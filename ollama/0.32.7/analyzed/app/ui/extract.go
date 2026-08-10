@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// ui 包内附件文本提取：按扩展名将 PDF、二进制或 UTF-8 文件转为可注入聊天的纯文本。
 package ui
 
 import (
@@ -13,7 +14,7 @@ import (
 	"github.com/ledongthuc/pdf"
 )
 
-// convertBytesToText converts raw file bytes to text based on file extension
+// convertBytesToText 根据文件名扩展名将原始字节转为文本；PDF 走专用提取，二进制返回占位描述。
 func convertBytesToText(data []byte, filename string) string {
 	ext := strings.ToLower(filepath.Ext(filename))
 
@@ -28,6 +29,7 @@ func convertBytesToText(data []byte, filename string) string {
 		return text
 	}
 
+	// 已知二进制扩展名列表，直接返回类型与大小占位
 	binaryExtensions := []string{
 		".xlsx", ".pptx", ".zip", ".tar", ".gz", ".rar",
 		".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg", ".ico",
@@ -43,11 +45,11 @@ func convertBytesToText(data []byte, filename string) string {
 		return string(data)
 	}
 
-	// If not valid UTF-8, return a placeholder
+	// 非合法 UTF-8 时返回占位说明
 	return fmt.Sprintf("[Binary file - %d bytes - not valid UTF-8]", len(data))
 }
 
-// extractPDFText extracts text content from PDF bytes
+// extractPDFText 从 PDF 字节流逐页提取纯文本，页间以分隔线连接。
 func extractPDFText(data []byte) (string, error) {
 	reader := bytes.NewReader(data)
 	pdfReader, err := pdf.NewReader(reader, int64(len(data)))
@@ -66,7 +68,7 @@ func extractPDFText(data []byte) (string, error) {
 
 		text, err := page.GetPlainText(nil)
 		if err != nil {
-			// Log the error but continue with other pages
+			// 单页失败时记录并继续处理其余页
 			continue
 		}
 

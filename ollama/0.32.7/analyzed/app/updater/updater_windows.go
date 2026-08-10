@@ -1,3 +1,4 @@
+// Windows 平台更新实现：下载 Inno Setup 安装包、Authenticode 验签与静默升级。
 package updater
 
 import (
@@ -57,6 +58,7 @@ type OSVERSIONINFOEXW struct {
 	wReserved           uint8
 }
 
+// init 配置 Windows staging 目录（updates_v2）、安装包名与 OS 版本 User-Agent。
 func init() {
 	VerifyDownload = verifyDownload
 	Installer = "Ollama-darwin.zip"
@@ -75,6 +77,7 @@ func init() {
 	loadOSVersion()
 }
 
+// loadOSVersion 通过 ntdll RtlGetVersion 获取 Windows 版本串。
 func loadOSVersion() {
 	UserAgentOS = "Windows"
 	verInfo := OSVERSIONINFOEXW{}
@@ -99,6 +102,7 @@ func loadOSVersion() {
 	}
 }
 
+// getStagedUpdate 查找 staging 下首个 .exe 更新安装包。
 func getStagedUpdate() string {
 	// When transitioning from old to new app, cleanup the update from the old staging dir
 	// This can eventually be removed once enough time has passed since the transition
@@ -118,6 +122,7 @@ func getStagedUpdate() string {
 	return files[0]
 }
 
+// DoUpgrade 验签后将安装包移到固定路径并启动 Inno Setup 静默安装，随后 os.Exit。
 func DoUpgrade(interactive bool) error {
 	bundle := getStagedUpdate()
 	if bundle == "" {
@@ -191,6 +196,7 @@ func DoUpgrade(interactive bool) error {
 	return nil
 }
 
+// DoPostUpgradeCleanup 清理 staging、升级标记与运行中安装包副本。
 func DoPostUpgradeCleanup() error {
 	cleanupOldDownloads(UpdateStageDir)
 	err := os.Remove(UpgradeMarkerFile)
@@ -214,6 +220,7 @@ func DoPostUpgradeCleanup() error {
 	return nil
 }
 
+// verifyDownload 对 staging 中的 .exe 执行 WinVerifyTrust 签名验证。
 func verifyDownload() error {
 	bundle := getStagedUpdate()
 	if bundle == "" {
@@ -227,6 +234,7 @@ func verifyDownload() error {
 	return nil
 }
 
+// verifyWindowsInstallerSignature 使用 WinTrust API 验证 Authenticode 签名链。
 func verifyWindowsInstallerSignature(filename string) error {
 	filename16, err := windows.UTF16PtrFromString(filename)
 	if err != nil {
@@ -264,6 +272,7 @@ func verifyWindowsInstallerSignature(filename string) error {
 	return nil
 }
 
+// windowsInstallerSignerSubject 解析 PKCS7 签名并确认签发者为 Ollama Inc.。
 func windowsInstallerSignerSubject(filename string) (string, error) {
 	filename16, err := windows.UTF16PtrFromString(filename)
 	if err != nil {
@@ -362,18 +371,22 @@ func cryptMsgClose(msg windows.Handle) error {
 	return nil
 }
 
+// IsUpdatePending 是否存在已下载待安装的 Windows 更新包。
 func IsUpdatePending() bool {
 	return getStagedUpdate() != ""
 }
 
+// DoUpgradeAtStartup 启动时以非交互模式触发 DoUpgrade。
 func DoUpgradeAtStartup() error {
 	return DoUpgrade(false)
 }
 
+// isInstallerRunning 检测 OllamaSetup.exe 安装进程是否已在运行。
 func isInstallerRunning() bool {
 	return len(IsProcRunning(Installer)) > 0
 }
 
+// IsProcRunning 枚举进程并返回模块名匹配 procName 的 PID 列表。
 func IsProcRunning(procName string) []uint32 {
 	pids := make([]uint32, 2048)
 	var ret uint32

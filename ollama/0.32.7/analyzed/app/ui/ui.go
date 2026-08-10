@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// ui 包实现 Ollama 桌面应用的聊天 HTTP 服务：REST API、SSE 流式对话、Ollama 反向代理与内嵌 React SPA。
 // package ui implements a chat interface for Ollama
 package ui
 
@@ -40,8 +41,10 @@ import (
 //go:generate tscriptify -package=github.com/ollama/ollama/app/ui/responses -target=./app/codegen/gotypes.gen.ts responses/types.go
 //go:generate npm --prefix ./app run build
 
+// CORS 是否启用，由环境变量 OLLAMA_CORS 控制。
 var CORS = envconfig.Bool("OLLAMA_CORS")
 
+// OllamaDotCom 返回 ollama.com 基址，可通过 OLLAMA_DOT_COM_URL 环境变量覆盖。
 // OllamaDotCom returns the URL for ollama.com, allowing override via environment variable
 var OllamaDotCom = func() string {
 	if url := os.Getenv("OLLAMA_DOT_COM_URL"); url != "" {
@@ -50,6 +53,7 @@ var OllamaDotCom = func() string {
 	return "https://ollama.com"
 }()
 
+// statusRecorder 包装 ResponseWriter 以记录实际 HTTP 状态码，供访问日志使用。
 type statusRecorder struct {
 	http.ResponseWriter
 	code int
@@ -77,6 +81,7 @@ func (r *statusRecorder) Flush() {
 	}
 }
 
+// Event 表示 SSE/JSONL 流式事件类型，前端据此分发 chat、thinking、download 等。
 // Event is a string that represents the type of event being sent to the
 // client. It is used in the Server-Sent Events (SSE) protocol to identify
 // the type of data being sent.
@@ -95,6 +100,7 @@ const (
 	EventDownload   Event = "download"
 )
 
+// Server 桌面 UI HTTP 服务：聊天存储、工具注册、Ollama 代理与自动更新。
 type Server struct {
 	Logger       *slog.Logger
 	Restart      func()
@@ -114,6 +120,7 @@ type Server struct {
 	UpdateAvailableFunc func()
 }
 
+// log 返回非 nil 日志器，缺省时使用 slog.Default。
 func (s *Server) log() *slog.Logger {
 	if s.Logger == nil {
 		return slog.Default()
@@ -121,6 +128,7 @@ func (s *Server) log() *slog.Logger {
 	return s.Logger
 }
 
+// ollamaProxy 创建到本地 Ollama 后端的反向代理，启动时等待服务就绪并懒初始化。
 // ollamaProxy creates a reverse proxy handler to the Ollama server
 func (s *Server) ollamaProxy() http.Handler {
 	var (
@@ -185,8 +193,10 @@ func (s *Server) ollamaProxy() http.Handler {
 	})
 }
 
+// errHandlerFunc 统一错误处理风格的 HTTP 处理器签名。
 type errHandlerFunc func(http.ResponseWriter, *http.Request) error
 
+// Handler 注册全部 API 路由、Ollama 代理与 React SPA 静态资源。
 func (s *Server) Handler() http.Handler {
 	handle := func(f errHandlerFunc) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -314,6 +324,7 @@ func (s *Server) Handler() http.Handler {
 	return mux
 }
 
+// handleError 将内部错误序列化为 JSON 500 响应，开发模式下保留 CORS 头。
 // handleError renders appropriate error responses based on request type
 func (s *Server) handleError(w http.ResponseWriter, e error) {
 	// Preserve CORS headers for API requests
@@ -329,6 +340,7 @@ func (s *Server) handleError(w http.ResponseWriter, e error) {
 	json.NewEncoder(w).Encode(map[string]string{"error": e.Error()})
 }
 
+// userAgentTransport 为出站 HTTP 请求自动附加 User-Agent 头。
 // userAgentTransport is a custom RoundTripper that adds the User-Agent header to all requests
 type userAgentTransport struct {
 	base http.RoundTripper
@@ -341,11 +353,13 @@ func (t *userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error
 	return t.base.RoundTrip(r)
 }
 
+// httpClient 返回带 User-Agent 且默认 10 秒超时的 HTTP 客户端。
 // httpClient returns an HTTP client that automatically adds the User-Agent header
 func (s *Server) httpClient() *http.Client {
 	return userAgentHTTPClient(10 * time.Second)
 }
 
+// inferenceClient 返回无超时的 Ollama API 客户端，避免长推理被截断。
 // inferenceClient uses almost the same HTTP client, but without a timeout so
 // long requests aren't truncated
 func (s *Server) inferenceClient() *api.Client {
@@ -361,6 +375,7 @@ func userAgentHTTPClient(timeout time.Duration) *http.Client {
 	}
 }
 
+// doSelfSigned 向 ollama.com 发送带本地密钥签名的认证请求。
 // doSelfSigned sends a self-signed request to the ollama.com API
 func (s *Server) doSelfSigned(ctx context.Context, method, path string) (*http.Response, error) {
 	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
@@ -381,6 +396,7 @@ func (s *Server) doSelfSigned(ctx context.Context, method, path string) (*http.R
 	return s.httpClient().Do(req)
 }
 
+// UserData 拉取当前登录用户信息并缓存到本地 store。
 // UserData fetches user data from ollama.com API for the current ollama key
 func (s *Server) UserData(ctx context.Context) (*api.UserResponse, error) {
 	resp, err := s.doSelfSigned(ctx, http.MethodPost, "/api/me")
@@ -412,6 +428,7 @@ func (s *Server) UserData(ctx context.Context) (*api.UserResponse, error) {
 	return &user, nil
 }
 
+// WaitForServer 轮询直到 Ollama 后端 /api/version 可用或超时。
 // WaitForServer waits for the Ollama server to be ready
 func WaitForServer(ctx context.Context, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
@@ -429,6 +446,7 @@ func WaitForServer(ctx context.Context, timeout time.Duration) error {
 	return errors.New("timeout waiting for Ollama server to be ready")
 }
 
+// createChat 生成 UUIDv7 新聊天 ID 并返回 JSON。
 func (s *Server) createChat(w http.ResponseWriter, r *http.Request) error {
 	if err := WaitForServer(r.Context(), 10*time.Second); err != nil {
 		return err
@@ -443,6 +461,7 @@ func (s *Server) createChat(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// listChats 返回全部聊天会话摘要列表。
 func (s *Server) listChats(w http.ResponseWriter, r *http.Request) error {
 	chats, _ := s.Store.Chats()
 
@@ -456,6 +475,7 @@ func (s *Server) listChats(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// checkModelUpstream 向 registry 发 HEAD 请求获取上游 digest 与推送时间。
 // checkModelUpstream makes a HEAD request to the Ollama registry to get the upstream digest and push time
 func (s *Server) checkModelUpstream(ctx context.Context, modelName string, timeout time.Duration) (string, int64, error) {
 	// Create a context with timeout for the registry check
@@ -510,6 +530,7 @@ func (s *Server) checkModelUpstream(ctx context.Context, modelName string, timeo
 	return digest, pushTime, nil
 }
 
+// isNetworkError 判断错误信息是否属于常见网络/连接失败模式。
 // isNetworkError checks if an error string contains common network/connection error patterns
 func isNetworkError(errStr string) bool {
 	networkErrorPatterns := []string{
@@ -534,8 +555,10 @@ func isNetworkError(errStr string) bool {
 	return false
 }
 
+// ErrNetworkOffline 表示网络不可用，用于映射用户可见错误。
 var ErrNetworkOffline = errors.New("network is offline")
 
+// getError 将底层错误映射为带 code 的前端 ErrorEvent（云端鉴权、离线下载等）。
 func (s *Server) getError(err error) responses.ErrorEvent {
 	var sErr api.AuthorizationError
 	if errors.As(err, &sErr) && sErr.StatusCode == http.StatusUnauthorized {
@@ -574,6 +597,7 @@ func (s *Server) getError(err error) responses.ErrorEvent {
 	}
 }
 
+// userMessageText 拼接全部用户消息正文，供浏览器工具 URL 白名单等使用。
 func userMessageText(messages []store.Message) string {
 	var b strings.Builder
 	for _, message := range messages {
@@ -586,6 +610,7 @@ func userMessageText(messages []store.Message) string {
 	return b.String()
 }
 
+// browserState 从聊天持久化字段解析浏览器工具状态。
 func (s *Server) browserState(chat *store.Chat) (*responses.BrowserStateData, bool) {
 	if len(chat.BrowserState) > 0 {
 		var st responses.BrowserStateData
@@ -596,6 +621,7 @@ func (s *Server) browserState(chat *store.Chat) (*responses.BrowserStateData, bo
 	return nil, false
 }
 
+// reconstructBrowserState（遗留）：从 tool 消息中重建最新完整浏览器状态。
 // reconstructBrowserState (legacy): return the latest full browser state stored in messages.
 func reconstructBrowserState(messages []store.Message, defaultViewTokens int) *responses.BrowserStateData {
 	for i := len(messages) - 1; i >= 0; i-- {
@@ -616,6 +642,7 @@ func reconstructBrowserState(messages []store.Message, defaultViewTokens int) *r
 	return nil
 }
 
+// chat 核心流式聊天处理器：拉模、工具循环、SSE JSONL 事件与持久化。
 func (s *Server) chat(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "text/jsonl")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -1242,6 +1269,7 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) error {
 	return s.Store.SetChat(*chat)
 }
 
+// getChat 返回单条聊天详情，并补全 tool 消息名与精简 browser_state。
 func (s *Server) getChat(w http.ResponseWriter, r *http.Request) error {
 	cid := r.PathValue("id")
 
@@ -1301,6 +1329,7 @@ func (s *Server) getChat(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// renameChat 更新聊天标题。
 func (s *Server) renameChat(w http.ResponseWriter, r *http.Request) error {
 	cid := r.PathValue("id")
 	if cid == "" {
@@ -1332,6 +1361,7 @@ func (s *Server) renameChat(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// deleteChat 删除指定聊天会话。
 func (s *Server) deleteChat(w http.ResponseWriter, r *http.Request) error {
 	cid := r.PathValue("id")
 	if cid == "" {
@@ -1358,6 +1388,7 @@ func (s *Server) deleteChat(w http.ResponseWriter, r *http.Request) error {
 }
 
 // TODO(parthsareen): consolidate events within the function
+// chatEventFromApiChatResponse 将 Ollama API 响应转为前端 ChatEvent（含 assistant_with_tools）。
 func chatEventFromApiChatResponse(res api.ChatResponse, thinkingTimeStart *time.Time, thinkingTimeEnd *time.Time) responses.ChatEvent {
 	// If there are tool calls, send assistant_with_tools event
 	if len(res.Message.ToolCalls) > 0 {
@@ -1412,6 +1443,7 @@ func chatEventFromApiChatResponse(res api.ChatResponse, thinkingTimeStart *time.
 	}
 }
 
+// chatInfoFromChat 从 store.Chat 提取列表展示所需的 ChatInfo。
 func chatInfoFromChat(chat store.Chat) responses.ChatInfo {
 	userExcerpt := ""
 	var updatedAt time.Time
@@ -1436,6 +1468,7 @@ func chatInfoFromChat(chat store.Chat) responses.ChatInfo {
 	}
 }
 
+// getSettings 读取应用设置并合并运行时 Agent/Tools 等开关。
 func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) error {
 	settings, err := s.Store.Settings()
 	if err != nil {
@@ -1458,6 +1491,7 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) error {
 	})
 }
 
+// settings 保存设置；上下文长度/模型目录/Expose 变更时触发重启，自动更新开关变更时协调 Updater。
 func (s *Server) settings(w http.ResponseWriter, r *http.Request) error {
 	old, err := s.Store.Settings()
 	if err != nil {
@@ -1503,6 +1537,7 @@ func (s *Server) settings(w http.ResponseWriter, r *http.Request) error {
 	})
 }
 
+// cloudSetting 启用或禁用云端模型功能并重启服务。
 func (s *Server) cloudSetting(w http.ResponseWriter, r *http.Request) error {
 	var req struct {
 		Enabled bool `json:"enabled"`
@@ -1520,10 +1555,12 @@ func (s *Server) cloudSetting(w http.ResponseWriter, r *http.Request) error {
 	return s.writeCloudStatus(w)
 }
 
+// getCloudSetting 返回云端功能禁用状态与配置来源。
 func (s *Server) getCloudSetting(w http.ResponseWriter, r *http.Request) error {
 	return s.writeCloudStatus(w)
 }
 
+// writeCloudStatus 序列化云端开关 JSON 响应。
 func (s *Server) writeCloudStatus(w http.ResponseWriter) error {
 	disabled, source, err := s.Store.CloudStatus()
 	if err != nil {
@@ -1537,6 +1574,7 @@ func (s *Server) writeCloudStatus(w http.ResponseWriter) error {
 	})
 }
 
+// getInferenceCompute 探测本机推理设备与默认上下文长度。
 func (s *Server) getInferenceCompute(w http.ResponseWriter, r *http.Request) error {
 	ctx, cancel := context.WithTimeout(r.Context(), 500*time.Millisecond)
 	defer cancel()
@@ -1567,6 +1605,7 @@ func (s *Server) getInferenceCompute(w http.ResponseWriter, r *http.Request) err
 	return json.NewEncoder(w).Encode(response)
 }
 
+// modelUpstream 比较本地 manifest 与 registry digest，返回模型是否过期。
 func (s *Server) modelUpstream(w http.ResponseWriter, r *http.Request) error {
 	if r.Method != "POST" {
 		return fmt.Errorf("method not allowed")
@@ -1611,6 +1650,7 @@ func (s *Server) modelUpstream(w http.ResponseWriter, r *http.Request) error {
 	return json.NewEncoder(w).Encode(response)
 }
 
+// userAgent 构造 ollama.com 可识别的客户端 User-Agent（devel 时用 v0.0.0）。
 func userAgent() string {
 	buildinfo, _ := debug.ReadBuildInfo()
 
@@ -1633,6 +1673,7 @@ func userAgent() string {
 	)
 }
 
+// convertToOllamaTool 将内部 tools 包 schema 转为 Ollama API Tool 格式。
 // convertToOllamaTool converts a tool schema from our tools package format to Ollama API format
 func convertToOllamaTool(toolSchema map[string]any) api.Tool {
 	tool := api.Tool{
@@ -1680,6 +1721,7 @@ func convertToOllamaTool(toolSchema map[string]any) api.Tool {
 	return tool
 }
 
+// getStringFromMap 从 map 安全读取字符串，缺失时返回默认值。
 // getStringFromMap safely gets a string from a map
 func getStringFromMap(m map[string]any, key, defaultValue string) string {
 	if val, ok := m[key].(string); ok {
@@ -1688,20 +1730,24 @@ func getStringFromMap(m map[string]any, key, defaultValue string) string {
 	return defaultValue
 }
 
+// isImageAttachment 判断附件是否为图片（走 vision 多模态而非文本嵌入）。
 // isImageAttachment checks if a filename is an image file
 func isImageAttachment(filename string) bool {
 	ext := strings.ToLower(filename)
 	return strings.HasSuffix(ext, ".png") || strings.HasSuffix(ext, ".jpg") || strings.HasSuffix(ext, ".jpeg") || strings.HasSuffix(ext, ".webp")
 }
 
+// ptr 返回字面量的指针，简化可选字段构造。
 // ptr is a convenience function for &literal
 func ptr[T any](v T) *T { return &v }
 
+// supportsBrowserTools 判断模型是否支持完整浏览器工具链（当前仅 gpt-oss 前缀）。
 // Browser tools simulate a full browser environment, allowing for actions like searching, opening, and interacting with web pages (e.g., "browser_search", "browser_open", "browser_find"). Currently only gpt-oss models support browser tools.
 func supportsBrowserTools(model string) bool {
 	return strings.HasPrefix(strings.ToLower(model), "gpt-oss")
 }
 
+// buildChatRequest 将 store 聊天历史转为 Ollama ChatRequest，含附件文本化与工具列表。
 // buildChatRequest converts store.Chat to api.ChatRequest
 func (s *Server) buildChatRequest(chat *store.Chat, model string, think any, availableTools []map[string]any) (*api.ChatRequest, error) {
 	var msgs []api.Message

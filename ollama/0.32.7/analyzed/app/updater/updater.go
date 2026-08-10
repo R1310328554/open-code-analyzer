@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// updater 包实现 Ollama 桌面应用的自动更新：检查、下载、验签与平台特定安装。
 package updater
 
 import (
@@ -44,12 +45,14 @@ var (
 	VerifyDownload func() error
 )
 
+// UpdateResponse ollama.com 更新检查 API 返回的下载 URL 与版本。
 // TODO - maybe move up to the API package?
 type UpdateResponse struct {
 	UpdateURL     string `json:"url"`
 	UpdateVersion string `json:"version"`
 }
 
+// checkForUpdate 向 ollama.com 查询是否有新版本，可选签名与设备 ID（macOS）。
 func (u *Updater) checkForUpdate(ctx context.Context) (bool, UpdateResponse) {
 	var updateResp UpdateResponse
 
@@ -134,6 +137,7 @@ func (u *Updater) checkForUpdate(ctx context.Context) (bool, UpdateResponse) {
 	return true, updateResp
 }
 
+// DownloadNewRelease 下载更新包到按 ETag 分目录的 staging 区，下载前 HEAD 校验并验签。
 func (u *Updater) DownloadNewRelease(ctx context.Context, updateResp UpdateResponse) error {
 	// Create a cancellable context for this download
 	downloadCtx, cancel := context.WithCancel(ctx)
@@ -249,6 +253,7 @@ func (u *Updater) DownloadNewRelease(ctx context.Context, updateResp UpdateRespo
 	return nil
 }
 
+// updateStagePath 根据 ETag 哈希与文件名生成安全的 staging 路径。
 func updateStagePath(stageDir, etag, filename string) (string, error) {
 	filename, err := safeUpdateFilename(filename)
 	if err != nil {
@@ -268,6 +273,7 @@ func updateStagePath(stageDir, etag, filename string) (string, error) {
 	return stageFilename, nil
 }
 
+// safeUpdateFilename 校验更新包文件名，拒绝路径穿越与绝对路径。
 func safeUpdateFilename(filename string) (string, error) {
 	filename = strings.TrimSpace(filename)
 	if filename == "" {
@@ -282,6 +288,7 @@ func safeUpdateFilename(filename string) (string, error) {
 	return filename, nil
 }
 
+// updateStageETagDir 将 ETag 转为 SHA256 十六进制子目录名。
 func updateStageETagDir(etag string) string {
 	etag = strings.Trim(strings.TrimSpace(etag), "\"")
 	if etag == "" {
@@ -293,6 +300,7 @@ func updateStageETagDir(etag string) string {
 	return hex.EncodeToString(sum[:])
 }
 
+// ensurePathInDir 确保目标路径仍在 staging 根目录内。
 func ensurePathInDir(dir, name string) error {
 	rel, err := filepath.Rel(dir, name)
 	if err != nil {
@@ -304,6 +312,7 @@ func ensurePathInDir(dir, name string) error {
 	return nil
 }
 
+// cleanupOldDownloads 清空 staging 目录下旧版本下载。
 func cleanupOldDownloads(stageDir string) {
 	files, err := os.ReadDir(stageDir)
 	if err != nil && errors.Is(err, os.ErrNotExist) {
@@ -323,6 +332,7 @@ func cleanupOldDownloads(stageDir string) {
 	}
 }
 
+// Updater 管理后台更新检查、下载取消与立即检查信号。
 type Updater struct {
 	Store              *store.Store
 	cancelDownload     context.CancelFunc
@@ -330,6 +340,7 @@ type Updater struct {
 	checkNow           chan struct{}
 }
 
+// CancelOngoingDownload 取消进行中的更新包下载。
 // CancelOngoingDownload cancels any currently running download
 func (u *Updater) CancelOngoingDownload() {
 	u.cancelDownloadLock.Lock()
@@ -341,6 +352,7 @@ func (u *Updater) CancelOngoingDownload() {
 	}
 }
 
+// TriggerImmediateCheck 通知后台 goroutine 立即执行一次更新检查。
 // TriggerImmediateCheck signals the background checker to check for updates immediately
 func (u *Updater) TriggerImmediateCheck() {
 	if u.checkNow != nil {
@@ -352,6 +364,7 @@ func (u *Updater) TriggerImmediateCheck() {
 	}
 }
 
+// StartBackgroundUpdaterChecker 启动定时与即时触发的更新检查循环；启用自动更新时下载并回调通知。
 func (u *Updater) StartBackgroundUpdaterChecker(ctx context.Context, cb func(string) error) {
 	u.checkNow = make(chan struct{}, 1)
 	u.checkNow <- struct{}{} // Trigger first check after initial delay

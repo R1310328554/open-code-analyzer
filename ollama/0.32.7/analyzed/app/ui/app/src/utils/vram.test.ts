@@ -1,9 +1,13 @@
+/**
+ * vram 工具函数的单元测试：parseVRAM 单位换算与 getTotalVRAM 汇总逻辑。
+ */
 import { describe, it, expect } from "vitest";
 import { parseVRAM, getTotalVRAM } from "./vram";
 
 describe("VRAM Utilities", () => {
   describe("parseVRAM", () => {
     it("should parse GB (decimal) values correctly", () => {
+      // 十进制 GB 转 GiB
       expect(parseVRAM("1 GB")).toBeCloseTo(1000 / 1024); // ≈0.9765625 GiB
       expect(parseVRAM("16.5 GB")).toBeCloseTo(16.5 * (1000 / 1024));
       expect(parseVRAM("32GB")).toBeCloseTo(32 * (1000 / 1024));
@@ -29,6 +33,7 @@ describe("VRAM Utilities", () => {
     });
 
     it("should handle case insensitive units", () => {
+      // 单位大小写不敏感
       expect(parseVRAM("8 gb")).toBeCloseTo(8 * (1000 / 1024));
       expect(parseVRAM("8 Gb")).toBeCloseTo(8 * (1000 / 1024));
       expect(parseVRAM("8 GiB")).toBe(8);

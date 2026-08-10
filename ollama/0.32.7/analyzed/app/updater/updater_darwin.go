@@ -1,3 +1,4 @@
+// macOS 平台更新实现：解压签名 zip、替换 .app bundle、Authorization 提权与启动时升级。
 package updater
 
 // #cgo CFLAGS: -x objective-c
@@ -22,6 +23,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// updateArchiveRoot 更新 zip 内应用 bundle 根目录名。
 const updateArchiveRoot = "Ollama.app"
 
 type bundleEntryScope int
@@ -61,6 +63,7 @@ var BundlePath = func() string {
 	return filepath.Dir(filepath.Dir(filepath.Dir(exe)))
 }()
 
+// init 配置 macOS 安装包名、staging 路径、User-Agent OS 串与 VerifyDownload 钩子。
 func init() {
 	VerifyDownload = verifyDownload
 	Installer = "Ollama-darwin.zip"
@@ -96,6 +99,7 @@ func init() {
 	UpdateStageDir = filepath.Join(appDataDir, "updates")
 }
 
+// DoUpgrade 备份当前 .app、解压新版本、处理符号链接并在成功后写升级标记。
 func DoUpgrade(interactive bool) error {
 	// TODO use UpgradeLogFile to record the upgrade details from->to version, etc.
 
@@ -256,6 +260,7 @@ func DoUpgrade(interactive bool) error {
 	return nil
 }
 
+// DoPostUpgradeCleanup 升级成功后删除备份目录与升级标记文件。
 func DoPostUpgradeCleanup() error {
 	slog.Debug("post upgrade cleanup", "backup", appBackupDir)
 	err := os.RemoveAll(appBackupDir)
@@ -266,6 +271,7 @@ func DoPostUpgradeCleanup() error {
 	return os.Remove(UpgradeMarkerFile)
 }
 
+// verifyDownload 解压到临时目录并调用 macOS 代码签名验证。
 func verifyDownload() error {
 	bundle := getStagedUpdate()
 	if bundle == "" {
@@ -344,6 +350,7 @@ func verifyDownload() error {
 	return nil
 }
 
+// bundleEntryPath 解析 zip 内相对路径并校验不逃逸 bundle 根。
 func bundleEntryPath(root, name string, scope bundleEntryScope) (string, error) {
 	cleanName := filepath.Clean(filepath.FromSlash(name))
 	if !filepath.IsLocal(cleanName) {
@@ -356,6 +363,7 @@ func bundleEntryPath(root, name string, scope bundleEntryScope) (string, error) 
 	return filepath.Join(root, cleanName), nil
 }
 
+// extractBundleFile 将 zip 内单个文件解压到目标路径。
 func extractBundleFile(f *zip.File, destName, name string) error {
 	src, err := f.Open()
 	if err != nil {
@@ -382,6 +390,7 @@ func extractBundleFile(f *zip.File, destName, name string) error {
 	return nil
 }
 
+// validBundleLinkTarget 校验 bundle 内符号链接目标合法且不指向 bundle 外。
 func validBundleLinkTarget(name, link string, scope bundleEntryScope) bool {
 	cleanTarget := filepath.Clean(filepath.Join(filepath.Dir(filepath.FromSlash(name)), filepath.FromSlash(link)))
 	if !filepath.IsLocal(cleanTarget) {
@@ -392,6 +401,7 @@ func validBundleLinkTarget(name, link string, scope bundleEntryScope) bool {
 }
 
 // If we detect an upgrade bundle, attempt to upgrade at startup
+// DoUpgradeAtStartup 启动时若存在已验签的 staging 包则静默升级。
 func DoUpgradeAtStartup() error {
 	bundle := getStagedUpdate()
 	if bundle == "" {
@@ -412,6 +422,7 @@ func DoUpgradeAtStartup() error {
 	return DoUpgrade(false)
 }
 
+// getStagedUpdate 在 staging 目录查找首个 .zip 更新包路径。
 func getStagedUpdate() string {
 	files, err := filepath.Glob(filepath.Join(UpdateStageDir, "*", "*.zip"))
 	if err != nil {
@@ -427,16 +438,19 @@ func getStagedUpdate() string {
 	return files[0]
 }
 
+// IsUpdatePending 是否存在已下载待安装的更新包。
 func IsUpdatePending() bool {
 	return getStagedUpdate() != ""
 }
 
+// chownWithAuthorization 通过 macOS Authorization 框架修改应用目录属主。
 func chownWithAuthorization(user string) bool {
 	u := C.CString(user)
 	defer C.free(unsafe.Pointer(u))
 	return (bool)(C.chownWithAuthorization(u))
 }
 
+// verifyExtractedBundle 调用 C/Objective-C 层验证已解压 .app 的 Apple 签名。
 func verifyExtractedBundle(path string) error {
 	p := C.CString(path)
 	defer C.free(unsafe.Pointer(p))
@@ -458,6 +472,7 @@ func goLogDebug(msg *C.cchar_t) {
 	slog.Debug(C.GoString(msg))
 }
 
+// alreadyMoved 检测当前进程是否已从 /Applications 下的 Ollama.app 启动（用户拖拽安装后）。
 func alreadyMoved() string {
 	// Respect users intent if they chose "keep" vs. "replace" when dragging to Applications
 	installedAppPaths, err := filepath.Glob(filepath.Join(

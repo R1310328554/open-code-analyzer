@@ -1,3 +1,6 @@
+/**
+ * Ollama 桌面 React UI 的 Vite 构建配置：路由插件、Tailwind、路径别名与 Safari 14 兼容 PostCSS。
+ */
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
@@ -28,29 +31,29 @@ export default defineConfig(() => ({
     postcss: {
       plugins: [
         postcssPresetEnv({
-          stage: 1, // Include more experimental features that Safari 14 needs
+          stage: 1, // 启用 Safari 14 所需的更多实验性 CSS 特性
           browsers: ["Safari >= 14"],
           // autoprefixer: false,
           features: {
-            "custom-properties": true, // Let TailwindCSS handle this
+            "custom-properties": true, // 由 TailwindCSS 处理 CSS 变量
             "nesting-rules": true,
-            "logical-properties-and-values": true, // Polyfill logical properties
-            "media-query-ranges": true, // Modern media query syntax
-            "color-function": true, // CSS color functions
+            "logical-properties-and-values": true, // 逻辑属性 polyfill
+            "media-query-ranges": true, // 现代媒体查询范围语法
+            "color-function": true, // CSS 颜色函数
             "double-position-gradients": true,
-            "gap-properties": true, // This is key for flexbox gap!
+            "gap-properties": true, // flexbox gap 支持（Safari 14 关键）
             "place-properties": true,
             "overflow-property": true,
-            "focus-visible-pseudo-class": true, // Focus-visible support
-            "focus-within-pseudo-class": true, // Focus-within support
-            "any-link-pseudo-class": true, // :any-link pseudo-class
-            "not-pseudo-class": true, // Enhanced :not() support
-            "dir-pseudo-class": true, // :dir() pseudo-class
-            "all-property": true, // CSS 'all' property
-            "image-set-function": true, // image-set() function
-            "hwb-function": true, // hwb() color function
-            "lab-function": true, // lab() color function
-            "oklab-function": true, // oklab() color function
+            "focus-visible-pseudo-class": true, // :focus-visible
+            "focus-within-pseudo-class": true, // :focus-within
+            "any-link-pseudo-class": true, // :any-link
+            "not-pseudo-class": true, // 增强 :not() 支持
+            "dir-pseudo-class": true, // :dir()
+            "all-property": true, // CSS all 属性
+            "image-set-function": true, // image-set()
+            "hwb-function": true, // hwb() 颜色
+            "lab-function": true, // lab() 颜色
+            "oklab-function": true, // oklab() 颜色
           },
         }),
       ],
