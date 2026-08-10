@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T04:56:16Z",
-  "files": [
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/constant/AuthSystemTypes.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/controller/UserController.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/controller/v3/PermissionControllerV3.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/controller/v3/RoleControllerV3.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/controller/v3/UserControllerV3.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/jwt/NacosJwtParser.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/jwt/NacosJwtPayload.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/jwt/NacosSignatureAlgorithm.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/model/OffsetFetchResult.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/AuthPaginationHelper.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/AuthRowMapperManager.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/EmbeddedPermissionPersistServiceImpl.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/EmbeddedRolePersistServiceImpl.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/EmbeddedUserPersistServiceImpl.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/ExternalPermissionPersistServiceImpl.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 287,
-  "done": 2235
+  "done": 2250
 }
