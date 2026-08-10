@@ -65,14 +65,16 @@ import static io.netty.util.internal.StringUtil.isNullOrEmpty;
 import static io.netty.util.internal.StringUtil.unescapeCsvFields;
 
 /**
- * Provides utility methods and constants for the HTTP/2 to HTTP conversion
+ * HTTP/1.x 与 HTTP/2 双向转换的工具类与常量。
+ * <p>负责伪头部映射、Connection/TE/Cookie 等特殊规则，以及在 {@link HttpObject} 上携带流 ID 等扩展头。
  */
 public final class HttpConversionUtil {
+    // 路径/查询解析逻辑改编自 Vert.x HttpUtils（见下方链接）
     // Parsing logic adapted from Vert.x HttpUtils.parsePath/parseQuery:
     // https://github.com/eclipse-vertx/vert.x/blob/98a8ef6c8b408009ff86eb8277fd0bbb2b866857/
     // vertx-core/src/main/java/io/vertx/core/http/impl/HttpUtils.java#L279-L319
     /**
-     * The set of headers that should not be directly copied when converting headers from HTTP to HTTP/2.
+     * HTTP → HTTP/2 时不应直接复制的头部黑名单（由伪头部或连接语义替代）。
      */
     private static final CharSequenceMap<AsciiString> HTTP_TO_HTTP2_HEADER_BLACKLIST =
             new CharSequenceMap<AsciiString>();
@@ -93,26 +95,22 @@ public final class HttpConversionUtil {
     }
 
     /**
-     * This will be the method used for {@link HttpRequest} objects generated out of the HTTP message flow defined in <a
-     * href="https://tools.ietf.org/html/rfc7540#section-8.1">[RFC 7540], Section 8.1</a>
+     * RFC 7540 §8.1 消息流之外生成的 {@link HttpRequest} 使用的占位方法。
      */
     public static final HttpMethod OUT_OF_MESSAGE_SEQUENCE_METHOD = HttpMethod.OPTIONS;
 
     /**
-     * This will be the path used for {@link HttpRequest} objects generated out of the HTTP message flow defined in <a
-     * href="https://tools.ietf.org/html/rfc7540#section-8.1">[RFC 7540], Section 8.1</a>
+     * 同上场景下占位请求的路径。
      */
     public static final String OUT_OF_MESSAGE_SEQUENCE_PATH = "";
 
     /**
-     * This will be the status code used for {@link HttpResponse} objects generated out of the HTTP message flow defined
-     * in <a href="https://tools.ietf.org/html/rfc7540#section-8.1">[RFC 7540], Section 8.1</a>
+     * 同上场景下占位响应的状态码。
      */
     public static final HttpResponseStatus OUT_OF_MESSAGE_SEQUENCE_RETURN_CODE = HttpResponseStatus.OK;
 
     /**
-     * <a href="https://tools.ietf.org/html/rfc7540#section-8.1.2.3">[RFC 7540], 8.1.2.3</a> states the path must not
-     * be empty, and instead should be {@code /}.
+     * RFC 7540 §8.1.2.3：:path 不得为空，空路径应规范化为 {@code /}。
      */
     private static final AsciiString EMPTY_REQUEST_PATH = AsciiString.cached("/");
 
@@ -120,47 +118,41 @@ public final class HttpConversionUtil {
     }
 
     /**
-     * Provides the HTTP header extensions used to carry HTTP/2 information in HTTP objects
+     * 在 HTTP/1.x {@link HttpObject} 上携带 HTTP/2 语义信息的扩展头名称。
      */
     public enum ExtensionHeaderNames {
         /**
-         * HTTP extension header which will identify the stream id from the HTTP/2 event(s) responsible for
-         * generating an {@code HttpObject}
+         * 标识生成该 {@code HttpObject} 的 HTTP/2 流 ID。
          * <p>
          * {@code "x-http2-stream-id"}
          */
         STREAM_ID("x-http2-stream-id"),
         /**
-         * HTTP extension header which will identify the scheme pseudo header from the HTTP/2 event(s) responsible for
-         * generating an {@code HttpObject}
+         * 对应 :scheme 伪头部的值。
          * <p>
          * {@code "x-http2-scheme"}
          */
         SCHEME("x-http2-scheme"),
         /**
-         * HTTP extension header which will identify the path pseudo header from the HTTP/2 event(s) responsible for
-         * generating an {@code HttpObject}
+         * 对应 :path 伪头部的值。
          * <p>
          * {@code "x-http2-path"}
          */
         PATH("x-http2-path"),
         /**
-         * HTTP extension header which will identify the stream id used to create this stream in an HTTP/2 push promise
-         * frame
+         * PUSH_PROMISE 关联的父流 ID。
          * <p>
          * {@code "x-http2-stream-promise-id"}
          */
         STREAM_PROMISE_ID("x-http2-stream-promise-id"),
         /**
-         * HTTP extension header which will identify the stream id which this stream is dependent on. This stream will
-         * be a child node of the stream id associated with this header value.
+         * 该流所依赖的父流 ID（优先级树）。
          * <p>
          * {@code "x-http2-stream-dependency-id"}
          */
         STREAM_DEPENDENCY_ID("x-http2-stream-dependency-id"),
         /**
-         * HTTP extension header which will identify the weight (if non-default and the priority is not on the default
-         * stream) of the associated HTTP/2 stream responsible responsible for generating an {@code HttpObject}
+         * 流优先级权重（非默认值时携带）。
          * <p>
          * {@code "x-http2-stream-weight"}
          */
@@ -178,7 +170,7 @@ public final class HttpConversionUtil {
     }
 
     /**
-     * Apply HTTP/2 rules while translating status code to {@link HttpResponseStatus}
+     * 按 HTTP/2 规则将状态码文本解析为 {@link HttpResponseStatus}（禁止 101 Switching Protocols）。
      *
      * @param status The status from an HTTP/2 frame
      * @return The HTTP/1.x status
@@ -235,8 +227,7 @@ public final class HttpConversionUtil {
                                                       boolean validateHttpHeaders)
                     throws Http2Exception {
         HttpResponseStatus status = parseStatus(http2Headers.status());
-        // HTTP/2 does not define a way to carry the version or reason phrase that is included in an
-        // HTTP/1.1 status line.
+        // HTTP/2 无 status-line，版本与 reason phrase 统一设为 HTTP/1.1 + 状态码
         FullHttpResponse msg = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, content,
                                                            validateHttpHeaders);
         try {
@@ -271,7 +262,7 @@ public final class HttpConversionUtil {
 
     private static String extractPath(CharSequence method, Http2Headers headers) {
         if (HttpMethod.CONNECT.asciiName().contentEqualsIgnoreCase(method)) {
-            // See https://tools.ietf.org/html/rfc7231#section-4.3.6
+            // CONNECT 的请求目标即 :authority，见 RFC 7231 §4.3.6
             return checkNotNull(headers.authority(),
                     "authority header cannot be null in the conversion to HTTP/1.x").toString();
         } else {
@@ -295,7 +286,7 @@ public final class HttpConversionUtil {
      */
     public static FullHttpRequest toFullHttpRequest(int streamId, Http2Headers http2Headers, ByteBuf content,
                                                 boolean validateHttpHeaders) throws Http2Exception {
-        // HTTP/2 does not define a way to carry the version identifier that is included in the HTTP/1.1 request line.
+        // HTTP/2 不携带 HTTP/1.1 请求行中的版本字段
         final CharSequence method = checkNotNull(http2Headers.method(),
                 "method header cannot be null in conversion to HTTP/1.x");
         final CharSequence path = extractPath(method, http2Headers);
@@ -327,7 +318,7 @@ public final class HttpConversionUtil {
      */
     public static HttpRequest toHttpRequest(int streamId, Http2Headers http2Headers, boolean validateHttpHeaders)
                     throws Http2Exception {
-        // HTTP/2 does not define a way to carry the version identifier that is included in the HTTP/1.1 request line.
+        // HTTP/2 不携带 HTTP/1.1 请求行中的版本字段
         final CharSequence method = checkNotNull(http2Headers.method(),
                 "method header cannot be null in conversion to HTTP/1.x");
         final CharSequence path = extractPath(method, http2Headers);
@@ -360,8 +351,7 @@ public final class HttpConversionUtil {
                                               final Http2Headers http2Headers,
                                               final boolean validateHttpHeaders) throws Http2Exception {
         final HttpResponseStatus status = parseStatus(http2Headers.status());
-        // HTTP/2 does not define a way to carry the version or reason phrase that is included in an
-        // HTTP/1.1 status line.
+        // HTTP/2 无 status-line 的版本与 reason phrase
         final HttpResponse msg = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status, validateHttpHeaders);
         try {
             addHttp2ToHttpHeaders(streamId, http2Headers, msg.headers(), msg.protocolVersion(), false, false);
@@ -374,7 +364,7 @@ public final class HttpConversionUtil {
     }
 
     /**
-     * Translate and add HTTP/2 headers to HTTP/1.x headers.
+     * 将 HTTP/2 头部翻译并写入 HTTP/1.x {@link FullHttpMessage}（初始头或 trailer）。
      *
      * @param streamId The stream associated with {@code sourceHeaders}.
      * @param inputHeaders The HTTP/2 headers to convert.
@@ -423,13 +413,9 @@ public final class HttpConversionUtil {
     }
 
     /**
-     * Converts the given HTTP/1.x headers into HTTP/2 headers.
-     * The following headers are only used if they can not be found in from the {@code HOST} header or the
-     * {@code Request-Line} as defined by <a href="https://tools.ietf.org/html/rfc7230">rfc7230</a>
-     * <ul>
-     * <li>{@link ExtensionHeaderNames#SCHEME}</li>
-     * </ul>
-     * {@link ExtensionHeaderNames#PATH} is ignored and instead extracted from the {@code Request-Line}.
+     * 将 HTTP/1.x 消息转换为 HTTP/2 头部（含伪头部推导）。
+     * <p>扩展头 {@link ExtensionHeaderNames#SCHEME} 仅在 Host/Request-Line 无法推断时使用；
+     * {@link ExtensionHeaderNames#PATH} 被忽略，路径始终从 Request-Line 提取。
      */
     public static Http2Headers toHttp2Headers(HttpMessage in, boolean validateHeaders) {
         HttpHeaders inHeaders = in.headers();
@@ -445,7 +431,7 @@ public final class HttpConversionUtil {
                 out.path(toHttp2Path(requestTarget));
                 if (hasSchemeAndAuthority(requestTarget)) {
                     URI requestTargetUri = URI.create(http2PathlessRequestTarget(requestTarget));
-                    // Take from the request-line if HOST header was empty
+                    // Host 为空时从绝对 URI 的 authority 补全
                     host = isNullOrEmpty(host) ? requestTargetUri.getAuthority() : host;
                     setHttp2Scheme(inHeaders, requestTargetUri, out);
                 } else {
@@ -464,7 +450,7 @@ public final class HttpConversionUtil {
             out.status(response.status().codeAsText());
         }
 
-        // Add the HTTP headers which have not been consumed above
+        // 复制尚未被伪头部逻辑消费的普通头部
         toHttp2Headers(inHeaders, out);
         return out;
     }
@@ -509,8 +495,7 @@ public final class HttpConversionUtil {
     }
 
     /**
-     * Filter the {@link HttpHeaderNames#TE} header according to the
-     * <a href="https://tools.ietf.org/html/rfc7540#section-8.1.2.2">special rules in the HTTP/2 RFC</a>.
+     * 按 RFC 7540 §8.1.2.2 过滤 TE 头：仅保留值为 {@code trailers} 的条目。
      * @param entry An entry whose name is {@link HttpHeaderNames#TE}.
      * @param out the resulting HTTP/2 headers.
      */
@@ -533,32 +518,31 @@ public final class HttpConversionUtil {
 
     public static void toHttp2Headers(HttpHeaders inHeaders, Http2Headers out) {
         Iterator<Entry<CharSequence, CharSequence>> iter = inHeaders.iteratorCharSequence();
-        // Choose 8 as a default size because it is unlikely we will see more than 4 Connection headers values, but
-        // still allowing for "enough" space in the map to reduce the chance of hash code collision.
+        // Connection 头列出的子项也需从复制列表中排除
         CharSequenceMap<AsciiString> connectionBlacklist =
             toLowercaseMap(inHeaders.valueCharSequenceIterator(CONNECTION), 8);
         while (iter.hasNext()) {
             Entry<CharSequence, CharSequence> entry = iter.next();
             final AsciiString aName = AsciiString.of(entry.getKey()).toLowerCase();
             if (!HTTP_TO_HTTP2_HEADER_BLACKLIST.contains(aName) && !connectionBlacklist.contains(aName)) {
-                // https://tools.ietf.org/html/rfc7540#section-8.1.2.2 makes a special exception for TE
+                // RFC 7540 §8.1.2.2：TE 仅允许 trailers
                 if (aName.contentEqualsIgnoreCase(TE)) {
                     toHttp2HeadersFilterTE(entry, out);
                 } else if (aName.contentEqualsIgnoreCase(COOKIE)) {
                     CharSequence valueCs = entry.getValue();
-                    // validate
+                    // 校验 Cookie 格式；不符合 RFC 6265 分隔规则则整段保留
                     boolean invalid = false;
                     for (int i = 0; i < valueCs.length(); i++) {
                         char c = valueCs.charAt(i);
                         if (c == ';') {
                             if (i + 1 >= valueCs.length() || valueCs.charAt(i + 1) != ' ') {
-                                // semicolon not followed by space. invalid, don't split
+                                // 分号后必须跟空格，否则视为非法 Cookie 行
                                 invalid = true;
                                 break;
                             }
                             i++; // skip space
                         } else if (c > 255) {
-                            // not ascii, don't split
+                            // 非 ASCII 字符时不拆分
                             invalid = true;
                             break;
                         }
@@ -579,8 +563,7 @@ public final class HttpConversionUtil {
     private static void splitValidCookieHeader(Http2Headers out, CharSequence valueCs) {
         try {
             AsciiString value = AsciiString.of(valueCs);
-            // split up cookies to allow for better compression
-            // https://tools.ietf.org/html/rfc7540#section-8.1.2.5
+            // 拆成多条 cookie 头以利于 HPACK 压缩（RFC 7540 §8.1.2.5）
             int index = value.forEachByte(FIND_SEMI_COLON);
             if (index != -1) {
                 int start = 0;
@@ -605,8 +588,7 @@ public final class HttpConversionUtil {
     }
 
     /**
-     * Generate an HTTP/2 {code :path} from a request-target in accordance with
-     * <a href="https://tools.ietf.org/html/rfc7230#section-5.3">rfc7230, 5.3</a>.
+     * 从 request-target 生成 HTTP/2 {@code :path}（含 query），遵循 RFC 7230 §5.3。
      */
     private static AsciiString toHttp2Path(String uri) {
         String path = dropEmptyFragment(parsePath(uri));
@@ -621,7 +603,7 @@ public final class HttpConversionUtil {
     }
 
     /**
-     * Extract the path out of the request-target. Based on Vert.x' HttpUtils.parsePath logic.
+     * 从 request-target 提取 path 部分（基于 Vert.x HttpUtils.parsePath）。
      */
     private static String parsePath(String uri) {
         if (uri.isEmpty()) {
@@ -632,7 +614,7 @@ public final class HttpConversionUtil {
             i = 0;
         } else {
             i = uri.indexOf("://");
-            // Netty change: validate the scheme before treating :// as authority syntax.
+            // Netty 增强：先校验 scheme 再按 :// 解析 authority
             if (!isValidScheme(uri, i)) {
                 i = 0;
             } else {
@@ -694,7 +676,7 @@ public final class HttpConversionUtil {
                 fragmentStart == -1 ? queryStart : Math.min(queryStart, fragmentStart);
     }
 
-    // Netty addition: detect authority for HTTP/2 :scheme/:authority extraction.
+    // Netty 增强：判断 request-target 是否含 scheme://authority，用于伪头部提取
     static boolean hasSchemeAndAuthority(String requestTarget) {
         int schemeEnd = requestTarget.indexOf("://");
         return isValidScheme(requestTarget, schemeEnd);
@@ -746,7 +728,7 @@ public final class HttpConversionUtil {
 
     // package-private for testing only
     static void setHttp2Authority(String authority, Http2Headers out) {
-        // The authority MUST NOT include the deprecated "userinfo" subcomponent
+        // RFC 7540：:authority 不得包含已废弃的 userinfo 子组件
         if (authority != null) {
             if (authority.isEmpty()) {
                 out.authority(EMPTY_STRING);
@@ -775,7 +757,7 @@ public final class HttpConversionUtil {
             return;
         }
 
-        // Consume the Scheme extension header if present
+        // 优先消费 x-http2-scheme 扩展头
         CharSequence cValue = in.get(ExtensionHeaderNames.SCHEME.text());
         if (cValue != null) {
             out.scheme(AsciiString.of(cValue));
@@ -793,11 +775,11 @@ public final class HttpConversionUtil {
     }
 
     /**
-     * Utility which translates HTTP/2 headers to HTTP/1 headers.
+     * HTTP/2 → HTTP/1.x 头部名翻译器（伪头部映射为 Host 或扩展头）。
      */
     private static final class Http2ToHttpHeaderTranslator {
         /**
-         * Translations from HTTP/2 header name to the HTTP/1.x equivalent.
+         * HTTP/2 伪头部到 HTTP/1.x 头部名的映射表。
          */
         private static final CharSequenceMap<AsciiString>
             REQUEST_HEADER_TRANSLATIONS = new CharSequenceMap<AsciiString>();
@@ -852,8 +834,7 @@ public final class HttpConversionUtil {
                                 "Invalid HTTP/2 header '%s' encountered in translation to HTTP/1.x", name);
                     }
                     if (COOKIE.equals(name)) {
-                        // combine the cookie values into 1 header entry.
-                        // https://tools.ietf.org/html/rfc7540#section-8.1.2.5
+                        // RFC 7540 §8.1.2.5：多条 cookie 头合并为一条 HTTP/1 Cookie
                         if (cookies == null) {
                             cookies = InternalThreadLocalMap.get().stringBuilder();
                         } else if (cookies.length() > 0) {
@@ -861,10 +842,7 @@ public final class HttpConversionUtil {
                         }
                         cookies.append(value);
                     } else if (contentEqualsIgnoreCase(HttpHeaderNames.HOST, name)) {
-                        // https://www.rfc-editor.org/rfc/rfc9113#section-8.3.1 requires that intermediaries
-                        // translating to HTTP/1.x treat a literal 'host' header that conflicts with ':authority'
-                        // as malformed, and RFC 9110 section 7.2 requires 'Host' be sent as a single field-value.
-                        // Reject the request rather than emitting an HTTP/1.x message with duplicate Host headers.
+                        // :authority 与 host 冲突时视为协议错误，避免 HTTP/1 出现重复 Host
                         if (hostHeaderFound) {
                             if (!contentEqualsIgnoreCase(output.get(HttpHeaderNames.HOST), value)) {
                                 throw streamError(streamId, PROTOCOL_ERROR,

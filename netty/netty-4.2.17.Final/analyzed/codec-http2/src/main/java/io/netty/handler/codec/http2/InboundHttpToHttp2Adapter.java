@@ -22,7 +22,8 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpScheme;
 
 /**
- * Translates HTTP/1.x object reads into HTTP/2 frames.
+ * 将入站 HTTP/1.x 完整消息（{@link FullHttpMessage}）转换为 HTTP/2 帧事件并交给 {@link Http2FrameListener}。
+ * <p>常用于 cleartext 升级（h2c）路径上，把已解码的 HTTP/1 消息喂给 HTTP/2 状态机。
  */
 public class InboundHttpToHttp2Adapter extends ChannelInboundHandlerAdapter {
     private final Http2Connection connection;
@@ -47,9 +48,7 @@ public class InboundHttpToHttp2Adapter extends ChannelInboundHandlerAdapter {
         }
     }
 
-    // note that this may behave strangely when used for the initial upgrade
-    // message when using h2c, since that message is ineligible for flow
-    // control, but there is not yet an API for signaling that.
+    // h2c 升级时首条消息不受流控约束，但当前 API 尚无法显式标记该特性
     static void handle(ChannelHandlerContext ctx, Http2Connection connection,
                               Http2FrameListener listener, FullHttpMessage message) throws Http2Exception {
         try {
@@ -62,6 +61,7 @@ public class InboundHttpToHttp2Adapter extends ChannelInboundHandlerAdapter {
             Http2Headers messageHeaders = HttpConversionUtil.toHttp2Headers(message, true);
             boolean hasContent = message.content().isReadable();
             boolean hasTrailers = !message.trailingHeaders().isEmpty();
+            // 首帧 HEADERS；无正文且无 trailer 时置 END_STREAM
             listener.onHeadersRead(
                     ctx, streamId, messageHeaders, 0, !(hasContent || hasTrailers));
             if (hasContent) {

@@ -23,7 +23,8 @@ import static io.netty.util.AsciiString.CASE_INSENSITIVE_HASHER;
 import static io.netty.util.AsciiString.CASE_SENSITIVE_HASHER;
 
 /**
- * Internal use only!
+ * HTTP/3 内部使用的 {@link CharSequence} 键头部映射（基于 {@link DefaultHeaders}）。
+ * <p>支持大小写敏感/ insensitive 哈希，值类型由 {@link ValueConverter} 决定。
  */
 final class CharSequenceMap<V> extends DefaultHeaders<CharSequence, V, CharSequenceMap<V>> {
     CharSequenceMap() {

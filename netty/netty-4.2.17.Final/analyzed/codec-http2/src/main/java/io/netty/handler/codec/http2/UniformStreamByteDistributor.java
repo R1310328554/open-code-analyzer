@@ -27,20 +27,19 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 /**
- * A {@link StreamByteDistributor} that ignores stream priority and uniformly allocates bytes to all
- * streams. This class uses a minimum chunk size that will be allocated to each stream. While
- * fewer streams may be written to in each call to {@link #distribute(int, Writer)}, doing this
- * should improve the goodput on each written stream.
+ * 忽略流优先级的 {@link StreamByteDistributor}：在所有有待写字节的流之间均匀分配配额。
+ * <p>通过 {@link #minAllocationChunk(int)} 设置每流最小分配块，减少单次分配过小导致的吞吐损失。
  */
 public final class UniformStreamByteDistributor implements StreamByteDistributor {
     private final Http2Connection.PropertyKey stateKey;
+    /** 轮询队列：存有当前可分配字节的流。 */
     private final Deque<State> queue = new ArrayDeque<State>(4);
 
     /**
-     * The minimum number of bytes that we will attempt to allocate to a stream. This is to
-     * help improve goodput on a per-stream basis.
+     * 每流单次至少分配的字节数，用于提升单流 goodput；默认见 {@link Http2CodecUtil#DEFAULT_MIN_ALLOCATION_CHUNK}。
      */
     private int minAllocationChunk = DEFAULT_MIN_ALLOCATION_CHUNK;
+    /** 所有活跃流待写字节总数。 */
     private long totalStreamableBytes;
 
     public UniformStreamByteDistributor(Http2Connection connection) {
@@ -64,7 +63,7 @@ public final class UniformStreamByteDistributor implements StreamByteDistributor
     }
 
     /**
-     * Sets the minimum allocation chunk that will be allocated to each stream. Defaults to 1KiB.
+     * 设置每流最小分配块（默认 1 KiB），须 &gt; 0。
      *
      * @param minAllocationChunk the minimum number of bytes that will be allocated to each stream.
      * Must be > 0.
@@ -83,7 +82,7 @@ public final class UniformStreamByteDistributor implements StreamByteDistributor
 
     @Override
     public void updateDependencyTree(int childStreamId, int parentStreamId, short weight, boolean exclusive) {
-        // This class ignores priority and dependency!
+        // 均匀分配器不处理优先级依赖树
     }
 
     @Override

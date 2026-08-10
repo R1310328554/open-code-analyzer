@@ -29,14 +29,17 @@ import io.netty.handler.codec.http2.Http2CodecUtil.SimpleChannelPromiseAggregato
 import io.netty.util.ReferenceCountUtil;
 
 /**
- * Translates HTTP/1.x object writes into HTTP/2 frames.
+ * 将出站方向的 HTTP/1.x 对象（{@link HttpMessage}、{@link HttpContent}）编码为 HTTP/2 帧。
  * <p>
- * See {@link InboundHttp2ToHttpAdapter} to get translation from HTTP/2 frames to HTTP/1.x objects.
+ * 入站方向的 HTTP/2 → HTTP/1.x 转换见 {@link InboundHttp2ToHttpAdapter}。
  */
 public class HttpToHttp2ConnectionHandler extends Http2ConnectionHandler {
 
+    /** 是否在转换时校验 HTTP 头部合法性。 */
     private final boolean validateHeaders;
+    /** 当前正在写入的 HTTP/2 流 ID（由首个 {@link HttpMessage} 确定）。 */
     private int currentStreamId;
+    /** 构造时指定的默认 scheme，可自动填入伪头部。 */
     private HttpScheme httpScheme;
 
     protected HttpToHttp2ConnectionHandler(Http2ConnectionDecoder decoder, Http2ConnectionEncoder encoder,
@@ -69,7 +72,7 @@ public class HttpToHttp2ConnectionHandler extends Http2ConnectionHandler {
     }
 
     /**
-     * Get the next stream id either from the {@link HttpHeaders} object or HTTP/2 codec
+     * 从扩展头 {@code x-http2-stream-id} 读取流 ID；未指定时由连接本地端自动分配下一个 ID。
      *
      * @param httpHeaders The HTTP/1.x headers object to look for the stream id
      * @return The stream id to use with this {@link HttpHeaders} object
@@ -81,7 +84,7 @@ public class HttpToHttp2ConnectionHandler extends Http2ConnectionHandler {
     }
 
     /**
-     * Handles conversion of {@link HttpMessage} and {@link HttpContent} to HTTP/2 frames.
+     * 拦截 {@link HttpMessage}/{@link HttpContent} 写入，拆分为 HEADERS/DATA 帧并聚合多个子 Promise。
      */
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
@@ -100,16 +103,16 @@ public class HttpToHttp2ConnectionHandler extends Http2ConnectionHandler {
             if (msg instanceof HttpMessage) {
                 final HttpMessage httpMsg = (HttpMessage) msg;
 
-                // Provide the user the opportunity to specify the streamId
+                // 允许调用方通过扩展头显式指定 streamId
                 currentStreamId = getStreamId(httpMsg.headers());
 
-                // Add HttpScheme if it's defined in constructor and header does not contain it.
+                // 构造器配置了 scheme 且头部尚未携带时，自动注入 x-http2-scheme
                 if (httpScheme != null &&
                         !httpMsg.headers().contains(HttpConversionUtil.ExtensionHeaderNames.SCHEME.text())) {
                     httpMsg.headers().set(HttpConversionUtil.ExtensionHeaderNames.SCHEME.text(), httpScheme.name());
                 }
 
-                // Convert and write the headers.
+                // 转换并写出 HEADERS 帧；FullHttpMessage 无正文时可在此帧上置 END_STREAM
                 Http2Headers http2Headers = HttpConversionUtil.toHttp2Headers(httpMsg, validateHeaders);
                 endStream = msg instanceof FullHttpMessage && !((FullHttpMessage) msg).content().isReadable();
                 writeHeaders(ctx, encoder, currentStreamId, httpMsg.headers(), http2Headers,
@@ -123,20 +126,20 @@ public class HttpToHttp2ConnectionHandler extends Http2ConnectionHandler {
                 if (msg instanceof LastHttpContent) {
                     isLastContent = true;
 
-                    // Convert any trailing headers.
+                    // 将 HTTP/1.x trailing headers 转为 HTTP/2 尾部 HEADERS 帧
                     final LastHttpContent lastContent = (LastHttpContent) msg;
                     trailers = lastContent.trailingHeaders();
                     http2Trailers = HttpConversionUtil.toHttp2Headers(trailers, validateHeaders);
                 }
 
-                // Write the data
+                // 写出 DATA 帧；引用计数由 encoder 接管，故 release=false
                 final ByteBuf content = ((HttpContent) msg).content();
                 endStream = isLastContent && trailers.isEmpty();
                 encoder.writeData(ctx, currentStreamId, content, 0, endStream, promiseAggregator.newPromise());
                 release = false;
 
                 if (!trailers.isEmpty()) {
-                    // Write trailing headers.
+                    // 有 trailer 时单独发一帧 HEADERS 并置 END_STREAM
                     writeHeaders(ctx, encoder, currentStreamId, trailers, http2Trailers, true, promiseAggregator);
                 }
             }

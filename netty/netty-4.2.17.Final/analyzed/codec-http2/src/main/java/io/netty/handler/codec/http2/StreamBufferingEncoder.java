@@ -33,31 +33,21 @@ import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
 import static io.netty.handler.codec.http2.Http2Exception.connectionError;
 
 /**
- * Implementation of a {@link Http2ConnectionEncoder} that dispatches all method call to another
- * {@link Http2ConnectionEncoder}, until {@code SETTINGS_MAX_CONCURRENT_STREAMS} is reached.
+ * {@link Http2ConnectionEncoder} 装饰器：在达到 {@code SETTINGS_MAX_CONCURRENT_STREAMS} 上限前透明转发，
+ * 超出后将新流及其帧缓冲，待活跃流关闭或上限提高后再自动刷出。
  * <p/>
- * <p>When this limit is hit, instead of rejecting any new streams this implementation buffers newly
- * created streams and their corresponding frames. Once an active stream gets closed or the maximum
- * number of concurrent streams is increased, this encoder will automatically try to empty its
- * buffer and create as many new streams as possible.
+ * <p>收到对端 {@code GOAWAY} 时，{@code lastStreamId} 以下尚未刷出的缓冲写操作将以
+ * {@link Http2GoAwayException} 失败。
  * <p/>
- * <p>
- * If a {@code GOAWAY} frame is received from the remote endpoint, all buffered writes for streams
- * with an ID less than the specified {@code lastStreamId} will immediately fail with a
- * {@link Http2GoAwayException}.
- * <p/>
- * <p>
- * If the channel/encoder gets closed, all new and buffered writes will immediately fail with a
- * {@link Http2ChannelClosedException}.
+ * <p>连接/编码器关闭时，所有新写与缓冲写以 {@link Http2ChannelClosedException} 失败。
  * </p>
- * <p>This implementation makes the buffering mostly transparent and is expected to be used as a
- * drop-in decorator of {@link DefaultHttp2ConnectionEncoder}.
+ * <p>可作为 {@link DefaultHttp2ConnectionEncoder} 的无缝 drop-in 装饰使用。
  * </p>
  */
 public class StreamBufferingEncoder extends DecoratingHttp2ConnectionEncoder {
 
     /**
-     * Thrown if buffered streams are terminated due to this encoder being closed.
+     * 编码器关闭导致缓冲流被终止时抛出。
      */
     public static final class Http2ChannelClosedException extends Http2Exception {
         private static final long serialVersionUID = 4768543442094476971L;
@@ -80,8 +70,7 @@ public class StreamBufferingEncoder extends DecoratingHttp2ConnectionEncoder {
     }
 
     /**
-     * Thrown by {@link StreamBufferingEncoder} if buffered streams are terminated due to
-     * receipt of a {@code GOAWAY}.
+     * 因收到 {@code GOAWAY} 而终止缓冲流时抛出。
      */
     public static final class Http2GoAwayException extends Http2Exception {
         private static final long serialVersionUID = 1326785622777291198L;
@@ -110,10 +99,10 @@ public class StreamBufferingEncoder extends DecoratingHttp2ConnectionEncoder {
     }
 
     /**
-     * Buffer for any streams and corresponding frames that could not be created due to the maximum
-     * concurrent stream limit being hit.
+     * 并发流达上限时，按流 ID 排序暂存待发送帧的缓冲表。
      */
     private final TreeMap<Integer, PendingStream> pendingStreams = new TreeMap<Integer, PendingStream>();
+    /** 当前允许的最大并发流数（来自 SETTINGS）。 */
     private int maxConcurrentStreams;
     private boolean closed;
     private GoAwayDetail goAwayDetail;

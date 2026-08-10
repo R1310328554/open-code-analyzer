@@ -33,12 +33,12 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static io.netty.util.internal.ObjectUtil.checkPositive;
 
 /**
- * This adapter provides just header/data events from the HTTP message flow defined
- * in <a href="https://tools.ietf.org/html/rfc7540#section-8.1">[RFC 7540], Section 8.1</a>.
+ * 将入站 HTTP/2 帧事件适配为 RFC 7540 §8.1 定义的 HTTP 消息语义（仅 HEADERS + DATA）。
  * <p>
- * See {@link HttpToHttp2ConnectionHandler} to get translation from HTTP/1.x objects to HTTP/2 frames for writes.
+ * 出站 HTTP/1.x → HTTP/2 帧转换见 {@link HttpToHttp2ConnectionHandler}。
  */
 public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
+    /** 检测 1xx 响应或 Expect: 100-continue 等需立即向上游投递的场景。 */
     private static final ImmediateSendDetector DEFAULT_SEND_DETECTOR = new ImmediateSendDetector() {
         @Override
         public boolean mustSendImmediately(FullHttpMessage msg) {
@@ -62,9 +62,12 @@ public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
         }
     };
 
+    /** 单条消息允许累积的最大正文长度，超出则 RST_STREAM(ENHANCE_YOUR_CALM)。 */
     private final int maxContentLength;
     private final ImmediateSendDetector sendDetector;
+    /** 在 {@link Http2Stream} 上挂载进行中的 {@link FullHttpMessage}。 */
     private final Http2Connection.PropertyKey messageKey;
+    /** 是否将 SETTINGS 帧继续 fireChannelRead 给下游。 */
     private final boolean propagateSettings;
     protected final Http2Connection connection;
     protected final boolean validateHttpHeaders;
@@ -80,7 +83,7 @@ public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
     }
 
     /**
-     * The stream is out of scope for the HTTP message flow and will no longer be tracked
+     * 流已超出 HTTP 消息流跟踪范围，清除关联的 {@link FullHttpMessage}。
      * @param stream The stream to remove associated state with
      * @param release {@code true} to call release on the value if it is present. {@code false} to not call release.
      */
@@ -118,7 +121,7 @@ public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
     }
 
     /**
-     * Set final headers and fire a channel read event
+     * 设置 Content-Length 并向 pipeline 投递完整消息。
      *
      * @param ctx The context to fire the event on
      * @param msg The message to send
@@ -133,7 +136,7 @@ public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
     }
 
     /**
-     * Create a new {@link FullHttpMessage} based upon the current connection parameters
+     * 根据连接角色（服务端/客户端）构造 {@link FullHttpRequest} 或 {@link FullHttpResponse}。
      *
      * @param stream The stream to create a message for
      * @param headers The headers associated with {@code stream}
@@ -154,8 +157,7 @@ public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
     }
 
     /**
-     * Provides translation between HTTP/2 and HTTP header objects while ensuring the stream
-     * is in a valid state for additional headers.
+     * HEADERS 帧处理的入口：新建或追加消息，并处理 1xx/Expect 等需立即投递的情况。
      *
      * @param ctx The context for which this message has been received.
      * Used to send informational header if detected.
@@ -193,8 +195,7 @@ public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
         }
 
         if (sendDetector.mustSendImmediately(msg)) {
-            // Copy the message (if necessary) before sending. The content is not expected to be copied (or used) in
-            // this operation but just in case it is used do the copy before sending and the resource may be released
+            // 1xx 或 Expect 场景：先投递当前消息，必要时复制一份继续累积后续 DATA
             final FullHttpMessage copy = endOfStream ? null : sendDetector.copyIfNeeded(ctx.alloc(), msg);
             fireChannelRead(ctx, msg, release, stream);
             return copy;
@@ -204,8 +205,7 @@ public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
     }
 
     /**
-     * After HTTP/2 headers have been processed by {@link #processHeadersBegin} this method either
-     * sends the result up the pipeline or retains the message for future processing.
+     * {@link #processHeadersBegin} 之后的收尾：END_STREAM 则投递，否则暂存待 DATA 追加。
      *
      * @param ctx The context for which this message has been received
      * @param stream The stream the {@code objAccumulator} corresponds to
@@ -215,7 +215,7 @@ public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
     private void processHeadersEnd(ChannelHandlerContext ctx, Http2Stream stream, FullHttpMessage msg,
                                    boolean endOfStream) {
         if (endOfStream) {
-            // Release if the msg from the map is different from the object being forwarded up the pipeline.
+            // 若 map 中仍是另一实例，需 release 旧引用
             fireChannelRead(ctx, msg, getMessage(stream) != msg, stream);
         } else {
             putMessage(stream, msg);
@@ -244,7 +244,7 @@ public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
             fireChannelRead(ctx, msg, false, stream);
         }
 
-        // All bytes have been processed.
+        // 所有 DATA 字节已计入流控窗口
         return dataReadableBytes + padding;
     }
 
@@ -265,7 +265,7 @@ public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
         Http2Stream stream = connection.stream(streamId);
         FullHttpMessage msg = processHeadersBegin(ctx, stream, headers, endOfStream, true, true);
         if (msg != null) {
-            // Add headers for dependency and weight.
+            // 记录 PRIORITY 信息到扩展头，供反向转换时使用
             // See https://github.com/netty/netty/issues/5866
             if (streamDependency != Http2CodecUtil.CONNECTION_STREAM_ID) {
                 msg.headers().setInt(HttpConversionUtil.ExtensionHeaderNames.STREAM_DEPENDENCY_ID.text(),
@@ -291,14 +291,10 @@ public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
     @Override
     public void onPushPromiseRead(ChannelHandlerContext ctx, int streamId, int promisedStreamId,
                                   Http2Headers headers, int padding) throws Http2Exception {
-        // A push promise should not be allowed to add headers to an existing stream
+        // PUSH_PROMISE 不允许向已存在消息的流追加头部
         Http2Stream promisedStream = connection.stream(promisedStreamId);
         if (headers.status() == null) {
-            // A PUSH_PROMISE frame has no Http response status.
-            // https://tools.ietf.org/html/rfc7540#section-8.2.1
-            // Server push is semantically equivalent to a server responding to a
-            // request; however, in this case, that request is also sent by the
-            // server, as a PUSH_PROMISE frame.
+            // PUSH_PROMISE 无状态码，语义上等价于服务端主动发起的请求，补默认 200
             headers.status(OK.codeAsText());
         }
         FullHttpMessage msg = processHeadersBegin(ctx, promisedStream, headers, false, false, false);
@@ -317,25 +313,24 @@ public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
     @Override
     public void onSettingsRead(ChannelHandlerContext ctx, Http2Settings settings) throws Http2Exception {
         if (propagateSettings) {
-            // Provide an interface for non-listeners to capture settings
+            // 允许非 Http2FrameListener 的 handler 感知 SETTINGS 变更
             ctx.fireChannelRead(settings);
         }
     }
 
     /**
-     * Called if a {@code RST_STREAM} is received but we have some data for that stream.
+     * 收到 RST_STREAM 且流上仍有未投递消息时的清理钩子。
      */
     protected void onRstStreamRead(Http2Stream stream, FullHttpMessage msg) {
         removeMessage(stream, true);
     }
 
     /**
-     * Allows messages to be sent up the pipeline before the next phase in the
-     * HTTP message flow is detected.
+     * 判断消息是否应在 END_STREAM 之前提前向上游投递（如 1xx、Expect: 100-continue）。
      */
     private interface ImmediateSendDetector {
         /**
-         * Determine if the response should be sent immediately, or wait for the end of the stream
+         * 是否立即 fireChannelRead，而非等待 END_STREAM。
          *
          * @param msg The response to test
          * @return {@code true} if the message should be sent immediately
@@ -344,11 +339,9 @@ public class InboundHttp2ToHttpAdapter extends Http2EventAdapter {
         boolean mustSendImmediately(FullHttpMessage msg);
 
         /**
-         * Determine if a copy must be made after an immediate send happens.
+         * 立即投递后，若仍需继续接收 DATA，返回需继续累积的消息副本。
          * <p>
-         * An example of this use case is if a request is received
-         * with a 'Expect: 100-continue' header. The message will be sent immediately,
-         * and the data will be queued and sent at the end of the stream.
+         * 典型场景：Expect: 100-continue —— 先投递带 Expect 的请求头，再等待正文。
          *
          * @param allocator The {@link ByteBufAllocator} that can be used to allocate
          * @param msg The message which has just been sent due to {@link #mustSendImmediately(FullHttpMessage)}

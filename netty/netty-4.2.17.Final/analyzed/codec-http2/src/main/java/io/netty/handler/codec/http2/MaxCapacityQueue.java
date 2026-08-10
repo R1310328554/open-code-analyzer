@@ -19,8 +19,13 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Queue;
 
+/**
+ * 带容量上限的 {@link Queue} 装饰器：{@link #offer} 在达到 {@code maxCapacity} 时返回 false 而非扩容。
+ * <p>用于 HTTP/2 内部缓冲，防止无界队列耗尽内存。
+ */
 final class MaxCapacityQueue<E> implements Queue<E> {
     private final Queue<E> queue;
+    /** 允许的最大元素个数（含当前已在队列中的元素）。 */
     private final int maxCapacity;
 
     MaxCapacityQueue(Queue<E> queue, int maxCapacity) {
@@ -38,6 +43,7 @@ final class MaxCapacityQueue<E> implements Queue<E> {
 
     @Override
     public boolean offer(E element) {
+        // 已达上限则拒绝入队（非阻塞）
         if (maxCapacity <= queue.size()) {
             return false;
         }

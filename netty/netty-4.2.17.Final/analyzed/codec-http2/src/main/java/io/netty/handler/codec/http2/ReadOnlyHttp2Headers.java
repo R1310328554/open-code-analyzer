@@ -35,24 +35,23 @@ import static io.netty.util.internal.EmptyArrays.*;
 import static io.netty.util.internal.ObjectUtil.checkNotNullArrayParam;
 
 /**
- * A variant of {@link Http2Headers} which only supports read-only methods.
+ * 只读版 {@link Http2Headers}：仅支持读操作，适合固定不变的头部集合。
  * <p>
- * Any array passed to this class may be used directly in the underlying data structures of this class. If these
- * arrays may be modified it is the caller's responsibility to supply this class with a copy of the array.
+ * 传入的数组可能被直接引用；若外部会修改数组，调用方须自行拷贝。
  * <p>
- * This may be a good alternative to {@link DefaultHttp2Headers} if your have a fixed set of headers which will not
- * change.
+ * 相比 {@link DefaultHttp2Headers} 更轻量，适用于预置或静态头部场景。
  */
 public final class ReadOnlyHttp2Headers implements Http2Headers {
     private static final byte PSEUDO_HEADER_TOKEN = (byte) ':';
+    /** 伪头部键值对（:method、:path 等），偶数长度数组。 */
     private final AsciiString[] pseudoHeaders;
+    /** 普通 HTTP/2 头部键值对。 */
     private final AsciiString[] otherHeaders;
 
     /**
-     * Used to create read only object designed to represent trailers.
+     * 构造仅含 trailer 的只读头部。
      * <p>
-     * If this is used for a purpose other than trailers you may violate the header serialization ordering defined by
-     * <a href="https://tools.ietf.org/html/rfc7540#section-8.1.2.1">RFC 7540, 8.1.2.1</a>.
+     * 若用于非 trailer 场景，可能违反 RFC 7540 §8.1.2.1 的头部序列化顺序。
      * @param validateHeaders {@code true} will run validation on each header name/value pair to ensure protocol
      *                        compliance.
      * @param otherHeaders An array of key:value pairs. Must not contain any
@@ -67,7 +66,7 @@ public final class ReadOnlyHttp2Headers implements Http2Headers {
     }
 
     /**
-     * Create a new read only representation of headers used by clients.
+     * 构造客户端请求用的只读头部（含 :method/:path/:scheme/:authority）。
      * @param validateHeaders {@code true} will run validation on each header name/value pair to ensure protocol
      *                        compliance.
      * @param method The value for {@link PseudoHeaderName#METHOD}.
@@ -94,7 +93,7 @@ public final class ReadOnlyHttp2Headers implements Http2Headers {
     }
 
     /**
-     * Create a new read only representation of headers used by servers.
+     * 构造服务端响应用的只读头部（含 :status）。
      * @param validateHeaders {@code true} will run validation on each header name/value pair to ensure protocol
      *                        compliance.
      * @param status The value for {@link PseudoHeaderName#STATUS}.

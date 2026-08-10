@@ -42,50 +42,37 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 /**
- * A {@link StreamByteDistributor} that is sensitive to stream priority and uses
- * <a href="https://en.wikipedia.org/wiki/Weighted_fair_queueing">Weighted Fair Queueing</a> approach for distributing
- * bytes.
+ * 感知流优先级的 {@link StreamByteDistributor}，采用
+ * <a href="https://en.wikipedia.org/wiki/Weighted_fair_queueing">加权公平队列（WFQ）</a> 分配出站字节。
  * <p>
- * Inspiration for this distributor was taken from Linux's
- * <a href="https://www.kernel.org/doc/Documentation/scheduler/sched-design-CFS.txt">Completely Fair Scheduler</a>
- * to model the distribution of bytes to simulate an "ideal multi-tasking CPU", but in this case we are simulating
- * an "ideal multi-tasking NIC".
+ * 设计灵感来自 Linux CFS 调度器：在「理想多任务 NIC」模型下按权重与虚拟时间公平分配带宽。
  * <p>
- * Each write operation will use the {@link #allocationQuantum(int)} to know how many more bytes should be allocated
- * relative to the next stream which wants to write. This is to balance fairness while also considering goodput.
+ * 每次 {@link #distribute} 以 {@link #allocationQuantum(int)} 为步长，在公平性与 goodput 间折中。
  */
 public final class WeightedFairQueueByteDistributor implements StreamByteDistributor {
     /**
-     * The initial size of the children map is chosen to be conservative on initial memory allocations under
-     * the assumption that most streams will have a small number of children. This choice may be
-     * sub-optimal if when children are present there are many children (i.e. a web page which has many
-     * dependencies to load).
+     * 子流映射表的初始容量（假设多数流仅有少量子依赖；可通过系统属性覆盖）。
      *
      * Visible only for testing!
      */
     static final int INITIAL_CHILDREN_MAP_SIZE =
             max(1, SystemPropertyUtil.getInt("io.netty.http2.childrenMapSize", 2));
-    /**
-     * FireFox currently uses 5 streams to establish QoS classes.
-     */
+    /** Firefox 等浏览器常用约 5 条流建立 QoS 类，与此默认上限一致。 */
     private static final int DEFAULT_MAX_STATE_ONLY_SIZE = 5;
 
     private final Http2Connection.PropertyKey stateKey;
     /**
-     * If there is no Http2Stream object, but we still persist priority information then this is where the state will
-     * reside.
+     * 尚无 {@link Http2Stream} 对象时，仅持久化优先级信息的占位状态。
      */
     private final IntObjectMap<State> stateOnlyMap;
     /**
-     * This queue will hold streams that are not active and provides the capability to retain priority for streams which
-     * have no {@link Http2Stream} object. See {@link StateOnlyComparator} for the priority comparator.
+     * 无活跃流对象时的优先级队列，按 {@link StateOnlyComparator} 淘汰最旧条目。
      */
     private final PriorityQueue<State> stateOnlyRemovalQueue;
     private final Http2Connection connection;
     private final State connectionState;
     /**
-     * The minimum number of bytes that we will attempt to allocate to a stream. This is to
-     * help improve goodput on a per-stream basis.
+     * 相对下一可写流多分配的字节量子，用于平衡公平性与批量写出效率。
      */
     private int allocationQuantum = DEFAULT_MIN_ALLOCATION_CHUNK;
     private final int maxStateOnlySize;

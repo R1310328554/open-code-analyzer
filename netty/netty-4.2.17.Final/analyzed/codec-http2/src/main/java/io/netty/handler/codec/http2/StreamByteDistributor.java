@@ -16,40 +16,34 @@
 package io.netty.handler.codec.http2;
 
 /**
- * An object (used by remote flow control) that is responsible for distributing the bytes to be
- * written across the streams in the connection.
+ * 远程流量控制使用的字节分配策略：决定在连接级可写字节中，各流应获得多少份额。
  */
 public interface StreamByteDistributor {
 
     /**
-     * State information for the stream, indicating the number of bytes that are currently
-     * streamable. This is provided to the {@link #updateStreamableBytes(StreamState)} method.
+     * 流的可写状态快照，供 {@link #updateStreamableBytes(StreamState)} 更新分配器内部队列。
      */
     interface StreamState {
         /**
-         * Gets the stream this state is associated with.
+         * 关联的 HTTP/2 流。
          */
         Http2Stream stream();
 
         /**
-         * Get the amount of bytes this stream has pending to send. The actual amount written must not exceed
-         * {@link #windowSize()}!
+         * 该流待发送的字节数；实际写入量不得超过 {@link #windowSize()}。
          * @return The amount of bytes this stream has pending to send.
          * @see Http2CodecUtil#streamableBytes(StreamState)
          */
         long pendingBytes();
 
         /**
-         * Indicates whether or not there are frames pending for this stream.
+         * 是否仍有待写的帧（含仅 HEADERS 无 DATA 的情况）。
          */
         boolean hasFrame();
 
         /**
-         * The size (in bytes) of the stream's flow control window. The amount written must not exceed this amount!
-         * <p>A {@link StreamByteDistributor} needs to know the stream's window size in order to avoid allocating bytes
-         * if the window size is negative. The window size being {@code 0} may also be significant to determine when if
-         * an stream has been given a chance to write an empty frame, and also enables optimizations like not writing
-         * empty frames in some situations (don't write headers until data can also be written).
+         * 该流的流量控制窗口大小（字节）；分配字节数不得超过此值。
+         * <p>窗口为 0 或负值时分配器应避免无效分配；也为「仅发空帧」等优化提供依据。
          * @return the size of the stream's flow control window.
          * @see Http2CodecUtil#streamableBytes(StreamState)
          */
@@ -57,14 +51,13 @@ public interface StreamByteDistributor {
     }
 
     /**
-     * Object that performs the writing of the bytes that have been allocated for a stream.
+     * 分配完成后，由分配器回调以执行实际写出。
      */
     interface Writer {
         /**
-         * Writes the allocated bytes for this stream.
+         * 为指定流写出已分配的字节数。
          * <p>
-         * Any {@link Throwable} thrown from this method is considered a programming error.
-         * A {@code GOAWAY} frame will be sent and the will be connection closed.
+         * 抛出任何 {@link Throwable} 视为编程错误，将触发 GOAWAY 并关闭连接。
          * @param stream the stream for which to perform the write.
          * @param numBytes the number of bytes to write.
          */
@@ -72,14 +65,12 @@ public interface StreamByteDistributor {
     }
 
     /**
-     * Called when the streamable bytes for a stream has changed. Until this
-     * method is called for the first time for a give stream, the stream is assumed to have no
-     * streamable bytes.
+     * 流的可写字节数发生变化时调用；首次调用前假定该流无可写字节。
      */
     void updateStreamableBytes(StreamState state);
 
     /**
-     * Explicitly update the dependency tree. This method is called independently of stream state changes.
+     * 显式更新优先级依赖树（与流状态变更独立触发）。
      * @param childStreamId The stream identifier associated with the child stream.
      * @param parentStreamId The stream identifier associated with the parent stream. May be {@code 0},
      *                       to make {@code childStreamId} and immediate child of the connection.
@@ -90,14 +81,9 @@ public interface StreamByteDistributor {
     void updateDependencyTree(int childStreamId, int parentStreamId, short weight, boolean exclusive);
 
     /**
-     * Distributes up to {@code maxBytes} to those streams containing streamable bytes and
-     * iterates across those streams to write the appropriate bytes. Criteria for
-     * traversing streams is undefined and it is up to the implementation to determine when to stop
-     * at a given stream.
-     *
-     * <p>The streamable bytes are not automatically updated by calling this method. It is up to the
-     * caller to indicate the number of bytes streamable after the write by calling
-     * {@link #updateStreamableBytes(StreamState)}.
+     * 在不超过 {@code maxBytes} 的前提下，按策略遍历各流并触发 {@link Writer#write}。
+     * <p>遍历顺序由具体实现决定；调用后不会自动扣减 streamable bytes，需调用方再调
+     * {@link #updateStreamableBytes(StreamState)}。
      *
      * @param maxBytes the maximum number of bytes to write.
      * @return {@code true} if there are still streamable bytes that have not yet been written,

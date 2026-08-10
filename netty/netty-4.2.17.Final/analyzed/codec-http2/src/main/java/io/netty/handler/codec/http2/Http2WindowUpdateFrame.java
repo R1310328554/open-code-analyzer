@@ -16,12 +16,13 @@
 package io.netty.handler.codec.http2;
 
 /**
- * HTTP/2 WINDOW_UPDATE frame.
+ * HTTP/2 WINDOW_UPDATE 帧：通知对端扩大流级或连接级流量控制窗口。
  */
 public interface Http2WindowUpdateFrame extends Http2StreamFrame {
 
     /**
-     * Number of bytes to increment the HTTP/2 stream's or connection's flow control window.
+     * 窗口增量（字节数）；接收方据此增加可发送额度。
+     * <p>流 ID 为 0 时表示连接级窗口，否则为对应流的窗口。
      */
     int windowSizeIncrement();
 }

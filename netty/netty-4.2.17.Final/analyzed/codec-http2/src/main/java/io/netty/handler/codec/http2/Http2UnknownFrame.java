@@ -18,6 +18,10 @@ package io.netty.handler.codec.http2;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 
+/**
+ * 表示 HTTP/2 规范未定义或当前编解码器未显式支持的帧类型。
+ * <p>载荷通过 {@link ByteBufHolder} 持有，便于扩展帧、实验性帧或前向兼容场景下的透传处理。
+ */
 public interface Http2UnknownFrame extends Http2StreamFrame, ByteBufHolder {
 
     @Override
@@ -26,8 +30,10 @@ public interface Http2UnknownFrame extends Http2StreamFrame, ByteBufHolder {
     @Override
     Http2UnknownFrame stream(Http2FrameStream stream);
 
+    /** 原始帧类型字节（9 字节帧头中的 type 字段）。 */
     byte frameType();
 
+    /** 该帧携带的标志位集合。 */
     Http2Flags flags();
 
     @Override

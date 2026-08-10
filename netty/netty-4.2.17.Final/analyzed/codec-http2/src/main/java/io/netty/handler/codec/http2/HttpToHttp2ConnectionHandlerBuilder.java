@@ -20,11 +20,12 @@ import io.netty.handler.codec.http.HttpScheme;
 import io.netty.handler.codec.http2.Http2HeadersEncoder.SensitivityDetector;
 
 /**
- * Builder which builds {@link HttpToHttp2ConnectionHandler} objects.
+ * {@link HttpToHttp2ConnectionHandler} 的构建器，继承通用 HTTP/2 连接 handler 配置项。
  */
 public final class HttpToHttp2ConnectionHandlerBuilder extends
         AbstractHttp2ConnectionHandlerBuilder<HttpToHttp2ConnectionHandler, HttpToHttp2ConnectionHandlerBuilder> {
 
+    /** 默认注入的 HTTP scheme（http/https），用于补全 :scheme 伪头部。 */
     private HttpScheme httpScheme;
 
     @Override
@@ -126,7 +127,7 @@ public final class HttpToHttp2ConnectionHandlerBuilder extends
     }
 
     /**
-     * Add {@code scheme} in {@link Http2Headers} if not already present.
+     * 若 {@link Http2Headers} 中尚无 :scheme，则使用此 {@link HttpScheme} 作为默认值。
      *
      * @param httpScheme {@link HttpScheme} type
      * @return {@code this}.
