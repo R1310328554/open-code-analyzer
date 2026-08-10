@@ -18,14 +18,19 @@
 package org.keycloak.theme;
 
 /**
+ * FreeMarker 模板处理异常。
+ * <p>主题渲染过程中模板解析或执行失败时抛出。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class FreeMarkerException extends Exception {
 
+    /** 以消息构造异常。 */
     public FreeMarkerException(String message) {
         super(message);
     }
 
+    /** 以消息与根因构造异常。 */
     public FreeMarkerException(String message, Throwable cause) {
         super(message, cause);
     }

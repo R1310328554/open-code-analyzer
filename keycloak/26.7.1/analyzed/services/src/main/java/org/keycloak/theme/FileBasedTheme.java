@@ -21,9 +21,15 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.Properties;
 
+/**
+ * 基于文件系统的主题抽象基类。
+ * <p>按 {@link Locale} 加载消息 bundle，并兼容旧版中文 locale 映射。</p>
+ */
 public abstract class FileBasedTheme implements Theme {
+    /** 子类实现：将指定 locale 的消息 bundle 加载到属性表。 */
     abstract protected void loadBundle(String baseBundlename, Locale locale, Properties m) throws IOException;
 
+    /** 加载指定 bundle 名与 locale 的消息属性。 */
     @Override
     public Properties getMessages(String baseBundlename, Locale locale) throws IOException {
         if(locale == null){
@@ -33,7 +39,7 @@ public abstract class FileBasedTheme implements Theme {
 
         loadBundle(baseBundlename, locale, m);
 
-        // Chinese locales mapping
+        // 旧版 zh-CN/zh-TW 映射到 zh-Hans/zh-Hant
         if (locale.getLanguage().equals("zh") && !locale.getCountry().isEmpty()) {
             Locale l = switch (locale.getCountry()) {
                 case "TW" -> Locale.forLanguageTag("zh-Hant");
@@ -48,6 +54,7 @@ public abstract class FileBasedTheme implements Theme {
         return m;
     }
 
+    /** 按 JDK ResourceBundle 规则构造 bundle 文件名。 */
     // Logic as implemented by JDK's ResourceBundle
     public String toBundleName(String baseName, Locale locale) {
         if (locale == Locale.ROOT) {

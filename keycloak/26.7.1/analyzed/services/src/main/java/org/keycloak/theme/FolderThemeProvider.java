@@ -24,27 +24,34 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * 文件夹主题 Provider。
+ * <p>扫描配置目录下各主题子目录并按 {@link Theme.Type} 提供 {@link FolderTheme}。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class FolderThemeProvider implements ThemeProvider {
 
     private final File themesDir;
 
+    /** 绑定主题根目录。 */
     public FolderThemeProvider(File themesDir) {
         this.themesDir = themesDir;
     }
 
+    /** 文件夹 Provider 优先级（低于 classpath）。 */
     @Override
     public int getProviderPriority() {
         return 100;
     }
 
+    /** 按名称与类型加载文件夹主题。 */
     @Override
     public Theme getTheme(String name, Theme.Type type) throws IOException {
         File themeDir = getThemeDir(name, type);
         return themeDir != null ? new FolderTheme(themeDir, name, type) : null;
     }
 
+    /** 列出指定类型下可用的主题名称。 */
     @Override
     public Set<String> nameSet(Theme.Type type) {
         if (themesDir == null || !themesDir.isDirectory()) {
@@ -72,6 +79,7 @@ public class FolderThemeProvider implements ThemeProvider {
     public void close() {
     }
 
+    /** 解析主题类型子目录，不存在时返回 null。 */
     private File getThemeDir(String name, Theme.Type type) {
         if (themesDir == null || !themesDir.isDirectory()) {
             return null;

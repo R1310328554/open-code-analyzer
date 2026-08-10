@@ -24,18 +24,19 @@ import org.owasp.html.HtmlPolicyBuilder;
 import org.owasp.html.PolicyFactory;
 
 /**
- * Based on the EbayPolicyExample in owasp java-html-sanitizer.
+ * Keycloak HTML 消毒策略。
+ * <p>基于 OWASP java-html-sanitizer 的 EbayPolicyExample，定义允许的标签、属性与 URL 规则。</p>
  */
 public class KeycloakSanitizerPolicy {
 
-  // Some common regular expression definitions.
+  // 常用正则定义
 
-  // The 16 colors defined by the HTML Spec (also used by the CSS Spec)
+  // HTML/CSS 规范定义的 16 种命名颜色
   private static final Pattern COLOR_NAME = Pattern.compile(
       "(?:aqua|black|blue|fuchsia|gray|grey|green|lime|maroon|navy|olive|purple"
       + "|red|silver|teal|white|yellow)");
 
-  // HTML/CSS Spec allows 3 or 6 digit hex to specify color
+  // HTML/CSS 允许 3 位或 6 位十六进制颜色码
   private static final Pattern COLOR_CODE = Pattern.compile(
       "(?:#(?:[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?))");
 
@@ -83,8 +84,9 @@ public class KeycloakSanitizerPolicy {
       ".?", Pattern.DOTALL);
 
 
+  /** 全局 HTML 消毒策略工厂实例。 */
   public static final PolicyFactory POLICY_DEFINITION = new HtmlPolicyBuilder()
-          .allowWithoutAttributes("span") // this is added to ebay example to allow span without attributes
+          .allowWithoutAttributes("span") // 相对 eBay 示例额外允许无属性 span
           .allowAttributes("id").matching(HTML_ID).globally()
           .allowAttributes("class").matching(HTML_CLASS).globally()
           .allowAttributes("lang").matching(Pattern.compile("[a-zA-Z]{2,20}"))
@@ -167,6 +169,7 @@ public class KeycloakSanitizerPolicy {
               "table", "td", "th", "tr", "colgroup", "fieldset", "legend")
           .toFactory();
 
+  /** 匹配任一给定正则的谓词。 */
   private static Predicate<String> matchesEither(final Pattern a, final Pattern b) {
     return s -> a.matcher(s).matches() || b.matcher(s).matches();
   }

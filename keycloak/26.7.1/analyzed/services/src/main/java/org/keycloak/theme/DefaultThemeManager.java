@@ -45,6 +45,9 @@ import org.keycloak.services.util.LocaleUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * 默认 {@link ThemeManager} 实现。
+ * <p>聚合各 {@link ThemeProvider}，支持父主题链、import 与缓存；{@link ExtendingTheme} 合并多层主题资源。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultThemeManager implements ThemeManager {
@@ -55,17 +58,20 @@ public class DefaultThemeManager implements ThemeManager {
     private final KeycloakSession session;
     private List<ThemeProvider> providers;
 
+    /** 绑定工厂与会话。 */
     public DefaultThemeManager(DefaultThemeManagerFactory factory, KeycloakSession session) {
         this.factory = factory;
         this.session = session;
     }
 
+    /** 按类型从 {@link ThemeSelectorProvider} 解析主题名并加载。 */
     @Override
     public Theme getTheme(Theme.Type type) {
         String name = session.getProvider(ThemeSelectorProvider.class).getThemeName(type);
         return getTheme(name, type);
     }
 
+    /** 按名称与类型加载主题，优先缓存，失败时回退默认主题。 */
     @Override
     public Theme getTheme(String name, Theme.Type type) {
         Theme theme = factory.getCachedTheme(name, type);
@@ -88,6 +94,7 @@ public class DefaultThemeManager implements ThemeManager {
         return theme;
     }
     
+    /** 汇总所有 Provider 的可用主题名称。 */
     @Override
     public Set<String> nameSet(Theme.Type type) {
         Set<String> themes = new HashSet<String>();
@@ -111,6 +118,7 @@ public class DefaultThemeManager implements ThemeManager {
     public void close() {
     }
 
+    /** 加载主题并解析父链与 import，组装为 {@link ExtendingTheme}。 */
     private Theme loadTheme(String name, Theme.Type type, RealmModel realm) {
         Theme theme = findTheme(name, type);
         if (theme == null) {
@@ -139,6 +147,7 @@ public class DefaultThemeManager implements ThemeManager {
         return new ExtendingTheme(realm, themes, session.getAllProviders(ThemeResourceProvider.class));
     }
 
+    /** 遍历 Provider 查找并实例化指定主题。 */
     private Theme findTheme(String name, Theme.Type type) {
         for (ThemeProvider p : getProviders()) {
             if (p.hasTheme(name, type)) {
@@ -152,6 +161,7 @@ public class DefaultThemeManager implements ThemeManager {
         return null;
     }
 
+    /** 解析 {@code import} 属性并将引用主题加入链，缺失时中止加载。 */
     private boolean processImportedTheme(List<Theme> themes, Theme theme, String origThemeName, Theme.Type type) {
         if (theme.getImportName() != null) {
             String[] s = theme.getImportName().split("/");
@@ -165,6 +175,7 @@ public class DefaultThemeManager implements ThemeManager {
         return true;
     }
 
+    /** 合并父主题链与 {@link ThemeResourceProvider} 的复合主题视图。 */
     private static class ExtendingTheme implements Theme {
 
         private final RealmModel realm;
@@ -178,6 +189,7 @@ public class DefaultThemeManager implements ThemeManager {
 
         private Pattern compiledContentHashPattern;
 
+        /** 按主题链与资源 Provider 构建扩展主题。 */
         public ExtendingTheme(RealmModel realm, List<Theme> themes, Set<ThemeResourceProvider> themeResourceProviders) {
             this.realm = realm;
             this.themes = themes;
@@ -296,6 +308,7 @@ public class DefaultThemeManager implements ThemeManager {
             return compiledContentHashPattern != null && compiledContentHashPattern.matcher(path).matches();
         }
 
+        /** 按 locale 合并主题链与 Provider 消息，并缓存结果。 */
         private Map<Locale, Properties> getMessagesByLocale(String baseBundlename, Locale locale) throws IOException {
             if (messages.get(baseBundlename) == null || messages.get(baseBundlename).get(locale) == null) {
                 Locale parent = LocaleUtil.getParentLocale(locale, realm);
@@ -330,6 +343,7 @@ public class DefaultThemeManager implements ThemeManager {
             }
         }
 
+        /** 为 theme.properties 中列出的 locale 自动生成显示标签。 */
         protected void addlocaleTranslations(Locale locale, Properties m) throws IOException {
             Locale currentLocale = Locale.forLanguageTag(resolveChineseLocale(locale.toLanguageTag()));
 
@@ -364,6 +378,7 @@ public class DefaultThemeManager implements ThemeManager {
             LATIN_CHARACTERS = p;
         }
 
+        /** 拉丁字母 locale 下首字母大写。 */
         private String capitalize(String name, Locale locale) {
             if (LATIN_CHARACTERS.matcher(name).matches()) {
                 return name.substring(0, 1).toUpperCase(locale) + name.substring(1);
@@ -392,8 +407,8 @@ public class DefaultThemeManager implements ThemeManager {
         }
 
         /**
-         * Iterate over all string properties defined in "theme.properties" then substitute the value with system property or environment variables.
-         * See {@link StringPropertyReplacer#replaceProperties} for details about the different formats.
+         * 遍历 theme.properties 中所有字符串属性，用系统属性或环境变量替换占位符。
+         * 格式详见 {@link StringPropertyReplacer#replaceProperties}。
          */
         private void substituteProperties(final Properties properties) {
             for (final String propertyName : properties.stringPropertyNames()) {
@@ -401,9 +416,9 @@ public class DefaultThemeManager implements ThemeManager {
             }
         }
 
+        /** 将旧版 zh-CN/zh-TW locale 码映射为 zh-Hans/zh-Hant。 */
         private String resolveChineseLocale(String locale) {
-            // This is mapping old locale codes to the new locale codes for Simplified and Traditional Chinese.
-            // Once the existing locales have been moved, this code can be removed.
+            // 旧 locale 码到新码的映射；现有 locale 迁移完成后可移除
             if (locale.equals("zh-CN")) {
                 return "zh-Hans";
             } else if (locale.equals("zh-TW")) {
@@ -414,6 +429,7 @@ public class DefaultThemeManager implements ThemeManager {
     }
 
 
+    /** 懒加载并按优先级排序的主题 Provider 列表。 */
     private List<ThemeProvider> getProviders() {
         if (providers == null) {
             providers = new LinkedList(session.getAllProviders(ThemeProvider.class));

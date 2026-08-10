@@ -32,6 +32,9 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.services.util.LocaleUtil;
 
 /**
+ * 文件夹主题实现。
+ * <p>从本地目录读取 {@code theme.properties}、模板与资源文件。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class FolderTheme extends FileBasedTheme {
@@ -44,6 +47,7 @@ public class FolderTheme extends FileBasedTheme {
     private Type type;
     private final Properties properties;
 
+    /** 从主题目录加载属性、父主题与 import 配置。 */
     public FolderTheme(File themeDir, String name, Type type) throws IOException {
         this.themeDir = themeDir;
         this.name = name;
@@ -104,8 +108,10 @@ public class FolderTheme extends FileBasedTheme {
         return getMessages("messages", locale);
     }
 
+    /** 合法 locale/bundle 名字符校验。 */
     private static final Pattern LEGAL_LOCALE = Pattern.compile("[a-zA-Z0-9-_#]*");
 
+    /** 从 {@code messages/} 子目录加载指定 bundle。 */
     @Override
     protected void loadBundle(String baseBundlename, Locale locale, Properties m) throws IOException {
         String filename = toBundleName(baseBundlename, locale);
@@ -122,6 +128,7 @@ public class FolderTheme extends FileBasedTheme {
         }
     }
 
+    /** 合并 Realm 本地化文本增强消息属性。 */
     public Properties getEnhancedMessages(RealmModel realm, Locale locale) throws IOException {
         if (locale == null){
             return null;

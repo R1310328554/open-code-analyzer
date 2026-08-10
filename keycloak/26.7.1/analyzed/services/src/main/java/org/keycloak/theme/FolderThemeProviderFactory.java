@@ -24,17 +24,22 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * 文件夹主题 Provider 工厂。
+ * <p>从配置项 {@code dir} 初始化 {@link FolderThemeProvider}，id 为 {@code folder}。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class FolderThemeProviderFactory implements ThemeProviderFactory {
 
     private FolderThemeProvider themeProvider;
 
+    /** 返回共享的文件夹主题 Provider 单例。 */
     @Override
     public ThemeProvider create(KeycloakSession sessions) {
         return themeProvider;
     }
 
+    /** 读取 {@code dir} 配置并创建 Provider。 */
     @Override
     public void init(Config.Scope config) {
         String d = config.get("dir");
@@ -55,6 +60,7 @@ public class FolderThemeProviderFactory implements ThemeProviderFactory {
 
     }
 
+    /** 工厂标识符。 */
     @Override
     public String getId() {
         return "folder";

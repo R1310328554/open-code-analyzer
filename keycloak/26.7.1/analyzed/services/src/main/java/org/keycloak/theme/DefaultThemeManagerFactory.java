@@ -27,6 +27,9 @@ import org.keycloak.models.ThemeManager;
 import org.jboss.logging.Logger;
 
 /**
+ * 默认主题管理器工厂。
+ * <p>创建 {@link DefaultThemeManager} 并按配置可选启用主题缓存。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultThemeManagerFactory implements ThemeManagerFactory {
@@ -35,12 +38,14 @@ public class DefaultThemeManagerFactory implements ThemeManagerFactory {
 
     private ConcurrentHashMap<ThemeKey, Theme> themeCache;
 
+    /** 按 {@code theme.cacheThemes} 配置初始化主题缓存。 */
     public DefaultThemeManagerFactory() {
         if(Config.scope("theme").getBoolean("cacheThemes", true)) {
             themeCache = new ConcurrentHashMap<>();
         }
     }
 
+    /** 为会话创建主题管理器实例。 */
     @Override
     public ThemeManager create(KeycloakSession session) {
         return new DefaultThemeManager(this, session);
@@ -58,11 +63,13 @@ public class DefaultThemeManagerFactory implements ThemeManagerFactory {
     public void close() {
     }
 
+    /** 工厂标识符。 */
     @Override
     public String getId() {
         return "default";
     }
 
+    /** 从缓存读取已加载主题，未启用缓存时返回 null。 */
     public Theme getCachedTheme(String name, Theme.Type type) {
         if (themeCache != null) {
             DefaultThemeManagerFactory.ThemeKey key = DefaultThemeManagerFactory.ThemeKey.get(name, type);
@@ -72,6 +79,7 @@ public class DefaultThemeManagerFactory implements ThemeManagerFactory {
         }
     }
 
+    /** 将主题放入缓存并返回缓存中的实例（并发下可能返回已有条目）。 */
     public Theme addCachedTheme(String name, Theme.Type type, Theme theme) {
         if (theme == null) {
             return null;
@@ -89,10 +97,12 @@ public class DefaultThemeManagerFactory implements ThemeManagerFactory {
         return theme;
     }
 
+    /** 是否启用了主题缓存。 */
     public boolean isCacheEnabled() {
         return themeCache != null;
     }
 
+    /** 清空主题缓存。 */
     @Override
     public void clearCache() {
         if (themeCache != null) {
@@ -101,6 +111,7 @@ public class DefaultThemeManagerFactory implements ThemeManagerFactory {
         }
     }
 
+    /** 主题缓存键：名称 + 类型。 */
     public static class ThemeKey {
 
         private String name;

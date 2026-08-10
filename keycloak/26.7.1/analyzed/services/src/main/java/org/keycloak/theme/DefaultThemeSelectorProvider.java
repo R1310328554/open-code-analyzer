@@ -4,16 +4,23 @@ import org.keycloak.Config;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 默认主题选择器 Provider。
+ * <p>按 {@link Theme.Type} 从配置、客户端属性或 Realm 设置解析主题名称。</p>
+ */
 public class DefaultThemeSelectorProvider implements ThemeSelectorProvider {
 
+    /** 客户端属性键：覆盖登录主题。 */
     public static final String LOGIN_THEME_KEY = "login_theme";
 
     private final KeycloakSession session;
 
+    /** 绑定当前 Keycloak 会话。 */
     public DefaultThemeSelectorProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 按类型解析生效主题名，缺失时回退到默认主题。 */
     @Override
     public String getThemeName(Theme.Type type) {
         String name = null;

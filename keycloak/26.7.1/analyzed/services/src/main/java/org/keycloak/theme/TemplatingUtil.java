@@ -20,14 +20,26 @@ package org.keycloak.theme;
 import java.util.Properties;
 
 /**
+ * 模板变量替换工具。
+ * <p>将文本中 {@code ${key}} 占位符替换为 {@link Properties} 中的值。</p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class TemplatingUtil {
 
+    /** 使用默认 {@code ${}} 标记解析变量。 */
     public static String resolveVariables(String text, Properties props) {
         return resolveVariables(text, props, "${", "}");
     }
 
+    /**
+     * 按自定义起止标记解析并替换变量。
+     *
+     * @param text 原始文本
+     * @param props 属性表，缺失键保留原占位符
+     * @param startMarker 变量起始标记
+     * @param endMarker 变量结束标记
+     */
     public static String resolveVariables(String text, Properties props, String startMarker, String endMarker) {
 
         int e = 0;

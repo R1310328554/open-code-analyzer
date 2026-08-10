@@ -25,19 +25,25 @@ import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * JAR 包内主题 Provider 工厂。
+ * <p>扫描 classpath 中所有 {@link ClasspathThemeProviderFactory#KEYCLOAK_THEMES_JSON} 并加载主题。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class JarThemeProviderFactory extends ClasspathThemeProviderFactory {
 
+    /** 注册 id 为 {@code jar} 的工厂。 */
     public JarThemeProviderFactory() {
         super("jar");
     }
 
+    /** 创建基于已加载主题表的 Provider。 */
     @Override
     public ThemeProvider create(KeycloakSession session) {
         return new ClasspathThemeProvider(themes);
     }
 
+    /** 遍历 classpath 上所有 keycloak-themes.json 并加载主题。 */
     @Override
     public void init(Config.Scope config) {
         try {

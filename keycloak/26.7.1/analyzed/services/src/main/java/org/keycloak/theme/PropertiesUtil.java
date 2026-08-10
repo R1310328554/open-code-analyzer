@@ -25,19 +25,19 @@ import java.util.Properties;
 import java.util.PropertyResourceBundle;
 
 /**
+ * 属性文件读取工具。
+ * <p>支持 UTF-8 与 ISO-8859-1 自动检测，行为与 {@link PropertyResourceBundle} 一致。</p>
+ *
  * @author <a href="mailto:wadahiro@gmail.com">Hiroyuki Wada</a>
  */
 public class PropertiesUtil {
 
     /**
-     * Read a properties file either UTF-8 or if that doesn't work in ISO-8895-1 format.
-     * This utilizes the functionality present in JDK 9 to automatically detect the encoding of the resource.
-     * A user can specify the standard Java system property <code>java.util.PropertyResourceBundle.encoding</code>
-     * to change this.
-     * <p />
-     * Unfortunately the standard {@link Properties#load(Reader)} doesn't support this automatic decoding,
-     * as it is only been implemented for resource files.
+     * 以字符集感知方式读取 properties 流并合并到目标 {@link Properties}。
+     * <p>可通过系统属性 {@code java.util.PropertyResourceBundle.encoding} 指定编码。</p>
      *
+     * @param properties 目标属性表
+     * @param stream 输入流
      * @see PropertyResourceBundle
      */
     public static void readCharsetAware(Properties properties, InputStream stream) throws IOException {
