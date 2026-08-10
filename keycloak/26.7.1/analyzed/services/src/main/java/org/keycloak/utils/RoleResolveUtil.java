@@ -27,25 +27,25 @@ import org.keycloak.models.RoleModel;
 import org.keycloak.representations.AccessToken;
 
 /**
- * Helper class to ensure that all the user's permitted roles (including composite roles) are loaded just once per request.
- * Then all underlying protocolMappers can consume them.
+ * 角色解析缓存工具。
+ * <p>确保每个请求仅加载一次用户授权角色（含复合角色），供协议映射器复用。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class RoleResolveUtil {
 
+    /** 会话属性前缀，用于缓存已解析角色。 */
     private static final String RESOLVED_ROLES_ATTR = "RESOLVED_ROLES";
 
 
     /**
-     * Object (possibly null) containing all the user's realm roles. Including user's groups roles. Composite roles are expanded.
-     * Just the roles, which current client has role-scope-mapping for (or it's clientScopes) are included.
-     * Current client means the client corresponding to specified clientSessionCtx.
+     * 获取用户领域角色（含组角色、展开复合角色）。
+     * <p>仅包含当前客户端有 scope 映射的角色。</p>
      *
-     * @param session
-     * @param clientSessionCtx
-     * @param createIfMissing
-     * @return can return null (just in case that createIfMissing is false)
+     * @param session Keycloak 会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @param createIfMissing 不存在时是否创建空 Access 对象
+     * @return 领域角色 Access，{@code createIfMissing} 为 false 时可能为 null
      */
     public static AccessToken.Access getResolvedRealmRoles(KeycloakSession session, ClientSessionContext clientSessionCtx, boolean createIfMissing) {
         AccessToken rolesToken = getAndCacheResolvedRoles(session, clientSessionCtx);
@@ -60,15 +60,13 @@ public class RoleResolveUtil {
 
 
     /**
-     * Object (possibly null) containing all the user's client roles of client specified by clientId. Including user's groups roles.
-     * Composite roles are expanded. Just the roles, which current client has role-scope-mapping for (or it's clientScopes) are included.
-     * Current client means the client corresponding to specified clientSessionCtx.
+     * 获取指定 clientId 的客户端角色（含组角色、展开复合角色）。
      *
-     * @param session
-     * @param clientSessionCtx
-     * @param clientId
-     * @param createIfMissing
-     * @return can return null (just in case that createIfMissing is false)
+     * @param session Keycloak 会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @param clientId 目标客户端 ID
+     * @param createIfMissing 不存在时是否创建空 Access 对象
+     * @return 客户端角色 Access，{@code createIfMissing} 为 false 时可能为 null
      */
     public static AccessToken.Access getResolvedClientRoles(KeycloakSession session, ClientSessionContext clientSessionCtx, String clientId, boolean createIfMissing) {
         AccessToken rolesToken = getAndCacheResolvedRoles(session, clientSessionCtx);
@@ -83,18 +81,17 @@ public class RoleResolveUtil {
 
 
     /**
-     * Object (but can be empty map) containing all the user's client roles of all clients. Including user's groups roles. Composite roles are expanded.
-     * Just the roles, which current client has role-scope-mapping for (or it's clientScopes) are included.
-     * Current client means the client corresponding to specified clientSessionCtx.
+     * 获取所有客户端的角色映射（非 null，可为空 Map）。
      *
-     * @param session
-     * @param clientSessionCtx
-     * @return not-null object (can return empty map)
+     * @param session Keycloak 会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @return clientId → Access 映射
      */
     public static Map<String, AccessToken.Access> getAllResolvedClientRoles(KeycloakSession session, ClientSessionContext clientSessionCtx) {
         return getAndCacheResolvedRoles(session, clientSessionCtx).getResourceAccess();
     }
 
+    /** 解析并缓存角色到会话属性，避免重复计算。 */
     private static AccessToken getAndCacheResolvedRoles(KeycloakSession session, ClientSessionContext clientSessionCtx) {
         ClientModel client = clientSessionCtx.getClientSession().getClient();
         String resolvedRolesAttrName = RESOLVED_ROLES_ATTR + ":" + clientSessionCtx.getClientSession().getUserSession().getId() + ":" + client.getId();
@@ -110,6 +107,7 @@ public class RoleResolveUtil {
         return token;
     }
 
+    /** 将单个角色加入 AccessToken 的领域或资源 Access 段。 */
     private static void addToToken(AccessToken token, RoleModel role) {
         AccessToken.Access access = null;
         if (role.getContainer() instanceof RealmModel) {

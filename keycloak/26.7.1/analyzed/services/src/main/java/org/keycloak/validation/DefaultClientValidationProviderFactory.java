@@ -18,15 +18,22 @@ package org.keycloak.validation;
 
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 默认客户端校验提供者工厂。
+ * <p>返回单例 {@link DefaultClientValidationProvider} 实例。</p>
+ */
 public class DefaultClientValidationProviderFactory implements ClientValidationProviderFactory {
 
+    /** 共享的单例校验提供者实例。 */
     private final DefaultClientValidationProvider provider = new DefaultClientValidationProvider();
 
+    /** 创建（返回）客户端校验提供者。 */
     @Override
     public ClientValidationProvider create(KeycloakSession session) {
         return provider;
     }
 
+    /** @return 工厂标识 {@code "default"} */
     @Override
     public String getId() {
         return "default";

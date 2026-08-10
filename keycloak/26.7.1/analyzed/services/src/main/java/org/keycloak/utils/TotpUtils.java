@@ -31,12 +31,17 @@ import org.keycloak.theme.Theme;
 import org.jboss.logging.Logger;
 
 /**
+ * TOTP 双因素认证工具类。
+ * <p>格式化密钥、生成 otpauth URI 及 QR 码。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class TotpUtils {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(TotpUtils.class);
 
+    /** 将 TOTP 密钥 Base32 编码并按 4 字符分组（空格分隔）。 */
     public static String encode(String totpSecret) {
         String encoded = Base32.encode(totpSecret.getBytes());
         StringBuilder sb = new StringBuilder();
@@ -50,9 +55,9 @@ public class TotpUtils {
     }
 
     /**
-     * Generates a QR code using the realm name as issuer. Use when no session is available.
+     * 使用领域名称作为 issuer 生成 QR 码（无 session 时使用）。
      *
-     * @deprecated Use {@link #qrCode(KeycloakSession, String, RealmModel, UserModel)} instead to get locale-aware issuer names.
+     * @deprecated 请改用 {@link #qrCode(KeycloakSession, String, RealmModel, UserModel)} 以支持本地化 issuer 名称。
      */
     @Deprecated(since = "26.7.0")
     public static String qrCode(String totpSecret, RealmModel realm, UserModel user) {
@@ -60,7 +65,13 @@ public class TotpUtils {
     }
 
     /**
-     * Generates a QR code using a locale-aware realm display name as issuer. Preferred when a session is available.
+     * 使用本地化领域显示名作为 issuer 生成 QR 码（推荐有 session 时使用）。
+     *
+     * @param session Keycloak 会话（可为 null，回退至领域名）
+     * @param totpSecret TOTP 共享密钥
+     * @param realm 领域模型
+     * @param user 用户模型
+     * @return Base64 编码的 PNG QR 码
      */
     public static String qrCode(KeycloakSession session, String totpSecret, RealmModel realm, UserModel user) {
         try {
@@ -81,6 +92,7 @@ public class TotpUtils {
         }
     }
 
+    /** 解析本地化 issuer 名称（displayName 模板 + 主题消息）。 */
     private static String getIssuerName(KeycloakSession session, RealmModel realm, UserModel user) {
         String displayName = realm.getDisplayName();
         if (StringUtil.isNullOrEmpty(displayName)) {

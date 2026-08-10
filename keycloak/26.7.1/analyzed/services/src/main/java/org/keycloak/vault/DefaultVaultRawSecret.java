@@ -21,13 +21,16 @@ import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Default raw secret implementation for {@code byte[]}.
+ * 基于 {@code byte[]} 的默认 {@link VaultRawSecret} 实现。
+ * <p>关闭时用随机字节覆写缓冲区，降低内存残留风险。</p>
  * @author hmlnarik
  */
 public class DefaultVaultRawSecret implements VaultRawSecret {
 
+    /** 空 ByteBuffer 占位符。 */
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
+    /** 空密钥单例（Optional.empty）。 */
     private static final VaultRawSecret EMPTY_VAULT_SECRET = new VaultRawSecret() {
         @Override
         public Optional<ByteBuffer> get() {
@@ -44,10 +47,17 @@ public class DefaultVaultRawSecret implements VaultRawSecret {
         }
     };
 
+    /** 底层字节缓冲区。 */
     private ByteBuffer rawSecret;
 
+    /** 按需缓存的 byte[] 副本。 */
     private byte[] secretArray;
 
+    /**
+     * 从 Optional {@link ByteBuffer} 创建 {@link VaultRawSecret}。
+     * @param buffer 密钥缓冲区
+     * @return 非空时返回包装实例，否则返回空单例
+     */
     public static VaultRawSecret forBuffer(Optional<ByteBuffer> buffer) {
         if (buffer == null || ! buffer.isPresent()) {
             return EMPTY_VAULT_SECRET;
@@ -55,15 +65,18 @@ public class DefaultVaultRawSecret implements VaultRawSecret {
         return new DefaultVaultRawSecret(buffer.get());
     }
 
+    /** 私有构造，通过 {@link #forBuffer(Optional)} 创建。 */
     private DefaultVaultRawSecret(ByteBuffer rawSecret) {
         this.rawSecret = rawSecret;
     }
 
+    /** @return 密钥 {@link ByteBuffer} */
     @Override
     public Optional<ByteBuffer> get() {
         return Optional.of(this.rawSecret);
     }
 
+    /** @return 密钥 byte[] 副本 */
     @Override
     public Optional<byte[]> getAsArray() {
         if (this.secretArray == null) {
@@ -78,6 +91,7 @@ public class DefaultVaultRawSecret implements VaultRawSecret {
         return Optional.of(this.secretArray);
     }
 
+    /** 用随机字节覆写缓冲区后清空，安全释放密钥。 */
     @Override
     public void close() {
         if (rawSecret.hasArray()) {
@@ -85,7 +99,7 @@ public class DefaultVaultRawSecret implements VaultRawSecret {
         }
         if (this.secretArray != null) {
             ThreadLocalRandom.current().nextBytes(this.secretArray);
-            this.secretArray = null;    // dispose of secretArray
+            this.secretArray = null;    // 释放 secretArray 引用
         }
         rawSecret.clear();
         rawSecret = EMPTY_BUFFER;

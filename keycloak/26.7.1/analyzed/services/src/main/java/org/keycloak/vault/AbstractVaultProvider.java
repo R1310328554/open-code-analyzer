@@ -25,18 +25,9 @@ import java.util.Optional;
 import org.jboss.logging.Logger;
 
 /**
- * Abstract class that is meant to be extended by implementations of {@link VaultProvider} that want to have support for
- * key resolvers.
- * <p/>
- * This class implements the {@link #obtainSecret(String)} method by iterating through the configured resolvers in order and,
- * using the final key name provided by each resolver, calls the {@link #obtainSecretInternal(String)} method that must be
- * implemented by sub-classes. If {@link #obtainSecretInternal(String)} returns a non-empty secret, it is immediately returned;
- * otherwise the implementation tries again using the next configured resolver until a non-empty secret is obtained or all
- * resolvers have been tried, in which case an empty {@link VaultRawSecret} is returned.
- * <p/>
- * Concrete implementations must, in addition to implementing the {@link #obtainSecretInternal(String)} method, ensure that
- * each constructor calls the {@link AbstractVaultProvider#AbstractVaultProvider(String, List)} constructor from this class
- * so that the realm and list of key resolvers are properly initialized.
+ * 支持密钥解析器的 {@link VaultProvider} 抽象基类。
+ * <p>按配置顺序遍历 {@link VaultKeyResolver}，将解析后的键名传给子类实现的 {@link #obtainSecretInternal(String)}；任一解析器返回非空密钥即返回，全部失败则返回空 {@link VaultRawSecret}。</p>
+ * <p>子类构造器须调用 {@link AbstractVaultProvider#AbstractVaultProvider(String, List)} 以初始化领域名与解析器列表。</p>
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
@@ -44,21 +35,24 @@ public abstract class AbstractVaultProvider implements VaultProvider {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    /** 当前 Keycloak 领域名称。 */
     protected final String realm;
+    /** 已配置的密钥解析器列表（按优先级排序）。 */
     protected final List<VaultKeyResolver> resolvers;
 
 
     /**
-     * Creates an instance of {@code AbstractVaultProvider} with the specified realm and list of key resolvers.
+     * 构造抽象 Vault 提供者。
      *
-     * @param realm the name of the keycloak realm.
-     * @param configuredResolvers a {@link List} containing the configured key resolvers.
+     * @param realm Keycloak 领域名称
+     * @param configuredResolvers 已配置的密钥解析器列表
      */
     public AbstractVaultProvider(final String realm, final List<VaultKeyResolver> configuredResolvers) {
         this.realm = realm;
         this.resolvers = configuredResolvers;
     }
 
+    /** 遍历解析器获取密钥：先校验键名，再按序尝试 {@link #obtainSecretInternal(String)}。 */
     @Override
     public VaultRawSecret obtainSecret(String vaultSecretId) {
         for (VaultKeyResolver resolver : this.resolvers) {
@@ -80,6 +74,7 @@ public abstract class AbstractVaultProvider implements VaultProvider {
         return DefaultVaultRawSecret.forBuffer(Optional.empty());
     }
 
+    /** 检测旧版双下划线密钥格式并记录迁移警告。 */
     private void checkForLegacyKey(VaultKeyResolver resolver, String vaultSecretId, String resolvedKey) {
         if (resolver == AbstractVaultProviderFactory.AvailableResolvers.KEY_ONLY.getVaultKeyResolver() && vaultSecretId.contains("_")) {
             String legacyKey = vaultSecretId.replaceAll("__", "_");
@@ -91,12 +86,12 @@ public abstract class AbstractVaultProvider implements VaultProvider {
     }
 
     /**
-     * Validates the resolved key to ensure it meets the necessary criteria.
+     * 校验解析后的密钥名（如禁止含文件分隔符）。
      *
-     * @param resolver the {@link VaultKeyResolver} used to resolve the key.
-     * @param key the original key provided.
-     * @param resolvedKey the key after being resolved by the resolver.
-     * @return a boolean indicating whether the validation passed.
+     * @param resolver 使用的 {@link VaultKeyResolver}
+     * @param key 原始密钥 ID
+     * @param resolvedKey 解析后的密钥名
+     * @return 校验通过返回 true
      */
     protected boolean validate(VaultKeyResolver resolver, String key, String resolvedKey) {
         if (key.contains(File.separator)) {
@@ -107,14 +102,10 @@ public abstract class AbstractVaultProvider implements VaultProvider {
     }
 
     /**
-     * Subclasses of {@code AbstractVaultProvider} must implement this method. It is meant to be implemented in the same
-     * way as the {@link #obtainSecret(String)} method from the {@link VaultProvider} interface, but the specified vault
-     * key must be used as is - i.e. implementations should refrain from processing the key again as the format was already
-     * defined by one of the configured key resolvers.
+     * 子类实现：使用已解析的 vault 键名直接获取密钥（不再二次解析）。
      *
-     * @param vaultKey a {@link String} representing the name of the entry that is being fetched from the vault.
-     * @return a {@link VaultRawSecret} representing the obtained secret. It can be a empty secret if no secret could be
-     * obtained using the specified vault key.
+     * @param vaultKey 解析后的 vault 条目名
+     * @return 获取到的 {@link VaultRawSecret}，未找到时可为空
      */
     protected abstract VaultRawSecret obtainSecretInternal(final String vaultKey);
 

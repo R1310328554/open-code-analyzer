@@ -28,38 +28,17 @@ import org.keycloak.models.KeycloakSession;
 import org.jboss.logging.Logger;
 
 /**
- * Abstract class that is meant to be extended by implementations of {@link VaultProviderFactory} that want to offer support
- * for the configuration of key resolvers.
- * <p/>
- * It implements the {@link #init(Config.Scope)} method, where is looks for the {@code keyResolvers} property. The value is
- * a comma-separated list of key resolver names. It then verifies if the resolver names match one of the available key resolver
- * implementations and then creates a list of {@link VaultKeyResolver} instances that subclasses can pass to {@link VaultProvider}
- * instances on {@link #create(KeycloakSession)}.
- * <p/>
- * The list of currently available resolvers follows:
+ * 支持配置密钥解析器的 {@link VaultProviderFactory} 抽象基类。
+ * <p>在 {@link #init(Config.Scope)} 中读取 {@code keyResolvers} 属性（逗号分隔），验证并实例化 {@link VaultKeyResolver} 列表，供子类在 {@link #create(KeycloakSession)} 中传给 Vault 提供者。</p>
+ * <p>可用解析器：</p>
  * <ul>
- *     <li>{@code KEY_ONLY}: only the key name is used as is, realm is ignored;</li>
- *     <li>{@code REALM_UNDERSCORE_KEY}: realm and key are combined using an underscore ({@code '_'}) character. Any occurrences of
- *     underscore in both the realm and key are escaped by an additional underscore character;</li>
- *     <li>{@code REALM_FILESEPARATOR_KEY}: realm and key are combined using the platform file separator character. It might not be
- *     suitable for every vault provider but it enables the grouping of secrets using a directory structure;</li>
- *     <li>{@code FACTORY_PROVIDED}: the format of the constructed key is determined by the factory's {@link #getFactoryResolver()}
- *     implementation. it allows for the customization of the final key format by extending the factory and overriding the
- *     {@link #getFactoryResolver()} method.</li>
+ *     <li>{@code KEY_ONLY}：仅使用密钥名，忽略领域；</li>
+ *     <li>{@code REALM_UNDERSCORE_KEY}：领域与密钥以下划线连接，内部下划线双写转义；</li>
+ *     <li>{@code REALM_FILESEPARATOR_KEY}：以平台文件分隔符连接，便于按目录分组；</li>
+ *     <li>{@code FACTORY_PROVIDED}：由工厂 {@link #getFactoryResolver()} 自定义格式。</li>
  * </ul>
- * <p/>
- * <b><i>Note</i></b>: When extending the standard factories to use the {@code FACTORY_PROVIDED} resolver, it is important to also
- * override the {@link #getId()} method so that the custom factory has its own id and as such can be configured in the keycloak
- * server.
- * <p/>
- * If no resolver is explicitly configured for the factory, it defaults to using the {@code REALM_UNDERSCORE_KEY} resolver.
- * When one or more resolvers are explicitly configured, this factory iterates through them in order and for each one attempts
- * to obtain the respective {@link VaultKeyResolver} implementation. If it fails (for example, the name doesn't match one of
- * the existing resolvers), it logs a message and ignores the resolver. If it fails to load all configured resolvers, it
- * throws a {@link VaultConfigurationException}.
- * <p/>
- * Concrete implementations must also make sure to call the {@code super.init(config)} in their own {@link #init(Config.Scope)}
- * implementations so tha the processing of the key resolvers is performed correctly.
+ * <p>未配置时默认 {@code REALM_UNDERSCORE_KEY}；全部解析器无效时抛出 {@link VaultConfigurationException}。子类 {@link #init(Config.Scope)} 须调用 {@code super.init(config)}。</p>
+ * <p><b>注意</b>：使用 {@code FACTORY_PROVIDED} 时须同时覆盖 {@link #getId()} 以独立配置。</p>
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
@@ -67,10 +46,13 @@ public abstract class AbstractVaultProviderFactory implements VaultProviderFacto
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    /** 密钥解析器列表的配置属性名。 */
     protected static final String KEY_RESOLVERS = "keyResolvers";
 
+    /** 初始化后可用的密钥解析器列表。 */
     protected List<VaultKeyResolver> keyResolvers = new LinkedList<>();
 
+    /** 从配置加载 keyResolvers，无效时回退默认或抛异常。 */
     @Override
     public void init(Config.Scope config) {
         String resolverNames = config.get(KEY_RESOLVERS);
@@ -85,7 +67,7 @@ public abstract class AbstractVaultProviderFactory implements VaultProviderFacto
                 throw new VaultConfigurationException("Unable to initialize factory - all provided key resolvers are invalid");
             }
         }
-        // no resolver configured - add the default REALM_UNDERSCORE_KEY resolver.
+        // 未配置解析器时使用默认 REALM_UNDERSCORE_KEY
         if (this.keyResolvers.isEmpty()) {
             logger.debugf("Key resolver is undefined - using %s by default", AvailableResolvers.REALM_UNDERSCORE_KEY.name());
             this.keyResolvers.add(AvailableResolvers.REALM_UNDERSCORE_KEY.getVaultKeyResolver());
@@ -93,31 +75,30 @@ public abstract class AbstractVaultProviderFactory implements VaultProviderFacto
     }
 
     /**
-     * Obtains the {@link VaultKeyResolver} implementation that is provided by the factory itself. By default this method
-     * throws an {@link UnsupportedOperationException}, so an attempt to use the {@code FACTORY_PROVIDED} resolver on a
-     * factory that doesn't override this method will result in a failure to use this resolver.
+     * 返回工厂自定义的 {@link VaultKeyResolver}（{@code FACTORY_PROVIDED} 时使用）。
+     * <p>默认抛出 {@link UnsupportedOperationException}。</p>
      *
-     * @return the factory-provided {@link VaultKeyResolver}.
+     * @return 工厂提供的解析器
      */
     protected VaultKeyResolver getFactoryResolver() {
         throw new UnsupportedOperationException("getFactoryResolver not implemented by factory " + getClass().getName());
     }
 
     /**
-     * Obtains the name of realm from the {@link KeycloakSession}.
+     * 从 {@link KeycloakSession} 获取当前领域名称。
      *
-     * @param session a reference to the {@link KeycloakSession}.
-     * @return the name of the realm.
+     * @param session Keycloak 会话
+     * @return 领域名称
      */
     protected String getRealmName(KeycloakSession session) {
         return session.getContext().getRealm().getName();
     }
 
     /**
-     * Obtains the key resolver with the specified name.
+     * 按名称获取 {@link VaultKeyResolver} 实例。
      *
-     * @param resolverName the name of the resolver.
-     * @return the {@link VaultKeyResolver} that corresponds to the name or {@code null} if the resolver could not be retrieved.
+     * @param resolverName 解析器名称
+     * @return 对应解析器，无效名称返回 {@code null}
      */
     private VaultKeyResolver getVaultKeyResolver(final String resolverName) {
         try {
@@ -130,44 +111,29 @@ public abstract class AbstractVaultProviderFactory implements VaultProviderFacto
         }
     }
 
-    /**
-     * Enum containing the available {@link VaultKeyResolver}s. The name used in the factory configuration must match the
-     * name one of the enum members.
-     */
+    /** 可用 {@link VaultKeyResolver} 枚举，配置名须与枚举成员一致。 */
     protected enum AvailableResolvers {
 
-        /**
-         * Ignores the realm, only the vault key is used when retrieving a secret from the vault. This is useful when we want
-         * all realms to share the secrets, so instead of replicating entries for all existing realms in the vault one can
-         * simply use key directly and all realms will obtain the same secret.
-         */
+        /** 忽略领域，所有领域共享同一密钥（密钥中下划线双写转义）。 */
         KEY_ONLY((realm, key) -> key.replaceAll("_", "__")),
 
-        /**
-         * The realm is prepended to the vault key and they are separated by an underscore ({@code '_'}) character. If either
-         * the realm or the key contains an underscore, it is escaped by another underscore character.
-         */
+        /** 领域名与密钥以下划线连接，内部下划线双写转义（默认解析器）。 */
         REALM_UNDERSCORE_KEY((realm, key) -> realm.replaceAll("_", "__") + "_" + key.replaceAll("_", "__")),
 
-        /**
-         * The realm is prepended to the vault key and they are separated by the platform file separator character. Not all
-         * providers might support this format but it is useful when a directory structure is used to group secrets per realm.
-         */
+        /** 以平台文件分隔符连接领域与密钥，便于按目录结构分组。 */
         REALM_FILESEPARATOR_KEY((realm, key) -> realm + File.separator + key),
 
-        /**
-         * The format of the vault key is determined by the factory's {@code getFactoryResolver} implementation. This allows
-         * for the customization of the vault key format by extending the factory and overriding the {@code getFactoryResolver}
-         * method. It is instantiated with a null resolver because we can't access the factory from the enum's static context.
-         */
+        /** 密钥格式由工厂 {@code getFactoryResolver} 自定义；枚举静态上下文无法引用工厂实例。 */
         FACTORY_PROVIDED(null);
 
+        /** 解析器函数式实现。 */
         private VaultKeyResolver resolver;
 
         AvailableResolvers(final VaultKeyResolver resolver) {
             this.resolver = resolver;
         }
 
+        /** @return 关联的 {@link VaultKeyResolver} */
         VaultKeyResolver getVaultKeyResolver() {
             return this.resolver;
         }

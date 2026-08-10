@@ -10,15 +10,19 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 
+/**
+ * QR 码生成工具。
+ * <p>基于 ZXing 将字符串编码为 PNG 格式二维码，支持字节数组或 Base64 字符串输出。</p>
+ */
 public class QRCodeUtils {
 
     /**
-     * Encode specified String as a QR code in PNG format
+     * 将字符串编码为 PNG 格式 QR 码字节数组。
      *
-     * @param contentToEncode content to encode
-     * @param width width of the resulting QR code
-     * @param height height of the resulting QR code
-     * @return bytes with encoded QR code
+     * @param contentToEncode 待编码内容
+     * @param width 二维码宽度（像素）
+     * @param height 二维码高度（像素）
+     * @return PNG 格式的 QR 码字节数组
      */
     public static byte[] encodeAsQRBytes(String contentToEncode, int width, int height) throws WriterException, IOException {
         QRCodeWriter qrCodeWriter = new QRCodeWriter();
@@ -30,12 +34,12 @@ public class QRCodeUtils {
     }
 
     /**
-     * Encode specified String as a QR code in PNG format
+     * 将字符串编码为 Base64 格式的 PNG QR 码。
      *
-     * @param contentToEncode content to encode
-     * @param width width of the resulting QR code
-     * @param height height of the resulting QR code
-     * @return Encoded QR code returned in the Base64 encoded string
+     * @param contentToEncode 待编码内容
+     * @param width 二维码宽度（像素）
+     * @param height 二维码高度（像素）
+     * @return Base64 编码的 PNG QR 码字符串
      */
     public static String encodeAsQRString(String contentToEncode, int width, int height) throws WriterException, IOException {
         byte[] bos = encodeAsQRBytes(contentToEncode, width, height);

@@ -57,10 +57,16 @@ import org.jboss.logging.Logger;
 import static org.keycloak.models.utils.ModelToRepresentation.toRepresentation;
 import static org.keycloak.services.managers.ResourceAdminManager.CLIENT_SESSION_HOST_PROPERTY;
 
+/**
+ * 默认客户端配置校验提供者。
+ * <p>校验 ClientModel 与 OIDC 动态注册表示中的 URL、协议、ACR/LoA、Pairwise subject、JWKS、会话超时及 X509 凭据等。</p>
+ */
 public class DefaultClientValidationProvider implements ClientValidationProvider {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(DefaultClientValidationProvider.class);
 
+    /** 各 URL 字段的校验错误消息键映射。 */
     private enum FieldMessages {
         ROOT_URL("rootUrl",
                 "Root URL is not a valid URL", "clientRootURLInvalid",
@@ -193,36 +199,44 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
             this.schemeKey = schemeKey;
         }
 
+        /** @return 字段标识符 */
         public String getFieldId() {
             return fieldId;
         }
 
+        /** @return URL 无效时的英文消息 */
         public String getInvalid() {
             return invalid;
         }
 
+        /** @return URL 无效时的消息键 */
         public String getInvalidKey() {
             return invalidKey;
         }
 
+        /** @return 含 fragment 时的英文消息 */
         public String getFragment() {
             return fragment;
         }
 
+        /** @return 含 fragment 时的消息键 */
         public String getFragmentKey() {
             return fragmentKey;
         }
 
+        /** @return 非法 scheme 时的英文消息 */
         public String getScheme() {
             return scheme;
         }
 
+        /** @return 非法 scheme 时的消息键 */
         public String getSchemeKey() {
             return schemeKey;
         }
     }
 
-    // TODO Before adding more validation consider using a library for validation
+    // TODO：扩展校验前考虑引入专用校验库
+    /** 校验 {@link ClientModel} 的完整客户端配置。 */
     @Override
     public ValidationResult validate(ValidationContext<ClientModel> context) {
         validateClientId(context);
@@ -240,6 +254,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         return context.toResult();
     }
 
+    /** 校验 OIDC 动态客户端注册表示。 */
     @Override
     public ValidationResult validate(ClientValidationContext.OIDCContext context) {
         validateClientId(context);
@@ -254,6 +269,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         return context.toResult();
     }
 
+    /** 校验 clientId 非空。 */
     private void validateClientId(ValidationContext<ClientModel> context) {
         ClientModel client = context.getObjectToValidate();
         if (StringUtil.isBlank(client.getClientId())) {
@@ -261,11 +277,12 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         }
     }
 
+    /** 校验协议名称有效且允许作为客户端协议。 */
     private void validateProtocol(ValidationContext<ClientModel> context) {
         ClientModel client = context.getObjectToValidate();
         String protocol = client.getProtocol();
 
-        // null protocol is allowed
+        // 允许 protocol 为 null
         if (protocol == null) {
             return;
         }
@@ -282,17 +299,18 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         }
     }
 
+    /** 校验 rootUrl、baseUrl、redirectUris 及 SAML/OIDC 相关 URL。 */
     private void validateUrls(ValidationContext<ClientModel> context) {
         ClientModel client = context.getObjectToValidate();
         OIDCAdvancedConfigWrapper clientWrapper = OIDCAdvancedConfigWrapper.fromClientModel(client);
 
 
-        // Use a fake URL for validating relative URLs as we may not be validating clients in the context of a request (import at startup)
+        // 启动导入等场景无真实请求上下文，使用占位 URL 解析相对路径
         String authServerUrl = "https://localhost/auth";
 
         String rootUrl = ResolveRelative.resolveRootUrl(authServerUrl, authServerUrl, client.getRootUrl());
 
-        // don't need to use actual rootUrl here as it'd interfere with others URL validations
+        // baseUrl 校验不依赖真实 rootUrl，避免干扰其他 URL 校验
         String baseUrl = ResolveRelative.resolveRelativeUri(authServerUrl, authServerUrl, authServerUrl, client.getBaseUrl());
 
         String backchannelLogoutUrl = clientWrapper.getBackchannelLogoutUrl();
@@ -308,7 +326,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
 
         List<String> postLogoutRedirectUris = clientWrapper.getAttributeMultivalued(OIDCConfigAttributes.POST_LOGOUT_REDIRECT_URIS);
         postLogoutRedirectUris.stream()
-                .filter(uri -> !"-".equals(uri) && !"+".equals(uri) && !"*".equals(uri)) // In case of "+", the redirect-uris would be validated, so no need to repeat the error message again
+                .filter(uri -> !"-".equals(uri) && !"+".equals(uri) && !"*".equals(uri)) // "+" 时 redirect-uris 已校验，跳过重复报错
                 .map(u -> ResolveRelative.resolveRelativeUri(authServerUrl, authServerUrl, rootUrl, u))
                 .forEach(u -> checkUri(FieldMessages.POST_LOGOUT_REDIRECT_URIS, u, context, false, true));
 
@@ -317,11 +335,11 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
                 .map(u -> ResolveRelative.resolveRelativeUri(authServerUrl, authServerUrl, rootUrl, u))
                 .forEach(u -> checkUri(FieldMessages.REQUEST_URIS, u, context, false, false));
 
-        // For SAML, it is tested below
+        // OIDC 的 adminUrl 在此校验；SAML 在下方单独校验
         if (OIDCLoginProtocol.LOGIN_PROTOCOL.equals(client.getProtocol())) {
             String adminUrl = ResolveRelative.resolveRelativeUri(authServerUrl, authServerUrl, rootUrl, client.getManagementUrl());
             if (adminUrl != null && adminUrl.contains(CLIENT_SESSION_HOST_PROPERTY)) {
-                // Fake hostname just for validation
+                // 占位主机名，仅用于 URL 格式校验
                 adminUrl = adminUrl.replace(CLIENT_SESSION_HOST_PROPERTY, "localhost");
             }
             checkUri(FieldMessages.ADMIN_URL, adminUrl, context, true, false);
@@ -335,7 +353,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         checkUri(FieldMessages.POLICY_URI, client.getAttribute(ClientModel.POLICY_URI), context, true, false);
         checkUri(FieldMessages.TOS_URI, client.getAttribute(ClientModel.TOS_URI), context, true, false);
 
-        // extra validation URLs for SAML clients
+        // SAML 客户端额外 URL 校验
         if (SamlProtocol.LOGIN_PROTOCOL.equals(client.getProtocol())) {
             checkUri(FieldMessages.SAML_ADMIN_URL, client.getManagementUrl(), context, true, false);
             checkUri(FieldMessages.SAML_ASSERTION_CONSUMER_URL_POST_URI, client.getAttribute(SamlProtocol.SAML_ASSERTION_CONSUMER_URL_POST_ATTRIBUTE), context, true, false);
@@ -351,6 +369,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
     }
 
 
+    /** 通用 URI 校验：scheme、fragment 及 URL 格式。 */
     private void checkUri(FieldMessages field, String url, ValidationContext<ClientModel> context, boolean checkValidUrl, boolean checkFragment) {
         if (url == null || url.isEmpty()) {
             return;
@@ -360,7 +379,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
             String urlToCheck=url;
             if(field==FieldMessages.BACKCHANNEL_LOGOUT_URL){
                 if(checkCurlyBracketsBalanced(url))
-                    // This allow user to set parametrized backchannel logout url in this format : http://{example}/{example2}
+                    // 允许参数化 backchannel logout URL：http://{example}/{example2}
                     urlToCheck=url.replace("{","%7B").replace("}","%7D");
                 else throw new MalformedURLException();
             }
@@ -372,15 +391,13 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
                 valid = false;
             }
 
-            // KEYCLOAK-3421
+            // KEYCLOAK-3421：redirect URI 禁止含 fragment
             if (checkFragment && uri.getFragment() != null) {
                 context.addError(field.getFieldId(), field.getFragment(), field.getFragmentKey());
                 valid = false;
             }
 
-            // Don't check if URL is valid if there are other problems with it; otherwise it could lead to duplicit errors.
-            // This cannot be moved higher because it acts on differently based on environment (e.g. sometimes it checks
-            // scheme, sometimes it doesn't).
+            // 已有其他错误时跳过 URL 有效性检查，避免重复报错；顺序不可提前（环境相关）
             if (checkValidUrl && valid) {
                 uri.toURL(); // throws an exception
             }
@@ -392,9 +409,9 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
     }
 
     /**
-     * Check if url has curly brackets in correct position ('{' before '}')
-     * @param url to check
-     * @return true if curly brackets are balanced, else false
+     * 检查 URL 中花括号是否成对且顺序正确（{@code '{'} 在 {@code '}'} 之前）。
+     * @param url 待检查 URL
+     * @return 平衡返回 true，否则 false
      */
     public static boolean checkCurlyBracketsBalanced(String url)
     {
@@ -404,7 +421,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         for(char singleLetter:url.toCharArray()){
             if (singleLetter == '{')
             {
-                // Push the element in the stack
+                // 左括号入栈
                 stack.push(singleLetter);
                 continue;
             }
@@ -421,6 +438,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         return stack.isEmpty();
     }
 
+    /** Logo URI 校验（禁止 javascript scheme）。 */
     private void checkUriLogo(FieldMessages field, String url, ValidationContext<ClientModel> context) {
         if (url == null || url.isEmpty()) {
             return;
@@ -439,6 +457,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         }
     }
 
+    /** 校验 ClientModel 中 Pairwise subject mapper 的 sector identifier URI。 */
     private void validatePairwiseInClientModel(ValidationContext<ClientModel> context) {
         List<ProtocolMapperRepresentation> foundPairwiseMappers = PairwiseSubMapperUtils.getPairwiseSubMappers(toRepresentation(context.getObjectToValidate(), context.getSession()));
 
@@ -448,18 +467,20 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         }
     }
 
+    /** 校验 OIDC 客户端表示中的 Pairwise subject 配置。 */
     private void validatePairwiseInOIDCClient(ClientValidationContext.OIDCContext context) {
         OIDCClientRepresentation oidcRep = context.getOIDCClient();
 
         SubjectType subjectType = SubjectType.parse(oidcRep.getSubjectType());
         String sectorIdentifierUri = oidcRep.getSectorIdentifierUri();
 
-        // If sector_identifier_uri is in oidc config, then always validate it
+        // OIDC 配置含 sector_identifier_uri 时始终校验
         if (SubjectType.PAIRWISE == subjectType || (sectorIdentifierUri != null && !sectorIdentifierUri.isEmpty())) {
             validatePairwise(context, oidcRep.getSectorIdentifierUri());
         }
     }
 
+    /** 调用 {@link PairwiseSubMapperValidator} 校验 sector identifier URI。 */
     private void validatePairwise(ValidationContext<ClientModel> context, String sectorIdentifierUri) {
         ClientModel client = context.getObjectToValidate();
         String rootUrl = client.getRootUrl();
@@ -473,6 +494,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         }
     }
 
+    /** 禁止同时配置 jwks_uri 与 jwks_string。 */
     private void validateJwks(ValidationContext<ClientModel> context) {
         ClientModel client = context.getObjectToValidate();
 
@@ -482,6 +504,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         }
     }
 
+    /** 校验 default_acr_values 须在 ACR-LoA 映射或浏览器流 LoA 级别中。 */
     private void validateDefaultAcrValues(ValidationContext<ClientModel> context) {
         ClientModel client = context.getObjectToValidate();
         if (!OIDCLoginProtocol.LOGIN_PROTOCOL.equals(client.getProtocol())) {
@@ -498,6 +521,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         }
     }
 
+    /** 校验 ACR-LoA 映射 JSON 格式；SAML 时键须为合法 URI。 */
     private void validateAcrLoaMap(ValidationContext<ClientModel> context) {
         ClientModel client = context.getObjectToValidate();
         if (!SamlProtocol.LOGIN_PROTOCOL.equals(client.getProtocol()) && !OIDCLoginProtocol.LOGIN_PROTOCOL.equals(client.getProtocol())) {
@@ -520,6 +544,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         }
     }
 
+    /** 校验 minimum_acr_value 须在 ACR-LoA 映射或浏览器流 LoA 级别中。 */
     private void validateMinimumAcrValue(ValidationContext<ClientModel> context) {
         ClientModel client = context.getObjectToValidate();
         if (!SamlProtocol.LOGIN_PROTOCOL.equals(client.getProtocol()) && !OIDCLoginProtocol.LOGIN_PROTOCOL.equals(client.getProtocol())) {
@@ -544,13 +569,14 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
             }
         }
     }
+    /** 校验客户端会话 idle/max 超时不超过领域 SSO 超时（含 Remember Me）。 */
     private void validateClientSessionTimeout(ValidationContext<ClientModel> context) {
         ClientModel clientModel = context.getObjectToValidate();
         if (clientModel == null ) return;
         RealmModel realmModel =  clientModel.getRealm();
         if (realmModel == null ) return;
 
-        //Realm values
+        // 领域级 SSO 超时配置
         int realmIdle = realmModel.getSsoSessionIdleTimeout();
         int realmMax = realmModel.getSsoSessionMaxLifespan();
         int realmRememberIdle = realmModel.getSsoSessionIdleTimeoutRememberMe();
@@ -562,7 +588,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         Integer clientMax = parseIntAttribute(clientModel.getAttribute(OIDCConfigAttributes.CLIENT_SESSION_MAX_LIFESPAN));
 
         if(!rememberMeEnabled) {
-            // Client idle Timeout validation on Remember me disabled
+            // Remember Me 关闭：客户端 idle 不得超过领域 idle
             if (clientIdle != null && clientIdle > realmIdle) {
                 context.addError(
                         OIDCConfigAttributes.CLIENT_SESSION_IDLE_TIMEOUT,
@@ -571,7 +597,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
                 );
             }
 
-            // Max Lifespan validation on Remember me disabled
+            // Remember Me 关闭：客户端 max 不得超过领域 max
             if (clientMax != null && clientMax > realmMax) {
                 context.addError(
                         OIDCConfigAttributes.CLIENT_SESSION_MAX_LIFESPAN,
@@ -583,7 +609,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
             int allowedMaxIdleTimeIfRememberMeEnabled = Math.max(realmIdle, realmRememberIdle);
             int allowedMaxSpanIfRememberMeEnabled = Math.max(realmMax,realmRememberMax);
 
-            //Client idle Timeout validation on Remember me enabled
+            // Remember Me 开启：客户端 idle 不得超过领域与 Remember Me idle 的较大值
             if (clientIdle != null && clientIdle > allowedMaxIdleTimeIfRememberMeEnabled) {
                 context.addError(
                         OIDCConfigAttributes.CLIENT_SESSION_IDLE_TIMEOUT,
@@ -592,7 +618,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
                 );
             }
 
-            // Max Lifespan validation on Remember me enabled
+            // Remember Me 开启：客户端 max 不得超过领域与 Remember Me max 的较大值
             if (clientMax != null && clientMax > allowedMaxSpanIfRememberMeEnabled) {
                 context.addError(
                         OIDCConfigAttributes.CLIENT_SESSION_MAX_LIFESPAN,
@@ -604,10 +630,11 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
 
     }
 
+    /** X509 客户端认证器配置弃用项警告（regex 比对、空 CA Subject DN）。 */
     private void validateX509Credentials(ValidationContext<ClientModel> context) {
         ClientModel client = context.getObjectToValidate();
         if (!client.isPublicClient() && !client.isBearerOnly() && X509ClientAuthenticator.PROVIDER_ID.equals(client.getClientAuthenticatorType())) {
-            // TODO: return validation error for keycloak 27.0
+            // TODO：Keycloak 27.0 改为返回校验错误
             if (Boolean.parseBoolean(client.getAttribute(X509ClientAuthenticator.ATTR_ALLOW_REGEX_PATTERN_COMPARISON))) {
                 logger.warnf("Option '%s' is deprecated. Please configure the X.509 client authenticator to use exact Subject DN for client '%s' in realm '%s'.",
                         X509ClientAuthenticator.ATTR_ALLOW_REGEX_PATTERN_COMPARISON, client.getClientId(), context.getSession().getContext().getRealm().getName());
@@ -619,6 +646,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         }
     }
 
+    /** 解析整型客户端属性，无效时返回 null。 */
     private Integer parseIntAttribute(String value) {
         try {
             return (value == null || value.isEmpty()) ? null : Integer.parseInt(value);

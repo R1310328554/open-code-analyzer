@@ -23,10 +23,18 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.common.Profile;
 
 /**
+ * Profile 特性检查辅助类。
+ * <p>在 REST 端点中校验 {@link Profile.Feature} 是否已启用，未启用时抛出 501。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ProfileHelper {
 
+    /**
+     * 要求指定 Profile 特性已启用，否则抛出 {@link WebApplicationException}（501）。
+     *
+     * @param feature 待检查的 Profile 特性
+     */
     public static void requireFeature(Profile.Feature feature) {
         if (!Profile.isFeatureEnabled(feature)) {
             throw new WebApplicationException("Feature not enabled", Response.Status.NOT_IMPLEMENTED);

@@ -22,34 +22,31 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
- * Utility methods for validating and matching regular expressions.
+ * 正则表达式校验与匹配工具类。
+ * <p>提供语法校验、长度限制及 ReDoS 防护。</p>
  */
 public class RegexUtils {
 
-    /**
-     * Default maximum regex length — limits complexity to mitigate ReDoS attacks.
-     */
+    /** 默认正则最大长度，用于限制复杂度、缓解 ReDoS 攻击。 */
     public static final int DEFAULT_MAX_LENGTH = 512;
 
     /**
-     * Validates whether the given string is a syntactically valid regular expression
-     * with a maximum length of {@link #DEFAULT_MAX_LENGTH} and groups allowed.
+     * 校验正则表达式语法是否合法（默认最大长度 {@link #DEFAULT_MAX_LENGTH}，允许分组）。
      *
-     * @param regexp the regular expression to validate
-     * @return {@code true} if the expression is valid, {@code false} otherwise
+     * @param regexp 待校验的正则表达式
+     * @return 合法返回 {@code true}，否则 {@code false}
      */
     public static boolean isValidRegex(String regexp) {
         return isValidRegex(regexp, DEFAULT_MAX_LENGTH, true);
     }
 
     /**
-     * Validates whether the given string is a syntactically valid regular expression.
+     * 校验正则表达式语法是否合法。
      *
-     * @param regexp      the regular expression to validate
-     * @param maxLength   the maximum allowed length of the expression
-     * @param allowGroups whether capturing and non-capturing groups (parentheses) are permitted
-     * @return {@code true} if the expression is valid, {@code false} if it is {@code null},
-     *         exceeds {@code maxLength}, contains groups when disallowed, or has invalid syntax
+     * @param regexp 待校验的正则表达式
+     * @param maxLength 允许的最大长度
+     * @param allowGroups 是否允许捕获/非捕获分组（括号）
+     * @return 合法返回 {@code true}；为 {@code null}、超长、含禁用分组或语法错误时返回 {@code false}
      */
     public static boolean isValidRegex(String regexp, int maxLength, boolean allowGroups) {
         if (regexp == null || regexp.length() > maxLength) {
@@ -66,6 +63,13 @@ public class RegexUtils {
         }
     }
 
+    /**
+     * 判断值是否匹配给定正则；{@link List} 时任一元素匹配即返回 true。
+     *
+     * @param regex 正则表达式
+     * @param value 待匹配值（可为 List）
+     * @return 匹配返回 {@code true}
+     */
     public static boolean valueMatchesRegex(String regex, Object value) {
         if (value instanceof List) {
             List list = (List) value;

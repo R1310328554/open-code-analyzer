@@ -25,22 +25,22 @@ import org.keycloak.email.EmailSenderProvider;
 import org.keycloak.models.KeycloakSession;
 
 /**
- * SMTP utility methods.
+ * SMTP 邮件配置工具类。
  *
  * @author rmartinc
  */
 public class SMTPUtil {
 
     private SMTPUtil() {
-        // static helper class
+        // 静态工具类，禁止实例化
     }
 
     /**
-     * Validates the configuration using the email sender provider.
+     * 通过 {@link EmailSenderProvider} 校验 SMTP 配置。
      *
-     * @param session The keycloak session to use
-     * @param config The configuration to validate
-     * @throws EmailException If some error is found in the configuration
+     * @param session Keycloak 会话
+     * @param config SMTP 配置映射
+     * @throws EmailException 配置无效时抛出
      */
     public static void checkSMTPConfiguration(KeycloakSession session, Map<String, String> config) throws EmailException {
         if (config == null || config.isEmpty()) {
@@ -52,11 +52,10 @@ public class SMTPUtil {
     }
 
     /**
-     * Converts an email address to its ASCII representation using punycode
-     * (IDN.toASCII) for the domain part. The local part is not modified.
+     * 将邮箱域名部分转为 Punycode ASCII（{@link IDN#toASCII}），本地部分不变。
      *
-     * @param email The email to convert
-     * @return The converted email or null (if IDN.toASCII throws an exception)
+     * @param email 原始邮箱地址
+     * @return 转换后的邮箱；{@link IDN#toASCII} 异常时返回 null
      */
     public static String convertIDNEmailAddress(String email) {
         final int idx = email == null ? -1 : email.lastIndexOf('@');
