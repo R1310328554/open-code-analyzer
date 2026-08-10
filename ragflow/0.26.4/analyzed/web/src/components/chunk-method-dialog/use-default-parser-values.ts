@@ -1,8 +1,11 @@
+// use-default-parser-values.ts — 分块解析器表单的默认值与缺失字段回填。
+
 import { IParserConfig } from '@/interfaces/database/document';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ParseDocumentType } from '../layout-recognize-form-field';
 
+/** 构建 IParserConfig 默认项（分块大小、RAPTOR、MinerU 等）。 */
 export function useDefaultParserValues() {
   const { t } = useTranslation();
 
@@ -50,6 +53,7 @@ export function useDefaultParserValues() {
   return defaultParserValues;
 }
 
+/** 将已有 parserConfig 与默认值合并，缺失键用默认填充。 */
 export function useFillDefaultValueOnMount() {
   const defaultParserValues = useDefaultParserValues();
 

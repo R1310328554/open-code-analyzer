@@ -1,3 +1,5 @@
+// document-preview/hooks.ts — 文档预览：Blob 检测、PDF 高亮、Excel/DOCX 加载与缩放。
+
 import { Authorization } from '@/constants/authorization';
 import { useGetKnowledgeSearchParams } from '@/hooks/route-hook';
 import { useGetPipelineResultSearchParams } from '@/pages/dataflow-result/hooks';
@@ -8,10 +10,11 @@ import { useSize } from 'ahooks';
 import axios from 'axios';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-// ZIP file header bytes "PK"
+// ZIP 文件头魔数 "PK"，用于判断 Blob 是否为压缩包
 const ZIP_HEADER_0 = 0x50;
 const ZIP_HEADER_1 = 0x4b;
 
+/** 读取 Blob 前两字节判断是否为 ZIP 格式。 */
 export const isZipLikeBlob = async (blob: Blob): Promise<boolean> => {
   try {
     const headerSlice = blob.slice(0, 4);
@@ -28,6 +31,7 @@ export const isZipLikeBlob = async (blob: Blob): Promise<boolean> => {
   }
 };
 
+/** ahooks useSize 包装：跟踪预览容器宽度变化。 */
 export const useDocumentResizeObserver = () => {
   const [containerWidth, setContainerWidth] = useState<number>();
   const [containerRef, setContainerRef] = useState<HTMLElement | null>(null);
@@ -57,6 +61,7 @@ function highlightPattern(text: string, pattern: string, pageNumber: number) {
   return text.replace(pattern, (value) => `<mark>${value}</mark>`);
 }
 
+/** PDF 文本层渲染器：按搜索词包裹 <mark> 高亮。 */
 export const useHighlightText = (searchText: string = '') => {
   const textRenderer = useCallback(
     (textItem: any) => {
@@ -68,6 +73,7 @@ export const useHighlightText = (searchText: string = '') => {
   return textRenderer;
 };
 
+/** 知识库预览 URL 或 Agent 流水线结果下载 URL。 */
 export const useGetDocumentUrl = (isAgent: boolean) => {
   const { documentId } = useGetKnowledgeSearchParams();
   const { createdBy, documentId: id } = useGetPipelineResultSearchParams();
@@ -82,6 +88,7 @@ export const useGetDocumentUrl = (isAgent: boolean) => {
   return url;
 };
 
+/** 预检 API：非 ArrayBuffer 且 code≠0 时记录错误消息。 */
 export const useCatchError = (api: string) => {
   const [error, setError] = useState('');
   const fetchDocument = useCallback(async () => {
@@ -100,6 +107,7 @@ export const useCatchError = (api: string) => {
   return { fetchDocument, error };
 };
 
+/** 带 Authorization 的 arraybuffer GET 下载封装。 */
 export const useFetchDocument = () => {
   const fetchDocument = useCallback(async (api: string) => {
     const ret = await axios.get(api, {
@@ -114,6 +122,7 @@ export const useFetchDocument = () => {
   return { fetchDocument };
 };
 
+/** js-preview-excel 初始化并预览 Excel 文件。 */
 export const useFetchExcel = (filePath: string) => {
   const [status, setStatus] = useState(true);
   const { fetchDocument } = useFetchDocument();
@@ -146,6 +155,7 @@ export const useFetchExcel = (filePath: string) => {
   return { status, containerRef, error };
 };
 
+/** 探测文档 URL：区分 JSON 错误与二进制 PDF 响应。 */
 export const useCatchDocumentError = (url: string) => {
   const httpHeaders = useMemo(() => {
     return {
@@ -177,6 +187,7 @@ export const useCatchDocumentError = (url: string) => {
   return error;
 };
 
+/** DOCX 预览离散缩放档位（百分比）。 */
 const ZOOM_STEPS = [25, 50, 75, 100, 125, 150, 175, 200] as const;
 
 const clampZoom = (scale: number, direction: 1 | -1): number => {
@@ -200,6 +211,7 @@ const clampZoom = (scale: number, direction: 1 | -1): number => {
   return ZOOM_STEPS[idx] ?? scale;
 };
 
+/** DOCX 缩放 Hook 入参：URL、页数、容器与页宽等。 */
 interface UseDocxPreviewZoomOptions {
   url: string;
   totalPages: number;
@@ -209,6 +221,7 @@ interface UseDocxPreviewZoomOptions {
   enabled?: boolean;
 }
 
+/** DOCX 缩放 Hook 返回值：当前比例与放大/缩小/重置。 */
 interface UseDocxPreviewZoomResult {
   zoomScale: number;
   minZoom: number;
@@ -218,6 +231,7 @@ interface UseDocxPreviewZoomResult {
   resetZoom: () => void;
 }
 
+/** 首次渲染按容器宽度 fit，用户手动缩放后不再自动 fit。 */
 export const useDocxPreviewZoom = ({
   url,
   totalPages,
@@ -250,7 +264,7 @@ export const useDocxPreviewZoom = ({
     setZoomScale((s) => clampZoom(s, -1));
   }, []);
 
-  // Fit the page width to the container on first paint and on resize,
+  // 首次绘制与容器 resize 时按可用宽度计算 fit 缩放（用户未手动缩放时）
   // unless the user has manually changed the zoom level.
   useEffect(() => {
     if (!enabled || totalPages <= 0 || !containerWidth || !pageWidthPx) {

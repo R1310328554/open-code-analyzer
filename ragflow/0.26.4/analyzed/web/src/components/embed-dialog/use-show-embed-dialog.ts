@@ -1,8 +1,11 @@
+// use-show-embed-dialog.ts — 嵌入对话弹窗：Token 校验与 Modal 显隐控制。
+
 import { useSetModalState, useTranslate } from '@/hooks/common-hooks';
 import { useFetchManualSystemTokenList } from '@/hooks/use-user-setting-request';
 import { useCallback } from 'react';
 import message from '../ui/message';
 
+/** Token 缺失时弹出 chat.tokenError 提示。 */
 export const useShowTokenEmptyError = () => {
   const { t } = useTranslate('chat');
 
@@ -12,6 +15,7 @@ export const useShowTokenEmptyError = () => {
   return { showTokenEmptyError };
 };
 
+/** Beta 未配置时弹出 chat.betaError 提示。 */
 export const useShowBetaEmptyError = () => {
   const { t } = useTranslate('chat');
 
@@ -21,6 +25,7 @@ export const useShowBetaEmptyError = () => {
   return { showBetaEmptyError };
 };
 
+/** 手动拉取系统 Token 列表并校验 beta/token 有效性。 */
 export const useFetchTokenListBeforeOtherStep = () => {
   const { showTokenEmptyError } = useShowTokenEmptyError();
   const { showBetaEmptyError } = useShowBetaEmptyError();
@@ -61,6 +66,7 @@ export const useFetchTokenListBeforeOtherStep = () => {
   };
 };
 
+/** 校验通过后打开嵌入弹窗，暴露 embedToken 与 beta 供 iframe 使用。 */
 export const useShowEmbedModal = () => {
   const {
     visible: embedVisible,

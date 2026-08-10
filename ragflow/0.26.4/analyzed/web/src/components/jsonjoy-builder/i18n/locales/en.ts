@@ -1,3 +1,5 @@
+// en.ts — jsonjoy-builder 英语（en）界面文案字典；默认语言包，键对齐 translation-keys。
+
 import type { Translation } from '../translation-keys.ts';
 
 export const en: Translation = {

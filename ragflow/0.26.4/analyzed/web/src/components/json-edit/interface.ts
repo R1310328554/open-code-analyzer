@@ -1,8 +1,13 @@
-// JSONEditor configuration options interface see: https://github.com/josdejong/jsoneditor/blob/master/docs/api.md
+// json-edit/interface.ts — jsoneditor 组件配置项与 React 封装 Props 的 TypeScript 类型。
+// 字段说明对齐官方 API：https://github.com/josdejong/jsoneditor/blob/master/docs/api.md
+
+// JsonEditorOptions 完整映射 jsoneditor 构造选项（模式、菜单、回调、Schema 等）
+/** jsoneditor 实例的全部可选配置项。 */
 export interface JsonEditorOptions {
   /**
    * Editor mode. Available values: 'tree' (default), 'view', 'form', 'text', and 'code'.
    */
+  /** 编辑器模式：tree/view/form/text/code。 */
   mode?: 'tree' | 'view' | 'form' | 'text' | 'code';
 
   /**
@@ -68,6 +73,7 @@ export interface JsonEditorOptions {
   /**
    * A JSON schema object
    */
+  /** 绑定的 JSON Schema，用于校验与表单生成。 */
   schema?: any;
 
   /**
@@ -135,11 +141,13 @@ export interface JsonEditorOptions {
    * Callback method, triggered in modes on change of contents, passing the changed contents as JSON.
    * Only applicable for modes 'tree', 'view', and 'form'.
    */
+  /** tree/view/form 模式下内容变更回调（JSON 对象）。 */
   onChangeJSON?: (json: any) => void;
 
   /**
    * Callback method, triggered in modes on change of contents, passing the changed contents as stringified JSON.
    */
+  /** 内容变更回调（字符串化 JSON）。 */
   onChangeText?: (text: string) => void;
 
   /**
@@ -204,6 +212,7 @@ export interface JsonEditorOptions {
   /**
    * Callback method, triggered when validating nodes
    */
+  /** 自定义节点校验，返回 path/message 错误列表。 */
   onValidate?: (
     json: any,
   ) =>
@@ -321,11 +330,12 @@ export interface JsonEditorOptions {
   _onSchemaChange?: (schema: any, schemaRefs: any) => void;
 }
 
+/** React 封装层 Props：受控 value、onChange、高度与 options。 */
 export interface JsonEditorProps {
-  // JSON data to be displayed in the editor
+  // 编辑器展示的 JSON 数据
   value?: any;
 
-  // Callback function triggered when the JSON data changes
+  // JSON 变更时的回调
   onChange?: (value: any) => void;
 
   // Height of the editor
@@ -334,6 +344,6 @@ export interface JsonEditorProps {
   // Additional CSS class names
   className?: string;
 
-  // Configuration options for the JSONEditor
+  // 透传至 jsoneditor 的配置项
   options?: JsonEditorOptions;
 }

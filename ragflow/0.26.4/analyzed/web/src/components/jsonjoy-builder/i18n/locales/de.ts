@@ -1,3 +1,5 @@
+// de.ts — jsonjoy-builder 德语（de）界面文案字典；键为 Translation 类型，值为德语用户可见字符串。
+
 import type { Translation } from '../translation-keys.ts';
 
 export const de: Translation = {

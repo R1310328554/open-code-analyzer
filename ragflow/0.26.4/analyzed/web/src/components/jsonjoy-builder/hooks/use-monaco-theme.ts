@@ -1,7 +1,10 @@
+// use-monaco-theme.ts — JSON Schema 编辑器 Monaco 主题、默认选项与 JSON 语言诊断配置。
+
 import { useIsDarkTheme } from '@/components/theme-provider';
 import type * as Monaco from 'monaco-editor';
 import type { JSONSchema } from '../types/json-schema.js';
 
+/** Monaco 编辑器可配置项子集（字体、折叠、括号匹配等）。 */
 export interface MonacoEditorOptions {
   minimap?: { enabled: boolean };
   fontSize?: number;
@@ -36,6 +39,7 @@ export interface MonacoEditorOptions {
   };
 }
 
+/** 与 RAGFlow 设计系统对齐的 Monaco 默认编辑器选项。 */
 export const defaultEditorOptions: MonacoEditorOptions = {
   minimap: { enabled: false },
   fontSize: 14,
@@ -62,6 +66,7 @@ export const defaultEditorOptions: MonacoEditorOptions = {
   },
 };
 
+/** 根据暗色主题注册 appLight/appDark 主题并配置 JSON Schema 校验。 */
 export function useMonacoTheme() {
   // const [isDarkTheme, setisDarkTheme] = useState(false);
   const isDarkTheme = useIsDarkTheme();
@@ -95,6 +100,7 @@ export function useMonacoTheme() {
   //   return () => observer.disconnect();
   // }, []);
 
+  /** 注册与应用 Tailwind 色板一致的明暗 JSON 语法高亮主题。 */
   const defineMonacoThemes = (monaco: typeof Monaco) => {
     // Define custom light theme that matches app colors
     monaco.editor.defineTheme('appLightTheme', {
@@ -159,7 +165,8 @@ export function useMonacoTheme() {
     });
   };
 
-  // Helper to configure JSON language validation
+  // 配置 Monaco JSON 语言服务：Schema 校验与 diagnostics
+  /** 设置 jsonDefaults diagnostics（可选绑定传入 JSONSchema）。 */
   const configureJsonDefaults = (
     monaco: typeof Monaco,
     schema?: JSONSchema,

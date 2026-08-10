@@ -1,3 +1,5 @@
+// fr.ts — jsonjoy-builder 法语（fr）界面文案字典；键为 Translation 类型，值为法语用户可见字符串。
+
 import type { Translation } from '../translation-keys.ts';
 
 export const fr: Translation = {

@@ -1,3 +1,5 @@
+// api-service/hooks.ts — API 服务页 Hooks：系统 Token 管理、图表统计与嵌入弹窗。
+
 import {
   useSetModalState,
   useShowDeleteConfirm,
@@ -14,6 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import message from '../ui/message';
 
+/** 创建/删除系统 API Token，并拉取 Token 列表。 */
 export const useOperateApiKey = (idKey: string, dialogId?: string) => {
   const { removeToken } = useRemoveSystemToken();
   const { createToken, loading: creatingLoading } = useCreateSystemToken();
@@ -40,10 +43,12 @@ export const useOperateApiKey = (idKey: string, dialogId?: string) => {
   };
 };
 
+/** 图表统计：各指标键映射为 { xAxis, yAxis } 序列。 */
 type ChartStatsType = {
   [k in keyof IStats]: Array<{ xAxis: string; yAxis: number }>;
 };
 
+/** 从 React Query 缓存读取 fetchStats 并转为图表可用结构。 */
 export const useSelectChartStatsList = (): ChartStatsType => {
   const queryClient = useQueryClient();
   const data = queryClient.getQueriesData({ queryKey: ['fetchStats'] });
@@ -61,6 +66,7 @@ export const useSelectChartStatsList = (): ChartStatsType => {
   }, {} as ChartStatsType);
 };
 
+/** 展示 Token 缺失时的 i18n 错误提示。 */
 export const useShowTokenEmptyError = () => {
   const { t } = useTranslate('chat');
 
@@ -70,6 +76,7 @@ export const useShowTokenEmptyError = () => {
   return { showTokenEmptyError };
 };
 
+/** 展示 Beta 地址未配置时的 i18n 错误提示。 */
 export const useShowBetaEmptyError = () => {
   const { t } = useTranslate('chat');
 
@@ -79,6 +86,7 @@ export const useShowBetaEmptyError = () => {
   return { showBetaEmptyError };
 };
 
+/** 打开嵌入等步骤前拉取 Token，校验 beta 与 token 是否存在。 */
 const useFetchTokenListBeforeOtherStep = () => {
   const { showTokenEmptyError } = useShowTokenEmptyError();
   const { showBetaEmptyError } = useShowBetaEmptyError();
@@ -119,6 +127,7 @@ const useFetchTokenListBeforeOtherStep = () => {
   };
 };
 
+/** 校验 Token 后控制嵌入 iframe 弹窗显隐，并暴露 embedToken/beta。 */
 export const useShowEmbedModal = () => {
   const {
     visible: embedVisible,
