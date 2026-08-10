@@ -18,6 +18,7 @@ package pipeline
 
 import "errors"
 
+// 包级预定义错误：空 DSL、无组件、未知组件/阶段。
 var (
 	errNilDSL           = errors.New("pipeline: nil DSL")
 	errEmptyStages      = errors.New("pipeline: DSL has no components")
@@ -25,6 +26,7 @@ var (
 	errUnknownStage     = errors.New("pipeline: unknown stage")
 )
 
+// stageError 描述单个 pipeline 阶段的失败原因。
 type stageError struct {
 	Stage  string
 	Reason string
@@ -34,6 +36,7 @@ func (e *stageError) Error() string {
 	return "pipeline: stage " + e.Stage + ": " + e.Reason
 }
 
+// sinkError 描述 sink 阶段的失败原因。
 type sinkError struct {
 	Reason string
 }
@@ -41,3 +44,4 @@ type sinkError struct {
 func (e *sinkError) Error() string {
 	return "pipeline: sink: " + e.Reason
 }
+// pipeline/errors.go — 流水线编译与执行错误类型。

@@ -31,28 +31,22 @@ import (
 	"go.opentelemetry.io/otel/trace/noop"
 )
 
-// TracerName is the instrumentation scope used for every span created by
-// [OtelHandler]. The constant is exported so other components can refer to
-// the same scope if they need to look up the tracer.
+// TracerName 为 OtelHandler 创建的全部 span 使用的 instrumentation scope。
 const TracerName = "github.com/infiniflow/ragflow/internal/observability/otel"
 
-// Context-key types. These are unexported (the value is exported via the
-// constructor helpers below) so that external packages cannot collide
-// with the keys we attach to the callback context.
+// Context-key 类型；未导出以防外部包与回调 context 键冲突。
 type (
 	runIDKeyType       struct{}
 	sessionIDKeyType   struct{}
 	spanContextKeyType struct{}
 )
 
-// WithRunID returns a copy of ctx that carries the supplied canvas run
-// id. The handler will read this value and attach it as a "run.id"
-// attribute on every emitted span. Pass an empty string to clear.
+// WithRunID 在 ctx 上携带 canvas run id，Handler 将其附加为 run.id 属性。
 func WithRunID(ctx context.Context, runID string) context.Context {
 	return context.WithValue(ctx, runIDKeyType{}, runID)
 }
 
-// RunIDFromContext returns the run id stored on ctx, or "" if none.
+// RunIDFromContext 返回 ctx 上的 run id，无则返回空串。
 func RunIDFromContext(ctx context.Context) string {
 	if v, ok := ctx.Value(runIDKeyType{}).(string); ok {
 		return v
@@ -60,15 +54,12 @@ func RunIDFromContext(ctx context.Context) string {
 	return ""
 }
 
-// WithSessionID returns a copy of ctx that carries the supplied chat
-// session id. The handler will read this value and attach it as a
-// "session.id" attribute on every emitted span.
+// WithSessionID 在 ctx 上携带 chat session id，Handler 将其附加为 session.id 属性。
 func WithSessionID(ctx context.Context, sessionID string) context.Context {
 	return context.WithValue(ctx, sessionIDKeyType{}, sessionID)
 }
 
-// SessionIDFromContext returns the session id stored on ctx, or "" if
-// none.
+// SessionIDFromContext 返回 ctx 上的 session id，无则返回空串。
 func SessionIDFromContext(ctx context.Context) string {
 	if v, ok := ctx.Value(sessionIDKeyType{}).(string); ok {
 		return v
@@ -81,8 +72,7 @@ var (
 	_              = sdktrace.TracerProvider{} // keep sdktrace import meaningful across refactors
 )
 
-// spanContextValue bundles the live span with its start time and any
-// stream reader that the streaming callbacks need to clean up.
+// spanContextValue 捆绑活跃 span、起始时间及流式回调需清理的 StreamReader。
 type spanContextValue struct {
 	span      trace.Span
 	startTime time.Time
@@ -90,12 +80,11 @@ type spanContextValue struct {
 	// us; we must close it once we have read (or decided to skip) the
 	// stream so the framework can recycle the original.
 	streamIn *schema.StreamReader[callbacks.CallbackInput]
-	// streamOut is the OnEndWithStreamOutput copy; same cleanup contract.
+	// streamOut 为 OnEndWithStreamOutput 副本，同样须 close。
 	streamOut *schema.StreamReader[callbacks.CallbackOutput]
 }
 
-// OtelHandler implements [callbacks.Handler] and bridges every eino
-// component invocation to an OTel span.
+// OtelHandler 实现 callbacks.Handler，将 eino 组件调用桥接为 OTel span。
 //
 // The handler is safe for concurrent use: it derives the per-call span
 // from the provider's [trace.Tracer] (which is itself goroutine-safe) and
@@ -119,16 +108,12 @@ type OtelHandler struct {
 	initOnce sync.Once
 }
 
-// NewOtelHandler wraps tp in a callbacks.Handler. A nil tp is accepted;
-// the returned handler then behaves as a pass-through that never emits
-// spans, so callers can wire it up unconditionally.
+// NewOtelHandler 将 tp 包装为 callbacks.Handler；nil tp 时透传不发射 span。
 func NewOtelHandler(tp *sdktrace.TracerProvider) *OtelHandler {
 	return &OtelHandler{tp: tp}
 }
 
-// resolveTracer returns the cached tracer, falling back to the global
-// noop tracer when tp is nil. It is the only place that touches tp, so
-// the rest of the methods can assume a non-nil tracer.
+// resolveTracer 返回缓存 tracer；tp 为 nil 时回退全局 noop tracer。
 func (h *OtelHandler) resolveTracer() trace.Tracer {
 	h.initOnce.Do(func() {
 		if h.tp == nil {
@@ -140,11 +125,7 @@ func (h *OtelHandler) resolveTracer() trace.Tracer {
 	return h.tracer
 }
 
-// spanName builds the OTel span name for a given RunInfo. The convention
-// is "<Component>:<Name>" — component category first, then the business
-// name (which is the canvas node id for nodes created via
-// compose.WithNodeName). When info is nil or both fields are empty the
-// span is named just "component" so it is still visible in the trace UI.
+// spanName 构建 OTel span 名，约定 "<Component>:<Name>"；皆空时为 "component"。
 func spanName(info *callbacks.RunInfo) string {
 	if info == nil {
 		return "component"
@@ -163,10 +144,7 @@ func spanName(info *callbacks.RunInfo) string {
 	}
 }
 
-// runAttributes returns the standard set of attributes that every span
-// emitted by the handler carries. The cpn.* / run.id / session.id tuple
-// makes the span easy to slice by tenant, canvas or individual run in
-// any OTel backend.
+// runAttributes 返回 Handler 发射 span 的标准属性集（cpn.*/run.id/session.id）。
 func runAttributes(info *callbacks.RunInfo, runID, sessionID string) []attribute.KeyValue {
 	attrs := []attribute.KeyValue{
 		attribute.String("run.id", runID),
@@ -193,10 +171,7 @@ func runAttributes(info *callbacks.RunInfo, runID, sessionID string) []attribute
 	return attrs
 }
 
-// OnStart is the entry point for a non-streaming component invocation.
-// It starts a span, attaches the standard run attributes, and stores the
-// live span on the returned context so the matching OnEnd/OnError call
-// can finalise it.
+// OnStart 为非流式组件调用入口：启动 span、附加属性并存入 context。
 func (h *OtelHandler) OnStart(ctx context.Context, info *callbacks.RunInfo, _ callbacks.CallbackInput) context.Context {
 	if h.tp == nil {
 		return ctx
@@ -213,11 +188,7 @@ func (h *OtelHandler) OnStart(ctx context.Context, info *callbacks.RunInfo, _ ca
 	})
 }
 
-// OnEnd finalises the span started by the matching OnStart. It is a no-op
-// if there is no in-flight span on the context (which can happen when
-// the handler is installed in a chain alongside another handler that
-// consumed the span first — defensive programming for the
-// order-independent multi-handler contract).
+// OnEnd 终结 OnStart 启动的 span；context 无 in-flight span 时为 no-op。
 func (h *OtelHandler) OnEnd(ctx context.Context, info *callbacks.RunInfo, _ callbacks.CallbackOutput) context.Context {
 	v, ok := ctx.Value(spanContextKey).(*spanContextValue)
 	if !ok || v == nil {
@@ -230,9 +201,7 @@ func (h *OtelHandler) OnEnd(ctx context.Context, info *callbacks.RunInfo, _ call
 	return context.WithValue(ctx, spanContextKey, (*spanContextValue)(nil))
 }
 
-// OnError records the error on the in-flight span and marks it with
-// OTel's "Error" status code. If no span is on the context (e.g. OnStart
-// was never called, or the handler is in no-op mode), OnError is a no-op.
+// OnError 在 in-flight span 上记录错误并标记 Error 状态；无 span 时为 no-op。
 func (h *OtelHandler) OnError(ctx context.Context, info *callbacks.RunInfo, err error) context.Context {
 	if err == nil {
 		// Treat nil error as a non-event so we never mark a span Error
@@ -249,12 +218,7 @@ func (h *OtelHandler) OnError(ctx context.Context, info *callbacks.RunInfo, err 
 	return context.WithValue(ctx, spanContextKey, (*spanContextValue)(nil))
 }
 
-// OnStartWithStreamInput mirrors [OtelHandler.OnStart] for streaming
-// inputs. eino hands us a *schema.StreamReader that we own a copy of;
-// we must close it after we are done so the framework can release the
-// original. The handler does not consume the stream — that is the
-// downstream component's job — so the close is all the bookkeeping we
-// need.
+// OnStartWithStreamInput 为流式输入镜像 OnStart；须 close 框架交付的 StreamReader 副本。
 func (h *OtelHandler) OnStartWithStreamInput(ctx context.Context, info *callbacks.RunInfo,
 	input *schema.StreamReader[callbacks.CallbackInput]) context.Context {
 	if h.tp == nil {
@@ -280,10 +244,7 @@ func (h *OtelHandler) OnStartWithStreamInput(ctx context.Context, info *callback
 	})
 }
 
-// OnEndWithStreamOutput mirrors [OtelHandler.OnEnd] for streaming
-// outputs. The framework hands us a copy of the output stream; we
-// close it without consuming it (the SSE handler in the canvas package
-// is the actual consumer) and finalise the span.
+// OnEndWithStreamOutput 为流式输出镜像 OnEnd；close 输出流副本并终结 span。
 func (h *OtelHandler) OnEndWithStreamOutput(ctx context.Context, info *callbacks.RunInfo,
 	output *schema.StreamReader[callbacks.CallbackOutput]) context.Context {
 	v, ok := ctx.Value(spanContextKey).(*spanContextValue)
@@ -301,11 +262,9 @@ func (h *OtelHandler) OnEndWithStreamOutput(ctx context.Context, info *callbacks
 	return context.WithValue(ctx, spanContextKey, (*spanContextValue)(nil))
 }
 
-// Compile-time assertion that *OtelHandler satisfies the eino Handler
-// interface. Catches signature drift the moment the file is compiled.
+// 编译期断言 *OtelHandler 满足 eino Handler 接口，即时捕获签名漂移。
 var _ callbacks.Handler = (*OtelHandler)(nil)
 
-// Keep the embedded interface referenced so an upgrade that drops
-// trace/embedded from go.opentelemetry.io/otel still surfaces a
-// compile error here rather than a silent Tracer regression.
+// 保留 embedded 接口引用，升级 OTel 时若移除 trace/embedded 则编译报错。
 var _ embedded.Tracer = (embedded.Tracer)(nil)
+// otel/handler.go — eino 回调桥接 OTel span 的 Handler 实现。

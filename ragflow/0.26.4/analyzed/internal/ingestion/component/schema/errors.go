@@ -18,9 +18,8 @@ package schema
 
 import "fmt"
 
-// errRequiredField is the typed error returned by schema Validate()
-// methods when a required field is missing or empty. It carries the
-// field name so callers can produce structured error responses.
+// errRequiredField 是 schema Validate() 在必填字段缺失或为空时返回的类型化错误，
+// 携带字段名以便调用方构造结构化错误响应。
 type errRequiredField struct {
 	Field string
 }
@@ -29,9 +28,8 @@ func (e errRequiredField) Error() string {
 	return fmt.Sprintf("schema: required field %q is missing or empty", e.Field)
 }
 
-// errInvalidValue is the typed error returned by schema Validate()
-// methods when a field's value is not in the allowed set. It carries
-// the field name and the offending value.
+// errInvalidValue 是 schema Validate() 在字段值不在允许集合内时返回的类型化错误，
+// 携带字段名与非法值。
 type errInvalidValue struct {
 	Field string
 	Value string
@@ -40,3 +38,4 @@ type errInvalidValue struct {
 func (e errInvalidValue) Error() string {
 	return fmt.Sprintf("schema: field %q has invalid value %q", e.Field, e.Value)
 }
+// schema/errors.go — 组件 schema 校验错误类型定义。

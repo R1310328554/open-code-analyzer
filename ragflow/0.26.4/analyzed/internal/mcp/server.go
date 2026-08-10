@@ -22,9 +22,7 @@ import (
 	"strings"
 )
 
-// Connector provides the data-access operations the MCP tools need.
-// It abstracts the RAGFlow backend so that tool implementations can use
-// either in-process service calls or out-of-process HTTP calls.
+// Connector 提供 MCP 工具所需的数据访问操作，抽象 RAGFlow 后端（进程内或 HTTP）。
 type Connector interface {
 	// ListDatasets returns newline-delimited JSON lines, each containing
 	// at minimum {"id": "...", "description": "..."}.
@@ -39,7 +37,7 @@ type Connector interface {
 	Retrieval(req RetrievalRequest) (string, error)
 }
 
-// RetrievalRequest carries all parameters for a retrieval query.
+// RetrievalRequest 携带检索查询的全部参数。
 type RetrievalRequest struct {
 	DatasetIDs             []string `json:"dataset_ids"`
 	DocumentIDs            []string `json:"document_ids"`
@@ -54,13 +52,13 @@ type RetrievalRequest struct {
 	ForceRefresh           bool     `json:"force_refresh"`
 }
 
-// Server handles MCP JSON-RPC requests.
+// Server 处理 MCP JSON-RPC 请求。
 type Server struct {
 	connector Connector
 	version   string
 }
 
-// NewServer creates a new MCP Server.
+// NewServer 创建 MCP Server。
 func NewServer(connector Connector) *Server {
 	return &Server{
 		connector: connector,
@@ -68,11 +66,9 @@ func NewServer(connector Connector) *Server {
 	}
 }
 
-// HandleRequest dispatches a raw JSON-RPC request body and returns the
-// serialized JSON-RPC response. Returns nil if the request is a
-// notification (no id) and requires no response.
+// HandleRequest 分发原始 JSON-RPC 请求体；通知（无 id）时不返回响应。
 func (s *Server) HandleRequest(body []byte) ([]byte, bool, error) {
-	// Try to decode as a request (with an id) first.
+	// 先尝试解码带 id 的请求。
 	var req JSONRPCRequest
 	if err := json.Unmarshal(body, &req); err != nil {
 		resp := NewParseError()
@@ -80,12 +76,12 @@ func (s *Server) HandleRequest(body []byte) ([]byte, bool, error) {
 		return data, true, nil
 	}
 
-	// Notifications have no id — do not send a response.
+	// 通知无 id — 不发送响应。
 	if req.ID == nil || string(req.ID) == "null" {
 		return nil, false, nil
 	}
 
-	// Validate jsonrpc field.
+	// 校验 jsonrpc 字段。
 	if req.JSONRPC != JSONRPCVersion {
 		resp := NewInvalidRequestError(req.ID, "jsonrpc must be \"2.0\"")
 		data, _ := json.Marshal(resp)
@@ -344,7 +340,7 @@ func (s *Server) callListChats(id json.RawMessage, args map[string]interface{}) 
 	return NewSuccessResponse(id, NewTextResult(result))
 }
 
-// --- argument extraction helpers ---
+// --- 参数提取辅助函数 ---
 
 func getStringArg(args map[string]interface{}, key, defaultVal string) string {
 	if v, ok := args[key]; ok {
@@ -430,8 +426,7 @@ func getBoolArg(args map[string]interface{}, key string, defaultVal bool) bool {
 	return defaultVal
 }
 
-// toStringSlice converts an interface{} value (expected to be a JSON array)
-// into a []string. Values are converted via fmt.Sprintf.
+// toStringSlice 将 interface{}（期望为 JSON 数组）转为 []string。
 func toStringSlice(v interface{}) []string {
 	arr, ok := v.([]interface{})
 	if !ok {
@@ -443,3 +438,4 @@ func toStringSlice(v interface{}) []string {
 	}
 	return result
 }
+// mcp/server.go — MCP JSON-RPC 服务端：工具列表与调用分发。

@@ -27,15 +27,13 @@ import (
 	"ragflow/internal/agent/runtime"
 )
 
-// Pipeline is a compiled ingestion canvas plus task-scoped metadata.
+// Pipeline 为已编译的 ingestion canvas 加任务级元数据。
 type Pipeline struct {
 	taskID string
 	canvas *canvas.Canvas
 }
 
-// NewPipelineFromDSL compiles the canonical ingestion canvas DSL.
-// It accepts either the inner canvas DSL or the template wrapper whose
-// top-level `dsl` field carries that canvas.
+// NewPipelineFromDSL 编译标准 ingestion canvas DSL；接受内层 canvas 或含 dsl 字段的模板包装。
 func NewPipelineFromDSL(dsl []byte, taskID string) (*Pipeline, error) {
 	var raw map[string]any
 	if err := json.Unmarshal(dsl, &raw); err != nil {
@@ -99,10 +97,7 @@ func stageTimeout() time.Duration {
 
 var defaultStageTimeout = 60 * time.Second
 
-// Run executes the full ingestion graph described by the canonical DSL.
-// There is no pipeline-layer partial resume entry point: execution always
-// starts from the graph entry and component-level replay decisions belong to
-// the components themselves.
+// Run 执行 DSL 描述的全量 ingestion 图；无 pipeline 层部分恢复入口，重放决策归组件自身。
 func (p *Pipeline) Run(ctx context.Context, inputs map[string]any) (map[string]any, error) {
 	if p == nil {
 		return nil, fmt.Errorf("pipeline: Run on nil pipeline")
@@ -139,3 +134,4 @@ func (p *Pipeline) Run(ctx context.Context, inputs map[string]any) (map[string]a
 	merged["state"] = runState.Snapshot()
 	return merged, nil
 }
+// pipeline/pipeline.go — 基于 canvas DSL 的 ingestion 流水线执行器。

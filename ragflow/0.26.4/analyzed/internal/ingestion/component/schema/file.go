@@ -14,33 +14,18 @@
 //  limitations under the License.
 //
 
-// Package schema holds the wire-level *FromUpstream / *Param / *Outputs types
-// that flow between ingestion pipeline components. Each file mirrors the
-// Pydantic schema in rag/flow/<component>/schema.py (or, when none exists,
-// the runtime contract implied by the component's _invoke signature).
+// Package schema 定义 ingestion 流水线组件间流转的 *FromUpstream / *Param / *Outputs wire 类型。
+// 各文件镜像 rag/flow/<component>/schema.py 的 Pydantic schema（或 _invoke 运行时契约）。
 //
-// Files in this package are pure data definitions — they import only stdlib.
-// Business logic (the component Implementations) lives elsewhere in
-// internal/ingestion/component/.
+// 本包为纯数据定义，仅依赖 stdlib；业务逻辑在 internal/ingestion/component/。
 package schema
 
-// FileFromUpstream is the upstream payload consumed by the File component.
-//
-// Mirrors the runtime contract of rag/flow/file.py:File._invoke. There is no
-// dedicated Pydantic schema for File in the Python codebase, so the fields
-// below were derived from the keyword arguments File reads at runtime:
-//
-//	async def _invoke(self, **kwargs):
-//	    if self._canvas._doc_id: ...            # doc_id path
-//	    else:
-//	        file = kwargs.get("file")[0]        # file-list path
-//
-// `_doc_id` is taken from the surrounding canvas, not kwargs, so it lives on
-// a separate optional field here for explicitness.
+// FileFromUpstream 是 File 组件消费的上游载荷，镜像 rag/flow/file.py:File._invoke。
+// Python 无专用 Pydantic schema，字段从运行时 kwargs 推导；doc_id 来自 canvas 而非 kwargs。
 type FileFromUpstream struct {
-	// CreatedTime is the upstream component's wall-clock start time (s).
+	// CreatedTime 上游组件墙上时钟起始时间（秒）。
 	CreatedTime *float64 `json:"_created_time,omitempty"`
-	// ElapsedTime is the upstream component's elapsed time (s).
+	// ElapsedTime 上游组件已耗时间（秒）。
 	ElapsedTime *float64 `json:"_elapsed_time,omitempty"`
 
 	// DocID is the canvas-bound document ID. When non-empty the File
@@ -55,10 +40,7 @@ type FileFromUpstream struct {
 	File []map[string]any `json:"file,omitempty"`
 }
 
-// Validate enforces the File component's wire-shape requirement: at
-// least one of DocID or File must be set. The Python code branches on
-// `_canvas._doc_id` vs. `kwargs.get("file")[0]`, which corresponds to
-// "one of the two upstream paths is wired".
+// Validate 要求 DocID 与 File 至少其一非空，对应 Python 两条上游路径之一已接入。
 func (f *FileFromUpstream) Validate() error {
 	if (f.DocID == nil || *f.DocID == "") && len(f.File) == 0 {
 		return errRequiredField{Field: "doc_id|file"}
@@ -66,35 +48,18 @@ func (f *FileFromUpstream) Validate() error {
 	return nil
 }
 
-// FileParam is the static configuration for the File component.
-//
-// Mirrors rag/flow/file.py:FileParam. The Python class has no fields
-// beyond what ProcessParamBase provides (none stored on the instance), so
-// the Go struct is intentionally empty. It is kept as a distinct type so
-// Phase 2.1 can attach config knobs (e.g., a `with_blob` flag) without a
-// rename.
+// FileParam 是 File 组件静态配置；Python FileParam 无额外字段，Go 结构体 intentionally 为空以预留扩展。
 type FileParam struct{}
 
-// Defaults returns a FileParam populated with the Python default values.
-// Today there are no fields; the constructor exists for forward
-// compatibility and to satisfy the "every type has a Defaults()"
-// convention adopted in this package.
+// Defaults 返回 Python 默认值（当前无字段，满足包内 Defaults() 约定）。
 func (FileParam) Defaults() FileParam { return FileParam{} }
 
-// Validate returns nil. FileParam has no required fields.
+// Validate 返回 nil；FileParam 无必填字段。
 func (FileParam) Validate() error { return nil }
 
-// FileOutputs is the result of invoking the File component. It mirrors
-// the values File sets via `self.set_output(...)` in rag/flow/file.py:
-//
-//	set_output("name", doc.name)             # name
-//	set_output("file", file)                  # file  (full descriptor)
-//	set_output("_ERROR", "...")               # error
-//
-// The binary blob (`blob`) is intentionally NOT part of the wire schema —
-// it lives on the storage layer (MinIO/S3) and is referenced by path.
+// FileOutputs 是 File 组件调用结果；二进制 blob 不在 wire schema 中，由存储层按路径引用。
 type FileOutputs struct {
-	// Name is the resolved document/file name.
+	// Name 为解析后的文档/文件名。
 	Name string `json:"name"`
 	// File is the upstream file descriptor (dict in Python). Optional —
 	// when invoked via doc_id the Python code does not re-emit it.
@@ -103,3 +68,4 @@ type FileOutputs struct {
 	// message (Python: set_output("_ERROR", ...)).
 	Error string `json:"_ERROR,omitempty"`
 }
+// schema/file.go — File 组件上下游 wire 类型。

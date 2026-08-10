@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-// Package otel provides OpenTelemetry-based observability for the RAGFlow
-// agent canvas runtime.
+// Package otel 为 RAGFlow agent canvas 运行时提供基于 OpenTelemetry 的可观测性。
 //
-// The package exposes a TracerProvider factory and a callbacks.Handler
-// implementation that maps eino graph-node lifecycle events to OTel spans.
-// The handler is designed to be a no-op when tracing is not configured, so
-// production code can wire it up unconditionally without paying any cost
-// in deployments that do not run an OTel collector.
+// 暴露 TracerProvider 工厂与将 eino 图节点生命周期映射为 OTel span 的 Handler；
+// 未配置追踪时为 no-op，生产可无代价无条件接入。
 package otel
 
 import (
@@ -37,7 +33,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
-// Default values applied when ProviderConfig fields are left zero.
+// ProviderConfig 字段为零时应用的默认值。
 const (
 	defaultServiceName    = "ragflow"
 	defaultServiceVersion = "0.0.0"
@@ -45,10 +41,8 @@ const (
 	defaultExportTimeout  = 30 * time.Second
 )
 
-// ProviderConfig configures the OTel TracerProvider built by
-// [NewTracerProvider]. Zero values fall back to sensible defaults that
-// keep the provider invisible in the runtime: a no-op BatchSpanProcessor
-// is not attached when OTLPEndpoint is empty or SampleRatio is 0.
+// ProviderConfig 配置 NewTracerProvider 构建的 TracerProvider；
+// OTLPEndpoint 空或 SampleRatio 为 0 时不附加 exporter。
 type ProviderConfig struct {
 	// ServiceName populates the "service.name" resource attribute. Defaults
 	// to "ragflow" when empty.
@@ -60,7 +54,7 @@ type ProviderConfig struct {
 	// "http://otel-collector:4318"). When empty, the returned provider
 	// has no exporter and effectively no-ops.
 	OTLPEndpoint string
-	// Insecure disables TLS for the OTLP exporter. Defaults to true.
+	// Insecure 禁用 OTLP exporter 的 TLS，默认 true。
 	Insecure bool
 	// SampleRatio is the probability an in-process trace is sampled,
 	// in the [0, 1] range. 0 disables the provider (no exporter, no
@@ -68,7 +62,7 @@ type ProviderConfig struct {
 	SampleRatio float64
 }
 
-// NewTracerProvider builds a [sdktrace.TracerProvider] honouring cfg.
+// NewTracerProvider 按 cfg 构建 sdktrace.TracerProvider。
 //
 // Two failure modes are special-cased and never return an error:
 //
@@ -121,9 +115,7 @@ func NewTracerProvider(ctx context.Context, cfg ProviderConfig) (*sdktrace.Trace
 	return tp, nil
 }
 
-// withDefaults fills the zero-valued fields of cfg with the package-level
-// defaults. The receiver is passed by value, so the caller's config is
-// not mutated.
+// withDefaults 为零值字段填充包级默认值；按值传递不修改调用方 cfg。
 func withDefaults(cfg ProviderConfig) ProviderConfig {
 	if cfg.ServiceName == "" {
 		cfg.ServiceName = defaultServiceName
@@ -139,9 +131,7 @@ func withDefaults(cfg ProviderConfig) ProviderConfig {
 	return cfg
 }
 
-// buildResource composes the OTel resource (process identity) attached to
-// every span emitted by the provider. The resource uses semconv v1.26.0
-// attribute keys.
+// buildResource 组合附加于每条 span 的 OTel resource（进程身份），使用 semconv v1.26.0。
 func buildResource(ctx context.Context, cfg ProviderConfig) (*resource.Resource, error) {
 	schemaURL := semconv.SchemaURL
 
@@ -164,9 +154,7 @@ func buildResource(ctx context.Context, cfg ProviderConfig) (*resource.Resource,
 	return detected, nil
 }
 
-// buildExporter constructs an OTLP/HTTP span exporter pointed at the
-// configured collector endpoint. Insecure defaults to true; callers that
-// need TLS should set cfg.Insecure=false.
+// buildExporter 构建指向采集端的 OTLP/HTTP span exporter；需 TLS 时设 Insecure=false。
 func buildExporter(ctx context.Context, cfg ProviderConfig) (*otlptrace.Exporter, error) {
 	opts := []otlptracehttp.Option{
 		otlptracehttp.WithEndpoint(cfg.OTLPEndpoint),
@@ -177,3 +165,4 @@ func buildExporter(ctx context.Context, cfg ProviderConfig) (*otlptrace.Exporter
 	}
 	return otlptracehttp.New(ctx, opts...)
 }
+// otel/provider.go — OTel TracerProvider 工厂与 OTLP 导出配置。

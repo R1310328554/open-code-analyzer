@@ -14,44 +14,24 @@
 //  limitations under the License.
 //
 
-// Tokenizer ingestion component (Phase 2.4 of
-// port-rag-flow-pipeline-to-go.md §4). Port of Python
-// `rag/flow/tokenizer/tokenizer.py`. Computes (a) full-text token
-// counts via the Go tokenizer package and (b) embedding vectors via
-// the tenant's embedding model.
+// Tokenizer ingestion 组件（Phase 2.4）。移植 Python rag/flow/tokenizer/tokenizer.py：
+// (a) 经 Go tokenizer 包计算全文 token 数；(b) 经租户嵌入模型计算向量。
 //
-// SCOPE (honest):
+// 职责范围（如实说明）：
 //
-//   - TOKEN COUNTING: matched at the wire level. Each chunk gets
-//     `content_ltks` (tokenized string via `tokenizer.Tokenize`) and
-//     `content_sm_ltks` (fine-grained variant) when `search_method`
-//     includes `full_text`. `title_tks` / `title_sm_tks` mirror the
-//     upstream `name` field. Python uses C++ RAGAnalyzer via
-//     `rag_tokenizer`; the Go side goes through `internal/tokenizer`
-//     which itself calls into the same C++ binding (`internal/binding`).
-//     For non-ASCII (CJK) input, Python's `rag_tokenizer.tokenize`
-//     falls back gracefully; the Go path uses the CGo analyzer
-//     when initialized, otherwise an empty string — see
-//     `internal/tokenizer/tokenizer.go:Tokenize` (Infinity engine
-//     returns input unchanged; otherwise the C++ binding is used).
+//   - TOKEN 计数：wire 级对齐。search_method 含 full_text 时为 chunk 写入
+//     content_ltks/content_sm_ltks 及 title_tks/title_sm_tks；Go 经 internal/tokenizer
+//     调用同一 C++ 绑定；CJK 输入时 CGo 分析器未初始化则返回空串。
 //
-//   - CJK CAVEAT (plan §8 Q2): The `NumTokensFromString` helper in
-//     `internal/tokenizer` falls back to `len([]byte(s))` on a
-//     tiktoken-init failure (over-counts CJK). The Python equivalent
-//     returns 0. The Go port KEEPS the Go behaviour — the tokenizer
-//     package is the single source of truth for token counting and
-//     must not be re-implemented here. Test
+//   - CJK 注意：NumTokensFromString 在 tiktoken 初始化失败时回退 len([]byte(s))（CJK 可能高估）；
+//     Go 移植保留该行为，tokenizer 包为计数唯一真相源。 Test
 //     `TestTokenizerComponent_Invoke_Unicode` asserts only that the
 //     count is finite and non-negative, matching the test
 //     convention in plan §6 (coverage target:
 //     "Tokenizer returns finite token counts for empty / unicode /
 //     mixed-script text").
 //
-//   - EMBEDDING MODEL RESOLUTION: mirrored. Python uses
-//     `LLMBundle(tenant_id, embd_id).encode([...])` from
-//     `rag/flow/tokenizer/tokenizer.py:54-66`; the Go port goes
-//     through `service.ModelProviderService.GetEmbeddingModel`
-//     (callers inject the model bundle, see `EncodeFunc` below).
+//   - 嵌入模型解析：镜像 Python LLMBundle.encode；Go 经 EncodeFunc 注入，避免 ingestion 反向依赖 service。
 //     The component does NOT directly construct a model driver —
 //     the resolution path depends on tenant/DAO context that lives
 //     in `internal/service`, and importing `internal/service` from
@@ -64,28 +44,17 @@
 //     a clear error — the same fail-loud contract the Python side
 //     enforces via `LLMBundle` constructor.
 //
-//   - BATCHED EMBEDDING (plan §AD-5a): matched. The Python path
-//     chunks calls by `settings.EMBEDDING_BATCH_SIZE` (default 16)
-//     and uses an async semaphore (`embed_limiter`). The Go port
-//     issues ONE `Encode([]string)` call with the entire chunk
-//     list (AD-5a calls out "embedding calls batched, not fanned"
-//     and Parallelism=1). Drivers that need to chunk internally
+//   - 批量嵌入（AD-5a）：Go 一次 Encode([]string) 覆盖全部 chunk，Parallelism=1。 Drivers that need to chunk internally
 //     can do so — the wire call is one round-trip.
 //
-//   - TRACKING: WithTimeout (60s, matches python `@timeout(60)` on
-//     `batch_encode`), TrackProgress, TrackElapsed. See
+//   - 追踪：WithTimeout(60s)、TrackProgress、TrackElapsed。 See
 //     `internal/agent/runtime/helpers.go` (plan §1 Phase 1).
 //
-//   - WHAT IS NOT PORTED:
+//   - 未移植项：
 //
-//   - The python `finalize_pdf_chunk` post-step — that
-//     normalizes PDF bbox metadata; it lives in
-//     `rag/flow/parser/pdf_chunk_metadata.py` and is the Parser
-//     component's concern (Phase 2.2).
+//   - Python finalize_pdf_chunk 后处理归 Parser 组件（Phase 2.2）。
 //
-//   - `rag.flow.tokenizer` `thread_pool_exec` async batching +
-//     `embed_limiter` semaphore — replaced by the single
-//     batched `Encode` call.
+//   - Python thread_pool_exec + embed_limiter — 由单次批量 Encode 替代。
 package component
 
 import (
@@ -103,27 +72,16 @@ import (
 
 const ComponentNameTokenizer = "Tokenizer"
 
-// tokenizerTimeout bounds the batched embedding call. Mirrors the
-// python `@timeout(60)` decorator on `Tokenizer._embedding.embed_limiter`
-// + `batch_encode` in tokenizer.py:92-104. Declared as a var so tests
-// can shrink it; production wiring uses 60s.
+// tokenizerTimeout 限制批量嵌入调用耗时，镜像 Python @timeout(60)；测试可缩短。
 var tokenizerTimeout = 60 * time.Second
 
-// titleExtRE strips a trailing file-extension (e.g. ".pdf") from the
-// upstream document name before tokenizing it. Mirrors the python
-// `re.sub(r"\.[a-zA-Z]+$", "", name)` in tokenizer.py:137.
+// titleExtRE 分词前去除文档名尾部扩展名，镜像 Python re.sub。
 var titleExtRE = regexp.MustCompile(`\.[a-zA-Z]+$`)
 
-// htmlTableRE matches HTML table-cell tags so the embedded text fed
-// to the embedding model doesn't carry raw markup. Mirrors the python
-// `re.sub(r"</?(table|td|caption|tr|th)( [^<>]{0,12})?>", " ", txt)` at
-// tokenizer.py:79.
+// htmlTableRE 去除 HTML 表格标签，避免嵌入文本携带原始 markup。
 var htmlTableRE = regexp.MustCompile(`</?(table|td|caption|tr|th)( [^<>]{0,12})?>`)
 
-// Embedder is the testability seam for the embedding branch. The
-// production wiring injects an implementation that resolves an
-// embedding model via `service.ModelProviderService.GetEmbeddingModel`
-// and calls its `ModelDriver.Embed`. Tests inject a stub.
+// Embedder 为嵌入分支的可测试 seam；生产经 ModelProviderService 解析模型，测试注入 stub。
 //
 // Returning one vector per input text (length len(texts), each
 // vector non-empty) is the contract; nil/error halts the component.
@@ -131,16 +89,10 @@ type Embedder interface {
 	Encode(texts []string) ([][]float64, error)
 }
 
-// EncodeFunc is the package-level injection point. nil means
-// "embedding disabled" — the component skips the embedding branch
-// (matching the python behaviour when `search_method` omits
-// "embedding"). Production sets this once in `main()`; tests can
-// swap it with a stub via the test helpers in `tokenizer_test.go`.
+// EncodeFunc 为包级注入点；nil 表示禁用嵌入；main 设置一次，测试可替换 stub。
 var EncodeFunc func(tenantID, embdID string) Embedder
 
-// TokenizerComponent computes token counts and (optionally) embedding
-// vectors for an upstream chunk list. Mirrors python
-// rag/flow/tokenizer/tokenizer.py:Tokenizer.
+// TokenizerComponent 为上游 chunk 列表计算 token 数与（可选）嵌入向量。
 //
 // Inputs:
 //
@@ -165,9 +117,7 @@ type TokenizerComponent struct {
 	param schema.TokenizerParam
 }
 
-// NewTokenizerComponent constructs a TokenizerComponent from DSL
-// params. Mirrors python `TokenizerParam` defaults (search_method =
-// ["full_text","embedding"], filename_embd_weight=0.1, fields=["text"]).
+// NewTokenizerComponent 从 DSL 参数构造组件，镜像 Python TokenizerParam 默认值。
 func NewTokenizerComponent(params map[string]any) (runtime.Component, error) {
 	p := schema.TokenizerParam{}.Defaults()
 	if params != nil {
@@ -217,7 +167,7 @@ func NewTokenizerComponent(params map[string]any) (runtime.Component, error) {
 	return &TokenizerComponent{param: p}, nil
 }
 
-// Inputs returns the parameter metadata.
+// Inputs 返回输入参数元数据。
 func (c *TokenizerComponent) Inputs() map[string]string {
 	return map[string]string{
 		"tenant_id":     "Tenant identifier used to resolve the embedding model (mirrors python self._canvas._tenant_id).",
@@ -232,8 +182,7 @@ func (c *TokenizerComponent) Inputs() map[string]string {
 	}
 }
 
-// Outputs returns the parameter metadata. Mirrors python set_output
-// contract for Tokenizer.
+// Outputs 返回输出参数元数据，镜像 Python set_output 契约。
 func (c *TokenizerComponent) Outputs() map[string]string {
 	return map[string]string{
 		"chunks":                      "Tokenized chunk list (each entry gains content_ltks / content_sm_ltks / title_tks and, when embedding is requested, q_<n>_vec).",
@@ -244,14 +193,12 @@ func (c *TokenizerComponent) Outputs() map[string]string {
 	}
 }
 
-// Parallelism is fixed at 1 — embedding calls are batched in one
-// round-trip (plan §2 AD-5a "Tokenizer: 1 (embedding calls batched,
-// not fanned)").
+// Parallelism 固定为 1 — 嵌入调用单次批量往返（AD-5a）。
 func (c *TokenizerComponent) Parallelism() int { return 1 }
 
-// Invoke computes tokens + embeddings for the upstream chunks.
+// Invoke 为上游 chunks 计算 token 与嵌入。
 //
-// Failure modes:
+// 失败模式：
 //
 //   - "embedding" requested but EncodeFunc is nil → returns an
 //     error (fail-loud: same contract as python when LLMBundle is
@@ -296,7 +243,7 @@ func (c *TokenizerComponent) Invoke(ctx context.Context, inputs map[string]any) 
 			"chunks":        schema.ChunkDocsToMaps(chunks),
 		}
 
-		// embedding pass — batched single call (plan §AD-5a).
+		// embedding pass — 单次批量调用（AD-5a）。
 		if contains(c.param.SearchMethod, "embedding") {
 			if EncodeFunc == nil {
 				return nil, fmt.Errorf("Tokenizer: embedding requested but EncodeFunc is unset")
@@ -306,7 +253,7 @@ func (c *TokenizerComponent) Invoke(ctx context.Context, inputs map[string]any) 
 				return nil, fmt.Errorf("Tokenizer: embedding requested but encoder resolution returned nil")
 			}
 
-			// Build the batched text list + index pairs.
+			// 构建批量文本列表与索引对。
 			texts := make([]string, 0, len(chunks))
 			pairs := make([]int, 0, len(chunks))
 			for i, ck := range chunks {
@@ -450,11 +397,7 @@ func cloneTokenizerChunkDoc(in schema.ChunkDoc) schema.ChunkDoc {
 	return out
 }
 
-// normalizeChunkTextFallback populates each chunk's "text" key
-// from "content_with_weight" when "text" is absent or empty. Mirrors
-// the python rag/flow/tokenizer.py:111 fallback so a chunk that
-// arrives from the parser path with only the structured
-// content_with_weight field still tokenizes.
+// normalizeChunkTextFallback 在 text 缺失时从 content_with_weight 填充，镜像 tokenizer.py:111。
 //
 // The function mutates the input slice in place; callers should
 // not retain separate copies of the chunks map. If both fields
@@ -471,9 +414,7 @@ func normalizeChunkTextFallback(chunks []schema.ChunkDoc) {
 	}
 }
 
-// tokenizeChunks annotates each chunk with title_tks, content_ltks,
-// and (when applicable) question_tks / important_tks / summary fields.
-// Mirrors python tokenizer.py:130-185.
+// tokenizeChunks 为 chunk 标注 title_tks/content_ltks 及可选 question/keyword/summary 字段。
 func tokenizeChunks(chunks []schema.ChunkDoc, titleStem string) error {
 	for i := range chunks {
 		ck := &chunks[i]
@@ -542,9 +483,7 @@ func tokenizeChunks(chunks []schema.ChunkDoc, titleStem string) error {
 	return nil
 }
 
-// concatFields concatenates the configured fields of a chunk into
-// a single string. Mirrors python tokenizer.py:69-79 which
-// concatenates `param.fields` (string or list-of-strings per chunk).
+// concatFields 将 chunk 配置字段拼接为单字符串，镜像 tokenizer.py:69-79。
 func concatFields(ck schema.ChunkDoc, fields []string) string {
 	var b strings.Builder
 	for _, f := range fields {
@@ -579,9 +518,7 @@ func getStringOr(m map[string]any, key, def string) string {
 	return def
 }
 
-// getStringLocal mirrors file.go's getString; we keep a local copy
-// so the tokenizer package does not depend on the file package's
-// helper signature. Reads either a string or a byte slice (JSON
+// getStringLocal 镜像 file.go 的 getString，避免 tokenizer 依赖 file 包。 Reads either a string or a byte slice (JSON
 // decoding yields string for string fields by default).
 func getStringLocal(m map[string]any, key string) (string, bool) {
 	v, ok := m[key]
@@ -608,9 +545,7 @@ func contains(s []string, v string) bool {
 
 func intPtr(v int) *int { return &v }
 
-// init registers Tokenizer under CategoryIngestion (plan §4
-// Phase 2.4). The metadata drives Phase 4's GET /api/v1/components
-// listing.
+// init 在 CategoryIngestion 下注册 Tokenizer，元数据驱动组件列表 API。
 func init() {
 	c := &TokenizerComponent{}
 	runtime.MustRegister(ComponentNameTokenizer, runtime.CategoryIngestion,
@@ -623,3 +558,4 @@ func init() {
 			Outputs: c.Outputs(),
 		})
 }
+// component/tokenizer.go — Tokenizer 组件实现：分词计数与批量嵌入。

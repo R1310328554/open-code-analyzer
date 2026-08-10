@@ -22,8 +22,7 @@ import (
 	"strings"
 )
 
-// ServiceConnector implements the Connector interface using in-process
-// service layer calls, avoiding HTTP round-trips to self.
+// ServiceConnector 经进程内 service 层调用实现 Connector，避免自调用 HTTP 往返。
 type ServiceConnector struct {
 	userID       string
 	listDatasets func(userID string, page, pageSize int, orderby string, desc bool) ([]map[string]interface{}, int64, error)
@@ -31,9 +30,7 @@ type ServiceConnector struct {
 	retrieval    func(userID string, req RetrievalRequest) (string, error)
 }
 
-// NewServiceConnector creates a ServiceConnector.
-// The function arguments abstract the service dependencies so this package
-// does not import the service layer directly.
+// NewServiceConnector 创建 ServiceConnector；函数参数抽象 service 依赖以避免直接 import。
 func NewServiceConnector(
 	userID string,
 	listDatasetsFunc func(userID string, page, pageSize int, orderby string, desc bool) ([]map[string]interface{}, int64, error),
@@ -48,8 +45,7 @@ func NewServiceConnector(
 	}
 }
 
-// ListDatasets returns newline-delimited JSON, each line being
-// {"id": "...", "description": "..."} for a dataset.
+// ListDatasets 返回换行分隔 JSON，每行含数据集 id/name/description。
 func (c *ServiceConnector) ListDatasets(page, pageSize int, orderby string, desc bool) (string, error) {
 	data, _, err := c.listDatasets(c.userID, page, pageSize, orderby, desc)
 	if err != nil {
@@ -71,7 +67,7 @@ func (c *ServiceConnector) ListDatasets(page, pageSize int, orderby string, desc
 				desc = s
 			}
 		}
-		// Match Python output: {"id": "...", "name": "...", "description": "..."}
+		// 对齐 Python 输出格式。
 		item := map[string]interface{}{
 			"id":          id,
 			"name":        name,
@@ -86,8 +82,7 @@ func (c *ServiceConnector) ListDatasets(page, pageSize int, orderby string, desc
 	return strings.Join(lines, "\n"), nil
 }
 
-// ListChats returns newline-delimited JSON, each line being
-// {"id": "...", "name": "...", "description": "..."} for a chat assistant.
+// ListChats 返回换行分隔 JSON，每行含聊天助手 id/name/description。
 func (c *ServiceConnector) ListChats(page, pageSize int, orderby string, desc bool) (string, error) {
 	data, _, err := c.listChats(c.userID, page, pageSize, orderby, desc)
 	if err != nil {
@@ -123,8 +118,8 @@ func (c *ServiceConnector) ListChats(page, pageSize int, orderby string, desc bo
 	return strings.Join(lines, "\n"), nil
 }
 
-// Retrieval executes a retrieval via the in-process service and returns
-// the result as a JSON string.
+// Retrieval 经进程内 service 执行检索并返回 JSON 字符串。
 func (c *ServiceConnector) Retrieval(req RetrievalRequest) (string, error) {
 	return c.retrieval(c.userID, req)
 }
+// mcp/connector.go — MCP 进程内服务连接器，避免自调用 HTTP 往返。

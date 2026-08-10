@@ -16,9 +16,7 @@
 
 package schema
 
-// ParserFromUpstream is the upstream payload consumed by the Parser
-// component. It mirrors rag/flow/parser/schema.py:ParserFromUpstream
-// (Pydantic BaseModel with populate_by_name, extra="forbid").
+// ParserFromUpstream 是 Parser 组件消费的上游载荷，镜像 Python ParserFromUpstream。
 //
 //	created_time: float | None  (alias _created_time)
 //	elapsed_time: float | None  (alias _elapsed_time)
@@ -40,8 +38,7 @@ type ParserFromUpstream struct {
 	Author   bool `json:"author,omitempty"`
 }
 
-// Validate enforces the only required field in ParserFromUpstream: Name.
-// Returns nil when Name is non-empty.
+// Validate 强制 Name 必填；非空时返回 nil。
 func (p *ParserFromUpstream) Validate() error {
 	if p.Name == "" {
 		return errRequiredField{Field: "name"}
@@ -49,22 +46,13 @@ func (p *ParserFromUpstream) Validate() error {
 	return nil
 }
 
-// Page is one parsed document section. The Parser component does not emit
-// a typed page model — Python code passes around `dict` literals with
-// shape `{text, layout_type, doc_type_kwd, positions?, image?, ...}`. To
-// keep the wire schema typed without overcommitting to a parser-specific
-// shape, Page is left as a generic map and provided for forward
-// documentation; downstream chunker code operates on the same dict shape.
+// Page 为单页解析结果；Python 使用 dict 字面量，Go 以 map 保持 wire 类型而不过度约束形状。
 type Page map[string]any
 
-// ParserSetup is the per-filetype configuration block stored on
-// ParserParam.setups[fileType]. The keys are heterogeneous (e.g.,
-// `parse_method`, `lang`, `output_format`, `suffix`, `fields`, `vlm`),
-// so a free-form map best mirrors the Python dict literal.
+// ParserSetup 为 ParserParam.setups[fileType] 的 per-filetype 配置块，键 heterogeneous 故用自由 map。
 type ParserSetup map[string]any
 
-// ParserParam is the static configuration for the Parser component.
-// Mirrors rag/flow/parser/parser.py:ParserParam.
+// ParserParam 是 Parser 组件静态配置，镜像 Python ParserParam。
 //
 // Two top-level fields are configured in the Python class:
 //
@@ -86,10 +74,7 @@ type ParserParam struct {
 	AllowedOutputFormat map[string][]string `json:"allowed_output_format"`
 }
 
-// Defaults returns a ParserParam populated with the Python defaults —
-// the full setups table copied verbatim from
-// rag/flow/parser/parser.py:ParserParam.__init__ and the corresponding
-// allowed_output_format map.
+// Defaults 返回 Python 默认 ParserParam（完整 setups 表与 allowed_output_format）。
 func (ParserParam) Defaults() ParserParam {
 	return ParserParam{
 		AllowedOutputFormat: map[string][]string{
@@ -197,16 +182,10 @@ func (ParserParam) Defaults() ParserParam {
 	}
 }
 
-// Validate returns nil. ParserParam's field set is fully defaulted by
-// Defaults(); the component's own `check()` method performs business
-// validation (e.g., "parse_method" must be one of the allowed set), and
-// that runs in the component implementation.
+// Validate 返回 nil；业务校验（如 parse_method 枚举）在组件实现中执行。
 func (ParserParam) Validate() error { return nil }
 
-// ParserOutputs is the result of invoking the Parser component. The
-// Python component calls `self.set_output(...)` with a mix of
-// string-typed, list-typed, and dict-typed values. The wire schema
-// below is the typed surface consumed by downstream components.
+// ParserOutputs 是 Parser 组件调用结果，为下游消费的 typed wire 表面。
 //
 // Mirrors what Parser sets at rag/flow/parser/parser.py:_invoke. The
 // parser writes to EITHER ("json" | "markdown" | "text" | "html") and
@@ -217,16 +196,16 @@ type ParserOutputs struct {
 	// Tokenizer branches on this field.
 	OutputFormat string `json:"output_format,omitempty"`
 
-	// JSON holds the list of structured sections when output_format == "json".
+	// JSON 在 output_format == "json" 时存放结构化 section 列表。
 	JSON []map[string]any `json:"json,omitempty"`
 
-	// Markdown holds the rendered markdown when output_format == "markdown".
+	// Markdown 在 output_format == "markdown" 时存放渲染结果。
 	Markdown string `json:"markdown,omitempty"`
 
-	// Text holds the rendered plain text when output_format == "text".
+	// Text 在 output_format == "text" 时存放纯文本。
 	Text string `json:"text,omitempty"`
 
-	// HTML holds the rendered HTML when output_format == "html".
+	// HTML 在 output_format == "html" 时存放 HTML。
 	HTML string `json:"html,omitempty"`
 
 	// File is the upstream file descriptor with parser-derived metadata
@@ -238,3 +217,4 @@ type ParserOutputs struct {
 	// message (Python: set_output("_ERROR", ...)).
 	Error string `json:"_ERROR,omitempty"`
 }
+// schema/parser.go — Parser 组件上下游 wire 类型与默认配置表。

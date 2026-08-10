@@ -42,19 +42,19 @@ type Ingestor struct {
 	cancel      context.CancelFunc
 	reconnectMu sync.Mutex
 
-	// Configuration
+	// 配置项
 	maxConcurrency    int32
 	supportedDocTypes []string
 	version           string
 
-	// Runtime state
+	// 运行时状态
 	currentTasks map[string]*TaskContext
 	tasksMu      sync.RWMutex
 
-	// Shutdown channel - receive on this to trigger graceful shutdown
+	// ShutdownCh — 接收信号以触发优雅关闭
 	ShutdownCh chan struct{}
 
-	// Worker pool
+	// 工作池
 	taskChan  chan *TaskContext
 	workerWg  sync.WaitGroup
 	startOnce sync.Once
@@ -119,7 +119,7 @@ func (e *Ingestor) Start() error {
 		return err
 	}
 
-	// Ensure worker pool is started on first task
+	// 首个任务到达时确保工作池已启动
 	go e.startWorkerPool()
 
 	for {
@@ -181,7 +181,7 @@ func (e *Ingestor) Start() error {
 			case common.RUNNING:
 			}
 
-			// Construct TaskContext with a cancellable context
+			// 构造带可取消 context 的 TaskContext
 			ctx, cancel := context.WithCancel(e.ctx)
 			taskCtx := &TaskContext{
 				Ctx:        ctx,
@@ -190,7 +190,7 @@ func (e *Ingestor) Start() error {
 				TaskHandle: taskHandle,
 			}
 
-			// Push to task channel; if full, reject the task (backpressure)
+			// 推入 taskChan；满则拒绝任务（背压）
 			select {
 			case e.taskChan <- taskCtx:
 				common.Info(fmt.Sprintf("Task %s queued (channel: %d/%d)", task.ID, len(e.taskChan), cap(e.taskChan)))
@@ -287,9 +287,7 @@ func (e *Ingestor) executeTask(taskCtx *TaskContext) {
 	_ = e.ackOrNack(taskCtx, true)
 }
 
-// defaultPipelineDSL returns the canonical ingestion canvas DSL bytes carried
-// by the task schema. The ingestion runtime accepts only the template/canvas
-// DSL shape; it does not synthesize a separate linear stages[] schema.
+// defaultPipelineDSL 返回 task schema 中的标准 canvas DSL 字节；仅接受 template/canvas 形状。
 func defaultPipelineDSL(task *entity.IngestionTask) []byte {
 	if task != nil && task.Schema != nil {
 		if raw, ok := task.Schema["pipeline"]; ok {
@@ -320,11 +318,7 @@ func defaultPipelineDSL(task *entity.IngestionTask) []byte {
 	return nil
 }
 
-// failTask updates the task to FAILED and Acks the message
-// (terminal-failure path: even on error, the message must be
-// removed from the queue, otherwise the broker redelivers it
-// indefinitely). This fixes the pre-existing bug that the
-// placeholder sleep loop never called Ack at all (plan §8 Q3).
+// failTask 将任务置 FAILED 并 Ack 消息，避免 broker 无限重投递（修复 plan §8 Q3）。
 func (e *Ingestor) failTask(taskCtx *TaskContext, runErr error) {
 	if err := e.ingestionTaskDAO.UpdateStatus(taskCtx.Task.ID, common.FAILED); err != nil {
 		common.Error(fmt.Sprintf("Task %s update status (failed) error", taskCtx.Task.ID), err)
@@ -333,11 +327,7 @@ func (e *Ingestor) failTask(taskCtx *TaskContext, runErr error) {
 	common.Error(fmt.Sprintf("Task %s failed: %v", taskCtx.Task.ID, runErr), runErr)
 }
 
-// ackOrNack centralises the post-execution NATS message
-// disposition. ack=true removes the message from the queue
-// (success OR terminal-failure); ack=false re-queues (rare;
-// we use it only on context cancellation to let another
-// worker pick it up).
+// ackOrNack 统一执行后 NATS 消息处置：ack 移除，nack 重新入队。
 func (e *Ingestor) ackOrNack(taskCtx *TaskContext, ack bool) error {
 	if taskCtx == nil || taskCtx.TaskHandle == nil {
 		return nil
@@ -382,7 +372,7 @@ func (e *Ingestor) executeTasklet(taskCtx *TaskContext) {
 	for i := currentStep; i < totalStep; i++ {
 		select {
 		case <-ctx.Done():
-			// Task canceled
+			// 任务已取消
 			common.Info(fmt.Sprintf("Tasklet %s stopped", tasklet.ID))
 			return
 		case <-time.After(3000 * time.Millisecond):
@@ -429,12 +419,13 @@ func (e *Ingestor) executeTasklet(taskCtx *TaskContext) {
 //	go e.heartbeatLoop()
 //}
 
-// Stop gracefully shuts down the ingestor
+// Stop 优雅关闭 Ingestor
 func (e *Ingestor) Stop() {
 	common.Info(fmt.Sprintf("Stopping ingestor %s", e.id))
 	e.cancel()
 
-	// Wait for all workers to finish (they exit on ctx.Done())
+	// 等待所有 worker 在 ctx.Done() 后退出
 	e.workerWg.Wait()
 	common.Info("All tasks completed")
 }
+// ingestion_service.go — Ingestor 服务：消息队列消费与流水线执行。

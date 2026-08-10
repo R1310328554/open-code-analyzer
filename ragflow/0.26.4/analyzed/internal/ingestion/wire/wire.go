@@ -14,30 +14,13 @@
 //  limitations under the License.
 //
 
-// Single owner for the ingestion-component registration surface.
+// ingestion 组件注册面的唯一所有者。
 //
-// Plan §2 AD-2 places every component under the same registry as
-// the agent canvas; in practice that means cmd entries (server,
-// ingestor, ...) must blank-import the ingestion component
-// packages so their init() runs. The historical pattern was
-// for each cmd entry to repeat the blank imports, which is
-// fragile: a new entry that forgets the blank import sees
-// "unknown component" at run time.
+// Plan AD-2 要求所有组件共用 agent canvas 注册表；cmd 入口须 blank-import 组件包以触发 init()。
 //
-// This package centralises the import list. cmd entries should
-// blank-import this package and call RegisterComponents once
-// at startup. The function is a no-op at run time — its only
-// purpose is to ensure the blank imports here are evaluated,
-// which in turn triggers init() in each component package.
+// 本包集中 import 列表；cmd 应 blank-import 并在启动时调用 RegisterComponents（运行时 no-op）。
 //
-// LOCATION NOTE: this lives under ingestion/ (not
-// ingestion/pipeline/) because pipeline.go imports the
-// chunker subpackage, and chunker imports the parent
-// ingestion package, which imports pipeline. A wire file
-// inside pipeline would close that cycle. By sitting
-// alongside pipeline under ingestion/, this package can
-// blank-import the component packages without going through
-// pipeline.
+// 位置说明：置于 ingestion/ 而非 pipeline/ 以避免 import 环（pipeline↔chunker↔ingestion）。
 package wire
 
 import (
@@ -47,12 +30,7 @@ import (
 	_ "ragflow/internal/ingestion/component/chunker" // 4 chunker variants
 )
 
-// RegisterComponents is the single bootstrap entry point that
-// guarantees every ingestion component is registered before the
-// pipeline runner resolves a name. It is a no-op at run time
-// (the actual registration happens via the package-level init()
-// triggered by the blank imports above); the function exists
-// only so cmd entries have a deterministic symbol to call.
+// RegisterComponents 为启动引导入口，保证流水线解析组件名前已全部注册；运行时 no-op。
 //
 // Usage from a cmd entry:
 //
@@ -74,3 +52,4 @@ func RegisterComponents() {
 	// packages above have already registered the components by
 	// the time this function is callable.
 }
+// wire/wire.go — ingestion 组件注册集中入口，避免 cmd 遗漏 blank import。

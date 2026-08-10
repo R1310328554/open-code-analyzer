@@ -16,11 +16,8 @@
 
 package schema
 
-// TokenizerFromUpstream is the upstream payload consumed by the
-// Tokenizer component. It mirrors
-// rag/flow/tokenizer/schema.py:TokenizerFromUpstream, including the
-// Pydantic `model_validator(mode="after")` invariant on
-// `output_format <-> payload` consistency.
+// TokenizerFromUpstream 是 Tokenizer 组件消费的上游载荷，
+// 含 output_format 与 payload 一致性的 model_validator 不变量。
 //
 // Wire shape (Pydantic):
 //
@@ -42,7 +39,7 @@ type TokenizerFromUpstream struct {
 	// (Python default = "").
 	Name string `json:"name,omitempty"`
 
-	// File is the optional upstream file descriptor.
+	// File 为可选上游文件描述符。
 	File *ChunkerFileMeta `json:"file,omitempty"`
 
 	// OutputFormat controls which of the *Result fields below is the
@@ -54,27 +51,24 @@ type TokenizerFromUpstream struct {
 	//   "chunks"   -> Chunks
 	OutputFormat PayloadFormat `json:"output_format,omitempty"`
 
-	// Chunks is the upstream chunk list. Set when OutputFormat == "chunks".
+	// Chunks 为上游 chunk 列表，OutputFormat == "chunks" 时使用。
 	Chunks []ChunkDoc `json:"chunks,omitempty"`
 
-	// JSONResult is the upstream structured JSON list (alias "json").
+	// JSONResult 为上游结构化 JSON 列表（别名 json）。
 	JSONResult []ChunkDoc `json:"json,omitempty"`
 
-	// MarkdownResult is the upstream markdown payload (alias "markdown").
+	// MarkdownResult 为上游 markdown 载荷（别名 markdown）。
 	MarkdownResult *string `json:"markdown,omitempty"`
 
-	// TextResult is the upstream plain-text payload (alias "text").
+	// TextResult 为上游纯文本载荷（别名 text）。
 	TextResult *string `json:"text,omitempty"`
 
-	// HTMLResult is the upstream HTML payload (alias "html").
+	// HTMLResult 为上游 HTML 载荷（别名 html）。
 	HTMLResult *string `json:"html,omitempty"`
 }
 
-// Validate enforces the Python model_validator invariants: when
-// OutputFormat is "markdown" / "text" / "html", the matching
-// *Result field must be non-nil (the Go equivalent of a non-None
-// string in Python); when OutputFormat is empty, nil, or any other
-// value, JSONResult (or Chunks) must be supplied.
+// Validate 强制 Python model_validator 不变量：markdown/text/html 时对应 *Result 非 nil；
+// 否则需 JSONResult 或 Chunks。
 //
 // The intent is to mirror the Python error messages verbatim where
 // possible. The Tokenizer's runtime contract treats an empty chunk
@@ -86,7 +80,7 @@ func (t *TokenizerFromUpstream) Validate() error {
 	}
 	switch t.OutputFormat {
 	case PayloadFormatChunks:
-		// Chunks may be nil (zero-length is valid). No-op.
+		// Chunks 可为 nil（零长度合法）。
 		return nil
 	case PayloadFormatMarkdown:
 		if t.MarkdownResult == nil {
@@ -110,8 +104,7 @@ func (t *TokenizerFromUpstream) Validate() error {
 	return nil
 }
 
-// TokenizerParam is the static configuration for the Tokenizer
-// component. Mirrors rag/flow/tokenizer/tokenizer.py:TokenizerParam.
+// TokenizerParam 是 Tokenizer 组件静态配置，镜像 Python TokenizerParam。
 //
 //	search_method:        list[str]   # ["full_text", "embedding"]
 //	filename_embd_weight: float       # 0.1
@@ -131,7 +124,7 @@ type TokenizerParam struct {
 	Fields []string `json:"fields"`
 }
 
-// Defaults returns the Python default TokenizerParam.
+// Defaults 返回 Python 默认 TokenizerParam。
 func (TokenizerParam) Defaults() TokenizerParam {
 	return TokenizerParam{
 		SearchMethod:       []string{"full_text", "embedding"},
@@ -140,9 +133,7 @@ func (TokenizerParam) Defaults() TokenizerParam {
 	}
 }
 
-// Validate enforces the SearchMethod enum. Fields and
-// FilenameEmbdWeight have no schema-level range checks in the Python
-// `check()`.
+// Validate 校验 SearchMethod 枚举；Fields 与 FilenameEmbdWeight 无 schema 级范围检查。
 func (p *TokenizerParam) Validate() error {
 	if len(p.SearchMethod) == 0 {
 		return errRequiredField{Field: "search_method"}
@@ -157,9 +148,7 @@ func (p *TokenizerParam) Validate() error {
 	return nil
 }
 
-// TokenizerOutputs is the result of invoking the Tokenizer component.
-// Mirrors what the Python component sets via `self.set_output(...)` at
-// rag/flow/tokenizer/tokenizer.py:_invoke.
+// TokenizerOutputs 是 Tokenizer 组件调用结果，镜像 Python set_output 契约。
 //
 // Always sets:
 //   - output_format = "chunks"
@@ -187,3 +176,4 @@ type TokenizerOutputs struct {
 	// message (Python: set_output("_ERROR", ...)).
 	Error string `json:"_ERROR,omitempty"`
 }
+// schema/tokenizer.go — Tokenizer 组件上下游 wire 类型。
