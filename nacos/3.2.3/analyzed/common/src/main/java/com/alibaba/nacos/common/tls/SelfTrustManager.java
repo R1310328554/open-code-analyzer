@@ -34,6 +34,9 @@ import java.security.cert.X509Certificate;
 import java.util.Collection;
 
 /**
+ * TLS 信任管理器工具：根据是否开启客户端认证及信任证书路径，
+ * 返回基于 JKS 的安全 {@link javax.net.ssl.TrustManager} 或信任所有证书的
+ * {@link #trustAll} 降级方案（构建失败时 WARN 并降级）。
  * A TrustManager tool returns the specified TrustManager.
  *
  * @author wangwei
@@ -43,6 +46,7 @@ public final class SelfTrustManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelfTrustManager.class);
     
     @SuppressWarnings("checkstyle:WhitespaceAround")
+    /** 信任所有服务端/客户端证书的 TrustManager 数组（无双向校验） */
     static TrustManager[] trustAll = new TrustManager[] {new X509TrustManager() {
         
         @Override
@@ -62,12 +66,12 @@ public final class SelfTrustManager {
     }};
     
     /**
-     * Returns the result of calling {@link #buildSecureTrustManager} if {@code needAuth} is enable and {@code
-     * trustCertPath} exists. Returns the {@link #trustAll} otherwise.
+     * 按配置选择 TrustManager：needAuth 且证书路径有效时加载 JKS 信任库；
+     * 否则或构建失败时返回 {@link #trustAll}。
      *
-     * @param needAuth      whether need client auth
-     * @param trustCertPath trust certificate path
-     * @return Array of {@link TrustManager }
+     * @param needAuth      是否启用客户端/server 证书校验
+     * @param trustCertPath 信任根/链证书文件路径
+     * @return TrustManager 数组
      */
     public static TrustManager[] trustManager(boolean needAuth, String trustCertPath) {
         if (needAuth) {
@@ -82,6 +86,7 @@ public final class SelfTrustManager {
         }
     }
     
+    /** 从 X.509 证书文件构建 JKS TrustManagerFactory */
     private static TrustManager[] buildSecureTrustManager(String trustCertPath)
         throws SSLException {
         TrustManagerFactory selfTmf;

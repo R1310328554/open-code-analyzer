@@ -17,6 +17,8 @@
 package com.alibaba.nacos.common.task;
 
 /**
+ * Nacos 通用任务接口：所有延迟任务与即时任务均实现此接口，
+ * 由任务执行引擎在调度前调用 {@link #shouldProcess()} 判断是否到达执行条件。
  * Nacos task.
  *
  * @author xiweng.yy
@@ -24,9 +26,9 @@ package com.alibaba.nacos.common.task;
 public interface NacosTask {
     
     /**
-     * Judge Whether this nacos task should do.
+     * 判断当前任务是否满足执行条件（如延迟间隔已到）。
      *
-     * @return true means the nacos task should be done, otherwise false
+     * @return true 表示应执行，false 表示继续等待
      */
     boolean shouldProcess();
 }

@@ -21,6 +21,9 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 
 /**
+ * 客户端 {@link SSLContext} 构建工具：读取 {@link TlsSystemConfig} 中的 TLS 开关、
+ * 客户端认证及信任证书路径，委托 {@link SelfTrustManager} 初始化 TLS 协议上下文。
+ * 当前仅支持客户端侧；下方示例展示无认证与单向认证的系统属性配置方式。
  * Utils for build {@link SSLContext}.
  *
  * <p>Currently only supports client-side
@@ -44,15 +47,15 @@ import java.security.NoSuchAlgorithmException;
 public final class TlsHelper {
     
     /**
-     * Returns a {@link org.apache.http.ssl.SSLContexts}.
+     * 构建 TLS {@link SSLContext}，TrustManager 由 {@link SelfTrustManager#trustManager} 提供。
      *
-     * <p>For example</p>
+     * <p>示例：</p>
      * <code>HttpsURLConnection.setDefaultSSLSocketFactory(TlsHelper.buildSslContext(true).getSocketFactory());</code>
      *
-     * @param forClient whether for client
-     * @return {@link SSLContext}
-     * @throws NoSuchAlgorithmException Not support the specified algorithm
-     * @throws KeyManagementException   KeyManagement exception
+     * @param forClient 是否为客户端场景（当前实现均按客户端配置）
+     * @return 已初始化的 SSLContext
+     * @throws NoSuchAlgorithmException 不支持的 TLS 算法
+     * @throws KeyManagementException   密钥管理初始化失败
      */
     public static SSLContext buildSslContext(boolean forClient)
         throws NoSuchAlgorithmException, KeyManagementException {

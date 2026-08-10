@@ -31,28 +31,43 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
+ * Nacos 延迟任务执行引擎：单线程定时扫描 {@link #tasks} 队列，
+ * 对满足 {@link com.alibaba.nacos.common.task.AbstractDelayTask#shouldProcess()} 的任务
+ * 调用对应 {@link com.alibaba.nacos.common.task.NacosTaskProcessor}；失败或异常时
+ * 更新 lastProcessTime 并重新入队。同 key 新任务通过 {@link AbstractDelayTask#merge} 合并。
  * Nacos delay task execute engine.
  *
  * @author xiweng.yy
  */
 public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<AbstractDelayTask> {
     
+    /** 定时扫描并处理延迟任务的调度线程池 */
     private final ScheduledExecutorService processingExecutor;
     
+    /** 任务 key → 延迟任务实例的并发存储 */
     protected final ConcurrentHashMap<Object, AbstractDelayTask> tasks;
     
+    /** 保护 tasks 读写与 size 统计的可重入锁 */
     protected final ReentrantLock lock = new ReentrantLock();
     
+    /** 使用默认容量 32、扫描间隔 100ms 构造引擎 */
     public NacosDelayTaskExecuteEngine(String name) {
         this(name, null);
     }
     
+    /** 指定日志 Logger，其余参数同双参 name 构造 */
     public NacosDelayTaskExecuteEngine(String name, Logger logger) {
         this(name, 32, logger, 100L);
     }
     
-    public NacosDelayTaskExecuteEngine(String name, int initCapacity, Logger logger,
-        long processInterval) {
+    /**
+     * 完整构造：初始化任务 map、单线程调度器，按 processInterval 毫秒周期执行扫描。
+     *
+     * @param name            线程工厂名称前缀
+     * @param initCapacity    任务 map 初始容量
+     * @param logger          日志实例
+     * @param processInterval 扫描间隔（毫秒）
+     */
         super(logger);
         tasks = new ConcurrentHashMap<>(initCapacity);
         processingExecutor =
@@ -62,6 +77,7 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
                 TimeUnit.MILLISECONDS);
     }
     
+    /** 当前队列中延迟任务数量（加锁统计） */
     @Override
     public int size() {
         lock.lock();
@@ -72,6 +88,7 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
         }
     }
     
+    /** 队列是否为空 */
     @Override
     public boolean isEmpty() {
         lock.lock();
@@ -82,6 +99,7 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
         }
     }
     
+    /** 移除并返回可处理的任务；未到执行时间则返回 null */
     @Override
     public AbstractDelayTask removeTask(Object key) {
         lock.lock();
@@ -97,6 +115,7 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
         }
     }
     
+    /** 返回当前所有任务 key 的快照集合 */
     @Override
     public Collection<Object> getAllTaskKeys() {
         Collection<Object> keys = new HashSet<>();
@@ -109,12 +128,14 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
         return keys;
     }
     
+    /** 清空任务并关闭调度线程池 */
     @Override
     public void shutdown() throws NacosException {
         tasks.clear();
         processingExecutor.shutdown();
     }
     
+    /** 添加或合并延迟任务：同 key 存在时调用 merge 后覆盖 */
     @Override
     public void addTask(Object key, AbstractDelayTask newTask) {
         lock.lock();
@@ -129,9 +150,8 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
         }
     }
     
-    /**
-     * process tasks in execute engine.
-     */
+    /** 扫描所有 key，取出可处理任务并委托处理器；失败则重试入队 */
+
     protected void processTasks() {
         Collection<Object> keys = getAllTaskKeys();
         for (Object taskKey : keys) {
@@ -141,7 +161,7 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
             }
             NacosTaskProcessor processor = getProcessor(taskKey);
             try {
-                // ReAdd task if process failed
+                // 处理失败时重新入队等待下次调度
                 if (!processor.process(task)) {
                     retryFailedTask(taskKey, task);
                 }
@@ -152,11 +172,13 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
         }
     }
     
+    /** 更新 lastProcessTime 后将失败任务重新加入队列 */
     private void retryFailedTask(Object key, AbstractDelayTask task) {
         task.setLastProcessTime(System.currentTimeMillis());
         addTask(key, task);
     }
     
+    /** 定时触发的任务扫描 Runnable，异常仅记录日志不中断调度 */
     private class ProcessRunnable implements Runnable {
         
         @Override

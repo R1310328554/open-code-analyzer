@@ -36,6 +36,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * TLS 证书文件变更监听器：单例模式，定时计算监听文件的 MD5，
+ * 变化时回调 {@link FileChangeListener#onChanged} 以热重载 SSL 上下文。
+ * 因需兼容 JDK 1.6 且避免 core 模块依赖，未使用 WatchFileCenter。
  * Certificate file update monitoring
  *
  * <p>Considering that the current client needs to support jdk 1.6 and module dependencies ,
@@ -47,34 +50,42 @@ public final class TlsFileWatcher {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(TlsFileWatcher.class);
     
+    /** 是否已启动定时扫描任务 */
     private AtomicBoolean started = new AtomicBoolean(false);
     
+    /** 文件 MD5 检查间隔（分钟），来自 {@link TlsSystemConfig} */
     private final int checkInterval = TlsSystemConfig.tlsFileCheckInterval;
     
+    /** 文件路径 → 上次已知 MD5 摘要 */
     private Map<String, String> fileMd5Map = new ConcurrentHashMap<>();
     
+    /** 监听路径 → 变更回调 */
     private ConcurrentHashMap<String, FileChangeListener> watchFilesMap = new ConcurrentHashMap<>();
     
+    /** 托管单线程调度器，执行周期性 MD5 比对 */
     private final ScheduledExecutorService service = ExecutorFactory.Managed
         .newSingleScheduledExecutorService(ClassUtils.getCanonicalName(TlsFileWatcher.class),
             new NameThreadFactory("com.alibaba.nacos.core.common.tls"));
     
+    /** 单例实例，构造时自动 start */
     private static TlsFileWatcher tlsFileWatcher = new TlsFileWatcher();
     
+    /** 私有构造，注册后立即启动监听 */
     private TlsFileWatcher() {
         start();
     }
     
+    /** 获取全局单例 */
     public static TlsFileWatcher getInstance() {
         return tlsFileWatcher;
     }
     
     /**
-     * Add file change listener for specified path.
+     * 为存在的证书文件注册变更监听，并记录初始 MD5。
      *
-     * @param fileChangeListener listener
-     * @param filePaths          file paths
-     * @throws IOException If an I/O error occurs
+     * @param fileChangeListener 变更回调
+     * @param filePaths          一个或多个证书文件路径
+     * @throws IOException 读取文件计算 MD5 失败时抛出
      */
     public void addFileChangeListener(FileChangeListener fileChangeListener, String... filePaths)
         throws IOException {
@@ -93,9 +104,8 @@ public final class TlsFileWatcher {
         }
     }
     
-    /**
-     * start file watch task. Notify when the MD5 of file changed
-     */
+    /** 启动定时任务：MD5 变化时触发 listener 并更新缓存 */
+
     public void start() {
         if (started.compareAndSet(false, true)) {
             service.scheduleAtFixedRate(() -> {
@@ -125,12 +135,13 @@ public final class TlsFileWatcher {
         }
     }
     
+    /** 证书文件内容变更时的回调接口 */
     public interface FileChangeListener {
         
         /**
-         * listener onChanged event.
+         * 文件 MD5 变更后调用，通常用于重载 SSLContext。
          *
-         * @param filePath Path of changed file
+         * @param filePath 发生变更的文件路径
          */
         void onChanged(String filePath);
     }

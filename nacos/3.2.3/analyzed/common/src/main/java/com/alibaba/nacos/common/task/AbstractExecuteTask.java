@@ -17,14 +17,19 @@
 package com.alibaba.nacos.common.task;
 
 /**
+ * 应立即执行的抽象任务基类：实现 {@link NacosTask} 与 {@link Runnable}，
+ * {@link #shouldProcess()} 恒为 true，由 {@link com.alibaba.nacos.common.task.engine.NacosExecuteTaskExecuteEngine}
+ * 分派到 {@link com.alibaba.nacos.common.task.engine.TaskExecuteWorker} 线程池即时运行。
  * Abstract task which should be executed immediately.
  *
  * @author xiweng.yy
  */
 public abstract class AbstractExecuteTask implements NacosTask, Runnable {
     
+    /** 部分子类复用的默认间隔常量：3000 毫秒 */
     protected static final long INTERVAL = 3000L;
     
+    /** 即时任务始终允许处理 */
     @Override
     public boolean shouldProcess() {
         return true;

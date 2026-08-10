@@ -17,6 +17,9 @@
 package com.alibaba.nacos.common.task;
 
 /**
+ * Nacos 任务处理器接口：按任务 key 注册到
+ * {@link com.alibaba.nacos.common.task.engine.NacosTaskExecuteEngine}，
+ * 引擎取出任务后委托 {@link #process(NacosTask)} 执行业务逻辑。
  * Task processor.
  *
  * @author Nacos
@@ -24,10 +27,10 @@ package com.alibaba.nacos.common.task;
 public interface NacosTaskProcessor {
     
     /**
-     * Process task.
+     * 处理单个 Nacos 任务。
      *
-     * @param task     task.
-     * @return process task result.
+     * @param task 待处理任务实例
+     * @return true 表示处理成功，false 时延迟引擎会重试入队
      */
     boolean process(NacosTask task);
 }

@@ -23,6 +23,9 @@ import com.alibaba.nacos.common.task.NacosTaskProcessor;
 import java.util.Collection;
 
 /**
+ * Nacos 任务执行引擎接口：统一管理处理器注册、任务入队/出队及生命周期。
+ * 实现类包括 {@link NacosDelayTaskExecuteEngine}（延迟合并）与
+ * {@link NacosExecuteTaskExecuteEngine}（即时分片）。继承 {@link com.alibaba.nacos.common.lifecycle.Closeable} 支持 shutdown。
  * Nacos task execute engine.
  *
  * @author xiweng.yy
@@ -30,77 +33,76 @@ import java.util.Collection;
 public interface NacosTaskExecuteEngine<T extends NacosTask> extends Closeable {
     
     /**
-     * Get Task size in execute engine.
+     * 获取引擎中当前待处理（或排队）任务数量。
      *
-     * @return size of task
+     * @return 任务数量
      */
     int size();
     
     /**
-     * Whether the execute engine is empty.
+     * 判断引擎是否无待处理任务。
      *
-     * @return true if the execute engine has no task to do, otherwise false
+     * @return 无任务为 true
      */
     boolean isEmpty();
     
     /**
-     * Add task processor {@link NacosTaskProcessor} for execute engine.
+     * 为指定任务 key 注册 {@link NacosTaskProcessor}。
      *
-     * @param key           key of task
-     * @param taskProcessor task processor
+     * @param key           任务标识
+     * @param taskProcessor 处理器实例
      */
     void addProcessor(Object key, NacosTaskProcessor taskProcessor);
     
     /**
-     * Remove task processor {@link NacosTaskProcessor} form execute engine for key.
+     * 移除指定 key 的任务处理器。
      *
-     * @param key key of task
+     * @param key 任务标识
      */
     void removeProcessor(Object key);
     
     /**
-     * Try to get {@link NacosTaskProcessor} by key, if non-exist, will return default processor.
+     * 按 key 获取处理器；不存在时返回默认处理器。
      *
-     * @param key key of task
-     * @return task processor for task key or default processor if task processor for task key non-exist
+     * @param key 任务标识
+     * @return 匹配的处理器或默认处理器
      */
     NacosTaskProcessor getProcessor(Object key);
     
     /**
-     * Get all processor key.
+     * 返回所有已注册处理器的 key 集合。
      *
-     * @return collection of processors
+     * @return 处理器 key 集合
      */
     Collection<Object> getAllProcessorKey();
     
     /**
-     * Set default task processor. If do not find task processor by task key, use this default processor to process
-     * task.
+     * 设置默认处理器：key 无专属处理器时使用。
      *
-     * @param defaultTaskProcessor default task processor
+     * @param defaultTaskProcessor 默认处理器
      */
     void setDefaultTaskProcessor(NacosTaskProcessor defaultTaskProcessor);
     
     /**
-     * Add task into execute pool.
+     * 向引擎提交任务。
      *
-     * @param key  key of task
-     * @param task task
+     * @param key  任务标识
+     * @param task 任务实例
      */
     void addTask(Object key, T task);
     
     /**
-     * Remove task.
+     * 移除并返回指定 key 的任务（延迟引擎支持，即时引擎可能抛异常）。
      *
-     * @param key key of task
-     * @return nacos task
+     * @param key 任务标识
+     * @return 被移除的任务，或 null
      */
     T removeTask(Object key);
     
     /**
-     * Get all task keys.
+     * 获取当前所有任务 key（部分实现不支持）。
      *
-     * @return collection of task keys.
+     * @return 任务 key 集合
      */
     Collection<Object> getAllTaskKeys();
 }
