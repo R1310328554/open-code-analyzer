@@ -24,11 +24,10 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * A {@link DnsQueryLifecycleObserverFactory} that enables detailed logging in the {@link DnsNameResolver}.
+ * 为 {@link DnsNameResolver} 提供详细 DNS 查询生命周期日志的 {@link DnsQueryLifecycleObserverFactory}。
  * <p>
- * When {@linkplain DnsNameResolverBuilder#dnsQueryLifecycleObserverFactory(DnsQueryLifecycleObserverFactory)
- * configured on the resolver}, detailed trace information will be generated so that it is easier to understand the
- * cause of resolution failure.
+ * 在 {@linkplain DnsNameResolverBuilder#dnsQueryLifecycleObserverFactory(DnsQueryLifecycleObserverFactory)
+ * 解析器上配置} 后，将输出跟踪信息以便排查解析失败原因。
  */
 public final class LoggingDnsQueryLifeCycleObserverFactory implements DnsQueryLifecycleObserverFactory {
     private static final InternalLogger DEFAULT_LOGGER =
@@ -37,14 +36,14 @@ public final class LoggingDnsQueryLifeCycleObserverFactory implements DnsQueryLi
     private final InternalLogLevel level;
 
     /**
-     * Create {@link DnsQueryLifecycleObserver} instances that log events at the default {@link LogLevel#DEBUG} level.
+     * 创建以默认 {@link LogLevel#DEBUG} 级别记录事件的 {@link DnsQueryLifecycleObserver}。
      */
     public LoggingDnsQueryLifeCycleObserverFactory() {
         this(LogLevel.DEBUG);
     }
 
     /**
-     * Create {@link DnsQueryLifecycleObserver} instances that log events at the given log level.
+     * 创建以指定日志级别记录事件的 {@link DnsQueryLifecycleObserver}。
      * @param level The log level to use for logging resolver events.
      */
     public LoggingDnsQueryLifeCycleObserverFactory(LogLevel level) {
@@ -53,8 +52,7 @@ public final class LoggingDnsQueryLifeCycleObserverFactory implements DnsQueryLi
     }
 
     /**
-     * Create {@link DnsQueryLifecycleObserver} instances that log events to a logger with the given class context,
-     * at the given log level.
+     * 使用指定类上下文 logger、给定日志级别创建 {@link DnsQueryLifecycleObserver}。
      * @param classContext The class context for the logger to use.
      * @param level The log level to use for logging resolver events.
      */
@@ -64,8 +62,7 @@ public final class LoggingDnsQueryLifeCycleObserverFactory implements DnsQueryLi
     }
 
     /**
-     * Create {@link DnsQueryLifecycleObserver} instances that log events to a logger with the given name context,
-     * at the given log level.
+     * 使用指定名称 logger、给定日志级别创建 {@link DnsQueryLifecycleObserver}。
      * @param name The name for the logger to use.
      * @param level The log level to use for logging resolver events.
      */

@@ -17,8 +17,12 @@ package io.netty.resolver.dns;
 
 import io.netty.channel.EventLoop;
 
+/**
+ * 空实现的 {@link DnsCnameCache}，从不缓存 CNAME 映射。
+ */
 public final class NoopDnsCnameCache implements DnsCnameCache {
 
+    /** 单例实例。 */
     public static final NoopDnsCnameCache INSTANCE = new NoopDnsCnameCache();
 
     private NoopDnsCnameCache() { }
@@ -30,12 +34,12 @@ public final class NoopDnsCnameCache implements DnsCnameCache {
 
     @Override
     public void cache(String hostname, String cname, long originalTtl, EventLoop loop) {
-        // NOOP
+        // 不缓存
     }
 
     @Override
     public void clear() {
-        // NOOP
+        // 无操作
     }
 
     @Override

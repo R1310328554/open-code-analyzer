@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Utility methods related to {@link DnsServerAddressStreamProvider}.
+ * {@link DnsServerAddressStreamProvider} 相关工具方法。
  */
 public final class DnsServerAddressStreamProviders {
 
@@ -41,8 +41,7 @@ public final class DnsServerAddressStreamProviders {
         Constructor<? extends DnsServerAddressStreamProvider> constructor = null;
         if (PlatformDependent.isOsx()) {
             try {
-                // As MacOSDnsServerAddressStreamProvider is contained in another jar which depends on this jar
-                // we use reflection to use it if its on the classpath.
+                // MacOS 实现在独立 jar 中，通过反射加载以避免硬依赖
                 Object maybeProvider = AccessController.doPrivileged(new PrivilegedAction<Object>() {
                     @Override
                     public Object run() {
@@ -92,9 +91,8 @@ public final class DnsServerAddressStreamProviders {
     }
 
     /**
-     * A {@link DnsServerAddressStreamProvider} which inherits the DNS servers from your local host's configuration.
-     * <p>
-     * Note that only macOS and Linux are currently supported.
+     * 继承本机 DNS 服务器配置的 {@link DnsServerAddressStreamProvider}。
+     * <p>当前仅支持 macOS 与 Linux。</p>
      * @return A {@link DnsServerAddressStreamProvider} which inherits the DNS servers from your local host's
      * configuration.
      */
@@ -109,14 +107,14 @@ public final class DnsServerAddressStreamProviders {
         return unixDefault();
     }
 
+    /** 返回 Unix 风格默认 provider（解析 resolv.conf 等）。 */
     public static DnsServerAddressStreamProvider unixDefault() {
         return DefaultProviderHolder.DEFAULT_DNS_SERVER_ADDRESS_STREAM_PROVIDER;
     }
 
-    // We use a Holder class to only initialize DEFAULT_DNS_SERVER_ADDRESS_STREAM_PROVIDER if we really
-    // need it.
+    // 延迟初始化默认 provider，仅在需要时加载
     private static final class DefaultProviderHolder {
-        // We use 5 minutes which is the same as what OpenJDK is using in sun.net.dns.ResolverConfigurationImpl.
+        // 与 OpenJDK sun.net.dns.ResolverConfigurationImpl 相同，每 5 分钟刷新
         private static final long REFRESH_INTERVAL = TimeUnit.MINUTES.toNanos(5);
 
         // TODO(scott): how is this done on Windows? This may require a JNI call to GetNetworkParams
@@ -131,8 +129,7 @@ public final class DnsServerAddressStreamProviders {
                         long last = lastRefresh.get();
                         DnsServerAddressStreamProvider current = currentProvider;
                         if (System.nanoTime() - last > REFRESH_INTERVAL) {
-                            // This is slightly racy which means it will be possible still use the old configuration
-                            // for a small amount of time, but that's ok.
+                            // 存在轻微竞态，旧配置可能仍被短暂使用
                             if (lastRefresh.compareAndSet(last, System.nanoTime())) {
                                 current = currentProvider = provider();
                             }
@@ -141,8 +138,7 @@ public final class DnsServerAddressStreamProviders {
                     }
 
                     private DnsServerAddressStreamProvider provider() {
-                        // If on windows just use the DefaultDnsServerAddressStreamProvider.INSTANCE as otherwise
-                        // we will log some error which may be confusing.
+                        // Windows 直接使用默认 provider，避免无意义的错误日志
                         return PlatformDependent.isWindows() ? DefaultDnsServerAddressStreamProvider.INSTANCE :
                                 UnixResolverDnsServerAddressStreamProvider.parseSilently();
                     }

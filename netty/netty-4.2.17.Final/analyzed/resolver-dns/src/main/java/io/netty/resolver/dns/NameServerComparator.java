@@ -24,20 +24,20 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Special {@link Comparator} implementation to sort the nameservers to use when follow redirects.
- *
- * This implementation follows all the semantics listed in the
- * <a href="https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html">Comparator apidocs</a>
- * with the limitation that {@link InetSocketAddress#equals(Object)} will not result in the same return value as
- * {@link #compare(InetSocketAddress, InetSocketAddress)}. This is completely fine as this should only be used
- * to sort {@link List}s.
+ * 跟随 DNS 重定向时对 nameserver 排序的专用 {@link Comparator}。
+ * <p>遵循 {@link Comparator} 语义，但 {@link InetSocketAddress#equals(Object)} 与
+ * {@link #compare(InetSocketAddress, InetSocketAddress)} 返回值可能不一致；仅用于排序 {@link List}。</p>
  */
 public final class NameServerComparator implements Comparator<InetSocketAddress>, Serializable {
 
     private static final long serialVersionUID = 8372151874317596185L;
 
+    /** 优先选用的 IP 地址类型（如 IPv4/IPv6）。 */
     private final Class<? extends InetAddress> preferredAddressType;
 
+    /**
+     * @param preferredAddressType 优先地址族对应的 {@link InetAddress} 子类
+     */
     public NameServerComparator(Class<? extends InetAddress> preferredAddressType) {
         this.preferredAddressType = ObjectUtil.checkNotNull(preferredAddressType, "preferredAddressType");
     }

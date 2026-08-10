@@ -18,14 +18,13 @@ package io.netty.resolver.dns;
 import java.util.List;
 
 /**
- * A {@link DnsServerAddressStreamProvider} which iterates through a collection of
- * {@link DnsServerAddressStreamProvider} until the first non-{@code null} result is found.
+ * 组合多个 {@link DnsServerAddressStreamProvider}，按顺序查询直至首个非 {@code null} 结果。
  */
 public final class MultiDnsServerAddressStreamProvider implements DnsServerAddressStreamProvider {
     private final DnsServerAddressStreamProvider[] providers;
 
     /**
-     * Create a new instance.
+     * 使用给定 provider 列表构造实例；按列表顺序依次查询。
      * @param providers The providers to use for DNS resolution. They will be queried in order.
      */
     public MultiDnsServerAddressStreamProvider(List<DnsServerAddressStreamProvider> providers) {
@@ -33,7 +32,7 @@ public final class MultiDnsServerAddressStreamProvider implements DnsServerAddre
     }
 
     /**
-     * Create a new instance.
+     * 使用给定 provider 数组构造实例；按数组顺序依次查询。
      * @param providers The providers to use for DNS resolution. They will be queried in order.
      */
     public MultiDnsServerAddressStreamProvider(DnsServerAddressStreamProvider... providers) {
@@ -42,6 +41,7 @@ public final class MultiDnsServerAddressStreamProvider implements DnsServerAddre
 
     @Override
     public DnsServerAddressStream nameServerAddressStream(String hostname) {
+        // 依次委托各 provider，返回第一个非 null 的地址流
         for (DnsServerAddressStreamProvider provider : providers) {
             DnsServerAddressStream stream = provider.nameServerAddressStream(hostname);
             if (stream != null) {

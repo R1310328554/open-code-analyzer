@@ -19,25 +19,25 @@ package io.netty.resolver.dns;
 import java.net.InetSocketAddress;
 
 /**
- * An infinite stream of DNS server addresses.
+ * 无限循环的 DNS 服务器地址流。
+ * <p>每次解析可从中依次取出 nameserver 地址，耗尽后按实现策略重复或终止。</p>
  */
 public interface DnsServerAddressStream {
     /**
-     * Retrieves the next DNS server address from the stream.
+     * 从流中取出下一个 DNS 服务器地址。
      */
     InetSocketAddress next();
 
     /**
-     * Get the number of times {@link #next()} will return a distinct element before repeating or terminating.
+     * 返回在重复或终止前，{@link #next()} 能返回的不同元素个数。
      * @return the number of times {@link #next()} will return a distinct element before repeating or terminating.
      */
     int size();
 
     /**
-     * Duplicate this object. The result of this should be able to be independently iterated over via {@link #next()}.
+     * 复制本对象，副本可独立通过 {@link #next()} 迭代。
      * <p>
-     * Note that {@link #clone()} isn't used because it may make sense for some implementations to have the following
-     * relationship {@code x.duplicate() == x}.
+     * 不使用 {@link #clone()}，因部分实现可能满足 {@code x.duplicate() == x}。
      * @return A duplicate of this object.
      */
     DnsServerAddressStream duplicate();

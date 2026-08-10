@@ -29,11 +29,19 @@ import java.util.concurrent.ConcurrentMap;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 // FIXME(trustin): Find a better name and move it to the 'resolver' module.
+/**
+ * 合并同一主机名并发解析请求的 {@link NameResolver} 装饰器。
+ * <p>若某主机名已在解析中，后续请求复用同一 {@link Promise}，避免重复 DNS 查询。</p>
+ */
 final class InflightNameResolver<T> implements NameResolver<T> {
 
+    /** 执行 resolve 回调的 EventExecutor。 */
     private final EventExecutor executor;
+    /** 被装饰的实际解析器。 */
     private final NameResolver<T> delegate;
+    /** 进行中的单地址 resolve，键为主机名。 */
     private final ConcurrentMap<String, Promise<T>> resolvesInProgress;
+    /** 进行中的 resolveAll，键为主机名。 */
     private final ConcurrentMap<String, Promise<List<T>>> resolveAllsInProgress;
 
     InflightNameResolver(EventExecutor executor, NameResolver<T> delegate,
@@ -77,7 +85,7 @@ final class InflightNameResolver<T> implements NameResolver<T> {
 
         final Promise<U> earlyPromise = resolveMap.putIfAbsent(inetHost, promise);
         if (earlyPromise != null) {
-            // Name resolution for the specified inetHost is in progress already.
+            // 该主机名已有解析在进行，复用已有 Promise
             if (earlyPromise.isDone()) {
                 transferResult(earlyPromise, promise);
             } else {

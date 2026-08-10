@@ -22,7 +22,9 @@ import io.netty.handler.codec.dns.DnsResponseCode;
 import java.net.InetSocketAddress;
 import java.util.List;
 
+/** 不执行任何操作的 {@link DnsQueryLifecycleObserver} 单例实现。 */
 final class NoopDnsQueryLifecycleObserver implements DnsQueryLifecycleObserver {
+    /** 共享单例。 */
     static final NoopDnsQueryLifecycleObserver INSTANCE = new NoopDnsQueryLifecycleObserver();
 
     private NoopDnsQueryLifecycleObserver() {

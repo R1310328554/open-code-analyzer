@@ -26,10 +26,13 @@ import java.util.List;
 
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/** 将 DNS 查询生命周期事件写入日志的 {@link DnsQueryLifecycleObserver} 实现。 */
 final class LoggingDnsQueryLifecycleObserver implements DnsQueryLifecycleObserver {
     private final InternalLogger logger;
     private final InternalLogLevel level;
+    /** 当前查询对应的 DNS 问题。 */
     private final DnsQuestion question;
+    /** 查询已写入的 nameserver 地址。 */
     private InetSocketAddress dnsServerAddress;
 
     LoggingDnsQueryLifecycleObserver(DnsQuestion question, InternalLogger logger, InternalLogLevel level) {
@@ -83,5 +86,6 @@ final class LoggingDnsQueryLifecycleObserver implements DnsQueryLifecycleObserve
 
     @Override
     public void querySucceed() {
+        // 成功时不额外打日志，避免噪声
     }
 }

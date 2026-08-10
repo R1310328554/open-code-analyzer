@@ -16,15 +16,15 @@
 package io.netty.resolver.dns;
 
 /**
- * Provides an opportunity to override which {@link DnsServerAddressStream} is used to resolve a specific hostname.
+ * 为指定主机名选择 {@link DnsServerAddressStream} 的扩展点。
  * <p>
- * For example this can be used to represent <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> and
+ * 可用于映射 <a href="https://linux.die.net/man/5/resolver">/etc/resolv.conf</a> 与
  * <a href="https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man5/resolver.5.html">
- * /etc/resolver</a>.
+ * /etc/resolver</a> 等系统配置。
  */
 public interface DnsServerAddressStreamProvider {
     /**
-     * Ask this provider for the name servers to query for {@code hostname}.
+     * 返回解析 {@code hostname} 时应使用的 nameserver 地址流。
      * @param hostname The hostname for which to lookup the DNS server addressed to use.
      *                 If this is the final {@link DnsServerAddressStreamProvider} to be queried then generally empty
      *                 string or {@code '.'} correspond to the default {@link DnsServerAddressStream}.

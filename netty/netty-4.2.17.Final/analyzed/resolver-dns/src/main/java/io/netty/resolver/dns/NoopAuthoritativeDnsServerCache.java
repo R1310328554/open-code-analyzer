@@ -20,9 +20,10 @@ import io.netty.channel.EventLoop;
 import java.net.InetSocketAddress;
 
 /**
- * A noop {@link AuthoritativeDnsServerCache} that actually never caches anything.
+ * 空实现的 {@link AuthoritativeDnsServerCache}，从不缓存任何权威 nameserver。
  */
 public final class NoopAuthoritativeDnsServerCache implements AuthoritativeDnsServerCache {
+    /** 单例实例。 */
     public static final NoopAuthoritativeDnsServerCache INSTANCE = new NoopAuthoritativeDnsServerCache();
 
     private NoopAuthoritativeDnsServerCache() { }
@@ -34,12 +35,12 @@ public final class NoopAuthoritativeDnsServerCache implements AuthoritativeDnsSe
 
     @Override
     public void cache(String hostname, InetSocketAddress address, long originalTtl, EventLoop loop) {
-        // NOOP
+        // 不缓存
     }
 
     @Override
     public void clear() {
-        // NOOP
+        // 无操作
     }
 
     @Override

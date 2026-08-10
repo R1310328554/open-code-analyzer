@@ -18,17 +18,14 @@ package io.netty.resolver.dns;
 import java.net.InetSocketAddress;
 
 /**
- * An infinite stream of DNS server addresses, that requests feedback to be returned to it.
- *
- * If query is successful timing information is provided, else a failure notification is given.
+ * 支持查询反馈的 DNS 服务器地址流。
+ * <p>查询成功时上报耗时，失败时上报原因，供 {@link #next()} 优选服务器。</p>
  */
 public interface DnsServerResponseFeedbackAddressStream extends DnsServerAddressStream {
 
     /**
-     * A way to provide success feedback to {@link DnsServerAddressStream} so that {@link #next()} can be tuned
-     * to return the best performing DNS server address
-     *
-     * NOTE: This is called regardless of the RCode returned by the DNS server
+     * 向地址流反馈一次成功查询，以便调整后续 {@link #next()} 的服务器选择。
+     * <p>无论 DNS 响应 RCode 如何均会调用。</p>
      *
      * @param address The address returned by {@link #next()} that feedback needs to be applied to
      * @param queryResponseTimeNanos The response time of a query against the given DNS server
@@ -36,8 +33,7 @@ public interface DnsServerResponseFeedbackAddressStream extends DnsServerAddress
     void feedbackSuccess(InetSocketAddress address, long queryResponseTimeNanos);
 
     /**
-     * A way to provide failure feedback to {@link DnsServerAddressStream} so that {@link #next()} cab be tuned
-     * to return the best performing DNS server address
+     * 向地址流反馈一次失败查询，以便按失败类型调整 {@link #next()} 的服务器选择。
      *
      * @param address The address returned by {@link #next()} that feedback needs to be applied to
      * @param failureCause The reason the DNS query failed, can be used to penalize failures differently

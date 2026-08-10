@@ -25,16 +25,14 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Provides an infinite sequence of DNS server addresses to {@link DnsNameResolver}.
+ * 为 {@link DnsNameResolver} 提供无限循环的 DNS 服务器地址序列。
  */
 @SuppressWarnings("IteratorNextCanNotThrowNoSuchElementException")
 public abstract class DnsServerAddresses {
     /**
      * @deprecated Use {@link DefaultDnsServerAddressStreamProvider#defaultAddressList()}.
      * <p>
-     * Returns the list of the system DNS server addresses. If it failed to retrieve the list of the system DNS server
-     * addresses from the environment, it will return {@code "8.8.8.8"} and {@code "8.8.4.4"}, the addresses of the
-     * Google public DNS servers.
+     * 返回系统 DNS 服务器地址列表；若读取失败则回退到 Google 公共 DNS（8.8.8.8、8.8.4.4）。
      */
     @Deprecated
     public static List<InetSocketAddress> defaultAddressList() {
@@ -44,11 +42,9 @@ public abstract class DnsServerAddresses {
     /**
      * @deprecated Use {@link DefaultDnsServerAddressStreamProvider#defaultAddresses()}.
      * <p>
-     * Returns the {@link DnsServerAddresses} that yields the system DNS server addresses sequentially. If it failed to
-     * retrieve the list of the system DNS server addresses from the environment, it will use {@code "8.8.8.8"} and
-     * {@code "8.8.4.4"}, the addresses of the Google public DNS servers.
+     * 按顺序返回系统 DNS 服务器地址；读取失败时使用 Google 公共 DNS。
      * <p>
-     * This method has the same effect with the following code:
+     * 等价于：
      * <pre>
      * DnsServerAddresses.sequential(DnsServerAddresses.defaultAddressList());
      * </pre>
@@ -60,16 +56,14 @@ public abstract class DnsServerAddresses {
     }
 
     /**
-     * Returns the {@link DnsServerAddresses} that yields the specified {@code addresses} sequentially. Once the
-     * last address is yielded, it will start again from the first address.
+     * 按顺序循环返回指定 {@code addresses}；到达末尾后从首个地址重新开始。
      */
     public static DnsServerAddresses sequential(Iterable<? extends InetSocketAddress> addresses) {
         return sequential0(sanitize(addresses));
     }
 
     /**
-     * Returns the {@link DnsServerAddresses} that yields the specified {@code addresses} sequentially. Once the
-     * last address is yielded, it will start again from the first address.
+     * 按顺序循环返回指定 {@code addresses}；到达末尾后从首个地址重新开始。
      */
     public static DnsServerAddresses sequential(InetSocketAddress... addresses) {
         return sequential0(sanitize(addresses));
@@ -89,16 +83,14 @@ public abstract class DnsServerAddresses {
     }
 
     /**
-     * Returns the {@link DnsServerAddresses} that yields the specified {@code address} in a shuffled order. Once all
-     * addresses are yielded, the addresses are shuffled again.
+     * 以随机顺序循环返回指定 {@code addresses}；一轮耗尽后重新洗牌。
      */
     public static DnsServerAddresses shuffled(Iterable<? extends InetSocketAddress> addresses) {
         return shuffled0(sanitize(addresses));
     }
 
     /**
-     * Returns the {@link DnsServerAddresses} that yields the specified {@code addresses} in a shuffled order. Once all
-     * addresses are yielded, the addresses are shuffled again.
+     * 以随机顺序循环返回指定 {@code addresses}；一轮耗尽后重新洗牌。
      */
     public static DnsServerAddresses shuffled(InetSocketAddress... addresses) {
         return shuffled0(sanitize(addresses));
@@ -118,20 +110,16 @@ public abstract class DnsServerAddresses {
     }
 
     /**
-     * Returns the {@link DnsServerAddresses} that yields the specified {@code addresses} in a rotational sequential
-     * order. It is similar to {@link #sequential(Iterable)}, but each {@link DnsServerAddressStream} starts from
-     * a different starting point.  For example, the first {@link #stream()} will start from the first address, the
-     * second one will start from the second address, and so on.
+     * 以轮转顺序返回 {@code addresses}：类似 {@link #sequential(Iterable)}，但每次 {@link #stream()}
+     * 的起始位置不同（第一次从首地址、第二次从次地址，依此类推）。
      */
     public static DnsServerAddresses rotational(Iterable<? extends InetSocketAddress> addresses) {
         return rotational0(sanitize(addresses));
     }
 
     /**
-     * Returns the {@link DnsServerAddresses} that yields the specified {@code addresses} in a rotational sequential
-     * order. It is similar to {@link #sequential(Iterable)}, but each {@link DnsServerAddressStream} starts from
-     * a different starting point.  For example, the first {@link #stream()} will start from the first address, the
-     * second one will start from the second address, and so on.
+     * 以轮转顺序返回 {@code addresses}：类似 {@link #sequential(Iterable)}，但每次 {@link #stream()}
+     * 的起始位置不同。
      */
     public static DnsServerAddresses rotational(InetSocketAddress... addresses) {
         return rotational0(sanitize(addresses));
@@ -146,7 +134,7 @@ public abstract class DnsServerAddresses {
     }
 
     /**
-     * Returns the {@link DnsServerAddresses} that yields only a single {@code address}.
+     * 仅包含单个 {@code address} 的 {@link DnsServerAddresses}。
      */
     public static DnsServerAddresses singleton(final InetSocketAddress address) {
         checkNotNull(address, "address");
@@ -202,8 +190,8 @@ public abstract class DnsServerAddresses {
     }
 
     /**
-     * Starts a new infinite stream of DNS server addresses. This method is invoked by {@link DnsNameResolver} on every
-     * uncached {@link DnsNameResolver#resolve(String)}or {@link DnsNameResolver#resolveAll(String)}.
+     * 启动新的无限 DNS 服务器地址流；每次未缓存的 {@link DnsNameResolver#resolve(String)} 或
+     * {@link DnsNameResolver#resolveAll(String)} 时由 {@link DnsNameResolver} 调用。
      */
     public abstract DnsServerAddressStream stream();
 }

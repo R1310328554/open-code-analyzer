@@ -23,14 +23,15 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * A noop DNS cache that actually never caches anything.
+ * 空实现的 {@link DnsCache}，从不持久化解析结果（仅返回临时条目）。
  */
 public final class NoopDnsCache implements DnsCache {
 
+    /** 单例实例。 */
     public static final NoopDnsCache INSTANCE = new NoopDnsCache();
 
     /**
-     * Private singleton constructor.
+     * 私有单例构造器。
      */
     private NoopDnsCache() {
     }
@@ -65,6 +66,7 @@ public final class NoopDnsCache implements DnsCache {
         return NoopDnsCache.class.getSimpleName();
     }
 
+    /** 不写入全局缓存、仅持有地址引用的 {@link DnsCacheEntry}。 */
     private static final class NoopDnsCacheEntry implements DnsCacheEntry {
         private final InetAddress address;
 

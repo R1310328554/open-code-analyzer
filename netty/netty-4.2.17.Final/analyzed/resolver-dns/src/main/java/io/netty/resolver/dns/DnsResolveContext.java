@@ -66,10 +66,16 @@ import static io.netty.handler.codec.dns.DnsResponseCode.SERVFAIL;
 import static io.netty.resolver.dns.DnsAddressDecoder.decodeAddress;
 import static java.lang.Math.min;
 
+/**
+ * DNS 解析上下文抽象基类，驱动单次 resolve/query 的完整流程。
+ * <p>负责 search 域、CNAME 跟随、多 nameserver 重试、重定向与结果缓存；子类实现记录类型转换与过滤。</p>
+ */
 abstract class DnsResolveContext<T> {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(DnsResolveContext.class);
+    /** 系统属性：地址查询失败时是否最后尝试 CNAME 查询。 */
     private static final String PROP_TRY_FINAL_CNAME_ON_ADDRESS_LOOKUPS =
             "io.netty.resolver.dns.tryCnameOnAddressLookups";
+    /** 是否在 A/AAAA 失败后额外发起 CNAME 查询。 */
     static boolean TRY_FINAL_CNAME_ON_ADDRESS_LOOKUPS;
 
     static {
@@ -103,22 +109,29 @@ abstract class DnsResolveContext<T> {
             DnsErrorCauseException.newStatic("Query failed with NXDOMAIN", NXDOMAIN,
                     DnsResolveContext.class, "onResponse(..)");
 
+    /** 所属 {@link DnsNameResolver}。 */
     final DnsNameResolver parent;
     private final Channel channel;
     private final Promise<?> originalPromise;
+    /** 本次解析使用的 nameserver 地址流。 */
     private final DnsServerAddressStream nameServerAddrs;
     private final String hostname;
     private final int dnsClass;
+    /** 期望的 DNS 记录类型（如 A、AAAA）。 */
     private final DnsRecordType[] expectedTypes;
     final DnsRecord[] additionals;
 
+    /** 尚未完成的 DNS 查询 Future 集合。 */
     private final Set<Future<AddressedEnvelope<DnsResponse, InetSocketAddress>>> queriesInProgress =
             Collections.newSetFromMap(
                     new IdentityHashMap<Future<AddressedEnvelope<DnsResponse, InetSocketAddress>>, Boolean>());
 
     private List<T> finalResult;
+    /** 剩余允许的 DNS 查询次数。 */
     private int allowedQueries;
+    /** 是否已尝试过最终 CNAME 回退查询。 */
     private boolean triedCNAME;
+    /** 是否已满足“提前完成”条件，仍会继续查询以填充缓存。 */
     private boolean completeEarly;
 
     DnsResolveContext(DnsNameResolver parent, Channel channel,
@@ -161,35 +174,35 @@ abstract class DnsResolveContext<T> {
     }
 
     /**
-     * The {@link Channel} used.
+     * 本解析使用的 {@link Channel}。
      */
     Channel channel() {
         return channel;
     }
 
     /**
-     * The {@link DnsCache} to use while resolving.
+     * 解析过程中使用的 {@link DnsCache}。
      */
     DnsCache resolveCache() {
         return parent.resolveCache();
     }
 
     /**
-     * The {@link DnsCnameCache} that is used for resolving.
+     * 解析过程中使用的 {@link DnsCnameCache}。
      */
     DnsCnameCache cnameCache() {
         return parent.cnameCache();
     }
 
     /**
-     * The {@link AuthoritativeDnsServerCache} to use while resolving.
+     * 解析过程中使用的 {@link AuthoritativeDnsServerCache}。
      */
     AuthoritativeDnsServerCache authoritativeDnsServerCache() {
         return parent.authoritativeDnsServerCache();
     }
 
     /**
-     * Creates a new context with the given parameters.
+     * 使用给定参数创建新的解析上下文（子类实现）。
      */
     abstract DnsResolveContext<T> newResolverContext(DnsNameResolver parent, Channel channel,
                                                      Promise<?> originalPromise,
@@ -199,41 +212,42 @@ abstract class DnsResolveContext<T> {
                                                      DnsServerAddressStream nameServerAddrs, int allowedQueries);
 
     /**
-     * Converts the given {@link DnsRecord} into {@code T}.
+     * 将 {@link DnsRecord} 转换为结果类型 {@code T}。
      */
     abstract T convertRecord(DnsRecord record, String hostname, DnsRecord[] additionals, EventLoop eventLoop);
 
     /**
-     * Returns a filtered list of results which should be the final result of DNS resolution. This must take into
-     * account JDK semantics such as {@link NetUtil#isIpV6AddressesPreferred()}.
+     * 过滤未加工结果，得到最终 DNS 解析列表（需考虑 {@link NetUtil#isIpV6AddressesPreferred()} 等 JDK 语义）。
      */
     abstract List<T> filterResults(List<T> unfiltered);
 
+    /** 给定单条结果是否足以提前结束解析。 */
     abstract boolean isCompleteEarly(T resolved);
 
     /**
-     * Returns {@code true} if we should allow duplicates in the result or {@code false} if no duplicates should
-     * be included.
+     * 最终结果是否允许重复条目。
      */
     abstract boolean isDuplicateAllowed();
 
     /**
-     * Caches a successful resolution.
+     * 缓存一次成功解析。
      */
     abstract void cache(String hostname, DnsRecord[] additionals,
                         DnsRecord result, T convertedResult);
 
     /**
-     * Caches a failed resolution.
+     * 缓存一次失败解析。
      */
     abstract void cache(String hostname, DnsRecord[] additionals,
                         UnknownHostException cause);
 
+    /** 入口：按 search 域策略或直接 internalResolve。 */
     void resolve(final Promise<List<T>> promise) {
         final String[] searchDomains = parent.searchDomains();
         if (searchDomains.length == 0 || parent.ndots() == 0 || StringUtil.endsWith(hostname, '.')) {
             internalResolve(hostname, promise);
         } else {
+            // 按 ndots 决定先查 FQDN 还是 hostname + searchDomain
             final boolean startWithoutSearchDomain = hasNDots();
             final String initialHostname = startWithoutSearchDomain ? hostname : hostname + '.' + searchDomains[0];
             final int initialSearchDomainIdx = startWithoutSearchDomain ? 0 : 1;
@@ -316,20 +330,19 @@ abstract class DnsResolveContext<T> {
         return name + '.';
     }
 
-    // Resolve the final name from the CNAME cache until there is nothing to follow anymore. This also
-    // guards against loops in the cache but early return once a loop is detected.
+    // 从 CNAME 缓存链式解析直至无更多映射；检测环路并提前返回
     //
     // Visible for testing only
     static String cnameResolveFromCache(DnsCnameCache cnameCache, String name) throws UnknownHostException {
         String first = cnameCache.get(hostnameWithDot(name));
         if (first == null) {
-            // Nothing in the cache at all
+            // 缓存中无任何 CNAME
             return name;
         }
 
         String second = cnameCache.get(hostnameWithDot(first));
         if (second == null) {
-            // Nothing else to follow, return first match.
+            // 无后续链，返回首条映射
             return first;
         }
 
@@ -339,12 +352,11 @@ abstract class DnsResolveContext<T> {
 
     private static String cnameResolveFromCacheLoop(
             DnsCnameCache cnameCache, String hostname, String first, String mapping) throws UnknownHostException {
-        // Detect loops by advance only every other iteration.
-        // See https://en.wikipedia.org/wiki/Cycle_detection#Floyd's_Tortoise_and_Hare
+        // Floyd 龟兔算法检测 CNAME 环
         boolean advance = false;
 
         String name = mapping;
-        // Resolve from cnameCache() until there is no more cname entry cached.
+        // 沿 CNAME 缓存继续解析
         while ((mapping = cnameCache.get(hostnameWithDot(name))) != null) {
             checkCnameLoop(hostname, first, mapping);
             name = mapping;
@@ -358,13 +370,14 @@ abstract class DnsResolveContext<T> {
 
     private static void checkCnameLoop(String hostname, String first, String second) throws UnknownHostException {
         if (first.equals(second)) {
-            // Follow CNAME from cache would loop. Lets throw and so fail the resolution.
+            // CNAME 环，解析失败
             throw new UnknownHostException("CNAME loop detected for '" + hostname + '\'');
         }
     }
+    /** 核心解析：CNAME 缓存预解析后向各 expectedType 发起查询。 */
     private void internalResolve(String name, Promise<List<T>> promise) {
         try {
-            // Resolve from cnameCache() until there is no more cname entry cached.
+            // 先沿 CNAME 缓存展开真实查询名
             name = cnameResolveFromCache(cnameCache(), name);
         } catch (Throwable cause) {
             promise.tryFailure(cause);
@@ -382,35 +395,34 @@ abstract class DnsResolveContext<T> {
             }
             query(name, expectedTypes[end], nameServerAddressStream, false, promise);
         } finally {
-            // Now flush everything we submitted before for the Channel.
+            // 刷新 Channel 上已提交的 DNS 查询
             channel.flush();
         }
     }
 
     /**
-     * Returns the {@link DnsServerAddressStream} that was cached for the given hostname or {@code null} if non
-     *  could be found.
+     * 从权威服务器缓存获取 hostname 对应的 {@link DnsServerAddressStream}，未命中则 {@code null}。
      */
     private DnsServerAddressStream getNameServersFromCache(String hostname) {
         int len = hostname.length();
 
         if (len == 0) {
-            // We never cache for root servers.
+            // 根服务器从不走缓存
             return null;
         }
 
-        // We always store in the cache with a trailing '.'.
+        // 缓存键一律带尾随 '.'
         if (hostname.charAt(len - 1) != '.') {
             hostname += ".";
         }
 
         int idx = hostname.indexOf('.');
         if (idx == hostname.length() - 1) {
-            // We are not interested in handling '.' as we should never serve the root servers from cache.
+            // '.' 单独作为域名时不查缓存
             return null;
         }
 
-        // We start from the closed match and then move down.
+        // 从最接近的父域向上逐级查找
         for (;;) {
             // Skip '.' as well.
             hostname = hostname.substring(idx + 1);
@@ -499,7 +511,7 @@ abstract class DnsResolveContext<T> {
                     onResponse(nameServerAddrStream, nameServerAddrStreamIndex, question, future.getNow(),
                                queryLifecycleObserver, promise);
                 } else {
-                    // Server did not respond or I/O error occurred; try again.
+                    // 服务器无响应或 I/O 错误，尝试下一个 nameserver
                     if (isFeedbackAddressStream) {
                         final DnsServerResponseFeedbackAddressStream feedbackNameServerAddrStream =
                                 (DnsServerResponseFeedbackAddressStream) nameServerAddrStream;
@@ -530,7 +542,7 @@ abstract class DnsResolveContext<T> {
         final String nameServerName = nameServerAddr.getHostString();
         assert nameServerName != null;
 
-        // Placeholder so we will not try to finish the original query yet.
+        // 占位 Future，避免在解析未完成 nameserver 时过早 finish
         final Future<AddressedEnvelope<DnsResponse, InetSocketAddress>> resolveFuture = parent.executor()
                 .newSucceededFuture(null);
         queriesInProgress.add(resolveFuture);
@@ -547,7 +559,7 @@ abstract class DnsResolveContext<T> {
                 query(addressStream, nameServerAddrStreamIndex, question,
                       queryLifecycleObserver, true, promise, cause);
             } else {
-                // Ignore the server and try the next one...
+                // 忽略该服务器，尝试流中下一个
                 query(nameServerAddrStream, nameServerAddrStreamIndex + 1,
                       question, queryLifecycleObserver, true, promise, cause);
             }
@@ -569,8 +581,7 @@ abstract class DnsResolveContext<T> {
 
     private static AuthoritativeDnsServerCache redirectAuthoritativeDnsServerCache(
             AuthoritativeDnsServerCache authoritativeDnsServerCache) {
-        // Don't wrap again to prevent the possibility of an StackOverflowError when wrapping another
-        // RedirectAuthoritativeDnsServerCache.
+        // 避免重复包装导致 StackOverflowError
         if (authoritativeDnsServerCache instanceof RedirectAuthoritativeDnsServerCache) {
             return authoritativeDnsServerCache;
         }
@@ -586,8 +597,7 @@ abstract class DnsResolveContext<T> {
 
         @Override
         public DnsServerAddressStream get(String hostname) {
-            // To not risk falling into any loop, we will not use the cache while following redirects but only
-            // on the initial query.
+            // 跟随重定向时不读缓存，防止环路；仅初始查询使用缓存
             return null;
         }
 
@@ -679,14 +689,14 @@ abstract class DnsResolveContext<T> {
     }
 
     /**
-     * Handles a redirect answer if needed and returns {@code true} if a redirect query has been made.
+     * 若响应为重定向则处理并返回 {@code true}（已发起后续查询）。
      */
     private boolean handleRedirect(
             DnsQuestion question, AddressedEnvelope<DnsResponse, InetSocketAddress> envelope,
             final DnsQueryLifecycleObserver queryLifecycleObserver, Promise<List<T>> promise) {
         final DnsResponse res = envelope.content();
 
-        // Check if we have answers, if not this may be an non authority NS and so redirects must be handled.
+        // 无 ANSWER 时可能为非权威 NS，需处理重定向
         if (res.count(DnsSection.ANSWER) == 0) {
             AuthoritativeNameServerList serverNames = extractAuthoritativeNameServers(question.name(), res);
             if (serverNames != null) {
@@ -711,7 +721,7 @@ abstract class DnsResolveContext<T> {
 
                 List<InetSocketAddress> addresses = serverNames.addressList();
 
-                // Give the user the chance to sort or filter the used servers for the query.
+                // 允许用户排序或过滤重定向使用的 nameserver
                 DnsServerAddressStream serverStream = parent.newRedirectDnsServerStream(
                         question.name(), addresses);
 
@@ -792,8 +802,7 @@ abstract class DnsResolveContext<T> {
     }
 
     /**
-     * Returns the {@code {@link AuthoritativeNameServerList} which were included in {@link DnsSection#AUTHORITY}
-     * or {@code null} if non are found.
+     * 返回 {@link DnsSection#AUTHORITY} 中的 {@link AuthoritativeNameServerList}，无则 {@code null}。
      */
     private static AuthoritativeNameServerList extractAuthoritativeNameServers(String questionName, DnsResponse res) {
         int authorityCount = res.count(DnsSection.AUTHORITY);
@@ -812,7 +821,7 @@ abstract class DnsResolveContext<T> {
             DnsQuestion question, AddressedEnvelope<DnsResponse, InetSocketAddress> envelope,
             final DnsQueryLifecycleObserver queryLifecycleObserver, Promise<List<T>> promise) {
 
-        // We often get a bunch of CNAMES as well when we asked for A/AAAA.
+        // A/AAAA 查询常附带 CNAME 记录
         final DnsResponse response = envelope.content();
         final Map<String, String> cnames = buildAliasMap(question.name(), response, cnameCache(), parent.executor());
         final int answerCount = response.count(DnsSection.ANSWER);
@@ -838,7 +847,7 @@ abstract class DnsResolveContext<T> {
             final String questionName = question.name().toLowerCase(Locale.US);
             final String recordName = r.name().toLowerCase(Locale.US);
 
-            // Make sure the record is for the questioned domain.
+            // 确保记录名与问题域匹配（含 CNAME 链与 search 域）
             if (!recordName.equals(questionName)) {
                 Map<String, String> cnamesCopy = new HashMap<String, String>(cnames);
                 // Even if the record's name is not exactly same, it might be an alias defined in the CNAME records.
@@ -904,7 +913,7 @@ abstract class DnsResolveContext<T> {
             // Check if the promise was done already, and only if not add things to the finalResult. Otherwise lets
             // just release things after we cached it.
             if (!promise.isDone()) {
-                // We want to ensure we do not have duplicates in finalResult as this may be unexpected.
+                // 避免 finalResult 中出现重复（优先 ArrayList 而非 HashSet 以降低常见路径开销）
                 //
                 // While using a LinkedHashSet or HashSet may sound like the perfect fit for this we will use an
                 // ArrayList here as duplicates should be found quite unfrequently in the wild and we dont want to pay
@@ -927,12 +936,11 @@ abstract class DnsResolveContext<T> {
             if (shouldRelease) {
                 ReferenceCountUtil.release(converted);
             }
-            // Note that we do not break from the loop here, so we decode/cache all A/AAAA records.
+            // 不 break，继续解码/缓存所有 A/AAAA 记录
         }
 
         if (found && !cnameNeedsFollow) {
-            // If we found the correct result we can just stop here without following any extra CNAME records in the
-            // response.
+            // 已有正确结果且无需再跟 CNAME
             if (completeEarly) {
                 this.completeEarly = true;
             }
@@ -941,7 +949,7 @@ abstract class DnsResolveContext<T> {
             queryLifecycleObserver.queryFailed(NO_MATCHING_RECORD_QUERY_FAILED_EXCEPTION);
         } else {
             queryLifecycleObserver.querySucceed();
-            // We also got a CNAME so we need to ensure we also query it.
+            // 响应中含 CNAME，需继续查询别名目标
             onResponseCNAME(question, cnames, newDnsQueryLifecycleObserver(question), promise);
         }
     }
@@ -951,7 +959,7 @@ abstract class DnsResolveContext<T> {
             final DnsQueryLifecycleObserver queryLifecycleObserver,
             Promise<List<T>> promise) {
 
-        // Resolve the host name in the question into the real host name.
+        // 将问题中的主机名沿 CNAME 映射解析为真实名
         String resolved = question.name().toLowerCase(Locale.US);
         boolean found = false;
         while (!cnames.isEmpty()) { // Do not attempt to call Map.remove() when the Map is empty
@@ -1001,12 +1009,12 @@ abstract class DnsResolveContext<T> {
             String name = r.name().toLowerCase(Locale.US);
             String mapping = domainName.toLowerCase(Locale.US);
 
-            // Cache the CNAME as well.
+            // 将 CNAME 写入缓存（仅当 owner 在原始查询名的 bailiwick 内）
             String nameWithDot = hostnameWithDot(name);
             String mappingWithDot = hostnameWithDot(mapping);
             if (!nameWithDot.equalsIgnoreCase(mappingWithDot)) {
                 String queryNameWithDot = hostnameWithDot(queryName.toLowerCase(Locale.US));
-                // Only cache the CNAME if the owner is in the bailiwick of the original query name.
+                // 仅当 CNAME owner 在查询名管辖范围内才缓存
                 boolean inBailiwick = nameWithDot.equals(queryNameWithDot) ||
                         nameWithDot.endsWith("." + queryNameWithDot);
                 if (inBailiwick) {
@@ -1026,16 +1034,15 @@ abstract class DnsResolveContext<T> {
                                     final Promise<List<T>> promise,
                                     final Throwable cause) {
 
-        // There are no queries left to try.
+        // 仍有进行中的查询时不结束
         if (!completeEarly && !queriesInProgress.isEmpty()) {
             queryLifecycleObserver.queryCancelled(allowedQueries);
 
-            // There are still some queries in process, we will try to notify once the next one finishes until
-            // all are finished.
+            // 尚有查询未完成，等下一次回调再 tryToFinish
             return;
         }
 
-        // There are no queries left to try.
+        // 尚无成功结果
         if (finalResult == null) {
             if (nameServerAddrStreamIndex < nameServerAddrStream.size()) {
                 if (queryLifecycleObserver == NoopDnsQueryLifecycleObserver.INSTANCE) {
@@ -1054,24 +1061,14 @@ abstract class DnsResolveContext<T> {
 
             // .. and we could not find any expected records.
 
-            // The following is of questionable benefit, but has been around for a while that
-            // it may be risky to remove. Reference https://datatracker.ietf.org/doc/html/rfc8020
-            // - If we receive NXDOMAIN we know the domain doesn't exist, any other lookup type is meaningless.
-            // - If we receive SERVFAIL, and we attempt a CNAME that returns NOERROR with 0 answers, it may lead the
-            //   call-site to invalidate previously advertised addresses.
-            // Having said that, there is the case of DNS services that don't respect the protocol either
-            // - An A lookup could result in NXDOMAIN but a CNAME may succeed with answers.
-            // It's an imperfect world. Accept it.
-            // Guarding it with a system property, as an opt-in functionality.
+            // 可选：A/AAAA 全失败时最后尝试 CNAME（受系统属性控制）
             if (TRY_FINAL_CNAME_ON_ADDRESS_LOOKUPS) {
-                // If cause != null we know this was caused by a timeout / cancel / transport exception. In this case we
-                // won't try to resolve the CNAME as we only should do this if we could not get the expected records
-                // because they do not exist and the DNS server did probably signal it.
+                // cause 非空表示超时/取消/传输错误，此时不应再查 CNAME
                 final boolean isValidResponse =
                         cause == NXDOMAIN_CAUSE_QUERY_FAILED_EXCEPTION || cause == SERVFAIL_QUERY_FAILED_EXCEPTION;
                 if ((cause == null || isValidResponse) && !triedCNAME &&
                         (question.type() == DnsRecordType.A || question.type() == DnsRecordType.AAAA)) {
-                    // As the last resort, try to query CNAME, just in case the name server has it.
+                    // 最后手段：向 nameserver 查询 CNAME
                     triedCNAME = true;
 
                     query(hostname, DnsRecordType.CNAME, getNameServers(hostname), true, promise);
@@ -1082,15 +1079,15 @@ abstract class DnsResolveContext<T> {
             queryLifecycleObserver.queryCancelled(allowedQueries);
         }
 
-        // We have at least one resolved record or tried CNAME as the last resort.
+        // 至少有一条结果或已尝试 CNAME 回退
         finishResolve(promise, cause);
     }
 
+    /** 将 finalResult 写入 promise 或构造 UnknownHostException 失败。 */
     private void finishResolve(Promise<List<T>> promise, Throwable cause) {
-        // If completeEarly was true we still want to continue processing the queries to ensure we still put everything
-        // in the cache eventually.
+        // completeEarly 时仍可能取消进行中的查询以尽快返回
         if (!completeEarly && !queriesInProgress.isEmpty()) {
-            // If there are queries in progress, we should cancel it because we already finished the resolution.
+            // 已有最终结果，取消剩余进行中的查询
             for (Iterator<Future<AddressedEnvelope<DnsResponse, InetSocketAddress>>> i = queriesInProgress.iterator();
                  i.hasNext();) {
                 Future<AddressedEnvelope<DnsResponse, InetSocketAddress>> f = i.next();
@@ -1102,7 +1099,7 @@ abstract class DnsResolveContext<T> {
 
         if (finalResult != null) {
             if (!promise.isDone()) {
-                // Found at least one resolved record.
+                // 至少解析到一条记录
                 final List<T> result = filterResults(finalResult);
                 // Lets replace the previous stored result.
                 finalResult = Collections.emptyList();
@@ -1119,7 +1116,7 @@ abstract class DnsResolveContext<T> {
             return;
         }
 
-        // No resolved address found.
+        // 未解析到任何地址
         final int maxAllowedQueries = parent.maxQueriesPerResolve();
         final int tries = maxAllowedQueries - allowedQueries;
         final StringBuilder buf = new StringBuilder(64);
@@ -1138,8 +1135,7 @@ abstract class DnsResolveContext<T> {
         }
         final UnknownHostException unknownHostException = new UnknownHostException(buf.toString());
         if (cause == null) {
-            // Only cache if the failure was not because of an IO error / timeout that was caused by the query
-            // itself.
+            // 非 I/O/超时类失败才写入负缓存
             cache(hostname, additionals, unknownHostException);
         } else {
             unknownHostException.initCause(cause);
@@ -1147,6 +1143,7 @@ abstract class DnsResolveContext<T> {
         promise.tryFailure(unknownHostException);
     }
 
+    /** 解码 DNS 域名；损坏帧时返回 null。 */
     static String decodeDomainName(ByteBuf in) {
         in.markReaderIndex();
         try {
@@ -1159,12 +1156,11 @@ abstract class DnsResolveContext<T> {
         }
     }
 
+    /** 获取 name 对应的 nameserver 流（缓存、CNAME 跟随或 duplicate 原流）。 */
     private DnsServerAddressStream getNameServers(String name) {
         DnsServerAddressStream stream = getNameServersFromCache(name);
         if (stream == null) {
-            // We need to obtain a new stream from the parent DnsNameResolver if the hostname is not the same as
-            // for the original query (for example we may follow CNAMEs). Otherwise let's just duplicate the
-            // original nameservers so we correctly update the internal index
+            // CNAME 跟随等场景需向 parent 索取新流；同名则 duplicate 以正确推进索引
             if (name.equals(hostname)) {
                 return nameServerAddrs.duplicate();
             }
@@ -1210,6 +1206,7 @@ abstract class DnsResolveContext<T> {
         return parent.dnsQueryLifecycleObserverFactory().newDnsQueryLifecycleObserver(question);
     }
 
+    /** 将未解析 nameserver 替换为已解析地址列表的组合地址流。 */
     private final class CombinedDnsServerAddressStream implements DnsServerAddressStream {
         private final InetSocketAddress replaced;
         private final DnsServerAddressStream originalStream;
@@ -1253,13 +1250,13 @@ abstract class DnsResolveContext<T> {
     }
 
     /**
-     * Holds the closed DNS Servers for a domain.
+     * 保存某域最接近的权威 DNS 服务器链表。
      */
     private static final class AuthoritativeNameServerList {
 
         private final String questionName;
 
-        // We not expect the linked-list to be very long so a double-linked-list is overkill.
+        // 链表通常较短，无需双向链表
         private AuthoritativeNameServer head;
 
         private int nameServerCount;
@@ -1273,7 +1270,7 @@ abstract class DnsResolveContext<T> {
                 return;
             }
 
-            // Only include servers that serve the correct domain.
+            // 仅保留与问题域后缀匹配的 NS
             if (questionName.length() <  r.name().length()) {
                 return;
             }
@@ -1292,7 +1289,7 @@ abstract class DnsResolveContext<T> {
             }
 
             if (head != null && head.dots > dots) {
-                // We already have a closer match so ignore this one, no need to parse the domainName etc.
+                // 已有更近匹配，忽略本条
                 return;
             }
 
@@ -1303,8 +1300,7 @@ abstract class DnsResolveContext<T> {
                 return;
             }
 
-            // We are only interested in preserving the nameservers which are the closest to our qName, so ensure
-            // we drop servers that have a smaller dots count.
+            // 保留与 qName 最接近的 nameserver，dots 更少则丢弃旧链
             if (head == null || head.dots < dots) {
                 nameServerCount = 1;
                 head = new AuthoritativeNameServer(dots, r.timeToLive(), recordName, domainName);
@@ -1318,6 +1314,7 @@ abstract class DnsResolveContext<T> {
             }
         }
 
+        /** 用 ADDITIONAL 段 A/AAAA 填充 NS 地址并写入权威缓存。 */
         void handleWithAdditional(
                 DnsNameResolver parent, DnsRecord r, AuthoritativeDnsServerCache authoritativeCache) {
             // Just walk the linked-list and mark the entry as handled when matched.
@@ -1357,7 +1354,7 @@ abstract class DnsResolveContext<T> {
             }
         }
 
-        // Now handle all AuthoritativeNameServer for which we had no ADDITIONAL record
+        /** 对无 ADDITIONAL 的 NS 尝试从 {@link DnsCache} 解析地址。 */
         void handleWithoutAdditionals(
                 DnsNameResolver parent, DnsCache cache, AuthoritativeDnsServerCache authoritativeCache) {
             AuthoritativeNameServer serverName = head;
@@ -1409,14 +1406,11 @@ abstract class DnsResolveContext<T> {
         }
 
         private void cache(AuthoritativeNameServer server, AuthoritativeDnsServerCache cache, EventLoop loop) {
-            // Cache NS record if not for a root server as we should never cache for root servers.
+            // 根区 NS 不缓存
             if (server.isRootServer()) {
                 return;
             }
-            // Bailiwick check (RFC 2181 §5.4.1): only cache a nameserver entry when its zone
-            // equals the question name or is a subdomain of it. A server that is authoritative
-            // for a child zone must not be trusted to supply authoritative NS records for a
-            // parent zone, which would allow cache poisoning of the parent.
+            // Bailiwick 检查（RFC 2181 §5.4.1）：仅当 NS 区等于问题名或其子域时才缓存
             if (!server.domainName.equals(questionName) &&
                     !server.domainName.endsWith("." + questionName)) {
                 return;
@@ -1425,14 +1419,14 @@ abstract class DnsResolveContext<T> {
         }
 
         /**
-         * Returns {@code true} if empty, {@code false} otherwise.
+         * 若列表为空则 {@code true}。
          */
         boolean isEmpty() {
             return nameServerCount == 0;
         }
 
         /**
-         * Creates a new {@link List} which holds the {@link InetSocketAddress}es.
+         * 构造包含全部 {@link InetSocketAddress} 的 {@link List}。
          */
         List<InetSocketAddress> addressList() {
             List<InetSocketAddress> addressList = new ArrayList<InetSocketAddress>(nameServerCount);
@@ -1476,14 +1470,14 @@ abstract class DnsResolveContext<T> {
         }
 
         /**
-         * Returns {@code true} if its a root server.
+         * 是否为根（.）nameserver。
          */
         boolean isRootServer() {
             return dots == 1;
         }
 
         /**
-         * Update the server with the given address and TTL if needed.
+         * 用给定地址与 TTL 更新服务器（取较小 TTL）。
          */
         void update(InetSocketAddress address, long ttl) {
             assert this.address == null || this.address.isUnresolved();
