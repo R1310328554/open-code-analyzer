@@ -1,3 +1,4 @@
+// 投机解码统计：draft/accept 计数、深度分桶与结束日志。
 package mlxrunner
 
 import (
@@ -7,25 +8,31 @@ import (
 	"strings"
 )
 
+// specStats 累积迭代次数、draft/accept 与每轮 chosen 深度。
 type specStats struct {
 	iterations int
 	drafted    int
 	accepted   int
 	maxDraft   int
+	// chosen 记录每轮选择的 draft 深度，用于 depthOverTime 分桶。
 	// chosen is the draft depth picked each round, in order; split into time
 	// buckets it distinguishes a ramp that holds from one that thrashes shallow.
 	chosen []int
 }
 
+// recordRound 追加本轮 chosen 深度。
 func (s *specStats) recordRound(depth int) {
 	s.chosen = append(s.chosen, depth)
 }
 
+// depthBuckets 为 depthOverTime 均分时间桶数量。
 // depthBuckets is how many equal time slices depthOverTime splits a run into.
 const depthBuckets = 8
 
+// depthOverTime 输出各时间桶 mean/max 深度，如 "0.3/1 2.1/3"。
 // depthOverTime reports per-bucket mean/max chosen depth across up to depthBuckets
 // equal time buckets, e.g. "0.3/1 2.1/3 4.8/5 5.0/6".
+// depthOverTime 计算分桶 mean/max 深度字符串。
 func (s *specStats) depthOverTime() string {
 	if len(s.chosen) == 0 {
 		return ""
@@ -45,6 +52,7 @@ func (s *specStats) depthOverTime() string {
 	return strings.Join(parts, " ")
 }
 
+// logStats 输出投机解码汇总与 debug 深度控制器信息。
 func (s *speculationSession) logStats() {
 	if !s.enabled {
 		return
@@ -65,6 +73,7 @@ func (s *speculationSession) logStats() {
 		return
 	}
 
+	// Debug 日志输出 trusted 位置接受率与期望 TPS。
 	// Log learned acceptance over the trusted positions [1, frontier] and
 	// expected throughput over the searched window [0, limit]; deeper
 	// depths have no data of their own.

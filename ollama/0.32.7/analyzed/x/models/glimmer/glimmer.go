@@ -1,4 +1,6 @@
+// Package glimmer 提供 Meta Glimmer MLX 文本/多模态模型实现。
 // Package glimmer provides the Meta Glimmer text model implementation for MLX.
+// Glimmer MLX 模型：GQA 注意力、shifted RMSNorm、aux hidden tap 与 DFlash 兼容。
 package glimmer
 
 import (
@@ -16,13 +18,16 @@ import (
 	"github.com/ollama/ollama/x/tokenizer"
 )
 
+// init 注册 GlimmerForCausalLM 模型工厂。
 func init() {
 	base.Register("MuseGlimmerForConditionalGeneration", newModel)
 }
 
 var _ base.Model = (*Model)(nil)
 
+// Config 保存 Glimmer 解码器与视觉 config 字段。
 // Config holds the decoder and vision fields from an Glimmer configuration.
+// Config 聚合文本与视觉配置及 aux tap 层 id。
 type Config struct {
 	HiddenSize               int32    `json:"hidden_size"`
 	NumHiddenLayers          int32    `json:"num_hidden_layers"`
@@ -79,6 +84,7 @@ type Config struct {
 	ImageEndTokenID   int32 `json:"-"`
 }
 
+// glimmerHFTextConfig 为 HF 文本子配置。
 type glimmerHFTextConfig struct {
 	HiddenSize            int32     `json:"hidden_size"`
 	NumHiddenLayers       int32     `json:"num_hidden_layers"`
@@ -102,6 +108,7 @@ type glimmerHFTextConfig struct {
 	} `json:"rope_parameters"`
 }
 
+// glimmerHFVisionConfig 为 HF 视觉子配置。
 type glimmerHFVisionConfig struct {
 	HiddenSize         int32    `json:"hidden_size"`
 	IntermediateSize   int32    `json:"intermediate_size"`
@@ -115,6 +122,7 @@ type glimmerHFVisionConfig struct {
 	LayerTypes         []string `json:"layer_types"`
 }
 
+// glimmerHFConfig 为完整 HF config 包装。
 type glimmerHFConfig struct {
 	TextConfig          *glimmerHFTextConfig   `json:"text_config"`
 	VisionConfig        *glimmerHFVisionConfig `json:"vision_config"`
@@ -123,6 +131,7 @@ type glimmerHFConfig struct {
 	ProjectorHiddenSize int32                  `json:"projector_hidden_size"`
 }
 
+// configFromHF 将 HF 配置转为内部 Config。
 func configFromHF(hf glimmerHFConfig) Config {
 	t := hf.TextConfig
 	cfg := Config{
@@ -186,6 +195,7 @@ func configFromHF(hf glimmerHFConfig) Config {
 }
 
 // Model is the Glimmer text decoder with an optional vision encoder.
+// Model 为 Glimmer 主模型（文本 + 可选视觉编码器）。
 type Model struct {
 	EmbedTokens nn.EmbeddingLayer
 	Layers      []*Layer
@@ -206,6 +216,7 @@ type Model struct {
 }
 
 // Layer is one Glimmer decoder block.
+// Layer 为 Glimmer Transformer 层。
 type Layer struct {
 	Attention *Attention
 	MLP       *MLP
@@ -221,6 +232,7 @@ type Layer struct {
 
 // Attention implements grouped-query attention with scaleless Q/K norm and an
 // output gate applied before the output projection.
+// Attention 含 GQA 投影。
 type Attention struct {
 	QProj          nn.LinearLayer
 	KProj          nn.LinearLayer
@@ -230,12 +242,14 @@ type Attention struct {
 }
 
 // MLP is the Glimmer SwiGLU feed-forward block.
+// MLP 为 SwiGLU 前馈。
 type MLP struct {
 	GateProj nn.LinearLayer
 	UpProj   nn.LinearLayer
 	DownProj nn.LinearLayer
 }
 
+// parseConfig 解析 config.json 并校验 schedule。
 func parseConfig(data []byte) (Config, error) {
 	var cfg Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
@@ -364,6 +378,7 @@ func parseConfig(data []byte) (Config, error) {
 	return cfg, nil
 }
 
+// newModel 构造 Glimmer 模型。
 func newModel(root *model.Root) (base.Model, error) {
 	configData, err := root.Manifest.ReadConfig("config.json")
 	if err != nil {
@@ -437,6 +452,7 @@ func newModel(root *model.Root) (base.Model, error) {
 	return m, nil
 }
 
+// validateTokenizer 校验 EOS 等特殊 token。
 func validateTokenizer(tok *tokenizer.Tokenizer) error {
 	eom, _ := tok.GetSpecialToken("<|eom|>")
 	if tok.IsEOS(eom) {
@@ -452,6 +468,7 @@ func validateTokenizer(tok *tokenizer.Tokenizer) error {
 	return nil
 }
 
+// shiftedRMSNorm 创建 (1+weight) 缩放的 RMSNorm。
 func shiftedRMSNorm(weight *mlx.Array, eps float32) *nn.RMSNorm {
 	if weight == nil {
 		return nil
@@ -459,6 +476,7 @@ func shiftedRMSNorm(weight *mlx.Array, eps float32) *nn.RMSNorm {
 	return nn.NewRMSNorm(mlx.AddScalar(weight, 1), eps)
 }
 
+// firstLinear 按路径尝试创建 LinearLayer。
 func firstLinear(linears model.LinearFactory, paths ...string) nn.LinearLayer {
 	for _, path := range paths {
 		if linear := linears.Make(path); linear != nil {
@@ -468,6 +486,7 @@ func firstLinear(linears model.LinearFactory, paths ...string) nn.LinearLayer {
 	return nil
 }
 
+// LoadWeights 加载文本/视觉权重。
 func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	linears := model.NewLinearFactory(tensors, m.QuantGroupSize, m.QuantBits, m.QuantMode, m.TensorQuant)
 	officialHF := tensors["model.language_model.embed_tokens.weight"] != nil
@@ -545,6 +564,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	return nil
 }
 
+// Forward 执行嵌入与前向（委托 forwardEmbeddings）。
 func (m *Model) Forward(b *batch.Batch, caches []cache.Cache) (hidden, auxHidden *mlx.Array) {
 	h := m.embed(b.InputIDs)
 	if len(b.Media) > 0 {
@@ -553,6 +573,7 @@ func (m *Model) Forward(b *batch.Batch, caches []cache.Cache) (hidden, auxHidden
 	return m.forwardEmbeddings(h, b, caches)
 }
 
+// embed 查找 token 嵌入并缩放。
 func (m *Model) embed(inputIDs *mlx.Array) *mlx.Array {
 	h := m.EmbedTokens.Forward(inputIDs)
 	if m.NormalizeTokenEmbeddings {
@@ -561,6 +582,7 @@ func (m *Model) embed(inputIDs *mlx.Array) *mlx.Array {
 	return h
 }
 
+// forwardEmbeddings 执行层堆叠前向。
 func (m *Model) forwardEmbeddings(h *mlx.Array, b *batch.Batch, caches []cache.Cache) (hidden, auxHidden *mlx.Array) {
 	dims := b.InputIDs.Dims()
 	B, L := int32(dims[0]), int32(dims[1])
@@ -587,6 +609,7 @@ func (m *Model) forwardEmbeddings(h *mlx.Array, b *batch.Batch, caches []cache.C
 
 // SetAuxHiddenLayers taps the listed layers' outputs, which Forward then
 // returns as the draft-conditioning state in place of the final hidden.
+// SetAuxHiddenLayers 设置 DFlash aux tap 层。
 func (m *Model) SetAuxHiddenLayers(layers []int) {
 	m.auxHiddenLayers = layers
 }
@@ -594,16 +617,19 @@ func (m *Model) SetAuxHiddenLayers(layers []int) {
 // TokenEmbeddings is the raw table lookup, for a draft that embeds with the
 // target's table. Note the model's optional embedding normalization does not
 // apply here; the draft mirrors what the target was trained with.
+// TokenEmbeddings 返回原始嵌入查找。
 func (m *Model) TokenEmbeddings(ids *mlx.Array) *mlx.Array {
 	return m.EmbedTokens.Forward(ids)
 }
 
 // RawLogits is the raw head projection, skipping the float32 cast, output
 // multiplier and softcap the target's own Unembed applies.
+// RawLogits 返回未装饰 logits。
 func (m *Model) RawLogits(hidden *mlx.Array) *mlx.Array {
 	return m.LMHead.Forward(hidden)
 }
 
+// Unembed 应用输出缩放并返回 float32 logits。
 func (m *Model) Unembed(x *mlx.Array) *mlx.Array {
 	logits := m.LMHead.Forward(x).AsType(mlx.DTypeFloat32)
 	if m.OutputMultiplier != 1 {
@@ -616,12 +642,16 @@ func (m *Model) Unembed(x *mlx.Array) *mlx.Array {
 	return logits
 }
 
+// NumLayers 返回层数。
 func (m *Model) NumLayers() int                  { return len(m.Layers) }
+// MaxContextLength 返回最大位置。
 func (m *Model) MaxContextLength() int           { return int(m.MaxPositionEmbeddings) }
+// Tokenizer 返回分词器。
 func (m *Model) Tokenizer() *tokenizer.Tokenizer { return m.tok }
 
 // NewCaches uses bounded rotating caches for sliding layers and full KV caches
 // for the periodic NoPE/global-attention layers.
+// NewCaches 按 attention schedule 创建 cache。
 func (m *Model) NewCaches() []cache.Cache {
 	caches := make([]cache.Cache, len(m.Layers))
 	for i, layer := range m.Layers {
@@ -634,6 +664,7 @@ func (m *Model) NewCaches() []cache.Cache {
 	return caches
 }
 
+// Forward 执行 Glimmer 层。
 func (l *Layer) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *mlx.Array, B, L int32, cfg *Config) *mlx.Array {
 	attnInput := l.InputNorm.Forward(x, cfg.RMSNormEps)
 	attnOut := l.Attention.Forward(attnInput, b, c, positions, B, L, l.UseRope, cfg)
@@ -644,6 +675,7 @@ func (l *Layer) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *
 	return mlx.Add(h, l.PostFFNNorm.Forward(mlpOut, cfg.PostNormEps))
 }
 
+// Forward 执行 GQA 注意力（可选 RoPE）。
 func (a *Attention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *mlx.Array, B, L int32, useRope bool, cfg *Config) *mlx.Array {
 	q := mlx.Reshape(a.QProj.Forward(x), B, L, cfg.NumAttentionHeads, cfg.HeadDim)
 	k := mlx.Reshape(a.KProj.Forward(x), B, L, cfg.NumKeyValueHeads, cfg.HeadDim)
@@ -680,6 +712,7 @@ func (a *Attention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positio
 	return a.OProj.Forward(out)
 }
 
+// Forward 执行 SwiGLU MLP。
 func (m *MLP) Forward(x *mlx.Array) *mlx.Array {
 	return m.DownProj.Forward(mlx.SwiGLU(m.GateProj.Forward(x), m.UpProj.Forward(x)))
 }

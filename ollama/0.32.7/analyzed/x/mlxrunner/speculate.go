@@ -1,3 +1,4 @@
+// 投机解码核心：draft session、验证轮次、KV 快照回滚与 rejection sampling。
 package mlxrunner
 
 import (
@@ -11,8 +12,10 @@ import (
 	sampler "github.com/ollama/ollama/x/mlxrunner/sample"
 )
 
+// draftSession 为单请求提议 draft token，通过 committed 流学习对话。
 // draftSession proposes speculative tokens for one request, learning the
 // conversation through the committed-stream reports.
+// draftSession 定义 propose/committed/settle/close 生命周期。
 type draftSession interface {
 	// propose returns up to maxTokens draft tokens with their proposal
 	// distributions, or nil to decode this round plainly.
@@ -35,6 +38,7 @@ type draftSession interface {
 	close()
 }
 
+// speculation 为 Runner 持久投机解码子系统：draft 模型、深度控制器与缓存分区。
 // speculation is the persistent speculative-decoding subsystem of a Runner —
 // one per loaded model, holding everything that outlives a request: the draft
 // model, the target-cache partition, and the depth state learned across
@@ -42,6 +46,7 @@ type draftSession interface {
 // short-lived speculationSession cursor over it; nothing here is rebuilt per request. A
 // nil *speculation means the checkpoint ships no draft head, so every request
 // decodes plainly.
+// speculation 跨请求持有 draft、target/draft KV 与深度状态。
 type speculation struct {
 	r     *Runner
 	draft base.DraftModel
@@ -63,6 +68,7 @@ type speculation struct {
 
 // drafter is the per-model half of a drafting implementation, opening each
 // request's drafting session with the request's per-row layout state.
+// drafter 为每模型 drafting 实现，open 返回 request 级 session。
 type drafter interface {
 	open(layout []any) draftSession
 
@@ -72,8 +78,10 @@ type drafter interface {
 	draftLimit() int
 }
 
+// newSpeculation 构建投机子系统；无 draft 返回 nil。
 // newSpeculation builds the speculative-decoding subsystem for a loaded model,
 // or nil when the checkpoint ships no draft head.
+// newSpeculation 按 BlockDraft/MTP 选择 drafter 并初始化 depth。
 func newSpeculation(r *Runner, draft base.DraftModel, targets, draftKV []cache.Cache) *speculation {
 	if draft == nil {
 		return nil
@@ -91,6 +99,7 @@ func newSpeculation(r *Runner, draft base.DraftModel, targets, draftKV []cache.C
 // speculationSession is the per-request cursor over the persistent speculation:
 // it owns the drafter and runs the validate rounds. A nil session is a plain
 // decode.
+// speculationSession 为单请求游标：drafter、深度 limit 与统计。
 type speculationSession struct {
 	spec    *speculation
 	drafter draftSession
@@ -107,8 +116,10 @@ type speculationSession struct {
 	roundDrafts    int
 }
 
+// open 返回请求级 session；logprobs 请求仅维护 draft cache（park）。
 // open returns the speculation cursor for this request or nil when the model ships
 // no draft head (a nil receiver), which decodes plainly.
+// open 打开请求 session；logprobs 时 enabled=false。
 func (s *speculation) open(request Request, layout []any) *speculationSession {
 	if s == nil {
 		return nil
@@ -127,8 +138,10 @@ func (s *speculation) open(request Request, layout []any) *speculationSession {
 	return spec
 }
 
+// beginRound 记录上一轮耗时样本并启动新轮计时。
 // beginRound records the previous round's cost sample (its wall time runs to
 // this round's start) and starts timing the new one.
+// beginRound 采样上一轮同深度耗时。
 func (s *speculationSession) beginRound() {
 	now := time.Now()
 	if !s.lastRoundStart.IsZero() && s.roundDrafts >= 0 {
@@ -140,10 +153,12 @@ func (s *speculationSession) beginRound() {
 	s.lastRoundStart = now
 }
 
+// endRound 记录 draft 深度、接受数与下一轮 limit。
 // endRound records a completed round's draft depth, proposal outcome, and the
 // controller's next draft length. observed is the leading draft positions the
 // acceptance model learns from: the full round, except an accepted EOS holds out
 // positions past it (a terminator, not a target rejection).
+// endRound 更新统计与 depth.next()。
 func (s *speculationSession) endRound(drafted, accepted, observed int) {
 	s.roundDrafts = drafted
 	s.stats.maxDraft = max(s.stats.maxDraft, drafted)
@@ -159,6 +174,7 @@ func (s *speculationSession) endRound(drafted, accepted, observed int) {
 	}
 }
 
+// committed 转发 committed 报告给 drafter。
 func (s *speculationSession) committed(tokens, hiddens *mlx.Array, position int, media []batch.MediaItem) {
 	if s == nil {
 		return
@@ -168,6 +184,7 @@ func (s *speculationSession) committed(tokens, hiddens *mlx.Array, position int,
 
 // settle completes the drafter's open frontier pair with next and writes
 // buffered reports through to the draft caches.
+// settle 用 next token 完成 drafter frontier。
 func (s *speculationSession) settle(next *mlx.Array) {
 	if s == nil {
 		return
@@ -175,6 +192,7 @@ func (s *speculationSession) settle(next *mlx.Array) {
 	s.drafter.settle(next)
 }
 
+// close 关闭 drafter session。
 func (s *speculationSession) close() {
 	if s == nil {
 		return
@@ -182,6 +200,7 @@ func (s *speculationSession) close() {
 	s.drafter.close()
 }
 
+// speculativeDecoder 每轮融合 current 与 draft 提议，返回接受 token 与 bonus。
 // speculativeDecoder decodes one speculative round per call: the engine
 // forwards the current token (emitted by the previous call, so a token that
 // ends generation is never forwarded) fused with the drafter's proposals,
@@ -189,6 +208,7 @@ func (s *speculationSession) close() {
 // primes current and is never returned. While the engine cannot draft (parked
 // at depth zero, or nothing committed to propose from) calls delegate to an
 // inner pipelined decoder at plain decode speed.
+// speculativeDecoder 管理 position、current 与 parked inner decoder。
 type speculativeDecoder struct {
 	s        *speculationSession
 	position int
@@ -199,12 +219,14 @@ type speculativeDecoder struct {
 // decoder returns the decoder for this engine's session. A speculationSession that
 // cannot draft (logprobs) has no depth controller and permanently parks,
 // running the inner pipelined decoder whose reports keep the draft KV level.
+// decoder 构造 speculativeDecoder 并 Pin seed。
 func (s *speculationSession) decoder(seed *mlx.Array, position int) decoder {
 	current := sampler.Result{Token: seed}
 	mlx.Pin(current.Arrays()...)
 	return &speculativeDecoder{s: s, position: position, current: current}
 }
 
+// next 执行一轮 draft/accept 或 park plain decode。
 func (st *speculativeDecoder) next(remaining int) ([]sampler.Result, error) {
 	// Route: end a parked stretch by emitting the inner sample, draft on a
 	// positive length and a primed drafter, else decode parked.
@@ -246,17 +268,21 @@ func (st *speculativeDecoder) next(remaining int) ([]sampler.Result, error) {
 	return results, nil
 }
 
+// advance 将末 token 设为下一轮 current 并更新 Pin。
 // advance retires the last returned token as the next call's current, pinned
 // across the sweeps the next call runs before reading it. Nothing is forced here.
+// advance 更新 current token 的 Pin 状态。
 func (st *speculativeDecoder) advance(next sampler.Result) {
 	mlx.Pin(next.Arrays()...)
 	mlx.Unpin(st.current.Arrays()...)
 	st.current = next
 }
 
+// resume 结束 park：drain inner 样本作为 drafting 起点。
 // resume ends a parked stretch: the inner decoder's in-flight sample (sampled
 // but never forwarded) is exactly the current token a drafting round expects,
 // so emit it and let the next call draft from it.
+// resume 从 park 恢复并记录 depth-0 轮。
 func (st *speculativeDecoder) resume() []sampler.Result {
 	next, position := st.inner.drain()
 	st.position = position
@@ -270,9 +296,11 @@ func (st *speculativeDecoder) resume() []sampler.Result {
 	return next
 }
 
+// park 在无法 draft 时用 pipelined plain decode 并维持 drafter。
 // park decodes one pipelined plain token while the engine cannot draft. Each
 // is a depth-0 round in the controller's accounting, and the inner decoder's
 // reports keep the drafter primed and maintained.
+// park 用 pipelinedDecoder 解码单 plain token。
 func (st *speculativeDecoder) park(remaining int) ([]sampler.Result, error) {
 	s := st.s
 	if st.inner == nil {
@@ -281,8 +309,10 @@ func (st *speculativeDecoder) park(remaining int) ([]sampler.Result, error) {
 	return st.inner.next(remaining)
 }
 
+// drain 交出 inner 未交付样本；drafting 路径已全部交付。
 // drain surrenders the inner decoder's undelivered sample while parked; a
 // drafting decoder has already delivered everything it sampled.
+// drain 交出 inner 未交付样本。
 func (st *speculativeDecoder) drain() ([]sampler.Result, int) {
 	if st.inner != nil {
 		return st.inner.drain()
@@ -290,6 +320,7 @@ func (st *speculativeDecoder) drain() ([]sampler.Result, int) {
 	return nil, st.position
 }
 
+// close settle drafter、Unpin 并记录统计。
 func (st *speculativeDecoder) close() {
 	if st.inner != nil {
 		// Ended while parked: the inner decoder's close settles the drafter
@@ -306,11 +337,13 @@ func (st *speculativeDecoder) close() {
 
 // draftCandidates is one round's draft tokens and the proposal distribution
 // each was sampled from, weighed against the target during acceptance.
+// draftCandidates 保存一轮 draft token 与 proposal 分布。
 type draftCandidates struct {
 	tokens *mlx.Array
 	dist   sampler.Distribution
 }
 
+// Arrays 返回 tokens 与 dist 数组供 Pin。
 func (c *draftCandidates) Arrays() []*mlx.Array {
 	if c == nil {
 		return nil
@@ -318,9 +351,11 @@ func (c *draftCandidates) Arrays() []*mlx.Array {
 	return append([]*mlx.Array{c.tokens}, c.dist.Arrays()...)
 }
 
+// scheduleSpeculation 在 draft 写入前为各 offset 准备 KV 快照。
 // scheduleSpeculation schedules per-token snapshots at offsets
 // [before, before+draftCount) on every cache, so the speculative forward
 // captures a rollback point before each draft token's write.
+// scheduleSpeculation 为各 draft offset 调用 PrepareSnapshots。
 func scheduleSpeculation(caches []cache.Cache, before, draftCount int) {
 	offsets := make([]int, draftCount)
 	for i := range offsets {
@@ -333,9 +368,11 @@ func scheduleSpeculation(caches []cache.Cache, before, draftCount int) {
 	}
 }
 
+// commitSpeculation 回滚 KV 至 before+accepted，保留接受前缀。
 // commitSpeculation rolls every cache back to before+accepted, keeping only
 // the accepted prefix; full acceptance needs no restore. Rollback tries a
 // live rewind first (Restore(nil)) and falls back to the captured snapshot.
+// commitSpeculation 回滚或保留 KV 快照至 target offset。
 func commitSpeculation(caches []cache.Cache, accepted, draftCount, before int) {
 	target := before + accepted
 	for _, c := range caches {
@@ -367,6 +404,7 @@ func commitSpeculation(caches []cache.Cache, accepted, draftCount, before int) {
 	}
 }
 
+// accept 用 rejection sampling 接受最长 draft 前缀并采样 bonus/residual。
 // accept accepts the longest draft prefix that survives rejection sampling,
 // returning the accepted drafts followed by the target's own next token
 // (residual at a rejection, bonus past a full run), except an accepted EOS
@@ -378,6 +416,7 @@ func commitSpeculation(caches []cache.Cache, accepted, draftCount, before int) {
 // The caller keeps current and the candidate tokens pinned across the call,
 // since accept sweeps before its eval and reads both afterward; accept pins
 // only the intermediates it produces.
+// accept 融合 forward、rejection mask 与 bonus 采样。
 func (s *speculationSession) accept(position *int, current sampler.Result, candidates *draftCandidates) (results []sampler.Result, accepted, observed int, err error) {
 	r := s.spec.r
 	before := *position
@@ -496,6 +535,7 @@ func (s *speculationSession) accept(position *int, current sampler.Result, candi
 	return results, accepted, observed, nil
 }
 
+// sampleAcceptedMask 计算 min(p/q,1) 的 Bernoulli 接受掩码。
 func (r *Runner) sampleAcceptedMask(targetDist, draftDist sampler.Distribution, draftTokens *mlx.Array) *mlx.Array {
 	p := targetDist.Prob(draftTokens)
 	q := draftDist.Prob(draftTokens)
@@ -503,12 +543,15 @@ func (r *Runner) sampleAcceptedMask(targetDist, draftDist sampler.Distribution, 
 	return r.Sampler.Bernoulli(pipelineSlot, acceptP).AsType(mlx.DTypeInt32)
 }
 
+// sampleTokenAt 从 dist 指定行采样单 token。
 func (r *Runner) sampleTokenAt(dist sampler.Distribution, index int) *mlx.Array {
 	return r.Sampler.SampleDistribution(pipelineSlot, dist.SliceRows(index, index+1))
 }
 
+// draftResults 将接受的 draft id 包装为 sampler.Result（无 logprobs）。
 // draftResults wraps accepted draft ids as sampler results; drafts carry no
 // logprobs, so only the token id is set.
+// draftResults 构造无 logprobs 的 draft Result 切片。
 func draftResults(ids []int) []sampler.Result {
 	results := make([]sampler.Result, len(ids))
 	for i, id := range ids {

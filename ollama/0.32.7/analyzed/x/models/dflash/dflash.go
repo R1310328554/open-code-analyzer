@@ -1,6 +1,9 @@
+// Package dflash 实现 DFlash 块扩散 draft 模型：Qwen3 形层、整 block 一次前向，
+// 以 target 隐状态 tap 为 KV 上下文。
 // Package dflash implements the DFlash block-diffusion draft model:
 // qwen3-shaped layers drafting a whole block per forward, conditioned on
 // tapped target hidden states as key/value context.
+// DFlash draft 模型：块扩散 drafting、target hidden tap 与 KV 上下文注意力。
 package dflash
 
 import (
@@ -16,6 +19,7 @@ import (
 	"github.com/ollama/ollama/x/models/nn"
 )
 
+// init 注册 DFlash/Laguna/Glimmer assistant draft 工厂。
 func init() {
 	base.RegisterDraft("DFlashDraftModel", func(root *model.Root, target base.Model) (base.DraftModel, error) {
 		return newModel(root, target, false)
@@ -30,6 +34,7 @@ func init() {
 
 var _ base.BlockDraft = (*Model)(nil)
 
+// Config 保存 draft 块大小、mask token 与 target tap 层 id。
 type Config struct {
 	HiddenSize        int32
 	NumHiddenLayers   int32
@@ -59,7 +64,9 @@ type Config struct {
 	Causal *bool
 }
 
+// draftTarget 扩展 base.Model：TokenEmbeddings、RawLogits 与 aux tap。
 // draftTarget is what dflash requires of its target beyond base.Model.
+// draftTarget 定义 draft 对 target 模型的额外接口。
 type draftTarget interface {
 	base.Model
 
@@ -79,6 +86,7 @@ type draftTarget interface {
 	NumLayers() int
 }
 
+// Model 为 DFlash draft：FC、层、aux norm 与 target 引用。
 type Model struct {
 	FC         nn.LinearLayer
 	HiddenNorm *nn.RMSNorm
@@ -104,6 +112,7 @@ type Model struct {
 	TensorQuant    map[string]*model.TensorQuantInfo
 }
 
+// Layer 为 draft Transformer 层。
 type Layer struct {
 	InputNorm    *nn.RMSNorm
 	PostAttnNorm *nn.RMSNorm
@@ -113,9 +122,11 @@ type Layer struct {
 	IsCausal     bool
 }
 
+// Attention 含 Q 与融合 K|V 投影；context 路径仅 KVProj。
 // Attention holds a q projection and a fused k|v projection: split
 // checkpoints are stacked at load, fused ones sliced. Context rows produce
 // no queries, so the context path uses only KVProj.
+// Attention 融合 self-attn 与 context KV 路径。
 type Attention struct {
 	QProj  nn.LinearLayer
 	KVProj nn.LinearLayer
@@ -128,12 +139,14 @@ type Attention struct {
 	ctxInputNorm *nn.RMSNorm
 }
 
+// MLP 为 draft 前馈网络。
 type MLP struct {
 	// GateUpProj is gate|up stacked at load; SwiGLU splits the halves.
 	GateUpProj nn.LinearLayer
 	DownProj   nn.LinearLayer
 }
 
+// parseConfig 解析 draft config 并校验 target 层 id。
 func parseConfig(data []byte) (*Config, error) {
 	var raw struct {
 		HiddenSize        int32   `json:"hidden_size"`
@@ -232,6 +245,7 @@ func parseConfig(data []byte) (*Config, error) {
 	return cfg, nil
 }
 
+// newModel 构造 DFlash draft 并绑定 target。
 func newModel(root *model.Root, targetModel base.Model, ctxLayerNorm bool) (base.DraftModel, error) {
 	if root == nil || root.Draft == nil {
 		return nil, fmt.Errorf("draft metadata missing")
@@ -306,6 +320,7 @@ func newModel(root *model.Root, targetModel base.Model, ctxLayerNorm bool) (base
 	return m, nil
 }
 
+// LoadWeights 加载 draft 权重并堆叠 KV 投影。
 func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	prefix := m.tensorPrefix
 	linears := model.NewLinearFactory(tensors, m.QuantGroupSize, m.QuantBits, m.QuantMode, m.TensorQuant)
@@ -410,6 +425,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 // stackLinears concatenates two linears along the output dimension. Quant
 // groups run along the input dimension, so this is exact; per-tensor global
 // scales are expanded to per-row so each half keeps its own.
+// stackLinears 垂直堆叠两个 LinearLayer。
 func stackLinears(a, b nn.LinearLayer) (nn.LinearLayer, error) {
 	if pa, ok := a.(*nn.Linear); ok {
 		pb, ok := b.(*nn.Linear)
@@ -458,6 +474,7 @@ func stackLinears(a, b nn.LinearLayer) (nn.LinearLayer, error) {
 
 // perRowGlobal expands a per-tensor (or nil, meaning 1.0) global scale to a
 // per-row vector; an already per-row scale passes through unchanged.
+// perRowGlobal 为每行广播全局向量。
 func perRowGlobal(g *mlx.Array, rows int32) *mlx.Array {
 	ones := make([]float32, rows)
 	for i := range ones {
@@ -470,6 +487,7 @@ func perRowGlobal(g *mlx.Array, rows int32) *mlx.Array {
 	return mlx.Mul(v, g)
 }
 
+// concatBias 按行拼接 bias 张量。
 func concatBias(a *mlx.Array, aRows int32, b *mlx.Array, bRows int32) *mlx.Array {
 	if a == nil && b == nil {
 		return nil
@@ -490,6 +508,7 @@ func concatBias(a *mlx.Array, aRows int32, b *mlx.Array, bRows int32) *mlx.Array
 }
 
 // sliceLinearRows returns rows [start, stop) of l along the output dimension.
+// sliceLinearRows 切片 Linear 权重行范围。
 func sliceLinearRows(l nn.LinearLayer, start, stop int32) nn.LinearLayer {
 	rows := func(t *mlx.Array) *mlx.Array {
 		if t == nil {
@@ -526,9 +545,11 @@ func sliceLinearRows(l nn.LinearLayer, start, stop int32) nn.LinearLayer {
 	return nil
 }
 
+// BlockParams 返回 blockSize 与 maskTokenID。
 func (m *Model) BlockParams() (int, int32) { return m.BlockSize, m.MaskTokenID }
 
 // NewCaches builds the per-layer context caches.
+// NewCaches 为 draft 层创建 KV cache。
 func (m *Model) NewCaches() []cache.Cache {
 	caches := make([]cache.Cache, len(m.Layers))
 	for i, layer := range m.Layers {
@@ -541,6 +562,7 @@ func (m *Model) NewCaches() []cache.Cache {
 	return caches
 }
 
+// Unembed 经 target RawLogits 投影 draft hidden。
 func (m *Model) Unembed(x *mlx.Array) *mlx.Array {
 	return m.target.RawLogits(x)
 }
@@ -550,6 +572,7 @@ func (m *Model) Unembed(x *mlx.Array) *mlx.Array {
 // come from the block only. Either input may be absent: with no block the
 // call just extends the context, with no context the block drafts from
 // whatever is already cached.
+// Forward 执行块扩散 draft 前向。
 func (m *Model) Forward(b *batch.Batch, _, draftCaches []cache.Cache) (hidden, auxHidden *mlx.Array) {
 	kv := draftCaches
 
@@ -607,12 +630,14 @@ func (m *Model) Forward(b *batch.Batch, _, draftCaches []cache.Cache) (hidden, a
 	return hidden, hidden
 }
 
+// Forward 执行单层 draft（含 context KV）。
 func (l *Layer) Forward(x, ctxK, ctxV *mlx.Array, c cache.Cache, bb *batch.Batch, positions *mlx.Array, mask nn.AttentionMask, B, L int32, cfg *Config) *mlx.Array {
 	h := mlx.Add(x, l.Attention.Forward(l.InputNorm.Forward(x, cfg.RMSNormEps), ctxK, ctxV, c, bb, positions, mask, B, L, cfg))
 	return mlx.Add(h, l.MLP.Forward(l.PostAttnNorm.Forward(h, cfg.RMSNormEps)))
 }
 
 // contextKV projects feature rows into the layer's context K/V.
+// contextKV 从 target hidden 构造 context K/V。
 func (a *Attention) contextKV(hctx *mlx.Array, positions *mlx.Array, cfg *Config) (k, v *mlx.Array) {
 	if a.ctxInputNorm != nil {
 		hctx = a.ctxInputNorm.Forward(hctx, cfg.RMSNormEps)
@@ -627,6 +652,7 @@ func (a *Attention) contextKV(hctx *mlx.Array, positions *mlx.Array, cfg *Config
 	return k, v
 }
 
+// splitKV 将融合 KV 投影拆为 K 与 V。
 func (a *Attention) splitKV(kv *mlx.Array, B, L int32, cfg *Config) (k, v *mlx.Array) {
 	kvDim := cfg.NumKeyValueHeads * cfg.HeadDim
 	k = mlx.Reshape(mlx.SliceStartStop(kv, []int32{0, 0, 0}, []int32{B, L, kvDim}), B, L, cfg.NumKeyValueHeads, cfg.HeadDim)
@@ -634,6 +660,7 @@ func (a *Attention) splitKV(kv *mlx.Array, B, L int32, cfg *Config) (k, v *mlx.A
 	return k, v
 }
 
+// Forward 执行 self-attn 与 context 交叉注意力。
 func (a *Attention) Forward(x, ctxK, ctxV *mlx.Array, c cache.Cache, bb *batch.Batch, positions *mlx.Array, mask nn.AttentionMask, B, L int32, cfg *Config) *mlx.Array {
 	q := mlx.Reshape(a.QProj.Forward(x), B, L, cfg.NumAttentionHeads, cfg.HeadDim)
 	k, v := a.splitKV(a.KVProj.Forward(x), B, L, cfg)
@@ -669,6 +696,7 @@ func (a *Attention) Forward(x, ctxK, ctxV *mlx.Array, c cache.Cache, bb *batch.B
 	return a.OProj.Forward(out)
 }
 
+// Forward 执行 SwiGLU MLP。
 func (m *MLP) Forward(x *mlx.Array) *mlx.Array {
 	gu := m.GateUpProj.Forward(x)
 	dims := gu.Dims()

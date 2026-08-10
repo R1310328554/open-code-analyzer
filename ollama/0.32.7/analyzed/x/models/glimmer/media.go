@@ -1,3 +1,4 @@
+// Glimmer 多模态媒体：图像预处理、scatter 嵌入与 PrepareMedia 管线。
 package glimmer
 
 import (
@@ -22,8 +23,10 @@ const maxImageTokens = 4096
 
 var _ base.MediaModel = (*Model)(nil)
 
+// preparedImage 为 Glimmer 私有媒体状态：patch 网格与 soft token 数。
 // preparedImage is glimmer's model-private media state: the patch grid the
 // encoder consumes and the soft-token count of its pixel-shuffled output.
+// preparedImage 保存目标尺寸、token 数与 grid 信息。
 type preparedImage struct {
 	gridH        int
 	gridW        int
@@ -33,6 +36,7 @@ type preparedImage struct {
 // PrepareMedia implements base.MediaModel: splice each image segment's
 // placeholder expansion — image_start, the patch-token run, image_end — into
 // the stream, decoding, resizing, and patchifying the image on the CPU.
+// PrepareMedia 解析 segments 并返回 PreparedRequest。
 func (m *Model) PrepareMedia(segments []base.Segment) (*base.PreparedRequest, error) {
 	prepared := &base.PreparedRequest{}
 	for s, seg := range segments {
@@ -76,6 +80,7 @@ func (m *Model) PrepareMedia(segments []base.Segment) (*base.PreparedRequest, er
 
 // EncodeMedia implements base.MediaModel: run the vision tower over one
 // prepared image, returning the lazy [outputTokens, hidden] features.
+// EncodeMedia 将预处理像素编码为 vision 嵌入。
 func (m *Model) EncodeMedia(item *base.PreparedItem, data *mlx.Array) *mlx.Array {
 	geom := item.Opaque.(preparedImage)
 	return m.encodeVision(data, geom.gridH, geom.gridW)
@@ -83,6 +88,7 @@ func (m *Model) EncodeMedia(item *base.PreparedItem, data *mlx.Array) *mlx.Array
 
 // softRun returns a media item's feature-bearing token range: the expansion
 // is image_start + patch*N + image_end, so the run starts one past the splice.
+// softRun 计算 media item 在 batch 中的 soft token 范围。
 func softRun(item batch.MediaItem) (start, end int) {
 	geom := item.Opaque.(preparedImage)
 	return item.Pos + 1, item.Pos + 1 + geom.outputTokens
@@ -90,6 +96,7 @@ func softRun(item batch.MediaItem) (start, end int) {
 
 // scatterMedia overwrites the patch-token rows this chunk covers with the
 // item's projected features.
+// scatterMedia 将 media 嵌入 scatter 到 token 序列。
 func (m *Model) scatterMedia(h *mlx.Array, b *batch.Batch) *mlx.Array {
 	for _, item := range b.Media {
 		if item.Features == nil {
@@ -155,6 +162,7 @@ func computeImageSize(width, height, patchStride, maxTokens int) (targetWidth, t
 // preprocessImage decodes and prepares one image on the CPU: budgeted
 // resize, [-1,1] rescale, and patchify to the tower's layout — one row per
 // patch, (temporal, RGB, pixel row, pixel column) within it.
+// preprocessImage 解码 PNG/JPEG 并归一化像素。
 func (m *Model) preprocessImage(data []byte) ([]float32, preparedImage, error) {
 	src, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {

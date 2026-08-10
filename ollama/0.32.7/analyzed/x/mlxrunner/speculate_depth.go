@@ -1,3 +1,4 @@
+// 投机深度控制器：EV 最优 draft 深度、成本 EWMA、接受率模型与探测 cadence。
 package mlxrunner
 
 import (
@@ -7,16 +8,19 @@ import (
 	"time"
 )
 
+// depthProbeInterval 为探测 cadence 基值：周期性 draft 超过当前选择深度。
 // depthProbeInterval is the base cadence at which the controller drafts one past its
 // selection to refresh the next position up; without it a shallow controller never
 // notices a deeper draft becoming worthwhile.
 const depthProbeInterval = 4
 
+// depthProbeIntervalMax 限制探测退避上限，避免无限 plain decode。
 // depthProbeIntervalMax caps the probe backoff. Probes that keep changing nothing
 // double the interval up to this cap, trading slower re-engagement — worst case
 // plain decode speed, never below — for fewer probes.
 const depthProbeIntervalMax = 512
 
+// depthController 在 [0,limit] 上选 EV 最优 draft 深度并周期性 probe。
 // depthController drafts argmax_N EV(N) where EV(N) = committed(N) / cost(N), over
 // depths from 0 (plain decode) up to one past the frontier, or the drafter's limit
 // where that is shallower. The depth-0 floor lets it stop speculating when no draft
@@ -28,6 +32,7 @@ const depthProbeIntervalMax = 512
 // per-depth cost curve, the drafts' per-position acceptance rates, the probe cadence,
 // and the depth scheduled for the next round — persisted on the speculation so a fresh
 // request starts at the proven-out depth instead of re-ramping from shallow.
+// depthController 跨请求持久成本/接受率/探测状态。
 type depthController struct {
 	cost   *costModel
 	acc    *acceptanceModel
@@ -49,14 +54,17 @@ type depthController struct {
 	lastSelected  int // the selection the cadence was calibrated against
 }
 
+// newDepthController 初始化 cost/acceptance 模型与 probe 间隔。
 func newDepthController() *depthController {
 	return &depthController{cost: newCostModel(), acc: newAcceptanceModel(), probeInterval: depthProbeInterval}
 }
 
+// frontier 返回 acceptance 模型 frontier。
 func (c *depthController) frontier() int { return c.acc.frontier() }
 
 // limit is the deepest depth the search considers: one past the frontier, held
 // to what the drafter can produce.
+// limit 返回搜索上限 min(frontier+1, drafterLimit)。
 func (c *depthController) limit() int {
 	limit := c.frontier() + 1
 	if c.drafterLimit > 0 {
@@ -65,12 +73,14 @@ func (c *depthController) limit() int {
 	return limit
 }
 
+// next 返回下轮 draft 深度：EV 最优或 probe/cost-seed。
 // next returns the draft depth for the upcoming step: the EV-optimal depth (held
 // to the search limit), except periodically it probes one past the selection to
 // refresh the next position up. The probe stays within that limit. The cadence
 // doubles toward its cap while probes change nothing and resets on any selection
 // change, giving the new selection a full interval to settle. The chosen depth is
 // recorded in c.scheduled for the next request's open to consume.
+// next 选择下轮深度并更新 scheduled/probe 状态。
 func (c *depthController) next() (depth int) {
 	defer func() { c.scheduled = depth }()
 	sel := c.selected()
@@ -103,9 +113,11 @@ func (c *depthController) next() (depth int) {
 	return sel
 }
 
+// costSeedDepth 返回最浅未采样成本的深度，或 -1。
 // costSeedDepth is the shallowest depth within the search limit with no clean
 // cost sample, or -1 if all are sampled; the bound keeps cost-seeding from
 // outrunning the acceptance frontier or the drafter.
+// costSeedDepth 找最浅未采样成本的深度。
 func (c *depthController) costSeedDepth() int {
 	limit := c.limit()
 	for n := 0; n <= limit; n++ {
@@ -116,10 +128,12 @@ func (c *depthController) costSeedDepth() int {
 	return -1
 }
 
+// selected 返回 EV 最优深度（不修改 probe 状态）。
 // selected returns the EV-optimal draft depth without mutating probe state, the
 // argmax within the search limit. The frontier bound keeps the inherited optimistic
 // rate from making ever-deeper depths look best; the depth-0 floor lets it stop
 // speculating. Returns 0 until the cost model can compare depths.
+// selected 计算 EV 最优 draft 深度。
 func (c *depthController) selected() int {
 	if !c.cost.ready() {
 		return 0
@@ -138,6 +152,7 @@ func (c *depthController) selected() int {
 // so a responsive alpha converges in a few visits while smoothing scheduler jitter.
 const costEWMAAlpha = 0.3
 
+// costModel 用 EWMA 估计各 draft 深度的 target forward 耗时。
 // costModel is the target-forward cost for validating N drafts — a fused batch of
 // 1 current token plus N drafts — as an EWMA per visited draft depth read by
 // piecewise-linear interpolation between samples (flat beyond the extremes).
@@ -145,11 +160,13 @@ const costEWMAAlpha = 0.3
 // bandwidth-bound forward is represented as measured. Cost is static within a run,
 // learned from decode steps that already sync the forward, so there is no startup
 // probe.
+// costModel 保存各深度 EWMA 毫秒成本与采样深度列表。
 type costModel struct {
 	ewma   map[int]float64 // EWMA of measured ms by draft depth
 	depths []int           // sampled draft depths, sorted; updated as new depths arrive
 }
 
+// newCostModel 创建空 cost EWMA 模型。
 func newCostModel() *costModel {
 	return &costModel{ewma: map[int]float64{}}
 }
@@ -163,6 +180,7 @@ const costClampFraction = 0.25
 
 // observe folds one forward's wall time into the draft depth's EWMA, clamping the
 // innovation so one stall-inflated sample cannot move it far.
+// observe 将 wall time fold 进指定深度的 EWMA（带 clamp）。
 func (m *costModel) observe(drafts int, dt time.Duration) {
 	if drafts < 0 || dt <= 0 {
 		return
@@ -179,16 +197,20 @@ func (m *costModel) observe(drafts int, dt time.Duration) {
 }
 
 // ready reports whether two distinct depths have been sampled, so a slope exists.
+// ready 报告是否已有至少两个深度样本。
 func (m *costModel) ready() bool { return len(m.ewma) >= 2 }
 
+// sampled 检查深度是否已有 EWMA 样本。
 func (m *costModel) sampled(drafts int) bool {
 	_, ok := m.ewma[drafts]
 	return ok
 }
 
+// cost 对 draft 深度做分段线性插值估计 forward 毫秒成本。
 // cost returns the estimated forward wall time (ms) for validating drafts tokens:
 // a piecewise-linear interpolation of the per-depth EWMAs, clamping to the nearest
 // sample outside the sampled range (the curve beyond is unknown).
+// cost 分段线性插值估计 draft 深度成本。
 func (m *costModel) cost(drafts int) float64 {
 	ds := m.depths
 	if len(ds) == 0 {
@@ -210,7 +232,9 @@ func (m *costModel) cost(drafts int) float64 {
 	return m.ewma[ds[len(ds)-1]]
 }
 
+// sampleString 格式化各深度 EWMA 成本供调试。
 // sampleString reports the EWMA ms per visited draft depth for diagnostics.
+// sampleString 输出各深度 EWMA 诊断字符串。
 func (m *costModel) sampleString() string {
 	ds := m.depths
 	parts := make([]string, 0, len(ds))
@@ -230,19 +254,23 @@ const acceptanceEWMAAlpha = 0.1
 // the ramp, since each depth is re-measured as it is drafted.
 const acceptanceMinSamples = 10
 
+// acceptanceModel 学习各位置条件接受率 EWMA，跨请求共享。
 // acceptanceModel learns the per-position conditional acceptance rate — the chance
 // position i is accepted given every draft before it already was — as an EWMA, shared
 // across requests so a fresh request keeps the proven-out frontier. Drift is handled
 // by the EWMA forgetting, not by discarding the estimate.
+// acceptanceModel 保存各位置接受率 EWMA 与样本计数。
 type acceptanceModel struct {
 	rate []float64 // EWMA acceptance rate given the prefix survived; index i is position i
 	seen []int     // times position i was reached (warmup gate for rate)
 }
 
+// newAcceptanceModel 初始化接受率模型。
 func newAcceptanceModel() *acceptanceModel {
 	return &acceptanceModel{rate: []float64{0}, seen: []int{0}}
 }
 
+// grow 扩展 rate/seen 切片至索引 i。
 func (a *acceptanceModel) grow(i int) {
 	for len(a.seen) <= i {
 		a.rate = append(a.rate, 0)
@@ -250,10 +278,12 @@ func (a *acceptanceModel) grow(i int) {
 	}
 }
 
+// observe 将本轮结果 fold 到可达位置的 EWMA。
 // observe folds a step's outcome into each reached position's EWMA. A position is
 // reached only when the prefix before it survived (accepted >= i-1), and is accepted
 // iff accepted >= i; updating only the surviving prefix avoids diluting deeper
 // positions the step never reached.
+// observe 更新可达位置的条件接受率 EWMA。
 func (a *acceptanceModel) observe(drafted, accepted int) {
 	for i := 1; i <= drafted; i++ {
 		if accepted < i-1 {
@@ -273,9 +303,11 @@ func (a *acceptanceModel) observe(drafted, accepted int) {
 	}
 }
 
+// acceptance 返回位置 i 条件接受率；欠采样时继承更深可信率。
 // acceptance returns the rate position i is accepted given its prefix survived. An under-sampled
 // position inherits the deepest trusted rate rather than zero, so the controller
 // keeps exploring deeper instead of locking shallow on noise.
+// acceptance 返回位置 i 的条件接受率。
 func (a *acceptanceModel) acceptance(i int) float64 {
 	if i >= 1 && i < len(a.seen) && a.seen[i] >= acceptanceMinSamples {
 		return a.rate[i]
@@ -289,10 +321,12 @@ func (a *acceptanceModel) acceptance(i int) float64 {
 	return 1
 }
 
+// expectedCommitted 返回深度 N 的期望提交 token 数（含 current）。
 // expectedCommitted returns expected committed tokens at depth N: the current token,
 // which always commits, plus the expected number of accepted drafts — each draft
 // position contributes the probability its whole prefix was accepted, the running
 // product of the per-position acceptance rates summed over positions.
+// expectedCommitted 计算深度 N 期望提交 token 数。
 func (a *acceptanceModel) expectedCommitted(n int) float64 {
 	total, prod := 1.0, 1.0
 	for k := 1; k <= n; k++ {
@@ -302,9 +336,11 @@ func (a *acceptanceModel) expectedCommitted(n int) float64 {
 	return total
 }
 
+// frontier 为最深可信接受率位置；搜索不超过 frontier+1。
 // frontier is the deepest position with a trusted acceptance rate. The controller
 // never selects beyond frontier+1, so the selection grows outward one position at a
 // time instead of jumping deep on the inherited optimistic rate.
+// frontier 返回最深可信接受率位置。
 func (a *acceptanceModel) frontier() int {
 	f := 0
 	for i := 1; i < len(a.seen); i++ {

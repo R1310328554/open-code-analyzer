@@ -1,4 +1,6 @@
+// Package gemma4 提供 Gemma 4 MLX 实现：MoE、PLE、可选视觉与 MTP 自 draft。
 // Package gemma4 provides the Gemma 4 text model implementation for MLX.
+// Gemma 4 MLX 模型：MoE/PLE、Q/K/v-norm、GatherQMM 专家与 suppress tokens。
 package gemma4
 
 import (
@@ -16,6 +18,7 @@ import (
 	"github.com/ollama/ollama/x/tokenizer"
 )
 
+// init 注册 Gemma4 模型与 SelfDraft/Assistant draft。
 func init() {
 	base.Register("Gemma4ForCausalLM", newModel)
 	base.Register("Gemma4ForConditionalGeneration", newModel)
@@ -28,17 +31,22 @@ func init() {
 	base.RegisterDraft("gemma4_unified_assistant", newAssistantModel)
 }
 
+// 编译期接口断言。
 // Compile-time interface checks.
 var _ base.Model = (*Model)(nil)
 
+// RopeParams 保存各层类型 RoPE 参数。
 // RopeParams holds per-layer-type RoPE settings.
+// RopeParams 含 rope_type、theta 与 local base freq。
 type RopeParams struct {
 	PartialRotaryFactor float32 `json:"partial_rotary_factor"`
 	RopeTheta           float32 `json:"rope_theta"`
 	RopeType            string  `json:"rope_type"`
 }
 
+// TextConfig 保存 Gemma4 文本/MoE/PLE 配置。
 // TextConfig holds configuration for the Gemma 4 text model.
+// TextConfig 聚合 MoE、PLE、视觉与 suppress token 配置。
 type TextConfig struct {
 	HiddenSize             int32                  `json:"hidden_size"`
 	NumHiddenLayers        int32                  `json:"num_hidden_layers"`
@@ -96,6 +104,7 @@ type TextConfig struct {
 	KVDonors map[int32]bool `json:"-"`
 }
 
+// generationConfig 保存 generation_config.json 字段。
 type generationConfig struct {
 	SuppressTokens []int32 `json:"suppress_tokens"`
 }
@@ -107,13 +116,16 @@ type generationConfig struct {
 // mask carries any storage-side mask the (k, v) path needs (e.g.
 // sliding window) — unused on the history path, where the cache's
 // applier supplies the equivalent restriction.
+// sharedHistory 在 donor 层间共享 KV history。
 type sharedHistory struct {
 	history *nn.KVHistory
 	k, v    *mlx.Array
 	mask    nn.AttentionMask
 }
 
+// Attention 实现 Gemma4 注意力（Q/K norm + v-norm）。
 // Attention implements Gemma 4 attention with Q/K normalization and v-norm.
+// Attention 含 Q/K/V/O 与 v-norm。
 type Attention struct {
 	QProj nn.LinearLayer
 	KProj nn.LinearLayer
@@ -128,7 +140,9 @@ type Attention struct {
 	KNormScaled *mlx.Array
 }
 
+// MLP 为 dense GeGLU 前馈。
 // MLP is the feed-forward network with GELU activation.
+// MLP 为 dense GeGLU。
 type MLP struct {
 	GateProj nn.LinearLayer
 	UpProj   nn.LinearLayer
@@ -136,6 +150,7 @@ type MLP struct {
 }
 
 // stackedExpertResult holds the result of collecting and stacking per-expert weights.
+// stackedExpertResult 保存堆叠专家权重与量化信息。
 type stackedExpertResult struct {
 	Weight    *mlx.Array
 	Scales    *mlx.Array
@@ -146,6 +161,7 @@ type stackedExpertResult struct {
 }
 
 // firstNonNil returns the first non-nil tensor found under any of the given keys.
+// firstNonNil 返回 keys 中首个非 nil 张量。
 func firstNonNil(tensors map[string]*mlx.Array, keys ...string) *mlx.Array {
 	for _, k := range keys {
 		if t := tensors[k]; t != nil {
@@ -157,6 +173,7 @@ func firstNonNil(tensors map[string]*mlx.Array, keys ...string) *mlx.Array {
 
 // firstTensorKey returns the first key present in tensors along with its
 // tensor, or "", nil if none of the keys are present.
+// firstTensorKey 返回首个存在的 tensor 键与值。
 func firstTensorKey(tensors map[string]*mlx.Array, keys ...string) (string, *mlx.Array) {
 	for _, k := range keys {
 		if t := tensors[k]; t != nil {
@@ -167,6 +184,7 @@ func firstTensorKey(tensors map[string]*mlx.Array, keys ...string) (string, *mlx
 }
 
 // sliceAxis1 slices a tensor along axis 1: a[:, start:stop, ...].
+// sliceAxis1 沿 axis=1 切片张量。
 func sliceAxis1(a *mlx.Array, start, stop int32) *mlx.Array {
 	dims := a.Dims()
 	beg := make([]int32, len(dims))
@@ -181,6 +199,7 @@ func sliceAxis1(a *mlx.Array, start, stop int32) *mlx.Array {
 
 // transposeForGatherMM transposes stacked expert weights from [experts, out, in]
 // to [experts, in, out] for use with GatherMM (which computes a @ b[group]).
+// transposeForGatherMM 转置权重以适配 GatherMM。
 func transposeForGatherMM(w *mlx.Array) *mlx.Array {
 	if w == nil || !w.Valid() || w.NumDims() != 3 {
 		return w
@@ -194,6 +213,7 @@ func transposeForGatherMM(w *mlx.Array) *mlx.Array {
 // optionally keeps quantized weight/scale/bias for GatherQMM.
 // prefix: e.g. "model.language_model.layers.0.moe.experts"
 // proj: e.g. "gate_proj"
+// collectExpertProjection 收集并堆叠 MoE 专家投影。
 func collectExpertProjection(tensors map[string]*mlx.Array, cfg *TextConfig, prefix, proj string, numExperts int32) *stackedExpertResult {
 	weights := make([]*mlx.Array, 0, numExperts)
 	scales := make([]*mlx.Array, 0, numExperts)
@@ -260,6 +280,7 @@ func collectExpertProjection(tensors map[string]*mlx.Array, cfg *TextConfig, pre
 // tensor and chooses GatherQMM (one quantized call) when scale companions are
 // present, or GatherMM otherwise. It is name-agnostic: callers resolve the
 // tensor keys, which may or may not carry a ".weight" suffix.
+// loadFusedExperts 加载融合 gate_up/down 专家权重。
 func (m *Model) loadFusedExperts(moe *MoEBlock, tensors map[string]*mlx.Array, gateUpKey string, gateUp *mlx.Array, downKey string, down *mlx.Array) {
 	moe.UseFusedGateUp = true
 
@@ -287,14 +308,18 @@ func (m *Model) loadFusedExperts(moe *MoEBlock, tensors map[string]*mlx.Array, g
 		m.QuantGroupSize, m.QuantBits, m.QuantMode, m.TensorQuant, downKey, down, downScales)
 }
 
+// Router 实现 Gemma4 MoE 路由（top-k + softmax）。
 // Router implements Gemma 4's expert routing mechanism.
+// Router 为 MoE gate 线性层。
 type Router struct {
 	Proj  nn.LinearLayer // [hidden_size -> num_experts]
 	Scale *mlx.Array     // learnable scale [hidden_size]
 }
 
+// MoEBlock 用 GatherQMM/GatherMM 执行 MoE 前向。
 // MoEBlock implements the Gemma 4 mixture-of-experts block.
 // Uses GatherQMM for quantized weights, GatherMM for dense.
+// MoEBlock 含 router 与 stacked 专家权重。
 type MoEBlock struct {
 	// Dense expert weights for GatherMM (used when not quantized).
 	GateUpWeight *mlx.Array // [num_experts, 2*intermediate, hidden] (fused gate+up)
@@ -321,7 +346,9 @@ type MoEBlock struct {
 	DownQuantMode               string // down mode (may differ for mixed mxfp4/mxfp8)
 }
 
+// PLELayer 保存单层 PLE（parallel layer embedding）权重。
 // PLELayer holds per-layer PLE weights for a single decoder layer.
+// PLELayer 为 parallel layer embedding 投影。
 type PLELayer struct {
 	InputGate  nn.LinearLayer // [hidden_size -> ple_dim]
 	Projection nn.LinearLayer // [ple_dim -> hidden_size]
@@ -331,7 +358,9 @@ type PLELayer struct {
 	PostNormScaled *mlx.Array
 }
 
+// DecoderLayer 为 Gemma4 Transformer 块（含 MoE/PLE）。
 // DecoderLayer is a single transformer block.
+// DecoderLayer 含 attention、MoE/MLP 与 PLE。
 type DecoderLayer struct {
 	InputNorm    *nn.RMSNorm
 	Attention    *Attention
@@ -373,7 +402,9 @@ type DecoderLayer struct {
 	IsDonor      bool  // true if this layer's KV is shared by later layers
 }
 
+// Model 为 Gemma4 主模型（文本 + 可选视觉）。
 // Model is the Gemma 4 model (text + optional vision).
+// Model 聚合嵌入、层、PLE、norm 与 LM head。
 type Model struct {
 	EmbedTokens nn.EmbeddingLayer
 	Layers      []*DecoderLayer
@@ -396,6 +427,7 @@ type Model struct {
 	weightPrefix      string
 }
 
+// parseTextConfig 解析 Gemma4 config.json。
 func parseTextConfig(configData []byte) (TextConfig, error) {
 	var cfg TextConfig
 	if err := json.Unmarshal(configData, &cfg); err != nil {
@@ -518,6 +550,7 @@ func parseTextConfig(configData []byte) (TextConfig, error) {
 	return cfg, nil
 }
 
+// parseSuppressTokens 解析需抑制的 token id。
 func parseSuppressTokens(configData []byte) []int32 {
 	var cfg generationConfig
 	if err := json.Unmarshal(configData, &cfg); err != nil {
@@ -526,10 +559,12 @@ func parseSuppressTokens(configData []byte) []int32 {
 	return cfg.SuppressTokens
 }
 
+// EnableCompile 返回 Gemma4 是否启用 MLX compile。
 func (m *Model) EnableCompile() bool {
 	return true
 }
 
+// resolveWeightPrefix 解析权重前缀。
 func resolveWeightPrefix(tensors map[string]*mlx.Array) string {
 	for _, prefix := range []string{"", "language_model.", "model.language_model."} {
 		if tensors[prefix+"embed_tokens.weight"] != nil {
@@ -545,6 +580,7 @@ func resolveWeightPrefix(tensors map[string]*mlx.Array) string {
 	return ""
 }
 
+// isLayerSliding 判断层是否 sliding window。
 func isLayerSliding(layerIdx int32, cfg *TextConfig) bool {
 	if len(cfg.LayerTypes) > 0 && int(layerIdx) < len(cfg.LayerTypes) {
 		return cfg.LayerTypes[layerIdx] == "sliding_attention"
@@ -556,8 +592,10 @@ func isLayerSliding(layerIdx int32, cfg *TextConfig) bool {
 }
 
 // precomputeGemmaScaledWeights assigns raw norm weights to the *Scaled fields.
+// Gemma4 norm 使用 scale_shift=0，预计算 scaled 权重。
 // Gemma 4 uses scale_shift=0.0 for all norms (no +1.0 adjustment), so the
 // precomputed weights are just the raw weights from the model.
+// precomputeGemmaScaledWeights 预计算 norm scaled 权重。
 func precomputeGemmaScaledWeights(m *Model) {
 	if m.Norm != nil {
 		m.NormScaled = m.Norm.Weight
@@ -605,6 +643,7 @@ func precomputeGemmaScaledWeights(m *Model) {
 	}
 }
 
+// newModel 构造 Gemma4 模型。
 func newModel(root *model.Root) (base.Model, error) {
 	configData, err := root.Manifest.ReadConfig("config.json")
 	if err != nil {
@@ -669,8 +708,10 @@ func newModel(root *model.Root) (base.Model, error) {
 	return m, nil
 }
 
+// LoadWeights 从 manifest 映射加载全部 Gemma4 权重。
 // LoadWeights receives all tensors loaded from the manifest and assigns them
 // to model fields.
+// LoadWeights 加载全部 Gemma4 权重。
 func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	m.weightPrefix = resolveWeightPrefix(tensors)
 	prefix := m.weightPrefix
@@ -984,6 +1025,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	return nil
 }
 
+// Forward 执行整模型前向（含 PLE 与 aux tap）。
 func (m *Model) Forward(b *batch.Batch, caches []cache.Cache) (hidden, auxHidden *mlx.Array) {
 	dims := b.InputIDs.Dims()
 	B, L := int32(dims[0]), int32(dims[1])
@@ -1037,6 +1079,7 @@ func (m *Model) Forward(b *batch.Batch, caches []cache.Cache) (hidden, auxHidden
 	return out, out
 }
 
+// Unembed 应用 softcap/suppress 并返回 logits。
 func (m *Model) Unembed(x *mlx.Array) *mlx.Array {
 	logits := m.LMHead.Forward(x)
 
@@ -1048,6 +1091,7 @@ func (m *Model) Unembed(x *mlx.Array) *mlx.Array {
 	return suppressTokenLogits(logits, m.SuppressLogitBias)
 }
 
+// makeSuppressLogitBias 构造 suppress token 的 logit bias。
 func makeSuppressLogitBias(tokenIDs []int32, vocabSize int32) *mlx.Array {
 	if len(tokenIDs) == 0 || vocabSize <= 0 {
 		return nil
@@ -1068,6 +1112,7 @@ func makeSuppressLogitBias(tokenIDs []int32, vocabSize int32) *mlx.Array {
 	return mlx.FromValues(bias, 1, 1, int(vocabSize))
 }
 
+// suppressTokenLogits 对 logits 应用 suppress bias。
 func suppressTokenLogits(logits, bias *mlx.Array) *mlx.Array {
 	if bias == nil {
 		return logits
@@ -1081,20 +1126,26 @@ func suppressTokenLogits(logits, bias *mlx.Array) *mlx.Array {
 	return logits.Add(bias.AsType(logits.DType()))
 }
 
+// MaxContextLength 返回最大上下文。
 func (m *Model) MaxContextLength() int {
 	return int(m.MaxPositionEmbeddings)
 }
 
+// Tokenizer 返回分词器。
 func (m *Model) Tokenizer() *tokenizer.Tokenizer {
 	return m.tok
 }
 
+// TokenEmbeddings 返回 MTP 用的缩放 token 嵌入。
 // TokenEmbeddings returns the target model's scaled token embeddings for MTP.
+// TokenEmbeddings 返回缩放嵌入供 MTP 使用。
 func (m *Model) TokenEmbeddings(inputIDs *mlx.Array) *mlx.Array {
 	return mlx.MulScalar(m.EmbedTokens.Forward(inputIDs), m.EmbedScale)
 }
 
+// NewCaches 为拥有 KV 的层创建 cache。
 // NewCaches creates cache objects for layers that own KV state.
+// NewCaches 创建各层 KV cache。
 func (m *Model) NewCaches() []cache.Cache {
 	cacheLayers := len(m.Layers)
 	for i, layer := range m.Layers {
@@ -1116,7 +1167,9 @@ func (m *Model) NewCaches() []cache.Cache {
 }
 
 // computePLEInputs computes per-layer embeddings and projections.
+// computePLEInputs 返回 shape [B,L,NumHiddenLayers,HiddenSizePerLayer]。
 // Returns shape [B, L, NumHiddenLayers, HiddenSizePerLayer].
+// computePLEInputs 计算 PLE 输入张量。
 func (m *Model) computePLEInputs(tokens, h *mlx.Array) *mlx.Array {
 	dims := tokens.Dims()
 	B, L := int32(dims[0]), int32(dims[1])
@@ -1146,7 +1199,9 @@ func (m *Model) computePLEInputs(tokens, h *mlx.Array) *mlx.Array {
 }
 
 // sliceLayerDim extracts a single layer's PLE input from the combined tensor.
+// sliceLayerDim 从 combined PLE 张量切出指定层维度。
 // Input shape: [B, L, NumLayers, PLEDim], output shape: [B, L, PLEDim].
+// sliceLayerDim 从 PLE combined 张量切层维。
 func sliceLayerDim(combined *mlx.Array, layerIdx, B, L, pleDim int32) *mlx.Array {
 	sliced := mlx.SliceStartStop(combined,
 		[]int32{0, 0, layerIdx, 0},
@@ -1155,6 +1210,7 @@ func sliceLayerDim(combined *mlx.Array, layerIdx, B, L, pleDim int32) *mlx.Array
 	return mlx.Squeeze(sliced, 2)
 }
 
+// Forward 执行 Gemma4 decoder（含 donor/PLE）。
 func (l *DecoderLayer) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *mlx.Array, B, L int32, cfg *TextConfig, pleInput *mlx.Array, donor *sharedHistory) (*mlx.Array, *sharedHistory) {
 	normed := mlx.RMSNormFn(x, l.InputNormScaled, cfg.RMSNormEps)
 	attnOut, kv := l.Attention.Forward(normed, b, c, positions, B, L, l.IsSliding, cfg, donor)
@@ -1205,6 +1261,7 @@ func (l *DecoderLayer) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, posi
 	return h, kv
 }
 
+// Forward 执行 Gemma4 注意力与 v-norm。
 func (a *Attention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *mlx.Array, B, L int32, isSliding bool, cfg *TextConfig, donor *sharedHistory) (*mlx.Array, *sharedHistory) {
 	// Determine head dim and scale based on layer type.
 	headDim := cfg.HeadDim
@@ -1329,14 +1386,17 @@ func (a *Attention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positio
 	return a.OProj.Forward(out), kv
 }
 
+// Forward 执行 dense GeGLU MLP。
 func (m *MLP) Forward(x *mlx.Array) *mlx.Array {
 	gate := m.GateProj.Forward(x)
 	up := m.UpProj.Forward(x)
 	return m.DownProj.Forward(mlx.GeGLU(gate, up))
 }
 
+// Router.Forward 为每 token 选 top-k 专家。
 // Forward runs the router to select top-k experts per token.
 // Returns (scores [B*L, topK], indices [B*L, topK]).
+// Forward 路由 top-k 专家。
 func (r *Router) Forward(x *mlx.Array, cfg *TextConfig) (*mlx.Array, *mlx.Array) {
 	dims := x.Dims()
 	BL := int32(dims[0]) * int32(dims[1])
@@ -1368,8 +1428,10 @@ func (r *Router) Forward(x *mlx.Array, cfg *TextConfig) (*mlx.Array, *mlx.Array)
 	return scores, inds
 }
 
+// MoEBlock.Forward 用 GatherQMM/GatherMM 混合专家输出。
 // Forward runs the MoE block using GatherQMM (quantized) or GatherMM (dense).
 // scores: [B*L, topK], inds: [B*L, topK], x: [B, L, hidden].
+// Forward 执行 MoE 块。
 func (m *MoEBlock) Forward(x *mlx.Array, scores, inds *mlx.Array, cfg *TextConfig) *mlx.Array {
 	dims := x.Dims()
 	B, L := int32(dims[0]), int32(dims[1])

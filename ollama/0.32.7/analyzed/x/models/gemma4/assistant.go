@@ -1,3 +1,4 @@
+// Gemma4 Assistant draft 模型：共享 target KV、centroid masking 与 MTP 辅助头。
 package gemma4
 
 import (
@@ -14,6 +15,7 @@ import (
 
 var _ base.DraftModel = (*AssistantModel)(nil)
 
+// AssistantConfig 保存 assistant draft 层数与 tap 配置。
 type AssistantConfig struct {
 	TextConfig               TextConfig `json:"text_config"`
 	BackboneHiddenSize       int32      `json:"backbone_hidden_size"`
@@ -22,6 +24,7 @@ type AssistantConfig struct {
 	CentroidIntermediateTopK int32      `json:"centroid_intermediate_top_k"`
 }
 
+// AssistantModel 为 Gemma4 assistant draft 实现。
 type AssistantModel struct {
 	PreProjection  nn.LinearLayer
 	PostProjection nn.LinearLayer
@@ -47,6 +50,7 @@ type AssistantModel struct {
 	TensorQuant    map[string]*model.TensorQuantInfo
 }
 
+// AssistantLayer 为 assistant Transformer 层。
 type AssistantLayer struct {
 	InputNorm    *nn.RMSNorm
 	PostAttnNorm *nn.RMSNorm
@@ -64,6 +68,7 @@ type AssistantLayer struct {
 	IsSliding   bool
 }
 
+// AssistantAttention 共享 target sliding/full KV history。
 type AssistantAttention struct {
 	QProj nn.LinearLayer
 	OProj nn.LinearLayer
@@ -72,6 +77,7 @@ type AssistantAttention struct {
 	QNormScaled *mlx.Array
 }
 
+// parseAssistantConfig 解析 assistant config.json。
 func parseAssistantConfig(configData []byte) (AssistantConfig, error) {
 	var raw struct {
 		TextConfig json.RawMessage `json:"text_config"`
@@ -108,6 +114,7 @@ func parseAssistantConfig(configData []byte) (AssistantConfig, error) {
 	}, nil
 }
 
+// newAssistantModel 构造 assistant draft 并绑定 target。
 func newAssistantModel(root *model.Root, target base.Model) (base.DraftModel, error) {
 	if root == nil || root.Draft == nil {
 		return nil, fmt.Errorf("draft metadata missing")
@@ -166,6 +173,7 @@ func newAssistantModel(root *model.Root, target base.Model) (base.DraftModel, er
 	return m, nil
 }
 
+// LoadWeights 加载 assistant 权重。
 func (m *AssistantModel) LoadWeights(tensors map[string]*mlx.Array) error {
 	prefix := m.tensorPrefix
 	linears := model.NewLinearFactory(tensors, m.QuantGroupSize, m.QuantBits, m.QuantMode, m.TensorQuant)
@@ -246,6 +254,7 @@ func (m *AssistantModel) LoadWeights(tensors map[string]*mlx.Array) error {
 	return nil
 }
 
+// precomputeScaledWeights 预计算 Gemma norm 缩放权重。
 func (m *AssistantModel) precomputeScaledWeights() {
 	if m.Norm != nil {
 		m.NormScaled = m.Norm.Weight
@@ -271,12 +280,14 @@ func (m *AssistantModel) precomputeScaledWeights() {
 
 // NewCaches returns nil: the assistant keeps no KV and re-attends the
 // target's caches read-only each step.
+// NewCaches assistant 无独立 KV，返回 nil。
 func (m *AssistantModel) NewCaches() []cache.Cache { return nil }
 
 // Forward is single-position: the head drafts every token as if it sat at the
 // last target-seen position, so it anchors RoPE and the mask there — from the
 // non-moving target full-attention cache — regardless of the advancing offset
 // in b. The input fuses the target's scaled token embedding with b.Hidden.
+// Forward 用 target cache 执行 assistant 前向。
 func (m *AssistantModel) Forward(b *batch.Batch, targetCaches, _ []cache.Cache) (hidden, auxHidden *mlx.Array) {
 	inputsEmbeds := m.target.TokenEmbeddings(b.InputIDs).Concatenate(-1, b.Hidden)
 	dims := inputsEmbeds.Dims()
@@ -307,6 +318,7 @@ func (m *AssistantModel) Forward(b *batch.Batch, targetCaches, _ []cache.Cache) 
 	return hidden, auxHidden
 }
 
+// sharedHistories 从 target cache 提取 sliding/full KV history。
 func (m *AssistantModel) sharedHistories(b *batch.Batch, caches []cache.Cache) (sliding, full *nn.KVHistory) {
 	if len(caches) < 2 {
 		return nil, nil
@@ -320,6 +332,7 @@ func (m *AssistantModel) sharedHistories(b *batch.Batch, caches []cache.Cache) (
 	return sliding, full
 }
 
+// Unembed 投影 assistant hidden 为 logits。
 func (m *AssistantModel) Unembed(hidden *mlx.Array) *mlx.Array {
 	if m.UseOrderedEmbeddings {
 		return m.applyCentroidMasking(hidden)
@@ -327,6 +340,7 @@ func (m *AssistantModel) Unembed(hidden *mlx.Array) *mlx.Array {
 	return m.LMHead.Forward(hidden)
 }
 
+// applyCentroidMasking 应用 centroid mask 抑制无效 logits。
 func (m *AssistantModel) applyCentroidMasking(hidden *mlx.Array) *mlx.Array {
 	B, L := hidden.Dim(0), hidden.Dim(1)
 	vocab := int(m.TextConfig.VocabSize)
@@ -349,6 +363,7 @@ func (m *AssistantModel) applyCentroidMasking(hidden *mlx.Array) *mlx.Array {
 	return out.PutAlongAxis(selectedCanonical.Reshape(B, L, topK*vocabPerCentroid), selectedLogits, -1)
 }
 
+// Forward 执行 assistant 层。
 func (l *AssistantLayer) Forward(x *mlx.Array, b *batch.Batch, positions *mlx.Array, B, L int32, cfg *TextConfig, sliding, full *nn.KVHistory) *mlx.Array {
 	normed := mlx.RMSNormFn(x, l.InputNormScaled, cfg.RMSNormEps)
 	attnOut := l.Attention.Forward(normed, b, positions, B, L, l.IsSliding, cfg, sliding, full)
@@ -366,6 +381,7 @@ func (l *AssistantLayer) Forward(x *mlx.Array, b *batch.Batch, positions *mlx.Ar
 	return h
 }
 
+// Forward 用共享 KV history 做注意力。
 func (a *AssistantAttention) Forward(x *mlx.Array, b *batch.Batch, positions *mlx.Array, B, L int32, isSliding bool, cfg *TextConfig, sliding, full *nn.KVHistory) *mlx.Array {
 	headDim := cfg.HeadDim
 	scale := cfg.SlidingScale

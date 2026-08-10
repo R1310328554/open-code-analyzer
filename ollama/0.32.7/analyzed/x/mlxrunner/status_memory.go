@@ -1,3 +1,4 @@
+// MLX 内存状态缓存：异步刷新 Active+Cache 内存供 /v1/status 使用。
 package mlxrunner
 
 import (
@@ -9,10 +10,13 @@ import (
 
 const statusMemoryRefreshWait = 50 * time.Millisecond
 
+// statusMemoryRefreshFunc 读取当前 MLX 内存字节数。
 type statusMemoryRefreshFunc func() (uint64, error)
 
+// statusMemoryCache 避免 health 同步阻塞 MLX worker，异步刷新内存遥测。
 // statusMemoryCache keeps health checks from depending synchronously on the
 // serialized MLX worker while still refreshing memory telemetry opportunistically.
+// statusMemoryCache 缓存 memory 与 refreshedAt，支持 in-flight 去重。
 type statusMemoryCache struct {
 	done    <-chan struct{}
 	wait    time.Duration
@@ -24,6 +28,7 @@ type statusMemoryCache struct {
 	inFlight    chan struct{}
 }
 
+// newStatusMemoryCache 创建带初始值与刷新回调的缓存。
 func newStatusMemoryCache(ctx context.Context, memory uint64, refreshedAt time.Time, wait time.Duration, refresh statusMemoryRefreshFunc) *statusMemoryCache {
 	return &statusMemoryCache{
 		done:        ctx.Done(),
@@ -34,6 +39,7 @@ func newStatusMemoryCache(ctx context.Context, memory uint64, refreshedAt time.T
 	}
 }
 
+// Memory 等待刷新或超时后返回缓存内存值。
 func (c *statusMemoryCache) Memory() uint64 {
 	done := c.startRefresh()
 	if c.wait <= 0 {
@@ -62,6 +68,7 @@ func (c *statusMemoryCache) Memory() uint64 {
 	return memory
 }
 
+// startRefresh 启动或复用进行中的异步刷新。
 func (c *statusMemoryCache) startRefresh() chan struct{} {
 	c.mu.Lock()
 	if c.inFlight != nil {
@@ -102,6 +109,7 @@ func (c *statusMemoryCache) startRefresh() chan struct{} {
 	return refreshDone
 }
 
+// snapshot 返回当前 memory 与 refreshedAt。
 func (c *statusMemoryCache) snapshot() (uint64, time.Time) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

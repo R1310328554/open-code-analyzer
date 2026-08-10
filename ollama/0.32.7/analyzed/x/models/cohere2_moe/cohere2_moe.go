@@ -1,3 +1,5 @@
+// Package cohere2_moe 提供 Cohere2 MoE（Command A/North）MLX 文本模型实现。
+// 架构要点：并行残差、交错 SWA/全注意力、dense 前缀 + sparse MoE、logit_scale。
 // Package cohere2_moe provides the Cohere2 MoE (Command A family, North) text
 // model implementation for MLX.
 //
@@ -12,6 +14,7 @@
 //     prefix_dense_intermediate_size; the rest are sparse MoE layers routed by
 //     a linear gate with sigmoid or softmax selection over the top-k logits.
 //   - Logits are scaled by logit_scale. Embeddings are tied by default.
+// Cohere2 MoE MLX 实现：并行残差、SWA/NoPE 交错与 sigmoid/softmax 路由。
 package cohere2_moe
 
 import (
@@ -28,11 +31,14 @@ import (
 	"github.com/ollama/ollama/x/tokenizer"
 )
 
+// init 注册 Cohere2MoeForCausalLM 模型工厂。
 func init() {
 	base.Register("Cohere2MoeForCausalLM", NewModel)
 }
 
+// Config 保存 HuggingFace config.json 中的 Cohere2 MoE 超参。
 // Config holds the Cohere2 MoE configuration (HuggingFace config.json).
+// Config 承载 hidden/layer/MoE/滑动窗口等配置字段。
 type Config struct {
 	HiddenSize            int32    `json:"hidden_size"`
 	NumHiddenLayers       int32    `json:"num_hidden_layers"`
@@ -74,29 +80,37 @@ type Config struct {
 	Scale float32 `json:"-"`
 }
 
+// normLayer 抽象 RMSNorm 与 Cohere LayerNorm 的选择。
 // normLayer abstracts the per-config choice between RMSNorm (rms_norm_eps set)
 // and Cohere-style bias-free LayerNorm.
+// normLayer 为归一化层接口。
 type normLayer interface {
 	Forward(x *mlx.Array) *mlx.Array
 }
 
+// rmsNorm 为 RMSNorm 实现。
 type rmsNorm struct {
 	Weight *mlx.Array
 	Eps    float32
 }
 
+// Forward 调用 mlx.RMSNormFn。
 func (n *rmsNorm) Forward(x *mlx.Array) *mlx.Array { return mlx.RMSNormFn(x, n.Weight, n.Eps) }
 
+// layerNorm 为无 bias LayerNorm 实现。
 type layerNorm struct {
 	Weight *mlx.Array
 	Eps    float32
 }
 
+// Forward 调用 mlx.LayerNormFn。
 func (n *layerNorm) Forward(x *mlx.Array) *mlx.Array {
 	return mlx.LayerNormFn(x, n.Weight, nil, n.Eps)
 }
 
+// Model 为 Cohere2 MoE 主模型：嵌入、层、norm 与 LM head。
 // Model is the Cohere2 MoE model.
+// Model 聚合嵌入、层、norm 与 LM head。
 type Model struct {
 	EmbedTokens nn.EmbeddingLayer
 	Layers      []*Layer
@@ -107,7 +121,9 @@ type Model struct {
 	*Config
 }
 
+// Layer 为并行残差 Transformer 块。
 // Layer is a parallel-residual transformer block.
+// Layer 含 InputNorm、Attention 与 MLP 块。
 type Layer struct {
 	InputNorm normLayer
 	Attention *Attention
@@ -117,7 +133,9 @@ type Layer struct {
 	UseRope   bool
 }
 
+// Attention 实现 Cohere2 注意力（无 q/k norm）。
 // Attention implements Cohere2 attention (no q/k norm).
+// Attention 含 Q/K/V/O 投影。
 type Attention struct {
 	QProj nn.LinearLayer
 	KProj nn.LinearLayer
@@ -126,11 +144,13 @@ type Attention struct {
 }
 
 // MLPBlock is the feed-forward interface for dense and MoE blocks.
+// MLPBlock 为 dense 或 MoE MLP 接口。
 type MLPBlock interface {
 	Forward(x *mlx.Array, cfg *Config) *mlx.Array
 }
 
 // DenseMLP is a SwiGLU feed-forward block.
+// DenseMLP 为前缀 dense SwiGLU MLP。
 type DenseMLP struct {
 	GateProj nn.LinearLayer
 	UpProj   nn.LinearLayer
@@ -138,6 +158,7 @@ type DenseMLP struct {
 }
 
 // SparseMoE routes each token to the top-k of NumExperts expert MLPs.
+// SparseMoE 为稀疏 MoE 路由与专家 MLP。
 type SparseMoE struct {
 	Router       nn.LinearLayer
 	SwitchMLP    *SwitchMLP
@@ -145,6 +166,7 @@ type SparseMoE struct {
 }
 
 // SwitchMLP executes the selected expert MLPs with stacked expert weights.
+// SwitchMLP 用 GatherQMM/GatherMM 执行 top-k 专家。
 type SwitchMLP struct {
 	GateWeight *mlx.Array
 	UpWeight   *mlx.Array
@@ -161,6 +183,7 @@ type SwitchMLP struct {
 	UseQuantized bool
 }
 
+// stackedExpertWeights 保存堆叠专家权重张量。
 type stackedExpertWeights struct {
 	Weight    *mlx.Array
 	Scales    *mlx.Array
@@ -170,6 +193,7 @@ type stackedExpertWeights struct {
 	Mode      string
 }
 
+// parseConfig 解析并校验 config.json。
 func parseConfig(configData []byte) (Config, error) {
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(configData, &raw); err != nil {
@@ -288,6 +312,7 @@ func parseConfig(configData []byte) (Config, error) {
 	return cfg, nil
 }
 
+// patternLayerType 按 pattern 返回层类型字符串。
 func patternLayerType(i, pattern int32) string {
 	if pattern > 0 && (i+1)%pattern == 0 {
 		return "full_attention"
@@ -295,10 +320,12 @@ func patternLayerType(i, pattern int32) string {
 	return "sliding_attention"
 }
 
+// layerIsSliding 判断层是否使用滑动窗口注意力。
 func (cfg *Config) layerIsSliding(i int32) bool {
 	return cfg.LayerTypes[i] == "sliding_attention"
 }
 
+// layerIsDense 判断层是否为 dense MLP。
 func (cfg *Config) layerIsDense(i int32) bool {
 	return cfg.MLPLayerTypes[i] == "dense"
 }
@@ -307,6 +334,7 @@ func (cfg *Config) layerIsDense(i int32) bool {
 // layers do, and prefix dense layers force RoPE even with full attention when
 // prefix_dense_sliding_window_pattern == 1 (matching Cohere2MoeAttention's
 // force_rope). Other full-attention layers use no positional encoding.
+// layerUsesRope 判断层是否应用 RoPE。
 func (cfg *Config) layerUsesRope(i int32) bool {
 	if cfg.layerIsSliding(i) {
 		return true
@@ -314,6 +342,7 @@ func (cfg *Config) layerUsesRope(i int32) bool {
 	return cfg.layerIsDense(i) && cfg.PrefixDenseSlidingWindowPattern == 1
 }
 
+// newNorm 按配置创建 RMSNorm 或 LayerNorm。
 func (cfg *Config) newNorm(weight *mlx.Array) normLayer {
 	if cfg.RMSNormEps != nil {
 		return &rmsNorm{Weight: weight, Eps: *cfg.RMSNormEps}
@@ -321,11 +350,13 @@ func (cfg *Config) newNorm(weight *mlx.Array) normLayer {
 	return &layerNorm{Weight: weight, Eps: cfg.LayerNormEps}
 }
 
+// tieEmbeddings 判断是否 tie 词嵌入。
 func (cfg *Config) tieEmbeddings() bool {
 	return cfg.TieWordEmbeddings == nil || *cfg.TieWordEmbeddings
 }
 
 // NewModel creates a Cohere2 MoE model from a manifest root.
+// NewModel 构造 Cohere2 MoE 模型实例。
 func NewModel(root *model.Root) (base.Model, error) {
 	configData, err := root.Manifest.ReadConfig("config.json")
 	if err != nil {
@@ -381,6 +412,7 @@ func NewModel(root *model.Root) (base.Model, error) {
 	return m, nil
 }
 
+// supportsGatherQMM 判断量化模式是否支持 GatherQMM。
 func supportsGatherQMM(mode string, bits int) bool {
 	switch mode {
 	case "affine":
@@ -410,6 +442,7 @@ func transposeExpertWeightForGatherMM(w *mlx.Array) *mlx.Array {
 // loadStackedProjection returns expert weights already stacked as a single 3D
 // tensor (layers.N.mlp.switch_mlp.<proj>.weight) — the layout `ollama create`
 // writes when it packs per-expert tensors at import.
+// loadStackedProjection 加载堆叠投影权重。
 func loadStackedProjection(tensors map[string]*mlx.Array, cfg *Config, useQuantized bool, base string) *stackedExpertWeights {
 	key := base + ".weight"
 	w := tensors[key]
@@ -449,6 +482,7 @@ func loadStackedProjection(tensors map[string]*mlx.Array, cfg *Config, useQuanti
 // loadStackedExperts resolves a stacked expert projection by its close-to-source
 // name (layers.N.mlp.experts.<proj>, which `ollama create` now writes) and falls
 // back to the legacy switch_mlp name that older imports produced.
+// loadStackedExperts 加载 MoE 专家堆叠权重。
 func loadStackedExperts(tensors map[string]*mlx.Array, cfg *Config, useQuantized bool, layerPrefix, proj string) *stackedExpertWeights {
 	if w := loadStackedProjection(tensors, cfg, useQuantized, layerPrefix+".mlp.experts."+proj); w != nil {
 		return w
@@ -457,6 +491,7 @@ func loadStackedExperts(tensors map[string]*mlx.Array, cfg *Config, useQuantized
 }
 
 // LoadWeights assigns tensors to model fields.
+// LoadWeights 从 manifest 张量映射加载各层权重。
 func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	cfg := m.Config
 
@@ -598,6 +633,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	return nil
 }
 
+// Forward 执行 Cohere2 注意力（可选 RoPE/SWA）。
 func (a *Attention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *mlx.Array, B, L int32, useRope bool, cfg *Config) *mlx.Array {
 	q := a.QProj.Forward(x)
 	k := a.KProj.Forward(x)
@@ -626,6 +662,7 @@ func (a *Attention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positio
 	return a.OProj.Forward(out)
 }
 
+// Forward 执行 dense SwiGLU MLP。
 func (m *DenseMLP) Forward(x *mlx.Array, _ *Config) *mlx.Array {
 	return m.DownProj.Forward(mlx.SwiGLU(m.GateProj.Forward(x), m.UpProj.Forward(x)))
 }
@@ -634,6 +671,7 @@ func (m *DenseMLP) Forward(x *mlx.Array, _ *Config) *mlx.Array {
 // and the activation (sigmoid or softmax) is applied to just the selected
 // entries, matching Cohere2MoeTopKRouter (both activations are monotonic, so
 // selection order is unchanged).
+// route 计算 top-k 专家索引与分数。
 func (moe *SparseMoE) route(x *mlx.Array, cfg *Config) (inds, scores *mlx.Array) {
 	logits := moe.Router.Forward(x)
 
@@ -653,6 +691,7 @@ func (moe *SparseMoE) route(x *mlx.Array, cfg *Config) (inds, scores *mlx.Array)
 	return inds, scores
 }
 
+// Forward 路由并执行 sparse MoE。
 func (moe *SparseMoE) Forward(x *mlx.Array, cfg *Config) *mlx.Array {
 	dims := x.Dims()
 	B, L := int32(dims[0]), int32(dims[1])
@@ -672,6 +711,7 @@ func (moe *SparseMoE) Forward(x *mlx.Array, cfg *Config) *mlx.Array {
 	return mlx.Reshape(y, B, L, cfg.HiddenSize)
 }
 
+// Forward 用 GatherQMM/GatherMM 混合专家输出。
 func (s *SwitchMLP) Forward(x *mlx.Array, indices *mlx.Array, cfg *Config) *mlx.Array {
 	dims := x.Dims()
 	B, L := int32(dims[0]), int32(dims[1])
@@ -721,6 +761,7 @@ func (s *SwitchMLP) Forward(x *mlx.Array, indices *mlx.Array, cfg *Config) *mlx.
 
 // Forward runs a parallel-residual block: one shared layernorm feeds both
 // attention and the MLP, and the residual adds both outputs.
+// Forward 执行并行残差块。
 func (l *Layer) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *mlx.Array, B, L int32, cfg *Config) *mlx.Array {
 	normed := l.InputNorm.Forward(x)
 	attnOut := l.Attention.Forward(normed, b, c, positions, B, L, l.UseRope, cfg)
@@ -728,6 +769,7 @@ func (l *Layer) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *
 	return mlx.Add(x, mlx.Add(attnOut, mlpOut))
 }
 
+// Forward 执行整模型前向并返回 hidden/auxHidden。
 func (m *Model) Forward(b *batch.Batch, caches []cache.Cache) (hidden, auxHidden *mlx.Array) {
 	dims := b.InputIDs.Dims()
 	B, L := int32(dims[0]), int32(dims[1])
@@ -746,6 +788,7 @@ func (m *Model) Forward(b *batch.Batch, caches []cache.Cache) (hidden, auxHidden
 	return out, out
 }
 
+// Unembed 应用 logit_scale 并返回 logits。
 func (m *Model) Unembed(x *mlx.Array) *mlx.Array {
 	logits := m.LMHead.Forward(x)
 	if m.LogitScale != 1.0 {
@@ -754,16 +797,19 @@ func (m *Model) Unembed(x *mlx.Array) *mlx.Array {
 	return logits
 }
 
+// MaxContextLength 返回 max_position_embeddings。
 func (m *Model) MaxContextLength() int {
 	return int(m.MaxPositionEmbeddings)
 }
 
+// Tokenizer 返回模型分词器。
 func (m *Model) Tokenizer() *tokenizer.Tokenizer {
 	return m.tok
 }
 
 // NewCaches creates per-layer caches: rotating (bounded) caches for sliding
 // window layers and standard KV caches for full attention layers.
+// NewCaches 为需 KV 的层创建 cache。
 func (m *Model) NewCaches() []cache.Cache {
 	caches := make([]cache.Cache, len(m.Layers))
 	for i, layer := range m.Layers {

@@ -1,3 +1,4 @@
+// MLX Runner HTTP 入口：MLX 初始化、健康检查、JSONL 补全与 legacy 路由重定向。
 package mlxrunner
 
 import (
@@ -20,6 +21,7 @@ import (
 	"github.com/ollama/ollama/x/mlxrunner/sample"
 )
 
+// Execute 解析 CLI、加载模型、注册 /v1/* 路由并监听端口。
 func Execute(args []string) error {
 	slog.SetDefault(logutil.NewLogger(os.Stderr, envconfig.LogLevel()))
 
@@ -113,6 +115,7 @@ func Execute(args []string) error {
 				return
 			}
 		case "DELETE":
+			// TODO: 清理模型与缓存。
 			// TODO: cleanup model and cache
 		}
 	})
@@ -226,20 +229,24 @@ func Execute(args []string) error {
 	}))
 }
 
+// statusRecorder 记录 HTTP 状态码用于结构化访问日志。
 type statusRecorder struct {
 	http.ResponseWriter
 	code int
 }
 
+// WriteHeader 记录状态码并转发。
 func (w *statusRecorder) WriteHeader(code int) {
 	w.code = code
 	w.ResponseWriter.WriteHeader(code)
 }
 
+// Status 返回 "code text" 状态描述。
 func (w *statusRecorder) Status() string {
 	return strconv.Itoa(w.code) + " " + http.StatusText(w.code)
 }
 
+// Flush 刷新底层 Flusher（若支持）。
 func (w *statusRecorder) Flush() {
 	if f, ok := w.ResponseWriter.(http.Flusher); ok {
 		f.Flush()

@@ -1,4 +1,6 @@
+// Package gemma3 提供 Gemma 3 MLX 文本模型实现（SWA + Q/K norm）。
 // Package gemma3 provides the Gemma 3 text model implementation for MLX.
+// Gemma 3 MLX 文本模型：Q/K RMSNorm、GELU MLP 与交错滑动窗口。
 package gemma3
 
 import (
@@ -15,12 +17,15 @@ import (
 	"github.com/ollama/ollama/x/tokenizer"
 )
 
+// init 注册 Gemma3ForCausalLM/ConditionalGeneration。
 func init() {
 	base.Register("Gemma3ForCausalLM", newModel)
 	base.Register("Gemma3ForConditionalGeneration", newModel)
 }
 
+// TextConfig 保存 Gemma3 文本 config.json 字段。
 // TextConfig holds configuration for the Gemma 3 text model.
+// TextConfig 含 hidden、RoPE、SWA 与量化元数据。
 type TextConfig struct {
 	HiddenSize            int32    `json:"hidden_size"`
 	NumHiddenLayers       int32    `json:"num_hidden_layers"`
@@ -48,7 +53,9 @@ type TextConfig struct {
 	Scale float32 `json:"-"`
 }
 
+// Attention 实现带 Q/K RMSNorm 的 Gemma3 注意力。
 // Attention implements Gemma 3 attention with Q/K normalization.
+// Attention 含 Q/K/V/O 投影与预计算 scaled norm 权重。
 type Attention struct {
 	QProj nn.LinearLayer
 	KProj nn.LinearLayer
@@ -63,14 +70,18 @@ type Attention struct {
 	KNormScaled *mlx.Array
 }
 
+// MLP 为 GELU 激活的前馈网络。
 // MLP is the feed-forward network with GELU activation.
+// MLP 为 Gate/Up/Down GELU MLP。
 type MLP struct {
 	GateProj nn.LinearLayer
 	UpProj   nn.LinearLayer
 	DownProj nn.LinearLayer
 }
 
+// DecoderLayer 为 Gemma3 单 Transformer 块。
 // DecoderLayer is a single transformer block.
+// DecoderLayer 含多级 RMSNorm 与 MLP。
 type DecoderLayer struct {
 	InputNorm    *nn.RMSNorm
 	Attention    *Attention
@@ -90,7 +101,9 @@ type DecoderLayer struct {
 	LayerIdx  int32
 }
 
+// Model 为 Gemma3 纯文本模型。
 // Model is the Gemma 3 text-only model.
+// Model 聚合嵌入、层、norm 与 LM head。
 type Model struct {
 	EmbedTokens nn.EmbeddingLayer
 	Layers      []*DecoderLayer
@@ -106,6 +119,7 @@ type Model struct {
 	weightPrefix string
 }
 
+// defaultHeads 按层数推断默认注意力头数。
 func defaultHeads(numLayers int32) (numHeads, numKVHeads int32) {
 	switch numLayers {
 	case 34:
@@ -119,6 +133,7 @@ func defaultHeads(numLayers int32) (numHeads, numKVHeads int32) {
 	}
 }
 
+// parseTextConfig 解析 config 并推断缺失头数。
 func parseTextConfig(configData []byte) (TextConfig, bool, error) {
 	var cfg TextConfig
 	if err := json.Unmarshal(configData, &cfg); err != nil {
@@ -183,6 +198,7 @@ func parseTextConfig(configData []byte) (TextConfig, bool, error) {
 	return cfg, fromConditional, nil
 }
 
+// resolveWeightPrefix 解析 safetensors 权重前缀。
 func resolveWeightPrefix(tensors map[string]*mlx.Array) string {
 	for _, prefix := range []string{"", "language_model."} {
 		if tensors[prefix+"model.embed_tokens.weight"] != nil {
@@ -192,6 +208,7 @@ func resolveWeightPrefix(tensors map[string]*mlx.Array) string {
 	return ""
 }
 
+// isLayerSliding 判断层是否使用 sliding window。
 func isLayerSliding(layerIdx int32, cfg *TextConfig) bool {
 	if len(cfg.LayerTypes) > 0 && int(layerIdx) < len(cfg.LayerTypes) {
 		return cfg.LayerTypes[layerIdx] == "sliding_attention"
@@ -202,6 +219,7 @@ func isLayerSliding(layerIdx int32, cfg *TextConfig) bool {
 	return (layerIdx+1)%cfg.SlidingWindowPattern != 0
 }
 
+// precomputeGemmaScaledWeights 预计算 (1+weight) norm 缩放。
 func precomputeGemmaScaledWeights(m *Model) {
 	if m.Norm != nil {
 		m.NormScaled = mlx.AddScalar(m.Norm.Weight, 1.0)
@@ -249,6 +267,7 @@ func precomputeGemmaScaledWeights(m *Model) {
 	}
 }
 
+// newModel 构造 Gemma3 模型实例。
 func newModel(root *model.Root) (base.Model, error) {
 	configData, err := root.Manifest.ReadConfig("config.json")
 	if err != nil {
@@ -306,6 +325,7 @@ func newModel(root *model.Root) (base.Model, error) {
 
 // LoadWeights receives all tensors loaded from the manifest and assigns them
 // to model fields.
+// LoadWeights 加载 Gemma3 权重并预计算 norm。
 func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	m.weightPrefix = resolveWeightPrefix(tensors)
 	prefix := m.weightPrefix
@@ -403,6 +423,7 @@ func (m *Model) LoadWeights(tensors map[string]*mlx.Array) error {
 	return nil
 }
 
+// Forward 执行整模型前向。
 func (m *Model) Forward(b *batch.Batch, caches []cache.Cache) (hidden, auxHidden *mlx.Array) {
 	dims := b.InputIDs.Dims()
 	B, L := int32(dims[0]), int32(dims[1])
@@ -423,19 +444,23 @@ func (m *Model) Forward(b *batch.Batch, caches []cache.Cache) (hidden, auxHidden
 	return out, out
 }
 
+// Unembed 返回 logits（含 softcap 等装饰）。
 func (m *Model) Unembed(x *mlx.Array) *mlx.Array {
 	return m.LMHead.Forward(x)
 }
 
+// MaxContextLength 返回最大上下文长度。
 func (m *Model) MaxContextLength() int {
 	return int(m.MaxPositionEmbeddings)
 }
 
+// Tokenizer 返回分词器。
 func (m *Model) Tokenizer() *tokenizer.Tokenizer {
 	return m.tok
 }
 
 // NewCaches creates cache objects for all layers.
+// NewCaches 为 SWA/全注意力层创建 cache。
 func (m *Model) NewCaches() []cache.Cache {
 	caches := make([]cache.Cache, len(m.Layers))
 	for i, layer := range m.Layers {
@@ -449,10 +474,12 @@ func (m *Model) NewCaches() []cache.Cache {
 }
 
 // FormatPrompt applies the Gemma 3 chat template.
+// FormatPrompt 格式化用户 prompt 为模型输入。
 func (m *Model) FormatPrompt(prompt string) string {
 	return fmt.Sprintf("<start_of_turn>user\n%s<end_of_turn>\n<start_of_turn>model\n", prompt)
 }
 
+// Forward 执行 Gemma3 decoder 块。
 func (l *DecoderLayer) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *mlx.Array, B, L int32, cfg *TextConfig) *mlx.Array {
 	normed := mlx.RMSNormFn(x, l.InputNormScaled, cfg.RMSNormEps)
 
@@ -468,6 +495,7 @@ func (l *DecoderLayer) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, posi
 	return mlx.Add(h, mlpOut)
 }
 
+// Forward 执行 Gemma3 注意力（RoPE/SWA）。
 func (a *Attention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positions *mlx.Array, B, L int32, isSliding bool, cfg *TextConfig) *mlx.Array {
 	q := a.QProj.Forward(x)
 	k := a.KProj.Forward(x)
@@ -507,6 +535,7 @@ func (a *Attention) Forward(x *mlx.Array, b *batch.Batch, c cache.Cache, positio
 	return a.OProj.Forward(out)
 }
 
+// Forward 执行 GeGLU MLP。
 func (m *MLP) Forward(x *mlx.Array) *mlx.Array {
 	gate := mlx.GELUApprox(m.GateProj.Forward(x))
 	up := m.UpProj.Forward(x)

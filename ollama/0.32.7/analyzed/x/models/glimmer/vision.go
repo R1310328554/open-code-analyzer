@@ -1,3 +1,4 @@
+// Glimmer 视觉塔：ViT 块、sparse permutation、2D RoPE 与 pixel shuffle。
 package glimmer
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/ollama/ollama/x/models/nn"
 )
 
+// VisionEncoder 为 Glimmer 视觉编码器。
 type VisionEncoder struct {
 	Conv1Linear            nn.LinearLayer
 	PositionalEmbeddingVLM *mlx.Array
@@ -17,6 +19,7 @@ type VisionEncoder struct {
 	LNPost                 *nn.LayerNorm
 }
 
+// VisionBlock 为 ViT Transformer 块。
 type VisionBlock struct {
 	LN1       *nn.LayerNorm
 	Attention *VisionAttention
@@ -24,6 +27,7 @@ type VisionBlock struct {
 	MLP       *VisionMLP
 }
 
+// VisionAttention 为视觉自注意力。
 type VisionAttention struct {
 	QProj           nn.LinearLayer
 	KProj           nn.LinearLayer
@@ -32,16 +36,19 @@ type VisionAttention struct {
 	InterleavedRoPE bool
 }
 
+// VisionMLP 为视觉 MLP。
 type VisionMLP struct {
 	FC   nn.LinearLayer
 	Proj nn.LinearLayer
 }
 
+// VisionAdapter 将视觉 hidden 投影到文本维。
 type VisionAdapter struct {
 	FC   nn.LinearLayer
 	Proj nn.LinearLayer
 }
 
+// loadVisionWeights 加载视觉塔权重。
 func (m *Model) loadVisionWeights(tensors map[string]*mlx.Array, linears model.LinearFactory) error {
 	officialHF := tensors["model.vision_tower.patch_embedder.position_embedding_table.weight"] != nil
 	encoderPrefix := "model.vision_encoder."
@@ -137,6 +144,7 @@ func (m *Model) loadVisionWeights(tensors map[string]*mlx.Array, linears model.L
 // lazy [outputTokens, hidden] features. Graph construction only, per the
 // base.MediaModel contract — the consuming forward's evaluation pulls the
 // encoder, and its intermediates are transient within that single eval.
+// encodeVision 执行完整视觉编码前向。
 func (m *Model) encodeVision(patches *mlx.Array, gridH, gridW int) *mlx.Array {
 	encoder := m.VisionEncoder
 	inputCount := gridH * gridW
@@ -195,6 +203,7 @@ func (m *Model) encodeVision(patches *mlx.Array, gridH, gridW int) *mlx.Array {
 	return features
 }
 
+// Forward 执行 ViT 块。
 func (b *VisionBlock) Forward(x, cos, sin, mask *mlx.Array, heads int) *mlx.Array {
 	h := b.LN1.Forward(x)
 	h = b.Attention.Forward(h, cos, sin, mask, heads)
@@ -203,6 +212,7 @@ func (b *VisionBlock) Forward(x, cos, sin, mask *mlx.Array, heads int) *mlx.Arra
 	return mlx.Add(x, b.MLP.Forward(h))
 }
 
+// Forward 执行视觉自注意力。
 func (a *VisionAttention) Forward(x, cos, sin, mask *mlx.Array, heads int) *mlx.Array {
 	shape := x.Dims()
 	batchSize, sequence, width := int32(shape[0]), int32(shape[1]), int32(shape[2])
@@ -222,14 +232,17 @@ func (a *VisionAttention) Forward(x, cos, sin, mask *mlx.Array, heads int) *mlx.
 	return a.OProj.Forward(mlx.Reshape(out, batchSize, sequence, width))
 }
 
+// Forward 执行视觉 MLP。
 func (m *VisionMLP) Forward(x *mlx.Array) *mlx.Array {
 	return m.Proj.Forward(mlx.GELU(m.FC.Forward(x)))
 }
 
+// Forward 投影视觉 hidden 到文本空间。
 func (a *VisionAdapter) Forward(x *mlx.Array) *mlx.Array {
 	return mlx.GELU(a.Proj.Forward(mlx.GELU(a.FC.Forward(x))))
 }
 
+// sparseVisionPermutation 计算 sparse window 排列索引。
 func sparseVisionPermutation(gridH, gridW, windowH, windowW int) ([]int32, []int) {
 	if windowH <= 0 || windowW <= 0 {
 		permutation := make([]int32, gridH*gridW)
@@ -255,6 +268,7 @@ func sparseVisionPermutation(gridH, gridW, windowH, windowW int) ([]int32, []int
 	return permutation, lengths
 }
 
+// visionBlockDiagonalMask 构造块对角注意力 mask。
 func visionBlockDiagonalMask(lengths []int, dtype mlx.DType) *mlx.Array {
 	if len(lengths) <= 1 {
 		return nil
@@ -287,6 +301,7 @@ func visionBlockDiagonalMask(lengths []int, dtype mlx.DType) *mlx.Array {
 	return mlx.Reshape(m, 1, 1, int32(total), int32(total)).AsType(dtype)
 }
 
+// interpolateVisionPositions 双线性插值 2D 位置编码。
 func interpolateVisionPositions(table *mlx.Array, gridH, gridW, tableH, tableW int) *mlx.Array {
 	count := gridH * gridW
 	indices := [4][]int32{
@@ -344,6 +359,7 @@ func interpolateVisionPositions(table *mlx.Array, gridH, gridW, tableH, tableW i
 	return result
 }
 
+// visionRoPE 生成视觉 2D RoPE cos/sin。
 func visionRoPE(gridH, gridW, headDim int) (*mlx.Array, *mlx.Array) {
 	half := headDim / 2
 	quarter := half / 2
@@ -366,6 +382,7 @@ func visionRoPE(gridH, gridW, headDim int) (*mlx.Array, *mlx.Array) {
 	return mlx.FromValues(cosValues, gridH*gridW, half), mlx.FromValues(sinValues, gridH*gridW, half)
 }
 
+// applyVisionRoPE 对 Q/K 应用 2D RoPE。
 func applyVisionRoPE(x, cos, sin *mlx.Array, interleaved bool) *mlx.Array {
 	shape := x.Dims()
 	batchSize, sequence, heads, headDim := int32(shape[0]), int32(shape[1]), int32(shape[2]), int32(shape[3])
@@ -391,6 +408,7 @@ func applyVisionRoPE(x, cos, sin *mlx.Array, interleaved bool) *mlx.Array {
 	return mlx.Reshape(mlx.Stack([]*mlx.Array{outReal, outImag}, 4), batchSize, sequence, heads, headDim).AsType(dtype)
 }
 
+// pixelShuffleVision 对 patch 特征做 pixel shuffle。
 func pixelShuffleVision(x *mlx.Array, gridH, gridW, factor int) *mlx.Array {
 	outputH, outputW := gridH/factor, gridW/factor
 	permutation := make([]int32, 0, gridH*gridW)

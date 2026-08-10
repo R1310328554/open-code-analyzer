@@ -1,3 +1,4 @@
+// MLX Runner 核心：模型加载、manifest 张量映射、wired 内存配置与请求调度。
 package mlxrunner
 
 import (
@@ -21,10 +22,12 @@ import (
 	"github.com/ollama/ollama/x/tokenizer"
 )
 
+// Request 在 HTTP 与 runner 协程间传递补全请求；Ctx 跨 channel 传播取消。
 // Request is a short-lived struct that carries a completion request through
 // a channel from the HTTP handler to the runner goroutine. The ctx field
 // must travel with the request so that cancellation propagates across the
 // channel boundary.
+// Request 携带补全参数、响应通道、pipeline 与采样选项。
 type Request struct {
 	CompletionRequest
 	Responses chan CompletionResponse
@@ -37,6 +40,7 @@ type Request struct {
 	SamplerOpts sample.Options
 }
 
+// Runner 持有模型、分词器、前缀缓存与投机解码子系统。
 type Runner struct {
 	Model         base.Model
 	Tokenizer     *tokenizer.Tokenizer
@@ -45,11 +49,13 @@ type Runner struct {
 	cache         *prefixCache
 	contextLength int
 	mlxThread     *mlxthread.Thread
+	// spec 为投机解码子系统；checkpoint 无 draft head 时为 nil。
 	// spec is the speculative-decoding subsystem. Nil when the model ships no
 	// draft head.
 	spec *speculation
 }
 
+// Load 加载 target/draft、Pin 权重、初始化缓存与投机解码并启用 Compile。
 func (r *Runner) Load(modelName string) error {
 	root, err := model.Open(modelName)
 	if err != nil {
@@ -121,7 +127,9 @@ func (r *Runner) Load(modelName string) error {
 	return nil
 }
 
+// newDraftCaches 无 draft 时返回 nil。
 // newDraftCaches returns nil when the model ships no draft.
+// newDraftCaches 为 draft 模型创建 KV 缓存。
 func newDraftCaches(draft base.DraftModel) []cache.Cache {
 	if draft == nil {
 		return nil
@@ -129,6 +137,7 @@ func newDraftCaches(draft base.DraftModel) []cache.Cache {
 	return draft.NewCaches()
 }
 
+// configureWiredMemory 设置 MLX wired limit 为 min(active, recommended)。
 func configureWiredMemory() {
 	if !mlx.GPUIsAvailable() {
 		return
@@ -156,6 +165,7 @@ func configureWiredMemory() {
 			"active", mlx.PrettyBytes(active),
 			"recommended", mlx.PrettyBytes(maxRecommended))
 	}
+	// 限制 wired 常驻为活跃分配，避免为 growing KV 预留。
 	// Limiting residency to the loaded model's active allocations avoids
 	// reserving the remaining capacity for growing KV caches.
 	slog.Debug("Configured MLX wired memory",
@@ -164,6 +174,7 @@ func configureWiredMemory() {
 		"previous", mlx.PrettyBytes(previous))
 }
 
+// loadTensorsFromManifest 分三阶段加载 manifest 张量并 remap 量化 bias。
 // loadTensorsFromManifest loads all tensor blobs from the manifest into a
 // flat map, deduplicating by digest and remapping safetensors key suffixes.
 //
@@ -171,7 +182,9 @@ func configureWiredMemory() {
 // .bias → _qbias with complete knowledge of which base names have .scale
 // entries. This avoids a race condition where Go map iteration order could
 // cause .bias to be processed before .scale within the same blob.
+// loadTensorsFromManifest 从 manifest 加载 safetensors 并去重 digest。
 func loadTensorsFromManifest(root *model.Root) (map[string]*mlx.Array, error) {
+	// 阶段 1：从各 blob 原始加载全部张量。
 	// Phase 1: Load all tensors raw from all blobs
 	rawTensors := make(map[string]*mlx.Array)
 	seen := make(map[string]bool)
@@ -186,6 +199,7 @@ func loadTensorsFromManifest(root *model.Root) (map[string]*mlx.Array, error) {
 		}
 	}
 
+	// 阶段 2：识别含 .scale 的基名并重映射为 _scale/_qbias。
 	// Phase 2: Identify all base names that have .scale tensors and remap them
 	scaleBaseNames := make(map[string]bool)
 	allTensors := make(map[string]*mlx.Array, len(rawTensors))
@@ -197,6 +211,7 @@ func loadTensorsFromManifest(root *model.Root) (map[string]*mlx.Array, error) {
 		}
 	}
 
+	// 阶段 3：在完整 scale 知识下处理其余张量。
 	// Phase 3: Process remaining tensors with complete scale knowledge
 	for name, arr := range rawTensors {
 		if strings.HasSuffix(name, ".scale") {
@@ -218,6 +233,7 @@ func loadTensorsFromManifest(root *model.Root) (map[string]*mlx.Array, error) {
 	return allTensors, nil
 }
 
+// Run 启动请求循环与 HTTP 服务。
 func (r *Runner) Run(host, port string, mux http.Handler) error {
 	g, ctx := errgroup.WithContext(context.Background())
 
@@ -256,6 +272,7 @@ func (r *Runner) Run(host, port string, mux http.Handler) error {
 	return g.Wait()
 }
 
+// runRequest 在 MLX 线程上执行 pipeline。
 func (r *Runner) runRequest(request Request) error {
 	if r.mlxThread == nil {
 		return request.Pipeline(request.Ctx, request)
