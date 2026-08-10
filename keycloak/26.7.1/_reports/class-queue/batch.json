@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T07:37:32Z",
-  "files": [
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/RoleByNameQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/RoleListQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/RoleQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/UserListQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/UserQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/AuthenticationSessionAuthNoteUpdateEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/BaseClientEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/BaseClientScopeEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/BaseRealmEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/BaseRoleEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/CacheKeyInvalidatedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/ClientAddedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/ClientRemovedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/ClientScopeAddedEvent.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/ClientScopeRemovedEvent.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4648,
-  "done": 1335
+  "done": 1350
 }

@@ -1303,3 +1303,18 @@
 2026-08-10T07:39:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/RealmListQuery.java wave45a cache query entities
 2026-08-10T07:39:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/RealmQuery.java wave45a cache query entities
 2026-08-10T07:39:21Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/Revisioned.java wave45a cache query entities
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/RoleByNameQuery.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/RoleListQuery.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/RoleQuery.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/UserListQuery.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/UserQuery.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/AuthenticationSessionAuthNoteUpdateEvent.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/BaseClientEvent.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/BaseClientScopeEvent.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/BaseRealmEvent.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/BaseRoleEvent.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/CacheKeyInvalidatedEvent.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/ClientAddedEvent.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/ClientRemovedEvent.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/ClientScopeAddedEvent.java wave45b role/user queries + cache events
+2026-08-10T07:39:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/ClientScopeRemovedEvent.java wave45b role/user queries + cache events
