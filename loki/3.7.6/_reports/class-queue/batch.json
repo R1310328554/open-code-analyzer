@@ -15,23 +15,8 @@
     "pkg/storage/chunk/client/aws/dynamodb_storage_client.go",
     "pkg/storage/chunk/client/aws/dynamodb_table_client.go",
     "pkg/storage/chunk/client/aws/fixtures.go",
-    "pkg/storage/chunk/client/aws/metrics_autoscaling.go",
-    "pkg/storage/chunk/client/aws/mock.go",
-    "pkg/storage/chunk/client/aws/retryer.go",
-    "pkg/storage/chunk/client/aws/s3_storage_client.go",
-    "pkg/storage/chunk/client/aws/sse_config.go",
-    "pkg/storage/chunk/client/azure/blob_storage_client.go",
-    "pkg/storage/chunk/client/baidubce/bos_storage_client.go",
-    "pkg/storage/chunk/client/cassandra/authenticator.go",
-    "pkg/storage/chunk/client/cassandra/fixtures.go",
-    "pkg/storage/chunk/client/cassandra/instrumentation.go",
-    "pkg/storage/chunk/client/cassandra/storage_client.go",
-    "pkg/storage/chunk/client/cassandra/table_client.go",
-    "pkg/storage/chunk/client/client.go",
-    "pkg/storage/chunk/client/congestion/config.go",
-    "pkg/storage/chunk/client/congestion/congestion.go",
-    "pkg/storage/chunk/client/congestion/controller.go"
+    "pkg/storage/chunk/client/aws/metrics_autoscaling.go"
   ],
   "remaining_pending": 322,
-  "done": 1200
+  "done": 1215
 }
