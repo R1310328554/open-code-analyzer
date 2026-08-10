@@ -34,26 +34,33 @@ import org.keycloak.services.messages.Messages;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
+ * 身份提供商（IdP）首次代理登录流程认证器的抽象基类，负责从认证会话读取 {@link BrokeredIdentityContext}、校验 IdP 启用状态并委派子类实现。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class AbstractIdpAuthenticator implements Authenticator {
 
+    /** 认证会话 note：序列化的 {@link BrokeredIdentityContext}，存在即表示首次代理登录流程进行中。 */
     // The clientSession note encapsulating all the BrokeredIdentityContext info. When this note is in clientSession, we know that firstBrokerLogin flow is in progress
     public static final String BROKERED_CONTEXT_NOTE = "BROKERED_CONTEXT";
 
+    /** 认证会话 note：已检测到重复账户的 {@link ExistingUserInfo} 序列化数据。 */
     // The clientSession note with all the info about existing user
     public static final String EXISTING_USER_INFO = "EXISTING_USER_INFO";
 
+    /** 认证会话 note：强制显示资料更新页，即使配置为首次登录不更新资料。 */
     // The clientSession note flag to indicate that updateProfile page will be always displayed even if "updateProfileOnFirstLogin" is off
     public static final String ENFORCE_UPDATE_PROFILE = "ENFORCE_UPDATE_PROFILE";
 
+    /** 认证会话 note：首次代理登录成功后写入，值为刚完成 first-broker-login 流程的 IdP providerId。 */
     // Set after firstBrokerLogin is successfully finished and contains the providerId of the provider, whose 'first-broker-login' flow was just finished
     public static final String FIRST_BROKER_LOGIN_SUCCESS = "FIRST_BROKER_LOGIN_SUCCESS";
 
+    /** 认证会话 note：检测到嵌套首次代理登录时设置，用于报告详细错误。 */
     // Set if nested firstBrokerLogin is detected, allowing to report a detailed error
     public static final String NESTED_FIRST_BROKER_CONTEXT = "NESTED_FIRST_BROKER_CONTEXT";
 
     @Override
+    /** 读取 Broker 上下文、校验 IdP 启用后调用 {@link #authenticateImpl}。 */
     public void authenticate(AuthenticationFlowContext context) {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
 
@@ -71,6 +78,7 @@ public abstract class AbstractIdpAuthenticator implements Authenticator {
     }
 
     @Override
+    /** 处理表单提交，校验 IdP 启用后调用 {@link #actionImpl}。 */
     public void action(AuthenticationFlowContext context) {
         AuthenticationSessionModel clientSession = context.getAuthenticationSession();
 
@@ -87,9 +95,12 @@ public abstract class AbstractIdpAuthenticator implements Authenticator {
         actionImpl(context, serializedCtx, brokerContext);
     }
 
+    /** 子类实现：首次展示时的认证逻辑。 */
     protected abstract void authenticateImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext);
+    /** 子类实现：用户提交表单后的动作处理。 */
     protected abstract void actionImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext);
 
+    /** 记录事件错误并以错误页挑战终止当前步骤。 */
     protected void sendFailureChallenge(AuthenticationFlowContext context, Response.Status status, String eventError, String errorMessage, AuthenticationFlowError flowError) {
         context.getEvent().user(context.getUser())
                 .error(eventError);
@@ -108,6 +119,7 @@ public abstract class AbstractIdpAuthenticator implements Authenticator {
 
     }
 
+    /** 从认证会话 note 反序列化并加载已检测到的重复用户，校验存在且已启用。 */
     public static UserModel getExistingUser(KeycloakSession session, RealmModel realm, AuthenticationSessionModel authSession) {
         String existingUserId = authSession.getAuthNote(EXISTING_USER_INFO);
         if (existingUserId == null) {

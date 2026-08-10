@@ -36,11 +36,13 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.sessions.CommonClientSessionModel;
 
 /**
+ * 确认关联认证器：当检测到重复账户时展示确认页，用户可选择关联现有账户或更新 IdP 资料以避免冲突。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class IdpConfirmLinkAuthenticator extends AbstractIdpAuthenticator {
 
     @Override
+    /** 无重复则 attempted；否则展示 IdP 关联确认页。 */
     protected void authenticateImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
 
@@ -51,7 +53,7 @@ public class IdpConfirmLinkAuthenticator extends AbstractIdpAuthenticator {
             return;
         }
 
-        // hide the review button if the idp review execution was not successfully executed before
+        // 若资料审查步骤未成功执行，则隐藏「更新资料」按钮
         boolean hideReviewButton = authSession.getExecutionStatus().entrySet().stream()
                 .filter(entry -> CommonClientSessionModel.ExecutionStatus.SUCCESS.equals(entry.getValue()))
                 .map(entry -> context.getRealm().getAuthenticationExecutionById(entry.getKey()))
@@ -70,6 +72,7 @@ public class IdpConfirmLinkAuthenticator extends AbstractIdpAuthenticator {
     }
 
     @Override
+    /** 处理 updateProfile（重置流程并强制更新资料）或 linkAccount（确认关联）。 */
     protected void actionImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
 
@@ -90,11 +93,13 @@ public class IdpConfirmLinkAuthenticator extends AbstractIdpAuthenticator {
     }
 
     @Override
+    /** @return 本步骤不要求上下文中已有用户 */
     public boolean requiresUser() {
         return false;
     }
 
     @Override
+    /** @return 始终未针对特定用户配置 */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return false;
     }

@@ -33,11 +33,16 @@ import org.keycloak.models.UserModel;
 import org.keycloak.services.messages.Messages;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
+/**
+ * 确认覆盖关联认证器：当账户已与同一 IdP 关联但 Broker 用户名变更时，提示用户确认是否覆盖现有关联。
+ */
 public class IdpConfirmOverrideLinkAuthenticator extends AbstractIdpAuthenticator {
 
+    /** 认证会话 note：用户确认覆盖现有关联时设为 true。 */
     public static final String OVERRIDE_LINK = "OVERRIDE_LINK";
 
     @Override
+    /** 无现有关联则直接成功；否则展示覆盖确认页。 */
     protected void authenticateImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
         RealmModel realm = context.getRealm();
         KeycloakSession session = context.getSession();
@@ -72,6 +77,7 @@ public class IdpConfirmOverrideLinkAuthenticator extends AbstractIdpAuthenticato
     }
 
     @Override
+    /** 处理 confirmOverride 动作，设置 OVERRIDE_LINK note 并完成步骤。 */
     protected void actionImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
 
@@ -87,11 +93,13 @@ public class IdpConfirmOverrideLinkAuthenticator extends AbstractIdpAuthenticato
     }
 
     @Override
+    /** @return 本步骤不要求上下文中已有用户 */
     public boolean requiresUser() {
         return false;
     }
 
     @Override
+    /** @return 始终未针对特定用户配置 */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return false;
     }

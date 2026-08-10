@@ -28,14 +28,17 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * {@link IdpEmailVerificationAuthenticator} 的 SPI 工厂，注册 idp-email-verification 邮箱验证关联执行器。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class IdpEmailVerificationAuthenticatorFactory implements AuthenticatorFactory {
 
+    /** 提供者 ID：idp-email-verification。 */
     public static final String PROVIDER_ID = "idp-email-verification";
     static IdpEmailVerificationAuthenticator SINGLETON = new IdpEmailVerificationAuthenticator();
 
     @Override
+    /** @return 单例 {@link IdpEmailVerificationAuthenticator} */
     public Authenticator create(KeycloakSession session) {
         return SINGLETON;
     }
@@ -56,11 +59,13 @@ public class IdpEmailVerificationAuthenticatorFactory implements AuthenticatorFa
     }
 
     @Override
+    /** @return 提供者 ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** @return 引用分类 emailVerification */
     public String getReferenceCategory() {
         return "emailVerification";
     }
@@ -77,11 +82,13 @@ public class IdpEmailVerificationAuthenticatorFactory implements AuthenticatorFa
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Verify existing account by Email";
     }
 
     @Override
+    /** @return 帮助说明：通过邮件验证现有关联账户 */
     public String getHelpText() {
         return "Email verification of existing Keycloak user, that wants to link his user account with identity provider";
     }

@@ -54,15 +54,18 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.jboss.logging.Logger;
 
 /**
+ * IdP 邮箱验证认证器：向现有 Keycloak 用户发送确认关联邮件，用户点击链接后完成 IdP 账户与本地账户的关联验证。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class IdpEmailVerificationAuthenticator extends AbstractIdpAuthenticator {
 
     private static Logger logger = Logger.getLogger(IdpEmailVerificationAuthenticator.class);
 
+    /** 认证会话 note：已通过邮件验证的 IdP 用户名，匹配则直接关联成功。 */
     public static final String VERIFY_ACCOUNT_IDP_USERNAME = "VERIFY_ACCOUNT_IDP_USERNAME";
 
     @Override
+    /** 检查 SMTP、资料变更与验证状态，发送或展示邮件已发送页。 */
     protected void authenticateImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
         KeycloakSession session = context.getSession();
         RealmModel realm = context.getRealm();
@@ -94,7 +97,7 @@ public class IdpEmailVerificationAuthenticator extends AbstractIdpAuthenticator 
 
         UserModel existingUser = getExistingUser(session, realm, authSession);
 
-        // Do not allow resending e-mail by simple page refresh
+        // 防止刷新页面重复发送邮件
         if (! Objects.equals(authSession.getAuthNote(Constants.VERIFY_EMAIL_KEY), existingUser.getEmail())) {
             authSession.setAuthNote(Constants.VERIFY_EMAIL_KEY, existingUser.getEmail());
             sendVerifyEmail(session, context, existingUser, brokerContext);
@@ -104,25 +107,29 @@ public class IdpEmailVerificationAuthenticator extends AbstractIdpAuthenticator 
     }
 
     @Override
+    /** 用户请求重发邮件：清除 note 后重新执行 authenticateImpl。 */
     protected void actionImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
         logger.debugf("Re-sending email requested for user, details follow");
 
-        // This will allow user to re-send email again
+        // 清除已发送标记以允许重新发送
         context.getAuthenticationSession().removeAuthNote(Constants.VERIFY_EMAIL_KEY);
 
         authenticateImpl(context, serializedCtx, brokerContext);
     }
 
     @Override
+    /** @return 本步骤不要求上下文中已有用户 */
     public boolean requiresUser() {
         return false;
     }
 
     @Override
+    /** @return 始终未针对特定用户配置 */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return false;
     }
 
+    /** 生成 {@link IdpVerifyAccountLinkActionToken} 并发送确认关联邮件。 */
     private void sendVerifyEmail(KeycloakSession session, AuthenticationFlowContext context, UserModel existingUser, BrokeredIdentityContext brokerContext) throws UriBuilderException, IllegalArgumentException {
         RealmModel realm = session.getContext().getRealm();
         UriInfo uriInfo = session.getContext().getUri();
@@ -177,6 +184,7 @@ public class IdpEmailVerificationAuthenticator extends AbstractIdpAuthenticator 
     }
 
 
+    /** 展示「邮件已发送」IdP 关联确认页，含重发动作 URL。 */
     protected void showEmailSentPage(AuthenticationFlowContext context, BrokeredIdentityContext brokerContext) {
         String accessCode = context.generateAccessCode();
         URI action = context.getActionUrl(accessCode);

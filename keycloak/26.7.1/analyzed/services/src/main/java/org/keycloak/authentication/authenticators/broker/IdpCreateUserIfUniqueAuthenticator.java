@@ -43,6 +43,7 @@ import static org.keycloak.authentication.actiontoken.idpverifyemail.IdpVerifyAc
 import static org.keycloak.broker.provider.AbstractIdentityProvider.BROKER_REGISTERED_NEW_USER;
 
 /**
+ * 唯一时创建用户认证器：检测邮箱/用户名是否重复，无重复则创建本地用户（或临时用户）并写入 IdP 属性；有重复则记录供后续步骤处理。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class IdpCreateUserIfUniqueAuthenticator extends AbstractIdpAuthenticator {
@@ -51,10 +52,12 @@ public class IdpCreateUserIfUniqueAuthenticator extends AbstractIdpAuthenticator
 
 
     @Override
+    /** 本认证器无表单动作，空实现。 */
     protected void actionImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
     }
 
     @Override
+    /** 检测重复、创建用户或记录 EXISTING_USER_INFO 并展示冲突错误。 */
     protected void authenticateImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
 
         KeycloakSession session = context.getSession();
@@ -124,9 +127,9 @@ public class IdpCreateUserIfUniqueAuthenticator extends AbstractIdpAuthenticator
             logger.debugf("Duplication detected. There is already existing user with %s '%s' .",
                     duplication.getDuplicateAttributeName(), duplication.getDuplicateAttributeValue());
 
-            // Set duplicated user, so next authenticators can deal with it
+            // 记录重复用户信息，供后续认证器处理
             context.getAuthenticationSession().setAuthNote(EXISTING_USER_INFO, duplication.serialize());
-            //Only show error message if the authenticator was required
+            // 仅当执行项为 REQUIRED 时才向用户展示错误页
             if (context.getExecution().isRequired()) {
                 Response challengeResponse = context.form()
                         .setError(Messages.FEDERATED_IDENTITY_EXISTS, duplication.getDuplicateAttributeName(), duplication.getDuplicateAttributeValue())
@@ -145,6 +148,7 @@ public class IdpCreateUserIfUniqueAuthenticator extends AbstractIdpAuthenticator
         }
     }
 
+    /** 按邮箱（若不允许重复）和用户名检测是否已存在本地用户，子类可覆盖扩展规则。 */
     // Could be overriden to detect duplication based on other criterias (firstName, lastName, ...)
     protected ExistingUserInfo checkExistingUser(AuthenticationFlowContext context, String username, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
 
@@ -163,12 +167,14 @@ public class IdpCreateUserIfUniqueAuthenticator extends AbstractIdpAuthenticator
         return null;
     }
 
+    /** 根据领域配置返回用于注册的用户名（邮箱或 model 用户名）。 */
     protected String getUsername(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
         RealmModel realm = context.getRealm();
         return realm.isRegistrationEmailAsUsername() ? brokerContext.getEmail() : brokerContext.getModelUsername();
     }
 
 
+    /** 新用户通过社交/IdP 注册成功后的回调钩子，子类可覆盖。 */
     // Empty method by default. This exists, so subclass can override and add callback after new user is registered through social
     protected void userRegisteredSuccess(AuthenticationFlowContext context, UserModel registeredUser, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
 
@@ -176,11 +182,13 @@ public class IdpCreateUserIfUniqueAuthenticator extends AbstractIdpAuthenticator
 
 
     @Override
+    /** @return 本步骤不要求上下文中已有用户 */
     public boolean requiresUser() {
         return false;
     }
 
     @Override
+    /** @return 始终已配置（对所有用户适用） */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }

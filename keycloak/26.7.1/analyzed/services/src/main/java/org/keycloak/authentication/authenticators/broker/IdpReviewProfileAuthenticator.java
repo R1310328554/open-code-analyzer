@@ -51,6 +51,7 @@ import org.keycloak.userprofile.ValidationException;
 import org.jboss.logging.Logger;
 
 /**
+ * IdP 资料审查认证器：首次代理登录时根据配置或校验结果展示资料更新页，用户确认或修改从 IdP 同步的用户属性。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class IdpReviewProfileAuthenticator extends AbstractIdpAuthenticator {
@@ -58,11 +59,13 @@ public class IdpReviewProfileAuthenticator extends AbstractIdpAuthenticator {
     private static final Logger logger = Logger.getLogger(IdpReviewProfileAuthenticator.class);
 
     @Override
+    /** @return 本步骤不要求上下文中已有用户 */
     public boolean requiresUser() {
         return false;
     }
 
     @Override
+    /** 若需要更新资料则展示 updateProfile 页，否则直接成功。 */
     protected void authenticateImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext userCtx, BrokeredIdentityContext brokerContext) {
         IdentityProviderModel idpConfig = brokerContext.getIdpConfig();
 
@@ -70,18 +73,19 @@ public class IdpReviewProfileAuthenticator extends AbstractIdpAuthenticator {
 
             logger.debugf("Identity provider '%s' requires update profile action for broker user '%s'.", idpConfig.getAlias(), userCtx.getUsername());
 
-            // No formData for first render. The profile is rendered from userCtx
+            // 首次渲染无 formData，资料来自 userCtx
             Response challengeResponse = context.form()
                     .setAttribute(LoginFormsProvider.UPDATE_PROFILE_CONTEXT_ATTR, userCtx)
                     .setFormData(null)
                     .createUpdateProfilePage();
             context.challenge(challengeResponse);
         } else {
-            // Not required to update profile. Marked success
+            // 无需更新资料，标记成功
             context.success();
         }
     }
 
+    /** 根据 ENFORCE_UPDATE_PROFILE note、配置项或 UserProfile 校验决定是否展示更新页。 */
     protected boolean requiresUpdateProfilePage(AuthenticationFlowContext context, SerializedBrokeredIdentityContext userCtx, BrokeredIdentityContext brokerContext) {
         String enforceUpdateProfile = context.getAuthenticationSession().getAuthNote(ENFORCE_UPDATE_PROFILE);
         if (Boolean.parseBoolean(enforceUpdateProfile)) {
@@ -110,6 +114,7 @@ public class IdpReviewProfileAuthenticator extends AbstractIdpAuthenticator {
     }
 
     @Override
+    /** 处理资料表单提交，校验并更新 userCtx 属性，记录用户名/邮箱变更 note。 */
     protected void actionImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext userCtx, BrokeredIdentityContext brokerContext) {
         EventBuilder event = context.getEvent();
         event.event(EventType.UPDATE_PROFILE).detail(Details.CONTEXT, UserProfileContext.IDP_REVIEW.name());
@@ -247,13 +252,14 @@ public class IdpReviewProfileAuthenticator extends AbstractIdpAuthenticator {
 
         event.detail(Details.UPDATED_EMAIL, newEmail);
 
-        // Ensure page is always shown when user later returns to it - for example with form "back" button
+        // 确保用户返回（如浏览器后退）时仍显示更新页
         context.getAuthenticationSession().setAuthNote(ENFORCE_UPDATE_PROFILE, "true");
 
         context.success();
     }
 
     @Override
+    /** @return 始终已配置（对所有用户适用） */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }

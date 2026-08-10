@@ -28,13 +28,16 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * {@link IdpAutoLinkAuthenticator} 的 SPI 工厂，注册 idp-auto-link 自动关联执行器。
  * @author <a href="mailto:Ryan.Slominski@gmail.com">Ryan Slominski</a>
  */
 public class IdpAutoLinkAuthenticatorFactory implements AuthenticatorFactory {
+    /** 提供者 ID：idp-auto-link。 */
     public static final String PROVIDER_ID = "idp-auto-link";
     static IdpAutoLinkAuthenticator SINGLETON = new IdpAutoLinkAuthenticator();
 
     @Override
+    /** @return 单例 {@link IdpAutoLinkAuthenticator} */
     public Authenticator create(KeycloakSession session) {
         return SINGLETON;
     }
@@ -55,42 +58,50 @@ public class IdpAutoLinkAuthenticatorFactory implements AuthenticatorFactory {
     }
 
     @Override
+    /** @return 提供者 ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** @return 引用分类 autoLink */
     public String getReferenceCategory() {
         return "autoLink";
     }
 
     @Override
+    /** @return 不可配置 */
     public boolean isConfigurable() {
         return false;
     }
 
 
     @Override
+    /** @return 允许的执行要求选项 */
     public AuthenticationExecutionModel.Requirement[] getRequirementChoices() {
         return REQUIREMENT_CHOICES;
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Automatically set existing user";
     }
 
     @Override
+    /** @return 帮助说明：自动设置现有用户到认证上下文 */
     public String getHelpText() {
         return "Automatically set existing user to authentication context without any verification";
     }
 
     @Override
+    /** @return 无配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return null;
     }
 
     @Override
+    /** @return 不允许用户自助配置 */
     public boolean isUserSetupAllowed() {
         return false;
     }    

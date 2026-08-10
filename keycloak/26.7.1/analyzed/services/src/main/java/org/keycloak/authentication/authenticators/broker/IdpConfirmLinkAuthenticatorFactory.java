@@ -28,14 +28,17 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * {@link IdpConfirmLinkAuthenticator} 的 SPI 工厂，注册 idp-confirm-link 确认关联执行器。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class IdpConfirmLinkAuthenticatorFactory implements AuthenticatorFactory {
 
+    /** 提供者 ID：idp-confirm-link。 */
     public static final String PROVIDER_ID = "idp-confirm-link";
     static IdpConfirmLinkAuthenticator SINGLETON = new IdpConfirmLinkAuthenticator();
 
     @Override
+    /** @return 单例 {@link IdpConfirmLinkAuthenticator} */
     public Authenticator create(KeycloakSession session) {
         return SINGLETON;
     }
@@ -56,11 +59,13 @@ public class IdpConfirmLinkAuthenticatorFactory implements AuthenticatorFactory 
     }
 
     @Override
+    /** @return 提供者 ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** @return 引用分类 confirmLink */
     public String getReferenceCategory() {
         return "confirmLink";
     }
@@ -77,11 +82,13 @@ public class IdpConfirmLinkAuthenticatorFactory implements AuthenticatorFactory 
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Confirm link existing account";
     }
 
     @Override
+    /** @return 帮助说明：展示关联确认或更新资料表单 */
     public String getHelpText() {
         return "Show the form where user confirms if he wants to link identity provider with existing account or rather edit user profile data retrieved from identity provider to avoid conflict";
     }

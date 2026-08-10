@@ -33,11 +33,15 @@ import org.keycloak.services.messages.Messages;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 检测现有 Broker 用户认证器：要求本地已存在与 IdP 邮箱/用户名匹配的用户，不存在则返回未授权错误；存在则记录 EXISTING_USER_INFO 供后续关联步骤使用。
+ */
 public class IdpDetectExistingBrokerUserAuthenticator extends IdpCreateUserIfUniqueAuthenticator {
 
     private static final Logger logger = Logger.getLogger(IdpDetectExistingBrokerUserAuthenticator.class);
 
     @Override
+    /** 检测重复用户：无匹配则错误页；有匹配则写入 note 并成功。 */
     protected void authenticateImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
 
         RealmModel realm = context.getRealm();
@@ -73,7 +77,7 @@ public class IdpDetectExistingBrokerUserAuthenticator extends IdpCreateUserIfUni
             logger.debugf("Duplication detected. There is already existing user with %s '%s' .",
                     duplication.getDuplicateAttributeName(), duplication.getDuplicateAttributeValue());
 
-            // Set duplicated user, so next authenticators can deal with it
+            // 记录已存在用户，供后续认证器关联处理
             context.getAuthenticationSession().setAuthNote(EXISTING_USER_INFO, duplication.serialize());
 
             context.success();
@@ -81,11 +85,13 @@ public class IdpDetectExistingBrokerUserAuthenticator extends IdpCreateUserIfUni
     }
 
     @Override
+    /** @return 本步骤不要求上下文中已有用户 */
     public boolean requiresUser() {
         return false;
     }
 
     @Override
+    /** @return 始终已配置（对所有用户适用） */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }

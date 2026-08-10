@@ -28,12 +28,17 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * {@link IdpDetectExistingBrokerUserAuthenticator} 的 SPI 工厂，注册 idp-detect-existing-broker-user 检测现有用户执行器。
+ */
 public class IdpDetectExistingBrokerUserAuthenticatorFactory implements AuthenticatorFactory {
 
+    /** 提供者 ID：idp-detect-existing-broker-user。 */
     public static final String PROVIDER_ID = "idp-detect-existing-broker-user";
     private static final IdpDetectExistingBrokerUserAuthenticator SINGLETON = new IdpDetectExistingBrokerUserAuthenticator();
 
     @Override
+    /** @return 单例 {@link IdpDetectExistingBrokerUserAuthenticator} */
     public Authenticator create(KeycloakSession session) {
         return SINGLETON;
     }
@@ -54,11 +59,13 @@ public class IdpDetectExistingBrokerUserAuthenticatorFactory implements Authenti
     }
 
     @Override
+    /** @return 提供者 ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** @return 引用分类 detectExistingBrokerUser */
     public String getReferenceCategory() {
         return "detectExistingBrokerUser";
     }
@@ -77,11 +84,13 @@ public class IdpDetectExistingBrokerUserAuthenticatorFactory implements Authenti
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Detect existing broker user";
     }
 
     @Override
+    /** @return 帮助说明：要求本地已存在匹配用户否则报错 */
     public String getHelpText() {
         return "Detect if there is an existing Keycloak account with same email like identity provider. If no, throw an error.";
     }
@@ -92,6 +101,7 @@ public class IdpDetectExistingBrokerUserAuthenticatorFactory implements Authenti
     }
 
     @Override
+    /** @return 无配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return Collections.emptyList();
     }

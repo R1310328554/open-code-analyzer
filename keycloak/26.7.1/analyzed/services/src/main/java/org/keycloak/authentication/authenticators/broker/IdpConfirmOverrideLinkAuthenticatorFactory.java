@@ -28,21 +28,28 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * {@link IdpConfirmOverrideLinkAuthenticator} 的 SPI 工厂，注册 idp-confirm-override-link 覆盖关联确认执行器。
+ */
 public class IdpConfirmOverrideLinkAuthenticatorFactory implements AuthenticatorFactory {
 
+    /** 提供者 ID：idp-confirm-override-link。 */
     public static final String PROVIDER_ID = "idp-confirm-override-link";
 
     @Override
+    /** @return 新建 {@link IdpConfirmOverrideLinkAuthenticator} 实例 */
     public Authenticator create(KeycloakSession session) {
         return new IdpConfirmOverrideLinkAuthenticator();
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Confirm override existing link";
     }
 
     @Override
+    /** @return 引用分类 confirmOverrideLink */
     public String getReferenceCategory() {
         return "confirmOverrideLink";
     }
@@ -66,6 +73,7 @@ public class IdpConfirmOverrideLinkAuthenticatorFactory implements Authenticator
     }
 
     @Override
+    /** @return 帮助说明：确认是否覆盖现有 Broker 关联 */
     public String getHelpText() {
         return "Confirm override the link if there is an existing broker user linked to the account.";
     }
@@ -91,6 +99,7 @@ public class IdpConfirmOverrideLinkAuthenticatorFactory implements Authenticator
     }
 
     @Override
+    /** @return 提供者 ID */
     public String getId() {
         return PROVIDER_ID;
     }

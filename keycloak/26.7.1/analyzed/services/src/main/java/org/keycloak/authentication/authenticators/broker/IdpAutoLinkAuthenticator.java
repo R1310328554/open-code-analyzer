@@ -30,6 +30,7 @@ import org.jboss.logging.Logger;
 import static org.keycloak.authentication.authenticators.broker.AbstractIdpAuthenticator.getExistingUser;
 
 /**
+ * 自动关联认证器：无需额外验证，直接将已检测到的现有用户写入认证上下文并完成步骤。
  * @author <a href="mailto:Ryan.Slominski@gmail.com">Ryan Slominski</a>
  */
 public class IdpAutoLinkAuthenticator extends AbstractIdpAuthenticator {
@@ -37,6 +38,7 @@ public class IdpAutoLinkAuthenticator extends AbstractIdpAuthenticator {
     private static Logger logger = Logger.getLogger(IdpAutoLinkAuthenticator.class);
 
     @Override
+    /** 加载重复用户、设置到上下文并标记成功。 */
     protected void authenticateImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
         KeycloakSession session = context.getSession();
         RealmModel realm = context.getRealm();
@@ -52,16 +54,19 @@ public class IdpAutoLinkAuthenticator extends AbstractIdpAuthenticator {
     }
 
     @Override
+    /** 动作处理与 {@link #authenticateImpl} 相同。 */
     protected void actionImpl(AuthenticationFlowContext context, SerializedBrokeredIdentityContext serializedCtx, BrokeredIdentityContext brokerContext) {
         authenticateImpl(context, serializedCtx, brokerContext);
     }
 
     @Override
+    /** @return 本步骤不要求上下文中已有用户 */
     public boolean requiresUser() {
         return false;
     }
 
     @Override
+    /** @return 始终未针对特定用户配置 */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return false;
     }

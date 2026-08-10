@@ -29,16 +29,20 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * {@link IdpCreateUserIfUniqueAuthenticator} 的 SPI 工厂，注册 idp-create-user-if-unique 唯一时创建用户执行器。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class IdpCreateUserIfUniqueAuthenticatorFactory implements AuthenticatorFactory {
 
+    /** 提供者 ID：idp-create-user-if-unique。 */
     public static final String PROVIDER_ID = "idp-create-user-if-unique";
     static IdpCreateUserIfUniqueAuthenticator SINGLETON = new IdpCreateUserIfUniqueAuthenticator();
 
+    /** 配置项键：注册成功后是否要求用户更新密码。 */
     public static final String REQUIRE_PASSWORD_UPDATE_AFTER_REGISTRATION = "require.password.update.after.registration";
 
     @Override
+    /** @return 单例 {@link IdpCreateUserIfUniqueAuthenticator} */
     public Authenticator create(KeycloakSession session) {
         return SINGLETON;
     }
@@ -59,16 +63,19 @@ public class IdpCreateUserIfUniqueAuthenticatorFactory implements AuthenticatorF
     }
 
     @Override
+    /** @return 提供者 ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** @return 引用分类 createUserIfUnique */
     public String getReferenceCategory() {
         return "createUserIfUnique";
     }
 
     @Override
+    /** @return 可配置注册后密码更新选项 */
     public boolean isConfigurable() {
         return true;
     }
@@ -79,11 +86,13 @@ public class IdpCreateUserIfUniqueAuthenticatorFactory implements AuthenticatorF
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Create User If Unique";
     }
 
     @Override
+    /** @return 帮助说明：检测重复邮箱/用户名并在唯一时创建用户 */
     public String getHelpText() {
         return "Detect if there is existing Keycloak account with same email like identity provider. If no, create new user";
     }
@@ -107,6 +116,7 @@ public class IdpCreateUserIfUniqueAuthenticatorFactory implements AuthenticatorF
 
 
     @Override
+    /** @return 配置属性（注册后强制更新密码） */
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
