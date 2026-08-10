@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * 已弃用配置项的元数据，记录替代选项键、说明与弃用取值。
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class DeprecatedMetadata {
@@ -37,10 +39,12 @@ public class DeprecatedMetadata {
         this.deprecatedValues = deprecatedValues;
     }
 
+    /** 工厂/工具方法：deprecateOption。 */
     public static DeprecatedMetadata deprecateOption(String note, String... newOptionsKeys) {
         return new DeprecatedMetadata(Arrays.asList(newOptionsKeys), note, Set.of());
     }
 
+    /** 工厂/工具方法：deprecateValues。 */
     public static DeprecatedMetadata deprecateValues(String note, String... values) {
         return new DeprecatedMetadata(Collections.emptyList(), note,
                 Collections.unmodifiableSet(new LinkedHashSet<String>(Arrays.asList(values))));

@@ -22,10 +22,13 @@ import java.util.List;
 import static org.keycloak.config.OptionsUtil.DURATION_DESCRIPTION;
 
 /**
+ * 管理接口配置选项，用于暴露健康检查、指标等管理端点。
+ *
  * Options for the management interface that handles management endpoints (f.e. health and metrics endpoints)
  */
 public class ManagementOptions {
 
+    /** 管理接口启用状态占位选项 */
     public static final Option<Boolean> HTTP_MANAGEMENT_ENABLED = new OptionBuilder<>("http-management-enabled", Boolean.class)
             .category(OptionCategory.MANAGEMENT)
             .description("Placeholder for resolving state of the management interface. If set, the value is ignored.")
@@ -33,6 +36,7 @@ public class ManagementOptions {
             .hidden()
             .build();
 
+    /** 配置选项：http management health enabled */
     public static final Option<Boolean> HTTP_MANAGEMENT_HEALTH_ENABLED = new OptionBuilder<>("http-management-health-enabled", Boolean.class)
             .category(OptionCategory.MANAGEMENT)
             .description("If health endpoints should be exposed on the management interface. If false, health endpoints will be exposed on the main interface.")
@@ -40,6 +44,7 @@ public class ManagementOptions {
             .buildTime(true)
             .build();
 
+    /** 配置选项：legacy observability interface */
     public static final Option<Boolean> LEGACY_OBSERVABILITY_INTERFACE = new OptionBuilder<>("legacy-observability-interface", Boolean.class)
             .category(OptionCategory.MANAGEMENT)
             .deprecated()
@@ -50,6 +55,7 @@ public class ManagementOptions {
 
     static String RELEVANT_MSG = "Relevant only when something is exposed on the management interface - see the guide for details.";
 
+    /** 配置选项：http management relative path */
     public static final Option<String> HTTP_MANAGEMENT_RELATIVE_PATH = new OptionBuilder<>("http-management-relative-path", String.class)
             .category(OptionCategory.MANAGEMENT)
             .description("Set the path relative to '/' for serving resources from management interface. The path must start with a '/'. If not given, the value is inherited from HTTP options. " + RELEVANT_MSG)
@@ -57,29 +63,37 @@ public class ManagementOptions {
             .buildTime(true)
             .build();
 
+    /** 配置选项：http management port */
     public static final Option<Integer> HTTP_MANAGEMENT_PORT = new OptionBuilder<>("http-management-port", Integer.class)
             .category(OptionCategory.MANAGEMENT)
             .description("Port of the management interface. " + RELEVANT_MSG)
             .defaultValue(9000)
             .build();
 
+    /** 配置选项：http management host */
     public static final Option<String> HTTP_MANAGEMENT_HOST = new OptionBuilder<>("http-management-host", String.class)
             .category(OptionCategory.MANAGEMENT)
             .description("Host of the management interface. If not given, the value is inherited from HTTP options. " + RELEVANT_MSG)
             .build();
 
+    /** 管理接口 HTTP/HTTPS 方案。 */
+
     public enum Scheme {
+        /** 管理接口使用 HTTP，不继承主接口 HTTPS 设置。 */
         http,
+        /** 管理接口继承主接口的 HTTPS 配置。 */
         inherited
     }
 
     //HTTPS
+    /** 配置选项：http management scheme */
     public static final Option<Scheme> HTTP_MANAGEMENT_SCHEME = new OptionBuilder<>("http-management-scheme", Scheme.class)
             .category(OptionCategory.MANAGEMENT)
             .description("Configures the management interface scheme. If 'inherited', the management interface will inherit the HTTPS settings of the main interface. If 'http', the management interface will be accessible via HTTP - it will not inherit HTTPS settings and cannot be configured for HTTPS.")
             .defaultValue(Scheme.inherited)
             .build();
 
+    /** 配置选项：https management client auth */
     public static final Option<HttpOptions.ClientAuth> HTTPS_MANAGEMENT_CLIENT_AUTH = new OptionBuilder<>("https-management-client-auth", HttpOptions.ClientAuth.class)
             .category(OptionCategory.MANAGEMENT)
             .description("Configures the management interface to require/request client authentication. If not given, the value is inherited from HTTP options. " + RELEVANT_MSG)
@@ -87,6 +101,7 @@ public class ManagementOptions {
             .buildTime(true)
             .build();
 
+    /** 配置选项：https management cipher suites */
     public static final Option<String> HTTPS_MANAGEMENT_CIPHER_SUITES = new OptionBuilder<>("https-management-cipher-suites", String.class)
             .category(OptionCategory.MANAGEMENT)
             .description("The cipher suites to use for the management server. If not given, the value is inherited from HTTP options. " + RELEVANT_MSG)
@@ -98,6 +113,7 @@ public class ManagementOptions {
             .defaultValue(List.of("TLSv1.3,TLSv1.2"))
             .build();
 
+    /** 配置选项：https management certificates reload period */
     public static final Option<String> HTTPS_MANAGEMENT_CERTIFICATES_RELOAD_PERIOD = new OptionBuilder<>("https-management-certificates-reload-period", String.class)
             .category(OptionCategory.MANAGEMENT)
             .description("Interval on which to reload key store, trust store, and certificate files referenced by https-management-* options for the management server. " +
@@ -107,42 +123,50 @@ public class ManagementOptions {
             .defaultValue("1h")
             .build();
 
+    /** 配置选项：https management certificate file */
     public static final Option<File> HTTPS_MANAGEMENT_CERTIFICATE_FILE = new OptionBuilder<>("https-management-certificate-file", File.class)
             .category(OptionCategory.MANAGEMENT)
             .description("The file path to a server certificate or certificate chain in PEM format for the management server. If not given, the value is inherited from HTTP options. " + RELEVANT_MSG)
             .build();
 
+    /** 配置选项：https management certificate key file */
     public static final Option<File> HTTPS_MANAGEMENT_CERTIFICATE_KEY_FILE = new OptionBuilder<>("https-management-certificate-key-file", File.class)
             .category(OptionCategory.MANAGEMENT)
             .description("The file path to a private key in PEM format for the management server. If not given, the value is inherited from HTTP options. " + RELEVANT_MSG)
             .build();
 
+    /** 配置选项：https management key store file */
     public static final Option<File> HTTPS_MANAGEMENT_KEY_STORE_FILE = new OptionBuilder<>("https-management-key-store-file", File.class)
             .category(OptionCategory.MANAGEMENT)
             .description("The key store which holds the certificate information instead of specifying separate files for the management server. If not given, the value is inherited from HTTP options. " + RELEVANT_MSG)
             .build();
 
+    /** 配置选项：https management key store password */
     public static final Option<String> HTTPS_MANAGEMENT_KEY_STORE_PASSWORD = new OptionBuilder<>("https-management-key-store-password", String.class)
             .category(OptionCategory.MANAGEMENT)
             .description("The password of the key store file for the management server. If not given, the value is inherited from HTTP options. " + RELEVANT_MSG)
             .defaultValue("password")
             .build();
 
+    /** 配置选项：https management key store type */
     public static final Option<String> HTTPS_MANAGEMENT_KEY_STORE_TYPE = new OptionBuilder<>("https-management-key-store-type", String.class)
             .category(OptionCategory.MANAGEMENT)
             .description("The type of the key store file for the management server. If not given, the value is inherited from HTTP options. " + RELEVANT_MSG)
             .build();
 
+    /** 配置选项：https management trust store file */
     public static final Option<File> HTTPS_MANAGEMENT_TRUST_STORE_FILE = new OptionBuilder<>("https-management-trust-store-file", File.class)
             .category(OptionCategory.MANAGEMENT)
             .description("The trust store which holds the certificate information of the certificates to trust for the management server. If not given, the value is inherited from HTTP options. " + RELEVANT_MSG)
             .build();
 
+    /** 配置选项：https management trust store password */
     public static final Option<String> HTTPS_MANAGEMENT_TRUST_STORE_PASSWORD = new OptionBuilder<>("https-management-trust-store-password", String.class)
             .category(OptionCategory.MANAGEMENT)
             .description("The password of the trust store file for the management server. If not given, the value is inherited from HTTP options. " + RELEVANT_MSG)
             .build();
 
+    /** 配置选项：https management trust store type */
     public static final Option<String> HTTPS_MANAGEMENT_TRUST_STORE_TYPE = new OptionBuilder<>("https-management-trust-store-type", String.class)
             .category(OptionCategory.MANAGEMENT)
             .description("The type of the trust store file for the management server. If not given, the value is inherited from HTTP options. " + RELEVANT_MSG)

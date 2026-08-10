@@ -17,20 +17,27 @@
 
 package org.keycloak.config;
 
+
+/**
+ * 领域数据导入相关配置选项。
+ */
 public class ImportOptions {
 
+    /** 导入/导出文件路径 */
     public static final Option<String> FILE = new OptionBuilder<>("file", String.class)
             .category(OptionCategory.IMPORT)
             .description("Set the path to a file that will be read.")
             .buildTime(false)
             .build();
 
+    /** 导入/导出目录路径 */
     public static final Option<String> DIR = new OptionBuilder<>("dir", String.class)
             .category(OptionCategory.IMPORT)
             .description("Set the path to a directory where files will be read from.")
             .buildTime(false)
             .build();
 
+    /** 导入时是否覆盖已有数据 */
     public static final Option<Boolean> OVERRIDE = new OptionBuilder<>("override", Boolean.class)
             .category(OptionCategory.IMPORT)
             .defaultValue(Boolean.TRUE)

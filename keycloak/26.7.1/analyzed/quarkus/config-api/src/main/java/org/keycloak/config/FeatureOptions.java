@@ -8,6 +8,10 @@ import java.util.stream.Collectors;
 
 import org.keycloak.common.Profile;
 
+
+/**
+ * Keycloak 功能特性（Feature）启用/禁用相关配置选项。
+ */
 public class FeatureOptions {
 
     public static final Option<List<String>> FEATURES = OptionBuilder.listOptionBuilder("features", String.class)
@@ -25,16 +29,19 @@ public class FeatureOptions {
             .buildTime(true)
             .build();
 
+    /** 单个功能特性的启用/禁用选项 */
     public static final Option<String> FEATURE = new OptionBuilder<>("feature-<name>", String.class)
             .category(OptionCategory.FEATURE)
             .description("Enable/Disable specific feature <feature>. It takes precedence over the '%s', and '%s' options. Possible values are: 'enabled', 'disabled', or specific version (lowercase) that will be enabled (f.e. 'v2')".formatted(FEATURES.getKey(), FEATURES_DISABLED.getKey()))
             .buildTime(true)
             .build();
 
+    /** 工厂/工具方法：getFeatureValues。 */
     public static List<String> getFeatureValues(boolean toEnable) {
         return getFeatureValues(toEnable, true);
     }
 
+    /** 工厂/工具方法：getFeatureValues。 */
     public static List<String> getFeatureValues(boolean toEnable, boolean includeProfiles) {
         List<String> features = new ArrayList<>();
 

@@ -2,8 +2,13 @@ package org.keycloak.config;
 
 import java.util.List;
 
+
+/**
+ * 用户事件指标（Metrics）相关配置选项。
+ */
 public class EventOptions {
 
+    /** 配置选项：user event metrics enabled */
     public static final Option<Boolean> USER_EVENT_METRICS_ENABLED = new OptionBuilder<>("event-metrics-user-enabled", Boolean.class)
             .category(OptionCategory.EVENTS)
             .description("Create metrics based on user events.")

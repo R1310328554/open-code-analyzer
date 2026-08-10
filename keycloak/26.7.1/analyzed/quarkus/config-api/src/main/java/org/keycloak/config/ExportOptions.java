@@ -17,26 +17,34 @@
 
 package org.keycloak.config;
 
+
+/**
+ * 领域数据导出相关配置选项。
+ */
 public class ExportOptions {
 
+    /** 导入/导出文件路径 */
     public static final Option<String> FILE = new OptionBuilder<>("file", String.class)
             .category(OptionCategory.EXPORT)
             .description("Set the path to a file that will be created with the exported data. To export more than 50000 users, export to a directory with different files instead.")
             .buildTime(false)
             .build();
 
+    /** 导入/导出目录路径 */
     public static final Option<String> DIR = new OptionBuilder<>("dir", String.class)
             .category(OptionCategory.EXPORT)
             .description("Set the path to a directory where files will be created with the exported data.")
             .buildTime(false)
             .build();
 
+    /** 要导出的领域名称 */
     public static final Option<String> REALM = new OptionBuilder<>("realm", String.class)
             .category(OptionCategory.EXPORT)
             .description("Set the name of the realm to export. If not set, all realms are going to be exported.")
             .buildTime(false)
             .build();
 
+    /** 配置选项：users per file */
     public static final Option<Integer> USERS_PER_FILE = new OptionBuilder<>("users-per-file", Integer.class)
             .category(OptionCategory.EXPORT)
             .defaultValue(50)
@@ -44,11 +52,12 @@ public class ExportOptions {
             .buildTime(false)
             .build();
 
+    /** 配置选项：users */
     public static final Option<String> USERS = new OptionBuilder<>("users", String.class)
             .category(OptionCategory.EXPORT)
             .defaultValue("different_files")
             .description("Set how users should be exported.")
-            // see UsersExportStrategy
+            // 参见 UsersExportStrategy 枚举
             .expectedValues("skip", "realm_file", "same_file", "different_files")
             .buildTime(false)
             .build();
