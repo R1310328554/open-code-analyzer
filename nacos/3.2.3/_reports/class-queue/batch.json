@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T04:18:00Z",
-  "files": [
-    "istio/src/main/java/com/alibaba/nacos/istio/misc/Loggers.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/model/DestinationRule.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/model/IstioEndpoint.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/model/IstioResources.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/model/IstioService.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/model/PushRequest.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/model/ServiceEntryWrapper.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/model/VirtualService.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/server/IstioServer.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/server/ServerInterceptor.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/util/IstioCrdUtil.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/util/IstioExecutor.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/util/NonceGenerator.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/xds/CdsGenerator.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/xds/DeltaConnection.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 737,
-  "done": 1785
+  "done": 1800
 }

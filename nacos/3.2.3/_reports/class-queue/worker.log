@@ -1813,3 +1813,18 @@
 2026-08-10T04:19:17Z DONE lock/src/main/java/com/alibaba/nacos/lock/NacosLockManager.java wave60b [15:30] istio xds + k8s-sync + lock
 2026-08-10T04:19:17Z DONE lock/src/main/java/com/alibaba/nacos/lock/aspect/RequestLockAspect.java wave60b [15:30] istio xds + k8s-sync + lock
 2026-08-10T04:19:17Z DONE lock/src/main/java/com/alibaba/nacos/lock/constant/Constants.java wave60b [15:30] istio xds + k8s-sync + lock
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/misc/Loggers.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/model/DestinationRule.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/model/IstioEndpoint.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/model/IstioResources.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/model/IstioService.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/model/PushRequest.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/model/ServiceEntryWrapper.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/model/VirtualService.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/server/IstioServer.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/server/ServerInterceptor.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/util/IstioCrdUtil.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/util/IstioExecutor.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/util/NonceGenerator.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/xds/CdsGenerator.java wave60a [0:15] istio model/server/util/xds start
+2026-08-10T04:19:26Z DONE istio/src/main/java/com/alibaba/nacos/istio/xds/DeltaConnection.java wave60a [0:15] istio model/server/util/xds start
