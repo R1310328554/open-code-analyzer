@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T16:13:04Z",
   "files": [
-    "server/model_recommendations.go",
-    "server/model_resolver.go",
-    "server/model_show_cache.go",
-    "server/prompt.go",
-    "server/quantization.go",
-    "server/renderer_resolution.go",
-    "server/routes.go",
-    "server/sched.go",
-    "server/sparse_common.go",
-    "server/sparse_windows.go",
-    "server/upload.go",
-    "template/template.go",
-    "thinking/parser.go",
-    "thinking/template.go",
-    "tokenizer/bytepairencoding.go",
     "tokenizer/sentencepiece.go",
     "tokenizer/tokenizer.go",
     "tokenizer/vocabulary.go",
@@ -32,5 +17,7 @@
     "x/create/classify.go",
     "x/create/client/create.go"
   ],
-  "note": "wave12"
+  "note": "wave12",
+  "done": 345,
+  "remaining_pending": 103
 }
