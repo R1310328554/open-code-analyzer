@@ -19,6 +19,7 @@ package com.alibaba.nacos.common.remote.client;
 import java.util.List;
 
 /**
+ * 服务端地址列表工厂：为内部 RPC 客户端提供候选节点及切换策略，配合 {@link RpcClient} 实现故障转移与负载均衡。
  * server list factory . use to inner client to connecte and switch servers.
  * @author liuzunfei
  * @version $Id: ServerListFactory.java, v 0.1 2020年07月14日 1:11 PM liuzunfei Exp $
@@ -26,6 +27,7 @@ import java.util.List;
 public interface ServerListFactory {
     
     /**
+     * 切换到下一个可用服务端并返回其地址（格式 {@code ip:port}）。
      * switch to a new server and get it.
      *
      * @return server " ip:port".
@@ -33,12 +35,14 @@ public interface ServerListFactory {
     String genNextServer();
     
     /**
+     * 获取当前正在连接或最近使用的服务端地址。
      * get current server.
      * @return server " ip:port".
      */
     String getCurrentServer();
     
     /**
+     * 返回完整的服务端地址列表快照。
      * get current server.
      *
      * @return servers.

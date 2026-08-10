@@ -23,6 +23,7 @@ import com.alibaba.nacos.common.remote.client.RpcClientTlsConfig;
 import java.util.Map;
 
 /**
+ * SDK 侧 gRPC 客户端：以 {@link AbilityMode#SDK_CLIENT} 协商能力，端口偏移默认 {@link com.alibaba.nacos.api.common.Constants#SDK_GRPC_PORT_DEFAULT_OFFSET}。
  * gRPC client for sdk.
  *
  * @author liuzunfei
@@ -30,10 +31,12 @@ import java.util.Map;
  */
 public class GrpcSdkClient extends GrpcClient {
     
+    /** 以名称创建 SDK gRPC 客户端，使用默认配置 */
     /**
      * Constructor.
      *
      * @param name name of client.
+      * <p>SDK gRPC 客户端；详见类级说明。</p>
      */
     public GrpcSdkClient(String name) {
         super(name);
@@ -46,6 +49,7 @@ public class GrpcSdkClient extends GrpcClient {
      * @param threadPoolCoreSize .
      * @param threadPoolMaxSize  .
      * @param labels             .
+      * <p>SDK gRPC 客户端；详见类级说明。</p>
      */
     public GrpcSdkClient(String name, Integer threadPoolCoreSize, Integer threadPoolMaxSize,
         Map<String, String> labels) {
@@ -63,10 +67,12 @@ public class GrpcSdkClient extends GrpcClient {
         return AbilityMode.SDK_CLIENT;
     }
     
+    /** 使用完整 {@link GrpcClientConfig} 创建客户端 */
     /**
      * constructor.
      *
      * @param config of GrpcClientConfig.
+      * <p>SDK gRPC 客户端；详见类级说明。</p>
      */
     public GrpcSdkClient(GrpcClientConfig config) {
         super(config);

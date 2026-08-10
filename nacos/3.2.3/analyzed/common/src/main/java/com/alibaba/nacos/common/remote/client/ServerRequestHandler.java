@@ -20,6 +20,7 @@ import com.alibaba.nacos.api.remote.request.Request;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
+ * 服务端推送请求处理器：当 Nacos Server 经双向流主动下发 {@link Request} 时，由注册的 Handler 生成 {@link Response} 回复。
  * ServerRequestHandler, to process the request from server side.
  *
  * @author liuzunfei
@@ -28,6 +29,7 @@ import com.alibaba.nacos.api.remote.response.Response;
 public interface ServerRequestHandler {
     
     /**
+     * 处理服务端推送的请求并返回响应；{@code connection} 可用于读取对端能力表等上下文。
      * Handle request from server.
      *
      * @param request request

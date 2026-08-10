@@ -71,6 +71,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 抽象 gRPC 远程客户端：继承 {@link RpcClient}，负责 Channel 创建、ServerCheck、双向流绑定、TLS 上下文构建及与服务端的能力协商（Setup/SetupAck）。
  * gRPC Client.
  *
  * @author liuzunfei
@@ -84,14 +85,10 @@ public abstract class GrpcClient extends RpcClient {
     
     private ThreadPoolExecutor grpcExecutor;
     
-    /**
-     * Block to wait setup success response.
-     */
+    /** 能力协商上下文：阻塞等待 SetupAck 并写入服务端能力表 */
     private final RecAbilityContext recAbilityContext = new RecAbilityContext(null);
     
-    /**
-     * for receiving server abilities.
-     */
+    /** 处理 SetupAck 请求，释放能力协商 CountDownLatch */
     private SetupRequestHandler setupRequestHandler;
     
     @Override
@@ -99,10 +96,12 @@ public abstract class GrpcClient extends RpcClient {
         return ConnectionType.GRPC;
     }
     
+    /** 以名称创建，内部使用 {@link DefaultGrpcClientConfig} 默认参数 */
     /**
      * constructor.
      *
      * @param name .
+      * <p>抽象 gRPC 客户端；详见类级说明。</p>
      */
     public GrpcClient(String name) {
         this(DefaultGrpcClientConfig.newBuilder().setName(name).build());
@@ -112,6 +111,7 @@ public abstract class GrpcClient extends RpcClient {
      * constructor.
      *
      * @param clientConfig .
+      * <p>抽象 gRPC 客户端；详见类级说明。</p>
      */
     public GrpcClient(GrpcClientConfig clientConfig) {
         super(clientConfig);
@@ -124,6 +124,7 @@ public abstract class GrpcClient extends RpcClient {
      *
      * @param clientConfig      .
      * @param serverListFactory .
+      * <p>抽象 gRPC 客户端；详见类级说明。</p>
      */
     public GrpcClient(GrpcClientConfig clientConfig, ServerListFactory serverListFactory) {
         super(clientConfig, serverListFactory);
@@ -131,11 +132,9 @@ public abstract class GrpcClient extends RpcClient {
         initSetupHandler();
     }
     
-    /**
-     * setup handler.
-     */
+    /** 注册 {@link SetupRequestHandler} 处理连接建立后的 SetupAck */
     private void initSetupHandler() {
-        // register to handler setup request
+        // 注册 SetupAck 处理器以接收服务端能力表
         setupRequestHandler = new SetupRequestHandler(this.recAbilityContext);
     }
     
@@ -146,6 +145,7 @@ public abstract class GrpcClient extends RpcClient {
      * @param threadPoolCoreSize .
      * @param threadPoolMaxSize  .
      * @param labels             .
+      * <p>抽象 gRPC 客户端；详见类级说明。</p>
      */
     public GrpcClient(String name, Integer threadPoolCoreSize, Integer threadPoolMaxSize,
         Map<String, String> labels) {
@@ -164,7 +164,7 @@ public abstract class GrpcClient extends RpcClient {
     }
     
     protected ThreadPoolExecutor createGrpcExecutor(String serverIp) {
-        // Thread name will use String.format, ipv6 maybe contain special word %, so handle it first.
+        // 线程名使用 String.format，IPv6 地址中的 % 需先转义避免格式化异常
         serverIp = serverIp.replaceAll("%", "-");
         ThreadPoolExecutor grpcExecutor = new ThreadPoolExecutor(clientConfig.threadPoolCoreSize(),
             clientConfig.threadPoolMaxSize(), clientConfig.threadPoolKeepAlive(),
@@ -187,6 +187,7 @@ public abstract class GrpcClient extends RpcClient {
     }
     
     /**
+     * 基于已建 Channel 创建 {@link RequestGrpc.RequestFutureStub}。
      * Create a stub using a channel.
      *
      * @param managedChannelTemp channel.
@@ -197,12 +198,14 @@ public abstract class GrpcClient extends RpcClient {
         return RequestGrpc.newFutureStub(managedChannelTemp);
     }
     
+    /** 按 IP/端口构建 ManagedChannel，配置压缩、保活、TLS 与线程池 */
     /**
      * create a new channel with specific server address.
      *
      * @param serverIp   serverIp.
      * @param serverPort serverPort.
      * @return if server check success,return a non-null channel.
+      * <p>抽象 gRPC 客户端；详见类级说明。</p>
      */
     private ManagedChannel createNewManagedChannel(String serverIp, int serverPort) {
         LOGGER.info("grpc client connection server: {} ip, serverPort: {}, grpcTslConfig: {}",
@@ -218,10 +221,12 @@ public abstract class GrpcClient extends RpcClient {
         return managedChannelBuilder.build();
     }
     
+    /** 立即 shutdown 指定 Channel（建连失败或探测失败时清理资源） */
     /**
      * shutdown a  channel.
      *
      * @param managedChannel channel to be shutdown.
+      * <p>抽象 gRPC 客户端；详见类级说明。</p>
      */
     private void shuntDownChannel(ManagedChannel managedChannel) {
         if (managedChannel != null && !managedChannel.isShutdown()) {
@@ -230,6 +235,7 @@ public abstract class GrpcClient extends RpcClient {
     }
     
     /**
+     * 发送 {@link ServerCheckRequest} 验证服务端可达；失败返回 null 并记录 TLS 提示。
      * check server if success.
      *
      * @param requestBlockingStub requestBlockingStub used to check server.
@@ -243,7 +249,7 @@ public abstract class GrpcClient extends RpcClient {
             ListenableFuture<Payload> responseFuture = requestBlockingStub.request(grpcRequest);
             Payload response =
                 responseFuture.get(clientConfig.serverCheckTimeOut(), TimeUnit.MILLISECONDS);
-            // receive connection unregister response here,not check response is success.
+            // 此处仅接收 ServerCheck 响应，不校验业务 success 标志
             return (Response) GrpcUtils.parse(response);
         } catch (Exception e) {
             LoggerUtils.printIfErrorEnabled(LOGGER,
@@ -275,7 +281,7 @@ public abstract class GrpcClient extends RpcClient {
                     if (request != null) {
                         try {
                             if (request instanceof SetupAckRequest) {
-                                // there is no connection ready this time
+                                // SetupAck 到达时连接可能尚未完全就绪，connection 可为 null
                                 setupRequestHandler.requestReply(request, null);
                                 return;
                             }
@@ -302,7 +308,7 @@ public abstract class GrpcClient extends RpcClient {
                     LoggerUtils.printIfErrorEnabled(LOGGER,
                         "[{}]Error to process server push response: {}",
                         grpcConn.getConnectionId(), payload.getBody().getValue().toStringUtf8());
-                    // remove and notify
+                    // 解析失败时释放能力协商阻塞并通知
                     recAbilityContext.release(null);
                 }
             }
@@ -359,7 +365,7 @@ public abstract class GrpcClient extends RpcClient {
     
     @Override
     public Connection connectToServer(ServerInfo serverInfo) {
-        // the newest connection id
+        // 记录 ServerCheck 返回的最新 connectionId
         String connectionId = "";
         try {
             if (grpcExecutor == null) {
@@ -374,8 +380,8 @@ public abstract class GrpcClient extends RpcClient {
                 shuntDownChannel(managedChannel);
                 return null;
             }
-            // submit ability table as soon as possible
-            // ability table will be null if server doesn't support ability table
+            // 尽早提交本节点能力表
+            // 旧版 Server 不支持能力表时为 null
             ServerCheckResponse serverCheckResponse = (ServerCheckResponse) response;
             connectionId = serverCheckResponse.getConnectionId();
             
@@ -384,23 +390,23 @@ public abstract class GrpcClient extends RpcClient {
                     newChannelStubTemp.getChannel());
             GrpcConnection grpcConn = new GrpcConnection(serverInfo, grpcExecutor);
             grpcConn.setConnectionId(connectionId);
-            // if not supported, it will be false
+            // 不支持能力协商时 supportAbilityNegotiation 为 false
             if (serverCheckResponse.isSupportAbilityNegotiation()) {
-                // mark
+                // 标记需要同步等待 SetupAck
                 this.recAbilityContext.reset(grpcConn);
-                // promise null if no abilities receive
+                // 未收到能力表前 abilityTable 保持 null
                 grpcConn.setAbilityTable(null);
             }
             
-            //create stream request and bind connection event to this connection.
+            // 建立双向流并将 onError/onCompleted 绑定到连接切换逻辑
             StreamObserver<Payload> payloadStreamObserver =
                 bindRequestStream(biRequestStreamStub, grpcConn);
             
-            // stream observer to send response to server
+            // 用于经双向流向 Server 发送 Response/Request
             grpcConn.setPayloadStreamObserver(payloadStreamObserver);
             grpcConn.setGrpcFutureServiceStub(newChannelStubTemp);
             grpcConn.setChannel(managedChannel);
-            //send a  setup request.
+            // 发送 ConnectionSetupRequest（版本、标签、能力表、租户）
             ConnectionSetupRequest conSetupRequest = new ConnectionSetupRequest();
             conSetupRequest.setClientVersion(getClientVersion());
             conSetupRequest.setLabels(super.getLabels());
@@ -409,25 +415,25 @@ public abstract class GrpcClient extends RpcClient {
                 NacosAbilityManagerHolder.getInstance().getCurrentNodeAbilities(abilityMode()));
             conSetupRequest.setTenant(super.getTenant());
             grpcConn.sendRequest(conSetupRequest);
-            // wait for response
+            // 等待 SetupAck 或兼容旧版的固定延迟
             if (recAbilityContext.isNeedToSync()) {
-                // try to wait for notify response
+                // 阻塞等待能力协商超时
                 recAbilityContext.await(this.clientConfig.capabilityNegotiationTimeout(),
                     TimeUnit.MILLISECONDS);
-                // if no server abilities receiving, then reconnect
+                // 超时未收到能力表则放弃本次连接
                 if (!recAbilityContext.check(grpcConn)) {
                     return null;
                 }
             } else {
-                // leave for adapting old version server
-                // registration is considered successful by default after 100ms
-                // wait to register connection setup
+                // 兼容不支持能力协商的旧 Server：固定 sleep 100ms
+                // 旧协议下默认 100ms 后视为注册成功
+                // 给服务端处理 Setup 请求的缓冲时间
                 Thread.sleep(100L);
             }
             return grpcConn;
         } catch (Exception e) {
             LOGGER.error("[{}]Fail to connect to server!,error={}", GrpcClient.this.getName(), e);
-            // remove and notify
+            // 建连异常时释放能力协商 latch
             recAbilityContext.release(null);
         }
         return null;
@@ -437,10 +443,12 @@ public abstract class GrpcClient extends RpcClient {
         return VersionUtils.getFullClientVersion();
     }
     
+    /** 子类声明能力上报模式：SDK 或 Cluster */
     /**
      * ability mode: sdk client or cluster client.
      *
      * @return mode
+      * <p>抽象 gRPC 客户端；详见类级说明。</p>
      */
     protected abstract AbilityMode abilityMode();
     
@@ -449,19 +457,17 @@ public abstract class GrpcClient extends RpcClient {
         recAbilityContext.release(null);
     }
     
+    /** 能力协商同步上下文：CountDownLatch 阻塞客户端直至收到 SetupAck */
     /**
      * This is for receiving server abilities.
+      * <p>抽象 gRPC 客户端；详见类级说明。</p>
      */
     static class RecAbilityContext {
         
-        /**
-         * connection waiting for server abilities.
-         */
+        /** 当前等待写入能力表的连接 */
         private volatile Connection connection;
         
-        /**
-         * way to block client.
-         */
+        /** 阻塞建连线程直至 release 或超时 */
         private volatile CountDownLatch blocker;
         
         private volatile boolean needToSync = false;
@@ -471,19 +477,23 @@ public abstract class GrpcClient extends RpcClient {
             this.blocker = new CountDownLatch(1);
         }
         
+        /** 本次建连是否需要等待能力表同步 */
         /**
          * whether to sync for ability table.
          *
          * @return whether to sync for ability table.
+          * <p>抽象 gRPC 客户端；详见类级说明。</p>
          */
         public boolean isNeedToSync() {
             return this.needToSync;
         }
         
+        /** 为新连接重置 latch 并开启同步等待 */
         /**
          * reset with new connection which is waiting for ability table.
          *
          * @param connection new connection which is waiting for ability table.
+          * <p>抽象 gRPC 客户端；详见类级说明。</p>
          */
         public void reset(Connection connection) {
             this.connection = connection;
@@ -491,15 +501,17 @@ public abstract class GrpcClient extends RpcClient {
             this.needToSync = true;
         }
         
+        /** 收到 SetupAck 后写入能力表并 countDown */
         /**
          * notify sync by abilities.
          *
          * @param abilities abilities.
+          * <p>抽象 gRPC 客户端；详见类级说明。</p>
          */
         public void release(Map<String, Boolean> abilities) {
             if (this.connection != null) {
                 this.connection.setAbilityTable(abilities);
-                // avoid repeat setting
+                // 避免重复写入同一连接
                 this.connection = null;
             }
             if (this.blocker != null) {
@@ -508,12 +520,14 @@ public abstract class GrpcClient extends RpcClient {
             this.needToSync = false;
         }
         
+        /** 在指定超时内等待 SetupAck */
         /**
          * await for abilities.
          *
          * @param timeout timeout.
          * @param unit    unit.
          * @throws InterruptedException by blocker.
+          * <p>抽象 gRPC 客户端；详见类级说明。</p>
          */
         public void await(long timeout, TimeUnit unit) throws InterruptedException {
             if (this.blocker != null) {
@@ -522,11 +536,13 @@ public abstract class GrpcClient extends RpcClient {
             this.needToSync = false;
         }
         
+        /** 校验是否已设置能力表；失败则标记 abandon 并关闭连接 */
         /**
          * check whether receive abilities.
          *
          * @param connection conn.
          * @return whether receive abilities.
+          * <p>抽象 gRPC 客户端；详见类级说明。</p>
          */
         public boolean check(Connection connection) {
             if (!connection.isAbilitiesSet()) {
@@ -601,8 +617,10 @@ public abstract class GrpcClient extends RpcClient {
         }
     }
     
+    /** 处理服务端下发的 {@link SetupAckRequest}，完成能力协商 */
     /**
      * Setup response handler.
+      * <p>抽象 gRPC 客户端；详见类级说明。</p>
      */
     class SetupRequestHandler implements ServerRequestHandler {
         
@@ -614,10 +632,10 @@ public abstract class GrpcClient extends RpcClient {
         
         @Override
         public Response requestReply(Request request, Connection connection) {
-            // if finish setup
+            // SetupAck 表示连接注册完成
             if (request instanceof SetupAckRequest) {
                 SetupAckRequest setupAckRequest = (SetupAckRequest) request;
-                // remove and count down
+                // 写入能力表并释放阻塞
                 recAbilityContext.release(
                     Optional.ofNullable(setupAckRequest.getAbilityTable())
                         .orElse(new HashMap<>(0)));

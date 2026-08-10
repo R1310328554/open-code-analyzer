@@ -21,6 +21,8 @@ import com.alibaba.nacos.common.remote.TlsConfig;
 import java.util.Properties;
 
 /**
+ * RPC TLS 配置工厂 SPI：从 {@link Properties} 解析 SDK 与集群两种场景的 {@link TlsConfig}。
+ * 实现类通过 {@link com.alibaba.nacos.common.spi.NacosServiceLoader} 加载，供 gRPC 客户端构建 SSL 上下文。
  * RpcTlsConfigFactory.
  *
  * @author stone-98
@@ -29,6 +31,7 @@ import java.util.Properties;
 public interface RpcTlsConfigFactory {
     
     /**
+     * 基于配置属性创建 SDK 客户端使用的 TLS 配置（证书、协议、双向认证等）。
      * Create a TlsConfig for SDK connections based on the provided properties.
      *
      * @param properties Properties containing configuration
@@ -37,6 +40,7 @@ public interface RpcTlsConfigFactory {
     TlsConfig createSdkConfig(Properties properties);
     
     /**
+     * 基于配置属性创建集群节点间通信使用的 TLS 配置。
      * Create a TlsConfig for cluster connections based on the provided properties.
      *
      * @param properties Properties containing configuration
@@ -45,6 +49,7 @@ public interface RpcTlsConfigFactory {
     TlsConfig createClusterConfig(Properties properties);
     
     /**
+     * 从 {@link Properties} 读取布尔配置项；缺失时返回默认值。
      * Get boolean property from properties.
      *
      * @param properties   Properties containing configuration

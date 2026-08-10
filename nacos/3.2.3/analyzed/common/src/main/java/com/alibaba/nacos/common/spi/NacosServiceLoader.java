@@ -24,6 +24,7 @@ import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * Nacos SPI 服务加载器：封装 {@link ServiceLoader}，首次加载时缓存实现类，后续通过 {@link #newServiceInstances(Class)} 快速实例化，降低重复扫描开销。
  * Nacos SPI Service Loader.
  *
  * @author xiweng.yy
@@ -33,7 +34,7 @@ public class NacosServiceLoader {
     private static final Map<Class<?>, Collection<Class<?>>> SERVICES = new ConcurrentHashMap<>();
     
     /**
-     * Load service.
+     * 加载 SPI 实现：首次扫描并缓存类，已缓存则直接实例化。
      *
      * <p>Load service by SPI and cache the classes for reducing cost when load second time.
      *
@@ -58,6 +59,7 @@ public class NacosServiceLoader {
     }
     
     /**
+     * 基于缓存的实现类创建新实例集合；未加载过则返回空列表。
      * New service instances.
      *
      * @param service service class

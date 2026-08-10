@@ -24,6 +24,7 @@ import com.alibaba.nacos.common.utils.VersionUtils;
 import java.util.Map;
 
 /**
+ * 集群节点间 gRPC 客户端：以 {@link AbilityMode#CLUSTER_CLIENT} 上报能力表，RPC 端口偏移量默认取 {@link com.alibaba.nacos.api.common.Constants#CLUSTER_GRPC_PORT_DEFAULT_OFFSET}。
  * gRPC client for cluster.
  *
  * @author liuzunfei
@@ -33,10 +34,12 @@ public class GrpcClusterClient extends GrpcClient {
     
     private static final String CLUSTER_CLIENT_VERSION_PREFIX = "Nacos-Server:v";
     
+    /** 以客户端名称创建，其余参数使用 {@link DefaultGrpcClientConfig} 默认值 */
     /**
      * Empty constructor.
      *
      * @param name name of client.
+      * <p>集群 gRPC 客户端；详见类级说明。</p>
      */
     public GrpcClusterClient(String name) {
         super(name);
@@ -46,11 +49,13 @@ public class GrpcClusterClient extends GrpcClient {
      * Empty constructor.
      *
      * @param config of GrpcClientConfig.
+      * <p>集群 gRPC 客户端；详见类级说明。</p>
      */
     public GrpcClusterClient(GrpcClientConfig config) {
         super(config);
     }
     
+    /** 指定线程池规模与标签创建集群 gRPC 客户端 */
     /**
      * Constructor.
      *
@@ -58,6 +63,7 @@ public class GrpcClusterClient extends GrpcClient {
      * @param threadPoolCoreSize .
      * @param threadPoolMaxSize  .
      * @param labels             .
+      * <p>集群 gRPC 客户端；详见类级说明。</p>
      */
     public GrpcClusterClient(String name, Integer threadPoolCoreSize, Integer threadPoolMaxSize,
         Map<String, String> labels) {

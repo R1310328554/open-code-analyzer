@@ -28,6 +28,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * {@link GrpcClientConfig} 默认实现：通过 {@link Builder} 组装超时、重试、线程池、Channel 保活及 TLS 标签；支持从 {@link Properties} 批量加载。
  * Default grpc client config.
  *
  * @author karsonto
@@ -70,10 +71,12 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
     
     private RpcClientTlsConfig tlsConfig = new RpcClientTlsConfig();
     
+    /** 私有构造，仅由 {@link Builder#build()} 调用 */
     /**
      * constructor.
      *
      * @param builder builder of DefaultGrpcClientConfig builder.
+      * <p>gRPC 客户端默认配置；详见类级说明。</p>
      */
     private DefaultGrpcClientConfig(Builder builder) {
         this.name = builder.name;
@@ -246,14 +249,14 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         private Builder() {
         }
         
-        /** Build SDK config from properties. */
+        /** 从属性文件构建 SDK 场景配置（含 SDK TLS） */
         public Builder buildSdkFromProperties(Properties properties) {
             RpcClientTlsConfig tlsConfig =
                 RpcClientTlsConfigFactory.getInstance().createSdkConfig(properties);
             return fromProperties(properties, tlsConfig);
         }
         
-        /** Build cluster config from properties. */
+        /** 从属性文件构建集群场景配置（含集群 TLS） */
         public Builder buildClusterFromProperties(Properties properties) {
             RpcClientTlsConfig tlsConfig =
                 RpcClientTlsConfigFactory.getInstance().createClusterConfig(properties);
@@ -261,6 +264,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         }
         
         /**
+         * 按 {@link GrpcConstants} 键名从 {@link Properties} 覆盖 Builder 各字段。
          * Set config from properties.
          *
          * @param properties properties
@@ -336,9 +340,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
             return this;
         }
         
-        /**
-         * set client name.
-         */
+        /** 设置客户端名称 */
         public Builder setName(String name) {
             this.name = name;
             return this;
@@ -346,6 +348,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         
         /**
          * set retryTimes.
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setRetryTimes(int retryTimes) {
             this.retryTimes = retryTimes;
@@ -354,6 +357,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         
         /**
          * set timeOutMills.
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setTimeOutMills(long timeOutMills) {
             this.timeOutMills = timeOutMills;
@@ -362,6 +366,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         
         /**
          * set connectionKeepAlive.
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setConnectionKeepAlive(long connectionKeepAlive) {
             this.connectionKeepAlive = connectionKeepAlive;
@@ -370,6 +375,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         
         /**
          * set threadPoolKeepAlive.
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setThreadPoolKeepAlive(Long threadPoolKeepAlive) {
             this.threadPoolKeepAlive = threadPoolKeepAlive;
@@ -378,6 +384,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         
         /**
          * set threadPoolCoreSize.
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setThreadPoolCoreSize(Integer threadPoolCoreSize) {
             if (!Objects.isNull(threadPoolCoreSize)) {
@@ -388,6 +395,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         
         /**
          * set threadPoolMaxSize.
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setThreadPoolMaxSize(Integer threadPoolMaxSize) {
             if (!Objects.isNull(threadPoolMaxSize)) {
@@ -398,6 +406,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         
         /**
          * set serverCheckTimeOut.
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setServerCheckTimeOut(Long serverCheckTimeOut) {
             this.serverCheckTimeOut = serverCheckTimeOut;
@@ -406,6 +415,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         
         /**
          * set threadPoolQueueSize.
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setThreadPoolQueueSize(int threadPoolQueueSize) {
             this.threadPoolQueueSize = threadPoolQueueSize;
@@ -414,6 +424,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         
         /**
          * set maxInboundMessageSize.
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setMaxInboundMessageSize(int maxInboundMessageSize) {
             this.maxInboundMessageSize = maxInboundMessageSize;
@@ -422,6 +433,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         
         /**
          * set channelKeepAlive.
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setChannelKeepAlive(int channelKeepAlive) {
             this.channelKeepAlive = channelKeepAlive;
@@ -433,6 +445,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
          *
          * @param channelKeepAliveTimeout milliseconds
          * @return builder
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setChannelKeepAliveTimeout(int channelKeepAliveTimeout) {
             this.channelKeepAliveTimeout = channelKeepAliveTimeout;
@@ -449,6 +462,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
          *
          * @param allowCoreThreadTimeOut allowCoreThreadTimeOut flag
          * @return builder
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setAllowCoreThreadTimeOut(boolean allowCoreThreadTimeOut) {
             this.allowCoreThreadTimeOut = allowCoreThreadTimeOut;
@@ -457,6 +471,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         
         /**
          * set healthCheckRetryTimes.
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setHealthCheckRetryTimes(int healthCheckRetryTimes) {
             this.healthCheckRetryTimes = healthCheckRetryTimes;
@@ -465,6 +480,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         
         /**
          * set healthCheckTimeOut.
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setHealthCheckTimeOut(long healthCheckTimeOut) {
             this.healthCheckTimeOut = healthCheckTimeOut;
@@ -473,6 +489,7 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
         
         /**
          * set labels.
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setLabels(Map<String, String> labels) {
             this.labels.putAll(labels);
@@ -484,15 +501,14 @@ public class DefaultGrpcClientConfig implements GrpcClientConfig {
          *
          * @param tlsConfig tls of client.
          * @return
+          * <p>gRPC 客户端默认配置；详见类级说明。</p>
          */
         public Builder setTlsConfig(RpcClientTlsConfig tlsConfig) {
             this.tlsConfig = tlsConfig;
             return this;
         }
         
-        /**
-         * build GrpcClientConfig.
-         */
+        /** 构建不可变 {@link GrpcClientConfig} 实例 */
         public GrpcClientConfig build() {
             return new DefaultGrpcClientConfig(this);
         }

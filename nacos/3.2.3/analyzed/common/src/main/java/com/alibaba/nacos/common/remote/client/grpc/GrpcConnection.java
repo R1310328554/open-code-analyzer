@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
+ * gRPC 连接实现：封装 {@link ManagedChannel}、Future Stub 与双向流 {@link StreamObserver}，负责 Request/Response 与 {@link Payload} 的编解码及同步/异步 RPC。
  * gRPC connection.
  *
  * @author liuzunfei
@@ -47,16 +48,12 @@ import java.util.concurrent.TimeoutException;
  */
 public class GrpcConnection extends Connection {
     
-    /**
-     * grpc channel.
-     */
+    /** 底层 gRPC {@link ManagedChannel} */
     protected ManagedChannel channel;
     
     Executor executor;
     
-    /**
-     * stub to send request.
-     */
+    /** 用于一元 RPC 的 {@link RequestGrpc.RequestFutureStub} */
     protected RequestGrpc.RequestFutureStub grpcFutureServiceStub;
     
     protected StreamObserver<Payload> payloadStreamObserver;
@@ -134,7 +131,7 @@ public class GrpcConnection extends Connection {
         Payload grpcRequest = GrpcUtils.convert(request);
         ListenableFuture<Payload> requestFuture = grpcFutureServiceStub.request(grpcRequest);
         
-        //set callback .
+        // 注册异步回调处理响应或异常
         Futures.addCallback(requestFuture, new FutureCallback<Payload>() {
             
             @Override
@@ -170,7 +167,7 @@ public class GrpcConnection extends Connection {
                 }
             }
         }, requestCallBack.getExecutor() != null ? requestCallBack.getExecutor() : this.executor);
-        // set timeout future.
+        // 为 Future 附加超时调度，超时触发 CancellationException
         ListenableFuture<Payload> payloadListenableFuture = Futures.withTimeout(requestFuture,
             requestCallBack.getTimeout(), TimeUnit.MILLISECONDS,
             RpcScheduledExecutor.TIMEOUT_SCHEDULER);
@@ -198,6 +195,7 @@ public class GrpcConnection extends Connection {
      * Getter method for property <tt>channel</tt>.
      *
      * @return property value of channel
+      * <p>gRPC 连接封装；详见类级说明。</p>
      */
     public ManagedChannel getChannel() {
         return channel;
@@ -207,6 +205,7 @@ public class GrpcConnection extends Connection {
      * Setter method for property <tt>channel</tt>.
      *
      * @param channel value to be assigned to property channel
+      * <p>gRPC 连接封装；详见类级说明。</p>
      */
     public void setChannel(ManagedChannel channel) {
         this.channel = channel;
@@ -216,6 +215,7 @@ public class GrpcConnection extends Connection {
      * Getter method for property <tt>grpcFutureServiceStub</tt>.
      *
      * @return property value of grpcFutureServiceStub
+      * <p>gRPC 连接封装；详见类级说明。</p>
      */
     public RequestGrpc.RequestFutureStub getGrpcFutureServiceStub() {
         return grpcFutureServiceStub;
@@ -225,6 +225,7 @@ public class GrpcConnection extends Connection {
      * Setter method for property <tt>grpcFutureServiceStub</tt>.
      *
      * @param grpcFutureServiceStub value to be assigned to property grpcFutureServiceStub
+      * <p>gRPC 连接封装；详见类级说明。</p>
      */
     public void setGrpcFutureServiceStub(RequestGrpc.RequestFutureStub grpcFutureServiceStub) {
         this.grpcFutureServiceStub = grpcFutureServiceStub;
@@ -234,6 +235,7 @@ public class GrpcConnection extends Connection {
      * Getter method for property <tt>payloadStreamObserver</tt>.
      *
      * @return property value of payloadStreamObserver
+      * <p>gRPC 连接封装；详见类级说明。</p>
      */
     public StreamObserver<Payload> getPayloadStreamObserver() {
         return payloadStreamObserver;
@@ -243,6 +245,7 @@ public class GrpcConnection extends Connection {
      * Setter method for property <tt>payloadStreamObserver</tt>.
      *
      * @param payloadStreamObserver value to be assigned to property payloadStreamObserver
+      * <p>gRPC 连接封装；详见类级说明。</p>
      */
     public void setPayloadStreamObserver(StreamObserver<Payload> payloadStreamObserver) {
         this.payloadStreamObserver = payloadStreamObserver;

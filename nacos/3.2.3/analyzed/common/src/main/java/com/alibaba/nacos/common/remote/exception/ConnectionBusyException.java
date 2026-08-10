@@ -17,6 +17,7 @@
 package com.alibaba.nacos.common.remote.exception;
 
 /**
+ * 连接繁忙异常（错误码 601）：连接正处理其他请求或处于不可接受新请求状态时抛出。
  * connection is busy exception.
  *
  * @author liuzunfei

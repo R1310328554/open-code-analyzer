@@ -19,6 +19,7 @@ package com.alibaba.nacos.common.remote.exception;
 import com.alibaba.nacos.api.exception.runtime.NacosRuntimeException;
 
 /**
+ * 远程通信模块根异常：继承 {@link com.alibaba.nacos.api.exception.runtime.NacosRuntimeException}，统一携带远程层错误码。
  * super exception in remote module.
  *
  * @author liuzunfei
@@ -26,6 +27,7 @@ import com.alibaba.nacos.api.exception.runtime.NacosRuntimeException;
  */
 public class RemoteException extends NacosRuntimeException {
     
+    /** 仅携带错误码的构造 */
     public RemoteException(int errorCode) {
         super(errorCode);
     }

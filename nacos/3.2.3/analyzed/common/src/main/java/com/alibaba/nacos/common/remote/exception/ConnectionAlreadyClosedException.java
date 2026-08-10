@@ -17,6 +17,7 @@
 package com.alibaba.nacos.common.remote.exception;
 
 /**
+ * 连接已关闭异常（错误码 600）：在已 shutdown 的连接上发起 RPC 时抛出。
  * connection already closed exception.
  *
  * @author liuzunfei
@@ -26,6 +27,7 @@ public class ConnectionAlreadyClosedException extends RemoteException {
     
     private static final int CONNECTION_ALREADY_CLOSED = 600;
     
+    /** 带自定义消息的构造 */
     public ConnectionAlreadyClosedException(String msg) {
         super(CONNECTION_ALREADY_CLOSED, msg);
     }

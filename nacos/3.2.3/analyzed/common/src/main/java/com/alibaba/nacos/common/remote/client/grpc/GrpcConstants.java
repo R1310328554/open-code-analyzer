@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * gRPC 客户端配置键常量：前缀 {@link #NACOS_CLIENT_GRPC}，带 {@link GRpcConfigLabel} 的字段会在静态块中注册到 {@link #getRpcParams()}。
  * GrpcConsts.
  *
  * @author karsonto
@@ -116,6 +117,7 @@ public class GrpcConstants {
         }
     }
     
+    /** 返回所有已注册的 gRPC 配置属性名（不可变集合） */
     public static Set<String> getRpcParams() {
         return Collections.unmodifiableSet(CONFIG_NAMES);
     }

@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * gRPC 载荷工具：在 {@link Request}/{@link Response} 与 Protobuf {@link Payload} 间转换，请求体经 Jackson 序列化为 JSON 写入 {@link Any}，类型名写入 {@link Metadata}。
  * gRPC utils, use to parse request and response.
  *
  * @author liuzunfei
@@ -49,9 +50,10 @@ public class GrpcUtils {
      * @param request request.
      * @param meta    request meta.
      * @return payload.
+      * <p>gRPC 载荷编解码工具；详见类级说明。</p>
      */
     public static Payload convert(Request request, RequestMeta meta) {
-        //meta.
+        // 组装元数据：类型名、客户端 IP、自定义 Header
         Payload.Builder payloadBuilder = Payload.newBuilder();
         Metadata.Builder metaBuilder = Metadata.newBuilder();
         if (meta != null) {
@@ -61,7 +63,7 @@ public class GrpcUtils {
         metaBuilder.setClientIp(NetUtils.localIp());
         payloadBuilder.setMetadata(metaBuilder.build());
         
-        // request body .
+        // 请求体 JSON 序列化后写入 Payload.body
         byte[] jsonBytes = convertRequestToByte(request);
         return payloadBuilder
             .setBody(Any.newBuilder().setValue(UnsafeByteOperations.unsafeWrap(jsonBytes))).build();
@@ -73,6 +75,7 @@ public class GrpcUtils {
      *
      * @param request request.
      * @return payload.
+      * <p>gRPC 载荷编解码工具；详见类级说明。</p>
      */
     public static Payload convert(Request request) {
         
@@ -94,6 +97,7 @@ public class GrpcUtils {
      *
      * @param response response.
      * @return payload.
+      * <p>gRPC 载荷编解码工具；详见类级说明。</p>
      */
     public static Payload convert(Response response) {
         byte[] jsonBytes = JacksonUtils.toJsonBytes(response);
@@ -114,6 +118,7 @@ public class GrpcUtils {
     }
     
     /**
+     * 按 {@link Metadata#getType()} 从 {@link PayloadRegistry} 反查类并反序列化；未知类型抛出 {@link RemoteException}。
      * parse payload to request/response model.
      *
      * @param payload payload to be parsed.
