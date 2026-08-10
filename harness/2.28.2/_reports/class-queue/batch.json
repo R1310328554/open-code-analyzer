@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T14:53:03Z",
-  "files": [
-    "cmd/drone-server/bootstrap/bootstrap.go",
-    "cmd/drone-server/config/config.go",
-    "cmd/drone-server/inject_client.go",
-    "cmd/drone-server/inject_external.go",
-    "cmd/drone-server/inject_license.go",
-    "cmd/drone-server/inject_login.go",
-    "cmd/drone-server/inject_plugin.go",
-    "cmd/drone-server/inject_runner.go",
-    "cmd/drone-server/inject_scheduler.go",
-    "cmd/drone-server/inject_server.go",
-    "cmd/drone-server/inject_service.go",
-    "cmd/drone-server/inject_store.go",
-    "cmd/drone-server/main.go",
-    "cmd/drone-server/wire.go",
-    "cmd/drone-server/wire_gen.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 358,
-  "done": 15
+  "done": 30
 }
