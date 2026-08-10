@@ -19,6 +19,8 @@ package org.keycloak.dom.saml.v1.protocol;
 import java.net.URI;
 
 /**
+ * SAML 1.1 认证查询（AuthenticationQuery）：请求指定主体在特定认证方法下的断言。
+ *
  * <complexType name="AuthenticationQueryType"> <complexContent> <extension base="samlp:SubjectQueryAbstractType">
  * <attribute
  * name="AuthenticationMethod" type="anyURI"/> </extension>
@@ -30,12 +32,15 @@ import java.net.URI;
  */
 public class SAML11AuthenticationQueryType extends SAML11SubjectQueryAbstractType {
 
+    /** 请求的认证方法 URI。 */
     protected URI authenticationMethod;
 
+    /** 返回认证方法 URI。 */
     public URI getAuthenticationMethod() {
         return authenticationMethod;
     }
 
+    /** 设置认证方法 URI。 */
     public void setAuthenticationMethod(URI authenticationMethod) {
         this.authenticationMethod = authenticationMethod;
     }

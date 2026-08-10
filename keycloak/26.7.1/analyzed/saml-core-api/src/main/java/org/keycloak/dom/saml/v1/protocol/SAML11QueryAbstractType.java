@@ -19,6 +19,8 @@ package org.keycloak.dom.saml.v1.protocol;
 import java.io.Serializable;
 
 /**
+ * SAML 1.1 查询（Query）抽象基类：各类 SAML 1.1 协议查询的公共父类型。
+ *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 22, 2011
  */

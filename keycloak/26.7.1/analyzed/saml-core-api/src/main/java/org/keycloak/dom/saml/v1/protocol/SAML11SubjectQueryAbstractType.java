@@ -19,6 +19,8 @@ package org.keycloak.dom.saml.v1.protocol;
 import org.keycloak.dom.saml.v1.assertion.SAML11SubjectType;
 
 /**
+ * SAML 1.1 主体查询（SubjectQuery）抽象基类：所有以主体为目标的查询的公共父类型。
+ *
  * <complexType name="SubjectQueryAbstractType" abstract="true"> <complexContent> <extension
  * base="samlp:QueryAbstractType">
  * <sequence> <element ref="saml:Subject"/> </sequence>
@@ -30,12 +32,15 @@ import org.keycloak.dom.saml.v1.assertion.SAML11SubjectType;
  */
 public class SAML11SubjectQueryAbstractType extends SAML11QueryAbstractType {
 
+    /** 查询目标主体。 */
     protected SAML11SubjectType subject;
 
+    /** 返回查询主体。 */
     public SAML11SubjectType getSubject() {
         return subject;
     }
 
+    /** 设置查询主体。 */
     public void setSubject(SAML11SubjectType subject) {
         this.subject = subject;
     }

@@ -18,6 +18,8 @@
 package org.keycloak.dom.saml.v2.ac;
 
 /**
+ * SAML 2.0 认证上下文会话激活限制类型：表示激活凭证仅限当前会话有效（无额外属性）。
+ *
  * <p>
  * Java class for ActivationLimitSessionType complex type.
  *

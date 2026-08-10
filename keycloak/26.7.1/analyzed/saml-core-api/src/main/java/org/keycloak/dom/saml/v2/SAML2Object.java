@@ -17,7 +17,7 @@
 package org.keycloak.dom.saml.v2;
 
 /**
- * Marker Interface
+ * SAML 2.0 DOM 对象标记接口：标识属于 SAML 2.0 协议/元数据/断言等 DOM 模型的类型。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Sep 17, 2009

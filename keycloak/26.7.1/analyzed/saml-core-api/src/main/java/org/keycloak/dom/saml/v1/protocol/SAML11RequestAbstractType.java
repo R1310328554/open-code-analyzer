@@ -25,6 +25,8 @@ import javax.xml.namespace.QName;
 import org.keycloak.dom.saml.common.CommonRequestAbstractType;
 
 /**
+ * SAML 1.1 请求抽象基类：包含版本号、RespondWith 列表及请求公共属性。
+ *
  * <complexType name="RequestAbstractType" abstract="true">
  *
  * <sequence> <element ref="samlp:RespondWith" minOccurs="0" maxOccurs="unbounded"/> <element ref="ds:Signature"
@@ -38,36 +40,51 @@ import org.keycloak.dom.saml.common.CommonRequestAbstractType;
  */
 public abstract class SAML11RequestAbstractType extends CommonRequestAbstractType {
 
+    /** 主版本号（SAML 1.1 默认为 1）。 */
     protected int majorVersion = 1;
 
+    /** 次版本号（SAML 1.1 默认为 1）。 */
     protected int minorVersion = 1;
 
+    /** 期望响应元素类型的 QName 列表。 */
     protected List<QName> respondWith = new ArrayList<>();
 
+    /**
+     * 构造 SAML 1.1 请求基类。
+     *
+     * @param id 请求 ID
+     * @param issueInstant 签发时间
+     */
     public SAML11RequestAbstractType(String id, XMLGregorianCalendar issueInstant) {
         super(id, issueInstant);
     }
 
+    /** 返回主版本号。 */
     public int getMajorVersion() {
         return majorVersion;
     }
 
+    /** 返回次版本号。 */
     public int getMinorVersion() {
         return minorVersion;
     }
 
+    /** 添加 RespondWith QName。 */
     public void add(QName rw) {
         this.respondWith.add(rw);
     }
 
+    /** 批量添加 RespondWith QName。 */
     public void addAllConditions(List<QName> rw) {
         this.respondWith.addAll(rw);
     }
 
+    /** 移除 RespondWith QName。 */
     public boolean remove(QName rw) {
         return this.respondWith.remove(rw);
     }
 
+    /** 返回不可修改的 RespondWith 列表。 */
     public List<QName> getRespondWith() {
         return Collections.unmodifiableList(respondWith);
     }

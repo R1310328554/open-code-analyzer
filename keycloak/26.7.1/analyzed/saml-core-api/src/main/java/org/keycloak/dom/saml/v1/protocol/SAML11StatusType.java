@@ -21,6 +21,8 @@ import java.io.Serializable;
 import org.keycloak.dom.saml.common.CommonStatusDetailType;
 
 /**
+ * SAML 1.1 状态（Status）类型：描述 SAML 响应的处理结果，含状态码、消息与详情。
+ *
  * <complexType name="StatusType"> <sequence> <element ref="samlp:StatusCode"/> <element ref="samlp:StatusMessage"
  * minOccurs="0"/> <element ref="samlp:StatusDetail" minOccurs="0"/> </sequence>
  *
@@ -31,36 +33,46 @@ import org.keycloak.dom.saml.common.CommonStatusDetailType;
  */
 public class SAML11StatusType implements Serializable {
 
+    /** 状态码。 */
     protected SAML11StatusCodeType statusCode;
 
+    /** 可选的状态消息。 */
     protected String statusMessage;
 
+    /** 可选的状态详情。 */
     protected CommonStatusDetailType statusDetail;
 
+    /** 返回状态码。 */
     public SAML11StatusCodeType getStatusCode() {
         return statusCode;
     }
 
+    /** 设置状态码。 */
     public void setStatusCode(SAML11StatusCodeType statusCode) {
         this.statusCode = statusCode;
     }
 
+    /** 返回状态消息。 */
     public String getStatusMessage() {
         return statusMessage;
     }
 
+    /** 设置状态消息。 */
     public void setStatusMessage(String statusMessage) {
         this.statusMessage = statusMessage;
     }
 
+    /** 返回状态详情。 */
     public CommonStatusDetailType getStatusDetail() {
         return statusDetail;
     }
 
+    /** 设置状态详情。 */
     public void setStatusDetail(CommonStatusDetailType statusDetail) {
         this.statusDetail = statusDetail;
     }
 
+    /** 构造表示成功的 Status 实例。 */
     public static SAML11StatusType successType() {
         SAML11StatusType success = new SAML11StatusType();
         success.setStatusCode(SAML11StatusCodeType.SUCCESS);

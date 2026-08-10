@@ -20,6 +20,8 @@ import java.io.Serializable;
 import javax.xml.namespace.QName;
 
 /**
+ * SAML 1.1 状态码（StatusCode）类型：标识 SAML 响应的处理结果，可嵌套子状态码。
+ *
  * <complexType name="StatusCodeType"> <sequence> <element ref="samlp:StatusCode" minOccurs="0"/> </sequence>
  * <attribute
  * name="Value" type="QName" use="required"/> </complexType>
@@ -29,38 +31,46 @@ import javax.xml.namespace.QName;
  */
 public class SAML11StatusCodeType implements Serializable {
 
+    /** 表示成功的预定义状态码。 */
     public static final SAML11StatusCodeType SUCCESS = new SAML11StatusCodeType(new QName("samlp:Success"));
 
+    /** 可选的嵌套子状态码。 */
     protected SAML11StatusCodeType statusCode;
 
+    /** 状态码值（QName）。 */
     protected QName value;
 
+    /**
+     * 构造状态码。
+     *
+     * @param theValue 状态码 QName 值
+     */
     public SAML11StatusCodeType(QName theValue) {
         value = theValue;
     }
 
     /**
-     * Gets the value of the statusCode property.
+     * 获取嵌套状态码属性值。
      *
-     * @return possible object is {@link StatusCodeType }
+     * @return 可能的值为 {@link StatusCodeType }
      */
     public SAML11StatusCodeType getStatusCode() {
         return statusCode;
     }
 
     /**
-     * Sets the value of the statusCode property.
+     * 设置嵌套状态码属性值。
      *
-     * @param value allowed object is {@link StatusCodeType }
+     * @param value 允许的值为 {@link StatusCodeType }
      */
     public void setStatusCode(SAML11StatusCodeType value) {
         this.statusCode = value;
     }
 
     /**
-     * Gets the value of the value property.
+     * 获取状态码 Value 属性值。
      *
-     * @return possible object is {@link String }
+     * @return 可能的值为 {@link String }
      */
     public QName getValue() {
         return value;

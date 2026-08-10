@@ -25,6 +25,8 @@ import org.keycloak.dom.saml.v1.assertion.SAML11ActionType;
 import org.keycloak.dom.saml.v1.assertion.SAML11EvidenceType;
 
 /**
+ * SAML 1.1 授权决策查询（AuthorizationDecisionQuery）：请求对指定主体在资源上的操作授权决策。
+ *
  * <complexType name="AuthorizationDecisionQueryType"> <complexContent> <extension
  * base="samlp:SubjectQueryAbstractType">
  * <sequence>
@@ -38,36 +40,46 @@ import org.keycloak.dom.saml.v1.assertion.SAML11EvidenceType;
  */
 public class SAML11AuthorizationDecisionQueryType extends SAML11SubjectQueryAbstractType {
 
+    /** 待决策的操作（Action）列表。 */
     protected List<SAML11ActionType> action = new ArrayList<>();
 
+    /** 可选的支持证据（Evidence）。 */
     protected SAML11EvidenceType evidence;
 
+    /** 目标资源 URI（必填）。 */
     protected URI resource;
 
+    /** 返回资源 URI。 */
     public URI getResource() {
         return resource;
     }
 
+    /** 设置资源 URI。 */
     public void setResource(URI resource) {
         this.resource = resource;
     }
 
+    /** 返回证据。 */
     public SAML11EvidenceType getEvidence() {
         return evidence;
     }
 
+    /** 设置证据。 */
     public void setEvidence(SAML11EvidenceType evidence) {
         this.evidence = evidence;
     }
 
+    /** 添加操作。 */
     public void add(SAML11ActionType sadt) {
         this.action.add(sadt);
     }
 
+    /** 移除操作。 */
     public boolean remove(SAML11ActionType sadt) {
         return this.action.remove(sadt);
     }
 
+    /** 返回不可修改的操作列表。 */
     public List<SAML11ActionType> get() {
         return Collections.unmodifiableList(action);
     }

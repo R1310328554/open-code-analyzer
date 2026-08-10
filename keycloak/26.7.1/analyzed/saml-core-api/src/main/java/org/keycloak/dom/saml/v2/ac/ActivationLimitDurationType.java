@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac;
 import javax.xml.datatype.Duration;
 
 /**
+ * SAML 2.0 认证上下文激活时限类型：以 XML Duration 限定激活凭证的有效时长。
+ *
  * <p>
  * Java class for ActivationLimitDurationType complex type.
  *
@@ -38,16 +40,22 @@ import javax.xml.datatype.Duration;
  */
 public class ActivationLimitDurationType {
 
+    /** 激活有效时长。 */
     protected Duration duration;
 
+    /**
+     * 构造激活时限。
+     *
+     * @param theDuration 有效时长
+     */
     public ActivationLimitDurationType(Duration theDuration) {
         this.duration = theDuration;
     }
 
     /**
-     * Gets the value of the duration property.
+     * 获取 duration 属性值。
      *
-     * @return possible object is {@link Duration }
+     * @return 可能的值为 {@link Duration }
      */
     public Duration getDuration() {
         return duration;

@@ -24,6 +24,8 @@ import java.util.List;
 import org.keycloak.dom.saml.v1.assertion.SAML11AttributeDesignatorType;
 
 /**
+ * SAML 1.1 属性查询（AttributeQuery）：向断言颁发者请求指定主体的属性值。
+ *
  * <complexType name="AttributeQueryType"> <complexContent> <extension base="samlp:SubjectQueryAbstractType">
  * <sequence>
  * <element ref="saml:AttributeDesignator" minOccurs="0" maxOccurs="unbounded"/> </sequence>
@@ -35,26 +37,33 @@ import org.keycloak.dom.saml.v1.assertion.SAML11AttributeDesignatorType;
  */
 public class SAML11AttributeQueryType extends SAML11SubjectQueryAbstractType {
 
+    /** 待查询的属性指示符列表。 */
     protected List<SAML11AttributeDesignatorType> attributeDesignator = new ArrayList<>();
 
+    /** 可选的资源 URI（属性所关联的资源）。 */
     protected URI resource;
 
+    /** 返回资源 URI。 */
     public URI getResource() {
         return resource;
     }
 
+    /** 设置资源 URI。 */
     public void setResource(URI resource) {
         this.resource = resource;
     }
 
+    /** 添加属性指示符。 */
     public void add(SAML11AttributeDesignatorType sadt) {
         this.attributeDesignator.add(sadt);
     }
 
+    /** 移除属性指示符。 */
     public boolean remove(SAML11AttributeDesignatorType sadt) {
         return this.attributeDesignator.remove(sadt);
     }
 
+    /** 返回不可修改的属性指示符列表。 */
     public List<SAML11AttributeDesignatorType> get() {
         return Collections.unmodifiableList(attributeDesignator);
     }

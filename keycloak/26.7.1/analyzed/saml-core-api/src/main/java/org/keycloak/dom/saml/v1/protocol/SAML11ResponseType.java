@@ -24,6 +24,8 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import org.keycloak.dom.saml.v1.assertion.SAML11AssertionType;
 
 /**
+ * SAML 1.1 响应（Response）类型：包含处理状态及零个或多个断言。
+ *
  * <complexType name="ResponseType"> <complexContent> <extension base="samlp:ResponseAbstractType"> <sequence> <element
  * ref="samlp:Status"/> <element ref="saml:Assertion" minOccurs="0" maxOccurs="unbounded"/> </sequence> </extension>
  *
@@ -34,30 +36,43 @@ import org.keycloak.dom.saml.v1.assertion.SAML11AssertionType;
  */
 public class SAML11ResponseType extends SAML11ResponseAbstractType {
 
+    /** 响应携带的断言列表。 */
     protected List<SAML11AssertionType> assertions = new ArrayList<>();
 
+    /** 响应处理状态。 */
     protected SAML11StatusType status;
 
+    /**
+     * 构造 SAML 1.1 响应。
+     *
+     * @param id 响应 ID
+     * @param issueInstant 签发时间
+     */
     public SAML11ResponseType(String id, XMLGregorianCalendar issueInstant) {
         super(id, issueInstant);
     }
 
+    /** 添加断言。 */
     public void add(SAML11AssertionType assertion) {
         this.assertions.add(assertion);
     }
 
+    /** 移除断言。 */
     public boolean remove(SAML11AssertionType assertion) {
         return this.assertions.remove(assertion);
     }
 
+    /** 返回不可修改的断言列表。 */
     public List<SAML11AssertionType> get() {
         return Collections.unmodifiableList(assertions);
     }
 
+    /** 返回处理状态。 */
     public SAML11StatusType getStatus() {
         return status;
     }
 
+    /** 设置处理状态。 */
     public void setStatus(SAML11StatusType status) {
         this.status = status;
     }
