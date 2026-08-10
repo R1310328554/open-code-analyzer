@@ -1,22 +1,22 @@
 {
-  "claimed_at": "2026-08-10T04:48:43Z",
+  "claimed_at": "2026-08-10T04:53:08Z",
   "files": [
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/EmbeddedPaginationHelperImpl.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/EmbeddedStorageContextHolder.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/hook/EmbeddedApplyHook.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/hook/EmbeddedApplyHookHolder.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/operate/BaseDatabaseOperate.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/operate/DatabaseOperate.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/operate/StandaloneDatabaseOperateImpl.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/sql/ModifyRequest.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/sql/QueryType.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/sql/SelectRequest.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/sql/limiter/SqlLimiter.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/sql/limiter/SqlTypeLimiter.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/extrnal/ExternalStoragePaginationHelperImpl.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/utils/ConnectionCheckUtil.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/utils/DatasourcePlatformUtil.java"
+    "plugin-default-impl/nacos-default-ai-pipeline-plugin/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/spi/impl/SkillScannerPipelineService.java",
+    "plugin-default-impl/nacos-default-ai-pipeline-plugin/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/spi/impl/SkillScannerPipelineServiceBuilder.java",
+    "plugin-default-impl/nacos-default-ai-pipeline-plugin/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/spi/impl/SkillScannerScanOptions.java",
+    "plugin-default-impl/nacos-default-ai-trace-plugin/src/main/java/com/alibaba/nacos/plugin/trace/ai/AiResourceTraceLogSubscriber.java",
+    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/AnonymousAccessInitializer.java",
+    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/DefaultAiVisibilityService.java",
+    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/JwtAuthenticationEntryPoint.java",
+    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/NacosAuthPluginService.java",
+    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/SafeBcryptPasswordEncoder.java",
+    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/authenticate/AbstractAuthenticationManager.java",
+    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/authenticate/DefaultAuthenticationManager.java",
+    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/authenticate/IAuthenticationManager.java",
+    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/condition/ConditionOnInnerDatasource.java",
+    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/condition/ConditionOnNacosAuth.java",
+    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/condition/ConditionOnRemoteDatasource.java"
   ],
-  "remaining_pending": 377,
-  "done": 2145
+  "remaining_pending": 317,
+  "done": 2205
 }
