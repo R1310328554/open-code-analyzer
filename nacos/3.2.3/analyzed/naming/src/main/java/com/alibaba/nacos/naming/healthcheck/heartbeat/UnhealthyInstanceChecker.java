@@ -36,14 +36,16 @@ import com.alibaba.nacos.sys.utils.ApplicationUtils;
 import java.util.Optional;
 
 /**
- * Instance beat checker for unhealthy instances.
+ * 不健康实例心跳检查器：心跳超时时将实例健康状态置为 false。
  *
- * <p>Mark these instances healthy status {@code false} if beat time out.
+ * <p>Mark these instances healthy status {@code false} if beat time out.</p>
+ * <p>超时阈值优先取自实例元数据，其次实例扩展字段，最后使用全局默认值。</p>
  *
  * @author xiweng.yy
  */
 public class UnhealthyInstanceChecker implements InstanceBeatChecker {
     
+    /** 仅当实例当前健康且心跳已超时时触发状态变更。 */
     @Override
     public void doCheck(Client client, Service service, HealthCheckInstancePublishInfo instance) {
         if (instance.isHealthy() && isUnhealthy(service, instance)) {
@@ -51,11 +53,13 @@ public class UnhealthyInstanceChecker implements InstanceBeatChecker {
         }
     }
     
+    /** 比较当前时间与上次心跳时间是否超过超时阈值。 */
     private boolean isUnhealthy(Service service, HealthCheckInstancePublishInfo instance) {
         long beatTimeout = getTimeout(service, instance);
         return System.currentTimeMillis() - instance.getLastHeartBeatTime() > beatTimeout;
     }
     
+    /** 解析心跳超时毫秒数：元数据 → 扩展字段 → 默认常量。 */
     private long getTimeout(Service service, InstancePublishInfo instance) {
         Optional<Object> timeout = getTimeoutFromMetadata(service, instance);
         if (!timeout.isPresent()) {
@@ -65,6 +69,7 @@ public class UnhealthyInstanceChecker implements InstanceBeatChecker {
         return timeout.map(ConvertUtils::toLong).orElse(Constants.DEFAULT_HEART_BEAT_TIMEOUT);
     }
     
+    /** 从 {@link InstanceMetadata} 扩展数据读取 HEART_BEAT_TIMEOUT。 */
     private Optional<Object> getTimeoutFromMetadata(Service service, InstancePublishInfo instance) {
         Optional<InstanceMetadata> instanceMetadata =
             ApplicationUtils.getBean(NamingMetadataManager.class)
@@ -73,6 +78,7 @@ public class UnhealthyInstanceChecker implements InstanceBeatChecker {
             metadata -> metadata.getExtendData().get(PreservedMetadataKeys.HEART_BEAT_TIMEOUT));
     }
     
+    /** 置 unhealthy、写事件日志并发布服务变更、客户端变更与链路追踪事件。 */
     private void changeHealthyStatus(Client client, Service service,
         HealthCheckInstancePublishInfo instance) {
         instance.setHealthy(false);

@@ -20,13 +20,16 @@ import com.alibaba.nacos.naming.healthcheck.NacosHealthCheckTask;
 import com.alibaba.nacos.naming.interceptor.NacosNamingInterceptor;
 
 /**
- * Abstract health check interceptor.
+ * 健康检查拦截器抽象基类，限定拦截目标为 {@link NacosHealthCheckTask} 及其子类。
+ *
+ * <p>具体实现负责全局开关、Distro 责任节点判定等前置过滤逻辑。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractHealthCheckInterceptor
     implements NacosNamingInterceptor<NacosHealthCheckTask> {
     
+    /** 仅拦截 NacosHealthCheckTask 类型任务。 */
     @Override
     public boolean isInterceptType(Class<?> type) {
         return NacosHealthCheckTask.class.isAssignableFrom(type);

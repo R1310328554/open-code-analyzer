@@ -26,12 +26,15 @@ import com.alibaba.nacos.sys.utils.ApplicationUtils;
 import java.util.Optional;
 
 /**
- * Instance enable beat check interceptor.
+ * 实例级客户端心跳检查开关拦截器。
+ *
+ * <p>优先读取实例元数据 {@link UtilsAndCommons#ENABLE_CLIENT_BEAT}，其次读取实例扩展字段；任一为 true 则允许进入心跳检查链。</p>
  *
  * @author xiweng.yy
  */
 public class InstanceEnableBeatCheckInterceptor extends AbstractBeatCheckInterceptor {
     
+    /** 根据实例元数据或扩展字段判断是否启用客户端心跳检查。 */
     @Override
     public boolean intercept(InstanceBeatCheckTask object) {
         NamingMetadataManager metadataManager =
@@ -51,6 +54,7 @@ public class InstanceEnableBeatCheckInterceptor extends AbstractBeatCheckInterce
         return false;
     }
     
+    /** 优先级仅次于 {@link ServiceEnableBeatCheckInterceptor}（服务级开关）。 */
     @Override
     public int order() {
         return Integer.MIN_VALUE + 1;

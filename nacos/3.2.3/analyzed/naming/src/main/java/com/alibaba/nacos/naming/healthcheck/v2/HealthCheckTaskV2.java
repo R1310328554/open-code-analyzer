@@ -34,26 +34,34 @@ import com.alibaba.nacos.common.utils.RandomUtils;
 import java.util.Optional;
 
 /**
- * Health check task for v2.x.
+ * Nacos 命名 V2 健康检查定时任务，绑定 {@link IpPortBasedClient} 周期性探测其发布实例。
  *
- * <p>Current health check logic is same as v1.x. TODO refactor health check for v2.x.
+ * <p>Current health check logic is same as v1.x. TODO refactor health check for v2.x.</p>
+ * <p>维护检查 RT 统计（最优/最差/归一化），并在 finally 中重新调度下一次检查。</p>
  *
  * @author nacos
  */
 public class HealthCheckTaskV2 extends AbstractExecuteTask implements NacosHealthCheckTask {
     
+    /** 首次检查 RT 归一化下限（毫秒）。 */
     private static final int LOWER_CHECK_RT = 2000;
     
+    /** SwitchDomain 未就绪时随机 RT 上限（毫秒）。 */
     private static final int UPPER_RANDOM_CHECK_RT = 5000;
     
+    /** 全局开关域（懒加载静态缓存）。 */
     private static SwitchDomain switchDomain;
     
+    /** 命名元数据管理器（懒加载静态缓存）。 */
     private static NamingMetadataManager metadataManager;
     
+    /** 被检查的 IP:Port 客户端。 */
     private final IpPortBasedClient client;
     
+    /** 任务 ID，等于 client.getResponsibleId()，用于 Distro 分片。 */
     private final String taskId;
     
+    /** 归一化后的检查间隔 RT（毫秒）。 */
     private long checkRtNormalized = -1;
     
     private long checkRtBest = -1;
@@ -66,6 +74,7 @@ public class HealthCheckTaskV2 extends AbstractExecuteTask implements NacosHealt
     
     private long startTime;
     
+    /** 取消标志，为 true 时不再重新调度。 */
     private volatile boolean cancelled = false;
     
     public HealthCheckTaskV2(IpPortBasedClient client) {
@@ -73,6 +82,7 @@ public class HealthCheckTaskV2 extends AbstractExecuteTask implements NacosHealt
         this.taskId = client.getResponsibleId();
     }
     
+    /** 懒初始化 SwitchDomain、MetadataManager 与检查 RT 参数。 */
     private void initIfNecessary() {
         if (switchDomain == null) {
             switchDomain = ApplicationUtils.getBean(SwitchDomain.class);
@@ -87,7 +97,7 @@ public class HealthCheckTaskV2 extends AbstractExecuteTask implements NacosHealt
         if (-1 != checkRtNormalized) {
             return;
         }
-        // first check time delay
+        // 首次检查随机延迟，避免集群内同时探测
         if (null != switchDomain) {
             checkRtNormalized = LOWER_CHECK_RT + RandomUtils.nextInt(0,
                 RandomUtils.nextInt(0, switchDomain.getTcpHealthParams().getMax()));
@@ -107,6 +117,7 @@ public class HealthCheckTaskV2 extends AbstractExecuteTask implements NacosHealt
         return taskId;
     }
     
+    /** 遍历客户端已发布服务，委托 {@link HealthCheckProcessorV2Delegate} 执行探测。 */
     @Override
     public void doHealthCheck() {
         try {
@@ -130,9 +141,9 @@ public class HealthCheckTaskV2 extends AbstractExecuteTask implements NacosHealt
             if (!cancelled) {
                 initCheckRt();
                 HealthCheckReactor.scheduleCheck(this);
-                // worst == 0 means never checked
+                // worst 为 0 表示尚未完成过检查，跳过 RT 差分日志
                 if (this.getCheckRtWorst() > 0) {
-                    // TLog doesn't support float so we must convert it into long
+                    // TLog 不支持浮点，RT 变化率乘以 10000 转为 long
                     long checkRtLastLast = getCheckRtLastLast();
                     this.setCheckRtLastLast(this.getCheckRtLast());
                     if (checkRtLastLast > 0) {
@@ -151,11 +162,13 @@ public class HealthCheckTaskV2 extends AbstractExecuteTask implements NacosHealt
         }
     }
     
+    /** 拦截链放行后直接执行健康检查。 */
     @Override
     public void passIntercept() {
         doHealthCheck();
     }
     
+    /** 被拦截后仍重新调度，保持任务生命周期。 */
     @Override
     public void afterIntercept() {
         if (!cancelled) {
@@ -173,6 +186,7 @@ public class HealthCheckTaskV2 extends AbstractExecuteTask implements NacosHealt
         doHealthCheck();
     }
     
+    /** 从服务元数据解析实例所在集群的 {@link ClusterMetadata}。 */
     private ClusterMetadata getClusterMetadata(Service service,
         InstancePublishInfo instancePublishInfo) {
         Optional<ServiceMetadata> serviceMetadata = metadataManager.getServiceMetadata(service);

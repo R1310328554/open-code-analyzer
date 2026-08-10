@@ -21,17 +21,21 @@ import com.alibaba.nacos.naming.healthcheck.NacosHealthCheckTask;
 import com.alibaba.nacos.sys.utils.ApplicationUtils;
 
 /**
- * Health check responsible interceptor.
+ * Distro 责任节点拦截器：非本节点负责的客户端健康检查任务将被跳过。
+ *
+ * <p>通过 {@link DistroMapper#responsible(String)} 判定 taskId 是否归属当前节点。</p>
  *
  * @author xiweng.yy
  */
 public class HealthCheckResponsibleInterceptor extends AbstractHealthCheckInterceptor {
     
+    /** 非责任节点时返回 true 以拦截任务。 */
     @Override
     public boolean intercept(NacosHealthCheckTask object) {
         return !ApplicationUtils.getBean(DistroMapper.class).responsible(object.getTaskId());
     }
     
+    /** 优先级仅次于全局开关拦截器。 */
     @Override
     public int order() {
         return Integer.MIN_VALUE + 1;

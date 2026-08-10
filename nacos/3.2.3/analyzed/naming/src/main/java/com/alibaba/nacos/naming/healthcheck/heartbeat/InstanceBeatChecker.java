@@ -21,14 +21,16 @@ import com.alibaba.nacos.naming.core.v2.pojo.HealthCheckInstancePublishInfo;
 import com.alibaba.nacos.naming.core.v2.pojo.Service;
 
 /**
- * Instance heart beat checker.
+ * 实例心跳检查器接口，负责对客户端上报心跳的实例执行超时与健康状态判定。
+ *
+ * <p>典型实现如 {@link UnhealthyInstanceChecker}，在心跳超时时将实例标记为不健康。</p>
  *
  * @author xiweng.yy
  */
 public interface InstanceBeatChecker {
     
     /**
-     * Do check for input instance.
+     * 对指定实例执行心跳检查逻辑。
      *
      * @param client   client
      * @param service  service of instance

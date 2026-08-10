@@ -20,19 +20,24 @@ import com.alibaba.nacos.naming.healthcheck.NacosHealthCheckTask;
 import com.alibaba.nacos.naming.interceptor.AbstractNamingInterceptorChain;
 
 /**
- * Health check interceptor chain.
+ * 健康检查拦截器链单例，自动收集所有 {@link AbstractHealthCheckInterceptor} 实现。
+ *
+ * <p>按 order 排序后依次执行，任一拦截器返回 true 则跳过本次健康检查。</p>
  *
  * @author xiweng.yy
  */
 public class HealthCheckInterceptorChain
     extends AbstractNamingInterceptorChain<NacosHealthCheckTask> {
     
+    /** 全局唯一拦截链实例。 */
     private static final HealthCheckInterceptorChain INSTANCE = new HealthCheckInterceptorChain();
     
+    /** 私有构造，注册 AbstractHealthCheckInterceptor 子类为链成员。 */
     private HealthCheckInterceptorChain() {
         super(AbstractHealthCheckInterceptor.class);
     }
     
+    /** 获取健康检查拦截链单例。 */
     public static HealthCheckInterceptorChain getInstance() {
         return INSTANCE;
     }

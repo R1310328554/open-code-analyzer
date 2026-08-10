@@ -25,7 +25,9 @@ import com.alibaba.nacos.naming.utils.InstanceUtil;
 import org.springframework.stereotype.Component;
 
 /**
- * Health status synchronizer for persistent service, implementation by CP.
+ * 持久服务（CP）健康状态同步器，通过 Raft 更新实例健康字段。
+ *
+ * <p>将 {@link InstancePublishInfo} 转为 API {@link Instance} 后调用 {@link PersistentClientOperationServiceImpl#updateInstance}。</p>
  *
  * @author xiweng.yy
  */
@@ -37,8 +39,10 @@ public class PersistentHealthStatusSynchronizer implements HealthStatusSynchroni
         this.persistentClientOperationService = persistentClientOperationService;
     }
     
+    /** 持久客户端操作服务，负责 CP 协议写实例。 */
     private final PersistentClientOperationServiceImpl persistentClientOperationService;
     
+    /** 构造更新实例并提交 CP updateInstance 请求。 */
     @Override
     public void instanceHealthStatusChange(boolean isHealthy, Client client, Service service,
         InstancePublishInfo instance) {

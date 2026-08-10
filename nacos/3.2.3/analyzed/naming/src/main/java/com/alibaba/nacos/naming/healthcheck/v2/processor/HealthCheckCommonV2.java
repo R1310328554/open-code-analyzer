@@ -30,9 +30,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Health check public methods for v2.x.
+ * V2 健康检查公共逻辑：RT 平滑、检查通过/失败计数与状态同步。
  *
- * <p>Current health check logic is same as v1.x. TODO refactor health check for v2.x.
+ * <p>Current health check logic is same as v1.x. TODO refactor health check for v2.x.</p>
+ * <p>连续成功/失败达到 {@link SwitchDomain#getCheckTimes()} 后才变更实例健康状态，并经由 {@link PersistentHealthStatusSynchronizer} 持久化。</p>
  *
  * @author nkorange
  * @author xiweng.yy
@@ -41,17 +42,20 @@ import org.springframework.stereotype.Component;
 @Component
 public class HealthCheckCommonV2 {
     
+    /** Distro 分片映射，判定当前节点是否有权变更状态。 */
     @Autowired
     private DistroMapper distroMapper;
     
+    /** 全局健康检查开关与阈值配置。 */
     @Autowired
     private SwitchDomain switchDomain;
     
+    /** CP 模式健康状态同步器。 */
     @Autowired
     private PersistentHealthStatusSynchronizer healthStatusSynchronizer;
     
     /**
-     * Re-evaluate check response time.
+     * 根据指数加权移动平均重新计算归一化检查 RT，并更新最优/最差统计。
      *
      * @param checkRt check response time
      * @param task    health check task
@@ -84,7 +88,7 @@ public class HealthCheckCommonV2 {
     }
     
     /**
-     * Health check pass.
+     * 探测成功：累加 okCount，达标后将不健康实例恢复为 healthy。
      *
      * @param task    health check task
      * @param service service
@@ -135,7 +139,7 @@ public class HealthCheckCommonV2 {
     }
     
     /**
-     * Health check fail, when instance check failed count more than max failed time, set unhealthy.
+     * 探测失败：累加 failCount，连续失败达标后将实例置为 unhealthy。
      *
      * @param task    health check task
      * @param service service
@@ -188,7 +192,7 @@ public class HealthCheckCommonV2 {
     }
     
     /**
-     * Health check fail, set instance unhealthy directly.
+     * 立即失败：不等待连续失败计数，直接将健康实例标记为 unhealthy。
      *
      * @param task    health check task
      * @param service service

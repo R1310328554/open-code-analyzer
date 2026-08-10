@@ -21,14 +21,16 @@ import com.alibaba.nacos.naming.core.v2.pojo.InstancePublishInfo;
 import com.alibaba.nacos.naming.core.v2.pojo.Service;
 
 /**
- * Health status synchronizer. Maybe implement by CP and AP both.
+ * 实例健康状态同步器接口，CP/AP 模式可有不同实现。
+ *
+ * <p>健康检查或心跳判定变更实例状态时，通过此接口将结果持久化或广播。</p>
  *
  * @author xiweng.yy
  */
 public interface HealthStatusSynchronizer {
     
     /**
-     * Instance health status change.
+     * 实例健康状态发生变更时的回调。
      *
      * @param isHealthy is the instance change to healthy or not
      * @param client    client of instance

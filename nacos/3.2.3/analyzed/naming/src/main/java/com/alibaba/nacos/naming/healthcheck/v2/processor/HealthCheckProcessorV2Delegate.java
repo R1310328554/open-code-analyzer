@@ -30,23 +30,29 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Delegate of health check v2.x.
+ * V2 健康检查处理器委托类，按集群配置的类型路由到具体 Processor 实现。
+ *
+ * <p>Spring 注入全部 {@link HealthCheckProcessorV2} Bean 并注册扩展；未知类型回退到 {@link NoneHealthCheckProcessor}。</p>
  *
  * @author nacos
  */
 @Component("healthCheckDelegateV2")
 public class HealthCheckProcessorV2Delegate implements HealthCheckProcessorV2 {
     
+    /** 健康检查类型 → 处理器实例映射。 */
     private final Map<String, HealthCheckProcessorV2> healthCheckProcessorMap = new HashMap<>();
     
+    /** 初始化 SPI 扩展提供者并加载自定义健康检查处理器。 */
     public HealthCheckProcessorV2Delegate(HealthCheckExtendProvider provider,
         HealthCheckProcessorExtendV2 healthCheckProcessorExtend) {
         provider.setHealthCheckProcessorExtend(healthCheckProcessorExtend);
         provider.init();
     }
     
+    /** Spring 收集全部 HealthCheckProcessorV2 Bean 并按 getType 注册。 */
     /**
      * Add health check processors.
+      * <p>Nacos 命名健康检查：心跳判定、拦截链过滤与 V2 探测调度；详见上方类/接口说明。</p>
      */
     @Autowired
     public void addProcessor(Collection<HealthCheckProcessorV2> processors) {
@@ -55,6 +61,7 @@ public class HealthCheckProcessorV2Delegate implements HealthCheckProcessorV2 {
             .collect(Collectors.toMap(HealthCheckProcessorV2::getType, processor -> processor)));
     }
     
+    /** 按 metadata.healthyCheckType 选取处理器，缺省使用 None 处理器。 */
     @Override
     public void process(HealthCheckTaskV2 task, Service service, ClusterMetadata metadata) {
         String type = metadata.getHealthyCheckType();
@@ -65,6 +72,7 @@ public class HealthCheckProcessorV2Delegate implements HealthCheckProcessorV2 {
         processor.process(task, service, metadata);
     }
     
+    /** 委托类本身无固定类型，返回 null。 */
     @Override
     public String getType() {
         return null;

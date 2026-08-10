@@ -21,21 +21,27 @@ import com.alibaba.nacos.naming.interceptor.NacosNamingInterceptorChain;
 import com.alibaba.nacos.naming.misc.Loggers;
 
 /**
- * Health check task intercept wrapper.
+ * 健康检查任务 Runnable 包装器，在调度线程中先经拦截链再执行探测。
+ *
+ * <p>拦截链异常时记录日志，避免影响 Reactor 调度器稳定性。</p>
  *
  * @author xiweng.yy
  */
 public class HealthCheckTaskInterceptWrapper implements Runnable {
     
+    /** 待执行的健康检查任务。 */
     private final NacosHealthCheckTask task;
     
+    /** 健康检查专用拦截器链。 */
     private final NacosNamingInterceptorChain<NacosHealthCheckTask> interceptorChain;
     
+    /** 绑定任务并获取 {@link HealthCheckInterceptorChain} 单例。 */
     public HealthCheckTaskInterceptWrapper(NacosHealthCheckTask task) {
         this.task = task;
         this.interceptorChain = HealthCheckInterceptorChain.getInstance();
     }
     
+    /** 委托拦截链执行 doInterceptor，捕获并记录异常。 */
     @Override
     public void run() {
         try {

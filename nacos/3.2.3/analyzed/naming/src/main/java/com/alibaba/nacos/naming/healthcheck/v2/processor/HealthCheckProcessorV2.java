@@ -21,14 +21,16 @@ import com.alibaba.nacos.naming.core.v2.pojo.Service;
 import com.alibaba.nacos.naming.healthcheck.v2.HealthCheckTaskV2;
 
 /**
- * Health check processor for v2.x.
+ * V2 健康检查处理器接口，按集群健康检查类型（TCP/HTTP/MySQL 等）执行具体探测。
+ *
+ * <p>由 {@link HealthCheckProcessorV2Delegate} 按 {@link ClusterMetadata#getHealthyCheckType()} 路由。</p>
  *
  * @author nkorange
  */
 public interface HealthCheckProcessorV2 {
     
     /**
-     * Run check task for service.
+     * 对指定服务与集群元数据执行一次健康探测。
      *
      * @param task     health check task v2
      * @param service  service of current process
@@ -37,7 +39,7 @@ public interface HealthCheckProcessorV2 {
     void process(HealthCheckTaskV2 task, Service service, ClusterMetadata metadata);
     
     /**
-     * Get check task type, refer to enum HealthCheckType.
+     * 返回处理器对应的健康检查类型字符串（参见 HealthCheckType 枚举）。
      *
      * @return check type
      */

@@ -21,12 +21,15 @@ import com.alibaba.nacos.naming.misc.SwitchDomain;
 import com.alibaba.nacos.sys.utils.ApplicationUtils;
 
 /**
- * Health check enable interceptor.
+ * 全局健康检查开关拦截器。
+ *
+ * <p>当 {@link SwitchDomain#isHealthCheckEnabled()} 为 false 时拦截任务；获取 Bean 异常时保守拦截（返回 true）。</p>
  *
  * @author xiweng.yy
  */
 public class HealthCheckEnableInterceptor extends AbstractHealthCheckInterceptor {
     
+    /** 全局健康检查关闭时拦截，阻止后续探测执行。 */
     @Override
     public boolean intercept(NacosHealthCheckTask object) {
         try {
@@ -36,6 +39,7 @@ public class HealthCheckEnableInterceptor extends AbstractHealthCheckInterceptor
         }
     }
     
+    /** 健康检查拦截链最高优先级。 */
     @Override
     public int order() {
         return Integer.MIN_VALUE;
