@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T03:53:42Z",
-  "files": [
-    "copilot/src/main/java/com/alibaba/nacos/copilot/model/SkillOptimizationResponse.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/model/StreamResponseType.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/service/PromptDebugService.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/service/PromptDebugServiceImpl.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/service/PromptOptimizationService.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/service/PromptOptimizationServiceImpl.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/service/SkillGenerationService.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/service/SkillGenerationServiceImpl.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/service/SkillOptimizationService.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/service/SkillOptimizationServiceImpl.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/service/StreamEventProcessor.java",
-    "core/src/main/java/com/alibaba/nacos/core/ability/RemoteAbilityInitializer.java",
-    "core/src/main/java/com/alibaba/nacos/core/ability/ServerAbilityInitializer.java",
-    "core/src/main/java/com/alibaba/nacos/core/ability/ServerAbilityInitializerHolder.java",
-    "core/src/main/java/com/alibaba/nacos/core/ability/config/AbilityConfigs.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1067,
-  "done": 1455
+  "done": 1470
 }
