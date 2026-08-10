@@ -15,23 +15,8 @@
     "scim/core/src/main/java/org/keycloak/scim/resource/schema/attribute/Attribute.java",
     "scim/core/src/main/java/org/keycloak/scim/resource/schema/attribute/AttributeMapper.java",
     "scim/core/src/main/java/org/keycloak/scim/resource/schema/attribute/ComplexAttributeSetter.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/schema/path/Path.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/schema/path/ScimFilterToJsonNodeConverter.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/spi/AbstractScimResourceTypeProvider.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/spi/ScimResourceTypeProvider.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/spi/ScimResourceTypeProviderFactory.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/spi/ScimResourceTypeSpi.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/spi/SingletonResourceTypeProvider.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/user/Email.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/user/EnterpriseUser.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/user/GroupMembership.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/user/Name.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/user/User.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/config/ServiceProviderConfigResourceTypeProvider.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/config/ServiceProviderConfigResourceTypeProviderFactory.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/filter/JPAFilterResult.java",
-    "scim/model/src/main/java/org/keycloak/scim/model/filter/ScimAttributeJpaExpressionResolver.java"
+    "scim/core/src/main/java/org/keycloak/scim/resource/schema/path/Path.java"
   ],
   "remaining_pending": 3118,
-  "done": 2850
+  "done": 2865
 }
