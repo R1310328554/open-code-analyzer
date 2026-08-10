@@ -1,19 +1,6 @@
 {
-  "claimed_at": "2026-08-10T20:10:49Z",
-  "files": [
-    "web/src/utils/llm-cache.ts",
-    "web/src/utils/llm-util.ts",
-    "web/src/utils/next-request.ts",
-    "web/src/utils/notification.ts",
-    "web/src/utils/register-server.ts",
-    "web/src/utils/request.ts",
-    "web/src/utils/simple-history-util.ts",
-    "web/src/utils/store-util.ts",
-    "web/src/utils/table-column-extract.ts",
-    "web/src/utils/text-direction.ts",
-    "web/tailwind.config.js",
-    "web/vite.config.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 0,
-  "done": 1752
+  "done": 1764
 }
