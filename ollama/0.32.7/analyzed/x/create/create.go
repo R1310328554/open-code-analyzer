@@ -1,3 +1,4 @@
+// 模型创建核心：manifest/blob 路径、量化决策、架构策略注册与 safetensors 源配置解析。
 package create
 
 import (
@@ -17,12 +18,14 @@ import (
 	"github.com/ollama/ollama/x/safetensors"
 )
 
+// ModelConfig 表示与模型一并存储的配置 blob。
 // ModelConfig represents the config blob stored with a model.
 type ModelConfig struct {
 	ModelFormat  string   `json:"model_format"`
 	Capabilities []string `json:"capabilities"`
 }
 
+// Manifest 表示 Ollama 模型 manifest 的 JSON 结构。
 // Manifest represents the manifest JSON structure.
 type Manifest struct {
 	SchemaVersion int             `json:"schemaVersion"`
@@ -31,6 +34,7 @@ type Manifest struct {
 	Layers        []ManifestLayer `json:"layers"`
 }
 
+// ManifestLayer 表示 manifest 中的一层（config 或权重 blob）。
 // ManifestLayer represents a layer in the manifest.
 type ManifestLayer struct {
 	MediaType string `json:"mediaType"`
@@ -40,16 +44,19 @@ type ManifestLayer struct {
 }
 
 // defaultManifestDir returns the manifest storage directory.
+// defaultManifestDir 返回 manifest 存储目录（~/.ollama/models/manifests）。
 func defaultManifestDir() string {
 	return filepath.Join(envconfig.Models(), "manifests")
 }
 
 // defaultBlobDir returns the blob storage directory.
+// defaultBlobDir 返回 blob 存储目录（~/.ollama/models/blobs）。
 func defaultBlobDir() string {
 	return filepath.Join(envconfig.Models(), "blobs")
 }
 
 // resolveManifestPath converts a model name to a manifest file path.
+// resolveManifestPath 将模型名解析为 host/namespace/name/tag 路径。
 func resolveManifestPath(modelName string) string {
 	host := "registry.ollama.ai"
 	namespace := "library"
@@ -76,6 +83,7 @@ func resolveManifestPath(modelName string) string {
 }
 
 // loadManifest loads a manifest for the given model name.
+// loadManifest 按模型名读取并解析 manifest JSON。
 func loadManifest(modelName string) (*Manifest, error) {
 	manifestPath := resolveManifestPath(modelName)
 
@@ -93,13 +101,14 @@ func loadManifest(modelName string) (*Manifest, error) {
 }
 
 // loadModelConfig loads the config blob for a model.
+// loadModelConfig 经 manifest 定位并读取 config blob。
 func loadModelConfig(modelName string) (*ModelConfig, error) {
 	manifest, err := loadManifest(modelName)
 	if err != nil {
 		return nil, err
 	}
 
-	// Read the config blob
+	// 读取 config 层对应的 blob
 	blobName := strings.Replace(manifest.Config.Digest, ":", "-", 1)
 	blobPath := filepath.Join(defaultBlobDir(), blobName)
 
@@ -116,6 +125,7 @@ func loadModelConfig(modelName string) (*ModelConfig, error) {
 	return &config, nil
 }
 
+// IsSafetensorsLLMModel 判断是否为 safetensors 且具备 completion 能力的 LLM。
 // IsSafetensorsLLMModel checks if a model is a safetensors LLM model
 // (has completion capability, not image generation).
 func IsSafetensorsLLMModel(modelName string) bool {
@@ -126,15 +136,16 @@ func IsSafetensorsLLMModel(modelName string) bool {
 	return config.ModelFormat == "safetensors" && slices.Contains(config.Capabilities, "completion")
 }
 
+// IsSafetensorsModelDir 检查目录是否含 config.json 与至少一个 .safetensors。
 // IsSafetensorsModelDir checks if the directory contains a standard safetensors model
 // by looking for config.json and at least one .safetensors file.
 func IsSafetensorsModelDir(dir string) bool {
-	// Must have config.json
+	// 必须存在 config.json
 	if _, err := os.Stat(filepath.Join(dir, "config.json")); err != nil {
 		return false
 	}
 
-	// Must have at least one .safetensors file
+	// 必须至少有一个 .safetensors 权重文件
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return false
@@ -149,6 +160,7 @@ func IsSafetensorsModelDir(dir string) bool {
 	return false
 }
 
+// LayerInfo 保存已创建层的 digest、大小、媒体类型与路径式名称。
 // LayerInfo holds metadata for a created layer.
 type LayerInfo struct {
 	Digest    string
@@ -157,46 +169,50 @@ type LayerInfo struct {
 	Name      string // Path-style name: "component/tensor" or "path/to/config.json"
 }
 
+// LayerCreator 写入 blob 层时的回调；name 为路径式名称。
 // LayerCreator is called to create a blob layer.
 // name is the path-style name (e.g., "tokenizer/tokenizer.json")
 type LayerCreator func(r io.Reader, mediaType, name string) (LayerInfo, error)
 
+// ManifestWriter 将 config 与 layers 写入模型 manifest。
 // ManifestWriter writes the manifest file.
 type ManifestWriter func(modelName string, config LayerInfo, layers []LayerInfo) error
 
+// ShouldQuantize 按名称/组件判断线性 weight 是否应量化（跳过 VAE、嵌入、norm 等）。
 // ShouldQuantize returns true if a tensor should be quantized.
 // For image gen models (component non-empty): quantizes linear weights, skipping VAE, embeddings, norms.
 // For LLM models (component empty): quantizes linear weights, skipping embeddings, norms, and small tensors.
 func ShouldQuantize(name, component string) bool {
-	// Image gen specific: skip VAE entirely
+	// 图像生成：跳过整个 VAE 组件
 	if component == "vae" {
 		return false
 	}
 
-	// Skip audio encoder tensors (highly sensitive to quantization)
+	// 跳过对量化极敏感的音频编码器 tensor
 	if strings.Contains(name, "audio_tower") || strings.Contains(name, "embed_audio") {
 		return false
 	}
 
-	// Skip embeddings
+	// 跳过嵌入层
 	if strings.Contains(name, "embed") {
 		return false
 	}
 
-	// Skip layer norms and RMS norms
+	// 跳过 LayerNorm / RMSNorm
 	if strings.Contains(name, "norm") || strings.Contains(name, "ln_") || strings.Contains(name, "layernorm") {
 		return false
 	}
 
-	// Skip biases
+	// 跳过 bias
 	if strings.HasSuffix(name, ".bias") {
 		return false
 	}
 
-	// Only quantize weights
+	// 仅量化 .weight
 	return strings.HasSuffix(name, ".weight")
 }
 
+// normalizeQuantType 将 Q4/Q8/FP4 等别名规范为 int4/int8/nvfp4/mxfp4/mxfp8。
 // normalizeQuantType converts various quantization type aliases to canonical forms.
 // Supports: q4/Q4/int4/INT4/fp4/FP4 -> int4, q8/Q8/int8/INT8/fp8/FP8 -> int8, nvfp4/NVFP4, mxfp4/MXFP4, mxfp8/MXFP8
 func normalizeQuantType(quantize string) string {
@@ -216,6 +232,7 @@ func normalizeQuantType(quantize string) string {
 	}
 }
 
+// isAligned 检查 tensor 末维是否满足给定量化类型的 group size 对齐。
 // isAligned checks if a tensor's last dimension is divisible by the
 // group size required for the given quantization type.
 func isAligned(shape []int32, quantType string) bool {
@@ -232,20 +249,22 @@ func isAligned(shape []int32, quantType string) bool {
 	return shape[len(shape)-1]%groupSize == 0
 }
 
+// isStackedExpertWeight 识别 MoE 中已堆叠或 per-expert 的专家权重名。
 func isStackedExpertWeight(name string) bool {
-	// Combined/stacked expert tensors may be emitted either as "...proj.weight" (per-expert)
+	// 专家权重可能以 per-expert 或预堆叠 packed 形式出现。
 	// or "...proj" (pre-stacked packed tensor).
 	if strings.HasSuffix(name, ".bias") || strings.HasSuffix(name, ".scale") || strings.HasSuffix(name, ".qbias") {
 		return false
 	}
 
-	// ".experts." covers the common case (.mlp.experts., .moe.experts.) as well
+	// ".experts." 覆盖 .mlp.experts.、.moe.experts. 及 gemma 裸 experts 路径。
 	// as gemma's bare "...layers.N.experts.gate_up_proj" (no .mlp/.moe prefix).
 	return strings.Contains(name, ".experts.") ||
 		strings.Contains(name, ".mlp.switch_mlp.") ||
 		strings.Contains(name, ".mlp.shared_experts.")
 }
 
+// isRoutingGate 识别 MoE 路由/门控小权重，量化噪声会改变专家选择，保持源精度。
 // isRoutingGate reports the small MoE routing/gate weights that select the
 // active experts. Quantization noise there can flip expert selection, so they
 // are kept at source precision regardless of architecture.
@@ -255,23 +274,24 @@ func isRoutingGate(name string) bool {
 		strings.HasSuffix(name, ".router.proj.weight")
 }
 
+// GetTensorQuantization 返回 tensor 应使用的量化类型；"" 表示不量化。
 // GetTensorQuantization returns the appropriate quantization type for a tensor.
 // Returns "" if the tensor should not be quantized.
 func GetTensorQuantization(name string, shape []int32, quantize string) string {
 	stackedExpert := isStackedExpertWeight(name)
 
-	// Use basic name-based check first
+	// 先做基于名称的 ShouldQuantize 检查
 	if !stackedExpert && !ShouldQuantize(name, "") {
 		return ""
 	}
 
-	// Quantize standard linear weights (2D). Also allow stacked expert weights (3D),
+	// 量化标准 2D 线性权重；3D 堆叠专家权重（如 qwen switch_mlp）亦允许。
 	// e.g. qwen switch_mlp / experts combined tensors.
 	if len(shape) != 2 && !(len(shape) == 3 && stackedExpert) {
 		return ""
 	}
 
-	// Skip small tensors (less than 1024 elements) - not worth quantizing
+	// 跳过元素数 < 1024 的小 tensor
 	var elems int64 = 1
 	for _, d := range shape {
 		elems *= int64(d)
@@ -280,15 +300,15 @@ func GetTensorQuantization(name string, shape []int32, quantize string) string {
 		return ""
 	}
 
-	// Normalize quantization type to canonical form
+	// 规范量化类型字符串
 	quantNorm := normalizeQuantType(quantize)
 
-	// Routing gates are tiny and selection-sensitive — keep them at source precision.
+	// 路由门体积小且选择敏感，保持源精度。
 	if isRoutingGate(name) {
 		return ""
 	}
 
-	// lm_head is too sensitive for 4-bit types; the 8-bit type in the requested
+	// lm_head 对 4-bit 过敏感；同族 8-bit 在质量与带宽间折中。
 	// family keeps quality close to bf16 while saving decode bandwidth.
 	if strings.HasSuffix(name, "lm_head.weight") {
 		if e := eightBit(quantNorm); isAligned(shape, e) {
@@ -297,17 +317,17 @@ func GetTensorQuantization(name string, shape []int32, quantize string) string {
 		return ""
 	}
 
-	// Vision components are too quantization-sensitive; keep source precision.
+	// 视觉组件对量化敏感，保持源精度。
 	if isVision(name) {
 		return ""
 	}
 
-	// MLX quantization requires last dimension to be divisible by group size.
+	// MLX 量化要求末维可被 group size 整除。
 	if !isAligned(shape, quantNorm) {
 		return ""
 	}
 
-	// Promote sensitive projections to 8-bit; fp4 skips experts since their kernels take a single mode.
+	// 4-bit 时将 v/k/down 提升至 8-bit；fp4 专家 kernel 单模式时跳过专家 blanket 提升。
 	if quantNorm == "int4" || ((quantNorm == "nvfp4" || quantNorm == "mxfp4") && !stackedExpert) {
 		if strings.Contains(name, ".v_proj") || strings.Contains(name, ".k_proj") || strings.Contains(name, "down_proj") {
 			if e := eightBit(quantNorm); isAligned(shape, e) {
@@ -321,6 +341,7 @@ func GetTensorQuantization(name string, shape []int32, quantize string) string {
 
 var expertLayerPrefixRegexp = regexp.MustCompile(`^(?:model\.language_model\.|language_model(?:\.model)?\.|model\.)?layers\.\d+$`)
 
+// ExpertGroupPrefix 返回应打包在一起的专家 tensor 组前缀。
 // ExpertGroupPrefix returns the group prefix for expert tensors that should be packed together.
 // For example:
 //   - "model.layers.1.mlp.experts.0.down_proj.weight" -> "model.layers.1.mlp.experts"
@@ -355,6 +376,7 @@ func ExpertGroupPrefix(tensorName string) string {
 	return ""
 }
 
+// sourceQuantization 解析 HuggingFace config 中的量化元数据字段。
 type sourceQuantization struct {
 	Bits            int     `json:"bits"`
 	GroupSize       int     `json:"group_size"`
@@ -372,6 +394,7 @@ type sourceQuantization struct {
 	} `json:"config_groups"`
 }
 
+// sourceModelConfig 为 config.json 的共享解析结构。
 type sourceModelConfig struct {
 	ModelType          string             `json:"model_type"`
 	Architectures      []string           `json:"architectures"`
@@ -386,6 +409,7 @@ type sourceModelConfig struct {
 	} `json:"text_config"`
 }
 
+// readSourceModelConfig 解析 config.json 并保留 RawMessage 供架构工厂二次解析。
 // readSourceModelConfig parses config.json into the shared sourceModelConfig
 // and returns the raw bytes alongside it. The raw bytes are retained on the
 // Inventory so architecture-specific factories can parse their own fields
@@ -405,6 +429,7 @@ func readSourceModelConfig(modelDir string) (sourceModelConfig, json.RawMessage,
 	return cfg, data, nil
 }
 
+// Architecture 返回 architectures[0]、model_type 或 text_config.model_type。
 func (cfg sourceModelConfig) Architecture() string {
 	if len(cfg.Architectures) > 0 && cfg.Architectures[0] != "" {
 		return cfg.Architectures[0]
@@ -415,8 +440,9 @@ func (cfg sourceModelConfig) Architecture() string {
 	return cfg.TextConfig.ModelType
 }
 
+// QuantMetadata 提取 quant_type/group_size 供 fused blob 元数据使用。
 func (cfg sourceModelConfig) QuantMetadata() map[string]string {
-	// Use the first non-empty quantization config found
+	// 取第一个非空的量化配置块
 	var q sourceQuantization
 	for _, candidate := range cfg.quantizationConfigs() {
 		if candidate.Bits != 0 {
@@ -437,6 +463,7 @@ func (cfg sourceModelConfig) QuantMetadata() map[string]string {
 	return metadata
 }
 
+// quantizationConfigs 汇总顶层与 text_config 下所有量化相关字段。
 func (cfg sourceModelConfig) quantizationConfigs() []sourceQuantization {
 	return []sourceQuantization{
 		cfg.Quantization,
@@ -448,6 +475,7 @@ func (cfg sourceModelConfig) quantizationConfigs() []sourceQuantization {
 	}
 }
 
+// HFFP8WeightBlockSize 从 HF fp8/compressed-tensors 配置读取块尺寸。
 func (cfg sourceModelConfig) HFFP8WeightBlockSize() (rows, cols int32, ok bool) {
 	for _, q := range cfg.quantizationConfigs() {
 		if !strings.EqualFold(q.QuantMethod, "fp8") || len(q.WeightBlockSize) != 2 {
@@ -467,8 +495,10 @@ func (cfg sourceModelConfig) HFFP8WeightBlockSize() (rows, cols int32, ok bool) 
 	return 0, 0, false
 }
 
+// tensorImportTransformFactory 按架构从 RawConfig 构造 quantizePolicy。
 type tensorImportTransformFactory func(rawConfig json.RawMessage) (quantizePolicy, error)
 
+// tensorImportTransformRegistry 将 HF architecture 名映射到导入量化策略工厂。
 var tensorImportTransformRegistry = map[string]tensorImportTransformFactory{
 	"Qwen3_5ForCausalLM":                    newQwen35ImportTransform,
 	"Qwen3_5ForConditionalGeneration":       newQwen35ImportTransform,
@@ -492,6 +522,7 @@ var tensorImportTransformRegistry = map[string]tensorImportTransformFactory{
 	"gemma4_unified_assistant":              newGemma4ImportTransform,
 }
 
+// newTensorImportTransform 按 Inventory 架构选择策略，无注册则 defaultQuantPolicy。
 func newTensorImportTransform(inv Inventory) (quantizePolicy, error) {
 	if factory, ok := tensorImportTransformRegistry[inv.Config.Architecture()]; ok {
 		return factory(inv.RawConfig)
@@ -499,6 +530,7 @@ func newTensorImportTransform(inv Inventory) (quantizePolicy, error) {
 	return defaultQuantPolicy{}, nil
 }
 
+// buildSourceFP8Reader 将 FP8 权重与 scale  companion 打包为 safetensors Reader。
 func buildSourceFP8Reader(weightTD, scaleTD *safetensors.TensorData) io.Reader {
 	scaleName := weightTD.Name + ".scale_inv"
 	if strings.HasSuffix(scaleTD.Name, "_scale") && !strings.HasSuffix(scaleTD.Name, "_scale_inv") {
@@ -507,6 +539,7 @@ func buildSourceFP8Reader(weightTD, scaleTD *safetensors.TensorData) io.Reader {
 	return safetensors.BuildPackedSafetensorsReader([]*safetensors.TensorData{weightTD, scaleTD.WithName(scaleName)})
 }
 
+// validateScalarFloat32TensorData 校验并规范化标量 F32 tensor。
 func validateScalarFloat32TensorData(td *safetensors.TensorData, name string) (*safetensors.TensorData, error) {
 	if td == nil {
 		return nil, nil
@@ -524,6 +557,7 @@ func validateScalarFloat32TensorData(td *safetensors.TensorData, name string) (*
 	return td.WithName(name), nil
 }
 
+// invertScalarFloat32TensorData 读取标量 F32 并存储其倒数（全局 scale 反演路径）。
 func invertScalarFloat32TensorData(td *safetensors.TensorData, name string) (*safetensors.TensorData, error) {
 	td, err := validateScalarFloat32TensorData(td, name)
 	if err != nil {
@@ -547,6 +581,7 @@ func invertScalarFloat32TensorData(td *safetensors.TensorData, name string) (*sa
 	return safetensors.NewTensorDataFromBytes(name, td.Dtype, td.Shape, out), nil
 }
 
+// readSourceTensorFiles 读取 model.safetensors.index.json 的 weight_map。
 func readSourceTensorFiles(modelDir string) (map[string]string, error) {
 	indexPath := filepath.Join(modelDir, "model.safetensors.index.json")
 	data, err := os.ReadFile(indexPath)

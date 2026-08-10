@@ -1,3 +1,4 @@
+// 导入规划器：由 Inventory 与 Classification 生成 BlobSpec/TensorSpec，writer 无决策。
 package create
 
 import (
@@ -8,6 +9,7 @@ import (
 	"strings"
 )
 
+// Transform 描述如何将源 tensor 组合或转换为输出 tensor；零值为直通复制。
 // Transform names how a tensor's source(s) are turned into the output tensor.
 // The zero value, TransformNone, copies a single source through unchanged.
 type Transform string
@@ -15,39 +17,40 @@ type Transform string
 const (
 	TransformNone Transform = ""
 
-	// TransformRepackFP4 reinterprets a U8 fp4-packed weight (2 values/byte)
+	// TransformRepackFP4 将 U8 fp4 打包权重重标为 U32（8 值/字），字节不变。
 	// as U32 words (8 values/word): the bytes are unchanged, only the dtype
 	// and last dimension are relabeled.
 	TransformRepackFP4 Transform = "repack_fp4"
 
-	// TransformRelabelU8 relabels an F8_E4M3 scale as U8 so the loader reads
+	// TransformRelabelU8 将 F8_E4M3 scale 重标为 U8 供加载器按原始字节读取。
 	// its raw bytes; the bytes themselves are unchanged.
 	TransformRelabelU8 Transform = "relabel_u8"
 
-	// TransformScalarF32 validates that the source is a scalar F32 and copies
+	// TransformScalarF32 校验标量 F32 并原样复制（全局 scale）。
 	// it through (a global scale stored as-is).
 	TransformScalarF32 Transform = "scalar_f32"
 
-	// TransformReciprocalF32 validates a scalar F32 and stores its reciprocal
+	// TransformReciprocalF32 校验标量 F32 并存储其倒数。
 	// (a global scale the producer stored inverted).
 	TransformReciprocalF32 Transform = "reciprocal_f32"
 
-	// TransformStackExperts concatenates N per-expert source tensors (in
+	// TransformStackExperts 按专家索引顺序堆叠 N 个 per-expert 源为 [experts,...]。
 	// expert-index order) into one [experts, ...] tensor.
 	TransformStackExperts Transform = "stack_experts"
 
-	// TransformDecodeFP8 dequantizes a block-FP8 weight using its block scale.
+	// TransformDecodeFP8 用块 scale 反量化 block-FP8 为 BF16，再由 Quantize 重量化。
 	// Its two sources are the F8_E4M3 weight and its scale companion; the
 	// result is a BF16 tensor, which Quantize (if set) then re-quantizes.
 	TransformDecodeFP8 Transform = "decode_fp8"
 
-	// TransformDecodeStackFP8 stacks N per-expert block-FP8 weights (and their N
+	// TransformDecodeStackFP8 堆叠 N 组 expert FP8 权重与 scale 并反量化为 BF16。
 	// block scales) into one [experts, out, in] tensor and dequantizes it. Its
 	// sources are the N weights followed by the N scales, in expert-index order;
 	// the result is a BF16 tensor, which Quantize (if set) then re-quantizes.
 	TransformDecodeStackFP8 Transform = "decode_stack_fp8"
 )
 
+// TensorSpec 描述 blob 内一个输出 tensor 的源、变换、名称与可选量化。
 // TensorSpec describes one output tensor within a blob: the source tensor(s)
 // it is built from, the transform that combines or converts them, the name it
 // takes in the blob, and an optional quantization to apply. When Quantize is
@@ -58,10 +61,11 @@ type TensorSpec struct {
 	Sources   []SourceTensor
 	Transform Transform
 	Quantize  string
-	OutDtype  string  // dtype after the transform; "" means same as the single source
-	OutShape  []int32 // shape after the transform; nil means same as the single source
+	OutDtype  string  // 变换后 dtype；"" 表示与单一源相同
+	OutShape  []int32 // 变换后 shape；nil 表示与单一源相同
 }
 
+// BlobSpec 描述一个输出 blob：层名、所含 tensor 与 safetensors 元数据。
 // BlobSpec describes one output blob: its layer name, the tensors it contains,
 // and its safetensors metadata. The planner builds these purely from the
 // inventory and classification; the writer executes them and makes no
@@ -72,6 +76,7 @@ type BlobSpec struct {
 	Metadata map[string]string
 }
 
+// quantizePolicy 为每个 tensor 决定量化类型；"" 保持源精度，可返回高于请求的类型。
 // quantizePolicy decides the quantization type for each tensor of a model,
 // returning "" to keep it at source precision. A policy may return a higher-
 // precision type than requested for sensitive tensors. The per-architecture
@@ -81,11 +86,13 @@ type quantizePolicy interface {
 	quantizationType(name string, shape []int32, requested string) string
 }
 
+// Plan 将 Inventory 与 Classification 转为待写 blob 列表；不读权重数据。
 // Plan turns an inventory and its classification into the ordered list of
 // blobs to write. It reads no weight data and makes every decision here, so
 // the writer that follows has nothing left to decide. The policy decides which
 // weights are quantized and to what; pass defaultQuantPolicy{} for the generic
 // policy.
+// Plan 按 SourceFloat/Prequantized/BlockFP8 分支规划并检测输出名冲突。
 func Plan(inv Inventory, class Classification, policy quantizePolicy) ([]BlobSpec, error) {
 	var (
 		specs []BlobSpec
@@ -110,6 +117,7 @@ func Plan(inv Inventory, class Classification, policy quantizePolicy) ([]BlobSpe
 	return specs, nil
 }
 
+// checkOutputCollisions 拒绝两个源 tensor 规范化后输出名冲突的计划。
 // checkOutputCollisions rejects a plan in which two source tensors normalized
 // to the same output name — for example a source shipping both foo.weight and
 // foo.weight_packed, which would both fuse to foo.weight. Writing such a plan
@@ -132,6 +140,7 @@ func checkOutputCollisions(specs []BlobSpec) error {
 	return nil
 }
 
+// planFloat 规划浮点源：per-expert 堆叠为组 blob，其余各成独立 blob。
 // planFloat plans a float model: per-expert tensors are packed into one blob
 // per layer's expert group; every other tensor becomes its own blob, with the
 // quantization policy deciding which weights are quantized and to what.
@@ -169,6 +178,7 @@ func planFloat(inv Inventory, quantize string, policy quantizePolicy) ([]BlobSpe
 	return specs, nil
 }
 
+// planExpertGroup 将各投影的 per-expert 权重堆叠为 [experts,out,in]；混合精度时分 blob。
 // planExpertGroup stacks each projection's per-expert weights into an
 // [experts, out, in] tensor. Uniform projections share one blob; mixed
 // precisions use one blob per projection so safetensors quantization metadata
@@ -220,6 +230,7 @@ func planExpertGroup(groupPrefix string, tensors []SourceTensor, quantize string
 	return homogeneousExpertBlobs(groupPrefix, tensorSpecs), nil
 }
 
+// homogeneousExpertBlobs 量化类型一致时合并为单 blob，否则每 tensor 独立 blob。
 func homogeneousExpertBlobs(groupPrefix string, tensors []TensorSpec) []BlobSpec {
 	if len(tensors) == 0 {
 		return nil
@@ -239,6 +250,7 @@ func homogeneousExpertBlobs(groupPrefix string, tensors []TensorSpec) []BlobSpec
 	return []BlobSpec{{Name: groupPrefix, Tensors: tensors}}
 }
 
+// parseExpertTensor 解析 <groupPrefix>.<index>.<projection>.weight 为索引与投影名。
 // parseExpertTensor splits a per-expert weight name of the form
 // "<groupPrefix>.<index>.<projection>.weight" into its expert index and
 // projection name.
@@ -262,6 +274,7 @@ func parseExpertTensor(groupPrefix, name string) (idx int, proj string, err erro
 	return idx, proj, nil
 }
 
+// perExpertGroup 判断是否为需堆叠的 per-expert 权重并返回组前缀。
 // perExpertGroup reports whether name is a per-expert weight that must be
 // stacked — e.g. "<layer>.mlp.experts.3.gate_proj.weight" — and returns its
 // group prefix. An already-stacked expert tensor (one tensor covering all
@@ -287,10 +300,12 @@ func perExpertGroup(name string) (string, bool) {
 	return gp, true
 }
 
+// sortedTensorNames 返回 Inventory 中按名称排序的 tensor 名列表。
 func sortedTensorNames(inv Inventory) []string {
 	return sortedKeys(inv.Tensors)
 }
 
+// sortedKeys 返回 map 键的字典序切片。
 func sortedKeys[V any](m map[string]V) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {

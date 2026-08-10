@@ -1,3 +1,4 @@
+// 源模型清单：读取 config 与 safetensors 头信息，供分类/规划/写入全程只读决策。
 package create
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/ollama/ollama/x/safetensors"
 )
 
+// SourceTensor 描述源模型中一个 tensor 的名称、dtype、shape 与所在 shard 文件。
 // SourceTensor describes one tensor found in a source model: its on-disk type
 // and shape and which safetensors file holds it. It carries no weight data —
 // only what the header and shard index reveal.
@@ -20,12 +22,14 @@ type SourceTensor struct {
 	File  string // safetensors file basename, relative to the model directory
 }
 
+// Inventory 为读源目录的不可变快照：tensor 索引、配置与 RawConfig 原始字节。
 // Inventory is the immutable result of reading a source model: every tensor
 // indexed by name, plus the parsed config and the model directory. Reading
 // source headers happens only here; the classify, plan, and write steps work
 // entirely from this listing and never re-open a source header to make a
 // decision. RawConfig holds the config.json bytes so architecture-specific
 // factories can parse their own fields without re-opening the file.
+// Inventory 后续 classify/plan/write 仅依赖此结构，不再重开源头。
 type Inventory struct {
 	Dir       string
 	Config    sourceModelConfig
@@ -33,12 +37,14 @@ type Inventory struct {
 	Tensors   map[string]SourceTensor
 }
 
+// Has 报告源清单中是否存在给定名称的 tensor。
 // Has reports whether a tensor with the given name exists in the source.
 func (inv Inventory) Has(name string) bool {
 	_, ok := inv.Tensors[name]
 	return ok
 }
 
+// ReadInventory 读取 config、分片索引与各 tensor 头；不读权重数据；缺 shard 则失败。
 // ReadInventory reads a source model directory into an Inventory: the config,
 // the shard index, and every tensor's header. It reads no weight data. If the
 // shard index references a tensor that cannot be found (a missing or truncated
@@ -60,7 +66,7 @@ func ReadInventory(dir string) (Inventory, error) {
 		return Inventory{}, err
 	}
 
-	// Only the standard HF weights - a monolithic model.safetensors or the
+	// 仅导入标准 HF 权重（单体 model.safetensors 或 model-*.safetensors 分片）。
 	// sharded model-*.safetensors set - are imported. Other safetensors in the
 	// same repo - notably Mistral's consolidated-*.safetensors - use a layout
 	// we don't support, and are skipped so they can't shadow or pollute the
@@ -106,7 +112,7 @@ func ReadInventory(dir string) (Inventory, error) {
 		ext.Close()
 	}
 
-	// Completeness: every tensor named in the shard index must actually be
+	// 完整性：index 中列出的每个 tensor 必须实际可读，否则报错而非静默缺权重。
 	// present. A missing shard (or an index entry whose shard lacks the
 	// tensor) means missing weights, which must fail loudly here rather than
 	// silently importing an incomplete model.

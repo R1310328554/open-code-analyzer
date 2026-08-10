@@ -1,3 +1,4 @@
+// MLX 量化执行：加载 safetensors、block-FP8 解码、Quantize 与多 tensor blob 打包。
 package create
 
 import (
@@ -12,15 +13,19 @@ import (
 	"github.com/ollama/ollama/x/quant"
 )
 
+// QuantizeSupported 报告 MLX 是否可用（从而是否支持量化）。
 // QuantizeSupported reports whether MLX (and thus quantization) is available.
+// QuantizeSupported 调用 mlx.CheckInit 探测运行时。
 func QuantizeSupported() bool {
 	return mlx.CheckInit() == nil
 }
 
+// quantizeItem 表示进入量化 blob 的一个 tensor 及其 reader 与 FP8 解码标志。
 // quantizeItem is one tensor going into a (possibly multi-tensor) quantized
 // blob: its output name, the quantization to apply (or "" to decode/keep at
 // source precision), a safetensors-wrapped reader for its input bytes (keyed by
 // name), and whether the input is a block-FP8 weight to decode before use.
+// quantizeItem 由 writer 构造并传入 quantizeBlob。
 type quantizeItem struct {
 	name      string
 	quantize  string
@@ -28,9 +33,11 @@ type quantizeItem struct {
 	decodeFP8 bool
 }
 
+// quantizeBlob 在 pinned MLX 线程上加载、量化并打包为单个 safetensors blob。
 // quantizeBlob loads, optionally quantizes, and packs the given tensors into a
 // single safetensors blob (weight + scale + optional bias per quantized
 // tensor). All MLX work runs on the pinned MLX thread.
+// quantizeBlob 对外入口，内部委托 runOnMLXThread。
 func quantizeBlob(items []quantizeItem) ([]byte, error) {
 	var blob []byte
 	err := runOnMLXThread(func() error {
@@ -41,6 +48,7 @@ func quantizeBlob(items []quantizeItem) ([]byte, error) {
 	return blob, err
 }
 
+// quantizeBlobLocked 必须在 MLX 线程上调用；Pin 数组后 SaveSafetensorsWithMetadata。
 func quantizeBlobLocked(items []quantizeItem) ([]byte, error) {
 	allArrays := make(map[string]*mlx.Array)
 	var pinned []*mlx.Array
@@ -55,7 +63,7 @@ func quantizeBlobLocked(items []quantizeItem) ([]byte, error) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	// Blob metadata: a single quant_type/group_size when every quantized
+	// blob 元数据：全部量化 tensor 类型一致时用单一 quant_type/group_size。
 	// tensor matches, otherwise per-tensor entries.
 	uniform, mixed, hasQuant := "", false, false
 	for _, it := range items {
@@ -120,6 +128,7 @@ func quantizeBlobLocked(items []quantizeItem) ([]byte, error) {
 	return os.ReadFile(outPath)
 }
 
+// arraysForItem 收集某 item 的 weight 及可选 .scale/.bias 数组供 Pin。
 func arraysForItem(all map[string]*mlx.Array, it quantizeItem) []*mlx.Array {
 	keys := []string{it.name}
 	if it.quantize != "" {
@@ -134,6 +143,7 @@ func arraysForItem(all map[string]*mlx.Array, it quantizeItem) []*mlx.Array {
 	return out
 }
 
+// loadAndQuantizeArray  spill 到临时文件后 MLX 加载；可选 FP8 解码再 Quantize。
 // loadAndQuantizeArray writes a safetensors reader to a temp file, loads it
 // with MLX, decodes a block-FP8 source tensor if present, optionally
 // quantizes, and adds the resulting arrays (weight, scale, optional bias) to
@@ -170,7 +180,7 @@ func loadAndQuantizeArray(r io.Reader, name, quantize string, decodeFP8 bool, ar
 		return tmpPath, nil, nil, fmt.Errorf("tensor %q not found in safetensors", name)
 	}
 
-	// Decode an FP8 source tensor (using its block scale) before quantizing,
+	// 量化前先解码 FP8 源（含 block scale），quantize=="" 时仍产出可用浮点数据。
 	// so a decode-only request (quantize == "") still yields usable float data.
 	if decodeFP8 {
 		scaleKey := name + ".scale_inv"
@@ -227,6 +237,7 @@ func loadAndQuantizeArray(r io.Reader, name, quantize string, decodeFP8 bool, ar
 	return tmpPath, toEval, st, nil
 }
 
+// decodeSourceFP8Tensor 将 128×128 块 FP8 权重与块 scale 反量化为 BF16。
 // decodeSourceFP8Tensor dequantizes a 128x128 block-FP8 weight using its block
 // scale, returning a BF16 tensor. The weight is either 2D [rows, cols] with a 2D
 // scale [ceil(rows/128), ceil(cols/128)], or a stacked 3D expert tensor
@@ -246,7 +257,7 @@ func decodeSourceFP8Tensor(weight, scale *mlx.Array) (*mlx.Array, error) {
 	const blockRows = 128
 	const blockCols = 128
 
-	// The 128x128 blocks tile the trailing [rows, cols]; a 3D weight carries a
+	// 128×128 块平铺末维 [rows,cols]；3D 权重首轴为 expert，逐 expert 解码。
 	// leading expert axis that broadcasts over those blocks one expert at a time.
 	lead := weightShape[:rank-2]
 	rows, cols := weightShape[rank-2], weightShape[rank-1]
@@ -267,17 +278,17 @@ func decodeSourceFP8Tensor(weight, scale *mlx.Array) (*mlx.Array, error) {
 	padBottom := blockRows*sr - rows
 	padSide := blockCols*sc - cols
 	if padBottom > 0 || padSide > 0 {
-		// Pad the bottom/right of the trailing [rows, cols] only.
+		// 仅对末维 [rows,cols] 右/下 padding 至块边界。
 		decoded = mlx.PadConstant(decoded, []int{rank - 2, rank - 1}, []int{0, 0}, []int{padBottom, padSide})
 	}
 
-	// Split each 128x128 block into its own axis pair, scale every block by its
+	// 将各 128×128 块拆成独立轴对，按 per-block scale 缩放后 reshape 回原形状。
 	// per-block factor (broadcast across the block interior), then restore.
 	blocked := append(append([]int32(nil), leadI32...), int32(sr), blockRows, int32(sc), blockCols)
 	decoded = mlx.Reshape(decoded, blocked...)
-	// scale [..., sr, sc] -> [..., sr, 1, sc, 1]
+	// scale 形状 [..., sr, sc] 扩展为 [..., sr, 1, sc, 1] 以广播到块内部。
 	scaleB := mlx.ExpandDims(mlx.ExpandDims(scale, len(lead)+1), len(lead)+3)
-	// Multiplying by an F32 scale promotes the result; keep the decoded dtype.
+	// F32 scale 相乘会提升 dtype；结果 cast 回解码 dtype。
 	decoded = mlx.Mul(decoded, scaleB).AsType(dtype)
 	padded := append(append([]int32(nil), leadI32...), int32(rows+padBottom), int32(cols+padSide))
 	decoded = mlx.Reshape(decoded, padded...)

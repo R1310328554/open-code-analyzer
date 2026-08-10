@@ -1,3 +1,4 @@
+// Safetensors dtype 工具：元素字节大小、浮点编解码与 HF 量化 mode 映射。
 package create
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/x448/float16"
 )
 
+// DTypeSize 返回给定 dtype 字符串下单元素字节数。
 // DTypeSize returns the byte size of a single element for the given dtype string.
 func DTypeSize(dtype string) (int, error) {
 	switch strings.ToUpper(dtype) {
@@ -28,6 +30,7 @@ func DTypeSize(dtype string) (int, error) {
 	}
 }
 
+// DecodeFloatTensor 按 dtype 将原始字节解码为 []float32。
 // DecodeFloatTensor decodes raw bytes into []float32 according to the given dtype.
 func DecodeFloatTensor(dtype string, raw []byte) ([]float32, error) {
 	switch strings.ToUpper(dtype) {
@@ -65,6 +68,7 @@ func DecodeFloatTensor(dtype string, raw []byte) ([]float32, error) {
 	}
 }
 
+// EncodeFloatTensor 按 dtype 将 []float32 编码为原始字节。
 // EncodeFloatTensor encodes []float32 into raw bytes according to the given dtype.
 func EncodeFloatTensor(dtype string, values []float32) ([]byte, error) {
 	switch strings.ToUpper(dtype) {
@@ -93,6 +97,7 @@ func EncodeFloatTensor(dtype string, values []float32) ([]byte, error) {
 	}
 }
 
+// sourceQuantType 将 HF quantization mode/bits 映射为 Ollama quant_type 字符串。
 func sourceQuantType(mode string, bits int) string {
 	switch strings.ToLower(mode) {
 	case "affine":
