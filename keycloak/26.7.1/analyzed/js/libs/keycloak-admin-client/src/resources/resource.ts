@@ -1,6 +1,11 @@
 import type { KeycloakAdminClient } from "../client.js";
 import { Agent, RequestArgs } from "./agent.js";
 
+/**
+ * Admin Client 资源基类：通过 Agent 封装 REST 请求。
+ * 子类使用 makeRequest / makeUpdateRequest 声明 Admin REST 端点。
+ */
+
 export default class Resource<ParamType = {}> {
   #agent: Agent;
   constructor(
@@ -17,6 +22,7 @@ export default class Resource<ParamType = {}> {
     });
   }
 
+  /** 创建 GET/POST/DELETE 类请求方法 */
   public makeRequest = <PayloadType = any, ResponseType = any>(
     args: RequestArgs,
   ): ((
@@ -26,7 +32,7 @@ export default class Resource<ParamType = {}> {
     return this.#agent.request(args);
   };
 
-  // update request will take three types: query, payload and response
+  /** 创建 PUT/POST 类更新请求（query + payload） */
   public makeUpdateRequest = <
     QueryType = any,
     PayloadType = any,

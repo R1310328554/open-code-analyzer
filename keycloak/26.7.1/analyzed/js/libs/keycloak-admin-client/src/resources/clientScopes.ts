@@ -5,12 +5,15 @@ import type ProtocolMapperRepresentation from "../defs/protocolMapperRepresentat
 import type MappingsRepresentation from "../defs/mappingsRepresentation.js";
 import type RoleRepresentation from "../defs/roleRepresentation.js";
 
+/** 客户端 Scope Admin 资源：Realm 级 Scope CRUD、默认 Scope、协议映射器与 Scope 角色映射。 */
 export class ClientScopes extends Resource<{ realm?: string }> {
+  /** 查询列表 */
   public find = this.makeRequest<{}, ClientScopeRepresentation[]>({
     method: "GET",
     path: "/client-scopes",
   });
 
+  /** 创建 */
   public create = this.makeRequest<ClientScopeRepresentation, { id: string }>({
     method: "POST",
     path: "/client-scopes",
@@ -18,6 +21,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 按 ID 操作客户端 Scope
    * Client-Scopes by id
    */
 
@@ -31,6 +35,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 更新 */
   public update = this.makeUpdateRequest<
     { id: string },
     ClientScopeRepresentation,
@@ -41,6 +46,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 删除 */
   public del = this.makeRequest<{ id: string }, void>({
     method: "DELETE",
     path: "/client-scopes/{id}",
@@ -48,6 +54,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
   });
 
   /**
+   * Realm 默认客户端 Scope
    * Default Client-Scopes
    */
 
@@ -59,12 +66,14 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     path: "/default-default-client-scopes",
   });
 
+  /** 添加默认客户端 Scope */
   public addDefaultClientScope = this.makeRequest<{ id: string }, void>({
     method: "PUT",
     path: "/default-default-client-scopes/{id}",
     urlParamKeys: ["id"],
   });
 
+  /** 移除默认客户端 Scope */
   public delDefaultClientScope = this.makeRequest<{ id: string }, void>({
     method: "DELETE",
     path: "/default-default-client-scopes/{id}",
@@ -72,6 +81,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 默认可选客户端 Scope
    * Default Optional Client-Scopes
    */
 
@@ -83,6 +93,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     path: "/default-optional-client-scopes",
   });
 
+  /** 添加默认可选客户端 Scope */
   public addDefaultOptionalClientScope = this.makeRequest<{ id: string }, void>(
     {
       method: "PUT",
@@ -91,6 +102,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     },
   );
 
+  /** 移除默认可选客户端 Scope */
   public delDefaultOptionalClientScope = this.makeRequest<{ id: string }, void>(
     {
       method: "DELETE",
@@ -100,6 +112,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
   );
 
   /**
+   * 协议映射器
    * Protocol Mappers
    */
 
@@ -113,6 +126,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 添加协议映射器 */
   public addProtocolMapper = this.makeUpdateRequest<
     { id: string },
     ProtocolMapperRepresentation,
@@ -123,6 +137,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 列出协议映射器 */
   public listProtocolMappers = this.makeRequest<
     { id: string },
     ProtocolMapperRepresentation[]
@@ -132,6 +147,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 按 ID 获取协议映射器 */
   public findProtocolMapper = this.makeRequest<
     { id: string; mapperId: string },
     ProtocolMapperRepresentation | undefined
@@ -142,6 +158,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 按协议类型列出协议映射器 */
   public findProtocolMappersByProtocol = this.makeRequest<
     { id: string; protocol: string },
     ProtocolMapperRepresentation[]
@@ -152,6 +169,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 更新协议映射器 */
   public updateProtocolMapper = this.makeUpdateRequest<
     { id: string; mapperId: string },
     ProtocolMapperRepresentation,
@@ -162,6 +180,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "mapperId"],
   });
 
+  /** 删除协议映射器 */
   public delProtocolMapper = this.makeRequest<
     { id: string; mapperId: string },
     void
@@ -172,6 +191,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
   });
 
   /**
+   * Scope 角色映射
    * Scope Mappings
    */
   public listScopeMappings = this.makeRequest<
@@ -183,6 +203,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 添加客户端 Scope 角色映射 */
   public addClientScopeMappings = this.makeUpdateRequest<
     { id: string; client: string },
     RoleRepresentation[],
@@ -193,6 +214,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "client"],
   });
 
+  /** 列出客户端 Scope 角色映射 */
   public listClientScopeMappings = this.makeRequest<
     { id: string; client: string },
     RoleRepresentation[]
@@ -202,6 +224,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "client"],
   });
 
+  /** 列出可分配的客户端 Scope 角色映射 */
   public listAvailableClientScopeMappings = this.makeRequest<
     { id: string; client: string },
     RoleRepresentation[]
@@ -211,6 +234,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "client"],
   });
 
+  /** 列出客户端 Scope 复合角色映射 */
   public listCompositeClientScopeMappings = this.makeRequest<
     { id: string; client: string },
     RoleRepresentation[]
@@ -220,6 +244,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "client"],
   });
 
+  /** 删除客户端 Scope 角色映射 */
   public delClientScopeMappings = this.makeUpdateRequest<
     { id: string; client: string },
     RoleRepresentation[],
@@ -230,6 +255,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "client"],
   });
 
+  /** 添加 Realm Scope 角色映射 */
   public addRealmScopeMappings = this.makeUpdateRequest<
     { id: string },
     RoleRepresentation[],
@@ -240,6 +266,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 列出 Realm Scope 角色映射 */
   public listRealmScopeMappings = this.makeRequest<
     { id: string },
     RoleRepresentation[]
@@ -249,6 +276,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 列出可分配的 Realm Scope 角色映射 */
   public listAvailableRealmScopeMappings = this.makeRequest<
     { id: string },
     RoleRepresentation[]
@@ -258,6 +286,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 列出 Realm Scope 复合角色映射 */
   public listCompositeRealmScopeMappings = this.makeRequest<
     { id: string },
     RoleRepresentation[]
@@ -267,6 +296,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 删除 Realm Scope 角色映射 */
   public delRealmScopeMappings = this.makeUpdateRequest<
     { id: string },
     RoleRepresentation[],
@@ -288,6 +318,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
   }
 
   /**
+   * 按名称查找
    * Find client scope by name.
    */
   public async findOneByName(payload: {
@@ -301,6 +332,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
   }
 
   /**
+   * 按名称删除
    * Delete client scope by name.
    */
   public async delByName(payload: {
@@ -320,6 +352,7 @@ export class ClientScopes extends Resource<{ realm?: string }> {
   }
 
   /**
+   * 按名称查找协议映射器
    * Find single protocol mapper by name.
    */
   public async findProtocolMapperByName(payload: {

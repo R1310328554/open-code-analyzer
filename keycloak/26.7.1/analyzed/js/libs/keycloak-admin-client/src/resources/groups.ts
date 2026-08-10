@@ -31,12 +31,15 @@ export type SubGroupQuery = Query &
     parentId: string;
   };
 
+/** 组数量统计查询参数 */
 export interface GroupCountQuery {
   search?: string;
   top?: boolean;
 }
 
+/** 用户组 Admin 资源：组 CRUD、层级子组、成员、角色映射；支持组织上下文。 */
 export class Groups extends Resource<{ realm?: string }> {
+  /** 查询列表 */
   public find = this.makeRequest<GroupQuery, GroupRepresentation[]>({
     method: "GET",
     queryParamKeys: [
@@ -50,16 +53,19 @@ export class Groups extends Resource<{ realm?: string }> {
     ],
   });
 
+  /** 创建 */
   public create = this.makeRequest<GroupRepresentation, { id: string }>({
     method: "POST",
     returnResourceIdInLocationHeader: { field: "id" },
   });
 
+  /** 更新根级组信息 */
   public updateRoot = this.makeRequest<GroupRepresentation, void>({
     method: "POST",
   });
 
   /**
+   * 单个用户/组
    * Single user
    */
 
@@ -73,6 +79,7 @@ export class Groups extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 更新 */
   public update = this.makeUpdateRequest<
     { id: string },
     GroupRepresentation,
@@ -83,12 +90,14 @@ export class Groups extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 删除 */
   public del = this.makeRequest<{ id: string }, void>({
     method: "DELETE",
     path: "/{id}",
     urlParamKeys: ["id"],
   });
 
+  /** 统计数量 */
   public count = this.makeRequest<GroupCountQuery, { count: number }>({
     method: "GET",
     path: "/count",
@@ -136,6 +145,7 @@ export class Groups extends Resource<{ realm?: string }> {
   );
 
   /**
+   * 组成员
    * Members
    */
 
@@ -150,6 +160,7 @@ export class Groups extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 角色映射
    * Role mappings
    * https://www.keycloak.org/docs-api/11.0/rest-api/#_role_mapper_resource
    */
@@ -163,6 +174,7 @@ export class Groups extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 添加 Realm 角色映射 */
   public addRealmRoleMappings = this.makeRequest<
     { id: string; roles: RoleMappingPayload[] },
     void
@@ -173,6 +185,7 @@ export class Groups extends Resource<{ realm?: string }> {
     payloadKey: "roles",
   });
 
+  /** 列出 Realm 角色映射 */
   public listRealmRoleMappings = this.makeRequest<
     { id: string },
     RoleRepresentation[]
@@ -182,6 +195,7 @@ export class Groups extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 删除 Realm 角色映射 */
   public delRealmRoleMappings = this.makeRequest<
     { id: string; roles: RoleMappingPayload[] },
     void
@@ -192,6 +206,7 @@ export class Groups extends Resource<{ realm?: string }> {
     payloadKey: "roles",
   });
 
+  /** 列出可分配 Realm 角色映射 */
   public listAvailableRealmRoleMappings = this.makeRequest<
     { id: string },
     RoleRepresentation[]
@@ -201,7 +216,8 @@ export class Groups extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
-  // Get effective realm-level role mappings This will recurse all composite roles to get the result.
+  // 获取有效 Realm 级角色映射（递归展开复合角色）
+  /** 列出 Realm 复合角色映射 */
   public listCompositeRealmRoleMappings = this.makeRequest<
     { id: string },
     RoleRepresentation[]
@@ -212,6 +228,7 @@ export class Groups extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 客户端角色映射
    * Client role mappings
    * https://www.keycloak.org/docs-api/11.0/rest-api/#_client_role_mappings_resource
    */
@@ -225,6 +242,7 @@ export class Groups extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "clientUniqueId"],
   });
 
+  /** 列出组织成员所属组 */
   public listOrgGroups = this.makeRequest<
     { id: string; briefRepresentation?: boolean } & PaginationQuery &
       SearchQuery,
@@ -235,6 +253,7 @@ export class Groups extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 添加客户端角色映射 */
   public addClientRoleMappings = this.makeRequest<
     { id: string; clientUniqueId: string; roles: RoleMappingPayload[] },
     void
@@ -245,6 +264,7 @@ export class Groups extends Resource<{ realm?: string }> {
     payloadKey: "roles",
   });
 
+  /** 删除客户端角色映射 */
   public delClientRoleMappings = this.makeRequest<
     { id: string; clientUniqueId: string; roles: RoleMappingPayload[] },
     void
@@ -255,6 +275,7 @@ export class Groups extends Resource<{ realm?: string }> {
     payloadKey: "roles",
   });
 
+  /** 列出可分配客户端角色映射 */
   public listAvailableClientRoleMappings = this.makeRequest<
     { id: string; clientUniqueId: string },
     RoleRepresentation[]
@@ -264,6 +285,7 @@ export class Groups extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "clientUniqueId"],
   });
 
+  /** 列出客户端复合角色映射 */
   public listCompositeClientRoleMappings = this.makeRequest<
     { id: string; clientUniqueId: string },
     RoleRepresentation[]
@@ -274,6 +296,7 @@ export class Groups extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 细粒度管理权限
    * Authorization permissions
    */
   public updatePermission = this.makeUpdateRequest<
@@ -286,6 +309,7 @@ export class Groups extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 获取细粒度管理权限 */
   public listPermissions = this.makeRequest<
     { id: string },
     ManagementPermissionReference
@@ -295,6 +319,7 @@ export class Groups extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 将用户加入组织组 */
   public addMemberToOrgGroup = this.makeRequest<
     { groupId: string; userId: string },
     void
@@ -304,6 +329,7 @@ export class Groups extends Resource<{ realm?: string }> {
     urlParamKeys: ["groupId", "userId"],
   });
 
+  /** 将用户从组织组移除 */
   public removeMemberFromOrgGroup = this.makeRequest<
     { groupId: string; userId: string },
     void

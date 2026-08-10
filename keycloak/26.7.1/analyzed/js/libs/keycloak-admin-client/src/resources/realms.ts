@@ -19,8 +19,10 @@ import type { ManagementPermissionReference } from "../defs/managementPermission
 import type ComponentTypeRepresentation from "../defs/componentTypeRepresentation.js";
 import type { ClientSessionStat } from "../defs/clientSessionStat.js";
 
+/** Realm Admin 资源：Realm 生命周期、导入导出、事件、会话、密钥、LDAP/SMTP 测试及本地化。 */
 export class Realms extends Resource {
   /**
+   * Realm 管理
    * Realm
    * https://www.keycloak.org/docs-api/11.0/rest-api/#_realms_admin_resource
    */
@@ -32,11 +34,13 @@ export class Realms extends Resource {
     method: "GET",
   });
 
+  /** 创建 */
   public create = this.makeRequest<RealmRepresentation, { realmName: string }>({
     method: "POST",
     returnResourceIdInLocationHeader: { field: "realmName" },
   });
 
+  /** 按 ID 获取单个 */
   public findOne = this.makeRequest<
     { realm: string },
     RealmRepresentation | undefined
@@ -47,6 +51,7 @@ export class Realms extends Resource {
     catchNotFound: true,
   });
 
+  /** 更新 */
   public update = this.makeUpdateRequest<
     { realm: string },
     RealmRepresentation,
@@ -57,12 +62,14 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 删除 */
   public del = this.makeRequest<{ realm: string }, void>({
     method: "DELETE",
     path: "/{realm}",
     urlParamKeys: ["realm"],
   });
 
+  /** 部分导入 Realm 配置 */
   public partialImport = this.makeRequest<
     {
       realm: string;
@@ -76,6 +83,7 @@ export class Realms extends Resource {
     payloadKey: "rep",
   });
 
+  /** 部分导出 Realm 配置 */
   public export = this.makeRequest<
     {
       realm: string;
@@ -90,6 +98,7 @@ export class Realms extends Resource {
     queryParamKeys: ["exportClients", "exportGroupsAndRoles"],
   });
 
+  /** 获取 Realm 默认组 */
   public getDefaultGroups = this.makeRequest<
     { realm: string },
     GroupRepresentation[]
@@ -99,18 +108,21 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 添加默认组 */
   public addDefaultGroup = this.makeRequest<{ realm: string; id: string }>({
     method: "PUT",
     path: "/{realm}/default-groups/{id}",
     urlParamKeys: ["realm", "id"],
   });
 
+  /** 移除默认组 */
   public removeDefaultGroup = this.makeRequest<{ realm: string; id: string }>({
     method: "DELETE",
     path: "/{realm}/default-groups/{id}",
     urlParamKeys: ["realm", "id"],
   });
 
+  /** 按路径获取组 */
   public getGroupByPath = this.makeRequest<
     { path: string; realm: string },
     GroupRepresentation
@@ -152,6 +164,7 @@ export class Realms extends Resource {
     ],
   });
 
+  /** 获取事件配置 */
   public getConfigEvents = this.makeRequest<
     { realm: string },
     RealmEventsConfigRepresentation
@@ -161,6 +174,7 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 更新事件配置 */
   public updateConfigEvents = this.makeUpdateRequest<
     { realm: string },
     RealmEventsConfigRepresentation,
@@ -171,18 +185,21 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 清除用户事件 */
   public clearEvents = this.makeRequest<{ realm: string }, void>({
     method: "DELETE",
     path: "/{realm}/events",
     urlParamKeys: ["realm"],
   });
 
+  /** 清除管理事件 */
   public clearAdminEvents = this.makeRequest<{ realm: string }, void>({
     method: "DELETE",
     path: "/{realm}/admin-events",
     urlParamKeys: ["realm"],
   });
 
+  /** 列出客户端注册策略提供者 */
   public getClientRegistrationPolicyProviders = this.makeRequest<
     { realm: string },
     ComponentTypeRepresentation[]
@@ -192,6 +209,7 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 列出客户端初始访问配置 */
   public getClientsInitialAccess = this.makeRequest<
     { realm: string },
     ClientInitialAccessPresentation[]
@@ -201,6 +219,7 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 创建客户端初始访问配置 */
   public createClientsInitialAccess = this.makeUpdateRequest<
     { realm: string },
     { count?: number; expiration?: number },
@@ -211,6 +230,7 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 删除客户端初始访问配置 */
   public delClientsInitialAccess = this.makeRequest<
     { realm: string; id: string },
     void
@@ -272,6 +292,7 @@ export class Realms extends Resource {
   });
 
   /**
+   * 用户管理细粒度权限
    * Users management permissions
    */
   public getUsersManagementPermissions = this.makeRequest<
@@ -283,6 +304,7 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 更新用户管理细粒度权限 */
   public updateUsersManagementPermissions = this.makeRequest<
     { realm: string; enabled: boolean },
     ManagementPermissionReference
@@ -293,6 +315,7 @@ export class Realms extends Resource {
   });
 
   /**
+   * 会话管理
    * Sessions
    */
   public getClientSessionStats = this.makeRequest<
@@ -304,12 +327,14 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 登出 Realm 内所有用户 */
   public logoutAll = this.makeRequest<{ realm: string }, void>({
     method: "POST",
     path: "/{realm}/logout-all",
     urlParamKeys: ["realm"],
   });
 
+  /** 删除指定会话 */
   public deleteSession = this.makeRequest<
     { realm: string; session: string; isOffline: boolean },
     void
@@ -320,6 +345,7 @@ export class Realms extends Resource {
     queryParamKeys: ["isOffline"],
   });
 
+  /** 推送令牌吊销 */
   public pushRevocation = this.makeRequest<
     { realm: string },
     GlobalRequestResult
@@ -330,6 +356,7 @@ export class Realms extends Resource {
     ignoredKeys: ["realm"],
   });
 
+  /** 获取 Realm 密钥元数据 */
   public getKeys = this.makeRequest<
     { realm: string },
     KeysMetadataRepresentation
@@ -339,6 +366,7 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 测试 LDAP 连接 */
   public testLDAPConnection = this.makeUpdateRequest<
     { realm: string },
     TestLdapConnectionRepresentation
@@ -348,6 +376,7 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 测试 SMTP 连接 */
   public testSMTPConnection = this.makeUpdateRequest<
     { realm: string },
     Record<string, string | number>
@@ -357,6 +386,7 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 探测 LDAP 服务器能力 */
   public ldapServerCapabilities = this.makeUpdateRequest<
     { realm: string },
     TestLdapConnectionRepresentation
@@ -366,6 +396,7 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 获取 Realm 支持的语言区域 */
   public getRealmSpecificLocales = this.makeRequest<
     { realm: string },
     string[]
@@ -375,6 +406,7 @@ export class Realms extends Resource {
     urlParamKeys: ["realm"],
   });
 
+  /** 获取 Realm 本地化文本 */
   public getRealmLocalizationTexts = this.makeRequest<
     { realm: string; selectedLocale: string; first?: number; max?: number },
     Record<string, string>
@@ -384,6 +416,7 @@ export class Realms extends Resource {
     urlParamKeys: ["realm", "selectedLocale"],
   });
 
+  /** 添加或更新本地化键值 */
   public addLocalization = this.makeUpdateRequest<
     { realm: string; selectedLocale: string; key: string },
     string,
@@ -395,6 +428,7 @@ export class Realms extends Resource {
     headers: { "content-type": "text/plain" },
   });
 
+  /** 删除 Realm 本地化文本 */
   public deleteRealmLocalizationTexts = this.makeRequest<
     { realm: string; selectedLocale: string; key?: string },
     void

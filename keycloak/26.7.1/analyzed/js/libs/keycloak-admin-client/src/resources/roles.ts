@@ -4,6 +4,7 @@ import type UserRepresentation from "../defs/userRepresentation.js";
 import type { KeycloakAdminClient } from "../client.js";
 import type { ManagementPermissionReference } from "../defs/managementPermissionReference.js";
 
+/** 角色列表查询参数 */
 export interface RoleQuery {
   first?: number;
   max?: number;
@@ -11,8 +12,10 @@ export interface RoleQuery {
   briefRepresentation?: boolean;
 }
 
+/** Realm 角色 Admin 资源：按名称/ID 管理 Realm 角色及复合角色关系。 */
 export class Roles extends Resource<{ realm?: string }> {
   /**
+   * Realm 角色
    * Realm roles
    */
 
@@ -21,6 +24,7 @@ export class Roles extends Resource<{ realm?: string }> {
     path: "/roles",
   });
 
+  /** 创建 */
   public create = this.makeRequest<RoleRepresentation, { roleName: string }>({
     method: "POST",
     path: "/roles",
@@ -28,6 +32,7 @@ export class Roles extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 按名称操作角色
    * Roles by name
    */
 
@@ -41,6 +46,7 @@ export class Roles extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 按名称更新 */
   public updateByName = this.makeUpdateRequest<
     { name: string },
     RoleRepresentation,
@@ -51,12 +57,14 @@ export class Roles extends Resource<{ realm?: string }> {
     urlParamKeys: ["name"],
   });
 
+  /** 按名称删除 */
   public delByName = this.makeRequest<{ name: string }, void>({
     method: "DELETE",
     path: "/roles/{name}",
     urlParamKeys: ["name"],
   });
 
+  /** 列出拥有指定角色的用户 */
   public findUsersWithRole = this.makeRequest<
     {
       name: string;
@@ -73,6 +81,7 @@ export class Roles extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 按 ID 操作角色
    * Roles by id
    */
 
@@ -86,6 +95,7 @@ export class Roles extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 添加复合角色 */
   public createComposite = this.makeUpdateRequest<
     { roleId: string },
     RoleRepresentation[],
@@ -96,6 +106,7 @@ export class Roles extends Resource<{ realm?: string }> {
     urlParamKeys: ["roleId"],
   });
 
+  /** 获取复合角色列表 */
   public getCompositeRoles = this.makeRequest<
     { id: string; search?: string; first?: number; max?: number },
     RoleRepresentation[]
@@ -105,6 +116,7 @@ export class Roles extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 获取 Realm 复合角色 */
   public getCompositeRolesForRealm = this.makeRequest<
     { id: string },
     RoleRepresentation[]
@@ -114,6 +126,7 @@ export class Roles extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 获取客户端复合角色 */
   public getCompositeRolesForClient = this.makeRequest<
     { id: string; clientId: string },
     RoleRepresentation[]
@@ -123,6 +136,7 @@ export class Roles extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "clientId"],
   });
 
+  /** 删除复合角色 */
   public delCompositeRoles = this.makeUpdateRequest<
     { id: string },
     RoleRepresentation[],
@@ -133,6 +147,7 @@ export class Roles extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 按 ID 更新 */
   public updateById = this.makeUpdateRequest<
     { id: string },
     RoleRepresentation,
@@ -143,6 +158,7 @@ export class Roles extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 按 ID 删除 */
   public delById = this.makeRequest<{ id: string }, void>({
     method: "DELETE",
     path: "/roles-by-id/{id}",
@@ -150,6 +166,7 @@ export class Roles extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 细粒度管理权限
    * Authorization permissions
    */
   public updatePermission = this.makeUpdateRequest<
@@ -162,6 +179,7 @@ export class Roles extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 获取细粒度管理权限 */
   public listPermissions = this.makeRequest<
     { id: string },
     ManagementPermissionReference

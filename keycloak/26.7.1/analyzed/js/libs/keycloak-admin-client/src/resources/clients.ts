@@ -22,11 +22,13 @@ import type UserSessionRepresentation from "../defs/userSessionRepresentation.js
 import Resource from "./resource.js";
 import { ClientsV2 } from "./clientsV2.js";
 
+/** 分页查询参数 */
 export interface PaginatedQuery {
   first?: number;
   max?: number;
 }
 
+/** 客户端列表查询参数 */
 export interface ClientQuery extends PaginatedQuery {
   clientId?: string;
   viewableOnly?: boolean;
@@ -34,6 +36,7 @@ export interface ClientQuery extends PaginatedQuery {
   q?: string;
 }
 
+/** 授权资源查询参数 */
 export interface ResourceQuery extends PaginatedQuery {
   id?: string;
   name?: string;
@@ -43,6 +46,7 @@ export interface ResourceQuery extends PaginatedQuery {
   deep?: boolean;
 }
 
+/** 授权策略查询参数 */
 export interface PolicyQuery extends PaginatedQuery {
   id?: string;
   name?: string;
@@ -54,6 +58,7 @@ export interface PolicyQuery extends PaginatedQuery {
   fields?: string;
 }
 
+/** 客户端 Admin 资源：OAuth/OIDC/SAML 客户端 CRUD、角色、Scope、会话、授权服务（UMA）及证书管理。 */
 export class Clients extends Resource<{ realm?: string }> {
   /**
    * Clients v2 API - New versioned API with OpenAPI-generated client.
@@ -61,16 +66,19 @@ export class Clients extends Resource<{ realm?: string }> {
   #v2: ClientsV2;
   #client: KeycloakAdminClient;
 
+  /** 查询列表 */
   public find = this.makeRequest<ClientQuery, ClientRepresentation[]>({
     method: "GET",
   });
 
+  /** 创建 */
   public create = this.makeRequest<ClientRepresentation, { id: string }>({
     method: "POST",
     returnResourceIdInLocationHeader: { field: "id" },
   });
 
   /**
+   * 单个客户端
    * Single client
    */
 
@@ -84,6 +92,7 @@ export class Clients extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 更新 */
   public update = this.makeUpdateRequest<
     { id: string },
     ClientRepresentation,
@@ -94,6 +103,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 删除 */
   public del = this.makeRequest<{ id: string }, void>({
     method: "DELETE",
     path: "/{id}",
@@ -101,6 +111,7 @@ export class Clients extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 客户端角色
    * Client roles
    */
 
@@ -114,12 +125,14 @@ export class Clients extends Resource<{ realm?: string }> {
     returnResourceIdInLocationHeader: { field: "roleName" },
   });
 
+  /** 列出客户端角色 */
   public listRoles = this.makeRequest<{ id: string }, RoleRepresentation[]>({
     method: "GET",
     path: "/{id}/roles",
     urlParamKeys: ["id"],
   });
 
+  /** 按名称获取客户端角色 */
   public findRole = this.makeRequest<
     { id: string; roleName: string },
     RoleRepresentation | null
@@ -130,6 +143,7 @@ export class Clients extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 更新客户端角色 */
   public updateRole = this.makeUpdateRequest<
     { id: string; roleName: string },
     RoleRepresentation,
@@ -140,12 +154,14 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "roleName"],
   });
 
+  /** 删除客户端角色 */
   public delRole = this.makeRequest<{ id: string; roleName: string }, void>({
     method: "DELETE",
     path: "/{id}/roles/{roleName}",
     urlParamKeys: ["id", "roleName"],
   });
 
+  /** 列出拥有指定角色的用户 */
   public findUsersWithRole = this.makeRequest<
     {
       id: string;
@@ -162,6 +178,7 @@ export class Clients extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 服务账户用户
    * Service account user
    */
 
@@ -175,6 +192,7 @@ export class Clients extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 客户端密钥
    * Client secret
    */
 
@@ -187,12 +205,14 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 使已轮换的客户端密钥失效 */
   public invalidateSecret = this.makeRequest<{ id: string }, void>({
     method: "DELETE",
     path: "/{id}/client-secret/rotated",
     urlParamKeys: ["id"],
   });
 
+  /** 生成客户端注册访问令牌 */
   public generateRegistrationAccessToken = this.makeRequest<
     { id: string },
     { registrationAccessToken: string }
@@ -202,6 +222,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 获取客户端密钥 */
   public getClientSecret = this.makeRequest<
     { id: string },
     CredentialRepresentation
@@ -212,6 +233,7 @@ export class Clients extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 客户端 Scope 关联
    * Client Scopes
    */
   public listDefaultClientScopes = this.makeRequest<
@@ -223,6 +245,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 添加默认客户端 Scope */
   public addDefaultClientScope = this.makeRequest<
     { id: string; clientScopeId: string },
     void
@@ -232,6 +255,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "clientScopeId"],
   });
 
+  /** 移除默认客户端 Scope */
   public delDefaultClientScope = this.makeRequest<
     { id: string; clientScopeId: string },
     void
@@ -241,6 +265,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "clientScopeId"],
   });
 
+  /** 列出可选客户端 Scope */
   public listOptionalClientScopes = this.makeRequest<
     { id: string },
     ClientScopeRepresentation[]
@@ -250,6 +275,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 添加可选客户端 Scope */
   public addOptionalClientScope = this.makeRequest<
     { id: string; clientScopeId: string },
     void
@@ -259,6 +285,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "clientScopeId"],
   });
 
+  /** 移除可选客户端 Scope */
   public delOptionalClientScope = this.makeRequest<
     { id: string; clientScopeId: string },
     void
@@ -269,6 +296,7 @@ export class Clients extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 协议映射器
    * Protocol Mappers
    */
 
@@ -282,6 +310,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 添加协议映射器 */
   public addProtocolMapper = this.makeUpdateRequest<
     { id: string },
     ProtocolMapperRepresentation,
@@ -292,6 +321,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 列出协议映射器 */
   public listProtocolMappers = this.makeRequest<
     { id: string },
     ProtocolMapperRepresentation[]
@@ -301,6 +331,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 按 ID 获取协议映射器 */
   public findProtocolMapperById = this.makeRequest<
     { id: string; mapperId: string },
     ProtocolMapperRepresentation
@@ -311,6 +342,7 @@ export class Clients extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 按协议类型列出协议映射器 */
   public findProtocolMappersByProtocol = this.makeRequest<
     { id: string; protocol: string },
     ProtocolMapperRepresentation[]
@@ -321,6 +353,7 @@ export class Clients extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 更新协议映射器 */
   public updateProtocolMapper = this.makeUpdateRequest<
     { id: string; mapperId: string },
     ProtocolMapperRepresentation,
@@ -331,6 +364,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "mapperId"],
   });
 
+  /** 删除协议映射器 */
   public delProtocolMapper = this.makeRequest<
     { id: string; mapperId: string },
     void
@@ -341,6 +375,7 @@ export class Clients extends Resource<{ realm?: string }> {
   });
 
   /**
+   * Scope 角色映射
    * Scope Mappings
    */
   public listScopeMappings = this.makeRequest<
@@ -352,6 +387,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 添加客户端 Scope 角色映射 */
   public addClientScopeMappings = this.makeUpdateRequest<
     { id: string; client: string },
     RoleRepresentation[],
@@ -362,6 +398,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "client"],
   });
 
+  /** 列出客户端 Scope 角色映射 */
   public listClientScopeMappings = this.makeRequest<
     { id: string; client: string },
     RoleRepresentation[]
@@ -371,6 +408,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "client"],
   });
 
+  /** 列出可分配的客户端 Scope 角色映射 */
   public listAvailableClientScopeMappings = this.makeRequest<
     { id: string; client: string },
     RoleRepresentation[]
@@ -380,6 +418,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "client"],
   });
 
+  /** 列出客户端 Scope 复合角色映射 */
   public listCompositeClientScopeMappings = this.makeRequest<
     { id: string; client: string },
     RoleRepresentation[]
@@ -389,6 +428,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "client"],
   });
 
+  /** 删除客户端 Scope 角色映射 */
   public delClientScopeMappings = this.makeUpdateRequest<
     { id: string; client: string },
     RoleRepresentation[],
@@ -399,6 +439,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "client"],
   });
 
+  /** 评估 Scope 权限映射 */
   public evaluatePermission = this.makeRequest<
     {
       id: string;
@@ -414,6 +455,7 @@ export class Clients extends Resource<{ realm?: string }> {
     queryParamKeys: ["scope"],
   });
 
+  /** 评估 Scope 下的协议映射器 */
   public evaluateListProtocolMapper = this.makeRequest<
     {
       id: string;
@@ -427,6 +469,7 @@ export class Clients extends Resource<{ realm?: string }> {
     queryParamKeys: ["scope"],
   });
 
+  /** 生成示例 SAML 响应 */
   public evaluateGenerateSamlResponse = this.makeRequest<
     { id: string; scope: string; userId: string },
     Record<string, unknown>
@@ -437,6 +480,7 @@ export class Clients extends Resource<{ realm?: string }> {
     queryParamKeys: ["scope", "userId"],
   });
 
+  /** 生成示例 Access Token */
   public evaluateGenerateAccessToken = this.makeRequest<
     { id: string; scope: string; userId: string; audience: string },
     Record<string, unknown>
@@ -447,6 +491,7 @@ export class Clients extends Resource<{ realm?: string }> {
     queryParamKeys: ["scope", "userId", "audience"],
   });
 
+  /** 生成示例 UserInfo */
   public evaluateGenerateUserInfo = this.makeRequest<
     { id: string; scope: string; userId: string },
     Record<string, unknown>
@@ -457,6 +502,7 @@ export class Clients extends Resource<{ realm?: string }> {
     queryParamKeys: ["scope", "userId"],
   });
 
+  /** 生成示例 ID Token */
   public evaluateGenerateIdToken = this.makeRequest<
     { id: string; scope: string; userId: string },
     Record<string, unknown>
@@ -467,6 +513,7 @@ export class Clients extends Resource<{ realm?: string }> {
     queryParamKeys: ["scope", "userId"],
   });
 
+  /** 添加 Realm Scope 角色映射 */
   public addRealmScopeMappings = this.makeUpdateRequest<
     { id: string },
     RoleRepresentation[],
@@ -477,6 +524,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "client"],
   });
 
+  /** 列出 Realm Scope 角色映射 */
   public listRealmScopeMappings = this.makeRequest<
     { id: string },
     RoleRepresentation[]
@@ -486,6 +534,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 列出可分配的 Realm Scope 角色映射 */
   public listAvailableRealmScopeMappings = this.makeRequest<
     { id: string },
     RoleRepresentation[]
@@ -495,6 +544,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 列出 Realm Scope 复合角色映射 */
   public listCompositeRealmScopeMappings = this.makeRequest<
     { id: string },
     RoleRepresentation[]
@@ -504,6 +554,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 删除 Realm Scope 角色映射 */
   public delRealmScopeMappings = this.makeUpdateRequest<
     { id: string },
     RoleRepresentation[],
@@ -515,6 +566,7 @@ export class Clients extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 会话管理
    * Sessions
    */
   public listSessions = this.makeRequest<
@@ -526,6 +578,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 列出离线会话 */
   public listOfflineSessions = this.makeRequest<
     { id: string; first?: number; max?: number },
     UserSessionRepresentation[]
@@ -535,6 +588,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 获取在线会话数量 */
   public getSessionCount = this.makeRequest<{ id: string }, { count: number }>({
     method: "GET",
     path: "/{id}/session-count",
@@ -542,6 +596,7 @@ export class Clients extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 授权资源服务器（UMA）
    * Resource
    */
 
@@ -554,6 +609,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 更新授权资源服务器配置 */
   public updateResourceServer = this.makeUpdateRequest<
     { id: string },
     ResourceServerRepresentation,
@@ -564,6 +620,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 列出授权资源 */
   public listResources = this.makeRequest<
     ResourceQuery,
     ResourceRepresentation[]
@@ -573,6 +630,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 创建授权资源 */
   public createResource = this.makeUpdateRequest<
     { id: string },
     ResourceRepresentation,
@@ -583,6 +641,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 获取授权资源 */
   public getResource = this.makeRequest<
     { id: string; resourceId: string },
     ResourceRepresentation
@@ -592,6 +651,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "resourceId"],
   });
 
+  /** 更新授权资源 */
   public updateResource = this.makeUpdateRequest<
     { id: string; resourceId: string },
     ResourceRepresentation,
@@ -602,6 +662,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "resourceId"],
   });
 
+  /** 删除授权资源 */
   public delResource = this.makeRequest<
     { id: string; resourceId: string },
     void
@@ -611,6 +672,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "resourceId"],
   });
 
+  /** 导入授权资源配置 */
   public importResource = this.makeUpdateRequest<
     { id: string },
     ResourceServerRepresentation
@@ -620,6 +682,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 导出授权资源配置 */
   public exportResource = this.makeRequest<
     { id: string },
     ResourceServerRepresentation
@@ -629,6 +692,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 评估授权策略 */
   public evaluateResource = this.makeUpdateRequest<
     { id: string },
     ResourceEvaluation,
@@ -640,6 +704,7 @@ export class Clients extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 授权策略
    * Policy
    */
   public listPolicies = this.makeRequest<
@@ -651,6 +716,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 按名称查找授权策略 */
   public findPolicyByName = this.makeRequest<
     { id: string; name: string },
     PolicyRepresentation
@@ -660,6 +726,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 更新策略 */
   public updatePolicy = this.makeUpdateRequest<
     { id: string; type: string; policyId: string },
     PolicyRepresentation,
@@ -670,6 +737,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "type", "policyId"],
   });
 
+  /** 创建授权策略 */
   public createPolicy = this.makeUpdateRequest<
     { id: string; type: string },
     PolicyRepresentation,
@@ -680,6 +748,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "type"],
   });
 
+  /** 按类型和 ID 获取授权策略 */
   public findOnePolicyWithType = this.makeRequest<
     { id: string; type: string; policyId: string },
     void
@@ -690,6 +759,7 @@ export class Clients extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 按 ID 获取授权策略 */
   public findOnePolicy = this.makeRequest<
     { id: string; policyId: string },
     void
@@ -700,6 +770,7 @@ export class Clients extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 列出依赖策略 */
   public listDependentPolicies = this.makeRequest<
     { id: string; policyId: string },
     PolicyRepresentation[]
@@ -709,12 +780,14 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "policyId"],
   });
 
+  /** 删除授权策略 */
   public delPolicy = this.makeRequest<{ id: string; policyId: string }, void>({
     method: "DELETE",
     path: "{id}/authz/resource-server/policy/{policyId}",
     urlParamKeys: ["id", "policyId"],
   });
 
+  /** 列出策略提供者类型 */
   public listPolicyProviders = this.makeRequest<
     { id: string },
     PolicyProviderRepresentation[]
@@ -758,6 +831,7 @@ export class Clients extends Resource<{ realm?: string }> {
   }
 
   /**
+   * 授权 Scope
    * Scopes
    */
   public listAllScopes = this.makeRequest<
@@ -769,6 +843,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 列出 Scope 关联资源 */
   public listAllResourcesByScope = this.makeRequest<
     { id: string; scopeId: string },
     ResourceRepresentation[]
@@ -778,6 +853,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "scopeId"],
   });
 
+  /** 列出 Scope 关联权限 */
   public listAllPermissionsByScope = this.makeRequest<
     { id: string; scopeId: string },
     PolicyRepresentation[]
@@ -787,6 +863,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "scopeId"],
   });
 
+  /** 列出资源关联权限 */
   public listPermissionsByResource = this.makeRequest<
     { id: string; resourceId: string },
     PolicyRepresentation[]
@@ -796,6 +873,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "resourceId"],
   });
 
+  /** 列出资源关联 Scope */
   public listScopesByResource = this.makeRequest<
     { id: string; resourceName: string },
     { id: string; name: string }[]
@@ -805,6 +883,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "resourceName"],
   });
 
+  /** 列出 Scope 权限 */
   public listPermissionScope = this.makeRequest<
     {
       id: string;
@@ -819,6 +898,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 创建授权 Scope */
   public createAuthorizationScope = this.makeUpdateRequest<
     { id: string },
     ScopeRepresentation
@@ -828,6 +908,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 更新授权 Scope */
   public updateAuthorizationScope = this.makeUpdateRequest<
     { id: string; scopeId: string },
     ScopeRepresentation
@@ -837,6 +918,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "scopeId"],
   });
 
+  /** 获取授权 Scope */
   public getAuthorizationScope = this.makeRequest<
     { id: string; scopeId: string },
     ScopeRepresentation
@@ -846,6 +928,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "scopeId"],
   });
 
+  /** 删除授权 Scope */
   public delAuthorizationScope = this.makeRequest<
     { id: string; scopeId: string },
     void
@@ -856,6 +939,7 @@ export class Clients extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 授权权限
    * Permissions
    */
   public findPermissions = this.makeRequest<
@@ -872,6 +956,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 创建权限 */
   public createPermission = this.makeUpdateRequest<
     { id: string; type: string },
     PolicyRepresentation,
@@ -882,6 +967,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "type"],
   });
 
+  /** 更新权限 */
   public updatePermission = this.makeUpdateRequest<
     { id: string; type: string; permissionId: string },
     PolicyRepresentation,
@@ -892,6 +978,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "type", "permissionId"],
   });
 
+  /** 删除权限 */
   public delPermission = this.makeRequest<
     { id: string; type: string; permissionId: string },
     void
@@ -901,6 +988,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "type", "permissionId"],
   });
 
+  /** 按 ID 获取权限 */
   public findOnePermission = this.makeRequest<
     { id: string; type: string; permissionId: string },
     PolicyRepresentation | undefined
@@ -910,6 +998,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "type", "permissionId"],
   });
 
+  /** 获取权限关联 Scope */
   public getAssociatedScopes = this.makeRequest<
     { id: string; permissionId: string },
     { id: string; name: string }[]
@@ -919,6 +1008,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "permissionId"],
   });
 
+  /** 获取权限关联资源 */
   public getAssociatedResources = this.makeRequest<
     { id: string; permissionId: string },
     { _id: string; name: string }[]
@@ -928,6 +1018,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "permissionId"],
   });
 
+  /** 获取权限关联策略 */
   public getAssociatedPolicies = this.makeRequest<
     { id: string; permissionId: string },
     PolicyRepresentation[]
@@ -937,6 +1028,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "permissionId"],
   });
 
+  /** 获取离线会话数量 */
   public getOfflineSessionCount = this.makeRequest<
     { id: string },
     { count: number }
@@ -946,6 +1038,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 获取客户端安装配置 */
   public getInstallationProviders = this.makeRequest<
     { id: string; providerId: string },
     string
@@ -955,6 +1048,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "providerId"],
   });
 
+  /** 推送令牌吊销 */
   public pushRevocation = this.makeRequest<{ id: string }, GlobalRequestResult>(
     {
       method: "POST",
@@ -963,12 +1057,14 @@ export class Clients extends Resource<{ realm?: string }> {
     },
   );
 
+  /** 注册集群节点 */
   public addClusterNode = this.makeRequest<{ id: string; node: string }, void>({
     method: "POST",
     path: "/{id}/nodes",
     urlParamKeys: ["id"],
   });
 
+  /** 删除集群节点 */
   public deleteClusterNode = this.makeRequest<
     { id: string; node: string },
     void
@@ -978,6 +1074,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "node"],
   });
 
+  /** 测试集群节点可用性 */
   public testNodesAvailable = this.makeRequest<
     { id: string },
     GlobalRequestResult
@@ -987,6 +1084,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 获取证书/密钥信息 */
   public getKeyInfo = this.makeRequest<
     { id: string; attr: string },
     CertificateRepresentation
@@ -996,6 +1094,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "attr"],
   });
 
+  /** 生成证书/密钥 */
   public generateKey = this.makeRequest<
     { id: string; attr: string },
     CertificateRepresentation
@@ -1005,6 +1104,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "attr"],
   });
 
+  /** 下载密钥库 */
   public downloadKey = this.makeUpdateRequest<
     { id: string; attr: string },
     KeyStoreConfig,
@@ -1018,6 +1118,7 @@ export class Clients extends Resource<{ realm?: string }> {
     },
   });
 
+  /** 生成并下载密钥库 */
   public generateAndDownloadKey = this.makeUpdateRequest<
     { id: string; attr: string },
     KeyStoreConfig,
@@ -1031,6 +1132,7 @@ export class Clients extends Resource<{ realm?: string }> {
     },
   });
 
+  /** 上传密钥库 */
   public uploadKey = this.makeUpdateRequest<
     { id: string; attr: string },
     FormData
@@ -1040,6 +1142,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "attr"],
   });
 
+  /** 上传证书 */
   public uploadCertificate = this.makeUpdateRequest<
     { id: string; attr: string },
     FormData
@@ -1049,6 +1152,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "attr"],
   });
 
+  /** 更新细粒度管理权限 */
   public updateFineGrainPermission = this.makeUpdateRequest<
     { id: string },
     ManagementPermissionReference,
@@ -1059,6 +1163,7 @@ export class Clients extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 获取细粒度管理权限 */
   public listFineGrainPermissions = this.makeRequest<
     { id: string },
     ManagementPermissionReference
@@ -1078,11 +1183,12 @@ export class Clients extends Resource<{ realm?: string }> {
     });
 
     this.#client = client;
-    // Initialize v2 API
+    // 初始化 Clients v2 API
     this.#v2 = new ClientsV2(client);
   }
 
   /**
+   * 获取当前 Realm 的 Clients v2 API 端点（实验性，需 enableExperimentalApis）。
    * Get the clients v2 API endpoint for the currently configured realm.
    * Returns a fluent API builder for client operations using the new versioned API.
    *
@@ -1135,6 +1241,7 @@ export class Clients extends Resource<{ realm?: string }> {
   }
 
   /**
+   * 按名称查找协议映射器
    * Find single protocol mapper by name.
    */
   public async findProtocolMapperByName(payload: {

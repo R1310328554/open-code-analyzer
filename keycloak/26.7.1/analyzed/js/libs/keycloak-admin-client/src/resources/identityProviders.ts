@@ -6,11 +6,13 @@ import type { ManagementPermissionReference } from "../defs/managementPermission
 import type CertificateRepresentation from "../defs/certificateRepresentation.js";
 import Resource from "./resource.js";
 
+/** 分页查询参数 */
 export interface PaginatedQuery {
   first?: number;
   max?: number;
 }
 
+/** 身份提供者列表查询参数 */
 export interface IdentityProvidersQuery extends PaginatedQuery {
   search?: string;
   realmOnly?: boolean;
@@ -18,8 +20,10 @@ export interface IdentityProvidersQuery extends PaginatedQuery {
   capability?: string;
 }
 
+/** 身份提供者 Admin 资源：外部 IdP 实例、映射器与证书管理。 */
 export class IdentityProviders extends Resource<{ realm?: string }> {
   /**
+   * 身份提供者
    * Identity provider
    * https://www.keycloak.org/docs-api/11.0/rest-api/#_identity_providers_resource
    */
@@ -32,6 +36,7 @@ export class IdentityProviders extends Resource<{ realm?: string }> {
     path: "/instances",
   });
 
+  /** 创建 */
   public create = this.makeRequest<
     IdentityProviderRepresentation,
     { id: string }
@@ -41,6 +46,7 @@ export class IdentityProviders extends Resource<{ realm?: string }> {
     returnResourceIdInLocationHeader: { field: "id" },
   });
 
+  /** 按 ID 获取单个 */
   public findOne = this.makeRequest<
     { alias: string },
     IdentityProviderRepresentation | undefined
@@ -51,6 +57,7 @@ export class IdentityProviders extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 上传证书 */
   public uploadCertificate = this.makeUpdateRequest<
     {},
     FormData,
@@ -60,6 +67,7 @@ export class IdentityProviders extends Resource<{ realm?: string }> {
     path: "/upload-certificate",
   });
 
+  /** 更新 */
   public update = this.makeUpdateRequest<
     { alias: string },
     IdentityProviderRepresentation,
@@ -70,18 +78,21 @@ export class IdentityProviders extends Resource<{ realm?: string }> {
     urlParamKeys: ["alias"],
   });
 
+  /** 删除 */
   public del = this.makeRequest<{ alias: string }, void>({
     method: "DELETE",
     path: "/instances/{alias}",
     urlParamKeys: ["alias"],
   });
 
+  /** 获取 IdP 提供者工厂配置 */
   public findFactory = this.makeRequest<{ providerId: string }, any>({
     method: "GET",
     path: "/providers/{providerId}",
     urlParamKeys: ["providerId"],
   });
 
+  /** 列出 IdP 映射器 */
   public findMappers = this.makeRequest<
     { alias: string },
     IdentityProviderMapperRepresentation[]
@@ -91,6 +102,7 @@ export class IdentityProviders extends Resource<{ realm?: string }> {
     urlParamKeys: ["alias"],
   });
 
+  /** 按 ID 获取 IdP 映射器 */
   public findOneMapper = this.makeRequest<
     { alias: string; id: string },
     IdentityProviderMapperRepresentation | undefined
@@ -101,6 +113,7 @@ export class IdentityProviders extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 创建 IdP 映射器 */
   public createMapper = this.makeRequest<
     {
       alias: string;
@@ -115,6 +128,7 @@ export class IdentityProviders extends Resource<{ realm?: string }> {
     returnResourceIdInLocationHeader: { field: "id" },
   });
 
+  /** 更新 IdP 映射器 */
   public updateMapper = this.makeUpdateRequest<
     { alias: string; id: string },
     IdentityProviderMapperRepresentation,
@@ -125,12 +139,14 @@ export class IdentityProviders extends Resource<{ realm?: string }> {
     urlParamKeys: ["alias", "id"],
   });
 
+  /** 删除 IdP 映射器 */
   public delMapper = this.makeRequest<{ alias: string; id: string }, void>({
     method: "DELETE",
     path: "/instances/{alias}/mappers/{id}",
     urlParamKeys: ["alias", "id"],
   });
 
+  /** 列出 IdP 映射器类型 */
   public findMapperTypes = this.makeRequest<
     { alias: string },
     Record<string, IdentityProviderMapperTypeRepresentation>
@@ -140,6 +156,7 @@ export class IdentityProviders extends Resource<{ realm?: string }> {
     urlParamKeys: ["alias"],
   });
 
+  /** 从 URL 导入 IdP 配置 */
   public importFromUrl = this.makeRequest<
     | {
         fromUrl: string;
@@ -152,6 +169,7 @@ export class IdentityProviders extends Resource<{ realm?: string }> {
     path: "/import-config",
   });
 
+  /** 更新权限 */
   public updatePermission = this.makeUpdateRequest<
     { alias: string },
     ManagementPermissionReference,
@@ -162,6 +180,7 @@ export class IdentityProviders extends Resource<{ realm?: string }> {
     urlParamKeys: ["alias"],
   });
 
+  /** 获取细粒度管理权限 */
   public listPermissions = this.makeRequest<
     { alias: string },
     ManagementPermissionReference
@@ -171,6 +190,7 @@ export class IdentityProviders extends Resource<{ realm?: string }> {
     urlParamKeys: ["alias"],
   });
 
+  /** 重新加载 IdP 签名密钥 */
   public reloadKeys = this.makeRequest<{ alias: string }, boolean>({
     method: "GET",
     path: "/instances/{alias}/reload-keys",

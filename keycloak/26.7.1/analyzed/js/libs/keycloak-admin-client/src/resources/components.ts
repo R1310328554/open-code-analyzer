@@ -3,6 +3,7 @@ import type ComponentRepresentation from "../defs/componentRepresentation.js";
 import type ComponentTypeRepresentation from "../defs/componentTypeRepresentation.js";
 import type { KeycloakAdminClient } from "../client.js";
 
+/** 组件查询参数 */
 export interface ComponentQuery {
   name?: string;
   parent?: string;
@@ -10,6 +11,7 @@ export interface ComponentQuery {
   providerId?: string;
 }
 
+/** 组件 Admin 资源：Realm 可扩展组件（User Federation、LDAP Mapper 等）CRUD。 */
 export class Components extends Resource<{ realm?: string }> {
   /**
    * components
@@ -20,11 +22,13 @@ export class Components extends Resource<{ realm?: string }> {
     method: "GET",
   });
 
+  /** 创建 */
   public create = this.makeRequest<ComponentRepresentation, { id: string }>({
     method: "POST",
     returnResourceIdInLocationHeader: { field: "id" },
   });
 
+  /** 按 ID 获取单个 */
   public findOne = this.makeRequest<
     { id: string },
     ComponentRepresentation | undefined
@@ -35,6 +39,7 @@ export class Components extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 更新 */
   public update = this.makeUpdateRequest<
     { id: string },
     ComponentRepresentation,
@@ -45,12 +50,14 @@ export class Components extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 删除 */
   public del = this.makeRequest<{ id: string }, void>({
     method: "DELETE",
     path: "/{id}",
     urlParamKeys: ["id"],
   });
 
+  /** 列出子组件类型 */
   public listSubComponents = this.makeRequest<
     { id: string; type: string },
     ComponentTypeRepresentation[]

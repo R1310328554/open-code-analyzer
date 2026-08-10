@@ -3,6 +3,7 @@ import type { ServerInfoRepresentation } from "../defs/serverInfoRepesentation.j
 import type KeycloakAdminClient from "../index.js";
 import type EffectiveMessageBundleRepresentation from "../defs/effectiveMessageBundleRepresentation.js";
 
+/** 消息包查询参数 */
 export interface MessageBundleQuery {
   realm: string;
   theme?: string;
@@ -11,6 +12,7 @@ export interface MessageBundleQuery {
   source?: boolean;
 }
 
+/** 服务器信息 Admin 资源：Keycloak 版本/特性及主题消息包查询。 */
 export class ServerInfo extends Resource {
   constructor(client: KeycloakAdminClient) {
     super(client, {
@@ -19,11 +21,13 @@ export class ServerInfo extends Resource {
     });
   }
 
+  /** 查询列表 */
   public find = this.makeRequest<{}, ServerInfoRepresentation>({
     method: "GET",
     path: "/admin/serverinfo",
   });
 
+  /** 获取有效消息包 */
   public findEffectiveMessageBundles = this.makeRequest<
     MessageBundleQuery,
     EffectiveMessageBundleRepresentation[]

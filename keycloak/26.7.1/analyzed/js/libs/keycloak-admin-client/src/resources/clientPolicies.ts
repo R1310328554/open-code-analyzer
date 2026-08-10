@@ -4,6 +4,7 @@ import type ClientProfilesRepresentation from "../defs/clientProfilesRepresentat
 import type ClientPoliciesRepresentation from "../defs/clientPoliciesRepresentation.js";
 
 /**
+ * 客户端策略 Admin 资源：Client Profiles 与 Client Policies（客户端注册/认证策略）。
  * https://www.keycloak.org/docs-api/15.0/rest-api/#_client_registration_policy_resource
  */
 export class ClientPolicies extends Resource<{ realm?: string }> {
@@ -17,7 +18,7 @@ export class ClientPolicies extends Resource<{ realm?: string }> {
     });
   }
 
-  /* Client Profiles */
+  /* 客户端配置集 — Client Profiles */
 
   public listProfiles = this.makeRequest<
     { includeGlobalProfiles?: boolean },
@@ -31,12 +32,13 @@ export class ClientPolicies extends Resource<{ realm?: string }> {
     },
   });
 
+  /** 创建或替换客户端配置集 */
   public createProfiles = this.makeRequest<ClientProfilesRepresentation, void>({
     method: "PUT",
     path: "/profiles",
   });
 
-  /* Client Policies */
+  /* 客户端策略 — Client Policies */
 
   public listPolicies = this.makeRequest<
     { includeGlobalPolicies?: boolean },
@@ -50,6 +52,7 @@ export class ClientPolicies extends Resource<{ realm?: string }> {
     },
   });
 
+  /** 更新策略 */
   public updatePolicy = this.makeRequest<ClientPoliciesRepresentation, void>({
     method: "PUT",
     path: "/policies",

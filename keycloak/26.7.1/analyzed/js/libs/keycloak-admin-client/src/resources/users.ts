@@ -18,10 +18,12 @@ import type IssuedUserVerifiableCredentialRepresentation from "../defs/issuedUse
 import type VerifiableCredentialOfferActionConfigRepresentation from "../defs/verifiableCredentialOfferActionConfigRepresentation.js";
 import Resource from "./resource.js";
 
+/** 搜索查询参数 */
 export interface SearchQuery {
   search?: string;
 }
 
+/** 分页参数 */
 export interface PaginationQuery {
   first?: number;
   max?: number;
@@ -35,22 +37,27 @@ interface UserBaseQuery {
   q?: string;
 }
 
+/** 用户列表查询参数 */
 export interface UserQuery extends PaginationQuery, SearchQuery, UserBaseQuery {
   exact?: boolean;
   [key: string]: string | number | undefined | boolean;
 }
 
+/** 用户 Admin 资源：用户 CRUD、角色/组映射、凭据、联邦身份、会话、可验证凭据及 Profile。 */
 export class Users extends Resource<{ realm?: string }> {
+  /** 查询列表 */
   public find = this.makeRequest<UserQuery, UserRepresentation[]>({
     method: "GET",
   });
 
+  /** 创建 */
   public create = this.makeRequest<UserRepresentation, { id: string }>({
     method: "POST",
     returnResourceIdInLocationHeader: { field: "id" },
   });
 
   /**
+   * 单个用户/组
    * Single user
    */
 
@@ -64,6 +71,7 @@ export class Users extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 更新 */
   public update = this.makeUpdateRequest<
     { id: string },
     UserRepresentation,
@@ -74,22 +82,26 @@ export class Users extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 删除 */
   public del = this.makeRequest<{ id: string }, void>({
     method: "DELETE",
     path: "/{id}",
     urlParamKeys: ["id"],
   });
 
+  /** 统计数量 */
   public count = this.makeRequest<UserBaseQuery & SearchQuery, number>({
     method: "GET",
     path: "/count",
   });
 
+  /** 获取用户 Profile 配置 */
   public getProfile = this.makeRequest<{}, UserProfileConfig>({
     method: "GET",
     path: "/profile",
   });
 
+  /** 更新用户 Profile 配置 */
   public updateProfile = this.makeRequest<UserProfileConfig, UserProfileConfig>(
     {
       method: "PUT",
@@ -97,6 +109,7 @@ export class Users extends Resource<{ realm?: string }> {
     },
   );
 
+  /** 获取用户 Profile 元数据 */
   public getProfileMetadata = this.makeRequest<{}, UserProfileMetadata>({
     method: "GET",
     path: "/profile/metadata",
@@ -115,6 +128,7 @@ export class Users extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 添加 Realm 角色映射 */
   public addRealmRoleMappings = this.makeRequest<
     { id: string; roles: RoleMappingPayload[] },
     void
@@ -125,6 +139,7 @@ export class Users extends Resource<{ realm?: string }> {
     payloadKey: "roles",
   });
 
+  /** 列出 Realm 角色映射 */
   public listRealmRoleMappings = this.makeRequest<
     { id: string },
     RoleRepresentation[]
@@ -134,6 +149,7 @@ export class Users extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 删除 Realm 角色映射 */
   public delRealmRoleMappings = this.makeRequest<
     { id: string; roles: RoleMappingPayload[] },
     void
@@ -144,6 +160,7 @@ export class Users extends Resource<{ realm?: string }> {
     payloadKey: "roles",
   });
 
+  /** 列出可分配 Realm 角色映射 */
   public listAvailableRealmRoleMappings = this.makeRequest<
     { id: string },
     RoleRepresentation[]
@@ -153,7 +170,8 @@ export class Users extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
-  // Get effective realm-level role mappings This will recurse all composite roles to get the result.
+  // 获取有效 Realm 级角色映射（递归展开复合角色）
+  /** 列出 Realm 复合角色映射 */
   public listCompositeRealmRoleMappings = this.makeRequest<
     { id: string },
     RoleRepresentation[]
@@ -164,6 +182,7 @@ export class Users extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 客户端角色映射
    * Client role mappings
    * https://www.keycloak.org/docs-api/11.0/rest-api/#_client_role_mappings_resource
    */
@@ -177,6 +196,7 @@ export class Users extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "clientUniqueId"],
   });
 
+  /** 添加客户端角色映射 */
   public addClientRoleMappings = this.makeRequest<
     { id: string; clientUniqueId: string; roles: RoleMappingPayload[] },
     void
@@ -187,6 +207,7 @@ export class Users extends Resource<{ realm?: string }> {
     payloadKey: "roles",
   });
 
+  /** 删除客户端角色映射 */
   public delClientRoleMappings = this.makeRequest<
     { id: string; clientUniqueId: string; roles: RoleMappingPayload[] },
     void
@@ -197,6 +218,7 @@ export class Users extends Resource<{ realm?: string }> {
     payloadKey: "roles",
   });
 
+  /** 列出可分配客户端角色映射 */
   public listAvailableClientRoleMappings = this.makeRequest<
     { id: string; clientUniqueId: string },
     RoleRepresentation[]
@@ -206,6 +228,7 @@ export class Users extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "clientUniqueId"],
   });
 
+  /** 列出客户端复合角色映射 */
   public listCompositeClientRoleMappings = this.makeRequest<
     { id: string; clientUniqueId: string },
     RoleRepresentation[]
@@ -242,6 +265,7 @@ export class Users extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 用户组关联
    * Group
    */
 
@@ -255,6 +279,7 @@ export class Users extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 将用户加入组 */
   public addToGroup = this.makeRequest<{ id: string; groupId: string }, string>(
     {
       method: "PUT",
@@ -263,6 +288,7 @@ export class Users extends Resource<{ realm?: string }> {
     },
   );
 
+  /** 将用户从组移除 */
   public delFromGroup = this.makeRequest<
     { id: string; groupId: string },
     string
@@ -272,6 +298,7 @@ export class Users extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "groupId"],
   });
 
+  /** 统计用户所属组数量 */
   public countGroups = this.makeRequest<
     { id: string; search?: string },
     { count: number }
@@ -282,6 +309,7 @@ export class Users extends Resource<{ realm?: string }> {
   });
 
   /**
+   * 联邦身份
    * Federated Identity
    */
 
@@ -294,6 +322,7 @@ export class Users extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 添加联邦身份关联 */
   public addToFederatedIdentity = this.makeRequest<
     {
       id: string;
@@ -308,6 +337,7 @@ export class Users extends Resource<{ realm?: string }> {
     payloadKey: "federatedIdentity",
   });
 
+  /** 删除联邦身份关联 */
   public delFromFederatedIdentity = this.makeRequest<
     { id: string; federatedIdentityId: string },
     void
@@ -339,6 +369,7 @@ export class Users extends Resource<{ realm?: string }> {
     payloadKey: "credential",
   });
 
+  /** 获取用户存储支持的凭据类型 */
   public getUserStorageCredentialTypes = this.makeRequest<
     { id: string },
     string[]
@@ -386,7 +417,8 @@ export class Users extends Resource<{ realm?: string }> {
     headers: { "content-type": "text/plain" },
   });
 
-  // Move a credential to a position behind another credential
+  // 将凭据移动到另一凭据之后
+  /** 将凭据下移至指定凭据之后 */
   public moveCredentialPositionDown = this.makeRequest<
     {
       id: string;
@@ -400,7 +432,8 @@ export class Users extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "credentialId", "newPreviousCredentialId"],
   });
 
-  // Move a credential to a first position in the credentials list of the user
+  // 将凭据移至用户凭据列表首位
+  /** 将凭据移至列表首位 */
   public moveCredentialPositionUp = this.makeRequest<
     {
       id: string;
@@ -475,6 +508,7 @@ export class Users extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 模拟登录指定用户 */
   public impersonation = this.makeUpdateRequest<
     { id: string },
     { user: string; realm: string },
@@ -595,6 +629,7 @@ export class Users extends Resource<{ realm?: string }> {
     urlParamKeys: ["id", "credentialId"],
   });
 
+  /** 获取用户未托管属性 */
   public getUnmanagedAttributes = this.makeRequest<
     { id: string },
     Record<string, string[]>
