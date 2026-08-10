@@ -372,3 +372,17 @@ store/stage/scan.go
 store/stage/stage.go
 store/stage/type.go
 store/step/scan.go
+store/step/step.go
+store/store.go
+store/template/scan.go
+store/template/template.go
+store/template/template_oss.go
+store/user/scan.go
+store/user/user.go
+trigger/change.go
+trigger/cron/cron.go
+trigger/cron/cron_oss.go
+trigger/dag/dag.go
+trigger/skip.go
+trigger/trigger.go
+version/version.go
