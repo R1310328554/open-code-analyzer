@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:26:58Z",
-  "files": [
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserGroupMembershipAddedWorkflowEventProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserGroupMembershipRemovedWorkflowEventFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserGroupMembershipRemovedWorkflowEventProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserRoleGrantedWorkflowEventFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserRoleGrantedWorkflowEventProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserRoleRevokedWorkflowEventFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/events/UserRoleRevokedWorkflowEventProvider.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/expression/AbstractBooleanEvaluator.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/expression/ConditionEvaluator.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/expression/ConditionNameCollector.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/expression/ConditionParserUtil.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/expression/ConditionTypeCollector.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/expression/ErrorListener.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/expression/EvaluatorUtils.java",
-    "model/jpa/src/main/java/org/keycloak/models/workflow/expression/EventEvaluator.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4168,
-  "done": 1815
+  "done": 1830
 }

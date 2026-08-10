@@ -1783,3 +1783,18 @@
 2026-08-10T08:28:39Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/events/UserFedIdentityRemovedWorkflowEventFactory.java wave61a workflow conditions + early event providers
 2026-08-10T08:28:39Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/events/UserFedIdentityRemovedWorkflowEventProvider.java wave61a workflow conditions + early event providers
 2026-08-10T08:28:39Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/events/UserGroupMembershipAddedWorkflowEventFactory.java wave61a workflow conditions + early event providers
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/events/UserGroupMembershipAddedWorkflowEventProvider.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/events/UserGroupMembershipRemovedWorkflowEventFactory.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/events/UserGroupMembershipRemovedWorkflowEventProvider.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/events/UserRoleGrantedWorkflowEventFactory.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/events/UserRoleGrantedWorkflowEventProvider.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/events/UserRoleRevokedWorkflowEventFactory.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/events/UserRoleRevokedWorkflowEventProvider.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/expression/AbstractBooleanEvaluator.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/expression/ConditionEvaluator.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/expression/ConditionNameCollector.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/expression/ConditionParserUtil.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/expression/ConditionTypeCollector.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/expression/ErrorListener.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/expression/EvaluatorUtils.java wave61b workflow events + expression evaluators
+2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/expression/EventEvaluator.java wave61b workflow events + expression evaluators
