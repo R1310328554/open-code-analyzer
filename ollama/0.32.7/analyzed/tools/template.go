@@ -1,3 +1,4 @@
+// 聊天模板解析：从 Go template AST 提取工具调用标签。
 package tools
 
 import (
@@ -9,6 +10,8 @@ import (
 	"text/template/parse"
 )
 
+// parseTag 从模板中 .ToolCalls 分支后的首个文本节点提取工具调用标签；
+// 未找到时返回 "{" 表示尝试解析 JSON 对象。
 // parseTag finds the tool calling tag from a Go template
 // often <tool_call> [TOOL_CALL] or similar by finding the
 // first text node after .ToolCalls and returning the content
@@ -33,6 +36,7 @@ func parseTag(tmpl *template.Template) string {
 	tag := string(tn.Text)
 	tag = strings.ReplaceAll(tag, "\r\n", "\n")
 
+	// 截断 "{" 之后避免误解析；无标签时保留 "{" 前缀。
 	// avoid parsing { onwards as this may be a tool call
 	// however keep '{' as a prefix if there is no tag
 	// so that all json objects will be attempted to
@@ -46,6 +50,7 @@ func parseTag(tmpl *template.Template) string {
 	return tag
 }
 
+// findToolCallNode 递归查找引用 .ToolCalls 的 IfNode。
 // findToolCallNode searches for and returns an IfNode with .ToolCalls
 func findToolCallNode(nodes []parse.Node) *parse.IfNode {
 	isToolCallsNode := func(n *parse.IfNode) bool {
@@ -67,6 +72,7 @@ func findToolCallNode(nodes []parse.Node) *parse.IfNode {
 			if isToolCallsNode(n) {
 				return n
 			}
+			// 递归搜索嵌套 IfNode。
 			// Recursively search in nested IfNodes
 			if result := findToolCallNode(n.List.Nodes); result != nil {
 				return result
@@ -103,12 +109,14 @@ func findToolCallNode(nodes []parse.Node) *parse.IfNode {
 	return nil
 }
 
+// findTextNode 深度优先查找首个非空白 TextNode，遇模板结构即停止。
 // findTextNode does a depth-first search for the first text content in nodes,
 // stopping at template constructs to avoid parsing text after the tool calls
 func findTextNode(nodes []parse.Node) *parse.TextNode {
 	for _, node := range nodes {
 		switch n := node.(type) {
 		case *parse.TextNode:
+			// 跳过仅含空白的文本节点。
 			// skip whitespace-only text nodes
 			if len(bytes.TrimSpace(n.Text)) == 0 {
 				continue

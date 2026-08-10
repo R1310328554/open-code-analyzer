@@ -1,3 +1,4 @@
+// HF block-FP8 转换规划：解码 E4M3 权重并按策略量化。
 package create
 
 import (
@@ -7,12 +8,14 @@ import (
 	"strings"
 )
 
+// planBlockFP8 规划 HF block-FP8 源：MLX 无 FP8 类型，权重经块 scale 解码为 BF16 再量化。
 // planBlockFP8 plans an HF block-FP8 source. MLX has no FP8 tensor type, so
 // every FP8 weight is decoded to BF16 using its block scale and then quantized
 // to the target (mxfp8); a weight the policy declines is still decoded and kept
 // at BF16 (it is never stored as FP8). Everything else passes through at source
 // precision.
 func planBlockFP8(inv Inventory, target string, policy quantizePolicy) ([]BlobSpec, error) {
+	// 每个 FP8 权重的 scale 伴生张量并入同一 blob，不单独输出。
 	// The scale companion of each FP8 weight is folded into that weight's
 	// blob, so it is not emitted on its own.
 	consumed := make(map[string]bool)
@@ -34,6 +37,7 @@ func planBlockFP8(inv Inventory, target string, policy quantizePolicy) ([]BlobSp
 		t := inv.Tensors[name]
 
 		if isFP8Weight(inv, name) {
+			// 离散 per-expert FP8 权重由 planFP8ExpertGroup 堆叠解码；已堆叠 3D 张量走单张量路径。
 			// Disjoint per-expert FP8 weights are stacked, decoded, and
 			// quantized together by planFP8ExpertGroup; an already-stacked (3D)
 			// FP8 expert tensor falls through to the single-tensor decode below.
@@ -87,6 +91,7 @@ func planBlockFP8(inv Inventory, target string, policy quantizePolicy) ([]BlobSp
 	return specs, nil
 }
 
+// planFP8ExpertGroup 将一层离散 expert FP8 权重堆叠为 [experts,out,in] 并解码量化。
 // planFP8ExpertGroup packs a layer's disjoint per-expert block-FP8 weights into
 // one blob: the experts of each projection are stacked into [experts, out, in],
 // dequantized from FP8 with their block scales, and quantized per the policy.
@@ -118,6 +123,7 @@ func planFP8ExpertGroup(groupPrefix string, tensors []SourceTensor, inv Inventor
 
 		base := experts[0].weight
 		baseScale := experts[0].scale
+		// Sources 为 N 个 weight 后接 N 个 scale，顺序与 TransformDecodeStackFP8 一致。
 		// Sources are the N weights followed by the N scales, in expert order,
 		// matching what TransformDecodeStackFP8 expects.
 		sources := make([]SourceTensor, 0, 2*len(experts))
@@ -150,6 +156,7 @@ func planFP8ExpertGroup(groupPrefix string, tensors []SourceTensor, inv Inventor
 	return homogeneousExpertBlobs(groupPrefix, tensorSpecs), nil
 }
 
+// isFP8Weight 判断是否为带块 scale 伴生张量的 F8_E4M3 权重。
 // isFP8Weight reports whether name is an F8_E4M3 weight with a block-scale
 // companion (the form that must be decoded before use).
 func isFP8Weight(inv Inventory, name string) bool {
@@ -161,6 +168,7 @@ func isFP8Weight(inv Inventory, name string) bool {
 	return ok
 }
 
+// fp8ScaleFor 返回 FP8 权重的块 scale 伴生名，优先 _scale_inv。
 // fp8ScaleFor returns the block-scale companion name for an FP8 weight,
 // preferring "_scale_inv" over "_scale" (matching the source conventions).
 func fp8ScaleFor(inv Inventory, weightName string) (string, bool) {

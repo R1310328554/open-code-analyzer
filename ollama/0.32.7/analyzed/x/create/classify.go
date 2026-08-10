@@ -1,3 +1,4 @@
+// 源模型分类：浮点/block-FP8/已量化及量化策略解析。
 package create
 
 import (
@@ -7,15 +8,18 @@ import (
 	"github.com/ollama/ollama/x/quant"
 )
 
+// SourceKind 表示 safetensors 源模型的总体 dtype 类别。
 // SourceKind is the overarching dtype for a given safetensors model
 type SourceKind int
 
+// 源模型种类：浮点可量化、block-FP8 自动转 mxfp8、已量化直通。
 const (
 	SourceFloat        SourceKind = iota // bf16/fp16/fp32 — quantizable on request
 	SourceBlockFP8                       // HF block-FP8 — auto-converted to mxfp8
 	SourcePrequantized                   // already quantized — copied through
 )
 
+// String 返回源种类的可读名称。
 func (k SourceKind) String() string {
 	switch k {
 	case SourceFloat:
@@ -29,6 +33,7 @@ func (k SourceKind) String() string {
 	}
 }
 
+// Classification 记录源模型种类与实际应用的量化类型。
 // Classification is the decision about a source model: its kind and the
 // quantization that will actually be applied. An empty Quantize means the
 // tensors are stored at source precision (no quantization).
@@ -37,6 +42,7 @@ type Classification struct {
 	Quantize string
 }
 
+// Classify 判定源模型种类并解析有效量化，拒绝不兼容请求。
 // Classify decides a source model's kind and resolves the effective
 // quantization from the user's requested type, rejecting requests that are not
 // allowed for the kind.
@@ -77,6 +83,7 @@ func Classify(inv Inventory, requested string) (Classification, error) {
 	return Classification{}, fmt.Errorf("could not classify source model in %s", inv.Dir)
 }
 
+// normalizeRequested 校验用户 quantize 参数并返回规范形式。
 // normalizeRequested validates the user's quantize value and returns its
 // canonical form ("" for no quantization).
 func normalizeRequested(requested string) (string, error) {
@@ -90,6 +97,7 @@ func normalizeRequested(requested string) (string, error) {
 	return c, nil
 }
 
+// detectKind 仅凭张量名/dtype/config 区分浮点、block-FP8 与已量化。
 // detectKind sorts a source into Float, BlockFP8, or Prequantized using only
 // the inventory's tensor names, dtypes, and config. Prequantized is detected
 // from the tensors themselves, so a model whose quantization config sidecar is
@@ -104,6 +112,7 @@ func detectKind(inv Inventory) SourceKind {
 		case strings.HasSuffix(name, ".weight_packed"):
 			hasPacked = true
 		case strings.HasSuffix(name, ".weight_scale"):
+			// NVFP4 块 scale 附于 packed U8 权重；block-FP8 的 weight 为 F8_E4M3 以区分。
 			// An NVFP4 per-block scale sits on a packed (U8) weight. A
 			// block-FP8 source also has a scale companion, but its weight is
 			// F8_E4M3 — so the base weight's dtype disambiguates the two.
@@ -126,6 +135,7 @@ func detectKind(inv Inventory) SourceKind {
 	}
 }
 
+// firstUnsupportedFP8 返回首个 F8_E5M2 权重名（仅支持 E4M3）。
 // firstUnsupportedFP8 returns the name of the first F8_E5M2 weight in the
 // source, if any. We decode only E4M3, so an E5M2 source must be rejected
 // explicitly rather than silently mishandled.
@@ -138,6 +148,7 @@ func firstUnsupportedFP8(inv Inventory) (string, bool) {
 	return "", false
 }
 
+// isPackedDtype 判断是否为 packed 量化权重的 dtype。
 func isPackedDtype(dtype string) bool {
 	switch strings.ToUpper(dtype) {
 	case "U8", "U32": // current .weight_scale producers ship U8; U32 covers a future word-packed source
@@ -147,6 +158,7 @@ func isPackedDtype(dtype string) bool {
 	}
 }
 
+// isE4M3Dtype 判断是否为 F8_E4M3 系列 dtype。
 func isE4M3Dtype(dtype string) bool {
 	switch strings.ToUpper(dtype) {
 	case "F8_E4M3", "F8_E4M3FN":
@@ -156,6 +168,7 @@ func isE4M3Dtype(dtype string) bool {
 	}
 }
 
+// isE5M2Dtype 判断是否为 F8_E5M2 系列 dtype。
 func isE5M2Dtype(dtype string) bool {
 	switch strings.ToUpper(dtype) {
 	case "F8_E5M2", "F8_E5M2FNUZ":

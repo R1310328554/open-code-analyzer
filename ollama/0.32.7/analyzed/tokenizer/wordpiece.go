@@ -1,3 +1,4 @@
+// WordPiece 分词器：BERT 风格最长匹配子词，支持 CJK 单字切分。
 package tokenizer
 
 import (
@@ -9,15 +10,18 @@ import (
 	"github.com/ollama/ollama/logutil"
 )
 
+// WordPiece 持有词表与是否小写化选项。
 type WordPiece struct {
 	vocab     *Vocabulary
 	lowercase bool
 }
 
+// ggmlPrefix 为 GGML 词表中表示词边界的 ▁ 前缀（非原始 ## 子词标记）。
 // ggmlPrefix is the prefix used by GGML vocabularies to indicate word boundaries.
 // this differs from original word piece which uses "##" to indicate subwords.
 const ggmlPrefix = "▁"
 
+// wordPieceReplacer 规范化标点与缩写的空格。
 var wordPieceReplacer = strings.NewReplacer(
 	" .", ".",
 	" ?", "?",
@@ -32,6 +36,7 @@ var wordPieceReplacer = strings.NewReplacer(
 	" 're", "'re",
 )
 
+// Decode 将 id 序列拼接为文本，▁ 前缀处插入空格。
 // Decode implements Tokenizer.
 func (wpm WordPiece) Decode(ids []int32) (string, error) {
 	var sb strings.Builder
@@ -54,6 +59,7 @@ func (wpm WordPiece) Decode(ids []int32) (string, error) {
 	return sb.String(), nil
 }
 
+// words 将字符串切分为词，CJK 字符单独成词。
 // words splits a string into words, treating CJK characters as separate words.
 // TODO: this is specifically for BERT and may need to be adjusted or refactored for other models.
 func (wpm WordPiece) words(s string) iter.Seq[string] {
@@ -76,6 +82,7 @@ func (wpm WordPiece) words(s string) iter.Seq[string] {
 		}
 
 		for w := range strings.FieldsFuncSeq(string(runes), unicode.IsSpace) {
+			// 保留标点并单独成段。
 			// split on but keep punctuation
 			var start int
 			for start < len(w) {
@@ -96,6 +103,7 @@ func (wpm WordPiece) words(s string) iter.Seq[string] {
 	}
 }
 
+// Encode 对每个词做最长前缀 WordPiece 匹配，未知词用 unk。
 // Encode implements Tokenizer.
 func (wpm WordPiece) Encode(s string, addSpecial bool) ([]int32, error) {
 	var ids []int32
@@ -127,6 +135,7 @@ func (wpm WordPiece) Encode(s string, addSpecial bool) ([]int32, error) {
 			}
 
 			if piece < 0 {
+				// 整词无法切分时标记为未知 token。
 				// Unknown token
 				pieces = pieces[:0]
 				break
@@ -151,11 +160,13 @@ func (wpm WordPiece) Encode(s string, addSpecial bool) ([]int32, error) {
 	return ids, nil
 }
 
+// Is 判断 id 是否为特殊 token。
 // Is implements Tokenizer.
 func (wpm WordPiece) Is(id int32, special Special) bool {
 	return wpm.vocab.Is(id, special)
 }
 
+// Vocabulary 返回底层词表。
 // Vocabulary implements Tokenizer.
 func (wpm WordPiece) Vocabulary() *Vocabulary {
 	return wpm.vocab
@@ -163,6 +174,7 @@ func (wpm WordPiece) Vocabulary() *Vocabulary {
 
 var _ Tokenizer = (*WordPiece)(nil)
 
+// NewWordPiece 构造 WordPiece 分词器。
 func NewWordPiece(vocab *Vocabulary, lowercase bool) WordPiece {
 	return WordPiece{
 		vocab:     vocab,

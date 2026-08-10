@@ -1,3 +1,4 @@
+// SentencePiece 分词器：基于词表分数的贪心合并编码与 ▁ 空格约定。
 package tokenizer
 
 import (
@@ -10,8 +11,10 @@ import (
 	"github.com/ollama/ollama/logutil"
 )
 
+// spmWhitespaceSep 为 SentencePiece 中表示空格的前缀字符。
 const spmWhitespaceSep = "▁"
 
+// SentencePiece 持有词表与最长 token 长度上限。
 type SentencePiece struct {
 	maxTokenLen int
 	vocab       *Vocabulary
@@ -19,10 +22,12 @@ type SentencePiece struct {
 
 var _ Tokenizer = (*SentencePiece)(nil)
 
+// Vocabulary 返回底层词表。
 func (spm SentencePiece) Vocabulary() *Vocabulary {
 	return spm.vocab
 }
 
+// NewSentencePiece 统计 token 类型分布并计算最大 token 字节长度。
 func NewSentencePiece(vocab *Vocabulary) SentencePiece {
 	logutil.Trace("Tokens", "num tokens", len(vocab.Values), "vals", vocab.Values[:5], "scores", vocab.Scores[:5], "types", vocab.Types[:5])
 
@@ -48,10 +53,12 @@ func NewSentencePiece(vocab *Vocabulary) SentencePiece {
 	}
 }
 
+// Is 判断 id 是否为指定的 BOS/EOS 等特殊 token。
 func (spm SentencePiece) Is(id int32, special Special) bool {
 	return spm.vocab.Is(id, special)
 }
 
+// Encode 先切分特殊 token，再对片段做 SPM 合并或整词/字节回退编码。
 func (spm SentencePiece) Encode(s string, addSpecial bool) ([]int32, error) {
 	fragments := []fragment{{value: s}}
 	for _, special := range spm.vocab.SpecialVocabulary() {
@@ -164,6 +171,7 @@ func (spm SentencePiece) Encode(s string, addSpecial bool) ([]int32, error) {
 					continue
 				}
 
+				// 无法匹配时回退为 <0xXX> 字节 token。
 				// Fallback to byte tokenization
 				var result []int32
 				for _, b := range []byte(token) {
@@ -189,16 +197,20 @@ func (spm SentencePiece) Encode(s string, addSpecial bool) ([]int32, error) {
 	return ids, nil
 }
 
+// candidate 表示待合并的相邻子串及其词表分数。
 type candidate struct {
 	a, b  int
 	score float32
 	size  int
 }
 
+// queue 为按分数降序的候选堆。
 type queue []*candidate
 
+// Len 返回堆中候选数量。
 func (q queue) Len() int { return len(q) }
 
+// Less 按分数降序、同分按位置升序排序。
 func (q queue) Less(i, j int) bool {
 	return (q[i].score > q[j].score) || (q[i].score == q[j].score && q[i].a < q[j].a)
 }
@@ -218,12 +230,14 @@ func (q *queue) Pop() interface{} {
 	return item
 }
 
+// Decode 将 id 序列还原为文本，▁ 转空格并解析 <0xXX> 字节 token。
 func (spm SentencePiece) Decode(ids []int32) (string, error) {
 	var sb strings.Builder
 	for _, id := range ids {
 		data := spm.vocab.Decode(id)
 		data = strings.ReplaceAll(data, spmWhitespaceSep, " ")
 
+		// 将 <0xXX> 字节 token 写回原始字节以便 runner 正确缓冲 Unicode。
 		// For tokenizer that use byte tokens like "<0xEA>"
 		// convert them to the partial unicode character
 		// so they are buffered correctly by the runner instead

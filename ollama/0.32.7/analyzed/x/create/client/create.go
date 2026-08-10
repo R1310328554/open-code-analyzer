@@ -1,6 +1,8 @@
-// Package client provides client-side model creation for safetensors-based models.
+// Package client 提供 safetensors 模型的客户端侧创建（绕过 server 导入环）。
+// Package client provides client-side model creation for safetensors-based models.// Package client provides client-side model creation for safetensors-based models.
 //
 // This package is in x/ because the safetensors model storage format is under development.
+// 同时打破导入环：server 导入 x/create，故 x/create 不可导入 server。
 // It also exists to break an import cycle: server imports x/create, so x/create
 // cannot import server. This sub-package can import server because server doesn't
 // import it.
@@ -29,9 +31,11 @@ import (
 	"github.com/ollama/ollama/x/quant"
 )
 
+// MinOllamaVersion 为 safetensors 模型所需的最低 Ollama 版本。
 // MinOllamaVersion is the minimum Ollama version required for safetensors models.
 const MinOllamaVersion = "0.19.0"
 
+// ModelfileConfig 保存从 Modelfile 提取的模板/系统/许可证等配置。
 // ModelfileConfig holds configuration extracted from a Modelfile.
 type ModelfileConfig struct {
 	Template   string
@@ -56,6 +60,7 @@ var ignoredModelfileParameters = []string{
 	"mirostat_eta",
 }
 
+// ConfigFromModelfile 从已解析 Modelfile 提取模型目录与配置。
 // ConfigFromModelfile extracts the model directory and x/create-specific
 // Modelfile configuration from a parsed Modelfile.
 func ConfigFromModelfile(modelfile *parser.Modelfile) (string, *ModelfileConfig, error) {
@@ -126,20 +131,25 @@ func ConfigFromModelfile(modelfile *parser.Modelfile) (string, *ModelfileConfig,
 	return modelDir, mfConfig, nil
 }
 
+// CreateOptions 聚合模型创建所需的全部选项。
 // CreateOptions holds all options for model creation.
 type CreateOptions struct {
 	ModelName     string
 	ModelDir      string
-	Quantize      string           // "int4", "int8", "nvfp4", "mxfp4", or "mxfp8" for quantization
-	DraftQuantize string           // optional quantization level for draft model tensors
+	Quantize      string           // 量化类型：int4/int8/nvfp4/mxfp4/mxfp8
+	// "int4", "int8", "nvfp4", "mxfp4", or "mxfp8" for quantization
+	DraftQuantize string           // draft 模型可选量化级别
+	// optional quantization level for draft model tensors
 	Modelfile     *ModelfileConfig // template/system/license/parser/renderer/parameters from Modelfile
 	BaseConfig    *model.ConfigV2
 }
 
+// CreateModel 从本地目录导入模型，直接写 blob 与 manifest。
 // CreateModel imports a model from a local directory.
 // This creates blobs and manifest directly on disk, bypassing the HTTP API.
 // Automatically detects model type (safetensors LLM vs image gen) and routes accordingly.
 func CreateModel(opts CreateOptions, p *progress.Progress) error {
+	// 检测 safetensors LLM 或带 draft 的 base 模型类型。
 	// Detect model type
 	isSafetensors := create.IsSafetensorsModelDir(opts.ModelDir)
 	hasDraft := opts.Modelfile != nil && opts.Modelfile.Draft != ""
@@ -172,6 +182,7 @@ func CreateModel(opts CreateOptions, p *progress.Progress) error {
 		capabilities = inferSafetensorsCapabilities(opts.ModelDir, resolveParserName(opts.Modelfile, parserName))
 	}
 
+	// 初始化进度 spinner。
 	// Set up progress spinner
 	statusMsg := "importing " + modelType
 	spinner := progress.NewSpinner(statusMsg)
@@ -211,6 +222,7 @@ func CreateModel(opts CreateOptions, p *progress.Progress) error {
 		return nil
 	}
 
+	// 经 x/create 流水线（读→分类→规划→写）创建模型。
 	// Create the model through the x/create pipeline (read → classify → plan
 	// → write), supplying blob storage and manifest assembly.
 	writer := newManifestWriter(opts, capabilities, parserName, rendererName)
@@ -233,6 +245,7 @@ func CreateModel(opts CreateOptions, p *progress.Progress) error {
 	return nil
 }
 
+// appendLayersManifestWriter 包装 ManifestWriter 以追加额外层。
 func appendLayersManifestWriter(next create.ManifestWriter, extra []create.LayerInfo) create.ManifestWriter {
 	return func(modelName string, config create.LayerInfo, layers []create.LayerInfo) error {
 		layers = append(layers, extra...)
@@ -240,6 +253,7 @@ func appendLayersManifestWriter(next create.ManifestWriter, extra []create.Layer
 	}
 }
 
+// draftMetadata 从 draft config.json 读取架构并构造 Draft 元数据。
 func draftMetadata(draftDir string) (*model.Draft, error) {
 	configPath := filepath.Join(draftDir, "config.json")
 	data, err := os.ReadFile(configPath)
@@ -274,6 +288,7 @@ func draftMetadata(draftDir string) (*model.Draft, error) {
 	}, nil
 }
 
+// createModelFromBaseWithDraft 将 draft 层合并到 imagegen base manifest。
 func createModelFromBaseWithDraft(opts CreateOptions, draftLayers []create.LayerInfo, progressFn func(string)) error {
 	progressFn(fmt.Sprintf("loading base model %s", opts.ModelDir))
 	baseManifest, err := imagemanifest.LoadManifest(opts.ModelDir)
@@ -316,6 +331,7 @@ func createModelFromBaseWithDraft(opts CreateOptions, draftLayers []create.Layer
 	)
 }
 
+// readConfigV2 从 base manifest 读取 ConfigV2。
 func readConfigV2(m *imagemanifest.ModelManifest) (*model.ConfigV2, error) {
 	data, err := os.ReadFile(m.BlobPath(m.Manifest.Config.Digest))
 	if err != nil {
@@ -329,6 +345,7 @@ func readConfigV2(m *imagemanifest.ModelManifest) (*model.ConfigV2, error) {
 	return &cfg, nil
 }
 
+// inferSafetensorsCapabilities 从目录与 parser 推断 completion/tools/vision 等能力。
 func inferSafetensorsCapabilities(modelDir, parserName string) []string {
 	capabilities := []string{"completion"}
 
@@ -357,6 +374,7 @@ func inferSafetensorsCapabilities(modelDir, parserName string) []string {
 	return capabilities
 }
 
+// newLayerCreator 返回创建 config/JSON manifest 层的回调。
 // newLayerCreator returns a LayerCreator callback for creating config/JSON layers.
 func newLayerCreator() create.LayerCreator {
 	return func(r io.Reader, mediaType, name string) (create.LayerInfo, error) {
@@ -374,6 +392,7 @@ func newLayerCreator() create.LayerCreator {
 	}
 }
 
+// newManifestWriter 组装 ConfigV2 与 Modelfile 层并写入 manifest。
 // newManifestWriter returns a ManifestWriter callback for writing the model manifest.
 func newManifestWriter(opts CreateOptions, capabilities []string, parserName, rendererName string) create.ManifestWriter {
 	return func(modelName string, config create.LayerInfo, layers []create.LayerInfo) error {
@@ -382,6 +401,7 @@ func newManifestWriter(opts CreateOptions, capabilities []string, parserName, re
 			return fmt.Errorf("invalid model name: %s", modelName)
 		}
 
+		// 写入含版本要求与能力的 config blob。
 		// Create config blob with version requirement.
 		configData := model.ConfigV2{}
 		if opts.BaseConfig != nil {
@@ -410,12 +430,14 @@ func newManifestWriter(opts CreateOptions, capabilities []string, parserName, re
 			return fmt.Errorf("failed to marshal config: %w", err)
 		}
 
+		// 创建 config 层 blob。
 		// Create config layer blob
 		configLayer, err := manifest.NewLayer(bytes.NewReader(configJSON), "application/vnd.docker.container.image.v1+json")
 		if err != nil {
 			return fmt.Errorf("failed to create config layer: %w", err)
 		}
 
+		// 将 LayerInfo 转为 manifest.Layer。
 		// Convert LayerInfo to manifest.Layer
 		manifestLayers := make([]manifest.Layer, 0, len(layers))
 		for _, l := range layers {
@@ -427,6 +449,7 @@ func newManifestWriter(opts CreateOptions, capabilities []string, parserName, re
 			})
 		}
 
+		// 追加 Modelfile 中的 template/system/license/params 层。
 		// Add Modelfile layers if present
 		if opts.Modelfile != nil {
 			modelfileLayers, err := createModelfileLayers(opts.Modelfile)
@@ -456,6 +479,7 @@ func resolveRendererName(mf *ModelfileConfig, inferred string) string {
 	return inferred
 }
 
+// createModelfileLayers 从 ModelfileConfig 创建 template/system/license/params 层。
 // createModelfileLayers creates layers for template, system, and license from Modelfile config.
 func createModelfileLayers(mf *ModelfileConfig) ([]manifest.Layer, error) {
 	var layers []manifest.Layer
@@ -500,6 +524,7 @@ func createModelfileLayers(mf *ModelfileConfig) ([]manifest.Layer, error) {
 	return layers, nil
 }
 
+// modelCapabilities 表示从源元数据推断的输入模态与推理能力。
 // modelCapabilities holds the input-modality and reasoning capabilities a model
 // advertises, inferred from its source metadata.
 type modelCapabilities struct {
@@ -508,6 +533,7 @@ type modelCapabilities struct {
 	thinking bool
 }
 
+// detectCapabilities 读取 config 与 chat template 推断 vision/audio/thinking。
 // detectCapabilities reads the model directory once and reports the vision,
 // audio, and thinking capabilities it can infer.
 func detectCapabilities(modelDir string) modelCapabilities {
@@ -530,6 +556,7 @@ func detectCapabilities(modelDir string) modelCapabilities {
 	}
 }
 
+// readChatTemplate 优先 tokenizer_config.json，否则 chat_template.jinja。
 // readChatTemplate returns the model's chat template, preferring the
 // chat_template field of tokenizer_config.json and falling back to a standalone
 // chat_template.jinja. It returns "" when neither is present.
@@ -548,6 +575,7 @@ func readChatTemplate(modelDir string) string {
 	return ""
 }
 
+// chatTemplateHasThinkingSupport 检测模板是否输出 thinking 块。
 // chatTemplateHasThinkingSupport reports whether a chat template emits thinking
 // blocks. Copied from server.chatTemplateHasThinkingSupport so this package need
 // not depend on the server package for an eight-line string check.
@@ -556,6 +584,7 @@ func chatTemplateHasThinkingSupport(chatTemplate string) bool {
 		return true
 	}
 
+	// 部分 Qwen/DeepSeek 模板通过 split </think> 剥离历史推理。
 	// Some Qwen/DeepSeek templates strip prior reasoning by splitting assistant
 	// content at </think>; llama.cpp can still extract reasoning from them.
 	return (strings.Contains(chatTemplate, "content.split('</think>')") ||
@@ -564,6 +593,7 @@ func chatTemplateHasThinkingSupport(chatTemplate string) bool {
 		!strings.Contains(chatTemplate, "<SPECIAL_12>")
 }
 
+// alwaysSupportsThinking 判断 Qwen3.5 等架构是否恒支持 thinking。
 func alwaysSupportsThinking(architectures []string, modelType string) bool {
 	if isQwen35Family(modelType) {
 		return true
@@ -581,6 +611,7 @@ func isQwen35Family(s string) bool {
 	return strings.Contains(s, "qwen3_5") || strings.Contains(s, "qwen3next")
 }
 
+// lagunaRendererParserName 根据 laguna 模板标记选择 poolside-v1 或 laguna。
 func lagunaRendererParserName(modelDir string) string {
 	const poolsideV1Marker = "laguna_glm_thinking_v8"
 
@@ -588,6 +619,7 @@ func lagunaRendererParserName(modelDir string) string {
 		return "poolside-v1"
 	}
 
+	// Poolside tokenizer 配置引用独立模板文件，需额外检查 chat_template.jinja。
 	// Poolside's tokenizer config includes the standalone template by name
 	// rather than embedding it, so inspect that file as well.
 	if data, err := os.ReadFile(filepath.Join(modelDir, "chat_template.jinja")); err == nil &&
@@ -598,6 +630,7 @@ func lagunaRendererParserName(modelDir string) string {
 	return "laguna"
 }
 
+// getParserName 从 config.json 架构推断 parser 名称。
 // getParserName returns the parser name for a model based on its architecture.
 // This reads the config.json from the model directory and determines the appropriate parser.
 func getParserName(modelDir string) string {
@@ -615,6 +648,7 @@ func getParserName(modelDir string) string {
 		return ""
 	}
 
+	// 按 architectures 匹配已知 parser。
 	// Check architectures for known parsers
 	for _, arch := range cfg.Architectures {
 		archLower := strings.ToLower(arch)
@@ -644,6 +678,7 @@ func getParserName(modelDir string) string {
 		}
 	}
 
+	// 再按 model_type 匹配。
 	// Also check model_type
 	if cfg.ModelType != "" {
 		typeLower := strings.ToLower(cfg.ModelType)
@@ -676,6 +711,7 @@ func getParserName(modelDir string) string {
 	return ""
 }
 
+// getRendererName 从 config.json 架构推断 renderer 名称。
 // getRendererName returns the renderer name for a model based on its architecture.
 // This reads the config.json from the model directory and determines the appropriate renderer.
 func getRendererName(modelDir string) string {

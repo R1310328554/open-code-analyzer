@@ -1,3 +1,4 @@
+// 流式工具调用解析器：检测标签、匹配工具名并提取 JSON 参数。
 package tools
 
 import (
@@ -9,14 +10,17 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// toolsState 表示解析器当前状态。
 type toolsState int
 
+// 解析状态：等待标签、解析工具调用、已完成。
 const (
 	toolsState_LookingForTag toolsState = iota
 	toolsState_ToolCalling
 	toolsState_Done
 )
 
+// Parser 缓冲流式输出并按 tag 解析工具调用。
 type Parser struct {
 	tag   string
 	tools []api.Tool
@@ -26,22 +30,26 @@ type Parser struct {
 	n      int
 }
 
+// GetBuffer 返回当前未消费缓冲区（调试用）。
 func (p *Parser) GetBuffer() []byte {
 	return p.buffer
 }
 
+// Tag 返回解析器在输出流中查找的工具调用标签。
 // Tag returns the tool-call tag string the parser looks for in the output
 // stream.
 func (p *Parser) Tag() string {
 	return p.tag
 }
 
+// NewParser 从聊天模板提取 tag 并构造解析器。
 // NewParser creates a new tool call parser from a model's chat
 // template and a list of provided tools.
 func NewParser(tmpl *template.Template, tools []api.Tool) *Parser {
 	return NewParserWithTag(tools, parseTag(tmpl))
 }
 
+// NewParserWithTag 使用显式 tag 构造解析器。
 func NewParserWithTag(tools []api.Tool, tag string) *Parser {
 	return &Parser{
 		tag:   tag,
@@ -49,6 +57,7 @@ func NewParserWithTag(tools []api.Tool, tag string) *Parser {
 	}
 }
 
+// Add 追加输入并返回已解析的工具调用与用户可见内容。
 // Add processes a string input to parse tool calls and content that
 // should be sent back to the user.
 func (p *Parser) Add(s string) (calls []api.ToolCall, content string) {
@@ -69,6 +78,7 @@ func (p *Parser) Add(s string) (calls []api.ToolCall, content string) {
 			p.buffer = p.buffer[i:]
 		}
 
+		// 以 { 或 [ 为 tag 时，仅当首非空白字符为括号才解析工具。
 		// for models where { or [ are used as tool calling
 		// tags, we only support parsing tools if the first non-
 		// whitespace character is { or [
@@ -104,15 +114,18 @@ func (p *Parser) Add(s string) (calls []api.ToolCall, content string) {
 	return calls, content
 }
 
+// findTag 在缓冲区查找完整或部分 tag 前缀。
 // findTag searches the buffer to find and handle a tool calling tag
 // returning true if the tag was found and false otherwise, and
 // a string content signaling any content that should be sent back to the user
 func (p *Parser) findTag() (int, bool) {
+	// 先查找完整 tag 子串。
 	// First check for complete substring anywhere in s
 	if i := bytes.Index(p.buffer, []byte(p.tag)); i > -1 {
 		return i, true
 	}
 
+	// 再检测缓冲区末尾的部分 tag 重叠。
 	// Then check for partial suffix overlap
 	max := min(len(p.buffer), len(p.tag))
 	for i := max; i > 0; i-- {
@@ -123,6 +136,7 @@ func (p *Parser) findTag() (int, bool) {
 	return -1, false
 }
 
+// parseToolCall 解析下一个完整工具调用并推进缓冲区。
 // parseToolCall finds the next complete tool call in the buffer
 // incrementing n and advancing the buffer.
 func (p *Parser) parseToolCall() *api.ToolCall {
@@ -159,6 +173,7 @@ func (p *Parser) parseToolCall() *api.ToolCall {
 	return tc
 }
 
+// findTool 在缓冲区中定位最早出现的工具名，尾部部分匹配时等待更多数据。
 // findTool finds the first tool name in the list that matches the
 // beginning of the buffer, returning nil if no tool is found
 // or if the buffer ends with a partial tool name since we need
@@ -170,6 +185,7 @@ func findTool(tools []api.Tool, buf []byte) (*api.Tool, int) {
 		return nil, 0
 	}
 
+	// 缓冲区以部分工具名结尾时不匹配，等待后续数据。
 	// check if buffer ends with a partial tool name
 	// this prevents matching "get" when seeing "get_weather"
 	var longest string
@@ -179,6 +195,7 @@ func findTool(tools []api.Tool, buf []byte) (*api.Tool, int) {
 		}
 	}
 
+	// 仅检查末尾最长工具名长度范围内的后缀。
 	// Only check up to longest characters from the end
 	for i := 1; i <= min(len(buf), len(longest)); i++ {
 		tail := buf[len(buf)-i:]
@@ -190,6 +207,7 @@ func findTool(tools []api.Tool, buf []byte) (*api.Tool, int) {
 		}
 	}
 
+	// 选取最早出现且最长的工具名匹配。
 	// find first occurrence of the longest tool name
 	var found *api.Tool
 	start := -1
@@ -202,6 +220,7 @@ func findTool(tools []api.Tool, buf []byte) (*api.Tool, int) {
 			continue
 		}
 
+		// 已有更优匹配则跳过。
 		// Skip if we have a better match already
 		if start != -1 {
 			if pos > start {
@@ -224,9 +243,11 @@ func findTool(tools []api.Tool, buf []byte) (*api.Tool, int) {
 	return nil, 0
 }
 
+// findArguments 扫描缓冲区首个合法 JSON 对象并递归提取 arguments/parameters。
 // findArguments returns the first object that appears to be
 // arguments for the provided tool in the provided buffer,
 // returning nil if no arguments are found and the end position
+// TODO：暂不支持省略 arguments 的全可选参数函数。
 // TODO (jmorganca): this does not support parsing omitted arguments
 // objects for functions that have all-optional parameters
 // e.g. `{"name": "get_conditions", "arguments": {}}` will work but
@@ -274,6 +295,7 @@ func findArguments(tool *api.Tool, buffer []byte) (map[string]any, int) {
 
 				var data map[string]any
 				if err := json.Unmarshal(object, &data); err != nil {
+					// 非合法 JSON 对象则继续扫描。
 					// not a valid object, keep looking
 					start = -1
 					continue
@@ -342,6 +364,7 @@ func findArguments(tool *api.Tool, buffer []byte) (map[string]any, int) {
 	return nil, 0
 }
 
+// done 对 {/[ tag 检查括号是否平衡以判定解析结束。
 // done checks if the parser is done parsing by looking
 // for closing tag. currently only } and ] are supported
 // for closing tags as {} or [] pairs may not always
@@ -388,6 +411,7 @@ func (p *Parser) done() bool {
 	return false
 }
 
+// Content 返回应回传给用户的剩余缓冲（仅 {/[ tag 且无工具调用时）。
 // Content returns any remaining content that
 // should be sent to the user. This should be the empty string
 // string unless the tag is { or [ and a tool call was not found

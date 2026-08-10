@@ -1,3 +1,4 @@
+// 词表结构：字符串↔id 映射、特殊 token 与 BPE 合并规则。
 package tokenizer
 
 import (
@@ -6,13 +7,16 @@ import (
 	"sync"
 )
 
+// Special 标识 BOS/EOS 等特殊 token 类别。
 type Special int32
 
+// 特殊 token 枚举。
 const (
 	SpecialBOS Special = iota
 	SpecialEOS
 )
 
+// Vocabulary 存储词表值、类型、分数、合并规则与 BOS/EOS 配置。
 type Vocabulary struct {
 	Values []string
 	Types  []int32
@@ -32,6 +36,7 @@ type Vocabulary struct {
 	merge     map[string]int32
 }
 
+// Is 判断 id 是否属于指定特殊 token 集合。
 func (v *Vocabulary) Is(id int32, special Special) bool {
 	switch special {
 	case SpecialBOS:
@@ -43,6 +48,7 @@ func (v *Vocabulary) Is(id int32, special Special) bool {
 	}
 }
 
+// addSpecials 按配置在序列首尾插入 BOS/EOS。
 func (v *Vocabulary) addSpecials(ids []int32) []int32 {
 	if v.AddBOS && len(v.BOS) > 0 {
 		if len(ids) > 0 && slices.Contains(v.BOS, ids[0]) {
@@ -65,6 +71,7 @@ func (v *Vocabulary) addSpecials(ids []int32) []int32 {
 	return ids
 }
 
+// Encode 将字符串映射为 id，未命中返回 -1。
 func (v *Vocabulary) Encode(s string) int32 {
 	v.valuesOnce.Do(func() {
 		v.values = make(map[string]int32, len(v.Values))
@@ -80,10 +87,12 @@ func (v *Vocabulary) Encode(s string) int32 {
 	return -1
 }
 
+// Decode 将 id 还原为词表字符串。
 func (v *Vocabulary) Decode(id int32) string {
 	return v.Values[id]
 }
 
+// SpecialVocabulary 返回 CONTROL/USER_DEFINED 类型的特殊 token 字符串列表。
 func (v *Vocabulary) SpecialVocabulary() []string {
 	v.specialOnce.Do(func() {
 		for i := range v.Values {
@@ -96,6 +105,7 @@ func (v *Vocabulary) SpecialVocabulary() []string {
 	return v.special
 }
 
+// Merge 查找 left+right 在 BPE 合并表中的序号。
 func (v *Vocabulary) Merge(left, right string) int {
 	v.mergeOnce.Do(func() {
 		v.merge = make(map[string]int32, len(v.Merges))

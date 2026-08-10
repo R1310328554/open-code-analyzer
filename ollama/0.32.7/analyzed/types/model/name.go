@@ -1,4 +1,5 @@
-// Package model contains types and utilities for parsing, validating, and
+// Package model 提供模型名称解析、校验与 digest 相关工具。
+// Package model contains types and utilities for parsing, validating, and// Package model contains types and utilities for parsing, validating, and
 // working with model names and digests.
 package model
 
@@ -12,21 +13,25 @@ import (
 	"strings"
 )
 
+// Errors 包级错误变量。
 // Errors
 var (
-	// ErrUnqualifiedName represents an error where a name is not fully
+	// ErrUnqualifiedName 表示名称未完全限定。
+// ErrUnqualifiedName represents an error where a name is not fully
 	// qualified. It is not used directly in this package, but is here
 	// to avoid other packages inventing their own error type.
 	// Additionally, it can be conveniently used via [Unqualified].
 	ErrUnqualifiedName = errors.New("unqualified name")
 )
 
+// Unqualified 包装 ErrUnqualifiedName 并附带名称。
 // Unqualified is a helper function that returns an error with
 // ErrUnqualifiedName as the cause and the name as the message.
 func Unqualified(n Name) error {
 	return fmt.Errorf("%w: %s", ErrUnqualifiedName, n)
 }
 
+// MissingPart 标记分隔符存在但对应部分缺失的占位符。
 // MissingPart is used to indicate any part of a name that was "promised" by
 // the presence of a separator, but is missing.
 //
@@ -35,6 +40,7 @@ func Unqualified(n Name) error {
 // spot in logs.
 const MissingPart = "!MISSING!"
 
+// 默认 registry 主机、命名空间、标签与协议。
 const (
 	defaultHost           = "registry.ollama.ai"
 	defaultNamespace      = "library"
@@ -42,6 +48,7 @@ const (
 	defaultProtocolScheme = "https"
 )
 
+// DefaultName 返回带默认 host/namespace/tag/scheme 的名称。
 // DefaultName returns a name with the default values for the host, namespace,
 // tag, and protocol scheme parts. The model and digest parts are empty.
 //
@@ -58,6 +65,7 @@ func DefaultName() Name {
 	}
 }
 
+// partKind 标识名称各组成部分。
 type partKind int
 
 const (
@@ -85,6 +93,7 @@ func (k partKind) String() string {
 	}
 }
 
+// Name 为模型名称的结构化表示，不保证合法，需用 IsValid 校验。
 // Name is a structured representation of a model name string, as defined by
 // [ParseNameNoDefaults].
 //
@@ -98,6 +107,7 @@ type Name struct {
 	ProtocolScheme string
 }
 
+// ParseName 解析名称字符串并与 DefaultName 合并缺省部分。
 // ParseName parses and assembles a Name from a name string. The
 // format of a valid name string is:
 //
@@ -141,12 +151,14 @@ func ParseName(s string) Name {
 	return Merge(ParseNameBare(s), DefaultName())
 }
 
+// ParseNameBare 解析名称但不合并默认值。
 // ParseNameBare parses s as a name string and returns a Name. No merge with
 // [DefaultName] is performed.
 func ParseNameBare(s string) Name {
 	var n Name
 	var promised bool
 
+	// "/" 非法出现在 tag 中，故可用 "/" 从右向左切分 host。
 	// "/" is an illegal tag character, so we can use it to split the host
 	if strings.LastIndex(s, ":") > strings.LastIndex(s, "/") {
 		s, n.Tag, _ = cutPromised(s, ":")
@@ -175,6 +187,7 @@ func ParseNameBare(s string) Name {
 	return n
 }
 
+// ParseNameFromFilepath 将四段文件路径解析为 Name。
 // ParseNameFromFilepath parses a 4-part filepath as a Name. The parts are
 // expected to be in the form:
 //
@@ -196,6 +209,7 @@ func ParseNameFromFilepath(s string) (n Name) {
 	return n
 }
 
+// Merge 合并两名称的 host/namespace/tag/scheme，优先 a 的非空部分。
 // Merge merges the host, namespace, tag, and protocol scheme parts of the two names,
 // preferring the non-empty parts of a.
 func Merge(a, b Name) Name {
@@ -206,6 +220,7 @@ func Merge(a, b Name) Name {
 	return a
 }
 
+// String 在名称合法时返回 ParseName 可接受的字符串形式。
 // String returns the name string, in the format that [ParseNameNoDefaults]
 // accepts as valid, if [Name.IsValid] reports true; otherwise the empty
 // string is returned.
@@ -227,6 +242,7 @@ func (n Name) String() string {
 	return b.String()
 }
 
+// DisplayShortest 返回省略默认 host/namespace 的短显示名。
 // DisplayShortest returns a short string version of the name.
 func (n Name) DisplayShortest() string {
 	var sb strings.Builder
@@ -248,12 +264,14 @@ func (n Name) DisplayShortest() string {
 	return sb.String()
 }
 
+// IsValidNamespace 校验命名空间字符串是否合法。
 // IsValidNamespace reports whether the provided string is a valid
 // namespace.
 func IsValidNamespace(s string) bool {
 	return isValidPart(kindNamespace, s)
 }
 
+// IsValid 检查名称各部分是否完整且合法。
 // IsValid reports whether all parts of the name are present and valid. The
 // digest is a special case, and is checked for validity only if present.
 //
@@ -263,6 +281,7 @@ func (n Name) IsValid() bool {
 	return n.IsFullyQualified()
 }
 
+// IsFullyQualified 判断 host/namespace/model/tag 是否均合法存在。
 // IsFullyQualified returns true if all parts of the name are present and
 // valid without the digest.
 func (n Name) IsFullyQualified() bool {
@@ -280,6 +299,7 @@ func (n Name) IsFullyQualified() bool {
 	return true
 }
 
+// Filepath 返回 host/namespace/model/tag 四段 canonical 路径。
 // Filepath returns a canonical filepath that represents the name with each part from
 // host to tag as a directory in the form:
 //
@@ -301,11 +321,13 @@ func (n Name) Filepath() string {
 	)
 }
 
+// LogValue 供 slog 结构化日志输出名称字符串。
 // LogValue returns a slog.Value that represents the name as a string.
 func (n Name) LogValue() slog.Value {
 	return slog.StringValue(n.String())
 }
 
+// EqualFold 大小写不敏感比较两名称各段。
 func (n Name) EqualFold(o Name) bool {
 	return strings.EqualFold(n.Host, o.Host) &&
 		strings.EqualFold(n.Namespace, o.Namespace) &&
@@ -313,6 +335,7 @@ func (n Name) EqualFold(o Name) bool {
 		strings.EqualFold(n.Tag, o.Tag)
 }
 
+// BaseURL 构造 registry 的 scheme+host URL。
 // BaseURL returns the base URL for the registry.
 func (n Name) BaseURL() *url.URL {
 	return &url.URL{
@@ -321,6 +344,7 @@ func (n Name) BaseURL() *url.URL {
 	}
 }
 
+// DisplayNamespaceModel 返回 namespace/model 拼接字符串。
 // DisplayNamespaceModel returns the namespace and model joined by "/".
 func (n Name) DisplayNamespaceModel() string {
 	var b strings.Builder
@@ -383,6 +407,7 @@ func cutLast(s, sep string) (before, after string, ok bool) {
 	return s, "", false
 }
 
+// cutPromised 在最后一个 sep 处切分，空段替换为 MissingPart。
 // cutPromised cuts the last part of s at the last occurrence of sep. If sep is
 // found, the part before and after sep are returned as-is unless empty, in
 // which case they are returned as MissingPart, which will cause
