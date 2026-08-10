@@ -1363,3 +1363,18 @@
 2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/handler/ai/AiResourceImportHandler.java nacos wave45b [15:30] console v3 core/naming + handlers
 2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/handler/ai/EnabledAiHandler.java nacos wave45b [15:30] console v3 core/naming + handlers
 2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/handler/ai/McpHandler.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ConsoleHealthController.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ConsoleServerStateController.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleA2aController.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleAgentSpecController.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleAiResourceImportController.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleCopilotConfigController.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleCopilotController.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleMcpController.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsolePipelineController.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsolePromptController.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleSkillController.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/CopilotHttpParamExtractor.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/CopilotSseExceptionHandler.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/config/ConsoleConfigController.java nacos wave45a [0:15] console v3 ai/config controllers
+2026-08-10T03:46:49Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/config/ConsoleHistoryController.java nacos wave45a [0:15] console v3 ai/config controllers

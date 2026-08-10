@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T03:44:59Z",
-  "files": [
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/ConsoleHealthController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/ConsoleServerStateController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleA2aController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleAgentSpecController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleAiResourceImportController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleCopilotConfigController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleCopilotController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleMcpController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsolePipelineController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsolePromptController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/ConsoleSkillController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/CopilotHttpParamExtractor.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/CopilotSseExceptionHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/config/ConsoleConfigController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/config/ConsoleHistoryController.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1187,
-  "done": 1335
+  "done": 1350
 }
