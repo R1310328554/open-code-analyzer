@@ -42,16 +42,22 @@ import org.jboss.logging.Logger;
 import org.jgroups.JChannel;
 
 /**
+ * Infinispan 连接相关的静态工具类：JGroups 传输配置、缓存配置委托、
+ * 以及将 Infinispan 时间服务替换为 Keycloak {@link Time} 的测试/集成辅助方法。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class InfinispanUtil {
 
     protected static final Logger logger = Logger.getLogger(InfinispanUtil.class);
 
+    /** 条件替换（replace）操作的最大重试次数。 */
     public static final int MAXIMUM_REPLACE_RETRIES = 25;
 
     /**
-     * @deprecated For removal. Use {@link InfinispanConnectionProvider#getNodeInfo()} instead.
+     * 获取当前会话关联的拓扑信息。
+     *
+     * @deprecated 即将移除，请改用 {@link InfinispanConnectionProvider#getNodeInfo()}。
      * @see TopologyInfo
      */
     @Deprecated
@@ -60,10 +66,13 @@ public class InfinispanUtil {
     }
 
 
+    /** JGroups 通道初始化时的进程级同步锁，避免并发修改系统属性。 */
     private static final Object CHANNEL_INIT_SYNCHRONIZER = new Object();
 
     /**
-     * @deprecated to be removed without replacement.
+     * 配置 Infinispan 全局传输层（JGroups 通道、节点名、站点与 JMX 域）。
+     *
+     * @deprecated 26.3 起弃用，无替代方案，将在后续版本移除。
      */
     @Deprecated(since = "26.3", forRemoval = true)
     public static void configureTransport(GlobalConfigurationBuilder gcb, String nodeName, String siteName, String jgroupsUdpMcastAddr,
@@ -96,7 +105,7 @@ public class InfinispanUtil {
                             .siteId(siteName)
                             .transport(transport);
 
-                    // Use the cluster corresponding to current site. This is needed as the nodes in different DCs should not share same cluster
+                    // 使用与当前站点对应的集群名；不同数据中心的节点不应共享同一 JGroups 集群
                     if (siteName != null) {
                         transportBuilder.clusterName(siteName);
                     }
@@ -126,7 +135,9 @@ public class InfinispanUtil {
     }
 
     /**
-     * @deprecated to be removed. Use {@link CacheConfigurator#createCacheConfigurationBuilder()}.
+     * 创建默认缓存配置构建器。
+     *
+     * @deprecated 请改用 {@link CacheConfigurator#createCacheConfigurationBuilder()}。
      */
     @Deprecated(since = "26.3", forRemoval = true)
     public static ConfigurationBuilder createCacheConfigurationBuilder() {
@@ -134,7 +145,9 @@ public class InfinispanUtil {
     }
 
     /**
-     * @deprecated to be removed without replacement.
+     * 获取 Action Token 缓存的配置（手动逐出、最大条目数与空闲过期）。
+     *
+     * @deprecated 请改用 {@link CacheConfigurator} 中的对应方法。
      */
     @Deprecated(since = "26.3", forRemoval = true)
     public static ConfigurationBuilder getActionTokenCacheConfig() {
@@ -151,7 +164,9 @@ public class InfinispanUtil {
     }
 
     /**
-     * @deprecated to be removed. Use {@link CacheConfigurator#getCrlCacheConfig()}.
+     * 获取 CRL（证书吊销列表）缓存配置。
+     *
+     * @deprecated 请改用 {@link CacheConfigurator#getCrlCacheConfig()}。
      */
     @Deprecated(since = "26.3", forRemoval = true)
     public static ConfigurationBuilder getCrlCacheConfig() {
@@ -159,7 +174,9 @@ public class InfinispanUtil {
     }
 
     /**
-     * @deprecated to be removed. Use {@link CacheConfigurator#getRevisionCacheConfig(long)}.
+     * 获取修订号（revision）缓存配置。
+     *
+     * @deprecated 请改用 {@link CacheConfigurator#getRevisionCacheConfig(long)}。
      */
     @Deprecated(since = "26.3", forRemoval = true)
     public static ConfigurationBuilder getRevisionCacheConfig(long maxEntries) {
@@ -167,10 +184,11 @@ public class InfinispanUtil {
     }
 
     /**
-     * Replaces the {@link TimeService} in infinispan with the one that respects Keycloak {@link Time}.
+     * 将 Infinispan 的 {@link TimeService} 替换为遵循 Keycloak {@link Time} 的实现，
+     * 便于在测试中控制虚拟时间。
      *
-     * @param cacheManager The {@link EmbeddedCacheManager} to inject the Keycloak {@link Time}.
-     * @return Runnable to revert replacement of the infinispan time service
+     * @param cacheManager 需注入 Keycloak 时间服务的嵌入式缓存管理器
+     * @return 用于恢复原有 TimeService 的可运行回调
      */
     public static Runnable setTimeServiceToKeycloakTime(EmbeddedCacheManager cacheManager) {
         TimeService previousTimeService = replaceComponent(cacheManager, TimeService.class, KEYCLOAK_TIME_SERVICE, true);
@@ -188,15 +206,13 @@ public class InfinispanUtil {
     }
 
     /**
-     * Forked from org.infinispan.test.TestingUtil class
-     * <p>
-     * Replaces a component in a running cache manager (global component registry).
+     * 源自 org.infinispan.test.TestingUtil：在运行中的缓存管理器全局组件注册表中替换组件。
      *
-     * @param cacheMgr             cache in which to replace component
-     * @param componentType        component type of which to replace
-     * @param replacementComponent new instance
-     * @param rewire               if true, ComponentRegistry.rewire() is called after replacing.
-     * @return the original component that was replaced
+     * @param cacheMgr             目标缓存管理器
+     * @param componentType        待替换的组件类型
+     * @param replacementComponent 新组件实例
+     * @param rewire               为 {@code true} 时在替换后调用 rewire 重建依赖图
+     * @return 被替换掉的原始组件实例
      */
     private static <T> T replaceComponent(EmbeddedCacheManager cacheMgr, Class<T> componentType, T replacementComponent, boolean rewire) {
         GlobalComponentRegistry cr = GlobalComponentRegistry.of(cacheMgr);
@@ -210,6 +226,10 @@ public class InfinispanUtil {
         return old != null ? old.wired() : null;
     }
 
+    /**
+     * 委托 Keycloak {@link Time#currentTimeMillis()} 的 Infinispan TimeService 实现。
+     * 使缓存过期、调度等逻辑与 Keycloak 可测试时间保持一致。
+     */
     public static final TimeService KEYCLOAK_TIME_SERVICE = new EmbeddedTimeService() {
 
         private long getCurrentTimeMillis() {

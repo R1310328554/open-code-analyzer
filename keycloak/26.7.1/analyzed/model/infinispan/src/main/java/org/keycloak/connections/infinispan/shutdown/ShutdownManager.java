@@ -29,39 +29,48 @@ import org.keycloak.common.util.Time;
 import org.jboss.logging.Logger;
 
 /**
- * Manages an ordered list of {@link ShutdownListener} instances that are notified sequentially when the server shuts
- * down.
+ * 管理有序注册的 {@link ShutdownListener} 列表，在服务器关闭时按序通知各监听器。
  * <p>
- * Listeners are invoked in registration order. Each listener may block the calling thread to delay shutdown until its
- * condition is met (e.g. waiting for a stable cache topology). All listeners share the same deadline, so the total
- * shutdown time is bounded regardless of how many listeners are registered. It is recommended to respect it.
+ * 监听器按注册顺序调用。每个监听器可阻塞调用线程以延迟关闭，直到其条件满足
+ * （例如等待缓存拓扑稳定）。所有监听器共享同一截止时间，因此无论注册多少监听器，
+ * 总关闭时长都有上界。建议各监听器严格遵守该截止时间。
  * <p>
- * If {@link #onShutdownStarted(Instant)} is called before {@link #onShutdown()} (e.g. from a shutdown delay event), the
- * deadline is anchored to that earlier timestamp. Otherwise, it falls back to the current time when
- * {@link #onShutdown()} is invoked.
+ * 若 {@link #onShutdownStarted(Instant)} 在 {@link #onShutdown()} 之前被调用
+ * （例如 Quarkus 关闭延迟事件），则截止时间锚定到较早的时间戳；否则以
+ * {@link #onShutdown()} 调用时的当前时间为准。
  * <p>
- * This class is thread-safe: listeners can be added or removed concurrently.
+ * 本类线程安全：可在运行时并发添加或移除监听器。
  */
 public class ShutdownManager {
 
     private static final Logger logger = Logger.getLogger(ShutdownManager.class);
 
+    /** 按注册顺序保存的关闭监听器列表（写时复制，支持并发注册）。 */
     private final List<ShutdownListener> listeners = new CopyOnWriteArrayList<>();
+    /** 关闭延迟与关闭超时之和，构成全局最大等待毫秒数。 */
     private final long maxShutdownTimeout;
+    /** 关闭序列实际开始时刻（可能早于 {@link #onShutdown()} 调用）。 */
     private volatile Instant shutdownStartTime;
 
+    /**
+     * @param shutdownDelay   关闭延迟（毫秒），计入总超时预算
+     * @param shutdownTimeout 关闭超时（毫秒），计入总超时预算
+     */
     public ShutdownManager(long shutdownDelay, long shutdownTimeout) {
         this.maxShutdownTimeout = shutdownDelay + shutdownTimeout;
     }
 
+    /** 注册一个关闭监听器，按调用顺序在关闭时依次执行。 */
     public void addListener(ShutdownListener listener) {
         listeners.add(Objects.requireNonNull(listener));
     }
 
+    /** 移除先前注册的关闭监听器。 */
     public void removeListener(ShutdownListener listener) {
         listeners.remove(Objects.requireNonNull(listener));
     }
 
+    /** 触发关闭流程：计算共享截止时间并依次通知所有监听器。 */
     public void onShutdown() {
         var instant = Objects.requireNonNullElse(shutdownStartTime, Instant.ofEpochMilli(Time.currentTimeMillis()));
         var deadline = Date.from(instant.plus(maxShutdownTimeout, ChronoUnit.MILLIS));
@@ -75,9 +84,9 @@ public class ShutdownManager {
     }
 
     /**
-     * Records the instant the shutdown sequence began (e.g. when the shutdown delay was initiated by Quarkus).
+     * 记录关闭序列开始的时刻（例如 Quarkus 发起关闭延迟时）。
      *
-     * @param shutdownStartTime The instant the shutdown was initiated.
+     * @param shutdownStartTime 关闭发起时刻
      */
     public void onShutdownStarted(Instant shutdownStartTime) {
         this.shutdownStartTime = shutdownStartTime;

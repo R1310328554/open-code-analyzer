@@ -21,17 +21,20 @@ import java.time.Instant;
 import java.util.Date;
 
 /**
- * A listener that is notified when the server begins shutting down.
+ * 服务器开始关闭时的通知回调接口。
+ * <p>
+ * 实现类可在 {@link #onShutdown(Instant, Date)} 中阻塞关闭线程，直到特定条件满足
+ * （例如等待 Infinispan 拓扑稳定），但必须在 {@code deadline} 之前返回。
  *
  * @see ShutdownManager
  */
 public interface ShutdownListener {
 
     /**
-     * Called when the server shutdown is initiated.
+     * 服务器关闭流程启动时调用。
      *
-     * @param shutdownTime The instant at which the shutdown was initiated.
-     * @param deadline     The absolute deadline by which this listener must return.
+     * @param shutdownTime 关闭发起时刻
+     * @param deadline     本监听器必须在此绝对截止时间前返回
      */
     void onShutdown(Instant shutdownTime, Date deadline);
 

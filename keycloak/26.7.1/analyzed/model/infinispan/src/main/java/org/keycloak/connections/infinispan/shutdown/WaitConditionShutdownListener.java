@@ -24,26 +24,32 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * A {@link ShutdownListener} that blocks the shutdown thread until a {@link ShutdownCondition} is no longer
- * {@linkplain ShutdownCondition#inProgress() in progress}, or until the provided deadline elapses.
+ * 在 {@link ShutdownCondition} 不再 {@linkplain ShutdownCondition#inProgress() 进行中}
+ * 或到达截止时间之前，阻塞关闭线程的 {@link ShutdownListener} 实现。
  * <p>
- * External events should invoke {@link #check()} whenever the condition may have changed (e.g. after a topology change
- * event). If the condition has cleared, the waiting shutdown thread is unblocked and
- * {@link ShutdownCondition#complete()} is called. If the timeout expires first, {@link ShutdownCondition#onTimeout()}
- * is called instead.
+ * 外部事件（如拓扑变更）应调用 {@link #check()} 以检测条件是否已解除；若条件已清除，
+ * 则唤醒等待中的关闭线程并调用 {@link ShutdownCondition#complete()}；若超时先到，
+ * 则调用 {@link ShutdownCondition#onTimeout()}。
  */
 public class WaitConditionShutdownListener implements ShutdownListener {
 
+    /** 保护条件变量与等待逻辑的互斥锁。 */
     private final ReentrantLock lock;
+    /** 拓扑/条件稳定时用于唤醒关闭线程的条件变量。 */
     private final Condition stableCluster;
+    /** 决定关闭是否仍需等待的业务条件。 */
     private final ShutdownCondition condition;
 
+    /**
+     * @param condition 关闭等待条件，不可为 {@code null}
+     */
     public WaitConditionShutdownListener(ShutdownCondition condition) {
         this.condition = Objects.requireNonNull(condition, "condition");
         lock = new ReentrantLock();
         stableCluster = lock.newCondition();
     }
 
+    /** {@inheritDoc} 在锁保护下等待条件稳定或超时，并调用相应的条件回调。 */
     @Override
     public void onShutdown(Instant shutdownTime, Date deadline) {
         try {
@@ -63,11 +69,9 @@ public class WaitConditionShutdownListener implements ShutdownListener {
     }
 
     /**
-     * Checks whether the {@link ShutdownCondition} is still in progress and, if not, signals the waiting shutdown
-     * thread to proceed.
+     * 检查 {@link ShutdownCondition} 是否仍在进行；若已解除则唤醒等待中的关闭线程。
      * <p>
-     * This method should be called from external event handlers (e.g. topology change listeners) whenever the condition
-     * may have changed.
+     * 应由外部事件处理器（如拓扑变更监听器）在条件可能发生变化时调用。
      */
     public void check() {
         if (condition.inProgress()) {
@@ -85,6 +89,11 @@ public class WaitConditionShutdownListener implements ShutdownListener {
         }
     }
 
+    /**
+     * 循环等待直到条件不再进行中，或到达 {@code deadline}。
+     *
+     * @return {@code true} 表示条件在截止前已稳定；{@code false} 表示超时
+     */
     private boolean awaitUntilStable(Date deadline) throws InterruptedException {
         while (condition.inProgress()) {
             if (!stableCluster.awaitUntil(deadline)) {

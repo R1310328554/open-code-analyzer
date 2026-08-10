@@ -35,24 +35,35 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.infinispan.Cache;
 
 /**
+ * {@link CrlStorageProvider} 的 Infinispan 实现工厂。
+ * <p>
+ * 管理 CRL 专用缓存引用、并发加载去重映射，以及 {@code cacheTime} /
+ * {@code minTimeBetweenRequests} 等可配置 TTL 策略。
  *
  * @author rmartinc
  */
 public class InfinispanCrlStorageProviderFactory implements CrlStorageProviderFactory, InfinispanCrlStorageProvider.SharedData {
 
+    /** 工厂在 Keycloak SPI 中的标识符。 */
     public static final String PROVIDER_ID = "infinispan";
 
+    /** 懒加载的 CRL Infinispan 缓存。 */
     private volatile Cache<String, X509CRLEntry> crlCache;
+    /** 按 CRL 键跟踪进行中的加载任务，避免 thundering herd。 */
     private final Map<String, FutureTask<X509CRL>> tasksInProgress = new ConcurrentHashMap<>();
+    /** CRL 条目最大缓存时长（毫秒）；{@code -1} 表示无固定上限。 */
     private volatile long cacheTime;
+    /** 两次 CRL 远程请求之间的最小间隔（毫秒）。 */
     private volatile long minTimeBetweenRequests;
 
+    /** {@inheritDoc} 创建绑定本工厂共享数据的存储提供者。 */
     @Override
     public CrlStorageProvider create(KeycloakSession session) {
         lazyInit(session);
         return new InfinispanCrlStorageProvider(this);
     }
 
+    /** {@inheritDoc} 暴露 {@code cacheTime} 与 {@code minTimeBetweenRequests} 配置项。 */
     @Override
     public List<ProviderConfigProperty> getConfigMetadata() {
         return ProviderConfigurationBuilder.create()
@@ -84,6 +95,7 @@ public class InfinispanCrlStorageProviderFactory implements CrlStorageProviderFa
                 .build();
     }
 
+    /** {@inheritDoc} 将秒级配置转换为毫秒并存储。 */
     @Override
     public void init(Config.Scope config) {
         final long tmpCacheTime = config.getLong("cacheTime", -1L);
@@ -93,21 +105,25 @@ public class InfinispanCrlStorageProviderFactory implements CrlStorageProviderFa
         minTimeBetweenRequests = tmpMinTimeBetweenRequests > 0? TimeUnit.SECONDS.toMillis(tmpMinTimeBetweenRequests) : 10_000L;
     }
 
+    /** {@inheritDoc} 无后置初始化逻辑。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         // no-op
     }
 
+    /** {@inheritDoc} 缓存由连接提供者统一管理。 */
     @Override
     public void close() {
         // no-op
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 双重检查锁定：首次创建提供者时解析 CRL 专用 Infinispan 缓存。 */
     private void lazyInit(KeycloakSession session) {
         if (crlCache == null) {
             synchronized (this) {
@@ -118,21 +134,25 @@ public class InfinispanCrlStorageProviderFactory implements CrlStorageProviderFa
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public Cache<String, X509CRLEntry> cache() {
         return crlCache;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Map<String, FutureTask<X509CRL>> tasksInProgress() {
         return tasksInProgress;
     }
 
+    /** {@inheritDoc} */
     @Override
     public long cacheTime() {
         return cacheTime;
     }
 
+    /** {@inheritDoc} */
     @Override
     public long minTimeBetweenRequests() {
         return minTimeBetweenRequests;

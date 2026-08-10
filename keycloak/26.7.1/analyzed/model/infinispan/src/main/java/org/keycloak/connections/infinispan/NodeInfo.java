@@ -26,12 +26,30 @@ import org.infinispan.remoting.transport.Transport;
 
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.NODE_PREFIX;
 
+/**
+ * 不可变记录，描述当前 Keycloak 节点在 Infinispan 集群中的标识信息。
+ * <p>
+ * 包含节点名、多站点（multi-site）环境下的站点名，以及 JGroups 集群名。
+ *
+ * @param nodeName    节点逻辑名称（JGroups 通道名或配置项）
+ * @param siteName    站点标识，非多站点部署时为 {@code null}
+ * @param clusterName JGroups/Infinispan 集群名称
+ */
 public record NodeInfo(String nodeName, String siteName, String clusterName) {
 
+    /** 紧凑构造器：节点名不可为空。 */
     public NodeInfo {
         Objects.requireNonNull(nodeName);
     }
 
+    /**
+     * 从嵌入式缓存管理器的传输配置与运行时 Transport 组件构建 {@link NodeInfo}。
+     * <p>
+     * 若配置中未指定节点名，则使用 Transport 本地名或随机生成的前缀名。
+     *
+     * @param cacheManager 嵌入式 Infinispan 缓存管理器
+     * @return 当前节点的拓扑标识信息
+     */
     public static NodeInfo of(EmbeddedCacheManager cacheManager) {
         var transportConfig = cacheManager.getCacheManagerConfiguration().transport();
         var nodeName = transportConfig.nodeName();
@@ -48,6 +66,7 @@ public record NodeInfo(String nodeName, String siteName, String clusterName) {
         return new NodeInfo(nodeName, transportConfig.siteId(), clusterName);
     }
 
+    /** 格式化输出节点、站点与集群信息，便于日志诊断。 */
     public String printInfo() {
         return "Node name: %s, Site name: %s, Cluster name: %s".formatted(nodeName, siteName, clusterName);
     }
