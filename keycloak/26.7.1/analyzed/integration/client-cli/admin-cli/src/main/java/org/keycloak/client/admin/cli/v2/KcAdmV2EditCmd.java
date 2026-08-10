@@ -22,6 +22,11 @@ import static org.keycloak.client.cli.util.HttpUtil.APPLICATION_JSON;
 import static org.keycloak.client.cli.util.IoUtil.readFully;
 import static org.keycloak.client.cli.util.OsUtil.OS_ARCH;
 
+/**
+ * {@code edit} 子命令：GET 资源 JSON → 外部编辑器修改 → PUT 回写。
+ * <p>
+ * 编辑器解析顺序：config editor 设置、{@code KC_CLI_EDITOR}、{@code VISUAL}、{@code EDITOR}、平台默认。
+ */
 final class KcAdmV2EditCmd extends KcAdmV2RequestExecutor {
 
     private static final String ENV_KC_CLI_EDITOR = "KC_CLI_EDITOR";
@@ -92,6 +97,7 @@ final class KcAdmV2EditCmd extends KcAdmV2RequestExecutor {
         }
     }
 
+    /** 按优先级解析编辑器命令字符串。 */
     private String resolveEditor(ConfigData configData) {
         String editor = configData.getEditor();
         if (editor != null && !editor.isBlank()) {
@@ -116,6 +122,7 @@ final class KcAdmV2EditCmd extends KcAdmV2RequestExecutor {
         return OS_ARCH.isWindows() ? DEFAULT_EDITOR_WINDOWS : DEFAULT_EDITOR_UNIX;
     }
 
+    /** 将 JSON 写入临时文件并启动编辑器进程，返回编辑后的文件内容。 */
     private String openInEditor(String editor, String content) throws IOException, InterruptedException {
         Path tempFile = Files.createTempFile("kcadm-edit-", ".json");
         try {
@@ -147,6 +154,7 @@ final class KcAdmV2EditCmd extends KcAdmV2RequestExecutor {
         }
     }
 
+    /** 生成 edit 子命令的多行帮助描述。 */
     static String[] createDescription(String resourceName) {
         return new String[] {
                 "Edit a " + resourceName + " by opening it in a text editor and applying the modifications.",

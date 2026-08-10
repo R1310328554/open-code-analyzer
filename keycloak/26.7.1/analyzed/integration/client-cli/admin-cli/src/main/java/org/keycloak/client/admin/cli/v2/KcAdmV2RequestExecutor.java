@@ -40,14 +40,21 @@ import static org.keycloak.client.cli.util.HttpUtil.APPLICATION_JSON;
 import static org.keycloak.client.cli.util.IoUtil.readFully;
 import static org.keycloak.common.util.ObjectUtil.capitalize;
 
+/**
+ * v2 动态 CLI 命令的执行器：组装 URL、请求体、认证头并调用 Admin REST API。
+ * <p>
+ * 同时作为 PicoCLI {@link Runnable} 叶子命令及 {@link KcAdmV2EditCmd} 的基类。
+ */
 class KcAdmV2RequestExecutor extends AbstractTargetAuthOptionsCmd implements Runnable {
 
+    /** PATCH 请求使用的 merge-patch 内容类型。 */
     static final String MERGE_PATCH_JSON = "application/merge-patch+json";
+    /** Admin API 路径中的版本段。 */
     static final String API_VERSION = "v2";
+    /** 未配置 realm 时的默认值。 */
     static final String DEFAULT_REALM = "master";
 
-    // Maps resource name to the JSON field that holds its ID, used to extract
-    // the path parameter from --file content when no positional <id> is given
+    // 资源名 → JSON ID 字段名；当无位置参数 <id> 时从 -f 文件内容提取路径参数
     static final Map<String, String> RESOURCE_ID_FIELDS = Map.of(
             "client", "clientId"
     );
@@ -55,6 +62,7 @@ class KcAdmV2RequestExecutor extends AbstractTargetAuthOptionsCmd implements Run
     protected final CommandSpec spec;
     protected final AbstractTargetAuthOptionsCmd root;
     private final CommandDescriptor descriptor;
+    /** 非 null 时表示当前为鉴别器变体叶子命令。 */
     private final VariantDescriptor variant;
 
     KcAdmV2RequestExecutor(AbstractTargetAuthOptionsCmd root, CommandDescriptor descriptor, VariantDescriptor variant) {
@@ -65,6 +73,7 @@ class KcAdmV2RequestExecutor extends AbstractTargetAuthOptionsCmd implements Run
         this.variant = variant;
     }
 
+    /** 是否为仅含变体子命令、自身不发送请求的父节点。 */
     boolean isVariantParent() {
         return variant == null && descriptor.hasVariants();
     }
@@ -90,14 +99,16 @@ class KcAdmV2RequestExecutor extends AbstractTargetAuthOptionsCmd implements Run
         }
     }
 
+    /** 已加载配置、令牌及 CLI 覆盖项的请求上下文。 */
     protected record RequestContext(ConfigData configData, String token) {}
 
+    /** 解析配置、认证、truststore 并返回请求上下文。 */
     protected final RequestContext prepareRequest() {
         processOptions();
 
         ConfigData configData = loadConfig();
 
-        // Apply CLI overrides onto config
+        // 将 CLI 覆盖项合并到配置
         if (server != null) {
             configData.setServerUrl(server);
         }
@@ -108,7 +119,7 @@ class KcAdmV2RequestExecutor extends AbstractTargetAuthOptionsCmd implements Run
             configData.setExternalToken(externalToken);
         }
 
-        // Default realm to master if not set anywhere
+        // 各处均未设置 realm 时默认 master
         if (configData.getRealm() == null) {
             configData.setRealm(DEFAULT_REALM);
         }
@@ -126,7 +137,7 @@ class KcAdmV2RequestExecutor extends AbstractTargetAuthOptionsCmd implements Run
 
         setupTruststore(configData);
 
-        // Set fields so ensureAuthInfo/BaseConfigCredentialsCmd can use them
+        // 填充字段供 ensureAuthInfo/BaseConfigCredentialsCmd 使用
         if (server == null) {
             server = configData.getServerUrl();
         }
@@ -196,6 +207,7 @@ class KcAdmV2RequestExecutor extends AbstractTargetAuthOptionsCmd implements Run
         }
     }
 
+    /** 发送带 Bearer 令牌与可选 JSON 正文的 HTTP 请求。 */
     protected final HeadersBodyStatus executeRequest(String method, String url, String token,
                                                String body, String contentType) throws IOException {
         Headers headers = new Headers();
@@ -215,6 +227,7 @@ class KcAdmV2RequestExecutor extends AbstractTargetAuthOptionsCmd implements Run
         return response;
     }
 
+    /** 替换路径占位符并附加查询字符串。 */
     protected final String buildUrl(ConfigData configData, String body) {
         String path = descriptor.getPath()
                 .replace("{realmName}", HttpUtil.urlencode(configData.getRealm()))
@@ -423,6 +436,7 @@ class KcAdmV2RequestExecutor extends AbstractTargetAuthOptionsCmd implements Run
         return file != null ? file : parentFile;
     }
 
+    /** 格式化 JSON 响应：可选压缩与 ANSI 语法高亮。 */
     protected final String formatOutput(String json) {
         try {
             var parseResult = spec.commandLine().getParseResult();

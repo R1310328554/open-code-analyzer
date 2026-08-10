@@ -39,10 +39,15 @@ import static org.keycloak.client.cli.util.ConfigUtil.loadConfig;
 
 
 /**
+ * 带服务器/领域/客户端认证选项的命令基类。
+ * <p>
+ * 处理配置文件加载、truststore、按需登录及令牌获取；子类通过 {@link CommandState} 区分 kcadm/kcreg 等 CLI。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public abstract class BaseAuthOptionsCmd extends BaseGlobalOptionsCmd {
 
+    /** 系统属性键：默认配置文件路径字符串。 */
     public static final String DEFAULT_CONFIG_PATH_STRING_KEY = "default.config.path.string";
 
     @Option(names = "--config", description = "Path to the config file (${sys:"+DEFAULT_CONFIG_PATH_STRING_KEY+"} by default)")
@@ -90,9 +95,10 @@ public abstract class BaseAuthOptionsCmd extends BaseGlobalOptionsCmd {
     @Option(names = "--insecure", description = "Turns off TLS validation")
     protected boolean insecure;
 
-    // subclasses unfortunately use different options for this, so they must be declared elsewhere
+    // 子类对外部令牌使用不同选项名，故在此仅声明字段
     protected String externalToken;
 
+    /** 命令上下文（CLI 名称、默认配置路径等）。 */
     protected CommandState commandState;
 
     public BaseAuthOptionsCmd(CommandState state) {
@@ -107,6 +113,7 @@ public abstract class BaseAuthOptionsCmd extends BaseGlobalOptionsCmd {
         return commandState.getDefaultConfigFilePath();
     }
 
+    /** 从父命令复制认证相关选项字段。 */
     protected void initFromParent(BaseAuthOptionsCmd parent) {
         noconfig = parent.noconfig;
         config = parent.config;
@@ -158,6 +165,7 @@ public abstract class BaseAuthOptionsCmd extends BaseGlobalOptionsCmd {
         }
     }
 
+    /** 为 HTTPS 连接配置 truststore 或跳过证书校验。 */
     protected void setupTruststore(ConfigData configData) {
 
         if (!configData.getServerUrl().startsWith("https:")) {
@@ -193,6 +201,7 @@ public abstract class BaseAuthOptionsCmd extends BaseGlobalOptionsCmd {
         }
     }
 
+    /** 若命令行提供了凭据则触发登录，否则校验已存服务器信息。 */
     protected ConfigData ensureAuthInfo(ConfigData config) {
 
         if (requiresLogin()) {
@@ -231,11 +240,13 @@ public abstract class BaseAuthOptionsCmd extends BaseGlobalOptionsCmd {
         }
     }
 
+    /** 是否因命令行凭据选项而需要即时登录。 */
     protected boolean requiresLogin() {
         return externalToken == null && (user != null || password != null || secret != null || keystore != null
                 || keyPass != null || storePass != null || alias != null);
     }
 
+    /** 深拷贝配置并应用 CLI 覆盖的服务器/realm/外部令牌。 */
     protected ConfigData copyWithServerInfo(ConfigData config) {
 
         ConfigData result = config.deepcopy();
@@ -274,10 +285,12 @@ public abstract class BaseAuthOptionsCmd extends BaseGlobalOptionsCmd {
         rdata.setGrantTypeForAuthentication(grantTypeForAuthentication);
     }
 
+    /** 确保 access token 有效（必要时刷新）并返回。 */
     protected String ensureToken(ConfigData config) {
         return AuthUtil.ensureToken(config, getCommand());
     }
 
+    /** 向帮助输出写入全局选项说明块。 */
     protected void globalOptions(PrintWriter out) {
         out.println();
         out.println("Arguments:");

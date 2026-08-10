@@ -23,23 +23,33 @@ import static org.keycloak.client.admin.cli.KcAdmMain.CMD;
 import static org.keycloak.client.admin.cli.KcAdmMain.V2_FLAG;
 import static org.keycloak.common.util.ObjectUtil.capitalize;
 
+/**
+ * 将 {@link KcAdmV2CommandDescriptor} 转换为 PicoCLI 命令树。
+ * <p>
+ * 按资源分组注册子命令，处理变体（如 oidc/saml）、连接选项分区及 {@code edit} 合成命令。
+ */
 final class KcAdmV2CommandBuilder {
 
     private static final String OPT_HELP = "--help";
+    /** 请求体 JSON 文件选项短名。 */
     static final String OPT_FILE = "-f";
+    /** 压缩 JSON 输出（不美化）选项。 */
     static final String OPT_COMPRESSED = "--compressed";
     private static final String CMD_EDIT = "edit";
     private static final String CONNECTION_OPTIONS_SECTION = "connectionOptions";
     private static final String CONNECTION_OPTIONS_HEADING = "%nConnection options (must precede the subcommand):%n";
 
     private final KcAdmV2Cmd root;
+    /** 根命令上的连接/认证选项，用于在帮助中单独展示。 */
     private final List<OptionSpec> connectionOptions;
 
+    /** 从根命令规格中提取可见连接选项。 */
     KcAdmV2CommandBuilder(KcAdmV2Cmd root, CommandSpec rootSpec) {
         this.root = root;
         this.connectionOptions = rootSpec.options().stream().filter(o -> !o.hidden()).toList();
     }
 
+    /** 将描述符中的全部资源与子命令挂载到给定 CLI 实例。 */
     void addCommands(CommandLine cli, KcAdmV2CommandDescriptor descriptor) {
         for (ResourceDescriptor resource : descriptor.getResources()) {
             GroupCommand groupCommand = new GroupCommand(resource.getName());
@@ -88,8 +98,7 @@ final class KcAdmV2CommandBuilder {
                     buildLeafCommand(cmd, variant.getOptions(), variant));
         }
 
-        // -f and variant subcommands are mutually exclusive: either provide a JSON file
-        // or pick a variant (e.g. oidc/saml) to get field-specific options
+        // -f 与变体子命令互斥：要么提供 JSON 文件，要么选择变体（如 oidc/saml）以获取协议专属选项
         String variants = parentCli.getSubcommands().keySet().stream().sorted().collect(joining(" | "));
         parentCli.getCommandSpec().usageMessage().customSynopsis(
                 CMD + " " + V2_FLAG + " " + KcAdmV2Cmd.CONNECTION_OPTIONS_HINT + " "
@@ -120,10 +129,8 @@ final class KcAdmV2CommandBuilder {
         if (!isVariantParent && cmd.isRequiresId()) {
             addIdPositional(spec, cmd.getResourceName(), !cmd.hasRequestBody());
         } else if (isCreate && hasIdOption) {
-            // For create commands with a known ID field (e.g. client → clientId), add an
-            // optional <id> positional so users can write "create oidc my-client" instead of
-            // "create oidc --client-id my-client". The --client-id option is kept hidden
-            // for backwards compatibility.
+            // 对含已知 ID 字段的 create 命令（如 client → clientId），增加可选 <id> 位置参数，
+            // 使用户可写 "create oidc my-client" 而非 "--client-id"；隐藏的 --client-id 保留向后兼容
             addIdPositional(spec, cmd.getResourceName(), false);
         }
 
@@ -135,7 +142,7 @@ final class KcAdmV2CommandBuilder {
                     .validate(false)
                     .order(1);
 
-            // On variant leaves, hide -f (files don't need the discriminator, users can omit it: "create -f file.json")
+            // 变体叶子节点隐藏 -f（文件无需鉴别器，用户可直接 "create -f file.json"）
             boolean isVariantLeaf = variant != null;
             fieldGroup.addArg(buildFileOption(hasBodyOptions, isVariantLeaf));
 
@@ -268,7 +275,7 @@ final class KcAdmV2CommandBuilder {
         UsageMessageSpec usage = spec.usageMessage();
         List<String> keys = new ArrayList<>(usage.sectionKeys());
 
-        // connection options must be listed before sub-commands on the variant parent
+        // 变体父命令的帮助中，连接选项须列在子命令列表之前
         int commandListIndex = keys.indexOf(UsageMessageSpec.SECTION_KEY_COMMAND_LIST_HEADING);
         if (commandListIndex >= 0) {
             keys.add(commandListIndex, CONNECTION_OPTIONS_SECTION);
@@ -277,7 +284,7 @@ final class KcAdmV2CommandBuilder {
         }
         usage.sectionKeys(keys);
 
-        // connection options are added as a custom options section so that they do not appear in the leaf autocomplete
+        // 连接选项作为自定义分区展示，避免出现在叶子命令的自动补全中
         usage.sectionMap().put(CONNECTION_OPTIONS_SECTION, help -> {
             Help.Layout layout = help.createDefaultLayout(connectionOptions, List.of(), help.colorScheme());
             for (OptionSpec opt : connectionOptions) {
@@ -295,6 +302,7 @@ final class KcAdmV2CommandBuilder {
                 .build());
     }
 
+    /** 资源分组占位命令：无子命令参数时提示用户使用 {@code --help}。 */
     static class GroupCommand implements Runnable {
         private final String name;
         private CommandSpec spec;

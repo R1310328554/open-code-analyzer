@@ -31,16 +31,20 @@ import static org.keycloak.client.cli.util.HttpUtil.APPLICATION_JSON;
 import static org.keycloak.common.util.ObjectUtil.capitalize;
 
 /**
- * Converts an {@link OpenAPI} model into a {@link KcAdmV2CommandDescriptor}.
- * Used at build time to produce the bundled default, and at runtime for server-fetch (future).
+ * 将 {@link OpenAPI} 模型转换为 {@link KcAdmV2CommandDescriptor}。
+ * <p>
+ * 构建期生成内置默认描述符；运行期亦用于从服务器拉取的 OpenAPI 转换。
  */
 public class KcAdmV2DescriptorBuilder {
 
+    /** 路径中资源 ID 占位符。 */
     static final String ID_PATH_PARAM = "{id}";
 
-
+    /** GET 子命令名。 */
     static final String CMD_NAME_GET = "get";
+    /** POST/create 子命令名。 */
     static final String CMD_NAME_CREATE = "create";
+    /** PUT/apply 子命令名。 */
     static final String CMD_NAME_APPLY = "apply";
 
     private static final Map<PathItem.HttpMethod, String> HTTP_METHOD_TO_COMMAND = Map.of(
@@ -53,11 +57,11 @@ public class KcAdmV2DescriptorBuilder {
 
     private static final String SP = " ";
 
+    /** 将完整 OpenAPI 文档转换为按资源分组的 CLI 描述符。 */
     public static KcAdmV2CommandDescriptor convert(OpenAPI openApi) {
         String version = openApi.getInfo() != null ? openApi.getInfo().getVersion() : "unknown";
 
-        // First pass: extract singular resource names from {id} paths (e.g., deleteClient -> "client")
-        // this way, we avoid dealing with plural, which can be tricky (getClients, getPolicies, ...)
+        // 第一遍：从含 {id} 的路径提取单数资源名（如 deleteClient → client），避免复数形式歧义
         Map<String, String> pathPrefixToResourceName = new LinkedHashMap<>();
         for (var entry : openApi.getPaths().getPathItems().entrySet()) {
             String path = entry.getKey();
@@ -124,11 +128,13 @@ public class KcAdmV2DescriptorBuilder {
         return descriptor;
     }
 
+    /** 将描述符序列化为 JSON 文件。 */
     public static void writeDescriptor(KcAdmV2CommandDescriptor descriptor, Path outputFile) throws IOException {
         Files.createDirectories(outputFile.getParent());
         OutputUtil.MAPPER.writeValue(outputFile.toFile(), descriptor);
     }
 
+    /** 从输入流反序列化描述符 JSON。 */
     public static KcAdmV2CommandDescriptor readDescriptor(InputStream is) throws IOException {
         return OutputUtil.MAPPER.readValue(is, KcAdmV2CommandDescriptor.class);
     }
@@ -138,7 +144,7 @@ public class KcAdmV2DescriptorBuilder {
             PathItem.HttpMethod httpMethod = cmdEntry.getKey();
             Operation op = pathItem.getOperations().get(httpMethod);
             if (op != null && op.getOperationId() != null) {
-                String command = cmdEntry.getValue(); // what you see in autocomplete, like 'create', 'delete', 'get'
+                String command = cmdEntry.getValue(); // 自动补全中显示的动词，如 create、delete、get
                 String name = stripVerbPrefix(op.getOperationId(), command);
                 if (name != null) {
                     return name;
@@ -151,9 +157,9 @@ public class KcAdmV2DescriptorBuilder {
     }
 
     private static String stripVerbPrefix(String operationId, String verb) {
-        // operationId pattern: "deleteClient", "getClient", "patchClient"
-        // ignored patterns (that won't match in this method) are for example: getClients
-        // verb from HTTP_METHOD_TO_COMMAND: "delete", "get", "patch", "create"
+        // operationId 模式：deleteClient、getClient、patchClient
+        // 不匹配的模式示例：getClients（复数）
+        // verb 来自 HTTP_METHOD_TO_COMMAND：delete、get、patch、create
         if (!operationId.toLowerCase().startsWith(verb)) {
             return null;
         }
@@ -414,7 +420,7 @@ public class KcAdmV2DescriptorBuilder {
     }
 
     /**
-     * Parses an OpenAPI JSON spec using SmallRye. Used at build time and for future server-fetch.
+     * 使用 SmallRye 解析 OpenAPI JSON；用于构建期及运行时服务器拉取。
      */
     public static OpenAPI parseOpenApi(java.util.function.Supplier<InputStream> specSupplier) {
         return SmallRyeOpenAPI.builder()
@@ -428,6 +434,7 @@ public class KcAdmV2DescriptorBuilder {
                 .model();
     }
 
+    /** 空 MicroProfile Config，避免 SmallRye 扫描外部配置源。 */
     private static final Config EMPTY_CONFIG = new Config() {
         @Override public <T> T getValue(String s, Class<T> c) { return null; }
         @Override public ConfigValue getConfigValue(String s) { return null; }
@@ -439,7 +446,7 @@ public class KcAdmV2DescriptorBuilder {
     };
 
     /**
-     * Build-time entry point: reads OpenAPI from classpath, writes descriptor and CLI examples to output directory.
+     * 构建期入口：从 classpath 读取 OpenAPI，写出描述符与 CLI 示例 JSON。
      */
     public static void main(String[] args) throws IOException {
         if (args.length != 1) {
@@ -456,8 +463,7 @@ public class KcAdmV2DescriptorBuilder {
     }
 
     /**
-     * Generates {@code admin-v2-cli-examples.json} from the descriptor.
-     * Used by the docs build pipeline to render CLI usage examples.
+     * 从描述符生成 {@code admin-v2-cli-examples.json}，供文档构建流水线渲染 CLI 用法示例。
      */
     private static void writeCliExamples(KcAdmV2CommandDescriptor descriptor, Path outputFile) throws IOException {
         Map<String, Map<String, String>> examples = new LinkedHashMap<>();

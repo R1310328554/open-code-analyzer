@@ -39,16 +39,22 @@ import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 import static org.keycloak.common.util.IoUtils.readPasswordFromConsole;
 
 /**
+ * {@code config credentials} 命令的共享实现：建立与 Keycloak 的认证会话并持久化令牌。
+ * <p>
+ * 支持密码、客户端密钥、Signed JWT（keystore）等多种认证方式；子类可扩展 {@link #printExtraOptions}。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class BaseConfigCredentialsCmd extends BaseAuthOptionsCmd {
 
+    /** Signed JWT 默认有效期（秒）。 */
     private int sigLifetime = 600;
 
     public BaseConfigCredentialsCmd(CommandState commandState) {
         super(commandState);
     }
 
+    /** 从已有配置数据填充未显式指定的 server/realm/客户端字段。 */
     public void init(ConfigData configData) {
         if (server == null) {
             server = configData.getServerUrl();
@@ -75,6 +81,7 @@ public class BaseConfigCredentialsCmd extends BaseAuthOptionsCmd {
         return new String[] {"--no-config", booleanOptionForCheck(noconfig)};
     }
 
+    /** 校验 server/realm，执行 OAuth 登录并将令牌写入配置文件。 */
     @Override
     public void process() {
         // check server
@@ -160,7 +167,7 @@ public class BaseConfigCredentialsCmd extends BaseAuthOptionsCmd {
                     alias, sigLifetime, clientId, realmInfoUrl);
         }
 
-        // if only server and realm are set, just save config and be done
+        // 仅设置 server 与 realm、无凭据时只保存配置不登录
         if (user == null && secret == null && keystore == null) {
             getHandler().saveMergeConfig(config -> {
                 config.setServerUrl(server);
@@ -263,6 +270,7 @@ public class BaseConfigCredentialsCmd extends BaseAuthOptionsCmd {
         return sb.toString();
     }
 
+    /** 子类在帮助文本中追加额外选项说明（如 v2 的 {@code --openapi-url}）。 */
     protected void printExtraOptions(PrintWriter out) {
     }
 }

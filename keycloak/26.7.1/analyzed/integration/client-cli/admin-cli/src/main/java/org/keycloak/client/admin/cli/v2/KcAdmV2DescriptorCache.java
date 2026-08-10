@@ -8,9 +8,16 @@ import java.util.Map;
 
 import org.keycloak.client.cli.util.OutputUtil;
 
+/**
+ * 按服务器 URL 缓存 v2 命令描述符的本地存储。
+ * <p>
+ * 使用 {@code registry.json} 映射服务器到 OpenAPI 版本，描述符文件名为 {@code descriptor-<version>.json}。
+ */
 public final class KcAdmV2DescriptorCache {
 
+    /** 服务器→版本注册表文件名。 */
     public static final String REGISTRY_FILENAME = "registry.json";
+    /** 描述符 JSON 文件前缀。 */
     public static final String DESCRIPTOR_PREFIX = "descriptor-";
 
     private final Path cacheDir;
@@ -19,6 +26,7 @@ public final class KcAdmV2DescriptorCache {
         this.cacheDir = cacheDir;
     }
 
+    /** 加载指定服务器 URL 对应的缓存描述符；不存在或损坏时返回 {@code null}。 */
     public KcAdmV2CommandDescriptor loadForServer(String serverUrl) {
         if (!Files.isDirectory(cacheDir)) {
             return null;
@@ -42,6 +50,7 @@ public final class KcAdmV2DescriptorCache {
         }
     }
 
+    /** 保存描述符并更新注册表；版本变更时清理无引用的旧描述符文件。 */
     public void save(String serverUrl, KcAdmV2CommandDescriptor descriptor) {
         String newVersion = descriptor.getVersion();
         if (newVersion == null || newVersion.isBlank()) {
@@ -120,10 +129,12 @@ public final class KcAdmV2DescriptorCache {
         }
     }
 
+    /** 服务器 URL → 描述符版本映射。 */
     static class Registry {
         public Map<String, ServerEntry> servers = new LinkedHashMap<>();
     }
 
+    /** 单个服务器条目：缓存的描述符 OpenAPI 版本号。 */
     static class ServerEntry {
         public String version;
 

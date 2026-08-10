@@ -29,13 +29,19 @@ import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 import static org.keycloak.common.util.IoUtils.readPasswordFromConsole;
 
 /**
+ * {@code config truststore} 命令的共享实现：配置或删除全局 HTTPS truststore。
+ * <p>
+ * 连接 Keycloak 时使用；密码可通过 {@code --trustpass}、环境变量或交互式输入提供。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class BaseConfigTruststoreCmd extends BaseAuthOptionsCmd {
 
+    /** truststore 文件路径（位置参数）。 */
     @Parameters(arity = "0..1")
     private String store;
 
+    /** 从配置中移除 truststore 设置。 */
     @Option(names = {"-d", "--delete"}, description = "Remove truststore configuration")
     private boolean delete;
 

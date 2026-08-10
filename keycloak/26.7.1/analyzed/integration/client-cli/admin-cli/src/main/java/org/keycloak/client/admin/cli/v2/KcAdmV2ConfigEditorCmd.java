@@ -11,9 +11,15 @@ import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Spec;
 
 
+/**
+ * {@code config editor} 子命令：配置 {@code edit} 命令使用的文本编辑器。
+ * <p>
+ * 写入配置文件中的 {@code editor} 字段，优先级高于环境变量。
+ */
 @Command(name = "editor", description = "Configure the text editor for the edit command")
 class KcAdmV2ConfigEditorCmd implements Runnable {
 
+    /** 编辑器命令（如 vi、nano、{@code code --wait}）。 */
     @Parameters(index = "0", paramLabel = "<editor>",
             description = "Editor command (e.g., vi, nano, 'code --wait')")
     String editorValue;
@@ -40,6 +46,7 @@ class KcAdmV2ConfigEditorCmd implements Runnable {
         spec.commandLine().getErr().println("Editor configured: " + editorValue);
     }
 
+    /** 解析配置文件路径：命令行 {@code --config} 或根选项。 */
     private String resolveConfigPath() {
         if (config != null) {
             return config;

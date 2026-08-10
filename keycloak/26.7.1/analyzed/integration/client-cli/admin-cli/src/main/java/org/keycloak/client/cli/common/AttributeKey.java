@@ -21,6 +21,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
+ * 解析 CLI 属性路径键（如 {@code user.attributes.foo}、{@code roles[0].name}）。
+ * <p>
+ * 支持点分路径、引号转义及末尾 {@code +} 表示追加模式；供属性 SET/DELETE 操作使用。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class AttributeKey {
@@ -30,7 +34,9 @@ public class AttributeKey {
     private static final int UNQUOTED = 2;
     private static final int END = 3;
 
+    /** 路径各段组件。 */
     private List<Component> components;
+    /** 键以 {@code +} 结尾时为追加而非覆盖。 */
     private boolean append;
 
     public AttributeKey() {
@@ -45,6 +51,7 @@ public class AttributeKey {
         components = parse(key);
     }
 
+    /** 将键字符串解析为不可变组件列表。 */
     static List<Component> parse(String key) {
 
         if (key == null || "".equals(key)) {
@@ -127,9 +134,12 @@ public class AttributeKey {
 
 
 
+    /** 属性路径中的单段：名称及可选数组下标 {@code [n]}。 */
     public static class Component {
 
+        /** 数组下标，非数组段为 -1。 */
         private int index = -1;
+        /** 段名称。 */
         private String name;
 
         Component(String name) {

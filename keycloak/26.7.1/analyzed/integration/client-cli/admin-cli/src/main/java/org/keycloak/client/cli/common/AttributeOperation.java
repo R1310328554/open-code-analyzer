@@ -17,12 +17,19 @@
 package org.keycloak.client.cli.common;
 
 /**
+ * 对 JSON/配置属性的单次 SET 或 DELETE 操作。
+ * <p>
+ * 键经 {@link AttributeKey} 解析；DELETE 类型不允许携带 value。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class AttributeOperation {
 
+    /** 操作类型。 */
     private Type type;
+    /** 目标属性路径。 */
     private AttributeKey key;
+    /** SET 时的新值；DELETE 时为 null。 */
     private String value;
 
     public AttributeOperation(Type type, String key) {
@@ -51,8 +58,11 @@ public class AttributeOperation {
     }
 
 
+    /** 属性操作类型：设置值或删除键。 */
     public enum Type {
+        /** 设置或覆盖属性值。 */
         SET,
+        /** 删除指定属性。 */
         DELETE
     }
 }

@@ -20,6 +20,11 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Spec;
 
+/**
+ * {@code config openapi} 子命令：从 URL 或本地文件加载 OpenAPI 规范并缓存为 v2 命令描述符。
+ * <p>
+ * 使 CLI 命令、选项与帮助文本与目标服务器版本一致；需先执行 {@code config credentials}。
+ */
 @Command(name = "openapi", description = "Fetch the server's OpenAPI spec to get commands, options, and help " +
         "that match your server version — instead of the built-in defaults.%n%n" +
         "The source can be a URL (e.g., https://localhost:9000/openapi) or a local file path.%n%n" +
@@ -27,6 +32,7 @@ import picocli.CommandLine.Spec;
         "than the main server. Requires 'config credentials' to be run first.")
 class KcAdmV2ConfigOpenApiCmd implements Runnable {
 
+    /** OpenAPI 来源：HTTP(S) URL 或本地 JSON 文件路径。 */
     @Parameters(index = "0", paramLabel = "<source>",
             description = "URL of the OpenAPI endpoint (e.g., http://localhost:9000/openapi) or path to a local OpenAPI JSON file")
     String openApiSource;
@@ -40,6 +46,7 @@ class KcAdmV2ConfigOpenApiCmd implements Runnable {
     @Spec
     CommandSpec spec;
 
+    /** 描述符缓存目录。 */
     private final Path cacheDir;
 
     KcAdmV2ConfigOpenApiCmd(Path cacheDir) {
@@ -66,6 +73,7 @@ class KcAdmV2ConfigOpenApiCmd implements Runnable {
         }
     }
 
+    /** 根据来源字符串加载描述符（URL 或文件）。 */
     static KcAdmV2CommandDescriptor loadDescriptor(String source) throws IOException {
         KcAdmV2CommandDescriptor descriptor;
         if (isUrl(source)) {
@@ -89,6 +97,7 @@ class KcAdmV2ConfigOpenApiCmd implements Runnable {
         return source.startsWith("http://") || source.startsWith("https://");
     }
 
+    /** 通过 HTTP GET 拉取 OpenAPI JSON 并转换为命令描述符。 */
     static KcAdmV2CommandDescriptor fetchDescriptorFromUrl(String url) throws IOException {
         HeadersBodyStatus response = HttpUtil.doRequest("get", url, new HeadersBody(new Headers()));
         response.checkSuccess();

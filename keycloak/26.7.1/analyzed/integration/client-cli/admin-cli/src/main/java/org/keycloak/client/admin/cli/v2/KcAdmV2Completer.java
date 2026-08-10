@@ -9,17 +9,20 @@ import picocli.AutoComplete;
 import picocli.CommandLine;
 
 /**
- * Handles the {@code __complete} request for dynamic shell completion.
- * Delegates to PicoCLI's {@link AutoComplete#complete} for candidate resolution.
+ * 处理 {@code __complete} 请求的动态 Shell 补全。
+ * <p>
+ * 委托 PicoCLI {@link AutoComplete#complete} 解析候选；对单独的 {@code --} 前缀做特殊处理。
  */
 public class KcAdmV2Completer {
 
     private static final String LONG_OPTION_PREFIX = "--";
 
+    /** 使用默认缓存目录构建 CLI 并补全。 */
     public static void complete(String[] args, PrintWriter out) {
         completeWith(buildCli(new KcAdmV2Cmd(args)), args, out);
     }
 
+    /** 使用指定描述符缓存目录构建 CLI 并补全。 */
     public static void complete(String[] args, PrintWriter out, Path cacheDir) {
         completeWith(buildCli(new KcAdmV2Cmd(cacheDir, args)), args, out);
     }
@@ -62,8 +65,8 @@ public class KcAdmV2Completer {
         }
     }
 
-    // PicoCLI's AutoComplete.complete() treats "--" as ambiguous (end-of-options vs partial option),
-    // so we handle it ourselves by listing all long options for the resolved command.
+    // PicoCLI 的 AutoComplete 将 "--" 视为歧义（选项结束 vs 部分选项名），
+    // 此处自行列出当前命令的全部长选项
     private static void completeLongOptions(CommandLine cli, String[] args, PrintWriter out) {
         CommandLine current = cli;
         for (int i = 0; i < args.length - 1; i++) {
