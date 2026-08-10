@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:46:30Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/organization/OrganizationSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/organization/validation/OrganizationsValidation.java",
-    "server-spi-private/src/main/java/org/keycloak/partialimport/Action.java",
-    "server-spi-private/src/main/java/org/keycloak/partialimport/PartialImportResult.java",
-    "server-spi-private/src/main/java/org/keycloak/partialimport/PartialImportResults.java",
-    "server-spi-private/src/main/java/org/keycloak/partialimport/ResourceType.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/AgePasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/AgePasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/DefaultPasswordPolicyManagerProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/DefaultPasswordPolicyManagerProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/DenylistPasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/DenylistPasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/DigitsPasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/DigitsPasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/ForceExpiredPasswordPolicyProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2668,
-  "done": 3315
+  "done": 3330
 }
