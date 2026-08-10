@@ -27,6 +27,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * 控制台重复 Bean 增强配置：在启用 {@code nacos.duplicate.bean.enhancement} 时注册后处理器，
+ * 避免多上下文或重复扫描导致的 Bean 冲突。
  * Bean Post Processor Configuration for nacos console.
  *
  * @author xiweng.yy
@@ -37,12 +39,14 @@ import org.springframework.context.annotation.Configuration;
 @EnabledInnerHandler
 public class NacosConsoleBeanPostProcessorConfiguration {
     
+    /** 注册普通 Spring Bean 重复定义检测与合并后处理器 */
     @Bean
     public InstantiationAwareBeanPostProcessor nacosDuplicateSpringBeanPostProcessor(
         ConfigurableApplicationContext context) {
         return new NacosDuplicateSpringBeanPostProcessor(context);
     }
     
+    /** 注册 {@code @Configuration} 类重复定义检测后处理器 */
     @Bean
     public InstantiationAwareBeanPostProcessor nacosDuplicateConfigurationBeanPostProcessor(
         ConfigurableApplicationContext context) {

@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * 按 {@code functionMode} 裁剪模块时的补偿配置：例如仅 config 模式仍需 {@link SelectorManager}。
  * Do some config and bean initialize when `functionMode` set. Such as `config` and `naming`.
  *
  * @author xiweng.yy
@@ -30,6 +31,7 @@ import org.springframework.context.annotation.Configuration;
 public class ConsoleFunctionEnabledConfig {
     
     /**
+     * 当 functionMode 为 config 时命名模块 Bean 不会加载，但控制台 API 仍需要 {@link SelectorManager} 解析选择器。
      * If `functionMode` set as `config`,
      * the naming module bean will not be loaded, but console api required {@link SelectorManager} to do selector parser.
      *

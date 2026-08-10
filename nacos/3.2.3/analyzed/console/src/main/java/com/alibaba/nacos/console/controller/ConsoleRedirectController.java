@@ -22,6 +22,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
 /**
+ * 控制台根路径重定向：根据 {@code nacos.console.ui.default} 将 {@code /} 转发到新/旧 UI。
  * Controller to redirect root path to the default console UI.
  *
  * <p>The default UI version is controlled by the property {@code nacos.console.ui.default}.
@@ -32,12 +33,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class ConsoleRedirectController {
     
+    /** 默认 UI 版本配置项键名 */
     private static final String PROPERTY_DEFAULT_UI = "nacos.console.ui.default";
     
+    /** 旧版控制台 UI 标识 */
     private static final String UI_LEGACY = "legacy";
     
+    /** 新版控制台 UI 标识 */
     private static final String UI_NEXT = "next";
     
+    /**
+     * 根路径入口：按配置重定向到 {@code /next/} 或 {@code /legacy/}。
+     *
+     * @return Spring MVC 重定向视图名
+     */
     @Since("3.2.0")
     @GetMapping("/")
     public String index() {
@@ -45,12 +54,14 @@ public class ConsoleRedirectController {
         return UI_LEGACY.equals(defaultUi) ? "redirect:/legacy/" : "redirect:/next/";
     }
     
+    /** 新版 UI 入口，内部转发到 {@code /next/index.html} */
     @Since("3.2.0")
     @GetMapping("/next/")
     public String next() {
         return "forward:/next/index.html";
     }
     
+    /** 旧版 UI 入口，内部转发到 {@code /legacy/index.html} */
     @Since("3.2.0")
     @GetMapping("/legacy/")
     public String legacy() {

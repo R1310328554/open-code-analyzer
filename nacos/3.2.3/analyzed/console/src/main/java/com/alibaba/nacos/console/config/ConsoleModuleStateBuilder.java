@@ -21,20 +21,26 @@ import com.alibaba.nacos.sys.module.AbstractConsoleModuleStateBuilder;
 import com.alibaba.nacos.sys.module.ModuleState;
 
 /**
+ * 控制台 UI 模块状态构建器：暴露 UI 开关、默认 UI 版本与 AI 扩展启用状态。
  * Console module state builder.
  *
  * @author xiweng.yy
  */
 public class ConsoleModuleStateBuilder extends AbstractConsoleModuleStateBuilder {
     
+    /** 模块状态命名空间：console */
     public static final String CONSOLE_MODULE = "console";
     
+    /** 状态键：控制台 UI 是否启用 */
     private static final String CONSOLE_UI_ENABLED = "console_ui_enabled";
     
+    /** 状态键：默认 UI 版本（next / legacy） */
     private static final String CONSOLE_UI_DEFAULT = "console_ui_default";
     
+    /** 状态键：AI 扩展功能是否启用 */
     private static final String AI_ENABLED = "ai_enabled";
     
+    /** 从环境变量读取 UI 与 AI 相关开关并写入 {@link ModuleState} */
     @Override
     public ModuleState build() {
         ModuleState result = new ModuleState(CONSOLE_MODULE);

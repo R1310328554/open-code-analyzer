@@ -23,6 +23,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
+ * Nacos 控制台 Spring Boot 启动入口：加载 console 配置、启用定时任务并启动 Web 容器。
  * Nacos console starter.
  *
  * @author xiweng.yy
@@ -32,6 +33,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class NacosConsole {
     
+    /**
+     * 控制台进程主入口，委托 {@link SpringApplication} 启动 Spring 上下文。
+     *
+     * @param args 命令行参数
+     */
     public static void main(String[] args) {
         SpringApplication.run(NacosConsole.class, args);
     }

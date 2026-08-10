@@ -24,64 +24,78 @@ import com.alibaba.nacos.plugin.auth.constant.Constants;
 import com.alibaba.nacos.sys.env.EnvUtil;
 
 /**
+ * 控制台鉴权动态配置：实现 {@link NacosAuthConfig}，从环境变量加载鉴权开关与 Server Identity。
  * Nacos console auth configurations.
  *
  * @author xiweng.yy
  */
 public class NacosConsoleAuthConfig extends AbstractDynamicConfig implements NacosAuthConfig {
     
+    /** 控制台 API 鉴权作用域标识（{@link ApiType#CONSOLE_API}） */
     public static final String NACOS_CONSOLE_AUTH_SCOPE = ApiType.CONSOLE_API.name();
     
     /**
+     * 是否启用控制台鉴权。
      * Whether console auth enabled.
      */
     private boolean authEnabled;
     
     /**
+     * 当前使用的鉴权系统类型（插件 SPI 名）。
      * Which auth system is in use.
      */
     private String nacosAuthSystemType;
     
+    /** Server Identity 请求头键名（集群互信） */
     private String serverIdentityKey;
     
+    /** Server Identity 请求头期望值 */
     private String serverIdentityValue;
     
+    /** 注册动态配置监听器并首次从环境加载 */
     public NacosConsoleAuthConfig() {
         super("NacosConsoleAuth");
         resetConfig();
     }
     
+    /** {@inheritDoc} 返回控制台 API 作用域 */
     @Override
     public String getAuthScope() {
         return NACOS_CONSOLE_AUTH_SCOPE;
     }
     
+    /** {@inheritDoc} 控制台鉴权是否开启 */
     @Override
     public boolean isAuthEnabled() {
         return authEnabled;
     }
     
+    /** {@inheritDoc} 鉴权插件类型 */
     @Override
     public String getNacosAuthSystemType() {
         return nacosAuthSystemType;
     }
     
+    /** {@inheritDoc} 是否配置了有效的 Server Identity 键值对 */
     @Override
     public boolean isSupportServerIdentity() {
         return StringUtils.isNotBlank(serverIdentityKey)
             && StringUtils.isNotBlank(serverIdentityValue);
     }
     
+    /** {@inheritDoc} Server Identity 键 */
     @Override
     public String getServerIdentityKey() {
         return serverIdentityKey;
     }
     
+    /** {@inheritDoc} Server Identity 值 */
     @Override
     public String getServerIdentityValue() {
         return serverIdentityValue;
     }
     
+    /** 从环境变量刷新鉴权开关、系统类型与 Server Identity 配置 */
     @Override
     protected void getConfigFromEnv() {
         authEnabled = EnvUtil.getProperty(Constants.Auth.NACOS_CORE_AUTH_CONSOLE_ENABLED,
@@ -93,11 +107,13 @@ public class NacosConsoleAuthConfig extends AbstractDynamicConfig implements Nac
             EnvUtil.getProperty(Constants.Auth.NACOS_CORE_AUTH_SERVER_IDENTITY_VALUE, "");
     }
     
+    /** {@inheritDoc} 日志输出时使用 {@link #toString()} */
     @Override
     protected String printConfig() {
         return toString();
     }
     
+    /** 返回鉴权开关与系统类型的简要描述 */
     @Override
     public String toString() {
         return "NacosConsoleAuthConfig{" + "authEnabled=" + authEnabled + ", nacosAuthSystemType='"

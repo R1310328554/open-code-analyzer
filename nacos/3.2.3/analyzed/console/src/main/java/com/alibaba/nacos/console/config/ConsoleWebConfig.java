@@ -38,6 +38,7 @@ import javax.annotation.PostConstruct;
 import java.time.ZoneId;
 
 /**
+ * 控制台 Web 层 Spring 配置：CORS、XSS/鉴权/参数校验过滤器、Jackson 时区与 Spring Security 链。
  * Console config.
  *
  * @author yshen
@@ -47,20 +48,22 @@ import java.time.ZoneId;
 @Configuration
 public class ConsoleWebConfig {
     
+    /** Controller 方法元数据缓存，供过滤器与启动初始化共用 */
     private final ControllerMethodsCache methodsCache;
     
+    /** 注入方法缓存 Bean */
     public ConsoleWebConfig(ControllerMethodsCache methodsCache) {
         this.methodsCache = methodsCache;
     }
     
-    /**
-     * Init.
-     */
+    /** 启动后扫描 {@code com.alibaba.nacos.console.controller} 包并缓存接口元数据 */
+
     @PostConstruct
     public void init() {
         methodsCache.initClassMethod("com.alibaba.nacos.console.controller");
     }
     
+    /** 根据 {@link ConsoleCorsConfig} 注册全局 CORS 过滤器 */
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
@@ -87,11 +90,13 @@ public class ConsoleWebConfig {
         return new CorsFilter(source);
     }
     
+    /** 注册 XSS 请求过滤 Bean */
     @Bean
     public XssFilter xssFilter() {
         return new XssFilter();
     }
     
+    /** 将控制台鉴权过滤器注册到 {@code /*}，顺序 6 */
     @Bean
     public FilterRegistrationBean<NacosConsoleAuthFilter> authFilterRegistration(
         NacosConsoleAuthFilter authFilter) {
@@ -104,6 +109,7 @@ public class ConsoleWebConfig {
         return registration;
     }
     
+    /** 创建绑定控制台鉴权 scope 的 {@link NacosConsoleAuthFilter} */
     @Bean
     public NacosConsoleAuthFilter consoleAuthFilter(ControllerMethodsCache methodsCache) {
         return new NacosConsoleAuthFilter(NacosAuthConfigHolder.getInstance()
@@ -111,6 +117,7 @@ public class ConsoleWebConfig {
             methodsCache);
     }
     
+    /** 注册参数校验过滤器，顺序 8 */
     @Bean
     public FilterRegistrationBean<ParamCheckerFilter> consoleParamCheckerFilterRegistration(
         ParamCheckerFilter consoleParamCheckerFilter) {
@@ -122,17 +129,20 @@ public class ConsoleWebConfig {
         return registration;
     }
     
+    /** 创建基于方法缓存的参数校验过滤器 */
     @Bean
     public ParamCheckerFilter consoleParamCheckerFilter(ControllerMethodsCache methodsCache) {
         return new ParamCheckerFilter(methodsCache);
     }
     
+    /** 将 Jackson 默认时区设为 JVM 系统默认时区 */
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer jacksonObjectMapperCustomization() {
         return jacksonObjectMapperBuilder -> jacksonObjectMapperBuilder
             .timeZone(ZoneId.systemDefault().toString());
     }
     
+    /** 配置 Spring Security：放行全部路径并禁用 CSRF（鉴权由 Nacos 过滤器负责） */
     @Bean
     @ConditionalOnMissingBean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -142,6 +152,7 @@ public class ConsoleWebConfig {
         return http.build();
     }
     
+    /** 注册统一 API 异常处理器 Bean */
     @Bean
     public NacosApiExceptionHandler nacosApiExceptionHandler() {
         return new NacosApiExceptionHandler();

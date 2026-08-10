@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * 控制台独立部署（{@link com.alibaba.nacos.sys.env.DeploymentType#CONSOLE}）时的 Spring Bean 配置。
  * Load Beans for {@link com.alibaba.nacos.sys.env.DeploymentType#CONSOLE} type.
  *
  * @author xiweng.yy
@@ -31,11 +32,13 @@ import org.springframework.context.annotation.Configuration;
 @EnabledRemoteHandler
 public class ConsoleDeploymentConfig {
     
+    /** 注册 Controller 方法元数据缓存，供鉴权与参数校验过滤器使用 */
     @Bean
     public ControllerMethodsCache controllerMethodsCache() {
         return new ControllerMethodsCache();
     }
     
+    /** 注册命名服务选择器管理器 Bean */
     @Bean
     public SelectorManager selectorManager() {
         return new SelectorManager();

@@ -21,6 +21,8 @@ import org.rocksdb.NativeLibraryLoader;
 import java.lang.reflect.Field;
 
 /**
+ * GraalVM / Spring AOT 辅助配置：通过反射读取 RocksDB 原生库加载器中的 JNI 库文件名，
+ * 便于在原生镜像构建时注册 jar 内嵌的 .so 等资源。
  * Help graalvm and spring-aot find specific native file from jar like rocksdb.
  *
  * @author Dioxide.CN
@@ -30,7 +32,10 @@ import java.lang.reflect.Field;
 public class AotConfiguration {
     
     /**
+     * 反射读取 {@link NativeLibraryLoader} 的 jniLibraryFileName 字段，供 AOT 资源模式注册使用。
      * To help find rocksdb inner fields' value.
+     *
+     * @return JNI 原生库文件名
      */
     public static String reflectToNativeLibraryLoader() {
         Class<NativeLibraryLoader> clazz = NativeLibraryLoader.class;

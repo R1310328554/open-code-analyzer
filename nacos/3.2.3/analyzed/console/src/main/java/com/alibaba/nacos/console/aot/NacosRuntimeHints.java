@@ -27,6 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
+ * Nacos 控制台 Spring AOT 运行时提示注册器：为反射、序列化与 classpath 资源
+ * 预注册 GraalVM 原生镜像所需的类型与资源模式（含 JRaft、gRPC、Derby、Hessian 等）。
  * Add nacos runtime hints support.
  *
  * @author Dioxide.CN
@@ -36,7 +38,8 @@ import java.util.stream.Stream;
 @SuppressWarnings("all")
 public class NacosRuntimeHints implements RuntimeHintsRegistrar {
     
-    // region Java
+    // region Java 标准库与 JMX 等需在原生镜像中保留反射的类型
+    /** JDK、gRPC 依赖等需在 AOT 中保留构造/方法/字段反射的类数组 */
     private final Class<?>[] javaClasses = {byte.class, byte.class, byte[].class, boolean.class,
         Object.class,
         Integer.class, com.sun.management.GarbageCollectorMXBean.class,
@@ -61,14 +64,16 @@ public class NacosRuntimeHints implements RuntimeHintsRegistrar {
         java.util.Properties.class};
     // endregion
     
-    // region Hessian
+    // region Hessian 序列化相关类型
+    /** Hessian 序列化相关类 */
     private final Class<?>[] hessianClasses = {com.caucho.hessian.io.Hessian2Input.class,
         com.caucho.hessian.io.ContextSerializerFactory.class};
     // endregion
     
-    // region SQL
+    // region SQL 嵌入式 Derby 与数据源相关类型
     // TODO: Replace hard Derby class literals with optional reflection-based registration,
     //       then remove direct Derby compile dependency from console.
+    /** Derby 嵌入式数据库与 HikariCP 等 SQL 层类 */
     private final Class<?>[] sqlClasses = {org.apache.derby.impl.store.raw.data.CachedPage.class,
         org.apache.derby.catalog.types.TypesImplInstanceGetter.class,
         org.apache.derby.impl.services.uuid.BasicUUIDGetter.class,
@@ -159,7 +164,8 @@ public class NacosRuntimeHints implements RuntimeHintsRegistrar {
         com.alibaba.nacos.persistence.datasource.ExternalDataSourceProperties.class};
     // endregion
     
-    // region JRaft Entity
+    // region JRaft 实体与 Protobuf 消息类型
+    /** JRaft 本地存储与 Raft 元数据 Protobuf 类 */
     private final Class<?>[] jraftDataClasses = {
         com.alipay.sofa.jraft.entity.LocalFileMetaOutter.LocalFileMeta.class,
         com.alipay.sofa.jraft.entity.LocalFileMetaOutter.LocalFileMeta.Builder.class,
@@ -181,7 +187,8 @@ public class NacosRuntimeHints implements RuntimeHintsRegistrar {
         com.alipay.sofa.jraft.entity.codec.v2.LogOutter.PBLogEntry.Builder.class,};
     // endregion
     
-    // region JRaft RPC
+    // region JRaft RPC 请求/响应类型
+    /** JRaft 节点间 RPC 消息类 */
     private final Class<?>[] jraftRpcClasses =
         {com.alipay.sofa.jraft.rpc.RpcRequests.AppendEntriesRequest.class,
             com.alipay.sofa.jraft.rpc.RpcRequests.AppendEntriesRequest.Builder.class,
@@ -215,7 +222,8 @@ public class NacosRuntimeHints implements RuntimeHintsRegistrar {
             com.alipay.sofa.jraft.rpc.RpcRequests.ReadIndexResponse.Builder.class};
     // endregion
     
-    // region JRaft CLI
+    // region JRaft CLI 管理命令类型
+    /** JRaft CLI 集群管理请求/响应类 */
     private final Class<?>[] jraftCliClasses =
         {com.alipay.sofa.jraft.rpc.CliRequests.LearnersOpResponse.class,
             com.alipay.sofa.jraft.rpc.CliRequests.LearnersOpResponse.Builder.class,
@@ -253,7 +261,8 @@ public class NacosRuntimeHints implements RuntimeHintsRegistrar {
             com.alipay.sofa.jraft.rpc.CliRequests.AddPeerRequest.Builder.class};
     // endregion
     
-    // region JRaft Service
+    // region JRaft 服务工厂与工具类
+    /** JRaft 运行时工厂、节点与复制器等服务类 */
     private final Class<?>[] jraftUtilClasses = {com.alipay.sofa.jraft.rpc.ProtobufMsgFactory.class,
         com.alipay.sofa.jraft.rpc.RpcRequestClosure.class,
         com.alipay.sofa.jraft.rpc.impl.AbstractClientService.class,
@@ -269,7 +278,8 @@ public class NacosRuntimeHints implements RuntimeHintsRegistrar {
         com.alipay.sofa.jraft.storage.snapshot.local.LocalSnapshotReader.class};
     // endregion
     
-    // region gRpc
+    // region gRPC / Netty  shaded 通信栈类型
+    /** gRPC、Protobuf 与 Netty shaded 通道相关类 */
     private final Class<?>[] grpcClasses =
         {com.google.protobuf.Any.class, com.google.protobuf.Any.Builder.class,
             com.google.protobuf.ByteString.class, com.google.protobuf.Message.class,
@@ -305,7 +315,8 @@ public class NacosRuntimeHints implements RuntimeHintsRegistrar {
             Class.forName("io.grpc.netty.shaded.io.grpc.netty.NettyServerStream")};
     // endregion
     
-    // region Nacos Hints
+    // region Nacos 核心模块需反射注册的类
+    /** Nacos 一致性、命名、配置、远程与插件等需反射的类集合 */
     private final Class<?>[] nacosClasses = {
         // reflect
         com.alibaba.nacos.common.notify.SlowEvent.class,
@@ -487,7 +498,8 @@ public class NacosRuntimeHints implements RuntimeHintsRegistrar {
         com.alibaba.nacos.config.server.remote.RpcConfigChangeNotifier.class,};
     // endregion
     
-    // region Nacos Serializer
+    // region Nacos 序列化 hint 类型列表
+    /** 原生镜像中需注册 Java 序列化支持的类型列表 */
     private final List<Class<? extends Serializable>> serializer = List.of(byte.class, byte[].class,
         String.class,
         ConcurrentHashMap.class, com.alibaba.nacos.api.grpc.auto.Metadata.class,
@@ -519,6 +531,7 @@ public class NacosRuntimeHints implements RuntimeHintsRegistrar {
         com.alibaba.nacos.consistency.entity.Log.class);
     // endregion
     
+    /** classpath 资源 glob 模式：原生库、静态前端资源、Derby 配置等 */
     private final String[] resourcePattern = {AotConfiguration.reflectToNativeLibraryLoader(),
         ".*libnetty_transport_native_epoll_.*\\.so", ".*\\.desc$", ".*\\.html$", ".*\\.css$",
         ".*\\.js$",
@@ -526,9 +539,16 @@ public class NacosRuntimeHints implements RuntimeHintsRegistrar {
         ".*\\.ttf$",
         "org/apache/derby/modules.properties", "application.properties",};
     
+    /** 默认构造；部分类数组初始化依赖 {@link Class#forName} */
     public NacosRuntimeHints() throws ClassNotFoundException {
     }
     
+    /**
+     * 向 Spring AOT 注册反射、资源与序列化运行时提示。
+     *
+     * @param hints       运行时提示收集器
+     * @param classLoader 当前类加载器
+     */
     @Override
     public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
         Stream
@@ -540,9 +560,9 @@ public class NacosRuntimeHints implements RuntimeHintsRegistrar {
                     MemberCategory.INVOKE_DECLARED_METHODS,
                     MemberCategory.DECLARED_FIELDS, MemberCategory.DECLARED_CLASSES));
         
-        // Register optional plugin classes by name to avoid compile-time dependency
+        // 按类名注册可选插件类，避免编译期硬依赖
         registerOptionalClass(hints, "com.alibaba.nacos.plugin.auth.impl.jwt.NacosJwtPayload");
-        // Register optional legacy adapter naming controllers (when api-legacy-adapter is on classpath, e.g. via bootstrap)
+        // 注册可选的旧版命名适配 Controller（bootstrap 引入 api-legacy-adapter 时）
         registerOptionalClass(hints, "com.alibaba.nacos.legacy.adapter.naming.CatalogController");
         
         for (String pattern : resourcePattern) {
@@ -552,6 +572,12 @@ public class NacosRuntimeHints implements RuntimeHintsRegistrar {
         serializer.forEach(type -> hints.serialization().registerType(type));
     }
     
+    /**
+     * 尝试按全限定名加载类并注册反射 hint；类不存在时静默跳过。
+     *
+     * @param hints     运行时提示收集器
+     * @param className 待注册类的全限定名
+     */
     private void registerOptionalClass(RuntimeHints hints, String className) {
         try {
             Class<?> clazz = Class.forName(className);
@@ -559,7 +585,7 @@ public class NacosRuntimeHints implements RuntimeHintsRegistrar {
                 MemberCategory.INVOKE_DECLARED_METHODS, MemberCategory.DECLARED_FIELDS,
                 MemberCategory.DECLARED_CLASSES);
         } catch (ClassNotFoundException e) {
-            // Optional plugin class not available, skip registration
+            // 可选插件类不在 classpath 上，跳过注册
         }
     }
     
