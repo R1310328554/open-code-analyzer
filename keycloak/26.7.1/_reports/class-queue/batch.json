@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T13:39:56Z",
   "files": [
-    "services/src/main/java/org/keycloak/userprofile/validator/RegistrationEmailAsUsernameEmailValueValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/RegistrationEmailAsUsernameUsernameValueValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/RegistrationUsernameExistsValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/UsernameHasValueValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/UsernameIDNHomographValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/UsernameMutationValidator.java",
-    "services/src/main/java/org/keycloak/userprofile/validator/UsernameProhibitedCharactersValidator.java",
-    "services/src/main/java/org/keycloak/utils/BrokerUtil.java",
-    "services/src/main/java/org/keycloak/utils/CRLUtils.java",
-    "services/src/main/java/org/keycloak/utils/FileUtils.java",
-    "services/src/main/java/org/keycloak/utils/FreemarkerUtils.java",
-    "services/src/main/java/org/keycloak/utils/GroupUtils.java",
-    "services/src/main/java/org/keycloak/utils/MediaType.java",
-    "services/src/main/java/org/keycloak/utils/MediaTypeMatcher.java",
-    "services/src/main/java/org/keycloak/utils/OAuth2Error.java",
     "services/src/main/java/org/keycloak/utils/ProfileHelper.java",
     "services/src/main/java/org/keycloak/utils/QRCodeUtils.java",
     "services/src/main/java/org/keycloak/utils/RegexUtils.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/vault/DefaultVaultRawSecret.java"
   ],
   "remaining_pending": 688,
-  "done": 5280
+  "done": 5295
 }
