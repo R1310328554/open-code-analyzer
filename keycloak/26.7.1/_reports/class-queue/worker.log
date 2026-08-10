@@ -2113,3 +2113,18 @@
 2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/TruststoreOptions.java wave72a quarkus config-api remaining options
 2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/VaultOptions.java wave72a quarkus config-api remaining options
 2026-08-10T09:03:06Z DONE quarkus/config-api/src/main/java/org/keycloak/config/WildcardOptionsUtil.java wave72a quarkus config-api remaining options
+2026-08-10T09:03:15Z DONE quarkus/config-api/src/main/java/org/keycloak/config/database/Database.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/CheckJdbcBuildStep.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/CheckMultipleDatasourcesBuildStep.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/ConfigBuildItem.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/CryptoProviderInitBuildItem.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/IsKeycloakDevMode.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/IsManagementEnabled.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/IsReAugmentation.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/KeycloakProcessor.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/KeycloakSessionFactoryPreInitBuildItem.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/LiquibaseProcessor.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/ProfileBuildItem.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/ValidatePersistenceUnitsBuildItem.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/deployment/src/main/java/org/keycloak/quarkus/deployment/WebAuthnMetadataBuildItem.java wave72b database + quarkus deployment + Environment
+2026-08-10T09:03:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/Environment.java wave72b database + quarkus deployment + Environment
