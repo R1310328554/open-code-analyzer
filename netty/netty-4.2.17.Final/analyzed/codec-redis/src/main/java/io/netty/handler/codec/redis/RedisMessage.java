@@ -19,6 +19,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * RedisMessage is base interface for codec-redis.
+ * <p>codec-redis 模块所有 RESP 消息类型的标记接口；具体语义由
+ * {@link SimpleStringRedisMessage}、{@link FullBulkStringRedisMessage}、
+ * {@link ArrayRedisMessage} 等实现类表达。</p>
  */
 @UnstableApi
 public interface RedisMessage {

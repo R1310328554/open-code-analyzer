@@ -20,6 +20,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * A strategy interface for caching {@link RedisMessage}s.
+ * <p>常见 RESP 值（如 {@code OK}、{@code PONG}、小整数）的缓存策略接口；
+ * {@link RedisDecoder} 解码与 {@link RedisEncoder} 编码时复用池内实例与预编码字节，
+ * 减少分配与 UTF-8 转换。未命中时返回 {@code null}，调用方自行构造新对象。</p>
  */
 @UnstableApi
 
@@ -27,11 +30,13 @@ public interface RedisMessagePool {
 
     /**
      * Returns {@link SimpleStringRedisMessage} for given {@code content}. Returns {@code null} it does not exist.
+     * <p>按字符串内容查找已缓存的简单字符串消息。</p>
      */
     SimpleStringRedisMessage getSimpleString(String content);
 
     /**
      * Returns {@link SimpleStringRedisMessage} for given {@code content}. Returns {@code null} it does not exist.
+     * <p>按 {@link ByteBuf} 内容查找，避免额外 String 分配。</p>
      */
     SimpleStringRedisMessage getSimpleString(ByteBuf content);
 
@@ -47,6 +52,7 @@ public interface RedisMessagePool {
 
     /**
      * Returns {@link IntegerRedisMessage} for given {@code value}. Returns {@code null} it does not exist.
+     * <p>按数值查找已缓存的整数 RESP 消息。</p>
      */
     IntegerRedisMessage getInteger(long value);
 
@@ -57,6 +63,7 @@ public interface RedisMessagePool {
 
     /**
      * Returns {@code byte[]} for given {@code msg}. Returns {@code null} it does not exist.
+     * <p>返回整数在 RESP 行中的 ASCII 字节表示，供编码器直接写入。</p>
      */
     byte[] getByteBufOfInteger(long value);
 }

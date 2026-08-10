@@ -23,11 +23,15 @@ import java.util.List;
 
 /**
  * Default {@link SmtpRequest} implementation.
+ * <p>客户端 SMTP 命令的不可变载体：{@link SmtpCommand}（如 HELO、MAIL、RCPT、DATA）
+ * 与经 {@link SmtpUtils#validateSMTPParameters} 校验的参数列表；
+ * 供 {@link SmtpRequestEncoder} 编码为 {@code COMMAND arg1 arg2\\r\\n} 行。</p>
  */
 @UnstableApi
 public final class DefaultSmtpRequest implements SmtpRequest {
 
     private final SmtpCommand command;
+    /** 不可变参数列表，无参命令时为 {@link Collections#emptyList()}。 */
     private final List<CharSequence> parameters;
 
     /**
@@ -49,6 +53,7 @@ public final class DefaultSmtpRequest implements SmtpRequest {
 
     /**
      * Creates a new instance with the given command and parameters.
+     * <p>命令名以字符串解析为 {@link SmtpCommand} 枚举。</p>
      */
     public DefaultSmtpRequest(CharSequence command, CharSequence... parameters) {
         this(SmtpCommand.valueOf(command), parameters);

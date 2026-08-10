@@ -20,18 +20,22 @@ import io.netty.util.internal.PlatformDependent;
 
 /**
  * Utilities for codec-redis.
+ * <p>编解码内部工具：长整型转 ASCII 字节、按平台字节序读写 16 位分隔符等，
+ * 供 {@link RedisEncoder} 与 {@link RedisDecoder} 复用。</p>
  */
 final class RedisCodecUtil {
 
     private RedisCodecUtil() {
     }
 
+    /** 将 long 转为 US-ASCII 十进制字节，用于 RESP 长度/整数行。 */
     static byte[] longToAsciiBytes(long value) {
         return Long.toString(value).getBytes(CharsetUtil.US_ASCII);
     }
 
     /**
      * Returns a {@code short} value using endian order.
+     * <p>将两个 ASCII 字符按本机字节序拼成 short，常用于快速比较 {@code \r\n}。</p>
      */
     static short makeShort(char first, char second) {
         return PlatformDependent.BIG_ENDIAN_NATIVE_ORDER ?
@@ -40,6 +44,7 @@ final class RedisCodecUtil {
 
     /**
      * Returns a {@code byte[]} of {@code short} value. This is opposite of {@code makeShort()}.
+     * <p>{@link #makeShort(char, char)} 的逆操作，用于异常信息中打印错误分隔符字节。</p>
      */
     static byte[] shortToBytes(short value) {
         byte[] bytes = new byte[2];

@@ -19,6 +19,8 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * Simple Strings of <a href="https://redis.io/topics/protocol">RESP</a>.
+ * <p>RESP 简单字符串（{@code +...\\r\\n}）：单行非二进制安全文本，
+ * 常用于 {@code OK}、{@code PONG} 等状态回复；正文不可含 CR/LF。</p>
  */
 @UnstableApi
 public final class SimpleStringRedisMessage extends AbstractStringRedisMessage {

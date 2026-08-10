@@ -30,6 +30,9 @@ import java.util.List;
  *
  * {@link RedisMessage} parts can be aggregated to {@link RedisMessage} using
  * {@link RedisArrayAggregator} or processed directly.
+ * <p>按 RESP 规范将字节流解析为 {@link RedisMessage}：状态机依次识别类型前缀、
+ * 内联行或长度行、Bulk String 正文与 CRLF。Bulk String 与数组可保持分片输出，
+ * 也可下游用 {@link RedisBulkStringAggregator} / {@link RedisArrayAggregator} 合并。</p>
  */
 @UnstableApi
 public final class RedisDecoder extends ByteToMessageDecoder {
@@ -41,8 +44,10 @@ public final class RedisDecoder extends ByteToMessageDecoder {
     private final RedisMessagePool messagePool;
 
     // current decoding states
+    /** 当前解析阶段（类型 → 内联/长度 → Bulk 正文等）。 */
     private State state = State.DECODE_TYPE;
     private RedisMessageType type;
+    /** Bulk String 尚未读入的字节数。 */
     private int remainingBulkLength;
 
     private enum State {
@@ -56,6 +61,7 @@ public final class RedisDecoder extends ByteToMessageDecoder {
     /**
      * Creates a new instance with default {@code maxInlineMessageLength} and {@code messagePool}
      * and inline command decoding disabled.
+     * <p>默认不解析无前缀的内联命令（仅 RESP 类型字节开头）。</p>
      */
     public RedisDecoder() {
         this(false);
@@ -234,6 +240,7 @@ public final class RedisDecoder extends ByteToMessageDecoder {
     }
 
     // ${expectedBulkLength}\r\n <here> {data...}\r\n
+    /** 大 Bulk String 分片输出；收齐正文+CRLF 时产出 {@link LastBulkStringRedisContent}。 */
     private boolean decodeBulkStringContent(ByteBuf in, List<Object> out) throws Exception {
         final int readableBytes = in.readableBytes();
         if (readableBytes == 0 || remainingBulkLength == 0 && readableBytes < RedisConstants.EOL_LENGTH) {
@@ -266,6 +273,7 @@ public final class RedisDecoder extends ByteToMessageDecoder {
         throw new RedisCodecException("delimiter: [" + bytes[0] + "," + bytes[1] + "] (expected: \\r\\n)");
     }
 
+    /** 内联类型优先从 {@link RedisMessagePool} 取缓存实例（如 OK、PONG）。 */
     private RedisMessage newInlineRedisMessage(RedisMessageType messageType, ByteBuf content) {
         switch (messageType) {
         case INLINE_COMMAND:
@@ -287,6 +295,7 @@ public final class RedisDecoder extends ByteToMessageDecoder {
         }
     }
 
+    /** 读取到 LF 为止的一行（不含 CR LF），数据不足返回 null。 */
     private static ByteBuf readLine(ByteBuf in) {
         if (!in.isReadable(RedisConstants.EOL_LENGTH)) {
             return null;
@@ -323,6 +332,7 @@ public final class RedisDecoder extends ByteToMessageDecoder {
         return toPositiveLongProcessor.content();
     }
 
+    /** 逐字节解析无符号十进制，遇非数字抛 {@link RedisCodecException}。 */
     private static final class ToPositiveLongProcessor implements ByteProcessor {
         private long result;
 

@@ -21,6 +21,8 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * Default implementation of {@link SmtpContent} that does no validation of the raw data passed in.
+ * <p>{@link SmtpContent} 的默认实现：在 SMTP DATA 传输中承载一块邮件正文
+ * （非最后一帧）；继承 {@link DefaultByteBufHolder} 以支持 retain/duplicate 等缓冲区生命周期操作。</p>
  */
 @UnstableApi
 public class DefaultSmtpContent extends DefaultByteBufHolder implements SmtpContent {

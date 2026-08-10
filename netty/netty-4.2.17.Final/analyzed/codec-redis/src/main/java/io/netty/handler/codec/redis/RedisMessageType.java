@@ -20,18 +20,27 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * Type of <a href="https://redis.io/topics/protocol">RESP (REdis Serialization Protocol)</a>.
+ * <p>RESP 报文类型枚举：首字节前缀（或无前缀的内联命令）、是否内联（无独立长度行）、
+ * 以及从 {@link ByteBuf} 读取/写入类型前缀的辅助方法。</p>
  */
 @UnstableApi
 public enum RedisMessageType {
 
+    /** 无前缀字节的纯文本命令行（需显式开启 {@link RedisDecoder} 内联命令解码）。 */
     INLINE_COMMAND(null, true),
+    /** {@code +} 简单字符串，单行至 CRLF。 */
     SIMPLE_STRING((byte) '+', true),
+    /** {@code -} 错误字符串。 */
     ERROR((byte) '-', true),
+    /** {@code :} 整数，十进制 ASCII。 */
     INTEGER((byte) ':', true),
+    /** {@code $} Bulk String，先长度行再正文与 CRLF。 */
     BULK_STRING((byte) '$', false),
+    /** {@code *} 数组头，元素个数行后接 N 个子 RESP 值。 */
     ARRAY_HEADER((byte) '*', false);
 
     private final Byte value;
+    /** 内联类型无长度字段，正文与类型在同一逻辑行。 */
     private final boolean inline;
 
     RedisMessageType(Byte value, boolean inline) {
@@ -41,6 +50,7 @@ public enum RedisMessageType {
 
     /**
      * Returns length of this type.
+     * <p>类型前缀写入长度；{@link #INLINE_COMMAND} 为 0。</p>
      */
     public int length() {
         return value != null ? RedisConstants.TYPE_LENGTH : 0;
@@ -49,6 +59,7 @@ public enum RedisMessageType {
     /**
      * Returns {@code true} if this type is inline type, or returns {@code false}. If this is {@code true},
      * this type doesn't have length field.
+     * <p>内联类型解码时进入 {@code DECODE_INLINE} 状态而非读长度行。</p>
      */
     public boolean isInline() {
         return inline;
@@ -56,6 +67,7 @@ public enum RedisMessageType {
 
     /**
      * Determine {@link RedisMessageType} based on the type prefix {@code byte} read from given the buffer.
+     * <p>读首字节映射类型；若为内联命令且未启用解码则回退 readerIndex 并抛异常。</p>
      */
     public static RedisMessageType readFrom(ByteBuf in, boolean decodeInlineCommands) {
         final int initialIndex = in.readerIndex();

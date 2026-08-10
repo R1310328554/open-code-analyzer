@@ -38,6 +38,9 @@ import io.netty.util.internal.UnstableApi;
  * </pre>
  * Be aware that you need to have the {@link RedisEncoder} before the {@link RedisBulkStringAggregator}
  * in the {@link ChannelPipeline}.
+ * <p>将 {@link RedisDecoder} 分片输出的 Bulk String（头 + 若干 {@link BulkStringRedisContent}）
+ * 合并为单个 {@link FullBulkStringRedisMessage}，上层业务无需处理 chunked 传输。
+ * 典型 Pipeline：encoder → decoder → 本聚合器 → 业务 Handler。</p>
  */
 @UnstableApi
 public final class RedisBulkStringAggregator extends MessageAggregator<RedisMessage, BulkStringHeaderRedisMessage,
@@ -45,6 +48,7 @@ public final class RedisBulkStringAggregator extends MessageAggregator<RedisMess
 
     /**
      * Creates a new instance.
+     * <p>最大内容长度沿用 {@link RedisConstants#REDIS_MESSAGE_MAX_LENGTH}（512MB）。</p>
      */
     public RedisBulkStringAggregator() {
         super(RedisConstants.REDIS_MESSAGE_MAX_LENGTH, RedisMessage.class);
@@ -76,6 +80,7 @@ public final class RedisBulkStringAggregator extends MessageAggregator<RedisMess
         return start.bulkStringLength() > maxContentLength;
     }
 
+    /** Redis 协议无 HTTP 100-continue 语义，不支持续传响应。 */
     @Override
     protected Object newContinueResponse(BulkStringHeaderRedisMessage start, int maxContentLength,
                                          ChannelPipeline pipeline) throws Exception {

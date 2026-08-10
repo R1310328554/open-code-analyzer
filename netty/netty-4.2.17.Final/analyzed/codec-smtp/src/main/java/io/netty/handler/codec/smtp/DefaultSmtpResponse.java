@@ -22,11 +22,14 @@ import java.util.List;
 
 /**
  * Default {@link SmtpResponse} implementation.
+ * <p>服务端 SMTP 应答：三位数字状态码（100–599，如 250 就绪、354 开始 DATA）
+ * 与可选的多行说明文本；details 为不可变列表，供解码器组装后交给业务层。</p>
  */
 @UnstableApi
 public final class DefaultSmtpResponse implements SmtpResponse {
 
     private final int code;
+    /** 应答附带的文本行（可为空）；多行响应时解码器可能合并为列表。 */
     private final List<CharSequence> details;
 
     /**

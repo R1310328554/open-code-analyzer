@@ -20,12 +20,15 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * Default implementation of {@link LastSmtpContent} that does no validation of the raw data passed in.
+ * <p>{@link LastSmtpContent} 的默认实现，标记 SMTP 邮件正文（DATA 阶段）的<strong>最后</strong>一块
+ * {@link ByteBuf}；不对点转义或行长度做校验，与 {@link DefaultSmtpContent} 配合用于分块写邮件体。</p>
  */
 @UnstableApi
 public final class DefaultLastSmtpContent extends DefaultSmtpContent implements LastSmtpContent {
 
     /**
      * Creates a new instance using the given data.
+     * @param data 本帧邮件正文数据，引用计数由 {@link DefaultByteBufHolder} 管理。
      */
     public DefaultLastSmtpContent(ByteBuf data) {
         super(data);

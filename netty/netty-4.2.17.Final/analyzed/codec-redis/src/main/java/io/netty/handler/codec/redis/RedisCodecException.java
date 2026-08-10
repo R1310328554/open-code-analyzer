@@ -20,6 +20,8 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * An {@link Exception} which is thrown by {@link RedisEncoder} or {@link RedisDecoder}.
+ * <p>Redis 编解码专用异常：RESP 格式非法、长度越界、分隔符错误等均由
+ * {@link RedisDecoder} / {@link RedisEncoder} 抛出，便于与通用 {@link CodecException} 区分。</p>
  */
 @UnstableApi
 public final class RedisCodecException extends CodecException {

@@ -31,13 +31,19 @@ import java.util.List;
 /**
  * Aggregates {@link RedisMessage} parts into {@link ArrayRedisMessage}. This decoder
  * should be used together with {@link RedisDecoder}.
+ * <p>将 {@link RedisDecoder} 逐条输出的 {@link ArrayHeaderRedisMessage} 及其子元素
+ * 聚合成完整的 {@link ArrayRedisMessage}。RESP 数组可能嵌套，解码器用栈式
+ * {@link AggregateState} 跟踪各层期望长度；须与 {@link RedisDecoder} 串联使用。</p>
  */
 @UnstableApi
 public final class RedisArrayAggregator extends MessageToMessageDecoder<RedisMessage> {
 
     private static final int DEFAULT_MAX_ARRAY_LENGTH = RedisConstants.REDIS_MAX_ARRAY_LENGTH;
+    /** 允许嵌套数组的最大深度，防止恶意或异常协议导致栈溢出。 */
     private final int maxNestedArrayDepth;
+    /** 当前正在组装的嵌套数组栈，栈顶为最内层。 */
     private final Deque<AggregateState> depths = new ArrayDeque<AggregateState>(4);
+    /** 单个数组可聚合的最大元素个数（Java List 为 int 索引）。 */
     private final int maxElements;
 
     /**
@@ -46,6 +52,8 @@ public final class RedisArrayAggregator extends MessageToMessageDecoder<RedisMes
      * <p>
      * This constructor specifies a maximum number of elements of 1.000.000,
      * but this default can be increased with the {@value RedisConstants#PROP_REDIS_MAX_ARRAY_LENGTH} system property.
+     * <p>默认最多聚合 100 万元素、嵌套深度 1024；可通过系统属性
+     * {@value RedisConstants#PROP_REDIS_MAX_ARRAY_LENGTH} 调整数组长度上限。</p>
      *
      * @deprecated Use {@link #RedisArrayAggregator(int, int)} instead to define a max size of the array to aggregate.
      */
@@ -86,6 +94,7 @@ public final class RedisArrayAggregator extends MessageToMessageDecoder<RedisMes
             current.children.add(msg);
 
             // if current aggregation completed, go to parent aggregation.
+            // 当前层元素收齐则弹出并向上层继续组装（支持嵌套数组）。
             if (current.children.size() == current.length) {
                 msg = new ArrayRedisMessage(current.children);
                 depths.pop();
@@ -125,6 +134,7 @@ public final class RedisArrayAggregator extends MessageToMessageDecoder<RedisMes
         }
     }
 
+    /** 单层数组聚合状态：期望子元素个数与已收集列表。 */
     private static final class AggregateState {
         private final int length;
         private final List<RedisMessage> children;
@@ -140,6 +150,7 @@ public final class RedisArrayAggregator extends MessageToMessageDecoder<RedisMes
         releaseAndClearDepths();
     }
 
+    /** Handler 移除或异常时释放栈内未完成的子消息引用。 */
     private void releaseAndClearDepths() {
         for (AggregateState state : depths) {
             for (RedisMessage message : state.children) {

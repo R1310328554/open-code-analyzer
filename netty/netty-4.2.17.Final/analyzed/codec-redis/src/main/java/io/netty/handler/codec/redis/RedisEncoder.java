@@ -29,6 +29,9 @@ import java.util.List;
 /**
  * Encodes {@link RedisMessage} into bytes following
  * <a href="https://redis.io/topics/protocol">RESP (REdis Serialization Protocol)</a>.
+ * <p>将 {@link RedisMessage} 子类型序列化为 RESP 字节：内联类型写「前缀+内容+CRLF」，
+ * Bulk String 可写完整帧或头+分片内容，数组可递归编码子消息或通过
+ * {@link ArrayHeaderRedisMessage} 流式只写头。</p>
  */
 @UnstableApi
 public class RedisEncoder extends MessageToMessageEncoder<RedisMessage> {
@@ -37,6 +40,7 @@ public class RedisEncoder extends MessageToMessageEncoder<RedisMessage> {
 
     /**
      * Creates a new instance with default {@code messagePool}.
+     * <p>默认使用 {@link FixedRedisMessagePool} 缓存常见整数与字符串的字节形式。</p>
      */
     public RedisEncoder() {
         this(FixedRedisMessagePool.INSTANCE);
@@ -62,6 +66,7 @@ public class RedisEncoder extends MessageToMessageEncoder<RedisMessage> {
         }
     }
 
+    /** 按运行时类型分派到各 RESP 类型的写入逻辑。 */
     private void writeRedisMessage(ByteBufAllocator allocator, RedisMessage msg, List<Object> out) {
         if (msg instanceof InlineCommandRedisMessage) {
             writeInlineCommandMessage(allocator, (InlineCommandRedisMessage) msg, out);
@@ -104,6 +109,7 @@ public class RedisEncoder extends MessageToMessageEncoder<RedisMessage> {
                                     List<Object> out) {
         if (type.isInline()) {
             // Inline, or "simple" messages do not permit CRLF bytes in their contents.
+            // RESP 内联/simple 类型正文不允许嵌入 CR 或 LF。
             if (content.indexOf('\r') != -1 || content.indexOf('\n') != -1) {
                 throw new CodecException("Line breaks are not permitted in 'simple' messages");
             }
@@ -170,6 +176,7 @@ public class RedisEncoder extends MessageToMessageEncoder<RedisMessage> {
 
     /**
      * Write array header only without body. Use this if you want to write arrays as streaming.
+     * <p>仅写 {@code *N\r\n} 头，元素由后续消息流式写入。</p>
      */
     private void writeArrayHeader(ByteBufAllocator allocator, ArrayHeaderRedisMessage msg, List<Object> out) {
         writeArrayHeader(allocator, msg.isNull(), msg.length(), out);
@@ -177,6 +184,7 @@ public class RedisEncoder extends MessageToMessageEncoder<RedisMessage> {
 
     /**
      * Write full constructed array message.
+     * <p>递归编码 {@link ArrayRedisMessage} 的全部子消息。</p>
      */
     private void writeArrayMessage(ByteBufAllocator allocator, ArrayRedisMessage msg, List<Object> out) {
         if (msg.isNull()) {
@@ -207,6 +215,7 @@ public class RedisEncoder extends MessageToMessageEncoder<RedisMessage> {
         }
     }
 
+    /** 优先从 messagePool 取整数的预编码 ASCII 字节。 */
     private byte[] numberToBytes(long value) {
         byte[] bytes = messagePool.getByteBufOfInteger(value);
         return bytes != null ? bytes : RedisCodecUtil.longToAsciiBytes(value);
