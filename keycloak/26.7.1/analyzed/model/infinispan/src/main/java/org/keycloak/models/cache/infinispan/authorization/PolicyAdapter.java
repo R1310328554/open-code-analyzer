@@ -39,17 +39,28 @@ import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.Logic;
 
 /**
+ * 授权策略（Policy）的 Infinispan 缓存适配器，实现 {@link Policy} 与 {@link CachedModel}。
+ * <p>
+ * 读操作返回 {@link CachedPolicy} 快照；写操作加载 DB 委托并注册策略失效。
+ * 关联策略、资源与作用域在首次访问时懒解析并缓存。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PolicyAdapter implements Policy, CachedModel<Policy> {
 
+    /** 惰性加载策略 DB 模型的供应器。 */
     private final Supplier<Policy> modelSupplier;
+    /** 缓存的策略快照实体。 */
     protected final CachedPolicy cached;
+    /** 所属授权缓存会话。 */
     protected final StoreFactoryCacheSession cacheSession;
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 数据库委托模型，写操作时懒加载。 */
     protected Policy updated;
 
+    /** 构造策略缓存适配器。 */
     public PolicyAdapter(CachedPolicy cached, StoreFactoryCacheSession cacheSession) {
         this.cached = cached;
         this.cacheSession = cacheSession;
@@ -57,6 +68,7 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
         this.modelSupplier = new LazyModel<>(this::getPolicyModel);
     }
 
+    /** 获取用于更新的数据库委托，首次调用时注册策略失效。 */
     @Override
     public Policy getDelegateForUpdate() {
         if (updated == null) {
@@ -200,8 +212,10 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
         updated.setDescription(description);
     }
 
+    /** 已解析的关联策略集合。 */
     protected Set<Policy> associatedPolicies;
 
+    /** 返回关联策略集合，未更新时从缓存 ID 列表懒解析。 */
     @Override
     public Set<Policy> getAssociatedPolicies() {
         if (isUpdated()) {
@@ -214,7 +228,7 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
         for (String id : cached.getAssociatedPoliciesIds(session, modelSupplier)) {
             Policy policy = policyStore.findById(cacheSession.getResourceServerStore().findById(resourceServerId), id);
             if (policy == null) {
-                // probably because the policy was removed
+                // 策略可能已被删除
                 continue;
             }
             cacheSession.cachePolicy(policy);
@@ -223,6 +237,7 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
         return associatedPolicies = Collections.unmodifiableSet(associatedPolicies);
     }
 
+    /** 已解析的关联资源集合。 */
     protected Set<Resource> resources;
 
     @Override
@@ -297,6 +312,7 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
 
     }
 
+    /** 已解析的关联作用域集合。 */
     protected Set<Scope> scopes;
 
     @Override
@@ -344,6 +360,7 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
         return getId().hashCode();
     }
 
+    /** 从数据库加载策略模型（供 LazyModel 使用）。 */
     private Policy getPolicyModel() {
         return cacheSession.getPolicyStoreDelegate().findById(cacheSession.getResourceServerStore().findById(cached.getResourceServerId()), cached.getId());
     }

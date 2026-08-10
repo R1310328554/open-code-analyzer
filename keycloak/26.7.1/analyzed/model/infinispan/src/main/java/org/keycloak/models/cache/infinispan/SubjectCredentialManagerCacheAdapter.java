@@ -25,16 +25,23 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 主体凭证管理器的缓存适配器基类。
+ * <p>
+ * 在用户凭证发生增删改时自动触发实体缓存失效，确保缓存与数据库一致。
+ *
  * @author Alexander Schwartz
  */
 public abstract class SubjectCredentialManagerCacheAdapter extends UserCredentialManager {
 
+    /** 构造绑定会话、域与用户的主体凭证管理器。 */
     public SubjectCredentialManagerCacheAdapter(KeycloakSession session, RealmModel realm, UserModel user) {
         super(session, realm, user);
     }
 
+    /** 凭证变更后使关联实体缓存失效，由子类实现具体失效逻辑。 */
     public abstract void invalidateCacheForEntity();
 
+    /** 更新凭证前先失效缓存。 */
     @Override
     public boolean updateCredential(CredentialInput input) {
         invalidateCacheForEntity();

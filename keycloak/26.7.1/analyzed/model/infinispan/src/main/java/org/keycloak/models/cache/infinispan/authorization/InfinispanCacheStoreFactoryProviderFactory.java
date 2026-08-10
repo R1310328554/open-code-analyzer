@@ -34,23 +34,32 @@ import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.A
 import static org.keycloak.models.cache.infinispan.InfinispanCacheRealmProviderFactory.REALM_CLEAR_CACHE_EVENTS;
 
 /**
+ * 授权存储的 Infinispan 缓存工厂，实现 {@link CachedStoreProviderFactory}。
+ * <p>
+ * 创建 {@link StoreFactoryCacheSession}，并在集群中注册授权缓存失效、清空及 realm 清空事件监听器。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class InfinispanCacheStoreFactoryProviderFactory implements CachedStoreProviderFactory {
 
     private static final Logger log = Logger.getLogger(InfinispanCacheStoreFactoryProviderFactory.class);
+    /** 集群广播：清空全部授权缓存条目。 */
     public static final String AUTHORIZATION_CLEAR_CACHE_EVENTS = "AUTHORIZATION_CLEAR_CACHE_EVENTS";
+    /** 集群广播：按 key 失效授权缓存条目。 */
     public static final String AUTHORIZATION_INVALIDATION_EVENTS = "AUTHORIZATION_INVALIDATION_EVENTS";
 
+    /** 全局共享的授权存储缓存管理器，懒加载初始化。 */
     protected volatile StoreFactoryCacheManager storeCache;
 
+    /** {@inheritDoc} 创建绑定当前会话的授权缓存会话。 */
     @Override
     public CachedStoreFactoryProvider create(KeycloakSession session) {
         lazyInit(session);
         return new StoreFactoryCacheSession(storeCache, session);
     }
 
+    /** 双重检查锁懒初始化授权缓存管理器及集群监听器。 */
     private void lazyInit(KeycloakSession session) {
         if (storeCache == null) {
             synchronized (this) {

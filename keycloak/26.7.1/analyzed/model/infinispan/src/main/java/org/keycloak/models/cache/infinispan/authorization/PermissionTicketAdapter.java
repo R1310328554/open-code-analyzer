@@ -25,20 +25,29 @@ import org.keycloak.authorization.model.Scope;
 import org.keycloak.models.cache.infinispan.authorization.entities.CachedPermissionTicket;
 
 /**
+ * 权限票据（Permission Ticket）的 Infinispan 缓存适配器。
+ * <p>
+ * 读操作返回 {@link CachedPermissionTicket} 快照；写操作加载 DB 委托并注册票据失效。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PermissionTicketAdapter implements PermissionTicket, CachedModel<PermissionTicket> {
 
+    /** 缓存的权限票据快照。 */
     protected CachedPermissionTicket cached;
+    /** 所属授权缓存会话。 */
     protected StoreFactoryCacheSession cacheSession;
+    /** 数据库委托模型，写操作时懒加载。 */
     protected PermissionTicket updated;
 
+    /** 构造权限票据缓存适配器。 */
     public PermissionTicketAdapter(CachedPermissionTicket cached, StoreFactoryCacheSession cacheSession) {
         this.cached = cached;
         this.cacheSession = cacheSession;
     }
 
+    /** 获取用于更新的数据库委托，首次调用时注册权限票据失效。 */
     @Override
     public PermissionTicket getDelegateForUpdate() {
         if (updated == null) {
@@ -50,8 +59,10 @@ public class PermissionTicketAdapter implements PermissionTicket, CachedModel<Pe
         return updated;
     }
 
+    /** 缓存条目是否已被标记失效。 */
     protected boolean invalidated;
 
+    /** 标记缓存条目为失效状态。 */
     protected void invalidateFlag() {
         invalidated = true;
     }
@@ -67,6 +78,7 @@ public class PermissionTicketAdapter implements PermissionTicket, CachedModel<Pe
         return cached.getCacheTimestamp();
     }
 
+    /** 判断是否需要从数据库读取（已更新或已失效）。 */
     protected boolean isUpdated() {
         if (updated != null) return true;
         if (!invalidated) return false;

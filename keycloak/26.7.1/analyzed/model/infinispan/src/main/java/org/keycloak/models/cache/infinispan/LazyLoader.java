@@ -21,10 +21,9 @@ import java.util.function.Supplier;
 import org.keycloak.models.KeycloakSession;
 
 /**
- * <p>A functional interface that can be used to return data {@code D} from a source {@code S} where implementations are free to define how and when
- * data is fetched from source as well how it is internally cached.
- *
- * <p>The source does not need to worry about caching data but always fetch data as demanded. The way data will actually be cached is an implementation detail.
+ * 惰性加载函数式接口：从数据源 {@code S} 获取数据 {@code D}，由实现决定何时拉取及如何缓存。
+ * <p>
+ * 数据源本身无需关心缓存策略，按需获取即可；具体缓存方式为实现细节。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  * @see DefaultLazyLoader
@@ -32,12 +31,12 @@ import org.keycloak.models.KeycloakSession;
 public interface LazyLoader<S, D> {
 
     /**
-     * Returns data from the given {@code source}. Data is only fetched from {@code source} once and only if necessary, it is
-     * up to implementations to decide the momentum to actually fetch data from source.
+     * 从 {@code source} 获取数据，仅在必要时拉取一次。
+     * 实际触发加载的时机由实现类决定。
      *
-     * @param session the session
-     * @param source the source from where data will be fetched.
-     * @return the data from source
+     * @param session 当前 Keycloak 会话
+     * @param source 数据源的惰性供应器
+     * @return 从数据源获取的数据
      */
     D get(KeycloakSession session, Supplier<S> source);
 }

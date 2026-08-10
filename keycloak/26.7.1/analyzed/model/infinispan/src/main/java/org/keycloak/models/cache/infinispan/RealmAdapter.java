@@ -69,16 +69,27 @@ import org.keycloak.storage.client.ClientStorageProvider;
 import static org.keycloak.models.utils.KeycloakModelUtils.runOnRealm;
 
 /**
+ * Realm 模型的 Infinispan 缓存适配器，实现 {@link CachedRealmModel}。
+ * <p>
+ * 读操作优先返回 {@link CachedRealm} 快照；写操作通过 {@link #getDelegateForUpdate()} 获取数据库委托并注册失效。
+ * 遵循 copy-on-write 语义：首次修改时才加载 DB 模型并标记 realm 缓存失效。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class RealmAdapter implements CachedRealmModel {
+    /** 缓存的 realm 快照实体。 */
     protected CachedRealm cached;
+    /** 所属缓存会话，负责失效注册与关联对象查询。 */
     protected RealmCacheSession cacheSession;
+    /** 数据库委托模型，写操作时懒加载。 */
     protected volatile RealmModel updated;
+    /** 当前 Keycloak 会话。 */
     protected KeycloakSession session;
+    /** 惰性加载 realm 数据库模型的供应器。 */
     private final Supplier<RealmModel> modelSupplier;
 
+    /** 构造 realm 缓存适配器。 */
     public RealmAdapter(KeycloakSession session, CachedRealm cached, RealmCacheSession cacheSession) {
         this.cached = cached;
         this.cacheSession = cacheSession;
@@ -86,6 +97,7 @@ public class RealmAdapter implements CachedRealmModel {
         this.modelSupplier = new LazyModel<>(this::getRealm);
     }
 
+    /** 获取用于更新的数据库委托，首次调用时注册 realm 失效并加载 DB 模型。 */
     @Override
     public RealmModel getDelegateForUpdate() {
         if (updated == null) {
@@ -96,8 +108,10 @@ public class RealmAdapter implements CachedRealmModel {
         return updated;
     }
 
+    /** 缓存条目是否已被标记失效。 */
     protected volatile boolean invalidated;
 
+    /** 标记缓存条目为失效状态。 */
     protected void invalidateFlag() {
         invalidated = true;
 
@@ -119,6 +133,7 @@ public class RealmAdapter implements CachedRealmModel {
         return cached.getCachedWith();
     }
 
+    /** 判断是否需要从数据库读取（已更新或已失效）。 */
     protected boolean isUpdated() {
         if (updated != null) return true;
         if (!invalidated) return false;
@@ -269,10 +284,12 @@ public class RealmAdapter implements CachedRealmModel {
         updated.setBruteForceProtected(value);
     }
 
+    /** 暴力破解防护设置变更标志，用于事务提交后同步登录失败提供者。 */
     boolean updateBruteForceSettings = false;
 
+    /** 注册事务完成后更新登录失败提供者的回调。 */
     private void updateBruteForceSettings() {
-        // TODO: This should really be an event where the recipient could figure out what has changed and can react accordingly
+        // TODO: 理想情况下应改为事件驱动，由接收方自行判断变更内容并响应
         if (!updateBruteForceSettings) {
             updateBruteForceSettings = true;
             KeycloakSessionFactory sf = session.getKeycloakSessionFactory();
@@ -464,8 +481,8 @@ public class RealmAdapter implements CachedRealmModel {
     public void setDuplicateEmailsAllowed(boolean duplicateEmailsAllowed) {
         getDelegateForUpdate();
         if (updated.isDuplicateEmailsAllowed() != duplicateEmailsAllowed) {
-            // If the flag changed, we need to clear all entries from the user cache as there are entries with the key of the email address which need to be re-evaluated.
-            // Still, this must only happen after all changes have been written to the database, therefore we enlist this to run after the completion of the transaction.
+            // 标志变更时需清空用户缓存：部分条目以邮箱为 key，需重新评估
+            // 必须在所有 DB 变更提交后再执行，因此注册为事务完成后回调
             session.getTransactionManager().enlistAfterCompletion(new AbstractKeycloakTransaction() {
                 @Override
                 protected void commitImpl() {
@@ -1691,13 +1708,14 @@ public class RealmAdapter implements CachedRealmModel {
         return updated.importComponentModel(model);
     }
 
+    /** 组件变更时执行缓存驱逐：用户存储 SPI 失效用户缓存，客户端存储 SPI 失效整个 realm。 */
     public void executeEvictions(ComponentModel model) {
         if (model == null) return;
 
-        // if user cache is disabled this is null
+        // 用户缓存禁用时为 null
         UserCache userCache = UserStorageUtil.userCache(session);
         if (userCache != null) {
-          // If not realm component, check to see if it is a user storage provider child component (i.e. LDAP mapper)
+          // 非 realm 组件：检查是否为用户存储提供者的子组件（如 LDAP 映射器）
           if (model.getParentId() != null && !model.getParentId().equals(getId())) {
               ComponentModel parent = getComponent(model.getParentId());
               if (parent != null && UserStorageProvider.class.getName().equals(parent.getProviderType())) {
@@ -1706,14 +1724,13 @@ public class RealmAdapter implements CachedRealmModel {
               return;
           }
 
-          // invalidate entire user cache if we're dealing with user storage SPI
+          // 用户存储 SPI 变更时失效整个 realm 的用户缓存
           if (UserStorageProvider.class.getName().equals(model.getProviderType())) {
             userCache.evict(this);
           }
         }
 
-        // invalidate entire realm if we're dealing with client storage SPI
-        // entire realm because of client roles, client lists, and clients
+        // 客户端存储 SPI 变更时失效整个 realm（含客户端角色、列表等）
         if (ClientStorageProvider.class.getName().equals(model.getProviderType())) {
             cacheSession.evictRealmOnRemoval(this);
         }
@@ -1855,6 +1872,7 @@ public class RealmAdapter implements CachedRealmModel {
         return Collections.unmodifiableMap(localizationTexts);
     }
 
+    /** 从数据库加载 realm 模型（供 LazyModel 使用）。 */
     private RealmModel getRealm() {
         return cacheSession.getRealmDelegate().getRealm(cached.getId());
     }
@@ -1942,6 +1960,7 @@ public class RealmAdapter implements CachedRealmModel {
         updated.setScimApiEnabled(enabled);
     }
 
+    /** 特性开关未启用时强制返回 false。 */
     private boolean featureAwareIsEnabled(Profile.Feature feature, boolean isEnabled) {
         if (!Profile.isFeatureEnabled(feature)) return false;
         return isEnabled;

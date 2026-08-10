@@ -35,19 +35,32 @@ import org.keycloak.models.cache.infinispan.entities.CachedRole;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 /**
+ * 角色模型的 Infinispan 缓存适配器，实现 {@link RoleModel}。
+ * <p>
+ * 读操作返回 {@link CachedRole} 快照；写操作通过委托加载 DB 模型并注册角色失效。
+ * 复合角色关系在失效时级联处理。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class RoleAdapter implements RoleModel {
 
+    /** 数据库委托模型，写操作时懒加载。 */
     protected RoleModel updated;
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 缓存的角色快照实体。 */
     protected CachedRole cached;
+    /** 所属 realm 缓存会话。 */
     protected RealmCacheSession cacheSession;
+    /** 角色所属的 realm。 */
     protected RealmModel realm;
+    /** 已解析的复合角色集合。 */
     protected Set<RoleModel> composites;
+    /** 惰性加载角色 DB 模型的供应器。 */
     private final Supplier<RoleModel> modelSupplier;
 
+    /** 构造角色缓存适配器。 */
     public RoleAdapter(CachedRole cached, RealmCacheSession cacheSession, RealmModel realm) {
         this.cached = cached;
         this.cacheSession = cacheSession;
@@ -56,6 +69,7 @@ public class RoleAdapter implements RoleModel {
         this.modelSupplier = new LazyModel<>(this::getRoleModel);
     }
 
+    /** 获取用于更新的数据库委托，首次调用时注册角色失效。 */
     protected void getDelegateForUpdate() {
         if (updated == null) {
             cacheSession.registerRoleInvalidation(cached.getId(), cached.getName(), getContainerId());
@@ -64,9 +78,10 @@ public class RoleAdapter implements RoleModel {
         }
     }
 
+    /** 角色重命名时额外失效新名称对应的"不存在"缓存条目。 */
     protected void getDelegateForRename(String newName) {
         if (!Objects.equals(newName, cached.getName())) {
-            // New role name might have been cached as non-existent
+            // 新角色名可能已被缓存为"不存在"
             String containerId = getContainerId();
             cacheSession.registerRoleInvalidation(cached.getId(), newName, containerId);
         }

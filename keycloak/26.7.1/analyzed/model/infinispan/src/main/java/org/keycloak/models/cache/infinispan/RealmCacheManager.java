@@ -36,12 +36,18 @@ import org.infinispan.Cache;
 import org.jboss.logging.Logger;
 
 /**
+ * Realm 缓存管理器，负责 realm 相关缓存条目的失效编排。
+ * <p>
+ * 当 realm、角色、客户端、客户端作用域或组发生变更时，计算并收集需要失效的缓存 key，
+ * 并通过 Infinispan Stream SPI 级联失效关联查询条目。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class RealmCacheManager extends CacheManager {
 
     private static final Logger logger = Logger.getLogger(RealmCacheManager.class);
 
+    /** 按 realm ID 串行化缓存计算的互斥锁映射，防止启动洪峰重复加载。 */
     private final ConcurrentHashMap<String, ReentrantLock> cacheInteractions = new ConcurrentHashMap<>();
 
     @Override
@@ -49,16 +55,19 @@ public class RealmCacheManager extends CacheManager {
         return logger;
     }
 
+    /** 构造 realm 缓存管理器，绑定数据缓存与修订号缓存。 */
     public RealmCacheManager(Cache<String, Revisioned> cache, Cache<String, Long> revisions) {
         super(cache, revisions);
     }
 
 
+    /** realm 更新时失效 realm ID 及按名称查询的缓存 key。 */
     public void realmUpdated(String id, String name, Set<String> invalidations) {
         invalidations.add(id);
         invalidations.add(RealmCacheSession.getRealmByNameCacheKey(name));
     }
 
+    /** realm 删除时额外失效该 realm 下所有关联缓存条目。 */
     public void realmRemoval(String id, String name, Set<String> invalidations) {
         realmUpdated(id, name, invalidations);
 
@@ -113,7 +122,8 @@ public class RealmCacheManager extends CacheManager {
         invalidations.add(RealmCacheSession.getClientScopesCacheKey(clientUuid, false));
     }
 
-    // Client roles invalidated separately
+    // 客户端角色单独失效
+    /** 客户端删除时失效 realm 客户端列表及该客户端关联的查询缓存。 */
     public void clientRemoval(String realmId, String clientUUID, String clientId, Set<String> invalidations) {
         invalidations.add(RealmCacheSession.getRealmClientsQueryCacheKey(realmId));
         invalidations.add(RealmCacheSession.getClientByClientIdCacheKey(clientId, realmId));
@@ -129,19 +139,17 @@ public class RealmCacheManager extends CacheManager {
     }
 
     /**
-     * Compute a cached realm and ensure that this happens only once with the current Keycloak instance.
-     * Use this to avoid concurrent preparations of a realm in parallel threads. This helps to break the load on
-     * a stampede after a server has started, were a lot of requests come in for the same realm that hasn't been cached yet.
-     * Instead of each request loading the realm in parallel, this lets the first request load the realm, and all
-     * other requests will use the cached realm, which is much more efficient.
+     * 串行化计算并缓存 realm，确保同一 Keycloak 实例内对同一 realm 的加载只执行一次。
+     * <p>
+     * 用于缓解服务启动后大量并发请求同时加载同一未缓存 realm 的"惊群"问题：
+     * 首个请求负责加载，其余请求等待并复用已缓存结果。
      */
     public <T> T computeSerialized(KeycloakSession session, String id, BiFunction<String, KeycloakSession, T> compute) {
-        // this locking is only to ensure that if there is a computation for the same id in the "synchronized" block below,
-        // it will have the same object instance to lock the current execution until the other is finished.
+        // 锁映射保证同一 ID 在 synchronized 块内使用相同锁实例，使并发请求串行等待
         ReentrantLock lock = cacheInteractions.computeIfAbsent(id, s -> new ReentrantLock());
         try {
             lock.lock();
-            // in case the previous thread has removed the entry in the finally block
+            // 若前一线程已在 finally 中移除条目，重新放入以确保锁一致性
             ReentrantLock existingLock = cacheInteractions.putIfAbsent(id, lock);
             if (existingLock != lock) {
                 logger.debugf("Concurrent execution detected for realm '%s'.", id);

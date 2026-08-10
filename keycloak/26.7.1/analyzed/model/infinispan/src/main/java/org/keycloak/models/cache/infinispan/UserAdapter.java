@@ -45,18 +45,30 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.RoleUtils;
 
 /**
+ * 用户模型的 Infinispan 缓存适配器，实现 {@link CachedUserModel}。
+ * <p>
+ * 读操作优先返回 {@link CachedUser} 快照；属性变更时通过 {@link #getDelegateForUpdate()} 加载 DB 委托并注册失效。
+ * 凭证管理通过 {@link SubjectCredentialManagerCacheAdapter} 子类在变更时自动失效用户缓存。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class UserAdapter implements CachedUserModel {
 
+    /** 惰性加载用户 DB 模型的供应器。 */
     private final Supplier<UserModel> modelSupplier;
+    /** 缓存的用户快照实体。 */
     protected final CachedUser cached;
+    /** 所属用户缓存会话。 */
     protected final UserCacheSession userProviderCache;
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession keycloakSession;
+    /** 用户所属的 realm。 */
     protected final RealmModel realm;
+    /** 数据库委托模型，写操作时懒加载。 */
     protected volatile UserModel updated;
 
+    /** 构造用户缓存适配器。 */
     public UserAdapter(CachedUser cached, UserCacheSession userProvider, KeycloakSession keycloakSession, RealmModel realm) {
         this.cached = cached;
         this.userProviderCache = userProvider;
@@ -99,6 +111,7 @@ public class UserAdapter implements CachedUserModel {
         setSingleAttribute(EMAIL, email);
     }
 
+    /** 获取用于更新的数据库委托，首次调用时注册用户失效。 */
     @Override
     public UserModel getDelegateForUpdate() {
         if (updated == null) {

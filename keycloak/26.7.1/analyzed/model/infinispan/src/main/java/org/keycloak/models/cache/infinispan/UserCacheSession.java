@@ -93,25 +93,42 @@ import static java.util.Optional.ofNullable;
 import static org.keycloak.organization.utils.Organizations.isReadOnlyOrganizationMember;
 
 /**
+ * 用户缓存会话，实现 {@link UserCache}，协调用户数据的缓存读写与失效。
+ * <p>
+ * 在事务内管理失效注册、集群事件广播及 {@link UserAdapter} 生命周期。
+ * 同时实现组件创建/更新回调与用户配置装饰器接口。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class UserCacheSession implements UserCache, OnCreateComponent, OnUpdateComponent, UserProfileDecorator {
     protected static final Logger logger = Logger.getLogger(UserCacheSession.class);
+    /** 用户缓存管理器。 */
     protected UserCacheManager cache;
+    /** 当前 Keycloak 会话。 */
     protected KeycloakSession session;
+    /** 底层用户存储委托，事务内懒加载。 */
     protected UserProvider delegate;
+    /** 当前是否在事务上下文中。 */
     protected boolean transactionActive;
+    /** 是否应将事务标记为仅回滚。 */
     protected boolean setRollbackOnly;
+    /** 会话创建时的缓存修订号，用于 Repeatable Read 防护。 */
     protected final long startupRevision;
 
 
+    /** 本事务内待失效的缓存 key 集合。 */
     protected Set<String> invalidations = new HashSet<>();
+    /** 本事务内待失效 realm 的 ID 集合。 */
     protected Set<String> realmInvalidations = new HashSet<>();
-    protected Set<InvalidationEvent> invalidationEvents = new HashSet<>(); // Events to be sent across cluster
+    /** 待广播至集群的失效事件集合。 */
+    protected Set<InvalidationEvent> invalidationEvents = new HashSet<>();
+    /** 本事务内已管理的用户适配器映射。 */
     protected Map<String, UserModel> managedUsers = new HashMap<>();
+    /** 数据存储提供者。 */
     private final StoreManagers datastoreProvider;
 
+    /** 构造用户缓存会话并注册事务完成回调。 */
     public UserCacheSession(UserCacheManager cache, KeycloakSession session) {
         this.cache = cache;
         this.session = session;
@@ -120,6 +137,7 @@ public class UserCacheSession implements UserCache, OnCreateComponent, OnUpdateC
         session.getTransactionManager().enlistAfterCompletion(getTransaction());
     }
 
+    /** 清空全部用户缓存并广播集群清空事件。 */
     @Override
     public void clear() {
         cache.clear();
@@ -127,6 +145,7 @@ public class UserCacheSession implements UserCache, OnCreateComponent, OnUpdateC
         cluster.notify(InfinispanUserCacheProviderFactory.USER_CLEAR_CACHE_EVENTS, ClearCacheEvent.getInstance(), true);
     }
 
+    /** 获取底层用户存储委托，必须在事务内调用。 */
     public UserProvider getDelegate() {
         if (!transactionActive) throw new IllegalStateException("Cannot access delegate without a transaction");
         if (delegate != null) return delegate;
@@ -135,6 +154,7 @@ public class UserCacheSession implements UserCache, OnCreateComponent, OnUpdateC
         return delegate;
     }
 
+    /** 注册用户更新失效：收集失效 key 并生成集群事件。 */
     public void registerUserInvalidation(CachedUser user) {
         cache.userUpdatedInvalidations(user.getId(), user.getUsername(), user.getEmail(), user.getRealm(), invalidations);
         invalidationEvents.add(UserUpdatedEvent.create(user.getId(), user.getUsername(), user.getEmail(), user.getRealm()));

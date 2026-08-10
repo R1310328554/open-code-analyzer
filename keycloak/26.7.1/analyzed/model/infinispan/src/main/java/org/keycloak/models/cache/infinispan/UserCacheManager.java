@@ -29,6 +29,10 @@ import org.infinispan.Cache;
 import org.jboss.logging.Logger;
 
 /**
+ * 用户缓存管理器，负责用户相关缓存条目的失效编排。
+ * <p>
+ * 涵盖按用户名/邮箱/联合身份查询、同意书、可验证凭证等缓存 key 的失效逻辑。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class UserCacheManager extends CacheManager {
@@ -44,31 +48,32 @@ public class UserCacheManager extends CacheManager {
         return logger;
     }
 
+    /** 用户基本信息更新时的失效 key 集合（ID、用户名、邮箱）。 */
     public void userUpdatedInvalidations(String userId, String username, String email, String realmId, Set<String> invalidations) {
         invalidations.add(userId);
         if (email != null) invalidations.add(UserCacheSession.getUserByEmailCacheKey(realmId, email));
         invalidations.add(UserCacheSession.getUserByUsernameCacheKey(realmId, username));
     }
 
-    // Fully invalidate user including consents and federatedIdentity links.
+    /** 完全失效用户缓存，包括同意书与联合身份链接。 */
     public void fullUserInvalidation(String userId, String username, String email, String realmId, boolean identityFederationEnabled, Map<String, String> federatedIdentities, Set<String> invalidations) {
         userUpdatedInvalidations(userId, username, email, realmId, invalidations);
 
         if (identityFederationEnabled) {
-            // Invalidate all keys for lookup this user by any identityProvider link
+            // 失效该用户所有身份提供方链接的查询 key
             for (Map.Entry<String, String> socialLink : federatedIdentities.entrySet()) {
                 String fedIdentityCacheKey = UserCacheSession.getUserByFederatedIdentityCacheKey(realmId, socialLink.getKey(), socialLink.getValue());
                 invalidations.add(fedIdentityCacheKey);
             }
 
-            // Invalidate federationLinks of user
+            // 失效用户的联合身份链接列表
             invalidations.add(UserCacheSession.getFederatedIdentityLinksCacheKey(userId));
         }
 
-        // Consents
+        // 同意书
         invalidations.add(UserCacheSession.getConsentCacheKey(userId));
 
-        // Verifiable credentials
+        // 可验证凭证
         invalidations.add(UserCacheSession.getVerifiableCredentialsCacheKey(userId));
     }
 
@@ -97,6 +102,7 @@ public class UserCacheManager extends CacheManager {
         ((UserCacheInvalidationEvent) event).addInvalidations(this, invalidations);
     }
 
+    /** 失效指定 realm 下所有用户缓存条目。 */
     public void invalidateRealmUsers(String realm, Set<String> invalidations) {
         InRealmPredicate inRealmPredicate = getInRealmPredicate(realm);
         addInvalidations(inRealmPredicate, invalidations);

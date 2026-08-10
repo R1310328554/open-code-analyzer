@@ -89,59 +89,16 @@ import org.jboss.logging.Logger;
 
 
 /**
- * - the high level architecture of this cache is an invalidation cache.
- * - the cache is manual/custom versioned.  When a model is updated, we remove it from the cache
- * which causes an invalidation message to be sent across the cluster.
- * - We had to do it this way because Infinispan REPEATABLE_READ
- * wouldn't cut it in invalidation mode.  Also, REPEATABLE_READ doesn't work very well on relationships and items that are
- * not in the cache.
- * - There are two Infinispan caches.  One clustered that holds actual objects and a another local one that holds revision
- * numbers of cached objects.  Whenever a cached object is removed (invalidated), the local revision
- * cache number or that key is bumped higher based on a local version counter.  Whenever a cache entry is fetched, this
- * revision number is also fetched and compared against the revision number in the cache entry to see if the cache entry
- * is stale.  Whenever a cache entry is added, this revision number is also checked against the revision cache.
- * - Revision entries are actually never removed (although they could be evicted by cache eviction policies).  The reason for this
- * is that it is possible for a stale object to be inserted if one thread loads and the data is updated in the database before
- * it is added to the cache.  So, we keep the version number around for this.
- * - In a transaction, objects are registered to be invalidated.  If an object is marked for invalidation within a transaction
- * a cached object should never be returned.  An DB adapter should always be returned.
- * - After DB commits, the objects marked for invalidation are invalidated, or rather removed from the cache.  At this time
- * the revision cache entry for this object has its version number bumped.
- * - Whenever an object is marked for invalidation, the cache is also searched for any objects that are related to this object
- * and need to also be evicted/removed.  We use the Infinispan Stream SPI for this.
- *
- * ClientList caches:
- * - lists of clients are cached in a specific cache entry i.e. realm clients, find client by clientId
- * - realm client lists need to be invalidated and evited whenever a client is added or removed from a realm.  RealmProvider
- * now has addClient/removeClient at its top level.  All adapters should use these methods so that the appropriate invalidations
- * can be registered.
- * - whenever a client is added/removed the realm of the client is added to a listInvalidations set
- * this set must be checked before sending back or caching a cached query.  This check is required to
- * avoid caching an uncommitted removal/add in a query cache.
- * - when a client is removed, any queries that contain that client must also be removed.
- * - a client removal will also cause anything that is contained and cached within that client to be removed
- *
- * Clustered caches:
- * - There is a Infinispan @Listener registered.  If an invalidation event happens, this is treated like
- * the object was removed from the database and will perform evictions based on that assumption.
- * - Eviction events will also cascade other evictions, but not assume this is a db removal.
- * - With an invalidation cache, if you remove an entry on node 1 and this entry does not exist on node 2, node 2 will not receive a @Listener invalidation event.
- * so, hat we have to put a marker entry in the invalidation cache before we read from the DB, so if the DB changes in between reading and adding a cache entry, the cache will be notified and bump
- * the version information.
- *
- * DBs with Repeatable Read:
- * - DBs like MySQL are Repeatable Read by default.  So, if you query a Client for instance, it will always return the same result in the same transaction even if the DB
- * was updated in between these queries.  This makes it possible to store stale cache entries.  To avoid this problem, this class stores the current local version counter
- * at the beginning of the transaction.  Whenever an entry is added to the cache, the current counter is compared against the counter at the beginning of the tx.  If the current
- * is greater, then don't cache.
- *
- * Groups and Roles:
- * - roles are tricky because of composites.  Composite lists are cached too.  So, when a role is removed
- * we also iterate and invalidate any role or group that contains that role being removed.
- *
- * - any relationship should be resolved from session.realms().  For example if JPA.getClientByClientId() is invoked,
- *  JPA should find the id of the client and then call session.realms().getClientById().  THis is to ensure that the cached
- *  object is invoked and all proper invalidation are being invoked.
+ * Realm 缓存会话，实现 {@link CacheRealmProvider}，是 realm 缓存层的核心协调器。
+ * <p>
+ * 架构要点：
+ * <ul>
+ *   <li>采用手动版本化的失效（invalidation）缓存，模型更新时从缓存移除并广播集群失效消息。</li>
+ *   <li>维护两个 Infinispan 缓存：集群对象缓存 + 本地修订号缓存；读取时比对修订号判断条目是否过期。</li>
+ *   <li>事务内注册待失效对象，提交后才真正移除并递增修订号；事务内不返回已标记失效的缓存对象。</li>
+ *   <li>失效时通过 Infinispan Stream SPI 级联驱逐关联查询条目（客户端列表、角色复合关系等）。</li>
+ *   <li>Repeatable Read 数据库（如 MySQL）下，事务开始时记录本地版本计数器，写入缓存前比对以防脏写。</li>
+ * </ul>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
