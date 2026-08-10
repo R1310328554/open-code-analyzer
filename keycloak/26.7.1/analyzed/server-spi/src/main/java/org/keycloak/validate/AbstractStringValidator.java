@@ -17,6 +17,13 @@
 package org.keycloak.validate;
 
 /**
+ * 字符串格式校验器基类：接受字符串及其集合；空值行为参见 {@link AbstractSimpleValidator}。
+ * <ul>
+ * <li>接受普通字符串及字符串集合。</li>
+ * <li>集合中每项由 {@link #doValidate(String, String, ValidationContext, ValidatorConfig)} 校验。</li>
+ * <li>null/空值行为遵循配置，见 {@link AbstractSimpleValidator}。</li>
+ * </ul>
+ *
  * Base class for String value format validators. Functionality covered in this base class:
  * <ul>
  * <li>accepts plain string and collections of strings as input

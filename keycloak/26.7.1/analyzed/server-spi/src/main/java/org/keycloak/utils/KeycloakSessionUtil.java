@@ -22,15 +22,22 @@ import org.keycloak.models.KeycloakContext;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
+/**
+ * Keycloak 会话工具类：通过 Resteasy 线程上下文获取/设置当前 {@link KeycloakSession}，
+ * 以及从会话中提取 realm 名称。
+ */
 public class KeycloakSessionUtil {
 
+    /** 会话中未找到 realm 时的占位返回值。 */
     private static final String NO_REALM = "no_realm_found_in_session";
 
+    /** 工具类，禁止实例化。 */
     private KeycloakSessionUtil() {
 
     }
 
     /**
+     * 获取当前线程关联的 {@link KeycloakSession}。
      * Get the {@link KeycloakSession} currently associated with the thread.
      *
      * @return the current session
@@ -40,6 +47,8 @@ public class KeycloakSessionUtil {
     }
 
     /**
+     * 将 {@link KeycloakSession} 绑定到当前线程。
+     * <br>警告：不应直接调用，由 Keycloak 框架管理。
      * Associate the {@link KeycloakSession} with the current thread.
      * <br>Warning: should not be called directly. Keycloak will manage this.
      *
@@ -50,6 +59,9 @@ public class KeycloakSessionUtil {
         return Resteasy.pushContext(KeycloakSession.class, session);
     }
 
+    /** 从会话上下文中提取 realm 名称；无法获取时返回 {@link #NO_REALM}。
+     * @param session Keycloak 会话
+     * @return realm 名称或占位符 */
     public static String getRealmNameFromContext(KeycloakSession session) {
         if(session == null) {
             return NO_REALM;

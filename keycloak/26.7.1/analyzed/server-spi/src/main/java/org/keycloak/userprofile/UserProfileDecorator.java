@@ -23,6 +23,8 @@ import java.util.List;
 
 
 /**
+ * 用户资料装饰器：允许用户存储 provider 按 provider 维度自定义 realm 的用户资料配置与属性。
+ *
  * <p>This interface allows user storage providers to customize the user profile configuration and its attributes for realm
  * on a per-user storage provider basis.
  *
@@ -31,6 +33,10 @@ import java.util.List;
 public interface UserProfileDecorator {
 
     /**
+     * 为用户资料附加元数据（如仅对特定用户存储 provider 可见的属性）。
+     * <p>每次通过用户资料 provider 管理用户时调用。</p>
+     * <p>返回的 {@link AttributeMetadata} 会覆盖 {@code metadata} 中同名的已有元数据。</p>
+     *
      * <p>Decorates user profile with additional metadata. For instance, metadata attributes, which are available just for your user-storage
      * provider can be added there, so they are available just for the users coming from your provider.
      *

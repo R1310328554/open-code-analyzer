@@ -27,25 +27,30 @@ import java.util.regex.Pattern;
 import org.keycloak.utils.StringUtil;
 
 /**
+ * 校验器配置包装类：对基于 {@link Map} 的配置提供类型安全的读取方法。
  * A typed wrapper around a {@link Map} based {@link Validator} configuration.
  */
 public class ValidatorConfig {
 
+    /** 空配置常量。 */
     /**
      * An empty {@link ValidatorConfig}.
      */
     public static final ValidatorConfig EMPTY = new ValidatorConfig(Collections.emptyMap());
 
+    /** 判断配置是否为空（{@code null} 视为空）。 */
     public static boolean isEmpty(ValidatorConfig config) {
         return EMPTY.equals(Optional.ofNullable(config).orElse(EMPTY));
     }
 
+    /** 底层配置映射。 */
     /**
      * Holds the backing map for the {@link Validator} config.
      */
     private final Map<String, Object> config;
 
     /**
+     * 从给定映射创建 {@link ValidatorConfig}。
      * Creates a new {@link ValidatorConfig} from the given {@code map}.
      *
      * @param config
@@ -55,6 +60,7 @@ public class ValidatorConfig {
     }
 
     /**
+     * 静态工厂：从映射创建配置；空映射返回 {@link #EMPTY}。
      * Static helper to create a {@link ValidatorConfig} from the given {@code map}.
      *
      * @param map
@@ -67,34 +73,46 @@ public class ValidatorConfig {
         return new ValidatorConfig(map);
     }
 
+    /** @return 底层配置映射 */
     public Map<String, Object> asMap(){
         return config;
     }
 
+    /** @param key 配置键
+     * @return 是否包含该键 */
     public boolean containsKey(String key) {
         return config.containsKey(key);
     }
 
+    /** @return 配置项数量 */
     public int size() {
         return config.size();
     }
 
+    /** @return 配置映射是否为空 */
     public boolean isEmpty() {
         return config.isEmpty();
     }
 
+    /** @param key 配置键
+     * @return 原始值 */
     public Object get(String key) {
         return config.get(key);
     }
 
+    /** @param key 配置键
+     * @param defaultValue 默认值
+     * @return 配置值或默认值 */
     public Object getOrDefault(String key, Object defaultValue) {
         return config.getOrDefault(key, defaultValue);
     }
 
+    /** 读取非空白字符串配置。 */
     public String getString(String key) {
         return getStringOrDefault(key, null);
     }
 
+    /** 读取字符串配置，无效时返回默认值。 */
     public String getStringOrDefault(String key, String defaultValue) {
         Object value = config.get(key);
         if (value instanceof String && StringUtil.isNotBlank((String) value)) {
@@ -103,10 +121,12 @@ public class ValidatorConfig {
         return defaultValue;
     }
 
+    /** 读取整数配置。 */
     public Integer getInt(String key) {
         return getIntOrDefault(key, null);
     }
 
+    /** 读取整数配置，无法解析时返回默认值。 */
     public Integer getIntOrDefault(String key, Integer defaultValue) {
         Object value = config.get(key);
         if (value instanceof Integer) {
@@ -123,10 +143,12 @@ public class ValidatorConfig {
         return defaultValue;
     }
 
+    /** 读取长整数配置。 */
     public Long getLong(String key) {
         return getLongOrDefault(key, null);
     }
 
+    /** 读取长整数配置，无法解析时返回默认值。 */
     public Long getLongOrDefault(String key, Long defaultValue) {
         Object value = config.get(key);
         if (value instanceof Long) {
@@ -143,10 +165,12 @@ public class ValidatorConfig {
         return defaultValue;
     }
 
+    /** 读取双精度浮点配置。 */
     public Double getDouble(String key) {
         return getDoubleOrDefault(key, null);
     }
 
+    /** 读取双精度配置，无法解析时返回默认值。 */
     public Double getDoubleOrDefault(String key, Double defaultValue) {
         Object value = config.get(key);
         if (value instanceof Double) {
@@ -163,10 +187,12 @@ public class ValidatorConfig {
         return defaultValue;
     }
 
+    /** 读取布尔配置。 */
     public Boolean getBoolean(String key) {
         return getBooleanOrDefault(key, null);
     }
 
+    /** 读取布尔配置，无法解析时返回默认值。 */
     public Boolean getBooleanOrDefault(String key, Boolean defaultValue) {
         Object value = config.get(key);
         if (value instanceof Boolean) {
@@ -177,10 +203,12 @@ public class ValidatorConfig {
         return defaultValue;
     }
 
+    /** 读取字符串集合配置。 */
     public Set<String> getStringSet(String key) {
         return getStringSetOrDefault(key, null);
     }
 
+    /** 读取字符串集合配置，无效时返回默认值。 */
     public Set<String> getStringSetOrDefault(String key, Set<String> defaultValue) {
         Object value = config.get(key);
         if (value instanceof Set) {
@@ -189,10 +217,12 @@ public class ValidatorConfig {
         return defaultValue;
     }
 
+    /** 读取字符串列表配置。 */
     public List<String> getStringListOrDefault(String key) {
         return getStringListOrDefault(key, null);
     }
 
+    /** 读取字符串列表配置，无效时返回默认值。 */
     public List<String> getStringListOrDefault(String key, List<String> defaultValue) {
         Object value = config.get(key);
         if (value instanceof List) {
@@ -202,15 +232,18 @@ public class ValidatorConfig {
     }
 
     /**
+     * 从配置读取正则 {@link Pattern}；字符串值会自动编译。
      * Get regex Pattern from the configuration. String can be used and it is compiled into Pattern.
      * 
      * @param key to get
      * @return Pattern or null
      */
+    /** 读取正则 Pattern 配置。 */
     public Pattern getPattern(String key) {
         return getPatternOrDefault(key, null);
     }
 
+    /** 读取 Pattern 配置，无效时返回默认值。 */
     public Pattern getPatternOrDefault(String key, Pattern defaultValue) {
         Object value = config.get(key);
         if (value instanceof Pattern) {
@@ -221,18 +254,22 @@ public class ValidatorConfig {
         return defaultValue;
     }
 
+    /** @return 配置构建器 */
     public static ValidatorConfigBuilder builder() {
         return new ValidatorConfigBuilder();
     }
 
     public static class ValidatorConfigBuilder {
 
+        /** 构建中的配置映射。 */
         private Map<String, Object> config = new HashMap<>();
 
+        /** @return 不可变配置实例 */
         public ValidatorConfig build() {
             return ValidatorConfig.configFromMap(this.config);
         }
 
+        /** 添加单个配置项。 */
         public ValidatorConfigBuilder config(String name, Object value) {
             config.put(name, value);
             return this;

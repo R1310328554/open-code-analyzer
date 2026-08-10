@@ -20,12 +20,15 @@
 package org.keycloak.userprofile;
 
 /**
+ * 用户资料相关常量：定义管理员与普通用户角色标识。
  * Constants related to user profile
  * 
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class UserProfileConstants {
 
+    /** 普通用户角色标识。 */
     public static final String ROLE_USER = "user";
+    /** 管理员角色标识。 */
     public static final String ROLE_ADMIN = "admin";
 }

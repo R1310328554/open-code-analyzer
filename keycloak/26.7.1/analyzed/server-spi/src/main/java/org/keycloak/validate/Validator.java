@@ -23,6 +23,9 @@ import java.util.Map;
 import org.keycloak.provider.Provider;
 
 /**
+ * 校验器 SPI：在 {@link ValidationContext} 中校验给定输入。
+ * <p>可选 {@code inputHint} 标识待校验对象中的属性或嵌套路径；可选 {@code config} 提供参数化配置。</p>
+ *
  * Validates given input in a {@link ValidationContext}.
  * <p>
  * Validations can be supported with an optional {@code inputHint}, which could denote a reference to a potentially
@@ -33,6 +36,7 @@ import org.keycloak.provider.Provider;
 public interface Validator extends Provider {
 
     /**
+     * 校验给定 {@code input}。
      * Validates the given {@code input}.
      *
      * @param input the value to validate
@@ -54,6 +58,7 @@ public interface Validator extends Provider {
     }
 
     /**
+     * 带 {@code inputHint} 校验给定输入。
      * Validates the given {@code input} with an additional {@code inputHint}.
      *
      * @param input     the value to validate
@@ -89,6 +94,7 @@ public interface Validator extends Provider {
     }
 
     /**
+     * 带 {@code inputHint} 与 {@code config} 校验给定输入。
      * Validates the given {@code input} with an additional {@code inputHint} and {@code config}.
      *
      * @param input     the value to validate
@@ -100,6 +106,7 @@ public interface Validator extends Provider {
     ValidationContext validate(Object input, String inputHint, ValidationContext context, ValidatorConfig config);
 
     default void close() {
+        // 默认无操作
         // NOOP
     }
 }

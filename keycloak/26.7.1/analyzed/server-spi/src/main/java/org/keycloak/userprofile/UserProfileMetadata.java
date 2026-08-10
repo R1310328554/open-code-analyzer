@@ -29,21 +29,28 @@ import java.util.stream.Collectors;
 import static org.keycloak.userprofile.AttributeMetadata.ALWAYS_TRUE;
 
 /**
+ * 用户资料元数据：描述某 {@link UserProfileContext} 下可用的属性定义、校验器与读写权限。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public final class UserProfileMetadata implements Cloneable {
 
+    /** 所属用户资料上下文。 */
     private final UserProfileContext context;
+    /** 属性元数据列表。 */
     private List<AttributeMetadata> attributes;
 
+    /** @param context 用户资料上下文 */
     public UserProfileMetadata(UserProfileContext context) {
         this.context = context;
     }
 
+    /** @return 全部属性元数据 */
     public List<AttributeMetadata> getAttributes() {
         return attributes;
     }
 
+    /** @param metadata 要追加的属性元数据列表 */
     public void addAttributes(List<AttributeMetadata> metadata) {
         if (attributes == null) {
             attributes = new ArrayList<>();
@@ -51,36 +58,45 @@ public final class UserProfileMetadata implements Cloneable {
         attributes.addAll(metadata);
     }
 
+    /** @param metadata 单个属性元数据
+     * @return 已添加的元数据 */
     public AttributeMetadata addAttribute(AttributeMetadata metadata) {
         addAttributes(Arrays.asList(metadata));
         return metadata;
     }
     
+    /** 按名称、GUI 顺序与校验器添加属性。 */
     public AttributeMetadata addAttribute(String name, int guiOrder, AttributeValidatorMetadata... validator) {
         return addAttribute(name, guiOrder, Arrays.asList(validator));
     }
 
+    /** 指定读写权限谓词添加属性。 */
     public AttributeMetadata addAttribute(String name, int guiOrder, Predicate<AttributeContext> writeAllowed, Predicate<AttributeContext> readAllowed, AttributeValidatorMetadata... validator) {
         return addAttribute(new AttributeMetadata(name, guiOrder, ALWAYS_TRUE, writeAllowed, ALWAYS_TRUE, readAllowed).addValidators(Arrays.asList(validator)));
     }
 
+    /** 指定写权限与校验器列表添加属性。 */
     public AttributeMetadata addAttribute(String name, int guiOrder, Predicate<AttributeContext> writeAllowed, List<AttributeValidatorMetadata> validators) {
         return addAttribute(new AttributeMetadata(name, guiOrder, ALWAYS_TRUE, writeAllowed, ALWAYS_TRUE, ALWAYS_TRUE).addValidators(validators));
     }
 
+    /** 指定写权限、必填谓词与校验器列表添加属性。 */
     public AttributeMetadata addAttribute(String name, int guiOrder, Predicate<AttributeContext> writeAllowed, Predicate<AttributeContext> required, List<AttributeValidatorMetadata> validators) {
         return addAttribute(new AttributeMetadata(name, guiOrder, ALWAYS_TRUE, writeAllowed, required, ALWAYS_TRUE).addValidators(validators));
     }
 
+    /** 按名称、GUI 顺序与校验器列表添加属性。 */
     public AttributeMetadata addAttribute(String name, int guiOrder, List<AttributeValidatorMetadata> validators) {
         return addAttribute(new AttributeMetadata(name, guiOrder).addValidators(validators));
     }
 
+    /** 完整参数添加属性：含选择器、读写/必填谓词与校验器。 */
     public AttributeMetadata addAttribute(String name, int guiOrder, List<AttributeValidatorMetadata> validator, Predicate<AttributeContext> selector, Predicate<AttributeContext> writeAllowed, Predicate<AttributeContext> required, Predicate<AttributeContext> readAllowed) {
         return addAttribute(new AttributeMetadata(name, guiOrder, selector, writeAllowed, required, readAllowed).addValidators(validator));
     }
 
     /**
+     * 获取指定名称属性的已有元数据。
      * Get existing AttributeMetadata for attribute of given name.
      * 
      * @param name of the attribute
@@ -93,6 +109,7 @@ public final class UserProfileMetadata implements Cloneable {
 
     }
 
+    /** @return 用户资料上下文 */
     public UserProfileContext getContext() {
         return context;
     }
@@ -101,6 +118,7 @@ public final class UserProfileMetadata implements Cloneable {
     public UserProfileMetadata clone() {
         UserProfileMetadata metadata = new UserProfileMetadata(this.context);
 
+        // 深拷贝 AttributeMetadata，以便后续修改（如追加校验器）
         //deeply clone AttributeMetadata so we can modify them (add validators etc) 
         if (attributes != null) {
             metadata.addAttributes(attributes.stream().map(AttributeMetadata::clone).collect(Collectors.toList()));

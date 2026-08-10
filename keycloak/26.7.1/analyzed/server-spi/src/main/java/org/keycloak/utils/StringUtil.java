@@ -18,9 +18,13 @@ package org.keycloak.utils;
 
 import java.util.Collection;
 
+/**
+ * 字符串工具类：提供空白判断、逻辑连接拼接、控制字符清理及空格规范化等方法。
+ */
 public class StringUtil {
 
     /**
+     * 字符串为 {@code null} 或空白时返回 {@code true}。
      * Returns true if string is null or blank
      */
     public static boolean isBlank(String str) {
@@ -28,6 +32,7 @@ public class StringUtil {
     }
 
     /**
+     * 字符串非 {@code null} 且非空白时返回 {@code true}。
      * Returns true if string is not null and not blank
      */
     public static boolean isNotBlank(String str) {
@@ -35,6 +40,7 @@ public class StringUtil {
     }
 
     /**
+     * 字符串为 {@code null} 或空串时返回 {@code true}。
      * Returns true if string is null or empty
      */
     public static boolean isNullOrEmpty(String str) {
@@ -42,6 +48,10 @@ public class StringUtil {
     }
 
     /**
+     * 用逗号分隔多个值，最后一项前插入逻辑连接词（如 "or"）。
+     * 示例：{@code joinValuesWithLogicalCondition("or", Arrays.asList("foo", "bar", "baz", "caz"))}
+     * 返回 {@code "foo, bar, baz or caz"}。
+     *
      * Calling:
      * <pre>joinValuesWithLogicalCondition("or", Arrays.asList("foo", "bar", "baz", "caz" ))</pre>
      * will return "foo, bar, baz or caz"
@@ -66,6 +76,9 @@ public class StringUtil {
     }
 
     /**
+     * 移除 ANSI 转义序列与控制字符，防止日志注入攻击。
+     * 不会解码合法的 URL 编码字符（如 {@code %20}），以保留重定向 URI 校验等场景的原始编码。
+     *
      * Removes ANSI escape codes and control characters from a string to prevent log injection attacks.
      * This method:
      * 1. Removes URL-encoded ANSI escape sequences (e.g., %1B[31m)
@@ -93,6 +106,8 @@ public class StringUtil {
 
 
     /**
+     * 将各类空白字符（\t、\n、\r 等）规范为空格；若指定引号字符则对其转义。
+     *
      * Utility method that substitutes any isWhitespace char to common space ' ' or character 20.
      * The idea is removing any weird space character in the string like \t, \n, \r.
      * If quotes character is passed the quotes char is escaped to mark is not the end
@@ -103,6 +118,7 @@ public class StringUtil {
      * @return The string without weird whitespaces and quotes escaped
      */
     public static String sanitizeSpacesAndQuotes(String str, Character quotes) {
+        // 思路借鉴 commons-lang StringUtils.normalizeSpace
         // idea taken from commons-lang StringUtils.normalizeSpace
         if (str == null || str.isEmpty()) {
             return str;
@@ -127,6 +143,10 @@ public class StringUtil {
         return sb == null? str : sb.toString();
     }
 
+    /** 若字符串以指定后缀结尾则移除该后缀。
+     * @param str 原字符串
+     * @param suffix 要移除的后缀
+     * @return 处理后的字符串 */
     public static String removeSuffix(String str, String suffix) {
         int index = str.lastIndexOf(suffix);
         if (str.endsWith(suffix) && index > 0) {

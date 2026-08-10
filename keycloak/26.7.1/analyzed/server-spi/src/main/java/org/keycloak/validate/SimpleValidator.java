@@ -21,6 +21,9 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * 轻量 {@link Validator} 便捷接口：合并 {@link ValidatorFactory}，提供默认空实现。
+ * {@link SimpleValidator} 实现应设计为单例。
+ *
  * Convenience interface to ease implementation of small {@link Validator} implementations.
  *
  * {@link SimpleValidator SimpleValidator's} should be implemented as singletons.
@@ -34,6 +37,7 @@ public interface SimpleValidator extends Validator, ValidatorFactory {
 
     @Override
     default void init(Config.Scope config) {
+        // 默认无操作
         // NOOP
     }
 
