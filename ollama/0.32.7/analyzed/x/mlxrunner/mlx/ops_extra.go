@@ -1,3 +1,4 @@
+// MLX 扩展算子：量化、卷积、RoPE、归一化与工具函数。
 package mlx
 
 // #include "generated.h"
@@ -8,8 +9,10 @@ import (
 	"unsafe"
 )
 
+// 量化相关算子
 // Quantization operations
 
+// Quantize 将浮点权重按 groupSize/bits/mode 量化，返回权重、scale 与可选 bias。
 func Quantize(w *Array, groupSize, bits int, mode string) (weights, scales, biases *Array) {
 	cMode := C.CString(mode)
 	defer C.free(unsafe.Pointer(cMode))
@@ -33,18 +36,21 @@ func Quantize(w *Array, groupSize, bits int, mode string) (weights, scales, bias
 	return w0, w1, nil
 }
 
+// FromFP8 将 FP8 张量反量化为目标 dtype。
 func FromFP8(x *Array, dtype DType) *Array {
 	out := New("FROM_FP8")
 	C.mlx_from_fp8(&out.ctx, x.ctx, C.mlx_dtype(dtype), DefaultStream().ctx)
 	return out
 }
 
+// ToFP8 将张量编码为 FP8。
 func ToFP8(x *Array) *Array {
 	out := New("TO_FP8")
 	C.mlx_to_fp8(&out.ctx, x.ctx, DefaultStream().ctx)
 	return out
 }
 
+// Dequantize 反量化权重；Metal 上 globalScale 在 Go 侧额外乘入。
 func Dequantize(w, scales, biases *Array, groupSize, bits int, mode string, globalScale *Array) *Array {
 	cMode := C.CString(mode)
 	defer C.free(unsafe.Pointer(cMode))
@@ -61,9 +67,11 @@ func Dequantize(w, scales, biases *Array, groupSize, bits int, mode string, glob
 	var noGlobalScale C.mlx_array
 	C.mlx_dequantize(&out.ctx, w.ctx, scales.ctx, b, optGroupSize, optBits, cMode, noGlobalScale, optDtype, DefaultStream().ctx)
 	if globalScale != nil {
+		// C 层 global_scale 在 Metal 被拒绝，此处 Go 侧再乘。
 		// The C-level global_scale argument is rejected on Metal; apply it on top.
 		gs := globalScale
 		if gs.Size() > 1 {
+			// 向量 scale 为逐行，需绑定权重 leading axis。
 			// A vector scale is per-row; bind it to the weight's leading axis.
 			gs = Reshape(gs, int32(gs.Size()), 1)
 		}
@@ -73,6 +81,7 @@ func Dequantize(w, scales, biases *Array, groupSize, bits int, mode string, glob
 	return out
 }
 
+// QuantizedMatmul 量化矩阵乘，可选转置权重。
 func QuantizedMatmul(x, w, scales, biases *Array, transpose bool, groupSize, bits int, mode string) *Array {
 	cMode := C.CString(mode)
 	defer C.free(unsafe.Pointer(cMode))
@@ -89,6 +98,7 @@ func QuantizedMatmul(x, w, scales, biases *Array, transpose bool, groupSize, bit
 	return out
 }
 
+// GatherQMM 带索引的量化分组矩阵乘，用于 MoE。
 func GatherQMM(x, w, scales *Array, biases, lhsIndices, rhsIndices *Array, transpose bool, groupSize, bits int, mode string, sortedIndices bool) *Array {
 	cMode := C.CString(mode)
 	defer C.free(unsafe.Pointer(cMode))
@@ -111,8 +121,10 @@ func GatherQMM(x, w, scales *Array, biases, lhsIndices, rhsIndices *Array, trans
 	return out
 }
 
+// 补充张量算子
 // Missing tensor ops
 
+// Tile 沿各维按 reps 重复张量。
 func Tile(a *Array, reps []int32) *Array {
 	cReps := make([]C.int, len(reps))
 	for i, r := range reps {
@@ -123,18 +135,21 @@ func Tile(a *Array, reps []int32) *Array {
 	return out
 }
 
+// Tri 构造 float32 三角矩阵。
 func Tri(n, m int32, k int) *Array {
 	out := New("TRI")
 	C.mlx_tri(&out.ctx, C.int(n), C.int(m), C.int(k), C.mlx_dtype(DTypeFloat32), DefaultStream().ctx)
 	return out
 }
 
+// Where 按 condition 逐元素选择 a 或 b。
 func Where(condition, a, b *Array) *Array {
 	out := New("WHERE")
 	C.mlx_where(&out.ctx, condition.ctx, a.ctx, b.ctx, DefaultStream().ctx)
 	return out
 }
 
+// Conv1d 一维卷积，可选 bias。
 func Conv1d(x, weight *Array, bias *Array, stride, padding, dilation, groups int32) *Array {
 	out := New("CONV1D")
 	C.mlx_conv1d(
@@ -153,13 +168,16 @@ func Conv1d(x, weight *Array, bias *Array, stride, padding, dilation, groups int
 	return out
 }
 
+// Contiguous 物化为连续存储，可选允许列主序。
 func Contiguous(a *Array, allowColMajor bool) *Array {
 	out := New("CONTIGUOUS")
 	C.mlx_contiguous(&out.ctx, a.ctx, C.bool(allowColMajor), DefaultStream().ctx)
 	return out
 }
 
+// Conv2d 二维卷积：x 为 NHWC，weight 为 [C_out,kH,kW,C_in]。
 // Conv2d performs 2D convolution: x [N,H,W,C_in], weight [C_out,kH,kW,C_in].
+// MLX 使用 NHWC 内存布局。
 // MLX uses NHWC layout.
 func Conv2d(x, weight *Array, strideH, strideW, padH, padW, dilationH, dilationW, groups int32) *Array {
 	out := New("CONV2D")
@@ -176,7 +194,9 @@ func Conv2d(x, weight *Array, strideH, strideW, padH, padW, dilationH, dilationW
 	return out
 }
 
+// Pad 沿 axes 填充，mode 为 constant/edge/reflect。
 // Pad pads array a along the given axes with specified low/high pad sizes.
+// mode 取值 constant、edge 或 reflect。
 // mode should be "constant", "edge", or "reflect".
 func Pad(a *Array, axes []int, lowPad, highPad []int, padValue *Array, mode string) *Array {
 	cAxes := make([]C.int, len(axes))
@@ -203,17 +223,20 @@ func Pad(a *Array, axes []int, lowPad, highPad []int, padValue *Array, mode stri
 	return out
 }
 
+// PadConstant 沿 axes 以零填充。
 // PadConstant pads with zeros along the given axes.
 func PadConstant(a *Array, axes []int, lowPad, highPad []int) *Array {
 	zero := NewScalarArray(float32(0))
 	return Pad(a, axes, lowPad, highPad, zero, "constant")
 }
 
+// DepthwiseConv1d 深度可分离一维卷积。
 func DepthwiseConv1d(x, weight *Array, bias *Array) *Array {
 	groups := int32(x.Dim(x.NumDims() - 1))
 	return Conv1d(x, weight, bias, 1, 0, 1, groups)
 }
 
+// Maximum 逐元素取较大值。
 // Maximum returns element-wise maximum of two arrays.
 func Maximum(a, b *Array) *Array {
 	out := New("MAXIMUM")
@@ -221,6 +244,7 @@ func Maximum(a, b *Array) *Array {
 	return out
 }
 
+// Minimum 逐元素取较小值。
 // Minimum returns element-wise minimum of two arrays.
 func Minimum(a, b *Array) *Array {
 	out := New("MINIMUM")
@@ -228,16 +252,19 @@ func Minimum(a, b *Array) *Array {
 	return out
 }
 
+// Softplus 用 logaddexp 稳定计算 log(1+exp(x))。
 // Softplus computes log(1 + exp(x)) using logaddexp for numerical stability.
 func Softplus(a *Array) *Array {
 	return Logaddexp(a, Zeros(a.DType(), a.Dims()...))
 }
 
+// ReLU 计算 max(0,x)。
 // ReLU computes max(0, x).
 func ReLU(a *Array) *Array {
 	return Maximum(a, NewScalarArray(float32(0)))
 }
 
+// GLU 门控线性单元：末维一分为二，返回 first*sigmoid(second)。
 // GLU applies Gated Linear Unit: splits x along last dim into two halves,
 // returns first * sigmoid(second).
 func GLU(a *Array) *Array {
@@ -254,6 +281,7 @@ func GLU(a *Array) *Array {
 	return first.Multiply(second.Sigmoid())
 }
 
+// 辅助：构造 SliceStartStop 的 stop，目标轴设为 val。
 // helper: builds stop array for SliceStartStop where the target axis = val
 func appendDims(a *Array, targetAxis int, val int32) []int32 {
 	n := a.NumDims()
@@ -268,6 +296,7 @@ func appendDims(a *Array, targetAxis int, val int32) []int32 {
 	return out
 }
 
+// 辅助：构造 SliceStartStop 的 start，目标轴设为 val。
 // helper: builds start array for SliceStartStop where the target axis = val
 func appendDimsStart(a *Array, targetAxis int, val int32) []int32 {
 	n := a.NumDims()
@@ -280,13 +309,16 @@ func appendDimsStart(a *Array, targetAxis int, val int32) []int32 {
 	return out
 }
 
+// Clamp 将值限制在 [min,max]。
 // Clamp clamps array values to [min, max].
 func Clamp(a *Array, minVal, maxVal float32) *Array {
 	return Minimum(Maximum(a, NewScalarArray(minVal)), NewScalarArray(maxVal))
 }
 
+// 模型代码用的函数式便捷包装
 // Convenience wrappers (function-style for the model code)
 
+// Stack 沿 axis 堆叠多个 Array。
 func Stack(arrays []*Array, axis int) *Array {
 	vectorData := make([]C.mlx_array, len(arrays))
 	for i := range arrays {
@@ -300,64 +332,79 @@ func Stack(arrays []*Array, axis int) *Array {
 	return out
 }
 
+// Neg 取负。
 func Neg(a *Array) *Array {
 	return a.Negative()
 }
 
+// Sum 沿轴求和。
 func Sum(a *Array, axis int, keepDims bool) *Array {
 	return a.SumAxis(axis, keepDims)
 }
 
+// Argsort 沿轴排序索引。
 func Argsort(a *Array, axis int) *Array {
 	return a.ArgsortAxis(axis)
 }
 
+// Take 沿轴按 indices 索引。
 func Take(a *Array, indices *Array, axis int) *Array {
 	return a.TakeAxis(indices, axis)
 }
 
+// RSqrt 逐元素 rsqrt。
 func RSqrt(a *Array) *Array {
 	out := New("RSQRT")
 	C.mlx_rsqrt(&out.ctx, a.ctx, DefaultStream().ctx)
 	return out
 }
 
+// Mean 沿轴求均值。
 func Mean(a *Array, axis int, keepDims bool) *Array {
 	out := New("MEAN_AXIS")
 	C.mlx_mean_axis(&out.ctx, a.ctx, C.int(axis), C.bool(keepDims), DefaultStream().ctx)
 	return out
 }
 
+// Argpartition 部分排序。
 func Argpartition(a *Array, kth int, axis int) *Array {
 	return a.ArgpartitionAxis(kth, axis)
 }
 
+// TakeAlongAxis 沿轴 gather。
 func TakeAlongAxis(a, indices *Array, axis int) *Array {
 	return a.TakeAlongAxis(indices, axis)
 }
 
+// 模型侧函数式包装
 // Function-style wrappers for model code.
 
+// Add 逐元素加。
 func Add(a, b *Array) *Array {
 	return a.Add(b)
 }
 
+// Sub 逐元素减。
 func Sub(a, b *Array) *Array {
 	return a.Subtract(b)
 }
 
+// Mul 逐元素乘。
 func Mul(a, b *Array) *Array {
 	return a.Multiply(b)
 }
 
+// Div 逐元素除。
 func Div(a, b *Array) *Array {
 	return a.Divide(b)
 }
 
+// Matmul 矩阵乘。
 func Matmul(a, b *Array) *Array {
 	return a.Matmul(b)
 }
 
+// Reshape 重塑 shape。
 func Reshape(a *Array, shape ...int32) *Array {
 	axes := make([]int, len(shape))
 	for i, s := range shape {
@@ -366,22 +413,27 @@ func Reshape(a *Array, shape ...int32) *Array {
 	return a.Reshape(axes...)
 }
 
+// Transpose 转置。
 func Transpose(a *Array, axes ...int) *Array {
 	return a.Transpose(axes...)
 }
 
+// ExpandDims 扩维。
 func ExpandDims(a *Array, axis int) *Array {
 	return a.ExpandDims(axis)
 }
 
+// Squeeze .squeeze 维。
 func Squeeze(a *Array, axis int) *Array {
 	return a.Squeeze(axis)
 }
 
+// Flatten 展平全部维。
 func Flatten(a *Array) *Array {
 	return a.Flatten(0, -1)
 }
 
+// Concatenate 拼接。
 func Concatenate(arrays []*Array, axis int) *Array {
 	if len(arrays) == 0 {
 		return nil
@@ -392,6 +444,7 @@ func Concatenate(arrays []*Array, axis int) *Array {
 	return arrays[0].Concatenate(axis, arrays[1:]...)
 }
 
+// SliceStartStop 按 start/stop 切片。
 func SliceStartStop(a *Array, start, stop []int32) *Array {
 	n := len(start)
 	cStart := make([]C.int, n)
@@ -407,6 +460,7 @@ func SliceStartStop(a *Array, start, stop []int32) *Array {
 	return out
 }
 
+// GatherMM 分组矩阵乘。
 func GatherMM(a, b *Array, lhsIndices, rhsIndices *Array, sortedIndices bool) *Array {
 	if lhsIndices == nil {
 		lhsIndices = New("")
@@ -417,6 +471,7 @@ func GatherMM(a, b *Array, lhsIndices, rhsIndices *Array, sortedIndices bool) *A
 	return a.GatherMM(b, lhsIndices, rhsIndices, sortedIndices)
 }
 
+// RoPEWithBase 对 x 应用 RoPE；offsets 为每 batch 行起始位置。
 // RoPEWithBase applies rotary position embeddings to x. offsets is an
 // int32 array of shape [B] giving each batch row's starting position;
 // the kernel applies positions offsets[b] + 0..T-1 per row.
@@ -424,8 +479,10 @@ func RoPEWithBase(x *Array, dims int, traditional bool, base, scale float32, off
 	return RoPEWithFreqs(x, dims, traditional, base, scale, offsets, nil)
 }
 
+// RoPEWithFreqs 可选自定义频率；MLX 内部取 freqs 倒数。
 // RoPEWithFreqs applies RoPE with optional custom frequencies.
 // When freqs is non-nil, it is used instead of computing from base.
+// 注意：传入实际频率 base^(2i/dim)，非逆频率。
 // Note: MLX takes reciprocal(freqs) internally to get inv_freq, so pass
 // the actual frequencies (base^(2i/dim)), not the inverse frequencies.
 func RoPEWithFreqs(x *Array, dims int, traditional bool, base, scale float32, offsets *Array, freqs *Array) *Array {
@@ -457,34 +514,40 @@ func RoPEWithFreqs(x *Array, dims int, traditional bool, base, scale float32, of
 	return out
 }
 
+// Sigmoid sigmoid。
 func Sigmoid(a *Array) *Array {
 	return a.Sigmoid()
 }
 
+// Erf 误差函数。
 func Erf(a *Array) *Array {
 	out := New("ERF")
 	C.mlx_erf(&out.ctx, a.ctx, DefaultStream().ctx)
 	return out
 }
 
+// Exp 指数。
 func Exp(a *Array) *Array {
 	out := New("EXP")
 	C.mlx_exp(&out.ctx, a.ctx, DefaultStream().ctx)
 	return out
 }
 
+// Log 对数。
 func Log(a *Array) *Array {
 	out := New("LOG")
 	C.mlx_log(&out.ctx, a.ctx, DefaultStream().ctx)
 	return out
 }
 
+// Sin 正弦。
 func Sin(a *Array) *Array {
 	out := New("SIN")
 	C.mlx_sin(&out.ctx, a.ctx, DefaultStream().ctx)
 	return out
 }
 
+// Cos 余弦。
 func Cos(a *Array) *Array {
 	out := New("COS")
 	C.mlx_cos(&out.ctx, a.ctx, DefaultStream().ctx)
@@ -497,24 +560,28 @@ func erf(a *Array) *Array {
 	return out
 }
 
+// Clip 裁剪到区间。
 func Clip(a, aMin, aMax *Array) *Array {
 	out := New("CLIP")
 	C.mlx_clip(&out.ctx, a.ctx, aMin.ctx, aMax.ctx, DefaultStream().ctx)
 	return out
 }
 
+// Logaddexp 稳定 log(exp(a)+exp(b))。
 func Logaddexp(a, b *Array) *Array {
 	out := New("LOGADDEXP")
 	C.mlx_logaddexp(&out.ctx, a.ctx, b.ctx, DefaultStream().ctx)
 	return out
 }
 
+// SoftmaxAxis 沿轴 softmax。
 func SoftmaxAxis(a *Array, axis int, precise bool) *Array {
 	out := New("SOFTMAX_AXIS")
 	C.mlx_softmax_axis(&out.ctx, a.ctx, C.int(axis), C.bool(precise), DefaultStream().ctx)
 	return out
 }
 
+// LayerNormFn 快速 LayerNorm。
 func LayerNormFn(x, weight, bias *Array, eps float32) *Array {
 	out := New("FAST_LAYERNORM")
 	var w, b C.mlx_array
@@ -528,6 +595,7 @@ func LayerNormFn(x, weight, bias *Array, eps float32) *Array {
 	return out
 }
 
+// RMSNormFn 快速 RMSNorm。
 func RMSNormFn(x, weight *Array, eps float32) *Array {
 	out := New("FAST_RMSNORM")
 	var w C.mlx_array
@@ -538,13 +606,17 @@ func RMSNormFn(x, weight *Array, eps float32) *Array {
 	return out
 }
 
+// AddMM 融合 addmm。
 func AddMM(c, a, b *Array, alpha, beta float32) *Array {
 	return c.Addmm(a, b, alpha, beta)
 }
 
+// 标量运算辅助
 // Scalar helpers
 
+// scalarWithDtype 创建与 a 同 dtype 的标量，利于算子融合。
 // scalarWithDtype creates a scalar array matching the dtype of a.
+// 匹配 dtype 可避免隐式 cast 并利于图融合。
 // Matching dtype is important for graph fusion and avoiding implicit casts.
 func scalarWithDtype(s float32, a *Array) C.mlx_array {
 	f32 := C.mlx_array_new_float(C.float(s))
@@ -558,6 +630,7 @@ func scalarWithDtype(s float32, a *Array) C.mlx_array {
 	return casted
 }
 
+// AddScalar 加标量。
 func AddScalar(a *Array, s float32) *Array {
 	scalar := scalarWithDtype(s, a)
 	out := New("ADD_SCALAR")
@@ -566,6 +639,7 @@ func AddScalar(a *Array, s float32) *Array {
 	return out
 }
 
+// MulScalar 乘标量。
 func MulScalar(a *Array, s float32) *Array {
 	scalar := scalarWithDtype(s, a)
 	out := New("MUL_SCALAR")
@@ -574,6 +648,7 @@ func MulScalar(a *Array, s float32) *Array {
 	return out
 }
 
+// DivScalar 除标量。
 func DivScalar(a *Array, s float32) *Array {
 	scalar := scalarWithDtype(s, a)
 	out := New("DIV_SCALAR")
@@ -582,13 +657,16 @@ func DivScalar(a *Array, s float32) *Array {
 	return out
 }
 
+// FloorDivideScalar 整除标量。
 func FloorDivideScalar(a *Array, s int32) *Array {
 	scalar := FromValue(int(s))
 	return a.FloorDivide(scalar)
 }
 
+// 张量构造
 // Array constructors
 
+// NewArrayInt32 从 int32 数据创建张量。
 func NewArrayInt32(data []int32, shape []int32) *Array {
 	cShape := make([]C.int, len(shape))
 	for i, s := range shape {
@@ -599,12 +677,14 @@ func NewArrayInt32(data []int32, shape []int32) *Array {
 	return out
 }
 
+// NewScalarArray 创建 float32 标量张量。
 func NewScalarArray(value float32) *Array {
 	out := New("SCALAR")
 	out.ctx = C.mlx_array_new_float32(C.float(value))
 	return out
 }
 
+// ZerosF32 创建 float32 零张量。
 func ZerosF32(shape []int32) *Array {
 	return Zeros(DTypeFloat32, func() []int {
 		ints := make([]int, len(shape))
@@ -615,8 +695,10 @@ func ZerosF32(shape []int32) *Array {
 	}()...)
 }
 
+// 反射收集与编译开关
 // Utility
 
+// Collect 递归收集结构体中所有有效 *Array。
 func Collect(v any) []*Array {
 	var arrays []*Array
 	seen := make(map[uintptr]bool)
@@ -679,10 +761,12 @@ func collect(v reflect.Value, arrays *[]*Array, seen map[uintptr]bool) {
 	}
 }
 
+// EnableCompile 开启 MLX 图编译。
 func EnableCompile() {
 	C.mlx_enable_compile()
 }
 
+// DisableCompile 关闭 MLX 图编译。
 func DisableCompile() {
 	C.mlx_disable_compile()
 }

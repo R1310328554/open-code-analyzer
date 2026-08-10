@@ -1,3 +1,4 @@
+// MLX 切片：Python 风格多维 slice 与 SliceUpdate。
 package mlx
 
 // #include "generated.h"
@@ -8,18 +9,23 @@ import (
 	"unsafe"
 )
 
+// End 表示维末 sentinel，等价 Python 省略 stop（如 a[i:]）。
 // End is a sentinel value meaning "to the end of the dimension",
+// 与 Python 省略 stop 等价。
 // equivalent to an omitted stop in Python (e.g. a[i:]).
 const End = math.MaxInt32
 
+// slice 保存 Slice(...) 的参数。
 type slice struct {
 	args []int
 }
 
+// Slice 构造切片描述，支持 i、i:j、i:j:k。
 func Slice(args ...int) slice {
 	return slice{args: args}
 }
 
+// resolve 将负索引与 End 解析为绝对下标。
 func resolve(val, dim int) C.int {
 	if val == End {
 		return C.int(dim)
@@ -30,6 +36,7 @@ func resolve(val, dim int) C.int {
 	return C.int(val)
 }
 
+// makeSlices 将多维 slice 转为 C 侧 start/stop/stride。
 func makeSlices(dims []int, slices ...slice) (starts, stops, strides []C.int) {
 	if len(slices) != len(dims) {
 		panic("number of slice arguments must match number of tensor dimensions")
@@ -45,22 +52,26 @@ func makeSlices(dims []int, slices ...slice) (starts, stops, strides []C.int) {
 		dim := dims[i]
 		switch len(s.args) {
 		case 0:
+			// 全维切片 slice[:]
 			// slice[:]
 			args[0][i] = C.int(0)
 			args[1][i] = C.int(dim)
 			args[2][i] = C.int(1)
 		case 1:
+			// 单点 slice[i]
 			// slice[i]
 			start := resolve(s.args[0], dim)
 			args[0][i] = start
 			args[1][i] = start + 1
 			args[2][i] = C.int(1)
 		case 2:
+			// 区间 slice[i:j]
 			// slice[i:j]
 			args[0][i] = resolve(s.args[0], dim)
 			args[1][i] = resolve(s.args[1], dim)
 			args[2][i] = C.int(1)
 		case 3:
+			// 步长 slice[i:j:k]
 			// slice[i:j:k]
 			args[0][i] = resolve(s.args[0], dim)
 			args[1][i] = resolve(s.args[1], dim)
@@ -73,6 +84,7 @@ func makeSlices(dims []int, slices ...slice) (starts, stops, strides []C.int) {
 	return args[0], args[1], args[2]
 }
 
+// Slice 对张量做多维切片。
 func (t *Array) Slice(slices ...slice) *Array {
 	starts, stops, strides := makeSlices(t.Dims(), slices...)
 	out := New("SLICE")
@@ -86,6 +98,7 @@ func (t *Array) Slice(slices ...slice) *Array {
 	return out
 }
 
+// SliceUpdate 在切片区域写入 other。
 func (t *Array) SliceUpdate(other *Array, slices ...slice) *Array {
 	starts, stops, strides := makeSlices(t.Dims(), slices...)
 	out := New("SLICE_UPDATE")

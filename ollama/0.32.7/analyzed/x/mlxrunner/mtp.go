@@ -1,3 +1,4 @@
+// MTP 多 token 预测 draft：pair 式 draft KV 与缓冲 flush。
 package mlxrunner
 
 import (
@@ -9,11 +10,13 @@ import (
 	sampler "github.com/ollama/ollama/x/mlxrunner/sample"
 )
 
+// mtpPendingFlushTokens 限制 pending 缓冲 token 数，bounded pin hidden。
 // mtpPendingFlushTokens caps how many committed look-ahead tokens wait in the
 // pending buffer before a batched flush, bounding the pinned hidden states
 // regardless of what else triggers a flush.
 const mtpPendingFlushTokens = 256
 
+// mtpDrafter 用模型 MTP head draft；构造时固定 trie draftLookahead=1。
 // mtpDrafter drafts with a model's multi-token-prediction head. Constructed
 // at load, it fixes the trie keys' draft look-ahead for the model's lifetime
 // and opens each request's drafting session.
@@ -21,8 +24,10 @@ type mtpDrafter struct {
 	spec *speculation
 }
 
+// newMTPDrafter 创建 MTP drafter 并设置 draftLookahead。
 func newMTPDrafter(s *speculation) *mtpDrafter {
 	if len(s.draftKV) > 0 {
+		// pairing 引用每 slot 后一 token；trie key 携带该 look-ahead。
 		// The pairing references one token past each slot; trie keys carry
 		// that look-ahead so a match verifies it (see prefixCache.draftLookahead).
 		s.r.cache.draftLookahead = 1
@@ -30,10 +35,12 @@ func newMTPDrafter(s *speculation) *mtpDrafter {
 	return &mtpDrafter{spec: s}
 }
 
+// draftLimit 无上限；head 每 token 一次前向。
 // draftLimit reports no bound; the head makes one call per draft token, so
 // any depth is reachable.
 func (d *mtpDrafter) draftLimit() int { return 0 }
 
+// open 返回单请求 session，frontier 与 restored draft cache offset 对齐。
 // open returns the drafting session for one request, its pairing frontier
 // synced to the draft caches' restored offset.
 func (d *mtpDrafter) open(layout []any) draftSession {
@@ -47,6 +54,7 @@ func (d *mtpDrafter) open(layout []any) draftSession {
 	return s
 }
 
+// mtpDraftSession 处理单请求 drafting；draft KV 将 slot S 与 S+1 token 及 target hidden 配对。
 // mtpDraftSession runs one request's drafting, fed through the
 // committed-stream reports. The draft KV pairs each slot S with the
 // look-ahead token at S+1 fused with the target hidden at S, so a pair
@@ -55,11 +63,13 @@ type mtpDraftSession struct {
 	drafter *mtpDrafter
 	layout  []any
 
+	// frontier 为末报告 token 后槽位；frontierHidden 为 frontier-1 的 target hidden。
 	// frontier is the slot after the last reported token; frontierHidden is
 	// the pinned target hidden at frontier-1, fused into the next pair.
 	frontier       int
 	frontierHidden *mlx.Array
 
+	// committedDraftOffset 为末写入 draft cache 的 pair 后槽位。
 	// committedDraftOffset is the slot after the last pair written to the
 	// draft caches; later pairs wait pinned in the pending lists until
 	// flushed. pendingCount is the look-ahead tokens those lists hold, summed
@@ -69,12 +79,14 @@ type mtpDraftSession struct {
 	pendingHiddens       []*mlx.Array
 	pendingCount         int
 
+	// heldHidden/heldAuxHidden 来自上次 flush，供 propose 首步复用。
 	// heldHidden is the frontier row's pre-unembed hidden and heldAuxHidden
 	// its fusion hidden, carried from the last flush so the first proposal
 	// reuses them without a head call.
 	heldHidden    *mlx.Array
 	heldAuxHidden *mlx.Array
 
+	// pendingMedia pin 待 deferred flush 嵌入的媒体行。
 	// pendingMedia holds manifest rows the deferred flush may still embed,
 	// pinned since prefill releases them after the target's chunk;
 	// lastDelivered marks each row's newest delivered end.
@@ -86,6 +98,7 @@ func (d *mtpDraftSession) committed(tokens, hiddens *mlx.Array, position int, me
 	n := tokens.Dim(1)
 	d.captureMedia(media, position+n)
 	if len(d.drafter.spec.draftKV) > 0 {
+		// slot S 的 pair 融合 token[S+1] 与 hidden[S]；跳过已缓冲/已写 slot。
 		// The pair at slot S fuses token[S+1] with hidden[S], so a run pairs its
 		// tokens with its own hiddens shifted one slot back: the first writable
 		// token takes the carried frontier hidden, each later token the row
@@ -113,6 +126,7 @@ func (d *mtpDraftSession) committed(tokens, hiddens *mlx.Array, position int, me
 	d.setFrontierHidden(lastHiddenRow(hiddens))
 }
 
+// captureMedia pin 本 run 含特征的行，供 deferred flush 嵌入。
 // captureMedia pins the run's feature-bearing rows for the deferred
 // flush, which embeds them after prefill has released the features. A row
 // spanning chunks arrives once per chunk.
@@ -136,6 +150,7 @@ func (d *mtpDraftSession) captureMedia(media []batch.MediaItem, end int) {
 	}
 }
 
+// flushMedia 返回 flush 用媒体 manifest，并释放已完全交付的行。
 // flushMedia returns the held rows for a flush batch and drops rows the
 // flush finishes: fully delivered below embedEnd means never embedded
 // again.
@@ -166,6 +181,7 @@ func (d *mtpDraftSession) closeMedia() {
 	}
 }
 
+// settle 用 next 完成未闭合 frontier pair 并 flush，使 draft 与 target 对齐。
 // settle completes any open frontier pair with next — the token after the
 // last committed slot — and flushes, leveling the draft caches with the
 // target.
@@ -186,6 +202,7 @@ func (d *mtpDraftSession) close() {
 	d.setHeld(nil, nil)
 }
 
+// queueCacheWrites 缓冲已完成的 pair 写入，达上限则 flush。
 // queueCacheWrites buffers completed draft-cache writes — look-ahead tokens
 // fused with their target hiddens — flushing once the buffer reaches the token
 // cap so the pinned hiddens stay bounded. flush coalesces the buffered writes
@@ -200,6 +217,7 @@ func (d *mtpDraftSession) queueCacheWrites(tokens, hiddens *mlx.Array) {
 	}
 }
 
+// flush 将 pending pair 一次 head 前向写入 draft cache，并持有末行 logits。
 // flush writes the pending pairs to the draft caches in one head forward,
 // dropping speculative entries past the committed range first and holding
 // the last row's logits and aux hidden for the next proposal chain.
@@ -218,6 +236,7 @@ func (d *mtpDraftSession) flush() {
 
 	ids := mlx.Concatenate(d.pendingTokens, 1)
 	hiddens := mlx.Concatenate(d.pendingHiddens, 1)
+	// flush 嵌入至 committedDraftOffset+len+1 的 prompt token。
 	// The pair at slot S embeds the look-ahead token S+1, so this flush
 	// embeds prompt tokens up to committedDraftOffset+len+1.
 	hidden, auxHidden := spec.draft.Forward(&batch.Batch{
@@ -231,6 +250,7 @@ func (d *mtpDraftSession) flush() {
 	d.setHeld(lastHiddenRow(hidden), lastHiddenRow(auxHidden))
 	d.committedDraftOffset += ids.Dim(1)
 
+	// 强制 eval draft 写入，避免从不 draft 的 session 长期 pin hidden。
 	// Force the draft writes: a session that never drafts would otherwise
 	// leave the flush chain unevaluated, pinning every hidden until close.
 	state := make([]*mlx.Array, 0, 2*len(spec.draftKV))
@@ -251,6 +271,7 @@ func (d *mtpDraftSession) setFrontierHidden(h *mlx.Array) {
 	d.frontierHidden = h
 }
 
+// setHeld 替换 held flush 输出并 pin 至下次 flush/close。
 // setHeld replaces the held flush outputs, pinned until the next flush or close.
 func (d *mtpDraftSession) setHeld(hidden, auxHidden *mlx.Array) {
 	mlx.Pin(hidden, auxHidden)
@@ -258,6 +279,7 @@ func (d *mtpDraftSession) setHeld(hidden, auxHidden *mlx.Array) {
 	d.heldHidden, d.heldAuxHidden = hidden, auxHidden
 }
 
+// propose 在当前未验证 token 后 draft 链；有 draft KV 时 settle 后复用 held 行。
 // propose drafts a token chain after the not-yet-validated current token.
 // A head with draft caches settles the frontier pair first, so its first step
 // reuses the held frontier row with no head call; a cacheless head re-attends
@@ -284,10 +306,12 @@ func (d *mtpDraftSession) propose(current *mlx.Array, maxTokens int) *draftCandi
 	for i := range maxTokens {
 		var hidden, auxHidden *mlx.Array
 		if i == 0 && len(spec.draftKV) > 0 {
+			// settle flush 已产出 frontier 行，首步直接复用。
 			// The settle flush already produced the frontier row; reuse it
 			// instead of re-running the head.
 			hidden, auxHidden = d.heldHidden, d.heldAuxHidden
 		} else {
+			// 有 draft KV 时每步写入下一 slot；无 KV 则单点重读 target cache。
 			// A head with draft caches writes each draft token to the next
 			// draft-cache slot, advancing one per step from the last committed
 			// slot (the held i==0 step stands in for that slot). A cacheless
@@ -305,6 +329,7 @@ func (d *mtpDraftSession) propose(current *mlx.Array, maxTokens int) *draftCandi
 				Layout:       d.layout,
 			}, spec.targets, spec.draftKV)
 		}
+		// 仅 unembed 待采样行。
 		// Unembed only the row being sampled, never the batch.
 		stepLogits := spec.draft.Unembed(hidden).Squeeze(1)
 		lastHidden = auxHidden
@@ -327,6 +352,7 @@ func (d *mtpDraftSession) propose(current *mlx.Array, maxTokens int) *draftCandi
 	}
 }
 
+// lastHiddenRow 取 hidden 末时间步行。
 func lastHiddenRow(hidden *mlx.Array) *mlx.Array {
 	return hidden.Slice(mlx.Slice(), mlx.Slice(hidden.Dim(1)-1), mlx.Slice())
 }

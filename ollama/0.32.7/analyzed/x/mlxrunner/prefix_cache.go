@@ -1,17 +1,26 @@
-// prefix_cache.go manages cache state shared across conversations using a
+// prefix_cache.go 用压缩前缀 trie 跨会话共享 KV cache：
+// 仅一条 active 路径持有 live MLX 数组；切换路径分页换入换出快照。
+// prefix_cache.go manages cache state shared across conversations using a// prefix_cache.go manages cache state shared across conversations using a
+// 每 trie 节点存边 token 序列与各层可分页快照。
 // compressed prefix trie. Each trie node stores a token sequence (edge) and
 // optional per-layer snapshots that can be paged in/out of the live MLX cache
 // arrays.
 //
+// 关键性质：
 // Key properties:
+//   - 同时仅一条 trie 路径 active（live MLX 数组）
 //   - Only one path through the trie is "active" (backed by live MLX arrays)
 //     at a time. Switching paths pages out the frontier node and pages in the
 //     new path.
+//   - 快照仅在 active 路径 frontier 捕获；中间节点来自 split prefill。
 //   - Snapshots are only captured at the frontier (end) of the active path.
 //     Intermediate node snapshots come from split prefill.
+//   - 各 cache 层 token offset 必须一致。
 //   - All cache layers must stay at the same token offset.
+//   - 兄弟边不得共享 token 前缀（压缩 trie 不变量）。
 //   - Sibling edges must not share a common token prefix (compressed trie
 //     invariant).
+//   - begin() 至少重算一 token 以便 pipeline 种子生成。
 //   - begin() always re-evaluates at least one token so the pipeline can seed
 //     generation, even on a full prefix match.
 
@@ -29,25 +38,32 @@ import (
 	"github.com/ollama/ollama/x/mlxrunner/mlx"
 )
 
-const maxPagedOutBytes int64 = 8 << 30 // 8 GiB eviction threshold for paged-out snapshot memory
+const maxPagedOutBytes int64 = 8 << 30 // 换出快照内存 8GiB 驱逐阈值
+// 8 GiB eviction threshold for paged-out snapshot memory
 
+// prefixCache 管理前缀 trie 与 live cache 数组。
 type prefixCache struct {
-	root          *trieNode   // root of the prefix trie
-	activePath    []*trieNode // current root→leaf path with live MLX arrays
+	root          *trieNode   // 前缀 trie 根
+	// root of the prefix trie
+	activePath    []*trieNode // 当前带 live 数组的根到叶路径
+	// current root→leaf path with live MLX arrays
 	caches        []cache.Cache
 	pagedOutBytes int64 // total bytes in paged-out snapshots across the trie
 
+	// draftLookahead 为 draft cache 条目向前看的 token 数；key 打包 (t_i,t_{i+1})。
 	// draftLookahead is how far the draft caches' entries reference past
 	// their own slot; trie keys pack each token with its look-ahead (see key).
 	draftLookahead int
 }
 
+// pendingSnapshot 为 prefill 中计划捕获的快照。
 // pendingSnapshot is a snapshot scheduled to be taken during prefill.
 type pendingSnapshot struct {
 	offset int
 	user   bool
 }
 
+// cacheSession 管理单次 pipeline 的 cache；close 时保存状态。
 // cacheSession manages caches for a single pipeline run.
 // Callers should append generated tokens to outputs and
 // defer close to save the cache state.
@@ -66,6 +82,7 @@ type cacheSession struct {
 	pendingSnapshots []pendingSnapshot
 }
 
+// newPrefixCache 为模型生命周期管理给定 cache 槽位。
 // newPrefixCache manages the given cache slots for the model's life.
 func newPrefixCache(caches []cache.Cache) *prefixCache {
 	return &prefixCache{caches: caches}
@@ -80,6 +97,7 @@ func (c *prefixCache) ensureRoot() {
 	}
 }
 
+// begin 为新请求准备 cache：匹配前缀、切换路径，至少留一 token 重算。
 // begin prepares caches for a new request. It finds the nearest
 // matching cache or creates new caches if none match.
 func (c *prefixCache) begin(inputs []int32, items []mediaItem) *cacheSession {
@@ -90,12 +108,14 @@ func (c *prefixCache) begin(inputs []int32, items []mediaItem) *cacheSession {
 	matchPath, matched := findBestMatch(c.root, keys)
 	originalMatched := matched
 
+	// 全匹配时也保留至少一 token 重算以种子生成。
 	// Always keep at least one token to re-evaluate so the
 	// pipeline can seed token generation from it.
 	if matched == len(inputs) && matched > 0 {
 		matchPath, matched = findBestMatch(c.root, keys[:matched-1])
 	}
 
+	// 切换到匹配路径并按需分页。
 	// Switch to the matched path, paging in/out as needed.
 	c.switchToPath(matchPath, matched)
 
@@ -111,6 +131,7 @@ func (c *prefixCache) begin(inputs []int32, items []mediaItem) *cacheSession {
 		remaining: remaining,
 	}
 
+	// 在分支点调度快照供后续 diverge 请求 restore。
 	// Schedule a snapshot at the branch point during prefill so future
 	// requests diverging here can restore instead of re-evaluating.
 	if prefix < matched {
@@ -126,6 +147,7 @@ func (c *prefixCache) begin(inputs []int32, items []mediaItem) *cacheSession {
 	return session
 }
 
+// effectiveKeyTokens 返回每位置 trie key 字母表；媒体展开用 fold 替代 token ID。
 // effectiveKeyTokens returns the per-position key alphabet: the token ID
 // outside media expansions, the item's fold value across each expansion's
 // whole range.
@@ -142,6 +164,7 @@ func effectiveKeyTokens(tokens []int32, items []mediaItem) []uint32 {
 	return eff
 }
 
+// key 打包可 restore 偏移的 (token_i, token_{i+1})；draftLookahead=1 时双 token key。
 // key packs (token i, token i+1) per restorable offset: draft caches
 // pair each slot with the next token, so matching k keys verifies k+1
 // tokens and every match is a valid restore point.
@@ -162,6 +185,7 @@ func (c *prefixCache) key(tokens []uint32) []trieKey {
 	return keys
 }
 
+// storedKeys 为已 eval 流（prompt + 生成 token）的 key 序列。
 // storedKeys keys the session's evaluated stream: the prompt's effective
 // tokens plus generated tokens, which are never media.
 func (s *cacheSession) storedKeys() []trieKey {
@@ -176,6 +200,7 @@ func (s *cacheSession) storedKeys() []trieKey {
 	return s.cache.key(eff)
 }
 
+// switchToPath 切换 active 路径：换出旧叶、rewind、换入新路径快照。
 // switchToPath transitions from the current active path to a new path,
 // paging out diverging segments and paging in the new path.
 func (c *prefixCache) switchToPath(newPath []*trieNode, matched int) {
@@ -197,6 +222,7 @@ func (c *prefixCache) switchToPath(newPath []*trieNode, matched int) {
 
 	var pageOutCount, pageInCount int
 
+	// 仅换出旧路径叶节点 live 状态；中间节点快照已在创建时捕获。
 	// Page out the leaf of the old path. Only the leaf's live cache
 	// state is correct — intermediate nodes already have snapshots
 	// captured during their creation (splitNode + prefill). Snapshotting
@@ -223,6 +249,7 @@ func (c *prefixCache) switchToPath(newPath []*trieNode, matched int) {
 		}
 	}
 
+	// rewind 各 cache 至目标 offset，失败则 Free。
 	// Rewind each cache to the target offset or free it. When matched
 	// falls within the ancestor's range (same-path case), we rewind
 	// directly to the match point. Otherwise we rewind to the ancestor
@@ -237,6 +264,7 @@ func (c *prefixCache) switchToPath(newPath []*trieNode, matched int) {
 		}
 	}
 
+	// 沿新路径换入快照；已越过 node 的 cache 跳过。
 	// Page in — walk the full new path, restoring from snapshots.
 	// Freed caches naturally pick up the first available snapshot.
 	// Caches already past a node skip it via offset check.
@@ -257,7 +285,8 @@ pageIn:
 				continue
 			}
 			if !kv.Restore(node.snapshots[j], nodeTarget) {
-				// Restore failed — stop page-in and let alignment
+				// restore 失败则停止换入，由对齐统一到一致 offset。
+			// Restore failed — stop page-in and let alignment
 				// bring all caches to a consistent offset.
 				break pageIn
 			}
@@ -268,6 +297,7 @@ pageIn:
 		}
 	}
 
+	// 将所有 cache 对齐到最小 offset。
 	// Align all caches to the minimum offset.
 	c.activePath = newPath
 	minOff := c.minCacheOffset()
@@ -299,6 +329,7 @@ pageIn:
 	}
 }
 
+// schedulePrefillSnapshots 在 prefill 跨越 offset 时捕获内部快照。
 // schedulePrefillSnapshots schedules every cache to capture snapshots as the
 // forward pass crosses the given absolute token offsets, so a single full-size
 // prefill records interior states without the caller breaking the batch. A
@@ -351,6 +382,7 @@ func (s *cacheSession) schedulePrefillSnapshots(offsets []int) {
 	}
 }
 
+// discardPrefillSnapshots 丢弃未 attach 的 prefill 快照，防泄漏。
 // discardPrefillSnapshots drains and closes the snapshots scheduled by
 // schedulePrefillSnapshots without attaching them to the trie, releasing their
 // pinned/lazy state. It is a no-op once attachPrefillSnapshots has drained the
@@ -374,6 +406,7 @@ func (s *cacheSession) discardPrefillSnapshots() {
 	}
 }
 
+// attachPrefillSnapshots 将 prefill 捕获的快照挂到 trie 并推进 frontier。
 // attachPrefillSnapshots collects the snapshots captured during prefill and
 // attaches them to the trie, materializing a node at each requested offset.
 // Pending offsets are ascending and were scheduled in the same order, so the
@@ -407,6 +440,7 @@ func (s *cacheSession) attachPrefillSnapshots() {
 		}
 	}
 
+	// prefill 留末 token 给 decode，未写到的 offset 跳过。
 	// Prefill leaves one token unprocessed for decode seeding, so an offset
 	// at or past the live cache position was never crossed by a write and has
 	// no captured state. Skip it rather than materialize a node whose edge
@@ -436,6 +470,7 @@ func (s *cacheSession) attachPrefillSnapshots() {
 	}
 }
 
+// attachCapturedSnapshots 将预捕获快照存到节点（非 live Snapshot）。
 // attachCapturedSnapshots stores pre-captured snapshots on a trie node. Unlike
 // taking a fresh Snapshot from the live cache, this works for an interior node
 // whose offset the live cache has already advanced past: the snapshots come
@@ -449,6 +484,7 @@ func (s *cacheSession) attachCapturedSnapshots(node *trieNode, snaps []cache.Sna
 	c.enforceEvictionPolicy()
 }
 
+// advancePath 沿 trie 匹配 token、split 部分边并追加新节点。
 // advancePath advances the active path from the current frontier by matching
 // tokens against existing trie children, splitting partial matches, and
 // appending any remaining tokens as new nodes. Returns the new frontier.
@@ -488,6 +524,7 @@ func (c *prefixCache) advancePath(frontier *trieNode, tokens []trieKey, endOffse
 	return dest
 }
 
+// freeAll 释放全部 cache 层。
 // freeAll releases all cache layers.
 func (c *prefixCache) freeAll() {
 	for _, kv := range c.caches {
@@ -512,6 +549,7 @@ func (c *prefixCache) minCacheOffset() int {
 	return offset
 }
 
+// close 若已 forward 则将生成 token 写入 trie 并 eval 状态。
 // close saves the token state if the forward pass ran.
 func (s *cacheSession) close() {
 	// Release any prefill snapshots the session scheduled but never attached to
@@ -535,6 +573,7 @@ func (s *cacheSession) close() {
 		arrays = append(arrays, kv.State()...)
 	}
 
+	// 确保 forward 后 metadata 与数据一致。
 	// Ensure that if we have run the forward pass and set the metadata
 	// that we also actually have the data.
 	mlx.AsyncEval(arrays...)
@@ -558,6 +597,7 @@ func (s *cacheSession) close() {
 	}
 }
 
+// enforceEvictionPolicy LRU 驱逐直至换出内存低于阈值。
 // enforceEvictionPolicy evicts eligible nodes until paged-out memory is within limits.
 func (c *prefixCache) enforceEvictionPolicy() {
 	if c.pagedOutBytes <= maxPagedOutBytes {
@@ -575,6 +615,7 @@ func (c *prefixCache) enforceEvictionPolicy() {
 			if n == c.root || activeSet[n] || len(n.children) > 1 {
 				return true
 			}
+			// 驱逐优先级：最旧、最深、最大。
 			// Evict: oldest, then deepest, then largest.
 			if best == nil || cmp.Or(
 				n.lastUsed.Compare(best.lastUsed),
@@ -592,6 +633,7 @@ func (c *prefixCache) enforceEvictionPolicy() {
 	}
 }
 
+// evictNode 驱逐单节点：叶删除或单子 interior 合并。
 // evictNode evicts a single node from the trie, freeing its snapshot memory.
 func (c *prefixCache) evictNode(node *trieNode) {
 	if len(node.children) == 0 {
@@ -609,6 +651,7 @@ func (c *prefixCache) evictNode(node *trieNode) {
 	}
 }
 
+// dumpTree 输出 trie 结构与 active/paged 内存统计（trace 级）。
 func (c *prefixCache) dumpTree() {
 	// Summary stats
 	var cacheBytes int

@@ -1,3 +1,4 @@
+// 文本生成流水线：Prepare、prefill 分块、decode 与 speculative。
 package mlxrunner
 
 import (
@@ -19,10 +20,12 @@ import (
 	"github.com/ollama/ollama/x/tokenizer"
 )
 
+// prefillChunkSize 返回 prefill 每块 token 数（2<<10）。
 func prefillChunkSize() int {
 	return 2 << 10
 }
 
+// Prepare 分词并校验上下文长度；成功时填充 Tokens 并调整 NumPredict。
 // Prepare tokenizes the prompt and validates it against the model's
 // context length. It is safe to call from any goroutine. On success it
 // populates request.Tokens and adjusts request.Options.NumPredict.
@@ -60,6 +63,7 @@ func (r *Runner) Prepare(request *Request) error {
 		return fmt.Errorf("input length (%d tokens) exceeds the model's maximum context length (%d tokens)", len(tokens), r.contextLength)
 	}
 
+	// 限制生成长度不超过剩余上下文。
 	// Cap generation to stay within the model's context length
 	maxGenerate := r.contextLength - len(tokens)
 	if request.Options.NumPredict <= 0 {
@@ -73,6 +77,7 @@ func (r *Runner) Prepare(request *Request) error {
 	return nil
 }
 
+// runner 当前串行请求，sampler 使用固定 slot 0。
 // The runner serializes requests today so we just use a fixed slot ID.
 const pipelineSlot = 0
 
@@ -100,6 +105,7 @@ func (r *Runner) TextGenerationPipeline(ctx context.Context, request Request) er
 	media := r.openMedia(request)
 	defer media.close()
 
+	// prefill 前打开 speculation，使 draft cache 与 target 同步 prefill。
 	// Built before prefill so a drafter with draft caches follows the prompt
 	// through prefill alongside the target.
 	spec := r.spec.open(request, media.rowLayout())
@@ -110,6 +116,7 @@ func (r *Runner) TextGenerationPipeline(ctx context.Context, request Request) er
 		return err
 	}
 
+	// prefill 完成后再注册 sampler。
 	// Register the sampler after prefill completes.
 	r.Sampler.Add(pipelineSlot, request.SamplerOpts, inputs)
 
@@ -123,6 +130,7 @@ func (r *Runner) TextGenerationPipeline(ctx context.Context, request Request) er
 	return r.decode(ctx, request, session, d, promptEval)
 }
 
+// prefill 分块 eval prompt，留末 token 供 decode 种子；返回 seed 与耗时。
 // prefill evaluates the prompt in chunks, leaving one token for decode to
 // seed from, and schedules the prompt's periodic snapshots. It returns the
 // seed token, the resume position, and the prompt-evaluation duration.
@@ -133,6 +141,7 @@ func (r *Runner) prefill(ctx context.Context, session *cacheSession, spec *specu
 	caches := session.caches
 	prefillChunk := prefillChunkSize()
 
+	// 长 prompt 在 prefill 中调度周期快照与 thinking 前快照。
 	// Request periodic snapshots during prefill and near the end of the
 	// prompt so that long prompts can be partially restored and
 	// thinking/generation can be retried without full reprocessing.
@@ -162,6 +171,7 @@ func (r *Runner) prefill(ctx context.Context, session *cacheSession, spec *specu
 
 	total, processed := len(tokens), 0
 	position := len(inputs) - len(tokens)
+	// 全命中时循环不跑，此处释放 restored 媒体缓冲。
 	// Free restored items' buffers now: on a full cache hit the loop never runs.
 	media.release(position)
 	for total-processed > 1 {
@@ -181,6 +191,7 @@ func (r *Runner) prefill(ctx context.Context, session *cacheSession, spec *specu
 			Media:        manifest,
 			Layout:       media.rowLayout(),
 		}, caches)
+		// chunk eval 后再报告 drafter，避免 sweep 前 eval 导致媒体缓冲泄漏。
 		// Report to the drafter only after the chunk's eval: a draft flush
 		// evaluates, and an eval before the sweep cannot free any buffer the
 		// chunk's live handles retain — on media chunks, the whole vision tower.
@@ -189,6 +200,7 @@ func (r *Runner) prefill(ctx context.Context, session *cacheSession, spec *specu
 		materializeCaches()
 		spec.committed(chunkIDs, auxHidden, position, manifest)
 		mlx.Unpin(chunkIDs, auxHidden)
+		// committed 后再 release，供 drafter 捕获 deferred flush 行。
 		// Released after committed so the drafter can capture rows its
 		// deferred flush still embeds.
 		media.release(position + n)
@@ -200,6 +212,7 @@ func (r *Runner) prefill(ctx context.Context, session *cacheSession, spec *specu
 		mlx.ClearCache()
 	}
 
+	// attach 前 settle，使 draft cache 与 target 在 seed 处对齐。
 	// Settle before attaching: snapshots attach only at offsets every cache
 	// has crossed, and the draft caches stay a pair short of the target
 	// until the seed completes the frontier pair.
@@ -210,6 +223,7 @@ func (r *Runner) prefill(ctx context.Context, session *cacheSession, spec *specu
 	return seed, position, time.Since(start), nil
 }
 
+// decoder 产出每轮待发射 token，decode 循环管预算与取消。
 // A decoder produces each run of tokens to emit, owning its own dispatch and
 // synchronization; the decode loop owns the budget, emission, and
 // cancellation. next may return none while its first tokens are in flight.
@@ -224,11 +238,13 @@ type decoder interface {
 	close()
 }
 
+// decode 驱动 decoder，在 EOS 或 NumPredict 处停止；未交付 token 仍写入 outputs。
 // decode drives either decoder and owns where generation stops — at an EOS
 // or the NumPredict budget. Every produced token is recorded so the caches
 // never rest ahead of session.outputs; tokens past the stop are recorded but
 // not streamed or counted.
 func (r *Runner) decode(ctx context.Context, request Request, session *cacheSession, d decoder, promptEval time.Duration) error {
+	// 已采样未交付的 token 仍须记入 outputs。
 	// A sampled-but-undelivered result is still a produced token; record it.
 	defer func() {
 		results, _ := d.drain()
@@ -247,6 +263,7 @@ func (r *Runner) decode(ctx context.Context, request Request, session *cacheSess
 	final.PromptEvalDuration = promptEval
 	now := time.Now()
 
+	// 每 clearCacheInterval token 清理 MLX 分配器缓存，防长跑膨胀。
 	// Release MLX's cached free buffers every clearCacheInterval tokens so the
 	// allocator's pool does not grow unbounded over a long generation.
 	const clearCacheInterval = 256
@@ -268,6 +285,7 @@ func (r *Runner) decode(ctx context.Context, request Request, session *cacheSess
 		done := false
 		stream := len(results)
 		for i, res := range results {
+			// 须先 Int() eval lazy token，否则读数竞态。
 			// Int evaluates the array before reading it; a raw data read
 			// on a lazy array races its evaluation and returns garbage.
 			id := int32(res.Token.Int())
@@ -319,11 +337,13 @@ func (r *Runner) decode(ctx context.Context, request Request, session *cacheSess
 	}
 }
 
+// pipelinedDecoder 流水线 decode：下一 token 前向与当前 emit 重叠。
 // pipelinedDecoder decodes one token per call, one call ahead of emission:
 // the next token's chain is dispatched before the returned one is
 // synchronized, so the device runs ahead of host emission.
 type pipelinedDecoder struct {
 	r *Runner
+	// spec 非 nil 时接收每步 token 并在 close 时 settle draft KV。
 	// spec, when non-nil, receives every forwarded token and settles its
 	// drafter at close, keeping a non-drafting session's draft KV level.
 	spec     *speculationSession
@@ -339,6 +359,7 @@ func (r *Runner) pipelinedDecoder(spec *speculationSession, caches []cache.Cache
 	return t
 }
 
+// dispatch 构建 forward+sample 链但不读 token 值，实现流水线。
 // dispatch builds one forward-and-sample chain without reading the token's
 // value, so it is in flight before the previous token is synchronized.
 func (t *pipelinedDecoder) dispatch(token *mlx.Array) sampler.Result {
@@ -366,6 +387,7 @@ func (t *pipelinedDecoder) next(int) ([]sampler.Result, error) {
 	return []sampler.Result{out}, nil
 }
 
+// drain 返回在途 sample 与下一 forward 位置。
 // drain ends production: it returns the in-flight sample (sampled but never
 // forwarded) and the position its forward would have taken. The decoder
 // keeps the sample for close.
@@ -374,12 +396,14 @@ func (t *pipelinedDecoder) drain() ([]sampler.Result, int) {
 }
 
 func (t *pipelinedDecoder) close() {
+	// 在途 sample 未 dispatch 下一 forward；close 时用其 settle drafter。
 	// The in-flight sample's forward was never dispatched; its report settles
 	// the drafter level with the caches' resting offset.
 	t.spec.settle(t.sample.Token)
 	mlx.Unpin(t.sample.Arrays()...)
 }
 
+// detokenizer 将 token 流式 detokenize，缓冲未完成 UTF-8 与对齐 logprobs。
 // detokenizer serializes sampled tokens into response chunks, holding bytes
 // whose UTF-8 sequence hasn't completed yet and the logprobs that belong
 // with those bytes so Content and Logprobs stay aligned when a chunk does
@@ -406,6 +430,7 @@ func (d *detokenizer) detokenize(res sampler.Result) (CompletionResponse, bool) 
 	return resp, true
 }
 
+// buildLogprob 将 sampler 张量转为 llm.Logprob 线格式。
 // buildLogprob converts the sampler's logprob tensors into the wire-format
 // llm.Logprob entries the caller wants. The sampler populates its logprob
 // tensors whenever any registered slot requested them, so the caller must
@@ -434,6 +459,7 @@ func buildLogprob(sample sampler.Result, wantLogprobs bool, wantTopLogprobs int,
 				Logprob: float64(vals[i]),
 			}
 		}
+		// sampler 用 Argpartition 输出 topK，此处按 logprob 降序排序。
 		// The sampler emits the top maxK across registered slots via
 		// Argpartition, which leaves entries unsorted.
 		sort.Slice(pairs, func(i, j int) bool {

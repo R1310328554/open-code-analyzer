@@ -1,3 +1,4 @@
+// MLX 随机数：密钥、分类采样与 Bernoulli。
 package mlx
 
 // #include "generated.h"
@@ -5,16 +6,19 @@ import "C"
 
 import "unsafe"
 
+// RandomKey 由 seed 生成 MLX 随机密钥 Array。
 func RandomKey(seed uint64) *Array {
 	out := New("RANDOM_KEY")
 	C.mlx_random_key(&out.ctx, C.uint64_t(seed))
 	return out
 }
 
+// Categorical 沿 axis 做分类采样，使用默认密钥。
 func (t *Array) Categorical(axis int) *Array {
 	return t.CategoricalWithKey(axis, nil)
 }
 
+// CategoricalWithKey 指定随机密钥的分类采样。
 func (t *Array) CategoricalWithKey(axis int, key *Array) *Array {
 	if key == nil {
 		key = New("")
@@ -24,10 +28,12 @@ func (t *Array) CategoricalWithKey(axis int, key *Array) *Array {
 	return out
 }
 
+// Bernoulli 按概率 p 采样 Bernoulli 分布。
 func Bernoulli(p *Array) *Array {
 	return BernoulliWithKey(p, nil)
 }
 
+// BernoulliWithKey 指定密钥的 Bernoulli 采样。
 func BernoulliWithKey(p *Array, key *Array) *Array {
 	dims := p.Dims()
 	shape := make([]C.int, len(dims))

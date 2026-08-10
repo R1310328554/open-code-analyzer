@@ -1,3 +1,4 @@
+// 模型 Root：manifest 包装、量化元数据扫描与 draft 配置。
 package model
 
 import (
@@ -14,25 +15,31 @@ import (
 	"github.com/ollama/ollama/x/imagegen/manifest"
 )
 
+// TensorQuantInfo 描述单张量量化元数据。
 // TensorQuantInfo describes per-tensor quantization metadata.
+// TensorQuantInfo 存储 QuantType 与 GroupSize。
 type TensorQuantInfo struct {
 	QuantType string
 	GroupSize int
 }
 
+// Root 包装 ModelManifest 并预扫描各 blob 量化信息。
 // Root wraps a ModelManifest with pre-scanned quantization metadata.
 type Root struct {
 	Manifest *manifest.ModelManifest
 	Draft    *modeltypes.Draft
 
+	// 兼容旧接口的模型级量化元数据（首个 tensor blob）。
 	// Backwards-compatible model-level quant metadata (first tensor blob).
 	quantType string
 	groupSize int
 
+	// 逐张量量化元数据表。
 	// Per-tensor quantization metadata.
 	tensorQuant map[string]*TensorQuantInfo
 }
 
+// Open 加载 manifest 并扫描 tensor blob 头中的量化元数据。
 // Open loads a manifest for the given model name and scans tensor blobs for
 // quantization metadata.
 func Open(modelName string) (*Root, error) {
@@ -71,6 +78,7 @@ func Open(modelName string) (*Root, error) {
 	return root, nil
 }
 
+// readDraftConfig 从 config 或 draft/config.json 推断 draft 配置。
 func readDraftConfig(m *manifest.ModelManifest) *modeltypes.Draft {
 	if m == nil || m.Manifest == nil || m.Manifest.Config.Digest == "" {
 		return nil
@@ -99,15 +107,19 @@ func readDraftConfig(m *manifest.ModelManifest) *modeltypes.Draft {
 	return nil
 }
 
+// Close 当前无操作（预留释放资源）。
 // Close is a no-op for now (future: release resources).
 func (r *Root) Close() {}
 
+// QuantType 返回首个 tensor blob 检测到的量化类型。
 // QuantType returns the quantization type detected from the first tensor blob metadata.
 func (r *Root) QuantType() string { return r.quantType }
 
+// GroupSize 返回首个 blob 检测到的 group size。
 // GroupSize returns the quantization group size detected from the first tensor blob metadata.
 func (r *Root) GroupSize() int { return r.groupSize }
 
+// TensorQuant 按名返回 per-tensor 量化信息。
 // TensorQuant returns per-tensor quantization metadata if available.
 func (r *Root) TensorQuant(name string) *TensorQuantInfo {
 	if r == nil {
@@ -116,6 +128,7 @@ func (r *Root) TensorQuant(name string) *TensorQuantInfo {
 	return r.tensorQuant[name]
 }
 
+// AllTensorQuant 返回 per-tensor 映射的副本。
 // AllTensorQuant returns a copy of the per-tensor quantization metadata.
 func (r *Root) AllTensorQuant() map[string]*TensorQuantInfo {
 	out := make(map[string]*TensorQuantInfo, len(r.tensorQuant))
@@ -134,6 +147,7 @@ func defaultGroupSize(quantType string) int {
 	return groupSize
 }
 
+// readBlobTensorQuantInfo 解析 safetensors 头中的全局与 per-tensor 量化信息。
 func readBlobTensorQuantInfo(path string) (map[string]*TensorQuantInfo, string, int, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -162,6 +176,7 @@ func readBlobTensorQuantInfo(path string) (map[string]*TensorQuantInfo, string, 
 	globalQuantType, globalGroupSize := parseGlobalQuantMetadata(header)
 	globalQuantType = strings.ToUpper(globalQuantType)
 
+	// 解析 __metadata__ 获取 per-tensor 量化字段。
 	// Parse full metadata for per-tensor quant info
 	var metaMap map[string]string
 	if metaRaw, ok := header["__metadata__"]; ok {
@@ -178,6 +193,7 @@ func readBlobTensorQuantInfo(path string) (map[string]*TensorQuantInfo, string, 
 		quantType := globalQuantType
 		groupSize := globalGroupSize
 
+		// 读取 per-tensor 元数据（如混合精度 expert blob）。
 		// Check per-tensor metadata (e.g. from packed expert blobs with mixed precision)
 		if metaMap != nil {
 			if qt, ok := metaMap[name+".quant_type"]; ok && qt != "" {
@@ -228,6 +244,7 @@ func parseGlobalQuantMetadata(header map[string]json.RawMessage) (quantType stri
 	return quantType, groupSize
 }
 
+// mainTensorNames 收集 header 中主张量名（排除 scale/bias/metadata）。
 func mainTensorNames(header map[string]json.RawMessage) []string {
 	names := make([]string, 0, len(header))
 	for name := range header {
@@ -240,6 +257,7 @@ func mainTensorNames(header map[string]json.RawMessage) []string {
 	return names
 }
 
+// inferQuantTypeFromShapes 由 weight/scale shape 比例推断 INT4/INT8 与 groupSize。
 func inferQuantTypeFromShapes(header map[string]json.RawMessage, tensorName string, hintQuantType string) (string, int) {
 	type tensorShape struct {
 		Shape []int64 `json:"shape"`

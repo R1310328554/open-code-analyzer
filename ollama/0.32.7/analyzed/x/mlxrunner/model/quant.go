@@ -1,3 +1,4 @@
+// 量化参数解析：与 x/quant 及 per-tensor 元数据对齐。
 package model
 
 import (
@@ -5,13 +6,16 @@ import (
 	"github.com/ollama/ollama/x/quant"
 )
 
+// QuantizationParams 返回量化类型的默认 groupSize/bits/mode。
 // QuantizationParams returns default groupSize, bits, and mode for a
+// 值来自 x/quant，与导入器、运行时、ollama show 一致。
 // quantization type. The values live in the shared x/quant package so the
 // importer, the runtime loader, and `ollama show` agree on them.
 func QuantizationParams(quantization string) (groupSize, bits int, mode string) {
 	return quant.Params(quantization)
 }
 
+// TensorQuantParams 优先 per-tensor 元数据，否则用模型默认。
 // TensorQuantParams resolves quant params for a tensor using per-tensor metadata
 // when available, otherwise falling back to the provided model defaults.
 func TensorQuantParams(
@@ -32,6 +36,7 @@ func TensorQuantParams(
 	return defaultGroupSize, defaultBits, defaultMode, false
 }
 
+// ResolveLinearQuantParams 为量化线性层解析参数，affine 时可 shape 推断。
 // ResolveLinearQuantParams resolves quantization params for a quantized linear
 // tensor, preferring per-tensor metadata and falling back to shape-based
 // inference for affine packed tensors.
@@ -62,6 +67,7 @@ func ResolveLinearQuantParams(
 	return groupSize, bits, mode
 }
 
+// InferAffineQuantParamsFromShapes 从 packed weight/scale shape 推断仿射量化参数。
 // InferAffineQuantParamsFromShapes infers (groupSize,bits) for affine quantized
 // tensors from packed weight and scale shapes.
 func InferAffineQuantParamsFromShapes(weight, scales *mlx.Array, hintBits int) (groupSize, bits int, ok bool) {
@@ -108,6 +114,7 @@ func InferAffineQuantParamsFromShapes(weight, scales *mlx.Array, hintBits int) (
 	return 0, 0, false
 }
 
+// isCommonGroupSize 判断是否为常见 group size（16/32/64/128）。
 func isCommonGroupSize(v int) bool {
 	switch v {
 	case 16, 32, 64, 128:
