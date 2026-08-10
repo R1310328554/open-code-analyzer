@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:33:31Z",
-  "files": [
-    "pkg/util/flagext/bytesize.go",
-    "pkg/util/flagext/csv.go",
-    "pkg/util/flagext/flagsetskip.go",
-    "pkg/util/flagext/labelset.go",
-    "pkg/util/hash_fp.go",
-    "pkg/util/http.go",
-    "pkg/util/httpgrpc/carrier.go",
-    "pkg/util/httpreq/encoding_flags.go",
-    "pkg/util/httpreq/headers.go",
-    "pkg/util/httpreq/tags.go",
-    "pkg/util/instrument/instrument.go",
-    "pkg/util/jumphash/memcached_client_selector.go",
-    "pkg/util/labelpool/labelpool.go",
-    "pkg/util/limiter/combined_limits.go",
-    "pkg/util/limiter/query_limiter.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 112,
-  "done": 1425
+  "done": 1440
 }
