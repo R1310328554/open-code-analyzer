@@ -21,20 +21,30 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 import org.keycloak.services.resources.admin.AdminAuth;
 
+/**
+ * Admin REST 客户端注销上下文：在 {@link ClientPolicyEvent#UNREGISTER} 事件上携带待删除的 {@link ClientModel}。
+ * <p>由 Admin API 删除客户端前触发，供策略条件/Executor 阻止或审计注销操作。</p>
+ */
 public class AdminClientUnregisterContext extends AbstractAdminClientCRUDContext implements ClientCRUDClientAvailableContext {
 
+    /** 待注销的目标客户端。 */
     private final ClientModel targetClient;
 
-    public AdminClientUnregisterContext(ClientModel targetClient, AdminAuth adminAuth) {
+    /**
+     * @param targetClient 待删除的客户端
+     * @param adminAuth Admin REST 认证上下文
+     */
         super(adminAuth);
         this.targetClient = targetClient;
     }
 
+    /** {@inheritDoc} @return {@link ClientPolicyEvent#UNREGISTER} */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.UNREGISTER;
     }
 
+    /** {@inheritDoc} @return 待注销客户端 */
     @Override
     public ClientModel getTargetClient() {
         return this.targetClient;

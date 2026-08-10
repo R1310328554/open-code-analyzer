@@ -23,52 +23,48 @@ import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 
 
 /**
- * <p>Abstract saml request context for any SAML request received. The context
- * will have the type object received, the client model and binding type
- * the client used to connect.</p>
+ * 任意 SAML 请求的抽象上下文：携带收到的请求对象、发起请求的 {@link ClientModel} 及协议绑定类型。
+ * <p>供 SAML 相关 {@link ClientPolicyContext} 实现复用，便于条件/Executor 访问客户端与绑定信息。</p>
  *
  * @author rmartinc
- * @param <T> The saml request type
+ * @param <T> SAML 请求类型
  */
 public abstract class AbstractSamlRequestContext<T> implements ClientPolicyContext, ClientModelContext {
 
+    /** 收到的 SAML 请求对象。 */
     protected final T request;
+    /** 发起请求的客户端模型。 */
     protected final ClientModel client;
+    /** 处理该请求的 Keycloak 协议绑定类型。 */
     protected final String protocolBinding;
 
+    /**
+     * @param request SAML 请求对象
+     * @param client 客户端模型
+     * @param protocolBinding 协议绑定类型
+     */
     public AbstractSamlRequestContext(final T request, final ClientModel client, final String protocolBinding) {
         this.request = request;
         this.client = client;
         this.protocolBinding = protocolBinding;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} 由子类返回具体 {@link ClientPolicyEvent}。 */
     @Override
     public abstract ClientPolicyEvent getEvent();
 
-    /**
-     * Getter for the SAML request received.
-     * @return The SAML request type
-     */
+    /** @return 收到的 SAML 请求对象 */
     public T getRequest() {
         return request;
     }
 
-    /**
-     * Getter for the client model doing the request.
-     * @return The client model
-     */
+    /** {@inheritDoc} @return 发起请求的客户端 */
     @Override
     public ClientModel getClient() {
         return client;
     }
 
-    /**
-     * Getter for the protocol binding type that is processing the request.
-     * @return The keycloak protocol binding type.
-     */
+    /** @return 处理请求的协议绑定类型 */
     public String getProtocolBinding() {
         return protocolBinding;
     }

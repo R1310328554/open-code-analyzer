@@ -21,20 +21,30 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 import org.keycloak.services.resources.admin.AdminAuth;
 
+/**
+ * Admin REST 客户端已注册上下文：在 {@link ClientPolicyEvent#REGISTERED} 事件上携带新创建的 {@link ClientModel}。
+ * <p>客户端持久化完成后触发，供策略 Executor 执行后续动作（如强制配置、审计等）。</p>
+ */
 public class AdminClientRegisteredContext extends AbstractAdminClientCRUDContext implements ClientCRUDClientAvailableContext {
 
+    /** 已成功注册并持久化的客户端。 */
     private final ClientModel registeredClient;
 
-    public AdminClientRegisteredContext(ClientModel registeredClient, AdminAuth adminAuth) {
+    /**
+     * @param registeredClient 已注册的客户端模型
+     * @param adminAuth Admin REST 认证上下文
+     */
         super(adminAuth);
         this.registeredClient = registeredClient;
     }
 
+    /** {@inheritDoc} @return {@link ClientPolicyEvent#REGISTERED} */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.REGISTERED;
     }
 
+    /** {@inheritDoc} @return 已注册的客户端 */
     @Override
     public ClientModel getTargetClient() {
         return registeredClient;

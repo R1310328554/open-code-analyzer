@@ -21,20 +21,30 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 import org.keycloak.services.resources.admin.AdminAuth;
 
+/**
+ * Admin REST 客户端查看上下文：在 {@link ClientPolicyEvent#VIEW} 事件上携带被读取的 {@link ClientModel}。
+ * <p>由 Admin API 读取客户端详情时触发，供策略条件/Executor 控制或审计访问。</p>
+ */
 public class AdminClientViewContext extends AbstractAdminClientCRUDContext implements ClientCRUDClientAvailableContext {
 
+    /** 被查看的目标客户端。 */
     private final ClientModel targetClient;
 
-    public AdminClientViewContext(ClientModel targetClient, AdminAuth adminAuth) {
+    /**
+     * @param targetClient 被读取的客户端
+     * @param adminAuth Admin REST 认证上下文
+     */
         super(adminAuth);
         this.targetClient = targetClient;
     }
 
+    /** {@inheritDoc} @return {@link ClientPolicyEvent#VIEW} */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.VIEW;
     }
 
+    /** {@inheritDoc} @return 被查看客户端 */
     @Override
     public ClientModel getTargetClient() {
         return targetClient;

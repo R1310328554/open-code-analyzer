@@ -24,51 +24,53 @@ import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.services.clientpolicy.ClientPolicyContext;
 
 /**
- * Represents the context in the request to register/read/update/unregister client by Dynamic Client Registration or Admin REST API.
+ * 客户端 CRUD 策略上下文：表示动态客户端注册或 Admin REST API 上的注册/读取/更新/注销请求。
+ * <p>提供提议表示、目标客户端、认证用户/客户端及伴随 JWT 等可选信息，供条件与 Executor 评估。</p>
  */
 public interface ClientCRUDContext extends ClientPolicyContext {
 
     /**
-     * returns {@link ClientRepresentation} for creating the new client or updating the existing client.
+     * 返回用于创建新客户端或更新现有客户端的 {@link ClientRepresentation}。
+     * <p>REGISTER/UPDATE 事件通常非 null；读取/注销事件可能为 null。</p>
      *
-     * @return {@link ClientRepresentation}
+     * @return 提议的客户端表示
      */
     default ClientRepresentation getProposedClientRepresentation() {
         return null;
     }
 
     /**
-     * returns {@link ClientModel} of the existing client to be updated/read/updated/deleted.
-     * on REGISTER event, it returns null.
+     * 返回待更新/读取/注销的现有 {@link ClientModel}。
+     * <p>REGISTER 事件时返回 null。</p>
      *
-     * @return {@link ClientModel}
+     * @return 目标客户端模型
      */
     default ClientModel getTargetClient() {
         return null;
     }
 
     /**
-     * returns {@link UserModel} of the authenticated user.
+     * 返回已认证用户的 {@link UserModel}（如 Admin API 调用者）。
      *
-     * @return {@link UserModel}
+     * @return 已认证用户
      */
     default UserModel getAuthenticatedUser() {
         return null;
     }
 
     /**
-     * returns {@link UserModel} of the authenticated client.
+     * 返回已认证客户端的 {@link ClientModel}（如服务账户或令牌 azp 对应客户端）。
      *
-     * @return {@link UserModel}
+     * @return 已认证客户端
      */
     default ClientModel getAuthenticatedClient() {
         return null;
     }
 
     /**
-     * returns {@link JsonWebToken} of the token accompanied with the request to register/read/update/unregister client
+     * 返回注册/读取/更新/注销请求伴随的 {@link JsonWebToken}（初始访问令牌、注册访问令牌或 Admin Bearer 令牌等）。
      *
-     * @return {@link JsonWebToken}
+     * @return 伴随 JWT
      */
     default JsonWebToken getToken() {
         return null;

@@ -22,27 +22,40 @@ import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 import org.keycloak.services.resources.admin.AdminAuth;
 
+/**
+ * Admin REST 客户端已更新上下文：在 {@link ClientPolicyEvent#UPDATED} 事件上携带更新后的 {@link ClientModel} 与原始提议表示。
+ * <p>客户端持久化变更完成后触发，供策略 Executor 执行后续动作。</p>
+ */
 public class AdminClientUpdatedContext extends AbstractAdminClientCRUDContext implements ClientCRUDClientAvailableContext {
 
+    /** 本次更新提交的客户端表示。 */
     private final ClientRepresentation proposedClientRepresentation;
+    /** 已成功持久化更新的客户端。 */
     private final ClientModel updatedClient;
 
-    public AdminClientUpdatedContext(ClientRepresentation proposedClientRepresentation, ClientModel updatedClient, AdminAuth adminAuth) {
+    /**
+     * @param proposedClientRepresentation 更新提议表示
+     * @param updatedClient 已更新的客户端模型
+     * @param adminAuth Admin REST 认证上下文
+     */
         super(adminAuth);
         this.proposedClientRepresentation = proposedClientRepresentation;
         this.updatedClient = updatedClient;
     }
 
+    /** {@inheritDoc} @return {@link ClientPolicyEvent#UPDATED} */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.UPDATED;
     }
 
+    /** {@inheritDoc} @return 更新提议表示 */
     @Override
     public ClientRepresentation getProposedClientRepresentation() {
         return proposedClientRepresentation;
     }
 
+    /** {@inheritDoc} @return 已更新客户端 */
     @Override
     public ClientModel getTargetClient() {
         return updatedClient;
