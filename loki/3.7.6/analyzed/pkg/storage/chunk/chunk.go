@@ -1,5 +1,7 @@
 package chunk
 
+// chunk 定义 Loki 时序块的核心类型：编码/解码、外部键解析与 CRC 校验，连接索引存储与对象存储中的块数据。
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -39,6 +41,7 @@ func errInvalidChunkID(s string) error {
 	return errors.Errorf("invalid chunk ID %q", s)
 }
 
+// Chunk 嵌入 ChunkRef（租户、指纹、时间范围、校验和）并持有 Metric 标签与 Data 载荷。
 // Chunk contains encoded timeseries data
 type Chunk struct {
 	logproto.ChunkRef
@@ -54,6 +57,7 @@ type Chunk struct {
 	encoded []byte
 }
 
+// NewChunk 从 Data 接口提取 Encoding，填充 From/Through 时间边界。
 // NewChunk creates a new chunk
 func NewChunk(userID string, fp model.Fingerprint, metric labels.Labels, c Data, from, through model.Time) Chunk {
 	return Chunk{
@@ -69,6 +73,7 @@ func NewChunk(userID string, fp model.Fingerprint, metric labels.Labels, c Data,
 	}
 }
 
+// ParseExternalKey 解析 DynamoDB/S3 外部键，支持 v12+ 三斜杠格式与旧版 hex 编码。
 // ParseExternalKey is used to construct a partially-populated chunk from the
 // key in DynamoDB.  This chunk can then be used to calculate the key needed
 // to fetch the Chunk data from Memcache/S3, and then fully populate the chunk
@@ -225,6 +230,7 @@ var writerPool = sync.Pool{
 	New: func() interface{} { return snappy.NewBufferedWriter(nil) },
 }
 
+// Encode 先写 metadata 长度与 snappy 压缩 JSON，再写 data 段并计算 Castagnoli CRC32。
 // Encode writes the chunk into a buffer, and calculates the checksum.
 func (c *Chunk) Encode() error {
 	return c.EncodeTo(nil, util_log.Logger)
@@ -314,6 +320,7 @@ func (c *Chunk) Encoded() ([]byte, error) {
 	return c.encoded, nil
 }
 
+// DecodeContext 复用 snappy.Reader，批量 GetChunks 时减少分配。
 // DecodeContext holds data that can be re-used between decodes of different chunks
 type DecodeContext struct {
 	reader *snappy.Reader
@@ -326,6 +333,7 @@ func NewDecodeContext() *DecodeContext {
 	}
 }
 
+// Decode 校验 checksum、反序列化 metadata 与 data，并用 equalByKey 确认身份一致。
 // Decode the chunk from the given buffer, and confirm the chunk is the one we
 // expected.
 func (c *Chunk) Decode(decodeContext *DecodeContext, input []byte) error {
@@ -389,3 +397,4 @@ func equalByKey(a, b Chunk) bool {
 	return a.UserID == b.UserID && a.Fingerprint == b.Fingerprint &&
 		a.From == b.From && a.Through == b.Through && a.Checksum == b.Checksum
 }
+// EncodeTo 编码后 round-trip Decode 自检；parseNewerExternalKey 将 fingerprint 作为路径前缀。

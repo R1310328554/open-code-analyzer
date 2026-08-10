@@ -1,5 +1,7 @@
 package aws
 
+// dynamodb_table_client 实现 index.TableClient：创建/删除/描述/更新 DynamoDB 表，支持按需与预置容量及可选 metrics 自动扩缩。
+
 import (
 	"context"
 	"strings"
@@ -25,6 +27,7 @@ const (
 )
 
 // Pluggable auto-scaler implementation
+// autoscale 可插拔自动扩缩：PostCreateTable、DescribeTable 与 UpdateTable 钩子。
 type autoscale interface {
 	PostCreateTable(ctx context.Context, desc config.TableDesc) error
 	// This whole interface is very similar to chunk.TableClient, but
@@ -38,6 +41,7 @@ type callManager struct {
 	backoffConfig backoff.Config
 }
 
+// dynamoTableClient 组合 DynamoDB API、限速 backoff、autoscale 与 KMS 配置。
 type dynamoTableClient struct {
 	DynamoDB    dynamoClient
 	callManager callManager
@@ -46,6 +50,7 @@ type dynamoTableClient struct {
 	kmsKeyID    string
 }
 
+// NewDynamoDBTableClient 在 Metrics.URL 非空时启用 Prometheus 驱动的自动扩缩。
 // NewDynamoDBTableClient makes a new DynamoTableClient.
 func NewDynamoDBTableClient(cfg DynamoDBConfig, reg prometheus.Registerer) (index.TableClient, error) {
 	dynamoDB, err := dynamoClientFromURL(cfg.DynamoDB.URL)
@@ -82,6 +87,7 @@ func (d dynamoTableClient) backoffAndRetry(ctx context.Context, fn func(context.
 	return d.callManager.backoffAndRetry(ctx, fn)
 }
 
+// backoffAndRetry 先 Wait API 限速，遇 SlowDown 错误指数退避重试。
 func (d callManager) backoffAndRetry(ctx context.Context, fn func(context.Context) error) error {
 	if d.limiter != nil { // Tests will have a nil limiter.
 		_ = d.limiter.Wait(ctx)
@@ -396,3 +402,4 @@ func (d dynamoTableClient) UpdateTable(ctx context.Context, current, expected co
 	}
 	return nil
 }
+// CreateTable 支持 OnDemand 与 Provisioned 模式及 SSE-KMS；UpdateTable 分别处理容量与计费模式变更。

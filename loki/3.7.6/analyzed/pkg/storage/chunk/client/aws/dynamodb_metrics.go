@@ -1,5 +1,7 @@
 package aws
 
+// dynamodb_metrics 注册 DynamoDB 客户端 Prometheus 指标：请求延迟、消耗容量、限流、失败与 Query 分页数。
+
 import (
 	"github.com/grafana/dskit/instrument"
 	"github.com/prometheus/client_golang/prometheus"
@@ -8,6 +10,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/constants"
 )
 
+// dynamoDBMetrics 聚合 histogram 与 counter vec，由 storage/table client 共享引用。
 type dynamoDBMetrics struct {
 	dynamoRequestDuration  *instrument.HistogramCollector
 	dynamoConsumedCapacity *prometheus.CounterVec
@@ -17,6 +20,7 @@ type dynamoDBMetrics struct {
 	dynamoQueryPagesCount  prometheus.Histogram
 }
 
+// newMetrics 创建并注册 Loki 命名空间下的 dynamo_* 指标，延迟桶覆盖 1ms~65s。
 func newMetrics(r prometheus.Registerer) *dynamoDBMetrics {
 	m := dynamoDBMetrics{}
 
@@ -60,3 +64,4 @@ func newMetrics(r prometheus.Registerer) *dynamoDBMetrics {
 
 	return &m
 }
+// dynamoConsumedCapacity 按 operation 与 table 标签累加；dynamoQueryPagesCount 观测模糊查询分页。

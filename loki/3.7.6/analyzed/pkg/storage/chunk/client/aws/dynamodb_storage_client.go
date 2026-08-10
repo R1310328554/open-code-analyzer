@@ -1,5 +1,7 @@
 package aws
 
+// dynamodb_storage_client 实现 index.Client 与 chunk.Client：BatchWrite/BatchGet 带退避重试，QueryPages 并行查询，GetChunks 按 gang 分组拉取。
+
 import (
 	"bytes"
 	"context"
@@ -56,6 +58,7 @@ const (
 	validationException       = "ValidationException"
 )
 
+// DynamoDBConfig 含 endpoint、API 限速、chunk 并行参数、退避与 KMS 加密键。
 // DynamoDBConfig specifies config for a DynamoDB database.
 type DynamoDBConfig struct {
 	DynamoDB               flagext.URLValue         `yaml:"dynamodb_url"`
@@ -83,6 +86,7 @@ func (cfg *DynamoDBConfig) RegisterFlags(f *flag.FlagSet) {
 	cfg.Metrics.RegisterFlags(f)
 }
 
+// StorageConfig 组合已弃用的 DynamoDB 索引配置与 S3 对象存储配置。
 // StorageConfig specifies config for storing data on AWS.
 type StorageConfig struct {
 	DynamoDBConfig `yaml:"dynamodb" doc:"description=Deprecated: Configures storing indexes in DynamoDB."`
@@ -145,6 +149,7 @@ type dynamoClient interface {
 	dynamoBatchItemWriter
 }
 
+// dynamoDBStorageClient 持有 DynamoDB 客户端、写限流器、schema 与 metrics。
 type dynamoDBStorageClient struct {
 	cfg       DynamoDBConfig
 	schemaCfg config.SchemaConfig
@@ -211,6 +216,7 @@ func logWriteRetry(unprocessed dynamoDBWriteBatch, metrics *dynamoDBMetrics) {
 	}
 }
 
+// BatchWrite 合并 outstanding 与 unprocessed，遇 ProvisionedThroughputExceeded 退避重试。
 // BatchWrite writes requests to the underlying storage, handling retries and backoff.
 // Structure is identical to getDynamoDBChunks(), but operating on different datatypes
 // so cannot share implementation.  If you fix a bug here fix it there too.
@@ -397,6 +403,7 @@ type chunksPlusError struct {
 	err    error
 }
 
+// GetChunks 按 ChunkGangSize 分组并行 getDynamoDBChunks，部分成功仍返回已取块。
 // GetChunks implements chunk.Client.
 func (a dynamoDBStorageClient) GetChunks(ctx context.Context, chunks []chunk.Chunk) ([]chunk.Chunk, error) {
 	log, ctx := spanlogger.NewOTel(ctx, log.Logger, tracer, "GetChunks.DynamoDB",
@@ -572,6 +579,7 @@ func processChunkResponse(response *dynamodb.BatchGetItemOutput, chunksByKey map
 	return result, nil
 }
 
+// PutChunksAndIndex 合并 chunk 与 index 写请求后一次 BatchWrite 提升吞吐。
 // PutChunksAndIndex implements chunk.ObjectAndIndexClient
 // Combine both sets of writes before sending to DynamoDB, for performance
 func (a dynamoDBStorageClient) PutChunksAndIndex(ctx context.Context, chunks []chunk.Chunk, index index.WriteBatch) error {
@@ -984,3 +992,4 @@ func dynamodbOptionsFromURL(awsURL *url.URL) (*dynamodb.Options, error) {
 	// Let AWS generate default endpoint based on region passed as a host in URL.
 	return &config, nil
 }
+// dynamoDBWriteBatch.TakeReqs 跨表填充至 AWS 批量上限；ValidationError 时丢弃条目并计数 dropped。

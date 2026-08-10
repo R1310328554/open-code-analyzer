@@ -1,5 +1,7 @@
 package cache
 
+// stats 为 Cache 装饰器，将 Store/Fetch 操作写入 logqlmodel/stats 上下文，供查询路径观测缓存命中率、下载耗时与字节量。
+
 import (
 	"context"
 	"time"
@@ -11,6 +13,7 @@ type statsCollector struct {
 	Cache
 }
 
+// CollectStats 包装任意 Cache 实现，不改变缓存语义仅增加可观测性。
 // CollectStats returns a new Cache that keeps various statistics on cache usage.
 func CollectStats(cache Cache) Cache {
 	return &statsCollector{
@@ -55,3 +58,4 @@ func (s statsCollector) Stop() {
 func (s statsCollector) GetCacheType() stats.CacheType {
 	return s.Cache.GetCacheType()
 }
+// Store 按 keys 数量计数 entries stored；Fetch 记录请求数、命中数、耗时与检索字节。

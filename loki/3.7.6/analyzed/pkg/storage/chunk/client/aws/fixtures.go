@@ -1,5 +1,7 @@
 package aws
 
+// fixtures 为 AWS 存储集成测试提供可插拔客户端组合：S3 块 + DynamoDB 索引，或纯 DynamoDB 块/索引/表客户端。
+
 import (
 	"fmt"
 	"io"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/series/index"
 )
 
+// fixture 实现 testutils.Fixture，延迟构造 index/object/table 客户端三元组。
 type fixture struct {
 	name    string
 	clients func() (index.Client, client.Client, index.TableClient, config.SchemaConfig, io.Closer, error)
@@ -27,6 +30,7 @@ func (f fixture) Clients() (index.Client, client.Client, index.TableClient, conf
 	return f.clients()
 }
 
+// Fixtures 包含 S3 chunks 与多种 DynamoDB 参数组合的 dynamoDBFixture 变体。
 // Fixtures for testing the various configuration of AWS storage.
 var Fixtures = []testutils.Fixture{
 	fixture{
@@ -59,6 +63,7 @@ var Fixtures = []testutils.Fixture{
 }
 
 // nolint
+// dynamoDBFixture 用 mock DynamoDB 模拟限流与并行 chunk 读取配置。
 func dynamoDBFixture(provisionedErr, gangsize, maxParallelism int) testutils.Fixture {
 	return fixture{
 		name: fmt.Sprintf("DynamoDB chunks provisionedErr=%d, ChunkGangSize=%d, ChunkGetMaxParallelism=%d",
@@ -93,3 +98,4 @@ func dynamoDBFixture(provisionedErr, gangsize, maxParallelism int) testutils.Fix
 		},
 	}
 }
+// 各 fixture 返回 CloserFunc 统一 Stop table/index/object；schema 分别用 s3 与 aws 默认配置。

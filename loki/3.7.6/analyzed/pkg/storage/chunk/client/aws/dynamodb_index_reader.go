@@ -1,5 +1,7 @@
 package aws
 
+// dynamodb_index_reader 实现 index.Reader，通过并行 Scan 全表读取索引条目，按 series 去重后 Query 关联 chunk 索引行。
+
 import (
 	"context"
 	"encoding/base64"
@@ -20,6 +22,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/series/index"
 )
 
+// dynamodbIndexReader 嵌入 dynamoDBStorageClient，附加日志、重试与 rowsRead 计数。
 type dynamodbIndexReader struct {
 	dynamoDBStorageClient
 
@@ -29,6 +32,7 @@ type dynamodbIndexReader struct {
 	rowsRead prometheus.Counter
 }
 
+// NewDynamoDBIndexReader 构造全表扫描器，processors 数量决定 Scan 分段并行度。
 // NewDynamoDBIndexReader returns an object that can scan an entire index table
 func NewDynamoDBIndexReader(cfg DynamoDBConfig, schemaCfg config.SchemaConfig, reg prometheus.Registerer, l gklog.Logger, rowsRead prometheus.Counter) (index.Reader, error) {
 	client, err := newDynamoDBStorageClient(cfg, schemaCfg, reg)
@@ -54,6 +58,7 @@ func (r *dynamodbIndexReader) IndexTableNames(ctx context.Context) ([]string, er
 	return tableClient.ListTables(ctx)
 }
 
+// seriesMap 按 tenant:day 桶跟踪已处理 series 的 sha256，避免重复 Query。
 type seriesMap struct {
 	mutex           sync.Mutex           // protect concurrent access to maps
 	seriesProcessed map[string]sha256Set // map of userID/bucket to set showing which series have been processed
@@ -61,6 +66,7 @@ type seriesMap struct {
 
 // Since all sha256 values are the same size, a fixed-size array
 // is more space-efficient than string or byte slice
+// sha256 固定 32 字节数组，比 string 更省内存用于 series 去重集合。
 type sha256 [32]byte
 
 // an entry in this set indicates we have processed a series with that sha already
@@ -68,6 +74,7 @@ type sha256Set struct {
 	series map[sha256]struct{}
 }
 
+// ReadIndexEntries 每 processor 负责一个 Scan segment，ProcessIndexEntry 按 hash/range 分发。
 // ReadIndexEntries reads the whole of a table on multiple goroutines in parallel.
 // Entries for the same HashValue and RangeValue should be passed to the same processor.
 func (r *dynamodbIndexReader) ReadIndexEntries(ctx context.Context, tableName string, processors []index.EntryProcessor) error {
@@ -222,3 +229,4 @@ func decodeHashValue(hashValue string) (orgStr, day, seriesID string, err error)
 	seriesID = hashParts[2]
 	return
 }
+// isSeriesIndexEntry 识别 range 倒数第二字节为 v3 的 series 行；decodeHashValue 解析 org:day:seriesID。

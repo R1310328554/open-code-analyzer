@@ -1,5 +1,7 @@
 package cache
 
+// snappy 包装 Cache 接口：Store 前压缩、Fetch 后解压，降低 Memcached/Redis 等远程缓存的网络与内存占用。
+
 import (
 	"context"
 
@@ -15,6 +17,7 @@ type snappyCache struct {
 	logger log.Logger
 }
 
+// NewSnappy 构造压缩层，GetCacheType 透传底层类型以便统计区分。
 // NewSnappy makes a new snappy encoding cache wrapper.
 func NewSnappy(next Cache, logger log.Logger) Cache {
 	return &snappyCache{
@@ -53,3 +56,4 @@ func (s *snappyCache) Stop() {
 func (c *snappyCache) GetCacheType() stats.CacheType {
 	return c.next.GetCacheType()
 }
+// Store 逐条 snappy.Encode；Fetch 逐条 Decode，失败时返回 keys 作为全部 missing。

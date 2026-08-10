@@ -1,5 +1,7 @@
 package aws
 
+// metrics_autoscaling 通过查询 Prometheus 指标驱动 DynamoDB 表读写容量自动调整：依据 ingester 队列长度、限流率与容量消耗决定扩缩。
+
 import (
 	"context"
 	"flag"
@@ -39,6 +41,7 @@ const (
 	defaultReadErrorQuery = `sum(increase(cortex_dynamo_failures_total{operation="DynamoDB.QueryPages",error="ProvisionedThroughputExceededException"}[1m])) by (table) > 0`
 )
 
+// MetricsAutoScalingConfig 定义 PromQL 查询、目标队列长度、扩缩因子与限流忽略阈值。
 // MetricsAutoScalingConfig holds parameters to configure how it works
 type MetricsAutoScalingConfig struct {
 	URL              string  `yaml:"url"`                   // URL to contact Prometheus store on
@@ -65,6 +68,7 @@ func (cfg *MetricsAutoScalingConfig) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&cfg.ReadErrorQuery, "metrics.read-error-query", defaultReadErrorQuery, "query to fetch read errors per table")
 }
 
+// metricsData 缓存 Prom 查询结果，按表名维护读写扩缩冷却时间戳。
 type metricsData struct {
 	cfg                  MetricsAutoScalingConfig
 	promAPI              promV1.API
@@ -78,6 +82,7 @@ type metricsData struct {
 	readErrorRates       map[string]float64
 }
 
+// newMetricsAutoScaling 连接 cfg.Metrics.URL 上的 Prometheus API。
 func newMetricsAutoScaling(cfg DynamoDBConfig) (*metricsData, error) {
 	client, err := promApi.NewClient(promApi.Config{Address: cfg.Metrics.URL})
 	if err != nil {
@@ -99,6 +104,7 @@ func (m *metricsData) DescribeTable(_ context.Context, _ *config.TableDesc) erro
 	return nil
 }
 
+// UpdateTable 拉取最新指标后，按 WriteScale/ReadScale 规则修改 expected 预置容量。
 func (m *metricsData) UpdateTable(ctx context.Context, current config.TableDesc, expected *config.TableDesc) error {
 	if err := m.update(ctx); err != nil {
 		return err
@@ -223,6 +229,7 @@ func computeScaleDown(currentName string, usageRates map[string]float64, targetV
 	return int64(usageRate * 100.0 / targetValue)
 }
 
+// scaleDown 尊重冷却期、20% 最小变更幅度与集群总 usage 下限，防止误缩容。
 func scaleDown(tableName string, currentValue, minValue int64, newValue int64, lastUpdated map[string]time.Time, coolDown int64, msg, operation string, usageRates map[string]float64) int64 {
 	if newValue < minValue {
 		newValue = minValue
@@ -375,3 +382,4 @@ func promQuery(ctx context.Context, promAPI promV1.API, query string, duration, 
 	}
 	return matrix, nil
 }
+// update 缓存 30s Prom 数据；queueLengths 取三点观察趋势；scaleUp 保证至少 max 容量 10% 增量。

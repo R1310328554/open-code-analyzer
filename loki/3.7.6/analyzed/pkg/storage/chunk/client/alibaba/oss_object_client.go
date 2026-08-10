@@ -1,5 +1,7 @@
 package alibaba
 
+// alibaba 包实现基于阿里云 OSS 的对象存储客户端，满足 chunk.ObjectClient 接口用于 Loki 块读写与列举。
+
 import (
 	"context"
 	"flag"
@@ -30,10 +32,12 @@ func init() {
 	ossRequestDuration.Register()
 }
 
+// OssObjectClient 持有默认 bucket 句柄，所有对象操作经 instrument 采集延迟指标。
 type OssObjectClient struct {
 	defaultBucket *oss.Bucket
 }
 
+// OssConfig 配置 bucket、endpoint、凭证与连接/读写超时。
 // OssConfig is config for the OSS Chunk Client.
 type OssConfig struct {
 	Bucket               string         `yaml:"bucket"`
@@ -66,6 +70,7 @@ func (cfg *OssConfig) Validate() error {
 	return nil
 }
 
+// NewOssObjectClient 创建 OSS SDK 客户端并绑定指定 bucket。
 // NewOssObjectClient makes a new chunk.Client that writes chunks to OSS.
 func NewOssObjectClient(_ context.Context, cfg OssConfig) (client.ObjectClient, error) {
 	client, err := oss.New(cfg.Endpoint, cfg.AccessKeyID, cfg.SecretAccessKey.String(), oss.Timeout(cfg.ConnectionTimeoutSec, cfg.ReadWriteTimeoutSec))
@@ -118,6 +123,7 @@ func (s *OssObjectClient) objectAttributes(ctx context.Context, objectKey, opera
 	return client.ObjectAttributes{Size: objectSize}, nil
 }
 
+// GetObject 通过 DoGetObject 获取完整对象流与 Content-Length。
 // GetObject returns a reader and the size for the specified object key from the configured OSS bucket.
 func (s *OssObjectClient) GetObject(ctx context.Context, objectKey string) (io.ReadCloser, int64, error) {
 	var resp *oss.GetObjectResult
@@ -171,6 +177,7 @@ func (s *OssObjectClient) PutObject(ctx context.Context, objectKey string, objec
 	})
 }
 
+// List 分页列举 prefix 下对象与 common prefix，支持 context 取消。
 // List implements chunk.ObjectClient.
 func (s *OssObjectClient) List(ctx context.Context, prefix, delimiter string) ([]client.StorageObject, []client.StorageCommonPrefix, error) {
 	var storageObjects []client.StorageObject
@@ -230,3 +237,4 @@ func (s *OssObjectClient) IsObjectNotFoundErr(err error) bool {
 
 // TODO(dannyk): implement for client
 func (s *OssObjectClient) IsRetryableErr(error) bool { return false }
+// IsObjectNotFoundErr 识别 NoSuchKey 404；IsRetryableErr 当前恒为 false 待后续实现。

@@ -3,6 +3,9 @@
 
 package resultscache
 
+// 本文件由 protoc-gen-gogo 从 types.proto 生成，定义结果缓存的 Protobuf 消息类型。
+// 放在独立包中以避免 logproto 与 queryrangebase 之间的循环依赖。
+
 import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -26,6 +29,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// CachingOptions 控制查询结果缓存开关；Disabled 为 true 时跳过缓存读写。
 // Defined here to prevent circular imports between logproto & queryrangebase
 type CachingOptions struct {
 	Disabled bool `protobuf:"varint,1,opt,name=disabled,proto3" json:"disabled,omitempty"`
@@ -70,6 +74,7 @@ func (m *CachingOptions) GetDisabled() bool {
 	return false
 }
 
+// CachedResponse 表示一次缓存命中：Key 为查询键，Extents 为按时间排序的不重叠片段列表。
 type CachedResponse struct {
 	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key"`
 	// List of cached responses; non-overlapping and in order.
@@ -122,6 +127,7 @@ func (m *CachedResponse) GetExtents() []Extent {
 	return nil
 }
 
+// Extent 描述已缓存的时间区间 [Start, End) 及对应响应体（types.Any 包装）。
 type Extent struct {
 	Start    int64      `protobuf:"varint,1,opt,name=start,proto3" json:"start"`
 	End      int64      `protobuf:"varint,2,opt,name=end,proto3" json:"end"`
@@ -1076,3 +1082,4 @@ var (
 	ErrInvalidLengthTypes = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowTypes   = fmt.Errorf("proto: integer overflow")
 )
+// Extent.TraceId 用于分布式追踪关联；Equal/Marshal 等由代码生成器维护，勿手动修改。

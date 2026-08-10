@@ -1,5 +1,7 @@
 package cache
 
+// tiered 实现多级缓存链：Fetch 自前向后查找，命中项回填到更快层级；Store 写入全部层级，返回最后一个非 nil 错误。
+
 import (
 	"context"
 
@@ -8,6 +10,7 @@ import (
 
 type tiered []Cache
 
+// NewTiered 单元素时直接返回该 Cache，避免多余包装。
 // NewTiered makes a new tiered cache.
 func NewTiered(caches []Cache) Cache {
 	if len(caches) == 1 {
@@ -17,6 +20,7 @@ func NewTiered(caches []Cache) Cache {
 	return tiered(caches)
 }
 
+// IsEmptyTieredCache 用于配置校验，识别未配置任何后端的分级缓存。
 // IsEmptyTieredCache is used to determine whether the current Cache is implemented by an empty tiered.
 func IsEmptyTieredCache(cache Cache) bool {
 	c, ok := cache.(tiered)
@@ -86,3 +90,4 @@ func (t tiered) Stop() {
 func (t tiered) GetCacheType() stats.CacheType {
 	return "tiered"
 }
+// Fetch 按原始 keys 顺序组装结果；任一层出错即中断并返回已收集的 passKeys/passBufs。
