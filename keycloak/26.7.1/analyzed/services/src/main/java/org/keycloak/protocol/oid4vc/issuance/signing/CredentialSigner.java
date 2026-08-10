@@ -22,22 +22,23 @@ import org.keycloak.protocol.oid4vc.model.CredentialBuildConfig;
 import org.keycloak.provider.Provider;
 
 /**
- * Interface to be used for signing verifiable credentials.
+ * 可验证凭证签名器接口。
+ * <p>各凭证格式（JWT VC、LDP VC、SD-JWT VC）通过 SPI 注册具体实现。</p>
  */
 public interface CredentialSigner<T> extends Provider {
 
+    /** 关闭签名器；默认无资源需释放。 */
     @Override
     default void close() {
     }
 
     /**
-     * Takes a verifiable credential and signs it according to the implementation.
-     * Depending on the type of the CredentialSigner, it will return a signed representation
-     * of the credential that be returned at the credential request endpoint.
+     * 对可验证凭证进行签名，返回可在凭证请求端点交付的已签名表示。
      *
-     * @param credentialBody        a partially built credential representation, awaiting to be signed
-     * @param credentialBuildConfig additional configurations for building the credential
-     * @return a signed representation
+     * @param credentialBody        待签名的部分构建凭证体
+     * @param credentialBuildConfig 凭证构建附加配置
+     * @return 已签名的凭证表示（类型因实现而异）
+     * @throws CredentialSignerException 签名失败
      */
     T signCredential(CredentialBody credentialBody, CredentialBuildConfig credentialBuildConfig)
             throws CredentialSignerException;

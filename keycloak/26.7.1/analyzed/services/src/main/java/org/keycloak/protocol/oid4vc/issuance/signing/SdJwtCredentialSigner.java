@@ -33,8 +33,8 @@ import org.keycloak.protocol.oid4vc.model.CredentialBuildConfig;
 import org.jboss.logging.Logger;
 
 /**
- * {@link CredentialSigner} implementing the SD_JWT_VC format. It returns the signed SD-JWT as a String.
- * <p>
+ * 实现 SD-JWT VC（{@code sd_jwt_vc}）格式的 {@link CredentialSigner}。
+ * <p>返回已签名的 SD-JWT 字符串；按 HAIP-6.1.1 在头中附加 x5c 证书链（若可用）。</p>
  * {@see https://drafts.oauth.net/oauth-sd-jwt-vc/draft-ietf-oauth-sd-jwt-vc.html}
  * {@see https://www.ietf.org/archive/id/draft-fett-oauth-selective-disclosure-jwt-02.html}
  */
@@ -42,6 +42,7 @@ public class SdJwtCredentialSigner extends AbstractCredentialSigner<String> {
 
     private static final Logger LOGGER = Logger.getLogger(SdJwtCredentialSigner.class);
 
+    /** @param keycloakSession 当前 Keycloak 会话 */
     public SdJwtCredentialSigner(KeycloakSession keycloakSession) {
         super(keycloakSession);
     }
@@ -55,28 +56,23 @@ public class SdJwtCredentialSigner extends AbstractCredentialSigner<String> {
 
         LOGGER.debugf("Sign credentials to sd-jwt format.");
 
-        // Get the signer first to ensure we use the exact same key that will sign the credential
+        // 先解析签名器，确保 x5c 与最终签名使用同一密钥
         SignatureSignerContext signer = getSigner(credentialBuildConfig);
 
-        // Add x5c certificate chain to the header if available (required by HAIP-6.1.1)
-        // See: https://openid.github.io/OpenID4VC-HAIP/openid4vc-high-assurance-interoperability-profile-wg-draft.html#section-6.1.1
+        // 若存在证书链则写入 x5c 头（HAIP-6.1.1 要求）
         addX5cHeader(sdJwtCredentialBody, signer);
 
         return sdJwtCredentialBody.sign(signer);
     }
 
     /**
-     * Adds x5c certificate chain to the IssuerSignedJWT header if available.
-     * This is required by HAIP-6.1.1 for SD-JWT credentials.
+     * 若签名器携带 X.509 证书链，将其写入 IssuerSignedJWT 头的 x5c 字段。
+     * <p>遵循 Keycloak 惯例：x5c 与签名密钥一致，满足 HAIP-6.1.1 发行方标识与密钥解析要求。</p>
      * <p>
-     * Uses the certificate chain from the signer to ensure we use the exact same key
-     * that will be used for signing, following Keycloak's established pattern.
-     * <p>
-     * See <a href="https://openid.github.io/OpenID4VC-HAIP/openid4vc-high-assurance-interoperability-profile-wg-draft.html#section-6.1.1">HAIP Section 6.1.1</a>
-     * for the requirement on issuer identification and key resolution.
+     * 参见 <a href="https://openid.github.io/OpenID4VC-HAIP/openid4vc-high-assurance-interoperability-profile-wg-draft.html#section-6.1.1">HAIP 6.1.1</a>
      *
-     * @param sdJwtCredentialBody The SD-JWT credential body to add x5c to
-     * @param signer              The signer context containing the certificate(s) for the signing key
+     * @param sdJwtCredentialBody 待附加 x5c 的 SD-JWT 凭证体
+     * @param signer              含签名密钥证书链的签名上下文
      */
     private void addX5cHeader(SdJwtCredentialBody sdJwtCredentialBody, SignatureSignerContext signer) {
         List<X509Certificate> certificateChain = signer.getCertificateChain();
@@ -111,7 +107,7 @@ public class SdJwtCredentialSigner extends AbstractCredentialSigner<String> {
             X500Principal subjectPrincipal = cert.getSubjectX500Principal();
             isTrustAnchor = subjectPrincipal.equals(issuerPrincipal) && basicConstraints >= 0;
         } catch (Exception e) {
-            // ignore
+            // 解析基本约束失败时视为非信任锚
         }
         return isTrustAnchor;
     }

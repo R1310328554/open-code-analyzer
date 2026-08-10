@@ -21,28 +21,33 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.Spi;
 
 /**
- * Spi implementation of the creation of {@link CredentialSigner}
+ * 注册 {@link CredentialSigner} 提供方的 SPI 定义。
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 public class CredentialSignerSpi implements Spi {
+    /** SPI 注册名称。 */
     private static final String NAME = "credentialSigner";
 
+    /** 内部 SPI，不对外暴露为可插拔扩展。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** @return 提供方接口 {@link CredentialSigner} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return CredentialSigner.class;
     }
 
+    /** @return 工厂接口 {@link CredentialSignerFactory} */
     @Override
     public Class<CredentialSignerFactory> getProviderFactoryClass() {
         return CredentialSignerFactory.class;

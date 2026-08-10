@@ -20,13 +20,18 @@ package org.keycloak.protocol.oid4vc.issuance.signing;
 import org.keycloak.VCFormat;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 创建 {@link SdJwtCredentialSigner} 的工厂，支持格式 {@link org.keycloak.VCFormat#SD_JWT_VC}。
+ */
 public class SdJwtCredentialSignerFactory implements CredentialSignerFactory {
 
+    /** @return {@link org.keycloak.VCFormat#SD_JWT_VC} */
     @Override
     public String getSupportedFormat() {
         return VCFormat.SD_JWT_VC;
     }
 
+    /** 创建绑定会话的 SD-JWT 凭证签名器。 */
     @Override
     public CredentialSigner<String> create(KeycloakSession session) {
         return new SdJwtCredentialSigner(session);

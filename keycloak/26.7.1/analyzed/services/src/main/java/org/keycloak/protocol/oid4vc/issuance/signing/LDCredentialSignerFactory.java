@@ -22,13 +22,18 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.protocol.oid4vc.issuance.OffsetTimeProvider;
 import org.keycloak.protocol.oid4vc.model.VerifiableCredential;
 
+/**
+ * 创建 {@link LDCredentialSigner} 的工厂，支持格式 {@link org.keycloak.VCFormat#LDP_VC}。
+ */
 public class LDCredentialSignerFactory implements CredentialSignerFactory {
 
+    /** @return {@link org.keycloak.VCFormat#LDP_VC} */
     @Override
     public String getSupportedFormat() {
         return VCFormat.LDP_VC;
     }
 
+    /** 创建带 {@link OffsetTimeProvider} 的 LD 凭证签名器。 */
     @Override
     public CredentialSigner<VerifiableCredential> create(KeycloakSession session) {
         return new LDCredentialSigner(session, new OffsetTimeProvider());

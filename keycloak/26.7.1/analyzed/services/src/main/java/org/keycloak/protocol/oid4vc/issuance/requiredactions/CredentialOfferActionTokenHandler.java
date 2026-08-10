@@ -39,10 +39,16 @@ import static org.keycloak.constants.OID4VCIConstants.IS_ADMIN_INITIATED;
 import static org.keycloak.constants.OID4VCIConstants.VERIFIABLE_CREDENTIAL_OFFER_PROVIDER_ID;
 import static org.keycloak.events.Details.REASON;
 
+/**
+ * 可验证凭证发放（Credential Offer）操作令牌的处理器。
+ * <p>校验 OID4VCI 功能开关、域配置与用户凭证范围后，引导用户确认并进入
+ * {@link VerifiableCredentialOfferAction} 必需操作流。</p>
+ */
 public class CredentialOfferActionTokenHandler extends AbstractActionTokenHandler<CredentialOfferActionToken>  {
 
     private static final Logger logger = Logger.getLogger(CredentialOfferActionTokenHandler.class);
 
+    /** 注册令牌类型、事件类型与默认错误消息。 */
     public CredentialOfferActionTokenHandler() {
         super(
                 CredentialOfferActionToken.TOKEN_TYPE,
@@ -53,6 +59,12 @@ public class CredentialOfferActionTokenHandler extends AbstractActionTokenHandle
         );
     }
 
+    /**
+     * 返回令牌校验谓词链：重定向 URI、邮箱验证与凭证发放动作合法性。
+     *
+     * @param tokenContext 操作令牌上下文
+     * @return 校验谓词数组
+     */
     @Override
     public TokenVerifier.Predicate<? super CredentialOfferActionToken>[] getVerifiers(ActionTokenContext<CredentialOfferActionToken> tokenContext) {
         RealmModel realm = tokenContext.getRealm();
@@ -61,7 +73,7 @@ public class CredentialOfferActionTokenHandler extends AbstractActionTokenHandle
 
         return TokenUtils.predicates(
                 TokenUtils.checkThat(
-                        // either redirect URI is not specified or must be valid for the client
+                        // 未指定重定向 URI，或 URI 须对当前客户端有效
                         t -> t.getRedirectUri() == null
                                 || RedirectUtils.verifyRedirectUri(tokenContext.getSession(), t.getRedirectUri(),
                                 tokenContext.getAuthenticationSession().getClient()) != null,
@@ -74,6 +86,13 @@ public class CredentialOfferActionTokenHandler extends AbstractActionTokenHandle
         );
     }
 
+    /**
+     * 处理凭证发放操作令牌：首次访问展示确认页，确认后写入 KC 动作参数并跳转必需操作。
+     *
+     * @param token        凭证发放操作令牌
+     * @param tokenContext 操作令牌上下文
+     * @return 确认信息页或必需操作重定向响应
+     */
     @Override
     public Response handleToken(CredentialOfferActionToken token, ActionTokenContext<CredentialOfferActionToken> tokenContext) {
         AuthenticationSessionModel authSession = tokenContext.getAuthenticationSession();
@@ -83,7 +102,7 @@ public class CredentialOfferActionTokenHandler extends AbstractActionTokenHandle
         final UserModel user = tokenContext.getAuthenticationSession().getAuthenticatedUser();
 
         if (tokenContext.isAuthenticationSessionFresh()) {
-            // Update the authentication session in the token
+            // 刷新认证会话 ID 并生成确认链接
             String authSessionEncodedId = AuthenticationSessionCompoundId.fromAuthSession(authSession).getEncodedId();
             token.setCompoundAuthenticationSessionId(authSessionEncodedId);
             UriBuilder builder = Urls.actionTokenBuilder(uriInfo.getBaseUri(), token.serialize(session, realm, uriInfo),
@@ -121,19 +140,20 @@ public class CredentialOfferActionTokenHandler extends AbstractActionTokenHandle
             throw ErrorResponse.error("Invalid credential configuration action", Response.Status.BAD_REQUEST);
         }
 
-        // verify user email as we know it is valid as this entry point would never have gotten here.
+        // 令牌入口已校验邮箱，此处标记为已验证
         user.setEmailVerified(true);
 
         String nextAction = AuthenticationManager.nextRequiredAction(tokenContext.getSession(), authSession, tokenContext.getRequest(), tokenContext.getEvent());
         return AuthenticationManager.redirectToRequiredActions(tokenContext.getSession(), tokenContext.getRealm(), authSession, tokenContext.getUriInfo(), nextAction);
     }
 
+    /** 凭证发放令牌不可重复使用。 */
     @Override
     public boolean canUseTokenRepeatedly(CredentialOfferActionToken token, ActionTokenContext<CredentialOfferActionToken> tokenContext) {
         return false;
     }
     
-    // Verify OID4VCI action is valid for user
+    /** 校验 OID4VCI 凭证发放动作对当前用户是否有效。 */
     protected TokenVerifier.Predicate<CredentialOfferActionToken> verifyCredentialOfferAction(ActionTokenContext<CredentialOfferActionToken> tokenContext) {
         RealmModel realm = tokenContext.getRealm();
         KeycloakSession session = tokenContext.getSession();

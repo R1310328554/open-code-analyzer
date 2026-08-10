@@ -37,26 +37,35 @@ import org.keycloak.protocol.oid4vc.model.vcdm.LdProof;
 import org.jboss.logging.Logger;
 
 /**
- * {@link CredentialSigner} implementing the JWT_VC format. It returns the signed JWT-Credential as a String.
- * <p></p>
- * {@see https://identity.foundation/jwt-vc-presentation-profile/}
+ * 实现 LDP VC（{@code ldp_vc}）格式的 {@link CredentialSigner}。
+ * <p>为 JSON-LD 可验证凭证附加 {@link org.keycloak.protocol.oid4vc.model.vcdm.LdProof} 证明后返回。</p>
  */
 public class LDCredentialSigner extends AbstractCredentialSigner<VerifiableCredential> {
 
     private static final Logger LOGGER = Logger.getLogger(LDCredentialSigner.class);
 
+    /** LdProof 的 proofPurpose 固定为 assertionMethod。 */
     public static final String PROOF_PURPOSE_ASSERTION = "assertionMethod";
+    /** 附加到凭证 JSON 中的 proof 属性键名。 */
     public static final String PROOF_KEY = "proof";
 
     private final TimeProvider timeProvider;
 
-    public LDCredentialSigner(KeycloakSession keycloakSession, TimeProvider timeProvider) {
+    /**
+     * @param keycloakSession Keycloak 会话
+     * @param timeProvider    用于 proof.created 时间戳
+     */
         super(keycloakSession);
         this.timeProvider = timeProvider;
     }
 
-    @Override
-    public VerifiableCredential signCredential(CredentialBody credentialBody, CredentialBuildConfig credentialBuildConfig)
+    /**
+     * 对 {@link LDCredentialBody} 生成 Linked Data 签名并附加 LdProof。
+     *
+     * @param credentialBody        LD 凭证体
+     * @param credentialBuildConfig 签名与 proof 类型配置
+     * @return 含 proof 的 {@link VerifiableCredential}
+     */
             throws CredentialSignerException {
         if (!(credentialBody instanceof LDCredentialBody ldCredentialBody)) {
             throw new CredentialSignerException("Credential body unexpectedly not of type LDCredentialBody");
@@ -80,7 +89,7 @@ public class LDCredentialSigner extends AbstractCredentialSigner<VerifiableCrede
         throw new CredentialSignerException(String.format("Proof Type %s is not supported.", ldpProofType));
     }
 
-    // add the signed proof to the credential.
+    /** 计算签名并将 LdProof 写入凭证附加属性。 */
     private VerifiableCredential addProof(
             VerifiableCredential verifiableCredential,
             CredentialBuildConfig credentialBuildConfig) {

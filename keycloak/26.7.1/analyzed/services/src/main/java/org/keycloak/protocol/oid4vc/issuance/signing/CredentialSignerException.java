@@ -18,16 +18,18 @@
 package org.keycloak.protocol.oid4vc.issuance.signing;
 
 /**
- * Exception to be thrown if credentials signing does fail
+ * 凭证签名失败时抛出的运行时异常。
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 public class CredentialSignerException extends RuntimeException {
 
+    /** @param message 错误描述 */
     public CredentialSignerException(String message) {
         super(message);
     }
 
+    /** @param message 错误描述 @param cause 根因 */
     public CredentialSignerException(String message, Throwable cause) {
         super(message, cause);
     }

@@ -27,16 +27,25 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.protocol.oid4vc.model.CredentialBuildConfig;
 import org.keycloak.utils.StringUtil;
 
+/**
+ * {@link CredentialSigner} 抽象基类，封装签名密钥解析与 JWS 签名上下文构建。
+ * <p>子类仅需关注具体凭证格式（JWT、LD、SD-JWT）的签名逻辑。</p>
+ */
 public abstract class AbstractCredentialSigner<T> implements CredentialSigner<T> {
 
     protected final KeycloakSession keycloakSession;
 
+    /** @param keycloakSession 当前 Keycloak 会话 */
     protected AbstractCredentialSigner(KeycloakSession keycloakSession) {
         this.keycloakSession = keycloakSession;
     }
 
     /**
-     * Reconstruct a signer matching a credential build configuration.
+     * 根据凭证构建配置重建 {@link SignatureSignerContext}。
+     *
+     * @param credentialBuildConfig 凭证构建配置（算法、密钥 ID 等）
+     * @return 可用于签名的上下文
+     * @throws CredentialSignerException 未配置签名算法或找不到密钥时
      */
     protected SignatureSignerContext getSigner(CredentialBuildConfig credentialBuildConfig) {
         if (credentialBuildConfig.getSigningAlgorithm() == null) {
@@ -46,10 +55,8 @@ public abstract class AbstractCredentialSigner<T> implements CredentialSigner<T>
             ));
         }
 
-        // 1. Will return the active key if `signingKeyId` is null.
-        // 2. `signingKeyId` as header can be confusing if there is any key rotation,
-        //    as key ids have to be immutable. It can lead to different keys being exposed
-        //    under the same id. We give the ability to override with a custom kid if configured.
+        // 1. signingKeyId 为空时使用域内活跃签名密钥
+        // 2. 密钥轮换时 header kid 可能指向不同物理密钥；可通过 overrideKeyId 自定义 kid
         KeyWrapper signingKey = getKeyWithKidSubstitute(
                 credentialBuildConfig.getSigningKeyId(),
                 credentialBuildConfig.getSigningAlgorithm(),
@@ -63,10 +70,13 @@ public abstract class AbstractCredentialSigner<T> implements CredentialSigner<T>
     }
 
     /**
-     * Returns the key stored under keyId, or the active key for the given jws algorithm.
-     * Additionally, the function clones the key retrieved from Keycloak, replacing the original
-     * key ID by the substitute one if provided. This makes it possible to have a custom kid header
-     * when producing JSON web signatures.
+     * 按 keyId 查找密钥，未指定时返回给定 JWS 算法的活跃密钥。
+     * <p>若提供 keyIdSubstitute，则克隆密钥并替换 kid，以便 JWS 头使用自定义标识。</p>
+     *
+     * @param keyId           密钥 ID，可为空
+     * @param algorithm       JWS 签名算法
+     * @param keyIdSubstitute 覆盖 JWS 头的 kid，可为空
+     * @return 可用于签名的 {@link KeyWrapper}
      */
     protected KeyWrapper getKeyWithKidSubstitute(String keyId, String algorithm, String keyIdSubstitute) {
         KeyWrapper signingKey = getKey(keyId, algorithm);
@@ -76,8 +86,7 @@ public abstract class AbstractCredentialSigner<T> implements CredentialSigner<T>
         }
 
         if (keyIdSubstitute != null) {
-            // We need to clone the key first, to not change the kid of the original key
-            // so that the next request still can find it.
+            // 克隆密钥以免修改原始 kid，保证后续请求仍能按原 ID 查找
             signingKey = signingKey.cloneKey();
             signingKey.setKid(keyIdSubstitute);
         }
@@ -86,15 +95,18 @@ public abstract class AbstractCredentialSigner<T> implements CredentialSigner<T>
     }
 
     /**
-     * Returns the key stored under keyId, or the active key for the given jws algorithm.
+     * 按 keyId 查找密钥；keyId 为空时返回域内该算法的活跃签名密钥。
+     *
+     * @param keyId     密钥 ID
+     * @param algorithm JWS 算法
+     * @return 匹配的 {@link KeyWrapper}，未找到时返回 null
      */
     protected KeyWrapper getKey(String keyId, String algorithm) {
         RealmModel realm = keycloakSession.getContext().getRealm();
         KeyManager keys = keycloakSession.keys();
 
         if (StringUtil.isBlank(keyId)) {
-            // Allow the signer to work with the active key if keyId is null
-            // And we still have to figure out how to proceed with key rotation
+            // keyId 为空时使用活跃密钥；密钥轮换策略尚待完善
             return keys.getActiveKey(realm, KeyUse.SIG, algorithm);
         }
 

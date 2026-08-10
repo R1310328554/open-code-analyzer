@@ -50,12 +50,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.setl.rdf.normalization.RdfNormalize;
 
 /**
- * Implementation of an LD-Crypto Suite for Ed25519Signature2018
+ * Ed25519Signature2018 关联数据密码套件（Linked Data Cryptographic Suite）实现。
+ * <p>流程：JSON-LD 展开 → RDF 规范化（URDNA2015）→ SHA-256 摘要 → Ed25519 签名。</p>
  * {@see https://w3c-ccg.github.io/ld-cryptosuite-registry/#ed25519signature2018}
  * <p>
- * Canonicalization Algorithm: https://w3id.org/security#URDNA2015
- * Digest Algorithm: http://w3id.org/digests#sha256
- * Signature Algorithm: http://w3id.org/security#ed25519
+ * 规范化算法：https://w3id.org/security#URDNA2015<br>
+ * 摘要算法：http://w3id.org/digests#sha256<br>
+ * 签名算法：http://w3id.org/security#ed25519
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
@@ -63,14 +64,20 @@ public class Ed255192018Suite implements LinkedDataCryptographicSuite {
 
     private final SignatureSignerContext signerContext;
 
+    /** LdProof.type 取值。 */
     public static final String PROOF_TYPE = "Ed25519Signature2018";
 
+    /** @param signerContext Ed25519 签名上下文 */
     public Ed255192018Suite(SignatureSignerContext signerContext) {
         this.signerContext = signerContext;
     }
 
-    @Override
-    public byte[] getSignature(VerifiableCredential verifiableCredential) {
+    /**
+     * 对凭证执行 transform → digest → sign 流水线。
+     *
+     * @param verifiableCredential 待签名的可验证凭证
+     * @return 原始签名字节
+     */
         byte[] transformedData = transform(verifiableCredential);
         byte[] hashedData = digest(transformedData);
         return sign(hashedData);
@@ -130,6 +137,7 @@ public class Ed255192018Suite implements LinkedDataCryptographicSuite {
     }
 
 
+    /** @return {@link #PROOF_TYPE} */
     @Override
     public String getProofType() {
         return PROOF_TYPE;

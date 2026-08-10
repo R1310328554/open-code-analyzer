@@ -25,20 +25,26 @@ import org.keycloak.protocol.oid4vc.model.CredentialBuildConfig;
 import org.jboss.logging.Logger;
 
 /**
- * {@link CredentialSigner} implementing the JWT_VC format. It returns the signed JWT-Credential as a String.
- * <p></p>
+ * 实现 JWT VC（{@code jwt_vc}）格式的 {@link CredentialSigner}。
+ * <p>返回已签名的 JWT 凭证字符串，供凭证端点交付。</p>
  * {@see https://identity.foundation/jwt-vc-presentation-profile/}
  */
 public class JwtCredentialSigner extends AbstractCredentialSigner<String> {
 
     private static final Logger LOGGER = Logger.getLogger(JwtCredentialSigner.class);
 
+    /** @param keycloakSession 当前 Keycloak 会话 */
     public JwtCredentialSigner(KeycloakSession keycloakSession) {
         super(keycloakSession);
     }
 
-    @Override
-    public String signCredential(CredentialBody credentialBody, CredentialBuildConfig credentialBuildConfig)
+    /**
+     * 对 {@link JwtCredentialBody} 执行 JWS 签名。
+     *
+     * @param credentialBody        JWT 凭证体
+     * @param credentialBuildConfig 签名配置
+     * @return 紧凑序列化的已签名 JWT 字符串
+     */
             throws CredentialSignerException {
         if (!(credentialBody instanceof JwtCredentialBody jwtCredentialBody)) {
             throw new CredentialSignerException("Credential body unexpectedly not of type JwtCredentialBody");
