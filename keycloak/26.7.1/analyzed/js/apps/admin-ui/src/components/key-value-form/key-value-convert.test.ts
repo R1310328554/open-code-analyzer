@@ -7,24 +7,23 @@ import {
 
 vi.mock("react");
 
+/** 键值对表单与多值属性对象互转函数的单元测试。 */
 describe("Tests the convert functions for attribute input", () => {
   it("converts empty array into form value", () => {
     const given: KeyValueType[] = [];
 
-    //when
+    // 空数组应转为空对象
     const result = keyValueToArray(given);
 
-    //then
     expect(result).toEqual({});
   });
 
   it("converts array into form value", () => {
     const given = [{ key: "theKey", value: "theValue" }];
 
-    //when
+    // 单行键值对应单元素字符串数组
     const result = keyValueToArray(given);
 
-    //then
     expect(result).toEqual({ theKey: ["theValue"] });
   });
 
@@ -34,20 +33,18 @@ describe("Tests the convert functions for attribute input", () => {
       { key: "", value: "" },
     ];
 
-    //when
+    // 空 key 行应被过滤，不参与结果
     const result = keyValueToArray(given);
 
-    //then
     expect(result).toEqual({ theKey: ["theValue"] });
   });
 
   it("convert object to attributes", () => {
     const given = { one: ["1"], two: ["2"] };
 
-    //when
+    // 多值对象展开为键值对行列表
     const result = arrayToKeyValue(given);
 
-    //then
     expect(result).toEqual([
       { key: "one", value: "1" },
       { key: "two", value: "2" },
@@ -60,10 +57,9 @@ describe("Tests the convert functions for attribute input", () => {
       { key: "theKey", value: "two" },
     ];
 
-    //when
+    // 重复 key 合并为同一属性下的多值数组
     const result = keyValueToArray(given);
 
-    //then
     expect(result).toEqual({ theKey: ["one", "two"] });
   });
 });

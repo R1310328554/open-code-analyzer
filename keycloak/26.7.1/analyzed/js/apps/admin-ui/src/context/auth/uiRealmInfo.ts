@@ -1,5 +1,7 @@
-/** Information about a realm, which is available for all admins of the realm */
+/**
+ * 领域级 UI 元信息：对该领域所有管理员可见的运行时开关与能力描述。
+ */
 export interface UiRealmInfo {
-  /** Whether at least one user storage provider is enabled */
+  /** 是否至少启用了一个用户存储/用户配置 Provider */
   userProfileProvidersEnabled?: boolean;
 }

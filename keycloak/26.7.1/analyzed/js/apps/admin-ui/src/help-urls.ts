@@ -1,8 +1,13 @@
+/** Keycloak 官方 Server Administration Guide 文档根地址。 */
 const adminGuide =
   "https://www.keycloak.org/docs/latest/server_admin/index.html";
 
 const keycloakHomepageURL = "https://www.keycloak.org";
 
+/**
+ * 各功能页「帮助/文档」外链集合。
+ * 链至对应章节锚点，供 UI 中的帮助按钮与文档跳转使用。
+ */
 export default {
   documentationUrl: adminGuide,
   clientsUrl: `${adminGuide}#assembly-managing-clients_server_administration_guide`,
