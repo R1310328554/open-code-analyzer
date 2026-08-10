@@ -1,9 +1,10 @@
 /**
+ * text-direction.ts — 文本方向（RTL/LTR）检测：阿拉伯语、希伯来语、波斯语等 Unicode 范围。
  * RTL (Right-to-Left) text direction utilities
  * Supports Arabic, Hebrew, Persian/Farsi, Urdu, and other RTL scripts
  */
 
-// Unicode ranges for RTL scripts
+/** RTL 书写系统 Unicode 码点区间表。 */
 const RTL_RANGES: [number, number][] = [
   [0x0600, 0x06ff], // Arabic
   [0x0750, 0x077f], // Arabic Supplement
@@ -18,9 +19,7 @@ const RTL_RANGES: [number, number][] = [
   [0x0860, 0x086f], // Syriac Supplement
 ];
 
-/**
- * Check if a character code is in RTL Unicode range
- */
+/** 判断字符码点是否落在 RTL Unicode 区间。 */
 const isRTLCharCode = (charCode: number): boolean => {
   return RTL_RANGES.some(
     ([start, end]) => charCode >= start && charCode <= end,
@@ -28,9 +27,7 @@ const isRTLCharCode = (charCode: number): boolean => {
 };
 
 /**
- * Find the first "strong" directional character in text
- * Strong characters are letters (not numbers, punctuation, or whitespace)
- * Returns 'rtl', 'ltr', or 'neutral' if no strong character found
+ * 扫描首个强方向字符（字母，跳过数字/标点/空白），返回 rtl/ltr/neutral。
  */
 export const getTextDirection = (text: string): 'rtl' | 'ltr' | 'neutral' => {
   if (!text) return 'neutral';
@@ -68,10 +65,7 @@ export const getTextDirection = (text: string): 'rtl' | 'ltr' | 'neutral' => {
   return 'neutral';
 };
 
-/**
- * Check if text contains any RTL characters
- * Useful for detecting mixed content
- */
+/** 文本是否包含任意 RTL 字符（用于混合内容检测）。 */
 export const containsRTL = (text: string): boolean => {
   if (!text) return false;
 
@@ -83,18 +77,12 @@ export const containsRTL = (text: string): boolean => {
   return false;
 };
 
-/**
- * Check if text is predominantly RTL
- * Returns true if first strong character is RTL
- */
+/** 首强方向字符是否为 RTL（即整体按 RTL 处理）。 */
 export const isRTL = (text: string): boolean => {
   return getTextDirection(text) === 'rtl';
 };
 
-/**
- * Get the appropriate dir attribute value for HTML elements
- * Returns 'rtl', 'ltr', or 'auto' (for neutral/mixed content)
- */
+/** 返回 HTML dir 属性值：rtl/ltr，neutral 时为 auto。 */
 export const getDirAttribute = (text: string): 'rtl' | 'ltr' | 'auto' => {
   const direction = getTextDirection(text);
   return direction === 'neutral' ? 'auto' : direction;

@@ -1,3 +1,7 @@
+/**
+ * vite.config.ts — Ragflow Web 构建与开发服务器：代理方案、别名、Less、分包与压缩。
+ */
+
 import { inspectorServer } from '@react-dev-inspector/vite-plugin';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -6,7 +10,7 @@ import { createHtmlPlugin } from 'vite-plugin-html';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { appName } from './src/conf.json';
 
-// Inject code location data attributes for react-dev-inspector
+/** 开发态 Babel 插件：为 JSX 注入源码位置属性供 react-dev-inspector 使用。 */
 const inspectorBabelPlugin = (): import('vite').Plugin => ({
   name: 'inspector-babel',
   enforce: 'pre' as const,
@@ -28,6 +32,7 @@ const inspectorBabelPlugin = (): import('vite').Plugin => ({
 
 type MinifyValue = boolean | 'esbuild' | 'terser';
 
+/** 解析 VITE_MINIFY 环境变量：false/esbuild/terser，默认 terser。 */
 function resolveMinify(value: string | undefined): MinifyValue {
   if (value === undefined) return 'terser';
   const lower = value.toLowerCase();
@@ -37,7 +42,7 @@ function resolveMinify(value: string | undefined): MinifyValue {
   return 'terser';
 }
 
-// https://vitejs.dev/config/
+/** Vite 配置工厂：按 mode 加载 env 并返回完整构建/ dev 选项。 */
 export default defineConfig(({ mode }) => {
   // Load env from .env file (also loads .env.local, .env.[mode], .env.[mode].local)
   const env = loadEnv(mode, process.cwd(), '');
@@ -56,6 +61,7 @@ export default defineConfig(({ mode }) => {
 
   console.log(`[vite.config] mode: ${mode}, API_PROXY_SCHEME: ${proxyScheme}`);
 
+  /** 后端代理方案：python / hybrid / go，按 API_PROXY_SCHEME 选择。 */
   const proxySchemes = {
     python: {
       '/api/v1/admin': {
@@ -138,9 +144,11 @@ export default defineConfig(({ mode }) => {
     },
   };
 
+  /** 当前生效的 dev server 反向代理规则。 */
   const proxy = proxySchemes[proxyScheme] || proxySchemes.python;
 
   return {
+    /* 向客户端暴露 API_PROXY_SCHEME（import.meta.env 与 __API_PROXY_SCHEME__）。 */
     define: {
       // Expose to client code via import.meta.env
       'import.meta.env.API_PROXY_SCHEME': JSON.stringify(proxyScheme),
@@ -171,12 +179,14 @@ export default defineConfig(({ mode }) => {
       }),
       inspectorServer(),
     ],
+    /* 路径别名：@ → src，@parent → 上级 web 目录。 */
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
         '@parent': path.resolve(__dirname, '../'),
       },
     },
+    /* CSS Modules camelCase、PostCSS 与 Less 全局变量注入。 */
     css: {
       modules: {
         localsConvention: 'camelCase',
@@ -195,6 +205,7 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    /* 开发端口、HMR 与 API 代理。 */
     server: {
       port: Number(env.PORT) || 9222,
       strictPort: false,
@@ -219,6 +230,7 @@ export default defineConfig(({ mode }) => {
       exclude: [],
       force: false,
     },
+    /* 输出目录、分包 manualChunks、terser 压缩与 sourcemap。 */
     build: {
       outDir: 'dist',
       assetsDir: 'assets',
@@ -233,6 +245,7 @@ export default defineConfig(({ mode }) => {
           warn(warning);
         },
         output: {
+          /** Rollup 手动分包：locale、d3、ajv、antv、lodash 等独立 chunk。 */
           manualChunks(id) {
             // if (id.includes('src/components')) {
             //   return 'components';

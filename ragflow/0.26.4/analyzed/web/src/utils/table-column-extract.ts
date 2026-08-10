@@ -2,8 +2,8 @@ import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 
 /**
- * Extracts column headers from a CSV or Excel file.
- * Returns an empty array if the file type is not supported or headers cannot be read.
+ * 从 CSV 或 Excel 文件提取列标题。
+ * 不支持的类型或读取失败时返回空数组。
  */
 export async function extractTableColumns(file: File): Promise<string[]> {
   const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
@@ -19,6 +19,7 @@ export async function extractTableColumns(file: File): Promise<string[]> {
   return [];
 }
 
+/** 解析 CSV 首行（preview: 1）得到非空字段名列表。 */
 function extractCsvColumns(file: File): Promise<string[]> {
   return new Promise((resolve) => {
     Papa.parse(file, {
@@ -36,6 +37,7 @@ function extractCsvColumns(file: File): Promise<string[]> {
   });
 }
 
+/** 读取 Excel 首 sheet 第一行作为列头。 */
 function extractExcelColumns(file: File): Promise<string[]> {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -67,9 +69,7 @@ function extractExcelColumns(file: File): Promise<string[]> {
   });
 }
 
-/**
- * Check if a file is a table file (CSV or Excel).
- */
+/** 根据扩展名判断是否为 csv/xlsx/xls 表格文件。 */
 export function isTableFile(file: File): boolean {
   const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
   return ['csv', 'xlsx', 'xls'].includes(ext);

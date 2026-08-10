@@ -1,3 +1,7 @@
+/**
+ * register-server.ts — API 服务注册：由 url/method 配置批量生成 umi-request 或 axios 调用函数。
+ */
+
 /* eslint-disable guard-for-in */
 import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { isObject } from 'lodash';
@@ -5,13 +9,16 @@ import omit from 'lodash/omit';
 import { RequestMethod } from 'umi-request';
 import request from './next-request';
 
+/** umi-request 风格服务：方法名 → (params, urlAppendix) 调用。 */
 type Service<T extends string> = Record<
   T,
   (params?: any, urlAppendix?: string) => any
 >;
 
+/** 使用 request(url, { method, data }) 的 HTTP 方法集合。 */
 const Methods = ['post', 'delete', 'put', 'patch'];
 
+/** 根据 opt 配置生成 umi-request 服务方法表（GET 走 params，其余走 data）。 */
 const registerServer = <T extends string>(
   opt: Record<T, { url: string; method: string }>,
   request: RequestMethod,
@@ -42,8 +49,10 @@ const registerServer = <T extends string>(
   return server;
 };
 
+/** 默认导出 umi-request 版 registerServer。 */
 export default registerServer;
 
+/** 基于 next-request（axios）生成类型化 API 方法，url 可为函数。 */
 export function registerNextServer<T extends string>(
   requestRecord: Record<
     T,

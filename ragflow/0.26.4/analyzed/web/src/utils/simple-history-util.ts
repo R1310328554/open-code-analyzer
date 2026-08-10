@@ -1,3 +1,8 @@
+/**
+ * simple-history-util.ts — 轻量 History 实现：popstate 监听、push/replace 与订阅回调（替代 react-router history）。
+ */
+
+/** 封装 window.history 与 popstate，向订阅者广播 location 与 action。 */
 class GlobalHistory {
   private listeners: Array<(location: any, action: string) => void> = [];
   state: any;
@@ -6,6 +11,7 @@ class GlobalHistory {
     window.addEventListener('popstate', this.handlePopState);
   }
 
+  /** 浏览器后退/前进时通知所有 listener（action 为 POP）。 */
   private handlePopState = (event: PopStateEvent) => {
     const location = {
       pathname: window.location.pathname,
@@ -19,6 +25,7 @@ class GlobalHistory {
     });
   };
 
+  /** pushState 并触发 PUSH 回调。 */
   push = (
     path:
       | string
@@ -48,6 +55,7 @@ class GlobalHistory {
     });
   };
 
+  /** replaceState 并触发 REPLACE 回调。 */
   replace = (
     path:
       | string
@@ -77,6 +85,7 @@ class GlobalHistory {
     });
   };
 
+  /** 调用 history.go(n)。 */
   go = (n: number) => {
     window.history.go(n);
   };
@@ -89,6 +98,7 @@ class GlobalHistory {
     window.history.forward();
   };
 
+  /** 注册路由变化监听，返回取消订阅函数。 */
   listen = (callback: (location: any, action: string) => void) => {
     this.listeners.push(callback);
 
@@ -118,8 +128,10 @@ class GlobalHistory {
   }
 }
 
+/** 全局单例 history 对象。 */
 export const history = new GlobalHistory();
 
+/** 返回 history 单例，供自定义导航 Hook 使用。 */
 export const useCustomNavigate = () => {
   return history;
 };

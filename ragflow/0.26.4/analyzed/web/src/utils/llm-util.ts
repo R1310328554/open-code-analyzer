@@ -1,11 +1,11 @@
 import { getCachedLlmList } from './llm-cache';
 
-// The names of the large models returned by the interface are similar to "deepseek-r1___OpenAI-API"
+/** 从接口返回的复合模型名（如 deepseek-r1___OpenAI-API）提取真实模型名（双下划线前段）。 */
 export function getRealModelName(llmName: string) {
   return llmName.split('__').at(0) ?? '';
 }
 
-// Get tenant model ID from LLM list by model name and factory ID
+/** 在缓存的 LLM 列表中按 modelName + factoryId 查找对应 tenant 模型 id。 */
 export function getTenantModelId(
   llmList: Record<string, any>,
   modelName: string,
@@ -34,7 +34,7 @@ export function getTenantModelId(
   return '';
 }
 
-/** Build "modelName@instanceName@providerName" */
+/** 拼接 modelName@instanceName@providerName 复合值。 */
 export function buildModelValue(model: {
   model_name: string;
   model_instance: string;
@@ -43,7 +43,7 @@ export function buildModelValue(model: {
   return `${model.model_name}@${model.model_instance}@${model.model_provider}`;
 }
 
-/** Parse "modelName@instanceName@providerName" */
+/** 解析 modelName@instanceName@providerName，格式非法时返回 null。 */
 export function parseModelValue(val: string) {
   if (!val) return null;
   const firstAt = val.indexOf('@');
@@ -56,8 +56,7 @@ export function parseModelValue(val: string) {
   };
 }
 
-// Extract model name and factory ID from a model UUID
-// Supports both "model_name@factory_id" and "model_name@factory_id#instance_name"
+/** 从 model UUID（支持 #instance 后缀）解析 modelName 与 factoryId。 */
 export function parseModelUuid(uuid: string): {
   modelName: string;
   factoryId: string;
@@ -68,11 +67,12 @@ export function parseModelUuid(uuid: string): {
   return { modelName, factoryId };
 }
 
-// Model parameter to tenant parameter mapping
+/** 请求体模型字段名到 tenant_* 字段名的映射表。 */
 type ModelParamMap = {
   [key: string]: string;
 };
 
+/** llm_id/embd_id 等字段 → tenant_llm_id/tenant_embd_id 等。 */
 const modelParamMap: ModelParamMap = {
   llm_id: 'tenant_llm_id',
   embd_id: 'tenant_embd_id',
@@ -82,7 +82,7 @@ const modelParamMap: ModelParamMap = {
   rerank_id: 'tenant_rerank_id',
 };
 
-// API endpoint whitelist - only these endpoints will have tenant parameters added
+/** 仅对白名单 URL 自动注入 tenant 模型参数。 */
 const API_WHITELIST = [
   '/api/v1/users/me/models',
   '/api/v1/chats',
@@ -94,12 +94,12 @@ const API_WHITELIST = [
   '/v1/dataflow/set',
 ];
 
-// Check if the URL is in the whitelist
+/** 判断请求 URL 是否命中 tenant 参数注入白名单。 */
 export function isUrlInWhitelist(url: string): boolean {
   return API_WHITELIST.some((endpoint) => url.includes(endpoint));
 }
 
-// Add tenant model ID parameters to request data
+/** 递归遍历请求体，将 llm_id 等字段解析为对应 tenant_* id（依赖 LLM 缓存）。 */
 export function addTenantParams(data: any, url?: string): any {
   if (!data || typeof data !== 'object') return data;
 

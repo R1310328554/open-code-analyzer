@@ -2,13 +2,17 @@ const { fontFamily } = require('tailwindcss/defaultTheme');
 
 /** @type {import('tailwindcss').Config} */
 
+/* 主配置：暗色模式、内容扫描路径、主题扩展与插件。 */
 module.exports = {
+  /* 通过 class/selector 切换暗色主题。 */
   darkMode: ['selector'],
+  /* 参与 JIT 扫描的 TSX 路径。 */
   content: [
     './src/pages/**/*.tsx',
     './src/components/**/*.tsx',
     './src/layouts/**/*.tsx',
   ],
+  /* 容器、断点（含 3xl/4xl）与 extend 设计变量。 */
   theme: {
     container: {
       center: true,
@@ -26,10 +30,12 @@ module.exports = {
       '3xl': '1780px',
       '4xl': '1980px',
     },
+    /* 边框、颜色令牌、圆角、字体、keyframes 与 animation。 */
     extend: {
       borderWidth: {
         0.5: '0.5px',
       },
+      /* CSS 变量映射：边框、背景、文本、accent、sidebar 等。 */
       colors: {
         border: 'var(--border-default)',
         input: 'hsl(var(--input))',
@@ -203,6 +209,7 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-sans)', ...fontFamily.sans],
       },
+      /* accordion、caret-blink、spin-reverse、bell-shake 等动画关键帧。 */
       keyframes: {
         'accordion-down': {
           from: { height: '0' },
@@ -238,6 +245,7 @@ module.exports = {
       },
     },
   },
+  /* tailwindcss-animate、line-clamp、scrollbar、container-queries。 */
   plugins: [
     require('tailwindcss-animate'),
     require('@tailwindcss/line-clamp'),

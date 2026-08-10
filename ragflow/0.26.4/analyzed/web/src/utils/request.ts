@@ -1,4 +1,5 @@
 /**
+ * request.ts — 基于 umi-request 的 HTTP 客户端（已弃用，请改用 next-request.ts）。
  * @deprecated This file will be deprecated. Please use `@web/src/utils/next-request.ts` instead.
  */
 
@@ -16,8 +17,10 @@ import { convertTheKeysOfTheObjectToSnake, isFormData } from './common-util';
 import { setCachedLlmList } from './llm-cache';
 import { addTenantParams } from './llm-util';
 
+/** 浏览器网络异常时的 error.message 标识。 */
 const FAILED_TO_FETCH = 'Failed to fetch';
 
+/** HTTP 状态码 → i18n 错误文案映射。 */
 export const RetcodeMessage = {
   200: i18n.t('message.200'),
   201: i18n.t('message.201'),
@@ -54,6 +57,7 @@ export type ResultCode =
   | 503
   | 504;
 
+/** 统一 HTTP 错误提示：网络异常或按状态码展示 notification。 */
 const errorHandler = (error: {
   response: Response;
   message: string;
@@ -78,15 +82,17 @@ const errorHandler = (error: {
   return response ?? { data: { code: 1999 } };
 };
 
+/** umi-request 实例：errorHandler、300s 超时、返回完整 response。 */
 const request: RequestMethod = extend({
   errorHandler,
   timeout: 300000,
   getResponse: true,
 });
 
-// avoid duplicate 401 redirects
+/** 防止并发 401 重复跳转登录页。 */
 let isRedirecting = false;
 
+/** 请求拦截：snake_case、tenant 参数、Authorization 头。 */
 request.interceptors.request.use((url: string, options: any) => {
   const data = convertTheKeysOfTheObjectToSnake(options.data);
   const params = convertTheKeysOfTheObjectToSnake(options.params);
@@ -113,6 +119,7 @@ request.interceptors.request.use((url: string, options: any) => {
   };
 });
 
+/** 响应拦截：413/504、HTTP 401、LLM 缓存更新与业务 code 处理。 */
 request.interceptors.response.use(async (response: Response, options) => {
   if (response?.status === 413 || response?.status === 504) {
     message.error(RetcodeMessage[response?.status as ResultCode]);
@@ -180,6 +187,7 @@ request.interceptors.response.use(async (response: Response, options) => {
   return response;
 });
 
+/** 默认导出 umi-request 实例。 */
 export default request;
 
 export const get = (url: string) => {
