@@ -41,6 +41,7 @@ import static io.netty.util.internal.ObjectUtil.intValue;
 
 /**
  * A {@link DnsNameResolver} builder.
+ * <p>{@link DnsNameResolver} 的流式构建器，配置通道、缓存、超时与解析策略。</p>
  */
 public final class DnsNameResolverBuilder {
 
@@ -82,12 +83,14 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Creates a new builder.
+     * <p>创建新的构建器实例。</p>
      */
     public DnsNameResolverBuilder() {
     }
 
     /**
      * Creates a new builder.
+     * <p>创建新的构建器实例。</p>
      *
      * @param eventLoop the {@link EventLoop} which will perform the communication with the DNS
      * servers.
@@ -98,6 +101,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the {@link EventLoop} which will perform the communication with the DNS servers.
+     * <p>设置与 DNS 服务器通信的 {@link EventLoop}。</p>
      *
      * @param eventLoop the {@link EventLoop}
      * @return {@code this}
@@ -118,6 +122,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the {@link ChannelFactory} that will create a {@link DatagramChannel}.
+     * <p>设置创建 {@link DatagramChannel} 的 {@link ChannelFactory}。</p>
      * <p>
      * If <a href="https://tools.ietf.org/html/rfc7766">TCP fallback</a> should be supported as well it is required
      * to call the {@link #socketChannelFactory(ChannelFactory)} or {@link #socketChannelType(Class)} method.
@@ -134,6 +139,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the {@link ChannelFactory} that will create a {@link DatagramChannel}.
+     * <p>设置创建 {@link DatagramChannel} 的 {@link ChannelFactory}。</p>
      * <p>
      * If <a href="https://tools.ietf.org/html/rfc7766">TCP fallback</a> should be supported as well it is required
      * to call the {@link #socketChannelFactory(ChannelFactory)} or {@link #socketChannelType(Class)} method.
@@ -149,6 +155,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the {@link ChannelFactory} as a {@link ReflectiveChannelFactory} of this type.
+     * <p>以 {@link ReflectiveChannelFactory} 指定数据报通道类型。</p>
      * Use as an alternative to {@link #channelFactory(ChannelFactory)}.
      * <p>
      * If <a href="https://tools.ietf.org/html/rfc7766">TCP fallback</a> should be supported as well it is required
@@ -165,6 +172,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the {@link ChannelFactory} as a {@link ReflectiveChannelFactory} of this type.
+     * <p>以 {@link ReflectiveChannelFactory} 指定数据报通道类型。</p>
      * Use as an alternative to {@link #datagramChannelFactory(ChannelFactory)}.
      * <p>
      * If <a href="https://tools.ietf.org/html/rfc7766">TCP fallback</a> should be supported as well it is required
@@ -179,6 +187,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the {@link ChannelFactory} that will create a {@link SocketChannel} for
+     * <p>设置 TCP 回退用的 {@link SocketChannel} 工厂（RFC7766）。</p>
      * <a href="https://tools.ietf.org/html/rfc7766">TCP fallback</a> if needed.
      * <p>
      * TCP fallback is <strong>not</strong> enabled by default and must be enabled by providing a non-null
@@ -204,6 +213,7 @@ public final class DnsNameResolverBuilder {
      * @param channelType the type or {@code null} if <a href="https://tools.ietf.org/html/rfc7766">TCP fallback</a>
      *                    should not be supported. By default, TCP fallback is not enabled.
      * @return {@code this}
+      * <p>Netty DNS 解析器 API；行为见上方英文说明。</p>
      */
     public DnsNameResolverBuilder socketChannelType(Class<? extends SocketChannel> channelType) {
         return socketChannelType(channelType, false);
@@ -211,6 +221,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the {@link ChannelFactory} that will create a {@link SocketChannel} for
+     * <p>设置 TCP 回退用的 {@link SocketChannel} 工厂（RFC7766）。</p>
      * <a href="https://tools.ietf.org/html/rfc7766">TCP fallback</a> if needed.
      * <p>
      * TCP fallback is <strong>not</strong> enabled by default and must be enabled by providing a non-null
@@ -245,6 +256,7 @@ public final class DnsNameResolverBuilder {
      *                       was detected, if {@code false} it will only try to use TCP if the response was marked
      *                       as truncated.
      * @return {@code this}
+      * <p>Netty DNS 解析器 API；行为见上方英文说明。</p>
      */
     public DnsNameResolverBuilder socketChannelType(
             Class<? extends SocketChannel> channelType, boolean retryOnTimeout) {
@@ -256,6 +268,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the cache for resolution results.
+     * <p>设置地址解析结果 {@link DnsCache}。</p>
      *
      * @param resolveCache the DNS resolution results cache
      * @return {@code this}
@@ -267,6 +280,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the cache for {@code CNAME} mappings.
+     * <p>设置 {@code CNAME} 映射缓存。</p>
      *
      * @param cnameCache the cache used to cache {@code CNAME} mappings for a domain.
      * @return {@code this}
@@ -278,6 +292,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Set the factory used to generate objects which can observe individual DNS queries.
+     * <p>设置 {@link DnsQueryLifecycleObserverFactory} 以观测单次查询。</p>
      * @param lifecycleObserverFactory the factory used to generate objects which can observe individual DNS queries.
      * @return {@code this}
      */
@@ -289,6 +304,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the cache for authoritative NS servers
+     * <p>设置域名权威 NS 服务器缓存。</p>
      *
      * @param authoritativeDnsServerCache the authoritative NS servers cache
      * @return {@code this}
@@ -302,6 +318,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the cache for authoritative NS servers
+     * <p>设置域名权威 NS 服务器缓存。</p>
      *
      * @param authoritativeDnsServerCache the authoritative NS servers cache
      * @return {@code this}
@@ -313,6 +330,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Configure the address that will be used to bind too. If {@code null} the default will be used.
+     * <p>配置 UDP 通道绑定地址；{@code null} 使用默认任意端口。</p>
      * @param localAddress the bind address
      * @return {@code this}
      */
@@ -323,6 +341,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the minimum and maximum TTL of the cached DNS resource records (in seconds). If the TTL of the DNS
+     * <p>设置缓存记录最小/最大 TTL（秒），用于钳制 DNS 服务器返回值。</p>
      * resource record returned by the DNS server is less than the minimum TTL or greater than the maximum TTL,
      * this resolver will ignore the TTL from the DNS server and use the minimum TTL or the maximum TTL instead
      * respectively.
@@ -341,6 +360,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the TTL of the cache for the failed DNS queries (in seconds).
+     * <p>设置解析失败（负缓存）的 TTL（秒）。</p>
      *
      * @param negativeTtl the TTL for failed cached queries
      * @return {@code this}
@@ -352,6 +372,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the timeout of each DNS query performed by this resolver (in milliseconds).
+     * <p>设置单次 DNS 查询超时（毫秒）。</p>
      * {@code 0} disables the timeout. If not set or a negative number is set, the default timeout is used.
      *
      * @param queryTimeoutMillis the query timeout
@@ -364,6 +385,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Compute a {@link ResolvedAddressTypes} from some {@link InternetProtocolFamily}s.
+     * <p>由 {@link InternetProtocolFamily} 数组推导 {@link ResolvedAddressTypes}。</p>
      * An empty input will return the default value, based on "java.net" System properties.
      * Valid inputs are (), (IPv4), (IPv6), (Ipv4, IPv6) and (IPv6, IPv4).
      *
@@ -395,6 +417,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Compute a {@link ResolvedAddressTypes} from some {@link SocketProtocolFamily}s.
+     * <p>由 {@link SocketProtocolFamily} 数组推导 {@link ResolvedAddressTypes}。</p>
      * An empty input will return the default value, based on "java.net" System properties.
      * Valid inputs are (), (IPv4), (IPv6), (Ipv4, IPv6) and (IPv6, IPv4).
      * @param socketProtocolFamilies a valid sequence of {@link SocketProtocolFamily}s
@@ -425,6 +448,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the list of the protocol families of the address resolved.
+     * <p>设置解析目标地址族（IPv4/IPv6 优先策略）。</p>
      * You can use {@link DnsNameResolverBuilder#computeResolvedAddressTypes(InternetProtocolFamily...)}
      * to get a {@link ResolvedAddressTypes} out of some {@link InternetProtocolFamily}s.
      *
@@ -438,6 +462,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * If {@code true} {@link DnsNameResolver#resolveAll(String)} will notify the returned {@link Future} as
+     * <p>为 true 时，首选地址族查询完成即完成 {@link Future}，不必等所有类型。</p>
      * soon as all queries for the preferred address-type are complete.
      *
      * @param completeOncePreferredResolved {@code true} to enable, {@code false} to disable.
@@ -450,6 +475,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets if this resolver has to send a DNS query with the RD (recursion desired) flag set.
+     * <p>设置是否在查询中置 RD（期望递归）位。</p>
      *
      * @param recursionDesired true if recursion is desired
      * @return {@code this}
@@ -461,6 +487,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the maximum allowed number of DNS queries to send when resolving a host name.
+     * <p>设置解析单主机名允许的最大查询次数。</p>
      *
      * @param maxQueriesPerResolve the max number of queries
      * @return {@code this}
@@ -472,6 +499,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets if this resolver should generate the detailed trace information in an exception message so that
+     * <p>（已废弃）是否在异常消息中包含详细追踪；请改用 {@link DnsQueryLifecycleObserverFactory}。</p>
      * it is easier to understand the cause of resolution failure.
      *
      * @param traceEnabled true if trace is enabled
@@ -487,6 +515,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Sets the capacity of the datagram packet buffer (in bytes).  The default value is {@code 4096} bytes.
+     * <p>设置 UDP 载荷/接收缓冲区大小（字节）。</p>
      *
      * @param maxPayloadSize the capacity of the datagram packet buffer
      * @return {@code this}
@@ -498,6 +527,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Enable the automatic inclusion of a optional records that tries to give the remote DNS server a hint about
+     * <p>启用 OPT 伪 RR，向远端提示本端可接受的 EDNS 载荷大小。</p>
      * how much data the resolver can read per response. Some DNSServer may not support this and so fail to answer
      * queries. If you find problems you may want to disable this.
      *
@@ -513,6 +543,7 @@ public final class DnsNameResolverBuilder {
      * @param hostsFileEntriesResolver the {@link HostsFileEntriesResolver} used to first check
      *                                 if the hostname is locally aliased.
      * @return {@code this}
+      * <p>Netty DNS 解析器 API；行为见上方英文说明。</p>
      */
     public DnsNameResolverBuilder hostsFileEntriesResolver(HostsFileEntriesResolver hostsFileEntriesResolver) {
         this.hostsFileEntriesResolver = hostsFileEntriesResolver;
@@ -527,6 +558,7 @@ public final class DnsNameResolverBuilder {
      * Set the {@link DnsServerAddressStreamProvider} which is used to determine which DNS server is used to resolve
      * each hostname.
      * @return {@code this}.
+      * <p>Netty DNS 解析器 API；行为见上方英文说明。</p>
      */
     public DnsNameResolverBuilder nameServerProvider(DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         this.dnsServerAddressStreamProvider =
@@ -541,6 +573,7 @@ public final class DnsNameResolverBuilder {
     /**
      * Set the {@link DnsServerAddressStream} which provides the server address for DNS queries.
      * @return {@code this}.
+      * <p>Netty DNS 解析器 API；行为见上方英文说明。</p>
      */
     public DnsNameResolverBuilder queryServerAddressStream(DnsServerAddressStream queryServerAddressStream) {
         this.queryDnsServerAddressStream =
@@ -550,6 +583,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Set the list of search domains of the resolver.
+     * <p>设置解析器搜索域列表（类似 resolv.conf search）。</p>
      *
      * @param searchDomains the search domains
      * @return {@code this}
@@ -564,6 +598,7 @@ public final class DnsNameResolverBuilder {
                 break;
             }
 
+            // 去重搜索域条目
             // Avoid duplicate entries.
             if (list.contains(f)) {
                 continue;
@@ -578,6 +613,7 @@ public final class DnsNameResolverBuilder {
 
   /**
    * Set the number of dots which must appear in a name before an initial absolute query is made.
+   * <p>设置相对名转绝对查询前 hostname 中所需的最少点数（ndots）。</p>
    * The default value is {@code 1}.
    *
    * @param ndots the ndots value
@@ -601,6 +637,7 @@ public final class DnsNameResolverBuilder {
         }
         return new DefaultAuthoritativeDnsServerCache(
                 intValue(minTtl, 0), intValue(maxTtl, Integer.MAX_VALUE),
+                // 与 DnsNameResolver 一致的 nameserver 排序比较器
                 // Let us use the sane ordering as DnsNameResolver will be used when returning
                 // nameservers from the cache.
                 new NameServerComparator(DnsNameResolver.addressType(
@@ -622,6 +659,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Set if domain / host names should be decoded to unicode when received.
+     * <p>设置收到 DNS 名时是否将 punycode 解码为 Unicode（IDN）。</p>
      * See <a href="https://tools.ietf.org/html/rfc3492">rfc3492</a>.
      *
      * @param decodeIdn if should get decoded
@@ -634,6 +672,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Set the maximum size of the cache that is used to consolidate lookups for different hostnames when in-flight.
+     * <p>设置并发解析合并缓存大小：相同进行中查询只发一次网络请求。</p>
      * This means if multiple lookups are done for the same hostname and still in-flight only one actual query will
      * be made and the result will be cascaded to the others.
      *
@@ -648,6 +687,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Set the strategy that is used to determine how a {@link DatagramChannel} is used by the resolver for sending
+     * <p>设置 UDP 查询时 {@link DatagramChannel} 复用策略。</p>
      * queries over UDP protocol.
      *
      * @param datagramChannelStrategy  the {@link DnsNameResolverChannelStrategy} to use when doing queries over
@@ -661,6 +701,7 @@ public final class DnsNameResolverBuilder {
 
     /**
      * Returns a new {@link DnsNameResolver} instance.
+     * <p>根据当前配置构建 {@link DnsNameResolver} 实例。</p>
      *
      * @return a {@link DnsNameResolver}
      */
@@ -720,6 +761,7 @@ public final class DnsNameResolverBuilder {
      * Creates a copy of this {@link DnsNameResolverBuilder}
      *
      * @return {@link DnsNameResolverBuilder}
+      * <p>Netty DNS 解析器 API；行为见上方英文说明。</p>
      */
     public DnsNameResolverBuilder copy() {
         DnsNameResolverBuilder copiedBuilder = new DnsNameResolverBuilder();

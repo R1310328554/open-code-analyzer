@@ -93,10 +93,12 @@ import static io.netty.util.internal.ObjectUtil.checkPositive;
 
 /**
  * A DNS-based {@link InetNameResolver}.
+ * <p>基于 DNS 的异步主机名解析器，支持缓存、搜索域、CNAME/NS 跟随与 UDP/TCP 查询。</p>
  */
 public class DnsNameResolver extends InetNameResolver {
     /**
      * An attribute used to mark all channels created by the {@link DnsNameResolver}.
+     * <p>标记由 {@link DnsNameResolver} 创建的全部 Channel，便于 pipeline 识别。</p>
      */
     public static final AttributeKey<Boolean> DNS_PIPELINE_ATTRIBUTE =
             AttributeKey.newInstance("io.netty.resolver.dns.pipeline");
@@ -162,6 +164,7 @@ public class DnsNameResolver extends InetNameResolver {
                     : UnixResolverDnsServerAddressStreamProvider.parseEtcResolverSearchDomains();
             searchDomains = list.toArray(EmptyArrays.EMPTY_STRINGS);
         } catch (Exception ignore) {
+            // 读取系统 search 域失败时使用空列表
             // Failed to get the system name search domain list.
             searchDomains = EmptyArrays.EMPTY_STRINGS;
         }
@@ -180,6 +183,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Returns {@code true} if any {@link NetworkInterface} supports {@code IPv6}, {@code false} otherwise.
+     * <p>检测是否存在非本地链路的全局 IPv6 网络接口。</p>
      */
     private static boolean anyInterfaceSupportsIpV6() {
         for (NetworkInterface iface : NetUtil.NETWORK_INTERFACES) {
@@ -217,6 +221,7 @@ public class DnsNameResolver extends InetNameResolver {
         protected DnsResponse decodeResponse(ChannelHandlerContext ctx, DatagramPacket packet) throws Exception {
             DnsResponse response = super.decodeResponse(ctx, packet);
             if (packet.content().isReadable()) {
+                // 缓冲区仍有数据说明 UDP 响应被截断，标记 truncated 以便 TCP 回退
                 // If there is still something to read we did stop parsing because of a truncated message.
                 // This can happen if we enabled EDNS0 but our MTU is not big enough to handle all the
                 // data.
@@ -242,15 +247,18 @@ public class DnsNameResolver extends InetNameResolver {
         }
     };
 
+    // 优先选用与首选地址族匹配的 nameserver
     // Comparator that ensures we will try first to use the nameservers that use our preferred address type.
     private final Comparator<InetSocketAddress> nameServerComparator;
     /**
      * Manages the {@link DnsQueryContext}s in progress and their query IDs.
+     * <p>管理进行中的 {@link DnsQueryContext} 与 16 位查询 ID 映射。</p>
      */
     private final DnsQueryContextManager queryContextManager = new DnsQueryContextManager();
 
     /**
      * Cache for {@link #doResolve(String, Promise)} and {@link #doResolveAll(String, Promise)}.
+     * <p>地址解析成功/失败结果的 {@link DnsCache}。</p>
      */
     private final DnsCache resolveCache;
     private final AuthoritativeDnsServerCache authoritativeDnsServerCache;
@@ -285,6 +293,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Creates a new DNS-based name resolver that communicates with the specified list of DNS servers.
+     * <p>使用指定 DNS 服务器列表构造解析器（完整配置版本）。</p>
      *
      * @param eventLoop the {@link EventLoop} which will perform the communication with the DNS servers
      * @param channelFactory the {@link ChannelFactory} that will create a {@link DatagramChannel}
@@ -338,6 +347,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Creates a new DNS-based name resolver that communicates with the specified list of DNS servers.
+     * <p>使用指定 DNS 服务器列表构造解析器（完整配置版本）。</p>
      *
      * @param eventLoop the {@link EventLoop} which will perform the communication with the DNS servers
      * @param channelFactory the {@link ChannelFactory} that will create a {@link DatagramChannel}
@@ -549,6 +559,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Creates a new {@link DnsServerAddressStream} to following a redirected DNS query. By overriding this
+     * <p>创建用于跟随 DNS 重定向的新 {@link DnsServerAddressStream}；可覆盖以自定义 nameserver 排序。</p>
      * it provides the opportunity to sort the name servers before following a redirected DNS query.
      *
      * @param hostname the hostname.
@@ -572,6 +583,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Returns the resolution cache.
+     * <p>返回地址解析缓存 {@link DnsCache}。</p>
      */
     public DnsCache resolveCache() {
         return resolveCache;
@@ -579,6 +591,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Returns the {@link DnsCnameCache}.
+     * <p>返回 CNAME 别名缓存。</p>
      */
     public DnsCnameCache cnameCache() {
         return cnameCache;
@@ -586,6 +599,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Returns the cache used for authoritative DNS servers for a domain.
+     * <p>返回域名权威 DNS 服务器缓存。</p>
      */
     public AuthoritativeDnsServerCache authoritativeDnsServerCache() {
         return authoritativeDnsServerCache;
@@ -593,6 +607,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Returns the timeout of each DNS query performed by this resolver (in milliseconds).
+     * <p>返回单次 DNS 查询超时（毫秒）；默认 5 秒。</p>
      * The default value is 5 seconds.
      */
     public long queryTimeoutMillis() {
@@ -601,6 +616,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Returns the dns server address stream used for DNS queries (not resolve).
+     * <p>返回显式 {@link #query} 使用的 DNS 服务器流（非 resolve 路径）。</p>
      */
     public DnsServerAddressStream queryDnsServerAddressStream() {
         return queryDnsServerAddressStream;
@@ -608,6 +624,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Returns the {@link ResolvedAddressTypes} resolved by {@link #resolve(String)}.
+     * <p>返回 {@link #resolve(String)} 解析的地址族策略。</p>
      * The default value depends on the value of the system property {@code "java.net.preferIPv6Addresses"}.
      */
     public ResolvedAddressTypes resolvedAddressTypes() {
@@ -648,6 +665,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Returns {@code true} if and only if this resolver sends a DNS query with the RD (recursion desired) flag set.
+     * <p>是否在所有查询中设置 RD（期望递归）标志。</p>
      * The default value is {@code true}.
      */
     public boolean isRecursionDesired() {
@@ -656,6 +674,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Returns the maximum allowed number of DNS queries to send when resolving a host name.
+     * <p>解析单个主机名时允许发送的最大 DNS 查询次数。</p>
      * The default value is {@code 8}.
      */
     public int maxQueriesPerResolve() {
@@ -664,6 +683,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Returns the capacity of the datagram packet buffer (in bytes).  The default value is {@code 4096} bytes.
+     * <p>UDP 数据报接收缓冲区容量（字节），默认 4096。</p>
      */
     public int maxPayloadSize() {
         return maxPayloadSize;
@@ -671,6 +691,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Returns the automatic inclusion of a optional records that tries to give the remote DNS server a hint about how
+     * <p>是否自动附加 OPT 伪资源记录以通告 EDNS0 载荷大小。</p>
      * much data the resolver can read per response is enabled.
      */
     public boolean isOptResourceEnabled() {
@@ -679,6 +700,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Returns the component that tries to resolve hostnames against the hosts file prior to asking to
+     * <p>返回在查询远程 DNS 前先查 hosts 文件的组件。</p>
      * remotes DNS servers.
      */
     public HostsFileEntriesResolver hostsFileEntriesResolver() {
@@ -687,6 +709,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Closes the internal datagram channel used for sending and receiving DNS messages, and clears all DNS resource
+     * <p>关闭内部通道并清空各类 DNS 缓存；之后 resolve/query 将失败。</p>
      * records from the cache. Attempting to send a DNS query or to resolve a domain name will fail once this method
      * has been called.
      */
@@ -729,6 +752,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Checks whether the given hostname refers to the current computer. This is the case for:
+     * <p>判断主机名是否应解析为回环地址（localhost、.localhost 或 Windows 本机名）。</p>
      * <ul>
      *     <li>localhost.</li>
      *     <li>any domain within .localhost.</li>
@@ -773,6 +797,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Resolves the specified name into an address.
+     * <p>将主机名解析为单个 {@link InetAddress}。</p>
      *
      * @param inetHost the name to resolve
      * @param additionals additional records ({@code OPT})
@@ -785,6 +810,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Resolves the specified name into an address.
+     * <p>将主机名解析为单个 {@link InetAddress}。</p>
      *
      * @param inetHost the name to resolve
      * @param additionals additional records ({@code OPT})
@@ -806,6 +832,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Resolves the specified host name and port into a list of address.
+     * <p>将主机名解析为 {@link InetAddress} 列表（可含 A/AAAA 多条）。</p>
      *
      * @param inetHost the name to resolve
      * @param additionals additional records ({@code OPT})
@@ -818,6 +845,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Resolves the specified host name and port into a list of address.
+     * <p>将主机名解析为 {@link InetAddress} 列表（可含 A/AAAA 多条）。</p>
      *
      * @param inetHost the name to resolve
      * @param additionals additional records ({@code OPT})
@@ -844,6 +872,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Resolves the {@link DnsRecord}s that are matched by the specified {@link DnsQuestion}. Unlike
+     * <p>按 {@link DnsQuestion} 解析记录（含重定向、CNAME、多服务器）；A/AAAA 会先查 hosts。</p>
      * {@link #query(DnsQuestion)}, this method handles redirection, CNAMEs and multiple name servers.
      * If the specified {@link DnsQuestion} is {@code A} or {@code AAAA}, this method looks up the configured
      * {@link HostsFileEntries} before sending a query to the name servers. If a match is found in the
@@ -859,6 +888,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Resolves the {@link DnsRecord}s that are matched by the specified {@link DnsQuestion}. Unlike
+     * <p>按 {@link DnsQuestion} 解析记录（含重定向、CNAME、多服务器）；A/AAAA 会先查 hosts。</p>
      * {@link #query(DnsQuestion)}, this method handles redirection, CNAMEs and multiple name servers.
      * If the specified {@link DnsQuestion} is {@code A} or {@code AAAA}, this method looks up the configured
      * {@link HostsFileEntries} before sending a query to the name servers. If a match is found in the
@@ -875,6 +905,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Resolves the {@link DnsRecord}s that are matched by the specified {@link DnsQuestion}. Unlike
+     * <p>按 {@link DnsQuestion} 解析记录（含重定向、CNAME、多服务器）；A/AAAA 会先查 hosts。</p>
      * {@link #query(DnsQuestion)}, this method handles redirection, CNAMEs and multiple name servers.
      * If the specified {@link DnsQuestion} is {@code A} or {@code AAAA}, this method looks up the configured
      * {@link HostsFileEntries} before sending a query to the name servers. If a match is found in the
@@ -897,6 +928,7 @@ public class DnsNameResolver extends InetNameResolver {
         checkNotNull(question, "question");
         checkNotNull(promise, "promise");
 
+        // A/AAAA 记录解析前先查 hosts 文件
         // Respect /etc/hosts as well if the record type is A or AAAA.
         final DnsRecordType type = question.type();
         final String hostname = question.name();
@@ -917,6 +949,7 @@ public class DnsNameResolver extends InetNameResolver {
                         }
                     }
                     if (content != null) {
+                        // hosts 文件暂不支持热重载，合成记录使用较大 TTL（1 天）
                         // Our current implementation does not support reloading the hosts file,
                         // so use a fairly large TTL (1 day, i.e. 86400 seconds).
                         result.add(new DefaultDnsRawRecord(hostname, type, 86400, content));
@@ -1018,6 +1051,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Hook designed for extensibility so one can pass a different cache on each resolution attempt
+     * <p>扩展钩子：每次解析可传入不同 {@link DnsCache}，而非全局缓存。</p>
      * instead of using the global one.
      */
     protected void doResolve(String inetHost,
@@ -1152,6 +1186,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Hook designed for extensibility so one can pass a different cache on each resolution attempt
+     * <p>扩展钩子：每次解析可传入不同 {@link DnsCache}，而非全局缓存。</p>
      * instead of using the global one.
      */
     protected void doResolveAll(String inetHost,
@@ -1262,6 +1297,7 @@ public class DnsNameResolver extends InetNameResolver {
                                       final Promise<List<InetAddress>> promise,
                                       final DnsCache resolveCache,
                                       final boolean completeEarlyIfPossible) {
+        // 须在 EventLoop 中执行，避免多次 query 重复调度 Runnable
         // Call doResolveUncached0(...) in the EventLoop as we may need to submit multiple queries which would need
         // to submit multiple Runnable at the end if we are not already on the EventLoop.
         EventExecutor executor = executor();
@@ -1307,6 +1343,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Sends a DNS query with the specified question.
+     * <p>向默认查询服务器发送指定 {@link DnsQuestion} 的 DNS 查询。</p>
      */
     public Future<AddressedEnvelope<DnsResponse, InetSocketAddress>> query(DnsQuestion question) {
         return query(nextNameServerAddress(), question);
@@ -1314,6 +1351,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Sends a DNS query with the specified question with additional records.
+     * <p>发送带附加记录（如 EDNS OPT）的 DNS 查询。</p>
      */
     public Future<AddressedEnvelope<DnsResponse, InetSocketAddress>> query(
             DnsQuestion question, Iterable<DnsRecord> additionals) {
@@ -1322,6 +1360,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Sends a DNS query with the specified question.
+     * <p>向默认查询服务器发送指定 {@link DnsQuestion} 的 DNS 查询。</p>
      */
     public Future<AddressedEnvelope<DnsResponse, InetSocketAddress>> query(
             DnsQuestion question, Promise<AddressedEnvelope<? extends DnsResponse, InetSocketAddress>> promise) {
@@ -1334,6 +1373,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Sends a DNS query with the specified question using the specified name server list.
+     * <p>向指定 nameserver 发送 DNS 查询。</p>
      */
     public Future<AddressedEnvelope<DnsResponse, InetSocketAddress>> query(
             final InetSocketAddress nameServerAddr, final DnsQuestion question) {
@@ -1342,6 +1382,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Sends a DNS query with the specified question with additional records using the specified name server list.
+     * <p>向指定 nameserver 发送带附加记录的 DNS 查询。</p>
      */
     public Future<AddressedEnvelope<DnsResponse, InetSocketAddress>> query(
             final InetSocketAddress nameServerAddr, final DnsQuestion question, final Iterable<DnsRecord> additionals) {
@@ -1351,6 +1392,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Sends a DNS query with the specified question using the specified name server list.
+     * <p>向指定 nameserver 发送 DNS 查询。</p>
      */
     public Future<AddressedEnvelope<DnsResponse, InetSocketAddress>> query(
             final InetSocketAddress nameServerAddr, final DnsQuestion question,
@@ -1360,6 +1402,7 @@ public class DnsNameResolver extends InetNameResolver {
 
     /**
      * Sends a DNS query with the specified question with additional records using the specified name server list.
+     * <p>向指定 nameserver 发送带附加记录的 DNS 查询。</p>
      */
     public Future<AddressedEnvelope<DnsResponse, InetSocketAddress>> query(
             final InetSocketAddress nameServerAddr, final DnsQuestion question,
@@ -1400,6 +1443,7 @@ public class DnsNameResolver extends InetNameResolver {
      * Returns {@code true} if the {@link Throwable} was caused by an timeout or transport error.
      * These methods can be used on the {@link Future#cause()} that is returned by the various methods exposed by this
      * {@link DnsNameResolver}.
+      * <p>Netty DNS 解析器 API；行为见上方英文说明。</p>
      */
     public static boolean isTransportOrTimeoutError(Throwable cause) {
         return cause != null && cause.getCause() instanceof DnsNameResolverException;
@@ -1409,6 +1453,7 @@ public class DnsNameResolver extends InetNameResolver {
      * Returns {@code true} if the {@link Throwable} was caused by an timeout.
      * These methods can be used on the {@link Future#cause()} that is returned by the various methods exposed by this
      * {@link DnsNameResolver}.
+      * <p>Netty DNS 解析器 API；行为见上方英文说明。</p>
      */
     public static boolean isTimeoutError(Throwable cause) {
         return cause != null && cause.getCause() instanceof DnsNameResolverTimeoutException;
@@ -1576,11 +1621,13 @@ public class DnsNameResolver extends InetNameResolver {
          *
          * @param resolutionFuture  the {@link Future} that will be notified once th resolution completes.
          * @return                  the {@link ChannelFuture}
+          * <p>Netty DNS 解析器 API；行为见上方英文说明。</p>
          */
         <T> ChannelFuture nextResolveChannel(Future<T> resolutionFuture);
 
         /**
          * Close the {@link DnsResolveChannelProvider} and so cleanup resources if needed.
+          * <p>Netty DNS 解析器 API；行为见上方英文说明。</p>
          */
         void close();
     }

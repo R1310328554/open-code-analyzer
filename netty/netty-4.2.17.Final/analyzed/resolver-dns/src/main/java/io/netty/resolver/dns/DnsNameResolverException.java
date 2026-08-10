@@ -22,13 +22,16 @@ import io.netty.util.internal.ObjectUtil;
 import java.net.InetSocketAddress;
 
 /**
- * A {@link RuntimeException} raised when {@link DnsNameResolver} failed to perform a successful query.
+ * {@link DnsNameResolver} 查询失败时抛出的 {@link RuntimeException}。
+ * <p>携带远程 DNS 服务器地址与失败的 {@link DnsQuestion}，便于定位具体查询。</p>
  */
 public class DnsNameResolverException extends RuntimeException {
 
     private static final long serialVersionUID = -8826717909627131850L;
 
+    /** 失败查询所发往的 DNS 服务器地址。 */
     private final InetSocketAddress remoteAddress;
+    /** 失败的 DNS 问题（类型与域名）。 */
     private final DnsQuestion question;
 
     public DnsNameResolverException(InetSocketAddress remoteAddress, DnsQuestion question, String message) {
@@ -53,19 +56,20 @@ public class DnsNameResolverException extends RuntimeException {
     }
 
     /**
-     * Returns the {@link InetSocketAddress} of the DNS query that has failed.
+     * 返回失败 DNS 查询的目标 {@link InetSocketAddress}。
      */
     public InetSocketAddress remoteAddress() {
         return remoteAddress;
     }
 
     /**
-     * Returns the {@link DnsQuestion} of the DNS query that has failed.
+     * 返回失败 DNS 查询的 {@link DnsQuestion}。
      */
     public DnsQuestion question() {
         return question;
     }
 
+    // 不填充堆栈以降低分配开销；方法无需同步
     // Suppress a warning since the method doesn't need synchronization
     @Override
     public Throwable fillInStackTrace() {

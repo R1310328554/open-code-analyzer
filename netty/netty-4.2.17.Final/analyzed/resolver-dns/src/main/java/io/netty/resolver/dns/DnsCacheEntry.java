@@ -18,11 +18,12 @@ package io.netty.resolver.dns;
 import java.net.InetAddress;
 
 /**
- * Represents the results from a previous DNS query which can be cached.
+ * 可缓存的 DNS 查询结果条目。
+ * <p>成功时 {@link #address()} 非空；失败时 {@link #cause()} 描述原因且地址为 null。</p>
  */
 public interface DnsCacheEntry {
     /**
-     * Get the resolved address.
+     * 获取已解析的 IP 地址。
      * <p>
      * This may be null if the resolution failed, and in that case {@link #cause()} will describe the failure.
      * @return the resolved address.
@@ -30,7 +31,7 @@ public interface DnsCacheEntry {
     InetAddress address();
 
     /**
-     * If the DNS query failed this will provide the rational.
+     * 若 DNS 查询失败，返回失败原因。
      * @return the rational for why the DNS query failed, or {@code null} if the query hasn't failed.
      */
     Throwable cause();

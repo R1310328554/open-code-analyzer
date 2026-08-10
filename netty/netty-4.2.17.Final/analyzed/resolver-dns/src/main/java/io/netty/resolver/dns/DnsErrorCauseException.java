@@ -22,13 +22,14 @@ import io.netty.util.internal.ThrowableUtil;
 import java.net.UnknownHostException;
 
 /**
- * A metadata carrier exception, to propagate {@link DnsResponseCode} information as an enrichment
- * within the {@link UnknownHostException} cause.
+ * 携带 {@link DnsResponseCode} 元数据的异常，作为 {@link UnknownHostException} 的 cause 传播 DNS 错误码。
+ * <p>不填充堆栈，避免泄漏 ClassLoader；供上层识别 SERVFAIL、REFUSED 等响应码。</p>
  */
 public final class DnsErrorCauseException extends RuntimeException {
 
     private static final long serialVersionUID = 7485145036717494533L;
 
+    /** 导致解析失败的 DNS 响应码。 */
     private final DnsResponseCode code;
 
     private DnsErrorCauseException(String message, DnsResponseCode code, boolean shared) {
@@ -37,6 +38,7 @@ public final class DnsErrorCauseException extends RuntimeException {
         assert shared;
     }
 
+    // 不填充堆栈，避免 native 回溯与 ClassLoader 泄漏
     // Override fillInStackTrace() so we not populate the backtrace via a native call and so leak the
     // Classloader.
     @Override
@@ -45,7 +47,7 @@ public final class DnsErrorCauseException extends RuntimeException {
     }
 
     /**
-     * Returns the DNS error-code that caused the {@link UnknownHostException}.
+     * 返回导致 {@link UnknownHostException} 的 DNS 错误码。
      *
      * @return the DNS error-code that caused the {@link UnknownHostException}.
      */

@@ -22,19 +22,20 @@ import java.net.InetAddress;
 import java.util.List;
 
 /**
- * A cache for DNS resolution entries.
+ * DNS 解析结果缓存接口。
+ * <p>存储主机名到 {@link InetAddress} 或解析失败原因的映射，支持按 TTL 过期与按主机名清除。</p>
  */
 public interface DnsCache {
 
     /**
-     * Clears all the resolved addresses cached by this resolver.
+     * 清除本解析器缓存的全部已解析地址。
      *
      * @see #clear(String)
      */
     void clear();
 
     /**
-     * Clears the resolved addresses of the specified host name from the cache of this resolver.
+     * 从缓存中清除指定主机名的已解析地址。
      *
      * @return {@code true} if and only if there was an entry for the specified host name in the cache and
      *         it has been removed by this method
@@ -42,7 +43,7 @@ public interface DnsCache {
     boolean clear(String hostname);
 
     /**
-     * Return the cached entries for the given hostname.
+     * 返回给定主机名的缓存条目列表。
      * @param hostname the hostname
      * @param additionals the additional records
      * @return the cached entries
@@ -50,7 +51,7 @@ public interface DnsCache {
     List<? extends DnsCacheEntry> get(String hostname, DnsRecord[] additionals);
 
     /**
-     * Create a new {@link DnsCacheEntry} and cache a resolved address for a given hostname.
+     * 创建 {@link DnsCacheEntry} 并缓存成功解析的地址。
      * @param hostname the hostname
      * @param additionals the additional records
      * @param address the resolved address
@@ -62,7 +63,7 @@ public interface DnsCache {
                         EventLoop loop);
 
     /**
-     * Cache the resolution failure for a given hostname.
+     * 缓存给定主机名的解析失败结果（负缓存）。
      * Be aware this <strong>won't</strong> be called with timeout / cancel / transport exceptions.
       *
      * @param hostname the hostname

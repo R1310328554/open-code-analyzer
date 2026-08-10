@@ -48,9 +48,14 @@ import java.util.concurrent.TimeUnit;
 
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/**
+ * DNS 单次查询的抽象上下文：分配 ID、构造 {@link DnsQuery}、写通道、超时与 TCP 回退。
+ * <p>子类实现 {@link #newQuery} 与 {@link #protocol()} 以区分 UDP/TCP 传输。</p>
+ */
 abstract class DnsQueryContext {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(DnsQueryContext.class);
+    /** 超时或取消后延迟回收 query ID 的毫秒数，降低与迟到的响应 ID 冲突风险。 */
     private static final long ID_REUSE_ON_TIMEOUT_DELAY_MILLIS;
 
     static {
@@ -61,7 +66,9 @@ abstract class DnsQueryContext {
 
     private static final TcpDnsQueryEncoder TCP_ENCODER = new TcpDnsQueryEncoder();
 
+    /** 发送查询的数据报或 TCP 通道。 */
     private final Channel channel;
+    /** 目标权威/递归 DNS 服务器地址。 */
     private final InetSocketAddress nameServerAddr;
     private final DnsQueryContextManager queryContextManager;
     private final DnsQueryLifecycleObserver queryLifecycleObserver;
@@ -78,8 +85,10 @@ abstract class DnsQueryContext {
     private final boolean retryWithTcpOnTimeout;
     private final long queryTimeoutMillis;
 
+    /** 查询超时定时任务；完成时取消。 */
     private volatile Future<?> timeoutFuture;
 
+    /** 已分配的 DNS 事务 ID；{@code Integer.MIN_VALUE} 表示尚未写入。 */
     private int id = Integer.MIN_VALUE;
 
     DnsQueryContext(Channel channel,
@@ -107,6 +116,7 @@ abstract class DnsQueryContext {
         this.retryWithTcpOnTimeout = retryWithTcpOnTimeout;
 
         if (maxPayLoadSize > 0 &&
+                // RFC6891：附加区最多一条 OPT；已有则不再注入
                 // Only add the extra OPT record if there is not already one. This is required as only one is allowed
                 // as per RFC:
                 //  - https://datatracker.ietf.org/doc/html/rfc6891#section-6.1.1
@@ -131,7 +141,7 @@ abstract class DnsQueryContext {
     }
 
     /**
-     * Returns {@code true} if the query was completed already.
+     * 查询是否已完成（成功、失败或取消）。
      *
      * @return {@code true} if done.
      */
@@ -140,7 +150,7 @@ abstract class DnsQueryContext {
     }
 
     /**
-     * Returns the {@link DnsQuestion} that will be written as part of the {@link DnsQuery}.
+     * 返回将写入 {@link DnsQuery} 的 {@link DnsQuestion}。
      *
      * @return the question.
      */
@@ -149,7 +159,7 @@ abstract class DnsQueryContext {
     }
 
     /**
-     * Creates and returns a new {@link DnsQuery}.
+     * 创建新的 {@link DnsQuery}（由 UDP/TCP 子类实现）。
      *
      * @param id                the transaction id to use.
      * @param nameServerAddr    the nameserver to which the query will be send.
@@ -158,14 +168,14 @@ abstract class DnsQueryContext {
     protected abstract DnsQuery newQuery(int id, InetSocketAddress nameServerAddr);
 
     /**
-     * Returns the protocol that is used for the query.
+     * 返回传输协议标识（如 {@code UDP} / {@code TCP}）。
      *
      * @return  the protocol.
      */
     protected abstract String protocol();
 
     /**
-     * Write the query and return the {@link ChannelFuture} that is completed once the write completes.
+     * 写入 DNS 查询：向 {@link DnsQueryContextManager} 申请 ID、组装报文并发送。
      *
      * @param flush                 {@code true} if {@link Channel#flush()} should be called as well.
      */
@@ -174,6 +184,7 @@ abstract class DnsQueryContext {
                 ".writeQuery(...) can only be executed once.";
 
         if ((id = queryContextManager.add(nameServerAddr, this)) == -1) {
+            // 16 位 ID 空间耗尽，直接失败
             // We did exhaust the id space, fail the query
             IllegalStateException e = new IllegalStateException("query ID space exhausted: " + question());
             finishFailure("failed to send a query via " + protocol(), e, false);
@@ -181,6 +192,7 @@ abstract class DnsQueryContext {
             return;
         }
 
+        // 查询结束时从管理器移除 ID；超时/取消则延迟移除
         // Ensure we remove the id from the QueryContextManager once the query completes.
         promise.addListener((FutureListener<AddressedEnvelope<DnsResponse, InetSocketAddress>>) future -> {
             // Cancel the timeout task.
@@ -192,6 +204,7 @@ abstract class DnsQueryContext {
 
             Throwable cause = future.cause();
             if (cause instanceof DnsNameResolverTimeoutException || cause instanceof CancellationException) {
+                // 超时/取消：延迟回收 ID，避免远端迟到响应与重用 ID 冲突
                 // This query was failed due a timeout or cancellation. Let's delay the removal of the id to reduce
                 // the risk of reusing the same id again while the remote nameserver might send the response after
                 // the timeout.
@@ -262,12 +275,14 @@ abstract class DnsQueryContext {
             return;
         }
 
+        // 按需注册查询超时任务
         // Schedule a query timeout task if necessary.
         if (queryTimeoutMillis > 0) {
             timeoutFuture = channel.eventLoop().schedule(new Runnable() {
                 @Override
                 public void run() {
                     if (promise.isDone()) {
+                        // 超时前已收到响应
                         // Received a response before the query times out.
                         return;
                     }
@@ -280,10 +295,11 @@ abstract class DnsQueryContext {
     }
 
     /**
-     * Notifies the original {@link Promise} that the response for the query was received.
+     * 收到响应并完成 {@link Promise}；本方法接管 {@link AddressedEnvelope} 引用。
      * This method takes ownership of passed {@link AddressedEnvelope}.
      */
     void finishSuccess(AddressedEnvelope<? extends DnsResponse, InetSocketAddress> envelope, boolean truncated) {
+        // 未截断或可走 TCP 回退时尝试成功完成
         // Check if the response was not truncated or if a fallback to TCP is possible.
         if (!truncated || !retryWithTcp(envelope)) {
             final DnsResponse res = envelope.content();
@@ -306,7 +322,7 @@ abstract class DnsQueryContext {
     }
 
     /**
-     * Notifies the original {@link Promise} that the query completes because of an failure.
+     * 因失败结束查询并 fail {@link Promise}；超时可能触发 TCP 重试。
      */
     final boolean finishFailure(String message, Throwable cause, boolean timeout) {
         if (promise.isDone()) {
@@ -327,6 +343,7 @@ abstract class DnsQueryContext {
 
         final DnsNameResolverException e;
         if (timeout) {
+            // 超时使用 DnsNameResolverTimeoutException，便于调用方重试
             // This was caused by a timeout so use DnsNameResolverTimeoutException to allow the user to
             // handle it special (like retry the query).
             e = new DnsNameResolverTimeoutException(nameServerAddr, question, buf.toString());
@@ -341,7 +358,7 @@ abstract class DnsQueryContext {
     }
 
     /**
-     * Retry the original query with TCP if possible.
+     * 在响应被截断或配置允许时，通过 TCP 重发同一查询。
      *
      * @param originalResult    the result of the original {@link DnsQueryContext}.
      * @return                  {@code true} if retry via TCP is supported and so the ownership of
@@ -356,6 +373,7 @@ abstract class DnsQueryContext {
             if (!future.isSuccess()) {
                 logger.debug("{} Unable to fallback to TCP [{}: {}]",
                         future.channel(), id, nameServerAddr, future.cause());
+                // TCP 回退失败，回退到截断 UDP 响应或原始错误
                 // TCP fallback failed, just use the truncated response or error.
                 finishOriginal(originalResult, future);
                 return;
@@ -439,6 +457,7 @@ abstract class DnsQueryContext {
         }
     }
 
+    /** TCP 回退路径上包装 {@link DnsResponse} 的轻量 {@link AddressedEnvelope} 适配器。 */
     private static final class AddressedEnvelopeAdapter implements AddressedEnvelope<DnsResponse, InetSocketAddress> {
         private final InetSocketAddress sender;
         private final InetSocketAddress recipient;

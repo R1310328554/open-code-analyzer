@@ -26,6 +26,10 @@ import io.netty.handler.codec.dns.DnsRecordType;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Promise;
 
+/**
+ * 解析任意 {@link DnsRecord} 类型（非地址）的 {@link DnsResolveContext} 实现。
+ * <p>不做结果缓存，允许重复记录，CNAME 缓存使用 {@link NoopDnsCnameCache}。</p>
+ */
 final class DnsRecordResolveContext extends DnsResolveContext<DnsRecord> {
 
     DnsRecordResolveContext(DnsNameResolver parent, Channel channel,
@@ -80,6 +84,7 @@ final class DnsRecordResolveContext extends DnsResolveContext<DnsRecord> {
 
     @Override
     void cache(String hostname, DnsRecord[] additionals, DnsRecord result, DnsRecord convertedResult) {
+        // 当前不缓存原始记录；若将来实现缓存需 retain 引用计数
         // Do not cache.
         // XXX: When we implement cache, we would need to retain the reference count of the result record.
     }
@@ -92,6 +97,7 @@ final class DnsRecordResolveContext extends DnsResolveContext<DnsRecord> {
 
     @Override
     DnsCnameCache cnameCache() {
+        // 与记录解析路径一致，不使用 CNAME 缓存
         // We don't use a cache here at all as we also don't cache if we end up using the DnsRecordResolverContext.
         return NoopDnsCnameCache.INSTANCE;
     }

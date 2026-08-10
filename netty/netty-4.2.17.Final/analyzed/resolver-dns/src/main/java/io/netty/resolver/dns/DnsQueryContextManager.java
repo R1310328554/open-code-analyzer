@@ -28,18 +28,18 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 按 DNS 服务器地址管理进行中的 {@link DnsQueryContext}，分配与回收 16 位查询 ID。
+ * <p>IPv4/IPv6 兼容地址会共享同一上下文映射，避免双栈环境下 ID 空间分裂。</p>
+ */
 final class DnsQueryContextManager {
 
-    /**
-     * A map whose key is the DNS server address and value is the map of the DNS query ID and its corresponding
-     * {@link DnsQueryContext}.
-     */
+    /** 键为 DNS 服务器地址，值为该服务器上 queryId → {@link DnsQueryContext} 的映射。 */
     private final Map<InetSocketAddress, DnsQueryContextMap> map =
             new HashMap<InetSocketAddress, DnsQueryContextMap>();
 
     /**
-     * Add {@link DnsQueryContext} to the context manager and return the ID that should be used for the query.
-     * This method will return {@code -1} if an ID could not be generated and the context was not stored.
+     * 注册 {@link DnsQueryContext} 并返回应使用的查询 ID；ID 耗尽时返回 {@code -1} 且不存储上下文。
      *
      * @param nameServerAddr    The {@link InetSocketAddress} of the nameserver to query.
      * @param qCtx              The {@link {@link DnsQueryContext} to store.
@@ -52,8 +52,7 @@ final class DnsQueryContextManager {
     }
 
     /**
-     * Return the {@link DnsQueryContext} for the given {@link InetSocketAddress} and id or {@code null} if
-     * none could be found.
+     * 按服务器地址与 query ID 查找 {@link DnsQueryContext}，未找到返回 {@code null}。
      *
      * @param nameServerAddr    The {@link InetSocketAddress} of the nameserver.
      * @param id                The id that identifies the {@link DnsQueryContext} and was used for the query.
@@ -69,8 +68,7 @@ final class DnsQueryContextManager {
     }
 
     /**
-     * Remove the {@link DnsQueryContext} for the given {@link InetSocketAddress} and id or {@code null} if
-     * none could be found.
+     * 移除并返回指定服务器与 ID 的 {@link DnsQueryContext}，同时将 ID 归还 ID 空间。
      *
      * @param nameServerAddr    The {@link InetSocketAddress} of the nameserver.
      * @param id                The id that identifies the {@link DnsQueryContext} and was used for the query.
@@ -107,6 +105,7 @@ final class DnsQueryContextManager {
 
             InetSocketAddress extraAddress = null;
             if (a instanceof Inet4Address) {
+                // 同时为 IPv4 映射 IPv6 地址注册相同映射
                 // Also add the mapping for the IPv4-compatible IPv6 address.
                 final Inet4Address a4 = (Inet4Address) a;
                 if (a4.isLoopbackAddress()) {
@@ -115,6 +114,7 @@ final class DnsQueryContextManager {
                     extraAddress = new InetSocketAddress(toCompactAddress(a4), port);
                 }
             } else if (a instanceof Inet6Address) {
+                // IPv4 兼容 IPv6 地址时同步注册 IPv4 键
                 // Also add the mapping for the IPv4 address if this IPv6 address is compatible.
                 final Inet6Address a6 = (Inet6Address) a;
                 if (a6.isLoopbackAddress()) {
@@ -159,12 +159,14 @@ final class DnsQueryContextManager {
 
         private final DnsQueryIdSpace idSpace = new DnsQueryIdSpace();
 
+        // 首次分配从 0 开始（内部计数自 -1 递增）
         // We increment on every usage so start with -1, this will ensure we start with 0 as first id.
         private final IntObjectMap<DnsQueryContext> map = new IntObjectHashMap<DnsQueryContext>();
 
         synchronized int add(DnsQueryContext ctx) {
             int id = idSpace.nextId();
             if (id == -1) {
+                // ID 空间耗尽（-1），不写入 map
                 // -1 means that we couldn't reserve an id to use. In this case return early and not store the
                 // context in the map.
                 return -1;

@@ -18,12 +18,13 @@ package io.netty.resolver.dns;
 import io.netty.channel.EventLoop;
 
 /**
- * A cache for {@code CNAME}s.
+ * {@code CNAME} 别名映射缓存接口。
+ * <p>记录主机名到规范名称的映射，避免重复跟随 CNAME 链查询。</p>
  */
 public interface DnsCnameCache {
 
     /**
-     * Returns the cached cname for the given hostname.
+     * 返回给定主机名已缓存的 CNAME 目标。
      *
      * @param hostname the hostname
      * @return the cached entries or an {@code null} if none.
@@ -31,7 +32,7 @@ public interface DnsCnameCache {
     String get(String hostname);
 
     /**
-     * Caches a cname entry that should be used for the given hostname.
+     * 缓存主机名到 CNAME 的映射。
      *
      * @param hostname the hostname
      * @param cname the cname mapping.
@@ -41,14 +42,14 @@ public interface DnsCnameCache {
     void cache(String hostname, String cname, long originalTtl, EventLoop loop);
 
     /**
-     * Clears all cached nameservers.
+     * 清除全部已缓存的 CNAME 条目。
      *
      * @see #clear(String)
      */
     void clear();
 
     /**
-     * Clears the cached nameservers for the specified hostname.
+     * 清除指定主机名的 CNAME 缓存。
      *
      * @return {@code true} if and only if there was an entry for the specified host name in the cache and
      *         it has been removed by this method

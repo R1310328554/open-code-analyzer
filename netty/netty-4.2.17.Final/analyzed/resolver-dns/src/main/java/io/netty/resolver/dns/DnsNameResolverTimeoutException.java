@@ -20,8 +20,8 @@ import io.netty.handler.codec.dns.DnsQuestion;
 import java.net.InetSocketAddress;
 
 /**
- * A {@link DnsNameResolverException} raised when {@link DnsNameResolver} failed to perform a successful query because
- * of an timeout. In this case you may want to retry the operation.
+ * 因超时而失败的 {@link DnsNameResolverException}。
+ * <p>表示在 {@link DnsNameResolver#queryTimeoutMillis()} 内未收到响应；调用方可选择重试。</p>
  */
 public final class DnsNameResolverTimeoutException extends DnsNameResolverException {
     private static final long serialVersionUID = -8826717969627131854L;

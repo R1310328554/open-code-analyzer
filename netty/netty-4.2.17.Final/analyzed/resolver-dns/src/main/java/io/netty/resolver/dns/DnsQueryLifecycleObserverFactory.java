@@ -18,11 +18,12 @@ package io.netty.resolver.dns;
 import io.netty.handler.codec.dns.DnsQuestion;
 
 /**
- * Used to generate new instances of {@link DnsQueryLifecycleObserver}.
+ * 创建 {@link DnsQueryLifecycleObserver} 实例的工厂。
+ * <p>每次新 DNS 查询开始时由 {@link DnsNameResolver} 调用，用于注入日志、指标等观测逻辑。</p>
  */
 public interface DnsQueryLifecycleObserverFactory {
     /**
-     * Create a new instance of a {@link DnsQueryLifecycleObserver}. This will be called at the start of a new query.
+     * 为新查询创建 {@link DnsQueryLifecycleObserver} 实例。
      * @param question The question being asked.
      * @return a new instance of a {@link DnsQueryLifecycleObserver}.
      */
