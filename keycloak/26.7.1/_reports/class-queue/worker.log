@@ -568,3 +568,18 @@
 2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/util/EnumWithStableIndex.java wave19b sdjwt vp + util classes
 2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/util/JWKSUtils.java wave19b sdjwt vp + util classes
 2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/util/JsonSerialization.java wave19b sdjwt vp + util classes
+2026-08-10T06:23:24Z DONE crypto/default/src/main/java/org/keycloak/crypto/hash/Argon2PasswordHashProviderFactory.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/elytron/src/main/java/org/keycloak/crypto/elytron/AesKeyWrapAlgorithmProvider.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/elytron/src/main/java/org/keycloak/crypto/elytron/ElytronCertificateUtilsProvider.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/elytron/src/main/java/org/keycloak/crypto/elytron/ElytronECDSACryptoProvider.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/elytron/src/main/java/org/keycloak/crypto/elytron/ElytronEcdhEsAlgorithmProvider.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/elytron/src/main/java/org/keycloak/crypto/elytron/ElytronOCSPProvider.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/elytron/src/main/java/org/keycloak/crypto/elytron/ElytronPEMUtilsProvider.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/elytron/src/main/java/org/keycloak/crypto/elytron/ElytronRsaKeyEncryption256JWEAlgorithmProvider.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/elytron/src/main/java/org/keycloak/crypto/elytron/ElytronRsaKeyEncryptionJWEAlgorithmProvider.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/elytron/src/main/java/org/keycloak/crypto/elytron/ElytronUserIdentityExtractorProvider.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/elytron/src/main/java/org/keycloak/crypto/elytron/WildFlyElytronProvider.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/fips1402/src/main/java/org/keycloak/crypto/fips/AbstractDelegatingSSLSocket.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/fips1402/src/main/java/org/keycloak/crypto/fips/BCFIPSCertificateUtilsProvider.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/fips1402/src/main/java/org/keycloak/crypto/fips/BCFIPSECDSACryptoProvider.java wave20b elytron + fips crypto
+2026-08-10T06:23:24Z DONE crypto/fips1402/src/main/java/org/keycloak/crypto/fips/BCFIPSEcdhEsAlgorithmProvider.java wave20b elytron + fips crypto
