@@ -1,3 +1,6 @@
+// database/agent.ts — Agent 画布 DSL、节点类型、日志与流水线请求类型定义。
+
+/** 分类节点单项：名称、示例与下游 to 连线。 */
 export interface ICategorizeItem {
   name: string;
   description?: string;
@@ -37,6 +40,7 @@ import { IDataset } from './dataset';
 
 export type DSLComponents = Record<string, IOperator>;
 
+/** Agent 画布 DSL：组件图、消息历史、全局/检索变量。 */
 export interface DSL {
   components: DSLComponents;
   history: any[];
@@ -62,6 +66,7 @@ export interface IOperatorNode {
   params: Record<string, unknown>;
 }
 
+/** Dataflow/Agent 画布实体：dsl、权限、关联 datasets 等。 */
 export declare interface IFlow {
   avatar?: string;
   canvas_type: null;
@@ -85,6 +90,7 @@ export declare interface IFlow {
   tags?: string;
 }
 
+/** 画布模板，title/description 多语言。 */
 export interface IFlowTemplate {
   avatar: string;
   canvas_type: string;
@@ -165,6 +171,7 @@ export interface ICodeForm {
   outputs: Record<string, { value: unknown; type: string }>;
 }
 
+/** Agent 组件表单：系统提示、工具、MCP 与结构化输出配置。 */
 export interface IAgentForm {
   sys_prompt: string;
   prompts: Array<{
@@ -224,6 +231,7 @@ export type ICodeNode = BaseNode<ICodeForm>;
 export type IAgentNode = BaseNode;
 export type IToolNode = BaseNode<IAgentForm>;
 
+/** React Flow 画布节点联合类型。 */
 export type RAGFlowNodeType =
   | IBeginNode
   | IRetrievalNode
@@ -243,6 +251,7 @@ export type RAGFlowNodeType =
   | IIterationStartNode
   | IKeywordNode;
 
+/** 画布图结构：nodes + edges。 */
 export interface IGraph {
   nodes: RAGFlowNodeType[];
   edges: Edge[];
@@ -253,6 +262,7 @@ export interface ITraceData {
   trace: Array<Record<string, any>>;
 }
 
+/** 单条 Agent 会话日志（含 message 与 reference）。 */
 export interface IAgentLogResponse {
   id: string;
   message: IAgentLogMessage[];
@@ -301,6 +311,7 @@ export interface IPipeLineListRequest {
   ext?: string;
 }
 
+/** 画布全局变量：名称、值、描述与类型。 */
 export interface GlobalVariableType {
   name: string;
   value: any;

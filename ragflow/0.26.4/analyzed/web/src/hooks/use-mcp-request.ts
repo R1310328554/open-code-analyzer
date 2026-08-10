@@ -1,3 +1,5 @@
+// use-mcp-request.ts — MCP 服务器 CRUD、导入导出与连通性测试 Hooks。
+
 import message from '@/components/ui/message';
 import { ResponseType } from '@/interfaces/database/base';
 import {
@@ -21,6 +23,7 @@ import {
   useHandleSearchChange,
 } from './logic-hooks';
 
+/** MCP 服务器 React Query 缓存键枚举。 */
 export const enum McpApiAction {
   ListMcpServer = 'listMcpServer',
   GetMcpServer = 'getMcpServer',
@@ -34,6 +37,7 @@ export const enum McpApiAction {
   TestMcpServer = 'testMcpServer',
 }
 
+/** 分页搜索 MCP 服务器列表。 */
 export const useListMcpServer = () => {
   const { searchString, handleInputChange } = useHandleSearchChange();
   const { pagination, setPagination } = useGetPaginationWithRouter();
@@ -69,6 +73,7 @@ export const useListMcpServer = () => {
   };
 };
 
+/** 按 mcp_id 拉取单个 MCP 服务器详情。 */
 export const useGetMcpServer = (id: string) => {
   const { data, isFetching: loading } = useQuery<IMcpServer>({
     queryKey: [McpApiAction.GetMcpServer, id],
@@ -84,6 +89,7 @@ export const useGetMcpServer = (id: string) => {
   return { data, loading, id };
 };
 
+/** 创建 MCP 服务器。 */
 export const useCreateMcpServer = () => {
   const queryClient = useQueryClient();
   const {
@@ -108,6 +114,7 @@ export const useCreateMcpServer = () => {
   return { data, loading, createMcpServer: mutateAsync };
 };
 
+/** 更新 MCP 服务器配置。 */
 export const useUpdateMcpServer = () => {
   const queryClient = useQueryClient();
   const {
@@ -132,6 +139,7 @@ export const useUpdateMcpServer = () => {
   return { data, loading, updateMcpServer: mutateAsync };
 };
 
+/** 批量删除 MCP 服务器。 */
 export const useDeleteMcpServer = () => {
   const queryClient = useQueryClient();
   const {
@@ -160,6 +168,7 @@ export const useDeleteMcpServer = () => {
   return { data, loading, deleteMcpServer: mutateAsync };
 };
 
+/** 从 JSON 批量导入 MCP 服务器。 */
 export const useImportMcpServer = () => {
   const queryClient = useQueryClient();
   const {
@@ -184,6 +193,7 @@ export const useImportMcpServer = () => {
   return { data, loading, importMcpServer: mutateAsync };
 };
 
+/** 批量导出 MCP 服务器配置为 JSON。 */
 export const useExportMcpServer = () => {
   const {
     data,
@@ -218,6 +228,7 @@ export const useExportMcpServer = () => {
   return { data, loading, exportMcpServer: mutateAsync };
 };
 
+/** 测试 MCP 服务器连通性并返回可用工具列表。 */
 export const useTestMcpServer = () => {
   const {
     data,

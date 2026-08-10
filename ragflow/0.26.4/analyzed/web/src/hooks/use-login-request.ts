@@ -1,3 +1,5 @@
+// use-login-request.ts — 登录、注册、登出与第三方 OAuth 渠道 Hooks。
+
 import message from '@/components/ui/message';
 import { Authorization } from '@/constants/authorization';
 import userService, {
@@ -13,21 +15,25 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useSaveSetting } from './use-user-setting-request';
 
+/** 邮箱密码登录请求体。 */
 export interface ILoginRequestBody {
   email: string;
   password: string;
 }
 
+/** 注册请求体，在登录字段基础上增加 nickname。 */
 export interface IRegisterRequestBody extends ILoginRequestBody {
   nickname: string;
 }
 
+/** 第三方登录渠道展示信息。 */
 export interface ILoginChannel {
   channel: string;
   display_name: string;
   icon: string;
 }
 
+/** 拉取可用 OAuth/第三方登录渠道列表。 */
 export const useLoginChannels = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['loginChannels'],
@@ -40,6 +46,7 @@ export const useLoginChannels = () => {
   return { channels: data as ILoginChannel[], loading: isLoading };
 };
 
+/** 跳转指定 channel 的 OAuth 登录流程。 */
 export const useLoginWithChannel = () => {
   const { isPending: loading, mutateAsync } = useMutation({
     mutationKey: ['loginWithChannel'],
@@ -52,6 +59,7 @@ export const useLoginWithChannel = () => {
   return { loading, login: mutateAsync };
 };
 
+/** 邮箱密码登录，成功后写入 Token 与 userInfo 到本地存储。 */
 export const useLogin = () => {
   const { saveSetting } = useSaveSetting(true);
   const {
@@ -88,6 +96,7 @@ export const useLogin = () => {
   return { data, loading, login: mutateAsync };
 };
 
+/** 用户注册，处理注册被禁用等错误提示。 */
 export const useRegister = () => {
   const { t } = useTranslation();
 
@@ -120,6 +129,7 @@ export const useRegister = () => {
   return { data, loading, register: mutateAsync };
 };
 
+/** 登出：清除凭证并跳转登录页。 */
 export const useLogout = () => {
   const { t } = useTranslation();
   const {

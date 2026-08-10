@@ -1,3 +1,5 @@
+// use-knowledge-request.ts — 知识库/数据集 CRUD、检索测试、图谱与标签 Hooks。
+
 import { useHandleFilterSubmit } from '@/components/list-filter-bar/use-handle-filter-submit';
 import message from '@/components/ui/message';
 import { ParseType } from '@/constants/knowledge';
@@ -40,6 +42,7 @@ import {
 import { extractParserConfigExt } from './parser-config-utils';
 import { useSetPaginationParams } from './route-hook';
 
+/** 知识库相关 React Query 缓存键枚举。 */
 export const enum KnowledgeApiAction {
   FetchKnowledgeListByPage = 'fetchKnowledgeListByPage',
   CreateKnowledge = 'createKnowledge',
@@ -53,12 +56,14 @@ export const enum KnowledgeApiAction {
   RemoveKnowledgeGraph = 'removeKnowledgeGraph',
 }
 
+/** 从路由 params 读取当前知识库 id。 */
 export const useKnowledgeBaseId = (): string => {
   const { id } = useParams();
 
   return (id as string) || '';
 };
 
+/** 新版检索测试：支持 doc_ids 筛选与 question 触发 mutation。 */
 export const useTestRetrieval = () => {
   const knowledgeBaseId = useKnowledgeBaseId();
   const [values, setValues] = useState<ITestRetrievalRequestBody>();
@@ -125,6 +130,7 @@ export const useTestRetrieval = () => {
   };
 };
 
+/** 分页拉取知识库列表，支持关键词与 owner 筛选。 */
 export const useFetchNextKnowledgeListByPage = () => {
   const { searchString, handleInputChange } = useHandleSearchChange();
   const { pagination, setPagination } = useGetPaginationWithRouter();
@@ -179,6 +185,7 @@ export const useFetchNextKnowledgeListByPage = () => {
   };
 };
 
+/** 创建或更新知识库（有 id 为修改）。 */
 export const useCreateKnowledge = () => {
   const queryClient = useQueryClient();
   const {
@@ -213,6 +220,7 @@ export const useCreateKnowledge = () => {
   return { data, loading, createKnowledge: mutateAsync };
 };
 
+/** 删除单个知识库。 */
 export const useDeleteKnowledge = () => {
   const queryClient = useQueryClient();
   const {
@@ -236,6 +244,7 @@ export const useDeleteKnowledge = () => {
   return { data, loading, deleteKnowledge: mutateAsync };
 };
 
+/** 保存知识库配置；shouldFetchList 控制刷新列表还是详情。 */
 export const useUpdateKnowledge = (shouldFetchList = false) => {
   const knowledgeBaseId = useKnowledgeBaseId();
   const queryClient = useQueryClient();
@@ -302,6 +311,7 @@ export const useUpdateKnowledge = (shouldFetchList = false) => {
   return { data, loading, saveKnowledgeConfiguration: mutateAsync };
 };
 
+/** 拉取知识库详情配置（编辑页用 searchParams.id 或路由 id）。 */
 export const useFetchKnowledgeBaseConfiguration = (props?: {
   isEdit?: boolean;
 }) => {
@@ -324,6 +334,7 @@ export const useFetchKnowledgeBaseConfiguration = (props?: {
   return { data, loading };
 };
 
+/** 拉取当前知识库的知识图谱与思维导图数据。 */
 export function useFetchKnowledgeGraph() {
   const knowledgeBaseId = useKnowledgeBaseId();
 
@@ -341,6 +352,7 @@ export function useFetchKnowledgeGraph() {
   return { data, loading };
 }
 
+/** 批量拉取多个知识库的元数据值分布。 */
 export function useFetchKnowledgeMetadata(kbIds: string[] = []) {
   const { data, isFetching: loading } = useQuery<
     Record<string, Record<string, string[]>>
@@ -360,6 +372,7 @@ export function useFetchKnowledgeMetadata(kbIds: string[] = []) {
   return { data, loading };
 }
 
+/** 批量拉取知识库元数据字段名列表。 */
 export function useFetchKnowledgeMetadataKeys(kbIds: string[] = []) {
   const sortedKbIds = useMemo(() => [...kbIds].sort(), [kbIds]);
   const { data, isFetching: loading } = useQuery<string[]>({
@@ -378,6 +391,7 @@ export function useFetchKnowledgeMetadataKeys(kbIds: string[] = []) {
   return { data, loading };
 }
 
+/** 删除当前知识库的知识图谱。 */
 export const useRemoveKnowledgeGraph = () => {
   const knowledgeBaseId = useKnowledgeBaseId();
 
@@ -403,6 +417,7 @@ export const useRemoveKnowledgeGraph = () => {
   return { data, loading, removeKnowledgeGraph: mutateAsync };
 };
 
+/** 拉取知识库全量或关键词过滤列表，可选过滤无 chunk 的空库。 */
 export const useFetchKnowledgeList = (
   shouldFilterListWithoutDocument: boolean = false,
   keywords = '',
@@ -438,6 +453,7 @@ export const useFetchKnowledgeList = (
   return { list: data, loading };
 };
 
+/** 将知识库列表转为 Select 组件 options。 */
 export const useSelectKnowledgeOptions = () => {
   const { list } = useFetchKnowledgeList();
 
@@ -450,6 +466,7 @@ export const useSelectKnowledgeOptions = () => {
 };
 
 //#region tags
+/** 重命名知识库标签。 */
 export const useRenameTag = () => {
   const knowledgeBaseId = useKnowledgeBaseId();
 
@@ -506,6 +523,7 @@ export const useFetchTagListByKnowledgeIds = () => {
   return { list: data, loading, setKnowledgeIds };
 };
 
+/** 拉取当前知识库的标签及计数列表。 */
 export const useFetchTagList = () => {
   const knowledgeBaseId = useKnowledgeBaseId();
 
@@ -523,6 +541,7 @@ export const useFetchTagList = () => {
   return { list: data, loading };
 };
 
+/** 删除一个或多个标签。 */
 export const useDeleteTag = () => {
   const knowledgeBaseId = useKnowledgeBaseId();
 
@@ -552,6 +571,7 @@ export const useDeleteTag = () => {
 
 //#region Retrieval testing
 
+/** 旧版分块检索测试（带分页参数）。 */
 export const useTestChunkRetrieval = (): ResponsePostType<ITestingResult> & {
   testChunk: (...params: any[]) => void;
 } => {
@@ -596,6 +616,7 @@ export const useTestChunkRetrieval = (): ResponsePostType<ITestingResult> & {
   };
 };
 
+/** 全库检索测试（doc_ids 为空）。 */
 export const useTestChunkAllRetrieval = (): ResponsePostType<ITestingResult> & {
   testChunkAll: (...params: any[]) => void;
 } => {

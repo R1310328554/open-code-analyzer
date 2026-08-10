@@ -1,3 +1,5 @@
+// use-send-message.ts — Agent 对话 SSE 流式发送与事件解析 Hook。
+
 import message from '@/components/ui/message';
 import { Authorization } from '@/constants/authorization';
 import { ResponseType } from '@/interfaces/database/base';
@@ -7,6 +9,7 @@ import { getAuthorization } from '@/utils/authorization-util';
 import { EventSourceParserStream } from 'eventsource-parser/stream';
 import { useCallback, useRef, useState } from 'react';
 
+/** Agent 工作流 SSE 事件类型枚举。 */
 export enum MessageEventType {
   WorkflowStarted = 'workflow_started',
   NodeStarted = 'node_started',
@@ -19,6 +22,7 @@ export enum MessageEventType {
   NodeLogs = 'node_logs',
 }
 
+/** SSE 应答事件通用结构，data 随 event 类型变化。 */
 export interface IAnswerEvent<T> {
   event: MessageEventType;
   message_id: string;
@@ -28,6 +32,7 @@ export interface IAnswerEvent<T> {
   data: T;
 }
 
+/** 节点开始/结束事件的 inputs/outputs 与耗时信息。 */
 export interface INodeData {
   inputs: Record<string, any>;
   outputs: Record<string, any>;
@@ -50,6 +55,7 @@ export interface IAttachment {
   format: string;
   file_name: string;
 }
+/** 流式 message 事件的正文、音频与思考标记。 */
 export interface IMessageData {
   content: string;
   audio_binary: string;
@@ -58,6 +64,7 @@ export interface IMessageData {
   end_to_think?: boolean;
 }
 
+/** message_end 事件携带的引用块汇总。 */
 export interface IMessageEndData {
   reference: IReferenceObject;
 }
@@ -83,6 +90,7 @@ export type IInputEvent = IAnswerEvent<IInputData>;
 
 export type ILogEvent = IAnswerEvent<ILogData>;
 
+/** 聊天 SSE 事件联合类型。 */
 export type IChatEvent = INodeEvent | IMessageEvent | IMessageEndEvent;
 
 export type IEventList = Array<IChatEvent>;
@@ -109,6 +117,7 @@ const normalizeAgentEvent = (value: any) => {
   return value;
 };
 
+/** POST 发起 SSE 对话，逐帧解析事件并累积 answerList；支持 abort 停止输出。 */
 export const useSendMessageBySSE = (url: string) => {
   const [answerList, setAnswerList] = useState<IEventList>([]);
   const [done, setDone] = useState(true);

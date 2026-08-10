@@ -1,3 +1,5 @@
+// use-dataflow-request.ts — Dataflow 画布 CRUD 与详情查询 Hooks（React Query）。
+
 import message from '@/components/ui/message';
 import { IFlow } from '@/interfaces/database/agent';
 import dataflowService from '@/services/dataflow-service';
@@ -5,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 
+/** Dataflow 相关 React Query mutation/query 键枚举。 */
 export const enum DataflowApiAction {
   ListDataflow = 'listDataflow',
   RemoveDataflow = 'removeDataflow',
@@ -13,6 +16,7 @@ export const enum DataflowApiAction {
   SetDataflow = 'setDataflow',
 }
 
+/** 批量删除 Dataflow 画布，成功后刷新列表并 Toast。 */
 export const useRemoveDataflow = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -41,6 +45,7 @@ export const useRemoveDataflow = () => {
   return { data, loading, removeDataflow: mutateAsync };
 };
 
+/** 创建或更新 Dataflow（有 id 为修改，无 id 为新建）。 */
 export const useSetDataflow = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -67,6 +72,7 @@ export const useSetDataflow = () => {
   return { data, loading, setDataflow: mutateAsync };
 };
 
+/** 按路由 id 拉取单个 Dataflow 详情。 */
 export const useFetchDataflow = () => {
   const { id } = useParams();
 

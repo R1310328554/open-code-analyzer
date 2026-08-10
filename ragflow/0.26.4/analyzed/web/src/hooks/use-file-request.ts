@@ -1,3 +1,5 @@
+// use-file-request.ts — 文件管理器：上传、移动、文件夹、下载与关联知识库 Hooks。
+
 import message from '@/components/ui/message';
 import { PaginationProps } from '@/interfaces/antd-compat';
 import {
@@ -18,6 +20,7 @@ import {
 } from './logic-hooks';
 import { useSetPaginationParams } from './route-hook';
 
+/** 文件管理 React Query 缓存键枚举。 */
 export const enum FileApiAction {
   UploadFile = 'uploadFile',
   FetchFileList = 'fetchFileList',
@@ -31,6 +34,7 @@ export const enum FileApiAction {
   FetchPureFileList = 'fetchPureFileList',
 }
 
+/** 从 URL searchParams 读取当前 folderId。 */
 export const useGetFolderId = () => {
   const [searchParams] = useSearchParams();
   const id = searchParams.get('folderId') as string;
@@ -38,6 +42,7 @@ export const useGetFolderId = () => {
   return id ?? '';
 };
 
+/** 上传文件到指定 parentId，支持 webkitRelativePath 目录结构。 */
 export const useUploadFile = () => {
   const { setPaginationParams } = useSetPaginationParams();
   const { t } = useTranslation();
@@ -78,12 +83,14 @@ export const useUploadFile = () => {
   return { data, loading, uploadFile: mutateAsync };
 };
 
+/** 移动/重命名文件请求体。 */
 export interface IMoveFileBody {
   src_file_ids: string[];
   dest_file_id?: string;
   new_name?: string;
 }
 
+/** 批量移动文件到目标文件夹。 */
 export const useMoveFile = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -109,6 +116,7 @@ export const useMoveFile = () => {
   return { data, loading, moveFile: mutateAsync };
 };
 
+/** 在 parentId 下创建文件夹。 */
 export const useCreateFolder = () => {
   const { setPaginationParams } = useSetPaginationParams();
   const queryClient = useQueryClient();
@@ -140,6 +148,7 @@ export const useCreateFolder = () => {
   return { data, loading, createFolder: mutateAsync };
 };
 
+/** 获取当前文件夹的祖先路径（面包屑）。 */
 export const useFetchParentFolderList = () => {
   const id = useGetFolderId();
   const { data } = useQuery<IFolder[]>({
@@ -159,6 +168,7 @@ export const useFetchParentFolderList = () => {
   return data;
 };
 
+/** 文件列表 Hook 返回的搜索与分页字段类型。 */
 export interface IListResult {
   searchString: string;
   handleInputChange: React.ChangeEventHandler<HTMLInputElement>;
@@ -167,6 +177,7 @@ export interface IListResult {
   loading: boolean;
 }
 
+/** 分页拉取当前文件夹下的文件/子文件夹列表。 */
 export const useFetchFileList = () => {
   const { searchString, handleInputChange } = useHandleSearchChange();
   const { pagination, setPagination } = useGetPaginationWithRouter();
@@ -214,6 +225,7 @@ export const useFetchFileList = () => {
   };
 };
 
+/** 批量删除文件。 */
 export const useDeleteFile = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -241,6 +253,7 @@ export const useDeleteFile = () => {
   return { data, loading, deleteFile: mutateAsync };
 };
 
+/** 下载单个文件为 Blob 并触发浏览器保存。 */
 export const useDownloadFile = () => {
   const {
     data,
@@ -257,6 +270,7 @@ export const useDownloadFile = () => {
   return { data, loading, downloadFile: mutateAsync };
 };
 
+/** 通过 moveFile 接口重命名文件。 */
 export const useRenameFile = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -284,6 +298,7 @@ export const useRenameFile = () => {
   return { data, loading, renameFile: mutateAsync };
 };
 
+/** 将文件关联到指定知识库。 */
 export const useConnectToKnowledge = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -309,6 +324,7 @@ export const useConnectToKnowledge = () => {
   return { data, loading, connectFileToKnowledge: mutateAsync };
 };
 
+/** 手动触发拉取某文件夹下纯文件列表（最多 100 条）。 */
 export const useFetchPureFileList = () => {
   const { mutateAsync, isPending: loading } = useMutation({
     mutationKey: [FileApiAction.FetchPureFileList],

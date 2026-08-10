@@ -1,3 +1,5 @@
+// use-document-request.ts — 知识库文档上传、列表、解析、元数据等 API Hooks。
+
 import { useHandleFilterSubmit } from '@/components/list-filter-bar/use-handle-filter-submit';
 
 import message from '@/components/ui/message';
@@ -44,6 +46,7 @@ import {
 } from './route-hook';
 import { KnowledgeApiAction } from './use-knowledge-request';
 
+/** 文档相关 React Query 缓存键枚举。 */
 export const enum DocumentApiAction {
   UploadDocument = 'uploadDocument',
   FetchDocumentList = 'fetchDocumentList',
@@ -59,6 +62,7 @@ export const enum DocumentApiAction {
   ParseDocument = 'parseDocument',
 }
 
+/** 向当前知识库上传文件列表，可选附带 parser_config。 */
 export const useUploadDocument = () => {
   const queryClient = useQueryClient();
   const { id } = useParams();
@@ -114,6 +118,7 @@ export const useUploadDocument = () => {
   return { uploadDocument: upload, loading, data };
 };
 
+/** 分页拉取文档列表，支持搜索/筛选；有解析中任务时每 5 秒轮询。 */
 export const useFetchDocumentList = (loop = true) => {
   const { knowledgeId } = useGetKnowledgeSearchParams();
   const { searchString, handleInputChange } = useHandleSearchChange();
@@ -215,6 +220,7 @@ export const useFetchDocumentList = (loop = true) => {
 };
 
 // get document filter
+/** 获取文档筛选项（后缀、运行状态、元数据），打开筛选面板时触发刷新。 */
 export const useGetDocumentFilter = (): {
   filter: IDocumentInfoFilter;
   onOpenChange: (open: boolean) => void;
@@ -257,6 +263,7 @@ export const useGetDocumentFilter = (): {
   };
 };
 // update document status
+/** 启用/禁用文档（批量 doc_ids）。 */
 export const useSetDocumentStatus = () => {
   const queryClient = useQueryClient();
 
@@ -296,6 +303,7 @@ export const useSetDocumentStatus = () => {
 };
 
 // This hook is used to run a document by its IDs
+/** 按 doc_ids 触发文档解析/入库任务。 */
 export const useRunDocument = () => {
   const queryClient = useQueryClient();
 
@@ -337,6 +345,7 @@ export const useRunDocument = () => {
   return { runDocumentByIds: mutateAsync, loading, data };
 };
 
+/** 删除一个或多个文档。 */
 export const useRemoveDocument = () => {
   const queryClient = useQueryClient();
   const { id: datasetId } = useParams();
@@ -362,6 +371,7 @@ export const useRemoveDocument = () => {
   return { data, loading, removeDocument: mutateAsync };
 };
 
+/** 重命名文档。 */
 export const useSaveDocumentName = () => {
   const queryClient = useQueryClient();
 
@@ -396,6 +406,7 @@ export const useSaveDocumentName = () => {
   return { loading, saveName: mutateAsync, data };
 };
 
+/** 更新文档分块方法、流水线或 parser_config。 */
 export const useSetDocumentParser = () => {
   const queryClient = useQueryClient();
 
@@ -450,6 +461,7 @@ export const useSetDocumentParser = () => {
   return { setDocumentParser: mutateAsync, data, loading };
 };
 
+/** 设置文档自定义元数据字段。 */
 export const useSetDocumentMeta = () => {
   const queryClient = useQueryClient();
 
@@ -483,6 +495,7 @@ export const useSetDocumentMeta = () => {
   return { setDocumentMeta: mutateAsync, data, loading };
 };
 
+/** 在当前知识库创建空白文档。 */
 export const useCreateDocument = () => {
   const { id } = useParams();
   const { setPaginationParams, page } = useSetPaginationParams();
@@ -517,6 +530,7 @@ export const useCreateDocument = () => {
   return { createDocument: mutateAsync, loading, data };
 };
 
+/** 返回文档预览 REST URL 生成函数。 */
 export const useGetDocumentUrl = (documentId?: string) => {
   const getDocumentUrl = useCallback(
     (id?: string) => {
@@ -528,6 +542,7 @@ export const useGetDocumentUrl = (documentId?: string) => {
   return getDocumentUrl;
 };
 
+/** 根据选中 chunk 与 PDF 尺寸计算 react-pdf-highlighter 高亮区域。 */
 export const useGetChunkHighlights = (
   selectedChunk: IChunk | IReferenceChunk,
 ) => {
@@ -549,6 +564,7 @@ export const useGetChunkHighlights = (
   return { highlights, setWidthAndHeight };
 };
 
+/** 按 doc_ids 批量拉取缩略图，通过 setDocumentIds 触发查询。 */
 export const useFetchDocumentThumbnailsByIds = () => {
   const [ids, setDocumentIds] = useState<string[]>([]);
   const { data } = useQuery<Record<string, string>>({

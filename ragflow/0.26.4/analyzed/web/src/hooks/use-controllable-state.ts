@@ -1,3 +1,5 @@
+// use-controllable-state.ts — 受控/非受控双模式状态 Hook（源自 Radix UI 实现）。
+
 import * as React from 'react';
 
 import { useCallbackRef } from '@/hooks/use-callback-ref';
@@ -6,6 +8,7 @@ import { useCallbackRef } from '@/hooks/use-callback-ref';
  * @see https://github.com/radix-ui/primitives/blob/main/packages/react/use-controllable-state/src/useControllableState.tsx
  */
 
+/** 受控状态参数：prop 存在时为受控，否则使用 defaultProp 非受控。 */
 type UseControllableStateParams<T> = {
   prop?: T | undefined;
   defaultProp?: T | undefined;
@@ -33,6 +36,7 @@ function useUncontrolledState<T>({
   return uncontrolledState;
 }
 
+/** 返回 [value, setValue]，受控时 setValue 触发 onChange 但不改内部 state。 */
 function useControllableState<T>({
   prop,
   defaultProp,
@@ -64,4 +68,5 @@ function useControllableState<T>({
   return [value, setValue] as const;
 }
 
+/** 导出受控/非受控统一状态管理 Hook。 */
 export { useControllableState };

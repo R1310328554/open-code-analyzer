@@ -1,3 +1,6 @@
+// antd-compat.ts — 脱离 antd 后的分页、表单、上传等类型兼容层。
+
+/** 分页组件 props，对齐 antd Table/Pagination 常用字段。 */
 export type PaginationProps = {
   current?: number;
   pageSize?: number;
@@ -8,6 +11,7 @@ export type PaginationProps = {
   onChange?: (page: number, pageSize?: number) => void;
 };
 
+/** Select/Cascader 选项节点类型。 */
 export type DefaultOptionType = {
   label: string | React.ReactNode;
   value: string | number;
@@ -15,6 +19,7 @@ export type DefaultOptionType = {
   children?: DefaultOptionType[];
 };
 
+/** 上传文件列表项，含 status、percent 与 originFileObj。 */
 export type UploadFile = {
   uid: string;
   name: string;
@@ -30,6 +35,7 @@ export type UploadFile = {
   originFileObj?: File;
 };
 
+/** 表格行选择配置。 */
 export type TableRowSelection<T = any> = {
   selectedRowKeys?: React.Key[];
   onChange?: (selectedRowKeys: React.Key[], selectedRows: T[]) => void;
@@ -38,6 +44,7 @@ export type TableRowSelection<T = any> = {
   };
 };
 
+/** 表单实例方法集合（get/set/validate/reset）。 */
 export type FormInstance = {
   getFieldValue: (name: string | string[]) => any;
   getFieldsValue: (names?: string[]) => Record<string, any>;
@@ -54,6 +61,7 @@ export type FormInstance = {
   isFieldsTouched: (fields?: string[]) => boolean;
 };
 
+/** Form.List 动态字段元数据。 */
 export type FormListFieldData = {
   name: number;
   key: number;

@@ -1,3 +1,5 @@
+// database/chat.ts — 对话、消息、引用块与 Dialog 配置类型定义。
+
 import { MessageType } from '@/constants/chat';
 import { IAttachment } from '@/hooks/use-send-message';
 
@@ -8,6 +10,7 @@ export interface IDocumentDownloadInfo {
   size?: number;
 }
 
+/** Dialog 提示词与 RAG/推理/TTS 等行为开关配置。 */
 export interface PromptConfig {
   empty_response: string;
   parameters: Parameter[];
@@ -50,6 +53,7 @@ export interface Variable {
   model_type?: string;
 }
 
+/** 聊天助手（Dialog）实体：关联知识库、LLM 与 prompt_config。 */
 export interface IDialog {
   create_date: string;
   create_time: number;
@@ -90,6 +94,7 @@ interface Manual {
   value: string;
 }
 
+/** 会话实体：messages、reference 与 chat_id。 */
 export interface IConversation {
   create_date: string;
   create_time: number;
@@ -104,6 +109,7 @@ export interface IConversation {
   is_new: true;
 }
 
+/** 单条消息：content、role、附件与引用等。 */
 export interface Message {
   content: string;
   role: MessageType;
@@ -118,6 +124,7 @@ export interface Message {
   downloads?: IDocumentDownloadInfo[];
 }
 
+/** 检索引用分块：相似度、文档名与 bbox positions。 */
 export interface IReferenceChunk {
   id: string;
   content: null;
@@ -133,6 +140,7 @@ export interface IReferenceChunk {
   document_metadata?: Record<string, any>;
 }
 
+/** 引用汇总：chunks 数组、doc_aggs 与 total。 */
 export interface IReference {
   chunks: IReferenceChunk[];
   doc_aggs: Docagg[];
@@ -144,6 +152,7 @@ export interface IReferenceObject {
   doc_aggs: Record<string, Docagg>;
 }
 
+/** 前端展示用助手回复，含 reference 与 attachment。 */
 export interface IAnswer {
   answer: string;
   attachment?: IAttachment;
@@ -188,6 +197,7 @@ export interface IToken {
   beta: string;
 }
 
+/** 对话统计时序：pv/uv/speed/tokens/round/thumb_up。 */
 export interface IStats {
   pv: [string, number][];
   uv: [string, number][];
@@ -197,6 +207,7 @@ export interface IStats {
   thumb_up: [string, number][];
 }
 
+/** 外链/embed 聊天页展示的标题、开场白与 LLM 信息。 */
 export interface IExternalChatInfo {
   avatar?: string;
   title: string;
@@ -211,6 +222,7 @@ export interface IMessage extends Message {
   conversationId?: string; // To distinguish which conversation the message belongs to
 }
 
+/** 客户端会话，messages 为带 id 的 IMessage。 */
 export interface IClientConversation extends IConversation {
   messages: IMessage[];
 }
