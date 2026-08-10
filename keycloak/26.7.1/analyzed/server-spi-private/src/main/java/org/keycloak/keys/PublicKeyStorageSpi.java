@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 公钥存储 SPI，注册 {@link PublicKeyStorageProvider} 提供者类型。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class PublicKeyStorageSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code publicKeyStorage}。 */
     @Override
     public String getName() {
         return "publicKeyStorage";
     }
 
+    /** 公钥存储提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return PublicKeyStorageProvider.class;
     }
 
+    /** 公钥存储工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return PublicKeyStorageProviderFactory.class;

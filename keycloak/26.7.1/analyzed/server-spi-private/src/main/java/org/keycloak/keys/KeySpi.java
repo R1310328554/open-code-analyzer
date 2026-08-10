@@ -22,24 +22,30 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 密钥 SPI，注册 {@link KeyProvider} 提供者类型。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class KeySpi implements Spi {
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code keys}。 */
     @Override
     public String getName() {
         return "keys";
     }
 
+    /** 密钥提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return KeyProvider.class;
     }
 
+    /** 密钥工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return KeyProviderFactory.class;

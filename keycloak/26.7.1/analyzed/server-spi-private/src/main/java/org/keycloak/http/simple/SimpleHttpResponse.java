@@ -22,6 +22,10 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.entity.ContentType;
 
+/**
+ * HTTP 响应包装：惰性读取实体、支持 gzip 解压与响应大小上限。
+ * <p>实现 {@link java.lang.AutoCloseable}，应在用毕后关闭以释放连接。</p>
+ */
 public class SimpleHttpResponse implements AutoCloseable {
 
     private final HttpResponse response;
@@ -79,11 +83,13 @@ public class SimpleHttpResponse implements AutoCloseable {
         }
     }
 
+    /** @return HTTP 状态码 */
     public int getStatus() throws IOException {
         readResponse();
         return response.getStatusLine().getStatusCode();
     }
 
+    /** 将响应体解析为 {@link com.fasterxml.jackson.databind.JsonNode}。 */
     public JsonNode asJson() throws IOException {
         return objectMapper.readTree(asString());
     }
@@ -96,11 +102,13 @@ public class SimpleHttpResponse implements AutoCloseable {
         return objectMapper.readValue(asString(), type);
     }
 
+    /** @return 响应体字符串（首次调用时读取并缓存） */
     public String asString() throws IOException {
         readResponse();
         return responseString;
     }
 
+    /** @return 指定响应头的第一个值，不存在时为 {@code null} */
     public String getFirstHeader(String name) throws IOException {
         readResponse();
         Header[] headers = response.getHeaders(name);
@@ -112,6 +120,7 @@ public class SimpleHttpResponse implements AutoCloseable {
         return null;
     }
 
+    /** @return 指定响应头的全部值列表，不存在时为 {@code null} */
     public List<String> getHeader(String name) throws IOException {
         readResponse();
         Header[] headers = response.getHeaders(name);
@@ -128,6 +137,7 @@ public class SimpleHttpResponse implements AutoCloseable {
         return response.getAllHeaders();
     }
 
+    /** @return 响应实体的 {@link org.apache.http.entity.ContentType} */
     public ContentType getContentType() throws IOException {
         readResponse();
         return contentType;
@@ -144,6 +154,7 @@ public class SimpleHttpResponse implements AutoCloseable {
         return StandardCharsets.UTF_8;
     }
 
+    /** 确保响应已读取并释放底层 HTTP 连接。 */
     public void close() throws IOException {
         readResponse();
     }

@@ -21,22 +21,29 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 负载均衡健康检查 SPI，注册 {@link LoadBalancerCheckProvider} 提供者类型。
+ */
 public class LoadBalancerCheckSpi implements Spi {
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code load-balancer-check}。 */
     @Override
     public String getName() {
         return "load-balancer-check";
     }
 
+    /** 负载均衡检查提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return LoadBalancerCheckProvider.class;
     }
 
+    /** 负载均衡检查工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return LoadBalancerCheckProviderFactory.class;

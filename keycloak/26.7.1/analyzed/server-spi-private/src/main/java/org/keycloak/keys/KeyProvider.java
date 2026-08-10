@@ -23,14 +23,17 @@ import org.keycloak.crypto.KeyWrapper;
 import org.keycloak.provider.Provider;
 
 /**
+ * Realm 密钥提供者 SPI：暴露签名/加密等 {@link org.keycloak.crypto.KeyWrapper}。
+ * <p>由组件模型配置，供令牌签名、JWE 等加密操作使用。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface KeyProvider extends Provider {
 
     /**
-     * Returns the {@code KeyWrapper} for a {@code KeyProvider}.
+     * 返回本提供者管理的全部 {@link org.keycloak.crypto.KeyWrapper}。
      *
-     * @return Returns the {@code KeyWrapper} for a {@code KeyProvider}.
+     * @return 密钥包装流
      */
     Stream<KeyWrapper> getKeysStream();
 

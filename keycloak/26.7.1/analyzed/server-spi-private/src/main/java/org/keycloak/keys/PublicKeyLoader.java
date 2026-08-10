@@ -20,10 +20,18 @@ package org.keycloak.keys;
 import org.keycloak.crypto.PublicKeysWrapper;
 
 /**
+ * 公钥加载回调：由 {@link PublicKeyStorageProvider} 在缓存未命中时调用以拉取远程 JWK/JWKS。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface PublicKeyLoader {
 
+    /**
+     * 加载公钥集合。
+     *
+     * @return 公钥包装
+     * @throws Exception 拉取或解析失败
+     */
     PublicKeysWrapper loadKeys() throws Exception;
 
 }

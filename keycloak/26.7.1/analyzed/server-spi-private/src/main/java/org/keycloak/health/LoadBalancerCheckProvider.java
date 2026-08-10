@@ -20,29 +20,23 @@ package org.keycloak.health;
 import org.keycloak.provider.Provider;
 
 /**
- * This interface is used for controlling load balancer. If one of the implementations reports that it is down,
- * the load balancer endpoint will return the {@code DOWN} status.
- *
+ * 负载均衡健康检查 SPI：任一实现报告组件不可用时，负载均衡端点返回 {@code DOWN} 状态。
+ * <p>实现应在事件循环中非阻塞执行，避免过载时检查超时触发误切换。</p>
  */
 @FunctionalInterface
 public interface LoadBalancerCheckProvider extends Provider {
 
     /**
-     * Check if a component represented by this check is down/unhealthy.
-     * <p />
-     * The implementation must be non-blocking as it is executed in the event loop.
-     * It is necessary to run this in the event loop as blocking requests are queued and then the check
-     * would time out on the loadbalancer side when there is an overload situation in Keycloak.
-     * An automatic failover to the secondary site due to an overloaded primary site is desired as this could
-     * lead to a ping-pong between the sites where the primary site becomes available again once the switchover
-     * is complete.
+     * 判断本检查所代表的组件是否不可用。
+     * <p>必须在事件循环中非阻塞执行；阻塞会导致过载时负载均衡侧超时，可能引发主备站点间 ping-pong 切换。</p>
      *
-     * @return true if the component is down/unhealthy, false otherwise
+     * @return 组件不可用时为 {@code true}，否则为 {@code false}
      */
     boolean isDown();
 
+    /** 默认无资源需释放。 */
     @Override
     default void close() {
-        //no-op by default
+        // 默认无操作
     }
 }

@@ -19,5 +19,8 @@ package org.keycloak.health;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link LoadBalancerCheckProvider} 的 {@link org.keycloak.provider.ProviderFactory} 工厂接口。
+ */
 public interface LoadBalancerCheckProviderFactory extends ProviderFactory<LoadBalancerCheckProvider> {
 }

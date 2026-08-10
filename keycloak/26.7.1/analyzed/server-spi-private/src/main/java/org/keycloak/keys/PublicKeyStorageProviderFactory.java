@@ -20,6 +20,8 @@ package org.keycloak.keys;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link PublicKeyStorageProvider} 的 {@link org.keycloak.provider.ProviderFactory} 工厂接口。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface PublicKeyStorageProviderFactory<T extends PublicKeyStorageProvider> extends ProviderFactory<T> {

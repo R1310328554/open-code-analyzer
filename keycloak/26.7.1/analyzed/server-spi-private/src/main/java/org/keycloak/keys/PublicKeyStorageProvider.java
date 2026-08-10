@@ -24,59 +24,59 @@ import org.keycloak.crypto.KeyWrapper;
 import org.keycloak.provider.Provider;
 
 /**
+ * 公钥存储 SPI：缓存客户端/IdP 等外部公钥，供 JWT 客户端认证、JWE 与 SAML 验签使用。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface PublicKeyStorageProvider extends Provider {
 
 
     /**
-     * Get public key to verify messages signed by particular client. Used for example during JWT client authentication
+     * 按 {@code kid} 与算法获取用于验签的公钥（如 JWT 客户端认证）。
      *
-     * @param modelKey
-     * @param kid
-     * @param algorithm The returned key must match this algorithm (unless the algorithm is not set in the JWK)
-     * @param loader
-     * @return
+     * @param modelKey 缓存模型键
+     * @param kid JWK 密钥 ID
+     * @param algorithm 期望算法（JWK 未指定算法时可为空）
+     * @param loader 缓存未命中时的加载器
+     * @return 匹配的 {@link org.keycloak.crypto.KeyWrapper}
      */
 	KeyWrapper getPublicKey(String modelKey, String kid, String algorithm, PublicKeyLoader loader);
 
     /**
-     * Get first found public key to verify messages signed by particular client having several public keys. Used for example during JWT client authentication
-     * or to encrypt content encryption key (CEK) by particular client. Used for example during encrypting a token in JWE
-     * 
-     * @param modelKey
-     * @param algorithm
-     * @param loader
-     * @return
+     * 获取首个匹配算法的公钥（多密钥客户端的 JWT 验签或 JWE 加密 CEK 等场景）。
+     *
+     * @param modelKey 缓存模型键
+     * @param algorithm 期望算法
+     * @param loader 缓存未命中时的加载器
+     * @return 首个匹配的密钥，无则 {@code null}
      */
     KeyWrapper getFirstPublicKey(String modelKey, String algorithm, PublicKeyLoader loader);
 
     /**
-     * Get the first public key that matches the predicate. Used by SAML when fetching
-     * a key via the metadata entity descriptor url.
+     * 返回首个满足谓词的公钥（SAML 通过元数据 URL 拉取密钥等）。
      *
-     * @param modelKey
-     * @param predicate
-     * @param loader
-     * @return The key or null
+     * @param modelKey 缓存模型键
+     * @param predicate 密钥过滤条件
+     * @param loader 缓存未命中时的加载器
+     * @return 匹配的密钥或 {@code null}
      */
     KeyWrapper getFirstPublicKey(String modelKey, Predicate<KeyWrapper> predicate, PublicKeyLoader loader);
 
     /**
-     * Getter for all the keys in the model key.
+     * 返回模型键下的全部公钥。
      *
-     * @param modelKey
-     * @param loader
-     * @return
+     * @param modelKey 缓存模型键
+     * @param loader 缓存未命中时的加载器
+     * @return 公钥列表
      */
     List<KeyWrapper> getKeys(String modelKey, PublicKeyLoader loader);
 
     /**
-     * Reloads keys for the model key.
+     * 强制重新加载指定模型键的公钥。
      *
-     * @param modelKey
-     * @param loader
-     * @return true if reloaded, false if not
+     * @param modelKey 缓存模型键
+     * @param loader 加载器
+     * @return 是否成功重新加载
      */
     boolean reloadKeys(String modelKey, PublicKeyLoader loader);
 }

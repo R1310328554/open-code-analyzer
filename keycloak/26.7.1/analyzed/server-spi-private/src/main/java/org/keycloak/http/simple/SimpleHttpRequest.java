@@ -52,6 +52,9 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicNameValuePair;
 
 /**
+ * 可链式配置的 HTTP 请求构建器：设置头、查询参数、JSON/表单实体并执行。
+ * <p>由 {@link SimpleHttp} 创建；响应封装为 {@link SimpleHttpResponse}。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  * @author Vlastimil Elias (velias at redhat dot com)
  * @author David Klassen (daviddd.kl@gmail.com)
@@ -80,6 +83,7 @@ public class SimpleHttpRequest {
         this.objectMapper = objectMapper;
     }
 
+    /** 添加或覆盖请求头。 */
     public SimpleHttpRequest header(String name, String value) {
         if (headers == null) {
             headers = new HashMap<>();
@@ -88,6 +92,7 @@ public class SimpleHttpRequest {
         return this;
     }
 
+    /** @return 指定名称的请求头值，未设置时为 {@code null} */
     public String getHeader(String name) {
         if (headers != null) {
             return headers.get(name);
@@ -95,6 +100,7 @@ public class SimpleHttpRequest {
         return null;
     }
 
+    /** @return 不可修改的请求头映射，未设置时为 {@code null} */
     public Map<String, String> getHeaders() {
         if (headers == null) {
             return null;
@@ -124,11 +130,13 @@ public class SimpleHttpRequest {
         return method;
     }
 
+    /** 将请求体设为 JSON 序列化对象（执行时默认 {@code Content-Type: application/json}）。 */
     public SimpleHttpRequest json(Object entity) {
         this.entity = entity;
         return this;
     }
 
+    /** 设置原始 {@link org.apache.http.HttpEntity} 请求体。 */
     public SimpleHttpRequest entity(HttpEntity entity) {
         this.entity = entity;
         return this;
@@ -139,6 +147,7 @@ public class SimpleHttpRequest {
         return this;
     }
 
+    /** 添加查询或表单参数（GET 等附加到 URL，POST 等作为表单实体）。 */
     public SimpleHttpRequest param(String name, String value) {
         if (params == null) {
             params = new HashMap<>();
@@ -147,17 +156,20 @@ public class SimpleHttpRequest {
         return this;
     }
 
+    /** 设置 {@code Authorization: Bearer <token>} 头。 */
     public SimpleHttpRequest auth(String token) {
         header("Authorization", "Bearer " + token);
         return this;
     }
 
+    /** 设置 HTTP Basic 认证头。 */
     public SimpleHttpRequest authBasic(final String username, final String password) {
         final String basicCredentials = String.format("%s:%s", username, password);
         header("Authorization", "Basic " + Base64.getEncoder().encodeToString(basicCredentials.getBytes()));
         return this;
     }
 
+    /** 若未设置 Accept，则添加 {@code application/json}。 */
     public SimpleHttpRequest acceptJson() {
         if (headers == null || !headers.containsKey("Accept")) {
             header("Accept", "application/json");
@@ -165,6 +177,7 @@ public class SimpleHttpRequest {
         return this;
     }
 
+    /** 执行请求并将响应体解析为 {@link com.fasterxml.jackson.databind.JsonNode}。 */
     public JsonNode asJson() throws IOException {
         if (headers == null || !headers.containsKey("Accept")) {
             header("Accept", "application/json");
@@ -186,18 +199,21 @@ public class SimpleHttpRequest {
         return objectMapper.readValue(asString(), type);
     }
 
+    /** 执行请求并返回响应体字符串（自动关闭响应）。 */
     public String asString() throws IOException {
         try (SimpleHttpResponse response = makeRequest()) {
             return response.asString();
         }
     }
 
+    /** 执行请求并返回 HTTP 状态码。 */
     public int asStatus() throws IOException {
         try (SimpleHttpResponse response = asResponse()) {
             return response.getStatus();
         }
     }
 
+    /** 执行请求并返回 {@link SimpleHttpResponse}（调用方负责关闭）。 */
     public SimpleHttpResponse asResponse() throws IOException {
         return makeRequest();
     }
@@ -214,9 +230,8 @@ public class SimpleHttpRequest {
         };
     }
 
-    /**
-     * @return the URL without params
-     */
+    /** @return 不含查询参数的原始 URL */
+    
     public String getUrl() {
         return url;
     }
