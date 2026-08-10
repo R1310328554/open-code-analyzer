@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
+ * 本地 cluster.conf 文件寻址模式：启动时读取配置并通过文件监听自动刷新成员列表。
  * Cluster.conf file managed cluster member node addressing pattern.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -56,7 +57,7 @@ public class FileConfigMemberLookup extends AbstractMemberLookup {
     public void doStart() throws NacosException {
         readClusterConfFromDisk();
         
-        // Use the inotify mechanism to monitor file changes and automatically
+        // 通过 inotify 监听 cluster.conf 变更并自动重读
         // trigger the reading of cluster.conf
         try {
             WatchFileCenter.registerWatcher(EnvUtil.getConfPath(), watcher);

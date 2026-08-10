@@ -69,7 +69,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import static com.alibaba.nacos.api.exception.NacosException.CLIENT_INVALID_PARAM;
 
 /**
- * Cluster node management in Nacos.
+ * Nacos 集群节点管理器：维护本机与集群成员状态、寻址模式、成员上报与健康地址集合，并在成员变更时发布 {@link MembersChangeEvent}。
  *
  * <p>{@link ServerMemberManager#init()} Cluster node manager initialization {@link ServerMemberManager#shutdown()} The
  * cluster node manager is down {@link ServerMemberManager#getSelf()} Gets local node information
@@ -105,41 +105,27 @@ public class ServerMemberManager implements NacosMemberManager {
     
     private static final long DEFAULT_TASK_DELAY_TIME = 5_000L;
     
-    /**
-     * Cluster node list.
-     */
+    /** 按地址排序的集群成员映射表（ip:port → {@link Member}）。 */
     private volatile ConcurrentSkipListMap<String, Member> serverList;
     
-    /**
-     * port.
-     */
+    /** 本节点对外服务端口。 */
     private int port;
     
-    /**
-     * Address information for the local node.
-     */
+    /** 本机地址（ip:port）。 */
     private String localAddress;
     
-    /**
-     * Addressing pattern instances.
-     */
+    /** 当前生效的成员寻址策略实例。 */
     private MemberLookup lookup;
     
-    /**
-     * self member obj.
-     */
+    /** 本机 {@link Member} 对象。 */
     private volatile Member self;
     
     private volatile long memberReportTs = System.currentTimeMillis();
     
-    /**
-     * here is always the node information of the "UP" state.
-     */
+    /** 状态为 UP 的成员地址集合，供路由与选主使用。 */
     private volatile Set<String> memberAddressInfos = new ConcurrentHashSet<>();
     
-    /**
-     * Broadcast this node element information task.
-     */
+    /** 周期性向其他节点上报本机元数据的任务。 */
     private final MemberInfoReportTask infoReportTask = new MemberInfoReportTask();
     
     private final UnhealthyMemberInfoReportTask unhealthyMemberInfoReportTask =
@@ -156,26 +142,26 @@ public class ServerMemberManager implements NacosMemberManager {
         this.localAddress = InetUtils.getSelfIP() + ":" + port;
         this.self = MemberUtil.singleParse(this.localAddress);
         this.self.setExtendVal(MemberMetaDataConstants.VERSION, VersionUtils.version);
-        //works  for gray model upgrade,can delete after compatibility period.
+        // 灰度升级兼容标记，过渡期后可删除
         this.self.setExtendVal(MemberMetaDataConstants.SUPPORT_GRAY_MODEL, true);
         this.self.setGrpcReportEnabled(true);
         
-        // init abilities.
+        // 初始化本节点能力集
         this.self.setAbilities(initMemberAbilities());
         
         serverList.put(self.getAddress(), self);
         
-        // register NodeChangeEvent publisher to NotifyManager
+        // 向 NotifyCenter 注册成员变更事件发布器
         registerClusterEvent();
         
-        // Initializes the lookup mode
+        // 初始化并启动成员寻址模式
         initAndStartLookup();
         
         Loggers.CORE.info("The cluster resource is initialized");
     }
     
     /**
-     * Init the ability of current node.
+     * 初始化本节点 {@link ServerAbilities}（已废弃，能力改由 {@link ServerAbilityControlManager} 管理）。
      *
      * @return ServerAbilities
      * @deprecated ability of current node and event cluster can be managed by {@link ServerAbilityControlManager}
@@ -190,12 +176,12 @@ public class ServerMemberManager implements NacosMemberManager {
     }
     
     private void registerClusterEvent() {
-        // Register node change events
+        // 注册成员变更事件发布器
         NotifyCenter.registerToPublisher(MembersChangeEvent.class,
             EnvUtil.getProperty(MEMBER_CHANGE_EVENT_QUEUE_SIZE_PROPERTY, Integer.class,
                 DEFAULT_MEMBER_CHANGE_EVENT_QUEUE_SIZE));
         
-        // The address information of this node needs to be dynamically modified
+        // 监听本机 IP 变更，动态更新 localAddress 与 serverList
         // when registering the IP change of this node
         NotifyCenter.registerSubscriber(new Subscriber<InetUtils.IPChangeEvent>() {
             
@@ -230,10 +216,10 @@ public class ServerMemberManager implements NacosMemberManager {
     }
     
     /**
-     * switch look up.
+     * 运行时切换成员寻址模式。
      *
-     * @param name look up name.
-     * @throws NacosException exception.
+     * @param name 寻址模式名称
+     * @throws NacosException 切换失败时抛出
      */
     public void switchLookup(String name) throws NacosException {
         this.lookup = LookupFactory.switchLookup(name, this);
@@ -242,10 +228,10 @@ public class ServerMemberManager implements NacosMemberManager {
     }
     
     /**
-     * member information update.
+     * 更新指定成员的基础信息与扩展字段；若关键字段变化则发布变更事件。
      *
-     * @param newMember {@link Member}
-     * @return update is success
+     * @param newMember 新成员快照
+     * @return 更新是否成功
      */
     public boolean update(Member newMember) {
         Loggers.CLUSTER.debug("member information update : {}", newMember);
@@ -266,7 +252,7 @@ public class ServerMemberManager implements NacosMemberManager {
                 System.currentTimeMillis());
             MemberUtil.copy(newMember, member);
             if (isPublishChangeEvent) {
-                // member basic data changes and all listeners need to be notified
+                // 基础信息变化时需通知所有订阅方
                 notifyMemberChange(member);
             }
             return member;
@@ -281,10 +267,10 @@ public class ServerMemberManager implements NacosMemberManager {
     }
     
     /**
-     * Whether the node exists within the cluster.
+     * 判断指定地址是否属于当前集群成员（支持仅 IP 精确匹配）。
      *
-     * @param address ip:port
-     * @return is exists
+     * @param address ip:port 或纯 IP
+     * @return 是否存在
      */
     public boolean hasMember(String address) {
         boolean result = serverList.containsKey(address);
@@ -292,7 +278,7 @@ public class ServerMemberManager implements NacosMemberManager {
             return true;
         }
         
-        // If only the IP is passed in (without port), match members by IP exactly.
+        // 仅传入 IP 时按 member.getIp() 精确匹配，避免前缀误判
         // Comparing the member IP avoids IPv4 prefix collisions (e.g. "192.168.1.10"
         // wrongly matching "192.168.1.100:8848") as well as IPv6 parsing pitfalls from
         // naive ":" splitting (e.g. "[::1]:8848").
@@ -330,22 +316,22 @@ public class ServerMemberManager implements NacosMemberManager {
     }
     
     /**
-     * return this cluster all members.
+     * 返回包含本机在内的全部成员副本。
      *
-     * @return {@link Collection} all member
+     * @return 成员 {@link Collection}
      */
     @Override
     public Collection<Member> allMembers() {
-        // We need to do a copy to avoid affecting the real data
+        // 返回副本，避免外部修改内部 serverList
         HashSet<Member> set = new HashSet<>(serverList.values());
         set.add(self);
         return set;
     }
     
     /**
-     * return this cluster all members without self.
+     * 返回除本机外的集群成员列表。
      *
-     * @return {@link Collection} all member without self
+     * @return 不含本机的成员 {@link Collection}
      */
     public List<Member> allMembersWithoutSelf() {
         List<Member> members = new ArrayList<>(serverList.values());
@@ -368,7 +354,7 @@ public class ServerMemberManager implements NacosMemberManager {
             Loggers.CLUSTER.warn("[serverlist] self ip {} not in serverlist {}", self, members);
         }
         
-        // If the number of old and new clusters is different, the cluster information
+        // 成员数量或集合差异即视为集群拓扑变更
         // must have changed; if the number of clusters is the same, then compare whether
         // there is a difference; if there is a difference, then the cluster node changes
         // are involved and all recipients need to be notified of the node change event
@@ -384,7 +370,7 @@ public class ServerMemberManager implements NacosMemberManager {
                 hasChange = true;
                 tmpMap.put(address, member);
             } else {
-                //to keep extendInfo and abilities that report dynamically.
+                // 保留已存在成员的 extendInfo 与 abilities
                 tmpMap.put(address, existMember);
             }
             
@@ -398,8 +384,8 @@ public class ServerMemberManager implements NacosMemberManager {
         
         Collection<Member> finalMembers = allMembers();
         
-        // Persist the current cluster node information to cluster.conf
-        // <important> need to put the event publication into a synchronized block to ensure
+        // 将最新成员列表持久化到 cluster.conf
+        // <important> 在 synchronized 块内发布事件，保证顺序一致
         // that the event publication is sequential
         if (hasChange) {
             Loggers.CLUSTER.info("[serverlist] changed to : {}", finalMembers);
@@ -416,10 +402,10 @@ public class ServerMemberManager implements NacosMemberManager {
     }
     
     /**
-     * members join this cluster.
+     * 将新成员并入当前集群视图。
      *
-     * @param members {@link Collection} new members
-     * @return is success
+     * @param members 待加入成员
+     * @return 是否发生变更
      */
     public synchronized boolean memberJoin(Collection<Member> members) {
         Set<Member> set = new HashSet<>(members);
@@ -428,10 +414,10 @@ public class ServerMemberManager implements NacosMemberManager {
     }
     
     /**
-     * members leave this cluster.
+     * 从集群视图中移除指定成员。
      *
-     * @param members {@link Collection} wait leave members
-     * @return is success
+     * @param members 待离开成员
+     * @return 是否发生变更
      */
     public synchronized boolean memberLeave(Collection<Member> members) {
         Set<Member> set = new HashSet<>(allMembers());
@@ -440,10 +426,10 @@ public class ServerMemberManager implements NacosMemberManager {
     }
     
     /**
-     * check this member whether is in the specific status.
+     * 检查成员是否处于给定 {@link NodeState} 之一。
      *
      * @param address ip:port
-     * @return is health
+     * @return 是否匹配目标状态
      */
     public boolean stateCheck(String address, List<NodeState> nodeStates) {
         Member member = serverList.get(address);
@@ -459,10 +445,10 @@ public class ServerMemberManager implements NacosMemberManager {
     }
     
     /**
-     * this member {@link Member#getState()} is health.
+     * 判断成员是否非 UP（即不健康或下线）。
      *
      * @param address ip:port
-     * @return is health
+     * @return 是否不健康
      */
     public boolean isUnHealth(String address) {
         Member member = serverList.get(address);
@@ -489,9 +475,9 @@ public class ServerMemberManager implements NacosMemberManager {
     }
     
     /**
-     * ServerMemberManager shutdown.
+     * 关闭成员管理器：清空列表、停止上报任务并销毁寻址实例。
      *
-     * @throws NacosException NacosException
+     * @throws NacosException 销毁寻址时可能抛出
      */
     @PreDestroy
     public void shutdown() throws NacosException {
@@ -519,6 +505,7 @@ public class ServerMemberManager implements NacosMemberManager {
         return Collections.unmodifiableMap(serverList);
     }
     
+    /** 轮询向集群其他节点上报本机元数据（HTTP 或 gRPC）。 */
     class MemberInfoReportTask extends Task {
         
         private final GenericType<RestResult<String>> reference =
@@ -535,7 +522,7 @@ public class ServerMemberManager implements NacosMemberManager {
         protected void executeBody() {
             List<Member> members = ServerMemberManager.this.allMembersWithoutSelf();
             
-            //report member count per 50 seconds.
+            // 每 50 秒打印一次成员数量
             if (System.currentTimeMillis() - memberReportTs > REPORT_INTERVAL) {
                 Loggers.CLUSTER.info("[serverlist] membercount={}", members.size() + 1);
                 memberReportTs = System.currentTimeMillis();
@@ -550,7 +537,7 @@ public class ServerMemberManager implements NacosMemberManager {
             
             Loggers.CLUSTER.debug("report the metadata to the node : {}", target.getAddress());
             
-            // adapt old version
+            // 兼容旧版本：按能力选择 gRPC 或 HTTP 上报
             if (target.getAbilities().getRemoteAbility().isGrpcReportEnabled()
                 || target.isGrpcReportEnabled()) {
                 reportByGrpc(target);
@@ -581,7 +568,7 @@ public class ServerMemberManager implements NacosMemberManager {
                                     "failed to report new info to target node : {}, result : {}",
                                     target.getAddress(), result);
                                 MemberUtil.onFail(ServerMemberManager.this, target);
-                                // try to connect by grpc next time, adapt old version
+                                // 失败后下次尝试 gRPC，兼容旧版
                                 target.setGrpcReportEnabled(true);
                                 target.getAbilities().getRemoteAbility().setGrpcReportEnabled(true);
                             }
@@ -614,7 +601,7 @@ public class ServerMemberManager implements NacosMemberManager {
         }
         
         protected void reportByGrpc(Member target) {
-            //Todo  circular reference
+            // Todo 存在循环依赖，延迟获取 Bean
             if (Objects.isNull(clusterRpcClientProxy)) {
                 clusterRpcClientProxy = ApplicationUtils.getBean(ClusterRpcClientProxy.class);
             }
@@ -674,6 +661,7 @@ public class ServerMemberManager implements NacosMemberManager {
         }
     }
     
+    /** 针对非 UP 成员的高频上报任务，加速故障节点恢复感知。 */
     class UnhealthyMemberInfoReportTask extends MemberInfoReportTask {
         
         @Override

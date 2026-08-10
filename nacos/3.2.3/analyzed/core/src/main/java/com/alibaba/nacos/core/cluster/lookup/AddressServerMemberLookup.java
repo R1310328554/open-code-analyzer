@@ -38,6 +38,7 @@ import java.util.Map;
 import static com.alibaba.nacos.common.constant.RequestUrlConstants.HTTP_PREFIX;
 
 /**
+ * 地址服务器寻址模式：周期性从 address-server 拉取集群成员列表并同步到本地。
  * Cluster member addressing mode for the address server.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -47,25 +48,34 @@ public class AddressServerMemberLookup extends AbstractMemberLookup {
     private final GenericType<String> genericType = new GenericType<String>() {
     };
     
+    /** 地址服务器域名。 */
     public String domainName;
     
+    /** 地址服务器端口。 */
     public String addressPort;
     
+    /** 获取 serverlist 的 URL 路径。 */
     public String addressUrl;
     
+    /** 环境标识查询 URL。 */
     public String envIdUrl;
     
+    /** 完整的 serverlist 请求地址。 */
     public String addressServerUrl;
     
+    /** 地址服务器是否健康（连续失败超阈值则置 false）。 */
     private volatile boolean isAddressServerHealth = true;
     
+    /** 连续拉取失败次数。 */
     private int addressServerFailCount = 0;
     
+    /** 判定 address-server 不健康的最大失败次数。 */
     private int maxFailCount = 12;
     
     private final NacosRestTemplate restTemplate =
         HttpClientBeanHolder.getNacosRestTemplate(Loggers.CORE);
     
+    /** 同步任务是否已关闭。 */
     private volatile boolean shutdown = false;
     
     private static final String HEALTH_CHECK_FAIL_COUNT_PROPERTY = "maxHealthCheckFailCount";
@@ -135,7 +145,7 @@ public class AddressServerMemberLookup extends AbstractMemberLookup {
     }
     
     private void run() throws NacosException {
-        // With the address server, you need to perform a synchronous member node pull at startup
+        // 启动时需同步拉取 serverlist，失败则重试
         // Repeat three times, successfully jump out
         boolean success = false;
         Throwable ex = null;
@@ -197,6 +207,7 @@ public class AddressServerMemberLookup extends AbstractMemberLookup {
         }
     }
     
+    /** 定时从 address-server 同步成员列表的后台任务。 */
     class AddressServerSyncTask implements Runnable {
         
         @Override

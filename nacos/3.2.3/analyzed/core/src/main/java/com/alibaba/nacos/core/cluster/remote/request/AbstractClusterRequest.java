@@ -21,14 +21,17 @@ package com.alibaba.nacos.core.cluster.remote.request;
 import com.alibaba.nacos.api.remote.request.Request;
 
 /**
+ * 集群模块 RPC 请求基类：统一将 {@link #getModule()} 固定为 cluster。
  * Cluster request.
  *
  * @author xiweng.yy
  */
 public abstract class AbstractClusterRequest extends Request {
     
+    /** 集群模块标识常量。 */
     private static final String CLUSTER = "cluster";
     
+    /** 返回集群模块名 cluster。 */
     @Override
     public String getModule() {
         return CLUSTER;

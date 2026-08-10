@@ -21,6 +21,7 @@ import com.alibaba.nacos.core.cluster.lookup.AbstractMemberLookup;
 import java.util.Collection;
 
 /**
+ * Nacos 集群成员管理 SPI：成员列表变更与查询的统一抽象，由 {@link ServerMemberManager} 实现并在寻址模块回调。
  * Nacos member managers.
  *
  * @author xiweng.yy
@@ -28,17 +29,17 @@ import java.util.Collection;
 public interface NacosMemberManager {
     
     /**
-     * Nacos members changed, called in {@link AbstractMemberLookup#afterLookup(Collection)}.
+     * 成员列表发生变更时回调，通常在 {@link AbstractMemberLookup#afterLookup(Collection)} 中触发。
      *
-     * @param members new members
-     * @return {@code true} if changed, {@code false} otherwise
+     * @param members 最新成员集合
+     * @return 若集群视图有变化返回 {@code true}，否则 {@code false}
      */
     boolean memberChange(Collection<Member> members);
     
     /**
-     * Get all members.
+     * 获取当前感知的全部集群成员。
      *
-     * @return {@link Collection} all member
+     * @return 成员 {@link Collection}
      */
     Collection<Member> allMembers();
 }

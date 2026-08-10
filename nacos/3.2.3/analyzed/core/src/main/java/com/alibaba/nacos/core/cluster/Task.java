@@ -20,12 +20,14 @@ import com.alibaba.nacos.common.utils.ExceptionUtil;
 import com.alibaba.nacos.core.utils.Loggers;
 
 /**
+ * 集群后台任务抽象基类：封装执行体、异常日志与完成后调度逻辑。
  * task.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public abstract class Task implements Runnable {
     
+    /** 任务是否已请求停止。 */
     protected volatile boolean shutdown = false;
     
     @Override
@@ -45,17 +47,18 @@ public abstract class Task implements Runnable {
     }
     
     /**
-     * Task executive.
+     * 任务核心执行逻辑，由子类实现。
      */
     protected abstract void executeBody();
     
     /**
-     * after executeBody should do.
+     * {@link #executeBody()} 完成后回调，通常用于再次调度。
      */
     protected void after() {
         
     }
     
+    /** 标记任务停止，后续 {@link #run()} 将不再调度。 */
     public void shutdown() {
         shutdown = true;
     }

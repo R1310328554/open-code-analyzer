@@ -25,14 +25,17 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 成员寻址策略抽象基类：注入 {@link NacosMemberManager} 并在寻址完成后回调成员变更。
  * Addressable pattern base class.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public abstract class AbstractMemberLookup implements MemberLookup {
     
+    /** 集群成员管理器，用于回写寻址结果。 */
     protected NacosMemberManager memberManager;
     
+    /** 寻址器是否已启动。 */
     protected AtomicBoolean start = new AtomicBoolean(false);
     
     @Override
@@ -60,14 +63,14 @@ public abstract class AbstractMemberLookup implements MemberLookup {
     }
     
     /**
-     * subclass can override this method if need.
-     * @throws NacosException NacosException
+     * 子类实现启动逻辑（如拉取 serverlist、监听文件）。
+     * @throws NacosException 启动失败时抛出
      */
     protected abstract void doStart() throws NacosException;
     
     /**
-     * subclass can override this method if need.
-     * @throws NacosException nacosException
+     * 子类实现销毁逻辑（停止定时任务、注销监听器等）。
+     * @throws NacosException 销毁失败时抛出
      */
     protected abstract void doDestroy() throws NacosException;
 }

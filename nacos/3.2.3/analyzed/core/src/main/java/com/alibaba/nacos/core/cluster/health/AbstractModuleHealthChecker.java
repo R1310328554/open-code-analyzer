@@ -17,6 +17,7 @@
 package com.alibaba.nacos.core.cluster.health;
 
 /**
+ * 模块就绪探针抽象基类：构造时自动注册到 {@link ModuleHealthCheckerHolder}。
  * Health checker.
  *
  * @author xiweng.yy
@@ -28,16 +29,16 @@ public abstract class AbstractModuleHealthChecker {
     }
     
     /**
-     * Check readiness.
+     * 检查本模块是否已就绪可对外服务。
      *
-     * @return {@code true} if readiness, otherwise {@code false}
+     * @return 就绪返回 {@code true}，否则 {@code false}
      */
     public abstract boolean readiness();
     
     /**
-     * Module name.
+     * 返回模块名称，用于就绪失败时的聚合提示。
      *
-     * @return module name
+     * @return 模块名
      */
     public abstract String getModuleName();
 }

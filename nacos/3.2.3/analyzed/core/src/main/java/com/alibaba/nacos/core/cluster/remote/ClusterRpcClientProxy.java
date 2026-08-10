@@ -51,6 +51,7 @@ import java.util.stream.Collectors;
 import static com.alibaba.nacos.api.exception.NacosException.CLIENT_INVALID_PARAM;
 
 /**
+ * 集群 RPC 客户端代理：为每个远程成员维护 gRPC 连接，并在 {@link MembersChangeEvent} 时刷新客户端池。
  * cluster rpc client proxy.
  *
  * @author liuzunfei
@@ -61,6 +62,7 @@ public class ClusterRpcClientProxy extends MemberChangeListener {
     
     private static final long DEFAULT_REQUEST_TIME_OUT = 3000L;
     
+    /** 集群成员管理器，提供成员列表与变更事件源。 */
     final ServerMemberManager serverMemberManager;
     
     public ClusterRpcClientProxy(ServerMemberManager serverMemberManager) {
@@ -68,7 +70,7 @@ public class ClusterRpcClientProxy extends MemberChangeListener {
     }
     
     /**
-     * init after constructor.
+     * 构造完成后订阅成员变更并初始化 RPC 客户端。
      */
     @PostConstruct
     public void init() {
@@ -87,18 +89,18 @@ public class ClusterRpcClientProxy extends MemberChangeListener {
     }
     
     /**
-     * init cluster rpc clients.
+     * 为给定成员创建或复用 RPC 客户端，并清理已离开节点的客户端。
      *
-     * @param members cluster server list member list.
+     * @param members 当前集群成员（不含本机）
      */
     private void refresh(List<Member> members) throws NacosException {
         
-        //ensure to create client of new members
+        // 确保为新成员创建客户端
         for (Member member : members) {
             createRpcClientAndStart(member, ConnectionType.GRPC);
         }
         
-        //shutdown and remove old members.
+        // 关闭并移除已离开成员的客户端
         Set<Map.Entry<String, RpcClient>> allClientEntrys = RpcClientFactory.getAllClientEntries();
         Iterator<Map.Entry<String, RpcClient>> iterator = allClientEntrys.iterator();
         List<String> newMemberKeys =
@@ -137,7 +139,7 @@ public class ClusterRpcClientProxy extends MemberChangeListener {
         if (client.isWaitInitiated()) {
             Loggers.CLUSTER.info("start a new rpc client to member -> : {}", member);
             
-            //one fixed server
+            // 单固定服务端地址的 ServerListFactory
             client.serverListFactory(new ServerListFactory() {
                 
                 @Override
@@ -161,7 +163,7 @@ public class ClusterRpcClientProxy extends MemberChangeListener {
     }
     
     /**
-     * Using {@link EnvUtil#getAvailableProcessors(int)} to build cluster clients' grpc thread pool.
+     * 基于 {@link EnvUtil#getAvailableProcessors(int)} 配置集群 gRPC 客户端线程池。
      */
     private RpcClient buildRpcClient(ConnectionType type, Map<String, String> labels,
         String memberClientKey) {
@@ -175,12 +177,12 @@ public class ClusterRpcClientProxy extends MemberChangeListener {
     }
     
     /**
-     * send request to member.
+     * 向指定成员同步发送 RPC 请求（默认超时 3s）。
      *
-     * @param member  member of server.
-     * @param request request.
-     * @return Response response.
-     * @throws NacosException exception may throws.
+     * @param member  目标成员
+     * @param request 请求体
+     * @return 响应
+     * @throws NacosException 无客户端或发送失败时抛出
      */
     public Response sendRequest(Member member, Request request) throws NacosException {
         return sendRequest(member, request, DEFAULT_REQUEST_TIME_OUT);
@@ -193,6 +195,7 @@ public class ClusterRpcClientProxy extends MemberChangeListener {
      * @param request request.
      * @return Response response.
      * @throws NacosException exception may throws.
+      * <p>集群 RPC 客户端代理；详见类级说明。</p>
      */
     public Response sendRequest(Member member, Request request, long timeoutMills)
         throws NacosException {
@@ -207,12 +210,12 @@ public class ClusterRpcClientProxy extends MemberChangeListener {
     }
     
     /**
-     * aync send request to member with callback.
+     * 异步向成员发送 RPC 请求并通过回调接收结果。
      *
-     * @param member   member of server.
-     * @param request  request.
-     * @param callBack RequestCallBack.
-     * @throws NacosException exception may throws.
+     * @param member   目标成员
+     * @param request  请求体
+     * @param callBack 异步回调
+     * @throws NacosException 无客户端时抛出
      */
     public void asyncRequest(Member member, Request request, RequestCallBack callBack)
         throws NacosException {
@@ -227,10 +230,10 @@ public class ClusterRpcClientProxy extends MemberChangeListener {
     }
     
     /**
-     * send request to member.
+     * 向除本机外的全部成员广播请求。
      *
-     * @param request request.
-     * @throws NacosException exception may throw.
+     * @param request 请求体
+     * @throws NacosException 任一发送失败时抛出
      */
     public void sendRequestToAllMembers(Request request) throws NacosException {
         List<Member> members = serverMemberManager.allMembersWithoutSelf();
@@ -252,10 +255,10 @@ public class ClusterRpcClientProxy extends MemberChangeListener {
     }
     
     /**
-     * Check whether client for member is ready.
+     * 检查目标成员的 RPC 客户端是否已连接就绪。
      *
-     * @param member member
-     * @return {@code true} if target client is connected, otherwise {@code false}
+     * @param member 目标成员
+     * @return 已连接返回 {@code true}
      */
     public boolean isRunning(Member member) {
         RpcClient client = RpcClientFactory.getClient(memberClientKey(member));

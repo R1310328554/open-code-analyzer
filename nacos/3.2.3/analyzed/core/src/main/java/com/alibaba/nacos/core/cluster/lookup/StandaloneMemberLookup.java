@@ -23,23 +23,27 @@ import com.alibaba.nacos.sys.env.EnvUtil;
 import java.util.Collections;
 
 /**
+ * 单机模式寻址：仅将本机地址作为唯一成员，无需外部 serverlist。
  * Member node addressing mode in stand-alone mode.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class StandaloneMemberLookup extends AbstractMemberLookup {
     
+    /** 启动时将本机 localAddress 作为唯一成员写入成员管理器。 */
     @Override
     public void doStart() {
         String url = EnvUtil.getLocalAddress();
         afterLookup(MemberUtil.readServerConf(Collections.singletonList(url)));
     }
     
+    /** 单机模式无需销毁额外资源。 */
     @Override
     protected void doDestroy() throws NacosException {
         
     }
     
+    /** 单机模式不使用 address-server。 */
     @Override
     public boolean useAddressServer() {
         return false;

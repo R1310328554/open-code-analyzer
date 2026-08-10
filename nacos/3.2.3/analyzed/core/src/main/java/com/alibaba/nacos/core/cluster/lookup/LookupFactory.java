@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
+ * 成员寻址工厂：根据配置或环境选择 file / address-server 等 {@link MemberLookup} 实现。
  * An addressing pattern factory, responsible for the creation of all addressing patterns.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -42,10 +43,10 @@ public final class LookupFactory {
     private static LookupType currentLookupType = null;
     
     /**
-     * Create the target addressing pattern.
+     * 根据配置创建目标寻址实现（不含成员管理器注入）。
      *
      * @return {@link MemberLookup}
-     * @throws NacosException NacosException
+     * @throws NacosException 创建失败时抛出
      */
     public static MemberLookup createLookUp() throws NacosException {
         String lookupType = EnvUtil.getProperty(LOOKUP_MODE_TYPE);
@@ -55,11 +56,11 @@ public final class LookupFactory {
     }
     
     /**
-     * Create the target addressing pattern.
+     * 创建寻址实例并注入 {@link ServerMemberManager}；单机模式使用 {@link StandaloneMemberLookup}。
      *
      * @param memberManager {@link ServerMemberManager}
      * @return {@link MemberLookup}
-     * @throws NacosException NacosException
+     * @throws NacosException 创建失败时抛出
      */
     public static MemberLookup createLookUp(ServerMemberManager memberManager)
         throws NacosException {
@@ -75,12 +76,12 @@ public final class LookupFactory {
     }
     
     /**
-     * Switch to target addressing mode.
+     * 运行时切换到指定寻址模式，必要时销毁旧实例。
      *
-     * @param name          target member-lookup name
+     * @param name          寻址模式名称
      * @param memberManager {@link ServerMemberManager}
-     * @return {@link MemberLookup}
-     * @throws NacosException {@link NacosException}
+     * @return 新的 {@link MemberLookup}
+     * @throws NacosException 切换失败时抛出
      */
     public static MemberLookup switchLookup(String name, ServerMemberManager memberManager)
         throws NacosException {
@@ -117,7 +118,7 @@ public final class LookupFactory {
             LOOK_UP = new AddressServerMemberLookup();
             return LOOK_UP;
         }
-        // unpossible to run here
+        // 不应执行到此分支
         throw new IllegalArgumentException();
     }
     
@@ -146,12 +147,12 @@ public final class LookupFactory {
     public enum LookupType {
         
         /**
-         * File addressing mode.
+         * 基于 cluster.conf 文件的寻址模式。
          */
         FILE_CONFIG(1, "file"),
         
         /**
-         * Address server addressing mode.
+         * 基于 address-server 的寻址模式。
          */
         ADDRESS_SERVER(2, "address-server");
         
@@ -165,9 +166,9 @@ public final class LookupFactory {
         }
         
         /**
-         * find one {@link LookupType} by name, if not found, return null.
+         * 按名称解析 {@link LookupType}，未匹配则返回 null。
          *
-         * @param name name
+         * @param name 模式名称
          * @return {@link LookupType}
          */
         public static LookupType sourceOf(String name) {

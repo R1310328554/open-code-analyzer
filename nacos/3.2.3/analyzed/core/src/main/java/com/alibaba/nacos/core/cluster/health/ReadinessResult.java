@@ -17,25 +17,31 @@
 package com.alibaba.nacos.core.cluster.health;
 
 /**
+ * 集群/模块就绪检查结果：包含是否成功及可读说明信息。
  * Readiness result.
  *
  * @author xiweng.yy
  */
 public class ReadinessResult {
     
+    /** 是否全部模块就绪。 */
     private final boolean success;
     
+    /** 结果说明（成功时为 OK，失败时列出未就绪模块）。 */
     private final String resultMessage;
     
+    /** 构造就绪结果。 */
     public ReadinessResult(boolean success, String resultMessage) {
         this.success = success;
         this.resultMessage = resultMessage;
     }
     
+    /** 是否就绪成功。 */
     public boolean isSuccess() {
         return success;
     }
     
+    /** 获取结果说明文本。 */
     public String getResultMessage() {
         return resultMessage;
     }

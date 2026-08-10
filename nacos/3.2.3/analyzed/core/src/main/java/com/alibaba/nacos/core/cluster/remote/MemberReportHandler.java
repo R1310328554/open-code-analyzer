@@ -37,6 +37,7 @@ import com.alibaba.nacos.plugin.auth.constant.SignType;
 import org.springframework.stereotype.Component;
 
 /**
+ * 集群成员上报 gRPC 处理器：接收远端节点元数据，校验后将状态置为 UP 并更新本地成员视图。
  * MemberReportHandler.
  *
  * @author : huangtianhui
@@ -46,8 +47,10 @@ import org.springframework.stereotype.Component;
 @InvokeSource(source = {RemoteConstants.LABEL_SOURCE_CLUSTER})
 public class MemberReportHandler extends RequestHandler<MemberReportRequest, MemberReportResponse> {
     
+    /** 本地集群成员管理器。 */
     private final ServerMemberManager memberManager;
     
+    /** 注入成员管理器。 */
     public MemberReportHandler(ServerMemberManager memberManager) {
         this.memberManager = memberManager;
     }

@@ -22,6 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
+ * 模块健康检查器持有者：聚合各 {@link AbstractModuleHealthChecker} 并统一执行就绪探测。
  * Holder of namespace detail injector.
  *
  * @author xiweng.yy
@@ -30,24 +31,27 @@ public class ModuleHealthCheckerHolder {
     
     private static final ModuleHealthCheckerHolder INSTANCE = new ModuleHealthCheckerHolder();
     
+    /** 已注册的全部模块检查器。 */
     private final List<AbstractModuleHealthChecker> moduleHealthCheckers;
     
     private ModuleHealthCheckerHolder() {
         this.moduleHealthCheckers = new LinkedList<>();
     }
     
+    /** 获取单例持有者。 */
     public static ModuleHealthCheckerHolder getInstance() {
         return INSTANCE;
     }
     
+    /** 注册模块检查器（通常由子类构造器调用）。 */
     public void registerChecker(AbstractModuleHealthChecker checker) {
         this.moduleHealthCheckers.add(checker);
     }
     
     /**
-     * Do check readiness for modules.
+     * 依次检查所有已注册模块的就绪状态。
      *
-     * @return readiness result
+     * @return {@link ReadinessResult} 聚合结果
      */
     public ReadinessResult checkReadiness() {
         List<String> readinessFailedModule = new LinkedList<>();
