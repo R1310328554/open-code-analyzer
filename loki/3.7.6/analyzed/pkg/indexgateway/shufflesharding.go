@@ -1,5 +1,7 @@
 package indexgateway
 
+// shufflesharding 实现 Index Gateway ring 模式的租户 shuffle sharding：定义 ring 操作码、Limits 接口及服务端/客户端一致的分片子环逻辑。
+
 import (
 	"github.com/grafana/dskit/ring"
 	"github.com/pkg/errors"
@@ -12,6 +14,7 @@ var (
 	// (replicas included).
 	IndexesSync = ring.NewOp([]ring.InstanceState{ring.JOINING, ring.ACTIVE, ring.LEAVING}, nil)
 
+// IndexesRead 仅 ACTIVE 实例参与 querier 的索引读取 ring 查找。
 	// IndexesRead is the operation run by the querier/query frontent to query
 	// indexes via the index gateway.
 	IndexesRead = ring.NewOp([]ring.InstanceState{ring.ACTIVE}, nil)
@@ -19,6 +22,7 @@ var (
 	errGatewayUnhealthy = errors.New("index-gateway is unhealthy in the ring")
 )
 
+// Limits 暴露每租户 shard 大小、最大容量比例及 TSDB 分片/预计算 chunk 限制。
 type Limits interface {
 	IndexGatewayShardSize(tenantID string) int
 	IndexGatewayMaxCapacity(tenantID string) float64
@@ -32,6 +36,7 @@ type ShardingStrategy interface {
 	FilterTenants(tenantID []string) ([]string, error)
 }
 
+// ShuffleShardingStrategy 在 ring 服务端按实例 ID 过滤应同步的租户列表。
 type ShuffleShardingStrategy struct {
 	r            ring.ReadRing
 	limits       Limits
@@ -48,6 +53,7 @@ func NewShuffleShardingStrategy(r ring.ReadRing, l Limits, instanceAddr, instanc
 	}
 }
 
+// FilterTenants 校验本实例 ring 健康后，仅保留属于本子环的 tenant ID。
 // FilterTenants implements ShardingStrategy.
 func (s *ShuffleShardingStrategy) FilterTenants(tenantIDs []string) ([]string, error) {
 	// As a protection, ensure the index-gateway instance is healthy in the ring. It could also be missing
@@ -73,6 +79,7 @@ func (s *ShuffleShardingStrategy) FilterTenants(tenantIDs []string) ([]string, e
 	return filteredIDs, nil
 }
 
+// GetShuffleShardingSubring 按 IndexGatewayShardSize 对租户做 ShuffleShard；0 表示全 ring。
 // GetShuffleShardingSubring returns the subring to be used for a given user.
 // This function should be used both by index gateway servers and clients in
 // order to guarantee the same logic is used.
@@ -91,6 +98,7 @@ func GetShuffleShardingSubring(ring ring.ReadRing, tenantID string, limits Limit
 	return ring.ShuffleShard(tenantID, shardSize)
 }
 
+// NoopStrategy 不过滤租户，用于 simple 模式或 ring 客户端模式。
 // NoopStrategy is an implementation of the ShardingStrategy that does not
 // filter anything.
 // This is used when the index gateway runs in simple mode or when the index
@@ -106,6 +114,7 @@ func (s *NoopStrategy) FilterTenants(tenantIDs []string) ([]string, error) {
 	return tenantIDs, nil
 }
 
+// GetShardingStrategy 根据 Mode 与 RingManager 模式返回 ShuffleSharding 或 Noop 策略。
 // GetShardingStrategy returns the correct ShardingStrategy implementation based
 // on provided configuration.
 func GetShardingStrategy(cfg Config, indexGatewayRingManager *lokiring.RingManager, o Limits) ShardingStrategy {
@@ -116,3 +125,4 @@ func GetShardingStrategy(cfg Config, indexGatewayRingManager *lokiring.RingManag
 	instanceID := indexGatewayRingManager.RingLifecycler.GetInstanceID()
 	return NewShuffleShardingStrategy(indexGatewayRingManager.Ring, o, instanceAddr, instanceID)
 }
+// errGatewayUnhealthy 表示本实例未出现在 IndexesSync 健康集合中。

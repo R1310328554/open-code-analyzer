@@ -1,5 +1,7 @@
 package ingester
 
+// checkpoint 实现 ingester WAL 检查点：将内存 stream/chunk 序列化为 protobuf 写入 checkpoint WAL，支持限速写入与旧检查点清理。
+
 import (
 	"bytes"
 	"context"
@@ -37,11 +39,13 @@ var (
 	headBufferPool = pool.NewBuffer(64, 2*1024*1024, 2)
 )
 
+// chunkWithBuffer 持有 blocks/head 缓冲池引用及可序列化的 Chunk 字段。
 type chunkWithBuffer struct {
 	blocks, head *bytes.Buffer
 	Chunk
 }
 
+// toWireChunks 复用 wireChunks 切片与 buffer 池，将 chunkDesc 序列化为可 checkpoint 的 Chunk。
 // The passed wireChunks slice is for re-use.
 func toWireChunks(descs []chunkDesc, wireChunks []chunkWithBuffer) ([]chunkWithBuffer, error) {
 	// release memory from previous list of chunks.
@@ -112,6 +116,7 @@ func fromWireChunks(conf *Config, headfmt chunkenc.HeadBlockFmt, wireChunks []Ch
 }
 
 // nolint:interfacer
+// decodeCheckpointRecord 复制 rec 避免 WAL Next 间缓冲区失效，再 proto 反序列化 Series。
 func decodeCheckpointRecord(rec []byte, s *Series) error {
 	// TODO(owen-d): reduce allocs
 	// The proto unmarshaling code will retain references to the underlying []byte it's passed
@@ -219,6 +224,7 @@ func newStreamsIterator(ing ingesterInstances) *streamIterator {
 	}
 }
 
+// Next 遍历各 instance 的 stream，跳过已 flush 的空 stream 并填充 Series protobuf。
 // Next loads the next stream of the current instance.
 // If the instance is empty, it moves to the next instance until there is no more.
 // Return true if there's a next stream, each successful calls will replace the current stream.
@@ -276,11 +282,13 @@ func (s *streamIterator) Next() bool {
 	return true
 }
 
+// Error 返回 streamIterator 迭代过程中遇到的序列化错误。
 // Err returns an errors thrown while iterating over the streams.
 func (s *streamIterator) Error() error {
 	return s.err
 }
 
+// Stream 返回当前 Series 指针；下次 Next 前需拷贝数据。
 // Stream is serializable (for checkpointing) stream of chunks.
 // NOTE: the series is re-used between successful Next calls.
 // This means you should make a copy or use the data before calling Next.
@@ -302,6 +310,7 @@ type walLogger interface {
 	Dir() string
 }
 
+// WALCheckpointWriter 向临时 checkpoint 目录写入 Series 记录，完成后原子 rename。
 type WALCheckpointWriter struct {
 	metrics    *ingesterMetrics
 	segmentWAL *wlog.WL
@@ -313,6 +322,7 @@ type WALCheckpointWriter struct {
 	recs          [][]byte
 }
 
+// Advance 推进 segment WAL、创建 .tmp 检查点目录；无 segment 时返回 noop。
 func (w *WALCheckpointWriter) Advance() (bool, error) {
 	_, lastSegment, err := wlog.Segments(w.segmentWAL.Dir())
 	if err != nil {
@@ -358,6 +368,7 @@ func (w *WALCheckpointWriter) Advance() (bool, error) {
 // Buckets [64KB to 256MB] by 2
 var recordBufferPool = prompool.New(1<<16, 1<<28, 2, func(size int) interface{} { return make([]byte, 0, size) })
 
+// Write 编码 Series 为 CheckpointRecord；缓冲超过 1MB 时 flush 到 checkpoint WAL。
 func (w *WALCheckpointWriter) Write(s *Series) error {
 	size := s.Size() + 1 // +1 for header
 	buf := recordBufferPool.Get(size).([]byte)[:size]
@@ -492,6 +503,7 @@ func (w *WALCheckpointWriter) deleteCheckpoints(maxIndex int) (err error) {
 //
 // This differs from deleteCheckpoints() which runs after successful checkpoint completion and handles
 // normal cleanup including .tmp files.
+// cleanupOldCheckpoints 启动时删除已被更新 checkpoint 取代且安全的旧目录。
 func cleanupOldCheckpoints(dir string, protectedCheckpointIdx int, logger log.Logger) {
 	level.Info(util_log.Logger).Log("msg", "old checkpoint cleanup starting")
 	start := time.Now()
@@ -545,6 +557,7 @@ func cleanupOldCheckpoints(dir string, protectedCheckpointIdx int, logger log.Lo
 // cleanupStaleTmpCheckpoints removes all .tmp checkpoint directories which represent
 // incomplete/failed checkpoint operations. These are safe to delete because recovery
 // only uses completed checkpoints (those without the .tmp suffix).
+// cleanupStaleTmpCheckpoints 删除未完成 checkpoint 留下的 .tmp 目录。
 func cleanupStaleTmpCheckpoints(dir string, logger log.Logger) {
 	level.Info(util_log.Logger).Log("msg", "tmp checkpoint cleanup starting")
 	start := time.Now()
@@ -579,6 +592,7 @@ func cleanupStaleTmpCheckpoints(dir string, logger log.Logger) {
 	}
 }
 
+// Close 完成 flush 后原子替换目录、截断旧 segment 并删除过期 checkpoint。
 func (w *WALCheckpointWriter) Close(abort bool) error {
 	if len(w.recs) > 0 {
 		if err := w.flush(); err != nil {
@@ -617,6 +631,7 @@ func (w *WALCheckpointWriter) Close(abort bool) error {
 	return nil
 }
 
+// Checkpointer 按固定间隔驱动 SeriesIter 写入 CheckpointWriter。
 type Checkpointer struct {
 	dur     time.Duration
 	iter    SeriesIter
@@ -636,6 +651,7 @@ func NewCheckpointer(dur time.Duration, iter SeriesIter, writer CheckpointWriter
 	}
 }
 
+// PerformCheckpoint 限速遍历全部 series；超时后切换为 burst 模式尽快写完。
 func (c *Checkpointer) PerformCheckpoint() (err error) {
 	noop, err := c.writer.Advance()
 	if err != nil {
@@ -701,6 +717,7 @@ func (c *Checkpointer) PerformCheckpoint() (err error) {
 	return c.writer.Close(false)
 }
 
+// Run 在 ticker 触发时执行 PerformCheckpoint，收到 quit 信号时停止。
 func (c *Checkpointer) Run() {
 	ticker := time.NewTicker(c.dur)
 	defer ticker.Stop()
@@ -731,3 +748,4 @@ func unflushedChunks(descs []chunkDesc) []chunkDesc {
 
 	return filtered
 }
+// checkpoint.N 命名表示覆盖至 segment N 的完整快照，恢复时可从该 segment 重放。

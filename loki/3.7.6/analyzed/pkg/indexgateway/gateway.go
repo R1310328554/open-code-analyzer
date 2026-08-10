@@ -1,5 +1,7 @@
 package indexgateway
 
+// gateway 实现 Index Gateway gRPC 服务端：将 QueryIndex/GetChunkRef/GetShards 等 RPC 委托给 indexQuerier 与多时期 indexClient。
+
 import (
 	"context"
 	"fmt"
@@ -44,6 +46,7 @@ const (
 	maxIndexEntriesPerResponse = 1000
 )
 
+// IndexQuerier 聚合 ChunkFetcher、BaseReader 与 StatsReader 能力。
 type IndexQuerier interface {
 	stores.ChunkFetcher
 	index.BaseReader
@@ -65,6 +68,7 @@ type BloomQuerier interface {
 	FilterChunkRefs(ctx context.Context, tenant string, from, through model.Time, series map[uint64]labels.Labels, chunks []*logproto.ChunkRef, plan plan.QueryPlan) ([]*logproto.ChunkRef, bool, error)
 }
 
+// Gateway 持有 indexQuerier、分时期 indexClients、bloomQuerier 与 Prometheus 指标。
 type Gateway struct {
 	services.Service
 
@@ -78,6 +82,7 @@ type Gateway struct {
 	log    log.Logger
 }
 
+// NewIndexGateway 按 TableRange 降序排列 indexClients，注册指标并包装 IdleService 生命周期。
 // NewIndexGateway instantiates a new Index Gateway and start its services.
 //
 // In case it is configured to be in ring mode, a Basic Service wrapping the ring client is started.
@@ -109,6 +114,7 @@ func NewIndexGateway(cfg Config, limits Limits, log log.Logger, r prometheus.Reg
 	return g, nil
 }
 
+// QueryIndex 按表号将查询路由到对应 indexClient，流式返回索引行（每批最多 1000 条）。
 func (g *Gateway) QueryIndex(request *logproto.QueryIndexRequest, server logproto.IndexGateway_QueryIndexServer) error {
 	log, _ := spanlogger.NewOTel(context.Background(), g.log, tracer, "IndexGateway.QueryIndex")
 	defer log.Finish()
@@ -176,6 +182,7 @@ func (g *Gateway) QueryIndex(request *logproto.QueryIndexRequest, server logprot
 	return nil
 }
 
+// buildResponses 迭代 ReadBatch 并按 maxIndexEntriesPerResponse 分批构造 QueryIndexResponse。
 func buildResponses(query seriesindex.Query, batch seriesindex.ReadBatchResult, callback func(*logproto.QueryIndexResponse) error) error {
 	itr := batch.Iterator()
 	var resp []*logproto.Row
@@ -211,6 +218,7 @@ func buildResponses(query seriesindex.Query, batch seriesindex.ReadBatchResult, 
 	return nil
 }
 
+// GetChunkRef 查索引获 chunk 引用，可选经 bloomQuerier 过滤并填充统计字段。
 func (g *Gateway) GetChunkRef(ctx context.Context, req *logproto.GetChunkRefRequest) (result *logproto.GetChunkRefResponse, err error) {
 	logger := util_log.WithContext(ctx, g.log)
 	ctx, sp := tracer.Start(ctx, "indexgateway.GetChunkRef")
@@ -307,6 +315,7 @@ func (g *Gateway) GetChunkRef(ctx context.Context, req *logproto.GetChunkRefRequ
 	return result, nil
 }
 
+// GetSeries 解析 matchers 后调用 indexQuerier.GetSeries 返回标签序列。
 func (g *Gateway) GetSeries(ctx context.Context, req *logproto.GetSeriesRequest) (*logproto.GetSeriesResponse, error) {
 	instanceID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -391,6 +400,7 @@ func (g *Gateway) LabelValuesForMetricName(ctx context.Context, req *logproto.La
 	}, nil
 }
 
+// GetStats 返回匹配序列的索引统计（流/块/字节等）。
 func (g *Gateway) GetStats(ctx context.Context, req *logproto.IndexStatsRequest) (*logproto.IndexStatsResponse, error) {
 	instanceID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -404,6 +414,7 @@ func (g *Gateway) GetStats(ctx context.Context, req *logproto.IndexStatsRequest)
 	return g.indexQuerier.Stats(ctx, instanceID, req.From, req.Through, matchers...)
 }
 
+// GetVolume 按标签聚合查询时间范围内的日志体积。
 func (g *Gateway) GetVolume(ctx context.Context, req *logproto.VolumeRequest) (*logproto.VolumeResponse, error) {
 	instanceID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -418,6 +429,7 @@ func (g *Gateway) GetVolume(ctx context.Context, req *logproto.VolumeRequest) (*
 	return g.indexQuerier.Volume(ctx, instanceID, req.From, req.Through, req.GetLimit(), req.TargetLabels, req.AggregateBy, matchers...)
 }
 
+// GetShards 若索引支持 forSeries 则走 boundedShards，否则回退 indexQuerier.GetShards。
 func (g *Gateway) GetShards(request *logproto.ShardsRequest, server logproto.IndexGateway_GetShardsServer) error {
 	ctx := server.Context()
 	ctx, sp := tracer.Start(ctx, "indexgateway.GetShards")
@@ -456,6 +468,7 @@ func (g *Gateway) GetShards(request *logproto.ShardsRequest, server logproto.Ind
 	return g.boundedShards(ctx, request, server, instanceID, p)
 }
 
+// boundedShards 解析 chunk 引用、可选 bloom 过滤，按 TargetBytesPerShard 生成分片与预计算 chunk 组。
 // boundedShards handles bounded shard requests, optionally returning precomputed chunks.
 func (g *Gateway) boundedShards(
 	ctx context.Context,
@@ -584,6 +597,7 @@ func (g *Gateway) boundedShards(
 	return server.Send(resp)
 }
 
+// ExtractShardRequestMatchersAndAST 解析查询为单一 matcher 组的 chunk.Predicate，供分片规划使用。
 // ExtractShardRequestMatchersAndAST extracts the matchers and AST from a query string.
 // It errors if there is more than one matcher group in the AST as this is supposed to be
 // split out during query planning before reaching this point.
@@ -615,6 +629,7 @@ func ExtractShardRequestMatchersAndAST(query string) (chunk.Predicate, error) {
 	}), nil
 }
 
+// accumulateChunksToShards 按指纹聚合 chunk 大小并调用 ShardsFor 切分目标字节分片。
 func accumulateChunksToShards(
 	req *logproto.ShardsRequest,
 	filtered []logproto.ChunkRefWithSizingInfo,
@@ -701,6 +716,7 @@ func (r refWithSizingInfo) Cmp(chk tsdb_index.ChunkMeta) iter.Ord {
 	return iter.Eq
 }
 
+// failingIndexClient 在未启用 boltdb-shipper 时占位，QueryPages 始终返回初始化错误。
 type failingIndexClient struct{}
 
 func (f failingIndexClient) QueryPages(_ context.Context, _ []seriesindex.Query, _ seriesindex.QueryPagesCallback) error {
@@ -708,3 +724,4 @@ func (f failingIndexClient) QueryPages(_ context.Context, _ []seriesindex.Query,
 }
 
 func (f failingIndexClient) Stop() {}
+// sendBatchMtx 保证 gRPC 流 Send 串行，避免 concurrent send 违规。

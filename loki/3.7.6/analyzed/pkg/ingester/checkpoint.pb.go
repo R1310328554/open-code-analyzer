@@ -3,6 +3,8 @@
 
 package ingester
 
+// checkpoint.pb 为 ingester WAL 检查点的 protobuf 生成代码：Chunk/Series 消息用于 checkpoint 序列化与 Memchunk 恢复。
+
 import (
 	bytes "bytes"
 	fmt "fmt"
@@ -32,6 +34,7 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Chunk 是 chunkDesc 的可序列化中间表示，含 Memchunk 块数据与 headBlock 字节。
 // Chunk is a {de,}serializable intermediate type for chunkDesc which allows
 // efficient loading/unloading to disk during WAL checkpoint recovery.
 type Chunk struct {
@@ -41,6 +44,7 @@ type Chunk struct {
 	LastUpdated time.Time `protobuf:"bytes,4,opt,name=lastUpdated,proto3,stdtime" json:"lastUpdated"`
 	Closed      bool      `protobuf:"varint,5,opt,name=closed,proto3" json:"closed,omitempty"`
 	Synced      bool      `protobuf:"varint,6,opt,name=synced,proto3" json:"synced,omitempty"`
+// Data 字段反序列化为 Memchunk 的压缩块数据。
 	// data to be unmarshaled into a MemChunk
 	Data []byte `protobuf:"bytes,7,opt,name=data,proto3" json:"data,omitempty"`
 	// data to be unmarshaled into a MemChunk's headBlock
@@ -135,6 +139,7 @@ func (m *Chunk) GetHead() []byte {
 	return nil
 }
 
+// Series 保存租户 ID、指纹、标签、chunk 列表及 stream 元数据（末行/计数器）。
 // Series is a {de,}serializable intermediate type for Series.
 type Series struct {
 	UserID string `protobuf:"bytes,1,opt,name=userID,proto3" json:"userID,omitempty"`
@@ -142,10 +147,12 @@ type Series struct {
 	Fingerprint uint64                                                 `protobuf:"varint,2,opt,name=fingerprint,proto3" json:"fingerprint,omitempty"`
 	Labels      []github_com_grafana_loki_v3_pkg_logproto.LabelAdapter `protobuf:"bytes,3,rep,name=labels,proto3,customtype=github.com/grafana/loki/v3/pkg/logproto.LabelAdapter" json:"labels"`
 	Chunks      []Chunk                                                `protobuf:"bytes,4,rep,name=chunks,proto3" json:"chunks"`
+// To 记录 stream 最近一次 push 的时间戳。
 	// most recently pushed timestamp.
 	To time.Time `protobuf:"bytes,5,opt,name=to,proto3,stdtime" json:"to"`
 	// most recently pushed line.
 	LastLine string `protobuf:"bytes,6,opt,name=lastLine,proto3" json:"lastLine,omitempty"`
+// HighestTs 为 push 计数器最高值，WAL 重放时用于跳过已应用条目。
 	// highest counter value for pushes to this stream.
 	// Used to skip already applied entries during WAL replay.
 	EntryCt int64 `protobuf:"varint,7,opt,name=entryCt,proto3" json:"entryCt,omitempty"`
@@ -1432,3 +1439,4 @@ var (
 	ErrInvalidLengthCheckpoint = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowCheckpoint   = fmt.Errorf("proto: integer overflow")
 )
+// 本文件由 protoc-gen-gogo 生成，手工注释仅说明 checkpoint 数据结构语义。

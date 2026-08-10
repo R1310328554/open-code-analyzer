@@ -1,5 +1,7 @@
 package indexgateway
 
+// metrics 定义 Index Gateway 服务端 chunk 过滤前后的数量直方图：按 route（chunk_refs/shards）区分 GetChunkRef 与 GetShards 路径。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -12,6 +14,7 @@ const (
 	routeShards    = "shards"
 )
 
+// Metrics 封装 preFilterChunks 与 postFilterChunks 两个 HistogramVec。
 type Metrics struct {
 	preFilterChunks  *prometheus.HistogramVec
 	postFilterChunks *prometheus.HistogramVec
@@ -35,3 +38,4 @@ func NewMetrics(r prometheus.Registerer) *Metrics {
 		}, []string{"route"}),
 	}
 }
+// bloom 过滤前后 chunk 数量差异反映索引剪枝效果。

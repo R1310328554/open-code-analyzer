@@ -1,5 +1,7 @@
 package client
 
+// compat 提供与 Prometheus 一致的标签指纹算法：FastFingerprint 用于 logproto.LabelAdapter，Fingerprint 用于 labels.Labels。
+
 import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
@@ -8,17 +10,21 @@ import (
 )
 
 const (
-	// offset64 is an offset require for the FNV (Fowler-Noll-Vo) hash function.
+	// offset64 为 FNV-1a 64 位哈希的初始偏移常量。
+// offset64 is an offset require for the FNV (Fowler-Noll-Vo) hash function.
 	offset64 = 14695981039346656037
-	// prime64 is a 64bit prime used by the FNV hash function.
+	// prime64 为 FNV-1a 每字节乘法的 64 位质数。
+// prime64 is a 64bit prime used by the FNV hash function.
 	prime64 = 1099511628211
 )
 
+// hashNew 返回 FNV-1a 哈希的初始状态 offset64。
 // hashNew initializes a new fnv64a hash value.
 func hashNew() uint64 {
 	return offset64
 }
 
+// FastFingerprint 对每个标签名/值分别哈希后 XOR 聚合，与 Prometheus 快速指纹一致。
 // FastFingerprint runs the same algorithm as Prometheus labelSetToFastFingerprint()
 func FastFingerprint(ls []logproto.LabelAdapter) model.Fingerprint {
 	if len(ls) == 0 {
@@ -36,6 +42,7 @@ func FastFingerprint(ls []logproto.LabelAdapter) model.Fingerprint {
 	return model.Fingerprint(result)
 }
 
+// Fingerprint 顺序哈希全部标签并以 SeparatorByte 分隔，与 Prometheus 标准指纹一致。
 // Fingerprint runs the same algorithm as Prometheus labelSetToFingerprint()
 func Fingerprint(lbls labels.Labels) model.Fingerprint {
 	sum := hashNew()
@@ -47,3 +54,4 @@ func Fingerprint(lbls labels.Labels) model.Fingerprint {
 	})
 	return model.Fingerprint(sum)
 }
+// 指纹算法必须与 Prometheus 兼容以保证 series 路由与存储一致。

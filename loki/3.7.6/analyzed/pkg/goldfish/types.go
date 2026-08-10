@@ -1,9 +1,12 @@
 package goldfish
 
+// types 定义 Goldfish A/B 查询对比的核心数据结构：采样记录、双单元性能统计、对比状态枚举及 API 过滤/统计类型。
+
 import (
 	"time"
 )
 
+// QuerySample 记录一次双单元查询的元数据、性能统计与对比结论（不含原始响应体）。
 // QuerySample represents a sampled query with performance stats from both cells
 type QuerySample struct {
 	CorrelationID   string        `json:"correlationId"`
@@ -17,6 +20,7 @@ type QuerySample struct {
 	EndTime         time.Time     `json:"endTime"`
 	Step            time.Duration `json:"step"`
 
+// 仅存性能统计而非完整响应，降低敏感数据泄露风险。
 	// Performance statistics instead of raw responses
 	CellAStats QueryStats `json:"cellAStats"`
 	CellBStats QueryStats `json:"cellBStats"`
@@ -53,6 +57,7 @@ type QuerySample struct {
 	SampledAt time.Time `json:"sampledAt"`
 }
 
+// QueryStats 从查询响应头/统计中提取的执行时间、吞吐与分片信息。
 // QueryStats contains extracted performance statistics
 type QueryStats struct {
 	ExecTimeMs           int64 `json:"execTimeMs"`           // Execution time in milliseconds
@@ -66,6 +71,7 @@ type QueryStats struct {
 	Shards               int64 `json:"shards"`               // Number of shards
 }
 
+// ComparisonResult 保存 correlation 维度的对比状态、差异详情与性能比值。
 // ComparisonResult represents the outcome of comparing two responses
 type ComparisonResult struct {
 	CorrelationID        string
@@ -77,6 +83,7 @@ type ComparisonResult struct {
 	ComparedAt           time.Time
 }
 
+// ComparisonStatus 枚举 match/mismatch/error/partial/match_within_tolerance 等结果。
 // ComparisonStatus represents the outcome of a comparison
 type ComparisonStatus string
 
@@ -88,6 +95,7 @@ const (
 	ComparisonStatusMatchWithinTolerance ComparisonStatus = "match_within_tolerance"
 )
 
+// IsValid 校验 ComparisonStatus 是否为已知枚举值。
 // IsValid checks if the ComparisonStatus value is valid
 func (cs ComparisonStatus) IsValid() bool {
 	switch cs {
@@ -98,6 +106,7 @@ func (cs ComparisonStatus) IsValid() bool {
 	}
 }
 
+// PerformanceMetrics 对比双单元查询耗时与处理字节的比值。
 // PerformanceMetrics contains performance comparison data
 type PerformanceMetrics struct {
 	CellAQueryTime  time.Duration
@@ -108,6 +117,7 @@ type PerformanceMetrics struct {
 	BytesRatio      float64
 }
 
+// QueryFilter 列表 API 的租户、用户、引擎版本及时间范围过滤条件。
 // QueryFilter contains filters for querying sampled queries
 type QueryFilter struct {
 	Tenant           string
@@ -118,6 +128,7 @@ type QueryFilter struct {
 	From, To         time.Time
 }
 
+// StatsFilter 统计 API 的时间范围及是否排除近期数据。
 // StatsFilter contains filters for statistics queries
 type StatsFilter struct {
 	From           time.Time
@@ -125,6 +136,7 @@ type StatsFilter struct {
 	UsesRecentData bool // When false, exclude queries that touch data within the last 3h
 }
 
+// Statistics 聚合面板展示的执行量、覆盖率、匹配率与性能差异指标。
 // Statistics contains aggregated statistics across sampled queries
 type Statistics struct {
 	QueriesExecuted       int64   `json:"queriesExecuted"`       // Count of queries executed with new engine
@@ -132,3 +144,4 @@ type Statistics struct {
 	MatchingQueries       float64 `json:"matchingQueries"`       // Ratio of queries with matching responses
 	PerformanceDifference float64 `json:"performanceDifference"` // Geometric mean of performance ratio
 }
+// MismatchCause 仅在 ComparisonStatus 为 mismatch 时有意义。

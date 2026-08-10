@@ -1,5 +1,7 @@
 package indexgateway
 
+// client_pool 封装到单个 Index Gateway 实例的 gRPC 连接：组合 Health 与 IndexGateway 客户端，供 ring 模式连接池工厂使用。
+
 import (
 	"io"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// ClientPool 嵌入 HealthClient、IndexGatewayClient 与 Closer，表示一条活跃 gRPC 连接。
 // ClientPool represents a pool of gRPC connections to different index gateway instances.
 //
 // Only used when Index Gateway is configured to run in ring mode.
@@ -19,6 +22,7 @@ type ClientPool struct {
 	io.Closer
 }
 
+// NewClientPool 对给定地址 Dial gRPC 并创建健康检查与索引网关 protobuf 客户端。
 // NewClientPool instantiates a new pool of IndexGateway GRPC connections.
 //
 // Internally, it also instantiates a protobuf index gateway client and a health client.
@@ -35,3 +39,4 @@ func NewClientPool(address string, opts []grpc.DialOption) (*ClientPool, error) 
 		IndexGatewayClient: logproto.NewIndexGatewayClient(conn),
 	}, nil
 }
+// 仅 ring 模式下由 clientpool 工厂为每个 ring 实例创建 ClientPool。

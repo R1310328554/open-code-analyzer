@@ -1,5 +1,7 @@
 package goldfish
 
+// storage_mysql 实现 Goldfish 查询采样与对比结果的 MySQL 持久化：支持 mysql/cloudsql/rds 三种 DSN，嵌入 goose 迁移并暴露分页查询与聚合统计。
+
 import (
 	"context"
 	"database/sql"
@@ -19,6 +21,7 @@ import (
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
 
+// MySQLStorage 封装 sql.DB 连接池，负责 sampled_queries 与 comparison_outcomes 表的读写。
 // MySQLStorage provides MySQL storage implementation
 type MySQLStorage struct {
 	db     *sql.DB
@@ -26,6 +29,7 @@ type MySQLStorage struct {
 	logger log.Logger
 }
 
+// NewMySQLStorage 按配置类型构建 DSN、校验连通性并执行嵌入迁移；密码来自 GOLDFISH_DB_PASSWORD。
 // NewMySQLStorage creates a new MySQL storage backend
 func NewMySQLStorage(config StorageConfig, logger log.Logger) (*MySQLStorage, error) {
 	var dsn string
@@ -50,6 +54,7 @@ func NewMySQLStorage(config StorageConfig, logger log.Logger) (*MySQLStorage, er
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
+// 配置连接池：最大连接数、空闲连接数及空闲超时。
 	// Configure connection pool
 	db.SetMaxOpenConns(config.MaxConnections)
 	db.SetMaxIdleConns(config.MaxConnections / 2)
@@ -73,6 +78,7 @@ func NewMySQLStorage(config StorageConfig, logger log.Logger) (*MySQLStorage, er
 	}, nil
 }
 
+// StoreQuerySample 将双单元（cell A/B）性能指标与对比摘要写入 sampled_queries 表。
 // StoreQuerySample stores a sampled query with performance statistics
 func (s *MySQLStorage) StoreQuerySample(ctx context.Context, sample *QuerySample, comparison *ComparisonResult) error {
 	query := `
@@ -104,6 +110,7 @@ func (s *MySQLStorage) StoreQuerySample(ctx context.Context, sample *QuerySample
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
+// 空 span ID 写入 NULL，避免数据库唯一约束冲突。
 	// Convert empty span IDs to NULL for database storage
 	var cellASpanID, cellBSpanID any
 	if sample.CellASpanID != "" {
@@ -194,6 +201,7 @@ func (s *MySQLStorage) StoreQuerySample(ctx context.Context, sample *QuerySample
 	return err
 }
 
+// StoreComparisonResult 序列化差异详情与性能指标 JSON，UPSERT 到 comparison_outcomes。
 // StoreComparisonResult stores the outcome of comparing two responses
 func (s *MySQLStorage) StoreComparisonResult(ctx context.Context, result *ComparisonResult) error {
 	differenceJSON, err := json.Marshal(result.DifferenceDetails)
@@ -239,6 +247,7 @@ func (s *MySQLStorage) StoreComparisonResult(ctx context.Context, result *Compar
 	return err
 }
 
+// GetSampledQueries 按租户/用户/引擎/时间等过滤，多取一条判定 HasMore 分页。
 // GetSampledQueries retrieves sampled queries from the database with pagination and outcome filtering
 func (s *MySQLStorage) GetSampledQueries(ctx context.Context, page, pageSize int, filter QueryFilter) (*APIResponse, error) {
 	// Validate and sanitize input parameters
@@ -379,6 +388,7 @@ func (s *MySQLStorage) GetSampledQueries(ctx context.Context, page, pageSize int
 	}, nil
 }
 
+// GetQueryByCorrelationID 按 correlation_id 精确查询单条采样记录。
 // GetQueryByCorrelationID retrieves a single query sample by correlation ID
 func (s *MySQLStorage) GetQueryByCorrelationID(ctx context.Context, correlationID string) (*QuerySample, error) {
 	query := `
@@ -469,6 +479,7 @@ func (s *MySQLStorage) GetQueryByCorrelationID(ctx context.Context, correlationI
 	return &q, nil
 }
 
+// GetStatistics 聚合执行量、新引擎覆盖率、响应匹配率及性能比值几何均值。
 // GetStatistics retrieves aggregated statistics from the database
 func (s *MySQLStorage) GetStatistics(ctx context.Context, filter StatsFilter) (*Statistics, error) {
 	stats := &Statistics{}
@@ -545,11 +556,13 @@ func (s *MySQLStorage) GetStatistics(ctx context.Context, filter StatsFilter) (*
 	return stats, nil
 }
 
+// Close 关闭底层数据库连接。
 // Close closes the storage connection
 func (s *MySQLStorage) Close() error {
 	return s.db.Close()
 }
 
+// buildWhereClause 为列表查询拼装参数化 WHERE 子句（租户、用户、引擎、对比状态等）。
 // buildWhereClause constructs a WHERE clause based on the filter parameters
 func buildWhereClause(filter QueryFilter) (string, []any) {
 	var conditions []string
@@ -610,6 +623,7 @@ func buildWhereClause(filter QueryFilter) (string, []any) {
 	return whereClause, args
 }
 
+// buildStatsWhereClause 为统计查询添加时间范围；UsesRecentData=false 时排除近 3 小时数据。
 // buildStatsWhereClause constructs a WHERE clause for statistics queries
 func buildStatsWhereClause(filter StatsFilter) (string, []any) {
 	var conditions []string
@@ -639,6 +653,7 @@ func buildStatsWhereClause(filter StatsFilter) (string, []any) {
 	return whereClause, args
 }
 
+// runMigrations 使用 goose 对嵌入 migrations/*.sql 执行 Up 升级。
 // runMigrations runs database migrations
 func runMigrations(db *sql.DB) error {
 	goose.SetBaseFS(embedMigrations)
@@ -653,3 +668,4 @@ func runMigrations(db *sql.DB) error {
 
 	return nil
 }
+// Goldfish 双单元对比字段 cell_a/cell_b 对称存储，便于 A/B 引擎回归分析。

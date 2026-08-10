@@ -1,5 +1,7 @@
 package indexgateway
 
+// client 实现 Index Gateway 的 gRPC 客户端：支持 ring/simple 两种模式，含连接池、shuffle sharding、按查询结束时间的分桶路由。
+
 import (
 	"cmp"
 	"context"
@@ -43,6 +45,7 @@ const (
 	maxConcurrentGrpcCalls = 10
 )
 
+// ClientConfig 配置运行模式、ring 地址池、gRPC 参数及实验性时间分片桶。
 // ClientConfig configures the Index Gateway client used to communicate with
 // the Index Gateway server.
 type ClientConfig struct {
@@ -87,6 +90,7 @@ type ClientConfig struct {
 	TimeBasedShardingBuckets []string `yaml:"time_based_sharding_buckets" category:"Experimental"`
 }
 
+// RegisterFlagsWithPrefix 注册 gRPC 地址、请求日志及 time-based-sharding-buckets 等客户端 flag。
 // RegisterFlagsWithPrefix register client-specific flags with the given prefix.
 //
 // Flags that are used by both, client and server, are defined in the indexgateway package.
@@ -107,6 +111,7 @@ func (i *ClientConfig) RegisterFlags(f *flag.FlagSet) {
 	i.RegisterFlagsWithPrefix("index-gateway-client", f)
 }
 
+// GatewayClient 持有 gRPC 连接池、ring/DNS 发现、租户限制及时间分片桶配置。
 type GatewayClient struct {
 	logger                            log.Logger
 	cfg                               ClientConfig
@@ -119,6 +124,7 @@ type GatewayClient struct {
 	done                              chan struct{}
 }
 
+// NewGatewayClient 按模式创建 ring 池或 DNS 发现池，注册延迟直方图并启动连接池服务。
 // NewGatewayClient instantiates a new client used to communicate with an Index Gateway instance.
 //
 // If it is configured to be in ring mode, a pool of GRPC connections to all Index Gateway instances is created using a ring.
@@ -231,6 +237,7 @@ func NewGatewayClient(cfg ClientConfig, r prometheus.Registerer, limits Limits, 
 	return sgClient, nil
 }
 
+// Stop 优雅停止连接池；simple 模式下同时停止 DNS 发现。
 // Stop stops the execution of this gateway client.
 func (s *GatewayClient) Stop() {
 	ctx, cancel := context.WithTimeoutCause(context.Background(), 10*time.Second, errors.New("service shutdown timeout expired"))
@@ -244,6 +251,7 @@ func (s *GatewayClient) Stop() {
 	}
 }
 
+// QueryPages 将大批量 index.Query 拆分为 ≤100 条的 gRPC 批次并发执行。
 func (s *GatewayClient) QueryPages(ctx context.Context, queries []index.Query, callback index.QueryPagesCallback) error {
 	if len(queries) <= maxQueriesPerGrpc {
 		return s.doQueries(ctx, queries, callback)
@@ -262,6 +270,7 @@ func (s *GatewayClient) QueryIndex(_ context.Context, _ *logproto.QueryIndexRequ
 	panic("not implemented")
 }
 
+// GetChunkRef 经 poolDo 调用网关获取 chunk 引用，simple 模式可按查询结束时间过滤地址。
 func (s *GatewayClient) GetChunkRef(ctx context.Context, in *logproto.GetChunkRefRequest) (*logproto.GetChunkRefResponse, error) {
 	var (
 		resp *logproto.GetChunkRefResponse
@@ -346,6 +355,7 @@ func (s *GatewayClient) GetVolume(ctx context.Context, in *logproto.VolumeReques
 	return resp, err
 }
 
+// GetShards 流式合并各副本分片响应；最多容忍 2 次错误以兼容滚动升级。
 func (s *GatewayClient) GetShards(ctx context.Context, in *logproto.ShardsRequest) (res *logproto.ShardsResponse, err error) {
 
 	// We try to get the shards from the index gateway,
@@ -435,6 +445,7 @@ func (s *GatewayClient) doQueries(ctx context.Context, queries []index.Query, ca
 
 }
 
+// clientDoQueries 通过 QueryIndex 流式 RPC 接收索引页并回调 QueryPagesCallback。
 // clientDoQueries send a query request to an Index Gateway instance using the given gRPC client.
 //
 // It is used by both, simple and ring mode.
@@ -467,6 +478,7 @@ func (s *GatewayClient) clientDoQueries(ctx context.Context, gatewayQueries []*l
 	return nil
 }
 
+// poolDo 按租户解析网关地址，失败时 shuffle 后依次重试其他副本。
 // poolDo executes the given function for each Index Gateway instance in the ring mapping to the correct tenant in the index.
 // In case of callback failure, we'll try another member of the ring for that tenant ID.
 func (s *GatewayClient) poolDo(ctx context.Context, callback func(client logproto.IndexGatewayClient) error, filterServerList func([]string) []string) error {
@@ -533,6 +545,7 @@ func (s *GatewayClient) poolDoWithStrategy(
 	return lastErr
 }
 
+// jumpHashShuffleSharding 按 IndexGatewayMaxCapacity 比例用 jump hash 为租户选取固定网关子集。
 // jumpHashShuffleSharding uses jump hash to consistently select a subset of index gateway instances for a tenant.
 // It ensures that each tenant gets a deterministic set of gateways based on the IndexGatewayMaxCapacity limit,
 // which is expressed as a fraction (0.0 to 1.0) of the total available gateways.
@@ -592,6 +605,7 @@ func (s *GatewayClient) BatchWrite(_ context.Context, _ index.WriteBatch) error 
 	panic("unsupported")
 }
 
+// readBatch 包装 QueryIndexResponse 以实现 index.ReadBatch 接口。
 type readBatch struct {
 	*logproto.QueryIndexResponse
 }
@@ -621,6 +635,7 @@ func (b *grpcIter) Value() []byte {
 	return b.Rows[b.i].Value
 }
 
+// instrumentation 组装用户头注入与请求耗时 Prometheus 拦截器链。
 func instrumentation(cfg ClientConfig, clientRequestDuration *prometheus.HistogramVec) ([]grpc.UnaryClientInterceptor, []grpc.StreamClientInterceptor) {
 	var unaryInterceptors []grpc.UnaryClientInterceptor
 	unaryInterceptors = append(unaryInterceptors, cfg.GRPCUnaryClientInterceptors...)
@@ -635,6 +650,7 @@ func instrumentation(cfg ClientConfig, clientRequestDuration *prometheus.Histogr
 	return unaryInterceptors, streamInterceptors
 }
 
+// addressesForQueryEndTime 按查询结束时间将网关地址映射到时间桶对应的实例子集。
 func addressesForQueryEndTime(addrs []string, t time.Time, buckets []time.Duration, now time.Time) []string {
 	n := len(addrs)
 	m := len(buckets)
@@ -674,3 +690,4 @@ func addressesForQueryEndTime(addrs []string, t time.Time, buckets []time.Durati
 }
 
 func noFilter(addrs []string) []string { return addrs }
+// Ring 模式下 GetShuffleShardingSubring 保证客户端与服务端分片逻辑一致。

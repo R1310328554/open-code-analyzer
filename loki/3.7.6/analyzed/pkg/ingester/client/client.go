@@ -1,5 +1,7 @@
 package client
 
+// client 封装连接单个 ingester 的 gRPC 客户端：组合 Pusher/Querier/StreamData/Health 接口并注入 OTel 与 Prometheus 拦截器。
+
 import (
 	"flag"
 	"io"
@@ -26,6 +28,7 @@ var ingesterClientRequestDuration = promauto.NewHistogramVec(prometheus.Histogra
 	Buckets: prometheus.ExponentialBuckets(0.001, 4, 6),
 }, []string{"operation", "status_code"})
 
+// HealthAndIngesterClient 扩展 HealthClient 并支持 Close 释放连接。
 type HealthAndIngesterClient interface {
 	grpc_health_v1.HealthClient
 	Close() error
@@ -39,6 +42,7 @@ type ClosableHealthAndIngesterClient struct {
 	io.Closer
 }
 
+// Config 含连接池参数、gRPC 配置、超时及 Internal 标志（机器间通信不注入 userid）。
 // Config for an ingester client.
 type Config struct {
 	PoolConfig                   clientpool.PoolConfig          `yaml:"pool_config,omitempty" doc:"description=Configures how connections are pooled."`
@@ -53,6 +57,7 @@ type Config struct {
 	Internal bool `yaml:"-"`
 }
 
+// RegisterFlags 注册 ingester.client 前缀 gRPC flag 与健康检查超时。
 // RegisterFlags registers flags.
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	cfg.GRPCClientConfig.RegisterFlagsWithPrefix("ingester.client", f)
@@ -62,6 +67,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.DurationVar(&cfg.RemoteTimeout, "ingester.client.timeout", 5*time.Second, "The remote request timeout on the client side.")
 }
 
+// New 对 addr Dial gRPC，返回实现 HealthAndIngesterClient 的组合客户端。
 // New returns a new ingester client.
 func New(cfg Config, addr string) (HealthAndIngesterClient, error) {
 	opts := []grpc.DialOption{
@@ -91,6 +97,7 @@ func New(cfg Config, addr string) (HealthAndIngesterClient, error) {
 	}, nil
 }
 
+// instrumentation 组装 query tags、HTTP 头、可选 userid 注入与请求耗时指标拦截器。
 func instrumentation(cfg *Config) ([]grpc.UnaryClientInterceptor, []grpc.StreamClientInterceptor) {
 	var unaryInterceptors []grpc.UnaryClientInterceptor
 	unaryInterceptors = append(unaryInterceptors, cfg.GRPCUnaryClientInterceptors...)
@@ -112,3 +119,4 @@ func instrumentation(cfg *Config) ([]grpc.UnaryClientInterceptor, []grpc.StreamC
 
 	return unaryInterceptors, streamInterceptors
 }
+// Internal=true 时跳过 ClientUserHeaderInterceptor，用于组件间内部 RPC。
