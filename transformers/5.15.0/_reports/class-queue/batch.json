@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:51:38Z",
-  "files": [
-    "src/transformers/data/metrics/__init__.py",
-    "src/transformers/data/metrics/squad_metrics.py",
-    "src/transformers/data/processors/__init__.py",
-    "src/transformers/data/processors/glue.py",
-    "src/transformers/data/processors/squad.py",
-    "src/transformers/data/processors/utils.py",
-    "src/transformers/data/processors/xnli.py",
-    "src/transformers/debug_utils.py",
-    "src/transformers/dependency_versions_check.py",
-    "src/transformers/dependency_versions_table.py",
-    "src/transformers/distributed/__init__.py",
-    "src/transformers/distributed/configuration_utils.py",
-    "src/transformers/distributed/fsdp.py",
-    "src/transformers/distributed/mixin.py",
-    "src/transformers/distributed/sharding_utils.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2619,
-  "done": 45
+  "done": 60
 }
