@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/userprofile/AttributeChangeListener.java",
     "server-spi-private/src/main/java/org/keycloak/userprofile/DefaultAttributes.java",
     "server-spi-private/src/main/java/org/keycloak/userprofile/DefaultUserProfile.java",
-    "server-spi-private/src/main/java/org/keycloak/userprofile/UserProfile.java",
-    "server-spi-private/src/main/java/org/keycloak/userprofile/UserProfileProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/userprofile/UserProfileProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/userprofile/UserProfileSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/userprofile/UserProfileUtil.java",
-    "server-spi-private/src/main/java/org/keycloak/userprofile/ValidationException.java",
-    "server-spi-private/src/main/java/org/keycloak/utils/ClosingDoubleStream.java",
-    "server-spi-private/src/main/java/org/keycloak/utils/ClosingIntStream.java",
-    "server-spi-private/src/main/java/org/keycloak/utils/ClosingLongStream.java",
-    "server-spi-private/src/main/java/org/keycloak/utils/ClosingStream.java",
-    "server-spi-private/src/main/java/org/keycloak/utils/CredentialHelper.java",
-    "server-spi-private/src/main/java/org/keycloak/utils/EmailValidationUtil.java",
-    "server-spi-private/src/main/java/org/keycloak/utils/JsonUtils.java",
-    "server-spi-private/src/main/java/org/keycloak/utils/OCSPProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/utils/RequiredActionHelper.java",
-    "server-spi-private/src/main/java/org/keycloak/utils/ReservedCharValidator.java"
+    "server-spi-private/src/main/java/org/keycloak/userprofile/UserProfile.java"
   ],
   "remaining_pending": 2488,
-  "done": 3480
+  "done": 3495
 }
