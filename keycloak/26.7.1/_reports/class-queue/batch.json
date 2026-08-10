@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/authentication/ForkFlowException.java",
     "server-spi-private/src/main/java/org/keycloak/authentication/FormAction.java",
     "server-spi-private/src/main/java/org/keycloak/authentication/FormActionFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/FormActionSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/FormAuthenticator.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/FormAuthenticatorFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/FormAuthenticatorSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/FormContext.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/InitiatedActionSupport.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/RequiredActionContext.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/RequiredActionFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/RequiredActionProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/RequiredActionSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/ValidationContext.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/otp/OTPApplicationProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/otp/OTPApplicationProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/authentication/otp/OTPApplicationSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/AuthorizationProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/AuthorizationProviderFactory.java"
+    "server-spi-private/src/main/java/org/keycloak/authentication/FormActionSpi.java"
   ],
   "remaining_pending": 3058,
-  "done": 2910
+  "done": 2925
 }
