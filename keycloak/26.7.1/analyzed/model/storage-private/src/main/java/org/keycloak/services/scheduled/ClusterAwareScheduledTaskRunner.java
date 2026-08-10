@@ -28,7 +28,9 @@ import org.keycloak.timer.ScheduledTask;
 import org.jboss.logging.Logger;
 
 /**
- * Ensures that there are not concurrent executions of same task (either on this host or any other cluster host)
+ * 集群感知的定时任务执行器：确保同一任务在本机或集群其他节点上不会并发执行。
+ * <p>
+ * 通过 {@link ClusterProvider#executeIfNotExecuted} 在集群范围内以任务类名为键进行互斥调度。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -36,6 +38,7 @@ public class ClusterAwareScheduledTaskRunner extends ScheduledTaskRunner {
 
     private static final Logger logger = Logger.getLogger(ClusterAwareScheduledTaskRunner.class);
 
+    /** 任务调度间隔（秒），用于集群互斥窗口。 */
     private final int intervalSecs;
 
     public ClusterAwareScheduledTaskRunner(KeycloakSessionFactory sessionFactory, ScheduledTask task, long intervalMillis) {
@@ -48,7 +51,7 @@ public class ClusterAwareScheduledTaskRunner extends ScheduledTaskRunner {
         ClusterProvider clusterProvider = session.getProvider(ClusterProvider.class);
         String taskKey = task.getClass().getSimpleName();
 
-        // copying over the value as parent class is in another module that wouldn't allow access from the lambda in Wildfly
+        // 复制 task 引用：父类位于另一模块，WildFly 环境下 lambda 无法直接访问
         ScheduledTask localTask = this.task;
         ExecutionResult<Void> result = clusterProvider.executeIfNotExecuted(taskKey, intervalSecs, new Callable<Void>() {
 

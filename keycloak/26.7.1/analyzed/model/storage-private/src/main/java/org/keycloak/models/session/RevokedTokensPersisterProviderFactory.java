@@ -19,5 +19,8 @@ package org.keycloak.models.session;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link RevokedTokenPersisterProvider} 工厂 SPI 接口，用于创建已吊销令牌持久化 Provider 实例。
+ */
 public interface RevokedTokensPersisterProviderFactory extends ProviderFactory<RevokedTokenPersisterProvider> {
 }

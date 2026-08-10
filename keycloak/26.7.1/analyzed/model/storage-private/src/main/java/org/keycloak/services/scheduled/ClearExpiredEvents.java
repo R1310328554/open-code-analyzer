@@ -25,6 +25,10 @@ import org.keycloak.timer.ScheduledTask;
 import org.jboss.logging.Logger;
 
 /**
+ * 定时任务：清理已过期的事件（Events）。
+ * <p>
+ * 若已配置 {@link EventStoreProvider}，则调用其 {@code clearExpiredEvents()} 方法执行清理。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ClearExpiredEvents implements ScheduledTask {

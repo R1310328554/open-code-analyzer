@@ -23,6 +23,9 @@ import org.keycloak.timer.ScheduledTask;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 定时任务：清理已过期的已签发可验证凭证（Issued Verifiable Credentials）。
+ */
 public class ClearExpiredIssuedVerifiableCredentials implements ScheduledTask {
 
     protected static final Logger logger = Logger.getLogger(ClearExpiredIssuedVerifiableCredentials.class);

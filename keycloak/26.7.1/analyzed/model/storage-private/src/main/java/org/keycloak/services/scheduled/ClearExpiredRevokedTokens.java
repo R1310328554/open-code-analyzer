@@ -25,14 +25,16 @@ import org.keycloak.timer.ScheduledTask;
 import org.jboss.logging.Logger;
 
 /**
- * Clear all expired revoked tokens.
- * @deprecated The new {@link org.keycloak.models.RevokedTokenProvider} cleanups the expired events internally
+ * 定时任务：清理所有已过期的已吊销令牌。
+ *
+ * @deprecated 新的 {@link org.keycloak.models.RevokedTokenProvider} 会在内部自行清理过期条目
  */
 @Deprecated(since = "26.7", forRemoval = true)
 public class ClearExpiredRevokedTokens implements ScheduledTask {
 
     protected static final Logger logger = Logger.getLogger(ClearExpiredRevokedTokens.class);
 
+    /** 任务名称常量，用于日志与集群调度标识。 */
     public static final String TASK_NAME = "ClearExpiredRevokedTokens";
 
     @Override

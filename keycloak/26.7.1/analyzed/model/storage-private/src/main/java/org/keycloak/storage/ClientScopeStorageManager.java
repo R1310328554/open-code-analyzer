@@ -28,6 +28,11 @@ import org.keycloak.storage.clientscope.ClientScopeStorageProvider;
 import org.keycloak.storage.clientscope.ClientScopeStorageProviderFactory;
 import org.keycloak.storage.clientscope.ClientScopeStorageProviderModel;
 
+/**
+ * 客户端作用域存储管理器：在本地存储与外部 {@link ClientScopeStorageProvider} 之间路由 {@link ClientScopeProvider} 操作。
+ * <p>
+ * 按 ID 查询时根据 {@link StorageId} 判断走本地还是联邦存储；增删改等管理操作仅由本地存储提供。
+ */
 public class ClientScopeStorageManager extends AbstractStorageManager<ClientScopeStorageProvider, ClientScopeStorageProviderModel> implements ClientScopeProvider {
 
     public ClientScopeStorageManager(KeycloakSession session) {
@@ -35,6 +40,7 @@ public class ClientScopeStorageManager extends AbstractStorageManager<ClientScop
                 ClientScopeStorageProviderModel::new, "clientscope");
     }
 
+    /** 获取本地客户端作用域 Provider（非联邦存储）。 */
     private ClientScopeProvider localStorage() {
         return session.getProvider(ClientScopeProvider.class);
     }

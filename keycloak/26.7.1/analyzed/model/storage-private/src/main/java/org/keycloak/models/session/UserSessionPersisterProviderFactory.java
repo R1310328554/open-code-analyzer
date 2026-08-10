@@ -20,6 +20,8 @@ package org.keycloak.models.session;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link UserSessionPersisterProvider} 工厂 SPI 接口，用于创建用户会话持久化 Provider 实例。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface UserSessionPersisterProviderFactory extends ProviderFactory<UserSessionPersisterProvider> {

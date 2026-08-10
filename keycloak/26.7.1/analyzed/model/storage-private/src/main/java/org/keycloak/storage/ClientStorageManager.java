@@ -42,6 +42,10 @@ import org.jboss.logging.Logger;
 import static org.keycloak.utils.StreamsUtil.paginatedStream;
 
 /**
+ * 客户端存储管理器：在本地 {@link ClientProvider} 与外部 {@link ClientStorageProvider} 之间路由客户端查询与管理操作。
+ * <p>
+ * 联邦客户端的写操作（如增删作用域）不受支持；跨存储搜索时在本层合并结果并处理分页与超时。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -50,23 +54,28 @@ public class ClientStorageManager implements ClientProvider {
 
     protected KeycloakSession session;
 
+    /** 外部客户端存储查询超时（毫秒）。 */
     private long clientStorageProviderTimeout;
 
+    /** 获取本地客户端 Provider（非联邦存储）。 */
     private ClientProvider localStorage() {
         return session.getProvider(ClientProvider.class);
     }
 
+    /** 判断指定领域的客户端存储 Provider 是否已启用。 */
     public static boolean isStorageProviderEnabled(RealmModel realm, String providerId) {
         ClientStorageProviderModel model = getStorageProviderModel(realm, providerId);
         return model.isEnabled();
     }
 
+    /** 按组件 ID 获取客户端存储 Provider 配置模型。 */
     public static ClientStorageProviderModel getStorageProviderModel(RealmModel realm, String componentId) {
         ComponentModel model = realm.getComponent(componentId);
         if (model == null) return null;
         return new ClientStorageProviderModel(model);
     }
 
+    /** 获取指定组件 ID 对应的 {@link ClientStorageProvider} 实例。 */
     public static ClientStorageProvider getStorageProvider(KeycloakSession session, RealmModel realm, String componentId) {
         ComponentModel model = realm.getComponent(componentId);
         if (model == null) return null;
@@ -79,6 +88,7 @@ public class ClientStorageManager implements ClientProvider {
     }
 
 
+    /** 返回支持指定类型的已配置客户端存储 Provider 模型流。 */
     private static <T> Stream<ClientStorageProviderModel> getStorageProviders(RealmModel realm, KeycloakSession session, Class<T> type) {
         return ((StorageProviderRealmModel) realm).getClientStorageProvidersStream()
                 .filter(model -> {
@@ -93,6 +103,7 @@ public class ClientStorageManager implements ClientProvider {
                 });
     }
 
+    /** 获取或创建客户端存储 Provider 实例（会话级缓存）。 */
     public static ClientStorageProvider getStorageProviderInstance(KeycloakSession session, ClientStorageProviderModel model, ClientStorageProviderFactory factory) {
         ClientStorageProvider instance = (ClientStorageProvider)session.getAttribute(model.getId());
         if (instance != null) return instance;
@@ -106,6 +117,7 @@ public class ClientStorageManager implements ClientProvider {
     }
 
 
+    /** 返回指定类型客户端存储 Provider 实例流。 */
     public static <T> Stream<T> getStorageProviders(KeycloakSession session, RealmModel realm, Class<T> type) {
         return getStorageProviders(realm, session, type)
                 .map(model -> type.cast(getStorageProviderInstance(session, model, getClientStorageProviderFactory(model, session))));
@@ -117,12 +129,14 @@ public class ClientStorageManager implements ClientProvider {
     }
 
 
+    /** 返回已启用的指定类型客户端存储 Provider 实例流。 */
     public static <T> Stream<T> getEnabledStorageProviders(KeycloakSession session, RealmModel realm, Class<T> type) {
         return getStorageProviders(realm, session, type)
                 .filter(ClientStorageProviderModel::isEnabled)
                 .map(model -> type.cast(getStorageProviderInstance(session, model, getClientStorageProviderFactory(model, session))));
     }
 
+    /** 判断领域是否存在已启用的指定类型客户端存储 Provider。 */
     public static boolean hasEnabledStorageProviders(KeycloakSession session, RealmModel realm, Class<?> type) {
         return getStorageProviders(realm, session, type).anyMatch(ClientStorageProviderModel::isEnabled);
     }
@@ -178,6 +192,11 @@ public class ClientStorageManager implements ClientProvider {
         Stream<ClientModel> query(ClientLookupProvider provider, Integer firstResult, Integer maxResults);
     }
 
+    /**
+     * 跨本地与联邦存储执行分页查询。
+     * <p>
+     * 存在外部 Provider 时无法在下层精确分页，需先合并全量结果再在本层分页。
+     */
     protected Stream<ClientModel> query(PaginatedQuery paginatedQuery, RealmModel realm, Integer firstResult, Integer maxResults) {
         if (maxResults != null && maxResults == 0) return Stream.empty();
 

@@ -24,6 +24,11 @@ import org.keycloak.timer.ScheduledTask;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 定时任务：清理已过期的管理事件（Admin Events）。
+ * <p>
+ * 通过 {@link PeriodicEventInvalidation#JPA_EVENT_STORE} 触发 JPA 事件存储的周期性失效与过期清理。
+ */
 public class ClearExpiredAdminEvents implements ScheduledTask {
 
     protected static final Logger logger = Logger.getLogger(ClearExpiredAdminEvents.class);

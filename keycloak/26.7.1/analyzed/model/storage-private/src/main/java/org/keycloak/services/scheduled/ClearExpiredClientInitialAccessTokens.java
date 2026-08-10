@@ -21,6 +21,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.timer.ScheduledTask;
 
 /**
+ * 定时任务：清理已过期的客户端初始访问令牌（Client Initial Access Tokens）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClearExpiredClientInitialAccessTokens implements ScheduledTask {

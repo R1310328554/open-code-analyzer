@@ -24,14 +24,17 @@ import org.keycloak.timer.ScheduledTask;
 import org.jboss.logging.Logger;
 
 /**
+ * 定时任务：清理已过期的用户会话与认证会话。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
- * @deprecated to be removed without replacement. The providers are responsible for purging the expired entries themselves.
+ * @deprecated 即将移除且无替代方案；各 Provider 需自行负责清理过期条目。
  */
 @Deprecated(since = "26.5", forRemoval = true)
 public class ClearExpiredUserSessions implements ScheduledTask {
 
     protected static final Logger logger = Logger.getLogger(ClearExpiredUserSessions.class);
 
+    /** 任务名称常量，用于日志与集群调度标识。 */
     public static final String TASK_NAME = "ClearExpiredUserSessions";
 
     @Override

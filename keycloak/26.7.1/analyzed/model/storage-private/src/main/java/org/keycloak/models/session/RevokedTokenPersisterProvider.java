@@ -22,19 +22,25 @@ import java.util.stream.Stream;
 import org.keycloak.provider.Provider;
 
 /**
- * Use this to revoke a token, so they will be available even after the restart of Keycloak.
- * The store can be optimized in a way that entries are only added and are only removed by expiry.
- *
- * The first Keycloak instance starting up will re-load all expired tokens from it.
+ * 已吊销令牌持久化 Provider：将令牌吊销记录写入持久存储，Keycloak 重启后仍可查询。
+ * <p>
+ * 存储层可优化为仅追加写入、仅通过过期机制删除条目。首个启动的 Keycloak 实例会从存储中重新加载所有已过期的令牌。
  *
  * @author Alexander Schwartz
  */
 public interface RevokedTokenPersisterProvider extends Provider {
 
-    /** Revoke a token with a given ID */
+    /**
+     * 吊销指定 ID 的令牌。
+     *
+     * @param tokenId 令牌标识
+     * @param lifetime 吊销记录的有效期（毫秒）
+     */
     void revokeToken(String tokenId, long lifetime);
 
+    /** 返回所有已吊销令牌的流。 */
     Stream<RevokedToken> getAllRevokedTokens();
 
+    /** 清理所有已过期的吊销令牌记录。 */
     void expireTokens();
 }
