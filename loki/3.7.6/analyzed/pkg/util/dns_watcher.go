@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util 包 DNS 监视器封装 grpcutil Watcher，在地址增删时通过 DNSNotifications 回调通知上层 ring 或负载均衡。
+
 import (
 	"context"
 	"fmt"
@@ -12,12 +14,15 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// DNSNotifications 描述解析结果变更；所有回调均在 watchDNSLoop 同一 goroutine 触发。
 // Notifications about address resolution. All notifications are sent on the same goroutine.
 type DNSNotifications interface {
-	// New address has been discovered by DNS watcher for supplied hostname.
+	// AddressAdded 在新后端实例出现在 DNS 记录时调用。
+// New address has been discovered by DNS watcher for supplied hostname.
 	AddressAdded(address string)
 
-	// Previously-discovered address is no longer resolved for the hostname.
+	// AddressRemoved 在旧地址从解析结果中消失时调用，便于摘除不健康副本。
+// Previously-discovered address is no longer resolved for the hostname.
 	AddressRemoved(address string)
 }
 
@@ -26,6 +31,7 @@ type dnsWatcher struct {
 	notifications DNSNotifications
 }
 
+// NewDNSWatcher 创建 resolver 并包装为 dskit BasicService，便于统一启停。
 // NewDNSWatcher creates a new DNS watcher and returns a service that is wrapping it.
 func NewDNSWatcher(address string, dnsLookupPeriod time.Duration, notifications DNSNotifications) (services.Service, error) {
 	resolver, err := grpcutil.NewDNSResolverWithFreq(dnsLookupPeriod, util_log.Logger)
@@ -45,6 +51,7 @@ func NewDNSWatcher(address string, dnsLookupPeriod time.Duration, notifications 
 	return services.NewBasicService(nil, w.watchDNSLoop, nil), nil
 }
 
+// watchDNSLoop 迭代 watcher.Next，将 Add/Delete 操作映射为通知接口调用。
 // watchDNSLoop watches for changes in DNS and sends notifications.
 func (w *dnsWatcher) watchDNSLoop(servCtx context.Context) error {
 	go func() {
@@ -81,3 +88,4 @@ func (w *dnsWatcher) watchDNSLoop(servCtx context.Context) error {
 		}
 	}
 }
+// 服务停止时在独立 goroutine 关闭 watcher，使 Next 返回后 watchDNSLoop 正常退出。

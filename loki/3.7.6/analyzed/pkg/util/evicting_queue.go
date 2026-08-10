@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util 包 EvictingQueue 实现带容量上限的 FIFO 队列：满时驱逐最旧元素并触发 onEvict 回调，适用于有界内存缓存。
+
 import (
 	"errors"
 	"sync"
@@ -31,6 +33,7 @@ func NewEvictingQueue(capacity int, onEvict func()) (*EvictingQueue, error) {
 	return queue, nil
 }
 
+// Append 在已达容量时先 evictOldest 再追加，保证长度不超过 capacity。
 func (q *EvictingQueue) Append(entry interface{}) {
 	q.Lock()
 	defer q.Unlock()
@@ -83,6 +86,7 @@ func (q *EvictingQueue) Clear() {
 	q.entries = q.entries[:0]
 }
 
+// validateCapacity 拒绝零或负容量，防止无界或语义不明的队列配置。
 func validateCapacity(capacity int) error {
 	if capacity <= 0 {
 		// a queue of 0 (or smaller) capacity is invalid
@@ -91,3 +95,4 @@ func validateCapacity(capacity int) error {
 
 	return nil
 }
+// Entries 返回内部 slice 引用，调用方应在锁保护下只读访问或自行拷贝。

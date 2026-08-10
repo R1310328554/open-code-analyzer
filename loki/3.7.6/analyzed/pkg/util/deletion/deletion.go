@@ -1,5 +1,7 @@
 package deletion
 
+// deletion 包将 logproto.Delete 请求转换为 log.PipelineFilter，在日志查询与采样提取管线中叠加按时间范围的删除过滤。
+
 import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 	"github.com/grafana/loki/v3/pkg/logql"
@@ -20,6 +22,7 @@ func SetupPipeline(req logql.SelectLogParams, p log.Pipeline) (log.Pipeline, err
 	return log.NewFilteringPipeline(filters, p), nil
 }
 
+// SetupExtractor 为指标采样路径注入相同删除过滤器，保持日志与样本视图一致。
 func SetupExtractor(req logql.QueryParams, se log.SampleExtractor) (log.SampleExtractor, error) {
 	if len(req.GetDeletes()) == 0 {
 		return se, nil
@@ -33,6 +36,7 @@ func SetupExtractor(req logql.QueryParams, se log.SampleExtractor) (log.SampleEx
 	return log.NewFilteringSampleExtractor(filters, se), nil
 }
 
+// deleteFilters 解析每条 Delete 的 LogQL 选择器并绑定 Start/End 时间窗。
 func deleteFilters(deletes []*logproto.Delete) ([]log.PipelineFilter, error) {
 	var filters []log.PipelineFilter
 	for _, d := range deletes {
@@ -56,3 +60,4 @@ func deleteFilters(deletes []*logproto.Delete) ([]log.PipelineFilter, error) {
 
 	return filters, nil
 }
+// PipelineFilter 携带 Matchers 与 Pipeline，便于 compactor 与 querier 复用同一过滤语义。

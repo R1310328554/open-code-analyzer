@@ -1,5 +1,7 @@
 package extract
 
+// extract 包从 Prometheus 风格 matchers 或 logproto 标签中提取 __name__ 指标名，供 ruler 与查询引擎拆分指标名与其余标签过滤器。
+
 import (
 	"fmt"
 
@@ -11,6 +13,7 @@ import (
 
 var errNoMetricNameLabel = fmt.Errorf("no metric name label")
 
+// MetricNameMatcherFromMatchers 分离 __name__ matcher 并返回剩余 matchers 副本。
 // MetricNameMatcherFromMatchers extracts the metric name from a set of matchers
 func MetricNameMatcherFromMatchers(matchers []*labels.Matcher) (*labels.Matcher, []*labels.Matcher, bool) {
 	// Handle the case where there is no metric name and all matchers have been
@@ -34,6 +37,7 @@ func MetricNameMatcherFromMatchers(matchers []*labels.Matcher) (*labels.Matcher,
 	return nil, matchers, false
 }
 
+// UnsafeMetricNameFromLabelAdapters 返回标签值字符串引用，无拷贝但调用方不得修改底层数据。
 // UnsafeMetricNameFromLabelAdapters extracts the metric name from a list of LabelPairs.
 // The returned metric name string is a reference to the label value (no copy).
 func UnsafeMetricNameFromLabelAdapters(labels []logproto.LabelAdapter) (string, error) {
@@ -44,3 +48,4 @@ func UnsafeMetricNameFromLabelAdapters(labels []logproto.LabelAdapter) (string, 
 	}
 	return "", errNoMetricNameLabel
 }
+// matchers 为空时 MetricNameMatcherFromMatchers 直接返回 false，对应 {foo=""} 等退化选择器。

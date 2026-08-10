@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util 包 errors 子模块提供 defer Close 错误日志、MultiError 聚合及 gRPC 连接取消与 deadline 判定等通用错误工具。
+
 import (
 	"bytes"
 	"context"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// LogError 在 f 返回非 nil 时以 error 级别记录 message 与 error 字段。
 // LogError logs any error returned by f; useful when deferring Close etc.
 func LogError(message string, f func() error) {
 	if err := f(); err != nil {
@@ -27,6 +30,7 @@ func LogErrorWithContext(ctx context.Context, message string, f func() error) {
 	}
 }
 
+// MultiError 切片实现 error 接口，可累积多条独立错误并在 Error() 中拼接。
 // The MultiError type implements the error interface, and contains the
 // Errors used to construct it.
 type MultiError []error
@@ -83,6 +87,7 @@ func (es MultiError) Is(target error) bool {
 }
 
 // IsDeadlineExceeded tells if all errors are either context.DeadlineExceeded or grpc codes.DeadlineExceeded.
+// IsDeadlineExceeded 当且仅当所有子错误均为 context 或 gRPC deadline 超时时返回 true。
 func (es MultiError) IsDeadlineExceeded() bool {
 	if len(es) == 0 {
 		return false
@@ -100,6 +105,7 @@ func (es MultiError) IsDeadlineExceeded() bool {
 	return true
 }
 
+// GroupedErrors 在 MultiError 基础上按错误文本分组并统计重复次数。
 // GroupedErrors implements the error interface, and it contains the errors used to construct it
 // grouped by the error message.
 type GroupedErrors struct {
@@ -131,6 +137,7 @@ func (es GroupedErrors) Error() string {
 	return buf.String()
 }
 
+// IsConnCanceled 识别 codes.Canceled 或 transport is closing 等连接关闭场景。
 // IsConnCanceled returns true, if error is from a closed gRPC connection.
 // copied from https://github.com/etcd-io/etcd/blob/7f47de84146bdc9225d2080ec8678ca8189a2d2b/clientv3/client.go#L646
 func IsConnCanceled(err error) bool {
@@ -147,3 +154,4 @@ func IsConnCanceled(err error) bool {
 
 	return false
 }
+// MultiError.Add 会展开嵌套 MultiError，避免多层包装导致重复计数。
