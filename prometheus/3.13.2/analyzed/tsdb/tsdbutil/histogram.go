@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 测试用原生直方图/浮点直方图生成器：为 TSDB 单元测试构造可复现的 histogram 样本。
+
 package tsdbutil
 
 import (
@@ -30,12 +32,14 @@ func GenerateTestHistograms(n int) (r []*histogram.Histogram) {
 	return r
 }
 
+// GenerateTestHistogramWithHint 生成单条直方图并指定 CounterResetHint。
 func GenerateTestHistogramWithHint(n int, hint histogram.CounterResetHint) *histogram.Histogram {
 	h := GenerateTestHistogram(int64(n))
 	h.CounterResetHint = hint
 	return h
 }
 
+// GenerateTestHistogram 构造带正负 span 的 schema=1 测试直方图，计数器重置提示由调用方设置。
 // GenerateTestHistogram but it is up to the user to set any known counter reset hint.
 func GenerateTestHistogram(i int64) *histogram.Histogram {
 	return &histogram.Histogram{
@@ -57,6 +61,7 @@ func GenerateTestHistogram(i int64) *histogram.Histogram {
 	}
 }
 
+// GenerateTestCustomBucketsHistograms 批量生成自定义桶 schema 的直方图。
 func GenerateTestCustomBucketsHistograms(n int) (r []*histogram.Histogram) {
 	for i := range n {
 		h := GenerateTestCustomBucketsHistogram(int64(i))
@@ -82,6 +87,7 @@ func GenerateTestCustomBucketsHistogram(i int64) *histogram.Histogram {
 	}
 }
 
+// GenerateTestGaugeHistograms 用正弦扰动索引生成 Gauge 类型直方图序列。
 func GenerateTestGaugeHistograms(n int) (r []*histogram.Histogram) {
 	for x := range n {
 		i := int64(math.Sin(float64(x))*100) + 100
@@ -96,6 +102,7 @@ func GenerateTestGaugeHistogram(i int64) *histogram.Histogram {
 	return h
 }
 
+// GenerateTestFloatHistograms 批量生成 FloatHistogram 测试数据。
 func GenerateTestFloatHistograms(n int) (r []*histogram.FloatHistogram) {
 	for i := range n {
 		h := GenerateTestFloatHistogram(int64(i))
@@ -107,6 +114,7 @@ func GenerateTestFloatHistograms(n int) (r []*histogram.FloatHistogram) {
 	return r
 }
 
+// GenerateTestFloatHistogram 构造浮点桶计数版本的测试直方图。
 // GenerateTestFloatHistogram but it is up to the user to set any known counter reset hint.
 func GenerateTestFloatHistogram(i int64) *histogram.FloatHistogram {
 	return &histogram.FloatHistogram{
@@ -167,6 +175,7 @@ func GenerateTestGaugeFloatHistogram(i int64) *histogram.FloatHistogram {
 	return h
 }
 
+// SetHistogramNotCounterReset/SetHistogramCounterReset 便捷设置 CounterReset 提示。
 func SetHistogramNotCounterReset(h *histogram.Histogram) *histogram.Histogram {
 	h.CounterResetHint = histogram.NotCounterReset
 	return h

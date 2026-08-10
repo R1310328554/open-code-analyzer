@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// documentcli 根据 kingpin ApplicationModel 生成 Prometheus 文档站风格的 CLI Markdown。
+
 // If we decide to employ this auto generation of markdown documentation for
 // amtool and alertmanager, this package could potentially be moved to
 // prometheus/common. However, it is crucial to note that this functionality is
@@ -30,6 +32,7 @@ import (
 	"github.com/grafana/regexp"
 )
 
+// GenerateMarkdown 输出 front matter、全局 flag/arg/cmd 表及递归子命令章节。
 // GenerateMarkdown generates the markdown documentation for an application from
 // its kingpin ApplicationModel.
 func GenerateMarkdown(model *kingpin.ApplicationModel, writer io.Writer) error {
@@ -53,6 +56,7 @@ func GenerateMarkdown(model *kingpin.ApplicationModel, writer io.Writer) error {
 	return writeSubcommands(writer, 1, model.Name, model.Commands)
 }
 
+// header 生成 YAML title 与帮助正文前缀。
 func header(title, help string) []byte {
 	return fmt.Appendf(nil, `---
 title: %s
@@ -162,6 +166,7 @@ func writeCmdTable(writer io.Writer, cgm *kingpin.CmdGroupModel) error {
 	return writeTable(writer, rows, "## Commands")
 }
 
+// writeTable 渲染 Markdown 表格，空列通过 determineColumnsToRender 省略。
 func writeTable(writer io.Writer, data [][]string, header string) error {
 	if len(data) < 2 {
 		return nil
@@ -261,6 +266,7 @@ func writeSubcommands(writer io.Writer, level int, modelName string, commands []
 	return nil
 }
 
+// formatHyphenatedWords 将 --flag 样式词包裹为 inline code 以适配文档渲染。
 func formatHyphenatedWords(input string) string {
 	hyphenRegex := regexp.MustCompile(`\B--\w+\b`)
 	replacer := func(s string) string {

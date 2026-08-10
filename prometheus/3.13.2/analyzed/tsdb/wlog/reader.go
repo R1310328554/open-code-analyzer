@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Reader：顺序读取已关闭或完整的 WAL segment，检测 torn record 并解压 Snappy/Zstd。
+
 package wlog
 
 import (
@@ -24,6 +26,7 @@ import (
 	"github.com/prometheus/prometheus/util/compression"
 )
 
+// Reader 面向完整 segment 的一次性顺序扫描，curRecTyp 用于 torn record 检测。
 // Reader reads WAL records from an io.Reader.
 type Reader struct {
 	rdr io.Reader
@@ -37,11 +40,13 @@ type Reader struct {
 	curRecTyp   recType // Used for checking that the last record is not torn.
 }
 
+// NewReader 分配同步 DecodeBuffer 供 compression.Decode 复用。
 // NewReader returns a new reader.
 func NewReader(r io.Reader) *Reader {
 	return &Reader{rdr: r, decBuf: compression.NewSyncDecodeBuffer()}
 }
 
+// Next 推进到下一条逻辑 record；EOF 时若处于 First/Middle 分片则报 torn。
 // Next advances the reader to the next records and returns true if it exists.
 // It must not be called again after it returned false.
 func (r *Reader) Next() bool {
@@ -59,6 +64,7 @@ func (r *Reader) Next() bool {
 	return r.err == nil
 }
 
+// nextNew 逐字节读页头、跳过 recPageTerm 填充、校验 CRC 并组装多分片 record。
 func (r *Reader) nextNew() (err error) {
 	// We have to use r.buf since allocating byte arrays here fails escape
 	// analysis and ends up on the heap, even though it seemingly should not.
@@ -151,6 +157,7 @@ func (r *Reader) nextNew() (err error) {
 	}
 }
 
+// Err 将底层错误包装为 CorruptionErr，segmentBufReader 时可定位 segment 与 offset。
 // Err returns the last encountered error wrapped in a corruption error.
 // If the reader does not allow to infer a segment index and offset, a total
 // offset in the reader stream will be provided.
@@ -173,12 +180,14 @@ func (r *Reader) Err() error {
 	}
 }
 
+// Record 返回当前解码 record；下次 Next 前有效。
 // Record returns the current record. The returned byte slice is only
 // valid until the next call to Next.
 func (r *Reader) Record() []byte {
 	return r.rec
 }
 
+// Segment/Offset 在 segmentBufReader 上返回当前 segment 序号与段内偏移。
 // Segment returns the current segment being read.
 func (r *Reader) Segment() int {
 	if b, ok := r.rdr.(*segmentBufReader); ok {

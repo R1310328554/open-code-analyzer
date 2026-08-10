@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// compression 缓冲抽象：同步/并发 EncodeBuffer 与 DecodeBuffer，复用 Snappy 与 Zstd 编解码器。
+
 package compression
 
 import (
@@ -19,6 +21,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
+// EncodeBuffer 为 Encode 提供 Zstd encoder 与可选输出 slice 缓存。
 type EncodeBuffer interface {
 	zstdEncBuf() *zstd.Encoder
 	get() []byte
@@ -31,6 +34,7 @@ type syncEBuffer struct {
 	buf      []byte
 }
 
+// NewSyncEncodeBuffer 单 goroutine 专用；Encode 返回值在下次 Encode 前有效。
 // NewSyncEncodeBuffer returns synchronous buffer that can only be used
 // on one encoding goroutine at once. Notably, the encoded byte slice returned
 // by Encode is valid only until the next Encode call.
@@ -59,6 +63,7 @@ type concurrentEBuffer struct {
 	w        *zstd.Encoder
 }
 
+// NewConcurrentEncodeBuffer 可并发调用，Zstd 隐式受 GOMAXPROCS 限制。
 // NewConcurrentEncodeBuffer returns a buffer that can be used concurrently.
 // NOTE: For Zstd compression, a concurrency limit equal to GOMAXPROCS is implied.
 func NewConcurrentEncodeBuffer() EncodeBuffer {
@@ -81,6 +86,7 @@ func (*concurrentEBuffer) get() []byte {
 
 func (*concurrentEBuffer) set([]byte) {}
 
+// DecodeBuffer 为 Decode 提供 Zstd decoder 与解码输出缓存。
 type DecodeBuffer interface {
 	zstdDecBuf() *zstd.Decoder
 	get() []byte
@@ -93,6 +99,7 @@ type syncDBuffer struct {
 	buf      []byte
 }
 
+// NewSyncDecodeBuffer 单 goroutine 解码缓冲，与 Encode 同步版对称。
 // NewSyncDecodeBuffer returns synchronous buffer that can only be used
 // on one decoding goroutine at once. Notably, the decoded byte slice returned
 // by Decode is valid only until the next Decode call.
@@ -121,6 +128,7 @@ type concurrentDBuffer struct {
 	r        *zstd.Decoder
 }
 
+// NewConcurrentDecodeBuffer 并发安全解码缓冲。
 // NewConcurrentDecodeBuffer returns a buffer that can be used concurrently.
 // NOTE: For Zstd compression a concurrency limit, equal to GOMAXPROCS is implied.
 func NewConcurrentDecodeBuffer() DecodeBuffer {

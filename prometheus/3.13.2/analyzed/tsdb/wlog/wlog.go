@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// wlog 包实现 TSDB 写前日志（WAL/WBL）：32KB 分页、record 分片、可选 Snappy/Zstd 压缩与 segment 轮转。
+
 package wlog
 
 import (
@@ -37,6 +39,7 @@ import (
 	"github.com/prometheus/prometheus/util/compression"
 )
 
+// WAL 默认 segment 128MB、页 32KB、record 头 7 字节；WblDirName 为乱序 WBL 目录名。
 const (
 	DefaultSegmentSize = 128 * 1024 * 1024 // DefaultSegmentSize is 128 MB.
 	pageSize           = 32 * 1024         // pageSize is 32KB.
@@ -53,6 +56,7 @@ var castagnoliTable = crc32.MakeTable(crc32.Castagnoli)
 // Records bigger than the page size are split and flushed separately.
 // A flush is triggered when a single records doesn't fit the page size or
 // when the next record can't fit in the remaining free page space.
+// page 为内存写缓冲，record 超页或页满时 flush 到 segment 文件。
 type page struct {
 	alloc   int
 	flushed int
@@ -75,6 +79,7 @@ func (p *page) reset() {
 	p.flushed = 0
 }
 
+// SegmentFile 抽象 segment 底层文件的 Stat/Sync/读写/关闭。
 // SegmentFile represents the underlying file used to store a segment.
 type SegmentFile interface {
 	Stat() (os.FileInfo, error)
@@ -84,6 +89,7 @@ type SegmentFile interface {
 	io.Closer
 }
 
+// Segment 绑定目录、序号与 SegmentFile。
 // Segment represents a segment file.
 type Segment struct {
 	SegmentFile
@@ -101,6 +107,7 @@ func (s *Segment) Dir() string {
 	return s.dir
 }
 
+// CorruptionErr 携带损坏 segment 目录、序号与字节偏移，供 Repair 定位。
 // CorruptionErr is an error that's returned when corruption is encountered.
 type CorruptionErr struct {
 	Dir     string
@@ -120,6 +127,7 @@ func (e *CorruptionErr) Unwrap() error {
 	return e.Err
 }
 
+// OpenWriteSegment 追加打开 segment，若末页 torn 则用零填充对齐页边界。
 // OpenWriteSegment opens segment k in dir. The returned segment is ready for new appends.
 func OpenWriteSegment(logger *slog.Logger, dir string, k int) (*Segment, error) {
 	segName := SegmentName(dir, k)
@@ -147,6 +155,7 @@ func OpenWriteSegment(logger *slog.Logger, dir string, k int) (*Segment, error) 
 	return &Segment{SegmentFile: f, i: k, dir: dir}, nil
 }
 
+// CreateSegment 创建新 segment 文件供写入。
 // CreateSegment creates a new segment k in dir.
 func CreateSegment(dir string, k int) (*Segment, error) {
 	f, err := os.OpenFile(SegmentName(dir, k), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o666)
@@ -156,6 +165,7 @@ func CreateSegment(dir string, k int) (*Segment, error) {
 	return &Segment{SegmentFile: f, i: k, dir: dir}, nil
 }
 
+// OpenReadSegment 只读打开单个 segment 文件。
 // OpenReadSegment opens the segment with the given filename.
 func OpenReadSegment(fn string) (*Segment, error) {
 	k, err := strconv.Atoi(filepath.Base(fn))
@@ -169,6 +179,7 @@ func OpenReadSegment(fn string) (*Segment, error) {
 	return &Segment{SegmentFile: f, i: k, dir: filepath.Dir(fn)}, nil
 }
 
+// WL 管理当前 segment/page、异步 actor 队列、压缩缓冲与 Prometheus WAL 指标。
 // WL is a write log that stores records in segment files.
 // It must be read from start to end once before logging new data.
 // If an error occurs during read, the repair procedure must be called
@@ -290,6 +301,7 @@ func newWLMetrics(w *WL, r prometheus.Registerer) *wlMetrics {
 	}
 }
 
+// New/NewSize 创建 WAL 目录、新建或续写 segment 并启动 run 协程处理 fsync/close。
 // New returns a new WAL over the given directory.
 func New(logger *slog.Logger, reg prometheus.Registerer, dir string, compress compression.Type) (*WL, error) {
 	return NewSize(logger, reg, dir, DefaultSegmentSize, compress)
@@ -350,6 +362,7 @@ func NewSize(logger *slog.Logger, reg prometheus.Registerer, dir string, segment
 	return w, nil
 }
 
+// Open 仅绑定目录与 logger，用于只读或 Repair 场景。
 // Open an existing WAL.
 func Open(logger *slog.Logger, dir string) (*WL, error) {
 	if logger == nil {
@@ -395,6 +408,7 @@ Loop:
 	}
 }
 
+// Repair 截断损坏 segment 之后的数据，重写损坏段内 offset 之前的 record。
 // Repair attempts to repair the WAL based on the error.
 // It discards all data after the corruption.
 func (w *WL) Repair(origErr error) error {
@@ -580,6 +594,7 @@ func (w *WL) setSegment(segment *Segment) error {
 // flushPage writes the new contents of the page to disk. If no more records will fit into
 // the page, the remaining bytes will be set to zero and a new page will be started.
 // If forceClear is true, this is enforced regardless of how many bytes are left in the page.
+// flushPage 将 page 缓冲写入 segment；forceClear 或页满时补零并开始新页。
 func (w *WL) flushPage(forceClear bool) error {
 	w.metrics.pageFlushes.Inc()
 
@@ -617,6 +632,7 @@ const (
 	recTypeMask = snappyMask - 1
 )
 
+// recType 表示 WAL record 分片类型：PageTerm/Full/First/Middle/Last，可与压缩标志位或运算。
 type recType uint8
 
 const (
@@ -652,6 +668,7 @@ func (w *WL) pagesPerSegment() int {
 	return w.segmentSize / pageSize
 }
 
+// Log 将多条 record 顺序写入，内部按页拆分并可选压缩。
 // Log writes the records into the log.
 // Multiple records can be passed at once to reduce writes and increase throughput.
 func (w *WL) Log(recs ...[]byte) error {
@@ -672,6 +689,7 @@ func (w *WL) Log(recs ...[]byte) error {
 // - the final record of a batch
 // - the record is bigger than the page size
 // - the current page is full.
+// log 压缩 record、必要时轮转 segment，按 recFull/First/Middle/Last 写入页并 flush。
 func (w *WL) log(rec []byte, final bool) error {
 	// When the last page flush failed the page will remain full.
 	// When the page is full, need to flush it before trying to add more records to it.
@@ -796,6 +814,7 @@ func (w *WL) LastSegmentAndOffset() (seg, offset int, err error) {
 	return seg, offset, err
 }
 
+// Truncate 删除序号小于 i 的旧 segment 文件。
 // Truncate drops all segments before i.
 func (w *WL) Truncate(i int) (err error) {
 	w.metrics.truncateTotal.Inc()
@@ -833,6 +852,7 @@ func (w *WL) Sync() error {
 	return w.fsync(w.segment)
 }
 
+// Close flush 末页、停止 actor、fsync 并关闭当前 segment。
 // Close flushes all writes and closes active segment.
 func (w *WL) Close() (err error) {
 	w.mtx.Lock()
@@ -872,6 +892,7 @@ func (w *WL) Close() (err error) {
 	return nil
 }
 
+// Segments 返回 WAL 目录中首尾 segment 序号；无 segment 时为 (-1,-1)。
 // Segments returns the range [first, n] of currently existing segments.
 // If no segments are found, first and n are -1.
 func Segments(wlDir string) (first, last int, err error) {
@@ -914,6 +935,7 @@ func listSegments(dir string) (refs []segmentRef, err error) {
 	return refs, nil
 }
 
+// SegmentRange/NewSegmentsRangeReader 按目录与序号区间串联多个 segment 供 Reader 读取。
 // SegmentRange groups segments by the directory and the first and last index it includes.
 type SegmentRange struct {
 	Dir         string
@@ -958,6 +980,7 @@ func NewSegmentsRangeReader(sr ...SegmentRange) (io.ReadCloser, error) {
 // corruption reporting.  We have to be careful not to increment curr too
 // early, as it is used by Reader.Err() to tell Repair which segment is corrupt.
 // As such we pad the end of non-page align segments with zeros.
+// segmentBufReader 按页缓冲跨 segment 读取，短 segment 末尾零填充以避免误报损坏段。
 type segmentBufReader struct {
 	buf  *bufio.Reader
 	segs []*Segment
@@ -1041,6 +1064,7 @@ func (r *segmentBufReader) Read(b []byte) (n int, err error) {
 	return n, nil
 }
 
+// Size 递归统计 WAL 目录下所有文件总字节数。
 // Size computes the size of the write log.
 // We do this by adding the sizes of all the files under the WAL dir.
 func (w *WL) Size() (int64, error) {

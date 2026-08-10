@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// LiveReader：从仍在写入的 WAL segment 流式读取完整 record，支持 Snappy/Zstd 与跨页容错。
+
 package wlog
 
 import (
@@ -27,12 +29,14 @@ import (
 	"github.com/prometheus/prometheus/util/compression"
 )
 
+// LiveReaderMetrics 暴露 WAL 读取 corruption 计数。
 // LiveReaderMetrics holds all metrics exposed by the LiveReader.
 type LiveReaderMetrics struct {
 	reg                    prometheus.Registerer
 	readerCorruptionErrors *prometheus.CounterVec
 }
 
+// NewLiveReaderMetrics 注册 prometheus_tsdb_wal_reader_corruption_errors_total。
 // NewLiveReaderMetrics instantiates, registers and returns metrics to be injected
 // at LiveReader instantiation.
 func NewLiveReaderMetrics(reg prometheus.Registerer) *LiveReaderMetrics {
@@ -60,6 +64,7 @@ func (m *LiveReaderMetrics) Unregister() {
 	m.reg.Unregister(m.readerCorruptionErrors)
 }
 
+// NewLiveReader 默认启用 permissive 模式以容忍 record 跨页边界。
 // NewLiveReader returns a new live reader.
 func NewLiveReader(logger *slog.Logger, metrics *LiveReaderMetrics, r io.Reader) *LiveReader {
 	lr := &LiveReader{
@@ -76,6 +81,7 @@ func NewLiveReader(logger *slog.Logger, metrics *LiveReaderMetrics, r io.Reader)
 	return lr
 }
 
+// LiveReader 用页缓冲增量组装分片 record，适合 tail 正在增长的 segment。
 // LiveReader reads WAL records from an io.Reader. It allows reading of WALs
 // that are still in the process of being written, and returns records as soon
 // as they can be read.
@@ -105,6 +111,7 @@ type LiveReader struct {
 	metrics *LiveReaderMetrics
 }
 
+// Err 返回读取错误；EOF 在 tail 场景下可重试，非 EOF 为致命错误。
 // Err returns any errors encountered reading the WAL.  io.EOFs are not terminal
 // and Next can be tried again.  Non-EOFs are terminal, and the reader should
 // not be used again.  It is up to the user to decide when to stop trying should
@@ -127,6 +134,7 @@ func (r *LiveReader) fillBuffer() (int, error) {
 	return n, err
 }
 
+// Next 循环填充缓冲并 buildRecord，直到得到完整 record 或出错/EOF。
 // Next returns true if Record() will contain a full record.
 // If Next returns false, you should always checked the contents of Error().
 // Return false guarantees there are no more records if the segment is closed
@@ -173,6 +181,7 @@ func (r *LiveReader) Next() bool {
 	}
 }
 
+// Record 返回当前解码后的 payload；仅在下次 Next 前有效。
 // Record returns the current record.
 // The returned byte slice is only valid until the next call to Next.
 func (r *LiveReader) Record() []byte {
@@ -183,6 +192,7 @@ func (r *LiveReader) Record() []byte {
 // if there was an error or if we weren't able to read a record for any reason.
 // Returns true if we read a full record. Any record data is appended to
 // LiveReader.rec.
+// buildRecord 拼接 recFirst/Middle/Last 分片，校验序列后解压为完整 record。
 func (r *LiveReader) buildRecord() (bool, error) {
 	for {
 		// Check that we have data in the internal buffer to read.
@@ -240,6 +250,7 @@ func (r *LiveReader) buildRecord() (bool, error) {
 // As an example, if i is > 0 because we've read some amount of a partial record
 // (recFirst, recMiddle, etc. but not recLast) and then we get another recFirst or recFull
 // instead of a recLast or recMiddle we would have an invalid record.
+// validateRecord 校验分片类型与序号 i 是否构成合法 WAL record 序列。
 func validateRecord(typ recType, i int) error {
 	switch typ {
 	case recFull:
@@ -272,6 +283,7 @@ func validateRecord(typ recType, i int) error {
 // Returns a byte slice of the record data read, the number of bytes read, and an error
 // if there's a non-zero byte in a page term record or the record checksum fails.
 // This is a non-method function to make it clear it does not mutate the reader.
+// readRecord 从页缓冲解析单条子 record，处理 recPageTerm 填充与 CRC 校验。
 func (r *LiveReader) readRecord() ([]byte, int, error) {
 	// Special case: for recPageTerm, check that are all zeros to end of page,
 	// consume them but don't return them.

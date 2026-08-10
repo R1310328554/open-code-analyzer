@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// tsdbutil 目录锁：对 TSDB 数据目录施加独占文件锁，防止多个 Prometheus 实例同时打开同一数据库。
+
 package tsdbutil
 
 import (
@@ -31,6 +33,7 @@ const (
 	lockfileCreatedCleanly = 1
 )
 
+// DirLocker 封装目录路径、Prometheus 指标与 fileutil.Releaser 释放句柄。
 type DirLocker struct {
 	logger *slog.Logger
 
@@ -40,6 +43,7 @@ type DirLocker struct {
 	path     string
 }
 
+// NewDirLocker 构造目录锁；subsystem 用于指标名 prometheus_{subsystem}_clean_start。
 // NewDirLocker creates a DirLocker that can obtain an exclusive lock on dir.
 func NewDirLocker(dir, subsystem string, l *slog.Logger, r prometheus.Registerer) (*DirLocker, error) {
 	lock := &DirLocker{
@@ -65,6 +69,7 @@ func NewDirLocker(dir, subsystem string, l *slog.Logger, r prometheus.Registerer
 	return lock, nil
 }
 
+// Lock 获取独占锁；若已有 lock 文件则记录 replaced 并覆盖。
 // Lock obtains the lock on the locker directory.
 func (l *DirLocker) Lock() error {
 	if l.releaser != nil {
@@ -87,6 +92,7 @@ func (l *DirLocker) Lock() error {
 	return nil
 }
 
+// Release 释放 flock 并删除 lock 文件；未持锁时为 no-op。
 // Release releases the lock. No-op if the lock is not held.
 func (l *DirLocker) Release() error {
 	if l.releaser == nil {

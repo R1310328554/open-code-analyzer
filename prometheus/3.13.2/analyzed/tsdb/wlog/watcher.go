@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// WAL Watcher：tail TSDB WAL 并将 series/样本/exemplar/histogram/metadata 推送给 remote write 等 WriteTo 实现。
+
 package wlog
 
 import (
@@ -33,6 +35,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/record"
 )
 
+// Watcher 轮询间隔：checkpoint GC、segment 切换检测与读超时。
 const (
 	checkpointPeriod   = 5 * time.Second
 	segmentCheckPeriod = 100 * time.Millisecond
@@ -44,6 +47,7 @@ var (
 	readTimeout  = 15 * time.Second
 )
 
+// WriteTo 定义 Watcher 下游接口；实现需并发安全且不得复用传入 slice。
 // WriteTo is an interface used by the Watcher to send the samples it's read
 // from the WAL on to somewhere else.
 //
@@ -72,6 +76,7 @@ type WriteTo interface {
 	SeriesReset(int)
 }
 
+// WriteNotified 在 WAL 写入后通知 Watcher 触发读取。
 // WriteNotified notifies the watcher that data has been written so that it can read.
 type WriteNotified interface {
 	Notify()
@@ -86,6 +91,7 @@ type WatcherMetrics struct {
 	notificationsSkipped  *prometheus.CounterVec
 }
 
+// Watcher 从 checkpoint 回放 series，再逐 segment tail 样本类 record。
 // Watcher watches the TSDB WAL for a given WriteTo.
 type Watcher struct {
 	name           string
@@ -192,6 +198,7 @@ func (m *WatcherMetrics) Unregister() {
 	m.reg.Unregister(m.notificationsSkipped)
 }
 
+// NewWatcher 默认 wal 子目录、可选 exemplar/histogram/metadata 推送与 record 缓冲池。
 // NewWatcher creates a new WAL watcher for a given WriteTo.
 func NewWatcher(
 	metrics *WatcherMetrics,
@@ -229,6 +236,7 @@ func NewWatcher(
 	}
 }
 
+// Notify 非阻塞通知读循环；若已在读取则递增 notifications_skipped。
 func (w *Watcher) Notify() {
 	select {
 	case w.readNotify <- struct{}{}:
@@ -253,6 +261,7 @@ func (w *Watcher) SetMetrics() {
 	}
 }
 
+// Start 绑定 per-consumer 指标并启动 loop goroutine。
 // Start the Watcher.
 func (w *Watcher) Start() {
 	w.SetMetrics()
@@ -261,6 +270,7 @@ func (w *Watcher) Start() {
 	go w.loop()
 }
 
+// Stop 关闭 quit 并等待 done，清理该 consumer 的标签化指标。
 // Stop the Watcher.
 func (w *Watcher) Stop() {
 	close(w.quit)
@@ -278,6 +288,7 @@ func (w *Watcher) Stop() {
 	w.logger.Info("WAL watcher stopped", "queue", w.name)
 }
 
+// loop 在 Run 失败或退出后等待 5s 重试，直至 quit 关闭。
 func (w *Watcher) loop() {
 	defer close(w.done)
 
@@ -296,6 +307,7 @@ func (w *Watcher) loop() {
 	}
 }
 
+// Run 先 replay checkpoint，再从对应 segment 起 watch/tail 直至 quit。
 // Run the watcher, which will tail the WAL until the quit channel is closed
 // or an error case is hit.
 func (w *Watcher) Run() error {
@@ -389,6 +401,7 @@ func (w *Watcher) readAndHandleError(r *LiveReader, segmentNum int, tail bool, s
 // Use tail true to indicate that the reader is currently on a segment that is
 // actively being written to. If false, assume it's a full segment and we're
 // replaying it on start to cache the series records.
+// watch 用 LiveReader 读 segment；tail 模式下响应写通知、超时与新 segment 切换。
 func (w *Watcher) watch(segmentNum int, tail bool) error {
 	segment, err := OpenReadSegment(SegmentName(w.walDir, segmentNum))
 	if err != nil {
@@ -477,6 +490,7 @@ func (w *Watcher) watch(segmentNum int, tail bool) error {
 	}
 }
 
+// garbageCollectSeries 发现新 checkpoint 后更新 series 段号并 SeriesReset 旧 series。
 func (w *Watcher) garbageCollectSeries(segmentNum int) error {
 	dir, _, err := LastCheckpoint(w.walDir)
 	if err != nil && !errors.Is(err, record.ErrNotFound) {
@@ -512,6 +526,7 @@ func (w *Watcher) garbageCollectSeries(segmentNum int) error {
 // Read from a segment and pass the details to w.writer.
 // Also used with readCheckpoint - implements segmentReadFn.
 // TODO(bwplotka): Rename tail to !onlySeries; extremely confusing and easy to miss.
+// readSegment 解码 record 并调用 WriteTo；非 tail 时跳过样本以加速 replay。
 func (w *Watcher) readSegment(r *LiveReader, segmentNum int, tail bool) error {
 	series := w.recordBuf.GetRefSeries(512)
 	samples := w.recordBuf.GetSamples(512)
@@ -713,6 +728,7 @@ func (w *Watcher) SetStartTime(t time.Time) {
 type segmentReadFn func(w *Watcher, r *LiveReader, segmentNum int, tail bool) error
 
 // Read all the series records from a Checkpoint directory.
+// readCheckpoint 顺序读 checkpoint 内全部 segment 并校验读满 size。
 func (w *Watcher) readCheckpoint(checkpointDir string, readFn segmentReadFn) error {
 	w.logger.Debug("Reading checkpoint", "dir", checkpointDir)
 	index, err := checkpointNum(checkpointDir)

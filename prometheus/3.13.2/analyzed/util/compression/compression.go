@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 统一 Snappy/Zstd/none 压缩入口：WAL 与 TSDB 块等组件通过 Type 字符串选择算法。
+
 package compression
 
 import (
@@ -20,6 +22,7 @@ import (
 	"github.com/golang/snappy"
 )
 
+// Type 为 none/snappy/zstd 字符串常量；空字符串等价于 None。
 // Type represents a valid compression type supported by this package.
 type Type = string
 
@@ -34,8 +37,10 @@ const (
 	Zstd Type = "zstd"
 )
 
+// Types 返回支持的压缩类型列表。
 func Types() []Type { return []Type{None, Snappy, Zstd} }
 
+// Encode 对非空 payload 压缩；Zstd 必须提供 EncodeBuffer，Snappy 可传 nil。
 // Encode returns the encoded form of src for the given compression type.
 // For None or empty message the encoding is not attempted.
 //
@@ -82,6 +87,7 @@ func Encode(t Type, src []byte, buf EncodeBuffer) (ret []byte, err error) {
 	return nil, fmt.Errorf("unsupported compression type: %s", t)
 }
 
+// Decode 解压 src；空或 none 时原样返回，Zstd 需 DecodeBuffer。
 // Decode returns the decoded form of src for the given compression type.
 //
 // The buf allows passing various buffer implementations that make decoding more

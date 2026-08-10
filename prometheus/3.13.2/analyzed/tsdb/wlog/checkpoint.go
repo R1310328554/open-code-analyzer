@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// WAL checkpoint：将 segment 范围压缩为 checkpoint.N 目录，丢弃过期 series/样本/tombstone 并保留最新 metadata。
+
 package wlog
 
 import (
@@ -35,6 +37,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/tsdbutil"
 )
 
+// CheckpointStats 汇总 checkpoint 过程中丢弃与处理的 series、样本、tombstone 等数量。
 // CheckpointStats returns stats about a created checkpoint.
 type CheckpointStats struct {
 	DroppedSeries     int
@@ -49,6 +52,7 @@ type CheckpointStats struct {
 	TotalMetadata     int // Processed metadata including dropped ones.
 }
 
+// LastCheckpoint 返回最新 checkpoint 目录路径与序号；无 checkpoint 时返回 ErrNotFound。
 // LastCheckpoint returns the directory name and index of the most recent checkpoint.
 // If dir does not contain any checkpoints, ErrNotFound is returned.
 func LastCheckpoint(dir string) (string, int, error) {
@@ -65,6 +69,7 @@ func LastCheckpoint(dir string) (string, int, error) {
 	return filepath.Join(dir, checkpoint.name), checkpoint.index, nil
 }
 
+// DeleteCheckpoints 删除 index 小于 maxIndex 的所有 checkpoint 目录。
 // DeleteCheckpoints deletes all checkpoints in a directory below a given index.
 func DeleteCheckpoints(dir string, maxIndex int) error {
 	checkpoints, err := listCheckpoints(dir)
@@ -82,9 +87,11 @@ func DeleteCheckpoints(dir string, maxIndex int) error {
 	return errors.Join(errs...)
 }
 
+// CheckpointTempFileSuffix（.tmp）标记写入中的临时 checkpoint 目录。
 // CheckpointTempFileSuffix is the suffix used when creating temporary checkpoint files.
 const CheckpointTempFileSuffix = ".tmp"
 
+// DeleteTempCheckpoints 清理残留的 .tmp checkpoint 目录。
 // DeleteTempCheckpoints deletes all temporary checkpoint directories in the given directory.
 func DeleteTempCheckpoints(logger *slog.Logger, dir string) error {
 	if err := tsdbutil.RemoveTmpDirs(logger, dir, isTempDir); err != nil {
@@ -93,6 +100,7 @@ func DeleteTempCheckpoints(logger *slog.Logger, dir string) error {
 	return nil
 }
 
+// Checkpoint 读取 [from,to] segment（含上一 checkpoint），按 keep/mint 过滤后写入 checkpoint.N。
 // Checkpoint creates a compacted checkpoint of segments in range [from, to] in the given WAL.
 // It includes the most recent checkpoint if it exists.
 // All series not satisfying keep, samples/tombstones/exemplars below mint and
@@ -429,6 +437,7 @@ func Checkpoint(logger *slog.Logger, w *WL, from, to int, keep func(id chunks.He
 // checkpointPrefix is the prefix used for checkpoint files.
 const checkpointPrefix = "checkpoint."
 
+// CheckpointDir 生成 checkpoint.{8位序号} 目录路径。
 func CheckpointDir(dir string, i int) string {
 	return filepath.Join(dir, fmt.Sprintf(checkpointPrefix+"%08d", i))
 }

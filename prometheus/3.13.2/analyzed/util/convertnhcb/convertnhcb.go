@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 经典 Prometheus 直方图（_bucket/_sum/_count）增量收集并转换为原生自定义桶 Histogram/FloatHistogram。
+
 package convertnhcb
 
 import (
@@ -32,11 +34,13 @@ var (
 	errCountNotCumulative  = errors.New("count is not cumulative")
 )
 
+// tempHistogramBucket 暂存单桶 le 与累积 count。
 type tempHistogramBucket struct {
 	le    float64
 	count float64
 }
 
+// TempHistogram 按序接收 bucket/count/sum，校验单调累积后 Convert 为 NHCB。
 // TempHistogram is used to collect information about classic histogram
 // samples incrementally before creating a histogram.Histogram or
 // histogram.FloatHistogram based on the values collected.
@@ -48,6 +52,7 @@ type TempHistogram struct {
 	hasCount bool
 }
 
+// NewTempHistogram 预分配 bucket 切片容量。
 // NewTempHistogram creates a new TempHistogram to
 // collect information about classic histogram samples.
 func NewTempHistogram() TempHistogram {
@@ -68,6 +73,7 @@ func (h *TempHistogram) Reset() {
 	h.hasCount = false
 }
 
+// SetBucketCount 追加或插入 bucket；非累积或 NaN 边界写入 h.err 并短路后续操作。
 func (h *TempHistogram) SetBucketCount(boundary, count float64) error {
 	if h.err != nil {
 		return h.err
@@ -139,6 +145,7 @@ func (h *TempHistogram) SetSum(sum float64) error {
 	return nil
 }
 
+// Convert 补 +Inf 桶后尝试整数桶路径，否则生成 FloatHistogram CustomBucketsSchema。
 func (h TempHistogram) Convert() (*histogram.Histogram, *histogram.FloatHistogram, error) {
 	if h.err != nil {
 		return nil, nil, h.err
@@ -234,6 +241,7 @@ func (h TempHistogram) convertToFloatHistogram() (*histogram.Histogram, *histogr
 	return nil, rh.Compact(0), nil
 }
 
+// GetHistogramMetricBase 去掉 le 标签并设置合并后的 metric 名。
 func GetHistogramMetricBase(m labels.Labels, name string) labels.Labels {
 	return labels.NewBuilder(m).
 		Set(labels.MetricName, name).
@@ -250,6 +258,7 @@ const (
 	SuffixCount
 )
 
+// GetHistogramMetricBaseName 解析 _bucket/_sum/_count 后缀并返回基础名与后缀类型。
 // GetHistogramMetricBaseName removes the suffixes _bucket, _sum, _count from
 // the metric name. We specifically do not remove the _created suffix as that
 // should be removed by the caller.

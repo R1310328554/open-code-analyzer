@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 查询注解容器：将 warning/info 建模为 error，按 Error() 字符串去重并支持位置与合并。
+
 package annotations
 
 import (
@@ -23,6 +25,7 @@ import (
 	"github.com/prometheus/prometheus/promql/parser/posrange"
 )
 
+// Annotations 为 map[string]error；零值可直接 Add/Merge。
 // Annotations is a general wrapper for warnings and other information
 // that is returned by the query API along with the results.
 // Each individual annotation is modeled by a Go error.
@@ -30,6 +33,7 @@ import (
 // The zero value is usable without further initialization, see New().
 type Annotations map[string]error
 
+// New 返回空 Annotations 指针，语义等价于 &Annotations{}。
 // New returns new Annotations ready to use. Note that the zero value of
 // Annotations is also fully usable, but using this method is often more
 // readable.
@@ -37,6 +41,7 @@ func New() *Annotations {
 	return &Annotations{}
 }
 
+// Add 插入注解；若 key 已存在且实现 annoError 则 Merge 合并详情。
 // Add adds an annotation (modeled as a Go error) in-place and returns the
 // modified Annotations for convenience.
 func (a *Annotations) Add(err error) Annotations {
@@ -53,6 +58,7 @@ func (a *Annotations) Add(err error) Annotations {
 	return *a
 }
 
+// Merge 将另一组注解并入当前 map，冲突时尝试 annoError.Merge。
 // Merge adds the contents of the second set of Annotations to the first, modifying
 // the first in-place, and returns the merged first Annotations for convenience.
 func (a *Annotations) Merge(aa Annotations) Annotations {
@@ -74,6 +80,7 @@ func (a *Annotations) Merge(aa Annotations) Annotations {
 	return *a
 }
 
+// AsErrors/AsStrings 将注解转为切片或带 PromQL 位置信息的 warning/info 字符串列表。
 // AsErrors is a convenience function to return the annotations map as a slice
 // of errors.
 func (a Annotations) AsErrors() []error {
@@ -173,6 +180,7 @@ var (
 
 // annoError extends the standard error interface to provide additional functionality
 // for PromQL annotations, allowing them to be merged with other similar errors.
+// annoError 扩展 error：支持 Unwrap、SetQuery 定位与 Merge 同类注解。
 type annoError interface {
 	error
 	// Necessary so we can use errors.Is() to disambiguate between warning and info.
@@ -455,6 +463,7 @@ func NewNativeHistogramFractionNaNsInfo(metricName string, pos posrange.Position
 	}
 }
 
+// HistogramOperation 描述直方图运算上下文（加/减/聚合），用于 counter reset 冲突类 warning。
 type HistogramOperation string
 
 const (

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// almost 包提供浮点近似相等比较，供测试与 PromQL 场景处理 NaN/StaleNaN 与相对误差。
+
 package almost
 
 import (
@@ -21,6 +23,7 @@ import (
 
 var minNormal = math.Float64frombits(0x0010000000000000) // The smallest positive normal value of type float64.
 
+// Equal 在相对误差小于 epsilon、或双方同为 StaleNaN/NaN、或完全相等时返回 true。
 // Equal returns true if a and b differ by less than their sum
 // multiplied by epsilon, or if both are StaleNaN, or if both are any other NaN.
 func Equal(a, b, epsilon float64) bool {

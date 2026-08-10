@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 清理 TSDB/WAL 目录下符合 isTmpDir 谓词的临时子目录；删除失败仅记日志不中断。
+
 package tsdbutil
 
 import (
@@ -21,6 +23,7 @@ import (
 	"path/filepath"
 )
 
+// RemoveTmpDirs 遍历 dir 子项，对临时目录调用 RemoveAll；目录不存在视为成功。
 // RemoveTmpDirs attempts to remove directories in the specified directory which match the isTmpDir predicate.
 // Errors encountered during reading the directory that other than non-existence are returned. All other errors
 // encountered during removal of tmp directories are logged but do not cause early termination.

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// DirLocker 用法测试辅助：验证 lock 文件创建/替换/禁用及关闭后清理行为。
+
 package tsdbutil
 
 import (
@@ -25,6 +27,7 @@ import (
 	"github.com/prometheus/prometheus/util/testutil"
 )
 
+// TestDirLockerUsage 表驱动测试 open/createLock 组合下的 clean_start 指标与 lock 文件生命周期。
 // TestDirLockerUsage performs a set of tests which guarantee correct usage of
 // DirLocker. open should use data as the storage directory, and createLock
 // to determine if a lock file should be used.
