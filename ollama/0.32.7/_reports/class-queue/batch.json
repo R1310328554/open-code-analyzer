@@ -15,23 +15,8 @@
     "model/renderers/deepseek3.go",
     "model/renderers/functiongemma.go",
     "model/renderers/gemma4.go",
-    "model/renderers/glimmer.go",
-    "model/renderers/glm46.go",
-    "model/renderers/glm47.go",
-    "model/renderers/glmocr.go",
-    "model/renderers/image_tags.go",
-    "model/renderers/json.go",
-    "model/renderers/laguna.go",
-    "model/renderers/lfm2.go",
-    "model/renderers/nemotron3nano.go",
-    "model/renderers/olmo3.go",
-    "model/renderers/olmo3_think.go",
-    "model/renderers/ornith.go",
-    "model/renderers/qwen35.go",
-    "model/renderers/qwen3coder.go",
-    "model/renderers/qwen3vl.go",
-    "model/renderers/renderer.go"
+    "model/renderers/glimmer.go"
   ],
   "remaining_pending": 163,
-  "done": 270
+  "done": 285
 }
