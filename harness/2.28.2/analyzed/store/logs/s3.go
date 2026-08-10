@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// logs 包 S3 后端，将构建步骤日志存储到 AWS S3 或兼容对象存储。
 package logs
 
 import (
@@ -21,7 +22,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// NewS3Env returns a new S3 log store.
+// NewS3Env 从 bucket、前缀与 endpoint 环境变量构造 S3 LogStore。
 func NewS3Env(bucket, prefix, endpoint string, pathStyle bool) core.LogStore {
 	disableSSL := false
 
@@ -42,7 +43,7 @@ func NewS3Env(bucket, prefix, endpoint string, pathStyle bool) core.LogStore {
 	}
 }
 
-// NewS3 returns a new S3 log store.
+// NewS3 使用已有 AWS Session 构造 S3 LogStore。
 func NewS3(session *session.Session, bucket, prefix string) core.LogStore {
 	return &s3store{
 		bucket:  bucket,
@@ -51,12 +52,14 @@ func NewS3(session *session.Session, bucket, prefix string) core.LogStore {
 	}
 }
 
+// s3store 以 prefix/stepID 为对象键存储日志。
 type s3store struct {
 	bucket  string
 	prefix  string
 	session *session.Session
 }
 
+// Find 从 S3 下载指定步骤的日志对象流。
 func (s *s3store) Find(ctx context.Context, step int64) (io.ReadCloser, error) {
 	svc := s3.New(s.session)
 	out, err := svc.GetObject(&s3.GetObjectInput{
@@ -69,6 +72,7 @@ func (s *s3store) Find(ctx context.Context, step int64) (io.ReadCloser, error) {
 	return out.Body, nil
 }
 
+// Create 以 private ACL 上传日志到 S3。
 func (s *s3store) Create(ctx context.Context, step int64, r io.Reader) error {
 	uploader := s3manager.NewUploader(s.session)
 	input := &s3manager.UploadInput{
@@ -81,10 +85,12 @@ func (s *s3store) Create(ctx context.Context, step int64, r io.Reader) error {
 	return err
 }
 
+// Update 覆盖上传，语义同 Create。
 func (s *s3store) Update(ctx context.Context, step int64, r io.Reader) error {
 	return s.Create(ctx, step, r)
 }
 
+// Delete 删除 S3 上对应步骤的日志对象。
 func (s *s3store) Delete(ctx context.Context, step int64) error {
 	svc := s3.New(s.session)
 	_, err := svc.DeleteObject(&s3.DeleteObjectInput{
@@ -94,6 +100,7 @@ func (s *s3store) Delete(ctx context.Context, step int64) error {
 	return err
 }
 
+// key 生成 S3 对象键：/{prefix}/{stepID}。
 func (s *s3store) key(step int64) string {
 	return path.Join("/", s.prefix, fmt.Sprint(step))
 }

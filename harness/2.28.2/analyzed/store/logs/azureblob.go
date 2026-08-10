@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// logs 包 Azure Blob 后端，将构建步骤日志存储到 Azure 容器。
 package logs
 
 import (
@@ -16,7 +17,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// NewAzureBlobEnv returns a new Azure blob log store.
+// NewAzureBlobEnv 从环境变量构造 Azure Blob LogStore。
 func NewAzureBlobEnv(containerName, storageAccountName, storageAccessKey string) core.LogStore {
 	return &azureBlobStore{
 		containerName:      containerName,
@@ -26,6 +27,7 @@ func NewAzureBlobEnv(containerName, storageAccountName, storageAccessKey string)
 	}
 }
 
+// azureBlobStore 以步骤 ID 为 blob 名称存储日志。
 type azureBlobStore struct {
 	containerName      string
 	storageAccountName string
@@ -33,6 +35,7 @@ type azureBlobStore struct {
 	containerURL       *azblob.ContainerURL
 }
 
+// Find 从 Azure Blob 下载指定步骤的日志流。
 func (az *azureBlobStore) Find(ctx context.Context, step int64) (io.ReadCloser, error) {
 	err := az.getContainerURL()
 	if err != nil {
@@ -46,6 +49,7 @@ func (az *azureBlobStore) Find(ctx context.Context, step int64) (io.ReadCloser, 
 	return out.Body(azblob.RetryReaderOptions{}), nil
 }
 
+// Create 将日志流分块上传至 Azure Blob（4MB 缓冲、最多 5 块）。
 func (az *azureBlobStore) Create(ctx context.Context, step int64, r io.Reader) error {
 	err := az.getContainerURL()
 	if err != nil {
@@ -60,10 +64,12 @@ func (az *azureBlobStore) Create(ctx context.Context, step int64, r io.Reader) e
 	return err
 }
 
+// Update 覆盖写入，语义同 Create。
 func (az *azureBlobStore) Update(ctx context.Context, step int64, r io.Reader) error {
 	return az.Create(ctx, step, r)
 }
 
+// Delete 删除指定步骤对应的 blob（含快照）。
 func (az *azureBlobStore) Delete(ctx context.Context, step int64) error {
 	err := az.getContainerURL()
 	if err != nil {
@@ -74,6 +80,7 @@ func (az *azureBlobStore) Delete(ctx context.Context, step int64) error {
 	return err
 }
 
+// getContainerURL 懒初始化容器 URL 与共享密钥凭证。
 func (az *azureBlobStore) getContainerURL() error {
 	if az.containerURL != nil {
 		return nil

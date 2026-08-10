@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// logs 包提供基于数据库的构建步骤日志存储实现。
 package logs
 
 import (
@@ -24,15 +25,17 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// New returns a new LogStore.
+// New 创建将日志存入 logs 表的 core.LogStore 实现。
 func New(db *db.DB) core.LogStore {
 	return &logStore{db}
 }
 
+// logStore 以步骤 ID 为键在 logs 表读写 JSONL 日志数据。
 type logStore struct {
 	db *db.DB
 }
 
+// Find 按步骤 ID 读取日志字节并包装为 ReadCloser。
 func (s *logStore) Find(ctx context.Context, step int64) (io.ReadCloser, error) {
 	out := &logs{ID: step}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -48,6 +51,7 @@ func (s *logStore) Find(ctx context.Context, step int64) (io.ReadCloser, error) 
 	), err
 }
 
+// Create 读取请求体并插入新日志记录。
 func (s *logStore) Create(ctx context.Context, step int64, r io.Reader) error {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
@@ -67,6 +71,7 @@ func (s *logStore) Create(ctx context.Context, step int64, r io.Reader) error {
 	})
 }
 
+// Update 覆盖指定步骤的 log_data 字段。
 func (s *logStore) Update(ctx context.Context, step int64, r io.Reader) error {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
@@ -86,6 +91,7 @@ func (s *logStore) Update(ctx context.Context, step int64, r io.Reader) error {
 	})
 }
 
+// Delete 按步骤 ID 删除日志行。
 func (s *logStore) Delete(ctx context.Context, step int64) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params := &logs{
@@ -100,6 +106,7 @@ func (s *logStore) Delete(ctx context.Context, step int64) error {
 	})
 }
 
+// logs 对应 logs 表一行记录。
 type logs struct {
 	ID   int64  `db:"log_id"`
 	Data []byte `db:"log_data"`

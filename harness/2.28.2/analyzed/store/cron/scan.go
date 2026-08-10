@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// cron 包扫描辅助函数，用于 cron 表行与 core.Cron 映射。
 package cron
 
 import (
@@ -13,8 +14,7 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// helper function converts the User structure to a set
-// of named query parameters.
+// toParams 将 core.Cron 转为命名查询参数字典。
 func toParams(cron *core.Cron) map[string]interface{} {
 	return map[string]interface{}{
 		"cron_id":       cron.ID,
@@ -33,8 +33,7 @@ func toParams(cron *core.Cron) map[string]interface{} {
 	}
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 从 sql.Row 扫描列值写入 core.Cron。
 func scanRow(scanner db.Scanner, dst *core.Cron) error {
 	return scanner.Scan(
 		&dst.ID,
@@ -53,8 +52,7 @@ func scanRow(scanner db.Scanner, dst *core.Cron) error {
 	)
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRows 遍历 sql.Rows 批量扫描为 []*core.Cron 切片。
 func scanRows(rows *sql.Rows) ([]*core.Cron, error) {
 	defer rows.Close()
 

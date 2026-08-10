@@ -14,11 +14,12 @@
 
 // +build oss
 
+// logs 包（OSS 构建）S3 后端桩实现。
 package logs
 
 import "github.com/drone/drone/core"
 
-// New returns a zero value LogStore.
+// NewS3Env 在 OSS 构建中返回 nil LogStore。
 func NewS3Env(bucket, prefix, endpoint string, pathStyle bool) core.LogStore {
 	return nil
 }

@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// logs 包扫描辅助函数，用于 logs 表行与结构体映射。
 package logs
 
 import "github.com/drone/drone/store/shared/db"
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 从 sql.Row 扫描 log_id 与 log_data 写入 logs 结构体。
 func scanRow(scanner db.Scanner, dst *logs) error {
 	return scanner.Scan(
 		&dst.ID,

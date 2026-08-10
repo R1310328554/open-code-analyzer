@@ -3,6 +3,7 @@
 // that can be found in the LICENSE file.
 // +build !oss
 
+// card 包为非 OSS 构建提供流水线步骤卡片（Card）的数据库存储实现。
 package card
 
 import (
@@ -15,22 +16,25 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// New returns a new card database store.
+// New 创建 core.CardStore 数据库实现。
 func New(db *db.DB) core.CardStore {
 	return &cardStore{
 		db: db,
 	}
 }
 
+// cardStore 将卡片 JSON 数据持久化到 cards 表。
 type cardStore struct {
 	db *db.DB
 }
 
+// card 对应 cards 表一行，以步骤 ID 为主键。
 type card struct {
 	Id   int64  `json:"id,omitempty"`
 	Data []byte `json:"card_data"`
 }
 
+// Find 按步骤 ID 读取卡片数据，返回可读的 ReadCloser。
 func (c cardStore) Find(ctx context.Context, step int64) (io.ReadCloser, error) {
 	out := &card{Id: step}
 	err := c.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -51,6 +55,7 @@ func (c cardStore) Find(ctx context.Context, step int64) (io.ReadCloser, error) 
 	), err
 }
 
+// Create 为指定步骤新建卡片记录。
 func (c cardStore) Create(ctx context.Context, step int64, r io.Reader) error {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
@@ -74,6 +79,7 @@ func (c cardStore) Create(ctx context.Context, step int64, r io.Reader) error {
 	})
 }
 
+// Update 覆盖指定步骤的卡片数据。
 func (c *cardStore) Update(ctx context.Context, step int64, r io.Reader) error {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
@@ -97,6 +103,7 @@ func (c *cardStore) Update(ctx context.Context, step int64, r io.Reader) error {
 	})
 }
 
+// Delete 删除指定步骤的卡片记录。
 func (c cardStore) Delete(ctx context.Context, step int64) error {
 	return c.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params := &card{

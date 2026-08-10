@@ -14,11 +14,12 @@
 
 // +build oss
 
+// logs 包（OSS 构建）Azure Blob 后端桩实现。
 package logs
 
 import "github.com/drone/drone/core"
 
-// New returns a zero value LogStore.
+// NewAzureBlobEnv 在 OSS 构建中返回 nil LogStore。
 func NewAzureBlobEnv(containerName, storageAccountName, storageAccessKey string) core.LogStore {
 	return nil
 }

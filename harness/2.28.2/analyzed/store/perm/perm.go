@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// perm 包提供仓库权限（读/写/管理）的数据库存储实现。
 package perm
 
 import (
@@ -21,16 +22,17 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// New returns a new PermStore.
+// New 创建 core.PermStore 数据库实现。
 func New(db *db.DB) core.PermStore {
 	return &permStore{db}
 }
 
+// permStore 封装 perms 表的 CRUD 与协作者列表查询。
 type permStore struct {
 	db *db.DB
 }
 
-// Find returns a project member from the datastore.
+// Find 按用户 ID 与仓库 UID 查询单条权限记录。
 func (s *permStore) Find(ctx context.Context, repo string, user int64) (*core.Perm, error) {
 	out := &core.Perm{RepoUID: repo, UserID: user}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -45,7 +47,7 @@ func (s *permStore) Find(ctx context.Context, repo string, user int64) (*core.Pe
 	return out, err
 }
 
-// List returns a list of project members from the datastore.
+// List 返回指定仓库的全部协作者及其权限，按 login 排序。
 func (s *permStore) List(ctx context.Context, repo string) ([]*core.Collaborator, error) {
 	var out []*core.Collaborator
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -64,7 +66,7 @@ func (s *permStore) List(ctx context.Context, repo string) ([]*core.Collaborator
 	return out, err
 }
 
-// Create persists a project member to the datastore.
+// Create 插入新的仓库权限记录。
 func (s *permStore) Create(ctx context.Context, perm *core.Perm) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params := toParams(perm)
@@ -77,7 +79,7 @@ func (s *permStore) Create(ctx context.Context, perm *core.Perm) error {
 	})
 }
 
-// Update persists an updated project member to the datastore.
+// Update 更新读/写/管理权限及 synced 时间戳。
 func (s *permStore) Update(ctx context.Context, perm *core.Perm) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params := toParams(perm)
@@ -90,7 +92,7 @@ func (s *permStore) Update(ctx context.Context, perm *core.Perm) error {
 	})
 }
 
-// Delete deletes a project member from the datastore.
+// Delete 删除用户对指定仓库的权限记录。
 func (s *permStore) Delete(ctx context.Context, perm *core.Perm) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params := toParams(perm)

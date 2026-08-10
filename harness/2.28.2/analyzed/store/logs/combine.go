@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// logs 包组合存储实现，主存储失败时回退到次级 LogStore。
 package logs
 
 import (
@@ -21,10 +22,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// NewCombined returns a new combined log store that will fallback
-// to a secondary log store when necessary. This can be useful when
-// migrating from database logs to s3, where logs for older builds
-// are still being stored in the database, and newer logs in s3.
+// NewCombined 构造组合 LogStore，便于从数据库日志迁移到 S3 等外部存储。
 func NewCombined(primary, secondary core.LogStore) core.LogStore {
 	return &combined{
 		primary:   primary,
@@ -32,10 +30,12 @@ func NewCombined(primary, secondary core.LogStore) core.LogStore {
 	}
 }
 
+// combined 读操作主存储失败时查次级；写操作仅走主存储。
 type combined struct {
 	primary, secondary core.LogStore
 }
 
+// Find 先查主存储，失败则回退到次级存储。
 func (s *combined) Find(ctx context.Context, step int64) (io.ReadCloser, error) {
 	rc, err := s.primary.Find(ctx, step)
 	if err == nil {
@@ -44,14 +44,17 @@ func (s *combined) Find(ctx context.Context, step int64) (io.ReadCloser, error) 
 	return s.secondary.Find(ctx, step)
 }
 
+// Create 仅写入主存储。
 func (s *combined) Create(ctx context.Context, step int64, r io.Reader) error {
 	return s.primary.Create(ctx, step, r)
 }
 
+// Update 仅更新主存储。
 func (s *combined) Update(ctx context.Context, step int64, r io.Reader) error {
 	return s.primary.Update(ctx, step, r)
 }
 
+// Delete 先删主存储，失败再尝试次级存储。
 func (s *combined) Delete(ctx context.Context, step int64) error {
 	err := s.primary.Delete(ctx, step)
 	if err != nil {

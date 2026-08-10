@@ -4,9 +4,9 @@
 
 // +build !oss
 
+// cron 包为非 OSS 构建提供定时任务（Cron）的数据库存储实现。
 package cron
 
-// NewCronStore returns a new CronStore.
 import (
 	"context"
 
@@ -14,15 +14,17 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// New returns a new Cron database store.
+// New 创建 core.CronStore 数据库实现。
 func New(db *db.DB) core.CronStore {
 	return &cronStore{db}
 }
 
+// cronStore 封装 cron 表的 CRUD 与就绪查询。
 type cronStore struct {
 	db *db.DB
 }
 
+// List 返回指定仓库下的全部定时任务，按名称排序。
 func (s *cronStore) List(ctx context.Context, id int64) ([]*core.Cron, error) {
 	var out []*core.Cron
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -41,6 +43,7 @@ func (s *cronStore) List(ctx context.Context, id int64) ([]*core.Cron, error) {
 	return out, err
 }
 
+// Ready 返回 cron_next 早于给定时间戳、待触发的任务列表。
 func (s *cronStore) Ready(ctx context.Context, before int64) ([]*core.Cron, error) {
 	var out []*core.Cron
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -59,6 +62,7 @@ func (s *cronStore) Ready(ctx context.Context, before int64) ([]*core.Cron, erro
 	return out, err
 }
 
+// Find 按主键 ID 查询单条定时任务。
 func (s *cronStore) Find(ctx context.Context, id int64) (*core.Cron, error) {
 	out := &core.Cron{ID: id}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -73,6 +77,7 @@ func (s *cronStore) Find(ctx context.Context, id int64) (*core.Cron, error) {
 	return out, err
 }
 
+// FindName 在指定仓库内按任务名称查询。
 func (s *cronStore) FindName(ctx context.Context, id int64, name string) (*core.Cron, error) {
 	out := &core.Cron{Name: name, RepoID: id}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -87,6 +92,7 @@ func (s *cronStore) FindName(ctx context.Context, id int64, name string) (*core.
 	return out, err
 }
 
+// Create 插入新定时任务；Postgres 使用 RETURNING 获取 ID。
 func (s *cronStore) Create(ctx context.Context, cron *core.Cron) error {
 	if s.db.Driver() == db.Postgres {
 		return s.createPostgres(ctx, cron)
@@ -94,6 +100,7 @@ func (s *cronStore) Create(ctx context.Context, cron *core.Cron) error {
 	return s.create(ctx, cron)
 }
 
+// create SQLite/MySQL 插入路径，通过 LastInsertId 获取自增 ID。
 func (s *cronStore) create(ctx context.Context, cron *core.Cron) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params := toParams(cron)
@@ -110,6 +117,7 @@ func (s *cronStore) create(ctx context.Context, cron *core.Cron) error {
 	})
 }
 
+// createPostgres 使用 RETURNING cron_id 获取新记录 ID。
 func (s *cronStore) createPostgres(ctx context.Context, cron *core.Cron) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params := toParams(cron)
@@ -121,6 +129,7 @@ func (s *cronStore) createPostgres(ctx context.Context, cron *core.Cron) error {
 	})
 }
 
+// Update 更新已有定时任务的表达式、下次触发时间等字段。
 func (s *cronStore) Update(ctx context.Context, cron *core.Cron) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params := toParams(cron)
@@ -133,6 +142,7 @@ func (s *cronStore) Update(ctx context.Context, cron *core.Cron) error {
 	})
 }
 
+// Delete 按主键删除定时任务。
 func (s *cronStore) Delete(ctx context.Context, cron *core.Cron) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params := toParams(cron)

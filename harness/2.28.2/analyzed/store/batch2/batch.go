@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// batch2 包在单事务中批量同步仓库列表，并处理权限 stale 标记与重复 slug 冲突。
 package batch2
 
 import (
@@ -24,25 +25,23 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// New returns a new Batcher.
+// New 创建 core.Batcher 实现，用于 SCM 仓库列表批量同步。
 func New(db *db.DB) core.Batcher {
 	return &batchUpdater{db}
 }
 
+// batchUpdater 在数据库事务中执行 Insert/Update/Revoke 批量操作。
 type batchUpdater struct {
 	db *db.DB
 }
 
+// Batch 应用批量变更：重置权限 synced、插入/更新仓库、撤销远程不可见仓库权限。
 func (b *batchUpdater) Batch(ctx context.Context, user *core.User, batch *core.Batch) error {
 	return b.db.Update(func(execer db.Execer, binder db.Binder) error {
 		now := time.Now().Unix()
 
-		//
-		// the repository list API does not return permissions, which means we have
-		// no way of knowing if permissions are current or not. We therefore mark all
-		// permissions stale in the database, so that each one must be individually
-		// verified at runtime.
-		//
+		// 仓库列表 API 不返回权限详情，先将该用户全部权限标记为 stale，
+		// 后续访问时再逐条向 SCM 校验。
 
 		stmt := permResetStmt
 		switch b.db.Driver() {
@@ -55,9 +54,7 @@ func (b *batchUpdater) Batch(ctx context.Context, user *core.User, batch *core.B
 			return fmt.Errorf("batch: cannot reset permissions: %s", err)
 		}
 
-		// if the repository exists with the same name,
-		// but a different unique identifier, attempt to
-		// delete the previous entry.
+		// 若 slug 相同但 UID 不同（远程删除后重建），先删除旧记录再按插入处理。
 		var insert []*core.Repository
 		var update []*core.Repository
 		for _, repo := range append(batch.Insert, batch.Update...) {
@@ -82,10 +79,8 @@ func (b *batchUpdater) Batch(ctx context.Context, user *core.User, batch *core.B
 
 		for _, repo := range insert {
 
-			//
-			// insert repository
-			// TODO: group inserts in batches of N
-			//
+			// 插入新仓库记录
+			// TODO: 按 N 条分批插入
 
 			stmt := repoInsertIgnoreStmt
 			switch b.db.Driver() {
@@ -105,10 +100,8 @@ func (b *batchUpdater) Batch(ctx context.Context, user *core.User, batch *core.B
 				return fmt.Errorf("batch: cannot insert repository: %s: %s: %s", repo.Slug, repo.UID, err)
 			}
 
-			//
-			// insert permissions
-			// TODO: group inserts in batches of N
-			//
+			// 为新仓库插入默认读权限
+			// TODO: 按 N 条分批插入
 
 			stmt = permInsertIgnoreStmt
 			switch b.db.Driver() {
@@ -129,10 +122,8 @@ func (b *batchUpdater) Batch(ctx context.Context, user *core.User, batch *core.B
 			}
 		}
 
-		//
-		// update existing repositories
-		// TODO: group updates in batches of N
-		//
+		// 更新已有仓库的远程元数据并确保权限记录存在
+		// TODO: 按 N 条分批更新
 
 		for _, repo := range update {
 			params := repos.ToParams(repo)
@@ -197,10 +188,8 @@ func (b *batchUpdater) Batch(ctx context.Context, user *core.User, batch *core.B
 			}
 		}
 
-		//
-		// revoke permissions
-		// TODO: group deletes in batches of N
-		//
+		// 撤销远程已不可见仓库的本地权限
+		// TODO: 按 N 条分批删除
 
 		for _, repo := range batch.Revoke {
 			stmt := permRevokeStmt
@@ -388,19 +377,14 @@ INSERT INTO perms (
 ) ON CONFLICT DO NOTHING
 `
 
-// this statement deletes a repository that was
-// deleted in version control and then re-created
-// with the same name (and thus has a different
-// unique identifier)
+// repoDeleteDeleted 删除 slug 相同但 UID 不同的旧仓库（远程删除后同名重建）。
 const repoDeleteDeleted = `
 DELETE FROM repos
 WHERE repo_slug = :repo_slug
   AND repo_uid != :repo_uid
 `
 
-// this resets the synced date indicating that
-// the system should refresh the permissions next
-// time the user attempts to access the resource
+// permResetStmt 将 synced 置零，表示下次访问需重新向 SCM 校验权限。
 const permResetStmt = `
 UPDATE perms SET
  perm_updated = ?
