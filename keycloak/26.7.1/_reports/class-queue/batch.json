@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T09:30:53Z",
   "files": [
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/GoverningAgreementsType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/IdentificationType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/KeyActivationType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/KeySharingType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/KeyStorageType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/LengthType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/MediumType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/NymType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/OperationalProtectionType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/PasswordType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/PhysicalVerification.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/PrincipalAuthenticationMechanismType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/PrivateKeyProtectionType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/PublicKeyType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/RestrictedLengthType.java",
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/RestrictedPasswordType.java",
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/SecretKeyProtectionType.java",
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/SecurityAuditType.java",
@@ -33,5 +18,5 @@
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/AuthenticatorTransportProtocolType.java"
   ],
   "remaining_pending": 3508,
-  "done": 2460
+  "done": 2475
 }

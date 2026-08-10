@@ -2428,3 +2428,18 @@
 2026-08-10T09:30:36Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/SAML2Object.java wave82a saml11 protocol + saml2 ac start
 2026-08-10T09:30:36Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ActivationLimitDurationType.java wave82a saml11 protocol + saml2 ac start
 2026-08-10T09:30:36Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ActivationLimitSessionType.java wave82a saml11 protocol + saml2 ac start
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/GoverningAgreementsType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/IdentificationType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/KeyActivationType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/KeySharingType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/KeyStorageType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/LengthType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/MediumType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/NymType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/OperationalProtectionType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/PasswordType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/PhysicalVerification.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/PrincipalAuthenticationMechanismType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/PrivateKeyProtectionType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/PublicKeyType.java wave83a saml2 ac key/password/protection types
+2026-08-10T09:32:17Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/RestrictedLengthType.java wave83a saml2 ac key/password/protection types
