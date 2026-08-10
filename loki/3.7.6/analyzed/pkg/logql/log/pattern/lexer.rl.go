@@ -2,6 +2,8 @@
 //line pkg/logql/log/pattern/lexer.rl:1
 package pattern
 
+// lexer.rl.go 为 ragel 从 lexer.rl 生成的有限状态机实现，驱动 pattern 词法扫描：识别 < >、标识符与 UTF-8 字面量。
+
 
 //line pkg/logql/log/pattern/lexer.rl.go:7
 var _pattern_actions []byte = []byte{
@@ -85,6 +87,7 @@ const pattern_en_main int = 9
 //line pkg/logql/log/pattern/lexer.rl:28
 
 
+// LEXER_ERROR 表示 ragel 无法识别的输入字符。
 const LEXER_ERROR = 0
 
 
@@ -269,3 +272,4 @@ func (lex *lexer) init() {
 
 //line pkg/logql/log/pattern/lexer.rl:57
 }
+// _pattern_* 表为编译期常量；修改词法规则需重新运行 ragel 生成此文件。

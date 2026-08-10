@@ -1,5 +1,7 @@
 package logfmt
 
+// jsonstring 提供 logfmt 引号值的 JSON 风格反转义，改编自 Go encoding/json 以支持 \u 与 surrogate 对。
+
 import (
 	"strconv"
 	"unicode"
@@ -13,6 +15,7 @@ import (
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// getu4 解析 \uXXXX 四字节 Unicode 转义序列。
 func getu4(s []byte) rune {
 	if len(s) < 6 || s[0] != '\\' || s[1] != 'u' {
 		return -1
@@ -137,3 +140,4 @@ func unquoteBytes(s []byte) (t []byte, ok bool) {
 	}
 	return b[0:w], true
 }
+// 非法 UTF-8 或孤立 surrogate 会回退为 ReplacementChar 或返回失败。

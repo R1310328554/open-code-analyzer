@@ -2,12 +2,15 @@
 // Original license is MIT.
 package logfmt
 
+// decode 提供逐行 logfmt 键值解码器（改编自 go-logfmt），以 []byte 为输入供 LogQL logfmt 解析 stage 零拷贝扫描。
+
 import (
 	"bytes"
 	"fmt"
 	"unicode/utf8"
 )
 
+// Decoder 维护行内偏移与当前 key/value 切片，支持 Reset 复用。
 // A Decoder reads and decodes logfmt records from an input stream.
 type Decoder struct {
 	pos   int
@@ -17,6 +20,7 @@ type Decoder struct {
 	err   error
 }
 
+// NewDecoder 绑定单行字节切片；ScanKeyval 在该行内推进。
 // NewDecoder returns a new decoder that reads from r.
 //
 // The decoder introduces its own buffering and may read data from r beyond
@@ -36,6 +40,7 @@ func (dec *Decoder) EOL() bool {
 	return dec.pos >= len(dec.line)
 }
 
+// ScanKeyval 跳过前导空白，解析 key=val、裸 key 或引号值；遇语法错误置 Err。
 // ScanKeyval advances the Decoder to the next key/value pair of the current
 // record, which can then be retrieved with the Key and Value methods. It
 // returns false when decoding stops, either by reaching the end of the
@@ -221,6 +226,7 @@ func (dec *Decoder) unexpectedByte(c byte) {
 }
 
 // A SyntaxError represents a syntax error in the logfmt input stream.
+// SyntaxError 记录 logfmt 语法错误位置（1-indexed Pos）与消息。
 type SyntaxError struct {
 	Msg string
 	Pos int
@@ -229,3 +235,4 @@ type SyntaxError struct {
 func (e *SyntaxError) Error() string {
 	return fmt.Sprintf("logfmt syntax error at pos %d : %s", e.Pos, e.Msg)
 }
+// 引号值经 unquoteBytes 处理转义；严格模式下 Err 会触发 __error__ 标签。

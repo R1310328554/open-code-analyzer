@@ -1,5 +1,7 @@
 package log
 
+// parser 实现 LogQL pipeline 中的结构化解析 stage：JSON、正则、logfmt、pattern 及表达式变体，将字段提取为 ParsedLabel。
+
 import (
 	"bytes"
 	"errors"
@@ -25,7 +27,8 @@ const (
 	duplicateSuffix = "_extracted"
 	trueString      = "true"
 	falseString     = "false"
-	// How much stack space to allocate for unescaping JSON strings; if a string longer
+	// unescapeStackBufSize 为小 JSON 字符串栈上反转义缓冲区大小。
+// How much stack space to allocate for unescaping JSON strings; if a string longer
 	// than this needs to be escaped, it will result in a heap allocation
 	unescapeStackBufSize = 64
 )
@@ -51,6 +54,7 @@ var (
 	}
 )
 
+// JSONParser 递归遍历 JSON 对象，按 hints 选择性提取嵌套键为标签。
 type JSONParser struct {
 	prefixBuffer    [][]byte // buffer used to build json keys
 	lbs             *LabelsBuilder
@@ -61,6 +65,7 @@ type JSONParser struct {
 	sanitizedPrefixBuffer []byte
 }
 
+// NewJSONParser 可选 captureJSONPath 以记录各标签的 JSON 路径。
 // NewJSONParser creates a log stage that can parse a json log line and add properties as labels.
 func NewJSONParser(captureJSONPath bool) *JSONParser {
 	return &JSONParser{
@@ -282,6 +287,7 @@ func unescapeJSONString(b []byte) string {
 	return res
 }
 
+// RegexpParser 用命名捕获组从日志行提取标签；无匹配时不过滤行。
 type RegexpParser struct {
 	regex     *regexp.Regexp
 	nameIndex map[int]string
@@ -289,6 +295,7 @@ type RegexpParser struct {
 	keys internedStringSet
 }
 
+// NewRegexpParser 要求至少一个有效命名子匹配且标签名符合 Prometheus 规范。
 // NewRegexpParser creates a new log stage that can extract labels from a log line using a regex expression.
 // The regex expression must contains at least one named match. If the regex doesn't match the line is not filtered out.
 func NewRegexpParser(re string) (*RegexpParser, error) {
@@ -358,6 +365,7 @@ func (r *RegexpParser) Process(_ int64, line []byte, lbs *LabelsBuilder) ([]byte
 
 func (r *RegexpParser) RequiredLabelNames() []string { return []string{} }
 
+// LogfmtParser 逐 key=value 扫描 logfmt 行；strict 模式下语法错误写入 __error__。
 type LogfmtParser struct {
 	strict    bool
 	keepEmpty bool
@@ -365,6 +373,7 @@ type LogfmtParser struct {
 	keys      internedStringSet
 }
 
+// NewLogfmtParser 的 keepEmpty 控制是否保留空值字段。
 // NewLogfmtParser creates a parser that can extract labels from a logfmt log line.
 // Each keyval is extracted into a respective label.
 func NewLogfmtParser(strict, keepEmpty bool) *LogfmtParser {
@@ -448,6 +457,7 @@ func (l *LogfmtParser) Process(_ int64, line []byte, lbs *LabelsBuilder) ([]byte
 
 func (l *LogfmtParser) RequiredLabelNames() []string { return []string{} }
 
+// PatternParser 使用 pattern.Matcher 按 <name> 捕获段提取标签。
 type PatternParser struct {
 	matcher *pattern.Matcher
 	names   []string
@@ -496,6 +506,7 @@ func (l *PatternParser) Process(_ int64, line []byte, lbs *LabelsBuilder) ([]byt
 
 func (l *PatternParser) RequiredLabelNames() []string { return []string{} }
 
+// LogfmtExpressionParser 按预编译路径表达式从 logfmt 行提取指定标签。
 type LogfmtExpressionParser struct {
 	expressions map[string][]interface{}
 	dec         *logfmt.Decoder
@@ -625,6 +636,7 @@ func (l *LogfmtExpressionParser) Process(_ int64, line []byte, lbs *LabelsBuilde
 
 func (l *LogfmtExpressionParser) RequiredLabelNames() []string { return []string{} }
 
+// JSONExpressionParser 按 jsonexpr 路径从 JSON 行提取多个标识符字段。
 type JSONExpressionParser struct {
 	ids   []string
 	paths [][]string
@@ -737,6 +749,7 @@ type UnpackParser struct {
 	keys      internedStringSet
 }
 
+// NewUnpackParser 解析 pack stage 产生的 JSON map，_entry 键替换原日志行。
 // NewUnpackParser creates a new unpack stage.
 // The unpack stage will parse a json log line as map[string]string where each key will be translated into labels.
 // A special key _entry will also be used to replace the original log line. This is to be used in conjunction with Promtail pack stage.
@@ -774,6 +787,7 @@ func (u *UnpackParser) Process(_ int64, line []byte, lbs *LabelsBuilder) ([]byte
 	return entry, true
 }
 
+// addErrLabel 设置解析错误标签；PreserveError hint 时附加 __preserve_error__。
 func addErrLabel(msg string, err error, lbs *LabelsBuilder) {
 	lbs.SetErr(msg)
 
@@ -840,3 +854,4 @@ func (u *UnpackParser) unpack(entry []byte, lbs *LabelsBuilder) ([]byte, error) 
 	}
 	return entry, nil
 }
+// 与流标签冲突的解析键自动追加 _extracted 后缀；ParserHint 可短路全量扫描。

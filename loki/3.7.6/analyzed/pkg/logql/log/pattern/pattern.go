@@ -1,5 +1,7 @@
 package pattern
 
+// pattern 实现 LogQL | pattern 阶段的匹配器：交替字面量与捕获段，从日志行提取命名或未命名捕获值。
+
 import (
 	"bytes"
 	"errors"
@@ -11,6 +13,7 @@ var (
 	ErrInvalidExpr       = errors.New("invalid expression")
 )
 
+// Matcher 持有编译后的 expr 及可复用的 captures 缓冲区。
 type Matcher struct {
 	e expr
 
@@ -33,6 +36,7 @@ func New(in string) (*Matcher, error) {
 	}, nil
 }
 
+// ParseLineFilter 用于行过滤：仅允许匿名 <_> 捕获。
 func ParseLineFilter(in []byte) (*Matcher, error) {
 	if len(in) == 0 {
 		return new(Matcher), nil
@@ -50,6 +54,7 @@ func ParseLineFilter(in []byte) (*Matcher, error) {
 	return &Matcher{e: e}, nil
 }
 
+// ParseLiterals 提取表达式中全部字面量片段供其他子系统使用。
 func ParseLiterals(in string) ([][]byte, error) {
 	e, err := parseExpr(in)
 	if err != nil {
@@ -64,6 +69,7 @@ func ParseLiterals(in string) ([][]byte, error) {
 	return lit, nil
 }
 
+// Matches 按 capture-literals 交替结构扫描行并填充 captures 切片。
 // Matches matches the given line with the provided pattern.
 // Matches invalidates the previous returned captures array.
 func (m *Matcher) Matches(in []byte) [][]byte {
@@ -121,6 +127,7 @@ func (m *Matcher) Names() []string {
 	return m.names
 }
 
+// Test 判断行是否满足 pattern 结构约束（用于过滤器而非提取）。
 func (m *Matcher) Test(in []byte) bool {
 	if len(in) == 0 || len(m.e) == 0 {
 		// An empty line can only match an empty pattern.
@@ -156,3 +163,4 @@ func (m *Matcher) Test(in []byte) bool {
 	hasRem := off != len(in)
 	return reqRem == hasRem
 }
+// Matches 会使前次返回的 captures 切片失效；同名捕获在 AST 层禁止重复。

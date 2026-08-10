@@ -1,5 +1,7 @@
 package pattern
 
+// ast 定义 log pattern 表达式的 AST 节点：字面量片段与命名/匿名捕获，并提供校验与枚举辅助方法。
+
 import (
 	"fmt"
 	"unicode/utf8"
@@ -70,6 +72,7 @@ func (e expr) captureCount() (count int) {
 	return len(e.captures())
 }
 
+// capture 表示 <name> 或匿名 <_> 捕获段。
 type capture string
 
 func (c capture) String() string {
@@ -84,6 +87,7 @@ func (c capture) isUnnamed() bool {
 	return len(c) == 1 && c[0] == underscore[0]
 }
 
+// literals 为 UTF-8 编码的固定匹配文本片段。
 type literals []byte
 
 func (l literals) String() string {
@@ -99,3 +103,4 @@ func runesToLiterals(rs []rune) literals {
 	res = res[:count]
 	return res
 }
+// validate 禁止重复命名捕获、相邻捕获及行过滤模式下的命名捕获。

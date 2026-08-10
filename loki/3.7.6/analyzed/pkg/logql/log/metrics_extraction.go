@@ -1,5 +1,7 @@
 package log
 
+// metrics_extraction 实现 metric 查询中的样本提取器：从日志行或标签值转换为 float64 时间序列样本并应用分组。
+
 import (
 	"context"
 	"sort"
@@ -18,6 +20,7 @@ const (
 	ConvertFloat    = "float"
 )
 
+// LineExtractor 从单行字节切片提取标量；Count/Bytes 为内置实现。
 // LineExtractor extracts a float64 from a log line.
 type LineExtractor func([]byte) float64
 
@@ -26,11 +29,13 @@ var (
 	BytesExtractor LineExtractor = func(line []byte) float64 { return float64(len(line)) }
 )
 
+// SampleExtractor 按流标签哈希缓存 StreamSampleExtractor，避免重复构建。
 // SampleExtractor creates StreamSampleExtractor that can extract samples for a given log stream.
 type SampleExtractor interface {
 	ForStream(labels labels.Labels) StreamSampleExtractor
 }
 
+// StreamSampleExtractor 处理单条日志；保证不修改入参 line 切片。
 // StreamSampleExtractor extracts samples for a log line.
 // A StreamSampleExtractor never mutates the received line.
 type StreamSampleExtractor interface {
@@ -40,6 +45,7 @@ type StreamSampleExtractor interface {
 	ReferencedStructuredMetadata() bool
 }
 
+// ExtractedSample 含 float64 值与分组后的 LabelsResult。
 // ExtractedSample represents a single sample extracted from a log line,
 // including its value and associated labels.
 type ExtractedSample struct {
@@ -61,6 +67,7 @@ type lineSampleExtractor struct {
 	streamExtractors map[uint64]StreamSampleExtractor
 }
 
+// NewLineSampleExtractor 先运行 pipeline stages 再调用 LineExtractor。
 // NewLineSampleExtractor creates a SampleExtractor from a LineExtractor.
 // Multiple log stages are run before converting the log line.
 func NewLineSampleExtractor(ex LineExtractor, stages []Stage, groups []string, without, noLabels bool) (SampleExtractor, error) {
@@ -139,6 +146,7 @@ type labelSampleExtractor struct {
 	streamExtractors map[uint64]StreamSampleExtractor
 }
 
+// LabelExtractorWithStages 从指定标签名读取字符串并经 bytes/duration/float 转换。
 // LabelExtractorWithStages creates a SampleExtractor that will extract metrics from a labels.
 // A set of log stage is executed before the conversion. A Filtering stage is executed after the conversion allowing
 // to remove sample containing the __error__ label.
@@ -237,6 +245,7 @@ func (l *streamLabelSampleExtractor) ProcessString(ts int64, line string, struct
 
 func (l *streamLabelSampleExtractor) BaseLabels() LabelsResult { return l.builder.currentResult }
 
+// NewFilteringSampleExtractor 在提取前按 PipelineFilter 时间窗过滤日志行。
 // NewFilteringSampleExtractor creates a sample extractor where entries from
 // the underlying log stream are filtered by pipeline filters before being
 // passed to extract samples. Filters are always upstream of the extractor.
@@ -313,6 +322,7 @@ func (sp *filteringStreamExtractor) ProcessString(ts int64, line string, structu
 	return sp.extractor.ProcessString(ts, line, structuredMetadata)
 }
 
+// convertFloat 使用 strconv.ParseFloat 解析标签字符串。
 func convertFloat(v string) (float64, error) {
 	return strconv.ParseFloat(v, 64)
 }
@@ -325,6 +335,7 @@ func convertDuration(v string) (float64, error) {
 	return d.Seconds(), nil
 }
 
+// convertBytes 经 humanize.ParseBytes 解析如 1KiB 的人类可读字节量。
 func convertBytes(v string) (float64, error) {
 	b, err := humanize.ParseBytes(v)
 	if err != nil {
@@ -332,3 +343,4 @@ func convertBytes(v string) (float64, error) {
 	}
 	return float64(b), nil
 }
+// 标签缺失或转换失败时跳过样本；__error__ 由 postFilter stage 过滤。

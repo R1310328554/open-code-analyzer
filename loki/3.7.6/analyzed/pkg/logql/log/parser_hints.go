@@ -1,5 +1,7 @@
 package log
 
+// parser_hints 为 metric 查询中的解析 stage 提供提取提示：限定需提取的标签键、前缀剪枝与标签过滤器一致性检查。
+
 import (
 	"strings"
 
@@ -10,6 +12,7 @@ func NoParserHints() ParserHint {
 	return &Hints{}
 }
 
+// ParserHint 避免 json/logfmt 等隐式全键扫描，仅提取 aggregation 所需标签。
 // ParserHint are hints given to LogQL parsers.
 // This is specially useful for parser that extract implicitly all possible label keys.
 // This is used only within metric queries since it's rare that you need all label keys.
@@ -56,6 +59,7 @@ type ParserHint interface {
 	ShouldContinueParsingLine(labelName string, lbs *LabelsBuilder) bool
 }
 
+// Hints 记录 requiredLabels、已提取键集及关联的 LabelFilterer 列表。
 type Hints struct {
 	noLabels            bool
 	requiredLabels      []string
@@ -141,6 +145,7 @@ func (p *Hints) ShouldContinueParsingLine(labelName string, lbs *LabelsBuilder) 
 	return true
 }
 
+// NewParserHint 合并 required、group 与 metric 标签名；without/无分组时不设 hints。
 // NewParserHint creates a new parser hint using the list of labels that are seen and required in a query.
 func NewParserHint(requiredLabelNames, groups []string, without, noLabels bool, metricLabelName string, stages []Stage) *Hints {
 	hints := make([]string, 0, 2*(len(requiredLabelNames)+len(groups)+1))
@@ -197,6 +202,7 @@ func containsError(hints []string) bool {
 	return false
 }
 
+// appendLabelHints 同时保留带/不带 _extracted 后缀的键以匹配解析前碰撞规则。
 // appendLabelHints Appends the label to the list of hints with and without the duplicate suffix.
 // If a parsed label collides with a stream label we add the `_extracted` suffix to it, however hints
 // are used by the parsers before we know they will collide with a stream label and hence before the
@@ -213,3 +219,4 @@ func appendLabelHints(dst []string, src ...string) []string {
 	}
 	return dst
 }
+// ShouldExtract 结果可被 parser 缓存，故不得依赖 RecordExtracted 的动态状态。

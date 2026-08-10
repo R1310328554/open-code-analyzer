@@ -1,5 +1,7 @@
 package logfmt
 
+// lexer 为 logfmt 路径表达式提供手写词法分析器，产出 KEY/STRING token 供 goyacc 生成的 LogfmtExpr 解析器使用。
+
 import (
 	"bufio"
 	"fmt"
@@ -37,6 +39,7 @@ func (sc *Scanner) Lex(lval *LogfmtExprSymType) int {
 	return sc.lex(lval)
 }
 
+// lex 跳过空白后识别标识符键名或双引号字符串字面量。
 func (sc *Scanner) lex(lval *LogfmtExprSymType) int {
 	for {
 		r := sc.read()
@@ -64,6 +67,7 @@ func (sc *Scanner) lex(lval *LogfmtExprSymType) int {
 	}
 }
 
+// 标识符以字母或下划线开头，后续可含数字。
 func isStartIdentifier(r rune) bool {
 	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '_'
 }
@@ -123,3 +127,4 @@ func (sc *Scanner) scanStr() string {
 func (sc *Scanner) unread() { _ = sc.buf.UnreadRune() }
 
 func isWhitespace(ch rune) bool { return ch == ' ' || ch == '\t' || ch == '\n' }
+// scanStr 以 " 为界读取路径段；EOF 或 null 字节终止输入。

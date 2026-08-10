@@ -1,5 +1,7 @@
 package pattern
 
+// parser 封装 pattern 表达式的 yacc 解析入口与 sync.Pool 复用，将输入字符串/字节编译为 expr AST。
+
 import (
 	"fmt"
 	"sync"
@@ -34,6 +36,7 @@ func init() {
 	}
 }
 
+// parseExpr 解析完整 pattern 字符串并校验捕获约束。
 func parseExpr(input string) (expr, error) {
 	return parseExprBytes([]byte(input))
 }
@@ -53,6 +56,7 @@ func parseExprBytes(input []byte) (expr, error) {
 }
 
 // parseError is what is returned when we failed to parse.
+// parseError 携带行列号与消息，供 LogQL 报错展示。
 type parseError struct {
 	msg       string
 	line, col int
@@ -72,3 +76,4 @@ func newParseError(msg string, line, col int) parseError {
 		col:  col,
 	}
 }
+// init 注册 token 可读名并启用 exprErrorVerbose 改善语法错误输出。
