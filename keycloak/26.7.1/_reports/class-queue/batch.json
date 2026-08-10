@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:01:58Z",
-  "files": [
-    "services/src/main/java/org/keycloak/organization/admin/resource/OrganizationResource.java",
-    "services/src/main/java/org/keycloak/organization/admin/resource/OrganizationsResource.java",
-    "services/src/main/java/org/keycloak/organization/authentication/authenticators/broker/IdpAddOrganizationMemberAuthenticator.java",
-    "services/src/main/java/org/keycloak/organization/authentication/authenticators/broker/IdpOrganizationAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/organization/authentication/authenticators/browser/OrganizationAuthenticator.java",
-    "services/src/main/java/org/keycloak/organization/authentication/authenticators/browser/OrganizationAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/organization/forms/login/freemarker/model/OrganizationAwareAuthenticationContextBean.java",
-    "services/src/main/java/org/keycloak/organization/forms/login/freemarker/model/OrganizationAwareIdentityProviderBean.java",
-    "services/src/main/java/org/keycloak/organization/forms/login/freemarker/model/OrganizationAwareRealmBean.java",
-    "services/src/main/java/org/keycloak/organization/protocol/mappers/oidc/OrganizationGroupMembershipMapper.java",
-    "services/src/main/java/org/keycloak/organization/protocol/mappers/oidc/OrganizationMembershipMapper.java",
-    "services/src/main/java/org/keycloak/organization/protocol/mappers/oidc/OrganizationScope.java",
-    "services/src/main/java/org/keycloak/organization/protocol/mappers/oidc/OrganizationTokenPostProcessor.java",
-    "services/src/main/java/org/keycloak/organization/protocol/mappers/oidc/OrganizationTokenPostProcessorFactory.java",
-    "services/src/main/java/org/keycloak/organization/protocol/mappers/saml/OrganizationGroupMembershipMapper.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1708,
-  "done": 4275
+  "done": 4290
 }
