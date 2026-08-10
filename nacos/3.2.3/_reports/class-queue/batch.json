@@ -1,22 +1,22 @@
 {
-  "claimed_at": "2026-08-10T04:58:48Z",
+  "claimed_at": "2026-08-10T05:01:25Z",
   "files": [
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/ExternalRolePersistServiceImpl.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/ExternalUserPersistServiceImpl.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/PermissionInfo.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/PermissionPersistService.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/RoleInfo.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/RolePersistService.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/User.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/UserPersistService.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/embedded/AuthEmbeddedPaginationHelperImpl.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/extrnal/AuthExternalPaginationHelperImpl.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/handler/PageHandlerAdapter.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/handler/PageHandlerAdapterFactory.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/handler/support/DefaultPageHandlerAdapter.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/handler/support/DerbyPageHandlerAdapter.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/persistence/handler/support/MysqlPageHandlerAdapter.java"
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-base/src/main/java/com/alibaba/nacos/plugin/datasource/impl/dialect/AbstractDatabaseDialect.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-base/src/main/java/com/alibaba/nacos/plugin/datasource/impl/enums/TrustedPostgresqFunctionEnum.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/AbstractMapperByDerby.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/AiResourceMapperByDerby.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/AiResourceVersionMapperByDerby.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/ConfigInfoBetaMapperByDerby.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/ConfigInfoGrayMapperByDerby.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/ConfigInfoMapperByDerby.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/ConfigInfoTagMapperByDerby.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/ConfigInfoTagsRelationMapperByDerby.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/ConfigMigrateMapperByDerby.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/GroupCapacityMapperByDerby.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/HistoryConfigInfoMapperByDerby.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/TenantCapacityMapperByDerby.java",
+    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/TenantInfoMapperByDerby.java"
   ],
-  "remaining_pending": 257,
-  "done": 2265
+  "remaining_pending": 227,
+  "done": 2295
 }
