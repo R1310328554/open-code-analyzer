@@ -15,23 +15,8 @@
     "internal/entity/models/replicate.go",
     "internal/entity/models/siliconflow.go",
     "internal/entity/models/stepfun.go",
-    "internal/entity/models/togetherai.go",
-    "internal/entity/models/tokenhub.go",
-    "internal/entity/models/tokenpony.go",
-    "internal/entity/models/types.go",
-    "internal/entity/models/upstage.go",
-    "internal/entity/models/vllm.go",
-    "internal/entity/models/volcengine.go",
-    "internal/entity/models/voyage.go",
-    "internal/entity/models/xai.go",
-    "internal/entity/models/xiaomi.go",
-    "internal/entity/models/xinference.go",
-    "internal/entity/models/xunfei.go",
-    "internal/entity/models/zhipu-ai.go",
-    "internal/entity/pipeline.go",
-    "internal/entity/search.go",
-    "internal/entity/skill_search.go"
+    "internal/entity/models/togetherai.go"
   ],
   "remaining_pending": 984,
-  "done": 750
+  "done": 765
 }
