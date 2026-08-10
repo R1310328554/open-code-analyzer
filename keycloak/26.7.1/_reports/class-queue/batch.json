@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:44:02Z",
-  "files": [
-    "model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearUserCacheResource.java",
-    "model/storage-services/src/main/java/org/keycloak/services/resources/admin/UserStorageProviderRealmAdminProvider.java",
-    "model/storage-services/src/main/java/org/keycloak/services/resources/admin/UserStorageProviderResource.java",
-    "model/storage/src/main/java/org/keycloak/credential/UserCredentialManager.java",
-    "model/storage/src/main/java/org/keycloak/models/StorageProviderRealmModel.java",
-    "model/storage/src/main/java/org/keycloak/models/cache/CachedObject.java",
-    "model/storage/src/main/java/org/keycloak/models/cache/CachedUserModel.java",
-    "model/storage/src/main/java/org/keycloak/models/cache/OnUserCache.java",
-    "model/storage/src/main/java/org/keycloak/models/cache/UserCache.java",
-    "model/storage/src/main/java/org/keycloak/storage/AbstractStorageManager.java",
-    "model/storage/src/main/java/org/keycloak/storage/CacheableStorageProviderModel.java",
-    "model/storage/src/main/java/org/keycloak/storage/StoreManagers.java",
-    "model/storage/src/main/java/org/keycloak/storage/UserStorageProvider.java",
-    "model/storage/src/main/java/org/keycloak/storage/UserStorageProviderFactory.java",
-    "model/storage/src/main/java/org/keycloak/storage/UserStorageProviderModel.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3988,
-  "done": 1995
+  "done": 2010
 }
