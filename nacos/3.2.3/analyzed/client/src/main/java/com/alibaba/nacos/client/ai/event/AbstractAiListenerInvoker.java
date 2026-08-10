@@ -24,15 +24,20 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Nacos AI module abstract ai listener invoker.
+ * Nacos AI 模块监听器调用器抽象基类。
+ *
+ * <p>封装 {@link NacosAiListener} 的异步/同步回调执行、首次调用标记与
+ * 基于 listener 实例的相等性比较，供各类 AI 资源监听器复用。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractAiListenerInvoker<E extends NacosAiEvent, L extends NacosAiListener<E>>
     implements ListenerInvoker<E> {
     
+    /** 被包装的 AI 事件监听器实例。 */
     protected final L listener;
     
+    /** 标记是否已至少调用过一次，避免订阅时重复推送初始快照。 */
     private final AtomicBoolean invoked = new AtomicBoolean(false);
     
     public AbstractAiListenerInvoker(L listener) {
@@ -51,7 +56,7 @@ public abstract class AbstractAiListenerInvoker<E extends NacosAiEvent, L extend
     }
     
     /**
-     * log invoker be invoked.
+     * 记录监听器被调用的日志。
      *
      * @param event event
      */

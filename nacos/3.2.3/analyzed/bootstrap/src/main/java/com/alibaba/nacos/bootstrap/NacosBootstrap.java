@@ -36,15 +36,20 @@ import org.springframework.jmx.export.MBeanExporter;
 import org.springframework.jmx.support.RegistrationPolicy;
 
 /**
- * Nacos bootstrap class.
+ * Nacos 服务端启动引导类。
+ *
+ * <p>根据 {@link DeploymentType} 部署模式启动 Core、Web、Console 与 AI Registry
+ * 等 Spring Boot 子上下文，支持合并部署、仅服务端与仅控制台三种形态。</p>
  *
  * @author xiweng.yy
  */
 @SpringBootApplication
 public class NacosBootstrap {
     
+    /** Spring JMX 开关配置键。 */
     private static final String SPRING_JMX_ENABLED = "spring.jmx.enabled";
     
+    /** 程序入口：解析部署类型并按模式启动对应 Spring 上下文组合。 */
     public static void main(String[] args) {
         String type = System.getProperty(Constants.NACOS_DEPLOYMENT_TYPE,
             Constants.NACOS_DEPLOYMENT_TYPE_MERGED);
@@ -65,14 +70,16 @@ public class NacosBootstrap {
         }
     }
     
+    /** 准备 Core 上下文：若启用 JMX 则设置 MBean 注册策略为忽略已存在项。 */
     private static void prepareCoreContext(ConfigurableApplicationContext coreContext) {
         if (coreContext.getEnvironment().getProperty(SPRING_JMX_ENABLED, Boolean.class, false)) {
-            // Avoid duplicate registration MBean to exporter.
+            // 避免 MBean 重复注册到 exporter。
             coreContext.getBean(MBeanExporter.class)
                 .setRegistrationPolicy(RegistrationPolicy.IGNORE_EXISTING);
         }
     }
     
+    /** 仅启动 Core + Web（及可选 AI Registry），不加载 Console。 */
     private static void startWithoutConsole(String[] args) {
         ConfigurableApplicationContext coreContext = startCoreContext(args);
         prepareCoreContext(coreContext);
@@ -83,6 +90,7 @@ public class NacosBootstrap {
         }
     }
     
+    /** 合并部署：启动 Core、Web、Console 及可选 AI Registry。 */
     private static void startWithConsole(String[] args) {
         ConfigurableApplicationContext coreContext = startCoreContext(args);
         prepareCoreContext(coreContext);
@@ -94,6 +102,7 @@ public class NacosBootstrap {
         }
     }
     
+    /** 启动 Core 基础上下文（无 Web 容器）。 */
     private static ConfigurableApplicationContext startCoreContext(String[] args) {
         NacosStartUpManager.start(NacosStartUp.CORE_START_UP_PHASE);
         return new SpringApplicationBuilder(NacosServerBasicApplication.class)
@@ -101,6 +110,7 @@ public class NacosBootstrap {
             .banner(getBanner("core-banner.txt")).run(args);
     }
     
+    /** 以 Core 为父上下文启动服务端 Web 应用。 */
     private static ConfigurableApplicationContext startServerWebContext(String[] args,
         ConfigurableApplicationContext coreContext) {
         NacosStartUpManager.start(NacosStartUp.WEB_START_UP_PHASE);
@@ -108,6 +118,7 @@ public class NacosBootstrap {
             .banner(getBanner("nacos-server-web-banner.txt")).run(args);
     }
     
+    /** 以 Core 为父上下文启动控制台应用。 */
     private static ConfigurableApplicationContext startConsoleContext(String[] args,
         ConfigurableApplicationContext coreContext) {
         NacosStartUpManager.start(NacosStartUp.CONSOLE_START_UP_PHASE);
@@ -115,6 +126,7 @@ public class NacosBootstrap {
             .banner(getBanner("nacos-console-banner.txt")).run(args);
     }
     
+    /** 以 Core 为父上下文启动 AI Registry 应用。 */
     private static ConfigurableApplicationContext startAiRegistryContext(String[] args,
         ConfigurableApplicationContext coreContext) {
         NacosStartUpManager.start(NacosStartUp.AI_REGISTRY_START_UP_PHASE);
@@ -122,16 +134,19 @@ public class NacosBootstrap {
             .banner(getBanner("nacos-ai-registry-banner.txt")).run(args);
     }
     
+    /** 独立控制台部署：仅启动 Console 上下文。 */
     private static void startOnlyConsole(String[] args) {
         NacosStartUpManager.start(NacosStartUp.CONSOLE_START_UP_PHASE);
         new SpringApplicationBuilder(NacosConsole.class).banner(
             getBanner("nacos-console-banner.txt")).run(args);
     }
     
+    /** 从类路径加载指定 Banner 文件。 */
     private static Banner getBanner(String bannerFileName) {
         return new ResourceBanner(new ClassPathResource(bannerFileName));
     }
     
+    /** 判断 MCP 或 Skill 注册中心是否至少有一项启用。 */
     private static boolean isEnabledAiRegistry(ConfigurableApplicationContext coreContext) {
         boolean mcpRegistryEnabled = coreContext.getEnvironment()
             .getProperty("nacos.ai.mcp.registry.enabled", Boolean.class, false);

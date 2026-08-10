@@ -77,12 +77,16 @@ import java.util.Properties;
 import java.util.Set;
 
 /**
- * Nacos AI client service implementation.
+ * Nacos AI 客户端服务实现。
+ *
+ * <p>实现 {@link AiService}，封装 MCP 服务器、Agent Card、Prompt、AgentSpec 与 Skill
+ * 的查询、发布、订阅与端点注册；支持 gRPC 与 HTTP 双传输模式。</p>
  *
  * @author xiweng.yy
  */
 public class NacosAiService implements AiService {
     
+    /** 本类 SLF4J 日志记录器。 */
     private static final Logger LOGGER = LogUtils.logger(NacosAiService.class);
     
     private static final String AGENT_CARD_FORMAT_ERROR =
@@ -90,26 +94,42 @@ public class NacosAiService implements AiService {
             + "(`agentCard.protocolVersion`, `agentCard.preferredTransport`, `agentCard.url`) are incomplete. "
             + "Please prefer `agentCard.supportedInterfaces` for A2A 1.0.0.";
     
+    /** 当前客户端命名空间 ID。 */
     private final String namespaceId;
     
+    /** gRPC 远程客户端，用于 MCP/Agent Card 等核心 RPC。 */
     private final AiGrpcClient grpcClient;
     
+    /** HTTP 远程代理，用于 Skill 下载等 HTTP 接口。 */
     private final AiHttpClientProxy httpProxy;
     
+    /** 当前生效的主传输代理（gRPC 或 HTTP）。 */
     private final AiClientProxy aiClientProxy;
     
+    /** MCP 服务器本地缓存持有者。 */
     private final NacosMcpServerCacheHolder mcpServerCacheHolder;
     
+    /** Agent Card 本地缓存持有者。 */
     private final NacosAgentCardCacheHolder agentCardCacheHolder;
     
+    /** Prompt 本地缓存持有者。 */
     private final NacosPromptCacheHolder promptCacheHolder;
     
+    /** AgentSpec 本地缓存持有者。 */
     private final NacosAgentSpecCacheHolder agentSpecCacheHolder;
     
+    /** Skill 本地缓存持有者。 */
     private final NacosSkillCacheHolder skillCacheHolder;
     
+    /** AI 资源变更通知器，负责将缓存事件分发给已注册监听器。 */
     private final AiChangeNotifier aiChangeNotifier;
     
+    /**
+     * 根据客户端配置初始化 AI 服务。
+     *
+     * @param properties Nacos 客户端连接与 AI 相关配置
+     * @throws NacosException 初始化或启动失败时抛出
+     */
     public NacosAiService(Properties properties) throws NacosException {
         NacosClientProperties clientProperties = NacosClientProperties.PROTOTYPE.derive(properties);
         LOGGER.info(ClientBasicParamUtil.getInputParameters(clientProperties.asProperties()));
@@ -134,6 +154,7 @@ public class NacosAiService implements AiService {
         start();
     }
     
+    /** 解析命名空间 ID，空值时使用默认命名空间。 */
     private String initNamespace(NacosClientProperties properties) {
         String tempNamespace = properties.getProperty(PropertyKeyConst.NAMESPACE);
         if (StringUtils.isBlank(tempNamespace)) {
@@ -142,6 +163,7 @@ public class NacosAiService implements AiService {
         return tempNamespace;
     }
     
+    /** 启动 gRPC 客户端、注册事件发布器并订阅 {@link AiChangeNotifier}。 */
     private void start() throws NacosException {
         this.grpcClient.start(this.mcpServerCacheHolder, this.agentCardCacheHolder);
         NotifyCenter.registerToPublisher(McpServerChangedEvent.class, 16384);
@@ -355,6 +377,7 @@ public class NacosAiService implements AiService {
         }
     }
     
+    /** 批量校验 Agent 端点集合，要求版本号一致。 */
     private void validateAgentEndpoint(Collection<AgentEndpoint> endpoints)
         throws NacosApiException {
         if (null == endpoints || endpoints.isEmpty()) {
@@ -375,6 +398,7 @@ public class NacosAiService implements AiService {
         }
     }
     
+    /** 校验单个 Agent 端点的版本与 IP/端口合法性。 */
     private void validateAgentEndpoint(AgentEndpoint endpoint) throws NacosApiException {
         if (null == endpoint) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
@@ -390,6 +414,7 @@ public class NacosAiService implements AiService {
         instance.validate();
     }
     
+    /** 校验 Agent Card 必填字符串字段非空。 */
     private static void validateAgentCardField(String fieldName, String fieldValue)
         throws NacosApiException {
         if (StringUtils.isEmpty(fieldValue)) {
@@ -398,6 +423,7 @@ public class NacosAiService implements AiService {
         }
     }
     
+    /** 校验 Agent Card 符合旧协议或 A2A 1.0.0 {@code supportedInterfaces} 格式。 */
     private static void validateAgentCard(AgentCard agentCard) throws NacosApiException {
         boolean hasLegacyRequiredFields = !StringUtils.isEmpty(agentCard.getProtocolVersion())
             && !StringUtils.isEmpty(
@@ -410,6 +436,7 @@ public class NacosAiService implements AiService {
         }
     }
     
+    /** 判断 A2A 1.0.0 接口列表是否完整有效。 */
     private static boolean hasValidV1Interfaces(List<AgentInterface> interfaces) {
         if (null == interfaces || interfaces.isEmpty()) {
             return false;
@@ -490,7 +517,7 @@ public class NacosAiService implements AiService {
         }
     }
     
-    // ==================== AgentSpec Methods ====================
+    // ==================== AgentSpec 相关方法 ====================
     
     @Override
     public AgentSpec loadAgentSpec(String agentSpecName) throws NacosException {
@@ -541,7 +568,7 @@ public class NacosAiService implements AiService {
         }
     }
     
-    // ==================== Prompt Methods ====================
+    // ==================== Prompt 相关方法 ====================
     
     @Override
     public Prompt getPrompt(String promptKey) throws NacosException {

@@ -39,7 +39,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Nacos AI module prompt cache holder.
+ * Nacos AI 模块 Prompt 本地缓存持有者。
+ *
+ * <p>为每个 Prompt 订阅维护轮询任务，携带 MD5 进行条件查询；
+ * 变更时发布 {@link PromptChangedEvent} 通知监听器。</p>
  *
  * @author nacos
  */
@@ -49,6 +52,7 @@ public class NacosPromptCacheHolder implements Closeable {
     
     private final AiClientProxy aiClientProxy;
     
+    /** Prompt 对象缓存，键为 promptKey/version/label 复合键。 */
     private final Map<String, Prompt> promptCache;
     
     private final ScheduledExecutorService updaterExecutor;
@@ -78,7 +82,7 @@ public class NacosPromptCacheHolder implements Closeable {
     }
     
     /**
-     * Subscribe prompt and start polling for prompt changes.
+     * 订阅 Prompt 并启动变更轮询。
      *
      * @param promptKey prompt key
      * @return current Prompt object, null if not found
@@ -108,7 +112,7 @@ public class NacosPromptCacheHolder implements Closeable {
     }
     
     /**
-     * Unsubscribe prompt and remove update task.
+     * 取消 Prompt 订阅并移除轮询任务。
      *
      * @param promptKey prompt key
      */
@@ -145,6 +149,7 @@ public class NacosPromptCacheHolder implements Closeable {
         }
     }
     
+    /** 更新 Prompt 缓存并在内容变更时发布事件。 */
     private void processPrompt(String promptKey, String cacheKey, Prompt newPrompt) {
         Prompt oldPrompt = promptCache.get(cacheKey);
         if (newPrompt == null) {
@@ -157,12 +162,14 @@ public class NacosPromptCacheHolder implements Closeable {
         }
     }
     
+    /** 通过 JSON 比较判断 Prompt 是否变更。 */
     private boolean isPromptChanged(Prompt oldPrompt, Prompt newPrompt) {
         String oldJson = oldPrompt == null ? StringUtils.EMPTY : JacksonUtils.toJson(oldPrompt);
         String newJson = newPrompt == null ? StringUtils.EMPTY : JacksonUtils.toJson(newPrompt);
         return !StringUtils.equals(oldJson, newJson);
     }
     
+    /** 定时条件查询 Prompt 的内部轮询任务。 */
     private class PromptUpdater implements Runnable {
         
         private final String promptKey;
@@ -200,7 +207,7 @@ public class NacosPromptCacheHolder implements Closeable {
                 if (e.getErrCode() == NacosException.NOT_FOUND) {
                     processPrompt(promptKey, cacheKey, null);
                 } else if (e.getErrCode() == NacosException.NOT_MODIFIED) {
-                    // No content change, keep local cache and skip callback.
+                    // 内容未变更，保留本地缓存并跳过回调。
                 } else {
                     LOGGER.warn("Prompt updater execute query failed: promptKey={}, err={}",
                         promptKey, e.getErrMsg());

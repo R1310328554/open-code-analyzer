@@ -34,20 +34,28 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Nacos AI module mcp server change notifier.
+ * Nacos AI 模块资源变更通知器。
+ *
+ * <p>订阅 MCP、Agent Card、Prompt、AgentSpec 与 Skill 五类内部变更事件，
+ * 按缓存键查找已注册 {@link AbstractAiListenerInvoker} 并转换为对外 API 事件回调。</p>
  *
  * @author xiweng.yy
  */
 public class AiChangeNotifier extends SmartSubscriber {
     
+    /** MCP 服务器监听器映射，键为 mcpName+version 缓存键。 */
     private final Map<String, Set<McpServerListenerInvoker>> mcpServerListenerInvokers;
     
+    /** Agent Card 监听器映射。 */
     private final Map<String, Set<AgentCardListenerInvoker>> agentCardListenerInvokers;
     
+    /** Prompt 监听器映射。 */
     private final Map<String, Set<PromptListenerInvoker>> promptListenerInvokers;
     
+    /** AgentSpec 监听器映射。 */
     private final Map<String, Set<AgentSpecListenerInvoker>> agentSpecListenerInvokers;
     
+    /** Skill 监听器映射。 */
     private final Map<String, Set<SkillListenerInvoker>> skillListenerInvokers;
     
     public AiChangeNotifier() {
@@ -73,6 +81,7 @@ public class AiChangeNotifier extends SmartSubscriber {
         }
     }
     
+    /** 处理 MCP 服务器变更事件并回调已注册监听器。 */
     private void handleMcpServerChangedEvent(McpServerChangedEvent event) {
         String mcpServerKey =
             CacheKeyUtils.buildMcpServerKey(event.getMcpName(), event.getVersion());
@@ -85,6 +94,7 @@ public class AiChangeNotifier extends SmartSubscriber {
         }
     }
     
+    /** 处理 Agent Card 变更事件并回调已注册监听器。 */
     private void handleAgentCardChangedEvent(AgentCardChangedEvent event) {
         String agentCardKey =
             CacheKeyUtils.buildAgentCardKey(event.getAgentName(), event.getVersion());
@@ -97,6 +107,7 @@ public class AiChangeNotifier extends SmartSubscriber {
         }
     }
     
+    /** 处理 Prompt 变更事件并回调已注册监听器。 */
     private void handlePromptChangedEvent(PromptChangedEvent event) {
         String promptCacheKey = event.getCacheKey();
         if (!isSubscribed(promptCacheKey, promptListenerInvokers)) {
@@ -109,6 +120,7 @@ public class AiChangeNotifier extends SmartSubscriber {
         }
     }
     
+    /** 处理 AgentSpec 变更事件并回调已注册监听器。 */
     private void handleAgentSpecChangedEvent(AgentSpecChangedEvent event) {
         String agentSpecKey = CacheKeyUtils.buildAgentSpecKey(event.getAgentSpecName());
         if (!isSubscribed(agentSpecKey, agentSpecListenerInvokers)) {
@@ -121,6 +133,7 @@ public class AiChangeNotifier extends SmartSubscriber {
         }
     }
     
+    /** 处理 Skill 变更事件并回调已注册监听器。 */
     private void handleSkillChangedEvent(SkillChangedEvent event) {
         String skillCacheKey = event.getCacheKey();
         if (!isSubscribed(skillCacheKey, skillListenerInvokers)) {
@@ -145,7 +158,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * register mcp server listener.
+     * 注册 MCP 服务器监听器。
      *
      * @param mcpName           name of mcp server
      * @param version           version of mcp server
@@ -167,7 +180,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * register agent card listener.
+     * 注册 Agent Card 监听器。
      *
      * @param agentName         name of agent card
      * @param version           version of agent card
@@ -189,7 +202,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * register prompt listener.
+     * 注册 Prompt 监听器。
      *
      * @param promptKey       prompt key
      * @param listenerInvoker listener invoker
@@ -210,7 +223,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * register agent spec listener.
+     * 注册 AgentSpec 监听器。
      *
      * @param agentSpecName   name of agent spec
      * @param listenerInvoker listener invoker
@@ -230,7 +243,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * register skill listener.
+     * 注册 Skill 监听器。
      *
      * @param skillName       name of skill
      * @param version         version of skill
@@ -253,7 +266,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * deregister mcp server listener.
+     * 注销 MCP 服务器监听器。
      *
      * @param mcpName           name of mcp server
      * @param version           version of mcp server
@@ -275,7 +288,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * deregister agent card listener.
+     * 注销 Agent Card 监听器。
      *
      * @param agentName         name of agent card
      * @param version           version of agent card
@@ -297,7 +310,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * deregister prompt listener.
+     * 注销 Prompt 监听器。
      *
      * @param promptKey       prompt key
      * @param listenerInvoker listener invoker
@@ -318,7 +331,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * deregister agent spec listener.
+     * 注销 AgentSpec 监听器。
      *
      * @param agentSpecName   name of agent spec
      * @param listenerInvoker listener invoker
@@ -338,7 +351,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * deregister skill listener.
+     * 注销 Skill 监听器。
      *
      * @param skillName       name of skill
      * @param version         version of skill
@@ -361,7 +374,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * check agent spec is subscribed.
+     * 检查 AgentSpec 是否仍有活跃订阅。
      *
      * @param agentSpecName name of agent spec
      * @return is agent spec subscribed
@@ -372,7 +385,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * check mcp server is subscribed.
+     * 检查 MCP 服务器是否仍有活跃订阅。
      *
      * @param mcpName name of mcp server
      * @param version version of mcp server
@@ -384,7 +397,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * check agent card is subscribed.
+     * 检查 Agent Card 是否仍有活跃订阅。
      *
      * @param agentName name of agent card
      * @param version version of agent card
@@ -396,7 +409,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * check prompt is subscribed.
+     * 检查 Prompt 是否仍有活跃订阅。
      *
      * @param promptKey prompt key
      * @return is prompt subscribed
@@ -407,7 +420,7 @@ public class AiChangeNotifier extends SmartSubscriber {
     }
     
     /**
-     * check skill is subscribed.
+     * 检查 Skill 是否仍有活跃订阅。
      *
      * @param skillName name of skill
      * @param version   version of skill
@@ -419,6 +432,7 @@ public class AiChangeNotifier extends SmartSubscriber {
         return isSubscribed(key, skillListenerInvokers);
     }
     
+    /** 判断指定缓存键下是否仍存在监听器。 */
     private <T extends AbstractAiListenerInvoker<?, ?>> boolean isSubscribed(String key,
         Map<String, Set<T>> listenerInvokers) {
         return CollectionUtils.isNotEmpty(listenerInvokers.get(key));

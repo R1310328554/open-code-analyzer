@@ -22,7 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Nacos AI module agent spec listener invoker.
+ * AgentSpec 监听器调用器。
+ *
+ * <p>将 {@link NacosAgentSpecEvent} 分派给 {@link AbstractNacosAgentSpecListener}。</p>
  *
  * @author nacos
  */
@@ -36,6 +38,7 @@ public class AgentSpecListenerInvoker
     }
     
     @Override
+    /** 记录 AgentSpec 事件回调日志。 */
     protected void logInvoke(NacosAgentSpecEvent event) {
         LOGGER.info("Invoke event agentSpecName: {} to Listener: {}", event.getAgentSpecName(),
             listener.toString());

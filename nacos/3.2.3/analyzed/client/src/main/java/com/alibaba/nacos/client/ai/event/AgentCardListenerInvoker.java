@@ -22,7 +22,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Nacos AI module agent card listener invoker.
+ * Agent Card 监听器调用器。
+ *
+ * <p>将 {@link NacosAgentCardEvent} 分派给 {@link AbstractNacosAgentCardListener}，
+ * 并在调用时记录 agentName 与 listener 信息。</p>
  *
  * @author xiweng.yy
  */
@@ -31,10 +34,12 @@ public class AgentCardListenerInvoker
     
     private static final Logger LOGGER = LoggerFactory.getLogger(AgentCardListenerInvoker.class);
     
+    /** @param listener Agent Card 监听器实例 */
     public AgentCardListenerInvoker(AbstractNacosAgentCardListener listener) {
         super(listener);
     }
     
+    /** 记录 Agent Card 事件回调日志。 */
     protected void logInvoke(NacosAgentCardEvent event) {
         LOGGER.info("Invoke event agentName: {} to Listener: {}", event.getAgentName(),
             listener.toString());

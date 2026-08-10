@@ -44,7 +44,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Nacos AI module mcp server cache holder.
+ * Nacos AI 模块 MCP 服务器本地缓存持有者。
+ *
+ * <p>缓存 MCP 服务器详情，定时轮询并比较 JSON 序列化结果以检测变更，
+ * 变更时发布 {@link McpServerChangedEvent}。</p>
  *
  * @author xiweng.yy
  */
@@ -56,6 +59,7 @@ public class NacosMcpServerCacheHolder implements Closeable {
     
     private final Map<String, McpServerDetailInfo> mcpServerCache;
     
+    /** 用于 MCP 详情 JSON 序列化比较的 ObjectMapper。 */
     private final ObjectMapper objectMapper;
     
     private final ScheduledExecutorService updaterExecutor;
@@ -85,7 +89,7 @@ public class NacosMcpServerCacheHolder implements Closeable {
     }
     
     /**
-     * Process new mcp server detail info.
+     * 处理新的 MCP 服务器详情并检测是否变更。
      *
      * @param detailInfo new mcp server detail info
      */
@@ -107,7 +111,7 @@ public class NacosMcpServerCacheHolder implements Closeable {
     }
     
     /**
-     * Add new update task for mcp server.
+     * 为 MCP 服务器添加定时轮询更新任务。
      *
      * @param mcpName name of mcp server
      * @param version version of mcp server
@@ -122,7 +126,7 @@ public class NacosMcpServerCacheHolder implements Closeable {
     }
     
     /**
-     * Remove new update task for mcp server.
+     * 移除 MCP 服务器的定时轮询更新任务。
      *
      * @param mcpName name of mcp server
      * @param version version of mcp server
@@ -135,6 +139,7 @@ public class NacosMcpServerCacheHolder implements Closeable {
         }
     }
     
+    /** 通过 JSON 序列化比较判断 MCP 服务器是否变更。 */
     private boolean isMcpServerChanged(McpServerDetailInfo oldMcpServer,
         McpServerDetailInfo detailInfo) {
         try {
@@ -159,6 +164,7 @@ public class NacosMcpServerCacheHolder implements Closeable {
         this.updaterExecutor.shutdownNow();
     }
     
+    /** 定时拉取 MCP 服务器详情并触发变更检测的内部任务。 */
     private class McpServerUpdater implements Runnable {
         
         private final String mcpName;

@@ -39,14 +39,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Nacos AI module agent spec cache holder.
+ * Nacos AI 模块 AgentSpec 本地缓存持有者。
  *
- * <p>Owns the per-subscription polling loop that periodically calls
- * {@link AiClientProxy#queryAgentSpec(String, String, String, String)} with the locally cached MD5
- * for conditional query. When the server returns 304 ({@link NacosException#NOT_MODIFIED})
- * the local cache is preserved and no callback fires; when the response carries new content
- * (different MD5) an {@link AgentSpecChangedEvent} is published so {@code AiChangeNotifier} can
- * dispatch it to all registered listeners.
+ * <p>为每个订阅维护轮询循环，周期性调用
+ * {@link AiClientProxy#queryAgentSpec(String, String, String, String)} 并携带本地 MD5
+ * 进行条件查询。服务端返回 304（{@link NacosException#NOT_MODIFIED}）时保留本地缓存且不触发回调；
+ * 内容变更（MD5 不同）时发布 {@link AgentSpecChangedEvent}，由 {@code AiChangeNotifier}
+ * 分发给已注册监听器。</p>
  *
  * @author nacos
  */
@@ -57,12 +56,12 @@ public class NacosAgentSpecCacheHolder implements Closeable {
     private final AiClientProxy aiClientProxy;
     
     /**
-     * agentSpecName -> last published MD5.
+     * agentSpecName -> 上次发布的 MD5 指纹。
      */
     private final Map<String, String> md5Cache;
     
     /**
-     * agentSpecName -> cached AgentSpec object.
+     * agentSpecName -> 缓存的 AgentSpec 对象。
      */
     private final Map<String, AgentSpec> agentSpecCache;
     
@@ -86,7 +85,7 @@ public class NacosAgentSpecCacheHolder implements Closeable {
     }
     
     /**
-     * Query agent spec synchronously (no subscription).
+     * 同步查询 AgentSpec（非订阅模式）。
      *
      * @param agentSpecName name of agent spec
      * @return AgentSpec object, null if not found
@@ -110,10 +109,9 @@ public class NacosAgentSpecCacheHolder implements Closeable {
     }
     
     /**
-     * Subscribe to agent spec changes and start polling.
+     * 订阅 AgentSpec 变更并启动轮询。
      *
-     * <p>Performs the initial query synchronously and primes the MD5 cache; subsequent polls
-     * piggy-back the cached MD5 to short-circuit unchanged content.
+     * <p>首次同步查询并填充 MD5 缓存；后续轮询携带 MD5 以跳过未变更内容。</p>
      *
      * @param agentSpecName name of agent spec
      * @return current AgentSpec object, null if not found
@@ -131,8 +129,8 @@ public class NacosAgentSpecCacheHolder implements Closeable {
             AgentSpecQueryResponse response =
                 aiClientProxy.queryAgentSpec(agentSpecName, null, null, null);
             agentSpec = response.getAgentSpec();
-            // Only update cache during initial subscribe; do NOT publish event here.
-            // The caller (NacosAiService) handles the first listener notification.
+            // 首次订阅仅更新缓存，不在此处发布事件；
+            // 首次监听器通知由调用方 NacosAiService 负责。
             String newMd5 = response.getMd5();
             if (StringUtils.isNotBlank(newMd5)) {
                 md5Cache.put(cacheKey, newMd5);
@@ -153,7 +151,7 @@ public class NacosAgentSpecCacheHolder implements Closeable {
     }
     
     /**
-     * Unsubscribe from agent spec changes.
+     * 取消 AgentSpec 订阅并清理缓存与轮询任务。
      *
      * @param agentSpecName name of agent spec
      */
@@ -173,6 +171,7 @@ public class NacosAgentSpecCacheHolder implements Closeable {
         this.updaterExecutor.shutdownNow();
     }
     
+    /** 为指定 AgentSpec 添加定时轮询任务。 */
     private void addUpdateTask(String agentSpecName) {
         String key = CacheKeyUtils.buildAgentSpecKey(agentSpecName);
         this.updateTaskMap.computeIfAbsent(key, s -> {
@@ -182,6 +181,7 @@ public class NacosAgentSpecCacheHolder implements Closeable {
         });
     }
     
+    /** 移除 AgentSpec 轮询任务。 */
     private void removeUpdateTask(String agentSpecName) {
         String key = CacheKeyUtils.buildAgentSpecKey(agentSpecName);
         AgentSpecUpdater task = this.updateTaskMap.remove(key);
@@ -190,6 +190,7 @@ public class NacosAgentSpecCacheHolder implements Closeable {
         }
     }
     
+    /** 处理轮询响应，更新 MD5/对象缓存并在变更时发布事件。 */
     private void processAgentSpec(String agentSpecName, String cacheKey,
         AgentSpecQueryResponse response) {
         String oldMd5 = md5Cache.get(cacheKey);
@@ -207,6 +208,7 @@ public class NacosAgentSpecCacheHolder implements Closeable {
         }
     }
     
+    /** 定时条件查询 AgentSpec 的内部轮询任务。 */
     private class AgentSpecUpdater implements Runnable {
         
         private final String agentSpecName;
@@ -238,7 +240,7 @@ public class NacosAgentSpecCacheHolder implements Closeable {
                 if (e.getErrCode() == NacosException.NOT_FOUND) {
                     processAgentSpec(agentSpecName, cacheKey, null);
                 } else if (e.getErrCode() == NacosException.NOT_MODIFIED) {
-                    // No content change, keep local cache and skip callback.
+                    // 内容未变更，保留本地缓存并跳过回调。
                 } else {
                     LOGGER.warn(
                         "AgentSpec updater query failed: name={}, err={}",

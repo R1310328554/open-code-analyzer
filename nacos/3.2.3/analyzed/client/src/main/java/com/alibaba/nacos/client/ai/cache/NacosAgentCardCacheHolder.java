@@ -43,7 +43,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Nacos AI module agent card cache holder.
+ * Nacos AI 模块 Agent Card 本地缓存持有者。
+ *
+ * <p>维护 Agent 卡片详情缓存，定时轮询服务端变更并通过
+ * {@link AgentCardChangedEvent} 通知监听器。</p>
  *
  * @author xiweng.yy
  */
@@ -51,16 +54,22 @@ public class NacosAgentCardCacheHolder implements Closeable {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(NacosAgentCardCacheHolder.class);
     
+    /** gRPC 客户端，用于拉取 Agent Card 详情。 */
     private final AiGrpcClient aiGrpcClient;
     
+    /** Agent Card 缓存，键为 {@link CacheKeyUtils} 生成的复合键。 */
     private final Map<String, AgentCardDetailInfo> agentCardCache;
     
+    /** 定时轮询更新任务的调度线程池。 */
     private final ScheduledExecutorService updaterExecutor;
     
+    /** 轮询更新间隔（毫秒）。 */
     private final long updateIntervalMillis;
     
+    /** 活跃更新任务映射，键为 Agent Card 缓存键。 */
     private final Map<String, AgentCardUpdater> updateTaskMap;
     
+    /** 构造缓存持有者并读取轮询间隔配置。 */
     public NacosAgentCardCacheHolder(AiGrpcClient aiGrpcClient, NacosClientProperties properties) {
         this.aiGrpcClient = aiGrpcClient;
         this.agentCardCache = new ConcurrentHashMap<>(4);
@@ -72,13 +81,14 @@ public class NacosAgentCardCacheHolder implements Closeable {
                 AiConstants.DEFAULT_AI_CACHE_UPDATE_INTERVAL);
     }
     
+    /** 从本地缓存读取 Agent Card 详情，未命中返回 null。 */
     public AgentCardDetailInfo getAgentCard(String agentName, String version) {
         String key = CacheKeyUtils.buildAgentCardKey(agentName, version);
         return agentCardCache.get(key);
     }
     
     /**
-     * Process new agent card detail info.
+     * 处理服务端推送或轮询得到的 Agent Card 详情。
      *
      * @param detailInfo new agent card detail info
      */
@@ -101,7 +111,7 @@ public class NacosAgentCardCacheHolder implements Closeable {
     }
     
     /**
-     * Add new update task for agent card.
+     * 为指定 Agent Card 添加定时轮询更新任务。
      *
      * @param agentName name of agent card
      * @param version version of agent card
@@ -116,7 +126,7 @@ public class NacosAgentCardCacheHolder implements Closeable {
     }
     
     /**
-     * Remove new update task for agent card.
+     * 移除 Agent Card 的定时轮询更新任务。
      *
      * @param agentName name of agent card
      * @param version version of agent card
@@ -129,6 +139,7 @@ public class NacosAgentCardCacheHolder implements Closeable {
         }
     }
     
+    /** 比较新旧 Agent Card 是否发生实质变更。 */
     private boolean isAgentCardChanged(AgentCardDetailInfo oldAgentCard,
         AgentCardDetailInfo newAgentCard) {
         if (null == oldAgentCard) {
@@ -142,6 +153,7 @@ public class NacosAgentCardCacheHolder implements Closeable {
         return isInterfacesChanged(oldAgentCard, newAgentCard);
     }
     
+    /** 比较 supportedInterfaces 或 additionalInterfaces 是否变更。 */
     private boolean isInterfacesChanged(AgentCardDetailInfo oldAgentCard,
         AgentCardDetailInfo newAgentCard) {
         List<AgentInterface> oldSupported = oldAgentCard.getSupportedInterfaces();
@@ -170,6 +182,7 @@ public class NacosAgentCardCacheHolder implements Closeable {
         this.updaterExecutor.shutdownNow();
     }
     
+    /** 定时拉取 Agent Card 并触发变更检测的内部任务。 */
     private class AgentCardUpdater implements Runnable {
         
         private final String agentName;

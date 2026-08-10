@@ -21,17 +21,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Loggers for core.
+ * Nacos 鉴权模块日志记录器集合。
+ *
+ * <p>提供 {@link #AUTH} 静态 Logger，并支持运行时动态调整鉴权日志级别。</p>
  *
  * @author nkorange
  * @since 1.2.0
  */
 public class Loggers {
     
+    /** 鉴权日志类别标识，对应 Logback 日志名 {@code auth}。 */
     private static final String AUTH_LOG_NAME = "auth";
     
+    /** 鉴权模块 SLF4J 日志记录器，名称为 {@code com.alibaba.nacos.auth}。 */
     public static final Logger AUTH = LoggerFactory.getLogger("com.alibaba.nacos.auth");
     
+    /**
+     * 按日志名动态设置 Logback 日志级别。
+     *
+     * @param logName 日志类别，当前仅支持 {@code auth}
+     * @param level Logback 级别字符串，如 {@code DEBUG}、{@code INFO}
+     */
     public static void setLogLevel(String logName, String level) {
         
         if (AUTH_LOG_NAME.equals(logName)) {

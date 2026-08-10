@@ -38,14 +38,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Nacos AI module skill cache holder.
+ * Nacos AI 模块 Skill 本地缓存持有者。
  *
- * <p>Owns the per-subscription polling loop that periodically calls
- * {@link AiClientProxy#querySkill(String, String, String, String)} with the locally cached MD5
- * for conditional download. When the server returns 304 ({@link NacosException#NOT_MODIFIED})
- * the local cache is preserved and no callback fires; when the response carries new content
- * (different MD5) a {@link SkillChangedEvent} is published so {@code AiChangeNotifier} can
- * dispatch it to all registered listeners.
+ * <p>为每个订阅维护轮询循环，周期性调用
+ * {@link AiClientProxy#querySkill(String, String, String, String)} 并携带本地 MD5
+ * 进行条件下载。服务端返回 304（{@link NacosException#NOT_MODIFIED}）时保留本地缓存且不触发回调；
+ * 内容变更（MD5 不同）时发布 {@link SkillChangedEvent}，由 {@code AiChangeNotifier}
+ * 分发给已注册监听器。</p>
  *
  * @author nacos
  */
@@ -56,7 +55,7 @@ public class NacosSkillCacheHolder implements Closeable {
     private final AiClientProxy aiClientProxy;
     
     /**
-     * cacheKey -> last published MD5 of the locally cached skill ZIP.
+     * cacheKey -> 本地缓存 Skill ZIP 上次发布的 MD5 指纹。
      */
     private final Map<String, String> skillMd5Cache;
     
@@ -77,10 +76,9 @@ public class NacosSkillCacheHolder implements Closeable {
     }
     
     /**
-     * Subscribe skill and start polling for skill changes.
+     * 订阅 Skill 并启动变更轮询。
      *
-     * <p>Performs the initial download synchronously and primes the MD5 cache; subsequent polls
-     * piggy-back the cached MD5 to short-circuit unchanged content.
+     * <p>首次同步下载并填充 MD5 缓存；后续轮询携带 MD5 以跳过未变更内容。</p>
      *
      * @param skillName skill name
      * @param version   skill version, optional
@@ -100,9 +98,8 @@ public class NacosSkillCacheHolder implements Closeable {
         try {
             SkillQueryResponse response = aiClientProxy.querySkill(skillName, version, label, null);
             zipBytes = response.getZipBytes();
-            // Only update cache during initial subscribe; do NOT publish event here.
-            // The caller (NacosAiService) handles the first listener notification to avoid
-            // duplicate callbacks racing with the async NotifyCenter dispatch.
+            // 首次订阅仅更新缓存，不在此处发布事件；
+            // 首次监听器通知由 NacosAiService 负责，避免与 NotifyCenter 异步分发重复回调。
             String newMd5 = response.getMd5();
             if (StringUtils.isNotBlank(newMd5)) {
                 skillMd5Cache.put(cacheKey, newMd5);
@@ -119,7 +116,7 @@ public class NacosSkillCacheHolder implements Closeable {
     }
     
     /**
-     * Unsubscribe skill and remove update task.
+     * 取消 Skill 订阅并移除轮询任务。
      *
      * @param skillName skill name
      * @param version   skill version, optional
@@ -158,6 +155,7 @@ public class NacosSkillCacheHolder implements Closeable {
         }
     }
     
+    /** 处理 Skill 轮询响应，更新 MD5 并在变更时发布事件。 */
     private void processSkill(String skillName, String cacheKey, SkillQueryResponse response) {
         String oldMd5 = skillMd5Cache.get(cacheKey);
         String newMd5 = response == null ? null : response.getMd5();
@@ -172,6 +170,7 @@ public class NacosSkillCacheHolder implements Closeable {
         }
     }
     
+    /** 定时条件下载 Skill 的内部轮询任务。 */
     private class SkillUpdater implements Runnable {
         
         private final String skillName;
@@ -209,7 +208,7 @@ public class NacosSkillCacheHolder implements Closeable {
                 if (e.getErrCode() == NacosException.NOT_FOUND) {
                     processSkill(skillName, cacheKey, null);
                 } else if (e.getErrCode() == NacosException.NOT_MODIFIED) {
-                    // No content change, keep local cache and skip callback.
+                    // 内容未变更，保留本地缓存并跳过回调。
                 } else {
                     LOGGER.warn("Skill updater execute query failed: skillName={}, err={}",
                         skillName, e.getErrMsg());
