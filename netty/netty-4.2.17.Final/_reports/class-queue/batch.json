@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T00:17:04Z",
   "files": [
-    "codec-protobuf/src/main/java/io/netty/handler/codec/protobuf/ProtobufVarint32FrameDecoder.java",
-    "codec-protobuf/src/main/java/io/netty/handler/codec/protobuf/ProtobufVarint32LengthFieldPrepender.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/AbstractStringRedisMessage.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/ArrayHeaderRedisMessage.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/ArrayRedisMessage.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/BulkStringHeaderRedisMessage.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/BulkStringRedisContent.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/DefaultBulkStringRedisContent.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/DefaultLastBulkStringRedisContent.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/ErrorRedisMessage.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/FixedRedisMessagePool.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/FullBulkStringRedisMessage.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/InlineCommandRedisMessage.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/IntegerRedisMessage.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/LastBulkStringRedisContent.java",
     "codec-redis/src/main/java/io/netty/handler/codec/redis/RedisArrayAggregator.java",
     "codec-redis/src/main/java/io/netty/handler/codec/redis/RedisBulkStringAggregator.java",
     "codec-redis/src/main/java/io/netty/handler/codec/redis/RedisCodecException.java",
@@ -33,5 +18,5 @@
     "codec-smtp/src/main/java/io/netty/handler/codec/smtp/DefaultSmtpResponse.java"
   ],
   "remaining_pending": 968,
-  "done": 930
+  "done": 945
 }
