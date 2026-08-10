@@ -25,16 +25,21 @@ import com.alibaba.nacos.plugin.control.tps.rule.TpsControlRule;
 import java.util.concurrent.TimeUnit;
 
 /**
- * tps barrier for tps point.
+ * TPS 屏障抽象基类，为每个限流点持有底层 {@link RuleBarrier} 并转发检查与规则应用。
+ *
+ * <p>默认使用 {@link LocalSimpleCountBarrierCreator} 创建秒级本地简单计数屏障。</p>
  *
  * @author shiyiyue
  */
 public abstract class TpsBarrier {
     
+    /** 规则屏障创建器。 */
     protected RuleBarrierCreator ruleBarrierCreator;
     
+    /** 限流点名称。 */
     protected String pointName;
     
+    /** 点级规则屏障实例。 */
     protected RuleBarrier pointBarrier;
     
     public TpsBarrier(String pointName) {
@@ -45,25 +50,35 @@ public abstract class TpsBarrier {
     }
     
     /**
-     * apply tps.
+     * 执行 TPS 限流检查。
      *
-     * @param tpsCheckRequest tpsCheckRequest.
-     * @return check current tps is allowed.
+     * @param tpsCheckRequest TPS 检查请求
+     * @return 是否允许通过及结果码
      */
     public abstract TpsCheckResponse applyTps(TpsCheckRequest tpsCheckRequest);
     
+    /**
+     * 获取点级规则屏障。
+     *
+     * @return 规则屏障实例
+     */
     public RuleBarrier getPointBarrier() {
         return pointBarrier;
     }
     
+    /**
+     * 获取限流点名称。
+     *
+     * @return 限流点名称
+     */
     public String getPointName() {
         return pointName;
     }
     
     /**
-     * apply rule.
+     * 应用或清除 TPS 管控规则。
      *
-     * @param newControlRule newControlRule.
+     * @param newControlRule 新规则
      */
     public abstract void applyRule(TpsControlRule newControlRule);
 }

@@ -24,7 +24,10 @@ import com.alibaba.nacos.plugin.control.tps.rule.RuleDetail;
 import com.alibaba.nacos.plugin.control.tps.rule.TpsControlRule;
 
 /**
- * tps barrier for tps point.
+ * 默认 Nacos TPS 屏障，将限流检查委托给底层 {@link RuleBarrier}。
+ *
+ * <p>负责将 {@link TpsCheckRequest} 转换为 {@link BarrierCheckRequest}，
+ * 并将 {@link TpsControlRule} 中的点级规则应用到屏障。</p>
  *
  * @author shiyiyue
  */
@@ -35,10 +38,10 @@ public class DefaultNacosTpsBarrier extends TpsBarrier {
     }
     
     /**
-     * apply tps.
+     * 执行 TPS 限流检查，转发至点级规则屏障。
      *
-     * @param tpsCheckRequest tpsCheckRequest.
-     * @return check current tps is allowed.
+     * @param tpsCheckRequest TPS 检查请求
+     * @return 是否允许通过及结果码
      */
     public TpsCheckResponse applyTps(TpsCheckRequest tpsCheckRequest) {
         
@@ -50,14 +53,14 @@ public class DefaultNacosTpsBarrier extends TpsBarrier {
     }
     
     /**
-     * apply rule.
+     * 应用或清除 TPS 管控规则到点级屏障。
      *
-     * @param newControlRule newControlRule.
+     * @param newControlRule 新规则，{@code null} 或空规则表示清除限流
      */
     public synchronized void applyRule(TpsControlRule newControlRule) {
         Loggers.CONTROL.info("Apply tps control rule start,pointName=[{}]  ", this.getPointName());
         
-        //1.reset all monitor point for null.
+        // 1. 规则为空时清除所有限流配置
         if (newControlRule == null || newControlRule.getPointRule() == null) {
             Loggers.CONTROL.info("Clear all tps control rule ,pointName=[{}]  ",
                 this.getPointName());
@@ -65,7 +68,7 @@ public class DefaultNacosTpsBarrier extends TpsBarrier {
             return;
         }
         
-        //2.check point rule.
+        // 2. 更新点级规则详情（最大 TPS、监控模式等）
         RuleDetail newPointRule = newControlRule.getPointRule();
         
         Loggers.CONTROL.info(

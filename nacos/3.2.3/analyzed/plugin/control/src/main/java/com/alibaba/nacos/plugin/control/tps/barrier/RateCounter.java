@@ -19,20 +19,18 @@ package com.alibaba.nacos.plugin.control.tps.barrier;
 import java.util.concurrent.TimeUnit;
 
 /**
- * abstract rate counter.
+ * 速率计数器抽象基类，按时间窗口累加与查询请求计数。
+ *
+ * <p>子类实现具体的窗口存储策略；本类提供秒/分/时粒度的时间对齐工具方法。</p>
  *
  * @author zunfei.lzf
  */
 public abstract class RateCounter {
     
-    /**
-     * rate count name.
-     */
+    /** 计数器名称。 */
     private String name;
     
-    /**
-     * rate period.
-     */
+    /** 统计周期（秒/分/时）。 */
     private TimeUnit period;
     
     public RateCounter(String name, TimeUnit period) {
@@ -40,46 +38,56 @@ public abstract class RateCounter {
         this.period = period;
     }
     
+    /**
+     * 获取统计周期。
+     *
+     * @return 时间单位
+     */
     public TimeUnit getPeriod() {
         return period;
     }
     
     /**
-     * add count for the second of timestamp.
+     * 累加指定时间窗口的请求计数。
      *
-     * @param timestamp timestamp.
-     * @param count     count.
-     * @return
+     * @param timestamp 时间戳（毫秒）
+     * @param count     累加数量
+     * @return 累加后的总计数
      */
     public abstract long add(long timestamp, long count);
     
     /**
-     * add intercepted count for the second of timestamp.
+     * 尝试累加计数，超过上限时记录拦截并返回 {@code false}。
      *
-     * @param timestamp timestamp
-     * @param countDelta count
-     * @param upperLimit upperLimit
-     * @return
+     * @param timestamp  时间戳（毫秒）
+     * @param countDelta 累加增量
+     * @param upperLimit 上限阈值
+     * @return 是否在限制内
      */
     public abstract boolean tryAdd(long timestamp, long countDelta, long upperLimit);
     
     /**
-     * get count of the second of timestamp.
+     * 获取指定时间窗口的当前计数。
      *
-     * @param timestamp timestamp.
-     * @return
+     * @param timestamp 时间戳（毫秒）
+     * @return 当前计数
      */
     public abstract long getCount(long timestamp);
     
+    /**
+     * 获取计数器名称。
+     *
+     * @return 名称
+     */
     public String getName() {
         return name;
     }
     
     /**
-     * get trim mills of second.
+     * 将毫秒时间戳对齐到分钟起始（截断秒以下精度）。
      *
-     * @param timeStamp timestamp milliseconds.
-     * @return
+     * @param timeStamp 毫秒时间戳
+     * @return 对齐后的毫秒时间戳
      */
     public static long getTrimMillsOfMinute(long timeStamp) {
         String millString = String.valueOf(timeStamp);
@@ -88,10 +96,10 @@ public abstract class RateCounter {
     }
     
     /**
-     * get trim mills of second.
+     * 将毫秒时间戳对齐到秒起始（截断毫秒以下精度）。
      *
-     * @param timeStamp timestamp milliseconds.
-     * @return
+     * @param timeStamp 毫秒时间戳
+     * @return 对齐后的毫秒时间戳
      */
     public static long getTrimMillsOfSecond(long timeStamp) {
         String millString = String.valueOf(timeStamp);
@@ -100,10 +108,10 @@ public abstract class RateCounter {
     }
     
     /**
-     * get trim mills of second.
+     * 将毫秒时间戳对齐到小时起始。
      *
-     * @param timeStamp timestamp milliseconds.
-     * @return
+     * @param timeStamp 毫秒时间戳
+     * @return 对齐后的毫秒时间戳
      */
     public static long getTrimMillsOfHour(long timeStamp) {
         String millString = String.valueOf(timeStamp);

@@ -20,30 +20,32 @@ import com.alibaba.nacos.plugin.control.connection.ConnectionControlManager;
 import com.alibaba.nacos.plugin.control.tps.TpsControlManager;
 
 /**
- * Nacos control plugin manager builder SPI.
+ * Nacos 管控插件管理器构建 SPI。
+ *
+ * <p>各管控实现通过此接口向框架注册名称，并分别提供连接数管控与 TPS 限流管理器的构建能力。</p>
  *
  * @author xiweng.yy
  */
 public interface ControlManagerBuilder {
     
     /**
-     * Get plugin name.
+     * 获取插件名称，用于与配置项 {@code controlManagerType} 匹配。
      *
-     * @return name of plugin
+     * @return 插件名称
      */
     String getName();
     
     /**
-     * Build {@link ConnectionControlManager} implementation for current plugin.
+     * 构建当前插件的 {@link ConnectionControlManager} 实现。
      *
-     * @return ConnectionControlManager implementation
+     * @return 连接数管控管理器实例
      */
     ConnectionControlManager buildConnectionControlManager();
     
     /**
-     * Build {@link TpsControlManager} implementation for current plugin.
+     * 构建当前插件的 {@link TpsControlManager} 实现。
      *
-     * @return TpsControlManager implementation
+     * @return TPS 限流管理器实例
      */
     TpsControlManager buildTpsControlManager();
 }

@@ -19,23 +19,26 @@ package com.alibaba.nacos.plugin.control.spi;
 import com.alibaba.nacos.plugin.control.rule.storage.ExternalRuleStorage;
 
 /**
- * Nacos control plugin external rule storage builder SPI.
+ * Nacos 管控插件外部规则存储构建 SPI。
+ *
+ * <p>允许将 TPS 与连接限制规则持久化到外部介质（如数据库、配置中心），
+ * 由 {@link com.alibaba.nacos.plugin.control.rule.storage.RuleStorageProxy} 按配置加载。</p>
  *
  * @author xiweng.yy
  */
 public interface ExternalRuleStorageBuilder {
     
     /**
-     * Get plugin name.
+     * 获取外部存储插件名称，与配置项 {@code ruleExternalStorage} 匹配。
      *
-     * @return name of plugin
+     * @return 插件名称
      */
     String getName();
     
     /**
-     * Build {@link ExternalRuleStorage} implementation for current plugin if necessary.
+     * 构建当前插件的 {@link ExternalRuleStorage} 实现。
      *
-     * @return ExternalRuleStorage implementation
+     * @return 外部规则存储实例
      */
     ExternalRuleStorage buildExternalRuleStorage();
 }

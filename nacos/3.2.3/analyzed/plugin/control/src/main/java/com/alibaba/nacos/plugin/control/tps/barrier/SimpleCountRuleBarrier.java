@@ -27,12 +27,16 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * simple count rule barrier.
+ * 简单计数规则屏障，基于 {@link RateCounter} 实现固定窗口计数限流。
+ *
+ * <p>拦截模式下超限拒绝请求，监控模式下仅累加计数不拒绝；
+ * 周期变更时会重建底层计数器。</p>
  *
  * @author shiyiyue
  */
 public abstract class SimpleCountRuleBarrier extends RuleBarrier {
     
+    /** 底层速率计数器。 */
     RateCounter rateCounter;
     
     public SimpleCountRuleBarrier(String pointName, String ruleName, TimeUnit period) {
@@ -43,14 +47,15 @@ public abstract class SimpleCountRuleBarrier extends RuleBarrier {
     }
     
     /**
-     * create rate count.
+     * 创建速率计数器实例，由子类指定具体实现。
      *
-     * @param name   name.
-     * @param period period.
-     * @return
+     * @param name   计数器名称
+     * @param period 统计周期
+     * @return 速率计数器
      */
     public abstract RateCounter createSimpleCounter(String name, TimeUnit period);
     
+    /** 周期变更时重建底层计数器。 */
     public void reCreateRaterCounter(String name, TimeUnit period) {
         this.rateCounter = createSimpleCounter(name, period);
     }
@@ -70,6 +75,7 @@ public abstract class SimpleCountRuleBarrier extends RuleBarrier {
         }
     }
     
+    /** 将时间戳对齐到当前统计周期的窗口起始。 */
     long trimTimeStamp(long timeStamp) {
         if (this.getPeriod() == TimeUnit.SECONDS) {
             timeStamp = RateCounter.getTrimMillsOfSecond(timeStamp);
@@ -78,7 +84,7 @@ public abstract class SimpleCountRuleBarrier extends RuleBarrier {
         } else if (this.getPeriod() == TimeUnit.HOURS) {
             timeStamp = RateCounter.getTrimMillsOfHour(timeStamp);
         } else {
-            //second default
+            // 默认按秒对齐
             timeStamp = RateCounter.getTrimMillsOfSecond(timeStamp);
         }
         return timeStamp;
@@ -99,9 +105,9 @@ public abstract class SimpleCountRuleBarrier extends RuleBarrier {
     }
     
     /**
-     * apply rule detail.
+     * 应用规则详情；统计周期变更时重建计数器。
      *
-     * @param ruleDetail ruleDetail.
+     * @param ruleDetail 规则详情
      */
     public void applyRuleDetail(RuleDetail ruleDetail) {
         

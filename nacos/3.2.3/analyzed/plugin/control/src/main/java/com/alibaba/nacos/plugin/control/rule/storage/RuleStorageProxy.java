@@ -27,7 +27,10 @@ import org.slf4j.Logger;
 import java.util.Collection;
 
 /**
- * rule storage proxy.
+ * 规则存储代理，统一管理本地磁盘与外部持久化两种规则存储后端。
+ *
+ * <p>构造时按配置决定是否通过 SPI 加载外部存储，并始终初始化本地磁盘存储；
+ * 同时创建 {@link ControlRuleChangeActivator} 以监听规则变更。</p>
  *
  * @author shiyiyue
  */
@@ -35,12 +38,16 @@ public class RuleStorageProxy {
     
     private static final Logger LOGGER = Loggers.CONTROL;
     
+    /** 单例实例。 */
     private static final RuleStorageProxy INSTANCE = new RuleStorageProxy();
     
+    /** 本地磁盘规则存储，始终可用。 */
     private LocalDiskRuleStorage localDiskRuleStorage = null;
     
+    /** 外部规则存储，按配置通过 SPI 构建，可为空。 */
     private ExternalRuleStorage externalRuleStorage = null;
     
+    /** 规则变更激活器，负责规则热更新通知。 */
     ControlRuleChangeActivator controlRuleChangeActivator = null;
     
     private RuleStorageProxy() {
@@ -52,6 +59,7 @@ public class RuleStorageProxy {
         controlRuleChangeActivator = new ControlRuleChangeActivator();
     }
     
+    /** 通过 SPI 按名称匹配并构建外部规则存储实现。 */
     private void buildExternalStorage(String externalStorageType) {
         Collection<ExternalRuleStorageBuilder> externalRuleStorageBuilders = NacosServiceLoader
             .load(ExternalRuleStorageBuilder.class);
@@ -73,6 +81,7 @@ public class RuleStorageProxy {
         }
     }
     
+    /** 初始化本地磁盘存储，并按配置设置规则根目录。 */
     private void initLocalStorage() {
         localDiskRuleStorage = new LocalDiskRuleStorage();
         if (StringUtils.isNotBlank(ControlConfigs.getInstance().getLocalRuleStorageBaseDir())) {
@@ -81,14 +90,29 @@ public class RuleStorageProxy {
         }
     }
     
+    /**
+     * 获取本地磁盘规则存储。
+     *
+     * @return 本地磁盘存储实例
+     */
     public RuleStorage getLocalDiskStorage() {
         return localDiskRuleStorage;
     }
     
+    /**
+     * 获取外部规则存储，未配置或未构建成功时返回 {@code null}。
+     *
+     * @return 外部存储实例，可能为空
+     */
     public RuleStorage getExternalStorage() {
         return externalRuleStorage;
     }
     
+    /**
+     * 获取规则存储代理单例。
+     *
+     * @return 代理实例
+     */
     public static RuleStorageProxy getInstance() {
         return INSTANCE;
     }

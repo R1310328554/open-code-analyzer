@@ -19,7 +19,7 @@ package com.alibaba.nacos.plugin.control.tps.barrier;
 import java.util.concurrent.TimeUnit;
 
 /**
- * local simple count rule barrier.
+ * 本地简单计数规则屏障，使用 {@link LocalSimpleCountRateCounter} 作为速率计数器。
  *
  * @author shiyiyue
  */
@@ -29,10 +29,18 @@ public class LocalSimpleCountRuleBarrier extends SimpleCountRuleBarrier {
         super(pointName, ruleName, period);
     }
     
+    /**
+     * 创建本地简单计数速率计数器实例。
+     *
+     * @param name   计数器名称
+     * @param period 统计周期
+     * @return 本地计数器实例
+     */
     public RateCounter createSimpleCounter(String name, TimeUnit period) {
         return new LocalSimpleCountRateCounter(name, period);
     }
     
+    /** 返回屏障算法标识 {@code localsimplecount}。 */
     @Override
     public String getBarrierName() {
         return "localsimplecount";

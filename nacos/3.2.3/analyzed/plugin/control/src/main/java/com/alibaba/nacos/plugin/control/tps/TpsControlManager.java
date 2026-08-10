@@ -31,14 +31,19 @@ import com.alibaba.nacos.plugin.control.tps.rule.TpsControlRule;
 import java.util.Map;
 
 /**
- * abstract tps control manager.
+ * TPS 限流管理器抽象基类。
+ *
+ * <p>封装规则解析器与屏障创建器的初始化，提供从本地/外部存储加载规则、
+ * 注册限流点、应用规则及执行 TPS 检查的模板流程，具体限流策略由子类实现。</p>
  *
  * @author shiyiyue
  */
 public abstract class TpsControlManager {
     
+    /** TPS 管控规则解析器。 */
     private final TpsControlRuleParser tpsControlRuleParser;
     
+    /** TPS 屏障创建器，用于为各限流点实例化屏障。 */
     protected final TpsBarrierCreator tpsBarrierCreator;
     
     protected TpsControlManager() {
@@ -46,23 +51,34 @@ public abstract class TpsControlManager {
         this.tpsBarrierCreator = buildTpsBarrierCreator();
     }
     
+    /**
+     * 获取 TPS 规则解析器。
+     *
+     * @return 规则解析器实例
+     */
     public TpsControlRuleParser getTpsControlRuleParser() {
         return tpsControlRuleParser;
     }
     
+    /** 构建 TPS 规则解析器，默认使用 Nacos 内置解析器。 */
     protected TpsControlRuleParser buildTpsControlRuleParser() {
         return new NacosTpsControlRuleParser();
     }
     
     /**
-     * Build tps barrier creator to creator tps barrier for each point.
+     * 构建 TPS 屏障创建器，用于为各限流点创建屏障实例。
      *
-     * @return TpsBarrierCreator implementation for current plugin
+     * @return 当前插件使用的 {@link TpsBarrierCreator} 实现
      */
     protected TpsBarrierCreator buildTpsBarrierCreator() {
         return new DefaultNacosTpsBarrierCreator();
     }
     
+    /**
+     * 从本地磁盘或外部存储加载指定限流点的规则并应用。
+     *
+     * @param pointName 限流点名称
+     */
     protected void initTpsRule(String pointName) {
         RuleStorageProxy ruleStorageProxy = RuleStorageProxy.getInstance();
         
@@ -89,46 +105,46 @@ public abstract class TpsControlManager {
     }
     
     /**
-     * apple tps rule.
+     * 注册 TPS 限流点。
      *
-     * @param pointName pointName.
+     * @param pointName 限流点名称
      */
     public abstract void registerTpsPoint(String pointName);
     
     /**
-     * get points.
+     * 获取所有已注册限流点及其屏障。
      *
-     * @return
+     * @return 限流点名称到屏障的映射
      */
     public abstract Map<String, TpsBarrier> getPoints();
     
     /**
-     * get rules.
+     * 获取所有限流点当前生效的规则。
      *
-     * @return
+     * @return 限流点名称到规则的映射
      */
     public abstract Map<String, TpsControlRule> getRules();
     
     /**
-     * apple tps rule.
+     * 应用或更新指定限流点的 TPS 规则。
      *
-     * @param pointName pointName.
-     * @param rule      rule.
+     * @param pointName 限流点名称
+     * @param rule      新规则
      */
     public abstract void applyTpsRule(String pointName, TpsControlRule rule);
     
     /**
-     * check tps result.
+     * 执行 TPS 限流检查。
      *
-     * @param tpsRequest TpsRequest.
-     * @return check current tps is allowed.
+     * @param tpsRequest TPS 检查请求
+     * @return 检查结果，包含是否放行及原因码
      */
     public abstract TpsCheckResponse check(TpsCheckRequest tpsRequest);
     
     /**
-     * get control manager name.
+     * 获取管控管理器名称标识。
      *
-     * @return
+     * @return 管理器名称
      */
     public abstract String getName();
 }

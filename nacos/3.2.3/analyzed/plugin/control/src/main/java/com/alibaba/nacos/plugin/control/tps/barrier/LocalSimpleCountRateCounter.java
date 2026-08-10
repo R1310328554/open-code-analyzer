@@ -22,16 +22,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * local simple count rate counter.
+ * 本地简单计数速率计数器，基于固定大小环形槽位窗口统计 TPS。
+ *
+ * <p>按秒/分/时对齐时间窗口，每个槽位记录一个周期内的请求计数与拦截计数；
+ * 窗口满时自动复用最旧槽位。</p>
  *
  * @author shiyiyue
  */
 public class LocalSimpleCountRateCounter extends RateCounter {
     
+    /** 环形槽位数量，决定可回溯的时间窗口长度。 */
     private static final int DEFAULT_RECORD_SIZE = 10;
     
+    /** 窗口起始对齐时间（毫秒）。 */
     long startTime = System.currentTimeMillis();
     
+    /** 环形槽位列表。 */
     private List<TpsSlot> slotList;
     
     public LocalSimpleCountRateCounter(String name, TimeUnit period) {
@@ -49,16 +55,18 @@ public class LocalSimpleCountRateCounter extends RateCounter {
         } else if (period == TimeUnit.HOURS) {
             startTime = RateCounter.getTrimMillsOfHour(now);
         } else {
-            //second default
+            // 默认按秒对齐
             startTime = RateCounter.getTrimMillsOfSecond(now);
         }
     }
     
+    /** {@inheritDoc} 累加计数，不做上限校验。 */
     @Override
     public long add(long timestamp, long count) {
         return createSlotIfAbsent(timestamp).countHolder.count.addAndGet(count);
     }
     
+    /** {@inheritDoc} 尝试累加，超上限时记录拦截计数并返回 {@code false}。 */
     @Override
     public boolean tryAdd(long timestamp, long countDelta, long upperLimit) {
         if (createSlotIfAbsent(timestamp).countHolder.count.addAndGet(countDelta) <= upperLimit) {
@@ -69,21 +77,28 @@ public class LocalSimpleCountRateCounter extends RateCounter {
         }
     }
     
+    /**
+     * 扣减指定时间窗口内的计数（用于补偿场景）。
+     *
+     * @param timestamp 时间戳（毫秒）
+     * @param count     扣减数量
+     */
     public void minus(long timestamp, long count) {
         AtomicLong currentCount = createSlotIfAbsent(timestamp).countHolder.count;
         currentCount.addAndGet(count * -1);
     }
     
+    /** {@inheritDoc} 获取指定时间窗口的当前计数，槽位不存在时返回 0。 */
     public long getCount(long timestamp) {
         TpsSlot point = getPoint(timestamp);
         return point == null ? 0L : point.countHolder.count.longValue();
     }
     
     /**
-     * get slot of the timestamp second,read only ,return nul if not exist.
+     * 只读获取指定时间戳对应的槽位，不存在时返回 {@code null}。
      *
-     * @param timeStamp the timestamp second.
-     * @return tps slot.
+     * @param timeStamp 时间戳（毫秒）
+     * @return 对应槽位，不存在时为 {@code null}
      */
     private TpsSlot getPoint(long timeStamp) {
         long distance = timeStamp - startTime;
@@ -101,10 +116,10 @@ public class LocalSimpleCountRateCounter extends RateCounter {
     }
     
     /**
-     * get slot of the timestamp second,create if not exist.
+     * 获取或创建指定时间戳对应的槽位。
      *
-     * @param timeStamp the timestamp second.
-     * @return tps slot.
+     * @param timeStamp 时间戳（毫秒）
+     * @return 对应槽位（不存在时自动创建并重置）
      */
     public TpsSlot createSlotIfAbsent(long timeStamp) {
         long distance = timeStamp - startTime;
@@ -122,12 +137,16 @@ public class LocalSimpleCountRateCounter extends RateCounter {
         return slotList.get(index);
     }
     
+    /** 单个时间窗口槽位，持有该窗口的请求与拦截计数。 */
     static class TpsSlot {
         
+        /** 槽位对应的时间窗口起始时间（毫秒）。 */
         long time = 0L;
         
+        /** 计数持有者。 */
         private SlotCountHolder countHolder = new SlotCountHolder();
         
+        /** 重置槽位到新的时间窗口并清零计数。 */
         public void reset(long second) {
             synchronized (this) {
                 if (this.time != second) {
@@ -145,10 +164,13 @@ public class LocalSimpleCountRateCounter extends RateCounter {
         
     }
     
+    /** 槽位内的原子计数持有者。 */
     static class SlotCountHolder {
         
+        /** 通过请求计数。 */
         AtomicLong count = new AtomicLong();
         
+        /** 被拦截请求计数。 */
         AtomicLong interceptedCount = new AtomicLong();
         
         @Override

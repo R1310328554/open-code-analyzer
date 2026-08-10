@@ -25,18 +25,30 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Control plugin provider implementation.
+ * 管控插件提供者，向 Nacos 插件框架注册 {@link ControlManagerBuilder} 实现。
+ *
+ * <p>通过 {@link NacosServiceLoader} 扫描 classpath 上所有 SPI 构建器，并以插件名称为键汇总。</p>
  *
  * @author WangzJi
  * @since 3.2.0
  */
 public class ControlPluginProvider implements PluginProvider<ControlManagerBuilder> {
     
+    /**
+     * 返回管控插件类型标识。
+     *
+     * @return {@link PluginType#CONTROL}
+     */
     @Override
     public PluginType getPluginType() {
         return PluginType.CONTROL;
     }
     
+    /**
+     * 加载并汇总所有 {@link ControlManagerBuilder} SPI 实现。
+     *
+     * @return 插件名称到构建器的映射
+     */
     @Override
     public Map<String, ControlManagerBuilder> getAllPlugins() {
         Collection<ControlManagerBuilder> builders =
