@@ -28,28 +28,36 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 授权类型条件工厂：注册 {@link GrantTypeCondition}。
+ * <p>配置项 {@code grant_types} 列出允许触发策略的 OAuth2 授权类型；选项随 Profile 特性动态扩展。</p>
  * @author <a href="mailto:ggrazian@redhat.com">Giuseppe Graziano</a>
  */
 public class GrantTypeConditionFactory extends AbstractClientPolicyConditionProviderFactory {
 
+    /** SPI 提供者标识符：grant-type */
     public static final String PROVIDER_ID = "grant-type";
+    /** 配置键：期望的 OAuth2 授权类型列表 */
     public static final String GRANT_TYPES = "grant_types";
 
+    /** {@inheritDoc} 创建 {@link GrantTypeCondition} 实例 */
     @Override
     public GrantTypeCondition create(KeycloakSession session) {
         return new GrantTypeCondition(session);
     }
 
+    /** {@inheritDoc} @return {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 当前 grant_type 是否在配置列表中 */
     @Override
     public String getHelpText() {
         return "The condition checks that the grant type used is one of those in the configured list.";
     }
 
+    /** {@inheritDoc} 返回授权类型多选配置项（含特性门控的可选项） */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         List<ProviderConfigProperty> configProperties = new ArrayList<>();

@@ -24,12 +24,16 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 客户端更新者主机条件工厂：注册 {@link ClientUpdaterSourceHostsCondition}。
+ * <p>配置项 {@code trusted-hosts} 指定允许发起客户端 CRUD 的主机 IP 或域名。</p>
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientUpdaterSourceHostsConditionFactory extends AbstractClientPolicyConditionProviderFactory {
 
+    /** SPI 提供者标识符：client-updater-source-host */
     public static final String PROVIDER_ID = "client-updater-source-host";
 
+    /** 配置键：受信任主机/域名列表 */
     public static final String TRUSTED_HOSTS = "trusted-hosts";
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
@@ -43,21 +47,25 @@ public class ClientUpdaterSourceHostsConditionFactory extends AbstractClientPoli
         configProperties.add(property);
     }
 
+    /** {@inheritDoc} 创建 {@link ClientUpdaterSourceHostsCondition} 实例 */
     @Override
     public ClientPolicyConditionProvider create(KeycloakSession session) {
         return new ClientUpdaterSourceHostsCondition(session);
     }
 
+    /** {@inheritDoc} @return {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 按更新者主机/域名判断是否应用策略 */
     @Override
     public String getHelpText() {
         return "The condition checks the host/domain of the entity who tries to create/update the client to determine whether the policy is applied.";
     }
 
+    /** {@inheritDoc} 返回受信任主机多值配置项 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;

@@ -44,39 +44,48 @@ import org.keycloak.services.clientpolicy.context.DynamicClientUpdatedContext;
 import org.jboss.logging.Logger;
 
 /**
+ * 客户端更新者组条件：按执行客户端创建/更新的用户所属组匹配策略。
+ * <p>Admin API 路径使用 {@link UserModel}；动态注册路径从 JWT subject 解析用户。</p>
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientUpdaterSourceGroupsCondition extends AbstractClientPolicyConditionProvider<ClientUpdaterSourceGroupsCondition.Configuration> {
 
     private static final Logger logger = Logger.getLogger(ClientUpdaterSourceGroupsCondition.class);
 
+    /** @param session Keycloak 会话 */
     public ClientUpdaterSourceGroupsCondition(KeycloakSession session) {
         super(session);
     }
 
+    /** {@inheritDoc} @return 条件配置类型 */
     @Override
     public Class<Configuration> getConditionConfigurationClass() {
         return Configuration.class;
     }
 
+    /** 条件配置：期望匹配的用户组名称列表。 */
     public static class Configuration extends ClientPolicyConditionConfigurationRepresentation {
 
         protected List<String> groups;
 
+        /** @return 期望的用户组名称列表 */
         public List<String> getGroups() {
             return groups;
         }
 
+        /** @param groups 用户组名称列表 */
         public void setGroups(List<String> groups) {
             this.groups = groups;
         }
     }
 
+    /** {@inheritDoc} @return {@link ClientUpdaterSourceGroupsConditionFactory#PROVIDER_ID} */
     @Override
     public String getProviderId() {
         return ClientUpdaterSourceGroupsConditionFactory.PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 在客户端注册/更新事件上按更新者组投票 */
     @Override
     public ClientPolicyVote applyPolicy(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -103,29 +112,33 @@ public class ClientUpdaterSourceGroupsCondition extends AbstractClientPolicyCond
         }
     }
 
+    /** 按用户组成员关系投票。 @param user 已认证用户 */
     private ClientPolicyVote getVoteForGroupsMatched(UserModel user) {
         if (isGroupsMatched(user)) return ClientPolicyVote.YES;
         return ClientPolicyVote.NO;
     }
 
+    /** 从 JWT subject 解析用户并按组投票。 @param token 注册/更新令牌 */
     private ClientPolicyVote getVoteForGroupsMatched(JsonWebToken token) {
         if (token == null) return ClientPolicyVote.NO;
         if(isGroupMatched(token.getSubject())) return ClientPolicyVote.YES;
         return ClientPolicyVote.NO;
     }
 
+    /** 按用户 ID 加载用户并检查组匹配。 @param subjectId JWT subject */
     private boolean isGroupMatched(String subjectId) {
         if (subjectId == null) return false;
         return isGroupsMatched(session.users().getUserById(session.getContext().getRealm(), subjectId));
     }
 
+    /** 判断用户是否属于配置的任一期望组。 @param user 待检查用户 */
     private boolean isGroupsMatched(UserModel user) {
         if (user == null) return false;
 
         Set<String> expectedGroups = instantiateGroupsForMatching();
         if (expectedGroups == null) return false;
 
-        // user.getGroupsStream() never returns null according to {@link UserModel.getGroupsStream}
+        // user.getGroupsStream() 按 {@link UserModel#getGroupsStream} 约定不会返回 null
         Set<String> groups = user.getGroupsStream().map(GroupModel::getName).collect(Collectors.toSet());
 
         if (logger.isTraceEnabled()) {
@@ -133,9 +146,10 @@ public class ClientUpdaterSourceGroupsCondition extends AbstractClientPolicyCond
             expectedGroups.forEach(i -> logger.tracev("expected user group = {0}", i));
         }
 
-        return expectedGroups.removeAll(groups); // may change expectedGroups so that it has needed to be instantiated.
+        return expectedGroups.removeAll(groups); // removeAll 会修改 expectedGroups 副本，故须每次实例化
     }
 
+    /** 从配置实例化期望组集合（可变的副本）。 */
     private Set<String> instantiateGroupsForMatching() {
         List<String> groups = configuration.getGroups();
         if (groups == null) return null;

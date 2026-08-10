@@ -31,16 +31,24 @@ import org.keycloak.services.clientpolicy.ClientPolicyException;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * 客户端 Scope 条件工厂：注册 {@link ClientScopesCondition}，按客户端默认/可选 Scope 匹配策略。
+ * <p>在 OIDC 授权请求与令牌请求阶段评估客户端已分配或请求的 Scope。</p>
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientScopesConditionFactory extends AbstractClientPolicyConditionProviderFactory {
 
+    /** SPI 提供者标识符：client-scopes */
     public static final String PROVIDER_ID = "client-scopes";
 
+    /** 配置键：期望匹配的 Scope 名称列表 */
     public static final String SCOPES = "scopes";
+    /** 配置键：Scope 类型（Default / Optional / Any） */
     public static final String TYPE = "type";
+    /** Scope 类型：仅匹配客户端默认 Scope */
     public static final String DEFAULT = "Default";
+    /** Scope 类型：匹配可选 Scope 且须在请求 scope 参数中出现 */
     public static final String OPTIONAL = "Optional";
+    /** Scope 类型：Default 或 Optional 任一满足即可 */
     public static final String ANY = "Any";
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
@@ -59,26 +67,31 @@ public class ClientScopesConditionFactory extends AbstractClientPolicyConditionP
         configProperties.add(property);
     }
 
+    /** {@inheritDoc} 创建 {@link ClientScopesCondition} 实例 */
     @Override
     public ClientPolicyConditionProvider create(KeycloakSession session) {
         return new ClientScopesCondition(session);
     }
 
+    /** {@inheritDoc} @return {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 按客户端 Scope 判断是否应用策略 */
     @Override
     public String getHelpText() {
         return "It uses the scopes requested or assigned in advance to the client to determine whether the policy is applied to this client. Condition is evaluated during OpenID Connect authorization request and/or token request.";
     }
 
+    /** {@inheritDoc} 返回期望 Scope 与 Scope 类型配置项 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** {@inheritDoc} 校验配置的 Scope 均存在于 Realm 中 */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ClientPolicyConditionRepresentation conditionRepresentation) throws ClientPolicyException {
         ClientScopesCondition.Configuration configuration = JsonSerialization.mapper.convertValue(conditionRepresentation.getConfiguration(), ClientScopesCondition.Configuration.class);

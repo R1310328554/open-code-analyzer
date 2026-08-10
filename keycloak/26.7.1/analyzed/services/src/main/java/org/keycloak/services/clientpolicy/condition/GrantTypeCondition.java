@@ -32,40 +32,49 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
 /**
+ * 授权类型条件：按当前 OAuth2/OIDC 授权类型（authorization_code、refresh_token、client_credentials 等）匹配策略。
+ * <p>在授权请求、令牌刷新、密码模式、服务账户、令牌交换、设备码与 JWT 授权等事件上评估。</p>
  * @author <a href="mailto:ggrazian@redhat.com">Giuseppe Graziano/a>
  */
 public class GrantTypeCondition extends AbstractClientPolicyConditionProvider<GrantTypeCondition.Configuration> {
 
     private static final Logger logger = Logger.getLogger(GrantTypeCondition.class);
 
+    /** @param session Keycloak 会话 */
     public GrantTypeCondition(KeycloakSession session) {
         super(session);
     }
 
+    /** {@inheritDoc} @return 条件配置类型 */
     @Override
     public Class<Configuration> getConditionConfigurationClass() {
         return Configuration.class;
     }
 
+    /** 条件配置：期望匹配的 OAuth2 grant_type 列表。 */
     public static class Configuration extends ClientPolicyConditionConfigurationRepresentation {
 
         @JsonProperty("grant_types")
         protected List<String> grantTypes;
 
+        /** @return 期望的授权类型列表 */
         public List<String> getGrantTypes() {
             return grantTypes;
         }
 
+        /** @param grantTypes 授权类型列表 */
         public void setGrantTypes(List<String> grantTypes) {
             this.grantTypes = grantTypes;
         }
     }
 
+    /** {@inheritDoc} @return 提供者 ID（注：当前实现引用 {@link ClientScopesConditionFactory#PROVIDER_ID}） */
     @Override
     public String getProviderId() {
         return ClientScopesConditionFactory.PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 按事件类型解析 grant_type 并投票 YES/NO/ABSTAIN */
     @Override
     public ClientPolicyVote applyPolicy(ClientPolicyContext context) throws ClientPolicyException {
 
@@ -96,6 +105,7 @@ public class GrantTypeCondition extends AbstractClientPolicyConditionProvider<Gr
         }
     }
 
+    /** 从授权端点 response_type 推断 grant_type 并匹配。 @param request 授权请求上下文 */
     private boolean isGrantMatching(AuthorizationRequestContext request) {
         if (request == null) return false;
         try {
@@ -117,6 +127,7 @@ public class GrantTypeCondition extends AbstractClientPolicyConditionProvider<Gr
         }
     }
 
+    /** 判断 grant_type 是否在配置列表中。 @param grantType OAuth2 授权类型 */
     private boolean isGrantMatching(String grantType) {
         return configuration.getGrantTypes() != null && configuration.getGrantTypes().contains(grantType);
     }

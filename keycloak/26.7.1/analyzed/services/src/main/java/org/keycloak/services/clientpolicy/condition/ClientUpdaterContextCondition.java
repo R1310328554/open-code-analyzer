@@ -34,40 +34,49 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
 /**
+ * 客户端更新上下文条件：按客户端创建/更新时的认证方式（Admin API、匿名注册、初始/注册访问令牌等）匹配策略。
+ * <p>在 REGISTER/UPDATE 及其完成事件上评估 {@link ClientCRUDContext} 中的令牌与用户上下文。</p>
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientUpdaterContextCondition extends AbstractClientPolicyConditionProvider<ClientUpdaterContextCondition.Configuration> {
 
     private static final Logger logger = Logger.getLogger(ClientUpdaterContextCondition.class);
 
+    /** @param session Keycloak 会话 */
     public ClientUpdaterContextCondition(KeycloakSession session) {
         super(session);
     }
 
+    /** {@inheritDoc} @return 条件配置类型 */
     @Override
     public Class<Configuration> getConditionConfigurationClass() {
         return Configuration.class;
     }
 
+    /** 条件配置：期望的客户端更新来源（认证方式）列表。 */
     public static class Configuration extends ClientPolicyConditionConfigurationRepresentation {
 
         @JsonProperty("update-client-source")
         protected List<String> updateClientSource;
 
+        /** @return 期望的更新来源标识列表 */
         public List<String> getUpdateClientSource() {
             return updateClientSource;
         }
 
+        /** @param updateClientSource 更新来源标识列表 */
         public void setUpdateClientSource(List<String> updateClientSource) {
             this.updateClientSource = updateClientSource;
         }
     }
 
+    /** {@inheritDoc} @return {@link ClientUpdaterContextConditionFactory#PROVIDER_ID} */
     @Override
     public String getProviderId() {
         return ClientUpdaterContextConditionFactory.PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 在客户端 CRUD 事件上按认证方式投票 YES/NO/ABSTAIN */
     @Override
     public ClientPolicyVote applyPolicy(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -82,6 +91,7 @@ public class ClientUpdaterContextCondition extends AbstractClientPolicyCondition
         }
     }
 
+    /** 判断实际认证方式是否在配置的期望列表中。 @param authMethod 解析出的来源标识 */
     private boolean isAuthMethodMatched(String authMethod) {
         if (authMethod == null) return false;
 
@@ -96,6 +106,7 @@ public class ClientUpdaterContextCondition extends AbstractClientPolicyCondition
         return expectedAuthMethods.stream().anyMatch(i -> i.equals(authMethod));
     }
 
+    /** 从 {@link ClientCRUDContext} 解析认证方式并匹配。 */
     private boolean isAuthMethodMatched(ClientCRUDContext context) {
         String authMethod = null;
 
@@ -116,14 +127,17 @@ public class ClientUpdaterContextCondition extends AbstractClientPolicyCondition
         return isAuthMethodMatched(authMethod);
     }
  
+    /** 判断 JWT 是否为初始访问令牌。 */
     private boolean isInitialAccessToken(JsonWebToken jwt) {
         return jwt != null && ClientRegistrationTokenUtils.TYPE_INITIAL_ACCESS_TOKEN.equals(jwt.getType());
     }
 
+    /** 判断 JWT 是否为注册访问令牌。 */
     private boolean isRegistrationAccessToken(JsonWebToken jwt) {
         return jwt != null && ClientRegistrationTokenUtils.TYPE_REGISTRATION_ACCESS_TOKEN.equals(jwt.getType());
     }
 
+    /** 判断 JWT 是否为 Bearer 访问令牌。 */
     private boolean isBearerToken(JsonWebToken jwt) {
         return jwt != null && TokenUtil.TOKEN_TYPE_BEARER.equals(jwt.getType());
     }

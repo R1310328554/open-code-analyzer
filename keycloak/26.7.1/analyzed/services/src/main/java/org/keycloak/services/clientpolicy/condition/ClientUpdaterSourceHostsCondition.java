@@ -33,41 +33,50 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
 /**
+ * 客户端更新者主机条件：按发起客户端创建/更新请求的远程 IP 或域名匹配策略。
+ * <p>支持精确主机名/IP 匹配及 {@code *.domain} 通配域名后缀匹配。</p>
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientUpdaterSourceHostsCondition extends AbstractClientPolicyConditionProvider<ClientUpdaterSourceHostsCondition.Configuration> {
 
     private static final Logger logger = Logger.getLogger(ClientUpdaterSourceHostsCondition.class);
 
+    /** @param session Keycloak 会话 */
     public ClientUpdaterSourceHostsCondition(KeycloakSession session) {
         super(session);
     }
 
+    /** {@inheritDoc} @return 条件配置类型 */
     @Override
     public Class<Configuration> getConditionConfigurationClass() {
         return Configuration.class;
     }
 
 
+    /** 条件配置：受信任的主机名或域名列表（{@code *.example.com} 表示域名后缀）。 */
     public static class Configuration extends ClientPolicyConditionConfigurationRepresentation {
 
         @JsonProperty("trusted-hosts")
         protected List<String> trustedHosts;
 
+        /** @return 受信任主机/域名配置列表 */
         public List<String> getTrustedHosts() {
             return trustedHosts;
         }
 
+        /** @param trustedHosts 受信任主机/域名列表 */
         public void setTrustedHosts(List<String> trustedHosts) {
             this.trustedHosts = trustedHosts;
         }
     }
 
+    /** {@inheritDoc} @return {@link ClientUpdaterSourceHostsConditionFactory#PROVIDER_ID} */
     @Override
     public String getProviderId() {
         return ClientUpdaterSourceHostsConditionFactory.PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 在客户端 CRUD 事件上按远程主机投票 */
     @Override
     public ClientPolicyVote applyPolicy(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -82,6 +91,7 @@ public class ClientUpdaterSourceHostsCondition extends AbstractClientPolicyCondi
         }
     }
 
+    /** 判断当前请求的远程地址是否匹配受信任主机或域名。 */
     private boolean isHostMatched() {
         String hostAddress = session.getContext().getConnection().getRemoteAddr();
 
@@ -94,13 +104,13 @@ public class ClientUpdaterSourceHostsCondition extends AbstractClientPolicyCondi
         List<String> trustedHosts = getTrustedHosts();
         List<String> trustedDomains = getTrustedDomains();
 
-        // Verify trustedHosts by their IP addresses
+        // 先按 IP 地址匹配非通配主机名
         String verifiedHost = verifyHostInTrustedHosts(hostAddress, trustedHosts);
         if (verifiedHost != null) {
             return true;
         }
 
-        // Verify domains if hostAddress hostname belongs to the domain. This assumes proper DNS setup
+        // 再按 DNS 反向解析的主机名后缀匹配通配域名
         verifiedHost = verifyHostInTrustedDomains(hostAddress, trustedDomains);
         if (verifiedHost != null) {
             return true;
@@ -109,6 +119,7 @@ public class ClientUpdaterSourceHostsCondition extends AbstractClientPolicyCondi
         return false;
     }
 
+    /** 从配置提取非 {@code *.} 前缀的精确主机名列表。 @return 主机名列表 */
     protected List<String> getTrustedHosts() {
         List<String> trustedHostsConfig = configuration.getTrustedHosts();
         return trustedHostsConfig.stream().filter((String hostname) -> {
@@ -116,6 +127,7 @@ public class ClientUpdaterSourceHostsCondition extends AbstractClientPolicyCondi
         }).collect(Collectors.toList());
     }
 
+    /** 从配置提取 {@code *.domain} 形式的域名后缀列表。 @return 域名后缀列表 */
     protected List<String> getTrustedDomains() {
         List<String> trustedHostsConfig = configuration.getTrustedHosts();
         List<String> domains = new LinkedList<>();
@@ -130,7 +142,12 @@ public class ClientUpdaterSourceHostsCondition extends AbstractClientPolicyCondi
         return domains;
     }
 
-    protected String verifyHostInTrustedHosts(String hostAddress, List<String> trustedHosts) {
+    /**
+     * 将配置主机名解析为 IP 并与请求地址比较。
+     * @param hostAddress 请求远程 IP
+     * @param trustedHosts 精确主机名列表
+     * @return 匹配的主机名，未匹配时 {@code null}
+     */
         for (String confHostName : trustedHosts) {
             try {
                 String hostIPAddress = InetAddress.getByName(confHostName).getHostAddress();
@@ -147,7 +164,12 @@ public class ClientUpdaterSourceHostsCondition extends AbstractClientPolicyCondi
         return null;
     }
 
-    protected String verifyHostInTrustedDomains(String hostAddress, List<String> trustedDomains) {
+    /**
+     * 反向解析请求 IP 为主机名并检查是否以受信任域名后缀结尾。
+     * @param hostAddress 请求远程 IP
+     * @param trustedDomains 域名后缀列表
+     * @return 匹配的主机名，未匹配时 {@code null}
+     */
         if (!trustedDomains.isEmpty()) {
             try {
                 String hostname = InetAddress.getByName(hostAddress).getHostName();

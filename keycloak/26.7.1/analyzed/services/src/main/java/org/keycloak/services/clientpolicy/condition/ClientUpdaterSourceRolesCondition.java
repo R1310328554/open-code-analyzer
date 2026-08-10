@@ -47,39 +47,48 @@ import org.jboss.logging.Logger;
 
 
 /**
+ * 客户端更新者角色条件：按执行客户端创建/更新的用户是否持有指定角色匹配策略。
+ * <p>支持领域角色与 {@code clientId.role} 形式的客户端角色；Admin 与动态注册路径分别使用用户或 JWT subject。</p>
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientUpdaterSourceRolesCondition extends AbstractClientPolicyConditionProvider<ClientUpdaterSourceRolesCondition.Configuration> {
 
     private static final Logger logger = Logger.getLogger(ClientUpdaterSourceRolesCondition.class);
 
+    /** @param session Keycloak 会话 */
     public ClientUpdaterSourceRolesCondition(KeycloakSession session) {
         super(session);
     }
 
+    /** {@inheritDoc} @return 条件配置类型 */
     @Override
     public Class<Configuration> getConditionConfigurationClass() {
         return Configuration.class;
     }
 
+    /** 条件配置：期望匹配的角色名称列表。 */
     public static class Configuration extends ClientPolicyConditionConfigurationRepresentation {
 
         protected List<String> roles;
 
+        /** @return 期望的角色名称列表 */
         public List<String> getRoles() {
             return roles;
         }
 
+        /** @param roles 角色名称列表 */
         public void setRoles(List<String> roles) {
             this.roles = roles;
         }
     }
 
+    /** {@inheritDoc} @return {@link ClientUpdaterSourceRolesConditionFactory#PROVIDER_ID} */
     @Override
     public String getProviderId() {
         return ClientUpdaterSourceRolesConditionFactory.PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 在客户端注册/更新事件上按更新者角色投票 */
     @Override
     public ClientPolicyVote applyPolicy(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -107,22 +116,26 @@ public class ClientUpdaterSourceRolesCondition extends AbstractClientPolicyCondi
         }
     }
 
+    /** 按用户角色映射投票。 @param user 已认证用户 */
     private ClientPolicyVote getVoteForRolesMatched(UserModel user) {
         if (isRolesMatched(user)) return ClientPolicyVote.YES;
         return ClientPolicyVote.NO;
     }
 
+    /** 从 JWT subject 解析用户并按角色投票。 @param token 注册/更新令牌 */
     private ClientPolicyVote getVoteForRolesMatched(JsonWebToken token) {
         if (token == null) return ClientPolicyVote.NO;
         if(isRoleMatched(token.getSubject())) return ClientPolicyVote.YES;
         return ClientPolicyVote.NO;
     }
 
+    /** 按用户 ID 加载用户并检查角色匹配。 @param subjectId JWT subject */
     private boolean isRoleMatched(String subjectId) {
         if (subjectId == null) return false;
         return isRolesMatched(session.users().getUserById(session.getContext().getRealm(), subjectId));
     }
 
+    /** 判断用户是否持有配置的任一期望角色。 @param user 待检查用户 */
     private boolean isRolesMatched(UserModel user) {
         if (user == null) return false;
 
@@ -130,7 +143,7 @@ public class ClientUpdaterSourceRolesCondition extends AbstractClientPolicyCondi
         if (expectedRoles == null) return false;
 
         if (logger.isTraceEnabled()) {
-            // user.getRoleMappingsStream() never returns null according to {@link UserModel.getRoleMappingsStream}
+            // user.getRoleMappingsStream() 按 {@link UserModel#getRoleMappingsStream} 约定不会返回 null
             Set<String> roles = user.getRoleMappingsStream().map(RoleModel::getName).collect(Collectors.toSet());
 
             roles.forEach(i -> logger.tracev("user role = {0}", i));
@@ -146,6 +159,7 @@ public class ClientUpdaterSourceRolesCondition extends AbstractClientPolicyCondi
         return false;
     }
 
+    /** 从配置实例化期望角色集合。 */
     private Set<String> instantiateRolesForMatching() {
         List<String> roles = configuration.getRoles();
         if (roles == null) return null;
