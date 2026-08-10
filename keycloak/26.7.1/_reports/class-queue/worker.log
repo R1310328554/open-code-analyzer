@@ -1108,3 +1108,18 @@
 2026-08-10T07:10:29Z DONE js/libs/ui-shared/src/utils/generateId.ts wave38b admin-client utils + ui-shared
 2026-08-10T07:10:29Z DONE js/libs/ui-shared/src/utils/getRuleValue.ts wave38b admin-client utils + ui-shared
 2026-08-10T07:10:29Z DONE js/libs/ui-shared/src/utils/isDefined.test.ts wave38b admin-client utils + ui-shared
+2026-08-10T07:19:03Z DONE js/libs/ui-shared/src/utils/isDefined.ts wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE js/libs/ui-shared/src/utils/useFetch.ts wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE js/libs/ui-shared/src/utils/useRequiredContext.test.ts wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE js/libs/ui-shared/src/utils/useRequiredContext.ts wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE js/libs/ui-shared/src/utils/useSetTimeout.test.ts wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE js/libs/ui-shared/src/utils/useSetTimeout.ts wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE js/libs/ui-shared/src/utils/useStorageItem.ts wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE js/libs/ui-shared/src/utils/useStoredState.ts wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE js/libs/ui-shared/src/vite-env.d.ts wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE js/libs/ui-shared/vite.config.ts wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE js/themes-vendor/rollup.config.js wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE js/themes-vendor/scripts/rewrite-imports.js wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE js/themes-vendor/src/main/js/web-crypto-shim.js wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE misc/db-compatibility-verifier/src/main/java/org/keycloak/db/compatibility/verifier/AbstractMojo.java wave39a ui-shared + themes + db-verifier
+2026-08-10T07:19:03Z DONE misc/db-compatibility-verifier/src/main/java/org/keycloak/db/compatibility/verifier/AbstractNewEntryMojo.java wave39a ui-shared + themes + db-verifier
