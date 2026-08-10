@@ -22,33 +22,64 @@ import java.util.List;
 import org.keycloak.dom.saml.v2.protocol.AuthnContextComparisonType;
 import org.keycloak.dom.saml.v2.protocol.RequestedAuthnContextType;
 
+/**
+ * SAML 2.0 RequestedAuthnContext 元素构建器，声明 SP 期望的认证上下文。
+ */
 public class SAML2RequestedAuthnContextBuilder {
+    /** 底层 RequestedAuthnContext 模型对象。 */
     private final RequestedAuthnContextType requestedAuthnContextType;
+    /** 比较方式（exact / minimum / maximum / better）。 */
     private AuthnContextComparisonType comparison;
+    /** AuthnContextClassRef URI 列表。 */
     private List<String> requestedAuthnContextClassRefList;
+    /** AuthnContextDeclRef URI 列表。 */
     private List<String> requestedAuthnContextDeclRefList;
 
+    /** 创建空的 RequestedAuthnContext 构建器。 */
     public SAML2RequestedAuthnContextBuilder() {
         this.requestedAuthnContextType = new RequestedAuthnContextType();
         this.requestedAuthnContextClassRefList = new LinkedList<String>();
         this.requestedAuthnContextDeclRefList = new LinkedList<String>();
     }
 
+    /**
+     * 设置比较方式（Comparison 属性）。
+     *
+     * @param comparison 比较枚举值
+     * @return 当前构建器
+     */
     public SAML2RequestedAuthnContextBuilder setComparison(AuthnContextComparisonType comparison) {
         this.comparison = comparison;
         return this;
     }
 
+    /**
+     * 添加 AuthnContextClassRef。
+     *
+     * @param authnContextClassRef 认证上下文类 URI
+     * @return 当前构建器
+     */
     public SAML2RequestedAuthnContextBuilder addAuthnContextClassRef(String authnContextClassRef) {
         this.requestedAuthnContextClassRefList.add(authnContextClassRef);
         return this;
     }
 
+    /**
+     * 添加 AuthnContextDeclRef。
+     *
+     * @param authnContextDeclRef 认证上下文声明 URI
+     * @return 当前构建器
+     */
     public SAML2RequestedAuthnContextBuilder addAuthnContextDeclRef(String authnContextDeclRef) {
         this.requestedAuthnContextDeclRefList.add(authnContextDeclRef);
         return this;
     }
 
+    /**
+     * 构建并返回 {@link RequestedAuthnContextType}。
+     *
+     * @return 配置完毕的认证上下文对象
+     */
     public RequestedAuthnContextType build() {
         if (this.comparison != null)
             this.requestedAuthnContextType.setComparison(this.comparison);

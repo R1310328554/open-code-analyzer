@@ -36,53 +36,104 @@ import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 import org.w3c.dom.Document;
 
 /**
+ * SAML 2.0 错误响应（StatusResponse）构建器，用于向 SP 返回失败状态码与消息。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SAML2ErrorResponseBuilder implements SamlProtocolExtensionsAwareBuilder<SAML2ErrorResponseBuilder> {
 
+    /** SAML 状态码 URI（如 {@code urn:oasis:names:tc:SAML:2.0:status:Responder}）。 */
     protected String status;
+    /** 可选的状态描述消息。 */
     protected String statusMessage;
+    /** 响应目标 URL（SP 端点）。 */
     protected String destination;
+    /** 响应 Issuer（通常为 IdP 实体 ID）。 */
     protected NameIDType issuer;
+    /** 对应的原始请求 ID（InResponseTo）。 */
     protected String inResponseTo;
+    /** 协议扩展节点生成器列表。 */
     protected final List<NodeGenerator> extensions = new LinkedList<>();
 
+    /**
+     * 设置 SAML 状态码。
+     *
+     * @param status 状态码 URI
+     * @return 当前构建器
+     */
     public SAML2ErrorResponseBuilder status(String status) {
         this.status = status;
         return this;
     }
 
+    /**
+     * 设置状态描述消息。
+     *
+     * @param statusMessage 人类可读的错误说明
+     * @return 当前构建器
+     */
     public SAML2ErrorResponseBuilder statusMessage(String statusMessage) {
         this.statusMessage = statusMessage;
         return this;
     }
 
+    /**
+     * 设置响应目标地址。
+     *
+     * @param destination SP 接收端点 URL
+     * @return 当前构建器
+     */
     public SAML2ErrorResponseBuilder destination(String destination) {
         this.destination = destination;
         return this;
     }
 
+    /**
+     * 设置 Issuer。
+     *
+     * @param issuer IdP 标识
+     * @return 当前构建器
+     */
     public SAML2ErrorResponseBuilder issuer(NameIDType issuer) {
         this.issuer = issuer;
         return this;
     }
 
+    /**
+     * 设置 Issuer（字符串形式）。
+     *
+     * @param issuer IdP 实体 ID
+     * @return 当前构建器
+     */
     public SAML2ErrorResponseBuilder issuer(String issuer) {
         return issuer(SAML2NameIDBuilder.value(issuer).build());
     }
 
+    /**
+     * 设置 InResponseTo，关联原始请求 ID。
+     *
+     * @param inResponseTo 原 AuthnRequest 的 ID
+     * @return 当前构建器
+     */
     public SAML2ErrorResponseBuilder inResponseTo(String inResponseTo) {
         this.inResponseTo = inResponseTo;
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public SAML2ErrorResponseBuilder addExtension(NodeGenerator extension) {
         this.extensions.add(extension);
         return this;
     }
 
+    /**
+     * 构建并序列化为 SAML 错误响应 XML 文档。
+     *
+     * @return W3C DOM 文档
+     * @throws ProcessingException 序列化或配置失败时抛出
+     */
     public Document buildDocument() throws ProcessingException {
 
         try {

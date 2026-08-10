@@ -45,11 +45,29 @@ import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.PROTOCOL_
 import static org.keycloak.saml.common.constants.JBossSAMLURIConstants.XMLDSIG_NSURI;
 
 /**
+ * SP（服务提供者）SAML 元数据（EntityDescriptor）构建工具类。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SPMetadataDescriptor {
 
+    /**
+     * 构建单 ACS / 单 SLO 端点的 SP 元数据（简化重载）。
+     *
+     * @param loginBinding 登录绑定 URI
+     * @param logoutBinding 登出绑定 URI
+     * @param assertionEndpoint ACS 端点 URL
+     * @param logoutEndpoint SLO 端点 URL
+     * @param wantAuthnRequestsSigned 是否要求 AuthnRequest 签名
+     * @param wantAssertionsSigned 是否要求 Assertion 签名
+     * @param wantAssertionsEncrypted 是否要求 Assertion 加密
+     * @param entityId SP 实体 ID
+     * @param nameIDPolicyFormat 支持的 NameID 格式
+     * @param signingCerts 签名密钥描述符列表
+     * @param encryptionCerts 加密密钥描述符列表
+     * @return EntityDescriptor 对象
+     */
     public static EntityDescriptorType buildSPDescriptor(URI loginBinding, URI logoutBinding, URI assertionEndpoint, URI logoutEndpoint,
             boolean wantAuthnRequestsSigned, boolean wantAssertionsSigned, boolean wantAssertionsEncrypted,
             String entityId, String nameIDPolicyFormat, List<KeyDescriptorType> signingCerts, List<KeyDescriptorType> encryptionCerts) {
@@ -58,6 +76,11 @@ public class SPMetadataDescriptor {
                 wantAuthnRequestsSigned, wantAssertionsSigned, wantAssertionsEncrypted, entityId, nameIDPolicyFormat, signingCerts, encryptionCerts, null);
     }
 
+    /**
+     * 构建 SP 元数据（多 ACS / SLO 端点，无缓存过期）。
+     *
+     * @return EntityDescriptor 对象
+     */
     public static EntityDescriptorType buildSPDescriptor(List<EndpointType> assertionConsumerServices, List<EndpointType> singleLogoutServices,
             boolean wantAuthnRequestsSigned, boolean wantAssertionsSigned, boolean wantAssertionsEncrypted,
             String entityId, String nameIDPolicyFormat, List<KeyDescriptorType> signingCerts,
@@ -66,6 +89,12 @@ public class SPMetadataDescriptor {
                 entityId, nameIDPolicyFormat, signingCerts, encryptionCerts, null);
     }
 
+    /**
+     * 构建完整 SP 元数据，可指定缓存过期时间。
+     *
+     * @param expiration 元数据缓存时长（秒），{@code null} 表示不设置
+     * @return EntityDescriptor 对象
+     */
     public static EntityDescriptorType buildSPDescriptor(List<EndpointType> assertionConsumerServices, List<EndpointType> singleLogoutServices,
             boolean wantAuthnRequestsSigned, boolean wantAssertionsSigned, boolean wantAssertionsEncrypted,
             String entityId, String nameIDPolicyFormat, List<KeyDescriptorType> signingCerts,
@@ -112,6 +141,14 @@ public class SPMetadataDescriptor {
         return entityDescriptor;
     }
 
+    /**
+     * 构建 KeyDescriptor 元素（含可选加密算法列表）。
+     *
+     * @param keyInfo ds:KeyInfo DOM 元素
+     * @param use 密钥用途（signing / encryption）
+     * @param algorithm 支持的加密算法 URI（可变参数）
+     * @return KeyDescriptorType 对象
+     */
     public static KeyDescriptorType buildKeyDescriptorType(Element keyInfo, KeyTypes use, String... algorithm) {
         KeyDescriptorType keyDescriptor = new KeyDescriptorType();
         keyDescriptor.setUse(use);
@@ -127,6 +164,13 @@ public class SPMetadataDescriptor {
         return keyDescriptor;
     }
 
+    /**
+     * 构建包含 X509 证书的 ds:KeyInfo DOM 元素。
+     *
+     * @param keyName 可选密钥名称
+     * @param pemEncodedCertificate PEM 编码的 X509 证书（不含头尾）
+     * @return KeyInfo DOM 元素
+     */
     public static Element buildKeyInfoElement(String keyName, String pemEncodedCertificate)
         throws javax.xml.parsers.ParserConfigurationException
     {

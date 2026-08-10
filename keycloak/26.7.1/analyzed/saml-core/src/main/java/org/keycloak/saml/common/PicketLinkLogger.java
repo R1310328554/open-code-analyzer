@@ -40,10 +40,9 @@ import org.keycloak.saml.common.exceptions.fed.WSTrustException;
 import org.w3c.dom.Element;
 
 /**
- * <p>This interface acts as a Log Facade for PicketLink, from which exceptions and messages should be created or
- * logged.</p> <p>As PicketLink supports multiple containers and its versions, the main objective of this interface is
- * to abstract the logging aspects from the code and provide different logging implementations for each supported
- * binding/container.</p>
+ * <p>PicketLink 日志门面接口：统一创建异常与记录日志消息。</p>
+ * <p>因 PicketLink 需支持多种容器及版本，本接口将日志实现与业务代码解耦，
+ * 各绑定/容器可提供不同实现（参见 {@link PicketLinkLoggerFactory}）。</p>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Silva</a>
  * @see {@link PicketLinkLoggerFactory}
@@ -51,39 +50,38 @@ import org.w3c.dom.Element;
 public interface PicketLinkLogger {
 
     /**
-     * <p>Creates an {@link IllegalArgumentException} for null arguments.</p>
+     * <p>为 null 参数创建 {@link IllegalArgumentException}。</p>
      *
-     * @param argument
+     * @param argument 参数名
      *
-     * @return
+     * @return 带错误码前缀的异常
      */
     IllegalArgumentException nullArgumentError(String argument);
 
     /**
-     * <p>Creates an {@link IllegalArgumentException} for arguments that should not be the same.</p>
+     * <p>为不应相同的参数创建 {@link IllegalArgumentException}。</p>
      *
-     * @param string
+     * @param string 描述信息
      *
-     * @return
+     * @return 带错误码前缀的异常
      */
     IllegalArgumentException shouldNotBeTheSameError(String string);
 
     /**
-     * <p>Creates an {@link org.keycloak.saml.common.exceptions.ProcessingException} for resources that are not found.</p>
+     * <p>为未找到的资源创建 {@link org.keycloak.saml.common.exceptions.ProcessingException}。</p>
      *
-     * @param resource
+     * @param resource 资源路径或名称
      *
-     * @return
+     * @return 处理异常
      */
     ProcessingException resourceNotFound(String resource);
 
     /**
-     * <p>Creates an {@link ProcessingException} for generics processing errors.</p>
+     * <p>为通用处理错误创建 {@link ProcessingException}。</p>
      *
-     * @param message
-     * @param t
+     * @param t 原始异常
      *
-     * @return
+     * @return 包装后的处理异常
      */
     ProcessingException processingError(Throwable t);
 

@@ -42,24 +42,22 @@ import org.jboss.logging.Logger;
 import org.w3c.dom.Element;
 
 /**
- *@author <a href="mailto:psilva@redhat.com">Pedro Silva</a>
+ * {@link PicketLinkLogger} 的默认实现，委托给 JBoss Logging {@link Logger}。
+ * <p>负责将 PicketLink 错误码与异常工厂方法映射到具体日志输出。</p>
  *
+ * @author <a href="mailto:psilva@redhat.com">Pedro Silva</a>
  */
-
-/**@author <a href="mailto:psilva@redhat.com">Pedro Silva</a> */
 public class DefaultPicketLinkLogger implements PicketLinkLogger {
 
+    /** 底层 JBoss 日志记录器，类别为 PicketLink 包名。 */
     private Logger logger = Logger.getLogger(PicketLinkLogger.class.getPackage().getName());
 
+    /** 包级构造，由 {@link PicketLinkLoggerFactory} 实例化。 */
     DefaultPicketLinkLogger() {
 
     }
 
-    /*
-     *(non-Javadoc)
-     *
-     *@see org.picketlink.identity.federation.PicketLinkLogger#info(java.lang.String)
-     */
+    /** {@inheritDoc} 输出 INFO 级别消息（仅在 INFO 启用时）。 */
     @Override
     public void info(String message) {
         if (logger.isInfoEnabled()) {
@@ -67,11 +65,7 @@ public class DefaultPicketLinkLogger implements PicketLinkLogger {
         }
     }
 
-    /*
-     *(non-Javadoc)
-     *
-     *@see org.picketlink.identity.federation.PicketLinkLogger#debug(java.lang.String)
-     */
+    /** {@inheritDoc} 输出 DEBUG 级别消息。 */
     @Override
     public void debug(String message) {
         if (logger.isDebugEnabled()) {
@@ -79,11 +73,7 @@ public class DefaultPicketLinkLogger implements PicketLinkLogger {
         }
     }
 
-    /*
-     *(non-Javadoc)
-     *
-     *@see org.picketlink.identity.federation.PicketLinkLogger#trace(java.lang.String)
-     */
+    /** {@inheritDoc} 输出 TRACE 级别消息。 */
     @Override
     public void trace(String message) {
         if (logger.isTraceEnabled()) {
@@ -125,11 +115,7 @@ public class DefaultPicketLinkLogger implements PicketLinkLogger {
         logger.error("Unexpected error", t);
     }
 
-    /*
-     *(non-Javadoc)
-     *
-     *@see org.picketlink.identity.federation.PicketLinkLogger#nullArgument(java.lang.String)
-     */
+    /** {@inheritDoc} 为 null 参数创建 {@link IllegalArgumentException}。 */
     @Override
     public IllegalArgumentException nullArgumentError(String argument) {
         return new IllegalArgumentException(ErrorCodes.NULL_ARGUMENT + argument);
@@ -1220,11 +1206,7 @@ public class DefaultPicketLinkLogger implements PicketLinkLogger {
         return new ProcessingException(ErrorCodes.NULL_VALUE + "Invalid cancel request: missing required CancelTarget");
     }
 
-    /*
-     *(non-Javadoc)
-     *
-     *@see org.picketlink.identity.federation.PicketLinkLogger#saml11MarshallError(java.lang.Throwable)
-     */
+    /** {@inheritDoc} 断言序列化（Marshall）失败时创建 {@link ProcessingException}。 */
     @Override
     public ProcessingException samlAssertionMarshallError(Throwable t) {
         return new ProcessingException(ErrorCodes.PROCESSING_EXCEPTION + "Failed to marshall assertion", t);
@@ -1631,11 +1613,7 @@ public class DefaultPicketLinkLogger implements PicketLinkLogger {
         return new TrustKeyConfigurationException(ErrorCodes.TRUST_MANAGER_MISSING);
     }
 
-    /*
-     *(non-Javadoc)
-     *
-     *@see org.picketlink.identity.federation.PicketLinkLogger#samlBase64DecodingError(java.lang.Throwable)
-     */
+    /** {@inheritDoc} 记录 SAML Base64 解码错误。 */
     @Override
     public void samlBase64DecodingError(Throwable t) {
         logger.error("Error in base64 decoding saml message.", t);
@@ -2376,6 +2354,7 @@ public class DefaultPicketLinkLogger implements PicketLinkLogger {
         return new RuntimeException("Parser feature " + feature + " not supported.");
     }
 
+    /** {@inheritDoc} Audience 不匹配时创建处理异常。 */
     @Override
     public ProcessingException samlAssertionWrongAudience(String serviceURL) {
         return new ProcessingException("Wrong audience [" + serviceURL + "].");

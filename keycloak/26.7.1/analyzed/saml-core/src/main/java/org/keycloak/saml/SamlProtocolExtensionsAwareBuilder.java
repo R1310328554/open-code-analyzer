@@ -22,29 +22,31 @@ import javax.xml.stream.XMLStreamWriter;
 import org.keycloak.saml.common.exceptions.ProcessingException;
 
 /**
- * Implementations of this interface are builders that can register &lt;samlp:Extensions&gt;
- * content providers.
+ * 支持注册 {@code &lt;samlp:Extensions&gt;} 内容提供者的 SAML 协议消息构建器接口。
  *
  * @author hmlnarik
  */
 public interface SamlProtocolExtensionsAwareBuilder<T> {
 
+    /**
+     * 扩展节点生成器：向 {@code &lt;samlp:Extensions&gt;} 写入自定义 XML 子树。
+     */
     public interface NodeGenerator {
         /**
-         * Generate contents of the &lt;samlp:Extensions&gt; tag. When this method is invoked,
-         * the writer has already emitted the &lt;samlp:Extensions&gt; start tag.
+         * 生成 {@code &lt;samlp:Extensions&gt;} 内部内容。
+         * 调用时 writer 已输出 Extensions 起始标签。
          *
-         * @param writer Writer to use for producing XML output
-         * @throws ProcessingException If any exception fails
+         * @param writer 用于输出 XML 的 StAX 写入器
+         * @throws ProcessingException 写入失败时抛出
          */
         void write(XMLStreamWriter writer) throws ProcessingException;
     }
 
     /**
-     * Adds a given node subtree as a SAML protocol extension into the SAML protocol message.
+     * 将扩展节点生成器加入 SAML 协议消息。
      *
-     * @param extension
-     * @return
+     * @param extension 扩展内容生成器
+     * @return 当前构建器（支持链式调用）
      */
     T addExtension(NodeGenerator extension);
 }

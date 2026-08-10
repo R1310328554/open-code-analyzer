@@ -34,17 +34,33 @@ import org.keycloak.saml.processing.web.util.RedirectBindingUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * SAML 请求/响应消息解析工具，支持 HTTP-Redirect 与 HTTP-POST 绑定。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SAMLRequestParser {
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
+    /** JBoss 日志记录器，用于调试输出原始 SAML 报文。 */
     protected static Logger log = Logger.getLogger(SAMLRequestParser.class);
 
+    /**
+     * 解析 Redirect 绑定的 SAML 请求（使用默认最大解压尺寸）。
+     *
+     * @param samlMessage Base64+Deflate 编码的 SAML 消息
+     * @return 解析结果；失败时返回 {@code null}
+     */
     public static SAMLDocumentHolder parseRequestRedirectBinding(String samlMessage) {
         return parseRequestRedirectBinding(samlMessage, DeflateUtil.DEFAULT_MAX_INFLATING_SIZE);
     }
 
+    /**
+     * 解析 Redirect 绑定的 SAML 请求。
+     *
+     * @param samlMessage Base64+Deflate 编码的 SAML 消息
+     * @param maxInflatingSize 解压上限（字节）
+     * @return 解析结果；失败时返回 {@code null}
+     */
     public static SAMLDocumentHolder parseRequestRedirectBinding(String samlMessage, long maxInflatingSize) {
         try (InputStream is = RedirectBindingUtil.base64DeflateDecode(samlMessage, maxInflatingSize)) {
             if (log.isDebugEnabled()) {
@@ -61,6 +77,12 @@ public class SAMLRequestParser {
 
     }
 
+    /**
+     * 解析 POST 绑定的 SAML 请求。
+     *
+     * @param samlMessage Base64 编码的 SAML 消息
+     * @return 解析结果；失败时返回 {@code null}
+     */
     public static SAMLDocumentHolder parseRequestPostBinding(String samlMessage) {
         InputStream is;
         byte[] samlBytes;
@@ -84,6 +106,12 @@ public class SAMLRequestParser {
         return null;
     }
 
+    /**
+     * 解析 POST 绑定的 SAML 响应。
+     *
+     * @param samlMessage Base64 编码的 SAML 响应
+     * @return 解析结果；失败时返回 {@code null}
+     */
     public static SAMLDocumentHolder parseResponsePostBinding(String samlMessage) {
         byte[] samlBytes;
         try {
@@ -96,6 +124,12 @@ public class SAMLRequestParser {
         return parseResponseDocument(samlBytes);
     }
 
+    /**
+     * 从原始字节解析 SAML 响应文档。
+     *
+     * @param samlBytes SAML XML 字节
+     * @return 解析结果；失败时返回 {@code null}
+     */
     public static SAMLDocumentHolder parseResponseDocument(byte[] samlBytes) {
         if (log.isDebugEnabled()) {
             String str = new String(samlBytes, GeneralConstants.SAML_CHARSET);
@@ -112,10 +146,23 @@ public class SAMLRequestParser {
         return null;
     }
 
+    /**
+     * 解析 Redirect 绑定的 SAML 响应（使用默认最大解压尺寸）。
+     *
+     * @param samlMessage Base64+Deflate 编码的 SAML 响应
+     * @return 解析结果；失败时返回 {@code null}
+     */
     public static SAMLDocumentHolder parseResponseRedirectBinding(String samlMessage) {
         return parseResponseRedirectBinding(samlMessage, DeflateUtil.DEFAULT_MAX_INFLATING_SIZE);
     }
 
+    /**
+     * 解析 Redirect 绑定的 SAML 响应。
+     *
+     * @param samlMessage Base64+Deflate 编码的 SAML 响应
+     * @param maxInflatingSize 解压上限（字节）
+     * @return 解析结果；失败时返回 {@code null}
+     */
     public static SAMLDocumentHolder parseResponseRedirectBinding(String samlMessage, long maxInflatingSize) {
         try (InputStream is = RedirectBindingUtil.base64DeflateDecode(samlMessage, maxInflatingSize)) {
             if (log.isDebugEnabled()) {

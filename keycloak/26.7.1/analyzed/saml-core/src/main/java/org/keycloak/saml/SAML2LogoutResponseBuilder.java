@@ -36,45 +36,81 @@ import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 import org.w3c.dom.Document;
 
 /**
+ * SAML 2.0 登出响应（LogoutResponse）构建器，向 SP 返回成功状态。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SAML2LogoutResponseBuilder implements SamlProtocolExtensionsAwareBuilder<SAML2LogoutResponseBuilder> {
 
+    /** 对应的 LogoutRequest ID（InResponseTo）。 */
     protected String logoutRequestID;
+    /** 响应目标 URL。 */
     protected String destination;
+    /** 响应 Issuer（IdP 实体 ID）。 */
     protected NameIDType issuer;
+    /** 协议扩展节点生成器列表。 */
     protected final List<NodeGenerator> extensions = new LinkedList<>();
 
+    /**
+     * 设置 InResponseTo（原 LogoutRequest ID）。
+     *
+     * @param logoutRequestID 登出请求 ID
+     * @return 当前构建器
+     */
     public SAML2LogoutResponseBuilder logoutRequestID(String logoutRequestID) {
         this.logoutRequestID = logoutRequestID;
         return this;
     }
 
+    /**
+     * 设置 Destination。
+     *
+     * @param destination SP 登出响应接收 URL
+     * @return 当前构建器
+     */
     public SAML2LogoutResponseBuilder destination(String destination) {
         this.destination = destination;
         return this;
     }
 
+    /**
+     * 设置 Issuer。
+     *
+     * @param issuer IdP 标识
+     * @return 当前构建器
+     */
     public SAML2LogoutResponseBuilder issuer(NameIDType issuer) {
         this.issuer = issuer;
         return this;
     }
 
+    /**
+     * 设置 Issuer（字符串形式）。
+     *
+     * @param issuer IdP 实体 ID
+     * @return 当前构建器
+     */
     public SAML2LogoutResponseBuilder issuer(String issuer) {
         return issuer(SAML2NameIDBuilder.value(issuer).build());
     }
 
+    /** {@inheritDoc} */
     @Override
     public SAML2LogoutResponseBuilder addExtension(NodeGenerator extension) {
         this.extensions.add(extension);
         return this;
     }
 
+    /**
+     * 构建 {@link StatusResponseType} 模型（状态码为 Success）。
+     *
+     * @return 登出响应对象
+     */
     public StatusResponseType buildModel() throws ConfigurationException {
         StatusResponseType statusResponse = new StatusResponseType(IDGenerator.create("ID_"), XMLTimeUtil.getIssueInstant());
 
-        // Status
+        // 设置成功状态
         StatusType statusType = new StatusType();
         StatusCodeType statusCodeType = new StatusCodeType();
         statusCodeType.setValue(JBossSAMLURIConstants.STATUS_SUCCESS.getUri());
@@ -96,6 +132,12 @@ public class SAML2LogoutResponseBuilder implements SamlProtocolExtensionsAwareBu
         return statusResponse;
     }
 
+    /**
+     * 构建并序列化为 DOM 文档。
+     *
+     * @return W3C DOM 文档
+     * @throws ProcessingException 序列化失败
+     */
     public Document buildDocument() throws ProcessingException {
         Document samlResponse = null;
         try {
