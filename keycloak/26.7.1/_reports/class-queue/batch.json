@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T12:57:16Z",
   "files": [
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/ScopeParameterContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/ServiceAccountTokenRequestContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/ServiceAccountTokenResponseContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/TokenExchangeRequestContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/TokenIntrospectContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/TokenRefreshContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/TokenRefreshResponseContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/TokenRequestContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/TokenResponseContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/TokenRevokeContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/TokenRevokeResponseContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/UserInfoRequestContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/AuthenticationFlowSelectorExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/AuthenticationFlowSelectorExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/ClientSecretRotationExecutor.java",
     "services/src/main/java/org/keycloak/services/clientpolicy/executor/ClientSecretRotationExecutorFactory.java",
     "services/src/main/java/org/keycloak/services/clientpolicy/executor/ConfidentialClientAcceptExecutor.java",
     "services/src/main/java/org/keycloak/services/clientpolicy/executor/ConfidentialClientAcceptExecutorFactory.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/services/clientpolicy/executor/IntentClientBindCheckExecutor.java"
   ],
   "remaining_pending": 1108,
-  "done": 4860
+  "done": 4875
 }
