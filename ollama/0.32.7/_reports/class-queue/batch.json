@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T16:19:07Z",
-  "files": [
-    "x/mlxrunner/mlx/act.go",
-    "x/mlxrunner/mlx/array.go",
-    "x/mlxrunner/mlx/compile.go",
-    "x/mlxrunner/mlx/depthwise_conv.go",
-    "x/mlxrunner/mlx/dtype.go",
-    "x/mlxrunner/mlx/dynamic.go",
-    "x/mlxrunner/mlx/dynamic_darwin.go",
-    "x/mlxrunner/mlx/dynamic_other.go",
-    "x/mlxrunner/mlx/fast.go",
-    "x/mlxrunner/mlx/gated_delta.go",
-    "x/mlxrunner/mlx/generator/main.go",
-    "x/mlxrunner/mlx/gpu_kernel.go",
-    "x/mlxrunner/mlx/io.go",
-    "x/mlxrunner/mlx/memory.go",
-    "x/mlxrunner/mlx/mlx.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 43,
-  "done": 405
+  "done": 420
 }
