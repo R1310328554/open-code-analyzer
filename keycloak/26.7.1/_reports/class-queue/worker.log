@@ -1348,3 +1348,18 @@
 2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/organization/CachedOrganization.java wave46b user events + idp/org cache
 2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/organization/CachedOrganizationIds.java wave46b user events + idp/org cache
 2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/organization/InfinispanInvitationManager.java wave46b user events + idp/org cache
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/organization/InfinispanOrganizationProvider.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/organization/InfinispanOrganizationProviderFactory.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/organization/OrganizationAdapter.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/stream/GroupListPredicate.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/stream/HasRolePredicate.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/stream/InClientPredicate.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/stream/InGroupPredicate.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/stream/InIdentityProviderPredicate.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/stream/InRealmPredicate.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/AuthenticatedClientSessionAdapter.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/AuthenticationSessionAdapter.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/CacheDecorators.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/ClientSessionManager.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/ImmutableClientSession.java wave47a org cache + stream predicates + session adapters
+2026-08-10T07:45:19Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/ImmutableSession.java wave47a org cache + stream predicates + session adapters
