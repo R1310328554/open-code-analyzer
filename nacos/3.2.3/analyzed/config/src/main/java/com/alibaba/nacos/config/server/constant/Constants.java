@@ -20,16 +20,20 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import com.alibaba.nacos.config.server.model.event.ConfigDumpEvent;
 
 /**
+ * Config 服务端全局常量：HTTP 头、API 路径前缀、批量操作状态码、灰度规则字段、
+ * 编码与流控阈值等，供 Controller、推送链路与客户端协议层统一引用。
  * Server Constants.
  *
  * @author Nacos
  */
 public class Constants {
     
+    /** 客户端版本号 HTTP 请求头名 */
     public static final String CLIENT_VERSION_HEADER = "Client-Version";
     
     public static final String CLIENT_VERSION = "3.0.0";
     
+    /** 未指定 group 时使用的默认配置分组名 */
     public static final String DEFAULT_GROUP = "DEFAULT_GROUP";
     
     public static final String DATASOURCE_PLATFORM_PROPERTY_STATE = "datasource_platform";
@@ -37,11 +41,13 @@ public class Constants {
     public static final String CONFIG_RENTENTION_DAYS_PROPERTY_STATE = "config_retention_days";
     
     /**
+     * 服务端本地配置快照目录名（相对 data 目录）。
      * Config file directory in server side.
      */
     public static final String BASE_DIR = "config-data";
     
     /**
+     * 服务端配置备份目录绝对路径，默认位于用户主目录下 nacos/bak_data。
      * Back up file directory in server side.
      */
     public static final String CONFIG_BAK_DIR =
@@ -67,6 +73,7 @@ public class Constants {
     
     public static final String CONTENT_ENCODING = "Content-Encoding";
     
+    /** 长轮询/监听请求中携带客户端 MD5 列表的 HTTP 头 */
     public static final String PROBE_MODIFY_REQUEST = "Listening-Configs";
     
     public static final String PROBE_MODIFY_RESPONSE = "Probe-Modify-Response";
@@ -75,6 +82,7 @@ public class Constants {
     
     public static final String USE_ZIP = "true";
     
+    /** 配置内容 MD5 校验 HTTP 响应头 */
     public static final String CONTENT_MD5 = "Content-MD5";
     
     public static final String CONFIG_VERSION = "Config-Version";
@@ -85,38 +93,46 @@ public class Constants {
     
     /**
      * Interval for async update address(unit: second).
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int ASYNC_UPDATE_ADDRESS_INTERVAL = 300;
     
     /**
+     * 短轮询默认间隔（秒）。
      * Interval for polling(unit: second).
      */
     public static final int POLLING_INTERVAL_TIME = 15;
     
     /**
      * Unit: millisecond.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int ONCE_TIMEOUT = 2000;
     
     /**
      * Unit: millisecond.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int CONN_TIMEOUT = 2000;
     
     /**
      * Unit: millisecond.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int SO_TIMEOUT = 60000;
     
     /**
      * Unit: millisecond.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int RECV_WAIT_TIMEOUT = ONCE_TIMEOUT * 5;
     
+    /** Config 模块 V1 开放 API 根路径 */
     public static final String BASE_PATH = "/v1/cs";
     
     public static final String BASE_V2_PATH = "/v2/cs";
     
+    /** Config 模块 V3 管理端 API 根路径 */
     public static final String BASE_ADMIN_V3_PATH = "/v3/admin/cs";
     
     public static final String OPS_CONTROLLER_PATH = BASE_PATH + "/ops";
@@ -153,6 +169,7 @@ public class Constants {
     
     public static final String METRICS_CONTROLLER_V3_ADMIN_PATH = BASE_ADMIN_V3_PATH + "/metrics";
     
+    /** V3 客户端 HTTP 拉取配置 Open API 路径 */
     public static final String CONFIG_V3_CLIENT_API_PATH = "/v3/client/cs/config";
     
     public static final String ENCODE = "UTF-8";
@@ -179,21 +196,25 @@ public class Constants {
     
     /**
      * Total time of threshold value when getting data from network(unit: millisecond).
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final long TOTALTIME_FROM_SERVER = 10000;
     
     /**
      * Invalid total time of threshold value when getting data from network(unit: millisecond).
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final long TOTALTIME_INVALID_THRESHOLD = 60000;
     
     /**
      * When exception or error occurs.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int BATCH_OP_ERROR = -1;
     
     /**
      * State code of single data when batch operation.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final String BATCH_OP_ERROR_IO_MSG = "get config dump error";
     
@@ -201,6 +222,7 @@ public class Constants {
     
     /**
      * Batch query when data existent.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int BATCH_QUERY_EXISTS = 1;
     
@@ -208,6 +230,7 @@ public class Constants {
     
     /**
      * Batch query when data non-existent.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int BATCH_QUERY_NONEXISTS = 2;
     
@@ -215,11 +238,13 @@ public class Constants {
     
     /**
      * Batch adding successfully.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int BATCH_ADD_SUCCESS = 3;
     
     /**
      * Batch updating successfully.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int BATCH_UPDATE_SUCCESS = 4;
     
@@ -237,26 +262,31 @@ public class Constants {
     
     /**
      * First version of data.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int FIRST_VERSION = 1;
     
     /**
+     * 配置被删除时使用的毒化版本号，用于客户端感知删除。
      * Poison version when data is deleted.
      */
     public static final int POISON_VERSION = -1;
     
     /**
      * Temporary version when disk file is full.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int TEMP_VERSION = 0;
     
     /**
      * Plain sequence of getting data: backup file -> server -> local file.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int GETCONFIG_LOCAL_SERVER_SNAPSHOT = 1;
     
     /**
      * Plain sequence of getting data: backup file -> local file -> server.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final int GETCONFIG_LOCAL_SNAPSHOT_SERVER = 2;
     
@@ -268,16 +298,19 @@ public class Constants {
     
     /**
      * Client, identity for sdk request to server.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final String REQUEST_IDENTITY = "Request-Identity";
     
     /**
      * Forward to leader node.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final String FORWARD_LEADER = "Forward-Leader";
     
     /**
      * Acl result information.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final String ACL_RESPONSE = "ACL-Response";
     
@@ -287,11 +320,13 @@ public class Constants {
     
     /**
      * Configure the dump event name.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final String EXTEND_INFO_CONFIG_DUMP_EVENT = ConfigDumpEvent.class.getName();
     
     /**
      * Configure the dump event-list name.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final String EXTEND_INFOS_CONFIG_DUMP_EVENT =
         ConfigDumpEvent.class.getName() + "@@many";
@@ -312,6 +347,7 @@ public class Constants {
     
     /**
      * Gray rule.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final String GRAY_RULE_TYPE = "type";
     
@@ -323,6 +359,7 @@ public class Constants {
     
     /**
      * default nacos encode.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final String DEFAULT_NACOS_ENCODE = "UTF-8";
     
@@ -330,13 +367,17 @@ public class Constants {
     
     /**
      * config publish type.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
+    /** 正式发布类型标识 */
     public static final String FORMAL = "formal";
     
+    /** 灰度发布类型标识 */
     public static final String GRAY = "gray";
     
     /**
      * request source type.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final String HTTP = "http";
     
@@ -344,9 +385,11 @@ public class Constants {
     
     /**
      * Separator.
+      * <p>Config 服务端常量；详见类级说明。</p>
      */
     public static final String COLON = ":";
     
+    /** 解析持久化编码：优先环境变量/系统属性 {@link #NACOS_PERSIST_ENCODE_KEY}，否则 UTF-8 */
     static String getPersistEncode() {
         String persistEncode = System.getenv(NACOS_PERSIST_ENCODE_KEY);
         if (StringUtils.isBlank(persistEncode)) {

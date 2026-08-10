@@ -44,6 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 import static com.alibaba.nacos.config.server.constant.Constants.CAPACITY_CONTROLLER_V3_ADMIN_PATH;
 
 /**
+ * V3 管理端容量 API：查询与更新命名空间/分组级配置配额（条数、单条大小、聚合子配置限制等）。
  * Capacity Management.
  *
  * @author Nacos
@@ -63,6 +64,7 @@ public class CapacityControllerV3 {
     }
     
     /**
+     * 查询指定 group 或 namespace 的容量配额信息，至少需提供其一。
      * Get capacity information.
      */
     @Since("3.0.0")
@@ -97,6 +99,7 @@ public class CapacityControllerV3 {
     }
     
     /**
+     * 修改分组或命名空间容量配额；若记录尚未初始化则自动创建。
      * Modify group or capacity of namespaceId, and init record when capacity information are still initial.
      */
     @Since("3.0.0")

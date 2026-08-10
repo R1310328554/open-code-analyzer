@@ -30,6 +30,8 @@ import org.springframework.context.annotation.Configuration;
 import javax.annotation.PostConstruct;
 
 /**
+ * Nacos Config 模块 Spring {@link Configuration}：注册 Web 字符集过滤器、
+ * 分布式嵌入式存储下的 {@link CircuitFilter} 熔断转发，并在启动时缓存 Controller 方法元数据。
  * Nacos Config {@link Configuration} includes required Spring components.
  *
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
@@ -45,11 +47,13 @@ public class NacosConfigConfiguration {
         this.methodsCache = methodsCache;
     }
     
+    /** 启动后扫描 config.server.controller 包并缓存 REST 方法签名 */
     @PostConstruct
     public void init() {
         methodsCache.initClassMethod("com.alibaba.nacos.config.server.controller");
     }
     
+    /** 注册 {@link NacosWebFilter}，拦截 /v1/cs/* 请求并统一字符集处理 */
     @Bean
     @ConditionalOnProperty(name = "nacos.web.charset.filter", havingValue = "nacos",
         matchIfMissing = true)
@@ -67,6 +71,7 @@ public class NacosConfigConfiguration {
         return new NacosWebFilter();
     }
     
+    /** 嵌入式分布式存储模式下注册 {@link CircuitFilter}，将写请求转发至 Leader */
     @Conditional(ConditionDistributedEmbedStorage.class)
     @Bean
     public FilterRegistrationBean<CircuitFilter> transferToLeaderRegistration() {

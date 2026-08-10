@@ -58,6 +58,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * V3 管理端 Config 运维 API：全量 Dump 本地缓存、动态调整日志级别、
+ * 嵌入式 Derby 只读 SQL 查询及数据导入等维护操作。
  * Configuration ops management.
  *
  * @author Nacos
@@ -77,6 +79,7 @@ public class ConfigOpsControllerV3 {
     }
     
     /**
+     * 手动触发从持久化存储全量 Dump 到本地缓存。
      * Manually trigger dump of a local configuration file.
      */
     @Since("3.0.0")
@@ -116,6 +119,7 @@ public class ConfigOpsControllerV3 {
     }
     
     /**
+     * 仅允许 SELECT，直连嵌入式 Derby 执行运维查询；需开启 derby.ops 开关。
      * Can only run select statements and is a direct query to the native Derby database without any additional logic.
      *
      * <p>
@@ -167,6 +171,7 @@ public class ConfigOpsControllerV3 {
     }
     
     /**
+     * 从外部 Derby 导出文件异步导入本地嵌入式库。
      * Import Derby data from other Derby database.
      *
      * <p>mysqldump --defaults-file="XXX" --host=0.0.0.0 --protocol=tcp --user=XXX --extended-insert=FALSE \
@@ -213,6 +218,7 @@ public class ConfigOpsControllerV3 {
     }
     
     /**
+     * 将旧版 {@link RestResult} 异步响应包装为 V2 {@link Result}，保持 API 兼容。
      * Ensure backward compatibility.
      */
     private DeferredResult<Result<String>> convertToResult(

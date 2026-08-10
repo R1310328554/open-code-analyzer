@@ -24,12 +24,15 @@ import com.alibaba.nacos.sys.module.AbstractServerModuleStateBuilder;
 import com.alibaba.nacos.sys.module.ModuleState;
 
 /**
+ * Config 模块运行时状态构建器：汇总数据源平台、插件日志、通知超时、容量配额、
+ * 健康检查及配置保留天数等关键参数，供运维控制台与模块自检展示。
  * config module state builder.
  * @author 985492783@qq.com
  * @date 2023/4/6 10:25
  */
 public class ConfigModuleStateBuilder extends AbstractServerModuleStateBuilder {
     
+    /** 组装 Config 模块 {@link ModuleState}，写入数据源与容量等运行时快照 */
     @Override
     public ModuleState build() {
         ModuleState moduleState =

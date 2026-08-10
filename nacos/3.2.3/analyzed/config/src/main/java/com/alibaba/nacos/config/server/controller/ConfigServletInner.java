@@ -60,6 +60,8 @@ import static com.alibaba.nacos.api.common.Constants.VIPSERVER_TAG;
 import static com.alibaba.nacos.config.server.constant.Constants.CONTENT_MD5;
 
 /**
+ * Config Servlet 内部服务层：封装长轮询监听、V1/V2 配置拉取、灰度/Beta 响应头
+ * 及加解密内容输出，供 {@code ConfigServlet} 与 AOP 切面复用核心逻辑。
  * ConfigServlet inner for aop.
  *
  * @author Nacos
@@ -67,6 +69,7 @@ import static com.alibaba.nacos.config.server.constant.Constants.CONTENT_MD5;
 @Service
 public class ConfigServletInner {
     
+    /** 获取配置写锁的最大重试次数 */
     private static final int TRY_GET_LOCK_TIMES = 9;
     
     private static final int START_LONG_POLLING_VERSION_NUM = 204;
@@ -91,19 +94,20 @@ public class ConfigServletInner {
     }
     
     /**
+     * 处理配置长轮询/短轮询监听：比较客户端 MD5 并挂起或立即返回变更列表。
      * long polling the config.
      */
     public String doPollingConfig(HttpServletRequest request, HttpServletResponse response,
         Map<String, ConfigListenState> clientMd5Map, int probeRequestSize) throws IOException {
         
-        // Long polling.
+        // 长轮询：挂起连接直至配置变更或超时
         if (LongPollingService.isSupportLongPolling(request)) {
             longPollingService.addLongPollingClient(request, response, clientMd5Map,
                 probeRequestSize);
             return HttpServletResponse.SC_OK + "";
         }
         
-        // Compatible with short polling logic.
+        // 短轮询兼容：立即比较 MD5 并返回变更分组
         Map<String, ConfigListenState> changedGroups =
             MD5Util.compareMd5(request, response, clientMd5Map);
         
@@ -134,6 +138,7 @@ public class ConfigServletInner {
     }
     
     /**
+     * 执行配置拉取（V1 纯文本 / V2 JSON），经 {@link ConfigQueryChainService} 责任链查询并写响应。
      * Execute to get config [API V1] or [API V2].
      */
     public String doGetConfig(HttpServletRequest request, HttpServletResponse response,

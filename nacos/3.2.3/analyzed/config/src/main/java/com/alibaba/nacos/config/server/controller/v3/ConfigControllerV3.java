@@ -107,6 +107,8 @@ import static com.alibaba.nacos.api.common.Constants.TAG_V2;
 import static com.alibaba.nacos.config.server.utils.RequestUtil.getRemoteIp;
 
 /**
+ * V3 管理端配置 CRUD API：发布/删除/查询/搜索/导入导出、灰度与 Beta 管理、
+ * 监听器状态及跨命名空间迁移等核心运维能力。
  * Configuration management.
  *
  * @author Nacos
@@ -119,6 +121,7 @@ public class ConfigControllerV3 {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigControllerV3.class);
     
+    /** 批量导出 ZIP 文件名前缀 */
     private static final String EXPORT_CONFIG_FILE_NAME = "nacos_config_export_";
     
     private static final String EXPORT_CONFIG_FILE_NAME_EXT = ".zip";
@@ -142,6 +145,7 @@ public class ConfigControllerV3 {
     private final ConfigMigrateService configMigrateService;
     
     /**
+     * 是否仍存在旧版 {@code config_info_beta} 表，用于兼容 Beta 灰度存储 schema。
      * Flag to indicate if the table `config_info_beta` exists, which means the old version of table schema is used.
      */
     private boolean oldTableVersion;
@@ -165,6 +169,7 @@ public class ConfigControllerV3 {
     }
     
     /**
+     * 按 dataId/group/namespace 查询配置详情（含解密后内容）。
      * Query configuration.
      */
     @Since("3.0.0")
@@ -194,6 +199,7 @@ public class ConfigControllerV3 {
     }
     
     /**
+     * 发布或更新配置：校验参数、可选加密、写入持久层并触发变更通知。
      * Publish configuration.
      */
     @Since("3.0.0")
@@ -251,6 +257,7 @@ public class ConfigControllerV3 {
      * @param configForm the config form
      * @return the result
      * @throws NacosException the nacos exception
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     @Since("3.1.0")
     @PutMapping("/metadata")
@@ -281,6 +288,7 @@ public class ConfigControllerV3 {
     
     /**
      * Delete configuration.
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     @Since("3.0.0")
     @DeleteMapping
@@ -304,6 +312,7 @@ public class ConfigControllerV3 {
     
     /**
      * Batch delete configuration by ids.
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     @Since("3.0.0")
     @DeleteMapping("/batch")
@@ -331,6 +340,7 @@ public class ConfigControllerV3 {
     
     /**
      * Subscribe to configured client information.
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     @Since("3.0.0")
     @GetMapping("/listener")
@@ -356,6 +366,7 @@ public class ConfigControllerV3 {
      * `nacos.config.search.max_capacity` and `nacos.config.search.max_thread` to upper the limit of query. And use
      * `nacos.config.search.wait_timeout` to control the waiting time of query.
      * </p>
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     @Since("3.0.0")
     @GetMapping("/list")
@@ -400,6 +411,7 @@ public class ConfigControllerV3 {
     
     /**
      * Execute to remove beta operation.
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     @Since("3.0.0")
     @DeleteMapping("/beta")
@@ -441,6 +453,7 @@ public class ConfigControllerV3 {
     
     /**
      * Execute to query beta operation.
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     @Since("3.0.0")
     @GetMapping("/beta")
@@ -468,6 +481,7 @@ public class ConfigControllerV3 {
     
     /**
      * Publish gray configuration.
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     @Since("3.2.2")
     @PostMapping("/gray")
@@ -518,6 +532,7 @@ public class ConfigControllerV3 {
     
     /**
      * Query gray configuration.
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     @Since("3.2.2")
     @GetMapping("/gray")
@@ -545,6 +560,7 @@ public class ConfigControllerV3 {
     
     /**
      * Remove gray configuration.
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     @Since("3.2.2")
     @DeleteMapping("/gray")
@@ -587,6 +603,7 @@ public class ConfigControllerV3 {
     
     /**
      * Execute import and publish config operation.
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     @Since("3.0.0")
     @PostMapping("/import")
@@ -658,6 +675,7 @@ public class ConfigControllerV3 {
     
     /**
      * Import config add .metadata.yml file.
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     private Result<Map<String, Object>> parseImportDataV2(String srcUser,
         ZipUtils.UnZipResult unziped,
@@ -748,6 +766,7 @@ public class ConfigControllerV3 {
     
     /**
      * Export config add metadata.yml file record config metadata.
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     @Since("3.0.0")
     @GetMapping("/export")
@@ -795,6 +814,7 @@ public class ConfigControllerV3 {
     
     /**
      * Execute clone config operation.
+      * <p>V3 配置 CRUD 管理 API；详见类级说明。</p>
      */
     @Since("3.0.0")
     @PostMapping("/clone")

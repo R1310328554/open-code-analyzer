@@ -21,14 +21,18 @@ import com.alibaba.nacos.core.config.AbstractDynamicConfig;
 import com.alibaba.nacos.sys.env.EnvUtil;
 
 /**
+ * Config 兼容模式动态配置：控制命名空间 ID 是否启用旧版兼容处理，
+ * 对应属性 {@link com.alibaba.nacos.config.server.constant.PropertiesConstant#NAMESPACE_COMPATIBLE_MODE}。
  * The type Config compatible config.
  *
  * @author Sunrisea
  */
 public class ConfigCompatibleConfig extends AbstractDynamicConfig {
     
+    /** 动态配置注册名 */
     private static final String CONFIG_NAME = "configCompatible";
     
+    /** 命名空间兼容模式开关，默认开启以平滑迁移旧客户端 */
     private boolean namespaceCompatibleMode = true;
     
     private static final ConfigCompatibleConfig INSTANCE = new ConfigCompatibleConfig();
@@ -38,6 +42,7 @@ public class ConfigCompatibleConfig extends AbstractDynamicConfig {
         resetConfig();
     }
     
+    /** 是否启用命名空间兼容模式 */
     public boolean isNamespaceCompatibleMode() {
         return namespaceCompatibleMode;
     }
@@ -54,6 +59,7 @@ public class ConfigCompatibleConfig extends AbstractDynamicConfig {
             + '}';
     }
     
+    /** 获取兼容配置单例 */
     public static ConfigCompatibleConfig getInstance() {
         return INSTANCE;
     }

@@ -53,6 +53,8 @@ import java.util.Objects;
 import static com.alibaba.nacos.config.server.constant.Constants.ENCODE_UTF8;
 
 /**
+ * Config V3 客户端 HTTP Open API：面向不支持 gRPC 的语言提供单次配置拉取；
+ * 不支持 HTTP 长轮询监听，监听请使用 gRPC。
  * Nacos config module client used HTTP Open API controller.
  *
  * <p>
@@ -75,6 +77,7 @@ public class ConfigOpenApiController {
         this.configQueryChainService = configQueryChainService;
     }
     
+    /** 客户端 Open API：按 dataId/group/namespace 拉取配置，支持 Beta/Tag 灰度匹配 */
     @Since("3.0.0")
     @GetMapping
     @TpsControl(pointName = "ConfigQuery")
@@ -98,6 +101,7 @@ public class ConfigOpenApiController {
         return Result.success(transferToResult(chainResponse));
     }
     
+    /** 将 HTTP 表单参数与客户端 IP 标签组装为责任链查询请求 */
     private ConfigQueryChainRequest buildQueryChainRequest(ConfigFormV3 configForm,
         String sourceIp) {
         ConfigQueryChainRequest request = new ConfigQueryChainRequest();

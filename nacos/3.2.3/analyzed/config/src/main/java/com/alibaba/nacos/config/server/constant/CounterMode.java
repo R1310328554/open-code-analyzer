@@ -17,6 +17,8 @@
 package com.alibaba.nacos.config.server.constant;
 
 /**
+ * 计数器操作模式枚举：增量 {@link #INCREMENT} 与减量 {@link #DECREMENT}，
+ * 用于容量统计等场景的可逆切换。
  * counter mode.
  *
  * @author hexu.hxy
@@ -25,15 +27,18 @@ package com.alibaba.nacos.config.server.constant;
 public enum CounterMode {
     
     /**
+     * 增量计数模式。
      * Increment.
      */
     INCREMENT,
     /**
+     * 减量计数模式。
      * Decrement.
      */
     DECREMENT;
     
     /**
+     * 反转当前模式：INCREMENT 与 DECREMENT 互换。
      * Reverse the two mode value.
      *
      * @return CounterMode

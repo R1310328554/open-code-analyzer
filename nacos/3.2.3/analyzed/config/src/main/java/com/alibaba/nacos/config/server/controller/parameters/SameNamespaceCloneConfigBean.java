@@ -17,6 +17,8 @@
 package com.alibaba.nacos.config.server.controller.parameters;
 
 /**
+ * 同命名空间克隆配置的请求体 Bean：携带源配置 ID、dataId 与 group，
+ * 供批量克隆 API 反序列化使用。
  * SameNamespaceCloneConfigBean.
  *
  * @author klw(213539 @ qq.com)
@@ -24,10 +26,13 @@ package com.alibaba.nacos.config.server.controller.parameters;
  */
 public class SameNamespaceCloneConfigBean {
     
+    /** 源配置在数据库中的主键 ID */
     private Long cfgId;
     
+    /** 目标配置的 dataId */
     private String dataId;
     
+    /** 目标配置的 group */
     private String group;
     
     public Long getCfgId() {

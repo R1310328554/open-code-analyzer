@@ -52,6 +52,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
+ * V3 管理端配置历史 API：分页查询变更记录、按 nid 查看详情、
+ * 获取上一版本及按命名空间列出配置快照。
  * History configuration management.
  *
  * @author Nacos
@@ -69,6 +71,7 @@ public class HistoryControllerV3 {
     }
     
     /**
+     * 分页查询指定 dataId/group/namespace 的配置变更历史列表。
      * Query the list history config.
      */
     @Since("3.0.0")
@@ -99,6 +102,7 @@ public class HistoryControllerV3 {
     }
     
     /**
+     * 按历史记录 nid 查询某次变更的完整内容与元数据。
      * Query the detailed configuration history information.
      */
     @Since("3.0.0")
@@ -125,6 +129,7 @@ public class HistoryControllerV3 {
     }
     
     /**
+     * 查询指定 id 的上一条历史版本详情。
      * Query previous config history information.
      */
     @Since("3.0.0")
@@ -151,6 +156,7 @@ public class HistoryControllerV3 {
     }
     
     /**
+     * 列出命名空间下所有配置的当前快照基本信息。
      * Query configs list by namespace.
      */
     @Since("3.0.0")

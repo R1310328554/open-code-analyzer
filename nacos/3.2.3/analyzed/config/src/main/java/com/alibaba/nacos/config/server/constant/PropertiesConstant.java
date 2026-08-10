@@ -17,12 +17,15 @@
 package com.alibaba.nacos.config.server.constant;
 
 /**
+ * Config 模块 {@link ModuleState} 与运行时属性键名常量：通知超时、健康检查、
+ * 容量配额、搜索线程池、Dump 变更及命名空间兼容等配置的 state 字段标识。
  * PropertiesConstant.
  *
  * @author lixiaoshuang
  */
 public class PropertiesConstant {
     
+    /** 配置变更通知连接超时（毫秒）状态键 */
     public static final String NOTIFY_CONNECT_TIMEOUT = "notifyConnectTimeout";
     
     public static final String NOTIFY_SOCKET_TIMEOUT = "notifySocketTimeout";
@@ -33,6 +36,7 @@ public class PropertiesConstant {
     
     public static final String MAX_CONTENT = "maxContent";
     
+    /** 是否启用容量管理功能的状态键 */
     public static final String IS_MANAGE_CAPACITY = "isManageCapacity";
     
     public static final String IS_CAPACITY_LIMIT_CHECK = "isCapacityLimitCheck";
@@ -43,6 +47,7 @@ public class PropertiesConstant {
     
     public static final String DEFAULT_TENANT_QUOTA = "defaultTenantQuota";
     
+    /** 单条配置默认最大字节数配额状态键 */
     public static final String DEFAULT_MAX_SIZE = "defaultMaxSize";
     
     public static final String DEFAULT_MAX_AGGR_COUNT = "defaultMaxAggrCount";
@@ -63,10 +68,12 @@ public class PropertiesConstant {
     
     public static final String DUMP_CHANGE_WORKER_INTERVAL = "dumpChangeWorkerInterval";
     
+    /** 配置历史保留天数环境属性键 */
     public static final String CONFIG_RENTENTION_DAYS = "nacos.config.retention.days";
     
     public static final String GRAY_CAPATIBEL_MODEL = "nacos.config.gray.compatible.model";
     
+    /** 命名空间 ID 兼容模式环境属性键 */
     public static final String NAMESPACE_COMPATIBLE_MODE = "nacos.config.namespace.compatible.mode";
     
 }

@@ -17,6 +17,7 @@
 package com.alibaba.nacos.config.server.constant;
 
 /**
+ * Config HTTP 请求参数字段名常量，供参数校验与 OpenAPI 文档统一引用。
  * Parameters Field.
  *
  * @author haiqi.wang
@@ -25,6 +26,7 @@ package com.alibaba.nacos.config.server.constant;
 public final class ParametersField {
     
     /**
+     * 批量导出/导入时指定配置类型列表的参数字段名。
      * Types.
      */
     public static final String TYPES = "types";
