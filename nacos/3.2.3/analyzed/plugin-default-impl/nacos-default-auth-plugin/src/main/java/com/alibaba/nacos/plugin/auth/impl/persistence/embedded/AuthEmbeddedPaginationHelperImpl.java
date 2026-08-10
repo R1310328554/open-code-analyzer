@@ -29,21 +29,25 @@ import org.springframework.jdbc.core.RowMapper;
 import java.util.List;
 
 /**
- * Auth plugin Pagination Utils For Apache Derby.
+ * 内嵌 Derby 数据源鉴权分页助手。
+ *
+ * <p>通过 {@link DatabaseOperate} 执行计数与数据查询， 分页 SQL 由 {@link DerbyPageHandlerAdapter} 追加 OFFSET/FETCH 子句。</p>
  *
  * @param <E> Generic class
  * @author huangKeMing
  */
 public class AuthEmbeddedPaginationHelperImpl<E> implements AuthPaginationHelper<E> {
     
+    /** 内嵌存储数据库操作门面。 */
     private final DatabaseOperate databaseOperate;
     
+    /** 注入内嵌数据库操作实例。 */
     public AuthEmbeddedPaginationHelperImpl(DatabaseOperate databaseOperate) {
         this.databaseOperate = databaseOperate;
     }
     
     /**
-     * Take paging.
+     * 标准分页查询：先计数再拉取当前页数据。
      *
      * @param sqlCountRows Query total SQL
      * @param sqlFetchRows Query data sql
@@ -68,19 +72,19 @@ public class AuthEmbeddedPaginationHelperImpl<E> implements AuthPaginationHelper
             throw new IllegalArgumentException("pageNo and pageSize must be greater than zero");
         }
         
-        // Query the total number of current records
+        // 查询符合条件的总记录数
         Integer rowCountInt = databaseOperate.queryOne(sqlCountRows, args, Integer.class);
         if (rowCountInt == null) {
             throw new IllegalArgumentException("fetchPageLimit error");
         }
         
-        // Count pages
+        // 计算总页数
         int pageCount = rowCountInt / pageSize;
         if (rowCountInt > pageSize * pageCount) {
             pageCount++;
         }
         
-        // Create Page object
+        // 构造分页结果对象
         final Page<E> page = new Page<>();
         page.setPageNumber(pageNo);
         page.setPagesAvailable(pageCount);
@@ -90,7 +94,7 @@ public class AuthEmbeddedPaginationHelperImpl<E> implements AuthPaginationHelper
             return page;
         }
         
-        // fill the sql Page args
+        // 追加 OFFSET/FETCH 分页参数
         String fetchSql = sqlFetchRows;
         OffsetFetchResult offsetFetchResult =
             addOffsetAndFetchNext(fetchSql, args, pageNo, pageSize);
@@ -224,6 +228,7 @@ public class AuthEmbeddedPaginationHelperImpl<E> implements AuthPaginationHelper
             rowMapper);
     }
     
+    /** 在内嵌存储上下文中执行带限流的更新 SQL。 */
     @Override
     public void updateLimit(final String sql, final Object[] args) {
         EmbeddedStorageContextHolder.addSqlContext(sql, args);
@@ -234,6 +239,7 @@ public class AuthEmbeddedPaginationHelperImpl<E> implements AuthPaginationHelper
         }
     }
     
+    /** 委托 Derby 适配器生成分页 SQL 与新参数数组。 */
     private OffsetFetchResult addOffsetAndFetchNext(String fetchSql, Object[] arg, int pageNo,
         int pageSize) {
         return PageHandlerAdapterFactory.getInstance().getHandlerAdapterMap()

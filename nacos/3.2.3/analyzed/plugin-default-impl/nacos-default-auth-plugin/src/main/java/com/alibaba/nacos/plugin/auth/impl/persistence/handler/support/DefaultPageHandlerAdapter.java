@@ -20,17 +20,21 @@ import com.alibaba.nacos.plugin.auth.impl.model.OffsetFetchResult;
 import com.alibaba.nacos.plugin.auth.impl.persistence.handler.PageHandlerAdapter;
 
 /**
- * Default page handler adapter.
+ * 默认分页适配器（不改写 SQL）。
+ *
+ * <p>{@link #supports} 恒为 false，仅作为外部数据源无匹配方言时的兜底， 原样返回 SQL 与参数。</p>
  *
  * @author huangKeMing
  */
 public class DefaultPageHandlerAdapter implements PageHandlerAdapter {
     
+    /** 默认适配器不匹配任何数据源类型。 */
     @Override
     public boolean supports(String dataSourceType) {
         return false;
     }
     
+    /** 不追加方言分页子句，直接封装原 SQL。 */
     @Override
     public OffsetFetchResult addOffsetAndFetchNext(String fetchSql, Object[] arg, int pageNo,
         int pageSize) {

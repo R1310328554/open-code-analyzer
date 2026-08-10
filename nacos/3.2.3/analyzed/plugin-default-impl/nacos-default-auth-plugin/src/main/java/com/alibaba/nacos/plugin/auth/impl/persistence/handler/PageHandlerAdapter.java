@@ -19,14 +19,16 @@ package com.alibaba.nacos.plugin.auth.impl.persistence.handler;
 import com.alibaba.nacos.plugin.auth.impl.model.OffsetFetchResult;
 
 /**
- * Auth plugin page handler adapter.
+ * 鉴权模块分页 SQL 适配器接口。
+ *
+ * <p>不同数据库方言的分页语法（MySQL LIMIT、Derby OFFSET/FETCH） 由实现类统一封装为 {@link OffsetFetchResult}。</p>
  *
  * @author huangKeMing
  */
 public interface PageHandlerAdapter {
     
     /**
-     * Determine whether the current data source supports paging.
+     * 判断适配器是否支持给定数据源类型。
      *
      * @param dataSourceType data source type
      * @return true if the current data source supports paging
@@ -34,7 +36,7 @@ public interface PageHandlerAdapter {
     boolean supports(String dataSourceType);
     
     /**
-     * Add offset and fetch next.
+     * 为查询 SQL 追加分页子句并扩展参数数组。
      *
      * @param fetchSql fetch sql.
      * @param arg      arguments.

@@ -19,7 +19,9 @@ package com.alibaba.nacos.plugin.auth.impl.persistence;
 import java.io.Serializable;
 
 /**
- * PermissionInfo model.
+ * 权限信息模型：角色对资源的操作授权。
+ *
+ * <p>三元组 {@code role + resource + action} 对应 RBAC 中一条权限记录， 序列化后用于持久化层与 API 传输。</p>
  *
  * @author nkorange
  * @since 1.2.0
@@ -28,29 +30,26 @@ public class PermissionInfo implements Serializable {
     
     private static final long serialVersionUID = 388813573388837395L;
     
-    /**
-     * Role name.
-     */
+    /** 拥有该权限的角色名。 */
     private String role;
     
-    /**
-     * Resource.
-     */
+    /** 受控资源标识（如命名空间、配置路径等）。 */
     private String resource;
     
-    /**
-     * Action on resource.
-     */
+    /** 对资源允许的操作（读、写、删除等）。 */
     private String action;
     
+    /** 获取角色名。 */
     public String getRole() {
         return role;
     }
     
+    /** 设置角色名。 */
     public void setRole(String role) {
         this.role = role;
     }
     
+    /** 获取资源标识。 */
     public String getResource() {
         return resource;
     }
@@ -59,6 +58,7 @@ public class PermissionInfo implements Serializable {
         this.resource = resource;
     }
     
+    /** 获取操作类型。 */
     public String getAction() {
         return action;
     }

@@ -36,7 +36,9 @@ import java.util.List;
 import static com.alibaba.nacos.plugin.auth.impl.persistence.AuthRowMapperManager.ROLE_INFO_ROW_MAPPER;
 
 /**
- * Implemetation of ExternalRolePersistServiceImpl.
+ * 外部数据源（MySQL 等）角色持久化服务实现。
+ *
+ * <p>通过 {@link JdbcTemplate} 访问 {@code roles} 表， 支持分页查询、模糊搜索及角色增删；分页委托 {@link AuthExternalPaginationHelperImpl} 按数据源类型适配 SQL。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -44,12 +46,15 @@ public class ExternalRolePersistServiceImpl implements RolePersistService {
     
     private static final Logger LOGGER = LoggerFactory.getLogger("com.alibaba.nacos.persistence");
     
+    /** 动态数据源提供的 JDBC 模板。 */
     private JdbcTemplate jt;
     
+    /** 当前数据源类型，用于选择分页适配器。 */
     private String dataSourceType = "";
     
     private static final String PATTERN_STR = "*";
     
+    /** 初始化 JDBC 模板与数据源类型。 */
     @PostConstruct
     protected void init() {
         DataSourceService dataSource = DynamicDataSource.getInstance().getDataSource();
@@ -57,6 +62,7 @@ public class ExternalRolePersistServiceImpl implements RolePersistService {
         dataSourceType = dataSource.getDataSourceType();
     }
     
+    /** 分页查询全部角色（按 role 去重计数）。 */
     @Override
     public Page<RoleInfo> getRoles(int pageNo, int pageSize) {
         
@@ -83,6 +89,7 @@ public class ExternalRolePersistServiceImpl implements RolePersistService {
         }
     }
     
+    /** 按用户名与角色名精确过滤后分页查询。 */
     @Override
     public Page<RoleInfo> getRolesByUserNameAndRoleName(String username, String role, int pageNo,
         int pageSize) {
@@ -115,7 +122,7 @@ public class ExternalRolePersistServiceImpl implements RolePersistService {
     }
     
     /**
-     * Execute add role operation.
+     * 向 {@code roles} 表插入用户-角色绑定记录。
      *
      * @param role     role string value.
      * @param userName username string value.
@@ -134,7 +141,7 @@ public class ExternalRolePersistServiceImpl implements RolePersistService {
     }
     
     /**
-     * Execute delete role operation.
+     * 按角色名删除该角色的全部绑定记录。
      *
      * @param role role string value.
      */
@@ -150,7 +157,7 @@ public class ExternalRolePersistServiceImpl implements RolePersistService {
     }
     
     /**
-     * Execute delete role operation.
+     * 删除指定用户与角色的单条绑定。
      *
      * @param role     role string value.
      * @param username username string value.
@@ -166,6 +173,7 @@ public class ExternalRolePersistServiceImpl implements RolePersistService {
         }
     }
     
+    /** 按角色名模糊匹配，返回角色名列表。 */
     @Override
     public List<String> findRolesLikeRoleName(String role) {
         String sql = "SELECT role FROM roles WHERE role LIKE ?";
@@ -174,6 +182,7 @@ public class ExternalRolePersistServiceImpl implements RolePersistService {
         return users;
     }
     
+    /** 将通配符 {@code *} 转为 SQL {@code %}，并转义下划线。 */
     @Override
     public String generateLikeArgument(String s) {
         String underscore = "_";
@@ -189,6 +198,7 @@ public class ExternalRolePersistServiceImpl implements RolePersistService {
         }
     }
     
+    /** 用户名与角色名模糊查询并分页。 */
     @Override
     public Page<RoleInfo> findRolesLike4Page(String username, String role, int pageNo,
         int pageSize) {
@@ -217,6 +227,7 @@ public class ExternalRolePersistServiceImpl implements RolePersistService {
         }
     }
     
+    /** 创建外部数据源鉴权分页助手。 */
     @Override
     public <E> AuthPaginationHelper<E> createPaginationHelper() {
         return new AuthExternalPaginationHelperImpl<>(jt, dataSourceType);

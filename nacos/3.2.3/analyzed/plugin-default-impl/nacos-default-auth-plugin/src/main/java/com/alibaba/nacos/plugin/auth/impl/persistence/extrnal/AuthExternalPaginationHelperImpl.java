@@ -30,15 +30,19 @@ import org.springframework.jdbc.core.RowMapper;
 import java.util.List;
 
 /**
- * Auth plugin Pagination Utils For Apache External.
+ * 外部数据源鉴权分页助手。
+ *
+ * <p>基于 {@link JdbcTemplate} 执行分页；按 {@code dataSourceType} 选择 {@link MysqlPageHandlerAdapter} 或 {@link DefaultPageHandlerAdapter} 拼接 LIMIT/OFFSET。</p>
  *
  * @param <E> Generic class
  * @author huangKeMing
  */
 public class AuthExternalPaginationHelperImpl<E> implements AuthPaginationHelper<E> {
     
+    /** Spring JDBC 模板，访问外部数据库。 */
     private final JdbcTemplate jdbcTemplate;
     
+    /** 数据源类型标识（mysql、derby 等）。 */
     private volatile String dataSourceType;
     
     public AuthExternalPaginationHelperImpl(JdbcTemplate jdbcTemplate, String dataSourceType) {
@@ -47,7 +51,7 @@ public class AuthExternalPaginationHelperImpl<E> implements AuthPaginationHelper
     }
     
     /**
-     * Take paging.
+     * 分页查询：计数 SQL 与数据 SQL 分离，支持游标 lastMaxId 重载。
      *
      * @param sqlCountRows query total SQL
      * @param sqlFetchRows query data sql
@@ -72,13 +76,13 @@ public class AuthExternalPaginationHelperImpl<E> implements AuthPaginationHelper
             throw new IllegalArgumentException("pageNo and pageSize must be greater than zero");
         }
         
-        // Query the total number of current records.
+        // 统计当前查询条件下的总记录数
         Integer rowCountInt = jdbcTemplate.queryForObject(sqlCountRows, args, Integer.class);
         if (rowCountInt == null) {
             throw new IllegalArgumentException("fetchPageLimit error");
         }
         
-        // Compute pages count
+        // 根据总数与页大小计算页数
         int pageCount = rowCountInt / pageSize;
         if (rowCountInt > pageSize * pageCount) {
             pageCount++;
@@ -237,7 +241,7 @@ public class AuthExternalPaginationHelperImpl<E> implements AuthPaginationHelper
     }
     
     /**
-     * Update limit with response.
+     * 执行更新并返回受影响行数。
      *
      * @param sql  sql
      * @param args args
@@ -253,6 +257,7 @@ public class AuthExternalPaginationHelperImpl<E> implements AuthPaginationHelper
         }
     }
     
+    /** 调用适配器追加数据库方言分页子句。 */
     private OffsetFetchResult addOffsetAndFetchNext(String fetchSql, Object[] arg, int pageNo,
         int pageSize) {
         return getHandlerAdapter(dataSourceType).addOffsetAndFetchNext(fetchSql, arg, pageNo,
@@ -260,7 +265,7 @@ public class AuthExternalPaginationHelperImpl<E> implements AuthPaginationHelper
     }
     
     /**
-     * Get handler adapter.
+     * 按数据源类型选取分页适配器，无匹配时用默认实现。
      *
      * @param dataSourceType data source type.
      * @return

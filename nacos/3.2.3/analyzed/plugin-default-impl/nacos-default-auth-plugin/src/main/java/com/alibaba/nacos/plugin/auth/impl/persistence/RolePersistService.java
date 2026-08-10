@@ -21,7 +21,9 @@ import com.alibaba.nacos.api.model.Page;
 import java.util.List;
 
 /**
- * Role CRUD service.
+ * 角色持久化服务接口。
+ *
+ * <p>涵盖角色分页查询、用户-角色绑定增删、模糊搜索及分页助手工厂方法； 由 Embedded/External 实现类分别对接内嵌与外部数据库。</p>
  *
  * @author nkorange
  * @since 1.2.0
@@ -29,7 +31,7 @@ import java.util.List;
 public interface RolePersistService {
     
     /**
-     * get roles by page.
+     * 分页查询全部角色信息。
      *
      * @param pageNo pageNo
      * @param pageSize pageSize
@@ -38,7 +40,7 @@ public interface RolePersistService {
     Page<RoleInfo> getRoles(int pageNo, int pageSize);
     
     /**
-     * query the user's roles by username.
+     * 按用户名与角色名过滤后分页查询。
      *
      * @param username username
      * @param pageNo pageNo
@@ -49,7 +51,7 @@ public interface RolePersistService {
         int pageSize);
     
     /**
-     * assign role to user.
+     * 为用户分配角色。
      *
      * @param role role
      * @param userName username
@@ -57,14 +59,14 @@ public interface RolePersistService {
     void addRole(String role, String userName);
     
     /**
-     * delete role.
+     * 删除角色及其全部用户绑定。
      *
      * @param role role
      */
     void deleteRole(String role);
     
     /**
-     * delete user's role.
+     * 解除指定用户的角色绑定。
      *
      * @param role role
      * @param username username
@@ -72,7 +74,7 @@ public interface RolePersistService {
     void deleteRole(String role, String username);
     
     /**
-     * fuzzy query roles by role name.
+     * 按角色名模糊查询角色列表。
      *
      * @param role role
      * @return roles
@@ -80,15 +82,15 @@ public interface RolePersistService {
     List<String> findRolesLikeRoleName(String role);
     
     /**
-     * Generate fuzzy search Sql.
+     * 将用户输入转为 SQL LIKE 参数。
      *
      * @param s origin string
      * @return fuzzy search Sql
      */
     String generateLikeArgument(String s);
     
-    /**.
-     * fuzzy query role information based on roleName and username
+    /**
+     * 用户名与角色名模糊查询并分页。
      *
      * @param username username of user
      * @param pageNo page number
@@ -102,6 +104,7 @@ public interface RolePersistService {
      *
      * @param <E> Generic object
      * @return {@link AuthPaginationHelper}
+      * <p>Nacos 3.2.3：默认鉴权插件持久化层；涵盖用户/角色/权限 CRUD、内嵌与外部 JDBC 分页助手及 MySQL/Derby 方言适配器。</p>
      */
     <E> AuthPaginationHelper<E> createPaginationHelper();
 }

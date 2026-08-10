@@ -26,17 +26,21 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * derby page handler adapter.
+ * Apache Derby 分页适配器。
+ *
+ * <p>在 SQL 末尾追加 {@code OFFSET ? ROWS FETCH NEXT ? ROWS ONLY}， 参数为 {@code (pageNo-1)*pageSize} 与 {@code pageSize}；已含 OFFSET 时不再改写。</p>
  *
  * @author huangKeMing
  */
 public class DerbyPageHandlerAdapter implements PageHandlerAdapter {
     
+    /** 仅支持 Derby 内嵌数据源。 */
     @Override
     public boolean supports(String dataSourceType) {
         return PersistenceConstant.DERBY.equals(dataSourceType);
     }
     
+    /** 追加 Derby 标准 OFFSET/FETCH 分页语法及占位参数。 */
     @Override
     public OffsetFetchResult addOffsetAndFetchNext(String fetchSql, Object[] arg, int pageNo,
         int pageSize) {

@@ -26,17 +26,21 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * mysql page handler adapter.
+ * MySQL 分页适配器。
+ *
+ * <p>在 SQL 末尾追加 {@code LIMIT ?, ?}，参数为偏移量与页大小； 若 SQL 已含 LIMIT 关键字则保持原样。</p>
  *
  * @author huangKeMing
  */
 public class MysqlPageHandlerAdapter implements PageHandlerAdapter {
     
+    /** 仅支持 MySQL 外部数据源。 */
     @Override
     public boolean supports(String dataSourceType) {
         return PersistenceConstant.MYSQL.equals(dataSourceType);
     }
     
+    /** 追加 MySQL LIMIT 子句及偏移、条数占位参数。 */
     @Override
     public OffsetFetchResult addOffsetAndFetchNext(String fetchSql, Object[] arg, int pageNo,
         int pageSize) {

@@ -34,7 +34,9 @@ import java.util.List;
 import static com.alibaba.nacos.plugin.auth.impl.persistence.AuthRowMapperManager.USER_ROW_MAPPER;
 
 /**
- * Implemetation of ExternalUserPersistServiceImpl.
+ * 外部数据源用户持久化服务实现。
+ *
+ * <p>操作 {@code users} 表完成用户 CRUD、密码更新与分页/模糊查询； 默认新建用户 {@code enabled=true}，查询无结果时返回 {@code null}。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -48,6 +50,7 @@ public class ExternalUserPersistServiceImpl implements UserPersistService {
     
     private static final String PATTERN_STR = "*";
     
+    /** 从动态数据源获取 JDBC 模板与类型。 */
     @PostConstruct
     protected void init() {
         DataSourceService dataSource = DynamicDataSource.getInstance().getDataSource();
@@ -56,7 +59,7 @@ public class ExternalUserPersistServiceImpl implements UserPersistService {
     }
     
     /**
-     * Execute create user operation.
+     * 创建用户并写入加密前的密码字段。
      *
      * @param username username string value.
      * @param password password string value.
@@ -74,7 +77,7 @@ public class ExternalUserPersistServiceImpl implements UserPersistService {
     }
     
     /**
-     * Execute delete user operation.
+     * 按用户名删除用户记录。
      *
      * @param username username string value.
      */
@@ -90,7 +93,7 @@ public class ExternalUserPersistServiceImpl implements UserPersistService {
     }
     
     /**
-     * Execute update user password operation.
+     * 更新指定用户的密码。
      *
      * @param username username string value.
      * @param password password string value.
@@ -106,7 +109,7 @@ public class ExternalUserPersistServiceImpl implements UserPersistService {
     }
     
     /**
-     * Execute find user by username operation.
+     * 按用户名精确查询单个用户。
      *
      * @param username username string value.
      * @return User model.
@@ -127,6 +130,7 @@ public class ExternalUserPersistServiceImpl implements UserPersistService {
         }
     }
     
+    /** 分页查询用户，可选按用户名精确过滤。 */
     @Override
     public Page<User> getUsers(int pageNo, int pageSize, String username) {
         
@@ -159,6 +163,7 @@ public class ExternalUserPersistServiceImpl implements UserPersistService {
         }
     }
     
+    /** 用户名模糊匹配，返回用户名列表。 */
     @Override
     public List<String> findUserLikeUsername(String username) {
         String sql = "SELECT username FROM users WHERE username LIKE ?";
@@ -167,6 +172,7 @@ public class ExternalUserPersistServiceImpl implements UserPersistService {
         return users;
     }
     
+    /** 用户名模糊查询并分页返回用户实体。 */
     @Override
     public Page<User> findUsersLike4Page(String username, int pageNo, int pageSize) {
         String sqlCountRows = "SELECT count(*) FROM users ";
@@ -190,6 +196,7 @@ public class ExternalUserPersistServiceImpl implements UserPersistService {
         }
     }
     
+    /** 构造 SQL LIKE 参数字符串（通配符与转义处理）。 */
     @Override
     public String generateLikeArgument(String s) {
         String underscore = "_";
@@ -205,6 +212,7 @@ public class ExternalUserPersistServiceImpl implements UserPersistService {
         }
     }
     
+    /** 创建外部数据源分页助手实例。 */
     @Override
     public <E> AuthPaginationHelper<E> createPaginationHelper() {
         return new AuthExternalPaginationHelperImpl<>(jt, dataSourceType);
