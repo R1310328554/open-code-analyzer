@@ -56,51 +56,64 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 基于 FreeMarker 的 {@link EmailTemplateProvider} 默认实现。
+ * <p>解析 EMAIL 主题模板与国际化消息，渲染 text/html 正文后委托 {@link EmailSenderProvider} 发送。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
 
     private static final Logger log = LoggerFactory.getLogger(FreeMarkerEmailTemplateProvider.class);
+    /** 当前 Keycloak 会话。 */
     protected KeycloakSession session;
     /**
-     * authenticationSession can be null for some email sendings, it is filled only for email sendings performed as part of the authentication session (email verification, password reset, broker link
-     * etc.)!
+     * 认证会话；部分邮件（如定时任务触发）可能为 {@code null}，仅在认证流程内发送（邮箱验证、密码重置、Broker 关联等）时填充。
      */
     protected AuthenticationSessionModel authenticationSession;
+    /** FreeMarker 模板引擎提供者。 */
     protected FreeMarkerProvider freeMarker;
+    /** 目标 Realm，用于 SMTP 配置与主题资源。 */
     protected RealmModel realm;
+    /** 收件用户。 */
     protected UserModel user;
+    /** 附加模板属性（可通过 {@link #setAttribute} 注入）。 */
     protected final Map<String, Object> attributes = new HashMap<>();
 
+    /** @param session 当前会话 */
     public FreeMarkerEmailTemplateProvider(KeycloakSession session) {
         this.session = session;
         this.freeMarker = session.getProvider(FreeMarkerProvider.class);
     }
 
     @Override
+    /** 设置目标 Realm。 */
     public EmailTemplateProvider setRealm(RealmModel realm) {
         this.realm = realm;
         return this;
     }
 
     @Override
+    /** 设置收件用户。 */
     public EmailTemplateProvider setUser(UserModel user) {
         this.user = user;
         return this;
     }
 
     @Override
+    /** 向模板上下文追加自定义属性。 */
     public EmailTemplateProvider setAttribute(String name, Object value) {
         attributes.put(name, value);
         return this;
     }
 
     @Override
+    /** 绑定当前认证会话供模板使用。 */
     public EmailTemplateProvider setAuthenticationSession(AuthenticationSessionModel authenticationSession) {
         this.authenticationSession = authenticationSession;
         return this;
     }
 
+    /** @return Realm 显示名，缺省时为首字母大写的内部名 */
     protected String getRealmName() {
         if (realm.getDisplayName() != null) {
             return realm.getDisplayName();
@@ -110,6 +123,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
     }
 
     @Override
+    /** 按 {@link EventType} 选择 event-*.ftl 模板并发送用户事件通知邮件。 */
     public void sendEvent(Event event) throws EmailException {
         Map<String, Object> attributes = new HashMap<>(this.attributes);
         attributes.put("event", new EventBean(event));
@@ -118,6 +132,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
     }
 
     @Override
+    /** 发送密码重置链接邮件。 */
     public void sendPasswordReset(String link, long expirationInMinutes) throws EmailException {
         Map<String, Object> attributes = new HashMap<>(this.attributes);
         addLinkInfoIntoAttributes(link, expirationInMinutes, attributes);
@@ -126,6 +141,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
     }
 
     @Override
+    /** 使用指定 SMTP 配置向用户发送连通性测试邮件。 */
     public void sendSmtpTestEmail(Map<String, String> config, UserModel user) throws EmailException {
         setRealm(session.getContext().getRealm());
         setUser(user);
@@ -137,6 +153,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
     }
 
     @Override
+    /** 发送身份代理账户关联确认邮件。 */
     public void sendConfirmIdentityBrokerLink(String link, long expirationInMinutes) throws EmailException {
         Map<String, Object> attributes = new HashMap<>(this.attributes);
         addLinkInfoIntoAttributes(link, expirationInMinutes, attributes);
@@ -157,6 +174,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
     }
 
     @Override
+    /** 发送「执行必需操作」邮件（如强制改密）。 */
     public void sendExecuteActions(String link, long expirationInMinutes) throws EmailException {
         Map<String, Object> attributes = new HashMap<>(this.attributes);
         addLinkInfoIntoAttributes(link, expirationInMinutes, attributes);
@@ -165,6 +183,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
     }
 
     @Override
+    /** 发送可验证凭证发放邀请邮件。 */
     public void sendVerifiableCredentialOffer(String link, long expirationInMinutes) throws EmailException {
         Map<String, Object> attributes = new HashMap<>(this.attributes);
         addLinkInfoIntoAttributes(link, expirationInMinutes, attributes);
@@ -173,6 +192,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
     }
 
     @Override
+    /** 发送邮箱地址验证邮件。 */
     public void sendVerifyEmail(String link, long expirationInMinutes) throws EmailException {
         Map<String, Object> attributes = new HashMap<>(this.attributes);
         addLinkInfoIntoAttributes(link, expirationInMinutes, attributes);
@@ -181,6 +201,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
     }
 
     @Override
+    /** 发送组织邀请邮件。 */
     public void sendOrgInviteEmail(OrganizationModel organization, String link, long expirationInMinutes) throws EmailException {
         Map<String, Object> attributes = new HashMap<>(this.attributes);
         addLinkInfoIntoAttributes(link, expirationInMinutes, attributes);
@@ -193,6 +214,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
     }
 
     @Override
+    /** 向新邮箱地址发送邮箱变更确认邮件。 */
     public void sendEmailUpdateConfirmation(String link, long expirationInMinutes, String newEmail) throws EmailException {
         if (newEmail == null) {
             throw new IllegalArgumentException("The new email is mandatory");
@@ -206,11 +228,11 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
     }
 
     /**
-     * Add link info into template attributes.
+     * 向模板属性注入操作链接与过期时间格式化器。
      *
-     * @param link to add
-     * @param expirationInMinutes to add
-     * @param attributes to add link info into
+     * @param link 用户操作 URL
+     * @param expirationInMinutes 链接有效分钟数
+     * @param attributes 待填充的模板属性映射
      */
     protected void addLinkInfoIntoAttributes(String link, long expirationInMinutes, Map<String, Object> attributes) throws EmailException {
         attributes.put("link", link);
@@ -228,6 +250,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
         send(subjectFormatKey, Collections.emptyList(), bodyTemplate, bodyAttributes);
     }
 
+    /** 解析主题消息键、渲染 text/html FreeMarker 模板并返回 {@link EmailTemplate}。 */
     protected EmailTemplate processTemplate(String subjectKey, List<Object> subjectAttributes, String template, Map<String, Object> attributes) throws EmailException {
         try {
             Locale locale = session.getContext().resolveLocale(user, Boolean.parseBoolean(String.valueOf(attributes.get(Constants.IGNORE_ACCEPT_LANGUAGE_HEADER))));
@@ -252,7 +275,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
                 attributes.put("url", new UrlBean(realm, theme, uriInfo.getBaseUri(), null));
             } catch (ContextNotActiveException e) {
                 log.debug("No active request, can't make url attribute available to the template");
-                // ignore when running without an active request context such as sending emails from an scheduled task
+                // 无活跃请求上下文（如定时任务发信）时忽略，模板中 url 属性不可用
             }
 
             String subject = new MessageFormat(messages.getProperty(subjectKey, subjectKey), locale).format(subjectAttributes.toArray());
@@ -278,6 +301,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
         }
     }
 
+    /** @return EMAIL 类型主题 */
     protected Theme getTheme() throws IOException {
         return session.theme().getTheme(Theme.Type.EMAIL);
     }
@@ -313,6 +337,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
         send(config, subject, textBody, htmlBody, null);
     }
 
+    /** 委托 {@link EmailSenderProvider} 发送已渲染的邮件。 */
     protected void send(Map<String, String> config, String subject, String textBody, String htmlBody, String address) throws EmailException {
         EmailSenderProvider emailSender = session.getProvider(EmailSenderProvider.class);
         if (address == null) {
@@ -326,6 +351,7 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
     public void close() {
     }
 
+    /** 将 {@link EventType} 枚举名转为 camelCase 消息键前缀（如 eventLoginError）。 */
     protected String toCamelCase(EventType event) {
         StringBuilder sb = new StringBuilder("event");
         for (String s : event.name().toLowerCase().split("_")) {
@@ -334,12 +360,14 @@ public class FreeMarkerEmailTemplateProvider implements EmailTemplateProvider {
         return sb.toString();
     }
 
+    /** 已渲染邮件的主题与 text/html 正文容器。 */
     protected static class EmailTemplate {
 
         private String subject;
         private String textBody;
         private String htmlBody;
 
+        /** @param subject 邮件主题 @param textBody 纯文本正文 @param htmlBody HTML 正文 */
         public EmailTemplate(String subject, String textBody, String htmlBody) {
             this.subject = subject;
             this.textBody = textBody;

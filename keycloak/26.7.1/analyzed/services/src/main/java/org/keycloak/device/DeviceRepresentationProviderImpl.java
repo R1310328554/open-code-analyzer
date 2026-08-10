@@ -10,19 +10,26 @@ import org.keycloak.representations.account.DeviceRepresentation;
 import org.jboss.logging.Logger;
 import ua_parser.Client;
 
+/**
+ * 设备表示提供者实现：从当前 HTTP 请求的 User-Agent 头解析浏览器、操作系统与 IP。
+ * <p>解析结果封装为 {@link DeviceRepresentation}，供账户活动与设备管理使用。</p>
+ */
 public class DeviceRepresentationProviderImpl implements DeviceRepresentationProvider {
     private static final Logger logger = Logger.getLogger(DeviceActivityManager.class);
+    /** User-Agent 头允许的最大长度（字节）。 */
     private static final int USER_AGENT_MAX_LENGTH = 512;
 
     private final LocalCache<String, Client> cache;
     private final KeycloakSession session;
 
+    /** @param session 当前会话 @param cache User-Agent → 解析结果缓存 */
     DeviceRepresentationProviderImpl(KeycloakSession session, LocalCache<String, Client> cache) {
         this.session = session;
         this.cache = cache;
     }
 
     @Override
+    /** 解析当前请求 User-Agent 并构建设备描述；无法解析时返回 {@code null}。 */
     public DeviceRepresentation deviceRepresentation() {
         KeycloakContext context = session.getContext();
 
@@ -44,8 +51,7 @@ public class DeviceRepresentationProviderImpl implements DeviceRepresentationPro
         DeviceRepresentation current;
         try {
             Client client = cache.get(userAgent);
-            // To avoid IDEA warning about NullPointerException
-            // It should never be null as the parser never returns a null client.
+            // 避免 IDEA 空指针警告；解析器理论上不会返回 null Client。
             assert client != null;
             current = new DeviceRepresentation();
 
@@ -92,6 +98,7 @@ public class DeviceRepresentationProviderImpl implements DeviceRepresentationPro
         }
     }
 
+    /** 针对 iOS Safari 特殊处理：当浏览器主版本高于 OS 主版本时用浏览器版本作为 OS 版本。 */
     static String resolveOsVersion(Client client, String osVersion, String browserVersion) {
         if (!"iOS".equalsIgnoreCase(client.os.family)) {
             return osVersion;
@@ -110,6 +117,7 @@ public class DeviceRepresentationProviderImpl implements DeviceRepresentationPro
         return osVersion;
     }
 
+    /** 将版本号主段解析为整数，失败时返回 -1。 */
     private static int toInt(String major) {
         try {
             return major == null ? -1 : Integer.parseInt(major.trim());

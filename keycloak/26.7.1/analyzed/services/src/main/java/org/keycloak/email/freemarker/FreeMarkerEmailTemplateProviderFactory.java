@@ -24,11 +24,15 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * FreeMarker 邮件模板 SPI 默认工厂。
+ * <p>为每个会话创建 {@link FreeMarkerEmailTemplateProvider} 实例。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class FreeMarkerEmailTemplateProviderFactory implements EmailTemplateProviderFactory {
 
     @Override
+    /** @param session 当前会话 @return FreeMarker 邮件模板提供者 */
     public EmailTemplateProvider create(KeycloakSession session) {
         return new FreeMarkerEmailTemplateProvider(session);
     }
@@ -46,6 +50,7 @@ public class FreeMarkerEmailTemplateProviderFactory implements EmailTemplateProv
     }
 
     @Override
+    /** @return SPI 工厂标识 {@code freemarker} */
     public String getId() {
         return "freemarker";
     }

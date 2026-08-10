@@ -51,6 +51,9 @@ import org.jboss.logging.Logger;
 import static org.keycloak.utils.StringUtil.isNotBlank;
 
 /**
+ * 默认 SMTP 邮件发送提供者：构建 Jakarta Mail 会话、选择认证策略并投递 multipart 邮件。
+ * <p>支持 SSL/STARTTLS、UTF-8（SMTPUTF8）、信封发件人及信任库主机名校验策略。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultEmailSenderProvider implements EmailSenderProvider {
@@ -58,16 +61,20 @@ public class DefaultEmailSenderProvider implements EmailSenderProvider {
     private static final Logger logger = Logger.getLogger(DefaultEmailSenderProvider.class);
     private static final String SUPPORTED_SSL_PROTOCOLS = getSupportedSslProtocols();
 
+    /** SMTP 认证策略表（由工厂注入）。 */
     private final Map<EmailAuthenticator.AuthenticatorType, EmailAuthenticator> authenticators;
 
+    /** 当前 Keycloak 会话，用于信任库与 vault 访问。 */
     private final KeycloakSession session;
 
+    /** @param session 当前会话 @param authenticators SMTP 认证策略映射 */
     public DefaultEmailSenderProvider(KeycloakSession session, Map<EmailAuthenticator.AuthenticatorType, EmailAuthenticator> authenticators) {
         this.authenticators = authenticators;
         this.session = session;
     }
 
     @Override
+    /** 向用户邮箱发送邮件；用户未配置邮箱时抛出 {@link EmailException}。 */
     public void send(Map<String, String> config, UserModel user, String subject, String textBody, String htmlBody) throws EmailException {
         String address = retrieveEmailAddress(user);
         if (address == null) {
@@ -77,6 +84,7 @@ public class DefaultEmailSenderProvider implements EmailSenderProvider {
     }
 
     @Override
+    /** 构建 MIME 消息、认证 SMTP 连接并发送 multipart 邮件。 */
     public void send(Map<String, String> config, String address, String subject, String textBody, String htmlBody) throws EmailException {
         final boolean allowutf8 = isAllowUTF8(config);
         final String convertedAddress = checkUserAddress(address, allowutf8);
@@ -100,8 +108,9 @@ public class DefaultEmailSenderProvider implements EmailSenderProvider {
     }
 
     @Override
+    /** 校验发件人与回复地址格式（静态检查，不实际发送邮件）。 */
     public void validate(Map<String, String> config) throws EmailException {
-        // just static configuration checking here, not really testing email
+        // 此处仅做静态配置校验，不实际发送测试邮件
         checkFromAddress(config.get("from"), isAllowUTF8(config));
         String replyTo = config.get("replyTo");
         if (isNotBlank(replyTo)) {
@@ -109,6 +118,7 @@ public class DefaultEmailSenderProvider implements EmailSenderProvider {
         }
     }
 
+    /** 根据 realm SMTP 配置构建 Jakarta Mail {@link Properties}。 */
     Properties buildEmailProperties(Map<String, String> config, String from) throws EmailException {
         Properties props = new Properties();
 
@@ -160,14 +170,14 @@ public class DefaultEmailSenderProvider implements EmailSenderProvider {
             props.setProperty("mail.mime.allowutf8", "true");
         }
 
-        // Specify 'mail.from' as InternetAddress.getLocalAddress() would otherwise do a InetAddress.getCanonicalHostName
-        // and add this as a mail header. This would both be slow, and would reveal internal IP addresses that we don't want.
-        // https://jakarta.ee/specifications/mail/2.0/jakarta-mail-spec-2.0#a823
+        // 显式设置 mail.from，避免 getLocalAddress() 触发 DNS 查询并泄露内网 IP。
+        // 参见 https://jakarta.ee/specifications/mail/2.0/jakarta-mail-spec-2.0#a823
         props.setProperty("mail.from", from);
 
         return props;
     }
 
+    /** 组装 MIME 消息：发件人、回复地址、收件人与 multipart 正文。 */
     private Message buildMessage(Session session, String address, String from, String subject, Map<String, String> config, Multipart multipart) throws EmailException {
 
         String fromDisplayName = config.get("fromDisplayName");
@@ -200,6 +210,7 @@ public class DefaultEmailSenderProvider implements EmailSenderProvider {
         }
     }
 
+    /** 构建 alternative multipart：纯文本与 HTML 正文各为一个 {@link MimeBodyPart}。 */
     private Multipart buildMultipartBody(String textBody, String htmlBody) throws EmailException {
         Multipart multipart = new MimeMultipart("alternative");
 
@@ -222,6 +233,7 @@ public class DefaultEmailSenderProvider implements EmailSenderProvider {
         return multipart;
     }
 
+    /** 按 {@code auth}/{@code authType} 配置选择 SMTP 认证策略，未启用 auth 时使用 NONE。 */
     private EmailAuthenticator selectAuthenticatorBasedOnConfig(Map<String, String> config) {
         if(isAuthConfigured(config)) {
             String authType = config.getOrDefault("authType", "basic");
@@ -287,20 +299,21 @@ public class DefaultEmailSenderProvider implements EmailSenderProvider {
         }
 
         if (allowutf8) {
-            // if allowutf8 the extension will manage both parts
+            // 启用 SMTPUTF8 时由扩展处理本地部分与域名
             return email;
         }
 
-        // if no allowutf8, do the IDN conversion over the domain part
+        // 未启用 UTF-8 时仅对域名做 IDN 转换
         final String convertedEmail = SMTPUtil.convertIDNEmailAddress(email);
         if (convertedEmail == null || !convertedEmail.chars().allMatch(c -> c < 128)) {
-            // now if there are non-ascii characters, we should send an error
+            // 本地部分仍含非 ASCII 字符则视为无效地址
             return null;
         }
 
         return convertedEmail;
     }
 
+    /** 构造带可选显示名的 {@link InternetAddress}。 */
     protected InternetAddress toInternetAddress(String email, String displayName) throws UnsupportedEncodingException, AddressException, EmailException {
         if (email == null || "".equals(email.trim())) {
             throw new EmailException("Please provide a valid address", null);
@@ -311,10 +324,12 @@ public class DefaultEmailSenderProvider implements EmailSenderProvider {
         return new InternetAddress(email, displayName, "utf-8");
     }
 
+    /** @return 用户配置的邮箱地址 */
     protected String retrieveEmailAddress(UserModel user) {
         return user.getEmail();
     }
 
+    /** 注入 Keycloak 信任库 SSLSocketFactory 及主机名校验策略。 */
     private void setupTruststore(Properties props) {
         JSSETruststoreConfigurator configurator = new JSSETruststoreConfigurator(session);
 
@@ -323,7 +338,7 @@ public class DefaultEmailSenderProvider implements EmailSenderProvider {
             props.put("mail.smtp.ssl.socketFactory", factory);
             if (configurator.getProvider().getPolicy() == HostnameVerificationPolicy.ANY) {
                 props.setProperty("mail.smtp.ssl.trust", "*");
-                props.put("mail.smtp.ssl.checkserveridentity", Boolean.FALSE.toString()); // this should be the default but seems to be impl specific, so set it explicitly just to be sure
+                props.put("mail.smtp.ssl.checkserveridentity", Boolean.FALSE.toString()); // 显式禁用，因部分实现默认值不一致
             } else {
                 props.put("mail.smtp.ssl.checkserveridentity", Boolean.TRUE.toString());
             }
@@ -335,6 +350,7 @@ public class DefaultEmailSenderProvider implements EmailSenderProvider {
 
     }
 
+    /** @return JVM 支持的 SSL/TLS 协议列表（空格分隔），失败时返回 {@code null} */
     private static String getSupportedSslProtocols() {
         try {
             String[] protocols = SSLContext.getDefault().getSupportedSSLParameters().getProtocols();
