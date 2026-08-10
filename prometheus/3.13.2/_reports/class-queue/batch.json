@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T20:26:07Z",
-  "files": [
-    "model/labels/sharding.go",
-    "model/labels/sharding_dedupelabels.go",
-    "model/labels/sharding_stringlabels.go",
-    "model/metadata/metadata.go",
-    "model/relabel/relabel.go",
-    "model/rulefmt/rulefmt.go",
-    "model/textparse/interface.go",
-    "model/textparse/nhcbparse.go",
-    "model/textparse/openmetricslex.l.go",
-    "model/textparse/openmetricsparse.go",
-    "model/textparse/promlex.l.go",
-    "model/textparse/promparse.go",
-    "model/textparse/protobufparse.go",
-    "model/timestamp/timestamp.go",
-    "model/value/value.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 384,
-  "done": 135
+  "done": 150
 }
