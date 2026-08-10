@@ -1,5 +1,8 @@
 package main
 
+// Docker 日志驱动（loki）的配置解析模块。
+// 将 Docker log-opt 选项映射为 Promtail 客户端配置、标签集与 pipeline stages。
+
 import (
 	"bytes"
 	"fmt"
@@ -79,6 +82,7 @@ var (
 	}
 )
 
+// 聚合解析后的标签、Loki 客户端与 pipeline 配置。
 type config struct {
 	labels       model.LabelSet
 	clientConfig client.Config
@@ -89,6 +93,7 @@ type PipelineConfig struct {
 	PipelineStages stages.PipelineStages `yaml:"pipeline_stages,omitempty"`
 }
 
+// 校验 Docker 传入的 log-opt 键名是否合法，并确保 loki-url 必填。
 func validateDriverOpt(loggerInfo logger.Info) error {
 	config := loggerInfo.Config
 
@@ -133,6 +138,7 @@ func validateDriverOpt(loggerInfo logger.Info) error {
 	return nil
 }
 
+// 从 logger.Info 解析 URL、TLS、批处理、外部标签、relabel 与 pipeline。
 func parseConfig(logCtx logger.Info) (*config, error) {
 	if err := validateDriverOpt(logCtx); err != nil {
 		return nil, err
@@ -306,6 +312,7 @@ func parseConfig(logCtx logger.Info) (*config, error) {
 	}, nil
 }
 
+// 从文件或内联 YAML 加载 pipeline_stages 定义。
 func parsePipeline(logCtx logger.Info) (PipelineConfig, error) {
 	var pipeline PipelineConfig
 	pipelineFile, okFile := logCtx.Config[cfgPipelineStagesFileKey]
@@ -361,6 +368,7 @@ func parseInt(key string, logCtx logger.Info, set func(i int)) error {
 	return nil
 }
 
+// 应用 Prometheus relabel 规则重写标签集。
 func relabelConfig(config string, lbs model.LabelSet) (model.LabelSet, error) {
 	relabelConfig := make([]*relabel.Config, 0)
 	if err := yaml.UnmarshalStrict([]byte(config), &relabelConfig); err != nil {
@@ -391,6 +399,7 @@ func parseBoolean(key string, logCtx logger.Info, defaultValue bool) (bool, erro
 	return b, nil
 }
 
+// 从 YAML 文件读取配置到目标结构体。
 // loadConfig read YAML-formatted config from filename into cfg.
 func loadConfig(filename string, cfg interface{}) error {
 	buf, err := os.ReadFile(filename)

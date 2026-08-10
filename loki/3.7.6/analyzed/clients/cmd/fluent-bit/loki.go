@@ -1,5 +1,8 @@
 package main
 
+// Fluent Bit 记录到 Loki 条目的转换核心。
+// 处理标签提取、键删除、行格式（JSON/logfmt）及 Kubernetes 元数据映射。
+
 import (
 	"bytes"
 	"encoding/json"
@@ -28,6 +31,7 @@ var (
 	keyReplacer  = strings.NewReplacer("/", "_", ".", "_", "-", "_")
 )
 
+// Fluent Bit Loki 插件实例，持有配置与推送 client。
 type loki struct {
 	cfg    *config
 	client client.Client
@@ -46,6 +50,7 @@ func newPlugin(cfg *config, logger log.Logger, metrics *client.Metrics) (*loki, 
 	}, nil
 }
 
+// 将单条 Fluent Bit 记录转为标签 + 日志行并推送到 Loki。
 // sendRecord send fluentbit records to loki as an entry.
 func (l *loki) sendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	records := toStringMap(r)
@@ -132,6 +137,7 @@ func toStringMap(record map[interface{}]interface{}) map[string]interface{} {
 	return m
 }
 
+// 从 kubernetes 嵌套字段自动提取 Pod/容器标签。
 func autoLabels(records map[string]interface{}, kuberneteslbs model.LabelSet) error {
 	kube, ok := records["kubernetes"]
 	if !ok {
@@ -219,6 +225,7 @@ func removeKeys(records map[string]interface{}, keys []string) {
 	}
 }
 
+// 按 json 或 key_value 格式序列化剩余字段为日志行文本。
 func (l *loki) createLine(records map[string]interface{}, f format) (string, error) {
 	switch f {
 	case jsonFormat:

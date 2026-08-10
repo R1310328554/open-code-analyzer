@@ -1,5 +1,8 @@
 package main
 
+// 基于 dque 磁盘队列的 Loki 缓冲客户端。
+// 入队协程持久化条目，出队协程异步转发至 Loki，提升断连容错能力。
+
 import (
 	"fmt"
 	"os"
@@ -42,6 +45,7 @@ func dqueEntryBuilder() interface{} {
 	return &dqueEntry{}
 }
 
+// dque 缓冲客户端：本地队列 + 后台 Loki 转发协程。
 type dqueClient struct {
 	logger  log.Logger
 	queue   *dque.DQue
@@ -51,6 +55,7 @@ type dqueClient struct {
 	entries chan api.Entry
 }
 
+// 创建 dque 队列目录、启动入队/出队协程并包装 Loki client。
 // New makes a new dque loki client
 func newDque(cfg *config, logger log.Logger, metrics *client.Metrics) (client.Client, error) {
 	var err error
@@ -86,6 +91,7 @@ func newDque(cfg *config, logger log.Logger, metrics *client.Metrics) (client.Cl
 	return q, nil
 }
 
+// 阻塞出队并将记录写入 Loki client 推送通道。
 func (c *dqueClient) dequeuer() {
 	defer c.wg.Done()
 	for {
@@ -143,6 +149,7 @@ func (c *dqueClient) StopNow() {
 	})
 }
 
+// 从 entries 通道读取并持久化到 dque 磁盘队列。
 func (c *dqueClient) enqueuer() {
 	defer c.wg.Done()
 	for e := range c.entries {

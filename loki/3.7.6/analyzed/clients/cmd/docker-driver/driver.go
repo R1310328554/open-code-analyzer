@@ -1,5 +1,8 @@
 package main
 
+// Docker Logging Driver 核心实现。
+// 管理容器 fifo 日志流，可选双写 json-file 与 Loki，并支持 ReadLogs 回放。
+
 import (
 	"context"
 	"encoding/binary"
@@ -23,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// 日志驱动实例：按 fifo 路径与容器 ID 索引活跃的 logPair。
 type driver struct {
 	mu     sync.Mutex
 	logs   map[string]*logPair
@@ -65,6 +69,7 @@ func newDriver(logger log.Logger) *driver {
 	}
 }
 
+// 为容器创建 json/loki logger、打开 fifo 并启动 consumeLog 协程。
 func (d *driver) StartLogging(file string, logCtx logger.Info) error {
 	d.mu.Lock()
 	if _, exists := d.logs[file]; exists {
@@ -135,6 +140,7 @@ func (d *driver) StopLogging(file string) {
 	}
 }
 
+// 从 fifo 读取 protobuf 日志条目，先推送 Loki 再写 json-file。
 func consumeLog(lf *logPair) {
 	dec := protoio.NewUint32DelimitedReader(lf.stream, binary.BigEndian, 1e6)
 	defer dec.Close()
@@ -176,6 +182,7 @@ func consumeLog(lf *logPair) {
 	}
 }
 
+// 通过 json-file logger 读取历史日志并以 protobuf 流返回。
 func (d *driver) ReadLogs(info logger.Info, config logger.ReadConfig) (io.ReadCloser, error) {
 	d.mu.Lock()
 	lf, exists := d.idx[info.ContainerID]

@@ -1,5 +1,8 @@
 package logql
 
+// LogQL 表达式抽象语法树与行过滤器。
+// 定义 Expr 接口及标签选择器、管道过滤器的组合求值逻辑。
+
 import (
 	"bytes"
 	"fmt"
@@ -8,9 +11,11 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
+// 行级过滤函数：对单条日志字节流返回是否保留。
 // Filter is a line filter sent to a querier to filter out log line.
 type Filter func([]byte) bool
 
+// LogQL 表达式根接口：提供 Matchers 与 Filter 两种求值视图。
 // Expr is a LogQL expression.
 type Expr interface {
 	Filter() (Filter, error)
@@ -39,6 +44,7 @@ func (e *filterExpr) Matchers() []*labels.Matcher {
 	return e.left.Matchers()
 }
 
+// 在已有表达式上叠加管道过滤器（|=、|~、!=、!~）。
 // NewFilterExpr wraps an existing Expr with a next filter expression.
 func NewFilterExpr(left Expr, ty labels.MatchType, match string) Expr {
 	return &filterExpr{
@@ -93,6 +99,7 @@ func (e *filterExpr) Filter() (Filter, error) {
 	return f, nil
 }
 
+// 构造 labels.Matcher，解析失败时 panic（供 yacc 动作使用）。
 func mustNewMatcher(t labels.MatchType, n, v string) *labels.Matcher {
 	m, err := labels.NewMatcher(t, n, v)
 	if err != nil {

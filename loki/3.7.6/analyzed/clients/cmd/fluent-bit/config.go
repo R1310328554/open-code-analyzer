@@ -1,5 +1,8 @@
 package main
 
+// Fluent Bit out_grafana_loki 插件配置解析。
+// 读取 URL、批处理、标签、Kubernetes 自动标签、行格式与 dque 缓冲参数。
+
 import (
 	"encoding/json"
 	"fmt"
@@ -25,6 +28,7 @@ func init() {
 	flagext.RegisterFlags(&defaultClientCfg)
 }
 
+// 抽象 Fluent Bit 插件配置键值读取接口。
 type ConfigGetter interface {
 	Get(key string) string
 }
@@ -41,6 +45,7 @@ const (
 	trueStr  = "true"
 )
 
+// 插件运行时配置：客户端、缓冲、标签策略与行格式等。
 type config struct {
 	clientConfig         client.Config
 	bufferConfig         bufferConfig
@@ -53,6 +58,7 @@ type config struct {
 	labelMap             map[string]interface{}
 }
 
+// 从 Fluent Bit 插件上下文逐项解析并校验全部配置键。
 func parseConfig(cfg ConfigGetter) (*config, error) {
 	res := &config{}
 

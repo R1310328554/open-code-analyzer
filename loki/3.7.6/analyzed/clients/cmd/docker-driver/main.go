@@ -1,5 +1,8 @@
 package main
 
+// Docker Loki 日志驱动插件主入口。
+// 在 Unix socket 上启动插件 HTTP 服务，可选开启 pprof 调试端口。
+
 import (
 	"fmt"
 	"net/http"
@@ -16,10 +19,12 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// Docker 插件默认 Unix domain socket 路径。
 const socketAddress = "/run/docker/plugins/loki.sock"
 
 var logLevel dslog.Level
 
+// 初始化日志级别、注册 handler 并监听插件 socket。
 func main() {
 	levelVal := os.Getenv("LOG_LEVEL")
 	if levelVal == "" {
@@ -50,6 +55,7 @@ func main() {
 	}
 }
 
+// 构造输出到 stdout 的 logfmt 日志器（Docker 插件要求）。
 func newLogger(lvl dslog.Level) log.Logger {
 	// plugin logs must be stdout to appear.
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stdout))

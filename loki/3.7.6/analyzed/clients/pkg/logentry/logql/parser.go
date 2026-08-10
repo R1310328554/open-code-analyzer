@@ -1,5 +1,8 @@
 package logql
 
+// LogQL 词法/语法分析入口。
+// 封装 goyacc 生成的 expr 解析器，提供 ParseExpr 与 ParseMatchers API。
+
 import (
 	"fmt"
 	"strconv"
@@ -19,6 +22,7 @@ func init() {
 	}
 }
 
+// 解析完整 LogQL 表达式字符串，返回可执行的 Expr AST。
 // ParseExpr parses a string and returns an Expr.
 func ParseExpr(input string) (Expr, error) {
 	l := lexer{
@@ -36,6 +40,7 @@ func ParseExpr(input string) (Expr, error) {
 	return l.expr, nil
 }
 
+// 仅解析标签选择器部分；若含管道过滤器则返回 ErrParseMatchers。
 // ParseMatchers parses a string and returns labels matchers, if the expression contains
 // anything else it will return an error.
 func ParseMatchers(input string) ([]*labels.Matcher, error) {
@@ -63,6 +68,7 @@ var tokens = map[string]int{
 	"|~": PIPE_MATCH,
 }
 
+// 手写 lexer：将输入流映射为 yacc token 并收集 ParseError。
 type lexer struct {
 	scanner.Scanner
 	errs   []ParseError
@@ -108,6 +114,7 @@ func (l *lexer) Error(msg string) {
 	})
 }
 
+// 语法解析失败时的行号、列号与错误消息。
 // ParseError is what is returned when we failed to parse.
 type ParseError struct {
 	msg       string

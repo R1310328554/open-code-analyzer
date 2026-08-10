@@ -1,5 +1,8 @@
 package main
 
+// 面向 Docker 的 Loki logger 适配层。
+// 封装 Promtail client 与可选 pipeline，将 logger.Message 转为 Loki 条目。
+
 import (
 	"bytes"
 	"sync"
@@ -19,6 +22,7 @@ import (
 
 var jobName = "docker"
 
+// Loki 输出适配器，持有 client、标签集与 pipeline handler。
 type loki struct {
 	client  client.Client
 	handler api.EntryHandler
@@ -31,6 +35,7 @@ type loki struct {
 	stop func()
 }
 
+// 创建 Loki logger：解析配置、构建 client 与 pipeline 处理器链。
 // New create a new Loki logger that forward logs to Loki instance
 func New(logCtx logger.Info, logger log.Logger) (logger.Logger, error) {
 	logger = log.With(logger, "container_id", logCtx.ContainerID)
@@ -62,6 +67,7 @@ func New(logCtx logger.Info, logger log.Logger) (logger.Logger, error) {
 	}, nil
 }
 
+// 实现 logger.Logger：将非空日志行异步写入 Loki 推送通道。
 // Log implements `logger.Logger`
 func (l *loki) Log(m *logger.Message) error {
 	l.mutex.RLock()

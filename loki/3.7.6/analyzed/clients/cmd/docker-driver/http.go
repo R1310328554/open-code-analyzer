@@ -1,5 +1,8 @@
 package main
 
+// Docker 插件 HTTP 处理器。
+// 实现 LogDriver.StartLogging/StopLogging/Capabilities/ReadLogs RPC 端点。
+
 import (
 	"encoding/json"
 	"errors"
@@ -30,6 +33,7 @@ type ReadLogsRequest struct {
 	Config logger.ReadConfig
 }
 
+// 注册 Docker 日志驱动插件的全部 HTTP 路由处理器。
 func handlers(h *sdk.Handler, d *driver) {
 	h.HandleFunc("/LogDriver.StartLogging", func(w http.ResponseWriter, r *http.Request) {
 		var req StartLoggingRequest
@@ -86,6 +90,7 @@ type response struct {
 	Err string
 }
 
+// 将错误封装为 JSON 响应写回 Docker 引擎。
 func respond(err error, w io.Writer) {
 	var res response
 	if err != nil {

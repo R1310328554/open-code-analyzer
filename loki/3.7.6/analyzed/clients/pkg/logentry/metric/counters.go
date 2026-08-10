@@ -1,5 +1,8 @@
 package metric
 
+// Pipeline metrics stage 的 Counter 实现。
+// 按日志流标签维护可过期的 Prometheus Counter，支持 inc/add 与字节计数。
+
 import (
 	"strings"
 	"time"
@@ -21,6 +24,7 @@ const (
 	ErrCounterInvalidCountBytesAction = "`count_entry_bytes: true` can only be used with `action: add`"
 )
 
+// Counter stage 配置：match_all、count_entry_bytes、value 与 action。
 type CounterConfig struct {
 	MatchAll   *bool   `mapstructure:"match_all"`
 	CountBytes *bool   `mapstructure:"count_entry_bytes"`
@@ -57,12 +61,14 @@ func parseCounterConfig(config interface{}) (*CounterConfig, error) {
 	return cfg, nil
 }
 
+// 按日志流标签分片的 Counter 向量，底层为带空闲回收的 metricVec。
 // Counters is a vec tor of counters for a each log stream.
 type Counters struct {
 	*metricVec
 	Cfg *CounterConfig
 }
 
+// 解析并校验配置后创建 Counter 指标向量。
 // NewCounters creates a new counter vec.
 func NewCounters(name, help string, config interface{}, maxIdleSec int64) (*Counters, error) {
 	cfg, err := parseCounterConfig(config)
@@ -92,6 +98,7 @@ func (c *Counters) With(labels model.LabelSet) prometheus.Counter {
 	return c.metricVec.With(labels).(prometheus.Counter)
 }
 
+// 带最后修改时间戳的 Counter 包装，供 metricVec 空闲过期回收。
 type expiringCounter struct {
 	prometheus.Counter
 	lastModSec int64

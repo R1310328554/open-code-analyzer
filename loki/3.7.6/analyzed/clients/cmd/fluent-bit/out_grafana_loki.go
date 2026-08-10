@@ -1,5 +1,8 @@
 package main
 
+// Fluent Bit Go 输出插件 C 导出接口。
+// 实现 FLBPluginRegister/Init/FlushCtx/Exit 生命周期与记录批量刷新。
+
 import (
 	"fmt"
 	"time"
@@ -41,6 +44,7 @@ func (c *pluginConfig) Get(key string) string {
 	return output.FLBPluginConfigKey(c.ctx, key)
 }
 
+// 向 Fluent Bit 注册 grafana-loki 输出插件名称与描述。
 //export FLBPluginRegister
 func FLBPluginRegister(ctx unsafe.Pointer) int {
 	return output.FLBPluginRegister(ctx, "grafana-loki", "Ship fluent-bit logs to Grafana Loki")
@@ -49,6 +53,7 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 // (fluentbit will call this)
 // ctx (context) pointer to fluentbit context (state/ c code)
 //
+// 插件初始化：解析配置、创建 Loki client 并绑定到 Fluent Bit 上下文。
 //export FLBPluginInit
 func FLBPluginInit(ctx unsafe.Pointer) int {
 	conf, err := parseConfig(&pluginConfig{ctx: ctx})
@@ -104,6 +109,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	return output.FLB_OK
 }
 
+// 刷新批次：解码 Fluent Bit 记录并逐条调用 sendRecord 推送 Loki。
 //export FLBPluginFlushCtx
 func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 	plugin := output.FLBPluginGetContext(ctx).(*loki)
@@ -151,6 +157,7 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 	return output.FLB_OK
 }
 
+// 插件退出时停止所有已注册 Loki client 实例。
 //export FLBPluginExit
 func FLBPluginExit() int {
 	for _, plugin := range plugins {
