@@ -34,15 +34,30 @@ import org.keycloak.util.TokenUtil;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 用户会话查找与校验工具类。
+ * <p>支持身份 Cookie、刷新令牌、访问令牌等场景下的在线/离线会话验证，
+ * 以及临时（transient）会话创建与 impersonation 回退逻辑。</p>
+ */
 public class UserSessionUtil {
 
     private static final Logger logger = Logger.getLogger(UserSessionUtil.class);
 
+    /**
+     * 为身份 Cookie 中的访问令牌查找有效用户会话。
+     *
+     * @param invalidSessionCallback 会话无效时的回调
+     */
     public static UserSessionValidationResult findValidSessionForIdentityCookie(KeycloakSession session, RealmModel realm, AccessToken token, Consumer<UserSessionModel> invalidSessionCallback) {
         return findValidSession(session, realm, token,  null, AccessTokenContext.SessionType.ONLINE, false, true, invalidSessionCallback);
     }
 
 
+    /**
+     * 为刷新令牌查找有效用户会话（区分 online/offline 类型）。
+     *
+     * @param invalidSessionCallback 会话无效时的回调
+     */
     public static UserSessionValidationResult findValidSessionForRefreshToken(KeycloakSession session, RealmModel realm, RefreshToken token, ClientModel client, Consumer<UserSessionModel> invalidSessionCallback) {
         AccessTokenContext.SessionType sessionType;
         if (TokenUtil.TOKEN_TYPE_OFFLINE.equals(token.getType())) {
@@ -57,6 +72,11 @@ public class UserSessionUtil {
     }
 
 
+    /**
+     * 为访问令牌查找有效用户会话（从令牌上下文解析 online/offline 类型）。
+     *
+     * @param invalidSessionCallback 会话无效时的回调
+     */
     public static UserSessionValidationResult findValidSessionForAccessToken(KeycloakSession session, RealmModel realm, AccessToken token, ClientModel client, Consumer<UserSessionModel> invalidSessionCallback) {
         AccessTokenContext accessTokenContext = session.getProvider(TokenContextEncoderProvider.class).getTokenContextFromTokenId(token.getId());
         AccessTokenContext.SessionType sessionType = accessTokenContext.getSessionType();
@@ -64,20 +84,19 @@ public class UserSessionUtil {
     }
 
     /**
-     * Find valid user session (online or offline according to which one is allowed) and performs all the needed checks on it. Like checking if the userSession is valid and if clientSession is attached to it and
-     * if userSession (and clientSession) are started earlier than the token.
+     * 查找并校验有效用户会话（在线或离线，依 sessionType 决定）。
+     * <p>校验会话有效性、客户端会话绑定，以及令牌签发时间不得早于会话启动时间。
+     * 成功时将 userSession 写入 {@link org.keycloak.models.KeycloakContext}。</p>
      *
-     * User session will be set to KeycloakContext if successfully found and verified
-     *
-     * @param session must be not null
-     * @param realm must be not null
-     * @param token must be not null
-     * @param client must be not null unless "skipCheckClient" is true
-     * @param sessionType sessionType from the token. It allows to hint whether session can be looked-up as "online" session or as offline session. Also whether it is allowed to have transient user session or "link" transient client session to the found userSession
-     * @param allowImpersonationFallback If true, it is possible to have impersonationCallback in which case the client is not required to be present in the userSession as long as the userSession was involved in impersonation
-     * @param skipCheckClient whether the method should skip lookup of clientSession from userSession. Usually when the passed token is not linked to any client (EG. identity cookie)
-     * @param invalidSessionCallback Callback, which is invoked when user session is found, but validation of this userSession failed. Callback not called when userSession not found or when all valiation successful
-     * @return userSession with all the successful validations OR error. Result should never contain both session and error. The error contains the error code from {@link Errors}, so it can be directly used in the error event
+     * @param session 不可为 null
+     * @param realm 不可为 null
+     * @param token 不可为 null
+     * @param client 除非 skipCheckClient 为 true，否则不可为 null
+     * @param sessionType 令牌中的会话类型，决定在线/离线查找及是否允许 transient 会话
+     * @param allowImpersonationFallback 为 true 时可在 impersonation 场景下不要求 client 已绑定到 userSession
+     * @param skipCheckClient 是否跳过 clientSession 查找（如身份 Cookie 场景）
+     * @param invalidSessionCallback 找到会话但校验失败时调用；未找到或全部成功时不调用
+     * @return 校验结果；session 与 error 不会同时存在，error 为 {@link Errors} 中的代码
      */
     private static UserSessionValidationResult findValidSession(KeycloakSession session, RealmModel realm,
                                                     AccessToken token, ClientModel client,
@@ -107,7 +126,7 @@ public class UserSessionUtil {
                     }
                 }
                 if (userSession == null && allowImpersonationFallback) {
-                    // also try to resolve sessions created during token exchange when the user is impersonated
+                    // 令牌交换 impersonation 场景：尝试通过 impersonator client note 解析会话
                     userSession = getUserSessionWithImpersonatorClient(session, realm, token.getSessionId(), false, client.getId());
                 }
             }
@@ -166,6 +185,11 @@ public class UserSessionUtil {
     }
 
 
+    /**
+     * 基于已有持久化会话创建 transient 用户会话，保留原 started 时间。
+     *
+     * @throws IllegalArgumentException 若传入的已是 transient 会话
+     */
     public static UserSessionModel createTransientUserSession(KeycloakSession session, UserSessionModel userSession) {
         if (userSession.getPersistenceState() == UserSessionModel.SessionPersistenceState.TRANSIENT) {
             throw new IllegalArgumentException("Not expected to invoke this method with the transient session");
@@ -179,7 +203,7 @@ public class UserSessionUtil {
         String noteValue = userSession.isOffline() ? Constants.CREATED_FROM_PERSISTENT_OFFLINE : Constants.CREATED_FROM_PERSISTENT_ONLINE;
         transientSession.setNote(Constants.CREATED_FROM_PERSISTENT, noteValue);
 
-        // Use "started" time from the original session
+        // 保留原持久化会话的 started 时间
         return new UserSessionModelDelegate(transientSession) {
 
             @Override
@@ -190,6 +214,7 @@ public class UserSessionUtil {
         };
     }
 
+    /** 判断客户端会话是否已授予 offline_access scope。 */
     public static boolean isOfflineAccessGranted(KeycloakSession session, AuthenticatedClientSessionModel clientSession) {
         if (clientSession == null) {
             return false;
@@ -200,6 +225,7 @@ public class UserSessionUtil {
         return clientSessionCtx.getClientScopesStream().anyMatch((s -> OAuth2Constants.OFFLINE_ACCESS.equals(s.getName())));
     }
 
+    /** 为 transient 用户会话附加认证会话并绑定客户端 scope。 */
     private static void attachAuthenticationSession(KeycloakSession session, UserSessionModel userSession, ClientModel client) {
         RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().createRootAuthenticationSession(userSession.getRealm());
         AuthenticationSessionModel authSession = rootAuthSession.createAuthenticationSession(client);
@@ -210,14 +236,16 @@ public class UserSessionUtil {
         TokenManager.attachAuthenticationSession(session, userSession, authSession);
     }
 
+    /** 从已有 userSession 创建带 client 绑定的 transient 会话。 */
     private static UserSessionModel createTransientSessionForClient(KeycloakSession session, UserSessionModel userSession, ClientModel client) {
         UserSessionModel transientSession = createTransientUserSession(session, userSession);
         attachAuthenticationSession(session, transientSession, client);
         return transientSession;
     }
 
+    /** 为无 sessionId 的无状态令牌创建 transient 用户会话并绑定 client。 */
     private static UserSessionValidationResult createTransientSessionForClient(KeycloakSession session, RealmModel realm, AccessToken token, ClientModel client) {
-        // create a transient session
+        // 创建 transient 会话
         UserModel user = TokenManager.lookupUserFromStatelessToken(session, realm, token);
         if (user == null) {
             logger.debug("Transient User not found");
@@ -231,11 +259,12 @@ public class UserSessionUtil {
         ClientConnection clientConnection = session.getContext().getConnection();
         UserSessionModel userSession = new UserSessionManager(session).createUserSession(KeycloakModelUtils.generateId(), realm, user, user.getUsername(), clientConnection.getRemoteHost(),
                 ServiceAccountConstants.CLIENT_AUTH, false, null, null, UserSessionModel.SessionPersistenceState.TRANSIENT);
-        // attach an auth session for the client
+        // 为 client 附加 auth session
         attachAuthenticationSession(session, userSession, client);
         return UserSessionValidationResult.validSession(session, userSession);
     }
 
+    /** 校验令牌签发时间不得早于用户会话启动时间。 */
     private static boolean checkTokenIssuedAt(AccessToken token, UserSessionModel userSession) {
         if (token.isIssuedBeforeSessionStart(userSession.getStarted())) {
             logger.debug("Stale token for user session");
@@ -245,6 +274,7 @@ public class UserSessionUtil {
         }
     }
 
+    /** 校验令牌签发时间不得早于客户端会话启动时间。 */
     private static boolean checkTokenIssuedAt(AccessToken token, AuthenticatedClientSessionModel clientSession) {
         if (token.isIssuedBeforeSessionStart(clientSession.getStarted())) {
             logger.debug("Stale token for client session");
@@ -254,30 +284,39 @@ public class UserSessionUtil {
         }
     }
 
+    /**
+     * 查找带有 impersonator client note 的用户会话（用于令牌交换 impersonation）。
+     */
     public static UserSessionModel getUserSessionWithImpersonatorClient(KeycloakSession session, RealmModel realm, String userSessionId, boolean offline, String clientUUID) {
         return session.sessions().getUserSessionWithPredicate(realm, userSessionId, offline, userSession -> Objects.equals(clientUUID, userSession.getNote(ImpersonationSessionNote.IMPERSONATOR_CLIENT.toString())));
     }
 
 
+    /** 用户会话校验结果：成功时含 userSession，失败时含 {@link Errors} 错误码。 */
     public static class UserSessionValidationResult {
+        /** 校验通过的用户会话，失败时为 null */
         private final UserSessionModel userSession;
+        /** 错误码，成功时为 null */
         private final String error;
 
+        /** 构造成功结果并将 userSession 写入 KeycloakContext。 */
         private static UserSessionValidationResult validSession(KeycloakSession session, UserSessionModel userSession) {
             session.getContext().setUserSession(userSession);
             return new UserSessionValidationResult(userSession, null);
         }
 
+        /** 构造仅含错误码的失败结果。 */
         private static UserSessionValidationResult error(String error) {
             return new UserSessionValidationResult(null, error);
         }
 
+        /** 构造失败结果并触发 invalidSessionCallback。 */
         private static UserSessionValidationResult error(String error, UserSessionModel invalidUserSession, Consumer<UserSessionModel> invalidSessionCallback) {
             invalidSessionCallback.accept(invalidUserSession);
             return new UserSessionValidationResult(null, error);
         }
 
-        // Should be only called by static creators
+        /** 仅由静态工厂方法调用。 */
         private UserSessionValidationResult(UserSessionModel userSession, String error) {
             this.userSession = userSession;
             this.error = error;

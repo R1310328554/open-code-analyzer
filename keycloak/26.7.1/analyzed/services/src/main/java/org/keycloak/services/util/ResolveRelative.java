@@ -25,17 +25,31 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.urls.UrlType;
 
 /**
+ * 相对 URI 解析工具类。
+ * <p>将以 {@code /} 开头的路径解析为基于 frontend/admin 根 URL 的绝对 URI，
+ * 并支持 {@link Constants#AUTH_BASE_URL_PROP} 等占位符替换。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ResolveRelative {
 
+    /**
+     * 从当前 session 上下文获取 frontend/admin URL 后解析相对 URI。
+     *
+     * @param rootUrl 根 URL 或占位符（如 {@link Constants#AUTH_BASE_URL_PROP}）
+     * @param url 待解析的路径
+     */
     public static String resolveRelativeUri(KeycloakSession session, String rootUrl, String url) {
         String frontendUrl = session.getContext().getUri(UrlType.FRONTEND).getBaseUri().toString();
         String adminUrl = session.getContext().getUri(UrlType.ADMIN).getBaseUri().toString();
         return resolveRelativeUri(frontendUrl, adminUrl, rootUrl, url);
     }
 
+    /**
+     * 将相对路径解析为绝对 URI。
+     * <p>非 {@code /} 开头则原样返回；有 rootUrl 则拼接；否则基于 frontendUrl 替换路径。</p>
+     */
     public static String resolveRelativeUri(String frontendUrl, String adminUrl, String rootUrl, String url) {
         String finalUrl;
 
@@ -50,12 +64,18 @@ public class ResolveRelative {
         return StringPropertyReplacer.replaceProperties(finalUrl);
     }
 
+    /** 从 session 上下文解析 rootUrl 占位符为实际 URL。 */
     public static String resolveRootUrl(KeycloakSession session, String rootUrl) {
         String frontendUrl = session.getContext().getUri(UrlType.FRONTEND).getBaseUri().toString();
         String adminUrl = session.getContext().getUri(UrlType.ADMIN).getBaseUri().toString();
         return resolveRootUrl(frontendUrl, adminUrl, rootUrl);
     }
 
+    /**
+     * 将 rootUrl 占位符替换为 frontend 或 admin 基础 URL。
+     * <p>{@link Constants#AUTH_BASE_URL_PROP} → frontendUrl；
+     * {@link Constants#AUTH_ADMIN_URL_PROP} → adminUrl。</p>
+     */
     public static String resolveRootUrl(String frontendUrl, String adminUrl, String rootUrl) {
         if (rootUrl != null) {
             if (rootUrl.equals(Constants.AUTH_BASE_URL_PROP)) {

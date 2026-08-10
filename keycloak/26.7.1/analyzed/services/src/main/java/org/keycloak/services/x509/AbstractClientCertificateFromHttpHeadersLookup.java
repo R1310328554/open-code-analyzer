@@ -29,6 +29,9 @@ import org.keycloak.http.HttpRequest;
 import org.jboss.logging.Logger;
 
 /**
+ * 从 HTTP 请求头读取 X.509 客户端证书的抽象查找器。
+ * <p>适用于 Keycloak 部署在反向代理（如 Apache）后、由代理转发客户端证书的场景。
+ * 仅当 {@link HttpRequest#isProxyTrusted()} 为 true 时才信任请求头中的证书。</p>
  *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
@@ -39,10 +42,18 @@ public abstract class AbstractClientCertificateFromHttpHeadersLookup implements 
 
     protected static final Logger logger = Logger.getLogger(AbstractClientCertificateFromHttpHeadersLookup.class);
 
+    /** 存放客户端叶子证书的 HTTP 头名称 */
     protected final String sslClientCertHttpHeader;
+    /** 证书链各节 HTTP 头名称前缀（后缀 _0、_1…） */
     protected final String sslCertChainHttpHeaderPrefix;
+    /** 除叶子证书外额外读取的证书链节数 */
     protected final int certificateChainLength;
 
+    /**
+     * @param sslCientCertHttpHeader 客户端证书 HTTP 头名（不可为 null）
+     * @param sslCertChainHttpHeaderPrefix 证书链头前缀，可为 null
+     * @param certificateChainLength 额外链节数量，须 ≥ 0
+     */
     public AbstractClientCertificateFromHttpHeadersLookup(String sslCientCertHttpHeader,
                                                           String sslCertChainHttpHeaderPrefix,
                                                           int certificateChainLength) {
@@ -64,10 +75,12 @@ public abstract class AbstractClientCertificateFromHttpHeadersLookup implements 
 
     }
 
+    /** 读取指定 HTTP 头的首个值。 */
     static String getHeaderValue(HttpRequest httpRequest, String headerName) {
         return httpRequest.getHttpHeaders().getRequestHeaders().getFirst(headerName);
     }
 
+    /** 去除 PEM 字符串首尾的双引号包裹。 */
     private static String trimDoubleQuotes(String quotedString) {
 
         if (quotedString == null) {
@@ -83,12 +96,14 @@ public abstract class AbstractClientCertificateFromHttpHeadersLookup implements 
         return quotedString;
     }
 
+    /** 子类实现：将 PEM 字符串解码为 X509Certificate。 */
     protected abstract X509Certificate decodeCertificateFromPem(String pem) throws PemException;
 
+    /** 从指定 HTTP 头读取并解码单个 X.509 证书。 */
     protected X509Certificate getCertificateFromHttpHeader(HttpRequest request, String httpHeader) throws GeneralSecurityException {
         String encodedCertificate = getHeaderValue(request, httpHeader);
 
-        // Remove double quotes
+        // 去除双引号包裹
         encodedCertificate = trimDoubleQuotes(encodedCertificate);
 
         if (encodedCertificate == null ||
@@ -115,6 +130,10 @@ public abstract class AbstractClientCertificateFromHttpHeadersLookup implements 
     }
 
 
+    /**
+     * 从 HTTP 头构建客户端证书链。
+     * <p>代理未受信任时直接返回 null。</p>
+     */
     @Override
     public final X509Certificate[] getCertificateChain(HttpRequest httpRequest) throws GeneralSecurityException {
         if (!httpRequest.isProxyTrusted()) {
@@ -123,7 +142,7 @@ public abstract class AbstractClientCertificateFromHttpHeadersLookup implements 
         }
         List<X509Certificate> chain = new ArrayList<>();
 
-        // Get the client certificate
+        // 读取客户端叶子证书
         X509Certificate cert = getCertificateFromHttpHeader(httpRequest, sslClientCertHttpHeader);
         if (cert != null) {
             buildChain(httpRequest, chain, cert);
@@ -131,11 +150,13 @@ public abstract class AbstractClientCertificateFromHttpHeadersLookup implements 
         return chain.toArray(new X509Certificate[0]);
     }
 
+    /** 将叶子证书加入链并从索引头读取后续链节。 */
     protected void buildChain(HttpRequest httpRequest, List<X509Certificate> chain, X509Certificate cert) {
         chain.add(cert);
         addCertificateChainFromIndexedHeaders(httpRequest, chain);
     }
 
+    /** 从 {@code prefix_0}、{@code prefix_1}… 索引头读取证书链中间/根证书。 */
     protected void addCertificateChainFromIndexedHeaders(HttpRequest httpRequest, List<X509Certificate> chain) {
         for (int i = 0; i < certificateChainLength; i++) {
             try {

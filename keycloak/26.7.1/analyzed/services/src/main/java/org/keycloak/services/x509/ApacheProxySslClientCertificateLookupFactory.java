@@ -21,6 +21,8 @@ package org.keycloak.services.x509;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * Apache 反向代理 SSL 客户端证书查找器工厂（Provider ID: {@code apache}）。
+ *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @since 4/4/2017
@@ -28,8 +30,10 @@ import org.keycloak.models.KeycloakSession;
 
 public class ApacheProxySslClientCertificateLookupFactory extends AbstractClientCertificateFromHttpHeadersLookupFactory {
 
+    /** Provider 标识符 */
     private final static String PROVIDER = "apache";
 
+    /** 创建 Apache 代理证书查找器实例。 */
     @Override
     public X509ClientCertificateLookup create(KeycloakSession session) {
         return new ApacheProxySslClientCertificateLookup(sslClientCertHttpHeader,

@@ -24,6 +24,9 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.jboss.logging.Logger;
 
 /**
+ * 基于 HTTP 头读取客户端证书的查找器工厂抽象基类。
+ * <p>从 SPI 配置读取证书头名称、链前缀及链长度等参数。</p>
+ *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @since 4/4/2017
@@ -33,14 +36,21 @@ public abstract class AbstractClientCertificateFromHttpHeadersLookupFactory impl
 
     private final static Logger logger = Logger.getLogger(AbstractClientCertificateFromHttpHeadersLookupFactory.class);
 
+    /** 配置项：除叶子证书外的链节数量 */
     protected final static String CERTIFICATE_CHAIN_LENGTH = "certificateChainLength";
+    /** 配置项：客户端证书 HTTP 头名称 */
     protected final static String HTTP_HEADER_CLIENT_CERT = "sslClientCert";
+    /** 配置项：证书链 HTTP 头前缀 */
     protected final static String HTTP_HEADER_CERT_CHAIN_PREFIX = "sslCertChainPrefix";
 
+    /** 客户端证书 HTTP 头名称 */
     protected String sslClientCertHttpHeader;
+    /** 证书链 HTTP 头前缀 */
     protected String sslChainHttpHeaderPrefix;
+    /** 额外链节数量，默认 1 */
     protected int certificateChainLength = 1;
 
+    /** 从 SPI 配置初始化 HTTP 头名称与链长度。 */
     @Override
     public void init(Config.Scope config) {
         certificateChainLength = config.getInt(CERTIFICATE_CHAIN_LENGTH, 1);

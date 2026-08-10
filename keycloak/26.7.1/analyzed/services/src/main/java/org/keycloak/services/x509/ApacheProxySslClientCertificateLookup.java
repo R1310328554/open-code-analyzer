@@ -24,8 +24,8 @@ import org.keycloak.common.util.PemException;
 import org.keycloak.common.util.PemUtils;
 
 /**
- * The provider allows to extract X.509 client certificate forwarded
- * to keycloak configured behind the Apache reverse proxy.
+ * Apache 反向代理 SSL 客户端证书查找器。
+ * <p>从 Apache 转发的 HTTP 头中提取 X.509 客户端证书，适用于 Keycloak 部署在 Apache 代理后的场景。</p>
  *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
@@ -40,6 +40,7 @@ public class ApacheProxySslClientCertificateLookup extends AbstractClientCertifi
         super(sslCientCertHttpHeader, sslCertChainHttpHeaderPrefix, certificateChainLength);
     }
 
+    /** 去除 PEM BEGIN/END 标记及换行符。 */
     private static String removeBeginEnd(String pem) {
         pem = pem.replace(PemUtils.BEGIN_CERT, "");
         pem = pem.replace(PemUtils.END_CERT, "");
@@ -48,6 +49,7 @@ public class ApacheProxySslClientCertificateLookup extends AbstractClientCertifi
         return pem.trim();
     }
 
+    /** 解码 PEM 证书；若含 BEGIN/END 标记则先剥离再解码。 */
     @Override
     protected X509Certificate decodeCertificateFromPem(String pem) throws PemException {
         if (pem == null) {

@@ -27,7 +27,15 @@ import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.representations.idm.ClientMappingsRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 
+/**
+ * Client scope 角色映射表示转换工具。
+ */
 public class ScopeMappedUtil {
+    /**
+     * 将客户端在指定 scope 容器上的角色映射转换为 {@link ClientMappingsRepresentation}。
+     *
+     * @return 无映射时返回 null
+     */
     public static ClientMappingsRepresentation toClientMappingsRepresentation(ClientModel client, ScopeContainerModel scopeContainer) {
         List<RoleRepresentation> roles = KeycloakModelUtils.getClientScopeMappingsStream(client, scopeContainer)
                 .map(role -> ModelToRepresentation.toBriefRepresentation(role))

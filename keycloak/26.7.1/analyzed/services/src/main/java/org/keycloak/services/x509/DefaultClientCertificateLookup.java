@@ -25,8 +25,9 @@ import org.keycloak.http.HttpRequest;
 import org.jboss.logging.Logger;
 
 /**
- * The provider retrieves a client certificate and the certificate chain
- * (if any) from the incoming TLS connection.
+ * 默认 X.509 客户端证书查找器。
+ * <p>直接从入站 TLS 连接读取客户端证书及证书链（不经 HTTP 头转发）。</p>
+ *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @since 3/26/2017
@@ -44,6 +45,11 @@ public class DefaultClientCertificateLookup implements X509ClientCertificateLook
 
     }
 
+    /**
+     * 从 HTTP 请求直接获取 TLS 客户端证书链。
+     *
+     * @return 证书链，trace 级别下输出各证书 SubjectDN
+     */
     @Override
     public X509Certificate[] getCertificateChain(HttpRequest httpRequest) {
 

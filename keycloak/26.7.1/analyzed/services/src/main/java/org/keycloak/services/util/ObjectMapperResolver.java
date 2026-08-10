@@ -31,19 +31,27 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.datatype.jdk8.StreamSerializer;
 
 /**
- * Any class with package org.jboss.resteasy.skeleton.key will use NON_DEFAULT inclusion
+ * JAX-RS {@link ContextResolver}，为 REST 端点提供配置好的 Jackson {@link ObjectMapper}。
+ * <p>支持 {@link Stream} 序列化、NON_NULL 包含策略及 classpath 模块自动发现。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @Provider
 public class ObjectMapperResolver implements ContextResolver<ObjectMapper> {
+    /** 共享 ObjectMapper 实例 */
     protected ObjectMapper mapper;
 
+    /** 初始化时使用 {@link ObjectMapperInitializer} 中的预配置实例。 */
     public ObjectMapperResolver() {
         mapper = ObjectMapperInitializer.OBJECT_MAPPER;
     }
 
+    /**
+     * 创建支持 {@link Stream} 序列化的 ObjectMapper。
+     * <p>可通过系统属性 {@code keycloak.jsonPrettyPrint} 启用格式化输出，
+     * 通过 {@code keycloak.jsonEnableJacksonModuleDiscovery} 启用 classpath 模块发现。</p>
+     */
     public static ObjectMapper createStreamSerializer() {
         ObjectMapper mapper = new ObjectMapper();
         JavaType type = TypeFactory.unknownType();
@@ -58,7 +66,7 @@ public class ObjectMapperResolver implements ContextResolver<ObjectMapper> {
             mapper.enable(SerializationFeature.INDENT_OUTPUT);
         }
 
-        // allow to discover jackson mappers on the classpath
+        // 允许发现 classpath 上的 Jackson 模块
         if (Boolean.parseBoolean(System.getProperty("keycloak.jsonEnableJacksonModuleDiscovery", "true"))) {
             mapper.findAndRegisterModules();
         }
@@ -66,13 +74,16 @@ public class ObjectMapperResolver implements ContextResolver<ObjectMapper> {
         return mapper;
     }
 
+    /** 返回适用于所有类型的共享 ObjectMapper。 */
     @Override
     public ObjectMapper getContext(Class<?> type) {
         return mapper;
     }
 
+    /** 延迟初始化 ObjectMapper 单例的 holder 类。 */
     private static class ObjectMapperInitializer {
 
+        /** 预配置的共享 ObjectMapper */
         private static final ObjectMapper OBJECT_MAPPER = createStreamSerializer();
     }
 }

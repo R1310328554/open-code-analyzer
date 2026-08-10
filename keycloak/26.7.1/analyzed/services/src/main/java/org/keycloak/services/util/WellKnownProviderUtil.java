@@ -8,25 +8,25 @@ import org.keycloak.wellknown.WellKnownProvider;
 import org.keycloak.wellknown.WellKnownProviderFactory;
 
 /**
- * Utility class for resolving {@link WellKnownProviderFactory} instances based on their alias.
- * This class provides methods to interact with the available provider factories within the context
- * of a {@link KeycloakSessionFactory}.
+ * Well Known Provider 工厂解析工具类。
+ * <p>根据 alias 从 {@link KeycloakSessionFactory} 中查找 {@link WellKnownProviderFactory}，
+ * 多个工厂共享 alias 时取 priority 最低者。</p>
  *
  * This is a utility class and is not intended to be instantiated.
  */
 public class WellKnownProviderUtil {
 
     private WellKnownProviderUtil() {
-        // Utility class
+        // 工具类禁止实例化
     }
 
     /**
-     * Resolves a {@link WellKnownProviderFactory} from the specified alias.
-     * If multiple factories share the same alias, the one with the lowest priority is selected.
+     * 按 alias 解析 {@link WellKnownProviderFactory}。
+     * <p>多个工厂共享同一 alias 时，选择 priority 数值最小（优先级最高）的实例。</p>
      *
-     * @param sessionFactory the {@link KeycloakSessionFactory} to retrieve provider factories from
-     * @param alias the alias of the desired {@link WellKnownProviderFactory}; if null, an empty {@link Optional} is returned
-     * @return an {@link Optional} containing the resolved {@link WellKnownProviderFactory}, or empty if no matching factory is found
+     * @param sessionFactory 用于获取 Provider 工厂的会话工厂
+     * @param alias 目标工厂 alias；为 null 时返回空 {@link Optional}
+     * @return 解析到的工厂，未找到时为空
      */
     public static Optional<WellKnownProviderFactory> resolveFromAlias(KeycloakSessionFactory sessionFactory, String alias) {
 

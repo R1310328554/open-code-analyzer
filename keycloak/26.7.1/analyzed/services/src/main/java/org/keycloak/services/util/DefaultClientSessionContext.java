@@ -49,7 +49,9 @@ import org.keycloak.util.TokenUtil;
 import org.jboss.logging.Logger;
 
 /**
- * Not thread safe. It's per-request object
+ * {@link ClientSessionContext} 的默认实现，按请求创建，非线程安全。
+ * <p>负责解析 OAuth scope 参数、过滤用户有权使用的 client scope、
+ * 懒加载角色与协议映射器，并生成写入令牌的 scope 字符串。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -57,26 +59,37 @@ public class DefaultClientSessionContext implements ClientSessionContext {
 
     private static final Logger logger = Logger.getLogger(DefaultClientSessionContext.class);
 
+    /** 已认证的客户端会话 */
     private final AuthenticatedClientSessionModel clientSession;
+    /** 请求中解析出的 client scope 集合 */
     private final Set<ClientScopeModel> requestedScopes;
+    /** 当前 Keycloak 会话 */
     private final KeycloakSession session;
+    /** 原始 scope 参数字符串 */
     private final String requestedScopeString;
 
+    /** 经权限过滤后允许使用的 client scope（懒加载） */
     private Set<ClientScopeModel> allowedClientScopes;
 
-    //
+    /** 当前上下文下的有效角色（懒加载） */
     private Set<RoleModel> roles;
+    /** 当前上下文下的协议映射器（懒加载） */
     private Set<ProtocolMapperModel> protocolMappers;
 
-    // All roles of user expanded. It doesn't yet take into account permitted clientScopes
+    /** 用户全部角色（含复合角色展开），尚未按 client scope 过滤 */
     private Set<RoleModel> userRoles;
 
+    /** 上下文附加属性（如 offline_access 缓存） */
     private final Map<String, Object> attributes = new HashMap<>();
+    /** 允许的 client scope ID 集合（懒加载） */
     private Set<String> clientScopeIds;
+    /** 写入令牌的 scope 字符串（懒加载） */
     private String scopeString;
 
+    /** 若不为 null，则仅允许名称在此集合内的 scope */
     private final Set<String> restrictedScopes;
 
+    /** 私有构造；同时将自身注册到 session 属性供后续复用。 */
     private DefaultClientSessionContext(AuthenticatedClientSessionModel clientSession, Set<ClientScopeModel> requestedScopes, Set<String> restrictedScopes, String requestedScopeString, KeycloakSession session) {
         this.requestedScopes = requestedScopes;
         this.restrictedScopes = restrictedScopes;
@@ -88,13 +101,21 @@ public class DefaultClientSessionContext implements ClientSessionContext {
 
 
     /**
-     * Useful if we want to "re-compute" client scopes based on the scope parameter
+     * 从客户端会话 note 中的 scope 参数重新计算 client scope 上下文。
+     *
+     * @param clientSession 已认证客户端会话
+     * @param session Keycloak 会话
+     * @return 新的上下文实例
      */
     public static DefaultClientSessionContext fromClientSessionScopeParameter(AuthenticatedClientSessionModel clientSession, KeycloakSession session) {
         return fromClientSessionAndScopeParameter(clientSession, clientSession.getNote(OAuth2Constants.SCOPE), session);
     }
 
 
+    /**
+     * 根据显式 scope 参数字符串构建上下文。
+     * <p>启用 PARAMETERIZED_SCOPES 时从 RAR 授权请求解析；否则走 {@link TokenManager} 常规逻辑。</p>
+     */
     public static DefaultClientSessionContext fromClientSessionAndScopeParameter(AuthenticatedClientSessionModel clientSession, String scopeParam, KeycloakSession session) {
         Stream<ClientScopeModel> requestedScopes;
         if (Profile.isFeatureEnabled(Profile.Feature.PARAMETERIZED_SCOPES)) {
@@ -106,6 +127,9 @@ public class DefaultClientSessionContext implements ClientSessionContext {
     }
 
 
+    /**
+     * 直接使用已解析的 client scope 集合构建上下文，可附带 restrictedScopes 白名单。
+     */
     public static DefaultClientSessionContext fromClientSessionAndClientScopes(AuthenticatedClientSessionModel clientSession,
             Set<ClientScopeModel> requestedScopes, Set<String> restrictedScopes, KeycloakSession session) {
         return new DefaultClientSessionContext(clientSession, requestedScopes, restrictedScopes, clientSession.getNote(OAuth2Constants.SCOPE), session);
@@ -130,7 +154,7 @@ public class DefaultClientSessionContext implements ClientSessionContext {
 
     @Override
     public Stream<ClientScopeModel> getClientScopesStream() {
-        // Load client scopes if not yet present
+        // 懒加载：过滤出用户有权使用的 client scope
         if (allowedClientScopes == null) {
             allowedClientScopes = requestedScopes.stream().filter(this::isAllowed).collect(Collectors.toSet());
         }
@@ -150,7 +174,7 @@ public class DefaultClientSessionContext implements ClientSessionContext {
 
     @Override
     public Stream<RoleModel> getRolesStream() {
-        // Load roles if not yet present
+        // 懒加载有效角色
         if (roles == null) {
             roles = loadRoles();
         }
@@ -160,7 +184,7 @@ public class DefaultClientSessionContext implements ClientSessionContext {
 
     @Override
     public Stream<ProtocolMapperModel> getProtocolMappersStream() {
-        // Load protocolMappers if not yet present
+        // 懒加载协议映射器
         if (protocolMappers == null) {
             protocolMappers = loadProtocolMappers();
         }
@@ -169,7 +193,7 @@ public class DefaultClientSessionContext implements ClientSessionContext {
 
 
     private Set<RoleModel> getUserRoles() {
-        // Load userRoles if not yet present
+        // 懒加载用户全部角色映射
         if (userRoles == null) {
             userRoles = loadUserRoles();
         }
@@ -196,14 +220,14 @@ public class DefaultClientSessionContext implements ClientSessionContext {
             }
             return scopeParam;
         }
-        // Add both default and optional scopes to scope parameter. Don't add client itself
+        // 合并默认/可选 scope 名称；不包含 client 自身
         String scopeParam = getClientScopesStream()
                 .filter(((Predicate<ClientScopeModel>) ClientModel.class::isInstance).negate())
                 .filter(scope-> scope.isIncludeInTokenScope() || ignoreIncludeInTokenScope)
                 .map(ClientScopeModel::getName)
                 .collect(Collectors.joining(" "));
 
-        // See if "openid" scope is requested
+        // OIDC 请求需附加 openid scope
         String scopeSent = requestedScopeString;
         if (TokenUtil.isOIDCRequest(scopeSent)) {
             scopeParam = TokenUtil.attachOIDCScope(scopeParam);
@@ -213,13 +237,11 @@ public class DefaultClientSessionContext implements ClientSessionContext {
     }
 
     /**
-     * Get all the scopes from the {@link AuthorizationRequestContext} by filtering entries by Source and by whether
-     * they should be included in tokens or not.
-     * Then return the scope name from the data stored in the RAR object representation.
+     * 从 {@link AuthorizationRequestContext} 提取 scope 名称。
+     * <p>仅保留来源为 SCOPE、允许写入令牌且用户有权使用的条目。</p>
      *
-     * @param ignoreIncludeInTokenScope ignore include in token scope from client scope options
-     *
-     * @return see description
+     * @param ignoreIncludeInTokenScope 是否忽略 client scope 的 includeInToken 选项
+     * @return 空格分隔的 scope 名称字符串
      */
     private String buildScopesStringFromAuthorizationRequest(boolean ignoreIncludeInTokenScope) {
         return AuthorizationContextUtil.getAuthorizationRequestContextFromScopes(session, clientSession.getClient(), clientSession.getUserSession().getUser(), requestedScopeString).getAuthorizationDetailEntries().stream()
@@ -248,8 +270,9 @@ public class DefaultClientSessionContext implements ClientSessionContext {
         return AuthorizationContextUtil.getAuthorizationRequestContextFromScopes(session, clientSession.getClient(), clientSession.getUserSession().getUser(), requestedScopeString);
     }
 
-    // Loading data
+    // —— 数据加载与权限过滤 ——
 
+    /** 判断 client scope 是否在 restricted 白名单内且用户有权使用。 */
     private boolean isAllowed(ClientScopeModel clientScope) {
         if (restrictedScopes != null && !restrictedScopes.contains(clientScope.getName())) {
             logger.tracef("Client scope '%s' is not among the restricted scopes list and will not be processed", clientScope.getName());
@@ -267,7 +290,7 @@ public class DefaultClientSessionContext implements ClientSessionContext {
         return true;
     }
 
-    // Return true if clientScope can be used by the user.
+    /** 判断用户是否被允许使用该 client scope（基于 scope 角色映射与用户角色交集）。 */
     private boolean isClientScopePermittedForUser(ClientScopeModel clientScope) {
         if (clientScope == null) {
             return false;
@@ -279,15 +302,15 @@ public class DefaultClientSessionContext implements ClientSessionContext {
 
         Set<RoleModel> clientScopeRoles = clientScope.getScopeMappingsStream().collect(Collectors.toSet());
 
-        // Client scope is automatically permitted if it doesn't have any role scope mappings
+        // 无角色映射的 scope 默认允许
         if (clientScopeRoles.isEmpty()) {
             return true;
         }
 
-        // Expand (resolve composite roles)
+        // 展开复合角色
         clientScopeRoles = RoleUtils.expandCompositeRoles(clientScopeRoles);
 
-        //remove roles that are not contained in requested audience
+        // 按 audience 请求过滤客户端角色
         if (attributes.get(Constants.REQUESTED_AUDIENCE_CLIENTS) != null) {
             final Set<String> requestedClientIdsFromAudience = Arrays.stream(getAttribute(Constants.REQUESTED_AUDIENCE_CLIENTS, ClientModel[].class))
                     .map(ClientModel::getId)
@@ -295,12 +318,13 @@ public class DefaultClientSessionContext implements ClientSessionContext {
             clientScopeRoles.removeIf(role-> role.isClientRole() && !requestedClientIdsFromAudience.contains(role.getContainerId()));
         }
 
-        // Check if expanded roles of clientScope has any intersection with expanded roles of user. If not, it is not permitted
+        // scope 角色与用户角色须有交集才允许
         clientScopeRoles.retainAll(getUserRoles());
         return !clientScopeRoles.isEmpty();
     }
 
 
+    /** 加载当前上下文下用户可获得的访问角色。 */
     private Set<RoleModel> loadRoles() {
         UserModel user = clientSession.getUserSession().getUser();
         ClientModel client = clientSession.getClient();
@@ -308,10 +332,11 @@ public class DefaultClientSessionContext implements ClientSessionContext {
     }
 
 
+    /** 加载与客户端协议匹配且已启用的协议映射器。 */
     private Set<ProtocolMapperModel> loadProtocolMappers() {
         String protocol = clientSession.getClient().getProtocol();
 
-        // Being rather defensive. But protocol should normally always be there
+        // 防御性处理：协议未配置时回退 openid-connect
         if (protocol == null) {
             logger.warnf("Client '%s' doesn't have protocol set. Fallback to openid-connect. Please fix client configuration",
                     clientSession.getClient().getClientId());
@@ -327,6 +352,7 @@ public class DefaultClientSessionContext implements ClientSessionContext {
     }
 
 
+    /** 加载用户全部深度角色映射（含复合角色）。 */
     private Set<RoleModel> loadUserRoles() {
         UserModel user = clientSession.getUserSession().getUser();
         return RoleUtils.getDeepUserRoleMappings(user);

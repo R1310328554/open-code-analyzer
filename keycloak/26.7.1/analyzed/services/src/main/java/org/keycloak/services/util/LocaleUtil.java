@@ -33,15 +33,24 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
+ * 国际化（i18n）locale 处理工具类。
+ * <p>解析请求中的 kc_locale 参数、计算 locale 继承链、
+ * 合并主题与领域本地化消息。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  * @author <a href="mailto:daniel.fesenmeyer@bosch.com">Daniel Fesenmeyer</a>
  */
 public class LocaleUtil {
 
     private LocaleUtil() {
-        // noop
+        // 工具类禁止实例化
     }
 
+    /**
+     * 处理请求 URL 中的 kc_locale 参数：写入认证会话 note 或 session 属性，并更新 locale Cookie。
+     *
+     * @param authSession 可为 null（如 info/error 页无认证会话时写入 session 属性）
+     */
     public static void processLocaleParam(KeycloakSession session, RealmModel realm, AuthenticationSessionModel authSession) {
         if (realm.isInternationalizationEnabled()) {
             String locale = session.getContext().getUri().getQueryParameters().getFirst(LocaleSelectorProvider.KC_LOCALE_PARAM);
@@ -49,7 +58,7 @@ public class LocaleUtil {
                 if (authSession != null) {
                     authSession.setAuthNote(LocaleSelectorProvider.USER_REQUEST_LOCALE, locale);
                 } else {
-                    // Might be on info/error page when we don't have authenticationSession
+                    // info/error 页等无 authenticationSession 的场景
                     session.setAttribute(LocaleSelectorProvider.USER_REQUEST_LOCALE, locale);
                 }
 
@@ -60,12 +69,12 @@ public class LocaleUtil {
     }
 
     /**
-     * Returns the parent locale of the given {@code locale}. If the locale just contains a language (e.g. "de"),
-     * returns the fallback locale "en". For "en" no parent exists, {@code null} is returned.
+     * 返回给定 locale 的父 locale。
+     * <p>仅含语言时回退为 "en"；"en" 无父 locale 返回 {@code null}。</p>
      *
-     * @param locale the locale
-     * @return the parent locale, may be {@code null}
-     * @deprecated use {@link LocaleUtil#getParentLocale(Locale, RealmModel)} instead.
+     * @param locale 目标 locale
+     * @return 父 locale，可能为 {@code null}
+     * @deprecated 请使用 {@link LocaleUtil#getParentLocale(Locale, RealmModel)}
      */
     @Deprecated(since = "26.5", forRemoval = true)
     public static Locale getParentLocale(Locale locale) {
@@ -73,11 +82,10 @@ public class LocaleUtil {
     }
 
     /**
-     * Returns the parent locale of the given {@code locale}. If the locale just contains a language (e.g. "de"),
-     * returns the fallback default locale of the realm or if that does not exist "en".
-     * For "en" no parent exists, {@code null} is returned.
+     * 返回给定 locale 的父 locale，考虑领域默认语言设置。
+     * <p>variant → language+country → language → 领域默认 locale → en。</p>
      *
-     * @return the parent locale, may be {@code null}
+     * @return 父 locale，可能为 {@code null}
      */
     public static Locale getParentLocale(Locale locale, RealmModel realm) {
         if (Locale.ENGLISH.equals(locale)) {
@@ -109,12 +117,11 @@ public class LocaleUtil {
     }
 
     /**
-     * Gets the applicable locales for the given locale.
-     * <p>
-     * Example: Locale "de-CH" has the applicable locales "de-CH", "de" and "en" (in exactly that order).
-     * 
-     * @param locale the locale
-     * @return the applicable locales
+     * 获取 locale 的适用 locale 链（由具体到抽象）。
+     * <p>示例："de-CH" → ["de-CH", "de", "en"]。</p>
+     *
+     * @param locale 目标 locale
+     * @return 适用 locale 列表（顺序从具体到抽象）
      */
     static List<Locale> getApplicableLocales(Locale locale, RealmModel realm) {
         List<Locale> applicableLocales = new ArrayList<>();
@@ -127,12 +134,11 @@ public class LocaleUtil {
     }
 
     /**
-     * Merge the given (locale-)grouped messages into one instance of {@link Properties}, applicable for the given
-     * {@code locale}.
-     * 
-     * @param locale the locale
-     * @param messages the (locale-)grouped messages
-     * @return the merged properties
+     * 将按 locale 分组的消息合并为适用于指定 locale 的 {@link Properties}。
+     *
+     * @param locale 目标 locale
+     * @param messages 按 locale 分组的消息
+     * @return 合并后的属性集
      * @see #mergeGroupedMessages(RealmModel, Locale, Map, Map)
      */
     public static Properties mergeGroupedMessages(RealmModel realm, Locale locale, Map<Locale, Properties> messages) {
@@ -140,10 +146,8 @@ public class LocaleUtil {
     }
 
     /**
-     * Merge the given (locale-)grouped messages into one instance of {@link Properties}, applicable for the given
-     * {@code locale}.
-     * <p>
-     * The priority of the messages is as follows (abbreviations: F = firstMessages, S = secondMessages):
+     * 合并两组按 locale 分组的消息，firstMessages 优先级高于 secondMessages。
+     * <p>优先级（F=firstMessages，S=secondMessages）：</p>
      * <ol>
      * <li>F &lt;language-region-variant&gt;</li>
      * <li>S &lt;language-region-variant&gt;</li>
@@ -154,25 +158,11 @@ public class LocaleUtil {
      * <li>F en</li>
      * <li>S en</li>
      * </ol>
-     * <p>
-     * Example for the message priority for locale "de-CH-1996" (language "de", region "CH", variant "1996):
-     * <ol>
-     * <li>F de-CH-1996</li>
-     * <li>S de-CH-1996</li>
-     * <li>F de-CH</li>
-     * <li>S de-CH</li>
-     * <li>F de</li>
-     * <li>S de</li>
-     * <li>F en</li>
-     * <li>S en</li>
-     * </ol>
-     * 
-     * @param locale the locale
-     * @param firstMessages the first (locale-)grouped messages, having higher priority (per locale) than
-     *        {@code secondMessages}
-     * @param secondMessages may be {@code null}, the second (locale-)grouped messages, having lower priority (per
-     *        locale) than {@code firstMessages}
-     * @return the merged properties
+     *
+     * @param locale 目标 locale
+     * @param firstMessages 高优先级消息组
+     * @param secondMessages 低优先级消息组，可为 {@code null}
+     * @return 合并后的属性集
      * @see #mergeGroupedMessages(RealmModel, Locale, Map)
      */
     public static Properties mergeGroupedMessages(RealmModel realm, Locale locale, Map<Locale, Properties> firstMessages,
@@ -182,14 +172,13 @@ public class LocaleUtil {
         Properties mergedProperties = new Properties();
 
         /*
-         * iterate starting from the end of the list in order to add the least relevant messages first (in order to be
-         * overwritten by more relevant messages)
+         * 从列表末尾向前迭代，先写入低优先级消息，再由高优先级覆盖
          */
         ListIterator<Locale> itr = applicableLocales.listIterator(applicableLocales.size());
         while (itr.hasPrevious()) {
             Locale currentLocale = itr.previous();
 
-            // add secondMessages first, if specified (to be overwritten by firstMessages)
+            // 先写入 secondMessages（可被 firstMessages 覆盖）
             if (secondMessages != null) {
                 Properties currentLocaleSecondMessages = secondMessages.get(currentLocale);
                 if (currentLocaleSecondMessages != null) {
@@ -197,7 +186,7 @@ public class LocaleUtil {
                 }
             }
 
-            // add firstMessages, overwriting secondMessages (if specified)
+            // 写入 firstMessages，覆盖 secondMessages
             Properties currentLocaleFirstMessages = firstMessages.get(currentLocale);
             if (currentLocaleFirstMessages != null) {
                 mergedProperties.putAll(currentLocaleFirstMessages);
@@ -208,16 +197,13 @@ public class LocaleUtil {
     }
 
     /**
-     * Enhance the properties from a theme with realm localization texts. Realm localization texts take precedence over
-     * the theme properties, but only when defined for the same locale. In general, texts for a more specific locale
-     * take precedence over texts for a less specific locale.
-     * <p>
-     * For implementation details, see {@link #mergeGroupedMessages(RealmModel, Locale, Map, Map)}.
-     * 
-     * @param realm the realm from which the localization texts should be used
-     * @param locale the locale for which the relevant texts should be retrieved
-     * @param themeMessages the theme messages, which should be enhanced and maybe overwritten
-     * @return the enhanced properties
+     * 用领域本地化文本增强主题消息；同 locale 下领域文本优先，更具体的 locale 优先于更抽象的。
+     * <p>实现细节见 {@link #mergeGroupedMessages(RealmModel, Locale, Map, Map)}。</p>
+     *
+     * @param realm 领域
+     * @param locale 目标 locale
+     * @param themeMessages 主题消息（作为低优先级组）
+     * @return 增强后的属性集
      */
     public static Properties enhancePropertiesWithRealmLocalizationTexts(RealmModel realm, Locale locale,
             Map<Locale, Properties> themeMessages) {
@@ -226,6 +212,7 @@ public class LocaleUtil {
         return mergeGroupedMessages(realm, locale, realmLocalizationMessages, themeMessages);
     }
 
+    /** 获取领域在 locale 链上各级的本地化文本，按 locale 分组。 */
     public static Map<Locale, Properties> getRealmLocalizationTexts(RealmModel realm, Locale locale) {
         LinkedHashMap<Locale, Properties> groupedMessages = new LinkedHashMap<>();
 
