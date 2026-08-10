@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TSDB chunk 样本抽象：统一 float、原生 histogram 与 float histogram 的访问接口，供 compaction 与测试生成器使用。
+
 package chunks
 
 import (
@@ -33,6 +35,7 @@ type Sample interface {
 	Copy() Sample // Returns a deep copy.
 }
 
+// SampleSlice 是 Samples 的切片实现。
 type SampleSlice []Sample
 
 func (s SampleSlice) Get(i int) Sample { return s[i] }
@@ -65,6 +68,7 @@ func (s sample) FH() *histogram.FloatHistogram {
 	return s.fh
 }
 
+// Type 根据 h/fh 指针判断 histogram、float histogram 或 float。
 func (s sample) Type() chunkenc.ValueType {
 	switch {
 	case s.h != nil:
@@ -76,6 +80,7 @@ func (s sample) Type() chunkenc.ValueType {
 	}
 }
 
+// Copy 深拷贝 histogram 字段，避免共享可变引用。
 func (s sample) Copy() Sample {
 	c := sample{t: s.t, f: s.f}
 	if s.h != nil {
@@ -87,6 +92,7 @@ func (s sample) Copy() Sample {
 	return c
 }
 
+// GenerateSamples 生成递增时间戳与 float 值的测试样本切片。
 // GenerateSamples starting at start and counting up numSamples.
 func GenerateSamples(start, numSamples int) []Sample {
 	return generateSamples(start, numSamples, func(i int) Sample {
@@ -97,6 +103,7 @@ func GenerateSamples(start, numSamples int) []Sample {
 	})
 }
 
+// generateSamples 通用样本生成器，由 gen 回调构造每个 Sample。
 func generateSamples(start, numSamples int, gen func(int) Sample) []Sample {
 	samples := make([]Sample, 0, numSamples)
 	for i := start; i < start+numSamples; i++ {

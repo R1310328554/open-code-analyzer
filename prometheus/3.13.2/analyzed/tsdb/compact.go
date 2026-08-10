@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TSDB 分层 compaction：规划可合并 block 目录、垂直/水平合并、写入新 block 并维护 compaction 元数据与指标。
+
 package tsdb
 
 import (
@@ -37,6 +39,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/tombstones"
 )
 
+// ExponentialBlockRanges 按 stepSize 指数生成各 compaction 层级时间跨度。
 // ExponentialBlockRanges returns the time ranges based on the stepSize.
 func ExponentialBlockRanges(minSize int64, steps, stepSize int) []int64 {
 	ranges := make([]int64, 0, steps)
@@ -49,6 +52,7 @@ func ExponentialBlockRanges(minSize int64, steps, stepSize int) []int64 {
 	return ranges
 }
 
+// Compactor 定义 Plan/Write/Compact 三阶段 compaction 接口。
 // Compactor provides compaction against an underlying storage
 // of time series data.
 type Compactor interface {
@@ -76,6 +80,7 @@ type Compactor interface {
 	Compact(dest string, dirs []string, open []*Block) ([]ulid.ULID, error)
 }
 
+// LeveledCompactor 按 ranges 层级选择 block 并执行合并写入。
 // LeveledCompactor implements the Compactor interface.
 type LeveledCompactor struct {
 	metrics                     *CompactorMetrics
@@ -92,6 +97,7 @@ type LeveledCompactor struct {
 	enableOverlappingCompaction bool
 }
 
+// CompactorMetrics 记录 compaction 次数、耗时与 chunk 统计直方图。
 type CompactorMetrics struct {
 	Ran               prometheus.Counter
 	PopulatingBlocks  prometheus.Gauge
@@ -102,6 +108,7 @@ type CompactorMetrics struct {
 	ChunkRange        prometheus.Histogram
 }
 
+// NewCompactorMetrics 注册 prometheus_tsdb_compaction_* 指标。
 // NewCompactorMetrics initializes metrics for Compactor.
 func NewCompactorMetrics(r prometheus.Registerer) *CompactorMetrics {
 	m := &CompactorMetrics{}
@@ -156,6 +163,7 @@ func NewCompactorMetrics(r prometheus.Registerer) *CompactorMetrics {
 	return m
 }
 
+// LeveledCompactorOptions 配置 postings 编解码、合并函数与重叠 compaction 开关。
 type LeveledCompactorOptions struct {
 	// PE specifies the postings encoder. It is called when compactor is writing out the postings for a label name/value pair during compaction.
 	// If it is nil then the default encoder is used. At the moment that is the "raw" encoder. See index.EncodePostingsRaw for more.
@@ -199,6 +207,7 @@ func NewLeveledCompactor(ctx context.Context, r prometheus.Registerer, l *slog.L
 	})
 }
 
+// NewLeveledCompactorWithOptions 填充默认 pool、mergeFunc 与 chunk 段大小。
 func NewLeveledCompactorWithOptions(ctx context.Context, r prometheus.Registerer, l *slog.Logger, ranges []int64, pool chunkenc.Pool, opts LeveledCompactorOptions) (*LeveledCompactor, error) {
 	if len(ranges) == 0 {
 		return nil, errors.New("at least one range must be provided")
@@ -245,6 +254,7 @@ type dirMeta struct {
 	meta *BlockMeta
 }
 
+// Plan 扫描目录 block，优先返回时间重叠组，否则按层级或 tombstone 比例挑选。
 // Plan returns a list of compactable blocks in the provided directory.
 func (c *LeveledCompactor) Plan(dir string) ([]string, error) {
 	dirs, err := blockDirs(dir)
@@ -327,6 +337,7 @@ func (c *LeveledCompactor) plan(dms []dirMeta) ([]string, error) {
 	return nil, nil
 }
 
+// selectDirs 在同一时间层级内选取可合并为更大 range 的连续 block 组。
 // selectDirs returns the dir metas that should be compacted into a single new block.
 // If only a single block range is configured, the result is always nil.
 func (c *LeveledCompactor) selectDirs(ds []dirMeta) []dirMeta {
@@ -366,6 +377,7 @@ func (c *LeveledCompactor) selectDirs(ds []dirMeta) []dirMeta {
 	return nil
 }
 
+// selectOverlappingDirs 找出 MinTime/MaxTime 交叉的重叠 block 目录。
 // selectOverlappingDirs returns all dirs with overlapping time ranges.
 // It expects sorted input by mint and returns the overlapping dirs in the same order as received.
 func (c *LeveledCompactor) selectOverlappingDirs(ds []dirMeta) []string {
@@ -436,6 +448,7 @@ func splitByRange(ds []dirMeta, tr int64) [][]dirMeta {
 	return splitDirs
 }
 
+// CompactBlockMetas 合并多个 BlockMeta 的 ULID、时间范围与 compaction 谱系。
 // CompactBlockMetas merges many block metas into one, combining its source blocks together
 // and adjusting compaction level. Min/Max time of result block meta covers all input blocks.
 func CompactBlockMetas(uid ulid.ULID, blocks ...*BlockMeta) *BlockMeta {
@@ -480,6 +493,7 @@ func CompactBlockMetas(uid ulid.ULID, blocks ...*BlockMeta) *BlockMeta {
 	return res
 }
 
+// Compact 打开源 block、调用 write 生成新 ULID；空 block 则标记源 Deletable。
 // Compact creates a new block in the compactor's directory from the blocks in the
 // provided directories.
 func (c *LeveledCompactor) Compact(dest string, dirs []string, open []*Block) ([]ulid.ULID, error) {
@@ -583,6 +597,7 @@ func (c *LeveledCompactor) CompactWithBlockPopulator(dest string, dirs []string,
 	return nil, errors.Join(errs...)
 }
 
+// Write 将单个 BlockReader 时间切片持久化为 level-1 新 block。
 func (c *LeveledCompactor) Write(dest string, b BlockReader, mint, maxt int64, base *BlockMeta) ([]ulid.ULID, error) {
 	start := time.Now()
 

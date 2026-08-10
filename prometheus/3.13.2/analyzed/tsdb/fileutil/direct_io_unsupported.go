@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 非 Linux 平台：Direct IO 不可用，回退 bufio 且 NewDirectIOWriter 返回 errDirectIOUnsupported。
+
 //go:build !linux
 
 package fileutil
@@ -24,6 +26,7 @@ func NewBufioWriterWithSize(f *os.File, size int) (BufWriter, error) {
 	return &writer{bufio.NewWriterSize(f, size)}, nil
 }
 
+// NewDirectIOWriter 在非 Linux 平台直接返回 errDirectIOUnsupported。
 func NewDirectIOWriter(*os.File, int) (BufWriter, error) {
 	return nil, errDirectIOUnsupported
 }

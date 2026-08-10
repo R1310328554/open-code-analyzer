@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Unix 平台 OpenDir：以 os.Open 打开目录供 fsync 同步元数据。
+
 //go:build !windows
 
 package fileutil
 
 import "os"
 
+// OpenDir 在 Unix 上直接 os.Open 目录路径。
 // OpenDir opens a directory for syncing.
 func OpenDir(path string) (*os.File, error) { return os.Open(path) }

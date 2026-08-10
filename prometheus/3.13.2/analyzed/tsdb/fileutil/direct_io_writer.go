@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Linux O_DIRECT 写入器：通过 statx 获取对齐要求，缓冲未对齐前缀后启用 Direct IO，Flush 时填充零字节满足段长度对齐。
+
 //go:build linux
 
 package fileutil
@@ -38,6 +40,7 @@ var (
 	errStatxNotSupported = errors.New("the statx syscall with STATX_DIOALIGN is not supported. At least Linux kernel 6.1 is needed")
 )
 
+// directIOWriter 在 offset/内存对齐满足时对齐块直接 Write，否则先经普通 IO 填 gap。
 // directIOWriter is a specialized bufio.Writer that supports Direct IO to a file
 // by ensuring all alignment restrictions are satisfied.
 // The writer can handle files whose initial offsets are not aligned.
@@ -57,6 +60,7 @@ type directIOWriter struct {
 	invalid bool
 }
 
+// newDirectIOWriter 查询对齐参数、检查初始文件偏移并分配对齐缓冲。
 func newDirectIOWriter(f *os.File, size int) (*directIOWriter, error) {
 	alignmentRqmts, err := fileDirectIORqmts(f)
 	if err != nil {
@@ -86,6 +90,7 @@ func (b *directIOWriter) Available() int { return len(b.buf) - b.n }
 
 func (b *directIOWriter) Buffered() int { return b.n }
 
+// fillInitialOffsetGap 用普通写补齐 offsetAlignmentGap 后 F_SETFL 启用 O_DIRECT。
 // fillInitialOffsetGap writes the necessary bytes from the buffer without Direct IO
 // to fill offsetAlignmentGap and align the file offset, enabling Direct IO usage.
 // Once alignment is achieved, Direct IO is enabled.
@@ -111,6 +116,7 @@ func (b *directIOWriter) fillInitialOffsetGap() {
 	b.err = errors.Join(b.err, err)
 }
 
+// directIOWrite 写入后 Seek 丢弃 padding；未对齐写入会标记 writer invalid。
 func (b *directIOWriter) directIOWrite(p []byte, padding int) (int, error) {
 	relevant := len(p) - padding
 
@@ -138,6 +144,7 @@ func (b *directIOWriter) directIOWrite(p []byte, padding int) (int, error) {
 
 // canDirectIOWrite returns true when all Direct IO alignment restrictions
 // are met for the p block to be written into the file.
+// canDirectIOWrite 检查缓冲地址、长度对齐且初始 offset gap 已清零。
 func (b *directIOWriter) canDirectIOWrite(p []byte) bool {
 	return isAligned(p, b.alignmentRqmts) && b.offsetAlignmentGap == 0
 }
@@ -217,6 +224,7 @@ func (b *directIOWriter) flush() error {
 	return nil
 }
 
+// Flush 先补齐初始 gap，再将 buf 按 offsetAlign 向上取整并 zero-pad 后写出。
 func (b *directIOWriter) Flush() error {
 	if b.offsetAlignmentGap != 0 {
 		b.fillInitialOffsetGap()
@@ -249,6 +257,7 @@ func (b *directIOWriter) Reset(f *os.File) error {
 	return nil
 }
 
+// fileDirectIORqmts 优先 statx STATX_DIOALIGN，不支持时回退 4096 默认对齐。
 // fileDirectIORqmts fetches alignment requirements via Statx, falling back to default
 // values when unsupported.
 func fileDirectIORqmts(f *os.File) (*directIORqmts, error) {
@@ -289,6 +298,7 @@ func isAligned(block []byte, alignmentRqmts *directIORqmts) bool {
 
 // alignedBlock returns a block whose address is alignment aligned.
 // The size should be a multiple of offsetAlign.
+// alignedBlock 分配额外空间使返回切片首地址满足 memoryAlign。
 func alignedBlock(size int, alignmentRqmts *directIORqmts) []byte {
 	if size == 0 || size%alignmentRqmts.offsetAlign != 0 {
 		panic(fmt.Errorf("size %d should be > 0 and a multiple of offsetAlign=%d", size, alignmentRqmts.offsetAlign))
@@ -328,6 +338,7 @@ func fileStatusFlags(fd uintptr) (int, error) {
 	return flag, err
 }
 
+// enableDirectIO 通过 fcntl F_SETFL 设置 O_DIRECT（已设置则 no-op）。
 // enableDirectIO enables Direct IO on the file if needed.
 func enableDirectIO(fd uintptr) error {
 	flag, err := fileStatusFlags(fd)
@@ -366,6 +377,7 @@ func checkInitialUnalignedOffset(f *os.File, alignmentRqmts *directIORqmts) (int
 
 // directIORqmts holds the alignment requirements for direct I/O.
 // All fields are in bytes.
+// directIORqmts 保存 Direct IO 所需的内存地址与文件偏移/段长度对齐（字节）。
 type directIORqmts struct {
 	// The required alignment for memory buffers addresses.
 	memoryAlign int

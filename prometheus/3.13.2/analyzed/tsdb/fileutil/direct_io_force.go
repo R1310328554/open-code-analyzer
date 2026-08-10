@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// forcedirectio 构建标签：测试环境强制所有写入走 Direct IO 路径。
+
 // This allows seamless testing of the Direct I/O writer across all tsdb tests.
 
 //go:build linux && forcedirectio
@@ -23,6 +25,7 @@ func NewDirectIOWriter(f *os.File, size int) (BufWriter, error) {
 	return newDirectIOWriter(f, size)
 }
 
+// NewBufioWriterWithSize 在测试构建中同样路由到 Direct IO writer。
 func NewBufioWriterWithSize(f *os.File, size int) (BufWriter, error) {
 	return NewDirectIOWriter(f, size)
 }

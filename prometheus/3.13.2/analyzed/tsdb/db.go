@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package tsdb 实现 Prometheus 本地时序库：Head、WAL、block compaction 与查询。
 // Package tsdb implements a time series storage for float64 sample data.
 package tsdb
 
@@ -68,9 +69,11 @@ const (
 	tmpLegacy = ".tmp"
 )
 
+// ErrNotReady 表示 DB 尚在 WAL replay 或初始化，暂不可查询。
 // ErrNotReady is returned if the underlying storage is not ready yet.
 var ErrNotReady = errors.New("TSDB not ready")
 
+// DefaultOptions 返回毫秒时间戳场景的合理默认 Retention、WAL 与 Head 参数。
 // DefaultOptions used for the DB. They are reasonable for setups using
 // millisecond precision timestamps.
 func DefaultOptions() *Options {
@@ -99,6 +102,7 @@ func DefaultOptions() *Options {
 	}
 }
 
+// Options 配置 retention、WAL、Head chunk、OOO、compaction 延迟与特性开关。
 // Options of the DB storage.
 type Options struct {
 	// staleSeriesCompactionThreshold is same as below option with same name, but is atomic so that we can do live updates without locks.
@@ -290,6 +294,7 @@ type BlockChunkQuerierFunc func(b BlockReader, mint, maxt int64) (storage.ChunkQ
 
 type FsSizeFunc func(path string) uint64
 
+// DB 是 TSDB 主对象：管理 Head、block 目录、compactor、exemplar 与后台 goroutine。
 // DB handles reads and writes of time series falling into
 // a hashed partition of a seriedb.
 type DB struct {
@@ -355,6 +360,7 @@ type DB struct {
 	fsSizeFunc FsSizeFunc
 }
 
+// dbMetrics 聚合 TSDB 大小、WAL、compaction 与 exemplar 相关 Prometheus 指标。
 type dbMetrics struct {
 	loadedBlocks                    prometheus.GaugeFunc
 	symbolTableSize                 prometheus.GaugeFunc
@@ -524,6 +530,7 @@ var ErrClosed = errors.New("db already closed")
 // DBReadOnly provides APIs for read only operations on a database.
 // Current implementation doesn't support concurrency so
 // all API calls should happen in the same go routine.
+// DBReadOnly 只读打开 TSDB，用于 WAL flush 或离线查询而不启动写入路径。
 type DBReadOnly struct {
 	logger     *slog.Logger
 	dir        string
@@ -868,6 +875,7 @@ func (db *DBReadOnly) Close() error {
 	return closeAll(db.closers)
 }
 
+// Open 创建或恢复 TSDB：加锁、replay WAL、加载 block 并启动 compaction 循环。
 // Open returns a new DB in the given directory. If options are empty, DefaultOptions will be used.
 func Open(dir string, l *slog.Logger, r prometheus.Registerer, opts *Options, stats *DBStats) (db *DB, err error) {
 	var rngs []int64
@@ -1201,6 +1209,7 @@ func (db *DB) BlockMetas() []BlockMeta {
 	return metas
 }
 
+// run 后台循环：定时 reload block、触发 compaction、清理 tombstone 与 retention。
 func (db *DB) run(ctx context.Context) {
 	defer close(db.donec)
 
@@ -1272,6 +1281,7 @@ func (db *DB) run(ctx context.Context) {
 }
 
 // Appender opens a new Appender against the database.
+// Appender 返回写入 Head 的 storage.Appender，经 exemplar 与 isolation 包装。
 func (db *DB) Appender(ctx context.Context) storage.Appender {
 	return dbAppender{db: db, Appender: db.head.Appender(ctx)}
 }
@@ -1298,6 +1308,7 @@ func (db *DB) AppenderV2(ctx context.Context) storage.AppenderV2 {
 //   - OOO Compaction and overlapping queries will remain enabled until a restart or until all OOO samples are compacted.
 //
 // 4) Before: OOO disabled, Now: OOO disabled => no-op.
+// ApplyConfig 热更新 retention、OOO 窗口、exemplar 容量与 stale compaction 阈值。
 func (db *DB) ApplyConfig(conf *config.Config) error {
 	oooTimeWindow := int64(0)
 	if conf.StorageConfig.TSDBConfig != nil {
@@ -1453,6 +1464,7 @@ func (db *DB) waitingForCompactionDelay() bool {
 // which will also delete the blocks that fall out of the retention window.
 // Old blocks are only deleted on reloadBlocks based on the new block's parent information.
 // See DB.reloadBlocks documentation for further information.
+// Compact 手动触发 Head、OOO Head 与磁盘 block 的 compaction 流水线。
 func (db *DB) Compact(ctx context.Context) (returnErr error) {
 	db.cmtx.Lock()
 	defer db.cmtx.Unlock()
@@ -1834,6 +1846,7 @@ func (db *DB) reload() error {
 // reloadBlocks reloads blocks without touching head.
 // Blocks that are obsolete due to replacement or retention will be deleted.
 // The db.cmtx mutex should be held before calling this method.
+// reloadBlocks 扫描目录打开新 block、关闭已删除 block 并更新 retention 删除集。
 func (db *DB) reloadBlocks() (err error) {
 	defer func() {
 		if err != nil {
@@ -1971,6 +1984,7 @@ func openBlocks(l *slog.Logger, dir string, loaded []*Block, chunkPool chunkenc.
 	return blocks, corrupted, nil
 }
 
+// DefaultBlocksToDelete 组合 BeyondTimeRetention 与 BeyondSizeRetention 决定可删 block。
 // DefaultBlocksToDelete returns a filter which decides time based and size based
 // retention from the options of the db.
 func DefaultBlocksToDelete(db *DB) BlocksToDeleteFunc {
@@ -2247,6 +2261,7 @@ func (db *DB) Head() *Head {
 }
 
 // Close the partition.
+// Close 停止后台任务、flush Head、关闭 WAL 与 block 并释放目录锁。
 func (db *DB) Close() error {
 	// Allow close-after-close operation for simpler use (e.g. tests).
 	select {
@@ -2310,6 +2325,7 @@ func (db *DB) ForceHeadMMap() {
 
 // Snapshot writes the current data to the directory. If withHead is set to true it
 // will create a new block containing all data that's currently in the memory buffer/WAL.
+// Snapshot 硬链接复制当前 block（可选含 Head mmap）到目标目录供备份。
 func (db *DB) Snapshot(dir string, withHead bool) error {
 	if dir == db.dir {
 		return errors.New("cannot snapshot into base directory")
@@ -2347,6 +2363,7 @@ func (db *DB) Snapshot(dir string, withHead bool) error {
 }
 
 // Querier returns a new querier over the data partition for the given time range.
+// Querier 合并 Head 与覆盖 [mint,maxt] 的持久 block Querier。
 func (db *DB) Querier(mint, maxt int64) (_ storage.Querier, err error) {
 	var blocks []BlockReader
 
@@ -2501,6 +2518,7 @@ func (db *DB) blockChunkQuerierForRange(mint, maxt int64) (_ []storage.ChunkQuer
 }
 
 // ChunkQuerier returns a new chunk querier over the data partition for the given time range.
+// ChunkQuerier 返回 chunk 级查询器，供 remote read 流式 XOR 等路径使用。
 func (db *DB) ChunkQuerier(mint, maxt int64) (storage.ChunkQuerier, error) {
 	blockQueriers, err := db.blockChunkQuerierForRange(mint, maxt)
 	if err != nil {

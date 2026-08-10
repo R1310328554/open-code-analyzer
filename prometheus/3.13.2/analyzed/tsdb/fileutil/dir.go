@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// fileutil 目录工具：递归统计目录占用字节数，忽略遍历中已删除的文件。
+
 package fileutil
 
 import (

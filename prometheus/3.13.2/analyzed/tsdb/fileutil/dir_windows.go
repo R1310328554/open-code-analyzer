@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Windows 平台 OpenDir：以读写权限打开目录句柄以便 Sync 刷盘。
+
 //go:build windows
 
 package fileutil
@@ -21,6 +23,7 @@ import (
 	"syscall"
 )
 
+// OpenDir 调用 CreateFile 并设置 FILE_FLAG_BACKUP_SEMANTICS 打开目录。
 // OpenDir opens a directory in windows with write access for syncing.
 func OpenDir(path string) (*os.File, error) {
 	fd, err := openDir(path)
@@ -30,6 +33,7 @@ func OpenDir(path string) (*os.File, error) {
 	return os.NewFile(uintptr(fd), path), nil
 }
 
+// openDir 将 UTF-16 路径转为 CreateFile 句柄，供 os.NewFile 包装。
 func openDir(path string) (fd syscall.Handle, err error) {
 	if len(path) == 0 {
 		return syscall.InvalidHandle, syscall.ERROR_FILE_NOT_FOUND

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 内存环形 exemplar 存储：按 series 维护双向链表，支持 OOO 窗口、容量 Resize 与 matcher 查询。
+
 package tsdb
 
 import (
@@ -35,6 +37,7 @@ const (
 	estimatedExemplarsPerSeries = 16
 )
 
+// CircularExemplarStorage 固定容量环形缓冲 + series 索引 map。
 type CircularExemplarStorage struct {
 	lock                sync.RWMutex
 	exemplars           []circularBufferEntry
@@ -60,6 +63,7 @@ type circularBufferEntry struct {
 	ref      *indexEntry
 }
 
+// ExemplarMetrics 暴露 appended、in-storage 与 OOO 拒绝等 Prometheus 指标。
 type ExemplarMetrics struct {
 	exemplarsAppended            prometheus.Counter
 	exemplarsInStorage           prometheus.Gauge
@@ -113,6 +117,7 @@ func NewExemplarMetrics(reg prometheus.Registerer) *ExemplarMetrics {
 	return &m
 }
 
+// NewCircularExemplarStorage 预分配环形数组；len<=0 为 noop 存储可后续 Resize。
 // NewCircularExemplarStorage creates a circular in memory exemplar storage.
 // If we assume the average case 95 bytes per exemplar we can fit 5651272 exemplars in
 // 1GB of extra memory, accounting for the fact that this is heap allocated space.
@@ -154,6 +159,7 @@ func (ce *CircularExemplarStorage) Querier(context.Context) (storage.ExemplarQue
 	return ce, nil
 }
 
+// Select 遍历 index，按时间窗口与 matcher 过滤并排序返回 QueryResult。
 // Select returns exemplars for a given set of label matchers.
 func (ce *CircularExemplarStorage) Select(start, end int64, matchers ...[]*labels.Matcher) ([]exemplar.QueryResult, error) {
 	ret := make([]exemplar.QueryResult, 0)
@@ -215,6 +221,7 @@ Outer:
 	return false
 }
 
+// ValidateExemplar 对外校验标签长度、重复与 OOO 窗口，持读锁。
 func (ce *CircularExemplarStorage) ValidateExemplar(l labels.Labels, e exemplar.Exemplar) error {
 	var buf [1024]byte
 	seriesLabels := l.Bytes(buf[:])
@@ -278,6 +285,7 @@ func (ce *CircularExemplarStorage) validateExemplar(idx *indexEntry, e exemplar.
 	return nil
 }
 
+// SetOutOfOrderTimeWindow 热更新 OOO 容忍毫秒窗口。
 // SetOutOfOrderTimeWindow sets the out-of-order time window for exemplars in
 // milliseconds. Exemplars older than it are not added to the circular exemplar
 // buffer.
@@ -287,6 +295,7 @@ func (ce *CircularExemplarStorage) SetOutOfOrderTimeWindow(d int64) {
 	ce.oooTimeWindowMillis = d
 }
 
+// Resize 分配新缓冲并迁移链表；缩容按 ingestion 顺序丢弃最旧 exemplar。
 // Resize changes the size of exemplar buffer by allocating a new buffer and
 // migrating data to it. Exemplars are kept when possible. Shrinking will discard
 // old data (in order of ingestion) as needed. Returns the number of migrated
@@ -381,6 +390,7 @@ func (ce *CircularExemplarStorage) shrink(l int64) (migrated int) {
 	return migrated
 }
 
+// AddExemplar 校验后写入环形槽，必要时驱逐最旧项并维护 per-series 链表顺序。
 func (ce *CircularExemplarStorage) AddExemplar(l labels.Labels, e exemplar.Exemplar) error {
 	// TODO(bwplotka): This lock can lock all scrapers, there might high contention on this on scale.
 	// Optimize by moving the lock to be per series (& benchmark it).
@@ -560,6 +570,7 @@ func (ce *CircularExemplarStorage) computeMetrics() {
 	}
 }
 
+// IterateExemplars 按环形缓冲顺序回调所有有效 exemplar，遇错即停。
 // IterateExemplars iterates through all the exemplars from oldest to newest appended and calls
 // the given function on all of them till the end (or) till the first function call that returns an error.
 func (ce *CircularExemplarStorage) IterateExemplars(f func(seriesLabels labels.Labels, e exemplar.Exemplar) error) error {

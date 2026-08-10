@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TSDB 通用压缩层：封装 none/snappy/zstd 对字节流的 Encode/Decode，供 WAL 与 index 等组件复用。
+
 package compression
 
 import (
@@ -21,6 +23,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
+// Type 字符串枚举压缩算法；空值等价于 None。
 // Type represents the compression type used for encoding and decoding data.
 type Type string
 
@@ -34,6 +37,7 @@ const (
 	Zstd Type = "zstd"
 )
 
+// Encoder 持有 zstd.Writer 状态，对任意字节切片按 Type 压缩。
 // Encoder provides compression encoding functionality for supported compression
 // types. It is agnostic to the content being compressed, operating on byte
 // slices of serialized data streams. The encoder maintains internal state for
@@ -43,6 +47,7 @@ type Encoder struct {
 	w *zstd.Encoder
 }
 
+// NewEncoder 初始化 zstd 编码器；Snappy 无需预分配 writer。
 // NewEncoder creates a new Encoder. Returns an error if the zstd encoder cannot
 // be initialized.
 func NewEncoder() (*Encoder, error) {
@@ -55,6 +60,7 @@ func NewEncoder() (*Encoder, error) {
 	return e, nil
 }
 
+// Encode 对 None/过大 Snappy 输入可能跳过压缩并返回 compressed=false。
 // Encode returns the encoded form of src for the given compression type. It also
 // returns the indicator if the compression was performed. Encode may skip
 // compressing for None type, but also when src is too large e.g. for Snappy block format.
@@ -86,6 +92,7 @@ func (e *Encoder) Encode(t Type, src, buf []byte) (_ []byte, compressed bool, er
 	}
 }
 
+// Decoder 持有 zstd.Decoder，与 Encoder 对称解压。
 // Decoder provides decompression functionality for supported compression types.
 // It is agnostic to the content being decompressed, operating on byte slices of
 // serialized data streams. The decoder maintains internal state for Zstd
@@ -105,6 +112,7 @@ func NewDecoder() *Decoder {
 	return d
 }
 
+// Decode 按 Type 解压；buf 作输出缓冲且不得与 src 重叠。
 // Decode returns the decoded form of src or error, given expected compression type.
 //
 // The buf is used as a buffer for the returned decoded entry, and it must not

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TSDB 二进制编解码工具：Encbuf 顺序写入各类整数/字符串，Decbuf 安全解析并延迟通过 Err() 报告越界或校验失败。
+
 package encoding
 
 import (
@@ -29,6 +31,7 @@ var (
 	ErrInvalidChecksum = errors.New("invalid checksum")
 )
 
+// Encbuf 追加式编码缓冲，复用 C 数组避免频繁分配 varint 临时区。
 // Encbuf is a helper type to populate a byte slice with various types.
 type Encbuf struct {
 	B []byte
@@ -73,6 +76,7 @@ func (e *Encbuf) PutVarint64(x int64) {
 }
 
 // PutUvarintStr writes a string to the buffer prefixed by its varint length (in bytes!).
+// PutUvarintStr 先写 uvarint 长度再写字符串字节（长度单位为字节）。
 func (e *Encbuf) PutUvarintStr(s string) {
 	e.PutUvarint(len(s))
 	e.PutString(s)
@@ -85,6 +89,7 @@ func (e *Encbuf) PutUvarintBytes(b []byte) {
 }
 
 // PutHash appends a hash over the buffers current contents to the buffer.
+// PutHash 对当前缓冲内容求 hash 并将 Sum 追加到 B。
 func (e *Encbuf) PutHash(h hash.Hash) {
 	h.Reset()
 	e.WriteToHash(h)
@@ -104,6 +109,7 @@ func (e *Encbuf) PutHashSum(h hash.Hash) {
 	e.B = h.Sum(e.B)
 }
 
+// Decbuf 解析时只设置 E 错误位，需在最后调用 Err() 检查。
 // Decbuf provides safe methods to extract data from a byte slice. It does all
 // necessary bounds checking and advancing of the byte slice.
 // Several datums can be extracted without checking for errors. However, before using
@@ -113,6 +119,7 @@ type Decbuf struct {
 	E error
 }
 
+// NewDecbufAt 解析 [BE32 长度][payload][CRC32] 帧并可选校验 Castagnoli CRC。
 // NewDecbufAt returns a new decoding buffer. It expects the first 4 bytes
 // after offset to hold the big endian encoded content length, followed by the contents and the expected
 // checksum.
@@ -139,6 +146,7 @@ func NewDecbufAt(bs ByteSlice, off int, castagnoliTable *crc32.Table) Decbuf {
 	return dec
 }
 
+// NewDecbufUvarintAt 与 NewDecbufAt 类似，但长度前缀为 uvarint。
 // NewDecbufUvarintAt returns a new decoding buffer. It expects the first bytes
 // after offset to hold the uvarint-encoded buffers length, followed by the contents and the expected
 // checksum.
@@ -199,6 +207,7 @@ func (d *Decbuf) UvarintStr() string {
 	return string(d.UvarintBytes())
 }
 
+// UvarintBytes 返回指向 Decbuf 内部切片的视图，避免 string 分配。
 // UvarintBytes returns a pointer to internal data;
 // the return value becomes invalid if the byte slice goes away.
 // Compared to UvarintStr, this avoids allocations.
@@ -216,6 +225,7 @@ func (d *Decbuf) UvarintBytes() []byte {
 	return s
 }
 
+// Varint64 读取 protobuf ZigZag 编码的有符号 varint。
 func (d *Decbuf) Varint64() int64 {
 	if d.E != nil {
 		return 0
@@ -307,6 +317,7 @@ func (d *Decbuf) Err() error  { return d.E }
 func (d *Decbuf) Len() int    { return len(d.B) }
 func (d *Decbuf) Get() []byte { return d.B }
 
+// ByteSlice 抽象 mmap 或内存上的只读字节区间访问。
 // ByteSlice abstracts a byte slice.
 type ByteSlice interface {
 	Len() int

@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// chunk 写入任务队列：分段环形缓冲替代大容量 channel，空闲时释放段引用以便 GC 回收内存。
+
 package chunks
 
 import "sync"
 
+// writeJobQueue 用等长 segment 链表模拟有界 channel，push/pop 通过 Cond 阻塞同步。
 // writeJobQueue is similar to buffered channel of chunkWriteJob, but manages its own buffers
 // to avoid using a lot of memory when it's empty. It does that by storing elements into segments
 // of equal size (segmentSize). When segment is not used anymore, reference to it are removed,
@@ -30,12 +33,14 @@ type writeJobQueue struct {
 	closed         bool                  // after closing the queue, nothing can be pushed to it
 }
 
+// writeJobQueueSegment 保存固定容量 segment 及段内读写游标与下一段指针。
 type writeJobQueueSegment struct {
 	segment             []chunkWriteJob
 	nextRead, nextWrite int                   // index of next read and next write in this segment.
 	nextSegment         *writeJobQueueSegment // next segment, if any
 }
 
+// newWriteJobQueue 校验参数并初始化 pushed/popped 条件变量。
 func newWriteJobQueue(maxSize, segmentSize int) *writeJobQueue {
 	if maxSize <= 0 || segmentSize <= 0 {
 		panic("invalid queue")
@@ -51,6 +56,7 @@ func newWriteJobQueue(maxSize, segmentSize int) *writeJobQueue {
 	return q
 }
 
+// close 标记队列关闭并 Broadcast 唤醒所有阻塞的 push/pop。
 func (q *writeJobQueue) close() {
 	q.mtx.Lock()
 	defer q.mtx.Unlock()
@@ -62,6 +68,7 @@ func (q *writeJobQueue) close() {
 	q.popped.Broadcast()
 }
 
+// push 在队列满时等待 pop 腾出空间；关闭后返回 false。
 // push blocks until there is space available in the queue, and then adds job to the queue.
 // If queue is closed or gets closed while waiting for space, push returns false.
 func (q *writeJobQueue) push(job chunkWriteJob) bool {
@@ -99,6 +106,7 @@ func (q *writeJobQueue) push(job chunkWriteJob) bool {
 	return true
 }
 
+// pop FIFO 取任务；关闭后会排空剩余元素再返回 false。
 // pop returns first job from the queue, and true.
 // If queue is empty, pop blocks until there is a job (returns true), or until queue is closed (returns false).
 // If queue was already closed, pop first returns all remaining elements from the queue (with true value), and only then returns false.
@@ -132,6 +140,7 @@ func (q *writeJobQueue) pop() (chunkWriteJob, bool) {
 	return res, true
 }
 
+// length 返回当前队列中待处理任务总数。
 // length returns number of all jobs in the queue.
 func (q *writeJobQueue) length() int {
 	q.mtx.Lock()

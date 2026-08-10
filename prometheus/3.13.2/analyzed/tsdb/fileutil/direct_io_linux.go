@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Linux Direct IO 工厂：按平台选择 bufio 或 O_DIRECT writer，并报告 uncached IO 能力。
+
 //go:build linux && !forcedirectio
 
 package fileutil
@@ -24,6 +26,7 @@ func NewBufioWriterWithSize(f *os.File, size int) (BufWriter, error) {
 	return &writer{bufio.NewWriterSize(f, size)}, nil
 }
 
+// NewDirectIOWriter 构造满足对齐约束的 directIOWriter。
 func NewDirectIOWriter(f *os.File, size int) (BufWriter, error) {
 	return newDirectIOWriter(f, size)
 }

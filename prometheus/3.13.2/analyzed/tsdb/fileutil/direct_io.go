@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Direct I/O 抽象：BufWriter 统一 bufio 与 O_DIRECT 写入路径的 Flush/Reset 接口。
+
 package fileutil
 
 import (
@@ -27,6 +29,7 @@ type BufWriter interface {
 	Reset(f *os.File) error
 }
 
+// writer 在未启用 Direct IO 时包装标准 bufio.Writer。
 // writer is a specialized wrapper around bufio.Writer.
 // It is used when Direct IO isn't enabled, as using directIOWriter in such cases is impractical.
 type writer struct {
