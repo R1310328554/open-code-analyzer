@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T17:56:37Z",
-  "files": [
-    "internal/dao/user_canvas.go",
-    "internal/dao/user_canvas_version.go",
-    "internal/dao/user_tenant.go",
-    "internal/deepdoc/client.go",
-    "internal/deepdoc/dla.go",
-    "internal/deepdoc/ocr.go",
-    "internal/deepdoc/parser/docx/parser.go",
-    "internal/deepdoc/parser/docx/reader.go",
-    "internal/deepdoc/parser/docx/reader_stub.go",
-    "internal/deepdoc/parser/docx/types.go",
-    "internal/deepdoc/parser/pdf/inference/client.go",
-    "internal/deepdoc/parser/pdf/layout/boxes_sections.go",
-    "internal/deepdoc/parser/pdf/layout/chars_boxes.go",
-    "internal/deepdoc/parser/pdf/layout/layout.go",
-    "internal/deepdoc/parser/pdf/mock_doc_analyzer.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1134,
-  "done": 615
+  "done": 630
 }
