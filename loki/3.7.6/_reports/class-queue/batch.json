@@ -1,18 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:44:07Z",
-  "files": [
-    "tools/doc-generator/parse/root_blocks.go",
-    "tools/doc-generator/parse/util.go",
-    "tools/doc-generator/writer.go",
-    "tools/querycomparator/compare.go",
-    "tools/querycomparator/config.go",
-    "tools/querycomparator/execute.go",
-    "tools/querycomparator/main.go",
-    "tools/querycomparator/metastore.go",
-    "tools/querycomparator/storage.go",
-    "tools/stream-generator/distributor/client/client.go",
-    "tools/stream-generator/generator/config.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 0,
-  "done": 1541
+  "done": 1552
 }
