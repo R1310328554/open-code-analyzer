@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T16:07:26Z",
-  "files": [
-    "model/parsers/ministral.go",
-    "model/parsers/nemotron3nano.go",
-    "model/parsers/olmo3.go",
-    "model/parsers/olmo3_think.go",
-    "model/parsers/parsers.go",
-    "model/parsers/qwen3.go",
-    "model/parsers/qwen35.go",
-    "model/parsers/qwen3coder.go",
-    "model/parsers/qwen3vl.go",
-    "model/renderers/cogito.go",
-    "model/renderers/cohere.go",
-    "model/renderers/deepseek3.go",
-    "model/renderers/functiongemma.go",
-    "model/renderers/gemma4.go",
-    "model/renderers/glimmer.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 163,
-  "done": 285
+  "done": 300
 }
