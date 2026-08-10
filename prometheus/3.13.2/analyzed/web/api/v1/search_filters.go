@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Search 过滤器链：子串/模糊/子序列匹配与评分，供 storage.Filter 在索引扫描时筛选候选值。
+
 package v1
 
 import (
@@ -21,11 +23,13 @@ import (
 	"github.com/prometheus/prometheus/util/strutil"
 )
 
+// 过滤器构造时的 query 与 Accept 的 value 须大小写一致；不区分大小写时用 caseFoldingFilter 包装。
 // Filters in this file expect the query passed to their constructor and the
 // value passed to Accept to share the same case. To search case-insensitively,
 // lowercase the query at construction time and wrap the resulting filter with
 // caseFoldingFilter so incoming values are lowercased once for the whole chain.
 
+// SubstringFilter 做大小写敏感子串匹配，前缀得 1.0 分，越靠后分数越低。
 // SubstringFilter implements case-sensitive substring matching with a
 // position-based score. A prefix match scores 1.0; substring matches score in
 // the range [0.1, 1.0) where earlier match positions score higher.
@@ -92,6 +96,7 @@ func isASCII(s string) bool {
 	return true
 }
 
+// FuzzyFilter 基于 Jaro-Winkler 相似度，得分不低于 threshold 则接受。
 // FuzzyFilter implements Jaro-Winkler fuzzy matching against a query.
 type FuzzyFilter struct {
 	query     string
@@ -115,6 +120,7 @@ func (f *FuzzyFilter) Accept(value string) (bool, float64) {
 	return score >= f.threshold, score
 }
 
+// SubsequenceFilter 要求模式字符按序出现在值中，奖励连续匹配、惩罚间隔。
 // SubsequenceFilter implements fuzzy matching using a sequential character
 // matching algorithm. It requires all pattern characters to appear in the value
 // in order (subsequence matching), and scores matches by rewarding consecutive
@@ -147,6 +153,7 @@ func (f *SubsequenceFilter) Accept(value string) (bool, float64) {
 	return score > 0 && score >= f.threshold, score
 }
 
+// caseFoldingFilter 对 value 统一小写后再委托内层过滤器，避免重复折叠。
 // caseFoldingFilter wraps another Filter and lowercases the value once before
 // delegating, so a chain of case-insensitive matchers does not each repeat the
 // case fold. The wrapped filter must have been constructed with a lowercased
@@ -183,6 +190,7 @@ const (
 	memoizingFilterMaxBytes   = 10 << 20 // 10 MiB.
 )
 
+// memoizingFilter 缓存内层 Accept 结果，限制条目与字节上限，仅单 goroutine 使用。
 // memoizingFilter caches the (accepted, score) returned by the inner filter
 // for each distinct value. It is intended to be used as the outermost wrapper
 // in buildSearchFilter so that values reaching the chain multiple times in a
@@ -228,6 +236,7 @@ func (f *memoizingFilter) Accept(value string) (bool, float64) {
 // Returns true only if all filters accept the value.
 // The returned score is the best (max) score across the filters, so that
 // rankings reflect the strongest matching dimension.
+// ChainFilter 顺序执行多个 Filter，全部通过才接受并累乘 score。
 type ChainFilter struct {
 	filters []storage.Filter
 }
@@ -294,6 +303,7 @@ func (f *orSearchesFilter) Accept(value string) (bool, float64) {
 
 // orFilter combines substring and fuzzy filters with OR logic.
 // Tries substring first, then fuzzy if substring doesn't match.
+// orFilter 对子串与模糊过滤器做 OR 组合，取最高 score。
 type orFilter struct {
 	substringFilter *SubstringFilter
 	fuzzyFilter     *FuzzyFilter

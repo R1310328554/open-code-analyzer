@@ -11,8 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Search API：NDJSON 流式返回指标名/标签名/标签值，支持模糊匹配、排序与分批推送。
+
 package v1
 
+// Search API 流式协议：application/x-ndjson 分批 results，末尾 trailer 或 error 行。
 // Search API stream contract:
 //
 //   - Successful responses use Content-Type "application/x-ndjson" and consist
@@ -57,6 +60,7 @@ import (
 	"github.com/prometheus/prometheus/util/httputil"
 )
 
+// defaultFuzzAlg 为未指定 fuzz_alg 时默认的子序列模糊算法。
 // defaultFuzzAlg is the algorithm assumed when fuzz_alg is not specified.
 const defaultFuzzAlg = "subsequence"
 
@@ -66,6 +70,7 @@ const defaultSearchLimit = 100
 // defaultSearchBatchSize is the default value for the batch_size parameter when the client omits it.
 const defaultSearchBatchSize = 100
 
+// maxSearchTermsPerRequest 限制单次请求的 search[] 数量，防止 DoS。
 // maxSearchTermsPerRequest caps the number of search[] query parameters
 // accepted in one request. Per-value filter cost grows with the number of
 // terms (each term adds at least one substring filter, optionally a fuzzy
@@ -86,6 +91,7 @@ func FuzzAlgorithms() []string {
 	return slices.Clone(fuzzAlgorithms)
 }
 
+// searchParams 保存三个 search 端点共用的解析后查询参数。
 // searchParams holds the common parsed parameters for all search endpoints.
 type searchParams struct {
 	matcherSets   [][]*labels.Matcher
@@ -122,12 +128,14 @@ type searchLabelValueResult struct {
 	Score *float64 `json:"score,omitempty"`
 }
 
+// searchBatch 表示流中一条含 results 与可选 warnings 的 NDJSON 批次行。
 // searchBatch is a single NDJSON batch line containing results and optional warnings.
 type searchBatch[T any] struct {
 	Results  []T      `json:"results"`
 	Warnings []string `json:"warnings,omitempty"`
 }
 
+// searchTrailer 为流结束行，携带 status、has_more 与增量 warnings。
 // searchTrailer is the final NDJSON line indicating completion status.
 type searchTrailer struct {
 	Status   string   `json:"status"`
@@ -142,6 +150,7 @@ type searchErrorResponse struct {
 	Error     string `json:"error"`
 }
 
+// ndjsonWriter 封装 ResponseWriter 与 Flusher，逐行写入 NDJSON。
 // ndjsonWriter writes newline-delimited JSON lines with flushing.
 type ndjsonWriter struct {
 	w       http.ResponseWriter
@@ -478,6 +487,7 @@ func (s *searchResultStreamer[T]) nextBatch() ([]T, error) {
 	return batch, nil
 }
 
+// streamSearchResults 驱动 SearchResultSet 迭代，分批写入 NDJSON 并发送 trailer。
 func streamSearchResults[T any](ctx context.Context, api *API, w http.ResponseWriter, rs storage.SearchResultSet, sp searchParams, toResult func(storage.SearchResult) T) {
 	defer func() { _ = rs.Close() }()
 
@@ -624,6 +634,7 @@ func searchLabelNames(ctx context.Context, searcher storage.Searcher, matcherSet
 // chain multiple times in one search (e.g. once per TSDB block) are scored once.
 // Substring-only chains skip the memo: substring scoring is already O(L) and
 // the cache lookup would only add overhead.
+// buildSearchFilter 按 search 词链式组装 Substring/Fuzzy 过滤器与 memo 缓存。
 func buildSearchFilter(searches []string, fuzzThreshold int, fuzzAlg string, caseSensitive bool) storage.Filter {
 	terms := make([]string, 0, len(searches))
 	for _, s := range searches {
@@ -750,6 +761,7 @@ func (api *API) newSearchRequest(w http.ResponseWriter, r *http.Request, endpoin
 }
 
 // searchMetricNames handles GET/POST /api/v1/search/metric_names.
+// searchMetricNames 处理 /search/metric_names，附加指标元数据并流式返回。
 func (api *API) searchMetricNames(w http.ResponseWriter, r *http.Request) {
 	req := api.newSearchRequest(w, r, "metric_names")
 	if req == nil {

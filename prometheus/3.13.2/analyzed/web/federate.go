@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// /federate 端点：按 match[] 选择序列，导出各指标最新样本为 Prometheus 文本或 protobuf 格式供联邦抓取。
+
 package web
 
 import (
@@ -48,6 +50,7 @@ var (
 	})
 )
 
+// registerFederationMetrics 注册 federation 错误与警告计数器。
 func registerFederationMetrics(r prometheus.Registerer) {
 	r.MustRegister(federationWarnings, federationErrors)
 }
@@ -312,6 +315,7 @@ Loop:
 
 // makeNativeHistogram creates a dto.Histogram representing a native histogram.
 // Use only for standard exponential schemas.
+// makeNativeHistogram 将 FloatHistogram 转为 protobuf 原生直方图 dto。
 func makeNativeHistogram(h *histogram.FloatHistogram) *dto.Histogram {
 	result := &dto.Histogram{
 		SampleCountFloat: proto.Float64(h.Count),
@@ -345,6 +349,7 @@ func makeNativeHistogram(h *histogram.FloatHistogram) *dto.Histogram {
 
 // makeClassicHistogram creates a dto.Histogram representing a classic
 // histogram. Use only for NHCB (schema -53).
+// makeClassicHistogram 将自定义桶直方图转为经典 cumulative bucket dto。
 func makeClassicHistogram(h *histogram.FloatHistogram) *dto.Histogram {
 	result := &dto.Histogram{
 		SampleCountFloat: proto.Float64(h.Count),

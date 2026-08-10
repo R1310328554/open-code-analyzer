@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 将 PromQL parser AST 转为 UI 树视图可用的 JSON 友好结构，供 /parse 与表达式编辑器展示。
+
 package v1
 
 import (
@@ -20,6 +22,7 @@ import (
 	"github.com/prometheus/prometheus/promql/parser"
 )
 
+// translateAST 递归遍历 parser.Expr，为各节点类型生成带 type 字段的 map。
 // Take a Go PromQL AST and translate it to an object that's nicely JSON-serializable
 // for the tree view in the UI.
 // TODO: Could it make sense to do this via the normal JSON marshalling methods? Maybe
@@ -145,6 +148,7 @@ func translateAST(node parser.Expr) any {
 	panic("unsupported node type")
 }
 
+// translateDurationExpr 专门处理 DurationExpr 与嵌套 NumberLiteral。
 func translateDurationExpr(node parser.Expr) any {
 	if node == nil {
 		return nil
@@ -178,6 +182,7 @@ func translateDurationExpr(node parser.Expr) any {
 	}
 }
 
+// sanitizeList 过滤空字符串，保证 JSON 输出中 grouping 等数组整洁。
 func sanitizeList(l []string) []string {
 	if l == nil {
 		return []string{}
@@ -185,6 +190,7 @@ func sanitizeList(l []string) []string {
 	return l
 }
 
+// translateMatchers 将 labels.Matcher 切片转为 UI 可展示的 matcher 对象。
 func translateMatchers(in []*labels.Matcher) any {
 	out := []map[string]any{}
 	for _, m := range in {
@@ -197,6 +203,7 @@ func translateMatchers(in []*labels.Matcher) any {
 	return out
 }
 
+// getStartOrEnd 将 @ 修饰符枚举转为 UI 可读的 start/end 字符串。
 func getStartOrEnd(startOrEnd parser.ItemType) any {
 	if startOrEnd == 0 {
 		return nil

@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 本文件定义 Prometheus HTTP API 全部路径的 OpenAPI PathItem，与 api.go 注册端点一一对应。
 // This file defines all API path specifications including parameters, request bodies,
 // and response schemas. Each path definition corresponds to an endpoint registered in api.go.
 package v1
@@ -23,6 +24,7 @@ import (
 	"github.com/pb33f/libopenapi/orderedmap"
 )
 
+// 以下方法为各 REST 端点生成 GET/POST 操作、参数与响应规范。
 // Path definition methods for API endpoints.
 
 func (*OpenAPIBuilder) queryPath() *v3.PathItem {
@@ -52,6 +54,7 @@ func (*OpenAPIBuilder) queryPath() *v3.PathItem {
 	}
 }
 
+// queryRangePath 描述 /query_range 区间查询参数与响应。
 func (*OpenAPIBuilder) queryRangePath() *v3.PathItem {
 	params := []*v3.Parameter{
 		queryParamWithExample("limit", "The maximum number of metrics to return.", false, integerSchema(), []example{{"example", 100}}),
@@ -149,6 +152,7 @@ func (*OpenAPIBuilder) parseQueryPath() *v3.PathItem {
 	}
 }
 
+// labelsPath 描述 /labels 标签名列表端点。
 func (*OpenAPIBuilder) labelsPath() *v3.PathItem {
 	params := []*v3.Parameter{
 		queryParamWithExample("start", "Start timestamp for label names query.", false, timestampSchema(), timestampExamples(exampleTime.Add(-1*time.Hour))),
@@ -177,6 +181,7 @@ func (*OpenAPIBuilder) labelsPath() *v3.PathItem {
 	}
 }
 
+// labelValuesPath 描述 /label/{name}/values 标签值端点。
 func (*OpenAPIBuilder) labelValuesPath() *v3.PathItem {
 	params := []*v3.Parameter{
 		pathParam("name", "Label name.", stringSchema()),
@@ -211,6 +216,7 @@ func commonSearchParams() []*v3.Parameter {
 	}
 }
 
+// searchMetricNamesPath 描述 NDJSON 流式指标名搜索端点。
 func (b *OpenAPIBuilder) searchMetricNamesPath() *v3.PathItem {
 	params := append([]*v3.Parameter{
 		queryParamWithExample("match[]", "Series selector argument used to scope metric discovery.", false, base.CreateSchemaProxy(&base.Schema{
@@ -423,6 +429,7 @@ func (*OpenAPIBuilder) targetsRelabelStepsPath() *v3.PathItem {
 	}
 }
 
+// rulesPath 描述 /rules 规则组发现端点。
 func (*OpenAPIBuilder) rulesPath() *v3.PathItem {
 	params := []*v3.Parameter{
 		queryParamWithExample("type", "Filter by rule type: alert or record.", false, stringSchema(), []example{{"example", "alert"}}),
@@ -457,6 +464,7 @@ func (*OpenAPIBuilder) rulesPath() *v3.PathItem {
 	}
 }
 
+// alertsPath 描述 /alerts 活跃告警端点。
 func (*OpenAPIBuilder) alertsPath() *v3.PathItem {
 	return &v3.PathItem{
 		Get: &v3.Operation{
@@ -479,6 +487,7 @@ func (*OpenAPIBuilder) alertmanagersPath() *v3.PathItem {
 	}
 }
 
+// statusConfigPath 描述 /status/config 运行配置 YAML 端点。
 func (*OpenAPIBuilder) statusConfigPath() *v3.PathItem {
 	return &v3.PathItem{
 		Get: &v3.Operation{
@@ -660,6 +669,7 @@ func (*OpenAPIBuilder) remoteReadPath() *v3.PathItem {
 	}
 }
 
+// remoteWritePath 描述 /write 远程写入端点。
 func (*OpenAPIBuilder) remoteWritePath() *v3.PathItem {
 	return &v3.PathItem{
 		Post: &v3.Operation{

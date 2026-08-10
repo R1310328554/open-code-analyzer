@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OpenAPI 辅助函数：构建 schema、参数、响应体与 PromQL 示例，供 openapi_paths/schemas 复用。
+
 package v1
 
 import (
@@ -25,8 +27,10 @@ import (
 	"github.com/prometheus/prometheus/promql"
 )
 
+// 本文件提供 OpenAPI 组件构建的通用辅助函数与类型工厂。
 // Helper functions for building common structures.
 
+// exampleTime 作为 OpenAPI 示例中的固定参考时间戳。
 // exampleTime is a reference time used for timestamp examples.
 var exampleTime = time.Date(2026, 1, 2, 13, 37, 0, 0, time.UTC)
 
@@ -47,6 +51,7 @@ type example struct {
 	value any
 }
 
+// exampleMap 将命名示例列表转为 orderedmap 供参数/响应引用。
 // exampleMap creates an Examples map from the provided examples.
 func exampleMap(exs []example) *orderedmap.Map[string, *base.Example] {
 	examples := orderedmap.New[string, *base.Example]()
@@ -229,6 +234,7 @@ func stringSchemaWithConstValue(value string) *base.SchemaProxy {
 	})
 }
 
+// enumStringSchema 构造限定枚举值的字符串 schema，首项作为 example。
 // enumStringSchema creates a string schema constrained to the given enum values.
 // The first value is used as the example. Use this for query parameters where
 // the description lives on the parameter object.
@@ -307,6 +313,7 @@ func pathParam(name, description string, schema *base.SchemaProxy) *v3.Parameter
 	}
 }
 
+// createYAMLNode 将 Go 值经 yaml 往返序列化为 libopenapi 示例节点。
 // createYAMLNode converts Go data to yaml.Node for use in examples.
 func createYAMLNode(data any) *yaml.Node {
 	node := &yaml.Node{}
@@ -315,6 +322,7 @@ func createYAMLNode(data any) *yaml.Node {
 	return node
 }
 
+// formRequestBodyWithExamples 构建 application/x-www-form-urlencoded 请求体。
 // formRequestBodyWithExamples creates a form-encoded request body with examples.
 func formRequestBodyWithExamples(schemaRef string, examples *orderedmap.Map[string, *base.Example], description string) *v3.RequestBody {
 	content := orderedmap.New[string, *v3.MediaType]()
@@ -332,6 +340,7 @@ func formRequestBodyWithExamples(schemaRef string, examples *orderedmap.Map[stri
 	}
 }
 
+// jsonResponseWithExamples 构建带 components schema 引用的 JSON 200 响应。
 // jsonResponseWithExamples creates a JSON response with examples.
 func jsonResponseWithExamples(schemaRef string, examples *orderedmap.Map[string, *base.Example], description string) *v3.Response {
 	content := orderedmap.New[string, *v3.MediaType]()
@@ -364,6 +373,7 @@ func textResponseWithExamples(contentType string, schema *base.SchemaProxy, exam
 	}
 }
 
+// ndjsonResponsesWithErrorExamples 为 NDJSON 流式端点定义 200 与 default 错误响应。
 // ndjsonResponsesWithErrorExamples creates responses for NDJSON streaming endpoints.
 func ndjsonResponsesWithErrorExamples(successExamples, errorExamples *orderedmap.Map[string, *base.Example], successDescription, errorDescription string) *v3.Responses {
 	codes := orderedmap.New[string, *v3.Response]()
@@ -404,6 +414,7 @@ func queryParamWithExample(name, description string, required bool, schema *base
 	return param
 }
 
+// marshalToYAMLNode 用 jsoniter 生产序列化后转 yaml.Node，保留整数时间戳类型。
 // marshalToYAMLNode marshals a value using jsoniter (production marshaling) and converts to yaml.Node.
 // The result is an inline JSON representation that preserves integer types for timestamps.
 func marshalToYAMLNode(v any) *yaml.Node {
@@ -419,6 +430,7 @@ func marshalToYAMLNode(v any) *yaml.Node {
 	return node
 }
 
+// vectorExample 用真实 PromQL Vector 构造 /query vector 响应示例。
 // vectorExample creates an example for a vector query response using production marshaling.
 func vectorExample(v promql.Vector) *yaml.Node {
 	type response struct {
@@ -434,6 +446,7 @@ func vectorExample(v promql.Vector) *yaml.Node {
 	return marshalToYAMLNode(resp)
 }
 
+// matrixExample 用真实 PromQL Matrix 构造 /query_range 响应示例。
 // matrixExample creates an example for a matrix query response using production marshaling.
 func matrixExample(m promql.Matrix) *yaml.Node {
 	type response struct {

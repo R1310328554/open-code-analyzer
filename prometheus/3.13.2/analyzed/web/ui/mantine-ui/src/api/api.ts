@@ -1,3 +1,5 @@
+// Mantine UI 的 Prometheus /api/v1 客户端：React Query 封装 fetch、错误处理与 pathPrefix。
+
 import { QueryKey, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useSettings } from "../state/settingsSlice";
 
@@ -18,6 +20,7 @@ export type ErrorAPIResponse = {
 
 export type APIResponse<T> = SuccessAPIResponse<T> | ErrorAPIResponse;
 
+// createQueryFn 工厂返回 React Query 的 queryFn，处理 JSON/网络/业务错误。
 const createQueryFn =
   <T>({
     pathPrefix,
@@ -97,6 +100,7 @@ type QueryOptions = {
   recordResponseTime?: (time: number) => void;
 };
 
+// useAPIQuery 非 suspense 查询 hook，支持 enabled 与 refetchInterval。
 export const useAPIQuery = <T>({
   key,
   path,
@@ -118,6 +122,7 @@ export const useAPIQuery = <T>({
   });
 };
 
+// useSuspenseAPIQuery 配合 Suspense 边界，staleTime=Infinity 避免卸载时 GC 丢数据。
 export const useSuspenseAPIQuery = <T>({ key, path, params }: QueryOptions) => {
   const { pathPrefix } = useSettings();
 

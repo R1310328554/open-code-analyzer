@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 本文件集中定义 OpenAPI components/schemas，按 query、labels、status 等功能域组织。
 // This file defines all OpenAPI schema definitions for API request and response types.
 // Schemas are organized by functional area: query, labels, series, metadata, targets,
 // rules, alerts, and status endpoints.
@@ -22,6 +23,7 @@ import (
 	"github.com/pb33f/libopenapi/orderedmap"
 )
 
+// buildComponents 注册全部 schema 供路径与示例引用。
 // Schema definitions and components builder.
 
 func (b *OpenAPIBuilder) buildComponents() *v3.Components {
@@ -440,6 +442,7 @@ func (*OpenAPIBuilder) histogramSeriesSchema() *base.SchemaProxy {
 	})
 }
 
+// queryDataSchema 定义 instant/range 查询 data 字段的 resultType 联合体。
 func (*OpenAPIBuilder) queryDataSchema() *base.SchemaProxy {
 	// Vector query result.
 	vectorProps := orderedmap.New[string, *base.SchemaProxy]()
@@ -769,6 +772,7 @@ func propsMap(pairs []schemaProp) *orderedmap.Map[string, *base.SchemaProxy] {
 }
 
 // commonSearchPostProps returns the properties shared by all three search POST bodies.
+// commonSearchPostProps 提取 search 端点 POST 体共用的 match[]、fuzz 等字段。
 func (b *OpenAPIBuilder) commonSearchPostProps() []schemaProp {
 	return []schemaProp{
 		{"fuzz_threshold", integerSchemaWithDescriptionAndExample("Form field: Fuzzy threshold in the range 0-100. Default is 0, the lowest fuzzy threshold.", 80)},
@@ -784,6 +788,7 @@ func (b *OpenAPIBuilder) commonSearchPostProps() []schemaProp {
 	}
 }
 
+// searchMetricNamesPostInputBodySchema 定义 POST /search/metric_names 请求体。
 func (b *OpenAPIBuilder) searchMetricNamesPostInputBodySchema() *base.SchemaProxy {
 	props := append([]schemaProp{
 		{"match[]", stringArraySchemaWithDescriptionAndExample("Form field: Series selector argument used to scope metric discovery.", []string{"{job=\"prometheus\"}"})},
@@ -885,6 +890,7 @@ func (*OpenAPIBuilder) metricMetadataSchema() *base.SchemaProxy {
 	})
 }
 
+// targetSchema 描述 scrape target 的健康、标签与 lastError 等字段。
 func (*OpenAPIBuilder) targetSchema() *base.SchemaProxy {
 	props := orderedmap.New[string, *base.SchemaProxy]()
 	props.Set("discoveredLabels", schemaRef("#/components/schemas/Labels"))
@@ -1051,6 +1057,7 @@ func (*OpenAPIBuilder) ruleDiscoverySchema() *base.SchemaProxy {
 	})
 }
 
+// alertSchema 描述 /alerts 返回的单条告警记录结构。
 func (*OpenAPIBuilder) alertSchema() *base.SchemaProxy {
 	props := orderedmap.New[string, *base.SchemaProxy]()
 	props.Set("labels", schemaRef("#/components/schemas/Labels"))

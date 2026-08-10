@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// builtinassets 构建标签：将 embed 的前端静态资源包装为 http.FS 供 Web UI 服务。
+
 //go:build builtinassets
 
 package ui
