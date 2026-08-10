@@ -20,5 +20,8 @@ package org.keycloak.crl;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link CrlStorageProvider} 的 {@link ProviderFactory} 工厂接口。
+ */
 public interface CrlStorageProviderFactory extends ProviderFactory<CrlStorageProvider> {
 }

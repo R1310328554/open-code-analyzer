@@ -23,27 +23,28 @@ import java.util.concurrent.Callable;
 import org.keycloak.provider.Provider;
 
 /**
- * Crl Storage Provider interface
+ * CRL（证书吊销列表）缓存存储提供者 SPI。
+ * <p>支持按 key 从缓存读取或加载 X509 CRL，以及主动刷新缓存条目。</p>
  *
  * @author rmartinc
  */
 public interface CrlStorageProvider extends Provider {
 
     /**
-     * Returns the CRL for this key from cache or loading from the loader.
-     * @param key The key for the CRL
-     * @param loader The loader to get if the CRL is not in cache
-     * @return The X509CRL placed in the cache
-     * @throws GeneralSecurityException
+     * 按 key 获取 CRL：命中缓存则直接返回，否则通过 {@code loader} 加载并写入缓存。
+     * @param key CRL 缓存键
+     * @param loader 缓存未命中时的加载回调
+     * @return 已缓存的 {@link X509CRL}
+     * @throws GeneralSecurityException 加载或解析失败时抛出
      */
     X509CRL get(String key, Callable<X509CRL> loader) throws GeneralSecurityException;
 
     /**
-     * Refreshes the CRL in the cache for this key.
-     * @param key The key for the CRL
-     * @param loader The loader to get the CRL
-     * @return true if refreshed or false if not
-     * @throws GeneralSecurityException
+     * 强制刷新指定 key 的 CRL 缓存条目。
+     * @param key CRL 缓存键
+     * @param loader 用于获取最新 CRL 的加载回调
+     * @return 刷新成功返回 {@code true}，否则 {@code false}
+     * @throws GeneralSecurityException 加载或解析失败时抛出
      */
     boolean refreshCache(String key, Callable<X509CRL> loader) throws GeneralSecurityException;
 

@@ -21,23 +21,30 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * CEK 管理 SPI，注册 {@link CekManagementProvider} 提供者类型。
+ */
 public class CekManagementSpi implements Spi{
 
+    /** 内部 SPI，不对扩展模块公开。 */
 	@Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code cekmanagement}。 */
     @Override
     public String getName() {
         return "cekmanagement";
     }
 
+    /** CEK 管理提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return CekManagementProvider.class;
     }
 
+    /** CEK 管理工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return CekManagementProviderFactory.class;

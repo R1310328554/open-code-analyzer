@@ -21,16 +21,22 @@ import org.keycloak.Config;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link ClientSignatureVerifierProvider} 的 {@link ProviderFactory} 工厂接口。
+ */
 public interface ClientSignatureVerifierProviderFactory extends ProviderFactory<ClientSignatureVerifierProvider> {
 
+    /** 默认空实现，子类可读取配置。 */
     @Override
     default void init(Config.Scope config) {
     }
 
+    /** 默认空实现，会话工厂就绪后回调。 */
     @Override
     default void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** 默认空实现，无资源需释放。 */
     @Override
     default void close() {
     }

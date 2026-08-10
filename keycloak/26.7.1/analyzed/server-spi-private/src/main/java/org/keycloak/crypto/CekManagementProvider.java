@@ -20,10 +20,16 @@ package org.keycloak.crypto;
 import org.keycloak.jose.jwe.alg.JWEAlgorithmProvider;
 import org.keycloak.provider.Provider;
 
+/**
+ * JWE 内容加密密钥（CEK）管理提供者 SPI。
+ * <p>封装 JWE 算法层（如 RSA-OAEP、ECDH-ES）的密钥协商实现。</p>
+ */
 public interface CekManagementProvider extends Provider {
 
+    /** @return 对应的 JWE 密钥管理算法提供者 */
     JWEAlgorithmProvider jweAlgorithmProvider();
 
+    /** 默认空实现，无资源需释放。 */
     @Override
     default void close() {
     }

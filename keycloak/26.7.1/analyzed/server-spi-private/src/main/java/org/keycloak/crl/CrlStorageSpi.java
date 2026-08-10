@@ -19,23 +19,30 @@ package org.keycloak.crl;
 
 import org.keycloak.provider.Spi;
 
+/**
+ * CRL 存储 SPI，注册 {@link CrlStorageProvider} 提供者类型。
+ */
 public class CrlStorageSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code crlStorage}。 */
     @Override
     public String getName() {
         return "crlStorage";
     }
 
+    /** CRL 存储提供者接口类型。 */
     @Override
     public Class<CrlStorageProvider> getProviderClass() {
         return CrlStorageProvider.class;
     }
 
+    /** CRL 存储工厂类型。 */
     @Override
     public Class<CrlStorageProviderFactory> getProviderFactoryClass() {
         return CrlStorageProviderFactory.class;

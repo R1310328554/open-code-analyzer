@@ -20,10 +20,16 @@ package org.keycloak.crypto;
 import org.keycloak.jose.jwe.enc.JWEEncryptionProvider;
 import org.keycloak.provider.Provider;
 
+/**
+ * JWE 内容加密（enc）算法提供者 SPI。
+ * <p>封装 AES-GCM、AES-CBC+HMAC 等载荷加密算法的实现。</p>
+ */
 public interface ContentEncryptionProvider extends Provider {
 
+    /** @return 对应的 JWE 内容加密算法提供者 */
     JWEEncryptionProvider jweEncryptionProvider();
 
+    /** 默认空实现，无资源需释放。 */
     @Override
     default void close() {
     }

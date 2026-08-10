@@ -22,18 +22,23 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link HashProvider} 的 {@link ProviderFactory} 工厂接口。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface HashProviderFactory extends ProviderFactory<HashProvider> {
 
+    /** 默认空实现，子类可读取配置。 */
     @Override
     default void init(Config.Scope config) {
     }
 
+    /** 默认空实现，会话工厂就绪后回调。 */
     @Override
     default void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** 默认空实现，无资源需释放。 */
     @Override
     default void close() {
     }

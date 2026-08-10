@@ -22,14 +22,28 @@ import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.models.ClientModel;
 import org.keycloak.provider.Provider;
 
+/**
+ * 客户端 JWS 签名验证提供者 SPI。
+ * <p>根据客户端配置与 JWS 输入创建 {@link SignatureVerifierContext}，用于校验请求签名。</p>
+ */
 public interface ClientSignatureVerifierProvider extends Provider {
+    /**
+     * 为指定客户端与 JWS 输入构建签名验证上下文。
+     * @param client 客户端模型
+     * @param input 待验证的 JWS
+     * @return 可用于执行验签的上下文
+     * @throws VerificationException 无法构建验证器时抛出
+     */
     SignatureVerifierContext verifier(ClientModel client, JWSInput input) throws VerificationException;
 
+    /** 默认空实现，无资源需释放。 */
     @Override
     default void close() {
     }
 
+    /** @return 该提供者支持的 JWS 算法标识（如 {@code RS256}） */
     String getAlgorithm();
 
+    /** @return 是否为非对称签名算法（RSA/EC 等） */
     boolean isAsymmetricAlgorithm();
 }
