@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/authorization/policy/provider/PolicyProvider.java",
     "server-spi-private/src/main/java/org/keycloak/authorization/policy/provider/PolicyProviderAdminService.java",
     "server-spi-private/src/main/java/org/keycloak/authorization/policy/provider/PolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/policy/provider/PolicySpi.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/AuthorizationStoreFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/PermissionTicketStore.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/PolicyStore.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/ResourceServerStore.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/ResourceStore.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/ScopeStore.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/StoreFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/StoreFactorySpi.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/syncronization/ClientApplicationSynchronizer.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/syncronization/GroupSynchronizer.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/syncronization/OrganizationSynchronizer.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/syncronization/RealmSynchronizer.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/syncronization/RoleSynchronizer.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/syncronization/Synchronizer.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/store/syncronization/UserSynchronizer.java"
+    "server-spi-private/src/main/java/org/keycloak/authorization/policy/provider/PolicySpi.java"
   ],
   "remaining_pending": 2998,
-  "done": 2970
+  "done": 2985
 }
