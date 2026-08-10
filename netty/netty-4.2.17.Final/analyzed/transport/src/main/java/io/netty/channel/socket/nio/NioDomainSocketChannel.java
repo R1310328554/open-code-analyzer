@@ -59,17 +59,22 @@ import static io.netty.channel.internal.ChannelUtils.MAX_BYTES_PER_GATHERING_WRI
 /**
  * {@link DuplexChannel} which uses NIO selector based implementation to support
  * UNIX Domain Sockets. This is only supported when using Java 16+.
+ * <p>基于 NIO 的 UNIX 域套接字全双工 {@link DuplexChannel}，需 Java 16+。</p>
  */
 public final class NioDomainSocketChannel extends AbstractNioByteChannel
         implements DuplexChannel {
+    /** 类级日志 */
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(NioDomainSocketChannel.class);
     private static final SelectorProvider DEFAULT_SELECTOR_PROVIDER = SelectorProvider.provider();
 
+    /** 反射 {@code openSocketChannel(ProtocolFamily)} 方法 */
     private static final Method OPEN_SOCKET_CHANNEL_WITH_FAMILY =
             SelectorProviderUtil.findOpenMethod("openSocketChannel");
 
     private final ChannelConfig config;
+    /** 输入方向是否已 shutdown */
     private volatile boolean isInputShutdown;
+    /** 输出方向是否已 shutdown */
     private volatile boolean isOutputShutdown;
 
     static SocketChannel newChannel(SelectorProvider provider) {
@@ -90,6 +95,7 @@ public final class NioDomainSocketChannel extends AbstractNioByteChannel
 
     /**
      * Create a new instance
+     * <p>创建新实例。</p>
      */
     public NioDomainSocketChannel() {
         this(DEFAULT_SELECTOR_PROVIDER);
@@ -97,6 +103,7 @@ public final class NioDomainSocketChannel extends AbstractNioByteChannel
 
     /**
      * Create a new instance using the given {@link SelectorProvider}.
+     * <p>使用指定 {@link SelectorProvider} 创建实例。</p>
      */
     public NioDomainSocketChannel(SelectorProvider provider) {
         this(newChannel(provider));
@@ -104,6 +111,7 @@ public final class NioDomainSocketChannel extends AbstractNioByteChannel
 
     /**
      * Create a new instance using the given {@link SocketChannel}.
+     * <p>基于已有 {@link SocketChannel} 创建实例。</p>
      */
     public NioDomainSocketChannel(SocketChannel socket) {
         this(null, socket);
@@ -111,6 +119,7 @@ public final class NioDomainSocketChannel extends AbstractNioByteChannel
 
     /**
      * Create a new instance
+     * <p>创建新实例。</p>
      *
      * @param parent    the {@link Channel} which created this instance or {@code null} if it was created by the user
      * @param socket    the {@link SocketChannel} which will be used
@@ -283,7 +292,7 @@ public final class NioDomainSocketChannel extends AbstractNioByteChannel
         try {
             return javaChannel().getLocalAddress();
         } catch (Exception ignore) {
-            // ignore
+            // 获取地址失败时忽略（通道可能已关闭）
         }
         return null;
     }
@@ -365,7 +374,7 @@ public final class NioDomainSocketChannel extends AbstractNioByteChannel
     }
 
     private void adjustMaxBytesPerGatheringWrite(int attempted, int written, int oldMaxBytesPerGatheringWrite) {
-        // By default we track the SO_SNDBUF when ever it is explicitly set. However some OSes may dynamically change
+        // 根据 SO_SNDBUF 与实际上写字节数动态调整 gather write 上限
         // SO_SNDBUF (and other characteristics that determine how much data can be written at once) so we should try
         // make a best effort to adjust as OS behavior changes.
         if (attempted == written) {
@@ -383,7 +392,7 @@ public final class NioDomainSocketChannel extends AbstractNioByteChannel
         int writeSpinCount = config().getWriteSpinCount();
         do {
             if (in.isEmpty()) {
-                // All written so clear OP_WRITE
+                // 全部写完，清除 OP_WRITE 兴趣集
                 clearOpWrite();
                 // Directly return here so incompleteWrite(...) is not called.
                 return;
@@ -394,7 +403,7 @@ public final class NioDomainSocketChannel extends AbstractNioByteChannel
             ByteBuffer[] nioBuffers = in.nioBuffers(1024, maxBytesPerGatheringWrite);
             int nioBufferCnt = in.nioBufferCount();
 
-            // Always use nioBuffers() to workaround data-corruption.
+            // 必须使用 nioBuffers() 规避数据损坏（见 issue #2761）
             // See https://github.com/netty/netty/issues/2761
             switch (nioBufferCnt) {
                 case 0:
@@ -446,12 +455,14 @@ public final class NioDomainSocketChannel extends AbstractNioByteChannel
     }
 
     private final class NioSocketChannelUnsafe extends NioByteUnsafe {
-        // Only extending it so we create a new instance in newUnsafe() and return it.
+        // 仅用于在 newUnsafe() 中返回独立 Unsafe 实例
     }
 
     private final class NioDomainSocketChannelConfig extends DefaultChannelConfig
             implements DuplexChannelConfig {
+        /** 是否允许半关闭（shutdownInput/Output 后不立即 close） */
         private volatile boolean allowHalfClosure;
+        /** 单次 gather write 尝试的最大字节数 */
         private volatile int maxBytesPerGatheringWrite = Integer.MAX_VALUE;
         private final SocketChannel javaChannel;
         private NioDomainSocketChannelConfig(NioDomainSocketChannel channel, SocketChannel javaChannel) {
@@ -628,7 +639,7 @@ public final class NioDomainSocketChannel extends AbstractNioByteChannel
         }
 
         private void calculateMaxBytesPerGatheringWrite() {
-            // Multiply by 2 to give some extra space in case the OS can process write data faster than we can provide.
+            // 发送缓冲区大小×2 作为 gather write 上限，预留 OS 更快消费的空间
             int newSendBufferSize = getSendBufferSize() << 1;
             if (newSendBufferSize > 0) {
                 setMaxBytesPerGatheringWrite(newSendBufferSize);

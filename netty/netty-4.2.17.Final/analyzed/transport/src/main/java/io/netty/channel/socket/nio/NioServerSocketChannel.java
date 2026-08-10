@@ -43,6 +43,7 @@ import java.util.Map;
 /**
  * A {@link io.netty.channel.socket.ServerSocketChannel} implementation which uses
  * NIO selector based implementation to accept new connections.
+ * <p>基于 NIO Selector 的 TCP {@link ServerSocketChannel}，accept 产生 {@link NioSocketChannel}。</p>
  */
 public class NioServerSocketChannel extends AbstractNioMessageChannel
                              implements io.netty.channel.socket.ServerSocketChannel {
@@ -69,6 +70,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     /**
      * Create a new instance
+     * <p>创建新实例。</p>
      */
     public NioServerSocketChannel() {
         this(DEFAULT_SELECTOR_PROVIDER);
@@ -76,6 +78,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     /**
      * Create a new instance using the given {@link SelectorProvider}.
+     * <p>使用指定 {@link SelectorProvider} 创建实例。</p>
      */
     public NioServerSocketChannel(SelectorProvider provider) {
         this(provider, (SocketProtocolFamily) null);
@@ -83,6 +86,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     /**
      * Create a new instance using the given {@link SelectorProvider} and protocol family (supported only since JDK 15).
+     * <p>创建新实例。</p>
      *
      * @deprecated use {@link NioServerSocketChannel#NioServerSocketChannel(SelectorProvider, SocketProtocolFamily)}
      */
@@ -93,6 +97,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     /**
      * Create a new instance using the given {@link SelectorProvider} and protocol family (supported only since JDK 15).
+     * <p>创建新实例。</p>
      */
     public NioServerSocketChannel(SelectorProvider provider, SocketProtocolFamily family) {
         this(newChannel(provider, family));
@@ -100,6 +105,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     /**
      * Create a new instance using the given {@link ServerSocketChannel}.
+     * <p>基于已有 {@link ServerSocketChannel} 创建实例。</p>
      */
     public NioServerSocketChannel(ServerSocketChannel channel) {
         super(null, channel, SelectionKey.OP_ACCEPT);
@@ -123,7 +129,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     @Override
     public boolean isActive() {
-        // As java.nio.ServerSocketChannel.isBound() will continue to return true even after the channel was closed
+        // 关闭后 JDK isBound 仍可能为 true，故同时检查 isOpen
         // we will also need to check if it is open.
         return isOpen() && javaChannel().socket().isBound();
     }
@@ -175,7 +181,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
         return 0;
     }
 
-    // Unnecessary stuff
+    // ServerChannel 不支持 connect/write 等，以下方法仅满足抽象类签名
     @Override
     protected boolean doConnect(
             SocketAddress remoteAddress, SocketAddress localAddress) throws Exception {

@@ -49,6 +49,7 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 /**
  * A {@link io.netty.channel.ServerChannel} implementation which uses
  * NIO selector based implementation to support UNIX Domain Sockets. This is only supported when using Java 16+.
+ * <p>UNIX 域套接字服务端 {@link ServerChannel}，accept 后创建 {@link NioDomainSocketChannel}。</p>
  */
 public final class NioServerDomainSocketChannel extends AbstractNioMessageChannel
         implements io.netty.channel.ServerChannel {
@@ -58,9 +59,10 @@ public final class NioServerDomainSocketChannel extends AbstractNioMessageChanne
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
     private static final SelectorProvider DEFAULT_SELECTOR_PROVIDER = SelectorProvider.provider();
     private final NioDomainServerSocketChannelConfig config;
+    /** 是否已成功 bind（关闭后仍可能 isBound，故配合 isOpen 判断 active） */
     private volatile boolean bound;
 
-    // Package-private for testing.
+    // 包级可见，供单元测试直接调用
     static ServerSocketChannel newChannel(SelectorProvider provider) {
         if (PlatformDependent.javaVersion() < 16) {
             throw new UnsupportedOperationException("Only supported with Java 16+");
@@ -84,6 +86,7 @@ public final class NioServerDomainSocketChannel extends AbstractNioMessageChanne
 
     /**
      * Create a new instance
+     * <p>创建新实例。</p>
      */
     public NioServerDomainSocketChannel() {
         this(DEFAULT_SELECTOR_PROVIDER);
@@ -91,6 +94,7 @@ public final class NioServerDomainSocketChannel extends AbstractNioMessageChanne
 
     /**
      * Create a new instance using the given {@link SelectorProvider}.
+     * <p>使用指定 {@link SelectorProvider} 创建实例。</p>
      */
     public NioServerDomainSocketChannel(SelectorProvider provider) {
         this(newChannel(provider));
@@ -98,6 +102,7 @@ public final class NioServerDomainSocketChannel extends AbstractNioMessageChanne
 
     /**
      * Create a new instance using the given {@link ServerSocketChannel}.
+     * <p>基于已有 {@link ServerSocketChannel} 创建实例。</p>
      */
     public NioServerDomainSocketChannel(ServerSocketChannel channel) {
         super(null, channel, SelectionKey.OP_ACCEPT);
@@ -106,7 +111,7 @@ public final class NioServerDomainSocketChannel extends AbstractNioMessageChanne
         }
         config = new NioDomainServerSocketChannelConfig(this);
         try {
-            // Check if we already have a local address bound.
+            // 构造时检查是否已绑定本地地址
             bound = channel.getLocalAddress() != null;
         } catch (IOException e) {
             throw new ChannelException(e);
@@ -169,7 +174,7 @@ public final class NioServerDomainSocketChannel extends AbstractNioMessageChanne
 
     @Override
     protected void doClose() throws Exception {
-        // Obtain the localAddress before we close the channel so it will not return null if we did not retrieve
+        // 关闭前先保存 localAddress，以便删除域套接字文件
         // it before.
         SocketAddress local = localAddress();
         try {
@@ -184,7 +189,7 @@ public final class NioServerDomainSocketChannel extends AbstractNioMessageChanne
 
     @Override
     protected SocketAddress localAddress0() {
-        // do not use unsafe which uses native transport (epoll or kqueue)
+        // 不使用 native unsafe；也不使用 javaChannel().socket()（非 NIO API）
         // do not use javaChannel().socket() which is not nio
         try {
             return javaChannel().getLocalAddress();

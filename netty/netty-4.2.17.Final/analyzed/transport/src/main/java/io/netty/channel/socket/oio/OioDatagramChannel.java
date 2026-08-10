@@ -52,6 +52,7 @@ import java.util.Locale;
 /**
  * An OIO datagram {@link Channel} that sends and receives an
  * {@link AddressedEnvelope AddressedEnvelope<ByteBuf, SocketAddress>}.
+ * <p>阻塞 I/O 实现的 UDP {@link Channel}，使用 {@link MulticastSocket}。</p>
  *
  * @see AddressedEnvelope
  * @see DatagramPacket
@@ -71,8 +72,10 @@ public class OioDatagramChannel extends AbstractOioMessageChannel
             StringUtil.simpleClassName(SocketAddress.class) + ">, " +
             StringUtil.simpleClassName(ByteBuf.class) + ')';
 
+    /** 底层 JDK 组播/数据报 socket */
     private final MulticastSocket socket;
     private final OioDatagramChannelConfig config;
+    /** 复用的 JDK 数据报包对象，减少分配 */
     private final java.net.DatagramPacket tmpPacket = new java.net.DatagramPacket(EmptyArrays.EMPTY_BYTES, 0);
 
     private static MulticastSocket newSocket() {
@@ -85,6 +88,7 @@ public class OioDatagramChannel extends AbstractOioMessageChannel
 
     /**
      * Create a new instance with an new {@link MulticastSocket}.
+     * <p>使用新 {@link MulticastSocket} 创建实例。</p>
      */
     public OioDatagramChannel() {
         this(newSocket());
@@ -92,6 +96,7 @@ public class OioDatagramChannel extends AbstractOioMessageChannel
 
     /**
      * Create a new instance from the given {@link MulticastSocket}.
+     * <p>基于已有 {@link MulticastSocket} 创建实例。</p>
      *
      * @param socket    the {@link MulticastSocket} which is used by this instance
      */
@@ -123,6 +128,7 @@ public class OioDatagramChannel extends AbstractOioMessageChannel
 
     /**
      * {@inheritDoc}
+     * <p>继承父接口文档。</p>
      *
      * This can be safely cast to {@link OioDatagramChannelConfig}.
      */
@@ -215,7 +221,7 @@ public class OioDatagramChannel extends AbstractOioMessageChannel
         ByteBuf data = config.getAllocator().heapBuffer(allocHandle.guess());
         boolean free = true;
         try {
-            // Ensure we null out the address which may have been set before.
+            // 读/写前清空地址字段，避免沿用上次的目标地址
             tmpPacket.setAddress(null);
             tmpPacket.setData(data.array(), data.arrayOffset(), data.capacity());
             socket.receive(tmpPacket);
@@ -227,7 +233,7 @@ public class OioDatagramChannel extends AbstractOioMessageChannel
             free = false;
             return 1;
         } catch (SocketTimeoutException e) {
-            // Expected
+            // accept/receive 超时属预期情况
             return 0;
         } catch (SocketException e) {
             if (!e.getMessage().toLowerCase(Locale.US).contains("socket closed")) {
@@ -270,7 +276,7 @@ public class OioDatagramChannel extends AbstractOioMessageChannel
                     tmpPacket.setSocketAddress(remoteAddress);
                 } else {
                     if (!isConnected()) {
-                        // If not connected we should throw a NotYetConnectedException() to be consistent with
+                        // 未 connect 时写无目标地址数据需抛 NotYetConnectedException，与 NioDatagramChannel 一致
                         // NioDatagramChannel
                         throw new NotYetConnectedException();
                     }
@@ -285,7 +291,7 @@ public class OioDatagramChannel extends AbstractOioMessageChannel
                 socket.send(tmpPacket);
                 in.remove();
             } catch (Exception e) {
-                // Continue on write error as a DatagramChannel can write to multiple remote peers
+                // 单包写失败继续处理队列中其余消息
                 //
                 // See https://github.com/netty/netty/issues/2665
                 in.remove(e);
@@ -374,6 +380,7 @@ public class OioDatagramChannel extends AbstractOioMessageChannel
         return promise;
     }
 
+    /** 组播 join 前必须已 bind */
     private void ensureBound() {
         if (!isActive()) {
             throw new IllegalStateException(

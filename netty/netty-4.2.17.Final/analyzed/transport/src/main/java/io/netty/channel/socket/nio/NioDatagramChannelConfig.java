@@ -33,8 +33,10 @@ import java.util.Map;
 
 /**
  * The default {@link NioDatagramChannelConfig} implementation.
+ * <p>{@link NioDatagramChannel} 的默认配置，通过 NIO {@link DatagramChannel} 读写组播等选项。</p>
  */
 class NioDatagramChannelConfig extends DefaultDatagramChannelConfig {
+    /** 底层 NIO 数据报通道 */
     private final DatagramChannel javaChannel;
 
     NioDatagramChannelConfig(NioDatagramChannel channel, DatagramChannel javaChannel) {

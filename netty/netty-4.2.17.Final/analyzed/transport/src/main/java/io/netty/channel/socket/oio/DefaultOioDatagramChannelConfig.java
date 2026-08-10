@@ -33,6 +33,7 @@ import java.util.Map;
 
 import static io.netty.channel.ChannelOption.SO_TIMEOUT;
 
+/** OIO 数据报通道默认配置：堆缓冲区分配器 + {@link SO_TIMEOUT} 支持 */
 final class DefaultOioDatagramChannelConfig extends DefaultDatagramChannelConfig implements OioDatagramChannelConfig  {
 
     DefaultOioDatagramChannelConfig(DatagramChannel channel, DatagramSocket javaSocket) {

@@ -28,6 +28,7 @@ import java.nio.channels.Channel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 
+/** {@link SelectorProvider} 反射辅助：按协议族打开 NIO 通道，减少 {@code SelectorProvider.provider()} 开销 */
 final class SelectorProviderUtil {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(SelectorProviderUtil.class);
 
@@ -47,6 +48,7 @@ final class SelectorProviderUtil {
      * {@link SelectorProvider#provider()} which is called by each SocketChannel.open() otherwise.
      * <p>
      * See <a href="https://github.com/netty/netty/issues/2308">#2308</a>.
+     * <p>通过指定 {@link SelectorProvider} 打开通道，避免每次 {@code open()} 触发 provider 查找。</p>
      */
     private static <C extends Channel> C newChannel(Method method, SelectorProvider provider,
                                                     Object family) throws IOException {

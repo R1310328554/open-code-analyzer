@@ -58,6 +58,7 @@ import java.util.Map;
 /**
  * An NIO datagram {@link Channel} that sends and receives an
  * {@link AddressedEnvelope AddressedEnvelope<ByteBuf, SocketAddress>}.
+ * <p>基于 NIO 的数据报 {@link Channel}，收发带目标地址的 {@link DatagramPacket}，支持组播 join/leave/block。</p>
  *
  * @see AddressedEnvelope
  * @see DatagramPacket
@@ -65,6 +66,7 @@ import java.util.Map;
 public final class NioDatagramChannel
         extends AbstractNioMessageChannel implements io.netty.channel.socket.DatagramChannel {
 
+    /** 支持 disconnect；单次读默认最多 16 条消息 */
     private static final ChannelMetadata METADATA = new ChannelMetadata(true, 16);
     private static final SelectorProvider DEFAULT_SELECTOR_PROVIDER = SelectorProvider.provider();
     private static final String EXPECTED_TYPES =
@@ -76,10 +78,12 @@ public final class NioDatagramChannel
 
     private final DatagramChannelConfig config;
 
+    /** 已加入的组播成员关系（按组播地址索引） */
     private Map<InetAddress, List<MembershipKey>> memberships;
 
     /**
      *  Use the {@link SelectorProvider} to open {@link DatagramChannel} and so remove condition in
+     * <p>通过 SelectorProvider 打开 DatagramChannel，避免重复查找 provider。</p>
      *  {@link SelectorProvider#provider()} which is called by each DatagramChannel.open() otherwise.
      * <p>
      *  See <a href="https://github.com/netty/netty/issues/2308">#2308</a>.
@@ -106,6 +110,7 @@ public final class NioDatagramChannel
 
     /**
      * Create a new instance which will use the Operation Systems default {@link SocketProtocolFamily}.
+     * <p>使用操作系统默认 {@link SocketProtocolFamily} 创建实例。</p>
      */
     public NioDatagramChannel() {
         this(newSocket(DEFAULT_SELECTOR_PROVIDER));
@@ -113,6 +118,7 @@ public final class NioDatagramChannel
 
     /**
      * Create a new instance using the given {@link SelectorProvider}
+     * <p>创建新实例。</p>
      * which will use the Operation Systems default {@link SocketProtocolFamily}.
      */
     public NioDatagramChannel(SelectorProvider provider) {
@@ -121,6 +127,7 @@ public final class NioDatagramChannel
 
     /**
      * Create a new instance using the given {@link InternetProtocolFamily}. If {@code null} is used it will depend
+     * <p>创建新实例。</p>
      * on the Operation Systems default which will be chosen.
      *
      * @deprecated use {@link NioDatagramChannel#NioDatagramChannel(SocketProtocolFamily)}
@@ -132,6 +139,7 @@ public final class NioDatagramChannel
 
     /**
      * Create a new instance using the given {@link SocketProtocolFamily}. If {@code null} is used it will depend
+     * <p>按指定 {@link SocketProtocolFamily} 创建；{@code null} 时使用 OS 默认。</p>
      * on the Operation Systems default which will be chosen.
      */
     public NioDatagramChannel(SocketProtocolFamily protocolFamily) {
@@ -140,6 +148,7 @@ public final class NioDatagramChannel
 
     /**
      * Create a new instance using the given {@link SelectorProvider} and {@link InternetProtocolFamily}.
+     * <p>创建新实例。</p>
      * If {@link InternetProtocolFamily} is {@code null} it will depend on the Operation Systems default
      * which will be chosen.
      *
@@ -152,6 +161,7 @@ public final class NioDatagramChannel
 
     /**
      * Create a new instance using the given {@link SelectorProvider} and {@link SocketProtocolFamily}.
+     * <p>使用指定 {@link SelectorProvider} 与 {@link SocketProtocolFamily} 创建实例。</p>
      * If {@link SocketProtocolFamily} is {@code null} it will depend on the Operation Systems default
      * which will be chosen.
      */
@@ -161,6 +171,7 @@ public final class NioDatagramChannel
 
     /**
      * Create a new instance from the given {@link DatagramChannel}.
+     * <p>基于已有 {@link DatagramChannel} 创建实例。</p>
      */
     public NioDatagramChannel(DatagramChannel socket) {
         super(null, socket, SelectionKey.OP_READ);
@@ -357,6 +368,7 @@ public final class NioDatagramChannel
 
     /**
      * Checks if the specified buffer is a direct buffer and is composed of a single NIO buffer.
+     * <p>检查是否为可直接写出、且仅含单个 NIO buffer 的直接缓冲区。</p>
      * (We check this because otherwise we need to make it a non-composite buffer.)
      */
     private static boolean isSingleDirectBuffer(ByteBuf buf) {
@@ -365,7 +377,7 @@ public final class NioDatagramChannel
 
     @Override
     protected boolean continueOnWriteError() {
-        // Continue on write error as a DatagramChannel can write to multiple remote peers
+        // 写失败仍继续：UDP 可向多个远端发送，单条失败不应中断整批
         //
         // See https://github.com/netty/netty/issues/2665
         return true;
@@ -530,6 +542,7 @@ public final class NioDatagramChannel
 
     /**
      * Block the given sourceToBlock address for the given multicastAddress on the given networkInterface
+     * <p>在指定网卡上屏蔽组播源地址。</p>
      */
     @Override
     public ChannelFuture block(
@@ -540,6 +553,7 @@ public final class NioDatagramChannel
 
     /**
      * Block the given sourceToBlock address for the given multicastAddress on the given networkInterface
+     * <p>在指定网卡上屏蔽组播源地址。</p>
      */
     @Override
     public ChannelFuture block(
@@ -570,6 +584,7 @@ public final class NioDatagramChannel
 
     /**
      * Block the given sourceToBlock address for the given multicastAddress
+     * <p>屏蔽指定组播组的源地址。</p>
      *
      */
     @Override
@@ -579,6 +594,7 @@ public final class NioDatagramChannel
 
     /**
      * Block the given sourceToBlock address for the given multicastAddress
+     * <p>屏蔽指定组播组的源地址。</p>
      *
      */
     @Override
@@ -607,7 +623,7 @@ public final class NioDatagramChannel
 
     @Override
     protected boolean closeOnReadError(Throwable cause) {
-        // We do not want to close on SocketException when using DatagramChannel as we usually can continue receiving.
+        // DatagramChannel 遇 SocketException 通常仍可继续收包，不因此关闭通道
         // See https://github.com/netty/netty/issues/5893
         if (cause instanceof SocketException) {
             return false;

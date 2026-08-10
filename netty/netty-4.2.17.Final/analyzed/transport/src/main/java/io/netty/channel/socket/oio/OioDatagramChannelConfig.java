@@ -25,17 +25,20 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 
 /**
+ * <p>OIO 数据报通道配置：在 {@link DatagramChannelConfig} 基础上增加阻塞读超时 {@link #setSoTimeout}。</p>
  * @deprecated use NIO / EPOLL / KQUEUE transport.
  */
 @Deprecated
 public interface OioDatagramChannelConfig extends DatagramChannelConfig {
     /**
      * Sets the maximal time a operation on the underlying socket may block.
+     * <p>设置底层 socket 单次阻塞 I/O 的最大等待时间（毫秒）。</p>
      */
     OioDatagramChannelConfig setSoTimeout(int timeout);
 
     /**
      * Returns the maximal time a operation on the underlying socket may block.
+     * <p>返回底层 socket 阻塞 I/O 超时（毫秒）。</p>
      */
     int getSoTimeout();
 

@@ -35,6 +35,7 @@ import java.util.List;
 
 /**
  * {@link ServerSocketChannel} which accepts new connections and create the {@link OioSocketChannel}'s for them.
+ * <p>阻塞 I/O 服务端套接字，{@code accept()} 后为每个连接创建 {@link OioSocketChannel}。</p>
  *
  * This implementation use Old-Blocking-IO.
  *
@@ -57,11 +58,14 @@ public class OioServerSocketChannel extends AbstractOioMessageChannel
         }
     }
 
+    /** 底层 JDK 服务端套接字（包级可见供测试） */
     final ServerSocket socket;
+    /** 通道配置 */
     private final OioServerSocketChannelConfig config;
 
     /**
      * Create a new instance with an new {@link Socket}
+     * <p>创建新实例。</p>
      */
     public OioServerSocketChannel() {
         this(newServerSocket());
@@ -69,6 +73,7 @@ public class OioServerSocketChannel extends AbstractOioMessageChannel
 
     /**
      * Create a new instance from the given {@link ServerSocket}
+     * <p>基于已有 {@link ServerSocket} 创建实例。</p>
      *
      * @param socket    the {@link ServerSocket} which is used by this instance
      */
@@ -164,7 +169,7 @@ public class OioServerSocketChannel extends AbstractOioMessageChannel
                 }
             }
         } catch (SocketTimeoutException e) {
-            // Expected
+            // accept 超时为正常情况
         }
         return 0;
     }
@@ -201,6 +206,7 @@ public class OioServerSocketChannel extends AbstractOioMessageChannel
         super.setReadPending(readPending);
     }
 
+    /** 清除 readPending（由 config.autoReadCleared 调用） */
     final void clearReadPending0() {
         super.clearReadPending();
     }

@@ -31,9 +31,11 @@ import java.util.Set;
 /**
  * Provides {@link ChannelOption} over a given {@link java.net.SocketOption} which is then passed through the underlying
  * {@link NetworkChannel}.
+ * <p>将 JDK {@link java.net.SocketOption} 包装为 Netty {@link ChannelOption}，经底层 {@link NetworkChannel} 读写。</p>
  */
 public final class NioChannelOption<T> extends ChannelOption<T> {
 
+    /** 底层 JDK socket 选项 */
     private final SocketOption<T> option;
 
     @SuppressWarnings("deprecation")
@@ -44,19 +46,20 @@ public final class NioChannelOption<T> extends ChannelOption<T> {
 
     /**
      * Returns a {@link ChannelOption} for the given {@link java.net.SocketOption}.
+     * <p>为指定 JDK socket 选项创建对应的 {@link ChannelOption}。</p>
      */
     public static <T> ChannelOption<T> of(SocketOption<T> option) {
         return new NioChannelOption<T>(option);
     }
 
-    // Internal helper methods to remove code duplication between Nio*Channel implementations.
+    // Nio*Channel 实现间复用的内部辅助方法，避免重复代码
     static <T> boolean setOption(Channel jdkChannel, NioChannelOption<T> option, T value) {
         NetworkChannel channel = (NetworkChannel) jdkChannel;
         if (!channel.supportedOptions().contains(option.option)) {
             return false;
         }
         if (channel instanceof ServerSocketChannel && option.option == StandardSocketOptions.IP_TOS) {
-            // Skip IP_TOS as a workaround for a JDK bug:
+            // 跳过 IP_TOS：规避 JDK ServerSocketChannel 相关 bug
             // See https://mail.openjdk.java.net/pipermail/nio-dev/2018-August/005365.html
             return false;
         }

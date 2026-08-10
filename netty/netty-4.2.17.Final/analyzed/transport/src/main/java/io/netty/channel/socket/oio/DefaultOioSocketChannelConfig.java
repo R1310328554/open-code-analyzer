@@ -33,6 +33,7 @@ import static io.netty.channel.ChannelOption.*;
 
 /**
  * Default {@link OioSocketChannelConfig} implementation
+ * <p>OIO 客户端套接字默认配置，堆缓冲区 + {@link SO_TIMEOUT}。</p>
  *
  * @deprecated use NIO / EPOLL / KQUEUE transport.
  */
@@ -187,6 +188,7 @@ public class DefaultOioSocketChannelConfig extends DefaultSocketChannelConfig im
     }
 
     @Override
+    /** autoRead 关闭时清除 readPending */
     protected void autoReadCleared() {
         if (channel instanceof OioSocketChannel) {
             ((OioSocketChannel) channel).clearReadPending0();

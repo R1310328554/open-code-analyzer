@@ -33,6 +33,7 @@ import static io.netty.channel.ChannelOption.*;
 
 /**
  * Default {@link OioServerSocketChannelConfig} implementation
+ * <p>OIO 服务端套接字默认配置，支持 {@link SO_TIMEOUT} 控制 accept 阻塞超时。</p>
  *
  * @deprecated use NIO / EPOLL / KQUEUE transport.
  */
@@ -159,6 +160,7 @@ public class DefaultOioServerSocketChannelConfig extends DefaultServerSocketChan
     }
 
     @Override
+    /** autoRead 关闭时清除 readPending 标志 */
     protected void autoReadCleared() {
         if (channel instanceof OioServerSocketChannel) {
             ((OioServerSocketChannel) channel).clearReadPending0();

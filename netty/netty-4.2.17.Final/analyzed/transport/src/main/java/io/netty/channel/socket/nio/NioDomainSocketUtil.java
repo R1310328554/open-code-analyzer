@@ -20,9 +20,12 @@ import java.lang.reflect.Method;
 import java.net.SocketAddress;
 import java.nio.file.Path;
 
+/** UNIX 域套接字地址工具类（反射访问 JDK API，避免低版本编译依赖） */
 final class NioDomainSocketUtil {
 
+    /** {@code UnixDomainSocketAddress.of(String)} 反射方法 */
     private static final Method OF_METHOD;
+    /** {@code UnixDomainSocketAddress.getPath()} 反射方法 */
     private static final Method GET_PATH_METHOD;
 
     static {
@@ -41,6 +44,7 @@ final class NioDomainSocketUtil {
         GET_PATH_METHOD = getPathMethod;
     }
 
+    /** 由文件系统路径创建 UNIX 域套接字地址 */
     static SocketAddress newUnixDomainSocketAddress(String path) {
         if (OF_METHOD == null) {
             throw new IllegalStateException();
@@ -52,6 +56,7 @@ final class NioDomainSocketUtil {
         }
     }
 
+    /** 关闭后删除域套接字对应的文件 */
     static void deleteSocketFile(SocketAddress address) {
         if (GET_PATH_METHOD == null) {
             throw new IllegalStateException();
