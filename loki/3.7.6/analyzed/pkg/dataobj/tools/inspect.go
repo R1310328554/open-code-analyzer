@@ -1,5 +1,7 @@
 package tools
 
+// inspect 提供 data object 命令行检查工具，打印 streams/logs 区段列统计摘要。
+
 import (
 	"context"
 	"fmt"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/streams"
 )
 
+// Inspect 打开 data object 并遍历各区段，识别 streams/logs 后打印列级信息。
 func Inspect(r io.ReaderAt, size int64) {
 	obj, err := dataobj.FromReaderAt(r, size)
 	if err != nil {
@@ -41,6 +44,7 @@ func Inspect(r io.ReaderAt, size int64) {
 	}
 }
 
+// printStreamInfo 调用 ReadStats 并以人类可读格式输出 streams 列压缩统计。
 func printStreamInfo(sec *streams.Section) {
 	fmt.Println("---- Streams Section ----")
 	stats, err := streams.ReadStats(context.Background(), sec)
@@ -56,6 +60,7 @@ func printStreamInfo(sec *streams.Section) {
 	fmt.Println("")
 }
 
+// printLogsInfo 调用 logs.ReadStats 并输出 logs 区段列压缩统计摘要。
 func printLogsInfo(sec *logs.Section) {
 	fmt.Println("---- Logs Section ----")
 	stats, err := logs.ReadStats(context.Background(), sec)
@@ -70,3 +75,4 @@ func printLogsInfo(sec *logs.Section) {
 	fmt.Printf("Logs Section Summary: %d columns; compressed size: %v; uncompressed size %v\n", len(stats.Columns), humanize.Bytes(stats.CompressedSize), humanize.Bytes(stats.UncompressedSize))
 	fmt.Println("")
 }
+// Inspect 面向运维调试，通过 humanize 格式化字节数与压缩算法名称。

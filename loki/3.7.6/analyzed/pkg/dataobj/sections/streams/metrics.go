@@ -1,5 +1,7 @@
 package streams
 
+// Metrics 为 streams 区段编码与 builder 状态暴露 Prometheus 指标。
+
 import (
 	"context"
 	"errors"
@@ -10,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// Metrics 聚合 columnar 通用指标与 streams 特有的编码/计数 gauge。
 // Metrics instruments the streams section.
 type Metrics struct {
 	columnar *columnar.Metrics
@@ -21,6 +24,7 @@ type Metrics struct {
 	maxTimestamp  prometheus.Gauge
 }
 
+// NewMetrics 注册 encode_seconds、records_total、stream_count 等指标。
 // NewMetrics creates a new set of metrics for the streams section.
 func NewMetrics() *Metrics {
 	return &Metrics{
@@ -73,11 +77,13 @@ func NewMetrics() *Metrics {
 	}
 }
 
+// Observe 委托 columnar.Metrics 采集已编码区段的列级统计。
 // Observe observes section statistics for a given section.
 func (m *Metrics) Observe(ctx context.Context, section *Section) error {
 	return m.columnar.Observe(ctx, section.inner)
 }
 
+// Register 将 streams 与 columnar 子指标一并注册到给定 Registerer。
 // Register registers metrics to report to reg.
 func (m *Metrics) Register(reg prometheus.Registerer) error {
 	var errs []error
@@ -90,6 +96,7 @@ func (m *Metrics) Register(reg prometheus.Registerer) error {
 	return errors.Join(errs...)
 }
 
+// Unregister 从 Registerer 移除所有 streams 相关 collector。
 // Unregister unregisters metrics from the provided Registerer.
 func (m *Metrics) Unregister(reg prometheus.Registerer) {
 	m.columnar.Unregister(reg)
@@ -100,3 +107,4 @@ func (m *Metrics) Unregister(reg prometheus.Registerer) {
 	reg.Unregister(m.minTimestamp)
 	reg.Unregister(m.maxTimestamp)
 }
+// min/max_timestamp gauge 在 Flush 后随 builder Reset 归零。

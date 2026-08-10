@@ -1,5 +1,7 @@
 package uploader
 
+// metrics 为 data object consumer 上传器暴露 Prometheus 计数、直方图与 gauge 指标。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -18,6 +20,7 @@ type metrics struct {
 	shaPrefixSize  prometheus.Gauge
 }
 
+// newMetrics 创建上传相关 collector 并初始化 sha_prefix_size gauge。
 func newMetrics(shaPrefixSize int) *metrics {
 	metrics := &metrics{
 		uploadFailures: prometheus.NewCounter(prometheus.CounterOpts{
@@ -48,6 +51,7 @@ func newMetrics(shaPrefixSize int) *metrics {
 	return metrics
 }
 
+// register 注册所有 collector，已注册时忽略 AlreadyRegisteredError。
 func (m *metrics) register(reg prometheus.Registerer) error {
 	collectors := []prometheus.Collector{
 		m.uploadFailures,
@@ -67,6 +71,7 @@ func (m *metrics) register(reg prometheus.Registerer) error {
 	return nil
 }
 
+// unregister 从 Registerer 移除所有上传指标 collector。
 func (m *metrics) unregister(reg prometheus.Registerer) {
 	collectors := []prometheus.Collector{
 		m.uploadFailures,
@@ -80,3 +85,4 @@ func (m *metrics) unregister(reg prometheus.Registerer) {
 		reg.Unregister(collector)
 	}
 }
+// upload_size 直方图按 success/failure 标签分组记录上传对象字节大小。

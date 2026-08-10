@@ -1,5 +1,7 @@
 package streams
 
+// Builder 将日志流元数据增量写入 streams 区段，支持标签哈希去重与列式编码。
+
 import (
 	"errors"
 	"fmt"
@@ -18,6 +20,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// Stream 表示 data object 内一条日志流，含 ID、时间范围、标签与行计数。
 // A Stream is an individual stream within a data object.
 type Stream struct {
 	// ID to uniquely represent a stream in a data object. Valid IDs start at 1.
@@ -39,6 +42,7 @@ type Stream struct {
 	Rows int
 }
 
+// Reset 清零 Stream 各字段以便从 sync.Pool 复用。
 // Reset zeroes all values in the stream struct so it can be reused.
 func (s *Stream) Reset() {
 	s.ID = 0
@@ -55,6 +59,7 @@ var streamPool = sync.Pool{
 	},
 }
 
+// Builder 维护流查找表、有序列表与全局时间范围，Flush 时编码为列式区段。
 // Builder builds a streams section.
 type Builder struct {
 	metrics      *Metrics
@@ -79,6 +84,7 @@ type Builder struct {
 	ordered []*Stream
 }
 
+// NewBuilder 创建 builder，pageSize/pageRowCount 控制列页大小与行数上限。
 // NewBuilder creates a new sterams section builder. The pageSize argument
 // specifies how large pages should be.
 func NewBuilder(metrics *Metrics, pageSize, pageRowCount int) *Builder {
@@ -109,6 +115,7 @@ func (b *Builder) TimeRange() (time.Time, time.Time) {
 	return b.globalMinTimestamp, b.globalMaxTimestamp
 }
 
+// Record 追加一条日志记录并更新流的时间范围、行数与未压缩大小，返回流 ID。
 // Record a stream record within the section. The provided timestamp is used to
 // track the minimum and maximum timestamp of a stream. The number of calls to
 // Record is used to track the number of rows for a stream. The recordSize is
@@ -145,6 +152,7 @@ func (b *Builder) observeRecord(ts time.Time) {
 	}
 }
 
+// AppendValue 从已有区段复制完整 Stream 结构，用于合并或迁移场景。
 // AppendValue may only be used for copying streams from an existing section.
 func (b *Builder) AppendValue(val Stream) {
 	newStream := streamPool.Get().(*Stream)
@@ -165,6 +173,7 @@ func (b *Builder) AppendValue(val Stream) {
 	b.ordered = append(b.ordered, newStream)
 }
 
+// EstimatedSize 用 delta 编码与 2x 压缩启发式估算编码后区段字节数。
 // EstimatedSize returns the estimated size of the Streams section in bytes.
 func (b *Builder) EstimatedSize() int {
 	// Since columns are only built when encoding, we can't use
@@ -245,6 +254,7 @@ func (b *Builder) StreamID(streamLabels labels.Labels) int64 {
 	return 0
 }
 
+// Flush 编码所有列并写入 SectionWriter，成功后 Reset 以便复用 builder。
 // Flush flushes the streams section to the provided writer.
 //
 // After successful encoding, b is reset to a fresh state and can be reused.
@@ -268,6 +278,7 @@ func (b *Builder) Flush(w dataobj.SectionWriter) (n int64, err error) {
 	return n, err
 }
 
+// encodeTo 为 ID、时间戳、行数、标签等列构建 ColumnBuilder 并提交到 Encoder。
 func (b *Builder) encodeTo(enc *columnar.Encoder) error {
 	// TODO(rfratto): handle one section becoming too large. This can happen when
 	// the number of columns is very wide. There are two approaches to handle
@@ -428,6 +439,7 @@ func encodeColumn(enc *columnar.Encoder, columnType ColumnType, builder *dataset
 	return columnEnc.Commit()
 }
 
+// Reset 归还 pool 中的 Stream 并重置计数器、租户与指标 gauge。
 // Reset resets all state, allowing Streams to be reused.
 func (b *Builder) Reset() {
 	b.lastID.Store(0)
@@ -445,3 +457,4 @@ func (b *Builder) Reset() {
 	b.metrics.minTimestamp.Set(0)
 	b.metrics.maxTimestamp.Set(0)
 }
+// 标签列按名称动态创建，Backfill 保证各标签列行数与流总数一致。

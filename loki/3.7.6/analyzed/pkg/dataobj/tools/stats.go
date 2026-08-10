@@ -1,7 +1,10 @@
+// 本文件暂留 tools 包以避免 dataobj 与 logs 包之间的循环依赖。
 // TODO(grobinson): Find a way to move this file into the dataobj package.
 // Today it's not possible because there is a circular dependency between the
 // dataobj package and the logs package.
 package tools
+
+// stats 聚合 data object 整体大小、区段数量、租户分布与分位数统计。
 
 import (
 	"context"
@@ -26,6 +29,7 @@ type PercentileStats struct {
 	P99    float64
 }
 
+// ReadStats 遍历所有区段，汇总大小、租户列表与各 tenant 区段计数。
 // ReadStats returns statistics about the data object. ReadStats returns an
 // error if the data object couldn't be inspected or if the provided ctx is
 // canceled.
@@ -47,6 +51,7 @@ func ReadStats(_ context.Context, obj *dataobj.Object) (*Stats, error) {
 	return &s, nil
 }
 
+// calcSectionsPerTenantStats 计算每个 tenant 区段数量的中位数与 P95/P99。
 // calcSectionsPerTenantStats calculates the median and other
 // percentiles for the number of sections per tenant.
 func calcSectionsPerTenantStats(s *Stats) {
@@ -60,6 +65,7 @@ func calcSectionsPerTenantStats(s *Stats) {
 	calcPercentiles(counts, &s.SectionsPerTenantStats)
 }
 
+// calcSectionSizeStats 计算各区段大小的中位数与 P95/P99 分位数。
 // calcSectionSizeStats calculates the median and other percentiles for the
 // size of sections.
 func calcSectionSizeStats(s *Stats) {
@@ -72,6 +78,7 @@ func calcSectionSizeStats(s *Stats) {
 	calcPercentiles(sizes, &s.SectionSizeStats)
 }
 
+// calcPercentiles 对排序后的样本计算中位数、P95 与 P99。
 func calcPercentiles[T int | uint | int64 | uint64](input []T, s *PercentileStats) {
 	// Data must be sorted to calculate percentiles.
 	slices.Sort(input)
@@ -92,3 +99,4 @@ func calcPercentiles[T int | uint | int64 | uint64](input []T, s *PercentileStat
 	}
 	s.P99 = float64(input[idx])
 }
+// TenantSections 映射 tenant 到区段数，Tenants 列表经排序去重。

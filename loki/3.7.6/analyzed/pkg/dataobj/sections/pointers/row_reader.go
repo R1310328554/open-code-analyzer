@@ -1,5 +1,7 @@
 package pointers
 
+// pointers 行读取器：顺序扫描 pointers 区段，支持流 ID 匹配与谓词下推过滤。
+
 import (
 	"bytes"
 	"context"
@@ -17,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// RowReader 封装 dataset 行读取器，将行解码为 SectionPointer 结构。
 // RowReader reads the set of streams from an [Object].
 type RowReader struct {
 	sec   *Section
@@ -36,6 +39,7 @@ type RowReader struct {
 
 var errRowReaderNotOpen = errors.New("row reader not opened")
 
+// NewRowReader 绑定 pointers 区段并初始化内部状态，使用前须调用 Open。
 // NewRowReader creates a new RowReader that reads rows from the provided
 // [Section].
 //
@@ -46,6 +50,7 @@ func NewRowReader(sec *Section) *RowReader {
 	return &sr
 }
 
+// Open 构建 columnar 数据集与 RowReader，并初始化符号化器。
 // Open initializes RowReader resources.
 //
 // Open must be called before [RowReader.Read]. Open is safe to call multiple
@@ -62,6 +67,7 @@ func (r *RowReader) Open(ctx context.Context) error {
 	return nil
 }
 
+// MatchStreams 限定只返回指定 stream ID 的指针行，读取开始后不可更改。
 // MatchStreams provides a sequence of stream IDs for the logs reader to match.
 // [RowReader.Read] will only return logs for the provided stream IDs.
 //
@@ -83,6 +89,7 @@ func (r *RowReader) MatchStreams(ids iter.Seq[int64]) error {
 	return nil
 }
 
+// SetPredicate 设置行过滤谓词，仅在 Open 之前或 Reset 之后可修改。
 // SetPredicate sets the predicate to use for filtering logs. [LogsReader.Read]
 // will only return logs for which the predicate passes.
 //
@@ -100,6 +107,7 @@ func (r *RowReader) SetPredicate(p RowPredicate) error {
 	return nil
 }
 
+// Read 批量读取 SectionPointer 到 s，区段末尾返回 io.EOF。
 // Read reads up to the next len(s) streams from the reader and stores them
 // into s. It returns the number of streams read and any error encountered. At
 // the end of the stream section, Read returns 0, io.EOF.
@@ -173,6 +181,7 @@ func (r *RowReader) initReader(ctx context.Context) error {
 	return nil
 }
 
+// Reset 切换新区段并清空谓词与 matchIDs，可复用同一 Reader 实例。
 // Reset resets the RowReader with a new decoder to read from. Reset allows
 // reusing a RowReader without allocating a new one.
 //
@@ -194,6 +203,7 @@ func (r *RowReader) Reset(sec *Section) {
 	// call to Open.
 }
 
+// Close 释放底层 dataset 行读取器占用的资源。
 // Close closes the RowReader and releases any resources it holds. Closed
 // RowReaders can be reused by calling [RowReader.Reset].
 func (r *RowReader) Close() error {
@@ -222,6 +232,7 @@ func streamIDPredicate(ids iter.Seq[int64], dsetColumns []dataset.Column, actual
 	}
 }
 
+// translatePointersPredicate 将 pointers 谓词翻译为 dataset 层谓词树。
 func translatePointersPredicate(p RowPredicate, dsetColumns []dataset.Column, actualColumns []*Column) dataset.Predicate {
 	if p == nil {
 		return nil
@@ -258,6 +269,7 @@ func translatePointersPredicate(p RowPredicate, dsetColumns []dataset.Column, ac
 	}
 }
 
+// convertBloomExistenceRowPredicate 用列名相等与 Bloom 测试组合过滤指针行。
 func convertBloomExistenceRowPredicate(p BloomExistenceRowPredicate, nameColumn, bloomColumn dataset.Column) dataset.Predicate {
 	if nameColumn == nil && bloomColumn == nil {
 		// If there are no name or bloom columns present, it means this section doesn't have any relevant columns for this predicate.
@@ -287,6 +299,7 @@ func convertBloomExistenceRowPredicate(p BloomExistenceRowPredicate, nameColumn,
 	}
 }
 
+// convertTimeRangeRowPredicate 用 min/max 时间戳列构造区间重叠判断。
 func convertTimeRangeRowPredicate(p TimeRangeRowPredicate, startColumn, endColumn dataset.Column) dataset.Predicate {
 	return dataset.AndPredicate{
 		Left: dataset.GreaterThanPredicate{
@@ -308,3 +321,4 @@ func findDatasetColumn(columns []dataset.Column, actual []*Column, check func(*C
 	}
 	return nil
 }
+// streamIDPredicate 将匹配的流 ID 集合转为 dataset.InPredicate 下推过滤。

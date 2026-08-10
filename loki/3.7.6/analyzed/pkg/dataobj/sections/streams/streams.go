@@ -1,3 +1,4 @@
+// streams 包定义 data object 的 streams 区段类型，列出对象内所有日志流元数据。
 // Package streams defines types used for the data object streams section. The
 // streams section holds a list of streams present in the data object.
 package streams
@@ -16,15 +17,18 @@ var sectionType = dataobj.SectionType{
 	Version:   columnar.FormatVersion,
 }
 
+// CheckSection 通过 SectionType 命名空间与 kind 判断是否为 streams 区段。
 // CheckSection returns true if section is a streams section.
 func CheckSection(section *dataobj.Section) bool { return sectionType.Equals(section.Type) }
 
+// Section 表示已打开的 streams 区段，持有 columnar 内部区段与 Column 列表。
 // Section represents an opened streams section.
 type Section struct {
 	inner   *columnar.Section
 	columns []*Column
 }
 
+// Open 校验区段类型与版本，创建 Decoder 并解析列描述。
 // Open opens a Section from an underlying [dataobj.Section]. Open returns an
 // error if the section metadata could not be read or if the provided ctx is
 // canceled.
@@ -73,6 +77,7 @@ func (s *Section) init() error {
 	return nil
 }
 
+// Columns 返回区段内已识别的 Column 列表，未知列类型会被跳过。
 // Columns returns the set of Columns in the section. The slice of returned
 // sections must not be mutated.
 //
@@ -80,6 +85,7 @@ func (s *Section) init() error {
 // sections) are skipped.
 func (s *Section) Columns() []*Column { return s.columns }
 
+// Column 表示 streams 区段中的一列，数据通过 Reader 批量读取。
 // A Column represents one of the columns in the streams section. Valid columns
 // can only be retrieved by calling [Section.Columns].
 //
@@ -92,6 +98,7 @@ type Column struct {
 	inner *columnar.Column
 }
 
+// ColumnType 枚举流 ID、时间戳、标签、行数等逻辑列类型。
 // ColumnType represents the kind of information stored in a [Column].
 type ColumnType int
 
@@ -120,6 +127,7 @@ var columnTypeNames = map[ColumnType]string{
 	ColumnTypeUncompressedSize: "uncompressed_size",
 }
 
+// ParseColumnType 从逻辑类型字符串（如 stream_id）解析 ColumnType。
 // ParseColumnType parses a [ColumnType] from a string. The expected string
 // format is the same as what's returned by [ColumnType.String].
 func ParseColumnType(text string) (ColumnType, error) {
@@ -151,3 +159,4 @@ func (ct ColumnType) String() string {
 	}
 	return text
 }
+// sectionType 标识 github.com/grafana/loki/streams 且版本与 columnar 格式一致。

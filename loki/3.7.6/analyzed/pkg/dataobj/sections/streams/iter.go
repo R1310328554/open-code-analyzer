@@ -1,5 +1,7 @@
 package streams
 
+// iter 提供 streams 区段的惰性迭代 API，支持标签缓冲复用与符号化去重。
+
 import (
 	"context"
 	"errors"
@@ -19,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/labelpool"
 )
 
+// IterOption 配置迭代时的标签缓冲复用与 symbolizer 行为。
 // IterOption configures iteration behavior.
 type IterOption func(*iterConfig)
 
@@ -27,6 +30,7 @@ type iterConfig struct {
 	symbolizer        *symbolizer.Symbolizer
 }
 
+// WithReuseLabelsBuffer 复用标签缓冲以降低分配，但不可保留 Labels 引用。
 // WithReuseLabelsBuffer enables label buffer reuse to reduce memory allocations.
 // When enabled, Stream.Labels is overwritten on each iteration.
 // WARNING: Callers must extract needed data (hash, specific label values)
@@ -37,6 +41,7 @@ func WithReuseLabelsBuffer() IterOption {
 	}
 }
 
+// WithSymbolizer 注入符号化器，对重复标签值字符串进行驻留去重。
 // WithSymbolizer sets a symbolizer for deduplicating label value strings.
 func WithSymbolizer(sym *symbolizer.Symbolizer) IterOption {
 	return func(c *iterConfig) {
@@ -44,6 +49,7 @@ func WithSymbolizer(sym *symbolizer.Symbolizer) IterOption {
 	}
 }
 
+// Iter 遍历 object 中所有 streams 区段，按顺序 yield 每条 Stream。
 // Iter iterates over streams in the provided decoder. All streams sections are
 // iterated over in order.
 func Iter(ctx context.Context, obj *dataobj.Object, opts ...IterOption) result.Seq[Stream] {
@@ -70,6 +76,7 @@ func Iter(ctx context.Context, obj *dataobj.Object, opts ...IterOption) result.S
 	})
 }
 
+// IterSection 迭代单个已打开的 streams 区段，内部批量读取 1024 行。
 func IterSection(ctx context.Context, section *Section, opts ...IterOption) result.Seq[Stream] {
 	var cfg iterConfig
 	for _, opt := range opts {
@@ -129,6 +136,7 @@ func iterSection(ctx context.Context, section *Section, cfg iterConfig) result.S
 	})
 }
 
+// decodeRow 按列类型将 dataset.Row 解码为 Stream，支持标签缓冲复用模式。
 // decodeRow decodes a stream from a [dataset.Row], using the provided columns to
 // determine the column type. The list of columns must match the columns used
 // to create the row.
@@ -226,3 +234,4 @@ func unsafeSlice(data string, capacity int) []byte {
 func unsafeString(data []byte) string {
 	return unsafe.String(unsafe.SliceData(data), len(data))
 }
+// unsafeString/unsafeSlice 用于零拷贝转换标签二进制值与字符串。

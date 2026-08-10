@@ -1,5 +1,7 @@
 package streams
 
+// stats 提供 streams 区段的压缩、时间范围、按小时分布与列/页级统计。
+
 import (
 	"context"
 	"fmt"
@@ -10,6 +12,7 @@ import (
 )
 
 type (
+// Stats 汇总区段未压缩/压缩字节数、时间戳范围及按小时流计数分布。
 	// Stats provides statistics about a streams section.
 	Stats struct {
 		UncompressedSize uint64
@@ -22,6 +25,7 @@ type (
 		Columns []ColumnStats
 	}
 
+// ColumnStats 描述单列的行数、压缩方式、基数与各页明细。
 	// ColumnStats provides statistics about a column in a section.
 	ColumnStats struct {
 		Name             string
@@ -39,6 +43,7 @@ type (
 		Pages []PageStats
 	}
 
+// PageStats 记录单页的编码、CRC、偏移与行/值计数。
 	// PageStats provides statistics about a page in a column.
 	PageStats struct {
 		UncompressedSize uint64
@@ -52,6 +57,7 @@ type (
 	}
 )
 
+// ReadStats 遍历列元数据与页描述，并迭代流计算 TimestampDistribution。
 // ReadStats returns statistics about the streams section. ReadStats returns an
 // error if the streams section couldn't be inspected or if the provided ctx is
 // canceled.
@@ -144,3 +150,4 @@ func ReadStats(ctx context.Context, section *Section) (Stats, error) {
 
 	return stats, nil
 }
+// TimestampDistribution 按小时桶统计各流时间范围覆盖的流数量。

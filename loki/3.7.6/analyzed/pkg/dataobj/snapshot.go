@@ -1,5 +1,7 @@
 package dataobj
 
+// snapshot 将完整 data object 映射为 scratch.Store 上的分段只读视图，按需读取。
+
 import (
 	"bytes"
 	"errors"
@@ -10,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/scratch"
 )
 
+// snapshot 通过多个 snapshotRegion 拼接 header、各 section 与 tailer，实现 io.ReaderAt。
 // A snapshot represents a complete data object where all sections are stored in
 // a [scratch.Store].
 //
@@ -29,6 +32,7 @@ type sectionRegion struct {
 	Size   int
 }
 
+// newSnapshot 接管 section handle 所有权，Close 时从 scratch store 删除。
 // newSnapshot creates a new snapshot for the given data. [sectionHandle]s
 // passed to the newSnapshot are owned by the snapshot, and are deleted
 // by the snapshot when calling [snapshot.Close].
@@ -69,6 +73,7 @@ func (s *snapshot) addRegion(size int64, newReader func() (io.ReadSeekCloser, er
 	})
 }
 
+// ReadAt 二分定位 region 并按需打开 reader 读取跨 region 的字节范围。
 // ReadAt implements [io.ReaderAt], returning bytes over the entire encoded
 // data object.
 func (s *snapshot) ReadAt(p []byte, off int64) (n int, err error) {
@@ -118,6 +123,7 @@ func readFullAndClose(r io.ReadCloser, dst []byte) (int, error) {
 	return io.ReadFull(r, dst)
 }
 
+// Size 返回所有 region 拼接后的 data object 总字节数。
 // Size returns the total size of the snapshot in bytes.
 func (s *snapshot) Size() int64 {
 	if len(s.regions) == 0 {
@@ -128,6 +134,7 @@ func (s *snapshot) Size() int64 {
 	return lastRegion.offset + lastRegion.length
 }
 
+// Close 从 scratch store 移除所有 section handle 并聚合错误。
 // Close releases resources associated with the snapsshot, removing all section
 // handles from the backing scratch store.
 func (s *snapshot) Close() error {
@@ -138,6 +145,7 @@ func (s *snapshot) Close() error {
 	return errors.Join(errs...)
 }
 
+// snapshotRegion 描述一段连续字节区间及其 NewReader 工厂函数。
 // snapshotRegion is a contiguous region of a snapshot's data.
 type snapshotRegion struct {
 	offset int64
@@ -146,3 +154,4 @@ type snapshotRegion struct {
 	// NewReader attempts to open a reader for the region's data.
 	NewReader func() (io.ReadSeekCloser, error)
 }
+// header 与 tailer 驻留内存，section 数据按需从 scratch store 打开读取。

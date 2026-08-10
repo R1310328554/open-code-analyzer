@@ -1,5 +1,7 @@
 package streams
 
+// RowReader 顺序读取 streams 区段中的流元数据行，支持 RowPredicate 下推过滤。
+
 import (
 	"context"
 	"errors"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/internal/columnar"
 )
 
+// RowReader 封装 dataset 行读取器，将行解码为 Stream 结构。
 // RowReader reads the set of streams from an [Object].
 type RowReader struct {
 	sec   *Section
@@ -31,6 +34,7 @@ type RowReader struct {
 
 var errRowReaderNotOpen = errors.New("row reader not opened")
 
+// NewRowReader 绑定 streams 区段并初始化内部状态，使用前须调用 Open。
 // NewRowReader creates a new RowReader that reads rows from the provided
 // [Section].
 //
@@ -41,6 +45,7 @@ func NewRowReader(sec *Section) *RowReader {
 	return &sr
 }
 
+// Open 构建 columnar 数据集与 RowReader，并初始化符号化器。
 // Open initializes RowReader resources.
 //
 // Open must be called before [RowReader.Read]. Open is safe to call multiple
@@ -57,6 +62,7 @@ func (r *RowReader) Open(ctx context.Context) error {
 	return nil
 }
 
+// SetPredicate 设置行过滤谓词，仅在 Open 之前或 Reset 之后可修改。
 // SetPredicate sets the predicate to use for filtering logs. [LogsReader.Read]
 // will only return logs for which the predicate passes.
 //
@@ -74,6 +80,7 @@ func (r *RowReader) SetPredicate(p RowPredicate) error {
 	return nil
 }
 
+// Read 批量读取 Stream 到 s，区段末尾返回 io.EOF。
 // Read reads up to the next len(s) streams from the reader and stores them
 // into s. It returns the number of streams read and any error encountered. At
 // the end of the stream section, Read returns 0, io.EOF.
@@ -143,6 +150,7 @@ func (r *RowReader) initReader(ctx context.Context) error {
 	return nil
 }
 
+// Reset 切换新区段并清空谓词，可复用同一 Reader 实例。
 // Reset resets the RowReader with a new decoder to read from. Reset allows
 // reusing a RowReader without allocating a new one.
 //
@@ -164,6 +172,7 @@ func (r *RowReader) Reset(sec *Section) {
 	// call to Open.
 }
 
+// Close 释放底层 dataset 行读取器占用的资源。
 // Close closes the RowReader and releases any resources it holds. Closed
 // RowReaders can be reused by calling [RowReader.Reset].
 func (r *RowReader) Close() error {
@@ -173,6 +182,7 @@ func (r *RowReader) Close() error {
 	return nil
 }
 
+// translateStreamsPredicate 将 streams 行谓词递归翻译为 dataset 层谓词。
 func translateStreamsPredicate(p RowPredicate, dsetColumns []dataset.Column, actualColumns []*Column) dataset.Predicate {
 	if p == nil {
 		return nil
@@ -239,6 +249,7 @@ func translateStreamsPredicate(p RowPredicate, dsetColumns []dataset.Column, act
 	}
 }
 
+// convertStreamsTimePredicate 根据 IncludeStart/End 构造四种区间重叠组合。
 func convertStreamsTimePredicate(p TimeRangeRowPredicate, minColumn, maxColumn dataset.Column) dataset.Predicate {
 	switch {
 	case p.IncludeStart && p.IncludeEnd: // !max.Before(p.StartTime) && !min.After(p.EndTime)
@@ -325,3 +336,4 @@ func valueToString(value dataset.Value) string {
 		panic(fmt.Sprintf("unsupported value type %s", value.Type()))
 	}
 }
+// 标签列缺失时 LabelMatcher/LabelFilter 谓词退化为 FalsePredicate。
