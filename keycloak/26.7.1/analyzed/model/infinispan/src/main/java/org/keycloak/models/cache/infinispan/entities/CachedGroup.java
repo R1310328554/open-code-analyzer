@@ -33,28 +33,44 @@ import org.keycloak.models.cache.infinispan.DefaultLazyLoader;
 import org.keycloak.models.cache.infinispan.LazyLoader;
 
 /**
+ * 用户组（Group）的 Infinispan 缓存快照实体。
+ * <p>
+ * 缓存组名称、层级关系与类型；属性、角色映射与子组通过 {@link LazyLoader} 按需加载。
+ * 实现 {@link InRealm}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class CachedGroup extends AbstractRevisioned implements InRealm {
 
+    /** 所属领域 ID。 */
     private final String realm;
+    /** 组名称。 */
     private final String name;
+    /** 组描述。 */
     private final String description;
+    /** 父组 ID（根组为 null）。 */
     private final String parentId;
+    /** 组创建时间戳。 */
     private final Long createdTimestamp;
+    /** 组最后修改时间戳。 */
     private final Long lastModifiedTimestamp;
+    /** 组属性懒加载器。 */
     private final LazyLoader<GroupModel, MultivaluedHashMap<String, String>> attributes;
+    /** 组角色映射懒加载器。 */
     private final LazyLoader<GroupModel, Set<String>> roleMappings;
     /**
-     * Use this so the cache invalidation can retrieve any previously cached role mappings to determine if this
-     * items should be evicted.
+     * 供缓存失效逻辑读取先前已缓存的角色映射，以判定本条目是否应被驱逐。
      */
     private Set<String> cachedRoleMappings = new HashSet<>();
+    /** 子组 ID 懒加载器。 */
     private final LazyLoader<GroupModel, Set<String>> subGroups;
+    /** 组类型（普通组或组织组等）。 */
     private final Type type;
+    /** 关联组织 ID（非组织组时为 null）。 */
     private final String organizationId;
 
+    /** 从组模型构造缓存快照。 */
     public CachedGroup(long revision, RealmModel realm, GroupModel group) {
         super(revision, group.getId());
         this.realm = realm.getId();
@@ -75,51 +91,61 @@ public class CachedGroup extends AbstractRevisioned implements InRealm {
         return realm;
     }
 
+    /** 按需加载并返回组属性映射。 */
     public MultivaluedHashMap<String, String> getAttributes(KeycloakSession session, Supplier<GroupModel> group) {
         return attributes.get(session, group);
     }
 
+    /** 按需加载并返回组角色映射，同时更新 {@link #cachedRoleMappings}。 */
     public Set<String> getRoleMappings(KeycloakSession session, Supplier<GroupModel> group) {
         cachedRoleMappings = roleMappings.get(session, group);
         return cachedRoleMappings;
     }
 
     /**
-     * Use this so the cache invalidation can retrieve any previously cached role mappings to determine if this
-     * items should be evicted. Will return an empty list if it hasn't been cached yet (and then no invalidation is necessary)
+     * 供缓存失效逻辑读取先前已缓存的角色映射，以判定本条目是否应被驱逐。
+     * 若尚未加载则返回空集合（此时无需失效）。
      */
     public Set<String> getCachedRoleMappings() {
         return cachedRoleMappings;
     }
 
+    /** 返回组名称。 */
     public String getName() {
         return name;
     }
 
+    /** 返回组创建时间戳。 */
     public Long getCreatedTimestamp() {
         return createdTimestamp;
     }
 
+    /** 返回组最后修改时间戳。 */
     public Long getLastModifiedTimestamp() {
         return lastModifiedTimestamp;
     }
 
+    /** 返回组描述。 */
     public String getDescription() {
         return description;
     }
 
+    /** 返回父组 ID。 */
     public String getParentId() {
         return parentId;
     }
 
+    /** 按需加载并返回子组 ID 集合。 */
     public Set<String> getSubGroups(KeycloakSession session, Supplier<GroupModel> group) {
         return subGroups.get(session, group);
     }
 
+    /** 返回组类型。 */
     public Type getType() {
         return type;
     }
 
+    /** 返回关联组织 ID。 */
     public String getOrganizationId() {
         return organizationId;
     }

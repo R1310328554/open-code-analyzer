@@ -56,128 +56,238 @@ import org.keycloak.models.cache.infinispan.LazyLoader;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 领域（Realm）的 Infinispan 缓存快照实体。
+ * <p>
+ * 缓存领域的完整配置：令牌生命周期、暴力破解防护、认证流程、主题、
+ * 组件、事件监听与国际化等。继承 {@link AbstractExtendableRevisioned}，
+ * 部分关联数据（如默认客户端作用域）通过 {@link LazyLoader} 按需加载。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class CachedRealm extends AbstractExtendableRevisioned {
 
+    /** 领域内部名称。 */
     protected String name;
+    /** 领域显示名称。 */
     protected String displayName;
+    /** 领域 HTML 显示名称。 */
     protected String displayNameHtml;
+    /** 领域是否启用。 */
     protected boolean enabled;
+    /** SSL 要求级别。 */
     protected SslRequired sslRequired;
+    /** 是否允许自助注册。 */
     protected boolean registrationAllowed;
+    /** 注册时是否以邮箱作为用户名。 */
     protected boolean registrationEmailAsUsername;
+    /** 是否启用"记住我"。 */
     protected boolean rememberMe;
+    /** 是否要求验证邮箱。 */
     protected boolean verifyEmail;
+    /** 是否允许使用邮箱登录。 */
     protected boolean loginWithEmailAllowed;
+    /** 是否允许重复邮箱。 */
     protected boolean duplicateEmailsAllowed;
+    /** 是否允许重置密码。 */
     protected boolean resetPasswordAllowed;
+    /** 是否启用身份联邦。 */
     protected boolean identityFederationEnabled;
+    /** 是否允许编辑用户名。 */
     protected boolean editUsernameAllowed;
+    /** 是否启用组织功能。 */
     protected boolean organizationsEnabled;
+    /** 是否启用管理员权限细粒度控制。 */
     protected boolean adminPermissionsEnabled;
+    /** 是否启用可验证凭证功能。 */
     protected boolean verifiableCredentialsEnabled;
+    /** 是否启用 SCIM API。 */
     protected boolean scimApiEnabled;
-    //--- brute force settings
+    //--- 暴力破解防护设置
+    /** 是否启用暴力破解防护。 */
     protected boolean bruteForceProtected;
+    /** 是否永久锁定（而非临时锁定）。 */
     protected boolean permanentLockout;
+    /** 最大临时锁定次数。 */
     protected int maxTemporaryLockouts;
+    /** 暴力破解策略。 */
     protected RealmRepresentation.BruteForceStrategy bruteForceStrategy;
+    /** 最大失败等待秒数。 */
     protected int maxFailureWaitSeconds;
+    /** 快速登录最小等待秒数。 */
     protected int minimumQuickLoginWaitSeconds;
+    /** 等待递增秒数。 */
     protected int waitIncrementSeconds;
+    /** 快速登录检测窗口（毫秒）。 */
     protected long quickLoginCheckMilliSeconds;
+    /** 最大增量时间（秒）。 */
     protected int maxDeltaTimeSeconds;
+    /** 失败因子。 */
     protected int failureFactor;
+    /** 二次认证最大失败次数。 */
     protected int maxSecondaryAuthFailures;
-    //--- end brute force settings
+    //--- 暴力破解防护设置结束
 
+    /** 默认签名算法。 */
     protected String defaultSignatureAlgorithm;
+    /** 是否在刷新时撤销旧 refresh token。 */
     protected boolean revokeRefreshToken;
+    /** refresh token 最大复用次数。 */
     protected int refreshTokenMaxReuse;
+    /** SSO 会话空闲超时（秒）。 */
     protected int ssoSessionIdleTimeout;
+    /** SSO 会话最大生命周期（秒）。 */
     protected int ssoSessionMaxLifespan;
+    /** "记住我" SSO 会话空闲超时（秒）。 */
     protected int ssoSessionIdleTimeoutRememberMe;
+    /** "记住我" SSO 会话最大生命周期（秒）。 */
     protected int ssoSessionMaxLifespanRememberMe;
+    /** 离线会话空闲超时（秒）。 */
     protected int offlineSessionIdleTimeout;
     // KEYCLOAK-7688 Offline Session Max for Offline Token
+    /** 是否启用离线会话最大生命周期限制。 */
     protected boolean offlineSessionMaxLifespanEnabled;
+    /** 离线会话最大生命周期（秒）。 */
     protected int offlineSessionMaxLifespan;
+    /** 客户端会话空闲超时（秒）。 */
     protected int clientSessionIdleTimeout;
+    /** 客户端会话最大生命周期（秒）。 */
     protected int clientSessionMaxLifespan;
+    /** 客户端离线会话空闲超时（秒）。 */
     protected int clientOfflineSessionIdleTimeout;
+    /** 客户端离线会话最大生命周期（秒）。 */
     protected int clientOfflineSessionMaxLifespan;
+    /** 访问令牌生命周期（秒）。 */
     protected int accessTokenLifespan;
+    /** 隐式流程访问令牌生命周期（秒）。 */
     protected int accessTokenLifespanForImplicitFlow;
+    /** 授权码生命周期（秒）。 */
     protected int accessCodeLifespan;
+    /** 用户操作授权码生命周期（秒）。 */
     protected int accessCodeLifespanUserAction;
+    /** 登录授权码生命周期（秒）。 */
     protected int accessCodeLifespanLogin;
+    /** OAuth2 设备授权配置懒加载器。 */
     protected LazyLoader<RealmModel, OAuth2DeviceConfig> deviceConfig;
+    /** 管理员生成的操作令牌生命周期（秒）。 */
     protected int actionTokenGeneratedByAdminLifespan;
+    /** 用户生成的操作令牌生命周期（秒）。 */
     protected int actionTokenGeneratedByUserLifespan;
+    /** notBefore 时间戳，用于令牌失效控制。 */
     protected int notBefore;
+    /** 密码策略。 */
     protected PasswordPolicy passwordPolicy;
+    /** OTP 策略。 */
     protected OTPPolicy otpPolicy;
+    /** WebAuthn 策略。 */
     protected WebAuthnPolicy webAuthnPolicy;
+    /** 无密码 WebAuthn 策略。 */
     protected WebAuthnPolicy webAuthnPasswordlessPolicy;
 
+    /** 登录主题名称。 */
     protected String loginTheme;
+    /** 账户主题名称。 */
     protected String accountTheme;
+    /** 管理控制台主题名称。 */
     protected String adminTheme;
+    /** 邮件主题名称。 */
     protected String emailTheme;
+    /** Master 领域管理客户端 ID。 */
     protected String masterAdminClient;
 
+    /** 必需凭证类型列表。 */
     protected List<RequiredCredentialModel> requiredCredentials;
+    /** 按父组件 ID 索引的组件映射。 */
     protected MultivaluedMap<String, ComponentModel> componentsByParent = new MultivaluedHashMap<>();
+    /** 按父 ID 与 provider 类型索引的组件映射。 */
     protected MultivaluedMap<String, ComponentModel> componentsByParentAndType = new ConcurrentMultivaluedHashMap<>();
+    /** 按组件 ID 索引的组件映射。 */
     protected Map<String, ComponentModel> components;
 
+    /** 浏览器安全响应头配置。 */
     protected Map<String, String> browserSecurityHeaders;
+    /** SMTP 邮件服务器配置。 */
     protected Map<String, String> smtpConfig;
+    /** 认证流程映射（按流程 ID）。 */
     protected Map<String, AuthenticationFlowModel> authenticationFlows = new HashMap<>();
+    /** 认证流程列表（保持顺序）。 */
     protected List<AuthenticationFlowModel> authenticationFlowList;
+    /** 认证器配置映射（按配置 ID）。 */
     protected Map<String, AuthenticatorConfigModel> authenticatorConfigs;
+    /** 必需操作配置映射（按配置 ID）。 */
     protected Map<String, RequiredActionConfigModel> requiredActionProviderConfigs = new HashMap<>();
+    /** 必需操作配置映射（按别名）。 */
     protected Map<String, RequiredActionConfigModel> requiredActionProviderConfigsByAlias = new HashMap<>();
+    /** 必需操作提供者映射（按 ID）。 */
     protected Map<String, RequiredActionProviderModel> requiredActionProviders = new HashMap<>();
+    /** 必需操作提供者列表（保持顺序）。 */
     protected List<RequiredActionProviderModel> requiredActionProviderList;
+    /** 必需操作提供者映射（按别名）。 */
     protected Map<String, RequiredActionProviderModel> requiredActionProvidersByAlias = new HashMap<>();
+    /** 认证执行步骤映射（按流程 ID 分组）。 */
     protected MultivaluedHashMap<String, AuthenticationExecutionModel> authenticationExecutions = new MultivaluedHashMap<>();
+    /** 认证执行映射（按执行 ID）。 */
     protected Map<String, AuthenticationExecutionModel> executionsById = new HashMap<>();
+    /** 认证执行映射（按子流程 ID）。 */
     protected Map<String, AuthenticationExecutionModel> executionsByFlowId = new HashMap<>();
 
+    /** 浏览器登录认证流程。 */
     protected AuthenticationFlowModel browserFlow;
+    /** 用户注册认证流程。 */
     protected AuthenticationFlowModel registrationFlow;
+    /** 直接授权（Resource Owner Password）流程。 */
     protected AuthenticationFlowModel directGrantFlow;
+    /** 重置凭证认证流程。 */
     protected AuthenticationFlowModel resetCredentialsFlow;
+    /** 客户端认证流程。 */
     protected AuthenticationFlowModel clientAuthenticationFlow;
+    /** Docker 认证流程。 */
     protected AuthenticationFlowModel dockerAuthenticationFlow;
+    /** 首次 Broker 登录流程。 */
     protected AuthenticationFlowModel firstBrokerLoginFlow;
 
+    /** 是否启用用户事件。 */
     protected boolean eventsEnabled;
+    /** 用户事件过期时间（秒）。 */
     protected long eventsExpiration;
+    /** 事件监听器名称集合。 */
     protected Set<String> eventsListeners;
+    /** 已启用的事件类型集合。 */
     protected Set<String> enabledEventTypes;
+    /** 是否启用管理员事件。 */
     protected boolean adminEventsEnabled;
+    /** 管理员事件是否记录详情。 */
     protected boolean adminEventsDetailsEnabled;
+    /** 默认角色 ID。 */
     protected String defaultRoleId;
+    /** 管理员权限客户端 ID。 */
     protected String adminPermissionsClientId;
+    /** 是否允许用户自主管理访问权限（UMA）。 */
     private boolean allowUserManagedAccess;
 
+    /** 默认组 ID 列表。 */
     protected List<String> defaultGroups;
+    /** 默认客户端作用域 ID 懒加载器。 */
     protected DefaultLazyLoader<RealmModel, List<String>> defaultDefaultClientScopes;
+    /** 可选默认客户端作用域 ID 懒加载器。 */
     protected DefaultLazyLoader<RealmModel, List<String>> optionalDefaultClientScopes;
+    /** 是否启用国际化。 */
     protected boolean internationalizationEnabled;
+    /** 支持的语言区域集合。 */
     protected Set<String> supportedLocales;
+    /** 默认语言区域。 */
     protected String defaultLocale;
 
+    /** 领域自定义属性键值对。 */
     protected Map<String, String> attributes;
 
+    /** 各操作令牌类型的生命周期映射（按 actionTokenId）。 */
     private Map<String, Integer> userActionTokenLifespans;
 
+    /** 领域本地化文本（语言 -> 键值对）。 */
     protected Map<String, Map<String,String>> realmLocalizationTexts;
 
+    /** 从领域模型构造缓存快照。 */
     public CachedRealm(long revision, RealmModel model) {
         super(revision, model.getId());
         name = model.getName();
@@ -552,10 +662,11 @@ public class CachedRealm extends AbstractExtendableRevisioned {
     }
 
     /**
-     * This method is supposed to return user lifespan based on the action token ID
-     * provided. If nothing is provided, it will return the default lifespan.
-     * @param actionTokenId
-     * @return lifespan
+     * 根据操作令牌 ID 返回用户生成的操作令牌生命周期。
+     * 若未指定 ID 或未配置专用生命周期，则返回默认值。
+     *
+     * @param actionTokenId 操作令牌类型 ID
+     * @return 生命周期（秒）
      */
     public int getActionTokenGeneratedByUserLifespan(String actionTokenId) {
         if (actionTokenId == null || this.userActionTokenLifespans.get(actionTokenId) == null)

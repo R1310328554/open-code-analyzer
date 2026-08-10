@@ -21,19 +21,26 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 
 /**
+ * 客户端角色（Client Role）的 Infinispan 缓存快照实体。
+ * <p>
+ * 继承 {@link CachedRole} 并实现 {@link InClient}，额外缓存所属客户端 ID。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class CachedClientRole extends CachedRole implements InClient {
 
+    /** 所属客户端 ID。 */
     private final String clientId;
 
+    /** 从客户端角色模型构造缓存快照。 */
     public CachedClientRole(long revision, String clientId, RoleModel model, RealmModel realm) {
         super(revision, model, realm);
         this.clientId = clientId;
 
     }
 
+    /** 返回所属客户端 ID。 */
     public String getClientId() {
         return clientId;
     }

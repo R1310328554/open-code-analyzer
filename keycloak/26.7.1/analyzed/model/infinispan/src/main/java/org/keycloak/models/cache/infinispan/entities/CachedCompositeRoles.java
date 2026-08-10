@@ -23,15 +23,23 @@ import java.util.Set;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 组合角色（Composite Roles）查询结果的 Infinispan 缓存实体。
+ * <p>
+ * 缓存父角色 ID 集合与组合子角色 ID 列表，实现 {@link InRealm}，供按角色查询组合关系时使用。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class CachedCompositeRoles extends AbstractRevisioned implements InRealm {
 
+    /** 父角色 ID 集合。 */
     private final Set<String> parentIds;
+    /** 所属领域 ID。 */
     final protected String realm;
+    /** 组合子角色 ID 列表。 */
     private final List<String> compositeIds;
 
+    /** 构造组合角色查询缓存条目。 */
     public CachedCompositeRoles(long revision, String id, Set<String> parentIds, List<String> compositeIds, RealmModel realm) {
         super(revision, id);
         this.parentIds = parentIds;
@@ -44,10 +52,12 @@ public class CachedCompositeRoles extends AbstractRevisioned implements InRealm 
         return realm;
     }
 
+    /** 返回父角色 ID 集合。 */
     public Set<String> getParentIds() {
         return parentIds;
     }
 
+    /** 返回组合子角色 ID 列表。 */
     public List<String> getCompositeIds() {
         return compositeIds;
     }

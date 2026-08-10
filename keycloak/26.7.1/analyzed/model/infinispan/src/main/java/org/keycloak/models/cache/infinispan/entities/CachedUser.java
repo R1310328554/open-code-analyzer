@@ -36,26 +36,46 @@ import org.keycloak.models.cache.infinispan.DefaultLazyLoader;
 import org.keycloak.models.cache.infinispan.LazyLoader;
 
 /**
+ * 用户（User）的 Infinispan 缓存快照实体。
+ * <p>
+ * 核心身份字段（用户名、邮箱等）在构造时即加载；属性、角色、组、凭证等通过 {@link LazyLoader} 按需加载。
+ * 继承 {@link AbstractExtendableRevisioned} 并实现 {@link InRealm}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class CachedUser extends AbstractExtendableRevisioned implements InRealm  {
 
+    /** 所属领域 ID。 */
     private final String realm;
+    /** 用户创建时间戳。 */
     private final Long createdTimestamp;
+    /** 用户最后修改时间戳。 */
     private final Long lastModifiedTimestamp;
+    /** 邮箱是否已验证。 */
     private final boolean emailVerified;
+    /** 用户是否启用。 */
     private final boolean enabled;
+    /** 联邦存储链接 ID。 */
     private final String federationLink;
+    /** 服务账户关联的客户端 ID。 */
     private final String serviceAccountClientLink;
+    /** notBefore 时间戳，用于令牌失效控制。 */
     private final int notBefore;
+    /** 必需操作（Required Actions）懒加载器。 */
     private final LazyLoader<UserModel, Set<String>> requiredActions;
+    /** 非核心用户属性懒加载器。 */
     private final LazyLoader<UserModel, MultivaluedHashMap<String, String>> lazyLoadedAttributes;
+    /** 构造时即加载的核心用户属性（用户名、姓名、邮箱）。 */
     private final MultivaluedHashMap<String,String> eagerLoadedAttributes;
+    /** 角色映射懒加载器。 */
     private final LazyLoader<UserModel, Set<String>> roleMappings;
+    /** 所属组懒加载器。 */
     private final LazyLoader<UserModel, Set<String>> groups;
+    /** 存储凭证懒加载器。 */
     private final LazyLoader<UserModel, List<CredentialModel>> storedCredentials;
 
+    /** 从用户模型构造缓存快照。 */
     public CachedUser(long revision, RealmModel realm, UserModel user, int notBefore) {
         super(revision, user.getId());
         this.realm = realm.getId();
@@ -78,14 +98,17 @@ public class CachedUser extends AbstractExtendableRevisioned implements InRealm 
         this.storedCredentials = new DefaultLazyLoader<>(userModel -> userModel.credentialManager().getStoredCredentialsStream().collect(Collectors.toCollection(LinkedList::new)), LinkedList::new);
     }
 
+    /** 返回所属领域 ID。 */
     public String getRealm() {
         return realm;
     }
 
+    /** 返回用户名（构造时即加载）。 */
     public String getUsername() {
         return eagerLoadedAttributes.getFirst(UserModel.USERNAME);
     }
 
+    /** 按名称获取首个用户属性值，优先从 eager 缓存读取，否则按需懒加载。 */
     public String getFirstAttribute(KeycloakSession session, String name, Supplier<UserModel> userModel) {
         if(eagerLoadedAttributes.containsKey(name))
             return eagerLoadedAttributes.getFirst(name);
@@ -141,8 +164,9 @@ public class CachedUser extends AbstractExtendableRevisioned implements InRealm 
         return notBefore;
     }
 
+    /** 按需加载并返回存储凭证列表（浅拷贝，避免修改污染缓存）。 */
     public List<CredentialModel> getStoredCredentials(KeycloakSession session, Supplier<UserModel> userModel) {
-        // clone the credential model before returning it, so that modifications don't pollute the cache
+        // 返回前浅拷贝凭证模型，避免外部修改污染缓存
         return storedCredentials.get(session, userModel).stream().map(CredentialModel::shallowClone).collect(Collectors.toList());
     }
 

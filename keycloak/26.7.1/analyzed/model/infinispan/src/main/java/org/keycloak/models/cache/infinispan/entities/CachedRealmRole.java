@@ -21,12 +21,17 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 
 /**
+ * 领域角色（Realm Role）的 Infinispan 缓存快照实体。
+ * <p>
+ * 继承 {@link CachedRole}，领域角色不绑定特定客户端，直接使用基类的名称、描述与组合角色懒加载逻辑。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class CachedRealmRole extends CachedRole {
 
 
+    /** 从领域角色模型构造缓存快照。 */
     public CachedRealmRole(long revision, RoleModel model, RealmModel realm) {
         super(revision, model, realm);
 

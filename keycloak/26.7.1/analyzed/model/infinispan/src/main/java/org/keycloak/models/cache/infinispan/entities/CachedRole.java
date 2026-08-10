@@ -30,24 +30,35 @@ import org.keycloak.models.cache.infinispan.DefaultLazyLoader;
 import org.keycloak.models.cache.infinispan.LazyLoader;
 
 /**
+ * 角色（Role）的 Infinispan 缓存快照实体。
+ * <p>
+ * 缓存角色名称、描述与所属领域；组合角色与属性通过 {@link LazyLoader} 按需加载。
+ * 实现 {@link InRealm}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class CachedRole extends AbstractRevisioned implements InRealm {
 
+    /** 组合角色记录：客户端容器 ID 集合与子角色 ID 集合。 */
     public record CompositeRolesRecord (Set<String> clientContainerIds, Set<String> ids) {}
 
+    /** 角色名称。 */
     final protected String name;
+    /** 所属领域 ID。 */
     final protected String realm;
+    /** 角色描述。 */
     final protected String description;
+    /** 组合角色懒加载器。 */
     final protected LazyLoader<RoleModel, CompositeRolesRecord> composites;
     /**
-     * Use this so the cache invalidation can retrieve any previously cached role mappings to determine if this
-     * items should be evicted.
+     * 供缓存失效逻辑读取先前已缓存的组合角色映射，以判定本条目是否应被驱逐。
      */
     private volatile CompositeRolesRecord cachedComposites = new CompositeRolesRecord(Set.of(), Set.of());
+    /** 角色属性懒加载器。 */
     private final LazyLoader<RoleModel, MultivaluedHashMap<String, String>> attributes;
 
+    /** 从角色模型构造缓存快照。 */
     public CachedRole(long revision, RoleModel model, RealmModel realm) {
         super(revision, model.getId());
         description = model.getDescription();
@@ -67,6 +78,7 @@ public class CachedRole extends AbstractRevisioned implements InRealm {
         attributes = new DefaultLazyLoader<>(roleModel -> new MultivaluedHashMap<>(roleModel.getAttributes()), MultivaluedHashMap::new);
     }
 
+    /** 返回角色名称。 */
     public String getName() {
         return name;
     }
@@ -76,27 +88,31 @@ public class CachedRole extends AbstractRevisioned implements InRealm {
         return realm;
     }
 
+    /** 返回角色描述。 */
     public String getDescription() {
         return description;
     }
 
+    /** 判断角色是否为组合角色（含至少一个子角色）。 */
     public boolean isComposite(KeycloakSession session, Supplier<RoleModel> roleModel) {
         return !getComposites(session, roleModel).ids().isEmpty();
     }
 
+    /** 按需加载并返回组合角色记录，同时更新 {@link #cachedComposites}。 */
     public CompositeRolesRecord getComposites(KeycloakSession session, Supplier<RoleModel> roleModel) {
         cachedComposites = composites.get(session, roleModel);
         return cachedComposites;
     }
 
     /**
-     * Use this so the cache invalidation can retrieve any previously cached role mappings to determine if this
-     * items should be evicted. Will return an empty list if it hasn't been cached yet (and then no invalidation is necessary)
+     * 供缓存失效逻辑读取先前已缓存的组合角色映射，以判定本条目是否应被驱逐。
+     * 若尚未加载则返回空集合（此时无需失效）。
      */
     public CompositeRolesRecord getCachedComposites() {
         return cachedComposites;
     }
 
+    /** 按需加载并返回角色属性映射。 */
     public MultivaluedHashMap<String, String> getAttributes(KeycloakSession session, Supplier<RoleModel> roleModel) {
         return attributes.get(session, roleModel);
     }
