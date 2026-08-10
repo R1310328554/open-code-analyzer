@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:39:24Z",
-  "files": [
-    "services/src/main/java/org/keycloak/broker/oauth/OAuth2IdentityProvider.java",
-    "services/src/main/java/org/keycloak/broker/oauth/OAuth2IdentityProviderFactory.java",
-    "services/src/main/java/org/keycloak/broker/oidc/AbstractOAuth2IdentityProvider.java",
-    "services/src/main/java/org/keycloak/broker/oidc/IssuerValidation.java",
-    "services/src/main/java/org/keycloak/broker/oidc/KeycloakOIDCIdentityProvider.java",
-    "services/src/main/java/org/keycloak/broker/oidc/KeycloakOIDCIdentityProviderFactory.java",
-    "services/src/main/java/org/keycloak/broker/oidc/OAuth2IdentityProviderConfig.java",
-    "services/src/main/java/org/keycloak/broker/oidc/OIDCIdentityProvider.java",
-    "services/src/main/java/org/keycloak/broker/oidc/OIDCIdentityProviderConfig.java",
-    "services/src/main/java/org/keycloak/broker/oidc/OIDCIdentityProviderFactory.java",
-    "services/src/main/java/org/keycloak/broker/oidc/mappers/AbstractClaimMapper.java",
-    "services/src/main/java/org/keycloak/broker/oidc/mappers/AbstractClaimToGroupMapper.java",
-    "services/src/main/java/org/keycloak/broker/oidc/mappers/AbstractClaimToRoleMapper.java",
-    "services/src/main/java/org/keycloak/broker/oidc/mappers/AbstractJsonUserAttributeMapper.java",
-    "services/src/main/java/org/keycloak/broker/oidc/mappers/AdvancedClaimToGroupMapper.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2008,
-  "done": 3975
+  "done": 3990
 }
