@@ -42,17 +42,21 @@ import java.util.Map;
 
 /**
  * JDK http client request implement.
+ * <p>基于 {@link HttpURLConnection} 的轻量同步 HTTP 实现：无 Apache 依赖，支持 SSL 上下文、表单/JSON body 及 {@link File}  multipart 上传。</p>
  *
  * @author mai.jh
  */
 public class JdkHttpClientRequest implements HttpClientRequest {
     
+    /** 请求体长度头字段名 */
     private static final String CONTENT_LENGTH = "Content-Length";
     
+    /** multipart 边界前缀，后接时间戳保证唯一 */
     private static final String BOUNDARY_PREFIX = "----WebKitFormBoundary";
     
     private static final String LINE_FEED = "\r\n";
     
+    /** 连接/读超时等配置，单次请求可通过 replaceDefaultConfig 覆盖 */
     private HttpClientConfig httpClientConfig;
     
     public JdkHttpClientRequest(HttpClientConfig httpClientConfig) {
@@ -61,6 +65,7 @@ public class JdkHttpClientRequest implements HttpClientRequest {
     
     /**
      * Use specified {@link SSLContext}.
+     * <p>设置全局默认 SSLSocketFactory，影响后续所有 HttpsURLConnection。</p>
      *
      * @param sslContext ssl context
      */
@@ -73,6 +78,7 @@ public class JdkHttpClientRequest implements HttpClientRequest {
     
     /**
      * Replace the default HostnameVerifier.
+     * <p>替换 HTTPS 主机名校验策略，常用于自签名证书场景。</p>
      *
      * @param hostnameVerifier custom hostnameVerifier
      */
@@ -104,6 +110,7 @@ public class JdkHttpClientRequest implements HttpClientRequest {
             conn.setReadTimeout(this.httpClientConfig.getReadTimeOutMillis());
             conn.setRequestMethod(httpMethod);
             if (body != null && !"".equals(body)) {
+                // body 为 File 时走 multipart 上传，不再写普通字符串 body
                 if (body instanceof File) {
                     handleFileUpload(conn, (File) body);
                 }
@@ -126,11 +133,13 @@ public class JdkHttpClientRequest implements HttpClientRequest {
             conn.connect();
             return new JdkHttpClientResponse(conn);
         } catch (Exception e) {
+            // 异常时断开连接，避免泄漏
             conn.disconnect();
             throw e;
         }
     }
     
+    /** 构造 multipart/form-data 请求体并写入文件字节 */
     private void handleFileUpload(HttpURLConnection conn, File file) throws IOException {
         String boundary = BOUNDARY_PREFIX + System.currentTimeMillis();
         conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
@@ -158,6 +167,7 @@ public class JdkHttpClientRequest implements HttpClientRequest {
     
     /**
      * Replace the HTTP config created by default with the HTTP config specified in the request.
+     * <p>若单次请求携带 {@link HttpClientConfig}，则替换实例级默认配置。</p>
      *
      * @param replaceConfig http config
      */

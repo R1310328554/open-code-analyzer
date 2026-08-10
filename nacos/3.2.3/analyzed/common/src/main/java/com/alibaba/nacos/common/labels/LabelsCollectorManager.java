@@ -20,15 +20,17 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
-* LabelsCollectorManager.
+ * LabelsCollectorManager.
+ * <p>标签收集器管理接口：聚合所有 {@link LabelsCollector} SPI 实现，刷新并返回合并后的完整标签 Map，供客户端或服务端注册时使用。</p>
  *
-* @author rong
-* @date 2024/2/4
-*/
+ * @author rong
+ * @date 2024/2/4
+ */
 public interface LabelsCollectorManager {
     
     /**
      * refresh all labels.
+     * <p>按 order 调用各 {@link LabelsCollector}，合并 {@code collectLabels} 结果为统一标签视图。</p>
      *
      * @date 2024/3/7
      * @param properties    Properties.

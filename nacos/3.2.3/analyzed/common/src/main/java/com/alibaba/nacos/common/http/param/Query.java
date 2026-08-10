@@ -26,13 +26,16 @@ import java.util.Set;
 
 /**
  * Http Query object.
+ * <p>URL 查询参数构建器：{@link LinkedHashMap} 保持插入顺序，通过 {@link #toQueryUrl()} 生成 {@code K=V&K=V} 形式并已 URL 编码。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class Query {
     
+    /** 是否尚未添加任何参数，与 {@link #clear()} 联动 */
     private boolean isEmpty = true;
     
+    /** 空 Query 单例 */
     public static final Query EMPTY = Query.newInstance();
     
     private Map<String, Object> params;
@@ -49,6 +52,7 @@ public class Query {
     
     /**
      * Add query parameter.
+     * <p>追加单个查询键值，value 可为任意 Object，序列化时 {@code String.valueOf}。</p>
      *
      * @param key   key
      * @param value value
@@ -69,6 +73,7 @@ public class Query {
      *
      * @param params parameters
      * @return this query
+      * <p>URL 查询参数；详见类级说明。</p>
      */
     public Query initParams(Map<String, String> params) {
         if (MapUtil.isNotEmpty(params)) {
@@ -81,6 +86,7 @@ public class Query {
     
     /**
      * Print query as a http url param string. Like K=V&K=V.
+     * <p>按插入顺序拼接查询串，null 值跳过，键值均 UTF-8 URL 编码。</p>
      *
      * @return http url param string
      */

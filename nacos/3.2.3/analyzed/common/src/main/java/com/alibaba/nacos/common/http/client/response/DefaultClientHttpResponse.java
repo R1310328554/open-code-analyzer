@@ -25,13 +25,16 @@ import java.io.InputStream;
 
 /**
  * ApacheClientHttpResponse implementation {@link HttpClientResponse}.
+ * <p>Apache {@link SimpleHttpResponse} 的 {@link HttpClientResponse} 适配器：懒加载 Nacos {@link Header}，body 以字节数组转为 {@link InputStream}。</p>
  *
  * @author mai.jh
  */
 public class DefaultClientHttpResponse implements HttpClientResponse {
     
+    /** 底层 Apache 简单响应对象 */
     private SimpleHttpResponse response;
     
+    /** 由 body 字节缓存转换的输入流，close 时释放 */
     private InputStream responseStream;
     
     private Header responseHeader;
@@ -52,6 +55,7 @@ public class DefaultClientHttpResponse implements HttpClientResponse {
     
     @Override
     public Header getHeaders() {
+        // 首次访问时从 Apache Header 数组构建 Nacos Header
         if (this.responseHeader == null) {
             this.responseHeader = Header.newInstance();
             org.apache.hc.core5.http.Header[] allHeaders = response.getHeaders();
@@ -65,6 +69,7 @@ public class DefaultClientHttpResponse implements HttpClientResponse {
     @Override
     public InputStream getBody() {
         byte[] bodyBytes = response.getBody().getBodyBytes();
+        // 有 body 则包装为 ByteArrayInputStream，否则返回空流
         if (bodyBytes != null) {
             this.responseStream = new ByteArrayInputStream(bodyBytes);
         } else {

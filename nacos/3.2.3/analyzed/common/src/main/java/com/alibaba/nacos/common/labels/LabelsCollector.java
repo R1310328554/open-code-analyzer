@@ -21,6 +21,7 @@ import java.util.Properties;
 
 /**
  * LabelsCollector.
+ * <p>标签采集 SPI：从 {@link Properties} 配置中提取键值对标签，供 Nacos 实例元数据或路由策略使用；多实现时按 {@link #getOrder()} 排序合并。</p>
  *
  * @author rong
  * @date 2024/2/4
@@ -29,6 +30,7 @@ public interface LabelsCollector {
     
     /**
      * getLabels.
+     * <p>根据运行时配置采集本收集器负责的标签子集。</p>
      *
      * @param properties properties
      * @return Map labels.
@@ -39,6 +41,7 @@ public interface LabelsCollector {
     
     /**
      * getOrder.
+     * <p>合并优先级，数值越小越先执行或覆盖权越高（由 Manager 约定）。</p>
      *
      * @return the order value
      * @date 2024/2/4
@@ -48,6 +51,7 @@ public interface LabelsCollector {
     
     /**
      * get collector name.
+     * <p>收集器唯一标识，用于日志与冲突诊断。</p>
      *
      * @return name of collector
      * @date 2024/2/4

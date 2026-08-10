@@ -29,15 +29,19 @@ import java.util.TreeMap;
 
 /**
  * Http header.
+ * <p>HTTP 请求/响应头容器：大小写不敏感 Map 存储单值头，默认 Content-Type 为 JSON、Accept-Charset 为 UTF-8；另保留 JDK 原始多值响应头映射供特殊场景使用。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class Header {
     
+    /** 空 Header 单例，仍带默认 Content-Type 与 Accept-Charset */
     public static final Header EMPTY = Header.newInstance();
     
+    /** 请求/响应头键值（大小写不敏感 TreeMap） */
     private final Map<String, String> header;
     
+    /** JDK 原始多值响应头，键同样大小写不敏感 */
     private final Map<String, List<String>> originalResponseHeader;
     
     private static final String DEFAULT_CHARSET = "UTF-8";
@@ -55,6 +59,7 @@ public class Header {
     
     /**
      * Add the key and value to the header.
+     * <p>添加或覆盖单个头字段，空 key 被忽略，支持链式调用。</p>
      *
      * @param key   the key
      * @param value the value
@@ -88,6 +93,7 @@ public class Header {
     
     /**
      * Transfer to KV part list. The odd index is key and the even index is value.
+     * <p>转为交替 key、value 的 List，便于与底层 HTTP 库 API 对接。</p>
      *
      * @return KV string list
      */
@@ -104,6 +110,7 @@ public class Header {
     
     /**
      * Add all KV list to header. The odd index is key and the even index is value.
+     * <p>从交替 KV 列表批量写入；长度必须为偶数否则抛 {@link IllegalArgumentException}。</p>
      *
      * @param list KV list
      * @return header
@@ -125,6 +132,7 @@ public class Header {
      * Add all parameters to header.
      *
      * @param params parameters
+      * <p>HTTP 头容器；详见类级说明。</p>
      */
     public void addAll(Map<String, String> params) {
         if (MapUtil.isNotEmpty(params)) {
@@ -136,8 +144,7 @@ public class Header {
     
     /**
      * set original format response header.
-     *
-     * <p>Currently only corresponds to the response header of JDK.
+     * <p>记录 JDK {@link HttpURLConnection} 返回的多值响应头，同时将 values 首元素写入单值 header Map。</p>
      *
      * @param key    original response header key
      * @param values original response header values
@@ -155,11 +162,15 @@ public class Header {
      * <p>Currently only corresponds to the response header of JDK.
      *
      * @return Map original response header
+      * <p>HTTP 头容器；详见类级说明。</p>
      */
     public Map<String, List<String>> getOriginalResponseHeader() {
         return this.originalResponseHeader;
     }
     
+    /**
+     * 解析字符集：优先 Accept-Charset，否则从 Content-Type 的 charset 参数解析，再回退 {@link com.alibaba.nacos.api.common.Constants#ENCODE}。
+     */
     public String getCharset() {
         String acceptCharset = getValue(HttpHeaderConsts.ACCEPT_CHARSET);
         if (acceptCharset == null) {

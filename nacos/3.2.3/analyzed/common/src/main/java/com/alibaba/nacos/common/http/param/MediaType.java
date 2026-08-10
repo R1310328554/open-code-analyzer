@@ -21,6 +21,7 @@ import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
  * Http Media type.
+ * <p>HTTP Content-Type 常量与解析工具：预置 JSON、表单、multipart 等常用 MIME，并提供 {@link #valueOf(String)} 从 Content-Type 头解析 type 与 charset。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -28,6 +29,7 @@ public final class MediaType {
     
     public static final String APPLICATION_ATOM_XML = "application/atom+xml";
     
+    /** 表单 URL 编码类型，与 {@link DefaultHttpClientRequest} 表单分支配合 */
     public static final String APPLICATION_FORM_URLENCODED =
         "application/x-www-form-urlencoded;charset=UTF-8";
     
@@ -39,6 +41,7 @@ public final class MediaType {
     
     public static final String APPLICATION_XML = "application/xml;charset=UTF-8";
     
+    /** 默认 JSON 类型，含 UTF-8 charset */
     public static final String APPLICATION_JSON = "application/json;charset=UTF-8";
     
     public static final String MULTIPART_FORM_DATA = "multipart/form-data;charset=UTF-8";
@@ -52,18 +55,15 @@ public final class MediaType {
         this.charset = charset;
     }
     
-    /**
-     * content type.
-     */
+    /** MIME 主类型（不含 charset 参数） */
     private final String type;
     
-    /**
-     * content type charset.
-     */
+    /** 从 Content-Type 解析或指定的字符集 */
     private final String charset;
     
     /**
      * Parse the given String contentType into a {@code MediaType} object.
+     * <p>按分号拆分 Content-Type，提取 {@code charset=} 参数，缺省为平台默认编码。</p>
      *
      * @param contentType mediaType
      * @return MediaType
@@ -88,6 +88,7 @@ public final class MediaType {
      * @param contentType contentType
      * @param charset charset
      * @return MediaType
+      * <p>MIME 类型常量与解析；详见类级说明。</p>
      */
     public static MediaType valueOf(String contentType, String charset) {
         if (StringUtils.isEmpty(contentType)) {

@@ -25,6 +25,7 @@ import java.net.URI;
 
 /**
  * Represents a client-side Async HTTP request. Created via an implementation execute.
+ * <p>异步 HTTP 客户端请求抽象：由具体实现（如 Apache HttpClient5 异步客户端）发起非阻塞请求，通过 {@link com.alibaba.nacos.common.http.Callback} 回调返回结果。</p>
  *
  * @author mai.jh
  */
@@ -32,9 +33,9 @@ public interface AsyncHttpClientRequest extends Closeable {
     
     /**
      * execute async http request.
+     * <p>异步执行 HTTP 请求：成功时 {@link ResponseHandler} 处理响应并 {@code onReceive}，失败或取消分别触发 {@code onError}/{@code onCancel}。</p>
      *
      * @param uri               http url
-     * @param httpMethod        http request method
      * @param requestHttpEntity http request entity
      * @param responseHandler   http response handler
      * @param callback          http response callback

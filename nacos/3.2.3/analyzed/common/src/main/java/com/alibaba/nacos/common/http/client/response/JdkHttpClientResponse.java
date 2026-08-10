@@ -29,17 +29,20 @@ import java.util.Map;
 
 /**
  * JDk http client response implement.
+ * <p>基于 {@link HttpURLConnection} 的 {@link HttpClientResponse} 实现：支持 gzip 解压、JDK 多值响应头保留，错误响应优先读 errorStream。</p>
  *
  * @author mai.jh
  */
 public class JdkHttpClientResponse implements HttpClientResponse {
     
+    /** 已连接的 JDK HTTP 连接，提供状态与头信息 */
     private final HttpURLConnection conn;
     
     private InputStream responseStream;
     
     private Header responseHeader;
     
+    /** 需解压的 Content-Encoding 值 */
     private static final String CONTENT_ENCODING = "gzip";
     
     public JdkHttpClientResponse(HttpURLConnection conn) {
@@ -60,10 +63,11 @@ public class JdkHttpClientResponse implements HttpClientResponse {
     @Override
     public InputStream getBody() throws IOException {
         Header headers = getHeaders();
+        // 4xx/5xx 时 getInputStream 可能不可用，优先使用 errorStream
         InputStream errorStream = this.conn.getErrorStream();
         this.responseStream = (errorStream != null ? errorStream : this.conn.getInputStream());
         String contentEncoding = headers.getValue(HttpHeaderConsts.CONTENT_ENCODING);
-        // Used to process http content_encoding, when content_encoding is GZIP, use GZIPInputStream
+        // Content-Encoding 为 gzip 时解压为字节数组再包装为 InputStream
         if (CONTENT_ENCODING.equals(contentEncoding)) {
             byte[] bytes = IoUtils.tryDecompress(this.responseStream);
             return new ByteArrayInputStream(bytes);

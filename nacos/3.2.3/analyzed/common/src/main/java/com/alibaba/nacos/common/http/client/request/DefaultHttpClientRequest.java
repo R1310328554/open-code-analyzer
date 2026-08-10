@@ -39,12 +39,14 @@ import java.util.Map;
 
 /**
  * {@link HttpClientRequest} implementation that uses apache http client to execute streaming requests.
+ * <p>Apache HttpClient5 同步请求实现：构建 {@link HttpUriRequestBase}、执行请求并将响应拷贝为 {@link SimpleHttpResponse}，再包装为 {@link DefaultClientHttpResponse}。</p>
  *
  * @author mai.jh
  */
 @SuppressWarnings({"unchecked", "resource"})
 public class DefaultHttpClientRequest implements HttpClientRequest {
     
+    /** 同步 CloseableHttpClient，由工厂创建并持有连接池 */
     private final CloseableHttpClient client;
     
     private final RequestConfig defaultConfig;
@@ -59,7 +61,7 @@ public class DefaultHttpClientRequest implements HttpClientRequest {
         RequestHttpEntity requestHttpEntity)
         throws Exception {
         HttpUriRequestBase request = build(uri, httpMethod, requestHttpEntity, defaultConfig);
-        // copy http response to simple type
+        // 将 Classic 响应实体读入内存并转为 SimpleHttpResponse，便于统一响应抽象
         SimpleHttpResponse response = client.execute(request, httpResponse -> {
             SimpleHttpResponse simpleHttpResponse = SimpleHttpResponse.copy(httpResponse);
             ContentType contentType = ContentType.parse(httpResponse.getEntity().getContentType());
@@ -70,6 +72,10 @@ public class DefaultHttpClientRequest implements HttpClientRequest {
         return new DefaultClientHttpResponse(response);
     }
     
+    /**
+     * 根据 URI、方法名与 {@link RequestHttpEntity} 构建 Apache 请求对象。
+     * <p>表单 URL 编码时 body 为 Map 走 {@code initRequestFromEntity}，否则走 {@code initRequestEntity}；最后合并默认与单次 {@link HttpClientConfig} 超时。</p>
+     */
     static HttpUriRequestBase build(URI uri, String method, RequestHttpEntity requestHttpEntity,
         RequestConfig defaultConfig) throws Exception {
         final Header headers = requestHttpEntity.getHeaders();
@@ -93,6 +99,7 @@ public class DefaultHttpClientRequest implements HttpClientRequest {
     
     /**
      * Merge the HTTP config created by default with the HTTP config specified in the request.
+     * <p>将单次请求的 {@link HttpClientConfig} 连接/读超时覆盖到 {@link RequestConfig} 副本上。</p>
      *
      * @param requestBase      requestBase
      * @param httpClientConfig http config

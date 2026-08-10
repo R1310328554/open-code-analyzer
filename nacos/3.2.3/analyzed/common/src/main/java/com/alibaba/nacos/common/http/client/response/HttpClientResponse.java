@@ -27,6 +27,7 @@ import java.io.InputStream;
  * Represents a client-side HTTP response.
  * In new version of Apache Http Components, {@code HttpResponse} has been replaced by {@link SimpleHttpResponse}.
  * Cause in this class body content no longer be {@link InputStream} anymore, we don't need to close it anymore.
+ * <p>HTTP 客户端响应抽象：统一访问状态码、状态文本、{@link Header} 与 body 流；Apache 5.x 响应体已内存化，实现类 {@link #close()} 主要关闭适配出的 InputStream。</p>
  *
  * @author mai.jh
  */
@@ -34,6 +35,7 @@ public interface HttpClientResponse extends Closeable {
     
     /**
      * Return the headers of this message.
+     * <p>返回 Nacos 统一 {@link Header}，永不为 null。</p>
      *
      * @return a corresponding HttpHeaders object (never {@code null})
      */
@@ -41,6 +43,7 @@ public interface HttpClientResponse extends Closeable {
     
     /**
      * Return the body of the message as an input stream.
+     * <p>以输入流形式读取响应体，charset 由 Header 解析。</p>
      *
      * @return String response body
      * @throws IOException IOException
@@ -52,6 +55,7 @@ public interface HttpClientResponse extends Closeable {
      *
      * @return the HTTP status as an integer
      * @throws IOException IOException
+      * <p>HTTP 响应抽象；详见接口说明。</p>
      */
     int getStatusCode() throws IOException;
     
@@ -60,11 +64,13 @@ public interface HttpClientResponse extends Closeable {
      *
      * @return the HTTP status text
      * @throws IOException IOException
+      * <p>HTTP 响应抽象；详见接口说明。</p>
      */
     String getStatusText() throws IOException;
     
     /**
      * close response InputStream.
+     * <p>关闭 {@link #getBody()} 返回的流并释放相关资源。</p>
      */
     @Override
     void close();
