@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T04:39:05Z",
-  "files": [
-    "naming/src/main/java/com/alibaba/nacos/naming/model/form/UpdateSwitchForm.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/model/vo/InstanceDetailInfoVo.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/model/vo/MetricsInfoVo.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/monitor/MetricsMonitor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/monitor/NamingDynamicMeterRefreshService.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/monitor/NamingTpsMonitor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/monitor/PerformanceLoggerThread.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/monitor/ServiceTopNCounter.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/monitor/TpsMonitorItem.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/monitor/collector/NamingSubAndPubMetricsCollector.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/monitor/collector/PushPendingTaskCountMetricsCollector.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/monitor/collector/ServiceEventQueueSizeMetricsCollector.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/paramcheck/NamingDefaultHttpParamExtractor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/paramcheck/NamingInstanceBeatHttpParamExtractor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/paramcheck/NamingInstanceListHttpParamExtractor.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 497,
-  "done": 2025
+  "done": 2040
 }

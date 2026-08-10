@@ -2053,3 +2053,18 @@
 2026-08-10T04:40:13Z DONE naming/src/main/java/com/alibaba/nacos/naming/model/form/ServiceListForm.java wave68a [0:15] naming misc switch/forms
 2026-08-10T04:40:13Z DONE naming/src/main/java/com/alibaba/nacos/naming/model/form/UpdateClusterForm.java wave68a [0:15] naming misc switch/forms
 2026-08-10T04:40:13Z DONE naming/src/main/java/com/alibaba/nacos/naming/model/form/UpdateHealthForm.java wave68a [0:15] naming misc switch/forms
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/model/form/UpdateSwitchForm.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/model/vo/InstanceDetailInfoVo.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/model/vo/MetricsInfoVo.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/monitor/MetricsMonitor.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/monitor/NamingDynamicMeterRefreshService.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/monitor/NamingTpsMonitor.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/monitor/PerformanceLoggerThread.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/monitor/ServiceTopNCounter.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/monitor/TpsMonitorItem.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/monitor/collector/NamingSubAndPubMetricsCollector.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/monitor/collector/PushPendingTaskCountMetricsCollector.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/monitor/collector/ServiceEventQueueSizeMetricsCollector.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/paramcheck/NamingDefaultHttpParamExtractor.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/paramcheck/NamingInstanceBeatHttpParamExtractor.java wave68b [15:30] naming forms/monitor/paramcheck
+2026-08-10T04:40:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/paramcheck/NamingInstanceListHttpParamExtractor.java wave68b [15:30] naming forms/monitor/paramcheck
