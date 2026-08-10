@@ -15,23 +15,8 @@
     "core/src/main/java/com/alibaba/nacos/core/namespace/repository/EmbeddedNamespacePersistServiceImpl.java",
     "core/src/main/java/com/alibaba/nacos/core/namespace/repository/ExternalNamespacePersistServiceImpl.java",
     "core/src/main/java/com/alibaba/nacos/core/namespace/repository/NamespacePersistService.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/repository/NamespaceRowMapperInjector.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/AbstractHttpParamExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/AbstractRpcParamExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/CheckConfiguration.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/ExtractorManager.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/ParamCheckerFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/ParamExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/ServerParamCheckConfig.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/AgentRequestParamExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/BatchInstanceRequestParamExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/ConfigBatchListenRequestParamExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/ConfigFuzzyWatchRequestParamsExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/ConfigRequestParamExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/InstanceRequestParamExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/McpServerRequestParamExtractor.java",
-    "core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/PersistentInstanceRequestParamExtractor.java"
+    "core/src/main/java/com/alibaba/nacos/core/namespace/repository/NamespaceRowMapperInjector.java"
   ],
   "remaining_pending": 887,
-  "done": 1620
+  "done": 1635
 }
