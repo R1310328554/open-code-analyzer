@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T22:13:01Z",
   "files": [
-    "pkg/engine/internal/planner/physical/vector_aggregate.go",
-    "pkg/engine/internal/proto/expressionpb/expressionpb.pb.go",
-    "pkg/engine/internal/proto/expressionpb/marshal.go",
-    "pkg/engine/internal/proto/expressionpb/marshal_literal.go",
-    "pkg/engine/internal/proto/expressionpb/marshal_types.go",
-    "pkg/engine/internal/proto/expressionpb/unmarshal.go",
-    "pkg/engine/internal/proto/expressionpb/unmarshal_literal.go",
-    "pkg/engine/internal/proto/expressionpb/unmarshal_types.go",
-    "pkg/engine/internal/proto/physicalpb/marshal.go",
-    "pkg/engine/internal/proto/physicalpb/marshal_node.go",
-    "pkg/engine/internal/proto/physicalpb/marshal_types.go",
-    "pkg/engine/internal/proto/physicalpb/physicalpb.pb.go",
-    "pkg/engine/internal/proto/physicalpb/unmarshal.go",
-    "pkg/engine/internal/proto/physicalpb/unmarshal_node.go",
-    "pkg/engine/internal/proto/physicalpb/unmarshal_types.go",
     "pkg/engine/internal/proto/ulid/ulid.go",
     "pkg/engine/internal/proto/ulid/ulid.pb.go",
     "pkg/engine/internal/proto/wirepb/wirepb.pb.go",
@@ -33,5 +18,5 @@
     "pkg/engine/internal/scheduler/wire/metrics.go"
   ],
   "remaining_pending": 952,
-  "done": 570
+  "done": 585
 }
