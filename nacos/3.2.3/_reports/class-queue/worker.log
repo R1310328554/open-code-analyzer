@@ -2113,3 +2113,18 @@
 2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/PushDelayTaskExecuteEngine.java wave70a [0:15] naming push hook/task/rpc handler
 2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/push/v2/task/PushExecuteTask.java wave70a [0:15] naming push hook/task/rpc handler
 2026-08-10T04:44:26Z DONE naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/BatchInstanceRequestHandler.java wave70a [0:15] naming push hook/task/rpc handler
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/DistroDataRequestHandler.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/InstanceRequestHandler.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/NamingFuzzyWatchRequestHandler.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/PersistentInstanceRequestHandler.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/ServiceListRequestHandler.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/ServiceQueryRequestHandler.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/SubscribeServiceRequestHandler.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/selector/LabelSelector.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/selector/NoneSelector.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/selector/SelectorManager.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/selector/context/CmdbSelectorContextBuilder.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/selector/context/NoneSelectorContextBuilder.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/selector/interpreter/ExpressionInterpreter.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/utils/DistroUtils.java wave70b [15:30] naming rpc/selector/utils
+2026-08-10T04:44:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/utils/InstanceUtil.java wave70b [15:30] naming rpc/selector/utils

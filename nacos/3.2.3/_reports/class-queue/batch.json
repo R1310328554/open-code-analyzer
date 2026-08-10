@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T04:43:18Z",
-  "files": [
-    "naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/DistroDataRequestHandler.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/InstanceRequestHandler.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/NamingFuzzyWatchRequestHandler.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/PersistentInstanceRequestHandler.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/ServiceListRequestHandler.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/ServiceQueryRequestHandler.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/remote/rpc/handler/SubscribeServiceRequestHandler.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/selector/LabelSelector.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/selector/NoneSelector.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/selector/SelectorManager.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/selector/context/CmdbSelectorContextBuilder.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/selector/context/NoneSelectorContextBuilder.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/selector/interpreter/ExpressionInterpreter.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/utils/DistroUtils.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/utils/InstanceUtil.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 437,
-  "done": 2085
+  "done": 2100
 }
