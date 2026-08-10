@@ -15,23 +15,8 @@
     "config/src/main/java/com/alibaba/nacos/config/server/utils/SimpleIpFlowData.java",
     "config/src/main/java/com/alibaba/nacos/config/server/utils/SimpleReadWriteLock.java",
     "config/src/main/java/com/alibaba/nacos/config/server/utils/StatConstants.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/SystemConfig.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/TimeUtils.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/TimeoutUtils.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/TraceLogUtil.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/UrlAnalysisUtils.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/YamlParserUtil.java",
-    "config/src/main/java/com/alibaba/nacos/config/server/utils/ZipUtils.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/CommandOperations.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/Config.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/ConsistencyProtocol.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/DataOperation.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/IdGenerator.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/ProtoMessageUtil.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/ProtocolMetaData.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/RequestProcessor.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/SerializeFactory.java"
+    "config/src/main/java/com/alibaba/nacos/config/server/utils/SystemConfig.java"
   ],
   "remaining_pending": 1247,
-  "done": 1260
+  "done": 1275
 }
