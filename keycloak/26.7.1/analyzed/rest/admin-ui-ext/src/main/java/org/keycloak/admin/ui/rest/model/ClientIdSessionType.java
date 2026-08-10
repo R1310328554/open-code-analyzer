@@ -4,17 +4,18 @@ package org.keycloak.admin.ui.rest.model;
 import java.util.Objects;
 
 /**
- * A tuple containing the clientId and the session type (online/offline).
- *
+ * 客户端 ID 与会话类型（在线/离线）的二元组，用于会话查询键。
  */
 public class ClientIdSessionType {
 
-
+    /** 会话类型枚举：全部、常规在线或离线。 */
     public enum SessionType {
         ALL, REGULAR, OFFLINE
     }
 
+    /** 客户端内部 ID。 */
     private final String clientId;
+    /** 会话类型。 */
     private final SessionType type;
 
     public ClientIdSessionType(String clientId, SessionType type) {

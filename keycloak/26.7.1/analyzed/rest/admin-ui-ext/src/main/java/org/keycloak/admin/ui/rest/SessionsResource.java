@@ -30,9 +30,15 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import static org.keycloak.admin.ui.rest.model.ClientIdSessionType.SessionType.OFFLINE;
 import static org.keycloak.admin.ui.rest.model.ClientIdSessionType.SessionType.REGULAR;
 
+/**
+ * 管理控制台会话查询 REST 资源：列出领域或客户端下的在线/离线用户会话。
+ */
 public class SessionsResource {
+    /** Keycloak 会话上下文。 */
     private final KeycloakSession session;
+    /** 当前操作的领域模型。 */
     private final RealmModel realm;
+    /** 管理员权限评估器。 */
     private final AdminPermissionEvaluator auth;
 
     public SessionsResource(KeycloakSession session, RealmModel realm, AdminPermissionEvaluator auth) {
@@ -58,6 +64,14 @@ public class SessionsResource {
                     )
             )}
     )
+    /**
+     * 分页列出当前领域会话，可按类型（在线/离线/全部）与关键字过滤。
+     *
+     * @param type 会话类型：REGULAR、OFFLINE 或 ALL
+     * @param search 用户名、IP 或客户端 ID 的模糊搜索
+     * @param first 分页起始偏移
+     * @param max 返回条数上限
+     */
     public Stream<SessionRepresentation> realmSessions(@QueryParam("type") @DefaultValue("ALL") final SessionType type,
                                                        @QueryParam("search") @DefaultValue("") final String search,
                                                        @QueryParam("first") @DefaultValue("0") int first,
@@ -91,6 +105,15 @@ public class SessionsResource {
                     )
             )}
     )
+    /**
+     * 分页列出指定客户端下的会话，支持类型过滤与关键字搜索。
+     *
+     * @param clientId 客户端内部 ID
+     * @param type 会话类型
+     * @param search 搜索关键字
+     * @param first 分页起始偏移
+     * @param max 返回条数上限
+     */
     public Stream<SessionRepresentation> clientSessions(@QueryParam("clientId") final String clientId,
                                                         @QueryParam("type") @DefaultValue("ALL") final SessionType type,
                                                         @QueryParam("search") @DefaultValue("") final String search,
@@ -107,6 +130,7 @@ public class SessionsResource {
         return applySearch(search, stream).skip(first).limit(max);
     }
 
+    /** 按用户可见性与搜索条件过滤会话流。 */
     private Stream<SessionRepresentation> applySearch(String search, Stream<SessionRepresentation> result) {
         result = result.filter(sessionRep ->
             auth.users().canView(session.users().getUserById(realm, sessionRep.getUserId()))
@@ -119,26 +143,31 @@ public class SessionsResource {
         return result;
     }
 
+    /** 读取领域内全部在线（常规）会话。 */
     private Stream<SessionRepresentation> streamRegular() {
         return session.sessions().readOnlyStreamUserSessions(realm)
                 .map(s -> toRepresentation(s, REGULAR));
     }
 
+    /** 读取领域内全部离线会话。 */
     private Stream<SessionRepresentation> streamOffline() {
         return session.sessions().readOnlyStreamOfflineUserSessions(realm)
                 .map(s -> toRepresentation(s, OFFLINE));
     }
 
+    /** 读取指定客户端下的在线会话。 */
     private Stream<SessionRepresentation> streamRegular(ClientModel client) {
         return session.sessions().readOnlyStreamUserSessions(realm, client, -1, -1)
                 .map(s -> toRepresentation(s, REGULAR));
     }
 
+    /** 读取指定客户端下的离线会话。 */
     private Stream<SessionRepresentation> streamOffline(ClientModel client) {
         return session.sessions().readOnlyStreamOfflineUserSessions(realm, client, -1, -1)
                 .map(s -> toRepresentation(s, OFFLINE));
     }
 
+    /** 将 {@link UserSessionModel} 转为管理 UI 用的 {@link SessionRepresentation}。 */
     private static SessionRepresentation toRepresentation(UserSessionModel session, SessionType type) {
         SessionRepresentation rep = new SessionRepresentation();
         rep.setId(session.getId());

@@ -18,8 +18,12 @@ package org.keycloak.admin.ui.rest.model;
 
 import org.keycloak.representations.idm.RequiredActionProviderRepresentation;
 
+/**
+ * 扩展 {@link RequiredActionProviderRepresentation}，标明该必需操作是否可在 UI 中配置。
+ */
 public class ConfigurableRequiredActionProviderRepresentation extends RequiredActionProviderRepresentation {
 
+    /** 若为 true，管理控制台允许编辑此必需操作的配置。 */
     private boolean configurable;
 
     public boolean isConfigurable() {

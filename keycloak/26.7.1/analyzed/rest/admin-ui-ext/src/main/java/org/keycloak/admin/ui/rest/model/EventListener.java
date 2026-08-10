@@ -19,8 +19,12 @@ package org.keycloak.admin.ui.rest.model;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+/**
+ * 可用事件监听器提供方在管理 UI 中的标识表示。
+ */
 public class EventListener {
 
+    /** 监听器 SPI 提供方 ID。 */
     @Schema(required = true)
     private String id;
 

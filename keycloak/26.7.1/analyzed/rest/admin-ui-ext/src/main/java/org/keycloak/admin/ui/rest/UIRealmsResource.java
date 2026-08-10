@@ -23,6 +23,9 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.jboss.resteasy.reactive.NoCache;
 
+/**
+ * 管理控制台领域列表 REST 资源：提供轻量级领域名称查询端点。
+ */
 public class UIRealmsResource {
 
     private final KeycloakSession session;
@@ -52,6 +55,13 @@ public class UIRealmsResource {
                     )
             )}
     )
+    /**
+     * 分页返回调用者有权限查看的领域的名称与显示名。
+     *
+     * @param first 分页起始偏移
+     * @param max 返回条数上限
+     * @param search 领域名称搜索关键字
+     */
     public Stream<RealmNameRepresentation> getRealms(@QueryParam("first") @DefaultValue("0") int first,
                                                      @QueryParam("max") @DefaultValue("10") int max,
                                                      @QueryParam("search") @DefaultValue("") String search) {

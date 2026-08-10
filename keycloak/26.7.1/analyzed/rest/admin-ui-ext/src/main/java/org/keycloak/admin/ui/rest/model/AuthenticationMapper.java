@@ -10,9 +10,20 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
+/**
+ * 将 {@link AuthenticationFlowModel} 及其引用关系映射为管理 UI 用的 {@link Authentication} DTO。
+ */
 public class AuthenticationMapper {
+    /** “被引用方”列表最多展示条数，避免响应过大。 */
     private static final int MAX_USED_BY = 9;
 
+    /**
+     * 从领域认证流模型构建 {@link Authentication}，并填充 usedBy 引用信息。
+     *
+     * @param session Keycloak 会话
+     * @param flow 源认证流模型
+     * @param realm 所属领域
+     */
     public static Authentication convertToModel(KeycloakSession session, AuthenticationFlowModel flow, RealmModel realm) {
 
         final Authentication authentication = new Authentication();

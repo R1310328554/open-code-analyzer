@@ -4,19 +4,27 @@ import java.util.Objects;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+/**
+ * 认证流（Authentication Flow）在管理 UI 中的展示模型。
+ */
 public class Authentication {
 
+    /** 认证流内部 ID。 */
     @Schema(required = true)
     private String id;
 
+    /** 认证流别名，领域内唯一标识。 */
     @Schema(required = true)
     private String alias;
 
+    /** 是否为 Keycloak 内置流，内置流不可删除。 */
     @Schema(required = true)
     private boolean builtIn;
 
+    /** 该流被哪些身份提供方、客户端或默认绑定引用。 */
     private UsedBy usedBy;
 
+    /** 人类可读的描述文本。 */
     private String description;
 
     public  UsedBy getUsedBy() {

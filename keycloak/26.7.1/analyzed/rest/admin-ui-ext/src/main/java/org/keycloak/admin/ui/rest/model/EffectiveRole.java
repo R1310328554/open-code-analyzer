@@ -4,15 +4,24 @@ import java.util.Objects;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+/**
+ * 有效角色（含领域角色与客户端角色）在管理 UI 中的统一表示。
+ */
 public final class EffectiveRole {
+    /** 角色内部 ID。 */
     @Schema(required = true)
     private final String id;
+    /** 角色名称。 */
     @Schema(required = true)
     private final String name;
+    /** 角色描述。 */
     private final String description;
+    /** 是否为客户端角色（false 表示领域角色）。 */
     @Schema(required = true)
     private final boolean clientRole;
+    /** 所属客户端可读 clientId，领域角色时为 null。 */
     private String client;
+    /** 所属客户端内部 ID。 */
     private String clientId;
 
     public EffectiveRole(String id, String name, String description, boolean clientRole) {

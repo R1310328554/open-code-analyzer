@@ -46,13 +46,13 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 /**
- * This JAX-RS resource is decorating the Admin Realm API in order to support specific behaviors from the
- * administration console.
+ * 管理控制台专用的领域 REST 装饰器：在标准 Admin Realm API 之上扩展 UI 特有行为。
  *
- * Its use is restricted to the built-in administration console.
+ * 仅供内置管理控制台使用。
  */
 public class UIRealmResource {
 
+    /** 委托给标准 {@link RealmAdminResource} 执行核心更新逻辑。 */
     private final RealmAdminResource delegate;
     private final KeycloakSession session;
     private final AdminPermissionEvaluator auth;
@@ -68,6 +68,7 @@ public class UIRealmResource {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Operation( hidden = true )
+    /** 更新领域配置；成功后同步写入用户配置文件（UPConfig）。 */
     public Response updateRealm(UIRealmRepresentation rep) {
         Response response = delegate.updateRealm(rep);
 
@@ -84,6 +85,7 @@ public class UIRealmResource {
     @APIResponse(responseCode = "200", description = "", content = {
             @Content(schema = @Schema(implementation = UIRealmInfo.class, type = SchemaType.OBJECT))})
     @Produces(MediaType.APPLICATION_JSON)
+    /** 返回领域摘要信息，所有领域管理员均可查看。 */
     public UIRealmInfo getInfo() {
         auth.requireAnyAdminRole();
 
@@ -92,11 +94,13 @@ public class UIRealmResource {
         return info;
     }
 
+    /** 判断当前领域是否至少启用了一个用户存储提供方。 */
     private boolean isAtLeastOneUserStorageProviderEnabled() {
         return ((StorageProviderRealmModel) session.getContext().getRealm()).getUserStorageProvidersStream()
                 .anyMatch(UserStorageProviderModel::isEnabled);
     }
 
+    /** 若请求体携带 UPConfig，则通过 {@link UserProfileResource} 持久化用户配置文件。 */
     private void updateUserProfileConfiguration(UIRealmRepresentation rep) {
         UserProfileResource userProfileResource = new UserProfileResource(session, auth, adminEvent);
         UPConfig config = rep.getUpConfig();
@@ -106,6 +110,7 @@ public class UIRealmResource {
         userProfileResource.setAndGetConfiguration(config);
     }
 
+    /** 判断 HTTP 响应是否属于 2xx 成功族。 */
     private boolean isSuccessful(Response response) {
         return Family.SUCCESSFUL.equals(response.getStatusInfo().getFamily());
     }

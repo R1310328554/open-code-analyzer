@@ -19,7 +19,11 @@ package org.keycloak.admin.ui.rest.model;
 
 import org.keycloak.events.EventListenerProviderFactory;
 
+/**
+ * 将 {@link EventListenerProviderFactory} SPI 实例映射为 {@link EventListener} DTO。
+ */
 public class ProviderMapper {
+    /** 从事件监听器工厂提取 ID 并构建 UI 模型。 */
     public static EventListener convertToModel(EventListenerProviderFactory eventListenerProviderFactory) {
         EventListener eventListener = new EventListener();
         eventListener.setId(eventListenerProviderFactory.getId());
