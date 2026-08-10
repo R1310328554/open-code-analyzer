@@ -37,6 +37,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for AuthenticatorBaseType complex type.
+ * SAML 2.0 认证器（Authenticator）基类：聚合多种认证因子与扩展元素的 JAXB 内容模型。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -77,6 +79,8 @@ public class AuthenticatorBaseType {
     protected List<JAXBElement<?>> content;
 
     /**
+     * 获取认证器内容模型（多种认证因子与扩展的混合列表）。
+     *
      * Gets the rest of the content model.
      *
      * <p>

@@ -35,6 +35,8 @@ import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 /**
  * <p>
  * Java class for anonymous complex type.
+ * SAML 2.0 PIN/凭证生成（Generation）根元素：mechanism 取 principalchosen（主体选择）或 automatic（自动）。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -66,6 +68,8 @@ public class Generation {
     protected String mechanism;
 
     /**
+     * 获取 生成机制 属性的值。
+     *
      * Gets the value of the mechanism property.
      *
      * @return possible object is {@link String }
@@ -75,6 +79,8 @@ public class Generation {
     }
 
     /**
+     * 设置 生成机制 属性的值。
+     *
      * Sets the value of the mechanism property.
      *
      * @param value allowed object is {@link String }

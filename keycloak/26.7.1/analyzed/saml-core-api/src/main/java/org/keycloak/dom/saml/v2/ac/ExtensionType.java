@@ -35,6 +35,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for ExtensionType complex type.
+ * SAML 2.0 扩展（Extension）类型：通过 xs:any 承载任意扩展 DOM 元素或对象。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -59,6 +61,8 @@ public class ExtensionType {
     protected List<Object> any;
 
     /**
+     * 获取扩展内容列表（任意 XML 元素或对象）。
+     *
      * Gets the value of the any property.
      *
      * <p>

@@ -31,6 +31,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for booleanType.
+ * SAML 2.0 布尔枚举（booleanType）：XML NMTOKEN 取值 true 或 false。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -49,8 +51,9 @@ import jakarta.xml.bind.annotation.XmlType;
 @XmlEnum
 public enum BooleanType {
 
-    @XmlEnumValue("true")
-    TRUE("true"), @XmlEnumValue("false")
+    /** 真值 true。 */ @XmlEnumValue("true")
+    TRUE("true"),
+    /** 假值 false。 */ @XmlEnumValue("false")
     FALSE("false");
     private final String value;
 
@@ -58,10 +61,12 @@ public enum BooleanType {
         value = v;
     }
 
+    /** 返回枚举对应的 XML 字符串值。 */
     public String value() {
         return value;
     }
 
+    /** 从 XML 字符串解析为 {@link BooleanType} 枚举常量。 */
     public static BooleanType fromValue(String v) {
         for (BooleanType c : BooleanType.values()) {
             if (c.value.equals(v)) {

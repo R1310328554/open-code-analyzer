@@ -35,6 +35,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for ExtensionOnlyType complex type.
+ * SAML 2.0 仅含扩展的类型：作为占位元素时仅允许携带 Extension 子元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -59,6 +61,8 @@ public class ExtensionOnlyType {
     protected List<ExtensionType> extension;
 
     /**
+     * 获取扩展（Extension）元素列表。
+     *
      * Gets the value of the extension property.
      *
      * <p>

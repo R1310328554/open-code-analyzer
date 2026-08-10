@@ -35,6 +35,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for AuthnMethodBaseType complex type.
+ * SAML 2.0 认证方法基类：描述主体认证机制、认证器、传输协议及扩展元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -69,6 +71,8 @@ public class AuthnMethodBaseType {
     protected List<ExtensionType> extension;
 
     /**
+     * 获取 主体认证机制 属性的值。
+     *
      * Gets the value of the principalAuthenticationMechanism property.
      *
      * @return possible object is {@link PrincipalAuthenticationMechanismType }
@@ -78,6 +82,8 @@ public class AuthnMethodBaseType {
     }
 
     /**
+     * 设置 主体认证机制 属性的值。
+     *
      * Sets the value of the principalAuthenticationMechanism property.
      *
      * @param value allowed object is {@link PrincipalAuthenticationMechanismType }
@@ -87,6 +93,8 @@ public class AuthnMethodBaseType {
     }
 
     /**
+     * 获取 认证器 属性的值。
+     *
      * Gets the value of the authenticator property.
      *
      * @return possible object is {@link AuthenticatorBaseType }
@@ -96,6 +104,8 @@ public class AuthnMethodBaseType {
     }
 
     /**
+     * 设置 认证器 属性的值。
+     *
      * Sets the value of the authenticator property.
      *
      * @param value allowed object is {@link AuthenticatorBaseType }
@@ -105,6 +115,8 @@ public class AuthnMethodBaseType {
     }
 
     /**
+     * 获取 认证器传输协议 属性的值。
+     *
      * Gets the value of the authenticatorTransportProtocol property.
      *
      * @return possible object is {@link AuthenticatorTransportProtocolType }
@@ -114,6 +126,8 @@ public class AuthnMethodBaseType {
     }
 
     /**
+     * 设置 认证器传输协议 属性的值。
+     *
      * Sets the value of the authenticatorTransportProtocol property.
      *
      * @param value allowed object is {@link AuthenticatorTransportProtocolType }
@@ -123,6 +137,8 @@ public class AuthnMethodBaseType {
     }
 
     /**
+     * 获取扩展（Extension）元素列表。
+     *
      * Gets the value of the extension property.
      *
      * <p>

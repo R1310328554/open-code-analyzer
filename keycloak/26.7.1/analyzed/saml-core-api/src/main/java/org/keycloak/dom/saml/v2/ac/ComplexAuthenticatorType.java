@@ -37,6 +37,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for ComplexAuthenticatorType complex type.
+ * SAML 2.0 复合认证器类型：可嵌套多种认证因子序列与选择的 JAXB 内容模型。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -77,6 +79,8 @@ public class ComplexAuthenticatorType {
     protected List<JAXBElement<?>> content;
 
     /**
+     * 获取复合认证器内容模型（嵌套认证因子与扩展的混合列表）。
+     *
      * Gets the rest of the content model.
      *
      * <p>

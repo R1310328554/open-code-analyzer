@@ -32,6 +32,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for ActivationLimitType complex type.
+ * SAML 2.0 认证上下文激活限制（ActivationLimit）类型：在时长、使用次数或会话维度约束凭证/密钥激活。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -63,6 +65,8 @@ public class ActivationLimitType {
     protected ActivationLimitSessionType activationLimitSession;
 
     /**
+     * 获取 激活时限（时长） 属性的值。
+     *
      * Gets the value of the activationLimitDuration property.
      *
      * @return possible object is {@link ActivationLimitDurationType }
@@ -72,6 +76,8 @@ public class ActivationLimitType {
     }
 
     /**
+     * 设置 激活时限（时长） 属性的值。
+     *
      * Sets the value of the activationLimitDuration property.
      *
      * @param value allowed object is {@link ActivationLimitDurationType }
@@ -81,6 +87,8 @@ public class ActivationLimitType {
     }
 
     /**
+     * 获取 激活使用次数上限 属性的值。
+     *
      * Gets the value of the activationLimitUsages property.
      *
      * @return possible object is {@link ActivationLimitUsagesType }
@@ -90,6 +98,8 @@ public class ActivationLimitType {
     }
 
     /**
+     * 设置 激活使用次数上限 属性的值。
+     *
      * Sets the value of the activationLimitUsages property.
      *
      * @param value allowed object is {@link ActivationLimitUsagesType }
@@ -99,6 +109,8 @@ public class ActivationLimitType {
     }
 
     /**
+     * 获取 激活会话限制 属性的值。
+     *
      * Gets the value of the activationLimitSession property.
      *
      * @return possible object is {@link ActivationLimitSessionType }
@@ -108,6 +120,8 @@ public class ActivationLimitType {
     }
 
     /**
+     * 设置 激活会话限制 属性的值。
+     *
      * Sets the value of the activationLimitSession property.
      *
      * @param value allowed object is {@link ActivationLimitSessionType }

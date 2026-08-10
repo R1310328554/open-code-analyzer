@@ -33,6 +33,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for GoverningAgreementRefType complex type.
+ * SAML 2.0 治理协议引用类型：以 anyURI 属性指向适用的治理/策略文档。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -56,6 +58,8 @@ public class GoverningAgreementRefType {
     protected String governingAgreementRef;
 
     /**
+     * 获取 治理协议 URI 引用 属性的值。
+     *
      * Gets the value of the governingAgreementRef property.
      *
      * @return possible object is {@link String }
@@ -65,6 +69,8 @@ public class GoverningAgreementRefType {
     }
 
     /**
+     * 设置 治理协议 URI 引用 属性的值。
+     *
      * Sets the value of the governingAgreementRef property.
      *
      * @param value allowed object is {@link String }

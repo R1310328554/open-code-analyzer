@@ -34,6 +34,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for ActivationLimitUsagesType complex type.
+ * SAML 2.0 激活使用次数限制类型：以整数属性 number 指定允许的最大使用次数。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -56,6 +58,8 @@ public class ActivationLimitUsagesType {
     protected BigInteger number;
 
     /**
+     * 获取 允许使用次数 属性的值。
+     *
      * Gets the value of the number property.
      *
      * @return possible object is {@link BigInteger }
@@ -65,6 +69,8 @@ public class ActivationLimitUsagesType {
     }
 
     /**
+     * 设置 允许使用次数 属性的值。
+     *
      * Sets the value of the number property.
      *
      * @param value allowed object is {@link BigInteger }
