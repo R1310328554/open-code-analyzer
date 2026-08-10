@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * RPC 连接管理器：注册/注销连接、限流校验、负载均衡踢出与指标采集。
  * connect manager.
  *
  * @author liuzunfei
@@ -58,12 +59,16 @@ public class ConnectionManager {
     
     private static final Logger LOGGER = com.alibaba.nacos.plugin.control.Loggers.CONNECTION;
     
+    /** 按客户端 IP 统计当前连接数。 */
     private Map<String, AtomicInteger> connectionForClientIp = new ConcurrentHashMap<>(16);
     
+    /** 全局 connectionId → Connection 映射表。 */
     Map<String, Connection> connections = new ConcurrentHashMap<>();
     
+    /** 运行时连接踢出策略实现。 */
     private RuntimeConnectionEjector runtimeConnectionEjector;
     
+    /** 客户端连接/断开事件监听器注册表。 */
     private ClientConnectionEventListenerRegistry clientConnectionEventListenerRegistry;
     
     public ConnectionManager(
@@ -72,10 +77,11 @@ public class ConnectionManager {
     }
     
     /**
+     * 判断指定客户端 IP 是否处于连接监控白名单。
      * if monitor detail.
      *
      * @param clientIp clientIp.
-     * @return
+     * @return 是否在监控列表中
      */
     public boolean traced(String clientIp) {
         ConnectionControlRule connectionControlRule =
@@ -86,6 +92,7 @@ public class ConnectionManager {
     }
     
     /**
+     * 校验 connectionId 是否仍存在于连接池中。
      * check connection id is valid.
      *
      * @param connectionId connectionId to be check.
@@ -96,6 +103,7 @@ public class ConnectionManager {
     }
     
     /**
+     * 注册新连接；通过限流校验后写入连接池并触发连接事件。
      * register a new connect.
      *
      * @param connectionId connectionId
@@ -146,6 +154,7 @@ public class ConnectionManager {
     }
     
     /**
+     * 注销连接：关闭底层通道、更新 IP 计数并通知断开监听器。
      * unregister a connection .
      *
      * @param connectionId connectionId.
@@ -168,6 +177,7 @@ public class ConnectionManager {
     }
     
     /**
+     * 按 connectionId 获取连接实例。
      * get by connection id.
      *
      * @param connectionId connection id.
@@ -178,6 +188,7 @@ public class ConnectionManager {
     }
     
     /**
+     * 按客户端 IP 筛选所有关联连接。
      * get by client ip.
      *
      * @param clientIp client ip.
@@ -196,6 +207,7 @@ public class ConnectionManager {
     }
     
     /**
+     * 通过 SPI 加载运行时连接踢出器，未找到时使用 Nacos 默认实现。
      * init connection ejector.
      */
     public void initConnectionEjector() {
@@ -229,6 +241,7 @@ public class ConnectionManager {
     }
     
     /**
+     * 返回当前连接池中的连接总数。
      * get current connections count.
      *
      * @return get all connection count
@@ -238,6 +251,7 @@ public class ConnectionManager {
     }
     
     /**
+     * 刷新指定连接的最后活跃时间。
      * refresh connection active time.
      *
      * @param connectionId connectionId.
@@ -250,13 +264,14 @@ public class ConnectionManager {
     }
     
     /**
+     * 启动定时任务：踢出过期/不健康连接并刷新模块连接数指标。
      * Start Task：Expel the connection which active Time expire.
      */
     @PostConstruct
     public void start() {
         
         initConnectionEjector();
-        // Start UnHealthy Connection Expel Task.
+        // 启动不健康连接踢出定时任务
         RpcScheduledExecutor.COMMON_SERVER_EXECUTOR.scheduleWithFixedDelay(() -> {
             runtimeConnectionEjector.doEject();
             MetricsMonitor.getLongConnectionMonitor().set(connections.size());
@@ -284,6 +299,7 @@ public class ConnectionManager {
     }
     
     /**
+     * 向指定 SDK 连接发送重定向请求以实现负载均衡踢出。
      * send load request to specific connectionId.
      *
      * @param connectionId    connection id of client.
@@ -319,6 +335,7 @@ public class ConnectionManager {
     }
     
     /**
+     * 返回当前全部客户端连接数。
      * get all client count.
      *
      * @return client count.
@@ -328,6 +345,7 @@ public class ConnectionManager {
     }
     
     /**
+     * 按标签精确匹配统计符合条件的客户端连接数。
      * get client count with labels filter.
      *
      * @param filterLabels label to filter client count.
@@ -352,6 +370,7 @@ public class ConnectionManager {
     }
     
     /**
+     * 返回来源为 SDK 的客户端连接数。
      * get client count from sdk.
      *
      * @return sdk client count.

@@ -22,6 +22,7 @@ import com.alibaba.nacos.core.remote.RpcAckCallbackSynchronizer;
 import org.springframework.stereotype.Component;
 
 /**
+ * 连接事件监听器：连接建立时初始化 ACK 上下文，断开时清理。
  * RemoteConnectionEventListener.
  *
  * @author liuzunfei
@@ -30,11 +31,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class RpcAckCallbackInitorOrCleaner extends ClientConnectionEventListener {
     
+    /** 客户端连接建立时为该 connectionId 预创建 ACK 回调 Map。 */
     @Override
     public void clientConnected(Connection connect) {
         RpcAckCallbackSynchronizer.initContextIfNecessary(connect.getMetaInfo().getConnectionId());
     }
     
+    /** 客户端断开时清除该 connectionId 的全部 ACK 回调。 */
     @Override
     public void clientDisConnected(Connection connect) {
         RpcAckCallbackSynchronizer.clearContext(connect.getMetaInfo().getConnectionId());

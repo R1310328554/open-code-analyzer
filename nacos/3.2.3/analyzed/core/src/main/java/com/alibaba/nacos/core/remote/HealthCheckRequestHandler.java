@@ -24,6 +24,7 @@ import com.alibaba.nacos.core.control.TpsControl;
 import org.springframework.stereotype.Component;
 
 /**
+ * 健康检查请求处理器，响应客户端存活探测。
  * push response  to clients.
  *
  * @author liuzunfei
@@ -34,6 +35,7 @@ import org.springframework.stereotype.Component;
 public class HealthCheckRequestHandler
     extends RequestHandler<HealthCheckRequest, HealthCheckResponse> {
     
+    /** 处理健康检查请求并返回空成功响应。 */
     @Override
     @TpsControl(pointName = "HealthCheck")
     public HealthCheckResponse handle(HealthCheckRequest request, RequestMeta meta) {

@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /**
+ * 服务端 Push 请求的 ACK 回调同步器，按 connectionId 维护待确认 Future。
  * server push ack synchronier.
  *
  * @author liuzunfei
@@ -34,6 +35,7 @@ import java.util.concurrent.TimeoutException;
  */
 public class RpcAckCallbackSynchronizer {
     
+    /** 全局 ACK 回调上下文：connectionId → (requestId → Future)。 */
     @SuppressWarnings("checkstyle:linelength")
     public static final Map<String, Map<String, DefaultRequestFuture>> CALLBACK_CONTEXT =
         new ConcurrentLinkedHashMap.Builder<String, Map<String, DefaultRequestFuture>>()
@@ -44,6 +46,7 @@ public class RpcAckCallbackSynchronizer {
             .build();
     
     /**
+     * 收到客户端 ACK 后完成对应 Future 并移除回调。
      * notify  ack.
      *
      * @param connectionId connectionId
@@ -82,6 +85,7 @@ public class RpcAckCallbackSynchronizer {
     }
     
     /**
+     * 注册待 ACK 的 Push Future，requestId 冲突时抛出异常。
      * sync callback.
      *
      * @param connectionId      connectionId
@@ -108,6 +112,7 @@ public class RpcAckCallbackSynchronizer {
     }
     
     /**
+     * 连接断开时清除该 connectionId 的全部 ACK 上下文。
      * clear context of connectionId.
      *
      * @param connectionId connectionId
@@ -117,6 +122,7 @@ public class RpcAckCallbackSynchronizer {
     }
     
     /**
+     * 按需为 connectionId 初始化 ACK 回调子 Map。
      * init context of connectionId if necessary.
      *
      * @param connectionId connectionId
@@ -133,6 +139,7 @@ public class RpcAckCallbackSynchronizer {
     }
     
     /**
+     * 移除指定 requestId 的待 ACK Future。
      * clear context of requestId.
      *
      * @param connectionId connectionId

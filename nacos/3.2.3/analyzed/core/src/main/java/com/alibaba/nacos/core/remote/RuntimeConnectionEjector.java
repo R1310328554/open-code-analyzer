@@ -19,6 +19,7 @@
 package com.alibaba.nacos.core.remote;
 
 /**
+ * 运行时连接踢出器抽象基类，定义心跳超时阈值与负载均衡踢出接口。
  * runtime connection ejector.
  *
  * @author shiyiyue
@@ -26,17 +27,21 @@ package com.alibaba.nacos.core.remote;
 public abstract class RuntimeConnectionEjector {
     
     /**
+     * 连接保活超时阈值（约为客户端 keep-alive 的 4 倍）。
      * 4 times of client keep alive.
      */
     public static final long KEEP_ALIVE_TIME = 20000L;
     
     /**
+     * 一次性负载调整目标连接数，用于集群 rebalance。
      * current loader adjust count,only effective once,use to re balance.
      */
     private int loadClient = -1;
     
+    /** 负载踢出时的重定向目标地址。 */
     String redirectAddress = null;
     
+    /** 关联的连接管理器。 */
     protected ConnectionManager connectionManager;
     
     public RuntimeConnectionEjector() {
@@ -51,6 +56,7 @@ public abstract class RuntimeConnectionEjector {
     }
     
     /**
+     * 执行运行时连接踢出逻辑。
      * eject runtime connection.
      */
     public abstract void doEject();
@@ -72,9 +78,10 @@ public abstract class RuntimeConnectionEjector {
     }
     
     /**
+     * 返回踢出器实现名称。
      * get name.
      *
-     * @return
+     * @return 踢出器名称
      */
     public abstract String getName();
 }

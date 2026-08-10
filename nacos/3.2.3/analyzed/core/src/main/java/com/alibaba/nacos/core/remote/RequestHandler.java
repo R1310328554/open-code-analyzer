@@ -24,6 +24,7 @@ import com.alibaba.nacos.core.utils.Loggers;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
+ * Nacos RPC 请求处理器抽象基类，先执行过滤器链再调用子类 handle。
  * Nacos based request handler.
  *
  * @author liuzunfei
@@ -31,10 +32,12 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public abstract class RequestHandler<T extends Request, S extends Response> {
     
+    /** 全局请求过滤器容器。 */
     @Autowired
     private RequestFilters requestFilters;
     
     /**
+     * 依次执行过滤器链，全部通过后委托子类处理请求。
      * Handler request.
      *
      * @param request request
@@ -58,6 +61,7 @@ public abstract class RequestHandler<T extends Request, S extends Response> {
     }
     
     /**
+     * 子类实现的业务请求处理逻辑。
      * Handler request.
      *
      * @param request request

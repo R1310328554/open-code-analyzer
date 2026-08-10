@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * RPC 请求过滤器注册容器，按顺序存放 {@link AbstractRequestFilter} 实例。
  * filters of request.
  *
  * @author liuzunfei
@@ -30,8 +31,10 @@ import java.util.List;
 @Service
 public class RequestFilters {
     
+    /** 已注册的请求过滤器列表。 */
     List<AbstractRequestFilter> filters = new ArrayList<>();
     
+    /** 注册新的请求过滤器。 */
     public void registerFilter(AbstractRequestFilter requestFilter) {
         filters.add(requestFilter);
     }

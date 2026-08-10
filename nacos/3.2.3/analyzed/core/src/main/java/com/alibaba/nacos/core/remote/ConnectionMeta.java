@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import static com.alibaba.nacos.api.common.Constants.VIPSERVER_TAG;
 
 /**
+ * RPC 连接元数据，记录客户端/服务端地址、标签、活跃时间与推送队列阻塞信息。
  * ConnectionMetaInfo.
  *
  * @author liuzunfei
@@ -38,66 +39,81 @@ import static com.alibaba.nacos.api.common.Constants.VIPSERVER_TAG;
 public class ConnectionMeta {
     
     /**
+     * 连接类型（如 gRPC）。
      * ConnectionType.
      */
     String connectType;
     
     /**
+     * 客户端 IP 地址。
      * Client IP Address.
      */
     String clientIp;
     
     /**
+     * 远端 IP 地址。
      * Remote IP Address.
      */
     String remoteIp;
     
     /**
+     * 远端端口。
      * Remote IP Port.
      */
     int remotePort;
     
     /**
+     * 本地监听端口。
      * Local Ip Port.
      */
     int localPort;
     
     /**
+     * 客户端版本号。
      * Client version.
      */
     String version;
     
     /**
+     * 全局唯一连接标识。
      * Identify Unique connectionId.
      */
     String connectionId;
     
     /**
+     * 连接建立时间。
      * create time.
      */
     Date createTime;
     
     /**
+     * 最后一次活跃时间戳（毫秒）。
      * lastActiveTime.
      */
     long lastActiveTime;
     
     /**
+     * 应用名称。
      * String appName.
      */
     String appName;
     
     /**
+     * 命名空间 ID。
      * namespaceId.
      */
     String namespaceId;
     
+    /** 首次推送队列阻塞时间戳。 */
     long firstPushQueueBlockTime = 0;
     
+    /** 最近一次推送队列阻塞时间戳。 */
     long lastPushQueueBlockTime = 0;
     
+    /** 连接标签键值对（来源、模块等）。 */
     protected Map<String, String> labels = new HashMap<>();
     
+    /** 是否启用 TLS 保护。 */
     boolean tlsProtected = false;
     
     public String getLabel(String labelKey) {
@@ -125,6 +141,7 @@ public class ConnectionMeta {
     }
     
     /**
+     * 判断连接来源是否为 SDK 客户端。
      * check if this connection is sdk source.
      *
      * @return if this connection is sdk source.
@@ -135,6 +152,7 @@ public class ConnectionMeta {
     }
     
     /**
+     * 判断连接来源是否为集群节点。
      * check if this connection is sdk source.
      *
      * @return if this connection is sdk source.
@@ -154,6 +172,7 @@ public class ConnectionMeta {
     }
     
     /**
+     * 提取以 {@link Constants#APP_CONN_PREFIX} 开头的应用标签并去除前缀后返回新 Map。
      * get labels map with filter of starting with prefix #{@link Constants#APP_CONN_PREFIX}
      * and return a new map trim the prefix #{@link Constants#APP_CONN_PREFIX}.
      * @date 2024/2/29
@@ -347,6 +366,7 @@ public class ConnectionMeta {
     }
     
     /**
+     * 记录推送队列阻塞发生次数（首次与最近一次时间戳）。
      * recordPushQueueBlockTimes.
      */
     public void recordPushQueueBlockTimes() {
@@ -358,6 +378,7 @@ public class ConnectionMeta {
     }
     
     /**
+     * 清除推送队列阻塞时间记录。
      * clear push queue block times.
      */
     public void clearPushQueueBlockTimes() {
@@ -374,9 +395,10 @@ public class ConnectionMeta {
     }
     
     /**
+     * 判断最近一次阻塞与首次阻塞的时间差是否超过给定阈值。
      * check block greater than the specific time.
      * @param timeMillsSeconds check times.
-     * @return
+     * @return 是否超过阈值
      */
     public boolean pushQueueBlockTimesLastOver(long timeMillsSeconds) {
         return this.lastPushQueueBlockTime - this.firstPushQueueBlockTime > timeMillsSeconds;

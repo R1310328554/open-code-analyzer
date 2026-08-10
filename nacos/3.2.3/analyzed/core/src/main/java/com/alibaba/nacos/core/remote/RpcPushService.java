@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import java.util.concurrent.Executor;
 
 /**
+ * RPC 服务端推送服务，向指定连接异步或同步下发 ServerRequest。
  * push response  to clients.
  *
  * @author liuzunfei
@@ -37,10 +38,12 @@ import java.util.concurrent.Executor;
 @Service
 public class RpcPushService {
     
+    /** 连接管理器，用于查找目标连接。 */
     @Autowired
     private ConnectionManager connectionManager;
     
     /**
+     * 带回调的异步推送，连接已关闭时自动注销并回调成功。
      * push response with no ack.
      *
      * @param connectionId    connectionId.
@@ -92,6 +95,7 @@ public class RpcPushService {
     }
     
     /**
+     * 同步推送且不等待 ACK，超时 3 秒。
      * push response with no ack.
      *
      * @param connectionId connectionId.

@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 服务端连接重载请求处理器，按目标连接数触发 SDK 客户端负载均衡踢出。
  * server reload request handler.
  *
  * @author liuzunfei
@@ -48,9 +49,11 @@ import java.util.Map;
 public class ServerReloaderRequestHandler
     extends RequestHandler<ServerReloadRequest, ServerReloadResponse> {
     
+    /** 连接管理器，用于统计 SDK 连接数并设置踢出目标。 */
     @Autowired
     private ConnectionManager connectionManager;
     
+    /** 处理集群发起的连接重载请求。 */
     @Override
     @Secured(resource = "serverReload", signType = SignType.SPECIFIED, apiType = ApiType.INNER_API)
     public ServerReloadResponse handle(ServerReloadRequest request, RequestMeta meta)

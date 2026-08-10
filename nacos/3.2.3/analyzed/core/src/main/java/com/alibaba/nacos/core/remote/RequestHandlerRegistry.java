@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * RPC 请求处理器注册表，Spring 容器刷新后自动扫描并注册 Handler、TPS 与调用来源。
  * RequestHandlerRegistry.
  *
  * @author liuzunfei
@@ -44,11 +45,14 @@ import java.util.Set;
 @Service
 public class RequestHandlerRegistry implements ApplicationListener<ContextRefreshedEvent> {
     
+    /** 请求类型名 → Handler 实例映射。 */
     Map<String, RequestHandler> registryHandlers = new HashMap<>();
     
+    /** 请求类型 → 允许调用来源集合。 */
     Map<String, Set<String>> sourceRegistry = new HashMap<>();
     
     /**
+     * 按请求类型名获取对应 Handler。
      * Get Request Handler By request Type.
      *
      * @param requestType see definitions  of sub constants classes of RequestTypeConstants
@@ -59,11 +63,12 @@ public class RequestHandlerRegistry implements ApplicationListener<ContextRefres
     }
     
     /**
+     * 校验指定请求类型是否允许来自给定 source 的调用。
      * check source invoke allowed.
      *
      * @param type   type.
      * @param source source.
-     * @return
+     * @return 是否允许调用
      */
     public boolean checkSourceInvokeAllowed(String type, String source) {
         if (sourceRegistry.containsKey(type) && !sourceRegistry.get(type).contains(source)) {
@@ -72,6 +77,7 @@ public class RequestHandlerRegistry implements ApplicationListener<ContextRefres
         return true;
     }
     
+    /** Spring 容器刷新完成后扫描并注册所有 {@link RequestHandler} Bean。 */
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         Map<String, RequestHandler> beansOfType =
@@ -91,7 +97,7 @@ public class RequestHandlerRegistry implements ApplicationListener<ContextRefres
             if (skip) {
                 continue;
             }
-            //register tps control.
+            // 注册 TPS 限流控制点
             try {
                 Method method = clazz.getMethod("handle", Request.class, RequestMeta.class);
                 if (method.isAnnotationPresent(TpsControl.class)
@@ -108,7 +114,7 @@ public class RequestHandlerRegistry implements ApplicationListener<ContextRefres
             Class tClass = (Class) ((ParameterizedType) clazz.getGenericSuperclass())
                 .getActualTypeArguments()[0];
             
-            //register invoke source.
+            // 注册允许的调用来源
             try {
                 if (clazz.isAnnotationPresent(InvokeSource.class)) {
                     InvokeSource tpsControl = clazz.getAnnotation(InvokeSource.class);

@@ -33,6 +33,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Nacos 默认运行时连接踢出器：清理过期连接并执行超载负载均衡踢出。
  * nacos runtime connection ejector.
  *
  * @author shiyiyue
@@ -44,16 +45,18 @@ public class NacosRuntimeConnectionEjector extends RuntimeConnectionEjector {
     }
     
     /**
+     * 执行运行时连接踢出：先清理过期连接，再处理超载踢出。
      * eject connections on runtime.
      */
     public void doEject() {
-        // remove out dated connection
+        // 踢出心跳超时的过期连接
         ejectOutdatedConnection();
-        // remove overload connection
+        // 踢出超出负载上限的连接
         ejectOverLimitConnection();
     }
     
     /**
+     * 探测并注销长时间无心跳或推送队列持续阻塞的连接。
      * eject the outdated connection.
      */
     private void ejectOutdatedConnection() {
@@ -67,7 +70,7 @@ public class NacosRuntimeConnectionEjector extends RuntimeConnectionEjector {
                 totalCount, currentSdkClientCount, (totalCount - currentSdkClientCount));
             Set<String> outDatedConnections = new HashSet<>();
             long now = System.currentTimeMillis();
-            //outdated connections collect.
+            // 收集过期连接 ID
             for (Map.Entry<String, Connection> entry : connections.entrySet()) {
                 Connection client = entry.getValue();
                 if (now - client.getMetaInfo().getLastActiveTime() >= KEEP_ALIVE_TIME) {
@@ -76,7 +79,7 @@ public class NacosRuntimeConnectionEjector extends RuntimeConnectionEjector {
                     outDatedConnections.add(client.getMetaInfo().getConnectionId());
                 }
             }
-            // check out date connection
+            // 对过期连接发送存活探测
             Loggers.CONNECTION.info("Out dated connection ,size={}", outDatedConnections.size());
             if (CollectionUtils.isNotEmpty(outDatedConnections)) {
                 Set<String> successConnections = new HashSet<>();
@@ -146,26 +149,26 @@ public class NacosRuntimeConnectionEjector extends RuntimeConnectionEjector {
     }
     
     /**
+     * 当连接数超过负载阈值时，向 SDK 客户端发送重定向以均衡负载。
      * eject the over limit connection.
      */
     private void ejectOverLimitConnection() {
-        // if not count set, then give up
+        // 未设置目标负载数则跳过
         if (getLoadClient() > 0) {
             try {
                 Loggers.CONNECTION.info(
                     "Connection overLimit check task start, loadCount={}, redirectAddress={}",
                     getLoadClient(), getRedirectAddress());
-                // check count
+                // 检查当前连接数是否超载
                 int currentConnectionCount = connectionManager.getCurrentConnectionCount();
                 int ejectingCount = currentConnectionCount - getLoadClient();
-                // if overload
+                // 需要踢出多余连接
                 if (ejectingCount > 0) {
-                    // we may modify the connection map when connection reset
-                    // avoid concurrent modified exception, create new set for ids snapshot
+                    // 避免并发修改，对 connectionId 做快照
                     Set<String> ids = new HashSet<>(connectionManager.connections.keySet());
                     for (String id : ids) {
                         if (ejectingCount > 0) {
-                            // check sdk
+                            // 仅踢出 SDK 来源连接
                             Connection connection = connectionManager.getConnection(id);
                             if (connection != null && connection.getMetaInfo().isSdkSource()) {
                                 if (connectionManager.loadSingle(id, redirectAddress)) {
@@ -173,7 +176,7 @@ public class NacosRuntimeConnectionEjector extends RuntimeConnectionEjector {
                                 }
                             }
                         } else {
-                            // reach the count
+                            // 已达到目标踢出数量
                             break;
                         }
                     }
@@ -184,12 +187,13 @@ public class NacosRuntimeConnectionEjector extends RuntimeConnectionEjector {
             } catch (Throwable e) {
                 Loggers.CONNECTION.error("Error occurs during connection overLimit... ", e);
             }
-            // reset
+            // 重置一次性负载调整参数
             setRedirectAddress(null);
             setLoadClient(-1);
         }
     }
     
+    /** 返回踢出器实现名称。 */
     @Override
     public String getName() {
         return "nacos";

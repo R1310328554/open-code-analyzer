@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 服务端负载信息查询处理器，返回连接数、SDK 连接数、CPU 与系统负载。
  * request handler to handle server loader info.
  *
  * @author liuzunfei
@@ -47,9 +48,11 @@ import java.util.Map;
 public class ServerLoaderInfoRequestHandler
     extends RequestHandler<ServerLoaderInfoRequest, ServerLoaderInfoResponse> {
     
+    /** 连接管理器，用于统计当前连接负载。 */
     @Autowired
     private ConnectionManager connectionManager;
     
+    /** 采集并返回服务端负载指标。 */
     @Override
     @Secured(resource = "serverLoader", signType = SignType.SPECIFIED, apiType = ApiType.INNER_API)
     public ServerLoaderInfoResponse handle(ServerLoaderInfoRequest request, RequestMeta meta)

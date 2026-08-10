@@ -23,6 +23,7 @@ import com.alibaba.nacos.api.remote.request.Request;
 import java.util.Map;
 
 /**
+ * RPC 长连接抽象基类，封装连接元数据、能力表与请求发送接口。
  * Connection.
  *
  * @author liuzunfei
@@ -30,10 +31,13 @@ import java.util.Map;
  */
 public abstract class Connection implements Requester {
     
+    /** 是否对该连接开启详细监控日志。 */
     private boolean traced = false;
     
+    /** 客户端能力协商表，键为能力名，值为是否支持。 */
     private Map<String, Boolean> abilityTable;
     
+    /** 连接元信息（IP、端口、标签等）。 */
     private final ConnectionMeta metaInfo;
     
     public Connection(ConnectionMeta metaInfo) {
@@ -65,6 +69,7 @@ public abstract class Connection implements Requester {
     }
     
     /**
+     * 检查底层连接是否仍处于活跃状态。
      * check is connected.
      *
      * @return if connection or not,check the inner connection is active.
@@ -72,6 +77,7 @@ public abstract class Connection implements Requester {
     public abstract boolean isConnected();
     
     /**
+     * 将最后活跃时间刷新为当前时刻。
      * Update last Active Time to now.
      */
     public void freshActiveTime() {
@@ -79,6 +85,7 @@ public abstract class Connection implements Requester {
     }
     
     /**
+     * 获取连接元信息。
      * Getter method for property <tt>metaInfo</tt>.
      *
      * @return property value of metaInfo
@@ -88,6 +95,7 @@ public abstract class Connection implements Requester {
     }
     
     /**
+     * 向对端发送无需 ACK 的请求。
      * Send request to remote.
      *
      * @param request request.
