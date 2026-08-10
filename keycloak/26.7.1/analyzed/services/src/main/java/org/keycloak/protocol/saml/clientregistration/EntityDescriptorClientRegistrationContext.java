@@ -23,11 +23,12 @@ import org.keycloak.services.clientregistration.AbstractClientRegistrationContex
 import org.keycloak.services.clientregistration.ClientRegistrationProvider;
 
 /**
+ * SAML EntityDescriptor 动态客户端注册上下文：承载从 SP 元数据转换得到的客户端表示。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class EntityDescriptorClientRegistrationContext extends AbstractClientRegistrationContext {
 
-    public EntityDescriptorClientRegistrationContext(KeycloakSession session, ClientRepresentation client, ClientRegistrationProvider provider) {
+    /** @param session Keycloak 会话；@param client 转换后的客户端表示；@param provider 注册提供者 */
         super(session, client, provider);
     }
 }

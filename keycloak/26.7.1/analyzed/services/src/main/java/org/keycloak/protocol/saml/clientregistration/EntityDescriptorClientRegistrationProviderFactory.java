@@ -24,12 +24,15 @@ import org.keycloak.services.clientregistration.ClientRegistrationProvider;
 import org.keycloak.services.clientregistration.ClientRegistrationProviderFactory;
 
 /**
+ * {@link EntityDescriptorClientRegistrationProvider} 的 SPI 工厂。
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class EntityDescriptorClientRegistrationProviderFactory implements ClientRegistrationProviderFactory {
 
+    /** SPI 提供者 ID：saml2-entity-descriptor */
     public static final String ID = "saml2-entity-descriptor";
 
+    /** {@inheritDoc} 创建 EntityDescriptor 注册提供者实例 */
     @Override
     public ClientRegistrationProvider create(KeycloakSession session) {
         return new EntityDescriptorClientRegistrationProvider(session);
@@ -47,6 +50,7 @@ public class EntityDescriptorClientRegistrationProviderFactory implements Client
     public void close() {
     }
 
+    /** {@inheritDoc} 返回 {@link #ID} */
     @Override
     public String getId() {
         return ID;

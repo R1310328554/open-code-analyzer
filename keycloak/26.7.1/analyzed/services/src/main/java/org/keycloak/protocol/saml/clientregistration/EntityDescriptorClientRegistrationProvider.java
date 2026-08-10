@@ -32,6 +32,7 @@ import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.services.clientregistration.AbstractClientRegistrationProvider;
 
 /**
+ * SAML EntityDescriptor 动态客户端注册提供者：接受 SP 元数据 XML 并创建 SAML 客户端。
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class EntityDescriptorClientRegistrationProvider extends AbstractClientRegistrationProvider {
@@ -43,7 +44,11 @@ public class EntityDescriptorClientRegistrationProvider extends AbstractClientRe
     @POST
     @Consumes(MediaType.APPLICATION_XML)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createSaml(String descriptor) {
+    /**
+     * 将 SAML EntityDescriptor XML 转换为客户端并注册。
+     * @param descriptor SP 元数据 XML 字符串
+     * @return 201 Created，Location 指向新客户端
+     */
         ClientRepresentation client = session.getProvider(ClientDescriptionConverter.class, EntityDescriptorDescriptionConverter.ID).convertToInternal(descriptor);
         EntityDescriptorClientRegistrationContext context = new EntityDescriptorClientRegistrationContext(session, client, this);
         client = create(context);

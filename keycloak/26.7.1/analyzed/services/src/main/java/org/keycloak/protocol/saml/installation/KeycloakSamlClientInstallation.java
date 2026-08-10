@@ -34,11 +34,14 @@ import org.keycloak.protocol.saml.SamlProtocol;
 import org.keycloak.services.resources.RealmsResource;
 
 /**
+ * Keycloak SAML 适配器安装提供者：生成 {@code keycloak-saml.xml} 配置片段。
+ * <p>含 SP entityID、密钥、IdP SSO/SLO 端点及签名策略。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class KeycloakSamlClientInstallation implements ClientInstallationProvider {
 
+    /** {@inheritDoc} 生成 keycloak-saml-adapter XML 配置 */
     @Override
     public Response generateInstallation(KeycloakSession session, RealmModel realm, ClientModel client, URI baseUri) {
         SamlClient samlClient = new SamlClient(client);
@@ -49,6 +52,7 @@ public class KeycloakSamlClientInstallation implements ClientInstallationProvide
         return Response.ok(buffer.toString(), MediaType.TEXT_PLAIN_TYPE).build();
     }
 
+    /** 向 buffer 追加 SP/IDP 公共 XML 片段，供多种安装格式复用 */
     public static void baseXml(KeycloakSession session, RealmModel realm, ClientModel client, URI baseUri, SamlClient samlClient, StringBuilder buffer) {
         buffer.append("    <SP entityID=\"").append(client.getBaseUrl() == null ? "SPECIFY YOUR entityID!" : client.getBaseUrl()).append("\"\n");
         buffer.append("        sslPolicy=\"").append(realm.getSslRequired().name()).append("\"\n");
@@ -122,16 +126,19 @@ public class KeycloakSamlClientInstallation implements ClientInstallationProvide
         return SamlProtocol.LOGIN_PROTOCOL;
     }
 
+    /** {@inheritDoc} 控制台显示名：Keycloak SAML Adapter keycloak-saml.xml */
     @Override
     public String getDisplayType() {
         return "Keycloak SAML Adapter keycloak-saml.xml";
     }
 
+    /** {@inheritDoc} 说明需编辑并放入 WAR 的 WEB-INF 目录 */
     @Override
     public String getHelpText() {
         return "Keycloak SAML adapter configuration file you must edit. Put this in WEB-INF directory of your WAR.";
     }
 
+    /** {@inheritDoc} 输出文件名：keycloak-saml.xml */
     @Override
     public String getFilename() {
         return "keycloak-saml.xml";
@@ -167,6 +174,7 @@ public class KeycloakSamlClientInstallation implements ClientInstallationProvide
 
     }
 
+    /** {@inheritDoc} SPI ID：keycloak-saml */
     @Override
     public String getId() {
         return "keycloak-saml";

@@ -151,28 +151,36 @@ import org.w3c.dom.NodeList;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 /**
- * Resource class for the saml connect token service
- *
+ * SAML 协议 REST 资源：处理 Redirect/POST/Artifact/SOAP 绑定上的 AuthnRequest、LogoutRequest/Response 及 IdP 元数据。
+ * <p>由 {@link SamlProtocolFactory} 注册为协议端点。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SamlService extends AuthorizationEndpointBase {
 
     protected static final Logger logger = Logger.getLogger(SamlService.class);
+    /** Artifact Resolution Service 路径段 */
     public static final String ARTIFACT_RESOLUTION_SERVICE_PATH = "resolve";
 
     private final DestinationValidator destinationValidator;
     private final long maxInflatingSize;
 
-    public SamlService(KeycloakSession session, EventBuilder event, long maxInflatingSize, DestinationValidator destinationValidator) {
+    /**
+     * 构造 SAML 服务端点。
+     * @param session Keycloak 会话
+     * @param event 事件构建器
+     * @param maxInflatingSize Redirect 绑定最大解压大小
+     * @param destinationValidator Destination 属性校验器
+     */
         super(session, event);
         this.destinationValidator = destinationValidator;
         this.maxInflatingSize = maxInflatingSize;
     }
 
+    /** SAML 绑定协议抽象基类：封装各绑定的请求解析、签名校验与响应编码 */
     public abstract class BindingProtocol {
 
-        // this is to support back button on browser
+        // 支持浏览器后退：true 时重定向到认证 URL
         // if true, we redirect to authenticate URL otherwise back button behavior has bad side effects
         // and we want to turn it off.
         protected boolean redirectToAuthentication;
@@ -188,6 +196,7 @@ public class SamlService extends AuthorizationEndpointBase {
             return protocol.sendError(authSession, error, errorMessage);
         }
 
+        /** 执行 SSL、Realm 启用等基础校验 */
         protected Response basicChecks(String samlRequest, String samlResponse, String artifact) {
             logger.tracef("basicChecks(%s, %s, %s)%s", samlRequest, samlResponse, artifact, getShortStackTrace());
             if (!checkSsl()) {
@@ -444,6 +453,7 @@ public class SamlService extends AuthorizationEndpointBase {
 
         protected abstract SAMLDocumentHolder extractResponseDocument(String response);
 
+        /** 处理 AuthnRequest：创建认证会话并启动登录 flow */
         protected Response loginRequest(String relayState, AuthnRequestType requestAbstractType, ClientModel client) {
             SamlClient samlClient = new SamlClient(client);
 
@@ -599,6 +609,7 @@ public class SamlService extends AuthorizationEndpointBase {
 
         protected abstract String getBindingType();
 
+        /** 处理 SP 发起的 LogoutRequest */
         protected Response logoutRequest(LogoutRequestType logoutRequest, ClientModel client, String relayState) {
             SamlClient samlClient = new SamlClient(client);
             if (! validateDestination(logoutRequest, samlClient, Errors.INVALID_SAML_LOGOUT_REQUEST)) {
@@ -817,6 +828,7 @@ public class SamlService extends AuthorizationEndpointBase {
         }
     }
 
+    /** POST 绑定实现：Base64 编码的 SAML 消息经表单提交 */
     protected class PostBindingProtocol extends BindingProtocol {
 
         @Override
@@ -862,6 +874,7 @@ public class SamlService extends AuthorizationEndpointBase {
 
     }
 
+    /** Redirect 绑定实现：Deflate+Base64 的 SAML 消息经 query 参数传递 */
     protected class RedirectBindingProtocol extends BindingProtocol {
 
         @Override
@@ -929,6 +942,7 @@ public class SamlService extends AuthorizationEndpointBase {
     /**
      */
     @GET
+    /** Redirect 绑定入口：处理 GET 上的 SAMLRequest/SAMLResponse/Artifact */
     public void redirectBinding(@Suspended AsyncResponse asyncResponse, @QueryParam(GeneralConstants.SAML_REQUEST_KEY) String samlRequest, @QueryParam(GeneralConstants.SAML_RESPONSE_KEY) String samlResponse, @QueryParam(GeneralConstants.RELAY_STATE) String relayState, @QueryParam(GeneralConstants.SAML_ARTIFACT_KEY) String artifact) {
         logger.debug("SAML GET");
         CacheControlUtil.noBackButtonCacheControlHeader(session);
@@ -941,6 +955,7 @@ public class SamlService extends AuthorizationEndpointBase {
     @POST
     @NoCache
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    /** POST 绑定入口：处理表单提交的 SAML 消息 */
     public void postBinding(@Suspended AsyncResponse asyncResponse, @FormParam(GeneralConstants.SAML_REQUEST_KEY) String samlRequest, @FormParam(GeneralConstants.SAML_RESPONSE_KEY) String samlResponse, @FormParam(GeneralConstants.RELAY_STATE) String relayState, @FormParam(GeneralConstants.SAML_ARTIFACT_KEY) String artifact) {
         logger.debug("SAML POST");
         PostBindingProtocol postBindingProtocol = new PostBindingProtocol();
@@ -955,12 +970,19 @@ public class SamlService extends AuthorizationEndpointBase {
     @Path("descriptor")
     @Produces(MediaType.APPLICATION_XML)
     @NoCache
+    /** 返回当前 Realm 的 IdP SAML 元数据 XML */
     public String getDescriptor() throws Exception {
         return getIDPMetadataDescriptor(session.getContext().getUri(), session, realm);
 
     }
 
-    public static String getIDPMetadataDescriptor(UriInfo uriInfo, KeycloakSession session, RealmModel realm) {
+    /**
+     * 构建 IdP EntityDescriptor 元数据字符串。
+     * @param uriInfo 当前请求 URI 信息
+     * @param session Keycloak 会话
+     * @param realm 领域模型
+     * @return SAML 元数据 XML
+     */
         try {
             List<KeyWrapper> keys = session.keys().getKeysStream(realm, KeyUse.SIG, Algorithm.RS256)
                     .sorted(SamlService::compareKeys)
@@ -1011,6 +1033,7 @@ public class SamlService extends AuthorizationEndpointBase {
     @GET
     @Path("clients/{client}")
     @Produces(MediaType.TEXT_HTML_UTF_8)
+    /** IdP 发起 SSO：按客户端 URL 名称创建认证会话并重定向登录 */
     public Response idpInitiatedSSO(@PathParam("client") String clientUrlName, @QueryParam("RelayState") String relayState) {
         event.event(EventType.LOGIN);
         CacheControlUtil.noBackButtonCacheControlHeader(session);
@@ -1115,6 +1138,7 @@ public class SamlService extends AuthorizationEndpointBase {
     @Path(ARTIFACT_RESOLUTION_SERVICE_PATH)
     @NoCache
     @Consumes({"application/soap+xml", MediaType.TEXT_XML})
+    /** Artifact Resolution Service：解析 ArtifactResolve 并返回 ArtifactResponse */
     public Response artifactResolutionService(InputStream inputStream) {
         Document soapBodyContents = Soap.extractSoapMessage(inputStream);
         ArtifactResolveType artifactResolveType = null;
@@ -1165,6 +1189,7 @@ public class SamlService extends AuthorizationEndpointBase {
     @POST
     @NoCache
     @Consumes({"application/soap+xml",MediaType.TEXT_XML})
+    /** SOAP 绑定入口：处理 ECP/PAOS 等 SOAP 封装的 SAML 消息 */
     public Response soapBinding(InputStream inputStream) {
         SamlEcpProfileService bindingService = new SamlEcpProfileService(session, event, maxInflatingSize, destinationValidator);
 

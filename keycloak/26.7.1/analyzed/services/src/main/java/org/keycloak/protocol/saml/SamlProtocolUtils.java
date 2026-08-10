@@ -80,6 +80,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 /**
+ * SAML 协议工具类：文档/Redirect 签名验证、加密密钥解析、Artifact 响应构建及 LoA 选择。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -88,26 +89,23 @@ public class SamlProtocolUtils {
     private static final Logger logger = Logger.getLogger(SamlProtocolUtils.class);
 
     /**
-     * Verifies a signature of the given SAML document using settings for the given client.
-     * Throws an exception if the client signature is expected to be present as per the client
-     * settings and it is invalid, otherwise returns back to the caller.
+     * 使用客户端配置验证 SAML 文档签名；无效时抛出 {@link VerificationException}。
      *
-     * @param session
-     * @param client
-     * @param document
-     * @throws VerificationException
+     * @param session Keycloak 会话
+     * @param client 客户端模型
+     * @param document 待验证的 SAML XML 文档
+     * @throws VerificationException 签名无效
      */
     public static void verifyDocumentSignature(KeycloakSession session, ClientModel client, Document document) throws VerificationException {
         verifyDocumentSignature(document, createKeyLocatorForClient(session, new SamlClient(client), KeyUse.SIG));
     }
 
     /**
-     * Verifies a signature of the given SAML document using keys obtained from the given key locator.
-     * Throws an exception if the client signature is invalid, otherwise returns back to the caller.
+     * 使用 {@link KeyLocator} 提供的密钥验证 SAML 文档签名。
      *
-     * @param document
-     * @param keyLocator
-     * @throws VerificationException
+     * @param document 待验证文档
+     * @param keyLocator 公钥定位器
+     * @throws VerificationException 签名无效
      */
     public static void verifyDocumentSignature(Document document, KeyLocator keyLocator) throws VerificationException {
         SAML2Signature saml2Signature = new SAML2Signature();
@@ -121,11 +119,11 @@ public class SamlProtocolUtils {
     }
 
     /**
-     * Returns public part of SAML encryption key from the client settings.
-     * @param session
-     * @param client
-     * @return Public key for encryption.
-     * @throws VerificationException
+     * 从客户端配置获取 SAML 加密用 RSA 公钥。
+     * @param session Keycloak 会话
+     * @param client 客户端模型
+     * @return 加密公钥
+     * @throws VerificationException 无可用加密密钥
      */
     public static PublicKey getEncryptionKey(KeycloakSession session, ClientModel client) throws VerificationException {
         return getEncryptionKey(session, new SamlClient(client));
@@ -149,6 +147,7 @@ public class SamlProtocolUtils {
         throw new VerificationException("Client does not have a public key for encryption");
     }
 
+    /** 按客户端配置为 SAML 绑定构建器设置加密算法与密钥 */
     public static void setupEncryption(KeycloakSession session, SamlClient samlClient, BaseSAML2BindingBuilder<?> bindingBuilder) throws VerificationException {
         PublicKey publicKey = getEncryptionKey(session, samlClient);
         bindingBuilder.encrypt(publicKey);
@@ -161,12 +160,12 @@ public class SamlProtocolUtils {
         if (samlClient.getClientEncryptingDigestMethod() != null &&
                 (XMLCipher.RSA_OAEP.equals(samlClient.getClientEncryptingKeyAlgorithm()) ||
                 XMLCipher.RSA_OAEP_11.equals(samlClient.getClientEncryptingKeyAlgorithm()))) {
-            // digest method is only available to rsa oaep
+            // 摘要算法仅 RSA-OAEP 可用
             bindingBuilder.keyEncryptionDigestMethod(samlClient.getClientEncryptingDigestMethod());
         }
         if (samlClient.getClientEncryptingMaskGenerationFunction() != null &&
                 XMLCipher.RSA_OAEP_11.equals(samlClient.getClientEncryptingKeyAlgorithm())) {
-            // the mgf is only available for rsa oaep 11
+            // MGF 仅 RSA-OAEP-11 可用
             bindingBuilder.keyEncryptionMgfAlgorithm(samlClient.getClientEncryptingMaskGenerationFunction());
         }
     }
@@ -182,13 +181,13 @@ public class SamlProtocolUtils {
 
     public static KeyLocator createKeyLocatorForClient(KeycloakSession session, SamlClient samlClient, KeyUse use) throws VerificationException {
         if (StringUtil.isNotBlank(samlClient.getMetadataDescriptorUrl()) && samlClient.isUseMetadataDescriptorUrl()) {
-            // configured to use the metadata
+            // 使用元数据 URL 加载客户端公钥
             String modelKey = PublicKeyStorageUtils.getClientModelCacheKey(samlClient.getClient().getRealm().getId(), samlClient.getClient().getClientId());
             PublicKeyStorageProvider keyStorage = session.getProvider(PublicKeyStorageProvider.class);
             PublicKeyLoader keyLoader = new SamlMetadataPublicKeyLoader(session, samlClient.getMetadataDescriptorUrl(), false);
             return new SamlMetadataKeyLocator(modelKey, keyLoader, use, keyStorage);
         } else if (KeyUse.SIG.equals(use)) {
-            // return the certificate in the client
+            // 回退到客户端配置的签名证书
             return new HardcodedKeyLocator(getPublicKey(samlClient.getClientSigningCertificate()));
         } else if (KeyUse.ENC.equals(use)) {
             return new HardcodedKeyLocator(getPublicKey(samlClient.getClientEncryptingCertificate()));
@@ -227,7 +226,7 @@ public class SamlProtocolUtils {
 
         String keyId = getMessageSigningKeyId(documentHolder.getSamlObject());
 
-        // Shibboleth doesn't sign the document for redirect binding.
+        // Shibboleth Redirect 绑定可能不签名文档
         // todo maybe a flag?
 
         StringBuilder rawQueryBuilder = new StringBuilder().append(paramKey).append("=").append(request);
@@ -281,13 +280,12 @@ public class SamlProtocolUtils {
     }
 
     /**
-     * Takes a saml object (an object that will be part of resulting ArtifactResponse), and inserts it as the body of 
-     * an ArtifactResponse. The ArtifactResponse is returned as ArtifactResponseType
+     * 将 SAML 对象包装为指定状态码的 {@link ArtifactResponseType}。
      *
-     * @param samlObject a Saml object
-     * @param issuer issuer of the resulting ArtifactResponse, should be the same as issuer of the samlObject
-     * @param statusCode status code of the resulting response
-     * @return An ArtifactResponse containing the saml object.
+     * @param samlObject 待嵌入的 SAML 对象
+     * @param issuer ArtifactResponse 签发者
+     * @param statusCode SAML 状态码 URI
+     * @return 含 SAML 对象的 ArtifactResponse
      */
     public static ArtifactResponseType buildArtifactResponse(SAML2Object samlObject, NameIDType issuer, URI statusCode) throws ConfigurationException, ProcessingException {
         ArtifactResponseType artifactResponse = new ArtifactResponseType(IDGenerator.create("ID_"),
@@ -336,14 +334,12 @@ public class SamlProtocolUtils {
     }
 
     /**
-     * Convert a SAML2 ArtifactResponse into a Document
-     * @param responseType an artifactResponse
-     *
-     * @return an artifact response converted to a Document
-     *
-     * @throws ParsingException
-     * @throws ConfigurationException
-     * @throws ProcessingException
+     * 将 {@link ArtifactResponseType} 序列化为 W3C {@link Document}。
+     * @param responseType Artifact 响应对象
+     * @return XML 文档
+     * @throws ParsingException 解析失败
+     * @throws ConfigurationException 配置错误
+     * @throws ProcessingException 处理失败
      */
     public static Document convert(ArtifactResponseType responseType) throws ProcessingException, ConfigurationException,
             ParsingException {
@@ -354,7 +350,7 @@ public class SamlProtocolUtils {
     }
 
     private static String checkLoAExact(String current, Map<String, Integer> acrLoaMap, int minLevel) {
-        // authentication context in the authentication statement MUST be the exact match of at least one of the authentication contexts specified
+        // EXACT：认证上下文须与请求列表中某项完全匹配
         Integer level = acrLoaMap.get(current);
         if (level == null) {
             return null;
@@ -412,7 +408,13 @@ public class SamlProtocolUtils {
         };
     }
 
-    public static String getSelectedLoA(ClientModel client, RequestedAuthnContextType requestedAuthnContext, Map<String, Integer> acrLoaMap) {
+    /**
+     * 按 RequestedAuthnContext 比较类型与客户端最低 ACR 选择认证上下文。
+     * @param client 客户端模型
+     * @param requestedAuthnContext SP 请求的认证上下文
+     * @param acrLoaMap ACR → LoA 映射
+     * @return 选中的 AuthnContextClassRef，无匹配则 null
+     */
         String minLoa = AcrUtils.getMinimumAcrValue(client);
         if (minLoa != null && acrLoaMap.get(minLoa) == null) {
             logger.warnf("Invalid value '%s' for option '%s' in client '%s' in realm '%s', no minimum value used",

@@ -35,8 +35,13 @@ import org.keycloak.services.resources.RealmsResource;
 
 import static org.keycloak.protocol.util.ClientCliInstallationUtil.quote;
 
+/**
+ * Keycloak SAML JBoss 子系统 CLI 安装提供者：生成 {@code jboss-cli} 脚本配置 SAML 适配器。
+ * <p>适用于不便修改 WAR 的应用服务器部署场景。</p>
+ */
 public class KeycloakSamlSubsystemCliInstallation implements ClientInstallationProvider {
 
+    /** {@inheritDoc} 生成 keycloak-saml 子系统 CLI 命令脚本 */
     @Override
     public Response generateInstallation(KeycloakSession session, RealmModel realm, ClientModel client, URI baseUri) {
         SamlClient samlClient = new SamlClient(client);
@@ -117,16 +122,19 @@ public class KeycloakSamlSubsystemCliInstallation implements ClientInstallationP
         return SamlProtocol.LOGIN_PROTOCOL;
     }
 
+    /** {@inheritDoc} 控制台显示名：Keycloak SAML JBoss Subsystem CLI */
     @Override
     public String getDisplayType() {
         return "Keycloak SAML JBoss Subsystem CLI";
     }
 
+    /** {@inheritDoc} 说明需编辑并在应用服务器执行的 CLI 脚本 */
     @Override
     public String getHelpText() {
         return "CLI script you must edit and apply to your client app server. This type of configuration is useful when you can't or don't want to crack open your WAR file.";
     }
 
+    /** {@inheritDoc} 输出文件名：keycloak-saml-subsystem.cli */
     @Override
     public String getFilename() {
         return "keycloak-saml-subsystem.cli";
@@ -162,6 +170,7 @@ public class KeycloakSamlSubsystemCliInstallation implements ClientInstallationP
 
     }
 
+    /** {@inheritDoc} SPI ID：keycloak-saml-subsystem-cli */
     @Override
     public String getId() {
         return "keycloak-saml-subsystem-cli";

@@ -29,17 +29,22 @@ import org.keycloak.models.UserSessionModel;
 import org.keycloak.protocol.saml.preprocessor.SamlAuthenticationPreprocessor;
 
 /**
+ * SAML 会话索引工具：在 SessionIndex 与用户/客户端会话之间转换，并提供认证预处理器迭代器。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class SamlSessionUtils {
 
     private static final String DELIMITER = "::";
 
-    // Just perf optimization
+    // 预编译分隔符正则以优化性能
     private static final Pattern PATTERN = Pattern.compile(DELIMITER);
 
 
-    public static String getSessionIndex(AuthenticatedClientSessionModel clientSession) {
+    /**
+     * 生成 SAML SessionIndex：{@code userSessionId::clientUUID}。
+     * @param clientSession 已认证客户端会话
+     * @return SessionIndex 字符串
+     */
         UserSessionModel userSession = clientSession.getUserSession();
         ClientModel client = clientSession.getClient();
 
@@ -47,7 +52,13 @@ public class SamlSessionUtils {
     }
 
 
-    public static AuthenticatedClientSessionModel getClientSession(KeycloakSession session, RealmModel realm, String sessionIndex) {
+    /**
+     * 从 SessionIndex 解析并加载对应的客户端会话。
+     * @param session Keycloak 会话
+     * @param realm 领域模型
+     * @param sessionIndex SAML SessionIndex
+     * @return 匹配的客户端会话，无效时 null
+     */
         if (sessionIndex == null) {
             return null;
         }
@@ -67,6 +78,7 @@ public class SamlSessionUtils {
         return userSession.getAuthenticatedClientSessionByClient(clientUUID);
     }
 
+    /** 返回已注册的 {@link SamlAuthenticationPreprocessor} 迭代器 */
     public static Iterator<SamlAuthenticationPreprocessor> getSamlAuthenticationPreprocessorIterator(KeycloakSession session) {
         return session.getKeycloakSessionFactory().getProviderFactoriesStream(SamlAuthenticationPreprocessor.class)
                 .filter(Objects::nonNull)

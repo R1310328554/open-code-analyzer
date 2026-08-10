@@ -52,11 +52,13 @@ import org.keycloak.saml.processing.core.saml.v2.constants.X500SAMLProfileConsta
 import org.keycloak.saml.validators.DestinationValidator;
 
 /**
+ * SAML 协议工厂：注册内置映射器、创建 {@link SamlProtocol} 与 {@link SamlService} 端点，并设置新客户端/Realm 默认值。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class SamlProtocolFactory extends AbstractLoginProtocolFactory {
 
+    /** 默认客户端范围：SAML 角色列表 */
     public static final String SCOPE_ROLE_LIST = "role_list";
     public static final String SCOPE_AUTHN_CONTEXT_CLASS_REF = "AuthnContextClassRef";
     private static final String ROLE_LIST_CONSENT_TEXT = "${samlRoleListScopeConsentText}";
@@ -64,16 +66,19 @@ public class SamlProtocolFactory extends AbstractLoginProtocolFactory {
     private DestinationValidator destinationValidator;
     private long maxInflatingSize;
 
+    /** {@inheritDoc} 创建 SAML REST 服务端点 */
     @Override
     public Object createProtocolEndpoint(KeycloakSession session, EventBuilder event) {
         return new SamlService(session, event, maxInflatingSize, destinationValidator);
     }
 
+    /** {@inheritDoc} 创建 {@link SamlProtocol} 实例 */
     @Override
     public LoginProtocol create(KeycloakSession session) {
         return new SamlProtocol().setSession(session);
     }
 
+    /** 初始化内置协议映射器、Destination 校验器与最大解压大小 */
     @Override
     public void init(Config.Scope config) {
         //PicketLinkCoreSTS sts = PicketLinkCoreSTS.instance();
@@ -117,6 +122,7 @@ public class SamlProtocolFactory extends AbstractLoginProtocolFactory {
         this.maxInflatingSize = config.getLong("maxInflatingSize", DeflateUtil.DEFAULT_MAX_INFLATING_SIZE);
     }
 
+    /** {@inheritDoc} 返回 {@link SamlProtocol#LOGIN_PROTOCOL} */
     @Override
     public String getId() {
         return SamlProtocol.LOGIN_PROTOCOL;
@@ -130,6 +136,7 @@ public class SamlProtocolFactory extends AbstractLoginProtocolFactory {
     private Map<String, ProtocolMapperModel> builtins = new HashMap<>();
     private List<ProtocolMapperModel> defaultBuiltins = new ArrayList<>();
 
+    /** 为新 Realm 创建 role_list 等默认 SAML 客户端范围 */
     @Override
     protected void createDefaultClientScopesImpl(RealmModel newRealm) {
         ClientScopeModel roleListScope = newRealm.addClientScope(SCOPE_ROLE_LIST);
@@ -156,6 +163,7 @@ public class SamlProtocolFactory extends AbstractLoginProtocolFactory {
     protected void addDefaults(ClientModel client) {
     }
 
+    /** 按 SAML 表示属性设置新客户端的签名、NameID 格式与绑定默认值 */
     @Override
     public void setupClientDefaults(ClientRepresentation clientRep, ClientModel newClient) {
         SamlRepresentationAttributes rep = new SamlRepresentationAttributes(clientRep.getAttributes());
@@ -210,18 +218,15 @@ public class SamlProtocolFactory extends AbstractLoginProtocolFactory {
         client.setArtifactBindingIdentifierFrom(clientRep.getClientId());
     }
 
-    /**
-     * defines the option-order in the admin-ui
-     */
+    /** 管理控制台中协议选项的排序（OIDC 之前） */
+
     @Override
     public int order() {
         return OIDCLoginProtocolFactory.UI_ORDER - 10;
     }
 
-    /**
-     * Getter for the max inflating size
-     * @return
-     */
+    /** @return REDIRECT 绑定 SAML 请求的最大解压字节数 */
+
     public long getMaxInflatingSize() {
         return maxInflatingSize;
     }
@@ -238,6 +243,7 @@ public class SamlProtocolFactory extends AbstractLoginProtocolFactory {
                 .build();
     }
 
+    /** 若启用 STEP_UP_AUTHENTICATION_SAML，添加 AuthnContextClassRef 默认客户端范围 */
     public ClientScopeModel addSamlAuthnContextClassRefClientScope(RealmModel newRealm) {
         if (Profile.isFeatureEnabled(Profile.Feature.STEP_UP_AUTHENTICATION_SAML)) {
             ClientScopeModel authnContextClassRefScope = KeycloakModelUtils.getClientScopeByName(newRealm, SCOPE_AUTHN_CONTEXT_CLASS_REF);

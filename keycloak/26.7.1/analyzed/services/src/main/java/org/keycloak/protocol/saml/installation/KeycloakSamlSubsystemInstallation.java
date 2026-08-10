@@ -32,11 +32,13 @@ import org.keycloak.protocol.saml.SamlClient;
 import org.keycloak.protocol.saml.SamlProtocol;
 
 /**
+ * Keycloak SAML JBoss 子系统 XML 安装提供者：生成 standalone.xml 中 keycloak-saml 子系统片段。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class KeycloakSamlSubsystemInstallation implements ClientInstallationProvider {
 
+    /** {@inheritDoc} 生成 secure-deployment XML 片段 */
     @Override
     public Response generateInstallation(KeycloakSession session, RealmModel realm, ClientModel client, URI baseUri) {
         SamlClient samlClient = new SamlClient(client);
@@ -52,16 +54,19 @@ public class KeycloakSamlSubsystemInstallation implements ClientInstallationProv
         return SamlProtocol.LOGIN_PROTOCOL;
     }
 
+    /** {@inheritDoc} 控制台显示名：Keycloak SAML JBoss Subsystem XML */
     @Override
     public String getDisplayType() {
         return "Keycloak SAML JBoss Subsystem XML";
     }
 
+    /** {@inheritDoc} 说明需合并到 standalone.xml 的 keycloak-saml 子系统 */
     @Override
     public String getHelpText() {
         return "Keycloak SAML adapter JBoss subsystem xml you must edit. Put this into <subsystem xmlns=\"urn:jboss:domain:keycloak-saml:1.2\"> element of your standalone.xml file.";
     }
 
+    /** {@inheritDoc} 输出文件名：keycloak-saml-subsystem.xml */
     @Override
     public String getFilename() {
         return "keycloak-saml-subsystem.xml";
@@ -97,6 +102,7 @@ public class KeycloakSamlSubsystemInstallation implements ClientInstallationProv
 
     }
 
+    /** {@inheritDoc} SPI ID：keycloak-saml-subsystem */
     @Override
     public String getId() {
         return "keycloak-saml-subsystem";

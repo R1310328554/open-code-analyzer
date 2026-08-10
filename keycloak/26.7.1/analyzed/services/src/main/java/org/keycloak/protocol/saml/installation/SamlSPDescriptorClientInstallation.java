@@ -45,6 +45,7 @@ import org.jboss.logging.Logger;
 
 
 /**
+ * SAML SP 元数据安装提供者：为客户端生成 SPSSODescriptor EntityDescriptor XML。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -52,10 +53,15 @@ public class SamlSPDescriptorClientInstallation implements ClientInstallationPro
 
     protected static final Logger logger = Logger.getLogger(SamlSPDescriptorClientInstallation.class);
 
+    /** SPI 提供者 ID：saml-sp-descriptor */
     public static final String SAML_CLIENT_INSTALATION_SP_DESCRIPTOR = "saml-sp-descriptor";
     private static final String FALLBACK_ERROR_URL_STRING = "ERROR:ENDPOINT_NOT_SET";
 
-    public static String getSPDescriptorForClient(ClientModel client) {
+    /**
+     * 根据客户端 SAML 配置构建 SP EntityDescriptor XML。
+     * @param client SAML 客户端模型
+     * @return SP 元数据 XML，失败时返回空字符串
+     */
         try {
             SamlClient samlClient = new SamlClient(client);
             String assertionUrl;
@@ -67,7 +73,7 @@ public class SamlSPDescriptorClientInstallation implements ClientInstallationPro
                 assertionUrl = client.getAttribute(SamlProtocol.SAML_ASSERTION_CONSUMER_URL_POST_ATTRIBUTE);
                 logoutUrl = client.getAttribute(SamlProtocol.SAML_SINGLE_LOGOUT_SERVICE_URL_POST_ATTRIBUTE);
                 loginBinding = JBossSAMLURIConstants.SAML_HTTP_POST_BINDING.getUri();
-            } else { //redirect binding
+            } else { // Redirect 绑定
                 assertionUrl = client.getAttribute(SamlProtocol.SAML_ASSERTION_CONSUMER_URL_REDIRECT_ATTRIBUTE);
                 logoutUrl = client.getAttribute(SamlProtocol.SAML_SINGLE_LOGOUT_SERVICE_URL_REDIRECT_ATTRIBUTE);
                 loginBinding = JBossSAMLURIConstants.SAML_HTTP_REDIRECT_BINDING.getUri();
@@ -122,6 +128,7 @@ public class SamlSPDescriptorClientInstallation implements ClientInstallationPro
         }
     }
 
+    /** {@inheritDoc} 返回 SP SAML 元数据 XML */
     @Override
     public Response generateInstallation(KeycloakSession session, RealmModel realm, ClientModel client, URI serverBaseUri) {
         String descriptor = getSPDescriptorForClient(client);
@@ -133,11 +140,13 @@ public class SamlSPDescriptorClientInstallation implements ClientInstallationPro
         return SamlProtocol.LOGIN_PROTOCOL;
     }
 
+    /** {@inheritDoc} 控制台显示名：SAML Metadata SPSSODescriptor */
     @Override
     public String getDisplayType() {
         return "SAML Metadata SPSSODescriptor";
     }
 
+    /** {@inheritDoc} 说明输出为 SP EntityDescriptor XML 文件 */
     @Override
     public String getHelpText() {
         return "SAML SP Metadata EntityDescriptor or rather SPSSODescriptor. This is an XML file.";
@@ -177,6 +186,7 @@ public class SamlSPDescriptorClientInstallation implements ClientInstallationPro
 
     }
 
+    /** {@inheritDoc} 返回 {@link #SAML_CLIENT_INSTALATION_SP_DESCRIPTOR} */
     @Override
     public String getId() {
         return SAML_CLIENT_INSTALATION_SP_DESCRIPTOR;

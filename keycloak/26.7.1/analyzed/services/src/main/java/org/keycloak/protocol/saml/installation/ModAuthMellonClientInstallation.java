@@ -41,10 +41,12 @@ import org.keycloak.protocol.saml.SamlProtocol;
 import org.keycloak.protocol.saml.SamlService;
 
 /**
+ * Mod Auth Mellon 安装提供者：打包 IdP/SP 元数据及客户端密钥为 ZIP，供 Apache mod_auth_mellon 配置。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ModAuthMellonClientInstallation implements ClientInstallationProvider {
+    /** {@inheritDoc} 生成含元数据与 PEM 密钥的 ZIP 包 */
     @Override
     public Response generateInstallation(KeycloakSession session, RealmModel realm, ClientModel client, URI serverBaseUri) {
         SamlClient samlClient = new SamlClient(client);
@@ -89,11 +91,13 @@ public class ModAuthMellonClientInstallation implements ClientInstallationProvid
         return SamlProtocol.LOGIN_PROTOCOL;
     }
 
+    /** {@inheritDoc} 控制台显示名：Mod Auth Mellon files */
     @Override
     public String getDisplayType() {
         return "Mod Auth Mellon files";
     }
 
+    /** {@inheritDoc} 说明 ZIP 内容及 Apache mod_auth_mellon 用法 */
     @Override
     public String getHelpText() {
         return "This is a zip file.  It contains a SAML SP descriptor, SAML IDP descriptor,  private key pem, and certificate pem that you will use to configure mod_auth_mellon for Apache.  You'll use these files when crafting the main Apache configuration file.  See mod_auth_mellon website for more details.";
@@ -109,6 +113,7 @@ public class ModAuthMellonClientInstallation implements ClientInstallationProvid
         return "application/zip";
     }
 
+    /** {@inheritDoc} 仅提供下载，不在控制台内联编辑 */
     @Override
     public boolean isDownloadOnly() {
         return true;
@@ -134,6 +139,7 @@ public class ModAuthMellonClientInstallation implements ClientInstallationProvid
 
     }
 
+    /** {@inheritDoc} SPI ID：mod-auth-mellon */
     @Override
     public String getId() {
         return "mod-auth-mellon";
@@ -149,6 +155,7 @@ public class ModAuthMellonClientInstallation implements ClientInstallationProvid
         return resultAsString.getBytes(StandardCharsets.US_ASCII);
     }
 
+    /** 将 PEM 内容按 64 字符换行 */
     private static String wrapAt64Chars(String text) {
         return Pattern.compile(".{1,64}")
                 .matcher(text)

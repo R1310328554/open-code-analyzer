@@ -118,6 +118,8 @@ import org.jboss.logging.Logger;
 import org.w3c.dom.Document;
 
 /**
+ * SAML 2.0 登录协议实现：处理 SSO 认证响应、登出、Artifact 解析及 IdP 发起登录。
+ * <p>实现 {@link LoginProtocol}，负责构建 SAML Response/Logout 并管理绑定类型与签名。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -132,12 +134,16 @@ public class SamlProtocol implements LoginProtocol {
     public static final String SAML_SINGLE_LOGOUT_SERVICE_URL_REDIRECT_ATTRIBUTE = "saml_single_logout_service_url_redirect";
     public static final String SAML_SINGLE_LOGOUT_SERVICE_URL_SOAP_ATTRIBUTE = "saml_single_logout_service_url_soap";
     public static final String SAML_ARTIFACT_RESOLUTION_SERVICE_URL_ATTRIBUTE = "saml_artifact_resolution_service_url";
+    /** 协议标识符：saml */
     public static final String LOGIN_PROTOCOL = "saml";
     public static final String SAML_BINDING = "saml_binding";
     public static final String SAML_IDP_INITIATED_LOGIN = "saml_idp_initiated_login";
+    /** POST 绑定类型标识 */
     public static final String SAML_POST_BINDING = "post";
+    /** Artifact 绑定类型标识 */
     public static final String SAML_ARTIFACT_BINDING = "artifact";
     public static final String SAML_SOAP_BINDING = "soap";
+    /** Redirect（GET）绑定类型标识 */
     public static final String SAML_REDIRECT_BINDING = "get";
     public static final String SAML_REQUEST_ID = "SAML_REQUEST_ID";
     public static final String SAML_REQUEST_ID_BROKER = "SAML_REQUEST_ID_BROKER";
@@ -151,6 +157,7 @@ public class SamlProtocol implements LoginProtocol {
     public static final String SAML_LOGOUT_SIGNATURE_ALGORITHM = "saml.logout.signature.algorithm";
     public static final String SAML_NAME_ID = "SAML_NAME_ID";
     public static final String SAML_NAME_ID_FORMAT = "SAML_NAME_ID_FORMAT";
+    /** 默认 NameID 格式：unspecified */
     public static final String SAML_DEFAULT_NAMEID_FORMAT = JBossSAMLURIConstants.NAMEID_FORMAT_UNSPECIFIED.get();
     public static final String SAML_PERSISTENT_NAME_ID_FOR = "saml.persistent.name.id.for";
     public static final String SAML_IDP_INITIATED_SSO_RELAY_STATE = "saml_idp_initiated_sso_relay_state";
@@ -178,6 +185,7 @@ public class SamlProtocol implements LoginProtocol {
     protected ArtifactResolver artifactResolver;
     protected SingleUseObjectProvider singleUseStore;
 
+    /** {@inheritDoc} 注入 Keycloak 会话 */
     @Override
     public SamlProtocol setSession(KeycloakSession session) {
         this.session = session;
@@ -222,8 +230,12 @@ public class SamlProtocol implements LoginProtocol {
         return singleUseStore;
     }
 
-    @Override
-    public Response sendError(AuthenticationSessionModel authSession, Error error, String errorMessage) {
+    /**
+     * 认证失败时发送 SAML 错误响应或 IdP 发起 SSO 重定向。
+     * @param authSession 认证会话
+     * @param error 错误类型
+     * @param errorMessage 可选错误消息
+     */
         try {
             ClientModel client = authSession.getClient();
 
@@ -247,11 +259,12 @@ public class SamlProtocol implements LoginProtocol {
                 );
             }
         } finally {
-            // Remove authenticationSession of current browser tab
+            // 移除当前浏览器标签页的认证会话
             new AuthenticationSessionManager(session).removeTabIdInAuthenticationSession(realm, authSession);
         }
     }
 
+    /** {@inheritDoc} 提取 SAML 响应模式、RelayState 等客户端数据 */
     @Override
     public ClientData getClientData(AuthenticationSessionModel authSession) {
         String responseMode = isPostBinding(authSession) ? SamlProtocol.SAML_POST_BINDING : SamlProtocol.SAML_REDIRECT_BINDING;
@@ -366,11 +379,13 @@ public class SamlProtocol implements LoginProtocol {
         return SamlProtocol.SAML_POST_BINDING.equals(clientSession.getNote(SamlProtocol.SAML_BINDING)) || samlClient.forcePostBinding();
     }
 
+    /** 判断发起登出的客户端是否使用 POST 绑定 */
     public static boolean isLogoutPostBindingForInitiator(UserSessionModel session) {
         String note = session.getNote(SamlProtocol.SAML_LOGOUT_BINDING);
         return SamlProtocol.SAML_POST_BINDING.equals(note);
     }
 
+    /** 获取客户端会话对应的 SAML 登出绑定类型 */
     public static String getLogoutBindingTypeForClientSession(AuthenticatedClientSessionModel clientSession) {
         ClientModel client = clientSession.getClient();
         SamlClient samlClient = new SamlClient(client);
@@ -483,8 +498,12 @@ public class SamlProtocol implements LoginProtocol {
         return samlPersistentNameId;
     }
 
-    @Override
-    public Response authenticated(AuthenticationSessionModel authSession, UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
+    /**
+     * 认证成功后构建 SAML Response（含 Assertion）并返回给 SP。
+     * @param authSession 认证会话
+     * @param userSession 用户会话
+     * @param clientSessionCtx 客户端会话上下文
+     */
         AuthenticatedClientSessionModel clientSession = clientSessionCtx.getClientSession();
         ClientModel client = clientSession.getClient();
         SamlClient samlClient = new SamlClient(client);
