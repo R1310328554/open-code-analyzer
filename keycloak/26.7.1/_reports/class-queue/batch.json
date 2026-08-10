@@ -15,23 +15,8 @@
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/protocol/SAML11SubjectQueryAbstractType.java",
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/SAML2Object.java",
     "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ActivationLimitDurationType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ActivationLimitSessionType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ActivationLimitType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ActivationLimitUsagesType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ActivationPinType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/AlphabetType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/AuthenticatorBaseType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/AuthenticatorTransportProtocolType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/AuthnContextDeclarationBaseType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/AuthnMethodBaseType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/BooleanType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ComplexAuthenticatorType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/DeviceTypeType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ExtensionOnlyType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ExtensionType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/Generation.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/GoverningAgreementRefType.java"
+    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ActivationLimitSessionType.java"
   ],
   "remaining_pending": 3538,
-  "done": 2430
+  "done": 2445
 }

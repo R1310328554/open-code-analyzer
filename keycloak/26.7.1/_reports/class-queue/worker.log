@@ -2398,3 +2398,18 @@
 2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AttributeType.java wave81a saml-core-api common + SAML11 assertion batch1
 2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AudienceRestrictionCondition.java wave81a saml-core-api common + SAML11 assertion batch1
 2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AuthenticationStatementType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ActivationLimitType.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ActivationLimitUsagesType.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ActivationPinType.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/AlphabetType.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/AuthenticatorBaseType.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/AuthenticatorTransportProtocolType.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/AuthnContextDeclarationBaseType.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/AuthnMethodBaseType.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/BooleanType.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ComplexAuthenticatorType.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/DeviceTypeType.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ExtensionOnlyType.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/ExtensionType.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/Generation.java wave82b saml2 ac authn/activation types
+2026-08-10T09:30:09Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/GoverningAgreementRefType.java wave82b saml2 ac authn/activation types
