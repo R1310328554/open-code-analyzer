@@ -17,14 +17,19 @@ package io.netty.channel.epoll;
 
 import io.netty.channel.unix.IovArray;
 
+/**
+ * 通道级复用的原生 I/O 数组池：{@link IovArray} 与 {@link NativeDatagramPacketArray}。
+ * <p>首次使用时懒初始化，{@link #free()} 释放堆外内存。</p>
+ */
 final class NativeArrays {
 
-    // These are initialized on first use
+    // 首次使用时懒初始化
     private IovArray iovArray;
     private NativeDatagramPacketArray datagramPacketArray;
 
     /**
      * Return a cleared {@link IovArray} that can be used for writes.
+     * <p>返回已清空的 {@link IovArray}，用于聚集写。</p>
      */
     IovArray cleanIovArray() {
         if (iovArray == null) {
@@ -37,6 +42,7 @@ final class NativeArrays {
 
     /**
      * Return a cleared {@link NativeDatagramPacketArray} that can be used for writes.
+     * <p>返回已清空的 {@link NativeDatagramPacketArray}，用于批量 UDP 写。</p>
      */
     NativeDatagramPacketArray cleanDatagramPacketArray() {
         if (datagramPacketArray == null) {
@@ -48,7 +54,7 @@ final class NativeArrays {
     }
 
     void free() {
-        // release native memory
+        // 释放堆外原生内存
         if (iovArray != null) {
             iovArray.release();
             iovArray = null;

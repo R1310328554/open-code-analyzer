@@ -38,9 +38,11 @@ import static io.netty.channel.unix.Errors.newIOException;
 
 /**
  * A socket which provides access Linux native methods.
+ * <p>封装 Linux 原生 socket 系统调用：组播、TCP 选项、sendmmsg/recvmmsg、sendfile、VSOCK 等。</p>
  */
 @UnstableApi
 public final class LinuxSocket extends Socket {
+    /** uint32_t 最大值，用于 TCP_NOTSENT_LOWAT 校验 */
     private static final long MAX_UINT32_T = 0xFFFFFFFFL;
 
     LinuxSocket(int fd) {
@@ -315,8 +317,7 @@ public final class LinuxSocket extends Socket {
     }
 
     long sendFile(DefaultFileRegion src, long baseOffset, long offset, long length) throws IOException {
-        // Open the file-region as it may be created via the lazy constructor. This is needed as we directly access
-        // the FileChannel field via JNI.
+        // 惰性构造的 FileRegion 需先 open，JNI 直接访问 FileChannel
         src.open();
 
         long res = sendFile(intValue(), src, baseOffset, offset, length);
@@ -403,6 +404,7 @@ public final class LinuxSocket extends Socket {
 
     /**
      * @deprecated use {@link #newSocketStream(SocketProtocolFamily)}
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public static LinuxSocket newSocketStream(InternetProtocolFamily protocol) {
@@ -423,6 +425,7 @@ public final class LinuxSocket extends Socket {
 
     /**
      * @deprecated use {@link #newSocketDgram(SocketProtocolFamily)}
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public static LinuxSocket newSocketDgram(InternetProtocolFamily family) {

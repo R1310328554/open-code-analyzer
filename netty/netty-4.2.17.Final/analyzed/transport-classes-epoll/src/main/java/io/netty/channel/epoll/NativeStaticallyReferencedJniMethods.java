@@ -25,6 +25,7 @@ package io.netty.channel.epoll;
  * <li>java.lang.UnsatisfiedLinkError is thrown because native method has not yet been registered.</li>
  * </ol>
  * Static members which call JNI methods must not be declared in this class!
+ * <p>打破 JNI_OnLoad 与静态 JNI 调用的循环依赖；epoll 常量与能力探测的静态 JNI 入口。</p>
  */
 final class NativeStaticallyReferencedJniMethods {
 

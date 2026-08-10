@@ -33,6 +33,10 @@ import java.nio.ByteBuffer;
 import static io.netty.channel.unix.Errors.ERRNO_EAGAIN_NEGATIVE;
 import static io.netty.channel.unix.Errors.ERRNO_EWOULDBLOCK_NEGATIVE;
 
+/**
+ * io_uring 服务端通道：通过 IORING_OP_ACCEPT 接受连接并创建子通道。
+ * <p>不支持 outbound write 与 connect；支持 multi-shot accept。</p>
+ */
 abstract class AbstractIoUringServerChannel extends AbstractIoUringChannel implements ServerChannel {
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
 
@@ -50,8 +54,7 @@ abstract class AbstractIoUringServerChannel extends AbstractIoUringChannel imple
             acceptedAddressMemoryAddress = Buffer.memoryAddress(acceptedAddressMemory);
             acceptedAddressLengthMemoryCleanable = Buffer.allocateDirectBufferWithNativeOrder(Long.BYTES);
             acceptedAddressLengthMemory = acceptedAddressLengthMemoryCleanable.buffer();
-            // Needs to be initialized to the size of acceptedAddressMemory.
-            // See https://man7.org/linux/man-pages/man2/accept.2.html
+            // 初始化为 sockaddr 存储区长度（accept(2) 要求）
             acceptedAddressLengthMemory.putLong(0, Native.SIZEOF_SOCKADDR_STORAGE);
             acceptedAddressLengthMemoryAddress = Buffer.memoryAddress(acceptedAddressLengthMemory);
         }
@@ -67,7 +70,7 @@ abstract class AbstractIoUringServerChannel extends AbstractIoUringChannel imple
     protected AbstractIoUringServerChannel(LinuxSocket socket, boolean active) {
         super(null, socket, active);
 
-        // We can only depend on the accepted address if multi-shot is not used.
+        // multi-shot accept 时不宜复用同一 addr 缓冲区
         // From the manpage:
         //       The multishot variants allow an application to issue a single
         //       accept request, which will repeatedly trigger a CQE when a

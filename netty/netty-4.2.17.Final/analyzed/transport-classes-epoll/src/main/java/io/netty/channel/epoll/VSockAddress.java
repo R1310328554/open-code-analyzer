@@ -21,30 +21,41 @@ import java.net.SocketAddress;
 /**
  * A address for a
  * <a href="https://man7.org/linux/man-pages/man7/vsock.7.html">VM sockets (Linux VSOCK address family)</a>.
+ * <p>Linux VSOCK 地址：虚拟机/宿主机间通信的 (cid, port) 对。</p>
  */
 
 public final class VSockAddress extends SocketAddress {
     private static final long serialVersionUID = 8600894096347158429L;
 
+    /** 任意 VM context ID */
     public static final int VMADDR_CID_ANY = -1;
+    /**  hypervisor context ID */
     public static final int VMADDR_CID_HYPERVISOR = 0;
+    /** 本地（同一 VM 内）context ID */
     public static final int VMADDR_CID_LOCAL = 1;
+    /** 宿主机 context ID */
     public static final int VMADDR_CID_HOST = 2;
 
+    /** 任意端口（绑定/连接时） */
     public static final int VMADDR_PORT_ANY = -1;
 
+    /** 虚拟机 context 标识符 */
     private final int cid;
+    /** VSOCK 端口号 */
     private final int port;
 
+    /** 构造 (cid, port) 地址对 */
     public VSockAddress(int cid, int port) {
         this.cid = cid;
         this.port = port;
     }
 
+    /** 返回 context ID */
     public int getCid() {
         return cid;
     }
 
+    /** 返回端口号 */
     public int getPort() {
         return port;
     }

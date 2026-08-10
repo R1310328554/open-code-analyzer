@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/** TCP MD5 签名选项工具：校验密钥长度并增量更新 {@link AbstractEpollChannel} 上的 MD5 映射 */
 final class TcpMd5Util {
 
     static Collection<InetAddress> newTcpMd5Sigs(AbstractEpollChannel channel, Collection<InetAddress> current,
@@ -35,7 +36,7 @@ final class TcpMd5Util {
         checkNotNull(current, "current");
         checkNotNull(newKeys, "newKeys");
 
-        // Validate incoming values
+        // 校验新密钥非空且长度不超过 TCP_MD5SIG_MAXKEYLEN
         for (Entry<InetAddress, byte[]> e : newKeys.entrySet()) {
             final byte[] key = e.getValue();
             checkNotNullWithIAE(e.getKey(), "e.getKey");
@@ -47,7 +48,7 @@ final class TcpMd5Util {
             }
         }
 
-        // Remove mappings not present in the new set.
+        // 移除新映射中不存在的旧地址（密钥置 null）
         for (InetAddress addr : current) {
             if (!newKeys.containsKey(addr)) {
                 channel.socket.setTcpMd5Sig(addr, null);
@@ -58,7 +59,7 @@ final class TcpMd5Util {
             return Collections.emptySet();
         }
 
-        // Set new mappings and store addresses which we set.
+        // 写入新映射并收集已设置地址
         final Collection<InetAddress> addresses = new ArrayList<InetAddress>(newKeys.size());
         for (Entry<InetAddress, byte[]> e : newKeys.entrySet()) {
             channel.socket.setTcpMd5Sig(e.getKey(), e.getValue());

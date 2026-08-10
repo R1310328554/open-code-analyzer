@@ -20,6 +20,7 @@ import io.netty.buffer.ByteBuf;
 import java.net.InetSocketAddress;
 
 /**
+ * <p>支持 UDP GSO 的分段数据报（已迁移至 unix 包）。</p>
  * @deprecated use {@link io.netty.channel.unix.SegmentedDatagramPacket}.
  */
 @Deprecated
@@ -27,6 +28,7 @@ public final class SegmentedDatagramPacket extends io.netty.channel.unix.Segment
 
     /**
      * Create a new instance.
+     * <p>创建新实例。</p>
      *
      * @param data          the {@link ByteBuf} which must be continguous.
      * @param segmentSize   the segment size.
@@ -39,6 +41,7 @@ public final class SegmentedDatagramPacket extends io.netty.channel.unix.Segment
 
     /**
      * Create a new instance.
+     * <p>创建新实例。</p>
      *
      * @param data          the {@link ByteBuf} which must be continguous.
      * @param segmentSize   the segment size.
@@ -52,6 +55,7 @@ public final class SegmentedDatagramPacket extends io.netty.channel.unix.Segment
 
     /**
      * Returns {@code true} if the underlying system supports GSO.
+     * <p>epoll 可用且支持 sendmmsg 与 UDP_SEGMENT 时返回 true。</p>
      */
     public static boolean isSupported() {
         return Epoll.isAvailable() &&

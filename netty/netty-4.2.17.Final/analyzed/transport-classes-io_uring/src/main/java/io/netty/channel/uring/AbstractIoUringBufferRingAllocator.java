@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 
 /**
  * Base class for {@link IoUringBufferRingAllocator} implementations which support large allocations.
+ * <p>io_uring 缓冲区环分配器基类：支持整块分配后切片或逐 buffer 分配。</p>
  */
 public abstract class AbstractIoUringBufferRingAllocator implements IoUringBufferRingAllocator {
     private final ByteBufAllocator allocator;
@@ -35,6 +36,7 @@ public abstract class AbstractIoUringBufferRingAllocator implements IoUringBuffe
      * @param largeAllocation   {@code true} if we should do a large allocation for the whole buffer ring
      *                          and then slice out the buffers or {@code false} if we should do one allocation
      *                          per buffer.
+     * <p>{@code largeAllocation} 为 true 时一次分配整环再切片，否则每 buffer 独立分配。</p>
      */
     protected AbstractIoUringBufferRingAllocator(ByteBufAllocator allocator, boolean largeAllocation) {
         this.allocator = Objects.requireNonNull(allocator, "allocator");
@@ -68,6 +70,7 @@ public abstract class AbstractIoUringBufferRingAllocator implements IoUringBuffe
 
     /**
      * Does nothing by default, sub-classes might override this.
+     * <p>默认无操作；子类可据读字节数调整下次 buffer 大小。</p>
      *
      * @param attempted  the attempted bytes to read.
      * @param actual     the number of bytes that could be read.
@@ -81,6 +84,7 @@ public abstract class AbstractIoUringBufferRingAllocator implements IoUringBuffe
      * Return the next buffer size of each {@link ByteBuf} that is put into the buffer ring.
      *
      * @return  the next size.
+     * <p>返回环中下一个 buffer 的字节容量（子类实现自适应策略）。</p>
      */
     protected abstract int nextBufferSize();
 }

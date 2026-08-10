@@ -34,10 +34,11 @@ import static io.netty.channel.unix.NativeInetAddress.copyIpv4MappedIpv6Address;
 
 /**
  * Support <a href="https://linux.die.net//man/2/sendmmsg">sendmmsg(...)</a> on linux with GLIBC 2.14+
+ * <p>批量 UDP 发送/接收的 mmsg 数组封装，共享 {@link IovArray} 降低内存开销。</p>
  */
 final class NativeDatagramPacketArray {
 
-    // Use UIO_MAX_IOV as this is the maximum number we can write with one sendmmsg(...) call.
+    // 单次 sendmmsg/recvmmsg 最多 UIO_MAX_IOV 条消息
     private final NativeDatagramPacket[] packets = new NativeDatagramPacket[UIO_MAX_IOV];
 
     // We share one IovArray for all NativeDatagramPackets to reduce memory overhead. This will allow us to write
@@ -62,8 +63,7 @@ final class NativeDatagramPacketArray {
 
     private boolean add0(ByteBuf buf, int index, int len, int segmentLen, InetSocketAddress recipient) {
         if (count == packets.length) {
-            // We already filled up to UIO_MAX_IOV messages. This is the max allowed per
-            // recvmmsg(...) / sendmmsg(...) call, we will try again later.
+            // 已达 UIO_MAX_IOV 上限，后续调用再续传
             return false;
         }
         if (len == 0) {
@@ -89,6 +89,7 @@ final class NativeDatagramPacketArray {
 
     /**
      * Returns the count
+     * <p>返回当前已填充的数据报数量。</p>
      */
     int count() {
         return count;
@@ -96,6 +97,7 @@ final class NativeDatagramPacketArray {
 
     /**
      * Returns an array with {@link #count()} {@link NativeDatagramPacket}s filled.
+     * <p>返回前 {@link #count()} 个已填充的 {@link NativeDatagramPacket}。</p>
      */
     NativeDatagramPacket[] packets() {
         return packets;
@@ -123,8 +125,7 @@ final class NativeDatagramPacketArray {
                 int segmentSize = 0;
                 if (packet instanceof io.netty.channel.unix.SegmentedDatagramPacket) {
                     int seg = ((io.netty.channel.unix.SegmentedDatagramPacket) packet).segmentSize();
-                    // We only need to tell the kernel that we want to use UDP_SEGMENT if there are multiple
-                    // segments in the packet.
+                    // 仅当载荷大于单段大小时才设置 UDP_SEGMENT
                     if (buf.readableBytes() > seg) {
                         segmentSize = seg;
                     }
@@ -158,13 +159,13 @@ final class NativeDatagramPacketArray {
 
     /**
      * Used to pass needed data to JNI.
+     * <p>供 JNI sendmmsg/recvmmsg 使用的原生数据结构。</p>
      */
     @SuppressWarnings("unused")
     @UnstableApi
     public final class NativeDatagramPacket {
 
-        // IMPORTANT: Most of the below variables are accessed via JNI. Be aware if you change any of these you also
-        // need to change these in the related .c file!
+        // 以下字段经 JNI 访问，修改须同步 .c 文件
 
         // This is the actual struct iovec*
         private long memoryAddress;

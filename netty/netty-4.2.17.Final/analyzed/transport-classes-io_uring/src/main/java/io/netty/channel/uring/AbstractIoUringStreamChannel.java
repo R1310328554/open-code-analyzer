@@ -41,6 +41,10 @@ import java.nio.channels.WritableByteChannel;
 
 import static io.netty.channel.unix.Errors.ioResult;
 
+/**
+ * io_uring 流式通道抽象基类：TCP/Unix 域流套接字的读写、shutdown 与 buffer ring 接收。
+ * <p>支持 splice 零拷贝、FileRegion 分块异步发送与 multi-shot recv。</p>
+ */
 abstract class AbstractIoUringStreamChannel extends AbstractIoUringChannel implements DuplexChannel {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(AbstractIoUringStreamChannel.class);
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
@@ -50,18 +54,19 @@ abstract class AbstractIoUringStreamChannel extends AbstractIoUringChannel imple
      * for the io_uring async send path. Overridable via the {@code io.netty.iouring.fileRegionChunkSize}
      * system property; capped at 16 MiB to guard against pathological configurations that would
      * risk direct-memory OOM.
+     * <p>FileRegion 转 ByteBuf 分块上限，可通过系统属性调整，最大 16 MiB。</p>
      */
     private static final int FILE_REGION_MAX_CHUNK_SIZE = Math.min(16 * 1024 * 1024,
             Math.max(1, SystemPropertyUtil.getInt("io.netty.iouring.fileRegionChunkSize", 64 * 1024)));
 
-    // Store the opCode so we know if we used WRITE or WRITEV.
+    // 记录写操作 opcode，便于 ASYNC_CANCEL
     byte writeOpCode;
     // Keep track of the ids used for write and read so we can cancel these when needed.
     long writeId;
     byte readOpCode;
     long readId;
 
-    // The configured buffer ring if any
+    // 配置的 io_uring 接收 buffer ring（若有）
     private IoUringBufferRing bufferRing;
 
     AbstractIoUringStreamChannel(Channel parent, LinuxSocket socket, boolean active) {
@@ -257,7 +262,7 @@ abstract class AbstractIoUringStreamChannel extends AbstractIoUringChannel imple
 
         private ByteBuf readBuffer;
 
-        // Chunk buffer for generic FileRegion writes. Non-null while a send is in flight.
+        // 通用 FileRegion 分块写缓冲；发送进行中非 null
         private ByteBuf fileRegionChunkBuf;
 
         @Override
@@ -804,6 +809,7 @@ abstract class AbstractIoUringStreamChannel extends AbstractIoUringChannel imple
      * A {@link WritableByteChannel} backed by a {@link ByteBuf}.
      * Writes are capped to {@link ByteBuf#writableBytes()} to prevent overflow
      * when {@link FileRegion#transferTo} writes more than the chunk size.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     private static final class ByteBufWritableByteChannel implements WritableByteChannel {
         private final ByteBuf buf;

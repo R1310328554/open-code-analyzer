@@ -26,11 +26,15 @@ import java.nio.ByteBuffer;
  *     // followed by unsigned char cmsg_data[];
  * };
  * }</pre>
+ * <p>辅助写入/读取 {@code cmsghdr} 控制消息：UDP_SEGMENT、SCM_RIGHTS 等。</p>
+ * <p>字段布局与 Linux {@code struct cmsghdr} 一致，通过 {@link Native} 偏移常量访问。</p>
  */
+/** 控制消息头工具：构造 UDP 分段大小或传递文件描述符（SCM_RIGHTS） */
 final class CmsgHdr {
 
     private CmsgHdr() { }
 
+    /** 写入 UDP_SEGMENT 等辅助数据到 cmsghdr 缓冲区 */
     static void write(ByteBuffer cmsghdr, int cmsgHdrDataOffset,
                       int cmsgLen, int cmsgLevel, int cmsgType, short segmentSize) {
         int cmsghdrPosition = cmsghdr.position();
@@ -45,6 +49,7 @@ final class CmsgHdr {
         cmsghdr.putShort(cmsghdrPosition + cmsgHdrDataOffset, segmentSize);
     }
 
+    /** 写入 SCM_RIGHTS 控制消息以传递文件描述符 */
     static void writeScmRights(ByteBuffer cmsghdr, int cmsgHdrDataOffset, int fd) {
         int cmsghdrPosition = cmsghdr.position();
         if (Native.SIZEOF_SIZE_T == 4) {
@@ -58,6 +63,7 @@ final class CmsgHdr {
         cmsghdr.putInt(cmsghdrPosition + cmsgHdrDataOffset, fd);
     }
 
+    /** 从 cmsghdr 读取 SCM_RIGHTS 传递的 fd */
     static int readScmRights(ByteBuffer cmsghdr, int cmsgHdrDataOffset) {
         return cmsghdr.getInt(cmsghdr.position() + cmsgHdrDataOffset);
     }

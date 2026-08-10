@@ -37,12 +37,19 @@ import static io.netty.channel.ChannelOption.SO_REUSEADDR;
 import static io.netty.channel.ChannelOption.SO_SNDBUF;
 import static io.netty.channel.ChannelOption.TCP_NODELAY;
 
+/**
+ * {@link EpollSocketChannel} 的 TCP 套接字配置：标准 socket 选项与 Linux 特有 TCP/IP 选项。
+ * <p>含 TCP_CORK、TCP_MD5SIG、IP_TRANSPARENT、TCP FastOpen 等 epoll 原生能力。</p>
+ */
 public final class EpollSocketChannelConfig extends EpollChannelConfig implements SocketChannelConfig {
+    /** 是否允许半关闭（shutdownInput/Output 独立生效） */
     private volatile boolean allowHalfClosure;
+    /** 客户端 TCP FastOpen 是否启用（配置缓存，非内核选项直读） */
     private volatile boolean tcpFastopen;
 
     /**
      * Creates a new instance.
+     * <p>创建实例；若平台默认则启用 TCP_NODELAY 并计算聚集写上限。</p>
      */
     EpollSocketChannelConfig(EpollSocketChannel channel) {
         super(channel);
@@ -246,6 +253,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Get the {@code TCP_CORK} option on the socket. See {@code man 7 tcp} for more details.
+     * <p>读取 TCP_CORK（粘包）选项状态。</p>
      */
     public boolean isTcpCork() {
         try {
@@ -257,6 +265,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Get the {@code SO_BUSY_POLL} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     public int getSoBusyPoll() {
         try {
@@ -269,6 +278,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
     /**
      * Get the {@code TCP_NOTSENT_LOWAT} option on the socket. See {@code man 7 tcp} for more details.
      * @return value is a uint32_t
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     public long getTcpNotSentLowAt() {
         try {
@@ -280,6 +290,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Get the {@code TCP_KEEPIDLE} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     public int getTcpKeepIdle() {
         try {
@@ -291,6 +302,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Get the {@code TCP_KEEPINTVL} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     public int getTcpKeepIntvl() {
         try {
@@ -302,6 +314,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Get the {@code TCP_KEEPCNT} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     public int getTcpKeepCnt() {
         try {
@@ -313,6 +326,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Get the {@code TCP_USER_TIMEOUT} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     public int getTcpUserTimeout() {
         try {
@@ -391,6 +405,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Set the {@code TCP_CORK} option on the socket. See {@code man 7 tcp} for more details.
+     * <p>设置 TCP_CORK，延迟小包发送直至取消或缓冲区满。</p>
      */
     public EpollSocketChannelConfig setTcpCork(boolean tcpCork) {
         try {
@@ -403,6 +418,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Set the {@code SO_BUSY_POLL} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     public EpollSocketChannelConfig setSoBusyPoll(int loopMicros) {
         try {
@@ -416,6 +432,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
     /**
      * Set the {@code TCP_NOTSENT_LOWAT} option on the socket. See {@code man 7 tcp} for more details.
      * @param tcpNotSentLowAt is a uint32_t
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     public EpollSocketChannelConfig setTcpNotSentLowAt(long tcpNotSentLowAt) {
         try {
@@ -438,6 +455,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Set the {@code TCP_KEEPIDLE} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     public EpollSocketChannelConfig setTcpKeepIdle(int seconds) {
         try {
@@ -450,6 +468,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Set the {@code TCP_KEEPINTVL} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     public EpollSocketChannelConfig setTcpKeepIntvl(int seconds) {
         try {
@@ -462,6 +481,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * @deprecated use {@link #setTcpKeepCnt(int)}
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public EpollSocketChannelConfig setTcpKeepCntl(int probes) {
@@ -470,6 +490,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Set the {@code TCP_KEEPCNT} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     public EpollSocketChannelConfig setTcpKeepCnt(int probes) {
         try {
@@ -482,6 +503,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Set the {@code TCP_USER_TIMEOUT} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     public EpollSocketChannelConfig setTcpUserTimeout(int milliseconds) {
         try {
@@ -494,6 +516,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Returns {@code true} if the IP_BIND_ADDRESS_NO_PORT option is set.
+     * <p>是否已设置 IP_BIND_ADDRESS_NO_PORT（bind 前绑定地址不占用端口）。</p>
      */
     public boolean isIpBindAddressNoPort() {
         try {
@@ -505,6 +528,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Set the IP_BIND_ADDRESS_NO_PORT option on the underlying Channel.
+     * <p>设置 IP_BIND_ADDRESS_NO_PORT；须在 bind 前调用才生效。</p>
      *
      * Be aware this method needs be called before {@link EpollSocketChannel#bind(java.net.SocketAddress)} to have
      * any affect.
@@ -520,6 +544,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
      /**
      * Returns {@code true} if <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_TRANSPARENT</a> is enabled,
+     * <p>是否启用 IP_TRANSPARENT 透明代理。</p>
      * {@code false} otherwise.
      */
     public boolean isIpTransparent() {
@@ -532,6 +557,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * If {@code true} is used <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_TRANSPARENT</a> is enabled,
+     * <p>启用或禁用 IP_TRANSPARENT；默认禁用。</p>
      * {@code false} for disable it. Default is disabled.
      */
     public EpollSocketChannelConfig setIpTransparent(boolean transparent) {
@@ -547,6 +573,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
      * Set the {@code TCP_MD5SIG} option on the socket. See {@code linux/tcp.h} for more details.
      * Keys can only be set on, not read to prevent a potential leak, as they are confidential.
      * Allowing them being read would mean anyone with access to the channel could get them.
+     * <p>配置 TCP MD5 签名密钥（BGP 等场景）；仅可写不可读以防密钥泄露。</p>
      */
     public EpollSocketChannelConfig setTcpMd5Sig(Map<InetAddress, byte[]> keys) {
         try {
@@ -561,6 +588,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
      * Set the {@code TCP_QUICKACK} option on the socket.
      * See <a href="https://linux.die.net//man/7/tcp">TCP_QUICKACK</a>
      * for more details.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     public EpollSocketChannelConfig setTcpQuickAck(boolean quickAck) {
         try {
@@ -573,6 +601,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Returns {@code true} if <a href="https://linux.die.net//man/7/tcp">TCP_QUICKACK</a> is enabled,
+     * <p>是否启用 IP_TRANSPARENT 透明代理。</p>
      * {@code false} otherwise.
      */
     public boolean isTcpQuickAck() {
@@ -588,6 +617,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
      * requires Linux kernel 4.11 or later, so instead we use the traditional fast open
      * client socket mechanics that work with kernel 3.6 and later. See this
      * <a href="https://lwn.net/Articles/508865/">LWN article</a> for more info.
+     * <p>启用客户端 TCP FastOpen；兼容 3.6+ 内核的传统 fast open 机制。</p>
      */
     public EpollSocketChannelConfig setTcpFastOpenConnect(boolean fastOpenConnect) {
         tcpFastopen = fastOpenConnect;
@@ -596,6 +626,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
 
     /**
      * Returns {@code true} if TCP fast open is enabled, {@code false} otherwise.
+     * <p>客户端 TCP FastOpen 是否已启用。</p>
      */
     public boolean isTcpFastOpenConnect() {
         return tcpFastopen;
@@ -688,7 +719,7 @@ public final class EpollSocketChannelConfig extends EpollChannelConfig implement
     }
 
     private void calculateMaxBytesPerGatheringWrite() {
-        // Multiply by 2 to give some extra space in case the OS can process write data faster than we can provide.
+        // 发送缓冲区翻倍作为聚集写上限，应对内核写速快于应用供数
         int newSendBufferSize = getSendBufferSize() << 1;
         if (newSendBufferSize > 0) {
             setMaxBytesPerGatheringWrite(newSendBufferSize);

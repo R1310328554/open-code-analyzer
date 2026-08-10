@@ -71,12 +71,16 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static io.netty.util.internal.StringUtil.className;
 
 
+/**
+ * io_uring 通道抽象基类：Linux 原生 socket + io_uring 异步 I/O 与 poll 状态机。
+ * <p>管理 connect/read/write 的 SQE 提交、完成回调与半关闭语义。</p>
+ */
 abstract class AbstractIoUringChannel extends AbstractChannel implements UnixChannel {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(AbstractIoUringChannel.class);
     final LinuxSocket socket;
     protected volatile boolean active;
 
-    // Different masks for outstanding I/O operations.
+    // 未完成 I/O 操作的位掩码（poll/read/write/connect）
     private static final int POLL_IN_SCHEDULED = 1;
     private static final int POLL_OUT_SCHEDULED = 1 << 2;
     private static final int POLL_RDHUP_SCHEDULED = 1 << 3;
@@ -121,6 +125,7 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
 
     /**
      * The future of the current connection attempt.  If not null, subsequent connection attempts will fail.
+     * <p>当前连接尝试的 Promise；非 null 时后续 connect 将失败。</p>
      */
     private ChannelPromise connectPromise;
     private ScheduledFuture<?> connectTimeoutFuture;
@@ -189,6 +194,7 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
 
     /**
      * Returns the next id that should be used when submitting {@link IoUringIoOps}.
+     * <p>返回提交 {@link IoUringIoOps} 时使用的下一个 userData id。</p>
      *
      * @return  opsId
      */
@@ -264,6 +270,7 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
 
     /**
      * Cancel all outstanding reads
+     * <p>取消所有未完成的读/accept 操作。</p>
      *
      * @param registration          the {@link IoRegistration}.
      * @param numOutstandingReads   the number of outstanding reads, or {@code -1} if multi-shot was used.
@@ -272,6 +279,7 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
 
     /**
      * Cancel all outstanding writes
+     * <p>取消所有未完成的写操作。</p>
      *
      * @param registration          the {@link IoRegistration}.
      * @param numOutstandingWrites  the number of outstanding writes.
@@ -440,12 +448,14 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
 
         /**
          * Schedule the write of multiple messages in the {@link ChannelOutboundBuffer} and returns the number of
+         * <p>调度 {@link ChannelOutboundBuffer} 中多条消息的写，返回预期 writeComplete 次数。</p>
          * {@link #writeComplete(byte, int, int, short)} calls that are expected because of the scheduled write.
          */
         protected abstract int scheduleWriteMultiple(ChannelOutboundBuffer in);
 
         /**
          * Schedule the write of a single message and returns the number of
+         * <p>调度单条消息写，返回预期 writeComplete 次数。</p>
          * {@link #writeComplete(byte, int, int, short)} calls that are expected because of the scheduled write.
          */
         protected abstract int scheduleWriteSingle(Object msg);
@@ -835,11 +845,13 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
 
         /**
          * Called once a read was completed.
+         * <p>读/accept 完成时由子类处理具体逻辑。</p>
          */
         protected abstract void readComplete0(byte op, int res, int flags, short data, int outstandingCompletes);
 
         /**
          * Called once POLLRDHUP event is ready to be processed
+         * <p>POLLRDHUP 就绪：对端关闭连接，继续读尽输入或 shutdown。</p>
          */
         private void pollRdHup(int res) {
             ioState &= ~POLL_RDHUP_SCHEDULED;
@@ -861,6 +873,7 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
 
         /**
          * Called once POLLIN event is ready to be processed
+         * <p>POLLIN 就绪：调度首次 read 或标记 socket 有数据待读。</p>
          */
         private void pollIn(int res, int flags, short data) {
             // Check if we need to rearm. This works for both cases, POLL_ADD and POLL_ADD_MULTI.
@@ -907,6 +920,7 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
 
         /**
          * Schedule a read and returns the number of {@link #readComplete(byte, int, int, short)}
+         * <p>调度读并返回预期 readComplete 回调次数；multi-shot 时返回 -1。</p>
          * calls that are expected because of the scheduled read.
          *
          * @param first             {@code true} if this is the first read of a read loop.
@@ -921,6 +935,7 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
          * Called once POLLOUT event is ready to be processed
          *
          * @param res   the result.
+         * <p>POLLOUT 就绪：完成 connect 或 flush 出站数据。</p>
          */
         private void pollOut(int res) {
             ioState &= ~POLL_OUT_SCHEDULED;
@@ -970,6 +985,7 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
          * @param res   the result.
          * @param flags the flags.
          * @param data  the data that was passed when submitting the op.
+          * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
          */
         private void writeComplete(byte op, int res, int flags, short data) {
             if ((ioState & CONNECT_SCHEDULED) != 0) {
@@ -1026,6 +1042,7 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
          * @param flags         the flags.
          * @param data          the data that was passed when submitting the op.
          * @param outstanding   the outstanding write completions.
+          * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
          */
         abstract boolean writeComplete0(byte op, int res, int flags, short data, int outstanding);
 
@@ -1036,6 +1053,7 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
          * @param res           the result.
          * @param flags         the flags.
          * @param data          the data that was passed when submitting the op.
+          * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
          */
         void cancelComplete0(byte op, int res, int flags, short data) {
             // NOOP
@@ -1047,6 +1065,7 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
          * @param res           the result.
          * @param flags         the flags.
          * @param data          the data that was passed when submitting the op.
+          * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
          */
         void connectComplete(byte op, int res, int flags, short data) {
             ioState &= ~CONNECT_SCHEDULED;
@@ -1346,6 +1365,7 @@ abstract class AbstractIoUringChannel extends AbstractChannel implements UnixCha
 
     /**
      * Return if the socket is guaranteed to be empty when the submitted io was executed and the completion event be
+     * <p>完成事件产生时套接字是否保证无待发数据（影响 POLL_FIRST 策略）。</p>
      * created.
      * @param flags     the flags that were part of the completion
      * @return          {@code true} if empty.

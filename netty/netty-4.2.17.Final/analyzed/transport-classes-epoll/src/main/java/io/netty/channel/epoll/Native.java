@@ -50,6 +50,7 @@ import static io.netty.channel.unix.Errors.newIOException;
  * Native helper methods
  * <p><strong>Internal usage only!</strong>
  * <p>Static members which call JNI methods must be defined in {@link NativeStaticallyReferencedJniMethods}.
+ * <p>epoll 原生 JNI 辅助类：事件循环、epoll_ctl、splice、sendmmsg/recvmmsg 等。</p>
  */
 public final class Native {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Native.class);
@@ -59,8 +60,7 @@ public final class Native {
     static {
         Selector selector = null;
         try {
-            // We call Selector.open() as this will under the hood cause IOUtil to be loaded.
-            // This is a workaround for a possible classloader deadlock that could happen otherwise:
+            // 预加载 Selector/IOUtil，规避类加载器死锁（见 netty#10187）
             //
             // See https://github.com/netty/netty/issues/10187
             selector = Selector.open();
@@ -75,8 +75,7 @@ public final class Native {
             throw new ExceptionInInitializerError(e);
         }
 
-        // Preload all classes that will be used in the OnLoad(...) function of JNI to eliminate the possiblity of a
-        // class-loader deadlock. This is a workaround for https://github.com/netty/netty/issues/11209.
+        // 预加载 JNI OnLoad 所需类，避免类加载器死锁（netty#11209）
 
         // This needs to match all the classes that are loaded via NETTY_JNI_UTIL_LOAD_CLASS or looked up via
         // NETTY_JNI_UTIL_FIND_CLASS.
@@ -129,18 +128,21 @@ public final class Native {
     /**
      * <a href ="https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt">tcp_fastopen</a> client mode enabled
      * state.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     static final boolean IS_SUPPORTING_TCP_FASTOPEN_CLIENT =
             (TCP_FASTOPEN_MODE & TFO_ENABLED_CLIENT_MASK) == TFO_ENABLED_CLIENT_MASK;
     /**
      * <a href ="https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt">tcp_fastopen</a> server mode enabled
      * state.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     static final boolean IS_SUPPORTING_TCP_FASTOPEN_SERVER =
             (TCP_FASTOPEN_MODE & TFO_ENABLED_SERVER_MASK) == TFO_ENABLED_SERVER_MASK;
     /**
      * @deprecated Use {@link Epoll#isTcpFastOpenClientSideAvailable()}
      * or {@link Epoll#isTcpFastOpenServerSideAvailable()}.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public static final boolean IS_SUPPORTING_TCP_FASTOPEN = IS_SUPPORTING_TCP_FASTOPEN_CLIENT ||
@@ -170,6 +172,7 @@ public final class Native {
 
     /**
      * @deprecated this method is no longer supported. This functionality is internal to this package.
+      * <p>Netty epoll/io_uring 传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public static int epollWait(FileDescriptor epollFd, EpollEventArray events, FileDescriptor timerFd,
@@ -181,8 +184,7 @@ public final class Native {
     static long epollWait(FileDescriptor epollFd, EpollEventArray events, FileDescriptor timerFd,
                                 int timeoutSec, int timeoutNs, long millisThreshold) throws IOException {
         if (timeoutSec == 0 && timeoutNs == 0) {
-            // Zero timeout => poll (aka return immediately)
-            // We shift this to be consistent with what is done in epollWait0(...)
+            // 零超时即 poll：立即返回，与 epollWait0 编码一致
             return ((long) epollWait(epollFd, events, 0)) << 32;
         }
         if (timeoutSec == Integer.MAX_VALUE) {
@@ -199,7 +201,7 @@ public final class Native {
         return result;
     }
 
-    // IMPORTANT: This needs to be consistent with what is used in netty_epoll_native.c
+    // 须与 netty_epoll_native.c 中编码一致
     static int epollReady(long result) {
         return (int) (result >> 32);
     }
@@ -215,6 +217,7 @@ public final class Native {
 
     /**
      * This uses epoll's own timeout and does not reset/re-arm any timerfd
+     * <p>使用 epoll 自带超时，不重置 timerfd。</p>
      */
     static int epollWait(FileDescriptor epollFd, EpollEventArray events, int timeoutMillis) throws IOException {
         int ready = epollWait(epollFd.intValue(), events.memoryAddress(), events.length(), timeoutMillis);
@@ -228,6 +231,7 @@ public final class Native {
      * Non-blocking variant of
      * {@link #epollWait(FileDescriptor, EpollEventArray, FileDescriptor, int, int)}
      * that will also hint to processor we are in a busy-wait loop.
+     * <p>非阻塞 epoll 忙等变体，提示 CPU 处于 busy-wait 循环。</p>
      */
     public static int epollBusyWait(FileDescriptor epollFd, EpollEventArray events) throws IOException {
         int ready = epollBusyWait0(epollFd.intValue(), events.memoryAddress(), events.length());
