@@ -1903,3 +1903,18 @@
 2026-08-10T04:27:18Z DONE naming/src/main/java/com/alibaba/nacos/naming/consistency/ephemeral/distro/v2/DistroClientTaskFailedHandler.java wave63a [0:15] naming cluster/consistency distro
 2026-08-10T04:27:18Z DONE naming/src/main/java/com/alibaba/nacos/naming/consistency/ephemeral/distro/v2/DistroClientTransportAgent.java wave63a [0:15] naming cluster/consistency distro
 2026-08-10T04:27:18Z DONE naming/src/main/java/com/alibaba/nacos/naming/consistency/ephemeral/distro/v2/DistroClientVerifyInfo.java wave63a [0:15] naming cluster/consistency distro
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/consistency/persistent/impl/AbstractSnapshotOperation.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/consistency/persistent/impl/BatchReadResponse.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/consistency/persistent/impl/BatchWriteRequest.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/consistency/persistent/impl/OldDataOperation.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/constants/ClientConstants.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/constants/Constants.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/constants/FieldsConstants.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/constants/PushConstants.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/constants/RequestConstant.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/controllers/OperatorMetricsV1Controller.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/controllers/v3/ClientControllerV3.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/controllers/v3/ClusterControllerV3.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/controllers/v3/HealthControllerV3.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/controllers/v3/InstanceControllerV3.java wave63b [15:30] naming persistent/constants/controllers
+2026-08-10T04:27:54Z DONE naming/src/main/java/com/alibaba/nacos/naming/controllers/v3/InstanceOpenApiController.java wave63b [15:30] naming persistent/constants/controllers
