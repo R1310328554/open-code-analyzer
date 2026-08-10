@@ -43,17 +43,21 @@ import org.keycloak.scripting.ScriptingProvider;
 import org.jboss.logging.Logger;
 
 /**
- * OIDC {@link org.keycloak.protocol.ProtocolMapper} that uses a provided JavaScript fragment to compute the token claim value.
+ * 基于脚本的 OIDC 协议映射器：执行 JavaScript 片段计算令牌声明值。
+ * <p>脚本可访问 user、realm、token、userSession、keycloakSession 等绑定变量。</p>
+ * <p>需启用 {@link org.keycloak.common.Profile.Feature#SCRIPTS} 特性。</p>
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
 public class ScriptBasedOIDCProtocolMapper extends AbstractOIDCProtocolMapper implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper,
         OIDCAccessTokenResponseMapper, TokenIntrospectionTokenMapper, EnvironmentDependentProviderFactory {
 
+  /** SPI 提供者标识符 */
   public static final String PROVIDER_ID = "oidc-script-based-protocol-mapper";
 
   private static final Logger LOGGER = Logger.getLogger(ScriptBasedOIDCProtocolMapper.class);
 
+  /** 配置键：JavaScript 脚本源码 */
   public static final String SCRIPT = "script";
 
   private static final List<ProviderConfigProperty> configProperties;
@@ -96,46 +100,55 @@ public class ScriptBasedOIDCProtocolMapper extends AbstractOIDCProtocolMapper im
     OIDCAttributeMapperHelper.addAttributeConfig(configProperties, UserPropertyMapper.class);
   }
 
+  /** {@inheritDoc} 返回脚本与多值等配置项 */
   public List<ProviderConfigProperty> getConfigProperties() {
     return configProperties;
   }
 
+  /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
   @Override
   public String getId() {
     return PROVIDER_ID;
   }
 
+  /** {@inheritDoc} 控制台显示名：Script Mapper */
   @Override
   public String getDisplayType() {
     return "Script Mapper";
   }
 
+  /** {@inheritDoc} 归类为令牌映射器 */
   @Override
   public String getDisplayCategory() {
     return TOKEN_MAPPER_CATEGORY;
   }
 
+  /** {@inheritDoc} 执行 JavaScript 函数根据上下文生成声明值 */
   @Override
   public String getHelpText() {
     return "Evaluates a JavaScript function to produce a token claim based on context information.";
   }
 
+  /** {@inheritDoc} 需启用 SCRIPTS 特性 */
   @Override
   public boolean isSupported(Config.Scope config) {
     return Profile.isFeatureEnabled(Profile.Feature.SCRIPTS);
   }
 
+  /** {@inheritDoc} 脚本映射器优先级 */
   @Override
   public int getPriority() {
     return ProtocolMapperUtils.PRIORITY_SCRIPT_MAPPER;
   }
 
+  /** 执行脚本并将结果写入 ID/Access Token 等声明 */
   @Override
   protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession, KeycloakSession keycloakSession, ClientSessionContext clientSessionCtx) {
     Object claimValue = evaluateScript(token, mappingModel, userSession, keycloakSession);
     OIDCAttributeMapperHelper.mapClaim(token, mappingModel, claimValue);
   }
 
+  /** 执行脚本并将结果写入访问令牌响应附加声明 */
   @Override
   protected void setClaim(AccessTokenResponse accessTokenResponse, ProtocolMapperModel mappingModel, UserSessionModel userSession,
           KeycloakSession keycloakSession, ClientSessionContext clientSessionCtx) {
@@ -143,6 +156,7 @@ public class ScriptBasedOIDCProtocolMapper extends AbstractOIDCProtocolMapper im
     OIDCAttributeMapperHelper.mapClaim(accessTokenResponse, mappingModel, claimValue);
   }
 
+  /** 编译并执行映射器脚本，注入上下文绑定变量 */
   private Object evaluateScript(Object tokenBinding, ProtocolMapperModel mappingModel, UserSessionModel userSession, KeycloakSession keycloakSession) {
     UserModel user = userSession.getUser();
     String scriptSource = getScriptCode(mappingModel);
@@ -174,6 +188,7 @@ public class ScriptBasedOIDCProtocolMapper extends AbstractOIDCProtocolMapper im
     return claimValue;
   }
 
+  /** {@inheritDoc} 保存前校验脚本能否成功编译 */
   @Override
   public void validateConfig(KeycloakSession session, RealmModel realm, ProtocolMapperContainerModel client, ProtocolMapperModel mapperModel) throws ProtocolMapperConfigException {
 
@@ -192,14 +207,16 @@ public class ScriptBasedOIDCProtocolMapper extends AbstractOIDCProtocolMapper im
     }
   }
 
+  /** 从映射器配置读取脚本源码 */
   protected String getScriptCode(ProtocolMapperModel mapperModel) {
     return mapperModel.getConfig().get(SCRIPT);
   }
 
-  public static ProtocolMapperModel create(String name,
-                                           String userAttribute,
-                                           String tokenClaimName, String claimType,
-                                           boolean accessToken, boolean idToken, boolean introspectionEndpoint, String script, boolean multiValued) {
+  /**
+   * 工厂方法：创建脚本映射器配置。
+   * @param script JavaScript 脚本源码
+   * @param multiValued 是否多值声明
+   */
     ProtocolMapperModel mapper = OIDCAttributeMapperHelper.createClaimMapper(name, userAttribute,
       tokenClaimName, claimType,
       accessToken, idToken,  introspectionEndpoint,

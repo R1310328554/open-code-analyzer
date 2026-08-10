@@ -20,9 +20,14 @@ import org.keycloak.rar.AuthorizationRequestContext;
 import org.keycloak.representations.IDToken;
 import org.keycloak.utils.StringUtil;
 
+/**
+ * 参数化 Scope 映射器：将参数化客户端范围的参数值直接映射为令牌声明。
+ * <p>需启用 {@link org.keycloak.common.Profile.Feature#PARAMETERIZED_SCOPES} 特性。</p>
+ */
 public class ParameterizedScopeMapper extends AbstractOIDCProtocolMapper
         implements OIDCAccessTokenMapper, OIDCIDTokenMapper, TokenIntrospectionTokenMapper, EnvironmentDependentProviderFactory {
 
+    /** SPI 提供者标识符 */
     public static final String PROVIDER_ID = "oidc-parameterized-scope-mapper";
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
@@ -31,31 +36,37 @@ public class ParameterizedScopeMapper extends AbstractOIDCProtocolMapper
         OIDCAttributeMapperHelper.addAttributeConfig(configProperties, ParameterizedScopeMapper.class);
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 控制台显示名：Parameterized Scope Parameter */
     @Override
     public String getDisplayType() {
         return "Parameterized Scope Parameter";
     }
 
+    /** {@inheritDoc} 归类为令牌映射器 */
     @Override
     public String getDisplayCategory() {
         return TOKEN_MAPPER_CATEGORY;
     }
 
+    /** {@inheritDoc} 将参数化 scope 的参数值映射到令牌声明 */
     @Override
     public String getHelpText() {
         return "Maps the parameter value from a parameterized scope directly to a token claim.";
     }
 
+    /** {@inheritDoc} 返回声明名、JSON 类型及包含目标等配置项 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** 解析参数化 scope 并调用 {@link #setClaim(IDToken, ProtocolMapperModel, UserSessionModel, KeycloakSession, List)} */
     @Override
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession,
                             KeycloakSession keycloakSession, ClientSessionContext clientSessionCtx) {
@@ -73,14 +84,15 @@ public class ParameterizedScopeMapper extends AbstractOIDCProtocolMapper
     }
 
     /**
-     * Maps resolved parameter values to a token claim. The mapper's {@code multivalued} config
-     * controls whether multiple values are mapped as a JSON array or only the first value is used.
+     * 将解析到的参数值映射为令牌声明。
+     * <p>{@code multivalued} 配置决定多值以 JSON 数组还是仅首值写入。</p>
      */
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession,
                             KeycloakSession keycloakSession, List<String> parameterValues) {
         OIDCAttributeMapperHelper.mapClaim(token, mappingModel, parameterValues);
     }
 
+    /** 从授权详情中定位与当前映射器关联的参数化客户端范围 */
     protected Optional<ClientScopeModel> resolveClientScope(ProtocolMapperModel mappingModel, ClientSessionContext clientSessionCtx) {
         AuthorizationRequestContext ctx = clientSessionCtx.getAuthorizationRequestContext();
         if (ctx == null) {
@@ -94,6 +106,7 @@ public class ParameterizedScopeMapper extends AbstractOIDCProtocolMapper
                 .findAny();
     }
 
+    /** 收集指定客户端范围在授权请求中的全部参数值 */
     protected List<String> resolveParameterValues(ClientScopeModel clientScope, ClientSessionContext clientSessionCtx) {
         AuthorizationRequestContext ctx = clientSessionCtx.getAuthorizationRequestContext();
         if (ctx == null) {
@@ -113,13 +126,21 @@ public class ParameterizedScopeMapper extends AbstractOIDCProtocolMapper
         return values;
     }
 
+    /** {@inheritDoc} 需启用 PARAMETERIZED_SCOPES 特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.PARAMETERIZED_SCOPES);
     }
 
-    public static ProtocolMapperModel create(String name, String tokenClaimName, String claimType,
-                                              boolean accessToken, boolean idToken, boolean introspectionEndpoint) {
+    /**
+     * 工厂方法：创建参数化 scope 映射器配置。
+     * @param name 映射器名称
+     * @param tokenClaimName 目标声明名
+     * @param claimType JSON 类型
+     * @param accessToken 是否写入 Access Token
+     * @param idToken 是否写入 ID Token
+     * @param introspectionEndpoint 是否写入内省响应
+     */
         ProtocolMapperModel mapper = OIDCAttributeMapperHelper.createClaimMapper(
                 name, null, tokenClaimName, claimType,
                 accessToken, idToken, false, introspectionEndpoint,

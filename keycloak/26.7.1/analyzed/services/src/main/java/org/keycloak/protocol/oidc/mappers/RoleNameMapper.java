@@ -35,7 +35,8 @@ import org.keycloak.representations.IDToken;
 import org.keycloak.utils.RoleResolveUtil;
 
 /**
- * Map an assigned role to a different position and name in the token
+ * 角色名称映射器：将已分配角色在令牌中重命名或移动到不同位置（领域/客户端角色树）。
+ * <p>先移除原角色名，再按新名称写入目标 access 结构。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -44,7 +45,9 @@ public class RoleNameMapper extends AbstractOIDCProtocolMapper implements OIDCAc
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
 
+    /** 配置键：待重命名的源角色（clientname.role 或领域角色名） */
     public static final String ROLE_CONFIG = "role";
+    /** 配置键：目标新角色名及位置 */
     public static String NEW_ROLE_NAME = "new.role.name";
 
     static {
@@ -63,33 +66,40 @@ public class RoleNameMapper extends AbstractOIDCProtocolMapper implements OIDCAc
         configProperties.add(property);
     }
 
+    /** SPI 提供者标识符 */
     public static final String PROVIDER_ID = "oidc-role-name-mapper";
 
 
+    /** {@inheritDoc} 返回源角色与新角色名配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 控制台显示名：Role Name Mapper */
     @Override
     public String getDisplayType() {
         return "Role Name Mapper";
     }
 
+    /** {@inheritDoc} 归类为令牌映射器 */
     @Override
     public String getDisplayCategory() {
         return TOKEN_MAPPER_CATEGORY;
     }
 
+    /** {@inheritDoc} 将已分配角色映射到新名称或令牌位置 */
     @Override
     public String getHelpText() {
         return "Map an assigned role to a new name or position in the token.";
     }
 
+    /** {@inheritDoc} 角色名称映射器优先级 */
     @Override
     public int getPriority() {
         return ProtocolMapperUtils.PRIORITY_ROLE_NAMES_MAPPER;
@@ -98,7 +108,7 @@ public class RoleNameMapper extends AbstractOIDCProtocolMapper implements OIDCAc
     @Override
     public AccessToken transformUserInfoToken(AccessToken token, ProtocolMapperModel mappingModel, KeycloakSession session,
                                               UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
-        // the mapper is always executed and then other role mappers decide if the claims are really set to the token
+        // 映射器始终执行；最终是否写入令牌由其他角色映射器决定
         setClaim(token, mappingModel, userSession, session, clientSessionCtx);
         return token;
     }
@@ -106,7 +116,7 @@ public class RoleNameMapper extends AbstractOIDCProtocolMapper implements OIDCAc
     @Override
     public AccessToken transformAccessToken(AccessToken token, ProtocolMapperModel mappingModel, KeycloakSession session,
                                             UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
-        // the mapper is always executed and then other role mappers decide if the claims are really set to the token
+        // 映射器始终执行；最终是否写入令牌由其他角色映射器决定
         setClaim(token, mappingModel, userSession, session, clientSessionCtx);
         return token;
     }
@@ -114,11 +124,12 @@ public class RoleNameMapper extends AbstractOIDCProtocolMapper implements OIDCAc
     @Override
     public AccessToken transformIntrospectionToken(AccessToken token, ProtocolMapperModel mappingModel, KeycloakSession session,
                                             UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
-        // the mapper is always executed and then other role mappers decide if the claims are really set to the token
+        // 映射器始终执行；最终是否写入令牌由其他角色映射器决定
         setClaim(token, mappingModel, userSession, session, clientSessionCtx);
         return token;
     }
 
+    /** 若用户持有源角色，则移除并在目标位置以新名称添加 */
     @Override
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession, KeycloakSession session,
                             ClientSessionContext clientSessionCtx) {
@@ -152,9 +163,11 @@ public class RoleNameMapper extends AbstractOIDCProtocolMapper implements OIDCAc
         access.addRole(newRoleName);
     }
 
-    public static ProtocolMapperModel create(String name,
-                                             String role,
-                                             String newName) {
+    /**
+     * 工厂方法：创建角色名称映射器配置。
+     * @param role 源角色
+     * @param newName 新角色名及位置
+     */
         String mapperId = PROVIDER_ID;
         ProtocolMapperModel mapper = new ProtocolMapperModel();
         mapper.setName(name);

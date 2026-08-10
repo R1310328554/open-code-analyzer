@@ -47,34 +47,47 @@ import static org.keycloak.utils.JsonUtils.splitClaimPath;
 
 
 /**
+ * OIDC 属性映射器辅助工具：声明写入、类型转换、配置项构建及包含目标判断。
+ * <p>被多数 OIDC 协议映射器复用以统一处理嵌套声明路径与 JSON 类型。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class OIDCAttributeMapperHelper {
 
+    /** 配置键：目标令牌声明名（支持点分路径） */
     public static final String TOKEN_CLAIM_NAME = "claim.name";
+    /** 控制台标签键：令牌声明名 */
     public static final String TOKEN_CLAIM_NAME_LABEL = "tokenClaimName.label";
+    /** 帮助文本键：令牌声明名 */
     public static final String TOKEN_CLAIM_NAME_TOOLTIP = "tokenClaimName.tooltip";
+    /** 配置键：声明 JSON 类型（String/long/int/boolean/JSON） */
     public static final String JSON_TYPE = "jsonType.label";
     public static final String JSON_TYPE_TOOLTIP = "jsonType.tooltip";
+    /** 配置键：是否包含于 Access Token */
     public static final String INCLUDE_IN_ACCESS_TOKEN = "access.token.claim";
     public static final String INCLUDE_IN_ACCESS_TOKEN_LABEL = "includeInAccessToken.label";
     public static final String INCLUDE_IN_ACCESS_TOKEN_HELP_TEXT = "includeInAccessToken.tooltip";
+    /** 配置键：是否包含于 ID Token */
     public static final String INCLUDE_IN_ID_TOKEN = "id.token.claim";
     public static final String INCLUDE_IN_ID_TOKEN_LABEL = "includeInIdToken.label";
     public static final String INCLUDE_IN_ID_TOKEN_HELP_TEXT = "includeInIdToken.tooltip";
+    /** 配置键：是否包含于访问令牌响应 */
     public static final String INCLUDE_IN_ACCESS_TOKEN_RESPONSE = "access.tokenResponse.claim";
     public static final String INCLUDE_IN_ACCESS_TOKEN_RESPONSE_LABEL = "includeInAccessTokenResponse.label";
     public static final String INCLUDE_IN_ACCESS_TOKEN_RESPONSE_HELP_TEXT = "includeInAccessTokenResponse.tooltip";
 
+    /** 配置键：是否包含于 UserInfo 响应 */
     public static final String INCLUDE_IN_USERINFO = "userinfo.token.claim";
     public static final String INCLUDE_IN_USERINFO_LABEL = "includeInUserInfo.label";
     public static final String INCLUDE_IN_USERINFO_HELP_TEXT = "includeInUserInfo.tooltip";
 
+    /** 配置键：是否包含于令牌内省响应 */
     public static final String INCLUDE_IN_INTROSPECTION = "introspection.token.claim";
     public static final String INCLUDE_IN_INTROSPECTION_LABEL = "includeInIntrospection.label";
     public static final String INCLUDE_IN_INTROSPECTION_HELP_TEXT = "includeInIntrospection.tooltip";
 
+    /** 配置键：是否包含于轻量 Access Token */
     public static final String INCLUDE_IN_LIGHTWEIGHT_ACCESS_TOKEN = "lightweight.claim";
 
     public static final String INCLUDE_IN_LIGHTWEIGHT_ACCESS_TOKEN_LABEL = "includeInLightweight.label";
@@ -84,25 +97,23 @@ public class OIDCAttributeMapperHelper {
     private static final Logger logger = Logger.getLogger(OIDCAttributeMapperHelper.class);
 
     /**
-     * Interface for a token property setter in a class T that accept claims.
-     * @param <T> The token class for the property
+     * 令牌属性 setter 函数式接口：将声明写入令牌对象的标准字段。
+     * @param <T> 接受声明的令牌类型
      */
     private static interface PropertySetter<T> {
         void set(String claim, String mapperName, T token, Object value);
     }
 
-    /**
-     * Setters for claims in IDToken/AccessToken that will not use the other claims map.
-     */
+    /** ID Token/Access Token 标准字段 setter 表（不写入 otherClaims） */
+
     private static final Map<String, PropertySetter<IDToken>> tokenPropertySetters;
 
-    /**
-     * Setters for claims in AccessTokenResponse that will not use the other claims map.
-     */
+    /** AccessTokenResponse 标准字段 setter 表（不写入 otherClaims） */
+
     private static final Map<String, PropertySetter<AccessTokenResponse>> responsePropertySetters;
 
     static {
-        // allowed claims that can be set in the IDToken/AccessToken object
+        // 允许通过 setter 直接写入 IDToken/AccessToken 的声明
         Map<String, PropertySetter<IDToken>> tmpToken = new HashMap<>();
         tmpToken.put("sub", (claim, mapperName, token, value) -> {
             token.setSubject(value.toString());
@@ -128,7 +139,7 @@ public class OIDCAttributeMapperHelper {
                 token.audience(value.toString());
             }
         });
-        // not allowed claims that are set by the server and can generate duplicates
+        // 服务端已设置、禁止映射器修改的声明
         PropertySetter<IDToken> notAllowedInToken = (claim, mapperName, token, value) -> {
             logger.warnf("Claim '%s' is non-modifiable in IDToken. Ignoring the assignment for mapper '%s'.", claim, mapperName);
         };
@@ -142,7 +153,7 @@ public class OIDCAttributeMapperHelper {
         tmpToken.put(IDToken.SESSION_STATE, notAllowedInToken);
         tokenPropertySetters = Collections.unmodifiableMap(tmpToken);
 
-        // in the AccessTokenResponse do not allow modifications for server assigned properties
+        // AccessTokenResponse 中禁止修改的服务端固定字段
         Map<String, PropertySetter<AccessTokenResponse>> tmpResponse = new HashMap<>();
         PropertySetter<AccessTokenResponse> notAllowedInResponse = (claim, mapperName, token, value) -> {
             logger.warnf("Claim '%s' is non-modifiable in AccessTokenResponse. Ignoring the assignment for mapper '%s'.", claim, mapperName);
@@ -159,7 +170,12 @@ public class OIDCAttributeMapperHelper {
         responsePropertySetters = Collections.unmodifiableMap(tmpResponse);
     }
 
-    public static Object mapAttributeValue(ProtocolMapperModel mappingModel, Object attributeValue) {
+    /**
+     * 将原始属性值按映射器 JSON 类型与多值配置转换为令牌可用值。
+     * @param mappingModel 映射器配置
+     * @param attributeValue 原始属性值
+     * @return 转换后的值，无法映射时返回 null
+     */
         if (attributeValue == null) return null;
 
         if (attributeValue instanceof Collection) {
@@ -289,14 +305,11 @@ public class OIDCAttributeMapperHelper {
     }
 
     /**
-     * Get or initialize the organization claim as a mutable Map for composition between organization mappers.
-     * Handles conversion from OrganizationMembershipMapper output to Map structure that
-     * OrganizationGroupMembershipMapper can add to. Supports ObjectNode (JSON type), Collection or String
-     * (String type), existing Map, or creates empty Map if null.
-     *
-     * @param token the token
-     * @param effectiveModel the effective model of the protocol mapper to retrieve the name of the organization claim
-     * @return a mutable Map that can be manipulated; changes will be reflected in the token
+     * 获取或初始化组织声明为可变 Map，供多个组织映射器组合写入。
+     * <p>兼容 ObjectNode、Collection、String 或已有 Map，必要时创建空 Map。</p>
+     * @param token 目标令牌
+     * @param effectiveModel 有效映射器模型（用于解析组织声明路径）
+     * @return 可变的组织声明 Map，修改会反映到令牌
      */
     public static Map<String, Object> getOrInitializeOrganizationClaimAsMap(IDToken token, ProtocolMapperModel effectiveModel) {
         List<String> claimPath = splitClaimPath(effectiveModel.getConfig().get(TOKEN_CLAIM_NAME));
@@ -304,15 +317,15 @@ public class OIDCAttributeMapperHelper {
         Map<String, Object> result;
 
         if (existingClaim instanceof ObjectNode) {
-            // OrganizationMembershipMapper with JSON_TYPE="JSON"
+            // OrganizationMembershipMapper 输出为 JSON ObjectNode
             result = JsonSerialization.mapper.convertValue(existingClaim, Map.class);
         } else if (existingClaim instanceof Collection || existingClaim instanceof String) {
-            // OrganizationMembershipMapper with String type - single alias or Collection of aliases
+            // OrganizationMembershipMapper 输出为 String 或 Collection
             result = new HashMap<>();
             Stream<?> items = existingClaim instanceof Collection ? ((Collection<?>) existingClaim).stream() : Stream.of(existingClaim);
             items.filter(Objects::nonNull).forEach(item -> result.put(item.toString(), new HashMap<>()));
         } else if (existingClaim instanceof Map) {
-            // Already a Map, use as-is
+            // 已是 Map，直接使用
             result = (Map<String, Object>) existingClaim;
         } else {
             result = new HashMap<>();
@@ -337,10 +350,12 @@ public class OIDCAttributeMapperHelper {
         return current.get(path.get(path.size() - 1));
     }
 
+    /** 将属性值映射到 ID Token（或 Access Token）声明 */
     public static void mapClaim(IDToken token, ProtocolMapperModel mappingModel, Object attributeValue) {
         mapClaim(token, mappingModel, attributeValue, tokenPropertySetters, token.getOtherClaims());
     }
 
+    /** 将属性值映射到访问令牌响应附加声明 */
     public static void mapClaim(AccessTokenResponse token, ProtocolMapperModel mappingModel, Object attributeValue) {
         mapClaim(token, mappingModel, attributeValue, responsePropertySetters, token.getOtherClaims());
     }
@@ -365,7 +380,7 @@ public class OIDCAttributeMapperHelper {
         String firstClaim = split.iterator().next();
         PropertySetter<T> setter = setters.get(firstClaim);
         if (setter != null) {
-            // assign using the property setters over the token
+            // 通过令牌标准字段 setter 写入
             if (split.size() > 1) {
                 logger.warnf("Claim '%s' contains more than one level in a setter. Ignoring the assignment for mapper '%s'.",
                         protocolClaim, mappingModel.getName());
@@ -376,10 +391,11 @@ public class OIDCAttributeMapperHelper {
             return;
         }
 
-        // map value to the other claims map
+        // 写入 otherClaims 嵌套结构
         JsonUtils.mapClaim(split, attributeValue, jsonObject, isMultivalued(mappingModel));
     }
 
+    /** 工厂方法：创建映射器（默认包含 UserInfo） */
     public static ProtocolMapperModel createClaimMapper(String name,
                                                         String userAttribute,
                                                         String tokenClaimName, String claimType,
@@ -388,11 +404,13 @@ public class OIDCAttributeMapperHelper {
         return createClaimMapper(name, userAttribute, tokenClaimName, claimType, accessToken, idToken, true, introspectionEndpoint, mapperId);
     }
 
-    public static ProtocolMapperModel createClaimMapper(String name,
-                                                        String userAttribute,
-                                                        String tokenClaimName, String claimType,
-                                                        boolean accessToken, boolean idToken, boolean userinfo, boolean introspectionEndpoint,
-                                                        String mapperId) {
+    /**
+     * 工厂方法：创建完整 OIDC 声明映射器配置模型。
+     * @param userAttribute 源用户属性（可为 null）
+     * @param tokenClaimName 目标声明名
+     * @param claimType JSON 类型
+     * @param mapperId 映射器 provider id
+     */
         ProtocolMapperModel mapper = new ProtocolMapperModel();
         mapper.setName(name);
         mapper.setProtocolMapper(mapperId);
@@ -409,26 +427,31 @@ public class OIDCAttributeMapperHelper {
         return mapper;
     }
 
+    /** 是否配置为包含于 ID Token */
     public static boolean includeInIDToken(ProtocolMapperModel mappingModel) {
         return "true".equals(mappingModel.getConfig().get(INCLUDE_IN_ID_TOKEN));
     }
 
+    /** 是否配置为包含于 Access Token */
     public static boolean includeInAccessToken(ProtocolMapperModel mappingModel) {
         return "true".equals(mappingModel.getConfig().get(INCLUDE_IN_ACCESS_TOKEN));
     }
 
+    /** 是否配置为包含于访问令牌响应 */
     public static boolean includeInAccessTokenResponse(ProtocolMapperModel mappingModel) {
         return "true".equals(mappingModel.getConfig().get(INCLUDE_IN_ACCESS_TOKEN_RESPONSE));
     }
 
+    /** 是否以多值（JSON 数组）形式写入声明 */
     public static boolean isMultivalued(ProtocolMapperModel mappingModel) {
         return "true".equals(mappingModel.getConfig().get(ProtocolMapperUtils.MULTIVALUED));
     }
 
+    /** 是否包含于 UserInfo（未显式配置时与 ID Token 设置兼容） */
     public static boolean includeInUserInfo(ProtocolMapperModel mappingModel){
         String includeInUserInfo = mappingModel.getConfig().get(INCLUDE_IN_USERINFO);
 
-        // Backwards compatibility
+        // 向后兼容：未配置时沿用 ID Token / Access Token 默认值
         if (includeInUserInfo == null && includeInIDToken(mappingModel)) {
             return true;
         }
@@ -436,6 +459,7 @@ public class OIDCAttributeMapperHelper {
         return "true".equals(includeInUserInfo);
     }
 
+    /** 是否包含于内省响应（未显式配置时与 Access Token 设置兼容） */
     public static boolean includeInIntrospection(ProtocolMapperModel mappingModel) {
         String includeInIntrospection = mappingModel.getConfig().get(INCLUDE_IN_INTROSPECTION);
 
@@ -447,10 +471,12 @@ public class OIDCAttributeMapperHelper {
         return "true".equals(includeInIntrospection);
     }
 
+    /** 是否包含于轻量 Access Token */
     public static boolean includeInLightweightAccessToken(ProtocolMapperModel mappingModel) {
         return "true".equals(mappingModel.getConfig().get(INCLUDE_IN_LIGHTWEIGHT_ACCESS_TOKEN));
     }
 
+    /** 追加声明名、JSON 类型及各令牌包含开关等标准配置项 */
     public static void addAttributeConfig(List<ProviderConfigProperty> configProperties, Class<? extends ProtocolMapper> protocolMapperClass) {
         addTokenClaimNameConfig(configProperties);
         addJsonTypeConfig(configProperties);
@@ -458,6 +484,7 @@ public class OIDCAttributeMapperHelper {
         addIncludeInTokensConfig(configProperties, protocolMapperClass);
     }
 
+    /** 追加「令牌声明名」配置项 */
     public static void addTokenClaimNameConfig(List<ProviderConfigProperty> configProperties) {
         ProviderConfigProperty property = new ProviderConfigProperty();
         property.setName(TOKEN_CLAIM_NAME);
@@ -468,10 +495,12 @@ public class OIDCAttributeMapperHelper {
         configProperties.add(property);
     }
 
+    /** 追加默认 JSON 类型列表配置项 */
     public static void addJsonTypeConfig(List<ProviderConfigProperty> configProperties) {
         addJsonTypeConfig(configProperties, List.of("String", "long", "int", "boolean", "JSON"), null);
     }
 
+    /** 追加可定制类型列表的 JSON 类型配置项 */
     public static void addJsonTypeConfig(List<ProviderConfigProperty> configProperties, List<String> supportedTypes, String defaultValue) {
         ProviderConfigProperty property = new ProviderConfigProperty();
         property.setName(JSON_TYPE);
@@ -483,6 +512,7 @@ public class OIDCAttributeMapperHelper {
         configProperties.add(property);
     }
 
+    /** 按映射器实现的接口追加 ID Token、Access Token、UserInfo 等包含开关 */
     public static void addIncludeInTokensConfig(List<ProviderConfigProperty> configProperties, Class<? extends ProtocolMapper> protocolMapperClass) {
         if (OIDCIDTokenMapper.class.isAssignableFrom(protocolMapperClass)) {
             ProviderConfigProperty property = new ProviderConfigProperty();

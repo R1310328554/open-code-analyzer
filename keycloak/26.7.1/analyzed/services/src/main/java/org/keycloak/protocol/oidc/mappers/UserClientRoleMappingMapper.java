@@ -33,12 +33,14 @@ import org.keycloak.representations.IDToken;
 import org.keycloak.utils.RoleResolveUtil;
 
 /**
- * Allows mapping of user client role mappings to an ID and Access Token claim.
+ * 用户客户端角色映射器：将用户在指定客户端（或全部客户端）的角色映射为令牌声明。
+ * <p>支持角色前缀与多值数组输出。</p>
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
 public class UserClientRoleMappingMapper extends AbstractUserRoleMappingMapper {
 
+    /** SPI 提供者标识符 */
     public static final String PROVIDER_ID = "oidc-usermodel-client-role-mapper";
 
     private static final String TOKEN_CLAIM_NAME_TOOLTIP = "usermodel.clientRoleMapping.tokenClaimName.tooltip";
@@ -71,7 +73,7 @@ public class UserClientRoleMappingMapper extends AbstractUserRoleMappingMapper {
 
         OIDCAttributeMapperHelper.addAttributeConfig(CONFIG_PROPERTIES, UserClientRoleMappingMapper.class);
 
-        // Alternative tooltip for the 'Token Claim Name'
+        // 为「令牌声明名」使用客户端角色专用提示文本
         for (ProviderConfigProperty prop : CONFIG_PROPERTIES) {
             if (OIDCAttributeMapperHelper.TOKEN_CLAIM_NAME.equals(prop.getName())) {
                 prop.setHelpText(TOKEN_CLAIM_NAME_TOOLTIP);
@@ -79,31 +81,37 @@ public class UserClientRoleMappingMapper extends AbstractUserRoleMappingMapper {
         }
     }
 
+    /** {@inheritDoc} 含客户端 ID、角色前缀与多值等配置项 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return CONFIG_PROPERTIES;
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 控制台显示名：User Client Role */
     @Override
     public String getDisplayType() {
         return "User Client Role";
     }
 
+    /** {@inheritDoc} 归类为令牌映射器 */
     @Override
     public String getDisplayCategory() {
         return TOKEN_MAPPER_CATEGORY;
     }
 
+    /** {@inheritDoc} 将用户客户端角色映射到令牌声明 */
     @Override
     public String getHelpText() {
         return "Map a user client role to a token claim.";
     }
 
+    /** 解析客户端角色并写入声明；未指定 clientId 时遍历全部客户端 */
     @Override
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession, KeycloakSession session, ClientSessionContext clientSessionCtx) {
         String clientId = mappingModel.getConfig().get(ProtocolMapperUtils.USER_MODEL_CLIENT_ROLE_MAPPING_CLIENT_ID);
@@ -117,7 +125,7 @@ public class UserClientRoleMappingMapper extends AbstractUserRoleMappingMapper {
 
             AbstractUserRoleMappingMapper.setClaim(token, mappingModel, access.getRoles(), clientId, rolePrefix);
         } else {
-            // If clientId is not specified, we consider all clients
+            // 未指定 clientId 时处理所有客户端的角色
             Map<String, AccessToken.Access> allAccess = RoleResolveUtil.getAllResolvedClientRoles(session, clientSessionCtx);
 
             for (Map.Entry<String, AccessToken.Access> entry : allAccess.entrySet()) {
@@ -137,6 +145,7 @@ public class UserClientRoleMappingMapper extends AbstractUserRoleMappingMapper {
     }
 
 
+    /** 工厂方法：创建客户端角色映射器（默认多值） */
     public static ProtocolMapperModel create(String clientId, String clientRolePrefix,
                                              String name,
                                              String tokenClaimName,
@@ -145,10 +154,12 @@ public class UserClientRoleMappingMapper extends AbstractUserRoleMappingMapper {
 
     }
 
-    public static ProtocolMapperModel create(String clientId, String clientRolePrefix,
-                                             String name,
-                                             String tokenClaimName,
-                                             boolean accessToken, boolean idToken, boolean introspectionEndpoint, boolean multiValued) {
+    /**
+     * 工厂方法：创建客户端角色映射器。
+     * @param clientId 目标客户端 ID（空表示全部）
+     * @param clientRolePrefix 角色名前缀（可含 ${clientId} 占位）
+     * @param multiValued 是否以数组写入多角色
+     */
         ProtocolMapperModel mapper = OIDCAttributeMapperHelper.createClaimMapper(name, "foo",
                 tokenClaimName, "String",
                 accessToken, idToken, false, introspectionEndpoint,

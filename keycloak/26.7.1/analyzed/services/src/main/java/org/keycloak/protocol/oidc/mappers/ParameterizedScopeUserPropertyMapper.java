@@ -15,8 +15,13 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.representations.IDToken;
 import org.keycloak.utils.StringUtil;
 
+/**
+ * 参数化 Scope 用户属性映射器：用 scope 参数（用户名）解析用户，并将其属性/字段映射为令牌声明。
+ * <p>扩展 {@link ParameterizedScopeMapper}，支持跨用户属性查询。</p>
+ */
 public class ParameterizedScopeUserPropertyMapper extends ParameterizedScopeMapper {
 
+    /** SPI 提供者标识符 */
     public static final String PROVIDER_ID = "oidc-parameterized-scope-user-property-mapper";
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
@@ -32,26 +37,31 @@ public class ParameterizedScopeUserPropertyMapper extends ParameterizedScopeMapp
         OIDCAttributeMapperHelper.addAttributeConfig(configProperties, ParameterizedScopeUserPropertyMapper.class);
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 控制台显示名：Parameterized Scope User Property */
     @Override
     public String getDisplayType() {
         return "Parameterized Scope User Property";
     }
 
+    /** {@inheritDoc} 按 scope 参数解析用户并映射其属性到声明 */
     @Override
     public String getHelpText() {
         return "Resolves a user from a parameterized scope parameter (username) and maps a user attribute or property to a token claim.";
     }
 
+    /** {@inheritDoc} 含用户属性选择与标准声明配置项 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** 按参数值查找用户，解析配置的用户属性或内置字段后写入声明 */
     @Override
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession,
                             KeycloakSession keycloakSession, List<String> parameterValues) {
@@ -84,16 +94,17 @@ public class ParameterizedScopeUserPropertyMapper extends ParameterizedScopeMapp
         }
     }
 
+    /** 工厂方法：创建映射器（默认非多值） */
     public static ProtocolMapperModel create(String name, String userAttribute,
                                               String tokenClaimName, String claimType,
                                               boolean accessToken, boolean idToken, boolean introspectionEndpoint) {
         return create(name, userAttribute, tokenClaimName, claimType, accessToken, idToken, introspectionEndpoint, false);
     }
 
-    public static ProtocolMapperModel create(String name, String userAttribute,
-                                              String tokenClaimName, String claimType,
-                                              boolean accessToken, boolean idToken, boolean introspectionEndpoint,
-                                              boolean multivalued) {
+    /**
+     * 工厂方法：创建带多值选项的参数化 scope 用户属性映射器。
+     * @param multivalued 是否以数组形式写入多值
+     */
         ProtocolMapperModel mapper = OIDCAttributeMapperHelper.createClaimMapper(
                 name, userAttribute, tokenClaimName, claimType,
                 accessToken, idToken, false, introspectionEndpoint,

@@ -33,11 +33,14 @@ import org.keycloak.representations.IDToken;
 import org.jboss.logging.Logger;
 
 /**
+ * 会话状态映射器：向令牌写入 {@code session_state} 声明（用户会话 ID）。
+ *
  * @author <a href="mailto:ggrazian@redhat.com">Giuseppe Graziano</a>
  */
 public class SessionStateMapper extends AbstractOIDCProtocolMapper implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper, TokenIntrospectionTokenMapper {
 
 
+    /** SPI 提供者标识符 */
     public static final String PROVIDER_ID = "oidc-session-state-mapper";
 
     private static final Logger logger = Logger.getLogger(SessionStateMapper.class);
@@ -48,30 +51,36 @@ public class SessionStateMapper extends AbstractOIDCProtocolMapper implements OI
         OIDCAttributeMapperHelper.addIncludeInTokensConfig(configProperties, SessionStateMapper.class);
     }
 
+    /** {@inheritDoc} 返回各令牌类型的包含开关 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 控制台显示名：Session State (session_state) */
     @Override
     public String getDisplayType() {
         return "Session State (session_state)";
     }
 
+    /** {@inheritDoc} 归类为令牌映射器 */
     @Override
     public String getDisplayCategory() {
         return TOKEN_MAPPER_CATEGORY;
     }
 
+    /** {@inheritDoc} 添加 session_state 声明 */
     @Override
     public String getHelpText() {
         return "Add Session State (session_state) claim";
     }
 
+    /** 将当前用户会话 ID 写入 session_state 声明 */
     @Override
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession, KeycloakSession keycloakSession,
                             ClientSessionContext clientSessionCtx) {
@@ -80,7 +89,13 @@ public class SessionStateMapper extends AbstractOIDCProtocolMapper implements OI
         }
     }
 
-    public static ProtocolMapperModel create(String name, boolean accessToken, boolean idToken, boolean userInfo, boolean introspectionEndpoint) {
+    /**
+     * 工厂方法：创建 session_state 映射器配置。
+     * @param accessToken 是否包含于 Access Token
+     * @param idToken 是否包含于 ID Token
+     * @param userInfo 是否包含于 UserInfo
+     * @param introspectionEndpoint 是否包含于内省响应
+     */
         ProtocolMapperModel mapper = new ProtocolMapperModel();
         mapper.setName(name);
         mapper.setProtocolMapper(PROVIDER_ID);

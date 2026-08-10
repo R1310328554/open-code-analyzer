@@ -30,9 +30,8 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.representations.IDToken;
 
 /**
- * Mappings UserModel.attribute to an ID Token claim.  Token claim name can be a full qualified nested object name,
- * i.e. "address.country".  This will create a nested
- * json object within the token claim.
+ * 用户属性映射器：将 {@link org.keycloak.models.UserModel} 自定义属性映射为令牌声明。
+ * <p>声明名支持点分嵌套路径（如 {@code address.country}），会在令牌中生成嵌套 JSON 对象。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -66,33 +65,40 @@ public class UserAttributeMapper extends AbstractOIDCProtocolMapper implements O
         configProperties.add(property);
     }
 
+    /** SPI 提供者标识符 */
     public static final String PROVIDER_ID = "oidc-usermodel-attribute-mapper";
 
 
+    /** {@inheritDoc} 含用户属性、多值与聚合属性等配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 控制台显示名：User Attribute */
     @Override
     public String getDisplayType() {
         return "User Attribute";
     }
 
+    /** {@inheritDoc} 归类为令牌映射器 */
     @Override
     public String getDisplayCategory() {
         return TOKEN_MAPPER_CATEGORY;
     }
 
+    /** {@inheritDoc} 将自定义用户属性映射到令牌声明 */
     @Override
     public String getHelpText() {
         return "Map a custom user attribute to a token claim.";
     }
 
+    /** 解析用户属性值（可选聚合）并写入令牌声明 */
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession) {
 
         UserModel user = userSession.getUser();
@@ -103,6 +109,7 @@ public class UserAttributeMapper extends AbstractOIDCProtocolMapper implements O
         OIDCAttributeMapperHelper.mapClaim(token, mappingModel, attributeValue);
     }
 
+    /** 工厂方法：创建用户属性映射器（指定是否多值） */
     public static ProtocolMapperModel createClaimMapper(String name,
                                                         String userAttribute,
                                                         String tokenClaimName, String claimType,
@@ -111,11 +118,10 @@ public class UserAttributeMapper extends AbstractOIDCProtocolMapper implements O
                 accessToken, idToken, introspectionEndpoint, multivalued, false);
     }
 
-    public static ProtocolMapperModel createClaimMapper(String name,
-                                                        String userAttribute,
-                                                        String tokenClaimName, String claimType,
-                                                        boolean accessToken, boolean idToken, boolean introspectionEndpoint,
-                                                        boolean multivalued, boolean aggregateAttrs) {
+    /**
+     * 工厂方法：创建用户属性映射器（多值与聚合选项）。
+     * @param aggregateAttrs 是否聚合同名属性
+     */
         ProtocolMapperModel mapper = OIDCAttributeMapperHelper.createClaimMapper(name, userAttribute,
                 tokenClaimName, claimType,
                 accessToken, idToken, introspectionEndpoint,
@@ -131,6 +137,7 @@ public class UserAttributeMapper extends AbstractOIDCProtocolMapper implements O
         return mapper;
     }
 
+    /** 工厂方法：创建默认单值、非聚合的用户属性映射器 */
     public static ProtocolMapperModel createClaimMapper(String name,
                                                         String userAttribute,
                                                         String tokenClaimName, String claimType,

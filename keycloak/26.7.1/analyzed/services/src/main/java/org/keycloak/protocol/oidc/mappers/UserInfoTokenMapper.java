@@ -24,10 +24,22 @@ import org.keycloak.models.UserSessionModel;
 import org.keycloak.representations.AccessToken;
 
 /**
+ * UserInfo 端点映射器接口：在 UserInfo 响应中注入自定义声明。
+ * <p>UserInfo 响应复用 {@link org.keycloak.representations.AccessToken} 结构。</p>
+ *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
 public interface UserInfoTokenMapper {
 
+    /**
+     * 转换 UserInfo 响应令牌，按映射器配置写入声明。
+     * @param token 当前 UserInfo 令牌表示
+     * @param mappingModel 协议映射器配置
+     * @param session Keycloak 会话
+     * @param userSession 用户会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @return 更新后的 UserInfo 令牌
+     */
     AccessToken transformUserInfoToken(AccessToken token, ProtocolMapperModel mappingModel, KeycloakSession session,
                                                UserSessionModel userSession, ClientSessionContext clientSessionCtx);
 }
