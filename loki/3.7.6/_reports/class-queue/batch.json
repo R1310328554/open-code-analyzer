@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:02:07Z",
-  "files": [
-    "pkg/ruler/storage/cleaner/cleaner.go",
-    "pkg/ruler/storage/cleaner/config.go",
-    "pkg/ruler/storage/cleaner/metrics.go",
-    "pkg/ruler/storage/instance/errors.go",
-    "pkg/ruler/storage/instance/instance.go",
-    "pkg/ruler/storage/instance/manager.go",
-    "pkg/ruler/storage/instance/marshal.go",
-    "pkg/ruler/storage/instance/metrics.go",
-    "pkg/ruler/storage/util/compare_yaml.go",
-    "pkg/ruler/storage/util/unregisterer.go",
-    "pkg/ruler/storage/wal/metrics.go",
-    "pkg/ruler/storage/wal/series.go",
-    "pkg/ruler/storage/wal/util.go",
-    "pkg/ruler/storage/wal/wal.go",
-    "pkg/ruler/util/relabel.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 412,
-  "done": 1125
+  "done": 1140
 }
