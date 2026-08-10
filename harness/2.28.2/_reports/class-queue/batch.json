@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:10:03Z",
-  "files": [
-    "handler/api/user/remote/repo.go",
-    "handler/api/user/remote/repos.go",
-    "handler/api/user/repos.go",
-    "handler/api/user/sync.go",
-    "handler/api/user/token.go",
-    "handler/api/user/update.go",
-    "handler/api/users/create.go",
-    "handler/api/users/delete.go",
-    "handler/api/users/find.go",
-    "handler/api/users/list.go",
-    "handler/api/users/repos.go",
-    "handler/api/users/token.go",
-    "handler/api/users/update.go",
-    "handler/health/health.go",
-    "handler/web/hook.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 208,
-  "done": 165
+  "done": 180
 }
