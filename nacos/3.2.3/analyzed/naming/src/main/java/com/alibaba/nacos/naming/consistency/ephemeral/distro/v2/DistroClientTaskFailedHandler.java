@@ -24,18 +24,22 @@ import com.alibaba.nacos.core.distributed.distro.task.DistroTaskEngineHolder;
 import com.alibaba.nacos.core.distributed.distro.task.delay.DistroDelayTask;
 
 /**
- * Distro client task failed handler.
+ * v2 客户端 Distro 同步失败重试处理器。
+ *
+ * <p>将失败的同步任务封装为 {@link DistroDelayTask} 加入延迟队列重试。</p>
  *
  * @author xiweng.yy
  */
 public class DistroClientTaskFailedHandler implements DistroFailedTaskHandler {
     
+    /** Distro 任务引擎持有者。 */
     private final DistroTaskEngineHolder distroTaskEngineHolder;
     
     public DistroClientTaskFailedHandler(DistroTaskEngineHolder distroTaskEngineHolder) {
         this.distroTaskEngineHolder = distroTaskEngineHolder;
     }
     
+    /** 按配置延迟重新提交 Distro 同步任务。 */
     @Override
     public void retry(DistroKey distroKey, DataOperation action) {
         DistroDelayTask retryTask = new DistroDelayTask(distroKey, action,

@@ -20,24 +20,31 @@ import com.alibaba.nacos.common.utils.JacksonUtils;
 import org.springframework.stereotype.Component;
 
 /**
- * Use Jackson to serialize data.
+ * 基于 Jackson 的 {@link Serializer} 实现。
+ *
+ * <p>委托 {@link com.alibaba.nacos.common.utils.JacksonUtils} 完成 Distro 与客户端同步数据的 JSON 编解码。</p>
  *
  * @author yangyi
  */
 @Component
 public class JacksonSerializer implements Serializer {
     
+    /** JSON 字段名：时间戳。 */
     private static final String TIMESTAMP_KEY = "timestamp";
     
+    /** JSON 字段名：键。 */
     private static final String KEY = "key";
     
+    /** JSON 字段名：值。 */
     private static final String VALUE = "value";
     
+    /** 将对象序列化为 JSON 字节数组。 */
     @Override
     public <T> byte[] serialize(T data) {
         return JacksonUtils.toJsonBytes(data);
     }
     
+    /** 将 JSON 字节数组反序列化为指定类型。 */
     @Override
     public <T> T deserialize(byte[] data, Class<T> clazz) {
         return JacksonUtils.toObj(data, clazz);

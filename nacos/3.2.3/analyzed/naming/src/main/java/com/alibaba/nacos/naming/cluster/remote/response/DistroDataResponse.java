@@ -20,18 +20,23 @@ import com.alibaba.nacos.api.remote.response.Response;
 import com.alibaba.nacos.core.distributed.distro.entity.DistroData;
 
 /**
- * Distro data response.
+ * 集群 Distro 数据同步 RPC 响应体。
+ *
+ * <p>成功时携带对端返回的 {@link DistroData}（如 QUERY/SNAPSHOT 结果）。</p>
  *
  * @author xiweng.yy
  */
 public class DistroDataResponse extends Response {
     
+    /** 响应中的 Distro 数据载荷。 */
     private DistroData distroData;
     
+    /** 获取响应 Distro 数据。 */
     public DistroData getDistroData() {
         return distroData;
     }
     
+    /** 设置响应 Distro 数据。 */
     public void setDistroData(DistroData distroData) {
         this.distroData = distroData;
     }

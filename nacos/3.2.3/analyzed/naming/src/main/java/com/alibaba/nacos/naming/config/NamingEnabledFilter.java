@@ -28,21 +28,29 @@ import static com.alibaba.nacos.sys.env.EnvUtil.FUNCTION_MODE_NAMING;
 import static com.alibaba.nacos.sys.env.EnvUtil.FUNCTION_MODE_MICROSERVICE;
 
 /**
- * Naming module enabled filter by spring packages scan.
+ * 按 Spring 包扫描控制 Naming 模块是否启用的过滤器。
+ *
+ * <p>当 {@link EnvUtil#getFunctionMode()} 指定为 naming、microservice 或 ai 模式时加载 Naming 包；否则排除 Naming 相关 Bean。</p>
  *
  * @author xiweng.yy
  */
 public class NamingEnabledFilter implements NacosPackageExcludeFilter {
     
+    /** 返回本过滤器负责的包前缀（{@link NamingApp} 所在包）。 */
     @Override
     public String getResponsiblePackagePrefix() {
         return NamingApp.class.getPackage().getName();
     }
     
-    @Override
-    public boolean isExcluded(String className, Set<String> annotationNames) {
+    /**
+     * 判断给定类是否应从组件扫描中排除。
+     *
+     * @param className        全限定类名
+     * @param annotationNames  类上注解名集合
+     * @return 应排除返回 {@code true}
+     */
         String functionMode = EnvUtil.getFunctionMode();
-        // When not specified naming mode or specified all mode, the naming module not start and load.
+        // 未指定功能模式时默认加载 Naming；指定 naming/microservice/ai 模式时也加载。
         if (StringUtils.isEmpty(functionMode)) {
             return false;
         }

@@ -29,23 +29,31 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 
 /**
- * Distro component registry for v2.
+ * Naming v2 客户端 Distro 组件注册器。
+ *
+ * <p>在启动时将 {@link DistroClientDataProcessor}、{@link DistroClientTransportAgent} 与 {@link DistroClientTaskFailedHandler} 注册到 {@link DistroComponentHolder}。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class DistroClientComponentRegistry {
     
+    /** 集群成员管理器。 */
     private final ServerMemberManager serverMemberManager;
     
+    /** Distro 协议主入口。 */
     private final DistroProtocol distroProtocol;
     
+    /** Distro 组件（处理器/传输/存储）持有者。 */
     private final DistroComponentHolder componentHolder;
     
+    /** Distro 延迟/重试任务引擎持有者。 */
     private final DistroTaskEngineHolder taskEngineHolder;
     
+    /** v2 客户端连接管理器。 */
     private final ClientManager clientManager;
     
+    /** 集群 RPC 客户端代理。 */
     private final ClusterRpcClientProxy clusterRpcClientProxy;
     
     public DistroClientComponentRegistry(ServerMemberManager serverMemberManager,
@@ -61,8 +69,7 @@ public class DistroClientComponentRegistry {
     }
     
     /**
-     * Register necessary component to distro protocol for v2 {@link com.alibaba.nacos.naming.core.v2.client.Client}
-     * implement.
+     * 向 Distro 协议注册 v2 {@link com.alibaba.nacos.naming.core.v2.client.Client} 相关组件。
      */
     @PostConstruct
     public void doRegister() {

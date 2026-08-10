@@ -22,20 +22,25 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * pay load registry.
+ * Naming 集群响应 Payload 类型注册表。
+ *
+ * <p>声明远程 RPC 可反序列化的响应 {@link Payload} 实现。</p>
  *
  * @author shiyiyue
  */
 public class ResponseRegistry {
     
+    /** 已注册的响应 Payload 类型集合。 */
     private static Set<Class<? extends Payload>> payloads = getPayload();
     
+    /** 初始化并返回 Naming 集群响应类型集合。 */
     private static Set<Class<? extends Payload>> getPayload() {
         HashSet<Class<? extends Payload>> payloads = new HashSet<>();
         payloads.add(DistroDataResponse.class);
         return payloads;
     }
     
+    /** 获取全部已注册的响应 Payload 类型。 */
     public static final Set<Class<? extends Payload>> getPayloads() {
         return payloads;
     }

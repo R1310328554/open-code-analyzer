@@ -21,20 +21,30 @@ import com.alibaba.nacos.core.cluster.remote.request.AbstractClusterRequest;
 import com.alibaba.nacos.core.distributed.distro.entity.DistroData;
 
 /**
- * Distro data request.
+ * 集群 Distro 数据同步 RPC 请求体。
+ *
+ * <p>封装 {@link DistroData} 与 {@link DataOperation}，经 {@link com.alibaba.nacos.core.cluster.remote.ClusterRpcClientProxy} 在节点间传输。</p>
  *
  * @author xiweng.yy
  */
 public class DistroDataRequest extends AbstractClusterRequest {
     
+    /** 待同步或查询的 Distro 数据包。 */
     private DistroData distroData;
     
+    /** 数据操作类型（ADD/CHANGE/DELETE/VERIFY 等）。 */
     private DataOperation dataOperation;
     
+    /** 无参构造，供反序列化使用。 */
     public DistroDataRequest() {
     }
     
-    public DistroDataRequest(DistroData distroData, DataOperation dataOperation) {
+    /**
+     * 构造带数据与操作类型的 Distro 请求。
+     *
+     * @param distroData    Distro 数据
+     * @param dataOperation 操作类型
+     */
         this.distroData = distroData;
         this.dataOperation = dataOperation;
     }

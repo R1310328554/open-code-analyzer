@@ -28,7 +28,9 @@ import javax.annotation.PostConstruct;
 import java.util.Optional;
 
 /**
- * Detect and control the working status of local server.
+ * 检测并维护本机 Naming 节点运行状态。
+ *
+ * <p>周期性刷新 {@link ServerStatus}：优先读取 {@link SwitchDomain} 覆盖值，否则依据 CP 协议就绪与 {@link DistroProtocol} 初始化情况判定 UP/DOWN。</p>
  *
  * @author nkorange
  * @since 1.0.0
@@ -36,14 +38,19 @@ import java.util.Optional;
 @Service
 public class ServerStatusManager {
     
+    /** 全局命名配置（如数据预热开关）。 */
     private final GlobalConfig globalConfig;
     
+    /** AP Distro 一致性协议实例。 */
     private final DistroProtocol distroProtocol;
     
+    /** CP/AP 协议管理器，用于判断 Raft 是否就绪。 */
     private final ProtocolManager protocolManager;
     
+    /** 运维开关域，可强制覆盖节点对外状态。 */
     private final SwitchDomain switchDomain;
     
+    /** 当前节点状态，初始为 STARTING。 */
     private ServerStatus serverStatus = ServerStatus.STARTING;
     
     public ServerStatusManager(GlobalConfig globalConfig, DistroProtocol distroProtocol,
@@ -54,11 +61,13 @@ public class ServerStatusManager {
         this.switchDomain = switchDomain;
     }
     
+    /** 注册定时状态刷新任务。 */
     @PostConstruct
     public void init() {
         GlobalExecutor.registerServerStatusUpdater(new ServerStatusUpdater());
     }
     
+    /** 根据开关覆盖或就绪检查结果刷新 {@link #serverStatus}。 */
     private void refreshServerStatus() {
         if (StringUtils.isNotBlank(switchDomain.getOverriddenServerStatus())) {
             serverStatus = ServerStatus.valueOf(switchDomain.getOverriddenServerStatus());
@@ -72,6 +81,7 @@ public class ServerStatusManager {
         }
     }
     
+    /** 判断节点是否可对外提供服务（预热、CP、Distro 均就绪）。 */
     private boolean isReady() {
         if (!globalConfig.isDataWarmup()) {
             return true;
@@ -82,10 +92,12 @@ public class ServerStatusManager {
         return protocolManager.getCpProtocol().isReady() && distroProtocol.isInitialized();
     }
     
+    /** 获取当前节点运行状态。 */
     public ServerStatus getServerStatus() {
         return serverStatus;
     }
     
+    /** 节点未就绪时返回可读错误提示（Distro 或 Raft 相关）。 */
     public Optional<String> getErrorMsg() {
         if (isReady()) {
             return Optional.empty();
@@ -98,6 +110,7 @@ public class ServerStatusManager {
             "No leader for raft, please see logs `alipay-jraft.log` or `naming-raft.log` to see details.");
     }
     
+    /** 定时触发 {@link #refreshServerStatus()} 的后台任务。 */
     public class ServerStatusUpdater implements Runnable {
         
         @Override

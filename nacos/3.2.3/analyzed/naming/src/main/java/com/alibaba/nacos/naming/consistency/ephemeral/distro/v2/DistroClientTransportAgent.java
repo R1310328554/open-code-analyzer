@@ -42,14 +42,18 @@ import com.alibaba.nacos.naming.monitor.NamingTpsMonitor;
 import java.util.concurrent.Executor;
 
 /**
- * Distro transport agent for v2.
+ * v2 客户端 Distro 集群传输代理。
+ *
+ * <p>通过 {@link ClusterRpcClientProxy} 发送 {@link DistroDataRequest}，完成节点间同步、校验、查询与快照拉取。</p>
  *
  * @author xiweng.yy
  */
 public class DistroClientTransportAgent implements DistroTransportAgent {
     
+    /** 集群 RPC 客户端。 */
     private final ClusterRpcClientProxy clusterRpcClientProxy;
     
+    /** 集群成员与节点状态管理。 */
     private final ServerMemberManager memberManager;
     
     public DistroClientTransportAgent(ClusterRpcClientProxy clusterRpcClientProxy,
@@ -63,6 +67,7 @@ public class DistroClientTransportAgent implements DistroTransportAgent {
         return true;
     }
     
+    /** 同步 Distro 数据到目标节点（同步 RPC）。 */
     @Override
     public boolean syncData(DistroData data, String targetServer) {
         if (isNoExistTarget(targetServer)) {
@@ -87,6 +92,7 @@ public class DistroClientTransportAgent implements DistroTransportAgent {
         return false;
     }
     
+    /** 异步同步 Distro 数据并在回调中通知结果。 */
     @Override
     public void syncData(DistroData data, String targetServer, DistroCallback callback) {
         if (isNoExistTarget(targetServer)) {
@@ -111,12 +117,13 @@ public class DistroClientTransportAgent implements DistroTransportAgent {
         }
     }
     
+    /** 向目标节点发送校验数据（同步 RPC）。 */
     @Override
     public boolean syncVerifyData(DistroData verifyData, String targetServer) {
         if (isNoExistTarget(targetServer)) {
             return true;
         }
-        // replace target server as self server so that can callback.
+        // 将目标地址设为本机，以便对端校验失败时能回调本节点。
         verifyData.getDistroKey().setTargetServer(memberManager.getSelf().getAddress());
         DistroDataRequest request = new DistroDataRequest(verifyData, DataOperation.VERIFY);
         Member member = memberManager.find(targetServer);
@@ -163,6 +170,7 @@ public class DistroClientTransportAgent implements DistroTransportAgent {
         }
     }
     
+    /** 从目标节点查询指定 Distro 键的数据。 */
     @Override
     public DistroData getData(DistroKey key, String targetServer) {
         Member member = memberManager.find(targetServer);
@@ -192,6 +200,7 @@ public class DistroClientTransportAgent implements DistroTransportAgent {
         }
     }
     
+    /** 从目标节点拉取完整 Distro 快照。 */
     @Override
     public DistroData getDatumSnapshot(String targetServer) {
         Member member = memberManager.find(targetServer);
@@ -232,6 +241,7 @@ public class DistroClientTransportAgent implements DistroTransportAgent {
         return ResponseCode.SUCCESS.getCode() == response.getResultCode();
     }
     
+    /** 包装 Distro 同步异步 RPC 回调并上报 TPS 指标。 */
     private class DistroRpcCallbackWrapper implements RequestCallBack<Response> {
         
         private final DistroCallback distroCallback;
@@ -270,6 +280,7 @@ public class DistroClientTransportAgent implements DistroTransportAgent {
         }
     }
     
+    /** 包装 Distro 校验异步 RPC 回调，失败时发布 {@link ClientEvent.ClientVerifyFailedEvent}。 */
     private class DistroVerifyCallbackWrapper implements RequestCallBack<Response> {
         
         private final String targetServer;

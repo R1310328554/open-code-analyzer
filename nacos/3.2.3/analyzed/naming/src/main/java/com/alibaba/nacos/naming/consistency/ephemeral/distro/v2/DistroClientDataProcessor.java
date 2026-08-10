@@ -51,19 +51,25 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Distro processor for v2.
+ * Naming v2 临时客户端 Distro 数据处理器。
+ *
+ * <p>订阅客户端变更事件，负责 AP 模式下 ephemeral 客户端数据的同步、校验与快照加载；持久客户端仍由 Raft 处理。</p>
  *
  * @author xiweng.yy
  */
 public class DistroClientDataProcessor extends SmartSubscriber
     implements DistroDataStorage, DistroDataProcessor {
     
+    /** Distro 资源类型标识：v2 客户端数据。 */
     public static final String TYPE = "Nacos:Naming:v2:ClientData";
     
+    /** 本地客户端管理器。 */
     private final ClientManager clientManager;
     
+    /** Distro 同步协议。 */
     private final DistroProtocol distroProtocol;
     
+    /** 是否已完成 Distro 初始快照加载。 */
     private volatile boolean isFinishInitial;
     
     public DistroClientDataProcessor(ClientManager clientManager, DistroProtocol distroProtocol) {
@@ -109,7 +115,7 @@ public class DistroClientDataProcessor extends SmartSubscriber
             return;
         }
         DistroKey distroKey = new DistroKey(client.getClientId(), TYPE);
-        // Verify failed data should be sync directly.
+        // 校验失败时需立即向目标节点同步最新客户端数据。
         distroProtocol.syncToTarget(distroKey, DataOperation.ADD, event.getTargetServer(), 0L);
     }
     
@@ -128,7 +134,7 @@ public class DistroClientDataProcessor extends SmartSubscriber
     }
     
     private boolean isInvalidClient(Client client) {
-        // Only ephemeral data sync by Distro, persist client should sync by raft.
+        // 仅临时客户端走 Distro；持久客户端由 Raft 同步。
         return null == client || !client.isEphemeral()
             || !clientManager.isResponsibleClient(client);
     }
@@ -171,7 +177,7 @@ public class DistroClientDataProcessor extends SmartSubscriber
     
     private void upgradeClient(Client client, ClientSyncData clientSyncData) {
         Set<Service> syncedService = new HashSet<>();
-        // process batch instance sync logic
+        // 处理批量实例注册同步逻辑
         processBatchInstanceDistroData(syncedService, client, clientSyncData);
         List<String> namespaces = clientSyncData.getNamespaces();
         List<String> groupNames = clientSyncData.getGroupNames();

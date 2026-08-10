@@ -17,7 +17,9 @@
 package com.alibaba.nacos.naming.cluster.transport;
 
 /**
- * Serializer specially for large map of data.
+ * 命名模块大数据量序列化接口。
+ *
+ * <p>主要用于 Distro 同步、客户端快照等场景的字节编解码。</p>
  *
  * @author nkorange
  * @since 1.0.0
@@ -25,21 +27,21 @@ package com.alibaba.nacos.naming.cluster.transport;
 public interface Serializer {
     
     /**
-     * Serialize  data with some kind of serializing protocol.
+     * 按约定协议将对象序列化为字节数组。
      *
-     * @param data data to serialize
-     * @param <T>  type of data
-     * @return byte array of serialized data
+     * @param data 待序列化对象
+     * @param <T>  对象类型
+     * @return 序列化后的字节数组
      */
     <T> byte[] serialize(T data);
     
     /**
-     * Deserialize byte array data to target type.
+     * 将字节数组反序列化为目标类型实例。
      *
-     * @param data  data to deserialize
-     * @param clazz target type
-     * @param <T>   target type
-     * @return deserialized data map
+     * @param data  待反序列化字节
+     * @param clazz 目标类型
+     * @param <T>   目标类型
+     * @return 反序列化结果
      */
     <T> T deserialize(byte[] data, Class<T> clazz);
 }
