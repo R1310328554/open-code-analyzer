@@ -42,15 +42,26 @@ import org.keycloak.provider.ServerInfoAwareProviderFactory;
 
 import org.jboss.logging.Logger;
 
+/**
+ * JPA 登录失败 Provider 工厂：创建 {@link JpaUserLoginFailureProvider} 并在 {@link #postInit} 注册过期清理任务。
+ * <p>
+ * 仅在 {@link Profile.Feature#STATELESS} 特性启用时可用（无 Infinispan 会话存储时的持久化路径）。
+ * 过期任务按 realm 协调，使用 {@link LoginFailureExpirationAction} 删除超出
+ * realm {@code maxDeltaTimeSeconds} 的失败记录。
+ */
 public class JpaUserLoginFailureProviderFactory implements UserLoginFailureProviderFactory<JpaUserLoginFailureProvider>, EnvironmentDependentProviderFactory, ServerInfoAwareProviderFactory {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
     private static final String PROVIDER_ID = "jpa";
     private static final String METRICS_KEY = "metricsEnabled";
 
+    /** 过期清理定时器间隔（秒）。 */
     private int expirationTaskIntervalSeconds;
+    /** 单次清理事务超时（秒）。 */
     private int expirationTaskTimeoutSeconds;
+    /** 每批最多删除条数。 */
     private int expirationTaskMaxRemoval;
+    /** 是否向 Micrometer 上报过期任务指标。 */
     private boolean metricsEnabled;
 
     @Override
@@ -58,6 +69,7 @@ public class JpaUserLoginFailureProviderFactory implements UserLoginFailureProvi
         return new JpaUserLoginFailureProvider(session);
     }
 
+    /** 从 SPI 配置读取过期任务参数与 metrics 开关。 */
     @Override
     public void init(Config.Scope config) {
         metricsEnabled = config.getBoolean(METRICS_KEY, config.root().getBoolean(MetricsOptions.METRICS_ENABLED.getKey(), Boolean.FALSE));
@@ -66,6 +78,7 @@ public class JpaUserLoginFailureProviderFactory implements UserLoginFailureProvi
         expirationTaskMaxRemoval = ExpirationHelper.getExpirationTaskMaxRemoval(config, logger);
     }
 
+    /** 构建并调度 realm 感知的过期清理任务（entityId = login-failure）。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         ExpirationTask.builder()
@@ -121,6 +134,7 @@ public class JpaUserLoginFailureProviderFactory implements UserLoginFailureProvi
 
     @Override
     public boolean isSupported(Config.Scope config) {
+        // 无状态部署模式下使用 JPA 表存储登录失败，替代 Infinispan 缓存
         return Profile.isFeatureEnabled(Profile.Feature.STATELESS);
     }
 }

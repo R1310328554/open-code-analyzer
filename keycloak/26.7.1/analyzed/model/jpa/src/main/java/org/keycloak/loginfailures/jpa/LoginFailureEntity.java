@@ -30,14 +30,17 @@ import jakarta.persistence.Table;
 import org.keycloak.connections.jpa.AsynchronousCommitAllowed;
 
 /**
- * This holds information about failed logins.
+ * 登录失败持久化实体，映射表 {@code LOGIN_FAILURE}。
  * <p>
- * This table has no version column for optimistic locking, as it will be accessed via the {@link UserLoginFailureAdapter} only with pessimistic locking,
- * and with idempotent methods.
+ * 复合主键 {@link LoginFailureKey}（realmId + userId）。无乐观锁版本列——
+ * 仅通过 {@link UserLoginFailureAdapter} 以悲观锁 + 幂等更新访问，避免 lost update。
+ * <p>
+ * 实现 {@link AsynchronousCommitAllowed}，允许在异步提交路径下持久化。
  */
 @NamedQueries({
         @NamedQuery(
                 name = "insertLoginFailure",
+                // PostgreSQL 风格 upsert：冲突时不抛异常，配合 Provider 幂等 add
                 query = "insert into LoginFailureEntity (realmId, userId) values (:realmId, :userId)" +
                         " on conflict (realmId, userId) do nothing"
         ),
@@ -47,10 +50,12 @@ import org.keycloak.connections.jpa.AsynchronousCommitAllowed;
         ),
         @NamedQuery(
                 name = "findExpiredLoginFailureUserIdsByRealm",
+                // lastFailure 早于 expire 阈值的用户 id，供分批删除
                 query = "select e.userId from LoginFailureEntity e where e.realmId = :realmId and e.lastFailure < :expire"
         ),
         @NamedQuery(
                 name = "deleteExpiredLoginFailureByRealmAndUserIds",
+                // 删除时再次校验 lastFailure，避免与并发登录失败更新竞态
                 query = "delete from LoginFailureEntity e where e.realmId = :realmId and e.userId in :userIds and e.lastFailure < :expire"
         ),
 })
@@ -67,21 +72,27 @@ public class LoginFailureEntity implements AsynchronousCommitAllowed {
     @Column(name = "USER_ID")
     private String userId;
 
+    /** 在此时间戳（秒）之前禁止再次尝试登录。 */
     @Column(name = "FAILED_LOGIN_NOT_BEFORE")
     private long failedLoginNotBefore;
 
+    /** 当前窗口内连续失败次数。 */
     @Column(name = "NUM_FAILURES")
     private int numFailures;
 
+    /** 累计临时锁定次数。 */
     @Column(name = "NUM_TEMPORARY_LOCKOUTS")
     private int numTemporaryLockouts;
 
+    /** 最近一次失败时间（毫秒 epoch）。 */
     @Column(name = "LAST_FAILURE")
     private long lastFailure;
 
+    /** 最近一次失败来源 IP。 */
     @Column(name = "LAST_IP_FAILURE")
     private String lastIPFailure;
 
+    /** 二次认证（如 OTP）失败次数。 */
     @Column(name = "NUM_SECONDARY_AUTH_FAILURES")
     private int numSecondaryAuthFailures;
 

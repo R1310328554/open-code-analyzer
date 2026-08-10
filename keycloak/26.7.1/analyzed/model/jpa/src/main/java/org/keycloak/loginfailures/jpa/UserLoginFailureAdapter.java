@@ -25,13 +25,17 @@ import jakarta.persistence.LockModeType;
 import org.keycloak.models.UserLoginFailureModel;
 
 /**
- * All methods are idempotent, as they either set a time or value, or increment a failure count.
- * With that, no failure count will be missed.
+ * {@link UserLoginFailureModel} 的 JPA 适配器，封装 {@link LoginFailureEntity}。
+ * <p>
+ * 所有写操作均为幂等（赋值或递增），配合悲观锁 refresh 不会丢失失败计数。
+ * 首次写前 {@link #ensureLocked()} 以 {@link LockModeType#PESSIMISTIC_WRITE} refresh，
+ * 丢弃 persistence context 中可能过期的快照。
  */
 public class UserLoginFailureAdapter implements UserLoginFailureModel {
 
     private final EntityManager em;
     private final LoginFailureEntity entity;
+    /** 是否已对实体加悲观写锁并完成 refresh。 */
     private boolean locked;
 
     public UserLoginFailureAdapter(EntityManager em, LoginFailureEntity entity) {
@@ -39,19 +43,20 @@ public class UserLoginFailureAdapter implements UserLoginFailureModel {
         this.entity = Objects.requireNonNull(entity);
     }
 
+    /**
+     * 写路径前置：refresh + 悲观写锁，保证基于最新行状态更新。
+     * {@link JpaUserLoginFailureProvider} 保证每实体每会话仅一个 adapter 实例。
+     */
     private void ensureLocked() {
         if (!locked) {
-            // The em.refresh() will discard any non-persisted changes.
-            // To ensure that no other instance has modified it, we need to ensure that there is only one instance
-            // of UserLoginFailureAdapter per entity. The JpaUserLoginFailureProvider ensures this within the current session aka transaction.
-            // When using this pattern, one needs to ensure that the caller is not issuing updates on the entity based on previously read (and possibly stale) values.
-            // Looking at the current implementation of DefaultBruteForceProtector, this is not the case as once a success or failure is identified,
-            // it then only updates the state.
+            // em.refresh 会丢弃未 flush 的本地修改；单 adapter 约束 + DefaultBruteForceProtector
+            // 的「先判定再更新」模式避免基于陈旧读数的 lost update。
             em.refresh(entity, LockModeType.PESSIMISTIC_WRITE);
             locked = true;
         }
     }
 
+    /** 复合 id：{@code realmId:userId}，与存储主键一致。 */
     @Override
     public String getId() {
         return entity.getRealmId() + ":" + entity.getUserId();
@@ -95,6 +100,7 @@ public class UserLoginFailureAdapter implements UserLoginFailureModel {
         entity.setNumTemporaryLockouts(entity.getNumTemporaryLockouts() + 1);
     }
 
+    /** 登录成功或管理员解锁：清零主认证失败计数与 IP/时间戳。 */
     @Override
     public void clearFailures() {
         ensureLocked();
@@ -138,6 +144,7 @@ public class UserLoginFailureAdapter implements UserLoginFailureModel {
         entity.setNumSecondaryAuthFailures(entity.getNumSecondaryAuthFailures() + 1);
     }
 
+    /** 同时清除主认证与二次认证失败计数。 */
     @Override
     public void clearPrimaryAndSecondaryAuthFailures() {
         clearFailures();

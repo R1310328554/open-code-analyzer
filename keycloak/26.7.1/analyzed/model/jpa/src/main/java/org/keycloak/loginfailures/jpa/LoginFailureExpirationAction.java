@@ -24,9 +24,20 @@ import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.expiration.jpa.ExpirationAction;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 登录失败记录的过期删除策略（{@link ExpirationAction} 单例）。
+ * <p>
+ * 过期判定：{@code lastFailure < currentTime - realm.maxDeltaTimeSeconds}（毫秒）。
+ * 永久锁定且不允许临时锁定的 realm 跳过清理（失败计数需长期保留）。
+ */
 public enum LoginFailureExpirationAction implements ExpirationAction {
     INSTANCE;
 
+    /**
+     * 在指定 realm 内查找并删除一批过期失败记录。
+     *
+     * @return {@code true} 若本批命中 {@code maxRemoval} 上限，调用方应继续下一批
+     */
     @Override
     public boolean removeExpired(KeycloakSession session, String realmId, int currentTime, int maxRemoval, IntConsumer removeCount) {
         var realm = session.realms().getRealm(realmId);
@@ -34,10 +45,10 @@ public enum LoginFailureExpirationAction implements ExpirationAction {
             return false;
         }
         if (realm.isPermanentLockout() && realm.getMaxTemporaryLockouts() == 0) {
-            // If mode is permanent lockout only, the "failure reset time" cannot be configured and login failures should never expire.
+            // 纯永久锁定模式无法配置 failure reset time，登录失败记录不应过期
             return false;
         }
-        // expired if last-failure + max-delta-time < current time
+        // 过期阈值：lastFailure 早于 (currentTime - maxDeltaTimeSeconds)
         var expired = TimeUnit.SECONDS.toMillis(currentTime - realm.getMaxDeltaTimeSeconds());
         var em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
         var userIds = em.createNamedQuery("findExpiredLoginFailureUserIdsByRealm", String.class)

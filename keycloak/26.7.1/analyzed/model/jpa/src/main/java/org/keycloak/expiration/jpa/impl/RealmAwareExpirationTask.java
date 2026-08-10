@@ -36,20 +36,22 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.storage.configuration.ServerConfigStorageProvider;
 
 /**
- * An {@link org.keycloak.expiration.jpa.ExpirationTask} that runs cleanup per realm.
+ * 按 realm 迭代的过期清理任务。
  * <p>
- * On each run, this task fetches the list of realms, removes orphan coordination keys (from deleted realms), and then
- * iterates over each realm. Per-realm coordination via {@link ServerConfigStorageProvider} ensures that a cleanup is
- * skipped if another node ran one recently for the same realm.
+ * 每轮先拉取全部 realm 列表、清理已删 realm 遗留的协调键，再逐 realm 执行
+ * {@link ExpirationAction#removeExpired}。每个 realm 通过 {@link ServerConfigStorageProvider}
+ * 独立协调，避免集群内对同一 realm 重复清理。
  */
 public class RealmAwareExpirationTask extends BaseExpirationTask {
 
+    /** 按 realm 记录上次清理时间的 ServerConfig 键前缀。 */
     private static final String ROW_ID_PREFIX = "exp-realm-";
 
     public RealmAwareExpirationTask(KeycloakSessionFactory factory, Executor executor, ExpirationAction action, ExpirationListener listener, String entityId, int transactionTimeoutSeconds, int intervalSeconds, int maxRemoval) {
         super(factory, executor, action, listener, entityId, transactionTimeoutSeconds, intervalSeconds, maxRemoval);
     }
 
+    /** 获取 realm 列表并清理孤儿键后，对每个 realm 分批删除过期记录。 */
     @Override
     void doWork() {
         var info = fetchRealmInformation();
@@ -78,6 +80,10 @@ public class RealmAwareExpirationTask extends BaseExpirationTask {
         }
     }
 
+    /**
+     * 单次事务内收集当前 realm id（TreeSet 保证稳定迭代顺序）及孤儿协调键。
+     * 孤儿键 = 前缀匹配但 realm 已不存在的 ServerConfig 条目。
+     */
     private RealmsInfo fetchRealmInformation() {
         try {
             return KeycloakModelUtils.runJobInTransactionWithResult(factory, session -> {
@@ -98,6 +104,7 @@ public class RealmAwareExpirationTask extends BaseExpirationTask {
         }
     }
 
+    /** 删除已不存在 realm 对应的协调键，失败时仅打日志，不阻断后续 realm 清理。 */
     private void cleanupOrphans(RealmsInfo realmsInfo) {
         if (realmsInfo.orphanKeys().isEmpty()) {
             return;
@@ -112,6 +119,7 @@ public class RealmAwareExpirationTask extends BaseExpirationTask {
         }
     }
 
+    /** 与 {@link DefaultExpirationTask#needsCleanup()} 类似，但键按 realm 粒度隔离。 */
     private boolean realmNeedsCleanup(String realmId, int currentTime) {
         try {
             return KeycloakModelUtils.runJobInTransactionWithResult(factory, session -> {
@@ -129,10 +137,12 @@ public class RealmAwareExpirationTask extends BaseExpirationTask {
         }
     }
 
+    /** 构造 realm 级协调键：{@code exp-realm-<entityId>-<realmId>}。 */
     private String rowIdForRealm(String realmId) {
         return ROW_ID_PREFIX + entityId + "-" + realmId;
     }
 
+    /** realm id 集合与待删孤儿协调键。 */
     private record RealmsInfo(Collection<String> realmIds, Collection<String> orphanKeys) {
     }
 

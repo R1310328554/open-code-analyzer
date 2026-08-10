@@ -29,6 +29,11 @@ import org.keycloak.models.KeycloakSessionFactory;
 import static org.keycloak.models.jpa.JpaRealmProviderFactory.PROVIDER_ID;
 import static org.keycloak.models.jpa.JpaRealmProviderFactory.PROVIDER_PRIORITY;
 
+/**
+ * JPA {@link DeploymentStateProvider} 工厂：读写 realm 部署/迁移状态（经 {@link JpaRealmProvider}）。
+ * <p>
+ * 用于跨节点协调 schema 版本、迁移进度等部署元数据。
+ */
 public class JpaDeploymentStateProviderFactory implements DeploymentStateProviderFactory {
 
     @Override
@@ -44,6 +49,7 @@ public class JpaDeploymentStateProviderFactory implements DeploymentStateProvide
         return PROVIDER_ID;
     }
 
+    /** 与 ClientScope 工厂相同：单一 JpaRealmProvider 门面多种 Provider 接口。 */
     @Override
     public DeploymentStateProvider create(KeycloakSession session) {
         EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();

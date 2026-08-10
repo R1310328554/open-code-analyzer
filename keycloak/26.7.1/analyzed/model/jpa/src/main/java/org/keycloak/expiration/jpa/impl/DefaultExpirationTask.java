@@ -29,19 +29,24 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.storage.configuration.ServerConfigStorageProvider;
 
 /**
- * An {@link org.keycloak.expiration.jpa.ExpirationTask} that runs a single global cleanup (no per-realm iteration).
+ * 全局（非按 realm）过期清理任务实现。
  * <p>
- * Uses {@link ServerConfigStorageProvider} to coordinate across cluster nodes: a cleanup is skipped if another node
- * ran one recently (within the configured interval).
+ * 通过 {@link ServerConfigStorageProvider} 在集群节点间协调：若其他节点在配置的
+ * {@code intervalSeconds} 内已执行过清理，本节点跳过本轮，避免重复全库扫描。
  */
 public class DefaultExpirationTask extends BaseExpirationTask {
 
+    /** ServerConfig 中记录上次清理时间的键前缀。 */
     private static final String ROW_ID_PREFIX = "exp-";
 
     public DefaultExpirationTask(KeycloakSessionFactory factory, Executor executor, ExpirationAction action, ExpirationListener listener, String entityId, int transactionTimeoutSeconds, int intervalSeconds, int maxRemoval) {
         super(factory, executor, action, listener, entityId, transactionTimeoutSeconds, intervalSeconds, maxRemoval);
     }
 
+    /**
+     * 全局清理：{@code realmId} 传 null，循环分批删除直至无更多过期行。
+     * 每批在独立事务中执行，{@code hasMore} 为 true 时继续下一批。
+     */
     @Override
     void doWork() {
         if (!needsCleanup()) {
@@ -56,6 +61,7 @@ public class DefaultExpirationTask extends BaseExpirationTask {
         var currentTime = Time.currentTime();
         try {
             do {
+                // removeExpired 返回 true 表示本批达到 maxRemoval 上限，可能仍有剩余过期数据
                 hasMore = KeycloakModelUtils.runJobInTransactionWithResult(factory, session -> action.removeExpired(session, null, currentTime, maxRemoval, removed::addAndGet));
                 success = true;
             } while (hasMore);
@@ -67,6 +73,10 @@ public class DefaultExpirationTask extends BaseExpirationTask {
         }
     }
 
+    /**
+     * 集群协调：CAS 更新 {@code exp-<entityId>} 时间戳。
+     * {@link ServerConfigStorageProvider#replace} 失败说明其他节点已抢占本轮清理权。
+     */
     private boolean needsCleanup() {
         try {
             return KeycloakModelUtils.runJobInTransactionWithResult(factory, session -> {

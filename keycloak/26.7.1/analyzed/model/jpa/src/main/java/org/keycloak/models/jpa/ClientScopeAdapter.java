@@ -40,6 +40,11 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.RoleUtils;
 
 /**
+ * {@link ClientScopeEntity} 的 JPA 适配器，表示 realm 级 OAuth client scope（可选/默认 scope 模板）。
+ * <p>
+ * 负责协议映射器、realm 角色 scope 映射及扩展属性；scope 名称经
+ * {@link KeycloakModelUtils#convertClientScopeName} 规范化。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -48,6 +53,7 @@ public class ClientScopeAdapter implements ClientScopeModel, JpaModel<ClientScop
     protected KeycloakSession session;
     protected RealmModel realm;
     protected EntityManager em;
+    /** 底层 CLIENT_SCOPE 实体。 */
     protected ClientScopeEntity entity;
 
     public ClientScopeAdapter(RealmModel realm, EntityManager em, KeycloakSession session, ClientScopeEntity entity) {
@@ -77,6 +83,7 @@ public class ClientScopeAdapter implements ClientScopeModel, JpaModel<ClientScop
         return entity.getName();
     }
 
+    /** 写入前规范化 scope 名称（大小写/空格等 realm 策略）。 */
     @Override
     public void setName(String name) {
         name = KeycloakModelUtils.convertClientScopeName(name);
@@ -100,6 +107,7 @@ public class ClientScopeAdapter implements ClientScopeModel, JpaModel<ClientScop
 
     }
 
+    /** 将持久化 ProtocolMapper 实体转为领域 {@link ProtocolMapperModel}（含 config 副本）。 */
     @Override
     public Stream<ProtocolMapperModel> getProtocolMappersStream() {
         return this.entity.getProtocolMappers().stream()
@@ -283,6 +291,7 @@ public class ClientScopeAdapter implements ClientScopeModel, JpaModel<ClientScop
         return getAttributes().get(name);
     }
 
+    /** 已是 adapter 则直接取实体，否则 getReference 延迟加载。 */
     public static ClientScopeEntity toClientScopeEntity(ClientScopeModel model, EntityManager em) {
         if (model instanceof ClientScopeAdapter) {
             return ((ClientScopeAdapter)model).getEntity();

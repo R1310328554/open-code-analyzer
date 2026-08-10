@@ -45,6 +45,12 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.RoleUtils;
 
 /**
+ * {@link ClientEntity} 的 JPA 适配器，实现 {@link ClientModel} 领域接口。
+ * <p>
+ * OAuth/OIDC 客户端的完整持久化视图：重定向 URI、协议映射器、角色 scope、
+ * 客户端 scope 关联等均委托 {@link ClientEntity} 及其关联集合。
+ * 协议变更时发布 {@link ClientModel.ClientProtocolUpdatedEvent} 供缓存失效。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -53,6 +59,7 @@ public class ClientAdapter implements ClientModel, JpaModel<ClientEntity> {
     protected KeycloakSession session;
     protected RealmModel realm;
     protected EntityManager em;
+    /** 底层 CLIENT 表实体，适配器不复制字段。 */
     protected ClientEntity entity;
 
     public ClientAdapter(RealmModel realm, EntityManager em, KeycloakSession session, ClientEntity entity) {
@@ -229,6 +236,7 @@ public class ClientAdapter implements ClientModel, JpaModel<ClientEntity> {
         entity.setRegistrationToken(registrationToken);
     }
 
+    /** 常量时间比较 client secret，缓解时序侧信道。 */
     @Override
     public boolean validateSecret(String secret) {
         return MessageDigest.isEqual(secret.getBytes(), entity.getSecret().getBytes());
@@ -271,6 +279,7 @@ public class ClientAdapter implements ClientModel, JpaModel<ClientEntity> {
         return entity.getProtocol();
     }
 
+    /** 协议变更时通知工厂，便于协议相关缓存/索引更新。 */
     @Override
     public void setProtocol(String protocol) {
         if (!Objects.equals(entity.getProtocol(), protocol)) {
@@ -302,14 +311,16 @@ public class ClientAdapter implements ClientModel, JpaModel<ClientEntity> {
         return copy;
     }
 
+    /**
+     * 设置客户端扩展属性。空/null 值不新建行；已有空值属性会被移除（历史兼容）。
+     */
     @Override
     public void setAttribute(String name, String value) {
         boolean valueUndefined = value == null || "".equals(value.trim());
 
         for (ClientAttributeEntity attr : entity.getAttributes()) {
             if (attr.getName().equals(name)) {
-                // clean up, so that attributes previously set with either a empty or null value are removed
-                // we should remove this in future versions so that new clients never store empty/null attributes
+                // 清理历史上以空串/null 写入的属性行；未来版本应禁止写入空值
                 if (valueUndefined) {
                     removeAttribute(name);
                 } else {
@@ -319,7 +330,7 @@ public class ClientAdapter implements ClientModel, JpaModel<ClientEntity> {
             }
         }
 
-        // do not create attributes if empty or null
+        // 空值且不存在时不 persist 新行
         if (valueUndefined) {
             return;
         }
@@ -363,6 +374,7 @@ public class ClientAdapter implements ClientModel, JpaModel<ClientEntity> {
         addClientScopes(Collections.singleton(clientScope), defaultScope);
     }
 
+    /** 客户端 scope 关联委托 {@link org.keycloak.models.ClientProvider}，避免 adapter 内重复 JPA 逻辑。 */
     @Override
     public void addClientScopes(Set<ClientScopeModel> clientScopes, boolean defaultScope) {
         session.clients().addClientScopes(getRealm(), this, clientScopes, defaultScope);
@@ -405,6 +417,7 @@ public class ClientAdapter implements ClientModel, JpaModel<ClientEntity> {
                 .distinct();
     }
 
+    /** 同一协议下 mapper 名称唯一；persist 新 {@link ProtocolMapperEntity}。 */
     @Override
     public ProtocolMapperModel addProtocolMapper(ProtocolMapperModel model) {
         if (getProtocolMapperByName(model.getProtocol(), model.getName()) != null) {
@@ -668,6 +681,9 @@ public class ClientAdapter implements ClientModel, JpaModel<ClientEntity> {
         return session.roles().searchForClientRolesStream(this, search, first, max);
     }
 
+    /**
+     * 判断 token 是否包含所需 role：full scope 放行，否则查 client scope 映射与 client 自身角色。
+     */
     @Override
     public boolean hasScope(RoleModel role) {
         if (isFullScopeAllowed()) return true;
@@ -693,6 +709,7 @@ public class ClientAdapter implements ClientModel, JpaModel<ClientEntity> {
         return entity.getRegisteredNodes();
     }
 
+    /** 注册 adapter 节点心跳；flush 使集群内其他节点可见。 */
     @Override
     public void registerNode(String nodeHost, int registrationTime) {
         Map<String, Integer> currentNodes = getRegisteredNodes();

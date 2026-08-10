@@ -20,6 +20,11 @@ package org.keycloak.loginfailures.jpa;
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * {@link LoginFailureEntity} 的复合主键：(realmId, userId)。
+ * <p>
+ * 作为 JPA {@code @IdClass} 与 Map 缓存键，record 构造器强制非 null。
+ */
 public record LoginFailureKey(String realmId, String userId) implements Serializable {
     public LoginFailureKey {
         Objects.requireNonNull(realmId);

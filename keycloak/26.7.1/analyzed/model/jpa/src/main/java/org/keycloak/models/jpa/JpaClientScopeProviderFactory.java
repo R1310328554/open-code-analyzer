@@ -29,6 +29,11 @@ import org.keycloak.models.KeycloakSessionFactory;
 import static org.keycloak.models.jpa.JpaRealmProviderFactory.PROVIDER_ID;
 import static org.keycloak.models.jpa.JpaRealmProviderFactory.PROVIDER_PRIORITY;
 
+/**
+ * JPA {@link ClientScopeProvider} 工厂：通过 {@link JpaRealmProvider} 提供 client scope 持久化。
+ * <p>
+ * 与 {@link JpaClientProviderFactory} 共享同一 PROVIDER_ID/PRIORITY，由 Keycloak SPI 按接口分别注册。
+ */
 public class JpaClientScopeProviderFactory implements ClientScopeProviderFactory {
 
     @Override
@@ -44,6 +49,7 @@ public class JpaClientScopeProviderFactory implements ClientScopeProviderFactory
         return PROVIDER_ID;
     }
 
+    /** 创建 JpaRealmProvider；client 与 scope 搜索参数均为 null。 */
     @Override
     public ClientScopeProvider create(KeycloakSession session) {
         EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();

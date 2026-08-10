@@ -31,28 +31,40 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserLoginFailureModel;
 import org.keycloak.models.UserLoginFailureProvider;
 
+/**
+ * 基于 JPA 的 {@link UserLoginFailureProvider} 实现，管理 LOGIN_FAILURE 表的读写。
+ * <p>
+ * 会话级两级缓存：
+ * <ul>
+ *   <li>{@code notInDatabaseCache}：负缓存，避免对不存在的 (realm, user) 重复 SELECT。</li>
+ *   <li>{@code entityInSession}：同一 {@link LoginFailureKey} 仅包装一个 {@link UserLoginFailureAdapter}，
+ *       防止 refresh 时丢失未刷新的修改。</li>
+ * </ul>
+ */
 public class JpaUserLoginFailureProvider implements UserLoginFailureProvider {
 
     private final KeycloakSession session;
+    /** 已确认数据库中不存在的键，避免 JPA 重复 miss 查询。 */
     private final Set<LoginFailureKey> notInDatabaseCache = new HashSet<>();
+    /** 当前会话内已 materialize 的适配器，保证每实体单 adapter 实例。 */
     private final Map<LoginFailureKey, UserLoginFailureModel> entityInSession = new HashMap();
 
     public JpaUserLoginFailureProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 按 (realmId, userId) 查找；不存在时写入负缓存并返回 null。 */
     @Override
     public UserLoginFailureModel getUserLoginFailure(RealmModel realm, String userId) {
         var key = new LoginFailureKey(realm.getId(), userId);
         if (notInDatabaseCache.contains(key)) {
-            // JPA will cache existing entries in the current persistence context. But if the entry doesn't exist, it would try to look it up multiple times.
-            // So with this small cache on the session level, it would only look it up once if it doesn't exist.
+            // JPA 会缓存 persistence context 中已有行，但 miss 时每次 find 仍会打库；
+            // 会话级负缓存确保「不存在」只查一次。
             return null;
         }
         UserLoginFailureModel model = entityInSession.get(key);
         if (model != null) {
-            // The Model class will refresh the entity, and we need to ensure that no changes get lost.
-            // We ensure this by having each entity wrapped with the model only once per session.
+            // Adapter 在写操作前会 refresh 实体；同 key 复用同一 adapter 避免并发修改被丢弃。
             return model;
         }
         var em = getEntityManager();
@@ -66,6 +78,10 @@ public class JpaUserLoginFailureProvider implements UserLoginFailureProvider {
         return model;
     }
 
+    /**
+     * 幂等插入：命名查询使用 ON CONFLICT DO NOTHING。
+     * 插入后清除负缓存并加载（或复用已存在行）实体。
+     */
     @Override
     public UserLoginFailureModel addUserLoginFailure(RealmModel realm, String userId) {
         var em = getEntityManager();
@@ -81,6 +97,7 @@ public class JpaUserLoginFailureProvider implements UserLoginFailureProvider {
         return model;
     }
 
+    /** 悲观写锁删除单行；实体不存在时静默返回。 */
     @Override
     public void removeUserLoginFailure(RealmModel realm, String userId) {
         var key = new LoginFailureKey(realm.getId(), userId);
@@ -91,9 +108,10 @@ public class JpaUserLoginFailureProvider implements UserLoginFailureProvider {
         }
         em.remove(entity);
         entityInSession.remove(key);
-        // em.flush() should not be necessary, as there shouldn't be any stale entries.
+        // 依赖 JPA 脏检查刷新，无需显式 flush
     }
 
+    /** 批量删除 realm 下全部登录失败记录（realm 删除等场景）。 */
     @Override
     public void removeAllUserLoginFailures(RealmModel realm) {
         var em = getEntityManager();

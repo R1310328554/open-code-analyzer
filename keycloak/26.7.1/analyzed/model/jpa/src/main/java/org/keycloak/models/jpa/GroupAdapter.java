@@ -59,6 +59,11 @@ import static org.keycloak.utils.StreamsUtil.closing;
 import static org.keycloak.utils.StringUtil.isBlank;
 
 /**
+ * {@link GroupEntity} 的 JPA 适配器，实现 realm/组织分组树、属性与角色映射。
+ * <p>
+ * 子组查询使用 Criteria API + 分页；realm 组在 ADMIN_FINE_GRAINED_AUTHZ_V2 下附加
+ * FGAP 过滤。属性支持多值；角色映射查询仅取 roleId 避免 eager load 缓存角色。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -136,6 +141,7 @@ public class GroupAdapter implements GroupModel , JpaModel<GroupEntity> {
         return parentId == null? null : realm.getGroupById(parentId);
     }
 
+    /** TOP_PARENT_ID 表示根组，对外 API 映射为 null parent。 */
     @Override
     public String getParentId() {
         return GroupEntity.TOP_PARENT_ID.equals(group.getParentId())? null : group.getParentId();
@@ -182,6 +188,10 @@ public class GroupAdapter implements GroupModel , JpaModel<GroupEntity> {
         return getSubGroupsStream("", false, -1, -1);
     }
 
+    /**
+     * 分页/搜索子组。通配符 {@code *} 转为 SQL LIKE；并发删除时 filter 掉 null。
+     * Realm 组类型附加 AdminPermissionsSchema 可见性谓词。
+     */
     @Override
     public Stream<GroupModel> getSubGroupsStream(String search, Boolean exact, Integer firstResult, Integer maxResults) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
@@ -217,7 +227,7 @@ public class GroupAdapter implements GroupModel , JpaModel<GroupEntity> {
 
         return closing(paginateQuery(em.createQuery(queryBuilder), firstResult, maxResults).getResultStream()
                 .map(realm::getGroupById)
-                // In concurrent tests, the group might be deleted in another thread, therefore, skip those null values.
+                // 并发测试中组可能已被其他线程删除，跳过 null
                 .filter(Objects::nonNull)
         );
     }
@@ -245,6 +255,7 @@ public class GroupAdapter implements GroupModel , JpaModel<GroupEntity> {
         return em.createQuery(queryBuilder).getSingleResult();
     }
 
+    /** 单值属性：同名多行时保留首行、删除重复行。 */
     @Override
     public void setSingleAttribute(String name, String value) {
         boolean found = false;
@@ -274,6 +285,7 @@ public class GroupAdapter implements GroupModel , JpaModel<GroupEntity> {
         fireGroupUpdatedEvent();
     }
 
+    /** 多值属性：内容未变则 no-op；否则先删后批量 persist。 */
     @Override
     public void setAttribute(String name, List<String> values) {
         List<String> current = getAttributes().getOrDefault(name, List.of());
@@ -282,10 +294,10 @@ public class GroupAdapter implements GroupModel , JpaModel<GroupEntity> {
             return;
         }
 
-        // Remove all existing
+        // 先移除该 name 下全部旧值
         removeAttribute(name);
 
-        // Put all new
+        // 再写入新值列表
         for (String value : values) {
             persistAttributeValue(name, value);
         }
@@ -340,6 +352,7 @@ public class GroupAdapter implements GroupModel , JpaModel<GroupEntity> {
         return result;
     }
 
+    /** 继承父组角色：直接映射未命中时递归查 parent。 */
     @Override
     public boolean hasRole(RoleModel role) {
         if (RoleUtils.hasRole(getRoleMappingsStream(), role)) return true;
@@ -351,7 +364,7 @@ public class GroupAdapter implements GroupModel , JpaModel<GroupEntity> {
     public boolean hasDirectRole(RoleModel role) {
         TypedQuery<GroupRoleMappingEntity> query = getGroupRoleMappingEntityTypedQuery(role);
         GroupRoleMappingEntity membership = query.getSingleResultOrNull();
-        // Avoid keeping it in the persistence context, as the group might be detached for example in a bulk delete
+        // 查完即 detach，避免 bulk delete 时 persistence context 持有陈旧映射行
         if (membership != null) {
             em.detach(membership);
         }
@@ -383,10 +396,12 @@ public class GroupAdapter implements GroupModel , JpaModel<GroupEntity> {
     }
 
 
+    /**
+     * 仅查询 roleId 列表再 resolve，避免 @ManyToOne 触发 role 实体加载
+     * （角色可能已在 realm 缓存中）。
+     */
     @Override
     public Stream<RoleModel> getRoleMappingsStream() {
-        // we query ids only as the role might be cached and following the @ManyToOne will result in a load
-        // even if we're getting just the id.
         TypedQuery<String> query = em.createNamedQuery("groupRoleMappingIds", String.class);
         query.setParameter("group", getEntity());
         return closing(query.getResultStream().map(realm::getRoleById).filter(Objects::nonNull));
@@ -417,6 +432,10 @@ public class GroupAdapter implements GroupModel , JpaModel<GroupEntity> {
         return Type.valueOf(group.getType());
     }
 
+    /**
+     * 组织组关联 {@link OrganizationEntity}；临时切换 session realm 上下文
+     * 避免跨 realm 查询组织时上下文不一致。
+     */
     @Override
     public OrganizationModel getOrganization() {
         OrganizationEntity organization = group.getOrganization();
@@ -425,7 +444,7 @@ public class GroupAdapter implements GroupModel , JpaModel<GroupEntity> {
         OrganizationProvider orgProvider = session.getProvider(OrganizationProvider.class);
         if (orgProvider == null) return null;
 
-        // Temporarily set session realm context to group's realm to avoid realm mismatch
+        // 临时将 session 上下文设为组所在 realm，防止 realm 不匹配
         RealmModel currentRealm = session.getContext().getRealm();
         try {
             session.getContext().setRealm(realm);
@@ -454,6 +473,7 @@ public class GroupAdapter implements GroupModel , JpaModel<GroupEntity> {
         return KeycloakModelUtils.escapeSlashesInGroupPath(session);
     }
 
+    /** 属性/结构变更后发布 {@link GroupUpdatedEvent}，驱动搜索索引等监听者。 */
     private void fireGroupUpdatedEvent() {
         GroupUpdatedEvent.fire(this, session);
     }
