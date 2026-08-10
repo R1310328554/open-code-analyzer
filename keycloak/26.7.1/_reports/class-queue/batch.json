@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:34:23Z",
-  "files": [
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/ciba/resolvers/DefaultCIBALoginUserResolverFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/device/DeviceGrantType.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/device/DeviceGrantTypeFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/device/clientpolicy/context/DeviceAuthorizationRequestContext.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/device/clientpolicy/context/DeviceTokenRequestContext.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/device/clientpolicy/context/DeviceTokenResponseContext.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/device/endpoints/DeviceEndpoint.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/device/endpoints/DeviceEndpointFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/installation/KeycloakOIDCClientInstallation.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/installation/KeycloakOIDCJbossSubsystemClientCliInstallation.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/installation/KeycloakOIDCJbossSubsystemClientInstallation.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/AbstractOIDCProtocolMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/AbstractPairwiseSubMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/AbstractUserRoleMappingMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/AcrProtocolMapper.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1378,
-  "done": 4605
+  "done": 4620
 }
