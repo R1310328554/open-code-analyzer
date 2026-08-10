@@ -28,34 +28,45 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 角色更新时的领域缓存失效事件。
+ * <p>
+ * 继承 {@link BaseRoleEvent}，携带角色名称，
+ * 通知 {@link RealmCacheManager} 刷新与该角色变更相关的缓存条目。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.ROLE_UPDATED_EVENT)
 public class RoleUpdatedEvent extends BaseRoleEvent {
 
+    /** 角色名称。 */
     @ProtoField(3)
     final String roleName;
 
+    /** Protobuf 反序列化工厂方法。 */
     @ProtoFactory
     RoleUpdatedEvent(String id, String containerId, String roleName) {
         super(id, containerId);
         this.roleName = Objects.requireNonNull(roleName);
     }
 
+    /** 创建角色更新失效事件。 */
     public static RoleUpdatedEvent create(String roleId, String roleName, String containerId) {
         return new RoleUpdatedEvent(roleId, containerId, roleName);
     }
 
+    /** 返回包含角色 ID、名称与容器 ID 的调试字符串。 */
     @Override
     public String toString() {
         return String.format("RoleUpdatedEvent [ roleId=%s, roleName=%s, containerId=%s ]", getId(), roleName, containerId);
     }
 
+    /** 刷新与该角色变更相关的缓存条目。 */
     @Override
     public void addInvalidations(RealmCacheManager realmCache, Set<String> invalidations) {
         realmCache.roleUpdated(containerId, roleName, invalidations);
     }
 
+    /** 比较角色名称是否一致。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -66,6 +77,7 @@ public class RoleUpdatedEvent extends BaseRoleEvent {
         return roleName.equals(that.roleName);
     }
 
+    /** 返回基于角色名称的哈希值。 */
     @Override
     public int hashCode() {
         int result = super.hashCode();

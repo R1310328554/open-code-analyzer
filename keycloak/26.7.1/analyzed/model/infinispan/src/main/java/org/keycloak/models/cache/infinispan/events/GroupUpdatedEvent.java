@@ -26,25 +26,33 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 组属性更新时的领域缓存失效事件。
+ * <p>
+ * 实现 {@link RealmCacheInvalidationEvent}，仅失效该组的名称相关缓存条目。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.GROUP_UPDATED_EVENT)
 public class GroupUpdatedEvent extends InvalidationEvent implements RealmCacheInvalidationEvent {
 
+    /** Protobuf 反序列化工厂方法。 */
     @ProtoFactory
     GroupUpdatedEvent(String id) {
         super(id);
     }
 
+    /** 创建组更新失效事件。 */
     public static GroupUpdatedEvent create(String groupId) {
         return new GroupUpdatedEvent(groupId);
     }
 
+    /** 返回包含组 ID 的调试字符串。 */
     @Override
     public String toString() {
         return "GroupUpdatedEvent [ " + getId() + " ]";
     }
 
+    /** 失效该组的名称相关缓存条目。 */
     @Override
     public void addInvalidations(RealmCacheManager realmCache, Set<String> invalidations) {
         realmCache.groupNameInvalidations(getId(), invalidations);

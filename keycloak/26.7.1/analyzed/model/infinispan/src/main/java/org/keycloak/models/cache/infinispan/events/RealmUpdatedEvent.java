@@ -26,20 +26,28 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 领域更新时的缓存失效事件。
+ * <p>
+ * 继承 {@link BaseRealmEvent}，通知 {@link RealmCacheManager}
+ * 刷新与该领域配置变更相关的缓存条目。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.REALM_UPDATED_EVENT)
 public class RealmUpdatedEvent extends BaseRealmEvent {
 
+    /** Protobuf 反序列化工厂方法。 */
     @ProtoFactory
     RealmUpdatedEvent(String id, String realmName) {
         super(id, realmName);
     }
 
+    /** 创建领域更新失效事件。 */
     public static RealmUpdatedEvent create(String realmId, String realmName) {
         return new RealmUpdatedEvent(realmId, realmName);
     }
 
+    /** 刷新与该领域配置变更相关的缓存条目。 */
     @Override
     public void addInvalidations(RealmCacheManager realmCache, Set<String> invalidations) {
         realmCache.realmUpdated(getId(), realmName, invalidations);

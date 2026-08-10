@@ -28,29 +28,39 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 角色删除时的领域缓存失效事件。
+ * <p>
+ * 继承 {@link BaseRoleEvent}，携带角色名称，
+ * 通知 {@link RealmCacheManager} 清除与该角色相关的缓存条目。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.ROLE_REMOVED_EVENT)
 public class RoleRemovedEvent extends BaseRoleEvent {
 
+    /** 角色名称。 */
     @ProtoField(3)
     final String roleName;
 
+    /** Protobuf 反序列化工厂方法。 */
     @ProtoFactory
     RoleRemovedEvent(String id, String containerId, String roleName) {
         super(id, containerId);
         this.roleName = Objects.requireNonNull(roleName);
     }
 
+    /** 创建角色删除失效事件。 */
     public static RoleRemovedEvent create(String roleId, String roleName, String containerId) {
         return new RoleRemovedEvent(roleId, containerId, roleName);
     }
 
+    /** 清除与该角色相关的缓存条目。 */
     @Override
     public void addInvalidations(RealmCacheManager realmCache, Set<String> invalidations) {
         realmCache.roleRemoval(getId(), roleName, containerId, invalidations);
     }
 
+    /** 比较角色名称是否一致。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -61,6 +71,7 @@ public class RoleRemovedEvent extends BaseRoleEvent {
         return roleName.equals(that.roleName);
     }
 
+    /** 返回基于角色名称的哈希值。 */
     @Override
     public int hashCode() {
         int result = super.hashCode();

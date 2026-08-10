@@ -26,25 +26,34 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 按领域批量失效用户缓存的事件。
+ * <p>
+ * 实现 {@link UserCacheInvalidationEvent}，以领域 ID 为键，
+ * 清除该领域下全部用户的缓存条目。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.USER_CACHE_REALM_INVALIDATION_EVENT)
 public class UserCacheRealmInvalidationEvent  extends InvalidationEvent implements UserCacheInvalidationEvent {
 
+    /** 以领域 ID 构造批量失效事件。 */
     private UserCacheRealmInvalidationEvent(String id) {
         super(id);
     }
 
+    /** Protobuf 反序列化工厂方法，同时作为对外创建入口。 */
     @ProtoFactory
     public static UserCacheRealmInvalidationEvent create(String id) {
         return new UserCacheRealmInvalidationEvent(id);
     }
 
+    /** 返回包含领域 ID 的调试字符串。 */
     @Override
     public String toString() {
         return String.format("UserCacheRealmInvalidationEvent [ realmId=%s ]", getId());
     }
 
+    /** 失效该领域下全部用户的缓存条目。 */
     @Override
     public void addInvalidations(UserCacheManager userCache, Set<String> invalidations) {
         userCache.invalidateRealmUsers(getId(), invalidations);

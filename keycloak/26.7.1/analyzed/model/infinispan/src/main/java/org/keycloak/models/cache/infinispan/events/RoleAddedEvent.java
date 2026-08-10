@@ -27,24 +27,33 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 角色新增时的领域缓存失效事件。
+ * <p>
+ * 继承 {@link BaseRoleEvent}，携带角色名称，
+ * 通知 {@link RealmCacheManager} 刷新与新增角色相关的缓存条目。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.ROLE_ADDED_EVENT)
 public class RoleAddedEvent extends BaseRoleEvent {
 
+    /** 角色名称。 */
     @ProtoField(3)
     final String roleName;
 
+    /** Protobuf 反序列化工厂方法。 */
     @ProtoFactory
     RoleAddedEvent(String id, String containerId, String roleName) {
         super(id, containerId);
         this.roleName = roleName;
     }
 
+    /** 创建角色新增失效事件。 */
     public static RoleAddedEvent create(String roleId, String containerId, String roleName) {
         return new RoleAddedEvent(roleId, containerId, roleName);
     }
 
+    /** 将新增角色引发的失效键加入集合。 */
     @Override
     public void addInvalidations(RealmCacheManager realmCache, Set<String> invalidations) {
         realmCache.roleAdded(containerId, roleName, invalidations);

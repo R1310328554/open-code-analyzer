@@ -29,18 +29,27 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 组移动时的领域缓存失效事件。
+ * <p>
+ * 实现 {@link RealmCacheInvalidationEvent}，记录新旧父组 ID，
+ * 失效组查询、组名称及新旧父组相关缓存条目。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.GROUP_MOVED_EVENT)
 public class GroupMovedEvent extends InvalidationEvent implements RealmCacheInvalidationEvent {
 
+    /** 新父组 ID；移至顶级时为 null。 */
     @ProtoField(2)
     final String newParentId; // null if moving to top-level
+    /** 原父组 ID；自顶级移出时为 null。 */
     @ProtoField(3)
     final String oldParentId; // null if moving from top-level
+    /** 所属领域 ID。 */
     @ProtoField(4)
     final String realmId;
 
+    /** 以组 ID、新旧父组 ID 与领域 ID 构造事件。 */
     private GroupMovedEvent(String groupId, String newParentId, String oldParentId, String realmId) {
         super(groupId);
         this.newParentId = newParentId;
@@ -48,20 +57,24 @@ public class GroupMovedEvent extends InvalidationEvent implements RealmCacheInva
         this.realmId = Objects.requireNonNull(realmId);
     }
 
+    /** Protobuf 反序列化工厂方法。 */
     @ProtoFactory
     static GroupMovedEvent protoFactory(String id, String newParentId, String oldParentId, String realmId) {
         return new GroupMovedEvent(id, newParentId, oldParentId, realmId);
     }
 
+    /** 从组模型与目标父组创建移动失效事件。 */
     public static GroupMovedEvent create(GroupModel group, GroupModel toParent, String realmId) {
         return new GroupMovedEvent(group.getId(), toParent == null ? null : toParent.getId(), group.getParentId(), realmId);
     }
 
+    /** 返回包含领域 ID、组 ID 及新旧父组 ID 的调试字符串。 */
     @Override
     public String toString() {
         return String.format("GroupMovedEvent [ realmId=%s, groupId=%s, newParentId=%s, oldParentId=%s ]", realmId, getId(), newParentId, oldParentId);
     }
 
+    /** 失效组查询、组名称及新旧父组相关缓存条目。 */
     @Override
     public void addInvalidations(RealmCacheManager realmCache, Set<String> invalidations) {
         realmCache.groupQueriesInvalidations(realmId, invalidations);
@@ -74,6 +87,7 @@ public class GroupMovedEvent extends InvalidationEvent implements RealmCacheInva
         }
     }
 
+    /** 比较新旧父组 ID 与领域 ID 是否一致。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -86,6 +100,7 @@ public class GroupMovedEvent extends InvalidationEvent implements RealmCacheInva
                 realmId.equals(that.realmId);
     }
 
+    /** 返回基于新旧父组 ID 与领域 ID 的哈希值。 */
     @Override
     public int hashCode() {
         int result = super.hashCode();

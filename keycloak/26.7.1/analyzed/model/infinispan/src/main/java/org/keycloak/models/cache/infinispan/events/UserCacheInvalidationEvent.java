@@ -22,10 +22,16 @@ import java.util.Set;
 import org.keycloak.models.cache.infinispan.UserCacheManager;
 
 /**
+ * 用户缓存失效事件接口。
+ * <p>
+ * 由用户增删改、同意书变更等事件实现，
+ * 通过 {@link UserCacheManager} 将需失效的缓存键写入集合。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface UserCacheInvalidationEvent {
 
+    /** 根据事件内容向失效集合追加需刷新的用户缓存键。 */
     void addInvalidations(UserCacheManager userCache, Set<String> invalidations);
 
 }

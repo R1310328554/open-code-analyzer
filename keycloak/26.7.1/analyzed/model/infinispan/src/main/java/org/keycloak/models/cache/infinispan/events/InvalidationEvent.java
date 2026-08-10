@@ -24,26 +24,36 @@ import org.keycloak.cluster.ClusterEvent;
 import org.infinispan.protostream.annotations.ProtoField;
 
 /**
+ * 缓存失效集群事件的抽象基类。
+ * <p>
+ * 实现 {@link ClusterEvent}，携带被失效实体的 ID，
+ * 供领域、用户、组、角色等各类缓存失效事件继承。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class InvalidationEvent implements ClusterEvent {
 
+    /** 被失效实体的 ID。 */
     private final String id;
 
+    /** 以实体 ID 构造失效事件。 */
     protected InvalidationEvent(String id) {
         this.id = Objects.requireNonNull(id);
     }
 
+    /** 返回被失效实体的 ID。 */
     @ProtoField(1)
     public final String getId() {
         return id;
     }
 
+    /** 返回基于类与实体 ID 的哈希值。 */
     @Override
     public int hashCode() {
         return getClass().hashCode() * 13 + getId().hashCode();
     }
 
+    /** 比较是否为同类型且实体 ID 相同。 */
     @Override
     public boolean equals(Object obj) {
         if (obj == null) return false;
