@@ -1453,3 +1453,18 @@
 2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/DistributionAwareExpirationTask.java wave50a session entities + cluster events + expiration
 2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/ExpirationTask.java wave50a session entities + cluster events + expiration
 2026-08-10T07:54:25Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/ExpirationTaskFactory.java wave50a session entities + cluster events + expiration
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/LocalExpirationTask.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/RemoteExpirationTask.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/listeners/BaseUserSessionExpirationListener.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/listeners/EmbeddedUserSessionExpirationListener.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/listeners/RemoteUserSessionExpirationListener.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/query/ClientSessionQueries.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/query/LoginFailureQueries.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/query/QueryHelper.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/query/UserSessionQueries.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteInfinispanAuthenticationSessionProvider.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteInfinispanAuthenticationSessionProviderFactory.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteInfinispanSingleUseObjectProvider.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteInfinispanSingleUseObjectProviderFactory.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteStickySessionEncoderProviderFactory.java wave50b expiration listeners + remote providers
+2026-08-10T07:54:37Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteUserLoginFailureProvider.java wave50b expiration listeners + remote providers

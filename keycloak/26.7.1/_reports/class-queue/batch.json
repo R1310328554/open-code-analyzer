@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T07:52:45Z",
-  "files": [
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/LocalExpirationTask.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/expiration/RemoteExpirationTask.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/listeners/BaseUserSessionExpirationListener.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/listeners/EmbeddedUserSessionExpirationListener.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/listeners/RemoteUserSessionExpirationListener.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/query/ClientSessionQueries.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/query/LoginFailureQueries.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/query/QueryHelper.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/query/UserSessionQueries.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteInfinispanAuthenticationSessionProvider.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteInfinispanAuthenticationSessionProviderFactory.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteInfinispanSingleUseObjectProvider.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteInfinispanSingleUseObjectProviderFactory.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteStickySessionEncoderProviderFactory.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteUserLoginFailureProvider.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4498,
-  "done": 1485
+  "done": 1500
 }
