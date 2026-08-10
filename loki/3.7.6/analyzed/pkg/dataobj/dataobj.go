@@ -1,3 +1,4 @@
+// dataobj 包提供 data object 的底层读写工具：对象由多个 section 组成，每节含数据区与轻量元数据区，支持 Builder 写入与 SectionReader 按需读取。
 // Package dataobj holds utilities for working with data objects.
 //
 // Data objects are a container format for storing data intended to be
@@ -83,6 +84,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/metadata/filemd"
 )
 
+// Object 表示已打开的数据对象，封装 rangeReader、decoder 与 section 列表。
 // An Object is a representation of a data object.
 type Object struct {
 	rr  rangeReader
@@ -93,6 +95,7 @@ type Object struct {
 	tenants  []string
 }
 
+// FromBucket 从对象存储 bucket 按路径打开 Object，prefetchBytes 控制元数据预读量。
 // FromBucket opens an Object from the given storage bucket and path.
 // FromBucket returns an error if the metadata of the Object cannot be read or
 // if the provided ctx times out.
@@ -107,6 +110,7 @@ func FromBucket(ctx context.Context, bucket objstore.BucketReader, path string, 
 	return obj, nil
 }
 
+// FromReaderAt 从本地 ReaderAt 打开 Object，size 为对象总字节数。
 // FromReadSeeker opens an Object from the given ReaderAt. The size argument
 // specifies the size of the data object in bytes. FromReaderAt returns an
 // error if the metadata of the Object cannot be read.
@@ -154,6 +158,7 @@ func (o *Object) init(ctx context.Context) error {
 	return nil
 }
 
+// Size 返回 data object 的字节大小，打开失败时不会调用此方法。
 // Size returns the size of the data object in bytes.
 func (o *Object) Size() int64 {
 	// By the time Size is called, objectSize would already be using a cached
@@ -167,14 +172,17 @@ func (o *Object) Size() int64 {
 	return sz
 }
 
+// Sections 返回 Object 内全部 section 切片，调用方不得修改返回切片。
 // Sections returns the list of sections available in the Object. The slice of
 // returned sections must not be mutated.
 func (o *Object) Sections() Sections { return o.sections }
 
+// Tenants 返回 Object 中出现的租户 ID 列表。
 // Tenant returns the list of tenant that have sections in the Object. The slice of
 // returned tenants must not be mutated.
 func (o *Object) Tenants() []string { return o.tenants }
 
+// Reader 返回读取整个原始 data object 字节的 ReadCloser。
 // Reader returns a reader for the entire raw data object.
 func (o *Object) Reader(ctx context.Context) (io.ReadCloser, error) {
 	return o.rr.Read(ctx)

@@ -1,5 +1,8 @@
 package consumer
 
+// downscale 模块定义缩容许可检查链：
+// 在 rollout operator 缩容前确认 Kafka 分区 offset 已全部提交，避免数据丢失。
+
 import (
 	"context"
 	"fmt"
@@ -12,6 +15,7 @@ import (
 
 type downscalePermittedFunc func(context.Context) (bool, error)
 
+// newChainedDownscalePermittedFunc 串联多个检查函数，全部返回 true 才允许缩容。
 // newChainedDownscalePermittedFunc returns a chain of downscalePermittedFunc
 // that must all return true for the func to return true.
 func newChainedDownscalePermittedFunc(funcs ...downscalePermittedFunc) downscalePermittedFunc {
@@ -25,6 +29,7 @@ func newChainedDownscalePermittedFunc(funcs ...downscalePermittedFunc) downscale
 	}
 }
 
+// newOffsetCommittedDownscaleFunc 检查消费者是否已提交至分区 end offset 的前一条记录。
 // newOffsetCommittedDownscaleFunc returns a downscalePermittedFunc that checks
 // if the consumer has committed all records up to the end offset.
 func newOffsetCommittedDownscaleFunc(offsetReader *kafkav2.OffsetReader, partitionID int32, logger log.Logger) downscalePermittedFunc {

@@ -1,5 +1,8 @@
 package consumer
 
+// service 模块实现 dataobj consumer 主服务：
+// 串联 ring 分区、Kafka 消费、builder/processor、刷写上传与缩容 HTTP 处理器。
+
 import (
 	"context"
 	"fmt"
@@ -27,6 +30,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/scratch"
 )
 
+// RingKey/PartitionRingKey 等常量定义 consumer 与分区 ring 的 KV 键名。
 const (
 	RingKey           = "dataobj-consumer"
 	RingName          = "dataobj-consumer"
@@ -51,6 +55,7 @@ type Service struct {
 	reg                         prometheus.Registerer
 }
 
+// New 初始化 Kafka 客户端、ring、builder 工厂、processor 与 flusher 等全部子组件。
 func New(kafkaCfg kafka.Config, cfg Config, mCfg metastore.Config, bucket objstore.Bucket, scratchStore scratch.Store, _ string, _ ring.PartitionRingReader, reg prometheus.Registerer, logger log.Logger) (*Service, error) {
 	logger = log.With(logger, "component", "dataobj-consumer")
 
@@ -186,6 +191,7 @@ func New(kafkaCfg kafka.Config, cfg Config, mCfg metastore.Config, bucket objsto
 	return s, nil
 }
 
+// starting 恢复 offset 并依次启动 lifecycler、processor 与 consumer。
 // starting implements the Service interface's starting method.
 func (s *Service) starting(ctx context.Context) error {
 	level.Info(s.logger).Log("msg", "starting")
@@ -207,12 +213,14 @@ func (s *Service) starting(ctx context.Context) error {
 	return nil
 }
 
+// running 阻塞等待 context 取消，主工作由 processor 与 consumer 承担。
 // running implements the Service interface's running method.
 func (s *Service) running(ctx context.Context) error {
 	<-ctx.Done()
 	return nil
 }
 
+// stopping 逆序停止 consumer、processor、lifecycler 并关闭 metastore 客户端。
 // stopping implements the Service interface's stopping method.
 func (s *Service) stopping(failureCase error) error {
 	level.Info(s.logger).Log("msg", "stopping")
@@ -234,14 +242,17 @@ func (s *Service) stopping(failureCase error) error {
 	return failureCase
 }
 
+// Flush 实现 ring.FlushTransferer，dataobj consumer 无需转移内存数据。
 // Flush implements the [ring.FlushTransferer] interface.
 func (s *Service) Flush() {}
 
+// TransferOut 实现 ring 分区迁出，本组件无状态无需转移。
 // TransferOut implements the [ring.FlushTransferer] interface.
 func (s *Service) TransferOut(_ context.Context) error {
 	return nil
 }
 
+// initResumeOffset 在启动 consumer 前获取并设置恢复 offset，失败时指数退避重试。
 // initResumeOffset fetches and sets the resume offset (often the last committed
 // offset) for the consumer. It must be called before starting the consumer.
 func (s *Service) initResumeOffset(ctx context.Context) error {

@@ -1,3 +1,4 @@
+// logsobj 包构建面向日志的 data object：缓冲 Kafka 流式日志、按租户写入 streams/logs section 并支持全局排序。
 // Package logsobj provides tooling for creating logs-oriented data objects.
 package logsobj
 
@@ -25,6 +26,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/scratch"
 )
 
+// ErrBuilderFull 表示 builder 已达目标大小需先 Flush；ErrBuilderEmpty 表示无数据可刷。
 // ErrBuilderFull is returned by [Builder.Append] when the buffer is
 // full and needs to flush; call [Builder.Flush] to flush it.
 var (
@@ -38,6 +40,7 @@ const (
 	sortTimestampDESC = "timestamp-desc"
 )
 
+// BuilderBaseConfig 配置页大小、对象大小、缓冲与 section 合并等 builder 参数。
 // BuilderBaseConfig configures a data object builder.
 type BuilderBaseConfig struct {
 	// TargetPageSize configures a target size for encoded pages within the data
@@ -115,6 +118,7 @@ func (cfg *BuilderBaseConfig) Validate() error {
 	return errors.Join(errs...)
 }
 
+// BuilderConfig 在基础配置上增加 dataobj 日志 section 的排序顺序选项。
 // BuilderConfig configures a [Builder].
 type BuilderConfig struct {
 	BuilderBaseConfig `yaml:",inline"`
@@ -165,6 +169,7 @@ func parseSortOrder(s string) logs.SortOrder {
 	return val
 }
 
+// Builder 从入站日志流构建 data object，方法非并发安全，调用方需自行同步。
 // A Builder constructs a logs-oriented data object from a set of incoming
 // log data. Log data is appended by calling [LogBuilder.Append]. A complete
 // data object is constructed by by calling [LogBuilder.Flush].
@@ -196,6 +201,7 @@ const (
 	builderStateDirty
 )
 
+// NewBuilder 校验配置并创建 Builder，含 LRU 标签缓存与内部 dataobj.Builder。
 // NewBuilder creates a new [Builder] which stores log-oriented data objects.
 //
 // NewBuilder returns an error if the provided config is invalid.
@@ -246,6 +252,7 @@ func (b *Builder) GetEstimatedSize() int {
 	return b.currentSizeEstimate
 }
 
+// Append 缓冲一条 logproto.Stream，满时返回 ErrBuilderFull 需先 Flush。
 // Append buffers a stream to be written to a data object. Append returns an
 // error if the stream labels cannot be parsed or [ErrBuilderFull] if the
 // builder is full.
@@ -390,6 +397,7 @@ func (b *Builder) TimeRanges() []multitenancy.TimeRange {
 	return timeRanges
 }
 
+// Flush 将全部缓冲 section 编码为 data object，成功后 Reset 以便继续 Append。
 // Flush flushes all buffered data to the buffer provided. Calling Flush can result
 // in a no-op if there is no buffered data to flush.
 //
@@ -432,6 +440,7 @@ func (b *Builder) Flush() (*dataobj.Object, io.Closer, error) {
 	return obj, closer, err
 }
 
+// CopyAndSort 对已有对象做全局排序重写，CPU 密集且支持 context 取消。
 // CopyAndSort takes an existing [dataobj.Object] and rewrites the logs sections
 // so the logs are sorted object-wide. The order of the sections is deterministic.
 // For each tenant, first come the streams sections in the order of the old object
@@ -583,6 +592,7 @@ func (b *Builder) observeObject(ctx context.Context, obj *dataobj.Object) error 
 	return errors.Join(errs...)
 }
 
+// Reset 丢弃待写数据并重置 builder 为空状态，不池化子 builder 以防 OOM。
 // Reset discards pending data and resets the builder to an empty state.
 func (b *Builder) Reset() {
 	b.builder.Reset()
@@ -602,6 +612,7 @@ func (b *Builder) Reset() {
 	b.state = builderStateEmpty
 }
 
+// RegisterMetrics 向 Prometheus 注册 builder 及各 section 指标。
 // RegisterMetrics registers metrics about builder to report to reg. All
 // metrics will have a tenant label set to the tenant ID of the Builder.
 //

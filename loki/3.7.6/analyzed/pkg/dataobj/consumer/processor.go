@@ -1,5 +1,8 @@
 package consumer
 
+// processor 模块消费 Kafka 记录并构建 data object：
+// 解码日志流写入 builder，按满/最大年龄/空闲超时触发 flush 与 offset 提交。
+
 import (
 	"context"
 	"errors"
@@ -20,6 +23,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// builder 接口抽象 logsobj.Builder，便于 processor 单元测试。
 // A builder allows mocking of [logsobj.Builder] in tests.
 type builder interface {
 	Append(tenant string, stream logproto.Stream) error
@@ -29,11 +33,13 @@ type builder interface {
 	CopyAndSort(ctx context.Context, obj *dataobj.Object) (*dataobj.Object, io.Closer, error)
 }
 
+// flushCommitter 接口抽象刷写与提交逻辑。
 // A flushCommitter allows mocking of flushes in tests.
 type flushCommitter interface {
 	Flush(ctx context.Context, builder builder, reason string, offset int64, earliestRecordTime time.Time) error
 }
 
+// processor 从 records channel 读取 Kafka 记录，维护 builder 生命周期与 flush 策略。
 // A processor receives records and builds data objects from them.
 type processor struct {
 	*services.BasicService
@@ -104,16 +110,19 @@ func newProcessor(
 	return p
 }
 
+// starting 为 BasicService 启动钩子，processor 无需额外初始化。
 // starting implements [services.StartingFn].
 func (p *processor) starting(_ context.Context) error {
 	return nil
 }
 
+// running 委托 Run 进入主消费循环。
 // running implements [services.RunningFn].
 func (p *processor) running(ctx context.Context) error {
 	return p.Run(ctx)
 }
 
+// stopping 为 BasicService 停止钩子，processor 无需清理资源。
 // stopping implements [services.StoppingFn].
 func (p *processor) stopping(_ error) error {
 	return nil
@@ -148,6 +157,7 @@ func (p *processor) Run(ctx context.Context) error {
 	}
 }
 
+// processRecord 解码单条记录、检查 max age、Append 并在 builder 满时 flush。
 func (p *processor) processRecord(ctx context.Context, rec *kgo.Record) error {
 	// We use the current time to calculate a number of metrics, such as
 	// consumption lag, the age of the data object builder, etc.
@@ -199,6 +209,7 @@ func (p *processor) shouldFlushDueToMaxAge() bool {
 		time.Since(p.firstAppend) > p.maxBuilderAge
 }
 
+// idleFlush 在超过 idleFlushTimeout 且有缓冲数据时触发空闲刷写。
 // idleFlush flushes the partition if it has exceeded the idle flush timeout.
 // It returns true if the partition was flushed, false with a non-nil error
 // if the partition could not be flushed, and false with a nil error if
@@ -213,6 +224,7 @@ func (p *processor) idleFlush(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
+// needsIdleFlush 判断 lastAppend 是否超时且 builder 非空。
 // needsIdleFlush returns true if the partition has exceeded the idle timeout
 // and the builder has some data buffered.
 func (p *processor) needsIdleFlush() bool {

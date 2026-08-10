@@ -1,5 +1,8 @@
 package logsobj
 
+// sort 模块实现多 logs section 的 k 路归并排序：
+// 基于 loser tree 按配置的 SortOrder 合并已排序 section 中的日志记录。
+
 import (
 	"context"
 	"fmt"
@@ -12,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/loser"
 )
 
+// sortMergeIterator 打开各 section 列式数据集，用 loser tree 做 k 路归并输出 Record。
 // sortMergeIterator returns an iterator that performs a k-way merge of records from multiple logs sections.
 // It requires that the input sections are sorted sorted by the same order.
 func sortMergeIterator(ctx context.Context, sections []*dataobj.Section, sort logs.SortOrder) (result.Seq[logs.Record], error) {
@@ -78,6 +82,7 @@ func sortMergeIterator(ctx context.Context, sections []*dataobj.Section, sort lo
 		}), nil
 }
 
+// sectionSequence 包装 logs.DatasetSequence 并保留 section 引用供解码行。
 type sectionSequence struct {
 	logs.DatasetSequence
 	section *logs.Section

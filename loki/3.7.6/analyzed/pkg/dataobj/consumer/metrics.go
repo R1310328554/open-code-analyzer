@@ -1,5 +1,8 @@
 package consumer
 
+// metrics 模块定义 dataobj consumer processor 的 Prometheus 指标：
+// 跟踪 offset、消费滞后、字节量与记录处理成功/失败计数。
+
 import (
 	"time"
 
@@ -16,6 +19,7 @@ type metrics struct {
 	recordFailures prometheus.Counter
 }
 
+// newMetrics 注册 loki_dataobj_consumer_* 系列指标到给定 Registerer。
 func newMetrics(r prometheus.Registerer) *metrics {
 	return &metrics{
 		lastOffset: promauto.With(r).NewGauge(prometheus.GaugeOpts{
@@ -45,6 +49,7 @@ func newMetrics(r prometheus.Registerer) *metrics {
 	}
 }
 
+// setLastOffset 更新最后消费 offset Gauge。
 func (m *metrics) setLastOffset(offset int64) {
 	m.lastOffset.Set(float64(offset))
 }

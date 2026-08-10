@@ -1,5 +1,8 @@
 package consumer
 
+// flush_committer 模块在刷写成功后提交 Kafka offset 并发送 metastore 事件：
+// 保证对象落盘、索引可见与消费位点一致。
+
 import (
 	"context"
 	"fmt"
@@ -12,21 +15,25 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+// committer 接口抽象 offset 提交，便于测试 mock kgo.Client。
 // A committer allows mocking of certain [kgo.Client] methods in tests.
 type committer interface {
 	Commit(ctx context.Context, partition int32, offset int64) error
 }
 
+// metastoreEventEmitter 接口抽象 metastore 事件发送。
 // A metastoreEventEmitter allows mocking of [metastoreEvents] in tests.
 type metastoreEventEmitter interface {
 	Emit(ctx context.Context, objectPath string, earliestRecordTime time.Time) error
 }
 
+// flusher 接口抽象 data object 刷写操作。
 // A flusher allows mocking of flushes in tests.
 type flusher interface {
 	Flush(ctx context.Context, builder builder, reason string) (string, error)
 }
 
+// flushCommitterImpl 串联 flusher、metastore 事件与 offset commit。
 // A flushCommitterImpl manages the flushing of data objects and commits.
 type flushCommitterImpl struct {
 	flusher         flusher
@@ -65,6 +72,7 @@ func newFlushCommitter(
 	}
 }
 
+// Flush 刷写 builder，成功后发 metastore 事件并提交 offset。
 // Flush the data object builder and, if successful, commit the offset.
 func (c *flushCommitterImpl) Flush(ctx context.Context, builder builder, reason string, offset int64, earliestRecordTime time.Time) error {
 	objectPath, err := c.flusher.Flush(ctx, builder, reason)
@@ -81,6 +89,7 @@ func (c *flushCommitterImpl) Flush(ctx context.Context, builder builder, reason 
 	return nil
 }
 
+// emitEvent 向 metastore 发送 ObjectWritten 事件，失败时指数退避重试。
 // emitEvent emits a metastore event for the object, retries with exponential
 // backoff until successful or the context is canceled.
 func (c *flushCommitterImpl) emitEvent(ctx context.Context, objectPath string, earliestRecordTime time.Time) error {
@@ -101,6 +110,7 @@ func (c *flushCommitterImpl) emitEvent(ctx context.Context, objectPath string, e
 	return lastErr
 }
 
+// commit 提交分区 offset，失败时指数退避直至成功或 context 取消。
 // commits the offset, retries with exponential backoff until successful or
 // the context is canceled.
 func (c *flushCommitterImpl) commit(ctx context.Context, offset int64) error {
