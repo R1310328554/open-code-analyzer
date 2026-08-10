@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:15:55Z",
-  "files": [
-    "rag/app/naive.py",
-    "rag/app/one.py",
-    "rag/app/paper.py",
-    "rag/app/picture.py",
-    "rag/app/presentation.py",
-    "rag/app/qa.py",
-    "rag/app/resume.py",
-    "rag/app/table.py",
-    "rag/app/tag.py",
-    "rag/benchmark.py",
-    "rag/flow/__init__.py",
-    "rag/flow/base.py",
-    "rag/flow/chunker/__init__.py",
-    "rag/flow/chunker/schema.py",
-    "rag/flow/chunker/title_chunker/__init__.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 564,
-  "done": 1185
+  "done": 1200
 }
