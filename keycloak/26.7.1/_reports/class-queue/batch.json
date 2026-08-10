@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:55:58Z",
-  "files": [
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/subject/SsfSubjectInclusionResolver.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/subject/SubjectManagementResult.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/subject/SubjectManagementService.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/subject/SubjectSubscriptionFilter.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/support/SsfActivityTracker.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/support/SsfAuthUtil.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/support/SsfErrorRepresentation.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/support/SsfPushUrlValidator.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/support/SsfTransmitterUrls.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/support/SsfUtil.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/AuthenticationExecutionBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/AuthenticationExecutionExportBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/AuthenticationFlowBuilder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/Builder.java",
-    "test-framework/builders/src/main/java/org/keycloak/testframework/realm/ClientBuilder.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 508,
-  "done": 5475
+  "done": 5490
 }
