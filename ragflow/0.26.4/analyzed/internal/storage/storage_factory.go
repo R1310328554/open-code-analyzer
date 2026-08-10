@@ -16,6 +16,8 @@
 
 package storage
 
+// storage_factory.go 管理全局 Storage 单例与按类型创建实例。
+
 import (
 	"fmt"
 	"ragflow/internal/common"
@@ -28,7 +30,7 @@ var (
 	once          sync.Once
 )
 
-// StorageFactory creates storage instances based on configuration
+// StorageFactory 根据 server.StorageConfig 持有当前 Storage 实例。
 type StorageFactory struct {
 	storageType StorageType
 	storage     Storage
@@ -36,7 +38,7 @@ type StorageFactory struct {
 	mu          sync.RWMutex
 }
 
-// GetStorageFactory returns the singleton storage factory instance
+// GetStorageFactory 返回全局 StorageFactory 单例（sync.Once 初始化）。
 func GetStorageFactory() *StorageFactory {
 	once.Do(func() {
 		globalFactory = &StorageFactory{}
@@ -44,13 +46,13 @@ func GetStorageFactory() *StorageFactory {
 	return globalFactory
 }
 
-// InitStorageFactory initializes the storage factory with configuration
+// InitStorageFactory 从全局配置读取 storage 类型并完成 initStorage。
 func InitStorageFactory() error {
 	factory := GetStorageFactory()
 
 	globalConfig := server.GetConfig()
 	factory.config = &globalConfig.StorageEngine
-	// Initialize storage based on type
+	// 按配置类型实例化具体后端
 	if err := factory.initStorage(); err != nil {
 		return err
 	}
@@ -60,7 +62,7 @@ func InitStorageFactory() error {
 	return nil
 }
 
-// initStorage initializes the specific storage implementation
+// initStorage 分发到 minio/s3/oss 初始化分支。
 func (f *StorageFactory) initStorage() error {
 	switch f.config.Type {
 	case "minio":
@@ -120,22 +122,21 @@ func (f *StorageFactory) initOSS(ossConfig *server.OSSConfig) error {
 	return nil
 }
 
-// GetStorage returns the current storage instance
+// GetStorage 读锁返回当前 Storage 接口实现。
 func (f *StorageFactory) GetStorage() Storage {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.storage
 }
 
-// GetStorageType returns the current storage type
+// GetStorageType 返回当前 StorageType 枚举值。
 func (f *StorageFactory) GetStorageType() StorageType {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.storageType
 }
 
-// Create creates a new storage instance based on the storage type
-// This is the factory method equivalent to Python's StorageFactory.create()
+// Create 按类型新建 Storage 实例，等价 Python StorageFactory.create()。
 func (f *StorageFactory) Create(storageType StorageType) (Storage, error) {
 	var storage Storage
 	var err error
@@ -170,14 +171,14 @@ func (f *StorageFactory) Create(storageType StorageType) (Storage, error) {
 	return storage, nil
 }
 
-// SetStorage sets the storage instance (useful for testing)
+// SetStorage 注入 Storage 实现，便于单测 mock。
 func (f *StorageFactory) SetStorage(storage Storage) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.storage = storage
 }
 
-// StorageTypeMapping returns the storage type mapping (equivalent to Python's storage_mapping)
+// StorageTypeMapping 类型到构造函数的映射表，对齐 Python storage_mapping。
 var StorageTypeMapping = map[StorageType]func(*server.StorageConfig) (Storage, error){
 	StorageMinio: func(config *server.StorageConfig) (Storage, error) {
 		if config.Minio == nil {
@@ -198,3 +199,4 @@ var StorageTypeMapping = map[StorageType]func(*server.StorageConfig) (Storage, e
 		return NewOSSStorage(config.OSS)
 	},
 }
+// storage_factory.go — 全局 Storage 工厂单例，按配置初始化 minio/s3/oss。

@@ -16,6 +16,8 @@
 
 package storage
 
+// oss.go 阿里云 OSS 存储实现（AWS SDK v2 S3 兼容客户端）。
+
 import (
 	"bytes"
 	"context"
@@ -32,8 +34,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// OSSStorage implements Storage interface for Aliyun OSS
-// OSS uses S3-compatible API
+// OSSStorage 阿里云 OSS 后端，通过 S3 兼容 API 访问。
 type OSSStorage struct {
 	client     *s3.Client
 	bucket     string
@@ -41,7 +42,7 @@ type OSSStorage struct {
 	config     *server.OSSConfig
 }
 
-// NewOSSStorage creates a new OSS storage instance
+// NewOSSStorage 连接 OSS 端点并初始化客户端。
 func NewOSSStorage(config *server.OSSConfig) (*OSSStorage, error) {
 	storage := &OSSStorage{
 		bucket:     config.Bucket,
@@ -59,14 +60,14 @@ func NewOSSStorage(config *server.OSSConfig) (*OSSStorage, error) {
 func (o *OSSStorage) connect() error {
 	ctx := context.Background()
 
-	// Create static credentials
+	// 使用静态 AccessKey/SecretKey 凭证
 	creds := credentials.NewStaticCredentialsProvider(
 		o.config.AccessKey,
 		o.config.SecretKey,
 		"",
 	)
 
-	// Load configuration
+	// 加载 AWS 配置并绑定区域
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(o.config.Region),
 		config.WithCredentialsProvider(creds),
@@ -75,7 +76,7 @@ func (o *OSSStorage) connect() error {
 		return fmt.Errorf("failed to load OSS config: %w", err)
 	}
 
-	// Create S3 client with OSS endpoint
+	// 创建指向 OSS Endpoint 的 S3 客户端
 	o.client = s3.NewFromConfig(cfg, func(opts *s3.Options) {
 		opts.BaseEndpoint = aws.String(o.config.EndpointURL)
 	})
@@ -103,7 +104,7 @@ func (o *OSSStorage) resolveBucketAndPath(bucket, fnm string) (string, string) {
 	return actualBucket, actualPath
 }
 
-// Health checks OSS service availability
+// Health 上传探测对象验证读写可用性。
 func (o *OSSStorage) Health() bool {
 	bucket := o.bucket
 	if bucket == "" {
@@ -118,7 +119,7 @@ func (o *OSSStorage) Health() bool {
 
 	ctx := context.Background()
 
-	// Ensure bucket exists
+	// 健康检查前确保桶存在
 	if !o.BucketExists(bucket) {
 		_, err := o.client.CreateBucket(ctx, &s3.CreateBucketInput{
 			Bucket: aws.String(bucket),
@@ -129,7 +130,7 @@ func (o *OSSStorage) Health() bool {
 		}
 	}
 
-	// Try to upload a test object
+	// 上传测试对象验证 PutObject
 	reader := bytes.NewReader(binary)
 	_, err := o.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucket),
@@ -145,7 +146,7 @@ func (o *OSSStorage) Health() bool {
 	return true
 }
 
-// Put uploads an object to OSS
+// Put 上传对象，桶不存在则创建，最多重试 2 次。
 func (o *OSSStorage) Put(bucket, fnm string, binary []byte, tenantID ...string) error {
 	bucket, fnm = o.resolveBucketAndPath(bucket, fnm)
 
@@ -185,7 +186,7 @@ func (o *OSSStorage) Put(bucket, fnm string, binary []byte, tenantID ...string) 
 	return fmt.Errorf("failed to put object after retries")
 }
 
-// Get retrieves an object from OSS
+// Get 下载对象字节，失败重连重试。
 func (o *OSSStorage) Get(bucket, fnm string, tenantID ...string) ([]byte, error) {
 	bucket, fnm = o.resolveBucketAndPath(bucket, fnm)
 
@@ -218,7 +219,7 @@ func (o *OSSStorage) Get(bucket, fnm string, tenantID ...string) ([]byte, error)
 	return nil, fmt.Errorf("failed to get object after retries")
 }
 
-// Remove removes an object from OSS
+// Remove 删除 OSS 对象。
 func (o *OSSStorage) Remove(bucket, fnm string, tenantID ...string) error {
 	bucket, fnm = o.resolveBucketAndPath(bucket, fnm)
 
@@ -236,7 +237,7 @@ func (o *OSSStorage) Remove(bucket, fnm string, tenantID ...string) error {
 	return nil
 }
 
-// ObjExist checks if an object exists in OSS
+// ObjExist 通过 HeadObject 判断对象是否存在。
 func (o *OSSStorage) ObjExist(bucket, fnm string, tenantID ...string) bool {
 	bucket, fnm = o.resolveBucketAndPath(bucket, fnm)
 
@@ -256,7 +257,7 @@ func (o *OSSStorage) ObjExist(bucket, fnm string, tenantID ...string) bool {
 	return true
 }
 
-// GetPresignedURL generates a presigned URL for accessing an object
+// GetPresignedURL 生成预签名下载 URL。
 func (o *OSSStorage) GetPresignedURL(bucket, fnm string, expires time.Duration, tenantID ...string) (string, error) {
 	bucket, fnm = o.resolveBucketAndPath(bucket, fnm)
 
@@ -282,7 +283,7 @@ func (o *OSSStorage) GetPresignedURL(bucket, fnm string, expires time.Duration, 
 	return "", fmt.Errorf("failed to generate presigned URL after 10 retries")
 }
 
-// BucketExists checks if a bucket exists
+// BucketExists HeadBucket 判断桶是否存在。
 func (o *OSSStorage) BucketExists(bucket string) bool {
 	actualBucket := bucket
 	if o.bucket != "" {
@@ -302,7 +303,7 @@ func (o *OSSStorage) BucketExists(bucket string) bool {
 	return true
 }
 
-// RemoveBucket removes a bucket and all its objects
+// RemoveBucket 分页列出并删除全部对象后 DeleteBucket。
 func (o *OSSStorage) RemoveBucket(bucket string) error {
 	actualBucket := bucket
 	if o.bucket != "" {
@@ -311,12 +312,12 @@ func (o *OSSStorage) RemoveBucket(bucket string) error {
 
 	ctx := context.Background()
 
-	// Check if bucket exists
+	// 桶不存在则直接返回
 	if !o.BucketExists(actualBucket) {
 		return nil
 	}
 
-	// List and delete all objects
+	// 分页 ListObjectsV2 并逐个 DeleteObject
 	listInput := &s3.ListObjectsV2Input{
 		Bucket: aws.String(actualBucket),
 	}
@@ -344,7 +345,7 @@ func (o *OSSStorage) RemoveBucket(bucket string) error {
 		listInput.ContinuationToken = result.NextContinuationToken
 	}
 
-	// Delete bucket
+	// 清空对象后删除桶
 	_, err := o.client.DeleteBucket(ctx, &s3.DeleteBucketInput{
 		Bucket: aws.String(actualBucket),
 	})
@@ -356,7 +357,7 @@ func (o *OSSStorage) RemoveBucket(bucket string) error {
 	return nil
 }
 
-// Copy copies an object from source to destination
+// Copy 使用 CopyObject 服务端复制。
 func (o *OSSStorage) Copy(srcBucket, srcPath, destBucket, destPath string) bool {
 	srcBucket, srcPath = o.resolveBucketAndPath(srcBucket, srcPath)
 	destBucket, destPath = o.resolveBucketAndPath(destBucket, destPath)
@@ -378,7 +379,7 @@ func (o *OSSStorage) Copy(srcBucket, srcPath, destBucket, destPath string) bool 
 	return true
 }
 
-// Move moves an object from source to destination
+// Move 复制后删除源键。
 func (o *OSSStorage) Move(srcBucket, srcPath, destBucket, destPath string) bool {
 	if o.Copy(srcBucket, srcPath, destBucket, destPath) {
 		if err := o.Remove(srcBucket, srcPath); err != nil {
@@ -390,7 +391,7 @@ func (o *OSSStorage) Move(srcBucket, srcPath, destBucket, destPath string) bool 
 	return false
 }
 
-// Helper functions
+// 辅助函数
 func isOSSNotFound(err error) bool {
 	if err == nil {
 		return false
@@ -401,3 +402,4 @@ func isOSSNotFound(err error) bool {
 	}
 	return false
 }
+// oss.go — 阿里云 OSS（S3 兼容 API）存储后端实现。

@@ -16,6 +16,8 @@
 
 package storage
 
+// memory.go 提供进程内 Storage 实现，用于测试与无外部依赖场景。
+
 import (
 	"errors"
 	"fmt"
@@ -23,36 +25,33 @@ import (
 	"time"
 )
 
-// ErrMemoryNotFound is returned when a key does not exist in the in-memory backend.
+// ErrMemoryNotFound 当桶或对象键不存在时返回。
 var ErrMemoryNotFound = errors.New("memory storage: object not found")
 
-// MemoryEntry describes a single stored object, used by Inspect for tests and diagnostics.
+// MemoryEntry 描述单条内存对象元数据，供 Inspect 诊断使用。
 type MemoryEntry struct {
 	Bucket string
 	Key    string
 	Size   int
 }
 
-// MemoryStorage is an in-process implementation of the Storage interface,
-// intended for unit tests and ephemeral tooling. All operations are safe
-// for concurrent use.
+// MemoryStorage 进程内 Storage 实现，读写加锁，适合单元测试。
 type MemoryStorage struct {
 	mu      sync.RWMutex
 	objects map[string]map[string][]byte
 }
 
-// NewMemoryStorage returns a fresh, empty in-memory storage backend.
+// NewMemoryStorage 创建空的内存存储后端。
 func NewMemoryStorage() Storage {
 	return &MemoryStorage{objects: make(map[string]map[string][]byte)}
 }
 
-// Health always reports healthy for the in-memory backend.
+// Health 内存后端恒为健康。
 func (m *MemoryStorage) Health() bool {
 	return true
 }
 
-// Put uploads an object to the in-memory backend, creating the bucket
-// on demand if it does not yet exist. The stored bytes are a defensive copy.
+// Put 写入对象；桶不存在则创建，存储内容为 defensive copy。
 func (m *MemoryStorage) Put(bucket, fnm string, binary []byte, tenantID ...string) error {
 	if bucket == "" {
 		return fmt.Errorf("memory storage: bucket is required")
@@ -76,8 +75,7 @@ func (m *MemoryStorage) Put(bucket, fnm string, binary []byte, tenantID ...strin
 	return nil
 }
 
-// Get retrieves an object from the in-memory backend. Returns
-// ErrMemoryNotFound when the bucket or key is missing.
+// Get 读取对象副本；桶或键缺失时包装 ErrMemoryNotFound。
 func (m *MemoryStorage) Get(bucket, fnm string, tenantID ...string) ([]byte, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -96,8 +94,7 @@ func (m *MemoryStorage) Get(bucket, fnm string, tenantID ...string) ([]byte, err
 	return out, nil
 }
 
-// Remove deletes an object from the in-memory backend. Removing a
-// non-existent key is a no-op and returns nil.
+// Remove 删除对象；不存在则静默成功。
 func (m *MemoryStorage) Remove(bucket, fnm string, tenantID ...string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -110,7 +107,7 @@ func (m *MemoryStorage) Remove(bucket, fnm string, tenantID ...string) error {
 	return nil
 }
 
-// ObjExist reports whether the given bucket and key are present.
+// ObjExist 判断桶内键是否存在。
 func (m *MemoryStorage) ObjExist(bucket, fnm string, tenantID ...string) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -123,8 +120,7 @@ func (m *MemoryStorage) ObjExist(bucket, fnm string, tenantID ...string) bool {
 	return ok
 }
 
-// GetPresignedURL returns a deterministic, non-network URL string for tests.
-// Format: memory://<bucket>/<key>?exp=<unix-seconds>
+// GetPresignedURL 返回 deterministic 测试用 URL：memory://桶/键?exp=过期时间戳。
 func (m *MemoryStorage) GetPresignedURL(bucket, fnm string, expires time.Duration, tenantID ...string) (string, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -141,7 +137,7 @@ func (m *MemoryStorage) GetPresignedURL(bucket, fnm string, expires time.Duratio
 	return fmt.Sprintf("memory://%s/%s?exp=%d", bucket, fnm, exp), nil
 }
 
-// BucketExists reports whether the named bucket has been created.
+// BucketExists 判断桶是否已创建。
 func (m *MemoryStorage) BucketExists(bucket string) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -150,8 +146,7 @@ func (m *MemoryStorage) BucketExists(bucket string) bool {
 	return ok
 }
 
-// RemoveBucket deletes a bucket and all of its keys. Removing a
-// non-existent bucket is a no-op and returns nil.
+// RemoveBucket 删除整个桶及其全部键；不存在则 no-op。
 func (m *MemoryStorage) RemoveBucket(bucket string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -160,9 +155,7 @@ func (m *MemoryStorage) RemoveBucket(bucket string) error {
 	return nil
 }
 
-// Copy duplicates an object from srcBucket/srcKey to destBucket/destKey.
-// The source is left untouched. Returns false if the source does not exist
-// or if the destination bucket creation fails.
+// Copy 复制对象到目标路径，源对象保留；源不存在则返回 false。
 func (m *MemoryStorage) Copy(srcBucket, srcPath, destBucket, destPath string) bool {
 	m.mu.RLock()
 	srcBucketMap, ok := m.objects[srcBucket]
@@ -190,8 +183,7 @@ func (m *MemoryStorage) Copy(srcBucket, srcPath, destBucket, destPath string) bo
 	return true
 }
 
-// Move transfers an object to a new location, deleting the source on success.
-// Returns false if the source does not exist or the copy step fails.
+// Move 先 Copy 再删除源对象。
 func (m *MemoryStorage) Move(srcBucket, srcPath, destBucket, destPath string) bool {
 	if !m.Copy(srcBucket, srcPath, destBucket, destPath) {
 		return false
@@ -202,9 +194,7 @@ func (m *MemoryStorage) Move(srcBucket, srcPath, destBucket, destPath string) bo
 	return true
 }
 
-// Inspect returns a stable snapshot of all (bucket, key, size) entries
-// currently held by the backend. Intended for test diagnostics and
-// cleanup assertions. The slice is freshly allocated and safe to mutate.
+// Inspect 返回当前全部 (bucket,key,size) 快照，供测试断言。
 func (m *MemoryStorage) Inspect() []MemoryEntry {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -217,3 +207,4 @@ func (m *MemoryStorage) Inspect() []MemoryEntry {
 	}
 	return out
 }
+// memory.go — 进程内 Storage 实现，供单元测试与临时工具使用。

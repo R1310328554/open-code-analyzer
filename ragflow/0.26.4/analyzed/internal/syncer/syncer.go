@@ -16,6 +16,8 @@
 
 package syncer
 
+// syncer.go 后台同步调度器：轮询 sync_logs 表并执行到期任务。
+
 import (
 	"context"
 	"fmt"
@@ -29,23 +31,22 @@ import (
 	"go.uber.org/zap"
 )
 
-// Syncer periodically polls the sync_logs table and dispatches due
-// sync/prune tasks to a fixed-size worker pool.
+// Syncer 固定 worker 池周期性拉取到期同步/裁剪任务并执行。
 type Syncer struct {
 	id             string
 	maxConcurrency int
-	pollInterval   time.Duration // how often each worker queries for due tasks
+	pollInterval   time.Duration // 每个 worker 查询到期任务的间隔
 
 	ctx    context.Context
 	cancel context.CancelFunc
 
 	workerWg sync.WaitGroup
 
-	// ShutdownCh is closed when Stop() completes.
+	// ShutdownCh 在 Stop() 完成后关闭，供外部等待优雅退出。
 	ShutdownCh chan struct{}
 }
 
-// NewSyncer creates a syncer with the given concurrency and poll interval.
+// NewSyncer 创建 Syncer，指定并发 worker 数与轮询间隔。
 func NewSyncer(maxConcurrency int, pollInterval time.Duration) *Syncer {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Syncer{
@@ -58,7 +59,7 @@ func NewSyncer(maxConcurrency int, pollInterval time.Duration) *Syncer {
 	}
 }
 
-// Start launches maxConcurrency worker goroutines.
+// Start 启动 maxConcurrency 个 workerLoop 协程。
 func (s *Syncer) Start() error {
 	common.Info(fmt.Sprintf("Syncer %s starting with %d workers (poll every %v)",
 		s.id, s.maxConcurrency, s.pollInterval))
@@ -70,7 +71,7 @@ func (s *Syncer) Start() error {
 	return nil
 }
 
-// Stop cancels all workers and waits for them to finish.
+// Stop 取消 context 并 Wait 全部 worker 后关闭 ShutdownCh。
 func (s *Syncer) Stop() {
 	common.Info(fmt.Sprintf("Stopping syncer %s", s.id))
 	s.cancel()
@@ -83,7 +84,7 @@ func (s *Syncer) ID() string {
 	return s.id
 }
 
-// workerLoop periodically polls the DB for due tasks until ctx is cancelled.
+// workerLoop 按 pollInterval ticker 调用 pollAndExecute 直至 ctx 取消。
 func (s *Syncer) workerLoop(workerID int) {
 	defer s.workerWg.Done()
 	common.Debug(fmt.Sprintf("Syncer worker %d started", workerID))
@@ -102,33 +103,32 @@ func (s *Syncer) workerLoop(workerID int) {
 	}
 }
 
-// pollAndExecute queries due sync & prune tasks, picks one, and runs it.
+// pollAndExecute 查询到期 sync/prune 任务并选取一条执行（当前为占位日志）。
 func (s *Syncer) pollAndExecute(workerID int) {
 	common.Info(fmt.Sprintf("Syncer worker %d polling for due tasks", workerID))
 }
 
-// executeSyncTask runs a sync task.
+// executeSyncTask 执行数据源同步任务（TODO：具体同步逻辑），完成后 markTaskDone。
 func (s *Syncer) executeSyncTask(task *entity.SyncLogs) {
 	common.Info("Executing sync task",
 		zap.String("task_id", task.ID),
 		zap.String("connector_id", task.ConnectorID),
 		zap.String("kb_id", task.KbID))
-	// TODO: implement actual data-source-specific sync logic.
-	// For now, mark done.
+	// TODO: 按连接器类型实现真实同步；当前直接标记完成。
 	s.markTaskDone(task.ID, task.ConnectorID)
 }
 
-// executePruneTask runs a prune (delete stale docs) task.
+// executePruneTask 执行裁剪任务，删除过期文档（TODO），完成后 markTaskDone。
 func (s *Syncer) executePruneTask(task *entity.SyncLogs) {
 	common.Info("Executing prune task",
 		zap.String("task_id", task.ID),
 		zap.String("connector_id", task.ConnectorID),
 		zap.String("kb_id", task.KbID))
-	// TODO: implement actual prune logic.
+	// TODO: 实现裁剪逻辑。
 	s.markTaskDone(task.ID, task.ConnectorID)
 }
 
-// markTaskDone updates task and connector status to DONE.
+// markTaskDone 将 SyncLogs 与 Connector 状态更新为 DONE。
 func (s *Syncer) markTaskDone(taskID, connectorID string) {
 	db := dao.GetDB()
 	now := time.Now().Local()
@@ -142,3 +142,4 @@ func (s *Syncer) markTaskDone(taskID, connectorID string) {
 		"update_time": now,
 	})
 }
+// syncer.go — 定时轮询 sync_logs 并分发同步/裁剪任务的 worker 池。

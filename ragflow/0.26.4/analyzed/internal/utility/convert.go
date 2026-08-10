@@ -16,6 +16,8 @@
 
 package utility
 
+// convert.go 提供 JSON/时间/十六进制位置等通用转换与序列化辅助。
+
 import (
 	"encoding/json"
 	"fmt"
@@ -25,7 +27,7 @@ import (
 	"time"
 )
 
-// JSONFloat64 is a float64 that always marshals with decimal point
+// JSONFloat64 序列化时始终带小数点（如 0.0 而非 0）。
 type JSONFloat64 float64
 
 func (f JSONFloat64) MarshalJSON() ([]byte, error) {
@@ -33,8 +35,7 @@ func (f JSONFloat64) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("%.1f", float64(f))), nil
 }
 
-// GetProjectBaseDirectory returns the current working directory.
-// If an error occurs while getting the current directory, it returns ".".
+// GetProjectBaseDirectory 返回当前工作目录，失败时返回 "."。
 //
 // Returns:
 //   - string: The current working directory path, or "." if an error occurs.
@@ -51,8 +52,7 @@ func GetProjectBaseDirectory() string {
 	return cwd
 }
 
-// StringPtr converts a string to a pointer of string.
-// If the input string is empty, it returns nil.
+// StringPtr 非空字符串转 *string，空串返回 nil。
 //
 // Parameters:
 //   - s: The string to convert to a pointer.
@@ -71,8 +71,7 @@ func StringPtr(s string) *string {
 	return &s
 }
 
-// ParseInt64 parses a string to int64.
-// If parsing fails, it returns 0.
+// ParseInt64 解析 int64，失败返回 0。
 //
 // Parameters:
 //   - s: The string to parse.
@@ -91,7 +90,7 @@ func ParseInt64(s string) int64 {
 	return result
 }
 
-// FormatTime formats time for display
+// FormatTime 格式化时间为展示字符串；零值显示 Perpetual。
 func FormatTime(t time.Time) string {
 	if t.IsZero() {
 		return "N/A (Perpetual)"
@@ -99,7 +98,7 @@ func FormatTime(t time.Time) string {
 	return t.Format("2006-01-02 15:04:05")
 }
 
-// FormatTimeToString converts time.Time to string in specified format
+// FormatTimeToString 按指定 layout 格式化 *time.Time，nil 返回 nil。
 func FormatTimeToString(t *time.Time, format string) interface{} {
 	if t == nil {
 		return nil
@@ -107,7 +106,7 @@ func FormatTimeToString(t *time.Time, format string) interface{} {
 	return t.Format(format)
 }
 
-// ConvertHexToPositionIntArray converts hex string to position int array (grouped by 5)
+// ConvertHexToPositionIntArray 十六进制串转位置 int 二维数组（每 5 个一组）。
 func ConvertHexToPositionIntArray(hexStr string) interface{} {
 	if hexStr == "" {
 		return nil
@@ -130,7 +129,7 @@ func ConvertHexToPositionIntArray(hexStr string) interface{} {
 		return nil
 	}
 
-	// Group by 5 elements
+	// 每 5 个整数为一组位置坐标
 	var result [][]int
 	for i := 0; i < len(intVals); i += 5 {
 		end := i + 5
@@ -143,8 +142,7 @@ func ConvertHexToPositionIntArray(hexStr string) interface{} {
 	return result
 }
 
-// ConvertPositionIntArrayToHex converts position_int list (2D) to hex string
-// e.g. [[1,2],[3,4]] -> "0000000100000002_0000000300000004"
+// ConvertPositionIntArrayToHex 二维 position_int 转固定宽度十六进制串。
 func ConvertPositionIntArrayToHex(list []interface{}) string {
 	var hexParts []string
 	for _, item := range list {
@@ -163,7 +161,7 @@ func ConvertPositionIntArrayToHex(list []interface{}) string {
 	return strings.Join(hexParts, "_")
 }
 
-// ConvertHexToIntArray converts hex string to int array (split by "_")
+// ConvertHexToIntArray 下划线分隔十六进制段转 []int。
 func ConvertHexToIntArray(hexStr string) interface{} {
 	if hexStr == "" {
 		return nil
@@ -188,8 +186,7 @@ func ConvertHexToIntArray(hexStr string) interface{} {
 	return result
 }
 
-// ConvertIntArrayToHex converts int array to hex string
-// e.g. [1, 2] -> "00000001_00000002"
+// ConvertIntArrayToHex int 数组转 8 位十六进制段拼接串。
 func ConvertIntArrayToHex(list []interface{}) string {
 	var hexParts []string
 	for _, num := range list {
@@ -204,7 +201,7 @@ func ConvertIntArrayToHex(list []interface{}) string {
 	return strings.Join(hexParts, "_")
 }
 
-// IsEmpty checks if value is empty (nil, empty array, or empty string)
+// IsEmpty 判断 nil、空切片或空字符串。
 func IsEmpty(v interface{}) bool {
 	if v == nil {
 		return true
@@ -224,7 +221,7 @@ func IsEmpty(v interface{}) bool {
 	return false
 }
 
-// IsNumericValue checks if a value is numeric (int, uint, float, or numeric string)
+// IsNumericValue 判断值是否为数值类型或可解析数值字符串。
 func IsNumericValue(v interface{}) bool {
 	if v == nil {
 		return false
@@ -244,7 +241,7 @@ func IsNumericValue(v interface{}) bool {
 	}
 }
 
-// SetFieldArray copies value to dest key, or sets empty array if value is empty
+// SetFieldArray 写入 map 字段；空值写 []interface{}{}。
 func SetFieldArray(result map[string]interface{}, destKey string, v interface{}) {
 	if IsEmpty(v) {
 		result[destKey] = []interface{}{}
@@ -253,7 +250,7 @@ func SetFieldArray(result map[string]interface{}, destKey string, v interface{})
 	}
 }
 
-// ToFloat64 converts various types to float64
+// ToFloat64 将多种类型转为 float64。
 func ToFloat64(val interface{}) (float64, bool) {
 	switch v := val.(type) {
 	case float64:
@@ -275,7 +272,7 @@ func ToFloat64(val interface{}) (float64, bool) {
 	}
 }
 
-// ConvertToStringSlice converts an interface{} to []string
+// ConvertToStringSlice 将 interface{} 转为 []string。
 // e.g. []interface{}{"a", "b", "c"} -> []string{"a", "b", "c"}
 // e.g. "hello" -> []string{"hello"}
 func ConvertToStringSlice(v interface{}) []string {
@@ -302,7 +299,7 @@ func ConvertToStringSlice(v interface{}) []string {
 	}
 }
 
-// ConvertToString converts an interface{} to space-separated string
+// ConvertToString 将值转为空格拼接字符串。
 // For []interface{}, joins elements with space; for other types, returns string representation
 // e.g. []interface{}{"a", "b", "c"} -> "a b c"
 // e.g. "hello" -> "hello"
@@ -326,10 +323,7 @@ func ConvertToString(v interface{}) string {
 	}
 }
 
-// ConvertMapToJSONString converts a map to JSON string for Infinity JSON columns
-// If v is a map[string]interface{}, marshals it to JSON string
-// If v is nil, returns "{}"
-// Otherwise returns v as-is
+// ConvertMapToJSONString map 转 JSON 字符串供 Infinity JSON 列存储；nil 为 "{}"。
 //
 // e.g. map[string]interface{}{"key": "value"}) -> `"{\"key\":\"value\"}"`
 func ConvertMapToJSONString(v interface{}) interface{} {
@@ -343,7 +337,7 @@ func ConvertMapToJSONString(v interface{}) interface{} {
 	return v
 }
 
-// FloatToString formats a float like Python's str() - adds ".0" if needed
+// FloatToString 按 Python str() 风格格式化浮点（整数补 .0）。
 func FloatToString(f float64) string {
 	s := strconv.FormatFloat(f, 'f', -1, 64)
 	if !strings.Contains(s, ".") && !strings.Contains(s, "e") {
@@ -351,3 +345,4 @@ func FloatToString(f float64) string {
 	}
 	return s
 }
+// convert.go — 通用类型转换、十六进制位置编码与 JSON 序列化辅助。

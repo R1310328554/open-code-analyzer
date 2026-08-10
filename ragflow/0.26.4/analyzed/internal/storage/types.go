@@ -16,11 +16,13 @@
 
 package storage
 
+// types.go 定义 Storage 抽象接口与各后端类型常量。
+
 import (
 	"time"
 )
 
-// StorageType represents the type of storage backend
+// StorageType 存储后端类型枚举。
 type StorageType int
 
 const (
@@ -54,41 +56,36 @@ func (s StorageType) String() string {
 	}
 }
 
-// Storage defines the interface for storage operations
+// Storage 对象存储统一接口，Ragflow 文档/附件读写均经此抽象。
 type Storage interface {
-	// Health checks the storage service availability
+	// Health 检查后端服务是否可用
 	Health() bool
 
-	// Put uploads an object to storage
-	// bucket: the bucket/container name
-	// fnm: the file/object name (key)
-	// binary: the data to upload
-	// tenantID: optional tenant identifier
+	// Put 上传对象；bucket 桶名，fnm 对象键，binary 内容，tenantID 可选租户标识
 	Put(bucket, fnm string, binary []byte, tenantID ...string) error
 
-	// Get retrieves an object from storage
-	// Returns the data or nil if not found
+	// Get 下载对象字节；不存在时返回 error
 	Get(bucket, fnm string, tenantID ...string) ([]byte, error)
 
-	// Remove removes an object from storage
+	// Remove 删除指定对象
 	Remove(bucket, fnm string, tenantID ...string) error
 
-	// ObjExist checks if an object exists
+	// ObjExist 判断对象是否存在
 	ObjExist(bucket, fnm string, tenantID ...string) bool
 
-	// GetPresignedURL generates a presigned URL for accessing an object
-	// expires: duration until the URL expires
+	// GetPresignedURL 生成带过期时间的预签名访问 URL
 	GetPresignedURL(bucket, fnm string, expires time.Duration, tenantID ...string) (string, error)
 
-	// BucketExists checks if a bucket exists
+	// BucketExists 判断桶是否存在
 	BucketExists(bucket string) bool
 
-	// RemoveBucket removes a bucket and all its objects
+	// RemoveBucket 删除桶及其全部对象
 	RemoveBucket(bucket string) error
 
-	// Copy copies an object from source to destination
+	// Copy 服务端复制对象
 	Copy(srcBucket, srcPath, destBucket, destPath string) bool
 
-	// Move moves an object from source to destination
+	// Move 移动对象（复制后删源）
 	Move(srcBucket, srcPath, destBucket, destPath string) bool
 }
+// types.go — Storage 接口与后端类型枚举定义。

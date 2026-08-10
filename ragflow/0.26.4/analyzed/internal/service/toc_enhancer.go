@@ -16,6 +16,8 @@
 
 package service
 
+// toc_enhancer.go 通过 LLM 对文档目录条目打分，增强检索结果中的相关分块。
+
 import (
 	"context"
 	"encoding/json"
@@ -33,9 +35,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// flexInt is an int that can unmarshal from either a JSON number or a JSON string.
-// This handles the mismatch between DB-stored TOC entries (level as string "1")
-// and LLM-emitted scores (level as number 1).
+// flexInt 可从 JSON 数字或字符串反序列化为 int。
+// 兼容数据库 TOC（level 为字符串 "1"）与 LLM 输出（level 为数字 1）的差异。
 type flexInt int
 
 func (f *flexInt) UnmarshalJSON(data []byte) error {
@@ -60,15 +61,14 @@ func (f flexInt) MarshalJSON() ([]byte, error) {
 	return json.Marshal(int(f))
 }
 
-// tocEntry holds a single entry from a document's TOC chunk.
-// Note: level is stored as a string in JSON (e.g. "1"), so we use flexInt.
+// tocEntry 表示文档 TOC 分块中的单条目录项；level 在 JSON 中常为字符串，故用 flexInt。
 type tocEntry struct {
 	Level flexInt  `json:"level"`
 	Title string   `json:"title"`
 	IDs   []string `json:"ids,omitempty"`
 }
 
-// tocRelevanceScore is the LLM-emitted score for a single TOC entry.
+// tocRelevanceScore 为 LLM 对单条 TOC 条目输出的相关性分数。
 type tocRelevanceScore struct {
 	Level int     `json:"level"`
 	Title string  `json:"title"`
@@ -215,8 +215,7 @@ Output **only** the JSON array with the added ` + "`" + `"score"` + "`" + ` fiel
 %s
 `
 
-// TOCEnhancer picks the top document, fetches its TOC, scores entries via LLM,
-// then merges matching chunks into kbinfos["chunks"].
+// TOCEnhancer 选取相似度最高的文档，拉取 TOC，经 LLM 打分后将相关分块并入 kbinfos["chunks"]。
 type TOCEnhancer struct {
 	docEngine engine.DocEngine
 	chatModel *modelModule.ChatModel
@@ -226,7 +225,7 @@ type TOCEnhancer struct {
 	topN      int
 }
 
-// NewTOCEnhancer constructs a TOCEnhancer.
+// NewTOCEnhancer 构造目录增强器，注入文档引擎、聊天模型与检索上下文。
 func NewTOCEnhancer(
 	docEngine engine.DocEngine,
 	chatModel *modelModule.ChatModel,
@@ -245,7 +244,7 @@ func NewTOCEnhancer(
 	}
 }
 
-// Enhance mutates kbinfos["chunks"] by appending/boosting TOC-relevant chunks.
+// Enhance 就地修改 kbinfos["chunks"]：提升已有分块相似度或追加 TOC 相关分块，返回新增数量。
 func (e *TOCEnhancer) Enhance(ctx context.Context, kbinfos map[string]interface{}) (int, error) {
 	if e == nil || e.chatModel == nil {
 		return 0, nil
@@ -367,7 +366,7 @@ func (e *TOCEnhancer) Enhance(ctx context.Context, kbinfos map[string]interface{
 	return added, nil
 }
 
-// topDocFromChunks picks the doc_id with the highest accumulated similarity.
+// topDocFromChunks 按累计 similarity 选出得分最高的 doc_id 及其 kb_id 映射。
 func topDocFromChunks(chunks []map[string]interface{}) (string, map[string]string) {
 	ranks := map[string]float64{}
 	docID2KBID := map[string]string{}
@@ -398,7 +397,7 @@ func topDocFromChunks(chunks []map[string]interface{}) (string, map[string]strin
 	return pairs[0].k, docID2KBID
 }
 
-// parseTOCEntries flattens TOC entries across all TOC chunks.
+// parseTOCEntries 解析所有 TOC 分块的 content_with_weight，扁平化为 tocEntry 列表。
 func parseTOCEntries(chunks []map[string]interface{}) []tocEntry {
 	common.Debug("TOC enhancer: parsing TOC entries",
 		zap.Int("chunk_count", len(chunks)))
@@ -418,7 +417,7 @@ func parseTOCEntries(chunks []map[string]interface{}) []tocEntry {
 			out = append(out, single)
 			continue
 		}
-		// Debug: log raw content that failed to parse
+		// 调试：记录无法解析为 TOC JSON 的原始内容预览
 		preview := cww
 		if len(preview) > 200 {
 			preview = preview[:200] + "..."
@@ -433,7 +432,7 @@ func parseTOCEntries(chunks []map[string]interface{}) []tocEntry {
 	return out
 }
 
-// scoreEntries calls the LLM to score TOC entries and returns (chunkID, normalizedScore) pairs.
+// scoreEntries 调用 LLM 对目录打分，归一化后返回 chunk_id 与平均相关性（≥0.3 才保留）。
 func (e *TOCEnhancer) scoreEntries(ctx context.Context, entries []tocEntry, limit int) ([]tocRelevanceScore, error) {
 	if e.chatModel == nil || e.chatModel.ModelDriver == nil || len(entries) == 0 {
 		return nil, nil
@@ -539,7 +538,7 @@ func (e *TOCEnhancer) scoreEntries(ctx context.Context, entries []tocEntry, limi
 	return result, nil
 }
 
-// fetchChunk loads a single chunk by chunk_id from the engine.
+// fetchChunk 按 chunk_id 从文档引擎检索单个分块完整字段。
 func (e *TOCEnhancer) fetchChunk(ctx context.Context, chunkID, docID, kbID string) (map[string]interface{}, error) {
 	filter := map[string]interface{}{
 		"doc_id":   []string{docID},
@@ -563,7 +562,7 @@ func (e *TOCEnhancer) fetchChunk(ctx context.Context, chunkID, docID, kbID strin
 	return resp.Chunks[0], nil
 }
 
-// indexName returns the search index name for a tenant.
+// indexName 返回租户对应的 Elasticsearch 索引名 ragflow_<tenantID>。
 func indexName(tenantID string) string {
 	return "ragflow_" + tenantID
 }
@@ -586,7 +585,7 @@ func getSlice(m map[string]interface{}, key string) []interface{} {
 	return nil
 }
 
-// sortAndTrimChunks sorts chunks by similarity descending and trims to top-N.
+// sortAndTrimChunks 按 similarity 降序稳定排序并截断至 topN。
 func sortAndTrimChunks(chunks []map[string]interface{}, topN int) []map[string]interface{} {
 	sort.SliceStable(chunks, func(i, j int) bool {
 		return getFloat(chunks[i], "similarity") > getFloat(chunks[j], "similarity")
@@ -603,3 +602,4 @@ func asMap(v interface{}) map[string]interface{} {
 	}
 	return nil
 }
+// toc_enhancer.go — 目录（TOC）增强：LLM 对章节相关性打分并合并检索分块。

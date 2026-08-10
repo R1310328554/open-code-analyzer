@@ -16,13 +16,14 @@
 
 package utility
 
+// embedding_lru.go 线程安全 embedding 向量 LRU 缓存。
+
 import (
 	"container/list"
 	"sync"
 )
 
-// EmbeddingLRU is a thread-safe LRU cache for embeddings.
-// The key is a combination of question and embedding ID.
+// EmbeddingLRU 以 question+embeddingID 为键的线程安全 LRU 缓存。
 type EmbeddingLRU struct {
 	capacity int
 	cache    map[string]*list.Element
@@ -30,13 +31,13 @@ type EmbeddingLRU struct {
 	mu       sync.RWMutex
 }
 
-// entry holds the key and value in the LRU cache.
+// entry LRU 链表节点，保存复合键与 embedding 向量。
 type entry struct {
 	key   string
 	value []float64
 }
 
-// NewEmbeddingLRU creates a new EmbeddingLRU with the given capacity.
+// NewEmbeddingLRU 创建指定容量的 LRU 缓存。
 func NewEmbeddingLRU(capacity int) *EmbeddingLRU {
 	return &EmbeddingLRU{
 		capacity: capacity,
@@ -45,25 +46,23 @@ func NewEmbeddingLRU(capacity int) *EmbeddingLRU {
 	}
 }
 
-// buildKey creates a composite key from question and embedding ID.
+// buildKey 用 "::" 拼接 question 与 embeddingID 作为缓存键。
 func buildKey(question, embeddingID string) string {
-	// Use a delimiter that is unlikely to appear in the strings.
-	// If needed, a more robust key generation can be implemented.
+	// 使用 unlikely 出现在正文中的分隔符；必要时可换更稳健键算法。
 	return question + "::" + embeddingID
 }
 
-// Get retrieves the embedding for the given question and embedding ID.
-// Returns the embedding and true if found, otherwise nil and false.
+// Get 命中则移至 MRU 并返回向量副本；未命中返回 nil,false。
 func (lru *EmbeddingLRU) Get(question, embeddingID string) ([]float64, bool) {
 	key := buildKey(question, embeddingID)
 	lru.mu.RLock()
 	defer lru.mu.RUnlock()
 
 	if elem, ok := lru.cache[key]; ok {
-		// Move to front (most recently used)
+		// 命中后移至链表头（最近使用）
 		lru.list.MoveToFront(elem)
 		ent := elem.Value.(*entry)
-		// Return a copy to prevent external modification of cached slice
+		// 返回副本防止调用方修改缓存内切片
 		embedding := make([]float64, len(ent.value))
 		copy(embedding, ent.value)
 		return embedding, true
@@ -71,15 +70,13 @@ func (lru *EmbeddingLRU) Get(question, embeddingID string) ([]float64, bool) {
 	return nil, false
 }
 
-// Put stores an embedding for the given question and embedding ID.
-// If the key already exists, its value is updated and moved to front.
-// If the cache is at capacity, the least recently used item is evicted.
+// Put 写入或更新 embedding；超容量则 evictOldest 淘汰 LRU 项。
 func (lru *EmbeddingLRU) Put(question, embeddingID string, embedding []float64) {
 	key := buildKey(question, embeddingID)
 	lru.mu.Lock()
 	defer lru.mu.Unlock()
 
-	// If key exists, update value and move to front
+	// 键已存在则更新并移到链表头
 	if elem, ok := lru.cache[key]; ok {
 		lru.list.MoveToFront(elem)
 		ent := elem.Value.(*entry)
@@ -89,20 +86,19 @@ func (lru *EmbeddingLRU) Put(question, embeddingID string, embedding []float64) 
 		return
 	}
 
-	// Add new entry
+	// 新键 PushFront 并写入 map
 	ent := &entry{key: key, value: make([]float64, len(embedding))}
 	copy(ent.value, embedding)
 	elem := lru.list.PushFront(ent)
 	lru.cache[key] = elem
 
-	// Evict if capacity exceeded
+	// 超过 capacity 时淘汰最久未用项
 	if lru.list.Len() > lru.capacity {
 		lru.evictOldest()
 	}
 }
 
-// evictOldest removes the least recently used item from the cache.
-// Must be called with lock held.
+// evictOldest 移除链表尾 LRU 项；调用方须已持写锁。
 func (lru *EmbeddingLRU) evictOldest() {
 	elem := lru.list.Back()
 	if elem != nil {
@@ -112,7 +108,7 @@ func (lru *EmbeddingLRU) evictOldest() {
 	}
 }
 
-// Remove removes the embedding for the given question and embedding ID.
+// Remove 删除指定键的缓存项。
 func (lru *EmbeddingLRU) Remove(question, embeddingID string) {
 	key := buildKey(question, embeddingID)
 	lru.mu.Lock()
@@ -124,7 +120,7 @@ func (lru *EmbeddingLRU) Remove(question, embeddingID string) {
 	}
 }
 
-// Clear removes all items from the cache.
+// Clear 清空 map 并重置链表。
 func (lru *EmbeddingLRU) Clear() {
 	lru.mu.Lock()
 	defer lru.mu.Unlock()
@@ -133,9 +129,10 @@ func (lru *EmbeddingLRU) Clear() {
 	lru.list.Init()
 }
 
-// Len returns the number of items in the cache.
+// Len 返回当前缓存条目数。
 func (lru *EmbeddingLRU) Len() int {
 	lru.mu.RLock()
 	defer lru.mu.RUnlock()
 	return lru.list.Len()
 }
+// embedding_lru.go — 线程安全 embedding LRU 缓存（question+model 复合键）。

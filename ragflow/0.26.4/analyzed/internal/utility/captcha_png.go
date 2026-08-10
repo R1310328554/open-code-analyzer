@@ -14,25 +14,10 @@
 //  limitations under the License.
 //
 
-// Stdlib-only PNG captcha renderer.
+// 纯标准库 PNG 验证码渲染器。
 //
-// PR #15290 review (Hz-186): the previous SVG renderer embedded the
-// captcha text in <text> nodes, so a scripted client could base64-
-// decode the response and read the answer with a regex — defeating
-// the captcha entirely. The reviewer asked for either a raster
-// captcha or something that doesn't put the answer in machine-
-// readable response content. We have no image-captcha library
-// vendored in go.mod and no network access during build, so this
-// renders a real PNG using only stdlib `image`, `image/color`,
-// `image/draw`, and `image/png`, with a hand-rolled 5x7 bitmap font
-// for [A-Z0-9].
-//
-// The output bytes contain only the raster — the captcha text is
-// nowhere in the response stream — so the previous regex-the-answer
-// attack is closed. An OCR-capable attacker can still solve it, but
-// that's the standard limit of any non-trivial captcha; the bar set
-// by the reviewer was specifically "not machine-readable in the
-// response content."
+// PR #15290：旧 SVG 在响应中嵌入明文，可被脚本正则提取。本实现仅用 image/png
+// 与手写 5×7 点阵字体绘制栅格图，响应流中不含可机器读取的明文答案。
 package utility
 
 import (
@@ -47,9 +32,7 @@ import (
 	"time"
 )
 
-// captchaPNGScale is the per-glyph pixel multiplier. The font is 5x7,
-// so a scale of 4 produces 20x28 glyphs, which are ~16x16 px after
-// padding — comfortably readable for humans at typical browser zoom.
+// captchaPNGScale 字形像素放大倍数；5×7 点阵 ×4 约 20×28，浏览器下可读。
 const (
 	captchaPNGScale    = 4
 	captchaGlyphW      = 5
@@ -61,12 +44,7 @@ const (
 	captchaNoiseLines  = 4
 )
 
-// font5x7 maps a single character to its 7-row bitmap. Each row is a
-// 5-character string where '#' is a foreground pixel and any other
-// character is background. Covers the captcha alphabet ([A-Z0-9])
-// plus '?' as a fallback glyph for anything unexpected.
-//
-// These are hand-drawn — apologies for the eye-strain.
+// font5x7 将字符映射为 7 行 5 列点阵，'#' 表示前景像素；覆盖 A-Z0-9 及 '?' 回退字形。
 var font5x7 = map[byte][7]string{
 	'A': {".###.", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"},
 	'B': {"####.", "#...#", "#...#", "####.", "#...#", "#...#", "####."},
@@ -107,14 +85,7 @@ var font5x7 = map[byte][7]string{
 	'?': {".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#.."},
 }
 
-// RenderCaptchaPNG renders the captcha text as a PNG and returns the
-// raw bytes. The image has per-character jitter, random distractor
-// lines, and dot noise applied — enough to defeat the trivial-regex
-// attack from the previous SVG implementation. OCR-capable attackers
-// remain a possibility (standard captcha limit).
-//
-// The output never references the original text — the answer is
-// painted as raster pixels only.
+// RenderCaptchaPNG 渲染 PNG 字节：字符抖动、干扰线与噪点；答案仅以像素形式存在。
 func RenderCaptchaPNG(text string) []byte {
 	if text == "" {
 		text = " "
@@ -131,11 +102,11 @@ func RenderCaptchaPNG(text string) []byte {
 	height := captchaTopPadding*2 + glyphH + 8 // a bit of headroom for jitter
 
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	// Background — light, slightly cool grey.
+	// 背景：浅冷灰色
 	bg := color.RGBA{R: 0xf5, G: 0xf5, B: 0xf7, A: 0xff}
 	draw.Draw(img, img.Bounds(), &image.Uniform{bg}, image.Point{}, draw.Src)
 
-	// Distractor lines drawn under the glyphs.
+	// 字形下方绘制干扰线
 	for i := 0; i < captchaNoiseLines; i++ {
 		drawLine(
 			img,
@@ -145,7 +116,7 @@ func RenderCaptchaPNG(text string) []byte {
 		)
 	}
 
-	// Glyphs, each with x/y jitter and a per-glyph foreground colour.
+	// 逐字绘制点阵，含 xy 抖动与随机前景色
 	x := captchaSidePadding
 	for i := 0; i < len(upper); i++ {
 		ch := upper[i]
@@ -161,7 +132,7 @@ func RenderCaptchaPNG(text string) []byte {
 		_ = i // explicit to silence any future lint pass
 	}
 
-	// Foreground dot noise on top.
+	// 前景随机噪点
 	for i := 0; i < captchaNoiseDots; i++ {
 		img.Set(rng.Intn(width), rng.Intn(height), pickStrokeRGBA(rng))
 	}
@@ -171,16 +142,13 @@ func RenderCaptchaPNG(text string) []byte {
 	return buf.Bytes()
 }
 
-// RenderCaptchaPNGDataURL base64-wraps the PNG so the handler can
-// return a single JSON string the FE drops into <img src="...">.
+// RenderCaptchaPNGDataURL 将 PNG 包装为 data URL 供前端 <img src> 使用。
 func RenderCaptchaPNGDataURL(text string) string {
 	pngBytes := RenderCaptchaPNG(text)
 	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(pngBytes)
 }
 
-// drawGlyph blits a 5x7 bitmap at (x, y) using captchaPNGScale x
-// captchaPNGScale pixel blocks. Each '#' in the bitmap becomes a
-// scale*scale block of `fg`.
+// drawGlyph 在 (x,y) 按 captchaPNGScale 块大小 blit 5×7 点阵。
 func drawGlyph(img *image.RGBA, x, y int, bitmap [7]string, fg color.RGBA) {
 	for row := 0; row < captchaGlyphH; row++ {
 		line := bitmap[row]
@@ -197,9 +165,7 @@ func drawGlyph(img *image.RGBA, x, y int, bitmap [7]string, fg color.RGBA) {
 	}
 }
 
-// drawLine paints a 1px line using Bresenham's algorithm. Out-of-bounds
-// pixels are clipped by image.RGBA.Set silently, so no bounds check
-// is needed here.
+// drawLine Bresenham 算法画 1px 线段；越界像素由 Set 静默裁剪。
 func drawLine(img *image.RGBA, x0, y0, x1, y1 int, c color.RGBA) {
 	dx := abs(x1 - x0)
 	dy := -abs(y1 - y0)
@@ -257,3 +223,4 @@ func pickStrokeRGBA(rng *rand.Rand) color.RGBA {
 	}
 	return palette[rng.Intn(len(palette))]
 }
+// captcha_png.go — 纯标准库 PNG 验证码渲染，避免 SVG 明文泄露答案。

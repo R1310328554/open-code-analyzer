@@ -16,6 +16,8 @@
 
 package service
 
+// user.go 实现用户账户、租户初始化、鉴权与忘记密码等业务逻辑。
+
 import (
 	"context"
 	"crypto/rsa"
@@ -45,38 +47,38 @@ import (
 	"ragflow/internal/utility"
 )
 
-// UserService user service
+// UserService 用户领域服务，封装 DAO 与密码/Token 处理。
 type UserService struct {
 	userDAO *dao.UserDAO
 }
 
-// NewUserService create user service
+// NewUserService 创建 UserService 实例。
 func NewUserService() *UserService {
 	return &UserService{
 		userDAO: dao.NewUserDAO(),
 	}
 }
 
-// RegisterRequest registration request
+// RegisterRequest 用户注册请求体。
 type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=1"`
 	Nickname string `json:"nickname" binding:"required"`
 }
 
-// LoginRequest login request
+// LoginRequest 用户名（邮箱）密码登录请求。
 type LoginRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
-// EmailLoginRequest email login request
+// EmailLoginRequest 邮箱密码登录请求。
 type EmailLoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 
-// UpdateSettingsRequest update user settings request
+// UpdateSettingsRequest 更新昵称、头像、语言等用户偏好。
 type UpdateSettingsRequest struct {
 	Nickname    *string `json:"nickname,omitempty"`
 	Avatar      *string `json:"avatar,omitempty"`
@@ -87,13 +89,13 @@ type UpdateSettingsRequest struct {
 	NewPassword *string `json:"new_password,omitempty"`
 }
 
-// ChangePasswordRequest change password request
+// ChangePasswordRequest 修改密码请求（可含旧密码校验）。
 type ChangePasswordRequest struct {
 	Password    *string `json:"password,omitempty"`
 	NewPassword *string `json:"new_password,omitempty"`
 }
 
-// UserResponse user response
+// UserResponse 对外暴露的用户摘要字段。
 type UserResponse struct {
 	ID        string  `json:"id"`
 	Email     string  `json:"email"`
@@ -102,7 +104,7 @@ type UserResponse struct {
 	CreatedAt string  `json:"created_at"`
 }
 
-// Register user registration
+// Register 注册新用户：校验邮箱、哈希密码，事务创建用户/租户/根目录与默认 LLM。
 func (s *UserService) Register(req *RegisterRequest) (*entity.User, common.ErrorCode, error) {
 	cfg := server.GetConfig()
 	if !cfg.Authentication.RegisterEnabled {
@@ -262,7 +264,7 @@ func (s *UserService) Register(req *RegisterRequest) (*entity.User, common.Error
 	return user, common.CodeSuccess, nil
 }
 
-// getInitTenantLLM builds the tenant_llm rows created for a new user's default tenant.
+// getInitTenantLLM 为新租户按配置工厂批量生成 tenant_llm 初始行并去重。
 func (s *UserService) getInitTenantLLM(userID string) ([]*entity.TenantLLM, error) {
 	cfg := server.GetConfig()
 	if cfg == nil {
@@ -350,21 +352,21 @@ func (s *UserService) getInitTenantLLM(userID string) ([]*entity.TenantLLM, erro
 	return uniqueTenantLLMs, nil
 }
 
-// Login user login
+// Login 使用 username 字段作为邮箱登录，校验密码并轮换 access_token。
 func (s *UserService) Login(req *LoginRequest) (*entity.User, common.ErrorCode, error) {
-	// Get user by email (using username field as email)
+	// 将 username 字段当作邮箱查询用户
 	user, err := s.userDAO.GetByEmail(req.Username)
 	if err != nil {
 		return nil, common.CodeAuthenticationError, fmt.Errorf("invalid email or password")
 	}
 
-	// Decrypt password using RSA
+	// RSA 解密客户端传来的密码密文
 	decryptedPassword, err := common.DecryptPassword(req.Password)
 	if err != nil {
 		return nil, common.CodeServerError, fmt.Errorf("failed to decrypt password: %w", err)
 	}
 
-	// Verify password
+	// 校验解密后的明文密码
 	if user.Password == nil || !s.VerifyPassword(*user.Password, decryptedPassword) {
 		return nil, common.CodeAuthenticationError, fmt.Errorf("invalid username or password")
 	}
@@ -373,7 +375,7 @@ func (s *UserService) Login(req *LoginRequest) (*entity.User, common.ErrorCode, 
 		return nil, common.CodeForbidden, fmt.Errorf("user is disabled")
 	}
 
-	// Generate new access token
+	// 生成新的 access_token 并更新最后登录时间
 	token := utility.GenerateToken()
 	user.AccessToken = &token
 	now := time.Now().Truncate(time.Second)
@@ -385,7 +387,7 @@ func (s *UserService) Login(req *LoginRequest) (*entity.User, common.ErrorCode, 
 	return user, common.CodeSuccess, nil
 }
 
-// LoginByEmail user login by email
+// LoginByEmail 邮箱登录；未注册/密码错误返回 CodeAuthenticationError。
 // Returns user on success, or error with specific code:
 // - CodeAuthenticationError (109): Email not registered or password mismatch
 // - CodeServerError (500): Password decryption failure
@@ -422,7 +424,7 @@ func (s *UserService) LoginByEmail(req *EmailLoginRequest) (*entity.User, common
 	return user, common.CodeSuccess, nil
 }
 
-// GetUserByID get user by ID
+// GetUserByID 按数值 ID 查询用户并组装 UserResponse。
 func (s *UserService) GetUserByID(id uint) (*UserResponse, common.ErrorCode, error) {
 	user, err := s.userDAO.GetByID(id)
 	if err != nil {
@@ -443,7 +445,7 @@ func (s *UserService) GetUserByID(id uint) (*UserResponse, common.ErrorCode, err
 	}, common.CodeSuccess, nil
 }
 
-// ListUsers list users
+// ListUsers 分页列出用户并返回总数。
 func (s *UserService) ListUsers(page, pageSize int) ([]*UserResponse, int64, common.ErrorCode, error) {
 	offset := (page - 1) * pageSize
 	users, total, err := s.userDAO.List(offset, pageSize)
@@ -470,8 +472,7 @@ func (s *UserService) ListUsers(page, pageSize int) ([]*UserResponse, int64, com
 	return responses, total, common.CodeSuccess, nil
 }
 
-// VerifyPassword verify password
-// Supports both werkzeug pbkdf2 format (pbkdf2:sha256:iterations$salt$hash) and scrypt format
+// VerifyPassword 校验明文密码，兼容 werkzeug pbkdf2 与 scrypt 两种哈希格式。
 func (s *UserService) VerifyPassword(hashedPassword, password string) bool {
 	// Check if it's pbkdf2 format (werkzeug)
 	if strings.HasPrefix(hashedPassword, "pbkdf2:") {
@@ -486,8 +487,7 @@ func (s *UserService) VerifyPassword(hashedPassword, password string) bool {
 	return false
 }
 
-// verifyPBKDF2Password verifies password using PBKDF2 (werkzeug format)
-// Format: pbkdf2:sha256:iterations$salt$hash
+// verifyPBKDF2Password 解析并校验 werkzeug PBKDF2 格式密码。
 func (s *UserService) verifyPBKDF2Password(hashedPassword, password string) bool {
 	parts := strings.Split(hashedPassword, "$")
 	if len(parts) != 3 {
@@ -539,9 +539,7 @@ func (s *UserService) verifyPBKDF2Password(hashedPassword, password string) bool
 	return computedHash == expectedHash
 }
 
-// verifyScryptPassword verifies password using scrypt format
-// Format: scrypt:n:r:p$base64(salt)$hex(hash)
-// IMPORTANT: werkzeug uses the base64-encoded salt string as UTF-8 bytes, NOT the decoded bytes
+// verifyScryptPassword 校验 scrypt 格式；werkzeug 将 base64 盐字符串当作 UTF-8 字节使用。
 func (s *UserService) verifyScryptPassword(hashedPassword, password string) bool {
 	// Parse hash format: scrypt:n:r:p$base64(salt)$hex(hash)
 	parts := strings.Split(hashedPassword, "$")
@@ -590,7 +588,7 @@ func (s *UserService) verifyScryptPassword(hashedPassword, password string) bool
 	return s.constantTimeCompare(expectedHash, computed)
 }
 
-// constantTimeCompare constant time comparison
+// constantTimeCompare 常量时间比较字节切片，降低时序侧信道风险。
 func (s *UserService) constantTimeCompare(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false
@@ -611,9 +609,7 @@ func defaultUserLanguage() string {
 	return "English"
 }
 
-// GetUserByToken gets user by authorization header
-// The token parameter is the authorization header value, which needs to be decrypted
-// using itsdangerous URLSafeTimedSerializer to get the actual access_token
+// GetUserByToken 从 Authorization 头解密 access_token 并查询用户。
 func (s *UserService) GetUserByToken(authorization string) (*entity.User, common.ErrorCode, error) {
 	// Get secret key from config
 	secretKey, err := server.GetSecretKey(redis.Get())
@@ -642,12 +638,12 @@ func (s *UserService) GetUserByToken(authorization string) (*entity.User, common
 	return user, common.CodeSuccess, nil
 }
 
-// UpdateUserAccessToken updates user's access token
+// UpdateUserAccessToken 持久化新的 access_token。
 func (s *UserService) UpdateUserAccessToken(user *entity.User, token string) error {
 	return s.userDAO.UpdateAccessToken(user, token)
 }
 
-// Logout invalidates user's access token
+// Logout 将 access_token 置为 INVALID_ 前缀的无效值以实现登出。
 func (s *UserService) Logout(user *entity.User) (common.ErrorCode, error) {
 	// Invalidate token by setting it to an invalid value
 	// Similar to Python implementation: "INVALID_" + secrets.token_hex(16)
@@ -659,7 +655,7 @@ func (s *UserService) Logout(user *entity.User) (common.ErrorCode, error) {
 	return common.CodeSuccess, nil
 }
 
-// GetUserProfile returns user profile information
+// GetUserProfile 组装前端所需的完整用户资料 map（含时区、语言等默认值）。
 func (s *UserService) GetUserProfile(user *entity.User) map[string]interface{} {
 	// Format create time and date (from database fields)
 	createTime := user.CreateTime
@@ -764,7 +760,7 @@ func (s *UserService) GetUserProfile(user *entity.User) map[string]interface{} {
 	}
 }
 
-// UpdateUserSettings updates user settings
+// UpdateUserSettings 更新用户设置；若含密码字段则 RSA 解密后校验旧密码再哈希新密码。
 func (s *UserService) UpdateUserSettings(user *entity.User, req *UpdateSettingsRequest) (common.ErrorCode, error) {
 	// Update fields if provided
 	if req.Password != nil {
@@ -830,7 +826,7 @@ func (s *UserService) UpdateUserSettings(user *entity.User, req *UpdateSettingsR
 	return common.CodeSuccess, nil
 }
 
-// ChangePassword changes user password
+// ChangePassword 修改密码：可选校验当前密码后写入新哈希。
 func (s *UserService) ChangePassword(user *entity.User, req *ChangePasswordRequest) (common.ErrorCode, error) {
 	// If password is provided, verify current password
 	if req.Password != nil {
@@ -855,14 +851,14 @@ func (s *UserService) ChangePassword(user *entity.User, req *ChangePasswordReque
 	return common.CodeSuccess, nil
 }
 
-// LoginChannel represents a login channel response
+// LoginChannel OAuth/SSO 登录渠道对外展示结构。
 type LoginChannel struct {
 	Channel     string `json:"channel"`
 	DisplayName string `json:"display_name"`
 	Icon        string `json:"icon"`
 }
 
-// GetLoginChannels gets all supported authentication channels
+// GetLoginChannels 枚举配置中启用的 OAuth 登录渠道及展示名/图标。
 func (s *UserService) GetLoginChannels() ([]*LoginChannel, common.ErrorCode, error) {
 	cfg := server.GetConfig()
 	channels := make([]*LoginChannel, 0)
@@ -888,7 +884,7 @@ func (s *UserService) GetLoginChannels() ([]*LoginChannel, common.ErrorCode, err
 	return channels, common.CodeSuccess, nil
 }
 
-// SetTenantInfoRequest represents the request for setting tenant info
+// SetTenantInfoRequest 更新租户默认模型 ID 等配置的请求体。
 type SetTenantInfoRequest struct {
 	TenantID  *string                `json:"tenant_id"`
 	ASRID     *string                `json:"asr_id"`
@@ -900,7 +896,7 @@ type SetTenantInfoRequest struct {
 	Raw       map[string]interface{} `json:"-"`
 }
 
-// SetTenantInfo updates tenant model configuration
+// SetTenantInfo 合并请求字段并确保 tenant 模型 ID 合法后写库。
 func (s *UserService) SetTenantInfo(userID string, req *SetTenantInfoRequest) (common.ErrorCode, error) {
 	_ = userID
 	tenantDAO := dao.NewTenantDAO()
@@ -930,13 +926,13 @@ func (s *UserService) SetTenantInfo(userID string, req *SetTenantInfoRequest) (c
 	return common.CodeSuccess, nil
 }
 
-// UserTenantService user tenant service
-// Provides business logic for user-tenant relationship management
+// UserTenantService 用户-租户关系查询服务。
 type UserTenantService struct {
 	userTenantDAO *dao.UserTenantDAO
 }
 
-// NewUserTenantService creates a new UserTenantService instance
+// NewUserTenantService 创建 UserTenantService。
+// NewUserTenantService 创建 UserTenantService 实例。
 /**
  * Returns:
  *   - *UserTenantService: a new UserTenantService instance
@@ -952,8 +948,7 @@ func NewUserTenantService() *UserTenantService {
 	}
 }
 
-// UserTenantRelation represents a user-tenant relationship response
-// This structure matches the Python implementation's return format
+// UserTenantRelation 用户在某租户中的角色关系响应，对齐 Python 返回格式。
 type UserTenantRelation struct {
 	ID       string `json:"id"`
 	UserID   string `json:"user_id"`
@@ -961,7 +956,7 @@ type UserTenantRelation struct {
 	Role     string `json:"role"`
 }
 
-// GetUserTenantRelationByUserID retrieves all user-tenant relationships for a given user ID
+// GetUserTenantRelationByUserID 查询指定用户的全部租户关系列表。
 /**
  * This method returns a list of user-tenant relationships with selected fields:
  * - id: the relationship ID
@@ -992,7 +987,7 @@ func (s *UserTenantService) GetUserTenantRelationByUserID(userID string) ([]*Use
 	return s.GetUserTenantRelationByUserIDWithContext(context.Background(), userID)
 }
 
-// GetUserTenantRelationByUserIDWithContext retrieves all user-tenant relationships for a given user ID with context.
+// GetUserTenantRelationByUserIDWithContext 带 context 的租户关系查询，便于超时/取消传递。
 func (s *UserTenantService) GetUserTenantRelationByUserIDWithContext(ctx context.Context, userID string) ([]*UserTenantRelation, error) {
 	relations, err := s.userTenantDAO.GetByUserIDWithContext(ctx, userID)
 	if err != nil {
@@ -1007,7 +1002,7 @@ func (s *UserTenantService) GetUserTenantRelationByUserIDWithContext(ctx context
 	return result, nil
 }
 
-// convertToUserTenantRelation converts model.UserTenant to UserTenantRelation
+// convertToUserTenantRelation 将 entity.UserTenant 转为 API 层 UserTenantRelation。
 /**
  * Parameters:
  *   - userTenant: the model.UserTenant to convert
@@ -1024,9 +1019,7 @@ func convertToUserTenantRelation(userTenant *entity.UserTenant) *UserTenantRelat
 	}
 }
 
-// GetUserByAPIToken gets user by access key from Authorization header
-// This is used for API token authentication
-// The authorization parameter should be in format: "Bearer <token>" or just "<token>"
+// GetUserByAPIToken 通过 API Token（Bearer）解析租户并返回对应用户。
 func (s *UserService) GetUserByAPIToken(authorization string) (*entity.User, common.ErrorCode, error) {
 	if authorization == "" {
 		return nil, common.CodeUnauthorized, fmt.Errorf("authorization header is empty")
@@ -1066,11 +1059,7 @@ func (s *UserService) GetUserByAPIToken(authorization string) (*entity.User, com
 
 }
 
-// GetAPITokenByBeta returns the APIToken row whose `beta` column
-// matches the given raw token. Used by the beta-auth middleware
-// to expose DialogID (the real agent_id) to downstream handlers
-// without re-parsing the Authorization header. Mirrors
-// `APIToken.query(beta=token)` from python bot_api.py:agent_bot_logs.
+// GetAPITokenByBeta 按 beta 字段查 APIToken，供 beta 鉴权中间件获取 DialogID。
 func (s *UserService) GetAPITokenByBeta(authorization string) (*entity.APIToken, error) {
 	authorization = strings.TrimSpace(authorization)
 	if authorization == "" {
@@ -1102,8 +1091,7 @@ func (s *UserService) GetAPITokenByBeta(authorization string) (*entity.APIToken,
 	return tokens[0], nil
 }
 
-// GetUserByBetaAPIToken gets user by beta access key from Authorization
-// header. This mirrors Python's AUTH_BETA flow used by public bot endpoints.
+// GetUserByBetaAPIToken 公开 bot 端点的 beta Token 鉴权，对齐 Python AUTH_BETA。
 func (s *UserService) GetUserByBetaAPIToken(authorization string) (*entity.User, common.ErrorCode, error) {
 	authorization = strings.TrimSpace(authorization)
 	if authorization == "" {
@@ -1145,17 +1133,9 @@ func (s *UserService) GetUserByBetaAPIToken(authorization string) (*entity.User,
 	return user, common.CodeSuccess, nil
 }
 
-// ---- Forgot-password flow (mirrors api/apps/restful_apis/user_api.py
-// `/auth/password/...` endpoints, fixes #15282) -------------------------
+// ---- 忘记密码流程（对齐 user_api.py /auth/password/*，修复 #15282）----
 
-// ForgotIssueCaptcha mints a captcha for the given email and stores the
-// expected text in Redis under utility.CaptchaIDRedisKey, keyed by a
-// fresh server-side captcha_id, with a 60s TTL. Returns the captcha_id
-// and a renderable SVG image (data URL) the FE drops into <img src> so
-// the human can read the challenge and type the answer. The plaintext
-// code itself is never sent to the client outside the rendered image.
-//
-// Refuses unknown emails to avoid leaking the user list — matches Python.
+// ForgotIssueCaptcha 为已知邮箱签发 PNG 验证码：明文仅存 Redis，响应仅含 captcha_id 与 data URL。
 func (s *UserService) ForgotIssueCaptcha(email string) (captchaID, imageDataURL string, code common.ErrorCode, err error) {
 	if email == "" {
 		return "", "", common.CodeArgumentError, fmt.Errorf("email is required")
@@ -1176,11 +1156,7 @@ func (s *UserService) ForgotIssueCaptcha(email string) (captchaID, imageDataURL 
 	return captchaID, imageDataURL, common.CodeSuccess, nil
 }
 
-// ForgotSendOTP verifies the captcha (looked up by the server-issued
-// captcha_id), then issues an OTP and emails it. Hash-and-salt is
-// stored in Redis under the keys returned by utility.OTPRedisKeys.
-// Resend cooldown and per-email lockout behaviour otherwise match the
-// Python implementation byte-for-byte.
+// ForgotSendOTP 校验图形验证码后生成 OTP 发邮件；Redis 存哈希，含重发冷却与锁定策略。
 func (s *UserService) ForgotSendOTP(email, captchaID, captcha string) (common.ErrorCode, error) {
 	if email == "" || captchaID == "" || captcha == "" {
 		return common.CodeArgumentError, fmt.Errorf("email, captcha_id and captcha required")
@@ -1277,9 +1253,7 @@ func (s *UserService) ForgotSendOTP(email, captchaID, captcha string) (common.Er
 	return common.CodeSuccess, nil
 }
 
-// ForgotVerifyOTP checks an OTP submitted by the user. On success it
-// consumes the OTP/attempt counters and writes a short-lived "verified"
-// flag the reset endpoint will gate on.
+// ForgotVerifyOTP 校验 OTP；成功则清除 OTP 状态并写入短时 verified 标记供重置接口使用。
 func (s *UserService) ForgotVerifyOTP(email, otp string) (common.ErrorCode, error) {
 	if email == "" || otp == "" {
 		return common.CodeArgumentError, fmt.Errorf("email and otp are required")
@@ -1331,7 +1305,7 @@ func (s *UserService) ForgotVerifyOTP(email, otp string) (common.ErrorCode, erro
 	return common.CodeSuccess, nil
 }
 
-// ForgotResetPasswordRequest carries the JSON body of /auth/password/reset.
+// ForgotResetPasswordRequest 重置密码 JSON 体；无 binding 标签以对齐 Python 错误文案。
 //
 // No `binding` tags on purpose: gin's validator fires inside
 // c.ShouldBindJSON and produces a verbose
@@ -1348,11 +1322,7 @@ type ForgotResetPasswordRequest struct {
 	ConfirmNewPassword string `json:"confirm_new_password"`
 }
 
-// ForgotResetPassword finalises the reset: only proceeds if the verified
-// flag is set, validates the two ciphertexts match after RSA decryption,
-// updates the password hash, and clears the verified flag. Returns the
-// user so the handler can auto-login (matching Python's
-// `construct_response(auth=user.get_id())`).
+// ForgotResetPassword 在 verified 标记有效时解密并校验两次新密码，更新哈希并自动登录。
 func (s *UserService) ForgotResetPassword(req *ForgotResetPasswordRequest) (*entity.User, common.ErrorCode, error) {
 	if req.Email == "" || req.NewPassword == "" || req.ConfirmNewPassword == "" {
 		return nil, common.CodeArgumentError, fmt.Errorf("email and passwords are required")
@@ -1401,3 +1371,4 @@ func (s *UserService) ForgotResetPassword(req *ForgotResetPasswordRequest) (*ent
 	rc.Delete(verifiedKey)
 	return user, common.CodeSuccess, nil
 }
+// user.go — 用户注册/登录、密码校验、Token 鉴权与忘记密码 OTP 全流程。

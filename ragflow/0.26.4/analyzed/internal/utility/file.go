@@ -16,6 +16,8 @@
 
 package utility
 
+// file.go 文件名规范化、类型分类、MIME 与 HTTP 附件/预览头辅助。
+
 import (
 	"fmt"
 	"net/http"
@@ -182,7 +184,7 @@ func GetFileExtension(filename string) string {
 	return strings.ToLower(ext)
 }
 
-// CONTENT_TYPE_MAP maps file extensions to MIME content types
+// CONTENT_TYPE_MAP 扩展名到 MIME 类型的映射表。
 var CONTENT_TYPE_MAP = map[string]string{
 	// Office
 	"docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -247,7 +249,7 @@ var CONTENT_TYPE_MAP = map[string]string{
 	"mpa":  "video/mpeg",
 }
 
-// FORCE_ATTACHMENT_EXTENSIONS are extensions that should always be downloaded as attachments
+// FORCE_ATTACHMENT_EXTENSIONS 强制以 attachment 下载的扩展名集合。
 var FORCE_ATTACHMENT_EXTENSIONS = map[string]bool{
 	"htm":   true,
 	"html":  true,
@@ -259,7 +261,7 @@ var FORCE_ATTACHMENT_EXTENSIONS = map[string]bool{
 	"svg":   true,
 }
 
-// FORCE_ATTACHMENT_CONTENT_TYPES are content types that should always be downloaded as attachments
+// FORCE_ATTACHMENT_CONTENT_TYPES 强制 attachment 的 Content-Type 集合。
 var FORCE_ATTACHMENT_CONTENT_TYPES = map[string]bool{
 	"text/html":             true,
 	"image/svg+xml":         true,
@@ -269,8 +271,7 @@ var FORCE_ATTACHMENT_CONTENT_TYPES = map[string]bool{
 	"multipart/related":     true,
 }
 
-// stripContentTypeParams strips "; charset=..." and similar parameters
-// from a content type string.  Mirrors Python's .split(";")[0].strip().
+// stripContentTypeParams 去掉 Content-Type 分号后的 charset 等参数。
 func stripContentTypeParams(ct string) string {
 	if before, _, found := strings.Cut(ct, ";"); found {
 		return strings.TrimSpace(before)
@@ -278,7 +279,7 @@ func stripContentTypeParams(ct string) string {
 	return strings.TrimSpace(ct)
 }
 
-// ShouldForceAttachment determines if the file should be forced as attachment
+// ShouldForceAttachment 根据扩展名或 MIME 判断是否强制 attachment 下载。
 func ShouldForceAttachment(ext string, contentType string) bool {
 	normalizedExt := strings.ToLower(strings.TrimPrefix(ext, "."))
 	if normalizedExt != "" && FORCE_ATTACHMENT_EXTENSIONS[normalizedExt] {
@@ -288,8 +289,7 @@ func ShouldForceAttachment(ext string, contentType string) bool {
 	return FORCE_ATTACHMENT_CONTENT_TYPES[normalizedType]
 }
 
-// GetContentType determines the content type based on extension and file type
-// fallbackPrefix is "image" for visual files, "application" for others
+// GetContentType 按扩展名查表，未知时用 image/ 或 application/ 前缀回退。
 func GetContentType(ext string, fileType string) string {
 	if ext == "" {
 		return ""
@@ -305,16 +305,12 @@ func GetContentType(ext string, fileType string) string {
 	return fallbackPrefix + "/" + normalizedExt
 }
 
-// SanitizeContentDispositionFilename sanitizes a filename for use in
-// Content-Disposition headers. Strips non-ASCII, path separators,
-// control characters, and quotes/percent signs. Falls back to "file"
-// when the result is empty. Mirrors Python file_response.py:
-// sanitize_content_disposition_filename().
+// SanitizeContentDispositionFilename 净化 Content-Disposition 文件名，对齐 Python。
 func SanitizeContentDispositionFilename(filename string) string {
 	if filename == "" {
 		return "file"
 	}
-	// Strip non-ASCII.
+	// 移除非 ASCII 字符
 	var asciiOnly strings.Builder
 	for _, r := range filename {
 		if r < 0x80 {
@@ -323,7 +319,7 @@ func SanitizeContentDispositionFilename(filename string) string {
 	}
 	sanitized := asciiOnly.String()
 
-	// Replace path separators, special chars.
+	// 替换路径分隔符与引号等特殊字符
 	sanitized = strings.ReplaceAll(sanitized, "/", "_")
 	sanitized = strings.ReplaceAll(sanitized, "\\", "_")
 	sanitized = strings.ReplaceAll(sanitized, ":", "_")
@@ -331,7 +327,7 @@ func SanitizeContentDispositionFilename(filename string) string {
 	sanitized = strings.ReplaceAll(sanitized, "'", "")
 	sanitized = strings.ReplaceAll(sanitized, "%", "")
 
-	// Strip remaining control characters.
+	// 移除控制字符
 	ctrlRe := regexp.MustCompile(`[\x00-\x1f\x7f]`)
 	sanitized = ctrlRe.ReplaceAllString(sanitized, "")
 
@@ -342,12 +338,7 @@ func SanitizeContentDispositionFilename(filename string) string {
 	return sanitized
 }
 
-// ResolveAttachmentContentType resolves a content type and extension from
-// query-parameter values. When mimeType is non-empty it is preferred and
-// reverse-looked up in CONTENT_TYPE_MAP to also resolve the extension;
-// otherwise the extension is looked up in CONTENT_TYPE_MAP, falling back
-// to "application/<ext>". Returns (contentType, ext). Mirrors Python
-// file_response.py: resolve_attachment_content_type().
+// ResolveAttachmentContentType 从 ext/mime_type 参数解析 Content-Type 与扩展名。
 func ResolveAttachmentContentType(ext string, mimeType string) (string, string) {
 	ext = strings.ToLower(strings.TrimSpace(ext))
 	ext = strings.TrimPrefix(ext, ".")
@@ -357,10 +348,7 @@ func ResolveAttachmentContentType(ext string, mimeType string) (string, string) 
 	if mimeType != "" {
 		normalizedType := strings.ToLower(stripContentTypeParams(mimeType))
 		contentType = normalizedType
-		// Reverse-lookup extension from CONTENT_TYPE_MAP only when
-		// no explicit ext was provided. Never overwrite a caller-
-		// supplied extension (e.g. ext=svg&mime_type=image/png must
-		// stay ext=svg for the force-attachment check).
+		// 仅当未传 ext 时从 MIME 反查扩展名；不覆盖调用方显式 ext。
 		if ext == "" {
 			for knownExt, knownType := range CONTENT_TYPE_MAP {
 				if knownType == normalizedType {
@@ -379,10 +367,7 @@ func ResolveAttachmentContentType(ext string, mimeType string) (string, string) 
 	return contentType, ext
 }
 
-// SetPreviewFileResponseHeaders sets response headers for inline file
-// preview. For force-attachment types (HTML, SVG, XML) it falls back to
-// attachment disposition with nosniff. Mirrors Python file_response.py:
-// apply_preview_file_response_headers().
+// SetPreviewFileResponseHeaders 设置 inline 预览响应头；强制附件类型改 attachment。
 func SetPreviewFileResponseHeaders(h http.Header, contentType, ext, filename string) {
 	if contentType != "" {
 		h.Set("Content-Type", contentType)
@@ -396,9 +381,7 @@ func SetPreviewFileResponseHeaders(h http.Header, contentType, ext, filename str
 	}
 }
 
-// SetDownloadFileResponseHeaders sets response headers for file download
-// (always attachment disposition). Mirrors Python file_response.py:
-// apply_download_file_response_headers().
+// SetDownloadFileResponseHeaders 设置下载响应头，默认 attachment。
 func SetDownloadFileResponseHeaders(h http.Header, contentType, ext, filename string) {
 	if contentType != "" {
 		h.Set("Content-Type", contentType)
@@ -412,10 +395,7 @@ func SetDownloadFileResponseHeaders(h http.Header, contentType, ext, filename st
 	h.Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, safe))
 }
 
-// AgentAttachmentPreviewPath builds the preview URL path for an agent
-// attachment. Query parameters ext and mime_type are URL-encoded when
-// provided. Mirrors Python file_response.py:
-// agent_attachment_preview_path().
+// AgentAttachmentPreviewPath 构造 Agent 附件预览 API 路径及查询参数。
 func AgentAttachmentPreviewPath(attachmentID, ext, mimeType string) string {
 	path := "/api/v1/agents/attachments/" + attachmentID + "/preview"
 	params := url.Values{}
@@ -430,3 +410,4 @@ func AgentAttachmentPreviewPath(attachmentID, ext, mimeType string) string {
 	}
 	return path
 }
+// file.go — 文件名/类型判定、MIME 映射与下载/预览响应头设置。

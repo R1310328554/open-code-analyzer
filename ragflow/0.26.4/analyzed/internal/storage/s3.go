@@ -16,6 +16,8 @@
 
 package storage
 
+// s3.go AWS S3 及兼容端点的对象存储实现。
+
 import (
 	"bytes"
 	"context"
@@ -32,7 +34,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// S3Storage implements Storage interface for AWS S3
+// S3Storage AWS S3 后端，支持自定义 endpoint 与 session token。
 type S3Storage struct {
 	client     *s3.Client
 	bucket     string
@@ -40,7 +42,7 @@ type S3Storage struct {
 	config     *server.S3Config
 }
 
-// NewS3Storage creates a new S3 storage instance
+// NewS3Storage 加载 AWS 配置并创建 S3 客户端。
 func NewS3Storage(config *server.S3Config) (*S3Storage, error) {
 	storage := &S3Storage{
 		config: config,
@@ -58,12 +60,12 @@ func (s *S3Storage) connect() error {
 
 	var opts []func(*config.LoadOptions) error
 
-	// Configure region
+	// 可选配置区域
 	if s.config.Region != "" {
 		opts = append(opts, config.WithRegion(s.config.Region))
 	}
 
-	// Configure credentials if provided
+	// 显式提供密钥时使用静态凭证（含 SessionToken）
 	if s.config.AccessKey != "" && s.config.SecretKey != "" {
 		creds := credentials.NewStaticCredentialsProvider(
 			s.config.AccessKey,
@@ -73,13 +75,13 @@ func (s *S3Storage) connect() error {
 		opts = append(opts, config.WithCredentialsProvider(creds))
 	}
 
-	// Load configuration
+	// 加载默认 AWS 配置链
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
-	// Create S3 client with custom endpoint if provided
+	// 若配置 EndpointURL 则覆盖 S3 基址（兼容 MinIO 等）
 	clientOpts := []func(*s3.Options){}
 	if s.config.EndpointURL != "" {
 		clientOpts = append(clientOpts, func(o *s3.Options) {
@@ -111,7 +113,7 @@ func (s *S3Storage) resolveBucketAndPath(bucket, fnm string) (string, string) {
 	return actualBucket, actualPath
 }
 
-// Health checks S3 service availability
+// Health 通过 PutObject 探针验证 S3 可用。
 func (s *S3Storage) Health() bool {
 	bucket := s.bucket
 	if bucket == "" {
@@ -153,7 +155,7 @@ func (s *S3Storage) Health() bool {
 	return true
 }
 
-// Put uploads an object to S3
+// Put 上传对象，必要时 CreateBucket，失败重试。
 func (s *S3Storage) Put(bucket, fnm string, binary []byte, tenantID ...string) error {
 	bucket, fnm = s.resolveBucketAndPath(bucket, fnm)
 
@@ -193,7 +195,7 @@ func (s *S3Storage) Put(bucket, fnm string, binary []byte, tenantID ...string) e
 	return fmt.Errorf("failed to put object after retries")
 }
 
-// Get retrieves an object from S3
+// Get 读取对象 Body 为 []byte。
 func (s *S3Storage) Get(bucket, fnm string, tenantID ...string) ([]byte, error) {
 	bucket, fnm = s.resolveBucketAndPath(bucket, fnm)
 
@@ -226,7 +228,7 @@ func (s *S3Storage) Get(bucket, fnm string, tenantID ...string) ([]byte, error) 
 	return nil, fmt.Errorf("failed to get object after retries")
 }
 
-// Remove removes an object from S3
+// Remove DeleteObject 删除键。
 func (s *S3Storage) Remove(bucket, fnm string, tenantID ...string) error {
 	bucket, fnm = s.resolveBucketAndPath(bucket, fnm)
 
@@ -244,7 +246,7 @@ func (s *S3Storage) Remove(bucket, fnm string, tenantID ...string) error {
 	return nil
 }
 
-// ObjExist checks if an object exists in S3
+// ObjExist HeadObject 判断存在性。
 func (s *S3Storage) ObjExist(bucket, fnm string, tenantID ...string) bool {
 	bucket, fnm = s.resolveBucketAndPath(bucket, fnm)
 
@@ -264,7 +266,7 @@ func (s *S3Storage) ObjExist(bucket, fnm string, tenantID ...string) bool {
 	return true
 }
 
-// GetPresignedURL generates a presigned URL for accessing an object
+// GetPresignedURL PresignGetObject 生成临时访问 URL。
 func (s *S3Storage) GetPresignedURL(bucket, fnm string, expires time.Duration, tenantID ...string) (string, error) {
 	bucket, fnm = s.resolveBucketAndPath(bucket, fnm)
 
@@ -290,7 +292,7 @@ func (s *S3Storage) GetPresignedURL(bucket, fnm string, expires time.Duration, t
 	return "", fmt.Errorf("failed to generate presigned URL after 10 retries")
 }
 
-// BucketExists checks if a bucket exists
+// BucketExists HeadBucket 检查桶。
 func (s *S3Storage) BucketExists(bucket string) bool {
 	actualBucket := bucket
 	if s.bucket != "" {
@@ -310,7 +312,7 @@ func (s *S3Storage) BucketExists(bucket string) bool {
 	return true
 }
 
-// RemoveBucket removes a bucket and all its objects
+// RemoveBucket 清空对象后删除桶。
 func (s *S3Storage) RemoveBucket(bucket string) error {
 	actualBucket := bucket
 	if s.bucket != "" {
@@ -364,7 +366,7 @@ func (s *S3Storage) RemoveBucket(bucket string) error {
 	return nil
 }
 
-// Copy copies an object from source to destination
+// Copy S3 CopyObject 服务端复制。
 func (s *S3Storage) Copy(srcBucket, srcPath, destBucket, destPath string) bool {
 	srcBucket, srcPath = s.resolveBucketAndPath(srcBucket, srcPath)
 	destBucket, destPath = s.resolveBucketAndPath(destBucket, destPath)
@@ -386,7 +388,7 @@ func (s *S3Storage) Copy(srcBucket, srcPath, destBucket, destPath string) bool {
 	return true
 }
 
-// Move moves an object from source to destination
+// Move 复制成功后 Remove 源对象。
 func (s *S3Storage) Move(srcBucket, srcPath, destBucket, destPath string) bool {
 	if s.Copy(srcBucket, srcPath, destBucket, destPath) {
 		if err := s.Remove(srcBucket, srcPath); err != nil {
@@ -398,7 +400,7 @@ func (s *S3Storage) Move(srcBucket, srcPath, destBucket, destPath string) bool {
 	return false
 }
 
-// isNotFound checks if the error is a not found error
+// isS3NotFound 判断 Smithy API 错误是否为对象/桶不存在。
 func isS3NotFound(err error) bool {
 	if err == nil {
 		return false
@@ -409,3 +411,4 @@ func isS3NotFound(err error) bool {
 	}
 	return false
 }
+// s3.go — AWS S3 存储后端：区域、凭证与自定义端点支持。

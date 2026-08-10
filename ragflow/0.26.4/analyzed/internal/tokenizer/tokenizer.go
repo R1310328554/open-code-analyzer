@@ -16,6 +16,8 @@
 
 package tokenizer
 
+// tokenizer.go 封装 RAG 分词器弹性连接池与 cl100k token 计数工具。
+
 import (
 	"context"
 	"fmt"
@@ -33,12 +35,10 @@ import (
 	rag "ragflow/internal/binding"
 )
 
-// engineTypeProvider is injected at startup by engine.RegisterEngineType
-// to break the tokenizer → engine import cycle.
+// engineTypeProvider 由 engine.RegisterEngineType 注入，打破 tokenizer↔engine 循环依赖。
 var engineTypeProvider = func() string { return "" }
 
-// RegisterEngineType wires the engine package's GetEngineType into the
-// tokenizer, breaking the circular import (engine/elasticsearch → tokenizer → engine).
+// RegisterEngineType 注册引擎类型查询函数，供 Infinity 分支跳过本地分词。
 func RegisterEngineType(get func() string) {
 	if get == nil {
 		engineTypeProvider = func() string { return "" }
@@ -47,16 +47,16 @@ func RegisterEngineType(get func() string) {
 	engineTypeProvider = get
 }
 
-// PoolConfig configures the elastic analyzer pool
+// PoolConfig 分词器连接池配置：字典路径、容量上下限与超时。
 type PoolConfig struct {
-	DictPath       string        // Path to dictionary files
-	MinSize        int           // Minimum number of pre-warmed instances (default: 2*CPU)
-	MaxSize        int           // Maximum number of instances allowed (default: 16*CPU)
-	IdleTimeout    time.Duration // Idle timeout for shrinking (default: 5 minutes)
-	AcquireTimeout time.Duration // Timeout for acquiring an instance (default: 10 seconds)
+	DictPath       string        // 词典文件目录路径
+	MinSize        int           // 预热实例下限（默认 2×CPU）
+	MaxSize        int           // 实例上限（默认 16×CPU）
+	IdleTimeout    time.Duration // 空闲缩容超时（默认 5 分钟）
+	AcquireTimeout time.Duration // 获取实例等待超时（默认 10 秒）
 }
 
-// poolInstance wraps an analyzer instance with metadata for pool management
+// poolInstance 包装 Analyzer 实例及最后使用时间，供池管理。
 type poolInstance struct {
 	analyzer   *rag.Analyzer
 	lastUsedAt time.Time
@@ -65,9 +65,9 @@ type poolInstance struct {
 // analyzerPool is the elastic pool for analyzer instances
 type analyzerPool struct {
 	config       PoolConfig
-	baseAnalyzer *rag.Analyzer      // Original analyzer used as template for copying
-	instances    chan *poolInstance // Channel-based pool for available instances
-	currentSize  int32              // Current number of instances (atomic)
+	baseAnalyzer *rag.Analyzer      // 作为 Copy 模板的基准 Analyzer
+	instances    chan *poolInstance // 可用实例 channel 池
+	currentSize  int32              // 当前实例数（原子计数）
 	initialized  bool
 	mu           sync.RWMutex
 	stopCh       chan struct{}
@@ -80,8 +80,7 @@ var (
 	poolInitError error
 )
 
-// Init initializes the elastic analyzer pool with the given configuration
-// Can be called multiple times if the pool was previously closed
+// Init 初始化全局分词器池；池已关闭时可重置 poolOnce 重新初始化。
 func Init(cfg *PoolConfig) error {
 	// Check if we need to reset poolOnce (for testing or re-initialization)
 	if globalPool != nil && !globalPool.initialized {
@@ -94,7 +93,7 @@ func Init(cfg *PoolConfig) error {
 			cfg = &PoolConfig{}
 		}
 
-		// Set default values
+		// 填充默认配置（环境变量 RAGFLOW_DICT_PATH、CPU 倍数等）
 		if cfg.DictPath == "" {
 			if env := os.Getenv("RAGFLOW_DICT_PATH"); env != "" {
 				cfg.DictPath = env
@@ -131,7 +130,7 @@ func Init(cfg *PoolConfig) error {
 			stopCh:    make(chan struct{}),
 		}
 
-		// Create the base analyzer as template
+		// 创建并 Load 基准 Analyzer 供 Copy
 		baseAnalyzer, err := rag.NewAnalyzer(cfg.DictPath)
 		if err != nil {
 			poolInitError = fmt.Errorf("failed to create base analyzer: %w", err)
@@ -148,7 +147,7 @@ func Init(cfg *PoolConfig) error {
 
 		globalPool.baseAnalyzer = baseAnalyzer
 
-		// Pre-warm minSize instances
+		// 预热 minSize 个实例放入 channel
 		for i := 0; i < cfg.MinSize; i++ {
 			instance, err := globalPool.createInstance()
 			if err != nil {
@@ -166,7 +165,7 @@ func Init(cfg *PoolConfig) error {
 			zap.Int("pre_warmed", cfg.MinSize),
 			zap.Int32("current_size", atomic.LoadInt32(&globalPool.currentSize)))
 
-		// Start the shrink loop for idle instance cleanup
+		// 启动 shrinkLoop 定期回收空闲实例
 		globalPool.wg.Add(1)
 		go globalPool.shrinkLoop()
 	})
@@ -174,13 +173,13 @@ func Init(cfg *PoolConfig) error {
 	return poolInitError
 }
 
-// createInstance creates a new analyzer instance by copying the base analyzer
+// createInstance 复制 baseAnalyzer 生成独立 Analyzer 实例。
 func (p *analyzerPool) createInstance() (*poolInstance, error) {
 	if p.baseAnalyzer == nil {
 		return nil, fmt.Errorf("base analyzer is nil")
 	}
 
-	// Copy the base analyzer to create a new independent instance
+	// Copy 基准分词器得到互不共享状态的新实例
 	copied := p.baseAnalyzer.Copy()
 	if copied == nil {
 		return nil, fmt.Errorf("failed to copy analyzer")
@@ -192,14 +191,13 @@ func (p *analyzerPool) createInstance() (*poolInstance, error) {
 	}, nil
 }
 
-// acquire gets an analyzer instance from the pool
-// If pool is empty and below max size, creates a new instance dynamically
+// acquire 从池取实例；池空且未达 MaxSize 则动态扩容。
 func (p *analyzerPool) acquire() (*poolInstance, error) {
 	if !p.initialized {
 		return nil, fmt.Errorf("pool not initialized")
 	}
 
-	// Fast path: try to get from pool without blocking
+	// 快路径：非阻塞从 channel 取实例
 	select {
 	case instance := <-p.instances:
 		instance.lastUsedAt = time.Now()
@@ -207,10 +205,10 @@ func (p *analyzerPool) acquire() (*poolInstance, error) {
 	default:
 	}
 
-	// Slow path: pool is empty, try dynamic expansion or wait
+	// 慢路径：动态扩容或带超时阻塞等待
 	current := atomic.LoadInt32(&p.currentSize)
 	if current < int32(p.config.MaxSize) {
-		// Try to increment atomically and create new instance
+		// CAS 增加 currentSize 并创建新实例
 		if atomic.CompareAndSwapInt32(&p.currentSize, current, current+1) {
 			instance, err := p.createInstance()
 			if err != nil {
@@ -224,10 +222,10 @@ func (p *analyzerPool) acquire() (*poolInstance, error) {
 				zap.Int("max_size", p.config.MaxSize))
 			return instance, nil
 		}
-		// CAS failed, another goroutine created an instance, fall through to wait
+		// CAS 失败说明其他协程已扩容，转入等待
 	}
 
-	// Wait for an instance to become available with timeout
+	// 带 AcquireTimeout 阻塞等待可用实例
 	ctx, cancel := context.WithTimeout(context.Background(), p.config.AcquireTimeout)
 	defer cancel()
 
@@ -241,7 +239,7 @@ func (p *analyzerPool) acquire() (*poolInstance, error) {
 	}
 }
 
-// release returns an analyzer instance to the pool
+// release 归还实例到池；池满则关闭并递减计数。
 func (p *analyzerPool) release(instance *poolInstance) {
 	if instance == nil || instance.analyzer == nil {
 		return
@@ -254,9 +252,9 @@ func (p *analyzerPool) release(instance *poolInstance) {
 
 	select {
 	case p.instances <- instance:
-		// Successfully returned to pool
+		// 成功放回 channel
 	default:
-		// Pool is full (shouldn't happen normally), close this instance
+		// 池满时销毁多余实例
 		common.Warn("Pool full when releasing instance, destroying it",
 			zap.Int32("current_size", atomic.LoadInt32(&p.currentSize)))
 		instance.analyzer.Close()
@@ -264,7 +262,7 @@ func (p *analyzerPool) release(instance *poolInstance) {
 	}
 }
 
-// shrinkLoop periodically checks and shrinks the pool by removing idle instances
+// shrinkLoop 每 30 秒触发 shrink 回收空闲实例。
 func (p *analyzerPool) shrinkLoop() {
 	defer p.wg.Done()
 
@@ -281,8 +279,7 @@ func (p *analyzerPool) shrinkLoop() {
 	}
 }
 
-// shrink removes idle instances that have exceeded the idle timeout
-// while keeping at least MinSize instances
+// shrink 移除超过 IdleTimeout 的空闲实例，但不低于 MinSize。
 func (p *analyzerPool) shrink() {
 	if !p.initialized {
 		return
@@ -291,7 +288,7 @@ func (p *analyzerPool) shrink() {
 	currentSize := atomic.LoadInt32(&p.currentSize)
 	minSize := int32(p.config.MinSize)
 
-	// Only shrink if we have more than minimum instances
+	// 仅当实例数大于 MinSize 时才缩容
 	if currentSize <= minSize {
 		return
 	}
@@ -300,14 +297,14 @@ func (p *analyzerPool) shrink() {
 	timeout := p.config.IdleTimeout
 	var toRemove []*poolInstance
 
-	// Try to collect idle instances without blocking
+	// 非阻塞收集超时未用的实例
 	for i := 0; i < int(currentSize-minSize); i++ {
 		select {
 		case instance := <-p.instances:
 			if now.Sub(instance.lastUsedAt) > timeout {
 				toRemove = append(toRemove, instance)
 			} else {
-				// Not idle, put back
+				// 未超时则放回池中
 				select {
 				case p.instances <- instance:
 				default:
@@ -322,7 +319,7 @@ func (p *analyzerPool) shrink() {
 	}
 
 	if len(toRemove) > 0 {
-		// Close and destroy idle instances
+		// 关闭并销毁待移除实例
 		for _, instance := range toRemove {
 			instance.analyzer.Close()
 		}
@@ -336,7 +333,7 @@ func (p *analyzerPool) shrink() {
 	}
 }
 
-// Close closes the pool and releases all resources
+// Close 停止 shrinkLoop 并关闭全部 Analyzer 与 channel。
 func (p *analyzerPool) Close() {
 	if p == nil {
 		return
@@ -350,11 +347,11 @@ func (p *analyzerPool) Close() {
 	p.initialized = false
 	p.mu.Unlock()
 
-	// Signal shrink loop to stop
+	// 通知 shrinkLoop 退出
 	close(p.stopCh)
 	p.wg.Wait()
 
-	// Close all instances in pool
+	// 排空 channel 并 Close 每个实例
 	close(p.instances)
 	for instance := range p.instances {
 		if instance != nil && instance.analyzer != nil {
@@ -362,7 +359,7 @@ func (p *analyzerPool) Close() {
 		}
 	}
 
-	// Close base analyzer
+	// 关闭基准 Analyzer
 	if p.baseAnalyzer != nil {
 		p.baseAnalyzer.Close()
 		p.baseAnalyzer = nil
@@ -371,7 +368,7 @@ func (p *analyzerPool) Close() {
 	common.Info(fmt.Sprintf("Analyzer pool closed, final_size: %d", atomic.LoadInt32(&p.currentSize)))
 }
 
-// GetPoolStats returns current pool statistics
+// GetPoolStats 返回池初始化状态、当前/最小/最大容量等统计。
 func GetPoolStats() map[string]interface{} {
 	if globalPool == nil {
 		return map[string]interface{}{
@@ -389,14 +386,14 @@ func GetPoolStats() map[string]interface{} {
 	}
 }
 
-// Close closes the global pool
+// Close 关闭全局 analyzerPool。
 func Close() {
 	if globalPool != nil {
 		globalPool.Close()
 	}
 }
 
-// withAnalyzer executes the given function with an exclusive analyzer instance
+// withAnalyzer 借出独占 Analyzer 执行 fn 后自动 release。
 func withAnalyzer(fn func(*rag.Analyzer) error) error {
 	if globalPool == nil {
 		return fmt.Errorf("tokenizer pool not initialized")
@@ -411,7 +408,7 @@ func withAnalyzer(fn func(*rag.Analyzer) error) error {
 	return fn(instance.analyzer)
 }
 
-// withAnalyzerResult executes the given function with an exclusive analyzer instance and returns a result
+// withAnalyzerResult 带返回值的 withAnalyzer 泛型封装。
 func withAnalyzerResult[T any](fn func(*rag.Analyzer) (T, error)) (T, error) {
 	var result T
 	if globalPool == nil {
@@ -427,10 +424,7 @@ func withAnalyzerResult[T any](fn func(*rag.Analyzer) (T, error)) (T, error) {
 	return fn(instance.analyzer)
 }
 
-// Tokenize tokenizes the text and returns a space-separated string of tokens
-// Example: "hello world" -> "hello world"
-//
-// NOTE: For Infinity engine, returns input unchanged to match python's behavior
+// Tokenize 分词并返回空格分隔 token 串；Infinity 引擎原样返回以对齐 Python。
 func Tokenize(text string) (string, error) {
 	if engineTypeProvider() == "infinity" {
 		return text, nil
@@ -440,34 +434,28 @@ func Tokenize(text string) (string, error) {
 	})
 }
 
-// TokenizeWithPosition tokenizes the text and returns a list of tokens with position information
+// TokenizeWithPosition 分词并返回带位置信息的 token 列表。
 func TokenizeWithPosition(text string) ([]rag.TokenWithPosition, error) {
 	return withAnalyzerResult(func(a *rag.Analyzer) ([]rag.TokenWithPosition, error) {
 		return a.TokenizeWithPosition(text)
 	})
 }
 
-// Analyze analyzes the text and returns all tokens
+// Analyze 深度分析文本，返回完整 Token 结构列表。
 func Analyze(text string) ([]rag.Token, error) {
 	return withAnalyzerResult(func(a *rag.Analyzer) ([]rag.Token, error) {
 		return a.Analyze(text)
 	})
 }
 
-// SetFineGrained sets whether to use fine-grained tokenization
-// Note: This is a no-op in pool mode as each request uses its own instance
-// To configure an instance, modify the base analyzer before Init() or use custom instances
+// SetFineGrained 池模式下为 no-op（每请求独立实例，需在 Init 前配置基准）。
 func SetFineGrained(fineGrained bool) {
 	// In pool mode, we don't set global state on instances
 	// Each request gets a fresh instance with default settings
 	common.Debug("SetFineGrained is no-op in pool mode", zap.Bool("fine_grained", fineGrained))
 }
 
-// FineGrainedTokenize performs fine-grained tokenization on space-separated tokens
-// Input: space-separated tokens (e.g., "hello world 测试")
-// Output: space-separated fine-grained tokens (e.g., "hello world 测 试")
-//
-// NOTE: For Infinity engine, returns input unchanged to match python's behavior
+// FineGrainedTokenize 对已有 token 串做细粒度切分；Infinity 引擎跳过。
 func FineGrainedTokenize(tokens string) (string, error) {
 	if engineTypeProvider() == "infinity" {
 		return tokens, nil
@@ -477,19 +465,17 @@ func FineGrainedTokenize(tokens string) (string, error) {
 	})
 }
 
-// SetEnablePosition sets whether to enable position tracking
-// Note: This is a no-op in pool mode as each request uses its own instance
+// SetEnablePosition 池模式下为 no-op。
 func SetEnablePosition(enablePosition bool) {
 	common.Debug("SetEnablePosition is no-op in pool mode", zap.Bool("enable_position", enablePosition))
 }
 
-// IsInitialized checks whether the tokenizer pool has been initialized
+// IsInitialized 判断全局分词器池是否已成功 Init。
 func IsInitialized() bool {
 	return globalPool != nil && globalPool.initialized
 }
 
-// GetTermFreq returns the frequency of a term (matching Python rag_tokenizer.freq)
-// Returns: frequency value, or 0 if term not found
+// GetTermFreq 查询词项词频，对齐 Python rag_tokenizer.freq。
 func GetTermFreq(term string) int32 {
 	result, _ := withAnalyzerResult(func(a *rag.Analyzer) (int32, error) {
 		return a.GetTermFreq(term), nil
@@ -497,8 +483,7 @@ func GetTermFreq(term string) int32 {
 	return result
 }
 
-// GetTermTag returns the POS tag of a term (matching Python rag_tokenizer.tag)
-// Returns: POS tag string (e.g., "n", "v", "ns"), or empty string if term not found or no tag
+// GetTermTag 查询词项词性标签，对齐 Python rag_tokenizer.tag。
 func GetTermTag(term string) string {
 	result, _ := withAnalyzerResult(func(a *rag.Analyzer) (string, error) {
 		return a.GetTermTag(term), nil
@@ -519,33 +504,27 @@ func getCL100KEncoder() (*tiktoken.Tiktoken, error) {
 	return cl100kEncoder.enc, cl100kEncoder.err
 }
 
-// NumTokensFromString returns the number of tokens in s using the cl100k_base
-// BPE encoding
+// NumTokensFromString 用 cl100k_base BPE 统计字符串 token 数；编码器不可用时按字节保守估计。
 func NumTokensFromString(s string) int {
 	if s == "" {
 		return 0
 	}
 	enc, err := getCL100KEncoder()
 	if err != nil {
-		// Fail closed: avoid dangerous undercounting when encoder is unavailable.
-		// A conservative byte-length estimate errs on the side of over-counting,
-		// which is safer for budget enforcement than returning zero.
+		// 编码器失败时按字节长度保守计数，避免预算低估。
 		return len([]byte(s))
 	}
 	return len(enc.Encode(s, nil, nil))
 }
 
-// TrimContentToTokenLimit truncates s to at most limit tokens using the
-// cl100k_base encoder. Mirrors Python's trim_content helper in
-// rag/prompts/generator.py: encoder.decode(encoder.encode(content)[:limit]).
-// Returns the original string if it already fits.
+// TrimContentToTokenLimit 按 cl100k token 上限截断内容，对齐 Python trim_content。
 func TrimContentToTokenLimit(s string, limit int) string {
 	if limit < 0 {
 		limit = 0
 	}
 	enc, err := getCL100KEncoder()
 	if err != nil {
-		// Fail closed: fall back to byte-length trimming with UTF-8 safety.
+		// 编码器不可用时按字节截断并保证 UTF-8 边界有效。
 		if limit <= 0 {
 			return ""
 		}
@@ -564,3 +543,4 @@ func TrimContentToTokenLimit(s string, limit int) string {
 	}
 	return enc.Decode(tokens[:limit])
 }
+// tokenizer.go — 弹性分词器池、cl100k BPE 计数与 Infinity 引擎分支。

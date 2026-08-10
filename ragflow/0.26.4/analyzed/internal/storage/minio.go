@@ -16,6 +16,8 @@
 
 package storage
 
+// minio.go 基于 minio-go 的对象存储适配层。
+
 import (
 	"bytes"
 	"context"
@@ -31,7 +33,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// MinioStorage implements Storage interface for MinIO
+// MinioStorage MinIO 后端，支持单桶+前缀路径映射模式。
 type MinioStorage struct {
 	client     *minio.Client
 	bucket     string // default bucket
@@ -39,7 +41,7 @@ type MinioStorage struct {
 	config     *server.MinioConfig
 }
 
-// NewMinioStorage creates a new MinIO storage instance
+// NewMinioStorage 根据配置连接 MinIO 并返回 Storage 实例。
 func NewMinioStorage(config *server.MinioConfig) (*MinioStorage, error) {
 	storage := &MinioStorage{
 		bucket:     config.Bucket,
@@ -57,7 +59,7 @@ func NewMinioStorage(config *server.MinioConfig) (*MinioStorage, error) {
 func (m *MinioStorage) connect() error {
 	var transport http.RoundTripper
 
-	// Configure transport for SSL/TLS verification
+	// 配置 TLS：Secure 模式下可按 verify 开关跳过证书校验
 	if m.config.Secure {
 		verify := m.config.Verify
 		transport = &http.Transport{
@@ -107,7 +109,7 @@ func (m *MinioStorage) resolveBucketAndPath(bucket, fnm string) (string, string)
 	return actualBucket, actualPath
 }
 
-// Health checks MinIO service availability
+// Health 调用 MinIO HealthCheck 并检查客户端在线状态。
 func (m *MinioStorage) Health() bool {
 	cancelFunction, err := m.client.HealthCheck(time.Second * 5)
 	if cancelFunction != nil {
@@ -122,7 +124,7 @@ func (m *MinioStorage) Health() bool {
 	return m.client.IsOnline()
 }
 
-// Put uploads an object to MinIO
+// Put 上传对象；非单桶模式时自动建桶，失败最多重试 3 次并重连。
 func (m *MinioStorage) Put(bucket, fnm string, binary []byte, tenantID ...string) error {
 	bucket, fnm = m.resolveBucketAndPath(bucket, fnm)
 
@@ -132,7 +134,7 @@ func (m *MinioStorage) Put(bucket, fnm string, binary []byte, tenantID ...string
 
 	for i := 0; i < 3; i++ {
 		var exists bool
-		// Ensure bucket exists
+		// 单桶模式关闭时确保目标桶存在
 		if m.bucket == "" {
 			exists, err = m.client.BucketExists(ctx, bucket)
 			if err != nil {
@@ -166,7 +168,7 @@ func (m *MinioStorage) Put(bucket, fnm string, binary []byte, tenantID ...string
 	return err
 }
 
-// Get retrieves an object from MinIO
+// Get 下载对象内容，失败时重连并重试。
 func (m *MinioStorage) Get(bucket, fnm string, tenantID ...string) ([]byte, error) {
 	bucket, fnm = m.resolveBucketAndPath(bucket, fnm)
 
@@ -196,7 +198,7 @@ func (m *MinioStorage) Get(bucket, fnm string, tenantID ...string) ([]byte, erro
 	return nil, fmt.Errorf("failed to get object after retries")
 }
 
-// Remove removes an object from MinIO
+// Remove 删除 MinIO 对象。
 func (m *MinioStorage) Remove(bucket, fnm string, tenantID ...string) error {
 	bucket, fnm = m.resolveBucketAndPath(bucket, fnm)
 
@@ -210,7 +212,7 @@ func (m *MinioStorage) Remove(bucket, fnm string, tenantID ...string) error {
 	return nil
 }
 
-// ObjExist checks if an object exists in MinIO
+// ObjExist 先检查桶再 StatObject 判断键是否存在。
 func (m *MinioStorage) ObjExist(bucket, fnm string, tenantID ...string) bool {
 	bucket, fnm = m.resolveBucketAndPath(bucket, fnm)
 
@@ -234,7 +236,7 @@ func (m *MinioStorage) ObjExist(bucket, fnm string, tenantID ...string) bool {
 	return true
 }
 
-// GetPresignedURL generates a presigned URL for accessing an object
+// GetPresignedURL 生成预签名 GET URL，最多重试 10 次。
 func (m *MinioStorage) GetPresignedURL(bucket, fnm string, expires time.Duration, tenantID ...string) (string, error) {
 	bucket, fnm = m.resolveBucketAndPath(bucket, fnm)
 
@@ -255,7 +257,7 @@ func (m *MinioStorage) GetPresignedURL(bucket, fnm string, expires time.Duration
 	return "", fmt.Errorf("failed to get presigned URL after 10 retries")
 }
 
-// BucketExists checks if a bucket exists
+// BucketExists 检查桶是否存在（单桶模式映射到配置的默认桶）。
 func (m *MinioStorage) BucketExists(bucket string) bool {
 	actualBucket := bucket
 	if m.bucket != "" {
@@ -273,7 +275,7 @@ func (m *MinioStorage) BucketExists(bucket string) bool {
 	return exists
 }
 
-// RemoveBucket removes a bucket and all its objects
+// RemoveBucket 按前缀列出并批量删除对象；单桶模式仅删前缀下对象。
 func (m *MinioStorage) RemoveBucket(bucket string) error {
 	actualBucket := bucket
 	origBucket := bucket
@@ -284,7 +286,7 @@ func (m *MinioStorage) RemoveBucket(bucket string) error {
 
 	ctx := context.Background()
 
-	// Build prefix for single-bucket mode
+	// 单桶模式下构造待删除对象的前缀
 	prefix := ""
 	if m.bucket != "" {
 		if m.prefixPath != "" {
@@ -293,7 +295,7 @@ func (m *MinioStorage) RemoveBucket(bucket string) error {
 		prefix += fmt.Sprintf("%s/", origBucket)
 	}
 
-	// List and delete objects with prefix
+	// 异步列出带前缀对象并批量 RemoveObjects
 	objectsCh := make(chan minio.ObjectInfo)
 
 	go func() {
@@ -314,7 +316,7 @@ func (m *MinioStorage) RemoveBucket(bucket string) error {
 		common.Warn(fmt.Sprintf("Failed to remove object, key: %s", err.ObjectName), zap.Error(err.Err))
 	}
 
-	// Only remove the actual bucket if not in single-bucket mode
+	// 非单桶模式才调用 RemoveBucket 删除物理桶
 	if m.bucket == "" {
 		if err := m.client.RemoveBucket(ctx, actualBucket); err != nil {
 			common.Warn("Failed to remove bucket", zap.String("bucket", actualBucket), zap.Error(err))
@@ -325,7 +327,7 @@ func (m *MinioStorage) RemoveBucket(bucket string) error {
 	return nil
 }
 
-// Copy copies an object from source to destination
+// Copy 服务端复制对象，必要时创建目标桶。
 func (m *MinioStorage) Copy(srcBucket, srcPath, destBucket, destPath string) bool {
 	srcBucket, srcPath = m.resolveBucketAndPath(srcBucket, srcPath)
 	destBucket, destPath = m.resolveBucketAndPath(destBucket, destPath)
@@ -347,14 +349,14 @@ func (m *MinioStorage) Copy(srcBucket, srcPath, destBucket, destPath string) boo
 		}
 	}
 
-	// Check if source object exists
+	// 复制前 Stat 源对象确认存在
 	_, err := m.client.StatObject(ctx, srcBucket, srcPath, minio.StatObjectOptions{})
 	if err != nil {
 		common.Warn("Failed to stat source object", zap.String("bucket", srcBucket), zap.String("key", srcPath), zap.Error(err))
 		return false
 	}
 
-	// Copy object
+	// 执行 CopyObject
 	srcOpts := minio.CopySrcOptions{
 		Bucket: srcBucket,
 		Object: srcPath,
@@ -373,7 +375,7 @@ func (m *MinioStorage) Copy(srcBucket, srcPath, destBucket, destPath string) boo
 	return true
 }
 
-// Move moves an object from source to destination
+// Move 复制成功后删除源对象。
 func (m *MinioStorage) Move(srcBucket, srcPath, destBucket, destPath string) bool {
 	if m.Copy(srcBucket, srcPath, destBucket, destPath) {
 		if err := m.Remove(srcBucket, srcPath); err != nil {
@@ -384,3 +386,4 @@ func (m *MinioStorage) Move(srcBucket, srcPath, destBucket, destPath string) boo
 	}
 	return false
 }
+// minio.go — MinIO 对象存储适配：上传、预签名 URL 与桶前缀映射。

@@ -14,20 +14,11 @@
 //  limitations under the License.
 //
 
-// Package tokenizer — per-run token usage tracking.
+// Package tokenizer — 单次 Canvas 回合的 Token 用量追踪。
 //
-// An agent run installs a mutable token usage accumulator on the context
-// (via WithRunUsage) at the start of each turn. Every LLM call inside
-// that run adds its usage (prompt/completion/total tokens) to the sink
-// via RecordRunTokenUsage. At the end of the run, the service layer
-// reads the accumulated totals and emits them in the workflow_finished
-// SSE event.
-//
-// This mirrors Python's common.token_utils:
-//   - token_usage_sink ContextVar → context.Context + runUsageKey
-//   - langfuse_run_attrs ContextVar → context.Context + runAttrsKey
-//   - record_run_token_usage() → RecordRunTokenUsage(ctx, ...)
-//   - usage_from_response() → UsageFromMap(raw)
+// 回合开始时通过 WithRunUsage 在 context 挂载可变累加器；回合内每次 LLM 调用
+// 经 RecordRunTokenUsage 累加 prompt/completion/total；结束时服务层读取总量并写入
+// workflow_finished SSE。对齐 Python common.token_utils 的 ContextVar 与 record 函数。
 package tokenizer
 
 import (
@@ -36,15 +27,11 @@ import (
 	"sync"
 )
 
-// Context key types — unexported to prevent direct external access.
+// context 键类型（未导出），防止外部直接访问。
 type runUsageKeyType struct{}
 type runAttrsKeyType struct{}
 
-// RunUsage is the mutable per-run token usage accumulator installed on
-// the context by the service layer at the start of a canvas turn.
-// All fields are guarded by the embedded mutex because concurrent
-// tool-calling goroutines (run_in_executor copies the context, so
-// workers share the same sink) can race on read/modify/write.
+// RunUsage 单次回合 Token 累加器；mutex 保护并发 tool 协程共享同一 sink。
 type RunUsage struct {
 	mu               sync.Mutex
 	PromptTokens     int
@@ -53,8 +40,7 @@ type RunUsage struct {
 	Calls            int
 }
 
-// Add atomically adds a single LLM call's token counts to the sink.
-// Safe to call concurrently from multiple goroutines.
+// Add 累加单次 LLM 调用的 token 计数并递增 Calls；并发安全。
 func (u *RunUsage) Add(prompt, completion, total int) {
 	if u == nil {
 		return
@@ -73,7 +59,7 @@ func (u *RunUsage) Add(prompt, completion, total int) {
 	u.Calls++
 }
 
-// Snapshot returns a copy of the current cumulative counts.
+// Snapshot 返回当前累计 prompt/completion/total/calls 快照。
 func (u *RunUsage) Snapshot() (prompt, completion, total, calls int) {
 	if u == nil {
 		return 0, 0, 0, 0
@@ -83,21 +69,18 @@ func (u *RunUsage) Snapshot() (prompt, completion, total, calls int) {
 	return u.PromptTokens, u.CompletionTokens, u.TotalTokens, u.Calls
 }
 
-// RunAttrs holds per-run Langfuse correlating attributes (session_id,
-// user_id) installed on the context by the service layer.
+// RunAttrs 单次回合 Langfuse 关联属性（session_id、user_id）。
 type RunAttrs struct {
 	SessionID string
 	UserID    string
 }
 
-// WithRunUsage installs a fresh RunUsage sink on ctx. Should be called
-// once at the start of a canvas turn.
+// WithRunUsage 在 ctx 安装新的 RunUsage，每回合开始调用一次。
 func WithRunUsage(ctx context.Context) context.Context {
 	return context.WithValue(ctx, runUsageKeyType{}, &RunUsage{})
 }
 
-// GetRunUsage retrieves the per-run token usage sink from ctx.
-// Returns nil when no sink is installed (e.g. outside a canvas run).
+// GetRunUsage 从 ctx 取出 RunUsage；非 Canvas 回合时为 nil。
 func GetRunUsage(ctx context.Context) *RunUsage {
 	if v := ctx.Value(runUsageKeyType{}); v != nil {
 		if sink, ok := v.(*RunUsage); ok {
@@ -107,7 +90,7 @@ func GetRunUsage(ctx context.Context) *RunUsage {
 	return nil
 }
 
-// WithRunAttrs installs Langfuse correlation attributes on ctx.
+// WithRunAttrs 在 ctx 挂载 Langfuse 关联属性。
 func WithRunAttrs(ctx context.Context, attrs *RunAttrs) context.Context {
 	if attrs == nil {
 		return ctx
@@ -115,7 +98,7 @@ func WithRunAttrs(ctx context.Context, attrs *RunAttrs) context.Context {
 	return context.WithValue(ctx, runAttrsKeyType{}, attrs)
 }
 
-// GetRunAttrs retrieves the per-run Langfuse attributes from ctx.
+// GetRunAttrs 从 ctx 读取 RunAttrs。
 func GetRunAttrs(ctx context.Context) *RunAttrs {
 	if v := ctx.Value(runAttrsKeyType{}); v != nil {
 		if attrs, ok := v.(*RunAttrs); ok {
@@ -125,9 +108,7 @@ func GetRunAttrs(ctx context.Context) *RunAttrs {
 	return nil
 }
 
-// RecordRunTokenUsage adds a single LLM call's token usage to the
-// active run sink on ctx. Safe to call from anywhere; when no run sink
-// is installed it is a no-op.
+// RecordRunTokenUsage 将单次 LLM 用量写入 ctx 上的 sink；无 sink 时为 no-op。
 func RecordRunTokenUsage(ctx context.Context, promptTokens, completionTokens, totalTokens int) {
 	sink := GetRunUsage(ctx)
 	if sink == nil {
@@ -136,11 +117,7 @@ func RecordRunTokenUsage(ctx context.Context, promptTokens, completionTokens, to
 	sink.Add(promptTokens, completionTokens, totalTokens)
 }
 
-// UsageFromMap extracts a token usage split from a raw API response map.
-// Handles OpenAI/OpenRouter-style resp["usage"] dicts. Missing fields
-// default to 0; total_tokens falls back to prompt+completion when absent.
-// Returns nil when no usage found.
-// Mirrors Python's common.token_utils.usage_from_response().
+// UsageFromMap 从原始 API 响应 map 解析 usage 字段，对齐 Python usage_from_response。
 func UsageFromMap(raw map[string]interface{}) (promptTokens, completionTokens, totalTokens int) {
 	if raw == nil {
 		return 0, 0, 0
@@ -182,3 +159,4 @@ func getInt(m map[string]interface{}, keys ...string) int {
 	}
 	return 0
 }
+// usage.go — Canvas 回合级 LLM Token 用量累加器（context 挂载）。
