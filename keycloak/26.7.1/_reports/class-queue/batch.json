@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T14:34:13Z",
-  "files": [
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authorization/SpecificAddressPolicyProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authorization/SpecificDomainOrAdminPolicyProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/authorization/TestPolicyProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/oidc/ClientIdRequiredJWTClientAuthenticator.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/oidc/LegacyIdIdentityProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/oidc/LegacyIdIdentityProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/oidc/MissingUseJwksRealmResourceProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/oidc/MissingUseJwksRealmResourceProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/oidc/MissingUseJwksRestResource.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/oidc/OverwrittenMappersTestIdentityProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/oidc/OverwrittenMappersTestIdentityProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/oidc/TestKeycloakOidcIdentityProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/oidc/UnsupportedKeyJwksRealmResourceProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/oidc/UnsupportedKeyJwksRealmResourceProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/oidc/UnsupportedKeyJwksRestResource.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 148,
-  "done": 5835
+  "done": 5850
 }
