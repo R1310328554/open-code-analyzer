@@ -15,23 +15,8 @@
     "internal/agent/component/io/html_writer.go",
     "internal/agent/component/io/markdown_writer.go",
     "internal/agent/component/io/pdf_writer.go",
-    "internal/agent/component/io/txt_writer.go",
-    "internal/agent/component/io_init.go",
-    "internal/agent/component/list_operations.go",
-    "internal/agent/component/llm.go",
-    "internal/agent/component/llm_credentials.go",
-    "internal/agent/component/llm_id.go",
-    "internal/agent/component/llm_retry.go",
-    "internal/agent/component/loop.go",
-    "internal/agent/component/memory_save.go",
-    "internal/agent/component/message.go",
-    "internal/agent/component/parallel.go",
-    "internal/agent/component/prompts/citation.go",
-    "internal/agent/component/registry.go",
-    "internal/agent/component/render.go",
-    "internal/agent/component/runtime_wire.go",
-    "internal/agent/component/stagehand_runtime.go"
+    "internal/agent/component/io/txt_writer.go"
   ],
   "remaining_pending": 1314,
-  "done": 420
+  "done": 435
 }
