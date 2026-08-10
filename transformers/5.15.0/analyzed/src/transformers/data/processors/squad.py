@@ -28,6 +28,7 @@ from .utils import DataProcessor
 
 
 # Store the tokenizers which insert 2 separators tokens
+# 使用双 [SEP] 的分词器集合（RoBERTa、BART 等）
 MULTI_SEP_TOKENS_TOKENIZERS_SET = {"roberta", "camembert", "bart", "mpnet"}
 
 
@@ -310,6 +311,7 @@ def squad_convert_example_to_features_init(tokenizer_for_convert: PreTrainedToke
     tokenizer = tokenizer_for_convert
 
 
+# squad_convert_examples_to_features：并行将 SquadExample 转为模型输入特征
 def squad_convert_examples_to_features(
     examples,
     tokenizer,
@@ -430,6 +432,7 @@ def squad_convert_examples_to_features(
         return features
 
 
+# SquadProcessor：SQuAD JSON 读取与 SquadExample 构造基类
 class SquadProcessor(DataProcessor):
     """
     Processor for the SQuAD data set. overridden by SquadV1Processor and SquadV2Processor, used by the version 1.1 and
@@ -576,16 +579,19 @@ class SquadProcessor(DataProcessor):
         return examples
 
 
+# SquadV1Processor：SQuAD v1.1 训练/开发文件路径
 class SquadV1Processor(SquadProcessor):
     train_file = "train-v1.1.json"
     dev_file = "dev-v1.1.json"
 
 
+# SquadV2Processor：SQuAD v2.0 含不可回答样本
 class SquadV2Processor(SquadProcessor):
     train_file = "train-v2.0.json"
     dev_file = "dev-v2.0.json"
 
 
+# SquadExample：单条问答样本（问题、上下文、答案 span）
 class SquadExample:
     """
     A single training/test example for the Squad dataset, as loaded from disk.
@@ -649,6 +655,7 @@ class SquadExample:
             ]
 
 
+# SquadFeatures：token 化后的 input_ids、span 位置与 impossible 标记
 class SquadFeatures:
     """
     Single squad example features to be fed to a model. Those features are model-specific and can be crafted from

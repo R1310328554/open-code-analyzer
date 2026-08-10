@@ -36,6 +36,7 @@ if is_torch_distributed_available():
         Shard.local_shard_size_and_offset = Shard._local_shard_size_and_offset
 
 
+# DtensorShardOperation：shard-on-read，支持 Replicate/Shard/_StridedShard 组合
 class DtensorShardOperation:
     """Shard-on-read: slice a full disk tensor down to this rank's local
     DTensor shard, for any combination of placements on a 1-D or n-D mesh.  It's on
@@ -91,6 +92,7 @@ class DtensorShardOperation:
         self._axis0_offset = offsets[0]
         self._axis0_local_size = local_shape[0]
 
+    # shard_tensor：dense 或 MoE per-expert 路径，返回本 rank 局部张量
     def shard_tensor(
         self, source: torch.Tensor, tensor_idx: int | None = None, device=None, dtype=None
     ) -> torch.Tensor | None:
@@ -318,6 +320,7 @@ class DtensorShardOperation:
         return dim if dim >= 0 else self.param_ndim + dim
 
 
+# _dtensor_from_local_like：用局部 tensor 包装为与 ref 同 mesh/placement 的 DTensor
 def _dtensor_from_local_like(local_tensor: torch.Tensor, ref: DTensor) -> DTensor:
     """Wrap `local_tensor` as a DTensor that mirrors `ref`'s mesh, placements,
     global shape, and stride."""

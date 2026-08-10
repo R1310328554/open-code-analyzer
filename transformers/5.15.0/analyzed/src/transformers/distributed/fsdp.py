@@ -38,6 +38,7 @@ if is_torch_distributed_available() and is_torch_greater_or_equal("2.6"):
 logger = logging.get_logger(__name__)
 
 
+# is_fsdp_enabled：通过 Accelerate 环境变量判断 FSDP1 是否激活
 def is_fsdp_enabled() -> bool:
     """Check if FSDP is active via Accelerate (env var based) — covers FSDP1 only."""
     return (
@@ -47,6 +48,7 @@ def is_fsdp_enabled() -> bool:
     )
 
 
+# is_fsdp_managed_module：模块是否被 FSDP1/2 包装
 def is_fsdp_managed_module(module: nn.Module) -> bool:
     """Check if a module is managed by FSDP (1 or 2)."""
     if not is_torch_distributed_available():
@@ -142,6 +144,7 @@ def _resolve_tied_embed_lm_head_plan(
     return adapted_plan
 
 
+# expand_fsdp_plan：将通配符计划键解析为 reshard/no-reshard 模块列表
 def expand_fsdp_plan(
     model: nn.Module,
     fsdp_plan: dict[str, str],
@@ -184,6 +187,7 @@ def verify_fsdp_plan(module_names: list[str], fsdp_plan: dict[str, str] | None) 
         logger.warning(f"The following FSDP rules were not applied to any module: {unused_rules}")
 
 
+# apply_fully_sharded_data_parallelism：按 _fsdp_plan 对模型应用 FSDP2 fully_shard
 def apply_fully_sharded_data_parallelism(
     model: nn.Module, fsdp_mesh: torch.distributed.device_mesh.DeviceMesh
 ) -> nn.Module:
@@ -254,6 +258,7 @@ def get_fsdp_ckpt_kwargs():
         return {}
 
 
+# update_fsdp_plugin_peft：LoRA/QLoRA 下更新 FSDP auto_wrap 与混合精度策略
 def update_fsdp_plugin_peft(model, accelerator):
     """
     Updates the FSDP plugin for PEFT LoRA/QLoRA compatibility.

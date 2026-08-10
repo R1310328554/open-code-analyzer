@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     import torch.nn as nn
 
 
+# DistributedMixin：TP/FSDP 计划初始化、分发模型与 gather 状态字典
 class DistributedMixin:
     """Distributed orchestration and save/load hooks for [`PreTrainedModel`].
 
@@ -61,6 +62,7 @@ class DistributedMixin:
     _pp_plan: dict[str, tuple[str, str]] | None = None
     _fsdp_plan: dict[str, str] | None = None
 
+    # init_parallel_plans：从类/配置/子模块合并 tp/ep/pp/fsdp 计划
     def init_parallel_plans(self) -> None:
         """Copy class-level plans onto the instance and merge config/children contributions."""
         model_cls = type(self)
@@ -148,6 +150,7 @@ class DistributedMixin:
         self._pp_plan = plan
 
     @classmethod
+    # prepare_distribute_model：按 DistributedConfig 初始化 device_mesh
     def prepare_distribute_model(
         cls,
         distributed_config: DistributedConfig | dict | None,
@@ -185,6 +188,7 @@ class DistributedMixin:
         return distributed_config, device_map, device_mesh
 
     @classmethod
+    # maybe_distribute_model：权重加载前应用 TP 或 FSDP2
     def maybe_distribute_model(
         cls,
         model: nn.Module,
@@ -215,6 +219,7 @@ class DistributedMixin:
             save_on_this_rank = save_on_this_rank and _get_torch_distributed_rank() == 0
         return save_on_this_rank
 
+    # save_distributed_checkpoint：FSDP 模型经 DCP 写入并可 push Hub
     def save_distributed_checkpoint(
         self,
         model_to_save,
@@ -254,6 +259,7 @@ class DistributedMixin:
                 create_pr=create_pr,
             )
 
+    # gather_sharded_state_dict_for_save：TP/FSDP 分片权重聚合为完整 CPU state_dict
     def gather_sharded_state_dict_for_save(
         self,
         model_to_save,

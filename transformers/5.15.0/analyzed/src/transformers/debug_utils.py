@@ -24,6 +24,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# DebugUnderflowOverflow：前向 hook 记录各层 abs min/max，溢出时打印调用栈帧
 class DebugUnderflowOverflow:
     """
     This debug class helps detect and understand where the model starts getting very large or very small, and more
@@ -185,6 +186,7 @@ class DebugUnderflowOverflow:
         print("\n\n")
         self.frames = []
 
+    # analyse_model：缓存 named_modules 供帧报告使用
     def analyse_model(self):
         # extract the fully qualified module names, to be able to report at run time. e.g.:
         # encoder.block.2.layer.0.SelfAttention.o
@@ -244,6 +246,7 @@ class DebugUnderflowOverflow:
     def _register_forward_hook(self, module):
         module.register_forward_hook(self.forward_hook)
 
+    # forward_hook：每步前向记录张量极值，检测 nan/inf 后抛异常
     def forward_hook(self, module, input, output):
         # - input is a tuple of packed inputs (could be non-Tensors)
         # - output could be a Tensor or a tuple of Tensors and non-Tensors
@@ -297,6 +300,7 @@ def get_abs_min_max(var, ctx):
     return f"{abs_var.min():8.2e} {abs_var.max():8.2e} {ctx}"
 
 
+# detect_overflow：检查张量是否含 nan/inf 并打印上下文
 def detect_overflow(var, ctx):
     """
     Report whether the tensor contains any `nan` or `inf` entries.
@@ -343,6 +347,7 @@ def detect_overflow(var, ctx):
     return detected
 
 
+# DebugOption：调试开关枚举（underflow_overflow、TPU 指标等）
 class DebugOption(ExplicitEnum):
     UNDERFLOW_OVERFLOW = "underflow_overflow"
     TPU_METRICS_DEBUG = "tpu_metrics_debug"

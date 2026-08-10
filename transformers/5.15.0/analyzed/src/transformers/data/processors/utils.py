@@ -24,6 +24,7 @@ from ...utils import is_torch_available, logging
 logger = logging.get_logger(__name__)
 
 
+# InputExample：单条原始文本样本（guid、text_a/text_b、label）
 @dataclass
 class InputExample:
     """
@@ -49,6 +50,7 @@ class InputExample:
         return json.dumps(dataclasses.asdict(self), indent=2) + "\n"
 
 
+# InputFeatures：模型可直接消费的 token ids 与 attention_mask
 @dataclass(frozen=True)
 class InputFeatures:
     """
@@ -75,6 +77,7 @@ class InputFeatures:
         return json.dumps(dataclasses.asdict(self)) + "\n"
 
 
+# DataProcessor：train/dev/test 样本加载与标签列表的抽象基类
 class DataProcessor:
     """Base class for data converters for sequence classification data sets."""
 
@@ -120,6 +123,7 @@ class DataProcessor:
             return list(csv.reader(f, delimiter="\t", quotechar=quotechar))
 
 
+# SingleSentenceClassificationProcessor：从 CSV 或内存列表构建单句分类数据
 class SingleSentenceClassificationProcessor(DataProcessor):
     """Generic processor for a single sentence classification data set."""
 
@@ -227,6 +231,7 @@ class SingleSentenceClassificationProcessor(DataProcessor):
 
         return self.examples
 
+    # get_features：将 examples tokenize 并填充为 InputFeatures 或 TensorDataset
     def get_features(
         self,
         tokenizer,

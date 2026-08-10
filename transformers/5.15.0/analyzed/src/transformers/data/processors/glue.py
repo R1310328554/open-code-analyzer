@@ -32,6 +32,7 @@ DEPRECATION_WARNING = (
 )
 
 
+# glue_convert_examples_to_features：批量 tokenize GLUE 样本为 InputFeatures
 def glue_convert_examples_to_features(
     examples: list[InputExample],
     tokenizer: PreTrainedTokenizer,
@@ -116,11 +117,13 @@ def _glue_convert_examples_to_features(
     return features
 
 
+# OutputMode：分类或回归输出模式枚举
 class OutputMode(Enum):
     classification = "classification"
     regression = "regression"
 
 
+# MrpcProcessor：MRPC 释义等价句对分类
 class MrpcProcessor(DataProcessor):
     """Processor for the MRPC data set (GLUE version)."""
 
@@ -168,6 +171,7 @@ class MrpcProcessor(DataProcessor):
         return examples
 
 
+# MnliProcessor：MultiNLI 三分类自然语言推理
 class MnliProcessor(DataProcessor):
     """Processor for the MultiNLI data set (GLUE version)."""
 
@@ -230,6 +234,7 @@ class MnliMismatchedProcessor(MnliProcessor):
         return self._create_examples(self._read_tsv(os.path.join(data_dir, "test_mismatched.tsv")), "test_mismatched")
 
 
+# ColaProcessor：CoLA 语法可接受性二分类
 class ColaProcessor(DataProcessor):
     """Processor for the CoLA data set (GLUE version)."""
 
@@ -323,6 +328,7 @@ class Sst2Processor(DataProcessor):
         return examples
 
 
+# StsbProcessor：STS-B 语义相似度回归
 class StsbProcessor(DataProcessor):
     """Processor for the STS-B data set (GLUE version)."""
 
@@ -571,6 +577,7 @@ glue_tasks_num_labels = {
     "wnli": 2,
 }
 
+# glue_processors：任务名到 Processor 类的映射表
 glue_processors = {
     "cola": ColaProcessor,
     "mnli": MnliProcessor,
@@ -584,6 +591,7 @@ glue_processors = {
     "wnli": WnliProcessor,
 }
 
+# glue_output_modes：各 GLUE 任务的 classification/regression 模式
 glue_output_modes = {
     "cola": "classification",
     "mnli": "classification",

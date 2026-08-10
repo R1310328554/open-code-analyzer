@@ -17,6 +17,7 @@ import os
 from dataclasses import asdict, dataclass
 
 
+# DistributedConfig：tp_size/fsdp_size、并行计划与 CPU offload、混合精度开关
 @dataclass
 class DistributedConfig:
     """
@@ -48,6 +49,7 @@ class DistributedConfig:
     fsdp_cpu_offload: bool = False
     fsdp_mixed_precision: bool = False
 
+    # __post_init__：默认 tp/fsdp 为 1；暂不支持 FSDP+TP 同时启用
     def __post_init__(self):
         if self.tp_size is None and self.fsdp_size is None:
             return
@@ -65,6 +67,7 @@ class DistributedConfig:
             )
 
     @classmethod
+    # from_dict：从字典构造，忽略未知键
     def from_dict(cls, config_dict: dict, **kwargs) -> "DistributedConfig":
         merged = {**config_dict, **kwargs}
         valid_keys = {f.name for f in cls.__dataclass_fields__.values()}

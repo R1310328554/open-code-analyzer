@@ -23,6 +23,7 @@ from .utils import DataProcessor, InputExample
 logger = logging.get_logger(__name__)
 
 
+# XnliProcessor：按 language 读取 XNLI-MT 训练与 XNLI 测试 TSV
 class XnliProcessor(DataProcessor):
     """
     Processor for the XNLI dataset. Adapted from
@@ -82,10 +83,12 @@ class XnliProcessor(DataProcessor):
         return ["contradiction", "entailment", "neutral"]
 
 
+# xnli_processors：任务名到 XnliProcessor 的注册表
 xnli_processors = {
     "xnli": XnliProcessor,
 }
 
+# xnli_output_modes：XNLI 为 classification 模式
 xnli_output_modes = {
     "xnli": "classification",
 }

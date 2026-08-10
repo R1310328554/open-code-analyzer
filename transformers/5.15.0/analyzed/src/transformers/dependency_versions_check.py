@@ -22,6 +22,7 @@ from .utils.versions import require_version, require_version_core
 # order specific notes:
 # - tqdm must be checked before tokenizers
 
+# pkgs_to_check_at_runtime：import transformers 时必查版本的包列表
 pkgs_to_check_at_runtime = [
     "python",
     "tqdm",
@@ -36,6 +37,7 @@ pkgs_to_check_at_runtime = [
     "pyyaml",
 ]
 
+# 逐项校验；tokenizers/accelerate 仅在已安装时检查版本
 for pkg in pkgs_to_check_at_runtime:
     if pkg in deps:
         if pkg == "tokenizers":
@@ -58,5 +60,6 @@ for pkg in pkgs_to_check_at_runtime:
         raise ValueError(f"can't find {pkg} in {deps.keys()}, check dependency_versions_table.py")
 
 
+# dep_version_check：按需校验单个可选依赖版本
 def dep_version_check(pkg, hint=None):
     require_version(deps[pkg], hint)

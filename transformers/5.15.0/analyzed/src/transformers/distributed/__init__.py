@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 from ..utils import _LazyModule
 
 
+# _import_structure：LazyModule 延迟加载的符号表
 _import_structure = {
     "configuration_utils": ["DistributedConfig"],
     "fsdp": ["is_fsdp_enabled", "is_fsdp_managed_module", "verify_fsdp_plan"],
@@ -31,6 +32,7 @@ _import_structure = {
 }
 
 
+# TYPE_CHECKING 分支提供静态类型提示所需的直接导入
 if TYPE_CHECKING:
     from .configuration_utils import (
         DistributedConfig,

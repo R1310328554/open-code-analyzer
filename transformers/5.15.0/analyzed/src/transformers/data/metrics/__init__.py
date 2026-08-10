@@ -20,6 +20,7 @@ if is_sklearn_available():
     from sklearn.metrics import f1_score, matthews_corrcoef
 
 
+# 弃用提示：建议改用 Evaluate 库与官方 run_glue 示例脚本
 DEPRECATION_WARNING = (
     "This metric will be removed from the library soon, metrics should be handled with the Hugging Face Evaluate "
     "library. You can have a look at this example script for pointers: "
@@ -27,12 +28,14 @@ DEPRECATION_WARNING = (
 )
 
 
+# simple_accuracy：预测与标签逐元素相等比例
 def simple_accuracy(preds, labels):
     warnings.warn(DEPRECATION_WARNING, FutureWarning)
     requires_backends(simple_accuracy, "sklearn")
     return (preds == labels).mean()
 
 
+# acc_and_f1：同时返回准确率、F1 及二者均值
 def acc_and_f1(preds, labels):
     warnings.warn(DEPRECATION_WARNING, FutureWarning)
     requires_backends(acc_and_f1, "sklearn")
@@ -45,6 +48,7 @@ def acc_and_f1(preds, labels):
     }
 
 
+# pearson_and_spearman：回归任务 Pearson 与 Spearman 相关系数
 def pearson_and_spearman(preds, labels):
     warnings.warn(DEPRECATION_WARNING, FutureWarning)
     requires_backends(pearson_and_spearman, "sklearn")
@@ -57,6 +61,7 @@ def pearson_and_spearman(preds, labels):
     }
 
 
+# glue_compute_metrics：按 GLUE 子任务名分发到对应指标函数
 def glue_compute_metrics(task_name, preds, labels):
     warnings.warn(DEPRECATION_WARNING, FutureWarning)
     requires_backends(glue_compute_metrics, "sklearn")
@@ -87,6 +92,7 @@ def glue_compute_metrics(task_name, preds, labels):
         raise KeyError(task_name)
 
 
+# xnli_compute_metrics：XNLI 跨语言 NLI 准确率
 def xnli_compute_metrics(task_name, preds, labels):
     warnings.warn(DEPRECATION_WARNING, FutureWarning)
     requires_backends(xnli_compute_metrics, "sklearn")

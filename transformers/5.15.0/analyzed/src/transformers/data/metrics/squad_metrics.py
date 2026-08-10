@@ -33,6 +33,7 @@ from ...utils import logging
 logger = logging.get_logger(__name__)
 
 
+# normalize_answer：小写、去标点/冠词/多余空白后规范化答案文本
 def normalize_answer(s):
     """Lower text and remove punctuation, articles and extra whitespace."""
 
@@ -59,10 +60,12 @@ def get_tokens(s):
     return normalize_answer(s).split()
 
 
+# compute_exact：规范化后完全匹配则 1，否则 0
 def compute_exact(a_gold, a_pred):
     return int(normalize_answer(a_gold) == normalize_answer(a_pred))
 
 
+# compute_f1：基于 token 重叠的 SQuAD F1 分数
 def compute_f1(a_gold, a_pred):
     gold_toks = get_tokens(a_gold)
     pred_toks = get_tokens(a_pred)
@@ -220,6 +223,7 @@ def find_all_best_thresh(main_eval, preds, exact_raw, f1_raw, na_probs, qid_to_h
     main_eval["best_f1_thresh"] = f1_thresh
 
 
+# squad_evaluate：汇总 EM/F1，SQuAD 2.0 支持无答案概率阈值
 def squad_evaluate(examples, preds, no_answer_probs=None, no_answer_probability_threshold=1.0):
     qas_id_to_has_answer = {example.qas_id: bool(example.answers) for example in examples}
     has_answer_qids = [qas_id for qas_id, has_answer in qas_id_to_has_answer.items() if has_answer]
@@ -380,6 +384,7 @@ def _compute_softmax(scores):
     return probs
 
 
+# compute_predictions_logits：从 start/end logits 解码 span 预测
 def compute_predictions_logits(
     all_examples,
     all_features,
@@ -587,6 +592,7 @@ def compute_predictions_logits(
     return all_predictions
 
 
+# compute_predictions_log_probs：基于 log 概率的无答案与 span 预测
 def compute_predictions_log_probs(
     all_examples,
     all_features,
