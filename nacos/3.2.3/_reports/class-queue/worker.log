@@ -2565,3 +2565,18 @@
 2026-08-10T05:21:33Z DONE plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/handler/EncryptionHandler.java wave84b [15:30] datasource mappers + encryption plugin
 2026-08-10T05:23:01Z DONE plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/VisibilityPluginProvider.java wave85b [15:17] visibility plugin provider/service
 2026-08-10T05:23:01Z DONE plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/VisibilityService.java wave85b [15:17] visibility plugin provider/service
+2026-08-10T05:23:47Z DONE plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/spi/EncryptionPluginService.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/environment/src/main/java/com/alibaba/nacos/plugin/environment/CustomEnvironmentPluginManager.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/environment/src/main/java/com/alibaba/nacos/plugin/environment/spi/CustomEnvironmentPluginService.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/environment/src/main/java/com/alibaba/nacos/plugin/environment/spi/EnvironmentPluginProvider.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/trace/src/main/java/com/alibaba/nacos/plugin/trace/NacosTracePluginManager.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/trace/src/main/java/com/alibaba/nacos/plugin/trace/TracePluginProvider.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/trace/src/main/java/com/alibaba/nacos/plugin/trace/spi/NacosTraceSubscriber.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/constant/VisibilityConstants.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/model/AuthorizedResources.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/model/BaseVisibilityPredicate.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/model/VisibilityQueryContext.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/model/VisibilityResource.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/QueryAdvisor.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/ValidationResult.java wave85a [0:15] encryption/env/trace/visibility plugins
+2026-08-10T05:23:47Z DONE plugin/visibility/src/main/java/com/alibaba/nacos/plugin/visibility/spi/VisibilityPluginManager.java wave85a [0:15] encryption/env/trace/visibility plugins
