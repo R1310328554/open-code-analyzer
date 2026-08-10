@@ -47,6 +47,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * ...
  * </pre>
  * Be aware that this class is marked as {@link Sharable} and so the implementation must be safe to be re-used.
+ * <p>特殊的入站处理器：通道注册后一次性初始化 {@link ChannelPipeline}，完成后自动移除。标注 {@link Sharable}，实现须无 per-channel 可变状态。</p>
  *
  * @param <C>   A sub-type of {@link Channel}
  */
@@ -54,6 +55,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class ChannelInitializer<C extends Channel> extends ChannelInboundHandlerAdapter {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ChannelInitializer.class);
+    // 使用 Set 跟踪各通道初始化上下文（ChannelInitializer 通常在 Bootstrap 间共享）
     // We use a Set as a ChannelInitializer is usually shared between all Channels in a Bootstrap /
     // ServerBootstrap. This way we can reduce the memory usage compared to use Attributes.
     private final Set<ChannelHandlerContext> initMap = ConcurrentHashMap.newKeySet();
@@ -66,6 +68,7 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
      * @throws Exception    is thrown if an error occurs. In that case it will be handled by
      *                      {@link #exceptionCaught(ChannelHandlerContext, Throwable)} which will by default close
      *                      the {@link Channel}.
+     * <p>通道注册后调用一次以配置管道；方法返回后本处理器会从管道移除。</p>
      */
     protected abstract void initChannel(C ch) throws Exception;
 
@@ -89,6 +92,7 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
 
     /**
      * Handle the {@link Throwable} by logging and closing the {@link Channel}. Sub-classes may override this.
+     * <p>初始化失败时记录警告并关闭通道；子类可覆盖。</p>
      */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
@@ -100,6 +104,7 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
 
     /**
      * {@inheritDoc} If override this method ensure you call super!
+     * <p>覆盖时须调用 {@code super.handlerAdded}。</p>
      */
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
@@ -123,7 +128,7 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
 
     @SuppressWarnings("unchecked")
     private boolean initChannel(ChannelHandlerContext ctx) throws Exception {
-        if (initMap.add(ctx)) { // Guard against re-entrance.
+        if (initMap.add(ctx)) { // 防止重入
             try {
                 initChannel((C) ctx.channel());
             } catch (Throwable cause) {

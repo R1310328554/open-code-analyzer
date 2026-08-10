@@ -83,16 +83,19 @@ import io.netty.util.concurrent.EventExecutor;
  * {@link ChannelPipeline} to find out more about inbound and outbound operations,
  * what fundamental differences they have, how they flow in a  pipeline,  and how to handle
  * the operation in your application.
+ * <p>上下文使 {@link ChannelHandler} 能与 {@link ChannelPipeline} 及其他处理器交互：可 fire 事件、动态修改管道、存储 per-handler 属性，并可在 handler 方法外触发 I/O。</p>
  */
 public interface ChannelHandlerContext extends AttributeMap, ChannelInboundInvoker, ChannelOutboundInvoker {
 
     /**
      * Return the {@link Channel} which is bound to the {@link ChannelHandlerContext}.
+     * <p>返回与此上下文绑定的 {@link Channel}。</p>
      */
     Channel channel();
 
     /**
      * Returns the {@link EventExecutor} which is used to execute an arbitrary task.
+     * <p>返回执行异步任务的 {@link EventExecutor}（通常为所属 {@link EventLoop}）。</p>
      */
     EventExecutor executor();
 
@@ -100,11 +103,13 @@ public interface ChannelHandlerContext extends AttributeMap, ChannelInboundInvok
      * The unique name of the {@link ChannelHandlerContext}.The name was used when then {@link ChannelHandler}
      * was added to the {@link ChannelPipeline}. This name can also be used to access the registered
      * {@link ChannelHandler} from the {@link ChannelPipeline}.
+     * <p>处理器加入管道时的唯一名称，可用于从 {@link ChannelPipeline} 查找处理器。</p>
      */
     String name();
 
     /**
      * The {@link ChannelHandler} that is bound this {@link ChannelHandlerContext}.
+     * <p>返回与此上下文绑定的 {@link ChannelHandler} 实例。</p>
      */
     ChannelHandler handler();
 
@@ -112,6 +117,7 @@ public interface ChannelHandlerContext extends AttributeMap, ChannelInboundInvok
      * Return {@code true} if the {@link ChannelHandler} which belongs to this context was removed
      * from the {@link ChannelPipeline}. Note that this method is only meant to be called from with in the
      * {@link EventLoop}.
+     * <p>处理器是否已从管道移除；须在 {@link EventLoop} 线程内调用。</p>
      */
     boolean isRemoved();
 
@@ -150,11 +156,13 @@ public interface ChannelHandlerContext extends AttributeMap, ChannelInboundInvok
 
     /**
      * Return the assigned {@link ChannelPipeline}
+     * <p>返回此上下文所属的 {@link ChannelPipeline}。</p>
      */
     ChannelPipeline pipeline();
 
     /**
      * Return the assigned {@link ByteBufAllocator} which will be used to allocate {@link ByteBuf}s.
+     * <p>返回用于分配 {@link ByteBuf} 的分配器。</p>
      */
     ByteBufAllocator alloc();
 

@@ -22,11 +22,13 @@ import java.net.SocketAddress;
 /**
  * Skeleton implementation of a {@link ChannelOutboundHandler}. This implementation just forwards each method call via
  * the {@link ChannelHandlerContext}.
+ * <p>出站处理器骨架实现：各方法经 {@link ChannelHandlerContext} 转发至管道中下一出站处理器。</p>
  */
 public class ChannelOutboundHandlerAdapter extends ChannelHandlerAdapter implements ChannelOutboundHandler {
 
     /**
      * Calls {@link ChannelHandlerContext#bind(SocketAddress, ChannelPromise)} to forward
+     * <p>转发 bind 操作。</p>
      * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -40,6 +42,7 @@ public class ChannelOutboundHandlerAdapter extends ChannelHandlerAdapter impleme
 
     /**
      * Calls {@link ChannelHandlerContext#connect(SocketAddress, SocketAddress, ChannelPromise)} to forward
+     * <p>转发 connect 操作。</p>
      * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -53,6 +56,7 @@ public class ChannelOutboundHandlerAdapter extends ChannelHandlerAdapter impleme
 
     /**
      * Calls {@link ChannelHandlerContext#disconnect(ChannelPromise)} to forward
+     * <p>转发 disconnect 操作。</p>
      * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -66,6 +70,7 @@ public class ChannelOutboundHandlerAdapter extends ChannelHandlerAdapter impleme
 
     /**
      * Calls {@link ChannelHandlerContext#close(ChannelPromise)} to forward
+     * <p>转发 close 操作。</p>
      * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -79,6 +84,7 @@ public class ChannelOutboundHandlerAdapter extends ChannelHandlerAdapter impleme
 
     /**
      * Calls {@link ChannelHandlerContext#deregister(ChannelPromise)} to forward
+     * <p>转发 deregister 操作。</p>
      * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -91,6 +97,7 @@ public class ChannelOutboundHandlerAdapter extends ChannelHandlerAdapter impleme
 
     /**
      * Calls {@link ChannelHandlerContext#read()} to forward
+     * <p>转发 read 操作。</p>
      * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -103,6 +110,7 @@ public class ChannelOutboundHandlerAdapter extends ChannelHandlerAdapter impleme
 
     /**
      * Calls {@link ChannelHandlerContext#write(Object, ChannelPromise)} to forward
+     * <p>转发 write 操作。</p>
      * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -115,6 +123,7 @@ public class ChannelOutboundHandlerAdapter extends ChannelHandlerAdapter impleme
 
     /**
      * Calls {@link ChannelHandlerContext#flush()} to forward
+     * <p>转发 flush 操作。</p>
      * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.

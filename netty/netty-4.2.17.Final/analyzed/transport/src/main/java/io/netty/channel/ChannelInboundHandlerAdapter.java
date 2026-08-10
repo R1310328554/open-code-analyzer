@@ -30,11 +30,13 @@ import io.netty.channel.ChannelHandlerMask.Skip;
  * method returns automatically. If you are looking for a {@link ChannelInboundHandler} implementation that
  * releases the received messages automatically, please see {@link SimpleChannelInboundHandler}.
  * </p>
+ * <p>默认实现仅转发至下一入站处理器；{@link #channelRead} 返回后不会自动释放消息，需自动释放请用 {@link SimpleChannelInboundHandler}。</p>
  */
 public class ChannelInboundHandlerAdapter extends ChannelHandlerAdapter implements ChannelInboundHandler {
 
     /**
      * Calls {@link ChannelHandlerContext#fireChannelRegistered()} to forward
+     * <p>转发 channelRegistered 事件。</p>
      * to the next {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -47,6 +49,7 @@ public class ChannelInboundHandlerAdapter extends ChannelHandlerAdapter implemen
 
     /**
      * Calls {@link ChannelHandlerContext#fireChannelUnregistered()} to forward
+     * <p>转发 channelUnregistered 事件。</p>
      * to the next {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -59,6 +62,7 @@ public class ChannelInboundHandlerAdapter extends ChannelHandlerAdapter implemen
 
     /**
      * Calls {@link ChannelHandlerContext#fireChannelActive()} to forward
+     * <p>转发 channelActive 事件。</p>
      * to the next {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -71,6 +75,7 @@ public class ChannelInboundHandlerAdapter extends ChannelHandlerAdapter implemen
 
     /**
      * Calls {@link ChannelHandlerContext#fireChannelInactive()} to forward
+     * <p>转发 channelInactive 事件。</p>
      * to the next {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -83,6 +88,7 @@ public class ChannelInboundHandlerAdapter extends ChannelHandlerAdapter implemen
 
     /**
      * Calls {@link ChannelHandlerContext#fireChannelRead(Object)} to forward
+     * <p>转发 channelRead 事件。</p>
      * to the next {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -95,6 +101,7 @@ public class ChannelInboundHandlerAdapter extends ChannelHandlerAdapter implemen
 
     /**
      * Calls {@link ChannelHandlerContext#fireChannelReadComplete()} to forward
+     * <p>转发 channelReadComplete 事件。</p>
      * to the next {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -107,6 +114,7 @@ public class ChannelInboundHandlerAdapter extends ChannelHandlerAdapter implemen
 
     /**
      * Calls {@link ChannelHandlerContext#fireUserEventTriggered(Object)} to forward
+     * <p>转发 userEventTriggered 事件。</p>
      * to the next {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -119,6 +127,7 @@ public class ChannelInboundHandlerAdapter extends ChannelHandlerAdapter implemen
 
     /**
      * Calls {@link ChannelHandlerContext#fireChannelWritabilityChanged()} to forward
+     * <p>转发 channelWritabilityChanged 事件。</p>
      * to the next {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.
@@ -131,6 +140,7 @@ public class ChannelInboundHandlerAdapter extends ChannelHandlerAdapter implemen
 
     /**
      * Calls {@link ChannelHandlerContext#fireExceptionCaught(Throwable)} to forward
+     * <p>转发 exceptionCaught 事件。</p>
      * to the next {@link ChannelHandler} in the {@link ChannelPipeline}.
      *
      * Sub-classes may override this method to change behavior.

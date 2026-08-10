@@ -32,10 +32,13 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+/**
+ * 内部工具：通过位掩码标记 {@link ChannelHandler} 需调用的方法；支持 {@link Skip} 跳过仅转发的空实现以优化性能。
+ */
 final class ChannelHandlerMask {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ChannelHandlerMask.class);
 
-    // Using to mask which methods must be called for a ChannelHandler.
+    // 位掩码：标记处理器需参与调用的入站/出站/异常方法
     static final int MASK_EXCEPTION_CAUGHT = 1;
     static final int MASK_CHANNEL_REGISTERED = 1 << 1;
     static final int MASK_CHANNEL_UNREGISTERED = 1 << 2;
@@ -72,6 +75,7 @@ final class ChannelHandlerMask {
 
     /**
      * Return the {@code executionMask}.
+     * <p>返回处理器类的执行掩码（带线程本地缓存）。</p>
      */
     static int mask(Class<? extends ChannelHandler> clazz) {
         // Try to obtain the mask from the cache first. If this fails calculate it and put it in the cache for fast
@@ -87,6 +91,7 @@ final class ChannelHandlerMask {
 
     /**
      * Calculate the {@code executionMask}.
+     * <p>根据处理器类型与 {@link Skip} 注解计算掩码。</p>
      */
     private static int mask0(Class<? extends ChannelHandler> handlerType) {
         int mask = MASK_EXCEPTION_CAUGHT;
@@ -156,7 +161,7 @@ final class ChannelHandlerMask {
                 mask &= ~MASK_EXCEPTION_CAUGHT;
             }
         } catch (Exception e) {
-            // Should never reach here.
+            // 不应到达此处
             PlatformDependent.throwException(e);
         }
 
@@ -189,6 +194,7 @@ final class ChannelHandlerMask {
      * Indicates that the annotated event handler method in {@link ChannelHandler} will not be invoked by
      * {@link ChannelPipeline} and so <strong>MUST</strong> only be used when the {@link ChannelHandler}
      * method does nothing except forward to the next {@link ChannelHandler} in the pipeline.
+     * <p>标记方法仅转发下一处理器，管道可跳过调用；注解不可继承，子类覆盖后行为改变。</p>
      * <p>
      * Note that this annotation is not {@linkplain Inherited inherited}. If a user overrides a method annotated with
      * {@link Skip}, it will not be skipped anymore. Similarly, the user can override a method not annotated with
@@ -199,6 +205,6 @@ final class ChannelHandlerMask {
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
     @interface Skip {
-        // no value
+        // 标记注解，无属性
     }
 }

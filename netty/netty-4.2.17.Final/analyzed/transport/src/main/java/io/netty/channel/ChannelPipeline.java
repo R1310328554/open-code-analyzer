@@ -29,6 +29,7 @@ import java.util.NoSuchElementException;
 
 /**
  * A list of {@link ChannelHandler}s which handles or intercepts inbound events and outbound operations of a
+ * <p>处理器链：按拦截器过滤器模式组织入站事件与出站 I/O；入站自下而上、出站自上而下传播。</p>
  * {@link Channel}.  {@link ChannelPipeline} implements an advanced form of the
  * <a href="https://www.oracle.com/technetwork/java/interceptingfilter-142169.html">Intercepting Filter</a> pattern
  * to give a user full control over how an event is handled and how the {@link ChannelHandler}s in a pipeline
@@ -210,6 +211,7 @@ public interface ChannelPipeline
 
     /**
      * Inserts a {@link ChannelHandler} at the first position of this pipeline.
+     * <p>在管道首部插入单个处理器。</p>
      *
      * @param name     the name of the handler to insert first
      * @param handler  the handler to insert first
@@ -223,6 +225,7 @@ public interface ChannelPipeline
 
     /**
      * Inserts a {@link ChannelHandler} at the first position of this pipeline.
+     * <p>在管道首部插入单个处理器。</p>
      *
      * @param group    the {@link EventExecutorGroup} which will be used to execute the {@link ChannelHandler}
      *                 methods
@@ -240,6 +243,7 @@ public interface ChannelPipeline
 
     /**
      * Appends a {@link ChannelHandler} at the last position of this pipeline.
+     * <p>在管道尾部追加单个处理器。</p>
      *
      * @param name     the name of the handler to append
      * @param handler  the handler to append
@@ -253,6 +257,7 @@ public interface ChannelPipeline
 
     /**
      * Appends a {@link ChannelHandler} at the last position of this pipeline.
+     * <p>在管道尾部追加单个处理器。</p>
      *
      * @param group    the {@link EventExecutorGroup} which will be used to execute the {@link ChannelHandler}
      *                 methods
@@ -270,6 +275,7 @@ public interface ChannelPipeline
 
     /**
      * Inserts a {@link ChannelHandler} before an existing handler of this
+     * <p>在指定处理器之前插入新处理器。</p>
      * pipeline.
      *
      * @param baseName  the name of the existing handler
@@ -287,6 +293,7 @@ public interface ChannelPipeline
 
     /**
      * Inserts a {@link ChannelHandler} before an existing handler of this
+     * <p>在指定处理器之前插入新处理器。</p>
      * pipeline.
      *
      * @param group     the {@link EventExecutorGroup} which will be used to execute the {@link ChannelHandler}
@@ -308,6 +315,7 @@ public interface ChannelPipeline
 
     /**
      * Inserts a {@link ChannelHandler} after an existing handler of this
+     * <p>在指定处理器之后插入新处理器。</p>
      * pipeline.
      *
      * @param baseName  the name of the existing handler
@@ -325,6 +333,7 @@ public interface ChannelPipeline
 
     /**
      * Inserts a {@link ChannelHandler} after an existing handler of this
+     * <p>在指定处理器之后插入新处理器。</p>
      * pipeline.
      *
      * @param group     the {@link EventExecutorGroup} which will be used to execute the {@link ChannelHandler}
@@ -346,6 +355,7 @@ public interface ChannelPipeline
 
     /**
      * Inserts {@link ChannelHandler}s at the first position of this pipeline.
+     * <p>在管道首部批量插入处理器。</p>
      *
      * @param handlers  the handlers to insert first
      *
@@ -354,6 +364,7 @@ public interface ChannelPipeline
 
     /**
      * Inserts {@link ChannelHandler}s at the first position of this pipeline.
+     * <p>在管道首部批量插入处理器。</p>
      *
      * @param group     the {@link EventExecutorGroup} which will be used to execute the {@link ChannelHandler}s
      *                  methods.
@@ -365,6 +376,7 @@ public interface ChannelPipeline
 
     /**
      * Inserts {@link ChannelHandler}s at the last position of this pipeline.
+     * <p>在管道尾部批量插入处理器。</p>
      *
      * @param handlers  the handlers to insert last
      *
@@ -373,6 +385,7 @@ public interface ChannelPipeline
 
     /**
      * Inserts {@link ChannelHandler}s at the last position of this pipeline.
+     * <p>在管道尾部批量插入处理器。</p>
      *
      * @param group     the {@link EventExecutorGroup} which will be used to execute the {@link ChannelHandler}s
      *                  methods.
@@ -384,6 +397,7 @@ public interface ChannelPipeline
 
     /**
      * Removes the specified {@link ChannelHandler} from this pipeline.
+     * <p>按实例移除处理器。</p>
      *
      * @param  handler          the {@link ChannelHandler} to remove
      *
@@ -396,6 +410,7 @@ public interface ChannelPipeline
 
     /**
      * Removes the {@link ChannelHandler} with the specified name from this pipeline.
+     * <p>按名称移除处理器。</p>
      *
      * @param  name             the name under which the {@link ChannelHandler} was stored.
      *
@@ -410,6 +425,7 @@ public interface ChannelPipeline
 
     /**
      * Removes the {@link ChannelHandler} of the specified type from this pipeline.
+     * <p>按类型移除处理器。</p>
      *
      * @param <T>           the type of the handler
      * @param handlerType   the type of the handler
@@ -425,6 +441,7 @@ public interface ChannelPipeline
 
     /**
      * Removes the first {@link ChannelHandler} in this pipeline.
+     * <p>移除管道中第一个处理器。</p>
      *
      * @return the removed handler
      *
@@ -435,6 +452,7 @@ public interface ChannelPipeline
 
     /**
      * Removes the last {@link ChannelHandler} in this pipeline.
+     * <p>移除管道中最后一个处理器。</p>
      *
      * @return the removed handler
      *
@@ -445,6 +463,7 @@ public interface ChannelPipeline
 
     /**
      * Replaces the specified {@link ChannelHandler} with a new handler in this pipeline.
+     * <p>用新处理器替换指定实例。</p>
      *
      * @param  oldHandler    the {@link ChannelHandler} to be replaced
      * @param  newName       the name under which the replacement should be added
@@ -465,6 +484,7 @@ public interface ChannelPipeline
 
     /**
      * Replaces the {@link ChannelHandler} of the specified name with a new handler in this pipeline.
+     * <p>按名称替换处理器。</p>
      *
      * @param  oldName       the name of the {@link ChannelHandler} to be replaced
      * @param  newName       the name under which the replacement should be added
@@ -485,6 +505,7 @@ public interface ChannelPipeline
 
     /**
      * Replaces the {@link ChannelHandler} of the specified type with a new handler in this pipeline.
+     * <p>按类型替换处理器。</p>
      *
      * @param  oldHandlerType   the type of the handler to be removed
      * @param  newName          the name under which the replacement should be added
@@ -507,6 +528,7 @@ public interface ChannelPipeline
 
     /**
      * Returns the first {@link ChannelHandler} in this pipeline.
+     * <p>返回管道中第一个处理器。</p>
      *
      * @return the first handler.  {@code null} if this pipeline is empty.
      */
@@ -514,6 +536,7 @@ public interface ChannelPipeline
 
     /**
      * Returns the context of the first {@link ChannelHandler} in this pipeline.
+     * <p>返回第一个处理器的上下文。</p>
      *
      * @return the context of the first handler.  {@code null} if this pipeline is empty.
      */
@@ -521,6 +544,7 @@ public interface ChannelPipeline
 
     /**
      * Returns the last {@link ChannelHandler} in this pipeline.
+     * <p>返回管道中最后一个处理器。</p>
      *
      * @return the last handler.  {@code null} if this pipeline is empty.
      */
@@ -528,6 +552,7 @@ public interface ChannelPipeline
 
     /**
      * Returns the context of the last {@link ChannelHandler} in this pipeline.
+     * <p>返回最后一个处理器的上下文。</p>
      *
      * @return the context of the last handler.  {@code null} if this pipeline is empty.
      */
@@ -535,6 +560,7 @@ public interface ChannelPipeline
 
     /**
      * Returns the {@link ChannelHandler} with the specified name in this
+     * <p>按名称返回处理器。</p>
      * pipeline.
      *
      * @return the handler with the specified name.
@@ -544,6 +570,7 @@ public interface ChannelPipeline
 
     /**
      * Returns the {@link ChannelHandler} of the specified type in this
+     * <p>按类型返回处理器。</p>
      * pipeline.
      *
      * @return the handler of the specified handler type.
@@ -553,6 +580,7 @@ public interface ChannelPipeline
 
     /**
      * Returns the context object of the specified {@link ChannelHandler} in
+     * <p>返回指定处理器实例的上下文。</p>
      * this pipeline.
      *
      * @return the context object of the specified handler.
@@ -562,6 +590,7 @@ public interface ChannelPipeline
 
     /**
      * Returns the context object of the {@link ChannelHandler} with the
+     * <p>按名称返回处理器上下文。</p>
      * specified name in this pipeline.
      *
      * @return the context object of the handler with the specified name.
@@ -571,6 +600,7 @@ public interface ChannelPipeline
 
     /**
      * Returns the context object of the {@link ChannelHandler} of the
+     * <p>按类型返回处理器上下文。</p>
      * specified type in this pipeline.
      *
      * @return the context object of the handler of the specified type.
@@ -582,17 +612,20 @@ public interface ChannelPipeline
      * Returns the {@link Channel} that this pipeline is attached to.
      *
      * @return the channel. {@code null} if this pipeline is not attached yet.
+      * <p>Netty 通道 API；详见上方英文说明。</p>
      */
     Channel channel();
 
     /**
      * Returns the {@link List} of the handler names.
+      * <p>Netty 通道 API；详见上方英文说明。</p>
      */
     List<String> names();
 
     /**
      * Converts this pipeline into an ordered {@link Map} whose keys are
      * handler names and whose values are handlers.
+      * <p>Netty 通道 API；详见上方英文说明。</p>
      */
     Map<String, ChannelHandler> toMap();
 

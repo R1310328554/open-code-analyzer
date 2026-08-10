@@ -18,6 +18,7 @@ package io.netty.channel;
 /**
  * A {@link ChannelException} which is thrown when a {@link ChannelPipeline}
  * failed to execute an operation.
+ * <p>当 {@link ChannelPipeline} 执行操作失败时抛出的异常类型。</p>
  */
 public class ChannelPipelineException extends ChannelException {
 
@@ -25,12 +26,14 @@ public class ChannelPipelineException extends ChannelException {
 
     /**
      * Creates a new instance.
+     * <p>创建无消息与原因的实例。</p>
      */
     public ChannelPipelineException() {
     }
 
     /**
      * Creates a new instance.
+     * <p>创建带消息与原因的实例。</p>
      */
     public ChannelPipelineException(String message, Throwable cause) {
         super(message, cause);
@@ -38,6 +41,7 @@ public class ChannelPipelineException extends ChannelException {
 
     /**
      * Creates a new instance.
+     * <p>创建带消息的实例。</p>
      */
     public ChannelPipelineException(String message) {
         super(message);
@@ -45,6 +49,7 @@ public class ChannelPipelineException extends ChannelException {
 
     /**
      * Creates a new instance.
+     * <p>创建仅带原因的实例。</p>
      */
     public ChannelPipelineException(Throwable cause) {
         super(cause);

@@ -21,6 +21,7 @@ import java.net.SocketAddress;
 
 /**
  * Represents the properties of a {@link Channel} implementation.
+ * <p>描述 {@link Channel} 实现的元属性，如是否支持 disconnect、默认单次读最大消息数。</p>
  */
 public final class ChannelMetadata {
 
@@ -29,6 +30,7 @@ public final class ChannelMetadata {
 
     /**
      * Create a new instance
+     * <p>创建实例，默认 {@code defaultMaxMessagesPerRead} 为 16。</p>
      *
      * @param hasDisconnect     {@code true} if and only if the channel has the {@code disconnect()} operation
      *                          that allows a user to disconnect and then call {@link Channel#connect(SocketAddress)}
@@ -40,6 +42,7 @@ public final class ChannelMetadata {
 
     /**
      * Create a new instance
+     * <p>创建实例并指定默认单次读最大消息数。</p>
      *
      * @param hasDisconnect     {@code true} if and only if the channel has the {@code disconnect()} operation
      *                          that allows a user to disconnect and then call {@link Channel#connect(SocketAddress)}
@@ -57,6 +60,7 @@ public final class ChannelMetadata {
      * Returns {@code true} if and only if the channel has the {@code disconnect()} operation
      * that allows a user to disconnect and then call {@link Channel#connect(SocketAddress)} again,
      * such as UDP/IP.
+     * <p>通道是否支持 disconnect 后再次 connect（如 UDP）。</p>
      */
     public boolean hasDisconnect() {
         return hasDisconnect;
@@ -65,6 +69,7 @@ public final class ChannelMetadata {
     /**
      * If a {@link MaxMessagesRecvByteBufAllocator} is in use, then this is the default value for
      * {@link MaxMessagesRecvByteBufAllocator#maxMessagesPerRead()}.
+     * <p>使用 {@link MaxMessagesRecvByteBufAllocator} 时的默认单次读最大消息数。</p>
      */
     public int defaultMaxMessagesPerRead() {
         return defaultMaxMessagesPerRead;

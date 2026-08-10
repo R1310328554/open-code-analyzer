@@ -42,15 +42,18 @@ import java.io.Serializable;
  * <li>{@code io.netty.processId} - an integer between 0 and 65535</li>
  * </ul>
  * </p>
+ * <p>表示 {@link Channel} 的全局唯一标识符；由 MAC、进程 ID、时间戳、随机数等组合生成，可通过系统属性 {@code io.netty.machineId} 与 {@code io.netty.processId} 手动指定。</p>
  */
 public interface ChannelId extends Serializable, Comparable<ChannelId> {
     /**
      * Returns the short but globally non-unique string representation of the {@link ChannelId}.
+     * <p>返回短文本形式，便于日志与调试，全局不保证唯一。</p>
      */
     String asShortText();
 
     /**
      * Returns the long yet globally unique string representation of the {@link ChannelId}.
+     * <p>返回长文本形式，全局唯一，适合持久化或跨进程标识。</p>
      */
     String asLongText();
 }

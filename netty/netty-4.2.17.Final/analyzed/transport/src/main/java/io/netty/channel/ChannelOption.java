@@ -28,6 +28,7 @@ import java.net.NetworkInterface;
  * way. Which {@link ChannelOption} is supported depends on the actual implementation
  * of {@link ChannelConfig} and may depend on the nature of the transport it belongs
  * to.
+ * <p>类型安全的 {@link ChannelConfig} 配置项；具体支持的选项取决于传输实现。</p>
  *
  * @param <T>   the type of the value which is valid for the {@link ChannelOption}
  */
@@ -42,6 +43,7 @@ public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
 
     /**
      * Returns the {@link ChannelOption} of the specified name.
+     * <p>按名称获取已注册的 {@link ChannelOption}。</p>
      */
     @SuppressWarnings("unchecked")
     public static <T> ChannelOption<T> valueOf(String name) {
@@ -50,6 +52,7 @@ public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
 
     /**
      * Shortcut of {@link #valueOf(String) valueOf(firstNameComponent.getName() + "#" + secondNameComponent)}.
+     * <p>以类名#常量名形式构造选项名并查找。</p>
      */
     @SuppressWarnings("unchecked")
     public static <T> ChannelOption<T> valueOf(Class<?> firstNameComponent, String secondNameComponent) {
@@ -58,6 +61,7 @@ public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
 
     /**
      * Returns {@code true} if a {@link ChannelOption} exists for the given {@code name}.
+     * <p>给定名称的选项是否已注册。</p>
      */
     public static boolean exists(String name) {
         return pool.exists(name);
@@ -75,6 +79,7 @@ public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
         return (ChannelOption<T>) pool.newInstance(name);
     }
 
+    /** {@link ByteBuf} 分配器选项。 */
     public static final ChannelOption<ByteBufAllocator> ALLOCATOR = valueOf("ALLOCATOR");
 
     public static final ChannelOption<RecvByteBufAllocator> RECVBUF_ALLOCATOR = valueOf("RECVBUF_ALLOCATOR");
@@ -111,11 +116,13 @@ public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
             valueOf("WRITE_BUFFER_WATER_MARK");
 
     public static final ChannelOption<Boolean> ALLOW_HALF_CLOSURE = valueOf("ALLOW_HALF_CLOSURE");
+    /** 是否自动触发读；关闭后须手动 {@link Channel#read()}。 */
     public static final ChannelOption<Boolean> AUTO_READ = valueOf("AUTO_READ");
 
     /**
      * If {@code true} then the {@link Channel} is closed automatically and immediately on write failure.
      * The default value is {@code true}.
+     * <p>写失败时是否立即自动关闭通道，默认 {@code true}。</p>
      */
     public static final ChannelOption<Boolean> AUTO_CLOSE = valueOf("AUTO_CLOSE");
 
@@ -134,14 +141,17 @@ public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
     public static final ChannelOption<Integer> IP_MULTICAST_TTL = valueOf("IP_MULTICAST_TTL");
     public static final ChannelOption<Boolean> IP_MULTICAST_LOOP_DISABLED = valueOf("IP_MULTICAST_LOOP_DISABLED");
 
+    /** TCP_NODELAY（禁用 Nagle 算法）。 */
     public static final ChannelOption<Boolean> TCP_NODELAY = valueOf("TCP_NODELAY");
     /**
      * Client-side TCP FastOpen. Sending data with the initial TCP handshake.
+     * <p>客户端 TCP FastOpen：在 SYN 握手时发送数据。</p>
      */
     public static final ChannelOption<Boolean> TCP_FASTOPEN_CONNECT = valueOf("TCP_FASTOPEN_CONNECT");
 
     /**
      * Server-side TCP FastOpen. Configures the maximum number of outstanding (waiting to be accepted) TFO connections.
+     * <p>服务端 TCP FastOpen：配置待 accept 的 TFO 连接上限。</p>
      */
     public static final ChannelOption<Integer> TCP_FASTOPEN = valueOf(ChannelOption.class, "TCP_FASTOPEN");
 
@@ -167,6 +177,7 @@ public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
     /**
      * Validate the value which is set for the {@link ChannelOption}. Sub-classes
      * may override this for special checks.
+     * <p>校验配置值非 null；子类可扩展校验逻辑。</p>
      */
     public void validate(T value) {
         ObjectUtil.checkNotNull(value, "value");

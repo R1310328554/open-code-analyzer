@@ -42,6 +42,7 @@ import static java.lang.Math.min;
 
 /**
  * (Transport implementors only) an internal data structure used by {@link AbstractChannel} to store its pending
+ * <p>（仅供传输实现）{@link AbstractChannel} 的出站写请求队列；除 isWritable 等少数方法外须在 I/O 线程调用。</p>
  * outbound write requests.
  * <p>
  * All methods must be called by a transport implementation from an I/O thread, except the following ones:
@@ -73,7 +74,7 @@ public final class ChannelOutboundBuffer {
 
     private final Channel channel;
 
-    // Entry(flushedEntry) --> ... Entry(unflushedEntry) --> ... Entry(tailEntry)
+    // 链表：flushedEntry → … → unflushedEntry → … → tailEntry
     //
     // The Entry that is the first in the linked-list structure that was flushed
     private Entry flushedEntry;
@@ -109,6 +110,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Add given message to this {@link ChannelOutboundBuffer}. The given {@link ChannelPromise} will be notified once
+     * <p>将消息加入出站缓冲，写完成后通知 {@link ChannelPromise}。</p>
      * the message was written.
      */
     public void addMessage(Object msg, int size, ChannelPromise promise) {
@@ -124,7 +126,7 @@ public final class ChannelOutboundBuffer {
             unflushedEntry = entry;
         }
 
-        // Touch the message to make it easier to debug buffer leaks.
+        // touch 消息便于排查缓冲区泄漏
 
         // this save both checking against the ReferenceCounted interface
         // and makes better use of virtual calls vs interface ones
@@ -134,13 +136,14 @@ public final class ChannelOutboundBuffer {
             ReferenceCountUtil.touch(msg);
         }
 
-        // increment pending bytes after adding message to the unflushed arrays.
+        // 加入 unflushed 后再累加 pending 字节（见 issue #1619）
         // See https://github.com/netty/netty/issues/1619
         incrementPendingOutboundBytes(entry.pendingSize, false);
     }
 
     /**
      * Add a flush to this {@link ChannelOutboundBuffer}. This means all previous added messages are marked as flushed
+     * <p>标记此前未 flush 的消息为已 flush，可供写出。</p>
      * and so you will be able to handle them.
      */
     public void addFlush() {
@@ -171,6 +174,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Increment the pending bytes which will be written at some point.
+     * <p>增加待写字节计数并更新可写性。</p>
      * This method is thread-safe!
      */
     void incrementPendingOutboundBytes(long size) {
@@ -190,6 +194,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Decrement the pending bytes which will be written at some point.
+     * <p>减少待写字节计数并更新可写性。</p>
      * This method is thread-safe!
      */
     void decrementPendingOutboundBytes(long size) {
@@ -222,6 +227,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Return the current message to write or {@code null} if nothing was flushed before and so is ready to be written.
+     * <p>返回当前待写消息，无已 flush 消息时返回 {@code null}。</p>
      */
     public Object current() {
         Entry entry = flushedEntry;
@@ -234,6 +240,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Return the current message flush progress.
+     * <p>返回当前消息的 flush 进度。</p>
      * @return {@code 0} if nothing was flushed before for the current message or there is no current message
      */
     public long currentProgress() {
@@ -246,6 +253,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Notify the {@link ChannelPromise} of the current message about writing progress.
+     * <p>通知当前消息 {@link ChannelPromise} 的写进度。</p>
      */
     public void progress(long amount) {
         Entry e = flushedEntry;
@@ -269,6 +277,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Will remove the current message, mark its {@link ChannelPromise} as success and return {@code true}. If no
+     * <p>移除当前消息并将 {@link ChannelPromise} 标记为成功。</p>
      * flushed message exists at the time this method is called it will return {@code false} to signal that no more
      * messages are ready to be handled.
      */
@@ -311,6 +320,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Will remove the current message, mark its {@link ChannelPromise} as failure using the given {@link Throwable}
+     * <p>移除当前消息并将 {@link ChannelPromise} 标记为成功。</p>
      * and return {@code true}. If no   flushed message exists at the time this method is called it will return
      * {@code false} to signal that no more messages are ready to be handled.
      */
@@ -360,6 +370,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Removes the fully written entries and update the reader index of the partially written entry.
+     * <p>移除已完全写出的条目，并更新部分写出条目的读索引。</p>
      * This operation assumes all messages in this buffer is {@link ByteBuf}.
      */
     public void removeBytes(long writtenBytes) {
@@ -403,6 +414,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Returns an array of direct NIO buffers if the currently pending messages are made of {@link ByteBuf} only.
+     * <p>若 pending 消息为 {@link ByteBuf}，返回可直接写出 NIO 缓冲区数组。</p>
      * {@link #nioBufferCount()} and {@link #nioBufferSize()} will return the number of NIO buffers in the returned
      * array and the total number of readable bytes of the NIO buffers respectively.
      * <p>
@@ -417,6 +429,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Returns an array of direct NIO buffers if the currently pending messages are made of {@link ByteBuf} only.
+     * <p>若 pending 消息为 {@link ByteBuf}，返回可直接写出 NIO 缓冲区数组。</p>
      * {@link #nioBufferCount()} and {@link #nioBufferSize()} will return the number of NIO buffers in the returned
      * array and the total number of readable bytes of the NIO buffers respectively.
      * <p>
@@ -535,6 +548,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Returns the number of {@link ByteBuffer} that can be written out of the {@link ByteBuffer} array that was
+     * <p>返回 nioBuffers 数组中可写出的 {@link ByteBuffer} 数量。</p>
      * obtained via {@link #nioBuffers()}. This method <strong>MUST</strong> be called after {@link #nioBuffers()}
      * was called.
      */
@@ -544,6 +558,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Returns the number of bytes that can be written out of the {@link ByteBuffer} array that was
+     * <p>返回 nioBuffers 数组中可写出的总字节数。</p>
      * obtained via {@link #nioBuffers()}. This method <strong>MUST</strong> be called after {@link #nioBuffers()}
      * was called.
      */
@@ -553,6 +568,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Returns {@code true} if and only if {@linkplain #totalPendingWriteBytes() the total number of pending bytes} did
+     * <p>待写字节未超过高水位时返回 {@code true}（通道可写）。</p>
      * not exceed the write watermark of the {@link Channel} and
      * no {@linkplain #setUserDefinedWritability(int, boolean) user-defined writability flag} has been set to
      * {@code false}.
@@ -563,6 +579,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Returns {@code true} if and only if the user-defined writability flag at the specified index is set to
+     * <p>查询指定索引的用户自定义可写标志。</p>
      * {@code true}.
      */
     public boolean getUserDefinedWritability(int index) {
@@ -571,6 +588,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Sets a user-defined writability flag at the specified index.
+     * <p>设置指定索引的用户自定义可写标志。</p>
      */
     public void setUserDefinedWritability(int index, boolean writable) {
         if (writable) {
@@ -661,6 +679,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Returns the number of flushed messages in this {@link ChannelOutboundBuffer}.
+     * <p>返回已 flush 的消息数量。</p>
      */
     public int size() {
         return flushed;
@@ -668,6 +687,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Returns {@code true} if there are flushed messages in this {@link ChannelOutboundBuffer} or {@code false}
+     * <p>是否存在已 flush 消息或缓冲非空。</p>
      * otherwise.
      */
     public boolean isEmpty() {
@@ -764,6 +784,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Get how many bytes can be written until {@link #isWritable()} returns {@code false}.
+     * <p>距离不可写还可写入的字节数。</p>
      * This quantity will always be non-negative. If {@link #isWritable()} is {@code false} then 0.
      */
     public long bytesBeforeUnwritable() {
@@ -777,6 +798,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Get how many bytes must be drained from the underlying buffer until {@link #isWritable()} returns {@code true}.
+     * <p>距离恢复可写还需从底层刷出的字节数。</p>
      * This quantity will always be non-negative. If {@link #isWritable()} is {@code true} then 0.
      */
     public long bytesBeforeWritable() {
@@ -790,6 +812,7 @@ public final class ChannelOutboundBuffer {
 
     /**
      * Call {@link MessageProcessor#processMessage(Object)} for each flushed message
+     * <p>对每个已 flush 消息调用 {@link MessageProcessor#processMessage(Object)}。</p>
      * in this {@link ChannelOutboundBuffer} until {@link MessageProcessor#processMessage(Object)}
      * returns {@code false} or there are no more flushed messages to process.
      */
@@ -818,6 +841,7 @@ public final class ChannelOutboundBuffer {
     public interface MessageProcessor {
         /**
          * Will be called for each flushed message until it either there are no more flushed messages or this
+         * <p>消息处理器回调接口：遍历 flushed 消息时使用。</p>
          * method returns {@code false}.
          */
         boolean processMessage(Object msg) throws Exception;
