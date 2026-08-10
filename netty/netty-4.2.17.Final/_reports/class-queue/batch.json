@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T00:36:02Z",
   "files": [
-    "common/src/main/java/io/netty/util/concurrent/DefaultFutureListeners.java",
-    "common/src/main/java/io/netty/util/concurrent/DefaultMockTicker.java",
-    "common/src/main/java/io/netty/util/concurrent/DefaultProgressivePromise.java",
-    "common/src/main/java/io/netty/util/concurrent/DefaultPromise.java",
-    "common/src/main/java/io/netty/util/concurrent/DefaultThreadFactory.java",
-    "common/src/main/java/io/netty/util/concurrent/EventExecutor.java",
-    "common/src/main/java/io/netty/util/concurrent/EventExecutorChooserFactory.java",
-    "common/src/main/java/io/netty/util/concurrent/EventExecutorGroup.java",
-    "common/src/main/java/io/netty/util/concurrent/FailedFuture.java",
-    "common/src/main/java/io/netty/util/concurrent/FastThreadLocal.java",
-    "common/src/main/java/io/netty/util/concurrent/FastThreadLocalRunnable.java",
-    "common/src/main/java/io/netty/util/concurrent/FastThreadLocalThread.java",
-    "common/src/main/java/io/netty/util/concurrent/Future.java",
-    "common/src/main/java/io/netty/util/concurrent/FutureListener.java",
-    "common/src/main/java/io/netty/util/concurrent/GenericFutureListener.java",
     "common/src/main/java/io/netty/util/concurrent/GenericProgressiveFutureListener.java",
     "common/src/main/java/io/netty/util/concurrent/GlobalEventExecutor.java",
     "common/src/main/java/io/netty/util/concurrent/ImmediateEventExecutor.java",
@@ -33,5 +18,5 @@
     "common/src/main/java/io/netty/util/concurrent/PromiseNotifier.java"
   ],
   "remaining_pending": 758,
-  "done": 1140
+  "done": 1155
 }
