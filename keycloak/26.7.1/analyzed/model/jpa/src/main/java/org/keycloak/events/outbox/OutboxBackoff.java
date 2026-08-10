@@ -23,27 +23,24 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Computes the exponential-backoff next-attempt timestamp for a failed
- * outbox delivery, and decides when a row has exhausted its budget and
- * should be transitioned to {@code DEAD_LETTER}.
- *
- * <p>The backoff curve and the dead-letter threshold are configured per
- * {@link OutboxConfig#backoff()}, so different consumers (SSF push,
- * webhooks, ...) can pick curves that match their delivery semantics.
- *
- * <p>A small uniform jitter (±25% of the base delay) is mixed in on
- * each computation so a flood of rows enqueued in the same tick don't
- * all wake up to retry in the same millisecond — spreading the retry
- * load in clustered deployments and across receivers.
+ * 计算投递失败后的指数退避下次重试时间，并判定行是否应转入 {@code DEAD_LETTER}。
+ * <p>
+ * 退避曲线与死信阈值由 {@link OutboxConfig#backoff()} 按 kind 配置，
+ * SSF push、webhook 等消费者可选用不同语义。
+ * </p>
+ * <p>
+ * 每次计算混入 ±25% 均匀抖动，避免同一时刻大量入队的行在同一毫秒唤醒，
+ * 在集群部署中分散重试负载。
+ * </p>
  */
 public class OutboxBackoff {
 
+    /** 默认最大重试次数。 */
     public static final int DEFAULT_MAX_ATTEMPTS = 8;
 
     /**
-     * Default HTTP-push curve — sensible for receivers that respond to
-     * an HTTP POST. Consumers with different delivery semantics
-     * (e.g. internal queue write) should provide their own.
+     * 默认 HTTP push 退避曲线——适用于 HTTP POST 类接收方；
+     * 其他语义（如内部队列写入）应提供自定义曲线。
      */
     public static final List<Duration> DEFAULT_HTTP_PUSH_CURVE = List.of(
             Duration.ofSeconds(1),
@@ -76,22 +73,17 @@ public class OutboxBackoff {
     }
 
     /**
-     * Returns {@code true} if the row has burned through its retry
-     * budget and should be transitioned to {@code DEAD_LETTER} instead
-     * of scheduling another attempt.
+     * 重试预算是否已耗尽，应转入 {@code DEAD_LETTER} 而非再调度。
      *
-     * @param attempts the value of {@code attempts} after the current
-     *                 failure has been accounted for.
+     * @param attempts 计入当前失败后 {@code attempts} 的值。
      */
     public boolean isExhausted(int attempts) {
         return attempts >= maxAttempts;
     }
 
     /**
-     * Computes the {@code next_attempt_at} timestamp for a row whose
-     * {@code attempts} counter has just been incremented to the given
-     * value after a failure. Callers should only invoke this when
-     * {@link #isExhausted(int)} returns false.
+     * 失败后 {@code attempts} 已递增，计算 {@code next_attempt_at}。
+     * 仅在 {@link #isExhausted(int)} 为 false 时调用。
      */
     public Instant computeNextAttemptAt(Instant now, int attempts) {
         Duration base = baseDelayFor(attempts);
@@ -104,11 +96,8 @@ public class OutboxBackoff {
     }
 
     /**
-     * Sum of the curve up to {@link #maxAttempts} entries — the
-     * worst-case time a row can spend in PENDING under the natural
-     * retry path before exhausting attempts. Operators tuning
-     * {@code pendingMaxAge} backstops should keep that value
-     * comfortably above this floor.
+     * 曲线前 {@link #maxAttempts} 项之和——行在自然重试路径下于 PENDING 状态
+     * 可能停留的最长累计时间。运维设置 {@code pendingMaxAge} 兜底时应高于此值。
      */
     public Duration getMaxNaturalRetryDuration() {
         Duration total = Duration.ZERO;
@@ -120,7 +109,7 @@ public class OutboxBackoff {
     }
 
     protected Duration baseDelayFor(int attempts) {
-        // attempts is 1-based after the first failed try.
+        // attempts 在首次失败后从 1 起计。
         int idx = Math.min(Math.max(attempts, 1), curve.size()) - 1;
         return curve.get(idx);
     }

@@ -40,26 +40,20 @@ import org.hibernate.query.SelectionQuery;
 import org.jboss.logging.Logger;
 
 /**
- * DAO over {@link OutboxEntryEntity}. Every method takes the row's
- * {@code entryKind} so the same store instance can serve multiple
- * subsystems sharing the underlying {@code OUTBOX_ENTRY} table — the
- * compound indexes on {@code (ENTRY_KIND, ...)} keep cross-kind
- * traffic from interfering with each other's hot paths.
+ * {@link OutboxEntryEntity} 的数据访问层。各方法均携带 {@code entryKind}，
+ * 使同一 store 实例可服务共享 {@code OUTBOX_ENTRY} 表的多个子系统；
+ * 复合索引 {@code (ENTRY_KIND, ...)} 避免跨 kind 热点互相干扰。
  *
- * <p>Read patterns (drainer, admin stats, retention purges) and write
- * patterns (enqueue, transition, bulk delete) are split here so the
- * runtime drainer / cleanup tasks compose primitives rather than
- * inlining queries.
+ * <p>读模式（drainer、管理统计、保留清理）与写模式（入队、状态转换、批量删除）
+ * 在此拆分，运行时 drainer / cleanup 任务组合原语而非内联 SQL。</p>
  */
 public class OutboxStore {
 
     private static final Logger log = Logger.getLogger(OutboxStore.class);
 
     /**
-     * Hard cap on the {@code last_error} column width — matches the
-     * VARCHAR(2048) defined in the changelog. Truncation is applied
-     * here so callers can pass arbitrarily long exception messages
-     * without worrying about persistence-layer rejection.
+     * {@code last_error} 列硬上限，与 changelog 中 VARCHAR(2048) 一致。
+     * 在此截断，调用方可传入任意长异常消息而无需担心持久化拒绝。
      */
     public static final int MAX_LAST_ERROR_LENGTH = 2048;
 
@@ -73,13 +67,11 @@ public class OutboxStore {
         return session.getProvider(JpaConnectionProvider.class).getEntityManager();
     }
 
-    // -- Enqueue -----------------------------------------------------------
+    // -- 入队 ---------------------------------------------------------------
 
     /**
-     * Inserts a fresh PENDING row, deduplicating on
-     * {@code (entryKind, ownerId, correlationId)}. Returns the id of
-     * the persisted (or pre-existing) row so the caller can correlate
-     * across at-least-once enqueue paths.
+     * 插入新的 PENDING 行，按 {@code (entryKind, ownerId, correlationId)} 去重。
+     * 返回已持久化（或已存在）行的 id，供至少一次入队路径关联。
      */
     public String enqueuePending(String entryKind,
                                  String realmId,
@@ -94,10 +86,8 @@ public class OutboxStore {
     }
 
     /**
-     * Inserts a fresh HELD row — used when the upstream channel is in
-     * a paused state at enqueue time (e.g. SSF stream paused) and the
-     * row should not be drained until {@link #releaseHeldForOwner} is
-     * called. Same dedup contract as {@link #enqueuePending}.
+     * 插入 HELD 行——上游通道在入队时处于暂停态（如 SSF stream 暂停），
+     * 在 {@link #releaseHeldForOwner} 之前不应被 drainer 处理。去重语义同 {@link #enqueuePending}。
      */
     public String enqueueHeld(String entryKind,
                               String realmId,
@@ -128,11 +118,8 @@ public class OutboxStore {
         Objects.requireNonNull(entryType, "entryType");
         Objects.requireNonNull(payload, "payload");
 
-        // Optimistic local fast-path: if we already wrote the row in this
-        // transaction (or it's recent enough to be in the row cache),
-        // skip the INSERT and return the existing id. Correctness does
-        // not depend on this — the storage-engine ON CONFLICT DO NOTHING
-        // below dedups regardless. Cheap savings for retry-style callers.
+        // 乐观本地快路径：本事务已写入或行缓存中有时，跳过 INSERT 并返回已有 id。
+        // 正确性不依赖此优化——下方 ON CONFLICT DO NOTHING 在存储引擎层去重。
         OutboxEntryEntity existing = findByOwnerAndCorrelationId(entryKind, ownerId, correlationId);
         if (existing != null) {
             log.debugf("Outbox enqueue deduplicated. entryKind=%s ownerId=%s correlationId=%s existingId=%s status=%s",
@@ -142,17 +129,11 @@ public class OutboxStore {
 
         Instant now = Instant.now();
         String id = generateEntryId();
-        // Race-safe insert. ON CONFLICT DO NOTHING (HQL, Hibernate 6.5+)
-        // resolves the dedup race at the storage engine: a concurrent
-        // sibling insert of the same (entryKind, ownerId, correlationId)
-        // triple causes our INSERT to no-op (executeUpdate returns 0)
-        // instead of throwing ConstraintViolationException and marking
-        // the JTA transaction rollback-only. The caller's surrounding
-        // transaction therefore survives the race cleanly.
+        // 竞态安全的 INSERT。ON CONFLICT DO NOTHING（HQL，Hibernate 6.5+）在存储引擎层解决去重竞态：
+        // 并发插入相同 (entryKind, ownerId, correlationId) 三元组时本 INSERT 无操作（executeUpdate 返回 0），
+        // 而非抛出 ConstraintViolationException 导致 JTA 事务 rollback-only。
         //
-        // next_attempt_at is meaningful only for PENDING rows the drainer
-        // locks; HELD rows ignore it but the column is NOT NULL, so we
-        // set it to "now" as a harmless seed.
+        // next_attempt_at 仅对 drainer 锁定的 PENDING 行有意义；HELD 行忽略该列但 NOT NULL，故设为 now。
         int inserted = getEntityManager()
                 .createNamedQuery("OutboxEntryEntity.insertIfAbsent")
                 .setParameter("id", id)
@@ -171,10 +152,7 @@ public class OutboxStore {
                 .executeUpdate();
 
         if (inserted == 0) {
-            // Lost the dedup race against a sibling. Their row is in
-            // storage and will be drained, so the event is captured
-            // at-most-once as intended. Re-fetch and return their id
-            // so the caller can correlate.
+            // 去重竞态失败： sibling 行已在存储中并将被 drain，事件至多一次捕获。重新查询并返回其 id。
             OutboxEntryEntity racingRow = findByOwnerAndCorrelationId(entryKind, ownerId, correlationId);
             log.debugf("Outbox enqueue lost dedup race; sibling already inserted. "
                     + "entryKind=%s realmId=%s ownerId=%s correlationId=%s racingId=%s",
@@ -209,12 +187,11 @@ public class OutboxStore {
         }
     }
 
-    // -- Drainer reads -----------------------------------------------------
+    // -- Drainer 读 -----------------------------------------------------
 
     /**
-     * Locks up to {@code limit} due PENDING rows for delivery in the
-     * current transaction. Uses {@code FOR UPDATE SKIP LOCKED} so
-     * cluster-aware drainers don't fight for the same rows.
+     * 在当前事务中锁定最多 {@code limit} 条到期 PENDING 行用于投递。
+     * 使用 {@code FOR UPDATE SKIP LOCKED}，集群 drainer 不会争抢同一行。
      */
     public List<OutboxEntryEntity> lockDueForDrain(String entryKind, int limit) {
         Objects.requireNonNull(entryKind, "entryKind");
@@ -228,8 +205,7 @@ public class OutboxStore {
                 .setParameter("now", Instant.now())
                 .setMaxResults(limit)
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE);
-        // Skip rows another tick / node already holds — a sibling
-        // drainer will get them on its own pass without blocking us.
+        // 跳过已被其他 tick/节点锁定的行，由 sibling drainer 在其 pass 中处理。
         try {
             query.unwrap(SelectionQuery.class).setHibernateLockMode(LockMode.UPGRADE_SKIPLOCKED);
         } catch (RuntimeException e) {
@@ -238,8 +214,9 @@ public class OutboxStore {
         return query.getResultList();
     }
 
-    // -- Row transitions ---------------------------------------------------
+    // -- 行状态转换 ---------------------------------------------------
 
+    /** 标记投递成功：递增 attempts、设为 DELIVERED、写入 deliveredAt、清空 last_error。 */
     public void markDelivered(OutboxEntryEntity entity) {
         entity.setAttempts(entity.getAttempts() + 1);
         entity.setStatus(OutboxEntryStatus.DELIVERED);
@@ -248,6 +225,7 @@ public class OutboxStore {
         getEntityManager().merge(entity);
     }
 
+    /** 记录可重试失败：递增 attempts、设置 nextAttemptAt 与 last_error。 */
     public void recordFailure(OutboxEntryEntity entity, Instant nextAttemptAt, String lastError) {
         entity.setAttempts(entity.getAttempts() + 1);
         entity.setNextAttemptAt(nextAttemptAt);
@@ -255,6 +233,7 @@ public class OutboxStore {
         getEntityManager().merge(entity);
     }
 
+    /** 标记死信：递增 attempts、设为 DEAD_LETTER、写入 last_error。 */
     public void markDeadLetter(OutboxEntryEntity entity, String lastError) {
         entity.setAttempts(entity.getAttempts() + 1);
         entity.setStatus(OutboxEntryStatus.DEAD_LETTER);
@@ -263,15 +242,9 @@ public class OutboxStore {
     }
 
     /**
-     * Bulk-promotes every {@link OutboxEntryStatus#QUEUED queued} row
-     * in the given kind whose {@code createdAt} is older than the
-     * supplied cutoff to {@code DEAD_LETTER}. Used by the drainer as a
-     * backstop so rows that get stuck in PENDING/HELD eventually
-     * graduate to a terminal state and are caught by the dead-letter
-     * retention purge.
-     *
-     * <p>Does not bump {@code attempts}: these rows didn't actually
-     * retry, they aged out. The {@code last_error} captures the reason.
+     * 批量将 {@code createdAt} 早于 cutoff 的 {@link OutboxEntryStatus#QUEUED queued} 行
+     * 提升为 {@code DEAD_LETTER}，作为 drainer 兜底，避免 PENDING/HELD 行永久滞留。
+     * <p>不递增 {@code attempts}——这些行并非真正重试失败，原因写入 {@code last_error}。</p>
      */
     public int promoteStaleQueuedToDeadLetter(String entryKind, Instant cutoff, String reason) {
         Objects.requireNonNull(entryKind, "entryKind");
@@ -286,23 +259,27 @@ public class OutboxStore {
                 .executeUpdate();
     }
 
-    // -- Stats (admin endpoints) -------------------------------------------
+    // -- 统计（管理端点） -------------------------------------------
 
+    /** 按 realm 统计各状态行数。 */
     public Map<OutboxEntryStatus, Long> countStatusesForRealm(String entryKind, String realmId) {
         return groupedCountQuery("OutboxEntryEntity.countByEntryKindRealmAndStatus",
                 entryKind, "realmId", realmId);
     }
 
+    /** 按 owner 统计各状态行数。 */
     public Map<OutboxEntryStatus, Long> countStatusesForOwner(String entryKind, String ownerId) {
         return groupedCountQuery("OutboxEntryEntity.countByEntryKindOwnerAndStatus",
                 entryKind, "ownerId", ownerId);
     }
 
+    /** 按 realm 查询各状态下最旧的 createdAt。 */
     public Map<OutboxEntryStatus, Instant> oldestCreatedAtPerStatusForRealm(String entryKind, String realmId) {
         return groupedInstantQuery("OutboxEntryEntity.oldestCreatedAtByEntryKindRealmAndStatus",
                 entryKind, "realmId", realmId);
     }
 
+    /** 按 owner 查询各状态下最旧的 createdAt。 */
     public Map<OutboxEntryStatus, Instant> oldestCreatedAtPerStatusForOwner(String entryKind, String ownerId) {
         return groupedInstantQuery("OutboxEntryEntity.oldestCreatedAtByEntryKindOwnerAndStatus",
                 entryKind, "ownerId", ownerId);
@@ -342,15 +319,13 @@ public class OutboxStore {
         return oldest;
     }
 
-    // -- Receiver-driven reads (POLL) --------------------------------------
+    // -- 接收方驱动读（POLL） --------------------------------------
 
     /**
-     * Locks up to {@code limit} PENDING rows for a receiver-driven
-     * read (e.g. SSF POLL). Uses {@code FOR UPDATE SKIP LOCKED} so a
-     * concurrent receiver request to the same owner doesn't block.
-     * Unlike {@link #lockDueForDrain(String, int)} this does not gate
-     * on {@code next_attempt_at} — receiver-pulled rows are served
-     * on demand regardless of any backoff schedule.
+     * 为接收方拉取（如 SSF POLL）锁定最多 {@code limit} 条 PENDING 行。
+     * 使用 {@code FOR UPDATE SKIP LOCKED}，并发请求同一 owner 时不阻塞。
+     * 与 {@link #lockDueForDrain(String, int)} 不同，不检查 {@code next_attempt_at}——
+     * 接收方按需拉取，不受退避 schedule 限制。
      */
     public List<OutboxEntryEntity> lockPendingForOwner(String entryKind, String ownerId, int limit) {
         Objects.requireNonNull(entryKind, "entryKind");
@@ -374,9 +349,7 @@ public class OutboxStore {
     }
 
     /**
-     * Counts an owner's rows in a given status. Used by receiver-driven
-     * read paths to decide whether to advertise more available items
-     * after returning a short batch.
+     * 统计某 owner 在指定状态下的行数，供接收方在返回短批次后判断是否还有更多条目。
      */
     public long countForOwnerByStatus(String entryKind, String ownerId, OutboxEntryStatus status) {
         Objects.requireNonNull(entryKind, "entryKind");
@@ -391,14 +364,10 @@ public class OutboxStore {
     }
 
     /**
-     * Receiver-driven ACK for the supplied correlation ids. Matching
-     * PENDING rows owned by the given owner transition to DELIVERED.
-     * Idempotent and silently scoped: ids the receiver doesn't own
-     * (different owner) and ids already terminal don't appear in the
-     * lookup result, so no error and no leakage of row existence.
+     * 接收方 ACK：将匹配 correlationId 的 PENDING 行转为 DELIVERED。
+     * 幂等且静默限定范围——非本 owner 或已终端的行不会出现在结果中。
      *
-     * @return the set of correlation ids that were transitioned to
-     *         DELIVERED.
+     * @return 已转为 DELIVERED 的 correlationId 集合。
      */
     public Set<String> ackPendingForOwner(String entryKind, String ownerId, Collection<String> correlationIds) {
         Objects.requireNonNull(entryKind, "entryKind");
@@ -426,15 +395,11 @@ public class OutboxStore {
     }
 
     /**
-     * Receiver-driven NACK. Matching PENDING rows owned by the given
-     * owner transition to DEAD_LETTER carrying the receiver-supplied
-     * reason. For receiver-pulled flows, DEAD_LETTER is reached only
-     * via this explicit NACK path (no transmitter-side retry-exhaustion
-     * counter to bump). Idempotent and silently scoped, like
-     * {@link #ackPendingForOwner}.
+     * 接收方 NACK：匹配 PENDING 行转为 DEAD_LETTER 并携带原因。
+     * 接收方拉取流程中死信仅经此显式 NACK 路径到达（无发送方侧重试计数）。
+     * 幂等语义同 {@link #ackPendingForOwner}。
      *
-     * @return the set of correlation ids that were transitioned to
-     *         DEAD_LETTER.
+     * @return 已转为 DEAD_LETTER 的 correlationId 集合。
      */
     public Set<String> nackPendingForOwner(String entryKind, String ownerId, Map<String, String> reasonByCorrelationId) {
         Objects.requireNonNull(entryKind, "entryKind");
@@ -462,15 +427,14 @@ public class OutboxStore {
         return nacked;
     }
 
-    // -- Owner-scoped lifecycle (pause/resume/disable/migrate) -------------
+    // -- Owner 生命周期（暂停/恢复/禁用/迁移） -----------------------------
 
     /**
-     * Bulk-transitions every {@link OutboxEntryStatus#HELD HELD} row
-     * for the owner back to {@link OutboxEntryStatus#PENDING PENDING}
-     * with {@code next_attempt_at = now} so the drainer picks them up
-     * on its next tick. Symmetric to {@link #holdPendingForOwner}.
+     * 将 owner 下所有 {@link OutboxEntryStatus#HELD HELD} 行批量转回
+     * {@link OutboxEntryStatus#PENDING PENDING}，{@code next_attempt_at = now}，
+     * 供 drainer 下一 tick 处理。与 {@link #holdPendingForOwner} 对称。
      *
-     * @return the number of rows that transitioned out of HELD.
+     * @return 从 HELD 转出的行数。
      */
     public int releaseHeldForOwner(String entryKind, String ownerId) {
         Objects.requireNonNull(entryKind, "entryKind");
@@ -490,11 +454,10 @@ public class OutboxStore {
     }
 
     /**
-     * Bulk-transitions every PENDING row for the owner to HELD —
-     * "park" the queue when the upstream channel pauses (e.g. SSF
-     * stream paused / disabled).
+     * 将 owner 下所有 PENDING 行批量转为 HELD——上游通道暂停时“停放”队列
+     * （如 SSF stream paused/disabled）。
      *
-     * @return the number of rows that transitioned PENDING → HELD.
+     * @return PENDING → HELD 的行数。
      */
     public int holdPendingForOwner(String entryKind, String ownerId) {
         Objects.requireNonNull(entryKind, "entryKind");
@@ -513,10 +476,8 @@ public class OutboxStore {
     }
 
     /**
-     * Dead-letters every queued (PENDING + HELD) row for the owner
-     * with the supplied reason. Used when the upstream forbids
-     * holding (e.g. SSF stream disabled) and the rows must be
-     * discarded rather than parked.
+     * 将 owner 下所有 queued（PENDING + HELD）行死信化并写入原因。
+     * 用于上游禁止 hold（如 SSF stream disabled）时必须丢弃而非停放的场景。
      */
     public int deadLetterQueuedForOwner(String entryKind, String ownerId, String reason) {
         Objects.requireNonNull(entryKind, "entryKind");
@@ -537,15 +498,11 @@ public class OutboxStore {
     }
 
     /**
-     * Dead-letters queued rows for the owner whose {@code entryType}
-     * is not in {@code allowedTypes}. Used when the upstream narrows
-     * its accepted-type set (e.g. SSF receiver narrowing
-     * {@code events_requested}) so already-signed rows of dropped
-     * types stop being delivered without losing the audit trail.
-     *
-     * <p>If {@code allowedTypes} is empty, this method falls back to
-     * {@link #deadLetterQueuedForOwner} since SQL {@code NOT IN ()}
-     * is implementation-defined.
+     * 将 owner 下 {@code entryType} 不在 {@code allowedTypes} 中的 queued 行死信化。
+     * 用于上游收窄接受类型集（如 SSF receiver 缩小 {@code events_requested}），
+     * 使已签名但类型被剔除的行停止投递且保留审计轨迹。
+     * <p>{@code allowedTypes} 为空时回退 {@link #deadLetterQueuedForOwner}，
+     * 因 SQL {@code NOT IN ()} 语义因实现而异。</p>
      */
     public int deadLetterQueuedForOwnerNotMatchingTypes(String entryKind, String ownerId,
                                                         Collection<String> allowedTypes,
@@ -574,12 +531,10 @@ public class OutboxStore {
     }
 
     /**
-     * Migrates queued rows for the owner from one entryKind to another
-     * (e.g. SSF receiver flipping push ↔ poll). Terminal rows
-     * (DELIVERED, DEAD_LETTER) are left under the previous kind — they
-     * are audit / dedup artifacts of the old channel.
+     * 将 owner 下 queued 行从 currentKind 迁移到 newKind（如 SSF push ↔ poll 切换）。
+     * 终端行（DELIVERED、DEAD_LETTER）保留在原 kind 下作为审计/去重 artifact。
      *
-     * @return the number of rows whose entryKind was migrated.
+     * @return entryKind 被迁移的行数。
      */
     public int migrateEntryKindForOwner(String currentKind, String newKind, String ownerId) {
         Objects.requireNonNull(currentKind, "currentKind");
@@ -598,13 +553,15 @@ public class OutboxStore {
         return migrated;
     }
 
-    // -- Admin / cascade deletes -------------------------------------------
+    // -- 管理 / 级联删除 -------------------------------------------
 
+    /** 按 realm 删除指定 kind 的全部行。 */
     public int deleteByRealm(String entryKind, String realmId) {
         return scopedDelete("OutboxEntryEntity.deleteByEntryKindAndRealm",
                 entryKind, "realmId", realmId);
     }
 
+    /** 按 owner 删除指定 kind 的全部行。 */
     public int deleteByOwner(String entryKind, String ownerId) {
         return scopedDelete("OutboxEntryEntity.deleteByEntryKindAndOwner",
                 entryKind, "ownerId", ownerId);
@@ -657,9 +614,7 @@ public class OutboxStore {
     }
 
     /**
-     * Bulk-deletes every {@link OutboxEntryStatus#QUEUED queued} row
-     * in the realm. Single-DML counterpart used by the realm-scoped
-     * "purge queued" admin endpoint.
+     * 批量删除 realm 下全部 queued 行，供 realm 级“清空队列”管理端点使用。
      */
     public int deleteQueuedByRealm(String entryKind, String realmId) {
         Objects.requireNonNull(entryKind, "entryKind");
@@ -683,8 +638,9 @@ public class OutboxStore {
                 .executeUpdate();
     }
 
-    // -- Retention purges (drainer housekeeping) ---------------------------
+    // -- 保留清理（drainer housekeeping） ---------------------------
 
+    /** 删除 createdAt 早于 cutoff 的 DELIVERED 行。 */
     public int purgeDeliveredOlderThan(String entryKind, Instant cutoff) {
         Objects.requireNonNull(entryKind, "entryKind");
         Objects.requireNonNull(cutoff, "cutoff");
@@ -700,6 +656,7 @@ public class OutboxStore {
         return purged;
     }
 
+    /** 删除 createdAt 早于 cutoff 的 DEAD_LETTER 行。 */
     public int purgeDeadLetterOlderThan(String entryKind, Instant cutoff) {
         Objects.requireNonNull(entryKind, "entryKind");
         Objects.requireNonNull(cutoff, "cutoff");
@@ -715,8 +672,9 @@ public class OutboxStore {
         return purged;
     }
 
-    // -- Helpers -----------------------------------------------------------
+    // -- 辅助方法 -----------------------------------------------------------
 
+    /** 按命名查询执行 scoped DELETE。 */
     private int scopedDelete(String namedQuery, String entryKind, String scopeParam, String scopeValue) {
         Objects.requireNonNull(entryKind, "entryKind");
         Objects.requireNonNull(scopeValue, scopeParam);
@@ -728,9 +686,7 @@ public class OutboxStore {
     }
 
     /**
-     * Truncates an error message to the column width with an ellipsis
-     * marker. Returns {@code null} unchanged so an explicit "no error"
-     * value (used by {@code markDelivered}) survives.
+     * 将错误消息截断至列宽并追加省略号；{@code null} 原样返回（供 {@code markDelivered} 清空错误）。
      */
     protected String truncateError(String error) {
         if (error == null) {

@@ -18,14 +18,15 @@
 package org.keycloak.expiration.jpa;
 
 /**
- * A periodic task that removes expired entries from the database.
+ * 周期性从数据库删除过期条目的任务接口。
  * <p>
- * Instances are created via the {@link ExpirationTaskBuilder} and registered with the Keycloak
- * {@link org.keycloak.timer.TimerProvider} by calling {@link #schedule()}.
+ * 通过 {@link ExpirationTaskBuilder} 构建实例，并调用 {@link #schedule()} 注册到
+ * {@link org.keycloak.timer.TimerProvider}。
+ * </p>
  * <p>
- * Each invocation of {@link #run()} submits the cleanup work to an {@link java.util.concurrent.Executor}, ensuring the
- * timer thread is not blocked by long-running deletions. Concurrent runs are prevented by an internal guard: if a
- * previous run is still in progress, the new invocation is skipped.
+ * 每次 {@link #run()} 将清理工作提交到 {@link java.util.concurrent.Executor}，
+ * 避免长时间删除阻塞定时器线程；若前一次运行尚未结束，新触发会被跳过。
+ * </p>
  *
  * @see ExpirationTaskBuilder
  * @see ExpirationAction
@@ -33,13 +34,12 @@ package org.keycloak.expiration.jpa;
 public interface ExpirationTask extends Runnable {
 
     /**
-     * Registers this task with the {@link org.keycloak.timer.TimerProvider} to run periodically at the configured
-     * interval.
+     * 在配置的间隔周期内，将此任务注册到 {@link org.keycloak.timer.TimerProvider}。
      */
     void schedule();
 
     /**
-     * Returns a new {@link ExpirationTaskBuilder} to configure and build an {@link ExpirationTask}.
+     * 返回用于配置并构建 {@link ExpirationTask} 的构建器。
      */
     static ExpirationTaskBuilder builder() {
         return new ExpirationTaskBuilder();

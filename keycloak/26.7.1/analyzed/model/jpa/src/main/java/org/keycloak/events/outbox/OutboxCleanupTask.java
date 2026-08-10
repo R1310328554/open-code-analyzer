@@ -26,28 +26,25 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.jboss.logging.Logger;
 
 /**
- * Background cleanup task that drains outbox rows owned by a removed
- * realm or owner (e.g. receiver client). Runs in a single bounded
- * transaction so the admin's original removal transaction can commit
- * immediately instead of carrying a six-digit {@code DELETE} on its
- * back.
- *
- * <p>Submitted by a feature's lifecycle listener (e.g. SSF's
- * {@code RealmRemovedEvent} / {@code ClientRemovedEvent} handler) to
- * a Keycloak-managed executor. The task itself opens a fresh session
- * via {@link KeycloakModelUtils#runJobInTransaction} so it doesn't
- * inherit the caller's transaction or session lifecycle.
- *
- * <p>Crash safety: if the node running this task dies mid-flight, the
- * remaining rows are orphaned. That's bounded by the
- * {@code pendingMaxAge} backstop on the drainer for queued rows and
- * by the configured retention windows for terminal rows — orphan rows
- * eventually get swept either way.
+ * realm 或 owner（如接收方客户端）删除后的 outbox 行后台清理任务。
+ * <p>
+ * 在单次有界事务中批量删除，使管理员删除事务可立即提交，而不背负大规模 {@code DELETE}。
+ * </p>
+ * <p>
+ * 由特性生命周期监听器（如 SSF 的 {@code RealmRemovedEvent} / {@code ClientRemovedEvent}）
+ * 提交到 Keycloak 托管执行器。任务通过 {@link KeycloakModelUtils#runJobInTransaction}
+ * 开启新会话，不继承调用方事务。
+ * </p>
+ * <p>
+ * 崩溃安全：节点中途宕机时剩余行成为孤儿，由 drainer 的 {@code pendingMaxAge}
+ * 兜底或终端行保留策略最终清扫。
+ * </p>
  */
 public class OutboxCleanupTask implements Runnable {
 
     private static final Logger log = Logger.getLogger(OutboxCleanupTask.class);
 
+    /** 清理范围：整个 realm 或单个 owner。 */
     public enum Scope {
         REALM, OWNER
     }
@@ -86,10 +83,7 @@ public class OutboxCleanupTask implements Runnable {
                         entryKind, scope, key, deleted);
             }
         } catch (RuntimeException e) {
-            // Don't re-throw: the executor would log it as an
-            // uncaught exception. Orphan rows will be reaped by the
-            // drainer's retention purges or the pendingMaxAge
-            // backstop on a future tick.
+            // 不向上抛出：执行器会记为未捕获异常。孤儿行由 drainer 保留清理或 pendingMaxAge 兜底。
             log.warnf(e, "Outbox cleanup task failed. entryKind=%s scope=%s key=%s", entryKind, scope, key);
         }
     }

@@ -37,10 +37,11 @@ import org.jboss.logging.Logger;
 import static org.keycloak.executors.ExecutorsProvider.EXPIRATION_TASKS;
 
 /**
- * Shared utilities for configuring and bootstrapping {@link ExpirationTask} instances in provider factories.
+ * 在 Provider 工厂中配置与启动 {@link ExpirationTask} 的共享工具类。
  * <p>
- * Provides standard configuration keys ({@code expirationTaskIntervalSeconds}, {@code expirationTaskTimeoutSeconds}),
- * duration parsing, and executor lookup.
+ * 提供标准配置键（{@code expirationTaskIntervalSeconds}、{@code expirationTaskTimeoutSeconds}）、
+ * 时长解析及执行器查找。
+ * </p>
  */
 public final class ExpirationHelper {
 
@@ -53,17 +54,19 @@ public final class ExpirationHelper {
     private ExpirationHelper() {
     }
 
+    /** 读取过期清理任务的运行间隔（秒）。 */
     public static int getExpirationTaskInterval(Config.Scope config, Logger logger) {
         return parseDuration(config, logger, EXPIRATION_TASK_INTERVAL_KEY, DEFAULT_EXPIRATION_TASK_INTERVAL, "expiration task interval");
     }
 
+    /** 读取单次过期清理事务的超时时间（秒）。 */
     public static int getExpirationTaskTimeout(Config.Scope config, Logger logger) {
         return parseDuration(config, logger, EXPIRATION_TASK_TIMEOUT_KEY, DEFAULT_EXPIRATION_TASK_TIMEOUT, "expiration task timeout");
     }
 
     /**
-     * Reads and validates the maximum number of entries to remove per expiration batch from the provider configuration.
-     * Falls back to {@link ExpirationTaskBuilder#DEFAULT_MAX_REMOVAL} if not set or invalid.
+     * 从 Provider 配置读取每批最多删除条目数；未设置或无效时回退到
+     * {@link ExpirationTaskBuilder#DEFAULT_MAX_REMOVAL}。
      */
     public static int getExpirationTaskMaxRemoval(Config.Scope config, Logger logger) {
         var value = config.getInt(EXPIRATION_TASK_MAX_REMOVAL_KEY, ExpirationTaskBuilder.DEFAULT_MAX_REMOVAL);
@@ -74,16 +77,19 @@ public final class ExpirationHelper {
         return value;
     }
 
+    /** 过期任务依赖的执行器、定时器与服务器配置存储 Provider。 */
     public static Set<Class<? extends Provider>> dependsOn() {
         return Set.of(ExecutorsProvider.class, TimerProvider.class, ServerConfigStorageProvider.class);
     }
 
+    /** 从会话工厂获取专用于过期任务的线程池执行器。 */
     public static Executor expirationExecutor(KeycloakSessionFactory factory) {
         try (var session = factory.create()) {
             return session.getProvider(ExecutorsProvider.class).getExecutor(EXPIRATION_TASKS);
         }
     }
 
+    /** 向 Provider 配置构建器追加过期任务相关属性项。 */
     public static void addConfiguration(ProviderConfigurationBuilder builder, String what) {
         builder.property()
                 .name(EXPIRATION_TASK_INTERVAL_KEY)
@@ -105,12 +111,14 @@ public final class ExpirationHelper {
                 .add();
     }
 
+    /** 将过期任务运行参数写入运维信息 Map。 */
     public static void addToOperationalInfo(int interval, int timeout, int maxRemoval, Map<String, String> info) {
         info.put(EXPIRATION_TASK_INTERVAL_KEY, interval + " seconds");
         info.put(EXPIRATION_TASK_TIMEOUT_KEY, timeout + " seconds");
         info.put(EXPIRATION_TASK_MAX_REMOVAL_KEY, Integer.toString(maxRemoval));
     }
 
+    /** 解析配置中的时长字符串为秒数，无效时返回默认值并记录警告。 */
     private static int parseDuration(Config.Scope config, Logger logger, String key, int defaultValueSeconds, String what) {
         var duration = DurationConverter.parseDuration(config.get(key));
         if (duration == null) {

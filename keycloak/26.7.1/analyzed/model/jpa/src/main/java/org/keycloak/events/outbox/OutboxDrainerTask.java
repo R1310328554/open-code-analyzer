@@ -30,29 +30,21 @@ import org.keycloak.utils.KeycloakSessionUtil;
 import org.jboss.logging.Logger;
 
 /**
- * Drains the generic outbox for one registered {@code entryKind}: locks
- * due PENDING rows, hands them off to the kind's
- * {@link OutboxDeliveryHandler}, and transitions each row based on the
- * returned {@link OutboxDeliveryOutcome}.
- *
- * <p>One drainer instance per registered kind. Each is wrapped in a
- * {@code ClusterAwareScheduledTaskRunner} at scheduling time so in an
- * HA deployment only one node drains a given kind per interval, even
- * though every node schedules the timer.
- *
- * <p>Concurrency within a single tick is cheap because rows are locked
- * {@code PESSIMISTIC_WRITE} via {@code FOR UPDATE SKIP LOCKED} by the
- * store, and each row is transitioned to a terminal state (DELIVERED /
- * back to PENDING with a future {@code next_attempt_at} / DEAD_LETTER)
- * before the transaction commits.
- *
- * <p>Per-tick housekeeping after the drain pass:
+ * 针对一种 {@code entryKind} 的通用 outbox drainer：锁定到期 PENDING 行，
+ * 交给对应 {@link OutboxDeliveryHandler} 投递，并按 {@link OutboxDeliveryOutcome} 转换状态。
+ * <p>
+ * 每种 kind 一个 drainer 实例；调度时包装为 {@code ClusterAwareScheduledTaskRunner}，
+ * HA 部署中同一 interval 仅一个节点执行 drain。
+ * </p>
+ * <p>
+ * 单 tick 内并发成本低：store 通过 {@code FOR UPDATE SKIP LOCKED} 悲观加锁，
+ * 每行在提交前即进入终端态或带未来 {@code next_attempt_at} 的 PENDING。
+ * </p>
+ * <p>每 tick 在 drain 后的 housekeeping：</p>
  * <ul>
- *   <li>Promote rows whose {@code createdAt} is older than
- *       {@link OutboxConfig#pendingMaxAge()} to DEAD_LETTER (backstop
- *       so stuck rows can't sit forever).</li>
- *   <li>Purge DELIVERED rows past {@link OutboxConfig#deliveredRetention()}.</li>
- *   <li>Purge DEAD_LETTER rows past {@link OutboxConfig#deadLetterRetention()}.</li>
+ *   <li>将 {@code createdAt} 超过 {@link OutboxConfig#pendingMaxAge()} 的行提升为 DEAD_LETTER。</li>
+ *   <li>清理超过 {@link OutboxConfig#deliveredRetention()} 的 DELIVERED 行。</li>
+ *   <li>清理超过 {@link OutboxConfig#deadLetterRetention()} 的 DEAD_LETTER 行。</li>
  * </ul>
  */
 public class OutboxDrainerTask implements ScheduledTask {
@@ -78,9 +70,7 @@ public class OutboxDrainerTask implements ScheduledTask {
 
     @Override
     public void run(KeycloakSession session) {
-        // Publish the drainer's KeycloakSession into the thread-local
-        // so handler collaborators that haven't been refactored to
-        // take an explicit session parameter still resolve correctly.
+        // 将 drainer 的 KeycloakSession 放入线程局部变量，供尚未重构为显式 session 参数的协作者使用。
         KeycloakSession previous = KeycloakSessionUtil.getKeycloakSession();
         KeycloakSessionUtil.setKeycloakSession(session);
         try {
@@ -94,6 +84,7 @@ public class OutboxDrainerTask implements ScheduledTask {
         }
     }
 
+    /** 锁定并处理一批到期行。 */
     protected void drain(KeycloakSession session, OutboxStore store) {
         List<OutboxEntryEntity> due = store.lockDueForDrain(config.entryKind(), config.batchSize());
         if (due.isEmpty()) {
@@ -105,6 +96,7 @@ public class OutboxDrainerTask implements ScheduledTask {
         }
     }
 
+    /** 对单行调用 handler 并应用状态转换。 */
     protected void processOne(KeycloakSession session, OutboxStore store, OutboxEntryEntity row) {
         OutboxDeliveryResult result;
         try {
@@ -145,6 +137,7 @@ public class OutboxDrainerTask implements ScheduledTask {
         }
     }
 
+    /** 调度重试或次数耗尽时转入死信。 */
     protected void handleRetry(OutboxStore store, OutboxEntryEntity row, String errorMessage) {
         int nextAttempts = row.getAttempts() + 1;
         String reason = errorMessage != null ? errorMessage : "delivery failed";
@@ -160,6 +153,7 @@ public class OutboxDrainerTask implements ScheduledTask {
         store.recordFailure(row, nextAttemptAt, reason);
     }
 
+    /** 将滞留过久的 QUEUED 行提升为 DEAD_LETTER。 */
     protected void promoteStaleQueuedToDeadLetter(OutboxStore store) {
         Duration pendingMaxAge = config.pendingMaxAge();
         if (pendingMaxAge == null || pendingMaxAge.isZero() || pendingMaxAge.isNegative()) {
@@ -174,6 +168,7 @@ public class OutboxDrainerTask implements ScheduledTask {
         }
     }
 
+    /** 按 deliveredRetention 清理已投递行。 */
     protected void purgeDeliveredOlderThanRetention(OutboxStore store) {
         Duration retention = config.deliveredRetention();
         if (retention == null || retention.isZero() || retention.isNegative()) {
@@ -182,6 +177,7 @@ public class OutboxDrainerTask implements ScheduledTask {
         store.purgeDeliveredOlderThan(config.entryKind(), Instant.now().minus(retention));
     }
 
+    /** 按 deadLetterRetention 清理死信行。 */
     protected void purgeDeadLetterOlderThanRetention(OutboxStore store) {
         Duration retention = config.deadLetterRetention();
         if (retention == null || retention.isZero() || retention.isNegative()) {

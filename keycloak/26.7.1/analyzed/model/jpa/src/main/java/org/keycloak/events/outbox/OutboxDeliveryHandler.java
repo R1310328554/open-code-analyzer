@@ -20,50 +20,39 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.jpa.entities.OutboxEntryEntity;
 
 /**
- * Per-kind plug-in that knows how to actually deliver an
- * {@link OutboxEntryEntity}'s payload to its destination. The drainer
- * is generic — for each due row it calls {@link #deliver(KeycloakSession, OutboxEntryEntity)}
- * and transitions the row based on the returned {@link OutboxDeliveryResult}.
- *
- * <p>One handler per registered {@code entryKind}; the drainer locates
- * a handler by the row's {@code entryKind} value. Implementations are
- * free to interpret the {@code payload} and {@code metadata} columns
- * however they like — the store treats both as opaque text.
- *
- * <p>Synchronous by design — the handler returns when delivery has
- * either succeeded, failed retryably, or failed terminally. Long-poll
- * or fire-and-forget delivery semantics should be modelled by
- * returning {@link OutboxDeliveryResult#delivered()} as soon as the
- * payload has been handed off (e.g. enqueued in an external broker).
+ * 按 {@code entryKind} 注册的投递插件：将 {@link OutboxEntryEntity} 载荷送达目的地。
+ * <p>
+ * drainer 为通用组件；对每条到期行调用 {@link #deliver(KeycloakSession, OutboxEntryEntity)}，
+ * 并根据返回的 {@link OutboxDeliveryResult} 转换行状态。
+ * </p>
+ * <p>
+ * 每种 kind 一个 handler；drainer 按行的 {@code entryKind} 查找。
+ * {@code payload} 与 {@code metadata} 列对 store 均为不透明文本。
+ * </p>
+ * <p>
+ * 同步设计——handler 在成功、可重试失败或终端失败时返回。
+ * 长轮询或 fire-and-forget 语义应在载荷已移交（如写入外部 broker）后
+ * 即返回 {@link OutboxDeliveryResult#delivered()}。
+ * </p>
  */
 public interface OutboxDeliveryHandler {
 
     /**
-     * The {@code entryKind} this handler is responsible for. Must
-     * match the {@code entry_kind} column of every row this handler
-     * will be invoked for; the drainer uses this to map locked rows
-     * back to a handler.
+     * 本 handler 负责的 {@code entryKind}，须与所处理行的 {@code entry_kind} 一致。
      */
     String entryKind();
 
     /**
-     * Attempts delivery for one outbox row. The drainer holds a
-     * pessimistic write lock on the row for the duration of the call;
-     * implementations should keep the call bounded (no indefinite
-     * blocking) and avoid touching unrelated database rows so the
-     * lock window stays tight.
-     *
-     * <p>Implementations may throw {@link RuntimeException}; the
-     * drainer treats an uncaught exception as
-     * {@link OutboxDeliveryOutcome#RETRY} and records the exception
-     * class + message in {@code last_error}.
-     *
-     * <p>The returned {@link OutboxDeliveryResult}'s
-     * {@code errorMessage} (if any) is persisted into the row's
-     * {@code last_error} column. Handlers should pack as much
-     * diagnostic detail (HTTP status, response body excerpt, exception
-     * class) into that single string as fits the column
-     * ({@code VARCHAR(2048)}).
+     * 尝试投递单行。drainer 在调用期间持有悲观写锁；实现应避免无限阻塞，
+     * 并尽量不触碰无关数据库行以缩短锁持有时间。
+     * <p>
+     * 未捕获的 {@link RuntimeException} 视为 {@link OutboxDeliveryOutcome#RETRY}，
+     * 异常类名与消息写入 {@code last_error}。
+     * </p>
+     * <p>
+     * 返回结果的 {@code errorMessage}（若有）持久化到 {@code last_error}
+     * （{@code VARCHAR(2048)}），应尽可能包含 HTTP 状态、响应片段等诊断信息。
+     * </p>
      */
     OutboxDeliveryResult deliver(KeycloakSession session, OutboxEntryEntity row);
 }

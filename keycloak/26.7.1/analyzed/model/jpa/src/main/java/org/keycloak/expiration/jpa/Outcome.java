@@ -18,25 +18,25 @@
 package org.keycloak.expiration.jpa;
 
 /**
- * The outcome of an expiration task execution.
+ * 过期清理任务一次执行的结果枚举。
  * <p>
- * Used by {@link ExpirationListener} to report the result of a cleanup run to listeners and metrics.
+ * 由 {@link ExpirationListener} 用于向监听器与指标系统报告清理结果。
+ * </p>
  */
 public enum Outcome {
 
     /**
-     * All batches completed successfully.
+     * 所有批次均成功完成。
      */
     OK,
 
     /**
-     * At least one batch completed successfully before a failure occurred. Some expired entries were removed, but the
-     * cleanup did not finish.
+     * 至少有一个批次成功，随后发生失败；部分过期条目已删除，但清理未完全结束。
      */
     PARTIAL,
 
     /**
-     * The first batch failed. No expired entries were removed.
+     * 首个批次即失败，未删除任何过期条目。
      */
     FAILED
 }

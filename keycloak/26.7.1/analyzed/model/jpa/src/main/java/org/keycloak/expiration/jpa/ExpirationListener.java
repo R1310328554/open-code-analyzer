@@ -20,10 +20,11 @@ package org.keycloak.expiration.jpa;
 import java.time.Duration;
 
 /**
- * A listener notified after each expiration task run.
+ * 过期清理任务每次运行结束后的回调监听器。
  * <p>
- * Implementations can use this callback for logging, alerting, or custom metrics. The built-in Micrometer metrics
- * listener is registered automatically when metrics are enabled via {@link ExpirationTaskBuilder#withMetrics(boolean)}.
+ * 可用于日志、告警或自定义指标。启用指标时，可通过
+ * {@link ExpirationTaskBuilder#withMetrics(boolean)} 自动注册内置 Micrometer 监听器。
+ * </p>
  *
  * @see ExpirationTaskBuilder#withListener(ExpirationListener)
  */
@@ -31,12 +32,12 @@ import java.time.Duration;
 public interface ExpirationListener {
 
     /**
-     * Called after an expiration task run completes for a given scope (global or per-realm).
+     * 某次过期清理（全局或按 realm）完成后被调用。
      *
-     * @param realmId  the realm that was cleaned up, or {@code null} for non-realm-aware expiration tasks.
-     * @param outcome  the outcome of the task run.
-     * @param removed  the total number of expired entries removed across all batches.
-     * @param duration the wall-clock duration of the task run.
+     * @param realmId  被清理的 realm ID；非 realm 感知任务时为 {@code null}。
+     * @param outcome  本次任务执行结果。
+     * @param removed  所有批次合计删除的过期条目数。
+     * @param duration 任务运行的墙钟耗时。
      */
     void onTaskRun(String realmId, Outcome outcome, int removed, Duration duration);
 }

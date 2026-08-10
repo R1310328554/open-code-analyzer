@@ -17,27 +17,24 @@
 package org.keycloak.events.outbox;
 
 /**
- * Per-row result of an {@link OutboxDeliveryHandler#deliver} invocation.
- * The drainer maps each outcome to a row transition:
- *
+ * {@link OutboxDeliveryHandler#deliver} 单次调用的逐行结果枚举。
+ * <p>drainer 将各 outcome 映射为行状态转换：</p>
  * <ul>
- *   <li>{@link #DELIVERED} → status {@code DELIVERED}, {@code deliveredAt} stamped.</li>
- *   <li>{@link #RETRY} → attempts++, {@code next_attempt_at} pushed forward
- *       per the kind's backoff curve. Promoted to {@link #DEAD_LETTER} once
- *       attempts are exhausted.</li>
- *   <li>{@link #DEAD_LETTER} → terminal failure regardless of remaining
- *       attempt budget (e.g. permanent destination error). Status set to
- *       {@code DEAD_LETTER} immediately.</li>
- *   <li>{@link #ORPHANED} → handler decided the row is no longer
- *       deliverable because the destination doesn't exist (e.g. the
- *       receiver client was deleted). Treated as a non-retryable
- *       terminal failure and recorded distinctly in metrics so
- *       operators can spot stream/owner leakage.</li>
+ *   <li>{@link #DELIVERED} → 状态 {@code DELIVERED}，写入 {@code deliveredAt}。</li>
+ *   <li>{@link #RETRY} → {@code attempts++}，按 kind 退避曲线推进 {@code next_attempt_at}；
+ *       次数耗尽后升为 {@link #DEAD_LETTER}。</li>
+ *   <li>{@link #DEAD_LETTER} → 无论剩余重试预算，立即标记为终端失败（如永久目的地错误）。</li>
+ *   <li>{@link #ORPHANED} → 目的地已不存在（如接收方客户端被删），作为不可重试的终端失败，
+ *       指标中单独统计以便发现 stream/owner 泄漏。</li>
  * </ul>
  */
 public enum OutboxDeliveryOutcome {
+    /** 投递成功。 */
     DELIVERED,
+    /** 可重试的失败。 */
     RETRY,
+    /** 不可重试的终端失败。 */
     DEAD_LETTER,
+    /** 目的地已消失导致的孤儿行。 */
     ORPHANED
 }
