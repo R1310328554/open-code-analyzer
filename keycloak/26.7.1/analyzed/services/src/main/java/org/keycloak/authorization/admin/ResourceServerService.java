@@ -51,6 +51,9 @@ import static org.keycloak.models.utils.ModelToRepresentation.toRepresentation;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
+/**
+ * 客户端资源服务器管理端点：生命周期 CRUD 及授权配置导入导出。
+ */
 public class ResourceServerService {
 
     private final AuthorizationProvider authorization;
@@ -60,6 +63,7 @@ public class ResourceServerService {
     private ResourceServer resourceServer;
     private final ClientModel client;
 
+    /** 构造资源服务器管理服务。 */
     public ResourceServerService(AuthorizationProvider authorization, ResourceServer resourceServer, ClientModel client, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.authorization = authorization;
         this.session = authorization.getKeycloakSession();
@@ -69,6 +73,7 @@ public class ResourceServerService {
         this.adminEvent = adminEvent;
     }
 
+    /** 为客户端创建资源服务器（需服务账户用户）。 */
     public ResourceServer create(boolean newClient) {
         AdminPermissionsSchema.SCHEMA.throwExceptionIfAdminPermissionClient(session, client.getId());
 
@@ -92,6 +97,7 @@ public class ResourceServerService {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @APIResponse(responseCode = "204", description = "No Content")
+    /** 更新资源服务器策略执行模式、决策策略等设置。 */
     public Response update(ResourceServerRepresentation server) {
         AdminPermissionsSchema.SCHEMA.throwExceptionIfAdminPermissionClient(session, client.getId());
 
@@ -103,11 +109,12 @@ public class ResourceServerService {
         return Response.noContent().build();
     }
 
+    /** 删除资源服务器及其全部授权数据。 */
     public void delete() {
         AdminPermissionsSchema.SCHEMA.throwExceptionIfAdminPermissionClient(session, client.getId());
 
         this.auth.realm().requireManageAuthorization(resourceServer);
-        //need to create representation before the object is deleted to be able to get lazy loaded fields
+        // 删除前生成表示以访问懒加载字段
         ResourceServerRepresentation rep = ModelToRepresentation.toRepresentation(resourceServer, client);
         authorization.getStoreFactory().getResourceServerStore().delete(client);
         audit(rep, OperationType.DELETE, session.getContext().getUri(), false);
@@ -115,6 +122,7 @@ public class ResourceServerService {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    /** @return 当前资源服务器表示 */
     public ResourceServerRepresentation findById() {
         this.auth.realm().requireViewAuthorization(resourceServer);
         return toRepresentation(this.resourceServer, this.client);
@@ -123,6 +131,7 @@ public class ResourceServerService {
     @Path("/settings")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    /** 导出完整授权设置（含资源、策略等）。 */
     public ResourceServerRepresentation exportSettings() {
         AdminPermissionsSchema.SCHEMA.throwExceptionIfAdminPermissionClient(session, client.getId());
         this.auth.realm().requireManageAuthorization(resourceServer);
@@ -133,6 +142,7 @@ public class ResourceServerService {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @APIResponse(responseCode = "204", description = "No Content")
+    /** 从表示导入并覆盖授权配置。 */
     public Response importSettings(ResourceServerRepresentation rep) {
         AdminPermissionsSchema.SCHEMA.throwExceptionIfAdminPermissionClient(session, client.getId());
         this.auth.realm().requireManageAuthorization(resourceServer);
@@ -147,26 +157,31 @@ public class ResourceServerService {
     }
 
     @Path("/resource")
+    /** @return 受保护资源集合管理子 API */
     public ResourceSetService getResourceSetResource() {
         return new ResourceSetService(this.session, this.resourceServer, this.authorization, this.auth, adminEvent);
     }
 
     @Path("/scope")
+    /** @return 作用域管理子 API */
     public ScopeService getScopeResource() {
         return new ScopeService(this.session, this.resourceServer, this.authorization, this.auth, adminEvent);
     }
 
     @Path("/policy")
+    /** @return 策略管理子 API */
     public PolicyService getPolicyResource() {
         return new PolicyService(this.resourceServer, this.authorization, this.auth, adminEvent);
     }
 
     @Path("/permission")
+    /** @return 权限（Permission）管理子 API */
     public PermissionService getPermissionTypeResource() {
         this.auth.realm().requireViewAuthorization(resourceServer);
         return new PermissionService(this.resourceServer, this.authorization, this.auth, adminEvent);
     }
 
+    /** 记录资源服务器管理审计事件。 */
     private void audit(ResourceServerRepresentation rep, OperationType operation, UriInfo uriInfo, boolean newClient) {
         if (newClient) {
             adminEvent.resource(ResourceType.AUTHORIZATION_RESOURCE_SERVER).operation(operation).resourcePath(uriInfo, client.getId())

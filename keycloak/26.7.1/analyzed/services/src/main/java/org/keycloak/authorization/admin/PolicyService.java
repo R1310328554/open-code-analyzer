@@ -78,6 +78,9 @@ import org.jboss.resteasy.reactive.NoCache;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
+/**
+ * 资源服务器策略集合 REST API：支持按类型/资源/作用域等条件搜索与创建。
+ */
 public class PolicyService {
 
     protected final ResourceServer resourceServer;
@@ -85,6 +88,7 @@ public class PolicyService {
     protected final AdminPermissionEvaluator auth;
     protected final AdminEventBuilder adminEvent;
 
+    /** 构造策略管理服务。 */
     public PolicyService(ResourceServer resourceServer, AuthorizationProvider authorization, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.resourceServer = resourceServer;
         this.authorization = authorization;
@@ -93,6 +97,7 @@ public class PolicyService {
     }
 
     @Path("{type}")
+    /** 按策略类型或策略 ID 路由到类型服务或实例资源。 */
     public Object getResource(@PathParam("type") String type) {
         PolicyProviderFactory providerFactory = getPolicyProviderFactory(type);
 
@@ -110,10 +115,12 @@ public class PolicyService {
         return doCreatePolicyResource(policy);
     }
 
+    /** @return 指定类型的策略列表服务 */
     protected PolicyTypeService doCreatePolicyTypeResource(String type) {
         return new PolicyTypeService(type, resourceServer, authorization, auth, adminEvent);
     }
 
+    /** @return 单个策略实例资源服务 */
     protected Object doCreatePolicyResource(Policy policy) {
         return new PolicyResourceService(policy, resourceServer, authorization, auth, adminEvent);
     }
@@ -123,6 +130,7 @@ public class PolicyService {
     @Produces(MediaType.APPLICATION_JSON)
     @NoCache
     @APIResponse(responseCode = "201", description = "Created")
+    /** 创建新策略并返回 201 及表示。 */
     public Response create(String payload) {
         if (auth != null) {
             this.auth.realm().requireManageAuthorization(resourceServer);
@@ -152,6 +160,7 @@ public class PolicyService {
         return representation;
     }
 
+    /** 持久化策略模型；名称冲突时抛出 409。 */
     public Policy create(AbstractPolicyRepresentation representation) {
         PolicyStore policyStore = authorization.getStoreFactory().getPolicyStore();
         Policy existing = policyStore.findByName(resourceServer, representation.getName());
@@ -177,6 +186,7 @@ public class PolicyService {
         @APIResponse(responseCode = "204", description = "No Content"),
         @APIResponse(responseCode = "400", description = "Bad Request")
     })
+    /** 按名称精确查询策略。 */
     public Response findByName(@QueryParam("name") String name, @QueryParam("fields") String fields) {
         if (auth != null) {
             this.auth.realm().requireViewAuthorization(resourceServer);
@@ -207,6 +217,7 @@ public class PolicyService {
         ),
         @APIResponse(responseCode = "204", description = "No Content")
     })
+    /** 多条件分页搜索策略列表。 */
     public Response findAll(@QueryParam("policyId") String id,
                             @QueryParam("name") String name,
                             @QueryParam("type") String type,
@@ -306,6 +317,7 @@ public class PolicyService {
         return ModelToRepresentation.toRepresentation(model, authorization, true, false, fields != null && fields.equals("*"));
     }
 
+    /** 执行策略存储查询并转换为表示列表。 */
     protected List<Object> doSearch(Integer firstResult, Integer maxResult, String fields, Map<Policy.FilterOption, String[]> filters) {
         PolicyStore policyStore = authorization.getStoreFactory().getPolicyStore();
         return policyStore.find(resourceServer, filters, firstResult != null ? firstResult : -1, maxResult != null ? maxResult : Constants.DEFAULT_MAX_RESULTS).stream()
@@ -321,6 +333,7 @@ public class PolicyService {
         responseCode = "200",
         content = @Content(schema = @Schema(implementation = PolicyProviderRepresentation.class, type = SchemaType.ARRAY))
     )
+    /** @return 非内部策略 Provider 类型列表 */
     public Response findPolicyProviders() {
         if (auth != null) {
             this.auth.realm().requireViewAuthorization(resourceServer);
@@ -345,6 +358,7 @@ public class PolicyService {
     }
 
     @Path("evaluate")
+    /** @return 策略评估子资源 */
     public PolicyEvaluationService getPolicyEvaluateResource() {
         if (auth != null) {
             this.auth.realm().requireViewAuthorization(resourceServer);
@@ -369,6 +383,7 @@ public class PolicyService {
         }
     }
 
+    /** 校验策略类型是否受当前 FGAP 特性支持。 */
     private void checkIfSupportedPolicyType(String type) throws BadRequestException {
         if (AdminPermissionsSchema.SCHEMA.isSupportedPolicyType(authorization.getKeycloakSession(), resourceServer, type)) {
             return;

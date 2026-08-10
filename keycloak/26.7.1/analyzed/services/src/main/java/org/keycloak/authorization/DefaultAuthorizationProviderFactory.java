@@ -28,11 +28,16 @@ import org.keycloak.models.RealmModel;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
+/**
+ * SPI 工厂实现，Provider ID 为 {@code authorization}。
+ */
 public class DefaultAuthorizationProviderFactory implements AuthorizationProviderFactory {
 
+    /** 默认策略评估器实例。 */
     private PolicyEvaluator policyEvaluator = new DefaultPolicyEvaluator();
 
     @Override
+    /** 为当前会话上下文领域创建授权 Provider。 */
     public AuthorizationProvider create(KeycloakSession session) {
         return create(session, session.getContext().getRealm());
     }
@@ -51,11 +56,13 @@ public class DefaultAuthorizationProviderFactory implements AuthorizationProvide
     }
 
     @Override
+    /** @return Provider ID：authorization */
     public String getId() {
         return "authorization";
     }
 
     @Override
+    /** 为指定领域创建 {@link AuthorizationProvider}。 */
     public AuthorizationProvider create(KeycloakSession session, RealmModel realm) {
         return new AuthorizationProvider(session, realm, policyEvaluator);
     }

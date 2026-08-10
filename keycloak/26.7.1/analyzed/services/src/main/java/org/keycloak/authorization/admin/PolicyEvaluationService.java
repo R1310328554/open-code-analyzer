@@ -92,14 +92,19 @@ import org.jboss.logging.Logger;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
+/**
+ * 管理 API 策略评估端点：根据 {@link PolicyEvaluationRequest} 构建身份与权限并执行评估。
+ */
 public class PolicyEvaluationService {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(PolicyEvaluationService.class);
 
     private final AuthorizationProvider authorization;
     private final AdminPermissionEvaluator auth;
     private final ResourceServer resourceServer;
 
+    /** 包级构造：绑定资源服务器与授权上下文。 */
     PolicyEvaluationService(ResourceServer resourceServer, AuthorizationProvider authorization, AdminPermissionEvaluator auth) {
         this.resourceServer = resourceServer;
         this.authorization = authorization;
@@ -116,6 +121,7 @@ public class PolicyEvaluationService {
         ),
         @APIResponse(responseCode = "500", description = "Internal Server Error")
     })
+    /** 执行策略评估并返回 {@link PolicyEvaluationResponse}。 */
     public Response evaluate(PolicyEvaluationRequest evaluationRequest) {
         this.auth.realm().requireViewAuthorization(resourceServer);
         CloseableKeycloakIdentity identity = createIdentity(evaluationRequest);
@@ -146,6 +152,7 @@ public class PolicyEvaluationService {
         }
     }
 
+    /** 构建权限列表并调用策略评估器收集决策。 */
     private EvaluationDecisionCollector evaluate(PolicyEvaluationRequest evaluationRequest, EvaluationContext evaluationContext, AuthorizationRequest request) {
         List<ResourcePermission> permissions = createPermissions(evaluationRequest, evaluationContext, authorization, request);
         EvaluationDecisionCollector decision = new EvaluationDecisionCollector(authorization, resourceServer, request);
@@ -160,6 +167,7 @@ public class PolicyEvaluationService {
         return authorization.evaluators().from(permissions, resourceServer, evaluationContext).evaluate(decision);
     }
 
+    /** 合并请求上下文属性到评估上下文。 */
     private EvaluationContext createEvaluationContext(PolicyEvaluationRequest representation, KeycloakIdentity identity) {
         return new DefaultEvaluationContext(identity, this.authorization.getKeycloakSession()) {
             @Override
@@ -183,6 +191,7 @@ public class PolicyEvaluationService {
         };
     }
 
+    /** 将请求中的资源/作用域解析为 {@link ResourcePermission} 列表。 */
     private List<ResourcePermission> createPermissions(PolicyEvaluationRequest representation, EvaluationContext evaluationContext, AuthorizationProvider authorization, AuthorizationRequest request) {
         List<ResourceRepresentation> requestedResources = representation.getResources();
 
@@ -272,6 +281,7 @@ public class PolicyEvaluationService {
         }).collect(Collectors.toList());
     }
 
+    /** 可关闭的 Keycloak 身份：评估结束后移除临时用户会话。 */
     private static class CloseableKeycloakIdentity extends KeycloakIdentity {
         private UserSessionModel userSession;
 
@@ -280,6 +290,7 @@ public class PolicyEvaluationService {
             this.userSession = userSession;
         }
 
+        /** 清理评估过程中创建的临时用户会话。 */
         public void close() {
             if (userSession != null) {
                 keycloakSession.sessions().removeUserSession(realm, userSession);
@@ -288,6 +299,7 @@ public class PolicyEvaluationService {
         }
 
         @Override
+        /** 优先返回会话用户 ID，否则解析服务账户 ID。 */
         public String getId() {
             if (userSession != null) {
                 return super.getId();
@@ -307,6 +319,7 @@ public class PolicyEvaluationService {
         }
     }
 
+    /** 根据评估请求构建访问令牌与可选用户会话。 */
     private CloseableKeycloakIdentity createIdentity(PolicyEvaluationRequest representation) {
         KeycloakSession keycloakSession = this.authorization.getKeycloakSession();
         RealmModel realm = keycloakSession.getContext().getRealm();
@@ -395,6 +408,7 @@ public class PolicyEvaluationService {
         return new CloseableKeycloakIdentity(accessToken, keycloakSession, userSession);
     }
 
+    /** 评估决策收集器：将授予结果标记为 PERMIT 并汇总策略结果。 */
     public static class EvaluationDecisionCollector extends DecisionPermissionCollector {
 
         public EvaluationDecisionCollector(AuthorizationProvider authorizationProvider, ResourceServer resourceServer, AuthorizationRequest request) {
@@ -402,6 +416,7 @@ public class PolicyEvaluationService {
         }
 
         @Override
+        /** 策略允许时将效果设为 PERMIT。 */
         protected boolean isGranted(Result.PolicyResult policyResult) {
             if (super.isGranted(policyResult)) {
                 policyResult.setEffect(Effect.PERMIT);
@@ -411,12 +426,14 @@ public class PolicyEvaluationService {
         }
 
         @Override
+        /** 授予权限时保留已批准的作用域子集。 */
         protected void grantPermission(AuthorizationProvider authorizationProvider, Set<Permission> permissions, ResourcePermission permission, Collection<Scope> grantedScopes, ResourceServer resourceServer, AuthorizationRequest request, Result result) {
             result.setStatus(Effect.PERMIT);
             result.getPermission().getScopes().retainAll(grantedScopes);
             super.grantPermission(authorizationProvider, permissions, permission, grantedScopes, resourceServer, request, result);
         }
 
+        /** @return 全部评估结果 */
         public Collection<Result> getResults() {
             return results.values();
         }

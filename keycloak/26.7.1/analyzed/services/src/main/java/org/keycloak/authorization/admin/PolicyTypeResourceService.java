@@ -30,13 +30,18 @@ import org.keycloak.util.JsonSerialization;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
+/**
+ * 扩展 {@link PolicyResourceService}：使用策略 Provider 的专用表示类解析请求体。
+ */
 public class PolicyTypeResourceService extends PolicyResourceService {
 
+    /** 构造类型化策略实例服务。 */
     public PolicyTypeResourceService(Policy policy, ResourceServer resourceServer, AuthorizationProvider authorization, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         super(policy, resourceServer, authorization, auth, adminEvent);
     }
 
     @Override
+    /** 按策略类型对应的表示类反序列化 JSON。 */
     protected AbstractPolicyRepresentation doCreateRepresentation(String payload) {
         String type = getPolicy().getType();
         Class<? extends AbstractPolicyRepresentation> representationType = authorization.getProviderFactory(type).getRepresentationType();
@@ -58,6 +63,7 @@ public class PolicyTypeResourceService extends PolicyResourceService {
         return representation;
     }
 
+    /** 转换为权限型表示（不含策略关联详情）。 */
     protected AbstractPolicyRepresentation toRepresentation(Policy policy, String fields, AuthorizationProvider authorization) {
         return ModelToRepresentation.toRepresentation(policy, authorization, false, false, fields != null && fields.equals("*"));
     }

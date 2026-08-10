@@ -36,16 +36,21 @@ import org.keycloak.util.JsonSerialization;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
+/**
+ * 单一策略类型的集合 API：自动注入 TYPE 过滤并挂载 Provider 管理端点。
+ */
 public class PolicyTypeService extends PolicyService {
 
     private final String type;
 
+    /** @param type 策略 Provider 类型 ID */
     public PolicyTypeService(String type, ResourceServer resourceServer, AuthorizationProvider authorization, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         super(resourceServer, authorization, auth, adminEvent);
         this.type = type;
     }
 
     @Path("/provider")
+    /** @return 策略 Provider 的管理 REST 子资源（若存在） */
     public Object getPolicyAdminResourceProvider() {
         PolicyProviderAdminService resource = getPolicyProviderAdminResource(type);
 
@@ -57,11 +62,13 @@ public class PolicyTypeService extends PolicyService {
     }
 
     @Override
+    /** @return {@link PolicyTypeResourceService} 实例 */
     protected Object doCreatePolicyResource(Policy policy) {
         return new PolicyTypeResourceService(policy, resourceServer,authorization, auth, adminEvent);
     }
 
     @Override
+    /** 使用 Provider 表示类型反序列化并设置策略类型。 */
     protected AbstractPolicyRepresentation doCreateRepresentation(String payload) {
         PolicyProviderFactory provider = getPolicyProviderFactory(type);
         Class<? extends AbstractPolicyRepresentation> representationType = provider.getRepresentationType();
@@ -91,6 +98,7 @@ public class PolicyTypeService extends PolicyService {
     }
 
     @Override
+    /** 搜索时强制限定当前策略类型。 */
     protected List<Object> doSearch(Integer firstResult, Integer maxResult, String fields, Map<Policy.FilterOption, String[]> filters) {
         filters.put(Policy.FilterOption.TYPE, new String[] {type});
         return super.doSearch(firstResult, maxResult, fields, filters);

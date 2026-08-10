@@ -56,6 +56,9 @@ import org.jboss.resteasy.reactive.NoCache;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
+/**
+ * 策略实例 CRUD 与关联查询 REST 端点。
+ */
 public class PolicyResourceService {
 
     private final Policy policy;
@@ -64,6 +67,7 @@ public class PolicyResourceService {
     protected final AdminPermissionEvaluator auth;
     private final AdminEventBuilder adminEvent;
 
+    /** 构造策略资源服务；策略不存在或不属于当前资源服务器时抛出 404。 */
     public PolicyResourceService(Policy policy, ResourceServer resourceServer, AuthorizationProvider authorization, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         if (policy == null || !policy.getResourceServer().equals(resourceServer)) {
             throw new NotFoundException();
@@ -79,6 +83,7 @@ public class PolicyResourceService {
     @Consumes("application/json")
     @Produces("application/json")
     @NoCache
+    /** 更新策略定义并记录管理审计事件。 */
     public Response update(String payload) {
         if (auth != null) {
             this.auth.realm().requireManageAuthorization(resourceServer);
@@ -103,6 +108,7 @@ public class PolicyResourceService {
     }
 
     @DELETE
+    /** 删除策略；删除前生成表示以供审计与 Provider 回调。 */
     public Response delete() {
         if (auth != null) {
             this.auth.realm().requireManageAuthorization(resourceServer);
@@ -116,7 +122,7 @@ public class PolicyResourceService {
         PolicyStore policyStore = storeFactory.getPolicyStore();
         PolicyProviderFactory resource = getProviderFactory(policy.getType());
 
-        //to be able to access all lazy loaded fields it's needed to create representation before it's deleted
+        // 删除前生成表示以访问全部懒加载字段
         AbstractPolicyRepresentation policyRep = toRepresentation(policy, authorization);
 
         if (resource != null) {
@@ -133,6 +139,7 @@ public class PolicyResourceService {
     @GET
     @Produces("application/json")
     @NoCache
+    /** 按 ID 查询策略表示。 */
     public Response findById(@QueryParam("fields") String fields) {
         if (auth != null) {
             this.auth.realm().requireViewAuthorization(resourceServer);
@@ -157,6 +164,7 @@ public class PolicyResourceService {
     @GET
     @Produces("application/json")
     @NoCache
+    /** @return 依赖本策略的其他策略列表 */
     public Response getDependentPolicies() {
         if (auth != null) {
             this.auth.realm().requireViewAuthorization(resourceServer);
@@ -183,6 +191,7 @@ public class PolicyResourceService {
     @GET
     @Produces("application/json")
     @NoCache
+    /** @return 策略关联的作用域列表 */
     public Response getScopes() {
         if (auth != null) {
             this.auth.realm().requireViewAuthorization(resourceServer);
@@ -206,6 +215,7 @@ public class PolicyResourceService {
     @GET
     @Produces("application/json")
     @NoCache
+    /** @return 策略关联的资源列表（含管理权限显示名） */
     public Response getResources() {
         if (auth != null) {
             this.auth.realm().requireViewAuthorization(resourceServer);
@@ -232,6 +242,7 @@ public class PolicyResourceService {
     @GET
     @Produces("application/json")
     @NoCache
+    /** @return 关联子策略列表 */
     public Response getAssociatedPolicies() {
         if (auth != null) {
             this.auth.realm().requireViewAuthorization(resourceServer);
@@ -253,6 +264,7 @@ public class PolicyResourceService {
         }).collect(Collectors.toList())).build();
     }
 
+    /** 反序列化 JSON 为 {@link PolicyRepresentation}。 */
     protected AbstractPolicyRepresentation doCreateRepresentation(String payload) {
         PolicyRepresentation representation;
 
@@ -269,10 +281,12 @@ public class PolicyResourceService {
         return authorization.getProviderFactory(policyType);
     }
 
+    /** @return 当前策略模型 */
     protected Policy getPolicy() {
         return policy;
     }
 
+    /** 记录策略管理审计事件。 */
     private void audit(AbstractPolicyRepresentation policy, OperationType operation) {
         adminEvent.operation(operation).resourcePath(authorization.getKeycloakSession().getContext().getUri()).representation(policy).success();
     }

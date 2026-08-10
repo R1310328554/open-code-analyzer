@@ -29,22 +29,31 @@ import org.keycloak.userprofile.UserProfileContext;
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
+/**
+ * {@link UserModel} 的 {@link UpdateProfileContext} 实现，用于 UPDATE_PROFILE 必需操作。
+ */
 public class UserUpdateProfileContext implements UpdateProfileContext {
 
     private final RealmModel realm;
     private final UserModel user;
 
+    /**
+     * @param realm 领域模型
+     * @param user 待更新用户
+     */
     public UserUpdateProfileContext(RealmModel realm, UserModel user) {
         this.realm = realm;
         this.user = user;
     }
     
     @Override
+    /** @return 领域是否允许编辑用户名 */
     public boolean isEditUsernameAllowed() {
         return realm.isEditUsernameAllowed();
     }
     
     @Override
+    /** @return {@link UserProfileContext#UPDATE_PROFILE} */
     public UserProfileContext getUserProfileContext() {
         return UserProfileContext.UPDATE_PROFILE;
     }
@@ -60,6 +69,7 @@ public class UserUpdateProfileContext implements UpdateProfileContext {
     }
 
     @Override
+    /** 启用 {@link UpdateEmail} 时禁止直接编辑邮箱。 */
     public boolean isEditEmailAllowed() {
         return !UpdateEmail.isEnabled(realm);
     }

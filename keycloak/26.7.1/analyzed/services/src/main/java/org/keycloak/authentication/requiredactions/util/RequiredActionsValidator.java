@@ -23,13 +23,17 @@ import org.keycloak.authentication.RequiredActionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
+/**
+ * 必需操作校验工具：验证给定必需操作 ID 列表是否均已在 SPI 中注册。
+ */
 public class RequiredActionsValidator {
     /**
-     * Validate provided required actions
+     * 校验必需操作 ID 列表是否全部有效。
      *
      * @param session         the {@code KeycloakSession}
      * @param requiredActions IDs of tested required actions
      */
+    /** @return 所有 ID 均存在对应 {@link RequiredActionProvider} 工厂时返回 {@code true} */
     public static boolean validRequiredActions(KeycloakSession session, List<String> requiredActions) {
         final KeycloakSessionFactory sessionFactory = session.getKeycloakSessionFactory();
 

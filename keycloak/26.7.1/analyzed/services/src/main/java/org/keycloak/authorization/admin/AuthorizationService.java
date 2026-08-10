@@ -35,6 +35,9 @@ import org.eclipse.microprofile.openapi.annotations.extensions.Extension;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
+/**
+ * 管理 API 授权根资源：按客户端挂载资源服务器及子服务。
+ */
 public class AuthorizationService {
 
     private final AdminPermissionEvaluator auth;
@@ -43,6 +46,12 @@ public class AuthorizationService {
     private final AuthorizationProvider authorization;
     private final AdminEventBuilder adminEvent;
 
+    /**
+     * @param session Keycloak 会话
+     * @param client 目标客户端
+     * @param auth 管理权限评估器
+     * @param adminEvent 管理事件构建器
+     */
     public AuthorizationService(KeycloakSession session, ClientModel client, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.client = client;
         this.authorization = session.getProvider(AuthorizationProvider.class);
@@ -51,6 +60,7 @@ public class AuthorizationService {
         this.auth = auth;
     }
 
+    /** @return 资源服务器管理子资源；未启用时抛出 404 */
     @Path("/resource-server")
     public ResourceServerService resourceServer() {
         if (resourceServer == null) {
@@ -60,22 +70,26 @@ public class AuthorizationService {
         return getResourceServerService();
     }
 
+    /** @return 资源服务器服务实例 */
     public ResourceServerService getResourceServerService() {
         return new ResourceServerService(this.authorization, this.resourceServer, this.client, this.auth, adminEvent);
     }
 
+    /** 若尚未启用则为客户端创建资源服务器。 */
     public void enable(boolean newClient) {
         if (!isEnabled()) {
             this.resourceServer = getResourceServerService().create(newClient);
         }
     }
 
+    /** 若已启用则删除资源服务器。 */
     public void disable() {
         if (isEnabled()) {
             getResourceServerService().delete();
         }
     }
 
+    /** @return 客户端是否已启用授权服务 */
     public boolean isEnabled() {
         return this.resourceServer != null;
     }

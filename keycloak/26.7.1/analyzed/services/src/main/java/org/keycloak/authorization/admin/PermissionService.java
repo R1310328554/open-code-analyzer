@@ -34,22 +34,29 @@ import org.eclipse.microprofile.openapi.annotations.extensions.Extension;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
+/**
+ * 权限策略专用服务：搜索与 CRUD 时自动过滤 {@code permission=true} 的策略。
+ */
 public class PermissionService extends PolicyService {
 
+    /** 构造权限管理服务。 */
     public PermissionService(ResourceServer resourceServer, AuthorizationProvider authorization, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         super(resourceServer, authorization, auth, adminEvent);
     }
 
     @Override
+    /** @return 权限策略实例资源服务 */
     protected PolicyResourceService doCreatePolicyResource(Policy policy) {
         return new PolicyTypeResourceService(policy, resourceServer, authorization, auth, adminEvent);
     }
 
     @Override
+    /** @return 按类型过滤的权限策略列表服务 */
     protected PolicyTypeService doCreatePolicyTypeResource(String type) {
         return new PolicyTypeService(type, resourceServer, authorization, auth, adminEvent) {
             @Override
-            protected List<Object> doSearch(Integer firstResult, Integer maxResult, String fields, Map<Policy.FilterOption, String[]> filters) {
+            /** 搜索时强制加入 PERMISSION=true 过滤条件。 */
+    protected List<Object> doSearch(Integer firstResult, Integer maxResult, String fields, Map<Policy.FilterOption, String[]> filters) {
                 filters.put(Policy.FilterOption.PERMISSION, new String[] {Boolean.TRUE.toString()});
                 filters.put(Policy.FilterOption.TYPE, new String[] {type});
                 return super.doSearch(firstResult, maxResult, fields, filters);
@@ -64,6 +71,7 @@ public class PermissionService extends PolicyService {
     }
 
     @Override
+    /** 权限表示转换（不含关联策略详情）。 */
     protected AbstractPolicyRepresentation toRepresentation(Policy policy, String fields, AuthorizationProvider authorization) {
         return ModelToRepresentation.toRepresentation(policy, authorization, false, false, fields != null && fields.equals("*"));
     }

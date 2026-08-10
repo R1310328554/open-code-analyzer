@@ -30,40 +30,58 @@ import org.keycloak.userprofile.UserProfileContext;
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
+/**
+ * 更新档案上下文接口：封装用户名、邮箱、姓名及自定义属性的读写。
+ */
 public interface UpdateProfileContext {
     
+    /** @return 用户档案上下文类型（如 UPDATE_PROFILE） */
     UserProfileContext getUserProfileContext();
 
+    /** @return 领域是否允许编辑用户名 */
     boolean isEditUsernameAllowed();
 
+    /** @return 当前用户名 */
     String getUsername();
 
+    /** 设置用户名。 */
     void setUsername(String username);
 
+    /** @return 是否允许编辑邮箱 */
     boolean isEditEmailAllowed();
 
+    /** @return 当前邮箱 */
     String getEmail();
 
+    /** 设置邮箱。 */
     void setEmail(String email);
 
+    /** @return 名 */
     String getFirstName();
 
+    /** 设置名。 */
     void setFirstName(String firstName);
 
+    /** @return 姓 */
     String getLastName();
 
+    /** 设置姓。 */
     void setLastName(String lastName);
 
+    /** @return 全部用户属性映射 */
     Map<String, List<String>> getAttributes();
 
+    /** 设置单值属性。 */
     void setSingleAttribute(String name, String value);
 
+    /** 设置多值属性。 */
     void setAttribute(String key, List<String> value);
 
+    /** @return 指定属性的首个值 */
     String getFirstAttribute(String name);
 
     /**
-     * @deprecated Use {@link #getAttributeStream(String) getAttributeStream} instead.
+     * @deprecated 请改用 {@link #getAttributeStream(String) getAttributeStream}。
      */
     @Deprecated
     default List<String> getAttribute(String key) {
@@ -71,7 +89,7 @@ public interface UpdateProfileContext {
     }
 
     /**
-     * Obtains all values associated with the specified attribute name.
+     * 获取指定属性名的全部值。
      *
      * @param name the name of the attribute.
      * @return a non-null {@link Stream} of attribute values.

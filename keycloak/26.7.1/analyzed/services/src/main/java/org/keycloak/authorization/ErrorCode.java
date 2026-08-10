@@ -21,8 +21,12 @@ package org.keycloak.authorization;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
+/**
+ * 授权服务错误码接口。
+ */
 public interface ErrorCode {
 
+    /** 无效客户端 ID 错误码。 */
     String INVALID_CLIENT_ID = "invalid_client_id";
 
 }
