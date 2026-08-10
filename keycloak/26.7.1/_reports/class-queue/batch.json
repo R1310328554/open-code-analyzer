@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:04:23Z",
-  "files": [
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/ClientRegistrationPolicyManager.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/ClientRegistrationPolicySpi.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/DefaultClientRegistrationPolicies.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/RegistrationAuth.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/ClientDisabledClientRegistrationPolicy.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/ClientDisabledClientRegistrationPolicyFactory.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/ClientScopesClientRegistrationPolicy.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/ClientScopesClientRegistrationPolicyFactory.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/ConsentRequiredClientRegistrationPolicy.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/ConsentRequiredClientRegistrationPolicyFactory.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/MaxClientsClientRegistrationPolicy.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/MaxClientsClientRegistrationPolicyFactory.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/ProtocolMappersClientRegistrationPolicy.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/ProtocolMappersClientRegistrationPolicyFactory.java",
-    "services/src/main/java/org/keycloak/services/clientregistration/policy/impl/RegistrationWebOriginsPolicy.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1018,
-  "done": 4965
+  "done": 4980
 }
