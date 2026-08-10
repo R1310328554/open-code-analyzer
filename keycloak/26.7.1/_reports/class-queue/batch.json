@@ -15,23 +15,8 @@
     "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/DatabaseSpec.java",
     "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/FeatureSpec.java",
     "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/HostnameSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/HttpManagementSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/HttpSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/ImportSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/IngressSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/NetworkPolicySpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/ProbeSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/ProxySpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/SchedulingSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/ServiceMonitorSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/TelemetrySpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/TracingSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/TransactionsSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/Truststore.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/TruststoreSource.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/UnsupportedSpec.java",
-    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/UpdateSpec.java"
+    "operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/HttpManagementSpec.java"
   ],
   "remaining_pending": 3898,
-  "done": 2070
+  "done": 2085
 }

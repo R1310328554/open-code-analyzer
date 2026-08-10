@@ -2038,3 +2038,18 @@
 2026-08-10T08:54:44Z DONE operator/src/main/java/org/keycloak/operator/controllers/KeycloakRealmImportJobDependentResource.java wave69a operator controllers
 2026-08-10T08:54:44Z DONE operator/src/main/java/org/keycloak/operator/controllers/KeycloakRealmImportSecretDependentResource.java wave69a operator controllers
 2026-08-10T08:54:44Z DONE operator/src/main/java/org/keycloak/operator/controllers/KeycloakSAMLClientController.java wave69a operator controllers
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/HttpSpec.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/ImportSpec.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/IngressSpec.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/NetworkPolicySpec.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/ProbeSpec.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/ProxySpec.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/SchedulingSpec.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/ServiceMonitorSpec.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/TelemetrySpec.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/TracingSpec.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/TransactionsSpec.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/Truststore.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/TruststoreSource.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/UnsupportedSpec.java wave70b operator v2beta1 deployment specs
+2026-08-10T08:57:11Z DONE operator/src/main/java/org/keycloak/operator/crds/v2beta1/deployment/spec/UpdateSpec.java wave70b operator v2beta1 deployment specs
