@@ -37,16 +37,19 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.handlers.InvocationHandler;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 
+/**
+ * 带 Keycloak 事务与会话绑定的 RESTEasy Reactive 调用处理器，
+ * 在阻塞线程上开启 JTA 事务，并在异步返回类型场景下提前清理线程绑定资源。
+ */
 public final class TransactionalSessionHandler extends InvocationHandler implements org.keycloak.quarkus.runtime.transaction.TransactionalSessionHandler {
-    
+
     /*
-     * see AsyncReturnTypeScanner - there doesn't seem to be a simpler way to get
-     * ahead of the respective handlers, so we'll capture the relevant types here.
-     * 
-     * If something is missed, we should be alerted by the log in KeycloakBeanProducer.dispose
-     * 
-     * Resteasy reactive specific types are added for completeness - we don't expect their usage
-     * in internal nor custom logic just yet
+     * 参见 AsyncReturnTypeScanner —— 似乎没有更简单的方式抢在对应 handler 之前介入，
+     * 因此在此集中维护相关异步返回类型集合。
+     *
+     * 若有遗漏，KeycloakBeanProducer.dispose 中的日志应能提示
+     *
+     * Resteasy Reactive 专有类型一并列出以保持完整；目前内外部逻辑尚未预期使用它们
      */
     public static final Set<Class<?>> ASYNC_TYPES = Set.of(
         CompletionStage.class,
@@ -57,38 +60,38 @@ public final class TransactionalSessionHandler extends InvocationHandler impleme
         Publisher.class,
         org.reactivestreams.Publisher.class,
         RestResponse.class
-    ); 
-    
+    );
+
+    /** @param invoker 被包装的端点调用器 */
     public TransactionalSessionHandler(EndpointInvoker invoker) {
         super(invoker);
     }
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        // This method might be invoked multiple times within a request when resolving sub-resources.
+        // 解析子资源时同一请求可能多次进入本方法
 
         requestContext.requireCDIRequestScope();
 
         KeycloakSession currentSession = ClientProxy.unwrap(Arc.container().instance(KeycloakSession.class).get());
 
-        // before we call the underlying invoke, ensure the thread bound resources are set
+        // 调用底层 invoker 前确保线程绑定资源已设置
         KeycloakSessionUtil.setKeycloakSession(currentSession);
         if (BlockingOperationSupport.isBlockingAllowed()) {
-            // ClientProxy.unwrap() resolves a proxy that is lazily initialized on the first method call or on unwrap.
+            // ClientProxy.unwrap() 会在首次方法调用或 unwrap 时解析懒初始化代理
             KeycloakTransactionManager transactionManager = currentSession.getTransactionManager();
             if (!transactionManager.isActive()) {
-                // This handler is always running in a blocking thread.
+                // 本 handler 始终在阻塞线程上运行
                 beginTransaction(currentSession);
             }
         }
 
         super.handle(requestContext);
-        
-        // check for async cases where we are now done with the initiating thread
-        // and must clean up anything that is thread bound
+
+        // 异步场景：发起线程已结束，需清理线程绑定状态
         if ((requestContext.getAsyncResponse() != null || ASYNC_TYPES
                 .contains(requestContext.getResteasyReactiveResourceInfo().getMethod().getReturnType()))) {
-            close(currentSession);    
+            close(currentSession);
         }
     }
 }

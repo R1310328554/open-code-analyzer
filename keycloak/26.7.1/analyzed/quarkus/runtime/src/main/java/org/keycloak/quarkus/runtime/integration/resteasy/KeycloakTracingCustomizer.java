@@ -39,8 +39,13 @@ import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
+/**
+ * 为每个 JAX-RS 资源方法创建 OpenTelemetry Span 的处理器链定制器，
+ * 在方法调用前后启动与结束追踪 span。
+ */
 public final class KeycloakTracingCustomizer implements HandlerChainCustomizer {
 
+    /** 在资源方法调用前创建并激活 OTel span。 */
     private static class StartHandler implements ServerRestHandler {
         private final String className;
         private final String methodName;
@@ -64,10 +69,10 @@ public final class KeycloakTracingCustomizer implements HandlerChainCustomizer {
             SpanBuilder spanBuilder = myTracer.spanBuilder(spanName);
             spanBuilder.setParent(Context.current().with(Span.current()));
             spanBuilder.setAttribute(CodeAttributes.CODE_FUNCTION_NAME, functionName);
-            // for backwards compatibility. deprecated in 26.6, to be removed in 27.0
+            // 向后兼容：26.6 起弃用，计划在 27.0 移除
             spanBuilder.setAttribute(CodeIncubatingAttributes.CODE_FUNCTION, methodName);
             spanBuilder.setAttribute(CodeIncubatingAttributes.CODE_NAMESPACE, className);
-            // end deprecation
+            // 弃用属性设置结束
 
             Span span = spanBuilder.startSpan();
             requestContext.setProperty("span", span);
@@ -75,6 +80,7 @@ public final class KeycloakTracingCustomizer implements HandlerChainCustomizer {
         }
     }
 
+    /** 在资源方法调用后关闭 scope 并结束 span。 */
     public static class EndHandler implements ServerRestHandler {
         @Override
         public void handle(ResteasyReactiveRequestContext requestContext) {
@@ -91,6 +97,7 @@ public final class KeycloakTracingCustomizer implements HandlerChainCustomizer {
         }
     }
 
+    /** 在 BEFORE/AFTER_METHOD_INVOKE 阶段分别挂载 span 开始与结束处理器。 */
     @Override
     public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
             ServerResourceMethod resourceMethod) {

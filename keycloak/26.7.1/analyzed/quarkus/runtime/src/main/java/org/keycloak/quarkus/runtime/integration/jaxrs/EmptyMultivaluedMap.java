@@ -21,8 +21,12 @@ import java.util.Map;
 
 import jakarta.ws.rs.core.AbstractMultivaluedMap;
 
+/**
+ * 基于不可变空 {@link Map} 的多值映射实现，用于表示无表单参数时的只读空集合。
+ */
 public final class EmptyMultivaluedMap<K, V> extends AbstractMultivaluedMap<K, V> {
 
+    /** 构造始终为空的多值映射。 */
     public EmptyMultivaluedMap() {
         super(Map.of());
     }

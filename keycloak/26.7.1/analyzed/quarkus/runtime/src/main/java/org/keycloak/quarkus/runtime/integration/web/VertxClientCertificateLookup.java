@@ -25,6 +25,8 @@ import org.keycloak.services.x509.X509ClientCertificateLookup;
 import org.jboss.logging.Logger;
 
 /**
+ * 基于 Vert.x/Quarkus HTTP 栈的 X.509 客户端证书查找实现。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class VertxClientCertificateLookup implements X509ClientCertificateLookup {
@@ -34,11 +36,13 @@ public class VertxClientCertificateLookup implements X509ClientCertificateLookup
     public VertxClientCertificateLookup() {
     }
 
+    /** {@inheritDoc} 无额外资源需释放。 */
     @Override
     public void close() {
 
     }
 
+    /** {@inheritDoc} 从 {@link HttpRequest} 读取 TLS 客户端证书链并在 trace 级别记录 SubjectDN。 */
     @Override
     public X509Certificate[] getCertificateChain(HttpRequest httpRequest) {
         X509Certificate[] certificates = httpRequest.getClientCertificateChain();

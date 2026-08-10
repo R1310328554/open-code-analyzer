@@ -42,24 +42,26 @@ import org.jboss.logmanager.handlers.FileHandler;
 import org.jboss.logmanager.handlers.SyslogHandler;
 
 /**
+ * Keycloak Quarkus 日志过滤器基类：抑制已知噪声日志、在虚拟线程上异步转发日志，
+ * 并为控制台/文件/Syslog 各 handler 提供具体子类。
+ *
  * @author Alexander Schwartz
  */
 public abstract class KeycloakLogFilter implements Filter {
 
     private static final Logger logger = Logger.getLogger(KeycloakLogFilter.class);
 
-    // avoid logging ISPN000312 for sessions, offlineSessions, clientSessions and offlineClientSessions caches only.
+    // 仅对 sessions/offlineSessions/clientSessions/offlineClientSessions 缓存抑制 ISPN000312
     private static final Pattern ISPN000312_PATTERN = Pattern.compile(
             "^\\[Context=(" + String.join("|", InfinispanConnectionProvider.USER_SESSION_CACHE_NAME, InfinispanConnectionProvider.CLIENT_SESSION_CACHE_NAME, InfinispanConnectionProvider.OFFLINE_USER_SESSION_CACHE_NAME, InfinispanConnectionProvider.OFFLINE_CLIENT_SESSION_CACHE_NAME) + ")] ISPN000312: .*");
 
-    // Use this thread pool to asynchronously log from virtual threads, which could otherwise be pinned and lead to deadlocks.
-    // A single thread ensures that all log entries appear in the correct order.
+    // 虚拟线程同步写日志可能导致 pinning 与死锁；用单线程池异步转发以保持顺序
     private final ExecutorService executor;
-    // Original handler for this these logs
+    // 对应 handler 的原始 JBoss LogManager Handler
     private Handler handler;
 
     public KeycloakLogFilter() {
-        // The class ThreadCreator needs to be called and initialized here as when we do this in isLoggable() we'll have a recursive logging
+        // ThreadCreator 须在此初始化；若在 isLoggable() 中首次触发会导致递归日志
         if (ThreadCreator.useVirtualThreads() && isHandlerEnabled() && !isAsyncLoggingEnabled()) {
             executor = Executors.newSingleThreadExecutor();
         } else {
@@ -67,29 +69,29 @@ public abstract class KeycloakLogFilter implements Filter {
         }
     }
 
+    /** 返回本过滤器绑定的 LogManager Handler 类型。 */
     protected abstract Class<? extends Handler> getHandlerClass();
 
     /**
-     * Whether the logging is enabled for specific handler
+     * 对应 handler 的日志输出是否已启用。
      */
     public abstract boolean isHandlerEnabled();
 
     /**
-     * Whether the async logging is enabled for specific handler
+     * 对应 handler 是否已启用 Quarkus 异步日志。
      */
     public abstract boolean isAsyncLoggingEnabled();
 
     @Override
     public boolean isLoggable(LogRecord record) {
-        // The ARJUNA012125 messages are logged and then thrown.
-        // As those messages might later be caught and handled, this is an antipattern so we prevent logging them.
+        // ARJUNA012125 消息会先记录再抛出，属于 log-and-throw 反模式，此处直接丢弃
         // https://narayana.zulipchat.com/#narrow/channel/323714-users/topic/Message.20.22ARJUNA012125.22.20implements.20log-and-throw.20antipattern
         if (Objects.equals(record.getLevel(), Level.WARNING) && record.getLoggerName().equals("com.arjuna.ats.arjuna") && record.getMessage().startsWith("ARJUNA012125:")) {
             return false;
         }
 
         if (MultiSiteUtils.isPersistentSessionsEnabled()) {
-            // Suppress messages for ISPN000312 as there shouldn't be a warning as this is expected as user and client sessions have only a single owner.
+            // 持久化会话场景下 ISPN000312 为预期行为（单 owner），不应作为警告输出
             // https://github.com/keycloak/keycloak/issues/39816
             if (Objects.equals(record.getLevel(), Level.WARNING) && record.getLoggerName().equals("org.infinispan.CLUSTER") && ISPN000312_PATTERN.matcher(record.getMessage()).matches()) {
                 return false;
@@ -104,14 +106,14 @@ public abstract class KeycloakLogFilter implements Filter {
         return true;
     }
 
+    /** 懒加载并缓存与 {@link #getHandlerClass()} 匹配的原始 handler。 */
     private Handler getHandler() {
         if (handler == null) {
-            // This needs a lazy initialization the logging is not yet fully initialized when instantiating the filter if the image is pre-built.
+            // 预构建镜像启动时日志尚未完全初始化，此处必须延迟绑定
             synchronized (this) {
                 if (handler == null) {
                     Class<? extends Handler> handlerClass = getHandlerClass();
-                    // Retrieving the original log handler. None might be found during build phase,
-                    // but then it should fail with an NPE when virtual threads are involved
+                    // 获取原始 log handler；构建阶段可能尚未注册，虚拟线程场景下后续会 NPE
                     handler = Arrays.stream(InitialConfigurator.DELAYED_HANDLER.getHandlers()).filter(
                             h -> handlerClass.isAssignableFrom(h.getClass())
                     ).findFirst().orElse(null);
@@ -124,6 +126,7 @@ public abstract class KeycloakLogFilter implements Filter {
         return handler;
     }
 
+    /** 在后台线程将日志记录转发到真实 handler。 */
     public record RecordLogger(LogRecord record, KeycloakLogFilter filter) implements Runnable {
         @Override
         public void run() {
@@ -134,6 +137,7 @@ public abstract class KeycloakLogFilter implements Filter {
         }
     }
 
+    /** 控制台日志过滤器。 */
     @LoggingFilter(name = "keycloak-filter-console")
     private static final class KeycloakConsoleLogFilter extends KeycloakLogFilter {
         @Override
@@ -152,6 +156,7 @@ public abstract class KeycloakLogFilter implements Filter {
         }
     }
 
+    /** 文件日志过滤器。 */
     @LoggingFilter(name = "keycloak-filter-file")
     private static final class KeycloakFileLogFilter extends KeycloakLogFilter {
         @Override
@@ -170,6 +175,7 @@ public abstract class KeycloakLogFilter implements Filter {
         }
     }
 
+    /** Syslog 日志过滤器。 */
     @LoggingFilter(name = "keycloak-filter-syslog")
     private static final class KeycloakSyslogLogFilter extends KeycloakLogFilter {
         protected Class<? extends Handler> getHandlerClass() {

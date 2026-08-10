@@ -23,14 +23,17 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
- * <p>A {@link ServerRestHandler} that set the media type produced by a JAX-RS resource method.
+ * <p>设置 JAX-RS 资源方法声明的响应 {@link MediaType} 的 {@link ServerRestHandler}。
  *
- * <p>The main reason behind this handler is to make the response media type available to {@link org.keycloak.headers.DefaultSecurityHeadersProvider}.
+ * <p>主要目的是让 {@link org.keycloak.headers.DefaultSecurityHeadersProvider} 能读取到实际产出的媒体类型。
  */
 public class SetResponseContentTypeHandler implements ServerRestHandler {
 
     private MediaType producesMediaType;
 
+    /**
+     * @param producesMediaTypes 资源方法 @Produces 声明的媒体类型列表；为空时默认 application/json
+     */
     public SetResponseContentTypeHandler(String[] producesMediaTypes) {
         if (producesMediaTypes.length == 0) {
             this.producesMediaType = MediaType.APPLICATION_JSON_TYPE;
@@ -39,6 +42,7 @@ public class SetResponseContentTypeHandler implements ServerRestHandler {
         }
     }
 
+    /** 将解析后的媒体类型写入响应上下文。 */
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) {
         requestContext.setResponseContentType(producesMediaType);

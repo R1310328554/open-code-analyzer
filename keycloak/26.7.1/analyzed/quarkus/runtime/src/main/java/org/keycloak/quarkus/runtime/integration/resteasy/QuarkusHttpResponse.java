@@ -30,6 +30,10 @@ import org.keycloak.http.HttpResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.vertx.VertxResteasyReactiveRequestContext;
 
+/**
+ * 基于 Resteasy Reactive 的 {@link HttpResponse} 实现，
+ * 封装状态码、响应头与 Set-Cookie 写入。
+ */
 public final class QuarkusHttpResponse implements HttpResponse {
 
     private static final RuntimeDelegate.HeaderDelegate<NewCookie> NEW_COOKIE_HEADER_DELEGATE = RuntimeDelegate.getInstance().createHeaderDelegate(NewCookie.class);
@@ -38,31 +42,37 @@ public final class QuarkusHttpResponse implements HttpResponse {
 
     private Set<NewCookie> newCookies;
 
+    /** @param requestContext 当前请求/响应上下文 */
     public QuarkusHttpResponse(ResteasyReactiveRequestContext requestContext) {
         this.requestContext = Objects.requireNonNull(requestContext);
     }
 
+    /** {@inheritDoc} 从 Vert.x 响应读取 HTTP 状态码。 */
     @Override
     public int getStatus() {
         VertxResteasyReactiveRequestContext serverHttpResponse = (VertxResteasyReactiveRequestContext) requestContext.serverResponse();
         return serverHttpResponse.vertxServerResponse().getStatusCode();
     }
 
+    /** {@inheritDoc} 设置 HTTP 状态码。 */
     @Override
     public void setStatus(int statusCode) {
         requestContext.serverResponse().setStatusCode(statusCode);
     }
 
+    /** {@inheritDoc} 追加响应头（允许多值）。 */
     @Override
     public void addHeader(String name, String value) {
         requestContext.serverResponse().addResponseHeader(name, value);
     }
 
+    /** {@inheritDoc} 覆盖设置响应头。 */
     @Override
     public void setHeader(String name, String value) {
         requestContext.serverResponse().setResponseHeader(name, value);
     }
 
+    /** {@inheritDoc} 若尚未设置相同 Cookie 则写入 Set-Cookie 头。 */
     @Override
     public void setCookieIfAbsent(NewCookie newCookie) {
         if (newCookie == null) {

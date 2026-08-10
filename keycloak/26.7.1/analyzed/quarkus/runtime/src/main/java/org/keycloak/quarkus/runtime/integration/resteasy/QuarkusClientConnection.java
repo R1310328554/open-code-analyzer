@@ -25,34 +25,44 @@ import org.keycloak.common.ClientConnection;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.net.SocketAddress;
 
+/**
+ * 基于 Vert.x {@link HttpServerRequest} 的 {@link ClientConnection} 实现，
+ * 从底层套接字地址读取客户端与本地连接信息。
+ */
 public final class QuarkusClientConnection implements ClientConnection {
 
     private final HttpServerRequest request;
 
+    /** @param request 当前 HTTP 请求，不可为 null */
     public QuarkusClientConnection(HttpServerRequest request) {
         this.request = Objects.requireNonNull(request);
     }
 
+    /** {@inheritDoc} 返回客户端 IP 地址。 */
     @Override
     public String getRemoteAddr() {
         return Optional.ofNullable(request.remoteAddress()).map(SocketAddress::hostAddress).orElse(null);
     }
 
+    /** {@inheritDoc} 返回客户端主机名。 */
     @Override
     public String getRemoteHost() {
         return Optional.ofNullable(request.remoteAddress()).map(SocketAddress::host).orElse(null);
     }
 
+    /** {@inheritDoc} 返回客户端端口，未知时返回 0。 */
     @Override
     public int getRemotePort() {
         return Optional.ofNullable(request.remoteAddress()).map(SocketAddress::port).orElse(0);
     }
 
+    /** {@inheritDoc} 返回本地监听地址。 */
     @Override
     public String getLocalAddr() {
         return Optional.ofNullable(request.localAddress()).map(SocketAddress::hostAddress).orElse(null);
     }
 
+    /** {@inheritDoc} 返回本地监听端口，未知时返回 0。 */
     @Override
     public int getLocalPort() {
         return Optional.ofNullable(request.localAddress()).map(SocketAddress::port).orElse(0);

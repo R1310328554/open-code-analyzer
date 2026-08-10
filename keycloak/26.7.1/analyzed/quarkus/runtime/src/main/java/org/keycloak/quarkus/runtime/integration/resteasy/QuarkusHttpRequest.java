@@ -44,6 +44,10 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 import org.jboss.resteasy.reactive.server.multipart.FormValue;
 
+/**
+ * 将 Resteasy Reactive 请求上下文适配为 Keycloak {@link HttpRequest}，
+ * 提供表单参数、multipart、TLS 客户端证书与代理信任判断。
+ */
 public final class QuarkusHttpRequest implements HttpRequest {
 
     private static final MultivaluedMap<String, String> EMPTY_FORM_PARAM = new EmptyMultivaluedMap<>();
@@ -53,15 +57,18 @@ public final class QuarkusHttpRequest implements HttpRequest {
 
     private MultivaluedMap<String, String> decodedFormParameters;
 
+    /** @param context 当前 Resteasy Reactive 请求上下文 */
     public <R> QuarkusHttpRequest(ResteasyReactiveRequestContext context) {
         this.context = Objects.requireNonNull(context);
     }
 
+    /** {@inheritDoc} 返回 HTTP 方法名。 */
     @Override
     public String getHttpMethod() {
         return context.getMethod();
     }
 
+    /** {@inheritDoc} 懒解析并缓存 URL 解码后的表单参数。 */
     @Override
     public MultivaluedMap<String, String> getDecodedFormParameters() {
         if (decodedFormParameters == null) {
@@ -89,6 +96,7 @@ public final class QuarkusHttpRequest implements HttpRequest {
         return decodedFormParameters;
     }
 
+    /** {@inheritDoc} 解析 multipart 表单，区分文件项与普通字段。 */
     @Override
     public MultivaluedMap<String, FormPartValue> getMultiPartFormParameters() {
         FormData formData = context.getFormData();
@@ -124,11 +132,13 @@ public final class QuarkusHttpRequest implements HttpRequest {
         return params;
     }
 
+    /** {@inheritDoc} 返回 JAX-RS HTTP 头。 */
     @Override
     public HttpHeaders getHttpHeaders() {
         return context.getHttpHeaders();
     }
 
+    /** {@inheritDoc} 从 Vert.x RoutingContext 的 TLS 会话读取客户端证书链。 */
     @Override
     public X509Certificate[] getClientCertificateChain() {
         Instance<RoutingContext> instances = CDI.current().select(RoutingContext.class);
@@ -145,18 +155,20 @@ public final class QuarkusHttpRequest implements HttpRequest {
 
                 return (X509Certificate[]) sslSession.getPeerCertificates();
             } catch (SSLPeerUnverifiedException ignore) {
-                // client not authenticated
+                // 客户端未通过 TLS 认证
             }
         }
 
         return null;
     }
 
+    /** {@inheritDoc} 返回请求 URI 信息。 */
     @Override
     public UriInfo getUri() {
         return context.getUriInfo();
     }
 
+    /** {@inheritDoc} 根据代理配置或 X-Forwarded-Trusted-Proxy 头判断是否信任代理。 */
     @Override
     public boolean isProxyTrusted() {
         boolean noTrustedProxies = Configuration.getOptionalKcValue(ProxyOptions.PROXY_TRUSTED_ADDRESSES).isEmpty();

@@ -52,6 +52,10 @@ import static org.keycloak.common.util.Environment.isDevMode;
 import static org.keycloak.common.util.Environment.isNonServerMode;
 import static org.keycloak.quarkus.runtime.Environment.hasEarlyExitLaunchMode;
 
+/**
+ * Quarkus 环境下的 Keycloak JAX-RS 应用入口：
+ * 监听 Quarkus 生命周期事件，管理异步启动、会话工厂与临时管理员引导。
+ */
 @ApplicationPath("/")
 @Blocking
 public class QuarkusKeycloakApplication extends KeycloakApplication {
@@ -60,9 +64,11 @@ public class QuarkusKeycloakApplication extends KeycloakApplication {
     private static final String KEYCLOAK_ADMIN_PASSWORD_ENV_VAR = "KEYCLOAK_ADMIN_PASSWORD";
 
     private static final Logger logger = Logger.getLogger(QuarkusKeycloakApplication.class);
-    
+
+    /** 异步启动任务；同步启动时为 null。 */
     private CompletableFuture<Void> bootstrapFuture;
 
+    /** {@inheritDoc} 从 Quarkus {@link Environment} 读取数据目录。 */
     @Override
     protected String getDataDir() {
         return Environment.getDataDir().orElseGet(() -> {
@@ -71,39 +77,45 @@ public class QuarkusKeycloakApplication extends KeycloakApplication {
         });
     }
 
+    /** Quarkus 启动事件：按配置选择同步或异步执行 Keycloak 引导。 */
     void onStartupEvent(@Observes StartupEvent event) {
         var asyncBootstrap = Configuration.getOptionalKcValue(ServerOptions.SERVER_ASYNC_BOOTSTRAP)
                 .map(Boolean::parseBoolean)
                 .orElse(Boolean.TRUE);
-        // skip async bootstrap in dev and non-server mode
+        // 开发模式、非 server 模式或早期退出模式下跳过异步引导
         if (isDevMode() || isNonServerMode() || hasEarlyExitLaunchMode() || !asyncBootstrap) {
-            startup();      
+            startup();
         } else {
             ManagedExecutor executor = Arc.container().instance(ManagedExecutor.class).get();
             bootstrapFuture = CompletableFuture.runAsync(this::startup, executor).exceptionally(cause -> {
                 KeycloakMain.asyncExit(1, cause);
                 return null;
-            });        
+            });
         }
     }
-    
+
+    /** 返回异步引导 Future，供外部等待启动完成。 */
     public Optional<CompletableFuture<Void>> getBootstrapFuture() {
         return Optional.ofNullable(bootstrapFuture);
     }
 
+    /** Quarkus 关闭事件：触发 Keycloak 关停逻辑。 */
     void onShutdownEvent(@Observes ShutdownEvent event) {
         shutdown();
     }
 
+    /** 延迟关闭开始事件：在优雅停机窗口内清理资源。 */
     void onShutdownDelayInitiatedEvent(@Observes ShutdownDelayInitiatedEvent event) {
         shutdownDelayInitiated();
     }
 
+    /** {@inheritDoc} 从 CDI 容器获取 Quarkus 会话工厂。 */
     @Override
     public DefaultKeycloakSessionFactory createSessionFactory() {
         return Arc.container().instance(QuarkusKeycloakSessionFactory.class).get();
     }
 
+    /** {@inheritDoc} 根据配置或环境变量创建临时 master 管理员用户/服务账号。 */
     @Override
     protected void createTemporaryAdmin(KeycloakSession session) {
         var adminUsername = getOption(BootstrapAdminOptions.USERNAME.getKey(), KEYCLOAK_ADMIN_ENV_VAR);
@@ -125,13 +137,20 @@ public class QuarkusKeycloakApplication extends KeycloakApplication {
         }
     }
 
+    /** {@inheritDoc} 使用 JPA 迁移事务超时作为全局事务超时。 */
     @Override
     protected int getTransactionTimeout(DefaultKeycloakSessionFactory sessionFactory) {
         return ((QuarkusJpaConnectionProviderFactory) sessionFactory.getProviderFactory(JpaConnectionProvider.class)).getMigrationTransactionTimeout();
     }
 
+    /**
+     * 读取配置项，若未设置则回退到环境变量（并记录弃用警告）。
+     *
+     * @param option  Keycloak 配置键
+     * @param envVar  兼容旧版的环境变量名
+     */
     private String getOption(String option, String envVar) {
-        PropertyMappingInterceptor.disable(); // disable default handling
+        PropertyMappingInterceptor.disable(); // 禁用默认属性映射拦截
         try {
             return Configuration.getOptionalKcValue(option).orElseGet(() -> {
                 String value = System.getenv(envVar);
@@ -145,10 +164,12 @@ public class QuarkusKeycloakApplication extends KeycloakApplication {
         }
     }
 
+    /** 在 master realm 创建临时管理员用户。 */
     public boolean createTemporaryMasterRealmAdminUser(String adminUserName, String adminPassword, /*Integer adminExpiration,*/ KeycloakSession session) {
         return new ApplianceBootstrap(session).createMasterRealmAdminUser(adminUserName, adminPassword, true /*, adminExpiration*/, false);
     }
 
+    /** 在 master realm 创建临时管理员服务客户端。 */
     public boolean createTemporaryMasterRealmAdminService(String clientId, String clientSecret, /*Integer adminExpiration,*/ KeycloakSession session) {
         return new ApplianceBootstrap(session).createTemporaryMasterRealmAdminService(clientId, clientSecret /*, adminExpiration*/);
     }

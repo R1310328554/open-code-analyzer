@@ -25,10 +25,15 @@ import org.keycloak.services.util.ObjectMapperResolver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * Quarkus CDI 环境下的 Jackson {@link ObjectMapper} 解析器，
+ * 将 Keycloak 全局 JSON 序列化配置暴露为可注入 Bean。
+ */
 @Provider
 @ApplicationScoped
 public class QuarkusObjectMapperResolver extends ObjectMapperResolver {
 
+    /** 向 CDI 容器提供 Keycloak 配置的 {@link ObjectMapper} 单例。 */
     @Produces
     public ObjectMapper getObjectMapper() {
         return mapper;
