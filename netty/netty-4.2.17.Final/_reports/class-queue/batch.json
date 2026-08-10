@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T01:28:00Z",
-  "files": [
-    "transport/src/main/java/io/netty/channel/local/LocalServerChannel.java",
-    "transport/src/main/java/io/netty/channel/nio/AbstractNioByteChannel.java",
-    "transport/src/main/java/io/netty/channel/nio/AbstractNioChannel.java",
-    "transport/src/main/java/io/netty/channel/nio/AbstractNioMessageChannel.java",
-    "transport/src/main/java/io/netty/channel/nio/NioEventLoop.java",
-    "transport/src/main/java/io/netty/channel/nio/NioEventLoopGroup.java",
-    "transport/src/main/java/io/netty/channel/nio/NioIoEvent.java",
-    "transport/src/main/java/io/netty/channel/nio/NioIoHandle.java",
-    "transport/src/main/java/io/netty/channel/nio/NioIoHandler.java",
-    "transport/src/main/java/io/netty/channel/nio/NioIoOps.java",
-    "transport/src/main/java/io/netty/channel/nio/NioSelectableChannelIoHandle.java",
-    "transport/src/main/java/io/netty/channel/nio/NioTask.java",
-    "transport/src/main/java/io/netty/channel/nio/SelectedSelectionKeySet.java",
-    "transport/src/main/java/io/netty/channel/nio/SelectedSelectionKeySetSelector.java",
-    "transport/src/main/java/io/netty/channel/oio/AbstractOioByteChannel.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 248,
-  "done": 1665
+  "done": 1680
 }
