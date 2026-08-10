@@ -21,12 +21,15 @@ import java.util.Arrays;
 import java.util.Collection;
 
 /**
+ * 路径模板匹配抽象基类：支持精确匹配、{@code *} 通配、{@code {param}} 模板及后缀模式。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public abstract class PathMatcher<P> {
 
     private static final char WILDCARD = '*';
 
+    /** 在已注册路径中查找与 {@code targetUri} 最具体匹配的配置项。 */
     public P matches(final String targetUri) {
         final String normalizedUri = normalizeUri(targetUri);
         if (normalizedUri == null) {
@@ -273,9 +276,9 @@ public abstract class PathMatcher<P> {
     }
 
     /**
-     * Validates that the given URI is a well-formed path template.
+     * 校验路径模板语法是否合法。
      *
-     * @return an error message if the URI is invalid, or {@code null} if it is valid
+     * @return 非法时返回错误描述，合法时返回 {@code null}
      */
     public static String validateTemplate(String uri) {
         boolean inBrace = false;
@@ -331,7 +334,7 @@ public abstract class PathMatcher<P> {
             return null;
         }
 
-        // strip matrix params — prevents bypass via /api/admin;x=1 which Servlet/JAX-RS silently ignores when routing
+        // 剥离 matrix 参数，防止 /api/admin;x=1 类绕过（Servlet/JAX-RS 路由时会忽略）
         StringBuilder sb = new StringBuilder(uri.length());
         boolean inMatrix = false;
         for (int i = 0; i < uri.length(); i++) {
@@ -347,18 +350,15 @@ public abstract class PathMatcher<P> {
         }
         String result = sb.toString();
 
-        // collapse double slashes before URI parsing — //foo is interpreted as a URI authority, not a path
+        // 合并连续斜杠 — //foo 会被 URI 解析为 authority 而非路径
         while (result.contains("//")) {
             result = result.replace("//", "/");
         }
 
-        // resolve dot segments and decode percent-encoding — prevents bypass via /api/foo/../admin, /api/./admin,
-        // or /api/%61dmin. On the server side the decoding is a no-op (servlet container already decodes form/query
-        // parameters), but on the policy enforcer side getRequestURI() preserves percent-encoding so this is needed.
-        // Full decoding is safe because resource paths are always configured as plain decoded strings.
+        // 规范化点段并解码百分号编码，防止 ../、./、%61dmin 等绕过；
+        // 服务端通常已解码，策略执行器侧 getRequestURI() 仍可能保留编码故需处理
         try {
-            // percent-encode curly braces before URI parsing — Keycloak uses {param} in path templates
-            // and new URI() rejects them as invalid characters
+            // 解析前转义花括号 — Keycloak 模板使用 {param}，原生 URI 构造函数不接受
             result = result.replace("{", "%7B").replace("}", "%7D");
             result = new URI(result).normalize().getPath();
             if (result == null) {
@@ -368,12 +368,12 @@ public abstract class PathMatcher<P> {
             return null;
         }
 
-        // collapse double slashes again — decoding %2F introduces new slashes (e.g. /api/%2Fadmin → /api//admin)
+        // 解码 %2F 等可能再次引入双斜杠
         while (result.contains("//")) {
             result = result.replace("//", "/");
         }
 
-        // strip trailing slash — prevents bypass via /api/admin/ which routes to /api/admin on the server
+        // 去掉尾部斜杠，防止 /api/admin/ 与 /api/admin 不一致导致绕过
         if (result.length() > 1 && result.endsWith("/")) {
             result = result.substring(0, result.length() - 1);
         }

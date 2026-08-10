@@ -31,16 +31,18 @@ import javax.security.auth.kerberos.KerberosTicket;
 import org.ietf.jgss.GSSCredential;
 
 /**
- * Provides serialization/deserialization of kerberos {@link org.ietf.jgss.GSSCredential}, so it can be transmitted from auth-server to the application
- * and used for further calls to kerberos-secured services
+ * 提供 Kerberos {@link org.ietf.jgss.GSSCredential} 的序列化/反序列化，以便从认证服务器传输到应用，
+ * 并用于后续调用 Kerberos 保护的服务。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class KerberosSerializationUtils {
 
+    /** 当前 JVM 与操作系统信息，用于异常诊断。 */
     public static final String JAVA_INFO;
 
     static {
+        // 收集运行时环境信息，便于排查跨 JDK/平台序列化问题
         String javaVersion = System.getProperty("java.version");
         String javaRuntimeVersion = System.getProperty("java.runtime.version");
         String javaVendor = System.getProperty("java.vendor");
@@ -51,6 +53,14 @@ public class KerberosSerializationUtils {
     private KerberosSerializationUtils() {
     }
 
+    /**
+     * 将 {@link GSSCredential} 序列化为 Base64 字符串。
+     *
+     * @param kerberosTicket 可选的 Kerberos 票据，用于 JDK 特定转换
+     * @param gssCredential 待序列化的 GSS 凭证
+     * @return Base64 编码的序列化结果
+     * @throws KerberosSerializationException 输入为空或序列化失败时
+     */
     public static String serializeCredential(KerberosTicket kerberosTicket, GSSCredential gssCredential) throws KerberosSerializationException {
         try {
             if (gssCredential == null) {
@@ -66,6 +76,13 @@ public class KerberosSerializationUtils {
     }
 
 
+    /**
+     * 从 Base64 字符串反序列化 {@link GSSCredential}。
+     *
+     * @param serializedCred 序列化凭证字符串
+     * @return 反序列化后的 GSS 凭证
+     * @throws KerberosSerializationException 输入为空、类型不匹配或反序列化失败时
+     */
     public static GSSCredential deserializeCredential(String serializedCred) throws KerberosSerializationException {
         if (serializedCred == null) {
             throw new KerberosSerializationException("Null credential given as input. Did you enable kerberos credential delegation for your web browser and mapping of gss credential to access token?");
@@ -131,6 +148,7 @@ public class KerberosSerializationUtils {
         }
     }
 
+    /** Kerberos 凭证序列化/反序列化失败时抛出的运行时异常。 */
     public static class KerberosSerializationException extends RuntimeException {
 
         public KerberosSerializationException(String message, Throwable cause) {

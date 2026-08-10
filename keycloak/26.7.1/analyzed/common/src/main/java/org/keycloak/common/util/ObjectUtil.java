@@ -18,6 +18,8 @@
 package org.keycloak.common.util;
 
 /**
+ * 通用对象/字符串比较与格式化小工具。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ObjectUtil {
@@ -25,10 +27,11 @@ public class ObjectUtil {
     private ObjectUtil() {}
 
     /**
+     * 两对象均为 null 或 {@link Object#equals} 为 true 时返回 true。
      *
-     * @param str1
-     * @param str2
-     * @return true if both strings are null or equal
+     * @param str1 第一个对象
+     * @param str2 第二个对象
+     * @return 相等或双 null 时为 true
      */
     public static boolean isEqualOrBothNull(Object str1, Object str2) {
         if (str1 == null && str2 == null) {
@@ -43,15 +46,16 @@ public class ObjectUtil {
     }
 
 
+    /** 将字符串首字母大写（假定非空）。 */
     public static String capitalize(String str) {
         return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
 
     /**
-     * Forked from apache-commons StringUtils
+     * 摘自 Apache Commons {@code StringUtils}。
      *
-     * <p>Checks if a CharSequence is whitespace, empty ("") or null.</p>
+     * <p>判断字符序列是否为 null、空串或仅空白。</p>
      *
      * <pre>
      * ObjectUtil.isBlank(null)      = true
@@ -61,8 +65,8 @@ public class ObjectUtil {
      * ObjectUtil.isBlank("  bob  ") = false
      * </pre>
      *
-     * @param cs
-     * @return {@code true} if the CharSequence is null, empty or whitespace
+     * @param cs 待检字符序列
+     * @return 为 null、空或全空白时为 {@code true}
      */
     public static boolean isBlank(final CharSequence cs) {
         int strLen;

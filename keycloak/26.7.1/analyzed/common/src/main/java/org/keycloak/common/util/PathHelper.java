@@ -21,9 +21,7 @@ import java.util.regex.Pattern;
 
 
 /**
- * A utility class for handling URI template parameters. As the Java
- * regulare expressions package does not handle named groups, this
- * class attempts to simulate that functionality by using groups.
+ * URI 模板参数工具：Java 正则不支持命名组，此处用捕获组模拟。
  *
  * @author Ryan J. McDonough
  * @author Bill Burke
@@ -32,19 +30,19 @@ import java.util.regex.Pattern;
  */
 public class PathHelper
 {
+   /** 模板参数名：字母/数字/点/连字符，首字符为字。 */
    public static final String URI_PARAM_NAME_REGEX = "\\w[\\w\\.-]*";
    public static final String URI_PARAM_REGEX_REGEX = "[^{}][^{}]*";
    public static final String URI_PARAM_REGEX = "\\{\\s*(" + URI_PARAM_NAME_REGEX + ")\\s*(:\\s*(" + URI_PARAM_REGEX_REGEX + "))?\\}";
    public static final Pattern URI_PARAM_PATTERN = Pattern.compile(URI_PARAM_REGEX);
 
-   /**
-    * A regex pattern that searches for a URI template parameter in the form of {*}
-    */
+   /** 匹配 {@code {*}} 形式 URI 模板占位符的正则。 */
    public static final Pattern URI_TEMPLATE_PATTERN = Pattern.compile("(\\{([^{}]+)\\})");
 
    public static final char openCurlyReplacement = 6;
    public static final char closeCurlyReplacement = 7;
 
+   /** 嵌套花括号占位符：内层 {@code {} } 替换为特殊字符以便正则匹配。 */
    public static String replaceEnclosedCurlyBraces(String str)
    {
       char[] chars = str.toCharArray();
@@ -68,6 +66,7 @@ public class PathHelper
       return new String(chars);
    }
 
+   /** 将 {@link #replaceEnclosedCurlyBraces} 的占位符还原为花括号。 */
    public static String recoverEnclosedCurlyBraces(String str)
    {
       return str.replace(openCurlyReplacement, '{').replace(closeCurlyReplacement, '}');

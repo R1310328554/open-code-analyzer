@@ -18,6 +18,8 @@
 package org.keycloak.common.util;
 
 /**
+ * PEM 编码/解码失败时抛出的运行时异常。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class PemException extends RuntimeException {

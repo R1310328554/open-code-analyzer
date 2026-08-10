@@ -35,19 +35,24 @@ import javax.crypto.spec.SecretKeySpec;
 import org.keycloak.common.crypto.CryptoIntegration;
 
 /**
+ * 密钥生成、加载与标识（kid）等密码学工具方法。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class KeyUtils {
 
+    /** 生成密钥 ID 时使用的默认摘要算法。 */
     private static final String DEFAULT_MESSAGE_DIGEST = "SHA-256";
 
     private KeyUtils() {
     }
 
+    /** 从原始字节与算法名构造 {@link SecretKey}。 */
     public static SecretKey loadSecretKey(byte[] secret, String javaAlgorithmName) {
         return new SecretKeySpec(secret, javaAlgorithmName);
     }
 
+    /** 生成指定位长的 RSA 密钥对。 */
     public static KeyPair generateRsaKeyPair(int keysize) {
         try {
             KeyPairGenerator generator = CryptoIntegration.getProvider().getKeyPairGen("RSA"); 
@@ -59,6 +64,7 @@ public class KeyUtils {
         }
     }
 
+    /** 从 RSA 私钥（{@link RSAPrivateCrtKey}）提取对应公钥。 */
     public static PublicKey extractPublicKey(PrivateKey key) {
         if (key == null) {
             return null;
@@ -74,6 +80,7 @@ public class KeyUtils {
         }
     }
 
+    /** 按曲线/算法名生成 EdDSA 密钥对。 */
     public static KeyPair generateEddsaKeyPair(String curveName) {
         try {
             KeyPairGenerator keyGen = KeyPairGenerator.getInstance(curveName);
@@ -83,6 +90,7 @@ public class KeyUtils {
         }
     }
 
+    /** 按命名曲线（如 {@code secp256r1}）生成 EC 密钥对。 */
     public static KeyPair generateEcKeyPair(String keySpecName) {
         try {
             KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
@@ -95,6 +103,7 @@ public class KeyUtils {
         }
     }
 
+    /** 对密钥编码做 SHA-256 摘要并 Base64Url 编码，用作 JWK kid。 */
     public static String createKeyId(Key key) {
         try {
             return Base64Url.encode(MessageDigest.getInstance(DEFAULT_MESSAGE_DIGEST).digest(key.getEncoded()));

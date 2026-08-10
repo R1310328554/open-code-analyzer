@@ -22,12 +22,15 @@ import java.io.File;
 import jakarta.activation.MimetypesFileTypeMap;
 
 /**
+ * 根据文件扩展名推断 MIME 类型，扩展 Jakarta Activation 默认映射。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class MimeTypeUtil {
 
     private static MimetypesFileTypeMap map = new MimetypesFileTypeMap();
     static {
+        // 补充静态资源常用 MIME 类型
         map.addMimeTypes("text/css css CSS");
         map.addMimeTypes("text/javascript js JS");
         map.addMimeTypes("application/json json JSON");
@@ -37,10 +40,12 @@ public class MimeTypeUtil {
         map.addMimeTypes("application/wasm wasm WASM");
     }
 
+    /** 根据 {@link File} 推断 Content-Type。 */
     public static String getContentType(File file) {
         return map.getContentType(file);
     }
 
+    /** 根据路径/文件名推断 Content-Type。 */
     public static String getContentType(String path) {
         return map.getContentType(path);
     }

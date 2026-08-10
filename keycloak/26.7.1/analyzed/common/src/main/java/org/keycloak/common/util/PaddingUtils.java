@@ -20,6 +20,8 @@
 package org.keycloak.common.util;
 
 /**
+ * 字符串尾部填充工具（用于固定长度缓冲区等场景）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class PaddingUtils {
@@ -27,12 +29,11 @@ public class PaddingUtils {
     private static final char PADDING_CHAR_NONE = '\u0000';
 
     /**
-     * Applies padding to given string up to specified number of characters. If given string is shorter or same as maxPaddingLength, it will just return the original string.
-     * Otherwise it would be padded with "\0" character to have at least "maxPaddingLength" characters
+     * 将字符串填充至至少 {@code maxPaddingLength} 字符；不足时用 {@code \\0} 补齐，已足够长则原样返回。
      *
-     * @param rawString raw string
-     * @param maxPaddingLength max padding length
-     * @return padded output
+     * @param rawString 原始字符串
+     * @param maxPaddingLength 目标最小长度
+     * @return 填充后的字符串
      */
     public static String padding(String rawString, int maxPaddingLength) {
         if (rawString.length() < maxPaddingLength) {

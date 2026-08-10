@@ -28,6 +28,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * Keycloak 使用的 URI 构建器，支持模板参数 {@code {name}}、路径/查询/片段编码及相对化。
+ *
+ * <p>源自 RESTEasy {@code UriBuilder}，用于 OIDC 重定向、管理 API 等场景。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -88,6 +92,9 @@ public class KeycloakUriBuilder {
         return s1.equals(s2);
     }
 
+    /**
+     * 计算 {@code to} 相对于 {@code from} 的相对 URI；方案/主机/端口不一致时返回 {@code to} 本身。
+     */
     public static URI relativize(URI from, URI to) {
         if (!compare(from.getScheme(), to.getScheme())) return to;
         if (!compare(from.getHost(), to.getHost())) return to;
@@ -117,10 +124,10 @@ public class KeycloakUriBuilder {
     }
 
     /**
-     * You may put path parameters anywhere within the uriTemplate except port
+     * 从 URI 模板创建构建器；路径参数 {@code {x}} 可出现在除端口外的任意位置。
      *
-     * @param uriTemplate
-     * @return
+     * @param uriTemplate URI 模板字符串
+     * @return 配置好的构建器
      */
     public static KeycloakUriBuilder fromTemplate(String uriTemplate) {
         KeycloakUriBuilder impl = new KeycloakUriBuilder();
@@ -129,10 +136,10 @@ public class KeycloakUriBuilder {
     }
 
     /**
-     * You may put path parameters anywhere within the uriTemplate except port
+     * 设置当前 URI 为模板；路径参数 {@code {x}} 可出现在除端口外的任意位置。
      *
-     * @param uriTemplate
-     * @return
+     * @param uriTemplate URI 模板字符串
+     * @return 当前构建器
      */
     public KeycloakUriBuilder uriTemplate(String uriTemplate) {
         return uri(uriTemplate, true);
@@ -330,12 +337,14 @@ public class KeycloakUriBuilder {
     }
 
     /**
-     * When this is called, then the port will be preserved in the build URL even if it is default port for the protocol (http, https)
+     * 构建 URL 时保留协议默认端口（如 HTTPS 443），即便该端口为默认值。
      *
-     * For example:
-     * - KeycloakUriBuilder.fromUri("https://localhost:443/path").buildAsString() will return "https://localhost/path" (port not preserved)
-     * - KeycloakUriBuilder.fromUri("https://localhost:443/path").preserveDefaultPort().buildAsString() will return "https://localhost:443/path" (port is preserved even if default port)
-     * - KeycloakUriBuilder.fromUri("https://localhost/path").preserveDefaultPort().buildAsString() will return "https://localhost/path" (port not included even if "preserveDefaultPort" as it was not in the original URL)
+     * <p>示例：</p>
+     * <ul>
+     *   <li>{@code fromUri("https://localhost:443/path").buildAsString()} → {@code "https://localhost/path"}（默认端口被省略）</li>
+     *   <li>{@code ...preserveDefaultPort().buildAsString()} → {@code "https://localhost:443/path"}（显式保留 443）</li>
+     *   <li>原始 URL 未含端口时，即使调用本方法也不会追加默认端口</li>
+     * </ul>
      */
     public KeycloakUriBuilder preserveDefaultPort() {
         this.preserveDefaultPort = true;
@@ -421,10 +430,10 @@ public class KeycloakUriBuilder {
     }
 
     /**
-     * Set fragment, but not encode it. It assumes that given fragment was already properly encoded
+     * 设置片段（fragment），不进行编码；调用方应保证片段已正确编码。
      *
-     * @param fragment
-     * @return
+     * @param fragment 已编码的片段
+     * @return 当前构建器
      */
     public KeycloakUriBuilder encodedFragment(String fragment) {
         this.fragment = fragment;
@@ -432,12 +441,12 @@ public class KeycloakUriBuilder {
     }
 
     /**
-     * Only replace path params in path of URI.  This changes state of URIBuilder.
+     * 仅替换 URI 路径中的模板参数，会修改构建器内部状态。
      *
-     * @param name
-     * @param value
-     * @param isEncoded
-     * @return
+     * @param name 参数名
+     * @param value 替换值
+     * @param isEncoded 值是否已编码
+     * @return 当前构建器
      */
     public KeycloakUriBuilder substitutePathParam(String name, Object value, boolean isEncoded) {
         if (path != null) {
@@ -628,9 +637,9 @@ public class KeycloakUriBuilder {
     }
 
     /**
-     * Return a unique order list of path params
+     * 按声明顺序返回路径模板中的唯一参数名列表。
      *
-     * @return
+     * @return 不重复的模板参数名
      */
     public List<String> getPathParamNamesInDeclarationOrder() {
         List<String> params = new ArrayList<String>();

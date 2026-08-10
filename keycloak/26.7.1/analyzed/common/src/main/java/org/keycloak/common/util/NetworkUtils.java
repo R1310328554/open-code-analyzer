@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.Locale;
 
 /**
- * Utility methods related to networking.
+ * 网络地址格式化与平台探测相关工具方法。
  *
  * @author Brian Stansberry (c) 2011 Red Hat Inc.
  */
@@ -33,12 +33,13 @@ public class NetworkUtils {
 
     private static final int MAX_GROUP_LENGTH = 4;
     private static final int IPV6_LEN = 8;
-    private static final boolean can_bind_to_mcast_addr; // are we running on Linux ?
+    private static final boolean can_bind_to_mcast_addr; // Linux/Solaris/HP 上可绑定组播地址
 
     static {
         can_bind_to_mcast_addr = checkForLinux() || checkForSolaris() || checkForHp();
     }
 
+    /** 若可能为 IPv6，则规范化为 {@code [addr]} 形式以便 URI 使用。 */
     public static String formatPossibleIpv6Address(String address) {
         if(address == null) {
             return null;
@@ -49,7 +50,7 @@ public class NetworkUtils {
         } else {
             ipv6Address = address;
         }
-        // Definitely not an IPv6, return untouched input.
+        // 明显不是 IPv6，原样返回
         if (!mayBeIPv6Address(ipv6Address)) {
             return ipv6Address;
         }
@@ -57,19 +58,16 @@ public class NetworkUtils {
     }
 
     /**
-     * <p>Convert IPv6 address into RFC 5952 form.
-     * E.g. 2001:db8:0:1:0:0:0:1 -> 2001:db8:0:1::1</p>
+     * <p>将 IPv6 地址转换为 RFC 5952 规范形式。
+     * 例如 {@code 2001:db8:0:1:0:0:0:1} → {@code 2001:db8:0:1::1}</p>
      *
-     * <p>Method is null safe, and if IPv4 address or host name is passed to the
-     * method it is returned without any processing.</p>
+     * <p>对 null 安全；传入 IPv4 或主机名时不做处理。</p>
      *
-     * <p>Method also supports IPv4 in IPv6 (e.g. 0:0:0:0:0:ffff:192.0.2.1 ->
-     * ::ffff:192.0.2.1), and zone ID (e.g. fe80:0:0:0:f0f0:c0c0:1919:1234%4
-     * -> fe80::f0f0:c0c0:1919:1234%4).</p>
+     * <p>支持 IPv4 映射 IPv6（如 {@code ::ffff:192.0.2.1}）与 zone ID（如 {@code fe80::...%4}）。</p>
      *
-     * @param ipv6Address String representing valid IPv6 address.
-     * @return String representing IPv6 in canonical form.
-     * @throws IllegalArgumentException if IPv6 format is unacceptable.
+     * @param ipv6Address 合法 IPv6 字符串
+     * @return 规范形式 IPv6
+     * @throws IllegalArgumentException 格式不可接受时
      */
     public static String canonize(String ipv6Address) throws IllegalArgumentException {
 
@@ -77,16 +75,15 @@ public class NetworkUtils {
             return null;
         }
 
-        // Definitely not an IPv6, return untouched input.
+        // 明显不是 IPv6，原样返回
         if (!mayBeIPv6Address(ipv6Address)) {
             return ipv6Address;
         }
 
-        // Length without zone ID (%zone) or IPv4 address
+        // 长度不含 zone ID（%zone）或内嵌 IPv4 部分
         int ipv6AddressLength = ipv6Address.length();
         if (isIPv4AddressInIPv6(ipv6Address)) {
-            // IPv4 in IPv6
-            // e.g. 0:0:0:0:0:FFFF:127.0.0.1
+            // IPv4 映射 IPv6，如 0:0:0:0:0:FFFF:127.0.0.1
             int lastColonPos = ipv6Address.lastIndexOf(":");
             int lastColonsPos = ipv6Address.lastIndexOf("::");
             if (lastColonsPos >= 0 && lastColonPos == lastColonsPos + 1) {
@@ -239,10 +236,10 @@ public class NetworkUtils {
     }
 
     /**
-     * Heuristic check if string might be an IPv6 address.
+     * 启发式判断字符串是否可能为 IPv6 地址。
      *
-     * @param input Any string or null
-     * @return true, if input string contains only hex digits and at least two colons, before '.' or '%' character.
+     * @param input 任意字符串或 null
+     * @return 在 {@code .} 或 {@code %} 之前仅含十六进制与至少两个冒号时为 true
      */
     private static boolean mayBeIPv6Address(String input) {
         if (input == null) {
@@ -271,22 +268,21 @@ public class NetworkUtils {
         return result;
     }
     /**
-     * Check if it is an IPv4 in IPv6 format.
-     * e.g. 0:0:0:0:0:FFFF:127.0.0.1
+     * 判断是否为 IPv4 映射 IPv6 格式（如 {@code 0:0:0:0:0:FFFF:127.0.0.1}）。
      *
-     * @param ipv6Address the address
-     * @return true, if input string is an IPv4 address in IPv6 format.
+     * @param ipv6Address 待检地址
+     * @return 同时含 {@code :} 与 {@code .} 时为 true
      */
     private static boolean isIPv4AddressInIPv6(String ipv6Address) {
         return (ipv6Address.contains(":") && ipv6Address.contains("."));
     }
 
     /**
-     * Formats input address. For IPV4 returns simply host address, for IPV6 formats address according to <a
-     * href="http://tools.ietf.org/html/rfc5952">RFC5952</a> rules. It does not embed IPV6 address in '[', ']', since those are part of IPV6 URI literal.
+     * 格式化 {@link InetAddress}：IPv4 返回主机地址；IPv6 按
+     * <a href="http://tools.ietf.org/html/rfc5952">RFC5952</a> 规范，不含 URI 字面量方括号。
      *
-     * @param inet
-     * @return
+     * @param inet 地址，不可为 null
+     * @return 格式化后的字符串
      */
     public static String formatAddress(InetAddress inet){
         if(inet == null){
@@ -309,15 +305,12 @@ public class NetworkUtils {
     }
 
     /**
-     * Converts socket address into string literal, which has form: 'address:port'. Example:<br>
-     * <ul>
-     *      <li>127.0.0.1:8080</li>
-     *      <li>dns.name.com:8080</li>
-     *      <li>[0fe:1::20]:8080</li>
-     *      <li>[::1]:8080</li>
-     * </ul>
-     * @param inet
-     * @return
+     * 将套接字地址格式化为 {@code 地址:端口} 字面量。
+     *
+     * <p>示例：{@code 127.0.0.1:8080}、{@code dns.name.com:8080}、{@code [0fe:1::20]:8080}、{@code [::1]:8080}</p>
+     *
+     * @param inet 套接字地址，不可为 null
+     * @return 格式化字符串
      */
     public static String formatAddress(InetSocketAddress inet){
         if(inet == null){
@@ -334,9 +327,10 @@ public class NetworkUtils {
     }
 
     /**
-     * Converts IPV6 int[] representation into valid IPV6 string literal. Sequence of '-1' values are converted into '::'.
-     * @param hexRepresentation
-     * @return
+     * 将 IPv6 的 {@code int[8]} 表示转为字符串；连续 {@code -1} 压缩为 {@code ::}。
+     *
+     * @param hexRepresentation 长度为 8 的十六进制组数组
+     * @return IPv6 字面量
      */
     private static String formatAddress6(int[] hexRepresentation){
         if(hexRepresentation == null){
@@ -368,6 +362,7 @@ public class NetworkUtils {
         return stringBuilder.toString();
     }
 
+    /** 当前平台是否支持绑定组播地址。 */
     public static boolean isBindingToMulticastDressSupported() {
         return can_bind_to_mcast_addr;
     }

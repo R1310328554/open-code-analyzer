@@ -19,14 +19,21 @@ package org.keycloak.common.util;
 
 import org.keycloak.common.Profile;
 
+/**
+ * 多站点（Multi-Site）部署相关的 Profile 特性探测。
+ */
 public class MultiSiteUtils {
 
+    /** 是否启用了 {@link Profile.Feature#MULTI_SITE} 特性。 */
     public static boolean isMultiSiteEnabled() {
         return Profile.isFeatureEnabled(Profile.Feature.MULTI_SITE);
     }
 
     /**
-     * @return true when user sessions are stored in the database. In multi-site setup this is false when REMOTE_CACHE feature is enabled
+     * 用户会话是否持久化到数据库。
+     *
+     * @return 启用 {@code PERSISTENT_USER_SESSIONS}，或多站点且非 {@code CLUSTERLESS} 时为 true；
+     *         多站点且启用远程缓存时会话可能不在 DB
      */
     public static boolean isPersistentSessionsEnabled() {
         return Profile.isFeatureEnabled(Profile.Feature.PERSISTENT_USER_SESSIONS) || (isMultiSiteEnabled() && !Profile.isFeatureEnabled(Profile.Feature.CLUSTERLESS));

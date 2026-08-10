@@ -32,23 +32,27 @@ import org.keycloak.common.constants.GenericConstants;
 import org.keycloak.common.crypto.CryptoIntegration;
 
 /**
+ * 密钥库/信任库加载与格式探测工具。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class KeystoreUtil {
 
+    /** 密钥库/信任库格式的公共描述。 */
     public interface StoreFormat {
         List<String> getFileExtensions();
         String getPrimaryExtension();
     };
 
+    /** 信任库常见文件格式。 */
     public enum TruststoreFormat implements StoreFormat {
         JKS("jks", "truststore"),
         PKCS12("p12", "pfx", "pkcs12"),
         PEM("pem", "ca", "crt"),
         BCFKS("bcfks");
 
-        // Typical file extension for this keystore format
+        // 该格式对应的典型文件扩展名
         private final List<String> fileExtensions;
 
         TruststoreFormat(String... extensions) {
@@ -66,12 +70,13 @@ public class KeystoreUtil {
         }
     }
 
+    /** 密钥库常见文件格式。 */
     public enum KeystoreFormat implements StoreFormat {
         JKS("jks"),
         PKCS12("p12", "pfx", "pkcs12"),
         BCFKS("bcfks");
 
-        // Typical file extension for this keystore format
+        // 该格式对应的典型文件扩展名
         private final List<String> fileExtensions;
         KeystoreFormat(String... extensions) {
             this.fileExtensions = Arrays.asList(extensions);
@@ -88,6 +93,7 @@ public class KeystoreUtil {
         }
     }
 
+    /** 从文件路径加载 {@link KeyStore}，类型由扩展名或 {@code preferedType} 推断。 */
     public static KeyStore loadKeyStore(String filename, String password) throws Exception {
         return loadKeyStore(filename, password, null);
     }
@@ -116,6 +122,7 @@ public class KeystoreUtil {
         return trustStore;
     }
 
+    /** 从密钥库按别名加载 RSA/通用密钥对。 */
     public static KeyPair loadKeyPairFromKeystore(String keystoreFile, String storePassword, String keyPassword, String keyAlias, KeystoreFormat format) {
         try (InputStream stream = FindFile.findFile(keystoreFile)) {
             KeyStore keyStore = CryptoIntegration.getProvider().getKeyStore(format);
@@ -175,12 +182,12 @@ public class KeystoreUtil {
     }
 
     /**
-     * Try to return supported keystore type
+     * 推断支持的密钥库类型。
      *
-     * @param preferredType The preferred format - usually the one from the configuration. When present, it should be preferred over anything else
-     * @param path Path of the file. We can try to detect keystore type from that (EG. my-keystore.pkcs12 will return "pkcs12") in case that preferredType is not defined
-     * @param defaultType Default format as last fallback when none of the above can be used. Should be non-null
-     * @return format as specified above
+     * @param preferredType 首选格式，通常来自配置；非空时优先于路径推断
+     * @param path 文件路径，可根据扩展名推断（如 {@code .pkcs12} → {@code pkcs12}）
+     * @param defaultType 上述均无法推断时的兜底类型，不可为 null
+     * @return 解析出的密钥库类型名
      */
     public static String getKeystoreType(String preferredType, String path, String defaultType) {
         return getStoreType(preferredType, path, defaultType, KeystoreFormat.values());

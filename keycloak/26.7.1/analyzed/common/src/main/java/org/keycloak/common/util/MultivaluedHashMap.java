@@ -22,15 +22,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * {@link MultivaluedMap} 的 {@link HashMap} 实现，键对应值列表。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @SuppressWarnings("serial")
 public class MultivaluedHashMap<K, V> extends HashMap<K, List<V>> implements MultivaluedMap<K, V>
 {
+   /** 空的多值映射。 */
    public MultivaluedHashMap() {
    }
 
+   /** 从普通 {@code Map<K, List<V>>} 拷贝构造。 */
    public MultivaluedHashMap(Map<K, List<V>> map) {
       if (map == null) {
          throw new IllegalArgumentException("Map can not be null");
@@ -39,6 +43,7 @@ public class MultivaluedHashMap<K, V> extends HashMap<K, List<V>> implements Mul
    }
 
 
+   /** 从另一个多值映射合并拷贝。 */
    public MultivaluedHashMap(MultivaluedHashMap<K, V> config) {
       addAll(config);
    }

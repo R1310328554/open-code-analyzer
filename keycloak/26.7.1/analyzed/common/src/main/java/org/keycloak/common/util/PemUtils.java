@@ -28,7 +28,7 @@ import java.util.Arrays;
 import org.keycloak.common.crypto.CryptoIntegration;
 
 /**
- * Utility classes to extract PublicKey, PrivateKey, and X509Certificate from openssl generated PEM files
+ * 从 OpenSSL 风格 PEM 提取 {@link PublicKey}、{@link PrivateKey} 与 {@link X509Certificate} 的工具类。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -44,22 +44,20 @@ public class PemUtils {
     public static final String END_RSA_PRIVATE_KEY = "-----END RSA PRIVATE KEY-----";
 
     /**
-     * Decode a X509 Certificate from a PEM string
+     * 从 PEM 字符串解码 X509 证书。
      *
-     * @param cert
-     * @return
-     * @throws Exception
+     * @param cert PEM 编码证书
+     * @return 解码后的证书
      */
     public static X509Certificate decodeCertificate(String cert) {
         return CryptoIntegration.getProvider().getPemUtils().decodeCertificate(cert);
     }
 
     /**
-     * Decode one or more X509 Certificates from a PEM string (certificate bundle)
+     * 从 PEM 字符串解码一条或多条 X509 证书（证书链/捆绑包）。
      *
-     * @param certs
-     * @return
-     * @throws Exception
+     * @param certs PEM 文本
+     * @return 证书数组
      */
     public static X509Certificate[] decodeCertificates(String certs) {
         return Arrays.stream(certs.split(END_CERT))
@@ -70,21 +68,21 @@ public class PemUtils {
     }
 
     /**
-     * Decode a Public Key from a PEM string
+     * 从 PEM 字符串解码公钥。
      *
-     * @param pem
-     * @return
-     * @throws Exception
+     * @param pem PEM 编码公钥
+     * @return 公钥
      */
     public static PublicKey decodePublicKey(String pem) {
         return CryptoIntegration.getProvider().getPemUtils().decodePublicKey(pem);
     }
 
     /**
-     * Decode a Public Key from a PEM string
-     * @param pem The pem encoded pblic key
-     * @param type The type of the key (RSA, EC,...)
-     * @return The public key or null
+     * 从 PEM 字符串解码指定类型的公钥。
+     *
+     * @param pem PEM 编码公钥
+     * @param type 密钥类型（RSA、EC 等）
+     * @return 公钥，失败时可能为 null
      */
     public static PublicKey decodePublicKey(String pem, String type){
         return CryptoIntegration.getProvider().getPemUtils().decodePublicKey(pem, type);
@@ -92,11 +90,10 @@ public class PemUtils {
 
 
     /**
-     * Decode a Private Key from a PEM string
+     * 从 PEM 字符串解码私钥。
      *
-     * @param pem
-     * @return
-     * @throws Exception
+     * @param pem PEM 编码私钥
+     * @return 私钥
      */
     public static PrivateKey decodePrivateKey(String pem){
         return CryptoIntegration.getProvider().getPemUtils().decodePrivateKey(pem);
@@ -104,21 +101,20 @@ public class PemUtils {
 
 
     /**
-     * Encode a Key to a PEM string
+     * 将 {@link Key} 编码为 PEM 字符串。
      *
-     * @param key
-     * @return
-     * @throws Exception
+     * @param key 密钥
+     * @return PEM 文本
      */
     public static String encodeKey(Key key){
         return CryptoIntegration.getProvider().getPemUtils().encodeKey(key);
     }
 
     /**
-     * Encode a X509 Certificate to a PEM string
+     * 将 X509 证书编码为 PEM 字符串。
      *
-     * @param certificate
-     * @return
+     * @param certificate 证书
+     * @return PEM 文本
      */
     public static String encodeCertificate(Certificate certificate){
         return CryptoIntegration.getProvider().getPemUtils().encodeCertificate(certificate);
