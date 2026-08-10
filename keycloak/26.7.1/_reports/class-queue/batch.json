@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T07:37:32Z",
   "files": [
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/CachedUserVerifiableCredentials.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/ClientListQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/ClientQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/ClientScopeListQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/ClientScopeQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/GroupListQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/GroupNameQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/GroupQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/InClient.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/InIdentityProvider.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/InRealm.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/NonExistentItem.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/RealmListQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/RealmQuery.java",
-    "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/Revisioned.java",
     "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/RoleByNameQuery.java",
     "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/RoleListQuery.java",
     "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/entities/RoleQuery.java",
@@ -33,5 +18,5 @@
     "model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/ClientScopeRemovedEvent.java"
   ],
   "remaining_pending": 4648,
-  "done": 1320
+  "done": 1335
 }
