@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T07:00:00Z",
-  "files": [
-    "js/apps/admin-ui/src/utils/useFormatDate.ts",
-    "js/apps/admin-ui/src/utils/useIsAdminPermissionsClient.ts",
-    "js/apps/admin-ui/src/utils/useIsFeatureEnabled.test.ts",
-    "js/apps/admin-ui/src/utils/useIsFeatureEnabled.ts",
-    "js/apps/admin-ui/src/utils/useLocale.ts",
-    "js/apps/admin-ui/src/utils/useLocaleSort.ts",
-    "js/apps/admin-ui/src/utils/useParams.ts",
-    "js/apps/admin-ui/src/utils/useQueryPermission.ts",
-    "js/apps/admin-ui/src/utils/useSortedResourceTypes.ts",
-    "js/apps/admin-ui/src/utils/useToggle.test.ts",
-    "js/apps/admin-ui/src/utils/useToggle.ts",
-    "js/apps/admin-ui/src/utils/useUpdateEffect.ts",
-    "js/apps/admin-ui/src/vite-env.d.ts",
-    "js/apps/admin-ui/src/workflows/routes.ts",
-    "js/apps/admin-ui/vite.config.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4978,
-  "done": 1005
+  "done": 1020
 }
