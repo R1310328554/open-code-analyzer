@@ -15,23 +15,8 @@
     "services/src/main/java/org/keycloak/protocol/saml/mappers/SAMLAudienceProtocolMapper.java",
     "services/src/main/java/org/keycloak/protocol/saml/mappers/SAMLAudienceResolveProtocolMapper.java",
     "services/src/main/java/org/keycloak/protocol/saml/mappers/SAMLGroupNameMapper.java",
-    "services/src/main/java/org/keycloak/protocol/saml/mappers/SAMLLoginResponseMapper.java",
-    "services/src/main/java/org/keycloak/protocol/saml/mappers/SAMLNameIdMapper.java",
-    "services/src/main/java/org/keycloak/protocol/saml/mappers/SAMLRoleListMapper.java",
-    "services/src/main/java/org/keycloak/protocol/saml/mappers/SAMLRoleNameMapper.java",
-    "services/src/main/java/org/keycloak/protocol/saml/mappers/SamlMetadataDescriptorUpdater.java",
-    "services/src/main/java/org/keycloak/protocol/saml/mappers/ScriptBasedMapper.java",
-    "services/src/main/java/org/keycloak/protocol/saml/mappers/UserAttributeNameIdMapper.java",
-    "services/src/main/java/org/keycloak/protocol/saml/mappers/UserAttributeStatementMapper.java",
-    "services/src/main/java/org/keycloak/protocol/saml/mappers/UserPropertyAttributeStatementMapper.java",
-    "services/src/main/java/org/keycloak/protocol/saml/mappers/UserSessionNoteStatementMapper.java",
-    "services/src/main/java/org/keycloak/protocol/saml/preprocessor/SamlAuthenticationPreprocessor.java",
-    "services/src/main/java/org/keycloak/protocol/saml/preprocessor/SamlAuthenticationPreprocessorSpi.java",
-    "services/src/main/java/org/keycloak/protocol/saml/profile/ecp/SamlEcpProfileService.java",
-    "services/src/main/java/org/keycloak/protocol/saml/profile/ecp/authenticator/HttpBasicAuthenticator.java",
-    "services/src/main/java/org/keycloak/protocol/saml/profile/ecp/authenticator/HttpBasicAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/protocol/saml/profile/util/Soap.java"
+    "services/src/main/java/org/keycloak/protocol/saml/mappers/SAMLLoginResponseMapper.java"
   ],
   "remaining_pending": 1228,
-  "done": 4740
+  "done": 4755
 }
