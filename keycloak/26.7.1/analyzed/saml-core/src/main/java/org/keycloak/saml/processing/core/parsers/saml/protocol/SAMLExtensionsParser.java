@@ -24,27 +24,32 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
- * Parses &lt;samlp:Extensions&gt; SAML2 element into series of DOM nodes.
+ * 解析 SAML 2.0 {@code samlp:Extensions} 元素为 DOM 节点序列。
+ * <p>扩展容器允许在协议消息中携带任意命名空间的扩展内容。</p>
  *
  * @author hmlnarik
  */
 public class SAMLExtensionsParser extends AbstractStaxSamlProtocolParser<ExtensionsType> {
 
+    /** 单例实例。 */
     private static final SAMLExtensionsParser INSTANCE = new SAMLExtensionsParser();
 
     private SAMLExtensionsParser() {
         super(SAMLProtocolQNames.EXTENSIONS);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLExtensionsParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建空的 ExtensionsType 容器。 */
     @Override
     protected ExtensionsType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         return new ExtensionsType();
     }
 
+    /** 将每个子元素转为 DOM 节点并加入扩展列表。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, ExtensionsType target, SAMLProtocolQNames element, StartElement elementDetail) throws ParsingException {
         target.addExtension(StaxParserUtil.getDOMElement(xmlEventReader));

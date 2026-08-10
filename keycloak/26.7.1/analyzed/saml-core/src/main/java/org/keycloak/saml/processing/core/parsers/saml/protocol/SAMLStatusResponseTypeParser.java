@@ -23,24 +23,27 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
- * Base Class for all Response Type parsing for SAML2
+ * SAML 响应类型解析抽象基类。
+ * <p>封装所有 {@link StatusResponseType} 子类型共用的属性解析逻辑。</p>
  *
+ * @param <T> 响应类型，须继承 StatusResponseType
  */
 public abstract class SAMLStatusResponseTypeParser<T extends StatusResponseType> extends AbstractStaxSamlProtocolParser<T> {
 
+    /** SAML 协议版本号 2.0。 */
     protected static final String VERSION_2_0 = "2.0";
 
+    /** 构造并绑定期望的起始响应元素。 */
     protected SAMLStatusResponseTypeParser(SAMLProtocolQNames expectedStartElement) {
         super(expectedStartElement);
     }
 
     /**
-     * Parse the attributes that are common to all SAML Response Types
+     * 解析所有 SAML 响应类型共有的 Destination、Consent 与 InResponseTo 属性。
      *
-     * @param startElement
-     * @param response
-     *
-     * @throws org.keycloak.saml.common.exceptions.ParsingException
+     * @param startElement 响应根元素
+     * @param response 目标响应对象
+     * @throws org.keycloak.saml.common.exceptions.ParsingException 解析失败时抛出
      */
     protected void parseBaseAttributes(StartElement startElement, T response) throws ParsingException {
         response.setDestination(StaxParserUtil.getAttributeValue(startElement, SAMLProtocolQNames.ATTR_DESTINATION));

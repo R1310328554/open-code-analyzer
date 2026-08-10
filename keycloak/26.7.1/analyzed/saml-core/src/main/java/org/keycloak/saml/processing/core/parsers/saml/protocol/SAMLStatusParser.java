@@ -29,27 +29,32 @@ import org.keycloak.saml.common.util.StaxParserUtil;
 import org.w3c.dom.Element;
 
 /**
- * Base Class for all Response Type parsing for SAML2
- *
+ * 解析 SAML 2.0 {@link StatusType} 响应状态元素。
+ * <p>包含状态码、可选状态消息及状态详情扩展。</p>
  */
 public class SAMLStatusParser extends AbstractStaxSamlProtocolParser<StatusType> {
 
+    /** 单例实例。 */
     private static final SAMLStatusParser INSTANCE = new SAMLStatusParser();
+    /** StatusDetail 子元素的通用 DOM 解析器。 */
     private static final AnyDomParser STATUS_DETAIL_PARSER = AnyDomParser.getInstance(SAMLProtocolQNames.STATUS_DETAIL.getQName());
 
     private SAMLStatusParser() {
         super(SAMLProtocolQNames.STATUS);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLStatusParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建空的 StatusType 对象。 */
     @Override
     protected StatusType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         return new StatusType();
     }
 
+    /** 分发并解析 StatusCode、StatusMessage 及 StatusDetail 子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, StatusType target, SAMLProtocolQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

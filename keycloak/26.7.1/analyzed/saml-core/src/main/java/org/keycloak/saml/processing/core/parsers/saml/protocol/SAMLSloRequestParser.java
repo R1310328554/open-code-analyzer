@@ -33,22 +33,26 @@ import org.w3c.dom.Element;
 import static org.keycloak.saml.processing.core.parsers.saml.protocol.SAMLRequestAbstractParser.VERSION_2_0;
 
 /**
- * Parse the Single Log Out requests
+ * 解析 SAML 2.0 {@link LogoutRequestType} 单点登出请求。
+ * <p>SP 或 IdP 发起以终止指定主体的一个或多个会话。</p>
  *
  * @since Nov 3, 2010
  */
 public class SAMLSloRequestParser extends SAMLRequestAbstractParser<LogoutRequestType> {
 
+    /** 单例实例。 */
     private static final SAMLSloRequestParser INSTANCE = new SAMLSloRequestParser();
 
     private SAMLSloRequestParser() {
         super(SAMLProtocolQNames.LOGOUT_REQUEST);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLSloRequestParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建 LogoutRequest 并解析 Reason、NotOnOrAfter 等属性。 */
     @Override
     protected LogoutRequestType instantiateElement(XMLEventReader xmlEventReader, StartElement startElement) throws ParsingException {
         SAMLParserUtil.validateAttributeValue(startElement, SAMLProtocolQNames.ATTR_VERSION, VERSION_2_0);
@@ -64,6 +68,7 @@ public class SAMLSloRequestParser extends SAMLRequestAbstractParser<LogoutReques
         return logoutRequest;
     }
 
+    /** 分发并解析 NameID、EncryptedID、SessionIndex 及公共请求子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, LogoutRequestType target,
       SAMLProtocolQNames element, StartElement elementDetail) throws ParsingException {

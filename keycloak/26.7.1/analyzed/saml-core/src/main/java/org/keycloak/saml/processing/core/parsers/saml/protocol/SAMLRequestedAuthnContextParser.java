@@ -26,30 +26,32 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
- * Parse the SAML2 RequestedAuthnContext
+ * 解析 SAML 2.0 {@link RequestedAuthnContextType} 元素。
+ * <p>指定 SP 期望的认证上下文类或声明引用及比较方式。</p>
  *
  * @since Nov 2, 2010
  */
 public class SAMLRequestedAuthnContextParser extends AbstractStaxSamlProtocolParser<RequestedAuthnContextType> {
 
+    /** 单例实例。 */
     private static final SAMLRequestedAuthnContextParser INSTANCE = new SAMLRequestedAuthnContextParser();
 
     private SAMLRequestedAuthnContextParser() {
         super(SAMLProtocolQNames.REQUESTED_AUTHN_CONTEXT);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLRequestedAuthnContextParser getInstance() {
         return INSTANCE;
     }
 
     /**
-     * Parse the attributes at the authnrequesttype element
+     * 创建 RequestedAuthnContext 并读取 Comparison 属性。
      *
-     * @param startElement
-     *
-     * @return
-     *
-     * @throws ParsingException
+     * @param xmlEventReader XML 事件读取器
+     * @param startElement 起始元素
+     * @return RequestedAuthnContextType 对象
+     * @throws ParsingException 解析失败时抛出
      */
     @Override
     protected RequestedAuthnContextType instantiateElement(XMLEventReader xmlEventReader, StartElement startElement) throws ParsingException {
@@ -63,6 +65,7 @@ public class SAMLRequestedAuthnContextParser extends AbstractStaxSamlProtocolPar
         return context;
     }
 
+    /** 解析 AuthnContextClassRef 或 AuthnContextDeclRef 子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, RequestedAuthnContextType target, SAMLProtocolQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

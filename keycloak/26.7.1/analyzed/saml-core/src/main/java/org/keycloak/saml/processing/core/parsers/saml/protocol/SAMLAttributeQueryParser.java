@@ -32,22 +32,26 @@ import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 import static org.keycloak.saml.processing.core.parsers.saml.protocol.SAMLRequestAbstractParser.VERSION_2_0;
 
 /**
- * Parse the {@link org.keycloak.dom.saml.v2.protocol.ArtifactResolveType}
+ * 解析 SAML 2.0 {@link AttributeQueryType} 元素。
+ * <p>属性查询请求用于向 IdP 索取指定主体的 SAML 属性断言。</p>
  *
  * @since Jul 1, 2011
  */
 public class SAMLAttributeQueryParser extends SAMLRequestAbstractParser<AttributeQueryType> implements StaxParser {
 
+    /** 单例实例。 */
     private static final SAMLAttributeQueryParser INSTANCE = new SAMLAttributeQueryParser();
 
     private SAMLAttributeQueryParser() {
         super(SAMLProtocolQNames.ATTRIBUTE_QUERY);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLAttributeQueryParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建 AttributeQuery 对象并解析根元素属性。 */
     @Override
     protected AttributeQueryType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         SAMLParserUtil.validateAttributeValue(element, SAMLProtocolQNames.ATTR_VERSION, VERSION_2_0);
@@ -60,6 +64,7 @@ public class SAMLAttributeQueryParser extends SAMLRequestAbstractParser<Attribut
         return authnRequest;
     }
 
+    /** 分发并解析 Subject、Attribute 及公共请求子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, AttributeQueryType target, SAMLProtocolQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

@@ -29,30 +29,32 @@ import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 import static org.keycloak.saml.processing.core.parsers.saml.protocol.SAMLRequestAbstractParser.VERSION_2_0;
 
 /**
- * Parse the {@link ArtifactResolveType}
+ * 解析 SAML 2.0 {@link ArtifactResolveType} 元素。
+ * <p>Artifact 解析请求用于通过 HTTP Artifact 绑定获取原始 SAML 消息。</p>
  *
  * @since Jul 1, 2011
  */
 public class SAMLArtifactResolveParser extends SAMLRequestAbstractParser<ArtifactResolveType> {
 
+    /** 单例实例。 */
     private static final SAMLArtifactResolveParser INSTANCE = new SAMLArtifactResolveParser();
 
     private SAMLArtifactResolveParser() {
         super(SAMLProtocolQNames.ARTIFACT_RESOLVE);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLArtifactResolveParser getInstance() {
         return INSTANCE;
     }
 
     /**
-     * Parse the attributes at the authnrequesttype element
+     * 创建 ArtifactResolve 对象并解析根元素属性。
      *
-     * @param startElement
-     *
-     * @return
-     *
-     * @throws ParsingException
+     * @param xmlEventReader XML 事件读取器
+     * @param startElement 起始元素
+     * @return 解析后的 ArtifactResolveType
+     * @throws ParsingException 解析失败时抛出
      */
     @Override
     protected ArtifactResolveType instantiateElement(XMLEventReader xmlEventReader, StartElement startElement) throws ParsingException {
@@ -66,6 +68,7 @@ public class SAMLArtifactResolveParser extends SAMLRequestAbstractParser<Artifac
         return authnRequest;
     }
 
+    /** 分发并解析 Issuer、Signature、Extensions 及 Artifact 子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, ArtifactResolveType target,
       SAMLProtocolQNames element, StartElement elementDetail) throws ParsingException {

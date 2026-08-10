@@ -32,30 +32,32 @@ import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 import static org.keycloak.saml.processing.core.parsers.saml.protocol.SAMLRequestAbstractParser.VERSION_2_0;
 
 /**
- * Parse the SAML2 AuthnRequest
+ * 解析 SAML 2.0 {@link AuthnRequestType} 元素。
+ * <p>认证请求由 SP 发起，请求 IdP 对指定主体进行身份认证并返回断言。</p>
  *
  * @since Nov 2, 2010
  */
 public class SAMLAuthNRequestParser extends SAMLRequestAbstractParser<AuthnRequestType> {
 
+    /** 单例实例。 */
     private static final SAMLAuthNRequestParser INSTANCE = new SAMLAuthNRequestParser();
 
     private SAMLAuthNRequestParser() {
         super(SAMLProtocolQNames.AUTHN_REQUEST);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLAuthNRequestParser getInstance() {
         return INSTANCE;
     }
 
     /**
-     * Parse the attributes at the authnrequesttype element
+     * 创建 AuthnRequest 对象并解析根元素及认证相关属性。
      *
-     * @param startElement
-     *
-     * @return
-     *
-     * @throws ParsingException
+     * @param xmlEventReader XML 事件读取器
+     * @param startElement 起始元素
+     * @return 解析后的 AuthnRequestType
+     * @throws ParsingException 解析失败时抛出
      */
     @Override
     protected AuthnRequestType instantiateElement(XMLEventReader xmlEventReader, StartElement startElement) throws ParsingException {
@@ -77,6 +79,7 @@ public class SAMLAuthNRequestParser extends SAMLRequestAbstractParser<AuthnReque
         return authnRequest;
     }
 
+    /** 分发并解析 NameIDPolicy、Subject、Conditions、RequestedAuthnContext 等子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, AuthnRequestType target, SAMLProtocolQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {
@@ -113,11 +116,10 @@ public class SAMLAuthNRequestParser extends SAMLRequestAbstractParser<AuthnReque
     }
 
     /**
-     * Get the NameIDPolicy
+     * 从 NameIDPolicy 起始元素读取 Format 与 AllowCreate 属性。
      *
-     * @param startElement
-     *
-     * @return
+     * @param startElement NameIDPolicy 起始元素
+     * @return NameIDPolicyType 对象
      */
     private NameIDPolicyType getNameIDPolicy(StartElement startElement) {
         NameIDPolicyType nameIDPolicy = new NameIDPolicyType();

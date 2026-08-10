@@ -25,25 +25,28 @@ import org.keycloak.saml.common.util.StaxParserUtil;
 import org.keycloak.saml.processing.core.parsers.util.SAMLParserUtil;
 
 /**
- * Base Class for SAML Request Parsing
+ * SAML 请求解析抽象基类。
+ * <p>封装所有 {@link RequestAbstractType} 子类型共用的属性与子元素解析逻辑。</p>
  *
+ * @param <T> 请求类型，须继承 RequestAbstractType
  * @since Nov 2, 2010
  */
 public abstract class SAMLRequestAbstractParser<T extends RequestAbstractType> extends AbstractStaxSamlProtocolParser<T> {
 
+    /** SAML 协议版本号 2.0。 */
     protected static final String VERSION_2_0 = "2.0";
 
+    /** 构造并绑定期望的起始请求元素。 */
     protected SAMLRequestAbstractParser(SAMLProtocolQNames expectedStartElement) {
         super(expectedStartElement);
     }
 
     /**
-     * Parse the attributes that are common to all SAML Request Types
+     * 解析所有 SAML 请求类型共有的 Destination 与 Consent 属性。
      *
-     * @param startElement
-     * @param request
-     *
-     * @throws ParsingException
+     * @param startElement 请求根元素
+     * @param request 目标请求对象
+     * @throws ParsingException 解析失败时抛出
      */
     protected void parseBaseAttributes(StartElement startElement, T request) throws ParsingException {
         request.setDestination(StaxParserUtil.getUriAttributeValue(startElement, SAMLProtocolQNames.ATTR_DESTINATION));
@@ -51,11 +54,12 @@ public abstract class SAMLRequestAbstractParser<T extends RequestAbstractType> e
     }
 
     /**
-     * If the current element is one of the common request elements (Issuer, Signature, Extensions), parses it.
-     * @param element
-     * @param xmlEventReader
-     * @param request
-     * @throws ParsingException
+     * 若当前子元素为 Issuer、Signature 或 Extensions，则解析并写入请求对象。
+     * @param element 协议元素枚举
+     * @param elementDetail 子元素起始标签
+     * @param xmlEventReader XML 事件读取器
+     * @param request 目标请求对象
+     * @throws ParsingException 解析失败时抛出
      */
     protected void parseCommonElements(SAMLProtocolQNames element, StartElement elementDetail, XMLEventReader xmlEventReader, RequestAbstractType request)
             throws ParsingException {

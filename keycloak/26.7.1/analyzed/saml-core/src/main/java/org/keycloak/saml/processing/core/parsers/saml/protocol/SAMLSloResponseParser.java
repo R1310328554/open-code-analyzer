@@ -31,22 +31,27 @@ import org.w3c.dom.Element;
 import static org.keycloak.saml.processing.core.parsers.saml.protocol.SAMLStatusResponseTypeParser.VERSION_2_0;
 
 /**
- * Parse the SLO Response
+ * 解析 SAML 2.0 单点登出响应（{@link StatusResponseType}）。
+ * <p>对 LogoutRequest 的处理结果，包含状态码及可选 Issuer 与签名。</p>
  *
  * @since Nov 3, 2010
  */
 public class SAMLSloResponseParser extends SAMLStatusResponseTypeParser<StatusResponseType> {
 
+    /** 单例实例。 */
     private static final SAMLSloResponseParser INSTANCE = new SAMLSloResponseParser();
 
+    /** 构造并绑定 LOGOUT_RESPONSE 根元素。 */
     public SAMLSloResponseParser() {
         super(SAMLProtocolQNames.LOGOUT_RESPONSE);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLSloResponseParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建 StatusResponse 对象并解析根元素属性。 */
     @Override
     protected StatusResponseType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         SAMLParserUtil.validateAttributeValue(element, SAMLProtocolQNames.ATTR_VERSION, VERSION_2_0);
@@ -55,12 +60,13 @@ public class SAMLSloResponseParser extends SAMLStatusResponseTypeParser<StatusRe
 
         StatusResponseType res = new StatusResponseType(id, issueInstant);
 
-        // Let us set the attributes
+        // 设置 Destination、Consent、InResponseTo 等公共响应属性
         super.parseBaseAttributes(element, res);
 
         return res;
     }
 
+    /** 分发并解析 Issuer、Signature、Extensions 及 Status 子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, StatusResponseType target, SAMLProtocolQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

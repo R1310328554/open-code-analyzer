@@ -24,21 +24,24 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
- * Base Class for all Response Type parsing for SAML2
- *
+ * 解析 SAML 2.0 {@link StatusCodeType} 状态码元素。
+ * <p>支持嵌套子状态码以表达多级错误层次。</p>
  */
 public class SAMLStatusCodeParser extends AbstractStaxSamlProtocolParser<StatusCodeType> {
 
+    /** 单例实例。 */
     private static final SAMLStatusCodeParser INSTANCE = new SAMLStatusCodeParser();
 
     private SAMLStatusCodeParser() {
         super(SAMLProtocolQNames.STATUS_CODE);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLStatusCodeParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建 StatusCode 并读取 Value URI 属性。 */
     @Override
     protected StatusCodeType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         final StatusCodeType res = new StatusCodeType();
@@ -46,6 +49,7 @@ public class SAMLStatusCodeParser extends AbstractStaxSamlProtocolParser<StatusC
         return res;
     }
 
+    /** 递归解析嵌套的 StatusCode 子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, StatusCodeType target, SAMLProtocolQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

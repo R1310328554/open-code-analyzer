@@ -32,22 +32,26 @@ import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 import org.w3c.dom.Element;
 
 /**
- * Parse the SAML Response
+ * 解析 SAML 2.0 {@link ResponseType} 元素。
+ * <p>响应消息携带处理状态及零个或多个断言（明文或加密）。</p>
  *
  * @since Nov 2, 2010
  */
 public class SAMLResponseParser extends SAMLStatusResponseTypeParser<ResponseType> {
 
+    /** 单例实例。 */
     private static final SAMLResponseParser INSTANCE = new SAMLResponseParser();
 
     private SAMLResponseParser() {
         super(SAMLProtocolQNames.RESPONSE);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLResponseParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建 Response 对象并解析根元素属性。 */
     @Override
     protected ResponseType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         SAMLParserUtil.validateAttributeValue(element, SAMLProtocolQNames.ATTR_VERSION, VERSION_2_0);
@@ -56,12 +60,13 @@ public class SAMLResponseParser extends SAMLStatusResponseTypeParser<ResponseTyp
 
         ResponseType res = new ResponseType(id, issueInstant);
 
-        // Let us set the attributes
+        // 设置 Destination、Consent、InResponseTo 等公共响应属性
         super.parseBaseAttributes(element, res);
 
         return res;
     }
 
+    /** 分发并解析 Issuer、Signature、Assertion、Status 等子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, ResponseType target, SAMLProtocolQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {
