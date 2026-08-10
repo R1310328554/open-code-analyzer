@@ -37,25 +37,40 @@ import org.keycloak.services.clientregistration.policy.ClientRegistrationPolicyE
 import org.jboss.logging.Logger;
 
 /**
+ * 协议映射器类型白名单注册策略。
+ * <p>在注册与更新时校验请求中的协议映射器类型是否在允许列表内；注册后移除自动添加但类型不在白名单内的内置映射器。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ProtocolMappersClientRegistrationPolicy implements ClientRegistrationPolicy {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(ProtocolMappersClientRegistrationPolicy.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 策略组件配置模型 */
     private final ComponentModel componentModel;
 
+    /** 构造策略实例。
+     * @param session Keycloak 会话
+     * @param componentModel 策略组件模型
+     */
     public ProtocolMappersClientRegistrationPolicy(KeycloakSession session, ComponentModel componentModel) {
         this.session = session;
         this.componentModel = componentModel;
     }
 
+    /** {@inheritDoc} 注册前校验协议映射器类型 */
     @Override
     public void beforeRegister(ClientRegistrationContext context) throws ClientRegistrationPolicyException {
         testMappers(context, null);
     }
 
+    /** 校验请求中的协议映射器：新映射器类型须在白名单内；更新时允许保留未变更的已有映射器。
+     * @param context 客户端注册上下文
+     * @param clientModel 更新时的现有客户端（注册时为 null）
+     * @throws ClientRegistrationPolicyException 类型不允许或映射器 ID 无效时抛出
+     */
     protected void testMappers(ClientRegistrationContext context, ClientModel clientModel) throws ClientRegistrationPolicyException {
         List<ProtocolMapperRepresentation> protocolMappers = context.getClient().getProtocolMappers();
         if (protocolMappers == null) {
@@ -100,15 +115,19 @@ public class ProtocolMappersClientRegistrationPolicy implements ClientRegistrati
 		}
     }
 
+	/** 记录警告并抛出协议映射器类型不允许异常。
+	 * @param mapper 被拒绝的映射器表示
+	 */
 	protected void failWithProtocolMapperTypeNotAllowedError(ProtocolMapperRepresentation mapper) {
 		ServicesLogger.LOGGER.clientRegistrationMapperNotAllowed(mapper.getName(), mapper.getProtocolMapper());
 		throw new ClientRegistrationPolicyException("ProtocolMapper type not allowed");
 	}
 
-    // Remove builtin mappers of unsupported types too
+    // 同时移除自动添加但类型不在白名单内的内置映射器
+    /** {@inheritDoc} 注册后移除不允许类型的内置映射器 */
     @Override
     public void afterRegister(ClientRegistrationContext context, ClientModel clientModel) {
-        // Remove mappers of unsupported type, which were added "automatically"
+        // 移除注册过程中自动添加但类型不在白名单内的映射器
         List<String> allowedMapperProviders = getAllowedMapperProviders();
         clientModel.getProtocolMappersStream()
                 .filter(mapper -> !allowedMapperProviders.contains(mapper.getProtocolMapper()))
@@ -118,25 +137,32 @@ public class ProtocolMappersClientRegistrationPolicy implements ClientRegistrati
                 .forEach(clientModel::removeProtocolMapper);
     }
 
+    /** {@inheritDoc} 更新前校验协议映射器类型与配置 */
     @Override
     public void beforeUpdate(ClientRegistrationContext context, ClientModel clientModel) throws ClientRegistrationPolicyException {
         testMappers(context, clientModel);
     }
 
+    /** {@inheritDoc} 更新后无额外处理 */
     @Override
     public void afterUpdate(ClientRegistrationContext context, ClientModel clientModel) {
     }
 
+    /** {@inheritDoc} 查看前无额外校验 */
     @Override
     public void beforeView(ClientRegistrationProvider provider, ClientModel clientModel) throws ClientRegistrationPolicyException {
 
     }
 
+    /** {@inheritDoc} 删除前无额外校验 */
     @Override
     public void beforeDelete(ClientRegistrationProvider provider, ClientModel clientModel) throws ClientRegistrationPolicyException {
 
     }
 
+    /** 从组件配置读取允许的协议映射器 Provider ID 列表。
+     * @return 允许的映射器类型 ID 列表
+     */
     private List<String> getAllowedMapperProviders() {
         return componentModel.getConfig().getOrDefault(ProtocolMappersClientRegistrationPolicyFactory.ALLOWED_PROTOCOL_MAPPER_TYPES, Collections.emptyList());
     }

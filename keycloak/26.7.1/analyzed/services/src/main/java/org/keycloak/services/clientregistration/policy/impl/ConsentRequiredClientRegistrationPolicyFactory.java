@@ -27,27 +27,34 @@ import org.keycloak.services.clientregistration.policy.AbstractClientRegistratio
 import org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy;
 
 /**
+ * {@link ConsentRequiredClientRegistrationPolicy} 的 Provider 工厂。
+ * <p>启用后，新注册客户端始终需要用户同意（consentRequired=true）。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ConsentRequiredClientRegistrationPolicyFactory extends AbstractClientRegistrationPolicyFactory {
 
+    /** 策略 Provider 标识符 */
     public static final String PROVIDER_ID = "consent-required";
 
+    /** {@inheritDoc} 创建强制同意策略实例 */
     @Override
     public ClientRegistrationPolicy create(KeycloakSession session, ComponentModel model) {
         return new ConsentRequiredClientRegistrationPolicy();
     }
 
+    /** {@inheritDoc} 返回策略说明文本 */
     @Override
     public String getHelpText() {
         return "When present, then newly registered client will always have 'consentRequired' switch enabled";
     }
 
+    /** {@inheritDoc} 本策略无可配置属性 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return Collections.emptyList();
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;

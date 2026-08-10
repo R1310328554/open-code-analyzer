@@ -31,21 +31,28 @@ import org.keycloak.services.clientregistration.policy.AbstractClientRegistratio
 import org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy;
 
 /**
+ * {@link ProtocolMappersClientRegistrationPolicy} 的 Provider 工厂。
+ * <p>配置允许的协议映射器类型白名单，选项来自已注册的 {@link ProtocolMapper} 工厂。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ProtocolMappersClientRegistrationPolicyFactory extends AbstractClientRegistrationPolicyFactory {
 
+    /** 配置属性列表（postInit 时填充） */
     private List<ProviderConfigProperty> configProperties = new LinkedList<>();
 
+    /** 策略 Provider 标识符 */
     public static final String PROVIDER_ID = "allowed-protocol-mappers";
 
+    /** 配置键：允许的协议映射器类型 ID 列表 */
     public static final String ALLOWED_PROTOCOL_MAPPER_TYPES = "allowed-protocol-mapper-types";
 
+    /** {@inheritDoc} 创建协议映射器白名单策略实例 */
     @Override
     public ClientRegistrationPolicy create(KeycloakSession session, ComponentModel model) {
         return new ProtocolMappersClientRegistrationPolicy(session, model);
     }
 
+    /** {@inheritDoc} 初始化允许映射器类型的多选配置项 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         super.postInit(factory);
@@ -60,22 +67,28 @@ public class ProtocolMappersClientRegistrationPolicyFactory extends AbstractClie
         configProperties.add(property);
     }
 
+    /** 收集所有已注册 {@link ProtocolMapper} 工厂的 Provider ID。
+     * @return 映射器工厂 ID 列表
+     */
     private List<String> getProtocolMapperFactoryIds() {
         return sessionFactory.getProviderFactoriesStream(ProtocolMapper.class)
                 .map(ProviderFactory::getId)
                 .collect(Collectors.toList());
     }
 
+    /** {@inheritDoc} 返回策略说明文本 */
     @Override
     public String getHelpText() {
         return "When present, it allows to specify whitelist of protocol mapper types, which will be allowed in representation of registered (or updated) client";
     }
 
+    /** {@inheritDoc} 返回允许映射器类型配置属性 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;

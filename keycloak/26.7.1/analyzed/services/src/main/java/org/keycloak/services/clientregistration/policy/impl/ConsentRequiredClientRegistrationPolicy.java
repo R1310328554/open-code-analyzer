@@ -24,20 +24,25 @@ import org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy;
 import org.keycloak.services.clientregistration.policy.ClientRegistrationPolicyException;
 
 /**
+ * 强制同意（Consent）注册策略。
+ * <p>新注册客户端自动开启 {@code consentRequired}，且禁止通过动态注册将其关闭。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ConsentRequiredClientRegistrationPolicy implements ClientRegistrationPolicy {
 
+    /** {@inheritDoc} 注册前无额外校验 */
     @Override
     public void beforeRegister(ClientRegistrationContext context) throws ClientRegistrationPolicyException {
 
     }
 
+    /** {@inheritDoc} 注册后强制开启 consentRequired */
     @Override
     public void afterRegister(ClientRegistrationContext context, ClientModel clientModel) {
         clientModel.setConsentRequired(true);
     }
 
+    /** {@inheritDoc} 禁止将 consentRequired 从 true 改为 false */
     @Override
     public void beforeUpdate(ClientRegistrationContext context, ClientModel clientModel) throws ClientRegistrationPolicyException {
         if (context.getClient().isConsentRequired() == null) {
@@ -55,16 +60,19 @@ public class ConsentRequiredClientRegistrationPolicy implements ClientRegistrati
         }
     }
 
+    /** {@inheritDoc} 更新后无额外处理 */
     @Override
     public void afterUpdate(ClientRegistrationContext context, ClientModel clientModel) {
 
     }
 
+    /** {@inheritDoc} 查看前无额外校验 */
     @Override
     public void beforeView(ClientRegistrationProvider provider, ClientModel clientModel) throws ClientRegistrationPolicyException {
 
     }
 
+    /** {@inheritDoc} 删除前无额外校验 */
     @Override
     public void beforeDelete(ClientRegistrationProvider provider, ClientModel clientModel) throws ClientRegistrationPolicyException {
 

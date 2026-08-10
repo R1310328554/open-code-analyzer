@@ -33,12 +33,20 @@ import org.keycloak.services.clientregistration.ClientRegistrationProvider;
 import org.jboss.logging.Logger;
 
 /**
+ * 客户端注册策略管理器。
+ * <p>在注册、更新、查看与删除客户端时，按 {@link RegistrationAuth} 类型触发领域配置的 {@link ClientRegistrationPolicy} 组件，并汇总各策略允许的 Web Origins。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientRegistrationPolicyManager {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(ClientRegistrationPolicyManager.class);
 
+    /** 注册客户端前触发所有匹配策略的 {@code beforeRegister} 钩子。
+     * @param context 客户端注册上下文
+     * @param authType 注册认证类型（匿名或已认证）
+     * @throws ClientRegistrationPolicyException 策略拒绝时抛出
+     */
     public static void triggerBeforeRegister(ClientRegistrationContext context, RegistrationAuth authType) throws ClientRegistrationPolicyException  {
         triggerPolicies(context.getSession(), context.getProvider(), authType, "before register client", (ClientRegistrationPolicy policy) -> {
 
@@ -47,6 +55,11 @@ public class ClientRegistrationPolicyManager {
         });
     }
 
+    /** 注册客户端后触发所有匹配策略的 {@code afterRegister} 钩子。
+     * @param context 客户端注册上下文
+     * @param authType 注册认证类型
+     * @param client 已创建的客户端模型
+     */
     public static void triggerAfterRegister(ClientRegistrationContext context, RegistrationAuth authType, ClientModel client) {
         try {
             triggerPolicies(context.getSession(), context.getProvider(), authType, "after register client " + client.getClientId(), (ClientRegistrationPolicy policy) -> {
@@ -60,6 +73,12 @@ public class ClientRegistrationPolicyManager {
     }
 
 
+    /** 更新客户端前触发所有匹配策略的 {@code beforeUpdate} 钩子。
+     * @param context 客户端注册上下文
+     * @param authType 注册认证类型
+     * @param client 待更新的客户端模型
+     * @throws ClientRegistrationPolicyException 策略拒绝时抛出
+     */
     public static void triggerBeforeUpdate(ClientRegistrationContext context, RegistrationAuth authType, ClientModel client) throws ClientRegistrationPolicyException  {
         triggerPolicies(context.getSession(), context.getProvider(), authType, "before update client " + client.getClientId(), (ClientRegistrationPolicy policy) -> {
 
@@ -68,6 +87,11 @@ public class ClientRegistrationPolicyManager {
         });
     }
 
+    /** 更新客户端后触发所有匹配策略的 {@code afterUpdate} 钩子。
+     * @param context 客户端注册上下文
+     * @param authType 注册认证类型
+     * @param client 已更新的客户端模型
+     */
     public static void triggerAfterUpdate(ClientRegistrationContext context, RegistrationAuth authType, ClientModel client) {
         try {
             triggerPolicies(context.getSession(), context.getProvider(), authType, "after update client " + client.getClientId(), (ClientRegistrationPolicy policy) -> {
@@ -80,6 +104,13 @@ public class ClientRegistrationPolicyManager {
         }
     }
 
+    /** 查看客户端前触发所有匹配策略的 {@code beforeView} 钩子。
+     * @param session Keycloak 会话
+     * @param provider 客户端注册 Provider
+     * @param authType 注册认证类型
+     * @param client 待查看的客户端模型
+     * @throws ClientRegistrationPolicyException 策略拒绝时抛出
+     */
     public static void triggerBeforeView(KeycloakSession session, ClientRegistrationProvider provider, RegistrationAuth authType, ClientModel client) throws ClientRegistrationPolicyException {
         triggerPolicies(session, provider, authType, "before view client " + client.getClientId(), (ClientRegistrationPolicy policy) -> {
 
@@ -88,6 +119,13 @@ public class ClientRegistrationPolicyManager {
         });
     }
 
+    /** 删除客户端前触发所有匹配策略的 {@code beforeDelete} 钩子。
+     * @param session Keycloak 会话
+     * @param provider 客户端注册 Provider
+     * @param authType 注册认证类型
+     * @param client 待删除的客户端模型
+     * @throws ClientRegistrationPolicyException 策略拒绝时抛出
+     */
     public static void triggerBeforeRemove(KeycloakSession session, ClientRegistrationProvider provider, RegistrationAuth authType, ClientModel client) throws ClientRegistrationPolicyException {
         triggerPolicies(session, provider, authType, "before delete client " + client.getClientId(), (ClientRegistrationPolicy policy) -> {
 
@@ -98,6 +136,11 @@ public class ClientRegistrationPolicyManager {
 
 
 
+    /** 汇总指定认证类型下所有策略声明的允许 Web Origins。
+     * @param session Keycloak 会话
+     * @param authType 注册认证类型
+     * @return 允许的 Origin 列表
+     */
     public static List<String> getAllowedOrigins(KeycloakSession session, RegistrationAuth authType) {
         RealmModel realm = session.getContext().getRealm();
         String policyTypeKey = getComponentTypeKey(authType);
@@ -113,6 +156,14 @@ public class ClientRegistrationPolicyManager {
         return origins;
     }
 
+    /** 按认证类型筛选并依次执行领域中的注册策略。
+     * @param session Keycloak 会话
+     * @param provider 客户端注册 Provider
+     * @param authType 注册认证类型
+     * @param opDescription 操作描述（用于日志与事件）
+     * @param op 策略回调
+     * @throws ClientRegistrationPolicyException 策略拒绝时抛出
+     */
     private static void triggerPolicies(KeycloakSession session, ClientRegistrationProvider provider, RegistrationAuth authType,
                                         String opDescription, ClientRegOperation op) throws ClientRegistrationPolicyException {
         RealmModel realm = session.getContext().getRealm();
@@ -123,6 +174,14 @@ public class ClientRegistrationPolicyManager {
                 .forEach(policyModel -> runPolicy(policyModel, session, provider, opDescription, op));
     }
 
+    /** 实例化并执行单个策略组件，失败时记录事件并重新抛出异常。
+     * @param policyModel 策略组件模型
+     * @param session Keycloak 会话
+     * @param provider 客户端注册 Provider
+     * @param opDescription 操作描述
+     * @param op 策略回调
+     * @throws ClientRegistrationPolicyException 策略拒绝或 Provider 缺失时抛出
+     */
     private static void runPolicy(ComponentModel policyModel, KeycloakSession session, ClientRegistrationProvider provider,
                            String opDescription, ClientRegOperation op) throws ClientRegistrationPolicyException {
         ClientRegistrationPolicy policy = session.getProvider(ClientRegistrationPolicy.class, policyModel);
@@ -144,12 +203,21 @@ public class ClientRegistrationPolicyManager {
         }
     }
 
+    /** 策略执行回调函数式接口 */
     private interface ClientRegOperation {
 
+        /** 对给定策略执行操作
+         * @param policy 客户端注册策略实例
+         * @throws ClientRegistrationPolicyException 策略拒绝时抛出
+         */
         void run(ClientRegistrationPolicy policy) throws ClientRegistrationPolicyException;
 
     }
 
+    /** 将 {@link RegistrationAuth} 转为组件 subType 键（小写枚举名）。
+     * @param authType 注册认证类型
+     * @return 组件 subType 字符串
+     */
     public static String getComponentTypeKey(RegistrationAuth authType) {
         return authType.toString().toLowerCase();
     }

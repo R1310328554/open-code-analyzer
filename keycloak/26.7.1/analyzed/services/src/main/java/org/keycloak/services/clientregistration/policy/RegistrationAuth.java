@@ -18,24 +18,28 @@
 package org.keycloak.services.clientregistration.policy;
 
 /**
+ * 客户端动态注册时的认证类型。
+ * <p>区分匿名注册（无 initialAccessToken/Bearer Token）与已认证注册，并用于选择对应的 {@link ClientRegistrationPolicy} 组件 subType。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public enum RegistrationAuth {
 
     /**
-     * Case when client is registered without token (either initialAccessToken or BearerToken).
-     *
-     * Note this will be the case also for update + view + remove with registrationToken, which was created during anonymous registration
+     * 匿名注册：未携带 initialAccessToken 或 Bearer Token。
+     * <p>通过匿名注册获得的 registrationToken 进行的更新/查看/删除也属于此类型。</p>
      */
     ANONYMOUS,
 
     /**
-     * Case when client is registered with token (either initialAccessToken or BearerToken).
-     *
-     * Note this will be the case also update + view + remove with registrationToken, which was created during authenticated registration or via admin console
+     * 已认证注册：携带 initialAccessToken 或 Bearer Token。
+     * <p>通过已认证注册或管理控制台创建的 registrationToken 进行的后续操作也属于此类型。</p>
      */
     AUTHENTICATED;
 
+    /** 从字符串解析枚举值（大小写不敏感）。
+     * @param regAuth 认证类型名称
+     * @return 对应的 {@link RegistrationAuth} 常量
+     */
     public static RegistrationAuth fromString(String regAuth) {
         return Enum.valueOf(RegistrationAuth.class, regAuth.toUpperCase());
     }

@@ -39,10 +39,13 @@ import org.keycloak.services.clientregistration.policy.impl.ScopeClientRegistrat
 import org.keycloak.services.clientregistration.policy.impl.TrustedHostClientRegistrationPolicyFactory;
 
 /**
+ * 默认客户端注册策略初始化。
+ * <p>当领域尚未配置任何 {@link ClientRegistrationPolicy} 组件时，为匿名与已认证注册路径注入受信任主机、同意要求、协议映射器白名单等内置策略。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DefaultClientRegistrationPolicies {
 
+    /** 默认允许的内置协议映射器 Provider ID 列表 */
     private static String[] DEFAULT_ALLOWED_PROTOCOL_MAPPERS = {
             UserAttributeStatementMapper.PROVIDER_ID,
             UserAttributeMapper.PROVIDER_ID,
@@ -54,17 +57,27 @@ public class DefaultClientRegistrationPolicies {
             RoleListMapper.PROVIDER_ID
     };
 
+    /** 若领域无注册策略组件，则添加匿名与已认证的默认策略集。
+     * @param realm 目标领域模型
+     */
     public static void addDefaultPolicies(RealmModel realm) {
         String anonPolicyType = ClientRegistrationPolicyManager.getComponentTypeKey(RegistrationAuth.ANONYMOUS);
         String authPolicyType = ClientRegistrationPolicyManager.getComponentTypeKey(RegistrationAuth.AUTHENTICATED);
 
-        // Probably an issue if admin removes all policies intentionally...
+        // 若管理员故意删除全部策略，此处不会重新注入（可能为已知限制）
         if (realm.getComponentsStream(realm.getId(), ClientRegistrationPolicy.class.getName()).count() == 0) {
             addAnonymousPolicies(realm, anonPolicyType);
             addAuthPolicies(realm, authPolicyType);
         }
     }
 
+    /** 创建策略组件模型的通用工厂方法。
+     * @param name 组件显示名称
+     * @param realm 所属领域
+     * @param providerId 策略 Provider ID
+     * @param policyType 策略 subType（anonymous/authenticated）
+     * @return 未持久化的组件模型
+     */
     private static ComponentModel createModelInstance(String name, RealmModel realm, String providerId, String policyType) {
         ComponentModel model = new ComponentModel();
         model.setName(name);
@@ -75,10 +88,14 @@ public class DefaultClientRegistrationPolicies {
         return model;
     }
 
+    /** 为匿名注册路径添加默认策略（受信任主机、同意、范围、客户端上限等）。
+     * @param realm 目标领域
+     * @param policyTypeKey 策略 subType 键
+     */
     private static void addAnonymousPolicies(RealmModel realm, String policyTypeKey) {
         ComponentModel trustedHostModel = createModelInstance("Trusted Hosts", realm, TrustedHostClientRegistrationPolicyFactory.PROVIDER_ID, policyTypeKey);
 
-        // Not any trusted hosts by default
+        // 默认不配置任何受信任主机
         trustedHostModel.getConfig().put(TrustedHostClientRegistrationPolicyFactory.TRUSTED_HOSTS, Collections.emptyList());
         trustedHostModel.getConfig().putSingle(TrustedHostClientRegistrationPolicyFactory.HOST_SENDING_REGISTRATION_REQUEST_MUST_MATCH, "true");
         trustedHostModel.getConfig().putSingle(TrustedHostClientRegistrationPolicyFactory.CLIENT_URIS_MUST_MATCH, "true");
@@ -98,10 +115,18 @@ public class DefaultClientRegistrationPolicies {
     }
 
 
+    /** 为已认证注册路径添加通用策略。
+     * @param realm 目标领域
+     * @param policyTypeKey 策略 subType 键
+     */
     private static void addAuthPolicies(RealmModel realm, String policyTypeKey) {
         addGenericPolicies(realm, policyTypeKey);
     }
 
+    /** 添加匿名与已认证路径共用的策略（协议映射器、客户端范围、注册 Web Origins）。
+     * @param realm 目标领域
+     * @param policyTypeKey 策略 subType 键
+     */
     private static void addGenericPolicies(RealmModel realm, String policyTypeKey) {
         ComponentModel protMapperModel = createModelInstance("Allowed Protocol Mapper Types", realm, ProtocolMappersClientRegistrationPolicyFactory.PROVIDER_ID, policyTypeKey);
         protMapperModel.getConfig().put(ProtocolMappersClientRegistrationPolicyFactory.ALLOWED_PROTOCOL_MAPPER_TYPES, Arrays.asList(DEFAULT_ALLOWED_PROTOCOL_MAPPERS));

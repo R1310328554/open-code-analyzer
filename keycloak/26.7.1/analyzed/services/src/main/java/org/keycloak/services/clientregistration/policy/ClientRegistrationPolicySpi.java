@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 客户端注册策略 SPI 定义。
+ * <p>将 {@link ClientRegistrationPolicy} 与 {@link ClientRegistrationPolicyFactory} 注册到 Keycloak 提供者框架。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientRegistrationPolicySpi implements Spi {
 
+    /** {@inheritDoc} 内部 SPI，不对外暴露 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** {@inheritDoc} SPI 名称：{@code client-registration-policy} */
     @Override
     public String getName() {
         return "client-registration-policy";
     }
 
+    /** {@inheritDoc} Provider 接口类 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return ClientRegistrationPolicy.class;
     }
 
+    /** {@inheritDoc} Provider 工厂接口类 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ClientRegistrationPolicyFactory.class;

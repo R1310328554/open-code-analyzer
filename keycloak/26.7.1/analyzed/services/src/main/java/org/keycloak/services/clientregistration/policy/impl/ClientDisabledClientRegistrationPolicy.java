@@ -24,20 +24,25 @@ import org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy;
 import org.keycloak.services.clientregistration.policy.ClientRegistrationPolicyException;
 
 /**
+ * 客户端禁用注册策略。
+ * <p>新注册客户端在 {@code afterRegister} 阶段自动设为禁用，且禁止通过动态注册重新启用已禁用客户端。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientDisabledClientRegistrationPolicy implements ClientRegistrationPolicy {
 
+    /** {@inheritDoc} 注册前无额外校验 */
     @Override
     public void beforeRegister(ClientRegistrationContext context) throws ClientRegistrationPolicyException {
 
     }
 
+    /** {@inheritDoc} 注册后将客户端设为禁用，需管理员手动启用 */
     @Override
     public void afterRegister(ClientRegistrationContext context, ClientModel clientModel) {
         clientModel.setEnabled(false);
     }
 
+    /** {@inheritDoc} 禁止将已禁用客户端通过注册 API 重新启用 */
     @Override
     public void beforeUpdate(ClientRegistrationContext context, ClientModel clientModel) throws ClientRegistrationPolicyException {
         if (context.getClient().isEnabled() == null) {
@@ -55,16 +60,19 @@ public class ClientDisabledClientRegistrationPolicy implements ClientRegistratio
         }
     }
 
+    /** {@inheritDoc} 更新后无额外处理 */
     @Override
     public void afterUpdate(ClientRegistrationContext context, ClientModel clientModel) {
 
     }
 
+    /** {@inheritDoc} 查看前无额外校验 */
     @Override
     public void beforeView(ClientRegistrationProvider provider, ClientModel clientModel) throws ClientRegistrationPolicyException {
 
     }
 
+    /** {@inheritDoc} 删除前无额外校验 */
     @Override
     public void beforeDelete(ClientRegistrationProvider provider, ClientModel clientModel) throws ClientRegistrationPolicyException {
 
