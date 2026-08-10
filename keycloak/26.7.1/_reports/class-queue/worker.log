@@ -1918,3 +1918,18 @@
 2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/services/scheduled/ClusterAwareScheduledTaskRunner.java wave65b session persisters + clear-expired + client storage
 2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/storage/ClientScopeStorageManager.java wave65b session persisters + clear-expired + client storage
 2026-08-10T08:40:02Z DONE model/storage-private/src/main/java/org/keycloak/storage/ClientStorageManager.java wave65b session persisters + clear-expired + client storage
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/GroupStorageManager.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/MigrationManager.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/RoleStorageManager.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/UserStorageEventListener.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/UserStorageManager.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/UserStoragePrivateUtil.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/UserStorageProviderClusterEvent.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/UserStorageSyncTask.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/adapter/InMemoryUserAdapter.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/client/AbstractClientStorageAdapter.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/client/AbstractReadOnlyClientScopeAdapter.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/client/AbstractReadOnlyClientStorageAdapter.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/client/ClientStorageProviderFactory.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/client/ClientStorageProviderSpi.java wave66a storage managers + client storage adapters
+2026-08-10T08:42:49Z DONE model/storage-private/src/main/java/org/keycloak/storage/client/UnsupportedOperationsClientStorageAdapter.java wave66a storage managers + client storage adapters
