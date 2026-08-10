@@ -18,6 +18,8 @@
 package org.keycloak.models;
 
 /**
+ * 模型唯一性冲突异常：创建或更新时字段值重复。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ModelDuplicateException extends ModelException {
@@ -25,6 +27,7 @@ public class ModelDuplicateException extends ModelException {
     private String duplicateFieldName;
 
     /**
+     * 默认构造。
      * Default constructor
      *
      * @deprecated use a variant with a message instead
@@ -33,19 +36,25 @@ public class ModelDuplicateException extends ModelException {
     public ModelDuplicateException() {
     }
 
+    /** @param message 错误消息 */
     public ModelDuplicateException(String message) {
         super(message);
     }
 
+    /** @param message 错误消息
+     * @param duplicateFieldName 重复字段名 */
     public ModelDuplicateException(String message, String duplicateFieldName) {
         super(message);
         this.duplicateFieldName = duplicateFieldName;
     }
 
+    /** @param message 错误消息
+     * @param cause 原因 */
     public ModelDuplicateException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /** @return 发生冲突的字段名 */
     public String getDuplicateFieldName() {
         return duplicateFieldName;
     }

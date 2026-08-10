@@ -18,14 +18,22 @@
 package org.keycloak.models;
 
 /**
+ * Keycloak 事务抽象：begin/commit/rollback 生命周期。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface KeycloakTransaction {
+    /** 启动事务。 */
     void begin();
+    /** 提交事务。 */
     void commit();
+    /** 回滚事务。 */
     void rollback();
+    /** 标记仅回滚（不可提交）。 */
     void setRollbackOnly();
+    /** @return 是否已标记仅回滚 */
     boolean getRollbackOnly();
+    /** @return 事务是否处于活动状态 */
     boolean isActive();
 }

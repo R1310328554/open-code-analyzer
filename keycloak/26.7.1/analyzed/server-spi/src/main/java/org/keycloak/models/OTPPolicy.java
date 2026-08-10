@@ -32,6 +32,8 @@ import org.jboss.logging.Logger;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
+ * OTP（TOTP/HOTP）策略：算法、位数、时间窗口及 otpauth URI 生成。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -72,73 +74,92 @@ public class OTPPolicy implements Serializable {
         this.isCodeReusable = isCodeReusable;
     }
 
+    /** 默认 TOTP 策略（SHA1、6 位、30 秒周期）。 */
     public static OTPPolicy DEFAULT_POLICY = new OTPPolicy(OTPCredentialModel.TOTP, HmacOTP.HMAC_SHA1, 0, 6, 1, 30);
+    /** 默认 OTP 码不可重复使用。 */
     public static final boolean DEFAULT_IS_REUSABLE = false;
 
+    /** Realm 属性：OTP 码是否可复用。 */
     // Realm attributes
     public static final String REALM_REUSABLE_CODE_ATTRIBUTE = "realmReusableOtpCode";
 
+    /** @return Key URI 算法名（如 SHA1） */
     public String getAlgorithmKey() {
         return algToKeyUriAlg.containsKey(algorithm) ? algToKeyUriAlg.get(algorithm) : algorithm;
     }
 
+    /** @return OTP 类型（totp/hotp） */
     public String getType() {
         return type;
     }
 
+    /** @param type OTP 类型 */
     public void setType(String type) {
         this.type = type;
     }
 
+    /** @return HMAC 算法标识 */
     public String getAlgorithm() {
         return algorithm;
     }
 
+    /** @param algorithm HMAC 算法 */
     public void setAlgorithm(String algorithm) {
         this.algorithm = algorithm;
     }
 
+    /** @return HOTP 初始计数器 */
     public int getInitialCounter() {
         return initialCounter;
     }
 
+    /** @param initialCounter HOTP 初始计数 */
     public void setInitialCounter(int initialCounter) {
         this.initialCounter = initialCounter;
     }
 
+    /** @return OTP 位数 */
     public int getDigits() {
         return digits;
     }
 
+    /** @param digits OTP 位数 */
     public void setDigits(int digits) {
         this.digits = digits;
     }
 
+    /** @return 验证前瞻窗口大小 */
     public int getLookAheadWindow() {
         return lookAheadWindow;
     }
 
+    /** @param lookAheadWindow 前瞻窗口 */
     public void setLookAheadWindow(int lookAheadWindow) {
         this.lookAheadWindow = lookAheadWindow;
     }
 
+    /** @return TOTP 时间步长（秒） */
     public int getPeriod() {
         return period;
     }
 
+    /** @param period TOTP 周期（秒） */
     public void setPeriod(int period) {
         this.period = period;
     }
 
+    /** @return OTP 码是否允许重复使用 */
     public boolean isCodeReusable() {
         return isCodeReusable;
     }
 
+    /** @param isReusable 是否可复用 */
     public void setCodeReusable(boolean isReusable) {
         isCodeReusable = isReusable;
     }
 
     /**
+     * 按 Key-Uri-Format 生成 otpauth:// URI（使用 Realm 显示名与用户）。
      * Constructs the <code>otpauth://</code> URI based on the <a href="https://github.com/google/google-authenticator/wiki/Key-Uri-Format">Key-Uri-Format</a>.
      *
      * @param realm
@@ -155,6 +176,7 @@ public class OTPPolicy implements Serializable {
     }
 
     /**
+     * 按 Key-Uri-Format 生成 otpauth:// URI。
      * Constructs the <code>otpauth://</code> URI based on the <a href="https://github.com/google/google-authenticator/wiki/Key-Uri-Format">Key-Uri-Format</a>.
      *
      * @param rawIssuerName

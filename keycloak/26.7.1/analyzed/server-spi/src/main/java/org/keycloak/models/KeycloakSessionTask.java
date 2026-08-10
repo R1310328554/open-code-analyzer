@@ -18,15 +18,18 @@
 package org.keycloak.models;
 
 /**
+ * 在事务内执行的 Keycloak 会话任务。
  * Task to be executed inside transaction
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface KeycloakSessionTask {
 
+    /** @param session 当前 Keycloak 会话 */
     void run(KeycloakSession session);
 
     /**
+     * @return 任务描述，可用于日志
      * @return Details about the task. Can be useful for logging purposes
      */
     default String getTaskName() {

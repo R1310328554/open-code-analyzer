@@ -17,6 +17,7 @@
 package org.keycloak.models;
 
 /**
+ * 在 {@link KeycloakSession} 上执行并返回结果的函数式任务接口。
  * Interface for tasks that compute a result and need access to the {@link KeycloakSession}.
  *
  * @param <V> the type of the computed result.
@@ -26,6 +27,7 @@ package org.keycloak.models;
 public interface KeycloakSessionTaskWithResult<V> {
 
     /**
+     * 计算并返回结果。
      * Computes a result.
      *
      * @param session a reference to the {@link KeycloakSession}.

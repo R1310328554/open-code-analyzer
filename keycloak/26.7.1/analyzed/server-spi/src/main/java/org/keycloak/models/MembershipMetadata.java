@@ -18,14 +18,17 @@ package org.keycloak.models;
 
 import org.keycloak.representations.idm.MembershipType;
 
+/** 成员关系元数据：封装 {@link MembershipType} 等成员属性。 */
 public class MembershipMetadata {
 
     private final MembershipType membershipType;
 
+    /** @param membershipType 成员类型 */
     public MembershipMetadata(MembershipType membershipType) {
         this.membershipType = membershipType;
     }
 
+    /** @return 成员类型 */
     public MembershipType getMembershipType() {
         return membershipType;
     }

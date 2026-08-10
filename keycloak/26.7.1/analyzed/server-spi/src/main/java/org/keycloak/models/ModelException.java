@@ -20,36 +20,48 @@ package org.keycloak.models;
 import org.keycloak.common.util.Throwables;
 
 /**
+ * 模型层运行时异常基类，可携带国际化消息参数。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ModelException extends RuntimeException {
 
     private Object[] parameters;
 
+    /** 默认构造。 */
     public ModelException() {
     }
 
+    /** @param message 错误消息 */
     public ModelException(String message) {
         super(message);
     }
 
+    /** @param message 消息模板
+     * @param parameters 消息参数 */
     public ModelException(String message, Object ... parameters) {
         super(message);
         this.parameters = parameters;
     }
 
+    /** @param message 错误消息
+     * @param cause 原因 */
     public ModelException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /** @return 消息格式化参数数组 */
     public Object[] getParameters() {
         return parameters;
     }
 
+    /** @param parameters 消息格式化参数 */
     public void setParameters(Object[] parameters) {
         this.parameters = parameters;
     }
 
+    /** @param type 待检查的异常类型
+     * @return 是否由给定类型引起 */
     @SafeVarargs
     public final boolean isCausedBy(Class<? extends Exception>... type) {
         return Throwables.isCausedBy(this, type);

@@ -18,6 +18,7 @@
 package org.keycloak.models;
 
 /**
+ * <p>模型校验失败异常：客户端可修正后重试的预期错误，非 500 内部错误。</p>
  * <p>Thrown to indicate that an error is expected as a result of the validations run against a model. Such
  * exceptions are not considered internal server errors but an expected error when validating a model where the client
  * has the opportunity to fix and retry the request.
@@ -27,6 +28,7 @@ package org.keycloak.models;
  */
 public class ModelValidationException extends ModelException {
 
+    /** @param message 校验失败说明 */
     public ModelValidationException(String message) {
         super(message);
     }

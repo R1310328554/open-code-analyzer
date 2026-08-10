@@ -35,6 +35,8 @@ import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 import static org.keycloak.common.util.UriUtils.parseQueryParameters;
 
 /**
+ * Keycloak 专用 {@link UriInfo}：基于 {@link HostnameProvider} 解析 base URI。
+ * 与 {@link UriInfo} 文档不同，无活动请求时多数方法抛出 {@link ContextNotActiveException} 而非 {@link IllegalStateException}。
  * Contrary to the {@link UriInfo} javadocs, most methods throw {@link ContextNotActiveException}, not {@link IllegalStateException}, if there is no active request.
  */
 public class KeycloakUriInfo implements UriInfo {
@@ -45,6 +47,9 @@ public class KeycloakUriInfo implements UriInfo {
     private URI requestURI;
     private URI baseURI;
 
+    /** @param session Keycloak 会话
+     * @param type URL 类型（前端/管理/后端）
+     * @param delegate 底层 JAX-RS UriInfo */
     public KeycloakUriInfo(KeycloakSession session, UrlType type, UriInfo delegate) {
         this.delegate = delegate;
 
@@ -52,6 +57,7 @@ public class KeycloakUriInfo implements UriInfo {
         baseURI = hostnameProvider.getBaseUri(delegate, type);
     }
 
+    /** @return 委托的 UriInfo */
     public UriInfo getDelegate() {
         return delegate;
     }

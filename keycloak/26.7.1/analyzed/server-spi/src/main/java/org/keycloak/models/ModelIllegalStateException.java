@@ -18,6 +18,7 @@ package org.keycloak.models;
 
 
 /**
+ * 模型非法状态异常：实体已被删除或并发更新导致无法读取。
  * Thrown when data can't be retrieved for the model.
  *
  * This occurs when an entity has been removed or updated in the meantime. This might wrap an optimistic lock exception
@@ -30,13 +31,17 @@ package org.keycloak.models;
  */
 public class ModelIllegalStateException extends ModelException {
 
+    /** 默认构造。 */
     public ModelIllegalStateException() {
     }
 
+    /** @param message 错误消息 */
     public ModelIllegalStateException(String message) {
         super(message);
     }
 
+    /** @param message 错误消息
+     * @param cause 原因（可能为乐观锁异常） */
     public ModelIllegalStateException(String message, Throwable cause) {
         super(message, cause);
     }

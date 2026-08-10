@@ -20,17 +20,23 @@ package org.keycloak.models;
 import java.util.Comparator;
 
 /**
+ * 带 GUI 排序序号的模型：管理控制台等 UI 按 {@link #getGuiOrder()} 排序。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface OrderedModel {
 
+    /** @return GUI 显示顺序（字符串形式整数，缺省视为 10000） */
     String getGuiOrder();
 
 
+    /** 按 {@link #getGuiOrder()} 数值升序比较 {@link OrderedModel}。 */
     class OrderedModelComparator<OM extends OrderedModel> implements Comparator<OM> {
 
+        /** 单例比较器实例。 */
         public static final OrderedModelComparator INSTANCE = new OrderedModelComparator();
 
+        /** @return 类型安全的比较器单例 */
         @SuppressWarnings("unchecked")
         public static <T extends OrderedModel> OrderedModelComparator<T> getInstance() {
             return INSTANCE;
