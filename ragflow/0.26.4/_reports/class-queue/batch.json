@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T17:36:14Z",
-  "files": [
-    "internal/agent/component/begin.go",
-    "internal/agent/component/browser.go",
-    "internal/agent/component/categorize.go",
-    "internal/agent/component/data_operations.go",
-    "internal/agent/component/docs_generator.go",
-    "internal/agent/component/excel_processor.go",
-    "internal/agent/component/fillup.go",
-    "internal/agent/component/fixture_stubs.go",
-    "internal/agent/component/invoke.go",
-    "internal/agent/component/io/docx_writer.go",
-    "internal/agent/component/io/helpers.go",
-    "internal/agent/component/io/html_writer.go",
-    "internal/agent/component/io/markdown_writer.go",
-    "internal/agent/component/io/pdf_writer.go",
-    "internal/agent/component/io/txt_writer.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1314,
-  "done": 435
+  "done": 450
 }
