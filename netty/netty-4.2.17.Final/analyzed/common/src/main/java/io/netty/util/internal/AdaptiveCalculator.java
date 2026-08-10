@@ -24,9 +24,13 @@ import static java.lang.Math.min;
 
 /**
  * Calculate sizes in a adaptive way.
+ *
+ * <p>根据实际使用量自适应调整下次分配尺寸（如 ByteBuf 容量），采用离散 SIZE_TABLE 与迟滞增减。</p>
  */
 public final class AdaptiveCalculator {
+    /** 记录到更大用量时索引一次跳增步长。 */
     private static final int INDEX_INCREMENT = 4;
+    /** 用量回落时索引递减步长（需连续两次确认才减）。 */
     private static final int INDEX_DECREMENT = 1;
 
     private static final int[] SIZE_TABLE;
@@ -37,7 +41,7 @@ public final class AdaptiveCalculator {
             sizeTable.add(i);
         }
 
-        // Suppress a warning since i becomes negative when an integer overflow happens
+        // 512 起按 2 幂扩展 SIZE_TABLE，直至 int 溢出终止
         for (int i = 512; i > 0; i <<= 1) {
             sizeTable.add(i);
         }
@@ -48,6 +52,7 @@ public final class AdaptiveCalculator {
         }
     }
 
+    /** 在 SIZE_TABLE 中二分查找不小于 size 的档位索引。 */
     private static int getSizeTableIndex(final int size) {
         for (int low = 0, high = SIZE_TABLE.length - 1;;) {
             if (high < low) {
@@ -114,6 +119,7 @@ public final class AdaptiveCalculator {
         nextSize = max(SIZE_TABLE[index], minCapacity);
     }
 
+    /** 根据本次实际使用 size 调整 index/nextSize：过大则升档，过小则迟滞降档。 */
     public void record(int size) {
         if (size <= SIZE_TABLE[max(0, index - INDEX_DECREMENT)]) {
             if (decreaseNow) {
@@ -130,6 +136,7 @@ public final class AdaptiveCalculator {
         }
     }
 
+    /** 返回建议的下次分配容量（受 min/max 约束）。 */
     public int nextSize() {
         return nextSize;
     }

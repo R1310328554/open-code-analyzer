@@ -17,45 +17,39 @@ package io.netty.util.concurrent;
 
 /**
  * Expose details for a {@link Thread}.
+ *
+ * <p>以不可变快照形式暴露 {@link Thread} 属性，便于跨线程安全查询 EventLoop 线程状态。</p>
  */
 public interface ThreadProperties {
-    /**
-     * @see Thread#getState()
-     */
+    /** 线程状态。 @see Thread#getState() */
+
     Thread.State state();
 
-    /**
-     * @see Thread#getPriority()
-     */
+    /** 优先级。 @see Thread#getPriority() */
+
     int priority();
 
-    /**
-     * @see Thread#isInterrupted()
-     */
+    /** 是否已中断。 @see Thread#isInterrupted() */
+
     boolean isInterrupted();
 
-    /**
-     * @see Thread#isDaemon()
-     */
+    /** 是否守护线程。 @see Thread#isDaemon() */
+
     boolean isDaemon();
 
-    /**
-     * @see Thread#getName()
-     */
+    /** 线程名。 @see Thread#getName() */
+
     String name();
 
-    /**
-     * @see Thread#getId()
-     */
+    /** 线程 id。 @see Thread#getId() */
+
     long id();
 
-    /**
-     * @see Thread#getStackTrace()
-     */
+    /** 栈跟踪快照。 @see Thread#getStackTrace() */
+
     StackTraceElement[] stackTrace();
 
-    /**
-     * @see Thread#isAlive()
-     */
+    /** 是否存活。 @see Thread#isAlive() */
+
     boolean isAlive();
 }

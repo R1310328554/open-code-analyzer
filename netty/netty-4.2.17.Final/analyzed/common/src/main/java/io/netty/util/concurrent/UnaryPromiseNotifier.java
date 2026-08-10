@@ -20,6 +20,7 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 /**
+ * 将单个 {@link Future} 的结果级联到目标 {@link Promise} 的监听器。
  *
  * @deprecated use {@link PromiseNotifier#cascade(boolean, Future, Promise)}.
  */
@@ -32,11 +33,13 @@ public final class UnaryPromiseNotifier<T> implements FutureListener<T> {
         this.promise = ObjectUtil.checkNotNull(promise, "promise");
     }
 
+    /** 完成时将 success/cancel/failure 传播到构造时绑定的 promise。 */
     @Override
     public void operationComplete(Future<T> future) throws Exception {
         cascadeTo(future, promise);
     }
 
+    /** 静态级联：成功 trySuccess，取消 cancel，失败 tryFailure；已完成的 promise 打 warn 日志。 */
     public static <X> void cascadeTo(Future<X> completedFuture, Promise<? super X> promise) {
         if (completedFuture.isSuccess()) {
             if (!promise.trySuccess(completedFuture.getNow())) {

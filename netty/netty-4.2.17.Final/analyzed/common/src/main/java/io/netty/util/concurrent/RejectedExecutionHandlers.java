@@ -23,8 +23,11 @@ import java.util.concurrent.locks.LockSupport;
 
 /**
  * Expose helper methods which create different {@link RejectedExecutionHandler}s.
+ *
+ * <p>提供 {@link RejectedExecutionHandler} 工厂方法：直接拒绝或带退避的重试。</p>
  */
 public final class RejectedExecutionHandlers {
+    /** 始终抛出 {@link RejectedExecutionException} 的默认拒绝策略。 */
     private static final RejectedExecutionHandler REJECT = new RejectedExecutionHandler() {
         @Override
         public void rejected(Runnable task, SingleThreadEventExecutor executor) {
@@ -36,6 +39,8 @@ public final class RejectedExecutionHandlers {
 
     /**
      * Returns a {@link RejectedExecutionHandler} that will always just throw a {@link RejectedExecutionException}.
+     *
+     * <p>返回直接抛 {@link RejectedExecutionException} 的处理器。</p>
      */
     public static RejectedExecutionHandler reject() {
         return REJECT;
@@ -45,6 +50,8 @@ public final class RejectedExecutionHandlers {
      * Tries to backoff when the task can not be added due restrictions for an configured amount of time. This
      * is only done if the task was added from outside of the event loop which means
      * {@link EventExecutor#inEventLoop()} returns {@code false}.
+     *
+     * <p>非 EventLoop 线程提交失败时，唤醒执行器并退避重试若干次；仍失败则抛异常。</p>
      */
     public static RejectedExecutionHandler backoff(final int retries, long backoffAmount, TimeUnit unit) {
         ObjectUtil.checkPositive(retries, "retries");
@@ -54,7 +61,7 @@ public final class RejectedExecutionHandlers {
             public void rejected(Runnable task, SingleThreadEventExecutor executor) {
                 if (!executor.inEventLoop()) {
                     for (int i = 0; i < retries; i++) {
-                        // Try to wake up the executor so it will empty its task queue.
+                        // 唤醒 EventLoop 线程以消费队列，再 park 退避后重试 offer
                         executor.wakeup(false);
 
                         LockSupport.parkNanos(backOffNanos);
@@ -63,7 +70,7 @@ public final class RejectedExecutionHandlers {
                         }
                     }
                 }
-                // Either we tried to add the task from within the EventLoop or we was not able to add it even with
+                // EventLoop 内提交或退避后仍无法入队，最终拒绝
                 // backoff.
                 throw new RejectedExecutionException();
             }

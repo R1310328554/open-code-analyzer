@@ -20,13 +20,18 @@ import io.netty.util.internal.ObjectUtil;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
+/**
+ * 每次 {@link #execute(Runnable)} 都通过 {@link ThreadFactory} 新建线程并立即 start 的简单执行器。
+ */
 public final class ThreadPerTaskExecutor implements Executor {
+    /** 用于创建执行线程的工厂。 */
     private final ThreadFactory threadFactory;
 
     public ThreadPerTaskExecutor(ThreadFactory threadFactory) {
         this.threadFactory = ObjectUtil.checkNotNull(threadFactory, "threadFactory");
     }
 
+    /** 新建线程执行 command，不池化、不复用。 */
     @Override
     public void execute(Runnable command) {
         threadFactory.newThread(command).start();

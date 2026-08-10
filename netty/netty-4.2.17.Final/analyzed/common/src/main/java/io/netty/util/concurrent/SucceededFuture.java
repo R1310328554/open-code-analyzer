@@ -19,8 +19,11 @@ package io.netty.util.concurrent;
  * The {@link CompleteFuture} which is succeeded already.  It is
  * recommended to use {@link EventExecutor#newSucceededFuture(Object)} instead of
  * calling the constructor of this future.
+ *
+ * <p>已成功的 {@link CompleteFuture} 轻量实现；推荐通过 {@link EventExecutor#newSucceededFuture(Object)} 创建。</p>
  */
 public final class SucceededFuture<V> extends CompleteFuture<V> {
+    /** 已成功时的结果值。 */
     private final V result;
 
     /**
@@ -33,6 +36,7 @@ public final class SucceededFuture<V> extends CompleteFuture<V> {
         this.result = result;
     }
 
+    /** 成功 Future 无失败原因，恒为 null。 */
     @Override
     public Throwable cause() {
         return null;
@@ -43,6 +47,7 @@ public final class SucceededFuture<V> extends CompleteFuture<V> {
         return true;
     }
 
+    /** 立即返回成功结果，无需等待。 */
     @Override
     public V getNow() {
         return result;

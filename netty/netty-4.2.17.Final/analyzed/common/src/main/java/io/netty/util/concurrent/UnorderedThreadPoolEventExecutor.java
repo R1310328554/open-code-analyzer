@@ -42,6 +42,9 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * <p>
  * <strong>Because it provides no ordering, care should be taken when using it!</strong>
  *
+ * <p>基于 {@link ScheduledThreadPoolExecutor} 的多线程 {@link EventExecutor}，<strong>不保证</strong>任务提交顺序与执行顺序一致。
+ * 仅适用于无需严格顺序的协议；更高并行度应显式 offload 到自建线程池。</p>
+ *
  * @deprecated The behavior of this event executor deviates from the typical Netty execution model
  * and can cause subtle issues as a result.
  * Applications that wish to process messages with greater parallelism, should instead do explicit
@@ -52,8 +55,10 @@ public final class UnorderedThreadPoolEventExecutor extends ScheduledThreadPoolE
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(
             UnorderedThreadPoolEventExecutor.class);
 
+    /** shutdown 完成时 success 的终止 Future。 */
     private final Promise<?> terminationFuture = GlobalEventExecutor.INSTANCE.newPromise();
     private final Set<EventExecutor> executorSet = Collections.singleton(this);
+    /** 当前正在执行池任务的线程集合，用于 {@link #inEventLoop(Thread)}。 */
     private final Set<Thread> eventLoopThreads = ConcurrentHashMap.newKeySet();
 
     /**
@@ -216,11 +221,13 @@ public final class UnorderedThreadPoolEventExecutor extends ScheduledThreadPoolE
         return (Future<T>) super.submit(task);
     }
 
+    /** 通过 schedule(0) 提交，并用 {@link NonNotifyRunnable} 避免 decorate 死循环。 */
     @Override
     public void execute(Runnable command) {
         super.schedule(new NonNotifyRunnable(command), 0, NANOSECONDS);
     }
 
+    /** 包装 JDK {@link RunnableScheduledFuture} 为 Netty {@link PromiseTask}，修复 Callable 结果传递。 */
     private static final class RunnableScheduledFutureTask<V> extends PromiseTask<V>
             implements RunnableScheduledFuture<V>, ScheduledFuture<V> {
         private final RunnableScheduledFuture<V> future;
@@ -236,7 +243,7 @@ public final class UnorderedThreadPoolEventExecutor extends ScheduledThreadPoolE
         V runTask() throws Throwable {
             V result =  super.runTask();
             if (result == null && wasCallable) {
-                // If this RunnableScheduledFutureTask wraps a RunnableScheduledFuture that wraps a Callable we need
+                // Callable 包装场景须 future.get() 取正确结果，见 netty#11072
                 // to ensure that we return the correct result by calling future.get().
                 //
                 // See https://github.com/netty/netty/issues/11072
@@ -257,7 +264,7 @@ public final class UnorderedThreadPoolEventExecutor extends ScheduledThreadPoolE
                 super.run();
             } else if (!isDone()) {
                 try {
-                    // Its a periodic task so we need to ignore the return value
+                    // 周期任务忽略返回值，失败则 tryFailureInternal
                     runTask();
                 } catch (Throwable cause) {
                     if (!tryFailureInternal(cause)) {
@@ -283,7 +290,7 @@ public final class UnorderedThreadPoolEventExecutor extends ScheduledThreadPoolE
         }
     }
 
-    // This is a special wrapper which we will be used in execute(...) to wrap the submitted Runnable. This is needed as
+    // execute 专用包装：避免 ScheduledThreadPoolExecutor.execute→submit→decorateTask 与 Promise 通知形成死循环（#6507）
     // ScheduledThreadPoolExecutor.execute(...) will delegate to submit(...) which will then use decorateTask(...).
     // The problem with this is that decorateTask(...) needs to ensure we only do our own decoration if we not call
     // from execute(...) as otherwise we may end up creating an endless loop because DefaultPromise will call
@@ -304,6 +311,7 @@ public final class UnorderedThreadPoolEventExecutor extends ScheduledThreadPoolE
         }
     }
 
+    /** 在任务运行期间将当前线程注册到 eventLoopThreads 集合。 */
     private static final class AccountingThreadFactory implements ThreadFactory {
         private final ThreadFactory delegate;
         private final Set<Thread> threads;

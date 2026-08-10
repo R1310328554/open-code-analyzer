@@ -24,12 +24,16 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
+/**
+ * 基于最小堆的定时任务：支持一次性、固定速率与固定延迟重复调度。
+ * {@code periodNanos}：0 不重复，{@code >0} 固定速率，{@code <0} 固定延迟。
+ */
 final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFuture<V>, PriorityQueueNode {
-    // set once when added to priority queue
+    /** 入优先队列时分配的唯一 id，deadline 相同时用于稳定排序。 */
     private long id;
 
     private long deadlineNanos;
-    /* 0 - no repeat, >0 - repeat at fixed rate, <0 - repeat with fixed delay */
+    /** 0=一次性；{@code >0} 固定速率；{@code <0} 固定延迟（绝对值纳秒）。 */
     private final long periodNanos;
 
     private int queueIndex = INDEX_NOT_IN_QUEUE;
@@ -93,8 +97,9 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         return deadlineNanos;
     }
 
+    /** 到期出队后标记已消费，避免重复读系统时钟。 */
     void setConsumed() {
-        // Optimization to avoid checking system clock again
+        // 一次性任务出队后将 deadline 置 0，后续 delayNanos 直接返回 0
         // after deadline has passed and task has been dequeued
         if (periodNanos == 0) {
             assert scheduledExecutor().getCurrentTimeNanos() >= deadlineNanos;
@@ -109,6 +114,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         return delayNanos(scheduledExecutor().getCurrentTimeNanos());
     }
 
+    /** 计算距 deadline 的剩余纳秒（已过期则为 0）。 */
     static long deadlineToDelayNanos(long currentTimeNanos, long deadlineNanos) {
         return deadlineNanos == 0L ? 0L : Math.max(0L, deadlineNanos - currentTimeNanos);
     }
@@ -122,6 +128,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         return unit.convert(delayNanos(), TimeUnit.NANOSECONDS);
     }
 
+    /** 按 deadline 升序，相同时按 id 升序保证堆序稳定。 */
     @Override
     public int compareTo(Delayed o) {
         if (this == o) {
@@ -142,12 +149,13 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         }
     }
 
+    /** EventLoop 执行：未到期则重新入队；一次性则完成 Promise；周期性则更新 deadline 并再调度。 */
     @Override
     public void run() {
         assert executor().inEventLoop();
         try {
             if (delayNanos() > 0L) {
-                // Not yet expired, need to add or remove from queue
+                // 尚未到期：已取消则从队列移除，否则重新 schedule
                 if (isCancelled()) {
                     scheduledExecutor().scheduledTaskQueue().removeTyped(this);
                 } else {
@@ -161,7 +169,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
                     setSuccessInternal(result);
                 }
             } else {
-                // check if is done as it may was cancelled
+                // 周期性任务：可能已取消，仍须 runTask 但不重复调度
                 if (!isCancelled()) {
                     runTask();
                     if (!executor().isShutdown()) {
@@ -190,6 +198,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
      *
      * @param mayInterruptIfRunning this value has no effect in this implementation.
      */
+    /** 取消时从调度队列移除。{@code mayInterruptIfRunning} 对本实现无效果。 */
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
         boolean canceled = super.cancel(mayInterruptIfRunning);

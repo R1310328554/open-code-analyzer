@@ -18,8 +18,13 @@ package io.netty.util.concurrent;
 import java.util.concurrent.Callable;
 import java.util.concurrent.RunnableFuture;
 
+/**
+ * 将 {@link Runnable}/{@link Callable} 包装为 {@link RunnableFuture} 的 {@link Promise} 实现。
+ * 任务执行完成后用哨兵对象替换 {@code task} 引用以便 GC；外部不可直接 {@code setSuccess/setFailure}。
+ */
 class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
 
+    /** 将 {@link Runnable} 适配为 {@link Callable}，执行后返回预设结果。 */
     private static final class RunnableAdapter<T> implements Callable<T> {
         final Runnable task;
         final T result;
@@ -45,6 +50,7 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
     private static final Runnable CANCELLED = new SentinelRunnable("CANCELLED");
     private static final Runnable FAILED = new SentinelRunnable("FAILED");
 
+    /** 任务完成/取消/失败后的占位哨兵，便于释放真实 task 引用。 */
     private static class SentinelRunnable implements Runnable {
         private final String name;
 
@@ -61,7 +67,7 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
         }
     }
 
-    // Strictly of type Callable<V> or Runnable
+    /** 底层任务，类型严格为 {@link Callable}{@code <V>} 或 {@link Runnable}。 */
     private Object task;
 
     PromiseTask(EventExecutor executor, Runnable runnable, V result) {
@@ -89,6 +95,7 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
         return this == obj;
     }
 
+    /** 执行底层 Callable 或 Runnable 并返回结果（Runnable 返回 null）。 */
     @SuppressWarnings("unchecked")
     V runTask() throws Throwable {
         final Object task = this.task;
@@ -99,6 +106,7 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
         return null;
     }
 
+    /** EventLoop 线程入口：先标记不可取消，再执行并设置成功/失败。 */
     @Override
     public void run() {
         try {
@@ -111,9 +119,10 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
         }
     }
 
+    /** 完成时以哨兵替换 task，帮助周期性调度任务及时释放引用。 */
     private boolean clearTaskAfterCompletion(boolean done, Runnable result) {
         if (done) {
-            // The only time where it might be possible for the sentinel task
+            // 周期性 ScheduledFutureTask 取消时可能与哨兵替换产生良性竞态，返回值不会被使用。
             // to be called is in the case of a periodic ScheduledFutureTask,
             // in which case it's a benign race with cancellation and the (null)
             // return value is not used.
@@ -122,11 +131,13 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
         return done;
     }
 
+    /** 外部禁止直接设置失败，须通过内部 {@link #setFailureInternal}。 */
     @Override
     public final Promise<V> setFailure(Throwable cause) {
         throw new IllegalStateException();
     }
 
+    /** 内部设置失败并清理 task 引用。 */
     protected final Promise<V> setFailureInternal(Throwable cause) {
         super.setFailure(cause);
         clearTaskAfterCompletion(true, FAILED);
@@ -147,6 +158,7 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
         throw new IllegalStateException();
     }
 
+    /** 内部设置成功并清理 task 引用。 */
     protected final Promise<V> setSuccessInternal(V result) {
         super.setSuccess(result);
         clearTaskAfterCompletion(true, COMPLETED);
@@ -167,6 +179,7 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
         throw new IllegalStateException();
     }
 
+    /** 任务开始执行前标记不可取消。 */
     protected final boolean setUncancellableInternal() {
         return super.setUncancellable();
     }

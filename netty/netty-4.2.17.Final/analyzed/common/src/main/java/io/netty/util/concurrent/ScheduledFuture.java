@@ -17,6 +17,8 @@ package io.netty.util.concurrent;
 
 /**
  * The result of a scheduled asynchronous operation.
+ *
+ * <p>定时异步操作的结果，同时继承 Netty {@link Future} 与 JDK {@link java.util.concurrent.ScheduledFuture}。</p>
  */
 @SuppressWarnings("ClassNameSameAsAncestorName")
 public interface ScheduledFuture<V> extends Future<V>, java.util.concurrent.ScheduledFuture<V> {

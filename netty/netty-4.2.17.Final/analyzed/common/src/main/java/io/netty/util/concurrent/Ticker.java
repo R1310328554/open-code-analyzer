@@ -19,12 +19,16 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A nanosecond-based time source, e.g. {@link System#nanoTime()}.
+ *
+ * <p>纳秒级单调时间源抽象，便于测试注入 {@link MockTicker}。</p>
  */
 public interface Ticker {
     /**
      * Returns the singleton {@link Ticker} that returns the values from the real system clock source.
      * However, note that this is not the same as {@link System#nanoTime()} because we apply a fixed offset
      * to the {@link System#nanoTime() nanoTime}.
+     *
+     * <p>返回系统 {@link SystemTicker} 单例；值为相对起点的 nanoTime，非原始 System.nanoTime。</p>
      */
     static Ticker systemTicker() {
         return SystemTicker.INSTANCE;
@@ -34,6 +38,8 @@ public interface Ticker {
      * Returns a newly created mock {@link Ticker} that allows the caller control the flow of time.
      * This can be useful when you test time-sensitive logic without waiting for too long or introducing
      * flakiness due to non-deterministic nature of system clock.
+     *
+     * <p>创建可手动推进时间的 {@link MockTicker}，用于确定性测试调度逻辑。</p>
      */
     static MockTicker newMockTicker() {
         return new DefaultMockTicker();
@@ -42,12 +48,16 @@ public interface Ticker {
     /**
      * The initial value used for delay and computations based upon a monotonic time source.
      * @return initial value used for delay and computations based upon a monotonic time source.
+     *
+     * <p>单调时间源的初始 nanoTime 基准，用于 deadline 换算。</p>
      */
     long initialNanoTime();
 
     /**
      * The time elapsed since initialization of this class in nanoseconds. This may return a negative number just like
      * {@link System#nanoTime()}.
+     *
+     * <p>自初始化以来经过的纳秒数，语义同 {@link System#nanoTime()}。</p>
      */
     long nanoTime();
 
@@ -58,6 +68,8 @@ public interface Ticker {
      * @param unit the {@link TimeUnit} of {@code delay}.
      *
      * @see Thread#sleep(long)
+     *
+     * <p>阻塞等待指定时长。</p>
      */
     void sleep(long delay, TimeUnit unit) throws InterruptedException;
 
