@@ -25,7 +25,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collection;
 
 /**
- * Client beatInfo instance builder.
+ * 客户端心跳 {@link RsInfo} 转 {@link Instance} 的构建器。
+ *
+ * <p>包装 {@link InstanceBuilder}，经 SPI 加载的 {@link InstanceExtensionHandler} 链式处理扩展字段，最后由 {@link InstanceIdGeneratorManager} 生成 instanceId。</p>
  *
  * @author xiweng.yy
  */
@@ -35,17 +37,19 @@ public class BeatInfoInstanceBuilder {
     
     private final Collection<InstanceExtensionHandler> handlers;
     
+    /** 私有构造，初始化底层 Builder 与扩展处理器集合。 */
     private BeatInfoInstanceBuilder() {
         this.actualBuilder = InstanceBuilder.newBuilder();
         this.handlers = NacosServiceLoader.newServiceInstances(InstanceExtensionHandler.class);
     }
     
+    /** 创建新的心跳实例构建器。 */
     public static BeatInfoInstanceBuilder newBuilder() {
         return new BeatInfoInstanceBuilder();
     }
     
     /**
-     * Build a new {@link Instance} and chain handled by {@link InstanceExtensionHandler}.
+     * 构建 {@link Instance} 并依次执行扩展处理器，最后写入 instanceId。
      *
      * @return new instance
      */
@@ -58,6 +62,7 @@ public class BeatInfoInstanceBuilder {
         return result;
     }
     
+    /** 从 HTTP 请求配置各扩展处理器的扩展信息。 */
     public BeatInfoInstanceBuilder setRequest(HttpServletRequest request) {
         for (InstanceExtensionHandler each : handlers) {
             each.configExtensionInfoFromRequest(request);
@@ -70,6 +75,7 @@ public class BeatInfoInstanceBuilder {
         return this;
     }
     
+    /** 将心跳 RsInfo 属性映射到底层 InstanceBuilder。 */
     public BeatInfoInstanceBuilder setBeatInfo(RsInfo beatInfo) {
         setAttributesToBuilder(beatInfo);
         return this;
@@ -84,6 +90,7 @@ public class BeatInfoInstanceBuilder {
         actualBuilder.setEphemeral(beatInfo.isEphemeral());
     }
     
+    /** 调用 ID 生成管理器为实例写入唯一 instanceId。 */
     private void setInstanceId(Instance instance) {
         instance.setInstanceId(InstanceIdGeneratorManager.generateInstanceId(instance));
     }

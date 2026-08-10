@@ -31,17 +31,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collection;
 
 /**
- * Http instance builder.
+ * HTTP OpenAPI 请求参数转 {@link Instance} 的构建器。
  *
- * <p>
- * The http openAPI will split each attributes of {@link Instance} as parameters of http parameters. This Builder can
- * set an http request and get necessary parameters to build {@link Instance}.
- * </p>
- *
- * <p>
- * This builder is a wrapper for {@link com.alibaba.nacos.api.naming.pojo.builder.InstanceBuilder} and will inject some
- * extension handler by spi.
- * </p>
+ * <p>将注册/更新接口的各 HTTP 参数解析并填入 {@link InstanceBuilder}，同时经 SPI 注入 {@link InstanceExtensionHandler} 处理 1.x 客户端扩展字段。</p>
  *
  * @author xiweng.yy
  */
@@ -53,6 +45,7 @@ public class HttpRequestInstanceBuilder {
     
     private boolean defaultInstanceEphemeral = true;
     
+    /** 私有构造，加载 SPI 扩展处理器并创建底层 Builder。 */
     private HttpRequestInstanceBuilder() {
         this.actualBuilder = InstanceBuilder.newBuilder();
         this.handlers = NacosServiceLoader.newServiceInstances(InstanceExtensionHandler.class);
@@ -63,7 +56,7 @@ public class HttpRequestInstanceBuilder {
     }
     
     /**
-     * Build a new {@link Instance} and chain handled by {@link InstanceExtensionHandler}.
+     * 构建实例、执行扩展处理链并生成 instanceId。
      *
      * @return new instance
      */
@@ -76,12 +69,14 @@ public class HttpRequestInstanceBuilder {
         return result;
     }
     
+    /** 设置 ephemeral 参数缺省值（请求未传时使用）。 */
     public HttpRequestInstanceBuilder setDefaultInstanceEphemeral(
         boolean defaultInstanceEphemeral) {
         this.defaultInstanceEphemeral = defaultInstanceEphemeral;
         return this;
     }
     
+    /** 从 HTTP 请求解析必填/可选参数并写入 Builder。 */
     public HttpRequestInstanceBuilder setRequest(HttpServletRequest request) throws NacosException {
         for (InstanceExtensionHandler each : handlers) {
             each.configExtensionInfoFromRequest(request);
@@ -105,6 +100,7 @@ public class HttpRequestInstanceBuilder {
         setMetadata(request);
     }
     
+    /** 解析 weight 参数并校验是否在合法区间内。 */
     private void setWeight(HttpServletRequest request) throws NacosException {
         double weight = Double.parseDouble(WebUtils.optional(request, "weight", "1"));
         if (weight > Constants.MAX_WEIGHT_VALUE || weight < Constants.MIN_WEIGHT_VALUE) {
@@ -116,6 +112,7 @@ public class HttpRequestInstanceBuilder {
         actualBuilder.setWeight(weight);
     }
     
+    /** 解析 cluster/clusterName，缺省时使用 DEFAULT 集群名。 */
     private void setCluster(HttpServletRequest request) {
         String cluster = WebUtils.optional(request, CommonParams.CLUSTER_NAME, StringUtils.EMPTY);
         if (StringUtils.isBlank(cluster)) {

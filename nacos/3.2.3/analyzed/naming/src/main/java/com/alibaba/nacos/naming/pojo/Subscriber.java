@@ -22,7 +22,9 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * Subscriber.
+ * 服务订阅者信息 POJO。
+ *
+ * <p>记录订阅客户端的地址、Agent、应用名、IP、端口、namespace、服务名及集群；用于订阅关系查询与推送路由。</p>
  *
  * @author nicholas
  */
@@ -46,9 +48,11 @@ public class Subscriber implements Serializable {
     
     private String cluster;
     
+    /** 无参构造，供序列化框架使用。 */
     public Subscriber() {
     }
     
+    /** 构造订阅者，cluster 默认为空串。 */
     public Subscriber(String addrStr, String agent, String app, String ip, String namespaceId,
         String serviceName,
         int port) {
@@ -132,6 +136,7 @@ public class Subscriber implements Serializable {
         this.cluster = cluster;
     }
     
+    /** 按地址、Agent、应用、IP、namespace 与服务名判定相等。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) {

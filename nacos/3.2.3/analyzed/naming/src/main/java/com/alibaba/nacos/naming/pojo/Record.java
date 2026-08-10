@@ -19,7 +19,9 @@ package com.alibaba.nacos.naming.pojo;
 import java.io.Serializable;
 
 /**
- * Record to transfer and store in Nacos cluster.
+ * 命名集群内可传输、可持久化的记录接口。
+ *
+ * <p>实现类（如 {@link com.alibaba.nacos.naming.misc.SwitchDomain}）通过 {@link #getChecksum()} 提供内容摘要，用于 Raft 同步与变更比对。</p>
  *
  * @author nkorange
  * @since 1.0.0
@@ -27,7 +29,7 @@ import java.io.Serializable;
 public interface Record extends Serializable {
     
     /**
-     * get the checksum of this record, usually for record comparison.
+     * 获取记录内容校验和，通常用于记录版本比对。
      *
      * @return checksum of record
      */

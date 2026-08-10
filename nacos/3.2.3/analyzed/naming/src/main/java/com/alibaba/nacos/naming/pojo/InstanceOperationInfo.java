@@ -21,7 +21,9 @@ import com.alibaba.nacos.api.naming.pojo.Instance;
 import java.util.List;
 
 /**
- * InstanceOperationInfo. operation resources's description
+ * 实例批量操作上下文描述。
+ *
+ * <p>封装目标服务名、一致性类型（ephemeral/persist）及待操作实例列表，供一致性服务层统一处理注册、注销或元数据变更。</p>
  *
  * @author horizonzy
  * @since 1.4.0
@@ -38,20 +40,13 @@ public class InstanceOperationInfo {
         this.instances = instances;
     }
     
-    /**
-     * serverName with groupName.
-     * TODO split serviceName to serverName and serviceName. After disabled v1 client api.
-     */
+    /** 含分组前缀的完整服务名；待 v1 客户端下线后拆分为 group 与 service。 */
     private String serviceName;
     
-    /**
-     * consistencyType. it helps to operate all instances from consistencyService, value = ephemeral or persist.
-     */
+    /** 一致性类型：ephemeral 或 persist，决定走临时还是持久化一致性服务。 */
     private String consistencyType;
     
-    /**
-     * instances which need operate.
-     */
+    /** 本次批量操作涉及的实例列表。 */
     private List<? extends Instance> instances;
     
     public String getServiceName() {

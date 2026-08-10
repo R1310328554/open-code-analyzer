@@ -23,7 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Service detial info.
+ * 服务详情 POJO（已废弃）。
+ *
+ * <p>聚合 namespace、服务名、分组、集群映射、metadata、保护阈值、selector 与 ephemeral 标志；旧版查询 API 返回结构。</p>
  *
  * @author caogu.wyp
  * @version $Id: ServiceDetailInfo.java, v 0.1 2018-09-17 上午10:47 caogu.wyp Exp $$
@@ -52,7 +54,7 @@ public class ServiceDetailInfo implements Serializable {
     private Boolean ephemeral;
     
     /**
-     * Getter method for property <tt>serviceName</tt>.
+     * 获取服务名。
      *
      * @return property value of serviceName
      */
@@ -61,7 +63,7 @@ public class ServiceDetailInfo implements Serializable {
     }
     
     /**
-     * Setter method for property <tt>serviceName </tt>.
+     * 设置服务名。
      *
      * @param serviceName value to be assigned to property serviceName
      */
@@ -78,7 +80,7 @@ public class ServiceDetailInfo implements Serializable {
     }
     
     /**
-     * Getter method for property <tt>clusterMap</tt>.
+     * 获取集群名到 {@link ClusterInfo} 的映射。
      *
      * @return property value of clusterMap
      */
@@ -87,7 +89,7 @@ public class ServiceDetailInfo implements Serializable {
     }
     
     /**
-     * Setter method for property <tt>clusterMap </tt>.
+     * 设置服务下各集群详情映射。
      *
      * @param clusterMap value to be assigned to property clusterMap
      */
@@ -99,6 +101,7 @@ public class ServiceDetailInfo implements Serializable {
      * Getter method for property <tt>metadata</tt>.
      *
      * @return property value of metadata
+      * <p>Nacos 命名 paramcheck/pojo/instance：HTTP 参数提取、服务/集群/订阅 POJO 及实例构建与 ID 生成 SPI；详见上方类说明。</p>
      */
     public Map<String, String> getMetadata() {
         return metadata;
@@ -108,6 +111,7 @@ public class ServiceDetailInfo implements Serializable {
      * Setter method for property <tt>metadata </tt>.
      *
      * @param metadata value to be assigned to property metadata
+      * <p>Nacos 命名 paramcheck/pojo/instance：HTTP 参数提取、服务/集群/订阅 POJO 及实例构建与 ID 生成 SPI；详见上方类说明。</p>
      */
     public void setMetadata(Map<String, String> metadata) {
         this.metadata = metadata;
@@ -146,7 +150,7 @@ public class ServiceDetailInfo implements Serializable {
     }
     
     /**
-     * For some old apis, from new {@link com.alibaba.nacos.api.naming.pojo.maintainer.ServiceDetailInfo} to this deprecated one.
+     * 将新版 maintainer 服务详情转换为旧版 POJO，供兼容接口返回。
      *
      * @param newServiceDetailInfo new {@link com.alibaba.nacos.api.naming.pojo.maintainer.ServiceDetailInfo}
      * @return this deprecated one

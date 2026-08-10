@@ -28,12 +28,15 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * InstanceIdGeneratorManager.
+ * 实例 ID 生成器 SPI 管理器（单例）。
+ *
+ * <p>启动时通过 {@link NacosServiceLoader} 加载全部 {@link InstanceIdGenerator} 实现，按 type 索引；{@link #generateInstanceId(Instance)} 根据实例指定或默认类型委托生成。</p>
  *
  * @author : huangtianhui
  */
 public class InstanceIdGeneratorManager {
     
+    /** 全局单例，类加载时完成 SPI 初始化。 */
     private static final InstanceIdGeneratorManager INSTANCE = new InstanceIdGeneratorManager();
     
     private final Map<String, InstanceIdGenerator> generatorMap = new ConcurrentHashMap<>();
@@ -42,6 +45,7 @@ public class InstanceIdGeneratorManager {
         init();
     }
     
+    /** 扫描并注册所有 InstanceIdGenerator SPI 实现。 */
     private void init() {
         Collection<InstanceIdGenerator> instanceIdGenerators =
             NacosServiceLoader.load(InstanceIdGenerator.class);
@@ -58,7 +62,7 @@ public class InstanceIdGeneratorManager {
     }
     
     /**
-     * spi generateInstanceId.
+     * 根据实例的 generator 类型（缺省为 default）生成唯一 instanceId。
      *
      * @param instance instance
      * @return InstanceId

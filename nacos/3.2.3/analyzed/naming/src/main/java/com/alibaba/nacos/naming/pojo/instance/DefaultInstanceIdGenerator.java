@@ -23,12 +23,15 @@ import static com.alibaba.nacos.api.common.Constants.DEFAULT_INSTANCE_ID_GENERAT
 import static com.alibaba.nacos.api.common.Constants.NAMING_INSTANCE_ID_SPLITTER;
 
 /**
- * Default instance id generator.
+ * 默认实例 ID 生成器。
+ *
+ * <p>实现 {@link InstanceIdGenerator}，以 ip、port、cluster、serviceName 用 {@link com.alibaba.nacos.api.common.Constants#NAMING_INSTANCE_ID_SPLITTER} 拼接成唯一标识。</p>
  *
  * @author xiweng.yy
  */
 public class DefaultInstanceIdGenerator implements InstanceIdGenerator {
     
+    /** 按 ip#port#cluster#serviceName 格式生成实例 ID。 */
     @Override
     public String generateInstanceId(Instance instance) {
         return instance.getIp() + NAMING_INSTANCE_ID_SPLITTER
@@ -37,6 +40,7 @@ public class DefaultInstanceIdGenerator implements InstanceIdGenerator {
             + instance.getServiceName();
     }
     
+    /** 返回默认生成器类型常量 {@link com.alibaba.nacos.api.common.Constants#DEFAULT_INSTANCE_ID_GENERATOR}。 */
     @Override
     public String type() {
         return DEFAULT_INSTANCE_ID_GENERATOR;

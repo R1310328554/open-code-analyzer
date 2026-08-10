@@ -24,7 +24,9 @@ import static com.alibaba.nacos.api.common.Constants.NAMING_INSTANCE_ID_SPLITTER
 import static com.alibaba.nacos.api.common.Constants.SNOWFLAKE_INSTANCE_ID_GENERATOR;
 
 /**
- * SnowFlake InstanceId Generator..
+ * 基于 Snowflake 算法的实例 ID 生成器。
+ *
+ * <p>实现 {@link InstanceIdGenerator}，ID 格式为 snowflakeId#cluster#serviceName；workerId 通过 {@link SnowFlowerIdGenerator} 懒加载且仅初始化一次。</p>
  *
  * @author : huangtianhui
  */
@@ -37,9 +39,7 @@ public class SnowFlakeInstanceIdGenerator implements InstanceIdGenerator {
     
     private static final Object LOCK = new Object();
     
-    /**
-     * initialize the workerId and ensure that it is only initialized once.
-     */
+    /** 双重检查锁确保 Snowflake workerId 仅初始化一次。 */
     private void ensureWorkerIdInitialization() {
         if (!initialize) {
             synchronized (LOCK) {
@@ -51,6 +51,7 @@ public class SnowFlakeInstanceIdGenerator implements InstanceIdGenerator {
         }
     }
     
+    /** 生成 snowflake 序号并与 cluster、serviceName 拼接为 instanceId。 */
     @Override
     public String generateInstanceId(Instance instance) {
         ensureWorkerIdInitialization();
@@ -59,6 +60,7 @@ public class SnowFlakeInstanceIdGenerator implements InstanceIdGenerator {
             + instance.getServiceName();
     }
     
+    /** 返回 {@link com.alibaba.nacos.api.common.Constants#SNOWFLAKE_INSTANCE_ID_GENERATOR} 类型标识。 */
     @Override
     public String type() {
         return SNOWFLAKE_INSTANCE_ID_GENERATOR;

@@ -20,7 +20,9 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Subscribers.
+ * 订阅者列表包装 POJO。
+ *
+ * <p>作为 OpenAPI 批量查询订阅关系的响应体，内含 {@link Subscriber} 列表。</p>
  *
  * @author nicholas
  * @version $Id: Subscribers.java, v 0.1 2019-05-28 下午10:47 nicholas Exp $$
@@ -31,10 +33,12 @@ public class Subscribers implements Serializable {
     
     private List<Subscriber> subscribers;
     
+    /** 获取订阅者列表。 */
     public List<Subscriber> getSubscribers() {
         return subscribers;
     }
     
+    /** 设置订阅者列表。 */
     public void setSubscribers(List<Subscriber> subscribers) {
         this.subscribers = subscribers;
     }

@@ -20,7 +20,9 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * Ip and address info.
+ * IP 地址与实例属性信息 POJO。
+ *
+ * <p>描述集群下单个主机的 IP、端口、权重、健康 valid 标志、enabled 及 metadata；作为 {@link ClusterInfo} 的 hosts 元素。</p>
  *
  * @author caogu.wyp
  * @version $Id: IpAddressInfo.java, v 0.1 2018-09-17 上午10:52 caogu.wyp Exp $$
@@ -54,7 +56,7 @@ public class IpAddressInfo implements Serializable {
     }
     
     /**
-     * Setter method for property <tt>valid </tt>.
+     * 设置实例健康/有效标志。
      *
      * @param valid value to be assigned to property valid
      */
@@ -67,7 +69,7 @@ public class IpAddressInfo implements Serializable {
     }
     
     /**
-     * Setter method for property <tt>metadata </tt>.
+     * 设置实例元数据键值对。
      *
      * @param metadata value to be assigned to property metadata
      */
@@ -80,7 +82,7 @@ public class IpAddressInfo implements Serializable {
     }
     
     /**
-     * Setter method for property <tt>port </tt>.
+     * 设置实例监听端口。
      *
      * @param port value to be assigned to property port
      */
@@ -93,7 +95,7 @@ public class IpAddressInfo implements Serializable {
     }
     
     /**
-     * Setter method for property <tt>ip </tt>.
+     * 设置实例 IP 地址。
      *
      * @param ip value to be assigned to property ip
      */
@@ -106,7 +108,7 @@ public class IpAddressInfo implements Serializable {
     }
     
     /**
-     * Setter method for property <tt>weight </tt>.
+     * 设置负载均衡权重。
      *
      * @param weight value to be assigned to property weight
      */

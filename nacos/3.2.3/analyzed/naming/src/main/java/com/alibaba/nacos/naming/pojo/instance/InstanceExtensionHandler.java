@@ -21,23 +21,23 @@ import com.alibaba.nacos.api.naming.pojo.Instance;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Instance extension handler.
+ * 实例扩展信息 SPI 处理器接口。
  *
- * <p>An extension handler for {@link Instance}, which is to handle some specified request for 1.x client.
+ * <p>供 1.x 客户端注册/心跳请求携带的额外字段扩展；由 {@link HttpRequestInstanceBuilder} 与 {@link BeatInfoInstanceBuilder} 链式调用。</p>
  *
  * @author xiweng.yy
  */
 public interface InstanceExtensionHandler {
     
     /**
-     * Config extension info from http request.
+     * 从 HTTP 请求读取并缓存扩展配置信息。
      *
      * @param request http request
      */
     void configExtensionInfoFromRequest(HttpServletRequest request);
     
     /**
-     * Do handle for instance.
+     * 将扩展信息写入待构建的 {@link Instance} 对象。
      *
      * @param needHandleInstance instance needed to be handled.
      */

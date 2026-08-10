@@ -19,7 +19,9 @@ package com.alibaba.nacos.naming.pojo;
 import java.util.Collection;
 
 /**
- * Service name view object.
+ * 服务名列表视图对象。
+ *
+ * <p>封装分页或过滤后的服务名集合及总数 count，供 OpenAPI 服务列表查询响应序列化。</p>
  *
  * @author xiweng.yy
  */
@@ -29,6 +31,7 @@ public class ServiceNameView {
     
     private Collection<String> services;
     
+    /** 返回当前结果集中的服务数量。 */
     public int getCount() {
         return count;
     }
@@ -37,6 +40,7 @@ public class ServiceNameView {
         this.count = count;
     }
     
+    /** 返回服务名集合。 */
     public Collection<String> getServices() {
         return services;
     }

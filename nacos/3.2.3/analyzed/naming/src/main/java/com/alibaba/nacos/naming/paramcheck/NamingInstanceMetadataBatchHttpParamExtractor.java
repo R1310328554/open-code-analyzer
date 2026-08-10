@@ -31,12 +31,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Naming instance metadata batch http param extractor.
+ * 实例元数据批量操作 HTTP 请求参数提取器。
+ *
+ * <p>继承 {@link AbstractHttpParamExtractor}，从批量 metadata 接口解析 serviceName、namespaceId、metadata 及 instances JSON 列表，为参数校验框架生成 {@link ParamInfo} 集合。</p>
  *
  * @author zhuoguang
  */
 public class NamingInstanceMetadataBatchHttpParamExtractor extends AbstractHttpParamExtractor {
     
+    /** 解析批量元数据请求参数，首条为服务级信息，其余为各实例 IP/端口/集群。 */
     @Override
     public List<ParamInfo> extractParam(HttpServletRequest request) throws NacosException {
         ParamInfo paramInfo = new ParamInfo();

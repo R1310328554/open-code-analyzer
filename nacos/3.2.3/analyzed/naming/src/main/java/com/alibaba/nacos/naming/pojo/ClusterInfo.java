@@ -25,7 +25,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Cluster info.
+ * 集群信息 POJO（已废弃）。
+ *
+ * <p>包含集群名、健康检查器、metadata 及 {@link IpAddressInfo} 主机列表；旧版 OpenAPI 仍使用，新代码请改用 maintainer 包下同名类。</p>
  *
  * @author caogu.wyp
  * @version $Id: ClusterInfo.java, v 0.1 2018-09-17 上午11:36 caogu.wyp Exp $$
@@ -46,7 +48,7 @@ public class ClusterInfo implements Serializable {
     private List<IpAddressInfo> hosts;
     
     /**
-     * Getter method for property <tt>hosts</tt>.
+     * 获取集群内主机（实例）列表。
      *
      * @return property value of hosts
      */
@@ -55,7 +57,7 @@ public class ClusterInfo implements Serializable {
     }
     
     /**
-     * Setter method for property <tt>hosts </tt>.
+     * 设置集群主机列表。
      *
      * @param hosts value to be assigned to property hosts
      */
@@ -88,7 +90,7 @@ public class ClusterInfo implements Serializable {
     }
     
     /**
-     * For some old apis, from new {@link com.alibaba.nacos.api.naming.pojo.maintainer.ClusterInfo} to this deprecated one.
+     * 将新版 maintainer {@link com.alibaba.nacos.api.naming.pojo.maintainer.ClusterInfo} 转换为旧版 POJO，供兼容 API 使用。
      *
      * @param newClusterInfo new {@link com.alibaba.nacos.api.naming.pojo.maintainer.ClusterInfo}
      * @return this deprecated one
