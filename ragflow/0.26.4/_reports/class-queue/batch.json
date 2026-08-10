@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:37:34Z",
-  "files": [
-    "web/src/components/message-item/hooks.ts",
-    "web/src/components/next-message-item/hooks.ts",
-    "web/src/components/next-message-item/utils.ts",
-    "web/src/components/pdf-drawer/hooks.ts",
-    "web/src/components/ui/message.ts",
-    "web/src/constants/authorization.ts",
-    "web/src/constants/chat.ts",
-    "web/src/constants/common.ts",
-    "web/src/constants/file.ts",
-    "web/src/constants/form.ts",
-    "web/src/constants/knowledge.ts",
-    "web/src/constants/llm.ts",
-    "web/src/constants/markdown-remark-plugins.ts",
-    "web/src/constants/permission.ts",
-    "web/src/constants/setting.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 354,
-  "done": 1395
+  "done": 1410
 }
