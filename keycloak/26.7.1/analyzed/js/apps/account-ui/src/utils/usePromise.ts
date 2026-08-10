@@ -2,18 +2,18 @@ import type { DependencyList } from "react";
 import { useEffect, useState } from "react";
 
 /**
- * Function that creates a Promise. Receives an [AbortSignal](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal)
- * which is aborted when the component unmounts, or the dependencies of the hook have changed.
+ * 创建 Promise 的工厂函数类型。
+ * 接收 AbortSignal：组件卸载或依赖变更时信号会被 abort，便于取消 fetch 等异步操作。
  */
 export type PromiseFactoryFn<T> = (signal: AbortSignal) => Promise<T>;
 
-/**
- * Function which is called with the value of the Promise when it resolves.
- */
+/** Promise 成功解析后的回调。 */
 export type PromiseResolvedFn<T> = (value: T) => void;
 
 /**
- * Takes a function that creates a Promise and returns its resolved result through a callback.
+ * 在 React 组件中执行异步 Promise 并将结果写入 state 的钩子。
+ *
+ * 依赖变更或卸载时自动 abort 进行中的请求，并忽略 AbortError。
  *
  * ```ts
  * const [products, setProducts] = useState();
@@ -25,22 +25,21 @@ export type PromiseResolvedFn<T> = (value: T) => void;
  * usePromise(() => getProducts(), setProducts);
  * ```
  *
- * Also takes a list of dependencies, when the dependencies change the Promise is recreated.
+ * 可传入依赖数组，依赖变化时重新创建 Promise：
  *
  * ```ts
  * usePromise(() => getProduct(id), setProduct, [id]);
  * ```
  *
- * Can abort a fetch request, an [AbortSignal](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal) is provided from the factory function to do so.
- * This signal will be aborted if the component unmounts, or if the dependencies of the hook have changed.
+ * 工厂函数接收 AbortSignal，可用于取消 fetch：
  *
  * ```ts
  * usePromise((signal) => fetch(`/api/products/${id}`, { signal }).then((res) => res.json()), setProduct, [id]);
  * ```
  *
- * @param factory Function that creates the Promise.
- * @param callback Function that gets called with the value of the Promise when it resolves.
- * @param deps If present, Promise will be recreated if the values in the list change.
+ * @param factory 创建 Promise 的函数
+ * @param callback Promise 成功时调用，通常用于 setState
+ * @param deps 依赖列表；变化时重新执行 factory
  */
 export function usePromise<T>(
   factory: PromiseFactoryFn<T>,
@@ -53,11 +52,11 @@ export function usePromise<T>(
     const { signal } = controller;
 
     async function handlePromise() {
-      // Try to resolve the Promise, if it fails, check if it was aborted.
+      // 解析 Promise；失败时若非 abort 则记录错误
       try {
         callback(await factory(signal));
       } catch (error) {
-        // Ignore errors caused by aborting the Promise.
+        // 组件卸载或依赖变更导致的 abort 不视为错误
         if (error instanceof Error && error.name === "AbortError") {
           return;
         }
@@ -68,11 +67,11 @@ export function usePromise<T>(
 
     void handlePromise();
 
-    // Abort the Promise when the component unmounts, or the dependencies change.
+    // 清理：abort 进行中的 Promise
     return () => controller.abort();
   }, deps);
 
-  // Rethrow other errors.
+  // 非 abort 错误向上抛出，由 Error Boundary 或上层处理
   if (error) {
     throw error;
   }
