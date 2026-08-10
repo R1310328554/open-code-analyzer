@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:36:59Z",
-  "files": [
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/OIDCAccessTokenResponseMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/OIDCAttributeMapperHelper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/OIDCIDTokenMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/PairwiseSubMapperHelper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/ParameterizedScopeMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/ParameterizedScopeUserPropertyMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/RoleNameMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/SHA256PairwiseSubMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/ScriptBasedOIDCProtocolMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/SessionStateMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/SubMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/TokenIntrospectionTokenMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/UserAttributeMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/UserClientRoleMappingMapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/mappers/UserInfoTokenMapper.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1348,
-  "done": 4635
+  "done": 4650
 }
