@@ -29,32 +29,37 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.jboss.logging.Logger;
 
 /**
+ * 系统/元客户端工具类，用于需要占位客户端的内部流程。
+ * <p>例如 action token 在新浏览器中打开时创建认证会话。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class SystemClientUtil {
 
+    /** 内置系统客户端 ID，在 account 客户端不可用时使用。 */
     public static final String SYSTEM_CLIENT_ID = "_system";
 
     private static final Logger logger = Logger.getLogger(SystemClientUtil.class);
 
 
     /**
+     * 获取领域系统客户端：优先启用中的 account 客户端，否则查找或创建 {@link #SYSTEM_CLIENT_ID}。
      * @return system client used during usecases when some "metaclient" is needed (EG. For fresh authenticationSession used during actionTokenFlow when email link is opened in new browser)
      */
     public static ClientModel getSystemClient(RealmModel realm) {
-        // Try to return builtin "account" client first
+        // 优先返回内置 account 客户端
         ClientModel client = realm.getClientByClientId(Constants.ACCOUNT_MANAGEMENT_CLIENT_ID);
         if (client != null && client.isEnabled()) {
             return client;
         }
 
 
-        // Fallback to "system" client
+        // 回退到 _system 客户端
         client = realm.getClientByClientId(SYSTEM_CLIENT_ID);
         if (client != null) {
             return client;
         } else {
-            // Return system client
+            // 不存在则创建系统客户端
             logger.warnf("Client '%s' not available. Creating system client '%s' for system operations", Constants.ACCOUNT_MANAGEMENT_CLIENT_ID, SYSTEM_CLIENT_ID);
             client = realm.addClient(SYSTEM_CLIENT_ID);
             client.setName(SYSTEM_CLIENT_ID);
@@ -63,6 +68,7 @@ public class SystemClientUtil {
 
     }
 
+    /** 使用系统客户端时设置 {@link Constants#SKIP_LINK}，避免显示账户管理链接。 */
     /**
      * Cleanup system client URL to avoid links to account management
      */

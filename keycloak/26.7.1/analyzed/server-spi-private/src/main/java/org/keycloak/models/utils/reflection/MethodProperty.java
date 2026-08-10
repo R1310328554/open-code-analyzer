@@ -19,6 +19,10 @@ package org.keycloak.models.utils.reflection;
 
 import java.lang.reflect.Method;
 
+/**
+ * 基于 JavaBean getter/setter 方法的 {@link Property} 扩展。
+ * <p>暴露底层 {@link Method} 作为注解与反射操作的入口。</p>
+ */
 public interface MethodProperty<V> extends Property<V> {
 
     Method getAnnotatedElement();

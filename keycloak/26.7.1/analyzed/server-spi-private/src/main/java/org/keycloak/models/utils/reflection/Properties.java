@@ -20,7 +20,7 @@ package org.keycloak.models.utils.reflection;
 import java.lang.reflect.Method;
 
 /**
- * Utility class for working with JavaBean style properties
+ * JavaBean 风格属性的工厂与校验工具类。
  *
  * @see Property
  */
@@ -30,7 +30,7 @@ public class Properties {
     }
 
     /**
-     * Create a JavaBean style property from the specified method
+     * 从访问器方法创建 {@link MethodProperty}。
      *
      * @param <V>
      * @param method
@@ -44,9 +44,7 @@ public class Properties {
         return new MethodPropertyImpl<V>(method);
     }
 
-    /**
-     * Indicates whether this method is a valid property method.
-     */
+    /** 判断方法是否符合 JavaBean 属性访问器约定。 */
     public static <V> boolean isProperty(Method method) {
         try {
             new MethodPropertyImpl<V>(method);

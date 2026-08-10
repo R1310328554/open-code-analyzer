@@ -20,9 +20,8 @@ package org.keycloak.models.utils.reflection;
 import java.lang.reflect.Method;
 
 /**
- * <p> A property criteria can be used to filter the properties found by a {@link PropertyQuery} </p> <p/> <p>
- * DeltaSpike provides a number of property queries ( {@link TypedPropertyCriteria}, {@link NamedPropertyCriteria} and
- * {@link AnnotatedPropertyCriteria}), or you can create a custom query by implementing this interface. </p>
+ * <p>用于 {@link PropertyQuery} 过滤匹配属性的条件接口。</p> <p/>
+ * <p>内置实现包括 {@link TypedPropertyCriteria}、{@link NamedPropertyCriteria}、 {@link AnnotatedPropertyCriteria}，也可自定义实现。</p>
  *
  * @see PropertyQuery#addCriteria(PropertyCriteria)
  * @see PropertyQueries
@@ -32,6 +31,7 @@ import java.lang.reflect.Method;
  */
 public interface PropertyCriteria {
 
+    /** 判断 getter 方法是否满足此条件。 */
     /**
      * Tests whether the specified method matches the criteria
      *

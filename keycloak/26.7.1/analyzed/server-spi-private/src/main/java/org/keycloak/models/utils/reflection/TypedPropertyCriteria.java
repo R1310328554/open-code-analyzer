@@ -21,19 +21,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
- * A criteria that matches a property based on its type
+ * 按属性类型（含子类型/超类型选项）匹配的 {@link PropertyCriteria} 实现。
  *
  * @see PropertyCriteria
  */
 public class TypedPropertyCriteria implements PropertyCriteria {
 
-    /**
-     * <p> Different options can be used to match a specific property based on its type. Regardless of the option
-     * chosen, if the property type equals the <code>propertyClass</code> it will be selected. <p/> <ul> <li>SUB_TYPE:
-     * Also consider properties where its type is a subtype of <code>propertyClass</code>. .</li> <li>SUPER_TYPE: Also
-     * consider properties where its type is a superclass or superinterface of <code>propertyClass</code>. .</li> </ul>
-     * </p>
-     */
+    /** 类型匹配选项：精确相等；SUB_TYPE 含子类型；SUPER_TYPE 含超类型；ALL 二者皆可。 */
     public enum MatchOption {
         SUB_TYPE, SUPER_TYPE, ALL
     }
@@ -41,10 +35,12 @@ public class TypedPropertyCriteria implements PropertyCriteria {
     private final Class<?> propertyClass;
     private final MatchOption matchOption;
 
+    /** 仅匹配与 propertyClass 完全相等的类型。 */
     public TypedPropertyCriteria(Class<?> propertyClass) {
         this(propertyClass, null);
     }
 
+    /** @param propertyClass 目标类型；@param matchOption 子/超类型匹配策略 */
     public TypedPropertyCriteria(Class<?> propertyClass, MatchOption matchOption) {
         if (propertyClass == null) {
             throw new IllegalArgumentException("Property class can not be null.");

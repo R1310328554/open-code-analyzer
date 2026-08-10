@@ -25,12 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * <p> Queries a target class for properties that match certain criteria. A property may either be a private or public
- * field, declared by the target class or inherited from a superclass, or a public method declared by the target class
- * or inherited from any of its superclasses. For properties that are exposed via a method, the property must be a
- * JavaBean style property, i.e. it must provide both an accessor and mutator method according to the JavaBean
- * specification. </p> <p/> <p> This class is not thread-safe, however the result returned by the getResultList() method
- * is. </p>
+ * <p>按条件查询目标类上的 JavaBean 属性（公开 getter 方法）。</p> <p/>
+ * <p>本类非线程安全，但 {@link #getResultList()} 返回的映射不可变。</p>
  *
  * @see PropertyQueries
  * @see PropertyCriteria
@@ -48,6 +44,7 @@ public class PropertyQuery<V> {
         this.criteria = new ArrayList<>();
     }
 
+    /** 追加过滤条件，支持链式调用。 */
     /**
      * Add a criteria to query
      *
@@ -58,6 +55,7 @@ public class PropertyQuery<V> {
         return this;
     }
 
+    /** 执行查询并返回首个匹配属性，无结果时返回 null。 */
     /**
      * Get the first result from the query, causing the query to be run.
      *
@@ -122,6 +120,7 @@ public class PropertyQuery<V> {
         }
     }
 
+    /** 执行查询并返回属性名到 {@link Property} 的不可变映射。 */
     /**
      * Get the result from the query, causing the query to be run.
      *
@@ -150,7 +149,7 @@ public class PropertyQuery<V> {
     private Map<String, Property<V>> getResultList(boolean writable) {
         Map<String, Property<V>> properties = new HashMap<>();
 
-        // First check public accessor methods (we ignore private methods)
+        // 遍历公开 getter/is 方法（忽略 private 方法）
         for (Method method : targetClass.getMethods()) {
             if (!(method.getName().startsWith("is") || method.getName().startsWith("get"))) {
                 continue;

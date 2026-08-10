@@ -24,14 +24,17 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 /**
- * TOTP: Time-based One-time Password Algorithm Based on http://tools.ietf.org/html/draft-mraihi-totp-timebased-06
+ * 基于时间的一次性密码（TOTP）实现。
+ * <p>算法参见 http://tools.ietf.org/html/draft-mraihi-totp-timebased-06，继承 {@link HmacOTP} 生成与校验令牌。</p>
  *
  * @author anil saldhana
  * @since Sep 20, 2010
  */
 public class TimeBasedOTP extends HmacOTP {
 
+    /** 默认时间步长（秒）。 */
     public static final int DEFAULT_INTERVAL_SECONDS = 30;
+    /** 默认时钟偏移窗口（前后各若干步）。 */
     public static final int DEFAULT_DELAY_WINDOW = 1;
 
     private Clock clock;
@@ -41,6 +44,7 @@ public class TimeBasedOTP extends HmacOTP {
     }
 
     /**
+     * 指定算法、位数、时间步长与校验窗口。
      * @param algorithm the encryption algorithm
      * @param numberDigits the number of digits for tokens
      * @param timeIntervalInSeconds the number of seconds a token is valid
@@ -52,7 +56,7 @@ public class TimeBasedOTP extends HmacOTP {
     }
 
     /**
-     * <p>Generates a token.</p>
+     * <p>根据共享密钥生成当前时间步的 TOTP。</p>
      *
      * @param secretKey the secret key to derive the token from.
      */
@@ -61,7 +65,7 @@ public class TimeBasedOTP extends HmacOTP {
 
         String steps = Long.toHexString(T).toUpperCase();
 
-        // Just get a 16 digit string
+        // 补齐为 16 位十六进制时间步字符串
         while (steps.length() < 16) {
             steps = "0" + steps;
         }
@@ -74,7 +78,7 @@ public class TimeBasedOTP extends HmacOTP {
     }
 
     /**
-     * <p>Validates a token using a secret key.</p>
+     * <p>在时钟偏移窗口内校验 TOTP 是否与共享密钥匹配。</p>
      *
      * @param token  OTP string to validate
      * @param secret Shared secret
@@ -89,7 +93,7 @@ public class TimeBasedOTP extends HmacOTP {
 
             String steps = Long.toHexString(adjustedInterval).toUpperCase();
 
-            // Just get a 16 digit string
+            // 补齐为 16 位十六进制时间步字符串
             while (steps.length() < 16) {
                 steps = "0" + steps;
             }
@@ -104,6 +108,7 @@ public class TimeBasedOTP extends HmacOTP {
         return false;
     }
 
+    /** 将窗口索引映射为时间步偏移：0,1,2,… → 0,-1,1,-2,2,… */
     /**
      * maps 0, 1, 2, 3, 4, 5, 6, 7, ... to 0, -1, 1, -2, 2, -3, 3, ...
      */
@@ -111,6 +116,7 @@ public class TimeBasedOTP extends HmacOTP {
         return (idx + 1) / 2 * (1 - (idx % 2) * 2);
     }
 
+    /** 设置内部时钟（主要用于测试）。 */
     public void setCalendar(Calendar calendar) {
         this.clock.setCalendar(calendar);
     }

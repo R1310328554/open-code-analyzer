@@ -23,7 +23,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Type;
 
 /**
- * A representation of a JavaBean style property
+ * JavaBean 风格属性的抽象表示，支持读写与注解查询。
  *
  * @param <V> the type of the properties value
  *
@@ -32,14 +32,13 @@ import java.lang.reflect.Type;
 public interface Property<V> {
 
     /**
-     * Returns the name of the property. If the property is a field, then the field name is returned. Otherwise, if the
-     * property is a method, then the name that is returned is the getter method name without the "get" or "is" prefix,
-     * and a lower case first letter.
+     * 返回属性名：字段取字段名；方法属性取 getter 去掉 get/is 前缀并首字母小写。
      *
      * @return The name of the property
      */
     String getName();
 
+    /** 返回属性的泛型类型。 */
     /**
      * Returns the property type
      *
@@ -69,8 +68,7 @@ public interface Property<V> {
     Member getMember();
 
     /**
-     * Returns the property value for the specified bean. The property to be returned is either a field or getter
-     * method.
+     * 从实例读取属性值（字段或 getter）。
      *
      * @param bean The bean to read the property from
      *
@@ -81,8 +79,7 @@ public interface Property<V> {
     V getValue(Object instance);
 
     /**
-     * This method sets the property value for a specified bean to the specified value. The property to be set is either
-     * a field or setter method.
+     * 向实例写入属性值（字段或 setter）。
      *
      * @param bean The bean containing the property to set
      * @param value The new property value
@@ -96,6 +93,7 @@ public interface Property<V> {
      */
     Class<?> getDeclaringClass();
 
+    /** 是否为只读属性（无 setter）。 */
     /**
      * Indicates whether this is a read-only property
      *

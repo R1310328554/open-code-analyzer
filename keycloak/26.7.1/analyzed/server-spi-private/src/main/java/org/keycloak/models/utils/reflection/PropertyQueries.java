@@ -18,7 +18,7 @@
 package org.keycloak.models.utils.reflection;
 
 /**
- * Utilities for working with property queries
+ * 属性查询的工厂工具类。
  *
  * @see PropertyQuery
  */
@@ -27,6 +27,7 @@ public class PropertyQueries {
     private PropertyQueries() {
     }
 
+    /** 为目标类创建新的 {@link PropertyQuery}。 */
     /**
      * Create a new {@link PropertyQuery}
      *

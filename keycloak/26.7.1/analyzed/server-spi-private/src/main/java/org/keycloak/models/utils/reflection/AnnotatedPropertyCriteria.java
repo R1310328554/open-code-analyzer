@@ -21,17 +21,19 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
 /**
- * A criteria that matches a property based on its annotations
+ * 按 getter 方法上的注解类型匹配属性的 {@link PropertyCriteria} 实现。
  *
  * @see PropertyCriteria
  */
 public class AnnotatedPropertyCriteria implements PropertyCriteria {
     private final Class<? extends Annotation> annotationClass;
 
+    /** @param annotationClass 需存在于方法上的注解类型 */
     public AnnotatedPropertyCriteria(Class<? extends Annotation> annotationClass) {
         this.annotationClass = annotationClass;
     }
 
+    /** 方法是否带有指定注解。 */
     @Override
     public boolean methodMatches(Method m) {
         return m.isAnnotationPresent(annotationClass);

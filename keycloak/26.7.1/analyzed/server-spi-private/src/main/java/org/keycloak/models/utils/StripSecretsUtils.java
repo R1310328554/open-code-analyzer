@@ -40,6 +40,9 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 
 /**
+ * 领域/客户端/用户等 REST 表示对象的敏感信息脱敏工具类。
+ * <p>将密钥、密码、凭证等替换为占位符；保留 {@code ${vault.xxx}} 形式的 Vault 引用。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class StripSecretsUtils {
@@ -48,8 +51,7 @@ public class StripSecretsUtils {
 
     private static final Map<Class<?>, BiConsumer<KeycloakSession, Object>> REPRESENTATION_FORMATTER = new HashMap<>();
 
-    /** interface to encapsulate the getComponentProperties() function in order to make the code unit-testable
-     */
+    /** 封装 getComponentProperties 以便单元测试注入的函数式接口。 */
     protected interface GetComponentPropertiesFn {
         Map<String, ProviderConfigProperty> getComponentProperties(KeycloakSession session, String providerType, String providerId);
     }
@@ -63,6 +65,7 @@ public class StripSecretsUtils {
         REPRESENTATION_FORMATTER.put(CredentialRepresentation.class, (session, o) -> StripSecretsUtils.stripCredentials((CredentialRepresentation) o));
     }
 
+    /** 按表示类型自动选择脱敏策略并原地修改。 */
     public static <T> T stripSecrets(KeycloakSession session, T representation) {
         return stripSecrets(session, representation, REPRESENTATION_FORMATTER);
     }
@@ -79,6 +82,7 @@ public class StripSecretsUtils {
         return representation;
     }
 
+    /** 非 Vault 引用值替换为 {@link ComponentRepresentation#SECRET_VALUE} 占位符。 */
     protected static String maskNonVaultValue(String value) {
         return value == null
           ? null
@@ -88,6 +92,7 @@ public class StripSecretsUtils {
             );
     }
 
+    /** 将凭证值掩码为星号。 */
     protected static CredentialRepresentation stripCredentials(CredentialRepresentation rep) {
         rep.setValue("**********");
         return rep;
@@ -131,6 +136,7 @@ public class StripSecretsUtils {
         return map;
     }
 
+    /** 脱敏 IdP 配置中的 clientSecret。 */
     protected static IdentityProviderRepresentation stripBroker(IdentityProviderRepresentation rep) {
         stripFromMap(rep.getConfig(), "clientSecret");
         return rep;
@@ -166,11 +172,13 @@ public class StripSecretsUtils {
                 .ifPresent(users -> users.forEach(StripSecretsUtils::stripUser));
     }
 
+    /** 移除用户表示中的凭证列表。 */
     protected static UserRepresentation stripUser(UserRepresentation user) {
         user.setCredentials(null);
         return user;
     }
 
+    /** 脱敏客户端密钥及轮换密钥属性。 */
     protected static ClientRepresentation stripClient(ClientRepresentation rep) {
         if (rep.getSecret() != null) {
             rep.setSecret(maskNonVaultValue(rep.getSecret()));

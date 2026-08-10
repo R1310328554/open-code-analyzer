@@ -26,7 +26,8 @@ import java.lang.reflect.Type;
 import org.keycloak.common.util.reflections.Reflections;
 
 /**
- * A bean property based on the value represented by a getter/setter method pair
+ * 由 getter/setter 方法对表示的 JavaBean 属性实现。
+ * <p>从任一访问器方法解析属性名并查找配对读写方法。</p>
  */
 class MethodPropertyImpl<V> implements MethodProperty<V> {
     private static final String GETTER_METHOD_PREFIX = "get";
@@ -41,6 +42,7 @@ class MethodPropertyImpl<V> implements MethodProperty<V> {
     private final String propertyName;
     private final Method setterMethod;
 
+    /** 从 get/set/is 访问器方法构造属性；不符合 JavaBean 约定时抛出 {@link IllegalArgumentException}。 */
     public MethodPropertyImpl(Method method) {
         final String accessorMethodPrefix;
         final String propertyNameInAccessorMethod;
@@ -128,7 +130,7 @@ class MethodPropertyImpl<V> implements MethodProperty<V> {
     @Override
     public void setValue(Object instance, V value) {
         if (setterMethod == null) {
-            // if the setter method is null may be because the declaring type is an interface which does not declare
+            // setter 为空时可能在接口上未声明，尝试在实例类上查找覆盖方法
             // a setter method. We just check if the instance is assignable from the property declaring class and
             // try to find a overridden method.
             if (getDeclaringClass().isAssignableFrom(instance.getClass())) {

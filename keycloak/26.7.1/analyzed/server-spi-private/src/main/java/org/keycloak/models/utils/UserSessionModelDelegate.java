@@ -26,11 +26,15 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
 
 /**
+ * {@link UserSessionModel} 的委托基类，将所有调用转发至底层会话。
+ * <p>子类可覆盖部分方法以扩展或拦截用户会话行为。</p>
+ *
  * @author Alexander Schwartz
  */
 public class UserSessionModelDelegate implements UserSessionModel {
     private UserSessionModel delegate;
 
+    /** @param delegate 被委托的真实用户会话 */
     public UserSessionModelDelegate(UserSessionModel delegate) {
         this.delegate = delegate;
     }

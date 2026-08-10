@@ -22,17 +22,19 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
- * A criteria that matches a property based on name
+ * 按属性名称匹配字段或 getter 方法的 {@link PropertyCriteria} 实现。
  *
  * @see PropertyCriteria
  */
 public class NamedPropertyCriteria implements PropertyCriteria {
     private final String[] propertyNames;
 
+    /** @param propertyNames 要匹配的一个或多个属性名 */
     public NamedPropertyCriteria(String... propertyNames) {
         this.propertyNames = propertyNames;
     }
 
+    /** 字段名是否在候选名称列表中。 */
     public boolean fieldMatches(Field f) {
         for (String propertyName : propertyNames) {
             if (propertyName.equals(f.getName())) {
@@ -42,6 +44,7 @@ public class NamedPropertyCriteria implements PropertyCriteria {
         return false;
     }
 
+    /** getter/is 方法解析出的属性名是否匹配。 */
     public boolean methodMatches(Method m) {
         String[] validPrefix = {"get", "is"};
         for (String propertyName : propertyNames) {
