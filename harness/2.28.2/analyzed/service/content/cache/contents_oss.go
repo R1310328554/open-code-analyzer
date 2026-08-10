@@ -14,12 +14,12 @@
 
 // +build oss
 
+// cache 包（OSS 构建）直接透传底层 FileService，不启用缓存。
 package cache
 
 import "github.com/drone/drone/core"
 
-// Contents returns the default FileService with no caching
-// enabled.
+// Contents 在 OSS 构建中直接返回原始 FileService，不添加缓存层。
 func Contents(base core.FileService) core.FileService {
 	return base
 }

@@ -15,6 +15,7 @@
 // +build !nolimit
 // +build !oss
 
+// license 包加载并解析 Drone 商业许可证文件。
 package license
 
 import (
@@ -26,14 +27,13 @@ import (
 	"github.com/drone/go-license/license/licenseutil"
 )
 
-// embedded public key used to verify license signatures.
+// publicKey 内嵌公钥，用于验证许可证签名。
 var publicKey = []byte("GB/hFnXEg63vDZ2W6mKFhLxZTuxMrlN/C/0iVZ2LfPQ=")
 
-// License renewal endpoint.
+// licenseEndpoint 许可证续期 API 端点。
 const licenseEndpoint = "https://license.drone.io/api/v1/license/renew"
 
-// Trial returns a default license with trial terms based
-// on the source code management system.
+// Trial 根据 SCM 平台返回默认试用许可证配额。
 func Trial(provider string) *core.License {
 	switch provider {
 	case "gitea", "gogs":
@@ -55,7 +55,7 @@ func Trial(provider string) *core.License {
 	}
 }
 
-// Load loads the license from file.
+// Load 从文件路径或内联密钥字符串加载并解析许可证。
 func Load(path string) (*core.License, error) {
 	pub, err := licenseutil.DecodePublicKey(publicKey)
 	if err != nil {

@@ -15,14 +15,17 @@
 // +build nolimit
 // +build oss
 
+// license 包（nolimit + OSS 构建）提供 FOSS 无限制许可证桩。
 package license
 
 import (
 	"github.com/drone/drone/core"
 )
 
-// DefaultLicense is an empty license with no restrictions.
+// DefaultLicense FOSS 版无限制许可证，Kind 为 LicenseFoss。
 var DefaultLicense = &core.License{Kind: core.LicenseFoss}
 
+// Trial 直接返回 DefaultLicense。
 func Trial(string) *core.License         { return DefaultLicense }
+// Load 直接返回 DefaultLicense，不解析文件。
 func Load(string) (*core.License, error) { return DefaultLicense, nil }

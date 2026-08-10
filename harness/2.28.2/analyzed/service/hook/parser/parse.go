@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// parser 包将 SCM 原生 Webhook 载荷解析为 Drone 内部 Hook 与 Repository 模型。
 package parser
 
 import (
@@ -54,11 +55,10 @@ import (
 // TODO(bradrydzewski): github, push hook timestamp is negative value.
 // TODO(bradrydzewski): github, pull request message is empty
 
-// represents a deleted ref in the github webhook.
+// emptyCommit GitHub 删除分支/tag 时 push hook 中的全零 SHA。
 const emptyCommit = "0000000000000000000000000000000000000000"
 
-// this is intended for local testing and instructs the handler
-// to print the contents of the hook to stdout.
+// debugPrintHook 本地调试开关，为 true 时将 hook 请求 dump 到 stderr。
 var debugPrintHook = false
 
 func init() {
@@ -67,28 +67,28 @@ func init() {
 	)
 }
 
-// New returns a new HookParser.
+// New 构造 HookParser，绑定 SCM 客户端用于 Webhook 解析。
 func New(client *scm.Client) core.HookParser {
 	return &parser{client}
 }
 
+// parser 实现 core.HookParser 接口。
 type parser struct {
 	client *scm.Client
 }
 
+// Parse 解析 HTTP Webhook 请求，校验签名并映射为 Drone Hook 事件。
 func (p *parser) Parse(req *http.Request, secretFunc func(string) string) (*core.Hook, *core.Repository, error) {
 	if debugPrintHook {
-		// if DRONE_DEBUG_DUMP_HOOK=true print the http.Request
-		// headers and body to stdout.
+		// DRONE_DEBUG_DUMP_HOOK=true 时打印请求头与 body。
 		out, _ := httputil.DumpRequest(req, true)
 		os.Stderr.Write(out)
 	}
 
-	// callback function provides the webhook parser with
-	// a per-repository secret key used to verify the webhook
-	// payload signature for authenticity.
+	// 回调向解析器提供各仓库密钥，用于校验 Webhook 签名。
 	fn := func(webhook scm.Webhook) (string, error) {
 		if webhook == nil {
+			// HACK：webhook 为 nil 时视为未知事件（go-scm 应返回 ErrUnknownAction）。
 			// HACK(bradrydzewski) if the incoming webhook is nil
 			// we assume it is an unknown event or action. A more
 			// permanent fix is to update go-scm to return an
@@ -117,14 +117,11 @@ func (p *parser) Parse(req *http.Request, secretFunc func(string) string) (*core
 
 	switch v := payload.(type) {
 	case *scm.PushHook:
-		// github sends push hooks when tags and branches are
-		// deleted. These hooks should be ignored.
+		// GitHub 删除 tag/分支时也会发 push hook，全零 SHA 应忽略。
 		if v.Commit.Sha == emptyCommit {
 			return nil, nil, nil
 		}
-		// github sends push hooks when tags are created. The
-		// push hook contains more information than the tag hook,
-		// so we choose to use the push hook for tags.
+		// 创建 tag 时 GitHub 的 push hook 信息更完整，优先用它构造 tag 事件。
 		if strings.HasPrefix(v.Ref, "refs/tags/") {
 			hook = &core.Hook{
 				Trigger:      core.TriggerHook, // core.TriggerHook
@@ -174,9 +171,7 @@ func (p *parser) Parse(req *http.Request, secretFunc func(string) string) (*core
 			HTTPURL:   v.Repo.Clone,
 			SSHURL:    v.Repo.CloneSSH,
 		}
-		// gogs and gitea do not include the author avatar in
-		// the webhook, but they do include the sender avatar.
-		// use the sender avatar when necessary.
+		// Gogs/Gitea webhook 缺作者头像时用 sender 头像补全。
 		if hook.AuthorAvatar == "" {
 			hook.AuthorAvatar = v.Sender.Avatar
 		}
@@ -185,20 +180,14 @@ func (p *parser) Parse(req *http.Request, secretFunc func(string) string) (*core
 		if v.Action != scm.ActionCreate {
 			return nil, nil, nil
 		}
-		// when a tag is created github sends both a push hook
-		// and a tag create hook. The push hook contains more
-		// information, so we choose to use the push hook and
-		// ignore the native tag hook.
+		// GitHub/Gitea/GitLab 创建 tag 时忽略原生 tag hook，已在 push 中处理。
 		if p.client.Driver == scm.DriverGithub ||
 			p.client.Driver == scm.DriverGitea ||
 			p.client.Driver == scm.DriverGitlab {
 			return nil, nil, nil
 		}
 
-		// the tag hook does not include the commit link, message
-		// or timestamp. In some cases it does not event include
-		// the sha (gogs). Note that we may need to fetch additional
-		// details to augment the webhook.
+		// 部分平台 tag hook 缺少链接、消息、时间戳或 SHA，后续可能需补拉详情。
 		hook = &core.Hook{
 			Trigger:      core.TriggerHook, // core.TriggerHook,
 			Event:        core.EventTag,
@@ -237,6 +226,7 @@ func (p *parser) Parse(req *http.Request, secretFunc func(string) string) (*core
 		return hook, repo, nil
 	case *scm.PullRequestHook:
 
+		// TODO：整理 PR 关闭 hook 的处理逻辑。
 		// TODO(bradrydzewski) cleanup the pr close hook code.
 		if v.Action == scm.ActionClose {
 			return &core.Hook{
@@ -256,8 +246,7 @@ func (p *parser) Parse(req *http.Request, secretFunc func(string) string) (*core
 		if v.Action != scm.ActionOpen && v.Action != scm.ActionSync {
 			return nil, nil, nil
 		}
-		// Pull Requests are not supported for Bitbucket due
-		// to lack of refs (e.g. refs/pull-requests/42/from).
+		// Bitbucket 缺少 PR ref 格式，暂不支持 Pull Request hook。
 		// Please contact Bitbucket Support if you would like to
 		// see this feature enabled:
 		// https://bitbucket.org/site/master/issues/5814/repository-refs-for-pull-requests
@@ -284,8 +273,7 @@ func (p *parser) Parse(req *http.Request, secretFunc func(string) string) (*core
 			AuthorAvatar: v.PullRequest.Author.Avatar,
 			Sender:       v.Sender.Login,
 		}
-		// HACK this is a workaround for github. The pull
-		// request title is populated, but not the message.
+		// GitHub PR hook 有 title 无 body 时，用 title 填充 Message。
 		if hook.Message == "" {
 			hook.Message = hook.Title
 		}
@@ -306,6 +294,7 @@ func (p *parser) Parse(req *http.Request, secretFunc func(string) string) (*core
 		return hook, repo, nil
 	case *scm.BranchHook:
 
+		// TODO：整理分支 hook 的处理逻辑。
 		// TODO(bradrydzewski) cleanup the branch hook code.
 		if v.Action == scm.ActionDelete {
 			return &core.Hook{
@@ -393,6 +382,7 @@ func (p *parser) Parse(req *http.Request, secretFunc func(string) string) (*core
 	}
 }
 
+// toMap 将 map[string]interface{} 转为 map[string]string。
 func toMap(src interface{}) map[string]string {
 	set, ok := src.(map[string]interface{})
 	if !ok {

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// hook 包内部工具函数，用于查找、创建与删除 SCM Webhook。
 package hook
 
 import (
@@ -21,6 +22,7 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
+// replaceHook 先删除同目标地址的旧 Hook，再创建新 Hook。
 func replaceHook(ctx context.Context, client *scm.Client, repo string, hook *scm.HookInput) error {
 	if err := deleteHook(ctx, client, repo, hook.Target); err != nil {
 		return err
@@ -29,6 +31,7 @@ func replaceHook(ctx context.Context, client *scm.Client, repo string, hook *scm
 	return err
 }
 
+// deleteHook 按回调 URL 主机名查找并删除匹配的 Webhook。
 func deleteHook(ctx context.Context, client *scm.Client, repo, target string) error {
 	u, _ := url.Parse(target)
 	h, err := findHook(ctx, client, repo, u.Host)
@@ -42,6 +45,7 @@ func deleteHook(ctx context.Context, client *scm.Client, repo, target string) er
 	return err
 }
 
+// findHook 列出仓库 Hook 并按目标 URL 主机名匹配返回。
 func findHook(ctx context.Context, client *scm.Client, repo, host string) (*scm.Hook, error) {
 	hooks, _, err := client.Repositories.ListHooks(ctx, repo, scm.ListOptions{Size: 100})
 	if err != nil {

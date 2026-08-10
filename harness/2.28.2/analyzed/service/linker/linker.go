@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// linker 包根据 SCM 客户端生成提交、分支等资源的可浏览链接。
 package linker
 
 import (
@@ -21,17 +22,19 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
-// New returns a new Linker server.
+// New 构造 Linker 服务，委托 SCM 客户端生成资源 URL。
 func New(client *scm.Client) core.Linker {
 	return &service{
 		client: client,
 	}
 }
 
+// service 实现 core.Linker 接口。
 type service struct {
 	client *scm.Client
 }
 
+// Link 返回仓库指定 ref/sha 在 SCM 上的浏览链接。
 func (s *service) Link(ctx context.Context, repo, ref, sha string) (string, error) {
 	return s.client.Linker.Resource(ctx, repo, scm.Reference{
 		Path: ref,

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// license 包提供许可证配额校验与过期检查服务。
 package license
 
 import (
@@ -21,7 +22,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// NewService returns a new License service.
+// NewService 构造 LicenseService，注入用户/仓库/构建存储与许可证对象。
 func NewService(
 	users core.UserStore,
 	repos core.RepositoryStore,
@@ -36,6 +37,7 @@ func NewService(
 	}
 }
 
+// service 实现 core.LicenseService，对照许可证限制检查资源用量。
 type service struct {
 	users   core.UserStore
 	repos   core.RepositoryStore
@@ -43,6 +45,7 @@ type service struct {
 	license *core.License
 }
 
+// Exceeded 检查构建数、用户数或仓库数是否超出许可证上限。
 func (s *service) Exceeded(ctx context.Context) (bool, error) {
 	if limit := s.license.Builds; limit > 0 {
 		count, _ := s.builds.Count(ctx)
@@ -65,10 +68,12 @@ func (s *service) Exceeded(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
+// Expired 判断许可证是否已过期。
 func (s *service) Expired(ctx context.Context) bool {
 	return s.license.Expired()
 }
 
+// Expires 返回许可证到期时间。
 func (s *service) Expires(ctx context.Context) time.Time {
 	return s.license.Expires
 }

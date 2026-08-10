@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// orgs 包通过 SCM API 查询用户组织列表与成员关系。
 package orgs
 
 import (
@@ -22,7 +23,7 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
-// New returns a new OrganizationService.
+// New 构造 OrganizationService，绑定 SCM 客户端与令牌续期器。
 func New(client *scm.Client, renewer core.Renewer) core.OrganizationService {
 	return &service{
 		client:  client,
@@ -30,11 +31,13 @@ func New(client *scm.Client, renewer core.Renewer) core.OrganizationService {
 	}
 }
 
+// service 实现 core.OrganizationService。
 type service struct {
 	renewer core.Renewer
 	client  *scm.Client
 }
 
+// List 列出当前用户可访问的全部组织。
 func (s *service) List(ctx context.Context, user *core.User) ([]*core.Organization, error) {
 	err := s.renewer.Renew(ctx, user, false)
 	if err != nil {
@@ -62,6 +65,7 @@ func (s *service) List(ctx context.Context, user *core.User) ([]*core.Organizati
 	return orgs, nil
 }
 
+// Membership 查询用户在指定组织的成员与管理员身份。
 func (s *service) Membership(ctx context.Context, user *core.User, name string) (bool, bool, error) {
 	err := s.renewer.Renew(ctx, user, false)
 	if err != nil {

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// hook 包管理 SCM 仓库上的 Drone Webhook 创建与删除。
 package hook
 
 import (
@@ -22,11 +23,12 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
-// New returns a new HookService.
+// New 构造 HookService，绑定 SCM 客户端、回调地址与监听事件列表。
 func New(client *scm.Client, addr string, renew core.Renewer, events []string) core.HookService {
 	return &service{client: client, addr: addr, renew: renew, events: events}
 }
 
+// service 实现 core.HookService，负责在 SCM 侧注册 Drone 回调。
 type service struct {
 	renew  core.Renewer
 	client *scm.Client
@@ -34,6 +36,7 @@ type service struct {
 	events []string
 }
 
+// Create 在指定仓库创建或替换 Drone Webhook，订阅配置的事件类型。
 func (s *service) Create(ctx context.Context, user *core.User, repo *core.Repository) error {
 	err := s.renew.Renew(ctx, user, false)
 	if err != nil {
@@ -65,6 +68,7 @@ func (s *service) Create(ctx context.Context, user *core.User, repo *core.Reposi
 	return replaceHook(ctx, s.client, repo.Slug, hook)
 }
 
+// Delete 删除仓库上指向 Drone 的 Webhook。
 func (s *service) Delete(ctx context.Context, user *core.User, repo *core.Repository) error {
 	err := s.renew.Renew(ctx, user, false)
 	if err != nil {

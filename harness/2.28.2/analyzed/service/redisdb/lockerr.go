@@ -12,21 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// redisdb 包定义 Redis 分布式锁的错误感知接口与空实现。
 package redisdb
 
 import (
 	"context"
 )
 
-// LockErr is an interface with lock and unlock functions that return an error.
-// Method names are chosen so that redsync.Mutex implements the interface.
+// LockErr 定义带错误返回的加锁/解锁接口，方法名与 redsync.Mutex 兼容。
 type LockErr interface {
 	LockContext(context.Context) error
 	UnlockContext(context.Context) (bool, error)
 }
 
-// LockErrNoOp is a dummy no-op locker
+// LockErrNoOp 空操作锁实现，用于未启用 Redis 锁的场景。
 type LockErrNoOp struct{}
 
+// LockContext 空实现，始终成功。
 func (l LockErrNoOp) LockContext(context.Context) error           { return nil }
+// UnlockContext 空实现，返回 false 且无错误。
 func (l LockErrNoOp) UnlockContext(context.Context) (bool, error) { return false, nil }

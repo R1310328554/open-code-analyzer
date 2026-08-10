@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// netrc 包为 Git 克隆生成 .netrc 认证凭证。
 package netrc
 
 import (
@@ -23,7 +24,7 @@ import (
 
 var _ core.NetrcService = (*Service)(nil)
 
-// Service implements a netrc file generation service.
+// Service 实现 core.NetrcService，按 SCM 平台生成克隆认证信息。
 type Service struct {
 	client   *scm.Client
 	renewer  core.Renewer
@@ -32,7 +33,7 @@ type Service struct {
 	password string
 }
 
-// New returns a new Netrc service.
+// New 构造 Netrc 服务，可配置全局用户名密码或 OAuth 令牌模式。
 func New(
 	client *scm.Client,
 	renewer core.Renewer,
@@ -49,10 +50,9 @@ func New(
 	}
 }
 
-// Create creates a netrc file for the user and repository.
+// Create 为指定用户与仓库生成 .netrc 条目；公开仓库且未强制认证时返回 nil。
 func (s *Service) Create(ctx context.Context, user *core.User, repo *core.Repository) (*core.Netrc, error) {
-	// if the repository is public and private mode is disabled,
-	// authentication is not required.
+	// 公开仓库且未启用 always-auth 时无需提供凭证。
 	if repo.Private == false && s.private == false {
 		return nil, nil
 	}
@@ -69,8 +69,7 @@ func (s *Service) Create(ctx context.Context, user *core.User, repo *core.Reposi
 		return netrc, nil
 	}
 
-	// force refresh the authorization token to prevent
-	// it from expiring during pipeline execution.
+	// 强制刷新 OAuth 令牌，避免流水线执行期间令牌过期。
 	err = s.renewer.Renew(ctx, user, true)
 	if err != nil {
 		return nil, err

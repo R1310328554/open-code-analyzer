@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// orgs 包提供组织列表查询与成员关系缓存包装。
 package orgs
 
 import (
@@ -25,15 +26,12 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 )
 
-// content key pattern used in the cache, comprised of the
-// organization name and username.
+// contentKey 缓存键格式：用户登录名与组织名。
 const contentKey = "%s/%s"
 
-// NewCache wraps the service with a simple cache to store
-// organization membership.
+// NewCache 用带 TTL 的 LRU 缓存包装 OrganizationService。
 func NewCache(base core.OrganizationService, size int, ttl time.Duration) core.OrganizationService {
-	// simple cache prevents the same yaml file from being
-	// requested multiple times in a short period.
+	// LRU 缓存避免短时间内重复查询同一用户的组织成员关系。
 	cache, _ := lru.New(25)
 
 	return &cacher{
@@ -44,6 +42,7 @@ func NewCache(base core.OrganizationService, size int, ttl time.Duration) core.O
 	}
 }
 
+// cacher 在底层 OrganizationService 上缓存 Membership 查询结果。
 type cacher struct {
 	mu sync.Mutex
 
@@ -54,27 +53,28 @@ type cacher struct {
 	cache *lru.Cache
 }
 
+// item 缓存条目，含过期时间与成员/管理员标志。
 type item struct {
 	expiry time.Time
 	member bool
 	admin  bool
 }
 
+// List 委托底层服务列出用户所属组织。
 func (c *cacher) List(ctx context.Context, user *core.User) ([]*core.Organization, error) {
 	return c.base.List(ctx, user)
 }
 
+// Membership 查询用户在指定组织的成员与管理员身份，优先读缓存。
 func (c *cacher) Membership(ctx context.Context, user *core.User, name string) (bool, bool, error) {
 	key := fmt.Sprintf(contentKey, user.Login, name)
 	now := time.Now()
 
-	// get the membership details from the cache.
+	// 尝试从缓存读取成员关系。
 	cached, ok := c.cache.Get(key)
 	if ok {
 		item := cached.(*item)
-		// if the item is expired it can be ejected
-		// from the cache, else if not expired we return
-		// the cached results.
+		// 条目过期则驱逐；未过期直接返回缓存结果。
 		if now.After(item.expiry) {
 			c.cache.Remove(cached)
 		} else {
@@ -82,8 +82,7 @@ func (c *cacher) Membership(ctx context.Context, user *core.User, name string) (
 		}
 	}
 
-	// get up-to-date membership details due to a cache
-	// miss or expired cache item.
+	// 缓存未命中或已过期时回源查询最新成员关系。
 	member, admin, err := c.base.Membership(ctx, user, name)
 	if err != nil {
 		return false, false, err

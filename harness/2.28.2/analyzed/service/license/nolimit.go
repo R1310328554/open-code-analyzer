@@ -15,14 +15,17 @@
 // +build nolimit
 // +build !oss
 
+// license 包（nolimit 构建）提供无配额限制的许可证桩实现。
 package license
 
 import (
 	"github.com/drone/drone/core"
 )
 
-// DefaultLicense is an empty license with no restrictions.
+// DefaultLicense 无限制的空许可证，Kind 为 LicenseFree。
 var DefaultLicense = &core.License{Kind: core.LicenseFree}
 
+// Trial 直接返回 DefaultLicense，忽略 SCM 平台参数。
 func Trial(string) *core.License         { return DefaultLicense }
+// Load 直接返回 DefaultLicense，不读取文件。
 func Load(string) (*core.License, error) { return DefaultLicense, nil }

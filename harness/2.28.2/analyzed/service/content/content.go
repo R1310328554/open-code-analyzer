@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// contents 包通过 SCM 客户端从远程仓库获取文件内容。
 package contents
 
 import (
@@ -23,13 +24,13 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
-// default number of backoff attempts.
+// attempts 获取文件失败时的默认重试次数。
 var attempts = 3
 
-// default time to wait after failed attempt.
+// wait 每次重试之间的默认等待时长。
 var wait = time.Second * 15
 
-// New returns a new FileService.
+// New 构造基于 SCM 客户端的 FileService 实例。
 func New(client *scm.Client, renewer core.Renewer) core.FileService {
 	return &service{
 		client:   client,
@@ -39,6 +40,7 @@ func New(client *scm.Client, renewer core.Renewer) core.FileService {
 	}
 }
 
+// service 封装 SCM 客户端与令牌续期逻辑，支持带退避的重试。
 type service struct {
 	renewer  core.Renewer
 	client   *scm.Client
@@ -46,7 +48,9 @@ type service struct {
 	wait     time.Duration
 }
 
+// Find 从 SCM 获取指定路径文件内容，含 Gogs 平台兼容处理。
 func (s *service) Find(ctx context.Context, user *core.User, repo, commit, ref, path string) (*core.File, error) {
+	// TODO(gogs) 暂不支持通过 Pull Request ref 获取 YAML。
 	// TODO(gogs) ability to fetch a yaml by pull request ref.
 	// it is not currently possible to fetch the yaml
 	// configuration file from a pull request sha. This
@@ -55,6 +59,7 @@ func (s *service) Find(ctx context.Context, user *core.User, repo, commit, ref, 
 		strings.HasPrefix(ref, "refs/pull") {
 		commit = "master"
 	}
+	// TODO(gogs) 暂不支持通过 commit SHA 获取 tag 下文件。
 	// TODO(gogs) ability to fetch a file in tag from commit sha.
 	// this is a workaround for gogs which does not allow
 	// fetching a file by commit sha for a tag. This forces
@@ -81,19 +86,15 @@ func (s *service) Find(ctx context.Context, user *core.User, repo, commit, ref, 
 	}, nil
 }
 
-// helper function attempts to get the yaml configuration file
-// with backoff on failure. This may be required due to eventual
-// consistency issues with the github datastore.
+// findRetry 带退避重试获取 YAML 配置，应对 GitHub 数据存储的最终一致性延迟。
 func (s *service) findRetry(ctx context.Context, repo, path, commit string) (content *scm.Content, err error) {
 	for i := 0; i < s.attempts; i++ {
 		content, _, err = s.client.Contents.Find(ctx, repo, path, commit)
-		// if no error is returned we can exit immediately.
+		// 成功则立即返回，无需继续重试。
 		if err == nil {
 			return
 		}
-		// wait a few seconds before retry. according to github
-		// support 30 seconds total should be enough time. we
-		// try 3 x 15 seconds, giving a total of 45 seconds.
+		// 失败后等待再重试；GitHub 建议总计约 30 秒，此处 3×15 秒共 45 秒。
 		time.Sleep(s.wait)
 	}
 	return
