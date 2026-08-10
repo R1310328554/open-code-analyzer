@@ -23,12 +23,19 @@ import java.util.Objects;
 
 import org.keycloak.util.JsonSerialization;
 
+/**
+ * rememberMe 列迁移用的查询投影：会话/用户标识及从 JSON {@code data} 解析出的 rememberMe 值。
+ *
+ * @param sessionAndUser 用户会话与用户 ID
+ * @param rememberMe     是否启用 rememberMe
+ */
 record UserSessionIdAndRememberMe(UserSessionAndUser sessionAndUser, boolean rememberMe) {
 
     UserSessionIdAndRememberMe {
         Objects.requireNonNull(sessionAndUser);
     }
 
+    /** 从 (userSessionId, userId, data) 三列 Object[] 投影构造实例。 */
     static UserSessionIdAndRememberMe fromQueryProjection(Object[] projection) {
         assert projection.length == 3;
         assert projection[0] != null;
@@ -39,7 +46,7 @@ record UserSessionIdAndRememberMe(UserSessionAndUser sessionAndUser, boolean rem
             String userId = String.valueOf(projection[1]);
             String data = String.valueOf(projection[2]);
             Map<?, ?> values = JsonSerialization.readValue(data, Map.class);
-            // TODO should we make PersistentUserSessionData public?
+            // TODO 是否应将 PersistentUserSessionData 设为 public？
             boolean rememberMe = Boolean.parseBoolean(String.valueOf(values.get("rememberMe")));
             return new UserSessionIdAndRememberMe(new UserSessionAndUser(sessionId, userId), rememberMe);
         } catch (IOException e) {

@@ -20,22 +20,20 @@ package org.keycloak.models.jpa.session;
 import java.util.Objects;
 
 /**
- * Record representing a {@link org.keycloak.models.AuthenticatedClientSessionModel}, with user session ID and its
- * associated client session ID.
+ * 表示 {@link org.keycloak.models.AuthenticatedClientSessionModel} 的查询投影：
+ * 用户会话 ID 及其关联的客户端会话标识。
  *
- * @param userSessionId         the user session ID (never null)
- * @param clientSessionId       the client ID for internal clients, or "external" for external clients (can be null from
- *                              LEFT JOIN)
- * @param clientStorageProvider the storage provider for external clients (can be null from LEFT JOIN)
- * @param externalClientId      the external client ID (can be null from LEFT JOIN)
+ * @param userSessionId         用户会话 ID（永不为 null）
+ * @param clientSessionId       内部客户端的 client ID，或外部客户端的 "external"（LEFT JOIN 可能为 null）
+ * @param clientStorageProvider 外部客户端的 storage provider（LEFT JOIN 可能为 null）
+ * @param externalClientId      外部客户端 ID（LEFT JOIN 可能为 null）
  */
 public record UserSessionIdAndClientSessionId(String userSessionId, String clientSessionId,
                                               String clientStorageProvider, String externalClientId) {
 
     public UserSessionIdAndClientSessionId {
         Objects.requireNonNull(userSessionId, "userSessionId");
-        // clientSessionId, clientStorageProvider, and externalClientId can be null from LEFT JOIN
-        // when a user session exists without any associated client sessions
+        // clientSessionId、clientStorageProvider、externalClientId 在 LEFT JOIN 无客户端会话时可为 null
     }
 
 

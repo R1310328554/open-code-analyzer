@@ -40,6 +40,9 @@ import org.keycloak.utils.StringUtil;
 
 import org.jboss.logging.Logger;
 
+/**
+ * JPA 实现的 {@link WorkflowStateProvider}：持久化 workflow 调度步骤（{@link WorkflowStateEntity}）。
+ */
 public class JpaWorkflowStateProvider implements WorkflowStateProvider {
 
     private final EntityManager em;
@@ -62,6 +65,7 @@ public class JpaWorkflowStateProvider implements WorkflowStateProvider {
         return entity != null ? toScheduledStep(entity) : null;
     }
 
+    /** 步骤未配置 after 时的默认调度间隔。 */
     private static final Duration DEFAULT_STEP_DURATION = Duration.ofMinutes(1);
 
     @Override
@@ -211,9 +215,7 @@ public class JpaWorkflowStateProvider implements WorkflowStateProvider {
         CriteriaDelete<WorkflowStateEntity> delete = cb.createCriteriaDelete(WorkflowStateEntity.class);
         Root<WorkflowStateEntity> root = delete.from(WorkflowStateEntity.class);
 
-        // this method is called after the realm entity has been removed and its component records
-        // (including workflows) have been cascade-deleted. Use a NOT IN subquery to delete workflow
-        // state entries whose workflow no longer exists.
+        // realm 已删除且 workflow 组件已级联删除后调用；删除 workflow 已不存在的孤儿状态
         Subquery<String> existingWorkflowIds = delete.subquery(String.class);
         Root<ComponentEntity> component = existingWorkflowIds.from(ComponentEntity.class);
         existingWorkflowIds.select(component.get("id"))
@@ -247,6 +249,7 @@ public class JpaWorkflowStateProvider implements WorkflowStateProvider {
     public void close() {
     }
 
+    /** 将 {@link WorkflowStateEntity} 转为 {@link ScheduledStep} 记录。 */
     private ScheduledStep toScheduledStep(WorkflowStateEntity entity) {
         return new ScheduledStep(entity.getWorkflowId(), entity.getScheduledStepId(), entity.getResourceId(),
                 entity.getExecutionId(), entity.getScheduledStepTimestamp());

@@ -35,16 +35,21 @@ import org.keycloak.storage.jpa.KeyUtils;
 import org.hibernate.annotations.DynamicUpdate;
 
 /**
+ * 持久化用户会话 JPA 实体，映射 OFFLINE_USER_SESSION 表。
+ * <p>
+ * 复合主键 (userSessionId, offline)；区分在线/离线会话，支持 rememberMe 列与 JSON {@link #data} 扩展字段。
+ * 内置大量 NamedQuery 供会话清理、迁移、只读投影及按 realm/用户/客户端查询。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @NamedQueries({
         @NamedQuery(name="deleteUserSessionsByRealm", query="delete from PersistentUserSessionEntity sess where sess.realmId = :realmId"),
         @NamedQuery(name="deleteUserSessionsByRealmSessionType", query="delete from PersistentUserSessionEntity sess where sess.realmId = :realmId and sess.offline = :offline"),
         @NamedQuery(name="deleteUserSessionsByUser", query="delete from PersistentUserSessionEntity sess where sess.userId = :userId"),
-        // The query "deleteExpiredUserSessions" is deprecated (since 26.5) and may be removed in the future.
+        // 查询 "deleteExpiredUserSessions" 自 26.5 起已弃用，未来可能移除
         @NamedQuery(name="deleteExpiredUserSessions", query="delete from PersistentUserSessionEntity sess where sess.realmId = :realmId AND sess.offline = :offline AND sess.lastSessionRefresh < :lastSessionRefresh"),
         @NamedQuery(name="deleteUserSessions", query="delete from PersistentUserSessionEntity sess where sess.offline = :offline AND sess.userSessionId IN (:userSessionIds)"),
-        // The query "findExpiredUserSessions" is deprecated (since 26.5) and may be removed in the future.
+        // 查询 "findExpiredUserSessions" 自 26.5 起已弃用，未来可能移除
         @NamedQuery(name="findExpiredUserSessions", query="select sess.userSessionId, sess.userId from PersistentUserSessionEntity sess where sess.realmId = :realmId AND sess.offline = :offline AND sess.lastSessionRefresh < :lastSessionRefresh"),
         @NamedQuery(name="updateUserSessionLastSessionRefresh", query="update PersistentUserSessionEntity sess set lastSessionRefresh = :lastSessionRefresh where sess.realmId = :realmId" +
                 " AND sess.offline = :offline AND sess.userSessionId IN (:userSessionIds)"),
@@ -52,7 +57,7 @@ import org.hibernate.annotations.DynamicUpdate;
         @NamedQuery(name="findUserSessionsOrderedById", query="select sess from PersistentUserSessionEntity sess, RealmEntity realm where realm.id = sess.realmId AND sess.offline = :offline" +
                 " AND sess.userSessionId > :lastSessionId" +
                 " order by sess.userSessionId"),
-        // The query "findUserSession" is deprecated (since 26.7) and may be removed in the future.
+        // 查询 "findUserSession" 自 26.7 起已弃用，未来可能移除
         @NamedQuery(name="findUserSession", query="select sess from PersistentUserSessionEntity sess where sess.offline = :offline" +
                 " AND sess.userSessionId = :userSessionId AND sess.realmId = :realmId AND sess.lastSessionRefresh >= :lastSessionRefresh"),
         @NamedQuery(name="findUserSessionsByUserId", query="select sess from PersistentUserSessionEntity sess where sess.offline = :offline" +
@@ -124,41 +129,50 @@ public class PersistentUserSessionEntity implements AsynchronousCommitAllowed {
 
     @Override
     public boolean isAsyncCommitAllowed(EntityOperationType operationType) {
-        // If a session is removed via a user logout,
-        // this needs to be durable to prevent a security relevant timing attack
+        // 用户登出触发的 DELETE 须同步提交，防止与安全相关的时序攻击
         return operationType != EntityOperationType.DELETE;
     }
 
+    /** 用户会话 ID（复合主键之一）。 */
     @Id
     @Column(name="USER_SESSION_ID", length = 36)
     protected String userSessionId;
 
+    /** 所属 realm ID。 */
     @Column(name = "REALM_ID", length = 36)
     protected String realmId;
 
+    /** 关联用户 ID。 */
     @Column(name="USER_ID")
     protected String userId;
 
+    /** 会话创建时间（秒 epoch）。 */
     @Column(name = "CREATED_ON")
     protected int createdOn;
 
+    /** 最后刷新/活动时间（秒 epoch）。 */
     @Column(name = "LAST_SESSION_REFRESH")
     protected int lastSessionRefresh;
 
+    /** 身份 broker 侧会话 ID（可选）。 */
     @Column(name = "BROKER_SESSION_ID")
     protected String brokerSessionId;
 
+    /** 乐观锁版本号。 */
     @Version
     @Column(name="VERSION")
     private int version;
 
+    /** 离线标志："1" 离线 / "0" 在线（复合主键之一）。 */
     @Id
     @Column(name = "OFFLINE_FLAG")
     protected String offline;
 
+    /** 会话扩展数据 JSON 字符串。 */
     @Column(name="DATA")
     protected String data;
 
+    /** rememberMe 标志；null 表示尚未迁移到独立列。 */
     @Column(name="REMEMBER_ME")
     protected Boolean rememberMe;
 
@@ -239,10 +253,13 @@ public class PersistentUserSessionEntity implements AsynchronousCommitAllowed {
         return version;
     }
 
+    /** {@link PersistentUserSessionEntity} 复合主键。 */
     public static class Key implements Serializable {
 
+        /** 用户会话 ID。 */
         protected String userSessionId;
 
+        /** 离线标志。 */
         protected String offline;
 
         public Key() {

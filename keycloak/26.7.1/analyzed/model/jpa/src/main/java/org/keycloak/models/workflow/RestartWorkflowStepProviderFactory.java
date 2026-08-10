@@ -7,9 +7,13 @@ import org.keycloak.component.ComponentValidationException;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
+/**
+ * {@link RestartWorkflowStepProvider} 工厂（SPI id {@value #ID}）。
+ */
 public final class RestartWorkflowStepProviderFactory implements WorkflowStepProviderFactory<RestartWorkflowStepProvider> {
 
     public static final String ID = "restart";
+    /** 重启目标步骤索引的配置键。 */
     public static final String CONFIG_POSITION = "position";
 
     @Override
@@ -31,7 +35,7 @@ public final class RestartWorkflowStepProviderFactory implements WorkflowStepPro
 
     @Override
     public Set<ResourceType> getSupportedResourceTypes() {
-        // Usable for all resource types.
+        // 适用于所有资源类型
         return Set.of(ResourceType.values());
     }
 

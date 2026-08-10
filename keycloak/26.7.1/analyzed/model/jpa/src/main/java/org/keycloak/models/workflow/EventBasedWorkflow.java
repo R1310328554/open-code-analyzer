@@ -14,6 +14,9 @@ import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_CO
 import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_ON_EVENT;
 import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_RESTART_IN_PROGRESS;
 
+/**
+ * 基于事件的 workflow 激活/停用/重启决策：解析 on-event、conditions 与并发配置。
+ */
 final class EventBasedWorkflow {
 
     private final KeycloakSession session;
@@ -31,8 +34,7 @@ final class EventBasedWorkflow {
     }
 
     /**
-     * Evaluates the specified context to determine whether the workflow should be activated or not. Activation will happen
-     * if the context's event matches the configured activation events and the resource conditions evaluate to true.
+     * 判断 workflow 是否应激活：事件类型匹配且资源条件为真。
      *
      * @param executionContext a reference to the workflow execution context.
      * @return {@code true} if the workflow should be activated, {@code false} otherwise.
@@ -46,8 +48,7 @@ final class EventBasedWorkflow {
     }
 
     /**
-     * Evaluates the specified context to determine whether the workflow should be deactivated or not. Deactivation will happen
-     * if the context's event matches the configured cancel-in-progress setting.
+     * 判断 workflow 是否应停用：事件匹配 cancel-in-progress 配置。
      *
      * @param executionContext a reference to the workflow execution context.
      * @return {@code true} if the workflow should be deactivated, {@code false} otherwise.
@@ -58,8 +59,7 @@ final class EventBasedWorkflow {
     }
 
     /**
-     * Evaluates the specified context to determine whether the workflow should be restarted or not. Restart will happen
-     * if the context's event matches the configured restart-in-progress setting.
+     * 判断 workflow 是否应重启：事件匹配 restart-in-progress 配置。
      *
      * @param executionContext a reference to the workflow execution context.
      * @return {@code true} if the workflow should be restarted, {@code false} otherwise.
@@ -70,8 +70,7 @@ final class EventBasedWorkflow {
     }
 
     /**
-     * Validates the resource conditions defined in the workflow configuration against the given execution context.
-     * If no conditions are defined, the method returns {@code true}.
+     * 校验 workflow 资源条件；未配置 conditions 时视为通过。
      *
      * @param context a reference to the workflow execution context.
      * @return {@code true} if the resource conditions are met or not defined, {@code false} otherwise.
@@ -88,13 +87,13 @@ final class EventBasedWorkflow {
     }
 
     /**
-     * Determines whether the workflow should be activated based on the given event or not.
+     * 根据配置的事件表达式判断 workflow 是否应被当前事件激活。
      *
      * @param executionContext a reference to the workflow execution context.
      * @return {@code true} if the workflow should be activated, {@code false} otherwise.
      */
     private boolean activateOnEvent(WorkflowExecutionContext executionContext) {
-        // AD_HOC is a special case that always triggers the workflow regardless of the configured activation events
+        // AD_HOC 为特殊事件，无视 on-event 配置始终触发
         if (WorkflowConstants.AD_HOC.equals(executionContext.getEvent().getEventProviderId())) {
             return true;
         }
@@ -110,9 +109,8 @@ final class EventBasedWorkflow {
     }
 
     /**
-     * Determines whether the event in the given execution context matches the concurrency setting, which can be one of
-     * {@code restart-in-progress} or {@code cancel-in-progress}. If the setting is set to "true", the decision is based
-     * on the activation settings. If the setting contains an event expression, it is parsed and evaluated.
+     * 判断事件是否匹配并发配置（restart-in-progress 或 cancel-in-progress）。
+     * 值为 "true" 时按激活条件决策；否则解析为事件表达式求值。
      *
      * @param executionContext a reference to the workflow execution context.
      * @param concurrencySetting the concurrency setting to evaluate.
@@ -125,12 +123,12 @@ final class EventBasedWorkflow {
         }
 
         if (StringUtil.isNotBlank(concurrencySetting)) {
-            // if the setting is "true", we decide based on the activation conditions but only if the workflow has activation events configured
+            // 配置为 "true" 时：仅当 workflow 配置了 on-event 且满足激活条件才生效
             if (Boolean.parseBoolean(concurrencySetting)) {
                 return StringUtil.isNotBlank(model.getConfig().getFirst(CONFIG_ON_EVENT)) && activate(executionContext);
             }
             else {
-                // the flag has an event expression - parse and evaluate it
+                // 否则将配置值视为事件表达式并求值
                 BooleanConditionParser.EvaluatorContext context = EvaluatorUtils.createEvaluatorContext(model, concurrencySetting);
                 EventEvaluator eventEvaluator = new EventEvaluator(session, executionContext);
                 return eventEvaluator.visit(context);

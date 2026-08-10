@@ -32,6 +32,9 @@ import org.jboss.logging.Logger;
 
 import static java.util.Optional.ofNullable;
 
+/**
+ * 默认 {@link WorkflowProvider}：管理 workflow 组件 CRUD、事件驱动激活/停用/重启及定时步骤执行。
+ */
 public class DefaultWorkflowProvider implements WorkflowProvider {
 
     private static final Logger log = Logger.getLogger(DefaultWorkflowProvider.class);
@@ -63,30 +66,27 @@ public class DefaultWorkflowProvider implements WorkflowProvider {
 
     @Override
     public void updateWorkflow(Workflow workflow, WorkflowRepresentation representation) {
-        // first step - ensure the updated workflow is valid
+        // 第一步：校验更新后的 workflow 定义
         WorkflowValidator.validateWorkflow(session, this, representation);
         WorkflowValidator.validateWorkflowConditionType(session, representation.getConditions(), workflow.getSupportedType());
 
-        // check if there are scheduled steps for this workflow - if there aren't, we can update freely
-        if (!stateProvider.hasScheduledSteps(workflow.getId())) {
-            // simply delete and re-create the workflow, ensuring the id remains the same
+        // 若无已调度步骤，可直接删后重建（保持 id 不变）
             removeWorkflow(workflow);
             representation.setId(workflow.getId());
             toModel(representation);
         } else {
-            // if there are scheduled steps, we don't allow to update the workflow's 'on' config
+            // 存在已调度资源时不允许修改 workflow 的 on 配置
             WorkflowRepresentation currentRepresentation = toRepresentation(workflow);
             if (!Objects.equals(currentRepresentation.getOn(), representation.getOn())) {
                 throw new ModelValidationException("Cannot update 'on' configuration when there are scheduled resources for the workflow.");
             }
 
-            // we do not allow changing the workflow type
+            // 不允许变更 workflow 资源类型
             if (representation.getSupports() != null && !Objects.equals(representation.getSupports(), currentRepresentation.getSupports())) {
                 throw new ModelValidationException("Cannot update 'supports' configuration.");
             }
 
-            // we also need to guarantee the steps remain the same - that is, in the same order with the same 'uses' property.
-            // each step can have its config updated, but the steps themselves cannot be changed.
+            // 步骤数量、顺序与 uses 不可变；仅允许更新各步骤 config
             List<WorkflowStepRepresentation> currentSteps = currentRepresentation.getSteps();
             List<WorkflowStepRepresentation> newSteps = ofNullable(representation.getSteps()).orElse(List.of());
             if (currentSteps.size() != newSteps.size()) {
@@ -98,15 +98,15 @@ public class DefaultWorkflowProvider implements WorkflowProvider {
                 if (!Objects.equals(currentStep.getUses(), newStep.getUses())) {
                     throw new ModelValidationException("Cannot change the number or order of steps when there are scheduled resources for the workflow.");
                 }
-                // set the id of the step to match the existing one, so we can update the config
+                // 保留原 step id 以便更新 config
                 newStep.setId(currentStep.getId());
                 newStep.setPriority(Long.parseLong(currentStep.getPriority()));
             }
 
-            // set the workflow's type
+            // 保留原 supports 类型
             representation.setSupports(currentRepresentation.getSupports());
 
-            // finally, update the workflow's config along with the steps' configs
+            // 更新 workflow 与各步骤 config 后重新调度
             workflow.updateConfig(representation.getConfig(), newSteps);
 
             cancelScheduledWorkflow(workflow);
@@ -141,13 +141,13 @@ public class DefaultWorkflowProvider implements WorkflowProvider {
     public Stream<WorkflowRepresentation> getScheduledWorkflowsByResource(String resourceId) {
         return stateProvider.getScheduledStepsByResource(resourceId).map(scheduledStep -> {
             Workflow workflow = getWorkflow(scheduledStep.workflowId());
-            // get the steps, then set the status (completed/pending) and scheduledAt for each pending step
+            // 构建步骤列表并标记已完成/待执行状态及 scheduledAt
             List<WorkflowStepRepresentation> steps = workflow.getSteps().map(this::toRepresentation).toList();
             boolean scheduledStepFound = false;
             Long scheduledAt = null;
             for (WorkflowStepRepresentation step : steps) {
                 if (!scheduledStepFound) {
-                    // check if we found the scheduled step
+                    // 定位当前已调度的步骤
                     if (step.getId().equals(scheduledStep.stepId())) {
                         scheduledStepFound = true;
                     } else {
@@ -178,7 +178,7 @@ public class DefaultWorkflowProvider implements WorkflowProvider {
         getWorkflows().filter(Workflow::isEnabled).forEach((workflow) -> {
             stateProvider.getDueScheduledSteps(workflow).forEach((scheduled) -> {
                 try {
-                    // check if the resource still meets the workflow's resource conditions
+                    // 恢复执行前再次校验资源是否仍满足 workflow 条件
                     DefaultWorkflowExecutionContext context = new DefaultWorkflowExecutionContext(session, workflow, scheduled);
                     EventBasedWorkflow provider = new EventBasedWorkflow(session, workflow.getSupportedType(), getWorkflowComponent(workflow.getId()));
                     if (!provider.validateResourceConditions(context)) {
@@ -209,10 +209,10 @@ public class DefaultWorkflowProvider implements WorkflowProvider {
     @Override
     public void migrateScheduledResources(String stepIdFrom, String stepIdTo) {
         if (stepIdFrom.equals(stepIdTo)) {
-            return; // nothing to do as both steps are the same
+            return; // 源步骤与目标步骤相同则无需迁移
         }
 
-        // first, we use the steps to find the workflows involved
+        // 通过步骤组件定位涉及的 workflow
         ComponentModel stepFromModel = getWorkflowComponent(stepIdFrom, WorkflowStepProvider.class.getName());
         Workflow workflowFrom = getWorkflow(stepFromModel.getParentId());
         ComponentModel stepToModel = getWorkflowComponent(stepIdTo, WorkflowStepProvider.class.getName());
@@ -221,15 +221,15 @@ public class DefaultWorkflowProvider implements WorkflowProvider {
         // get the scheduled steps from the source step
         List<ScheduledStep> scheduledStepsFrom = stateProvider.getScheduledStepsByStep(workflowFrom.getId(), stepIdFrom).toList();
 
-        // when migrating between different workflows, we need to perform additional validations
+        // 跨 workflow 迁移时需额外校验
         if (!workflowFrom.getId().equals(workflowTo.getId())) {
 
-            // ensure both workflows support the same resource type
+            // 两 workflow 须支持相同资源类型
             if (workflowFrom.getSupportedType() != workflowTo.getSupportedType()) {
                 throw new ModelValidationException("Cannot migrate scheduled resources between workflows that support different resource types.");
             }
 
-            // ensure all resources scheduled in the source step satisfy the activation conditions of the destination workflow
+            // 源步骤上所有已调度资源须满足目标 workflow 激活条件
             EventBasedWorkflow eventBasedWorkflow = new EventBasedWorkflow(session, workflowTo.getSupportedType(), getWorkflowComponent(workflowTo.getId()));
             for (ScheduledStep scheduledStep : scheduledStepsFrom) {
                 DefaultWorkflowExecutionContext context = new DefaultWorkflowExecutionContext(session, workflowTo, scheduledStep);
@@ -240,7 +240,7 @@ public class DefaultWorkflowProvider implements WorkflowProvider {
             }
         }
 
-        // perform the migration - for each scheduled step in the source, we remove it and activate the destination workflow from the specified step
+        // 逐条迁移：移除源调度记录并在目标 workflow 指定步骤重启
         int stepPosition = workflowTo.getStepById(stepIdTo).getPriority() - 1;
         WorkflowStep stepFrom = workflowFrom.getStepById(stepIdFrom);
         WorkflowStep stepTo = workflowTo.getStepById(stepIdTo);
@@ -248,15 +248,15 @@ public class DefaultWorkflowProvider implements WorkflowProvider {
         for (ScheduledStep scheduledStep : scheduledStepsFrom) {
             String oldExecutionId = scheduledStep.executionId();
 
-            // remove the scheduled step from the source workflow
+            // 从源 workflow 移除调度状态
             stateProvider.remove(oldExecutionId);
 
-            // activate the destination workflow for the resource, starting from the specified step
+            // 在目标 workflow 指定步骤为资源激活 execution
             DefaultWorkflowExecutionContext context = getWorkflowExecutionContext(scheduledStep, workflowFrom, workflowTo);
             restartWorkflow(context, stepPosition);
 
             String newExecutionId = context.getExecutionId();
-            // Fire workflow resource migrated event
+            // 发布 workflow 资源迁移事件
             WorkflowProviderEvents.fireWorkflowResourceMigratedEvent(session, workflowFrom, workflowTo, stepFrom, stepTo,
                     scheduledStep.resourceId(), oldExecutionId, newExecutionId);
 
@@ -271,7 +271,7 @@ public class DefaultWorkflowProvider implements WorkflowProvider {
     private DefaultWorkflowExecutionContext getWorkflowExecutionContext(ScheduledStep scheduledStep, Workflow workflowFrom, Workflow workflowTo) {
         DefaultWorkflowExecutionContext context;
         if (workflowFrom.getId().equals(workflowTo.getId())) {
-            // we reuse the executionId when migrating within the same workflow
+            // 同一 workflow 内迁移时复用 executionId
             context = new DefaultWorkflowExecutionContext(session, workflowTo, new AdhocWorkflowEvent(workflowTo.getSupportedType(), scheduledStep.resourceId()),
                     scheduledStep.executionId());
         } else {
@@ -332,7 +332,7 @@ public class DefaultWorkflowProvider implements WorkflowProvider {
         Workflow workflow = addWorkflow(new Workflow(session, rep.getId(), config));
         workflow.addSteps(rep.getSteps());
 
-        // After adding steps, validate that the condition type is compatible with the computed workflow type.
+        // 添加步骤后校验条件类型与 workflow 资源类型兼容
         WorkflowValidator.validateWorkflowConditionType(session, workflow.getCondition(), workflow.getSupportedType());
 
         return workflow;
@@ -356,7 +356,7 @@ public class DefaultWorkflowProvider implements WorkflowProvider {
     }
 
 
-    /* ================================= Workflows component providers and factories ================================= */
+    /* ================= workflow 组件 provider 与 factory 辅助 ================= */
 
     private WorkflowProvider getWorkflowProvider(Workflow workflow) {
         ComponentFactory<?, ?> factory = (ComponentFactory<?, ?>) sessionFactory
@@ -373,20 +373,20 @@ public class DefaultWorkflowProvider implements WorkflowProvider {
 
             try {
                 if (!provider.supports(event.getResourceType())) {
-                    // Prevents loading of scheduled steps when this resource type is not supported for the workflow
+                    // 资源类型不匹配则跳过，避免加载无关调度状态
                     return;
                 }
 
                 DefaultWorkflowExecutionContext context = new DefaultWorkflowExecutionContext(session, workflow, event);
 
                 if (scheduledSteps[0] == null) {
-                    // Lazily loading the current steps for this resource
+                    // 惰性加载该资源当前所有 workflow 调度状态
                     scheduledSteps[0] = stateProvider.getScheduledStepsByResource(event.getResourceId())
                             .collect(Collectors.toMap(ScheduledStep::workflowId, Function.identity()));
                 }
                 ScheduledStep scheduledStep = scheduledSteps[0].get(workflow.getId());
 
-                // if workflow is not active for the resource, check if the provider allows activating based on the event
+                // 资源尚未激活此 workflow：判断是否应激活
                 if (scheduledStep == null) {
                     if (provider.activate(context)) {
                         if (isAlreadyScheduledInSession(event, workflow)) {
@@ -394,16 +394,16 @@ public class DefaultWorkflowProvider implements WorkflowProvider {
                         }
 
 
-                        // If the workflow has a positive notBefore set, schedule the first step with it
+                        // 配置了 notBefore 时先调度首步而非立即执行
                         if (DurationConverter.isPositiveDuration(workflow.getNotBefore())) {
                             scheduleWorkflow(context);
                         } else {
-                            // process the workflow steps, scheduling or running them as needed
+                            // 逐步执行或调度 workflow 步骤
                             runWorkflow(context);
                         }
                     }
                 } else {
-                    // workflow is active for the resource, check if the provider wants to reset or deactivate it based on the event
+                    // 资源已激活：根据事件决定重启或停用
                     String executionId = scheduledStep.executionId();
                     String resourceId = scheduledStep.resourceId();
                     if (provider.restart(context)) {

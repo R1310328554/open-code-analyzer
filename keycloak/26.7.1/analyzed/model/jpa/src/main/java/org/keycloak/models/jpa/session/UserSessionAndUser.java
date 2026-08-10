@@ -17,8 +17,15 @@
 
 package org.keycloak.models.jpa.session;
 
+/**
+ * 用户会话 ID 与用户 ID 的轻量投影，用于过期清理等 NamedQuery 结果映射。
+ *
+ * @param userSessionId 用户会话 ID
+ * @param userId        用户 ID
+ */
 record UserSessionAndUser(String userSessionId, String userId) {
 
+    /** 从 Object[] 查询投影构造实例（长度须为 2，元素非 null）。 */
     static UserSessionAndUser fromQueryProjection(Object[] projection) {
         assert projection.length == 2;
         assert projection[0] != null;

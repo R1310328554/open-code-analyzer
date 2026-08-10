@@ -24,6 +24,9 @@ import org.keycloak.utils.StringUtil;
 
 import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_CONDITIONS;
 
+/**
+ * 客户端资源类型的 {@link ResourceTypeSelector}：按 workflow 条件筛选尚未激活该 workflow 的客户端 ID。
+ */
 public class ClientResourceTypeWorkflowProvider implements ResourceTypeSelector {
 
     private final EntityManager em;
@@ -41,7 +44,7 @@ public class ClientResourceTypeWorkflowProvider implements ResourceTypeSelector 
         Root<ClientEntity> userRoot = query.from(ClientEntity.class);
         List<Predicate> predicates = new ArrayList<>();
 
-        // Subquery will find if a state record exists for the user and workflow
+        // 子查询：该客户端是否已有此 workflow 的状态记录
         // SELECT 1 FROM WorkflowActionStateEntity s WHERE s.resourceId = userRoot.id AND s.workflowId = :workflowId
         Subquery<Integer> subquery = query.subquery(Integer.class);
         Root<WorkflowStateEntity> stateRoot = subquery.from(WorkflowStateEntity.class);
@@ -72,6 +75,7 @@ public class ClientResourceTypeWorkflowProvider implements ResourceTypeSelector 
         return ResourceType.CLIENTS.resolveResource(session, resourceId);
     }
 
+    /** 将 workflow 配置中的 conditions 表达式编译为 JPA Predicate。 */
     private Predicate getConditionsPredicate(Workflow workflow, CriteriaBuilder cb, CriteriaQuery<String> query, Root<ClientEntity> path) {
         MultivaluedHashMap<String, String> config = workflow.getConfig();
         String conditions = config.getFirst(CONFIG_CONDITIONS);

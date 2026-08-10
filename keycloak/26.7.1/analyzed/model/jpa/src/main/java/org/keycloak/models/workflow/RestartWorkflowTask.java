@@ -6,10 +6,14 @@ import org.keycloak.models.KeycloakSession;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 从指定步骤索引重启 workflow 的异步任务（继承 {@link RunWorkflowTask}）。
+ */
 class RestartWorkflowTask extends RunWorkflowTask {
 
     private static final Logger log = Logger.getLogger(RestartWorkflowTask.class);
 
+    /** 重启后首个执行的步骤索引。 */
     private final int position;
 
     RestartWorkflowTask(DefaultWorkflowExecutionContext context, int position) {

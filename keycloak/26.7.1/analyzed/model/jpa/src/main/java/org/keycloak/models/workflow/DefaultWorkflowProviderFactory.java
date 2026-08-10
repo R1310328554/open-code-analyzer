@@ -17,9 +17,13 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.keycloak.provider.ProviderEvent;
 import org.keycloak.provider.ProviderEventListener;
 
+/**
+ * 默认 {@link WorkflowProviderFactory}：装配 {@link WorkflowExecutor}、集群调度监听及迁移/realm 删除事件处理。
+ */
 public class DefaultWorkflowProviderFactory implements WorkflowProviderFactory<DefaultWorkflowProvider>, ProviderEventListener {
 
     static final String ID = "default";
+    /** workflow 异步任务默认超时（毫秒）。 */
     private static final long DEFAULT_EXECUTOR_TASK_TIMEOUT = 5000L;
 
     private WorkflowExecutor executor;
@@ -85,6 +89,7 @@ public class DefaultWorkflowProviderFactory implements WorkflowProviderFactory<D
     }
 
 
+    /** 供 {@link DefaultWorkflowProvider} 通知集群调度变更。 */
     WorkflowScheduleEventListener getScheduleEventListener() {
         return scheduleEventListener;
     }
@@ -110,11 +115,12 @@ public class DefaultWorkflowProviderFactory implements WorkflowProviderFactory<D
                 .property()
                 .name("executor-task-timeout")
                 .type("long")
-                .helpText("The time in milliseconds before a workflow task is marked as timed out .")
+                .helpText("workflow 任务超时时间（毫秒），超时后标记为 timed out。")
                 .defaultValue(DEFAULT_EXECUTOR_TASK_TIMEOUT)
                 .add().build();
     }
 
+    /** 获取 workflow 事件专用线程池。 */
     private ExecutorService getTaskExecutor(KeycloakSessionFactory factory) {
         return factory.getProviderFactory(ExecutorsProvider.class).create(null).getExecutor("workflow-event-executor");
     }

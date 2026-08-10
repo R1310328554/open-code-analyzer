@@ -5,18 +5,25 @@ import java.util.UUID;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.workflow.WorkflowStateProvider.ScheduledStep;
 
+/**
+ * {@link WorkflowExecutionContext} 默认实现：绑定 workflow、事件、当前步骤与 executionId。
+ */
 final class DefaultWorkflowExecutionContext implements WorkflowExecutionContext {
 
+    /** 目标资源 ID。 */
     private final String resourceId;
+    /** 本次 workflow 执行唯一标识。 */
     private final String executionId;
     private final Workflow workflow;
     private final WorkflowEvent event;
     private final KeycloakSession session;
+    /** 当前或待恢复的步骤。 */
     private final WorkflowStep step;
+    /** 非 null 时表示从该步骤索引重启 workflow。 */
     private Integer restartPosition;
 
     /**
-     * A new execution context for a workflow event. The execution ID is randomly generated.
+     * 为 workflow 事件创建执行上下文，executionId 随机生成。
      *
      * @param workflow the workflow
      * @param event the event
@@ -26,7 +33,7 @@ final class DefaultWorkflowExecutionContext implements WorkflowExecutionContext 
     }
 
     /**
-     * A new execution context for a workflow event. The execution ID is provided as a parameter
+     * 为 workflow 事件创建执行上下文，使用指定的 executionId。
      *
      * @param workflow the workflow
      * @param event the event
@@ -37,8 +44,7 @@ final class DefaultWorkflowExecutionContext implements WorkflowExecutionContext 
     }
 
     /**
-     * An execution context for a scheduled step, resuming the workflow from that step. The execution ID and resource ID are
-     * taken from the scheduled step.
+     * 为已调度步骤创建上下文，从该步骤恢复 workflow；executionId 与 resourceId 取自 {@link ScheduledStep}。
      *
      * @param session the session
      * @param workflow the workflow
@@ -49,8 +55,8 @@ final class DefaultWorkflowExecutionContext implements WorkflowExecutionContext 
     }
 
     /**
-     * A copy constructor that creates a new execution context based on an existing one but bound to a different {@link KeycloakSession}.
-
+     * 复制构造函数：绑定新的 {@link KeycloakSession}，其余状态来自已有上下文。
+     *
      * @param session the session
      * @param context the existing context
      */
@@ -59,8 +65,8 @@ final class DefaultWorkflowExecutionContext implements WorkflowExecutionContext 
     }
 
     /**
-     * A copy constructor that creates a new execution context based on an existing one but bound to a different {@link KeycloakSession} and the given {@link WorkflowStep}.
-
+     * 复制构造函数：绑定新 session 并指定当前 {@link WorkflowStep}。
+     *
      * @param session the session
      * @param context the existing context
      * @param step the current step
@@ -97,7 +103,7 @@ final class DefaultWorkflowExecutionContext implements WorkflowExecutionContext 
     @Override
     public WorkflowStep getNextStep() {
         if (restartPosition != null) {
-            // we are restarting the workflow, so we ignore the current step and return the step at the restart position
+            // 重启模式：忽略当前步骤，返回 restartPosition 处的步骤
             return workflow.getSteps().skip(restartPosition).findFirst().orElse(null);
         }
         return workflow.getSteps(step.getId()).skip(1).findFirst().orElse(null);
@@ -115,6 +121,7 @@ final class DefaultWorkflowExecutionContext implements WorkflowExecutionContext 
         return step;
     }
 
+    /** 标记从指定步骤索引重启 workflow。 */
     void restart(int position) {
         this.restartPosition = position;
     }

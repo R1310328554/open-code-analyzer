@@ -48,11 +48,14 @@ import static org.keycloak.models.utils.KeycloakModelUtils.runJobInTransactionWi
 
 
 /**
- * Moved the user session expiration logic from {@link JpaUserSessionPersisterProvider} to here.
+ * 用户会话过期、rememberMe 迁移及无效会话清理逻辑。
+ * <p>
+ * 自 {@link JpaUserSessionPersisterProvider} 抽离；按批次事务执行 NamedQuery 并发布 {@link EventType#USER_SESSION_DELETED} 事件。
  */
 final class UserSessionExpirationLogic {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    /** 无需设置额外查询参数的占位 Consumer。 */
     private static final Consumer<TypedQuery<Object[]>> NO_PARAMETERS = typedQuery -> {
     };
 
@@ -60,14 +63,13 @@ final class UserSessionExpirationLogic {
     }
 
     /**
-     * It expires the offline user sessions, using the {@code currentTime} and the realm's {@link RealmExpiration}.
+     * 按 {@code currentTime} 与 realm {@link RealmExpiration} 清理已过期的离线用户会话。
      *
-     * @param sessionFactory The {@link KeycloakSessionFactory}, used to start transactions.
-     * @param realm          The {@link RealmModel} from the user session should be checked for expiration.
-     * @param currentTime    The current timestamp, in seconds.
-     * @param expiration     The realm's {@link RealmExpiration}. It contains the user session lifespan and max-idle
-     *                       settings.
-     * @param batchSize      Sets the maximum number of user sessions to delete in a single transaction.
+     * @param sessionFactory 用于开启事务的 {@link KeycloakSessionFactory}
+     * @param realm          待检查过期的 {@link RealmModel}
+     * @param currentTime    当前时间戳（秒）
+     * @param expiration     realm 会话 lifespan 与 max-idle 配置
+     * @param batchSize      单次事务最多删除的会话数
      */
     public static void expireOfflineSessions(KeycloakSessionFactory sessionFactory, RealmModel realm, int currentTime, RealmExpiration expiration, int batchSize) {
         long start = System.nanoTime();
@@ -98,15 +100,14 @@ final class UserSessionExpirationLogic {
     }
 
     /**
-     * It expires the regular user sessions, using the {@code currentTime} and the realm's {@link RealmExpiration}.
+     * 按 {@code currentTime} 与 realm {@link RealmExpiration} 清理已过期的常规（在线）用户会话。
      *
-     * @param sessionFactory The {@link KeycloakSessionFactory}, used to start transactions.
-     * @param realm          The {@link RealmModel} from the user session should be checked for expiration.
-     * @param currentTime    The current timestamp, in seconds.
-     * @param expiration     The realm's {@link RealmExpiration}. It contains the user session lifespan and max-idle
-     *                       settings.
-     * @param rememberMe     If {@code true}, it only checks that have remember me enabled.
-     * @param batchSize      Sets the maximum number of user sessions to delete in a single transaction.
+     * @param sessionFactory 用于开启事务的 {@link KeycloakSessionFactory}
+     * @param realm          待检查过期的 {@link RealmModel}
+     * @param currentTime    当前时间戳（秒）
+     * @param expiration     realm 会话 lifespan 与 max-idle 配置
+     * @param rememberMe     为 {@code true} 时仅处理 rememberMe 会话
+     * @param batchSize      单次事务最多删除的会话数
      */
     public static void expireRegularSessions(KeycloakSessionFactory sessionFactory, RealmModel realm, int currentTime, RealmExpiration expiration, boolean rememberMe, int batchSize) {
         long start = System.nanoTime();
@@ -137,17 +138,15 @@ final class UserSessionExpirationLogic {
     }
 
     /**
-     * Migrates the remember me flag into to its own column, for an efficient query.
+     * 将 rememberMe 从 JSON data 迁移到独立列，便于高效查询。
      * <p>
-     * It only affects regular user sessions since offline sessions do not have remember me, and only migrates sessions
-     * close to the expiration time to avoid concurrency issues on existing sessions.
+     * 仅影响常规会话（离线会话无 rememberMe）；仅迁移接近过期窗口的会话以降低并发冲突。
      *
-     * @param sessionFactory The {@link KeycloakSessionFactory}, used to start transactions.
-     * @param realm          The {@link RealmModel} with the user session to be migrated.
-     * @param currentTime    The current timestamp, in seconds.
-     * @param expiration     The realm's {@link RealmExpiration}. It contains the user session lifespan and max-idle
-     *                       settings.
-     * @param batchSize      Sets the maximum number of user sessions to update in a single transaction.
+     * @param sessionFactory 用于开启事务的 {@link KeycloakSessionFactory}
+     * @param realm          待迁移的 {@link RealmModel}
+     * @param currentTime    当前时间戳（秒）
+     * @param expiration     realm 会话 lifespan 与 max-idle 配置
+     * @param batchSize      单次事务最多更新的会话数
      */
     public static void migrateRememberMe(KeycloakSessionFactory sessionFactory, RealmModel realm, RealmExpiration expiration, int currentTime, int batchSize) {
         long start = System.nanoTime();
@@ -156,7 +155,7 @@ final class UserSessionExpirationLogic {
         final String realmName = realm.getName();
         logger.tracef("Migrating remember me value for regular user sessions, for realm '%s'", realmName);
 
-        // migrating session, they don't need to be accurate.
+        // 迁移任务不要求 rememberMe 值完全精确
         final int expireMaxIdle = currentTime - Math.min(expiration.maxIdle(), expiration.rememberMeMaxIdle());
         Consumer<TypedQuery<Object[]>> setLastSessionRefresh = setLastSessionRefresh(expireMaxIdle);
         final int expireLifespan = currentTime - Math.min(expiration.lifespan(), expiration.rememberMeLifespan());
@@ -180,14 +179,11 @@ final class UserSessionExpirationLogic {
     }
 
     /**
-     * Removes invalid regular user sessions from the database.
-     * <p>
-     * An invalid user session is a regular session with remember me column set to true, but with the remember me
-     * disabled in the realm settings.
+     * 删除无效的常规用户会话：rememberMe 列为 true 但 realm 已禁用 rememberMe。
      *
-     * @param sessionFactory The {@link KeycloakSessionFactory}, used to start transactions.
-     * @param realm          The {@link RealmModel} to check and remove invalid user sessions.
-     * @param batchSize      Sets the maximum number of user sessions to remove in a single transaction.
+     * @param sessionFactory 用于开启事务的 {@link KeycloakSessionFactory}
+     * @param realm          待清理的 {@link RealmModel}
+     * @param batchSize      单次事务最多删除的会话数
      */
     public static void deleteInvalidSessions(KeycloakSessionFactory sessionFactory, RealmModel realm, int batchSize) {
         long start = System.nanoTime();
@@ -205,6 +201,7 @@ final class UserSessionExpirationLogic {
         logger.debugf("Invalid session removed for realm '%s'. Took %dms", realmName, TimeUnit.NANOSECONDS.toMillis(duration));
     }
 
+    /** 处理 rememberMe 列迁移：解析 data、更新列或删除无效会话。 */
     private static boolean handleRememberMeColumnValue(KeycloakSession session, String realmId, String realmName, int batchSize, boolean rememberMeEnabled, String queryName, Consumer<TypedQuery<Object[]>> setParameters, List<UserSessionAndUser> sessionsWithRememberMeCollector, List<String> sessionsWithoutRememberMeCollector) {
         final EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
 
@@ -235,6 +232,7 @@ final class UserSessionExpirationLogic {
         return sessionsWithRememberMeCollector.size() + sessionsWithoutRememberMeCollector.size() >= batchSize;
     }
 
+    /** 发布 USER_SESSION_DELETED 事件。 */
     private static void createUserSessionDeletedEvent(KeycloakSession session, RealmModel realm, UserSessionAndUser data, String reason) {
         new EventBuilder(realm, session)
                 .user(data.userId())
@@ -244,7 +242,7 @@ final class UserSessionExpirationLogic {
                 .success();
     }
 
-    // returns true if it has more rows to check
+    /** 查询过期会话并删除；返回 true 表示可能还有更多批次待处理。 */
     private static boolean findAndRemoveSessions(KeycloakSession session, String realmId, int batchSize, boolean offline, String eventReason, String detailsForLog, String queryName, Consumer<TypedQuery<Object[]>> queryParameters, List<UserSessionAndUser> expiredSessions) {
         EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
 
@@ -259,8 +257,7 @@ final class UserSessionExpirationLogic {
 
         handleResultsToRemove(session, em, realmId, offline, eventReason, detailsForLog, expiredSessions);
 
-        // This should be safe.
-        // If the hits are less than the desired batch size, we should not have expired sessions.
+        // 命中数少于 batchSize 时通常表示已无更多过期会话，此处判断是安全的
         return expiredSessions.size() >= batchSize;
     }
 
@@ -272,7 +269,7 @@ final class UserSessionExpirationLogic {
         RealmModel realm = session.realms().getRealm(realmId);
         session.getContext().setRealm(realm);
 
-        // creates the expiration events and extracts the user session IDs for the delete statement.
+        // 先发布过期事件，再收集待删除的 userSessionId
         var sessionIds = expiredSessions.stream()
                 .peek(sessionAndUser -> createUserSessionDeletedEvent(session, realm, sessionAndUser, eventReason))
                 .map(UserSessionAndUser::userSessionId)
@@ -303,6 +300,7 @@ final class UserSessionExpirationLogic {
                 .executeUpdate();
     }
 
+    /** 循环按批次执行任务直至无更多结果。 */
     private static void runInBatches(KeycloakSessionFactory sessionFactory, KeycloakSessionTaskWithResult<Boolean> task, Runnable afterBatchAction) {
         boolean hasMore;
         do {

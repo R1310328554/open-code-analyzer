@@ -2,6 +2,11 @@ package org.keycloak.models.workflow;
 
 import java.util.List;
 
+/**
+ * 重启 workflow 的步骤 provider：将执行指针设到配置的步骤索引。
+ *
+ * @param position 目标步骤在 workflow 中的零基索引
+ */
 public record RestartWorkflowStepProvider(int position) implements WorkflowStepProvider {
 
     @Override
@@ -22,6 +27,6 @@ public record RestartWorkflowStepProvider(int position) implements WorkflowStepP
 
     @Override
     public void close() {
-        // No resources to close
+        // 无需释放资源
     }
 }

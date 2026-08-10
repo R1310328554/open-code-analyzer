@@ -23,8 +23,12 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel.RealmRemovedEvent;
 import org.keycloak.models.UserModel.UserRemovedEvent;
 
+/**
+ * JPA {@link WorkflowStateProvider} 工厂：监听用户/realm 删除并清理 workflow 状态。
+ */
 public class JpaWorkflowStateProviderFactory implements WorkflowStateProviderFactory {
 
+    /** Provider SPI ID。 */
     public static final String PROVIDER_ID = "jpa";
 
     @Override
@@ -56,12 +60,14 @@ public class JpaWorkflowStateProviderFactory implements WorkflowStateProviderFac
     public void close() {
     }
 
+    /** realm 删除后清理全部 workflow 状态。 */
     private void onRealmRemovedEvent(RealmRemovedEvent event) {
         KeycloakSession session = event.getKeycloakSession();
         WorkflowStateProvider provider = session.getProvider(WorkflowStateProvider.class);
         provider.removeAll();
     }
 
+    /** 用户删除后按 resourceId 清理 workflow 状态。 */
     private void onUserRemovedEvent(UserRemovedEvent event) {
         KeycloakSession session = event.getKeycloakSession();
         WorkflowStateProvider provider = session.getProvider(WorkflowStateProvider.class);
