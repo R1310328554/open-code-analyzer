@@ -28,6 +28,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.utils.KeycloakSessionUtil;
 
 /**
+ * Keycloak 安全响应头过滤器。
+ * <p>在响应阶段通过 {@link SecurityHeadersProvider} 为所有 HTTP 响应添加领域配置的安全头。</p>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 @Provider
@@ -35,6 +37,7 @@ import org.keycloak.utils.KeycloakSessionUtil;
 @Priority(10)
 public class KeycloakSecurityHeadersFilter implements ContainerResponseFilter {
 
+    /** {@inheritDoc} 为响应附加安全 HTTP 头 */
     @Override
     public void filter(ContainerRequestContext containerRequestContext, ContainerResponseContext containerResponseContext) {
         KeycloakSession session = KeycloakSessionUtil.getKeycloakSession();

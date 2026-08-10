@@ -46,27 +46,35 @@ import static org.keycloak.models.Constants.DEFAULT_SESSION_MAX_LIFESPAN;
 import static org.keycloak.models.UserModel.IS_TEMP_ADMIN_ATTR_NAME;
 
 /**
+ * 首次安装引导工具。
+ * <p>创建 master 领域、临时/初始管理员用户及服务账户客户端。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ApplianceBootstrap {
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
 
     public ApplianceBootstrap(KeycloakSession session) {
         this.session = session;
     }
 
+    /** @return 是否为全新安装（admin realm 尚不存在） */
     public boolean isNewInstall() {
         return session.realms().getRealmByName(Config.getAdminRealm()) == null;
     }
 
+    /** @return master 领域是否尚无用户 */
     public boolean isNoMasterUser() {
         RealmModel realm = session.realms().getRealmByName(Config.getAdminRealm());
         session.getContext().setRealm(realm);
         return session.users().getUsersCount(realm, true) == 0;
     }
 
+    /** 创建默认 master 领域及密钥 Provider。
+     * @throws IllegalStateException 领域已存在时
+     */
     public void createMasterRealm() {
         if (!isNewInstall()) {
             throw new IllegalStateException("Can't create default realm as realms already exists");
@@ -88,7 +96,7 @@ public class ApplianceBootstrap {
         realm.setAccessTokenLifespanForImplicitFlow(Constants.DEFAULT_ACCESS_TOKEN_LIFESPAN_FOR_IMPLICIT_FLOW_TIMEOUT);
         realm.setSsoSessionMaxLifespan(DEFAULT_SESSION_MAX_LIFESPAN);
         realm.setOfflineSessionIdleTimeout(Constants.DEFAULT_OFFLINE_SESSION_IDLE_TIMEOUT);
-        // KEYCLOAK-7688 Offline Session Max for Offline Token
+        // KEYCLOAK-7688：离线 Token 的离线会话最大寿命
         realm.setOfflineSessionMaxLifespanEnabled(false);
         realm.setOfflineSessionMaxLifespan(Constants.DEFAULT_OFFLINE_SESSION_MAX_LIFESPAN);
         realm.setAccessCodeLifespan(DEFAULT_ACCESS_CODE_LIFESPAN);
@@ -101,8 +109,8 @@ public class ApplianceBootstrap {
         session.getContext().setRealm(realm);
         DefaultKeyProviders.createProviders(realm);
 
-        // In master realm the UP config is more relaxed
-        // firstName, lastName and email are not required (all attributes except username)
+        // master 领域用户配置更宽松
+        // 除 username 外 firstName/lastName/email 均非必填
         UserProfileProvider UserProfileProvider = session.getProvider(UserProfileProvider.class);
         UPConfig upConfig = UserProfileProvider.getConfiguration();
         for (UPAttribute attr : upConfig.getAttributes()) {
@@ -114,27 +122,27 @@ public class ApplianceBootstrap {
     }
 
     /**
-     * Create a temporary admin user
-     * @param username the admin username
-     * @param password the admin password
-     * @param isTemporary whether the user is a temporary admin
-     * @param initialUser if true only create the user if no other users exist
-     * @return false if the user could not be created
+     * 创建 master 领域管理员用户。
+     * @param username 管理员用户名
+     * @param password 密码
+     * @param isTemporary 是否为临时管理员
+     * @param initialUser 为 true 时仅在没有其他用户时创建
+     * @return 创建失败返回 false
      */
     public boolean createMasterRealmAdminUser(String username, String password, boolean isTemporary, /*Integer expriationMinutes,*/ boolean initialUser) {
         return createMasterRealmAdminUser(username, password, null, null, null, isTemporary, initialUser);
     }
 
     /**
-     * Create a temporary admin user with additional profile information
-     * @param username the admin username
-     * @param password the admin password
-     * @param firstName the admin user's first name (optional)
-     * @param lastName the admin user's last name (optional)
-     * @param email the admin user's email address (optional)
-     * @param isTemporary whether the user is a temporary admin
-     * @param initialUser if true only create the user if no other users exist
-     * @return false if the user could not be created
+     * 创建带扩展资料的管理员用户。
+     * @param username 用户名
+     * @param password 密码
+     * @param firstName 名（可选）
+     * @param lastName 姓（可选）
+     * @param email 邮箱（可选）
+     * @param isTemporary 是否临时管理员
+     * @param initialUser 为 true 时仅在没有其他用户时创建
+     * @return 创建失败返回 false
      */
     public boolean createMasterRealmAdminUser(String username, String password, String firstName, String lastName, String email, boolean isTemporary, /*Integer expriationMinutes,*/ boolean initialUser) {
         RealmModel realm = session.realms().getRealmByName(Config.getAdminRealm());
@@ -183,10 +191,10 @@ public class ApplianceBootstrap {
     }
 
     /**
-     * Create a temporary admin service account
-     * @param clientId     the client ID
-     * @param clientSecret the client secret
-     * @return false if the service account could not be created
+     * 创建临时管理员服务账户客户端。
+     * @param clientId 客户端 ID
+     * @param clientSecret 客户端密钥
+     * @return 创建失败返回 false
      */
     public boolean createTemporaryMasterRealmAdminService(String clientId, String clientSecret /*, Integer expriationMinutes*/) {
         RealmModel realm = session.realms().getRealmByName(Config.getAdminRealm());

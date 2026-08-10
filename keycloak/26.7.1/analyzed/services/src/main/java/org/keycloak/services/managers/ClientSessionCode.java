@@ -26,6 +26,8 @@ import org.keycloak.sessions.CommonClientSessionModel;
 
 
 /**
+ * 客户端/认证会话一次性操作码封装。
+ * <p>解析、校验 action code 的有效期与哈希，支持 CLIENT/LOGIN/USER 三类动作寿命。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -35,10 +37,11 @@ public class ClientSessionCode<CLIENT_SESSION extends CommonClientSessionModel> 
     private final RealmModel realm;
     private final CLIENT_SESSION commonLoginSession;
 
+    /** 操作码有效寿命类型。 */
     public enum ActionType {
-        CLIENT,
-        LOGIN,
-        USER
+        /** 通用 access code */ CLIENT,
+        /** 登录流程 */ LOGIN,
+        /** 用户操作（必需操作等） */ USER
     }
 
     public ClientSessionCode(KeycloakSession session, RealmModel realm, CLIENT_SESSION commonLoginSession) {
@@ -47,6 +50,7 @@ public class ClientSessionCode<CLIENT_SESSION extends CommonClientSessionModel> 
         this.commonLoginSession = commonLoginSession;
     }
 
+    /** code 解析结果。 */
     public static class ParseResult<CLIENT_SESSION extends CommonClientSessionModel> {
         ClientSessionCode<CLIENT_SESSION> code;
         boolean authSessionNotFound;
@@ -149,6 +153,11 @@ public class ClientSessionCode<CLIENT_SESSION extends CommonClientSessionModel> 
         return commonLoginSession;
     }
 
+    /** 校验 action 名称与寿命。
+     * @param requestedAction 期望的 action
+     * @param actionType 寿命类型
+     * @return 是否有效
+     */
     public boolean isValid(String requestedAction, ActionType actionType) {
         if (!isValidAction(requestedAction)) return false;
         return isActionActive(actionType);
@@ -200,6 +209,9 @@ public class ClientSessionCode<CLIENT_SESSION extends CommonClientSessionModel> 
         clientSessionParser.setTimestamp(commonLoginSession, Time.currentTime());
     }
 
+    /** 获取或生成当前会话的一次性 code。
+     * @return action code 字符串
+     */
     public String getOrGenerateCode() {
         CodeGenerateUtil.ClientSessionParser parser = CodeGenerateUtil.getParser(commonLoginSession.getClass());
         return parser.retrieveCode(session, commonLoginSession);

@@ -57,22 +57,25 @@ import org.jboss.logging.Logger;
 import static org.keycloak.models.UserModel.DISABLED_REASON;
 
 /**
- * A single thread will log failures.  This is so that we can avoid concurrent writes as we want an accurate failure count
- *
+ * 默认暴力破解保护实现。
+ * <p>在独立 executor 线程中记录失败/成功，累计失败次数并实施临时或永久账户锁定；支持 OTP 等二次认证类别的独立计数。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class DefaultBruteForceProtector implements BruteForceProtector {
     private static final Logger logger = Logger.getLogger(DefaultBruteForceProtector.class);
 
+    /** 参与暴力破解计数的认证类别（密码、OTP、恢复码） */
     public static final Set<String> ALLOWED_AUTHENTICATION_CATEGORIES = Set.of(
             PasswordCredentialModel.TYPE,
             OTPCredentialModel.TYPE,
             RecoveryAuthnCodesCredentialModel.TYPE
     );
 
+    /** OTP 认证类别常量 */
     public static final String OTP_CATEGORY = OTPCredentialModel.TYPE;
 
+    /** 失败计数窗口外的最大间隔（秒，默认 12 小时） */
     protected int maxDeltaTimeSeconds = 60 * 60 * 12; // 12 hours
     protected KeycloakSessionFactory factory;
 
@@ -80,6 +83,14 @@ public class DefaultBruteForceProtector implements BruteForceProtector {
         this.factory = factory;
     }
 
+    /** 记录一次登录失败并更新锁定状态。
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @param userId 用户 ID
+     * @param remoteAddr 客户端 IP
+     * @param failureTime 失败时间戳（毫秒）
+     * @param categories 认证类别集合
+     */
     public void failure(KeycloakSession session, RealmModel realm, String userId, String remoteAddr, long failureTime, Set<String> categories) {
         UserLoginFailureModel userLoginFailure = getUserFailureModel(session, realm, userId);
         if (userLoginFailure == null) {
@@ -132,7 +143,7 @@ public class DefaultBruteForceProtector implements BruteForceProtector {
             if (quickLoginFailure || !realm.isPermanentLockout() || userLoginFailure.getNumTemporaryLockouts() <= realm.getMaxTemporaryLockouts()) {
                 long notBefore = (failureTime / 1000) + waitSeconds;
                 logger.debugv("set notBefore: {0}", notBefore);
-                // Converting to int is workaround for the fact that "failedLoginNotBefore" is int in the model. Should be fine as user would be considered temporarily disabled with Integer.MAX_VALUE
+                // 模型中 failedLoginNotBefore 为 int，超大值截断为 Integer.MAX_VALUE
                 int notBeforeInt = notBefore > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) notBefore;
                 userLoginFailure.setFailedLoginNotBefore(notBeforeInt);
                 sendEvent(session, realm, userLoginFailure, EventType.USER_DISABLED_BY_TEMPORARY_LOCKOUT);
@@ -221,13 +232,14 @@ public class DefaultBruteForceProtector implements BruteForceProtector {
     }
 
     @Override
+    /** {@inheritDoc} 异步提交失败登录事件 */
     public void failedLogin(RealmModel realm, UserModel user, ClientConnection clientConnection, UriInfo uriInfo, Set<String> authenticationCategories) {
         if (authenticationCategories != null && Collections.disjoint(ALLOWED_AUTHENTICATION_CATEGORIES, authenticationCategories)) {
             logger.debugf("'%s' authentication category not allowed for brute force", authenticationCategories);
             return;
         }
         processLogin(realm, user, clientConnection, uriInfo, false, authenticationCategories);
-        // wait a minimum of seconds for type to process so that a hacker
+        // 曾考虑等待处理完成以防队列洪水（见 todo）
         // cannot flood with failed logins and overwhelm the queue and not have notBefore updated to block next requests
         // todo failure HTTP responses should be queued via async HTTP
         //event.latch.await(5, TimeUnit.SECONDS);
@@ -235,6 +247,7 @@ public class DefaultBruteForceProtector implements BruteForceProtector {
     }
 
     @Override
+    /** {@inheritDoc} 异步提交成功登录并清除失败计数 */
     public void successfulLogin(RealmModel realm, UserModel user, ClientConnection clientConnection, UriInfo uriInfo, Set<String> authenticationCategories) {
         if (authenticationCategories == null || Collections.disjoint(ALLOWED_AUTHENTICATION_CATEGORIES, authenticationCategories)) {
             logger.debugf("'%s' authentication category not allowed for brute force", authenticationCategories);
@@ -264,6 +277,7 @@ public class DefaultBruteForceProtector implements BruteForceProtector {
     }
 
     @Override
+    /** {@inheritDoc} 检查 failedLoginNotBefore 是否尚未过期 */
     public boolean isTemporarilyDisabled(KeycloakSession session, RealmModel realm, UserModel user) {
         UserLoginFailureModel userLoginFailure = getUserFailureModel(session, realm, user.getId());
 
@@ -281,6 +295,7 @@ public class DefaultBruteForceProtector implements BruteForceProtector {
     }
 
     @Override
+    /** {@inheritDoc} 检查永久锁定属性或临时锁定次数超限 */
     public boolean isPermanentlyLockedOut(KeycloakSession session, RealmModel realm, UserModel user) {
         if (!user.isEnabled() && DISABLED_BY_PERMANENT_LOCKOUT.equals(user.getFirstAttribute(DISABLED_REASON))) {
             return true;
@@ -307,6 +322,7 @@ public class DefaultBruteForceProtector implements BruteForceProtector {
     @Override
     public void close() {}
 
+    /** 暴力破解后台任务用的最小 HttpRequest 存根。 */
     private static class BruteForceHttpRequest implements HttpRequest {
 
         private final UriInfo uriInfo;
@@ -351,6 +367,7 @@ public class DefaultBruteForceProtector implements BruteForceProtector {
         }
     }
 
+    /** 暴力破解后台任务用的空 HttpResponse 存根。 */
     private static class BruteForceHttpResponse implements HttpResponse {
         @Override
         public int getStatus() {

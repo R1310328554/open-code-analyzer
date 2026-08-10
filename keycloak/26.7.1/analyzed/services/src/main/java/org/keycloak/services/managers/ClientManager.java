@@ -57,12 +57,15 @@ import org.jboss.logging.Logger;
 import static org.keycloak.models.Constants.defaultClients;
 
 /**
+ * 客户端生命周期管理器。
+ * <p>创建/删除客户端、服务账户、节点注册校验及适配器安装配置导出。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ClientManager {
     private static final Logger logger = Logger.getLogger(ClientManager.class);
 
+    /** 领域管理器 */
     protected RealmManager realmManager;
 
     public ClientManager(RealmManager realmManager) {
@@ -73,12 +76,11 @@ public class ClientManager {
     }
 
     /**
-     * Should not be called from an import.  This really expects that the client is created from the admin console.
-     *
-     * @param session
-     * @param realm
-     * @param rep
-     * @return
+     * 从表示创建客户端（非导入场景，通常来自管理控制台）。
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @param rep 客户端表示
+     * @return 客户端模型
      */
     public static ClientModel createClient(KeycloakSession session, RealmModel realm, ClientRepresentation rep) {
 
@@ -101,6 +103,9 @@ public class ClientManager {
     }
 
 
+    /** 删除客户端及相关会话、服务账户用户。
+     * @return 是否成功删除
+     */
     public boolean removeClient(RealmModel realm, ClientModel client) {
         if (!isInternalClient(realm.getName(), client.getClientId()) && realm.removeClient(client.getId())) {
             UserSessionProvider sessions = realmManager.getSession().sessions();
@@ -124,6 +129,10 @@ public class ClientManager {
         }
     }
 
+    /** 校验并清理超时的已注册节点。
+     * @param client 客户端
+     * @return 仍有效的节点名集合
+     */
     public Set<String> validateRegisteredNodes(ClientModel client) {
         Map<String, Integer> registeredNodes = client.getRegisteredNodes();
         if (registeredNodes == null || registeredNodes.isEmpty()) {
@@ -156,6 +165,9 @@ public class ClientManager {
         return validatedNodes;
     }
 
+    /** 启用服务账户：创建专用用户并分配 service-account scope。
+     * @param client 客户端
+     */
     public void enableServiceAccount(ClientModel client) {
         client.setServiceAccountsEnabled(true);
 
@@ -175,6 +187,9 @@ public class ClientManager {
         }
     }
 
+    /** 禁用服务账户并移除关联用户与 scope。
+     * @param client 客户端
+     */
     public void disableServiceAccount(ClientModel client) {
         client.setServiceAccountsEnabled(false);
 
@@ -260,6 +275,7 @@ public class ClientManager {
     @JsonPropertyOrder({"realm", "realm-public-key", "bearer-only", "auth-server-url", "ssl-required",
             "resource", "public-client", "verify-token-audience", "credentials",
             "use-resource-role-mappings"})
+    /** Keycloak 适配器 JSON 安装配置。 */
     public static class InstallationAdapterConfig extends BaseRealmConfig {
         @JsonProperty("resource")
         protected String resource;
@@ -334,6 +350,10 @@ public class ClientManager {
     }
 
 
+    /** 生成适配器 JSON 安装表示。
+     * @param baseUri 认证服务器基 URI
+     * @return 安装配置
+     */
     public InstallationAdapterConfig toInstallationRepresentation(RealmModel realmModel, ClientModel clientModel, URI baseUri) {
         InstallationAdapterConfig rep = new InstallationAdapterConfig();
         rep.setAuthServerUrl(baseUri.toString());
@@ -354,6 +374,9 @@ public class ClientManager {
         return rep;
     }
 
+    /** 生成 JBoss 子系统 XML 片段。
+     * @return XML 配置字符串
+     */
     public String toJBossSubsystemConfig(RealmModel realmModel, ClientModel clientModel, URI baseUri) {
         StringBuffer buffer = new StringBuffer();
         buffer.append("<secure-deployment name=\"WAR MODULE NAME.war\">\n");

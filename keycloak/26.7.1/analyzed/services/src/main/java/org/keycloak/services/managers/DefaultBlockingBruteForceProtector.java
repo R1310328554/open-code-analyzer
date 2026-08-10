@@ -33,13 +33,20 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
+/**
+ * 阻塞式暴力破解保护器。
+ * <p>在 {@link DefaultBruteForceProtector} 基础上，对同一用户并发登录尝试进行线程级串行化，避免并行请求绕过临时锁定判定。</p>
+ */
 public class DefaultBlockingBruteForceProtector extends DefaultBruteForceProtector {
 
-    // make this configurable?
+    // TODO：并发上限是否可配置
+    /** 并发登录跟踪 map 最大条目数 */
     private static final int DEFAULT_MAX_CONCURRENT_ATTEMPTS = 1000;
     private static final float DEFAULT_LOAD_FACTOR = 0.75f;
+    /** 标记暴力破解处理已在后台线程启动的后缀 */
     private static final String OFF_THREAD_STARTED = "#brute_force_started";
 
+    /** 用户 ID → 正在处理登录的线程名（LRU 淘汰） */
     private final Map<String, String> loginAttempts = Collections.synchronizedMap(new LinkedHashMap<>(100, DEFAULT_LOAD_FACTOR) {
         @Override
         protected boolean removeEldestEntry(Entry<String, String> eldest) {
@@ -47,6 +54,7 @@ public class DefaultBlockingBruteForceProtector extends DefaultBruteForceProtect
         }
     });
 
+    /** @param factory Keycloak 会话工厂 */
     DefaultBlockingBruteForceProtector(KeycloakSessionFactory factory) {
         super(factory);
     }
@@ -82,7 +90,7 @@ public class DefaultBlockingBruteForceProtector extends DefaultBruteForceProtect
         return !tryEnlistBlockingTransactionOrSameThread(session, user);
     }
 
-    // Return true if this thread successfully enlisted itself or it was already done by the same thread
+    // 当前线程成功登记或已由同一线程登记时返回 true
     private boolean tryEnlistBlockingTransactionOrSameThread(KeycloakSession session, UserModel user) {
         AtomicBoolean inserted = new AtomicBoolean(false);
         String threadInProgress = loginAttempts.computeIfAbsent(user.getId(), k -> {

@@ -47,6 +47,8 @@ import static org.keycloak.services.managers.AuthenticationManager.authenticateI
 
 
 /**
+ * 认证会话管理器。
+ * <p>管理根认证会话的创建、AUTH_SESSION_ID Cookie 签名/路由编码，以及多标签页登出协调。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class AuthenticationSessionManager {
@@ -54,6 +56,7 @@ public class AuthenticationSessionManager {
     private static final Logger log = Logger.getLogger(AuthenticationSessionManager.class);
     private static final Base64.Encoder BASE_64_ENCODER_NO_PADDING = Base64.getEncoder().withoutPadding();
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
 
     public AuthenticationSessionManager(KeycloakSession session) {
@@ -61,9 +64,10 @@ public class AuthenticationSessionManager {
     }
 
     /**
-     * Creates a fresh authentication session for the given realm . Optionally sets the browser
-     * authentication session cookie with the ID of the new session.
-     * @param browserCookie Set the cookie in the browser for the
+     * 为领域创建新的根认证会话。
+     * @param realm 领域
+     * @param browserCookie 是否在浏览器设置 AUTH_SESSION_ID Cookie
+     * @return 根认证会话
      */
     public RootAuthenticationSessionModel createAuthenticationSession(RealmModel realm, boolean browserCookie) {
         RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().createRootAuthenticationSession(realm);
@@ -76,6 +80,10 @@ public class AuthenticationSessionManager {
         return rootAuthSession;
     }
 
+    /** 从 Cookie 获取当前根认证会话。
+     * @param realm 领域
+     * @return 根会话或 null
+     */
     public RootAuthenticationSessionModel getCurrentRootAuthenticationSession(RealmModel realm) {
         AuthSessionCookie authSession = getAuthSessionCookies(realm);
         if (authSession == null) {
@@ -87,7 +95,11 @@ public class AuthenticationSessionManager {
     }
 
     /**
-     * @return The current authentication session if it exists, otherwise returns {@code null}.
+     * 获取当前客户端/标签页的认证会话。
+     * @param realm 领域
+     * @param client 客户端
+     * @param tabId 浏览器标签 ID
+     * @return 认证会话或 {@code null}
      */
     public AuthenticationSessionModel getCurrentAuthenticationSession(RealmModel realm, ClientModel client, String tabId) {
         AuthSessionCookie rootAuth = getAuthSessionCookies(realm);
@@ -103,7 +115,8 @@ public class AuthenticationSessionManager {
     }
 
     /**
-     * @param authSessionId decoded authSessionId (without route info attached)
+     * 设置 AUTH_SESSION_ID Cookie（含签名与 sticky 路由）。
+     * @param authSessionId 解码后的认证会话 ID（不含路由）
      */
     public void setAuthSessionCookie(String authSessionId) {
         StickySessionEncoderProvider encoder = session.getProvider(StickySessionEncoderProvider.class);
@@ -132,6 +145,10 @@ public class AuthenticationSessionManager {
         }
     }
 
+    /** Base64 解码并验证认证会话 ID 签名。
+     * @param encodedBase64AuthSessionId 编码后的 ID
+     * @return 有效 sessionId 或 null
+     */
     public String decodeBase64AndValidateSignature(String encodedBase64AuthSessionId) {
         try {
             String decodedAuthSessionId = new String(Base64Url.decode(encodedBase64AuthSessionId), StandardCharsets.UTF_8);
@@ -171,6 +188,10 @@ public class AuthenticationSessionManager {
         return null;
     }
 
+    /** 对认证会话 ID 签名并 Base64 编码。
+     * @param authSessionId 明文 ID
+     * @return 编码后的 Cookie 值
+     */
     public String signAndEncodeToBase64AuthSessionId(String authSessionId) {
         SignatureProvider signatureProvider = session.getProvider(SignatureProvider.class, Constants.INTERNAL_SIGNATURE_ALGORITHM);
         SignatureSignerContext signer = signatureProvider.signer();
@@ -217,6 +238,11 @@ public class AuthenticationSessionManager {
         return new AuthSessionCookie(rootAuthenticationSession, routeChanged);
     }
 
+    /** 移除根认证会话及可选的重启登录 Cookie。
+     * @param realm 领域
+     * @param authSession 认证会话
+     * @param expireRestartCookie 是否过期 restart cookie
+     */
     public void removeAuthenticationSession(RealmModel realm, AuthenticationSessionModel authSession, boolean expireRestartCookie) {
         RootAuthenticationSessionModel rootAuthSession = authSession.getParentSession();
 
@@ -233,9 +259,8 @@ public class AuthenticationSessionManager {
     }
 
     /**
-     * Remove authentication session from root session. Possibly remove whole root authentication session if there are no other browser tabs
-     *
-     * @return true if whole root authentication session was removed. False just if single tab was removed
+     * 从根会话移除单个标签页认证会话；无剩余标签时移除整棵根会话。
+     * @return 是否已移除整个根认证会话
      */
     public boolean removeTabIdInAuthenticationSession(RealmModel realm, AuthenticationSessionModel authSession) {
         RootAuthenticationSessionModel rootAuthSession = authSession.getParentSession();
@@ -250,9 +275,7 @@ public class AuthenticationSessionManager {
     }
 
     /**
-     * This happens when one browser tab successfully finished authentication (including required actions and consent screen if applicable)
-     * Just authenticationSession of the current browser tab is removed from "root authentication session" and other tabs are kept, so
-     * authentication can be automatically finished in other browser tabs (typically with authChecker.js javascript)
+     * 某标签页认证成功后更新根会话：移除当前 tab，保留其他 tab 供 authChecker.js 自动完成 SSO。
      */
     public void updateAuthenticationSessionAfterSuccessfulAuthentication(RealmModel realm, AuthenticationSessionModel authSession) {
         boolean removedRootAuthSession = removeTabIdInAuthenticationSession(realm, authSession);
@@ -277,13 +300,13 @@ public class AuthenticationSessionManager {
         log.tracef("Removed authentication session of root session '%s' with tabId '%s'. But there are remaining tabs in the root session. Root authentication session will expire in %d seconds", rootAuthSession.getId(), authSession.getTabId(), authSessionExpiresIn);
     }
 
-    // Check to see if we already have authenticationSession with same ID
+    // 查找与用户会话 ID 关联的认证会话
     public UserSessionModel getUserSession(AuthenticationSessionModel authSession) {
         return getUserSessionProvider().getUserSession(authSession.getRealm(), authSession.getParentSession().getId());
     }
 
 
-    // Don't look at cookie. Just lookup authentication session based on the ID and client. Return null if not found
+    // 不读 Cookie，直接按 ID 与客户端查找认证会话
     public AuthenticationSessionModel getAuthenticationSessionByIdAndClient(RealmModel realm, String authSessionId, ClientModel client, String tabId) {
         RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realm, authSessionId);
         return rootAuthSession==null ? null : rootAuthSession.getAuthenticationSession(client, tabId);
@@ -294,6 +317,10 @@ public class AuthenticationSessionManager {
         return decodedAuthSessionId==null ? null : getAuthenticationSessionByIdAndClient(realm, decodedAuthSessionId, client, tabId);
     }
 
+    /** 从 AUTH_SESSION_ID Cookie 解析用户会话，失败时回退 Identity Cookie。
+     * @param realm 领域
+     * @return 用户会话或 null
+     */
     public UserSessionModel getUserSessionFromAuthenticationCookie(RealmModel realm) {
         AuthSessionCookie rootAuth = getAuthSessionCookies(realm);
 
@@ -331,6 +358,7 @@ public class AuthenticationSessionManager {
         return session.sessions();
     }
 
+    /** Cookie 解析结果：根会话及 sticky 路由是否变更。 */
     record AuthSessionCookie(RootAuthenticationSessionModel rootSession, boolean routeChanged) {
 
         public String sessionId() {

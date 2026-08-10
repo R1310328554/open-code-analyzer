@@ -37,6 +37,8 @@ import static org.keycloak.util.TokenUtil.TOKEN_TYPE_BEARER;
 import static org.keycloak.util.TokenUtil.TOKEN_TYPE_DPOP;
 
 /**
+ * 应用层认证管理器。
+ * <p>扩展 {@link AuthenticationManager}，处理 Identity Cookie 刷新及 Bearer/DPoP 令牌解析与校验。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
@@ -46,16 +48,16 @@ public class AppAuthManager extends AuthenticationManager {
     public AuthResult authenticateIdentityCookie(KeycloakSession session, RealmModel realm) {
         AuthResult authResult = super.authenticateIdentityCookie(session, realm);
         if (authResult == null) return null;
-        // refresh the cookies!
+        // 刷新登录 Cookie
         createLoginCookie(session, realm, authResult.user(), authResult.session(), session.getContext().getUri(), session.getContext().getConnection());
         if (authResult.session().isRememberMe()) createRememberMeCookie(authResult.user().getUsername(), session.getContext().getUri(), session);
         return authResult;
     }
 
     /**
-     * Extracts the token string from the given Authorization Bearer header.
-     *
-     * @return authHeader with the token and scheme or {@literal null}
+     * 从 Authorization 头解析令牌字符串。
+     * @param authHeader Authorization 头原始值
+     * @return 含 scheme 与 token 的 {@link AuthHeader}，无法解析时返回 {@literal null}
      */
     private static AuthHeader extractTokenStringFromAuthHeader(String authHeader) {
 
@@ -72,7 +74,7 @@ public class AppAuthManager extends AuthenticationManager {
         String typeString = authHeader.substring(0, indexOfSpace);
         String tokenString = authHeader.substring(indexOfSpace + 1);
 
-        // Auth schemes are case insensitive per RFC9110-11.1
+        // 认证 scheme 按 RFC9110 大小写不敏感
         // Checked by fapi2-security-profile-final-access-token-type-header-case-sensitivity
         boolean isBearerHeader = typeString.equalsIgnoreCase(TOKEN_TYPE_BEARER);
         if (!Profile.isFeatureEnabled(Profile.Feature.DPOP)) {
@@ -93,13 +95,13 @@ public class AppAuthManager extends AuthenticationManager {
     }
 
     /**
-     * Extracts the token string from the Authorization Bearer Header.
-     *
-     * @param headers
-     * @return the authHeader with the token and scheme or {@literal null} if the Authorization header is not of supported type (EG. Bearer or DPoP), or the token string is missing.
+     * 从 HTTP 头提取 Authorization Bearer/DPoP 令牌。
+     * @param headers HTTP 请求头
+     * @return 解析结果；不支持类型或缺少 token 时返回 {@literal null}
+     * @throws NotAuthorizedException 存在多个 Authorization 头时
      */
     public static AuthHeader extractAuthorizationHeaderTokenOrReturnNull(HttpHeaders headers) {
-        // error if including more than one Authorization header
+        // 多个 Authorization 头视为错误
         List<String> authHeaders = headers.getRequestHeaders().get(HttpHeaders.AUTHORIZATION);
         if (authHeaders == null || authHeaders.isEmpty()) {
             return null;
@@ -112,11 +114,10 @@ public class AppAuthManager extends AuthenticationManager {
     }
 
     /**
-     * Extracts the token string from the Authorization Bearer Header.
-     *
-     * @param headers
-     * @return the token string or {@literal null} of the Authorization header is missing
-     * @throws  NotAuthorizedException if the Authorization header is not of type Bearer, or the token string is missing.
+     * 从 Authorization 头提取纯 token 字符串。
+     * @param headers HTTP 请求头
+     * @return token 字符串；头缺失时返回 {@literal null}
+     * @throws NotAuthorizedException 非 Bearer 类型或 token 缺失时
      */
     public static String extractAuthorizationHeaderToken(HttpHeaders headers) {
         String authHeader = headers.getRequestHeaders().getFirst(HttpHeaders.AUTHORIZATION);
@@ -130,6 +131,7 @@ public class AppAuthManager extends AuthenticationManager {
         return parsedHeader.getToken();
     }
 
+    /** Bearer/DPoP 访问令牌认证器（流式配置）。 */
     public static class BearerTokenAuthenticator {
         private static final Logger logger = Logger.getLogger(BearerTokenAuthenticator.class);
         
@@ -194,7 +196,7 @@ public class AppAuthManager extends AuthenticationManager {
             if (headers == null) headers = ctx.getRequestHeaders();
             if (request == null) request = ctx.getHttpRequest();
             if (tokenString == null) tokenString = extractAuthorizationHeaderToken(headers);
-            // audience can be null
+            // audience 可为 null
 
             return verifyIdentityToken(session, realm, uriInfo, connection, true, true, audience, false, tokenString, headers,
                     verifier -> {
@@ -204,9 +206,12 @@ public class AppAuthManager extends AuthenticationManager {
         }
     }
 
+    /** Authorization 头解析结果（scheme + token）。 */
     public static class AuthHeader {
 
+        /** 认证 scheme（如 Bearer） */
         private final String scheme;
+        /** 令牌字符串 */
         private final String token;
 
         public AuthHeader(String scheme, String token) {

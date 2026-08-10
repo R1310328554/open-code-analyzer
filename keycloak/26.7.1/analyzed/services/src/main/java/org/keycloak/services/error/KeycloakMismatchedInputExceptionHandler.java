@@ -29,16 +29,20 @@ import org.keycloak.models.KeycloakSession;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 /**
- * Override explicitly added ExceptionMapper for handling {@link MismatchedInputException} in RestEasy Jackson
+ * Jackson {@link MismatchedInputException} 专用异常映射器。
+ * <p>显式覆盖 RestEasy Jackson 默认处理，将反序列化类型不匹配异常委托给 {@link KeycloakErrorHandler}。</p>
  */
 @Provider
 public class KeycloakMismatchedInputExceptionHandler implements ExceptionMapper<MismatchedInputException> {
 
+    /** 注入的 Keycloak 会话 */
     @Context
     KeycloakSession session;
 
     /**
-     * Return escaped original message
+     * 返回经转义后的原始错误消息响应。
+     * @param exception Jackson 输入不匹配异常
+     * @return HTTP 响应
      */
     @Override
     public Response toResponse(MismatchedInputException exception) {

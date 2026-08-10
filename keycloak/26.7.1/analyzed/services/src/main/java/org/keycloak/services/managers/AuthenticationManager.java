@@ -133,65 +133,71 @@ import static org.keycloak.models.UserSessionModel.CORRESPONDING_SESSION_ID;
 import static org.keycloak.protocol.oidc.grants.device.DeviceGrantType.isOAuth2DeviceVerificationFlow;
 
 /**
- * Stateless object that manages authentication
- *
+ * 认证管理器（无状态工具类）。
+ * <p>负责用户/客户端会话校验、登录/登出 Cookie、后台/前台登出、必需操作（Required Actions）、身份令牌验证及 SSO 流程衔接。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class AuthenticationManager {
+    /** 必需操作完成后是否设置重定向 URI */
     public static final String SET_REDIRECT_URI_AFTER_REQUIRED_ACTIONS= "SET_REDIRECT_URI_AFTER_REQUIRED_ACTIONS";
+    /** 必需操作完成后直接结束流程（显示信息页） */
     public static final String END_AFTER_REQUIRED_ACTIONS = "END_AFTER_REQUIRED_ACTIONS";
+    /** 完成后作废的 Action Token 键 */
     public static final String INVALIDATE_ACTION_TOKEN = "INVALIDATE_ACTION_TOKEN";
+    /** 时钟偏差容限（秒） */
     private final static long CLOCK_SKEW_SECONDS = 60;
 
-    /**
-     * Auth session note, which indicates if user session will be persistent (Saved to real persistent store) or
-     * transient (transient session will be scoped to single request and hence there is no need to save it in the underlying store)
-     */
+    /** 认证会话备注：用户会话是否持久化（否则为单次请求范围的瞬态会话） */
     public static final String USER_SESSION_PERSISTENT_STATE = "USER_SESSION_PERSISTENT_STATE";
 
-    /**
-     * Auth session note on client logout state (when logging out)
-     */
+    /** 客户端登出状态备注前缀（登出流程中使用） */
     public static final String CLIENT_LOGOUT_STATE = "logout.state.";
 
-    // userSession note with authTime (time when authentication flow including requiredActions was finished)
+    // 用户会话备注：认证完成时间（含必需操作）
     public static final String AUTH_TIME = "AUTH_TIME";
 
-    // authSession client note set during brokering indicating the time when the authentication happened at the IdP
+    // 联合登录时在 IdP 完成认证的时间
     public static final String AUTH_TIME_BROKER = "AUTH_TIME_BROKER";
 
-    // clientSession note with flag that clientSession was authenticated through SSO cookie
+    // 客户端会话备注：是否通过 SSO Cookie 认证
     public static final String SSO_AUTH = "SSO_AUTH";
 
-    // authSession note with flag that is true if user is forced to re-authenticate by client (EG. in case of OIDC client by sending "prompt=login")
+    // 客户端强制重新认证（如 prompt=login）
     public static final String FORCED_REAUTHENTICATION = "FORCED_REAUTHENTICATION";
 
-    // authSession note with flag that is true if the user's password has been correctly validated
+    // 用户密码已通过验证
     public static final String PASSWORD_VALIDATED = "PASSWORD_VALIDATED";
 
-    // authSession note with flag that registration of new user happened in this authSession
+    // 本次认证会话中完成了新用户注册
     public static final String NEW_USER_REGISTERED = "NEW_USER_REGISTERED";
 
-    // state checker identity token claim
+    // Identity Cookie 中的 state_checker 声明
     private static final String STATE_CHECKER = "state_checker";
 
     protected static final Logger logger = Logger.getLogger(AuthenticationManager.class);
 
     public static final String FORM_USERNAME = "username";
-    // used solely to determine is user is logged in
+    // 用于判断用户是否已登录（非 HttpOnly）
     public static final String KEYCLOAK_SESSION_COOKIE = "KEYCLOAK_SESSION";
 
-    // Protocol of the client, which initiated logout
+    // 发起登出的客户端协议
     public static final String KEYCLOAK_LOGOUT_PROTOCOL = "KEYCLOAK_LOGOUT_PROTOCOL";
-    // Filled in case that logout was triggered with "initiating idp"
+    // 由 initiating IdP 触发登出时的 IdP 标识
     public static final String LOGOUT_INITIATING_IDP = "LOGOUT_INITIATING_IDP";
 
-    // Parameter of LogoutEndpoint
+    /** 登出端点参数：发起登出的 IdP */
+
     public static final String INITIATING_IDP_PARAM = "initiating_idp";
 
+    /** Identity Cookie 令牌类型校验 */
     private static final TokenTypeCheck VALIDATE_IDENTITY_COOKIE = new TokenTypeCheck(List.of(TokenUtil.TOKEN_TYPE_KEYCLOAK_ID));
 
+    /** 校验用户会话是否在 idle/max 寿命内有效。
+     * @param realm 领域
+     * @param userSession 用户会话
+     * @return 是否有效
+     */
     public static boolean isSessionValid(RealmModel realm, UserSessionModel userSession) {
         if (userSession == null) {
             logger.debug("No user session");
@@ -220,6 +226,13 @@ public class AuthenticationManager {
         return sessionIdleOk && sessionMaxOk;
     }
 
+    /** 校验客户端会话是否有效。
+     * @param realm 领域
+     * @param client 客户端
+     * @param userSession 用户会话
+     * @param clientSession 客户端会话
+     * @return 是否有效
+     */
     public static boolean isClientSessionValid(RealmModel realm, ClientModel client,
             UserSessionModel userSession, AuthenticatedClientSessionModel clientSession) {
         if (userSession == null || clientSession == null) {
@@ -248,6 +261,13 @@ public class AuthenticationManager {
         return expireUserSessionCookie(session, userSession, realm, uriInfo);
     }
 
+    /** 若 Identity Cookie 对应当前用户会话则使其过期。
+     * @param session Keycloak 会话
+     * @param userSession 用户会话
+     * @param realm 领域
+     * @param uriInfo URI 信息
+     * @return 是否成功处理
+     */
     public static boolean expireUserSessionCookie(KeycloakSession session, UserSessionModel userSession, RealmModel realm, UriInfo uriInfo) {
         try {
             // check to see if any identity cookie is set with the same session and expire it if necessary
@@ -277,6 +297,11 @@ public class AuthenticationManager {
 
     }
 
+    /** 使用当前上下文对指定用户会话执行后台登出。
+     * @param session Keycloak 会话
+     * @param userSession 用户会话
+     * @param logoutBroker 是否同时登出身份代理 IdP
+     */
     public static void backchannelLogout(KeycloakSession session, UserSessionModel userSession, boolean logoutBroker) {
         backchannelLogout(
                 session,
@@ -309,6 +334,17 @@ public class AuthenticationManager {
      * @param offlineSession
      *
      * @return BackchannelLogoutResponse with logout information
+     */
+    /** 完整后台登出：通知各客户端、清理 Cookie 与会话。
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @param userSession 用户会话
+     * @param uriInfo URI
+     * @param connection 客户端连接
+     * @param headers HTTP 头
+     * @param logoutBroker 是否登出 broker
+     * @param offlineSession 是否为离线会话
+     * @return 后台登出响应汇总
      */
     public static BackchannelLogoutResponse backchannelLogout(KeycloakSession session, RealmModel realm,
             UserSessionModel userSession, UriInfo uriInfo,
@@ -372,6 +408,15 @@ public class AuthenticationManager {
         return backchannelLogoutResponse;
     }
 
+    /** 创建或加入登出认证会话。
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @param asm 认证会话管理器
+     * @param userSession 用户会话
+     * @param browserCookie 是否设置浏览器 Cookie
+     * @param initiateLogout 是否由客户端发起登出
+     * @return 登出认证会话
+     */
     public static AuthenticationSessionModel createOrJoinLogoutSession(KeycloakSession session, RealmModel realm,
             final AuthenticationSessionManager asm, UserSessionModel userSession, boolean browserCookie, boolean initiateLogout) {
         AuthenticationSessionModel logoutSession = session.getContext().getAuthenticationSession();
@@ -649,6 +694,11 @@ public class AuthenticationManager {
      * @param clientUuid Client. Must not be {@code null}
      * @param action
      */
+    /** 在登出认证会话中记录客户端登出状态。
+     * @param logoutAuthSession 登出认证会话
+     * @param clientUuid 客户端内部 ID
+     * @param action 登出动作状态
+     */
     public static void setClientLogoutAction(AuthenticationSessionModel logoutAuthSession, String clientUuid, Action action) {
         if (logoutAuthSession != null && clientUuid != null) {
             logoutAuthSession.setAuthNote(CLIENT_LOGOUT_STATE + clientUuid, action.name());
@@ -660,6 +710,11 @@ public class AuthenticationManager {
      * @param logoutAuthSession logoutAuthSession. May be {@code null} in which case this is a no-op.
      * @param clientUuid Internal ID of the client. Must not be {@code null}
      * @return State if it can be determined, {@code null} otherwise.
+     */
+    /** 读取客户端登出状态。
+     * @param logoutAuthSession 登出认证会话
+     * @param clientUuid 客户端内部 ID
+     * @return 登出状态，未知时 null
      */
     public static Action getClientLogoutAction(AuthenticationSessionModel logoutAuthSession, String clientUuid) {
         if (logoutAuthSession == null || clientUuid == null) {
@@ -710,6 +765,9 @@ public class AuthenticationManager {
                         );
     }
 
+    /** 浏览器登出入口：可能重定向至 IdP 或完成本地登出。
+     * @return 重定向响应或 null
+     */
     public static Response browserLogout(KeycloakSession session,
                                          RealmModel realm,
                                          UserSessionModel userSession,
@@ -764,6 +822,9 @@ public class AuthenticationManager {
         return null;
     }
 
+    /** 完成浏览器登出：前台/后台通知客户端并清理会话。
+     * @return 协议层 finish 响应
+     */
     public static Response finishBrowserLogout(KeycloakSession session, RealmModel realm, UserSessionModel userSession, UriInfo uriInfo, ClientConnection connection, HttpHeaders headers) {
         final AuthenticationSessionManager asm = new AuthenticationSessionManager(session);
         AuthenticationSessionModel logoutAuthSession = createOrJoinLogoutSession(session, realm, asm, userSession, true, false);
@@ -817,6 +878,11 @@ public class AuthenticationManager {
         return response;
     }
 
+    /** 移除仍处于未确认登出状态的用户会话。
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @param userSessionModel 用户会话
+     */
     public static void finishUnconfirmedUserSession(KeycloakSession session, RealmModel realm, UserSessionModel userSessionModel) {
         if (userSessionModel.getAuthenticatedClientSessions().values().stream().anyMatch(cs -> !CommonClientSessionModel.Action.LOGGED_OUT.name().equals(cs.getAction()))) {
             logger.warnf("UserSession with id %s is removed while there are still some user sessions that are not logged out properly.", userSessionModel.getId());
@@ -831,6 +897,14 @@ public class AuthenticationManager {
     }
 
 
+    /** 构建 Identity Cookie JWT。
+     * @param keycloakSession Keycloak 会话
+     * @param realm 领域
+     * @param user 用户
+     * @param session 用户会话
+     * @param issuer 签发者
+     * @return Identity Cookie 令牌
+     */
     public static IdentityCookieToken createIdentityToken(KeycloakSession keycloakSession, RealmModel realm, UserModel user, UserSessionModel session, String issuer) {
         IdentityCookieToken token = new IdentityCookieToken();
         token.id(SecretGenerator.getInstance().generateSecureID());
@@ -859,6 +933,14 @@ public class AuthenticationManager {
         return token;
     }
 
+    /** 设置 Identity 与 KEYCLOAK_SESSION Cookie。
+     * @param keycloakSession Keycloak 会话
+     * @param realm 领域
+     * @param user 用户
+     * @param session 用户会话
+     * @param uriInfo URI
+     * @param connection 连接
+     */
     public static void createLoginCookie(KeycloakSession keycloakSession, RealmModel realm, UserModel user, UserSessionModel session, UriInfo uriInfo, ClientConnection connection) {
         Objects.requireNonNull(session, "User session cannot be null");
         String issuer = Urls.realmIssuer(uriInfo.getBaseUri(), realm.getName());
@@ -872,16 +954,25 @@ public class AuthenticationManager {
 
         String sessionCookieValue = sha384UrlEncodedHash(session.getId());
 
-        // THIS SHOULD NOT BE A HTTPONLY COOKIE!  It is used for OpenID Connect Iframe Session support!
-        // Max age should be set to the max lifespan of the session as it's used to invalidate old-sessions on re-login
+        // KEYCLOAK_SESSION 不得设为 HttpOnly，供 OIDC iframe 会话检测使用
+        // maxAge 与会话最大寿命一致，用于重新登录时使旧会话失效
         int sessionCookieMaxAge = session.isRememberMe() && realm.getSsoSessionMaxLifespanRememberMe() > 0 ? realm.getSsoSessionMaxLifespanRememberMe() : realm.getSsoSessionMaxLifespan();
         keycloakSession.getProvider(CookieProvider.class).set(CookieType.SESSION, sessionCookieValue, sessionCookieMaxAge);
     }
 
+    /** 设置“记住我”登录提示 Cookie。
+     * @param username 用户名
+     * @param uriInfo URI
+     * @param session Keycloak 会话
+     */
     public static void createRememberMeCookie(String username, UriInfo uriInfo, KeycloakSession session) {
         session.getProvider(CookieProvider.class).set(CookieType.LOGIN_HINT, "username:" + URLEncoder.encode(username, StandardCharsets.UTF_8));
     }
 
+    /** 从 Cookie 读取“记住我”用户名。
+     * @param session Keycloak 会话
+     * @return 用户名或 null
+     */
     public static String getRememberMeUsername(KeycloakSession session) {
         if (session.getContext().getRealm().isRememberMe()) {
             String value = session.getProvider(CookieProvider.class).get(CookieType.LOGIN_HINT);
@@ -895,29 +986,48 @@ public class AuthenticationManager {
         return null;
     }
 
+    /** 使 Identity 与 SESSION Cookie 过期 */
     public static void expireIdentityCookie(KeycloakSession session) {
         session.getProvider(CookieProvider.class).expire(CookieType.IDENTITY);
         session.getProvider(CookieProvider.class).expire(CookieType.SESSION);
     }
 
+    /** 使“记住我”Cookie 过期 */
     public static void expireRememberMeCookie(KeycloakSession session) {
         session.getProvider(CookieProvider.class).expire(CookieType.LOGIN_HINT);
     }
 
+    /** 使 AUTH_SESSION_ID Cookie 过期 */
     public static void expireAuthSessionCookie(KeycloakSession session) {
         session.getProvider(CookieProvider.class).expire(CookieType.AUTH_SESSION_ID);
     }
 
+    /** 计算领域 Cookie 路径（KEYCLOAK-5270）。
+     * @param realm 领域
+     * @param uriInfo URI
+     * @return Cookie 路径
+     */
     public static String getRealmCookiePath(RealmModel realm, UriInfo uriInfo) {
         URI uri = RealmsResource.realmBaseUrl(uriInfo).build(realm.getName());
-        // KEYCLOAK-5270
+        // KEYCLOAK-5270：Cookie 路径需含 realm 段
         return uri.getRawPath() + "/";
     }
 
+    /** 验证 Identity Cookie（默认检查 active）。
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @return 认证结果或 null
+     */
     public AuthResult authenticateIdentityCookie(KeycloakSession session, RealmModel realm) {
         return authenticateIdentityCookie(session, realm, true);
     }
 
+    /** 验证 Identity Cookie。
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @param checkActive 是否校验 exp/active
+     * @return 认证结果或 null
+     */
     public static AuthResult authenticateIdentityCookie(KeycloakSession session, RealmModel realm, boolean checkActive) {
         String tokenString = session.getProvider(CookieProvider.class).get(CookieType.IDENTITY);
         if (tokenString == null || tokenString.isEmpty()) {
@@ -936,6 +1046,9 @@ public class AuthenticationManager {
     }
 
 
+    /** 认证成功后重定向至客户端（按协议实现）。
+     * @return 协议 authenticated 响应
+     */
     public static Response redirectAfterSuccessfulFlow(KeycloakSession session, RealmModel realm, UserSessionModel userSession,
                                                        ClientSessionContext clientSessionCtx,
                                                 HttpRequest request, UriInfo uriInfo, ClientConnection clientConnection,
@@ -967,7 +1080,7 @@ public class AuthenticationManager {
         // Updates users locale if required
         session.getContext().resolveLocale(userSession.getUser());
 
-        // refresh the cookies!
+        // 刷新登录 Cookie
         createLoginCookie(session, realm, userSession.getUser(), userSession, uriInfo, clientConnection);
         if (userSession.getState() != UserSessionModel.State.LOGGED_IN) userSession.setState(UserSessionModel.State.LOGGED_IN);
         if (userSession.isRememberMe()) {
@@ -1000,6 +1113,11 @@ public class AuthenticationManager {
      * @param sessionId in plain-text
      * @return true if sessionId matches with the session from KEYCLOAK_SESSION_COOKIE
      */
+    /** 比较明文 sessionId 与 KEYCLOAK_SESSION Cookie 哈希是否一致。
+     * @param session Keycloak 会话
+     * @param sessionId 用户会话 ID
+     * @return 是否匹配
+     */
     public static boolean compareSessionIdWithSessionCookie(KeycloakSession session, String sessionId) {
         Objects.requireNonNull(sessionId, "Session id cannot be null");
 
@@ -1011,7 +1129,7 @@ public class AuthenticationManager {
 
         if (cookie.equals(sha384UrlEncodedHash(sessionId))) return true;
 
-        // Backwards compatibility
+        // 向后兼容旧版 Cookie 格式
         String[] split = cookie.split("/");
         if (split.length >= 3) {
             String oldSessionId = split[2];
@@ -1020,12 +1138,19 @@ public class AuthenticationManager {
         return false;
     }
 
+    /** 客户端会话是否通过 SSO 完成认证。
+     * @param clientSession 客户端会话
+     * @return 是否 SSO
+     */
     public static boolean isSSOAuthentication(AuthenticatedClientSessionModel clientSession) {
         String ssoAuth = clientSession.getNote(SSO_AUTH);
         return Boolean.parseBoolean(ssoAuth);
     }
 
 
+    /** 认证完成后下一步：必需操作或完成登录。
+     * @return 重定向/表单响应
+     */
     public static Response nextActionAfterAuthentication(KeycloakSession session, AuthenticationSessionModel authSession,
                                                   ClientConnection clientConnection,
                                                   HttpRequest request, UriInfo uriInfo, EventBuilder event) {
@@ -1043,6 +1168,10 @@ public class AuthenticationManager {
     }
 
 
+    /** 重定向至必需操作 URL（非 POST，便于浏览器刷新）。
+     * @param requiredAction 必需操作别名
+     * @return 302 响应
+     */
     public static Response redirectToRequiredActions(KeycloakSession session, RealmModel realm, AuthenticationSessionModel authSession, UriInfo uriInfo, String requiredAction) {
         // redirect to non-action url so browser refresh button works without reposting past data
         ClientSessionCode<AuthenticationSessionModel> accessCode = new ClientSessionCode<>(session, realm, authSession);
@@ -1077,6 +1206,9 @@ public class AuthenticationManager {
     }
 
 
+    /** 所有必需操作完成后附加会话并重定向。
+     * @return 登录成功响应
+     */
     public static Response finishedRequiredActions(KeycloakSession session, AuthenticationSessionModel authSession, UserSessionModel userSession,
                                                    ClientConnection clientConnection, HttpRequest request, UriInfo uriInfo, EventBuilder event) {
         String actionTokenKeyToInvalidate = authSession.getAuthNote(INVALIDATE_ACTION_TOKEN);
@@ -1135,7 +1267,10 @@ public class AuthenticationManager {
         return response;
     }
 
-    // Return null if action is not required. Or the alias of the requiredAction in case it is required.
+    // 无必需操作时返回 null，否则返回必需操作别名
+    /** 计算下一个必需操作或 OAuth 同意别名。
+     * @return 操作别名或 null
+     */
     public static String nextRequiredAction(final KeycloakSession session, final AuthenticationSessionModel authSession,
             final HttpRequest request, final EventBuilder event) {
         final var realm = authSession.getRealm();
@@ -1283,6 +1418,11 @@ public class AuthenticationManager {
     }
 
 
+    /** 获取同意屏需展示的客户端 Scope 流。
+     * @param session Keycloak 会话
+     * @param client 客户端
+     * @return AuthorizationDetails 流
+     */
     public static Stream<AuthorizationDetails> getClientScopeModelStream(KeycloakSession session, ClientModel client) {
         AuthenticationSessionModel authSession = session.getContext().getAuthenticationSession();
         //if Parameterized Scopes are enabled, get the scopes from the AuthorizationRequestContext, passing the session and scopes as parameters
@@ -1298,6 +1438,10 @@ public class AuthenticationManager {
     }
 
 
+    /** 将请求的 client scope 写入认证会话。
+     * @param session Keycloak 会话
+     * @param authSession 认证会话
+     */
     public static void setClientScopesInSession(KeycloakSession session, AuthenticationSessionModel authSession) {
         ClientModel client = authSession.getClient();
         UserModel user = authSession.getAuthenticatedUser();
@@ -1311,6 +1455,10 @@ public class AuthenticationManager {
         authSession.setClientScopes(requestedClientScopes);
     }
 
+    /** 从上下文工厂创建必需操作 Provider。
+     * @param context 必需操作上下文
+     * @return Provider 实例
+     */
     public static RequiredActionProvider createRequiredAction(RequiredActionContextResult context) {
         return context.getFactory().create(context.getSession());
     }
@@ -1474,6 +1622,14 @@ public class AuthenticationManager {
         return model;
     }
 
+    /** 评估并触发领域配置的必需操作（如密码过期）。
+     * @param session Keycloak 会话
+     * @param authSession 认证会话
+     * @param request HTTP 请求
+     * @param event 事件构建器
+     * @param realm 领域
+     * @param user 用户
+     */
     public static void evaluateRequiredActionTriggers(final KeycloakSession session, final AuthenticationSessionModel authSession,
                                                       final HttpRequest request, final EventBuilder event,
                                                       final RealmModel realm, final UserModel user) {
@@ -1541,6 +1697,20 @@ public class AuthenticationManager {
         return factory;
     }
 
+    /** 验证 Identity/Access 令牌并解析用户会话。
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @param uriInfo URI
+     * @param connection 连接
+     * @param checkActive 是否检查 active
+     * @param checkTokenType 是否检查 token 类型
+     * @param checkAudience 期望 audience
+     * @param isCookie 是否为 Cookie 令牌
+     * @param tokenString 令牌字符串
+     * @param headers HTTP 头
+     * @param verifierConsumer 额外校验回调
+     * @return 认证结果或 null
+     */
     public static AuthResult verifyIdentityToken(KeycloakSession session, RealmModel realm, UriInfo uriInfo, ClientConnection connection, boolean checkActive, boolean checkTokenType,
                                                  String checkAudience, boolean isCookie, String tokenString, HttpHeaders headers, Consumer<TokenVerifier<AccessToken>> verifierConsumer) {
         try {
@@ -1669,6 +1839,12 @@ public class AuthenticationManager {
      * @param realm realm
      * @return true if some roles were resolved. False if the token was not lightweight or there was some issue (EG. user session not found)
      */
+    /** 为轻量级访问令牌解析并填充角色声明。
+     * @param session Keycloak 会话
+     * @param accessToken 访问令牌
+     * @param realm 领域
+     * @return 是否成功解析角色
+     */
     public static boolean resolveLightweightAccessTokenRoles(KeycloakSession session, AccessToken accessToken, RealmModel realm) {
         final String issuedFor = accessToken.getIssuedFor();
         ClientModel client = realm.getClientByClientId(issuedFor);
@@ -1699,10 +1875,20 @@ public class AuthenticationManager {
         return false;
     }
 
+    /** 用户名/密码表单认证结果状态。 */
     public enum AuthenticationStatus {
-        SUCCESS, ACCOUNT_TEMPORARILY_DISABLED, ACCOUNT_DISABLED, ACTIONS_REQUIRED, INVALID_USER, INVALID_CREDENTIALS, MISSING_PASSWORD, MISSING_TOTP, FAILED
+        /** 成功 */ SUCCESS,
+        /** 账户临时锁定 */ ACCOUNT_TEMPORARILY_DISABLED,
+        /** 账户禁用 */ ACCOUNT_DISABLED,
+        /** 需要必需操作 */ ACTIONS_REQUIRED,
+        /** 无效用户 */ INVALID_USER,
+        /** 凭据错误 */ INVALID_CREDENTIALS,
+        /** 缺少密码 */ MISSING_PASSWORD,
+        /** 缺少 TOTP */ MISSING_TOTP,
+        /** 认证失败 */ FAILED
     }
 
+    /** 令牌/Cookie 认证结果记录。 */
     public record AuthResult(UserModel user, UserSessionModel session, AccessToken token, ClientModel client) {
         /**
          * @deprecated use {@link #session()} instead.
@@ -1737,6 +1923,11 @@ public class AuthenticationManager {
         }
     }
 
+    /** 设置 kc_action 执行状态并清理相关 client note。
+     * @param executedProviderId 已执行的 Provider ID
+     * @param status 执行状态
+     * @param authSession 认证会话
+     */
     public static void setKcActionStatus(String executedProviderId, RequiredActionContext.KcActionStatus status, AuthenticationSessionModel authSession) {
         if (executedProviderId.equals(authSession.getClientNote(Constants.KC_ACTION))) {
             authSession.setClientNote(Constants.KC_ACTION_STATUS, status.name().toLowerCase());
@@ -1751,6 +1942,10 @@ public class AuthenticationManager {
         }
     }
 
+    /** 登录成功时记录暴力破解保护成功事件。
+     * @param session Keycloak 会话
+     * @param authSession 认证会话
+     */
     public static void logSuccess(KeycloakSession session, AuthenticationSessionModel authSession) {
         RealmModel realm = session.getContext().getRealm();
         if (realm.isBruteForceProtected()) {
@@ -1768,6 +1963,11 @@ public class AuthenticationManager {
         }
     }
 
+    /** 获取认证器 reference category（用于暴力破解分类）。
+     * @param session Keycloak 会话
+     * @param authenticator 认证器 ID
+     * @return 类别或 null
+     */
     public static String getAuthenticationCategory(KeycloakSession session, String authenticator) {
         if (authenticator == null) return null;
 
@@ -1775,6 +1975,9 @@ public class AuthenticationManager {
         return factory != null ? factory.getReferenceCategory() : null;
     }
 
+    /** 为暴力破解日志查找用户（已认证或尝试用户名）。
+     * @return 用户或 null
+     */
     public static UserModel lookupUserForBruteForceLog(KeycloakSession session, RealmModel realm, AuthenticationSessionModel authenticationSession) {
         UserModel user = authenticationSession.getAuthenticatedUser();
         if (user != null) return user;
@@ -1787,10 +1990,18 @@ public class AuthenticationManager {
         return null;
     }
 
+    /** 对输入做 SHA-384 并 Base64Url 编码。
+     * @param input 明文 sessionId
+     * @return 哈希字符串
+     */
     public static String sha384UrlEncodedHash(String input) {
         return HashUtils.sha384UrlEncodedHash(input, StandardCharsets.ISO_8859_1);
     }
 
+    /** 从上下文解析请求的 scope 字符串。
+     * @param session Keycloak 会话
+     * @return scope 或 null
+     */
     public static String getRequestedScopes(KeycloakSession session) {
         return getRequestedScopes(session, session.getContext().getClient());
     }

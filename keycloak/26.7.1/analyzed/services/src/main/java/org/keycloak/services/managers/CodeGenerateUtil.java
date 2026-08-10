@@ -39,14 +39,15 @@ import org.keycloak.sessions.RootAuthenticationSessionModel;
 import org.jboss.logging.Logger;
 
 /**
- * TODO: Remove this and probably also ClientSessionParser. It's unnecessary genericity and abstraction, which is not needed anymore when clientSessionModel was fully removed.
- *
+ * 认证会话 action code 生成与校验工具。
+ * <p>通过 {@link ClientSessionParser} 抽象 {@link AuthenticationSessionModel} 的 code 生命周期；含回滚驱动事务以保证 code 与主事务一致。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 class CodeGenerateUtil {
 
     private static final Logger logger = Logger.getLogger(CodeGenerateUtil.class);
 
+    /** 认证会话 authNote 中存放当前有效 code 的键 */
     private static final String ACTIVE_CODE = "active_code";
 
     private static final Map<Class<? extends CommonClientSessionModel>, Supplier<ClientSessionParser>> PARSERS = new HashMap<>();
@@ -69,6 +70,7 @@ class CodeGenerateUtil {
     }
 
 
+    /** 客户端会话 code 解析策略接口。 */
     interface ClientSessionParser<CS extends CommonClientSessionModel> {
 
         CS parseSession(String code, String tabId, KeycloakSession session, RealmModel realm, ClientModel client, EventBuilder event);
@@ -89,14 +91,14 @@ class CodeGenerateUtil {
     }
 
 
-    // IMPLEMENTATIONS
+    // 具体实现
 
 
     private static class AuthenticationSessionModelParser implements ClientSessionParser<AuthenticationSessionModel> {
 
         @Override
         public AuthenticationSessionModel parseSession(String code, String tabId, KeycloakSession session, RealmModel realm, ClientModel client, EventBuilder event) {
-            // Read authSessionID from cookie. Code is ignored for now
+            // 从 Cookie 读取认证会话；code 参数暂不使用
             return new AuthenticationSessionManager(session).getCurrentAuthenticationSession(realm, client, tabId);
         }
 
@@ -107,7 +109,7 @@ class CodeGenerateUtil {
                 String actionId = Base64Url.encode(SecretGenerator.getInstance().randomBytes());
                 authSession.setAuthNote(ACTIVE_CODE, actionId);
 
-                // enlist a transaction that ensures the code is set in the auth session in case the main transaction is rolled back.
+                // 注册回滚事务：主事务回滚时仍保留 code
                 session.getTransactionManager().enlist(new RollbackDrivenTransaction(session.getKeycloakSessionFactory(), currentSession -> {
                     final RootAuthenticationSessionModel rootAuthenticationSession = currentSession.authenticationSessions()
                             .getRootAuthenticationSession(authSession.getRealm(), authSession.getParentSession().getId());
@@ -141,7 +143,7 @@ class CodeGenerateUtil {
             }
 
             authSession.removeAuthNote(ACTIVE_CODE);
-            // enlist a transaction that ensures the code is removed in case the main transaction is rolled back.
+            // 注册回滚事务：主事务回滚时仍移除 code
             session.getTransactionManager().enlist(new RollbackDrivenTransaction(session.getKeycloakSessionFactory(), currentSession -> {
                 AuthenticationSessionModel authenticationSession = currentSession.authenticationSessions()
                         .getRootAuthenticationSession(authSession.getRealm(), authSession.getParentSession().getId())
@@ -175,7 +177,8 @@ class CodeGenerateUtil {
     }
 
     /**
-     * A {@link KeycloakTransaction} that runs a task only when {@link #rollback()} is called.
+     * 仅在 {@link #rollback()} 时执行任务的事务包装。
+     * <p>用于在主事务失败时同步 auth session 中的 code 状态。</p>
      */
     private static class RollbackDrivenTransaction implements KeycloakTransaction {
 
@@ -189,7 +192,7 @@ class CodeGenerateUtil {
 
         @Override
         public void begin() {
-            // no-op - this tx doesn't participate in the regular transaction flow, only when rollback is triggered.
+            // 不参与正常提交流程，仅在回滚时执行
         }
 
         @Override

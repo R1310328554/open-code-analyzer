@@ -15,13 +15,19 @@ import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 无效查询参数过滤器。
+ * <p>在预匹配阶段拦截含 ASCII 控制字符（除 TAB/LF/CR）的查询参数值，防止编码破坏与终端异常行为。</p>
+ */
 @Provider
 @PreMatching
 @Priority(10)
 public class InvalidQueryParameterFilter implements ContainerRequestFilter {
 
+    /** 日志记录器 */
     private static final Logger LOGGER = Logger.getLogger(InvalidQueryParameterFilter.class);
 
+    /** {@inheritDoc} 校验所有查询参数值是否含非法控制字符 */
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         final Map<String, List<String>> queryParams = requestContext.getUriInfo().getQueryParameters();
@@ -37,6 +43,8 @@ public class InvalidQueryParameterFilter implements ContainerRequestFilter {
     }
 
     /**
+     * 判定输入是否含不安全 ASCII 控制字符。
+     * <p>不安全字符包括 NUL（破坏 UTF-8 编码）、ESC（ANSI 终端异常）及除 TAB/LF/CR 外所有低于 0x20 的字符。</p>
      * Unsafe character values we can safely assume is a bad request:
      * NUL	U+0000	Breaks encoding (esp. UTF-8)
      * ESC  U+001B  Can lead to strange behavior in ANSI terminals
@@ -57,9 +65,9 @@ public class InvalidQueryParameterFilter implements ContainerRequestFilter {
             } else {
                 if (c < 32) {
                     switch (c) {
-                        case 0x09: // TAB
-                        case 0x0A: // LF
-                        case 0x0D: // CR
+                        case 0x09: // 制表符 TAB
+                        case 0x0A: // 换行 LF
+                        case 0x0D: // 回车 CR
                             break;
                         default:
                             return true;

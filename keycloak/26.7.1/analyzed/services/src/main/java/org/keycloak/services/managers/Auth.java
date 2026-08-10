@@ -27,16 +27,20 @@ import org.keycloak.models.UserSessionModel;
 import org.keycloak.representations.AccessToken;
 
 /**
-* @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
-*/
+ * 已认证请求上下文。
+ * <p>封装用户、客户端、访问令牌及会话，支持 Cookie 与 Bearer 两种认证方式的角色检查。</p>
+ * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
+ */
 public class Auth {
 
+    /** 是否通过 Cookie 认证 */
     private final boolean cookie;
     private final RealmModel realm;
     private final AccessToken token;
     private final UserModel user;
     private final ClientModel client;
     private final UserSessionModel session;
+    /** 已认证的客户端会话（可选） */
     private AuthenticatedClientSessionModel clientSession;
 
     public Auth(RealmModel realm, AccessToken token, UserModel user, ClientModel client, UserSessionModel session, boolean cookie) {
@@ -49,6 +53,7 @@ public class Auth {
         this.session = session;
     }
 
+    /** @return 是否 Cookie 认证 */
     public boolean isCookieAuthenticated() {
         return cookie;
     }
@@ -81,18 +86,28 @@ public class Auth {
         this.clientSession = clientSession;
     }
 
+    /** 要求当前客户端具备指定角色，否则抛出 {@link ForbiddenException}。
+     * @param role 客户端角色名
+     */
     public void require(String role) {
         if (!hasClientRole(client, role)) {
             throw new ForbiddenException();
         }
     }
 
+    /** 要求具备任一客户端角色。
+     * @param roles 角色名列表
+     */
     public void requireOneOf(String... roles) {
         if (!hasOneOfAppRole(client, roles)) {
             throw new ForbiddenException();
         }
     }
 
+    /** 检查是否拥有领域角色。
+     * @param role 角色名
+     * @return 是否拥有
+     */
     public boolean hasRealmRole(String role) {
         if (cookie) {
             return user.hasRole(realm.getRole(role));
@@ -111,6 +126,11 @@ public class Auth {
         return false;
     }
 
+    /** 检查是否拥有指定客户端的角色。
+     * @param app 客户端
+     * @param role 角色名
+     * @return 是否拥有
+     */
     public boolean hasClientRole(ClientModel app, String role) {
         if (cookie) {
             return user.hasRole(app.getRole(role));
