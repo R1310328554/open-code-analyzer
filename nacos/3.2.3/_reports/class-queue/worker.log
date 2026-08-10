@@ -1528,3 +1528,18 @@
 2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/remote/ClusterRpcClientProxy.java nacos wave50b [15:30] core cluster manager/lookup/remote
 2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/remote/MemberReportHandler.java nacos wave50b [15:30] core cluster manager/lookup/remote
 2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/remote/request/AbstractClusterRequest.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/console/NacosConsolePathTipFilter.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/context/RequestContext.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/context/RequestContextHolder.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/context/addition/AddressContext.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/context/addition/AuthContext.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/context/addition/BasicContext.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/context/addition/EngineContext.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/context/remote/HttpRequestContextConfig.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/context/remote/HttpRequestContextFilter.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/control/SpringValueConfigsInitializer.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/control/TpsControl.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/control/TpsControlConfig.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/control/http/HttpTpsCheckRequestParser.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/control/http/HttpTpsCheckRequestParserRegistry.java nacos wave51b [15:30] core context + tps control
+2026-08-10T03:59:45Z DONE core/src/main/java/com/alibaba/nacos/core/control/http/HttpTpsPointRegistry.java nacos wave51b [15:30] core context + tps control

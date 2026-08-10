@@ -15,23 +15,8 @@
     "core/src/main/java/com/alibaba/nacos/core/config/AbstractDynamicConfig.java",
     "core/src/main/java/com/alibaba/nacos/core/config/DistroModuleStateBuilder.java",
     "core/src/main/java/com/alibaba/nacos/core/config/RaftModuleStateBuilder.java",
-    "core/src/main/java/com/alibaba/nacos/core/console/ConsolePathTipConfig.java",
-    "core/src/main/java/com/alibaba/nacos/core/console/NacosConsolePathTipFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/context/RequestContext.java",
-    "core/src/main/java/com/alibaba/nacos/core/context/RequestContextHolder.java",
-    "core/src/main/java/com/alibaba/nacos/core/context/addition/AddressContext.java",
-    "core/src/main/java/com/alibaba/nacos/core/context/addition/AuthContext.java",
-    "core/src/main/java/com/alibaba/nacos/core/context/addition/BasicContext.java",
-    "core/src/main/java/com/alibaba/nacos/core/context/addition/EngineContext.java",
-    "core/src/main/java/com/alibaba/nacos/core/context/remote/HttpRequestContextConfig.java",
-    "core/src/main/java/com/alibaba/nacos/core/context/remote/HttpRequestContextFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/control/SpringValueConfigsInitializer.java",
-    "core/src/main/java/com/alibaba/nacos/core/control/TpsControl.java",
-    "core/src/main/java/com/alibaba/nacos/core/control/TpsControlConfig.java",
-    "core/src/main/java/com/alibaba/nacos/core/control/http/HttpTpsCheckRequestParser.java",
-    "core/src/main/java/com/alibaba/nacos/core/control/http/HttpTpsCheckRequestParserRegistry.java",
-    "core/src/main/java/com/alibaba/nacos/core/control/http/HttpTpsPointRegistry.java"
+    "core/src/main/java/com/alibaba/nacos/core/console/ConsolePathTipConfig.java"
   ],
   "remaining_pending": 1007,
-  "done": 1500
+  "done": 1515
 }
