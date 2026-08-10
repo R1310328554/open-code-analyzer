@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T11:53:26Z",
   "files": [
-    "services/src/main/java/org/keycloak/email/freemarker/beans/EventBean.java",
-    "services/src/main/java/org/keycloak/email/freemarker/beans/ProfileBean.java",
-    "services/src/main/java/org/keycloak/encoding/GzipResourceEncodingProvider.java",
-    "services/src/main/java/org/keycloak/encoding/GzipResourceEncodingProviderFactory.java",
-    "services/src/main/java/org/keycloak/encoding/ResourceEncodingHelper.java",
-    "services/src/main/java/org/keycloak/encoding/ResourceEncodingProvider.java",
-    "services/src/main/java/org/keycloak/encoding/ResourceEncodingProviderFactory.java",
-    "services/src/main/java/org/keycloak/encoding/ResourceEncodingSpi.java",
-    "services/src/main/java/org/keycloak/events/email/EmailEventListenerProvider.java",
-    "services/src/main/java/org/keycloak/events/email/EmailEventListenerProviderFactory.java",
-    "services/src/main/java/org/keycloak/events/log/JBossLoggingEventListenerProvider.java",
-    "services/src/main/java/org/keycloak/events/log/JBossLoggingEventListenerProviderFactory.java",
-    "services/src/main/java/org/keycloak/executors/DefaultExecutorsProviderFactory.java",
-    "services/src/main/java/org/keycloak/exportimport/ClientDescriptionConverter.java",
-    "services/src/main/java/org/keycloak/exportimport/ClientDescriptionConverterFactory.java",
     "services/src/main/java/org/keycloak/exportimport/ClientDescriptionConverterSpi.java",
     "services/src/main/java/org/keycloak/exportimport/ExportImportConfig.java",
     "services/src/main/java/org/keycloak/exportimport/ExportImportManager.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/forms/login/freemarker/model/CodeBean.java"
   ],
   "remaining_pending": 1828,
-  "done": 4140
+  "done": 4155
 }
