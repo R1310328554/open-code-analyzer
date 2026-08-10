@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:14:27Z",
-  "files": [
-    "services/src/main/java/org/keycloak/services/resources/account/resources/ResourcesService.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/AdminAuth.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/AdminConsole.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/AdminCorsPreflightService.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/AdminEventBuilder.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/AdminRoleTokenPostProcessor.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/AdminRoleTokenPostProcessorFactory.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/AdminRoot.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/AttackDetectionResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/AuthenticationManagementResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ClientAttributeCertificateResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ClientInitialAccessResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ClientPoliciesResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ClientProfilesResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ClientRegistrationPolicyResource.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 928,
-  "done": 5055
+  "done": 5070
 }
