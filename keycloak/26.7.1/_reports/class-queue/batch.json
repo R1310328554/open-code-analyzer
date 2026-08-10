@@ -15,23 +15,8 @@
     "test-framework/db-mssql/src/main/java/org/keycloak/testframework/database/MSSQLServerTestFrameworkExtension.java",
     "test-framework/db-mysql/src/main/java/org/keycloak/testframework/database/MySQLDatabaseSupplier.java",
     "test-framework/db-mysql/src/main/java/org/keycloak/testframework/database/MySQLTestDatabase.java",
-    "test-framework/db-mysql/src/main/java/org/keycloak/testframework/database/MySQLTestFrameworkExtension.java",
-    "test-framework/db-oracle/src/main/java/org/keycloak/testframework/database/OracleDatabaseSupplier.java",
-    "test-framework/db-oracle/src/main/java/org/keycloak/testframework/database/OracleTestDatabase.java",
-    "test-framework/db-oracle/src/main/java/org/keycloak/testframework/database/OracleTestFrameworkExtension.java",
-    "test-framework/db-postgres/src/main/java/org/keycloak/testframework/database/PostgresDatabaseSupplier.java",
-    "test-framework/db-postgres/src/main/java/org/keycloak/testframework/database/PostgresTestDatabase.java",
-    "test-framework/db-postgres/src/main/java/org/keycloak/testframework/database/PostgresTestFrameworkExtension.java",
-    "test-framework/db-tidb/src/main/java/org/keycloak/testframework/database/TiDBDatabaseSupplier.java",
-    "test-framework/db-tidb/src/main/java/org/keycloak/testframework/database/TiDBTestDatabase.java",
-    "test-framework/db-tidb/src/main/java/org/keycloak/testframework/database/TiDBTestFrameworkExtension.java",
-    "test-framework/email-server/src/main/java/org/keycloak/testframework/mail/GreenMailSupplier.java",
-    "test-framework/email-server/src/main/java/org/keycloak/testframework/mail/GreenMailTestFrameworkExtension.java",
-    "test-framework/email-server/src/main/java/org/keycloak/testframework/mail/MailServer.java",
-    "test-framework/email-server/src/main/java/org/keycloak/testframework/mail/annotations/InjectMailServer.java",
-    "test-framework/infinispan-server/src/main/java/org/keycloak/testframework/infinispan/InfinispanExternalServer.java",
-    "test-framework/infinispan-server/src/main/java/org/keycloak/testframework/infinispan/InfinispanExternalServerSupplier.java"
+    "test-framework/db-mysql/src/main/java/org/keycloak/testframework/database/MySQLTestFrameworkExtension.java"
   ],
   "remaining_pending": 328,
-  "done": 5640
+  "done": 5655
 }
