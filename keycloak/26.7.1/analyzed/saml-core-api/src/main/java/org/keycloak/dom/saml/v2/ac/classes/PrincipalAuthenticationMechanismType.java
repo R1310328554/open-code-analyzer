@@ -22,6 +22,8 @@ import java.math.BigInteger;
 /**
  * <p>
  * Java class for PrincipalAuthenticationMechanismType complex type.
+ * SAML 2.0 主体认证机制类型：在口令、受限口令、令牌、智能卡或激活 PIN 中选一。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -57,6 +59,8 @@ public class PrincipalAuthenticationMechanismType extends ExtensionListType {
     protected BigInteger preauth;
 
     /**
+     * 获取 口令 属性的值。
+     *
      * Gets the value of the password property.
      *
      * @return possible object is {@link PasswordType }
@@ -66,6 +70,8 @@ public class PrincipalAuthenticationMechanismType extends ExtensionListType {
     }
 
     /**
+     * 设置 口令 属性的值。
+     *
      * Sets the value of the password property.
      *
      * @param value allowed object is {@link PasswordType }
@@ -75,6 +81,8 @@ public class PrincipalAuthenticationMechanismType extends ExtensionListType {
     }
 
     /**
+     * 获取 受限口令 属性的值。
+     *
      * Gets the value of the restrictedPassword property.
      *
      * @return possible object is {@link RestrictedPasswordType }
@@ -84,6 +92,8 @@ public class PrincipalAuthenticationMechanismType extends ExtensionListType {
     }
 
     /**
+     * 设置 受限口令 属性的值。
+     *
      * Sets the value of the restrictedPassword property.
      *
      * @param value allowed object is {@link RestrictedPasswordType }
@@ -93,6 +103,8 @@ public class PrincipalAuthenticationMechanismType extends ExtensionListType {
     }
 
     /**
+     * 获取 令牌 属性的值。
+     *
      * Gets the value of the token property.
      *
      * @return possible object is {@link TokenType }
@@ -102,6 +114,8 @@ public class PrincipalAuthenticationMechanismType extends ExtensionListType {
     }
 
     /**
+     * 设置 令牌 属性的值。
+     *
      * Sets the value of the token property.
      *
      * @param value allowed object is {@link TokenType }
@@ -111,6 +125,8 @@ public class PrincipalAuthenticationMechanismType extends ExtensionListType {
     }
 
     /**
+     * 获取 智能卡 属性的值。
+     *
      * Gets the value of the smartcard property.
      *
      * @return possible object is {@link ExtensionOnlyType }
@@ -120,6 +136,8 @@ public class PrincipalAuthenticationMechanismType extends ExtensionListType {
     }
 
     /**
+     * 设置 智能卡 属性的值。
+     *
      * Sets the value of the smartcard property.
      *
      * @param value allowed object is {@link ExtensionOnlyType }
@@ -129,6 +147,8 @@ public class PrincipalAuthenticationMechanismType extends ExtensionListType {
     }
 
     /**
+     * 获取 激活 PIN 属性的值。
+     *
      * Gets the value of the activationPin property.
      *
      * @return possible object is {@link ActivationPinType }
@@ -138,6 +158,8 @@ public class PrincipalAuthenticationMechanismType extends ExtensionListType {
     }
 
     /**
+     * 设置 激活 PIN 属性的值。
+     *
      * Sets the value of the activationPin property.
      *
      * @param value allowed object is {@link ActivationPinType }
@@ -147,6 +169,8 @@ public class PrincipalAuthenticationMechanismType extends ExtensionListType {
     }
 
     /**
+     * 获取 预认证标识 属性的值。
+     *
      * Gets the value of the preauth property.
      *
      * @return possible object is {@link BigInteger }
@@ -156,6 +180,8 @@ public class PrincipalAuthenticationMechanismType extends ExtensionListType {
     }
 
     /**
+     * 设置 预认证标识 属性的值。
+     *
      * Sets the value of the preauth property.
      *
      * @param value allowed object is {@link BigInteger }

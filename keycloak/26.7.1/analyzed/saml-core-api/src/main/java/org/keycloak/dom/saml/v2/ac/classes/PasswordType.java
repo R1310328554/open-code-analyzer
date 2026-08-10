@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for PasswordType complex type.
+ * SAML 2.0 口令类型：描述长度、字符集、生成方式及外部验证 URI。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -49,6 +51,8 @@ public class PasswordType extends ExtensionListType {
     protected String externalVerification;
 
     /**
+     * 获取 口令长度 属性的值。
+     *
      * Gets the value of the length property.
      *
      * @return possible object is {@link LengthType }
@@ -58,6 +62,8 @@ public class PasswordType extends ExtensionListType {
     }
 
     /**
+     * 设置 口令长度 属性的值。
+     *
      * Sets the value of the length property.
      *
      * @param value allowed object is {@link LengthType }
@@ -67,6 +73,8 @@ public class PasswordType extends ExtensionListType {
     }
 
     /**
+     * 获取 字符集 属性的值。
+     *
      * Gets the value of the alphabet property.
      *
      * @return possible object is {@link AlphabetType }
@@ -76,6 +84,8 @@ public class PasswordType extends ExtensionListType {
     }
 
     /**
+     * 设置 字符集 属性的值。
+     *
      * Sets the value of the alphabet property.
      *
      * @param value allowed object is {@link AlphabetType }
@@ -85,6 +95,8 @@ public class PasswordType extends ExtensionListType {
     }
 
     /**
+     * 获取 生成方式 属性的值。
+     *
      * Gets the value of the generation property.
      *
      * @return possible object is {@link Generation }
@@ -94,6 +106,8 @@ public class PasswordType extends ExtensionListType {
     }
 
     /**
+     * 设置 生成方式 属性的值。
+     *
      * Sets the value of the generation property.
      *
      * @param value allowed object is {@link Generation }
@@ -103,6 +117,8 @@ public class PasswordType extends ExtensionListType {
     }
 
     /**
+     * 获取 外部验证 URI 属性的值。
+     *
      * Gets the value of the externalVerification property.
      *
      * @return possible object is {@link String }
@@ -112,6 +128,8 @@ public class PasswordType extends ExtensionListType {
     }
 
     /**
+     * 设置 外部验证 URI 属性的值。
+     *
      * Sets the value of the externalVerification property.
      *
      * @param value allowed object is {@link String }

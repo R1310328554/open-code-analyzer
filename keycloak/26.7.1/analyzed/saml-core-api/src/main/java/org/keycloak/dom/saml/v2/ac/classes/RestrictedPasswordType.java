@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for RestrictedPasswordType complex type.
+ * SAML 2.0 受限口令类型：在 PasswordType 基础上要求 RestrictedLengthType 长度约束。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

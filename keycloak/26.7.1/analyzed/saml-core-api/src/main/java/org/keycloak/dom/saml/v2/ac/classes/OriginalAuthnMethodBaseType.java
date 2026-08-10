@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for AuthnMethodBaseType complex type.
+ * SAML 2.0 原始认证方法基类：描述主体认证机制、认证器及传输协议。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -50,6 +52,8 @@ public class OriginalAuthnMethodBaseType extends ExtensionListType {
     protected AuthenticatorTransportProtocolType authenticatorTransportProtocol;
 
     /**
+     * 获取 主体认证机制 属性的值。
+     *
      * Gets the value of the principalAuthenticationMechanism property.
      *
      * @return possible object is {@link PrincipalAuthenticationMechanismType }
@@ -59,6 +63,8 @@ public class OriginalAuthnMethodBaseType extends ExtensionListType {
     }
 
     /**
+     * 设置 主体认证机制 属性的值。
+     *
      * Sets the value of the principalAuthenticationMechanism property.
      *
      * @param value allowed object is {@link PrincipalAuthenticationMechanismType }
@@ -68,6 +74,8 @@ public class OriginalAuthnMethodBaseType extends ExtensionListType {
     }
 
     /**
+     * 获取 认证器 属性的值。
+     *
      * Gets the value of the authenticator property.
      *
      * @return possible object is {@link AuthenticatorBaseType }
@@ -77,6 +85,8 @@ public class OriginalAuthnMethodBaseType extends ExtensionListType {
     }
 
     /**
+     * 设置 认证器 属性的值。
+     *
      * Sets the value of the authenticator property.
      *
      * @param value allowed object is {@link AuthenticatorBaseType }
@@ -86,6 +96,8 @@ public class OriginalAuthnMethodBaseType extends ExtensionListType {
     }
 
     /**
+     * 获取 认证器传输协议 属性的值。
+     *
      * Gets the value of the authenticatorTransportProtocol property.
      *
      * @return possible object is {@link AuthenticatorTransportProtocolType }
@@ -95,6 +107,8 @@ public class OriginalAuthnMethodBaseType extends ExtensionListType {
     }
 
     /**
+     * 设置 认证器传输协议 属性的值。
+     *
      * Sets the value of the authenticatorTransportProtocol property.
      *
      * @param value allowed object is {@link AuthenticatorTransportProtocolType }

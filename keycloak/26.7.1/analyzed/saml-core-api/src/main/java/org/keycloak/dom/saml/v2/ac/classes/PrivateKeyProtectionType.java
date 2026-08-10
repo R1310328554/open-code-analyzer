@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for PrivateKeyProtectionType complex type.
+ * SAML 2.0 私钥保护类型：描述密钥激活、存储介质及共享方式。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -48,6 +50,8 @@ public class PrivateKeyProtectionType extends ExtensionListType {
     protected KeySharingType keySharing;
 
     /**
+     * 获取 密钥激活 属性的值。
+     *
      * Gets the value of the keyActivation property.
      *
      * @return possible object is {@link KeyActivationType }
@@ -57,6 +61,8 @@ public class PrivateKeyProtectionType extends ExtensionListType {
     }
 
     /**
+     * 设置 密钥激活 属性的值。
+     *
      * Sets the value of the keyActivation property.
      *
      * @param value allowed object is {@link KeyActivationType }
@@ -66,6 +72,8 @@ public class PrivateKeyProtectionType extends ExtensionListType {
     }
 
     /**
+     * 获取 密钥存储 属性的值。
+     *
      * Gets the value of the keyStorage property.
      *
      * @return possible object is {@link KeyStorageType }
@@ -75,6 +83,8 @@ public class PrivateKeyProtectionType extends ExtensionListType {
     }
 
     /**
+     * 设置 密钥存储 属性的值。
+     *
      * Sets the value of the keyStorage property.
      *
      * @param value allowed object is {@link KeyStorageType }
@@ -84,6 +94,8 @@ public class PrivateKeyProtectionType extends ExtensionListType {
     }
 
     /**
+     * 获取 密钥共享 属性的值。
+     *
      * Gets the value of the keySharing property.
      *
      * @return possible object is {@link KeySharingType }
@@ -93,6 +105,8 @@ public class PrivateKeyProtectionType extends ExtensionListType {
     }
 
     /**
+     * 设置 密钥共享 属性的值。
+     *
      * Sets the value of the keySharing property.
      *
      * @param value allowed object is {@link KeySharingType }

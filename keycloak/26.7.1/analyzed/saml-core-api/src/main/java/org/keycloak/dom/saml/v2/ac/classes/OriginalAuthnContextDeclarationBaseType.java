@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for AuthnContextDeclarationBaseType complex type.
+ * SAML 2.0 原始认证上下文声明基类：聚合身份识别、技术/操作保护、认证方法及治理协议。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -57,6 +59,8 @@ public class OriginalAuthnContextDeclarationBaseType extends ExtensionListType {
     protected String id;
 
     /**
+     * 获取 身份识别 属性的值。
+     *
      * Gets the value of the identification property.
      *
      * @return possible object is {@link IdentificationType }
@@ -66,6 +70,8 @@ public class OriginalAuthnContextDeclarationBaseType extends ExtensionListType {
     }
 
     /**
+     * 设置 身份识别 属性的值。
+     *
      * Sets the value of the identification property.
      *
      * @param value allowed object is {@link IdentificationType }
@@ -75,6 +81,8 @@ public class OriginalAuthnContextDeclarationBaseType extends ExtensionListType {
     }
 
     /**
+     * 获取 技术保护 属性的值。
+     *
      * Gets the value of the technicalProtection property.
      *
      * @return possible object is {@link TechnicalProtectionBaseType }
@@ -84,6 +92,8 @@ public class OriginalAuthnContextDeclarationBaseType extends ExtensionListType {
     }
 
     /**
+     * 设置 技术保护 属性的值。
+     *
      * Sets the value of the technicalProtection property.
      *
      * @param value allowed object is {@link TechnicalProtectionBaseType }
@@ -93,6 +103,8 @@ public class OriginalAuthnContextDeclarationBaseType extends ExtensionListType {
     }
 
     /**
+     * 获取 操作保护 属性的值。
+     *
      * Gets the value of the operationalProtection property.
      *
      * @return possible object is {@link OperationalProtectionType }
@@ -102,6 +114,8 @@ public class OriginalAuthnContextDeclarationBaseType extends ExtensionListType {
     }
 
     /**
+     * 设置 操作保护 属性的值。
+     *
      * Sets the value of the operationalProtection property.
      *
      * @param value allowed object is {@link OperationalProtectionType }
@@ -111,6 +125,8 @@ public class OriginalAuthnContextDeclarationBaseType extends ExtensionListType {
     }
 
     /**
+     * 获取 认证方法 属性的值。
+     *
      * Gets the value of the authnMethod property.
      *
      * @return possible object is {@link AuthnMethodBaseType }
@@ -120,6 +136,8 @@ public class OriginalAuthnContextDeclarationBaseType extends ExtensionListType {
     }
 
     /**
+     * 设置 认证方法 属性的值。
+     *
      * Sets the value of the authnMethod property.
      *
      * @param value allowed object is {@link AuthnMethodBaseType }
@@ -129,6 +147,8 @@ public class OriginalAuthnContextDeclarationBaseType extends ExtensionListType {
     }
 
     /**
+     * 获取 治理协议 属性的值。
+     *
      * Gets the value of the governingAgreements property.
      *
      * @return possible object is {@link GoverningAgreementsType }
@@ -138,6 +158,8 @@ public class OriginalAuthnContextDeclarationBaseType extends ExtensionListType {
     }
 
     /**
+     * 设置 治理协议 属性的值。
+     *
      * Sets the value of the governingAgreements property.
      *
      * @param value allowed object is {@link GoverningAgreementsType }
@@ -147,6 +169,8 @@ public class OriginalAuthnContextDeclarationBaseType extends ExtensionListType {
     }
 
     /**
+     * 获取 声明标识 ID 属性的值。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -156,6 +180,8 @@ public class OriginalAuthnContextDeclarationBaseType extends ExtensionListType {
     }
 
     /**
+     * 设置 声明标识 ID 属性的值。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }

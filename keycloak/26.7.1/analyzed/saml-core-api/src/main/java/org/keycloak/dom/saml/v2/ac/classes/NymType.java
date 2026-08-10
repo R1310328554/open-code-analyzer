@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for nymType.
+ * SAML 2.0 匿名属性枚举（nymType）：anonymity（匿名）、verinymity（实名）、pseudonymity（假名）。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -44,10 +46,12 @@ public enum NymType {
         value = v;
     }
 
+    /** 返回枚举对应的 XML 字符串值。 */
     public String value() {
         return value;
     }
 
+    /** 从 XML 字符串解析为 {@link NymType} 枚举常量。 */
     public static NymType fromValue(String v) {
         for (NymType c : NymType.values()) {
             if (c.value.equals(v)) {

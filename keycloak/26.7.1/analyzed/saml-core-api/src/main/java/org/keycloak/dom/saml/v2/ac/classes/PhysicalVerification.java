@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for anonymous complex type.
+ * SAML 2.0 物理验证类型：以 credentialLevel 属性区分主凭证（primary）或次凭证（secondary）。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -46,6 +48,8 @@ public class PhysicalVerification {
     protected String credentialLevel;
 
     /**
+     * 获取 凭证级别 属性的值。
+     *
      * Gets the value of the credentialLevel property.
      *
      * @return possible object is {@link String }
@@ -55,6 +59,8 @@ public class PhysicalVerification {
     }
 
     /**
+     * 设置 凭证级别 属性的值。
+     *
      * Sets the value of the credentialLevel property.
      *
      * @param value allowed object is {@link String }

@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for mediumType.
+ * SAML 2.0 存储介质枚举（mediumType）：memory、smartcard、token、MobileDevice、MobileAuthCard。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -46,10 +48,12 @@ public enum MediumType {
         value = v;
     }
 
+    /** 返回枚举对应的 XML 字符串值。 */
     public String value() {
         return value;
     }
 
+    /** 从 XML 字符串解析为 {@link MediumType} 枚举常量。 */
     public static MediumType fromValue(String v) {
         for (MediumType c : MediumType.values()) {
             if (c.value.equals(v)) {

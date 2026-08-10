@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for RestrictedLengthType complex type.
+ * SAML 2.0 受限长度类型：继承 LengthType，min 至少为 3。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

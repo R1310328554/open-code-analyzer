@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for AuthenticatorBaseType complex type.
+ * SAML 2.0 原始认证器基类：组合认证器选择与序列组，继承 ObjectListType。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
