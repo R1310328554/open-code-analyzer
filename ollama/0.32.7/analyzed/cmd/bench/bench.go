@@ -1,3 +1,4 @@
+// bench 为 Ollama 模型推理性能基准工具，支持预热、TTFT 与 benchstat/csv 输出。
 package main
 
 import (
@@ -16,6 +17,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// flagOptions 聚合命令行基准测试参数。
 type flagOptions struct {
 	models       *string
 	epochs       *int
@@ -35,6 +37,7 @@ type flagOptions struct {
 	numCtx       *int
 }
 
+// Metrics 记录单步基准指标（模型、阶段、计数与耗时）。
 type Metrics struct {
 	Model    string
 	Step     string
@@ -42,6 +45,7 @@ type Metrics struct {
 	Duration time.Duration
 }
 
+// ModelInfo 缓存 Show 与运行时内存/上下文等模型元数据。
 type ModelInfo struct {
 	Name              string
 	ParameterSize     string
@@ -52,8 +56,10 @@ type ModelInfo struct {
 	NumCtx            int64
 }
 
+// DefaultPrompt 为未指定 -p 时使用的默认长提示。
 const DefaultPrompt = `Please write a descriptive story about a llama named Alonso who grows up to be President of the Land of Llamas. Include details about Alonso's childhood, adolescent years, and how he grew up to be a political mover and shaker. Write the story with a sense of whimsy.`
 
+// promptWordList 用于按目标 token 数合成可变长度提示，避免 KV 前缀缓存干扰。
 // Word list for generating prompts targeting a specific token count.
 var promptWordList = []string{
 	"the", "quick", "brown", "fox", "jumps", "over", "lazy", "dog",
@@ -70,6 +76,7 @@ var promptWordList = []string{
 // Initialized with a heuristic, then updated during warmup based on actual tokenization.
 var tokensPerWord = 1.3
 
+// generatePromptForTokenCount 按 epoch 偏移词表生成约 targetTokens 的提示文本。
 func generatePromptForTokenCount(targetTokens int, epoch int) string {
 	targetWords := int(float64(targetTokens) / tokensPerWord)
 	if targetWords < 1 {
@@ -87,6 +94,7 @@ func generatePromptForTokenCount(targetTokens int, epoch int) string {
 }
 
 // calibratePromptTokens adjusts tokensPerWord based on actual tokenization from a warmup run.
+// calibratePromptTokens 根据预热实测 token 数校准 tokensPerWord 比率。
 func calibratePromptTokens(targetTokens, actualTokens, wordCount int) {
 	if actualTokens <= 0 || wordCount <= 0 {
 		return
@@ -97,6 +105,7 @@ func calibratePromptTokens(targetTokens, actualTokens, wordCount int) {
 		tokensPerWord, targetTokens, actualTokens, wordCount, newWords)
 }
 
+// buildGenerateRequest 组装单次 Generate 请求（含选项、KeepAlive 与多模态图片）。
 func buildGenerateRequest(model string, fOpt flagOptions, imgData api.ImageData, epoch int) *api.GenerateRequest {
 	options := make(map[string]interface{})
 	if *fOpt.maxTokens > 0 {
@@ -257,6 +266,7 @@ func OutputMetrics(w io.Writer, format string, metrics []Metrics, verbose bool) 
 	}
 }
 
+// BenchmarkModel 对每个模型执行预热、计时 epoch 并输出指标。
 func BenchmarkModel(fOpt flagOptions) error {
 	models := strings.Split(*fOpt.models, ",")
 
@@ -485,6 +495,7 @@ func BenchmarkModel(fOpt flagOptions) error {
 	return nil
 }
 
+// unloadModel 通过 KeepAlive=0 的 Generate 请求卸载模型释放显存。
 func unloadModel(client *api.Client, model string, timeout int) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
@@ -514,6 +525,7 @@ func readImage(filePath string) (api.ImageData, error) {
 	return api.ImageData(data), nil
 }
 
+// main 解析命令行标志并启动 BenchmarkModel。
 func main() {
 	fOpt := flagOptions{
 		models:       flag.String("model", "", "Model to benchmark"),

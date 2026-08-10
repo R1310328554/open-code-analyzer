@@ -24,6 +24,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// Package webview 封装跨平台原生 WebView（Windows WebView2 / macOS WebKit），提供 Go 与 JavaScript 双向绑定。
 package webview
 
 /*
@@ -59,11 +60,13 @@ import (
 	"unsafe"
 )
 
+// init 锁定当前 goroutine 到 OS 主线程，满足 WebView UI 线程要求。
 func init() {
 	// Ensure that main.main is called from the main thread
 	runtime.LockOSThread()
 }
 
+// Hint 用于配置窗口尺寸与缩放约束。
 // Hints are used to configure window sizing and resizing
 type Hint int
 
@@ -81,6 +84,7 @@ const (
 	HintMax = C.WEBVIEW_HINT_MAX
 )
 
+// WebView 为嵌入式浏览器窗口的抽象接口。
 type WebView interface {
 	// Run runs the main loop until it's terminated. After this function exits -
 	// you must destroy the webview.
@@ -152,6 +156,7 @@ type WebView interface {
 	GetZoom() float64
 }
 
+// webview 为 WebView 接口的 CGO 实现。
 type webview struct {
 	w C.webview_t
 }
@@ -170,10 +175,12 @@ func boolToInt(b bool) C.int {
 	return 0
 }
 
+// New 创建带独立窗口的 WebView；debug 为 true 时启用开发者工具（若平台支持）。
 // New calls NewWindow to create a new window and a new webview instance. If debug
 // is non-zero - developer tools will be enabled (if the platform supports them).
 func New(debug bool) WebView { return NewWindow(debug, nil) }
 
+// NewWindow 创建 WebView；window 非空时将 WebView 嵌入已有父窗口句柄。
 // NewWindow creates a new webview instance. If debug is non-zero - developer
 // tools will be enabled (if the platform supports them). Window parameter can be
 // a pointer to the native window handle. If it's non-null - then child WebView is
@@ -245,6 +252,7 @@ func (w *webview) Dispatch(f func()) {
 	C.CgoWebViewDispatch(w.w, C.uintptr_t(index))
 }
 
+// _webviewDispatchGoCallback 由 C 回调，在主线程执行 Dispatch 投递的 Go 函数。
 //export _webviewDispatchGoCallback
 func _webviewDispatchGoCallback(index unsafe.Pointer) {
 	m.Lock()
@@ -254,6 +262,7 @@ func _webviewDispatchGoCallback(index unsafe.Pointer) {
 	f()
 }
 
+// _webviewBindingGoCallback 处理 JavaScript 通过 Bind 发起的 RPC 调用并返回 JSON 结果。
 //export _webviewBindingGoCallback
 func _webviewBindingGoCallback(w C.webview_t, id *C.char, req *C.char, index uintptr) {
 	m.Lock()
@@ -277,6 +286,7 @@ func _webviewBindingGoCallback(w C.webview_t, id *C.char, req *C.char, index uin
 	C.webview_return(w, id, C.int(status), s)
 }
 
+// Bind 将 Go 函数暴露为全局 JavaScript 函数；参数与返回值经 JSON 序列化。
 func (w *webview) Bind(name string, f interface{}) error {
 	v := reflect.ValueOf(f)
 	// f must be a function
@@ -352,6 +362,7 @@ func (w *webview) Bind(name string, f interface{}) error {
 	return nil
 }
 
+// Unbind 移除先前 Bind 注册的 JavaScript 回调。
 func (w *webview) Unbind(name string) error {
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
@@ -359,10 +370,12 @@ func (w *webview) Unbind(name string) error {
 	return nil
 }
 
+// SetZoom 设置页面缩放；1.0 为默认，大于 1 放大，小于 1 缩小。
 func (w *webview) SetZoom(level float64) {
 	C.webview_set_zoom(w.w, C.double(level))
 }
 
+// GetZoom 返回当前页面缩放级别。
 func (w *webview) GetZoom() float64 {
 	return float64(C.webview_get_zoom(w.w))
 }

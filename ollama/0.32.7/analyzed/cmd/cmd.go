@@ -1,3 +1,4 @@
+// Package cmd 实现 ollama CLI：模型 run/pull/create、服务启动与交互式启动器。
 package cmd
 
 import (
@@ -58,6 +59,7 @@ import (
 	xcreateclient "github.com/ollama/ollama/x/create/client"
 )
 
+// init 将 launch 包的默认选择器/登录/确认 UI 替换为 Bubbletea TUI 实现。
 func init() {
 	// Override default selectors to use Bubbletea TUI instead of raw terminal I/O.
 	launch.DefaultSingleSelector = func(title string, items []launch.SelectionItem, current string) (string, error) {
@@ -97,6 +99,7 @@ func init() {
 	launch.DefaultSpinner = tui.RunSpinner
 }
 
+// runTUISingleSelector 在非 TTY 环境拒绝运行，否则弹出单选模型 TUI。
 func runTUISingleSelector(title string, items []launch.SelectionItem, current string, updates <-chan []launch.SelectionItem) (string, error) {
 	if !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stdout.Fd())) {
 		return "", fmt.Errorf("model selection requires an interactive terminal; use --model to run in headless mode")
@@ -137,6 +140,7 @@ func convertSelectionItemUpdates(updates <-chan []launch.SelectionItem) <-chan [
 
 const ConnectInstructions = "If your browser did not open, navigate to:\n    %s\n\n"
 
+// ensureThinkingSupport 若模型不支持 thinking 能力则在 stderr 输出警告。
 // ensureThinkingSupport emits a warning if the model does not advertise thinking support
 func ensureThinkingSupport(ctx context.Context, client *api.Client, name string) {
 	if name == "" {
@@ -174,6 +178,7 @@ func getModelfileName(cmd *cobra.Command) (string, error) {
 	return absName, nil
 }
 
+// isLocalhost 判断 OLLAMA_HOST 是否为本地回环或未指定地址。
 // isLocalhost returns true if the configured Ollama host is a loopback or unspecified address.
 func isLocalhost() bool {
 	host := envconfig.Host()
@@ -218,6 +223,7 @@ func resolveExperimentalDraftDir(ref, filename string) (string, error) {
 	return "", fmt.Errorf("DRAFT model references are not supported with --experimental yet: %s", ref)
 }
 
+// CreateHandler 处理 ollama create：标准 Modelfile 路径或实验性 safetensors 目录创建。
 func CreateHandler(cmd *cobra.Command, args []string) error {
 	p := progress.NewProgress(os.Stderr)
 	defer p.Stop()
@@ -540,6 +546,7 @@ func (w *progressWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+// loadOrUnloadModel 对本地模型发起空 Generate 以加载/保活；云端模型仅校验登录。
 func loadOrUnloadModel(cmd *cobra.Command, opts *runOptions) error {
 	p := progress.NewProgress(os.Stderr)
 	defer p.StopAndClear()
@@ -597,6 +604,7 @@ func loadOrUnloadModel(cmd *cobra.Command, opts *runOptions) error {
 	})
 }
 
+// StopHandler 停止指定名称的运行中模型进程。
 func StopHandler(cmd *cobra.Command, args []string) error {
 	opts := &runOptions{
 		Model:     args[0],
@@ -713,6 +721,7 @@ func hasListedModelName(models []api.ListModelResponse, name string) bool {
 // pullWithCloudSuggestion), in which case the returned name is the cloud
 // name the caller should continue with. verb is the user-facing command
 // ("run" or "pull") used in hint text.
+// showOrPullModel 尝试 Show，不存在则 pull（含 cloud 建议）并返回解析后的模型名。
 func showOrPullModel(cmd *cobra.Command, client *api.Client, name string, insecure bool, verb string) (*api.ShowResponse, string, error) {
 	info, err := client.Show(cmd.Context(), &api.ShowRequest{Model: name})
 	if err == nil {
@@ -733,6 +742,7 @@ func showOrPullModel(cmd *cobra.Command, client *api.Client, name string, insecu
 	return info, resolved, err
 }
 
+// RunHandler 实现 ollama run：加载模型并进入交互或单次 generate/chat 模式。
 func RunHandler(cmd *cobra.Command, args []string) error {
 	interactive := true
 
@@ -1081,6 +1091,7 @@ func PushHandler(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// ListHandler 列出本地已安装模型。
 func ListHandler(cmd *cobra.Command, args []string) error {
 	client, err := api.ClientFromEnvironment()
 	if err != nil {
@@ -1201,6 +1212,7 @@ func DeleteHandler(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// ShowHandler 显示模型 Modelfile、参数与能力等详细信息。
 func ShowHandler(cmd *cobra.Command, args []string) error {
 	client, err := api.ClientFromEnvironment()
 	if err != nil {
@@ -1512,6 +1524,7 @@ func CopyHandler(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// PullHandler 从 registry 拉取模型并显示进度。
 func PullHandler(cmd *cobra.Command, args []string) error {
 	insecure, err := cmd.Flags().GetBool("insecure")
 	if err != nil {
@@ -1755,6 +1768,7 @@ func thinkingOutputClosingText(plainText bool) string {
 	return readline.ColorGrey + readline.ColorBold + text + readline.ColorDefault
 }
 
+// chat 在交互模式下读取用户输入并调用 Chat API，支持工具与 thinking 输出。
 func chat(cmd *cobra.Command, opts runOptions) (*api.Message, error) {
 	client, err := api.ClientFromEnvironment()
 	if err != nil {
@@ -1881,6 +1895,7 @@ func chat(cmd *cobra.Command, opts runOptions) (*api.Message, error) {
 	return &api.Message{Role: role, Thinking: thinkingContent.String(), Content: fullResponse.String()}, nil
 }
 
+// generate 执行单次非交互 Generate 并将响应流式输出到终端。
 func generate(cmd *cobra.Command, opts runOptions) error {
 	client, err := api.ClientFromEnvironment()
 	if err != nil {
@@ -2012,6 +2027,7 @@ func generate(cmd *cobra.Command, opts runOptions) error {
 	return nil
 }
 
+// RunServer 启动内嵌 Ollama HTTP 服务进程。
 func RunServer(_ *cobra.Command, _ []string) error {
 	if err := initializeKeypair(); err != nil {
 		return err
@@ -2276,6 +2292,7 @@ func launcherActionExitsLoop(integration string) bool {
 	}
 }
 
+// NewCLI 构建根 cobra 命令及 run/pull/create/serve 等子命令树。
 func NewCLI() *cobra.Command {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	cobra.EnableCommandSorting = false
@@ -2562,6 +2579,7 @@ func NewCLI() *cobra.Command {
 // to false).
 //
 // If capabilities are not provided, we fetch them from the server.
+// inferThinkingOption 根据模型能力与用户 flag 推断 thinking 输出选项。
 func inferThinkingOption(caps *[]model.Capability, runOpts *runOptions, explicitlySetByUser bool) (*api.ThinkValue, error) {
 	if explicitlySetByUser {
 		return runOpts.Think, nil

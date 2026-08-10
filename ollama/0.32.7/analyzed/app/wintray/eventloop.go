@@ -1,5 +1,6 @@
 //go:build windows
 
+// Package wintray（eventloop）实现 Windows 托盘应用的消息循环与窗口过程。
 package wintray
 
 import (
@@ -11,12 +12,14 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// quitOnce 保证退出流程只执行一次；UI_REQUEST_MSG_ID / FOCUS_WINDOW_MSG_ID 为自定义窗口消息。
 var (
 	quitOnce            sync.Once
 	UI_REQUEST_MSG_ID   = WM_USER + 2
 	FOCUS_WINDOW_MSG_ID = WM_USER + 3
 )
 
+// TrayRun 运行 Win32 消息泵，直至收到 WM_QUIT 或致命错误。
 func (t *winTray) TrayRun() {
 	// Main message pump.
 	slog.Debug("starting event handling loop")
@@ -65,6 +68,7 @@ func (t *winTray) TrayRun() {
 	}
 }
 
+// wndProc 为托盘隐藏窗口的窗口过程，分发菜单、托盘图标与跨进程消息。
 // WindowProc callback function that processes messages sent to a window.
 // https://msdn.microsoft.com/en-us/library/windows/desktop/ms633573(v=vs.85).aspx
 func (t *winTray) wndProc(hWnd windows.Handle, message uint32, wParam, lParam uintptr) (lResult uintptr) {
@@ -197,12 +201,14 @@ func (t *winTray) wndProc(hWnd windows.Handle, message uint32, wParam, lParam ui
 	return
 }
 
+// Quit 标记退出并投递 WM_CLOSE 关闭托盘窗口。
 func (t *winTray) Quit() {
 	// slog.Debug("XXX in winTray.Quit")
 	t.quitting = true
 	quitOnce.Do(quit)
 }
 
+// SendUIRequestMessage 向主事件线程投递 UI 路由请求（线程安全）。
 func SendUIRequestMessage(path string) {
 	boolRet, _, err := pPostMessage.Call(
 		uintptr(wt.window),
@@ -227,6 +233,7 @@ func quit() {
 	}
 }
 
+// findExistingInstance 按窗口类名查找已运行的 Ollama 实例，未找到返回 0。
 // findExistingInstance attempts to find an existing Ollama instance window
 // Returns the window handle if found, 0 if not found
 func findExistingInstance() uintptr {
@@ -244,6 +251,7 @@ func findExistingInstance() uintptr {
 	return hwnd
 }
 
+// CheckAndSendToExistingInstance 将 URL scheme 通过 WM_COPYDATA 转发给已有实例。
 // CheckAndSendToExistingInstance attempts to send a URL scheme to an existing instance
 // Returns true if successfully sent to existing instance, false if no instance found
 func CheckAndSendToExistingInstance(urlScheme string) bool {
@@ -276,6 +284,7 @@ func CheckAndSendToExistingInstance(urlScheme string) bool {
 	return true
 }
 
+// handleURLSchemeRequest 解析 URL scheme 并委托实现 URLSchemeHandler 的应用回调。
 // handleURLSchemeRequest processes a URL scheme request
 func handleURLSchemeRequest(urlScheme string) {
 	if urlScheme == "" {
@@ -296,6 +305,7 @@ func handleURLSchemeRequest(urlScheme string) {
 	}
 }
 
+// CheckAndFocusExistingInstance 查找已有实例并按需发送聚焦/启动 UI 消息。
 // CheckAndFocusExistingInstance attempts to find an existing instance and optionally focus it
 // Returns true if an existing instance was found, false otherwise
 func CheckAndFocusExistingInstance(shouldFocus bool) bool {

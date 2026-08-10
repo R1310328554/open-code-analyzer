@@ -1,5 +1,6 @@
 //go:build windows
 
+// Package wintray（menus）管理托盘右键菜单项与更新通知。
 package wintray
 
 import (
@@ -14,6 +15,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// 托盘菜单项 ID，与 WM_COMMAND 的 wParam 对应。
 const (
 	_ = iota
 	openUIMenuID
@@ -27,6 +29,7 @@ const (
 	quitMenuID
 )
 
+// initMenus 初始化打开 UI、设置、日志与退出等默认菜单项。
 func (t *winTray) initMenus() error {
 	if err := t.addOrUpdateMenuItem(openUIMenuID, 0, openUIMenuTitle, false); err != nil {
 		return fmt.Errorf("unable to create menu entries %w", err)
@@ -47,6 +50,7 @@ func (t *winTray) initMenus() error {
 	return nil
 }
 
+// UpdateAvailable 在检测到新版本时更新菜单、托盘图标并弹出气球通知。
 func (t *winTray) UpdateAvailable(ver string) error {
 	if !t.updateNotified {
 		slog.Debug("updating menu and sending notification for new update")
@@ -88,6 +92,7 @@ func (t *winTray) UpdateAvailable(ver string) error {
 	return nil
 }
 
+// showLogs 在资源管理器中打开 Ollama 本地日志目录。
 func (t *winTray) showLogs() error {
 	localAppData := os.Getenv("LOCALAPPDATA")
 	AppDataDir := filepath.Join(localAppData, "Ollama")

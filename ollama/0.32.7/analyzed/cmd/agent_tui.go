@@ -1,3 +1,4 @@
+// agent_tui.go 实现 ollama 交互式 Agent TUI 的模型准备、工具注册与系统提示组装。
 package cmd
 
 import (
@@ -26,6 +27,7 @@ import (
 	"github.com/ollama/ollama/types/model"
 )
 
+// agentTUIOptions 为 Agent TUI 会话的运行时选项。
 type agentTUIOptions struct {
 	Model               string
 	System              string
@@ -39,6 +41,7 @@ type agentTUIOptions struct {
 	MultiModal          bool
 }
 
+// saveLastAgentModel 将最近使用的 Agent 模型写入用户配置。
 func saveLastAgentModel(model string) error {
 	model = strings.TrimSpace(model)
 	if model == "" {
@@ -47,6 +50,7 @@ func saveLastAgentModel(model string) error {
 	return config.SetLastModel(model)
 }
 
+// prepareAgentModel 拉取/解析模型，推断 thinking 与多模态、上下文窗口能力。
 func prepareAgentModel(cmd *cobra.Command, client *api.Client, opts *agentTUIOptions, thinkExplicit bool) (*api.ShowResponse, error) {
 	// Unlike `ollama run`, the bare `ollama` root command doesn't define
 	// --insecure, so GetBool would error; treat it as false.
@@ -69,6 +73,7 @@ func prepareAgentModel(cmd *cobra.Command, client *api.Client, opts *agentTUIOpt
 	return info, nil
 }
 
+// GenerateAgentTUI 加载技能与工具注册表并启动 Agent 聊天 TUI。
 func GenerateAgentTUI(cmd *cobra.Command, client *api.Client, opts agentTUIOptions) error {
 	cwd := agentWorkingDir()
 	contextWindowForModel := func(ctx context.Context, model string, fallback int) int {
@@ -160,6 +165,7 @@ func GenerateAgentTUI(cmd *cobra.Command, client *api.Client, opts agentTUIOptio
 	return err
 }
 
+// agentSkillSystemContext 在启用 skill 工具时返回技能目录的系统上下文片段。
 func agentSkillSystemContext(catalog *coreagent.SkillCatalog, registry *coreagent.Registry, toolsDisabled bool) string {
 	if toolsDisabled || registry == nil {
 		return ""
@@ -185,6 +191,7 @@ func agentSelectionItems(models []agentchat.ModelOption) []launch.SelectionItem 
 
 var agentGetwd = os.Getwd
 
+// agentWorkingDir 返回当前工作目录，失败时返回空字符串。
 func agentWorkingDir() string {
 	cwd, err := agentGetwd()
 	if err != nil {
@@ -209,6 +216,7 @@ func agentSystemPromptAtWithWorkingDir(now time.Time, modelName string, modelSys
 	return strings.Join(parts, "\n\n")
 }
 
+// agentDefaultSystemPromptWithWorkingDir 构建 Agent 默认系统提示（日期、Shell、工作目录约束）。
 func agentDefaultSystemPromptWithWorkingDir(now time.Time, modelName string, workingDir string) string {
 	date := now.Format("Monday, January 2, 2006")
 	shellName := "bash"
@@ -246,6 +254,7 @@ func agentSystemFromShow(ctx context.Context, client *api.Client, modelName stri
 	return resp.System
 }
 
+// agentToolsRegistry 按模型能力与云端策略注册 bash/read/edit/web 等 Agent 工具。
 func agentToolsRegistry(ctx context.Context, client *api.Client, modelName string, skillCatalog *coreagent.SkillCatalog) *coreagent.Registry {
 	supportsTools, err := agentModelSupportsTools(ctx, client, modelName)
 	if err != nil {
@@ -317,6 +326,7 @@ func showResponseSupportsMultimodal(resp *api.ShowResponse) bool {
 	return false
 }
 
+// agentContextWindowForModel 从运行中进程、推荐列表或 Show 响应解析上下文长度。
 func agentContextWindowForModel(ctx context.Context, client *api.Client, modelName string, fallback int) int {
 	if client == nil || strings.TrimSpace(modelName) == "" {
 		return fallback
@@ -435,6 +445,7 @@ func numericModelInfo(value any) (int, bool) {
 	}
 }
 
+// preloadAgentModelIfLocal 对本地模型发起空 Generate 以预加载并返回实际上下文长度。
 func preloadAgentModelIfLocal(ctx context.Context, client *api.Client, opts agentTUIOptions, modelName string, think *api.ThinkValue) (int, error) {
 	modelName = strings.TrimSpace(modelName)
 	if client == nil || modelName == "" {
@@ -489,6 +500,7 @@ func processContextWindowForModel(modelName string, resp *api.ProcessResponse) i
 	return 0
 }
 
+// agentModelOptions 汇总云端推荐与本地已安装模型供 TUI 模型选择器使用。
 func agentModelOptions(ctx context.Context, client *api.Client) ([]agentchat.ModelOption, error) {
 	if client == nil {
 		return nil, errors.New("model picker requires an API client")
@@ -557,6 +569,7 @@ func agentModelOptions(ctx context.Context, client *api.Client) ([]agentchat.Mod
 	return options, nil
 }
 
+// cloudAvailabilityBadges 为云端模型附加登录/升级等可用性徽章与登录 URL。
 func cloudAvailabilityBadges(ctx context.Context, client *api.Client, options []agentchat.ModelOption) (map[string]string, map[string]string) {
 	badges := make(map[string]string)
 	signInURLs := make(map[string]string)
@@ -686,6 +699,7 @@ func agentCloudStatusDisabled(ctx context.Context, client *api.Client) (disabled
 	return status.Cloud.Disabled, true
 }
 
+// ensureCloudModelAccess 校验用户已登录且订阅计划满足云端模型要求。
 func ensureCloudModelAccess(ctx context.Context, client *api.Client, modelName, requiredPlan string) error {
 	if client == nil {
 		return errors.New("no API client available")

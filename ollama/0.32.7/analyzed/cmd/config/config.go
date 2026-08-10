@@ -1,3 +1,4 @@
+// Package config 持久化外部编程工具（Claude Code、Codex 等）与 Ollama 的集成配置。
 // Package config provides integration configuration for external coding tools
 // (Claude Code, Codex, Droid, OpenCode) to use Ollama models.
 package config
@@ -13,12 +14,14 @@ import (
 	"github.com/ollama/ollama/cmd/internal/fileutil"
 )
 
+// integration 表示某一集成应用的模型列表、别名与 onboarding 状态。
 type integration struct {
 	Models    []string          `json:"models"`
 	Aliases   map[string]string `json:"aliases,omitempty"`
 	Onboarded bool              `json:"onboarded,omitempty"`
 }
 
+// IntegrationConfig 为单个集成的持久化配置别名。
 // IntegrationConfig is the persisted config for one integration.
 type IntegrationConfig = integration
 
@@ -28,6 +31,7 @@ type config struct {
 	LastSelection string                  `json:"last_selection,omitempty"` // "run" or integration name
 }
 
+// configPath 返回 ~/.ollama/config.json 路径。
 func configPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -44,6 +48,7 @@ func legacyConfigPath() (string, error) {
 	return filepath.Join(home, ".ollama", "config", "config.json"), nil
 }
 
+// migrateConfig 将旧版 ~/.ollama/config/config.json 迁移到新路径。
 // migrateConfig moves the config from the legacy path to ~/.ollama/config.json
 func migrateConfig() (bool, error) {
 	oldPath, err := legacyConfigPath()
@@ -129,6 +134,7 @@ func save(cfg *config) error {
 	return fileutil.WriteWithBackup(path, data)
 }
 
+// SaveIntegration 保存指定集成应用的模型列表。
 func SaveIntegration(appName string, models []string) error {
 	if appName == "" {
 		return errors.New("app name cannot be empty")
@@ -157,6 +163,7 @@ func SaveIntegration(appName string, models []string) error {
 	return save(cfg)
 }
 
+// MarkIntegrationOnboarded 标记集成已完成 onboarding 引导。
 // MarkIntegrationOnboarded marks an integration as onboarded in Ollama's config.
 func MarkIntegrationOnboarded(appName string) error {
 	cfg, err := load()
@@ -192,6 +199,7 @@ func IntegrationModels(appName string) []string {
 	return integrationConfig.Models
 }
 
+// LastModel 返回上次 run 使用的模型名。
 // LastModel returns the last model that was run, or empty string if none.
 func LastModel() string {
 	cfg, err := load()
@@ -201,6 +209,7 @@ func LastModel() string {
 	return cfg.LastModel
 }
 
+// SetLastModel 持久化上次 run 的模型名。
 // SetLastModel saves the last model that was run.
 func SetLastModel(model string) error {
 	cfg, err := load()
@@ -230,6 +239,7 @@ func SetLastSelection(selection string) error {
 	return save(cfg)
 }
 
+// LoadIntegration 读取指定集成名称的配置，不存在返回 os.ErrNotExist。
 // LoadIntegration returns the saved config for one integration.
 func LoadIntegration(appName string) (*integration, error) {
 	cfg, err := load()
@@ -245,6 +255,7 @@ func LoadIntegration(appName string) (*integration, error) {
 	return integrationConfig, nil
 }
 
+// SaveAliases 全量替换某集成的模型别名映射（支持删除）。
 // SaveAliases replaces the saved aliases for one integration.
 func SaveAliases(appName string, aliases map[string]string) error {
 	if appName == "" {

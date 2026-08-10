@@ -1,5 +1,6 @@
 //go:build windows
 
+// Package wintray（w32api）声明 Win32 API 过程地址与常用常量。
 package wintray
 
 import (
@@ -8,6 +9,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// 延迟加载 Kernel32、User32、Shell32 及托盘/窗口相关 API 过程。
 var (
 	k32 = windows.NewLazySystemDLL("Kernel32.dll")
 	u32 = windows.NewLazySystemDLL("User32.dll")
@@ -91,17 +93,20 @@ const (
 	MB_ICONINFORMATION  = 0x00000040
 )
 
+// init 将 goroutine 绑定到 OS 线程，满足 Win32 窗口过程线程亲和性。
 // Not sure if this is actually needed on windows
 func init() {
 	runtime.LockOSThread()
 }
 
+// point 对应 Win32 POINT 结构，表示屏幕坐标。
 // The POINT structure defines the x- and y- coordinates of a point.
 // https://msdn.microsoft.com/en-us/library/windows/desktop/dd162805(v=vs.85).aspx
 type point struct {
 	X, Y int32
 }
 
+// COPYDATASTRUCT 用于 WM_COPYDATA 在进程间传递 URL scheme 等数据。
 // COPYDATASTRUCT contains data to be passed to another application by WM_COPYDATA
 // https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-copydatastruct
 type COPYDATASTRUCT struct {

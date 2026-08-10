@@ -1,3 +1,4 @@
+// Package auth 提供基于 ~/.ollama 私钥的请求签名与公钥读取。
 package auth
 
 import (
@@ -16,8 +17,10 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// defaultPrivateKey 为 Ollama 默认 Ed25519 私钥文件名。
 const defaultPrivateKey = "id_ed25519"
 
+// GetPublicKey 读取本地私钥并返回 authorized_keys 格式的公钥字符串。
 func GetPublicKey() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -41,6 +44,7 @@ func GetPublicKey() (string, error) {
 	return strings.TrimSpace(string(publicKey)), nil
 }
 
+// NewNonce 生成指定长度的随机 nonce，Base64 URL 编码返回。
 func NewNonce(r io.Reader, length int) (string, error) {
 	nonce := make([]byte, length)
 	if _, err := io.ReadFull(r, nonce); err != nil {
@@ -50,6 +54,7 @@ func NewNonce(r io.Reader, length int) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(nonce), nil
 }
 
+// Sign 用本地私钥对载荷签名，返回 "<pubkey>:<signature>" 格式字符串。
 func Sign(ctx context.Context, bts []byte) (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {

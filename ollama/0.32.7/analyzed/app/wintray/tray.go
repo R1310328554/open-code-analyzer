@@ -1,5 +1,6 @@
 //go:build windows
 
+// Package wintray（tray）实现 Windows 系统托盘图标、菜单与窗口生命周期。
 package wintray
 
 import (
@@ -18,12 +19,14 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// 托盘图标资源名与窗口类名常量。
 const (
 	UpdateIconName = "tray_upgrade.ico"
 	IconName       = "tray.ico"
 	ClassName      = "OllamaClass"
 )
 
+// NewTray 从嵌入资源加载图标并初始化托盘。
 func NewTray(app AppCallbacks) (TrayCallbacks, error) {
 	updateIcon, err := assets.GetIcon(UpdateIconName)
 	if err != nil {
@@ -37,6 +40,7 @@ func NewTray(app AppCallbacks) (TrayCallbacks, error) {
 	return InitTray(icon, updateIcon, app)
 }
 
+// TrayCallbacks 为托盘模块对外暴露的生命周期与更新回调。
 type TrayCallbacks interface {
 	Quit()
 	TrayRun()
@@ -44,6 +48,7 @@ type TrayCallbacks interface {
 	GetIconHandle() windows.Handle
 }
 
+// AppCallbacks 由主应用实现，供托盘菜单驱动 UI 与退出逻辑。
 type AppCallbacks interface {
 	UIRun(path string)
 	UIShow()
@@ -53,6 +58,7 @@ type AppCallbacks interface {
 	DoUpdate()
 }
 
+// URLSchemeHandler 处理来自其他实例转发的自定义 URL scheme。
 type URLSchemeHandler interface {
 	HandleURLScheme(urlScheme string)
 }
@@ -60,6 +66,7 @@ type URLSchemeHandler interface {
 // Helpful sources: https://github.com/golang/exp/blob/master/shiny/driver/internal/win32
 
 // Contains information about loaded resources
+// winTray 聚合托盘窗口、菜单、图标与通知状态。
 type winTray struct {
 	instance,
 	icon,
@@ -104,6 +111,7 @@ type winTray struct {
 
 var wt winTray
 
+// InitTray 注册窗口类、创建隐藏窗口、设置托盘图标并构建菜单。
 func InitTray(icon, updateIcon []byte, app AppCallbacks) (*winTray, error) {
 	wt.normalIcon = icon
 	wt.updateIcon = updateIcon
@@ -133,6 +141,7 @@ func InitTray(icon, updateIcon []byte, app AppCallbacks) (*winTray, error) {
 	return &wt, wt.initMenus()
 }
 
+// initInstance 注册窗口类、创建隐藏消息窗口并添加 NOTIFYICONDATA。
 func (t *winTray) initInstance() error {
 	const (
 		windowName = ""
@@ -238,6 +247,7 @@ func (t *winTray) initInstance() error {
 	return t.nid.add()
 }
 
+// createMenu 创建根弹出菜单并设置 MIM_APPLYTOSUBMENUS。
 func (t *winTray) createMenu() error {
 	menuHandle, _, err := pCreatePopupMenu.Call()
 	if menuHandle == 0 {
@@ -268,6 +278,7 @@ func (t *winTray) createMenu() error {
 
 // Contains information about a menu item.
 // https://msdn.microsoft.com/en-us/library/windows/desktop/ms647578(v=vs.85).aspx
+// menuItemInfo 对应 MENUITEMINFO，描述单个菜单项属性。
 type menuItemInfo struct {
 	Size, Mask, Type, State     uint32
 	ID                          uint32
@@ -278,6 +289,7 @@ type menuItemInfo struct {
 	BMPItem                     windows.Handle
 }
 
+// addOrUpdateMenuItem 插入或更新菜单项，维护可见项排序索引。
 func (t *winTray) addOrUpdateMenuItem(menuItemId uint32, parentId uint32, title string, disabled bool) error {
 	titlePtr, err := windows.UTF16PtrFromString(title)
 	if err != nil {
@@ -369,6 +381,7 @@ func (t *winTray) addSeparatorMenuItem(menuItemId, parentId uint32) error {
 	return nil
 }
 
+// showMenu 在光标位置弹出托盘右键菜单。
 func (t *winTray) showMenu() error {
 	p := point{}
 	boolRet, _, err := pGetCursorPos.Call(uintptr(unsafe.Pointer(&p)))
@@ -431,6 +444,7 @@ func (t *winTray) getVisibleItemIndex(parent, val uint32) int {
 	return -1
 }
 
+// iconBytesToFilePath 将图标字节写入临时 .ico 文件并缓存路径。
 func iconBytesToFilePath(iconBytes []byte) (string, error) {
 	bh := md5.Sum(iconBytes)
 	dataHash := hex.EncodeToString(bh[:])
@@ -444,6 +458,7 @@ func iconBytesToFilePath(iconBytes []byte) (string, error) {
 	return iconFilePath, nil
 }
 
+// setIcon 加载图标文件并更新 NOTIFYICONDATA 的图标与提示文本。
 // Loads an image from file and shows it in tray.
 // Shell_NotifyIcon: https://msdn.microsoft.com/en-us/library/windows/desktop/bb762159(v=vs.85).aspx
 func (t *winTray) setIcon(src string) error {
@@ -468,6 +483,7 @@ func (t *winTray) setIcon(src string) error {
 
 // Loads an image from file to be shown in tray or menu item.
 // LoadImage: https://msdn.microsoft.com/en-us/library/windows/desktop/ms648045(v=vs.85).aspx
+// loadIconFrom 从文件加载图标句柄，按路径缓存避免重复 LoadImage。
 func (t *winTray) loadIconFrom(src string) (windows.Handle, error) {
 	// Save and reuse handles of loaded images
 	t.muLoadedImages.RLock()
@@ -501,6 +517,7 @@ func (t *winTray) GetIconHandle() windows.Handle {
 	return t.defaultIcon
 }
 
+// DisplayFirstUseNotification 显示首次运行气球提示。
 func (t *winTray) DisplayFirstUseNotification() error {
 	t.muNID.Lock()
 	defer t.muNID.Unlock()

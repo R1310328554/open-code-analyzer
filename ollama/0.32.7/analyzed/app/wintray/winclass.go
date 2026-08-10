@@ -1,5 +1,6 @@
 //go:build windows
 
+// Package wintray（winclass）封装窗口类注册与注销。
 package wintray
 
 import (
@@ -8,6 +9,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// wndClassEx 对应 WNDCLASSEX，供 RegisterClassEx 使用。
 // Contains window class information.
 // It is used with the RegisterClassEx and GetClassInfoEx functions.
 // https://msdn.microsoft.com/en-us/library/ms633577.aspx
@@ -20,6 +22,7 @@ type wndClassEx struct {
 	IconSm                             windows.Handle
 }
 
+// register 注册窗口类以便 CreateWindowEx 创建托盘消息窗口。
 // Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
 // https://msdn.microsoft.com/en-us/library/ms633587.aspx
 func (w *wndClassEx) register() error {
@@ -31,6 +34,7 @@ func (w *wndClassEx) register() error {
 	return nil
 }
 
+// unregister 注销窗口类并释放相关资源。
 // Unregisters a window class, freeing the memory required for the class.
 // https://msdn.microsoft.com/en-us/library/ms644899.aspx
 func (w *wndClassEx) unregister() error {
