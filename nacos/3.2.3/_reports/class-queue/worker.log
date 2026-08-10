@@ -1348,3 +1348,18 @@
 2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/config/NacosConsoleAuthConfig.java nacos wave44b [15:30] console startup/config
 2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/config/NacosConsoleBeanPostProcessorConfiguration.java nacos wave44b [15:30] console startup/config
 2026-08-10T03:43:57Z DONE console/src/main/java/com/alibaba/nacos/console/controller/ConsoleRedirectController.java nacos wave44b [15:30] console startup/config
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/core/ConsoleClusterController.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/core/ConsoleNamespaceController.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/core/ConsolePluginController.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/naming/ConsoleInstanceController.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/controller/v3/naming/ConsoleServiceController.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/exception/ConsoleExceptionHandler.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/filter/NacosConsoleAuthFilter.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/filter/XssFilter.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/handler/HealthHandler.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/handler/ServerStateHandler.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/handler/ai/A2aHandler.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/handler/ai/AgentSpecHandler.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/handler/ai/AiResourceImportHandler.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/handler/ai/EnabledAiHandler.java nacos wave45b [15:30] console v3 core/naming + handlers
+2026-08-10T03:46:41Z DONE console/src/main/java/com/alibaba/nacos/console/handler/ai/McpHandler.java nacos wave45b [15:30] console v3 core/naming + handlers

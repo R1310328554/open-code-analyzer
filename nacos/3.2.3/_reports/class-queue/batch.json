@@ -15,23 +15,8 @@
     "console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/CopilotHttpParamExtractor.java",
     "console/src/main/java/com/alibaba/nacos/console/controller/v3/ai/CopilotSseExceptionHandler.java",
     "console/src/main/java/com/alibaba/nacos/console/controller/v3/config/ConsoleConfigController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/config/ConsoleHistoryController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/core/ConsoleClusterController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/core/ConsoleNamespaceController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/core/ConsolePluginController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/naming/ConsoleInstanceController.java",
-    "console/src/main/java/com/alibaba/nacos/console/controller/v3/naming/ConsoleServiceController.java",
-    "console/src/main/java/com/alibaba/nacos/console/exception/ConsoleExceptionHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/filter/NacosConsoleAuthFilter.java",
-    "console/src/main/java/com/alibaba/nacos/console/filter/XssFilter.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/HealthHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/ServerStateHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/ai/A2aHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/ai/AgentSpecHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/ai/AiResourceImportHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/ai/EnabledAiHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/handler/ai/McpHandler.java"
+    "console/src/main/java/com/alibaba/nacos/console/controller/v3/config/ConsoleHistoryController.java"
   ],
   "remaining_pending": 1187,
-  "done": 1320
+  "done": 1335
 }
