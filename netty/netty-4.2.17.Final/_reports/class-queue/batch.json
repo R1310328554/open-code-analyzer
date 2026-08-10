@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T01:07:51Z",
   "files": [
-    "resolver-dns/src/main/java/io/netty/resolver/dns/AuthoritativeDnsServerCache.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/AuthoritativeDnsServerCacheAdapter.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/BiDnsQueryLifecycleObserver.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/BiDnsQueryLifecycleObserverFactory.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/Cache.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DatagramDnsQueryContext.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DefaultAuthoritativeDnsServerCache.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DefaultDnsCache.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DefaultDnsCnameCache.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DefaultDnsServerAddressStreamProvider.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DefaultDnsServerAddresses.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DirContextUtils.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsAddressDecoder.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsAddressResolveContext.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/DnsAddressResolverGroup.java",
     "resolver-dns/src/main/java/io/netty/resolver/dns/DnsCache.java",
     "resolver-dns/src/main/java/io/netty/resolver/dns/DnsCacheEntry.java",
     "resolver-dns/src/main/java/io/netty/resolver/dns/DnsCnameCache.java",
@@ -33,5 +18,5 @@
     "resolver-dns/src/main/java/io/netty/resolver/dns/DnsRecordResolveContext.java"
   ],
   "remaining_pending": 428,
-  "done": 1470
+  "done": 1485
 }
