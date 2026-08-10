@@ -27,13 +27,18 @@ import org.keycloak.storage.ldap.mappers.LDAPOperationDecorator;
 import org.jboss.logging.Logger;
 
 /**
+ * MSAD 密码策略提示装饰器：在 LDAP 修改密码操作前附加 LDAP_SERVER_POLICY_HINTS 控制，
+ * 使 Active Directory 应用密码历史、最短使用期等高级策略。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LDAPServerPolicyHintsDecorator implements LDAPOperationDecorator {
 
     private static final Logger logger = Logger.getLogger(LDAPServerPolicyHintsDecorator.class);
 
+    /** 较新的 LDAP 密码策略提示 OID（MSAD 2012+）。 */
     public static final String LDAP_SERVER_POLICY_HINTS_OID = "1.2.840.113556.1.4.2239";
+    /** 已弃用但仍兼容 MSAD 2008 R2 的 OID。 */
     public static final String LDAP_SERVER_POLICY_HINTS_DEPRECATED_OID = "1.2.840.113556.1.4.2066";
 
     @Override
@@ -42,7 +47,7 @@ public class LDAPServerPolicyHintsDecorator implements LDAPOperationDecorator {
 
         final byte[] controlData = {48, (byte) 132, 0, 0, 0, 3, 2, 1, 1};
 
-        // Rather using deprecated OID as it works from MSAD 2008-R2 when the newer works from MSAD 2012
+        // 使用已弃用 OID，因 MSAD 2008 R2 起可用；较新 OID 需 MSAD 2012+
         BasicControl control = new BasicControl(LDAP_SERVER_POLICY_HINTS_DEPRECATED_OID, true, controlData);
         BasicControl[] controls = new BasicControl[] { control };
         ldapContext.setRequestControls(controls);

@@ -44,14 +44,16 @@ import org.keycloak.storage.ldap.mappers.TxAwareLDAPUserModelDelegate;
 import org.jboss.logging.Logger;
 
 /**
- * Mapper specific to MSAD. It's able to read the userAccountControl and pwdLastSet attributes and set actions in Keycloak based on that.
- * It's also able to handle exception code from LDAP user authentication (See http://www-01.ibm.com/support/docview.wss?uid=swg21290631 )
+ * MSAD 专用映射器：读取 userAccountControl 与 pwdLastSet，同步 Keycloak 账户启用状态与必需操作；
+ * 并可解析 LDAP 认证异常码（参见 http://www-01.ibm.com/support/docview.wss?uid=swg21290631）。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapper implements PasswordUpdateCallback {
 
+    /** 是否在修改密码时使用 LDAP 密码策略提示扩展。 */
     public static final String LDAP_PASSWORD_POLICY_HINTS_ENABLED = "ldap.password.policy.hints.enabled";
+    /** 是否始终从 LDAP userAccountControl 读取启用状态。 */
     public static final String ALWAYS_READ_ENABLED_VALUE_FROM_LDAP = "always.read.enabled.value.from.ldap";
 
     private static final Logger logger = Logger.getLogger(MSADUserAccountControlStorageMapper.class);
@@ -59,9 +61,9 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
     private static final Pattern AUTH_EXCEPTION_REGEX = Pattern.compile(".*AcceptSecurityContext error, data ([0-9a-f]*), v.*");
     private static final Pattern ERROR_CODE_REGEX = Pattern.compile(".*ERROR CODE ([0-9A-F]*) - ([0-9A-F]*).*");
 
-    // See https://datatracker.ietf.org/doc/html/rfc4511#appendix-A.2
+    // 参见 https://datatracker.ietf.org/doc/html/rfc4511#appendix-A.2
     public static final Set<String> PASSWORD_UPDATE_LDAP_ERROR_CODES = Set.of("53", "19");
-    // See https://msdn.microsoft.com/en-us/library/windows/desktop/ms681385(v=vs.85).aspx
+    // 参见 https://msdn.microsoft.com/en-us/library/windows/desktop/ms681385(v=vs.85).aspx
     public static final Set<String> PASSWORD_UPDATE_MSAD_ERROR_CODES = Set.of("52D");
 
     private final Function<LDAPObject, UserAccountControl> GET_USER_ACCOUNT_CONTROL = ldapUser -> {
@@ -82,7 +84,7 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
         query.addReturningLdapAttribute(LDAPConstants.PWD_LAST_SET);
         query.addReturningLdapAttribute(LDAPConstants.USER_ACCOUNT_CONTROL);
 
-        // This needs to be read-only and can be set to writable just on demand
+        // pwdLastSet 默认为只读，仅在需要写入时解除
         query.addReturningReadOnlyLdapAttribute(LDAPConstants.PWD_LAST_SET);
 
         if (ldapProvider.getEditMode() != UserStorageProvider.EditMode.WRITABLE) {
@@ -92,7 +94,7 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
 
     @Override
     public LDAPOperationDecorator beforePasswordUpdate(UserModel user, LDAPObject ldapUser, UserCredentialModel password) {
-        // Not apply policies if password is reset by admin (not by user themself)
+        // 管理员重置密码时不应用 MSAD 密码策略提示
         if (password.isAdminRequest()) {
             return null;
         }
@@ -106,7 +108,7 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
         logger.debugf("Going to update userAccountControl for ldap user '%s' after successful password update. Keycloak user '%s' in realm '%s'", ldapUser.getDn().toString(),
                 user.getUsername(), getRealmName());
 
-        // Normally it's read-only
+        // pwdLastSet 通常只读，写入前需解除只读标记
         ldapUser.removeReadOnlyAttributeName(LDAPConstants.PWD_LAST_SET);
 
         ldapUser.setSingleAttribute(LDAPConstants.PWD_LAST_SET, "-1");
@@ -139,7 +141,7 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
 
     @Override
     public void onImportUserFromLDAP(LDAPObject ldapUser, UserModel user, RealmModel realm, boolean isCreate) {
-        // check if user is enabled in MSAD or not.
+        // 根据 MSAD userAccountControl 设置 Keycloak 用户启用状态
         user.setEnabled(!getUserAccountControl(ldapUser).has(UserAccountControl.ACCOUNTDISABLE));
     }
 
@@ -160,9 +162,9 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
 
         if (ldapProvider.getEditMode() == UserStorageProvider.EditMode.WRITABLE) {
             if (errorCode.equals("532") || errorCode.equals("773")) {
-                // User needs to change his MSAD password. Allow him to login, but add UPDATE_PASSWORD required action to authenticationSession
+                // 用户须更改 MSAD 密码：允许登录并添加 UPDATE_PASSWORD 必需操作
                 if (user.getRequiredActionsStream().noneMatch(action -> Objects.equals(action, UserModel.RequiredAction.UPDATE_PASSWORD.name()))) {
-                    // This usually happens when 532 was returned, which means that "pwdLastSet" is set to some positive value, which is older than MSAD password expiration policy.
+                    // 通常对应错误码 532：pwdLastSet 为正且超过 MSAD 密码过期策略
                     AuthenticationSessionModel authSession = getSession().getContext().getAuthenticationSession();
                     if (authSession != null) {
                         if (authSession.getRequiredActions().stream().noneMatch(action -> Objects.equals(action, UserModel.RequiredAction.UPDATE_PASSWORD.name()))) {
@@ -170,18 +172,17 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
                             authSession.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
                         }
                     } else {
-                        // Just a fallback. It should not happen during normal authentication process
+                        // 兜底：正常认证流程中不应出现
                         logger.debugf("Adding requiredAction UPDATE_PASSWORD to the user %s", user.getUsername());
                         user.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
                     }
                 } else {
-                    // This usually happens when "773" error code is returned by MSAD. This typically happens when "pwdLastSet" is set to 0 and password was manually set
-                    // by administrator (or user) to expire
+                    // 通常对应错误码 773：pwdLastSet 为 0 且密码被管理员手动设为过期
                     logger.tracef("Skip adding required action UPDATE_PASSWORD. It was already set on user '%s' in realm '%s'", user.getUsername(), getRealmName());
                 }
                 return true;
             } else if (errorCode.equals("533")) {
-                // User is disabled in MSAD. Set him to disabled in KC as well
+                // MSAD 中用户已禁用，同步禁用 Keycloak 用户
                 if (user.isEnabled()) {
                     user.setEnabled(false);
                 }
@@ -195,6 +196,7 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
     }
 
 
+    /** 解析密码更新失败异常，将 MSAD 密码策略违规转为通用无效密码消息。 */
     protected ModelException processFailedPasswordUpdateException(ModelException e) {
         if (e.getCause() == null || e.getCause().getMessage() == null) {
             return e;
@@ -219,6 +221,7 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
         return e;
     }
 
+    /** 获取 userAccountControl；本地对象无值时从 LDAP 重新加载。 */
     protected UserAccountControl getUserAccountControl(LDAPObject ldapUser) {
         UserAccountControl control = GET_USER_ACCOUNT_CONTROL.apply(ldapUser);
 
@@ -237,7 +240,7 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
         return GET_USER_ACCOUNT_CONTROL.apply(ldapUser);
     }
 
-    // Update user in LDAP if "updateInLDAP" is true. Otherwise it is assumed that LDAP update will be called at the end of transaction
+    /** 更新 userAccountControl；{@code updateInLDAP} 为 false 时延迟到事务结束写入 LDAP。 */
     protected void updateUserAccountControl(boolean updateInLDAP, LDAPObject ldapUser, UserAccountControl accountControl) {
         String userAccountControlValue = String.valueOf(accountControl.getValue());
         logger.debugf("Updating userAccountControl of user '%s' to value '%s'. Realm is '%s'", ldapUser.getDn().toString(), userAccountControlValue, getRealmName());
@@ -255,6 +258,7 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
     }
 
 
+    /** MSAD 用户代理：同步启用状态、必需操作与 pwdLastSet 到 LDAP。 */
     public class MSADUserModelDelegate extends TxAwareLDAPUserModelDelegate {
 
         private final LDAPObject ldapUser;
@@ -292,7 +296,7 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
                     updateUserAccountControl(false, ldapUser, control);
                 }
             }
-            // Always update DB
+            // 始终同步本地数据库
             super.setEnabled(enabled);
         }
 
@@ -315,7 +319,7 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
 
                 markUpdatedRequiredActionInTransaction(action);
             } else {
-                // Update DB
+                // 写入本地数据库
                 MSADUserAccountControlStorageMapper.logger.debugf("Going to add required action '%s' of user '%s' in realm '%s' to the DB", action, getUsername(), getRealmName());
                 super.addRequiredAction(action);
             }
@@ -329,12 +333,12 @@ public class MSADUserAccountControlStorageMapper extends AbstractLDAPStorageMapp
 
         @Override
         public void removeRequiredAction(String action) {
-            // Always update DB
+            // 始终更新本地数据库
             super.removeRequiredAction(action);
 
             if (ldapProvider.getEditMode() == UserStorageProvider.EditMode.WRITABLE && RequiredAction.UPDATE_PASSWORD.toString().equals(action)) {
 
-                // Don't set pwdLastSet in MSAD when it is new user
+                // 新用户不在 MSAD 中设置 pwdLastSet
                 UserAccountControl accountControl = getUserAccountControl(ldapUser);
                 if (accountControl.getValue() != 0 && !accountControl.has(UserAccountControl.PASSWD_NOTREQD)) {
                     MSADUserAccountControlStorageMapper.logger.debugf("Going to remove required action UPDATE_PASSWORD from MSAD for ldap user '%s'. Account control: %s, Keycloak user '%s' in realm '%s'",

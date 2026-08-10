@@ -32,6 +32,8 @@ import org.keycloak.storage.ldap.mappers.AbstractLDAPStorageMapperFactory;
 import org.keycloak.storage.ldap.mappers.msad.MSADUserAccountControlStorageMapper;
 
 /**
+ * MSAD LDS 用户账户控制映射器工厂，注册 {@link MSADLDSUserAccountControlStorageMapper}。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  * @author <a href="mailto:slawomir@dabek.name">Slawomir Dabek</a>
  */
@@ -44,6 +46,7 @@ public class MSADLDSUserAccountControlStorageMapperFactory extends AbstractLDAPS
         configProperties = getConfigProps(null);
     }
 
+    /** 根据父联邦提供者构建配置属性列表。 */
     private static List<ProviderConfigProperty> getConfigProps(ComponentModel parentModel) {
         UserStorageProviderModel parent = parentModel != null ? new UserStorageProviderModel(parentModel) : new UserStorageProviderModel();
         if (parent.isImportEnabled()) {

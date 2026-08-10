@@ -29,44 +29,47 @@ import org.keycloak.storage.ldap.mappers.AbstractLDAPStorageMapper;
 import org.keycloak.storage.ldap.mappers.membership.CommonLDAPGroupMapperConfig;
 
 /**
+ * LDAP 组映射器配置：读取并解析 {@link GroupLDAPStorageMapper} 的组件配置项。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class GroupMapperConfig extends CommonLDAPGroupMapperConfig {
 
-    // LDAP DN where groups of this tree are saved.
+    /** 保存该组树的 LDAP DN。 */
     public static final String GROUPS_DN = "groups.dn";
+    /** 相对于组 DN 的创建路径前缀。 */
     public static final String GROUPS_RELATIVE_CREATE_DN = "groups.relative.create.dn";
 
-    // Name of LDAP attribute, which is used in group objects for name and RDN of group. Usually it will be "cn"
+    /** 组对象中用作名称与 RDN 的 LDAP 属性，通常为 cn。 */
     public static final String GROUP_NAME_LDAP_ATTRIBUTE = "group.name.ldap.attribute";
 
-    // Object classes of the group object.
+    /** 组对象的 objectClass 列表。 */
     public static final String GROUP_OBJECT_CLASSES = "group.object.classes";
 
-    // Flag whether group inheritance from LDAP should be propagated to Keycloak group inheritance.
+    /** 是否将 LDAP 组继承关系同步到 Keycloak 组层次结构。 */
     public static final String PRESERVE_GROUP_INHERITANCE = "preserve.group.inheritance";
 
-    // Flag whether missing groups should be ignored.
+    /** 是否忽略 LDAP 中引用但不存在的缺失组。 */
     public static final String IGNORE_MISSING_GROUPS = "ignore.missing.groups";
 
-    // Customized LDAP filter which is added to the whole LDAP query
+    /** 附加到 LDAP 组查询的自定义过滤器。 */
     public static final String GROUPS_LDAP_FILTER = "groups.ldap.filter";
 
-    // Name of attributes of the LDAP group object, which will be mapped as attributes of Group in Keycloak
+    /** 从 LDAP 组对象映射到 Keycloak 组属性的 LDAP 属性名列表。 */
     public static final String MAPPED_GROUP_ATTRIBUTES = "mapped.group.attributes";
 
-    // Controls whether the UUID LDAP attribute (e.g. objectGUID) is decoded to UUID format or kept as base64
+    /** 是否将 UUID 类 LDAP 属性（如 objectGUID）解码为 UUID 格式而非保留 base64。 */
     public static final String DECODE_GROUP_UUID_ATTRIBUTE = "decode.group.uuid.attribute";
 
-    // During sync of groups from LDAP to Keycloak, we will keep just those Keycloak groups, which still exists in LDAP. Rest will be deleted
+    /** 从 LDAP 同步到 Keycloak 时，删除 LDAP 中已不存在的 Keycloak 组。 */
     public static final String DROP_NON_EXISTING_GROUPS_DURING_SYNC = "drop.non.existing.groups.during.sync";
 
-    // See UserRolesRetrieveStrategy
+    /** 参见 {@link org.keycloak.storage.ldap.mappers.membership.UserRolesRetrieveStrategy}。 */
     public static final String LOAD_GROUPS_BY_MEMBER_ATTRIBUTE = "LOAD_GROUPS_BY_MEMBER_ATTRIBUTE";
     public static final String GET_GROUPS_FROM_USER_MEMBEROF_ATTRIBUTE = "GET_GROUPS_FROM_USER_MEMBEROF_ATTRIBUTE";
     public static final String LOAD_GROUPS_BY_MEMBER_ATTRIBUTE_RECURSIVELY = "LOAD_GROUPS_BY_MEMBER_ATTRIBUTE_RECURSIVELY";
 
-    // Keycloak group path the LDAP groups are added to (default: top level "/")
+    /** LDAP 组挂载到 Keycloak 的路径，默认为顶层 "/"。 */
     public static final String LDAP_GROUPS_PATH = "groups.path";
     public static final String DEFAULT_LDAP_GROUPS_PATH = "/";
 
@@ -74,7 +77,7 @@ public class GroupMapperConfig extends CommonLDAPGroupMapperConfig {
         super(mapperModel);
     }
 
-
+    /** 返回组树的 LDAP DN，未配置时抛出 {@link ModelException}。 */
     public String getGroupsDn() {
         String groupsDn = mapperModel.getConfig().getFirst(GROUPS_DN);
         if (groupsDn == null) {
@@ -83,6 +86,7 @@ public class GroupMapperConfig extends CommonLDAPGroupMapperConfig {
         return groupsDn;
     }
 
+    /** 返回创建组时使用的相对 DN 前缀，末尾保证带逗号。 */
     public String getRelativeCreateDn() {
         String relativeCreateDn = mapperModel.getConfig().getFirst(GROUPS_RELATIVE_CREATE_DN);
         if(relativeCreateDn != null) {
@@ -97,6 +101,7 @@ public class GroupMapperConfig extends CommonLDAPGroupMapperConfig {
         return getGroupsDn();
     }
 
+    /** 返回组名称对应的 LDAP 属性名，默认 cn。 */
     public String getGroupNameLdapAttribute() {
         String rolesRdnAttr = mapperModel.getConfig().getFirst(GROUP_NAME_LDAP_ATTRIBUTE);
         return rolesRdnAttr!=null ? rolesRdnAttr : LDAPConstants.CN;
@@ -107,51 +112,61 @@ public class GroupMapperConfig extends CommonLDAPGroupMapperConfig {
         return getGroupNameLdapAttribute();
     }
 
+    /** 是否保留 LDAP 组继承关系。 */
     public boolean isPreserveGroupsInheritance() {
         return AbstractLDAPStorageMapper.parseBooleanParameter(mapperModel, PRESERVE_GROUP_INHERITANCE);
     }
 
+    /** 是否忽略缺失的组引用。 */
     public boolean isIgnoreMissingGroups() {
         return AbstractLDAPStorageMapper.parseBooleanParameter(mapperModel, IGNORE_MISSING_GROUPS);
     }
 
+    /** 返回组对象的 objectClass 集合；Active Directory 默认为 group，其他服务器默认为 groupOfNames。 */
     public Collection<String> getGroupObjectClasses(LDAPStorageProvider ldapProvider) {
         String objectClasses = mapperModel.getConfig().getFirst(GROUP_OBJECT_CLASSES);
         if (objectClasses == null) {
-            // For Active directory, the default is 'group' . For other servers 'groupOfNames'
+            // Active Directory 默认为 group，其他 LDAP 服务器默认为 groupOfNames
             objectClasses = ldapProvider.getLdapIdentityStore().getConfig().isActiveDirectory() ? LDAPConstants.GROUP : LDAPConstants.GROUP_OF_NAMES;
         }
 
         return getConfigValues(objectClasses);
     }
 
+    /** 返回需要映射到 Keycloak 组的 LDAP 属性名集合。 */
     public Collection<String> getGroupAttributes() {
         String groupAttrs = mapperModel.getConfig().getFirst(MAPPED_GROUP_ATTRIBUTES);
         return (groupAttrs == null) ? Collections.<String>emptySet() : getConfigValues(groupAttrs);
     }
 
+    /** 返回自定义 LDAP 过滤器。 */
     public String getCustomLdapFilter() {
         return mapperModel.getConfig().getFirst(GROUPS_LDAP_FILTER);
     }
 
+    /** 是否解码组 UUID 属性。 */
     public boolean isDecodeGroupUuidAttribute() {
         return AbstractLDAPStorageMapper.parseBooleanParameter(mapperModel, DECODE_GROUP_UUID_ATTRIBUTE);
     }
 
+    /** 同步时是否删除 LDAP 中已不存在的 Keycloak 组。 */
     public boolean isDropNonExistingGroupsDuringSync() {
         return AbstractLDAPStorageMapper.parseBooleanParameter(mapperModel, DROP_NON_EXISTING_GROUPS_DURING_SYNC);
     }
 
+    /** 返回用户组检索策略键，默认按 member 属性加载。 */
     public String getUserGroupsRetrieveStrategy() {
         String strategyString = mapperModel.getConfig().getFirst(USER_ROLES_RETRIEVE_STRATEGY);
         return strategyString!=null ? strategyString : LOAD_GROUPS_BY_MEMBER_ATTRIBUTE;
     }
 
+    /** 返回 LDAP 组在 Keycloak 中的挂载路径。 */
     public String getGroupsPath() {
         String groupsPath = mapperModel.getConfig().getFirst(LDAP_GROUPS_PATH);
         return ObjectUtil.isBlank(groupsPath) ? DEFAULT_LDAP_GROUPS_PATH : groupsPath.trim();
     }
 
+    /** 返回以斜杠结尾的组路径。 */
     public String getGroupsPathWithTrailingSlash() {
         String path = getGroupsPath();
         while (!path.endsWith("/")) {
@@ -160,6 +175,7 @@ public class GroupMapperConfig extends CommonLDAPGroupMapperConfig {
         return path;
     }
 
+    /** 是否为顶层组路径 "/"。 */
     public boolean isTopLevelGroupsPath() {
         return "/".equals(getGroupsPath());
     }

@@ -43,6 +43,8 @@ import org.keycloak.storage.ldap.mappers.membership.UserRolesRetrieveStrategy;
 import org.keycloak.storage.ldap.mappers.membership.group.GroupMapperConfig;
 
 /**
+ * LDAP 角色映射器工厂：注册 role-ldap-mapper 提供者及配置属性。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class RoleLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFactory {
@@ -202,6 +204,7 @@ public class RoleLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFacto
         return config.build();
     }
 
+    /** 父联邦提供者禁用导入时，将 IMPORT 模式降级为 READ_ONLY。 */
     @Override
     public void onParentUpdate(RealmModel realm, UserStorageProviderModel oldParent, UserStorageProviderModel newParent, ComponentModel mapperModel) {
         if (!newParent.isImportEnabled()) {
@@ -282,6 +285,7 @@ public class RoleLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFacto
         return new RoleLDAPStorageMapper(mapperModel, federationProvider, this);
     }
 
+    /** 按策略键返回用户角色检索策略实现。 */
     protected UserRolesRetrieveStrategy getUserRolesRetrieveStrategy(String strategyKey) {
         return userRolesStrategies.get(strategyKey);
     }

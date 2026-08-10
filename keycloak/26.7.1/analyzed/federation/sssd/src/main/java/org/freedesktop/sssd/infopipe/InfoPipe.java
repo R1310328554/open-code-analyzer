@@ -26,20 +26,27 @@ import org.freedesktop.dbus.interfaces.DBusInterface;
 import org.freedesktop.dbus.types.Variant;
 
 /**
+ * SSSD InfoPipe D-Bus 接口：通过 org.freedesktop.sssd.infopipe 服务查询用户属性与组信息。
+ *
  * @author <a href="mailto:bruno@abstractj.org">Bruno Oliveira</a>.
  */
 @DBusInterfaceName("org.freedesktop.sssd.infopipe")
 public interface InfoPipe extends DBusInterface {
 
+    /** InfoPipe 对象路径。 */
     String OBJECTPATH = "/org/freedesktop/sssd/infopipe";
+    /** InfoPipe D-Bus 总线名。 */
     String BUSNAME = "org.freedesktop.sssd.infopipe";
 
+    /** 按属性名列表获取用户 LDAP/SSSD 属性。 */
     @DBusMemberName("GetUserAttr")
     Map<String, Variant> getUserAttributes(String user, List<String> attr);
 
+    /** 获取用户所属组名列表。 */
     @DBusMemberName("GetUserGroups")
     List<String> getUserGroups(String user);
 
+    /** 健康检查 ping。 */
     @DBusMemberName("Ping")
     String ping(String ping);
 

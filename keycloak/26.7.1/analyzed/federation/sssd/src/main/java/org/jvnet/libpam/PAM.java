@@ -44,15 +44,11 @@ import static org.jvnet.libpam.impl.PAMLibrary.PAM_USER;
 import static org.jvnet.libpam.impl.PAMLibrary.libpam;
 
 /**
- * PAM authenticator.
+ * PAM 认证器封装，通过 JNA 调用 libpam 完成 Unix/Linux 用户认证。
  * <p>
+ * 实例非线程安全且不可重入，不可用于连续认证多个用户。
  * <p>
- * Instances are thread unsafe and non reentrant. An instance cannot be reused
- * to authenticate multiple users.
- * <p>
- * <p>
- * For an overview of PAM programming, refer to the following resources:
- * <p>
+ * PAM 编程概述参见：
  * <ul>
  * <li><a href="http://www.netbsd.org/docs/guide/en/chap-pam.html">NetBSD PAM programming guide</a>
  * <li><a href="http://www.kernel.org/pub/linux/libs/pam/">Linux PAM</a>
@@ -65,16 +61,14 @@ public class PAM {
     private int ret;
 
     /**
-     * Temporarily stored to pass a value from {@link #authenticate(String, String...)}
-     * to {@link pam_conv}.
+     * 临时保存认证因子，供 {@link #authenticate(String, String...)} 传递给 {@link pam_conv}。
      */
     private String[] factors;
 
     /**
-     * Creates a new authenticator.
+     * 创建 PAM 认证器。
      *
-     * @param serviceName PAM service name. This corresponds to the service name that shows up
-     *                    in the PAM configuration,
+     * @param serviceName PAM 服务名，对应 PAM 配置文件中的服务条目
      */
     public PAM(String serviceName) throws PAMException {
         pam_conv conv = new pam_conv(new PamCallback() {
@@ -83,7 +77,7 @@ public class PAM {
                 if (factors == null)
                     return PAM_CONV_ERR;
 
-                // allocates pam_response[num_msg]. the caller will free this
+                // 分配 pam_response[num_msg]，由调用方释放
                 Pointer m = libc.calloc(pam_response.SIZE, num_msg);
                 resp.setPointer(0, m);
 
@@ -93,7 +87,7 @@ public class PAM {
                     if (pm.msg_style == PAM_PROMPT_ECHO_OFF) {
                         pam_response r = new pam_response(m.share(pam_response.SIZE * i));
                         r.setResp(factors[i]);
-                        r.write(); // write to (*resp)[i]
+                        r.write(); // 写入 (*resp)[i]
                     }
                 }
 
@@ -117,10 +111,10 @@ public class PAM {
     }
 
     /**
-     * Authenticate the user with a password.
+     * 使用密码等因素认证用户。
      *
-     * @return Upon a successful authentication, return information about the user.
-     * @throws PAMException If the authentication fails.
+     * @return 认证成功后返回 {@link UnixUser} 用户信息
+     * @throws PAMException 认证失败时抛出
      */
     public UnixUser authenticate(String username, String... factors) throws PAMException {
         this.factors = factors;
@@ -128,7 +122,7 @@ public class PAM {
             check(libpam.pam_set_item(pht, PAM_USER, username), "pam_set_item failed");
             check(libpam.pam_authenticate(pht, 0), "pam_authenticate failed");
             check(libpam.pam_setcred(pht, 0), "pam_setcred failed");
-            // several different error code seem to be used to represent authentication failures
+            // 多种错误码均可能表示认证失败
             check(libpam.pam_acct_mgmt(pht,0),"pam_acct_mgmt failed");
 
             PointerByReference r = new PointerByReference();
@@ -144,31 +138,20 @@ public class PAM {
     }
 
     /**
-     * Returns the groups a user belongs to
+     * 返回用户所属组名集合。
      *
-     * @param username
-     * @return Set of group names
-     * @throws PAMException
-     * @deprecated Pointless and ugly convenience method.
+     * @param username 用户名
+     * @return 组名集合
+     * @throws PAMException 查询失败时抛出
+     * @deprecated 便捷方法，设计上不够清晰。
      */
     public Set<String> getGroupsOfUser(String username) throws PAMException {
         return new UnixUser(username).getGroups();
     }
 
     /**
-     * After a successful authentication, call this method to obtain the effective user name.
-     * This can be different from the user name that you passed to the {@link #authenticate(String, String)}
-     * method.
-     */
-
-    /**
-     * Performs an early disposal of the object, instead of letting this GC-ed.
-     * Since PAM may hold on to native resources that don't put pressure on Java GC,
-     * doing this is a good idea.
-     * <p>
-     * <p>
-     * This method is called by {@link #finalize()}, too, so it's not required
-     * to call this method explicitly, however.
+     * 提前释放 PAM 会话及本地资源；PAM 持有的原生资源不受 Java GC 压力影响，建议显式调用。
+     * {@link #finalize()} 也会调用本方法。
      */
     public void dispose() {
         if (pht != null) {

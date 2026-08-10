@@ -53,7 +53,7 @@ import org.keycloak.storage.user.SynchronizationResult;
 import org.jboss.logging.Logger;
 
 /**
- * Map realm roles or roles of particular client to LDAP groups
+ * LDAP 角色映射器：将指定 LDAP DN 下的 LDAP 组映射为 Keycloak 领域角色或客户端角色。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -85,12 +85,12 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
     public void onImportUserFromLDAP(LDAPObject ldapUser, UserModel user, RealmModel realm, boolean isCreate) {
         LDAPGroupMapperMode mode = config.getMode();
 
-        // For now, import LDAP role mappings just during create
+        // 当前仅在用户首次从 LDAP 导入时同步角色映射
         if (mode == LDAPGroupMapperMode.IMPORT && isCreate) {
 
             List<LDAPObject> ldapRoles = getLDAPRoleMappings(ldapUser);
 
-            // Import role mappings from LDAP into Keycloak DB
+            // 将 LDAP 角色映射导入 Keycloak 数据库
             String roleNameAttr = config.getRoleNameLdapAttribute();
 
             RoleContainerModel roleContainer = getTargetRoleContainer(realm);
@@ -118,7 +118,7 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
     }
 
 
-    // Sync roles from LDAP to Keycloak DB
+    /** 从 LDAP 同步角色到 Keycloak 数据库。 */
     @Override
     public SynchronizationResult syncDataFromFederationProviderToKeycloak(RealmModel realm) {
         SynchronizationResult syncResult = new SynchronizationResult() {
@@ -138,7 +138,7 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
             return syncResult;
         }
 
-        // Send LDAP query to load all roles
+        // 查询 LDAP 加载全部角色
         try (LDAPQuery ldapRoleQuery = createRoleQuery(false)) {
             List<LDAPObject> ldapRoles = LDAPUtils.loadAllLDAPObjects(ldapRoleQuery, ldapProvider);
 
@@ -160,7 +160,7 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
     }
 
 
-    // Sync roles from Keycloak back to LDAP
+    /** 从 Keycloak 同步角色到 LDAP。 */
     @Override
     public SynchronizationResult syncDataFromKeycloakToFederationProvider(RealmModel realm) {
         SynchronizationResult syncResult = new SynchronizationResult() {
@@ -185,7 +185,7 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
             return syncResult;
         }
 
-        // Send LDAP query to see which roles exists there
+        // 查询 LDAP 获取已存在的角色
         try (LDAPQuery ldapQuery = createRoleQuery(false)) {
             List<LDAPObject> ldapRoles = LDAPUtils.loadAllLDAPObjects(ldapQuery, ldapProvider);
 
@@ -214,11 +214,12 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
         }
     }
 
+    /** 构建 LDAP 角色查询；{@code includeMemberAttribute} 为 true 时一并返回成员属性以优化性能。 */
     // TODO: Possible to merge with GroupMapper and move to common class
     public LDAPQuery createRoleQuery(boolean includeMemberAttribute) {
         LDAPQuery ldapQuery = new LDAPQuery(ldapProvider);
 
-        // For now, use same search scope, which is configured "globally" and used for user's search.
+        // 使用与用户搜索相同的全局搜索范围
         ldapQuery.setSearchScope(ldapProvider.getLdapIdentityStore().getConfig().getSearchScope());
 
         String rolesDn = config.getRolesDn();
@@ -237,7 +238,7 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
 
         ldapQuery.addReturningLdapAttribute(rolesRdnAttr);
 
-        // Performance improvement
+        // 性能优化：按需返回成员属性
         if (includeMemberAttribute) {
             String membershipAttr = config.getMembershipLdapAttribute();
             ldapQuery.addReturningLdapAttribute(membershipAttr);
@@ -246,6 +247,7 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
         return ldapQuery;
     }
 
+    /** 返回角色映射的目标容器（领域或客户端）。 */
     protected RoleContainerModel getTargetRoleContainer(RealmModel realm) {
         boolean realmRolesMapping = config.isRealmRolesMapping();
         if (realmRolesMapping) {
@@ -264,6 +266,7 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
     }
 
 
+    /** 在 LDAP 中创建角色条目。 */
     public LDAPObject createLDAPRole(String roleName) {
         LDAPObject ldapRole = LDAPUtils.createLDAPGroup(ldapProvider, roleName, config.getRoleNameLdapAttribute(), config.getRoleObjectClasses(ldapProvider),
                 config.getRelativeCreateDn() + config.getRolesDn(), Collections.<String, Set<String>>emptyMap(), config.getMembershipLdapAttribute());
@@ -272,6 +275,7 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
         return ldapRole;
     }
 
+    /** 在 LDAP 中为用户添加角色成员关系。 */
     public void addRoleMappingInLDAP(String roleName, LDAPObject ldapUser) {
         LDAPObject ldapRole = loadLDAPRoleByName(roleName);
         if (ldapRole == null) {
@@ -283,11 +287,13 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
         LDAPUtils.addMember(ldapProvider, config.getMembershipTypeLdapAttribute(), config.getMembershipLdapAttribute(), membershipUserAttrName, ldapRole, ldapUser);
     }
 
+    /** 从 LDAP 角色中移除用户成员关系。 */
     public void deleteRoleMappingInLDAP(LDAPObject ldapUser, LDAPObject ldapRole) {
         String membershipUserAttrName = getMembershipUserLdapAttribute();
         LDAPUtils.deleteMember(ldapProvider, config.getMembershipTypeLdapAttribute(), config.getMembershipLdapAttribute(), membershipUserAttrName, ldapRole, ldapUser);
     }
 
+    /** 按角色名加载 LDAP 角色对象。 */
     public LDAPObject loadLDAPRoleByName(String roleName) {
         try (LDAPQuery ldapQuery = createRoleQuery(true)) {
             Condition roleNameCondition = new LDAPQueryConditionsBuilder().equal(config.getRoleNameLdapAttribute(), roleName);
@@ -296,6 +302,7 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
         }
     }
 
+    /** 按配置策略获取用户的 LDAP 角色映射列表。 */
     protected List<LDAPObject> getLDAPRoleMappings(LDAPObject ldapUser) {
         String strategyKey = config.getUserRolesRetrieveStrategy();
         UserRolesRetrieveStrategy strategy = factory.getUserRolesRetrieveStrategy(strategyKey);
@@ -308,7 +315,7 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
     public UserModel proxy(LDAPObject ldapUser, UserModel delegate, RealmModel realm) {
         final LDAPGroupMapperMode mode = config.getMode();
 
-        // For IMPORT mode, all operations are performed against local DB
+        // IMPORT 模式下所有操作针对本地数据库
         if (mode == LDAPGroupMapperMode.IMPORT) {
             return delegate;
         }
@@ -334,13 +341,14 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
     }
 
 
+    /** 用户代理：在 LDAP_ONLY/READ_ONLY 模式下合并或覆盖 LDAP 角色映射。 */
     public class LDAPRoleMappingsUserDelegate extends UserModelDelegate {
 
         private final RealmModel realm;
         private final LDAPObject ldapUser;
         private final RoleContainerModel roleContainer;
 
-        // Avoid loading role mappings from LDAP more times per-request
+        // 避免同一请求内多次从 LDAP 加载角色映射
         private Set<RoleModel> cachedLDAPRoleMappings;
 
         public LDAPRoleMappingsUserDelegate(RealmModel realm, UserModel user, LDAPObject ldapUser, RoleContainerModel targetRoleContainer) {
@@ -356,10 +364,10 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
                 Stream<RoleModel> ldapRoleMappings = getLDAPRoleMappingsConverted();
 
                 if (config.getMode() == LDAPGroupMapperMode.LDAP_ONLY) {
-                    // Use just role mappings from LDAP
+                    // 仅使用 LDAP 中的角色映射
                     return ldapRoleMappings;
                 } else {
-                    // Merge mappings from both DB and LDAP
+                    // 合并数据库与 LDAP 的角色映射
                     return Stream.concat(ldapRoleMappings, super.getRealmRoleMappingsStream());
                 }
             } else {
@@ -373,10 +381,10 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
                 Stream<RoleModel> ldapRoleMappings = getLDAPRoleMappingsConverted();
 
                 if (config.getMode() == LDAPGroupMapperMode.LDAP_ONLY) {
-                    // Use just role mappings from LDAP
+                    // 仅使用 LDAP 中的角色映射
                     return ldapRoleMappings;
                 } else {
-                    // Merge mappings from both DB and LDAP
+                    // 合并数据库与 LDAP 的角色映射
                     return Stream.concat(ldapRoleMappings, super.getClientRoleMappingsStream(client));
                 }
             } else {
@@ -396,7 +404,7 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
 
                 if (role.getContainer().equals(roleContainer)) {
 
-                    // We need to create new role mappings in LDAP
+                    // 需在 LDAP 中创建新的角色映射
                     cachedLDAPRoleMappings = null;
                     addRoleMappingInLDAP(role.getName(), ldapUser);
                 } else {
@@ -414,13 +422,14 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
             Stream<RoleModel> ldapRoleMappings = getLDAPRoleMappingsConverted();
 
             if (config.getMode() == LDAPGroupMapperMode.LDAP_ONLY) {
-                // For LDAP-only we want to retrieve role mappings of target container just from LDAP
+                // LDAP_ONLY 模式下目标容器的角色映射仅来自 LDAP
                 modelRoleMappings = modelRoleMappings.filter(role -> !Objects.equals(role.getContainer(), roleContainer));
             }
 
             return Stream.concat(modelRoleMappings, ldapRoleMappings);
         }
 
+        /** 将 LDAP 角色对象转换为 Keycloak {@link RoleModel} 流。 */
         protected Stream<RoleModel> getLDAPRoleMappingsConverted() {
             if (cachedLDAPRoleMappings != null) {
                 return cachedLDAPRoleMappings.stream();
@@ -433,7 +442,7 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
                         String roleName = role.getAttributeAsString(roleNameLdapAttr);
                         RoleModel modelRole = roleContainer.getRole(roleName);
                         if (modelRole == null) {
-                            // Add role to local DB
+                            // 在本地数据库中创建角色
                             modelRole = roleContainer.addRole(roleName);
                         }
                         return modelRole;
@@ -459,16 +468,16 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
                     LDAPObject ldapRole = ldapQuery.getFirstResult();
 
                     if (ldapRole == null) {
-                        // Role mapping doesn't exist in LDAP. For LDAP_ONLY mode, we don't need to do anything. For READ_ONLY, delete it in local DB.
+                        // LDAP 中无此映射：LDAP_ONLY 无需操作；READ_ONLY 则删除本地映射
                         if (config.getMode() == LDAPGroupMapperMode.READ_ONLY) {
                             super.deleteRoleMapping(role);
                         }
                     } else {
-                        // Role mappings exists in LDAP. For LDAP_ONLY mode, we can just delete it in LDAP. For READ_ONLY we can't delete it -> throw error
+                        // LDAP 中存在映射：LDAP_ONLY 可删除；READ_ONLY 不可删除
                         if (config.getMode() == LDAPGroupMapperMode.READ_ONLY) {
                             throw new ModelException("Not possible to delete LDAP role mappings as mapper mode is READ_ONLY");
                         } else {
-                            // Delete ldap role mappings
+                            // 删除 LDAP 角色映射
                             cachedLDAPRoleMappings = null;
                             deleteRoleMappingInLDAP(ldapUser, ldapRole);
                         }
@@ -491,7 +500,7 @@ public class RoleLDAPStorageMapper extends AbstractLDAPStorageMapper implements 
     @Override
     public List<UserModel> getRoleMembers(RealmModel realm, RoleModel role, int firstResult, int maxResults) {
         if (config.getMode() == LDAPGroupMapperMode.IMPORT) {
-            // only results from Keycloak should be returned, or imported LDAP and KC items will duplicate
+            // IMPORT 模式仅返回 Keycloak 侧结果，避免与 LDAP 成员重复
             return Collections.emptyList();
         }
 

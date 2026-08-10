@@ -24,7 +24,7 @@
 package org.jvnet.libpam;
 
 /**
- * Exception in PAM invoactions.
+ * PAM 调用异常，封装 libpam 认证或账户管理失败信息。
  *
  * @author Kohsuke Kawaguchi
  */

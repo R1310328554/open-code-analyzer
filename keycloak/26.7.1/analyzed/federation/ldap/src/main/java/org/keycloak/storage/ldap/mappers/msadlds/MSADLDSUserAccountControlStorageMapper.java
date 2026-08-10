@@ -43,8 +43,8 @@ import org.jboss.logging.Logger;
 import static org.keycloak.storage.ldap.mappers.msad.MSADUserAccountControlStorageMapper.ALWAYS_READ_ENABLED_VALUE_FROM_LDAP;
 
 /**
- * Mapper specific to MSAD LDS. It's able to read the msDS-UserAccountDisabled, msDS-UserPasswordExpired and pwdLastSet attributes and set actions in Keycloak based on that.
- * It's also able to handle exception code from LDAP user authentication (See http://www-01.ibm.com/support/docview.wss?uid=swg21290631 )
+ * MSAD LDS 专用映射器：读取 msDS-UserAccountDisabled、msDS-UserPasswordExpired 与 pwdLastSet，
+ * 同步 Keycloak 账户状态；并可解析 LDAP 认证异常码。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  * @author <a href="mailto:slawomir@dabek.name">Slawomir Dabek</a>
@@ -66,10 +66,10 @@ public class MSADLDSUserAccountControlStorageMapper extends AbstractLDAPStorageM
         query.addReturningLdapAttribute(LDAPConstants.PWD_LAST_SET);
         query.addReturningLdapAttribute(LDAPConstants.MSDS_USER_ACCOUNT_DISABLED);
 
-        // This needs to be read-only and can be set to writable just on demand
+        // pwdLastSet 默认为只读，按需解除
         query.addReturningReadOnlyLdapAttribute(LDAPConstants.PWD_LAST_SET);
 
-        // ask msds-user-password-expired in ldap query for required action UPDATE_PASSWORD
+        // 查询 msDS-UserPasswordExpired 以判断 UPDATE_PASSWORD 必需操作
         query.addReturningLdapAttribute(LDAPConstants.MSDS_USER_PASSWORD_EXPIRED);
         query.addReturningReadOnlyLdapAttribute(LDAPConstants.MSDS_USER_PASSWORD_EXPIRED);
         
@@ -80,16 +80,16 @@ public class MSADLDSUserAccountControlStorageMapper extends AbstractLDAPStorageM
 
     @Override
     public LDAPOperationDecorator beforePasswordUpdate(UserModel user, LDAPObject ldapUser, UserCredentialModel password) {
-        return null; // Not supported for now. Not sure if LDAP_SERVER_POLICY_HINTS_OID works in MSAD LDS
+        return null; // MSAD LDS 暂不支持 LDAP_SERVER_POLICY_HINTS_OID
     }
 
     @Override
     public void passwordUpdated(UserModel user, LDAPObject ldapUser, UserCredentialModel password) {
         logger.debugf("Going to update pwdLastSet for ldap user '%s' after successful password update", ldapUser.getDn().toString());
 
-        // Normally it's read-only and adlds do this automaticly
+        // pwdLastSet 通常只读，AD LDS 会在密码更新后自动维护
         ldapUser.removeReadOnlyAttributeName(LDAPConstants.PWD_LAST_SET);
-        // set but not commit in AD LDS (-1 set pwdLastSet time to now)
+        // 设为 -1 表示 pwdLastSet 更新为当前时间（此处仅设置尚未提交）
         ldapUser.setSingleAttribute(LDAPConstants.PWD_LAST_SET, "-1");
 
         if (user.isEnabled()) {
@@ -118,7 +118,7 @@ public class MSADLDSUserAccountControlStorageMapper extends AbstractLDAPStorageM
 
     @Override
     public void onImportUserFromLDAP(LDAPObject ldapUser, UserModel user, RealmModel realm, boolean isCreate) {
-        // check if user is enabled in MSAD or not.
+        // 根据 msDS-UserAccountDisabled 设置 Keycloak 启用状态
         user.setEnabled(!Boolean.parseBoolean(ldapUser.getAttributeAsString(LDAPConstants.MSDS_USER_ACCOUNT_DISABLED)));
     }
 
@@ -139,13 +139,13 @@ public class MSADLDSUserAccountControlStorageMapper extends AbstractLDAPStorageM
 
         if (ldapProvider.getEditMode() == UserStorageProvider.EditMode.WRITABLE) {
             if (errorCode.equals("532") || errorCode.equals("773")) {
-                // User needs to change his MSAD password. Allow him to login, but add UPDATE_PASSWORD required action
+                // 用户须更改密码，添加 UPDATE_PASSWORD 必需操作
                 if (user.getRequiredActionsStream().noneMatch(action -> Objects.equals(action, UserModel.RequiredAction.UPDATE_PASSWORD.name()))) {
                     user.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
                 }
                 return true;
             } else if (errorCode.equals("533")) {
-                // User is disabled in MSAD LDS. Set him to disabled in KC as well
+                // MSAD LDS 中用户已禁用，同步禁用 Keycloak 用户
                 if (user.isEnabled()) {
                     user.setEnabled(false);
                 }
@@ -159,6 +159,7 @@ public class MSADLDSUserAccountControlStorageMapper extends AbstractLDAPStorageM
     }
 
 
+    /** 解析密码更新失败，将 AD LDS 约束违规转为正则模式错误消息。 */
     protected ModelException processFailedPasswordUpdateException(ModelException e) {
         if (e.getCause() == null || e.getCause().getMessage() == null) {
             return e;
@@ -175,6 +176,7 @@ public class MSADLDSUserAccountControlStorageMapper extends AbstractLDAPStorageM
         return e;
     }
 
+    /** MSAD LDS 用户代理：同步启用状态、必需操作与 pwdLastSet。 */
     public class MSADUserModelDelegate extends UserModelDelegate {
 
         private final LDAPObject ldapUser;
@@ -207,7 +209,7 @@ public class MSADLDSUserAccountControlStorageMapper extends AbstractLDAPStorageM
                 }
                 ldapProvider.getLdapIdentityStore().update(ldapUser);
             }
-            // Always update DB
+            // 始终更新本地数据库
             super.setEnabled(enabled);
         }
 
@@ -219,7 +221,7 @@ public class MSADLDSUserAccountControlStorageMapper extends AbstractLDAPStorageM
 
         @Override
         public void addRequiredAction(String action) {
-            // Always update DB
+            // 始终更新本地数据库
             super.addRequiredAction(action);
 
             if (ldapProvider.getEditMode() == UserStorageProvider.EditMode.WRITABLE && RequiredAction.UPDATE_PASSWORD.toString().equals(action)) {
@@ -241,12 +243,12 @@ public class MSADLDSUserAccountControlStorageMapper extends AbstractLDAPStorageM
 
         @Override
         public void removeRequiredAction(String action) {
-            // Always update DB
+            // 始终更新本地数据库
             super.removeRequiredAction(action);
 
             if (ldapProvider.getEditMode() == UserStorageProvider.EditMode.WRITABLE && RequiredAction.UPDATE_PASSWORD.toString().equals(action)) {
 
-                // Don't set pwdLastSet in MSAD LDS when it is new user
+                // 新用户不在 MSAD LDS 中设置 pwdLastSet
                 if (!Boolean.parseBoolean(ldapUser.getAttributeAsString(LDAPConstants.MSDS_USER_PASSWORD_NOTREQD))) {
                     logger.debugf("Going to remove required action UPDATE_PASSWORD from MSAD LDS for ldap user '%s' ", ldapUser.getDn().toString());
 
@@ -264,7 +266,7 @@ public class MSADLDSUserAccountControlStorageMapper extends AbstractLDAPStorageM
             Stream<String> requiredActions = super.getRequiredActionsStream();
 
             if (ldapProvider.getEditMode() == UserStorageProvider.EditMode.WRITABLE) {
-                    // update password only if force or expired and not updated (-1)
+                    // 强制改密或密码过期且未更新（pwdLastSet 不为 -1）时需 UPDATE_PASSWORD
                     if (getPwdLastSet() == 0 || (getPwdLastSet() != -1 && Boolean.parseBoolean(ldapUser.getAttributeAsString(LDAPConstants.MSDS_USER_PASSWORD_EXPIRED)))) {
                         return Stream.concat(requiredActions, Stream.of(RequiredAction.UPDATE_PASSWORD.toString())).distinct();
                     }

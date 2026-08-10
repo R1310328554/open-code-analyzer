@@ -30,6 +30,8 @@ import java.util.TreeSet;
 import org.jboss.logging.Logger;
 
 /**
+ * LDAP 组树解析器：将 LDAP 组父子关系解析为 Keycloak 可用的单父组树，并校验循环与多父约束。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class GroupTreeResolver {
@@ -38,21 +40,20 @@ public class GroupTreeResolver {
 
 
     /**
-     * Fully resolves list of group trees to be used in Keycloak. The input is group info (usually from LDAP) where each "Group" object contains
-     * just it's name and direct children.
+     * 将 LDAP 组信息（每组仅含名称与直接子组）完整解析为 Keycloak 可用的组树列表。
+     * <p>
+     * 同时执行校验：LDAP 允许递归与多父，Keycloak 不允许。
      *
-     * The operation also performs validation as rules for LDAP are less strict than for Keycloak (In LDAP, the recursion is possible and multiple parents of single group is also allowed)
-     *
-     * @param groups
-     * @param ignoreMissingGroups
-     * @return
-     * @throws GroupTreeResolveException
+     * @param groups 组列表
+     * @param ignoreMissingGroups 是否忽略缺失的子组引用
+     * @return 解析后的根组树条目列表
+     * @throws GroupTreeResolveException 存在多父、循环或缺失组时抛出
      */
     public List<GroupTreeEntry> resolveGroupTree(List<Group> groups, boolean ignoreMissingGroups) throws GroupTreeResolveException {
-        // 1- Get parents of each group
+        // 1 - 计算每个组的父组列表
         Map<String, List<String>> parentsTree = getParentsTree(groups, ignoreMissingGroups);
 
-        // 2 - Get rootGroups (groups without parent) and check if there is no group with multiple parents
+        // 2 - 找出根组（无父组），并检测多父组
         List<String> rootGroups = new LinkedList<>();
         for (Map.Entry<String, List<String>> group : parentsTree.entrySet()) {
             int parentCount = group.getValue().size();
@@ -63,13 +64,13 @@ public class GroupTreeResolver {
             }
         }
 
-        // 3 - Just convert to map for easier retrieval
+        // 3 - 转为 Map 便于按名称查找
         Map<String, Group> asMap = new TreeMap<>();
         for (Group group : groups) {
             asMap.put(group.getGroupName(), group);
         }
 
-        // 4 - Now we have rootGroups. Let's resolve them
+        // 4 - 从各根组递归解析子树
         List<GroupTreeEntry> finalResult = new LinkedList<>();
         Set<String> visitedGroups = new TreeSet<>();
         for (String rootGroupName : rootGroups) {
@@ -80,9 +81,9 @@ public class GroupTreeResolver {
         }
 
 
-        // 5 - Check recursion
+        // 5 - 检测未访问到的组（说明存在循环）
         if (visitedGroups.size() != asMap.size()) {
-            // Recursion detected. Try to find where it is
+            // 检测到循环，尝试定位循环路径
             for (Map.Entry<String, Group> entry : asMap.entrySet()) {
                 String groupName = entry.getKey();
                 if (!visitedGroups.contains(groupName)) {
@@ -95,13 +96,14 @@ public class GroupTreeResolver {
                 }
             }
 
-            // Shouldn't happen
+            // 不应到达此处
             throw new GroupTreeResolveException("Illegal state: Recursion detected, but wasn't able to find it");
         }
 
         return finalResult;
     }
 
+    /** 根据子组引用反向构建父组映射。 */
     private Map<String, List<String>> getParentsTree(List<Group> groups, boolean ignoreMissingGroups) throws GroupTreeResolveException {
         Map<String, List<String>> result = new TreeMap<>();
 
@@ -117,7 +119,7 @@ public class GroupTreeResolver {
                 if (list != null) {
                     list.add(group.getGroupName());
                 } else if (ignoreMissingGroups) {
-                    // Need to remove the missing group
+                    // 移除不存在的子组引用
                     iterator.remove();
                     logger.debug("Group '" + child + "' referenced as member of group '" + group.getGroupName() + "' doesn't exist. Ignoring.");
                 } else {
@@ -128,6 +130,7 @@ public class GroupTreeResolver {
         return result;
     }
 
+    /** 递归解析以 groupName 为根的子树。 */
     private GroupTreeEntry resolveGroupTree(String groupName, Map<String, Group> asMap, Set<String> visitedGroups, List<String> currentSubtree) throws GroupTreeResolveException {
         if (visitedGroups.contains(groupName)) {
             throw new GroupTreeResolveException("Recursion detected when trying to resolve group '" + groupName + "'. Whole recursion path: " + currentSubtree);
@@ -152,8 +155,9 @@ public class GroupTreeResolver {
 
 
 
-    // static classes
+    // 静态内部类
 
+    /** 组树解析失败时抛出的异常。 */
     public static class GroupTreeResolveException extends Exception {
 
         public GroupTreeResolveException(String message) {
@@ -161,7 +165,7 @@ public class GroupTreeResolver {
         }
     }
 
-
+    /** 输入组节点：组名及其直接子组名列表。 */
     public static class Group {
 
         private final String groupName;
@@ -185,6 +189,7 @@ public class GroupTreeResolver {
         }
     }
 
+    /** 解析后的组树节点，含组名与子节点列表。 */
     public static class GroupTreeEntry {
 
         private final String groupName;

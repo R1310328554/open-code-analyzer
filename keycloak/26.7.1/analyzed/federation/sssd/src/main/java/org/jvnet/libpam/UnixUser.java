@@ -35,7 +35,7 @@ import org.jvnet.libpam.impl.CLibrary.passwd;
 import static org.jvnet.libpam.impl.CLibrary.libc;
 
 /**
- * Represents an Unix user. Immutable.
+ * Unix 用户不可变表示，封装 passwd 结构与 supplementary 组列表。
  *
  * @author Kohsuke Kawaguchi
  */
@@ -59,15 +59,15 @@ public class UnixUser {
         IntByReference pngroups = new IntByReference(ngroups);
         try {
             if (libc.getgrouplist(userName, pwd.getPwGid(), m, pngroups) < 0) {
-                // allocate a bigger memory
+                // 组数量超出预分配，扩大缓冲区重试
                 m = new Memory(pngroups.getValue() * sz);
                 if (libc.getgrouplist(userName, pwd.getPwGid(), m, pngroups) < 0)
-                    // shouldn't happen, but just in case.
+                    // 不应发生，兜底抛出异常
                     throw new PAMException("getgrouplist failed");
             }
             ngroups = pngroups.getValue();
         } catch (LinkageError e) {
-            // some platform, notably Solaris, doesn't have the getgrouplist function
+            // 部分平台（如 Solaris）无 getgrouplist，改用 _getgroupsbymember
             ngroups = libc._getgroupsbymember(userName, m, ngroups, 0);
             if (ngroups < 0)
                 throw new PAMException("_getgroupsbymember failed");
@@ -89,8 +89,7 @@ public class UnixUser {
     }
 
     /**
-     * Copy constructor for mocking. Not intended for regular use. Only for testing.
-     * This signature may change in the future.
+     * 模拟用拷贝构造器，仅供测试；签名可能变更。
      */
     protected UnixUser(String userName, String gecos, String dir, String shell, int uid, int gid, Set<String> groups) {
         this.userName = userName;
@@ -102,57 +101,46 @@ public class UnixUser {
         this.groups = groups;
     }
 
-    /**
-     * Gets the unix account name. Never null.
-     */
+    /** 返回 Unix 账户名，永不为 null。 */
     public String getUserName() {
         return userName;
     }
 
-    /**
-     * Gets the UID of this user.
-     */
+    /** 返回用户 UID。 */
     public int getUID() {
         return uid;
     }
 
-    /**
-     * Gets the GID of this user.
-     */
+    /** 返回用户主 GID。 */
     public int getGID() {
         return gid;
     }
 
-    /**
-     * Gets the gecos (the real name) of this user.
-     */
+    /** 返回 gecos 字段（真实姓名）。 */
     public String getGecos() {
         return gecos;
     }
 
-    /**
-     * Gets the home directory of this user.
-     */
+    /** 返回用户主目录路径。 */
     public String getDir() {
         return dir;
     }
 
-    /**
-     * Gets the shell of this user.
-     */
+    /** 返回用户默认 shell。 */
     public String getShell() {
         return shell;
     }
 
     /**
-     * Gets the groups that this user belongs to.
+     * 返回用户所属组名集合。
      *
-     * @return never null.
+     * @return 永不为 null 的不可修改集合
      */
     public Set<String> getGroups() {
         return Collections.unmodifiableSet(groups);
     }
 
+    /** 检查指定 Unix 用户名是否存在。 */
     public static boolean exists(String name) {
         return libc.getpwnam(name) != null;
     }
