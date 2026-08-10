@@ -59,7 +59,8 @@ import com.webauthn4j.verifier.exception.BadOriginException;
 import org.jboss.logging.Logger;
 
 /**
- * Credential provider for WebAuthn 2-factor credential of the user
+ * WebAuthn 双因素凭证提供者：注册、认证、计数器更新与 UI 元数据。
+ * <p>基于 WebAuthn4J 解析/校验 assertion，并支持额外 Origin 白名单。</p>
  */
 public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCredentialModel>, CredentialInputValidator {
 
@@ -67,11 +68,16 @@ public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCr
     private static final String WEBAUTHN_AUTHENTICATOR_PROVIDER = "webauthn-authenticator-provider";
     private static final String WEBAUTHN_TRANSPORTS = "webauthn-transports";
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 认证器 AAGUID 元数据服务（名称与图标）。 */
     private final WebAuthnMetadataService metadataService;
     private final CredentialPublicKeyConverter credentialPublicKeyConverter;
     private final AttestationStatementConverter attestationStatementConverter;
 
+    /** @param session 当前会话
+     *  @param metadataService 认证器展示元数据
+     *  @param objectConverter WebAuthn4J 对象转换器 */
     public WebAuthnCredentialProvider(KeycloakSession session, WebAuthnMetadataService metadataService, ObjectConverter objectConverter) {
         this.session = session;
         this.metadataService = metadataService;
@@ -80,6 +86,7 @@ public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCr
     }
 
     @Override
+    /** 创建 WebAuthn 凭证，未设置创建时间则写入当前时间戳。 */
     public CredentialModel createCredential(RealmModel realm, UserModel user, WebAuthnCredentialModel credentialModel) {
         if (credentialModel.getCreatedDate() == null) {
             credentialModel.setCreatedDate(Time.currentTimeMillis());
@@ -100,6 +107,7 @@ public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCr
     }
 
     @Override
+    /** 为 UI 展示附加认证器名称与深浅色图标等 presentation 数据。 */
     public WebAuthnCredentialModel getCredentialForPresentationFromModel(CredentialModel model) {
         WebAuthnCredentialModel origCredential = getCredentialFromModel(model);
         WebAuthnCredentialData data = origCredential.getWebAuthnCredentialData();
@@ -117,7 +125,7 @@ public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCr
     }
 
     /**
-     * Convert WebAuthn credential input to the model, which can be saved in the persistent storage (DB)
+     * 将 WebAuthn 凭证输入转换为可持久化的 {@link WebAuthnCredentialModel}。
      *
      * @param input should be typically WebAuthnCredentialModelInput
      * @param userLabel label for the credential
@@ -157,7 +165,7 @@ public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCr
 
 
     /**
-     * Convert WebAuthnCredentialModel, which was usually retrieved from DB, to the CredentialInput, which contains data in the webauthn4j specific format
+     * 将数据库中的 {@link WebAuthnCredentialModel} 转为 WebAuthn4J 格式的 {@link CredentialInput}。
      */
     private WebAuthnCredentialModelInput getCredentialInputFromCredentialModel(CredentialModel credential) {
         WebAuthnCredentialModel webAuthnCredential = getCredentialFromModel(credential);
@@ -205,6 +213,7 @@ public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCr
 
 
     @Override
+    /** 匹配用户已注册凭证并校验 WebAuthn assertion；成功时更新签名计数器。 */
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput input) {
         if (!WebAuthnCredentialModelInput.class.isInstance(input)) return false;
 
@@ -225,10 +234,10 @@ public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCr
                             auth.getCount()
                     );
 
-                    // parse
+                    // 解析客户端 assertion
                     authenticationData = webAuthnAuthenticationManager.parse(context.getAuthenticationRequest());
 
-                    // validate
+                    // 校验签名、origin 与用户验证
                     AuthenticationParameters authenticationParameters = new AuthenticationParameters(
                             context.getAuthenticationParameters().getServerProperty(),
                             authenticator,
@@ -242,9 +251,8 @@ public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCr
                     CredentialModel credModel = user.credentialManager().getStoredCredentialById(auth.getCredentialDBId());
                     WebAuthnCredentialModel webAuthnCredModel = getCredentialFromModel(credModel);
 
-                    // update authenticator counter
-                    // counters are an optional feature of the spec - if an authenticator does not support them, it
-                    // will always send zero. MacOS/iOS does this for keys stored in the secure enclave (TouchID/FaceID)
+                    // 更新认证器签名计数器
+                    // 计数器为规范可选特性；不支持时恒为 0（如 Secure Enclave 中的 TouchID/FaceID 密钥）
                     final long storedCounter = auth.getCount();
                     final long clientCounter = authenticationData.getAuthenticatorData().getSignCount();
                     if (storedCounter > 0 || clientCounter > 0) {
@@ -267,10 +275,11 @@ public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCr
             wae.printStackTrace();
             throw(wae);
         }
-        // no authenticator matched
+        // 未匹配到任何已注册认证器
         return false;
     }
 
+    /** 构建 WebAuthn4J 认证管理器，并扩展 Origin 校验以支持 Realm 额外来源。 */
     protected WebAuthnAuthenticationManager getWebAuthnAuthenticationManager() {
         WebAuthnPolicy policy = getWebAuthnPolicy();
         Set<Origin> origins = policy.getExtraOrigins().stream()
@@ -285,7 +294,7 @@ public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCr
                 AssertUtil.notNull(serverProperty, "serverProperty must not be null");
                 final Origin clientOrigin = collectedClientData.getOrigin();
                 if (serverProperty.getOrigins().contains(clientOrigin)) return;
-                // https://github.com/w3c/webauthn/issues/1297
+                // 支持 Realm 配置的额外 Origin（见 w3c/webauthn#1297）
                 if (origins.contains(clientOrigin)) return;
                 throw new BadOriginException("The collectedClientData '" + clientOrigin + "' origin doesn't match any of the preconfigured origins.");
             }
@@ -293,6 +302,7 @@ public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCr
         return webAuthnAuthenticationManager;
     }
 
+    /** @return 当前 Realm 的双因素 WebAuthn 策略 */
     protected WebAuthnPolicy getWebAuthnPolicy() {
         return session.getContext().getRealm().getWebAuthnPolicy();
     }
@@ -319,6 +329,7 @@ public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCr
     }
 
     @Override
+    /** 返回 WebAuthn 双因素在凭据 UI 中的分类、文案与注册动作。 */
     public CredentialTypeMetadata getCredentialTypeMetadata(CredentialTypeMetadataContext metadataContext) {
         return CredentialTypeMetadata.builder()
                 .type(getType())
@@ -335,6 +346,7 @@ public class WebAuthnCredentialProvider implements CredentialProvider<WebAuthnCr
         return session;
     }
     @Override
+    /** 展示认证器厂商与传输方式（usb/nfc/ble/internal 等）信息。 */
     public CredentialMetadata getCredentialMetadata(WebAuthnCredentialModel credentialModel, CredentialTypeMetadata credentialTypeMetadata) {
 
         CredentialMetadata credentialMetadata = new CredentialMetadata();

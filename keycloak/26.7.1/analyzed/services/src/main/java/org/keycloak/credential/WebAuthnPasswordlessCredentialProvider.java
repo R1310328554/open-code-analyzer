@@ -27,22 +27,26 @@ import org.keycloak.models.credential.WebAuthnCredentialModel;
 import com.webauthn4j.converter.util.ObjectConverter;
 
 /**
- * Credential provider for WebAuthn passwordless credential of the user
+ * WebAuthn 无密码凭证提供者：继承双因素实现，使用无密码策略与 UI 分类。
+ * <p>凭证类型为 {@link WebAuthnCredentialModel#TYPE_PASSWORDLESS}，读取 {@link WebAuthnPolicy} 的无密码配置。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class WebAuthnPasswordlessCredentialProvider extends WebAuthnCredentialProvider {
 
+    /** @param session 当前会话 @param metadataService 认证器元数据 @param objectConverter WebAuthn4J 转换器 */
     public WebAuthnPasswordlessCredentialProvider(KeycloakSession session, WebAuthnMetadataService metadataService, ObjectConverter objectConverter) {
         super(session, metadataService, objectConverter);
     }
 
     @Override
+    /** @return {@link WebAuthnCredentialModel#TYPE_PASSWORDLESS} */
     public String getType() {
         return WebAuthnCredentialModel.TYPE_PASSWORDLESS;
     }
 
     @Override
+    /** 返回无密码分类的凭据元数据与注册必需动作。 */
     public CredentialTypeMetadata getCredentialTypeMetadata(CredentialTypeMetadataContext metadataContext) {
         return CredentialTypeMetadata.builder()
                 .type(getType())
@@ -56,6 +60,7 @@ public class WebAuthnPasswordlessCredentialProvider extends WebAuthnCredentialPr
     }
 
     @Override
+    /** @return 当前 Realm 的无密码 WebAuthn 策略（非双因素策略）。 */
     protected WebAuthnPolicy getWebAuthnPolicy() {
         return getKeycloakSession().getContext().getRealm().getWebAuthnPolicyPasswordless();
     }

@@ -20,7 +20,12 @@ package org.keycloak.crypto;
 import org.keycloak.jose.jwe.JWEConstants;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * JWE 内容加密算法 128-bit AES-CBC + HMAC-SHA256 的 SPI 工厂。
+ * <p>算法 ID 为 {@link #ID}（JWA {@code A128CBC-HS256}），创建 {@link AesCbcHmacShaContentEncryptionProvider} 实例。</p>
+ */
 public class Aes128CbcHmacSha256ContentEncryptionProviderFactory implements ContentEncryptionProviderFactory {
+    /** JWE 内容加密算法标识：A128CBC-HS256。 */
     public static final String ID = JWEConstants.A128CBC_HS256;
 
     @Override
@@ -29,6 +34,7 @@ public class Aes128CbcHmacSha256ContentEncryptionProviderFactory implements Cont
     }
 
     @Override
+    /** @param session 当前会话 @return AES-CBC+HMAC 内容加密提供者 */
     public ContentEncryptionProvider create(KeycloakSession session) {
         return new AesCbcHmacShaContentEncryptionProvider(session, ID);
     }

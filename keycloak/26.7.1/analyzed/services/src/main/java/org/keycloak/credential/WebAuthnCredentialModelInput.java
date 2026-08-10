@@ -30,18 +30,28 @@ import com.webauthn4j.data.attestation.authenticator.COSEKey;
 import com.webauthn4j.data.attestation.statement.AttestationStatement;
 import com.webauthn4j.server.ServerProperty;
 
+/**
+ * WebAuthn 凭证输入模型：封装注册/认证流程中的 attestation 与 authentication 数据。
+ * <p>实现 {@link CredentialInput}，供 {@link WebAuthnCredentialProvider} 转换与校验。</p>
+ */
 public class WebAuthnCredentialModelInput implements CredentialInput {
 
+    /** 认证器 attestation 中的凭证数据（AAGUID、凭证 ID、COSE 公钥）。 */
     private AttestedCredentialData attestedCredentialData;
     private AttestationStatement attestationStatement;
+    /** 认证阶段服务器属性与用户验证要求；不持久化，仅用于单次认证。 */
     private KeycloakWebAuthnAuthenticationParameters authenticationParameters; // not persisted because it can only be used on authentication operation.
+    /** WebAuthn4J 认证请求；不持久化，仅用于单次认证校验。 */
     private AuthenticationRequest authenticationRequest; // not persisted because it can only be used on authentication operation.
+    /** 认证器签名计数器（防克隆检测）。 */
     private long count;
+    /** 持久化存储中的凭证主键 ID。 */
     private String credentialDBId;
     private final String credentialType;
     private String attestationStatementFormat;
     private Set<AuthenticatorTransport> transports;
 
+    /** @param credentialType WebAuthn 凭证类型（双因素或无密码） */
     public WebAuthnCredentialModelInput(String credentialType) {
         this.credentialType = credentialType;
     }
@@ -52,6 +62,7 @@ public class WebAuthnCredentialModelInput implements CredentialInput {
     }
 
     @Override
+    /** WebAuthn 不使用 challenge-response 字符串，调用将抛出异常。 */
     public String getChallengeResponse() {
         throw new UnsupportedOperationException("WebAuthn credential doesn't support getChallengeResponse");
     }
@@ -166,7 +177,7 @@ public class WebAuthnCredentialModelInput implements CredentialInput {
               .append(",");
         }
         if (authenticationRequest != null) {
-            // only set on Authentication
+            // 仅在认证流程中设置
             sb.append("Credential Id = ")
               .append(Base64.getEncoder().encodeToString(authenticationRequest.getCredentialId()))
               .append(",");
@@ -185,11 +196,14 @@ public class WebAuthnCredentialModelInput implements CredentialInput {
         return sb.toString();
     }
 
+    /** Keycloak 侧 WebAuthn 认证参数：服务器属性与用户验证策略。 */
     public static class KeycloakWebAuthnAuthenticationParameters{
 
         private final ServerProperty serverProperty;
         private final boolean userVerificationRequired;
 
+        /** @param serverProperty RP 侧 challenge/origin 等服务器属性
+         *  @param userVerificationRequired 是否要求用户验证（UV） */
         public KeycloakWebAuthnAuthenticationParameters(ServerProperty serverProperty, boolean userVerificationRequired) {
             this.serverProperty = serverProperty;
             this.userVerificationRequired = userVerificationRequired;

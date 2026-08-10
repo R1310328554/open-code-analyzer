@@ -21,18 +21,24 @@ package org.keycloak.credential;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * WebAuthn 无密码凭证 {@link WebAuthnPasswordlessCredentialProvider} 的 SPI 工厂。
+ * <p>复用 {@link WebAuthnCredentialProviderFactory} 的转换器与元数据服务。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class WebAuthnPasswordlessCredentialProviderFactory extends WebAuthnCredentialProviderFactory {
 
+    /** SPI 工厂标识：{@code keycloak-webauthn-passwordless}。 */
     public static final String PROVIDER_ID = "keycloak-webauthn-passwordless";
 
     @Override
+    /** @param session 当前会话 @return 无密码 WebAuthn 凭证提供者 */
     public CredentialProvider create(KeycloakSession session) {
         return new WebAuthnPasswordlessCredentialProvider(session, getMetadataService(), createOrGetObjectConverter());
     }
 
     @Override
+    /** @return {@link #PROVIDER_ID} */
     public String getId() {
         return PROVIDER_ID;
     }

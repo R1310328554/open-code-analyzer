@@ -20,7 +20,12 @@ package org.keycloak.crypto;
 import org.keycloak.jose.jwe.JWEConstants;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * JWE 内容加密算法 256-bit AES-GCM 的 SPI 工厂。
+ * <p>算法 ID 为 {@link #ID}（JWA {@code A256GCM}），创建 {@link AesGcmContentEncryptionProvider} 实例。</p>
+ */
 public class Aes256GcmContentEncryptionProviderFactory implements ContentEncryptionProviderFactory {
+    /** JWE 内容加密算法标识：A256GCM。 */
     public static final String ID = JWEConstants.A256GCM;
 
     @Override
@@ -29,6 +34,7 @@ public class Aes256GcmContentEncryptionProviderFactory implements ContentEncrypt
     }
 
     @Override
+    /** @param session 当前会话 @return AES-GCM 内容加密提供者 */
     public ContentEncryptionProvider create(KeycloakSession session) {
         return new AesGcmContentEncryptionProvider(session, ID);
     }
