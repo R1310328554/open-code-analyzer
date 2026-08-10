@@ -1,5 +1,7 @@
 package syntax
 
+// serialize 将 LogQL AST 与 JSON 互转：JSONSerializer 实现 RootVisitor 输出结构化 JSON，DecodeJSON 按顶层键反序列化为 Expr。
+
 import (
 	"fmt"
 	"io"
@@ -21,6 +23,7 @@ func NewJSONSerializer(s *jsoniter.Stream) *JSONSerializer {
 	}
 }
 
+// EncodeJSON 借用 jsoniter 流将表达式树序列化为 JSON 写入 w。
 func EncodeJSON(e Expr, w io.Writer) error {
 	s := jsoniter.ConfigFastest.BorrowStream(w)
 	defer jsoniter.ConfigFastest.ReturnStream(s)
@@ -29,6 +32,7 @@ func EncodeJSON(e Expr, w io.Writer) error {
 	return s.Flush()
 }
 
+// 下列常量定义 JSON 字段名，保证序列化/反序列化键一致。
 // Field names
 const (
 	Bin                 = "bin"
@@ -81,6 +85,7 @@ const (
 	Of                  = "of"
 )
 
+// DecodeJSON 读取顶层对象键（bin/vector_agg/range_agg 等）并分派到对应 decode 函数。
 func DecodeJSON(raw string) (Expr, error) {
 	iter := jsoniter.ParseString(jsoniter.ConfigFastest, raw)
 
@@ -109,6 +114,7 @@ func DecodeJSON(raw string) (Expr, error) {
 
 var _ RootVisitor = &JSONSerializer{}
 
+// VisitBinOp 输出二元运算节点：操作符、左右子表达式及可选 VectorMatching。
 func (v *JSONSerializer) VisitBinOp(e *BinOpExpr) {
 	v.WriteObjectStart()
 
@@ -208,6 +214,7 @@ func (v *JSONSerializer) VisitRangeAggregation(e *RangeAggregationExpr) {
 	v.Flush()
 }
 
+// VisitLogRange 序列化区间、偏移、日志选择器字符串及 unwrap 配置。
 func (v *JSONSerializer) VisitLogRange(e *LogRangeExpr) {
 	v.WriteObjectStart()
 
@@ -335,6 +342,7 @@ func (v *JSONSerializer) VisitVariants(e *MultiVariantExpr) {
 	v.Flush()
 }
 
+// Pipeline 阶段在 JSON 中已折叠为原始 LogQL 字符串，故 Stage 访问器为空实现。
 // Below are StageExpr visitors that we are skipping since a pipeline is
 // serialized as a string.
 func (*JSONSerializer) VisitDecolorize(*DecolorizeExpr)                         {}
@@ -426,6 +434,7 @@ func decodeUnwrap(iter *jsoniter.Iterator) *UnwrapExpr {
 	return e
 }
 
+// encodeLabelFilter 按具体 LabelFilterer 类型递归写入 binary/bytes/numeric 等子结构。
 func encodeLabelFilter(s *jsoniter.Stream, filter log.LabelFilterer) {
 	switch concrete := filter.(type) {
 	case *log.BinaryLabelFilter:
@@ -585,6 +594,7 @@ func encodeLabelFilter(s *jsoniter.Stream, filter log.LabelFilterer) {
 	}
 }
 
+// decodeLabelFilter 根据 JSON 对象键构造对应的 log.LabelFilterer 实现。
 func decodeLabelFilter(iter *jsoniter.Iterator) log.LabelFilterer {
 	var filter log.LabelFilterer
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
@@ -697,6 +707,7 @@ func decodeLabelFilter(iter *jsoniter.Iterator) log.LabelFilterer {
 	return filter
 }
 
+// encodeLogSelector 将 LogSelectorExpr 以 raw 字段保存其 String() 表示。
 func encodeLogSelector(s *jsoniter.Stream, e LogSelectorExpr) {
 	s.WriteObjectStart()
 	s.WriteObjectField(Raw)
@@ -995,3 +1006,4 @@ func decodeVariants(iter *jsoniter.Iterator) (VariantsExpr, error) {
 
 	return &e, nil
 }
+// encodeVectorMatching/decodeVectorMatching 负责 PromQL 风格向量匹配选项的 JSON 往返。

@@ -3,6 +3,8 @@
 
 package stats
 
+// stats.pb.go 由 stats.proto 生成（protoc-gen-gogo），定义 LogQL 查询统计的 protobuf 消息：Result/Summary/Querier/Ingester/Store/Caches 等，供 JSON 响应与分片合并。
+
 import (
 	encoding_binary "encoding/binary"
 	fmt "fmt"
@@ -26,6 +28,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Result 为顶层统计消息，聚合 summary、querier、ingester、cache 与 index 五部分。
 // Result contains LogQL query statistics.
 type Result struct {
 	Summary  Summary  `protobuf:"bytes,1,opt,name=summary,proto3" json:"summary"`
@@ -102,6 +105,7 @@ func (m *Result) GetIndex() Index {
 	return Index{}
 }
 
+// Caches 按缓存用途拆分 chunk/index/result/stats-result 等八类 Cache 统计。
 type Caches struct {
 	Chunk               Cache `protobuf:"bytes,1,opt,name=chunk,proto3" json:"chunk"`
 	Index               Cache `protobuf:"bytes,2,opt,name=index,proto3" json:"index"`
@@ -201,6 +205,7 @@ func (m *Caches) GetInstantMetricResult() Cache {
 	return Cache{}
 }
 
+// Summary 提供吞吐、总字节/行数、exec/queue 时间与 splits/shards 等摘要字段。
 // Summary is the summary of a query statistics.
 type Summary struct {
 	// Total bytes processed per second.
@@ -353,6 +358,7 @@ func (m *Summary) GetTotalStructuredMetadataBytesProcessed() int64 {
 // Statistics from Index queries
 // TODO(owen-d): include bytes.
 // Needs some index methods added to return _sized_ chunk refs to know
+// Index 记录索引查询阶段的 chunk 引用数、流数、Bloom 过滤与分片耗时。
 type Index struct {
 	// Total chunks
 	TotalChunks int64 `protobuf:"varint,1,opt,name=totalChunks,proto3" json:"totalChunks"`
@@ -455,6 +461,7 @@ func (m *Index) GetBloomFilterTime() float64 {
 	return 0
 }
 
+// Querier 持有 store 子统计及 querier 本地执行耗时 QuerierExecTime。
 type Querier struct {
 	Store Store `protobuf:"bytes,1,opt,name=store,proto3" json:"store"`
 	// Querier execution time in seconds.
@@ -509,6 +516,7 @@ func (m *Querier) GetQuerierExecTime() float64 {
 	return 0
 }
 
+// Ingester 汇总触达 ingester 数、匹配 chunk、批次数、发送行数与 RecvWaitTime。
 type Ingester struct {
 	// Total ingester reached for this query.
 	TotalReached int32 `protobuf:"varint,1,opt,name=totalReached,proto3" json:"totalReached"`
@@ -599,6 +607,7 @@ func (m *Ingester) GetRecvWaitTime() float64 {
 	return 0
 }
 
+// Store 统计 chunk 下载/解压字节行数、dataobj 页扫描及 V2 引擎标志等存储层指标。
 type Store struct {
 	// The total of chunk reference fetched from index.
 	TotalChunksRef int64 `protobuf:"varint,1,opt,name=totalChunksRef,proto3" json:"totalChunksRef"`
@@ -722,6 +731,7 @@ func (m *Store) GetDataobj() Dataobj {
 	return Dataobj{}
 }
 
+// Dataobj 描述 data object 存储谓词前后解压行/字节、页下载与过滤行等 V2 引擎细项。
 type Dataobj struct {
 	// Total number of rows decompressed from storage in the primary fill stage.
 	PrePredicateDecompressedRows int64 `protobuf:"varint,1,opt,name=prePredicateDecompressedRows,proto3" json:"prePredicateDecompressedRows"`
@@ -990,6 +1000,7 @@ func (m *Chunk) GetDecompressedStructuredMetadataBytes() int64 {
 	return 0
 }
 
+// Cache 记录单次缓存层的请求数、命中/存储条目、字节收发与下载耗时。
 type Cache struct {
 	EntriesFound      int32 `protobuf:"varint,1,opt,name=entriesFound,proto3" json:"entriesFound"`
 	EntriesRequested  int32 `protobuf:"varint,2,opt,name=entriesRequested,proto3" json:"entriesRequested"`
@@ -5444,3 +5455,4 @@ var (
 	ErrInvalidLengthStats = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowStats   = fmt.Errorf("proto: integer overflow")
 )
+// Marshal/Unmarshal 等 gogo 生成方法支持 stats.Result 在 gRPC 与 HTTP stats 字段间序列化。

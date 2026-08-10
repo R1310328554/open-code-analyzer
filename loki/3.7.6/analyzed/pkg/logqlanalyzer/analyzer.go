@@ -1,5 +1,7 @@
 package logqlanalyzer
 
+// logqlanalyzer 逐阶段回放 LogQL pipeline：解析选择器、构建 PipelineAnalyzer，记录每 stage 处理前后行内容与标签。
+
 import (
 	"fmt"
 	"time"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logql/syntax"
 )
 
+// logQLAnalyzer 无状态分析器，analyze 对多条日志行批量执行 pipeline 追踪。
 type logQLAnalyzer struct {
 }
 
@@ -41,6 +44,7 @@ func (a logQLAnalyzer) analyze(query string, logs []string) (*Result, error) {
 	return response, nil
 }
 
+// extractExpressionParts 从 PipelineExpr 或 MatchersExpr 拆出选择器与各 stage 文本。
 func (a logQLAnalyzer) extractExpressionParts(expr syntax.LogSelectorExpr) (string, []string, error) {
 	switch expr := expr.(type) {
 	case *syntax.PipelineExpr:
@@ -83,6 +87,7 @@ func mapAllToLabelsResponse(lbls []labels.Label) []Label {
 	return result
 }
 
+// PipelineAnalyzer 对单行日志返回按 stage 顺序的 StageAnalysisRecord 切片。
 type PipelineAnalyzer interface {
 	AnalyzeLine(line string) []StageAnalysisRecord
 }
@@ -99,6 +104,7 @@ type streamPipelineAnalyzer struct {
 	streamLabels labels.Labels
 }
 
+// NewPipelineAnalyzer 若 pipeline 实现 AnalyzablePipeline 则包装为 streamPipelineAnalyzer。
 func NewPipelineAnalyzer(origin log.Pipeline, streamLabels labels.Labels) PipelineAnalyzer {
 	if o, ok := origin.(log.AnalyzablePipeline); ok {
 		stagesCount := len(o.Stages())
@@ -122,6 +128,7 @@ func (p streamPipelineAnalyzer) AnalyzeLine(line string) []StageAnalysisRecord {
 	return records
 }
 
+// StageAnalysisRecorder 包装真实 Stage，在 Process 中捕获前后行/标签与是否被过滤。
 type StageAnalysisRecorder struct {
 	log.Stage
 	origin     log.Stage
@@ -149,6 +156,7 @@ func (s StageAnalysisRecorder) RequiredLabelNames() []string {
 	return s.origin.RequiredLabelNames()
 }
 
+// StageAnalysisRecord 保存单 stage 的输入输出快照及 FilteredOut 标志。
 type StageAnalysisRecord struct {
 	Processed    bool
 	LineBefore   string
@@ -157,3 +165,4 @@ type StageAnalysisRecord struct {
 	LabelsAfter  []labels.Label
 	FilteredOut  bool
 }
+// mapAllToLineResult 将已处理 stage 记录转为 HTTP 响应用的 LineResult/StageRecord。

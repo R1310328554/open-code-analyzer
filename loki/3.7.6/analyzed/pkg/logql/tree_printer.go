@@ -15,6 +15,8 @@
 // Fork of https://raw.githubusercontent.com/cockroachdb/cockroach/065aa74206c9ec9bcd8b9ea2a6c62ddde8aab0a6/pkg/util/treeprinter/tree_printer.go
 package logql
 
+// tree_printer 提供 ASCII 树形输出（fork 自 Cockroach treeprinter）：按深度优先预序追加子节点并绘制 ├── / └── 边。
+
 import (
 	"bytes"
 	"fmt"
@@ -27,6 +29,7 @@ var (
 	edgeLast = []rune(" └── ")
 )
 
+// Node 绑定共享 tree 状态与当前层级，Child/AddLine 在此深度追加输出行。
 // Node is a handle associated with a specific depth in a tree. See below for
 // sample usage.
 type Node struct {
@@ -34,6 +37,7 @@ type Node struct {
 	level int
 }
 
+// NewTree 返回根级 Node（level=0），后续 Child 调用须保持深度优先预序。
 // NewTree creates a tree printer and returns a sentinel node reference which
 // should be used to add the root. Sample usage:
 //
@@ -63,6 +67,7 @@ func NewTree() Node {
 	}
 }
 
+// tree 累积各行 rune 切片，并在 lastNode 记录每层最后一个节点行号以修正 sibling 边。
 type tree struct {
 	// rows maintains the rows accumulated so far, as rune arrays.
 	//
@@ -79,6 +84,7 @@ func (n Node) Childf(format string, args ...interface{}) Node {
 	return n.Child(fmt.Sprintf(format, args...))
 }
 
+// Child 支持多行文本：首行带树边，后续行通过 AddLine 缩进对齐。
 // Child adds a node as a child of the given node. Multi-line strings are
 // supported with appropriate indentation.
 func (n Node) Child(text string) Node {
@@ -93,6 +99,7 @@ func (n Node) Child(text string) Node {
 	return n.childLine(text)
 }
 
+// AddLine 在子节点下追加无连接符的缩进行，用于多行节点正文。
 // AddLine adds a new line to a child node without an edge.
 func (n Node) AddLine(v string) {
 	// Each level indents by this much.
@@ -109,6 +116,7 @@ func (n Node) AddLine(v string) {
 }
 
 // childLine adds a node as a child of the given node.
+// childLine 计算缩进、连接 sibling 的 ├── 或 └──，并返回 level+1 的子 Node。
 func (n Node) childLine(text string) Node {
 	runes := []rune(text)
 
@@ -168,6 +176,7 @@ func (n Node) AddEmptyLine() {
 	n.tree.rows = append(n.tree.rows, []rune{})
 }
 
+// FormattedRows 仅允许在根 Node 调用，返回各行字符串切片。
 // FormattedRows returns the formatted rows. Can only be called on the result of
 // treeprinter.New.
 func (n Node) FormattedRows() []string {
@@ -192,3 +201,4 @@ func (n Node) String() string {
 	}
 	return buf.String()
 }
+// String 将 rows 拼接为带换行的树形文本，供 LogQL 计划或 AST 调试打印。

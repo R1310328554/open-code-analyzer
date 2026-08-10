@@ -1,5 +1,7 @@
 package logqlanalyzer
 
+// http 暴露 LogQL 分析 REST 端点：接收 query 与 logs JSON，返回各 stage 逐行分析结果。
+
 import (
 	"context"
 	"encoding/json"
@@ -26,6 +28,7 @@ func CorsMiddleware() mux.MiddlewareFunc {
 	}
 }
 
+// LogQLAnalyzeHandler 持有 logQLAnalyzer，实现 http.Handler 处理 POST 分析请求。
 type LogQLAnalyzeHandler struct {
 	analyzer logQLAnalyzer
 }
@@ -59,11 +62,13 @@ func (s *LogQLAnalyzeHandler) ServeHTTP(w http.ResponseWriter, req *http.Request
 	}
 }
 
+// writeError 记录结构化日志并以 HTTP 错误状态返回 err.Error() 文本。
 func writeError(ctx context.Context, w http.ResponseWriter, err error, statusCode int, msg string) {
 	level.Error(util_log.WithContext(ctx, util_log.Logger)).Log("msg", msg, "err", err)
 	http.Error(w, err.Error(), statusCode)
 }
 
+// Request 为分析 API 请求体：LogQL query 字符串与待分析的日志行列表。
 type Request struct {
 	Query string   `json:"query"`
 	Logs  []string `json:"logs"`
@@ -92,3 +97,4 @@ type Label struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
+// StageRecord/Label 为 JSON 序列化 DTO，描述单 stage 前后标签与行内容及过滤状态。

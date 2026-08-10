@@ -1,4 +1,5 @@
 /*
+// stats 包在 context 中累积 querier/ingester/store/cache/index 各层查询统计。
 Package stats provides primitives for recording metrics across the query path.
 Statistics are passed through the query context.
 To start a new query statistics context use:
@@ -39,6 +40,7 @@ const (
 	statsKey ctxKeyType = "stats"
 )
 
+// Context 使用 mutex 合并分片结果，并用 atomic 更新高频计数器字段。
 // Context is the statistics context. It is passed through the query path and accumulates statistics.
 type Context struct {
 	querier  Querier
@@ -65,6 +67,7 @@ type Context struct {
 	mtx sync.Mutex
 }
 
+// CacheType 枚举 chunk/index/result 等缓存层名称，供 AddCache* 方法分派。
 type CacheType string
 
 const (
@@ -83,6 +86,7 @@ const (
 	EngineLogResultCache      CacheType = "engine-log-result"     //nolint:staticcheck
 )
 
+// NewContext 创建空统计 Context 并注入 context.Value。
 // NewContext creates a new statistics context
 func NewContext(ctx context.Context) (*Context, context.Context) {
 	contextData := &Context{}
@@ -157,6 +161,7 @@ func (c *Context) Reset() {
 	c.querierExecTime = 0
 }
 
+// Result 合并 querier/ingester/cache/index 并调用 ComputeSummary 生成最终快照。
 // Result calculates the summary based on store and ingester data.
 func (c *Context) Result(execTime time.Duration, queueTime time.Duration, totalEntriesReturned int) Result {
 	r := c.result
@@ -186,6 +191,7 @@ func (c *Context) Result(execTime time.Duration, queueTime time.Duration, totalE
 	return r
 }
 
+// JoinResults 将子查询 stats.Result 合并进当前 context 的 result 字段。
 // JoinResults merges a Result with the embedded Result in a context in a concurrency-safe manner.
 func JoinResults(ctx context.Context, res Result) {
 	stats := FromContext(ctx)
@@ -204,6 +210,7 @@ func JoinIngesters(ctx context.Context, inc Ingester) {
 	stats.ingester.Merge(inc)
 }
 
+// ComputeSummary 汇总字节/行吞吐量、exec/queue 时间与返回条目数。
 // ComputeSummary compute the summary of the statistics.
 func (r *Result) ComputeSummary(execTime time.Duration, queueTime time.Duration, totalEntriesReturned int) {
 	r.Summary.TotalBytesProcessed = r.Querier.Store.Chunk.DecompressedBytes + r.Querier.Store.Chunk.HeadChunkBytes +
@@ -415,6 +422,7 @@ func (c *Context) AddIngesterReached(i int32) {
 
 // AddIngesterRecvWait accumulates the time the querier spent waiting
 // for batches from ingesters over gRPC Recv().
+// AddIngesterRecvWait 累加 querier 在 ingester gRPC Recv 上的等待时间（纳秒 atomic）。
 func (c *Context) AddIngesterRecvWait(d time.Duration) {
 	atomic.AddInt64(&c.recvWaitTime, int64(d))
 }
@@ -487,6 +495,7 @@ func (c *Context) AddIndexPostFilterChunkRefs(i int64) {
 	atomic.AddInt64(&c.index.PostFilterChunks, i)
 }
 
+// AddCacheEntriesFound 按 CacheType 增加缓存命中条目计数。
 // AddCacheEntriesFound counts the number of cache entries requested and found
 func (c *Context) AddCacheEntriesFound(t CacheType, i int) {
 	stats := c.getCacheStatsByType(t)
@@ -636,6 +645,7 @@ func (c *Context) AddQuerierExecTime(d time.Duration) {
 	atomic.AddInt64(&c.querierExecTime, int64(d))
 }
 
+// getCacheStatsByType 将 CacheType 映射到 Context.caches 中对应 Cache 字段指针。
 func (c *Context) getCacheStatsByType(t CacheType) *Cache {
 	var stats *Cache
 	switch t {
@@ -661,6 +671,7 @@ func (c *Context) getCacheStatsByType(t CacheType) *Cache {
 	return stats
 }
 
+// Log/KVList 将 Result 展开为 go-kit 键值对，便于结构化日志输出查询统计。
 func (r Result) Log(logger log.Logger) {
 	logger.Log(r.KVList()...)
 }
@@ -794,3 +805,4 @@ func (d Dataobj) kvList(prefix string) []any {
 		prefix + "Dataobj.TotalPageDownloadTime", time.Duration(d.TotalPageDownloadTime),
 	}
 }
+// Merge/MergeSplit 在各 protobuf 子结构间递归合并；Dataobj.kvList 在 V2 引擎路径追加对象存储指标。

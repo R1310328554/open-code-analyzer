@@ -1,5 +1,7 @@
 package syntax
 
+// visit 定义 LogQL AST 访问者模式：AcceptVisitor 接受 RootVisitor，DepthFirstTraversal 提供可覆盖回调的深度优先默认遍历。
+
 type AcceptVisitor interface {
 	Accept(RootVisitor)
 }
@@ -49,6 +51,7 @@ type VariantsExprVisitor interface {
 
 var _ RootVisitor = &DepthFirstTraversal{}
 
+// DepthFirstTraversal 各 VisitXxxFn 非空时短路默认子树递归，便于定制遍历逻辑。
 type DepthFirstTraversal struct {
 	VisitBinOpFn                  func(v RootVisitor, e *BinOpExpr)
 	VisitDecolorizeFn             func(v RootVisitor, e *DecolorizeExpr)
@@ -73,6 +76,7 @@ type DepthFirstTraversal struct {
 	VisitVariantsFn               func(v RootVisitor, e *MultiVariantExpr)
 }
 
+// VisitBinOp 默认先访问 LHS SampleExpr 再访问 RHS。
 // VisitBinOp implements RootVisitor.
 func (v *DepthFirstTraversal) VisitBinOp(e *BinOpExpr) {
 	if e == nil {
@@ -166,6 +170,7 @@ func (v *DepthFirstTraversal) VisitLabelReplace(e *LabelReplaceExpr) {
 	}
 }
 
+// VisitLineFilter 递归访问 Left 与 Or 分支以覆盖复合行过滤器。
 // VisitLineFilter implements RootVisitor.
 func (v *DepthFirstTraversal) VisitLineFilter(e *LineFilterExpr) {
 	if e == nil {
@@ -245,6 +250,7 @@ func (v *DepthFirstTraversal) VisitMatchers(e *MatchersExpr) {
 	}
 }
 
+// VisitPipeline 遍历左侧选择器并依次访问 MultiStages 中各 Stage。
 // VisitPipeline implements RootVisitor.
 func (v *DepthFirstTraversal) VisitPipeline(e *PipelineExpr) {
 	if e == nil {
@@ -294,6 +300,7 @@ func (v *DepthFirstTraversal) VisitVectorAggregation(e *VectorAggregationExpr) {
 	}
 }
 
+// VisitVariants 默认遍历 LogRange 与各 variant SampleExpr。
 func (v *DepthFirstTraversal) VisitVariants(e *MultiVariantExpr) {
 	if e == nil {
 		return
@@ -309,3 +316,4 @@ func (v *DepthFirstTraversal) VisitVariants(e *MultiVariantExpr) {
 		}
 	}
 }
+// SampleExprVisitor/StageExprVisitor 等接口按 AST 节点类别拆分 Visit 方法签名。

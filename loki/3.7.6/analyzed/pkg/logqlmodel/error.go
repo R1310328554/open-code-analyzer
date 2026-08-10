@@ -1,5 +1,7 @@
 package logqlmodel
 
+// error 定义 LogQL 引擎可识别的哨兵错误与 ParseError/PipelineError/LimitError，支持 errors.Is 分类处理。
+
 import (
 	"errors"
 	"fmt"
@@ -7,6 +9,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
+// ErrParse/ErrPipeline/ErrLimit 等哨兵错误供引擎与 API 层区分失败原因。
 // Those errors are useful for comparing error returned by the engine.
 // e.g. errors.Is(err,logqlmodel.ErrParse) let you know if this is a ast parsing error.
 var (
@@ -27,6 +30,7 @@ var (
 	ErrorDetailsLabel  = "__error_details__"
 )
 
+// ParseError 携带行列号，Error() 格式化为人可读的 parse error 消息。
 // ParseError is what is returned when we failed to parse.
 type ParseError struct {
 	msg       string
@@ -40,6 +44,7 @@ func (p ParseError) Error() string {
 	return fmt.Sprintf("parse error at line %d, col %d: %s", p.line, p.col, p.msg)
 }
 
+// ParseError.Is 使 errors.Is(err, ErrParse) 可识别语法解析失败。
 // Is allows to use errors.Is(err,ErrParse) on this error.
 func (p ParseError) Is(target error) bool {
 	return target == ErrParse
@@ -61,6 +66,7 @@ func NewStageError(expr string, err error) ParseError {
 	}
 }
 
+// PipelineError 表示某条序列 pipeline 执行失败，Error() 提示用 __error__ 标签过滤。
 type PipelineError struct {
 	metric    labels.Labels
 	errorType string
@@ -87,6 +93,7 @@ func (e PipelineError) Is(target error) bool {
 	return target == ErrPipeline
 }
 
+// LimitError 封装序列数或区间超限等限制类错误，Is 匹配 ErrLimit。
 type LimitError struct {
 	error
 }
@@ -101,3 +108,4 @@ func NewSeriesLimitError(limit int) *LimitError {
 func (e LimitError) Is(target error) bool {
 	return target == ErrLimit
 }
+// ErrorLabel/__error_details__ 等常量定义 Loki 在指标流上附加的错误标签键名。
