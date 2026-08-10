@@ -13,14 +13,17 @@ import (
 	internalcloud "github.com/ollama/ollama/internal/cloud"
 )
 
+// Web 工具超时、内容长度与认证错误常量。
 const (
 	maxWebFetchContentRunes = 60_000
 	webSearchTimeout        = 15 * time.Second
 	webFetchTimeout         = 30 * time.Second
 )
 
+// ErrWebAuthRequired 表示需先 ollama signin 才能使用 Web 工具。
 var ErrWebAuthRequired = errors.New("Not authenticated. Run `ollama signin` and try again.")
 
+// WebSearch 通过 Ollama 云 API 执行网页搜索。
 type WebSearch struct{}
 
 func (w *WebSearch) Name() string {
@@ -99,6 +102,7 @@ func (w *WebSearch) Execute(ctx context.Context, _ agent.ToolContext, args map[s
 	return agent.ToolResult{Content: sb.String()}, nil
 }
 
+// WebFetch 抓取并提取网页文本内容。
 type WebFetch struct{}
 
 func (w *WebFetch) Name() string {
@@ -177,6 +181,7 @@ func (w *WebFetch) Execute(ctx context.Context, _ agent.ToolContext, args map[st
 	return agent.ToolResult{Content: sb.String()}, nil
 }
 
+// truncateWebFetchContent 将抓取内容截断至上下文预算内。
 func truncateWebFetchContent(content string) string {
 	return agent.Truncate(content, agent.TruncateConfig{
 		MaxRunes: maxWebFetchContentRunes,

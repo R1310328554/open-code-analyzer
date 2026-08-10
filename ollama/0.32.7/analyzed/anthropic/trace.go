@@ -9,6 +9,7 @@ import (
 )
 
 // Trace truncation limits.
+// Trace 截断上限：控制调试日志中字符串、切片与映射的体积。
 const (
 	TraceMaxStringRunes = 240
 	TraceMaxSliceItems  = 8

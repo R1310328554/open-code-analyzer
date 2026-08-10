@@ -15,6 +15,7 @@ import (
 // tool_call_detected -> tool_started -> tool_finished lifecycle the model path
 // uses, and returns the messages to prepend. A blank SkillName is a no-op.
 func (s *Session) activateSkill(ctx context.Context, runID string, opts RunOptions) ([]api.Message, error) {
+	// activateSkill 在首次模型请求前注入合成 skill 工具调用/结果对。
 	name := strings.TrimSpace(opts.SkillName)
 	if name == "" {
 		return nil, nil

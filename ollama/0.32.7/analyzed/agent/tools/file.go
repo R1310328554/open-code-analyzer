@@ -14,10 +14,12 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// maxReadBytes 限制单次读/写文件的最大字节数。
 const (
 	maxReadBytes = 200000
 )
 
+// Read 读取工作目录内（或绝对路径）的文本文件。
 type Read struct{}
 
 func (r *Read) Name() string {
@@ -98,6 +100,7 @@ func (r *Read) Execute(ctx context.Context, toolCtx agent.ToolContext, args map[
 	return agent.ToolResult{Content: content}, nil
 }
 
+// Edit 通过精确文本替换编辑工作目录内的文件。
 type Edit struct{}
 
 func (e *Edit) Name() string {
@@ -213,6 +216,7 @@ func (e *Edit) Execute(ctx context.Context, toolCtx agent.ToolContext, args map[
 	return agent.ToolResult{Content: fmt.Sprintf("Updated %s (%d replacement%s).", path, matches, plural(matches))}, nil
 }
 
+// cleanRelativePath 校验相对路径不逃逸工作根目录。
 func cleanRelativePath(path string) (string, error) {
 	path = strings.TrimSpace(path)
 	if path == "" {
@@ -228,6 +232,7 @@ func cleanRelativePath(path string) (string, error) {
 	return cleaned, nil
 }
 
+// openRegularFile 打开常规文件并拒绝目录与符号链接。
 func openRegularFile(workingDir, path string, allowAbsolute bool) (*os.File, os.FileInfo, error) {
 	path = strings.TrimSpace(path)
 	if path == "" {
@@ -320,6 +325,7 @@ func rejectNonRegularFile(path string, info os.FileInfo) error {
 	return nil
 }
 
+// writeFileAtomic 通过临时文件与 rename 原子写入。
 func writeFileAtomic(workingDir, path string, data []byte, perm os.FileMode) error {
 	rel, err := cleanRelativePath(path)
 	if err != nil {
@@ -458,6 +464,7 @@ func canonicalPath(path string) (string, error) {
 	return abs, nil
 }
 
+// readSelection 表示按行号范围读取文件的选项。
 type readSelection struct {
 	enabled bool
 	start   int

@@ -15,6 +15,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// SkillsDirEnv 等常量定义技能目录布局与 bundled skill-creator 内容。
 const (
 	// SkillsDirEnv overrides the user-level Ollama-owned skills directory. The
 	// cross-client .agents/skills/ convention and project-level .ollama/skills/
@@ -76,6 +77,8 @@ Skills provide instructions only. They do not grant filesystem, network, shell, 
 
 var skillName = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
+// skillName 校验技能目录名：小写字母、数字与单连字符。
+
 // SkillsDir returns the canonical runtime-owned skill directory.
 func SkillsDir() (string, error) {
 	if path := strings.TrimSpace(os.Getenv(SkillsDirEnv)); path != "" {
@@ -101,6 +104,7 @@ type Skill struct {
 }
 
 func (s Skill) Content() string {
+	// Content 将技能格式化为供模型读取的 XML 风格文本。
 	var b strings.Builder
 	fmt.Fprintf(&b, "<skill name=%q>\n%s\n", s.Name, strings.TrimSpace(s.Instructions))
 	if s.Path != "" {
@@ -151,6 +155,7 @@ type SkillCatalog struct {
 	diagnostics []error
 }
 
+// DiscoverSkills 扫描目录并加载有效技能，无效项记入 diagnostics。
 func DiscoverSkills(dir string) (*SkillCatalog, error) {
 	dir, err := filepath.Abs(strings.TrimSpace(dir))
 	if err != nil {
@@ -239,6 +244,7 @@ func LoadDefaultSkills(projectDir string) (*SkillCatalog, error) {
 	return catalog, nil
 }
 
+// bundledSkillCreator 返回内置 skill-creator 技能定义。
 func bundledSkillCreator() (Skill, error) {
 	skill, err := parseSkillContent("", bundledSkillCreatorName, bundledSkillCreatorContent)
 	if err != nil {
@@ -247,6 +253,7 @@ func bundledSkillCreator() (Skill, error) {
 	return skill, nil
 }
 
+// installBundledSkillCreator 将 bundled skill 写入用户技能目录。
 func installBundledSkillCreator() error {
 	dir, err := SkillsDir()
 	if err != nil {
@@ -308,6 +315,7 @@ func ImportSkills(source string) (SkillImportResult, error) {
 	return importSkillsFromRoots(source, conventionalSkillImportRoots(home), destination)
 }
 
+// conventionalSkillImportRoots 映射导入源名称到默认路径。
 func conventionalSkillImportRoots(home string) map[string]string {
 	return map[string]string{
 		"codex":  filepath.Join(home, ".codex", "skills"),
@@ -325,6 +333,7 @@ func importSkillsFromRoots(source string, roots map[string]string, destination s
 	return importSkillsFromDir(source, sourceDir, destination)
 }
 
+// importSkillsFromDir 从外部目录导入技能到 Ollama 目录。
 func importSkillsFromDir(source, sourceDir, destination string) (SkillImportResult, error) {
 	result := SkillImportResult{Source: source, SourceDir: sourceDir, Destination: destination}
 	info, err := os.Lstat(sourceDir)
@@ -383,6 +392,7 @@ func importSkillsFromDir(source, sourceDir, destination string) (SkillImportResu
 	return result, nil
 }
 
+// validateImportSkill 校验待导入技能目录结构与 SKILL.md。
 func validateImportSkill(dir, name string) error {
 	manifest := filepath.Join(dir, skillFilename)
 	info, err := os.Lstat(manifest)
@@ -437,6 +447,7 @@ const (
 	skillImportExisting
 )
 
+// importSkillDirectory 原子复制单个技能目录到目标位置。
 func importSkillDirectory(source, destination string) (skillImportState, error) {
 	if info, err := os.Lstat(destination); err == nil {
 		if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
@@ -649,6 +660,7 @@ func defaultSkillRoots(projectDir string) ([]skillRoot, error) {
 	return roots, nil
 }
 
+// Dir 返回目录级技能根路径（DiscoverSkills 时设置）。
 func (c *SkillCatalog) Dir() string {
 	if c == nil {
 		return ""
@@ -656,6 +668,7 @@ func (c *SkillCatalog) Dir() string {
 	return c.dir
 }
 
+// List 返回按名称排序的全部有效技能。
 func (c *SkillCatalog) List() []Skill {
 	if c == nil {
 		return nil
@@ -668,6 +681,7 @@ func (c *SkillCatalog) List() []Skill {
 	return list
 }
 
+// Diagnostics 返回发现/解析过程中收集的非致命错误。
 func (c *SkillCatalog) Diagnostics() []error {
 	if c == nil {
 		return nil
@@ -700,6 +714,7 @@ func (c *SkillCatalog) ExcludeNames(names []string) []string {
 	return excluded
 }
 
+// Load 按名称加载已发现技能。
 func (c *SkillCatalog) Load(name string) (Skill, error) {
 	name = strings.TrimSpace(name)
 	if !skillName.MatchString(name) {
@@ -734,6 +749,7 @@ func (c *SkillCatalog) SystemContext() string {
 	return strings.Join(lines, "\n")
 }
 
+// parseSkill 从磁盘读取并解析 SKILL.md。
 func parseSkill(path, directoryName string) (Skill, error) {
 	// Stat (not Lstat) so a symlinked SKILL.md resolves to its target file.
 	info, err := os.Stat(path)
@@ -753,6 +769,7 @@ func parseSkill(path, directoryName string) (Skill, error) {
 	return parseSkillContent(path, directoryName, string(data))
 }
 
+// parseSkillContent 解析 SKILL.md 文本内容与 YAML  front matter。
 func parseSkillContent(path, directoryName, input string) (Skill, error) {
 	instructions := strings.TrimSpace(input)
 	if instructions == "" {
@@ -792,6 +809,7 @@ type skillFrontMatterMetadata struct {
 	Metadata    map[string]any `yaml:"metadata"`
 }
 
+// skillFrontMatter 拆分 YAML front matter 与 Markdown 正文。
 func skillFrontMatter(input string) (skillFrontMatterMetadata, string, error) {
 	input = strings.ReplaceAll(input, "\r\n", "\n")
 	lines := strings.Split(input, "\n")

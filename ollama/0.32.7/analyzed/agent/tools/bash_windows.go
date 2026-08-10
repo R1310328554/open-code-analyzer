@@ -1,3 +1,4 @@
+// bash_windows.go 提供 Windows 平台的 PowerShell 工具实现。
 //go:build windows
 
 package tools
@@ -14,6 +15,7 @@ import (
 
 var bashJobHandles sync.Map
 
+// shellToolName 在 Windows 上返回 "powershell"。
 func shellToolName() string {
 	return "powershell"
 }
@@ -40,6 +42,7 @@ func newBashCommand(ctx context.Context, command, cwdPath string) *exec.Cmd {
 	)
 }
 
+// powerShellCommandScript 包装用户命令并记录最终工作目录。
 func powerShellCommandScript(command, cwdPath string) string {
 	cwdPath = powerShellSingleQuote(cwdPath)
 	return strings.Join([]string{
@@ -91,6 +94,7 @@ func killBashCommand(cmd *exec.Cmd) error {
 	return nil
 }
 
+// createBashJob 创建 Job 对象以便进程树随 Job 关闭而终止。
 func createBashJob(pid int) (windows.Handle, error) {
 	job, err := windows.CreateJobObject(nil, nil)
 	if err != nil {

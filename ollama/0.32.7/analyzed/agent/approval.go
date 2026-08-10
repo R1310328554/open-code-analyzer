@@ -1,3 +1,4 @@
+// agent 包实现 Ollama 智能体会话、工具调用、用户审批与上下文压缩等核心逻辑。
 package agent
 
 import (
@@ -6,11 +7,13 @@ import (
 	"sync"
 )
 
+// ApprovalRequest 描述一次待审批的工具调用批次。
 type ApprovalRequest struct {
 	WorkingDir string
 	Calls      []ApprovalToolCall
 }
 
+// AddToolCall 向审批请求追加一条工具调用。
 func (r *ApprovalRequest) AddToolCall(id, name, scope string, args map[string]any) {
 	r.Calls = append(r.Calls, ApprovalToolCall{
 		ToolCallID:    id,
@@ -20,6 +23,7 @@ func (r *ApprovalRequest) AddToolCall(id, name, scope string, args map[string]an
 	})
 }
 
+// ApprovalToolCall 表示单条待审批的工具调用。
 type ApprovalToolCall struct {
 	ToolCallID    string
 	ToolName      string
@@ -27,6 +31,7 @@ type ApprovalToolCall struct {
 	ApprovalScope string
 }
 
+// Approval 表示用户对工具执行的审批结果。
 type Approval struct {
 	Allow       bool
 	AllowAll    bool
@@ -34,16 +39,19 @@ type Approval struct {
 	Reason      string
 }
 
+// ApprovalPrompter 负责向用户展示审批提示并收集决定。
 type ApprovalPrompter interface {
 	PromptApproval(context.Context, ApprovalRequest) (Approval, error)
 }
 
+// ApprovalState 在会话内累积已授予的审批范围。
 type ApprovalState struct {
 	mu       sync.RWMutex
 	allowAll bool
 	scopes   map[string]bool
 }
 
+// Set 重置全局允许标志与范围映射。
 func (s *ApprovalState) Set(allowAll bool, scopes map[string]bool) {
 	if s == nil {
 		return
@@ -56,6 +64,7 @@ func (s *ApprovalState) Set(allowAll bool, scopes map[string]bool) {
 
 // GrantAll grants blanket approval for all future tool calls.
 func (s *ApprovalState) GrantAll() {
+	// GrantAll 授予对所有后续工具调用的 blanket 批准。
 	if s == nil {
 		return
 	}
@@ -66,6 +75,7 @@ func (s *ApprovalState) GrantAll() {
 
 // AllGranted reports whether blanket approval has been granted.
 func (s *ApprovalState) AllGranted() bool {
+	// AllGranted 报告是否已授予 blanket 批准。
 	if s == nil {
 		return false
 	}
@@ -74,6 +84,7 @@ func (s *ApprovalState) AllGranted() bool {
 	return s.allowAll
 }
 
+// Allows 检查给定审批范围是否已被允许。
 func (s *ApprovalState) Allows(scope string) bool {
 	if s == nil {
 		return false
@@ -88,6 +99,7 @@ func (s *ApprovalState) Allows(scope string) bool {
 // scope). It does not mutate the approval; the caller sets Allow based on the
 // returned value.
 func (s *ApprovalState) Apply(result *Approval) bool {
+	// Apply 将审批结果合并进状态；若授予 allow-all 或至少一个范围则返回 true。
 	if s == nil || result == nil {
 		return false
 	}
@@ -107,6 +119,7 @@ func (s *ApprovalState) Apply(result *Approval) bool {
 
 // GrantScopes merges the given scopes into the state.
 func (s *ApprovalState) GrantScopes(scopes []string) {
+	// GrantScopes 将给定范围合并进审批状态。
 	if s == nil {
 		return
 	}
@@ -118,6 +131,7 @@ func (s *ApprovalState) GrantScopes(scopes []string) {
 // grantScopesLocked adds trimmed, non-empty scopes to the state. Caller must
 // hold s.mu.
 func (s *ApprovalState) grantScopesLocked(scopes []string) {
+	// grantScopesLocked 添加修剪后的非空范围；调用方须持有 s.mu。
 	if s.scopes == nil {
 		s.scopes = make(map[string]bool, len(scopes))
 	}
@@ -129,6 +143,7 @@ func (s *ApprovalState) grantScopesLocked(scopes []string) {
 	}
 }
 
+// cloneApprovalScopes 深拷贝审批范围映射。
 func cloneApprovalScopes(src map[string]bool) map[string]bool {
 	if len(src) == 0 {
 		return nil
@@ -142,12 +157,14 @@ func cloneApprovalScopes(src map[string]bool) map[string]bool {
 	return dst
 }
 
+// needsApproval 判断工具调用是否仍需用户审批。
 func (s *Session) needsApproval(tool Tool, name string, args map[string]any) bool {
 	return ToolRequiresApproval(tool, args) && !s.allows(toolApprovalScope(tool, name, args))
 }
 
 // allows reports whether scope is permitted by the session's accumulated approval state.
 func (s *Session) allows(scope string) bool {
+	// allows 报告会话累积审批状态是否允许该范围。
 	if s == nil || s.ApprovalState == nil {
 		return false
 	}
@@ -157,6 +174,7 @@ func (s *Session) allows(scope string) bool {
 // applyApproval merges an approval result into the session's state and marks
 // the result as allowed when scopes or allow-all were granted.
 func (s *Session) applyApproval(result *Approval) {
+	// applyApproval 将审批结果合并进会话状态并标记 Allow。
 	if s == nil || result == nil {
 		return
 	}
@@ -168,6 +186,7 @@ func (s *Session) applyApproval(result *Approval) {
 	}
 }
 
+// authorizeToolCalls 批量请求用户审批并更新会话状态。
 func (s *Session) authorizeToolCalls(ctx context.Context, req ApprovalRequest) (Approval, error) {
 	if s == nil || len(req.Calls) == 0 || (s.ApprovalState != nil && s.ApprovalState.AllGranted()) {
 		return Approval{Allow: true}, nil
@@ -191,6 +210,7 @@ func (s *Session) authorizeToolCalls(ctx context.Context, req ApprovalRequest) (
 // scope (e.g. shell tools scope to "<tool>\x00<command>"). Otherwise the scope
 // is the trimmed tool name.
 func toolApprovalScope(tool Tool, toolName string, args map[string]any) string {
+	// toolApprovalScope 返回工具调用的审批范围键。
 	if scoped, ok := tool.(ScopedTool); ok {
 		return scoped.ApprovalScope(args)
 	}

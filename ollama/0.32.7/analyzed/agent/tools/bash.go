@@ -1,3 +1,4 @@
+// tools 包提供智能体可用的 bash/PowerShell、文件、Web 与 skill 等工具实现。
 package tools
 
 import (
@@ -16,14 +17,17 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// bash 执行超时、输出上限等常量。
 const (
 	bashTimeout        = 3 * time.Minute
 	bashWaitDelay      = 1 * time.Second
 	maxBashOutputBytes = 60_000
 )
 
+// Bash 在 Unix 上执行 bash、在 Windows 上执行 PowerShell。
 type Bash struct{}
 
+// Name 返回平台相关的 shell 工具名（bash 或 powershell）。
 func (b *Bash) Name() string {
 	return shellToolName()
 }
@@ -69,6 +73,7 @@ func (b *Bash) ApprovalScope(args map[string]any) string {
 	return name
 }
 
+// Execute 在子进程中运行命令并捕获 stdout/stderr。
 func (b *Bash) Execute(ctx context.Context, toolCtx agent.ToolContext, args map[string]any) (agent.ToolResult, error) {
 	// TODO: use shared agent.RequiredStringArg for the "command" parameter (see agent package cleanup plan).
 	command, ok := args["command"].(string)
@@ -143,6 +148,7 @@ func (b *Bash) Execute(ctx context.Context, toolCtx agent.ToolContext, args map[
 	return agent.ToolResult{Content: sb.String(), WorkingDir: finalWorkingDir}, nil
 }
 
+// bashContentWithError 将错误信息附加到命令输出末尾。
 func bashContentWithError(content, msg string) string {
 	if content == "" {
 		return msg
@@ -168,6 +174,7 @@ func rejectUnsafeShellCommand(command string) error {
 	}
 }
 
+// hasUnsafeRecursiveDelete 检测过于宽泛的递归删除命令。
 func hasUnsafeRecursiveDelete(command string) bool {
 	// Check each command segment independently. shellSafetyText flattens
 	// separators (; & | newlines) to spaces, which would otherwise let the
@@ -259,6 +266,7 @@ func powerShellDeleteCommandDeletesUnsafeTarget(fields []string) bool {
 	return false
 }
 
+// readsCredentialPath 检测读取敏感凭证路径的命令。
 func readsCredentialPath(command string) bool {
 	fields := shellSafetyFields(command)
 	if !hasCredentialReadVerb(fields) {
@@ -362,6 +370,7 @@ func shellSafetyText(command string) string {
 	).Replace(command)
 }
 
+// readFinalWorkingDir 从临时文件读取命令结束后的工作目录。
 func readFinalWorkingDir(path string) string {
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -395,6 +404,7 @@ func isASCIIAlpha(b byte) bool {
 	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 }
 
+// boundedOutput 限制 stdout/stderr 缓冲大小并统计省略字节。
 type boundedOutput struct {
 	Limit   int
 	buf     []byte

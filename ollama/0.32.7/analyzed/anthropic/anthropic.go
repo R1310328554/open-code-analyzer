@@ -1,3 +1,4 @@
+// anthropic 包在 Ollama 与 Anthropic Messages API 格式之间双向转换。
 package anthropic
 
 import (
@@ -23,11 +24,13 @@ import (
 )
 
 // Error types matching Anthropic API
+// Error 匹配 Anthropic API 错误对象结构。
 type Error struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
 }
 
+// ErrorResponse 是带 request_id 的完整错误响应。
 type ErrorResponse struct {
 	Type      string `json:"type"` // always "error"
 	Error     Error  `json:"error"`
@@ -64,6 +67,7 @@ func NewError(code int, message string) ErrorResponse {
 // Request types
 
 // MessagesRequest represents an Anthropic Messages API request
+// MessagesRequest 表示 Anthropic Messages API 请求体。
 type MessagesRequest struct {
 	Model         string          `json:"model"`
 	MaxTokens     int             `json:"max_tokens"`
@@ -86,6 +90,7 @@ type OutputConfig struct {
 }
 
 // MessageParam represents a message in the request
+// MessageParam 表示请求中的一条 user/assistant 消息。
 type MessageParam struct {
 	Role    string         `json:"role"`    // "user" or "assistant"
 	Content []ContentBlock `json:"content"` // always []ContentBlock; plain strings are normalized on unmarshal
@@ -113,6 +118,7 @@ func (m *MessageParam) UnmarshalJSON(data []byte) error {
 // ContentBlock represents a content block in a message.
 // Text and Thinking use pointers so they serialize as the field being present (even if empty)
 // only when set, which is required for SDK streaming accumulation.
+// ContentBlock 表示消息中的单个内容块（文本、图像、工具等）。
 type ContentBlock struct {
 	Type string `json:"type"` // text, image, tool_use, tool_result, thinking, server_tool_use, web_search_tool_result
 
@@ -173,6 +179,7 @@ type ImageSource struct {
 }
 
 // Tool represents a tool definition
+// Tool 表示工具定义或内置 web_search 工具。
 type Tool struct {
 	Type        string          `json:"type,omitempty"` // "custom" for user-defined tools, or "web_search_20250305" for web search
 	Name        string          `json:"name"`
@@ -204,6 +211,7 @@ type Metadata struct {
 // Response types
 
 // MessagesResponse represents an Anthropic Messages API response
+// MessagesResponse 表示 Anthropic Messages API 非流式响应。
 type MessagesResponse struct {
 	ID           string         `json:"id"`
 	Type         string         `json:"type"` // "message"
@@ -715,6 +723,7 @@ func mapStopReason(reason string, hasToolCalls bool) string {
 }
 
 // StreamConverter manages state for converting Ollama streaming responses to Anthropic format
+// StreamConverter 维护 Ollama 流式响应到 Anthropic SSE 的转换状态。
 type StreamConverter struct {
 	ID                   string
 	Model                string
@@ -729,6 +738,7 @@ type StreamConverter struct {
 	toolCallsSent        map[string]bool
 }
 
+// NewStreamConverter 创建流转换器并注入估算的输入 token 数。
 func NewStreamConverter(id, model string, estimatedInputTokens int) *StreamConverter {
 	return &StreamConverter{
 		ID:                   id,
@@ -740,6 +750,7 @@ func NewStreamConverter(id, model string, estimatedInputTokens int) *StreamConve
 }
 
 // StreamEvent represents a streaming event to be sent to the client
+// StreamEvent 表示一条待发送的 Anthropic 流式事件。
 type StreamEvent struct {
 	Event string
 	Data  any
@@ -990,6 +1001,7 @@ func generateID(prefix string) string {
 }
 
 // GenerateMessageID generates a unique message ID
+// GenerateMessageID 生成唯一的 Anthropic 风格消息 ID。
 func GenerateMessageID() string {
 	return generateID("msg")
 }
@@ -1074,6 +1086,7 @@ type CountTokensRequest struct {
 }
 
 // EstimateInputTokens estimates input tokens from a MessagesRequest (reuses CountTokensRequest logic)
+// EstimateInputTokens 从 MessagesRequest 粗估输入 token 数。
 func EstimateInputTokens(req MessagesRequest) int {
 	return estimateTokens(CountTokensRequest{
 		Model:    req.Model,
@@ -1188,6 +1201,7 @@ type OllamaWebSearchResponse struct {
 
 var WebSearchEndpoint = "https://ollama.com/api/web_search"
 
+// WebSearch 调用 Ollama 云 Web 搜索 API。
 func WebSearch(ctx context.Context, query string, maxResults int) (*OllamaWebSearchResponse, error) {
 	if internalcloud.Disabled() {
 		logutil.TraceContext(ctx, "anthropic: web search blocked", "reason", "cloud_disabled")
@@ -1266,6 +1280,7 @@ func WebSearch(ctx context.Context, query string, maxResults int) (*OllamaWebSea
 	return &searchResp, nil
 }
 
+// ConvertOllamaToAnthropicResults 将 Ollama 搜索结果转为 Anthropic 块格式。
 func ConvertOllamaToAnthropicResults(ollamaResults *OllamaWebSearchResponse) []WebSearchResult {
 	var results []WebSearchResult
 	for _, r := range ollamaResults.Results {

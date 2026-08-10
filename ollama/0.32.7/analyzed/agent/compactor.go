@@ -13,6 +13,7 @@ import (
 
 // Compaction wire-format. These constants and helpers are the single canonical
 // definition of how a compacted turn is represented in message history.
+// Compaction 线格式常量与辅助函数：定义压缩轮次在消息历史中的规范表示。
 const (
 	CompactionSummaryMessagePrefix = "Conversation summary:\n"
 	CompactionToolName             = "summary"
@@ -21,6 +22,7 @@ const (
 )
 
 const (
+	// 默认上下文窗口、保留用户轮次与压缩阈值。
 	defaultCompactionContextWindowTokens = 32768
 	defaultCompactionKeepUserTurns       = 3
 	defaultCompactionThreshold           = 0.8
@@ -31,6 +33,7 @@ const (
 	compactionSystemPrompt = "Summarize the archived part of an Ollama agent conversation. Preserve user goals, decisions, files, commands, tool results, and unresolved tasks needed to continue. Omit private reasoning and return only the summary."
 )
 
+// Compactor 定义对话历史压缩行为。
 type Compactor interface {
 	MaybeCompact(context.Context, CompactionRequest) (CompactionResult, error)
 
@@ -47,12 +50,14 @@ type Compactor interface {
 	ShouldCompact(req CompactionRequest) (trigger string, should bool)
 }
 
+// CompactionOptions 配置压缩器默认参数。
 type CompactionOptions struct {
 	ContextWindowTokens int
 	KeepUserTurns       int
 	Threshold           float64
 }
 
+// CompactionRequest 携带一次压缩操作的完整上下文。
 type CompactionRequest struct {
 	ChatID        string
 	Model         string
@@ -70,10 +75,12 @@ type CompactionRequest struct {
 	Progress      func(CompactionProgress)
 }
 
+// CompactionProgress 报告压缩摘要生成进度。
 type CompactionProgress struct {
 	Tokens int
 }
 
+// CompactionResult 返回压缩后的消息与元信息。
 type CompactionResult struct {
 	Messages  []api.Message
 	Compacted bool
@@ -82,11 +89,13 @@ type CompactionResult struct {
 	Reason    string
 }
 
+// SimpleCompactor 通过模型摘要实现简单压缩。
 type SimpleCompactor struct {
 	Client  ChatClient
 	Options CompactionOptions
 }
 
+// MaybeCompact 在需要时执行压缩并返回新消息列表。
 func (c *SimpleCompactor) MaybeCompact(ctx context.Context, req CompactionRequest) (CompactionResult, error) {
 	result := CompactionResult{Messages: req.Messages}
 	if c == nil {
@@ -141,6 +150,7 @@ func (c *SimpleCompactor) MaybeCompact(ctx context.Context, req CompactionReques
 	return result, nil
 }
 
+// shouldCompact 根据 token 估算判断是否需要压缩。
 func (c *SimpleCompactor) shouldCompact(req CompactionRequest) bool {
 	contextWindow := c.contextWindowTokens(req.Options)
 	threshold := int(float64(contextWindow) * c.threshold())
@@ -210,6 +220,7 @@ func (c *SimpleCompactor) keepUserTurns(options map[string]any) int {
 	return defaultCompactionKeepUserTurns
 }
 
+// ResolveContextWindowTokens 从运行时选项或配置解析有效上下文窗口。
 func ResolveContextWindowTokens(options map[string]any, configured int) int {
 	if n := intOption(options, "num_ctx"); n > 0 {
 		return n
@@ -220,6 +231,7 @@ func ResolveContextWindowTokens(options map[string]any, configured int) int {
 	return defaultCompactionContextWindowTokens
 }
 
+// ResolveCompactionThreshold 解析压缩触发阈值比例。
 func ResolveCompactionThreshold(configured float64) float64 {
 	if configured > 0 {
 		return configured
@@ -356,6 +368,7 @@ func truncateCompactionSummary(summary string) string {
 	})
 }
 
+// estimateCompactionTokens 估算文本 token 数量。
 func estimateCompactionTokens(text string) int {
 	text = strings.TrimSpace(text)
 	if text == "" {
@@ -364,6 +377,7 @@ func estimateCompactionTokens(text string) int {
 	return ApproximateTokens(len([]rune(text)))
 }
 
+// estimateMessagesTokens 估算消息列表总 token 数。
 func estimateMessagesTokens(messages []api.Message) int {
 	var total int
 	for _, msg := range messages {
@@ -380,6 +394,7 @@ func estimateMessagesTokens(messages []api.Message) int {
 	return total
 }
 
+// estimateCompactionRequestTokens 估算完整压缩请求的 token 数。
 func estimateCompactionRequestTokens(req CompactionRequest) int {
 	requestMessages := sanitizeMessagesForEstimate(req.Messages)
 	if strings.TrimSpace(req.SystemPrompt) != "" {
@@ -443,6 +458,7 @@ func (s *Session) checkPostCompactionPromptBudget(opts RunOptions, messages []ap
 	return fmt.Errorf("history is still too large after compaction (~%d/%d tokens). Start a fresh request, reduce the system prompt or history, or use a model with a larger context", estimated, contextWindow)
 }
 
+// sanitizeMessagesForEstimate 清理消息以便 token 估算（移除图像等）。
 func sanitizeMessagesForEstimate(messages []api.Message) []api.Message {
 	requestMessages := sanitizeMessagesForRequest(messages)
 	for i := range requestMessages {
@@ -534,6 +550,7 @@ func largestCompactionContentMessage(messages []api.Message) int {
 	return idx
 }
 
+// splitCompactionMessages 将历史拆分为前缀、归档段与后缀。
 func splitCompactionMessages(messages []api.Message, keepUserTurns int) (prefix []api.Message, previousSummary string, archive []api.Message, suffix []api.Message, keptUserTurns int, ok bool) {
 	if keepUserTurns < 0 {
 		keepUserTurns = defaultCompactionKeepUserTurns
@@ -645,6 +662,7 @@ func CompactionSummaryText(content string) string {
 	))
 }
 
+// intOption 从 options 映射读取整型选项。
 func intOption(options map[string]any, key string) int {
 	if options == nil {
 		return 0

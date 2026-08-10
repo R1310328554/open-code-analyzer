@@ -14,6 +14,8 @@ import (
 // session's synthetic skill call and bypasses this adapter.
 type Skill struct{ Catalog *agent.SkillCatalog }
 
+// Skill 是面向模型的技能目录适配器；模型主动加载需审批。
+
 func (t *Skill) Name() string { return "skill" }
 
 func (t *Skill) Description() string {

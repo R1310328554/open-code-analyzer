@@ -15,10 +15,12 @@ import (
 	"github.com/ollama/ollama/internal/modelref"
 )
 
+// ChatClient 抽象与 Ollama 聊天 API 的交互。
 type ChatClient interface {
 	Chat(context.Context, *api.ChatRequest, api.ChatResponseFunc) error
 }
 
+// Session  orchestrates 一次或多轮智能体运行：模型、工具、技能与压缩。
 type Session struct {
 	Client           ChatClient
 	EventSinks       []EventSink
@@ -31,6 +33,7 @@ type Session struct {
 	Compactor        Compactor
 }
 
+// RunOptions 配置单次 Run 的模型、消息与行为参数。
 type RunOptions struct {
 	ChatID       string
 	Model        string
@@ -51,6 +54,7 @@ type RunOptions struct {
 	MaxToolRounds int
 }
 
+// RunResult 返回运行结束后的消息历史与最新模型响应。
 type RunResult struct {
 	Messages   []api.Message
 	Latest     api.ChatResponse
@@ -58,6 +62,7 @@ type RunResult struct {
 }
 
 const (
+	// 工具轮次上限、工具结果截断与上下文窗口相关常量。
 	defaultMaxToolRounds              = 100
 	maxToolResultRunes                = 60000
 	smallContextToolResultRunes       = 6000
@@ -68,12 +73,14 @@ const (
 	toolOutputFullOmissionPrefix      = "[tool output truncated: output omitted because the context is full;"
 )
 
+// toolOutputOverflow 记录因上下文满而被省略的工具输出。
 type toolOutputOverflow struct {
 	toolName   string
 	toolCallID string
 	content    string
 }
 
+// toolBatchResult 汇总一批工具调用的消息与停止原因。
 type toolBatchResult struct {
 	messages  []api.Message
 	stop      toolExecutionStop
@@ -86,6 +93,8 @@ type toolBatchResult struct {
 // batch also terminates the run with the matching status.
 type toolExecutionStop string
 
+// toolExecutionStop 表示一批工具调用的批次级结果（与单条 ToolStatus 不同）。
+
 const (
 	toolExecutionDenied   toolExecutionStop = "denied"
 	toolExecutionCanceled toolExecutionStop = "canceled"
@@ -93,6 +102,7 @@ const (
 
 const toolExecutionDisabledMessage = "Tool execution disabled."
 
+// runPhase 表示运行状态机的当前阶段。
 type runPhase int
 
 const (
@@ -102,6 +112,7 @@ const (
 	runPhaseDone
 )
 
+// runState 保存单次 Run 的可变运行状态。
 type runState struct {
 	runID string
 	opts  RunOptions
@@ -125,6 +136,7 @@ type runState struct {
 	finish runFinish
 }
 
+// runFinish 记录运行终态与可选错误。
 type runFinish struct {
 	status         RunStatus
 	ignoreCanceled bool
@@ -151,6 +163,7 @@ func (st *runState) finishError(err error) {
 	st.phase = runPhaseDone
 }
 
+// Run 执行完整的模型-工具-压缩循环直至结束。
 func (s *Session) Run(ctx context.Context, opts RunOptions) (*RunResult, error) {
 	if err := s.validateRun(opts); err != nil {
 		return nil, err
@@ -237,6 +250,7 @@ func (s *Session) buildRunMessages(ctx context.Context, runID string, opts RunOp
 	return messages, nil
 }
 
+// runModelStep 向模型发起一轮聊天并处理响应。
 func (s *Session) runModelStep(ctx context.Context, st *runState) error {
 	opts := st.opts
 	meta := newEventMetadata(st.runID, opts)
@@ -316,6 +330,7 @@ func (s *Session) runModelStep(ctx context.Context, st *runState) error {
 	return nil
 }
 
+// runToolStep 执行待处理的工具调用批次。
 func (s *Session) runToolStep(ctx context.Context, st *runState) error {
 	batch, err := s.executeToolCalls(ctx, st.runID, st.opts, st.messages, st.pendingToolCalls)
 	if err != nil {
@@ -329,6 +344,7 @@ func (s *Session) runToolStep(ctx context.Context, st *runState) error {
 	return nil
 }
 
+// runCompactionStep 在适当时机触发历史压缩。
 func (s *Session) runCompactionStep(ctx context.Context, st *runState) error {
 	opts := st.opts
 	meta := newEventMetadata(st.runID, opts)
@@ -368,6 +384,7 @@ func (s *Session) runCompactionStep(ctx context.Context, st *runState) error {
 	return nil
 }
 
+// finishRun 发出 run_finished 事件并构造 RunResult。
 func (s *Session) finishRun(ctx context.Context, st *runState) (*RunResult, error) {
 	if st.finish.status != "" {
 		event := newRunFinished(newEventMetadata(st.runID, st.opts), st.finish.status)
@@ -384,6 +401,7 @@ func (s *Session) finishRun(ctx context.Context, st *runState) (*RunResult, erro
 	return &RunResult{Messages: st.messages, Latest: st.latest, WorkingDir: s.WorkingDir}, st.finish.err
 }
 
+// chatRound 流式调用模型并累积 assistant 消息与工具调用。
 func (s *Session) chatRound(ctx context.Context, runID string, opts RunOptions, messages []api.Message, latest *api.ChatResponse) (api.Message, []api.ToolCall, bool, error) {
 	meta := newEventMetadata(runID, opts)
 	var tools api.Tools
@@ -440,6 +458,7 @@ func (s *Session) chatRound(ctx context.Context, runID string, opts RunOptions, 
 	return assistant, pendingToolCalls, false, nil
 }
 
+// buildChatRequest 由 RunOptions 与消息构造 api.ChatRequest。
 func buildChatRequest(opts RunOptions, messages []api.Message, tools api.Tools) api.ChatRequest {
 	requestMessages := sanitizeMessagesForRequest(messages)
 	if strings.TrimSpace(opts.SystemPrompt) != "" {
@@ -469,6 +488,7 @@ func buildChatRequest(opts RunOptions, messages []api.Message, tools api.Tools) 
 	return req
 }
 
+// executeToolCalls 顺序执行工具调用并处理审批与截断。
 func (s *Session) executeToolCalls(ctx context.Context, runID string, opts RunOptions, messages []api.Message, calls []api.ToolCall) (toolBatchResult, error) {
 	meta := newEventMetadata(runID, opts)
 	batch := toolBatchResult{
@@ -713,6 +733,7 @@ func isContextCanceledError(ctx context.Context, err error) bool {
 	return ctx != nil && errors.Is(ctx.Err(), context.Canceled) && strings.Contains(err.Error(), "context canceled")
 }
 
+// maybeCompact 在 token 超阈值时尝试自动压缩对话。
 func (s *Session) maybeCompact(ctx context.Context, runID string, opts RunOptions, messages []api.Message, latest api.ChatResponse, skipNotified bool) ([]api.Message, bool, error) {
 	if s.Compactor == nil {
 		return messages, skipNotified, nil
@@ -853,6 +874,7 @@ func (s *Session) autoCompactionTrigger(req CompactionRequest) CompactionTrigger
 	return ""
 }
 
+// CompactionSkippedMessage 格式化压缩跳过原因供事件展示。
 func CompactionSkippedMessage(reason string) string {
 	reason = strings.TrimSpace(reason)
 	if reason == "" {
@@ -861,6 +883,7 @@ func CompactionSkippedMessage(reason string) string {
 	return reason
 }
 
+// resolvedMaxToolRounds 解析显式或模型默认的工具轮次上限。
 func resolvedMaxToolRounds(model string, value int) int {
 	if value != 0 {
 		return value
