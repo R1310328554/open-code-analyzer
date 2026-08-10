@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Health check status.
+ * 实例健康检查运行时状态，记录探测互斥与连续成功/失败计数。
  *
  * @author nacos
  */
@@ -29,11 +29,15 @@ public class HealthCheckStatus implements Serializable {
     
     private static final long serialVersionUID = -5791320072773064978L;
     
+    /** 是否正在执行健康检查（CAS 互斥标志）。 */
     public AtomicBoolean isBeingChecked = new AtomicBoolean(false);
     
+    /** 连续健康检查失败次数。 */
     public AtomicInteger checkFailCount = new AtomicInteger(0);
     
+    /** 连续健康检查成功次数。 */
     public AtomicInteger checkOkCount = new AtomicInteger(0);
     
+    /** 最近一次健康检查耗时（毫秒），-1 表示尚未探测。 */
     public long checkRt = -1L;
 }

@@ -25,7 +25,9 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Service metadata for v2.
+ * Nacos 命名 V2 服务级元数据模型。
+ *
+ * <p>包含 ephemeral 标志、保护阈值、负载均衡选择器、扩展字段与集群元数据映射。</p>
  *
  * @author xiweng.yy
  */
@@ -33,23 +35,31 @@ public class ServiceMetadata implements Serializable {
     
     private static final long serialVersionUID = -6605609934135069566L;
     
+    /** 服务是否为临时（ephemeral）类型；持久服务由 Raft 管理。 */
     /**
      * Service is ephemeral or persistence.
+      * <p>Nacos 命名 V2 元数据、POJO、客户端操作与健康检查；详见上方类/接口说明。</p>
      */
     private boolean ephemeral = true;
     
+    /** 健康实例比例保护阈值，低于该比例时触发保护策略。 */
     /**
      * protect threshold.
+      * <p>Nacos 命名 V2 元数据、POJO、客户端操作与健康检查；详见上方类/接口说明。</p>
      */
     private float protectThreshold = 0.0F;
     
+    /** 服务实例选择器类型，默认 {@link NoneSelector}。 */
     /**
      * Type of {@link Selector}.
+      * <p>Nacos 命名 V2 元数据、POJO、客户端操作与健康检查；详见上方类/接口说明。</p>
      */
     private Selector selector = new NoneSelector();
     
+    /** 服务级扩展键值对（并发安全）。 */
     private Map<String, String> extendData = new ConcurrentHashMap<>(1);
     
+    /** 集群名 → {@link ClusterMetadata} 映射。 */
     private Map<String, ClusterMetadata> clusters = new ConcurrentHashMap<>(1);
     
     public boolean isEphemeral() {

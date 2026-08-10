@@ -40,21 +40,26 @@ import java.util.Optional;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Service metadata processor.
+ * 服务元数据 CP 协议处理器，通过 Raft 同步服务级元数据变更。
+ *
+ * <p>支持 ADD/CHANGE/DELETE 操作，并与 {@link ServiceStorage} 联动清理实例索引。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class ServiceMetadataProcessor extends RequestProcessor4CP {
     
+    /** 命名元数据内存管理器。 */
     private final NamingMetadataManager namingMetadataManager;
     
+    /** 服务实例存储，删除元数据时同步清理。 */
     private final ServiceStorage serviceStorage;
     
     private final Serializer serializer;
     
     private final Type processType;
     
+    /** 快照读写锁，与快照操作共享。 */
     private final ReentrantReadWriteLock lock;
     
     private final ReentrantReadWriteLock.ReadLock readLock;
@@ -78,11 +83,13 @@ public class ServiceMetadataProcessor extends RequestProcessor4CP {
             .singletonList(new ServiceMetadataSnapshotOperation(namingMetadataManager, lock));
     }
     
+    /** 服务元数据暂不支持只读请求。 */
     @Override
     public Response onRequest(ReadRequest request) {
         return null;
     }
     
+    /** 应用 Raft 写请求：按操作类型增删改服务元数据。 */
     @Override
     public Response onApply(WriteRequest request) {
         readLock.lock();
@@ -114,6 +121,7 @@ public class ServiceMetadataProcessor extends RequestProcessor4CP {
         }
     }
     
+    /** ADD：合并集群元数据到已有服务，或新建服务元数据。 */
     private void addClusterMetadataToService(MetadataOperation<ServiceMetadata> op) {
         Service service = Service
             .newService(op.getNamespace(), op.getGroup(), op.getServiceName(),
@@ -128,6 +136,7 @@ public class ServiceMetadataProcessor extends RequestProcessor4CP {
         }
     }
     
+    /** CHANGE：合并新旧元数据后更新内存索引。 */
     private void updateServiceMetadata(MetadataOperation<ServiceMetadata> op) {
         Service service = Service
             .newService(op.getNamespace(), op.getGroup(), op.getServiceName(),
@@ -145,7 +154,9 @@ public class ServiceMetadataProcessor extends RequestProcessor4CP {
     }
     
     /**
-     * Do not modified old metadata directly to avoid read half status.
+     * 合并元数据：不直接修改旧对象，避免并发读到半更新状态。
+     *
+     * <p>ephemeral 标志仅保留创建时的值，其余字段以新元数据为准。</p>
      *
      * <p>Ephemeral variable should only use the value the metadata create.
      *
@@ -164,6 +175,7 @@ public class ServiceMetadataProcessor extends RequestProcessor4CP {
         return result;
     }
     
+    /** DELETE：移除元数据、单例服务及实例存储数据。 */
     private void deleteServiceMetadata(MetadataOperation<ServiceMetadata> op) {
         Service service = Service.newService(op.getNamespace(), op.getGroup(), op.getServiceName());
         namingMetadataManager.removeServiceMetadata(service);

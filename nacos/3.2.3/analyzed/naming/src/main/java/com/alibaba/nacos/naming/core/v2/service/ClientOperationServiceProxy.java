@@ -30,7 +30,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Implementation of external exposure.
+ * 客户端操作服务代理，对外统一暴露注册/订阅 API。
+ *
+ * <p>按实例 ephemeral 标志路由到临时或持久实现；订阅仅走临时路径。</p>
  *
  * <p>Depends on {@link com.alibaba.nacos.naming.push.v2.NamingSubscriberServiceV2Impl namingSubscriberServiceV2Impl}
  * having listen on related {@link com.alibaba.nacos.naming.core.v2.event.service.ServiceEvent.ServiceChangedEvent events}.
@@ -40,8 +42,10 @@ import java.util.List;
 @Component
 public class ClientOperationServiceProxy implements ClientOperationService {
     
+    /** 临时实例/订阅操作实现。 */
     private final ClientOperationService ephemeralClientOperationService;
     
+    /** 持久实例操作实现（Raft CP）。 */
     private final ClientOperationService persistentClientOperationService;
     
     public ClientOperationServiceProxy(
@@ -77,6 +81,7 @@ public class ClientOperationServiceProxy implements ClientOperationService {
     
     @Override
     public void subscribeService(Service service, Subscriber subscriber, String clientId) {
+        // 订阅者仅支持临时类型，直接委托临时客户端实现
         // Subscriber is an ephemeral type only, so call ephemeral client directly
         ephemeralClientOperationService.subscribeService(service, subscriber, clientId);
     }
@@ -87,6 +92,7 @@ public class ClientOperationServiceProxy implements ClientOperationService {
         ephemeralClientOperationService.unsubscribeService(service, subscriber, clientId);
     }
     
+    /** 根据实例 ephemeral 标志选择临时或持久操作服务。 */
     private ClientOperationService chooseClientOperationService(final Instance instance) {
         return instance.isEphemeral() ? ephemeralClientOperationService
             : persistentClientOperationService;

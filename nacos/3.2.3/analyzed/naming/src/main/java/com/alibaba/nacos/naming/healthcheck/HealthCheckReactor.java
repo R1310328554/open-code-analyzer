@@ -28,19 +28,23 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Health check reactor.
+ * 健康检查任务调度中心，统一管理 V1 心跳与 V2 健康探测。
+ *
+ * <p>通过 {@link GlobalExecutor} 延迟/周期执行检测任务，支持取消与立即调度。</p>
  *
  * @author nacos
  */
 public class HealthCheckReactor {
     
+    /** taskKey → 周期调度 Future，用于心跳任务取消。 */
     private static Map<String, ScheduledFuture> futureMap = new ConcurrentHashMap<>();
     
     /**
-     * Schedule health check task for v2.
+     * 调度 V2 健康检查任务，按归一化 RT 延迟执行。
      *
      * @param task health check task
      */
+    /** 包装拦截器后提交 V2 检测任务。 */
     public static void scheduleCheck(HealthCheckTaskV2 task) {
         task.setStartTime(System.currentTimeMillis());
         Runnable wrapperTask = new HealthCheckTaskInterceptWrapper(task);
@@ -49,7 +53,7 @@ public class HealthCheckReactor {
     }
     
     /**
-     * Schedule client beat check task with a delay.
+     * 以 5 秒初始延迟与 5 秒周期调度客户端心跳检测（V1）。
      *
      * @param task client beat check task
      */
@@ -64,7 +68,7 @@ public class HealthCheckReactor {
     }
     
     /**
-     * Cancel client beat check task.
+     * 取消已调度的心跳检测任务。
      *
      * @param task client beat check task
      */
@@ -82,7 +86,7 @@ public class HealthCheckReactor {
     }
     
     /**
-     * Schedule client beat check task without a delay.
+     * 立即调度一次性健康检查任务。
      *
      * @param task health check task
      * @return scheduled future

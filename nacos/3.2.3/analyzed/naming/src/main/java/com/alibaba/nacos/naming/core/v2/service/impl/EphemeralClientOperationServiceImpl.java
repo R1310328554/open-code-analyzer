@@ -39,7 +39,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Operation service for ephemeral clients and services.
+ * 临时客户端与临时服务的命名操作实现。
+ *
+ * <p>直接在内存客户端上增删实例/订阅，并通过 {@link NotifyCenter} 发布变更事件。</p>
  *
  * @author xiweng.yy
  */
@@ -52,6 +54,7 @@ public class EphemeralClientOperationServiceImpl implements ClientOperationServi
         this.clientManager = clientManager;
     }
     
+    /** 注册临时实例：校验服务/客户端类型后写入客户端并发布事件。 */
     @Override
     public void registerInstance(Service service, Instance instance, String clientId)
         throws NacosException {
@@ -77,6 +80,7 @@ public class EphemeralClientOperationServiceImpl implements ClientOperationServi
                 instanceInfo.getMetadataId(), false));
     }
     
+    /** 批量注册临时实例，封装为 {@link BatchInstancePublishInfo}。 */
     @Override
     public void batchRegisterInstance(Service service, List<Instance> instances, String clientId) {
         Service singleton = ServiceManager.getInstance().getSingleton(service);
@@ -105,6 +109,7 @@ public class EphemeralClientOperationServiceImpl implements ClientOperationServi
                 batchInstancePublishInfo.getMetadataId(), false));
     }
     
+    /** 注销临时实例并发布元数据过期事件。 */
     @Override
     public void deregisterInstance(Service service, Instance instance, String clientId) {
         if (!ServiceManager.getInstance().containSingleton(service)) {
@@ -126,6 +131,7 @@ public class EphemeralClientOperationServiceImpl implements ClientOperationServi
         }
     }
     
+    /** 添加服务订阅并发布订阅事件。 */
     @Override
     public void subscribeService(Service service, Subscriber subscriber, String clientId) {
         Service singleton =
@@ -138,6 +144,7 @@ public class EphemeralClientOperationServiceImpl implements ClientOperationServi
             new ClientOperationEvent.ClientSubscribeServiceEvent(singleton, clientId));
     }
     
+    /** 移除服务订阅并发布取消订阅事件。 */
     @Override
     public void unsubscribeService(Service service, Subscriber subscriber, String clientId) {
         Service singleton =
@@ -150,6 +157,7 @@ public class EphemeralClientOperationServiceImpl implements ClientOperationServi
             new ClientOperationEvent.ClientUnsubscribeServiceEvent(singleton, clientId));
     }
     
+    /** 校验客户端存在且为临时类型。 */
     private void checkClientIsLegal(Client client, String clientId) {
         if (client == null) {
             Loggers.SRV_LOG.warn("Client connection {} already disconnect", clientId);

@@ -20,7 +20,9 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * batch instance data.
+ * 客户端批量实例同步数据结构。
+ *
+ * <p>各列表按索引对齐，描述 namespace/group/service 与实例发布信息的对应关系。</p>
  * @ClassName: BatchInstanceData.
  * @author : ChenHao26
  * @Date: 2022/6/24 16:25
@@ -29,12 +31,16 @@ public class BatchInstanceData implements Serializable {
     
     private static final long serialVersionUID = 7845847904043098494L;
     
+    /** 与服务一一对应的命名空间列表。 */
     private List<String> namespaces;
     
+    /** 与服务一一对应的分组名列表。 */
     private List<String> groupNames;
     
+    /** 与服务一一对应的服务名列表。 */
     private List<String> serviceNames;
     
+    /** 与服务一一对应的批量实例发布信息列表。 */
     private List<BatchInstancePublishInfo> batchInstancePublishInfos;
     
     public BatchInstanceData() {

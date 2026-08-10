@@ -22,7 +22,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * the client support service registers multiple instance entity classes.
+ * 单服务多实例批量注册时的发布信息容器，继承 {@link InstancePublishInfo}。
+ *
+ * <p>客户端一次请求可向同一服务注册多个实例。</p>
  *
  * @author : ChenHao26
  * @ClassName: BatchInstancePublishInfo
@@ -30,8 +32,10 @@ import java.util.Objects;
  */
 public class BatchInstancePublishInfo extends InstancePublishInfo {
     
+    /** 客户端上报的全部实例发布信息列表。 */
     /**
      * save all the service instance data transmitted from the client.
+      * <p>Nacos 命名 V2 元数据、POJO、客户端操作与健康检查；详见上方类/接口说明。</p>
      */
     private List<InstancePublishInfo> instancePublishInfos;
     

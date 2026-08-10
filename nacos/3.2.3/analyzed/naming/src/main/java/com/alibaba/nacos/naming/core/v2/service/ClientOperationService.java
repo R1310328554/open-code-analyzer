@@ -29,14 +29,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Client operation service.
+ * 客户端命名操作服务接口：注册/注销实例与订阅服务。
+ *
+ * <p>临时与持久实例由不同实现处理，并提供 {@link Instance} → {@link InstancePublishInfo} 转换。</p>
  *
  * @author xiweng.yy
  */
 public interface ClientOperationService {
     
     /**
-     * Register instance to service.
+     * 向服务注册单个实例。
      *
      * @param service  service
      * @param instance instance
@@ -47,7 +49,7 @@ public interface ClientOperationService {
         throws NacosException;
     
     /**
-     * Batch register instance to service.
+     * 批量向服务注册多个实例。
      *
      * @param service  service
      * @param instances instances
@@ -56,7 +58,7 @@ public interface ClientOperationService {
     void batchRegisterInstance(Service service, List<Instance> instances, String clientId);
     
     /**
-     * Deregister instance from service.
+     * 从服务注销实例。
      *
      * @param service  service
      * @param instance instance
@@ -65,7 +67,7 @@ public interface ClientOperationService {
     void deregisterInstance(Service service, Instance instance, String clientId);
     
     /**
-     * Subscribe a service.
+     * 订阅服务变更（默认空实现，临时客户端实现覆盖）。
      *
      * @param service    service
      * @param subscriber subscribe
@@ -76,7 +78,7 @@ public interface ClientOperationService {
     }
     
     /**
-     * Unsubscribe a service.
+     * 取消订阅服务。
      *
      * @param service    service
      * @param subscriber subscribe
@@ -89,7 +91,9 @@ public interface ClientOperationService {
     double EPSILON = 1e-10;
     
     /**
-     * get publish info.
+     * 将 API {@link Instance} 转换为内部 {@link InstancePublishInfo}。
+     *
+     * <p>提取 metadata、权重、启用状态与集群名等扩展字段。</p>
      *
      * @param instance {@link Instance}
      * @return {@link InstancePublishInfo}

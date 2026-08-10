@@ -24,7 +24,9 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Service POJO for Nacos v2.
+ * Nacos V2 服务标识 POJO，由 namespace、group、name 与 ephemeral 唯一确定。
+ *
+ * <p>维护 revision 与最后更新时间，用于 Distro 同步与变更推送。</p>
  *
  * @author xiweng.yy
  */
@@ -32,16 +34,22 @@ public class Service implements Serializable {
     
     private static final long serialVersionUID = -990509089519499344L;
     
+    /** 命名空间 ID。 */
     private final String namespace;
     
+    /** 服务分组名。 */
     private final String group;
     
+    /** 服务名。 */
     private final String name;
     
+    /** 是否为临时服务。 */
     private final boolean ephemeral;
     
+    /** 服务版本号，实例变更时递增。 */
     private final AtomicLong revision;
     
+    /** 最近一次更新时间戳。 */
     private long lastUpdatedTime;
     
     private Service(String namespace, String group, String name, boolean ephemeral) {
@@ -53,6 +61,7 @@ public class Service implements Serializable {
         lastUpdatedTime = System.currentTimeMillis();
     }
     
+    /** 创建默认临时服务（ephemeral=true）。 */
     public static Service newService(String namespace, String group, String name) {
         return newService(namespace, group, name, true);
     }
@@ -86,19 +95,23 @@ public class Service implements Serializable {
         return lastUpdatedTime;
     }
     
+    /** 刷新最后更新时间为当前时刻。 */
     public void renewUpdateTime() {
         lastUpdatedTime = System.currentTimeMillis();
     }
     
+    /** 递增服务 revision。 */
     public void incrementRevision() {
         revision.incrementAndGet();
     }
     
+    /** 返回 group@@serviceName 格式名称。 */
     public String getGroupedServiceName() {
         return NamingUtils.getGroupedName(name, group);
     }
     
     public String getNameSpaceGroupedServiceName() {
+        // 不使用 String.intern，避免永久代/元空间泄漏
         //do not String.intern
         return namespace + Constants.SERVICE_INFO_SPLITER + NamingUtils.getGroupedName(name, group);
     }

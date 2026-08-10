@@ -75,8 +75,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.zip.Checksum;
 
 /**
- * Operation service for persistent clients and services. only for v2 For persistent instances, clientId must be in the
- * format of host:port.
+ * 持久客户端与持久服务的命名操作实现（V2），通过 Raft CP 协议持久化。
+ *
+ * <p>持久实例 clientId 必须为 host:port 格式；不支持持久订阅。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  * @author xiweng.yy
@@ -85,6 +86,7 @@ import java.util.zip.Checksum;
 public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
     implements ClientOperationService {
     
+    /** 持久 IP:Port 客户端管理器。 */
     private final PersistentIpPortClientManager clientManager;
     
     private final Serializer serializer = SerializeFactory.getDefault();
@@ -103,6 +105,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
         this.protocol.addRequestProcessors(Collections.singletonList(this));
     }
     
+    /** 通过 Raft ADD 写请求注册持久实例。 */
     @Override
     public void registerInstance(Service service, Instance instance, String clientId) {
         Service singleton = ServiceManager.getInstance().getSingleton(service);
@@ -130,8 +133,10 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
         }
     }
     
+    /** 通过 Raft CHANGE 写请求更新持久实例。 */
     /**
      * update persistent instance.
+      * <p>Nacos 命名 V2 元数据、POJO、客户端操作与健康检查；详见上方类/接口说明。</p>
      */
     public void updateInstance(Service service, Instance instance, String clientId) {
         Service singleton = ServiceManager.getInstance().getSingleton(service);
@@ -159,9 +164,11 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
     
     @Override
     public void batchRegisterInstance(Service service, List<Instance> instances, String clientId) {
+        // TODO：持久实例批量注册尚未实现
         //TODO PersistentClientOperationServiceImpl Nacos batchRegister
     }
     
+    /** 通过 Raft DELETE 写请求注销持久实例。 */
     @Override
     public void deregisterInstance(Service service, Instance instance, String clientId) {
         final InstanceStoreRequest request = new InstanceStoreRequest();
@@ -197,6 +204,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
         throw new UnsupportedOperationException("Temporary does not support");
     }
     
+    /** 应用 Raft 写请求：在状态机中执行注册/更新/注销。 */
     @Override
     public Response onApply(WriteRequest request) {
         final Lock lock = readLock;
@@ -240,6 +248,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
             .contains(instanceRequest.service);
     }
     
+    /** 状态机内注册持久实例并发布变更事件。 */
     private void onInstanceRegister(Service service, Instance instance, String clientId) {
         Service singleton = ServiceManager.getInstance().getSingleton(service);
         if (!clientManager.contains(clientId)) {
@@ -256,6 +265,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
                 false));
     }
     
+    /** 状态机内注销实例；无剩余发布服务时断开客户端。 */
     private void onInstanceDeregister(Service service, String clientId) {
         Service singleton = ServiceManager.getInstance().getSingleton(service);
         Client client = clientManager.getClient(clientId);
@@ -287,6 +297,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
         return Constants.NAMING_PERSISTENT_SERVICE_GROUP_V2;
     }
     
+    /** Raft 写请求体：携带服务、实例与 clientId。 */
     public static class InstanceStoreRequest implements Serializable {
         
         private static final long serialVersionUID = -9077205657156890549L;
@@ -323,6 +334,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
         
     }
     
+    /** 持久实例快照：导出/导入 {@link IpPortBasedClient} 同步数据。 */
     private class PersistentInstanceSnapshotOperation extends AbstractSnapshotOperation {
         
         private final String snapshotSaveTag = ClassUtils.getSimpleName(getClass()) + ".SAVE";
@@ -377,6 +389,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
             ConcurrentHashMap<String, ClientSyncData> newData =
                 serializer.deserialize(snapshotBytes);
             Collection<String> oldClientIds = clientManager.allClientId();
+            // 对比快照与本地：新增或更新存活客户端
             // add or update
             for (Map.Entry<String, ClientSyncData> entry : newData.entrySet()) {
                 if (oldClientIds.contains(entry.getKey())) {
@@ -391,6 +404,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
                     addSyncDataToClient(entry, snapshotClient);
                 }
             }
+            // 移除快照中已不存在的客户端及其全部实例
             // remove dead client
             removeDeadClient(newData.keySet(), oldClientIds);
         }
@@ -400,6 +414,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
          *
          * @param entry entry
          * @param client client
+          * <p>Nacos 命名 V2 元数据、POJO、客户端操作与健康检查；详见上方类/接口说明。</p>
          */
         private void updateSyncDataToClient(Map.Entry<String, ClientSyncData> entry,
             IpPortBasedClient client) {
@@ -408,6 +423,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
             List<String> groupNames = data.getGroupNames();
             List<String> serviceNames = data.getServiceNames();
             List<InstancePublishInfo> instances = data.getInstancePublishInfos();
+            // 快照中存活的实例：Service → InstancePublishInfo
             // alive instance data: Service = InstancePublishInfo
             Map<Service, InstancePublishInfo> newInstanceInfoMap = new HashMap<>(instances.size());
             for (int i = 0; i < namespaces.size(); i++) {
@@ -463,6 +479,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
          *
          * @param aliveClientIds new client ids
          * @param oldClientIds old client ids
+          * <p>Nacos 命名 V2 元数据、POJO、客户端操作与健康检查；详见上方类/接口说明。</p>
          */
         private void removeDeadClient(Collection<String> aliveClientIds,
             Collection<String> oldClientIds) {
@@ -471,6 +488,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP
                 return;
             }
             for (String oldClientId : oldClientIds) {
+                // 快照中不含该 clientId 表示已下线
                 // no contains if discaonnect
                 if (!aliveClientIds.contains(oldClientId)) {
                     Client client = clientManager.getClient(oldClientId);

@@ -24,7 +24,9 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Instance POJO of client published for Nacos v2.
+ * Nacos V2 客户端实例发布信息 POJO。
+ *
+ * <p>承载 IP、端口、集群、健康状态及扩展元数据，用于内存索引与推送。</p>
  *
  * @author xiweng.yy
  */
@@ -32,14 +34,19 @@ public class InstancePublishInfo implements Serializable {
     
     private static final long serialVersionUID = -74988890439616025L;
     
+    /** 实例 IP 地址。 */
     private String ip;
     
+    /** 实例端口号。 */
     private int port;
     
+    /** 实例健康标志。 */
     private boolean healthy;
     
+    /** 所属集群名称。 */
     private String cluster;
     
+    /** 扩展元数据（权重、自定义 ID 等）。 */
     private Map<String, Object> extendDatum;
     
     public InstancePublishInfo() {
@@ -91,6 +98,7 @@ public class InstancePublishInfo implements Serializable {
         this.healthy = healthy;
     }
     
+    /** 生成实例元数据唯一标识：ip:port:cluster。 */
     public String getMetadataId() {
         return genMetadataId(ip, port, cluster);
     }
@@ -124,6 +132,7 @@ public class InstancePublishInfo implements Serializable {
             + '}';
     }
     
+    /** 根据 IP、端口与集群构造元数据 ID。 */
     public static String genMetadataId(String ip, int port, String cluster) {
         return ip + InternetAddressUtil.IP_PORT_SPLITER + port + InternetAddressUtil.IP_PORT_SPLITER
             + cluster;

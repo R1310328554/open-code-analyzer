@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Service metadata snapshot operation.
+ * 服务元数据 Raft 快照操作，负责持久化与恢复 {@link ServiceMetadata} 映射。
  *
  * @author xiweng.yy
  */
@@ -38,6 +38,7 @@ public class ServiceMetadataSnapshotOperation extends AbstractMetadataSnapshotOp
     private static final String SNAPSHOT_LOAD =
         ServiceMetadataSnapshotOperation.class.getSimpleName() + ".LOAD";
     
+    /** 快照压缩包文件名。 */
     private static final String SNAPSHOT_ARCHIVE = "service_metadata.zip";
     
     private final NamingMetadataManager metadataManager;
@@ -51,12 +52,14 @@ public class ServiceMetadataSnapshotOperation extends AbstractMetadataSnapshotOp
         this.serializer = SerializeFactory.getDefault();
     }
     
+    /** 导出全部服务元数据快照为序列化字节流。 */
     @Override
     protected InputStream dumpSnapshot() {
         Map<Service, ServiceMetadata> snapshot = metadataManager.getServiceMetadataSnapshot();
         return new ByteArrayInputStream(serializer.serialize(snapshot));
     }
     
+    /** 从快照字节反序列化并加载到 {@link NamingMetadataManager}。 */
     @Override
     protected void loadSnapshot(byte[] snapshotBytes) {
         metadataManager.loadServiceMetadataSnapshot(serializer.deserialize(snapshotBytes));
