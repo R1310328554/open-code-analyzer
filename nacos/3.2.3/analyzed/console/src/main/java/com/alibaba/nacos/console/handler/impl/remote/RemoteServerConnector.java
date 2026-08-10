@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
+ * Console 远程 HTTP 转发公共连接器：提供健康节点选择、认证头注入与 context-path 解析。
  * Common connector for remote server operations in console deployment mode.
  *
  * <p>Provides shared functionality for remote HTTP forwarding services, including
@@ -48,10 +49,13 @@ import java.util.stream.Collectors;
 @EnabledRemoteHandler
 public class RemoteServerConnector {
     
+    /** 本地集群成员管理器 */
     private final NacosMemberManager memberManager;
     
+    /** 远程集群 Handler，用于查询节点 UP/DOWN 状态 */
     private final ClusterHandler remoteClusterHandler;
     
+    /** 注入成员管理器与集群 Handler */
     public RemoteServerConnector(NacosMemberManager memberManager,
         ClusterHandler remoteClusterHandler) {
         this.memberManager = memberManager;
@@ -59,7 +63,7 @@ public class RemoteServerConnector {
     }
     
     /**
-     * Add authentication identity headers to the HTTP request.
+     * 向 HTTP 请求注入服务端身份认证头。
      *
      * @param request the HTTP request to add auth headers to
      */
@@ -73,7 +77,7 @@ public class RemoteServerConnector {
     }
     
     /**
-     * Get the server context path for remote server.
+     * 获取远程 Nacos 服务的 context-path，默认 {@code /nacos}。
      *
      * @return server context path, defaults to "/nacos"
      */
@@ -82,7 +86,7 @@ public class RemoteServerConnector {
     }
     
     /**
-     * Randomly select one healthy member from the cluster.
+     * 从集群中随机选取一个 UP 状态的健康节点。
      *
      * @return a healthy cluster member
      * @throws NacosException if no healthy server node is found

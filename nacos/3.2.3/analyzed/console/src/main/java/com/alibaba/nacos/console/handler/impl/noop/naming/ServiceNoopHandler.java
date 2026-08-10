@@ -31,6 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import java.util.List;
 
 /**
+ * 服务管理空实现 Handler：functionMode 为 config 时 naming 模块未启用，全部接口返回 {@link ErrorCode#API_FUNCTION_DISABLED}。
  * Noop Implementation of ServiceHandler that handles service-related operations.
  * Used when `naming` module is disabled(functionMode is `config`)
  *
@@ -40,9 +41,11 @@ import java.util.List;
 @ConditionalOnMissingBean(value = ServiceHandler.class, ignored = ServiceNoopHandler.class)
 public class ServiceNoopHandler implements ServiceHandler {
     
+    /** naming 模块未启用时的统一错误提示文案 */
     private static final String MCP_NOT_ENABLED_MESSAGE =
         "Current functionMode is `config`, naming module is disabled.";
     
+    /** 创建服务 — 功能未启用时抛出异常 */
     @Override
     public void createService(ServiceForm serviceForm, ServiceMetadata serviceMetadata)
         throws Exception {
@@ -51,6 +54,7 @@ public class ServiceNoopHandler implements ServiceHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 删除服务 — 功能未启用时抛出异常 */
     @Override
     public void deleteService(String namespaceId, String serviceName, String groupName)
         throws Exception {
@@ -59,6 +63,7 @@ public class ServiceNoopHandler implements ServiceHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 更新服务 — 功能未启用时抛出异常 */
     @Override
     public void updateService(ServiceForm serviceForm, ServiceMetadata serviceMetadata)
         throws Exception {
@@ -67,6 +72,7 @@ public class ServiceNoopHandler implements ServiceHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 获取负载均衡选择器类型列表 — 功能未启用时抛出异常 */
     @Override
     public List<String> getSelectorTypeList() throws NacosException {
         throw new NacosApiException(NacosException.SERVER_NOT_IMPLEMENTED,
@@ -74,6 +80,7 @@ public class ServiceNoopHandler implements ServiceHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 分页查询服务订阅者 — 功能未启用时抛出异常 */
     @Override
     public Page<SubscriberInfo> getSubscribers(int pageNo, int pageSize, String namespaceId,
         String serviceName,
@@ -83,6 +90,7 @@ public class ServiceNoopHandler implements ServiceHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 分页查询服务列表 — 功能未启用时抛出异常 */
     @Override
     public Object getServiceList(boolean withInstances, String namespaceId, int pageNo,
         int pageSize,
@@ -92,6 +100,7 @@ public class ServiceNoopHandler implements ServiceHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 查询服务详情 — 功能未启用时抛出异常 */
     @Override
     public ServiceDetailInfo getServiceDetail(String namespaceId, String serviceName,
         String groupName)
@@ -101,6 +110,7 @@ public class ServiceNoopHandler implements ServiceHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 更新集群元数据 — 功能未启用时抛出异常 */
     @Override
     public void updateClusterMetadata(String namespaceId, String groupName, String serviceName,
         String clusterName,

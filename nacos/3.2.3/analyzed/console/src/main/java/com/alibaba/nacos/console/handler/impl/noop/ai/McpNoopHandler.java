@@ -32,6 +32,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.stereotype.Service;
 
 /**
+ * MCP 空实现 Handler：naming 或 config 模块未同时启用时注册，全部接口返回 {@link ErrorCode#API_FUNCTION_DISABLED}。
  * Noop implementation of Mcp handler.
  * Used when `naming` or `config` module are not enabled.
  *
@@ -41,9 +42,11 @@ import org.springframework.stereotype.Service;
 @ConditionalOnMissingBean(value = McpHandler.class, ignored = McpNoopHandler.class)
 public class McpNoopHandler implements McpHandler {
     
+    /** MCP 功能未启用时的统一错误提示文案 */
     private static final String MCP_NOT_ENABLED_MESSAGE =
         "Nacos AI MCP module and API required both `naming` and `config` module.";
     
+    /** 分页列出 MCP Server — 功能未启用时抛出异常 */
     @Override
     public Page<McpServerBasicInfo> listMcpServers(String namespaceId, String mcpName,
         String search, int pageNo,
@@ -53,6 +56,7 @@ public class McpNoopHandler implements McpHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 查询 MCP Server 详情 — 功能未启用时抛出异常 */
     @Override
     public McpServerDetailInfo getMcpServer(String namespaceId, String mcpName, String mcpId,
         String version)
@@ -62,6 +66,7 @@ public class McpNoopHandler implements McpHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 创建 MCP Server — 功能未启用时抛出异常 */
     @Override
     public String createMcpServer(String namespaceId, McpServerBasicInfo serverSpecification,
         McpToolSpecification toolSpecification, McpEndpointSpec endpointSpecification)
@@ -71,6 +76,7 @@ public class McpNoopHandler implements McpHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 更新 MCP Server — 功能未启用时抛出异常 */
     @Override
     public void updateMcpServer(String namespaceId, boolean isPublish,
         McpServerBasicInfo serverSpecification,
@@ -81,6 +87,7 @@ public class McpNoopHandler implements McpHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 删除 MCP Server — 功能未启用时抛出异常 */
     @Override
     public void deleteMcpServer(String namespaceId, String mcpName, String mcpId, String version)
         throws NacosException {
@@ -89,6 +96,7 @@ public class McpNoopHandler implements McpHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 校验 MCP 导入请求 — 功能未启用时抛出异常 */
     @Override
     public McpServerImportValidationResult validateImport(String namespaceId,
         McpServerImportRequest request) throws NacosException {
@@ -97,6 +105,7 @@ public class McpNoopHandler implements McpHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 执行 MCP 导入 — 功能未启用时抛出异常 */
     @Override
     public McpServerImportResponse executeImport(String namespaceId, McpServerImportRequest request)
         throws NacosException {

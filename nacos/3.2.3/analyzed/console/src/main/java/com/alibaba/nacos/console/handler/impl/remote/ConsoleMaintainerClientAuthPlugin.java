@@ -28,14 +28,17 @@ import java.util.List;
 import java.util.Properties;
 
 /**
+ * Console 远程 Maintainer 客户端认证插件：为远程运维客户端注入服务端身份凭证。
  * Client Auth Plugin implementation for console remote maintainer client.
  *
  * @author xiweng.yy
  */
 public class ConsoleMaintainerClientAuthPlugin extends AbstractClientAuthService {
     
+    /** 缓存登录身份上下文，供远程请求携带服务端身份头 */
     private LoginIdentityContext identityContext = new LoginIdentityContext();
     
+    /** 初始化认证：若启用服务端身份则写入 {@link LoginIdentityContext} */
     @Override
     public Boolean login(Properties properties) {
         NacosConsoleAuthConfig authConfig =
@@ -48,19 +51,23 @@ public class ConsoleMaintainerClientAuthPlugin extends AbstractClientAuthService
         return true;
     }
     
+    /** 设置远程 Nacos 集群地址列表（Console 模式下无需额外处理） */
     @Override
     public void setServerList(List<String> serverList) {
     }
     
+    /** 注入 HTTP 客户端模板（Console 模式下无需额外处理） */
     @Override
     public void setNacosRestTemplate(NacosRestTemplate nacosRestTemplate) {
     }
     
+    /** 返回当前请求应携带的登录身份上下文 */
     @Override
     public LoginIdentityContext getLoginIdentityContext(RequestResource resource) {
         return identityContext;
     }
     
+    /** 关闭认证插件（无额外资源需释放） */
     @Override
     public void shutdown() throws NacosException {
         

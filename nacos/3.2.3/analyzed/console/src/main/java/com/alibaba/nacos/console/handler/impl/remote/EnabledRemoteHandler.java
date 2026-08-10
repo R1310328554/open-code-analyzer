@@ -26,6 +26,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * 标记 Console 远程 Handler：当 {@link Constants#NACOS_DEPLOYMENT_TYPE} 为
+ * {@link Constants#NACOS_DEPLOYMENT_TYPE_CONSOLE} 时注册对应 Bean，通过 {@link NacosMaintainerClientHolder} 将控制台 API 转发至后端 Nacos Admin。
  * Using Remote handler to call Nacos Admin API to  handle console API request.
  *
  * @author xiweng.yy

@@ -26,6 +26,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.stereotype.Service;
 
 /**
+ * AI 流水线空实现 Handler：AI 模块未启用或 naming/config 未同时可用时注册，全部接口返回 {@link ErrorCode#API_FUNCTION_DISABLED}。
  * Noop implementation of Pipeline handler.
  * Used when AI module is not enabled.
  *
@@ -36,15 +37,18 @@ import org.springframework.stereotype.Service;
 @ConditionalOnMissingBean(value = PipelineHandler.class, ignored = PipelineNoopHandler.class)
 public class PipelineNoopHandler implements PipelineHandler {
     
+    /** 流水线功能未启用时的统一错误提示文案 */
     private static final String NOT_ENABLED_MSG =
         "Nacos AI Pipeline module requires both `naming` and `config` module.";
     
+    /** 按 ID 查询流水线执行记录 — 功能未启用时抛出异常 */
     @Override
     public PipelineExecution getPipeline(String pipelineId) throws NacosException {
         throw new NacosApiException(NacosException.SERVER_NOT_IMPLEMENTED,
             ErrorCode.API_FUNCTION_DISABLED, NOT_ENABLED_MSG);
     }
     
+    /** 分页列出流水线 — 功能未启用时抛出异常 */
     @Override
     public Page<PipelineExecution> listPipelines(String resourceType, String resourceName,
         String namespaceId, String version, int pageNo, int pageSize) throws NacosException {

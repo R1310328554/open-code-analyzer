@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 配置管理空实现 Handler：functionMode 为 naming 时 config 模块未启用，全部接口返回 {@link ErrorCode#API_FUNCTION_DISABLED}。
  * Noop Implementation of ConfigHandler for handling internal configuration operations.
  * Used when `config` module is disabled(functionMode is `naming`)
  *
@@ -48,9 +49,11 @@ import java.util.Map;
 @ConditionalOnMissingBean(value = ConfigHandler.class, ignored = ConfigNoopHandler.class)
 public class ConfigNoopHandler implements ConfigHandler {
     
+    /** 配置模块未启用时的统一错误提示文案 */
     private static final String MCP_NOT_ENABLED_MESSAGE =
         "Current functionMode is `naming`, config module is disabled.";
     
+    /** 分页查询配置列表 — 功能未启用时抛出异常 */
     @Override
     public Page<ConfigBasicInfo> getConfigList(int pageNo, int pageSize, String dataId,
         String group,
@@ -60,6 +63,7 @@ public class ConfigNoopHandler implements ConfigHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 查询配置详情 — 功能未启用时抛出异常 */
     @Override
     public ConfigDetailInfo getConfigDetail(String dataId, String group, String namespaceId)
         throws NacosException {
@@ -68,6 +72,7 @@ public class ConfigNoopHandler implements ConfigHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 发布配置 — 功能未启用时抛出异常 */
     @Override
     public Boolean publishConfig(ConfigForm configForm, ConfigRequestInfo configRequestInfo)
         throws NacosException {
@@ -76,6 +81,7 @@ public class ConfigNoopHandler implements ConfigHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 删除配置 — 功能未启用时抛出异常 */
     @Override
     public Boolean deleteConfig(String dataId, String group, String namespaceId, String tag,
         String clientIp,
@@ -85,6 +91,7 @@ public class ConfigNoopHandler implements ConfigHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 批量删除配置 — 功能未启用时抛出异常 */
     @Override
     public Boolean batchDeleteConfigs(List<Long> ids, String clientIp, String srcUser)
         throws NacosException {
@@ -93,6 +100,7 @@ public class ConfigNoopHandler implements ConfigHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 按内容搜索配置 — 功能未启用时抛出异常 */
     @Override
     public Page<ConfigBasicInfo> getConfigListByContent(String search, int pageNo, int pageSize,
         String dataId,
@@ -103,6 +111,7 @@ public class ConfigNoopHandler implements ConfigHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 查询配置监听者 — 功能未启用时抛出异常 */
     @Override
     public ConfigListenerInfo getListeners(String dataId, String group, String namespaceId,
         boolean aggregation)
@@ -112,6 +121,7 @@ public class ConfigNoopHandler implements ConfigHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 按客户端 IP 查询订阅配置 — 功能未启用时抛出异常 */
     @Override
     public ConfigListenerInfo getAllSubClientConfigByIp(String ip, boolean all, String namespaceId,
         boolean aggregation)
@@ -121,6 +131,7 @@ public class ConfigNoopHandler implements ConfigHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 导出配置 — 功能未启用时抛出异常 */
     @Override
     public ResponseEntity<byte[]> exportConfig(String dataId, String group, String namespaceId,
         String appName,
@@ -130,6 +141,7 @@ public class ConfigNoopHandler implements ConfigHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 导入并发布配置 — 功能未启用时抛出异常 */
     @Override
     public Result<Map<String, Object>> importAndPublishConfig(String srcUser, String namespaceId,
         SameConfigPolicy policy, MultipartFile file, String srcIp, String requestIpApp)
@@ -139,6 +151,7 @@ public class ConfigNoopHandler implements ConfigHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 克隆配置 — 功能未启用时抛出异常 */
     @Override
     public Result<Map<String, Object>> cloneConfig(String srcUser, String namespaceId,
         List<SameNamespaceCloneConfigBean> configBeansList, SameConfigPolicy policy, String srcIp,
@@ -148,6 +161,7 @@ public class ConfigNoopHandler implements ConfigHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 移除 Beta 配置 — 功能未启用时抛出异常 */
     @Override
     public boolean removeBetaConfig(String dataId, String group, String namespaceId,
         String remoteIp,
@@ -157,6 +171,7 @@ public class ConfigNoopHandler implements ConfigHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 查询 Beta 配置 — 功能未启用时抛出异常 */
     @Override
     public ConfigGrayInfo queryBetaConfig(String dataId, String group, String namespaceId)
         throws NacosException {

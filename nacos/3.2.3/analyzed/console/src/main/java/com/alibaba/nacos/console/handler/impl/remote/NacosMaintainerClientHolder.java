@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Properties;
 
 /**
+ * Nacos Maintainer 客户端持有者：在 Console 部署模式下聚合 Naming/Config/AI 远程运维客户端，并在集群成员变更时重建连接。
  * Nacos maintainer client holder.
  *
  * @author xiweng.yy
@@ -50,23 +51,32 @@ public class NacosMaintainerClientHolder extends MemberChangeListener {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(NacosMaintainerClientHolder.class);
     
+    /** 远程 Nacos 服务 context-path 配置键 */
     private static final String REMOTE_SERVER_CONTEXT_PATH_KEY =
         "nacos.console.remote.server.context-path";
     
+    /** 默认远程 context-path */
     private static final String DEFAULT_REMOTE_SERVER_CONTEXT_PATH = "/nacos";
     
+    /** 路径分隔符 */
     private static final String PATH_SEPARATOR = "/";
     
+    /** 根路径长度（仅含单个 {@code /}） */
     private static final int ROOT_PATH_LENGTH = 1;
     
+    /** 远程集群成员管理器 */
     private final RemoteServerMemberManager memberManager;
     
+    /** Naming 远程运维客户端（成员变更时重建） */
     private volatile NamingMaintainerService namingMaintainerService;
     
+    /** Config 远程运维客户端（成员变更时重建） */
     private volatile ConfigMaintainerService configMaintainerService;
     
+    /** AI 远程运维客户端（成员变更时重建） */
     private volatile AiMaintainerService aiMaintainerService;
     
+    /** 根据当前集群成员初始化各 Maintainer 客户端并订阅成员变更事件 */
     public NacosMaintainerClientHolder(RemoteServerMemberManager memberManager)
         throws NacosException {
         this.memberManager = memberManager;
@@ -74,6 +84,7 @@ public class NacosMaintainerClientHolder extends MemberChangeListener {
         NotifyCenter.registerSubscriber(this);
     }
     
+    /** 按最新集群地址与 context-path 重建 Naming/Config/AI Maintainer 客户端 */
     private void buildMaintainerService() throws NacosException {
         List<String> memberAddress =
             memberManager.allMembers().stream().map(Member::getAddress).toList();
@@ -87,6 +98,7 @@ public class NacosMaintainerClientHolder extends MemberChangeListener {
         aiMaintainerService = AiMaintainerFactory.createAiMaintainerService(properties);
     }
     
+    /** 解析并规范化远程 Nacos 服务的 context-path */
     static String resolveRemoteContextPath() {
         String remoteContextPath =
             EnvUtil.getProperty(REMOTE_SERVER_CONTEXT_PATH_KEY, DEFAULT_REMOTE_SERVER_CONTEXT_PATH);
@@ -99,18 +111,22 @@ public class NacosMaintainerClientHolder extends MemberChangeListener {
         return remoteContextPath;
     }
     
+    /** 返回 Naming Maintainer 客户端 */
     public NamingMaintainerService getNamingMaintainerService() {
         return namingMaintainerService;
     }
     
+    /** 返回 Config Maintainer 客户端 */
     public ConfigMaintainerService getConfigMaintainerService() {
         return configMaintainerService;
     }
     
+    /** 返回 AI Maintainer 客户端 */
     public AiMaintainerService getAiMaintainerService() {
         return aiMaintainerService;
     }
     
+    /** 集群成员变更时重建 Maintainer 客户端 */
     @Override
     public void onEvent(MembersChangeEvent event) {
         try {

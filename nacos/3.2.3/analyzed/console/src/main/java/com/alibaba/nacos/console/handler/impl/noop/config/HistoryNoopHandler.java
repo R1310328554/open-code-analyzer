@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
+ * 配置历史空实现 Handler：functionMode 为 naming 时 config 模块未启用，全部接口返回 {@link ErrorCode#API_FUNCTION_DISABLED}。
  * Noop Implementation of HistoryHandler for handling internal configuration operations.
  * Used when `config` module is disabled(functionMode is `naming`)
  *
@@ -39,9 +40,11 @@ import java.util.List;
 @ConditionalOnMissingBean(value = HistoryHandler.class, ignored = HistoryNoopHandler.class)
 public class HistoryNoopHandler implements HistoryHandler {
     
+    /** 配置模块未启用时的统一错误提示文案 */
     private static final String MCP_NOT_ENABLED_MESSAGE =
         "Current functionMode is `naming`, config module is disabled.";
     
+    /** 查询指定历史版本详情 — 功能未启用时抛出异常 */
     @Override
     public ConfigHistoryDetailInfo getConfigHistoryInfo(String dataId, String group,
         String namespaceId, Long nid)
@@ -51,6 +54,7 @@ public class HistoryNoopHandler implements HistoryHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 分页列出配置变更历史 — 功能未启用时抛出异常 */
     @Override
     public Page<ConfigHistoryBasicInfo> listConfigHistory(String dataId, String group,
         String namespaceId,
@@ -60,6 +64,7 @@ public class HistoryNoopHandler implements HistoryHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 查询上一版本历史详情 — 功能未启用时抛出异常 */
     @Override
     public ConfigHistoryDetailInfo getPreviousConfigHistoryInfo(String dataId, String group,
         String namespaceId,
@@ -69,6 +74,7 @@ public class HistoryNoopHandler implements HistoryHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 按命名空间列出全部配置 — 功能未启用时抛出异常 */
     @Override
     public List<ConfigBasicInfo> getConfigsByTenant(String namespaceId) throws NacosException {
         throw new NacosApiException(NacosException.SERVER_NOT_IMPLEMENTED,

@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 
 /**
+ * 服务器状态远程 Handler：聚合后端 Nacos 状态并补充 Console 本地模块与端口信息。
  * Remote Implementation of ServerStateHandler that performs server state operations.
  *
  * @author xiweng.yy
@@ -35,18 +36,21 @@ import java.util.Map;
 @EnabledRemoteHandler
 public class ServerStateRemoteHandler extends AbstractServerStateHandler {
     
+    /** Maintainer 客户端持有者 */
     private final NacosMaintainerClientHolder clientHolder;
     
+    /** 注入 Maintainer 客户端持有者 */
     public ServerStateRemoteHandler(NacosMaintainerClientHolder clientHolder) {
         this.clientHolder = clientHolder;
     }
     
+    /** 获取合并后的服务器状态键值对（含 Console 端口与各模块状态） */
     public Map<String, String> getServerState() throws NacosException {
         Map<String, String> serverState =
             this.clientHolder.getNamingMaintainerService().getServerState();
         serverState.put(Constants.SERVER_PORT_STATE,
             EnvUtil.getProperty("nacos.console.port", "8080"));
-        // Add current console states
+        // 合并当前 Console 进程各模块状态
         for (ModuleState each : ModuleStateHolder.getInstance().getAllModuleStates()) {
             each.getStates().forEach((s, o) -> serverState.put(s, null == o ? null : o.toString()));
         }

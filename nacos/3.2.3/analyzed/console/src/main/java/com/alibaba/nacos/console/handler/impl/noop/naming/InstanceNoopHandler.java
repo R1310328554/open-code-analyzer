@@ -27,6 +27,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.stereotype.Service;
 
 /**
+ * 服务实例空实现 Handler：functionMode 为 config 时 naming 模块未启用，全部接口返回 {@link ErrorCode#API_FUNCTION_DISABLED}。
  * Noop Implementation of InstanceHandler that handles instance-related operations.
  * Used when `naming` module is disabled(functionMode is `config`)
  *
@@ -36,9 +37,11 @@ import org.springframework.stereotype.Service;
 @ConditionalOnMissingBean(value = InstanceHandler.class, ignored = InstanceNoopHandler.class)
 public class InstanceNoopHandler implements InstanceHandler {
     
+    /** naming 模块未启用时的统一错误提示文案 */
     private static final String MCP_NOT_ENABLED_MESSAGE =
         "Current functionMode is `config`, naming module is disabled.";
     
+    /** 分页列出服务实例 — 功能未启用时抛出异常 */
     @Override
     public Page<? extends Instance> listInstances(String namespaceId,
         String serviceNameWithoutGroup, String groupName,
@@ -48,6 +51,7 @@ public class InstanceNoopHandler implements InstanceHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 更新实例元数据 — 功能未启用时抛出异常 */
     @Override
     public void updateInstance(InstanceForm instanceForm, Instance instance) throws NacosException {
         throw new NacosApiException(NacosException.SERVER_NOT_IMPLEMENTED,
@@ -55,6 +59,7 @@ public class InstanceNoopHandler implements InstanceHandler {
             MCP_NOT_ENABLED_MESSAGE);
     }
     
+    /** 下线/删除实例 — 功能未启用时抛出异常 */
     @Override
     public void removeInstance(InstanceForm instanceForm, Instance instance) throws NacosException {
         throw new NacosApiException(NacosException.SERVER_NOT_IMPLEMENTED,
