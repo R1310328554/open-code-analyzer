@@ -1573,3 +1573,18 @@
 2026-08-10T04:02:06Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/AbstractConsistencyProtocol.java nacos wave52a [0:15] core tps/controllers + protocol
 2026-08-10T04:02:06Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/ConsistencyConfiguration.java nacos wave52a [0:15] core tps/controllers + protocol
 2026-08-10T04:02:06Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/ProtocolExecutor.java nacos wave52a [0:15] core tps/controllers + protocol
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/ProtocolManager.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/DistroConfig.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/DistroConstants.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/DistroProtocol.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/component/DistroCallback.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/component/DistroComponentHolder.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/component/DistroDataProcessor.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/component/DistroDataStorage.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/component/DistroFailedTaskHandler.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/component/DistroTransportAgent.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/entity/DistroData.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/entity/DistroKey.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/exception/DistroException.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/monitor/DistroRecord.java nacos wave52b [15:30] core distro protocol/components
+2026-08-10T04:02:15Z DONE core/src/main/java/com/alibaba/nacos/core/distributed/distro/monitor/DistroRecordsHolder.java nacos wave52b [15:30] core distro protocol/components

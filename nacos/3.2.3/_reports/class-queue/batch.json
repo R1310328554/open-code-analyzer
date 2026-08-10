@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T04:00:56Z",
-  "files": [
-    "core/src/main/java/com/alibaba/nacos/core/distributed/ProtocolManager.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/DistroConfig.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/DistroConstants.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/DistroProtocol.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/component/DistroCallback.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/component/DistroComponentHolder.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/component/DistroDataProcessor.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/component/DistroDataStorage.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/component/DistroFailedTaskHandler.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/component/DistroTransportAgent.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/entity/DistroData.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/entity/DistroKey.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/exception/DistroException.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/monitor/DistroRecord.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/distro/monitor/DistroRecordsHolder.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 977,
-  "done": 1545
+  "done": 1560
 }
