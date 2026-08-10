@@ -1558,3 +1558,18 @@
 2026-08-10T08:03:31Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/JndiEntityManagerLookup.java wave53b authz adapters + cluster/JPA connection
 2026-08-10T08:03:31Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/JpaConnectionProvider.java wave53b authz adapters + cluster/JPA connection
 2026-08-10T08:03:31Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/JpaConnectionProviderFactory.java wave53b authz adapters + cluster/JPA connection
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/JpaConnectionSpi.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/JpaExceptionConverter.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/JpaKeycloakTransaction.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/PersistenceExceptionConverter.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/entityprovider/JpaEntityProvider.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/entityprovider/JpaEntityProviderFactory.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/entityprovider/JpaEntitySpi.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/JpaUpdaterProvider.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/JpaUpdaterProviderFactory.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/JpaUpdaterSpi.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/LiquibaseConstants.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/LiquibaseJpaUpdaterProvider.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/LiquibaseJpaUpdaterProviderFactory.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/MySQL8VarcharType.java wave54a JPA SPI/tx + Liquibase updater core
+2026-08-10T08:05:22Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/ThreadLocalSessionContext.java wave54a JPA SPI/tx + Liquibase updater core
