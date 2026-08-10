@@ -10,6 +10,10 @@ import org.keycloak.models.UserSessionModel;
 import org.keycloak.protocol.ProtocolMapperUtils;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * 用户属性 NameID 映射器：将指定用户自定义属性的首值作为 SAML NameID。
+ * <p>实现 {@link SAMLNameIdMapper}，适用于 SP 要求 NameID 来自特定属性的场景。</p>
+ */
 public class UserAttributeNameIdMapper extends AbstractSAMLProtocolMapper implements SAMLNameIdMapper {
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
@@ -26,31 +30,38 @@ public class UserAttributeNameIdMapper extends AbstractSAMLProtocolMapper implem
         configProperties.add(property);
     }
 
+    /** SPI 提供者标识符 */
     public static final String PROVIDER_ID = "saml-user-attribute-nameid-mapper";
 
+    /** {@inheritDoc} 返回用户属性与 NameID 相关配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 控制台显示名：User Attribute Mapper For NameID */
     @Override
     public String getDisplayType() {
         return "User Attribute Mapper For NameID";
     }
 
+    /** {@inheritDoc} 归类为 NameID 映射器 */
     @Override
     public String getDisplayCategory() {
         return "NameID Mapper";
     }
 
+    /** {@inheritDoc} 将用户属性映射为 SAML NameID 值 */
     @Override
     public String getHelpText() {
         return "Map user attribute to SAML NameID value.";
     }
 
+    /** {@inheritDoc} 读取配置的用户属性首值作为 NameID */
     @Override
     public String mapperNameId(String nameIdFormat, ProtocolMapperModel mappingModel, KeycloakSession session,
             UserSessionModel userSession, AuthenticatedClientSessionModel clientSession) {

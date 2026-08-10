@@ -51,6 +51,8 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.w3c.dom.Document;
 
 /**
+ * SAML ECP（Enhanced Client or Proxy）Profile 服务：通过 SOAP 绑定处理非浏览器客户端的 SAML SSO。
+ * <p>扩展 {@link SamlService}，强制被动认证、返回 SOAP 封装响应，并使用专用认证 flow。</p>
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class SamlEcpProfileService extends SamlService {
@@ -59,16 +61,19 @@ public class SamlEcpProfileService extends SamlService {
     private static final String NS_PREFIX_SAML_PROTOCOL = "samlp";
     private static final String NS_PREFIX_SAML_ASSERTION = "saml";
 
+    /** SOAP Fault 默认原因：无法处理认证请求 */
     public static final String AUTHN_REQUEST_CANNOT_BE_PROCESSED = "Authentication request cannot be processed.";
 
-    public SamlEcpProfileService(KeycloakSession session, EventBuilder event, long maxInflatingSize, DestinationValidator destinationValidator) {
+    /** @param session Keycloak 会话；@param event 事件构建器；@param maxInflatingSize Redirect 最大解压大小；@param destinationValidator Destination 校验器 */
         super(session, event, maxInflatingSize, destinationValidator);
     }
 
+    /** 从 SOAP 输入流提取 SAML 消息并执行 ECP 认证 */
     public Response authenticate(InputStream inputStream) {
         return authenticate(Soap.extractSoapMessage(inputStream));
     }
 
+    /** 处理 SOAP 文档中的 AuthnRequest 并返回 SOAP 响应或 Fault */
     public Response authenticate(Document soapMessage) {
         try {
             return new PostBindingProtocol() {
@@ -96,13 +101,13 @@ public class SamlEcpProfileService extends SamlService {
 
                 @Override
                 protected Response loginRequest(String relayState, AuthnRequestType requestAbstractType, ClientModel client) {
-                    // Do not allow ECP login when client does not support it
+                    // 客户端未启用 ECP 时不允许执行该 profile
                     if (!new SamlClient(client).allowECPFlow()) {
                         logger.errorf("Client %s is not allowed to execute ECP flow", client.getClientId());
                         throw new RuntimeException("Client is not allowed to use ECP profile.");
                     }
 
-                    // force passive authentication when executing this profile
+                    // ECP profile 强制被动认证（IsPassive=true）
                     requestAbstractType.setIsPassive(true);
                     requestAbstractType.setDestination(session.getContext().getUri().getAbsolutePath());
                     return super.loginRequest(relayState, requestAbstractType, client);
@@ -122,14 +127,14 @@ public class SamlEcpProfileService extends SamlService {
 
     @Override
     protected Response newBrowserAuthentication(AuthenticationSessionModel authSession, boolean isPassive, boolean redirectToAuthentication, SamlProtocol samlProtocol) {
-        // Saml ECP flow creates only TRANSIENT user sessions
+        // ECP flow 仅创建 TRANSIENT 用户会话
         authSession.setClientNote(AuthenticationManager.USER_SESSION_PERSISTENT_STATE, UserSessionModel.SessionPersistenceState.TRANSIENT.toString());
         return super.newBrowserAuthentication(authSession, isPassive, redirectToAuthentication, createEcpSamlProtocol());
     }
 
     private SamlProtocol createEcpSamlProtocol() {
         return new SamlProtocol() {
-            // method created to send a SOAP Binding response instead of a HTTP POST response
+            // 覆盖默认 POST 绑定，改为返回 SOAP 封装响应
             @Override
             protected Response buildAuthenticatedResponse(AuthenticatedClientSessionModel clientSession, String redirectUri, Document samlDocument, JaxrsSAML2BindingBuilder bindingBuilder) throws ConfigurationException, ProcessingException, IOException {
                 Document document = bindingBuilder.postBinding(samlDocument).getDocument();
@@ -182,6 +187,7 @@ public class SamlEcpProfileService extends SamlService {
         }.setEventBuilder(event).setHttpHeaders(headers).setRealm(realm).setSession(session).setUriInfo(session.getContext().getUri());
     }
 
+    /** {@inheritDoc} 使用 {@link DefaultAuthenticationFlows#SAML_ECP_FLOW} 认证 flow */
     @Override
     protected AuthenticationFlowModel getAuthenticationFlow(AuthenticationSessionModel authSession) {
         return realm.getAuthenticationFlowsStream()

@@ -21,9 +21,16 @@ import org.keycloak.models.ProtocolMapperModel;
 import org.keycloak.models.RoleModel;
 
 /**
+ * SAML 角色名称映射器接口：在写入角色列表前转换单个角色的显示名称。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface SAMLRoleNameMapper {
+    /**
+     * 将 {@link RoleModel} 映射为 SAML 属性中使用的角色名字符串。
+     * @param model 协议映射器配置
+     * @param role 待映射角色
+     * @return 输出到 Assertion 的角色名
+     */
     String mapName(ProtocolMapperModel model, RoleModel role);
 }

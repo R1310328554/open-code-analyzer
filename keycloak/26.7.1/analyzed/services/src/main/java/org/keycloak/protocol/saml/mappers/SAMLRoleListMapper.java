@@ -24,11 +24,19 @@ import org.keycloak.models.ProtocolMapperModel;
 import org.keycloak.models.UserSessionModel;
 
 /**
+ * SAML 角色列表映射器接口：将用户角色写入 Assertion 的 AttributeStatement。
+ * <p>实现类负责解析领域/客户端角色并以 SAML 属性格式输出。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface SAMLRoleListMapper {
 
-    void mapRoles(AttributeStatementType roleAttributeStatement, ProtocolMapperModel mappingModel, KeycloakSession session,
-                                     UserSessionModel userSession, ClientSessionContext clientSessionCtx );
+    /**
+     * 将用户角色映射到 SAML AttributeStatement。
+     * @param roleAttributeStatement 目标属性语句
+     * @param mappingModel 协议映射器配置
+     * @param session Keycloak 会话
+     * @param userSession 用户会话
+     * @param clientSessionCtx 客户端会话上下文
+     */
 }

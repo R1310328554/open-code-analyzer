@@ -26,60 +26,55 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
- * Provider interface for SAML authentication preprocessing.
+ * SAML 认证预处理器提供者接口：在登录/登出请求与响应收发各阶段介入修改 SAML 消息。
+ * <p>同时继承 {@link org.keycloak.provider.Provider} 与 {@link org.keycloak.provider.ProviderFactory}，可注册为 SPI 实现。</p>
  * 
  * @author <a href="mailto:gideon.caranzo@thalesgroup.com">Gideon Caranzo</a>
  *
  */
 public interface SamlAuthenticationPreprocessor extends Provider, ProviderFactory<SamlAuthenticationPreprocessor> {
 
-    /**
-     * Called before a login request is processed.
-     */
+    /** 处理收到的 AuthnRequest 之前调用 */
+
     default AuthnRequestType beforeProcessingLoginRequest(AuthnRequestType authnRequest,
             AuthenticationSessionModel authSession) {
         return authnRequest;
     }
 
     /**
-     * Called before a logout request is processed.
-     * 
-     * @param clientSession can be null if client is not applicable (e.g. when used within identity broker)
+     * 处理收到的 LogoutRequest 之前调用。
+     * @param clientSession 客户端会话；身份代理等场景可为 null
      */
     default LogoutRequestType beforeProcessingLogoutRequest(LogoutRequestType logoutRequest,
             UserSessionModel authSession, AuthenticatedClientSessionModel clientSession) {
         return logoutRequest;
     }
 
-    /**
-     * Called before a login request is sent.
-     */
+    /** 向外发送 AuthnRequest 之前调用 */
+
     default AuthnRequestType beforeSendingLoginRequest(AuthnRequestType authnRequest,
             AuthenticationSessionModel clientSession) {
         return authnRequest;
     }
 
     /**
-     * Called before a logout request is sent.
-     * 
-     * @param clientSession can be null if client is not applicable (e.g. when used within identity broker)
+     * 向外发送 LogoutRequest 之前调用。
+     * @param clientSession 客户端会话；身份代理等场景可为 null
      */
     default LogoutRequestType beforeSendingLogoutRequest(LogoutRequestType logoutRequest,
             UserSessionModel authSession, AuthenticatedClientSessionModel clientSession) {
         return logoutRequest;
     }
 
-    /**
-     * Called before a login response is processed.
-     */
+    /** 处理收到的登录响应（StatusResponse）之前调用 */
+
     default StatusResponseType beforeProcessingLoginResponse(StatusResponseType statusResponse,
             AuthenticationSessionModel authSession) {
         return statusResponse;
     }
 
-    /**
-     * Called before a response is sent back to the client.
-     */
+    /** 向客户端发送 SAML 响应之前调用 */
+
     default StatusResponseType beforeSendingResponse(StatusResponseType statusResponse,
             AuthenticatedClientSessionModel clientSession) {
         return statusResponse;

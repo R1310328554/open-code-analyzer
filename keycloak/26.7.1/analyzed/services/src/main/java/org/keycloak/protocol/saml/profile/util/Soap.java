@@ -58,27 +58,26 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 /**
+ * SAML SOAP 工具类：构建/解析 SOAP 消息、提取 SAML Body、编码 HTTP POST 绑定及发起 SOAP 调用。
+ * <p>供 ECP Profile 与 SOAP 绑定端点复用。</p>
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public final class Soap {
 
+    /** 创建 SOAP Fault 构建器 */
     public static SoapFaultBuilder createFault() {
         return new SoapFaultBuilder();
     }
 
+    /** 创建 SOAP 消息构建器 */
     public static SoapMessageBuilder createMessage() {
         return new SoapMessageBuilder();
     }
 
     /**
-     * <p>Returns a string encoded accordingly with the SAML HTTP POST Binding specification based on the
-     * given <code>inputStream</code> which must contain a valid SOAP message.
-     *
-     * <p>The resulting string is based on the Body of the SOAP message, which should map to a valid SAML message.
-     *
-     * @param document the document containing a valid SOAP message with a Body that contains a SAML message
-     *
-     * @return a string encoded accordingly with the SAML HTTP POST Binding specification
+     * 将 SOAP Body 中的 SAML 文档按 HTTP POST 绑定规范 Base64 编码。
+     * @param document 含 SAML 消息的 SOAP Body 文档
+     * @return POST 绑定编码字符串
      */
     public static String toSamlHttpPostMessage(Document document) {
         try {
@@ -89,12 +88,9 @@ public final class Soap {
     }
 
     /**
-     * <p>Returns Document based on the given <code>inputStream</code> which must contain a valid SOAP message.
-     *
-     * <p>The resulting string is based on the Body of the SOAP message, which should map to a valid SAML message.
-     *
-     * @param inputStream an InputStream consisting of a SOAPMessage
-     * @return A document containing the body of the SOAP message
+     * 从输入流解析 SOAP 消息并提取 Body 中的 SAML 文档。
+     * @param inputStream SOAP 消息输入流
+     * @return Body 内 SAML 内容的 W3C Document
      */
     public static Document extractSoapMessage(InputStream inputStream) {
         try {
@@ -107,11 +103,9 @@ public final class Soap {
     }
 
     /**
-     * <p>Returns Document based on the given SOAP message.
-     *
-     * <p>The resulting string is based on the Body of the SOAP message, which should map to a valid SAML message.
-     * @param soapMessage a SOAPMessage from which to extract the body
-     * @return A document containing the body of the SOAP message
+     * 从 {@link SOAPMessage} 提取 Body 首个元素为 SAML Document。
+     * @param soapMessage 已解析的 SOAP 消息
+     * @return Body 内 SAML 文档
      */
     public static Document extractSoapMessage(SOAPMessage soapMessage) {
         try {
@@ -126,9 +120,9 @@ public final class Soap {
     }
 
     /**
-     * Get the first direct child that is an XML element.
-     * In case of pretty-printed XML (with newlines and spaces), this method skips non-element objects (e.g. text)
-     * to really fetch the next XML tag.
+     * 获取父节点下第一个 XML 元素子节点（跳过空白文本节点）。
+     * @param parent 父 DOM 节点
+     * @return 首个 Element 子节点，无则 null
      */
     public static Node getFirstChild(Node parent) {
         Node n = parent.getFirstChild();
@@ -139,6 +133,7 @@ public final class Soap {
         return n;
     }
 
+    /** SOAP 消息构建器：组装 Envelope、Header、Body 并输出 JAX-RS Response 或 HTTP POST */
     public static class SoapMessageBuilder {
         private final SOAPMessage message;
         private final SOAPBody body;
@@ -154,6 +149,7 @@ public final class Soap {
             }
         }
 
+        /** 将 W3C Document 追加到 SOAP Body */
         public SoapMessageBuilder addToBody(Document document) {
             try {
                 this.body.addDocument(document);
@@ -163,6 +159,7 @@ public final class Soap {
             return this;
         }
 
+        /** 在 Envelope 上声明 XML 命名空间 */
         public SoapMessageBuilder addNamespace(String prefix, String ns) {
             try {
                 envelope.addNamespaceDeclaration(prefix, ns);
@@ -172,6 +169,7 @@ public final class Soap {
             return this;
         }
 
+        /** 添加 SOAP Header 元素（如 ECP 扩展头） */
         public SOAPHeaderElement addHeader(String name, String prefix) {
             try {
                 return this.envelope.getHeader().addHeaderElement(envelope.createQName(name, prefix));
@@ -209,18 +207,17 @@ public final class Soap {
         }
 
         /**
-         * Standard build method, generates a javax ws rs Response
-         * @param status the status of the response
-         * @return a Response containing the SOAP message
+         * 构建指定 HTTP 状态的 JAX-RS Response（Content-Type: text/xml）。
+         * @param status HTTP 响应状态
+         * @return 含 SOAP 字节的 Response
          */
         Response build(Status status) {
             return Response.status(status).entity(getBytes()).type(MediaType.TEXT_XML_TYPE).build();
         }
 
         /**
-         * Build method for testing, generates an apache httpcomponents HttpPost
-         * @param uri the URI to which to POST the soap message
-         * @return an HttpPost containing the SOAP message
+         * 构建 Apache HttpClient HttpPost（测试用）。
+         * @param uri SOAP 端点 URI
          */
         public HttpPost buildHttpPost(URI uri) {
             HttpPost post = new HttpPost(uri);
@@ -260,14 +257,14 @@ public final class Soap {
          * @throws SOAPException Raised if there's a problem performing the SOAP call
          */
         public SOAPMessage call(String url, KeycloakSession session) throws SOAPException {
-            // https://github.com/eclipse-ee4j/metro-saaj/blob/master/saaj-ri/src/main/java/com/sun/xml/messaging/saaj/client/p2p/HttpSOAPConnection.java
-            // save changes of the message, this adds content-type and content-length headers
+            // 参考 Metro SAAJ HttpSOAPConnection 实现
+            // 保存消息变更以写入 Content-Type 与 Content-Length
             if (message.saveRequired()) {
                 message.saveChanges();
             }
-            // use SimpleHttp from the session
+            // 使用 session 中的 SimpleHttp 发送请求
             SimpleHttpRequest simpleHttp = SimpleHttp.create(session).doPost(url);
-            // add all the headers as HTTP headers except the ones needed for the HttpEntity
+            // 将 MIME 头映射为 HTTP 头（Content-Type/Length 单独处理）
             Iterator<MimeHeader> reqHeaders = message.getMimeHeaders().getAllHeaders();
             ContentType contentType = null;
             int length = -1;
@@ -288,15 +285,15 @@ public final class Soap {
                 }
             }
             if (!hasCacheControl) {
-                // set no cache if cache-control was not specified
+                // 未指定 Cache-Control 时默认 no-cache, no-store
                 simpleHttp.header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store");
             }
-            // create the message and send to the parameter URL
+            // 序列化 SOAP 消息并 POST 到目标 URL
             try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 message.writeTo(out);
                 simpleHttp.entity(new ByteArrayEntity(out.toByteArray(), 0, length, contentType));
                 try (SimpleHttpResponse res = simpleHttp.asResponse()) {
-                    // HTTP_INTERNAL_ERROR (500) and HTTP_BAD_REQUEST (400) should be processed as SOAP faults
+                    // 500/400/200 均按 SOAP 响应解析
                     if (res.getStatus() == HttpStatus.SC_INTERNAL_SERVER_ERROR
                             || res.getStatus() == HttpStatus.SC_BAD_REQUEST
                             || res.getStatus() == HttpStatus.SC_OK) {
@@ -307,7 +304,7 @@ public final class Soap {
                         }
                         String responseString = res.asString();
                         if (responseString == null || responseString.isEmpty()) {
-                            // return null if no reply message
+                            // 空响应体时返回 null
                             return null;
                         }
                         return MessageFactory.newInstance().createMessage(resHeaders, new ByteArrayInputStream(responseString.getBytes(res.getContentTypeCharset())));
@@ -325,6 +322,7 @@ public final class Soap {
         }
     }
 
+    /** SOAP Fault 构建器：设置 fault code/reason/detail 并返回 500 Response */
     public static class SoapFaultBuilder {
 
         private final SOAPFault fault;
@@ -339,6 +337,7 @@ public final class Soap {
             }
         }
 
+        /** 设置 Fault detail 文本 */
         public SoapFaultBuilder detail(String detail) {
             try {
                 this.fault.addDetail().setValue(detail);
@@ -348,6 +347,7 @@ public final class Soap {
             return this;
         }
 
+        /** 设置 Fault 原因字符串 */
         public SoapFaultBuilder reason(String reason) {
             try {
                 this.fault.setFaultString(reason);
@@ -357,6 +357,7 @@ public final class Soap {
             return this;
         }
 
+        /** 设置 Fault 代码 */
         public SoapFaultBuilder code(String code) {
             try {
                 this.fault.setFaultCode(code);

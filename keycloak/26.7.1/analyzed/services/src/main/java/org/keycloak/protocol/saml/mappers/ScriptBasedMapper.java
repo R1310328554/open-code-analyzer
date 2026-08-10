@@ -28,24 +28,21 @@ import org.jboss.logging.Logger;
 
 
 /**
- * This class provides a mapper that uses javascript to attach a value to an attribute for SAML tokens.
- * The mapper can handle both a result that is a single value, or multiple values (an array or a list for example).
- * For the latter case, it can return the result as a single attribute with multiple values, or as multiple attributes
- * However, in all cases, the returned values must be castable to String values.
+ * 基于 JavaScript 的 SAML 属性映射器：执行脚本计算 AttributeStatement 中的属性值。
+ * <p>支持单值或多值（数组/集合）；多值可合并为单属性多值或拆分为多个属性，结果须可转为字符串。</p>
+ * <p>需启用 {@link org.keycloak.common.Profile.Feature#SCRIPTS} 特性。</p>
  *
  * @author Alistair Doswald
  */
 public class ScriptBasedMapper extends AbstractSAMLProtocolMapper implements SAMLAttributeStatementMapper, EnvironmentDependentProviderFactory {
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
+    /** SPI 提供者标识符 */
     public static final String PROVIDER_ID = "saml-javascript-mapper";
     private static final String SINGLE_VALUE_ATTRIBUTE = "single";
     private static final Logger LOGGER = Logger.getLogger(ScriptBasedMapper.class);
 
-    /*
-     * This static property block is used to determine the elements available to the mapper. This is determinant
-     * both for the frontend (gui elements in the mapper) and for the backend.
-     */
+    /* 静态配置块：定义管理控制台与后端共用的映射器配置项 */
     static {
         ProviderConfigProperty property = new ProviderConfigProperty();
         property.setType(ProviderConfigProperty.SCRIPT_TYPE);
@@ -84,46 +81,48 @@ public class ScriptBasedMapper extends AbstractSAMLProtocolMapper implements SAM
         AttributeStatementHelper.setConfigProperties(configProperties);
     }
 
+    /** {@inheritDoc} 返回脚本与单值属性等配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 控制台显示名：Javascript Mapper */
     @Override
     public String getDisplayType() {
         return "Javascript Mapper";
     }
 
+    /** {@inheritDoc} 归类为 AttributeStatement 映射器 */
     @Override
     public String getDisplayCategory() {
         return AttributeStatementHelper.ATTRIBUTE_STATEMENT_CATEGORY;
     }
 
+    /** {@inheritDoc} 执行 JavaScript 根据上下文生成 SAML 属性值 */
     @Override
     public String getHelpText() {
         return "Evaluates a JavaScript function to produce an attribute value based on context information.";
     }
 
+    /** {@inheritDoc} 需启用 SCRIPTS 特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.SCRIPTS);
     }
 
     /**
-     *  This method attaches one or many attributes to the passed attribute statement.
-     *  To obtain the attribute values, it executes the mapper's script and returns attaches the returned value to the
-     *  attribute.
-     *  If the returned attribute is an Array or is iterable, the mapper will either return multiple attributes, or an
-     *  attribute with multiple values. The variant chosen depends on the configuration of the mapper
-     *
-     * @param attributeStatement The attribute statements to be added to a token
-     * @param mappingModel The mapping model reflects the values that are actually input in the GUI
-     * @param session The current session
-     * @param userSession The current user session
-     * @param clientSession The current client session
+     * 执行脚本并将结果写入 AttributeStatement。
+     * <p>若脚本返回数组或可迭代对象，按「单属性多值」或「多属性」配置处理。</p>
+     * @param attributeStatement 待追加属性的语句
+     * @param mappingModel 映射器配置（对应控制台输入）
+     * @param session Keycloak 会话
+     * @param userSession 用户会话
+     * @param clientSession 客户端会话
      */
     @Override
     public void transformAttributeStatement(AttributeStatementType attributeStatement, ProtocolMapperModel mappingModel,
@@ -149,7 +148,7 @@ public class ScriptBasedMapper extends AbstractSAMLProtocolMapper implements SAM
                 bindings.put("userSession", userSession);
                 bindings.put("keycloakSession", session);
             });
-            //If the result is a an array or is iterable, get all values
+            // 结果为数组或可迭代对象时展开全部元素
             if (attributeValue.getClass().isArray()){
                 attributeValue = Arrays.asList((Object[])attributeValue);
             }
@@ -166,7 +165,7 @@ public class ScriptBasedMapper extends AbstractSAMLProtocolMapper implements SAM
                     }
                 }
             } else {
-                // single value case
+                // 单值：直接写入一个 SAML 属性
                 AttributeStatementHelper.addAttribute(attributeStatement, mappingModel, attributeValue.toString());
             }
         } catch (Exception ex) {
@@ -175,6 +174,7 @@ public class ScriptBasedMapper extends AbstractSAMLProtocolMapper implements SAM
         }
     }
 
+    /** {@inheritDoc} 保存前校验脚本能否成功编译 */
     @Override
     public void validateConfig(KeycloakSession session, RealmModel realm, ProtocolMapperContainerModel client, ProtocolMapperModel mapperModel) throws ProtocolMapperConfigException {
 
@@ -193,21 +193,20 @@ public class ScriptBasedMapper extends AbstractSAMLProtocolMapper implements SAM
         }
     }
 
+    /** 从映射器配置读取 JavaScript 脚本源码 */
     protected String getScriptCode(ProtocolMapperModel mappingModel) {
         return mappingModel.getConfig().get(ProviderConfigProperty.SCRIPT_TYPE);
     }
 
     /**
-     * Creates an protocol mapper model for the this script based mapper. This mapper model is meant to be used for
-     * testing, as normally such objects are created in a different manner through the keycloak GUI.
-     *
-     * @param name The name of the mapper (this has no functional use)
-     * @param samlAttributeName The name of the attribute in the SAML attribute
-     * @param nameFormat can be "basic", "URI reference" or "unspecified"
-     * @param friendlyName a display name, only useful for the keycloak GUI
-     * @param script the javascript to be executed by the mapper
-     * @param singleAttribute If true, all groups will be stored under one attribute with multiple attribute values
-     * @return a Protocol Mapper for a group mapping
+     * 工厂方法：创建脚本映射器配置（主要用于测试）。
+     * @param name 映射器名称（无运行时作用）
+     * @param samlAttributeName SAML 属性名
+     * @param nameFormat 名称格式：basic、URI reference 或 unspecified
+     * @param friendlyName 控制台友好名
+     * @param script 待执行的 JavaScript
+     * @param singleAttribute true 时多值合并为单属性
+     * @return 协议映射器模型
      */
     public static ProtocolMapperModel create(String name, String samlAttributeName, String nameFormat, String friendlyName, String script, boolean singleAttribute) {
         ProtocolMapperModel mapper =  AttributeStatementHelper.createAttributeMapper(name, null, samlAttributeName, nameFormat, friendlyName,
