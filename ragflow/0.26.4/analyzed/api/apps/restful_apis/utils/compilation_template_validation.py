@@ -12,11 +12,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+知识编译模板请求体验证：校验 name/kind/config 及 entity/relation/claim/concept 字段约束。
+"""
+
 #
 
 
 def validate_template_payload(req: dict, require_all: bool = True) -> str:
-    """Validate a single template payload (kind + config + name)."""
+    """校验单条编译模板 payload（kind + config + name）；通过返回空串，否则返回英文错误信息。"""
+    # require_all 为真时 name/kind/config 均为必填
     required = ["name", "kind", "config"] if require_all else []
     for key in required:
         if key not in req:
@@ -40,6 +45,7 @@ def validate_template_payload(req: dict, require_all: bool = True) -> str:
     if isinstance(config, dict):
         if len(str(config.get("global_rules") or "")) > 4096:
             return "Global compilation rules is too long."
+        # 校验 entity/relation 字段：type 唯一、description/rule 长度
         for section in ["entity", "relation"]:
             fields = (config.get(section) or {}).get("fields") or []
             seen_types = set()
@@ -56,6 +62,7 @@ def validate_template_payload(req: dict, require_all: bool = True) -> str:
                     return f"{section.capitalize()} field description is too long."
                 if len(str((field or {}).get("rule") or "")) > 1024:
                     return f"{section.capitalize()} field rule is too long."
+        # artifacts 模板额外校验 claim 与 concept 字段
         if config.get("kind") == "artifacts" or req.get("kind") == "artifacts":
             for field in (config.get("claim") or {}).get("fields") or []:
                 if not str((field or {}).get("statement") or "").strip():

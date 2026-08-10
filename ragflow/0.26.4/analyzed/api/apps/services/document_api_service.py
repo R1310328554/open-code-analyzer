@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+文档 API 服务层：重命名、分块方法变更、状态切换、字段校验与 API 响应键映射。
+"""
+
 #
 import logging
 
@@ -28,6 +32,8 @@ from rag.nlp import rag_tokenizer, search
 
 def update_document_name_only(document_id, req_doc_name):
     """
+    仅更新文档名称（不做额外校验），并同步 File 与 ES 索引中的标题字段。
+
     Update document name only (without validation).
     :param document_id: id (string) of the document
     :param req_doc_name: new name (string) from request for the document
@@ -64,6 +70,8 @@ def update_document_name_only(document_id, req_doc_name):
 
 def update_chunk_method(req, doc, tenant_id):
     """
+    仅更新分块/parser 配置；若 chunk_method 变更则触发重解析重置。
+
     Update chunk method only (without validation).
 
     Updates the chunk method and parser configuration for a document,
@@ -91,6 +99,8 @@ def update_chunk_method(req, doc, tenant_id):
 
 def reset_document_for_reparse(doc, tenant_id, parser_id=None, pipeline_id=None):
     """
+    重置文档解析进度、清空 doc store 分块并删除 chunk 图片。
+
     Reset document for reparsing.
 
     Updates the parser_id and/or pipeline_id for a document, resets its progress,
@@ -216,6 +226,8 @@ def validate_document_update_fields(update_doc_req: UpdateDocumentReq, doc, req)
 
 def map_doc_keys(doc):
     """
+    将内部字段名映射为 REST API 响应格式（如 chunk_num → chunk_count）。
+
     Rename document keys to match API response format.
 
     Converts internal document model field names to the external API
@@ -267,6 +279,7 @@ def _process_key_mappings(doc):
     Returns:
         A dictionary with renamed keys for API response.
     """
+    # 对外 API 字段别名
     key_mapping = {
         "chunk_num": "chunk_count",
         "kb_id": "dataset_id",
@@ -297,6 +310,7 @@ def _process_run_mapping(doc, run_status):
     Returns:
         A dictionary with renamed keys for API response.
     """
+    # 解析任务 run 状态码 → 字符串枚举
     run_mapping = {
         "0": "UNSTART",
         "1": "RUNNING",

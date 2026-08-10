@@ -1,3 +1,6 @@
+"""
+聊天渠道核心抽象：入站/出站消息结构与 Channel 生命周期接口。
+"""
 from __future__ import annotations
 
 import logging
@@ -10,6 +13,7 @@ LOGGER = logging.getLogger(__name__)
 
 @dataclass
 class IncomingMessage:
+    # 平台入站消息的标准化表示
     channel: str
     account_id: str
     chat_id: str
@@ -22,6 +26,7 @@ class IncomingMessage:
 
 @dataclass
 class OutgoingMessage:
+    # 回发给用户的出站消息
     chat_id: str
     text: str
     reply_to_message_id: Optional[str] = None
@@ -31,7 +36,7 @@ MessageHandler = Callable[[IncomingMessage], Awaitable[None]]
 
 
 class Channel(ABC):
-    """One configured bot identity on one messaging platform."""
+    """单个 messaging 平台上的一条已配置 Bot 身份。"""
 
     channel_id: ClassVar[str]
     account_id: str
@@ -47,7 +52,7 @@ class Channel(ABC):
             return
         try:
             await self._handler(message)
-        except Exception:  # framework boundary — keep one bad msg from killing the channel
+        except Exception:  # 框架边界：单条消息处理失败不终止整个渠道
             LOGGER.error("[%s:%s] handler error", self.channel_id, self.account_id, exc_info=True)
 
     @abstractmethod

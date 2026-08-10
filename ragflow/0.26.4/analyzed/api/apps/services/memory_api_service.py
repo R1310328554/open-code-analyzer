@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Agent 记忆 API 服务：创建/更新/删除记忆库、消息写入与检索、权限与租户可见性校验。
+"""
+
 #
 from api.apps import current_user
 from api.db import TenantPermission
@@ -30,6 +34,7 @@ from common.time_utils import current_timestamp, timestamp_to_date
 
 
 def _split_filter_values(values):
+    # 将逗号分隔或列表形式的过滤值规范化为字符串列表
     if not values:
         return []
     if isinstance(values, str):
@@ -51,6 +56,7 @@ def _joined_tenant_ids(user_id: str) -> set[str]:
 
 
 def _memory_accessible(memory) -> bool:
+    # 当前用户是否可访问该记忆（本人或团队共享）
     if memory.tenant_id == current_user.id:
         return True
     if memory.permissions != TenantPermission.TEAM.value:
@@ -74,6 +80,8 @@ def _filter_accessible_memories(memory_ids: list[str]):
 
 async def create_memory(memory_info: dict):
     """
+    创建记忆库并校验名称长度与 memory_type 枚举。
+
     :param memory_info: {
         "name": str,
         "memory_type": list[str],
@@ -107,6 +115,8 @@ async def create_memory(memory_info: dict):
 
 async def update_memory(memory_id: str, new_memory_setting: dict):
     """
+    更新记忆配置；非空记忆禁止修改 embd_id/memory_type。
+
     :param memory_id: str
     :param new_memory_setting: {
         "name": str,
@@ -332,6 +342,8 @@ async def update_message_status(memory_id: str, message_id: int, status: bool):
 
 async def search_message(filter_dict: dict, params: dict):
     """
+    跨记忆库向量/关键词混合检索消息。
+
     :param filter_dict: {
         "memory_id": list[str],
         "agent_id": str,

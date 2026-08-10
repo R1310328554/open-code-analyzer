@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+LLM Provider API 服务：工厂列表、实例 CRUD、API Key 探测、模型启停与试聊。
+"""
+
 #
 import os
 import json
@@ -43,6 +47,7 @@ def _factory_model_types(llm: dict) -> list[str]:
 
 
 def _normalize_provider_base_url(provider_name: str, base_url: str | None):
+    # VLLM 等 OpenAI 兼容端点统一补全 /v1 后缀
     if provider_name != "VLLM" or not base_url:
         return base_url
     base_url = base_url.strip().rstrip("/")
@@ -63,6 +68,8 @@ def _factory_llm_name(llm: dict) -> str:
 
 def list_providers(tenant_id: str, all_available: bool = False):
     """
+    列出系统可用工厂或租户已配置的 Provider 及其支持的 model_types。
+
     List providers for a tenant.
 
     If available_only is True, list all system-wide providers (pool providers).
@@ -257,6 +264,8 @@ def show_provider_model(provider_id_or_name: str, model_name: str):
 
 async def create_provider_instance(tenant_id: str, provider_id_or_name: str, instance_name: str, api_key: str | dict, base_url: str, region: str, model_info: list[dict] = None):
     """
+    创建 Provider 实例（含 API Key 校验）并可批量挂载自定义模型。
+
     Create a provider instance.
 
     The instance_name parameter is accepted for API compatibility but in the old
@@ -370,6 +379,8 @@ def list_provider_instances(tenant_id: str, provider_id_or_name: str):
 
 async def verify_api_key(provider_id_or_name: str, api_key: str | dict, base_url: str = None, region: str = None, model_info: list[dict] = None):
     """
+    按工厂模型目录探测 embedding/chat/rerank/ocr/tts 是否可用。
+
     Verify API key for a provider.
 
     :param provider_id_or_name: provider/factory ID or name
@@ -423,7 +434,7 @@ async def verify_api_key(provider_id_or_name: str, api_key: str | dict, base_url
         if not factory_llms:
             return False, f"No valid models found for provider '{provider_id_or_name}'"
 
-    # test if api key works
+    # 遍历工厂模型，分别探测各 model_type 是否可用
     chat_passed, embd_passed, rerank_passed, ocr_passed, tts_passed = False, False, False, False, False
     timeout_seconds = int(os.environ.get("LLM_TIMEOUT_SECONDS", 10))
     extra = {"provider": provider_name}
@@ -789,6 +800,8 @@ def add_model_to_instance(tenant_id: str, provider_id_or_name: str, instance_id_
 
 def update_model_status(tenant_id: str, provider_id_or_name: str, instance_id_or_name: str, model_name: str, status: str):
     """
+    启用或禁用实例下的模型（tenant_model 表记录 inactive 即禁用）。
+
     Enable or disable a model for a provider instance.
 
     - If the model record exists in tenant_model, update its status.
@@ -861,6 +874,8 @@ def update_model_status(tenant_id: str, provider_id_or_name: str, instance_id_or
 
 async def chat_to_model(tenant_id: str, provider_id_or_name: str, instance_id_or_name: str, model_name: str, message: str, stream: bool = False, thinking: bool = False):
     """
+    向指定实例模型发起试聊（支持流式返回 LLMBundle）。
+
     Chat to a model.
 
     :param tenant_id: tenant ID

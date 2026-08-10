@@ -13,7 +13,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-"""Chat channel runtime, embedded in the RAGFlow API server.
+"""RAGFlow API 内嵌的聊天渠道运行时。
+
+Chat channel runtime, embedded in the RAGFlow API server.
 
 Continuously reconciles the running channel bots against the ``chat_channel``
 table: newly added bots are started, deleted ones are stopped, and edited ones
@@ -33,7 +35,7 @@ import threading
 
 LOGGER = logging.getLogger(__name__)
 
-# Channel packages bundled under api/channels that self-register on import.
+# api/channels 下各渠道包 import 时自注册 builder
 _BUNDLED_CHANNELS = (
     "feishu",
     "discord",
@@ -45,12 +47,12 @@ _BUNDLED_CHANNELS = (
     "whatsapp",
 )
 
-# How often (seconds) to reconcile running channels against the database.
+# 与数据库对账运行中 Bot 的间隔（秒）
 _RECONCILE_INTERVAL_SECS = 10
 
 
 def _register_channels() -> None:
-    """Import each bundled channel package so it self-registers a builder.
+    """导入各内置渠道包以完成自注册；单渠道依赖缺失不影响其他渠道。
 
     Each channel is imported independently: a missing optional dependency only
     disables that one channel instead of taking down the whole channel server.
@@ -63,7 +65,7 @@ def _register_channels() -> None:
 
 
 def _fingerprint(channel: str, credential: dict) -> str:
-    """Stable hash of the parts that require a channel restart when changed."""
+    """对 channel + credential 做稳定哈希，凭据变更时需重启 Bot。"""
     payload = json.dumps(
         {"channel": channel, "credential": credential},
         sort_keys=True,
@@ -73,7 +75,7 @@ def _fingerprint(channel: str, credential: dict) -> str:
 
 
 def _desired_channels() -> dict:
-    """Return {chat_channel.id: (channel_type, credential, fingerprint)} for enabled bots."""
+    """从 DB 读取已启用 Bot：{id → (渠道类型, 凭据, 指纹)}。"""
     from api.db.services.chat_channel_service import ChatChannelService
 
     desired: dict = {}
@@ -93,7 +95,7 @@ def _build_one(account_id: str, channel: str, credential: dict):
 
 
 def _make_chat_handler(ch):
-    """Build the inbound-message handler bound to a single channel.
+    """为单个渠道构建入站消息处理器：写入会话并调用 RAG 补全后回发。
 
     Mirrors the non-streaming path of ``session_completion``: the message is
     appended to a per-end-user conversation under the dialog connected to the
@@ -220,7 +222,7 @@ async def _start_channel(running: dict, account_id: str, channel: str, credentia
 
 
 async def _reconcile(running: dict, failed: dict) -> None:
-    """Diff desired (DB) vs running channels and apply start/stop/restart.
+    """对比 DB 期望态与运行态，执行启动/停止/重启；失败配置记入 failed 避免反复重试。
 
     ``failed`` remembers configs that could not be started so they are not
     retried (and re-logged) every tick until their credentials change.
@@ -258,7 +260,7 @@ async def _reconcile(running: dict, failed: dict) -> None:
 
 
 async def run_channels(stop_event: threading.Event) -> None:
-    """Reconcile and run channels until ``stop_event`` is set."""
+    """循环对账并运行各渠道 Bot，直至 stop_event 被置位。"""
     _register_channels()
 
     running: dict = {}
@@ -281,7 +283,7 @@ async def run_channels(stop_event: threading.Event) -> None:
 
 
 def start_channel_server(stop_event: threading.Event) -> None:
-    """Thread entrypoint: run the channel event loop, isolating any failure."""
+    """后台线程入口：运行 asyncio 事件循环，异常仅记录不拖垮主进程。"""
     try:
         asyncio.run(run_channels(stop_event))
     except Exception as ex:

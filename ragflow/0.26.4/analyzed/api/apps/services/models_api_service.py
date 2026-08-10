@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+租户默认模型 API：解析 modelName@instance@provider 复合键、列出已添加模型并校验可用性。
+"""
+
 #
 import logging
 import os
@@ -24,7 +28,7 @@ from api.db.services.user_service import TenantService
 from common.constants import ActiveStatusEnum, LLMType
 from common.settings import FACTORY_LLM_INFOS
 
-# Mapping from model_type string to Tenant model field name
+# model_type 字符串 → Tenant 表默认模型字段名
 MODEL_TYPE_TO_FIELD = {
     "chat": "llm_id",
     "embedding": "embd_id",
@@ -62,6 +66,8 @@ def _factory_model_types(llm: dict) -> list[str]:
 
 def _get_model_info(tenant_id: str, default_model: str, model_type: str):
     """
+    解析复合模型 ID（右锚定 @ 分隔）并校验 Provider/Instance/Model 是否存在且启用。
+
     Parse a composite model string (modelName@instanceName@providerName or modelName@providerName)
     and validate that the provider, instance, and model exist.
 
@@ -220,6 +226,8 @@ def _check_model_available(tenant_id: str, provider_name: str, instance_name: st
 
 def list_tenant_default_models(tenant_id: str):
     """
+    列出租户各类型（chat/embedding/rerank 等）的默认模型。
+
     List all default models for a tenant.
 
     For each model type (chat, embedding, rerank, asr, vision, tts, ocr),
@@ -248,6 +256,8 @@ def list_tenant_default_models(tenant_id: str):
 
 def set_tenant_default_models(tenant_id: str, model_provider: str, model_instance: str, model_name: str, model_type: str):
     """
+    设置或清空某类型的租户默认模型（三者全空则清除）。
+
     Set or clear a tenant default model.
 
     If model_provider, model_instance, and model_name are all provided,
@@ -287,6 +297,8 @@ def set_tenant_default_models(tenant_id: str, model_provider: str, model_instanc
 
 def list_tenant_added_models(tenant_id: str, model_type_filter: str = None):
     """
+    列出租户已配置的 Provider 实例下全部可用模型（含工厂目录与手动添加）。
+
     List all added models for a tenant.
 
     :param tenant_id: tenant ID
@@ -397,7 +409,7 @@ def list_tenant_added_models(tenant_id: str, model_type_filter: str = None):
                 }
             )
 
-    # Add TEI Builtin embedding model if configured
+    # Docker Compose TEI profile 下追加 Builtin embedding 模型
     compose_profiles = os.getenv("COMPOSE_PROFILES", "")
     tei_model = os.getenv("TEI_MODEL", "")
     if "tei-" in compose_profiles and tei_model:

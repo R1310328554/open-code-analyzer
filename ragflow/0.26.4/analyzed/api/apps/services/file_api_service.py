@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+文件管理 API 服务：上传、文件夹 CRUD、列表、移动/重命名与递归删除（含 Skill 空间索引清理）。
+"""
+
 #
 import logging
 import os
@@ -31,6 +35,8 @@ from common.misc_utils import get_uuid, thread_pool_exec
 
 async def upload_file(tenant_id: str, pf_id: str, file_objs: list):
     """
+    上传文件到指定父文件夹，自动创建中间路径并去重命名。
+
     Upload files to a folder.
 
     :param tenant_id: tenant ID
@@ -215,6 +221,8 @@ def get_all_parent_folders(file_id: str, user_id: str = None):
 
 async def delete_files(uid: str, file_ids: list, auth_header: str = ""):
     """
+    递归删除文件/文件夹；Skill 空间需先调用 Go 后端删除索引。
+
     Delete files/folders with team permission check and recursive deletion.
 
     :param uid: user ID
@@ -226,7 +234,7 @@ async def delete_files(uid: str, file_ids: list, auth_header: str = ""):
     success_count = 0
 
     def _get_space_uuid_by_name(tenant_id, space_name, authorization):
-        """Get space UUID by space name from Go backend"""
+        """通过 Go 后端按空间名解析 space UUID。"""
         try:
             import requests
 
@@ -255,7 +263,7 @@ async def delete_files(uid: str, file_ids: list, auth_header: str = ""):
         return None
 
     def _delete_skill_index(tenant_id, space_name, skill_name, authorization):
-        """Delete skill index from Go backend.
+        """调用 Go 后端删除 Skill 向量索引。
 
         Returns:
             bool: True if deletion succeeded (HTTP 200), False otherwise.
@@ -455,6 +463,8 @@ async def delete_files(uid: str, file_ids: list, auth_header: str = ""):
 
 async def move_files(uid: str, src_file_ids: list, dest_file_id: str = None, new_name: str = None):
     """
+    移动和/或重命名文件，语义类似 Linux mv（可仅改名、仅移动或同时操作）。
+
     Move and/or rename files. Follows Linux mv semantics:
     - new_name only: rename in place (no storage operation)
     - dest_file_id only: move to new folder (keep names)
@@ -575,7 +585,7 @@ async def move_files(uid: str, src_file_ids: list, dest_file_id: str = None, new
             for file in files:
                 _move_entry_recursive(file, dest_folder, override_name=new_name)
         else:
-            # Pure rename: no storage operation needed
+            # 纯重命名：不涉及对象存储搬迁
             file = files[0]
             if not FileService.update_by_id(file.id, {"name": new_name}):
                 return False, "Database error (File rename)!"

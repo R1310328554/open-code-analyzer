@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Canvas 运行时副本服务：在 Redis 中维护 per-user DSL 副本，供 /completions 与 /set 读写。
+"""
+
 #
 
 import json
@@ -26,6 +30,8 @@ from rag.utils.redis_conn import REDIS_CONN, RedisDistributedLock
 
 class CanvasReplicaService:
     """
+    管理存储于 Redis 的 per-user Canvas 运行时副本。
+
     Manage per-user canvas runtime replicas stored in Redis.
 
     Lifecycle:
@@ -34,6 +40,7 @@ class CanvasReplicaService:
     - commit_after_run: atomically persist run result back to replica
     """
 
+    # Redis 副本 TTL：3 小时
     TTL_SECS = 3 * 60 * 60
     REPLICA_KEY_PREFIX = "canvas:replica"
     LOCK_KEY_PREFIX = "canvas:replica:lock"
@@ -44,7 +51,7 @@ class CanvasReplicaService:
 
     @classmethod
     def normalize_dsl(cls, dsl):
-        """Normalize DSL to a JSON-serializable dict. Raise ValueError on invalid input."""
+        """将 DSL 规范化为可 JSON 序列化的 dict；非法输入抛出 ValueError。"""
         normalized = dsl
         if isinstance(normalized, str):
             try:
@@ -70,7 +77,7 @@ class CanvasReplicaService:
 
     @classmethod
     def _read_payload(cls, replica_key: str):
-        """Read replica payload from Redis; return None on missing/invalid content."""
+        """从 Redis 读取副本 payload；缺失或解析失败返回 None。"""
         cache_blob = REDIS_CONN.get(replica_key)
         if not cache_blob:
             return None
@@ -111,6 +118,7 @@ class CanvasReplicaService:
         }
 
     @classmethod
+    # ---------- 生命周期：创建 / 引导 / 加载 / 替换 / 提交 ----------
     def create_if_absent(
         cls,
         canvas_id: str,
@@ -195,7 +203,7 @@ class CanvasReplicaService:
 
     @classmethod
     def _acquire_lock_with_retry(cls, lock_key: str):
-        """Acquire distributed lock with bounded retries; return lock object or None."""
+        """带有限重试获取分布式锁；成功返回锁对象，否则 None。"""
         lock = RedisDistributedLock(
             lock_key,
             timeout=cls.LOCK_TIMEOUT_SECS,
@@ -230,7 +238,7 @@ class CanvasReplicaService:
         try:
             latest_payload = cls._read_payload(replica_key)
 
-            # Always write latest runtime DSL back to Redis first.
+            # 无论后续是否成功，优先将最新运行时 DSL 写回 Redis
             updated_payload = cls._build_payload(
                 canvas_id=canvas_id,
                 tenant_id=str(tenant_id),

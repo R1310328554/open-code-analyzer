@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+数据集（Knowledgebase）API 服务层：CRUD、索引任务、检索测试、标签、ingest 日志与 Artifact/Skill 页面。
+"""
+
 #
 import logging
 import json
@@ -33,6 +37,7 @@ from common.constants import FileSource, StatusEnum
 from api.utils.api_utils import deep_merge, get_parser_config, remap_dictionary_keys, verify_embedding_availability
 from common.misc_utils import thread_pool_exec
 
+# 支持的索引/编译任务类型
 _VALID_INDEX_TYPES = {"graph", "raptor", "mindmap", "artifact", "skill"}
 
 _INDEX_TYPE_TO_TASK_TYPE = {
@@ -62,6 +67,8 @@ _INDEX_TYPE_TO_DISPLAY_NAME = {
 
 async def create_dataset(tenant_id: str, req: dict):
     """
+    创建新数据集（Knowledgebase）。
+
     Create a new dataset.
 
     :param tenant_id: tenant ID
@@ -118,6 +125,8 @@ async def create_dataset(tenant_id: str, req: dict):
 
 async def delete_datasets(tenant_id: str, ids: list = None, delete_all: bool = False):
     """
+    批量删除数据集及其文档、索引与关联文件。
+
     Delete datasets.
 
     :param tenant_id: tenant ID
@@ -480,6 +489,8 @@ def delete_knowledge_graph(dataset_id: str, tenant_id: str):
 
 def run_index(dataset_id: str, tenant_id: str, index_type: str):
     """
+    为数据集排队 GraphRAPTOR/RAPTOR/Mindmap/Artifact/Skill 等索引任务。
+
     Run an indexing task (graph/raptor/mindmap) for a dataset.
 
     :param dataset_id: dataset ID
@@ -936,6 +947,8 @@ def rename_tag(dataset_id: str, tenant_id: str, from_tag: str, to_tag: str):
 
 async def search(dataset_id: str, tenant_id: str, req: dict):
     """
+    单数据集检索测试（向量+全文+可选 KG）。
+
     Search (retrieval test) within a dataset.
 
     :param dataset_id: dataset ID
@@ -1490,6 +1503,7 @@ async def search_datasets(tenant_id: str, req: dict):
 
 
 # ---------------------------------------------------------------------------
+# Artifact（知识编译）页面：wiki 页列表/详情/编辑与图谱增量加载
 # Artifact (knowledge compilation) page surface
 #
 # These three helpers power the dataset-level "Artifact" tab. They query rows
@@ -2215,7 +2229,9 @@ async def get_wiki_graph(
     tenant_id: str,
     node: str | None = None,
 ):
-    """Load the canvas graph payload incrementally from per-row data.
+    """从 ES 逐行增量加载 Artifact 画布图谱（概览分页或点击展开）。
+
+    Load the canvas graph payload incrementally from per-row data.
 
     Two modes:
 
@@ -2468,7 +2484,9 @@ async def get_wiki_graph(
 
 
 async def clear_wiki(dataset_id: str, tenant_id: str):
-    """Wipe every artifact-related row from ES for this KB.
+    """清除该知识库下全部 Artifact 相关 ES 行，下次编译从零开始。
+
+    Wipe every artifact-related row from ES for this KB.
 
     Touches all five ``compile_kwd`` row types the artifact pipeline writes
     (MAP extracts, REDUCE results, PLAN output, page drafts, and the

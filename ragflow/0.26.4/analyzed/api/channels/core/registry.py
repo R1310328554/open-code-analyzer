@@ -1,3 +1,6 @@
+"""
+渠道 Builder 注册表：按名称注册并在配置中实例化各 account 的 Channel。
+"""
 from __future__ import annotations
 
 import logging
@@ -14,6 +17,7 @@ _BUILDERS: Dict[str, ChannelBuilder] = {}
 
 
 def register_channel(name: str, builder: ChannelBuilder) -> None:
+    # 各渠道包在 import 时调用以注册 builder
     _BUILDERS[name] = builder
 
 
@@ -22,7 +26,7 @@ def registered_channel_ids() -> List[str]:
 
 
 def build_channels(config: dict) -> List[Channel]:
-    """Walk config.channels.<name>.accounts.<id> and construct one Channel per account."""
+    """遍历 config.channels.<name>.accounts.<id>，为每个 account 构造一个 Channel 实例。"""
     instances: List[Channel] = []
     channels_cfg = config.get("channels") or {}
     for name, raw in channels_cfg.items():
@@ -34,7 +38,7 @@ def build_channels(config: dict) -> List[Channel]:
             continue
         accounts = raw.get("accounts") or {}
         if not accounts:
-            # Allow a flat single-account config without an `accounts:` block.
+            # 无 accounts 块时退化为 flat 单账号配置
             accounts = {"default": {k: v for k, v in raw.items() if k != "accounts"}}
         shared = {k: v for k, v in raw.items() if k not in ("accounts", "default_account")}
         for account_id, account_cfg in accounts.items():
