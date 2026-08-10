@@ -15,23 +15,8 @@
     "api/src/main/java/com/alibaba/nacos/api/ai/AiFactory.java",
     "api/src/main/java/com/alibaba/nacos/api/ai/AiService.java",
     "api/src/main/java/com/alibaba/nacos/api/ai/constant/AiConstants.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/listener/AbstractNacosAgentCardListener.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/listener/AbstractNacosAgentSpecListener.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/listener/AbstractNacosMcpServerListener.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/listener/AbstractNacosPromptListener.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/listener/AbstractNacosSkillListener.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/listener/NacosAgentCardEvent.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/listener/NacosAgentSpecEvent.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/listener/NacosAiEvent.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/listener/NacosAiListener.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/listener/NacosMcpServerEvent.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/listener/NacosPromptEvent.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/listener/NacosSkillEvent.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/NacosAiConfigKeyCodec.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/a2a/AgentAuthentication.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/a2a/AgentCapabilities.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/model/a2a/AgentCard.java"
+    "api/src/main/java/com/alibaba/nacos/api/ai/listener/AbstractNacosAgentCardListener.java"
   ],
   "remaining_pending": 2267,
-  "done": 240
+  "done": 255
 }
