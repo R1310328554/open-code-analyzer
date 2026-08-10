@@ -1633,3 +1633,18 @@
 2026-08-10T04:06:43Z DONE core/src/main/java/com/alibaba/nacos/core/listener/LoggingApplicationListener.java nacos wave54a [0:15] core raft utils + exception/listener
 2026-08-10T04:06:43Z DONE core/src/main/java/com/alibaba/nacos/core/listener/NacosApplicationListener.java nacos wave54a [0:15] core raft utils + exception/listener
 2026-08-10T04:06:43Z DONE core/src/main/java/com/alibaba/nacos/core/listener/StartingApplicationListener.java nacos wave54a [0:15] core raft utils + exception/listener
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/listener/startup/AbstractNacosStartUp.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/listener/startup/NacosCoreStartUp.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/listener/startup/NacosStartUp.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/listener/startup/NacosStartUpManager.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/listener/startup/NacosWebStartUp.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/model/form/AggregationForm.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/model/form/PageForm.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/model/form/v3/RaftCommandForm.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/model/request/LogUpdateRequest.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/model/request/LookupUpdateRequest.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/monitor/GrpcServerThreadPoolMonitor.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/monitor/MetricsMonitor.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/monitor/NacosMeterRegistryCenter.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/monitor/topn/BaseTopNCounter.java nacos wave54b [15:30] core startup/model/monitor
+2026-08-10T04:07:08Z DONE core/src/main/java/com/alibaba/nacos/core/monitor/topn/FixedSizePriorityQueue.java nacos wave54b [15:30] core startup/model/monitor
