@@ -15,23 +15,8 @@
     "api/apps/restful_apis/system_api.py",
     "api/apps/restful_apis/task_api.py",
     "api/apps/restful_apis/tenant_api.py",
-    "api/apps/restful_apis/user_api.py",
-    "api/apps/restful_apis/utils/compilation_template_validation.py",
-    "api/apps/services/__init__.py",
-    "api/apps/services/canvas_replica_service.py",
-    "api/apps/services/dataset_api_service.py",
-    "api/apps/services/document_api_service.py",
-    "api/apps/services/file_api_service.py",
-    "api/apps/services/memory_api_service.py",
-    "api/apps/services/models_api_service.py",
-    "api/apps/services/provider_api_service.py",
-    "api/channels/__init__.py",
-    "api/channels/bootstrap.py",
-    "api/channels/core/__init__.py",
-    "api/channels/core/base.py",
-    "api/channels/core/registry.py",
-    "api/channels/dingtalk/__init__.py"
+    "api/apps/restful_apis/user_api.py"
   ],
   "remaining_pending": 1614,
-  "done": 120
+  "done": 135
 }
