@@ -538,3 +538,18 @@
 2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/JwsToken.java wave18b sdjwt core classes
 2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/SdJwt.java wave18b sdjwt core classes
 2026-08-10T06:17:17Z DONE core/src/main/java/org/keycloak/sdjwt/SdJwtArrayElement.java wave18b sdjwt core classes
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/SdJwtClaim.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/SdJwtClaimFactory.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/SdJwtClaimName.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/SdJwtSalt.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/SdJwtUtils.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/SdJwtVerificationContext.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/UndisclosedArrayElement.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/UndisclosedClaim.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/VisibleArrayElement.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/VisibleSdJwtClaim.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/consumer/HttpDataFetcher.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/consumer/JwtVcMetadata.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/consumer/JwtVcMetadataTrustedSdJwtIssuer.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/consumer/PresentationRequirements.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/consumer/SdJwtPresentationConsumer.java wave19a sdjwt claims + consumer
