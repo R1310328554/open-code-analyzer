@@ -1,8 +1,14 @@
+/**
+ * skeleton-card.stories.ts — SkeletonCard Storybook：内容加载占位骨架屏。
+ */
+
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import { SkeletonCard } from '@/components/skeleton-card';
 
-// More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
+// Storybook 默认导出 meta 配置
+// SkeletonCard 骨架卡片示例
+/** Storybook meta：组件文档、布局与 argTypes。 */
 const meta = {
   title: 'Example/SkeletonCard',
   component: SkeletonCard,
@@ -57,11 +63,14 @@ function MyComponent() {
   },
 } satisfies Meta<typeof SkeletonCard>;
 
+/** 默认导出 meta 供 Storybook 自动发现。 */
 export default meta;
+/** 本文件 Story 类型别名。 */
 type Story = StoryObj<typeof meta>;
 
-// More on writing stories with args: https://storybook.js.org/docs/writing-stories/args
+// 各 Story 通过 args 展示组件不同状态
 
+/** 通过 className 控制骨架宽度。 */
 export const WithCustomWidth: Story = {
   args: {
     className: 'w-80',

@@ -1,10 +1,18 @@
+/**
+ * api.ts — 前端 REST 路径注册表：集中定义 /api/v1 与 /v1 全部端点。
+ */
+
+/** 旧版 Web API 前缀（Canvas/Dataflow 等）。 */
 const webAPI = `/v1`;
+/** 主 REST API v1 前缀。 */
 const restAPIv1 = `/api/v1`;
 
+/** 导出 API 前缀常量。 */
 export { restAPIv1, webAPI };
 
+/** 默认导出：按业务域分组的端点 URL 工厂对象。 */
 export default {
-  // user
+  // 用户认证与资料
   login: `${restAPIv1}/auth/login`,
   logout: `${restAPIv1}/auth/logout`,
   register: `${restAPIv1}/users`,
@@ -14,7 +22,7 @@ export default {
   loginChannels: `${restAPIv1}/auth/login/channels`,
   loginChannel: (channel: string) => `${restAPIv1}/auth/login/${channel}`,
 
-  // team
+  // 租户/团队
   addTenantUser: (tenantId: string) => `${restAPIv1}/tenants/${tenantId}/users`,
   listTenantUser: (tenantId: string) =>
     `${restAPIv1}/tenants/${tenantId}/users`,
@@ -23,7 +31,7 @@ export default {
   listTenant: `${restAPIv1}/tenants`,
   agreeTenant: (tenantId: string) => `${restAPIv1}/tenants/${tenantId}`,
 
-  // llm model
+  // LLM 提供商与模型实例
   listAllAddedModels: `${restAPIv1}/models`,
   defaultModel: `${restAPIv1}/models/default`,
   listProviders: `${restAPIv1}/providers`,
@@ -80,7 +88,7 @@ export default {
   }) =>
     `${restAPIv1}/providers/${provider_name}/instances/${instance_name}/models/${model_name}`,
 
-  // data source
+  // 外部数据源连接器
   dataSourceUpdate: (id: string) => `${restAPIv1}/connectors/${id}`,
   dataSourceSet: `${restAPIv1}/connectors`,
   dataSourceList: `${restAPIv1}/connectors`,
@@ -96,7 +104,7 @@ export default {
   boxWebAuthStart: () => `${restAPIv1}/connectors/box/oauth/web/start`,
   boxWebAuthResult: () => `${restAPIv1}/connectors/box/oauth/web/result`,
 
-  // chat channel
+  // 聊天渠道集成
   chatChannelSet: `${restAPIv1}/chat-channels`,
   chatChannelList: `${restAPIv1}/chat-channels`,
   chatChannelDetail: (id: string) => `${restAPIv1}/chat-channels/${id}`,
@@ -105,12 +113,12 @@ export default {
   chatChannelRuntime: (id: string) =>
     `${restAPIv1}/chat-channels/${id}/runtime`,
 
-  // plugin
+  // 插件与工具
   llmTools: `${restAPIv1}/plugin/tools`,
 
   chatsTranscriptions: `${restAPIv1}/chat/audio/transcription`,
 
-  // knowledge base
+  // 知识库（数据集）
 
   checkEmbedding: (datasetId: string) =>
     `${restAPIv1}/datasets/${datasetId}/embedding/check`,
@@ -128,7 +136,7 @@ export default {
   getMeta: `${restAPIv1}/datasets/metadata/flattened`,
   getKnowledgeBasicInfo: (datasetId: string) =>
     `${restAPIv1}/datasets/${datasetId}/ingestions/summary`,
-  // data pipeline log
+  // 数据管道摄取日志
   fetchDataPipelineLog: (datasetId: string) =>
     `${restAPIv1}/datasets/${datasetId}/ingestions`,
   getPipelineDetail: (datasetId: string, logId: string) =>
@@ -151,7 +159,7 @@ export default {
   documentUpdateMetaDataConfig: (datasetId: string, documentId: string) =>
     `${restAPIv1}/datasets/${datasetId}/documents/${documentId}/metadata/config`,
 
-  // tags
+  // 知识库标签
   listTag: (knowledgeId: string) => `${restAPIv1}/datasets/${knowledgeId}/tags`,
   listTagByKnowledgeIds: `${restAPIv1}/datasets/tags/aggregation`,
   removeTag: (knowledgeId: string) =>
@@ -159,14 +167,14 @@ export default {
   renameTag: (knowledgeId: string) =>
     `${restAPIv1}/datasets/${knowledgeId}/tags`,
 
-  // chunk
+  // 文档分块
   chunkList: (datasetId: string, documentId: string) =>
     `${restAPIv1}/datasets/${datasetId}/documents/${documentId}/chunks`,
   chunkDetail: (datasetId: string, documentId: string, chunkId: string) =>
     `${restAPIv1}/datasets/${datasetId}/documents/${documentId}/chunks/${chunkId}`,
   retrievalTest: `${restAPIv1}/datasets/search`,
 
-  // document
+  // 文档管理
   getDocumentList: (datasetId: string) =>
     `${restAPIv1}/datasets/${datasetId}/documents`,
   documentChangeStatus: (datasetId: string) =>
@@ -193,7 +201,7 @@ export default {
   getDatasetFilter: (datasetId: string) =>
     `${restAPIv1}/datasets/${datasetId}/documents?type=filter`,
 
-  // chat
+  // 对话与会话
   createChat: `${restAPIv1}/chats`,
   listChats: `${restAPIv1}/chats`,
   getChat: (chatId: string) => `${restAPIv1}/chats/${chatId}`,
@@ -219,10 +227,10 @@ export default {
   chatsMindmap: `${restAPIv1}/chat/mindmap`,
   chatsRelatedQuestions: `${restAPIv1}/chat/recommendation`,
 
-  // next chat
+  // 外部 Chatbot
   fetchExternalChatInfo: (id: string) => `${restAPIv1}/chatbots/${id}/info`,
 
-  // file manager
+  // 文件管理器
   listFile: `${restAPIv1}/files`,
   uploadFile: `${restAPIv1}/files`,
   removeFile: `${restAPIv1}/files`,
@@ -232,7 +240,7 @@ export default {
   getFile: `${restAPIv1}/files`,
   moveFile: `${restAPIv1}/files/move`,
 
-  // system
+  // 系统版本、令牌与配置
   getSystemVersion: `${restAPIv1}/system/version`,
   getSystemTokenList: `${restAPIv1}/system/tokens`,
   createSystemToken: `${restAPIv1}/system/tokens`,
@@ -240,7 +248,7 @@ export default {
   getSystemConfig: `${restAPIv1}/system/config`,
   setLangfuseConfig: `${restAPIv1}/langfuse/api-key`,
 
-  // flow
+  // Agent/Canvas 工作流
   listAgentTemplate: `${restAPIv1}/agents/templates`,
   listAgents: `${restAPIv1}/agents`,
   listAgentTags: `${restAPIv1}/agents/tags`,
@@ -259,7 +267,7 @@ export default {
   sharedTrace: (sharedId: string, messageId: string) =>
     `${restAPIv1}/agentbots/${sharedId}/logs/${messageId}`,
   cancelCanvas: (taskId: string) => `${restAPIv1}/tasks/${taskId}/cancel`,
-  // agent
+  // Agent 会话与附件
   inputForm: (agentId: string, componentId: string) =>
     `${restAPIv1}/agents/${agentId}/components/${componentId}/input-form`,
   fetchVersionList: (id: string) => `${restAPIv1}/agents/${id}/versions`,
@@ -280,6 +288,7 @@ export default {
   cancelDataflow: (id: string) => `${restAPIv1}/tasks/${id}/cancel`,
   getAttachmentFileDownload: (docId: string) =>
     `${restAPIv1}/agents/attachments/${docId}/download`,
+  /** 构建 Agent 附件预览 URL（可选 ext/mime_type/filename 查询参数）。 */
   getAttachmentFilePreview: ({
     docId,
     ext,
@@ -302,9 +311,9 @@ export default {
   testWebhook: (id: string) => `${restAPIv1}/agents/${id}/webhook/test`,
   fetchWebhookTrace: (id: string) => `${restAPIv1}/agents/${id}/webhook/logs`,
 
-  // explore
+  // 探索页（预留）
 
-  // mcp server
+  // MCP 服务注册
   listMcpServer: `${restAPIv1}/mcp/servers`,
   getMcpServer: (id: string) => `${restAPIv1}/mcp/servers/${id}`,
   createMcpServer: `${restAPIv1}/mcp/servers`,
@@ -315,7 +324,7 @@ export default {
     `${restAPIv1}/mcp/servers/${id}?mode=download`,
   testMcpServer: (id: string) => `${restAPIv1}/mcp/servers/${id}/test`,
 
-  // next-search
+  // 新版搜索应用
   createSearch: `${restAPIv1}/searches`,
   getSearchList: `${restAPIv1}/searches`,
   deleteSearch: (params: { search_id: string }) =>
@@ -330,7 +339,7 @@ export default {
   getRelatedQuestionsShare: `${restAPIv1}/searchbots/related_questions`,
   retrievalTestShare: `${restAPIv1}/searchbots/retrieval_test`,
 
-  // memory
+  // 长期记忆
   createMemory: `${restAPIv1}/memories`,
   getMemoryList: `${restAPIv1}/memories`,
   getMemoryConfig: (id: string) => `${restAPIv1}/memories/${id}/config`,
@@ -344,14 +353,14 @@ export default {
   updateMessageState: (data: { memory_id: string; message_id: string }) =>
     `${restAPIv1}/messages/${data.memory_id}:${data.message_id}`,
 
-  // data pipeline
+  // 旧版 dataflow Web API
   fetchDataflow: (id: string) => `${webAPI}/dataflow/get/${id}`,
   setDataflow: `${webAPI}/dataflow/set`,
   removeDataflow: `${webAPI}/dataflow/rm`,
   listDataflow: `${webAPI}/dataflow/list`,
   runDataflow: `${webAPI}/dataflow/run`,
 
-  // admin
+  // 管理后台
   adminLogin: `${restAPIv1}/admin/login`,
   adminLogout: `${restAPIv1}/admin/logout`,
   adminListUsers: `${restAPIv1}/admin/users`,
@@ -404,7 +413,7 @@ export default {
 
   adminGetSystemVersion: `${restAPIv1}/admin/version`,
 
-  // Sandbox settings
+  // 沙箱执行环境配置
   adminListSandboxProviders: `${restAPIv1}/admin/sandbox/providers`,
   adminGetSandboxProviderSchema: (providerId: string) =>
     `${restAPIv1}/admin/sandbox/providers/${providerId}/schema`,
@@ -412,7 +421,7 @@ export default {
   adminSetSandboxConfig: `${restAPIv1}/admin/sandbox/config`,
   adminTestSandboxConnection: `${restAPIv1}/admin/sandbox/test`,
 
-  // Skill spaces
+  // Skill Space 技能空间
   skillSpaces: `${restAPIv1}/skills/spaces`,
   skillSpace: (spaceId: string) => `${restAPIv1}/skills/spaces/${spaceId}`,
   skillSpaceByFolder: `${restAPIv1}/skills/space/by-folder`,

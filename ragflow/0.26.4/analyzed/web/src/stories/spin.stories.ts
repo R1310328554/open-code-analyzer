@@ -1,8 +1,14 @@
+/**
+ * spin.stories.ts — Spin Storybook：加载旋转指示器与尺寸变体。
+ */
+
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import { Spin } from '@/components/ui/spin';
 
-// More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
+// Storybook 默认导出 meta 配置
+// Spin 加载动画组件示例
+/** Storybook meta：组件文档、布局与 argTypes。 */
 const meta = {
   title: 'Example/Spin',
   component: Spin,
@@ -70,10 +76,13 @@ function MyComponent() {
   args: {},
 } satisfies Meta<typeof Spin>;
 
+/** 默认导出 meta 供 Storybook 自动发现。 */
 export default meta;
+/** 本文件 Story 类型别名。 */
 type Story = StoryObj<typeof meta>;
 
-// More on writing stories with args: https://storybook.js.org/docs/writing-stories/args
+// 各 Story 通过 args 展示组件不同状态
+/** 默认尺寸且 spinning 激活。 */
 export const Default: Story = {
   args: {
     spinning: true,

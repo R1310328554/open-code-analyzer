@@ -1,10 +1,16 @@
+/**
+ * ragflow-pagination.stories.ts — RAGFlowPagination Storybook：分页与 pageSize 切换。
+ */
+
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import { fn } from 'storybook/test';
 
 import { RAGFlowPagination } from '@/components/ui/ragflow-pagination';
 
-// More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
+// Storybook 默认导出 meta 配置
+// RAGFlowPagination 分页组件示例
+/** Storybook meta：组件文档、布局与 argTypes。 */
 const meta = {
   title: 'Example/RAGFlowPagination',
   component: RAGFlowPagination,
@@ -32,10 +38,13 @@ RAGFlowPagination is a pagination component that helps navigate through large da
   args: { onChange: fn() },
 } satisfies Meta<typeof RAGFlowPagination>;
 
+/** 默认导出 meta 供 Storybook 自动发现。 */
 export default meta;
+/** 本文件 Story 类型别名。 */
 type Story = StoryObj<typeof meta>;
 
-// More on writing stories with args: https://storybook.js.org/docs/writing-stories/args
+// 各 Story 通过 args 展示组件不同状态
+/** 典型列表分页：current/pageSize/total 与尺寸切换。 */
 export const WithLoading: Story = {
   args: {
     current: 1,

@@ -1,10 +1,16 @@
+/**
+ * number-input.stories.ts — NumberInput 组件 Storybook：步进器、边界与样式变体。
+ */
+
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import { fn } from 'storybook/test';
 
 import NumberInput from '@/components/originui/number-input';
 
-// More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
+// Storybook 默认导出 meta 配置
+// NumberInput 数字输入框多种用法
+/** Storybook meta：组件文档、布局与 argTypes。 */
 const meta = {
   title: 'Example/NumberInput',
   component: NumberInput,
@@ -93,10 +99,13 @@ function MyComponent() {
   args: { onChange: fn() },
 } satisfies Meta<typeof NumberInput>;
 
+/** 默认导出 meta 供 Storybook 自动发现。 */
 export default meta;
+/** 本文件 Story 类型别名。 */
 type Story = StoryObj<typeof meta>;
 
-// More on writing stories with args: https://storybook.js.org/docs/writing-stories/args
+// 各 Story 通过 args 展示组件不同状态
+/** 默认值 0 的基础样式。 */
 export const Default: Story = {
   args: {
     value: 0,
@@ -122,6 +131,7 @@ Shows the basic number input with default styling and zero value.
   tags: ['!dev'],
 };
 
+/** 预设初始数值。 */
 export const WithInitialValue: Story = {
   args: {
     value: 10,
@@ -147,6 +157,7 @@ Shows the number input with a predefined initial value.
   tags: ['!dev'],
 };
 
+/** 自定义容器高度。 */
 export const CustomHeight: Story = {
   args: {
     value: 5,
@@ -174,6 +185,7 @@ Shows the number input with custom height styling.
   tags: ['!dev'],
 };
 
+/** 通过 className 定制外观。 */
 export const WithCustomClass: Story = {
   args: {
     value: 3,
@@ -201,6 +213,7 @@ Shows the number input with custom CSS classes for styling.
   tags: ['!dev'],
 };
 
+/** min/max 约束非法输入。 */
 export const WithMinMax: Story = {
   args: {
     value: 5,
@@ -230,6 +243,7 @@ Shows the number input with minimum and maximum value constraints. Values outsid
   tags: ['!dev'],
 };
 
+/** hideIcons 隐藏加减按钮。 */
 export const HideIcons: Story = {
   args: {
     value: 7,
@@ -257,6 +271,7 @@ Shows the number input with increment/decrement buttons hidden, leaving only the
   tags: ['!dev'],
 };
 
+/** inputClassName 直接作用于 input 元素。 */
 export const WithInputClassName: Story = {
   args: {
     value: 4,

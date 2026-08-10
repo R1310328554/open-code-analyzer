@@ -1,10 +1,16 @@
+/**
+ * avatar-upload.stories.ts — AvatarUpload 组件 Storybook：头像上传、预览与移除。
+ */
+
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import { fn } from 'storybook/test';
 
 import { AvatarUpload } from '@/components/avatar-upload';
 
-// More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
+// Storybook 默认导出 meta 配置
+// AvatarUpload 头像上传组件示例
+/** Storybook meta：组件文档、布局与 argTypes。 */
 const meta = {
   title: 'Example/AvatarUpload',
   component: AvatarUpload,
@@ -68,10 +74,13 @@ function MyComponent() {
   args: { onChange: fn() },
 } satisfies Meta<typeof AvatarUpload>;
 
+/** 默认导出 meta 供 Storybook 自动发现。 */
 export default meta;
+/** 本文件 Story 类型别名。 */
 type Story = StoryObj<typeof meta>;
 
-// More on writing stories with args: https://storybook.js.org/docs/writing-stories/args
+// 各 Story 通过 args 展示组件不同状态
+/** 空状态：未选择头像时显示上传区域。 */
 export const EmptyState: Story = {
   args: {
     value: '',

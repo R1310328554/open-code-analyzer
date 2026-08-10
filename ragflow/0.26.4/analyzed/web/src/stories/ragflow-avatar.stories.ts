@@ -1,8 +1,14 @@
+/**
+ * ragflow-avatar.stories.ts — RAGFlowAvatar Storybook：图片头像与首字母渐变兜底。
+ */
+
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import { RAGFlowAvatar } from '@/components/ragflow-avatar';
 
-// More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
+// Storybook 默认导出 meta 配置
+// RAGFlowAvatar 头像组件示例
+/** Storybook meta：组件文档、布局与 argTypes。 */
 const meta = {
   title: 'Example/RAGFlowAvatar',
   component: RAGFlowAvatar,
@@ -80,10 +86,13 @@ function MyComponent() {
   },
 } satisfies Meta<typeof RAGFlowAvatar>;
 
+/** 默认导出 meta 供 Storybook 自动发现。 */
 export default meta;
+/** 本文件 Story 类型别名。 */
 type Story = StoryObj<typeof meta>;
 
-// More on writing stories with args: https://storybook.js.org/docs/writing-stories/args
+// 各 Story 通过 args 展示组件不同状态
+/** 无图片时按姓名生成首字母渐变。 */
 export const WithInitials: Story = {
   args: {
     name: 'John Doe',
@@ -110,6 +119,7 @@ Shows the avatar component with only a name, displaying generated initials with 
   tags: ['!dev'],
 };
 
+/** 展示真实头像图片（isPerson 圆形）。 */
 export const WithAvatar: Story = {
   args: {
     name: 'Jane Smith',
@@ -139,6 +149,7 @@ Shows the avatar component with an actual image. When isPerson is true, the avat
   tags: ['!dev'],
 };
 
+/** isPerson=true 圆形个人头像。 */
 export const PersonStyle: Story = {
   args: {
     name: 'Alice Johnson',
@@ -165,6 +176,7 @@ Shows the avatar component with isPerson set to true, which makes it circular.
   tags: ['!dev'],
 };
 
+/** isPerson=false 圆角矩形（如 Bot）。 */
 export const NonPersonStyle: Story = {
   args: {
     name: 'Bot Assistant',
