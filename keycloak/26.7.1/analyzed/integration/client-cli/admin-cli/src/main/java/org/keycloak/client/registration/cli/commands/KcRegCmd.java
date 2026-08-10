@@ -28,6 +28,13 @@ import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 import static org.keycloak.client.registration.cli.KcRegMain.CMD;
 
 /**
+ * Keycloak 客户端注册 CLI（{@code kcreg}）的根命令入口。
+ * <p>
+ * 聚合 config、create、get、update、delete 等子命令，提供基于 picocli 的命令行框架
+ * 及全局选项（配置文件路径、错误堆栈输出等）。用户需先通过 {@code config credentials}
+ * 建立会话或使用初始/注册访问令牌完成客户端注册操作。
+ * </p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 
@@ -52,6 +59,7 @@ subcommands = {
 })
 public class KcRegCmd extends BaseGlobalOptionsCmd {
 
+    /** 根命令本身不执行业务逻辑，始终视为“无操作”。 */
     @Override
     protected boolean nothingToDo() {
         return true;
@@ -62,6 +70,11 @@ public class KcRegCmd extends BaseGlobalOptionsCmd {
         return usage();
     }
 
+    /**
+     * 生成 kcreg CLI 的完整使用说明，包括认证方式、令牌流转及各子命令简介。
+     *
+     * @return 格式化的帮助文本
+     */
     public static String usage() {
         StringWriter sb = new StringWriter();
         PrintWriter out = new PrintWriter(sb);

@@ -62,30 +62,42 @@ import static org.keycloak.client.registration.cli.EndpointType.OIDC;
 import static org.keycloak.client.registration.cli.KcRegMain.CMD;
 
 /**
+ * {@code update} 子命令：更新已有客户端的配置。
+ * <p>
+ * 支持从文件覆盖、命令行属性增量修改、与服务端配置合并等多种模式；
+ * 认证优先级为：{@code -t} 令牌 → 输入文件中的 registrationAccessToken → 本地配置 → 当前会话。
+ * </p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "update", description = "CLIENT_ID [ARGUMENTS]")
 public class UpdateCmd extends AbstractAuthOptionsCmd {
 
+    /** 注册端点类型，仅支持 {@code default} 与 {@code oidc}。 */
     @Option(names = {"-e", "--endpoint"}, description = "Endpoint type to use - one of: 'default', 'oidc'", converter = EndpointTypeConverter.class)
     private EndpointType regType = null;
 
+    /** 包含完整或部分客户端定义的 JSON 文件路径，{@code -} 表示从标准输入读取。 */
     @Option(names = {"-f", "--file"}, description = "Use the file or standard input if '-' is specified")
     private String file = null;
 
+    /** 为 {@code true} 时先拉取服务端现有配置再与本地/命令行变更合并后提交。 */
     @Option(names = {"-m", "--merge"}, description = "Merge new values with existing configuration on the server")
     private boolean mergeMode = false;
 
+    /** 更新成功后是否将新配置输出到标准输出。 */
     @Option(names = {"-o", "--output"}, description = "After update output the new client configuration")
     private boolean outputClient = false;
 
+    /** 为 {@code true} 时不美化 JSON 输出。 */
     @Option(names = {"-c", "--compressed"}, description = "Don't pretty print the output")
     private boolean compressed = false;
 
+    /** 要更新的客户端 ID。 */
     @Parameters(arity = "0..1")
     String clientId;
 
-    // to maintain relative positions of set and delete operations
+    /** picocli 参数组：保持 {@code -s} 与 {@code -d} 操作在命令行中的相对顺序。 */
     static class AttributeOperations {
         @Option(names = {"-s", "--set"}, required = true) String set;
         @Option(names = {"-d", "--delete"}, required = true) String delete;
@@ -94,8 +106,10 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
     @ArgGroup(exclusive = true, multiplicity = "0..*")
     List<AttributeOperations> rawAttributeOperations = new ArrayList<>();
 
+    /** 解析后的属性设置/删除操作列表。 */
     List<AttributeOperation> attrs = new LinkedList<>();
 
+    /** 将 picocli 原始参数组转换为 {@link AttributeOperation} 列表。 */
     @Override
     protected void processOptions() {
         super.processOptions();
@@ -110,6 +124,9 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
         }
     }
 
+    /**
+     * 执行更新流程：解析输入、确定合并模式、获取/合并配置并 PUT 到注册端点。
+     */
     @Override
     protected void process() {
         if (clientId == null) {
@@ -124,34 +141,17 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
             throw new IllegalArgumentException("No file nor attribute values specified");
         }
 
-        // We have several options for update:
+        // 更新模式说明：
         //
-        // A) if a file is specified, then we can overwrite server state with that file
-        //   (that's the normal flow - get and save locally, edit, post to server)
+        // A) 指定文件：用文件内容覆盖服务端状态（常规 get → 编辑 → update 流程）
         //
-        //   update my_client -f new_client.json
+        // B) 文件 + 命令行覆盖：以文件为模板，命令行 -s/-d 覆盖文件中的值（适合批处理）
         //
-        // B) if a file is specified, and overrides are specified, then we override the file values with those from command line
-        //   (that allows us to have a local file as a template, it's also batch job friendly)
+        // C) 无文件、仅有属性：从服务端拉取当前配置，应用变更后回写（默认 merge 模式）
         //
-        //   update my_client -s public=true -s enableDirectGrants=false -f new_client.json
+        // D) --merge + 文件：先拉取服务端配置，再与文件/命令行变更合并
         //
-        // C) if no file is specified, then we can fetch the client definition from server, apply changes to it, and post it back
-        //   (again a batch job friendly mode)
-        //
-        //   update my_client -s public=true -s enableDirectGrants=false
-        //
-        //   This is merge mode by default - if --merge is additionally specified, it is ignored
-        //
-        // D) if a file is specified, then we can merge the file with current state on the server
-        //   (that is similar to previous mode except that the overrides are also taken from a file)
-        //
-        //   update my_client --merge -f new_client.json
-        //   update my_client --merge -s public=true -s enableDirectGrants=false -f new_client.json
-        //
-        // We could also support environment variables in input file, and apply them before parsing it.
-        //
-        // One problem - what if it is SAML XML? No problem as we don't support update for SAML - only create.
+        // SAML XML 不支持 update，仅 create。
         //
         if (file == null && attrs.size() > 0) {
             mergeMode = true;
@@ -170,9 +170,8 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
             throw new RuntimeException("Update not supported for endpoint type: " + regType.getEndpoint());
         }
 
-        // initialize config only after reading from stdin,
-        // to allow proper operation when piping 'get' - which consumes the old
-        // registration access token, and saves the new one to the config
+        // 在读取 stdin 之后再初始化配置，以便与 `get | update` 管道配合：
+        // get 会消耗旧注册令牌并将新令牌写入配置
         ConfigData config = loadConfig();
         config = copyWithServerInfo(config);
 
@@ -180,8 +179,7 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
         final String realm = config.getRealm();
 
         if (externalToken == null) {
-            // if registration access token is not set via --token, see if it's in the body of any input file
-            // but first see if it's overridden by --set, or maybe deliberately muted via -d registrationAccessToken
+            // 未通过 --token 指定时，先检查 -s/-d 是否覆盖 registrationAccessToken，再尝试输入文件
             boolean processed = false;
             for (AttributeOperation op: attrs) {
                 if ("registrationAccessToken".equals(op.getKey().toString())) {
@@ -189,7 +187,7 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
                     if (op.getType() == AttributeOperation.Type.SET) {
                         externalToken = op.getValue();
                     }
-                    // otherwise it's delete - meaning it should stay null
+                    // 否则为 delete，保持 externalToken 为 null
                     break;
                 }
             }
@@ -199,7 +197,7 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
         }
 
         if (externalToken == null) {
-            // if registration access token is not set, try use the one from configuration
+            // 仍未指定时，从本地配置文件读取该客户端的注册访问令牌
             externalToken = getRegistrationToken(config.sessionRealmConfigData(), clientId);
         }
 
@@ -241,10 +239,9 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
                 throw new RuntimeException("Not a valid JSON document", e);
             }
 
-            // we have to use registration access token retrieved from previous operation
-            // that ensures optimistic locking semantics
+            // 必须使用 GET 响应中的注册令牌，以保证乐观锁语义
             if (externalToken != null) {
-                // we use auth with doPost later
+                // 后续 doPut 使用此 auth
                 auth = "Bearer " + externalToken;
 
                 String newToken = externalToken;
@@ -254,7 +251,7 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
                 });
             }
 
-            // merge local representation over remote one
+            // 将本地/文件侧表示合并到远端拉取的配置上
             if (ctx.getClient() != null) {
                 ReflectionUtil.merge(ctx.getClient(), ctxremote.getClient());
             } else if (ctx.getOidcClient() != null) {
@@ -267,7 +264,7 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
             ctx = CmdStdinContext.mergeAttributes(ctx, attrs);
         }
 
-        // now update
+        // 提交更新后的客户端配置
         InputStream response = doPut(server + "/realms/" + realm + "/clients-registrations/" + regType.getEndpoint() + "/" + urlencode(clientId),
                 APPLICATION_JSON, APPLICATION_JSON, ctx.getContent(), auth);
         try {
@@ -292,6 +289,11 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
         }
     }
 
+    /**
+     * 若启用了 {@code -o}，将更新后的客户端对象序列化并输出。
+     *
+     * @param result {@link ClientRepresentation} 或 {@link OIDCClientRepresentation}
+     */
     private void outputResult(Object result) throws IOException {
         if (outputClient) {
             if (compressed) {
@@ -302,11 +304,13 @@ public class UpdateCmd extends AbstractAuthOptionsCmd {
         }
     }
 
+    /** 判断是否未提供任何有效参数。 */
     @Override
     protected boolean nothingToDo() {
         return super.nothingToDo() && regType == null && file == null && rawAttributeOperations.isEmpty() && clientId == null;
     }
 
+    /** 返回 {@code update} 子命令的详细用法说明与示例。 */
     @Override
     protected String help() {
         StringWriter sb = new StringWriter();

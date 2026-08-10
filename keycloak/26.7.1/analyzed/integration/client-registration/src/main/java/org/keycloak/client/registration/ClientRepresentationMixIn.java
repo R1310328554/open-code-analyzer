@@ -20,10 +20,16 @@ package org.keycloak.client.registration;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
+ * Jackson MixIn：控制 {@link org.keycloak.representations.idm.ClientRepresentation} 的 JSON 序列化行为。
+ * <p>
+ * 将 {@code registrationAccessToken} 标记为 {@link JsonIgnore}，避免在对外输出或日志中泄露敏感注册令牌。
+ * </p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 abstract class ClientRepresentationMixIn {
 
+    /** 注册访问令牌，序列化时忽略。 */
     @JsonIgnore
     String registrationAccessToken;
 

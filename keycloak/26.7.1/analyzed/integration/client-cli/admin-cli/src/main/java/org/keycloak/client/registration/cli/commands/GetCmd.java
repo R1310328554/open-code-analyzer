@@ -49,20 +49,32 @@ import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 import static org.keycloak.client.registration.cli.KcRegMain.CMD;
 
 /**
+ * {@code get} 子命令：从 Keycloak 客户端注册端点获取指定客户端的配置描述。
+ * <p>
+ * 优先使用命令行或本地配置中的注册访问令牌（Registration Access Token）；若无则回退到当前会话凭据。
+ * 支持 default、OIDC、install 等多种端点格式，并在成功获取后自动持久化新的注册令牌。
+ * </p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "get", description = "[ARGUMENTS]")
 public class GetCmd extends AbstractAuthOptionsCmd {
 
+    /** 为 {@code true} 时不美化 JSON 输出（压缩格式）。 */
     @Option(names = {"-c", "--compressed"}, description = "Print full stack trace when exiting with error")
     private boolean compressed = false;
 
+    /** 客户端注册端点类型，如 {@code default}、{@code oidc}、{@code install}。 */
     @Option(names = {"-e", "--endpoint"}, description = "Endpoint type to use")
     private String endpoint;
 
+    /** 要查询的客户端 ID（clientId）。 */
     @Parameters(arity = "0..1")
     String clientId;
 
+    /**
+     * 执行获取流程：解析认证信息、调用注册 API、反序列化响应并输出 JSON。
+     */
     @Override
     protected void process() {
         if (clientId == null) {
@@ -80,7 +92,7 @@ public class GetCmd extends AbstractAuthOptionsCmd {
         config = copyWithServerInfo(config);
 
         if (externalToken == null) {
-            // if registration access token is not set via -t, try use the one from configuration
+            // 未通过 -t 指定令牌时，尝试从本地配置文件读取该客户端的注册访问令牌
             externalToken = getRegistrationToken(config.sessionRealmConfigData(), clientId);
         }
 
@@ -152,11 +164,13 @@ public class GetCmd extends AbstractAuthOptionsCmd {
         }
     }
 
+    /** 判断是否未提供任何有效参数（无需执行）。 */
     @Override
     protected boolean nothingToDo() {
         return super.nothingToDo() && endpoint == null && clientId == null;
     }
 
+    /** 返回 {@code get} 子命令的详细用法说明与示例。 */
     @Override
     protected String help() {
         StringWriter sb = new StringWriter();

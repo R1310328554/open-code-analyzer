@@ -25,6 +25,12 @@ import org.keycloak.util.JsonSerialization;
 import org.apache.http.StatusLine;
 
 /**
+ * 客户端注册 HTTP 请求返回非成功状态码时抛出的 IO 异常。
+ * <p>
+ * 保留 {@link StatusLine} 与原始错误响应体，可通过 {@link #toErrorRepresentation()}
+ * 解析为 {@link OAuth2ErrorRepresentation} 以获取 OAuth2 标准错误字段。
+ * </p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class HttpErrorException extends IOException {
@@ -32,19 +38,31 @@ public class HttpErrorException extends IOException {
     private final StatusLine statusLine;
     private final String errorResponse;
 
+    /**
+     * @param statusLine HTTP 响应状态行
+     * @param errorResponse 响应正文（可能为 JSON 错误体）
+     */
     public HttpErrorException(StatusLine statusLine, String errorResponse) {
         this.statusLine = statusLine;
         this.errorResponse = errorResponse;
     }
 
+    /** @return HTTP 状态行 */
     public StatusLine getStatusLine() {
         return statusLine;
     }
 
+    /** @return 原始错误响应字符串 */
     public String getErrorResponse() {
         return errorResponse;
     }
 
+    /**
+     * 将错误响应体解析为 OAuth2 错误表示。
+     *
+     * @return 解析成功时返回 {@link OAuth2ErrorRepresentation}，无响应体时返回 {@code null}
+     * @throws RuntimeException 响应体不是合法 OAuth2 错误 JSON 时
+     */
     public OAuth2ErrorRepresentation toErrorRepresentation() {
         if (errorResponse == null) {
             return null;

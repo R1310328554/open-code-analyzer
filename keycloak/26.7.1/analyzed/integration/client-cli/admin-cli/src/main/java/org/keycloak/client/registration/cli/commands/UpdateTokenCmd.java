@@ -44,14 +44,24 @@ import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 import static org.keycloak.client.registration.cli.KcRegMain.CMD;
 
 /**
+ * {@code update-token} 子命令：为指定客户端重新签发注册访问令牌。
+ * <p>
+ * 需已通过 {@code config credentials} 建立具备管理员权限的会话；新令牌写入本地配置，
+ * 或在 {@code --no-config} 模式下直接输出到标准输出。
+ * </p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "update-token", description = "CLIENT [ARGUMENTS]")
 public class UpdateTokenCmd extends AbstractAuthOptionsCmd {
 
+    /** 要重新签发注册令牌的客户端 ID。 */
     @Parameters(arity = "0..1")
     String clientId;
 
+    /**
+     * 通过 Admin API 查找客户端内部 ID，调用注册令牌端点并持久化或输出新令牌。
+     */
     @Override
     protected void process() {
         if (clientId == null) {
@@ -74,7 +84,7 @@ public class UpdateTokenCmd extends AbstractAuthOptionsCmd {
         final String server = config.getServerUrl();
         final String realm = config.getRealm();
 
-        // first we need to get id of the client with client_id == clientId
+        // 先通过 Admin API 按 clientId 查找客户端的内部 UUID（id）
         InputStream response = doGet(server + "/admin/realms/" + realm + "/clients", APPLICATION_JSON, "Bearer " + auth);
         try {
             List<ClientRepresentation> clients = JsonSerialization.readValue(response, new TypeReference<List<ClientRepresentation>>() {});
@@ -99,7 +109,7 @@ public class UpdateTokenCmd extends AbstractAuthOptionsCmd {
             ClientRepresentation client = JsonSerialization.readValue(response, ClientRepresentation.class);
 
             if (noconfig) {
-                // output to stdout
+                // 不使用配置文件时，将新令牌输出到标准输出
                 printOut(client.getRegistrationAccessToken());
             } else {
                 saveMergeConfig(cfg -> {
@@ -111,11 +121,13 @@ public class UpdateTokenCmd extends AbstractAuthOptionsCmd {
         }
     }
 
+    /** 判断是否未指定客户端 ID。 */
     @Override
     protected boolean nothingToDo() {
         return super.nothingToDo() && clientId == null;
     }
 
+    /** 返回 {@code update-token} 子命令的用法说明与示例。 */
     @Override
     protected String help() {
         StringWriter sb = new StringWriter();

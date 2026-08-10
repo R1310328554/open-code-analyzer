@@ -18,14 +18,27 @@
 package org.keycloak.client.registration;
 
 /**
+ * 客户端注册 API 调用失败时抛出的受检异常。
+ * <p>
+ * 封装 HTTP 层错误、JSON 序列化/反序列化失败及连接异常等场景，
+ * 供 {@link ClientRegistration} 及其调用方统一处理。
+ * </p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ClientRegistrationException extends Exception {
 
+    /**
+     * @param s 错误描述
+     * @param throwable 根因
+     */
     public ClientRegistrationException(String s, Throwable throwable) {
         super(s, throwable);
     }
 
+    /**
+     * @param s 错误描述
+     */
     public ClientRegistrationException(String s) {
         super(s);
     }
