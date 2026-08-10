@@ -19,25 +19,36 @@ package com.alibaba.nacos.api.naming.remote.response;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * Instance response.
+ * 单实例操作远程响应。
+ *
+ * <p>客户端发起实例注册/注销等请求后，服务端返回此 {@link Response}；{@link #type} 回显或标识操作类型。</p>
  *
  * @author xiweng.yy
  */
 public class InstanceResponse extends Response {
     
+    /** 实例操作类型。 */
     private String type;
     
+    /** 无参构造，表示默认成功响应。 */
     public InstanceResponse() {
     }
     
+    /**
+     * 构造带操作类型的实例响应。
+     *
+     * @param type 操作类型
+     */
     public InstanceResponse(String type) {
         this.type = type;
     }
     
+    /** 设置操作类型。 */
     public void setType(String type) {
         this.type = type;
     }
     
+    /** 返回操作类型。 */
     public String getType() {
         return type;
     }

@@ -19,7 +19,9 @@ package com.alibaba.nacos.api.naming.remote.response;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * Response for notify fuzzy watcher.
+ * 模糊监听单服务变更通知的客户端应答。
+ *
+ * <p>客户端收到 {@link com.alibaba.nacos.api.naming.remote.request.NamingFuzzyWatchChangeNotifyRequest} 后返回此空响应，表示已成功处理变更通知。</p>
  *
  * @author tanyongquan
  */

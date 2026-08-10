@@ -17,16 +17,24 @@
 package com.alibaba.nacos.api.naming.remote.response;
 
 /**
- * batch instance response.
+ * 批量实例操作远程响应。
+ *
+ * <p>继承 {@link InstanceResponse}，用于批量注册/注销等操作的 gRPC 应答；{@link #type} 标识具体操作类型。</p>
  *
  * @author <a href="mailto:chenhao26@xiaomi.com">chenhao26</a>
  */
 public class BatchInstanceResponse extends InstanceResponse {
     
+    /** 无参构造，表示默认成功响应。 */
     public BatchInstanceResponse() {
         super();
     }
     
+    /**
+     * 构造带操作类型的批量实例响应。
+     *
+     * @param type 批量操作类型
+     */
     public BatchInstanceResponse(String type) {
         super(type);
     }

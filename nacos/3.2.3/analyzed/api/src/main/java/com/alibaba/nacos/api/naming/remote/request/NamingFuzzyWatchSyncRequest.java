@@ -21,61 +21,73 @@ import java.util.Set;
 import static com.alibaba.nacos.api.common.Constants.Naming.NAMING_MODULE;
 
 /**
- * fuzzy watch sync request from Nacos server.
+ * 命名模糊监听全量/增量同步请求（服务端推送）。
+ *
+ * <p>服务端按 {@link #groupKeyPattern} 批量下发匹配服务的 {@link Context} 列表；大批量时分批传输，由 {@link #totalBatch} 与 {@link #currentBatch} 标识进度。</p>
  *
  * @author shiyiyue
  */
 public class NamingFuzzyWatchSyncRequest extends AbstractFuzzyWatchNotifyRequest {
     
-    /**
-     * The pattern used to match service keys for the services.
-     */
+    /** 服务键匹配模式。 */
     private String groupKeyPattern;
     
-    /**
-     * The set of contexts containing information about the service.
-     */
+    /** 本批次包含的服务变更上下文集合。 */
     private Set<Context> contexts;
     
+    /** 同步总批次数。 */
     private int totalBatch;
     
+    /** 当前批次序号（从 1 起）。 */
     private int currentBatch;
     
+    /** 无参构造，供反序列化使用。 */
     public NamingFuzzyWatchSyncRequest() {
         
     }
     
+    /**
+     * 构造同步请求。
+     *
+     * @param pattern  服务键匹配模式
+     * @param syncType 同步类型
+     * @param contexts 服务变更上下文集合
+     */
     public NamingFuzzyWatchSyncRequest(String pattern, String syncType, Set<Context> contexts) {
         super(syncType);
         this.groupKeyPattern = pattern;
         this.contexts = contexts;
     }
     
+    /** 返回同步总批次数。 */
     public int getTotalBatch() {
         return totalBatch;
     }
     
+    /** 设置同步总批次数。 */
     public void setTotalBatch(int totalBatch) {
         this.totalBatch = totalBatch;
     }
     
+    /** 返回当前批次序号。 */
     public int getCurrentBatch() {
         return currentBatch;
     }
     
+    /** 设置当前批次序号。 */
     public void setCurrentBatch(int currentBatch) {
         this.currentBatch = currentBatch;
     }
     
     /**
-     * Build SyncNotifyRequest.
+     * 构建带分批信息的同步通知请求。
      *
-     * @param pattern      pattern
-     * @param syncType     syncType
-     * @param contexts     contexts
-     * @param totalBatch   totalBatch
-     * @param currentBatch currentBatch
-     * @return A new NamingFuzzyWatchSyncRequest instance
+     * @param pattern      服务键匹配模式
+     * @param syncType     同步类型
+     * @param contexts     服务变更上下文集合
+     * @param totalBatch   总批次数
+     * @param currentBatch 当前批次序号
+     * @return 新的 {@link NamingFuzzyWatchSyncRequest} 实例
      */
     public static NamingFuzzyWatchSyncRequest buildSyncNotifyRequest(String pattern,
         String syncType,
@@ -88,54 +100,51 @@ public class NamingFuzzyWatchSyncRequest extends AbstractFuzzyWatchNotifyRequest
         return namingFuzzyWatchSyncRequest;
     }
     
+    /** 返回服务键匹配模式。 */
     public String getGroupKeyPattern() {
         return groupKeyPattern;
     }
     
+    /** 设置服务键匹配模式。 */
     public void setGroupKeyPattern(String groupKeyPattern) {
         this.groupKeyPattern = groupKeyPattern;
     }
     
+    /** 返回本批次服务变更上下文。 */
     public Set<Context> getContexts() {
         return contexts;
     }
     
+    /** 设置服务变更上下文集合。 */
     public void setContexts(Set<Context> contexts) {
         this.contexts = contexts;
     }
     
+    /** 返回命名模块标识。 */
     @Override
     public String getModule() {
         return NAMING_MODULE;
     }
     
-    /**
-     * fuzzy watch sync context.
-     */
+    /** 模糊监听同步上下文，描述单个服务的变更信息。 */
     public static class Context {
         
-        /**
-         * service key.
-         */
+        /** 服务键（group@@service）。 */
         String serviceKey;
         
-        /**
-         * changed type.
-         */
+        /** 变更类型（ADD/DELETE/MODIFY）。 */
         private String changedType;
         
-        /**
-         * Constructs an empty Context object.
-         */
+        /** 无参构造，供序列化使用。 */
         public Context() {
         }
         
         /**
-         * Builds a new context object with the provided parameters.
+         * 构建服务变更上下文。
          *
-         * @param serviceKey  The groupKey associated of the configuration.
-         * @param changedType The type of the configuration change event.
-         * @return A new context object initialized with the provided parameters.
+         * @param serviceKey  服务键
+         * @param changedType 变更类型
+         * @return 初始化完毕的 {@link Context} 实例
          */
         public static NamingFuzzyWatchSyncRequest.Context build(String serviceKey,
             String changedType) {
@@ -145,18 +154,22 @@ public class NamingFuzzyWatchSyncRequest extends AbstractFuzzyWatchNotifyRequest
             return context;
         }
         
+        /** 返回服务键。 */
         public String getServiceKey() {
             return serviceKey;
         }
         
+        /** 设置服务键。 */
         public void setServiceKey(String serviceKey) {
             this.serviceKey = serviceKey;
         }
         
+        /** 返回变更类型。 */
         public String getChangedType() {
             return changedType;
         }
         
+        /** 设置变更类型。 */
         public void setChangedType(String changedType) {
             this.changedType = changedType;
         }

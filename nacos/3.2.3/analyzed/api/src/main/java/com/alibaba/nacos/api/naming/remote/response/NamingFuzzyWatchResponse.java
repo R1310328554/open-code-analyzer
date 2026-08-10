@@ -20,24 +20,28 @@ import com.alibaba.nacos.api.remote.response.Response;
 import com.alibaba.nacos.api.remote.response.ResponseCode;
 
 /**
- * Nacos naming fuzzy watch service response.
+ * 命名模糊监听注册请求的远程响应。
+ *
+ * <p>服务端处理 {@link com.alibaba.nacos.api.naming.remote.request.NamingFuzzyWatchRequest} 后返回；失败时通过 {@link #buildFailResponse} 携带错误信息。</p>
  *
  * @author tanyongquan
  */
 public class NamingFuzzyWatchResponse extends Response {
     
+    /** 无参构造，默认成功响应。 */
     public NamingFuzzyWatchResponse() {
     }
     
+    /** 构建成功的模糊监听响应。 */
     public static NamingFuzzyWatchResponse buildSuccessResponse() {
         return new NamingFuzzyWatchResponse();
     }
     
     /**
-     * Build fail response.
+     * 构建失败的模糊监听响应。
      *
-     * @param message error message
-     * @return fail response
+     * @param message 错误消息
+     * @return 带错误码的失败响应
      */
     public static NamingFuzzyWatchResponse buildFailResponse(String message) {
         NamingFuzzyWatchResponse result = new NamingFuzzyWatchResponse();
