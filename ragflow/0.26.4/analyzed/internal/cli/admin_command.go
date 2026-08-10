@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// admin_command.go — RAGFlow 管理端 CLI 命令层：通过 AdminServerClient 调用 /admin/* REST，涵盖用户/角色/服务/许可证/摄入/消息队列/数据清理等运维操作。
+
 //
 
 package cli
@@ -24,6 +26,7 @@ import (
 
 // PingServer pings the server to check if it's alive
 // Returns benchmark result map if iterations > 1, otherwise prints status
+// PingAdmin 探测管理端存活；iterations>1 时走基准测试路径。
 func (c *CLI) PingAdmin(cmd *Command) (ResponseIf, error) {
 	// Get iterations from command params (for benchmark)
 	iterations := 1
@@ -72,6 +75,7 @@ func (c *CLI) AdminListResourcesCommand(cmd *Command) (ResponseIf, error) {
 }
 
 // AdminListRolesCommand to list roles command (admin mode only)
+// AdminListRolesCommand 列出角色并剔除 extra 字段。
 func (c *CLI) AdminListRolesCommand(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != AdminMode || c.AdminServerClient.LoginToken == nil {
 		return nil, fmt.Errorf("this command is only allowed in ADMIN mode or already login")
@@ -248,6 +252,7 @@ func (c *CLI) AdminRevokeUserAdminCommand(cmd *Command) (ResponseIf, error) {
 }
 
 // AdminGrantRolePermissionCommand grants permission to role (admin mode only)
+// AdminGrantRolePermissionCommand 为角色授予资源 actions 权限。
 func (c *CLI) AdminGrantRolePermissionCommand(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != AdminMode || c.AdminServerClient.LoginToken == nil {
 		return nil, fmt.Errorf("this command is only allowed in ADMIN mode or already login")
@@ -341,6 +346,7 @@ func (c *CLI) AdminShowRolePermissionCommand(cmd *Command) (ResponseIf, error) {
 }
 
 // AdminCreateUserCommand creates a new user (admin mode only)
+// AdminCreateUserCommand RSA 加密密码后 POST 创建用户。
 func (c *CLI) AdminCreateUserCommand(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != AdminMode || c.AdminServerClient.LoginToken == nil {
 		return nil, fmt.Errorf("this command is only allowed in ADMIN mode or already login")
@@ -507,6 +513,7 @@ type listServicesResponse struct {
 }
 
 // AdminListServicesCommand lists all services (admin mode only)
+// AdminListServicesCommand 列出后台托管服务。
 func (c *CLI) AdminListServicesCommand(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != AdminMode || c.AdminServerClient.LoginToken == nil {
 		return nil, fmt.Errorf("this command is only allowed in ADMIN mode or already login")
@@ -592,6 +599,7 @@ func (c *CLI) AdminShowService(cmd *Command) (ResponseIf, error) {
 	return HandleCommonDataResponse(resp, "show service")
 }
 
+// normalizeVariableRows 统一变量行的 setting_type 与 source 字段。
 func normalizeVariableRows(rows []map[string]interface{}) {
 	for _, row := range rows {
 		if _, ok := row["setting_type"]; ok {
@@ -606,6 +614,7 @@ func normalizeVariableRows(rows []map[string]interface{}) {
 }
 
 // AdminListVariablesCommand lists all system variables (admin mode only).
+// AdminListVariablesCommand 列出系统变量并规范化 setting_type。
 func (c *CLI) AdminListVariablesCommand(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != AdminMode || c.AdminServerClient.LoginToken == nil {
 		return nil, fmt.Errorf("this command is only allowed in ADMIN mode or already login")
@@ -715,6 +724,7 @@ func (c *CLI) AdminShowVariable(cmd *Command) (ResponseIf, error) {
 	return &result, nil
 }
 
+// AdminSetLicenseCommand 上传/设置系统许可证。
 func (c *CLI) AdminSetLicenseCommand(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != AdminMode || c.AdminServerClient.LoginToken == nil {
 		return nil, fmt.Errorf("this command is only allowed in ADMIN mode or already login")
@@ -1656,6 +1666,7 @@ func (c *CLI) AdminShowUsersPlanCommand(cmd *Command) (ResponseIf, error) {
 
 // ListUsers lists all users (admin mode only)
 // Returns (result_map, error) - result_map is non-nil for benchmark mode
+// AdminListUsersCommand 分页列出全部用户。
 func (c *CLI) AdminListUsersCommand(cmd *Command) (ResponseIf, error) {
 	if c.Config.CLIMode != AdminMode || c.AdminServerClient.LoginToken == nil {
 		return nil, fmt.Errorf("this command is only allowed in ADMIN mode or already login")
@@ -1948,6 +1959,7 @@ func (c *CLI) AdminShowTasksSummaryCommand(cmd *Command) (ResponseIf, error) {
 	return &result, nil
 }
 
+// AdminPurgeOrphanCommand 清理孤儿数据，支持 preview 预演。
 func (c *CLI) AdminPurgeOrphanCommand(cmd *Command) (ResponseIf, error) {
 
 	if c.Config.CLIMode != AdminMode || c.AdminServerClient.LoginToken == nil {
@@ -2435,6 +2447,7 @@ func (c *CLI) AdminRemoveUserIngestionTasksCommand(cmd *Command) (ResponseIf, er
 }
 
 // AdminAddProviderCommand add provider
+// AdminAddProviderCommand 注册新的模型 Provider。
 func (c *CLI) AdminAddProviderCommand(cmd *Command) (ResponseIf, error) {
 
 	if c.Config.CLIMode != AdminMode || c.AdminServerClient.LoginToken == nil {

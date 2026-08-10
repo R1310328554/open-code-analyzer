@@ -41,6 +41,7 @@ const wencaiUnsupportedMessage = "Wencai requires web scraping of 同花顺 — 
 // The Python implementation accepts a free-form natural-language query
 // and an optional page/per-page limit. The Go stub preserves the shape
 // but rejects every invocation.
+// wencaiParams 为自然语言 query 及可选分页参数。
 type wencaiParams struct {
 	Query   string `json:"query"`
 	Page    int    `json:"page,omitempty"`
@@ -49,6 +50,7 @@ type wencaiParams struct {
 
 // wencaiEnvelope is the model-facing JSON shape. The stub always
 // returns a populated Error.
+// wencaiEnvelope 桩实现始终通过 _ERROR 返回不可用说明。
 type wencaiEnvelope struct {
 	Items []any  `json:"items,omitempty"`
 	Error string `json:"_ERROR,omitempty"`
@@ -67,13 +69,16 @@ type wencaiEnvelope struct {
 // invocation fails fast with a clear "use Python Canvas" message.
 //
 // WencaiTool does not own an HTTPHelper — it never makes network calls.
+// WencaiTool 占位注册，保证 DSL 引用 wencai 仍可解析。
 type WencaiTool struct{}
 
 // NewWencaiTool returns a WencaiTool. No HTTPHelper is allocated; the
 // stub never issues network requests.
+// NewWencaiTool 构造桩工具，不分配 HTTP 客户端。
 func NewWencaiTool() *WencaiTool { return &WencaiTool{} }
 
 // Info returns the tool's metadata for the chat model.
+// Info 描述 query/page/per_page 参数及 STUB 说明。
 func (w *WencaiTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: wencaiToolName,
@@ -101,6 +106,7 @@ func (w *WencaiTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 // InvokableRun validates the input shape (query is required) and
 // returns a clear "use Python Canvas" error. The model receives a
 // JSON envelope with the message in the `_ERROR` field.
+// InvokableRun 校验 query 后快速失败，引导使用 Python Canvas。
 func (w *WencaiTool) InvokableRun(_ context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p wencaiParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {
@@ -115,6 +121,7 @@ func (w *WencaiTool) InvokableRun(_ context.Context, argsJSON string, _ ...tool.
 		errors.New(wencaiUnsupportedMessage)
 }
 
+// wencaiJSON 序列化问财响应信封。
 func wencaiJSON(env wencaiEnvelope) string {
 	b, err := json.Marshal(env)
 	if err != nil {
@@ -123,6 +130,7 @@ func wencaiJSON(env wencaiEnvelope) string {
 	return string(b)
 }
 
+// wencaiErrJSON 将桩错误消息写入 _ERROR。
 func wencaiErrJSON(err error) string {
 	return wencaiJSON(wencaiEnvelope{Error: err.Error()})
 }

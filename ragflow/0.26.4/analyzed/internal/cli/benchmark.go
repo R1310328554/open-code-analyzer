@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// benchmark.go — CLI 基准测试：对嵌套命令重复执行并统计 QPS、成功率与延迟。
+
 //
 
 package cli
@@ -24,6 +26,7 @@ import (
 )
 
 // BenchmarkResult holds the result of a benchmark run
+// BenchmarkResult 汇总单次基准运行的耗时与成功/失败计数。
 type BenchmarkResult struct {
 	Duration      float64
 	TotalCommands int
@@ -34,6 +37,7 @@ type BenchmarkResult struct {
 }
 
 // RunBenchmark runs a benchmark with the given concurrency and iterations
+// RunBenchmark 读取 concurrency/iterations 并调度单线程或并发压测。
 func (c *CLI) RunBenchmark(cmd *Command) (ResponseIf, error) {
 	concurrency, ok := cmd.Params["concurrency"].(int)
 	if !ok {
@@ -64,6 +68,7 @@ func (c *CLI) RunBenchmark(cmd *Command) (ResponseIf, error) {
 }
 
 // runBenchmarkSingle runs benchmark with single concurrency (sequential execution)
+// runBenchmarkSingle 顺序执行 iterations 次嵌套命令。
 func (c *CLI) runBenchmarkSingle(iterations int, nestedCmd *Command) (*BenchmarkResponse, error) {
 	commandType := nestedCmd.Type
 
@@ -144,6 +149,7 @@ func (c *CLI) runBenchmarkSingle(iterations int, nestedCmd *Command) (*Benchmark
 }
 
 // runBenchmarkConcurrent runs benchmark with multiple concurrent workers
+// runBenchmarkConcurrent 用 worker 池并发压测并合并统计。
 func (c *CLI) runBenchmarkConcurrent(concurrency, iterations int, nestedCmd *Command) (*BenchmarkResponse, error) {
 	results := make([]map[string]interface{}, concurrency)
 	var wg sync.WaitGroup

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// yahoo_finance.go — Yahoo Finance 行情工具：无鉴权 GET quote API，返回 symbol/价格/涨跌幅等快照。
+
 //
 
 package tool
@@ -33,12 +35,14 @@ const yahooFinanceToolName = "yahoo_finance"
 const yahooFinanceToolDescription = "Fetch stock quote snapshots from Yahoo Finance. Returns quoteResponse.result[].{symbol, regularMarketPrice, currency, regularMarketChangePercent}."
 
 // yahooFinanceParams is the JSON shape the model sends into InvokableRun.
+// yahooFinanceParams 含 symbols 列表及可选 fields 查询参数。
 type yahooFinanceParams struct {
 	Symbols []string `json:"symbols"`
 	Fields  []string `json:"fields"`
 }
 
 // yahooFinanceQuote is one element of the upstream result array.
+// yahooFinanceQuote 为单只股票 quoteResponse.result 元素。
 type yahooFinanceQuote struct {
 	Symbol                     string  `json:"symbol"`
 	RegularMarketPrice         float64 `json:"regularMarketPrice"`
@@ -63,12 +67,14 @@ type yahooFinanceEnvelope struct {
 
 // yahooFinanceEndpoint is the Yahoo Finance quote URL. Exposed as a
 // package var so tests can substitute a httptest.Server URL.
+// yahooFinanceEndpoint 可被测试替换为 httptest 地址。
 var yahooFinanceEndpoint = "https://query1.finance.yahoo.com/v7/finance/quote"
 
 // YahooFinanceTool is the
 // Yahoo Finance quote tool.
 // It performs an unauthenticated GET against the public quote API
 // via the shared HTTPHelper and returns the parsed quote records.
+// YahooFinanceTool 经 HTTPHelper 拉取公开行情接口。
 type YahooFinanceTool struct {
 	helper *HTTPHelper
 }
@@ -110,6 +116,7 @@ func (y *YahooFinanceTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 
 // buildYahooFinanceURL composes the quote URL with the symbol list
 // and an optional `fields` parameter. Centralized for testability.
+// buildYahooFinanceURL 拼接 symbols 与 fields 查询串。
 func buildYahooFinanceURL(symbols []string, fields []string) string {
 	q := url.Values{}
 	q.Set("symbols", strings.Join(symbols, ","))
@@ -120,6 +127,7 @@ func buildYahooFinanceURL(symbols []string, fields []string) string {
 }
 
 // InvokableRun performs the Yahoo Finance quote lookup.
+// InvokableRun 发送浏览器 User-Agent 规避 401 并解析 quoteResponse。
 func (y *YahooFinanceTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p yahooFinanceParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {

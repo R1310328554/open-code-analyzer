@@ -14,6 +14,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// rag_analyzer.go — CGO 版 RAG 分词器绑定：封装 C++ RAGAnalyzer C API，供 Go 侧分词/词频/词性查询。
+
 //
 
 package rag_analyzer
@@ -35,6 +37,7 @@ import (
 )
 
 // Token represents a single token from the analyzer
+// Token 表示单个分词结果及字节偏移区间。
 type Token struct {
 	Text      string
 	Offset    uint32
@@ -42,6 +45,7 @@ type Token struct {
 }
 
 // TokenWithPosition represents a token with position information
+// TokenWithPosition 含显式位置信息的词条。
 type TokenWithPosition struct {
 	Text      string
 	Offset    uint32
@@ -49,12 +53,14 @@ type TokenWithPosition struct {
 }
 
 // Analyzer wraps the C RAGAnalyzer
+// Analyzer 持有 C.RAGAnalyzerHandle，管理词典生命周期。
 type Analyzer struct {
 	handle C.RAGAnalyzerHandle
 }
 
 // NewAnalyzer creates a new RAGAnalyzer instance
 // path: path to dictionary files (containing rag/, wordnet/, opencc/ directories)
+// NewAnalyzer 传入词典目录（含 rag/wordnet/opencc）创建分析器。
 func NewAnalyzer(path string) (*Analyzer, error) {
 	cPath := C.CString(path)
 	defer C.free(unsafe.Pointer(cPath))
@@ -68,6 +74,7 @@ func NewAnalyzer(path string) (*Analyzer, error) {
 }
 
 // Load loads the analyzer dictionaries
+// Load 加载词典资源，失败返回错误码。
 func (a *Analyzer) Load() error {
 	if a.handle == nil {
 		return fmt.Errorf("analyzer is not initialized")
@@ -138,6 +145,7 @@ func parseTokens(result string) []Token {
 }
 
 // Tokenize analyzes text and returns a space-separated string of tokens
+// Tokenize 返回空格分隔的分词字符串。
 func (a *Analyzer) Tokenize(text string) (string, error) {
 	if a.handle == nil {
 		return "", fmt.Errorf("analyzer is not initialized")
@@ -156,6 +164,7 @@ func (a *Analyzer) Tokenize(text string) (string, error) {
 }
 
 // TokenizeWithPosition analyzes text and returns tokens with position information
+// TokenizeWithPosition 返回带 offset 的结构化词条切片。
 func (a *Analyzer) TokenizeWithPosition(text string) ([]TokenWithPosition, error) {
 	if a.handle == nil {
 		return nil, fmt.Errorf("analyzer is not initialized")
@@ -193,6 +202,7 @@ func (a *Analyzer) TokenizeWithPosition(text string) ([]TokenWithPosition, error
 }
 
 // Close destroys the analyzer and releases resources
+// Close 销毁 C 侧句柄并释放资源。
 func (a *Analyzer) Close() {
 	if a.handle != nil {
 		C.RAGAnalyzer_Destroy(a.handle)
@@ -203,6 +213,7 @@ func (a *Analyzer) Close() {
 // FineGrainedTokenize performs fine-grained tokenization on space-separated tokens
 // Input: space-separated tokens (e.g., "hello world 测试")
 // Output: space-separated fine-grained tokens (e.g., "hello world 测 试")
+// FineGrainedTokenize 对已有分词做细粒度二次切分。
 func (a *Analyzer) FineGrainedTokenize(tokens string) (string, error) {
 	if a.handle == nil {
 		return "", fmt.Errorf("analyzer is not initialized")
@@ -222,6 +233,7 @@ func (a *Analyzer) FineGrainedTokenize(tokens string) (string, error) {
 
 // GetTermFreq returns the frequency of a term (matching Python rag_tokenizer.freq)
 // Returns: frequency value, or 0 if term not found
+// GetTermFreq 查询词频，对齐 Python rag_tokenizer.freq。
 func (a *Analyzer) GetTermFreq(term string) int32 {
 	if a.handle == nil {
 		return 0
@@ -235,6 +247,7 @@ func (a *Analyzer) GetTermFreq(term string) int32 {
 
 // GetTermTag returns the POS tag of a term (matching Python rag_tokenizer.tag)
 // Returns: POS tag string (e.g., "n", "v", "ns"), or empty string if term not found or no tag
+// GetTermTag 返回词性标签（如 n/v/ns），无则空串。
 func (a *Analyzer) GetTermTag(term string) string {
 	if a.handle == nil {
 		return ""
@@ -255,6 +268,7 @@ func (a *Analyzer) GetTermTag(term string) string {
 // Copy creates a new independent analyzer instance from the current one
 // The new instance shares the loaded dictionaries but has independent internal state
 // This is useful for creating per-request analyzer instances in concurrent environments
+// Copy 克隆独立实例，共享已加载词典，适合并发 per-request。
 func (a *Analyzer) Copy() *Analyzer {
 	if a.handle == nil {
 		return nil

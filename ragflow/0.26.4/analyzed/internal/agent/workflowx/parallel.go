@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// parallel.go — workflowx 并行扇出扩展：对输入切片逐项 Invoke 子工作流，支持有界并发与逐项中断恢复。
+
 //
 
 // Package workflowx parallel extension.
@@ -44,6 +46,7 @@ import (
 // ParallelAddressSegment is the per-item address segment used when
 // addressing interrupts. It mirrors the batch node's
 // AddressSegmentBatchProcess.
+// ParallelAddressSegment 为并行节点逐项中断地址段类型。
 const ParallelAddressSegment compose.AddressSegmentType = "workflowx-parallel"
 
 // Sentinel errors for the parallel extension. Tests use errors.Is
@@ -62,6 +65,7 @@ var (
 
 // ParallelOption configures AddParallelNode. Follows the
 // functional-options pattern.
+// ParallelOption 配置 AddParallelNode 的并发、checkpoint 等行为。
 type ParallelOption func(*parallelOptions)
 
 type parallelOptions struct {
@@ -82,6 +86,7 @@ type parallelOptions struct {
 // item still runs on the main goroutine.
 //
 // The default is 0 (sequential).
+// WithParallelMaxConcurrency：n<=1 顺序执行，n>1 信号量限流并发。
 func WithParallelMaxConcurrency(n int) ParallelOption {
 	return func(o *parallelOptions) {
 		if n >= 0 {
@@ -190,6 +195,7 @@ func getParallelOptions(opts []ParallelOption) *parallelOptions {
 // re-decode it with the original Go types on resume. JSON's
 // default behaviour of decoding numbers into float64 would
 // otherwise break integer and other typed inputs.
+// ParallelInterruptState 保存原始输入 JSON、已完成索引与逐项 checkpoint。
 type ParallelInterruptState struct {
 	// OriginalInputsJSON is the JSON encoding of the input slice
 	// as seen by the parallel lambda on first run. On resume
@@ -223,6 +229,7 @@ type ParallelInterruptState struct {
 
 // Compilable is the input type accepted by AddParallelNode. Both
 // *compose.Graph[I, O] and *compose.Workflow[I, O] satisfy it.
+// Compilable 抽象可 Compile 的子图（Graph 或 Workflow）。
 type Compilable[I, O any] interface {
 	Compile(ctx context.Context, opts ...compose.GraphCompileOption) (compose.Runnable[I, O], error)
 }
@@ -238,6 +245,7 @@ type Compilable[I, O any] interface {
 // AddParallelNode compiles the sub-workflow immediately. Compile-
 // time failures are returned as an error and the outer workflow
 // is not modified.
+// AddParallelNode 在外层 wf 安装并行 lambda；v1 外层 Stream 暂不支持。
 func AddParallelNode[I, O any](
 	ctx context.Context,
 	wf *compose.Workflow[[]I, []O],
@@ -309,6 +317,7 @@ var ErrParallelOuterStreamUnsupported = errParallelOuterStreamUnsupported
 //     a resumed run re-enter deterministically.
 //   - On a non-interrupt error, return the first one (wrapped per
 //     "item %d: %w") and discard the other items' results.
+// runParallelInvoke 实现 fresh/resume 状态机并聚合逐项结果或 CompositeInterrupt。
 func runParallelInvoke[I, O any](
 	ctx context.Context,
 	nodeKey string,
@@ -556,6 +565,7 @@ func encodeParallelState(s ParallelInterruptState) ([]byte, error) {
 // non-completed complement for safety: under concurrent execution,
 // an item whose goroutine was still in-flight at the interrupt
 // boundary is treated as needing replay.
+// buildPendingIndices 计算中断后需重放的全量未完成索引集合。
 func buildPendingIndices(totalCount int, completedResults map[int]any) []int {
 	if totalCount <= 0 {
 		return nil
@@ -633,6 +643,7 @@ type parallelTaskResult struct {
 //
 // Per-item panics are recovered and surfaced as a normal error
 // wrapped with "item %d:" so the outer lambda never crashes.
+// runParallelFanout 按并发策略调度逐项 sub.Invoke 并回收 panic。
 func runParallelFanout[I, O any](
 	ctx context.Context,
 	nodeKey string,
@@ -729,6 +740,7 @@ type parallelBridgeStoreKey struct{}
 // parallelBridgeState is the in-memory map backing the per-item
 // child checkpoints. It is owned by AddParallelNode and passed
 // through ctx so the parallelBridgeStore can find it.
+// parallelBridgeState 为并行节点逐项子 checkpoint 内存映射。
 type parallelBridgeState struct {
 	mu   sync.RWMutex
 	data map[string][]byte

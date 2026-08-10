@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// tushare.go — Tushare Pro 中国金融数据工具：POST api.tushare.pro，返回 fields/items 列式数据供模型索引。
+
 //
 
 package tool
@@ -29,6 +31,7 @@ import (
 	"github.com/cloudwego/eino/schema"
 )
 
+// tushareToolName 为 Eino 工具注册名。
 const tushareToolName = "tushare"
 
 const tushareToolDescription = "Call Tushare Pro (api.tushare.pro) for Chinese financial data. " +
@@ -36,6 +39,7 @@ const tushareToolDescription = "Call Tushare Pro (api.tushare.pro) for Chinese f
 
 // tushareEndpoint is the Tushare Pro REST endpoint. Exposed as a
 // package var so tests can substitute a httptest.Server URL.
+// tushareEndpoint 为 Tushare REST 端点，测试可替换为 httptest URL。
 var tushareEndpoint = "http://api.tushare.pro"
 
 // tushareParams is the JSON shape the model sends into InvokableRun.
@@ -45,6 +49,7 @@ var tushareEndpoint = "http://api.tushare.pro"
 //     "daily", "fund_basic", "index_daily", "fut_basic".
 //   - Params (optional): a free-form map of Tushare query parameters,
 //     e.g. {"ts_code":"000001.SZ","start_date":"20240101"}.
+// tushareParams 为模型传入 InvokableRun 的 JSON 形参（token、api_name、params、fields）。
 type tushareParams struct {
 	Token   string            `json:"token"`
 	APIName string            `json:"api_name"`
@@ -53,6 +58,7 @@ type tushareParams struct {
 }
 
 // tushareRequest is the JSON envelope Tushare Pro expects on POST.
+// tushareRequest 为 POST 请求体信封，与 Tushare Pro 协议一致。
 type tushareRequest struct {
 	Token   string            `json:"token"`
 	APIName string            `json:"api_name"`
@@ -64,6 +70,7 @@ type tushareRequest struct {
 // column-major record: `fields` lists the column names in order, and
 // `items` is a slice of rows where each row is a slice aligned with
 // `fields`.
+// tushareData 描述上游 data 字段：fields 列名 + items 行数组。
 type tushareData struct {
 	Fields []string `json:"fields"`
 	Items  [][]any  `json:"items"`
@@ -76,6 +83,7 @@ type tushareData struct {
 //	  "msg":  "...",
 //	  "data": {...}        // optional
 //	}
+// tushareResponse 为 Tushare 顶层响应（code/msg/data）。
 type tushareResponse struct {
 	Code int          `json:"code"`
 	Msg  string       `json:"msg,omitempty"`
@@ -86,6 +94,7 @@ type tushareResponse struct {
 // verbatim so the model can index by column name. _ERROR captures
 // non-zero `code` responses from Tushare (e.g. "权限不足" / 40201) and
 // transport-level failures.
+// tushareEnvelope 为模型可见 JSON；非零 code 写入 _ERROR。
 type tushareEnvelope struct {
 	Fields []string `json:"fields,omitempty"`
 	Items  [][]any  `json:"items,omitempty"`
@@ -100,17 +109,20 @@ type tushareEnvelope struct {
 //
 // TushareTool uses the shared HTTPHelper for retry/timeout/OTel
 // propagation.
+// TushareTool 封装 Tushare Pro 调用，复用 HTTPHelper 重试/超时/OTel。
 type TushareTool struct {
 	helper *HTTPHelper
 }
 
 // NewTushareTool returns a TushareTool using the default HTTPHelper.
+// NewTushareTool 使用默认 HTTPHelper 构造工具。
 func NewTushareTool() *TushareTool {
 	return NewTushareToolWith(NewHTTPHelper())
 }
 
 // NewTushareToolWith returns a TushareTool that uses the provided
 // HTTPHelper. Useful for tests.
+// NewTushareToolWith 允许测试注入自定义 HTTPHelper。
 func NewTushareToolWith(h *HTTPHelper) *TushareTool {
 	if h == nil {
 		h = NewHTTPHelper()
@@ -119,6 +131,7 @@ func NewTushareToolWith(h *HTTPHelper) *TushareTool {
 }
 
 // Info returns the tool's metadata for the chat model.
+// Info 向聊天模型暴露 token、api_name、params、fields 参数 schema。
 func (t *TushareTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: tushareToolName,
@@ -151,6 +164,7 @@ func (t *TushareTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 // buildTushareRequestBody marshals the request envelope to JSON. The
 // Tushare Pro server expects a flat object — no URL-encoding — so we
 // POST raw JSON. Exposed for unit testing.
+// buildTushareRequestBody 序列化 POST JSON 请求体。
 func buildTushareRequestBody(p tushareParams) ([]byte, error) {
 	req := tushareRequest{
 		Token:   p.Token,
@@ -163,6 +177,7 @@ func buildTushareRequestBody(p tushareParams) ([]byte, error) {
 
 // buildTushareURL returns the POST URL. Tushare's API only reads the
 // body, not the query string, but the helper requires a URL.
+// buildTushareURL 返回 POST URL（Tushare 仅读 body）。
 func buildTushareURL() string {
 	u, _ := url.Parse(tushareEndpoint)
 	if u.Scheme == "" {
@@ -172,6 +187,7 @@ func buildTushareURL() string {
 }
 
 // InvokableRun performs the Tushare Pro POST call.
+// InvokableRun 校验 token/api_name，POST 上游并透传 fields/items。
 func (t *TushareTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p tushareParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {
@@ -230,6 +246,7 @@ func (t *TushareTool) InvokableRun(ctx context.Context, argsJSON string, _ ...to
 	return tushareJSON(env), nil
 }
 
+// tushareJSON 序列化结果并去除 Encoder 尾随换行。
 func tushareJSON(env tushareEnvelope) string {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
@@ -246,6 +263,7 @@ func tushareJSON(env tushareEnvelope) string {
 	return string(out)
 }
 
+// tushareErrJSON 将错误写入 _ERROR 字段返回 JSON。
 func tushareErrJSON(err error) string {
 	return tushareJSON(tushareEnvelope{Error: err.Error()})
 }

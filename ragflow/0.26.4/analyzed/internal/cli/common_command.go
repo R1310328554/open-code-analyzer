@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// common_command.go — CLI 共用命令：登录/Ping、Provider 管理、API 服务器配置及模型列表等跨模式逻辑。
+
 //
 
 package cli
@@ -30,6 +32,7 @@ import (
 	"golang.org/x/term"
 )
 
+// LoginUserByCommand 从 Command 参数触发交互式或直传密码登录。
 func (c *CLI) LoginUserByCommand(cmd *Command) (ResponseIf, error) {
 	email, ok := cmd.Params["email"].(string)
 	if !ok {
@@ -54,6 +57,7 @@ func (c *CLI) LoginUserByCommand(cmd *Command) (ResponseIf, error) {
 }
 
 // LoginUserInteractive performs interactive login with username and password
+// LoginUserInteractive 先 Ping 再按模式 POST /admin/login 或 API 登录。
 func (c *CLI) LoginUserInteractive(email, password string) error {
 	// First, ping the server to check if it's available
 	_, err := c.PingServer(1)
@@ -117,6 +121,7 @@ func (c *CLI) PingByCommand(cmd *Command) (ResponseIf, error) {
 	return c.PingServer(iterations)
 }
 
+// PingServer 探测当前模式对应服务端点，支持多次采样。
 func (c *CLI) PingServer(iterations int) (ResponseIf, error) {
 	var pingPath string
 	var resp *Response
@@ -213,6 +218,7 @@ func (c *CLI) loginUser(httpClient *HTTPClient, baseURL, email, password string)
 	return token, nil
 }
 
+// Logout 清除本地 token 并通知服务端登出。
 func (c *CLI) Logout() (ResponseIf, error) {
 
 	var resp *Response
@@ -390,6 +396,7 @@ func (c *CLI) CommonShowProviderInstanceBalanceCommand(cmd *Command) (ResponseIf
 
 // CommonListProviderInstancesCommand lists all instances of a provider
 // LIST INSTANCES FROM PROVIDER <name>
+// CommonListProviderInstancesCommand 列出指定 Provider 的实例。
 func (c *CLI) CommonListProviderInstancesCommand(cmd *Command) (ResponseIf, error) {
 
 	providerName, ok := cmd.Params["provider_name"].(string)
@@ -990,6 +997,7 @@ func (c *CLI) CommonListAPIServersCommand(cmd *Command) (ResponseIf, error) {
 	return &result, nil
 }
 
+// AddAPIServerCommand 向 rf.yml 增加 API 服务器条目。
 func (c *CLI) AddAPIServerCommand(cmd *Command) (ResponseIf, error) {
 	apiServerName, ok := cmd.Params["server_name"].(string)
 	if !ok {
@@ -1316,6 +1324,7 @@ func (c *CLI) CommonShowModelCommand(cmd *Command) (ResponseIf, error) {
 }
 
 // readPassword reads password from terminal without echoing
+// ReadPassword 从终端无 echo 读取密码（优先 term.ReadPassword）。
 func ReadPassword() (string, error) {
 	if !term.IsTerminal(int(os.Stdin.Fd())) {
 		return ReadPasswordFallback()
@@ -1344,6 +1353,7 @@ func ReadPasswordFallback() (string, error) {
 }
 
 // FlattenMap recursively flattens a nested map into dot-notation keys
+// FlattenMap 递归展平嵌套 map 供表格输出。
 func FlattenMap(data map[string]interface{}, prefix string, result *[]map[string]interface{}) {
 	for key, value := range data {
 		// Build the current key path

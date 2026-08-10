@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// crypt.go — CLI 密码加密：与 Python api/utils/crypt.py 对齐的 RSA PKCS1v15 + 双重 Base64。
+
 //
 
 package cli
@@ -29,6 +31,7 @@ import (
 
 // EncryptPassword encrypts a password using RSA public key
 // This matches the Python implementation in api/utils/crypt.py
+// EncryptPassword 先 Base64 密码再 RSA 加密并再次 Base64 编码。
 func EncryptPassword(password string, publicKeyPEM []byte) (string, error) {
 	// Read public key from conf/public.pem
 	//publicKeyPath := filepath.Join(getProjectBaseDirectory(), "conf", "public.pem")
@@ -71,6 +74,7 @@ func EncryptPassword(password string, publicKeyPEM []byte) (string, error) {
 }
 
 // getProjectBaseDirectory returns the project base directory
+// getProjectBaseDirectory 向上查找含 go.mod 或 conf 的项目根目录。
 func getProjectBaseDirectory() string {
 	// Try to find the project root by looking for go.mod or conf directory
 	// Start from current working directory and go up

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// cli.go — RAGFlow 命令行主入口：解析 rf.yml、管理 API/Admin 模式、交互式 liner 会话与单次命令执行。
+
 //
 
 package cli
@@ -32,6 +34,7 @@ import (
 	"ragflow/internal/cli/filesystem"
 )
 
+// APIServerConfig 描述单个 API 服务器连接信息。
 type APIServerConfig struct {
 	Name         string  `yaml:"name"`
 	Host         string  `yaml:"host"`
@@ -44,6 +47,7 @@ type APIServerConfig struct {
 }
 
 // ConfigFile represents the rf.yml configuration file structure
+// ConfigFile 映射 rf.yml 默认凭据与 api_servers 表。
 type ConfigFile struct {
 	Host         string                      `yaml:"host"`      // default API server host
 	APIKey       string                      `yaml:"api_key"`   // default API server api key
@@ -53,6 +57,7 @@ type ConfigFile struct {
 }
 
 // OutputFormat represents the output format type
+// OutputFormat 控制命令输出为 table/plain/json。
 type OutputFormat string
 
 const (
@@ -61,6 +66,7 @@ const (
 	OutputFormatJSON  OutputFormat = "json"  // JSON format (reserved for future use)
 )
 
+// CommandLineMode 区分 api/admin/ingestor/collector 运行模式。
 type CommandLineMode string
 
 const (
@@ -103,6 +109,7 @@ func (c *CommandLineConfig) Print() {
 	}
 }
 
+// ParseArgs 解析 -m/-h/-v/-i/-o 等命令行标志。
 func ParseArgs(args []string) (*CommandLineConfig, error) {
 	commandLineConfig := &CommandLineConfig{
 		CLIMode:           APIMode,
@@ -488,6 +495,7 @@ func HistoryFile() string {
 const historyFileName = ".ragflow_cli_history"
 
 // CLI represents the command line interface
+// CLI 聚合配置、HTTP 客户端、解析器与命令分发状态。
 type CLI struct {
 	running bool
 	line    *liner.State
@@ -500,6 +508,7 @@ type CLI struct {
 	Config             *CommandLineConfig
 }
 
+// NewCLIWithConfig 按模式初始化 Admin/API HTTP 客户端。
 func NewCLIWithConfig(commandLineConfig *CommandLineConfig) (*CLI, error) {
 	// Create liner first
 	line := liner.NewLiner()
@@ -609,6 +618,7 @@ func sanitizeCLIError(err error) string {
 }
 
 // Run starts the interactive CLI
+// Run 启动交互式 REPL 或处理 meta 命令（help/exit）。
 func (c *CLI) Run() error {
 	// If username is provided without password, prompt for password
 	cliConfig := c.Config
@@ -871,6 +881,7 @@ func (c *CLI) Cleanup() {
 }
 
 // RunSingleCommand executes a single command and exits
+// RunSingleCommand 非交互模式执行单条 DSL 并打印结果。
 func (c *CLI) RunSingleCommand(command *string) error {
 	// Ensure cleanup is called on exit to restore terminal settings
 	defer c.Cleanup()
@@ -902,6 +913,7 @@ func (c *CLI) VerifyAuth(username, password string) error {
 	return err
 }
 
+// GetPublicKeyPEM 读取 conf/public.pem 供密码 RSA 加密。
 func (c *CLI) GetPublicKeyPEM() ([]byte, error) {
 
 	var publicKeyFile *string = nil

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// admin_parser.go — 管理端 DSL 解析器：将 LOGIN ADMIN、LIST ROLES 等令牌序列解析为 Command 结构。
+
 //
 
 package cli
@@ -22,7 +24,9 @@ import (
 	"strings"
 )
 
-// region AUTH commands
+// region AUTH commands — 认证相关：登录、登出、Ping。
+
+// parseAdminLoginUser 解析 LOGIN ADMIN 'email' [PASSWORD 'pwd']。
 func (p *Parser) parseAdminLoginUser() (*Command, error) {
 	cmd := NewCommand("admin_login_user")
 
@@ -59,6 +63,7 @@ func (p *Parser) parseAdminLoginUser() (*Command, error) {
 	return cmd, nil
 }
 
+// parseAdminLogout 解析 LOGOUT ADMIN。
 func (p *Parser) parseAdminLogout() (*Command, error) {
 	cmd := NewCommand("admin_logout")
 	p.nextToken()
@@ -121,6 +126,7 @@ func (p *Parser) parseAdminListCommands() (*Command, error) {
 	}
 }
 
+// parseAdminListServices 解析 LIST SERVICES。
 func (p *Parser) parseAdminListServices() (*Command, error) {
 	p.nextToken() // consume SERVICES
 
@@ -131,6 +137,7 @@ func (p *Parser) parseAdminListServices() (*Command, error) {
 	return NewCommand("admin_list_services"), nil
 }
 
+// parseAdminListRoles 解析 LIST ROLES。
 func (p *Parser) parseAdminListRoles() (*Command, error) {
 	p.nextToken() // consume ROLES
 
@@ -459,6 +466,7 @@ func (p *Parser) parseAdminShowUserCommands() (*Command, error) {
 }
 
 // SHOW USER 'user@example.com';
+// parseAdminShowUser 解析 SHOW USER 子命令。
 func (p *Parser) parseAdminShowUser(userName string) (*Command, error) {
 
 	// Semicolon is optional
@@ -707,6 +715,7 @@ func (p *Parser) parseAdminShowFingerprint() (*Command, error) {
 }
 
 // SHOW LICENSE;
+// parseAdminShowLicense 解析 SHOW LICENSE。
 func (p *Parser) parseAdminShowLicense() (*Command, error) {
 	p.nextToken() // consume LICENSE
 

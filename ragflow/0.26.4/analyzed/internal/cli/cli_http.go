@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// cli_http.go — CLI 命令路由：按 CLIMode 将解析后的 Command 分派到 Admin 或 User 处理器。
+
 //
 
 package cli
@@ -22,6 +24,7 @@ import (
 
 // ExecuteCommand executes a parsed command
 // Returns benchmark result map for commands that support it (e.g., ping_server with iterations > 1)
+// ExecuteCommand 根据 APIMode/AdminMode 选择 ExecuteUser/AdminCommand。
 func (c *CLI) ExecuteCommand(cmd *Command) (ResponseIf, error) {
 	switch c.Config.CLIMode {
 	case APIMode:
@@ -35,6 +38,7 @@ func (c *CLI) ExecuteCommand(cmd *Command) (ResponseIf, error) {
 	}
 }
 
+// ExecuteAdminCommand 将 admin_* 命令类型映射到具体 Admin* 方法。
 func (c *CLI) ExecuteAdminCommand(cmd *Command) (ResponseIf, error) {
 	switch cmd.Type {
 	case "admin_login_user":
@@ -285,6 +289,7 @@ func (c *CLI) ExecuteAdminCommand(cmd *Command) (ResponseIf, error) {
 		return nil, fmt.Errorf("command '%s' would be executed with API", cmd.Type)
 	}
 }
+// ExecuteUserCommand 将 API 模式命令映射到用户侧处理器。
 func (c *CLI) ExecuteUserCommand(cmd *Command) (ResponseIf, error) {
 	switch cmd.Type {
 	case "api_register_user":

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// wikipedia.go — Wikipedia 搜索工具：调用 MediaWiki action API，返回 title/snippet/url 列表。
+
 //
 
 package tool
@@ -34,6 +36,7 @@ const wikipediaToolDescription = "Search Wikipedia and return matching articles 
 // wikipediaParams is the JSON shape the model sends into InvokableRun.
 // lang is the language subdomain (e.g. "en", "zh", "de"); max_results
 // defaults to 5 when unset or non-positive.
+// wikipediaParams 含 query、lang 子域及 max_results（默认 5）。
 type wikipediaParams struct {
 	Query      string `json:"query"`
 	Lang       string `json:"lang"`
@@ -41,6 +44,7 @@ type wikipediaParams struct {
 }
 
 // wikipediaResult is one row in the upstream `query.search` array.
+// wikipediaResult 为单条搜索结果行。
 type wikipediaResult struct {
 	Title   string `json:"title"`
 	Snippet string `json:"snippet"`
@@ -48,6 +52,7 @@ type wikipediaResult struct {
 }
 
 // wikipediaResponse is the upstream MediaWiki API envelope.
+// wikipediaResponse 映射 MediaWiki query.search 结构。
 type wikipediaResponse struct {
 	Query struct {
 		Search []wikipediaResult `json:"search"`
@@ -56,6 +61,7 @@ type wikipediaResponse struct {
 
 // wikipediaEnvelope is what the model sees. It mirrors the Python tool's
 // output: a flat list of {title, snippet, url} entries.
+// wikipediaEnvelope 为模型可见的 results/_ERROR 信封。
 type wikipediaEnvelope struct {
 	Results []wikipediaResult `json:"results"`
 	Error   string            `json:"_ERROR,omitempty"`
@@ -65,11 +71,13 @@ type wikipediaEnvelope struct {
 // search tool. It calls the
 // public MediaWiki action API via the shared HTTPHelper and returns the
 // top N matches for the query.
+// WikipediaTool 经 HTTPHelper 访问公开百科搜索 API。
 type WikipediaTool struct {
 	helper *HTTPHelper
 }
 
 // NewWikipediaTool returns a WikipediaTool using the default HTTPHelper.
+// NewWikipediaTool 使用默认 HTTPHelper。
 func NewWikipediaTool() *WikipediaTool {
 	return NewWikipediaToolWith(NewHTTPHelper())
 }
@@ -110,6 +118,7 @@ func (w *WikipediaTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 
 // buildWikipediaURL constructs the MediaWiki action=query URL. Centralized
 // so the test suite can verify URL encoding without spinning up a server.
+// buildWikipediaURL 构造 action=query&list=search URL，便于单测校验编码。
 func buildWikipediaURL(lang, query string, maxResults int) string {
 	if lang == "" {
 		lang = "en"
@@ -126,6 +135,7 @@ func buildWikipediaURL(lang, query string, maxResults int) string {
 }
 
 // InvokableRun performs the Wikipedia search.
+// InvokableRun 执行搜索并为每条结果补全 wiki 页面 URL。
 func (w *WikipediaTool) InvokableRun(ctx context.Context, argsJSON string, _ ...tool.Option) (string, error) {
 	var p wikipediaParams
 	if err := json.Unmarshal([]byte(argsJSON), &p); err != nil {

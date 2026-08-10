@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// loop.go — workflowx 循环节点扩展：在 eino 外层图内用 AnyLambda 反复调用子工作流直至退出条件满足；驱动 Canvas Loop 组件。
+
 //
 
 // Package workflowx is a zero-intrusion extension to the eino compose
@@ -65,6 +67,7 @@ import (
 // LoopStreamMode controls how the loop node surfaces iteration streams
 // to its downstream consumers. The first release supports two modes;
 // see the plan §"Stream support" section for the rationale.
+// LoopStreamMode 控制循环节点如何将各迭代流暴露给下游。
 type LoopStreamMode string
 
 const (
@@ -85,6 +88,7 @@ const (
 // configure an explicit limit. The cap is intentionally generous to
 // accommodate real workflows (deep research, iterative refinement) but
 // is finite so a bug in the quit condition cannot spin forever.
+// defaultMaxIterations 为未显式配置时的安全迭代上限，防止死循环。
 const defaultMaxIterations = 1024
 
 // LoopCondition is the per-iteration exit predicate. It is invoked
@@ -110,6 +114,7 @@ const defaultMaxIterations = 1024
 // the loop's final output. Returning (false, nil) advances to the
 // next iteration with `next` rewritten as the upcoming `prev`.
 // Returning a non-nil error fails the entire loop run.
+// LoopCondition 为每轮迭代结束后的退出谓词；true 表示以 next 作为循环输出。
 type LoopCondition[T any] func(ctx context.Context, iteration int, prev, next T) (bool, error)
 
 // Sentinel errors. Tests use errors.Is to assert these.
@@ -138,6 +143,7 @@ var (
 
 // LoopOption configures AddLoopNode. LoopOption follows the same
 // functional-options pattern as the rest of the eino public API.
+// LoopOption 以函数选项模式配置 AddLoopNode。
 type LoopOption func(*loopOptions)
 
 type loopOptions struct {
@@ -154,6 +160,7 @@ type loopOptions struct {
 // default cap in effect. A value of 1 is legal and yields the
 // do-while contract: the sub-workflow executes at least once and the
 // loop exits immediately (subject to shouldQuit).
+// WithLoopMaxIterations 设置最大迭代次数（0 保留默认 1024）。
 func WithLoopMaxIterations(n int) LoopOption {
 	return func(o *loopOptions) {
 		if n >= 0 {
@@ -182,6 +189,7 @@ func WithLoopRunOptions(opts ...compose.Option) LoopOption {
 
 // WithLoopStream overrides the default LoopStreamFinalOnly mode.
 // See the LoopStreamMode documentation for per-mode semantics.
+// WithLoopStream 选择 final_only 或 every_iteration 流模式。
 func WithLoopStream(mode LoopStreamMode) LoopOption {
 	return func(o *loopOptions) {
 		if mode == LoopStreamFinalOnly || mode == LoopStreamEveryIteration {
@@ -259,6 +267,7 @@ func getLoopOptions(opts []LoopOption) *loopOptions {
 // value: storing CurrentInput as []byte (the JSON encoding produced
 // by the loop itself) sidesteps the need for callers to register
 // generic types with the schema package — see plan §"Type shape".
+// loopInterruptState 为循环本地 checkpoint 载荷，支持中断恢复。
 type loopInterruptState struct {
 	Iteration       int               `json:"iteration"`
 	CurrentInput    []byte            `json:"current_input"`
@@ -286,6 +295,7 @@ type loopInterruptState struct {
 // failures are returned as an error and the outer workflow is not
 // modified, so the caller does not need to roll back any state on
 // failure.
+// AddLoopNode 在外层 wf 追加单节点循环：内部 Invoke/Stream 子图直至 shouldQuit。
 func AddLoopNode[T any](
 	ctx context.Context,
 	wf *compose.Workflow[T, T],
@@ -400,6 +410,7 @@ func encodeState(s loopSnapshot) ([]byte, error) {
 // runLoopInvoke executes the loop on the invoke path. It is the
 // body of the loop lambda's Invoke handler. See the package doc and
 // plan §"Invoke path" for the documented state machine.
+// runLoopInvoke 为 Invoke 路径状态机：编译子图、评估退出、处理 CompositeInterrupt。
 func runLoopInvoke[T any](
 	ctx context.Context,
 	nodeKey string,
@@ -527,6 +538,7 @@ func runLoopInvoke[T any](
 //     the caller.
 //   - EveryIteration: the resumed run re-emits the full stream from
 //     iteration 1. Downstream consumers MUST be replay-tolerant.
+// runLoopStream 为 Stream 路径：按模式缓冲或逐轮转发子工作流输出流。
 func runLoopStream[T any](
 	ctx context.Context,
 	nodeKey string,
@@ -791,6 +803,7 @@ func readAllStream[T any](sr *schema.StreamReader[T]) ([]T, error) {
 // interrupt, or the deprecated and-rerun form). Detecting
 // interrupts is required so we can persist loop state and re-throw
 // via CompositeInterrupt.
+// isInterruptError 检测 eino 中断信号以便持久化 loop 状态。
 func isInterruptError(err error) bool {
 	if err == nil {
 		return false
@@ -875,6 +888,7 @@ func (s *loopBridgeState) snapshot() map[string][]byte {
 	return cloneCheckpointMap(s.data)
 }
 
+// loopBridgeStore 为子图 checkpoint 的内存桥接存储。
 type loopBridgeStore struct{}
 
 func newLoopBridgeStore() *loopBridgeStore {
