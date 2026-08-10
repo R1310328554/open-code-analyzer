@@ -28,18 +28,29 @@ import com.alibaba.nacos.core.utils.Loggers;
 import java.util.List;
 
 /**
+ * Distro 定时校验调度任务：遍历各资源类型，向除自身外的集群成员提交 {@link DistroVerifyExecuteTask} 进行数据一致性校验。
  * Timed to start distro verify task.
  *
  * @author xiweng.yy
  */
 public class DistroVerifyTimedTask implements Runnable {
     
+    /** 集群成员管理器。 */
     private final ServerMemberManager serverMemberManager;
     
+    /** Distro 组件注册表。 */
     private final DistroComponentHolder distroComponentHolder;
     
+    /** 同步任务引擎，用于提交校验执行任务。 */
     private final DistroExecuteTaskExecuteEngine executeTaskExecuteEngine;
     
+    /**
+     * 注入成员管理、组件与执行引擎依赖。
+     *
+     * @param serverMemberManager 集群成员管理器
+     * @param distroComponentHolder 组件注册表
+     * @param executeTaskExecuteEngine 同步任务引擎
+     */
     public DistroVerifyTimedTask(ServerMemberManager serverMemberManager,
         DistroComponentHolder distroComponentHolder,
         DistroExecuteTaskExecuteEngine executeTaskExecuteEngine) {
@@ -48,6 +59,7 @@ public class DistroVerifyTimedTask implements Runnable {
         this.executeTaskExecuteEngine = executeTaskExecuteEngine;
     }
     
+    /** 获取目标节点列表，对每个资源类型触发校验。 */
     @Override
     public void run() {
         try {
@@ -63,6 +75,12 @@ public class DistroVerifyTimedTask implements Runnable {
         }
     }
     
+    /**
+     * 对指定资源类型向各目标节点提交校验任务；未完成初始化的存储跳过。
+     *
+     * @param type 资源类型
+     * @param targetServer 目标节点列表
+     */
     private void verifyForDataStorage(String type, List<Member> targetServer) {
         DistroDataStorage dataStorage = distroComponentHolder.findDataStorage(type);
         if (!dataStorage.isFinishInitial()) {

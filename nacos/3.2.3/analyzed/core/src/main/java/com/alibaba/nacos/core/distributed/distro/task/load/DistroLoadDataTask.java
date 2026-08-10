@@ -32,22 +32,36 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Distro 启动全量加载任务：等待集群成员与数据存储就绪后，从远端节点拉取各资源类型快照并写入本地 {@link com.alibaba.nacos.core.distributed.distro.component.DistroDataProcessor}，未完成时按配置间隔重试。
  * Distro load data task.
  *
  * @author xiweng.yy
  */
 public class DistroLoadDataTask implements Runnable {
     
+    /** 集群成员管理器，提供除自身外的节点列表。 */
     private final ServerMemberManager memberManager;
     
+    /** Distro 组件注册表。 */
     private final DistroComponentHolder distroComponentHolder;
     
+    /** Distro 配置，含加载重试间隔等参数。 */
     private final DistroConfig distroConfig;
     
+    /** 全量加载完成或失败时的回调。 */
     private final DistroCallback loadCallback;
     
+    /** 各资源类型的加载完成状态。 */
     private final Map<String, Boolean> loadCompletedMap;
     
+    /**
+     * 注入成员管理、组件、配置与回调依赖。
+     *
+     * @param memberManager 集群成员管理器
+     * @param distroComponentHolder 组件注册表
+     * @param distroConfig Distro 配置
+     * @param loadCallback 加载结果回调
+     */
     public DistroLoadDataTask(ServerMemberManager memberManager,
         DistroComponentHolder distroComponentHolder,
         DistroConfig distroConfig, DistroCallback loadCallback) {
@@ -58,6 +72,9 @@ public class DistroLoadDataTask implements Runnable {
         loadCompletedMap = new HashMap<>(1);
     }
     
+    /**
+     * 执行加载：全部资源类型成功后回调 onSuccess，否则按配置延迟重试；异常时回调 onFailed。
+     */
     @Override
     public void run() {
         try {
@@ -74,6 +91,7 @@ public class DistroLoadDataTask implements Runnable {
         }
     }
     
+    /** 等待集群与存储注册就绪，逐资源类型从远端拉取快照。 */
     private void load() throws Exception {
         while (memberManager.allMembersWithoutSelf().isEmpty()) {
             Loggers.DISTRO.info("[DISTRO-INIT] waiting server list init...");
@@ -90,6 +108,12 @@ public class DistroLoadDataTask implements Runnable {
         }
     }
     
+    /**
+     * 从各远端成员拉取指定资源类型的全量快照，成功则标记存储初始化完成。
+     *
+     * @param resourceType 资源类型
+     * @return 是否至少从一个节点成功加载
+     */
     private boolean loadAllDataSnapshotFromRemote(String resourceType) {
         DistroTransportAgent transportAgent =
             distroComponentHolder.findTransportAgent(resourceType);
@@ -127,11 +151,13 @@ public class DistroLoadDataTask implements Runnable {
         return false;
     }
     
+    /** 返回快照内容字节长度，用于日志统计。 */
     private static int getDistroDataLength(DistroData distroData) {
         return distroData != null && distroData.getContent() != null
             ? distroData.getContent().length : 0;
     }
     
+    /** 检查所有已注册资源类型是否均加载成功。 */
     private boolean checkCompleted() {
         if (distroComponentHolder.getDataStorageTypes().size() != loadCompletedMap.size()) {
             return false;

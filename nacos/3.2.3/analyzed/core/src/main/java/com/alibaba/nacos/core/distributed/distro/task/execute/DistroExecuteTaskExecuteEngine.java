@@ -20,12 +20,14 @@ import com.alibaba.nacos.common.task.engine.NacosExecuteTaskExecuteEngine;
 import com.alibaba.nacos.core.utils.Loggers;
 
 /**
+ * Distro 同步任务执行引擎：基于 {@link com.alibaba.nacos.common.task.engine.NacosExecuteTaskExecuteEngine} 并发执行变更/删除/校验等即时 Distro 任务。
  * Distro execute task execute engine.
  *
  * @author xiweng.yy
  */
 public class DistroExecuteTaskExecuteEngine extends NacosExecuteTaskExecuteEngine {
     
+    /** 使用 Distro 日志记录器初始化同步执行引擎。 */
     public DistroExecuteTaskExecuteEngine() {
         super(DistroExecuteTaskExecuteEngine.class.getSimpleName(), Loggers.DISTRO);
     }

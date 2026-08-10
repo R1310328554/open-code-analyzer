@@ -27,24 +27,32 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * JRaft 运维命令服务：解析 {@link com.alibaba.nacos.core.distributed.raft.utils.JRaftConstants} 参数，对指定或全部 Raft 组执行 {@link com.alibaba.nacos.core.distributed.raft.utils.JRaftOps} 定义的 CLI 操作。
  * JRaft operations interface.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class JRaftMaintainService {
     
+    /** 底层 JRaft 服务端，提供 CliService 与 Node 访问。 */
     private final JRaftServer raftServer;
     
+    /**
+     * 注入 JRaft 服务端。
+     *
+     * @param raftServer Raft 服务实例
+     */
     public JRaftMaintainService(JRaftServer raftServer) {
         this.raftServer = raftServer;
     }
     
+    /** 字符串数组参数入口（当前未实现）。 */
     public RestResult<String> execute(String[] args) {
         return RestResultUtils.failed("not support yet");
     }
     
     /**
-     * Execute relevant commands.
+     * 执行 JRaft 运维命令：若指定 groupId 则单组执行，否则遍历所有 Raft 组。
      *
      * @param args {@link Map}
      * @return {@link RestResult}
@@ -68,6 +76,15 @@ public class JRaftMaintainService {
         return RestResultUtils.success();
     }
     
+    /**
+     * 对单个 Raft 组解析 command 并委托 {@link com.alibaba.nacos.core.distributed.raft.utils.JRaftOps} 执行。
+     *
+     * @param cliService JRaft CLI 服务
+     * @param groupId Raft 组 ID
+     * @param node 组内 Node
+     * @param args 命令参数映射
+     * @return 执行结果
+     */
     private RestResult<String> single(CliService cliService, String groupId, Node node,
         Map<String, String> args) {
         try {

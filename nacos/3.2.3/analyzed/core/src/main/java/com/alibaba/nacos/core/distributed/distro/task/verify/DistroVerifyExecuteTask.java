@@ -27,20 +27,33 @@ import com.alibaba.nacos.core.utils.Loggers;
 import java.util.List;
 
 /**
+ * Distro 校验执行任务：将本地 {@link com.alibaba.nacos.core.distributed.distro.entity.DistroData} 校验摘要发送到目标节点，不一致时由对端触发修复。
  * Execute distro verify task.
  *
  * @author xiweng.yy
  */
 public class DistroVerifyExecuteTask extends AbstractExecuteTask {
     
+    /** 传输代理，负责发送校验数据。 */
     private final DistroTransportAgent transportAgent;
     
+    /** 待校验的数据列表。 */
     private final List<DistroData> verifyData;
     
+    /** 目标节点地址。 */
     private final String targetServer;
     
+    /** 资源类型，用于日志与监控。 */
     private final String resourceType;
     
+    /**
+     * 构造校验执行任务。
+     *
+     * @param transportAgent 传输代理
+     * @param verifyData 校验数据列表
+     * @param targetServer 目标节点地址
+     * @param resourceType 资源类型
+     */
     public DistroVerifyExecuteTask(DistroTransportAgent transportAgent, List<DistroData> verifyData,
         String targetServer, String resourceType) {
         this.transportAgent = transportAgent;
@@ -49,6 +62,7 @@ public class DistroVerifyExecuteTask extends AbstractExecuteTask {
         this.resourceType = resourceType;
     }
     
+    /** 逐条发送校验数据，支持回调与非回调传输模式。 */
     @Override
     public void run() {
         for (DistroData each : verifyData) {
@@ -66,16 +80,20 @@ public class DistroVerifyExecuteTask extends AbstractExecuteTask {
         }
     }
     
+    /** 带回调模式发送单条校验数据。 */
     private void doSyncVerifyDataWithCallback(DistroData data) {
         transportAgent.syncVerifyData(data, targetServer, new DistroVerifyCallback());
     }
     
+    /** 同步模式发送单条校验数据。 */
     private void doSyncVerifyData(DistroData data) {
         transportAgent.syncVerifyData(data, targetServer);
     }
     
+    /** 校验回调：失败时递增 {@link com.alibaba.nacos.core.distributed.distro.monitor.DistroRecord} 校验失败计数。 */
     private class DistroVerifyCallback implements DistroCallback {
         
+        /** 校验成功，debug 级别记录日志。 */
         @Override
         public void onSuccess() {
             if (Loggers.DISTRO.isDebugEnabled()) {
@@ -84,6 +102,7 @@ public class DistroVerifyExecuteTask extends AbstractExecuteTask {
             }
         }
         
+        /** 校验失败，更新监控计数并记录 debug 日志。 */
         @Override
         public void onFailed(Throwable throwable) {
             DistroRecord distroRecord = DistroRecordsHolder.getInstance().getRecord(resourceType);

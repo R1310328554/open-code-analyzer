@@ -31,6 +31,12 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 雪花算法分布式 ID 生成器（参考 shariding-JDBC-snowflake 实现）。
+ *
+ * <p><strong>WorkerId</strong> 生成策略：优先读取配置 {@code nacos.core.snowflake.worker-id}，未配置时根据本机 IP 末两字节计算；10 位 workerId 与 12 位序列号组合，配合单调时钟避免同一毫秒内序列溢出。</p>
+ *
+ * <p>WorkerId 重复周期与 Raft 选主间隔相关：若每次选举间隔 5 秒，最大 workerId 重复约需 150 秒（假设每次选主后需重新分配）。</p>
+ *
  * copy from http://www.cluozy.com/home/hexo/2018/08/11/shariding-JDBC-snowflake/.
  *
  * <strong>WorkerId</strong> generation policy: Calculate the InetAddress hashcode
@@ -49,42 +55,47 @@ public class SnowFlowerIdGenerator implements IdGenerator {
     private static final String DATETIME_PATTERN = "yyyy-MM-dd HH:mm:ss.SSS";
     
     /**
+     * 雪花算法纪元起点（2018-08-05 08:34），用于压缩时间戳位数。
      * Start time intercept (2018-08-05 08:34)
      */
     public static final long EPOCH = 1533429240000L;
     
     private static final Logger logger = LoggerFactory.getLogger(SnowFlowerIdGenerator.class);
     
-    // the bits of sequence
+    // 序列号占用位数
     private static final long SEQUENCE_BITS = 12L;
     
-    // the bits of workerId
+    // workerId 占用位数
     private static final long WORKER_ID_BITS = 10L;
     
-    // the mask of sequence (111111111111B = 4095)
+    // 序列号掩码（111111111111B = 4095）
     private static final long SEQUENCE_MASK = 4095L;
     
-    // the left shift bits of workerId equals 12 bits
+    // workerId 左移位数，等于序列号位数 12
     private static final long WORKER_ID_LEFT_SHIFT_BITS = 12L;
     
-    // the left shift bits of timestamp equals 22 bits (WORKER_ID_LEFT_SHIFT_BITS + workerId)
+    // 时间戳左移位数 22（序列 12 + workerId 10）
     private static final long TIMESTAMP_LEFT_SHIFT_BITS = 22L;
     
-    // the max of worker ID is 1024
+    // workerId 最大值为 1024
     private static final long WORKER_ID_MAX_VALUE = 1024L;
     
-    //CLOCK_REALTIME
+    // 墙钟起始时间（CLOCK_REALTIME）
     private final long startWallTime = System.currentTimeMillis();
     
-    //CLOCK_MONOTONIC
+    // 单调时钟起始纳秒（CLOCK_MONOTONIC）
     private final long monotonicStartTime = System.nanoTime();
     
+    /** 工作节点 ID（0~1024）。 */
     private long workerId;
     
+    /** 当前毫秒内的序列号。 */
     private long sequence;
     
+    /** 上次生成 ID 的毫秒时间戳。 */
     private long lastTime;
     
+    /** 最近一次生成的 ID 值。 */
     private long currentId;
     
     {
@@ -107,21 +118,29 @@ public class SnowFlowerIdGenerator implements IdGenerator {
         }
     }
     
+    /** {@inheritDoc} 使用实例块解析的 workerId 初始化。 */
     @Override
     public void init() {
         initialize(workerId);
     }
     
+    /** {@inheritDoc} 返回最近一次生成的 ID。 */
     @Override
     public long currentId() {
         return currentId;
     }
     
+    /** {@inheritDoc} 返回当前 workerId。 */
     @Override
     public long workerId() {
         return workerId;
     }
     
+    /**
+     * {@inheritDoc} 生成下一个雪花 ID：同毫秒内序列自增，溢出则等待下一毫秒。
+     *
+     * @return 64 位分布式 ID
+     */
     @Override
     public synchronized long nextId() {
         long currentMillis = currentTimeMillis();
@@ -145,6 +164,7 @@ public class SnowFlowerIdGenerator implements IdGenerator {
         return currentId;
     }
     
+    /** {@inheritDoc} 返回 currentId 与 workerId 等运行时信息。 */
     @Override
     public Map<Object, Object> info() {
         Map<Object, Object> info = new HashMap<>(4);
@@ -153,10 +173,10 @@ public class SnowFlowerIdGenerator implements IdGenerator {
         return info;
     }
     
-    // ==============================Constructors=====================================
+    // ============================== 构造与初始化 =============================
     
     /**
-     * init
+     * 显式设置 workerId 并校验范围。
      *
      * @param workerId worker id (0~1024)
      */
@@ -171,7 +191,7 @@ public class SnowFlowerIdGenerator implements IdGenerator {
     }
     
     /**
-     * Block to the next millisecond until a new timestamp is obtained
+     * 阻塞直至获得大于 lastTimestamp 的新毫秒时间戳（序列溢出时使用）。
      *
      * @param lastTimestamp The time intercept of the last ID generated
      * @return Current timestamp
@@ -186,6 +206,7 @@ public class SnowFlowerIdGenerator implements IdGenerator {
         return time;
     }
     
+    /** 基于单调时钟换算当前毫秒时间戳，避免系统时间回拨。 */
     private long currentTimeMillis() {
         return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - monotonicStartTime)
             + startWallTime;

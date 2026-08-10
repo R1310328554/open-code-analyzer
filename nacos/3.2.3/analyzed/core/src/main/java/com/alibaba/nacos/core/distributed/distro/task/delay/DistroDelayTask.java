@@ -21,22 +21,39 @@ import com.alibaba.nacos.consistency.DataOperation;
 import com.alibaba.nacos.core.distributed.distro.entity.DistroKey;
 
 /**
+ * Distro 延迟同步任务：封装 {@link com.alibaba.nacos.core.distributed.distro.entity.DistroKey}、数据操作类型与延迟间隔，支持同键任务合并。
  * Distro delay task.
  *
  * @author xiweng.yy
  */
 public class DistroDelayTask extends AbstractDelayTask {
     
+    /** 待同步的 Distro 键（资源类型、键值、目标节点）。 */
     private final DistroKey distroKey;
     
+    /** 数据操作类型：ADD/CHANGE/DELETE。 */
     private DataOperation action;
     
+    /** 任务创建时间戳，用于合并时比较新旧操作。 */
     private long createTime;
     
+    /**
+     * 构造默认 CHANGE 操作的延迟任务。
+     *
+     * @param distroKey 同步键
+     * @param delayTime 延迟执行间隔（毫秒）
+     */
     public DistroDelayTask(DistroKey distroKey, long delayTime) {
         this(distroKey, DataOperation.CHANGE, delayTime);
     }
     
+    /**
+     * 构造指定操作类型的延迟任务。
+     *
+     * @param distroKey 同步键
+     * @param action 数据操作类型
+     * @param delayTime 延迟执行间隔（毫秒）
+     */
     public DistroDelayTask(DistroKey distroKey, DataOperation action, long delayTime) {
         this.distroKey = distroKey;
         this.action = action;
@@ -45,18 +62,26 @@ public class DistroDelayTask extends AbstractDelayTask {
         setTaskInterval(delayTime);
     }
     
+    /** 返回 Distro 同步键。 */
     public DistroKey getDistroKey() {
         return distroKey;
     }
     
+    /** 返回数据操作类型。 */
     public DataOperation getAction() {
         return action;
     }
     
+    /** 返回任务创建时间。 */
     public long getCreateTime() {
         return createTime;
     }
     
+    /**
+     * 合并同键延迟任务：操作类型冲突时保留较新创建时间的操作，并继承上次处理时间以重置延迟窗口。
+     *
+     * @param task 待合并的延迟任务
+     */
     @Override
     public void merge(AbstractDelayTask task) {
         if (!(task instanceof DistroDelayTask)) {

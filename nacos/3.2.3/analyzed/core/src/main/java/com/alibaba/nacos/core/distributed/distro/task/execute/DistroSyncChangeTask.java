@@ -24,23 +24,33 @@ import com.alibaba.nacos.core.distributed.distro.entity.DistroKey;
 import com.alibaba.nacos.core.utils.Loggers;
 
 /**
+ * Distro 变更同步任务：从本地 {@link com.alibaba.nacos.core.distributed.distro.component.DistroDataStorage} 读取数据并通过 {@link com.alibaba.nacos.core.distributed.distro.component.DistroTransportAgent} 推送到目标节点。
  * Distro sync change task.
  *
  * @author xiweng.yy
  */
 public class DistroSyncChangeTask extends AbstractDistroExecuteTask {
     
+    /** 固定为 CHANGE 操作类型。 */
     private static final DataOperation OPERATION = DataOperation.CHANGE;
     
+    /**
+     * 构造变更同步任务。
+     *
+     * @param distroKey 同步键
+     * @param distroComponentHolder 组件注册表
+     */
     public DistroSyncChangeTask(DistroKey distroKey, DistroComponentHolder distroComponentHolder) {
         super(distroKey, distroComponentHolder);
     }
     
+    /** {@inheritDoc} 返回 CHANGE 操作。 */
     @Override
     protected DataOperation getDataOperation() {
         return OPERATION;
     }
     
+    /** 无回调模式下读取本地数据并同步到目标节点；无数据时跳过。 */
     @Override
     protected boolean doExecute() {
         String type = getDistroKey().getResourceType();
@@ -53,6 +63,7 @@ public class DistroSyncChangeTask extends AbstractDistroExecuteTask {
             .syncData(distroData, getDistroKey().getTargetServer());
     }
     
+    /** 带回调模式下异步推送变更数据。 */
     @Override
     protected void doExecuteWithCallback(DistroCallback callback) {
         String type = getDistroKey().getResourceType();
@@ -65,11 +76,13 @@ public class DistroSyncChangeTask extends AbstractDistroExecuteTask {
             .syncData(distroData, getDistroKey().getTargetServer(), callback);
     }
     
+    /** 返回便于日志追踪的任务描述。 */
     @Override
     public String toString() {
         return "DistroSyncChangeTask for " + getDistroKey().toString();
     }
     
+    /** 从本地存储读取 Distro 数据并标记为 CHANGE 操作。 */
     private DistroData getDistroData(String type) {
         DistroData result =
             getDistroComponentHolder().findDataStorage(type).getDistroData(getDistroKey());
