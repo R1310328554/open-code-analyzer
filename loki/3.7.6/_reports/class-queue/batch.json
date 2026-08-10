@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T22:41:25Z",
   "files": [
-    "pkg/logql/log/pipeline.go",
-    "pkg/logql/log/util.go",
-    "pkg/logql/log/vector.go",
-    "pkg/logql/mapper_metrics.go",
-    "pkg/logql/mapper_stats.go",
-    "pkg/logql/matchers.go",
-    "pkg/logql/matrix.go",
-    "pkg/logql/metrics.go",
-    "pkg/logql/optimize.go",
-    "pkg/logql/quantile_over_time_sketch.go",
-    "pkg/logql/range_vector.go",
-    "pkg/logql/rangemapper.go",
-    "pkg/logql/shardmapper.go",
-    "pkg/logql/shards.go",
-    "pkg/logql/sketch/cms.go",
     "pkg/logql/sketch/hash.go",
     "pkg/logql/sketch/heap.go",
     "pkg/logql/sketch/quantile.go",
@@ -33,5 +18,5 @@
     "pkg/logql/syntax/query_scanner.go"
   ],
   "remaining_pending": 652,
-  "done": 870
+  "done": 885
 }
