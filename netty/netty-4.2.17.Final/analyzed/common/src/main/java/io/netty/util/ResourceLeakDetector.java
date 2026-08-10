@@ -39,6 +39,11 @@ import static io.netty.util.internal.StringUtil.EMPTY_STRING;
 import static io.netty.util.internal.StringUtil.NEWLINE;
 import static io.netty.util.internal.StringUtil.simpleClassName;
 
+/**
+ * 引用计数资源泄漏检测器：对采样到的对象建立 {@link WeakReference} 跟踪，
+ * GC 回收且未 {@link ResourceLeakTracker#close(Object)} 时报告 LEAK。
+ * 级别由 {@link Level} 与系统属性 {@code io.netty.leakDetection.level} 控制。
+ */
 public class ResourceLeakDetector<T> {
 
     private static final String PROP_LEVEL_OLD = "io.netty.leakDetectionLevel";
@@ -61,26 +66,32 @@ public class ResourceLeakDetector<T> {
 
     /**
      * Represents the level of resource leak detection.
+     *
+     * <p>泄漏检测级别枚举。</p>
      */
     public enum Level {
         /**
          * Disables resource leak detection.
          */
+        /** 关闭检测。 */
         DISABLED,
         /**
          * Enables simplistic sampling resource leak detection which reports there is a leak or not,
          * at the cost of small overhead (default).
          */
+        /** 简单采样（默认），低开销。 */
         SIMPLE,
         /**
          * Enables advanced sampling resource leak detection which reports where the leaked object was accessed
          * recently at the cost of high overhead.
          */
+        /** 高级采样，记录访问栈。 */
         ADVANCED,
         /**
          * Enables paranoid resource leak detection which reports where the leaked object was accessed recently,
          * at the cost of the highest possible overhead (for testing purposes only).
          */
+        /** 全量跟踪，仅测试用。 */
         PARANOID;
 
         /**
@@ -100,6 +111,7 @@ public class ResourceLeakDetector<T> {
         }
     }
 
+    /** 全局检测级别。 */
     private static Level level;
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ResourceLeakDetector.class);
@@ -165,13 +177,17 @@ public class ResourceLeakDetector<T> {
         return level;
     }
 
-    /** the collection of active resources */
+    /** 当前活跃泄漏跟踪条目集合。 */
     private final Set<DefaultResourceLeak<?>> allLeaks = ConcurrentHashMap.newKeySet();
 
+    /** 被跟踪对象 GC 时入队的引用队列。 */
     private final ReferenceQueue<Object> refQueue = new ReferenceQueue<>();
+    /** 已报告过的泄漏签名，避免重复日志。 */
     private final Set<String> reportedLeaks = ConcurrentHashMap.newKeySet();
 
+    /** 资源类型名，用于日志。 */
     private final String resourceType;
+    /** 采样间隔：1/samplingInterval 概率创建 tracker。 */
     private final int samplingInterval;
 
     /**
@@ -250,6 +266,7 @@ public class ResourceLeakDetector<T> {
      *
      * @return the {@link ResourceLeakTracker} or {@code null}
      */
+    /** 按级别与采样创建 tracker；DISABLED 或非采样时返回 null。 */
     public ResourceLeakTracker<T> track(T obj) {
         return track0(obj, false);
     }
@@ -263,6 +280,7 @@ public class ResourceLeakDetector<T> {
      *
      * @return the {@link ResourceLeakTracker}
      */
+    /** 强制创建 tracker，忽略 DISABLED/采样。 */
     public ResourceLeakTracker<T> trackForcibly(T obj) {
         return track0(obj, true);
     }
@@ -272,11 +290,13 @@ public class ResourceLeakDetector<T> {
      *
      * @return {@code true} if {@link ResourceLeakTracker#record()} should be called
      */
+    /** ADVANCED/PARANOID 且 TARGET_RECORDS>0 时 {@link ResourceLeakTracker#record()} 有效。 */
     public boolean isRecordEnabled() {
         Level level = getLevel();
         return (level == Level.ADVANCED || level == Level.PARANOID) && TARGET_RECORDS > 0;
     }
 
+    /** 采样或 PARANOID/force 时创建 {@link DefaultResourceLeak} 并触发 reportLeak。 */
     private DefaultResourceLeak<T> track0(T obj, boolean force) {
         Level level = ResourceLeakDetector.level;
         if (force ||
@@ -288,6 +308,7 @@ public class ResourceLeakDetector<T> {
         return null;
     }
 
+    /** 清空引用队列但不报告（日志级别不足时）。 */
     private void clearRefQueue() {
         for (;;) {
             DefaultResourceLeak<?> ref = (DefaultResourceLeak<?>) refQueue.poll();
@@ -308,6 +329,7 @@ public class ResourceLeakDetector<T> {
         return logger.isErrorEnabled();
     }
 
+    /** 处理 refQueue 中已 GC 的泄漏：生成报告并通知 LeakListener。 */
     private void reportLeak() {
         if (!needReport()) {
             clearRefQueue();
@@ -397,6 +419,7 @@ public class ResourceLeakDetector<T> {
     }
 
     @SuppressWarnings("deprecation")
+    /** 默认泄漏跟踪：WeakReference + 访问栈链表 {@link TraceRecord}。 */
     private static final class DefaultResourceLeak<T>
             extends WeakReference<Object> implements ResourceLeakTracker<T>, ResourceLeak {
 
@@ -475,6 +498,7 @@ public class ResourceLeakDetector<T> {
          * object isn't shared! If this is a problem, the loop can be aborted and the record dropped, because another
          * thread won the race.
          */
+        /** 指数退避采样记录访问栈，控制 TARGET_RECORDS 规模。 */
         private void record0(Object hint) {
             // Check TARGET_RECORDS > 0 here to avoid similar check before remove from and add to lastRecords
             if (TARGET_RECORDS > 0) {
@@ -506,6 +530,7 @@ public class ResourceLeakDetector<T> {
             }
         }
 
+        /** GC 回调：从 allLeaks 移除。 */
         boolean dispose() {
             clear();
             return allLeaks.remove(this);
@@ -558,6 +583,7 @@ public class ResourceLeakDetector<T> {
          * @see java.lang.ref.Reference#reachabilityFence
          */
         @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "EmptySynchronizedStatement"})
+        /** JDK8 兼容的 reachabilityFence：synchronized(ref) 空块。 */
         private static void reachabilityFence0(Object ref) {
             if (ref != null) {
                 synchronized (ref) {
@@ -586,6 +612,7 @@ public class ResourceLeakDetector<T> {
             return generateReport(oldHead);
         }
 
+        /** 格式化最近访问记录与创建栈为可读报告。 */
         private String generateReport(TraceRecord oldHead) {
             if (oldHead == null) {
                 // Already closed
@@ -638,9 +665,11 @@ public class ResourceLeakDetector<T> {
         }
     }
 
+    /** 堆栈报告中排除的 (类名, 方法名) 对。 */
     private static final AtomicReference<String[]> excludedMethods =
             new AtomicReference<>(EmptyArrays.EMPTY_STRINGS);
 
+    /** 注册堆栈过滤：泄漏报告中跳过指定类的指定方法帧。 */
     public static void addExclusions(@SuppressWarnings("rawtypes") Class clz, String ... methodNames) {
         Set<String> nameSet = new HashSet<>(Arrays.asList(methodNames));
         // Use loop rather than lookup. This avoids knowing the parameters, and doesn't have to handle
@@ -665,11 +694,13 @@ public class ResourceLeakDetector<T> {
         } while (!excludedMethods.compareAndSet(oldMethods, newMethods));
     }
 
+    /** 单条访问记录：链表节点，pos 表示深度或 CLOSE/BOTTOM 标记。 */
     private static class TraceRecord extends Throwable {
         private static final long serialVersionUID = 6065153674892850720L;
         public static final int BOTTOM_POS = -1;
         public static final int CLOSE_MARK_POS = -2;
 
+        /** 链表哨兵：创建点栈底，不填充 native 栈。 */
         private static final TraceRecord BOTTOM = new TraceRecord(false) {
             private static final long serialVersionUID = 7396077602074694571L;
 

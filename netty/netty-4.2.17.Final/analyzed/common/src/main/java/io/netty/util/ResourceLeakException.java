@@ -20,12 +20,15 @@ import java.util.Arrays;
 
 /**
  * @deprecated This class will be removed in the future version.
+ *
+ * <p>资源泄漏异常：缓存创建时的堆栈用于去重比较；已废弃，未来版本将移除。</p>
  */
 @Deprecated
 public class ResourceLeakException extends RuntimeException {
 
     private static final long serialVersionUID = 7186453858343358280L;
 
+    /** 构造时快照的堆栈，用于 {@link #equals} 去重。 */
     private final StackTraceElement[] cachedStackTrace;
 
     public ResourceLeakException() {
@@ -47,6 +50,7 @@ public class ResourceLeakException extends RuntimeException {
         cachedStackTrace = getStackTrace();
     }
 
+    /** 基于缓存堆栈元素计算哈希。 */
     @Override
     public int hashCode() {
         int hashCode = 0;
@@ -56,6 +60,7 @@ public class ResourceLeakException extends RuntimeException {
         return hashCode;
     }
 
+    /** 两条泄漏若堆栈快照相同则视为同一泄漏。 */
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof ResourceLeakException)) {

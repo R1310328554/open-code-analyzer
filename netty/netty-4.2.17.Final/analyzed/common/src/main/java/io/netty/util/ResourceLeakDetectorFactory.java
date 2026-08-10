@@ -26,10 +26,15 @@ import java.lang.reflect.Constructor;
 
 /**
  * This static factory should be used to load {@link ResourceLeakDetector}s as needed
+ *
+ * <p>{@link ResourceLeakDetector} 的静态工厂：默认单例 {@link DefaultResourceLeakDetectorFactory}，
+ * 可通过 {@link #setResourceLeakDetectorFactory(ResourceLeakDetectorFactory)} 在 Bootstrap 前替换，
+ * 或通过 {@code io.netty.customResourceLeakDetector} 指定自定义实现类。</p>
  */
 public abstract class ResourceLeakDetectorFactory {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ResourceLeakDetectorFactory.class);
 
+    /** 工厂单例，volatile 保证可见性。 */
     private static volatile ResourceLeakDetectorFactory factoryInstance = new DefaultResourceLeakDetectorFactory();
 
     /**
@@ -46,6 +51,8 @@ public abstract class ResourceLeakDetectorFactory {
      * {@link ResourceLeakDetector} is called by all the callers of this factory. That is, before initializing a
      * Netty Bootstrap.
      *
+     * <p>必须在 Netty Bootstrap 初始化前设置，否则已创建的 Detector 不会受影响。</p>
+     *
      * @param factory the instance that will become the current {@link ResourceLeakDetectorFactory}'s singleton
      */
     public static void setResourceLeakDetectorFactory(ResourceLeakDetectorFactory factory) {
@@ -54,6 +61,8 @@ public abstract class ResourceLeakDetectorFactory {
 
     /**
      * Returns a new instance of a {@link ResourceLeakDetector} with the given resource class.
+     *
+     * <p>使用默认 {@link ResourceLeakDetector#SAMPLING_INTERVAL} 创建 Detector。</p>
      *
      * @param resource the resource class used to initialize the {@link ResourceLeakDetector}
      * @param <T> the type of the resource class
@@ -94,9 +103,13 @@ public abstract class ResourceLeakDetectorFactory {
 
     /**
      * Default implementation that loads custom leak detector via system property
+     *
+     * <p>默认工厂：启动时读取 {@code io.netty.customResourceLeakDetector}，反射加载自定义 Detector 构造器。</p>
      */
     private static final class DefaultResourceLeakDetectorFactory extends ResourceLeakDetectorFactory {
+        /** 三参数 (Class, int, long) 构造器，兼容旧版自定义类。 */
         private final Constructor<?> obsoleteCustomClassConstructor;
+        /** 两参数 (Class, int) 构造器。 */
         private final Constructor<?> customClassConstructor;
 
         DefaultResourceLeakDetectorFactory() {
@@ -115,6 +128,7 @@ public abstract class ResourceLeakDetectorFactory {
             }
         }
 
+        /** 解析 (Class, int, long) 构造器。 */
         private static Constructor<?> obsoleteCustomClassConstructor(String customLeakDetector) {
             try {
                 final Class<?> detectorClass = Class.forName(customLeakDetector, true,
@@ -132,6 +146,7 @@ public abstract class ResourceLeakDetectorFactory {
             return null;
         }
 
+        /** 解析 (Class, int) 构造器。 */
         private static Constructor<?> customClassConstructor(String customLeakDetector) {
             try {
                 final Class<?> detectorClass = Class.forName(customLeakDetector, true,

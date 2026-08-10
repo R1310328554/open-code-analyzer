@@ -40,11 +40,15 @@ import static java.lang.Math.min;
  * Light-weight object pool based on a thread-local stack.
  *
  * @param <T> the type of the pooled object
+ *
+ * <p>基于线程本地池的轻量对象复用器：默认每线程独立 {@link LocalPool}，
+ * 通过 {@link Handle#recycle(Object)} 归还实例；支持 Guarded（状态校验）与 Unguarded（高性能）两种模式，
+ * 以及跨线程共享池、线程绑定（owner）等高级构造。</p>
  */
 public abstract class Recycler<T> {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Recycler.class);
 
-    /**
+    /** {@link EnhancedHandle} 的 LocalPool 专用实现，避免 NOOP/Default/Local 三种具体类。
      * We created this handle to avoid having more than 2 concrete implementations of {@link EnhancedHandle}
      * i.e. NOOP_HANDLE, {@link DefaultHandle} and the one used in the LocalPool.
      */
@@ -72,15 +76,24 @@ public abstract class Recycler<T> {
         }
     }
 
+    /** 禁用池化时的空 Handle。 */
     private static final EnhancedHandle<?> NOOP_HANDLE = new LocalPoolHandle<>(null);
+    /** 容量为 0 时的空 LocalPool。 */
     private static final UnguardedLocalPool<?> NOOP_LOCAL_POOL = new UnguardedLocalPool<>(0);
+    /** 每线程池默认最大容量（4096）。 */
     private static final int DEFAULT_INITIAL_MAX_CAPACITY_PER_THREAD = 4 * 1024; // Use 4k instances as default.
+    /** 系统属性解析后的每线程最大容量。 */
     private static final int DEFAULT_MAX_CAPACITY_PER_THREAD;
+    /** 采样比率：每 RATIO 次分配才允许一次入池，平滑扩容。 */
     private static final int RATIO;
+    /** 本地 batch 数组块大小。 */
     private static final int DEFAULT_QUEUE_CHUNK_SIZE_PER_THREAD;
+    /** 是否使用同步 BlockingMessageQueue（调试用）。 */
     private static final boolean BLOCKING_POOL;
+    /** 是否仅对 FastThreadLocalThread 启用 batch 优化。 */
     private static final boolean BATCH_FAST_TL_ONLY;
 
+    /** 从系统属性加载 recycler 全局配置。 */
     static {
         // In the future, we might have different maxCapacity for different object types.
         // e.g. io.netty.recycler.maxCapacity.writeTask
@@ -119,7 +132,9 @@ public abstract class Recycler<T> {
         }
     }
 
+    /** 非 TLS 模式下的共享/绑定池；TLS 模式下为 null。 */
     private final LocalPool<?, T> localPool;
+    /** TLS 模式下每线程 LocalPool；非 TLS 时为 null。 */
     private final FastThreadLocal<LocalPool<?, T>> threadLocalPool;
 
     /**
@@ -132,6 +147,10 @@ public abstract class Recycler<T> {
      * it means that {@link Handle#recycle(Object)} is not checking that {@code object} is the same which was
      * recycled and assume no other recycling happens concurrently
      * (similar to what {@link EnhancedHandle#unguardedRecycle(Object)} does).<br>
+     */
+    /**
+     * 构造跨线程共享池（禁用 TLS）。
+     * @see #Recycler(int, boolean)
      */
     protected Recycler(int maxCapacity, boolean unguarded) {
         if (maxCapacity <= 0) {
@@ -300,6 +319,7 @@ public abstract class Recycler<T> {
         }
     }
 
+    /** 从池中获取或新建对象；TLS/共享池分支在此选择。 */
     @SuppressWarnings("unchecked")
     public final T get() {
         if (localPool != null) {
@@ -320,6 +340,7 @@ public abstract class Recycler<T> {
      * be garbage collected even if {@link Handle}s are still referenced by other objects.
      * <p>
      */
+    /** 解除 owner 绑定，避免 Thread 无法 GC（非线程安全）。 */
     public static void unpinOwner(Recycler<?> recycler) {
         if (recycler.localPool != null) {
             recycler.localPool.owner = null;
@@ -358,11 +379,13 @@ public abstract class Recycler<T> {
     /**
      * @param handle can NOT be null.
      */
+    /** 池无可用实例时由子类创建新对象并绑定 Handle。 */
     protected abstract T newObject(Handle<T> handle);
 
     @SuppressWarnings("ClassNameSameAsAncestorName") // Can't change this due to compatibility.
     public interface Handle<T> extends ObjectPool.Handle<T>  { }
 
+    /** 扩展 Handle，提供无守卫的 {@link #unguardedRecycle(Object)}。 */
     @UnstableApi
     public abstract static class EnhancedHandle<T> implements Handle<T> {
 
@@ -372,8 +395,11 @@ public abstract class Recycler<T> {
         }
     }
 
+    /** Guarded 模式下的 Handle：CLAIMED/AVAILABLE 状态机防止重复 recycle。 */
     private static final class DefaultHandle<T> extends EnhancedHandle<T> {
+        /** 已借出。 */
         private static final int STATE_CLAIMED = 0;
+        /** 在池中可用。 */
         private static final int STATE_AVAILABLE = 1;
         private static final AtomicIntegerFieldUpdater<DefaultHandle<?>> STATE_UPDATER;
         static {
@@ -408,6 +434,7 @@ public abstract class Recycler<T> {
             localPool.release(this);
         }
 
+        /** 从 AVAILABLE 转为 CLAIMED 并返回托管对象。 */
         T claim() {
             assert state == STATE_AVAILABLE;
             STATE_UPDATER.lazySet(this, STATE_CLAIMED);
@@ -418,6 +445,7 @@ public abstract class Recycler<T> {
             this.value = value;
         }
 
+        /** 原子置 AVAILABLE，重复 recycle 抛异常。 */
         private void toAvailable() {
             int prev = STATE_UPDATER.getAndSet(this, STATE_AVAILABLE);
             if (prev == STATE_AVAILABLE) {
@@ -434,6 +462,7 @@ public abstract class Recycler<T> {
         }
     }
 
+    /** 带状态校验的本地池，Handle 为 {@link DefaultHandle}。 */
     private static final class GuardedLocalPool<T> extends LocalPool<DefaultHandle<T>, T> {
         static {
             // Eagerly initiate DefaultHandle class-loading.
@@ -471,6 +500,7 @@ public abstract class Recycler<T> {
         }
     }
 
+    /** 无守卫本地池：直接池化 T 实例，recycle 走 {@link LocalPoolHandle}。 */
     private static final class UnguardedLocalPool<T> extends LocalPool<T, T> {
         private final EnhancedHandle<T> handle;
 
@@ -499,6 +529,10 @@ public abstract class Recycler<T> {
         }
     }
 
+    /**
+     * 本地对象池核心：thread-local batch 栈 + 外部 MPSC/MPMC 队列。
+     * acquire 优先 pop batch，release 优先 push batch（同 owner 线程），否则 offer 到外部队列。
+     */
     private abstract static class LocalPool<H, T> {
         private final int ratioInterval;
         private final H[] batch;
@@ -554,6 +588,7 @@ public abstract class Recycler<T> {
                          ? Thread.currentThread() : null, maxCapacity, ratioInterval, chunkSize);
         }
 
+        /** 从 batch 或外部队列取一个 Handle/对象。 */
         protected final H acquire() {
             int size = batchSize;
             if (size == 0) {
@@ -571,6 +606,7 @@ public abstract class Recycler<T> {
             return h;
         }
 
+        /** 归还到 batch 或外部队列；owner 已终止则丢弃池引用。 */
         protected final void release(H handle) {
             Thread owner = this.owner;
             if (owner != null && Thread.currentThread() == owner && batchSize < batch.length) {
@@ -587,12 +623,14 @@ public abstract class Recycler<T> {
             }
         }
 
+        /** J9 上用 isAlive 代替 getState 以避免性能问题。 */
         private static boolean isTerminated(Thread owner) {
             // Do not use `Thread.getState()` in J9 JVM because it's known to have a performance issue.
             // See: https://github.com/netty/netty/issues/13347#issuecomment-1518537895
             return PlatformDependent.isJ9Jvm()? !owner.isAlive() : owner.getState() == Thread.State.TERMINATED;
         }
 
+        /** 按 ratioInterval 采样决定是否分配可池化的新 Handle/对象。 */
         boolean canAllocatePooled() {
             if (ratioInterval < 0) {
                 return false;
@@ -622,6 +660,7 @@ public abstract class Recycler<T> {
      * The implementation relies on synchronised monitor locks for thread-safety.
      * The {@code fill} bulk operation is not supported by this implementation.
      */
+    /** 调试用同步 MPMC 队列，基于 {@link ArrayDeque} + synchronized。 */
     private static final class BlockingMessageQueue<T> implements MessagePassingQueue<T> {
         private final Queue<T> deque;
         private final int maxCapacity;

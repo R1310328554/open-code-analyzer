@@ -23,10 +23,14 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation to suppress forbidden-apis errors inside a whole class, a method, or a field.
+ *
+ * <p>标注在类/方法/字段上，向 forbidden-apis 插件说明此处有意使用受限 API，
+ * {@link #reason()} 必填以记录豁免理由。</p>
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({ ElementType.CONSTRUCTOR, ElementType.FIELD, ElementType.METHOD, ElementType.TYPE })
 public @interface SuppressForbidden {
 
+    /** 使用受限 API 的原因说明。 */
     String reason();
 }

@@ -42,19 +42,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * </p>
  *
  * @deprecated will be removed in the next major release
+ *
+ * <p>已废弃：后台守护线程每秒轮询被监视线程是否存活，死亡时执行关联 {@link Runnable}；
+ * 主要用于 {@link ReferenceCountUtil#releaseLater(Object)} 单测场景，下一大版本将移除。</p>
  */
 @Deprecated
 public final class ThreadDeathWatcher {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ThreadDeathWatcher.class);
     // visible for testing
+    /** 创建 Watcher 守护线程的工厂。 */
     static final ThreadFactory threadFactory;
 
+    // 使用 MPMC 队列，因 isEmpty 可能由多线程并发调用
     // Use a MPMC queue as we may end up checking isEmpty() from multiple threads which may not be allowed to do
     // concurrently depending on the implementation of it in a MPSC queue.
+    /** 待处理的 watch/unwatch 请求队列。 */
     private static final Queue<Entry> pendingEntries = new ConcurrentLinkedQueue<Entry>();
+    /** 单例 Watcher 任务。 */
     private static final Watcher watcher = new Watcher();
+    /** Watcher 线程是否已启动。 */
     private static final AtomicBoolean started = new AtomicBoolean();
+    /** 当前 Watcher 守护线程引用。 */
     private static volatile Thread watcherThread;
 
     static {
@@ -63,6 +72,7 @@ public final class ThreadDeathWatcher {
         if (!StringUtil.isNullOrEmpty(serviceThreadPrefix)) {
             poolName = serviceThreadPrefix + poolName;
         }
+        // 单例 Watcher 可能从任意线程组提交任务，工厂不绑定特定 ThreadGroup
         // because the ThreadDeathWatcher is a singleton, tasks submitted to it can come from arbitrary threads and
         // this can trigger the creation of a thread from arbitrary thread groups; for this reason, the thread factory
         // must not be sticky about its thread group
@@ -71,6 +81,8 @@ public final class ThreadDeathWatcher {
 
     /**
      * Schedules the specified {@code task} to run when the specified {@code thread} dies.
+     *
+     * <p>注册监视：thread 终止后执行 task；thread 必须仍存活。</p>
      *
      * @param thread the {@link Thread} to watch
      * @param task the {@link Runnable} to run when the {@code thread} dies
@@ -90,6 +102,8 @@ public final class ThreadDeathWatcher {
 
     /**
      * Cancels the task scheduled via {@link #watch(Thread, Runnable)}.
+     *
+     * <p>取消先前注册的 watch。</p>
      */
     public static void unwatch(Thread thread, Runnable task) {
         schedule(ObjectUtil.checkNotNull(thread, "thread"),
@@ -97,11 +111,13 @@ public final class ThreadDeathWatcher {
                 false);
     }
 
+    /** 将 watch/unwatch 请求入队并懒启动 Watcher 线程。 */
     private static void schedule(Thread thread, Runnable task, boolean isWatch) {
         pendingEntries.add(new Entry(thread, task, isWatch));
 
         if (started.compareAndSet(false, true)) {
             final Thread watcherThread = threadFactory.newThread(watcher);
+            // 清空 ContextClassLoader，避免类加载器泄漏
             // Set to null to ensure we not create classloader leaks by holds a strong reference to the inherited
             // classloader.
             // See:
@@ -127,6 +143,8 @@ public final class ThreadDeathWatcher {
      * <strong>after</strong> your application is shut down and there's no chance of calling
      * {@link #watch(Thread, Runnable)} afterwards.
      *
+     * <p>等待 Watcher 守护线程在无监视对象时自行退出；仅适用于应用关闭后不再 watch 的场景。</p>
+     *
      * @return {@code true} if and only if the watcher thread has been terminated
      */
     public static boolean awaitInactivity(long timeout, TimeUnit unit) throws InterruptedException {
@@ -143,8 +161,10 @@ public final class ThreadDeathWatcher {
 
     private ThreadDeathWatcher() { }
 
+    /** 后台轮询：拉取 pending、检测 watchees 死亡并执行任务。 */
     private static final class Watcher implements Runnable {
 
+        /** 当前正在监视的 (thread, task) 列表。 */
         private final List<Entry> watchees = new ArrayList<Entry>();
 
         @Override
@@ -153,6 +173,7 @@ public final class ThreadDeathWatcher {
                 fetchWatchees();
                 notifyWatchees();
 
+                // 再拉取一次，应对 notify 期间新增的 watch/unwatch
                 // Try once again just in case notifyWatchees() triggered watch() or unwatch().
                 fetchWatchees();
                 notifyWatchees();
@@ -160,6 +181,7 @@ public final class ThreadDeathWatcher {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException ignore) {
+                    // 忽略中断，直到所有任务执行完毕
                     // Ignore the interrupt; do not terminate until all tasks are run.
                 }
 
@@ -173,6 +195,8 @@ public final class ThreadDeathWatcher {
 
                     // Check if there are pending entries added by watch() while we do CAS above.
                     if (pendingEntries.isEmpty()) {
+                        // A) watch() 未再被调用，安全退出
+                        // B) 新 Watcher 已启动并处理完毕，本线程可退出
                         // A) watch() was not invoked and thus there's nothing to handle
                         //    -> safe to terminate because there's nothing left to do
                         // B) a new watcher thread started and handled them all
@@ -180,13 +204,16 @@ public final class ThreadDeathWatcher {
                         break;
                     }
 
+                    // watch() 在 CAS 期间又添加了条目
                     // There are pending entries again, added by watch()
                     if (!started.compareAndSet(false, true)) {
+                        // 已有新 Watcher 线程，本线程退出
                         // watch() started a new watcher thread and set 'started' to true.
                         // -> terminate this thread so that the new watcher reads from pendingEntries exclusively.
                         break;
                     }
 
+                    // 本线程继续处理新条目
                     // watch() added an entry, but this worker was faster to set 'started' to true.
                     // i.e. a new watcher thread was not started
                     // -> keep this thread alive to handle the newly added entries.
@@ -194,6 +221,7 @@ public final class ThreadDeathWatcher {
             }
         }
 
+        /** 从 pendingEntries 合并到 watchees。 */
         private void fetchWatchees() {
             for (;;) {
                 Entry e = pendingEntries.poll();
@@ -209,6 +237,7 @@ public final class ThreadDeathWatcher {
             }
         }
 
+        /** 对已死亡线程执行 task 并从列表移除。 */
         private void notifyWatchees() {
             List<Entry> watchees = this.watchees;
             for (int i = 0; i < watchees.size();) {
@@ -227,6 +256,7 @@ public final class ThreadDeathWatcher {
         }
     }
 
+    /** watch/unwatch 队列条目，equals 基于 thread 与 task 引用。 */
     private static final class Entry {
         final Thread thread;
         final Runnable task;

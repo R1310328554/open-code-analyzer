@@ -22,18 +22,24 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 
 /**
  * Collection of method to handle objects that may implement {@link ReferenceCounted}.
+ *
+ * <p>对可能实现 {@link ReferenceCounted} 的消息做 retain/release/touch 的工具方法：
+ * 非引用计数对象则原样返回或 no-op，便于 Pipeline 中统一处理任意类型消息。</p>
  */
 public final class ReferenceCountUtil {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ReferenceCountUtil.class);
 
     static {
+        // touch 为工具转发，不参与泄漏栈记录
         ResourceLeakDetector.addExclusions(ReferenceCountUtil.class, "touch");
     }
 
     /**
      * Try to call {@link ReferenceCounted#retain()} if the specified message implements {@link ReferenceCounted}.
      * If the specified message doesn't implement {@link ReferenceCounted}, this method does nothing.
+     *
+     * <p>若 msg 为 {@link ReferenceCounted} 则 retain，否则原样返回。</p>
      */
     @SuppressWarnings("unchecked")
     public static <T> T retain(T msg) {
@@ -46,6 +52,8 @@ public final class ReferenceCountUtil {
     /**
      * Try to call {@link ReferenceCounted#retain(int)} if the specified message implements {@link ReferenceCounted}.
      * If the specified message doesn't implement {@link ReferenceCounted}, this method does nothing.
+     *
+     * <p>按 increment 增加引用计数。</p>
      */
     @SuppressWarnings("unchecked")
     public static <T> T retain(T msg, int increment) {
@@ -59,6 +67,8 @@ public final class ReferenceCountUtil {
     /**
      * Tries to call {@link ReferenceCounted#touch()} if the specified message implements {@link ReferenceCounted}.
      * If the specified message doesn't implement {@link ReferenceCounted}, this method does nothing.
+     *
+     * <p>记录泄漏检测访问点。</p>
      */
     @SuppressWarnings("unchecked")
     public static <T> T touch(T msg) {
@@ -72,6 +82,8 @@ public final class ReferenceCountUtil {
      * Tries to call {@link ReferenceCounted#touch(Object)} if the specified message implements
      * {@link ReferenceCounted}.  If the specified message doesn't implement {@link ReferenceCounted},
      * this method does nothing.
+     *
+     * <p>带 hint 的 touch。</p>
      */
     @SuppressWarnings("unchecked")
     public static <T> T touch(T msg, Object hint) {
@@ -84,6 +96,8 @@ public final class ReferenceCountUtil {
     /**
      * Try to call {@link ReferenceCounted#release()} if the specified message implements {@link ReferenceCounted}.
      * If the specified message doesn't implement {@link ReferenceCounted}, this method does nothing.
+     *
+     * <p>release 一次；非引用计数对象返回 {@code false}。</p>
      */
     public static boolean release(Object msg) {
         if (msg instanceof ReferenceCounted) {
@@ -95,6 +109,8 @@ public final class ReferenceCountUtil {
     /**
      * Try to call {@link ReferenceCounted#release(int)} if the specified message implements {@link ReferenceCounted}.
      * If the specified message doesn't implement {@link ReferenceCounted}, this method does nothing.
+     *
+     * <p>按 decrement 减少引用计数。</p>
      */
     public static boolean release(Object msg, int decrement) {
         ObjectUtil.checkPositive(decrement, "decrement");
@@ -110,6 +126,8 @@ public final class ReferenceCountUtil {
      * Unlike {@link #release(Object)} this method catches an exception raised by {@link ReferenceCounted#release()}
      * and logs it, rather than rethrowing it to the caller.  It is usually recommended to use {@link #release(Object)}
      * instead, unless you absolutely need to swallow an exception.
+     *
+     * <p>release 并吞掉异常，仅打 WARN 日志。</p>
      */
     public static void safeRelease(Object msg) {
         try {
@@ -125,6 +143,8 @@ public final class ReferenceCountUtil {
      * Unlike {@link #release(Object)} this method catches an exception raised by {@link ReferenceCounted#release(int)}
      * and logs it, rather than rethrowing it to the caller.  It is usually recommended to use
      * {@link #release(Object, int)} instead, unless you absolutely need to swallow an exception.
+     *
+     * <p>带 decrement 的 safeRelease。</p>
      */
     public static void safeRelease(Object msg, int decrement) {
         try {
@@ -143,6 +163,8 @@ public final class ReferenceCountUtil {
      * intended use case.
      *
      * @deprecated this may introduce a lot of memory usage so it is generally preferable to manually release objects.
+     *
+     * <p>已废弃：在线程结束时自动 release，仅用于单测，生产环境易泄漏内存。</p>
      */
     @Deprecated
     public static <T> T releaseLater(T msg) {
@@ -168,6 +190,8 @@ public final class ReferenceCountUtil {
     /**
      * Returns reference count of a {@link ReferenceCounted} object. If object is not type of
      * {@link ReferenceCounted}, {@code -1} is returned.
+     *
+     * <p>非引用计数对象返回 -1。</p>
      */
     public static int refCnt(Object msg) {
         return msg instanceof ReferenceCounted ? ((ReferenceCounted) msg).refCnt() : -1;
@@ -175,6 +199,8 @@ public final class ReferenceCountUtil {
 
     /**
      * Releases the objects when the thread that called {@link #releaseLater(Object)} has been terminated.
+     *
+     * <p>线程死亡时在 {@link ThreadDeathWatcher} 中执行的 release 任务。</p>
      */
     private static final class ReleasingTask implements Runnable {
 

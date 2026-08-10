@@ -23,18 +23,27 @@ import java.util.Locale;
 
 /**
  * A utility class for wrapping calls to {@link Runtime}.
+ *
+ * <p>封装 {@link Runtime#availableProcessors()} 的可配置访问：可通过系统属性
+ * {@code io.netty.availableProcessors} 或 {@link #setAvailableProcessors(int)} 覆盖，
+ * 便于测试与容器环境下调优 EventLoop 线程数。</p>
  */
 public final class NettyRuntime {
 
     /**
      * Holder class for available processors to enable testing.
+     *
+     * <p>可用处理器数量的持有者，支持测试时注入固定值。</p>
      */
     static class AvailableProcessorsHolder {
 
+        /** 已配置的处理器数，0 表示尚未初始化。 */
         private int availableProcessors;
 
         /**
          * Set the number of available processors.
+         *
+         * <p>设置可用处理器数量，仅允许配置一次。</p>
          *
          * @param availableProcessors the number of available processors
          * @throws IllegalArgumentException if the specified number of available processors is non-positive
@@ -58,6 +67,8 @@ public final class NettyRuntime {
          * This can be overridden by setting the system property "io.netty.availableProcessors" or by invoking
          * {@link #setAvailableProcessors(int)} before any calls to this method.
          *
+         * <p>首次调用时从系统属性或 {@link Runtime} 读取并缓存。</p>
+         *
          * @return the configured number of available processors
          */
         @SuppressForbidden(reason = "to obtain default number of available processors")
@@ -73,10 +84,13 @@ public final class NettyRuntime {
         }
     }
 
+    /** 单例持有者。 */
     private static final AvailableProcessorsHolder holder = new AvailableProcessorsHolder();
 
     /**
      * Set the number of available processors.
+     *
+     * <p>在 Netty 初始化前调用以覆盖 JVM 报告的 CPU 核数。</p>
      *
      * @param availableProcessors the number of available processors
      * @throws IllegalArgumentException if the specified number of available processors is non-positive
