@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:29:48Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/crypto/HashSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/SignatureProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/SignatureProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/crypto/SignatureSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/deployment/DeployedConfigurationsManager.java",
-    "server-spi-private/src/main/java/org/keycloak/deployment/DeployedConfigurationsProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/deployment/DeployedConfigurationsProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/deployment/DeployedConfigurationsSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/device/DeviceActivityManager.java",
-    "server-spi-private/src/main/java/org/keycloak/device/DeviceRepresentationProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/device/DeviceRepresentationProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/device/DeviceRepresentationSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/email/EmailException.java",
-    "server-spi-private/src/main/java/org/keycloak/email/EmailSenderProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/email/EmailSenderProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2878,
-  "done": 3105
+  "done": 3120
 }
