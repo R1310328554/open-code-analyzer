@@ -1378,3 +1378,18 @@
 2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/InfinispanUserSessionProviderFactory.java wave47b session auth/revoked/single-use providers
 2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/PersistentUserSessionProvider.java wave47b session auth/revoked/single-use providers
 2026-08-10T07:45:41Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/RootAuthenticationSessionAdapter.java wave47b session auth/revoked/single-use providers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/PersistentSessionsChangelogBasedTransaction.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/PersistentUpdate.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/ReplaceFunction.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/RootAuthenticationSessionUpdateTask.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/SerializeExecutionsByKey.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/SessionEntityWrapper.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/SessionUpdateTask.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/SessionUpdatesList.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/SessionsChangelogBasedTransaction.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/Tasks.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/UserSessionInfinispanChangelogBasedTransaction.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/UserSessionPersistentChangelogBasedTransaction.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/UserSessionUpdateTask.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/remover/ConditionalRemover.java wave48b persistent changelog + remote removers
+2026-08-10T07:48:12Z DONE model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/changes/remote/remover/EmptyConditionalRemover.java wave48b persistent changelog + remote removers
