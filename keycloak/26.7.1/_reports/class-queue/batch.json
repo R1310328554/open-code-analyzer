@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:25:07Z",
-  "files": [
-    "services/src/main/java/org/keycloak/protocol/oid4vc/utils/CredentialScopeUtils.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/utils/OID4VCUtil.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/AbstractClientConfigWrapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/AccessTokenIntrospectionProvider.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/AccessTokenIntrospectionProviderFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/BackchannelLogoutResponse.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/FrontChannelLogoutHandler.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/LogoutTokenValidationCode.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/LogoutTokenValidationContext.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/OIDCAdvancedConfigWrapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/OIDCClientDescriptionConverter.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/OIDCClientDescriptionConverterFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/OIDCClientSecretConfigWrapper.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/OIDCLoginProtocol.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/OIDCLoginProtocolFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1468,
-  "done": 4515
+  "done": 4530
 }
