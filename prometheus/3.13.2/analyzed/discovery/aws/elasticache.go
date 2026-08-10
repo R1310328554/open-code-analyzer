@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// elasticache.go — AWS ElastiCache 服务发现：支持无服务器缓存与节点级缓存集群。
+
 package aws
 
 import (
@@ -172,7 +174,7 @@ const (
 	elasticacheLabelServerlessCacheTag = elasticacheLabelServerlessCache + "tag_"
 )
 
-// DefaultElasticacheSDConfig is the default Elasticache SD configuration.
+// DefaultElasticacheSDConfig 为 ElastiCache 服务发现的默认配置。
 var DefaultElasticacheSDConfig = ElasticacheSDConfig{
 	Port:               80,
 	RefreshInterval:    model.Duration(60 * time.Second),
@@ -184,7 +186,7 @@ func init() {
 	discovery.RegisterConfig(&ElasticacheSDConfig{})
 }
 
-// ElasticacheSDConfig is the configuration for Elasticache based service discovery.
+// ElasticacheSDConfig 定义基于 AWS ElastiCache 的服务发现配置。
 type ElasticacheSDConfig struct {
 	Region          string         `yaml:"region"`
 	Endpoint        string         `yaml:"endpoint"`
@@ -203,27 +205,27 @@ type ElasticacheSDConfig struct {
 	HTTPClientConfig config.HTTPClientConfig `yaml:",inline"`
 }
 
-// NewDiscovererMetrics implements discovery.Config.
+// NewDiscovererMetrics 实现 discovery.Config，返回对应服务的发现器指标。
 func (*ElasticacheSDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	return &elasticacheMetrics{
 		refreshMetrics: rmi,
 	}
 }
 
-// Name returns the name of the Elasticache Config.
+// Name 返回配置机制名称 "elasticache"。
 func (*ElasticacheSDConfig) Name() string { return "elasticache" }
 
-// NewDiscoverer returns a Discoverer for the Elasticache Config.
+// NewDiscoverer 根据 ElasticacheSDConfig 创建 ElasticacheDiscovery。
 func (c *ElasticacheSDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discovery.Discoverer, error) {
 	return NewElasticacheDiscovery(c, opts)
 }
 
-// SetDirectory joins any relative file paths with dir.
+// SetDirectory 将配置中的相对文件路径与给定目录拼接。
 func (c *ElasticacheSDConfig) SetDirectory(dir string) {
 	c.HTTPClientConfig.SetDirectory(dir)
 }
 
-// UnmarshalYAML implements the yaml.Unmarshaler interface for the Elasticache Config.
+// UnmarshalYAML 解析 YAML 配置并推断 AWS 区域。
 func (c *ElasticacheSDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	*c = DefaultElasticacheSDConfig
 	type plain ElasticacheSDConfig
@@ -246,11 +248,7 @@ type elasticacheClient interface {
 	ListTagsForResource(ctx context.Context, params *elasticache.ListTagsForResourceInput, optFns ...func(*elasticache.Options)) (*elasticache.ListTagsForResourceOutput, error)
 }
 
-// elasticacheClientAdapter captures only the ElastiCache API calls AWS
-// discovery uses as method-value closures, keeping the concrete
-// *elasticache.Client out of any interface-boxed struct field. See
-// ec2ClientAdapter for the full rationale: this stops the linker from retaining
-// the entire ElastiCache API surface (~2.5 MB).
+// elasticacheClientAdapter 仅捕获 ElastiCache 发现所需 API，避免链接器保留完整客户端（约 2.5 MB）。
 type elasticacheClientAdapter struct {
 	describeServerlessCaches func(ctx context.Context, params *elasticache.DescribeServerlessCachesInput, optFns ...func(*elasticache.Options)) (*elasticache.DescribeServerlessCachesOutput, error)
 	describeCacheClusters    func(ctx context.Context, params *elasticache.DescribeCacheClustersInput, optFns ...func(*elasticache.Options)) (*elasticache.DescribeCacheClustersOutput, error)
@@ -277,8 +275,7 @@ func (a elasticacheClientAdapter) ListTagsForResource(ctx context.Context, param
 	return a.listTagsForResource(ctx, params, optFns...)
 }
 
-// ElasticacheDiscovery periodically performs Elasticache-SD requests.
-// It implements the Discoverer interface.
+// ElasticacheDiscovery 定期执行 ElastiCache 服务发现，实现 Discoverer 接口。
 type ElasticacheDiscovery struct {
 	*refresh.Discovery
 	logger            *slog.Logger
@@ -286,7 +283,7 @@ type ElasticacheDiscovery struct {
 	elasticacheClient elasticacheClient
 }
 
-// NewElasticacheDiscovery returns a new ElasticacheDiscovery which periodically refreshes its targets.
+// NewElasticacheDiscovery 创建 ElasticacheDiscovery，周期性刷新缓存目标。
 func NewElasticacheDiscovery(conf *ElasticacheSDConfig, opts discovery.DiscovererOptions) (*ElasticacheDiscovery, error) {
 	m, ok := opts.Metrics.(*elasticacheMetrics)
 	if !ok {
@@ -379,7 +376,7 @@ func (d *ElasticacheDiscovery) initElasticacheClient(ctx context.Context) error 
 	return nil
 }
 
-// describeServerlessCaches calls DescribeServerlessCaches API for the given cache IDs (or all caches if no IDs are provided) and returns the list of serverless caches.
+// describeServerlessCaches 调用 DescribeServerlessCaches，返回无服务器缓存列表。
 func (d *ElasticacheDiscovery) describeServerlessCaches(ctx context.Context, caches []string) ([]types.ServerlessCache, error) {
 	mu := &sync.Mutex{}
 	errg, ectx := errgroup.WithContext(ctx)
@@ -428,7 +425,7 @@ func (d *ElasticacheDiscovery) describeServerlessCaches(ctx context.Context, cac
 	return serverlessCaches, errg.Wait()
 }
 
-// describeCacheClusters calls DescribeCacheClusters API for the given cache cluster IDs (or all cache clusters if no IDs are provided) and returns the list of cache clusters.
+// describeCacheClusters 调用 DescribeCacheClusters，返回传统缓存集群列表。
 func (d *ElasticacheDiscovery) describeCacheClusters(ctx context.Context, caches []string) ([]types.CacheCluster, error) {
 	mu := &sync.Mutex{}
 	errg, ectx := errgroup.WithContext(ctx)
@@ -486,7 +483,7 @@ func (d *ElasticacheDiscovery) describeCacheClusters(ctx context.Context, caches
 	return cacheClusters, errg.Wait()
 }
 
-// listTagsForResource calls ListTagsForResource API for the given resource ARNs and returns a map of resource ARN to list of tags.
+// listTagsForResource 批量查询资源标签，返回 ARN→标签列表映射。
 func (d *ElasticacheDiscovery) listTagsForResource(ctx context.Context, resourceARNs []string) (map[string][]types.Tag, error) {
 	mu := &sync.Mutex{}
 	errg, ectx := errgroup.WithContext(ctx)
@@ -589,9 +586,7 @@ func (d *ElasticacheDiscovery) refresh(ctx context.Context) ([]*targetgroup.Grou
 	return []*targetgroup.Group{tg}, nil
 }
 
-// splitCacheTypes takes a list of cache ARNs and splits them into serverless cache IDs and cache cluster IDs based on their format.
-// Serverless caches are in the format arn:aws:elasticache:<REGION>:<ACCOUNT_ID>:serverlesscache:<CACHE_NAME>
-// Cache clusters are in the format arn:aws:elasticache:<REGION>:<ACCOUNT_ID>:replicationgroup:<CACHE_CLUSTER_ID>.
+// splitCacheDeploymentOptions 按 ARN 格式将缓存 ARN 拆分为无服务器缓存 ID 与复制组 ID。
 func splitCacheDeploymentOptions(caches []string) (serverlessCacheIDs, cacheClusterIDs []string) {
 	for _, cacheARN := range caches {
 		if cacheARN == "" {
@@ -615,7 +610,7 @@ func splitCacheDeploymentOptions(caches []string) (serverlessCacheIDs, cacheClus
 	return serverlessCacheIDs, cacheClusterIDs
 }
 
-// addServerlessCacheTargets adds targets for a serverless cache to the target group.
+// addServerlessCacheTargets 将无服务器缓存写入目标组并设置 endpoint 地址标签。
 func addServerlessCacheTargets(tg *targetgroup.Group, cache *types.ServerlessCache, tags []types.Tag) {
 	labels := model.LabelSet{
 		elasticacheLabelDeploymentOption:                  model.LabelValue("serverless"),
@@ -711,8 +706,7 @@ func addServerlessCacheTargets(tg *targetgroup.Group, cache *types.ServerlessCac
 	tg.Targets = append(tg.Targets, labels)
 }
 
-// addCacheClusterTargets adds targets for a cache cluster to the target group.
-// Creates one target per cache node for individual scraping.
+// addCacheClusterTargets 为缓存集群每个节点生成独立 scrape 目标。
 func addCacheClusterTargets(tg *targetgroup.Group, cluster *types.CacheCluster, tags []types.Tag) {
 	// Build common labels that apply to all nodes in this cluster
 	commonLabels := model.LabelSet{

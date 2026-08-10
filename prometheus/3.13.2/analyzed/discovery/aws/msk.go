@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// msk.go — AWS MSK（Managed Streaming for Kafka）服务发现：发现 Broker/Controller 节点。
+
 package aws
 
 import (
@@ -42,6 +44,7 @@ import (
 	"github.com/prometheus/prometheus/util/strutil"
 )
 
+// NodeType 表示 MSK 集群节点类型（Broker 或 Controller）。
 type NodeType string
 
 const (
@@ -86,7 +89,7 @@ const (
 	mskLabelControllerEndpointIndex = mskLabelController + "endpoint_index"
 )
 
-// DefaultMSKSDConfig is the default MSK SD configuration.
+// DefaultMSKSDConfig 为 MSK 服务发现的默认配置。
 var DefaultMSKSDConfig = MSKSDConfig{
 	Port:               80,
 	RefreshInterval:    model.Duration(60 * time.Second),
@@ -98,7 +101,7 @@ func init() {
 	discovery.RegisterConfig(&MSKSDConfig{})
 }
 
-// MSKSDConfig is the configuration for MSK based service discovery.
+// MSKSDConfig 定义基于 AWS MSK 的服务发现配置。
 type MSKSDConfig struct {
 	Region          string         `yaml:"region"`
 	Endpoint        string         `yaml:"endpoint"`
@@ -115,27 +118,27 @@ type MSKSDConfig struct {
 	HTTPClientConfig   config.HTTPClientConfig `yaml:",inline"`
 }
 
-// NewDiscovererMetrics implements discovery.Config.
+// NewDiscovererMetrics 实现 discovery.Config，返回对应服务的发现器指标。
 func (*MSKSDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	return &mskMetrics{
 		refreshMetrics: rmi,
 	}
 }
 
-// Name returns the name of the MSK Config.
+// Name 返回配置机制名称 "msk"。
 func (*MSKSDConfig) Name() string { return "msk" }
 
-// NewDiscoverer returns a Discoverer for the MSK Config.
+// NewDiscoverer 根据 MSKSDConfig 创建 MSKDiscovery。
 func (c *MSKSDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discovery.Discoverer, error) {
 	return NewMSKDiscovery(c, opts)
 }
 
-// SetDirectory joins any relative file paths with dir.
+// SetDirectory 将配置中的相对文件路径与给定目录拼接。
 func (c *MSKSDConfig) SetDirectory(dir string) {
 	c.HTTPClientConfig.SetDirectory(dir)
 }
 
-// UnmarshalYAML implements the yaml.Unmarshaler interface for the MSK Config.
+// UnmarshalYAML 解析 YAML 配置并推断 AWS 区域。
 func (c *MSKSDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	*c = DefaultMSKSDConfig
 	type plain MSKSDConfig
@@ -158,10 +161,7 @@ type mskClient interface {
 	ListNodes(context.Context, *kafka.ListNodesInput, ...func(*kafka.Options)) (*kafka.ListNodesOutput, error)
 }
 
-// mskClientAdapter captures only the MSK (Kafka) API calls AWS discovery uses
-// as method-value closures, keeping the concrete *kafka.Client out of any
-// interface-boxed struct field. See ec2ClientAdapter for the full rationale:
-// this stops the linker from retaining the entire MSK API surface (~1.4 MB).
+// mskClientAdapter 仅捕获 MSK 发现所需 Kafka API，避免保留完整客户端（约 1.4 MB）。
 type mskClientAdapter struct {
 	describeClusterV2 func(context.Context, *kafka.DescribeClusterV2Input, ...func(*kafka.Options)) (*kafka.DescribeClusterV2Output, error)
 	listClustersV2    func(context.Context, *kafka.ListClustersV2Input, ...func(*kafka.Options)) (*kafka.ListClustersV2Output, error)
@@ -188,8 +188,7 @@ func (a mskClientAdapter) ListNodes(ctx context.Context, params *kafka.ListNodes
 	return a.listNodes(ctx, params, optFns...)
 }
 
-// MSKDiscovery periodically performs MSK-SD requests. It implements
-// the Discoverer interface.
+// MSKDiscovery 定期执行 MSK 服务发现，实现 Discoverer 接口。
 type MSKDiscovery struct {
 	*refresh.Discovery
 	logger *slog.Logger
@@ -197,7 +196,7 @@ type MSKDiscovery struct {
 	msk    mskClient
 }
 
-// NewMSKDiscovery returns a new MSKDiscovery which periodically refreshes its targets.
+// NewMSKDiscovery 创建 MSKDiscovery，周期性刷新 Kafka 节点目标。
 func NewMSKDiscovery(conf *MSKSDConfig, opts discovery.DiscovererOptions) (*MSKDiscovery, error) {
 	m, ok := opts.Metrics.(*mskMetrics)
 	if !ok {
@@ -290,7 +289,7 @@ func (d *MSKDiscovery) initMskClient(ctx context.Context) error {
 	return nil
 }
 
-// describeClusters describes the clusters with the given ARNs and returns their details.
+// describeClusters 批量 DescribeClusterV2，返回指定 MSK 集群详情。
 func (d *MSKDiscovery) describeClusters(ctx context.Context, clusterARNs []string) ([]types.Cluster, error) {
 	var (
 		clusters []types.Cluster
@@ -316,7 +315,7 @@ func (d *MSKDiscovery) describeClusters(ctx context.Context, clusterARNs []strin
 	return clusters, errg.Wait()
 }
 
-// listClusters lists all MSK clusters in the configured region and returns their details.
+// listClusters 分页列出区域内全部 MSK 集群。
 func (d *MSKDiscovery) listClusters(ctx context.Context) ([]types.Cluster, error) {
 	var (
 		clusters  []types.Cluster
@@ -344,7 +343,7 @@ func (d *MSKDiscovery) listClusters(ctx context.Context) ([]types.Cluster, error
 	return clusters, nil
 }
 
-// listNodes lists all nodes for the given clusters and returns a map of cluster ARN to its nodes.
+// listNodes 列出各 MSK 集群的 Broker/Controller 节点，返回集群 ARN→节点列表映射。
 func (d *MSKDiscovery) listNodes(ctx context.Context, clusters []types.Cluster) (map[string][]types.NodeInfo, error) {
 	clusterNodeMap := make(map[string][]types.NodeInfo)
 	mu := sync.Mutex{}

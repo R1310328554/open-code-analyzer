@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ecs.go — AWS ECS 服务发现：枚举集群/服务/任务并解析容器网络地址。
+
 package aws
 
 import (
@@ -79,7 +81,7 @@ const (
 	ecsLabelPublicIP             = ecsLabel + "public_ip"
 )
 
-// DefaultECSSDConfig is the default ECS SD configuration.
+// DefaultECSSDConfig 为 ECS 服务发现的默认配置（并发 20，对齐 AWS API 限速）。
 var DefaultECSSDConfig = ECSSDConfig{
 	Port:               80,
 	RefreshInterval:    model.Duration(60 * time.Second),
@@ -91,7 +93,7 @@ func init() {
 	discovery.RegisterConfig(&ECSSDConfig{})
 }
 
-// ECSSDConfig is the configuration for ECS based service discovery.
+// ECSSDConfig 定义基于 AWS ECS 的服务发现配置。
 type ECSSDConfig struct {
 	Region          string         `yaml:"region"`
 	Endpoint        string         `yaml:"endpoint"`
@@ -115,27 +117,27 @@ type ECSSDConfig struct {
 	HTTPClientConfig config.HTTPClientConfig `yaml:",inline"`
 }
 
-// NewDiscovererMetrics implements discovery.Config.
+// NewDiscovererMetrics 实现 discovery.Config，返回对应服务的发现器指标。
 func (*ECSSDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	return &ecsMetrics{
 		refreshMetrics: rmi,
 	}
 }
 
-// Name returns the name of the ECS Config.
+// Name 返回配置机制名称 "ecs"。
 func (*ECSSDConfig) Name() string { return "ecs" }
 
-// NewDiscoverer returns a Discoverer for the EC2 Config.
+// NewDiscoverer 根据 ECSSDConfig 创建 ECSDiscovery 发现器。
 func (c *ECSSDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discovery.Discoverer, error) {
 	return NewECSDiscovery(c, opts)
 }
 
-// SetDirectory joins any relative file paths with dir.
+// SetDirectory 将配置中的相对文件路径与给定目录拼接。
 func (c *ECSSDConfig) SetDirectory(dir string) {
 	c.HTTPClientConfig.SetDirectory(dir)
 }
 
-// UnmarshalYAML implements the yaml.Unmarshaler interface for the ECS Config.
+// UnmarshalYAML 解析 YAML 配置并推断 AWS 区域。
 func (c *ECSSDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	*c = DefaultECSSDConfig
 	type plain ECSSDConfig
@@ -152,6 +154,7 @@ func (c *ECSSDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return c.HTTPClientConfig.Validate()
 }
 
+// ecsClient 抽象 ECS 发现所需的 List/Describe API。
 type ecsClient interface {
 	ListClusters(context.Context, *ecs.ListClustersInput, ...func(*ecs.Options)) (*ecs.ListClustersOutput, error)
 	DescribeClusters(context.Context, *ecs.DescribeClustersInput, ...func(*ecs.Options)) (*ecs.DescribeClustersOutput, error)
@@ -162,10 +165,7 @@ type ecsClient interface {
 	DescribeContainerInstances(context.Context, *ecs.DescribeContainerInstancesInput, ...func(*ecs.Options)) (*ecs.DescribeContainerInstancesOutput, error)
 }
 
-// ecsClientAdapter captures only the ECS API calls AWS discovery uses as
-// method-value closures, keeping the concrete *ecs.Client out of any
-// interface-boxed struct field. See ec2ClientAdapter for the full rationale:
-// this stops the linker from retaining the entire ECS API surface (~2 MB).
+// ecsClientAdapter 仅捕获 ECS 发现所需的 API 方法值，避免链接器保留完整 ECS 客户端（约 2 MB）。
 type ecsClientAdapter struct {
 	listClusters               func(context.Context, *ecs.ListClustersInput, ...func(*ecs.Options)) (*ecs.ListClustersOutput, error)
 	describeClusters           func(context.Context, *ecs.DescribeClustersInput, ...func(*ecs.Options)) (*ecs.DescribeClustersOutput, error)
@@ -216,13 +216,13 @@ func (a ecsClientAdapter) DescribeContainerInstances(ctx context.Context, params
 	return a.describeContainerInstances(ctx, params, optFns...)
 }
 
+// ecsEC2Client 抽象 ECS 发现中补充查询 EC2/ENI 所需的 API。
 type ecsEC2Client interface {
 	DescribeInstances(context.Context, *ec2.DescribeInstancesInput, ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
 	DescribeNetworkInterfaces(context.Context, *ec2.DescribeNetworkInterfacesInput, ...func(*ec2.Options)) (*ec2.DescribeNetworkInterfacesOutput, error)
 }
 
-// ECSDiscovery periodically performs ECS-SD requests. It implements
-// the Discoverer interface.
+// ECSDiscovery 定期执行 ECS 服务发现，实现 Discoverer 接口。
 type ECSDiscovery struct {
 	*refresh.Discovery
 	logger *slog.Logger
@@ -231,7 +231,7 @@ type ECSDiscovery struct {
 	ec2    ecsEC2Client
 }
 
-// NewECSDiscovery returns a new ECSDiscovery which periodically refreshes its targets.
+// NewECSDiscovery 创建 ECSDiscovery，按配置间隔刷新 ECS 任务目标。
 func NewECSDiscovery(conf *ECSSDConfig, opts discovery.DiscovererOptions) (*ECSDiscovery, error) {
 	m, ok := opts.Metrics.(*ecsMetrics)
 	if !ok {
@@ -328,8 +328,7 @@ func (d *ECSDiscovery) initEcsClient(ctx context.Context) error {
 	return nil
 }
 
-// listClusterARNs returns a slice of cluster arns.
-// This method does not use concurrency as it's a simple paginated call.
+// listClusterARNs 分页列出所有 ECS 集群 ARN（单线程分页调用）。
 func (d *ECSDiscovery) listClusterARNs(ctx context.Context) ([]string, error) {
 	var (
 		clusterARNs []string
@@ -355,9 +354,7 @@ func (d *ECSDiscovery) listClusterARNs(ctx context.Context) ([]string, error) {
 	return clusterARNs, nil
 }
 
-// describeClusters returns a map of cluster ARN to a slice of clusters.
-// Uses concurrent requests limited by RequestConcurrency to respect AWS API throttling.
-// Clusters are described in batches of 100 to respect AWS API limits (DescribeClusters allows up to 100 clusters per call).
+// describeClusters 并发批量 DescribeClusters（每批最多 100 个），返回 ARN→Cluster 映射。
 func (d *ECSDiscovery) describeClusters(ctx context.Context, clusters []string) (map[string]types.Cluster, error) {
 	mu := sync.Mutex{}
 	clusterMap := make(map[string]types.Cluster)
@@ -388,9 +385,7 @@ func (d *ECSDiscovery) describeClusters(ctx context.Context, clusters []string) 
 	return clusterMap, errg.Wait()
 }
 
-// listServiceARNs returns a map of cluster ARN to a slice of service ARNs.
-// Uses concurrent requests limited by RequestConcurrency to respect AWS API throttling.
-// Services are listed in batches of 100 to respect AWS API limits (ListServices allows up to 100 services per call).
+// listServiceARNs 并发分页列出各集群下的服务 ARN。
 func (d *ECSDiscovery) listServiceARNs(ctx context.Context, clusters []string) (map[string][]string, error) {
 	mu := sync.Mutex{}
 	services := make(map[string][]string)
@@ -428,9 +423,7 @@ func (d *ECSDiscovery) listServiceARNs(ctx context.Context, clusters []string) (
 	return services, errg.Wait()
 }
 
-// describeServices returns a map of service name to service.
-// Uses concurrent requests limited by RequestConcurrency to respect AWS API throttling.
-// Services are described in batches of 10 to respect AWS API limits (DescribeServices allows up to 10 services per call).
+// describeServices 并发批量 DescribeServices（每批最多 10 个），返回服务名→Service 映射。
 func (d *ECSDiscovery) describeServices(ctx context.Context, clusterARN string, serviceARNS []string) (map[string]types.Service, error) {
 	mu := sync.Mutex{}
 	services := make(map[string]types.Service)
@@ -462,10 +455,7 @@ func (d *ECSDiscovery) describeServices(ctx context.Context, clusterARN string, 
 	return services, errg.Wait()
 }
 
-// listTaskARNs returns a map of clustersARN to a slice of task ARNs.
-// Uses concurrent requests limited by RequestConcurrency to respect AWS API throttling.
-// Tasks are listed in batches of 100 to respect AWS API limits (ListTasks allows up to 100 tasks per call).
-// This method also uses pagination to handle cases where there are more than 100 tasks in a cluster.
+// listTaskARNs 并发分页列出各集群任务 ARN，支持超过 100 个任务的分页场景。
 func (d *ECSDiscovery) listTaskARNs(ctx context.Context, clusterARNs []string) (map[string][]string, error) {
 	mu := sync.Mutex{}
 	tasks := make(map[string][]string)
@@ -505,9 +495,7 @@ func (d *ECSDiscovery) listTaskARNs(ctx context.Context, clusterARNs []string) (
 	return tasks, errg.Wait()
 }
 
-// describeTasks returns a slice of tasks.
-// Uses concurrent requests limited by RequestConcurrency to respect AWS API throttling.
-// Tasks are described in batches of 100 to respect AWS API limits (DescribeTasks allows up to 100 tasks per call).
+// describeTasks 并发批量 DescribeTasks（每批最多 100 个），返回任务详情列表。
 func (d *ECSDiscovery) describeTasks(ctx context.Context, clusterARN string, taskARNs []string) ([]types.Task, error) {
 	mu := sync.Mutex{}
 	var tasks []types.Task
@@ -535,9 +523,7 @@ func (d *ECSDiscovery) describeTasks(ctx context.Context, clusterARN string, tas
 	return tasks, errg.Wait()
 }
 
-// describeContainerInstances returns a map of container instance ARN to EC2 instance ID
-// Uses concurrent requests limited by RequestConcurrency to respect AWS API throttling.
-// Container instances are described in batches of 100 to respect AWS API limits (DescribeContainerInstances allows up to 100 container instances per call).
+// describeContainerInstances 将容器实例 ARN 映射到 EC2 实例 ID（批量并发）。
 func (d *ECSDiscovery) describeContainerInstances(ctx context.Context, clusterARN string, tasks []types.Task) (map[string]string, error) {
 	containerInstanceARNs := make([]string, 0, len(tasks))
 	for _, task := range tasks {
@@ -578,7 +564,7 @@ func (d *ECSDiscovery) describeContainerInstances(ctx context.Context, clusterAR
 	return containerInstToEC2, errg.Wait()
 }
 
-// ec2InstanceInfo holds information retrieved from EC2 DescribeInstances.
+// ec2InstanceInfo 保存从 EC2 DescribeInstances 获取的实例网络与标签信息。
 type ec2InstanceInfo struct {
 	privateIP    string
 	publicIP     string
@@ -587,9 +573,7 @@ type ec2InstanceInfo struct {
 	tags         map[string]string
 }
 
-// describeEC2Instances returns a map of EC2 instance ID to instance information.
-// Uses concurrent requests limited by RequestConcurrency to respect AWS API throttling.
-// This method does not use concurrency as it's a simple paginated call.
+// describeEC2Instances 分页查询 EC2 实例详情，返回实例 ID→ec2InstanceInfo 映射。
 func (d *ECSDiscovery) describeEC2Instances(ctx context.Context, instanceIDs []string) (map[string]ec2InstanceInfo, error) {
 	if len(instanceIDs) == 0 {
 		return make(map[string]ec2InstanceInfo), nil
@@ -643,9 +627,7 @@ func (d *ECSDiscovery) describeEC2Instances(ctx context.Context, instanceIDs []s
 	return instanceInfo, nil
 }
 
-// describeNetworkInterfaces returns a map of ENI ID to public IP address.
-// This is needed to get the public IP for tasks using awsvpc network mode, as the ENI is what gets the public IP, not the EC2 instance.
-// This method does not use concurrency as it's a simple paginated call.
+// describeNetworkInterfaces 查询 ENI 公网 IP，供 awsvpc 网络模式任务使用。
 func (d *ECSDiscovery) describeNetworkInterfaces(ctx context.Context, tasks []types.Task) (map[string]string, error) {
 	eniIDs := make([]string, 0, len(tasks))
 

@@ -11,22 +11,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// mskMetrics — AWS MSK 服务发现的 Prometheus 指标占位实现。
+
 package aws
 
 import (
 	"github.com/prometheus/prometheus/discovery"
 )
 
+// mskMetrics 持有刷新指标实例化器，供 MSK 服务发现复用。
 type mskMetrics struct {
 	refreshMetrics discovery.RefreshMetricsInstantiator
 }
 
 var _ discovery.DiscovererMetrics = (*mskMetrics)(nil)
 
-// Register implements discovery.DiscovererMetrics.
+// Register 实现 discovery.DiscovererMetrics，注册 Prometheus 指标（本实现为空操作）。
 func (*mskMetrics) Register() error {
 	return nil
 }
 
-// Unregister implements discovery.DiscovererMetrics.
+// Unregister 实现 discovery.DiscovererMetrics，注销已注册的指标。
 func (*mskMetrics) Unregister() {}

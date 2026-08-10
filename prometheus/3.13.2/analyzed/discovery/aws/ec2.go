@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ec2.go — AWS EC2 服务发现：通过 DescribeInstances 拉取实例并生成 scrape 目标。
+
 package aws
 
 import (
@@ -69,7 +71,7 @@ const (
 	ec2LabelSeparator            = ","
 )
 
-// DefaultEC2SDConfig is the default EC2 SD configuration.
+// DefaultEC2SDConfig 为 EC2 服务发现的默认配置（端口 80、刷新间隔 60s）。
 var DefaultEC2SDConfig = EC2SDConfig{
 	Port:             80,
 	RefreshInterval:  model.Duration(60 * time.Second),
@@ -80,7 +82,7 @@ func init() {
 	discovery.RegisterConfig(&EC2SDConfig{})
 }
 
-// EC2SDConfig is the configuration for EC2 based service discovery.
+// EC2SDConfig 定义基于 AWS EC2 的服务发现配置（区域、凭证、过滤器等）。
 type EC2SDConfig struct {
 	Endpoint        string         `yaml:"endpoint"`
 	Region          string         `yaml:"region"`
@@ -96,27 +98,27 @@ type EC2SDConfig struct {
 	HTTPClientConfig config.HTTPClientConfig `yaml:",inline"`
 }
 
-// NewDiscovererMetrics implements discovery.Config.
+// NewDiscovererMetrics 实现 discovery.Config，返回对应服务的发现器指标。
 func (*EC2SDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	return &ec2Metrics{
 		refreshMetrics: rmi,
 	}
 }
 
-// Name returns the name of the EC2 Config.
+// Name 返回配置机制名称 "ec2"。
 func (*EC2SDConfig) Name() string { return "ec2" }
 
-// NewDiscoverer returns a Discoverer for the EC2 Config.
+// NewDiscoverer 根据 EC2SDConfig 创建 EC2Discovery 发现器。
 func (c *EC2SDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discovery.Discoverer, error) {
 	return NewEC2Discovery(c, opts)
 }
 
-// SetDirectory joins any relative file paths with dir.
+// SetDirectory 将配置中的相对文件路径与给定目录拼接。
 func (c *EC2SDConfig) SetDirectory(dir string) {
 	c.HTTPClientConfig.SetDirectory(dir)
 }
 
-// UnmarshalYAML implements the yaml.Unmarshaler interface for the EC2 Config.
+// UnmarshalYAML 解析 YAML 配置，自动推断 AWS 区域并校验过滤器。
 func (c *EC2SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	*c = DefaultEC2SDConfig
 	type plain EC2SDConfig
@@ -139,32 +141,22 @@ func (c *EC2SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return c.HTTPClientConfig.Validate()
 }
 
+// ec2Client 抽象 EC2 发现所需的 Describe 类 API。
 type ec2Client interface {
 	DescribeAvailabilityZones(ctx context.Context, params *ec2.DescribeAvailabilityZonesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeAvailabilityZonesOutput, error)
 	DescribeInstances(ctx context.Context, params *ec2.DescribeInstancesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
 }
 
-// ec2ClientAdapter holds the EC2 API calls that AWS discovery actually uses as
-// method-value closures over the concrete *ec2.Client.
-//
-// It exists purely to keep the binary small. The Go linker, once reflection
-// (reflect.Value.Method/Call plus struct-field traversal, both reachable via
-// the YAML/config machinery) is live, conservatively retains every exported
-// method of any concrete type that is reachable through an interface — and a
-// type stored as a field of an interface-boxed struct counts. *ec2.Client has
-// ~470 operation methods; retaining all of them pulls in ~1,500 serializers and
-// roughly 21 MB. By capturing only the needed methods as func values, the
-// concrete *ec2.Client is hidden inside closure contexts (which reflection
-// cannot traverse) and never appears as a field of a boxed type, so dead-code
-// elimination drops the unused operations.
+// ec2ClientAdapter 将 EC2 发现实际调用的 API 封装为方法值闭包，避免
+// 具体 *ec2.Client 出现在接口装箱结构体字段中，从而减小二进制体积
+//（完整 EC2 客户端约 470 个操作，全部保留约增加 21 MB）。
 type ec2ClientAdapter struct {
 	describeAvailabilityZones func(ctx context.Context, params *ec2.DescribeAvailabilityZonesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeAvailabilityZonesOutput, error)
 	describeInstances         func(ctx context.Context, params *ec2.DescribeInstancesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
 	describeNetworkInterfaces func(ctx context.Context, params *ec2.DescribeNetworkInterfacesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeNetworkInterfacesOutput, error)
 }
 
-// newEC2ClientAdapter wraps a concrete *ec2.Client, capturing only the API
-// calls AWS discovery needs. See the ec2ClientAdapter doc comment for why.
+// newEC2ClientAdapter 包装 *ec2.Client，仅捕获发现流程所需的 API 方法。
 func newEC2ClientAdapter(c *ec2.Client) ec2ClientAdapter {
 	return ec2ClientAdapter{
 		describeAvailabilityZones: c.DescribeAvailabilityZones,
@@ -185,8 +177,7 @@ func (a ec2ClientAdapter) DescribeNetworkInterfaces(ctx context.Context, params 
 	return a.describeNetworkInterfaces(ctx, params, optFns...)
 }
 
-// EC2Discovery periodically performs EC2-SD requests. It implements
-// the Discoverer interface.
+// EC2Discovery 定期执行 EC2 服务发现请求，实现 Discoverer 接口。
 type EC2Discovery struct {
 	*refresh.Discovery
 	logger *slog.Logger
@@ -199,7 +190,7 @@ type EC2Discovery struct {
 	azToAZID map[string]string
 }
 
-// NewEC2Discovery returns a new EC2Discovery which periodically refreshes its targets.
+// NewEC2Discovery 创建 EC2Discovery，按 RefreshInterval 周期性刷新目标列表。
 func NewEC2Discovery(conf *EC2SDConfig, opts discovery.DiscovererOptions) (*EC2Discovery, error) {
 	m, ok := opts.Metrics.(*ec2Metrics)
 	if !ok {

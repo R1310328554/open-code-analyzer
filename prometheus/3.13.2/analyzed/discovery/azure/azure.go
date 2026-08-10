@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// azure.go — Azure 虚拟机服务发现：通过 ARM API 枚举 VM/VMSS 并解析网卡 IP。
+
 package azure
 
 import (
@@ -71,7 +73,7 @@ const (
 	authMethodWorkloadIdentity = "WorkloadIdentity"
 )
 
-// DefaultSDConfig is the default Azure SD configuration.
+// DefaultSDConfig 为 Azure 服务发现的默认配置（OAuth 认证、5 分钟刷新）。
 var DefaultSDConfig = SDConfig{
 	Port:                 80,
 	RefreshInterval:      model.Duration(5 * time.Minute),
@@ -89,7 +91,7 @@ var environments = map[string]cloud.Configuration{
 	"AZUREUSGOVERNMENTCLOUD": cloud.AzureGovernment,
 }
 
-// CloudConfigurationFromName returns cloud configuration based on the common name specified.
+// CloudConfigurationFromName 根据环境名称（如 AzurePublicCloud）返回 Azure 云配置。
 func CloudConfigurationFromName(name string) (cloud.Configuration, error) {
 	name = strings.ToUpper(name)
 	env, ok := environments[name]
@@ -104,7 +106,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
-// SDConfig is the configuration for Azure based service discovery.
+// SDConfig 定义基于 Azure Resource Manager 的服务发现配置。
 type SDConfig struct {
 	Environment          string             `yaml:"environment,omitempty"`
 	Port                 int                `yaml:"port"`
@@ -119,15 +121,15 @@ type SDConfig struct {
 	HTTPClientConfig config_util.HTTPClientConfig `yaml:",inline"`
 }
 
-// NewDiscovererMetrics implements discovery.Config.
+// NewDiscovererMetrics 实现 discovery.Config，返回对应服务的发现器指标。
 func (*SDConfig) NewDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	return newDiscovererMetrics(reg, rmi)
 }
 
-// Name returns the name of the Config.
+// Name 返回配置机制名称 "azure"。
 func (*SDConfig) Name() string { return "azure" }
 
-// NewDiscoverer returns a Discoverer for the Config.
+// NewDiscoverer 根据 SDConfig 创建 Azure Discovery 发现器。
 func (c *SDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discovery.Discoverer, error) {
 	return NewDiscovery(c, opts)
 }
@@ -139,7 +141,7 @@ func validateAuthParam(param, name string) error {
 	return nil
 }
 
-// UnmarshalYAML implements the yaml.Unmarshaler interface.
+// UnmarshalYAML 解析 YAML 配置并校验订阅 ID 与认证参数。
 func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	*c = DefaultSDConfig
 	type plain SDConfig
@@ -170,6 +172,7 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return c.HTTPClientConfig.Validate()
 }
 
+// Discovery 定期执行 Azure 服务发现，实现 Discoverer 接口。
 type Discovery struct {
 	*refresh.Discovery
 	logger  *slog.Logger
@@ -179,7 +182,7 @@ type Discovery struct {
 	metrics *azureMetrics
 }
 
-// NewDiscovery returns a new AzureDiscovery which periodically refreshes its targets.
+// NewDiscovery 创建 Discovery，按 RefreshInterval 周期性刷新 Azure VM 目标。
 func NewDiscovery(cfg *SDConfig, opts discovery.DiscovererOptions) (*Discovery, error) {
 	m, ok := opts.Metrics.(*azureMetrics)
 	if !ok {
@@ -220,7 +223,7 @@ type client interface {
 	getVMScaleSetVMNetworkInterfaceByID(ctx context.Context, networkInterfaceID, scaleSetName, instanceID string) (*armnetwork.Interface, error)
 }
 
-// azureClient represents multiple Azure Resource Manager providers.
+// azureClient 聚合 Azure 计算与网络 ARM 客户端，供发现流程调用。
 type azureClient struct {
 	nic    interfacesClientAdapter
 	vm     virtualMachinesClientAdapter
@@ -231,11 +234,9 @@ type azureClient struct {
 
 var _ client = &azureClient{}
 
-// The *ClientAdapter types below capture only the operations discovery uses as
-// closures, hiding the concrete SDK clients from reflection so dead-code
-// elimination can drop the unused operations and shrink the binary.
+// 以下 *ClientAdapter 类型仅保留发现所需 ARM 操作，隐藏具体 SDK 客户端以减小二进制。
 
-// virtualMachinesClientAdapter adapts *armcompute.VirtualMachinesClient.
+// virtualMachinesClientAdapter 适配虚拟机 List/ListAll 分页 API。
 type virtualMachinesClientAdapter struct {
 	newListAllPager func(options *armcompute.VirtualMachinesClientListAllOptions) *runtime.Pager[armcompute.VirtualMachinesClientListAllResponse]
 	newListPager    func(resourceGroupName string, options *armcompute.VirtualMachinesClientListOptions) *runtime.Pager[armcompute.VirtualMachinesClientListResponse]
@@ -248,17 +249,17 @@ func newVirtualMachinesClientAdapter(c *armcompute.VirtualMachinesClient) virtua
 	}
 }
 
-// NewListAllPager lists all virtual machines in the subscription.
+// NewListAllPager 创建订阅级虚拟机分页迭代器。
 func (a virtualMachinesClientAdapter) NewListAllPager(options *armcompute.VirtualMachinesClientListAllOptions) *runtime.Pager[armcompute.VirtualMachinesClientListAllResponse] {
 	return a.newListAllPager(options)
 }
 
-// NewListPager lists the virtual machines in a resource group.
+// NewListPager 创建资源组内虚拟机分页迭代器。
 func (a virtualMachinesClientAdapter) NewListPager(resourceGroupName string, options *armcompute.VirtualMachinesClientListOptions) *runtime.Pager[armcompute.VirtualMachinesClientListResponse] {
 	return a.newListPager(resourceGroupName, options)
 }
 
-// virtualMachineScaleSetsClientAdapter adapts *armcompute.VirtualMachineScaleSetsClient.
+// virtualMachineScaleSetsClientAdapter 适配虚拟机规模集 List API。
 type virtualMachineScaleSetsClientAdapter struct {
 	newListAllPager func(options *armcompute.VirtualMachineScaleSetsClientListAllOptions) *runtime.Pager[armcompute.VirtualMachineScaleSetsClientListAllResponse]
 	newListPager    func(resourceGroupName string, options *armcompute.VirtualMachineScaleSetsClientListOptions) *runtime.Pager[armcompute.VirtualMachineScaleSetsClientListResponse]
@@ -281,7 +282,7 @@ func (a virtualMachineScaleSetsClientAdapter) NewListPager(resourceGroupName str
 	return a.newListPager(resourceGroupName, options)
 }
 
-// virtualMachineScaleSetVMsClientAdapter adapts *armcompute.VirtualMachineScaleSetVMsClient.
+// virtualMachineScaleSetVMsClientAdapter 适配规模集内 VM 实例 List API。
 type virtualMachineScaleSetVMsClientAdapter struct {
 	newListPager func(resourceGroupName, virtualMachineScaleSetName string, options *armcompute.VirtualMachineScaleSetVMsClientListOptions) *runtime.Pager[armcompute.VirtualMachineScaleSetVMsClientListResponse]
 }
@@ -297,7 +298,7 @@ func (a virtualMachineScaleSetVMsClientAdapter) NewListPager(resourceGroupName, 
 	return a.newListPager(resourceGroupName, virtualMachineScaleSetName, options)
 }
 
-// interfacesClientAdapter adapts *armnetwork.InterfacesClient.
+// interfacesClientAdapter 适配网络接口 Get API（含 VMSS 网卡）。
 type interfacesClientAdapter struct {
 	get func(ctx context.Context, resourceGroupName, networkInterfaceName string, options *armnetwork.InterfacesClientGetOptions) (armnetwork.InterfacesClientGetResponse, error)
 
@@ -311,17 +312,17 @@ func newInterfacesClientAdapter(c *armnetwork.InterfacesClient) interfacesClient
 	}
 }
 
-// Get retrieves a network interface.
+// Get 按资源 ID 获取独立 VM 的网络接口。
 func (a interfacesClientAdapter) Get(ctx context.Context, resourceGroupName, networkInterfaceName string, options *armnetwork.InterfacesClientGetOptions) (armnetwork.InterfacesClientGetResponse, error) {
 	return a.get(ctx, resourceGroupName, networkInterfaceName, options)
 }
 
-// GetVirtualMachineScaleSetNetworkInterface retrieves a scale set VM network interface.
+// GetVirtualMachineScaleSetNetworkInterface 获取规模集 VM 的网络接口。
 func (a interfacesClientAdapter) GetVirtualMachineScaleSetNetworkInterface(ctx context.Context, resourceGroupName, virtualMachineScaleSetName, virtualMachineIndex, networkInterfaceName string, options *armnetwork.InterfacesClientGetVirtualMachineScaleSetNetworkInterfaceOptions) (armnetwork.InterfacesClientGetVirtualMachineScaleSetNetworkInterfaceResponse, error) {
 	return a.getVirtualMachineScaleSetNetworkInterface(ctx, resourceGroupName, virtualMachineScaleSetName, virtualMachineIndex, networkInterfaceName, options)
 }
 
-// createAzureClient is a helper method for creating an Azure compute client to ARM.
+// createAzureClient 根据 SDConfig 创建带凭证的 Azure ARM 客户端。
 func (d *Discovery) createAzureClient() (client, error) {
 	cloudConfiguration, err := CloudConfigurationFromName(d.cfg.Environment)
 	if err != nil {
@@ -423,7 +424,7 @@ func newCredential(cfg SDConfig, policyClientOptions policy.ClientOptions) (azco
 	return credential, nil
 }
 
-// virtualMachine represents an Azure virtual machine (which can also be created by a VMSS).
+// virtualMachine 表示 Azure 虚拟机（含独立 VM 与规模集实例）。
 type virtualMachine struct {
 	ID                string
 	Name              string
@@ -438,7 +439,7 @@ type virtualMachine struct {
 	Size              string
 }
 
-// Create a new azureResource object from an ID string.
+// newAzureResource 从 ARM 资源 ID 字符串解析订阅/资源组/资源名。
 func newAzureResourceFromID(id string, logger *slog.Logger) (*arm.ResourceID, error) {
 	if logger == nil {
 		logger = promslog.NewNopLogger()
@@ -783,8 +784,7 @@ func mapFromVMScaleSetVM(vm armcompute.VirtualMachineScaleSetVM, scaleSetName st
 
 var errorNotFound = errors.New("network interface does not exist")
 
-// getVMNetworkInterfaceByID gets the network interface.
-// If a 404 is returned from the Azure API, `errorNotFound` is returned.
+// getVMNetworkInterfaceByID 获取 VM 网卡；404 时返回 errorNotFound。
 func (client *azureClient) getVMNetworkInterfaceByID(ctx context.Context, networkInterfaceID string) (*armnetwork.Interface, error) {
 	r, err := newAzureResourceFromID(networkInterfaceID, client.logger)
 	if err != nil {
@@ -803,8 +803,7 @@ func (client *azureClient) getVMNetworkInterfaceByID(ctx context.Context, networ
 	return &resp.Interface, nil
 }
 
-// getVMScaleSetVMNetworkInterfaceByID gets the network interface.
-// If a 404 is returned from the Azure API, `errorNotFound` is returned.
+// getVMScaleSetVMNetworkInterfaceByID 获取规模集 VM 网卡；404 时返回 errorNotFound。
 func (client *azureClient) getVMScaleSetVMNetworkInterfaceByID(ctx context.Context, networkInterfaceID, scaleSetName, instanceID string) (*armnetwork.Interface, error) {
 	r, err := newAzureResourceFromID(networkInterfaceID, client.logger)
 	if err != nil {
@@ -833,7 +832,7 @@ func (d *Discovery) addToCache(nicID string, netInt *armnetwork.Interface) {
 }
 
 // getFromCache will get the network Interface for the specified nicID
-// If the cache is disabled nothing will happen.
+// 若缓存未启用则跳过写入（用于网卡 IP 查询结果缓存）。
 func (d *Discovery) getFromCache(nicID string) (*armnetwork.Interface, bool) {
 	net, found := d.cache.Get(nicID)
 	return net, found

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// lightsail.go — AWS Lightsail 服务发现：通过 GetInstances 发现轻量实例。
+
 package aws
 
 import (
@@ -56,7 +58,7 @@ const (
 	lightsailLabelSeparator           = ","
 )
 
-// DefaultLightsailSDConfig is the default Lightsail SD configuration.
+// DefaultLightsailSDConfig 为 Lightsail 服务发现的默认配置。
 var DefaultLightsailSDConfig = LightsailSDConfig{
 	Port:             80,
 	RefreshInterval:  model.Duration(60 * time.Second),
@@ -67,7 +69,7 @@ func init() {
 	discovery.RegisterConfig(&LightsailSDConfig{})
 }
 
-// LightsailSDConfig is the configuration for Lightsail based service discovery.
+// LightsailSDConfig 定义基于 AWS Lightsail 的服务发现配置。
 type LightsailSDConfig struct {
 	Endpoint        string         `yaml:"endpoint"`
 	Region          string         `yaml:"region"`
@@ -82,27 +84,27 @@ type LightsailSDConfig struct {
 	HTTPClientConfig config.HTTPClientConfig `yaml:",inline"`
 }
 
-// NewDiscovererMetrics implements discovery.Config.
+// NewDiscovererMetrics 实现 discovery.Config，返回对应服务的发现器指标。
 func (*LightsailSDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	return &lightsailMetrics{
 		refreshMetrics: rmi,
 	}
 }
 
-// Name returns the name of the Lightsail Config.
+// Name 返回配置机制名称 "lightsail"。
 func (*LightsailSDConfig) Name() string { return "lightsail" }
 
-// NewDiscoverer returns a Discoverer for the Lightsail Config.
+// NewDiscoverer 根据 LightsailSDConfig 创建 LightsailDiscovery。
 func (c *LightsailSDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discovery.Discoverer, error) {
 	return NewLightsailDiscovery(c, opts)
 }
 
-// SetDirectory joins any relative file paths with dir.
+// SetDirectory 将配置中的相对文件路径与给定目录拼接。
 func (c *LightsailSDConfig) SetDirectory(dir string) {
 	c.HTTPClientConfig.SetDirectory(dir)
 }
 
-// UnmarshalYAML implements the yaml.Unmarshaler interface for the Lightsail Config.
+// UnmarshalYAML 解析 YAML 配置并推断 AWS 区域。
 func (c *LightsailSDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	*c = DefaultLightsailSDConfig
 	type plain LightsailSDConfig
@@ -119,11 +121,7 @@ func (c *LightsailSDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return c.HTTPClientConfig.Validate()
 }
 
-// lightsailClientAdapter captures only the Lightsail API calls AWS discovery
-// uses as method-value closures, keeping the concrete *lightsail.Client out of
-// any interface-boxed struct field. See ec2ClientAdapter for the full
-// rationale: this stops the linker from retaining the entire Lightsail API
-// surface (~3.4 MB).
+// lightsailClientAdapter 仅捕获 Lightsail 发现所需 GetInstances API，减小二进制体积（约 3.4 MB）。
 type lightsailClientAdapter struct {
 	getInstances func(ctx context.Context, params *lightsail.GetInstancesInput, optFns ...func(*lightsail.Options)) (*lightsail.GetInstancesOutput, error)
 }
@@ -136,15 +134,14 @@ func (a *lightsailClientAdapter) GetInstances(ctx context.Context, params *light
 	return a.getInstances(ctx, params, optFns...)
 }
 
-// LightsailDiscovery periodically performs Lightsail-SD requests. It implements
-// the Discoverer interface.
+// LightsailDiscovery 定期执行 Lightsail 服务发现，实现 Discoverer 接口。
 type LightsailDiscovery struct {
 	*refresh.Discovery
 	cfg       *LightsailSDConfig
 	lightsail *lightsailClientAdapter
 }
 
-// NewLightsailDiscovery returns a new LightsailDiscovery which periodically refreshes its targets.
+// NewLightsailDiscovery 创建 LightsailDiscovery，周期性刷新实例目标。
 func NewLightsailDiscovery(conf *LightsailSDConfig, opts discovery.DiscovererOptions) (*LightsailDiscovery, error) {
 	m, ok := opts.Metrics.(*lightsailMetrics)
 	if !ok {

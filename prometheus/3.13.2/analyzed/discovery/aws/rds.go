@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// rds.go — AWS RDS 服务发现：发现 DB 实例与 Aurora 集群并导出丰富元数据标签。
+
 package aws
 
 import (
@@ -205,7 +207,7 @@ const (
 	rdsLabelInstanceTag = rdsLabelInstance + "tag_"
 )
 
-// DefaultRDSSDConfig is the default RDS SD configuration.
+// DefaultRDSSDConfig 为 RDS 服务发现的默认配置。
 var DefaultRDSSDConfig = RDSSDConfig{
 	Port:               80,
 	RefreshInterval:    model.Duration(60 * time.Second),
@@ -217,7 +219,7 @@ func init() {
 	discovery.RegisterConfig(&RDSSDConfig{})
 }
 
-// RDSSDConfig is the configuration for RDS based service discovery.
+// RDSSDConfig 定义基于 AWS RDS 的服务发现配置。
 type RDSSDConfig struct {
 	Region          string         `yaml:"region"`
 	Endpoint        string         `yaml:"endpoint"`
@@ -235,27 +237,27 @@ type RDSSDConfig struct {
 	HTTPClientConfig   config.HTTPClientConfig `yaml:",inline"`
 }
 
-// NewDiscovererMetrics implements discovery.Config.
+// NewDiscovererMetrics 实现 discovery.Config，返回对应服务的发现器指标。
 func (*RDSSDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	return &rdsMetrics{
 		refreshMetrics: rmi,
 	}
 }
 
-// Name returns the name of the RDS Config.
+// Name 返回配置机制名称 "rds"。
 func (*RDSSDConfig) Name() string { return "rds" }
 
-// NewDiscoverer returns a Discoverer for the RDS Config.
+// NewDiscoverer 根据 RDSSDConfig 创建 RDSDiscovery。
 func (c *RDSSDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discovery.Discoverer, error) {
 	return NewRDSDiscovery(c, opts)
 }
 
-// SetDirectory joins any relative file paths with dir.
+// SetDirectory 将配置中的相对文件路径与给定目录拼接。
 func (c *RDSSDConfig) SetDirectory(dir string) {
 	c.HTTPClientConfig.SetDirectory(dir)
 }
 
-// UnmarshalYAML implements the yaml.Unmarshaler interface for the RDS Config.
+// UnmarshalYAML 解析 YAML 配置并推断 AWS 区域。
 func (c *RDSSDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	*c = DefaultRDSSDConfig
 	type plain RDSSDConfig
@@ -277,10 +279,7 @@ type rdsClient interface {
 	DescribeDBInstances(context.Context, *rds.DescribeDBInstancesInput, ...func(*rds.Options)) (*rds.DescribeDBInstancesOutput, error)
 }
 
-// rdsClientAdapter captures only the RDS API calls AWS discovery uses as
-// method-value closures, keeping the concrete *rds.Client out of any
-// interface-boxed struct field. See ec2ClientAdapter for the full rationale:
-// this stops the linker from retaining the entire RDS API surface (~5 MB).
+// rdsClientAdapter 仅捕获 RDS 发现所需 API，避免保留完整 RDS 客户端（约 5 MB）。
 type rdsClientAdapter struct {
 	describeDBClusters  func(context.Context, *rds.DescribeDBClustersInput, ...func(*rds.Options)) (*rds.DescribeDBClustersOutput, error)
 	describeDBInstances func(context.Context, *rds.DescribeDBInstancesInput, ...func(*rds.Options)) (*rds.DescribeDBInstancesOutput, error)
@@ -301,8 +300,7 @@ func (a rdsClientAdapter) DescribeDBInstances(ctx context.Context, params *rds.D
 	return a.describeDBInstances(ctx, params, optFns...)
 }
 
-// RDSDiscovery periodically performs RDS-SD requests. It implements
-// the Discoverer interface.
+// RDSDiscovery 定期执行 RDS 服务发现，实现 Discoverer 接口。
 type RDSDiscovery struct {
 	*refresh.Discovery
 	logger *slog.Logger
@@ -310,7 +308,7 @@ type RDSDiscovery struct {
 	rds    rdsClient
 }
 
-// NewRDSDiscovery returns a new RDSDiscovery which periodically refreshes its targets.
+// NewRDSDiscovery 创建 RDSDiscovery，周期性刷新数据库实例/集群目标。
 func NewRDSDiscovery(conf *RDSSDConfig, opts discovery.DiscovererOptions) (*RDSDiscovery, error) {
 	m, ok := opts.Metrics.(*rdsMetrics)
 	if !ok {

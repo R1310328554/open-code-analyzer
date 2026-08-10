@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// metrics.go — Azure 服务发现的 Prometheus 指标（刷新失败计数与缓存命中）。
+
 package azure
 
 import (
@@ -21,6 +23,7 @@ import (
 
 var _ discovery.DiscovererMetrics = (*azureMetrics)(nil)
 
+// azureMetrics 注册 Azure SD 刷新失败与网卡缓存命中 Prometheus 指标。
 type azureMetrics struct {
 	refreshMetrics discovery.RefreshMetricsInstantiator
 
@@ -30,6 +33,7 @@ type azureMetrics struct {
 	metricRegisterer discovery.MetricRegisterer
 }
 
+// newDiscovererMetrics 构造 azureMetrics 并注册 failures/cache_hit 计数器。
 func newDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	m := &azureMetrics{
 		refreshMetrics: rmi,
@@ -53,12 +57,12 @@ func newDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetric
 	return m
 }
 
-// Register implements discovery.DiscovererMetrics.
+// Register 实现 discovery.DiscovererMetrics，注册 Prometheus 指标（本实现为空操作）。
 func (m *azureMetrics) Register() error {
 	return m.metricRegisterer.RegisterMetrics()
 }
 
-// Unregister implements discovery.DiscovererMetrics.
+// Unregister 实现 discovery.DiscovererMetrics，注销已注册的指标。
 func (m *azureMetrics) Unregister() {
 	m.metricRegisterer.UnregisterMetrics()
 }
