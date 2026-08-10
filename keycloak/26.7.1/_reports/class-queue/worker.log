@@ -1678,3 +1678,18 @@
 2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/JpaClientProviderFactory.java wave57a expiration impl + login failure JPA + early models/jpa
 2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/JpaClientScopeProviderFactory.java wave57a expiration impl + login failure JPA + early models/jpa
 2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/JpaDeploymentStateProviderFactory.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/CompositeRoleEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/CredentialEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/DefaultClientScopeRealmMappingEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/FederatedIdentityEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/GroupAttributeEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/GroupEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/GroupRoleMappingEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/IdentityProviderEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/IdentityProviderMapperEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/IssuedVerifiableCredentialEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/MigrationModelEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/OrganizationDomainEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/OrganizationEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/OrganizationInvitationEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/OutboxEntryEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
