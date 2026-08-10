@@ -65,6 +65,11 @@ import static org.keycloak.models.jpa.session.JpaSessionUtil.offlineToString;
 import static org.keycloak.utils.StreamsUtil.closing;
 
 /**
+ * 基于 JPA 的用户/客户端会话持久化 Provider。
+ * <p>
+ * 将在线/离线用户会话及关联 client session 写入数据库（OFFLINE_USER_SESSION /
+ * OFFLINE_CLIENT_SESSION 表），支持惰性加载、乐观锁、批量过期清理及只读查询优化。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JpaUserSessionPersisterProvider implements UserSessionPersisterProvider {
@@ -72,8 +77,11 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
 
     private final KeycloakSession session;
     private final EntityManager em;
+    /** 过期清理时每批删除的会话数量上限。 */
     private final int expirationBatch;
+    /** 负缓存：已知 DB 中不存在的 user session 键，避免重复查询。 */
     private final Set<PersistentUserSessionEntity.Key> userSessionNotInDatabaseCache = new HashSet<>();
+    /** 负缓存：已知 DB 中不存在的 client session 键。 */
     private final Set<PersistentClientSessionEntity.Key> clientSessionNotInDatabaseCache = new HashSet<>();
 
     public JpaUserSessionPersisterProvider(KeycloakSession session, EntityManager em, int expirationBatch) {
@@ -133,7 +141,7 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
         }
 
         if (entity != null) {
-            // client session can already exist in some circumstances (EG. in case it was already present, but expired in the infinispan, but not yet expired in the DB)
+            // client session 可能已存在（如 Infinispan 已过期但 DB 尚未清理）
             exists = true;
         } else {
             entity = new PersistentClientSessionEntity();
@@ -185,7 +193,7 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
             em.remove(sessionEntity);
 
             if (offline) {
-                // Remove userSession if it was last clientSession
+                // 离线模式下移除最后一个 client session 时同步删除 user session
                 if (hasNoClientSessions(userSessionId, offlineStr)) {
                     removeUserSessionFromDatabase(userSessionId, offlineStr);
                 }
@@ -219,10 +227,9 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
     }
 
     /**
-     * Remove client sessions for a specific client.
+     * 删除指定客户端的所有 client session。
      * <p>
-     * We need to remove the client sessions for clients that are no longer present, as we would otherwise
-     * look up those non-existent clients again and again, and this would be slow as they would never be in the cache.
+     * 客户端被移除后须清理残留 session，否则每次加载都会尝试查找已不存在的 client，造成性能问题。
      */
     private void onClientRemoved(String clientUUID) {
         logger.debugf("Client sessions removed for client %s",  clientUUID);
@@ -270,7 +277,7 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
             return;
         }
 
-        // The offline sessions do not have remember_me flag. We do not waste time migrating them.
+        // 离线会话无 remember_me 标志，跳过迁移以节省开销
         UserSessionExpirationLogic.migrateRememberMe(sessionFactory, realm, expiration, currentTime, expirationBatch);
 
         UserSessionExpirationLogic.expireRegularSessions(sessionFactory, realm, currentTime, expiration, false, expirationBatch);
@@ -327,14 +334,13 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
         String offlineStr = offlineToString(offline);
         PersistentUserSessionEntity entity = em.find(PersistentUserSessionEntity.class, new PersistentUserSessionEntity.Key(userSessionId, offlineStr));
         if (entity == null) {
-            // If the entity has already been deleted, there is no need to lock it, as this transaction will fail anyway if it is modified concurrently
-            // When caches are enabled, this might have been retrieved from the cache, and the entry doesn't exist in the database yet, and it can lead to conflicts if it is not locked.
+            // 实体已删除则无需加锁；启用缓存时可能尚未写入 DB，不加锁会导致并发冲突
             logger.debugf("User session %s/%s not locked as it wasn't found (mode: %b)", userSessionId, offlineStr, isDelete);
             return isDelete;
         }
         int knownVersion = entity.getVersion();
 
-        // Fetch the entry and lock the row but only if it is not locked already
+        // 读取并加悲观写锁，但仅在尚未被锁定时生效
         Integer currentVersion = em.createQuery("select version from PersistentUserSessionEntity where userSessionId = :userSessionId and offline = :offline", Integer.class)
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .setHint(LOCK_TIMEOUT, -2)
@@ -478,8 +484,7 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
 
         PersistentClientSessionEntity entity = em.find(PersistentClientSessionEntity.class, key);
         if (entity == null) {
-            // If the entity has already been deleted, there is no need to lock it, as this transaction will fail anyway if it is modified concurrently
-            // When caches are enabled, this might have been retrieved from the cache, and the entry doesn't exist in the database yet, and it can lead to conflicts if it is not locked.
+            // 实体已删除则无需加锁；启用缓存时可能尚未写入 DB，不加锁会导致并发冲突
             logger.debugf("Client session %s/%s/%s not locked as it wasn't found (mode: %b)", userSessionId, clientId, offline, isDelete);
             return isDelete;
         }
@@ -539,11 +544,10 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
     }
 
     /**
-     * Only client sessions from the user sessions obtained from the {@code query} are loaded.
+     * 仅加载 query 返回的用户会话所关联的 client session。
      */
     private Stream<UserSessionModel> loadExactUserSessionsWithClientSessions(TypedQuery<PersistentUserSessionEntity> query, String offlineStr) {
-        // Take the results returned by the database in chunks and enrich them.
-        // The chunking avoids loading all the entries, as the caller usually adds pagination for the frontend.
+        // 分块处理 DB 结果并填充 client session，避免一次性加载全部（调用方通常有分页）
         return closing(StreamsUtil.chunkedStream(closing(query.getResultStream()).map(this::toAdapter).filter(Objects::nonNull), 100)
                 .flatMap(batchedUserSessions -> {
                     Set<String> removedClientUUIDs = new HashSet<>();
@@ -571,8 +575,7 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
     }
 
     private Stream<UserSessionModel> readOnlyLoadExactUserSessionsWithClientSessions(TypedQuery<ImmutablePersistentUserSessionEntity> query, RealmModel realm, String offlineStr) {
-        // Take the results returned by the database in chunks and enrich them.
-        // The chunking avoids loading all the entries, as the caller usually adds pagination for the frontend.
+        // 分块处理只读查询结果并填充 client session
         var stream = StreamsUtil.closing(query.getResultStream())
                 .map(entity -> new PersistentUserSessionAdapter(session, entity, realm, entity.userId(), new HashMap<>()));
         return closing(StreamsUtil.chunkedStream(stream, 100)
@@ -590,7 +593,7 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
 
                     clientStream.forEach(clientSessionEntity -> {
                         var userSession = sessionsById.get(clientSessionEntity.getUserSessionId());
-                        // check if we have a user session for the client session
+                        // 确认 client session 对应的 user session 仍在当前批次中
                         if (userSession == null) {
                             return;
                         }
@@ -612,8 +615,7 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
     }
 
     /**
-     * The IDs of user sessions returned by the query is taken as limits, and all client sessions are loaded that belong
-     * to user sessions whose ID is in between the minimum and maximum ID from this result.
+     * 以 query 返回的 user session ID 范围为界，加载该区间内所有 client session。
      */
     private Stream<UserSessionModel> loadUserSessionsWithClientSessions(TypedQuery<PersistentUserSessionEntity> query, String offlineStr) {
         List<PersistentUserSessionAdapter> userSessionAdapters = closing(query.getResultStream()
@@ -651,11 +653,11 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
     private void processClientSessions(Map<String, OfflineUserSessionModel> sessionsById, Set<String> removedClientUUIDs, TypedQuery<PersistentClientSessionEntity> queryClientSessions) {
         closing(queryClientSessions.getResultStream()).forEach(clientSession -> {
             OfflineUserSessionModel userSession = sessionsById.get(clientSession.getUserSessionId());
-            // check if we have a user session for the client session
+            // 确认 client session 对应的 user session 存在
             if (userSession != null) {
                 boolean added = addClientSessionToAuthenticatedClientSessionsIfPresent(userSession, clientSession);
                 if (!added) {
-                    // client was removed in the meantime
+                    // 客户端已被并发删除
                     removedClientUUIDs.add(clientSession.getClientId());
                 }
             }
@@ -679,7 +681,7 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
 
     private PersistentUserSessionAdapter toAdapter(PersistentUserSessionEntity entity) {
         RealmModel realm = session.realms().getRealm(entity.getRealmId());
-        if (realm == null) {    // Realm has been deleted concurrently, ignore the entity
+        if (realm == null) {    // realm 已被并发删除，忽略该实体
             return null;
         }
         return toAdapter(realm, entity);
@@ -769,7 +771,7 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
 
     private PersistentAuthenticatedClientSessionAdapter toAdapter(RealmModel realm, ClientModel client, UserSessionModel userSession, PersistentClientSessionEntity entity) {
         if (client == null) {
-            // can be null if client is not found anymore
+            // client 可能已被删除，尝试按 storage ID 重新查找
             client = realm.getClientById(JpaSessionUtil.getClientId(entity));
             if (client == null) {
                 logger.debugf("Client not found for clientId %s clientStorageProvider %s externalClientId %s",
@@ -846,7 +848,7 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
             query.setParameter("externalClientId", clientStorageId.getExternalId());
         }
 
-        // Note, that realm is unused here, since the clientModel id already determines the offline user-sessions bound to an owning realm.
+        // realm 参数此处未使用，clientModel ID 已隐含所属 realm
         query.setParameter("offline", offlineStr);
 
         Number n = (Number) query.getSingleResult();
@@ -877,7 +879,7 @@ public class JpaUserSessionPersisterProvider implements UserSessionPersisterProv
 
     @Override
     public void close() {
-        // NOOP
+        // 无资源需释放
     }
 
     private Stream<PersistentAuthenticatedClientSessionAdapter> fetchClientSessions(PersistentUserSessionAdapter userSession, String offlineStr) {

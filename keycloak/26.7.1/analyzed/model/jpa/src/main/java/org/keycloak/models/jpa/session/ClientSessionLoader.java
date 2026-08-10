@@ -25,9 +25,15 @@ import java.util.stream.Stream;
 import org.keycloak.models.AuthenticatedClientSessionModel;
 import org.keycloak.models.session.PersistentAuthenticatedClientSessionAdapter;
 
+/**
+ * 客户端会话惰性加载器：首次访问 {@link org.keycloak.models.UserSessionModel#getAuthenticatedClientSessions()}
+ * 时从数据库批量填充 client session 映射。
+ */
 class ClientSessionLoader implements Consumer<Map<String, AuthenticatedClientSessionModel>> {
 
+    /** 是否已完成加载（保证只执行一次）。 */
     private boolean loaded = false;
+    /** 提供 client session 适配器流的工厂。 */
     private final Supplier<Stream<PersistentAuthenticatedClientSessionAdapter>> supplier;
 
     ClientSessionLoader(Supplier<Stream<PersistentAuthenticatedClientSessionAdapter>> supplier) {
@@ -41,6 +47,7 @@ class ClientSessionLoader implements Consumer<Map<String, AuthenticatedClientSes
         if (loaded) {
             return;
         }
+        // 按 client ID 填入映射，仅加载一次
         supplier.get().forEach(m -> clientSessions.put(m.getClient().getId(), m));
         loaded = true;
     }

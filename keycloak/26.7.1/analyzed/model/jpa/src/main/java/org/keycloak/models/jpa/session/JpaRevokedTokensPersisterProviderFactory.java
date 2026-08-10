@@ -27,10 +27,15 @@ import org.keycloak.models.session.RevokedTokenPersisterProvider;
 import org.keycloak.models.session.RevokedTokensPersisterProviderFactory;
 
 /**
+ * JPA 已吊销令牌 Persister Provider 工厂。
+ * <p>
+ * SPI ID 为 {@value #ID}，通过 {@link JpaConnectionProvider} 获取 EntityManager。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JpaRevokedTokensPersisterProviderFactory implements RevokedTokensPersisterProviderFactory {
 
+    /** SPI provider ID。 */
     public static final String ID = "jpa";
 
     @Override

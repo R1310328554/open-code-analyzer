@@ -33,33 +33,44 @@ import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.Table;
 
 /**
+ * User Federation Mapper JPA 实体，映射 USER_FEDERATION_MAPPER 表。
+ * <p>
+ * 将外部用户存储（LDAP 等）的属性/角色映射到 Keycloak 内部模型；
+ * {@link #federationMapperType} 标识 mapper SPI 类型，{@link #config} 存放运行时配置。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @Entity
 @Table(name="USER_FEDERATION_MAPPER")
 public class UserFederationMapperEntity {
 
+    /** Mapper UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
-    @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
+    @Access(AccessType.PROPERTY) // 关联常只取 id 不加载实体，PROPERTY 访问可避免额外 SQL
     protected String id;
 
+    /** Admin Console 展示名称。 */
     @Column(name="NAME")
     protected String name;
 
+    /** 所属 User Federation Provider。 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "FEDERATION_PROVIDER_ID")
     protected UserFederationProviderEntity federationProvider;
 
+    /** Mapper SPI 类型（如 hardcoded-role、user-attribute-ldap-mapper）。 */
     @Column(name = "FEDERATION_MAPPER_TYPE")
     protected String federationMapperType;
 
+    /** Mapper 运行时配置项（name/value 键值对）。 */
     @ElementCollection
     @MapKeyColumn(name="NAME")
     @Column(name="VALUE")
     @CollectionTable(name="USER_FEDERATION_MAPPER_CONFIG", joinColumns={ @JoinColumn(name="USER_FEDERATION_MAPPER_ID") })
     private Map<String, String> config;
 
+    /** 所属 realm。 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "REALM_ID")
     private RealmEntity realm;

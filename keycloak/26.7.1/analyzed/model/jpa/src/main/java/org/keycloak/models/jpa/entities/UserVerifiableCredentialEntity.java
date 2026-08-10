@@ -14,6 +14,12 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 
+/**
+ * 用户可验证凭证 JPA 实体，映射 USER_VER_CREDENTIAL 表。
+ * <p>
+ * 存储用户在特定 client scope 下的可验证凭证（Verifiable Credential）快照；
+ * 同一用户 + client scope 唯一（{@code USER_ID + CLIENT_SCOPE_ID} 约束）。
+ */
 @Entity
 @Table(name="USER_VER_CREDENTIAL", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"USER_ID", "CLIENT_SCOPE_ID"})
@@ -26,30 +32,38 @@ import jakarta.persistence.Version;
 })
 public class UserVerifiableCredentialEntity {
 
+    /** 凭证 UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
-    @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
+    @Access(AccessType.PROPERTY) // 关联常只取 id 不加载实体，PROPERTY 访问可避免额外 SQL
     protected String id;
 
+    /** 所属用户。 */
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name="USER_ID")
     protected UserEntity user;
 
+    /** 关联的 client scope ID。 */
     @Column(name="CLIENT_SCOPE_ID")
     protected String clientScopeId;
 
+    /** 凭证版本/修订号。 */
     @Column(name="REVISION")
     protected String revision;
 
+    /** 序列化的用户属性快照（JSON 等）。 */
     @Column(name = "USER_ATTRIBUTES")
     protected String userAttributes;
 
+    /** 创建时间戳（毫秒）。 */
     @Column(name = "CREATED_DATE")
     private Long createdDate;
 
+    /** 最后更新时间戳（毫秒）。 */
     @Column(name = "UPDATED_DATE")
     private Long updatedDate;
 
+    /** 乐观锁版本号。 */
     @Version
     @Column(name = "VERSION")
     private int version;

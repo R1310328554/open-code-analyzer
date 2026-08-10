@@ -21,7 +21,9 @@ import org.keycloak.models.session.PersistentClientSessionModel;
 import org.keycloak.storage.StorageId;
 
 /**
- * An immutable {@link PersistentClientSessionEntity} to optimize read-only queries.
+ * 不可变 {@link PersistentClientSessionEntity} record，用于只读查询优化。
+ * <p>
+ * 所有 setter 调用 {@link #readOnly()} 抛出异常，避免 Hibernate 脏检查开销。
  */
 public record ImmutablePersistentClientSessionEntity(
         String userSessionId,
@@ -76,6 +78,6 @@ public record ImmutablePersistentClientSessionEntity(
     }
 
     private static void readOnly() {
-        throw new UnsupportedOperationException("this instance is read-only");
+        throw new UnsupportedOperationException("this instance is read-only"); // 只读实例禁止修改
     }
 }

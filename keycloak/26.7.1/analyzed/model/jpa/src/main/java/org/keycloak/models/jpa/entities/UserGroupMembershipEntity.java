@@ -33,6 +33,10 @@ import jakarta.persistence.Table;
 import org.keycloak.representations.idm.MembershipType;
 
 /**
+ * 用户与组的成员关系 JPA 实体，映射 USER_GROUP_MEMBERSHIP 表。
+ * <p>
+ * 复合主键 (user, groupId)；{@link #membershipType} 区分普通成员与管理员等类型。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -50,15 +54,18 @@ import org.keycloak.representations.idm.MembershipType;
 @IdClass(UserGroupMembershipEntity.Key.class)
 public class UserGroupMembershipEntity {
 
+    /** 所属用户（复合主键之一）。 */
     @Id
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name="USER_ID")
     protected UserEntity user;
 
+    /** 组 ID（复合主键之一）。 */
     @Id
     @Column(name = "GROUP_ID")
     protected String groupId;
 
+    /** 成员类型（UNIFIED / MANAGER 等，存 {@link MembershipType} 枚举名）。 */
     @Column(name = "MEMBERSHIP_TYPE")
     private String membershipType;
 
@@ -86,6 +93,7 @@ public class UserGroupMembershipEntity {
         this.membershipType = membershipType.toString();
     }
 
+    /** 复合主键类：user + groupId。 */
     public static class Key implements Serializable {
 
         protected UserEntity user;

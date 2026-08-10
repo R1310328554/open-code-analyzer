@@ -35,19 +35,23 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.keycloak.provider.ServerInfoAwareProviderFactory;
 
 /**
+ * JPA 用户会话 Persister Provider 工厂。
+ * <p>
+ * SPI ID 为 {@value #ID}；可配置 {@value #EXPIRATION_BATCH_CONFIG} 控制过期清理批大小。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JpaUserSessionPersisterProviderFactory implements UserSessionPersisterProviderFactory, ServerInfoAwareProviderFactory {
 
+    /** SPI provider ID。 */
     public static final String ID = "jpa";
 
+    /** 过期清理批大小配置键。 */
     private static final String EXPIRATION_BATCH_CONFIG = "expirationBatch";
-    // Using 512 as default. From Gemini:
-    // * Oracle: Has a strict limit of 1000 expressions in a single IN list (ORA-01795).
-    // * SQL Server: Has limits based on the maximum number of parameters in an RPC, often hitting a limit of 2100 parameters.
-    // * PostgreSQL/MySQL: Generally have much higher limits or no practical limit.
+    // 默认 512。各数据库 IN 子句参数上限：Oracle 1000（ORA-01795）、SQL Server ~2100、PostgreSQL/MySQL 通常更高
     public static final int DEFAULT_EXPIRATION_BATCH = 512;
 
+    /** 当前配置的过期清理批大小。 */
     private int expirationBatch = DEFAULT_EXPIRATION_BATCH;
 
     @Override
@@ -58,12 +62,7 @@ public class JpaUserSessionPersisterProviderFactory implements UserSessionPersis
 
     @Override
     public void init(Config.Scope config) {
-        // We do not set a maximum batch size, because Hibernate should be able to handle it.
-        // From Gemini:
-        // Modern versions of Hibernate (especially in their database Dialects for Oracle) are often aware of the 1000-item
-        // limitation and automatically implement a workaround when you pass a collection larger than the limit.
-        // Hibernate will automatically generate SQL that splits the large list into multiple IN clauses connected by OR:
-        // "WHERE id IN (1, 2, 3, ..., 1000) OR id IN (1001, 1002, ...)"
+        // 不设上限：Hibernate 方言会自动拆分超大 IN 列表（如 Oracle 1000 项限制）
         expirationBatch = Math.max(1, config.getInt(EXPIRATION_BATCH_CONFIG, DEFAULT_EXPIRATION_BATCH));
     }
 

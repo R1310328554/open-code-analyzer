@@ -31,6 +31,10 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
+ * 用户必需操作 JPA 实体，映射 USER_REQUIRED_ACTION 表。
+ * <p>
+ * 复合主键 (user, action)；登录后须完成指定操作（如 UPDATE_PASSWORD、CONFIGURE_TOTP）方可继续。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -43,11 +47,13 @@ import jakarta.persistence.Table;
 @IdClass(UserRequiredActionEntity.Key.class)
 public class UserRequiredActionEntity {
 
+    /** 所属用户（复合主键之一）。 */
     @Id
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name="USER_ID")
     protected UserEntity user;
 
+    /** 必需操作标识（复合主键之一，如 UPDATE_PASSWORD）。 */
     @Id
     @Column(name="REQUIRED_ACTION")
     protected String action;
@@ -68,6 +74,7 @@ public class UserRequiredActionEntity {
         this.user = user;
     }
 
+    /** 复合主键类：user + action。 */
     public static class Key implements Serializable {
 
         protected UserEntity user;

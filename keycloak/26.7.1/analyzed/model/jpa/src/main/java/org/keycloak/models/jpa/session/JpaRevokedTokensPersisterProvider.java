@@ -32,10 +32,15 @@ import org.keycloak.models.session.RevokedToken;
 import org.keycloak.models.session.RevokedTokenPersisterProvider;
 
 /**
+ * 基于 JPA 的已吊销令牌持久化 Provider。
+ * <p>
+ * 将 token ID 及过期时间写入 {@link RevokedTokenEntity}，供集群节点共享吊销状态。
+ *
  * @author Alexander Schwartz
  */
 public class JpaRevokedTokensPersisterProvider implements RevokedTokenPersisterProvider {
 
+    /** JPA 实体管理器。 */
     private final EntityManager em;
 
     public JpaRevokedTokensPersisterProvider(EntityManager em) {
@@ -47,8 +52,7 @@ public class JpaRevokedTokensPersisterProvider implements RevokedTokenPersisterP
         RevokedTokenEntity revokedTokenEntity = em.find(RevokedTokenEntity.class, tokenId);
         long expire = Time.currentTime() + lifetime;
         if (revokedTokenEntity != null) {
-            // The token has already been revoked.
-            // There shouldn't be much need to update the expiry of the token, let's do it anyway to be on the safe side.
+            // 令牌已吊销；通常无需更新过期时间，但为安全起见仍延长 expire
             if (revokedTokenEntity.getExpire() < expire) {
                 revokedTokenEntity.setExpire(expire);
             }
@@ -84,6 +88,6 @@ public class JpaRevokedTokensPersisterProvider implements RevokedTokenPersisterP
 
     @Override
     public void close() {
-        // noop
+        // 无资源需释放
     }
 }

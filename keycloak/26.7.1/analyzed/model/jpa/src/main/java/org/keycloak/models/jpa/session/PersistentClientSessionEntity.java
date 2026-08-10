@@ -34,6 +34,11 @@ import org.keycloak.connections.jpa.AsynchronousCommitAllowed;
 import org.hibernate.annotations.DynamicUpdate;
 
 /**
+ * 持久化客户端会话 JPA 实体，映射 OFFLINE_CLIENT_SESSION 表。
+ * <p>
+ * 复合主键 (userSessionId, clientId, clientStorageProvider, externalClientId, offline)；
+ * 支持本地客户端与外部存储客户端（{@link #LOCAL}/{@link #EXTERNAL} 标记）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @NamedQueries({
@@ -44,7 +49,7 @@ import org.hibernate.annotations.DynamicUpdate;
         @NamedQuery(name="deleteClientSessionsByUser", query="delete from PersistentClientSessionEntity sess where sess.userSessionId IN (select u.userSessionId from PersistentUserSessionEntity u where u.userId = :userId)"),
         @NamedQuery(name="deleteClientSessionsByUserSession", query="delete from PersistentClientSessionEntity sess where sess.userSessionId = :userSessionId and sess.offline = :offline"),
         @NamedQuery(name="deleteClientSessionsByUserSessions", query="delete from PersistentClientSessionEntity sess where sess.userSessionId in (:userSessionId) and sess.offline = :offline"),
-        // The query "deleteExpiredClientSessions" is deprecated (since 26.5) and may be removed in the future.
+        // 查询 "deleteExpiredClientSessions" 自 26.5 起已弃用，未来可能移除
         @NamedQuery(name="deleteExpiredClientSessions", query="delete from PersistentClientSessionEntity sess where sess.offline = :offline AND sess.userSessionId IN (select u.userSessionId from PersistentUserSessionEntity u where u.realmId = :realmId AND u.offline = :offline AND u.lastSessionRefresh < :lastSessionRefresh)"),
         @NamedQuery(name="deleteClientSessionsByRealmSessionType", query="delete from PersistentClientSessionEntity sess where sess.offline = :offline AND sess.realmId = :realmId"),
         @NamedQuery(name="findClientSessionsByUserSession", query="select sess from PersistentClientSessionEntity sess where sess.userSessionId=:userSessionId and sess.offline = :offline"),
@@ -52,9 +57,9 @@ import org.hibernate.annotations.DynamicUpdate;
         @NamedQuery(name="findClientSessionsOrderedByIdExact", query="select sess from PersistentClientSessionEntity sess where sess.offline = :offline and sess.userSessionId IN (:userSessionIds)"),
         @NamedQuery(name="findClientSessionsCountByClient", query="select count(sess) from PersistentClientSessionEntity sess where sess.offline = :offline and sess.clientId = :clientId and sess.clientId != 'external'"),
         @NamedQuery(name="findClientSessionsCountByExternalClient", query="select count(sess) from PersistentClientSessionEntity sess where sess.offline = :offline and sess.clientStorageProvider = :clientStorageProvider and sess.externalClientId = :externalClientId and sess.clientStorageProvider != 'internal'"),
-        // The query "findClientSessionsByUserSessionAndClient" is deprecated (since 26.7) and may be removed in the future.
+        // 查询 "findClientSessionsByUserSessionAndClient" 自 26.7 起已弃用，未来可能移除
         @NamedQuery(name="findClientSessionsByUserSessionAndClient", query="select sess from PersistentClientSessionEntity sess where sess.userSessionId=:userSessionId and sess.offline = :offline and sess.clientId=:clientId and sess.clientId != 'external'"),
-        // The query "findClientSessionsByUserSessionAndExternalClient" is deprecated (since 26.7) and may be removed in the future.
+        // 查询 "findClientSessionsByUserSessionAndExternalClient" 自 26.7 起已弃用，未来可能移除
         @NamedQuery(name="findClientSessionsByUserSessionAndExternalClient", query="select sess from PersistentClientSessionEntity sess where sess.userSessionId=:userSessionId and sess.offline = :offline and sess.clientStorageProvider = :clientStorageProvider and sess.externalClientId = :externalClientId and sess.clientStorageProvider != 'internal'"),
         @NamedQuery(name="findClientSessionsClientIds", query="SELECT sess.clientId, sess.externalClientId, sess.clientStorageProvider, count(sess)" +
                 " FROM PersistentClientSessionEntity sess" +
@@ -74,43 +79,53 @@ public class PersistentClientSessionEntity implements AsynchronousCommitAllowed 
 
     @Override
     public boolean isAsyncCommitAllowed(EntityOperationType operationType) {
-        // If a session is removed by revoking this client's refresh token,
-        // this needs to be durable to prevent a security relevant timing attack
+        // 撤销 refresh token 触发的 DELETE 须同步提交，防止时序攻击
         return operationType != EntityOperationType.DELETE;
     }
 
+    /** 本地客户端 storage provider 占位符。 */
     public static final String LOCAL = "local";
+    /** 外部客户端 storage provider 占位符。 */
     public static final String EXTERNAL = "external";
+    /** 所属用户会话 ID（复合主键之一）。 */
     @Id
     @Column(name = "USER_SESSION_ID", length = 36)
     protected String userSessionId;
 
+    /** 客户端 ID 或 EXTERNAL 占位（复合主键之一）。 */
     @Id
     @Column(name="CLIENT_ID", length = 36)
     protected String clientId;
 
+    /** 客户端存储 provider ID（复合主键之一）。 */
     @Id
     @Column(name="CLIENT_STORAGE_PROVIDER", length = 36)
     protected String clientStorageProvider;
 
+    /** 外部客户端 ID（复合主键之一）。 */
     @Id
     @Column(name="EXTERNAL_CLIENT_ID", length = 255)
     protected String externalClientId;
 
+    /** 会话最后活动时间戳（秒）。 */
     @Column(name="TIMESTAMP")
     protected int timestamp;
 
+    /** 乐观锁版本号。 */
     @Version
     @Column(name="VERSION")
     private int version;
 
+    /** 离线标志："1" 离线 / "0" 在线（复合主键之一）。 */
     @Id
     @Column(name = "OFFLINE_FLAG")
     protected String offline;
 
+    /** 序列化的 client session 附加数据。 */
     @Column(name="DATA")
     protected String data;
 
+    /** 所属 realm ID。 */
     @Column(name = "REALM_ID", length = 36)
     protected String realmId;
 
@@ -182,6 +197,7 @@ public class PersistentClientSessionEntity implements AsynchronousCommitAllowed 
         return version;
     }
 
+    /** 复合主键类：userSessionId + clientId + clientStorageProvider + externalClientId + offline。 */
     public static class Key implements Serializable {
 
         protected String userSessionId;

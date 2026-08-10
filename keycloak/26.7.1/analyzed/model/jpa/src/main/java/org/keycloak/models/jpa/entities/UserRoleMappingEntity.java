@@ -31,6 +31,10 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
+ * 用户与 Realm 角色的直接映射 JPA 实体，映射 USER_ROLE_MAPPING 表。
+ * <p>
+ * 复合主键 (user, roleId)；表示用户直接拥有的 realm 角色（不含组/客户端间接授予）。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -50,11 +54,13 @@ import jakarta.persistence.Table;
 @IdClass(UserRoleMappingEntity.Key.class)
 public class UserRoleMappingEntity  {
 
+    /** 所属用户（复合主键之一）。 */
     @Id
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name="USER_ID")
     protected UserEntity user;
 
+    /** Realm 角色 ID（复合主键之一）。 */
     @Id
     @Column(name = "ROLE_ID")
     protected String roleId;
@@ -76,6 +82,7 @@ public class UserRoleMappingEntity  {
     }
 
 
+    /** 复合主键类：user + roleId。 */
     public static class Key implements Serializable {
 
         protected UserEntity user;
