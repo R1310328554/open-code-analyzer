@@ -1,5 +1,7 @@
 package queue
 
+// RequestQueue 按租户维护待处理查询队列，公平分配给已注册 consumer（querier），支持 DequeueMany 批量出队与 SlicePool 复用切片。
+
 import (
 	"context"
 	"fmt"
@@ -23,6 +25,7 @@ var (
 	ErrQueueWasRemoved = errors.New("the queue has been removed or moved to another position")
 )
 
+// QueueIndex 在 GetNextRequestForQuerier 连续调用间保持租户轮转位置。
 // QueueIndex is opaque type that allows to resume iteration over tenants between successive calls
 // of RequestQueue.GetNextRequestForQuerier method.
 type QueueIndex int // nolint:revive
@@ -52,6 +55,7 @@ type Request any
 // RequestChannel is a channel that queues Requests
 type RequestChannel chan Request
 
+// RequestQueue 用 tenantQueues 管理 shuffle sharding 与 consumer 连接.forgetDelay 清理断连。
 // RequestQueue holds incoming requests in per-tenant queues. It also assigns each tenant specified number of queriers,
 // and when querier asks for next request to handle (using GetNextRequestForQuerier), it returns requests
 // in a fair fashion.
@@ -83,6 +87,7 @@ func NewRequestQueue(maxOutstandingPerTenant int, forgetDelay time.Duration, lim
 	return q
 }
 
+// Enqueue 乐观递增 perUserQueueLen，超 maxUserQueueSize 则丢弃并计 discardedRequests。
 // Enqueue puts the request into the queue.
 // If request is successfully enqueued, successFn is called with the lock held, before any querier can receive the request.
 func (q *RequestQueue) Enqueue(tenant string, path []string, req Request, successFn func()) error {
@@ -136,6 +141,7 @@ func (q *RequestQueue) ReleaseRequests(items []Request) {
 	q.pool.Put(items)
 }
 
+// DequeueMany 从 pool 取切片，循环 dequeue 直至 maxItems 或租户队列为空。
 // DequeueMany consumes multiple items for a single tenant from the queue.
 // It blocks the execution until it dequeues at least 1 request and continue reading
 // until it reaches `maxItems` requests or if no requests for this tenant are enqueued.
@@ -300,6 +306,7 @@ func (q *RequestQueue) GetConnectedConsumersMetric() float64 {
 }
 
 // contextCond is a *sync.Cond with Wait() method overridden to support context-based waiting.
+// contextCond.Wait 在 sync.Cond 上支持 context 取消，避免 goroutine 泄漏。
 type contextCond struct {
 	*sync.Cond
 
@@ -357,3 +364,4 @@ func (c contextCond) Wait(ctx context.Context) {
 		<-condWait
 	}
 }
+// forgetCheckPeriod 定时调用 forgetDisconnectedConsumers 触发 resharding 广播。

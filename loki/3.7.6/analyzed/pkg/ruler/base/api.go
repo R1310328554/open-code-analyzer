@@ -1,5 +1,7 @@
 package base
 
+// ruler base 包 API 复刻 Prometheus rules API，为 Loki/Cortex ruler 提供规则与告警的 HTTP CRUD 与 discovery 端点。
+
 import (
 	"encoding/json"
 	"fmt"
@@ -30,6 +32,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// 因 upstream API 无法在 rule lookup 失败时返回错误，故本地重写响应结构。
 // In order to reimplement the prometheus rules API, a large amount of code was copied over
 // This is required because the prometheus api implementation does not allow us to return errors
 // on rule lookups, which might fail in Cortex's case.
@@ -61,6 +64,7 @@ type RuleDiscovery struct {
 }
 
 // RuleGroup has info for rules which are part of a group
+// RuleGroup JSON 同时暴露 alerting 与 recording 规则以保持组内顺序。
 type RuleGroup struct {
 	Name string `json:"name"`
 	File string `json:"file"`
@@ -103,6 +107,7 @@ type recordingRule struct {
 	EvaluationTime float64       `json:"evaluationTime"`
 }
 
+// respondError/respondInvalidRequest 统一 Prometheus v1 风格 JSON 错误体。
 func respondError(logger log.Logger, w http.ResponseWriter, status int, errorType v1.ErrorType, msg string) {
 	b, err := json.Marshal(&response{
 		Status:    "error",
@@ -132,6 +137,7 @@ func respondServerError(logger log.Logger, w http.ResponseWriter, msg string) {
 }
 
 // API is used to handle HTTP requests for the ruler service
+// API 持有 Ruler 实例与 rulestore.RuleStore，处理 /api/v1/rules 等路由。
 type API struct {
 	ruler *Ruler
 	store rulestore.RuleStore
@@ -139,6 +145,7 @@ type API struct {
 	logger log.Logger
 }
 
+// NewAPI 注入 ruler、store 与 logger，供 mux 注册 HTTP handlers。
 // NewAPI returns a new API struct with the provided ruler and rule store
 func NewAPI(r *Ruler, s rulestore.RuleStore, logger log.Logger) *API {
 	return &API{
@@ -694,3 +701,4 @@ func (a *API) DeleteRuleGroup(w http.ResponseWriter, req *http.Request) {
 
 	respondAccepted(w, logger)
 }
+// AlertDiscovery 与 RuleDiscovery 结构供 Grafana 与 promtool 兼容查询 ruler 状态。

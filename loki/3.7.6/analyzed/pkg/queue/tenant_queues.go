@@ -5,6 +5,8 @@
 
 package queue
 
+// tenantQueues 管理各租户 TreeQueue、consumer 注册与 shuffle sharding，源自 Cortex scheduler 队列逻辑并适配 Loki 多租户 limits。
+
 import (
 	"fmt"
 	"math/rand"
@@ -45,6 +47,7 @@ func (tqs intPointerMap) Dec(key string) int {
 }
 
 // consumer holds information about a consumer registered in the queue.
+// consumer 跟踪 connections、shuttingDown 与 disconnectedAt 以 forgetDelay 后移除。
 type consumer struct {
 	// Number of active connections.
 	connections int
@@ -58,6 +61,7 @@ type consumer struct {
 
 // This struct holds tenant queues for pending requests. It also keeps track of connected consumers,
 // and mapping between tenants and consumers.
+// tenantQueues 用 Mapping 存 tenantQueue，sortedConsumers 供分片选择 consumer 子集。
 type tenantQueues struct {
 	mapping *Mapping[*tenantQueue]
 
@@ -91,6 +95,7 @@ type Mapable interface {
 	SetPos(index QueueIndex)
 }
 
+// tenantQueue 嵌入 TreeQueue，consumers 非 nil 时限制仅指定 querier 可消费该租户。
 type tenantQueue struct {
 	*TreeQueue
 
@@ -125,6 +130,7 @@ func (q *tenantQueues) deleteQueue(tenant string) {
 	q.mapping.Remove(tenant)
 }
 
+// getOrAddQueue 按 path 在 TreeQueue 上递归 add，并据 limits 更新 consumers 映射。
 // Returns existing or new queue for a tenant.
 func (q *tenantQueues) getOrAddQueue(tenantID string, path []string) (Queue, error) {
 	// Empty tenant is not allowed, as that would break our tenants list ("" is used for free spot).
@@ -352,3 +358,4 @@ func shuffleConsumersForTenants(userSeed int64, consumersToSelect int, allSorted
 
 	return result
 }
+// intPointerMap Inc/Dec 维护 perUserQueueLen，与 channel 容量解耦以精确限流。

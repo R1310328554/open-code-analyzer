@@ -1,5 +1,7 @@
 package querytee
 
+// ProxyBackend 表示 query-tee 的单个下游 HTTP 后端，负责克隆请求、注入 trace 并执行带超时的 ForwardRequest。
+
 import (
 	"context"
 	"io"
@@ -17,6 +19,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 )
 
+// ProxyBackend 标记 v1Preferred/v2Preferred，Alias 供 metrics 区分 v1/v2/other。
 // ProxyBackend holds the information of a single backend.
 type ProxyBackend struct {
 	name     string
@@ -33,6 +36,7 @@ type ProxyBackend struct {
 	filter *regexp.Regexp
 }
 
+// NewProxyBackend 创建不跟随重定向的 http.Client，Transport 禁用压缩。
 // NewProxyBackend makes a new ProxyBackend
 // It accepts preferred booleans in the following order [v1, v2].
 // A backend can be v1Preferred, v2Preferred, or neither, but not both.
@@ -92,6 +96,7 @@ func (b *ProxyBackend) Alias() string {
 	return "other"
 }
 
+// ForwardRequest 创建 span、执行 doBackendRequest 并返回 BackendResponse 含耗时与 trace。
 func (b *ProxyBackend) ForwardRequest(orig *http.Request, body io.ReadCloser) *BackendResponse {
 	start := time.Now()
 	req, span := b.createBackendRequest(orig, body)
@@ -195,6 +200,7 @@ func (b *ProxyBackend) doBackendRequest(req *http.Request) (int, []byte, http.He
 	return res.StatusCode, body, res.Header, nil
 }
 
+// injectTraceHeaders 在 context.WithoutCancel 前显式注入 OpenTracing 或 OTel 头。
 // injectTraceHeaders explicitly injects trace context into HTTP headers.
 // This is necessary because context.WithoutCancel breaks the normal trace propagation.
 func (b *ProxyBackend) injectTraceHeaders(req *http.Request) {
@@ -214,3 +220,4 @@ func (b *ProxyBackend) injectTraceHeaders(req *http.Request) {
 	propagator := otel.GetTextMapPropagator()
 	propagator.Inject(ctx, propagation.HeaderCarrier(req.Header))
 }
+// createBackendRequest 合并 endpoint 与请求路径，并按 endpoint 或客户端 BasicAuth 设置认证。

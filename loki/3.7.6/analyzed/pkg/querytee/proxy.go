@@ -1,5 +1,7 @@
 package querytee
 
+// querytee 包 Proxy 是 query-tee 核心：将查询/写入请求转发至多后端，支持 race、v1/v2 优选路由、Goldfish 采样与响应比对。
+
 import (
 	"context"
 	"flag"
@@ -30,6 +32,7 @@ import (
 
 var errMinBackends = errors.New("at least 1 backend is required")
 
+// RoutingMode 定义 race、v1-preferred、v2-preferred 三种路由策略。
 type RoutingMode string
 
 const (
@@ -97,6 +100,7 @@ func (cfg *RoutingConfig) Validate() error {
 	return nil
 }
 
+// ProxyConfig 聚合后端列表、比对容差、Goldfish 与 Routing 子配置。
 type ProxyConfig struct {
 	ServerServicePort              int
 	BackendEndpoints               string
@@ -148,6 +152,7 @@ type Route struct {
 	ResponseComparator comparator.ResponsesComparator
 }
 
+// Proxy 管理 backends、read/write 路由表、HTTP 服务与 goldfishManager。
 type Proxy struct {
 	cfg         ProxyConfig
 	backends    []*ProxyBackend
@@ -167,6 +172,7 @@ type Proxy struct {
 	goldfishManager goldfish.Manager
 }
 
+// NewProxy 解析 backend.endpoints、校验 v1/v2 preferred 与 Goldfish 配置后构造代理。
 func NewProxy(
 	cfg ProxyConfig,
 	logger log.Logger,
@@ -336,6 +342,7 @@ func NewProxy(
 	return p, nil
 }
 
+// Start 注册 read/write 路由、挂载 SplittingHandler 与 tracing middleware 并 Serve。
 func (p *Proxy) Start() error {
 	// Setup listener first, so we can fail early if the port is in use.
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", p.cfg.ServerServicePort))
@@ -512,3 +519,4 @@ func filterReadDisabledBackends(backends []*ProxyBackend, disableReadProxyCfg st
 
 	return readEnabledBackends
 }
+// filterReadDisabledBackends 可禁用指定非主后端的读代理以减轻负载。

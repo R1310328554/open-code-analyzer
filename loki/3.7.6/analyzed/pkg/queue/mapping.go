@@ -1,5 +1,7 @@
 package queue
 
+// Mapping 是支持按键与按索引访问的 map 结构，删除键时保留索引槽位，供 tenantQueues 与 TreeQueue 子队列稳定迭代。
+
 import (
 	"github.com/pkg/errors"
 )
@@ -8,6 +10,7 @@ var ErrOutOfBounds = errors.New("queue index out of bounds")
 
 var empty = string([]byte{byte(0)})
 
+// Mapping 删除时将 keys[idx] 置为占位 empty，empty 栈记录可复用索引。
 // Mapping is a map-like data structure that allows accessing its items not
 // only by key but also by index.
 // When an item is removed, the internal key array is not resized, but the
@@ -15,6 +18,7 @@ var empty = string([]byte{byte(0)})
 // changing the index of the remaining items after the removed key.
 // Mapping uses *tenantQueue as concrete value and keys of type string.
 // The data structure is not thread-safe.
+// 泛型 v 须实现 Mapable（Pos/SetPos），典型为 *tenantQueue 或 *TreeQueue。
 type Mapping[v Mapable] struct {
 	m     map[string]v
 	keys  []string
@@ -27,6 +31,7 @@ func (m *Mapping[v]) Init(size int) {
 	m.empty = make([]QueueIndex, 0, size)
 }
 
+// Put 优先复用 empty 槽位，否则 append 新 key 并 SetPos 当前长度。
 func (m *Mapping[v]) Put(key string, value v) bool {
 	// do not allow empty string or 0 byte string as key
 	if key == "" || key == empty {
@@ -53,6 +58,7 @@ func (m *Mapping[v]) Get(idx QueueIndex) v {
 	return m.GetByKey(k)
 }
 
+// GetNext 从 idx+1 扫描非 empty 键，越界返回 ErrOutOfBounds。
 func (m *Mapping[v]) GetNext(idx QueueIndex) (v, error) {
 	if m.Len() == 0 {
 		return nil, ErrOutOfBounds
@@ -108,3 +114,4 @@ func (m *Mapping[v]) Values() []v {
 func (m *Mapping[v]) Len() int {
 	return len(m.keys) - len(m.empty)
 }
+// Len 返回有效键数 len(keys)-len(empty)，Keys/Values 跳过 empty 占位。

@@ -1,5 +1,7 @@
 package querytee
 
+// ProxyMetrics 注册 query-tee 的 Prometheus 指标：请求量、耗时、响应比对结果、Goldfish 采样与 race 胜出计数。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -15,6 +17,7 @@ const (
 	canaryIssuer  = "loki-canary"
 )
 
+// ProxyMetrics 使用 cortex_querytee 与 loki_querytee 命名空间区分通用与 race 指标。
 type ProxyMetrics struct {
 	requestsTotal          *prometheus.CounterVec
 	requestDuration        *prometheus.HistogramVec
@@ -26,10 +29,12 @@ type ProxyMetrics struct {
 	queriesSampled    *prometheus.CounterVec
 	samplingDecisions *prometheus.CounterVec
 
+// raceWins 在 RoutingModeRace 下按 backend/route/issuer 统计竞速胜出次数。
 	// Race metrics
 	raceWins *prometheus.CounterVec
 }
 
+// NewProxyMetrics 用 promauto 注册 requests_total、request_duration_seconds 等向量。
 func NewProxyMetrics(registerer prometheus.Registerer) *ProxyMetrics {
 	m := &ProxyMetrics{
 		requestsTotal: promauto.With(registerer).NewCounterVec(prometheus.CounterOpts{
@@ -81,3 +86,4 @@ func NewProxyMetrics(registerer prometheus.Registerer) *ProxyMetrics {
 
 	return m
 }
+// comparisonMatch/Mismatch/Failed/Skipped 常量用于 responses_compared_total 标签。

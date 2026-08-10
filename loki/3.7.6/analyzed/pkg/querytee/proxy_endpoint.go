@@ -1,5 +1,7 @@
 package querytee
 
+// ProxyEndpoint 是单条 HTTP 路由的处理器：并行转发至各 backend、选取下游响应、可选比对 secondary 与 Goldfish 异步对比。
+
 import (
 	"bytes"
 	"errors"
@@ -30,6 +32,7 @@ type ComparisonSummary struct {
 	missingMetrics int
 }
 
+// ProxyEndpoint 可挂载 queryHandler（SplittingHandler）或走 legacy serveWrites。
 type ProxyEndpoint struct {
 	backends   []*ProxyBackend
 	metrics    *ProxyMetrics
@@ -85,6 +88,7 @@ func (p *ProxyEndpoint) WithGoldfish(manager goldfish.Manager) *ProxyEndpoint {
 	return p
 }
 
+// WithQueryHandler 启用 queryrange 中间件链替代 executeBackendRequests。
 // WithQueryHandler sets the middleware-based query handlers (logs and metrics) for the endpoint.
 // When set, ServeHTTP uses this handler instead of the legacy executeBackendRequests.
 func (p *ProxyEndpoint) WithQueryHandler(handler http.Handler) *ProxyEndpoint {
@@ -103,6 +107,7 @@ func (p *ProxyEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.queryHandler.ServeHTTP(w, r)
 }
 
+// serveWrites 对写入请求 fan-out 至所有 backend，waitBackendResponseForDownstream 选首个可用响应。
 // serveWrites serves writes without a queryrangebase.Handler, since write requests cannot be decoded into a queryrangebase.Request.
 func (p *ProxyEndpoint) serveWrites(w http.ResponseWriter, r *http.Request) {
 	// tenant := extractTenant(r)
@@ -161,6 +166,7 @@ func (p *ProxyEndpoint) serveWrites(w http.ResponseWriter, r *http.Request) {
 	p.metrics.responsesTotal.WithLabelValues(downstreamRes.backend.name, downstreamRes.backend.Alias(), r.Method, p.routeName, detectIssuer(r)).Inc()
 }
 
+// executeBackendRequests 并发 ForwardRequest，比对 v1 preferred 与 secondary 响应体。
 func (p *ProxyEndpoint) executeBackendRequests(r *http.Request, resCh chan *BackendResponse, correlationID string) {
 	var (
 		wg                  = sync.WaitGroup{}
@@ -376,6 +382,7 @@ func (p *ProxyEndpoint) compareResponses(expectedResponse, actualResponse *Backe
 	return p.comparator.Compare(expectedResponse.body, actualResponse.body, queryEvalTime)
 }
 
+// BackendResponse succeeded 将 2xx 与部分 4xx（非 429）视为成功。
 type BackendResponse struct {
 	backend  *ProxyBackend
 	status   int
@@ -434,3 +441,4 @@ func (p *ProxyEndpoint) processWithGoldfish(r *http.Request, cellAResp, cellBRes
 
 	p.goldfishManager.SendToGoldfish(r, cellAGoldfishResp, cellBGoldfishResp, correlationID)
 }
+// processWithGoldfish 在采样命中时将 cell A/B 响应异步发送至 Goldfish 存储比对。

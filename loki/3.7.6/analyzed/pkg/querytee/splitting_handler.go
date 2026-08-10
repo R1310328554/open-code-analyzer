@@ -1,5 +1,7 @@
 package querytee
 
+// SplittingHandler 按 LogQL 类型与时间窗将查询路由至 v1 chunks 或 v2 dataobjs，集成 EngineRouterMiddleware 与 Goldfish 采样决策。
+
 import (
 	"context"
 	"io"
@@ -22,6 +24,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/server"
 )
 
+// SplittingHandlerConfig 绑定 FanOutHandler、V1Backend 与 split 相关路由参数。
 // SplittingHandlerConfig holds configuration for creating a SplittingHandler.
 type SplittingHandlerConfig struct {
 	Codec                         queryrangebase.Codec
@@ -36,6 +39,7 @@ type SplittingHandlerConfig struct {
 	AddRoutingDecisionsToWarnings bool
 }
 
+// SplittingHandler 分别持有 logs 与 metrics 的 splitting queryrange Handler。
 type SplittingHandler struct {
 	codec                         queryrangebase.Codec
 	fanOutHandler                 queryrangebase.Handler
@@ -158,6 +162,7 @@ func (f *splitHandlerFactory) createSplittingHandler(forMetricQuery bool, v1Hand
 	return queryrangebase.MergeMiddlewares(middleware...).Wrap(v1Handler)
 }
 
+// ServeHTTP 多租户仅走 v1；v1-preferred 未采样时可 skip fanout 减轻 secondary 负载。
 // ServeHTTP implements http.Handler interface to serve queries that can be split.
 //
 // Routing behavior depends on the routing mode:
@@ -313,6 +318,7 @@ func (f *SplittingHandler) shouldSample(tenants []string, httpReq *http.Request)
 	return false, ""
 }
 
+// serveSplits 按 SampleExpr/VariantsExpr 选择 metrics 或 logs 分裂处理器。
 func (f *SplittingHandler) serveSplits(ctx context.Context, req queryrangebase.Request) (queryrangebase.Response, error) {
 	switch op := req.(type) {
 	case *queryrange.LokiRequest:
@@ -349,6 +355,7 @@ func (f *SplittingHandler) serveSplits(ctx context.Context, req queryrangebase.R
 	}
 }
 
+// addWarningToResponse 在 LokiResponse/LokiPromResponse 的 Warnings 中追加路由说明。
 // addWarningToResponse adds a warning message to the response based on its type.
 func addWarningToResponse(resp queryrangebase.Response, warning string) {
 	switch r := resp.(type) {
@@ -360,3 +367,4 @@ func addWarningToResponse(resp queryrangebase.Response, warning string) {
 		}
 	}
 }
+// writeResponse 编码 queryrange 响应并在采样时设置 GoldfishCorrelationID 响应头。

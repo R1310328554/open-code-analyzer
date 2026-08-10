@@ -1,5 +1,7 @@
 package base
 
+// rulerClientsPool 基于 dskit client.Pool 管理到各 ruler 实例的 gRPC 连接，含健康检查与请求耗时直方图。
+
 import (
 	"time"
 
@@ -15,6 +17,7 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
+// ClientsPool 扩展 services.Service，GetClientFor 返回 RulerClient 接口。
 // ClientsPool is the interface used to get the client from the pool for a specified address.
 type ClientsPool interface {
 	services.Service
@@ -22,6 +25,7 @@ type ClientsPool interface {
 	GetClientFor(addr string) (RulerClient, error)
 }
 
+// rulerClientsPool 包装 client.Pool，类型断言 PoolClient 为 RulerClient。
 type rulerClientsPool struct {
 	*client.Pool
 }
@@ -34,6 +38,7 @@ func (p *rulerClientsPool) GetClientFor(addr string) (RulerClient, error) {
 	return c.(RulerClient), nil
 }
 
+// newRulerClientPool 默认每分钟 health check，Gauge 上报 ruler_clients 连接数。
 func newRulerClientPool(clientCfg grpcclient.Config, logger log.Logger, reg prometheus.Registerer, metricsNamespace string) ClientsPool {
 	// We prefer sane defaults instead of exposing further config options.
 	poolCfg := client.PoolConfig{
@@ -79,6 +84,7 @@ func newRulerPoolClient(clientCfg grpcclient.Config, reg prometheus.Registerer, 
 	}
 }
 
+// dialRulerClient 注入 grpcclient Instrument 拦截器后 Dial 并包装 extended client。
 func dialRulerClient(clientCfg grpcclient.Config, addr string, requestDuration *prometheus.HistogramVec) (*rulerExtendedClient, error) {
 	unaryInterceptors, streamInterceptors := grpcclient.Instrument(requestDuration)
 	opts, err := clientCfg.DialOption(unaryInterceptors, streamInterceptors, middleware.NoOpInvalidClusterValidationReporter)
@@ -99,6 +105,7 @@ func dialRulerClient(clientCfg grpcclient.Config, addr string, requestDuration *
 	}, nil
 }
 
+// rulerExtendedClient 组合 RulerClient 与 grpc_health_v1.HealthClient 供 Pool 使用。
 type rulerExtendedClient struct {
 	RulerClient
 	grpc_health_v1.HealthClient
@@ -116,3 +123,4 @@ func (c *rulerExtendedClient) String() string {
 func (c *rulerExtendedClient) RemoteAddress() string {
 	return c.conn.Target()
 }
+// Close 关闭底层 conn；RemoteAddress 返回 conn.Target 供 ring 寻址。

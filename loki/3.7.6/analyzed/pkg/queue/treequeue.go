@@ -1,5 +1,7 @@
 package queue
 
+// TreeQueue 是层级队列：本地 channel 与子 TreeQueue 等概率轮转 Dequeue，path 分段对应 scheduler 子查询层级。
+
 import (
 	"fmt"
 	"strings"
@@ -7,6 +9,7 @@ import (
 
 type QueuePath []string //nolint:revive
 
+// TreeQueue 用 Mapping 存子队列，current 索引在 local 与子队列间 round-robin。
 // TreeQueue is an hierarchical queue implementation where each sub-queue
 // has the same guarantees to be chosen from.
 // Each queue has also a local queue, which gets chosen with equal preference as the sub-queues.
@@ -25,6 +28,7 @@ type TreeQueue struct {
 	size int
 }
 
+// newTreeQueue 创建带缓冲 ch 与空 Mapping，pos 初始为 StartIndexWithLocalQueue。
 // newTreeQueue creates a new TreeQueue instance
 func newTreeQueue(size int, name string) *TreeQueue {
 	m := &Mapping[*TreeQueue]{}
@@ -39,6 +43,7 @@ func newTreeQueue(size int, name string) *TreeQueue {
 	}
 }
 
+// add 沿 QueuePath 递归 getOrCreate 子节点并 Put 至 mapping。
 // add recursively adds queues based on given path
 func (q *TreeQueue) add(path QueuePath) *TreeQueue {
 	if len(path) == 0 {
@@ -66,6 +71,7 @@ func (q *TreeQueue) Chan() RequestChannel {
 	return q.ch
 }
 
+// Dequeue 无子队列时仅读 local ch；否则轮转 local 与子队列直至取到非 nil 项。
 // Dequeue implements Queue
 func (q *TreeQueue) Dequeue() Request {
 	var item Request
@@ -152,3 +158,4 @@ func (q *TreeQueue) String() string {
 	sb.WriteString("}")
 	return sb.String()
 }
+// 子队列为空时 Remove 以收缩树；Len 递归统计 local 与全部子队列深度。
