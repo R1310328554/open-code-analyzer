@@ -26,9 +26,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Default {@link VaultTranscriber} implementation that uses the configured {@link VaultProvider} to obtain raw secrets
- * and convert them into other types. By default, the {@link VaultProvider} provides raw secrets through a {@link ByteBuffer}.
- * This class offers methods to convert the raw secrets into other types (such as {@link VaultCharSecret} or {@link WeakReference<String>}).
+ * 默认 {@link VaultTranscriber} 实现：通过配置的 {@link VaultProvider} 获取原始密钥并转换为其他类型。
+ * <p>默认情况下 {@link VaultProvider} 以 {@link ByteBuffer} 提供原始密钥；本类提供将其转为 {@link VaultCharSecret}、{@link VaultStringSecret} 等类型的方法。</p>
  *
  * @see VaultRawSecret
  * @see VaultCharSecret
@@ -37,10 +36,16 @@ import java.util.regex.Pattern;
  */
 public class DefaultVaultTranscriber implements VaultTranscriber {
 
+    /** 匹配 {@code ${vault.<KEY>}} 表达式的正则。 */
     private static final Pattern pattern = Pattern.compile("^\\$\\{vault\\.(.+?)}$");
 
+    /** 用于检索密钥条目的 Vault 提供者。 */
     private final VaultProvider provider;
 
+    /**
+     * 构造转录器；{@code provider} 为 null 时使用空提供者（始终返回空密钥）。
+     * @param provider Vault 提供者，可为 null
+     */
     public DefaultVaultTranscriber(final VaultProvider provider) {
         if (provider == null) {
             this.provider = new VaultProvider() {
@@ -62,10 +67,10 @@ public class DefaultVaultTranscriber implements VaultTranscriber {
     public VaultRawSecret getRawSecret(final String value) {
         String entryId = this.getVaultEntryKey(value);
         if (entryId != null) {
-            // we have a valid ${vault.<KEY>} string, use the provider to retrieve the entry.
+            // 有效的 ${vault.<KEY>} 表达式，通过 provider 检索条目
             return this.provider.obtainSecret(entryId);
         } else {
-            // not a vault expression - encode the value itself as a byte buffer.
+            // 非 vault 表达式，将值本身编码为字节缓冲区
             ByteBuffer buffer = value != null ? ByteBuffer.wrap(value.getBytes(StandardCharsets.UTF_8)) : null;
             return DefaultVaultRawSecret.forBuffer(Optional.ofNullable(buffer));
         }
@@ -73,7 +78,7 @@ public class DefaultVaultTranscriber implements VaultTranscriber {
 
     @Override
     public VaultCharSecret getCharSecret(final String value) {
-        // obtain the raw secret and convert it into a char secret.
+        // 获取原始密钥并转为字符密钥
         try (VaultRawSecret rawSecret = this.getRawSecret(value)) {
             if (!rawSecret.get().isPresent()) {
                 return DefaultVaultCharSecret.forBuffer(Optional.empty());
@@ -86,7 +91,7 @@ public class DefaultVaultTranscriber implements VaultTranscriber {
 
     @Override
     public VaultStringSecret getStringSecret(final String value) {
-        // obtain the raw secret and convert it into a string string.
+        // 获取原始密钥并转为字符串密钥
         try (VaultRawSecret rawSecret = this.getRawSecret(value)) {
             if (!rawSecret.get().isPresent()) {
                 return DefaultVaultStringSecret.forString(Optional.empty());
@@ -97,12 +102,11 @@ public class DefaultVaultTranscriber implements VaultTranscriber {
     }
 
     /**
-     * Obtains the vault entry key from the specified value if the value is a valid {@code ${vault.<KEY>}} expression.
-     * For example, calling this method with the {@code ${vault.smtp_secret}} argument results in the string {@code smtp_secret}
-     * being returned.
+     * 若值为合法的 {@code ${vault.<KEY>}} 表达式，则提取 vault 条目键名。
+     * <p>例如传入 {@code ${vault.smtp_secret}} 将返回 {@code smtp_secret}。</p>
      *
-     * @param value a {@code String} that might contain a vault entry key.
-     * @return the extracted entry key if the value follows the {@code ${vault.<KEY>}} format; null otherwise.
+     * @param value 可能包含 vault 条目键名的字符串
+     * @return 符合 {@code ${vault.<KEY>}} 格式时返回提取的键名，否则返回 null
      */
     private String getVaultEntryKey(final String value) {
         if (value != null) {

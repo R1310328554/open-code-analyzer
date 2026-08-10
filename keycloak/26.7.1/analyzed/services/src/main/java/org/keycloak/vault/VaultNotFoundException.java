@@ -18,16 +18,16 @@
 package org.keycloak.vault;
 
 /**
- * Thrown when a vault directory doesn't exist.
+ * vault 目录或 keystore 文件不存在时抛出。
  *
  * @author Sebastian Łaskawiec
  */
 public class VaultNotFoundException extends RuntimeException {
 
     /**
-     * Constructs new exception.
+     * 构造异常实例。
      *
-     * @param message A full text message of the exception.
+     * @param message 完整异常消息文本
      */
     public VaultNotFoundException(String message) {
         super(message);

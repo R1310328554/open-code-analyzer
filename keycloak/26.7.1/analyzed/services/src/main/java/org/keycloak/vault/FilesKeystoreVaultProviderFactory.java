@@ -11,14 +11,22 @@ import org.keycloak.models.KeycloakSessionFactory;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 文件 KeyStore 型 Vault 提供者工厂，ID 为 {@code files-keystore}。
+ * <p>从配置读取 keystore 路径、密码与类型，创建 {@link FilesKeystoreVaultProvider}。</p>
+ */
 public class FilesKeystoreVaultProviderFactory extends AbstractVaultProviderFactory {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    /** 提供者工厂标识 {@code files-keystore}。 */
     public static final String PROVIDER_ID = "files-keystore";
 
+    /** 已配置的 keystore 文件路径。 */
     private Path keystoreFile;
+    /** keystore 访问密码。 */
     private String keystorePass;
+    /** keystore 类型（如 PKCS12）。 */
     private String keystoreType;
 
     @Override

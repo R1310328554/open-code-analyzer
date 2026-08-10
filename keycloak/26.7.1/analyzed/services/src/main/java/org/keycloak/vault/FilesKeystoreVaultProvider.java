@@ -18,6 +18,10 @@ import jakarta.annotation.Nonnull;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 基于 Java KeyStore 文件的 {@link VaultProvider} 实现。
+ * <p>从指定 keystore 中按别名读取密钥条目，经 {@link VaultKeyResolver} 解析后的键名查找对应 Secret。</p>
+ */
 public class FilesKeystoreVaultProvider extends AbstractVaultProvider {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
@@ -27,12 +31,13 @@ public class FilesKeystoreVaultProvider extends AbstractVaultProvider {
     private final String keystoreType;
 
     /**
-     * Creates a new {@link FilesKeystoreVaultProvider}.
+     * 创建 {@link FilesKeystoreVaultProvider} 实例。
      *
-     * @param keystorePath A path to a vault. Can not be null.
-     * @param keystorePass A password to a vault. Can not be null.
-     * @param keystoreType Specifies a type of keystore. Can not be null. Default value is PKCS12.
-     * @param realmName    A realm name. Can not be null.
+     * @param keystorePath keystore 文件路径，不可为 null
+     * @param keystorePass keystore 密码，不可为 null
+     * @param keystoreType keystore 类型，不可为 null（默认 PKCS12）
+     * @param realmName 领域名称，不可为 null
+     * @param resolvers 密钥解析器列表
      */
     public FilesKeystoreVaultProvider(@Nonnull Path keystorePath, @Nonnull String keystorePass, @Nonnull String keystoreType,
                                       @Nonnull String realmName, @Nonnull List<VaultKeyResolver> resolvers) {

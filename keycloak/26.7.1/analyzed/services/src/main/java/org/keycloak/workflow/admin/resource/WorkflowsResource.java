@@ -36,13 +36,25 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+/**
+ * 工作流集合的管理 REST 资源：创建、列表、子资源定位、按资源查询已调度工作流及步骤迁移。
+ * <p>须启用 {@link Profile.Feature#WORKFLOWS} 且调用方具备 Realm 管理员权限。</p>
+ */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class WorkflowsResource {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 工作流领域提供者。 */
     private final WorkflowProvider provider;
+    /** 管理权限评估器。 */
     private final AdminPermissionEvaluator auth;
 
+    /**
+     * 构造工作流资源；未启用 WORKFLOWS 功能时抛出 404。
+     * @param session Keycloak 会话
+     * @param auth 管理权限评估器
+     */
     public WorkflowsResource(KeycloakSession session, AdminPermissionEvaluator auth) {
         if (!Profile.isFeatureEnabled(Feature.WORKFLOWS)) {
             throw new NotFoundException();
@@ -64,6 +76,7 @@ public class WorkflowsResource {
             @APIResponse(responseCode = "201", description = "Created"),
             @APIResponse(responseCode = "400", description = "Bad Request")
     })
+    /** 根据表示创建新工作流，成功时返回 201 及 Location 头。 */
     public Response create(WorkflowRepresentation rep) {
         try {
             Workflow workflow = provider.toModel(rep);
@@ -83,6 +96,7 @@ public class WorkflowsResource {
             @APIResponse(responseCode = "200", description = "Workflow sub-resource located"),
             @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 按 ID 定位单个工作流的子资源。 */
     public WorkflowResource get(
             @Parameter(description = "Workflow identifier")
             @PathParam("id") String id
@@ -107,6 +121,7 @@ public class WorkflowsResource {
             @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = WorkflowRepresentation.class))),
             @APIResponse(responseCode = "400", description = "Bad Request")
     })
+    /** 按名称搜索并分页列出工作流。 */
     public List<WorkflowRepresentation> list(
             @Parameter(description = "A String representing the workflow name - either partial or exact")
             @QueryParam("search") String search,
@@ -134,6 +149,7 @@ public class WorkflowsResource {
             @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = WorkflowRepresentation.class))),
             @APIResponse(responseCode = "400", description = "Bad Request")
     })
+    /** 返回指定资源 ID 关联的、含已调度步骤的工作流列表。 */
     public List<WorkflowRepresentation> getScheduledWorkflows(
             @Parameter(description = "Identifier of the resource associated with the scheduled workflows")
             @PathParam("resource-id") String resourceId
@@ -152,6 +168,7 @@ public class WorkflowsResource {
             @APIResponse(responseCode = "204", description = "No Content"),
             @APIResponse(responseCode = "400", description = "Bad Request")
     })
+    /** 将已调度资源从一个步骤迁移至同工作流或跨工作流的另一步骤。 */
     public Response migrate(
             @Parameter(description = "A String representing the id of the step to migrate from")
             @QueryParam("from") String stepIdFrom,

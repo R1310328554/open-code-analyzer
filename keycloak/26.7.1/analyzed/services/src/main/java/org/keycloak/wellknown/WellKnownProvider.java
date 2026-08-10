@@ -20,10 +20,14 @@ package org.keycloak.wellknown;
 import org.keycloak.provider.Provider;
 
 /**
+ * Well-Known 元数据 {@link Provider} 接口。
+ * <p>各实现通过 {@link #getConfig()} 返回特定 well-known 端点的配置对象（如 OIDC Discovery）。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface WellKnownProvider extends Provider {
 
+    /** @return well-known 端点的配置表示 */
     Object getConfig();
 
 }

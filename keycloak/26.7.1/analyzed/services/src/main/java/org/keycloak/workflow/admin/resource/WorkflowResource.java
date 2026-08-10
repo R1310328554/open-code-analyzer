@@ -31,12 +31,18 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+/**
+ * 单个工作流的管理 REST 子资源：删除、更新、查询及按资源激活/停用工作流。
+ */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class WorkflowResource {
 
+    /** 工作流领域提供者。 */
     private final WorkflowProvider provider;
+    /** 当前操作的目标工作流实体。 */
     private final Workflow workflow;
 
+    /** @param provider 工作流提供者 @param workflow 目标工作流 */
     public WorkflowResource(WorkflowProvider provider, Workflow workflow) {
         this.provider = provider;
         this.workflow = workflow;
@@ -52,6 +58,7 @@ public class WorkflowResource {
             @APIResponse(responseCode = "204", description = "No Content"),
             @APIResponse(responseCode = "400", description = "Bad Request")
     })
+    /** 删除工作流及其配置。 */
     public void delete() {
         try {
             provider.removeWorkflow(workflow);
@@ -61,7 +68,7 @@ public class WorkflowResource {
     }
 
     /**
-     * Update the workflow configuration. The method does not update the workflow steps.
+     * 更新工作流配置（不更新工作流步骤）。
      */
     @PUT
     @Consumes({YAMLMediaTypes.APPLICATION_JACKSON_YAML, MediaType.APPLICATION_JSON})
@@ -94,6 +101,7 @@ public class WorkflowResource {
             @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = WorkflowRepresentation.class))),
             @APIResponse(responseCode = "400", description = "Bad Request")
     })
+    /** 获取工作流表示；{@code includeId=false} 时从响应中排除工作流与步骤 ID。 */
     public WorkflowRepresentation toRepresentation(
             @Parameter(
                     description = "Indicates whether the workflow and step ids should be included in the representation or not - defaults to true"
@@ -109,13 +117,11 @@ public class WorkflowResource {
     }
 
     /**
-     * Activate the workflow for the resource.
+     * 为指定资源激活工作流。
      *
-     * @param type the resource type
-     * @param resourceId the resource id
-     * @param notBefore optional value representing the time to schedule the first workflow step, overriding the first
-     *                  step time configuration (after). The value is either an integer representing the seconds from now,
-     *                  an integer followed by 'ms' representing milliseconds from now, or an ISO-8601 date string.
+     * @param type 资源类型
+     * @param resourceId 资源 ID
+     * @param notBefore 可选的首步调度时间，覆盖步骤 {@code after} 配置：整数表示秒数、整数加 {@code ms} 表示毫秒，或 ISO-8601 日期字符串
      */
     @POST
     @Path("activate/{type}/{resourceId}")
@@ -155,10 +161,10 @@ public class WorkflowResource {
     }
 
     /**
-     * Deactivate the workflow for the resource.
+     * 为指定资源停用工作流。
      *
-     * @param type the resource type
-     * @param resourceId the resource id
+     * @param type 资源类型
+     * @param resourceId 资源 ID
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)

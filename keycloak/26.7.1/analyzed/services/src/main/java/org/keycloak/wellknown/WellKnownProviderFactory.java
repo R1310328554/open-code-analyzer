@@ -20,39 +20,35 @@ package org.keycloak.wellknown;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link WellKnownProvider} 的 {@link ProviderFactory} 接口。
+ * <p>定义 URL 别名、优先级及是否可通过服务器元数据端点暴露等扩展点。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface WellKnownProviderFactory extends ProviderFactory<WellKnownProvider> {
 
     /**
-     * Alias, which will be used as URL suffix of this well-known provider. For example if you use alias like "openid-configuration", then your WellKnown provider
-     * might be available under URL like "https://myhost/auth/realms/myrealm/.well-known/openid-configuration". If there are multiple provider factories with same alias,
-     * the one with lowest priority will be used.
+     * 用作 well-known 提供者 URL 后缀的别名。
+     * <p>例如别名为 {@code openid-configuration} 时，端点可能为 {@code https://myhost/auth/realms/myrealm/.well-known/openid-configuration}。多个工厂使用相同别名时，优先级最低（数值最小）者生效。</p>
      *
      * @see #getPriority()
-     *
      */
     default String getAlias() {
         return getId();
     }
 
     /**
-     * Use low priority, so custom implementation with alias "openid-configuration" will win over the default implementation
-     * with alias "openid-configuration", which is provided by Keycloak (OIDCWellKnownProviderFactory).
-     *
+     * 返回较低优先级，使自定义 {@code openid-configuration} 实现优先于 Keycloak 内置 {@link org.keycloak.protocol.oidc.OIDCWellKnownProviderFactory}。
      */
     default int getPriority() {
         return 1;
     }
 
     /**
-     * Controls if the {@link WellKnownProvider} is available via server metadata endpoint.
-     * If this method returns true, then the provider will be available under {@code /.well-known/{alias}/realms/{realm}},
-     * where {@code {alias}} is the well-known alias returned by {@link #getAlias()}.
+     * 控制 {@link WellKnownProvider} 是否可通过服务器元数据端点访问。
+     * <p>返回 true 时，提供者可通过 {@code /.well-known/{alias}/realms/{realm}} 暴露，其中 {@code {alias}} 为 {@link #getAlias()} 返回值。默认实现返回 false。</p>
      *
-     * Default implementation returns false.
-     *
-     * @return true if this provider may be exposed via ServerMetadataResource
+     * @return 若可通过 ServerMetadataResource 暴露则为 true
      */
     default boolean isAvailableViaServerMetadata() {
         return false;

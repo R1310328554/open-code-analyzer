@@ -18,16 +18,16 @@
 package org.keycloak.vault;
 
 /**
- * This exception is thrown when the factory fails to init due to a configuration error.
+ * Vault 工厂因配置错误初始化失败时抛出。
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
 public class VaultConfigurationException extends RuntimeException {
 
     /**
-     * Constructs a new {@code VaultConfigurationException}.
+     * 构造 {@code VaultConfigurationException}。
      *
-     * @param message the exception message.
+     * @param message 异常消息
      */
     public VaultConfigurationException(String message) {
         super(message);

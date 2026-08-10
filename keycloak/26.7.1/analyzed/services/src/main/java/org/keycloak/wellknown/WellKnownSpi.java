@@ -22,25 +22,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * Well-Known 元数据的 Keycloak {@link Spi} 定义。
+ * <p>注册 {@link WellKnownProvider} 与 {@link WellKnownProviderFactory}，SPI 名称为 {@code well-known}。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class WellKnownSpi implements Spi {
 
+    /** @return 是否为内部 SPI（不对外暴露扩展点文档） */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code well-known} */
     @Override
     public String getName() {
         return "well-known";
     }
 
+    /** @return 提供者接口类 {@link WellKnownProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return WellKnownProvider.class;
     }
 
+    /** @return 提供者工厂接口类 {@link WellKnownProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return WellKnownProviderFactory.class;

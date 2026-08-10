@@ -12,7 +12,8 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.jboss.logging.Logger;
 
 /**
- * Creates and configures {@link FilesPlainTextVaultProvider}.
+ * 创建并配置 {@link FilesPlainTextVaultProvider} 的工厂，ID 为 {@code files-plaintext}。
+ * <p>从配置读取 vault 目录路径，校验存在性后供 {@link #create(KeycloakSession)} 使用。</p>
  *
  * @author Sebastian Łaskawiec
  */
@@ -20,9 +21,12 @@ public class FilesPlainTextVaultProviderFactory extends AbstractVaultProviderFac
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    /** 提供者工厂标识 {@code files-plaintext}。 */
     public static final String PROVIDER_ID = "files-plaintext";
 
+    /** 配置的 vault 目录路径字符串。 */
     private String vaultDirectory;
+    /** 解析后的 vault 目录 {@link Path}。 */
     private Path vaultPath;
 
     @Override

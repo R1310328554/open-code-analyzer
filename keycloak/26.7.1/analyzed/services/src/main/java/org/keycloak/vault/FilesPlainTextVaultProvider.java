@@ -13,17 +13,14 @@ import jakarta.annotation.Nonnull;
 import org.jboss.logging.Logger;
 
 /**
- * A text-based vault provider, which stores each secret in a separate file. The file name needs to match a vault secret id (or
- * a key for short) and follows the format provided by the configured {@link VaultKeyResolver}. A typical vault directory
- * layout looks like this:
+ * 纯文本文件型 Vault 提供者：每个密钥存储在独立文件中，文件名须与 vault 密钥 ID（简称 key）匹配，格式由配置的 {@link VaultKeyResolver} 决定。
+ * <p>典型目录布局示例：</p>
  * <pre>
- *     ${VAULT}/realma__key1 (contains secret for key 1)
- *     ${VAULT}/realma__key2 (contains secret for key 2)
- *     etc...
+ *     ${VAULT}/realma__key1 （key1 的密钥）
+ *     ${VAULT}/realma__key2 （key2 的密钥）
+ *     …
  * </pre>
- * Note, that in this case each key is prefixed by realm name. This particular kind of layout is used by Kubernetes by default
- * (when mounting a volume into the pod) and can be used by selecting the {@code REALM_UNDERSCORE_KEY} resolver (which is
- * the default resolver when none is defined). Other layouts are available through different resolvers.
+ * <p>上述布局中每个 key 以领域名前缀；Kubernetes 默认挂载 Secret 卷时采用类似结构，可通过 {@code REALM_UNDERSCORE_KEY} 解析器（未配置时的默认解析器）启用。其他布局可通过不同解析器实现。</p>
  *
  * See https://kubernetes.io/docs/concepts/configuration/secret/
  * See https://github.com/keycloak/keycloak-community/blob/main/design/secure-credentials-store.md#plain-text-file-per-secret-kubernetes--openshift
@@ -37,10 +34,11 @@ public class FilesPlainTextVaultProvider extends AbstractVaultProvider {
     private final Path vaultPath;
 
     /**
-     * Creates a new {@link FilesPlainTextVaultProvider}.
+     * 创建 {@link FilesPlainTextVaultProvider} 实例。
      *
-     * @param path A path to a vault. Can not be null.
-     * @param realmName A realm name. Can not be null.
+     * @param path vault 目录路径，不可为 null
+     * @param realmName 领域名称，不可为 null
+     * @param resolvers 密钥解析器列表
      */
     public FilesPlainTextVaultProvider(@Nonnull Path path, @Nonnull String realmName, @Nonnull List<VaultKeyResolver> resolvers) {
         super(realmName, resolvers);
