@@ -20,12 +20,15 @@ import com.alibaba.nacos.common.logging.NacosLoggingAdapter;
 import com.alibaba.nacos.common.logging.NacosLoggingAdapterBuilder;
 
 /**
- * Builder of {@link com.alibaba.nacos.common.logging.NacosLoggingAdapter} for log4j2.
+ * Log4j2 日志适配器的 SPI 构建器。
+ *
+ * <p>通过 {@link com.alibaba.nacos.common.spi.NacosServiceLoader} 注册， 在 classpath 存在 Log4j2 时由 {@link com.alibaba.nacos.common.logging.NacosLogging} 选用。</p>
  *
  * @author xiweng.yy
  */
 public class Log4j2NacosLoggingAdapterBuilder implements NacosLoggingAdapterBuilder {
     
+    /** 创建 {@link Log4J2NacosLoggingAdapter} 实例。 */
     @Override
     public NacosLoggingAdapter build() {
         return new Log4J2NacosLoggingAdapter();

@@ -22,14 +22,16 @@ import org.apache.logging.log4j.core.lookup.AbstractLookup;
 import org.apache.logging.log4j.core.lookup.StrLookup;
 
 /**
- * support log4j2 read properties from NacosClientProperties. for example:
- * <SizeBasedTriggeringPolicy size="${nacosClientProperty:JM.LOG.FILE.SIZE:-10MB}"/>
+ * Log4j2 自定义属性查找插件 {@code nacosClientProperty}。
+ *
+ * <p>使 log4j2.xml 可通过占位符读取 Nacos 客户端属性，例如： {@code ${nacosClientProperty:JM.LOG.FILE.SIZE:-10MB}}。</p>
  *
  * @author onewe
  */
 @Plugin(name = "nacosClientProperty", category = StrLookup.CATEGORY)
 public class NacosClientPropertiesLookup extends AbstractLookup {
     
+    /** 从 {@link Log4j2NacosLoggingPropertiesHolder} 按 key 查找属性值。 */
     @Override
     public String lookup(LogEvent event, String key) {
         return Log4j2NacosLoggingPropertiesHolder.getValue(key);

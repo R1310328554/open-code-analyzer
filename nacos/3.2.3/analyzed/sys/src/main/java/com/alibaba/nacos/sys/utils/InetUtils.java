@@ -49,16 +49,21 @@ import static com.alibaba.nacos.sys.env.Constants.USE_ONLY_SITE_INTERFACES;
 import static com.alibaba.nacos.sys.env.Constants.NACOS_REMOTE_GRPC_LISTEN_IP;
 
 /**
- * Network card operation tool class.
+ * Nacos 本机网络地址解析与自动刷新工具。
+ *
+ * <p>按配置优先级解析 Server IP（系统属性、Spring 配置、网卡扫描）， 定时刷新并在 IP 变更时通过 {@link NotifyCenter} 发布 {@link IPChangeEvent}。</p>
  *
  * @author Nacos
  */
 public class InetUtils {
     
+    /** 网卡解析与 IP 刷新日志。 */
     private static final Logger LOG = LoggerFactory.getLogger(InetUtils.class);
     
+    /** 优先匹配的网段或 IP 前缀列表。 */
     private static final List<String> PREFERRED_NETWORKS = new ArrayList<>();
     
+    /** 需忽略的网卡名称正则列表。 */
     private static final List<String> IGNORED_INTERFACES = new ArrayList<>();
     
     private static final ScheduledExecutorService INET_AUTO_REFRESH_EXECUTOR =
@@ -66,10 +71,13 @@ public class InetUtils {
             InetUtils.class.getCanonicalName(),
             new NameThreadFactory("com.alibaba.inet.ip.auto-refresh"));
     
+    /** 当前解析到的本机对外 IP（volatile 保证可见性）。 */
     private static volatile String selfIP;
     
+    /** 是否仅使用站点本地（内网）地址。 */
     private static boolean useOnlySiteLocalInterface = false;
     
+    /** 是否优先使用主机名而非 IP。 */
     private static boolean preferHostnameOverIP = false;
     
     static {
@@ -98,7 +106,7 @@ public class InetUtils {
     }
     
     /**
-     * refresh ip address.
+     * 重新解析并更新本机 IP，变更时发布事件。
      */
     private static void refreshIp() {
         
@@ -133,11 +141,11 @@ public class InetUtils {
     }
     
     /**
-     * Get ip address from environment
-     * System property nacos.server.ip
-     * Spring property nacos.inetutils.ip-address.
+     * 从环境读取显式配置的 Nacos IP。
      *
-     * @return ip address
+     * <p>优先级：系统属性 {@code nacos.server.ip}，其次 Spring 属性 {@code nacos.inetutils.ip-address}。</p>
+     *
+     * @return 配置的 IP 或域名，未配置时返回 null
      */
     public static String getNacosIp() {
         String nacosIp = System.getProperty(NACOS_SERVER_IP);
@@ -154,9 +162,9 @@ public class InetUtils {
     }
     
     /**
-     * Get ip address.
+     * 在启用 preferHostnameOverIP 时返回本机主机名。
      *
-     * @return ip address
+     * @return 主机名或 canonical 主机名
      */
     private static String getPreferHostnameOverIP() {
         preferHostnameOverIP = Boolean.getBoolean(SYSTEM_PREFER_HOSTNAME_OVER_IP);
@@ -184,14 +192,15 @@ public class InetUtils {
         return preferHostnameOverIp;
     }
     
+    /** 返回当前缓存的本机对外 IP。 */
     public static String getSelfIP() {
         return selfIP;
     }
     
     /**
-     * findFirstNonLoopbackAddress.
+     * 扫描网卡，返回首个非回环且符合偏好规则的 {@link InetAddress}。
      *
-     * @return {@link InetAddress}
+     * @return 解析到的地址，失败时回退 localhost
      */
     public static InetAddress findFirstNonLoopbackAddress() {
         InetAddress result = null;
@@ -244,9 +253,10 @@ public class InetUtils {
     }
     
     /**
-     * check network intreface isUp, not throw SocketException.
-     * @param ifc network interface
-     * @return true or false;
+     * 安全检测网卡是否处于 UP 状态，不向外抛出 {@link SocketException}。
+     *
+     * @param ifc 待检测网卡
+     * @return 网卡可用时返回 true
      */
     public static boolean isUp(NetworkInterface ifc) {
         try {
@@ -289,13 +299,15 @@ public class InetUtils {
     }
     
     /**
-     * {@link com.alibaba.nacos.core.cluster.ServerMemberManager} is listener.
+     * 本机 IP 变更慢事件，{@link com.alibaba.nacos.core.cluster.ServerMemberManager} 等组件监听。
      */
     @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
     public static class IPChangeEvent extends SlowEvent {
         
+        /** 变更前的 IP 地址。 */
         private String oldIP;
         
+        /** 变更后的 IP 地址。 */
         private String newIP;
         
         public String getOldIP() {
@@ -320,6 +332,7 @@ public class InetUtils {
         }
     }
     
+    /** 读取 gRPC 监听 IP 系统属性并校验格式。 */
     public static String getGrpcListenIp() {
         String grpcListenIp = System.getProperty(NACOS_REMOTE_GRPC_LISTEN_IP);
         if (StringUtils.isNotBlank(grpcListenIp) && !InternetAddressUtil.isIp(grpcListenIp)) {

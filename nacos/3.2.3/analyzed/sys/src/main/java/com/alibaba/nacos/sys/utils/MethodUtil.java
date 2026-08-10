@@ -19,21 +19,24 @@ package com.alibaba.nacos.sys.utils;
 import java.lang.reflect.Method;
 
 /**
- * MethodUtil related.
+ * 反射方法安全调用工具类。
+ *
+ * <p>封装 {@link Method#invoke} 的异常处理，在 JMX 指标采集等场景下 安全读取 double/long 返回值，失败时返回 NaN 或 -1。</p>
  *
  * @author yanhom
  */
 public final class MethodUtil {
     
+    /** 工具类禁止实例化。 */
     private MethodUtil() {
     }
     
     /**
-     * Invoke method and return double value.
+     * 反射调用并返回 double 结果。
      *
-     * @param method target method
-     * @param targetObj the object the underlying method is invoked from
-     * @return result
+     * @param method 目标方法，null 时返回 {@link Double#NaN}
+     * @param targetObj 方法所属对象
+     * @return 调用成功时的 double 值，异常时返回 NaN
      */
     public static double invokeAndReturnDouble(Method method, Object targetObj) {
         try {
@@ -44,11 +47,11 @@ public final class MethodUtil {
     }
     
     /**
-     * Invoke method and return long value.
+     * 反射调用并返回 long 结果。
      *
-     * @param method target method
-     * @param targetObj the object the underlying method is invoked from
-     * @return result
+     * @param method 目标方法，null 时返回 -1
+     * @param targetObj 方法所属对象
+     * @return 调用成功时的 long 值，异常时返回 -1
      */
     public static long invokeAndReturnLong(Method method, Object targetObj) {
         try {

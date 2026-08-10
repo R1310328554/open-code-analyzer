@@ -20,30 +20,32 @@ import com.alibaba.nacos.common.logging.NacosLoggingProperties;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 
 /**
- * Log4j2 nacos logging properties holder.
+ * Log4j2 运行时 Nacos 日志属性持有者。
  *
- * <p>
- * Log4j2 use {@link Plugin} annotation to inject Properties lookup to set properties, this holder is to keep the {@link
- * NacosLoggingProperties} and called in {@link NacosClientPropertiesLookup} which is annotate by {@link Plugin}.
- * </p>
+ * <p>Log4j2 通过 {@link Plugin} 注入 {@link org.apache.logging.log4j.core.lookup.StrLookup}； 本类保存 {@link com.alibaba.nacos.common.logging.NacosLoggingProperties}， 供 {@link NacosClientPropertiesLookup} 在 XML 占位符中读取客户端配置。</p>
  *
  * @author xiweng.yy
  */
 public class Log4j2NacosLoggingPropertiesHolder {
     
+    /** 单例持有者实例。 */
     private static final Log4j2NacosLoggingPropertiesHolder INSTANCE =
         new Log4j2NacosLoggingPropertiesHolder();
     
+    /** 当前绑定的 Nacos 日志属性对象。 */
     private NacosLoggingProperties properties;
     
+    /** 在加载 Log4j2 配置前注入属性。 */
     public static void setProperties(NacosLoggingProperties properties) {
         INSTANCE.properties = properties;
     }
     
+    /** 返回当前持有的属性对象。 */
     public static NacosLoggingProperties getProperties() {
         return INSTANCE.properties;
     }
     
+    /** 按 key 读取属性值，未设置时返回 null。 */
     public static String getValue(String key) {
         return null == INSTANCE.properties ? null : INSTANCE.properties.getValue(key, null);
     }

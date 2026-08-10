@@ -24,29 +24,33 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Properties util.
+ * Spring Environment 属性绑定工具。
+ *
+ * <p>基于 {@link Binder} 按前缀将配置项绑定为 {@link Properties} 或 {@code Map}，供 Nacos 各模块读取带前缀的配置块。</p>
  *
  * @author xiweng.yy
  */
 public class PropertiesUtil {
     
+    /** 按前缀绑定为 {@link Properties} 对象。 */
     public static Properties getPropertiesWithPrefix(Environment environment, String prefix) {
         return handleSpringBinder(environment, prefix, Properties.class);
     }
     
+    /** 按前缀绑定为 Map 结构。 */
     public static Map<String, Object> getPropertiesWithPrefixForMap(Environment environment,
         String prefix) {
         return handleSpringBinder(environment, prefix, Map.class);
     }
     
     /**
-     * Handle spring binder to bind object.
+     * 通用 Spring Binder 绑定入口。
      *
-     * @param environment spring environment
-     * @param prefix      properties prefix
-     * @param targetClass target class
-     * @param <T>         target class
-     * @return binder object
+     * @param environment Spring 环境
+     * @param prefix 配置前缀（可带或不带点后缀）
+     * @param targetClass 目标绑定类型
+     * @param <T> 目标类型参数
+     * @return 绑定结果，无匹配时返回 null
      */
     public static <T> T handleSpringBinder(Environment environment, String prefix,
         Class<T> targetClass) {

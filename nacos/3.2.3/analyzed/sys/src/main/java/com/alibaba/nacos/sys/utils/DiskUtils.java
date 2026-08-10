@@ -56,30 +56,36 @@ import static com.alibaba.nacos.common.utils.StringUtils.TOP_PATH;
 import static com.alibaba.nacos.common.utils.StringUtils.WINDOWS_FOLDER_SEPARATOR;
 
 /**
- * IO operates on the utility class.
+ * Nacos 磁盘与文件 IO 工具类。
+ *
+ * <p>封装读写、压缩解压、临时文件与路径合法性校验，供持久化、快照与配置落盘使用； 磁盘满时触发进程退出以保护数据一致性。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public final class DiskUtils {
     
+    /** 磁盘操作日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(DiskUtils.class);
     
+    /** 磁盘空间不足的中文系统错误消息。 */
     private static final String NO_SPACE_CN = "设备上没有空间";
     
     private static final String NO_SPACE_EN = "No space left on device";
     
+    /** 超出磁盘配额的中文错误消息。 */
     private static final String DISK_QUOTA_CN = "超出磁盘限额";
     
     private static final String DISK_QUOTA_EN = "Disk quota exceeded";
     
+    /** 文件读写默认 UTF-8 字符集。 */
     private static final Charset CHARSET = StandardCharsets.UTF_8;
     
     /**
-     * Touch file.
+     * 创建或更新指定目录下文件的修改时间。
      *
-     * @param path     path of fileName
-     * @param fileName fileName
-     * @throws IOException during touch
+     * @param path 目录路径
+     * @param fileName 文件名
+     * @throws IOException 触摸文件失败时抛出
      */
     public static void touch(String path, String fileName) throws IOException {
         if (isIllegalPath(path) || isIllegalFileName(fileName)) {
@@ -98,6 +104,7 @@ public final class DiskUtils {
      *
      * @param file the File to touch
      * @throws IOException If an I/O problem occurs
+      * <p>磁盘文件读写与压缩工具。</p>
      */
     public static void touch(File file) throws IOException {
         FileUtils.touch(file);
@@ -125,6 +132,7 @@ public final class DiskUtils {
      * @throws SecurityException             In the case of the default provider, and a security manager is installed,
      *                                       the {@link SecurityManager#checkWrite(String) checkWrite} method is invoked
      *                                       to check write access to the file.
+      * <p>磁盘文件读写与压缩工具。</p>
      */
     public static File createTmpFile(String dir, String prefix, String suffix) throws IOException {
         return Files.createTempFile(Paths.get(dir), prefix, suffix).toFile();
@@ -146,6 +154,7 @@ public final class DiskUtils {
      * @throws SecurityException             In the case of the default provider, and a security manager is installed,
      *                                       the {@link SecurityManager#checkWrite(String) checkWrite} method is invoked
      *                                       to check write access to the file.
+      * <p>磁盘文件读写与压缩工具。</p>
      */
     public static File createTmpFile(String prefix, String suffix) throws IOException {
         return Files.createTempFile(prefix, suffix).toFile();
@@ -157,7 +166,9 @@ public final class DiskUtils {
      * @param path     directory
      * @param fileName filename
      * @return content
+      * <p>磁盘文件读写与压缩工具。</p>
      */
+    /** 读取指定路径下文本文件内容。 */
     public static String readFile(String path, String fileName) {
         File file = openFile(path, fileName);
         if (null != file && file.exists()) {
@@ -171,7 +182,9 @@ public final class DiskUtils {
      *
      * @param is {@link InputStream}
      * @return content
+      * <p>磁盘文件读写与压缩工具。</p>
      */
+    /** 从输入流按行拼接读取 UTF-8 文本。 */
     public static String readFile(InputStream is) {
         try (BufferedReader reader =
             new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
@@ -191,9 +204,10 @@ public final class DiskUtils {
      *
      * @param file {@link File}
      * @return content
+      * <p>磁盘文件读写与压缩工具。</p>
      */
     public static String readFile(File file) {
-        // CharsetDecoder is documented as not safe for concurrent use, so allocate one per call
+        // CharsetDecoder 非线程安全，每次调用独立分配解码器
         // instead of sharing a static instance across threads.
         CharsetDecoder decoder = CHARSET.newDecoder();
         try (FileInputStream fis = new FileInputStream(file);
@@ -208,14 +222,14 @@ public final class DiskUtils {
                 while (charBuffer.hasRemaining()) {
                     text.append(charBuffer.get());
                 }
-                // compact() preserves any bytes the decoder did not consume - typically the leading
+                // compact() 保留解码器未消费的字节，避免跨块 UTF-8 字符被截断
                 // bytes of a multi-byte UTF-8 character that straddles the 4096-byte chunk boundary.
                 // The previous clear() silently discarded those bytes, corrupting any non-ASCII
                 // content longer than one chunk.
                 buffer.compact();
                 charBuffer.clear();
             }
-            // Flush the trailing partial input and any decoder state once the stream is exhausted.
+            // 流读完后刷新解码器尾部残留状态
             buffer.flip();
             decoder.decode(buffer, charBuffer, true);
             decoder.flush(charBuffer);
@@ -234,7 +248,9 @@ public final class DiskUtils {
      *
      * @param file {@link File}
      * @return content bytes
+      * <p>磁盘文件读写与压缩工具。</p>
      */
+    /** 读取文件内容为字节数组。 */
     public static byte[] readFileBytes(File file) {
         if (file.exists()) {
             String result = readFile(file);
@@ -251,6 +267,7 @@ public final class DiskUtils {
      * @param path     path of file
      * @param fileName file name
      * @return content bytes
+      * <p>磁盘文件读写与压缩工具。</p>
      */
     public static byte[] readFileBytes(String path, String fileName) {
         if (isIllegalPath(path) || isIllegalFileName(fileName)) {
@@ -267,7 +284,9 @@ public final class DiskUtils {
      * @param content content
      * @param append  write append mode
      * @return write success
+      * <p>磁盘文件读写与压缩工具。</p>
      */
+    /** 写入字节到文件，磁盘满时记录告警并退出进程。 */
     public static boolean writeFile(File file, byte[] content, boolean append) {
         try (FileOutputStream fos = new FileOutputStream(file, append);
             FileChannel fileChannel = fos.getChannel()) {
@@ -280,6 +299,7 @@ public final class DiskUtils {
                 if (NO_SPACE_CN.equals(errMsg) || NO_SPACE_EN.equals(errMsg)
                     || errMsg.contains(DISK_QUOTA_CN)
                     || errMsg.contains(DISK_QUOTA_EN)) {
+                    // 磁盘空间耗尽，记录告警后主动退出避免数据损坏
                     LOGGER.warn("磁盘满，自杀退出");
                     System.exit(0);
                 }
@@ -288,6 +308,7 @@ public final class DiskUtils {
         return false;
     }
     
+    /** 静默删除文件或目录，不抛异常。 */
     public static void deleteQuietly(File file) {
         Objects.requireNonNull(file, "file");
         FileUtils.deleteQuietly(file);
@@ -304,7 +325,9 @@ public final class DiskUtils {
      * @param path     directory
      * @param fileName filename
      * @return delete success
+      * <p>磁盘文件读写与压缩工具。</p>
      */
+    /** 删除指定路径下的文件。 */
     public static boolean deleteFile(String path, String fileName) {
         if (isIllegalPath(path) || isIllegalFileName(fileName)) {
             return false;
@@ -328,6 +351,7 @@ public final class DiskUtils {
         FileUtils.forceMkdir(file);
     }
     
+    /** 删除目录后重新创建空目录。 */
     public static void deleteDirThenMkdir(String path) throws IOException {
         deleteDirectory(path);
         forceMkdir(path);
@@ -352,7 +376,9 @@ public final class DiskUtils {
      * @param fileName filename
      * @param rewrite  if rewrite is true, will delete old file and create new one
      * @return {@link File}
+      * <p>磁盘文件读写与压缩工具。</p>
      */
+    /** 打开或创建文件，rewrite 为 true 时先删后建。 */
     public static File openFile(String path, String fileName, boolean rewrite) {
         if (isIllegalPath(path) || isIllegalFileName(fileName)) {
             return null;
@@ -388,7 +414,7 @@ public final class DiskUtils {
         return file;
     }
     
-    // copy from sofa-jraft
+    // 压缩/解压实现借鉴 sofa-jraft
     
     /**
      * Compress a folder in a directory.
@@ -398,7 +424,9 @@ public final class DiskUtils {
      * @param outputFile output file
      * @param checksum   checksum
      * @throws IOException IOException
+      * <p>磁盘文件读写与压缩工具。</p>
      */
+    /** 将目录压缩为 ZIP 并写入校验和。 */
     public static void compress(final String rootDir, final String sourceDir,
         final String outputFile,
         final Checksum checksum) throws IOException {
@@ -411,7 +439,7 @@ public final class DiskUtils {
         }
     }
     
-    // copy from sofa-jraft
+    // 压缩/解压实现借鉴 sofa-jraft
     
     private static void compressDirectoryToZipFile(final String rootDir, final String sourceDir,
         final ZipOutputStream zos) throws IOException {
@@ -438,6 +466,7 @@ public final class DiskUtils {
      * @param outputFile  output file
      * @param checksum    check sum
      * @throws IOException IOException during compress
+      * <p>磁盘文件读写与压缩工具。</p>
      */
     public static void compressIntoZipFile(final String childName, final InputStream inputStream,
         final String outputFile, final Checksum checksum) throws IOException {
@@ -461,7 +490,7 @@ public final class DiskUtils {
         IOUtils.copy(inputStream, zipOutputStream);
     }
     
-    // copy from sofa-jraft
+    // 压缩/解压实现借鉴 sofa-jraft
     
     /**
      * Unzip the target file to the specified folder.
@@ -470,7 +499,9 @@ public final class DiskUtils {
      * @param outputDir  specified folder
      * @param checksum   checksum
      * @throws IOException IOException
+      * <p>磁盘文件读写与压缩工具。</p>
      */
+    /** 解压 ZIP 到目标目录并校验完整性。 */
     public static void decompress(final String sourceFile, final String outputDir,
         final Checksum checksum)
         throws IOException {
@@ -492,7 +523,7 @@ public final class DiskUtils {
                     fos.getFD().sync();
                 }
             }
-            // Continue to read all remaining bytes(extra metadata of ZipEntry) directly from the checked stream,
+            // 继续读取 ZipEntry 尾部元数据以保证校验和正确
             // Otherwise, the checksum value maybe unexpected.
             //
             // See https://coderanch.com/t/279175/java/ZipInputStream
@@ -507,6 +538,7 @@ public final class DiskUtils {
      * @param checksum   checksum
      * @return decompress byte array
      * @throws IOException IOException during decompress
+      * <p>磁盘文件读写与压缩工具。</p>
      */
     public static byte[] decompress(final String sourceFile, final Checksum checksum)
         throws IOException {
@@ -531,13 +563,16 @@ public final class DiskUtils {
      *
      * @param fileName File name
      * @return {@code true} when file name contain <code>..</code> or start with root path.
+      * <p>磁盘文件读写与压缩工具。</p>
      */
+    /** 检测文件名是否含路径穿越或绝对路径前缀。 */
     public static boolean isIllegalFileName(String fileName) {
         return fileName.contains(TOP_PATH) || fileName.startsWith(FOLDER_SEPARATOR)
             || fileName.startsWith(
                 WINDOWS_FOLDER_SEPARATOR);
     }
     
+    /** 检测路径是否包含上级目录引用（..）。 */
     public static boolean isIllegalPath(String path) {
         return path.contains(TOP_PATH);
     }
@@ -571,6 +606,7 @@ public final class DiskUtils {
      * @return an Iterator of the lines in the file, never <code>null</code>
      * @throws IOException in case of an I/O error (file closed)
      * @since 1.2
+      * <p>磁盘文件读写与压缩工具。</p>
      */
     public static LineIterator lineIterator(File file, String encoding) throws IOException {
         return new LineIterator(FileUtils.lineIterator(file, encoding));
@@ -584,11 +620,13 @@ public final class DiskUtils {
      * @throws IOException in case of an I/O error (file closed)
      * @see #lineIterator(File, String)
      * @since 1.3
+      * <p>磁盘文件读写与压缩工具。</p>
      */
     public static LineIterator lineIterator(File file) throws IOException {
         return new LineIterator(FileUtils.lineIterator(file, null));
     }
     
+    /** 按行遍历文件的自动关闭迭代器封装。 */
     public static class LineIterator implements AutoCloseable {
         
         private final org.apache.commons.io.LineIterator target;
@@ -597,6 +635,7 @@ public final class DiskUtils {
          * Constructs an iterator of the lines for a <code>Reader</code>.
          *
          * @param target {@link org.apache.commons.io.LineIterator}
+          * <p>磁盘文件读写与压缩工具。</p>
          */
         LineIterator(org.apache.commons.io.LineIterator target) {
             this.target = target;

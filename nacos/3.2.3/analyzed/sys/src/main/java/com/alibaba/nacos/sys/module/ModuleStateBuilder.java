@@ -19,42 +19,44 @@ package com.alibaba.nacos.sys.module;
 import com.alibaba.nacos.sys.env.DeploymentType;
 
 /**
- * Module state builder.
+ * 模块状态构建器 SPI 接口。
+ *
+ * <p>各子模块通过 {@link com.alibaba.nacos.common.spi.NacosServiceLoader} 注册实现， 由 {@link ModuleStateHolder} 在启动时聚合构建 {@link ModuleState}。</p>
  *
  * @author xiweng.yy
  */
 public interface ModuleStateBuilder {
     
     /**
-     * Build module state.
+     * 构建当前模块的状态快照。
      *
-     * @return ModuleState
+     * @return 填充完毕的 {@link ModuleState}
      */
     ModuleState build();
     
     /**
-     * Whether module is ignored, default return false.
+     * 是否跳过该构建器（默认 false，即参与构建）。
      *
-     * @return boolean
+     * @return true 表示忽略
      */
     default boolean isIgnore() {
         return false;
     }
     
     /**
-     * Whether module is cache, default return true.
+     * 构建结果是否可缓存（默认 true，仅启动时构建一次）。
      *
-     * @return boolean
+     * @return true 表示缓存
      */
     default boolean isCacheable() {
         return true;
     }
     
     /**
-     * Whether module is match deployment type, default return true.
+     * 当前部署类型是否适用该模块（默认 true，全部部署均构建）。
      *
-     * @param type deployment type
-     * @return boolean
+     * @param type 部署类型枚举
+     * @return true 表示匹配
      */
     default boolean isMatchDeployment(DeploymentType type) {
         return true;

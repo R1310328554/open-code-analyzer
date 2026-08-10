@@ -26,18 +26,15 @@ import java.io.InputStream;
 import java.net.URI;
 
 /**
- * Custom Log4j2 Configurator for Nacos logging.
- * 
- * <p>This class provides a framework-compliant way to load Nacos logging configuration
- * without interfering with user's application logging setup. It follows the same design
- * pattern as Logback's NacosLogbackConfiguratorAdapterV1.
- * 
- * <p>Key features:
+ * Nacos 专用 Log4j2 配置加载器。
+ *
+ * <p>以框架合规方式将 Nacos 日志配置增量合并到现有 {@link LoggerContext}， 不替换用户应用日志；设计模式与 Logback 版 {@code NacosLogbackConfiguratorAdapterV1} 一致。</p>
+ *
+ * <p>要点：</p>
  * <ul>
- *   <li>Uses {@link Configuration#initialize()} instead of {@link Configuration#start()}
- *       to avoid ClassUnload issue (#13940)</li>
- *   <li>Additively merges Nacos configuration into existing LoggerContext</li>
- *   <li>Non-invasive: does not replace user's logging configuration</li>
+ *   <li>使用 {@link Configuration#initialize()} 而非 {@link Configuration#start()}， 避免 ClassUnload 问题（#13940）</li>
+ *   <li>仅追加 Nacos Appender 与 {@code com.alibaba.nacos} 包 Logger</li>
+ *   <li>非侵入式，保留用户原有日志配置</li>
  * </ul>
  *
  * @author xiweng.yy
@@ -46,28 +43,28 @@ import java.net.URI;
  */
 public class NacosLog4j2Configurator {
     
+    /** 仅合并该包前缀下的 Logger 配置。 */
     private static final String NACOS_LOGGER_PREFIX = "com.alibaba.nacos";
     
     /**
-     * Configure LoggerContext by loading Nacos configuration from URI.
-     * This method additively merges Nacos appenders and loggers into the existing configuration.
+     * 从 URI 加载 Nacos Log4j2 配置并增量合并到现有 LoggerContext。
      *
-     * @param loggerContext The LoggerContext to configure
-     * @param configLocation URI of the Nacos Log4j2 configuration file
-     * @throws IOException if configuration file cannot be read
+     * @param loggerContext 待配置的 LoggerContext
+     * @param configLocation Nacos log4j2 配置文件 URI
+     * @throws IOException 配置文件无法读取时抛出
      */
     public void configure(LoggerContext loggerContext, URI configLocation) throws IOException {
         Configuration nacosConfig = loadConfiguration(loggerContext, configLocation);
         
-        // Key fix for issue #13940: Use initialize() instead of start()
+        // 修复 #13940：使用 initialize() 而非 start() 避免插件重复初始化
         // initialize() sets up the configuration without triggering plugin reinitialization
         nacosConfig.initialize();
         
-        // Get the current active configuration
+        // 获取当前活跃的 LoggerContext 配置
         Configuration currentConfig = loggerContext.getConfiguration();
         
-        // Additively merge Nacos appenders (non-invasive approach for middleware)
-        // Note: Appenders are started individually and added to currentConfig
+        // 增量合并 Nacos Appender，中间件非侵入式接入
+        // Appender 单独启动后注册到 currentConfig，不从 nacosConfig 移除
         // They are NOT removed from nacosConfig to avoid lifecycle issues
         nacosConfig.getAppenders().values().forEach(appender -> {
             if (!appender.isStarted()) {
@@ -76,29 +73,28 @@ public class NacosLog4j2Configurator {
             currentConfig.addAppender(appender);
         });
         
-        // Add only Nacos-specific loggers to avoid interfering with user configuration
+        // 仅追加 com.alibaba.nacos 包 Logger，避免覆盖用户配置
         nacosConfig.getLoggers().entrySet().stream()
             .filter(entry -> entry.getKey().startsWith(NACOS_LOGGER_PREFIX))
             .forEach(entry -> currentConfig.addLogger(entry.getKey(), entry.getValue()));
         
-        // Apply the merged configuration
+        // 刷新 Logger 引用使合并生效
         loggerContext.updateLoggers();
         
-        // Important: Do NOT call nacosConfig.stop() here!
-        // The appenders and loggers have been transferred to currentConfig.
+        // 切勿调用 nacosConfig.stop()，Appender 已转移给 currentConfig
+        // Appender 与 Logger 已归属 currentConfig，由 GC 回收 nacosConfig
         // Calling stop() would shut down the appenders that are now owned by currentConfig.
-        // nacosConfig will be garbage collected naturally, and since we only called initialize()
+        // 仅 initialize 未 start，无后台线程需清理
         // (not start()), there are no active background threads or resources to clean up.
     }
     
     /**
-     * Load Log4j2 configuration from URI using ConfigurationFactory.
-     * This is the standard Log4j2 way to parse configuration files.
+     * 通过 {@link ConfigurationFactory} 从 URI 解析 Log4j2 配置。
      *
-     * @param ctx LoggerContext
-     * @param configLocation URI of configuration file
-     * @return Parsed Configuration object
-     * @throws IOException if configuration cannot be loaded
+     * @param ctx LoggerContext 上下文
+     * @param configLocation 配置文件 URI
+     * @return 解析后的 Configuration 对象
+     * @throws IOException 加载失败时抛出
      */
     private Configuration loadConfiguration(LoggerContext ctx, URI configLocation)
         throws IOException {

@@ -31,20 +31,27 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Module State Holder.
+ * 全局模块状态持有者（单例）。
+ *
+ * <p>启动时通过 SPI 加载全部 {@link ModuleStateBuilder}，按部署类型过滤后构建并缓存 {@link ModuleState}；对非缓存构建器在每次查询时重建。</p>
  *
  * @author xiweng.yy
  */
 public class ModuleStateHolder {
     
+    /** 模块状态构建失败时的告警日志。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(ModuleStateHolder.class);
     
+    /** 懒加载单例实例。 */
     private static final ModuleStateHolder INSTANCE = new ModuleStateHolder();
     
+    /** 模块名到状态快照的映射表。 */
     private final Map<String, ModuleState> moduleStates;
     
+    /** 已注册且通过部署过滤的构建器列表。 */
     private final List<ModuleStateBuilder> moduleStateBuilders = new ArrayList<>();
     
+    /** 私有构造：SPI 加载并初始化全部模块状态。 */
     private ModuleStateHolder() {
         this.moduleStates = new HashMap<>();
         for (ModuleStateBuilder each : NacosServiceLoader.load(ModuleStateBuilder.class)) {
@@ -65,10 +72,12 @@ public class ModuleStateHolder {
         }
     }
     
+    /** 获取全局单例。 */
     public static ModuleStateHolder getInstance() {
         return INSTANCE;
     }
     
+    /** 对标记为非缓存的构建器重新构建状态。 */
     private void reBuildModuleState() {
         for (ModuleStateBuilder each : moduleStateBuilders) {
             if (each.isCacheable()) {
@@ -85,27 +94,30 @@ public class ModuleStateHolder {
         
     }
     
+    /** 按模块名查询状态，不存在时返回空 Optional。 */
     public Optional<ModuleState> getModuleState(String moduleName) {
         reBuildModuleState();
         return Optional.ofNullable(moduleStates.get(moduleName));
     }
     
+    /** 返回全部模块状态的副本集合。 */
     public Set<ModuleState> getAllModuleStates() {
         reBuildModuleState();
         return new HashSet<>(moduleStates.values());
     }
     
+    /** 按模块名与状态名取值，缺失时返回空字符串。 */
     public String getStateValueByName(String moduleName, String stateName) {
         return getStateValueByName(moduleName, stateName, StringUtils.EMPTY);
     }
     
     /**
-     * Get State Value by module name and state name.
+     * 按模块名与状态名取值，支持泛型默认值。
      *
-     * @param moduleName   module name of state
-     * @param stateName    state name
-     * @param defaultValue default value when can't find module or state
-     * @return state value
+     * @param moduleName 模块名
+     * @param stateName 状态项名
+     * @param defaultValue 模块或状态不存在时的默认值
+     * @return 状态值
      */
     public <T> T getStateValueByName(String moduleName, String stateName, T defaultValue) {
         Optional<ModuleState> moduleState = getModuleState(moduleName);
@@ -116,11 +128,11 @@ public class ModuleStateHolder {
     }
     
     /**
-     * Search State Value by state name one by one.
+     * 跨模块按状态名线性搜索首个匹配值。
      *
-     * @param stateName    state name
-     * @param defaultValue default value when can't find module or state
-     * @return state value
+     * @param stateName 状态项名
+     * @param defaultValue 未找到时的默认值
+     * @return 状态值
      */
     @SuppressWarnings("all")
     public <T> T searchStateValue(String stateName, T defaultValue) {

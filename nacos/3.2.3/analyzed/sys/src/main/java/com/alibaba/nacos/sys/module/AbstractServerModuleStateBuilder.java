@@ -19,12 +19,15 @@ package com.alibaba.nacos.sys.module;
 import com.alibaba.nacos.sys.env.DeploymentType;
 
 /**
- * Abstract server type Module State Builder.
+ * 服务端部署类型的模块状态构建器抽象基类。
+ *
+ * <p>默认仅匹配 {@link com.alibaba.nacos.sys.env.DeploymentType#MERGED} 与 {@link com.alibaba.nacos.sys.env.DeploymentType#SERVER} 两种部署模式， 供各业务模块在 Server 进程中注册 {@link ModuleState}。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractServerModuleStateBuilder implements ModuleStateBuilder {
     
+    /** 判断当前部署类型是否为合并或独立 Server 模式。 */
     @Override
     public boolean isMatchDeployment(DeploymentType type) {
         return DeploymentType.MERGED.equals(type) || DeploymentType.SERVER.equals(type);

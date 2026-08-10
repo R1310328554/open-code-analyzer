@@ -27,7 +27,9 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 /**
- * Nacos global tool class.
+ * Nacos 全局 Spring 应用上下文工具类。
+ *
+ * <p>实现 {@link ApplicationContextInitializer}，在容器启动时注入 {@link ApplicationContext}，供非 Spring 管理的静态代码获取 Bean、发布事件与加载资源。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -35,22 +37,28 @@ import java.util.function.Consumer;
 public class ApplicationUtils
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
     
+    /** 全局持有的 Spring 应用上下文。 */
     private static ApplicationContext applicationContext;
     
+    /** Nacos 进程是否已完成启动的标志位。 */
     private static boolean started = false;
     
+    /** 返回 Nacos 是否已标记为启动完成。 */
     public static boolean isStarted() {
         return started;
     }
     
+    /** 设置 Nacos 启动完成标志。 */
     public static void setStarted(boolean started) {
         ApplicationUtils.started = started;
     }
     
+    /** 按 Bean 名称获取实例。 */
     public static Object getBean(String name) throws BeansException {
         return applicationContext.getBean(name);
     }
     
+    /** 按名称与类型获取 Bean。 */
     public static <T> T getBean(String name, Class<T> requiredType) throws BeansException {
         return applicationContext.getBean(name, requiredType);
     }
@@ -59,10 +67,12 @@ public class ApplicationUtils
         return applicationContext.getBean(name, args);
     }
     
+    /** 按类型获取唯一 Bean。 */
     public static <T> T getBean(Class<T> requiredType) throws BeansException {
         return applicationContext.getBean(requiredType);
     }
     
+    /** Bean 存在时执行 consumer，不存在则静默跳过。 */
     public static <T> void getBeanIfExist(Class<T> requiredType, Consumer<T> consumer)
         throws BeansException {
         try {
@@ -76,6 +86,7 @@ public class ApplicationUtils
         return applicationContext.getBean(requiredType, args);
     }
     
+    /** 判断容器中是否注册了指定名称的 Bean。 */
     public static boolean containsBean(String name) {
         return applicationContext.containsBean(name);
     }
@@ -84,10 +95,12 @@ public class ApplicationUtils
         return applicationContext.getType(name);
     }
     
+    /** 向 Spring 容器发布应用事件。 */
     public static void publishEvent(Object event) {
         applicationContext.publishEvent(event);
     }
     
+    /** 按 Ant 风格路径模式批量加载资源。 */
     public static Resource[] getResources(String locationPattern) throws IOException {
         return applicationContext.getResources(locationPattern);
     }
@@ -100,10 +113,12 @@ public class ApplicationUtils
         return applicationContext.getClassLoader();
     }
     
+    /** 返回当前持有的 ApplicationContext。 */
     public static ApplicationContext getApplicationContext() {
         return applicationContext;
     }
     
+    /** 手动注入应用上下文（测试或特殊启动场景）。 */
     public static void injectContext(ConfigurableApplicationContext context) {
         ApplicationUtils.applicationContext = context;
     }
@@ -111,10 +126,10 @@ public class ApplicationUtils
     @Override
     public void initialize(ConfigurableApplicationContext context) {
         if (null == applicationContext) {
-            // First time be called, set the context directly.
+            // 首次初始化，直接保存根上下文
             applicationContext = context;
         } else if (context.getParent() == applicationContext) {
-            // Not first time be called, which means sub context initialize, only store the first sub context.
+            // 子上下文初始化时，仅保留第一个子上下文引用
             applicationContext = context;
         }
     }
