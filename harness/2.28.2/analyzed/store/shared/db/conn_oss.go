@@ -14,6 +14,7 @@
 
 // +build oss
 
+// db 包在 OSS 构建中提供仅 SQLite 的数据库连接。
 package db
 
 import (
@@ -25,7 +26,7 @@ import (
 	"github.com/drone/drone/store/shared/migrate/sqlite"
 )
 
-// Connect to an embedded sqlite database.
+// Connect 连接内嵌 SQLite 数据库并执行迁移（OSS 构建专用）。
 func Connect(driver, datasource string, maxOpenConnections int) (*DB, error) {
 	db, err := sql.Open(driver, datasource)
 	if err != nil {

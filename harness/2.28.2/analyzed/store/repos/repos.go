@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// repos 包实现 core.RepositoryStore，负责仓库 CRUD 与关联查询。
 package repos
 
 import (
@@ -21,15 +22,17 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// New returns a new RepositoryStore.
+// New 创建并返回 core.RepositoryStore 实现。
 func New(db *db.DB) core.RepositoryStore {
 	return &repoStore{db}
 }
 
+// repoStore 是 core.RepositoryStore 的数据库实现。
 type repoStore struct {
 	db *db.DB
 }
 
+// List 返回指定用户有权限访问的全部仓库。
 func (s *repoStore) List(ctx context.Context, id int64) ([]*core.Repository, error) {
 	var out []*core.Repository
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -48,6 +51,7 @@ func (s *repoStore) List(ctx context.Context, id int64) ([]*core.Repository, err
 	return out, err
 }
 
+// ListLatest 返回用户活跃仓库及其最新一次构建。
 func (s *repoStore) ListLatest(ctx context.Context, id int64) ([]*core.Repository, error) {
 	var out []*core.Repository
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -73,6 +77,7 @@ func (s *repoStore) ListLatest(ctx context.Context, id int64) ([]*core.Repositor
 	return out, err
 }
 
+// ListRecent 返回用户最近 25 条含构建记录的仓库。
 func (s *repoStore) ListRecent(ctx context.Context, id int64) ([]*core.Repository, error) {
 	var out []*core.Repository
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -91,6 +96,7 @@ func (s *repoStore) ListRecent(ctx context.Context, id int64) ([]*core.Repositor
 	return out, err
 }
 
+// ListIncomplete 返回存在 pending/running 阶段的不完整构建所属仓库。
 func (s *repoStore) ListIncomplete(ctx context.Context) ([]*core.Repository, error) {
 	var out []*core.Repository
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -104,6 +110,7 @@ func (s *repoStore) ListIncomplete(ctx context.Context) ([]*core.Repository, err
 	return out, err
 }
 
+// ListRunningStatus 返回所有 pending/running 阶段对应的仓库-构建-阶段快照。
 func (s *repoStore) ListRunningStatus(ctx context.Context) ([]*core.RepoBuildStage, error) {
 	var out []*core.RepoBuildStage
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -117,6 +124,7 @@ func (s *repoStore) ListRunningStatus(ctx context.Context) ([]*core.RepoBuildSta
 	return out, err
 }
 
+// ListAll 分页返回全部仓库（管理员用途）。
 func (s *repoStore) ListAll(ctx context.Context, limit, offset int) ([]*core.Repository, error) {
 	var out []*core.Repository
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -138,6 +146,7 @@ func (s *repoStore) ListAll(ctx context.Context, limit, offset int) ([]*core.Rep
 	return out, err
 }
 
+// Find 按主键 ID 查找仓库。
 func (s *repoStore) Find(ctx context.Context, id int64) (*core.Repository, error) {
 	out := &core.Repository{ID: id}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -152,6 +161,7 @@ func (s *repoStore) Find(ctx context.Context, id int64) (*core.Repository, error
 	return out, err
 }
 
+// FindName 按 namespace/name 组合 slug 查找仓库。
 func (s *repoStore) FindName(ctx context.Context, namespace, name string) (*core.Repository, error) {
 	out := &core.Repository{Slug: namespace + "/" + name}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -166,6 +176,7 @@ func (s *repoStore) FindName(ctx context.Context, namespace, name string) (*core
 	return out, err
 }
 
+// Create 插入新仓库记录；Postgres 使用 RETURNING 获取 ID。
 func (s *repoStore) Create(ctx context.Context, repo *core.Repository) error {
 	if s.db.Driver() == db.Postgres {
 		return s.createPostgres(ctx, repo)
@@ -173,9 +184,10 @@ func (s *repoStore) Create(ctx context.Context, repo *core.Repository) error {
 	return s.create(ctx, repo)
 }
 
+// create 在非 Postgres 驱动下插入仓库并获取 LastInsertId。
 func (s *repoStore) create(ctx context.Context, repo *core.Repository) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
-		repo.Version = 1 // set the initial record version
+		repo.Version = 1 // 设置初始记录版本号
 		params := ToParams(repo)
 		stmt, args, err := binder.BindNamed(stmtInsert, params)
 		if err != nil {
@@ -190,9 +202,10 @@ func (s *repoStore) create(ctx context.Context, repo *core.Repository) error {
 	})
 }
 
+// createPostgres 在 Postgres 下插入仓库并通过 RETURNING 获取 ID。
 func (s *repoStore) createPostgres(ctx context.Context, repo *core.Repository) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
-		repo.Version = 1 // set the initial record version
+		repo.Version = 1 // 设置初始记录版本号
 		params := ToParams(repo)
 		stmt, args, err := binder.BindNamed(stmtInsertPg, params)
 		if err != nil {
@@ -202,10 +215,12 @@ func (s *repoStore) createPostgres(ctx context.Context, repo *core.Repository) e
 	})
 }
 
+// Activate 激活仓库（委托 Update 持久化 active 标志）。
 func (s *repoStore) Activate(ctx context.Context, repo *core.Repository) error {
 	return s.Update(ctx, repo)
 }
 
+// Update 以乐观锁方式更新仓库；版本冲突时返回 ErrOptimisticLock。
 func (s *repoStore) Update(ctx context.Context, repo *core.Repository) error {
 	versionNew := repo.Version + 1
 	versionOld := repo.Version
@@ -236,6 +251,7 @@ func (s *repoStore) Update(ctx context.Context, repo *core.Repository) error {
 	return err
 }
 
+// Delete 按主键删除仓库记录。
 func (s *repoStore) Delete(ctx context.Context, repo *core.Repository) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params := ToParams(repo)
@@ -245,6 +261,7 @@ func (s *repoStore) Delete(ctx context.Context, repo *core.Repository) error {
 	})
 }
 
+// Count 统计活跃仓库总数。
 func (s *repoStore) Count(ctx context.Context) (i int64, err error) {
 	err = s.db.View(func(queryer db.Queryer, binder db.Binder) error {
 		params := map[string]interface{}{"repo_active": true}
@@ -254,6 +271,7 @@ func (s *repoStore) Count(ctx context.Context) (i int64, err error) {
 	return
 }
 
+// Increment 递增仓库构建计数器；乐观锁冲突时重读并重试。
 func (s *repoStore) Increment(ctx context.Context, repo *core.Repository) (*core.Repository, error) {
 	for {
 		repo.Counter++
@@ -493,6 +511,15 @@ WHERE repo_id = :repo_id
   AND repo_version = :repo_version_old
 `
 
+// TODO(bradrydzewski): 此查询需性能调优。
+// 可行方案是利用 repo_counter（最新构建号）与 builds 表关联：
+//
+//   FROM repos LEFT OUTER JOIN builds ON (
+//     repos.repo_id = builds.build_repo_id AND
+//     builds.build_number = repos.repo_counter
+//   )
+//   INNER JOIN perms ON perms.perm_repo_uid = repos.repo_uid
+//
 // TODO(bradrydzewski) this query needs performance tuning.
 // one approach that is promising is the ability to use the
 // repo_counter (latest build number) to join on the build

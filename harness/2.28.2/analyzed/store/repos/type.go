@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// repos 包定义用于 LEFT JOIN 构建表的可空中间结构。
 package repos
 
 import (
@@ -23,6 +24,7 @@ import (
 	"github.com/jmoiron/sqlx/types"
 )
 
+// nullBuild 封装 LEFT JOIN builds 时各字段的可空 SQL 类型。
 type nullBuild struct {
 	ID           sql.NullInt64
 	RepoID       sql.NullInt64
@@ -61,7 +63,7 @@ type nullBuild struct {
 	Version      sql.NullInt64
 }
 
-func (b *nullBuild) value() *core.Build {
+// value 将 nullBuild 转换为 core.Build；build_id 为 0 时不附加 Build。
 	params := map[string]string{}
 	json.Unmarshal(b.Params, &params)
 

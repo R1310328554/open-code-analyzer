@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// db 包提供非 OSS 构建的数据库连接、Ping 与迁移入口。
 package db
 
 import (
@@ -18,7 +19,7 @@ import (
 	"github.com/drone/drone/store/shared/migrate/sqlite"
 )
 
-// Connect to a database and verify with a ping.
+// Connect 连接数据库并通过 Ping 验证可用性，随后执行自动迁移。
 func Connect(driver, datasource string, maxOpenConnections int) (*DB, error) {
 	db, err := sql.Open(driver, datasource)
 	if err != nil {
@@ -34,7 +35,7 @@ func Connect(driver, datasource string, maxOpenConnections int) (*DB, error) {
 	if err := setupDatabase(db, driver); err != nil {
 		return nil, err
 	}
-	// generally set to 0, user configured for larger installs
+	// 通常为 0；大型部署可由用户配置最大连接数
 	db.SetMaxOpenConns(maxOpenConnections)
 
 	var engine Driver
@@ -58,9 +59,7 @@ func Connect(driver, datasource string, maxOpenConnections int) (*DB, error) {
 	}, nil
 }
 
-// helper function to ping the database with backoff to ensure
-// a connection can be established before we proceed with the
-// database setup and migration.
+// pingDatabase 以退避重试方式 Ping 数据库，确保迁移前连接可用。
 func pingDatabase(db *sql.DB) (err error) {
 	for i := 0; i < 30; i++ {
 		err = db.Ping()
@@ -72,8 +71,7 @@ func pingDatabase(db *sql.DB) (err error) {
 	return
 }
 
-// helper function to setup the database by performing automated
-// database migration steps.
+// setupDatabase 根据驱动类型执行自动数据库迁移。
 func setupDatabase(db *sql.DB, driver string) error {
 	switch driver {
 	case "mysql":

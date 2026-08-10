@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// repos 包提供仓库及关联构建记录的 SQL 扫描辅助函数。
 package repos
 
 import (
@@ -21,8 +22,7 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// ToParams converts the Repository structure to a set
-// of named query parameters.
+// ToParams 将 Repository 结构体转换为命名查询参数字典。
 func ToParams(v *core.Repository) map[string]interface{} {
 	return map[string]interface{}{
 		"repo_id":             v.ID,
@@ -59,8 +59,7 @@ func ToParams(v *core.Repository) map[string]interface{} {
 	}
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
 func scanRow(scanner db.Scanner, dest *core.Repository) error {
 	return scanner.Scan(
 		&dest.ID,
@@ -97,8 +96,8 @@ func scanRow(scanner db.Scanner, dest *core.Repository) error {
 	)
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
+// scanRows 迭代 sql.Rows，扫描全部仓库记录。
 func scanRows(rows *sql.Rows) ([]*core.Repository, error) {
 	defer rows.Close()
 
@@ -114,8 +113,8 @@ func scanRows(rows *sql.Rows) ([]*core.Repository, error) {
 	return repos, nil
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
+// scanRowBuild 扫描含 LEFT JOIN 构建字段的仓库行。
 func scanRowBuild(scanner db.Scanner, dest *core.Repository) error {
 	build := new(nullBuild)
 	err := scanner.Scan(
@@ -150,7 +149,7 @@ func scanRowBuild(scanner db.Scanner, dest *core.Repository) error {
 		&dest.Version,
 		&dest.Signer,
 		&dest.Secret,
-		// build parameters
+		// 构建（Build）字段
 		&build.ID,
 		&build.RepoID,
 		&build.Trigger,
@@ -192,8 +191,8 @@ func scanRowBuild(scanner db.Scanner, dest *core.Repository) error {
 	return err
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
+// scanRowsBuild 批量扫描含构建信息的仓库行。
 func scanRowsBuild(rows *sql.Rows) ([]*core.Repository, error) {
 	defer rows.Close()
 
@@ -209,7 +208,8 @@ func scanRowsBuild(rows *sql.Rows) ([]*core.Repository, error) {
 	return repos, nil
 }
 
-// helper function scans the sql.Row and copies the column values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
+// repoBuildStageRowBuild 扫描单条仓库-构建-阶段运行状态行。
 func repoBuildStageRowBuild(scanner db.Scanner, dest *core.RepoBuildStage) error {
 	err := scanner.Scan(
 		&dest.RepoNamespace,
@@ -242,7 +242,8 @@ func repoBuildStageRowBuild(scanner db.Scanner, dest *core.RepoBuildStage) error
 	return err
 }
 
-// helper function scans the sql.Row and copies the column values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
+// repoBuildStageRowsBuild 批量扫描仓库-构建-阶段运行状态。
 func repoBuildStageRowsBuild(rows *sql.Rows) ([]*core.RepoBuildStage, error) {
 	defer rows.Close()
 

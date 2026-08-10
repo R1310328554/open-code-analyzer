@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// global 包提供组织级密钥的加密、扫描与参数转换辅助函数。
 package global
 
 import (
@@ -14,8 +15,7 @@ import (
 	"github.com/drone/drone/store/shared/encrypt"
 )
 
-// helper function converts the User structure to a set
-// of named query parameters.
+// toParams 将 Secret 结构体转换为命名查询参数字典（含加密后的密文）。
 func toParams(encrypt encrypt.Encrypter, secret *core.Secret) (map[string]interface{}, error) {
 	ciphertext, err := encrypt.Encrypt(secret.Data)
 	if err != nil {
@@ -32,8 +32,7 @@ func toParams(encrypt encrypt.Encrypter, secret *core.Secret) (map[string]interf
 	}, nil
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
 func scanRow(encrypt encrypt.Encrypter, scanner db.Scanner, dst *core.Secret) error {
 	var ciphertext []byte
 	err := scanner.Scan(
@@ -56,9 +55,8 @@ func scanRow(encrypt encrypt.Encrypter, scanner db.Scanner, dst *core.Secret) er
 	return nil
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
-func scanRows(encrypt encrypt.Encrypter, rows *sql.Rows) ([]*core.Secret, error) {
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
+// scanRows 批量扫描组织密钥行并解密 secret_data。 ([]*core.Secret, error) {
 	defer rows.Close()
 
 	secrets := []*core.Secret{}

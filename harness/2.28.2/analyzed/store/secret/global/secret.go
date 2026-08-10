@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// global 包实现 core.GlobalSecretStore，管理组织命名空间下的密钥。
 package global
 
 import (
@@ -14,7 +15,7 @@ import (
 	"github.com/drone/drone/store/shared/encrypt"
 )
 
-// New returns a new global Secret database store.
+// New 创建并返回全局（组织级）Secret 数据库存储。
 func New(db *db.DB, enc encrypt.Encrypter) core.GlobalSecretStore {
 	return &secretStore{
 		db:  db,
@@ -22,11 +23,13 @@ func New(db *db.DB, enc encrypt.Encrypter) core.GlobalSecretStore {
 	}
 }
 
+// secretStore 是密钥存储的数据库实现。
 type secretStore struct {
 	db  *db.DB
 	enc encrypt.Encrypter
 }
 
+// List 列出指定命名空间下全部组织密钥。
 func (s *secretStore) List(ctx context.Context, namespace string) ([]*core.Secret, error) {
 	var out []*core.Secret
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -45,6 +48,7 @@ func (s *secretStore) List(ctx context.Context, namespace string) ([]*core.Secre
 	return out, err
 }
 
+// ListAll 列出系统中全部组织密钥。
 func (s *secretStore) ListAll(ctx context.Context) ([]*core.Secret, error) {
 	var out []*core.Secret
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -58,6 +62,7 @@ func (s *secretStore) ListAll(ctx context.Context) ([]*core.Secret, error) {
 	return out, err
 }
 
+// Find 按主键 ID 查找密钥。
 func (s *secretStore) Find(ctx context.Context, id int64) (*core.Secret, error) {
 	out := &core.Secret{ID: id}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -75,6 +80,7 @@ func (s *secretStore) Find(ctx context.Context, id int64) (*core.Secret, error) 
 	return out, err
 }
 
+// FindName 按命名空间与名称查找组织密钥。
 func (s *secretStore) FindName(ctx context.Context, namespace, name string) (*core.Secret, error) {
 	out := &core.Secret{Name: name, Namespace: namespace}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -92,6 +98,7 @@ func (s *secretStore) FindName(ctx context.Context, namespace, name string) (*co
 	return out, err
 }
 
+// Create 插入新密钥；Postgres 使用 RETURNING 获取 ID。
 func (s *secretStore) Create(ctx context.Context, secret *core.Secret) error {
 	if s.db.Driver() == db.Postgres {
 		return s.createPostgres(ctx, secret)
@@ -99,6 +106,7 @@ func (s *secretStore) Create(ctx context.Context, secret *core.Secret) error {
 	return s.create(ctx, secret)
 }
 
+// create 在非 Postgres 驱动下插入密钥。
 func (s *secretStore) create(ctx context.Context, secret *core.Secret) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params, err := toParams(s.enc, secret)
@@ -118,6 +126,7 @@ func (s *secretStore) create(ctx context.Context, secret *core.Secret) error {
 	})
 }
 
+// createPostgres 在 Postgres 下插入密钥。
 func (s *secretStore) createPostgres(ctx context.Context, secret *core.Secret) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params, err := toParams(s.enc, secret)
@@ -132,6 +141,7 @@ func (s *secretStore) createPostgres(ctx context.Context, secret *core.Secret) e
 	})
 }
 
+// Update 更新密钥明文（写入前加密）及 PR 相关标志。
 func (s *secretStore) Update(ctx context.Context, secret *core.Secret) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params, err := toParams(s.enc, secret)
@@ -147,6 +157,7 @@ func (s *secretStore) Update(ctx context.Context, secret *core.Secret) error {
 	})
 }
 
+// Delete 按主键删除密钥记录。
 func (s *secretStore) Delete(ctx context.Context, secret *core.Secret) error {
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
 		params, err := toParams(s.enc, secret)

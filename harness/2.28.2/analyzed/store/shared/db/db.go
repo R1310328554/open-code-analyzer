@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// db 包封装 sqlx 连接池，提供只读 View、写锁 Lock 与事务 Update。
 package db
 
 import (
@@ -21,10 +22,10 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Driver defines the database driver.
+// Driver 表示数据库驱动类型。
 type Driver int
 
-// Database driver enums.
+// 数据库驱动枚举常量。
 const (
 	Sqlite = iota + 1
 	Mysql
@@ -34,11 +35,13 @@ const (
 type (
 	// A Scanner represents an object that can be scanned
 	// for values.
+	// Scanner 表示可从 SQL 结果集 Scan 值的对象。
 	Scanner interface {
 		Scan(dest ...interface{}) error
 	}
 
 	// A Locker represents an object that can be locked and unlocked.
+	// Locker 表示可加读/写锁的对象（SQLite 并发控制）。
 	Locker interface {
 		Lock()
 		Unlock()
@@ -47,12 +50,14 @@ type (
 	}
 
 	// Binder interface defines database field bindings.
+	// Binder 定义命名参数绑定接口。
 	Binder interface {
 		BindNamed(query string, arg interface{}) (string, []interface{}, error)
 	}
 
 	// Queryer interface defines a set of methods for
 	// querying the database.
+	// Queryer 定义数据库只读查询方法集。
 	Queryer interface {
 		Query(query string, args ...interface{}) (*sql.Rows, error)
 		QueryRow(query string, args ...interface{}) *sql.Row
@@ -60,6 +65,7 @@ type (
 
 	// Execer interface defines a set of methods for executing
 	// read and write commands against the database.
+	// Execer 定义数据库读写执行方法集。
 	Execer interface {
 		Queryer
 		Exec(query string, args ...interface{}) (sql.Result, error)
@@ -67,6 +73,7 @@ type (
 
 	// DB is a pool of zero or more underlying connections to
 	// the drone database.
+	// DB 封装 Drone 数据库连接池及驱动类型。
 	DB struct {
 		conn   *sqlx.DB
 		lock   Locker
@@ -77,6 +84,7 @@ type (
 // View executes a function within the context of a managed read-only
 // transaction. Any error that is returned from the function is returned
 // from the View() method.
+// View 在共享读锁下执行只读查询回调。
 func (db *DB) View(fn func(Queryer, Binder) error) error {
 	db.lock.RLock()
 	err := fn(db.conn, db.conn)
@@ -87,6 +95,7 @@ func (db *DB) View(fn func(Queryer, Binder) error) error {
 // Lock obtains a write lock to the database (sqlite only) and executes
 // a function. Any error that is returned from the function is returned
 // from the Lock() method.
+// Lock 获取写锁（SQLite）后执行写操作回调。
 func (db *DB) Lock(fn func(Execer, Binder) error) error {
 	db.lock.Lock()
 	err := fn(db.conn, db.conn)
@@ -99,6 +108,7 @@ func (db *DB) Lock(fn func(Execer, Binder) error) error {
 // transaction is committed. If an error is returned then the entire
 // transaction is rolled back. Any error that is returned from the function
 // or returned from the commit is returned from the Update() method.
+// Update 在托管读写事务中执行回调；出错则回滚。
 func (db *DB) Update(fn func(Execer, Binder) error) (err error) {
 	db.lock.Lock()
 	defer db.lock.Unlock()
@@ -124,11 +134,13 @@ func (db *DB) Update(fn func(Execer, Binder) error) (err error) {
 }
 
 // Driver returns the name of the SQL driver.
+// Driver 返回当前 SQL 驱动类型枚举。
 func (db *DB) Driver() Driver {
 	return db.driver
 }
 
 // Close closes the database connection.
+// Close 关闭底层数据库连接。
 func (db *DB) Close() error {
 	return db.conn.Close()
 }

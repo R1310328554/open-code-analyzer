@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// perm 包提供权限记录的 SQL 扫描与参数转换辅助函数。
 package perm
 
 import (
@@ -21,8 +22,7 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// helper function converts the Perm structure to a set
-// of named query parameters.
+// toParams 将 Perm 结构体转换为命名查询参数字典。
 func toParams(perm *core.Perm) map[string]interface{} {
 	return map[string]interface{}{
 		"perm_user_id":  perm.UserID,
@@ -36,8 +36,7 @@ func toParams(perm *core.Perm) map[string]interface{} {
 	}
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
 func scanRow(scanner db.Scanner, dst *core.Perm) error {
 	return scanner.Scan(
 		&dst.UserID,
@@ -51,8 +50,8 @@ func scanRow(scanner db.Scanner, dst *core.Perm) error {
 	)
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
+// scanCollabRow 扫描协作者（含登录名与头像）权限行。
 func scanCollabRow(scanner db.Scanner, dst *core.Collaborator) error {
 	return scanner.Scan(
 		&dst.UserID,
@@ -68,8 +67,8 @@ func scanCollabRow(scanner db.Scanner, dst *core.Collaborator) error {
 	)
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
+// scanCollabRows 批量扫描协作者权限记录。
 func scanCollabRows(rows *sql.Rows) ([]*core.Collaborator, error) {
 	defer rows.Close()
 

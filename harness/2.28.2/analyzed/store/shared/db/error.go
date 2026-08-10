@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// db 包定义数据库层通用错误变量。
 package db
 
 import "errors"
 
-// ErrOptimisticLock is returned by if the struct being
-// modified has a Version field and the value is not equal
-// to the current value in the database
+// ErrOptimisticLock 在乐观锁版本号不匹配时返回。
 var ErrOptimisticLock = errors.New("Optimistic Lock Error")

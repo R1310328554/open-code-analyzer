@@ -14,6 +14,7 @@
 
 // +build oss
 
+// global 包在 OSS 构建中提供空操作的全局密钥存储。
 package global
 
 import (
@@ -24,37 +25,45 @@ import (
 	"github.com/drone/drone/store/shared/encrypt"
 )
 
-// New returns a new Secret database store.
+// New 创建并返回仓库级 Secret 数据库存储。
 func New(db *db.DB, enc encrypt.Encrypter) core.GlobalSecretStore {
 	return new(noop)
 }
 
+// noop 是 OSS 构建中的空操作密钥存储实现。
 type noop struct{}
 
+// List 在 OSS 构建中返回 nil。
 func (noop) List(context.Context, string) ([]*core.Secret, error) {
 	return nil, nil
 }
 
+// ListAll 在 OSS 构建中返回 nil。
 func (noop) ListAll(context.Context) ([]*core.Secret, error) {
 	return nil, nil
 }
 
+// Find 在 OSS 构建中返回 nil。
 func (noop) Find(context.Context, int64) (*core.Secret, error) {
 	return nil, nil
 }
 
+// FindName 在 OSS 构建中返回 nil。
 func (noop) FindName(context.Context, string, string) (*core.Secret, error) {
 	return nil, nil
 }
 
+// Create 在 OSS 构建中为 no-op。
 func (noop) Create(context.Context, *core.Secret) error {
 	return nil
 }
 
+// Update 在 OSS 构建中为 no-op。
 func (noop) Update(context.Context, *core.Secret) error {
 	return nil
 }
 
+// Delete 在 OSS 构建中为 no-op。
 func (noop) Delete(context.Context, *core.Secret) error {
 	return nil
 }

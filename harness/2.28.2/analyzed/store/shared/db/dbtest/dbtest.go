@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// dbtest 包为 store 层单元测试提供数据库连接与重置工具。
 package dbtest
 
 import (
@@ -28,7 +29,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Connect opens a new test database connection.
+// Connect 打开测试用数据库连接（默认内存 SQLite）。
 func Connect() (*db.DB, error) {
 	var (
 		driver         = "sqlite3"
@@ -44,7 +45,7 @@ func Connect() (*db.DB, error) {
 	return db.Connect(driver, config, maxConnections)
 }
 
-// Reset resets the database state.
+// Reset 清空各业务表，重置测试数据库状态。
 func Reset(d *db.DB) {
 	d.Lock(func(tx db.Execer, _ db.Binder) error {
 		tx.Exec("DELETE FROM cron")
@@ -63,7 +64,7 @@ func Reset(d *db.DB) {
 	})
 }
 
-// Disconnect closes the database connection.
+// Disconnect 关闭数据库连接。
 func Disconnect(d *db.DB) error {
 	return d.Close()
 }
