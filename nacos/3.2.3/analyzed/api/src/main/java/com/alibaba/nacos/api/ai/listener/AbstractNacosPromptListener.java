@@ -17,9 +17,10 @@
 package com.alibaba.nacos.api.ai.listener;
 
 /**
- * Nacos AI module prompt event listener.
+ * Nacos AI 模块 Prompt 配置变更事件监听器抽象基类。
  *
- * <p>Extend this class to receive prompt change notifications.</p>
+ * <p>继承此类即可接收 {@link NacosPromptEvent} 推送，
+ * 在 {@link NacosAiListener#onEvent(NacosAiEvent)} 中处理 Prompt 增删改通知。</p>
  *
  * @author nacos
  */

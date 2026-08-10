@@ -17,9 +17,10 @@
 package com.alibaba.nacos.api.ai.listener;
 
 /**
- * Nacos AI module skill event listener.
+ * Nacos AI 模块 Skill 变更事件监听器抽象基类。
  *
- * <p>Extend this class to receive skill change notifications.</p>
+ * <p>继承此类即可接收 {@link NacosSkillEvent} 推送，
+ * 事件载荷含 Skill ZIP 字节与内容 MD5 指纹，便于本地缓存与增量对比。</p>
  *
  * @author nacos
  * @since 3.2.0

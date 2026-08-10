@@ -21,7 +21,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * AgentAuthentication.
+ * A2A Agent 认证信息，描述支持的认证方案与凭据。
+ *
+ * <p>对应 Agent-to-Agent 协议中的 authentication 字段，
+ * {@link #schemes} 列出可用方案，{@link #credentials} 携带凭据内容。</p>
  *
  * @author KiteSoar
  */
@@ -31,18 +34,22 @@ public class AgentAuthentication {
     
     private String credentials;
     
+    /** 返回支持的认证方案列表。 */
     public List<String> getSchemes() {
         return schemes;
     }
     
+    /** 设置支持的认证方案列表。 */
     public void setSchemes(List<String> schemes) {
         this.schemes = schemes;
     }
     
+    /** 返回认证凭据。 */
     public String getCredentials() {
         return credentials;
     }
     
+    /** 设置认证凭据。 */
     public void setCredentials(String credentials) {
         this.credentials = credentials;
     }

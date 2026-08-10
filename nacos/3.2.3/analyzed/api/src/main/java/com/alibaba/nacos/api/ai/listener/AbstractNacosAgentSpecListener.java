@@ -17,7 +17,10 @@
 package com.alibaba.nacos.api.ai.listener;
 
 /**
- * Nacos AI module agent spec event listener.
+ * Nacos AI 模块 Agent 规格（AgentSpec）变更事件监听器抽象基类。
+ *
+ * <p>继承此类并实现 {@link NacosAiListener#onEvent(NacosAiEvent)}，
+ * 即可接收 {@link NacosAgentSpecEvent} 推送。</p>
  *
  * @author nacos
  */

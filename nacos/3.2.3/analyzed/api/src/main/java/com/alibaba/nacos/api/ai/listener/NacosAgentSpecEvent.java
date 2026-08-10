@@ -19,7 +19,9 @@ package com.alibaba.nacos.api.ai.listener;
 import com.alibaba.nacos.api.ai.model.agentspecs.AgentSpec;
 
 /**
- * Nacos AI Module agent spec event.
+ * Nacos AI 模块 Agent 规格（AgentSpec）变更事件。
+ *
+ * <p>包含规格名称与 {@link AgentSpec} 对象，用于监听 Agent 定义文件的发布与更新。</p>
  *
  * @author nacos
  */
@@ -29,15 +31,23 @@ public class NacosAgentSpecEvent implements NacosAiEvent {
     
     private final AgentSpec agentSpec;
     
+    /**
+     * 构造 AgentSpec 变更事件。
+     *
+     * @param agentSpecName Agent 规格名称
+     * @param agentSpec Agent 规格内容
+     */
     public NacosAgentSpecEvent(String agentSpecName, AgentSpec agentSpec) {
         this.agentSpecName = agentSpecName;
         this.agentSpec = agentSpec;
     }
     
+    /** 返回 Agent 规格名称。 */
     public String getAgentSpecName() {
         return agentSpecName;
     }
     
+    /** 返回 Agent 规格对象。 */
     public AgentSpec getAgentSpec() {
         return agentSpec;
     }

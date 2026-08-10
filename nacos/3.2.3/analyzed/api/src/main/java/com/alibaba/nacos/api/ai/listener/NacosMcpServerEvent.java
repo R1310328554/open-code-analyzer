@@ -19,7 +19,10 @@ package com.alibaba.nacos.api.ai.listener;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
 
 /**
- * Nacos AI module event for mcp server.
+ * Nacos AI 模块 MCP 服务器变更事件。
+ *
+ * <p>由 {@link McpServerDetailInfo} 构造，暴露 MCP ID、命名空间、名称及完整详情，
+ * 便于客户端同步 MCP 工具端点与元数据。</p>
  *
  * @author xiweng.yy
  */
@@ -33,25 +36,33 @@ public class NacosMcpServerEvent implements NacosAiEvent {
     
     private final McpServerDetailInfo mcpServerDetailInfo;
     
-    public NacosMcpServerEvent(McpServerDetailInfo mcpServerDetailInfo) {
+    /**
+     * 由 MCP 服务器详情构造事件，并提取 id、namespaceId 与 name。
+     *
+     * @param mcpServerDetailInfo MCP 服务器详情
+     */
         this.mcpServerDetailInfo = mcpServerDetailInfo;
         this.mcpId = mcpServerDetailInfo.getId();
         this.namespaceId = mcpServerDetailInfo.getNamespaceId();
         this.mcpName = mcpServerDetailInfo.getName();
     }
     
+    /** 返回 MCP 服务器唯一 ID。 */
     public String getMcpId() {
         return mcpId;
     }
     
+    /** 返回 MCP 服务器所在命名空间 ID。 */
     public String getNamespaceId() {
         return namespaceId;
     }
     
+    /** 返回 MCP 服务器名称。 */
     public String getMcpName() {
         return mcpName;
     }
     
+    /** 返回 MCP 服务器完整详情。 */
     public McpServerDetailInfo getMcpServerDetailInfo() {
         return mcpServerDetailInfo;
     }

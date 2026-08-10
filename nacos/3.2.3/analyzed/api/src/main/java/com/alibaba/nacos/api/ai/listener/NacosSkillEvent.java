@@ -17,12 +17,11 @@
 package com.alibaba.nacos.api.ai.listener;
 
 /**
- * Nacos AI module skill event.
+ * Nacos AI 模块 Skill 变更事件。
  *
- * <p>Triggered when a subscribed skill changes on the server side. The {@link #zipBytes}
- * payload carries the freshly downloaded skill ZIP archive (SKILL.md plus resources); the
- * {@link #md5} field is the server-published content fingerprint suitable for diffing
- * subsequent revisions or persisting alongside the local cache.
+ * <p>当订阅的 Skill 在服务端发生变更时触发。{@link #zipBytes} 携带最新下载的
+ * Skill ZIP 包（含 SKILL.md 与资源文件）；{@link #md5} 为服务端发布的内容指纹，
+ * 可用于与后续版本对比或持久化本地缓存。</p>
  *
  * @author nacos
  * @since 3.2.0
@@ -37,7 +36,14 @@ public class NacosSkillEvent implements NacosAiEvent {
     
     private final String resolvedVersion;
     
-    public NacosSkillEvent(String skillName, byte[] zipBytes, String md5, String resolvedVersion) {
+    /**
+     * 构造 Skill 变更事件。
+     *
+     * @param skillName Skill 名称
+     * @param zipBytes Skill ZIP 字节，删除时为 null
+     * @param md5 内容 MD5 指纹
+     * @param resolvedVersion 解析后的版本号（按标签订阅时）
+     */
         this.skillName = skillName;
         this.zipBytes = zipBytes;
         this.md5 = md5;
@@ -45,7 +51,7 @@ public class NacosSkillEvent implements NacosAiEvent {
     }
     
     /**
-     * Get the skill name.
+     * 获取 Skill 名称。
      *
      * @return skill name
      */
@@ -54,7 +60,7 @@ public class NacosSkillEvent implements NacosAiEvent {
     }
     
     /**
-     * Get the skill ZIP payload, may be {@code null} when the skill has been deleted on the server.
+     * 获取 Skill ZIP 载荷；服务端已删除该 Skill 时为 {@code null}。
      *
      * @return skill ZIP byte array, or {@code null} if the skill no longer exists
      */
@@ -63,8 +69,7 @@ public class NacosSkillEvent implements NacosAiEvent {
     }
     
     /**
-     * Get the published content MD5 of this skill revision, may be {@code null} for delete events
-     * or when the server response did not carry the fingerprint header.
+     * 获取本 Skill 版本的内容 MD5；删除事件或未携带指纹响应头时为 {@code null}。
      *
      * @return content MD5
      */
@@ -73,9 +78,7 @@ public class NacosSkillEvent implements NacosAiEvent {
     }
     
     /**
-     * Get the resolved version string when the listener was registered against a label, may be
-     * {@code null} when the request used an explicit version or the response did not carry the
-     * resolved version header.
+     * 获取按标签订阅时解析出的版本字符串；显式指定版本或未携带解析版本响应头时为 {@code null}。
      *
      * @return resolved version, optional
      */

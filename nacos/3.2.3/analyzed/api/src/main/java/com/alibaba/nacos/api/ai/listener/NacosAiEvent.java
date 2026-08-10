@@ -17,7 +17,10 @@
 package com.alibaba.nacos.api.ai.listener;
 
 /**
- * Nacos AI module listener event.
+ * Nacos AI 模块监听器事件标记接口。
+ *
+ * <p>所有 AI 相关推送事件（Prompt、Skill、MCP、Agent 等）均实现此接口，
+ * 供 {@link NacosAiListener} 泛型约束使用。</p>
  *
  * @author nkorange
  */

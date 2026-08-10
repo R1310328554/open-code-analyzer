@@ -21,7 +21,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * AgentCapabilities.
+ * A2A Agent 能力描述，声明 Agent 支持的交互特性。
+ *
+ * <p>涵盖流式响应、推送通知、状态迁移历史及扩展 Agent Card 等能力标志，
+ * 并可通过 {@link #extensions} 挂载自定义扩展。</p>
  *
  * @author KiteSoar
  */
@@ -33,8 +36,7 @@ public class AgentCapabilities {
     
     private Boolean stateTransitionHistory;
     
-    /**
-     * For A2A 1.0.0.
+    /** A2A 1.0.0 扩展 Agent Card 能力标志。
      *
      * @since 3.2.1
      */
@@ -42,42 +44,52 @@ public class AgentCapabilities {
     
     private List<AgentExtension> extensions;
     
+    /** 是否支持流式响应。 */
     public Boolean getStreaming() {
         return streaming;
     }
     
+    /** 设置是否支持流式响应。 */
     public void setStreaming(Boolean streaming) {
         this.streaming = streaming;
     }
     
+    /** 是否支持推送通知。 */
     public Boolean getPushNotifications() {
         return pushNotifications;
     }
     
+    /** 设置是否支持推送通知。 */
     public void setPushNotifications(Boolean pushNotifications) {
         this.pushNotifications = pushNotifications;
     }
     
+    /** 是否支持状态迁移历史。 */
     public Boolean getStateTransitionHistory() {
         return stateTransitionHistory;
     }
     
+    /** 设置是否支持状态迁移历史。 */
     public void setStateTransitionHistory(Boolean stateTransitionHistory) {
         this.stateTransitionHistory = stateTransitionHistory;
     }
     
+    /** 是否支持扩展 Agent Card（A2A 1.0.0）。 */
     public Boolean getExtendedAgentCard() {
         return extendedAgentCard;
     }
     
+    /** 设置是否支持扩展 Agent Card。 */
     public void setExtendedAgentCard(Boolean extendedAgentCard) {
         this.extendedAgentCard = extendedAgentCard;
     }
     
+    /** 返回 Agent 扩展能力列表。 */
     public List<AgentExtension> getExtensions() {
         return extensions;
     }
     
+    /** 设置 Agent 扩展能力列表。 */
     public void setExtensions(List<AgentExtension> extensions) {
         this.extensions = extensions;
     }

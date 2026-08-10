@@ -19,9 +19,10 @@ package com.alibaba.nacos.api.ai.listener;
 import com.alibaba.nacos.api.ai.model.prompt.Prompt;
 
 /**
- * Nacos AI Module prompt event.
+ * Nacos AI 模块 Prompt 配置变更事件。
  *
- * <p>This event is triggered when a prompt configuration changes.</p>
+ * <p>当订阅的 Prompt 在服务端发生增删改时触发；
+ * {@link #getPrompt()} 在删除场景下可能为 null。</p>
  *
  * @author nacos
  */
@@ -31,13 +32,18 @@ public class NacosPromptEvent implements NacosAiEvent {
     
     private final Prompt prompt;
     
-    public NacosPromptEvent(String promptKey, Prompt prompt) {
+    /**
+     * 构造 Prompt 变更事件。
+     *
+     * @param promptKey Prompt 配置键
+     * @param prompt Prompt 对象，删除时为 null
+     */
         this.promptKey = promptKey;
         this.prompt = prompt;
     }
     
     /**
-     * Get the prompt key.
+     * 获取 Prompt 配置键。
      *
      * @return prompt key
      */
@@ -46,7 +52,7 @@ public class NacosPromptEvent implements NacosAiEvent {
     }
     
     /**
-     * Get the prompt object.
+     * 获取 Prompt 对象；若 Prompt 已被删除则返回 null。
      *
      * @return prompt object, may be null if prompt is deleted
      */

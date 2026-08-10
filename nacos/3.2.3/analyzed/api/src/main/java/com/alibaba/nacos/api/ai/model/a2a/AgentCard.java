@@ -22,15 +22,17 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * AgentCard.
+ * A2A Agent Card 完整模型，描述 Agent 的接口、安全与能力等元数据。
+ *
+ * <p>继承 {@link AgentCardBasicInfo}，扩展端点 URL、传输协议、安全方案及
+ * A2A 1.0.0 新增的 {@link #supportedInterfaces} 等字段。</p>
  *
  * @author KiteSoar
  */
 public class AgentCard extends AgentCardBasicInfo {
     
     /**
-     * Legacy field for old A2A protocol compatibility, may be removed in future versions.
-     * Use {@link #supportedInterfaces} for A2A 1.0.0.
+     * 旧版 A2A 协议兼容字段，后续版本可能移除；A2A 1.0.0 请改用 {@link #supportedInterfaces}。
      *
      * @deprecated For old A2A protocol compatibility only.
      */
@@ -38,8 +40,7 @@ public class AgentCard extends AgentCardBasicInfo {
     private String url;
     
     /**
-     * Legacy field for old A2A protocol compatibility, may be removed in future versions.
-     * Use {@link AgentInterface#getProtocolBinding()} for A2A 1.0.0.
+     * 旧版 A2A 协议兼容字段；A2A 1.0.0 请改用 {@link AgentInterface#getProtocolBinding()}。
      *
      * @deprecated For old A2A protocol compatibility only.
      */
@@ -51,39 +52,45 @@ public class AgentCard extends AgentCardBasicInfo {
      * Use {@link #supportedInterfaces} for A2A 1.0.0.
      *
      * @deprecated For old A2A protocol compatibility only.
+      * <p>Nacos AI 监听器/模型 API；详见上方说明。</p>
      */
     @Deprecated
     private List<AgentInterface> additionalInterfaces;
     
-    /**
-     * For A2A 1.0.0.
+    /** A2A 1.0.0 新增字段。
      *
      * @since 3.2.1
      */
     private List<AgentInterface> supportedInterfaces;
     
+    /** Agent 提供方信息。 */
     private AgentProvider provider;
     
+    /** Agent 文档 URL。 */
     private String documentationUrl;
     
+    /** 安全方案定义映射（方案名 → 方案详情）。 */
     private Map<String, SecurityScheme> securitySchemes;
     
+    /** 旧版安全要求列表（A2A 1.0.0 前）。 */
     private List<Map<String, List<String>>> security;
     
     /**
      * For A2A 1.0.0.
      *
      * @since 3.2.1
+      * <p>Nacos AI 监听器/模型 API；详见上方说明。</p>
      */
     private List<Map<String, List<String>>> securityRequirements;
     
+    /** 默认输入模式列表。 */
     private List<String> defaultInputModes;
     
+    /** 默认输出模式列表。 */
     private List<String> defaultOutputModes;
     
     /**
-     * Legacy field for old A2A protocol compatibility, may be removed in future versions.
-     * Use {@link AgentCapabilities#getExtendedAgentCard()} for A2A 1.0.0.
+     * 旧版 A2A 协议兼容字段；A2A 1.0.0 请改用 {@link AgentCapabilities#getExtendedAgentCard()}。
      *
      * @deprecated For old A2A protocol compatibility only.
      */
@@ -94,6 +101,7 @@ public class AgentCard extends AgentCardBasicInfo {
      * For A2A 1.0.0.
      *
      * @since 3.2.1
+      * <p>Nacos AI 监听器/模型 API；详见上方说明。</p>
      */
     private List<Map<String, Object>> signatures;
     
