@@ -32,16 +32,21 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Nacos auth plugin remote nacos server util.
+ * 远程 Nacos 集群地址与 HTTP 辅助工具。
+ *
+ * <p>从 {@code cluster.conf} 读取节点列表并监听变更， 提供轮询选取、上下文路径及 {@link AuthConfigs} 身份头构造。</p>
  *
  * @author xiweng.yy
  */
 public class RemoteServerUtil {
     
+    /** 远程控制台默认上下文路径。 */
     private static final String DEFAULT_REMOTE_SERVER_CONTEXT_PATH = "/nacos";
     
+    /** 集群节点地址列表（可变，由文件监听刷新）。 */
     private static List<String> serverAddresses = new LinkedList<>();
     
+    /** 轮询下标，用于 {@link #getOneNacosServerAddress()}。 */
     private static AtomicInteger index = new AtomicInteger();
     
     private static String remoteServerContextPath = DEFAULT_REMOTE_SERVER_CONTEXT_PATH;
@@ -52,6 +57,7 @@ public class RemoteServerUtil {
         initRemoteServerContextPath();
     }
     
+    /** 从环境配置读取远程控制台 context-path。 */
     private static void initRemoteServerContextPath() {
         if (EnvUtil.getEnvironment() == null) {
             return;
@@ -61,6 +67,7 @@ public class RemoteServerUtil {
                 DEFAULT_REMOTE_SERVER_CONTEXT_PATH);
     }
     
+    /** 注册 cluster.conf 文件变更监听器。 */
     private static void registerWatcher() {
         try {
             WatchFileCenter.registerWatcher(EnvUtil.getClusterConfFilePath(), new FileWatcher() {
@@ -79,9 +86,7 @@ public class RemoteServerUtil {
         }
     }
     
-    /**
-     * Read nacos server address from cluster.conf.
-     */
+    /** 从 cluster.conf 重新加载集群节点地址。 */
     public static void readRemoteServerAddress() {
         try {
             serverAddresses = EnvUtil.readClusterConf();
@@ -89,21 +94,24 @@ public class RemoteServerUtil {
         }
     }
     
+    /** 返回集群地址列表的副本。 */
     public static List<String> getServerAddresses() {
         return new LinkedList<>(serverAddresses);
     }
     
+    /** 轮询返回一个集群节点地址。 */
     public static String getOneNacosServerAddress() {
         int actual = index.getAndUpdate(operand -> (operand + 1) % serverAddresses.size());
         return serverAddresses.get(actual);
     }
     
+    /** 获取远程控制台上下文路径。 */
     public static String getRemoteServerContextPath() {
         return remoteServerContextPath;
     }
     
     /**
-     * Single check http result, if not success, wrapper result as Nacos exception.
+     * 校验 HTTP 响应，失败时封装为 {@link NacosException} 抛出。
      *
      * @param result http execute result
      * @throws NacosException wrapper result as NacosException
@@ -116,7 +124,7 @@ public class RemoteServerUtil {
     }
     
     /**
-     * According input {@link AuthConfigs} to build remote server identity header.
+     * 根据 {@link AuthConfigs} 构造远程服务端身份认证请求头。
      *
      * @param authConfigs authConfigs
      * @return remote server identity header

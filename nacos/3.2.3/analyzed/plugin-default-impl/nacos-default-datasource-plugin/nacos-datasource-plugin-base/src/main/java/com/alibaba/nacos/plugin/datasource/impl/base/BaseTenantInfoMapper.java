@@ -22,18 +22,23 @@ import com.alibaba.nacos.plugin.datasource.mapper.AbstractMapper;
 import com.alibaba.nacos.plugin.datasource.mapper.TenantInfoMapper;
 
 /**
- * The base implementation of TenantInfo.
+ * {@link TenantInfoMapper} 抽象基类。
+ *
+ * <p>租户信息 Mapper 的方言适配基类， 子类继承 {@link AbstractMapper} 并实现具体 SQL；本类仅封装 {@link DatabaseDialect} 函数解析。</p>
  *
  * @author Long Yu
  **/
 public abstract class BaseTenantInfoMapper extends AbstractMapper implements TenantInfoMapper {
     
+    /** 当前数据源的数据库方言。 */
     private DatabaseDialect databaseDialect;
     
+    /** 根据数据源类型初始化方言。 */
     public BaseTenantInfoMapper() {
         databaseDialect = DatabaseDialectManager.getInstance().getDialect(getDataSource());
     }
     
+    /** 委托方言将逻辑函数名映射为数据库原生函数。 */
     @Override
     public String getFunction(String functionName) {
         return databaseDialect.getFunction(functionName);

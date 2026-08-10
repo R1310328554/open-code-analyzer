@@ -34,26 +34,33 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * The base implementation of ConfigInfoMapper.
+ * {@link ConfigInfoMapper} 抽象基类。
+ *
+ * <p>封装 config_info 表各类分页查询、模糊搜索与变更追踪 SQL， 分页语法由 {@link DatabaseDialect} 按 MySQL/Derby 等方言改写。</p>
  *
  * @author Long Yu
  **/
 public abstract class BaseConfigInfoMapper extends AbstractMapper implements ConfigInfoMapper {
     
+    /** 当前数据源的数据库方言。 */
     private DatabaseDialect databaseDialect;
     
+    /** 初始化数据库方言。 */
     public BaseConfigInfoMapper() {
         databaseDialect = DatabaseDialectManager.getInstance().getDialect(getDataSource());
     }
     
+    /** 追加 OFFSET/LIMIT 风格分页子句。 */
     public String getLimitPageSqlWithOffset(String sql, int startOffset, int pageSize) {
         return databaseDialect.getLimitPageSqlWithOffset(sql, startOffset, pageSize);
     }
     
+    /** 追加占位符风格的分页子句（参数由调用方绑定）。 */
     public String getLimitPageSqlWithMark(String sql) {
         return databaseDialect.getLimitPageSqlWithMark(sql);
     }
     
+    /** 按租户与应用名分页查询配置。 */
     @Override
     public MapperResult findConfigInfoByAppFetchRows(MapperContext context) {
         int startRow = context.getStartRow();
@@ -67,6 +74,7 @@ public abstract class BaseConfigInfoMapper extends AbstractMapper implements Con
         return new MapperResult(sql, CollectionUtils.list(tenantId, appName));
     }
     
+    /** 分页获取非空 tenant_id 去重列表。 */
     @Override
     public MapperResult getTenantIdList(MapperContext context) {
         int startRow = context.getStartRow();
@@ -77,6 +85,7 @@ public abstract class BaseConfigInfoMapper extends AbstractMapper implements Con
         return new MapperResult(sql, Collections.emptyList());
     }
     
+    /** 分页获取默认命名空间下的 group_id 列表。 */
     @Override
     public MapperResult getGroupIdList(MapperContext context) {
         int startRow = context.getStartRow();
@@ -87,6 +96,7 @@ public abstract class BaseConfigInfoMapper extends AbstractMapper implements Con
         return new MapperResult(sql, Collections.emptyList());
     }
     
+    /** 分页查询指定租户下的配置键（dataId/groupId/appName）。 */
     @Override
     public MapperResult findAllConfigKey(MapperContext context) {
         int startRow = context.getStartRow();
@@ -94,13 +104,14 @@ public abstract class BaseConfigInfoMapper extends AbstractMapper implements Con
         String innerSql = getLimitPageSqlWithOffset(
             " SELECT id FROM config_info WHERE tenant_id LIKE ? ORDER BY id ",
             startRow, pageSize);
-        // fix-bug 缺失括号
+        // 修复子查询括号缺失问题
         String sql = " SELECT data_id,group_id,app_name  FROM ( " + innerSql
             + " ) g, config_info t WHERE g.id = t.id  ";
         return new MapperResult(sql,
             CollectionUtils.list(context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 分页拉取默认命名空间配置基础字段。 */
     @Override
     public MapperResult findAllConfigInfoBaseFetchRows(MapperContext context) {
         int startRow = context.getStartRow();
@@ -111,6 +122,7 @@ public abstract class BaseConfigInfoMapper extends AbstractMapper implements Con
         return new MapperResult(sql, CollectionUtils.list(startRow, pageSize));
     }
     
+    /** 按 id 游标分页拉取配置片段（可选是否含 content）。 */
     @Override
     public MapperResult findAllConfigInfoFragment(MapperContext context) {
         int startRow = context.getStartRow();
@@ -125,6 +137,7 @@ public abstract class BaseConfigInfoMapper extends AbstractMapper implements Con
             CollectionUtils.list(context.getWhereParameter(FieldConstant.ID)));
     }
     
+    /** 按多条件与时间范围分页查询变更配置。 */
     @Override
     public MapperResult findChangeConfigFetchRows(MapperContext context) {
         final String tenant = (String) context.getWhereParameter(FieldConstant.TENANT_ID);
@@ -170,6 +183,7 @@ public abstract class BaseConfigInfoMapper extends AbstractMapper implements Con
         return new MapperResult(sql, paramList);
     }
     
+    /** 分页返回配置的 group 键及 md5 等元数据。 */
     @Override
     public MapperResult listGroupKeyMd5ByPageFetchRows(MapperContext context) {
         int startRow = context.getStartRow();
@@ -183,6 +197,7 @@ public abstract class BaseConfigInfoMapper extends AbstractMapper implements Con
         return new MapperResult(sql, Collections.emptyList());
     }
     
+    /** 默认命名空间下按 dataId/group/content 模糊分页查询。 */
     @Override
     public MapperResult findConfigInfoBaseLikeFetchRows(MapperContext context) {
         final String dataId = (String) context.getWhereParameter(FieldConstant.DATA_ID);
@@ -210,6 +225,7 @@ public abstract class BaseConfigInfoMapper extends AbstractMapper implements Con
         return new MapperResult(sql, paramList);
     }
     
+    /** 精确条件分页查询租户配置列表。 */
     @Override
     public MapperResult findConfigInfo4PageFetchRows(MapperContext context) {
         final String tenant = (String) context.getWhereParameter(FieldConstant.TENANT_ID);
@@ -245,6 +261,7 @@ public abstract class BaseConfigInfoMapper extends AbstractMapper implements Con
         return new MapperResult(resultSql, paramList);
     }
     
+    /** 按 group 与 tenant 分页查询配置内容。 */
     @Override
     public MapperResult findConfigInfoBaseByGroupFetchRows(MapperContext context) {
         int startRow = context.getStartRow();
@@ -257,6 +274,7 @@ public abstract class BaseConfigInfoMapper extends AbstractMapper implements Con
                 context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 租户下多字段模糊分页查询配置。 */
     @Override
     public MapperResult findConfigInfoLike4PageFetchRows(MapperContext context) {
         final String tenant = (String) context.getWhereParameter(FieldConstant.TENANT_ID);
@@ -292,6 +310,7 @@ public abstract class BaseConfigInfoMapper extends AbstractMapper implements Con
         return new MapperResult(sql, paramList);
     }
     
+    /** 分页拉取指定租户全部配置（含 content/md5）。 */
     @Override
     public MapperResult findAllConfigInfoFetchRows(MapperContext context) {
         String innerSql = getLimitPageSqlWithMark(
@@ -304,11 +323,13 @@ public abstract class BaseConfigInfoMapper extends AbstractMapper implements Con
                 context.getPageSize()));
     }
     
+    /** 返回主配置表名 {@link TableConstant#CONFIG_INFO}。 */
     @Override
     public String getTableName() {
         return TableConstant.CONFIG_INFO;
     }
     
+    /** 委托方言解析数据库函数。 */
     @Override
     public String getFunction(String functionName) {
         return databaseDialect.getFunction(functionName);

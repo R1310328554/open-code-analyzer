@@ -30,28 +30,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The postgresql implementation of ConfigTagsRelationMapper.
+ * {@link ConfigTagsRelationMapper} 抽象基类。
+ *
+ * <p>通过 config_info 与 config_tags_relation 左连接， 支持按标签数组精确/模糊分页查询配置。</p>
  *
  * @author Long Yu
  **/
 public abstract class BaseConfigTagsRelationMapper extends AbstractMapper
     implements ConfigTagsRelationMapper {
     
+    /** 当前数据源的数据库方言。 */
     private DatabaseDialect databaseDialect;
     
+    /** 初始化数据库方言。 */
     public BaseConfigTagsRelationMapper() {
         databaseDialect = DatabaseDialectManager.getInstance().getDialect(getDataSource());
     }
     
+    /** 为 SQL 追加带偏移量的分页子句。 */
     public String getLimitPageSqlWithOffset(String sql, int startOffset, int pageSize) {
         return databaseDialect.getLimitPageSqlWithOffset(sql, startOffset, pageSize);
     }
     
+    /** 返回标签关联表名 {@link TableConstant#CONFIG_TAGS_RELATION}。 */
     @Override
     public String getTableName() {
         return TableConstant.CONFIG_TAGS_RELATION;
     }
     
+    /** 按租户、标签等精确条件分页查询配置。 */
     @Override
     public MapperResult findConfigInfo4PageFetchRows(MapperContext context) {
         final String tenant = (String) context.getWhereParameter(FieldConstant.TENANT_ID);
@@ -100,6 +107,7 @@ public abstract class BaseConfigTagsRelationMapper extends AbstractMapper
         return new MapperResult(resultSql, paramList);
     }
     
+    /** 按租户、标签等模糊条件分页查询配置。 */
     @Override
     public MapperResult findConfigInfoLike4PageFetchRows(MapperContext context) {
         final String tenant = (String) context.getWhereParameter(FieldConstant.TENANT_ID);
@@ -147,6 +155,7 @@ public abstract class BaseConfigTagsRelationMapper extends AbstractMapper
         return new MapperResult(sql, paramList);
     }
     
+    /** 委托方言解析数据库函数。 */
     @Override
     public String getFunction(String functionName) {
         return databaseDialect.getFunction(functionName);

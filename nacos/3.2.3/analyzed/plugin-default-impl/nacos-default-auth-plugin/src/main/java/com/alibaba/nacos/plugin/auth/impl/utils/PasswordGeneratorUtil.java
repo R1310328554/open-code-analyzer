@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * RandomPasswordGenerator .
+ * 随机密码生成器。
+ *
+ * <p>固定长度 8 位，强制包含小写、大写、数字与特殊字符各至少一个， 最终打乱顺序以避免可预测模式。</p>
  *
  * @author : huangtianhui
  */
@@ -40,8 +42,8 @@ public class PasswordGeneratorUtil {
     private static final int PASSWORD_LENGTH = 8;
     
     /**
-     * generateRandomPassword.
-     * @return
+     * 生成符合复杂度要求的随机密码。
+     * @return 8 位随机密码字符串
      */
     public static String generateRandomPassword() {
         SecureRandom random = new SecureRandom();
@@ -53,16 +55,16 @@ public class PasswordGeneratorUtil {
         pwdChars.add(DIGITS.charAt(random.nextInt(DIGITS.length())));
         pwdChars.add(SPECIAL_CHARS.charAt(random.nextInt(SPECIAL_CHARS.length())));
         
-        // Fill the rest of the password with random characters from all categories
+        // 从全部字符集中随机填充剩余位数
         String allCharacters = LOWER_CASE + UPPER_CASE + DIGITS + SPECIAL_CHARS;
         while (pwdChars.size() < PASSWORD_LENGTH) {
             pwdChars.add(allCharacters.charAt(random.nextInt(allCharacters.length())));
         }
         
-        // Shuffle to avoid predictable order
+        // 打乱顺序，避免类型位置固定
         Collections.shuffle(pwdChars, random);
         
-        // Build the final password string
+        // 拼接为最终密码字符串
         return pwdChars.stream().map(String::valueOf).collect(Collectors.joining());
     }
 }

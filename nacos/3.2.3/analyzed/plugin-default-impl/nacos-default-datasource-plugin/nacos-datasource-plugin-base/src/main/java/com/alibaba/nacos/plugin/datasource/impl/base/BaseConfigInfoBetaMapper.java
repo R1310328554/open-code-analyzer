@@ -27,28 +27,35 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 import java.util.Collections;
 
 /**
- * The base implementation of ConfigInfoBetaMapper.
+ * {@link ConfigInfoBetaMapper} 抽象基类。
+ *
+ * <p>通过 {@link DatabaseDialect} 适配分页 SQL 与数据库函数， 子类仅需声明 {@link #getDataSource()} 数据源类型。</p>
  *
  * @author Long Yu
  **/
 public abstract class BaseConfigInfoBetaMapper extends AbstractMapper
     implements ConfigInfoBetaMapper {
     
+    /** 当前数据源对应的数据库方言。 */
     private DatabaseDialect databaseDialect;
     
+    /** 根据数据源类型初始化方言实例。 */
     public BaseConfigInfoBetaMapper() {
         databaseDialect = DatabaseDialectManager.getInstance().getDialect(getDataSource());
     }
     
+    /** 返回 Beta 配置表名 {@link TableConstant#CONFIG_INFO_BETA}。 */
     @Override
     public String getTableName() {
         return TableConstant.CONFIG_INFO_BETA;
     }
     
+    /** 为 SQL 追加带偏移量的分页子句。 */
     public String getLimitPageSqlWithOffset(String sql, int startRow, int pageSize) {
         return databaseDialect.getLimitPageSqlWithOffset(sql, startRow, pageSize);
     }
     
+    /** 分页拉取全部 Beta 配置用于全量 dump（子查询 + 关联）。 */
     @Override
     public MapperResult findAllConfigInfoBetaForDumpAllFetchRows(MapperContext context) {
         int startRow = context.getStartRow();
@@ -62,6 +69,7 @@ public abstract class BaseConfigInfoBetaMapper extends AbstractMapper
         return new MapperResult(sql, Collections.emptyList());
     }
     
+    /** 委托方言解析数据库函数名。 */
     @Override
     public String getFunction(String functionName) {
         return databaseDialect.getFunction(functionName);

@@ -26,19 +26,24 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The base implementation of GroupCapacityMapper.
+ * {@link GroupCapacityMapper} 抽象基类。
+ *
+ * <p>操作 group_capacity 表，提供按 id 游标分页查询分组容量信息， Top-N SQL 由 {@link DatabaseDialect} 适配。</p>
  *
  * @author Long Yu
  **/
 public abstract class BaseGroupCapacityMapper extends AbstractMapper
     implements GroupCapacityMapper {
     
+    /** 当前数据源的数据库方言。 */
     private DatabaseDialect databaseDialect;
     
+    /** 初始化数据库方言。 */
     public BaseGroupCapacityMapper() {
         databaseDialect = DatabaseDialectManager.getInstance().getDialect(getDataSource());
     }
     
+    /** 按 id 游标分页查询 group_id 列表（用于容量校正）。 */
     @Override
     public MapperResult selectGroupInfoBySize(MapperContext context) {
         String sql = databaseDialect
@@ -48,6 +53,7 @@ public abstract class BaseGroupCapacityMapper extends AbstractMapper
                 context.getPageSize()));
     }
     
+    /** 委托方言解析数据库函数。 */
     @Override
     public String getFunction(String functionName) {
         return databaseDialect.getFunction(functionName);

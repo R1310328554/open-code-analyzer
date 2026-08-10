@@ -19,7 +19,9 @@ package com.alibaba.nacos.plugin.auth.impl.users;
 import java.io.Serializable;
 
 /**
- * User information in authorization.
+ * 鉴权模块中的用户信息模型。
+ *
+ * <p>轻量级用户标识，仅包含 {@code userName} 字段， 用于鉴权上下文传递与序列化，区别于持久化层 {@code persistence.User}。</p>
  *
  * @author nkorange
  * @author mai.jh
@@ -29,15 +31,15 @@ public class User implements Serializable {
     
     private static final long serialVersionUID = -8002966873087151367L;
     
-    /**
-     * Unique string representing user.
-     */
+    /** 唯一标识用户的登录名。 */
     private String userName;
     
+    /** 获取用户名。 */
     public String getUserName() {
         return userName;
     }
     
+    /** 设置用户名。 */
     public void setUserName(String userName) {
         this.userName = userName;
     }

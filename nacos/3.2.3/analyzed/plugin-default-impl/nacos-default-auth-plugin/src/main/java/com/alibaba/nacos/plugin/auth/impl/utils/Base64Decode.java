@@ -19,7 +19,9 @@ package com.alibaba.nacos.plugin.auth.impl.utils;
 import java.util.Arrays;
 
 /**
- * Base64Decoder.
+ * Base64 解码工具类（无第三方依赖）。
+ *
+ * <p>支持标准 Base64 字母表、填充符 {@code =} 及 76 字符换行分隔； 非法字符将抛出 {@link IllegalArgumentException}。</p>
  *
  * @author xYohn
  * @date 2023/8/7
@@ -44,14 +46,14 @@ public class Base64Decode {
     }
     
     /**
-     * Decodes a Base64 encoded String into a newly-allocated byte array using the Base64 encoding scheme.
+     * 将 Base64 编码字符串解码为新分配的字节数组。
      *
      * @param input the string to decode
      * @return a byte array containing binary data
      */
     public static byte[] decode(String input) {
         
-        // Check special case
+        // 空输入直接返回空数组
         if (input == null || input.equals("")) {
             return new byte[0];
         }
@@ -62,46 +64,46 @@ public class Base64Decode {
         }
         
         int sIx = 0;
-        // Start and end index after trimming.
+        // 裁剪非法字符后的起止下标
         int eIx = sLen - 1;
         
-        // Trim illegal chars from start
+        // 跳过首部非法 Base64 字符
         while (sIx < eIx && IALPHABET[sArr[sIx]] < 0) {
             sIx++;
         }
         
-        // Trim illegal chars from end
+        // 跳过尾部非法 Base64 字符
         while (eIx > 0 && IALPHABET[sArr[eIx]] < 0) {
             eIx--;
         }
         
-        // get the padding count (=) (0, 1 or 2)
-        // Count '=' at end.
+        // 统计末尾填充符 {@code =} 个数（0/1/2）
+        // 根据末尾 {@code =} 判断填充长度
         int pad = sArr[eIx] == '=' ? (sArr[eIx - 1] == '=' ? 2 : 1) : 0;
-        // Content count including possible separators
+        // 有效字符数（含可能的换行分隔符）
         int cCnt = eIx - sIx + 1;
         int sepCnt = sLen > 76 ? (sArr[76] == '\r' ? cCnt / 78 : 0) << 1 : 0;
-        // The number of decoded bytes
+        // 计算解码后的字节长度
         int len = ((cCnt - sepCnt) * 6 >> 3) - pad;
-        // Preallocate byte[] of exact length
+        // 预分配精确长度的结果数组
         byte[] dArr = new byte[len];
         
-        // Decode all but the last 0 - 2 bytes.
+        // 批量解码除最后 0～2 字节外的全部内容
         int d = 0;
         int three = 3;
         int eight = 8;
         for (int cc = 0, eLen = (len / three) * three; d < eLen;) {
             
-            // Assemble three bytes into an int from four "valid" characters.
+            // 四个合法字符拼成一个 24 位整数
             int i = ctoi(sArr[sIx++]) << 18 | ctoi(sArr[sIx++]) << 12 | ctoi(sArr[sIx++]) << 6
                 | ctoi(sArr[sIx++]);
             
-            // Add the bytes
+            // 拆出三个字节写入结果数组
             dArr[d++] = (byte) (i >> 16);
             dArr[d++] = (byte) (i >> 8);
             dArr[d++] = (byte) i;
             
-            // If line separator, jump over it.
+            // 遇到 76 字符换行则跳过 \r\n
             if (sepCnt > 0 && ++cc == 19) {
                 sIx += 2;
                 cc = 0;
@@ -109,7 +111,7 @@ public class Base64Decode {
         }
         
         if (d < len) {
-            // Decode last 1-3 bytes (incl '=') into 1-3 bytes
+            // 处理末尾带填充的最后 1～3 字节
             int i = 0;
             for (int j = 0; sIx <= eIx - pad; j++) {
                 i |= ctoi(sArr[sIx++]) << (18 - j * 6);
@@ -123,6 +125,7 @@ public class Base64Decode {
         return dArr;
     }
     
+    /** 将 Base64 字符映射为 6 位索引值，非法字符抛异常。 */
     private static int ctoi(char c) {
         int i = c > IALPHABET_MAX_INDEX ? -1 : IALPHABET[c];
         if (i < 0) {

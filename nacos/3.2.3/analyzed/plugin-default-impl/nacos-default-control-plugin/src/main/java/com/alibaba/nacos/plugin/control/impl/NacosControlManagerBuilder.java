@@ -21,22 +21,27 @@ import com.alibaba.nacos.plugin.control.spi.ControlManagerBuilder;
 import com.alibaba.nacos.plugin.control.tps.TpsControlManager;
 
 /**
- * Nacos default control plugin implementation.
+ * Nacos 默认管控插件构建器。
+ *
+ * <p>实现 {@link ControlManagerBuilder} SPI， 分别创建连接管控与 TPS 管控管理器实例。</p>
  *
  * @author xiweng.yy
  */
 public class NacosControlManagerBuilder implements ControlManagerBuilder {
     
+    /** 返回构建器名称 {@code nacos}。 */
     @Override
     public String getName() {
         return "nacos";
     }
     
+    /** 构建 {@link NacosConnectionControlManager} 实例。 */
     @Override
     public ConnectionControlManager buildConnectionControlManager() {
         return new NacosConnectionControlManager();
     }
     
+    /** 构建 {@link NacosTpsControlManager} 实例。 */
     @Override
     public TpsControlManager buildTpsControlManager() {
         return new NacosTpsControlManager();

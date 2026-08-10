@@ -26,19 +26,24 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The base implementation of TenantCapacityMapper.
+ * {@link TenantCapacityMapper} 抽象基类。
+ *
+ * <p>操作 tenant_capacity 表，分页拉取租户容量记录用于用量校正； 分页语法委托 {@link DatabaseDialect}。</p>
  *
  * @author Long Yu
  **/
 public abstract class BaseTenantCapacityMapper extends AbstractMapper
     implements TenantCapacityMapper {
     
+    /** 当前数据源的数据库方言。 */
     private DatabaseDialect databaseDialect;
     
+    /** 初始化数据库方言。 */
     public BaseTenantCapacityMapper() {
         databaseDialect = DatabaseDialectManager.getInstance().getDialect(getDataSource());
     }
     
+    /** 按 id 游标分页查询租户容量列表（校正用量）。 */
     @Override
     public MapperResult getCapacityList4CorrectUsage(MapperContext context) {
         String sql = databaseDialect
@@ -48,6 +53,7 @@ public abstract class BaseTenantCapacityMapper extends AbstractMapper
                 context.getWhereParameter(FieldConstant.LIMIT_SIZE)));
     }
     
+    /** 委托方言解析数据库函数。 */
     @Override
     public String getFunction(String functionName) {
         return databaseDialect.getFunction(functionName);

@@ -35,24 +35,24 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Nacos default control plugin implementation.
+ * Nacos 默认 TPS 流控管理器。
+ *
+ * <p>维护 TPS 点位与 {@link TpsBarrier} 映射，支持规则注册/更新； 内置定时任务每 900ms 上报通过/拒绝计数。</p>
  *
  * @author shiyiyue
  */
 public class NacosTpsControlManager extends TpsControlManager {
     
-    /**
-     * point name -> tps barrier.
-     */
+    /** TPS 点位名称到限流屏障的映射。 */
     protected final Map<String, TpsBarrier> points = new ConcurrentHashMap<>(16);
     
-    /**
-     * point name -> tps control rule.
-     */
+    /** TPS 点位名称到流控规则的映射。 */
     protected final Map<String, TpsControlRule> rules = new ConcurrentHashMap<>(16);
     
+    /** 定时上报 TPS 指标的调度线程池。 */
     protected ScheduledExecutorService executorService;
     
+    /** 初始化 TPS 管理器并启动指标上报任务。 */
     public NacosTpsControlManager() {
         super();
         executorService = ExecutorFactory.newSingleScheduledExecutorService(r -> {
@@ -63,6 +63,7 @@ public class NacosTpsControlManager extends TpsControlManager {
         startTpsReport();
     }
     
+    /** 启动固定延迟的 TPS 指标上报调度。 */
     protected void startTpsReport() {
         executorService
             .scheduleWithFixedDelay(new NacosTpsControlManager.TpsMetricsReporter(), 0, 900,
@@ -70,7 +71,7 @@ public class NacosTpsControlManager extends TpsControlManager {
     }
     
     /**
-     * apple tps rule.
+     * 注册 TPS 限流点位并初始化或应用已有规则。
      *
      * @param pointName pointName.
      */
@@ -86,7 +87,7 @@ public class NacosTpsControlManager extends TpsControlManager {
     }
     
     /**
-     * apple tps rule.
+     * 更新指定点位的 TPS 流控规则。
      *
      * @param pointName pointName.
      * @param rule      rule.
@@ -102,16 +103,18 @@ public class NacosTpsControlManager extends TpsControlManager {
         }
     }
     
+    /** 返回全部 TPS 点位屏障映射。 */
     public Map<String, TpsBarrier> getPoints() {
         return points;
     }
     
+    /** 返回全部 TPS 流控规则映射。 */
     public Map<String, TpsControlRule> getRules() {
         return rules;
     }
     
     /**
-     * check tps result.
+     * 对请求执行 TPS 校验，未注册点位则跳过。
      *
      * @param tpsRequest TpsRequest.
      * @return check current tps is allowed.
@@ -130,12 +133,13 @@ public class NacosTpsControlManager extends TpsControlManager {
         
     }
     
+    /** 定时采集各点位 TPS 通过/拒绝计数并写入日志。 */
     class TpsMetricsReporter implements Runnable {
         
         long lastReportSecond = 0L;
         
         /**
-         * get format string "2021-01-16 17:20:21" of timestamp.
+         * 将毫秒时间戳格式化为 {@code yyyy-MM-dd HH:mm:ss} 字符串。
          *
          * @param timeStamp timestamp milliseconds.
          * @return
@@ -161,7 +165,7 @@ public class NacosTpsControlManager extends TpsControlManager {
                     String pointName = entry.getKey();
                     TpsMetrics metrics = tpsBarrier.getPointBarrier().getMetrics(metricsTime);
                     if (metrics != null) {
-                        //already reported.
+                        // 该秒指标已上报则跳过
                         if (lastReportSecond != 0L && lastReportSecond == metrics.getTimeStamp()) {
                             continue;
                         }
@@ -189,6 +193,7 @@ public class NacosTpsControlManager extends TpsControlManager {
         }
     }
     
+    /** 返回插件标识 {@code nacos}。 */
     @Override
     public String getName() {
         return "nacos";

@@ -20,18 +20,21 @@ import com.alibaba.nacos.plugin.auth.impl.SafeBcryptPasswordEncoder;
 import com.alibaba.nacos.plugin.auth.impl.constant.AuthConstants;
 
 /**
- * Password encoder tool.
+ * 密码编解码工具类。
+ *
+ * <p>委托 {@link SafeBcryptPasswordEncoder} 完成 BCrypt 哈希与校验； {@link #encode} 会校验明文长度不超过 {@link AuthConstants#MAX_PASSWORD_LENGTH}。</p>
  *
  * @author nacos
  */
 public class PasswordEncoderUtil {
     
+    /** 校验明文密码是否与已编码哈希匹配。 */
     public static Boolean matches(String raw, String encoded) {
         return new SafeBcryptPasswordEncoder().matches(raw, encoded);
     }
     
     /**
-     * Encode password.
+     * 对明文密码进行 BCrypt 编码。
      *
      * @param raw password
      * @return encoded password
