@@ -20,6 +20,7 @@ import com.alibaba.nacos.consistency.entity.Response;
 import com.alipay.sofa.jraft.Closure;
 
 /**
+ * 基于 JRaft {@link Closure} 的故障回调接口：Raft apply 失败时携带业务响应与异常信息，供 {@link FailoverClosureImpl} 完成 {@link java.util.concurrent.CompletableFuture}。
  * Failure callback based on Closure.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -27,14 +28,14 @@ import com.alipay.sofa.jraft.Closure;
 public interface FailoverClosure extends Closure {
     
     /**
-     * Set the return interface if needed.
+     * 设置业务层返回数据（apply 成功时使用）。
      *
      * @param response {@link Response} data
      */
     void setResponse(Response response);
     
     /**
-     * Catch exception.
+     * 记录 apply 过程中捕获的异常（失败时优先用于构造 {@link com.alibaba.nacos.consistency.exception.ConsistencyException}）。
      *
      * @param throwable {@link Throwable}
      */

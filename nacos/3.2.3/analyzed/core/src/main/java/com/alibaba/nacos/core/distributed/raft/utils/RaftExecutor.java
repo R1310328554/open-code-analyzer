@@ -28,27 +28,34 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Raft 专用线程池门面：按 {@link com.alibaba.nacos.core.distributed.raft.RaftConfig} 初始化核心、CLI、公共调度与快照四类执行器。
  * raft executor.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public final class RaftExecutor {
     
+    /** Raft 核心 apply/RPC 处理线程池。 */
     private static ExecutorService raftCoreExecutor;
     
+    /** Raft CLI 运维命令线程池。 */
     private static ExecutorService raftCliServiceExecutor;
     
+    /** Raft 公共调度线程池（成员刷新、延迟任务等）。 */
     private static ScheduledExecutorService raftCommonExecutor;
     
+    /** Raft 快照异步执行线程池。 */
     private static ExecutorService raftSnapshotExecutor;
     
+    /** 托管线程池归属标识（JRaftServer 全限定名）。 */
     private static final String OWNER = ClassUtils.getCanonicalName(JRaftServer.class);
     
+    /** 工具类禁止实例化。 */
     private RaftExecutor() {
     }
     
     /**
-     * init raft executor by {@link RaftConfig}.
+     * 根据 {@link RaftConfig} 创建核心、CLI、公共调度与快照线程池。
      *
      * @param config {@link RaftConfig}
      */
@@ -77,31 +84,38 @@ public final class RaftExecutor {
         
     }
     
+    /** 以固定速率调度 Raft 成员刷新任务。 */
     public static void scheduleRaftMemberRefreshJob(Runnable runnable, long initialDelay,
         long period, TimeUnit unit) {
         raftCommonExecutor.scheduleAtFixedRate(runnable, initialDelay, period, unit);
     }
     
+    /** 返回 Raft 核心线程池。 */
     public static ExecutorService getRaftCoreExecutor() {
         return raftCoreExecutor;
     }
     
+    /** 返回 Raft CLI 线程池。 */
     public static ExecutorService getRaftCliServiceExecutor() {
         return raftCliServiceExecutor;
     }
     
+    /** 在公共调度池上立即执行任务。 */
     public static void executeByCommon(Runnable r) {
         raftCommonExecutor.execute(r);
     }
     
+    /** 在公共调度池上延迟执行任务。 */
     public static void scheduleByCommon(Runnable r, long delayMs) {
         raftCommonExecutor.schedule(r, delayMs, TimeUnit.MILLISECONDS);
     }
     
+    /** 返回 Raft 公共调度线程池。 */
     public static ScheduledExecutorService getRaftCommonExecutor() {
         return raftCommonExecutor;
     }
     
+    /** 在快照专用线程池上异步执行快照任务。 */
     public static void doSnapshot(Runnable runnable) {
         raftSnapshotExecutor.execute(runnable);
     }

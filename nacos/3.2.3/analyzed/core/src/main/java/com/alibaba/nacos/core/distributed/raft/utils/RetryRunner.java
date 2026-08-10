@@ -17,6 +17,7 @@
 package com.alibaba.nacos.core.distributed.raft.utils;
 
 /**
+ * 可重试任务函数式接口：供 Raft 相关逻辑封装需反复执行的操作。
  * Retry function.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -25,7 +26,7 @@ package com.alibaba.nacos.core.distributed.raft.utils;
 public interface RetryRunner {
     
     /**
-     * Tasks that require retry.
+     * 执行一次待重试的任务体。
      */
     void run();
     

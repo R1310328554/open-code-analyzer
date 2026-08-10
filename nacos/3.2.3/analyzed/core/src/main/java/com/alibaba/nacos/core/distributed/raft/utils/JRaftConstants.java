@@ -17,34 +17,45 @@
 package com.alibaba.nacos.core.distributed.raft.utils;
 
 /**
+ * JRaft 运维命令与日志扩展字段常量：供 {@link JRaftOps}、CLI 请求参数及日志附加信息使用。
  * constant.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class JRaftConstants {
     
+    /** 日志扩展信息键，取 {@link JRaftLogOperation} 全限定类名。 */
     public static final String JRAFT_EXTEND_INFO_KEY = JRaftLogOperation.class.getCanonicalName();
     
+    /** Raft 组 ID 参数名。 */
     public static final String GROUP_ID = "groupId";
     
+    /** 运维命令名称参数键。 */
     public static final String COMMAND_NAME = "command";
     
+    /** 运维命令参数值键。 */
     public static final String COMMAND_VALUE = "value";
     
+    /** 转移 Leader 命令标识。 */
     public static final String TRANSFER_LEADER = "transferLeader";
     
+    /** 重置 Raft 集群成员（changePeers）命令标识。 */
     public static final String RESET_RAFT_CLUSTER = "restRaftCluster";
     
+    /** 触发快照命令标识。 */
     public static final String DO_SNAPSHOT = "doSnapshot";
     
+    /** 移除单个 Peer 命令标识。 */
     public static final String REMOVE_PEER = "removePeer";
     
+    /** 批量移除 Peer 命令标识。 */
     public static final String REMOVE_PEERS = "removePeers";
     
+    /** 变更集群成员列表命令标识。 */
     public static final String CHANGE_PEERS = "changePeers";
     
     /**
-     * resetPeers.
+     * 紧急 resetPeers 命令标识（仅在可用性优先于一致性时使用）。
      */
     public static final String RESET_PEERS = "resetPeers";
     

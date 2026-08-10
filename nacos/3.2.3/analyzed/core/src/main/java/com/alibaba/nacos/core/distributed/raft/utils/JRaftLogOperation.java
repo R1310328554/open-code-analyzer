@@ -17,14 +17,17 @@
 package com.alibaba.nacos.core.distributed.raft.utils;
 
 /**
+ * JRaft 日志附加操作类型常量：写入 Raft 日志扩展字段，区分读/写 apply 路径。
  * JRaft for additional information on logging operations.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class JRaftLogOperation {
     
+    /** 写操作（状态变更）日志标记。 */
     public static final String MODIFY_OPERATION = "modify";
     
+    /** 只读操作日志标记。 */
     public static final String READ_OPERATION = "read";
     
 }

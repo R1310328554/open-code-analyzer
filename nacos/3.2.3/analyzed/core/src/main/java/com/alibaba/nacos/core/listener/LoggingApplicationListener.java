@@ -24,6 +24,7 @@ import static org.springframework.boot.context.logging.LoggingApplicationListene
 import static org.springframework.core.io.ResourceLoader.CLASSPATH_URL_PREFIX;
 
 /**
+ * 日志配置初始化监听器：若 Spring Environment 未指定 logback 配置路径，则注入 Nacos 默认 {@code META-INF/logback/nacos.xml}。
  * For init logging configuration.
  *
  * @author horizonzy
@@ -31,11 +32,18 @@ import static org.springframework.core.io.ResourceLoader.CLASSPATH_URL_PREFIX;
  */
 public class LoggingApplicationListener implements NacosApplicationListener {
     
+    /** Nacos 默认 logback 配置文件 classpath 位置。 */
     private static final String DEFAULT_NACOS_LOGBACK_LOCATION =
         CLASSPATH_URL_PREFIX + "META-INF/logback/nacos.xml";
     
+    /** 本监听器日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggingApplicationListener.class);
     
+    /**
+     * Environment 就绪阶段：缺失 {@code logging.config} 时写入默认 Nacos logback 路径。
+     *
+     * @param environment Spring 可配置 Environment
+     */
     @Override
     public void environmentPrepared(ConfigurableEnvironment environment) {
         if (!environment.containsProperty(CONFIG_PROPERTY)) {

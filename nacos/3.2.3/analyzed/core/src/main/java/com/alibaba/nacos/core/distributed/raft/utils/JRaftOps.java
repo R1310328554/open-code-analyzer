@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * JRaft 运维命令枚举：将 HTTP/CLI 命令名映射为 {@link com.alipay.sofa.jraft.CliService} 调用，返回统一 {@link com.alibaba.nacos.common.model.RestResult}。
  * jraft maintain service.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -37,6 +38,7 @@ import java.util.Objects;
 @SuppressWarnings("all")
 public enum JRaftOps {
     
+    /** 将指定 Peer 设为 Leader。 */
     TRANSFER_LEADER(JRaftConstants.TRANSFER_LEADER) {
         
         @Override
@@ -52,6 +54,7 @@ public enum JRaftOps {
         }
     },
     
+    /** 通过 changePeers 重置整个 Raft 集群配置。 */
     RESET_RAFT_CLUSTER(JRaftConstants.RESET_RAFT_CLUSTER) {
         
         @Override
@@ -68,6 +71,7 @@ public enum JRaftOps {
         }
     },
     
+    /** 对指定 Peer 触发快照。 */
     DO_SNAPSHOT(JRaftConstants.DO_SNAPSHOT) {
         
         @Override
@@ -83,6 +87,7 @@ public enum JRaftOps {
         }
     },
     
+    /** 从集群移除单个 Peer（已不存在则视为成功）。 */
     REMOVE_PEER(JRaftConstants.REMOVE_PEER) {
         
         @Override
@@ -106,6 +111,7 @@ public enum JRaftOps {
         }
     },
     
+    /** 按逗号分隔批量移除 Peer。 */
     REMOVE_PEERS(JRaftConstants.REMOVE_PEERS) {
         
         @Override
@@ -131,6 +137,7 @@ public enum JRaftOps {
         }
     },
     
+    /** 将集群成员替换为新 Peer 列表（配置未变则直接成功）。 */
     CHANGE_PEERS(JRaftConstants.CHANGE_PEERS) {
         
         @Override
@@ -156,9 +163,9 @@ public enum JRaftOps {
     },
     
     /**
-     * resetPeers.
+     * 紧急 resetPeers：在本地节点上强制重置成员列表。
      * <p>
-     * Use only in very urgent situations where availability is more important!
+     * 仅在可用性优先于一致性的极端场景使用！
      * https://www.sofastack.tech/projects/sofa-jraft/jraft-user-guide/#7.3
      * </p>
      */
@@ -182,12 +189,20 @@ public enum JRaftOps {
         }
     };
     
+    /** 命令字符串，与 {@link JRaftConstants} 中常量对应。 */
     private String name;
     
+    /** 绑定命令名。 */
     JRaftOps(String name) {
         this.name = name;
     }
     
+    /**
+     * 按命令字符串查找枚举，未匹配返回 null。
+     *
+     * @param command 命令名
+     * @return 对应 {@link JRaftOps} 或 null
+     */
     public static JRaftOps sourceOf(String command) {
         for (JRaftOps enums : JRaftOps.values()) {
             if (Objects.equals(command, enums.name)) {
@@ -197,6 +212,15 @@ public enum JRaftOps {
         return null;
     }
     
+    /**
+     * 默认空实现（仅基类占位）；各枚举常量覆盖此方法执行具体 CLI 操作。
+     *
+     * @param cliService JRaft CLI 服务
+     * @param groupId Raft 组 ID
+     * @param node 本地 Raft 节点
+     * @param args 命令参数
+     * @return 运维结果
+     */
     public RestResult<String> execute(CliService cliService, String groupId, Node node,
         Map<String, String> args) {
         return RestResultUtils.success();

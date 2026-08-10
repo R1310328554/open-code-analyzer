@@ -21,6 +21,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
 
 /**
+ * Nacos 应用生命周期监听器：对齐 Spring Boot 启动各阶段，供 {@link StartingApplicationListener} 等实现初始化逻辑。
  * Nacos Application Listener, execute init process.
  *
  * @author horizonzy
@@ -29,13 +30,13 @@ import org.springframework.core.env.ConfigurableEnvironment;
 public interface NacosApplicationListener {
     
     /**
-     * {@link SpringApplicationRunListener#starting}.
+     * 应用开始启动，对应 {@link SpringApplicationRunListener#starting}。
      */
     default void starting() {
     }
     
     /**
-     * {@link com.alibaba.nacos.core.code.SpringApplicationRunListener#environmentPrepared}.
+     * Environment 准备完成，对应 {@link com.alibaba.nacos.core.code.SpringApplicationRunListener#environmentPrepared}。
      *
      * @param environment environment
      */
@@ -43,7 +44,7 @@ public interface NacosApplicationListener {
     }
     
     /**
-     * {@link com.alibaba.nacos.core.code.SpringApplicationRunListener#contextLoaded}.
+     * ApplicationContext 创建完成，对应 contextPrepared 阶段。
      *
      * @param context context
      */
@@ -51,7 +52,7 @@ public interface NacosApplicationListener {
     }
     
     /**
-     * {@link com.alibaba.nacos.core.code.SpringApplicationRunListener#contextLoaded}.
+     * Context 加载完成，对应 {@link com.alibaba.nacos.core.code.SpringApplicationRunListener#contextLoaded}。
      *
      * @param context context
      */
@@ -59,7 +60,7 @@ public interface NacosApplicationListener {
     }
     
     /**
-     * {@link com.alibaba.nacos.core.code.SpringApplicationRunListener#started}.
+     * 应用已启动，对应 {@link com.alibaba.nacos.core.code.SpringApplicationRunListener#started}。
      *
      * @param context context
      */
@@ -67,7 +68,7 @@ public interface NacosApplicationListener {
     }
     
     /**
-     * {@link com.alibaba.nacos.core.code.SpringApplicationRunListener#ready}.
+     * 应用就绪，对应 {@link com.alibaba.nacos.core.code.SpringApplicationRunListener#ready}。
      *
      * @param context context
      */
@@ -75,7 +76,7 @@ public interface NacosApplicationListener {
     }
     
     /**
-     * {@link com.alibaba.nacos.core.code.SpringApplicationRunListener#failed}.
+     * 启动失败回调，对应 {@link com.alibaba.nacos.core.code.SpringApplicationRunListener#failed}。
      *
      * @param context   context
      * @param exception exception

@@ -51,6 +51,7 @@ import static com.alibaba.nacos.core.distributed.raft.RaftSysConstants.SYNC;
 import static com.alibaba.nacos.core.distributed.raft.RaftSysConstants.SYNC_META;
 
 /**
+ * 从 Nacos {@link com.alibaba.nacos.core.distributed.raft.RaftConfig} 构建 SOFA JRaft {@link RaftOptions}。
  * build {@link RaftOptions}.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -58,7 +59,7 @@ import static com.alibaba.nacos.core.distributed.raft.RaftSysConstants.SYNC_META
 public class RaftOptionsBuilder {
     
     /**
-     * By {@link RaftConfig} creating a {@link RaftOptions}.
+     * 按 {@link RaftConfig} 填充 RPC 批量、选举、同步、Disruptor 等 Raft 运行时参数。
      *
      * @param config {@link RaftConfig}
      * @return {@link RaftOptions}
@@ -116,6 +117,12 @@ public class RaftOptionsBuilder {
         return raftOptions;
     }
     
+    /**
+     * 解析只读模式配置：默认 ReadOnlySafe，可选 ReadOnlyLeaseBased。
+     *
+     * @param config Raft 配置
+     * @return JRaft ReadOnlyOption
+     */
     private static ReadOnlyOption raftReadIndexType(RaftConfig config) {
         String readOnySafe = "ReadOnlySafe";
         String readOnlyLeaseBased = "ReadOnlyLeaseBased";

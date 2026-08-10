@@ -51,6 +51,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
+ * JRaft 启动与集群辅助工具：初始化 gRPC RPC 服务、Raft 目录、Peer 字符串转换及首节点加群逻辑。
  * JRaft utils.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -58,6 +59,13 @@ import java.util.stream.Collectors;
 @SuppressWarnings("all")
 public class JRaftUtils {
     
+    /**
+     * 创建并注册 gRPC Raft RPC 服务：序列化一致性 Protobuf 消息，挂载读写处理器与核心/CLI 线程池。
+     *
+     * @param server Nacos JRaft 服务端
+     * @param peerId 本节点 PeerId
+     * @return 已注册处理器的 RpcServer
+     */
     public static RpcServer initRpcServer(JRaftServer server, PeerId peerId) {
         GrpcRaftRpcFactory raftRpcFactory = (GrpcRaftRpcFactory) RpcFactoryHelper.rpcFactory();
         raftRpcFactory.registerProtobufSerializer(Log.class.getName(), Log.getDefaultInstance());
@@ -90,12 +98,19 @@ public class JRaftUtils {
         return rpcServer;
     }
     
+    /**
+     * 为指定 Raft 组创建 log/snapshot/meta-data 目录并写入 {@link NodeOptions}。
+     *
+     * @param parentPath Raft 数据根路径
+     * @param groupName Raft 组名
+     * @param copy 待填充的 NodeOptions
+     */
     public static final void initDirectory(String parentPath, String groupName, NodeOptions copy) {
         final String logUri = Paths.get(parentPath, groupName, "log").toString();
         final String snapshotUri = Paths.get(parentPath, groupName, "snapshot").toString();
         final String metaDataUri = Paths.get(parentPath, groupName, "meta-data").toString();
         
-        // Initialize the raft file storage path for different services
+        // 为各 Raft 组初始化 log、snapshot、meta-data 磁盘目录
         try {
             DiskUtils.forceMkdir(new File(logUri));
             DiskUtils.forceMkdir(new File(snapshotUri));
@@ -110,11 +125,21 @@ public class JRaftUtils {
         copy.setSnapshotUri(snapshotUri);
     }
     
+    /** 将 PeerId 列表转换为其 endpoint 字符串列表。 */
     public static List<String> toStrings(List<PeerId> peerIds) {
         return peerIds.stream().map(peerId -> peerId.getEndpoint().toString())
             .collect(Collectors.toList());
     }
     
+    /**
+     * 首 IP 节点启动时将其他成员逐个 addPeer 加入 Raft 组，失败则每秒重试直至全部加入或列表为空。
+     *
+     * @param cliService JRaft CLI
+     * @param members 待加入成员 endpoint 集合
+     * @param conf 当前集群配置
+     * @param group Raft 组 ID
+     * @param self 本节点 PeerId（会从待加入集合中排除）
+     */
     public static void joinCluster(CliService cliService, Collection<String> members,
         Configuration conf, String group,
         PeerId self) {
