@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:57:48Z",
-  "files": [
-    "web/src/pages/agents/hooks/use-export-agent-log.ts",
-    "web/src/pages/agents/hooks/use-select-filters.ts",
-    "web/src/pages/agents/use-import-json.ts",
-    "web/src/pages/agents/use-rename-agent.ts",
-    "web/src/pages/chunk/parsed-result/add-knowledge/components/knowledge-chunk/constant.ts",
-    "web/src/pages/chunk/parsed-result/add-knowledge/components/knowledge-chunk/hooks.ts",
-    "web/src/pages/chunk/parsed-result/add-knowledge/components/knowledge-chunk/utils.ts",
-    "web/src/pages/chunk/parsed-result/add-knowledge/constant.ts",
-    "web/src/pages/dataflow-result/components/parse-editer/hook.ts",
-    "web/src/pages/dataflow-result/components/parse-editer/interface.ts",
-    "web/src/pages/dataflow-result/constant.ts",
-    "web/src/pages/dataflow-result/hooks.ts",
-    "web/src/pages/dataflow-result/interface.ts",
-    "web/src/pages/dataflow-result/utils.ts",
-    "web/src/pages/dataset/components/metedata/constant.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 144,
-  "done": 1605
+  "done": 1620
 }
