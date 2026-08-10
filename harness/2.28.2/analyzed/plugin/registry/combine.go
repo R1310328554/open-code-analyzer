@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// registry 包提供镜像仓库凭据插件，支持从文件、数据库、外部 API 等多源组合加载。
 package registry
 
 import (
@@ -23,16 +24,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Combine combines the registry services, allowing the
-// system to source registry credential from multiple sources.
+// Combine 组合多个 RegistryService，使系统可从多个来源聚合镜像仓库凭据。
 func Combine(services ...core.RegistryService) core.RegistryService {
 	return &combined{services}
 }
 
+// combined 依次调用各注册表凭据源并合并结果。
 type combined struct {
 	sources []core.RegistryService
 }
 
+// List 遍历所有来源获取凭据并合并；任一来源出错则立即返回。
 func (c *combined) List(ctx context.Context, req *core.RegistryArgs) ([]*core.Registry, error) {
 	var all []*core.Registry
 	for _, source := range c.sources {
@@ -42,9 +44,7 @@ func (c *combined) List(ctx context.Context, req *core.RegistryArgs) ([]*core.Re
 		}
 		all = append(all, list...)
 	}
-	// if trace level debugging is enabled we print
-	// all registry credentials retrieved from the
-	// various registry sources.
+	// Trace 级别下输出从各来源加载的镜像仓库凭据摘要。
 	logger := logger.FromContext(ctx)
 	if logrus.IsLevelEnabled(logrus.TraceLevel) {
 		if len(all) == 0 {

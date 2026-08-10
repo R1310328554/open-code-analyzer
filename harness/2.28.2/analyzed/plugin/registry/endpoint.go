@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// registry 包（非 OSS 构建）实现从 HTTP 端点获取镜像仓库凭据。
 package registry
 
 import (
@@ -14,8 +15,7 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// EndpointSource returns a registry credential provider
-// that sources registry credentials from an http endpoint.
+// EndpointSource 创建从 HTTP 端点获取镜像仓库凭据的 RegistryService。
 func EndpointSource(endpoint, secret string, skipVerify bool) core.RegistryService {
 	return &service{
 		endpoint:   endpoint,
@@ -24,12 +24,14 @@ func EndpointSource(endpoint, secret string, skipVerify bool) core.RegistryServi
 	}
 }
 
+// service 通过 drone-go registry 插件客户端拉取凭据。
 type service struct {
 	endpoint   string
 	secret     string
 	skipVerify bool
 }
 
+// List 调用外部端点 API 并映射为 core.Registry 列表；endpoint 为空时跳过。
 func (c *service) List(ctx context.Context, in *core.RegistryArgs) ([]*core.Registry, error) {
 	if c.endpoint == "" {
 		return nil, nil

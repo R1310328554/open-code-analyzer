@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// auths 包解析 Docker 客户端配置文件（通常为 ~/.docker/config.json）中的镜像仓库凭据。
 package auths
 
 import (
@@ -25,15 +26,14 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// config represents the Docker client configuration,
-// typically located at ~/.docker/config.json
+// config 表示 Docker 客户端配置结构，通常位于 ~/.docker/config.json。
 type config struct {
 	Auths map[string]struct {
 		Auth string `json:"auth"`
 	} `json:"auths"`
 }
 
-// Parse parses the registry credential from the reader.
+// Parse 从 Reader 解析镜像仓库凭据列表。
 func Parse(r io.Reader) ([]*core.Registry, error) {
 	c := new(config)
 	err := json.NewDecoder(r).Decode(c)
@@ -52,7 +52,7 @@ func Parse(r io.Reader) ([]*core.Registry, error) {
 	return auths, nil
 }
 
-// ParseFile parses the registry credential file.
+// ParseFile 从文件路径解析镜像仓库凭据。
 func ParseFile(filepath string) ([]*core.Registry, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
@@ -62,24 +62,24 @@ func ParseFile(filepath string) ([]*core.Registry, error) {
 	return Parse(f)
 }
 
-// ParseString parses the registry credential file.
+// ParseString 从字符串解析镜像仓库凭据。
 func ParseString(s string) ([]*core.Registry, error) {
 	return Parse(strings.NewReader(s))
 }
 
-// ParseBytes parses the registry credential file.
+// ParseBytes 从字节切片解析镜像仓库凭据。
 func ParseBytes(b []byte) ([]*core.Registry, error) {
 	return Parse(bytes.NewReader(b))
 }
 
-// encode returns the encoded credentials.
+// encode 将用户名与密码编码为 base64 认证字符串。
 func encode(username, password string) string {
 	return base64.StdEncoding.EncodeToString(
 		[]byte(username + ":" + password),
 	)
 }
 
-// decode returns the decoded credentials.
+// decode 解码 base64 认证字符串，返回用户名与密码。
 func decode(s string) (username, password string) {
 	d, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {

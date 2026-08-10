@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// registry 包（非 OSS 构建）实现从 .docker/config.json 文件读取镜像仓库凭据。
 package registry
 
 import (
@@ -15,21 +16,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// FileSource returns a registry credential provider that
-// sources registry credentials from a .docker/config.json file.
+// FileSource 从 .docker/config.json 文件读取镜像仓库凭据。
 func FileSource(path string) core.RegistryService {
 	return &registryConfig{
 		path: path,
 	}
 }
 
+// registryConfig 持有 Docker 配置文件路径。
 type registryConfig struct {
 	path string
 }
 
+// List 解析指定路径的 Docker 配置；路径为空时跳过。
 func (r *registryConfig) List(ctx context.Context, req *core.RegistryArgs) ([]*core.Registry, error) {
-	// configuration of the .docker/config.json file path
-	// is optional. Ignore if empty string.
+	// .docker/config.json 路径为可选配置，空字符串时忽略。
 	if r.path == "" {
 		return nil, nil
 	}

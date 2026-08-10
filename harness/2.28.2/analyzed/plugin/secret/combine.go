@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// secret 包提供流水线密钥插件，支持从数据库、加密 YAML、外部 API 等多源链式查找。
 package secret
 
 import (
@@ -21,20 +22,19 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Combine combines the secret services, allowing the system
-// to get pipeline secrets from multiple sources.
+// Combine 组合多个 SecretService，按链式顺序查找流水线密钥。
 func Combine(services ...core.SecretService) core.SecretService {
 	return &combined{services}
 }
 
+// combined 依次调用各密钥来源，跳过空结果与 Docker 内部配置名。
 type combined struct {
 	sources []core.SecretService
 }
 
+// Find 查找密钥；忽略 docker_auth_config 等系统保留名称。
 func (c *combined) Find(ctx context.Context, in *core.SecretArgs) (*core.Secret, error) {
-	// Ignore any requests for the .docker/config.json file.
-	// This file is reserved for internal use only, and is
-	// never exposed to the build environment.
+	// .docker/config.json 为内部专用，不向构建环境暴露。
 	if isDockerConfig(in.Name) {
 		return nil, nil
 	}
@@ -47,10 +47,7 @@ func (c *combined) Find(ctx context.Context, in *core.SecretArgs) (*core.Secret,
 		if secret == nil {
 			continue
 		}
-		// if the secret object is not nil, but is empty
-		// we should assume the secret service returned a
-		// 204 no content, and proceed to the next service
-		// in the chain.
+		// Secret 非 nil 但 Data 为空表示远端返回 204，继续尝试下一来源。
 		if secret.Data == "" {
 			continue
 		}
@@ -59,8 +56,7 @@ func (c *combined) Find(ctx context.Context, in *core.SecretArgs) (*core.Secret,
 	return nil, nil
 }
 
-// helper function returns true if the build event matches the
-// docker_auth_config variable name.
+// isDockerConfig 判断名称是否为 Docker 内部配置变量（不向流水线暴露）。
 func isDockerConfig(name string) bool {
 	return strings.EqualFold(name, "docker_auth_config") ||
 		strings.EqualFold(name, ".dockerconfigjson") ||

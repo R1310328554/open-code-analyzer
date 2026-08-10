@@ -18,7 +18,7 @@ package registry
 
 import "github.com/drone/drone/core"
 
-// External returns a no-op registry credential provider.
+// External 在 OSS 构建中返回空操作凭据提供者，不调用外部 Secret 插件。
 func External(string, string, bool) core.RegistryService {
 	return new(noop)
 }

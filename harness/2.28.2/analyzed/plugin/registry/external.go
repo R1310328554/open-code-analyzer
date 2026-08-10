@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// registry 包（非 OSS 构建）实现通过外部 Secret 插件获取 image_pull_secrets。
 package registry
 
 import (
@@ -19,7 +20,7 @@ import (
 	droneapi "github.com/drone/drone-go/drone"
 )
 
-// External returns a new external Secret controller.
+// External 返回通过外部 Secret 插件获取 image_pull_secrets 的 RegistryService。
 func External(endpoint, secret string, skipVerify bool) core.RegistryService {
 	return &externalController{
 		endpoint:   endpoint,
@@ -28,12 +29,14 @@ func External(endpoint, secret string, skipVerify bool) core.RegistryService {
 	}
 }
 
+// externalController 按 YAML 中 secret.get 配置调用外部服务。
 type externalController struct {
 	endpoint   string
 	secret     string
 	skipVerify bool
 }
 
+// List 遍历 PullSecrets，从外部 API 获取并解析 Docker auths 格式凭据。
 func (c *externalController) List(ctx context.Context, in *core.RegistryArgs) ([]*core.Registry, error) {
 	var results []*core.Registry
 
@@ -44,10 +47,7 @@ func (c *externalController) List(ctx context.Context, in *core.RegistryArgs) ([
 			WithField("secret", c.endpoint)
 		logger.Trace("image_pull_secrets: find secret")
 
-		// lookup the named secret in the manifest. If the
-		// secret does not exist, return a nil variable,
-		// allowing the next secret controller in the chain
-		// to be invoked.
+		// 在 manifest 中查找命名 Secret；未找到则返回 nil，交由链中下一控制器处理。
 		path, name, ok := getExternal(in.Conf, match)
 		if !ok {
 			logger.Trace("image_pull_secrets: no matching secret resource in yaml")
@@ -58,10 +58,7 @@ func (c *externalController) List(ctx context.Context, in *core.RegistryArgs) ([
 			WithField("get.path", path).
 			WithField("get.name", name)
 
-		// include a timeout to prevent an API call from
-		// hanging the build process indefinitely. The
-		// external service must return a request within
-		// one minute.
+		// 为 API 调用设置超时，防止外部服务无响应时阻塞构建流程（1 分钟）。
 		ctx, cancel := context.WithTimeout(ctx, time.Minute)
 		defer cancel()
 
@@ -78,16 +75,12 @@ func (c *externalController) List(ctx context.Context, in *core.RegistryArgs) ([
 			return nil, err
 		}
 
-		// if no error is returned and the secret is empty,
-		// this indicates the client returned No Content,
-		// and we should exit with no secret, but no error.
+		// 无错误但 Data 为空表示远端返回 204 No Content，应视为无凭据而非错误。
 		if res.Data == "" {
 			return nil, nil
 		}
 
-		// The secret can be restricted to non-pull request
-		// events. If the secret is restricted, return
-		// empty results.
+		// 密钥可限制为非 Pull Request 事件可用；PR 构建时返回空结果。
 		if (res.Pull == false && res.PullRequest == false) &&
 			in.Build.Event == core.EventPullRequest {
 			logger.WithError(err).Trace("image_pull_secrets: pull_request access denied")
@@ -106,6 +99,7 @@ func (c *externalController) List(ctx context.Context, in *core.RegistryArgs) ([
 	return results, nil
 }
 
+// getExternal 在 manifest 中查找带 get.path/get.name 的 Secret 资源。
 func getExternal(manifest *yaml.Manifest, match string) (path, name string, ok bool) {
 	for _, resource := range manifest.Resources {
 		secret, ok := resource.(*yaml.Secret)
@@ -123,6 +117,7 @@ func getExternal(manifest *yaml.Manifest, match string) (path, name string, ok b
 	return
 }
 
+// toRepo 将 core.Repository 转换为 drone-go API 类型。
 func toRepo(from *core.Repository) droneapi.Repo {
 	return droneapi.Repo{
 		ID:         from.ID,
@@ -146,6 +141,7 @@ func toRepo(from *core.Repository) droneapi.Repo {
 	}
 }
 
+// toBuild 将 core.Build 转换为 drone-go API 类型。
 func toBuild(from *core.Build) droneapi.Build {
 	return droneapi.Build{
 		ID:           from.ID,

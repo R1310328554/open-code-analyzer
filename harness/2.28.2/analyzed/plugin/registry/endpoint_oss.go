@@ -18,7 +18,7 @@ package registry
 
 import "github.com/drone/drone/core"
 
-// EndpointSource returns a no-op registry credential provider.
+// EndpointSource 在 OSS 构建中返回空操作凭据提供者，不调用外部 HTTP 端点。
 func EndpointSource(string, string, bool) core.RegistryService {
 	return new(noop)
 }

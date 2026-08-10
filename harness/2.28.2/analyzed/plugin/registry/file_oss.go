@@ -18,7 +18,7 @@ package registry
 
 import "github.com/drone/drone/core"
 
-// FileSource returns a no-op registry credential provider.
+// FileSource 在 OSS 构建中返回空操作凭据提供者，不读取本地 Docker 配置文件。
 func FileSource(string) core.RegistryService {
 	return new(noop)
 }

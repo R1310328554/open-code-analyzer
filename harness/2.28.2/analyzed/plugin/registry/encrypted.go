@@ -27,16 +27,16 @@ import (
 	"github.com/drone/drone/plugin/registry/auths"
 )
 
-// Encrypted returns a new encrypted registry credentials
-// provider that sources credentials from the encrypted strings
-// in the yaml file.
+// Encrypted 返回从 YAML 加密字符串获取镜像仓库凭据的 RegistryService。
 func Encrypted() core.RegistryService {
 	return new(encrypted)
 }
 
+// encrypted 实现基于 AES-GCM 解密的 image_pull_secrets 解析。
 type encrypted struct {
 }
 
+// List 按 Pipeline.PullSecrets 查找加密 Secret，解密后解析为 Registry 列表。
 func (c *encrypted) List(ctx context.Context, in *core.RegistryArgs) ([]*core.Registry, error) {
 	var results []*core.Registry
 
@@ -46,10 +46,7 @@ func (c *encrypted) List(ctx context.Context, in *core.RegistryArgs) ([]*core.Re
 			WithField("kind", "secret")
 		logger.Trace("image_pull_secrets: find encrypted secret")
 
-		// lookup the named secret in the manifest. If the
-		// secret does not exist, return a nil variable,
-		// allowing the next secret controller in the chain
-		// to be invoked.
+		// 在 manifest 中查找命名 Secret；未找到则返回 nil，交由链中下一控制器处理。
 		data, ok := getEncrypted(in.Conf, match)
 		if !ok {
 			logger.Trace("image_pull_secrets: no matching encrypted secret in yaml")
@@ -81,6 +78,7 @@ func (c *encrypted) List(ctx context.Context, in *core.RegistryArgs) ([]*core.Re
 	return results, nil
 }
 
+// getEncrypted 在 manifest 中按名称查找含 Data 字段的 Secret 资源。
 func getEncrypted(manifest *yaml.Manifest, match string) (data string, ok bool) {
 	for _, resource := range manifest.Resources {
 		secret, ok := resource.(*yaml.Secret)
@@ -98,6 +96,7 @@ func getEncrypted(manifest *yaml.Manifest, match string) (data string, ok bool) 
 	return
 }
 
+// decrypt 使用 AES-GCM 解密密文，密钥来自仓库 Secret。
 func decrypt(ciphertext []byte, key []byte) (plaintext []byte, err error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {

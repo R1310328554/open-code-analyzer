@@ -20,8 +20,10 @@ import (
 	"github.com/drone/drone/core"
 )
 
+// noop 空操作 RegistryService，始终返回 nil 凭据列表。
 type noop struct{}
 
+// List 空实现，不提供任何镜像仓库凭据。
 func (noop) List(context.Context, *core.RegistryArgs) ([]*core.Registry, error) {
 	return nil, nil
 }

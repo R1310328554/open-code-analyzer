@@ -22,15 +22,17 @@ import (
 	"github.com/drone/drone/plugin/registry/auths"
 )
 
-// Static returns a new static credentials controller.
+// Static 从数据库静态 Secret 列表提供镜像仓库凭据。
 func Static(secrets []*core.Secret) core.RegistryService {
 	return &staticController{secrets: secrets}
 }
 
+// staticController 按名称索引 Secret 并解析 auths 格式。
 type staticController struct {
 	secrets []*core.Secret
 }
 
+// List 匹配 Pipeline.PullSecrets，校验 PR 访问权限后解析凭据。
 func (c *staticController) List(ctx context.Context, in *core.RegistryArgs) ([]*core.Registry, error) {
 	static := map[string]*core.Secret{}
 	for _, secret := range c.secrets {
@@ -48,9 +50,7 @@ func (c *staticController) List(ctx context.Context, in *core.RegistryArgs) ([]*
 			continue
 		}
 
-		// The secret can be restricted to non-pull request
-		// events. If the secret is restricted, return
-		// empty results.
+		// 密钥可限制为非 Pull Request 事件可用；PR 构建时跳过。
 		if secret.PullRequest == false &&
 			in.Build.Event == core.EventPullRequest {
 			logger.Trace("registry: database: pull_request access denied")

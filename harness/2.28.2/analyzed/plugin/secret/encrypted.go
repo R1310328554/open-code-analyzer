@@ -26,32 +26,29 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// Encrypted returns a new encrypted Secret controller.
+// Encrypted 返回从 YAML 加密 data 字段解密的 SecretService。
 func Encrypted() core.SecretService {
 	return new(encrypted)
 }
 
+// encrypted 实现 AES-GCM 解密与 fork PR 安全限制。
 type encrypted struct {
 }
 
+// Find 查找加密 Secret，解密后返回；公开仓库 fork PR 不暴露密钥。
 func (c *encrypted) Find(ctx context.Context, in *core.SecretArgs) (*core.Secret, error) {
 	logger := logger.FromContext(ctx).
 		WithField("name", in.Name).
 		WithField("kind", "secret")
 
-	// lookup the named secret in the manifest. If the
-	// secret does not exist, return a nil variable,
-	// allowing the next secret controller in the chain
-	// to be invoked.
+	// 在 manifest 中查找命名 Secret；未找到则返回 nil，交由链中下一控制器处理。
 	data, ok := getEncrypted(in.Conf, in.Name)
 	if !ok {
 		logger.Trace("secret: encrypted: no matching secret")
 		return nil, nil
 	}
 
-	// if the build event is a pull request and the source
-	// repository is a fork, the secret is not exposed to
-	// the pipeline, for security reasons.
+	// 公开仓库的 fork Pull Request 不暴露密钥，防止泄露上游 Secret。
 	if in.Repo.Private == false &&
 		in.Build.Event == core.EventPullRequest &&
 		in.Build.Fork != "" {
@@ -79,6 +76,7 @@ func (c *encrypted) Find(ctx context.Context, in *core.SecretArgs) (*core.Secret
 	}, nil
 }
 
+// getEncrypted 在 manifest 中按名称查找含 Data 字段的 Secret 资源。
 func getEncrypted(manifest *yaml.Manifest, match string) (data string, ok bool) {
 	for _, resource := range manifest.Resources {
 		secret, ok := resource.(*yaml.Secret)
@@ -96,6 +94,7 @@ func getEncrypted(manifest *yaml.Manifest, match string) (data string, ok bool) 
 	return
 }
 
+// decrypt 使用 AES-GCM 解密密文，密钥来自仓库 Secret。
 func decrypt(ciphertext []byte, key []byte) (plaintext []byte, err error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {

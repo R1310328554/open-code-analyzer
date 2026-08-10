@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// secret 包（非 OSS 构建）实现通过 HTTP 端点获取流水线密钥。
 package secret
 
 import (
@@ -18,7 +19,7 @@ import (
 	"github.com/drone/drone-go/plugin/secret"
 )
 
-// External returns a new external Secret controller.
+// External 返回通过 HTTP 端点获取密钥的外部 SecretService。
 func External(endpoint, secret string, skipVerify bool) core.SecretService {
 	return &externalController{
 		endpoint:   endpoint,
@@ -27,12 +28,14 @@ func External(endpoint, secret string, skipVerify bool) core.SecretService {
 	}
 }
 
+// externalController 调用 drone-go secret 插件客户端。
 type externalController struct {
 	endpoint   string
 	secret     string
 	skipVerify bool
 }
 
+// Find 按 manifest get 配置请求外部服务，含超时与 PR 访问限制。
 func (c *externalController) Find(ctx context.Context, in *core.SecretArgs) (*core.Secret, error) {
 	if c.endpoint == "" {
 		return nil, nil
@@ -42,20 +45,14 @@ func (c *externalController) Find(ctx context.Context, in *core.SecretArgs) (*co
 		WithField("name", in.Name).
 		WithField("kind", "secret")
 
-	// lookup the named secret in the manifest. If the
-	// secret does not exist, return a nil variable,
-	// allowing the next secret controller in the chain
-	// to be invoked.
+	// 在 manifest 中查找命名 Secret；未找到则返回 nil，交由链中下一控制器处理。
 	path, name, ok := getExternal(in.Conf, in.Name)
 	if !ok {
 		logger.Trace("secret: external: no matching secret")
 		return nil, nil
 	}
 
-	// include a timeout to prevent an API call from
-	// hanging the build process indefinitely. The
-	// external service must return a request within
-	// one minute.
+	// 为 API 调用设置超时，防止外部服务无响应时阻塞构建流程（1 分钟）。
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
@@ -72,17 +69,13 @@ func (c *externalController) Find(ctx context.Context, in *core.SecretArgs) (*co
 		return nil, err
 	}
 
-	// if no error is returned and the secret is empty,
-	// this indicates the client returned No Content,
-	// and we should exit with no secret, but no error.
+	// 无错误但 Data 为空表示远端返回 204 No Content，应视为无密钥而非错误。
 	if res.Data == "" {
 		logger.Trace("secret: external: secret disabled for pull requests")
 		return nil, nil
 	}
 
-	// the secret can be restricted to non-pull request
-	// events. If the secret is restricted, return
-	// empty results.
+	// 密钥可限制为非 Pull Request 事件可用；PR 构建时返回空结果。
 	if (res.Pull == false && res.PullRequest == false) &&
 		in.Build.Event == core.EventPullRequest {
 		logger.Trace("secret: external: restricted from forks")
@@ -98,6 +91,7 @@ func (c *externalController) Find(ctx context.Context, in *core.SecretArgs) (*co
 	}, nil
 }
 
+// getExternal 在 manifest 中查找带 get.path/get.name 的 Secret 资源。
 func getExternal(manifest *yaml.Manifest, match string) (path, name string, ok bool) {
 	for _, resource := range manifest.Resources {
 		secret, ok := resource.(*yaml.Secret)
@@ -115,6 +109,7 @@ func getExternal(manifest *yaml.Manifest, match string) (path, name string, ok b
 	return
 }
 
+// toRepo 将 core.Repository 转换为 drone-go API 类型。
 func toRepo(from *core.Repository) drone.Repo {
 	return drone.Repo{
 		ID:         from.ID,
@@ -138,6 +133,7 @@ func toRepo(from *core.Repository) drone.Repo {
 	}
 }
 
+// toBuild 将 core.Build 转换为 drone-go API 类型。
 func toBuild(from *core.Build) drone.Build {
 	return drone.Build{
 		ID:           from.ID,
