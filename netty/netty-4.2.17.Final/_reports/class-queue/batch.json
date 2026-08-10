@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T00:38:33Z",
   "files": [
-    "common/src/main/java/io/netty/util/concurrent/PromiseTask.java",
-    "common/src/main/java/io/netty/util/concurrent/RejectedExecutionHandler.java",
-    "common/src/main/java/io/netty/util/concurrent/RejectedExecutionHandlers.java",
-    "common/src/main/java/io/netty/util/concurrent/ScheduledFuture.java",
-    "common/src/main/java/io/netty/util/concurrent/ScheduledFutureTask.java",
-    "common/src/main/java/io/netty/util/concurrent/SingleThreadEventExecutor.java",
-    "common/src/main/java/io/netty/util/concurrent/SucceededFuture.java",
-    "common/src/main/java/io/netty/util/concurrent/SystemTicker.java",
-    "common/src/main/java/io/netty/util/concurrent/ThreadAwareExecutor.java",
-    "common/src/main/java/io/netty/util/concurrent/ThreadPerTaskExecutor.java",
-    "common/src/main/java/io/netty/util/concurrent/ThreadProperties.java",
-    "common/src/main/java/io/netty/util/concurrent/Ticker.java",
-    "common/src/main/java/io/netty/util/concurrent/UnaryPromiseNotifier.java",
-    "common/src/main/java/io/netty/util/concurrent/UnorderedThreadPoolEventExecutor.java",
-    "common/src/main/java/io/netty/util/internal/AdaptiveCalculator.java",
     "common/src/main/java/io/netty/util/internal/AppendableCharSequence.java",
     "common/src/main/java/io/netty/util/internal/AtomicReferenceCountUpdater.java",
     "common/src/main/java/io/netty/util/internal/BoundedInputStream.java",
@@ -33,5 +18,5 @@
     "common/src/main/java/io/netty/util/internal/EmptyArrays.java"
   ],
   "remaining_pending": 728,
-  "done": 1170
+  "done": 1185
 }
