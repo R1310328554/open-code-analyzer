@@ -2458,3 +2458,18 @@
 2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/AlphabetType.java wave83b saml2 ac remaining + classes batch1
 2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/AuthenticatorBaseType.java wave83b saml2 ac remaining + classes batch1
 2026-08-10T09:32:26Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/AuthenticatorTransportProtocolType.java wave83b saml2 ac remaining + classes batch1
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/AuthnContextDeclarationBaseType.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/AuthnMethodBaseType.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ComplexAuthenticatorType.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/DeviceTypeType.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ExtensionListType.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ExtensionOnlyType.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/ExtensionType.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/Generation.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/GoverningAgreementRefType.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/GoverningAgreementsType.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/IdentificationType.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/KeyActivationType.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/KeySharingType.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/KeyStorageType.java wave84a saml2 ac.classes authn/ext/key
+2026-08-10T09:34:02Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/ac/classes/LengthType.java wave84a saml2 ac.classes authn/ext/key
