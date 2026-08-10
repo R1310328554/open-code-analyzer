@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T11:51:22Z",
   "files": [
-    "services/src/main/java/org/keycloak/crypto/RS512SignatureProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/RsaCekManagementProvider.java",
-    "services/src/main/java/org/keycloak/crypto/RsaesOaep256CekManagementProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/RsaesOaepCekManagementProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/RsaesPkcs1CekManagementProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/SHA256HashProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/SHA384HashProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/SHA512HashProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/SHAKE256HashProviderFactory.java",
-    "services/src/main/java/org/keycloak/crypto/ServerAsymmetricSignatureSignerContext.java",
-    "services/src/main/java/org/keycloak/crypto/ServerAsymmetricSignatureVerifierContext.java",
-    "services/src/main/java/org/keycloak/crypto/ServerECDSASignatureSignerContext.java",
-    "services/src/main/java/org/keycloak/crypto/ServerECDSASignatureVerifierContext.java",
-    "services/src/main/java/org/keycloak/crypto/ServerEdDSASignatureSignerContext.java",
-    "services/src/main/java/org/keycloak/crypto/ServerEdDSASignatureVerifierContext.java",
     "services/src/main/java/org/keycloak/crypto/ServerMacSignatureSignerContext.java",
     "services/src/main/java/org/keycloak/crypto/ServerMacSignatureVerifierContext.java",
     "services/src/main/java/org/keycloak/deployment/DefaultDeployedConfigurationsProvider.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/email/freemarker/beans/AdminEventBean.java"
   ],
   "remaining_pending": 1858,
-  "done": 4110
+  "done": 4125
 }
