@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T04:45:32Z",
-  "files": [
-    "persistence/src/main/java/com/alibaba/nacos/persistence/configuration/condition/ConditionStandaloneEmbedStorage.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/constants/PersistenceConstant.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/datasource/DataSourcePoolProperties.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/datasource/DataSourceService.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/datasource/DynamicDataSource.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/datasource/ExternalDataSourceProperties.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/datasource/ExternalDataSourceServiceImpl.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/datasource/LocalDataSourceServiceImpl.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/exception/NJdbcException.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/model/event/DerbyImportEvent.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/model/event/DerbyLoadEvent.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/model/event/RaftDbErrorEvent.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/monitor/DatasourceMetrics.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/PaginationHelper.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/repository/RowMapperManager.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 407,
   "done": 2115
 }
