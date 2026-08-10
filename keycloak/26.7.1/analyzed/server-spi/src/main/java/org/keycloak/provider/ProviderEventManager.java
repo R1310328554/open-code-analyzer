@@ -18,13 +18,21 @@
 package org.keycloak.provider;
 
 /**
+ * Provider 事件管理器：注册/注销监听器并发布事件。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ProviderEventManager {
+    /** 注册事件监听器。
+     * @param listener 监听器 */
     void register(ProviderEventListener listener);
 
+    /** 注销事件监听器。
+     * @param listener 监听器 */
     void unregister(ProviderEventListener listener);
 
+    /** 发布 Provider 事件。
+     * @param event 事件对象 */
     void publish(ProviderEvent event);
 }

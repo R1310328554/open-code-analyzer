@@ -20,15 +20,20 @@ package org.keycloak.provider;
 import java.util.List;
 
 /**
+ * 可配置 Provider：提供帮助文本、配置属性与默认配置。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ConfiguredProvider {
+    /** @return Provider 帮助文本（管理控制台展示） */
     String getHelpText();
 
+    /** @return Provider 配置属性元数据列表 */
     List<ProviderConfigProperty> getConfigProperties();
 
     /**
+     * 返回该 Provider 的默认配置对象。
      * Returns a default configuration for this provider.
      *
      * @param <C> the type of the configuration

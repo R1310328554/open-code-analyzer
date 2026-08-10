@@ -20,11 +20,14 @@ package org.keycloak.provider;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * Provider 事件标记接口：SPI 内部生命周期与状态变更事件的基类。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ProviderEvent {
 
+    /** @return 触发事件时的 Keycloak 会话（默认 null） */
     default KeycloakSession getKeycloakSession() {
         return null;
     }

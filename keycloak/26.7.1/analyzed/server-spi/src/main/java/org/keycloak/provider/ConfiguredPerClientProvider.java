@@ -20,11 +20,14 @@ package org.keycloak.provider;
 import java.util.List;
 
 /**
+ * 按客户端配置的 Provider：扩展 {@link ConfiguredProvider}，支持在客户端凭据页按客户端配置属性。
+ *
  * @author <a href="mailto:ggrazian@redhat.com">Giuseppe Graziano</a>
  */
 public interface ConfiguredPerClientProvider extends ConfiguredProvider {
 
     /**
+     * 返回该客户端实现的配置属性列表（在管理控制台客户端凭据页按客户端配置）。
      * List of config properties for this client implementation. Those will be shown in admin console in clients credentials tab and can be configured per client.
      *
      * @return

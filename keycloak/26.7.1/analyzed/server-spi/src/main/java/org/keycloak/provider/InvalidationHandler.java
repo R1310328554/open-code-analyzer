@@ -19,6 +19,8 @@ package org.keycloak.provider;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * 失效处理器：由缓存外部对象变更的 Provider 实现，收到失效请求后清除缓存。
+ * <p>实现者仅应响应失效请求，不应主动发起相同对象的失效（避免无限循环）。</p>
  * Handles invalidation requests. This interface is specifically implemented by
  * providers that implement a cache of objects that might change in the outside.
  * <p>
@@ -32,15 +34,18 @@ import org.keycloak.models.KeycloakSession;
 public interface InvalidationHandler {
 
     /**
+     * 可失效对象类型的标记接口。
      * Tagging interface for the kinds of invalidatable object
      */
     public interface InvalidableObjectType {}
 
+    /** 可失效对象类型枚举。 */
     public enum ObjectType implements InvalidableObjectType {
-        _ALL_, REALM, CLIENT, CLIENT_SCOPE, USER, ROLE, GROUP, COMPONENT, PROVIDER_FACTORY
+        /** 全部 */ _ALL_, /** realm */ REALM, /** 客户端 */ CLIENT, /** 客户端范围 */ CLIENT_SCOPE, /** 用户 */ USER, /** 角色 */ ROLE, /** 组 */ GROUP, /** 组件 */ COMPONENT, /** Provider 工厂 */ PROVIDER_FACTORY
     }
 
     /**
+     * 使给定对象的中间缓存状态失效。
      * Invalidates intermediate states of the given objects
      * @param session KeycloakSession
      * @param type Type of the objects to invalidate

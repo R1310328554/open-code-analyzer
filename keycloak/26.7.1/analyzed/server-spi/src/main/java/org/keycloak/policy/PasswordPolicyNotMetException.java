@@ -20,34 +20,46 @@ package org.keycloak.policy;
 import org.keycloak.models.ModelException;
 
 /**
+ * 密码策略未满足异常：用户密码不符合 realm 密码策略时抛出。
+ *
  * @author <a href="mailto:vramik@redhat.com">Vlastislav Ramik</a>
  */
 public class PasswordPolicyNotMetException extends ModelException {
 
     private String username;
 
+    /** 默认构造。 */
     public PasswordPolicyNotMetException() {
         super();
     }
 
+    /** @param message 错误消息 */
     public PasswordPolicyNotMetException(String message) {
         super(message);
     }
 
+    /** @param message 错误消息
+     * @param username 用户名 */
     public PasswordPolicyNotMetException(String message, String username) {
         super(message);
         this.username = username;
     }
 
+    /** @param message 错误消息
+     * @param username 用户名
+     * @param cause 原因 */
     public PasswordPolicyNotMetException(String message, String username, Throwable cause) {
         super(message, cause);
         this.username = username;
     }
 
+    /** @param message 错误消息
+     * @param cause 原因 */
     public PasswordPolicyNotMetException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /** @return 未满足策略的用户名 */
     public String getUsername() {
         return username;
     }

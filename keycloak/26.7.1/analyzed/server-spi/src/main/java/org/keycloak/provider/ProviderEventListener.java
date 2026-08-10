@@ -18,9 +18,13 @@
 package org.keycloak.provider;
 
 /**
+ * Provider 事件监听器：接收并处理 {@link ProviderEvent}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ProviderEventListener {
+    /** 处理 Provider 事件。
+     * @param event 事件对象 */
     void onEvent(ProviderEvent event);
 }

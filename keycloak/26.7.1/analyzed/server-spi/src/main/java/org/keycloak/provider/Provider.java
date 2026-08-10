@@ -18,10 +18,13 @@
 package org.keycloak.provider;
 
 /**
+ * Provider 根接口：所有 Keycloak SPI Provider 的基础，负责资源释放。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface Provider {
 
+    /** 关闭 Provider 并释放资源。 */
     void close();
 
 }

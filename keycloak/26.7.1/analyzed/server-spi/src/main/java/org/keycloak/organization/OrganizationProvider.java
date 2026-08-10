@@ -36,6 +36,7 @@ import org.keycloak.representations.idm.MembershipType;
 public interface OrganizationProvider extends Provider {
 
     /**
+     * 在 realm 中创建新组织（自动生成内部 ID）。
      * Creates a new organization with given {@code name} and {@code alias} to the realm.
      * The internal ID of the organization will be created automatically.
      * @param name the name of the organization.
@@ -48,6 +49,7 @@ public interface OrganizationProvider extends Provider {
     }
 
     /**
+     * 在 realm 中创建指定 ID 的新组织。
      * Creates a new organization with given {@code id}, {@code name}, and {@code alias} to the realm
      * @param id the id of the organization.
      * @param name the name of the organization.
@@ -58,6 +60,7 @@ public interface OrganizationProvider extends Provider {
     OrganizationModel create(String id, String name, String alias);
 
     /**
+     * 按 ID 返回 {@link OrganizationModel}。
      * Returns a {@link OrganizationModel} by its {@code id};
      *
      * @param id the id of an organization
@@ -66,6 +69,7 @@ public interface OrganizationProvider extends Provider {
     OrganizationModel getById(String id);
 
     /**
+     * 按互联网域名返回 {@link OrganizationModel}。
      * Returns a {@link OrganizationModel} by its internet domain.
      *
      * @param domainName the organization's internet domain (e.g. redhat.com)
@@ -74,6 +78,7 @@ public interface OrganizationProvider extends Provider {
     OrganizationModel getByDomainName(String domainName);
 
     /**
+     * 返回 realm 内全部组织。
      * Returns all organizations in the realm.
      *
      * @return a {@link Stream} of the realm's organizations.
@@ -83,6 +88,7 @@ public interface OrganizationProvider extends Provider {
     }
 
     /**
+     * 按搜索/属性条件分页返回 realm 内组织。
      * Returns all organizations in the realm filtered according to the specified parameters.
      *
      * @param search a {@code String} representing either an organization name or domain.
@@ -106,6 +112,7 @@ public interface OrganizationProvider extends Provider {
     Stream<OrganizationModel> getAllStream(Map<String, String> attributes, Integer first, Integer max);
 
     /**
+     * 返回符合条件的组织数量。
      * Returns the number of organizations in the realm filtered according to the specified parameters.
      *
      * @param search a {@code String} representing either an organization name or domain.
@@ -129,6 +136,7 @@ public interface OrganizationProvider extends Provider {
     }
 
     /**
+     * 从 realm 移除组织及其关联数据（如成员）。
      * Removes the given organization from the realm together with the data associated with it, e.g. its members etc.
      *
      * @param organization Organization to be removed.
@@ -138,11 +146,13 @@ public interface OrganizationProvider extends Provider {
     boolean remove(OrganizationModel organization);
 
     /**
+     * 移除 realm 内全部组织。
      * Removes all organizations from the realm.
      */
     void removeAll();
 
     /**
+     * 将用户添加为组织的受管成员。
      * Adds the given {@link UserModel} as a managed member of the given {@link OrganizationModel}.
      *
      * @param organization the organization
@@ -153,6 +163,7 @@ public interface OrganizationProvider extends Provider {
     boolean addManagedMember(OrganizationModel organization, UserModel user);
 
     /**
+     * 将用户添加为组织的非受管成员。
      * Adds the given {@link UserModel} as an unmanaged member of the given {@link OrganizationModel}.
      *
      * @param organization the organization
@@ -163,6 +174,7 @@ public interface OrganizationProvider extends Provider {
     boolean addMember(OrganizationModel organization, UserModel user);
 
     /**
+     * 按条件分页返回组织成员（已弃用）。
      * Returns the members of a given {@link OrganizationModel} filtered according to the specified parameters.
      *
      * @param organization the organization
@@ -173,6 +185,7 @@ public interface OrganizationProvider extends Provider {
     Stream<UserModel> getMembersStream(OrganizationModel organization, String search, Boolean exact, Integer first, Integer max);
 
     /**
+     * 按过滤器分页返回组织成员。
      * Returns the members of a given {@link OrganizationModel} filtered according to the specified {@code filters}.
      *
      * @param organization the organization
@@ -190,6 +203,7 @@ public interface OrganizationProvider extends Provider {
     }
 
     /**
+     * 返回组织成员数量。
      * Returns number of members in the organization.
      * @param organization the organization
      * @return Number of members in the organization.
@@ -197,6 +211,7 @@ public interface OrganizationProvider extends Provider {
     long getMembersCount(OrganizationModel organization);
 
     /**
+     * 按 ID 返回组织成员。
      * Returns the member of the {@link OrganizationModel} by its {@code id}.
      *
      * @param organization the organization
@@ -206,6 +221,7 @@ public interface OrganizationProvider extends Provider {
     UserModel getMemberById(OrganizationModel organization, String id);
 
     /**
+     * 返回成员所属的组织。
      * Returns the {@link OrganizationModel} that the {@code member} belongs to.
      *
      * @param member the member of an organization
@@ -214,6 +230,7 @@ public interface OrganizationProvider extends Provider {
     Stream<OrganizationModel> getByMember(UserModel member);
 
     /**
+     * 在组织内创建新组。
      * Creates a new group within the given {@link OrganizationModel}.
      * The internal ID of the group will be created automatically.
      * The created group will be of type {@link org.keycloak.models.GroupModel.Type#ORGANIZATION}.
@@ -237,6 +254,7 @@ public interface OrganizationProvider extends Provider {
     }
 
     /**
+     * 在组织内创建指定 ID 的新组。
      * Creates a new group with the given {@code id} within the given {@link OrganizationModel}.
      * The created group will be of type {@link org.keycloak.models.GroupModel.Type#ORGANIZATION}.
      * If {@code toParent} is {@code null}, the group will be created as a top-level organization group,
@@ -258,6 +276,7 @@ public interface OrganizationProvider extends Provider {
     GroupModel createGroup(OrganizationModel organization, String id, String name, GroupModel toParent);
 
     /**
+     * 返回组织顶层组。
      * Returns the top-level groups of the given {@link OrganizationModel}.
      *
      * @param organization the organization
@@ -268,6 +287,7 @@ public interface OrganizationProvider extends Provider {
     Stream<GroupModel> getTopLevelGroups(OrganizationModel organization, Integer firstResult, Integer maxResults);
 
     /**
+     * 按组名搜索组织内组。
      * Returns groups of the given {@link OrganizationModel} filtered by group name.
      *
      * @param organization the organization
@@ -280,6 +300,7 @@ public interface OrganizationProvider extends Provider {
     Stream<GroupModel> searchGroupsByName(OrganizationModel organization, String search, Boolean exact, Integer firstResult, Integer maxResults);
 
     /**
+     * 按组属性搜索组织内组。
      * Returns groups of the given {@link OrganizationModel} filtered by group attributes.
      *
      * @param organization the organization
@@ -291,6 +312,7 @@ public interface OrganizationProvider extends Provider {
     Stream<GroupModel> searchGroupsByAttributes(OrganizationModel organization, Map<String, String> attributes, Integer firstResult, Integer maxResults);
 
     /**
+     * 返回成员在组织内显式所属的全部组织组。
      * Returns all organization groups that the given {@code member} explicitly belongs to within the given {@code organization}.
      * Only returns groups of type {@link org.keycloak.models.GroupModel.Type#ORGANIZATION} that belong to the specified organization.
      *
@@ -301,6 +323,7 @@ public interface OrganizationProvider extends Provider {
     Stream<GroupModel> getOrganizationGroupsByMember(OrganizationModel organization, UserModel member);
 
     /**
+     * 分页搜索成员在组织内显式所属的组织组。
      * Returns organization groups that the given {@code member} explicitly belongs to within the given {@code organization},
      * with pagination and search support.
      * Only returns groups of type {@link org.keycloak.models.GroupModel.Type#ORGANIZATION} that belong to the specified organization.
@@ -315,6 +338,7 @@ public interface OrganizationProvider extends Provider {
     Stream<GroupModel> getOrganizationGroupsByMember(OrganizationModel organization, UserModel member, String search, Integer first, Integer max);
 
     /**
+     * 返回组织的内部根组（组层次结构的根节点）。
      * Returns the internal organization group for the given {@link OrganizationModel}.
      * The internal group is a special group with the same name as the organization's ID,
      * used as the root of the organization's group hierarchy.
@@ -326,6 +350,7 @@ public interface OrganizationProvider extends Provider {
     GroupModel getOrganizationGroup(OrganizationModel organization);
 
     /**
+     * 将 IdP 与组织关联。
      * Associate the given {@link IdentityProviderModel} with the given {@link OrganizationModel}.
      *
      * @param organization the organization
@@ -335,12 +360,14 @@ public interface OrganizationProvider extends Provider {
     boolean addIdentityProvider(OrganizationModel organization, IdentityProviderModel identityProvider);
 
     /**
+     * 返回组织关联的全部 IdP。
      * @param organization the organization
      * @return Stream of the identity providers associated with the given {@code organization}. Never returns {@code null}.
      */
     Stream<IdentityProviderModel> getIdentityProviders(OrganizationModel organization);
 
     /**
+     * 移除组织与 IdP 的关联。
      * Removes the link between the given {@link OrganizationModel} and the identity provider associated with it if such a link exists.
      *
      * @param organization the organization
@@ -350,6 +377,7 @@ public interface OrganizationProvider extends Provider {
     boolean removeIdentityProvider(OrganizationModel organization, IdentityProviderModel identityProvider);
 
     /**
+     * 指示当前 realm 是否启用组织功能。
      * Indicates if the current realm supports organization.
      *
      * @return {@code true} if organization is supported. Otherwise, returns {@code false}
@@ -357,6 +385,7 @@ public interface OrganizationProvider extends Provider {
     boolean isEnabled();
 
     /**
+     * 指示成员是否为组织受管成员（生命周期与组织绑定）。
      * <p>Indicates if the given {@code member} is managed by the organization.
      *
      * <p>A member is managed by the organization whenever the member cannot exist without the organization they belong
@@ -375,6 +404,7 @@ public interface OrganizationProvider extends Provider {
     boolean isManagedMember(OrganizationModel organization, UserModel member);
 
     /**
+     * 指示用户是否为组织成员。
      * Indicates if the given {@code user} is a member of the given {@code organization}.
      *
      * @param organization the organization
@@ -386,6 +416,7 @@ public interface OrganizationProvider extends Provider {
     }
 
     /**
+     * 从组织移除成员（受管成员可能从 realm 删除，非受管仅解除关联）。
      * <p>Removes a member from the organization.
      *
      * <p>This method can either remove the given {@code member} entirely from the realm (and the organization) or only
@@ -399,12 +430,14 @@ public interface OrganizationProvider extends Provider {
     boolean removeMember(OrganizationModel organization, UserModel member);
 
     /**
+     * 返回 realm 内组织总数。
      * Returns number of organizations in the realm.
      * @return long Number of organizations
      */
     long count();
 
     /**
+     * 按别名返回组织。
      * Returns an {@link OrganizationModel} with the given {@code alias}.
      *
      * @param alias the alias
@@ -415,6 +448,7 @@ public interface OrganizationProvider extends Provider {
     }
 
     /**
+     * 返回用于管理邀请的 {@link InvitationManager}。
      * Returns a {@link InvitationManager} for managing invitations
      *
      * @return the invitation manager
@@ -422,6 +456,7 @@ public interface OrganizationProvider extends Provider {
     InvitationManager getInvitationManager();
 
     /**
+     * 优化检查 realm 内是否存在任意组织。
      * Used to provide an optimized check if any organization exists in the realm.
      *
      * @return true if any organization exists in the realm

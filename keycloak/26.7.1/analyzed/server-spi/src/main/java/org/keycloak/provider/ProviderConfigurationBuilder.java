@@ -37,14 +37,17 @@ public class ProviderConfigurationBuilder {
     private ProviderConfigurationBuilder() {
     }
 
+    /** 创建新的配置构建器。 */
     public static ProviderConfigurationBuilder create() {
         return new ProviderConfigurationBuilder();
     }
 
+    /** 开始构建单个配置属性。 */
     public ProviderConfigPropertyBuilder property() {
         return new ProviderConfigPropertyBuilder();
     }
 
+    /** 添加已有配置属性。 */
     public ProviderConfigurationBuilder property(ProviderConfigProperty property) {
         add(property);
         return this;
@@ -65,6 +68,7 @@ public class ProviderConfigurationBuilder {
     }
 
     /**
+     * 创建并返回配置属性列表。
      * Create the list.
      *
      * @return
@@ -73,6 +77,7 @@ public class ProviderConfigurationBuilder {
         return properties;
     }
 
+    /** 单个配置属性的流式构建器。 */
     public class ProviderConfigPropertyBuilder {
 
         private String name;
@@ -84,6 +89,7 @@ public class ProviderConfigurationBuilder {
         private boolean secret;
         private boolean required;
 
+        /** @param name 配置名 */
         public ProviderConfigPropertyBuilder name(String name) {
             this.name = name;
             return this;

@@ -18,21 +18,27 @@
 package org.keycloak.policy;
 
 /**
+ * 策略验证错误：携带国际化消息键与占位参数。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public final class PolicyError {
     private String message;
     private Object[] parameters;
 
+    /** @param message 国际化消息键
+     * @param parameters 消息占位参数 */
     public PolicyError(String message, Object... parameters) {
         this.message = message;
         this.parameters = parameters;
     }
 
+    /** @return 国际化消息键 */
     public String getMessage() {
         return message;
     }
 
+    /** @return 消息占位参数数组 */
     public Object[] getParameters() {
         return parameters;
     }
