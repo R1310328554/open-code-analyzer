@@ -6,13 +6,15 @@ import (
 	"ragflow/internal/harness/graph/errors"
 )
 
-// LastValue stores the last value received, can receive at most one value per step.
+// last_value.go — 末值通道：每步最多接收一个值，保留最后一次写入。
+
+// LastValue 存储最后接收到的值，每步最多接受一个更新。
 type LastValue struct {
 	BaseChannel
-	value interface{}
+	value interface{} // 当前末值
 }
 
-// NewLastValue creates a new LastValue channel.
+// NewLastValue 创建 LastValue 通道。
 func NewLastValue(typ interface{}) *LastValue {
 	return &LastValue{
 		BaseChannel: BaseChannel{Typ: typ},
@@ -20,7 +22,7 @@ func NewLastValue(typ interface{}) *LastValue {
 	}
 }
 
-// Get returns the current value of the channel.
+// Get 返回当前值；空通道返回 EmptyChannelError。
 func (c *LastValue) Get() (interface{}, error) {
 	if IsMissing(c.value) {
 		return nil, &errors.EmptyChannelError{}
@@ -28,12 +30,12 @@ func (c *LastValue) Get() (interface{}, error) {
 	return c.value, nil
 }
 
-// IsAvailable returns true if the channel has a value.
+// IsAvailable 通道是否已有值。
 func (c *LastValue) IsAvailable() bool {
 	return !IsMissing(c.value)
 }
 
-// Update updates the channel with a single value.
+// Update 用单个值更新通道；同一步骤传入多个值会报错。
 func (c *LastValue) Update(values []interface{}) (bool, error) {
 	if len(values) == 0 {
 		return false, nil
@@ -47,7 +49,7 @@ func (c *LastValue) Update(values []interface{}) (bool, error) {
 	return true, nil
 }
 
-// Copy returns a copy of the channel.
+// Copy 返回通道拷贝。
 func (c *LastValue) Copy() Channel {
 	newCh := NewLastValue(c.Typ)
 	newCh.Key = c.Key
@@ -55,12 +57,12 @@ func (c *LastValue) Copy() Channel {
 	return newCh
 }
 
-// Checkpoint returns the current value.
+// Checkpoint 返回当前值。
 func (c *LastValue) Checkpoint() interface{} {
 	return c.value
 }
 
-// FromCheckpoint restores the channel from a checkpoint.
+// FromCheckpoint 从检查点恢复。
 func (c *LastValue) FromCheckpoint(checkpoint interface{}) Channel {
 	newCh := NewLastValue(c.Typ)
 	newCh.Key = c.Key

@@ -8,30 +8,31 @@ import (
 	"ragflow/internal/harness/graph/errors"
 )
 
-// BinaryOperator is a function that combines two values into one.
+// binop.go — 二元算子聚合通道：用自定义二元函数逐步合并多个更新。
+
+// BinaryOperator 将两个值合并为一个的二元函数。
 type BinaryOperator func(a, b interface{}) interface{}
 
-// BinaryOperatorAggregate stores the result of applying a binary operator to the current value and each new value.
+// BinaryOperatorAggregate 用二元算子将当前值与每个新值逐步聚合。
 type BinaryOperatorAggregate struct {
 	BaseChannel
 	value    interface{}
 	operator BinaryOperator
 }
 
-// NewBinaryOperatorAggregate creates a new BinaryOperatorAggregate channel.
+// NewBinaryOperatorAggregate 创建二元算子聚合通道。
 func NewBinaryOperatorAggregate(typ interface{}, operator BinaryOperator) *BinaryOperatorAggregate {
 	c := &BinaryOperatorAggregate{
 		BaseChannel: BaseChannel{Typ: typ},
 		operator:    operator,
 	}
 
-	// Try to initialize with zero value
 	c.value = createZeroValue(typ)
 
 	return c
 }
 
-// createZeroValue creates a zero value for the given type.
+// createZeroValue 为给定类型创建零值初始状态。
 func createZeroValue(typ interface{}) (result interface{}) {
 	result = Missing
 	if typ == nil {
@@ -40,7 +41,6 @@ func createZeroValue(typ interface{}) (result interface{}) {
 
 	rt := reflect.TypeOf(typ)
 
-	// Handle special collection types
 	switch rt.String() {
 	case "[]interface {}":
 		return make([]interface{}, 0)
@@ -48,7 +48,6 @@ func createZeroValue(typ interface{}) (result interface{}) {
 		return make(map[string]interface{})
 	}
 
-	// Try to create instance
 	if rt.Kind() == reflect.Ptr {
 		rt = rt.Elem()
 	}
@@ -61,20 +60,18 @@ func createZeroValue(typ interface{}) (result interface{}) {
 		return reflect.MakeMap(rt).Interface()
 	}
 
-	// Use named return so the deferred recovery can return Missing.
 	defer func() {
 		if r := recover(); r != nil {
 			result = Missing
 		}
 	}()
 
-	// Create a zero value using reflect.Zero
 	zero := reflect.Zero(rt)
 	result = zero.Interface()
 	return
 }
 
-// Get returns the current value of the channel.
+// Get 返回聚合后的当前值。
 func (c *BinaryOperatorAggregate) Get() (interface{}, error) {
 	if IsMissing(c.value) {
 		return nil, &errors.EmptyChannelError{}
@@ -82,18 +79,17 @@ func (c *BinaryOperatorAggregate) Get() (interface{}, error) {
 	return c.value, nil
 }
 
-// IsAvailable returns true if the channel has a value.
+// IsAvailable 通道是否已有聚合结果。
 func (c *BinaryOperatorAggregate) IsAvailable() bool {
 	return !IsMissing(c.value)
 }
 
-// isOverwrite checks if a value is an overwrite wrapper.
+// isOverwrite 检测值是否为覆盖（Overwrite）包装。
 func isOverwrite(value interface{}) (bool, interface{}) {
 	if value == nil {
 		return false, nil
 	}
 
-	// Check for Overwrite type
 	type overwriter interface {
 		GetValue() interface{}
 	}
@@ -101,7 +97,6 @@ func isOverwrite(value interface{}) (bool, interface{}) {
 		return true, ow.GetValue()
 	}
 
-	// Check for map with __overwrite__ key
 	if m, ok := value.(map[string]interface{}); ok {
 		if len(m) == 1 {
 			if v, exists := m[constants.Overwrite]; exists {
@@ -113,13 +108,12 @@ func isOverwrite(value interface{}) (bool, interface{}) {
 	return false, nil
 }
 
-// Update updates the channel with values.
+// Update 用二元算子逐步聚合多个更新；支持 Overwrite 强制覆盖。
 func (c *BinaryOperatorAggregate) Update(values []interface{}) (bool, error) {
 	if len(values) == 0 {
 		return false, nil
 	}
 
-	// Initialize with first value if empty
 	if IsMissing(c.value) {
 		c.value = values[0]
 		values = values[1:]
@@ -147,7 +141,7 @@ func (c *BinaryOperatorAggregate) Update(values []interface{}) (bool, error) {
 	return true, nil
 }
 
-// Copy returns a copy of the channel.
+// Copy 返回通道拷贝。
 func (c *BinaryOperatorAggregate) Copy() Channel {
 	newCh := NewBinaryOperatorAggregate(c.Typ, c.operator)
 	newCh.Key = c.Key
@@ -155,12 +149,12 @@ func (c *BinaryOperatorAggregate) Copy() Channel {
 	return newCh
 }
 
-// Checkpoint returns the current value.
+// Checkpoint 返回当前聚合值。
 func (c *BinaryOperatorAggregate) Checkpoint() interface{} {
 	return c.value
 }
 
-// FromCheckpoint restores the channel from a checkpoint.
+// FromCheckpoint 从检查点恢复。
 func (c *BinaryOperatorAggregate) FromCheckpoint(checkpoint interface{}) Channel {
 	newCh := NewBinaryOperatorAggregate(c.Typ, c.operator)
 	newCh.Key = c.Key
@@ -170,19 +164,17 @@ func (c *BinaryOperatorAggregate) FromCheckpoint(checkpoint interface{}) Channel
 	return newCh
 }
 
-// String concatenation operator for BinaryOperatorAggregate.
+// StringConcat 字符串拼接二元算子。
 func StringConcat(a, b interface{}) interface{} {
 	sa, ok1 := a.(string)
 	sb, ok2 := b.(string)
 	if !ok1 || !ok2 {
-		// Gracefully degrade: concatenate via fmt.Sprint.
 		return fmt.Sprint(a) + fmt.Sprint(b)
 	}
 	return sa + sb
 }
 
-// IntAdd is an integer addition operator for BinaryOperatorAggregate.
-// Supports int and float64. On type mismatch, returns a unchanged (graceful degradation).
+// IntAdd 整数/浮点加法二元算子；类型不匹配时优雅降级返回 a。
 func IntAdd(a, b interface{}) interface{} {
 	if ai, ok := a.(int); ok {
 		if bi, ok := b.(int); ok {
@@ -194,11 +186,10 @@ func IntAdd(a, b interface{}) interface{} {
 			return af + bf
 		}
 	}
-	// Graceful degradation: return a unchanged.
 	return a
 }
 
-// ListAppend appends two lists for BinaryOperatorAggregate.
+// ListAppend 列表追加二元算子。
 func ListAppend(a, b interface{}) interface{} {
 	if al, ok := a.([]interface{}); ok {
 		if bl, ok := b.([]interface{}); ok {

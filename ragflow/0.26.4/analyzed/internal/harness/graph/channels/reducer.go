@@ -6,13 +6,15 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// ReducerChannel wraps a channel with a reducer function.
+// reducer.go — 归约器通道：用自定义归约函数合并多值更新。
+
+// ReducerChannel 在底层通道外包装归约函数。
 type ReducerChannel struct {
 	Channel
-	reducer types.ReducerFunc
+	reducer types.ReducerFunc // 二元归约函数
 }
 
-// NewReducerChannel creates a new ReducerChannel.
+// NewReducerChannel 创建 ReducerChannel。
 func NewReducerChannel(channel Channel, reducer types.ReducerFunc) *ReducerChannel {
 	return &ReducerChannel{
 		Channel: channel,
@@ -20,17 +22,16 @@ func NewReducerChannel(channel Channel, reducer types.ReducerFunc) *ReducerChann
 	}
 }
 
-// Update applies the reducer to combine new values with the current value.
+// Update 用归约函数将新值与当前值合并后写入底层通道。
 func (rc *ReducerChannel) Update(values []interface{}) (bool, error) {
 	if len(values) == 0 {
 		return false, nil
 	}
 
-	// Read current value from the wrapped channel.
+	// 读取底层通道当前值
 	current, err := rc.Channel.Get()
 
-	// Combine all values with the current value using the reducer.
-	// If the channel is empty, start from values[0] and combine the rest.
+	// 用归约函数合并：通道为空时从 values[0] 起步
 	combined := values[0]
 	if err == nil {
 		combined = rc.reducer(current, combined)
@@ -42,7 +43,7 @@ func (rc *ReducerChannel) Update(values []interface{}) (bool, error) {
 	return rc.Channel.Update([]interface{}{combined})
 }
 
-// Copy returns a copy of the ReducerChannel.
+// Copy 返回 ReducerChannel 拷贝。
 func (rc *ReducerChannel) Copy() Channel {
 	return &ReducerChannel{
 		Channel: rc.Channel.Copy(),
@@ -50,12 +51,12 @@ func (rc *ReducerChannel) Copy() Channel {
 	}
 }
 
-// Checkpoint returns the checkpoint of the wrapped channel.
+// Checkpoint 返回底层通道的检查点。
 func (rc *ReducerChannel) Checkpoint() interface{} {
 	return rc.Channel.Checkpoint()
 }
 
-// FromCheckpoint restores the wrapped channel from a checkpoint.
+// FromCheckpoint 从检查点恢复底层通道。
 func (rc *ReducerChannel) FromCheckpoint(checkpoint interface{}) Channel {
 	return &ReducerChannel{
 		Channel: rc.Channel.FromCheckpoint(checkpoint),
@@ -63,18 +64,16 @@ func (rc *ReducerChannel) FromCheckpoint(checkpoint interface{}) Channel {
 	}
 }
 
-// CreateReducerChannel creates a reducer channel based on type hints.
-// It inspects the field type and annotation to determine appropriate channel.
+// CreateReducerChannel 根据字段类型与注解自动选择底层通道并可选包装归约器。
 func CreateReducerChannel(fieldName string, fieldType reflect.Type, reducer types.ReducerFunc) (Channel, error) {
-	// Determine default channel based on type
 	var channel Channel
 
 	switch fieldType.Kind() {
 	case reflect.Slice, reflect.Array:
-		// For slices, use BinaryOperatorAggregate with append operator
+		// 切片类型：BinaryOperatorAggregate + ListAppend
 		channel = NewBinaryOperatorAggregate(fieldType, ListAppend)
 	case reflect.Map:
-		// For maps, use BinaryOperatorAggregate with merge operator
+		// 映射类型：BinaryOperatorAggregate + 合并算子
 		channel = NewBinaryOperatorAggregate(fieldType, func(a, b interface{}) interface{} {
 			if aMap, ok := a.(map[string]interface{}); ok {
 				if bMap, ok := b.(map[string]interface{}); ok {
@@ -93,20 +92,15 @@ func CreateReducerChannel(fieldName string, fieldType reflect.Type, reducer type
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Float32, reflect.Float64:
-		// For numeric types, use BinaryOperatorAggregate with add operator.
-		// Pass reflect.Zero(fieldType).Interface() instead of fieldType itself
-		// so createZeroValue uses the correct underlying numeric type for its
-		// reflect.Zero call, not the reflect.Type descriptor.
+		// 数值类型：BinaryOperatorAggregate + IntAdd
 		channel = NewBinaryOperatorAggregate(reflect.Zero(fieldType).Interface(), IntAdd)
 	default:
-		// Default to LastValue channel
+		// 默认 LastValue 通道
 		channel = NewLastValue(fieldType)
 	}
 
-	// Set the channel key
 	channel.SetKey(fieldName)
 
-	// If a reducer is provided, wrap the channel with it
 	if reducer != nil {
 		return NewReducerChannel(channel, reducer), nil
 	}
@@ -114,30 +108,27 @@ func CreateReducerChannel(fieldName string, fieldType reflect.Type, reducer type
 	return channel, nil
 }
 
-// Built-in reducer functions for common types.
+// 内置归约函数，适用于常见类型。
 var (
-	// AddReducer adds numeric values.
+	// AddReducer 数值相加。
 	AddReducer = func(current, update interface{}) interface{} {
 		if current == nil {
 			return update
 		}
-		// Try int addition
 		if ci, ok := current.(int); ok {
 			if ui, ok := update.(int); ok {
 				return ci + ui
 			}
 		}
-		// Try float64 addition
 		if cf, ok := current.(float64); ok {
 			if uf, ok := update.(float64); ok {
 				return cf + uf
 			}
 		}
-		// Fallback: return update
 		return update
 	}
 
-	// AppendReducer appends to slices.
+	// AppendReducer 向切片追加元素。
 	AppendReducer = func(current, update interface{}) interface{} {
 		if current == nil {
 			return []interface{}{update}
@@ -145,11 +136,10 @@ var (
 		if slice, ok := current.([]interface{}); ok {
 			return append(slice, update)
 		}
-		// Convert to slice
 		return []interface{}{current, update}
 	}
 
-	// MergeReducer merges maps.
+	// MergeReducer 合并映射。
 	MergeReducer = func(current, update interface{}) interface{} {
 		if current == nil {
 			return update

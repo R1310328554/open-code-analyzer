@@ -9,19 +9,19 @@ import (
 	"time"
 )
 
-// MemoryEventStore is an in-memory EventStore implementation.
-// Suitable for testing and single-instance development.
-// All events are lost on process restart.
+// memory.go — 内存事件存储：适用于测试与单实例开发，进程重启后数据丢失。
+
+// MemoryEventStore 内存实现的 EventStore，进程重启后事件全部丢失。
 type MemoryEventStore struct {
 	mu     sync.RWMutex
 	events []*Event
 	byID   map[EventID]*Event
 	clock  atomic.Uint64
-	subs   map[int64]chan *Event
+	subs   map[int64]chan *Event // 订阅者通道
 	subID  atomic.Int64
 }
 
-// NewMemoryEventStore creates a new empty MemoryEventStore.
+// NewMemoryEventStore 创建空的内存事件存储。
 func NewMemoryEventStore() *MemoryEventStore {
 	return &MemoryEventStore{
 		events: make([]*Event, 0, 1024),
@@ -30,7 +30,7 @@ func NewMemoryEventStore() *MemoryEventStore {
 	}
 }
 
-// Append implements EventLog.
+// Append 追加事件并分发给订阅者。
 func (s *MemoryEventStore) Append(ctx context.Context, events ...*Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -43,12 +43,11 @@ func (s *MemoryEventStore) Append(ctx context.Context, events ...*Event) error {
 		s.events = append(s.events, ev)
 		s.byID[ev.ID] = ev
 
-		// Dispatch to subscribers.
+		// 非阻塞分发给订阅者；慢订阅者丢弃事件
 		for id, ch := range s.subs {
 			select {
 			case ch <- ev:
 			default:
-				// Drop slow subscriber.
 			}
 			_ = id
 		}
@@ -56,7 +55,7 @@ func (s *MemoryEventStore) Append(ctx context.Context, events ...*Event) error {
 	return nil
 }
 
-// Stream implements EventLog.
+// Stream 返回匹配过滤器的事件迭代器。
 func (s *MemoryEventStore) Stream(ctx context.Context, filter EventFilter) EventIterator {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -70,7 +69,7 @@ func (s *MemoryEventStore) Stream(ctx context.Context, filter EventFilter) Event
 	return &sliceIterator{events: filtered, pos: 0}
 }
 
-// Get implements EventLog.
+// Get 按 ID 检索事件。
 func (s *MemoryEventStore) Get(ctx context.Context, id EventID) (*Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -81,7 +80,7 @@ func (s *MemoryEventStore) Get(ctx context.Context, id EventID) (*Event, error) 
 	return ev, nil
 }
 
-// Range implements EventLog.
+// Range 返回逻辑时钟区间内匹配过滤器的事件。
 func (s *MemoryEventStore) Range(ctx context.Context, from, to uint64, filter EventFilter) ([]*Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -101,7 +100,7 @@ func (s *MemoryEventStore) Range(ctx context.Context, from, to uint64, filter Ev
 	return result, nil
 }
 
-// Seek implements EventLog.
+// Seek 从指定逻辑时钟位置开始迭代。
 func (s *MemoryEventStore) Seek(ctx context.Context, clock uint64) (EventIterator, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -117,14 +116,14 @@ func (s *MemoryEventStore) Seek(ctx context.Context, clock uint64) (EventIterato
 	return &sliceIterator{events: s.events[pos:], pos: 0}, nil
 }
 
-// Length implements EventLog.
+// Length 返回事件总数。
 func (s *MemoryEventStore) Length(ctx context.Context) (uint64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return uint64(len(s.events)), nil
 }
 
-// CreateSnapshot implements EventStore.
+// CreateSnapshot 序列化当前全部事件为快照。
 func (s *MemoryEventStore) CreateSnapshot(ctx context.Context, traceID string) (*Snapshot, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -143,14 +142,12 @@ func (s *MemoryEventStore) CreateSnapshot(ctx context.Context, traceID string) (
 	}, nil
 }
 
-// RestoreSnapshot implements EventStore.
+// RestoreSnapshot 从快照恢复；内存存储中事件仍在，直接 Seek 到起点。
 func (s *MemoryEventStore) RestoreSnapshot(ctx context.Context, snapshotID string) (EventIterator, error) {
-	// For MemoryEventStore, we simply seek past the snapshot's clock.
-	// The snapshot data itself is not needed since events are still in memory.
 	return s.Seek(ctx, 0)
 }
 
-// Subscribe implements EventStore.
+// Subscribe 注册实时事件订阅；ctx 取消时清理并关闭通道。
 func (s *MemoryEventStore) Subscribe(ctx context.Context, filter EventFilter) (<-chan *Event, error) {
 	ch := make(chan *Event, 256)
 	id := s.subID.Add(1)
@@ -170,7 +167,7 @@ func (s *MemoryEventStore) Subscribe(ctx context.Context, filter EventFilter) (<
 	return ch, nil
 }
 
-// GC implements EventStore.
+// GC 删除早于保留期的事件。
 func (s *MemoryEventStore) GC(ctx context.Context, retention time.Duration) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -190,6 +187,7 @@ func (s *MemoryEventStore) GC(ctx context.Context, retention time.Duration) erro
 
 // ---- sliceIterator ----
 
+// sliceIterator 基于切片的事件迭代器。
 type sliceIterator struct {
 	events []*Event
 	pos    int

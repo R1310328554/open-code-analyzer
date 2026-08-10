@@ -7,17 +7,17 @@ import (
 	"ragflow/internal/harness/graph/errors"
 )
 
-// NamedBarrierValue waits until all specified named values are received before making the value available.
-// This implementation matches Python LangGraph's NamedBarrierValue semantics.
+// barrier.go — 命名屏障通道：等待指定名称全部到达后才可用，对齐 Python LangGraph 语义。
+
+// NamedBarrierValue 等待所有指定名称的值均收到后才变为可用。
 type NamedBarrierValue struct {
 	BaseChannel
-	names map[string]bool // Set of expected values
-	seen  map[string]bool // Set of received values
+	names map[string]bool // 期望收到的名称集合
+	seen  map[string]bool // 已收到的名称集合
 	mu    sync.RWMutex
 }
 
-// NewNamedBarrierValue creates a new NamedBarrierValue channel.
-// waitFor is a slice of expected value names.
+// NewNamedBarrierValue 创建命名屏障通道；waitFor 为期望名称列表。
 func NewNamedBarrierValue(typ interface{}, waitFor []string) *NamedBarrierValue {
 	names := make(map[string]bool)
 	for _, name := range waitFor {
@@ -30,7 +30,7 @@ func NewNamedBarrierValue(typ interface{}, waitFor []string) *NamedBarrierValue 
 	}
 }
 
-// Get returns the value (always nil for NamedBarrierValue) if all values have been received.
+// Get 全部名称到齐后返回 nil；否则 EmptyChannelError。
 func (c *NamedBarrierValue) Get() (interface{}, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -41,15 +41,14 @@ func (c *NamedBarrierValue) Get() (interface{}, error) {
 	return nil, nil
 }
 
-// IsAvailable returns true if all expected values have been received.
+// IsAvailable 是否已收齐全部期望名称。
 func (c *NamedBarrierValue) IsAvailable() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.namesMatchSeen()
 }
 
-// Update updates the channel with new values.
-// Each value should be a string name from the expected names set.
+// Update 接收字符串名称更新；名称须在期望集合内。
 func (c *NamedBarrierValue) Update(values []interface{}) (bool, error) {
 	if len(values) == 0 {
 		return false, nil
@@ -82,7 +81,7 @@ func (c *NamedBarrierValue) Update(values []interface{}) (bool, error) {
 	return updated, nil
 }
 
-// Copy returns a copy of the channel.
+// Copy 返回通道拷贝。
 func (c *NamedBarrierValue) Copy() Channel {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -90,13 +89,11 @@ func (c *NamedBarrierValue) Copy() Channel {
 	newCh := NewNamedBarrierValue(c.Typ, nil)
 	newCh.Key = c.Key
 
-	// Copy names map
 	newCh.names = make(map[string]bool, len(c.names))
 	for k, v := range c.names {
 		newCh.names[k] = v
 	}
 
-	// Copy seen map
 	newCh.seen = make(map[string]bool, len(c.seen))
 	for k, v := range c.seen {
 		newCh.seen[k] = v
@@ -105,7 +102,7 @@ func (c *NamedBarrierValue) Copy() Channel {
 	return newCh
 }
 
-// Checkpoint returns the seen values as a map.
+// Checkpoint 返回已收到名称的映射副本。
 func (c *NamedBarrierValue) Checkpoint() interface{} {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -114,7 +111,6 @@ func (c *NamedBarrierValue) Checkpoint() interface{} {
 		return Missing
 	}
 
-	// Return a copy of seen
 	result := make(map[string]bool, len(c.seen))
 	for k, v := range c.seen {
 		result[k] = v
@@ -122,22 +118,19 @@ func (c *NamedBarrierValue) Checkpoint() interface{} {
 	return result
 }
 
-// FromCheckpoint restores the channel from a checkpoint.
+// FromCheckpoint 从检查点恢复；JSON 往返后 map[string]bool 可能变为 map[string]interface{}。
 func (c *NamedBarrierValue) FromCheckpoint(checkpoint interface{}) Channel {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	newCh := NewNamedBarrierValue(c.Typ, nil)
 	newCh.Key = c.Key
-	// Restore names from original (FromCheckpoint is called on the same channel).
 	newCh.names = make(map[string]bool, len(c.names))
 	for k, v := range c.names {
 		newCh.names[k] = v
 	}
 
 	if checkpoint != nil && !IsMissing(checkpoint) {
-		// Restore seen from checkpoint.
-		// After JSON round-trip, map[string]bool becomes map[string]interface{}.
 		newCh.seen = make(map[string]bool)
 		switch v := checkpoint.(type) {
 		case map[string]bool:
@@ -156,8 +149,7 @@ func (c *NamedBarrierValue) FromCheckpoint(checkpoint interface{}) Channel {
 	return newCh
 }
 
-// Finish checks if all expected values have been received and clears them.
-// Returns true if there were values to clear.
+// Finish 全部到齐后清空 seen；返回是否有内容被清除。
 func (c *NamedBarrierValue) Finish() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -169,8 +161,7 @@ func (c *NamedBarrierValue) Finish() bool {
 	return false
 }
 
-// Consume resets the channel after all values have been received.
-// Returns true if the channel was consumed.
+// Consume 全部到齐后重置 seen；返回是否消费成功。
 func (c *NamedBarrierValue) Consume() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -182,7 +173,7 @@ func (c *NamedBarrierValue) Consume() bool {
 	return false
 }
 
-// namesMatchSeen checks if all expected names have been seen.
+// namesMatchSeen 检查是否所有期望名称均已收到。
 func (c *NamedBarrierValue) namesMatchSeen() bool {
 	if len(c.names) != len(c.seen) {
 		return false
@@ -195,17 +186,16 @@ func (c *NamedBarrierValue) namesMatchSeen() bool {
 	return true
 }
 
-// NamedBarrierValueAfterFinish waits until all specified named values are received,
-// but only makes the value available after finish() is called.
+// NamedBarrierValueAfterFinish 等待全部名称到齐，且须调用 Finish 后才可用。
 type NamedBarrierValueAfterFinish struct {
 	BaseChannel
-	names    map[string]bool // Set of expected values
-	seen     map[string]bool // Set of received values
+	names    map[string]bool
+	seen     map[string]bool
 	finished bool
 	mu       sync.RWMutex
 }
 
-// NewNamedBarrierValueAfterFinish creates a new NamedBarrierValueAfterFinish channel.
+// NewNamedBarrierValueAfterFinish 创建须 Finish 后才可用的命名屏障通道。
 func NewNamedBarrierValueAfterFinish(typ interface{}, waitFor []string) *NamedBarrierValueAfterFinish {
 	names := make(map[string]bool)
 	for _, name := range waitFor {
@@ -219,7 +209,7 @@ func NewNamedBarrierValueAfterFinish(typ interface{}, waitFor []string) *NamedBa
 	}
 }
 
-// Get returns the value (always nil) if finished and all values have been received.
+// Get Finish 且全部到齐后返回 nil。
 func (c *NamedBarrierValueAfterFinish) Get() (interface{}, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -230,14 +220,14 @@ func (c *NamedBarrierValueAfterFinish) Get() (interface{}, error) {
 	return nil, nil
 }
 
-// IsAvailable returns true if finished and all expected values have been received.
+// IsAvailable 是否已 Finish 且全部名称到齐。
 func (c *NamedBarrierValueAfterFinish) IsAvailable() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.finished && c.namesMatchSeen()
 }
 
-// Update updates the channel with new values.
+// Update 接收字符串名称更新。
 func (c *NamedBarrierValueAfterFinish) Update(values []interface{}) (bool, error) {
 	if len(values) == 0 {
 		return false, nil
@@ -270,7 +260,7 @@ func (c *NamedBarrierValueAfterFinish) Update(values []interface{}) (bool, error
 	return updated, nil
 }
 
-// Copy returns a copy of the channel.
+// Copy 返回通道拷贝。
 func (c *NamedBarrierValueAfterFinish) Copy() Channel {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -278,13 +268,11 @@ func (c *NamedBarrierValueAfterFinish) Copy() Channel {
 	newCh := NewNamedBarrierValueAfterFinish(c.Typ, nil)
 	newCh.Key = c.Key
 
-	// Copy names map
 	newCh.names = make(map[string]bool, len(c.names))
 	for k, v := range c.names {
 		newCh.names[k] = v
 	}
 
-	// Copy seen map
 	newCh.seen = make(map[string]bool, len(c.seen))
 	for k, v := range c.seen {
 		newCh.seen[k] = v
@@ -295,7 +283,7 @@ func (c *NamedBarrierValueAfterFinish) Copy() Channel {
 	return newCh
 }
 
-// Checkpoint returns a tuple of (seen, finished).
+// Checkpoint 返回 (seen, finished) 状态映射。
 func (c *NamedBarrierValueAfterFinish) Checkpoint() interface{} {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -304,7 +292,6 @@ func (c *NamedBarrierValueAfterFinish) Checkpoint() interface{} {
 		return Missing
 	}
 
-	// Return as a map with both values
 	result := map[string]interface{}{
 		"seen":     c.seen,
 		"finished": c.finished,
@@ -312,14 +299,13 @@ func (c *NamedBarrierValueAfterFinish) Checkpoint() interface{} {
 	return result
 }
 
-// FromCheckpoint restores the channel from a checkpoint.
+// FromCheckpoint 从检查点恢复 seen 与 finished 状态。
 func (c *NamedBarrierValueAfterFinish) FromCheckpoint(checkpoint interface{}) Channel {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	newCh := NewNamedBarrierValueAfterFinish(c.Typ, nil)
 	newCh.Key = c.Key
-	// Restore names from original.
 	newCh.names = make(map[string]bool, len(c.names))
 	for k, v := range c.names {
 		newCh.names[k] = v
@@ -327,7 +313,6 @@ func (c *NamedBarrierValueAfterFinish) FromCheckpoint(checkpoint interface{}) Ch
 
 	if checkpoint != nil && !IsMissing(checkpoint) {
 		if cp, ok := checkpoint.(map[string]interface{}); ok {
-			// After JSON round-trip, map[string]bool becomes map[string]interface{}.
 			newCh.seen = make(map[string]bool)
 			switch seen := cp["seen"].(type) {
 			case map[string]bool:
@@ -350,8 +335,7 @@ func (c *NamedBarrierValueAfterFinish) FromCheckpoint(checkpoint interface{}) Ch
 	return newCh
 }
 
-// Finish marks the channel as finished if all values have been received.
-// Returns true if the channel was marked as finished.
+// Finish 全部到齐后标记为 finished。
 func (c *NamedBarrierValueAfterFinish) Finish() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -363,8 +347,7 @@ func (c *NamedBarrierValueAfterFinish) Finish() bool {
 	return false
 }
 
-// Consume resets the channel after finish and all values have been received.
-// Returns true if the channel was consumed.
+// Consume Finish 且全部到齐后重置 finished 与 seen。
 func (c *NamedBarrierValueAfterFinish) Consume() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -377,7 +360,7 @@ func (c *NamedBarrierValueAfterFinish) Consume() bool {
 	return false
 }
 
-// namesMatchSeen checks if all expected names have been seen.
+// namesMatchSeen 检查是否所有期望名称均已收到。
 func (c *NamedBarrierValueAfterFinish) namesMatchSeen() bool {
 	if len(c.names) != len(c.seen) {
 		return false
@@ -390,7 +373,7 @@ func (c *NamedBarrierValueAfterFinish) namesMatchSeen() bool {
 	return true
 }
 
-// LastValueAfterFinish stores the last value received, but only makes it available after finish().
+// LastValueAfterFinish 存储末值，但须 Finish 后才可读。
 type LastValueAfterFinish struct {
 	BaseChannel
 	value    interface{}
@@ -398,7 +381,7 @@ type LastValueAfterFinish struct {
 	mu       sync.RWMutex
 }
 
-// NewLastValueAfterFinish creates a new LastValueAfterFinish channel.
+// NewLastValueAfterFinish 创建须 Finish 后才可用的末值通道。
 func NewLastValueAfterFinish(typ interface{}) *LastValueAfterFinish {
 	return &LastValueAfterFinish{
 		BaseChannel: BaseChannel{Typ: typ},
@@ -407,7 +390,7 @@ func NewLastValueAfterFinish(typ interface{}) *LastValueAfterFinish {
 	}
 }
 
-// Get returns the last value received after finish().
+// Get Finish 后返回最后写入的值。
 func (c *LastValueAfterFinish) Get() (interface{}, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -423,14 +406,14 @@ func (c *LastValueAfterFinish) Get() (interface{}, error) {
 	return c.value, nil
 }
 
-// IsAvailable returns true if finished and has a value.
+// IsAvailable 是否已 Finish 且持有值。
 func (c *LastValueAfterFinish) IsAvailable() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.finished && !IsMissing(c.value)
 }
 
-// Update updates the channel with new values.
+// Update 每步最多接收一个值。
 func (c *LastValueAfterFinish) Update(values []interface{}) (bool, error) {
 	if len(values) == 0 {
 		return false, nil
@@ -439,7 +422,6 @@ func (c *LastValueAfterFinish) Update(values []interface{}) (bool, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Only accept one value per step
 	if len(values) > 1 {
 		return false, &errors.InvalidUpdateError{
 			Message: "Can receive only one value per step. Use a reducer to handle multiple values.",
@@ -450,7 +432,7 @@ func (c *LastValueAfterFinish) Update(values []interface{}) (bool, error) {
 	return true, nil
 }
 
-// Copy returns a copy of the channel.
+// Copy 返回通道拷贝。
 func (c *LastValueAfterFinish) Copy() Channel {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -462,14 +444,14 @@ func (c *LastValueAfterFinish) Copy() Channel {
 	return newCh
 }
 
-// Checkpoint returns the current value.
+// Checkpoint 返回当前值。
 func (c *LastValueAfterFinish) Checkpoint() interface{} {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.value
 }
 
-// FromCheckpoint restores the channel from a checkpoint.
+// FromCheckpoint 从检查点恢复。
 func (c *LastValueAfterFinish) FromCheckpoint(checkpoint interface{}) Channel {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -484,7 +466,7 @@ func (c *LastValueAfterFinish) FromCheckpoint(checkpoint interface{}) Channel {
 	return newCh
 }
 
-// Finish marks the channel as finished.
+// Finish 标记通道为 finished。
 func (c *LastValueAfterFinish) Finish() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -496,7 +478,7 @@ func (c *LastValueAfterFinish) Finish() bool {
 	return false
 }
 
-// Consume always returns false for this channel.
+// Consume 本通道始终返回 false。
 func (c *LastValueAfterFinish) Consume() bool {
 	return false
 }

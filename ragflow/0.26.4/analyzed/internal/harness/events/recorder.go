@@ -7,24 +7,24 @@ import (
 	"ragflow/internal/harness/graph/pregel"
 )
 
-// ---- Context helpers for passing EventRecorder through context ----
+// recorder.go — 事件记录器：将图执行、LLM/工具调用等写入仅追加事件日志。
+
+// ---- 通过 context 传递 EventRecorder ----
 
 type recorderContextKey struct{}
 
-// ContextWithRecorder stores an EventRecorder in context for use by
-// model wrappers and tool middlewares in the agent core.
+// ContextWithRecorder 将 EventRecorder 存入 context，供模型包装器与工具中间件使用。
 func ContextWithRecorder(ctx context.Context, r *EventRecorder) context.Context {
 	return context.WithValue(ctx, recorderContextKey{}, r)
 }
 
-// RecorderFromContext retrieves an EventRecorder from context.
-// Returns nil when no recorder is present.
+// RecorderFromContext 从 context 取出 EventRecorder；不存在时返回 nil。
 func RecorderFromContext(ctx context.Context) *EventRecorder {
 	r, _ := ctx.Value(recorderContextKey{}).(*EventRecorder)
 	return r
 }
 
-// RecorderOption configures an EventRecorder.
+// RecorderOption 配置 EventRecorder 的可选参数。
 type RecorderOption func(*recorderOptions)
 
 type recorderOptions struct {
@@ -32,26 +32,24 @@ type recorderOptions struct {
 	threadID string
 }
 
-// WithTraceID sets the trace ID for the recorder.
+// WithTraceID 设置记录器的轨迹 ID。
 func WithTraceID(traceID string) RecorderOption {
 	return func(o *recorderOptions) {
 		o.traceID = traceID
 	}
 }
 
-// WithThreadID sets the thread ID for the recorder.
+// WithThreadID 设置记录器的线程 ID。
 func WithThreadID(threadID string) RecorderOption {
 	return func(o *recorderOptions) {
 		o.threadID = threadID
 	}
 }
 
-// EventRecorder records graph execution events as append-only Events.
-// It implements pregel.GraphCallback and can be added to a CallbackManager.
-// Additionally, RecordModelCall / RecordToolCall / etc. provide fine-grained
-// event recording for LLM invocations and tool executions.
+// EventRecorder 将图执行过程记录为仅追加 Event，实现 pregel.GraphCallback。
+// 另提供 RecordModelCall / RecordToolCall 等细粒度 API 记录 LLM 与工具调用。
 //
-// Usage:
+// 用法示例：
 //
 //	store := events.NewMemoryEventStore()
 //	recorder := events.NewEventRecorder(store, events.WithTraceID("trace-001"))
@@ -64,7 +62,7 @@ type EventRecorder struct {
 	threadID string
 }
 
-// NewEventRecorder creates a new EventRecorder.
+// NewEventRecorder 创建事件记录器。
 func NewEventRecorder(store EventLog, opts ...RecorderOption) *EventRecorder {
 	o := &recorderOptions{}
 	for _, opt := range opts {
@@ -78,7 +76,7 @@ func NewEventRecorder(store EventLog, opts ...RecorderOption) *EventRecorder {
 	}
 }
 
-// record creates and appends an event.
+// record 创建事件并追加到存储。
 func (r *EventRecorder) record(ctx context.Context, typ EventType, opts ...func(*Event)) {
 	ev := NewEvent(typ, r.clock.Tick())
 	ev.TraceID = r.traceID
@@ -90,9 +88,9 @@ func (r *EventRecorder) record(ctx context.Context, typ EventType, opts ...func(
 	_ = r.store.Append(ctx, ev)
 }
 
-// ---- Context-based recording (used by model/tool wrappers) ----
+// ---- 基于 context 的细粒度记录（模型/工具包装器调用） ----
 
-// RecordModelCall records an LLM model invocation with its result.
+// RecordModelCall 记录 LLM 模型调用及结果。
 func (r *EventRecorder) RecordModelCall(ctx context.Context, model, provider string, messages []any, content string, tokens TokenUsage, durationMs int64, cost float64) {
 	r.record(ctx, EventLLMCallStart, func(ev *Event) {
 		ev.Deterministic = false
@@ -114,7 +112,7 @@ func (r *EventRecorder) RecordModelCall(ctx context.Context, model, provider str
 	})
 }
 
-// RecordLLMChunk records a single streaming chunk from an LLM call.
+// RecordLLMChunk 记录 LLM 流式输出的单个分块。
 func (r *EventRecorder) RecordLLMChunk(ctx context.Context, model string, chunk string) {
 	r.record(ctx, EventLLMCallChunk, func(ev *Event) {
 		ev.Deterministic = false
@@ -123,7 +121,7 @@ func (r *EventRecorder) RecordLLMChunk(ctx context.Context, model string, chunk 
 	})
 }
 
-// RecordToolCall records a tool invocation with its result.
+// RecordToolCall 记录工具调用及结果。
 func (r *EventRecorder) RecordToolCall(ctx context.Context, toolName string, arguments map[string]any, result any, durationMs int64, retryCount int, errStr string) {
 	r.record(ctx, EventToolCallStart, func(ev *Event) {
 		ev.Metadata["tool"] = toolName
@@ -144,7 +142,7 @@ func (r *EventRecorder) RecordToolCall(ctx context.Context, toolName string, arg
 	})
 }
 
-// RecordSubAgentCall records a sub-agent invocation with its result.
+// RecordSubAgentCall 记录子 Agent 调用及结果。
 func (r *EventRecorder) RecordSubAgentCall(ctx context.Context, subAgentName string, input, output any, depth int, durationMs int64, errStr string) {
 	r.record(ctx, EventSubAgentCallStart, func(ev *Event) {
 		pl := SubAgentCallPayload{
@@ -169,7 +167,7 @@ func (r *EventRecorder) RecordSubAgentCall(ctx context.Context, subAgentName str
 	})
 }
 
-// RecordSessionValue records a session value change.
+// RecordSessionValue 记录会话键值变更。
 func (r *EventRecorder) RecordSessionValue(ctx context.Context, key string, value any) {
 	r.record(ctx, EventSessionValueSet, func(ev *Event) {
 		pl := SessionValuePayload{Key: key, Value: value}
@@ -177,7 +175,7 @@ func (r *EventRecorder) RecordSessionValue(ctx context.Context, key string, valu
 	})
 }
 
-// RecordSessionTransfer records an agent transfer event.
+// RecordSessionTransfer 记录 Agent 间会话转移。
 func (r *EventRecorder) RecordSessionTransfer(ctx context.Context, fromAgent, toAgent, reason string, input any) {
 	r.record(ctx, EventSessionTransfer, func(ev *Event) {
 		pl := SessionTransferPayload{
@@ -190,7 +188,7 @@ func (r *EventRecorder) RecordSessionTransfer(ctx context.Context, fromAgent, to
 	})
 }
 
-// RecordStateWrite records a state transition.
+// RecordStateWrite 记录状态通道写入。
 func (r *EventRecorder) RecordStateWrite(ctx context.Context, channel string, oldValue, newValue any, reducer string) {
 	r.record(ctx, EventStateWrite, func(ev *Event) {
 		pl := StateTransitionPayload{
@@ -203,7 +201,7 @@ func (r *EventRecorder) RecordStateWrite(ctx context.Context, channel string, ol
 	})
 }
 
-// RecordMemoryWrite records a memory operation.
+// RecordMemoryWrite 记录记忆写入操作。
 func (r *EventRecorder) RecordMemoryWrite(ctx context.Context, store, operation, key string, value any, score float64) {
 	r.record(ctx, EventMemoryWrite, func(ev *Event) {
 		pl := MemoryWritePayload{
@@ -217,7 +215,7 @@ func (r *EventRecorder) RecordMemoryWrite(ctx context.Context, store, operation,
 	})
 }
 
-// RecordMemoryRead records a memory read operation.
+// RecordMemoryRead 记录记忆读取操作。
 func (r *EventRecorder) RecordMemoryRead(ctx context.Context, store, key string, score float64) {
 	r.record(ctx, EventMemoryRead, func(ev *Event) {
 		pl := MemoryWritePayload{
@@ -229,7 +227,7 @@ func (r *EventRecorder) RecordMemoryRead(ctx context.Context, store, key string,
 	})
 }
 
-// RecordApproval records a human-in-the-loop approval event.
+// RecordApproval 记录人机协同审批事件。
 func (r *EventRecorder) RecordApproval(ctx context.Context, requestID, action string, context any, decision string, latencyMs int64) {
 	r.record(ctx, EventApprovalRequest, func(ev *Event) {
 		pl := ApprovalPayload{
@@ -243,30 +241,30 @@ func (r *EventRecorder) RecordApproval(ctx context.Context, requestID, action st
 	})
 }
 
-// RecordError records an execution error.
+// RecordError 记录执行错误。
 func (r *EventRecorder) RecordError(ctx context.Context, errMsg string) {
 	r.record(ctx, EventError, func(ev *Event) {
 		ev.Metadata["error"] = errMsg
 	})
 }
 
-// RecordRetry records a retry event.
+// RecordRetry 记录重试事件。
 func (r *EventRecorder) RecordRetry(ctx context.Context, detail string) {
 	r.record(ctx, EventRetry, func(ev *Event) {
 		ev.Metadata["detail"] = detail
 	})
 }
 
-// ---- GraphCallback implementation ----
+// ---- GraphCallback 实现 ----
 
-// OnRunStart implements pregel.RunCallback.
+// OnRunStart 图运行开始回调。
 func (r *EventRecorder) OnRunStart(ctx context.Context, graphName, threadID string) {
 	r.record(ctx, EventGraphStart, func(ev *Event) {
 		ev.Metadata["graph_name"] = graphName
 	})
 }
 
-// OnRunEnd implements pregel.RunCallback.
+// OnRunEnd 图运行结束回调。
 func (r *EventRecorder) OnRunEnd(ctx context.Context, graphName, threadID string, err error) {
 	r.record(ctx, EventGraphEnd, func(ev *Event) {
 		ev.Metadata["graph_name"] = graphName
@@ -276,7 +274,7 @@ func (r *EventRecorder) OnRunEnd(ctx context.Context, graphName, threadID string
 	})
 }
 
-// OnStepStart implements pregel.StepCallback.
+// OnStepStart Pregel 超步开始回调。
 func (r *EventRecorder) OnStepStart(ctx context.Context, step, taskCount int) {
 	r.record(ctx, EventStepStart, func(ev *Event) {
 		ev.Step = step
@@ -284,7 +282,7 @@ func (r *EventRecorder) OnStepStart(ctx context.Context, step, taskCount int) {
 	})
 }
 
-// OnStepEnd implements pregel.StepCallback.
+// OnStepEnd Pregel 超步结束回调。
 func (r *EventRecorder) OnStepEnd(ctx context.Context, step int, err error) {
 	r.record(ctx, EventStepEnd, func(ev *Event) {
 		ev.Step = step
@@ -294,7 +292,7 @@ func (r *EventRecorder) OnStepEnd(ctx context.Context, step int, err error) {
 	})
 }
 
-// OnNodeStart implements pregel.NodeCallback.
+// OnNodeStart 节点执行开始回调。
 func (r *EventRecorder) OnNodeStart(ctx context.Context, nodeName string, step int) {
 	r.record(ctx, EventNodeStart, func(ev *Event) {
 		ev.Node = nodeName
@@ -302,7 +300,7 @@ func (r *EventRecorder) OnNodeStart(ctx context.Context, nodeName string, step i
 	})
 }
 
-// OnNodeEnd implements pregel.NodeCallback.
+// OnNodeEnd 节点执行结束回调。
 func (r *EventRecorder) OnNodeEnd(ctx context.Context, nodeName string, step int, output interface{}, err error) {
 	r.record(ctx, EventNodeEnd, func(ev *Event) {
 		ev.Node = nodeName
@@ -313,7 +311,7 @@ func (r *EventRecorder) OnNodeEnd(ctx context.Context, nodeName string, step int
 	})
 }
 
-// OnCheckpointSave implements pregel.CheckpointCallback.
+// OnCheckpointSave 检查点保存回调。
 func (r *EventRecorder) OnCheckpointSave(ctx context.Context, threadID, checkpointID string, step int) {
 	r.record(ctx, EventCheckpointCreated, func(ev *Event) {
 		ev.ThreadID = threadID
@@ -322,7 +320,7 @@ func (r *EventRecorder) OnCheckpointSave(ctx context.Context, threadID, checkpoi
 	})
 }
 
-// OnCheckpointLoad implements pregel.CheckpointCallback.
+// OnCheckpointLoad 检查点加载回调。
 func (r *EventRecorder) OnCheckpointLoad(ctx context.Context, threadID, checkpointID string, step int) {
 	r.record(ctx, EventCheckpointRestored, func(ev *Event) {
 		ev.ThreadID = threadID
@@ -331,7 +329,7 @@ func (r *EventRecorder) OnCheckpointLoad(ctx context.Context, threadID, checkpoi
 	})
 }
 
-// OnCheckpointUpdate implements pregel.CheckpointCallback.
+// OnCheckpointUpdate 检查点更新回调。
 func (r *EventRecorder) OnCheckpointUpdate(ctx context.Context, threadID, asNode string) {
 	r.record(ctx, EventStateWrite, func(ev *Event) {
 		ev.ThreadID = threadID
@@ -339,7 +337,7 @@ func (r *EventRecorder) OnCheckpointUpdate(ctx context.Context, threadID, asNode
 	})
 }
 
-// OnInterrupt implements pregel.InterruptCallback.
+// OnInterrupt 中断回调。
 func (r *EventRecorder) OnInterrupt(ctx context.Context, nodeNames []string, step int) {
 	r.record(ctx, EventInterrupt, func(ev *Event) {
 		ev.Step = step
@@ -347,14 +345,14 @@ func (r *EventRecorder) OnInterrupt(ctx context.Context, nodeNames []string, ste
 	})
 }
 
-// OnResume implements pregel.InterruptCallback.
+// OnResume 恢复执行回调。
 func (r *EventRecorder) OnResume(ctx context.Context, threadID string) {
 	r.record(ctx, EventResume, func(ev *Event) {
 		ev.ThreadID = threadID
 	})
 }
 
-// compile-time interface checks
+// 编译期接口检查
 var (
 	_ pregel.GraphCallback = (*EventRecorder)(nil)
 )

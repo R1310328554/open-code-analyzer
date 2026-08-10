@@ -1,4 +1,4 @@
-// Package channels provides channel implementations for LangGraph Go.
+// Package channels 提供 LangGraph Go 的通道（Channel）实现。
 package channels
 
 import (
@@ -9,7 +9,7 @@ import (
 	"ragflow/internal/harness/graph/errors"
 )
 
-// Missing is a sentinel value to indicate a missing value.
+// Missing 哨兵值，表示通道尚无有效值。
 var Missing = &missingSentinel{}
 
 type missingSentinel struct{}
@@ -18,7 +18,7 @@ func (m *missingSentinel) String() string {
 	return "<MISSING>"
 }
 
-// IsMissing checks if a value is the Missing sentinel.
+// IsMissing 判断值是否为 Missing 哨兵。
 func IsMissing(val any) bool {
 	if val == nil {
 		return false
@@ -27,98 +27,86 @@ func IsMissing(val any) bool {
 	return ok
 }
 
-// Channel is the base interface for all channels.
+// Channel 所有通道的基础接口。
 type Channel interface {
-	// GetKey returns the channel key.
 	GetKey() string
-	// SetKey sets the channel key.
 	SetKey(key string)
-	// Get returns the current value of the channel.
-	// Returns EmptyChannelError if the channel is empty.
+	// Get 返回当前值；空通道返回 EmptyChannelError。
 	Get() (interface{}, error)
-	// IsAvailable returns true if the channel is available (not empty).
+	// IsAvailable 通道是否可读（非空）。
 	IsAvailable() bool
-	// Update updates the channel's value with the given sequence of updates.
-	// Returns true if the channel was updated.
+	// Update 用给定更新序列写入通道；返回是否实际更新。
 	Update(values []interface{}) (bool, error)
-	// Copy returns a copy of the channel.
 	Copy() Channel
-	// Checkpoint returns a serializable representation of the channel's current state.
-	// Returns Missing if the channel is empty.
+	// Checkpoint 返回可序列化的通道状态；空时返回 Missing。
 	Checkpoint() interface{}
-	// FromCheckpoint returns a new channel initialized from a checkpoint.
 	FromCheckpoint(checkpoint interface{}) Channel
-	// Consume notifies the channel that a subscribed task ran.
-	// Returns true if the channel was updated.
+	// Consume 通知通道：订阅任务已执行；返回是否更新了通道。
 	Consume() bool
-	// Finish notifies the channel that the Pregel run is finishing.
-	// Returns true if the channel was updated.
+	// Finish 通知通道：Pregel 运行即将结束。
 	Finish() bool
-	// GetVersion returns the current version number of this channel.
-	// Returns -1 if the channel does not support version tracking.
+	// GetVersion 返回通道版本号；-1 表示不支持版本追踪。
 	GetVersion() int
 }
 
-// BaseChannel provides a base implementation of Channel.
-// Embed this struct in your channel implementations.
+// BaseChannel 通道的基础嵌入结构，提供 Key、版本号等公共字段。
 type BaseChannel struct {
 	Key     string
 	Typ     interface{}
-	Version int64 // atomic: channel version for change detection (thread-safe)
+	Version int64 // 原子版本号，用于变更检测（线程安全）
 }
 
-// GetKey returns the channel key.
+// GetKey 返回通道键名。
 func (c *BaseChannel) GetKey() string {
 	return c.Key
 }
 
-// SetKey sets the channel key.
+// SetKey 设置通道键名。
 func (c *BaseChannel) SetKey(key string) {
 	c.Key = key
 }
 
-// Consume is a no-op by default.
+// Consume 默认无操作。
 func (c *BaseChannel) Consume() bool {
 	return false
 }
 
-// Finish is a no-op by default.
+// Finish 默认无操作。
 func (c *BaseChannel) Finish() bool {
 	return false
 }
 
-// GetVersion returns the current version of this channel using atomic read.
-// Returns -1 for channels that do not use version tracking.
+// GetVersion 原子读取通道版本号。
 func (c *BaseChannel) GetVersion() int {
 	return int(atomic.LoadInt64(&c.Version))
 }
 
-// SetVersion sets the channel version atomically (used by the engine after applying writes).
+// SetVersion 原子设置版本号（引擎应用写入后调用）。
 func (c *BaseChannel) SetVersion(v int) {
 	atomic.StoreInt64(&c.Version, int64(v))
 }
 
-// Registry is a registry of channel types.
+// Registry 通道类型注册表，管理命名通道实例。
 type Registry struct {
 	mu       sync.RWMutex
 	channels map[string]Channel
 }
 
-// NewRegistry creates a new channel registry.
+// NewRegistry 创建空注册表。
 func NewRegistry() *Registry {
 	return &Registry{
 		channels: make(map[string]Channel),
 	}
 }
 
-// Register registers a channel.
+// Register 注册命名通道。
 func (r *Registry) Register(name string, channel Channel) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.channels[name] = channel
 }
 
-// Get gets a channel by name.
+// Get 按名称获取通道。
 func (r *Registry) Get(name string) (Channel, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -126,21 +114,21 @@ func (r *Registry) Get(name string) (Channel, bool) {
 	return ch, ok
 }
 
-// Remove removes a channel.
+// Remove 移除通道。
 func (r *Registry) Remove(name string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	delete(r.channels, name)
 }
 
-// Len returns the number of channels.
+// Len 返回已注册通道数量。
 func (r *Registry) Len() int {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return len(r.channels)
 }
 
-// Names returns all channel names.
+// Names 返回所有通道名称。
 func (r *Registry) Names() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -151,12 +139,12 @@ func (r *Registry) Names() []string {
 	return names
 }
 
-// List returns all channel names (alias for Names).
+// List Names 的别名。
 func (r *Registry) List() []string {
 	return r.Names()
 }
 
-// CreateCheckpoint creates a checkpoint for all channels.
+// CreateCheckpoint 为所有通道创建检查点快照。
 func (r *Registry) CreateCheckpoint() map[string]interface{} {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -170,7 +158,7 @@ func (r *Registry) CreateCheckpoint() map[string]interface{} {
 	return checkpoint
 }
 
-// RestoreFromCheckpoint restores all channels from a checkpoint.
+// RestoreFromCheckpoint 从检查点恢复所有通道。
 func (r *Registry) RestoreFromCheckpoint(checkpoint map[string]interface{}) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -185,7 +173,7 @@ func (r *Registry) RestoreFromCheckpoint(checkpoint map[string]interface{}) erro
 	return nil
 }
 
-// UpdateChannels updates all channels with the given writes.
+// UpdateChannels 批量更新各通道的写入值。
 func (r *Registry) UpdateChannels(writes map[string][]interface{}) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -201,7 +189,7 @@ func (r *Registry) UpdateChannels(writes map[string][]interface{}) error {
 	return nil
 }
 
-// GetValues returns the current values of all channels.
+// GetValues 读取所有通道的当前值（空通道跳过）。
 func (r *Registry) GetValues() (map[string]interface{}, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

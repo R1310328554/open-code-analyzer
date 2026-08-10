@@ -4,15 +4,17 @@ import (
 	"ragflow/internal/harness/graph/errors"
 )
 
-// EphemeralValue stores a value that is cleared after being read once.
+// ephemeral_value.go — 瞬态值通道：读取一次后自动清空。
+
+// EphemeralValue 存储读取后即清除的瞬态值。
 type EphemeralValue struct {
 	BaseChannel
-	value interface{}
-	guard bool // if true, raises EmptyChannelError if value is not set
+	value interface{} // 当前值，Get 后重置为 Missing
+	guard bool        // 为 true 时，未设值调用 Get 返回 EmptyChannelError
 }
 
-// NewEphemeralValue creates a new EphemeralValue channel.
-// If guard is true, raises EmptyChannelError if value is not set when Get is called.
+// NewEphemeralValue 创建 EphemeralValue 通道。
+// guard 为 true 时，未设值调用 Get 会返回 EmptyChannelError。
 func NewEphemeralValue(typ interface{}, guard bool) *EphemeralValue {
 	return &EphemeralValue{
 		BaseChannel: BaseChannel{Typ: typ},
@@ -21,7 +23,7 @@ func NewEphemeralValue(typ interface{}, guard bool) *EphemeralValue {
 	}
 }
 
-// Get returns the current value of the channel and clears it.
+// Get 返回当前值并清空通道（一次性读取语义）。
 func (c *EphemeralValue) Get() (interface{}, error) {
 	if IsMissing(c.value) {
 		if c.guard {
@@ -34,13 +36,12 @@ func (c *EphemeralValue) Get() (interface{}, error) {
 	return val, nil
 }
 
-// IsAvailable returns true if the channel has a value.
+// IsAvailable 通道是否持有未读值。
 func (c *EphemeralValue) IsAvailable() bool {
 	return !IsMissing(c.value)
 }
 
-// Update updates the channel with values.
-// Keeps only the last value.
+// Update 更新通道，仅保留最后一个值。
 func (c *EphemeralValue) Update(values []interface{}) (bool, error) {
 	if len(values) == 0 {
 		return false, nil
@@ -49,7 +50,7 @@ func (c *EphemeralValue) Update(values []interface{}) (bool, error) {
 	return true, nil
 }
 
-// Copy returns a copy of the channel.
+// Copy 返回通道拷贝。
 func (c *EphemeralValue) Copy() Channel {
 	newCh := NewEphemeralValue(c.Typ, c.guard)
 	newCh.Key = c.Key
@@ -57,12 +58,12 @@ func (c *EphemeralValue) Copy() Channel {
 	return newCh
 }
 
-// Checkpoint returns the current value.
+// Checkpoint 返回当前值。
 func (c *EphemeralValue) Checkpoint() interface{} {
 	return c.value
 }
 
-// FromCheckpoint restores the channel from a checkpoint.
+// FromCheckpoint 从检查点恢复。
 func (c *EphemeralValue) FromCheckpoint(checkpoint interface{}) Channel {
 	newCh := NewEphemeralValue(c.Typ, c.guard)
 	newCh.Key = c.Key

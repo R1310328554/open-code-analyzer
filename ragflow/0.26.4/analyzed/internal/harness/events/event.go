@@ -1,9 +1,8 @@
-// Package events provides append-only event sourcing for agent execution.
+// Package events 为 Agent 执行提供仅追加（append-only）的事件溯源能力。
 //
-// Every tool call, state transition, memory write, approval, LLM invocation,
-// and checkpoint operation is recorded as an immutable Event. Events are
-// causally ordered via a monotonic logical clock, enabling deterministic
-// replay, fork/diff, and postmortem analysis.
+// 每次工具调用、状态迁移、记忆写入、审批、LLM 调用与检查点操作
+// 均记录为不可变 Event。事件通过单调逻辑时钟因果排序，
+// 支持确定性重放、分叉对比与事后分析。
 package events
 
 import (
@@ -13,110 +12,109 @@ import (
 	"time"
 )
 
-// EventID is a globally unique event identifier (UUID v7, time-ordered).
+// EventID 全局唯一事件标识（UUID v7，时间有序）。
 type EventID string
 
-// EventType enumerates every recordable action during agent execution.
+// EventType 枚举 Agent 执行期间可记录的各类动作。
 type EventType string
 
 const (
-	// Graph execution lifecycle.
+	// 图执行生命周期
 	EventGraphStart EventType = "graph.start"
 	EventGraphEnd   EventType = "graph.end"
 	EventStepStart  EventType = "step.start"
 	EventStepEnd    EventType = "step.end"
 
-	// Node execution.
+	// 节点执行
 	EventNodeStart EventType = "node.start"
 	EventNodeEnd   EventType = "node.end"
 
-	// State transitions.
+	// 状态迁移
 	EventStateRead  EventType = "state.read"
 	EventStateWrite EventType = "state.write"
 
-	// Tool calls.
+	// 工具调用
 	EventToolCallStart  EventType = "tool.call.start"
 	EventToolCallResult EventType = "tool.call.result"
 	EventToolCallError  EventType = "tool.call.error"
 
-	// LLM invocations.
+	// LLM 调用
 	EventLLMCallStart EventType = "llm.call.start"
 	EventLLMCallChunk EventType = "llm.call.chunk"
 	EventLLMCallEnd   EventType = "llm.call.end"
 
-	// Memory operations.
+	// 记忆操作
 	EventMemoryRead  EventType = "memory.read"
 	EventMemoryWrite EventType = "memory.write"
 
-	// Human-in-the-loop.
+	// 人机协同（Human-in-the-loop）
 	EventApprovalRequest EventType = "approval.request"
 	EventApprovalGranted EventType = "approval.granted"
 	EventApprovalDenied  EventType = "approval.denied"
 
-	// Checkpoint.
+	// 检查点
 	EventCheckpointCreated  EventType = "checkpoint.created"
 	EventCheckpointRestored EventType = "checkpoint.restored"
 
-	// Interrupt / Resume.
+	// 中断 / 恢复
 	EventInterrupt EventType = "interrupt"
 	EventResume    EventType = "resume"
 
-	// Error & retry.
+	// 错误与重试
 	EventError EventType = "error"
 	EventRetry EventType = "retry"
 
-	// Fork — branch from an existing event.
+	// 分叉 —— 从已有事件分支
 	EventFork EventType = "fork"
 
-	// Sub-agent execution.
+	// 子 Agent 执行
 	EventSubAgentCallStart EventType = "subagent.call.start"
 	EventSubAgentCallEnd   EventType = "subagent.call.end"
 
-	// Session / Transfer.
+	// 会话 / 转移
 	EventSessionValueSet EventType = "session.value.set"
 	EventSessionTransfer EventType = "session.transfer"
 )
 
-// Event is an immutable append-only event.
+// Event 不可变的仅追加事件记录。
 type Event struct {
-	// ID is the globally unique event identifier.
+	// ID 全局唯一事件标识
 	ID EventID `json:"id"`
-	// Type describes what happened.
+	// Type 事件类型，描述发生了什么
 	Type EventType `json:"type"`
-	// Timestamp is the wall-clock time when this event was recorded.
+	// Timestamp 记录时的墙钟时间
 	Timestamp time.Time `json:"timestamp"`
-	// Clock is the monotonic logical clock value (global total order).
+	// Clock 单调逻辑时钟值，提供全局全序
 	Clock uint64 `json:"clock"`
 
-	// TraceID identifies one complete execution trace.
+	// TraceID 标识一次完整执行轨迹
 	TraceID string `json:"trace_id"`
-	// ParentID is the immediate predecessor event in the same trace.
+	// ParentID 同轨迹中直接前驱事件
 	ParentID EventID `json:"parent_id,omitempty"`
-	// CausedBy lists predecessor events (multiple for fork/join scenarios).
+	// CausedBy 前驱事件列表（分叉/汇合场景可有多个）
 	CausedBy []EventID `json:"caused_by,omitempty"`
 
-	// ThreadID identifies the execution thread.
+	// ThreadID 执行线程标识
 	ThreadID string `json:"thread_id,omitempty"`
-	// Step is the Pregel superstep number.
+	// Step Pregel 超步编号
 	Step int `json:"step,omitempty"`
-	// Node is the graph node name.
+	// Node 图节点名称
 	Node string `json:"node,omitempty"`
-	// TaskID identifies the execution task.
+	// TaskID 执行任务标识
 	TaskID string `json:"task_id,omitempty"`
 
-	// Payload is the type-specific event payload (JSON).
+	// Payload 类型相关的 JSON 载荷
 	Payload json.RawMessage `json:"payload,omitempty"`
-	// Metadata holds arbitrary key-value metadata.
+	// Metadata 任意键值元数据
 	Metadata map[string]any `json:"metadata,omitempty"`
 
-	// Deterministic is false when the event involves non-deterministic
-	// operations (LLM output, random, wall-clock time).
+	// Deterministic 为 false 表示含非确定性操作（LLM 输出、随机数、墙钟时间）
 	Deterministic bool `json:"deterministic"`
-	// Hash is the SHA-256 of Payload+Metadata (for integrity verification).
+	// Hash Payload+Metadata 的 SHA-256，用于完整性校验
 	Hash string `json:"hash,omitempty"`
 }
 
-// NewEvent creates a new Event with auto-generated ID and current timestamp.
+// NewEvent 创建新事件，自动生成 ID 并填入当前时间戳。
 func NewEvent(typ EventType, clock uint64) *Event {
 	return &Event{
 		ID:        EventID(fmt.Sprintf("evt-%d-%x", clock, time.Now().UnixNano())),
@@ -127,7 +125,7 @@ func NewEvent(typ EventType, clock uint64) *Event {
 	}
 }
 
-// computeHash computes the SHA-256 hash of the event payload and metadata.
+// computeHash 计算事件载荷与元数据的 SHA-256 哈希。
 func (e *Event) computeHash() string {
 	h := sha256.New()
 	if e.Payload != nil {
@@ -140,14 +138,14 @@ func (e *Event) computeHash() string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-// Seal finalises the event by computing its hash and marking it immutable.
+// Seal 终结事件：计算哈希并标记为不可变。
 func (e *Event) Seal() {
 	e.Hash = e.computeHash()
 }
 
-// ---- typed payloads ----
+// ---- 类型化载荷 ----
 
-// ToolCallPayload is the payload for tool call events.
+// ToolCallPayload 工具调用事件的载荷。
 type ToolCallPayload struct {
 	ToolName   string         `json:"tool_name"`
 	Arguments  map[string]any `json:"arguments,omitempty"`
@@ -157,7 +155,7 @@ type ToolCallPayload struct {
 	RetryCount int            `json:"retry_count,omitempty"`
 }
 
-// LLMCallPayload is the payload for LLM invocation events.
+// LLMCallPayload LLM 调用事件的载荷。
 type LLMCallPayload struct {
 	Model      string     `json:"model"`
 	Provider   string     `json:"provider,omitempty"`
@@ -169,14 +167,14 @@ type LLMCallPayload struct {
 	Cost       float64    `json:"cost,omitempty"`
 }
 
-// TokenUsage tracks token consumption for an LLM call.
+// TokenUsage 记录 LLM 调用的 Token 消耗。
 type TokenUsage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
 	TotalTokens      int `json:"total_tokens"`
 }
 
-// StateTransitionPayload is the payload for state change events.
+// StateTransitionPayload 状态变更事件的载荷。
 type StateTransitionPayload struct {
 	Channel  string `json:"channel"`
 	OldValue any    `json:"old_value,omitempty"`
@@ -184,7 +182,7 @@ type StateTransitionPayload struct {
 	Reducer  string `json:"reducer,omitempty"`
 }
 
-// MemoryWritePayload is the payload for memory operation events.
+// MemoryWritePayload 记忆操作事件的载荷。
 type MemoryWritePayload struct {
 	Store     string  `json:"store"`
 	Operation string  `json:"operation"`
@@ -193,7 +191,7 @@ type MemoryWritePayload struct {
 	Score     float64 `json:"score,omitempty"`
 }
 
-// ApprovalPayload is the payload for approval events.
+// ApprovalPayload 审批事件的载荷。
 type ApprovalPayload struct {
 	RequestID string `json:"request_id"`
 	Action    string `json:"action"`
@@ -202,7 +200,7 @@ type ApprovalPayload struct {
 	LatencyMs int64  `json:"latency_ms,omitempty"`
 }
 
-// SubAgentCallPayload is the payload for sub-agent call events.
+// SubAgentCallPayload 子 Agent 调用事件的载荷。
 type SubAgentCallPayload struct {
 	SubAgentName string `json:"sub_agent_name"`
 	Input        any    `json:"input,omitempty"`
@@ -212,13 +210,13 @@ type SubAgentCallPayload struct {
 	Error        string `json:"error,omitempty"`
 }
 
-// SessionValuePayload is the payload for session value events.
+// SessionValuePayload 会话值事件的载荷。
 type SessionValuePayload struct {
 	Key   string `json:"key"`
 	Value any    `json:"value,omitempty"`
 }
 
-// SessionTransferPayload is the payload for session transfer events.
+// SessionTransferPayload 会话转移事件的载荷。
 type SessionTransferPayload struct {
 	FromAgent string `json:"from_agent"`
 	ToAgent   string `json:"to_agent"`

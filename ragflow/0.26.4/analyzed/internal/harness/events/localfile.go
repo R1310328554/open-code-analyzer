@@ -14,24 +14,24 @@ import (
 	"time"
 )
 
+// localfile.go — 本地 JSONL 文件事件存储：单实例持久化，支持分段轮转。
+
 const (
-	defaultMaxSegmentSize int64 = 64 * 1024 * 1024 // 64 MB
+	defaultMaxSegmentSize int64 = 64 * 1024 * 1024 // 每段最大 64 MB
 	segmentFilePattern          = "events_*.jsonl"
 )
 
-// LocalFileEventStore persists events to JSONL files with automatic
-// segment rotation. Suitable for single-instance durable storage.
+// LocalFileEventStore 将事件持久化到 JSONL 文件，自动分段轮转，适合单实例部署。
 type LocalFileEventStore struct {
 	dir     string
-	segment int   // current write segment number
-	maxSize int64 // max bytes per segment before rotation
+	segment int          // 当前写入段编号
+	maxSize int64        // 段大小上限，超出则轮转
 	mu      sync.RWMutex
-	cached  []*Event // in-memory cache for current segment
+	cached  []*Event     // 当前段内存缓存
 	clock   atomic.Uint64
 }
 
-// NewLocalFileEventStore creates or opens an event store at the given directory.
-// Existing segment files are loaded into memory on startup.
+// NewLocalFileEventStore 在指定目录创建或打开事件存储，启动时加载已有分段。
 func NewLocalFileEventStore(dir string) (*LocalFileEventStore, error) {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, fmt.Errorf("create events dir: %w", err)
@@ -44,7 +44,6 @@ func NewLocalFileEventStore(dir string) (*LocalFileEventStore, error) {
 		cached:  make([]*Event, 0),
 	}
 
-	// Load existing segments to find the highest segment number.
 	if err := s.loadExisting(); err != nil {
 		return nil, fmt.Errorf("load existing segments: %w", err)
 	}
@@ -52,7 +51,7 @@ func NewLocalFileEventStore(dir string) (*LocalFileEventStore, error) {
 	return s, nil
 }
 
-// loadExisting scans the directory for existing segment files and loads them.
+// loadExisting 扫描目录中已有分段文件并加载到内存。
 func (s *LocalFileEventStore) loadExisting() error {
 	entries, err := os.ReadDir(s.dir)
 	if err != nil {
@@ -66,7 +65,6 @@ func (s *LocalFileEventStore) loadExisting() error {
 		}
 	}
 
-	// Sort by name (lexicographic works for timestamp-based names).
 	sort.Strings(segmentFiles)
 
 	allEvents := make([]*Event, 0)
@@ -93,7 +91,7 @@ func (s *LocalFileEventStore) loadExisting() error {
 	return nil
 }
 
-// readSegmentFile reads all events from a JSONL file.
+// readSegmentFile 从 JSONL 文件读取全部事件。
 func readSegmentFile(path string) ([]*Event, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -103,7 +101,7 @@ func readSegmentFile(path string) ([]*Event, error) {
 
 	var events []*Event
 	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 1024*1024), 1024*1024) // 1 MB line buffer
+	scanner.Buffer(make([]byte, 1024*1024), 1024*1024) // 1 MB 行缓冲
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
@@ -118,7 +116,7 @@ func readSegmentFile(path string) ([]*Event, error) {
 	return events, scanner.Err()
 }
 
-// Append implements EventLog.
+// Append 追加事件到内存缓存并写入当前分段文件。
 func (s *LocalFileEventStore) Append(ctx context.Context, events ...*Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -130,7 +128,6 @@ func (s *LocalFileEventStore) Append(ctx context.Context, events ...*Event) erro
 		ev.Seal()
 		s.cached = append(s.cached, ev)
 
-		// Check if we need to rotate segment.
 		if err := s.appendToFileLocked(ev); err != nil {
 			return err
 		}
@@ -138,13 +135,11 @@ func (s *LocalFileEventStore) Append(ctx context.Context, events ...*Event) erro
 	return nil
 }
 
-// appendToFileLocked writes a single event to the current segment file.
-// Must be called with s.mu held.
+// appendToFileLocked 将单条事件追加到当前分段；调用方须持有 s.mu。
 func (s *LocalFileEventStore) appendToFileLocked(ev *Event) error {
 	fname := fmt.Sprintf("events_%s_%04d.jsonl", ev.TraceID, s.segment)
 	fpath := filepath.Join(s.dir, fname)
 
-	// Check segment size and rotate if needed.
 	if info, err := os.Stat(fpath); err == nil && info.Size() > s.maxSize {
 		s.segment++
 		fname = fmt.Sprintf("events_%s_%04d.jsonl", ev.TraceID, s.segment)
@@ -171,7 +166,7 @@ func (s *LocalFileEventStore) appendToFileLocked(ev *Event) error {
 	return nil
 }
 
-// Stream implements EventLog.
+// Stream 返回匹配过滤器的事件迭代器。
 func (s *LocalFileEventStore) Stream(ctx context.Context, filter EventFilter) EventIterator {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -185,7 +180,7 @@ func (s *LocalFileEventStore) Stream(ctx context.Context, filter EventFilter) Ev
 	return &sliceIterator{events: filtered, pos: 0}
 }
 
-// Get implements EventLog.
+// Get 按 ID 检索事件。
 func (s *LocalFileEventStore) Get(ctx context.Context, id EventID) (*Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -198,7 +193,7 @@ func (s *LocalFileEventStore) Get(ctx context.Context, id EventID) (*Event, erro
 	return nil, nil
 }
 
-// Range implements EventLog.
+// Range 返回逻辑时钟区间内匹配过滤器的事件。
 func (s *LocalFileEventStore) Range(ctx context.Context, from, to uint64, filter EventFilter) ([]*Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -218,7 +213,7 @@ func (s *LocalFileEventStore) Range(ctx context.Context, from, to uint64, filter
 	return result, nil
 }
 
-// Seek implements EventLog.
+// Seek 从指定逻辑时钟位置开始迭代。
 func (s *LocalFileEventStore) Seek(ctx context.Context, clock uint64) (EventIterator, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -234,14 +229,14 @@ func (s *LocalFileEventStore) Seek(ctx context.Context, clock uint64) (EventIter
 	return &sliceIterator{events: s.cached[pos:], pos: 0}, nil
 }
 
-// Length implements EventLog.
+// Length 返回缓存中的事件总数。
 func (s *LocalFileEventStore) Length(ctx context.Context) (uint64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return uint64(len(s.cached)), nil
 }
 
-// CreateSnapshot implements EventStore.
+// CreateSnapshot 序列化当前缓存为快照。
 func (s *LocalFileEventStore) CreateSnapshot(ctx context.Context, traceID string) (*Snapshot, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -260,23 +255,19 @@ func (s *LocalFileEventStore) CreateSnapshot(ctx context.Context, traceID string
 	}, nil
 }
 
-// RestoreSnapshot implements EventStore.
+// RestoreSnapshot 从快照恢复；本地文件存储直接 Seek 到起点。
 func (s *LocalFileEventStore) RestoreSnapshot(ctx context.Context, snapshotID string) (EventIterator, error) {
 	return s.Seek(ctx, 0)
 }
 
-// Subscribe implements EventStore.
+// Subscribe 本地文件存储不支持实时订阅；分布式场景请用 NATSEventStore。
 func (s *LocalFileEventStore) Subscribe(ctx context.Context, filter EventFilter) (<-chan *Event, error) {
-	// LocalFileEventStore does not support real-time subscriptions.
-	// Use NATSEventStore for distributed scenarios that need Subscribe.
 	ch := make(chan *Event)
 	close(ch)
 	return ch, nil
 }
 
-// GC implements EventStore.
-// Retained events are rewritten to fresh segment files; only segments whose
-// entire content predates the cutoff are deleted.
+// GC 删除早于保留期的事件，并重写保留事件到新分段文件。
 func (s *LocalFileEventStore) GC(ctx context.Context, retention time.Duration) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -291,8 +282,6 @@ func (s *LocalFileEventStore) GC(ctx context.Context, retention time.Duration) e
 	s.cached = keep
 	s.segment = 0
 
-	// Remove all old segment files so the retained events can be rewritten
-	// into fresh files below.
 	entries, _ := os.ReadDir(s.dir)
 	for _, entry := range entries {
 		if !entry.IsDir() && strings.HasPrefix(entry.Name(), "events_") && strings.HasSuffix(entry.Name(), ".jsonl") {
@@ -300,9 +289,6 @@ func (s *LocalFileEventStore) GC(ctx context.Context, retention time.Duration) e
 		}
 	}
 
-	// Rewrite retained events into fresh segment files.
-	// appendToFileLocked is safe to call here — it does not acquire s.mu
-	// (the "Locked" suffix means the caller must hold it).
 	for _, ev := range keep {
 		if err := s.appendToFileLocked(ev); err != nil {
 			return err
