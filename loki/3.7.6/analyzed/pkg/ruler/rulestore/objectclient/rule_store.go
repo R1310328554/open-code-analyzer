@@ -1,5 +1,7 @@
 package objectclient
 
+// objectclient.RuleStore 通过 chunk client.ObjectClient 存取规则 protobuf，对象键格式 rules/<user>/<b64 namespace>/<b64 group>。
+
 import (
 	"bytes"
 	"context"
@@ -19,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/chunk/client"
 )
 
+// 命名使用 URL Base64 避免 Prometheus 规则名中的非法对象存储字符。
 // Object Rule Storage Schema
 // =======================
 // Object Name: "rules/<user_id>/<base64 URL Encoded: namespace>/<base64 URL Encoded: group_name>"
@@ -34,6 +37,7 @@ const (
 )
 
 // RuleStore allows cortex rules to be stored using an object store backend.
+// RuleStore 封装 ObjectClient 与 loadConcurrency 并行加载池。
 type RuleStore struct {
 	client          client.ObjectClient
 	loadConcurrency int
@@ -41,6 +45,7 @@ type RuleStore struct {
 	logger log.Logger
 }
 
+// NewRuleStore 由 ruler 模块按 storage 配置构造并注入 logger。
 // NewRuleStore returns a new RuleStore
 func NewRuleStore(client client.ObjectClient, loadConcurrency int, logger log.Logger) *RuleStore {
 	return &RuleStore{
@@ -247,6 +252,7 @@ func (o *RuleStore) DeleteNamespace(ctx context.Context, userID, namespace strin
 	return nil
 }
 
+// generateRuleObjectKey 分段拼接 prefix，空 group 时用于 List 前缀查询。
 func generateRuleObjectKey(userID, namespace, groupName string) string {
 	if userID == "" {
 		return rulePrefix
@@ -287,3 +293,4 @@ func decomposeRuleObjectKey(objectKey string) (userID, namespace, groupName stri
 
 	return components[1], string(ns), string(gr)
 }
+// decomposeRuleObjectKey 解析四段路径还原 user、namespace 与 group 名。

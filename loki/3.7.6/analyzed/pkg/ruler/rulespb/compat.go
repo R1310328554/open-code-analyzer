@@ -1,5 +1,7 @@
 package rulespb
 
+// rulespb compat 在 rulefmt.RuleGroup 与 protobuf RuleGroupDesc 间双向转换，供 ruler API 与对象存储持久化共用同一 schema。
+
 import (
 	"time"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto" //lint:ignore faillint allowed to import other protobuf
 )
 
+// ToProto 将 YAML 解析后的 rulefmt 转为含 User/Namespace 的 RuleGroupDesc。
 // ToProto transforms a formatted prometheus rulegroup to a rule group protobuf
 func ToProto(user string, namespace string, rl rulefmt.RuleGroup) *RuleGroupDesc {
 	rg := RuleGroupDesc{
@@ -39,6 +42,7 @@ func formattedRuleToProto(rls []rulefmt.Rule) []*RuleDesc {
 	return rules
 }
 
+// FromProto 从 RuleGroupDesc 还原 rulefmt.RuleGroup 供 Prometheus Manager 加载。
 // FromProto generates a rulefmt RuleGroup
 func FromProto(rg *RuleGroupDesc) rulefmt.RuleGroup {
 	formattedRuleGroup := rulefmt.RuleGroup{
@@ -69,3 +73,4 @@ func FromProto(rg *RuleGroupDesc) rulefmt.RuleGroup {
 
 	return formattedRuleGroup
 }
+// formattedRuleToProto 通过 logproto 标签适配器转换 Labels 与 Annotations。

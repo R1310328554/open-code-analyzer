@@ -1,5 +1,7 @@
 package ruler
 
+// walRegistry 为 ruler recording 规则提供 per-tenant WAL + remote-write 存储，实现 storage.Appendable 与租户级配置刷新。
+
 import (
 	"context"
 	"fmt"
@@ -31,6 +33,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/ruler/storage/wal"
 )
 
+// walRegistry 通过 instance.BasicManager 管理各租户 WAL 实例与 WALCleaner。
 type walRegistry struct {
 	logger  log.Logger
 	manager instance.Manager
@@ -52,6 +55,7 @@ type storageRegistry interface {
 	configureTenantStorage(tenant string)
 }
 
+// newWALRegistry 在 RemoteWrite 未启用时返回 nullRegistry 丢弃样本。
 func newWALRegistry(logger log.Logger, reg prometheus.Registerer, config Config, overrides RulesLimits) storageRegistry {
 	if !config.RemoteWrite.Enabled {
 		return nullRegistry{}
@@ -129,6 +133,7 @@ func (r *walRegistry) get(tenant string) storage.Storage {
 	return i.Storage()
 }
 
+// Appender 按 ConfigRefreshPeriod 刷新租户 remote-write 并返回实例 Appender。
 func (r *walRegistry) Appender(ctx context.Context) storage.Appender {
 	// concurrency-safe retrieval of remote-write config for this tenant, using the global remote-write for defaults
 	r.overridesMu.Lock()
@@ -235,6 +240,7 @@ func (r *walRegistry) getTenantConfig(tenant string) (instance.Config, error) {
 	return conf, nil
 }
 
+// getTenantRemoteWriteConfig 合并 limits 覆盖 URL、队列、SigV4 与 relabel。
 func (r *walRegistry) getTenantRemoteWriteConfig(tenant string, base RemoteWriteConfig) (*RemoteWriteConfig, error) {
 	overrides, err := base.Clone()
 	if err != nil {
@@ -387,6 +393,7 @@ func (r *walRegistry) createRelabelConfigs(tenant string) ([]*relabel.Config, er
 
 var errNotReady = errors.New("appender not ready")
 
+// notReadyAppender 在 WAL 实例未就绪时返回 errNotReady。
 type notReadyAppender struct{}
 
 func (n notReadyAppender) Append(_ storage.SeriesRef, _ labels.Labels, _ int64, _ float64) (storage.SeriesRef, error) {
@@ -502,3 +509,4 @@ func (n nullRegistry) Appender(_ context.Context) storage.Appender { return disc
 func (n nullRegistry) isReady(_ string) bool                       { return true }
 func (n nullRegistry) stop()                                       {}
 func (n nullRegistry) configureTenantStorage(_ string)             {}
+// tenantWALManager.newInstance 按 RulerEnableWALReplay 控制 WAL 重放行为。

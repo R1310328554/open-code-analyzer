@@ -1,5 +1,7 @@
 package bucketclient
 
+// bucketclient 基于 Thanos objstore.Bucket 实现 RuleStore，规则对象键为 rules/<user>/<base64 namespace>/<base64 group>。
+
 import (
 	"bytes"
 	"context"
@@ -34,6 +36,7 @@ var (
 	errEmptyGroupName      = errors.New("empty group name")
 )
 
+// BucketRuleStore 用 PrefixedBucket 与 UserBucketClient 隔离租户与 SSE 配置。
 // BucketRuleStore is used to support the RuleStore interface against an object storage backend. It is implemented
 // using the Thanos objstore.Bucket interface
 type BucketRuleStore struct {
@@ -164,6 +167,7 @@ func (b *BucketRuleStore) ListRuleGroupsForUserAndNamespace(ctx context.Context,
 	return groupList, nil
 }
 
+// LoadRuleGroups 用 loadConcurrency 个 worker 并行下载并 proto.Unmarshal 各组。
 // LoadRuleGroups implements rules.RuleStore.
 func (b *BucketRuleStore) LoadRuleGroups(ctx context.Context, groupsToLoad map[string]rulespb.RuleGroupList) error {
 	ch := make(chan *rulespb.RuleGroupDesc)
@@ -290,6 +294,7 @@ func parseRuleGroupObjectKeyWithUser(key string) (user, namespace, group string,
 	return
 }
 
+// parseRuleGroupObjectKey 对 namespace/group 做 URL Base64 解码校验非空。
 // parseRuleGroupObjectKey parses a bucket object key in the format "<namespace>/<rules group>".
 func parseRuleGroupObjectKey(key string) (namespace, group string, _ error) {
 	parts := strings.Split(key, objstore.DirDelim)
@@ -317,3 +322,4 @@ func parseRuleGroupObjectKey(key string) (namespace, group string, _ error) {
 
 	return string(decodedNamespace), string(decodedGroup), nil
 }
+// List 方法可仅返回元数据，完整规则需后续 LoadRuleGroups 填充。

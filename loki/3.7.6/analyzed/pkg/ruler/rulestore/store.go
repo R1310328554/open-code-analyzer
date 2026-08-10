@@ -1,5 +1,7 @@
 package rulestore
 
+// rulestore 包定义 RuleStore 接口与 ErrGroupNotFound 等错误，List 可返回仅含元数据的组，完整规则需 LoadRuleGroups。
+
 import (
 	"context"
 	"errors"
@@ -16,10 +18,12 @@ var (
 	ErrUserNotFound = errors.New("no rule groups found for user")
 )
 
+// RuleStore 抽象 ruler 规则 CRUD：按 user/namespace 列表、加载、读写与删除。
 // RuleStore is used to store and retrieve rules.
 // Methods starting with "List" prefix may return partially loaded groups: with only group Name, Namespace and User fields set.
 // To make sure that rules within each group are loaded, client must use LoadRuleGroups method.
 type RuleStore interface {
+// ListAllUsers 返回配置过规则的全部租户 ID。
 	// ListAllUsers returns all users with rule groups configured.
 	ListAllUsers(ctx context.Context) ([]string, error)
 
@@ -30,6 +34,7 @@ type RuleStore interface {
 	// If namespace is empty, groups from all namespaces are returned.
 	ListRuleGroupsForUserAndNamespace(ctx context.Context, userID string, namespace string) (rulespb.RuleGroupList, error)
 
+// LoadRuleGroups 填充 List 返回的 RuleGroupDesc.Rules 字段。
 	// LoadRuleGroups loads rules for each rule group in the map.
 	// Parameter with groups to load *MUST* be coming from one of the List methods.
 	// Reason is that some implementations don't do anything, since their List method already loads the rules.
@@ -45,3 +50,4 @@ type RuleStore interface {
 	// If namespace is empty, deletes all rule groups for user.
 	DeleteNamespace(ctx context.Context, userID, namespace string) error
 }
+// ErrGroupNamespaceNotFound 与 ErrUserNotFound 供 API 层区分 404 场景。

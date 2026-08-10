@@ -1,5 +1,7 @@
 package ruler
 
+// GroupLoader 实现 Prometheus rules.GroupLoader，用 Loki logql/syntax 解析规则表达式，从 YAML 文件加载 rulefmt.RuleGroups。
+
 import (
 	"bytes"
 	"os"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logql/syntax"
 )
 
+// GroupLoader 零值可用，Parse 走 syntax.ParseExpr 并适配 parser.Expr。
 type GroupLoader struct{}
 
 func (GroupLoader) Parse(query string) (parser.Expr, error) {
@@ -26,6 +29,7 @@ func (GroupLoader) Parse(query string) (parser.Expr, error) {
 	return exprAdapter{expr}, nil
 }
 
+// Load 读文件后 parseRules，KnownFields(true) 拒绝未知 YAML 字段。
 func (g GroupLoader) Load(identifier string, _ bool, _ model.ValidationScheme) (*rulefmt.RuleGroups, []error) {
 	b, err := os.ReadFile(identifier)
 	if err != nil {
@@ -58,6 +62,7 @@ func (GroupLoader) parseRules(content []byte) (*rulefmt.RuleGroups, []error) {
 	return &groups, ValidateGroups(groups.Groups...)
 }
 
+// CachingGroupLoader 缓存已加载文件内容，Prune 移除不再引用的 identifier。
 type CachingGroupLoader struct {
 	loader rules.GroupLoader
 	cache  map[string]*rulefmt.RuleGroups
@@ -101,6 +106,7 @@ func (l *CachingGroupLoader) Prune(toKeep []string) {
 	}
 }
 
+// AlertingRules 展平 cache 中全部 alerting 规则供 MemStore 等组件使用。
 func (l *CachingGroupLoader) AlertingRules() []rulefmt.Rule {
 	l.mtx.RLock()
 	defer l.mtx.RUnlock()
@@ -127,3 +133,4 @@ func (l *CachingGroupLoader) AlertingRules() []rulefmt.Rule {
 func (l *CachingGroupLoader) Parse(query string) (parser.Expr, error) {
 	return l.loader.Parse(query)
 }
+// ValidateGroups 在 parseRules 成功后校验规则组格式与 LogQL 语法。

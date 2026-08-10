@@ -3,6 +3,8 @@
 
 package rulespb
 
+// rules.pb.go 由 rules.proto 生成，定义 RuleGroupDesc/RuleDesc protobuf 消息，持久化 ruler 规则组至对象存储或 bucket 后端。
+
 import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -32,6 +34,7 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// RuleGroupDesc 含 name、namespace、interval、rules 与可选 limit/options。
 // RuleGroupDesc is a proto representation of a rule group.
 type RuleGroupDesc struct {
 	Name      string        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -1318,3 +1321,4 @@ var (
 	ErrInvalidLengthRules = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowRules   = fmt.Errorf("proto: integer overflow")
 )
+// RuleDesc 区分 recording（Record）与 alerting（Alert）规则及 for 持续时间。

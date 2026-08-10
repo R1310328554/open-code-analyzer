@@ -1,5 +1,7 @@
 package local
 
+// local 包实现只读 RuleStore：从 cfg.Directory/<userID>/<namespace> 文件加载 YAML 规则，不支持 SetRuleGroup 等写操作。
+
 import (
 	"context"
 	"flag"
@@ -26,9 +28,11 @@ func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.StringVar(&cfg.Directory, prefix+"local.directory", "", "Directory to scan for rules")
 }
 
+// 目录布局为 Directory/user/namespace 单文件，namespace 即文件名。
 // Client expects to load already existing rules located at:
 //
 //	cfg.Directory / userID / namespace
+// Client 使用 promRules.GroupLoader 解析磁盘上的 Prometheus 规则文件。
 type Client struct {
 	cfg    Config
 	loader promRules.GroupLoader
@@ -108,12 +112,14 @@ func (l *Client) ListRuleGroupsForUserAndNamespace(ctx context.Context, userID s
 	return l.loadAllRulesGroupsForUser(ctx, userID)
 }
 
+// LoadRuleGroups 为空操作，List 方法已同步加载全部规则内容。
 func (l *Client) LoadRuleGroups(_ context.Context, _ map[string]rulespb.RuleGroupList) error {
 	// This Client already loads the rules in its List methods, there is nothing left to do here.
 	return nil
 }
 
 // GetRuleGroup implements RuleStore
+// GetRuleGroup/SetRuleGroup/Delete* 均返回 unsupported，本地模式仅扫描目录。
 func (l *Client) GetRuleGroup(_ context.Context, _, _, _ string) (*rulespb.RuleGroupDesc, error) {
 	return nil, errors.New("GetRuleGroup unsupported in rule local store")
 }
@@ -192,3 +198,4 @@ func (l *Client) loadAllRulesGroupsForUserAndNamespace(_ context.Context, userID
 
 	return list, nil
 }
+// loadAllRulesGroupsForUserAndNamespace 调用 ToProto 转为 RuleGroupDesc 列表。

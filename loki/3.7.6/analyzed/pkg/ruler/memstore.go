@@ -1,5 +1,7 @@
 package ruler
 
+// MemStore 为 alerting 规则 RestoreForState 提供内存 synthetic TSDB，缓存 ALERTS_FOR_STATE 序列并定期清理过期样本。
+
 import (
 	"context"
 	"errors"
@@ -30,6 +32,7 @@ const (
 	statusFailure           = "failure"
 )
 
+// ForStateMetric 构造 __name__=ALERTS_FOR_STATE 且 alertname 标签的指标。
 func ForStateMetric(base labels.Labels, alertName string) labels.Labels {
 	b := labels.NewBuilder(base)
 	b.Set(model.MetricNameLabel, AlertForStateMetricName)
@@ -64,6 +67,7 @@ type RuleIter interface {
 	AlertingRules() []rulefmt.Rule
 }
 
+// MemStore 按 alertname 维护 RuleCache，Start 后 run 周期 CleanupOldSamples。
 type MemStore struct {
 	mtx       sync.Mutex
 	userID    string
@@ -94,6 +98,7 @@ func NewMemStore(userID string, queryFunc rules.QueryFunc, metrics *memstoreMetr
 
 }
 
+// Start 注入 RuleIter、关闭 initiated 并启动后台 cleanup goroutine。
 // Calling Start will set the RuleIter, unblock the MemStore, and start the run() function in a separate goroutine.
 func (m *MemStore) Start(iter RuleIter) {
 	m.mgr = iter
@@ -165,6 +170,7 @@ func (m *MemStore) run() {
 	}
 }
 
+// Querier 实现 storage.Queryable，仅用于 for 状态恢复时的 Select 调用。
 // implement storage.Queryable. It is only called with the desired ts as maxtime. Mint is
 // parameterized via the outage tolerance, but since we're synthetically generating these,
 // we only care about the desired time.
@@ -309,6 +315,7 @@ func (*memStoreQuerier) LabelNames(_ context.Context, _ *storage.LabelHints, _ .
 // Close releases the resources of the Querier.
 func (*memStoreQuerier) Close() error { return nil }
 
+// RuleCache 按时间戳与 labels.StableHash 索引 promql.Sample。
 type RuleCache struct {
 	mtx     sync.Mutex
 	metrics *memstoreMetrics
@@ -372,3 +379,4 @@ func (c *RuleCache) CleanupOldSamples(olderThan time.Time) (empty bool) {
 	}
 	return len(c.data) == 0
 }
+// memStoreQuerier.Select 未命中缓存时 queryFunc 回溯 for 时长并重算 forStateVec。

@@ -1,5 +1,7 @@
 package ruler
 
+// RemoteEvaluator 通过 httpgrpc 向 query-frontend 发起 /loki/api/v1/query，EvalModeRemote 模式下规则求值与 querier 路径一致。
+
 // SPDX-License-Identifier: AGPL-3.0-only
 // Provenance-includes-location: https://github.com/grafana/mimir/pull/1536/
 // Provenance-includes-license: Apache-2.0
@@ -67,6 +69,7 @@ type metrics struct {
 	failedEvals     *prometheus.CounterVec
 }
 
+// RemoteEvaluator 含 HTTPClient、租户 limits 与 remote_eval Prometheus 指标。
 type RemoteEvaluator struct {
 	client    httpgrpc.HTTPClient
 	overrides RulesLimits
@@ -80,6 +83,7 @@ type RemoteEvaluator struct {
 	metrics *metrics
 }
 
+// NewRemoteEvaluator 注册 request_duration、response_bytes 与 success/failure 计数。
 func NewRemoteEvaluator(client httpgrpc.HTTPClient, overrides RulesLimits, logger log.Logger, registerer prometheus.Registerer) (*RemoteEvaluator, error) {
 	return &RemoteEvaluator{
 		client:         client,
@@ -147,6 +151,7 @@ type queryResponse struct {
 	err error
 }
 
+// Eval 按租户 timeout 在 goroutine 中 Query，超时计 failure_total{reason=timeout}。
 func (r *RemoteEvaluator) Eval(ctx context.Context, qs string, now time.Time) (*logqlmodel.Result, error) {
 	orgID, err := user.ExtractOrgID(ctx)
 	if err != nil {
@@ -172,6 +177,7 @@ func (r *RemoteEvaluator) Eval(ctx context.Context, qs string, now time.Time) (*
 	}
 }
 
+// DialQueryFrontend 建立 gRPC 连接并包装为 httpgrpc.HTTPClient。
 // DialQueryFrontend creates and initializes a new httpgrpc.HTTPClient taking a QueryFrontendConfig configuration.
 func DialQueryFrontend(cfg *QueryFrontendConfig) (httpgrpc.HTTPClient, error) {
 	tlsDialOptions, err := cfg.TLS.GetGRPCDialOptions(cfg.TLSEnabled)
@@ -355,6 +361,7 @@ func metricToLabels(m model.Metric) labels.Labels {
 	return b.Labels()
 }
 
+// QueryFrontendConfig 配置 ruler.evaluation.query-frontend 地址与 TLS。
 // QueryFrontendConfig defines query-frontend transport configuration.
 type QueryFrontendConfig struct {
 	// The address of the remote querier to connect to.
@@ -373,3 +380,4 @@ func (c *QueryFrontendConfig) RegisterFlags(f *flag.FlagSet) {
 
 	c.TLS.RegisterFlagsWithPrefix("ruler.evaluation.query-frontend", f)
 }
+// decodeResponse 仅支持 vector/scalar 结果，metricToLabels 保证标签排序。
