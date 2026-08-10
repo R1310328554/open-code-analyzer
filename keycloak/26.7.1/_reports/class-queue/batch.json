@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:19:26Z",
-  "files": [
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/OutboxEntryStatus.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/ProtocolMapperEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/RealmAttributeEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/RealmAttributes.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/RealmEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/RealmLocalizationTextsEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/RequiredActionProviderEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/RequiredCredentialEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/RevokedTokenEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/RoleAttributeEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/RoleEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserAttributeEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserConsentClientScopeEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserConsentEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserEntity.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4228,
-  "done": 1755
+  "done": 1770
 }

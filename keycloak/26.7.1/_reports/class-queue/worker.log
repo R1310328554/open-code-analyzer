@@ -1723,3 +1723,18 @@
 2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/JpaUserSessionPersisterProvider.java wave59b user fed entities + JPA session persisters
 2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/JpaUserSessionPersisterProviderFactory.java wave59b user fed entities + JPA session persisters
 2026-08-10T08:21:44Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/session/PersistentClientSessionEntity.java wave59b user fed entities + JPA session persisters
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/OutboxEntryStatus.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/ProtocolMapperEntity.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/RealmAttributeEntity.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/RealmAttributes.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/RealmEntity.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/RealmLocalizationTextsEntity.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/RequiredActionProviderEntity.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/RequiredCredentialEntity.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/RevokedTokenEntity.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/RoleAttributeEntity.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/RoleEntity.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserAttributeEntity.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserConsentClientScopeEntity.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserConsentEntity.java wave59a JPA entities realm/role/user/consent/outbox
+2026-08-10T08:22:15Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/UserEntity.java wave59a JPA entities realm/role/user/consent/outbox
