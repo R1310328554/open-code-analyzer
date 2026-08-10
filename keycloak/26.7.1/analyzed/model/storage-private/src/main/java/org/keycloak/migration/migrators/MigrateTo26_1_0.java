@@ -23,11 +23,13 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 升级至 26.1.0 的域级迁移器：添加 OIDC {@code service_account} 客户端作用域，并迁移认证会话存储。
  *
  * @author rmartinc
  */
 public class MigrateTo26_1_0 extends RealmMigration {
-public static final ModelVersion VERSION = new ModelVersion("26.1.0");
+    /** 目标模型版本 26.1.0。 */
+    public static final ModelVersion VERSION = new ModelVersion("26.1.0");
 
     @Override
     public ModelVersion getVersion() {
@@ -36,7 +38,7 @@ public static final ModelVersion VERSION = new ModelVersion("26.1.0");
 
     @Override
     public void migrateRealm(KeycloakSession session, RealmModel realm) {
-        // add the new service_account scope to the realm
+        // 向域添加新的 service_account 客户端作用域
         MigrationProvider migrationProvider = session.getProvider(MigrationProvider.class);
         migrationProvider.addOIDCServiceAccountClientScope(realm);
 

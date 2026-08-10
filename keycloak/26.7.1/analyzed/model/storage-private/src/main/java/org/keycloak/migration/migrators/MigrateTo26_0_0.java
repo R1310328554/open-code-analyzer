@@ -25,8 +25,13 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserSessionProvider;
 
+/**
+ * 升级至 26.0.0 的域级迁移器：将用户会话序列化从 jboss-marshalling 迁移至 Infinispan Protostream，
+ * 并为 admin-console/admin-cli 启用轻量访问令牌与全作用域。
+ */
 public class MigrateTo26_0_0 extends RealmMigration {
 
+    /** 目标模型版本 26.0.0。 */
     public static final ModelVersion VERSION = new ModelVersion("26.0.0");
 
     @Override
@@ -36,9 +41,9 @@ public class MigrateTo26_0_0 extends RealmMigration {
 
     @Override
     public void migrate(KeycloakSession session) {
-        // migrate jboss-marshalling to infinispan protostream - do this only on upgrade, not on import
+        // 将 jboss-marshalling 迁移至 infinispan protostream——仅在升级时执行，导入时不执行
         UserSessionProvider userSessions = session.sessions();
-        if (userSessions != null) { // can be null in the test suite.
+        if (userSessions != null) { // 测试套件中可能为 null
             userSessions.migrate(VERSION.toString());
         }
 

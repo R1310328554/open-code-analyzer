@@ -23,16 +23,21 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 升级至 1.9.0 的模型迁移器：更新 master 管理域的 HTML 显示名称样式。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo1_9_0 implements Migration {
 
+    /** 目标模型版本 1.9.0。 */
     public static final ModelVersion VERSION = new ModelVersion("1.9.0");
 
+    @Override
     public ModelVersion getVersion() {
         return VERSION;
     }
 
+    /** 将 admin 域的旧版 Keycloak 粗体 HTML 标题替换为新版 logo 容器结构。 */
     public void migrate(KeycloakSession session) {
         RealmModel realm = session.realms().getRealmByName(Config.getAdminRealm());
         if (realm != null && realm.getDisplayNameHtml() != null && realm.getDisplayNameHtml().equals("<strong>Keycloak</strong>")) {

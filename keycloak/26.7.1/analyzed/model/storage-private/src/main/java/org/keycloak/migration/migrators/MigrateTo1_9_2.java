@@ -26,14 +26,20 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.representations.idm.RealmRepresentation;
 
+/**
+ * 升级至 1.9.2 的模型迁移器：为各域浏览器安全响应头补充 {@code X-Content-Type-Options: nosniff}。
+ */
 public class MigrateTo1_9_2 implements Migration {
 
+    /** 目标模型版本 1.9.2。 */
     public static final ModelVersion VERSION = new ModelVersion("1.9.2");
 
+    @Override
     public ModelVersion getVersion() {
         return VERSION;
     }
 
+    /** 遍历全部域并更新浏览器安全头。 */
     public void migrate(KeycloakSession session) {
         session.realms().getRealmsStream().forEach(this::migrateRealm);
     }
@@ -43,6 +49,7 @@ public class MigrateTo1_9_2 implements Migration {
         migrateRealm(realm);
     }
 
+    /** 在已有浏览器安全头配置中追加 {@code xContentTypeOptions=nosniff}。 */
     protected void migrateRealm(RealmModel realm) {
         if (realm.getBrowserSecurityHeaders() != null) {
 

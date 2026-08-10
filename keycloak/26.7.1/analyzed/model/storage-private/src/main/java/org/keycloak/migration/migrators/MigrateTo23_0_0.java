@@ -30,12 +30,17 @@ import org.keycloak.userprofile.UserProfileProvider;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 升级至 23.0.0 的域级迁移器：合并分片式用户配置组件为单一 JSON，并移除注册表单中的 profile 执行器。
+ */
 public class MigrateTo23_0_0 extends RealmMigration {
 
     private static final Logger LOG = Logger.getLogger(MigrateTo23_0_0.class);
 
+    /** 目标模型版本 23.0.0。 */
     public static final ModelVersion VERSION = new ModelVersion("23.0.0");
 
+    /** 域属性：是否启用声明式用户配置（迁移前）。 */
     private static final String USER_PROFILE_ENABLED_PROP = "userProfileEnabled";
     private static final String UP_PIECES_COUNT_COMPONENT_CONFIG_KEY = "config-pieces-count";
     private static final String UP_PIECE_COMPONENT_CONFIG_KEY_BASE = "config-piece-";
@@ -47,6 +52,10 @@ public class MigrateTo23_0_0 extends RealmMigration {
         removeRegistrationProfileFormExecution(realm);
     }
 
+    /**
+     * 将旧版分片存储的 {@link UserProfileProvider} 组件配置合并为 {@code kc.user.profile.config} 单键。
+     * 若分片数为 0 则移除空组件。
+     */
     private void updateUserProfileConfig(RealmModel realm) {
         if (realm.getAttribute(USER_PROFILE_ENABLED_PROP, Boolean.FALSE)) {
 
@@ -78,6 +87,7 @@ public class MigrateTo23_0_0 extends RealmMigration {
         }
     }
 
+    /** 从所有表单型注册流中移除 {@code registration-profile-action} 执行器。 */
     private void removeRegistrationProfileFormExecution(RealmModel realm) {
         realm.getAuthenticationFlowsStream()
                 .filter(flow -> AuthenticationFlow.FORM_FLOW.equals(flow.getProviderId()))

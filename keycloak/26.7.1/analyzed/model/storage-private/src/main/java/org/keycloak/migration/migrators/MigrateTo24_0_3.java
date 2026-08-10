@@ -27,12 +27,15 @@ import org.keycloak.models.utils.DefaultRequiredActions;
 import org.jboss.logging.Logger;
 
 /**
+ * 升级至 24.0.3 的域级迁移器：为各域注册「删除凭证」必需操作。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo24_0_3 extends RealmMigration {
 
     private static final Logger LOG = Logger.getLogger(MigrateTo24_0_3.class);
 
+    /** 目标模型版本 24.0.3。 */
     public static final ModelVersion VERSION = new ModelVersion("24.0.3");
 
     @Override

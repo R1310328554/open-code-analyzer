@@ -25,10 +25,13 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.utils.DefaultRequiredActions;
 
 /**
+ * 升级至 26.3.0 的域级迁移器：为各域注册 IdP 账户链接必需操作。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo26_3_0 extends RealmMigration {
 
+    /** 目标模型版本 26.3.0。 */
     public static final ModelVersion VERSION = new ModelVersion("26.3.0");
 
     @Override

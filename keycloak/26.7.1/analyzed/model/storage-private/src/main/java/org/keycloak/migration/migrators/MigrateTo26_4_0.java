@@ -24,8 +24,12 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserSessionProvider;
 
+/**
+ * 升级至 26.4.0 的域级迁移器：触发 {@link UserSessionProvider} 会话存储格式迁移（域级无额外变更）。
+ */
 public class MigrateTo26_4_0 extends RealmMigration {
 
+    /** 目标模型版本 26.4.0。 */
     public static final ModelVersion VERSION = new ModelVersion("26.4.0");
 
     @Override

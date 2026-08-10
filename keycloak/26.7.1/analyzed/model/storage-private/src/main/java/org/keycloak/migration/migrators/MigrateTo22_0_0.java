@@ -30,12 +30,16 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.jboss.logging.Logger;
 
 /**
+ * 升级至 22.0.0 的域级迁移器：移除已废弃的 HTTP Challenge 认证流，并在导入时清理 RH-SSO 主题引用。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo22_0_0 extends RealmMigration {
 
+    /** 目标模型版本 22.0.0。 */
     public static final ModelVersion VERSION = new ModelVersion("22.0.0");
 
+    /** 待删除的 HTTP Challenge 认证流别名。 */
     public static final String HTTP_CHALLENGE_FLOW = "http challenge";
 
     private static final Logger LOG = Logger.getLogger(MigrateTo22_0_0.class);
@@ -43,7 +47,7 @@ public class MigrateTo22_0_0 extends RealmMigration {
     @Override
     public void migrateRealm(KeycloakSession session, RealmModel realm) {
         removeHttpChallengeFlow(session, realm);
-        //login, account, email themes are handled by JpaUpdate22_0_0_RemoveRhssoThemes
+        // login、account、email 主题由 JpaUpdate22_0_0_RemoveRhssoThemes 处理
     }
 
     @Override
@@ -55,6 +59,7 @@ public class MigrateTo22_0_0 extends RealmMigration {
         updateClientAttributes(realm);
     }
 
+    /** 深度删除 http challenge 流；若仍被引用则记录错误并抛出 {@link ModelException}。 */
     private void removeHttpChallengeFlow(KeycloakSession session, RealmModel realm) {
         AuthenticationFlowModel httpChallenge = realm.getFlowByAlias(HTTP_CHALLENGE_FLOW);
         if (httpChallenge == null) return;
@@ -69,6 +74,7 @@ public class MigrateTo22_0_0 extends RealmMigration {
         }
     }
 
+    /** 将 legacy account 主题迁移至 keycloak.v2。 */
     private void updateAccountTheme(RealmModel realm) {
         String accountTheme = realm.getAccountTheme();
         if ("keycloak".equals(accountTheme) || "rh-sso".equals(accountTheme) || "rh-sso.v2".equals(accountTheme)) {
@@ -76,6 +82,7 @@ public class MigrateTo22_0_0 extends RealmMigration {
         }
     }
 
+    /** 清除 rh-sso 邮件主题（回退默认）。 */
     private void updateEmailTheme(RealmModel realm) {
         String emailTheme = realm.getEmailTheme();
         if ("rh-sso".equals(emailTheme)) {
@@ -83,6 +90,7 @@ public class MigrateTo22_0_0 extends RealmMigration {
         }
     }
 
+    /** 清除 rh-sso 登录主题（回退默认）。 */
     private void updateLoginTheme(RealmModel realm) {
         String loginTheme = realm.getLoginTheme();
         if ("rh-sso".equals(loginTheme)) {
@@ -90,6 +98,7 @@ public class MigrateTo22_0_0 extends RealmMigration {
         }
     }
 
+    /** 移除客户端属性中指向 rh-sso 的 login_theme。 */
     private void updateClientAttributes(RealmModel realm) {
         realm.getClientsStream()
                 .filter(client -> {

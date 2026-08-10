@@ -24,8 +24,12 @@ import org.keycloak.migration.ModelVersion;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
+/**
+ * 升级至 26.2.0 的域级迁移器：从浏览器安全响应头中移除已废弃的 {@code X-XSS-Protection} 配置项。
+ */
 public class MigrateTo26_2_0 extends RealmMigration {
 
+    /** 目标模型版本 26.2.0。 */
     public static final ModelVersion VERSION = new ModelVersion("26.2.0");
 
     @Override
@@ -35,7 +39,7 @@ public class MigrateTo26_2_0 extends RealmMigration {
 
     @Override
     public void migrateRealm(KeycloakSession session, RealmModel realm) {
-        // Removes _browser_header.xXSSProtection attribute
+        // 移除 _browser_header.xXSSProtection 属性
         var headers = new HashMap<>(realm.getBrowserSecurityHeaders());
         headers.remove("xXSSProtection");
         realm.setBrowserSecurityHeaders(Collections.unmodifiableMap(headers));
