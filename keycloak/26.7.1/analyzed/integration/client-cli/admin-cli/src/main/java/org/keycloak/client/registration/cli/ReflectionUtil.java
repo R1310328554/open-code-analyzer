@@ -37,26 +37,38 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.core.JsonParseException;
 
 /**
+ * 注册 CLI 客户端表示的属性反射工具。
+ * <p>
+ * 通过字段（非 getter/setter）索引支持 {@code --set} 点分路径赋值、
+ * 列表/Map 嵌套操作及 {@code attrs} 命令的类型描述输出。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class ReflectionUtil {
 
+    /** 类型到字段名索引的缓存。 */
     static Map<Class, Map<String, Field>> index = new HashMap<>();
 
+    /** 扫描类型声明字段并填充 {@link #index}。 */
     static void populateAttributesIndex(Class type) {
-        // We are using fields rather than getters / setters
-        // because it seems like JSON mapping sometimes also uses fields as well
-        // This may have to be changed some day due to reliance on Field.setAccessible()
+        // 使用字段而非 getter/setter，因 JSON 映射有时也直接写字段
+        // 未来可能因 Field.setAccessible() 依赖而需调整
         Map<String, Field> map = new HashMap<>();
         Field [] fields  = type.getDeclaredFields();
         for (Field f: fields) {
-            // make sure to also have access to non-public fields
+            // 确保非 public 字段也可访问
             f.setAccessible(true);
             map.put(f.getName(), f);
         }
         index.put(type, map);
     }
 
+    /**
+     * 返回类型的可写属性字段映射（列表/Map 类型返回空映射）。
+     *
+     * @param gtype 类或参数化类型
+     * @return 字段名到 {@link Field} 的映射
+     */
     public static Map<String, Field> getAttrFieldsForType(Type gtype) {
         Class type;
         if (gtype instanceof Class) {
@@ -78,20 +90,31 @@ public class ReflectionUtil {
         return map;
     }
 
+    /** 判断类型是否为 List 或数组。 */
     public static boolean isListType(Class type) {
         return List.class.isAssignableFrom(type) || type.isArray();
     }
 
+    /** 判断是否为 CLI 支持的基本类型（String、数值、布尔）。 */
     public static boolean isBasicType(Type type) {
         return type == String.class || type == Boolean.class || type == boolean.class
                 || type == Integer.class || type == int.class || type == Long.class || type == long.class
                 || type == Float.class || type == float.class || type == Double.class || type == double.class;
     }
 
+    /** 判断类型是否实现 {@link Map}。 */
     public static boolean isMapType(Class type) {
         return Map.class.isAssignableFrom(type);
     }
 
+    /**
+     * 将字符串或数值转换为目标字段类型。
+     *
+     * @param value 源值
+     * @param type 目标类型
+     * @return 转换后的值
+     * @throws IOException JSON 反序列化失败时
+     */
     public static Object convertValueToType(Object value, Class<?> type) throws IOException {
 
         if (value == null) {
@@ -128,6 +151,13 @@ public class ReflectionUtil {
         throw new RuntimeException("Unable to handle type [" + type + "]");
     }
 
+    /**
+     * 按 {@link AttributeOperation} 列表在客户端对象上设置/追加/删除属性。
+     *
+     * @param client 目标客户端表示对象
+     * @param attrs 属性操作序列
+     * @throws AttributeException 未知属性或类型不匹配时
+     */
     public static void setAttributes(Object client, List<AttributeOperation> attrs) {
 
         for (AttributeOperation item: attrs) {
@@ -160,7 +190,7 @@ public class ReflectionUtil {
                         field = fields.get(c.getName());
                     }
                 }
-                // if it's a 'basic' type we directly use setter
+                // 基本类型：直接 field.set
                 type = field == null ? type : field.getType();
                 if (isBasicType(type)) {
                     if (i < cs.size() - 1) {
@@ -323,10 +353,12 @@ public class ReflectionUtil {
         }
     }
 
+    /** 通过无参构造实例化对象类型。 */
     private static Object createNewObject(Class type) throws Exception {
         return type.newInstance();
     }
 
+    /** 创建指定 List 实现类型的空列表实例。 */
     public static List createNewList(Class type) {
 
         if (type == List.class) {
@@ -342,6 +374,13 @@ public class ReflectionUtil {
         }
     }
 
+    /**
+     * 将 JSON 数组字符串解析为指定元素类型的 List。
+     *
+     * @param value 以 {@code [} 开头的 JSON 数组字面量
+     * @param itemType 列表元素类型
+     * @return 转换后的列表
+     */
     public static List convertValueToList(String value, Class itemType) {
         try {
             List result = new LinkedList();
@@ -365,9 +404,15 @@ public class ReflectionUtil {
         }
     }
 
+    /**
+     * 将 {@code source} 中非 null 字段值复制到 {@code dest}（同类型）。
+     *
+     * @param source 源对象
+     * @param dest 目标对象
+     * @param <T> 对象类型
+     */
     public static <T> void merge(T source, T dest) {
-        // Use existing index for type, then iterate over all attributes and
-        // use setter on dest, and getter on source to copy value over
+        // 复用字段索引，逐字段 getter/setter 式复制
         Map<String, Field> fieldMap = getAttrFieldsForType(source.getClass());
         try {
             for (Field field : fieldMap.values()) {
@@ -382,6 +427,13 @@ public class ReflectionUtil {
     }
 
 
+    /**
+     * 列出指定嵌套路径下子属性的 JSON 类型描述（供 {@code attrs} 命令使用）。
+     *
+     * @param type 根类型
+     * @param attr 属性路径键，{@code null} 表示根级
+     * @return 属性名到类型字符串的有序映射
+     */
     public static LinkedHashMap<String, String> getAttributeListWithJSonTypes(Class type, AttributeKey attr) {
 
         LinkedHashMap<String, String> result = new LinkedHashMap<>();
@@ -412,6 +464,14 @@ public class ReflectionUtil {
         return result;
     }
 
+    /**
+     * 按点分路径解析目标 {@link Field}。
+     *
+     * @param type 根类型
+     * @param attr 属性路径
+     * @return 路径末端字段
+     * @throws AttributeException 路径不存在时
+     */
     public static Field resolveField(Class type, AttributeKey attr) {
         Field f = null;
         Type gtype = type;
@@ -435,6 +495,13 @@ public class ReflectionUtil {
         return f;
     }
 
+    /**
+     * 将 Java 类型转换为 {@code attrs} 命令显示的类型字符串（如 {@code string}、{@code array (object)}）。
+     *
+     * @param type 类型，可为 {@code null} 时从 {@code field} 推断
+     * @param field 可选字段（提供泛型信息）
+     * @return 人类可读的类型描述
+     */
     public static String getTypeString(Type type, Field field) {
         if (type == null) {
             if (field == null) {

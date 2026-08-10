@@ -29,6 +29,10 @@ import static org.keycloak.client.registration.cli.ReflectionUtil.isListType;
 import static org.keycloak.client.registration.cli.ReflectionUtil.isMapType;
 
 /**
+ * {@code kcreg attrs} 命令：列出客户端注册文档的可配置属性及类型。
+ * <p>
+ * 支持按 {@link EndpointType} 切换 default/oidc 格式，点分路径查看嵌套子属性。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "attrs", description = "[ATTRIBUTE] [--endpoint TYPE]")
@@ -36,12 +40,15 @@ public class AttrsCmd extends BaseGlobalOptionsCmd {
 
     CommandLine.Model.CommandSpec spec;
 
+    /** 注册端点类型（{@code default}、{@code oidc} 等）。 */
     @Option(names = {"-e", "--endpoint"}, description = "Endpoint type to use")
     protected String endpoint;
 
+    /** 可选属性路径（点分表示法）。 */
     @Parameters(arity = "0..1")
     protected String attr;
 
+    /** 解析端点类型并输出属性列表或单个属性类型信息。 */
     @Override
     protected void process() {
         EndpointType regType = EndpointType.DEFAULT;
@@ -96,7 +103,7 @@ public class AttrsCmd extends BaseGlobalOptionsCmd {
             }
 
             if (!eol) {
-                // add end of line
+                // 输出换行
                 out.println();
             }
         }
@@ -107,6 +114,7 @@ public class AttrsCmd extends BaseGlobalOptionsCmd {
         return usage();
     }
 
+    /** 返回本命令的用法说明。 */
     public static String usage() {
         StringWriter sb = new StringWriter();
         PrintWriter out = new PrintWriter(sb);

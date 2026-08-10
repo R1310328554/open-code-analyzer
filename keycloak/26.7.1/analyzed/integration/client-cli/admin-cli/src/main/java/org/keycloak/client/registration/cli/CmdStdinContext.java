@@ -33,51 +33,76 @@ import static org.keycloak.client.cli.util.IoUtil.readFileOrStdin;
 import static org.keycloak.client.registration.cli.ReflectionUtil.setAttributes;
 
 /**
+ * 从文件或标准输入解析得到的注册 CLI 上下文。
+ * <p>
+ * 封装端点类型、原始内容、{@link ClientRepresentation} 或 {@link OIDCClientRepresentation} 对象，
+ * 并提供属性合并与注册访问令牌读取。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class CmdStdinContext {
 
+    /** 推断或指定的注册端点类型。 */
     private EndpointType regType;
+    /** Keycloak 默认格式的客户端表示（若适用）。 */
     private ClientRepresentation client;
+    /** OIDC 动态注册格式的客户端表示（若适用）。 */
     private OIDCClientRepresentation oidcClient;
+    /** 原始文档内容（JSON 或 SAML XML）。 */
     private String content;
+    /** 参数形似 CLI 选项时的客户端 ID 警告模板。 */
     public static final String CLIENT_OPTION_WARN = "You're using what looks like an OPTION as CLIENT: %s";
+    /** 参数形似 CLI 选项时的令牌警告模板。 */
     public static final String TOKEN_OPTION_WARN = "You're using what looks like an OPTION as TOKEN: %s";
 
+    /** 构造空上下文。 */
     public CmdStdinContext() {}
 
+    /** 返回端点类型。 */
     public EndpointType getEndpointType() {
         return regType;
     }
 
+    /** 设置端点类型。 */
     public void setEndpointType(EndpointType regType) {
         this.regType = regType;
     }
 
+    /** 返回 Keycloak 默认格式客户端对象。 */
     public ClientRepresentation getClient() {
         return client;
     }
 
+    /** 设置 Keycloak 默认格式客户端对象。 */
     public void setClient(ClientRepresentation client) {
         this.client = client;
     }
 
+    /** 返回 OIDC 格式客户端对象。 */
     public OIDCClientRepresentation getOidcClient() {
         return oidcClient;
     }
 
+    /** 设置 OIDC 格式客户端对象。 */
     public void setOidcClient(OIDCClientRepresentation oidcClient) {
         this.oidcClient = oidcClient;
     }
 
+    /** 返回原始文档内容。 */
     public String getContent() {
         return content;
     }
 
+    /** 设置原始文档内容。 */
     public void setContent(String content) {
         this.content = content;
     }
 
+    /**
+     * 从已解析的客户端对象中提取注册访问令牌。
+     *
+     * @return 注册访问令牌，未解析客户端时返回 {@code null}
+     */
     public String getRegistrationAccessToken() {
         if (client != null) {
             return client.getRegistrationAccessToken();
@@ -87,6 +112,15 @@ public class CmdStdinContext {
         return null;
     }
 
+    /**
+     * 从文件或标准输入读取并解析客户端配置文档。
+     * <p>
+     * 未指定 {@code type} 时根据内容前缀自动推断：{@code <} 为 SAML XML，{@code {} 为 JSON。
+     *
+     * @param file 文件路径，{@code -} 表示标准输入
+     * @param type 端点类型，可为 {@code null} 以自动检测
+     * @return 填充完毕的上下文
+     */
     public static CmdStdinContext parseFileOrStdin(String file, EndpointType type) {
     
         String content = readFileOrStdin(file).trim();
@@ -94,13 +128,12 @@ public class CmdStdinContext {
         OIDCClientRepresentation oidcClient = null;
     
         if (type == null) {
-            // guess the correct endpoint from content of the file
+            // 根据文件内容推断正确的端点类型
             if (content.startsWith("<")) {
-                // looks like XML
+                // 形如 XML
                 type = EndpointType.SAML2;
             } else if (content.startsWith("{")) {
-                // looks like JSON?
-                // try parse as ClientRepresentation
+                // 形如 JSON：先尝试 ClientRepresentation
                 try {
                     client = JsonSerialization.readValue(content, ClientRepresentation.class);
                     type = EndpointType.DEFAULT;
@@ -112,7 +145,7 @@ public class CmdStdinContext {
                 }
     
                 if (client == null) {
-                    // try parse as OIDCClientRepresentation
+                    // 再尝试 OIDCClientRepresentation
                     try {
                         oidcClient = JsonSerialization.readValue(content, OIDCClientRepresentation.class);
                         type = EndpointType.OIDC;
@@ -130,7 +163,7 @@ public class CmdStdinContext {
             }
         }
     
-        // check content type, making sure it can be parsed into .json if it's not saml xml
+        // 校验内容类型；非 SAML XML 须能解析为 JSON
         if (content != null) {
             try {
                 if (type == EndpointType.DEFAULT && client == null) {
@@ -155,6 +188,13 @@ public class CmdStdinContext {
         return ctx;
     }
 
+    /**
+     * 将 {@code --set} 属性操作合并到上下文中的客户端表示。
+     *
+     * @param ctx 现有上下文
+     * @param attrs 属性设置/追加/删除操作列表
+     * @return 更新后的上下文（含新 JSON 内容与对象）
+     */
     public static CmdStdinContext mergeAttributes(CmdStdinContext ctx, List<AttributeOperation> attrs) {
         String content = ctx.getContent();
         ClientRepresentation client = ctx.getClient();

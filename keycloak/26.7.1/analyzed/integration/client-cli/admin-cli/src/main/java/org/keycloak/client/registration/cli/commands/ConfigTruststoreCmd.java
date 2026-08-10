@@ -22,11 +22,16 @@ import org.keycloak.client.registration.cli.KcRegMain;
 import picocli.CommandLine.Command;
 
 /**
+ * {@code kcreg config truststore} 子命令：配置 TLS 信任库路径。
+ * <p>
+ * 继承 {@link BaseConfigTruststoreCmd}，供 HTTPS 注册端点校验服务器证书。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "truststore", description = "PATH [ARGUMENTS]")
 public class ConfigTruststoreCmd extends BaseConfigTruststoreCmd {
 
+    /** 绑定注册 CLI 的 {@link KcRegMain#COMMAND_STATE}。 */
     public ConfigTruststoreCmd() {
         super(KcRegMain.COMMAND_STATE);
     }

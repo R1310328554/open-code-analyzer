@@ -19,16 +19,23 @@ import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 import static org.keycloak.client.registration.cli.KcRegMain.CMD;
 
 /**
+ * {@code kcreg config initial-token} 子命令：配置初始访问令牌。
+ * <p>
+ * 用于 {@code create} 命令授权；优先级高于会话凭据，可设置/删除/保留默认 server-realm。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "initial-token", description = "[--server SERVER] --realm REALM [--delete | TOKEN] [ARGUMENTS]")
 public class ConfigInitialTokenCmd extends AbstractAuthOptionsCmd {
 
+    /** 删除已保存的初始访问令牌。 */
     @Option(names = {"-d", "--delete"}, description = "Indicates that initial access token should be removed")
     private boolean delete;
+    /** 写入令牌时不覆盖默认 server 与 realm。 */
     @Option(names = {"-k", "--keep-domain"}, description = "Don't overwrite default server and realm")
     private boolean keepDomain;
 
+    /** 初始访问令牌值（可选，未指定时控制台提示）。 */
     @Parameters(arity = "0..1")
     private String token;
 
@@ -67,7 +74,7 @@ public class ConfigInitialTokenCmd extends AbstractAuthOptionsCmd {
             token = IoUtils.readPasswordFromConsole("Initial Access Token");
         }
 
-        // now update the config
+        // 合并写入配置文件
 
         String initialToken = token;
         saveMergeConfig(config -> {
@@ -92,6 +99,7 @@ public class ConfigInitialTokenCmd extends AbstractAuthOptionsCmd {
         return usage();
     }
 
+    /** 返回 initial-token 子命令用法说明。 */
     public static String usage() {
         StringWriter sb = new StringWriter();
         PrintWriter out = new PrintWriter(sb);

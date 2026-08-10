@@ -17,14 +17,20 @@ import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 import static org.keycloak.client.registration.cli.KcRegMain.CMD;
 
 /**
+ * {@code kcreg config registration-token} 子命令：按 clientId 保存注册访问令牌。
+ * <p>
+ * 供 {@code get}、{@code update}、{@code delete} 等命令授权，优先于会话 access token。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "registration-token", description = "[--server SERVER] --realm REALM --client CLIENT [--delete | TOKEN] [ARGUMENTS]")
 public class ConfigRegistrationTokenCmd extends AbstractAuthOptionsCmd {
 
+    /** 删除指定客户端的注册访问令牌。 */
     @Option(names = {"-d", "--delete"}, description = "Indicates that initial access token should be removed")
     private boolean delete;
 
+    /** 注册访问令牌值（可选，未指定时控制台提示）。 */
     @Parameters(arity = "0..1")
     private String token;
 
@@ -64,7 +70,7 @@ public class ConfigRegistrationTokenCmd extends AbstractAuthOptionsCmd {
             token = IoUtils.readPasswordFromConsole("Registration Access Token");
         }
 
-        // now update the config
+        // 合并写入配置文件
 
         String registrationToken = token;
         saveMergeConfig(config -> {
@@ -84,6 +90,7 @@ public class ConfigRegistrationTokenCmd extends AbstractAuthOptionsCmd {
         return usage();
     }
 
+    /** 返回 registration-token 子命令用法说明。 */
     public static String usage() {
         StringWriter sb = new StringWriter();
         PrintWriter out = new PrintWriter(sb);

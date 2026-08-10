@@ -57,29 +57,41 @@ import static org.keycloak.client.registration.cli.KcRegMain.CMD;
 import static org.keycloak.common.util.IoUtils.readPasswordFromConsole;
 
 /**
+ * {@code kcreg create} 命令：在服务器上注册新客户端。
+ * <p>
+ * 支持从文件/标准输入读取配置、{@code --set} 覆盖属性、多种 {@link EndpointType}，
+ * 并使用初始访问令牌或会话凭据授权；成功后可将注册访问令牌写入配置。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "create", description = "[ARGUMENTS]")
 public class CreateCmd extends AbstractAuthOptionsCmd {
 
+    /** 创建成功后仅输出 clientId。 */
     @Option(names = {"-i", "--clientId"}, description = "After creation only print clientId to standard output")
     protected boolean returnClientId = false;
 
+    /** 注册端点类型 / 文档格式。 */
     @Option(names = {"-e", "--endpoint"}, description = "Endpoint type / document format to use - one of: 'default', 'oidc', 'saml2'", converter = EndpointTypeConverter.class)
     protected EndpointType regType;
 
+    /** 从文件或标准输入（{@code -}）读取客户端 JSON/XML。 */
     @Option(names = {"-f", "--file"}, description = "Read object from file or standard input if FILENAME is set to '-'")
     protected String file;
 
+    /** 创建成功后输出完整客户端配置。 */
     @Option(names = {"-o", "--output"}, description = "After creation output the new client configuration to standard output")
     protected boolean outputClient = false;
 
+    /** JSON 输出不格式化（压缩为一行）。 */
     @Option(names = {"-c", "--compressed"}, description = "Don't pretty print the output")
     protected boolean compressed = false;
 
+    /** {@code --set NAME=VALUE} 原始参数字符串列表。 */
     @Option(names = {"-s", "--set"}, description = "Set a specific attribute NAME to a specified value VALUE")
     List<String> rawSets = new ArrayList<>();
 
+    /** 解析后的属性设置操作列表。 */
     List<AttributeOperation> attrs = new ArrayList<>();
 
     @Override
@@ -102,7 +114,7 @@ public class CreateCmd extends AbstractAuthOptionsCmd {
             throw new IllegalArgumentException("Options -o and -i are mutually exclusive");
         }
 
-        // if --token is specified read it
+        // --token 为 - 时从控制台读取初始访问令牌
         if ("-".equals(externalToken)) {
             externalToken = readPasswordFromConsole("Initial Access Token");
         }
@@ -129,7 +141,7 @@ public class CreateCmd extends AbstractAuthOptionsCmd {
         config = copyWithServerInfo(config);
 
         if (externalToken == null) {
-            // if initial token is not set, try use the one from configuration
+            // 未指定 -t 时尝试使用配置文件中的初始令牌
             externalToken = config.sessionRealmConfigData().getInitialToken();
         }
 
@@ -177,6 +189,7 @@ public class CreateCmd extends AbstractAuthOptionsCmd {
         }
     }
 
+    /** 按 {@code -i/-o/-c} 选项输出创建结果。 */
     private void outputResult(String clientId, Object result) throws IOException {
         if (returnClientId) {
             printOut(clientId);

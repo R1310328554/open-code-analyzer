@@ -38,11 +38,16 @@ import static org.keycloak.client.registration.cli.KcRegMain.CMD;
 
 
 /**
+ * {@code kcreg delete} 命令：删除指定 clientId 的客户端注册。
+ * <p>
+ * 优先使用 {@code -t} 或配置中的注册访问令牌；否则回退到当前会话凭据。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "delete", description = "CLIENT [GLOBAL_OPTIONS]")
 public class DeleteCmd extends AbstractAuthOptionsCmd {
 
+    /** 待删除的客户端 ID。 */
     @Parameters(arity = "0..1")
     String clientId;
 
@@ -62,7 +67,7 @@ public class DeleteCmd extends AbstractAuthOptionsCmd {
         config = copyWithServerInfo(config);
 
         if (externalToken == null) {
-            // if registration access token is not set via -t, try use the one from configuration
+            // 未指定 -t 时从配置读取该 clientId 的注册访问令牌
             externalToken = getRegistrationToken(config.sessionRealmConfigData(), clientId);
         }
 

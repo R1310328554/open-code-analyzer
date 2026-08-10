@@ -25,6 +25,11 @@ import picocli.CommandLine.Command;
 import static org.keycloak.client.registration.cli.KcRegMain.CMD;
 
 /**
+ * {@code kcreg config} 父命令：管理注册 CLI 本地配置。
+ * <p>
+ * 子命令包括 {@link ConfigCredentialsCmd}、{@link ConfigInitialTokenCmd}、
+ * {@link ConfigRegistrationTokenCmd} 与 {@link ConfigTruststoreCmd}。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 
@@ -51,6 +56,7 @@ public class ConfigCmd extends AbstractAuthOptionsCmd {
         return usage();
     }
 
+    /** 返回 config 子命令组的用法说明。 */
     public static String usage() {
         StringWriter sb = new StringWriter();
         PrintWriter out = new PrintWriter(sb);
