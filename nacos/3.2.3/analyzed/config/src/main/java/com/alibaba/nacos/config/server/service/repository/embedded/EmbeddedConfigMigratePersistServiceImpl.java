@@ -59,6 +59,7 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapperInjector.CONFIG_INFO_ROW_MAPPER;
 
 /**
+ * 内嵌存储配置迁移持久化实现：扫描 migrate_config 缓冲表，批量将正式/灰度配置同步到目标租户。
  * The type Embedded config migrate persist service.
  *
  * @author Sunrisea
@@ -67,24 +68,32 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 @Service("embeddedConfigMigratePersistServiceImpl")
 public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePersistService {
     
+    /** 依赖字段 RESOURCE_CONFIG_INFO_ID。 */
     private static final String RESOURCE_CONFIG_INFO_ID = "config-info-id";
     
+    /** 依赖字段 RESOURCE_CONFIG_HISTORY_GRAY_ID。 */
     private static final String RESOURCE_CONFIG_HISTORY_GRAY_ID = "config-history-gray-id";
     
+    /** 依赖字段 databaseOperate。 */
     private final DatabaseOperate databaseOperate;
     
+    /** 依赖字段 idGeneratorManager。 */
     private final IdGeneratorManager idGeneratorManager;
     
+    /** 依赖字段 dataSourceService。 */
     private DataSourceService dataSourceService;
     
+    /** 依赖字段 mapperManager。 */
     private MapperManager mapperManager;
     
+    /** 依赖字段 configInfoPersistService。 */
     private ConfigInfoPersistService configInfoPersistService;
     
+    /** 依赖字段 configInfoGrayPersistService。 */
     private ConfigInfoGrayPersistService configInfoGrayPersistService;
     
     /**
-     * Instantiates a new Embedded config migrate persist service.
+     * 注入数据库操作、ID 生成器及正式/灰度持久化服务。
      *
      * @param databaseOperate              the database operate
      * @param idGeneratorManager           the id generator manager
@@ -108,11 +117,13 @@ public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePer
         this.configInfoGrayPersistService = configInfoGrayPersistService;
     }
     
+    /** 创建分页查询助手。 */
     @Override
     public <E> PaginationHelper<E> createPaginationHelper() {
         return new EmbeddedPaginationHelperImpl<>(databaseOperate);
     }
     
+    /** 统计迁移冲突的正式配置数。 */
     @Override
     public Integer configInfoConflictCount(String srcUser) {
         ConfigMigrateMapper configInfoMigrateMapper =
@@ -130,6 +141,7 @@ public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePer
         return result;
     }
     
+    /** 统计迁移冲突的灰度配置数。 */
     @Override
     public Integer configInfoGrayConflictCount(String srcUser) {
         ConfigMigrateMapper configInfoMigrateMapper =
@@ -147,6 +159,7 @@ public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePer
         return result;
     }
     
+    /** 分页获取待迁移正式配置 ID。 */
     @Override
     public List<Long> getMigrateConfigInsertIdList(long startId, int pageSize) {
         ConfigMigrateMapper configInfoMigrateMapper =
@@ -160,6 +173,7 @@ public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePer
             mapperResult.getParamList().toArray(), Long.class);
     }
     
+    /** 分页获取待迁移灰度配置 ID。 */
     @Override
     public List<Long> getMigrateConfigGrayInsertIdList(long startId, int pageSize) {
         ConfigMigrateMapper configInfoMigrateMapper =
@@ -174,6 +188,7 @@ public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePer
             mapperResult.getParamList().toArray(), Long.class);
     }
     
+    /** 分页获取待更新租户的正式配置。 */
     @Override
     public List<ConfigInfo> getMigrateConfigUpdateList(long startId, int pageSize, String srcTenant,
         String targetTenant, String srcUser) {
@@ -191,6 +206,7 @@ public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePer
             mapperResult.getParamList().toArray(), CONFIG_INFO_ROW_MAPPER);
     }
     
+    /** 分页获取待更新租户的灰度配置。 */
     @Override
     public List<ConfigInfoGrayWrapper> getMigrateConfigGrayUpdateList(long startId, int pageSize,
         String srcTenant,
@@ -210,6 +226,7 @@ public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePer
             CONFIG_INFO_GRAY_WRAPPER_ROW_MAPPER);
     }
     
+    /** 按 ID 批量迁移插入正式配置。 */
     @Override
     public void migrateConfigInsertByIds(List<Long> ids, String srcUser) {
         ConfigMigrateMapper configInfoMigrateMapper =
@@ -228,6 +245,7 @@ public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePer
         databaseOperate.blockUpdate();
     }
     
+    /** 按 ID 批量迁移插入灰度配置。 */
     @Override
     public void migrateConfigGrayInsertByIds(List<Long> ids, String srcUser) {
         ConfigMigrateMapper configInfoMigrateMapper =
@@ -246,6 +264,7 @@ public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePer
         databaseOperate.blockUpdate();
     }
     
+    /** 同步单条正式配置到目标租户。 */
     @Override
     public void syncConfig(String dataId, String group, String tenant, String targetTenant,
         String srcUser) {
@@ -279,6 +298,7 @@ public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePer
      * @param srcUser           the src user
      * @param configAdvanceInfo the config advance info
      * @param lastModified      the last modified
+      * <p>内嵌配置迁移持久化；详见类级说明。</p>
      */
     public void updateConfigInfoAtomic(final ConfigInfo configInfo, final String srcIp,
         final String srcUser,
@@ -317,6 +337,7 @@ public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePer
         EmbeddedStorageContextHolder.addSqlContext(sql, args);
     }
     
+    /** 同步单条灰度配置到目标租户。 */
     @Override
     public void syncConfigGray(String dataId, String group, String tenant, String grayName,
         String targetTenant,
@@ -358,6 +379,7 @@ public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePer
      * @param grayName the gray name
      * @param srcIp    the src ip
      * @param srcUser  the src user
+      * <p>内嵌配置迁移持久化；详见类级说明。</p>
      */
     public void removeConfigInfoGrayWithoutHistory(final String dataId, final String group,
         final String tenant,
@@ -390,6 +412,7 @@ public class EmbeddedConfigMigratePersistServiceImpl implements ConfigMigratePer
      * @param grayRule   the gray rule
      * @param srcIp      the src ip
      * @param srcUser    the src user
+      * <p>内嵌配置迁移持久化；详见类级说明。</p>
      */
     public void updateConfigInfo4GrayWithoutHistory(ConfigInfo configInfo, String grayName,
         String grayRule,

@@ -39,6 +39,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * 配置模块 {@link RowMapper} 注册器：将 config_info、beta、tag、gray、history 等查询结果映射为领域模型，并在静态块中注入 {@link RowMapperManager}。
  * Config row mapper injector.
  *
  * @author xiweng.yy
@@ -46,46 +47,61 @@ import java.sql.SQLException;
 @Component
 public class ConfigRowMapperInjector {
     
+    /** 正式配置包装对象行映射器（含 content、md5 等）。 */
     public static final RowMapper<ConfigInfoWrapper> CONFIG_INFO_WRAPPER_ROW_MAPPER =
         new ConfigInfoWrapperRowMapper();
     
+    /** 配置状态轻量映射器，仅含 id 与 gmt_modified。 */
     public static final ConfigInfoStateWrapperRowMapper CONFIG_INFO_STATE_WRAPPER_ROW_MAPPER =
         new ConfigInfoStateWrapperRowMapper();
     
+    /** 配置主键（dataId+group+appName）映射器。 */
     public static final RowMapper<ConfigKey> CONFIG_KEY_ROW_MAPPER = new ConfigKeyRowMapper();
     
+    /** Beta 配置包装映射器。 */
     public static final ConfigInfoBetaWrapperRowMapper CONFIG_INFO_BETA_WRAPPER_ROW_MAPPER =
         new ConfigInfoBetaWrapperRowMapper();
     
+    /** Tag 配置包装映射器。 */
     public static final ConfigInfoTagWrapperRowMapper CONFIG_INFO_TAG_WRAPPER_ROW_MAPPER =
         new ConfigInfoTagWrapperRowMapper();
     
+    /** 灰度配置包装映射器。 */
     public static final ConfigInfoGrayWrapperRowMapper CONFIG_INFO_GRAY_WRAPPER_ROW_MAPPER =
         new ConfigInfoGrayWrapperRowMapper();
     
+    /** 完整 {@link ConfigInfo} 行映射器。 */
     public static final ConfigInfoRowMapper CONFIG_INFO_ROW_MAPPER = new ConfigInfoRowMapper();
     
+    /** 配置扩展元数据（desc、schema 等）映射器。 */
     public static final ConfigAdvanceInfoRowMapper CONFIG_ADVANCE_INFO_ROW_MAPPER =
         new ConfigAdvanceInfoRowMapper();
     
+    /** 配置全量信息（含内容与扩展字段）映射器。 */
     public static final ConfigAllInfoRowMapper CONFIG_ALL_INFO_ROW_MAPPER =
         new ConfigAllInfoRowMapper();
     
+    /** Beta 列表查询专用映射器。 */
     public static final ConfigInfo4BetaRowMapper CONFIG_INFO4BETA_ROW_MAPPER =
         new ConfigInfo4BetaRowMapper();
     
+    /** Tag 列表查询专用映射器。 */
     public static final ConfigInfo4TagRowMapper CONFIG_INFO4TAG_ROW_MAPPER =
         new ConfigInfo4TagRowMapper();
     
+    /** 配置基础字段（dataId+group+content）映射器。 */
     public static final ConfigInfoBaseRowMapper CONFIG_INFO_BASE_ROW_MAPPER =
         new ConfigInfoBaseRowMapper();
     
+    /** 变更通知用三元组（dataId+group+tenant）映射器。 */
     public static final ConfigInfoChangedRowMapper CONFIG_INFO_CHANGED_ROW_MAPPER =
         new ConfigInfoChangedRowMapper();
     
+    /** 历史列表（不含 content）映射器。 */
     public static final ConfigHistoryRowMapper HISTORY_LIST_ROW_MAPPER =
         new ConfigHistoryRowMapper();
     
+    /** 历史详情（含 content 与 md5）映射器。 */
     public static final ConfigHistoryDetailRowMapper HISTORY_DETAIL_ROW_MAPPER =
         new ConfigHistoryDetailRowMapper();
     
@@ -96,6 +112,7 @@ public class ConfigRowMapperInjector {
     public ConfigRowMapperInjector() {
     }
     
+    /** 将全部 RowMapper 注册到全局 {@link RowMapperManager}，供 JDBC 查询复用。 */
     private static void injectConfigRowMapper() {
         // CONFIG_INFO_WRAPPER_ROW_MAPPER
         

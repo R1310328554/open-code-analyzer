@@ -62,6 +62,7 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 import static com.alibaba.nacos.config.server.utils.PropertyUtil.GRAY_MIGRATE_FLAG;
 
 /**
+ * 外置数据库灰度配置持久化实现：通过 JDBC 事务管理 {@code config_info_gray} 的 CRUD 与历史联动。
  * ExternalConfigInfoGrayPersistServiceImpl.
  *
  * @author rong
@@ -71,14 +72,17 @@ import static com.alibaba.nacos.config.server.utils.PropertyUtil.GRAY_MIGRATE_FL
 @Service("externalConfigInfoGrayPersistServiceImpl")
 public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayPersistService {
     
+    /** 依赖字段 dataSourceService。 */
     private DataSourceService dataSourceService;
     
     protected JdbcTemplate jt;
     
     protected TransactionTemplate tjt;
     
+    /** 依赖字段 mapperManager。 */
     private MapperManager mapperManager;
     
+    /** 依赖字段 historyConfigInfoPersistService。 */
     private HistoryConfigInfoPersistService historyConfigInfoPersistService;
     
     public ExternalConfigInfoGrayPersistServiceImpl(
@@ -93,11 +97,13 @@ public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayP
         this.mapperManager = MapperManager.instance(isDataSourceLogEnable);
     }
     
+    /** 创建分页查询助手。 */
     @Override
     public <E> PaginationHelper<E> createPaginationHelper() {
         return new ExternalStoragePaginationHelperImpl<>(jt);
     }
     
+    /** 查询灰度配置状态。 */
     @Override
     public ConfigInfoStateWrapper findConfigInfo4GrayState(final String dataId, final String group,
         final String tenant,
@@ -132,6 +138,7 @@ public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayP
         
     }
     
+    /** 新增灰度配置。 */
     @Override
     public ConfigOperateResult addConfigInfo4Gray(ConfigInfo configInfo, String grayName,
         String grayRule, String srcIp,
@@ -164,6 +171,7 @@ public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayP
         });
     }
     
+    /** 新增ConfigInfoGrayAtomic。 */
     @Override
     public void addConfigInfoGrayAtomic(long configGrayId, ConfigInfo configInfo, String grayName,
         String grayRule,
@@ -187,6 +195,7 @@ public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayP
             configInfo.getContent(), encryptedDataKey, md5, srcIp, srcUser);
     }
     
+    /** 插入或更新灰度配置。 */
     @Override
     public ConfigOperateResult insertOrUpdateGray(final ConfigInfo configInfo,
         final String grayName,
@@ -199,6 +208,7 @@ public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayP
         }
     }
     
+    /** 插入OrUpdateGrayCas。 */
     @Override
     public ConfigOperateResult insertOrUpdateGrayCas(final ConfigInfo configInfo,
         final String grayName,
@@ -211,11 +221,13 @@ public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayP
         }
     }
     
+    /** 删除ConfigInfoGray。 */
     @Override
     public void removeConfigInfoGray(final String dataId, final String group, final String tenant,
         final String grayName, final String srcIp, final String srcUser) {
         tjt.execute(new TransactionCallbackWithoutResult() {
             
+            /** 实现接口方法 doInTransactionWithoutResult。 */
             @Override
             protected void doInTransactionWithoutResult(TransactionStatus status) {
                 String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;
@@ -253,6 +265,7 @@ public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayP
         });
     }
     
+    /** 更新ConfigInfo4Gray。 */
     @Override
     public ConfigOperateResult updateConfigInfo4Gray(ConfigInfo configInfo, String grayName,
         String grayRule,
@@ -308,6 +321,7 @@ public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayP
         });
     }
     
+    /** 更新ConfigInfo4GrayCas。 */
     @Override
     public ConfigOperateResult updateConfigInfo4GrayCas(ConfigInfo configInfo, String grayName,
         String grayRule,
@@ -378,6 +392,7 @@ public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayP
         });
     }
     
+    /** 查询ConfigInfo4Gray。 */
     @Override
     public ConfigInfoGrayWrapper findConfigInfo4Gray(final String dataId, final String group,
         final String tenant,
@@ -403,6 +418,7 @@ public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayP
         }
     }
     
+    /** 统计灰度配置数。 */
     @Override
     public int configInfoGrayCount() {
         ConfigInfoGrayMapper configInfoGrayMapper =
@@ -416,6 +432,7 @@ public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayP
         return result;
     }
     
+    /** 查询AllConfigInfoGrayForDumpAll。 */
     @Override
     public Page<ConfigInfoGrayWrapper> findAllConfigInfoGrayForDumpAll(final int pageNo,
         final int pageSize) {
@@ -440,6 +457,7 @@ public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayP
         }
     }
     
+    /** 查询指定时间后的变更配置列表。 */
     @Override
     public List<ConfigInfoGrayWrapper> findChangeConfig(final Timestamp startTime, long lastMaxId,
         final int pageSize) {
@@ -462,6 +480,7 @@ public class ExternalConfigInfoGrayPersistServiceImpl implements ConfigInfoGrayP
         }
     }
     
+    /** 查询ConfigInfoGrays。 */
     @Override
     public List<String> findConfigInfoGrays(final String dataId, final String group,
         final String tenant) {

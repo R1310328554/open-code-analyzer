@@ -57,6 +57,7 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapperInjector.CONFIG_INFO_ROW_MAPPER;
 
 /**
+ * 外置数据库配置迁移持久化实现：JDBC 批量处理 migrate_config 缓冲数据并同步正式/灰度配置到目标租户。
  * The type External config migrate persist service.
  *
  * @author Sunrisea
@@ -65,22 +66,26 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 @Service("externalConfigMigratePersistServiceImpl")
 public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePersistService {
     
-    /**
-     * The Jt.
-     */
+    /** JDBC 操作模板。 */
+    /** The Jt. */
     protected JdbcTemplate jt;
     
     /**
      * The Tjt.
+      * <p>外置配置迁移持久化；详见类级说明。</p>
      */
     protected TransactionTemplate tjt;
     
+    /** 依赖字段 dataSourceService。 */
     private DataSourceService dataSourceService;
     
+    /** 依赖字段 mapperManager。 */
     private MapperManager mapperManager;
     
+    /** 依赖字段 configInfoPersistService。 */
     private ConfigInfoPersistService configInfoPersistService;
     
+    /** 依赖字段 configInfoGrayPersistService。 */
     private ConfigInfoGrayPersistService configInfoGrayPersistService;
     
     /**
@@ -88,6 +93,7 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
      *
      * @param configInfoPersistService     the config info persist service
      * @param configInfoGrayPersistService the config info gray persist service
+      * <p>外置配置迁移持久化；详见类级说明。</p>
      */
     public ExternalConfigMigratePersistServiceImpl(
         @Qualifier("externalConfigInfoPersistServiceImpl") ConfigInfoPersistService configInfoPersistService,
@@ -103,11 +109,13 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
         this.configInfoGrayPersistService = configInfoGrayPersistService;
     }
     
+    /** 创建分页查询助手。 */
     @Override
     public <E> PaginationHelper<E> createPaginationHelper() {
         return new ExternalStoragePaginationHelperImpl<>(jt);
     }
     
+    /** 统计迁移冲突的正式配置数。 */
     @Override
     public Integer configInfoConflictCount(String srcUser) {
         ConfigMigrateMapper configMigrateMapper =
@@ -124,6 +132,7 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
         return result;
     }
     
+    /** 统计迁移冲突的灰度配置数。 */
     @Override
     public Integer configInfoGrayConflictCount(String srcUser) {
         ConfigMigrateMapper configMigrateMapper =
@@ -140,6 +149,7 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
         return result;
     }
     
+    /** 分页获取待迁移正式配置 ID。 */
     @Override
     public List<Long> getMigrateConfigInsertIdList(long startId, int pageSize) {
         ConfigMigrateMapper configMigrateMapper =
@@ -153,6 +163,7 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
             Long.class);
     }
     
+    /** 分页获取待迁移灰度配置 ID。 */
     @Override
     public List<Long> getMigrateConfigGrayInsertIdList(long startId, int pageSize) {
         ConfigMigrateMapper configMigrateMapper =
@@ -166,6 +177,7 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
             Long.class);
     }
     
+    /** 分页获取待更新租户的正式配置。 */
     @Override
     public List<ConfigInfo> getMigrateConfigUpdateList(long startId, int pageSize, String srcTenant,
         String targetTenant, String srcUser) {
@@ -183,6 +195,7 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
             CONFIG_INFO_ROW_MAPPER);
     }
     
+    /** 分页获取待更新租户的灰度配置。 */
     @Override
     public List<ConfigInfoGrayWrapper> getMigrateConfigGrayUpdateList(long startId, int pageSize,
         String srcTenant,
@@ -201,6 +214,7 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
             CONFIG_INFO_GRAY_WRAPPER_ROW_MAPPER);
     }
     
+    /** 按 ID 批量迁移插入正式配置。 */
     @Override
     public void migrateConfigInsertByIds(List<Long> ids, String srcUser) {
         ConfigMigrateMapper configMigrateMapper =
@@ -218,6 +232,7 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
         }
     }
     
+    /** 按 ID 批量迁移插入灰度配置。 */
     @Override
     public void migrateConfigGrayInsertByIds(List<Long> ids, String srcUser) {
         ConfigMigrateMapper configMigrateMapper =
@@ -235,6 +250,7 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
         }
     }
     
+    /** 同步单条灰度配置到目标租户。 */
     @Override
     public void syncConfigGray(String dataId, String group, String tenant, String grayName,
         String targetTenant,
@@ -317,6 +333,7 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
      * @param grayName the gray name
      * @param srcIp    the src ip
      * @param srcUser  the src user
+      * <p>外置配置迁移持久化；详见类级说明。</p>
      */
     public void removeConfigInfoGrayWithoutHistory(final String dataId, final String group,
         final String tenant,
@@ -345,6 +362,7 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
      * @param grayRule   the gray rule
      * @param srcIp      the src ip
      * @param srcUser    the src user
+      * <p>外置配置迁移持久化；详见类级说明。</p>
      */
     public void updateConfigInfo4GrayWithoutHistory(ConfigInfo configInfo, String grayName,
         String grayRule,
@@ -375,6 +393,7 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
         }
     }
     
+    /** 同步单条正式配置到目标租户。 */
     @Override
     public void syncConfig(String dataId, String group, String tenant, String targetTenant,
         String srcUser) {
@@ -459,6 +478,7 @@ public class ExternalConfigMigratePersistServiceImpl implements ConfigMigratePer
      * @param srcUser           the src user
      * @param configAdvanceInfo the config advance info
      * @param lastModified      the last modified
+      * <p>外置配置迁移持久化；详见类级说明。</p>
      */
     public void updateConfigInfoAtomic(final ConfigInfo configInfo, final String srcIp,
         final String srcUser,

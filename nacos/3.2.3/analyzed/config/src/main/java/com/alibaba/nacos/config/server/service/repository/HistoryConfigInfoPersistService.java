@@ -26,6 +26,7 @@ import java.sql.Timestamp;
 import java.util.List;
 
 /**
+ * 配置历史持久化服务接口：访问 {@code his_config_info} 表，记录配置变更轨迹并支持历史查询与清理。
  * Database service, providing access to his_config_info in the database.
  *
  * @author lixiaoshuang
@@ -33,17 +34,17 @@ import java.util.List;
 public interface HistoryConfigInfoPersistService {
     
     /**
-     * create Pagination utils.
+     * 创建分页查询助手。
      *
      * @param <E> Generic object
      * @return {@link PaginationHelper}
      */
     <E> PaginationHelper<E> createPaginationHelper();
     
-    //------------------------------------------insert---------------------------------------------//
+    //------------------------------------------insert 插入区---------------------------------------------//
     
     /**
-     * Update change records; database atomic operations, minimal sql actions, no business encapsulation.
+     * 原子写入一条配置变更历史；仅做最小 SQL 封装，不含业务逻辑。
      *
      * @param id          id
      * @param configInfo  config info
@@ -58,20 +59,20 @@ public interface HistoryConfigInfoPersistService {
     void insertConfigHistoryAtomic(long id, ConfigInfo configInfo, String srcIp, String srcUser,
         final Timestamp time,
         String ops, String publishType, String grayName, String extInfo);
-    //------------------------------------------delete---------------------------------------------//
+    //------------------------------------------delete 删除区---------------------------------------------//
     
     /**
-     * Delete data before startTime.
+     * 按时间批量清理历史记录（运维归档）。
      *
      * @param startTime start time
      * @param limitSize limit size
      */
     void removeConfigHistory(final Timestamp startTime, final int limitSize);
-    //------------------------------------------update---------------------------------------------//
-    //------------------------------------------select---------------------------------------------//
+    //------------------------------------------update 更新区---------------------------------------------//
+    //------------------------------------------select 查询区---------------------------------------------//
     
     /**
-     * Query deleted config.
+     * 查询已删除配置的元数据，供 Dump 与审计使用。
      *
      * @param startTime   start time
      * @param startId     last max id
@@ -84,7 +85,7 @@ public interface HistoryConfigInfoPersistService {
         String publishType);
     
     /**
-     * List configuration history change record.
+     * 分页查询指定配置的历史变更列表。
      *
      * @param dataId   data Id
      * @param group    group
@@ -97,7 +98,7 @@ public interface HistoryConfigInfoPersistService {
         int pageNo, int pageSize);
     
     /**
-     * Get history config detail.
+     * 按 nid 获取单条历史详情（含内容）。
      *
      * @param nid nid
      * @return {@link ConfigHistoryInfo}
@@ -105,7 +106,7 @@ public interface HistoryConfigInfoPersistService {
     ConfigHistoryInfo detailConfigHistory(Long nid);
     
     /**
-     * Get previous config detail.
+     * 获取指定 id 的上一条历史快照。
      *
      * @param id id
      * @return {@link ConfigHistoryInfo}
@@ -113,7 +114,7 @@ public interface HistoryConfigInfoPersistService {
     ConfigHistoryInfo detailPreviousConfigHistory(Long id);
     
     /**
-     * Get the number of configurations before the specified time.
+     * 统计指定时间之前的历史记录数量（已废弃）。
      *
      * @param startTime start time
      * @return count of history config that meet the conditions
@@ -122,7 +123,7 @@ public interface HistoryConfigInfoPersistService {
     int findConfigHistoryCountByTime(final Timestamp startTime);
     
     /**
-     * Get the next history config detail of the history config.
+     * 获取 startNid 之后的下一条历史记录，用于增量同步。
      *
      * @param dataId      data Id
      * @param group       group

@@ -89,6 +89,7 @@ import static com.alibaba.nacos.config.server.utils.LogUtil.DEFAULT_LOG;
 import static com.alibaba.nacos.persistence.repository.RowMapperManager.MAP_ROW_MAPPER;
 
 /**
+ * 内嵌存储正式配置持久化核心实现：通过 {@link DatabaseOperate} 与 {@link EmbeddedStorageContextHolder} 批量提交 SQL，覆盖 config_info 全生命周期及标签关联、加密与历史写入。
  * EmbeddedConfigInfoPersistServiceImpl.
  *
  * @author lixiaoshuang
@@ -100,50 +101,69 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
     
     public static final String SPOT = ".";
     
+    /** 分布式 ID 生成器资源名：config_info 主键。 */
     private static final String RESOURCE_CONFIG_INFO_ID = "config-info-id";
     
+    /** 依赖字段 RESOURCE_CONFIG_HISTORY_ID。 */
     private static final String RESOURCE_CONFIG_HISTORY_ID = "config-history-id";
     
+    /** 依赖字段 RESOURCE_CONFIG_TAG_RELATION_ID。 */
     private static final String RESOURCE_CONFIG_TAG_RELATION_ID = "config-tag-relation-id";
     
+    /** 依赖字段 RESOURCE_APP_CONFIGDATA_RELATION_SUBS。 */
     private static final String RESOURCE_APP_CONFIGDATA_RELATION_SUBS =
         "app-configdata-relation-subs";
     
+    /** 依赖字段 RESOURCE_CONFIG_BETA_ID。 */
     private static final String RESOURCE_CONFIG_BETA_ID = "config-beta-id";
     
+    /** 依赖字段 RESOURCE_NAMESPACE_ID。 */
     private static final String RESOURCE_NAMESPACE_ID = "namespace-id";
     
+    /** 依赖字段 RESOURCE_USER_ID。 */
     private static final String RESOURCE_USER_ID = "user-id";
     
+    /** 依赖字段 RESOURCE_ROLE_ID。 */
     private static final String RESOURCE_ROLE_ID = "role-id";
     
+    /** 依赖字段 RESOURCE_PERMISSIONS_ID。 */
     private static final String RESOURCE_PERMISSIONS_ID = "permissions_id";
     
+    /** 依赖字段 DATA_ID。 */
     private static final String DATA_ID = "dataId";
     
+    /** 依赖字段 GROUP。 */
     private static final String GROUP = "group";
     
+    /** 依赖字段 APP_NAME。 */
     private static final String APP_NAME = "appName";
     
+    /** 依赖字段 CONTENT。 */
     private static final String CONTENT = "content";
     
+    /** 依赖字段 TENANT。 */
     private static final String TENANT = "tenant_id";
     
+    /** MCP 等系统内置 group，导入时禁止覆盖。 */
     private static final Set<String> SYSTEM_GROUP =
         Set.of("mcp-server", "mcp-server-versions", "mcp-tools");
     
+    /** 依赖字段 databaseOperate。 */
     private final DatabaseOperate databaseOperate;
     
+    /** 依赖字段 idGeneratorManager。 */
     private final IdGeneratorManager idGeneratorManager;
     
     MapperManager mapperManager;
     
+    /** 依赖字段 dataSourceService。 */
     private DataSourceService dataSourceService;
     
+    /** 依赖字段 historyConfigInfoPersistService。 */
     private HistoryConfigInfoPersistService historyConfigInfoPersistService;
     
     /**
-     * The constructor sets the dependency injection order.
+     * 注册 ID 生成器、MapperManager 与历史服务依赖。
      *
      * @param databaseOperate    databaseOperate.
      * @param idGeneratorManager {@link IdGeneratorManager}
@@ -166,11 +186,13 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         NotifyCenter.registerToSharePublisher(DerbyImportEvent.class);
     }
     
+    /** 创建分页查询助手。 */
     @Override
     public <E> PaginationHelper<E> createPaginationHelper() {
         return new EmbeddedPaginationHelperImpl<>(databaseOperate);
     }
     
+    /** 将搜索关键字转为 SQL LIKE 参数（转义 _ 与 *）。 */
     @Override
     public String generateLikeArgument(String s) {
         String underscore = "_";
@@ -186,6 +208,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 查询配置元数据状态（id、最后修改时间）。 */
     @Override
     public ConfigInfoStateWrapper findConfigInfoState(final String dataId, final String group,
         final String tenant) {
@@ -212,6 +235,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         
     }
     
+    /** 新增正式配置（含标签与历史）。 */
     @Override
     public ConfigOperateResult addConfigInfo(final String srcIp, final String srcUser,
         final ConfigInfo configInfo,
@@ -259,6 +283,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 更新ConfigInfoMetadata。 */
     @Override
     public ConfigOperateResult updateConfigInfoMetadata(String dataId, String group, String tenant,
         String configTags,
@@ -297,6 +322,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 插入或更新配置（按冲突策略）。 */
     @Override
     public ConfigOperateResult insertOrUpdate(String srcIp, String srcUser, ConfigInfo configInfo,
         Map<String, Object> configAdvanceInfo) {
@@ -309,6 +335,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 插入OrUpdateCas。 */
     @Override
     public ConfigOperateResult insertOrUpdateCas(String srcIp, String srcUser,
         ConfigInfo configInfo,
@@ -322,6 +349,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 新增ConfigInfoAtomic。 */
     @Override
     public long addConfigInfoAtomic(final long id, final String srcIp, final String srcUser,
         final ConfigInfo configInfo, Map<String, Object> configAdvanceInfo) {
@@ -358,6 +386,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return id;
     }
     
+    /** 新增ConfigTagRelationAtomic。 */
     @Override
     public void addConfigTagRelationAtomic(long configId, String tagName, String dataId,
         String group, String tenant) {
@@ -370,6 +399,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         EmbeddedStorageContextHolder.addSqlContext(sql, args);
     }
     
+    /** 新增ConfigTagsRelation。 */
     @Override
     public void addConfigTagsRelation(long configId, String configTags, String dataId, String group,
         String tenant) {
@@ -381,6 +411,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 批量导入或更新配置。 */
     @Override
     public Map<String, Object> batchInsertOrUpdate(List<ConfigAllInfo> configInfoList,
         String srcUser, String srcIp,
@@ -486,6 +517,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return result;
     }
     
+    /** 删除正式配置。 */
     @Override
     public void removeConfigInfo(final String dataId, final String group, final String tenant,
         final String srcIp,
@@ -519,6 +551,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 删除ConfigInfoByIds。 */
     @Override
     public List<ConfigAllInfo> removeConfigInfoByIds(final List<Long> ids, final String srcIp,
         final String srcUser) {
@@ -555,6 +588,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 删除TagByIdAtomic。 */
     @Override
     public void removeTagByIdAtomic(long id) {
         ConfigTagsRelationMapper configTagsRelationMapper = mapperManager.findMapper(
@@ -564,6 +598,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         EmbeddedStorageContextHolder.addSqlContext(sql, args);
     }
     
+    /** 删除ConfigInfoAtomic。 */
     @Override
     public void removeConfigInfoAtomic(final String dataId, final String group, final String tenant,
         final String srcIp,
@@ -579,6 +614,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         EmbeddedStorageContextHolder.addSqlContext(sql, args);
     }
     
+    /** 删除ConfigInfoByIdsAtomic。 */
     @Override
     public void removeConfigInfoByIdsAtomic(final String ids) {
         if (StringUtils.isBlank(ids)) {
@@ -599,6 +635,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
             result.getParamList().toArray());
     }
     
+    /** 更新正式配置内容与元数据。 */
     @Override
     public ConfigOperateResult updateConfigInfo(final ConfigInfo configInfo, final String srcIp,
         final String srcUser,
@@ -655,6 +692,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 更新ConfigInfoCas。 */
     @Override
     public ConfigOperateResult updateConfigInfoCas(final ConfigInfo configInfo, final String srcIp,
         final String srcUser, final Map<String, Object> configAdvanceInfo) {
@@ -761,6 +799,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         
     }
     
+    /** 更新ConfigInfoAtomic。 */
     @Override
     public void updateConfigInfoAtomic(final ConfigInfo configInfo, final String srcIp,
         final String srcUser,
@@ -812,6 +851,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         EmbeddedStorageContextHolder.addSqlContext(sql, updateParams.toArray());
     }
     
+    /** 查询ConfigMaxId。 */
     @Override
     public long findConfigMaxId() {
         ConfigInfoMapper configInfoMapper =
@@ -822,6 +862,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
             .orElse(0L);
     }
     
+    /** 按三元组查询完整配置。 */
     @Override
     public ConfigInfo findConfigInfo(long id) {
         ConfigInfoMapper configInfoMapper =
@@ -833,6 +874,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return databaseOperate.queryOne(sql, new Object[] {id}, CONFIG_INFO_ROW_MAPPER);
     }
     
+    /** 按三元组查询完整配置。 */
     @Override
     public ConfigInfoWrapper findConfigInfo(final String dataId, final String group,
         final String tenant) {
@@ -850,6 +892,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         
     }
     
+    /** 分页搜索配置列表。 */
     @Override
     public Page<ConfigInfo> findConfigInfo4Page(final int pageNo, final int pageSize,
         final String dataId,
@@ -917,6 +960,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return page;
     }
     
+    /** 统计配置总数。 */
     @Override
     public int configInfoCount() {
         ConfigInfoMapper configInfoMapper =
@@ -930,6 +974,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return result;
     }
     
+    /** 统计配置总数。 */
     @Override
     public int configInfoCount(String tenant) {
         ConfigInfoMapper configInfoMapper =
@@ -947,6 +992,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return result;
     }
     
+    /** 获取租户 ID 列表。 */
     @Override
     public List<String> getTenantIdList(int page, int pageSize) {
         PaginationHelper<Map<String, Object>> helper = createPaginationHelper();
@@ -964,6 +1010,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
             .collect(Collectors.toList());
     }
     
+    /** 获取GroupIdList。 */
     @Override
     public List<String> getGroupIdList(int page, int pageSize) {
         PaginationHelper<Map<String, Object>> helper = createPaginationHelper();
@@ -981,6 +1028,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
             .collect(Collectors.toList());
     }
     
+    /** 查询AllConfigInfoFragment。 */
     @Override
     public Page<ConfigInfoWrapper> findAllConfigInfoFragment(final long lastMaxId,
         final int pageSize,
@@ -998,6 +1046,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         
     }
     
+    /** 查询ConfigInfoLike4Page。 */
     @Override
     public Page<ConfigInfo> findConfigInfoLike4Page(final int pageNo, final int pageSize,
         final String dataId,
@@ -1072,6 +1121,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         
     }
     
+    /** 查询指定时间后的变更配置列表。 */
     @Override
     public List<ConfigInfoStateWrapper> findChangeConfig(final Timestamp startTime, long lastMaxId,
         final int pageSize) {
@@ -1091,6 +1141,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         
     }
     
+    /** 实现接口方法 selectTagByConfig。 */
     @Override
     public List<String> selectTagByConfig(String dataId, String group, String tenant) {
         ConfigTagsRelationMapper configTagsRelationMapper = mapperManager.findMapper(
@@ -1100,6 +1151,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return databaseOperate.queryMany(sql, new Object[] {dataId, group, tenant}, String.class);
     }
     
+    /** 按 ID 批量查询配置。 */
     @Override
     public List<ConfigInfo> findConfigInfosByIds(final String ids) {
         if (StringUtils.isBlank(ids)) {
@@ -1122,6 +1174,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         
     }
     
+    /** 查询配置扩展元数据。 */
     @Override
     public ConfigAdvanceInfo findConfigAdvanceInfo(final String dataId, final String group,
         final String tenant) {
@@ -1152,6 +1205,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return configAdvance;
     }
     
+    /** 查询ConfigAllInfo。 */
     @Override
     public ConfigAllInfo findConfigAllInfo(final String dataId, final String group,
         final String tenant) {
@@ -1188,6 +1242,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return configAdvance;
     }
     
+    /** 导出用全量配置分页查询。 */
     @Override
     public List<ConfigAllInfo> findAllConfigInfo4Export(final String dataId, final String group,
         final String tenant,
@@ -1239,6 +1294,7 @@ public class EmbeddedConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return configAllInfos;
     }
     
+    /** 实现接口方法 queryConfigInfoByNamespace。 */
     @Override
     public List<ConfigInfoWrapper> queryConfigInfoByNamespace(String tenantId) {
         if (Objects.isNull(tenantId)) {

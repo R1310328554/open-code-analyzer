@@ -23,6 +23,7 @@ import com.alibaba.nacos.persistence.repository.PaginationHelper;
 import java.util.List;
 
 /**
+ * 配置迁移持久化服务接口：在跨租户/跨集群迁移场景下，统计冲突、分页拉取待迁移配置并批量写入目标租户。
  * The interface Config migrate persist service.
  *
  * @author Sunrisea
@@ -30,6 +31,7 @@ import java.util.List;
 public interface ConfigMigratePersistService {
     
     /**
+     * 创建分页查询助手，供迁移任务分批扫描 migrate_config 表。
      * Create pagination helper pagination helper.
      *
      * @param <E> the type parameter
@@ -38,6 +40,7 @@ public interface ConfigMigratePersistService {
     <E> PaginationHelper<E> createPaginationHelper();
     
     /**
+     * 统计正式配置迁移中与目标租户冲突的记录数。
      * Config info conflict count integer.
      *
      * @param srcUser the src user
@@ -46,6 +49,7 @@ public interface ConfigMigratePersistService {
     Integer configInfoConflictCount(String srcUser);
     
     /**
+     * 统计灰度配置迁移冲突记录数。
      * Config info gray conflict count integer.
      *
      * @param srcUser the src user
@@ -54,6 +58,7 @@ public interface ConfigMigratePersistService {
     Integer configInfoGrayConflictCount(String srcUser);
     
     /**
+     * 分页获取待插入的正式配置迁移 ID 列表。
      * Gets migrate config id list.
      *
      * @param startId  the start id
@@ -63,6 +68,7 @@ public interface ConfigMigratePersistService {
     List<Long> getMigrateConfigInsertIdList(long startId, int pageSize);
     
     /**
+     * 分页获取待插入的灰度配置迁移 ID 列表。
      * Gets migrate config gray id list.
      *
      * @param startId  the start id
@@ -72,7 +78,7 @@ public interface ConfigMigratePersistService {
     List<Long> getMigrateConfigGrayInsertIdList(long startId, int pageSize);
     
     /**
-     * Gets migrate config update list.
+     * 分页拉取需更新租户信息的正式配置列表。
      *
      * @param startId      the start id
      * @param pageSize     the page size
@@ -86,7 +92,7 @@ public interface ConfigMigratePersistService {
         String srcUser);
     
     /**
-     * Gets migrate config gray update list.
+     * 分页拉取需更新租户信息的灰度配置列表。
      *
      * @param startId      the start id
      * @param pageSize     the page size
@@ -100,7 +106,7 @@ public interface ConfigMigratePersistService {
         String targetTenant, String srcUser);
     
     /**
-     * Migrate config by ids.
+     * 按 ID 批量执行正式配置迁移插入。
      *
      * @param ids     the ids
      * @param srcUser the src user
@@ -108,7 +114,7 @@ public interface ConfigMigratePersistService {
     void migrateConfigInsertByIds(List<Long> ids, String srcUser);
     
     /**
-     * Migrate config gray by ids.
+     * 按 ID 批量执行灰度配置迁移插入。
      *
      * @param ids     the ids
      * @param srcUser the src user
@@ -116,7 +122,7 @@ public interface ConfigMigratePersistService {
     void migrateConfigGrayInsertByIds(List<Long> ids, String srcUser);
     
     /**
-     * Sync config gray.
+     * 同步单条灰度配置到目标租户。
      *
      * @param dataId       the data id
      * @param group        the group
@@ -130,7 +136,7 @@ public interface ConfigMigratePersistService {
         String srcUser);
     
     /**
-     * Sync config.
+     * 同步单条正式配置到目标租户。
      *
      * @param dataId       the data id
      * @param group        the group

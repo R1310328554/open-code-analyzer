@@ -55,6 +55,7 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapperInjector.CONFIG_INFO_STATE_WRAPPER_ROW_MAPPER;
 
 /**
+ * 内嵌存储 Beta 配置持久化实现：基于 Derby + {@link DatabaseOperate} 访问 {@code config_info_beta} 表；2.5.0 起已由灰度模型替代，保留兼容。
  * EmbeddedConfigInfoBetaPersistServiceImpl.
  *
  * @author lixiaoshuang
@@ -64,13 +65,17 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 @Service("embeddedConfigInfoBetaPersistServiceImpl")
 public class EmbeddedConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaPersistService {
     
+    /** 依赖字段 dataSourceService。 */
     private DataSourceService dataSourceService;
     
+    /** 依赖字段 databaseOperate。 */
     private final DatabaseOperate databaseOperate;
     
+    /** 依赖字段 mapperManager。 */
     private MapperManager mapperManager;
     
     /**
+     * 注入内嵌数据库操作器并初始化 MapperManager。
      * The constructor sets the dependency injection order.
      *
      * @param databaseOperate databaseOperate.
@@ -85,11 +90,13 @@ public class EmbeddedConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         NotifyCenter.registerToSharePublisher(DerbyImportEvent.class);
     }
     
+    /** 创建分页查询助手。 */
     @Override
     public <E> PaginationHelper<E> createPaginationHelper() {
         return new EmbeddedPaginationHelperImpl<>(databaseOperate);
     }
     
+    /** 查询 Beta 配置状态。 */
     @Override
     public ConfigInfoStateWrapper findConfigInfo4BetaState(final String dataId, final String group,
         final String tenant) {
@@ -117,6 +124,7 @@ public class EmbeddedConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         
     }
     
+    /** 新增 Beta 配置。 */
     @Override
     public ConfigOperateResult addConfigInfo4Beta(ConfigInfo configInfo, String betaIps,
         String srcIp, String srcUser) {
@@ -152,6 +160,7 @@ public class EmbeddedConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         }
     }
     
+    /** 插入或更新 Beta 配置。 */
     @Override
     public ConfigOperateResult insertOrUpdateBeta(final ConfigInfo configInfo, final String betaIps,
         final String srcIp,
@@ -164,6 +173,7 @@ public class EmbeddedConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         }
     }
     
+    /** 插入OrUpdateBetaCas。 */
     @Override
     public ConfigOperateResult insertOrUpdateBetaCas(final ConfigInfo configInfo,
         final String betaIps,
@@ -177,6 +187,7 @@ public class EmbeddedConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         
     }
     
+    /** 删除 Beta 配置。 */
     @Override
     public void removeConfigInfo4Beta(final String dataId, final String group,
         final String tenant) {
@@ -206,6 +217,7 @@ public class EmbeddedConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         }
     }
     
+    /** 更新ConfigInfo4Beta。 */
     @Override
     public ConfigOperateResult updateConfigInfo4Beta(ConfigInfo configInfo, String betaIps,
         String srcIp,
@@ -242,6 +254,7 @@ public class EmbeddedConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         }
     }
     
+    /** 更新ConfigInfo4BetaCas。 */
     @Override
     public ConfigOperateResult updateConfigInfo4BetaCas(ConfigInfo configInfo, String betaIps,
         String srcIp,
@@ -290,6 +303,7 @@ public class EmbeddedConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         }
     }
     
+    /** 查询ConfigInfo4Beta。 */
     @Override
     public ConfigInfoBetaWrapper findConfigInfo4Beta(final String dataId, final String group,
         final String tenant) {
@@ -308,6 +322,7 @@ public class EmbeddedConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         
     }
     
+    /** 统计 Beta 配置数。 */
     @Override
     public int configInfoBetaCount() {
         ConfigInfoBetaMapper configInfoBetaMapper =
@@ -321,6 +336,7 @@ public class EmbeddedConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         return result;
     }
     
+    /** 查询AllConfigInfoBetaForDumpAll。 */
     @Override
     public Page<ConfigInfoBetaWrapper> findAllConfigInfoBetaForDumpAll(final int pageNo,
         final int pageSize) {

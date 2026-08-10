@@ -55,6 +55,7 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapperInjector.CONFIG_INFO_TAG_WRAPPER_ROW_MAPPER;
 
 /**
+ * 内嵌存储 Tag 配置持久化实现：访问 {@code config_info_tag} 表；2.5.0 起已废弃，由灰度模型替代。
  * EmbeddedConfigInfoTagPersistServiceImpl.
  *
  * @author lixiaoshuang
@@ -64,16 +65,20 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 @Service("embeddedConfigInfoTagPersistServiceImpl")
 public class EmbeddedConfigInfoTagPersistServiceImpl implements ConfigInfoTagPersistService {
     
+    /** 依赖字段 dataSourceService。 */
     private DataSourceService dataSourceService;
     
+    /** 依赖字段 databaseOperate。 */
     private final DatabaseOperate databaseOperate;
     
+    /** 依赖字段 mapperManager。 */
     private MapperManager mapperManager;
     
     /**
      * The constructor sets the dependency injection order.
      *
      * @param databaseOperate databaseOperate.
+      * <p>内嵌 Tag 配置持久化；详见类级说明。</p>
      */
     public EmbeddedConfigInfoTagPersistServiceImpl(DatabaseOperate databaseOperate) {
         this.databaseOperate = databaseOperate;
@@ -85,11 +90,13 @@ public class EmbeddedConfigInfoTagPersistServiceImpl implements ConfigInfoTagPer
         NotifyCenter.registerToSharePublisher(DerbyImportEvent.class);
     }
     
+    /** 创建分页查询助手。 */
     @Override
     public <E> PaginationHelper<E> createPaginationHelper() {
         return new EmbeddedPaginationHelperImpl<>(databaseOperate);
     }
     
+    /** 查询 Tag 配置状态。 */
     @Override
     public ConfigInfoStateWrapper findConfigInfo4TagState(final String dataId, final String group,
         final String tenant,
@@ -119,6 +126,7 @@ public class EmbeddedConfigInfoTagPersistServiceImpl implements ConfigInfoTagPer
         
     }
     
+    /** 新增 Tag 配置。 */
     @Override
     public ConfigOperateResult addConfigInfo4Tag(ConfigInfo configInfo, String tag, String srcIp,
         String srcUser) {
@@ -155,6 +163,7 @@ public class EmbeddedConfigInfoTagPersistServiceImpl implements ConfigInfoTagPer
         }
     }
     
+    /** 插入或更新 Tag 配置。 */
     @Override
     public ConfigOperateResult insertOrUpdateTag(final ConfigInfo configInfo, final String tag,
         final String srcIp,
@@ -167,6 +176,7 @@ public class EmbeddedConfigInfoTagPersistServiceImpl implements ConfigInfoTagPer
         }
     }
     
+    /** 插入OrUpdateTagCas。 */
     @Override
     public ConfigOperateResult insertOrUpdateTagCas(final ConfigInfo configInfo, final String tag,
         final String srcIp,
@@ -179,6 +189,7 @@ public class EmbeddedConfigInfoTagPersistServiceImpl implements ConfigInfoTagPer
         }
     }
     
+    /** 删除ConfigInfoTag。 */
     @Override
     public void removeConfigInfoTag(final String dataId, final String group, final String tenant,
         final String tag,
@@ -202,6 +213,7 @@ public class EmbeddedConfigInfoTagPersistServiceImpl implements ConfigInfoTagPer
         }
     }
     
+    /** 更新ConfigInfo4Tag。 */
     @Override
     public ConfigOperateResult updateConfigInfo4Tag(ConfigInfo configInfo, String tag, String srcIp,
         String srcUser) {
@@ -238,6 +250,7 @@ public class EmbeddedConfigInfoTagPersistServiceImpl implements ConfigInfoTagPer
         }
     }
     
+    /** 更新ConfigInfo4TagCas。 */
     @Override
     public ConfigOperateResult updateConfigInfo4TagCas(ConfigInfo configInfo, String tag,
         String srcIp,
@@ -288,6 +301,7 @@ public class EmbeddedConfigInfoTagPersistServiceImpl implements ConfigInfoTagPer
         }
     }
     
+    /** 查询ConfigInfo4Tag。 */
     @Override
     public ConfigInfoTagWrapper findConfigInfo4Tag(final String dataId, final String group,
         final String tenant,
@@ -306,6 +320,7 @@ public class EmbeddedConfigInfoTagPersistServiceImpl implements ConfigInfoTagPer
             CONFIG_INFO_TAG_WRAPPER_ROW_MAPPER);
     }
     
+    /** 统计 Tag 配置数。 */
     @Override
     public int configInfoTagCount() {
         ConfigInfoTagMapper configInfoTagMapper =
@@ -319,6 +334,7 @@ public class EmbeddedConfigInfoTagPersistServiceImpl implements ConfigInfoTagPer
         return result;
     }
     
+    /** 查询AllConfigInfoTagForDumpAll。 */
     @Override
     public Page<ConfigInfoTagWrapper> findAllConfigInfoTagForDumpAll(final int pageNo,
         final int pageSize) {
@@ -337,6 +353,7 @@ public class EmbeddedConfigInfoTagPersistServiceImpl implements ConfigInfoTagPer
         
     }
     
+    /** 查询ConfigInfoTags。 */
     @Override
     public List<String> findConfigInfoTags(String dataId, String group, String tenant) {
         String tenantTmp = StringUtils.isBlank(tenant) ? StringUtils.EMPTY : tenant;

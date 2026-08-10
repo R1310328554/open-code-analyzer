@@ -53,6 +53,7 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapperInjector.CONFIG_INFO_STATE_WRAPPER_ROW_MAPPER;
 
 /**
+ * 外置数据库 Beta 配置持久化实现：基于 {@link JdbcTemplate} 访问 {@code config_info_beta}；保留兼容，推荐使用灰度模型。
  * ExternalConfigInfoBetaPersistServiceImpl.
  *
  * @author lixiaoshuang
@@ -62,12 +63,14 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 @Service("externalConfigInfoBetaPersistServiceImpl")
 public class ExternalConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaPersistService {
     
+    /** 依赖字段 dataSourceService。 */
     private DataSourceService dataSourceService;
     
     protected JdbcTemplate jt;
     
     protected TransactionTemplate tjt;
     
+    /** 依赖字段 mapperManager。 */
     private MapperManager mapperManager;
     
     public ExternalConfigInfoBetaPersistServiceImpl() {
@@ -80,11 +83,13 @@ public class ExternalConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         this.mapperManager = MapperManager.instance(isDataSourceLogEnable);
     }
     
+    /** 创建分页查询助手。 */
     @Override
     public <E> PaginationHelper<E> createPaginationHelper() {
         return new ExternalStoragePaginationHelperImpl<>(jt);
     }
     
+    /** 新增 Beta 配置。 */
     @Override
     public ConfigOperateResult addConfigInfo4Beta(ConfigInfo configInfo, String betaIps,
         String srcIp, String srcUser) {
@@ -113,6 +118,7 @@ public class ExternalConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         }
     }
     
+    /** 插入或更新 Beta 配置。 */
     @Override
     public ConfigOperateResult insertOrUpdateBeta(final ConfigInfo configInfo, final String betaIps,
         final String srcIp,
@@ -129,6 +135,7 @@ public class ExternalConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         }
     }
     
+    /** 插入OrUpdateBetaCas。 */
     @Override
     public ConfigOperateResult insertOrUpdateBetaCas(final ConfigInfo configInfo,
         final String betaIps,
@@ -143,6 +150,7 @@ public class ExternalConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         }
     }
     
+    /** 删除 Beta 配置。 */
     @Override
     public void removeConfigInfo4Beta(final String dataId, final String group,
         final String tenant) {
@@ -167,6 +175,7 @@ public class ExternalConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         });
     }
     
+    /** 更新ConfigInfo4Beta。 */
     @Override
     public ConfigOperateResult updateConfigInfo4Beta(ConfigInfo configInfo, String betaIps,
         String srcIp,
@@ -195,6 +204,7 @@ public class ExternalConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         }
     }
     
+    /** 查询 Beta 配置状态。 */
     @Override
     public ConfigInfoStateWrapper findConfigInfo4BetaState(final String dataId, final String group,
         final String tenant) {
@@ -221,6 +231,7 @@ public class ExternalConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         
     }
     
+    /** 更新ConfigInfo4BetaCas。 */
     @Override
     public ConfigOperateResult updateConfigInfo4BetaCas(ConfigInfo configInfo, String betaIps,
         String srcIp,
@@ -263,6 +274,7 @@ public class ExternalConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         }
     }
     
+    /** 查询ConfigInfo4Beta。 */
     @Override
     public ConfigInfoBetaWrapper findConfigInfo4Beta(final String dataId, final String group,
         final String tenant) {
@@ -285,6 +297,7 @@ public class ExternalConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         }
     }
     
+    /** 统计 Beta 配置数。 */
     @Override
     public int configInfoBetaCount() {
         ConfigInfoBetaMapper configInfoBetaMapper =
@@ -296,6 +309,7 @@ public class ExternalConfigInfoBetaPersistServiceImpl implements ConfigInfoBetaP
         return result.intValue();
     }
     
+    /** 查询AllConfigInfoBetaForDumpAll。 */
     @Override
     public Page<ConfigInfoBetaWrapper> findAllConfigInfoBetaForDumpAll(final int pageNo,
         final int pageSize) {

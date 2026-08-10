@@ -54,6 +54,7 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapperInjector.HISTORY_LIST_ROW_MAPPER;
 
 /**
+ * 内嵌存储配置历史持久化实现：读写 {@code his_config_info}，支持原子插入、分页查询与过期清理。
  * EmbeddedHistoryConfigInfoPersistServiceImpl.
  *
  * @author lixiaoshuang
@@ -64,13 +65,17 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 public class EmbeddedHistoryConfigInfoPersistServiceImpl
     implements HistoryConfigInfoPersistService {
     
+    /** 依赖字段 dataSourceService。 */
     private DataSourceService dataSourceService;
     
+    /** 依赖字段 databaseOperate。 */
     private final DatabaseOperate databaseOperate;
     
+    /** 依赖字段 mapperManager。 */
     private MapperManager mapperManager;
     
     /**
+     * 注入内嵌 {@link DatabaseOperate} 并初始化 MapperManager。
      * The constructor sets the dependency injection order.
      *
      * @param databaseOperate databaseOperate.
@@ -85,11 +90,13 @@ public class EmbeddedHistoryConfigInfoPersistServiceImpl
         NotifyCenter.registerToSharePublisher(DerbyImportEvent.class);
     }
     
+    /** 创建分页查询助手。 */
     @Override
     public <E> PaginationHelper<E> createPaginationHelper() {
         return new EmbeddedPaginationHelperImpl<>(databaseOperate);
     }
     
+    /** 原子写入配置变更历史。 */
     @Override
     public void insertConfigHistoryAtomic(long configHistoryId, ConfigInfo configInfo, String srcIp,
         String srcUser,
@@ -117,6 +124,7 @@ public class EmbeddedHistoryConfigInfoPersistServiceImpl
         EmbeddedStorageContextHolder.addSqlContext(sql, args);
     }
     
+    /** 清理过期历史记录。 */
     @Override
     public void removeConfigHistory(final Timestamp startTime, final int limitSize) {
         HistoryConfigInfoMapper historyConfigInfoMapper = mapperManager.findMapper(
@@ -129,6 +137,7 @@ public class EmbeddedHistoryConfigInfoPersistServiceImpl
         helper.updateLimit(mapperResult.getSql(), mapperResult.getParamList().toArray());
     }
     
+    /** 查询已删除配置元数据。 */
     @Override
     public List<ConfigInfoStateWrapper> findDeletedConfig(final Timestamp startTime, long lastMaxId,
         final int pageSize,
@@ -162,6 +171,7 @@ public class EmbeddedHistoryConfigInfoPersistServiceImpl
         return configInfoStateWrappers;
     }
     
+    /** 分页查询配置历史。 */
     @Override
     public Page<ConfigHistoryInfo> findConfigHistory(String dataId, String group, String tenant,
         int pageNo,
@@ -186,6 +196,7 @@ public class EmbeddedHistoryConfigInfoPersistServiceImpl
             HISTORY_LIST_ROW_MAPPER);
     }
     
+    /** 获取历史详情。 */
     @Override
     public ConfigHistoryInfo detailConfigHistory(Long nid) {
         HistoryConfigInfoMapper historyConfigInfoMapper = mapperManager.findMapper(
@@ -201,6 +212,7 @@ public class EmbeddedHistoryConfigInfoPersistServiceImpl
             HISTORY_DETAIL_ROW_MAPPER);
     }
     
+    /** 获取上一条历史。 */
     @Override
     public ConfigHistoryInfo detailPreviousConfigHistory(Long id) {
         HistoryConfigInfoMapper historyConfigInfoMapper = mapperManager.findMapper(
@@ -213,6 +225,7 @@ public class EmbeddedHistoryConfigInfoPersistServiceImpl
             HISTORY_DETAIL_ROW_MAPPER);
     }
     
+    /** 统计指定时间前的历史数。 */
     @Override
     public int findConfigHistoryCountByTime(final Timestamp startTime) {
         HistoryConfigInfoMapper historyConfigInfoMapper = mapperManager.findMapper(
@@ -229,6 +242,7 @@ public class EmbeddedHistoryConfigInfoPersistServiceImpl
         return result;
     }
     
+    /** 获取下一条历史记录。 */
     @Override
     public ConfigHistoryInfo getNextHistoryInfo(String dataId, String group, String tenant,
         String publishType,

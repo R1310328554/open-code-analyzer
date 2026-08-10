@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * 内嵌存储 Raft 日志应用钩子：在一致性日志提交后解析扩展字段，发布 {@link ConfigDumpEvent} 触发本地配置 Dump。
  * Embedded apply hook for config dump.
  *
  * @author xiweng.yy
@@ -39,16 +40,19 @@ import java.util.Objects;
 @Component
 public class EmbeddedConfigDumpApplyHook extends EmbeddedApplyHook {
     
+    /** 注册 Dump 事件发布器与订阅处理器。 */
     public EmbeddedConfigDumpApplyHook() {
         NotifyCenter.registerToPublisher(ConfigDumpEvent.class, NotifyCenter.ringBufferSize);
         NotifyCenter.registerSubscriber(new DumpConfigHandler());
     }
     
+    /** Raft 日志应用完成后，从 extendInfo 解析并发布 Dump 事件。 */
     @Override
     public void afterApply(WriteRequest log) {
         handleExtendInfo(log.getExtendInfoMap());
     }
     
+    /** 解析单条或批量 ConfigDumpEvent JSON 并投递到 {@link NotifyCenter}。 */
     private void handleExtendInfo(Map<String, String> extendInfo) {
         if (extendInfo.containsKey(Constants.EXTEND_INFO_CONFIG_DUMP_EVENT)) {
             String jsonVal = extendInfo.get(Constants.EXTEND_INFO_CONFIG_DUMP_EVENT);

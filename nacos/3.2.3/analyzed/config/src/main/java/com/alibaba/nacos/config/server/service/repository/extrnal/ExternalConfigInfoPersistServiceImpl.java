@@ -90,6 +90,7 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapperInjector.CONFIG_INFO_WRAPPER_ROW_MAPPER;
 
 /**
+ * 外置数据库正式配置持久化核心实现：使用 {@link JdbcTemplate} 与 {@link TransactionTemplate} 管理 config_info 及标签关联、加密处理与历史写入。
  * ExternalConfigInfoPersistServiceImpl.
  *
  * @author lixiaoshuang
@@ -99,19 +100,22 @@ import static com.alibaba.nacos.config.server.service.repository.ConfigRowMapper
 @Service("externalConfigInfoPersistServiceImpl")
 public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistService {
     
-    /**
-     * constant variables.
-     */
+    /** 类内常量定义区。 */
+    /** constant variables. */
     public static final String SPOT = ".";
     
+    /** Spring JDBC 模板，执行单条 SQL。 */
     protected JdbcTemplate jt;
     
+    /** 编程式事务模板，保证配置写入原子性。 */
     protected TransactionTemplate tjt;
     
     MapperManager mapperManager;
     
+    /** 依赖字段 dataSourceService。 */
     private DataSourceService dataSourceService;
     
+    /** 依赖字段 historyConfigInfoPersistService。 */
     private HistoryConfigInfoPersistService historyConfigInfoPersistService;
     
     public ExternalConfigInfoPersistServiceImpl(
@@ -126,11 +130,13 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         this.historyConfigInfoPersistService = historyConfigInfoPersistService;
     }
     
+    /** 创建分页查询助手。 */
     @Override
     public <E> PaginationHelper<E> createPaginationHelper() {
         return new ExternalStoragePaginationHelperImpl<>(jt);
     }
     
+    /** 将搜索关键字转为 SQL LIKE 参数（转义 _ 与 *）。 */
     @Override
     public String generateLikeArgument(String s) {
         String underscore = "_";
@@ -146,6 +152,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 新增正式配置（含标签与历史）。 */
     @Override
     public ConfigOperateResult addConfigInfo(final String srcIp, final String srcUser,
         final ConfigInfo configInfo,
@@ -184,6 +191,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         });
     }
     
+    /** 更新ConfigInfoMetadata。 */
     @Override
     public ConfigOperateResult updateConfigInfoMetadata(final String dataId, final String group,
         final String tenant,
@@ -226,6 +234,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
      * @param configInfo        config info
      * @param configAdvanceInfo advance info
      * @return
+      * <p>外置正式配置持久化核心实现；详见类级说明。</p>
      */
     @Override
     public ConfigOperateResult insertOrUpdate(String srcIp, String srcUser, ConfigInfo configInfo,
@@ -248,6 +257,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 插入OrUpdateCas。 */
     @Override
     public ConfigOperateResult insertOrUpdateCas(String srcIp, String srcUser,
         ConfigInfo configInfo,
@@ -270,6 +280,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 新增ConfigInfoAtomic。 */
     @Override
     public long addConfigInfoAtomic(final long configId, final String srcIp, final String srcUser,
         final ConfigInfo configInfo, Map<String, Object> configAdvanceInfo) {
@@ -342,6 +353,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return ps;
     }
     
+    /** 新增ConfigTagRelationAtomic。 */
     @Override
     public void addConfigTagRelationAtomic(long configId, String tagName, String dataId,
         String group, String tenant) {
@@ -358,6 +370,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 新增ConfigTagsRelation。 */
     @Override
     public void addConfigTagsRelation(long configId, String configTags, String dataId, String group,
         String tenant) {
@@ -369,6 +382,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 批量导入或更新配置。 */
     @Override
     public Map<String, Object> batchInsertOrUpdate(List<ConfigAllInfo> configInfoList,
         String srcUser, String srcIp,
@@ -469,6 +483,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return type;
     }
     
+    /** 删除正式配置。 */
     @Override
     public void removeConfigInfo(final String dataId, final String group, final String tenant,
         final String srcIp,
@@ -477,6 +492,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
             
             final Timestamp time = new Timestamp(System.currentTimeMillis());
             
+            /** 实现接口方法 doInTransaction。 */
             @Override
             public Boolean doInTransaction(TransactionStatus status) {
                 try {
@@ -500,6 +516,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         });
     }
     
+    /** 删除ConfigInfoByIds。 */
     @Override
     public List<ConfigAllInfo> removeConfigInfoByIds(final List<Long> ids, final String srcIp,
         final String srcUser) {
@@ -511,6 +528,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
             
             final Timestamp time = new Timestamp(System.currentTimeMillis());
             
+            /** 实现接口方法 doInTransaction。 */
             @Override
             public List<ConfigAllInfo> doInTransaction(TransactionStatus status) {
                 try {
@@ -536,6 +554,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         });
     }
     
+    /** 删除TagByIdAtomic。 */
     @Override
     public void removeTagByIdAtomic(long id) {
         try {
@@ -548,6 +567,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 删除ConfigInfoAtomic。 */
     @Override
     public void removeConfigInfoAtomic(final String dataId, final String group, final String tenant,
         final String srcIp,
@@ -566,6 +586,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 删除ConfigInfoByIdsAtomic。 */
     @Override
     public void removeConfigInfoByIdsAtomic(final String ids) {
         if (StringUtils.isBlank(ids)) {
@@ -590,6 +611,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 更新正式配置内容与元数据。 */
     @Override
     public ConfigOperateResult updateConfigInfo(final ConfigInfo configInfo, final String srcIp,
         final String srcUser,
@@ -652,6 +674,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         
     }
     
+    /** 更新ConfigInfoCas。 */
     @Override
     public ConfigOperateResult updateConfigInfoCas(final ConfigInfo configInfo, final String srcIp,
         final String srcUser, final Map<String, Object> configAdvanceInfo) {
@@ -759,6 +782,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 更新ConfigInfoAtomic。 */
     @Override
     public void updateConfigInfoAtomic(final ConfigInfo configInfo, final String srcIp,
         final String srcUser,
@@ -810,6 +834,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 查询ConfigMaxId。 */
     @Override
     public long findConfigMaxId() {
         ConfigInfoMapper configInfoMapper =
@@ -824,6 +849,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 按三元组查询完整配置。 */
     @Override
     public ConfigInfo findConfigInfo(long id) {
         try {
@@ -841,6 +867,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 按三元组查询完整配置。 */
     @Override
     public ConfigInfoWrapper findConfigInfo(final String dataId, final String group,
         final String tenant) {
@@ -863,6 +890,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 分页搜索配置列表。 */
     @Override
     public Page<ConfigInfo> findConfigInfo4Page(final int pageNo, final int pageSize,
         final String dataId,
@@ -926,6 +954,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 统计配置总数。 */
     @Override
     public int configInfoCount() {
         ConfigInfoMapper configInfoMapper =
@@ -939,6 +968,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return result;
     }
     
+    /** 统计配置总数。 */
     @Override
     public int configInfoCount(String tenant) {
         ConfigInfoMapper configInfoMapper =
@@ -955,6 +985,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         return result;
     }
     
+    /** 获取租户 ID 列表。 */
     @Override
     public List<String> getTenantIdList(int page, int pageSize) {
         ConfigInfoMapper configInfoMapper =
@@ -967,6 +998,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
             String.class);
     }
     
+    /** 获取GroupIdList。 */
     @Override
     public List<String> getGroupIdList(int page, int pageSize) {
         ConfigInfoMapper configInfoMapper =
@@ -979,6 +1011,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
             String.class);
     }
     
+    /** 查询AllConfigInfoFragment。 */
     @Override
     public Page<ConfigInfoWrapper> findAllConfigInfoFragment(final long lastMaxId,
         final int pageSize,
@@ -1001,6 +1034,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 查询ConfigInfoLike4Page。 */
     @Override
     public Page<ConfigInfo> findConfigInfoLike4Page(final int pageNo, final int pageSize,
         final String dataId,
@@ -1074,6 +1108,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 查询指定时间后的变更配置列表。 */
     @Override
     public List<ConfigInfoStateWrapper> findChangeConfig(final Timestamp startTime, long lastMaxId,
         final int pageSize) {
@@ -1096,6 +1131,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 实现接口方法 selectTagByConfig。 */
     @Override
     public List<String> selectTagByConfig(String dataId, String group, String tenant) {
         ConfigTagsRelationMapper configTagsRelationMapper = mapperManager.findMapper(
@@ -1114,6 +1150,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 按 ID 批量查询配置。 */
     @Override
     public List<ConfigInfo> findConfigInfosByIds(final String ids) {
         if (StringUtils.isBlank(ids)) {
@@ -1142,6 +1179,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 查询配置扩展元数据。 */
     @Override
     public ConfigAdvanceInfo findConfigAdvanceInfo(final String dataId, final String group,
         final String tenant) {
@@ -1177,6 +1215,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 查询ConfigAllInfo。 */
     @Override
     public ConfigAllInfo findConfigAllInfo(final String dataId, final String group,
         final String tenant) {
@@ -1214,6 +1253,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 查询配置元数据状态（id、最后修改时间）。 */
     @Override
     public ConfigInfoStateWrapper findConfigInfoState(final String dataId, final String group,
         final String tenant) {
@@ -1236,6 +1276,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 导出用全量配置分页查询。 */
     @Override
     public List<ConfigAllInfo> findAllConfigInfo4Export(final String dataId, final String group,
         final String tenant,
@@ -1292,6 +1333,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
         }
     }
     
+    /** 实现接口方法 queryConfigInfoByNamespace。 */
     @Override
     public List<ConfigInfoWrapper> queryConfigInfoByNamespace(String tenant) {
         if (Objects.isNull(tenant)) {
