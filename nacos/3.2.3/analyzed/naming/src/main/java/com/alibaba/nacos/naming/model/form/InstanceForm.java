@@ -27,7 +27,10 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * InstanceForm.
+ * 实例注册/更新 HTTP 请求表单。
+ *
+ * <p>承载 namespace、服务名、IP、端口、权重、健康状态、元数据及 ephemeral 等字段；validate 时强制 serviceName、ip、port 非空。</p>
+ *
  * @author dongyafei
  * @date 2022/9/7
  */
@@ -61,7 +64,7 @@ public class InstanceForm implements Serializable {
     }
     
     /**
-     * check param.
+     * 校验必填参数并填充默认值。
      *
      * @throws NacosApiException NacosApiException
      */
@@ -81,9 +84,7 @@ public class InstanceForm implements Serializable {
         }
     }
     
-    /**
-     * fill default value.
-     */
+    /** 填充命名空间、分组、集群名及 healthy/weight/enabled 默认值。 */
     public void fillDefaultValue() {
         if (StringUtils.isBlank(namespaceId)) {
             namespaceId = Constants.DEFAULT_NAMESPACE_ID;

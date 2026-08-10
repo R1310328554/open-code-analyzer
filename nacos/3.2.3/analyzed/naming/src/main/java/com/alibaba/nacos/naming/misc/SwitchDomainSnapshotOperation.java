@@ -30,7 +30,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.zip.Checksum;
 
 /**
- * Switch Domain snapshot operation.
+ * {@link SwitchDomain} 持久化快照读写操作。
+ *
+ * <p>将开关域数据压缩为 naming_persistent.zip 写入 Raft 快照，恢复时校验 CRC64 后交由 {@link SwitchManager#loadSnapshot} 加载。</p>
  *
  * @author xiweng.yy
  */
@@ -51,6 +53,7 @@ public class SwitchDomainSnapshotOperation extends AbstractSnapshotOperation {
         this.serializer = serializer;
     }
     
+    /** 导出开关域目录、压缩并附带 CRC64 校验写入快照。 */
     @Override
     protected boolean writeSnapshot(Writer writer) throws Exception {
         final String writePath = writer.getPath();
@@ -69,6 +72,7 @@ public class SwitchDomainSnapshotOperation extends AbstractSnapshotOperation {
         return writer.addFile(snapshotArchive, meta);
     }
     
+    /** 解压快照、校验 CRC64 并加载开关域数据。 */
     @Override
     protected boolean readSnapshot(Reader reader) throws Exception {
         final String readerPath = reader.getPath();
@@ -89,11 +93,13 @@ public class SwitchDomainSnapshotOperation extends AbstractSnapshotOperation {
         return true;
     }
     
+    /** 快照保存链路追踪标签。 */
     @Override
     protected String getSnapshotSaveTag() {
         return SwitchDomainSnapshotOperation.class.getSimpleName() + ".SAVE";
     }
     
+    /** 快照加载链路追踪标签。 */
     @Override
     protected String getSnapshotLoadTag() {
         return SwitchDomainSnapshotOperation.class.getSimpleName() + ".LOAD";

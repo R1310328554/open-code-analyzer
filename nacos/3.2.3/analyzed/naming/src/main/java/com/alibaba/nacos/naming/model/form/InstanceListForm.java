@@ -26,7 +26,9 @@ import org.springframework.http.HttpStatus;
 import java.util.Objects;
 
 /**
- * Instance List Form.
+ * 实例列表查询表单。
+ *
+ * <p>支持按 namespace、group、service、cluster 过滤，healthyOnly 为 true 时仅返回健康实例。</p>
  *
  * @author xiweng.yy
  */
@@ -45,7 +47,7 @@ public class InstanceListForm implements NacosForm {
     private Boolean healthyOnly;
     
     /**
-     * check param.
+     * 校验 serviceName 必填并填充默认 namespace/group/cluster。
      *
      * @throws NacosApiException NacosApiException
      */
@@ -57,9 +59,7 @@ public class InstanceListForm implements NacosForm {
         }
     }
     
-    /**
-     * fill default value.
-     */
+    /** 填充缺省命名空间、分组，cluster 默认空串，healthyOnly 默认 false。 */
     public void fillDefaultValue() {
         if (StringUtils.isBlank(namespaceId)) {
             namespaceId = Constants.DEFAULT_NAMESPACE_ID;

@@ -29,7 +29,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Switch domain.
+ * 命名全局开关域模型，集中存储 Distro、推送、健康检查等运行时配置。
+ *
+ * <p>实现 {@link Record} 与 {@link Cloneable}，由 {@link SwitchManager} 持久化并通过 Raft 同步；运维可通过 OpenAPI 动态调整各开关项。</p>
  *
  * @author nacos
  */
@@ -82,14 +84,10 @@ public class SwitchDomain implements Record, Cloneable {
     
     private Map<String, Integer> limitedUrlMap = new HashMap<>();
     
-    /**
-     * The server is regarded as expired if its two reporting interval is lagger than this variable.
-     */
+    /** Distro 节点上报间隔超过该毫秒数时视为过期。 */
     private long distroServerExpiredMillis = TimeUnit.SECONDS.toMillis(10);
     
-    /**
-     * since which version, push can be enabled.
-     */
+    /** 自该客户端版本起允许开启推送能力。 */
     private String pushVersionOfGo = "0.1.0";
     
     private String pushVersionOfJava = "0.1.0";
@@ -151,7 +149,7 @@ public class SwitchDomain implements Record, Cloneable {
         this.sendBeatOnly = sendBeatOnly;
     }
     
-    // the followings are not implemented
+    // 以下 Record 接口方法暂未实现
     
     public String getName() {
         return UtilsAndCommons.SWITCH_DOMAIN_NAME;
@@ -221,6 +219,7 @@ public class SwitchDomain implements Record, Cloneable {
         return healthCheckEnabled;
     }
     
+    /** 全局开关或白名单命中时对该服务启用健康检查。 */
     public boolean isHealthCheckEnabled(String serviceName) {
         return healthCheckEnabled || getHealthCheckWhiteList().contains(serviceName);
     }
@@ -406,30 +405,32 @@ public class SwitchDomain implements Record, Cloneable {
         return null;
     }
     
+    /** 健康检查 RT 参数接口：最大/最小响应时间与重估因子。 */
     public interface HealthParams {
         
         /**
-         * Maximum RT.
+         * 最大响应时间阈值（毫秒）。
          *
          * @return Max RT
          */
         int getMax();
         
         /**
-         * Minimum RT.
+         * 最小响应时间阈值（毫秒）。
          *
          * @return Minimum RT
          */
         int getMin();
         
         /**
-         * Get Factor to reevaluate RT.
+         * 获取 RT 重估因子，用于动态调整超时判定。
          *
          * @return reevaluate factor
          */
         float getFactor();
     }
     
+    /** HTTP 健康检查 RT 参数默认值与边界常量。 */
     public static class HttpHealthParams implements HealthParams {
         
         public static final int MIN_MAX = 3000;
@@ -470,6 +471,7 @@ public class SwitchDomain implements Record, Cloneable {
         }
     }
     
+    /** MySQL 健康检查 RT 参数配置。 */
     public static class MysqlHealthParams implements HealthParams {
         
         private int max = 3000;
@@ -506,6 +508,7 @@ public class SwitchDomain implements Record, Cloneable {
         }
     }
     
+    /** TCP 健康检查 RT 参数配置。 */
     public static class TcpHealthParams implements HealthParams {
         
         private int max = 5000;

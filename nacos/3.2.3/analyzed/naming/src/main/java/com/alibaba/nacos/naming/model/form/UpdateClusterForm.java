@@ -24,7 +24,9 @@ import com.alibaba.nacos.api.model.NacosForm;
 import org.springframework.http.HttpStatus;
 
 /**
- * Nacos HTTP update cluster API form.
+ * 集群配置更新 HTTP 表单。
+ *
+ * <p>用于修改健康检查端口、是否复用实例端口、healthChecker 类型及集群 metadata；serviceName 与 clusterName 为必填项。</p>
  *
  * @author xiweng.yy
  */
@@ -48,6 +50,7 @@ public class UpdateClusterForm implements NacosForm {
     
     private String metadata;
     
+    /** 校验必填字段并在通过后填充 namespace/group/metadata 默认值。 */
     @Override
     public void validate() throws NacosApiException {
         if (StringUtils.isBlank(serviceName)) {
@@ -73,6 +76,7 @@ public class UpdateClusterForm implements NacosForm {
         fillDefaultValue();
     }
     
+    /** 填充缺省 namespace、group，metadata 缺省为空串。 */
     private void fillDefaultValue() {
         if (StringUtils.isEmpty(namespaceId)) {
             namespaceId = Constants.DEFAULT_NAMESPACE_ID;

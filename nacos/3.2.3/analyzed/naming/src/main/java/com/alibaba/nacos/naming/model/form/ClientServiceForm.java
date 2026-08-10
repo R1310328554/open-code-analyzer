@@ -26,7 +26,9 @@ import org.springframework.http.HttpStatus;
 import java.io.Serial;
 
 /**
- * Client Info Service From.
+ * 客户端服务查询表单，用于按客户端 IP/端口定位其订阅的服务。
+ *
+ * <p>实现 {@link NacosForm}，namespaceId 与 groupName 可缺省并填充默认值。</p>
  *
  * @author xiweng.yy
  */
@@ -45,6 +47,7 @@ public class ClientServiceForm implements NacosForm {
     
     private Integer port;
     
+    /** 填充默认值并校验 serviceName 必填。 */
     @Override
     public void validate() throws NacosApiException {
         fillDefaultValue();
@@ -54,9 +57,7 @@ public class ClientServiceForm implements NacosForm {
         }
     }
     
-    /**
-     * fill default value.
-     */
+    /** 为 namespaceId、groupName 填充平台默认常量。 */
     public void fillDefaultValue() {
         if (StringUtils.isBlank(namespaceId)) {
             namespaceId = Constants.DEFAULT_NAMESPACE_ID;

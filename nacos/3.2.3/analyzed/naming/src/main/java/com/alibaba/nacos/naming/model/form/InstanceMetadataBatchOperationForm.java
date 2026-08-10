@@ -26,7 +26,10 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * InstanceMetadataBatchOperationForm.
+ * 实例元数据批量操作表单。
+ *
+ * <p>通过 instances 字段指定目标实例列表，metadata 为待批量写入的元数据 JSON；consistencyType 可选指定一致性策略。</p>
+ *
  * @author dongyafei
  * @date 2022/9/7
  */
@@ -50,7 +53,7 @@ public class InstanceMetadataBatchOperationForm implements Serializable {
     }
     
     /**
-     * check param.
+     * 校验 serviceName 与 metadata 必填。
      *
      * @throws NacosApiException NacosApiException
      */
@@ -66,9 +69,7 @@ public class InstanceMetadataBatchOperationForm implements Serializable {
         }
     }
     
-    /**
-     * fill default value.
-     */
+    /** 填充默认 namespace/group，consistencyType 与 instances 缺省为空串。 */
     public void fillDefaultValue() {
         if (StringUtils.isBlank(namespaceId)) {
             namespaceId = Constants.DEFAULT_NAMESPACE_ID;

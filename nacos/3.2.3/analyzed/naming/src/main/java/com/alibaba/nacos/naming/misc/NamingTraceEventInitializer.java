@@ -23,13 +23,16 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 
 /**
- * Naming Trace event initializer.
+ * 命名链路追踪事件初始化器。
+ *
+ * <p>Spring 容器启动后注册 {@link NamingTraceEvent} 的 {@link NacosCombinedTraceSubscriber}，使命名操作可接入统一追踪体系。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class NamingTraceEventInitializer {
     
+    /** 容器就绪后订阅命名追踪事件类型。 */
     @PostConstruct
     public void registerSubscriberForNamingEvent() {
         new NacosCombinedTraceSubscriber(NamingTraceEvent.class);

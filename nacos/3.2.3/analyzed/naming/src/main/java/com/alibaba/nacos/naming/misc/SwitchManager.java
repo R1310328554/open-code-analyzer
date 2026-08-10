@@ -59,7 +59,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Switch manager.
+ * 命名开关域 CP 一致性管理器。
+ *
+ * <p>继承 {@link RequestProcessor4CP}，负责开关项校验、本地更新与 Raft 持久化；提供快照导入导出及 {@link SwitchEntry} 逐项热更新能力。</p>
  *
  * @author nkorange
  * @since 1.0.0
@@ -100,7 +102,9 @@ public class SwitchManager extends RequestProcessor4CP {
     }
     
     /**
-     * Update switch information.
+     * 按开关项键更新单个配置值。
+     *
+     * <p>先克隆当前 {@link SwitchDomain} 并校验，debug 为 true 时仅本地生效，否则通过 Raft 写入持久化。</p>
      *
      * @param entry item entry of switch, {@link SwitchEntry}
      * @param value switch value
@@ -169,7 +173,7 @@ public class SwitchManager extends RequestProcessor4CP {
                 tempSwitchDomain.setDefaultPushCacheMillis(cacheMillis);
             }
             
-            // extremely careful while modifying this, cause it will affect all clients without pushing enabled
+            // 修改此项需格外谨慎，会影响未开启推送的全部客户端缓存行为
             if (entry.equals(SwitchEntry.DEFAULT_CACHE_MILLIS)) {
                 long cacheMillis = Long.parseLong(value);
                 
@@ -337,7 +341,7 @@ public class SwitchManager extends RequestProcessor4CP {
     }
     
     /**
-     * Update switch information from new switch domain.
+     * 用完整开关域对象覆盖当前内存配置。
      *
      * @param newSwitchDomain new switch domain
      */
@@ -379,7 +383,7 @@ public class SwitchManager extends RequestProcessor4CP {
     }
     
     /**
-     * Validate health params.
+     * 校验健康检查 RT 参数 min/max/factor 是否在合法范围。
      *
      * @param healthParams health params
      */
@@ -427,7 +431,7 @@ public class SwitchManager extends RequestProcessor4CP {
     }
     
     /**
-     * Load Snapshot from snapshot dir.
+     * 从快照目录恢复开关域数据到本地磁盘与内存。
      *
      * @param snapshotPath snapshot dir
      */
@@ -435,9 +439,9 @@ public class SwitchManager extends RequestProcessor4CP {
         this.raftLock.writeLock().lock();
         try {
             File srcDir = Paths.get(snapshotPath).toFile();
-            // If snapshot path is non-exist, means snapshot is empty
+            // 快照目录不存在表示空快照，跳过加载
             if (srcDir.exists()) {
-                // First clean up the local file information, before the file copy
+                // 复制前先清空本地数据目录，避免残留旧文件
                 String baseDir = this.dataFile.getParent();
                 DiskUtils.deleteDirThenMkdir(baseDir);
                 File descDir = Paths.get(baseDir).toFile();
@@ -461,7 +465,7 @@ public class SwitchManager extends RequestProcessor4CP {
     }
     
     /**
-     * Dump data from data dir to snapshot dir.
+     * 将本地开关域数据目录复制到快照备份路径。
      *
      * @param backupPath snapshot dir
      */
@@ -478,6 +482,7 @@ public class SwitchManager extends RequestProcessor4CP {
         }
     }
     
+    /** CP 读请求：返回当前 SwitchDomain 序列化数据。 */
     @Override
     public Response onRequest(ReadRequest request) {
         this.raftLock.readLock().lock();
@@ -503,6 +508,7 @@ public class SwitchManager extends RequestProcessor4CP {
         }
     }
     
+    /** CP 写请求：反序列化并持久化开关域变更。 */
     @Override
     public Response onApply(WriteRequest log) {
         this.raftLock.writeLock().lock();

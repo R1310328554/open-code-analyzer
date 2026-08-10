@@ -26,7 +26,10 @@ import org.springframework.http.HttpStatus;
 import java.util.Objects;
 
 /**
- * ServiceForm.
+ * 服务创建/更新 HTTP 请求表单。
+ *
+ * <p>包含 ephemeral、protectThreshold、metadata、selector 等服务级配置；实现 {@link NacosForm} 接口。</p>
+ *
  * @author dongyafei
  * @date 2022/9/7
  */
@@ -51,6 +54,7 @@ public class ServiceForm implements NacosForm {
     public ServiceForm() {
     }
     
+    /** 校验 serviceName 必填并填充各字段默认值。 */
     @Override
     public void validate() throws NacosApiException {
         fillDefaultValue();
@@ -60,9 +64,7 @@ public class ServiceForm implements NacosForm {
         }
     }
     
-    /**
-     * fill default value.
-     */
+    /** 填充 namespace/group，ephemeral 默认 false，protectThreshold 默认 0。 */
     public void fillDefaultValue() {
         if (StringUtils.isBlank(namespaceId)) {
             namespaceId = Constants.DEFAULT_NAMESPACE_ID;

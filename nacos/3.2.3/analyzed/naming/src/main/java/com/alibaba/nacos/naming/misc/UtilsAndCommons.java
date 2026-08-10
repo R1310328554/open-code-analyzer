@@ -35,14 +35,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Naming utils and common values.
+ * 命名模块公共常量与工具方法集合。
+ *
+ * <p>定义 HTTP 路径前缀、开关域名、实例元数据键、Raft 数据目录等；并提供 metadata 解析与一致性哈希负载均衡 {@link #shakeUp} 等辅助能力。</p>
  *
  * @author nacos
  * @author jifengnan
  */
 public class UtilsAndCommons {
     
-    // ********************** Nacos HTTP Context ************************ \\
+    // ********************** Nacos HTTP 上下文路径常量 ************************ \\
     
     public static final String NACOS_SERVER_CONTEXT = "/nacos";
     
@@ -99,7 +101,7 @@ public class UtilsAndCommons {
     
     public static final String INSTANCE_V3_CLIENT_API_PATH = V3_CLIENT_API_PATH + "/ns/instance";
     
-    // ********************** Nacos HTTP Context ************************ //
+    // ********************** Nacos HTTP 上下文路径常量 ************************ //
     
     public static final String NACOS_SERVER_HEADER = Constants.NACOS_SERVER_HEADER;
     
@@ -178,7 +180,9 @@ public class UtilsAndCommons {
     }
     
     /**
-     * Parse meta data from string.
+     * 将 metadata 字符串解析为键值 Map。
+     *
+     * <p>优先按 JSON 解析，失败则回退为逗号分隔的 key=value 格式。</p>
      *
      * @param metadata meta data string
      * @return meta data map
@@ -213,21 +217,22 @@ public class UtilsAndCommons {
         return metadataMap;
     }
     
+    /** 拼接 namespaceId 与服务名，使用 {@link #NAMESPACE_SERVICE_CONNECTOR} 连接。 */
     public static String assembleFullServiceName(String namespaceId, String serviceName) {
         return namespaceId + UtilsAndCommons.NAMESPACE_SERVICE_CONNECTOR + serviceName;
     }
     
     /**
-     * Provide a number between 0(inclusive) and {@code upperLimit}(exclusive) for the given {@code string}, the number
-     * will be nearly uniform distribution.
+     * 基于字符串哈希在 [0, upperLimit) 区间生成近似均匀分布的索引。
      *
+     * <p>常用于同一服务多节点 IP 列表的确定性负载均衡选择。</p>
      * <p>e.g. Assume there's an array which contains some IP of the servers provide the same service, the caller name
      * can be used to choose the server to achieve load balance.
      * <blockquote><pre>
      *     String[] serverIps = new String[10];
      *     int index = shakeUp("callerName", serverIps.length);
      *     String targetServerIp = serverIps[index];
-     * </pre></blockquote>
+     * </pre></blockquote></p>
      *
      * @param string     a string. the number 0 will be returned if it's null
      * @param upperLimit the upper limit of the returned number, must be a positive integer, which means > 0

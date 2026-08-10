@@ -26,7 +26,10 @@ import org.springframework.http.HttpStatus;
 import java.util.Objects;
 
 /**
- * UpdateHealthForm.
+ * 手动更新实例健康状态表单。
+ *
+ * <p>通过 serviceName、ip、port 定位实例，healthy 指定目标健康布尔值；常用于运维强制上下线或探活补偿。</p>
+ *
  * @author dongyafei
  * @date 2022/9/15
  */
@@ -50,7 +53,7 @@ public class UpdateHealthForm {
     }
     
     /**
-     * check param.
+     * 校验 healthy、serviceName、ip、port 必填。
      *
      * @throws NacosApiException NacosApiException
      */
@@ -74,9 +77,7 @@ public class UpdateHealthForm {
         }
     }
     
-    /**
-     * fill default value.
-     */
+    /** 填充默认 namespace、group 及 DEFAULT 集群名。 */
     public void fillDefaultValue() {
         if (StringUtils.isBlank(namespaceId)) {
             namespaceId = Constants.DEFAULT_NAMESPACE_ID;

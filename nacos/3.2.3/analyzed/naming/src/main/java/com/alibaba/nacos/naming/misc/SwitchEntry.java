@@ -17,7 +17,9 @@
 package com.alibaba.nacos.naming.misc;
 
 /**
- * All switch entries for naming.
+ * 命名开关项键名与操作常量定义。
+ *
+ * <p>供 {@link SwitchManager#update} 解析 entry 参数，以及 OpenAPI 批量/单项开关变更使用；同时定义各时间阈值的下限常量。</p>
  *
  * @author nkorange
  */
@@ -111,8 +113,6 @@ public class SwitchEntry {
     
     public static final String AUTO_CHANGE_HEALTH_CHECK_ENABLED = "autoChangeHealthCheckEnabled";
     
-    /**
-     * Used to open or close double write service data between v2.0.0 - v2.1.0
-     */
+    /** 用于 v2.0.0–v2.1.0 期间开启/关闭服务数据双写迁移。 */
     public static final String DOUBLE_WRITE_ENABLED = "doubleWriteEnabled";
 }
