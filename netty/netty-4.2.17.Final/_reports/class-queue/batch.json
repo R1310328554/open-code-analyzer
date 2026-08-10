@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:36:02Z",
-  "files": [
-    "common/src/main/java/io/netty/util/concurrent/GenericProgressiveFutureListener.java",
-    "common/src/main/java/io/netty/util/concurrent/GlobalEventExecutor.java",
-    "common/src/main/java/io/netty/util/concurrent/ImmediateEventExecutor.java",
-    "common/src/main/java/io/netty/util/concurrent/ImmediateExecutor.java",
-    "common/src/main/java/io/netty/util/concurrent/MockTicker.java",
-    "common/src/main/java/io/netty/util/concurrent/MpscIntQueue.java",
-    "common/src/main/java/io/netty/util/concurrent/MultithreadEventExecutorGroup.java",
-    "common/src/main/java/io/netty/util/concurrent/NonStickyEventExecutorGroup.java",
-    "common/src/main/java/io/netty/util/concurrent/OrderedEventExecutor.java",
-    "common/src/main/java/io/netty/util/concurrent/ProgressiveFuture.java",
-    "common/src/main/java/io/netty/util/concurrent/ProgressivePromise.java",
-    "common/src/main/java/io/netty/util/concurrent/Promise.java",
-    "common/src/main/java/io/netty/util/concurrent/PromiseAggregator.java",
-    "common/src/main/java/io/netty/util/concurrent/PromiseCombiner.java",
-    "common/src/main/java/io/netty/util/concurrent/PromiseNotifier.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 758,
-  "done": 1155
+  "done": 1170
 }
