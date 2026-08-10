@@ -21,6 +21,8 @@ package org.keycloak.client.clienttype;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link ClientTypeProvider} 的 {@link ProviderFactory} 工厂接口。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ClientTypeProviderFactory extends ProviderFactory<ClientTypeProvider> {

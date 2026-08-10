@@ -17,5 +17,11 @@
 
 package org.keycloak.cluster;
 
+/**
+ * 持久化的集群事件记录，包含事件标识与序列化载荷。
+ *
+ * @param id 事件唯一标识
+ * @param eventData 序列化后的事件字节数据
+ */
 public record StoredClusterEvent(String id, byte[] eventData) {
 }

@@ -18,16 +18,18 @@
 package org.keycloak.cluster;
 
 /**
- * Task to be executed on all cluster nodes once it's notified.
+ * 集群监听器：在任意节点收到缓存通知后于各集群节点执行的任务。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ClusterListener {
 
     /**
+     * 收到缓存通知后在所有集群节点上执行的已注册任务。
+     *
      * Registered task to be executed on all cluster nodes once it's notified from cache.
      *
-     * @param event value of notification (Object added into the cache)
+     * @param event 通知载荷（写入缓存的对象）
      */
     void eventReceived(ClusterEvent event);
 

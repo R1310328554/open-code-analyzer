@@ -18,6 +18,8 @@
 package org.keycloak.cluster;
 
 /**
+ * {@link ClusterProvider#executeIfNotExecuted} 的执行结果，区分任务是否实际运行及其返回值。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ExecutionResult<T> {
@@ -30,18 +32,22 @@ public class ExecutionResult<T> {
         this.result = result;
     }
 
+    /** 任务已执行并携带结果。 */
     public static <T> ExecutionResult<T> executed(T result) {
         return new ExecutionResult<>(true, result);
     }
 
+    /** 任务未执行（已有其他节点或本节点正在处理）。 */
     public static <T> ExecutionResult<T> notExecuted() {
         return new ExecutionResult<>(false, null);
     }
 
+    /** @return 是否实际执行了任务 */
     public boolean isExecuted() {
         return executed;
     }
 
+    /** @return 任务返回值；未执行时为 {@code null} */
     public T getResult() {
         return result;
     }

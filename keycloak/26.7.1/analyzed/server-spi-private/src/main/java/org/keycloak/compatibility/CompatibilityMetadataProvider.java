@@ -3,20 +3,22 @@ package org.keycloak.compatibility;
 import java.util.Map;
 
 /**
- * Provides the metadata used by the "update-compatibility" command.
+ * 为 {@code update-compatibility} 命令提供元数据的 SPI。
  * <p>
- * Implementations should return all metadata required to determine if it is possible to update from one Keycloak
- * deployment to another in a compatible manner. Metadata key/value pairs may be added or removed in a subsequent
- * version, so it's necessary for implementations to handle missing metadata gracefully.
+ * 实现应返回判断两次 Keycloak 部署间能否兼容升级所需的全部键值对；后续版本可能增删元数据键，实现需优雅处理缺失项。
+ * </p>
  * <p>
- * The {@link CompatibilityResult} determines if a rolling update is possible. Factory methods are present with default
- * implementations of {@link CompatibilityResult}.
+ * {@link CompatibilityResult} 表示是否可滚动更新；工厂方法提供 {@link CompatibilityResult} 的默认实现。
+ * </p>
  */
 public interface CompatibilityMetadataProvider {
 
+    /** 默认优先级，用于同 ID 多实现时的排序。 */
     int DEFAULT_PRIORITY = 1;
 
     /**
+     * 返回需持久化的兼容性元数据；空映射表示不保存本实现的信息。
+     *
      * Provides the metadata to be persisted.
      * <p>
      * If an empty {@link Map} is returned, no information about this implementation will be persisted. A {@code null}
@@ -27,6 +29,8 @@ public interface CompatibilityMetadataProvider {
     Map<String, String> metadata();
 
     /**
+     * 将当前元数据与另一部署的元数据比较，默认相等则允许滚动更新。
+     *
      * It compares the current metadata with {@code other} from another deployment.
      * <p>
      * The default implementation will allow a rolling update if the metadata from the current server is equal to the
@@ -41,7 +45,7 @@ public interface CompatibilityMetadataProvider {
     }
 
     /**
-     * @return The priority. Only relevant is multiple implementation has the same {@link #getId()} and/or to replace
+     * @return 优先级；当多个实现共享同一 {@link #getId()} 或需替换内置实现时生效
      * the default implementation shipped in Keycloak.
      */
     default int priority() {
@@ -49,7 +53,7 @@ public interface CompatibilityMetadataProvider {
     }
 
     /**
-     * @return The ID of this implementation. It should be unique as implementation with the same ID and priority is not
+     * @return 实现唯一标识；相同 ID 与优先级的并存实现无效
      * valid.
      */
     String getId();

@@ -22,6 +22,9 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * 客户端类型管理器 {@link ProviderFactory}，同时实现 {@link EnvironmentDependentProviderFactory}。
+ * <p>负责在运行时创建 {@link ClientTypeManager} 实例，并可根据部署环境决定是否启用。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ClientTypeManagerFactory extends ProviderFactory<ClientTypeManager>, EnvironmentDependentProviderFactory {

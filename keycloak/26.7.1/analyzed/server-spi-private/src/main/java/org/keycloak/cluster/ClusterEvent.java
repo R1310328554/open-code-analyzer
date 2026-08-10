@@ -20,10 +20,13 @@ package org.keycloak.cluster;
 import java.util.function.Consumer;
 
 /**
+ * 集群事件：实现 {@link Consumer}{@code <ClusterListener>}，收到通知时调用 {@link ClusterListener#eventReceived(ClusterEvent)}。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ClusterEvent extends Consumer<ClusterListener> {
 
+    /** 将事件分发给监听器。 */
     @Override
     default void accept(ClusterListener listener) {
         listener.eventReceived(this);

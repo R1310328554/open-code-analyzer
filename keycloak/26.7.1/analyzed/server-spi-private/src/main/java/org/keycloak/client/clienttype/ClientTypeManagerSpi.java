@@ -23,25 +23,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 客户端类型管理器 SPI，注册 {@link ClientTypeManager} 提供者类型。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientTypeManagerSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code client-type-manager}。 */
     @Override
     public String getName() {
         return "client-type-manager";
     }
 
+    /** 管理器提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return ClientTypeManager.class;
     }
 
+    /** 管理器工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ClientTypeManagerFactory.class;

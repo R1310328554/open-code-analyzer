@@ -23,48 +23,53 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * The result of {@link CompatibilityMetadataProvider#isCompatible(Map)}.
+ * {@link CompatibilityMetadataProvider#isCompatible(Map)} 的兼容性判定结果。
  * <p>
- * It is composed by the exit code (to help building scripts around this tool as it is easier than parsing logs), and an
- * optional error message.
+ * 包含脚本友好的退出码（便于封装 CI 流程）及可选的错误说明。
+ * </p>
  */
 public interface CompatibilityResult {
 
     /**
-     * @return The exit code to use to signal the compatibility result.
+     * @return 表示兼容性结论的进程退出码
      */
     int exitCode();
 
     /**
-     * @return An optional error message explaining what caused the incompatibility.
+     * @return 可选的不兼容原因说明
      */
     default Optional<String> errorMessage() {
         return Optional.empty();
     }
 
     /**
-     * @return An optional message after the check is finished.
+     * @return 检查完成后的可选提示信息
      */
     default Optional<String> endMessage() {
         return Optional.empty();
     }
 
+    /** @return 不兼容的属性名集合，默认空 */
     default Optional<Set<String>> incompatibleAttributes() {return Optional.empty();}
 
+    /** 创建提供者兼容的结果（退出码 ROLLING）。 */
     static CompatibilityResult providerCompatible(String providerId) {
         return new ProviderCompatibleResult(Objects.requireNonNull(providerId));
     }
 
+    /** 创建因属性变更导致不兼容的结果（退出码 RECREATE）。 */
     static CompatibilityResult incompatibleAttribute(String providerId, String attribute, String previousValue, String currentValue) {
         return new ProviderIncompatibleResult(Objects.requireNonNull(providerId), Objects.requireNonNull(attribute),
                 previousValue, currentValue);
     }
 
     enum ExitCode {
+        /** 可滚动更新。 */
         ROLLING(0),
         // see picocli.CommandLine.ExitCode
         // 1 -> software error
         // 2 -> usage error
+        /** 需重建集群，不可滚动更新。 */
         RECREATE(3);
         // 4 -> feature 'rolling-updates' disabled
 
@@ -74,6 +79,7 @@ public interface CompatibilityResult {
             this.exitCode = exitCode;
         }
 
+        /** @return 对应的整数退出码 */
         public int value() {
             return exitCode;
         }
