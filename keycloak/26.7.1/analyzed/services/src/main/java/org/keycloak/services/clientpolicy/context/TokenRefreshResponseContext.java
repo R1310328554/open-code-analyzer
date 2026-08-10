@@ -25,32 +25,43 @@ import org.keycloak.services.clientpolicy.ClientPolicyContext;
 import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 
 /**
+ * 令牌刷新响应上下文：在 {@link ClientPolicyEvent#TOKEN_REFRESH_RESPONSE} 事件上暴露新令牌响应构建器。
+ * <p>刷新 grant 成功签发新 access/refresh token 后、HTTP 响应返回前触发。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class TokenRefreshResponseContext implements ClientPolicyContext, ClientPolicyClientSessionContext {
 
+    /** 原始刷新请求表单参数。 */
     private final MultivaluedMap<String, String> params;
+    /** 刷新后访问令牌响应构建器。 */
     private final TokenManager.AccessTokenResponseBuilder accessTokenResponseBuilder;
 
-    public TokenRefreshResponseContext(MultivaluedMap<String, String> params,
-            TokenManager.AccessTokenResponseBuilder accessTokenResponseBuilder) {
+    /**
+     * @param params 刷新请求表单参数
+     * @param accessTokenResponseBuilder 访问令牌响应构建器
+     */
         this.params = params;
         this.accessTokenResponseBuilder = accessTokenResponseBuilder;
     }
 
+    /** {@inheritDoc} @return {@link ClientPolicyEvent#TOKEN_REFRESH_RESPONSE} */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.TOKEN_REFRESH_RESPONSE;
     }
 
+    /** @return 刷新请求表单参数 */
     public MultivaluedMap<String, String> getParams() {
         return params;
     }
 
+    /** @return 访问令牌响应构建器 */
     public TokenManager.AccessTokenResponseBuilder getAccessTokenResponseBuilder() {
         return accessTokenResponseBuilder;
     }
 
+    /** {@inheritDoc} 从响应构建器解析客户端会话 */
     @Override
     public AuthenticatedClientSessionModel getClientSession() {
         return this.accessTokenResponseBuilder.getClientSessionCtx().getClientSession();

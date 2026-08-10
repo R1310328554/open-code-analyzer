@@ -27,29 +27,39 @@ import static org.keycloak.services.clientpolicy.executor.ClientSecretRotationEx
 
 
 /**
+ * 客户端密钥轮换 Executor：为机密客户端自动设置密钥过期时间并在到期前轮换 secret。
+ * <p>监听 REGISTERED/UPDATED、AUTHORIZATION_REQUEST、TOKEN_REQUEST 等事件，维护主密钥与过渡密钥（rotated secret）的生命周期。</p>
+ *
  * @author <a href="mailto:masales@redhat.com">Marcelo Sales</a>
  */
 public class ClientSecretRotationExecutor implements
         ClientPolicyExecutorProvider<ClientSecretRotationExecutor.Configuration> {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(ClientSecretRotationExecutor.class);
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 密钥轮换策略配置（过期周期、过渡窗口等）。 */
     private Configuration configuration;
 
+    /** @param session Keycloak 会话 */
     public ClientSecretRotationExecutor(KeycloakSession session) {
         this.session = session;
     }
 
+    /** {@inheritDoc} @return {@link ClientSecretRotationExecutorFactory#PROVIDER_ID} */
     @Override
     public String getProviderId() {
         return ClientSecretRotationExecutorFactory.PROVIDER_ID;
     }
 
+    /** {@inheritDoc} @return {@link Configuration} */
     @Override
     public Class<Configuration> getExecutorConfigurationClass() {
         return Configuration.class;
     }
 
+    /** {@inheritDoc} 按事件类型触发密钥过期初始化或轮换逻辑 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         switch (context.getEvent()) {
@@ -72,6 +82,7 @@ public class ClientSecretRotationExecutor implements
         }
     }
 
+    /** {@inheritDoc} 解析配置并为空值填充默认过期周期 */
     @Override
     public void setupConfiguration(ClientSecretRotationExecutor.Configuration config) {
 
@@ -83,23 +94,26 @@ public class ClientSecretRotationExecutor implements
 
     }
 
+    /** @return 是否为需 client secret 的机密客户端（非 public/bearer-only） */
     private boolean isClientWithSecret(ClientModel client) {
         if (client == null) return false;
         return (!client.isPublicClient() && !client.isBearerOnly());
     }
 
+    /** 首次授权/令牌请求时为客户端设置密钥过期时间。 */
     private void executeOnAuthRequest() {
         ClientModel client = session.getContext().getClient();
         OIDCClientSecretConfigWrapper wrapper = OIDCClientSecretConfigWrapper.fromClientModel(
                 client);
 
         if (!wrapper.hasClientSecretExpirationTime()) {
-            //first login with policy
+            // 策略启用后首次登录：初始化密钥过期时间
             updatedSecretExpiration(wrapper);
         }
 
     }
 
+    /** 客户端创建/更新或动态更新时评估是否需要轮换密钥。 */
     private void executeOnClientCreateOrUpdate(ClientCRUDContext adminContext) {
         OIDCClientSecretConfigWrapper clientConfigWrapper = OIDCClientSecretConfigWrapper.fromClientModel(
                 adminContext.getTargetClient());
@@ -124,6 +138,7 @@ public class ClientSecretRotationExecutor implements
         }
     }
 
+    /** 调试输出动态客户端密钥过期与剩余窗口时间。 */
     private void debugDynamicInfo(OIDCClientSecretConfigWrapper clientConfigWrapper, long startRemainingWindow) {
         if (logger.isDebugEnabled()) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -132,6 +147,7 @@ public class ClientSecretRotationExecutor implements
         }
     }
 
+    /** 执行密钥轮换：保存旧 secret 为过渡密钥并生成新主密钥。 */
     private void rotateSecret(ClientCRUDContext crudContext,
                               OIDCClientSecretConfigWrapper clientConfigWrapper) {
 
@@ -160,17 +176,20 @@ public class ClientSecretRotationExecutor implements
         logger.debugv("Client configured: {0}", clientConfigWrapper.toJson());
     }
 
+    /** 按配置的主密钥过期周期更新 client secret 过期时间戳。 */
     private void updatedSecretExpiration(OIDCClientSecretConfigWrapper clientConfigWrapper) {
         clientConfigWrapper.setClientSecretExpirationTime(
                 Time.currentTimeSeconds() + configuration.getExpirationPeriod());
         logger.debugv("A new secret expiration is configured for client {0}. Expires at {1}", clientConfigWrapper.getId(), new Date(TimeUnit.SECONDS.toMillis(clientConfigWrapper.getClientSecretExpirationTime())));
     }
 
+    /** 更新密钥创建时间并刷新主密钥过期时间。 */
     private void updateClientConfigProperties(OIDCClientSecretConfigWrapper clientConfigWrapper) {
         clientConfigWrapper.setClientSecretCreationTime(Time.currentTimeSeconds());
         updatedSecretExpiration(clientConfigWrapper);
     }
 
+    /** 将旧 secret 写入过渡密钥字段并设置其独立过期时间。 */
     private void updateRotateSecret(OIDCClientSecretConfigWrapper clientConfigWrapper,
                                     String secret) {
         if (configuration.rotatedExpirationPeriod > 0) {
@@ -187,29 +206,34 @@ public class ClientSecretRotationExecutor implements
         }
     }
 
+    /** 客户端密钥轮换 Executor 配置。 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
 
+        /** 主 client secret 有效期（秒）。 */
         @JsonProperty(ClientSecretRotationExecutorFactory.SECRET_EXPIRATION_PERIOD)
         protected Long expirationPeriod;
+        /** 到期前开始允许轮换的剩余时间窗口（秒）。 */
         @JsonProperty(ClientSecretRotationExecutorFactory.SECRET_REMAINING_ROTATION_PERIOD)
         protected Long remainExpirationPeriod;
+        /** 过渡（旧）secret 在轮换后仍有效的时长（秒）。 */
         @JsonProperty(ClientSecretRotationExecutorFactory.SECRET_ROTATED_EXPIRATION_PERIOD)
         private Long rotatedExpirationPeriod;
 
+        /** {@inheritDoc} 校验过期周期为正且过渡/剩余窗口不超过主密钥周期 */
         @Override
         public boolean validateConfig() {
             logger.debugv("Validating configuration: [ expirationPeriod: {0}, rotatedExpirationPeriod: {1}, remainExpirationPeriod: {2} ]", expirationPeriod, rotatedExpirationPeriod, remainExpirationPeriod);
-            // expiration must be a positive value greater than 0 (seconds)
+            // 主密钥过期时间必须大于 0（秒）
             if (expirationPeriod <= 0) {
                 return false;
             }
 
-            // rotated secret duration could not be bigger than the main secret
+            // 过渡 secret 有效期不得长于主密钥
             if (rotatedExpirationPeriod > expirationPeriod) {
                 return false;
             }
 
-            // remaining secret expiration period could not be bigger than main secret
+            // 剩余轮换窗口不得长于主密钥有效期
             if (remainExpirationPeriod > expirationPeriod) {
                 return false;
             }
@@ -217,30 +241,37 @@ public class ClientSecretRotationExecutor implements
             return true;
         }
 
+        /** @return 主密钥过期周期（秒） */
         public Long getExpirationPeriod() {
             return expirationPeriod;
         }
 
+        /** @param expirationPeriod 主密钥过期周期（秒） */
         public void setExpirationPeriod(Long expirationPeriod) {
             this.expirationPeriod = expirationPeriod;
         }
 
+        /** @return 剩余轮换窗口（秒） */
         public Long getRemainExpirationPeriod() {
             return remainExpirationPeriod;
         }
 
+        /** @param remainExpirationPeriod 剩余轮换窗口（秒） */
         public void setRemainExpirationPeriod(Long remainExpirationPeriod) {
             this.remainExpirationPeriod = remainExpirationPeriod;
         }
 
+        /** @return 过渡 secret 有效期（秒） */
         public Long getRotatedExpirationPeriod() {
             return rotatedExpirationPeriod;
         }
 
+        /** @param rotatedExpirationPeriod 过渡 secret 有效期（秒） */
         public void setRotatedExpirationPeriod(Long rotatedExpirationPeriod) {
             this.rotatedExpirationPeriod = rotatedExpirationPeriod;
         }
 
+        /** 为未设置的配置项填充 Factory 定义的默认值。 */
         public Configuration parseWithDefaultValues() {
             if (getExpirationPeriod() == null) {
                 setExpirationPeriod(DEFAULT_SECRET_EXPIRATION_PERIOD);

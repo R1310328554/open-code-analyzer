@@ -24,28 +24,38 @@ import org.keycloak.models.AuthenticatedClientSessionModel;
 import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 
 /**
+ * 服务账户令牌请求上下文：在 {@link ClientPolicyEvent#SERVICE_ACCOUNT_TOKEN_REQUEST} 事件上携带 OAuth 表单参数与客户端会话。
+ * <p>客户端凭据（client_credentials）grant 处理令牌请求前触发，供策略评估 scope、客户端类型等。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ServiceAccountTokenRequestContext implements ClientPolicyClientSessionContext {
 
+    /** OAuth 令牌端点表单参数。 */
     private final MultivaluedMap<String, String> params;
+    /** 已认证的服务账户客户端会话。 */
     private final AuthenticatedClientSessionModel clientSession;
 
-    public ServiceAccountTokenRequestContext(MultivaluedMap<String, String> params,
-                                             AuthenticatedClientSessionModel clientSession) {
+    /**
+     * @param params 令牌请求表单参数
+     * @param clientSession 服务账户客户端会话
+     */
         this.params = params;
         this.clientSession = clientSession;
     }
 
+    /** {@inheritDoc} @return {@link ClientPolicyEvent#SERVICE_ACCOUNT_TOKEN_REQUEST} */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.SERVICE_ACCOUNT_TOKEN_REQUEST;
     }
 
+    /** @return 令牌请求表单参数 */
     public MultivaluedMap<String, String> getParams() {
         return params;
     }
 
+    /** {@inheritDoc} @return 服务账户客户端会话 */
     @Override
     public AuthenticatedClientSessionModel getClientSession() {
         return clientSession;

@@ -25,36 +25,48 @@ import org.keycloak.protocol.oidc.TokenManager;
 import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 
 /**
+ * 服务账户令牌响应上下文：在 {@link ClientPolicyEvent#SERVICE_ACCOUNT_TOKEN_RESPONSE} 事件上暴露响应构建器。
+ * <p>服务账户令牌成功签发后、响应返回客户端前触发，Executor 可修改 access token 或附加字段。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ServiceAccountTokenResponseContext implements ClientPolicyClientSessionContext {
 
+    /** 原始令牌请求表单参数。 */
     private final MultivaluedMap<String, String> params;
+    /** 签发令牌对应的客户端会话。 */
     private final AuthenticatedClientSessionModel clientSession;
+    /** 访问令牌响应构建器，可调整 token 内容与 HTTP 响应。 */
     private final TokenManager.AccessTokenResponseBuilder accessTokenResponseBuilder;
 
-    public ServiceAccountTokenResponseContext(MultivaluedMap<String, String> params,
-                                              AuthenticatedClientSessionModel clientSession,
-                                              TokenManager.AccessTokenResponseBuilder accessTokenResponseBuilder) {
+    /**
+     * @param params 令牌请求表单参数
+     * @param clientSession 客户端会话
+     * @param accessTokenResponseBuilder 访问令牌响应构建器
+     */
         this.params = params;
         this.clientSession = clientSession;
         this.accessTokenResponseBuilder = accessTokenResponseBuilder;
     }
 
+    /** {@inheritDoc} @return {@link ClientPolicyEvent#SERVICE_ACCOUNT_TOKEN_RESPONSE} */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.SERVICE_ACCOUNT_TOKEN_RESPONSE;
     }
 
+    /** @return 令牌请求表单参数 */
     public MultivaluedMap<String, String> getParams() {
         return params;
     }
 
+    /** {@inheritDoc} @return 客户端会话 */
     @Override
     public AuthenticatedClientSessionModel getClientSession() {
         return clientSession;
     }
 
+    /** @return 访问令牌响应构建器 */
     public TokenManager.AccessTokenResponseBuilder getAccessTokenResponseBuilder() {
         return accessTokenResponseBuilder;
     }
