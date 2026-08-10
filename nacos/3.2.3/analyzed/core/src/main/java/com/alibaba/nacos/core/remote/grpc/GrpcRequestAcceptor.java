@@ -47,6 +47,8 @@ import org.springframework.stereotype.Service;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * gRPC 一元 RPC 请求接收器：解析 Payload、校验连接与处理器，
+ * 分发至 {@link RequestHandlerRegistry} 并记录监控指标。
  * rpc request acceptor of grpc.
  *
  * @author liuzunfei
@@ -55,14 +57,18 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class GrpcRequestAcceptor extends RequestGrpc.RequestImplBase {
     
+    /** 默认应用名占位符。 */
     private static final String DEFAULT_APP_NAME = "-";
     
+    /** RPC 请求处理器注册表。 */
     @Autowired
     RequestHandlerRegistry requestHandlerRegistry;
     
+    /** 远程连接管理器。 */
     @Autowired
     private ConnectionManager connectionManager;
     
+    /** 对追踪 IP 打印收/发 Payload 详情。 */
     private void traceIfNecessary(Payload grpcRequest, boolean receive) {
         String clientIp = grpcRequest.getMetadata().getClientIp();
         String connectionId = GrpcServerConstants.CONTEXT_KEY_CONN_ID.get();
@@ -81,6 +87,7 @@ public class GrpcRequestAcceptor extends RequestGrpc.RequestImplBase {
         
     }
     
+    /** 处理一元 gRPC 请求的主入口。 */
     @Override
     public void request(Payload grpcRequest, StreamObserver<Payload> responseObserver) {
         
@@ -88,7 +95,7 @@ public class GrpcRequestAcceptor extends RequestGrpc.RequestImplBase {
         String type = grpcRequest.getMetadata().getType();
         long startTime = System.nanoTime();
         
-        //server is on starting.
+        // 服务尚未启动完成
         if (!ApplicationUtils.isStarted()) {
             Payload payloadResponse = GrpcUtils.convert(
                 ErrorResponse.build(NacosException.INVALID_SERVER_STATUS,
@@ -102,7 +109,7 @@ public class GrpcRequestAcceptor extends RequestGrpc.RequestImplBase {
             return;
         }
         
-        // server check.
+        // 服务端健康检查请求
         if (ServerCheckRequest.class.getSimpleName().equals(type)) {
             Payload serverCheckResponseP = GrpcUtils.convert(
                 new ServerCheckResponse(GrpcServerConstants.CONTEXT_KEY_CONN_ID.get(), true));
@@ -115,7 +122,7 @@ public class GrpcRequestAcceptor extends RequestGrpc.RequestImplBase {
         }
         
         RequestHandler requestHandler = requestHandlerRegistry.getByRequestType(type);
-        //no handler found.
+        // 未找到对应 RequestHandler
         if (requestHandler == null) {
             Loggers.REMOTE_DIGEST
                 .warn(String.format("[%s] No handler for request type : %s :", "grpc", type));
@@ -130,7 +137,7 @@ public class GrpcRequestAcceptor extends RequestGrpc.RequestImplBase {
             return;
         }
         
-        //check connection status.
+        // 校验连接是否已在 ConnectionManager 注册
         String connectionId = GrpcServerConstants.CONTEXT_KEY_CONN_ID.get();
         boolean requestValid = connectionManager.checkValid(connectionId);
         if (!requestValid) {
@@ -242,6 +249,7 @@ public class GrpcRequestAcceptor extends RequestGrpc.RequestImplBase {
         
     }
     
+    /** 填充 {@link RequestContext}：协议、应用名、地址等。 */
     private void prepareRequestContext(Request request, RequestMeta requestMeta,
         Connection connection) {
         RequestContext requestContext = RequestContextHolder.getContext();

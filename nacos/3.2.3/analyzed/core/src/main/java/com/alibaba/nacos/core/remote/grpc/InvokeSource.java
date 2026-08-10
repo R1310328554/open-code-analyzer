@@ -20,6 +20,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
+ * 标注 RPC 请求处理器允许的调用来源（SDK/CLUSTER 等）。
  * annotation for invoke source.
  *
  * @author liuzunfei
@@ -28,8 +29,9 @@ import java.lang.annotation.RetentionPolicy;
 public @interface InvokeSource {
     
     /**
+     * 允许的来源标签列表。
      * allowed sources.
-     * @return
+     * @return 来源数组
      */
     String[] source();
 }

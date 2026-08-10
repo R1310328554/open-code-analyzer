@@ -43,6 +43,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 /**
+ * gRPC 远程连接实现：通过双向流 StreamObserver 向客户端发送请求，
+ * 支持同步/异步 RPC、推送队列背压检测与连接关闭。
  * grpc connection.
  *
  * @author liuzunfei
@@ -50,12 +52,20 @@ import java.util.concurrent.Future;
  */
 public class GrpcConnection extends Connection {
     
+    /** 双向流响应观察者，用于向客户端推送 Payload。 */
     private StreamObserver streamObserver;
     
+    /** 底层 Netty Channel。 */
     private Channel channel;
     
+    /** TPS 控制器，用于记录推送队列阻塞。 */
     private static volatile TpsControlManager tpsControlManager;
     
+    /** 构造 gRPC 连接。
+     * @param metaInfo 连接元信息
+     * @param streamObserver 双向流观察者
+     * @param channel Netty 通道
+     */
     public GrpcConnection(ConnectionMeta metaInfo, StreamObserver streamObserver, Channel channel) {
         super(metaInfo);
         this.streamObserver = streamObserver;
@@ -63,6 +73,7 @@ public class GrpcConnection extends Connection {
     }
     
     /**
+     * 向客户端发送请求且不等待 ACK（单向推送）。
      * send request without ack.
      *
      * @param request request data.
@@ -71,7 +82,7 @@ public class GrpcConnection extends Connection {
     public void sendRequestNoAck(Request request) throws NacosException {
         sendQueueBlockCheck();
         Future<Boolean> executeFuture = this.channel.eventLoop().submit(() -> {
-            //StreamObserver#onNext() is not thread-safe,synchronized is required to avoid direct memory leak.
+            // StreamObserver#onNext 非线程安全，需同步避免直接内存泄漏
             synchronized (streamObserver) {
                 try {
                     Payload payload = GrpcUtils.convert(request);
@@ -101,9 +112,9 @@ public class GrpcConnection extends Connection {
     
     private void sendQueueBlockCheck() {
         if (streamObserver instanceof ServerCallStreamObserver) {
-            // if bytes on queue is greater than  32k ,isReady will return false.
-            // queue type: grpc write queue,flowed controller queue etc.
-            // this 32k threshold is fixed with static final.
+            // 发送队列超过约 32KB 时 isReady 返回 false
+            // 队列包括 gRPC 写队列与流控队列等
+            // 32KB 阈值见 AbstractStream.TransportState.DEFAULT_ONREADY_THRESHOLD
             // see io.grpc.internal.AbstractStream.TransportState.DEFAULT_ONREADY_THRESHOLD
             boolean ready = ((ServerCallStreamObserver<?>) streamObserver).isReady();
             if (!ready) {
@@ -118,7 +129,7 @@ public class GrpcConnection extends Connection {
                 }
                 TpsCheckRequest tpsCheckRequest = new TpsCheckRequest("SERVER_PUSH_BLOCK",
                     this.getMetaInfo().getConnectionId(), this.getMetaInfo().getClientIp());
-                //record block only.
+                // 仅记录阻塞 TPS 指标
                 tpsControlManager.check(tpsCheckRequest);
                 getMetaInfo().recordPushQueueBlockTimes();
                 throw new ConnectionBusyException(
@@ -165,6 +176,7 @@ public class GrpcConnection extends Connection {
         return defaultPushFuture;
     }
     
+    /** 同步发送请求并等待响应，超时抛出异常。 */
     @Override
     public Response request(Request request, long timeoutMills) throws NacosException {
         DefaultRequestFuture pushFuture = sendRequestInner(request, null);
@@ -178,17 +190,20 @@ public class GrpcConnection extends Connection {
         }
     }
     
+    /** 异步发送请求并返回 Future。 */
     @Override
     public RequestFuture requestFuture(Request request) throws NacosException {
         return sendRequestInner(request, null);
     }
     
+    /** 异步发送请求并通过回调接收响应。 */
     @Override
     public void asyncRequest(Request request, RequestCallBack requestCallBack)
         throws NacosException {
         sendRequestInner(request, requestCallBack);
     }
     
+    /** 关闭双向流与底层 Channel。 */
     @Override
     public void close() {
         String connectionId = null;
@@ -223,6 +238,7 @@ public class GrpcConnection extends Connection {
         }
     }
     
+    /** 判断 Netty Channel 是否仍处于活跃连接状态。 */
     @Override
     public boolean isConnected() {
         return channel != null && channel.isOpen() && channel.isActive();

@@ -24,17 +24,20 @@ import io.grpc.netty.shaded.io.netty.channel.Channel;
 import io.grpc.stub.StreamObserver;
 
 /**
+ * 默认 gRPC 连接生成实现：创建 {@link GrpcConnection} 实例，类型标识为 nacos。
  * Grpc Connection Generator Service Impl.
  * @author jianwei.wjw
  */
 public class ConnectionGeneratorServiceImpl implements ConnectionGeneratorService {
     
+    /** 构造 {@link GrpcConnection} 并返回。 */
     @Override
     public Connection getConnection(ConnectionMeta metaInfo, StreamObserver streamObserver,
         Channel channel) {
         return new GrpcConnection(metaInfo, streamObserver, channel);
     }
     
+    /** 返回类型标识 nacos。 */
     @Override
     public String getType() {
         return "nacos";

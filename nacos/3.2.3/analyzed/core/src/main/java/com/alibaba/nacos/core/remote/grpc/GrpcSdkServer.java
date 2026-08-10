@@ -37,6 +37,8 @@ import java.util.Optional;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
+ * SDK 客户端 gRPC RPC 服务端：使用 SDK 端口偏移、SDK 协议协商器
+ * 及 SDK 专用拦截器/传输过滤器，调用来源为 SDK。
  * Grpc implementation as  a rpc server.
  *
  * @author liuzunfei
@@ -45,16 +47,19 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Service
 public class GrpcSdkServer extends BaseGrpcServer {
     
+    /** 返回 SDK gRPC 端口相对主端口的偏移量。 */
     @Override
     public int rpcPortOffset() {
         return Constants.SDK_GRPC_PORT_DEFAULT_OFFSET;
     }
     
+    /** 返回 SDK RPC 专用线程池。 */
     @Override
     public ThreadPoolExecutor getRpcExecutor() {
         return GlobalExecutor.sdkRpcExecutor;
     }
     
+    /** 读取 SDK KeepAlive 配置。 */
     @Override
     protected long getKeepAliveTime() {
         Long property = EnvUtil
@@ -65,6 +70,7 @@ public class GrpcSdkServer extends BaseGrpcServer {
         return super.getKeepAliveTime();
     }
     
+    /** 读取 SDK KeepAlive 超时配置。 */
     @Override
     protected long getKeepAliveTimeout() {
         Long property = EnvUtil.getProperty(
@@ -76,6 +82,7 @@ public class GrpcSdkServer extends BaseGrpcServer {
         return super.getKeepAliveTimeout();
     }
     
+    /** 读取 SDK 入站消息大小上限。 */
     @Override
     protected int getMaxInboundMessageSize() {
         Integer property =
@@ -97,6 +104,7 @@ public class GrpcSdkServer extends BaseGrpcServer {
         return size;
     }
     
+    /** 读取 SDK 允许 KeepAlive 最小间隔。 */
     @Override
     protected long getPermitKeepAliveTime() {
         Long property = EnvUtil
@@ -107,12 +115,14 @@ public class GrpcSdkServer extends BaseGrpcServer {
         return super.getPermitKeepAliveTime();
     }
     
+    /** 构建 SDK TLS/协议协商器。 */
     @Override
     protected Optional<InternalProtocolNegotiator.ProtocolNegotiator> newProtocolNegotiator() {
         protocolNegotiator = SdkProtocolNegotiatorBuilderSingleton.getSingleton().build();
         return Optional.ofNullable(protocolNegotiator);
     }
     
+    /** 叠加 SDK 专用 gRPC 拦截器。 */
     @Override
     protected List<ServerInterceptor> getSeverInterceptors() {
         List<ServerInterceptor> result = new LinkedList<>();
@@ -122,6 +132,7 @@ public class GrpcSdkServer extends BaseGrpcServer {
         return result;
     }
     
+    /** 叠加 SDK 专用传输过滤器。 */
     @Override
     protected List<ServerTransportFilter> getServerTransportFilters() {
         List<ServerTransportFilter> result = new LinkedList<>();
@@ -131,6 +142,7 @@ public class GrpcSdkServer extends BaseGrpcServer {
         return result;
     }
     
+    /** 返回 SDK 调用来源标签。 */
     @Override
     protected String getSource() {
         return RemoteConstants.LABEL_SOURCE_SDK;

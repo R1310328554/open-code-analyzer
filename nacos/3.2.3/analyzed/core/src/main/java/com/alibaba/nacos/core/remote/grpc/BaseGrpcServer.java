@@ -56,6 +56,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * gRPC RPC 服务端抽象基类：构建 Netty gRPC Server、注册 unary/bidi 服务、
+ * 管理协议协商器、KeepAlive 与入站消息大小等配置。
  * Grpc implementation as a rpc server.
  *
  * @author liuzunfei
@@ -63,30 +65,36 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class BaseGrpcServer extends BaseRpcServer {
     
-    /**
-     * The ProtocolNegotiator instance used for communication.
-     */
+    /** 协议协商器实例（TLS/Proxy Protocol 等）。 */
+
     protected NacosGrpcProtocolNegotiator protocolNegotiator;
     
+    /** 底层 gRPC Server 实例。 */
     private Server server;
     
+    /** 一元 RPC 请求接收器。 */
     @Autowired
     private GrpcRequestAcceptor grpcCommonRequestAcceptor;
     
+    /** 双向流 RPC 请求接收器。 */
     @Autowired
     private GrpcBiStreamRequestAcceptor grpcBiStreamRequestAcceptor;
     
+    /** 远程连接管理器。 */
     @Autowired
     private ConnectionManager connectionManager;
     
+    /** RPC 请求处理器注册表。 */
     @Autowired
     private RequestHandlerRegistry requestHandlerRegistry;
     
+    /** 返回 GRPC 连接类型。 */
     @Override
     public ConnectionType getConnectionType() {
         return ConnectionType.GRPC;
     }
     
+    /** 启动 gRPC 服务：绑定地址、注册 handler 与传输过滤器。 */
     @Override
     public void startServer() throws Exception {
         final MutableHandlerRegistry handlerRegistry = new MutableHandlerRegistry();
@@ -119,12 +127,14 @@ public abstract class BaseGrpcServer extends BaseRpcServer {
         server.start();
     }
     
+    /** 重新加载协议协商上下文（如 TLS 证书变更）。 */
     @Override
     public void reloadProtocolContext() {
         reloadProtocolNegotiator();
     }
     
     /**
+     * 构建新的协议协商器（如 TLS、Proxy Protocol）。
      * Build new one protocol negotiator.
      *
      * <p>Such as support tls, proxy protocol and so on</p>
@@ -135,9 +145,8 @@ public abstract class BaseGrpcServer extends BaseRpcServer {
         return Optional.empty();
     }
     
-    /**
-     * reload protocol negotiator If necessary.
-     */
+    /** 按需热重载协议协商器。 */
+
     public void reloadProtocolNegotiator() {
         if (protocolNegotiator != null) {
             try {
@@ -150,18 +159,22 @@ public abstract class BaseGrpcServer extends BaseRpcServer {
         }
     }
     
+    /** 返回允许客户端 KeepAlive 的最小间隔（毫秒）。 */
     protected long getPermitKeepAliveTime() {
         return GrpcServerConstants.GrpcConfig.DEFAULT_GRPC_PERMIT_KEEP_ALIVE_TIME;
     }
     
+    /** 返回服务端 KeepAlive 探测间隔（毫秒）。 */
     protected long getKeepAliveTime() {
         return GrpcServerConstants.GrpcConfig.DEFAULT_GRPC_KEEP_ALIVE_TIME;
     }
     
+    /** 返回 KeepAlive 超时时间（毫秒）。 */
     protected long getKeepAliveTimeout() {
         return GrpcServerConstants.GrpcConfig.DEFAULT_GRPC_KEEP_ALIVE_TIMEOUT;
     }
     
+    /** 返回入站消息最大字节数，优先读取配置项。 */
     protected int getMaxInboundMessageSize() {
         Integer property =
             EnvUtil.getProperty(GrpcServerConstants.GrpcConfig.MAX_INBOUND_MSG_SIZE_PROPERTY,
@@ -172,20 +185,23 @@ public abstract class BaseGrpcServer extends BaseRpcServer {
         return GrpcServerConstants.GrpcConfig.DEFAULT_GRPC_MAX_INBOUND_MSG_SIZE;
     }
     
+    /** 返回服务端拦截器链（含连接上下文注入）。 */
     protected List<ServerInterceptor> getSeverInterceptors() {
         List<ServerInterceptor> result = new LinkedList<>();
         result.add(new GrpcConnectionInterceptor());
         return result;
     }
     
+    /** 返回传输层过滤器列表（含地址解析）。 */
     protected List<ServerTransportFilter> getServerTransportFilters() {
         return Collections.singletonList(new AddressTransportFilter(connectionManager));
     }
     
     /**
+     * 返回本 gRPC 服务对应的调用来源标签（SDK/CLUSTER）。
      * get source for the request.
      *
-     * @return
+     * @return 来源标签
      */
     protected abstract String getSource();
     
@@ -215,7 +231,7 @@ public abstract class BaseGrpcServer extends BaseRpcServer {
     private void addServices(MutableHandlerRegistry handlerRegistry,
         ServerInterceptor... serverInterceptor) {
         
-        // unary common call register.
+        // 注册一元通用 RPC 调用。
         final MethodDescriptor<Payload, Payload> unaryPayloadMethod = MethodDescriptor
             .<Payload, Payload>newBuilder()
             .setType(MethodDescriptor.MethodType.UNARY).setFullMethodName(
@@ -235,7 +251,7 @@ public abstract class BaseGrpcServer extends BaseRpcServer {
         handlerRegistry
             .addService(ServerInterceptors.intercept(serviceDefOfUnaryPayload, serverInterceptor));
         
-        // bi stream register.
+        // 注册双向流 RPC 调用。
         final ServerCallHandler<Payload, Payload> biStreamHandler =
             ServerCalls.asyncBidiStreamingCall(
                 (responseObserver) -> grpcBiStreamRequestAcceptor
@@ -258,6 +274,7 @@ public abstract class BaseGrpcServer extends BaseRpcServer {
         
     }
     
+    /** 立即关闭 gRPC Server。 */
     @Override
     public void shutdownServer() {
         if (server != null) {
@@ -266,6 +283,7 @@ public abstract class BaseGrpcServer extends BaseRpcServer {
     }
     
     /**
+     * 返回处理 RPC 的业务线程池。
      * get rpc executor.
      *
      * @return executor.

@@ -43,6 +43,8 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 
 /**
+ * gRPC 双向流请求接收器：处理连接建立（ConnectionSetup）、
+ * 服务端推送 ACK 及客户端响应，维护 {@link ConnectionManager} 注册与能力协商。
  * grpc bi stream request .
  *
  * @author liuzunfei
@@ -51,9 +53,11 @@ import java.util.Map;
 @Service
 public class GrpcBiStreamRequestAcceptor extends BiRequestStreamGrpc.BiRequestStreamImplBase {
     
+    /** 远程连接管理器。 */
     @Autowired
     ConnectionManager connectionManager;
     
+    /** 对追踪 IP 打印双向流请求详情。 */
     private void traceDetailIfNecessary(Payload grpcRequest) {
         String clientIp = grpcRequest.getMetadata().getClientIp();
         String connectionId = GrpcServerConstants.CONTEXT_KEY_CONN_ID.get();
@@ -72,6 +76,7 @@ public class GrpcBiStreamRequestAcceptor extends BiRequestStreamGrpc.BiRequestSt
         
     }
     
+    /** 建立双向流：返回入站 Payload 的 StreamObserver。 */
     @Override
     public StreamObserver<Payload> requestBiStream(StreamObserver<Payload> responseObserver) {
         StreamObserver<Payload> streamObserver = new StreamObserver<>() {
@@ -102,12 +107,12 @@ public class GrpcBiStreamRequestAcceptor extends BiRequestStreamGrpc.BiRequestSt
                     ServerCallStreamObserver serverCallStreamObserver =
                         ((ServerCallStreamObserver) responseObserver);
                     if (serverCallStreamObserver.isCancelled()) {
-                        //client close the stream.
+                        // 客户端已关闭流
                     } else {
                         try {
                             serverCallStreamObserver.onCompleted();
                         } catch (Throwable throwable) {
-                            //ignore
+                            // 忽略 onCompleted 异常
                         }
                     }
                 }
@@ -177,14 +182,14 @@ public class GrpcBiStreamRequestAcceptor extends BiRequestStreamGrpc.BiRequestSt
             Connection connection = ConnectionGeneratorServiceDelegate.getInstance()
                 .getConnection(metaInfo, responseObserver,
                     GrpcServerConstants.CONTEXT_KEY_CHANNEL.get());
-            // null if supported
+            // 客户端携带能力表时同步服务端能力
             if (setUpRequest.getAbilityTable() != null) {
                 // map to table
                 connection.setAbilityTable(setUpRequest.getAbilityTable());
             }
             boolean rejectSdkOnStarting = metaInfo.isSdkSource() && !ApplicationUtils.isStarted();
             if (rejectSdkOnStarting || !connectionManager.register(connectionId, connection)) {
-                //Not register to the connection manager if current server is over limit or server is starting.
+                // 服务未启动或连接数超限时不注册并关闭连接
                 try {
                     Loggers.REMOTE_DIGEST.warn("[{}]Connection register fail,reason:{}",
                         connectionId,
@@ -192,7 +197,7 @@ public class GrpcBiStreamRequestAcceptor extends BiRequestStreamGrpc.BiRequestSt
                             : " server is over limited.");
                     connection.close();
                 } catch (Exception e) {
-                    //Do nothing.
+                    // 关闭失败时忽略
                     if (connectionManager.traced(clientIp)) {
                         Loggers.REMOTE_DIGEST.warn("[{}]Send connect reset request error,error={}",
                             connectionId, e);
@@ -200,7 +205,7 @@ public class GrpcBiStreamRequestAcceptor extends BiRequestStreamGrpc.BiRequestSt
                 }
             } else {
                 try {
-                    // server sends abilities only when:
+                    // 注册成功后向客户端发送 SetupAck 与服务端能力表
                     //      1. client sends setUpRequest with its abilities table
                     //      2. client sends setUpRequest with empty table
                     if (setUpRequest.getAbilityTable() != null) {
@@ -211,7 +216,7 @@ public class GrpcBiStreamRequestAcceptor extends BiRequestStreamGrpc.BiRequestSt
                                 .getCurrentNodeAbilities(AbilityMode.SERVER)));
                     }
                 } catch (Exception e) {
-                    // nothing to do
+                    // 发送 SetupAck 失败时忽略
                 }
             }
         } else if (parseObj instanceof Response) {

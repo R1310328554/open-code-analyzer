@@ -31,6 +31,8 @@ import static com.alibaba.nacos.core.remote.grpc.GrpcServerConstants.ATTR_TRANS_
 import static com.alibaba.nacos.core.remote.grpc.GrpcServerConstants.ATTR_TRANS_KEY_REMOTE_PORT;
 
 /**
+ * gRPC 传输层过滤器：在连接就绪时解析远端/本地地址并生成 connectionId，
+ * 连接终止时注销 {@link ConnectionManager} 中的连接。
  * AddressTransportFilter process remote address, local address and connection id attributes.
  *
  * @author Weizhan▪Yun
@@ -38,12 +40,17 @@ import static com.alibaba.nacos.core.remote.grpc.GrpcServerConstants.ATTR_TRANS_
  */
 public class AddressTransportFilter extends ServerTransportFilter {
     
+    /** 连接管理器，用于注销已终止连接。 */
     private final ConnectionManager connectionManager;
     
+    /** 构造传输过滤器。
+     * @param connectionManager 连接管理器
+     */
     public AddressTransportFilter(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
     }
     
+    /** 传输就绪：写入 connectionId、远端/本地 IP 与端口属性。 */
     @Override
     public Attributes transportReady(Attributes transportAttrs) {
         InetSocketAddress remoteAddress = (InetSocketAddress) transportAttrs
@@ -64,13 +71,14 @@ public class AddressTransportFilter extends ServerTransportFilter {
         
     }
     
+    /** 传输终止：从连接管理器注销对应 connectionId。 */
     @Override
     public void transportTerminated(Attributes transportAttrs) {
         String connectionId = null;
         try {
             connectionId = transportAttrs.get(ATTR_TRANS_KEY_CONN_ID);
         } catch (Exception e) {
-            // Ignore
+            // 忽略属性缺失异常
         }
         if (StringUtils.isNotBlank(connectionId)) {
             Loggers.REMOTE_DIGEST

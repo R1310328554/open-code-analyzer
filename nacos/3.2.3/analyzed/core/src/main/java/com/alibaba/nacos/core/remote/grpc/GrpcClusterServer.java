@@ -37,6 +37,8 @@ import java.util.Optional;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
+ * 集群节点间 gRPC RPC 服务端：使用集群端口偏移、集群协议协商器
+ * 及集群专用拦截器/传输过滤器，调用来源为 CLUSTER。
  * Grpc implementation as  a rpc server.
  *
  * @author liuzunfei
@@ -45,11 +47,13 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Service
 public class GrpcClusterServer extends BaseGrpcServer {
     
+    /** 返回集群 gRPC 端口相对主端口的偏移量。 */
     @Override
     public int rpcPortOffset() {
         return Constants.CLUSTER_GRPC_PORT_DEFAULT_OFFSET;
     }
     
+    /** 返回集群 RPC 专用线程池。 */
     @Override
     public ThreadPoolExecutor getRpcExecutor() {
         if (!GlobalExecutor.clusterRpcExecutor.allowsCoreThreadTimeOut()) {
@@ -58,6 +62,7 @@ public class GrpcClusterServer extends BaseGrpcServer {
         return GlobalExecutor.clusterRpcExecutor;
     }
     
+    /** 读取集群 KeepAlive 配置，缺省使用父类默认值。 */
     @Override
     protected long getKeepAliveTime() {
         Long property =
@@ -69,6 +74,7 @@ public class GrpcClusterServer extends BaseGrpcServer {
         return super.getKeepAliveTime();
     }
     
+    /** 读取集群 KeepAlive 超时配置。 */
     @Override
     protected long getKeepAliveTimeout() {
         Long property =
@@ -80,12 +86,14 @@ public class GrpcClusterServer extends BaseGrpcServer {
         return super.getKeepAliveTimeout();
     }
     
+    /** 构建集群 TLS/协议协商器。 */
     @Override
     protected Optional<InternalProtocolNegotiator.ProtocolNegotiator> newProtocolNegotiator() {
         protocolNegotiator = ClusterProtocolNegotiatorBuilderSingleton.getSingleton().build();
         return Optional.ofNullable(protocolNegotiator);
     }
     
+    /** 读取集群允许 KeepAlive 最小间隔。 */
     @Override
     protected long getPermitKeepAliveTime() {
         Long property = EnvUtil
@@ -96,6 +104,7 @@ public class GrpcClusterServer extends BaseGrpcServer {
         return super.getPermitKeepAliveTime();
     }
     
+    /** 读取集群入站消息大小上限。 */
     @Override
     protected int getMaxInboundMessageSize() {
         Integer property = EnvUtil.getProperty(
@@ -115,6 +124,7 @@ public class GrpcClusterServer extends BaseGrpcServer {
         return size;
     }
     
+    /** 叠加集群专用 gRPC 拦截器。 */
     @Override
     protected List<ServerInterceptor> getSeverInterceptors() {
         List<ServerInterceptor> result = new LinkedList<>();
@@ -124,6 +134,7 @@ public class GrpcClusterServer extends BaseGrpcServer {
         return result;
     }
     
+    /** 叠加集群专用传输过滤器。 */
     @Override
     protected List<ServerTransportFilter> getServerTransportFilters() {
         List<ServerTransportFilter> result = new LinkedList<>();
@@ -133,6 +144,7 @@ public class GrpcClusterServer extends BaseGrpcServer {
         return result;
     }
     
+    /** 返回 CLUSTER 调用来源标签。 */
     @Override
     protected String getSource() {
         return RemoteConstants.LABEL_SOURCE_CLUSTER;

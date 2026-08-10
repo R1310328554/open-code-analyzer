@@ -28,6 +28,8 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyChannelHelper;
 import io.grpc.netty.shaded.io.netty.channel.Channel;
 
 /**
+ * gRPC 连接上下文拦截器：将传输层 connectionId、远端/本地地址
+ * 及双向流 Netty Channel 注入 {@link Context}，供后续 RPC 处理读取。
  * GrpcConnectionInterceptor set connection.
  *
  * @author Weizhan▪Yun
@@ -35,6 +37,7 @@ import io.grpc.netty.shaded.io.netty.channel.Channel;
  */
 public class GrpcConnectionInterceptor implements ServerInterceptor {
     
+    /** 拦截 RPC 调用并填充连接上下文。 */
     @Override
     public <T, S> ServerCall.Listener<T> interceptCall(ServerCall<T, S> call, Metadata headers,
         ServerCallHandler<T, S> next) {
@@ -55,6 +58,7 @@ public class GrpcConnectionInterceptor implements ServerInterceptor {
         return Contexts.interceptCall(ctx, call, headers, next);
     }
     
+    /** 从 ServerCall 获取底层 Netty Channel。 */
     private Channel getInternalChannel(ServerCall serverCall) {
         ServerStream serverStream = ServerStreamHelper.getServerStream(serverCall);
         return NettyChannelHelper.getChannel(serverStream);

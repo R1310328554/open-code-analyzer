@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 
 /**
+ * {@link ConnectionGeneratorService} 单例委托：通过 SPI 加载指定类型的连接生成实现。
  * ConnectionGeneratorServiceDelegate.
  *
  * @author jianwei.wjw
@@ -36,14 +37,18 @@ import java.util.Objects;
 
 public class ConnectionGeneratorServiceDelegate {
     
+    /** 连接生成器类型，默认 nacos，可通过系统属性覆盖。 */
     private String connectionGeneratorType =
         System.getProperty("nacos.core.remote.connection.generator", "nacos");
     
+    /** 已加载的 SPI 连接生成器实例。 */
     private ConnectionGeneratorService connectionGeneratorService = null;
     
+    /** 日志记录器。 */
     private static final Logger LOGGER =
         LoggerFactory.getLogger(ConnectionGeneratorServiceDelegate.class);
     
+    /** 私有构造：扫描 SPI 并匹配 connectionGeneratorType。 */
     private ConnectionGeneratorServiceDelegate() {
         for (ConnectionGeneratorService connectionGeneratorService : NacosServiceLoader
             .load(ConnectionGeneratorService.class)) {
@@ -61,13 +66,16 @@ public class ConnectionGeneratorServiceDelegate {
         }
     }
     
+    /** 单例实例。 */
     private static final ConnectionGeneratorServiceDelegate INSTANCE =
         new ConnectionGeneratorServiceDelegate();
     
+    /** 获取单例委托。 */
     public static ConnectionGeneratorServiceDelegate getInstance() {
         return INSTANCE;
     }
     
+    /** 委托 SPI 实现创建连接。 */
     public Connection getConnection(ConnectionMeta metaInfo, StreamObserver streamObserver,
         Channel channel) {
         return connectionGeneratorService.getConnection(metaInfo, streamObserver, channel);

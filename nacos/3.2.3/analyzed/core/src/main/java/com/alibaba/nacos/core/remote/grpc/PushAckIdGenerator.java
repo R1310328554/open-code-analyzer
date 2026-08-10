@@ -19,6 +19,7 @@ package com.alibaba.nacos.core.remote.grpc;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * 服务端推送 ACK 请求 ID 生成器：单调递增，接近 Long.MAX_VALUE 时回绕。
  * id generator to server push ack.
  *
  * @author liuzunfei
@@ -26,13 +27,14 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class PushAckIdGenerator {
     
+    /** 当前 ID 计数器。 */
     private static AtomicLong id = new AtomicLong(0L);
     
+    /** 距 Long.MAX_VALUE 小于该偏移时重置计数器。 */
     private static final int ID_PREV_REGEN_OFFSET = 1000;
     
-    /**
-     * get server push id.
-     */
+    /** 生成下一个推送 ACK 请求 ID。 */
+
     public static long getNextId() {
         if (id.longValue() > Long.MAX_VALUE - ID_PREV_REGEN_OFFSET) {
             id.getAndSet(0L);

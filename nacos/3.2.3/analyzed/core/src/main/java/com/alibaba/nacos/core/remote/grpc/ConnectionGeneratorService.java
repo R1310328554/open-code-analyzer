@@ -24,12 +24,14 @@ import io.grpc.netty.shaded.io.netty.channel.Channel;
 import io.grpc.stub.StreamObserver;
 
 /**
+ * 连接生成 SPI：根据 {@link ConnectionMeta} 与 Netty Channel 构造 {@link Connection} 实例。
  * ConnectionGeneratorService.
  * @author jianwei.wjw
  */
 public interface ConnectionGeneratorService {
     
     /**
+     * 根据元信息与底层通道创建连接对象。
      * get connection by metaInfo.
      * @param metaInfo not null
      * @param streamObserver not null
@@ -40,6 +42,7 @@ public interface ConnectionGeneratorService {
         Channel channel);
     
     /**
+     * 返回实现类型标识（如 nacos）。
      * get connection type.
      * @return type
      */
