@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+同义词扩展：本地 synonym.json + Redis 热更新 + 英文 WordNet 回退。
+"""
+
+
 
 import logging
 import json
@@ -32,7 +37,9 @@ except Exception:
 
 
 class Dealer:
+    # 同义词查询器：词典 + Redis kevin_synonyms + WordNet
     def __init__(self, redis=None):
+        # 加载 rag/res/synonym.json，可选 Redis 实时刷新
 
         self.lookup_num = 100000000
         self.load_tm = time.time() - 1000000
@@ -56,6 +63,7 @@ class Dealer:
         self.load()
 
     def load(self):
+        # 每小时最多从 Redis 重载一次同义词表
         if not self.redis:
             return
 
@@ -77,6 +85,7 @@ class Dealer:
             logging.error("Fail to load synonym!" + str(e))
 
     def lookup(self, tk, topn=8):
+        # 查同义词：词典 → 纯小写英文 WordNet → 空列表
         if not tk or not isinstance(tk, str):
             return []
 

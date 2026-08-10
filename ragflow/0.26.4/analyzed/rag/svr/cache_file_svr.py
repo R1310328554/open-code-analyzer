@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+文件缓存服务：将进行中解析任务的文档二进制预热写入 Redis，减少重复拉取对象存储。
+"""
+
+
 import logging
 import time
 import traceback
@@ -24,6 +29,7 @@ from common import settings
 
 
 def collect():
+    # 查询进行中任务的 (kb_id, 存储路径) 列表
     doc_locations = TaskService.get_ongoing_doc_name()
     logging.debug(doc_locations)
     if len(doc_locations) == 0:
@@ -33,6 +39,7 @@ def collect():
 
 
 def main():
+    # 主循环：未缓存则 STORGE→Redis，TTL 12 分钟
     locations = collect()
     if not locations:
         return

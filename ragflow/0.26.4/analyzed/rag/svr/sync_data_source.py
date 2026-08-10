@@ -13,6 +13,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+外部数据源同步 Worker：连接器工厂、增量/全量同步、Prune 与调度入口。
+
+支持 S3/GDrive/Confluence/Slack/RDBMS 等数十种 FileSource，统一 SyncBase 生命周期。
+"""
+
+
+"""
+    数据源同步基类：连接日志、超时、SyncLogs 状态与 poll 窗口管理。
+外部数据源同步 Worker：连接器工厂、增量/全量同步、Prune 与调度入口。
+
+支持 S3/GDrive/Confluence/Slack/RDBMS 等数十种 FileSource，统一 SyncBase 生命周期。
+"""
+
+
 
 # from beartype import BeartypeConf
 # from beartype.claw import beartype_all  # <-- you didn't sign up for this
@@ -91,6 +106,7 @@ task_limiter = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
 
 
 def _redact_mailbox(value: str) -> str:
+    # 日志中脱敏邮箱/UPN，避免泄露租户目录
     """Return a privacy-preserving representation of a UPN / email / object id.
 
     Sync logs surface connector configuration verbatim, so leaking the
@@ -361,6 +377,7 @@ class SyncBase:
 
 
 class _BlobLikeBase(SyncBase):
+    # 对象存储类连接器公共逻辑（S3/R2/GCS 等）
     DEFAULT_BUCKET_TYPE: str = "s3"
 
     def _fingerprint_filtered_generator(self, task: dict):
@@ -490,6 +507,7 @@ class GOOGLE_CLOUD_STORAGE(_BlobLikeBase):
 
 
 class RSS(SyncBase):
+    # RSS 订阅源同步
     SOURCE_NAME: str = FileSource.RSS
 
     async def _generate(self, task: dict):
@@ -513,6 +531,7 @@ class RSS(SyncBase):
 
 
 class Confluence(SyncBase):
+    # Atlassian Confluence 页面同步
     SOURCE_NAME: str = FileSource.CONFLUENCE
 
     async def _generate(self, task: dict):
@@ -691,6 +710,7 @@ class Discord(SyncBase):
 
 
 class Gmail(SyncBase):
+    # Gmail 邮件附件/正文同步
     SOURCE_NAME: str = FileSource.GMAIL
 
     async def _generate(self, task: dict):
@@ -774,6 +794,7 @@ class Dropbox(SyncBase):
 
 
 class GoogleDrive(SyncBase):
+    # Google Drive 文件同步
     """
     Data synchronization connector for Google Drive.
     Handles both full re-indexing and incremental polling, including the capability
@@ -973,6 +994,7 @@ class Jira(SyncBase):
 
 
 class SharePoint(SyncBase):
+    # Microsoft SharePoint 文档库同步
     SOURCE_NAME: str = FileSource.SHAREPOINT
 
     async def _generate(self, task: dict):
@@ -1985,6 +2007,7 @@ class _CursorPersistingSyncBase(SyncBase):
 
 
 class _RDBMSBase(_CursorPersistingSyncBase):
+    # 关系库连接器基类：游标持久化 + SQL 分页拉取
     DB_TYPE: str = ""
     LOG_NAME: str = ""
     DEFAULT_PORT: int = 0
@@ -2033,6 +2056,7 @@ class _RDBMSBase(_CursorPersistingSyncBase):
 
 
 class MySQL(_RDBMSBase):
+    # MySQL 表/视图行同步
     SOURCE_NAME: str = FileSource.MYSQL
     DB_TYPE: str = "mysql"
     LOG_NAME: str = "MySQL"
@@ -2110,6 +2134,7 @@ class BigQuery(_CursorPersistingSyncBase):
 
 
 class REST_API(SyncBase):
+    # 通用 REST API 分页数据同步
     SOURCE_NAME: str = FileSource.REST_API
 
     async def _generate(self, task: dict):
@@ -2176,6 +2201,7 @@ func_factory = {
 
 
 async def dispatch_tasks():
+    # 轮询到期 sync/prune 任务并 asyncio.gather 并发执行
     """Polls the database for pending synchronization tasks and dispatches them concurrently."""
     while True:
         try:
@@ -2224,7 +2250,9 @@ CONSUMER_NAME = "data_sync_" + CONSUMER_NO
 
 
 async def main():
-    """Entry point for the RAGFlow data synchronization worker process."""
+    """
+    RAGFlow 数据同步 Worker 主入口：init_settings、信号处理与 dispatch 循环。
+    """
     logging.info(r"""
   _____        _           _____
  |  __ \      | |         / ____|

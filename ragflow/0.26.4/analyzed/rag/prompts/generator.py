@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+LLM 提示词生成与编排：KB 上下文、工具调用、TOC、元数据过滤、多轮对话裁剪等。
+"""
+
+
 import asyncio
 import datetime
 import json
@@ -29,6 +34,7 @@ from rag.prompts.template import load_prompt
 from common.constants import TAG_FLD
 from common.token_utils import encoder, num_tokens_from_string
 
+# Agent 停止标记与任务完成工具名
 STOP_TOKEN = "<|STOP|>"
 COMPLETE_TASK = "complete_task"
 INPUT_UTILIZATION = 0.5
@@ -39,6 +45,7 @@ def get_value(d, k1, k2):
 
 
 def chunks_format(reference):
+    # 将检索 chunks 统一为前端/LLM 友好字段结构
     if not reference or not isinstance(reference, dict):
         return []
     raw_chunks = reference.get("chunks", [])
@@ -67,6 +74,7 @@ def chunks_format(reference):
 
 
 def message_fit_in(msg, max_length=4000):
+    # 按 token 预算裁剪对话：保留 system + 末条 user
     if max_length <= 0:
         logging.debug("message_fit_in normalizing non-positive max_length=%s to 8192", max_length)
         max_length = 8192
@@ -137,6 +145,7 @@ def message_fit_in(msg, max_length=4000):
 
 
 def kb_prompt(kbinfos, max_tokens, hash_id=False):
+    # 拼装知识库 chunk 为带 ID 的引用上下文
     knowledges = [get_value(ck, "content", "content_with_weight") for ck in kbinfos["chunks"]]
     kwlg_len = len(knowledges)
     used_token_count = 0
@@ -174,6 +183,7 @@ def kb_prompt(kbinfos, max_tokens, hash_id=False):
 
 
 def memory_prompt(message_list, max_tokens):
+    # 记忆消息列表格式化为 prompt 片段
     used_token_count = 0
     content_list = []
     for message in message_list:
@@ -222,6 +232,7 @@ def citation_plus(sources: str) -> str:
 
 
 async def keyword_extraction(chat_mdl, content, topn=3):
+    # LLM 抽取检索关键词
     template = PROMPT_JINJA_ENV.from_string(KEYWORD_PROMPT_TEMPLATE)
     rendered_prompt = template.render(content=content, topn=topn)
 
@@ -252,6 +263,7 @@ async def question_proposal(chat_mdl, content, topn=3):
 
 
 async def full_question(tenant_id=None, llm_id=None, messages=[], language=None, chat_mdl=None):
+    # 多轮对话补全为完整独立问句
     from common.constants import LLMType
     from api.db.services.llm_service import LLMBundle
     from api.db.joint_services.tenant_model_service import get_model_config_from_provider_instance, get_model_type_by_name
@@ -288,6 +300,7 @@ async def full_question(tenant_id=None, llm_id=None, messages=[], language=None,
 
 
 async def cross_languages(tenant_id, llm_id, query, languages=[]):
+    # 跨语言 query 改写/翻译
     from common.constants import LLMType
     from api.db.services.llm_service import LLMBundle
     from api.db.joint_services.tenant_model_service import get_model_config_from_provider_instance, get_tenant_default_model_by_type, get_model_type_by_name
@@ -403,6 +416,7 @@ def form_history(history, limit=-6):
 
 
 async def analyze_task_async(chat_mdl, prompt, task_name, tools_description: list[dict], user_defined_prompts: dict = {}):
+    # Agent 任务分析：选择工具与参数
     tools_desc = tool_schema(tools_description)
     context = ""
 
@@ -421,6 +435,7 @@ async def analyze_task_async(chat_mdl, prompt, task_name, tools_description: lis
 
 
 async def next_step_async(chat_mdl, history: list, tools_description: list[dict], task_desc, user_defined_prompts: dict = {}):
+    # Agent 下一步动作规划
     if not tools_description:
         return "", 0
     desc = tool_schema(tools_description)
@@ -491,6 +506,7 @@ async def rank_memories_async(chat_mdl, goal: str, sub_goal: str, tool_call_summ
 
 
 async def gen_meta_filter(chat_mdl, meta_data: dict, query: str, constraints: dict = None) -> dict:
+    # 根据问句生成文档元数据过滤条件
     """Generate metadata filter conditions from a user query using an LLM.
 
     Args:
@@ -535,6 +551,7 @@ async def gen_meta_filter(chat_mdl, meta_data: dict, query: str, constraints: di
 
 
 async def gen_json(system_prompt: str, user_prompt: str, chat_mdl, gen_conf={}, max_retry=2):
+    # 结构化 JSON 输出，带 json_repair 重试
     from rag.graphrag.utils import get_llm_cache, set_llm_cache
 
     cached = get_llm_cache(chat_mdl.llm_name, system_prompt, user_prompt, gen_conf)
@@ -711,6 +728,7 @@ async def check_if_toc_transformation_is_complete(content, toc, chat_mdl):
 
 
 async def toc_transformer(toc_pages, chat_mdl):
+    # 将 PDF 目录页 OCR 文本转为层级 TOC JSON
     init_prompt = """
     You are given a table of contents, You job is to transform the whole table of content into a JSON format included table_of_contents.
 
@@ -814,6 +832,7 @@ def split_chunks(chunks, max_length: int):
 
 
 async def run_toc_from_text(chunks, chat_mdl, callback=None):
+    # 从正文 chunk 推断并生成文档目录
     input_budget = int(chat_mdl.max_length * INPUT_UTILIZATION) - num_tokens_from_string(TOC_FROM_TEXT_USER + TOC_FROM_TEXT_SYSTEM)
 
     input_budget = 1024 if input_budget > 1024 else input_budget
@@ -907,6 +926,7 @@ TOC_RELEVANCE_USER = load_prompt("toc_relevance_user")
 
 
 async def relevant_chunks_with_toc(query: str, toc: list[dict], chat_mdl, topn: int = 6):
+    # 结合 TOC 与问句选取相关章节 chunk
     import numpy as np
 
     try:
@@ -938,6 +958,7 @@ META_DATA = load_prompt("meta_data")
 
 
 async def gen_metadata(chat_mdl, schema: dict, content: str):
+    # 按 schema 从正文抽取结构化元数据
     if not schema:
         return ""
     if "properties" not in schema:
@@ -960,6 +981,7 @@ SUFFICIENCY_CHECK = load_prompt("sufficiency_check")
 
 
 async def sufficiency_check(chat_mdl, question: str, ret_content: str):
+    # 判断检索内容是否足以回答问题
     try:
         return await gen_json(PROMPT_JINJA_ENV.from_string(SUFFICIENCY_CHECK).render(question=question, retrieved_docs=ret_content), "Output:\n", chat_mdl)
     except Exception as e:
@@ -971,6 +993,7 @@ MULTI_QUERIES_GEN = load_prompt("multi_queries_gen")
 
 
 async def multi_queries_gen(chat_mdl, question: str, query: str, missing_infos: list[str], ret_content: str):
+    # 信息不足时生成补充检索 query
     try:
         return await gen_json(
             PROMPT_JINJA_ENV.from_string(MULTI_QUERIES_GEN).render(original_question=question, original_query=query, missing_info="\n - ".join(missing_infos), retrieved_docs=ret_content),

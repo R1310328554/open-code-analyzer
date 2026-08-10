@@ -12,6 +12,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+"""
+RAGFlow 解析/入库 Task Executor：Redis 队列消费、分块、嵌入、RAPTOR/GraphRAG/Dataflow 等流水线。
+"""
+
 import argparse
 import time
 
@@ -111,6 +116,7 @@ from rag.nlp import search as nlp_search
 BATCH_SIZE = 64
 
 
+# 解析器类型 → rag.app 模块映射（与 chunk_builder 一致）
 FACTORY = {
     "general": naive,
     ParserType.NAIVE.value: naive,
@@ -165,6 +171,7 @@ def signal_handler(sig, frame):
 
 
 def set_progress(task_id, from_page=0, to_page=-1, prog=None, msg="Processing..."):
+    # 更新任务进度到 DB，处理取消与分页前缀
     try:
         if prog is not None and prog < 0:
             msg = "[ERROR]" + msg
@@ -199,6 +206,7 @@ def set_progress(task_id, from_page=0, to_page=-1, prog=None, msg="Processing...
 
 
 async def collect():
+    # 从 Redis 消费者组拉取待处理 task 消息
     global CONSUMER_NAME, DONE_TASKS, FAILED_TASKS
     global UNACKED_ITERATOR
 
@@ -279,6 +287,7 @@ async def get_storage_binary(bucket, name):
 @timed_with_recording
 @timeout(60 * 80, 1)
 async def build_chunks(task, progress_callback):
+    # 下载文件 → 解析分块 → TOC/标签/元数据等后处理
     if task["size"] > settings.DOC_MAXIMUM_SIZE:
         set_progress(task["id"], prog=-1, msg="File size exceeds( <= %dMb )" % (int(settings.DOC_MAXIMUM_SIZE / 1024 / 1024)))
         get_recording_context().record("file_size_exceeded", True)
@@ -689,6 +698,7 @@ def init_kb(row, vector_size: int):
 
 @timed_with_recording
 async def embedding(docs, mdl, parser_config=None, callback=None):
+    # 批量计算 chunk 向量并写回字段
     if parser_config is None:
         parser_config = {}
     tts, cnts = [], []
@@ -742,6 +752,7 @@ async def embedding(docs, mdl, parser_config=None, callback=None):
 
 @timed_with_recording
 async def run_dataflow(task: dict):
+    # Canvas/Dataflow 特殊解析流水线
     from api.db.services.canvas_service import UserCanvasService
     from rag.flow.pipeline import Pipeline
 
@@ -1023,6 +1034,7 @@ async def delete_raptor_chunks(doc_id: str, tenant_id: str, kb_id: str, keep_met
 
 @timeout(3600)
 async def run_raptor_for_kb(row, kb_parser_config, chat_mdl, embd_mdl, vector_size, callback=None, doc_ids=[]):
+    # KB 级 RAPTOR 层次摘要聚类与索引
     """Generate RAPTOR summaries for selected documents in a knowledge base."""
     fake_doc_id = GRAPH_RAPTOR_FAKE_DOC_ID
 
@@ -1255,6 +1267,7 @@ async def delete_image(kb_id, chunk_id):
 
 @timed_with_recording
 async def insert_chunks(task_id, task_tenant_id, task_dataset_id, chunks, progress_callback):
+    # 写入 doc store、MinIO 图片与 ES/Infinity 索引
     """
     Insert chunks into document store (Elasticsearch OR Infinity).
 
@@ -1371,6 +1384,7 @@ async def insert_chunks(task_id, task_tenant_id, task_dataset_id, chunks, progre
 
 @timeout(60 * 60 * 3, 1)
 async def do_handle_task(task):
+    # 单任务主编排：memory/dataflow/raptor/常规 parse 分支
     task_type = task.get("task_type", "")
 
     if task_type == "memory":
@@ -1704,6 +1718,7 @@ async def do_handle_task(task):
 
 
 async def handle_task():
+    # 消费一条 Redis 消息并调用 do_handle_task
     global DONE_TASKS, FAILED_TASKS
     redis_msg, task = await collect()
     if not task:
@@ -1783,6 +1798,7 @@ async def get_server_ip() -> str:
 
 
 async def report_status():
+    # 周期性向 Redis 上报 worker 心跳与队列 lag
     """
     Periodically reports the executor's heartbeat
     """
@@ -1864,6 +1880,7 @@ async def report_status():
 
 
 async def task_manager():
+    # 在 task_limiter 内执行 handle_task 并释放信号量
     try:
         await handle_task()
     finally:
@@ -1871,6 +1888,7 @@ async def task_manager():
 
 
 async def main():
+    # Worker 启动：错峰、init_settings、心跳与并发 task 循环
     # Stagger executor startup to prevent connection storm to Infinity
     # Extract worker number from CONSUMER_NAME (e.g., "task_executor_abc123_5" -> 5)
     try:

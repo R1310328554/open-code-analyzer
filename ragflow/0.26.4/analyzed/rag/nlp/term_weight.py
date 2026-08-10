@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+词项权重：结合 NER、词频、DF、词性与停用词，为检索/query 扩展计算归一化权重。
+"""
+
+
 
 import logging
 import math
@@ -25,6 +30,7 @@ from common.file_utils import get_project_base_directory
 
 
 class Dealer:
+    # 词权重计算器：pretoken → token_merge → IDF 加权
     def __init__(self):
         self.stop_words = set(
             [
@@ -95,6 +101,7 @@ class Dealer:
             logging.warning("Load term.freq FAIL!")
 
     def pretoken(self, txt, num=False, stpwd=True):
+        # 分词并过滤停用词、标点占位符
         patt = [r"[~—\t @#%!<>,\.\?\":;'\{\}\[\]_=\(\)\|，。？》•●○↓《；‘’：“”【¥ 】…￥！、·（）×`&\\/「」\\]"]
         rewt = []
         for p, r in rewt:
@@ -115,6 +122,7 @@ class Dealer:
         return res
 
     def token_merge(self, tks):
+        # 合并短 token（如「多 工位」）避免过度切分
         def one_term(t):
             return len(t) == 1 or re.match(r"[0-9a-z]{1,2}$", t)
 
@@ -142,6 +150,7 @@ class Dealer:
         return [t for t in res if t]
 
     def ner(self, t):
+        # 查 ner.json 实体类型标签
         if not self.ne:
             return ""
         res = self.ne.get(t, "")
@@ -158,6 +167,7 @@ class Dealer:
         return tks
 
     def weights(self, tks, preprocess=True):
+        # 主入口：返回 (token, 归一化权重) 列表
         num_pattern = re.compile(r"[0-9,.]{2,}$")
         short_letter_pattern = re.compile(r"[a-z]{1,2}$")
         num_space_pattern = re.compile(r"[0-9. -]{2,}$")

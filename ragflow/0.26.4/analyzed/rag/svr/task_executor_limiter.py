@@ -13,14 +13,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Task Executor 并发限流：任务、分块、嵌入、MinIO 与 KG 的 LoopLocalSemaphore 实例。
+"""
+
+
 import os
 
 from common.asyncio_utils import LoopLocalSemaphore
 
+# 环境变量可调的并发上限
 MAX_CONCURRENT_TASKS = int(os.environ.get("MAX_CONCURRENT_TASKS", "5"))
 MAX_CONCURRENT_CHUNK_BUILDERS = int(os.environ.get("MAX_CONCURRENT_CHUNK_BUILDERS", "1"))
 MAX_CONCURRENT_MINIO = int(os.environ.get("MAX_CONCURRENT_MINIO", "10"))
 
+# 各子系统独立信号量，避免 IO/CPU 互相饿死
 task_limiter = LoopLocalSemaphore(MAX_CONCURRENT_TASKS)
 chunk_limiter = LoopLocalSemaphore(MAX_CONCURRENT_CHUNK_BUILDERS)
 embed_limiter = LoopLocalSemaphore(MAX_CONCURRENT_CHUNK_BUILDERS)

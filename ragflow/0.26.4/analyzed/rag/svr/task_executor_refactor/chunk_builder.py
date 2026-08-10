@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+分块构建模块：解析器工厂、异步 chunk 与 PDF 大纲持久化。
 Chunk Builder Module.
 
 Provides parser factory and document chunking logic:
@@ -36,7 +37,11 @@ from rag.utils.table_es_metadata import merge_table_parser_config_from_kb
 
 
 def get_parser(parser_id: str):
-    """Get parser module by ID.
+    # 按 parser_id 返回 rag.app 中对应解析模块
+    """
+    解析器工厂：general/naive/paper 等映射到 rag.app 子模块。
+
+    Get parser module by ID.
 
     Args:
         parser_id: The parser identifier.
@@ -68,6 +73,7 @@ def get_parser(parser_id: str):
 
 
 async def run_chunking(
+    # 在线程池中调用 chunker.chunk，受 chunk_limiter 约束
     chunker,
     binary: bytes,
     ctx: TaskContext,
@@ -110,6 +116,7 @@ async def run_chunking(
 
 
 async def extract_outline(cks: List[Dict], ctx: TaskContext) -> None:
+    # 从首 chunk 提取 __outline__ 并写入文档元数据
     """Extract and persist PDF outline if present.
 
     Args:

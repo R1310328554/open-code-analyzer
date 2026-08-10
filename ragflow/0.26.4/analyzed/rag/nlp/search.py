@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+文档检索与重排：全文/向量混合搜索、引用插入、分页检索与 chunk 向量按需拉取。
+"""
+
+
 import json
 import logging
 import re
@@ -33,16 +38,19 @@ from common.misc_utils import thread_pool_exec
 
 
 def index_name(uid):
+    # 租户索引名：ragflow_{uid}
     return f"ragflow_{uid}"
 
 
 class Dealer:
+    # 检索编排：封装 FulltextQueryer 与 DocStoreConnection
     def __init__(self, dataStore: DocStoreConnection):
         self.qryr = query.FulltextQueryer()
         self.dataStore = dataStore
 
     @dataclass
     class SearchResult:
+        # 统一搜索结果结构（ids、字段、高亮、聚合等）
         total: int
         ids: list[str]
         query_vector: list[float] | None = None
@@ -53,6 +61,7 @@ class Dealer:
         group_docs: list[list] | None = None
 
     async def get_vector(self, txt, emb_mdl, topk=10, similarity=0.1):
+        # 将问句编码为 MatchDenseExpr 向量检索表达式
         qv, _ = await thread_pool_exec(emb_mdl.encode_queries, txt)
         shape = np.array(qv).shape
         if len(shape) > 1:
@@ -75,6 +84,7 @@ class Dealer:
         return await thread_pool_exec(_load)
 
     async def _prune_deleted_chunks(self, sres: SearchResult) -> SearchResult:
+        # 过滤父文档已删除的 stale chunk（兜底，非主删除路径）
         # Temporary safety net:
         # Some delete paths can leave stale chunks in the doc store if the DB row
         # is removed but the vector record is not fully cleaned up. We filter those
@@ -119,6 +129,7 @@ class Dealer:
         )
 
     def get_filters(self, req):
+        # 将 API 请求字段映射为 doc store 过滤条件
         condition = dict()
         for key, field in {"kb_ids": "kb_id", "doc_ids": "doc_id"}.items():
             if key in req and req[key] is not None:
@@ -132,6 +143,7 @@ class Dealer:
         return condition
 
     async def search(self, req, idx_names: str | list[str], kb_ids: list[str], emb_mdl=None, highlight: bool | list | None = None, rank_feature: dict | None = None):
+        # 核心搜索：无问句时排序浏览，有问句时全文±向量融合
         if highlight is None:
             highlight = False
 
@@ -249,6 +261,7 @@ class Dealer:
         return [get_float(t) for t in txt.split("\t")]
 
     def insert_citations(self, answer, chunks, chunk_v, embd_mdl, tkweight=0.1, vtweight=0.9):
+        # 按句混合相似度在答案中插入 [ID:n] 引用标记
         assert len(chunks) == len(chunk_v)
         if not chunks:
             return answer, set([])
@@ -328,6 +341,7 @@ class Dealer:
         return res, seted
 
     def _rank_feature_scores(self, query_rfea, search_res):
+        # 计算 tag 特征分与 PageRank 加权
         ## For rank feature(tag_fea) scores.
         rank_fea = []
         pageranks = []
@@ -362,6 +376,8 @@ class Dealer:
 
     async def _knn_scores(self, sres: "Dealer.SearchResult", idx_names: str | list[str], kb_ids: list[str]) -> dict[str, float]:
         """
+        二次 ES KNN 调用：仅对候选 chunk id 取引擎侧余弦分，向量不出索引。
+
         Second-pass ES call that returns the cosine similarity between the
         query embedding and each candidate chunk's embedding, filtered to the
         chunk ids the original search already surfaced. We rely on ES to do
@@ -395,6 +411,8 @@ class Dealer:
 
     async def fetch_chunk_vectors(self, chunk_ids: list[str], tenant_ids: str | list[str], kb_ids: list[str], dim: int) -> dict[str, list[float]]:
         """
+        引用阶段按需拉取指定 chunk 的 embedding 向量。
+
         Citation-time helper: fetch only the embedding vectors for an
         explicit set of chunk ids. Used by callers that need to compute
         answer-vs-chunk similarity locally (e.g. insert_citations) so the
@@ -433,6 +451,8 @@ class Dealer:
 
     def rerank_with_knn(self, sres, query, knn_scores: dict[str, float], tkweight=0.3, vtweight=0.7, cfield="content_ltks", rank_feature: dict | None = None):
         """
+        ES 路径重排：引擎 KNN 余弦分 + 本地词项相似度按权重融合。
+
         Merge ES-side KNN cosine similarity with locally computed term
         similarity using the user-configured weights. Replaces the older
         local-only rerank() for the ES path, which depended on shipping
@@ -459,6 +479,7 @@ class Dealer:
         return sim, tksim, vtsim
 
     def rerank(self, sres, query, tkweight=0.3, vtweight=0.7, cfield="content_ltks", rank_feature: dict | None = None):
+        # OceanBase 等本地向量重排路径
         _, keywords = self.qryr.question(query)
         vector_size = len(sres.query_vector)
         vector_column = f"q_{vector_size}_vec"
@@ -492,6 +513,7 @@ class Dealer:
         return sim + rank_fea, tksim, vtsim
 
     def rerank_by_model(self, rerank_mdl, sres, query, tkweight=0.3, vtweight=0.7, cfield="content_ltks", rank_feature: dict | None = None):
+        # 外部 rerank 模型：词项分 + 模型语义分融合
         _, keywords = self.qryr.question(query)
 
         for i in sres.ids:
@@ -523,7 +545,10 @@ class Dealer:
 
     @staticmethod
     def _rerank_window(page_size: int, top: int = 0) -> int:
-        """Candidate-window size shared by retrieval's block fetch and slice.
+        """
+        检索分页候选窗口：必须为 page_size 整数倍，否则深分页会丢结果。
+
+        Candidate-window size shared by retrieval's block fetch and slice.
 
         ``retrieval`` reuses this value BOTH as the backend block size and as
         the modulus for extracting a single page from a (re)ranked block::
@@ -547,6 +572,7 @@ class Dealer:
         return window
 
     async def retrieval(
+        # 对外检索入口：搜索→重排→阈值过滤→分页返回 chunks
         self,
         question,
         embd_mdl,

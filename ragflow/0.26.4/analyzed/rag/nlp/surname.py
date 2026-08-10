@@ -13,7 +13,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+中文姓氏集合：用于 NER/分词中识别单字姓，isit() 判断 token 是否为常见姓氏。
+"""
 
+
+
+# 常见中文单姓与复姓集合
 m = set(
     [
         "赵",
@@ -570,4 +576,5 @@ m = set(
 
 
 def isit(n):
+    # 判断字符串（去空白）是否在姓氏表中
     return n.strip() in m

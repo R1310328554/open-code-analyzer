@@ -13,3 +13,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+RAG 子包 settings 占位模块：运行时配置已迁移至 common.settings，本文件保留许可证头。
+"""
+
+

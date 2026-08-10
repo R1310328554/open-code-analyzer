@@ -13,12 +13,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+RAG 分词器 Python 封装：委托 C++ infinity.rag_tokenizer，Infinity 引擎下跳过二次分词。
+"""
+
+
 
 import infinity.rag_tokenizer
 
 
 class RagTokenizer(infinity.rag_tokenizer.RagTokenizer):
+    # 继承 C++ 分词器；Infinity 文档引擎下 tokenize 直接返回原文
     def tokenize(self, line: str) -> str:
+        # 粗粒度分词；DOC_ENGINE_INFINITY 时跳过分词
         from common import settings  # moved from the top of the file to avoid circular import
 
         if settings.DOC_ENGINE_INFINITY:
@@ -27,6 +34,7 @@ class RagTokenizer(infinity.rag_tokenizer.RagTokenizer):
             return super().tokenize(line)
 
     def fine_grained_tokenize(self, tks: str) -> str:
+        # 细粒度二次分词
         from common import settings  # moved from the top of the file to avoid circular import
 
         if settings.DOC_ENGINE_INFINITY:
@@ -36,6 +44,7 @@ class RagTokenizer(infinity.rag_tokenizer.RagTokenizer):
 
 
 def is_chinese(s):
+    # 判断字符是否为中文
     return infinity.rag_tokenizer.is_chinese(s)
 
 
@@ -48,9 +57,11 @@ def is_alphabet(s):
 
 
 def naive_qie(txt):
+    # 朴素切分（无词典）
     return infinity.rag_tokenizer.naive_qie(txt)
 
 
+# 模块级单例与便捷导出
 tokenizer = RagTokenizer()
 tokenize = tokenizer.tokenize
 fine_grained_tokenize = tokenizer.fine_grained_tokenize

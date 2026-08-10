@@ -13,12 +13,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Discord Bot 示例：@ 机器人时调用 RAGFlow completion_aibotk API 并回传文本/图片。
+"""
+
+
 import logging
 import discord
 import requests
 import base64
 import asyncio
 
+# RAGFlow 对话 Bot 接口地址
 URL = '{YOUR_IP_ADDRESS:PORT}/v1/api/completion_aibotk'  # Default: https://cloud.ragflow.io/v1/api/completion_aibotk
 
 JSON_DATA = {
@@ -41,6 +47,7 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
+    # 被 @ 时转发用户问题到 RAGFlow 并回复
     if message.author == client.user:
         return
 
