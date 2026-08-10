@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:42:15Z",
-  "files": [
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/AcrUtils.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/AmrUtils.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/AuthorizeClientUtil.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/ClientHostUtils.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/JWKSHttpUtils.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/JWKSServerUtils.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/LogoutUtil.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/OAuth2Code.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/OAuth2CodeParser.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/OIDCRedirectUriBuilder.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/OIDCResponseMode.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/OIDCResponseType.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/PairwiseSubMapperUtils.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/PairwiseSubMapperValidator.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/utils/PkceUtils.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1288,
-  "done": 4695
+  "done": 4710
 }
