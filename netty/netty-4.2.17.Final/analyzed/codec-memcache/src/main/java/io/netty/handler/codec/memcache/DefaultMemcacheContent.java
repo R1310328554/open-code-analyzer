@@ -22,6 +22,8 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * The default {@link MemcacheContent} implementation.
+ *
+ * <p>非末尾 body 分片的默认实现：持有单个 {@link ByteBuf}，引用计数归零时在 {@link #deallocate()} 中 release。
  */
 @UnstableApi
 public class DefaultMemcacheContent extends AbstractMemcacheObject implements MemcacheContent {
@@ -30,6 +32,8 @@ public class DefaultMemcacheContent extends AbstractMemcacheObject implements Me
 
     /**
      * Creates a new instance with the specified content.
+     *
+     * <p>content 所有权转移给本对象，调用方不应再单独 release。</p>
      */
     public DefaultMemcacheContent(ByteBuf content) {
         this.content = ObjectUtil.checkNotNull(content, "content");

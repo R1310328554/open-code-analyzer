@@ -22,6 +22,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * The default implementation for the {@link LastMemcacheContent}.
+ *
+ * <p>最后一个 body 分片的默认实现；编码器见到此类型后会将 {@code expectingMoreContent} 置 false，
+ * 允许下一条 {@link MemcacheMessage} 出站。</p>
  */
 @UnstableApi
 public class DefaultLastMemcacheContent extends DefaultMemcacheContent implements LastMemcacheContent {

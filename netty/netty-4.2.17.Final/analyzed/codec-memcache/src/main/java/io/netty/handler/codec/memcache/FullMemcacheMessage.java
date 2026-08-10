@@ -21,6 +21,9 @@ import io.netty.util.internal.UnstableApi;
 /**
  * Combines {@link MemcacheMessage} and {@link LastMemcacheContent} into one
  * message. So it represent a <i>complete</i> memcache message.
+ *
+ * <p>聚合器输出类型：同时承载协议头字段与完整 value（{@link LastMemcacheContent}），
+ * 等价于 HTTP 的 FullHttpMessage，业务层一次读取即可处理整条 Memcache 报文。
  */
 @UnstableApi
 public interface FullMemcacheMessage extends MemcacheMessage, LastMemcacheContent {

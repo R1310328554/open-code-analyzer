@@ -23,6 +23,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * A {@link MessageToByteEncoder} that encodes binary memcache messages into bytes.
+ *
+ * <p>二进制 Memcache 编码：将 24 字节头、extras、key 写入单个 {@link ByteBuf}；
+ * value 仍由父类 {@link AbstractMemcacheObjectEncoder} 按 {@link io.netty.handler.codec.memcache.MemcacheContent} 分片追加。</p>
  */
 @UnstableApi
 public abstract class AbstractBinaryMemcacheEncoder<M extends BinaryMemcacheMessage>
@@ -50,6 +53,8 @@ public abstract class AbstractBinaryMemcacheEncoder<M extends BinaryMemcacheMess
      *
      * @param buf    the {@link ByteBuf} to write into.
      * @param extras the extras to encode.
+     *
+     * <p>extras 可选；null 或不可读时跳过。</p>
      */
     private static void encodeExtras(ByteBuf buf, ByteBuf extras) {
         if (extras == null || !extras.isReadable()) {
@@ -81,6 +86,8 @@ public abstract class AbstractBinaryMemcacheEncoder<M extends BinaryMemcacheMess
      *
      * @param buf the {@link ByteBuf} to write into.
      * @param msg the message to encode.
+     *
+     * <p>子类写入 magic、opcode、body length、opaque、CAS 等；必须与 {@link AbstractBinaryMemcacheDecoder#decodeHeader} 对称。</p>
      */
     protected abstract void encodeHeader(ByteBuf buf, M msg);
 

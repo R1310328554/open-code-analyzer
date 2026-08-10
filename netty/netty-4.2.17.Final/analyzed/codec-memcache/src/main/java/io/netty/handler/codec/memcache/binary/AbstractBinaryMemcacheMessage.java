@@ -21,6 +21,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * Default implementation of a {@link BinaryMemcacheMessage}.
+ *
+ * <p>二进制 Memcache 报文头的可变数据模型：维护 magic/opcode/长度/opaque/CAS 等字段，
+ * key 与 extras 以 retained {@link ByteBuf} 持有，{@link #setKey}/{@link #setExtras} 会同步更新 totalBodyLength。</p>
  */
 @UnstableApi
 public abstract class AbstractBinaryMemcacheMessage
@@ -42,8 +45,11 @@ public abstract class AbstractBinaryMemcacheMessage
     private short keyLength;
     private byte extrasLength;
     private byte dataType;
+    /** 协议头中的 total body length，含 key + extras + value（value 由后续分片承载）。 */
     private int totalBodyLength;
+    /** 客户端用于匹配请求/响应的 opaque 令牌。 */
     private int opaque;
+    /** Compare-And-Swap 令牌，用于 cas 类命令。 */
     private long cas;
 
     /**
@@ -160,6 +166,8 @@ public abstract class AbstractBinaryMemcacheMessage
      * This may be 0, since the extras content is optional.
      *
      * @param extrasLength the extras length.
+     *
+     * <p>解码器在解析头后调用，与 {@link #setExtras} 写入的 buffer 长度保持一致。</p>
      */
     BinaryMemcacheMessage setExtrasLength(byte extrasLength) {
         this.extrasLength = extrasLength;
@@ -237,6 +245,8 @@ public abstract class AbstractBinaryMemcacheMessage
      * Copies special metadata hold by this instance to the provided instance
      *
      * @param dst The instance where to copy the metadata of this instance to
+     *
+     * <p>copy/duplicate 时复制协议头标量字段，不含 key/extras buffer 本身。</p>
      */
     void copyMeta(AbstractBinaryMemcacheMessage dst) {
         dst.magic = magic;

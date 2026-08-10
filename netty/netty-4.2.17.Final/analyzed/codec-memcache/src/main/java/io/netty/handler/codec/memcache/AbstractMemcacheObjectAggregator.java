@@ -41,6 +41,9 @@ import io.netty.util.internal.UnstableApi;
  * p.addLast("encoder", new {@link BinaryMemcacheResponseEncoder}());
  * p.addLast("handler", new YourMemcacheRequestHandler());
  * </pre>
+ *
+ * <p>将「消息头 + 若干 {@link MemcacheContent} 分片」聚合成单个 {@link FullMemcacheMessage}，
+ * 业务 handler 只需处理完整报文。Memcache 无 HTTP 100-continue 语义，故 continue 相关钩子均禁用或返回 null。
  */
 @UnstableApi
 public abstract class AbstractMemcacheObjectAggregator<H extends MemcacheMessage> extends
@@ -52,26 +55,31 @@ public abstract class AbstractMemcacheObjectAggregator<H extends MemcacheMessage
 
     @Override
     protected boolean isContentMessage(MemcacheObject msg) throws Exception {
+        // 分片 body 以 MemcacheContent 形式到达
         return msg instanceof MemcacheContent;
     }
 
     @Override
     protected boolean isLastContentMessage(MemcacheContent msg) throws Exception {
+        // LastMemcacheContent 标记最后一个分片
         return msg instanceof LastMemcacheContent;
     }
 
     @Override
     protected boolean isAggregated(MemcacheObject msg) throws Exception {
+        // 已是 FullMemcacheMessage 则无需再聚合
         return msg instanceof FullMemcacheMessage;
     }
 
     @Override
     protected boolean isContentLengthInvalid(H start, int maxContentLength) {
+        // Memcache 协议不在此层校验 Content-Length
         return false;
     }
 
     @Override
     protected Object newContinueResponse(H start, int maxContentLength, ChannelPipeline pipeline) {
+        // Memcache 不支持 100-continue
         return null;
     }
 

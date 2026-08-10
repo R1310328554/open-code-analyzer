@@ -34,16 +34,22 @@ import java.util.List;
  * Decoder for both {@link BinaryMemcacheRequest} and {@link BinaryMemcacheResponse}.
  * <p/>
  * The difference in the protocols (header) is implemented by the subclasses.
+ *
+ * <p>二进制 Memcache 解码器：按 24 字节头 → extras → key → value 分片的状态机解析。
+ * 请求/响应仅 {@link #decodeHeader} 不同；value 按 {@link #chunkSize} 切分为多个 {@link MemcacheContent}。</p>
  */
 @UnstableApi
 public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMessage>
     extends AbstractMemcacheObjectDecoder {
 
+    /** 单次从 socket 读出的 value 分片上限，默认 8 KiB。 */
     public static final int DEFAULT_MAX_CHUNK_SIZE = 8192;
 
     private final int chunkSize;
 
+    /** 正在组装的当前报文，header/key 阶段持有引用直至 value 读完或 reset。 */
     private M currentMessage;
+    /** 当前报文 value 已读字节数，用于判断是否到达 totalBodyLength。 */
     private int alreadyReadChunkSize;
 
     private State state = State.READ_HEADER;
@@ -59,6 +65,8 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
      * Create a new {@link AbstractBinaryMemcacheDecoder} with custom settings.
      *
      * @param chunkSize the maximum chunk size of the payload.
+     *
+     * <p>限制每个 {@link MemcacheContent} 分片大小，避免大 value 一次性占用过多内存。</p>
      */
     protected AbstractBinaryMemcacheDecoder(int chunkSize) {
         checkPositiveOrZero(chunkSize, "chunkSize");
@@ -159,6 +167,7 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
                 return;
             }
             case BAD_MESSAGE:
+                // 已进入坏帧状态，丢弃剩余字节直至连接关闭
                 in.skipBytes(actualReadableBytes());
                 return;
             default:
@@ -171,6 +180,8 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
      *
      * @param cause the cause of the decoding failure.
      * @return a valid message indicating failure.
+     *
+     * <p>解析失败时不抛异常中断 pipeline，而是产出带 {@link DecoderResult#failure} 的占位消息。</p>
      */
     private M invalidMessage(Exception cause) {
         state = State.BAD_MESSAGE;
@@ -207,6 +218,8 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
 
     /**
      * Prepare for next decoding iteration.
+     *
+     * <p>释放未完成的 currentMessage 并重置分片计数，准备解析下一条二进制报文。</p>
      */
     protected void resetDecoder() {
         if (currentMessage != null) {
@@ -221,6 +234,8 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
      *
      * @param in the incoming buffer.
      * @return the decoded header.
+     *
+     * <p>从 in 读取固定 24 字节头；子类区分 request/response 的 magic 与 opcode 布局。</p>
      */
     protected abstract M decodeHeader(ByteBuf in);
 
@@ -237,6 +252,8 @@ public abstract class AbstractBinaryMemcacheDecoder<M extends BinaryMemcacheMess
      * Note that most of the states can be optional, the only one required is reading
      * the header ({@link #READ_HEADER}. All other steps depend on the length fields
      * in the header and will be executed conditionally.
+     *
+     * <p>fall-through switch 实现半包友好：同一 {@link #decode} 调用内尽可能推进多个阶段。</p>
      */
     enum State {
         /**

@@ -20,6 +20,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * Marker interface for both ascii and binary messages.
+ *
+ * <p>Memcache 请求/响应的消息头部分（不含 value 分片），同时是 {@link ReferenceCounted}，
+ * 便于与后续 {@link MemcacheContent} 分片在引用计数上独立管理。
  */
 @UnstableApi
 public interface MemcacheMessage extends MemcacheObject, ReferenceCounted {

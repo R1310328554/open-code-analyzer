@@ -31,10 +31,14 @@ import java.util.List;
  * <p>Note that this class is designed to be extended, especially because both the binary and ascii protocol
  * require different treatment of their messages. Since the content chunk writing is the same for both, the encoder
  * abstracts this right away.</p>
+ *
+ * <p>Memcache 出站编码模板：子类实现 {@link #encodeMessage} 写协议头，本类统一处理后续 body 分片。
+ * 通过 {@code expectingMoreContent} 状态机保证「消息头 → 若干 content → 下一消息头」的严格顺序。</p>
  */
 @UnstableApi
 public abstract class AbstractMemcacheObjectEncoder<M extends MemcacheMessage> extends MessageToMessageEncoder<Object> {
 
+    /** 上一帧是否已写消息头、仍在等待后续 content 分片。 */
     private boolean expectingMoreContent;
 
     public AbstractMemcacheObjectEncoder() {
@@ -45,6 +49,7 @@ public abstract class AbstractMemcacheObjectEncoder<M extends MemcacheMessage> e
     protected void encode(ChannelHandlerContext ctx, Object msg, List<Object> out) throws Exception {
         if (msg instanceof MemcacheMessage) {
             if (expectingMoreContent) {
+                // 上一消息的 body 尚未结束，不能再写新消息头
                 throw new IllegalStateException("unexpected message type: " + StringUtil.simpleClassName(msg));
             }
 
@@ -58,6 +63,7 @@ public abstract class AbstractMemcacheObjectEncoder<M extends MemcacheMessage> e
             if (contentLength > 0) {
                 out.add(encodeAndRetain(msg));
             } else {
+                // 零长度分片仍占位，保持分片边界
                 out.add(Unpooled.EMPTY_BUFFER);
             }
 
@@ -76,6 +82,8 @@ public abstract class AbstractMemcacheObjectEncoder<M extends MemcacheMessage> e
      * @param ctx the channel handler context.
      * @param msg the message to encode.
      * @return the {@link ByteBuf} representation of the message.
+     *
+     * <p>子类将协议头（及 key/extras 等）写入可写 {@link ByteBuf}；body 由本类按分片单独追加。</p>
      */
     protected abstract ByteBuf encodeMessage(ChannelHandlerContext ctx, M msg);
 
@@ -103,6 +111,8 @@ public abstract class AbstractMemcacheObjectEncoder<M extends MemcacheMessage> e
      *
      * @param msg the object to encode.
      * @return the encoded object.
+     *
+     * <p>retain 后交给 pipeline 写出，避免编码阶段意外释放引用。</p>
      */
     private static Object encodeAndRetain(Object msg) {
         if (msg instanceof ByteBuf) {

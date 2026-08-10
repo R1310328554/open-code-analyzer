@@ -27,6 +27,9 @@ import io.netty.util.internal.UnstableApi;
  * {@link MemcacheMessage} when the content is large. If you prefer not to receive {@link MemcacheContent}
  * in your handler, place a aggregator after an implementation of the {@link AbstractMemcacheObjectDecoder}
  * in the {@link ChannelPipeline}.
+ *
+ * <p>大 value 解码时，在 {@link MemcacheMessage} 之后逐片下发的 body 块。
+ * 若业务不想处理分片，可在 decoder 后插入 {@link AbstractMemcacheObjectAggregator} 合并为 {@link FullMemcacheMessage}。
  */
 @UnstableApi
 public interface MemcacheContent extends MemcacheObject, ByteBufHolder {

@@ -23,6 +23,9 @@ import io.netty.util.internal.UnstableApi;
  * <p/>
  * Currently it just acts as a common denominator, but will certainly include methods once the ascii protocol
  * is implemented.
+ *
+ * <p>ASCII 与二进制 Memcache 解码器的共同父类，继承 {@link ByteToMessageDecoder}。
+ * 当前仅作类型锚点，待 ASCII 协议实现后可在此抽取共用逻辑。
  */
 @UnstableApi
 public abstract class AbstractMemcacheObjectDecoder extends ByteToMessageDecoder {

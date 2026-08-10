@@ -22,6 +22,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * The default {@link MemcacheObject} implementation.
+ *
+ * <p>Memcache 消息对象的公共基类：继承 {@link AbstractReferenceCounted} 管理 {@link ByteBuf} 生命周期，
+ * 并持有 {@link DecoderResult}，使解码失败时 upstream 仍能收到带失败标记的对象而非直接抛异常。
  */
 @UnstableApi
 public abstract class AbstractMemcacheObject extends AbstractReferenceCounted implements MemcacheObject {
@@ -29,7 +32,7 @@ public abstract class AbstractMemcacheObject extends AbstractReferenceCounted im
     private DecoderResult decoderResult = DecoderResult.SUCCESS;
 
     protected AbstractMemcacheObject() {
-        // Disallow direct instantiation
+        // 禁止直接实例化，仅允许子类构造
     }
 
     @Override

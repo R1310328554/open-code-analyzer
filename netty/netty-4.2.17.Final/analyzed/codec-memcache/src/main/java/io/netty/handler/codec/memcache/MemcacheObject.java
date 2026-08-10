@@ -20,6 +20,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * Defines a common interface for all {@link MemcacheObject} implementations.
+ *
+ * <p>Memcache 编解码 pipeline 中所有出站/入站对象的根标记接口，
+ * 继承 {@link DecoderResultProvider} 以统一承载解码成败状态。
  */
 @UnstableApi
 public interface MemcacheObject extends DecoderResultProvider { }

@@ -26,10 +26,14 @@ import io.netty.util.internal.UnstableApi;
  * Note that by design, even when no content is emitted by the protocol, an
  * empty {@link LastMemcacheContent} is issued to make the upstream parsing
  * easier.
+ *
+ * <p>标记 body 分片序列结束；即使 value 长度为 0，解码器也会下发 {@link #EMPTY_LAST_CONTENT}，
+ * 使聚合器与业务 handler 始终遵循「消息头 + 至少一个 Last 分片」的统一模式。</p>
  */
 @UnstableApi
 public interface LastMemcacheContent extends MemcacheContent {
 
+    /** 零长度、不可释放的单例末尾分片，用于无 body 的报文。 */
     LastMemcacheContent EMPTY_LAST_CONTENT = new LastMemcacheContent() {
 
         @Override
