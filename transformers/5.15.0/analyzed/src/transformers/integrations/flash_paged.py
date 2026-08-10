@@ -1,9 +1,11 @@
+# Flash 分页注意力：连续批 PagedAttentionCache + flash_attn varlen/kvcache 融合路径。
 import torch
 
 from ..generation.continuous_batching import PagedAttentionCache
 from ..modeling_flash_attention_utils import lazy_import_paged_flash_attention
 
 
+# paged_attention_forward：分页 KV 更新 + flash_attn_varlen 或 kvcache decode
 def paged_attention_forward(
     module: torch.nn.Module,
     q: torch.Tensor,
@@ -98,6 +100,7 @@ def paged_attention_forward(
 
 
 @torch.compiler.disable
+# _paged_decode_forward：decode 快路径，flash_attn_with_kvcache 原地更新 cache
 def _paged_decode_forward(
     module: torch.nn.Module,
     q: torch.Tensor,

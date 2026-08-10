@@ -53,6 +53,7 @@ logger = logging.get_logger(__name__)
 
 
 @dataclass(frozen=True)
+# DeepGEMM：kernels-community/deep-gemm 暴露的精选 kernel 入口点集合
 class DeepGEMM:
     """Curated entry points exposed by `kernels-community/deep-gemm`."""
 
@@ -76,6 +77,7 @@ class DeepGEMM:
 
 
 @functools.cache
+# _get_cuda_home：解析 CUDA toolkit 根目录（与 DeepGEMM JIT 一致）
 def _get_cuda_home() -> str | None:
     """Resolve the CUDA toolkit root the way DeepGEMM's JIT does:
     ``CUDA_HOME`` → ``CUDA_PATH`` → dir of ``which nvcc`` → ``/usr/local/cuda`` (``None`` if none found).
@@ -95,6 +97,7 @@ def _get_cuda_home() -> str | None:
 
 
 @functools.cache
+# _get_nvcc_version：从磁盘读取 nvcc 对应 CUDA 版本
 def _get_nvcc_version() -> tuple[int, int] | None:
     """Version of the CUDA toolkit nvcc will use, as ``(major, minor)``, read off disk without a
     subprocess from (in order) ``{CUDA_HOME}/version.json``, ``version.txt``, or the ``CUDA_VERSION``
@@ -142,6 +145,7 @@ def _get_nvcc_version() -> tuple[int, int] | None:
 
 
 @torch._dynamo.assume_constant_result
+# is_sm100：当前 GPU 是否为 Blackwell（SM100+），供 dynamo 内联
 def is_sm100() -> bool:
     """Whether the current CUDA device is Blackwell (SM100+). `@assume_constant_result` makes dynamo
     evaluate it once at trace time and inline the bool — keeping the untraceable
@@ -153,6 +157,7 @@ def is_sm100() -> bool:
 
 
 @torch._dynamo.assume_constant_result
+# is_deepgemm_loadable：检查环境是否可加载 DeepGEMM kernel
 def is_deepgemm_loadable(raise_error: bool = False) -> bool:
     """Whether the DeepGEMM kernel can be loaded in this environment: `kernels` installed, a CUDA GPU on a
     supported arch (Hopper SM90 or Blackwell SM100), and a CUDA toolkit/nvcc new enough to JIT-compile it.
@@ -229,6 +234,7 @@ _DEEPGEMM: DeepGEMM | None = None
 
 
 @torch._dynamo.allow_in_graph
+# _load_deepgemm_kernel：一次性加载 DeepGEMM 到模块全局（allow_in_graph）
 def _load_deepgemm_kernel() -> None:
     """Load DeepGEMM once into the `_DEEPGEMM` module global, raising `ImportError` if the env or any
     required symbol is missing. Under NO circumstances may this function return a value: it rides
@@ -300,6 +306,7 @@ def _load_deepgemm_kernel() -> None:
     )
 
 
+# load_deepgemm_kernel：返回已加载的 DeepGEMM kernel  bundle
 def load_deepgemm_kernel() -> DeepGEMM:
     _load_deepgemm_kernel()
     return _DEEPGEMM
@@ -308,6 +315,7 @@ def load_deepgemm_kernel() -> DeepGEMM:
 # ── Scale-factor helpers ───────────────────────────────────────────────────────
 
 
+# _assert_sm100_requirements：FP4/SM100 与 float32 scale 的架构约束检查
 def _assert_sm100_requirements(weight: torch.Tensor, scale: torch.Tensor) -> None:
     """Before-load guard for DeepGEMM's FP8/FP4 arch constraints on the given weight/scale dtypes:
 
@@ -357,6 +365,7 @@ def _ceil_to_ue8m0(sf: torch.Tensor) -> torch.Tensor:
     return (int_view + ((1 << 23) - 1)).bitwise_and_(~((1 << 23) - 1)).view(torch.float)
 
 
+# _coerce_sf_for_kernel：按架构将 scale factor 整理为 DeepGEMM 期望布局
 def _coerce_sf_for_kernel(sf: torch.Tensor, is_sm100: bool, expected_mn: int | None = None) -> torch.Tensor:
     """Lay out `sf` as DeepGEMM's dispatch expects, per arch.
 
@@ -448,6 +457,7 @@ def _select_fp8_cast_kwargs(
 # ── Layout helpers (M-grouped contiguous, TMA-aligned) ─────────────────────────
 
 
+# _build_deepgemm_contiguous_layout：构建 TMA 对齐的 M-grouped 布局
 def _build_deepgemm_contiguous_layout(
     expert_ids_sorted: torch.Tensor, num_experts: int, alignment: int, use_psum_layout: bool
 ) -> tuple[torch.Tensor, torch.Tensor, int]:
@@ -498,6 +508,7 @@ def _unpad_from_deepgemm_contiguous_layout(x_padded: torch.Tensor, sorted_to_pad
 # ── Routing helpers (sort → matmul → restore) ─────────────────────────────────
 
 
+# _dispatch_routed_input：按 expert id 排序 token 并构建 padded 布局
 def _dispatch_routed_input(
     hidden_states: torch.Tensor,
     top_k_index: torch.Tensor,
@@ -548,6 +559,7 @@ def _dispatch_routed_input(
     )
 
 
+# _combine_routed_output：unpad → 加权 → 还原 top-k 聚合输出
 def _combine_routed_output(
     out_padded: torch.Tensor,
     sorted_weights: torch.Tensor,
@@ -575,6 +587,7 @@ def _combine_routed_output(
 
 
 @deprecate_kwarg("output_dtype", version="v5.16")
+# deepgemm_fp8_fp4_linear：端到端 FP8/FP4 Linear（per-token 激活量化 + matmul）
 def deepgemm_fp8_fp4_linear(
     input: torch.Tensor,
     weight: torch.Tensor,
@@ -619,6 +632,7 @@ def deepgemm_fp8_fp4_linear(
     return output
 
 
+# deepgemm_bf16_experts_forward：BF16 M-grouped MoE 专家前向
 def deepgemm_bf16_experts_forward(
     self: torch.nn.Module,
     hidden_states: torch.Tensor,
@@ -684,6 +698,7 @@ def deepgemm_bf16_experts_forward(
     )
 
 
+# deepgemm_fp8_fp4_experts_forward：FP8/FP4 grouped MoE 专家前向
 def deepgemm_fp8_fp4_experts_forward(
     self: torch.nn.Module,
     hidden_states: torch.Tensor,
@@ -777,6 +792,7 @@ def deepgemm_fp8_fp4_experts_forward(
     )
 
 
+# setup_megamoe_weights：Mega MoE 权重一次性打包为 UTCCP 布局
 def setup_megamoe_weights(module: torch.nn.Module) -> None:
     """One-shot pack + permute of an FP8Experts module's L1/L2 weights into the
     Mega MoE UTCCP layout. Called lazily on the first megamoe forward; idempotent
@@ -835,6 +851,7 @@ def setup_megamoe_weights(module: torch.nn.Module) -> None:
     module.down_proj_scale_inv = torch.nn.Parameter(down_sf, requires_grad=False)
 
 
+# deepgemm_fp8_fp4_megamoe_experts_forward：SM100+ FP8×FP4 Mega MoE 融合前向
 def deepgemm_fp8_fp4_megamoe_experts_forward(
     self: torch.nn.Module,
     hidden_states: torch.Tensor,

@@ -24,6 +24,7 @@ from ..utils.import_utils import is_torch_greater_or_equal
 logger = logging.get_logger(__name__)
 
 
+# get_experts_scheme：从混合量化配置中解析 MoE 专家所用 scheme
 def get_experts_scheme(quantization_config):
     """Resolve which config group quantizes the MoE experts. Mixed configs quantize
     different layers with different schemes (e.g. Kimi: FP8 attention + INT4 experts), so
@@ -42,6 +43,7 @@ def get_experts_scheme(quantization_config):
     return groups[0]
 
 
+# DecompressExperts：解压 packed MoE 专家权重为 dense 张量
 class DecompressExperts(ConversionOps):
     """
     Dequantize MoE layers when they are in new layout, because they aren't `nn.Module` anymore!
@@ -174,6 +176,7 @@ _FP8_MIN = torch.finfo(_FP8_DTYPE).min
 _FP8_MAX = torch.finfo(_FP8_DTYPE).max
 
 
+# quantize_fp8_per_row：纯 PyTorch 按行 FP8 量化（torch.compile 兼容）
 def quantize_fp8_per_row(x: torch.Tensor):
     """Quantize a 2D tensor to FP8 per-row using pure PyTorch (torch.compile compatible).
 
@@ -193,6 +196,7 @@ def quantize_fp8_per_row(x: torch.Tensor):
     return x_fp8, scales
 
 
+# _scaled_mm_rowwise：行级 scaled FP8 矩阵乘，优先 public scaled_mm API
 def _scaled_mm_rowwise(
     input: torch.Tensor,
     weight: torch.Tensor,
@@ -228,6 +232,7 @@ def _scaled_mm_rowwise(
     return torch._scaled_mm(input, weight, scale_a=scale_a, scale_b=scale_b, out_dtype=out_dtype, bias=bias)
 
 
+# CompressedTensorsFP8Linear：FP8 权重 + 动态激活量化的 Linear
 class CompressedTensorsFP8Linear(nn.Linear):
     """Linear layer for compressed-tensors FP8 models.
 
@@ -269,6 +274,7 @@ class CompressedTensorsFP8Linear(nn.Linear):
         return output.reshape(output_shape)
 
 
+# replace_with_compressed_tensors_fp8_linear：按 targets 替换为 FP8 Linear
 def replace_with_compressed_tensors_fp8_linear(model, targets=None, ignore=None, modules_to_not_convert=None):
     """Replace nn.Linear modules with CompressedTensorsFP8Linear for compressed-tensors FP8 loading.
 
@@ -321,6 +327,7 @@ def _get_fp8_linear(model, full_layer_name):
     return module if isinstance(module, CompressedTensorsFP8Linear) else None
 
 
+# ConvertFP8LinearScale：加载时将 weight_scale 转为行级 kernel 布局
 class ConvertFP8LinearScale(ConversionOps):
     """Reshape the checkpoint ``weight_scale`` into the row-wise kernel layout at load time.
 
@@ -350,6 +357,7 @@ class ConvertFP8LinearScale(ConversionOps):
         return RevertFP8LinearScale()
 
 
+# RevertFP8LinearScale：保存时将 scale 还原为 checkpoint 原始布局
 class RevertFP8LinearScale(ConversionOps):
     """Save-time inverse of :class:`ConvertFP8LinearScale`: restore the checkpoint layout,
     ``(out_features, 1)`` for the channel strategy and ``(1, 1)`` for the tensor strategy.

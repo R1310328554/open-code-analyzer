@@ -24,6 +24,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# EetqQuantize：加载时对权重执行 EETQ int8 量化
 class EetqQuantize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
@@ -44,6 +45,7 @@ class EetqQuantize(ConversionOps):
         return {full_layer_name: int8_weight, f"{full_layer_name}_scales": scales}
 
 
+# EetqLinearMMFunction：EETQ w8_a16 GEMM 自定义 autograd 前向/反向
 class EetqLinearMMFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x, weight, scales, bias=None):
@@ -68,6 +70,7 @@ class EetqLinearMMFunction(torch.autograd.Function):
         return grad_input, None, None, None
 
 
+# EetqLinear：EETQ 量化 Linear 模块
 class EetqLinear(nn.Module):
     def __init__(self, in_features, out_features, dtype=torch.int8, bias=False):
         super().__init__()
@@ -83,6 +86,7 @@ class EetqLinear(nn.Module):
         return output
 
 
+# replace_with_eetq_linear：将 nn.Linear 递归替换为 EetqLinear
 def replace_with_eetq_linear(model, modules_to_not_convert: list[str] | None = None, pre_quantized=False):
     """
     A helper function to replace all `torch.nn.Linear` modules by `EetqLinear` modules.

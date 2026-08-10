@@ -1,9 +1,11 @@
+# Eager 分页注意力：连续批处理下纯 PyTorch 实现的 paged KV cache 注意力前向。
 import torch
 from torch import nn
 
 from ..generation.continuous_batching.cache import PagedAttentionCache
 
 
+# repeat_kv：GQA 场景下将 KV 头重复以匹配 query 头数
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
     This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
@@ -16,6 +18,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
+# eager_paged_attention_forward：分页 KV 缓存 + eager softmax 注意力计算
 def eager_paged_attention_forward(
     module: nn.Module,
     query: torch.Tensor,

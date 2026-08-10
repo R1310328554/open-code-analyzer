@@ -55,6 +55,7 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+# get_module_size_with_ties：计算模块大小并累加 tied 参数对应子模块
 def get_module_size_with_ties(
     tied_params,
     module_size,
@@ -91,6 +92,7 @@ def get_module_size_with_ties(
     return module_size_with_ties, tied_module_names, tied_modules
 
 
+# check_and_set_device_map：校验/规范化 device_map 并检测 DeepSpeed 冲突
 def check_and_set_device_map(device_map: "torch.device | int | str | dict | None") -> dict | str | None:
     from ..modeling_utils import get_torch_context_manager_or_global_device
 
@@ -139,6 +141,7 @@ def check_and_set_device_map(device_map: "torch.device | int | str | dict | None
     return device_map
 
 
+# compute_module_sizes：按子模块统计参数量与 buffer 字节数
 def compute_module_sizes(
     model: "PreTrainedModel",
     hf_quantizer: "HfQuantizer | None" = None,
@@ -189,6 +192,7 @@ def compute_module_sizes(
     return all_module_sizes, leaves_module_sizes
 
 
+# compute_module_total_buffer_size：统计全模型 buffer 总字节数
 def compute_module_total_buffer_size(model: nn.Module, hf_quantizer: "HfQuantizer | None" = None):
     """
     Compute the total size of buffers in each submodule of a given model.
@@ -197,6 +201,7 @@ def compute_module_total_buffer_size(model: nn.Module, hf_quantizer: "HfQuantize
     return module_sizes.get("", 0)
 
 
+# get_max_memory：获取各设备可用显存并修正 PyTorch 已分配但未用部分
 def get_max_memory(max_memory: dict[int | str, int | str] | None = None):
     """
     Get the maximum memory available if nothing is passed, converts string to int otherwise.
@@ -235,6 +240,7 @@ def get_max_memory(max_memory: dict[int | str, int | str] | None = None):
     return final_max_memory
 
 
+# get_balanced_memory：为多 GPU auto device_map 计算均衡 max_memory
 def get_balanced_memory(
     model: "PreTrainedModel",
     max_memory: dict[int | str, int | str] | None = None,
@@ -333,6 +339,7 @@ def get_balanced_memory(
     return max_memory
 
 
+# _get_device_map：将 auto/balanced 等字符串解析为具体 device_map
 def _get_device_map(
     model: "PreTrainedModel",
     device_map: dict | str | None,
@@ -372,6 +379,7 @@ def _get_device_map(
     return device_map
 
 
+# accelerate_dispatch：调用 accelerate.dispatch_model 放置模型到各设备
 def accelerate_dispatch(model, hf_quantizer, device_map, offload_folder, offload_index, offload_buffers):
     device_map_kwargs = {
         "device_map": device_map,
@@ -400,6 +408,7 @@ def accelerate_dispatch(model, hf_quantizer, device_map, offload_folder, offload
         dispatch_model(model, **device_map_kwargs)
 
 
+# expand_device_map：将层级 device_map 展开为每个参数名到设备的映射
 def expand_device_map(device_map: dict | None, param_names: list[str]):
     """
     Expand a device map to return the correspondence parameter name to device.
@@ -419,6 +428,7 @@ def expand_device_map(device_map: dict | None, param_names: list[str]):
     return new_device_map
 
 
+# get_device：根据 device_map 查询单个参数应放置的设备
 def get_device(device_map: dict | None, param_name: str, valid_torch_device: bool = False) -> torch.device | str | int:
     """Return the device on which `param_name` should be according to the `device_map`. If `valid_torch_device` is `True`,
     then if the device is `"disk"`, `"cpu"` will be returned instead."""
@@ -428,6 +438,7 @@ def get_device(device_map: dict | None, param_name: str, valid_torch_device: boo
     return device
 
 
+# accelerate_disk_offload：构建磁盘 offload 索引供 safetensors 按需读取
 def accelerate_disk_offload(
     model: "PreTrainedModel",
     disk_offload_folder: str | None,
@@ -495,6 +506,7 @@ def accelerate_disk_offload(
     return disk_offload_index
 
 
+# offload_weight：将单个权重写入 safetensors 并更新 offload_index
 def offload_weight(weight: torch.Tensor, weight_name: str, offload_folder: str | None, offload_index: dict) -> dict:
     """Write `weight` to disk inside `offload_folder`, and update `offload_index` accordingly. Everything is
     saved in `safetensors` format."""
@@ -515,6 +527,7 @@ def offload_weight(weight: torch.Tensor, weight_name: str, offload_folder: str |
     return offload_index
 
 
+# load_offloaded_parameter：从磁盘加载已 offload 的 meta 参数
 def load_offloaded_parameter(model: "PreTrainedModel", param_name: str) -> torch.Tensor:
     """Load `param_name` from disk, if it was offloaded due to the device_map, and thus lives as a meta parameter
     inside `model`.
@@ -541,6 +554,7 @@ def load_offloaded_parameter(model: "PreTrainedModel", param_name: str) -> torch
     return tensor
 
 
+# _init_infer_auto_device_map：初始化 infer_auto_device_map 所需变量
 def _init_infer_auto_device_map(
     model: nn.Module,
     max_memory: dict[int | str, int | str] | None = None,
@@ -611,6 +625,7 @@ def _init_infer_auto_device_map(
     )
 
 
+# infer_auto_device_map：按 GPU→CPU→disk 优先级自动推断 device_map
 def infer_auto_device_map(
     model: nn.Module,
     max_memory: dict[int | str, int | str] | None = None,
@@ -897,6 +912,7 @@ def _get_param_device(param, device_map):
         return _get_param_device(parent_param, device_map)
 
 
+# check_tied_parameters_on_same_device：检查 tied 参数是否同设备
 def check_tied_parameters_on_same_device(tied_params, device_map):
     """
     Check if tied parameters are on the same device
@@ -920,6 +936,7 @@ def check_tied_parameters_on_same_device(tied_params, device_map):
             )
 
 
+# force_accelerate_hooks：装饰器，在 forward 前强制触发子模块 accelerate hook
 def force_accelerate_hooks(child_module_names: str | list[str]) -> Callable:
     """
     Decorator to forcefully fire the accelerate hooks of `child_module_names`, before entering the forward of the parent itself.

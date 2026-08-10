@@ -24,6 +24,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# AWQ_SCALES_MAPPINGS：各模型架构 AWQ 激活缩放层名称映射
 AWQ_SCALES_MAPPINGS = {
     "starcoder2": {"act": "act", "layer_before_act": "c_fc"},
     "RefinedWebModel": {"act": "act", "layer_before_act": "dense_h_to_4h"},
@@ -36,6 +37,7 @@ AWQ_SCALES_MAPPINGS = {
 }
 
 
+# replace_quantization_scales：为特定架构插入 ScaledActivation 缩放层
 def replace_quantization_scales(model, model_type):
     from gptqmodel.quantization.awq.modules.act import ScaledActivation
 
@@ -53,6 +55,7 @@ def replace_quantization_scales(model, model_type):
     return model
 
 
+# replace_with_awq_linear：将 Linear 替换为 gptqmodel AWQ 量化 Linear
 def replace_with_awq_linear(
     model,
     modules_to_not_convert=None,

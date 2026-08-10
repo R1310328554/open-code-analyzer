@@ -41,6 +41,7 @@ if is_fbgemm_gpu_available() and not _is_torch_xpu_available:
 logger = logging.get_logger(__name__)
 
 
+# FbgemmFp8Quantize：加载时将权重按行量化为 FP8 并生成 scale
 class FbgemmFp8Quantize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
@@ -101,6 +102,7 @@ class FbgemmFp8Quantize(ConversionOps):
         return {target_key: torch.nn.Parameter(new_value), f"{target_key}_scale": weight_scale}
 
 
+# FbgemmFp8Linear：FBGEMM f8f8bf16_rowwise 高性能 FP8 Linear
 class FbgemmFp8Linear(torch.nn.Linear):
     def __init__(self, in_features, out_features, bias, dtype=torch.float8_e4m3fn):
         super().__init__(in_features, out_features, bias)
@@ -147,6 +149,7 @@ class FbgemmFp8Linear(torch.nn.Linear):
         return output
 
 
+# FbgemmFp8Llama4TextExperts：Llama4 文本 MoE 专家的 FP8 逐专家 matmul
 class FbgemmFp8Llama4TextExperts(nn.Module):
     def __init__(self, config, dtype=torch.float32):
         super().__init__()
@@ -258,6 +261,7 @@ class FbgemmFp8Llama4TextExperts(nn.Module):
 
 
 @lru_cache(maxsize=1)
+# get_quantize_fp8_per_row：获取 FBGEMM 或 XPU hub 的 per-row FP8 量化 op
 def get_quantize_fp8_per_row():
     if _is_torch_xpu_available:
         from .hub_kernels import get_kernel
@@ -266,6 +270,7 @@ def get_quantize_fp8_per_row():
     return torch.ops.fbgemm.quantize_fp8_per_row
 
 
+# replace_with_fbgemm_fp8_linear：将 Linear/Llama4TextExperts 替换为 FBGEMM FP8 层
 def replace_with_fbgemm_fp8_linear(
     model, modules_to_not_convert: list[str] | None = None, quantization_config=None, pre_quantized=False, tp_plan=None
 ):

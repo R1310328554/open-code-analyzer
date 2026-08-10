@@ -1,3 +1,4 @@
+# BitNet 集成：三值权重打包/解包、BitLinear 与 AutoBitLinear 量化 Linear 层。
 from ..quantizers.quantizers_utils import should_convert_module
 from ..utils import is_torch_available, logging
 
@@ -11,9 +12,11 @@ logger = logging.get_logger(__name__)
 
 
 # the weights are ternary so can be represented with 2 bits, and they are packed in uint8 tensors, hence the number of values per item is 4
+# VALUES_PER_ITEM：每个 uint8 打包 4 个三值权重（2 bit/值）
 VALUES_PER_ITEM = 4
 
 
+# pack_weights：将 {-1,0,1} 三值权重打包为紧凑 uint8 张量
 def pack_weights(quantized_weights: torch.Tensor) -> torch.Tensor:
     """
     Packs a tensor of quantized weights into a compact format using 2 bits per value.
@@ -53,6 +56,7 @@ def pack_weights(quantized_weights: torch.Tensor) -> torch.Tensor:
 
 
 @torch.compile
+# unpack_weights：从 2-bit 打包格式解包恢复三值权重
 def unpack_weights(packed: torch.Tensor, dtype: torch.dtype) -> torch.Tensor:
     """
     Unpacks a tensor of quantized weights that were stored in a packed format using 2 bits per value.
@@ -121,6 +125,7 @@ def unpack_weights(packed: torch.Tensor, dtype: torch.dtype) -> torch.Tensor:
     return unpacked.to(dtype) - 1
 
 
+# BitLinear：BitNet 量化 Linear，含激活量化与权重解包前向
 class BitLinear(nn.Module):
     def __init__(
         self,
@@ -196,6 +201,7 @@ class BitLinear(nn.Module):
         return y
 
 
+# WeightQuant：三值权重量化自定义 autograd（STE 反向）
 class WeightQuant(torch.autograd.Function):
     """
     Implements a custom autograd function for weight quantization.
@@ -219,6 +225,7 @@ class WeightQuant(torch.autograd.Function):
         return grad_input
 
 
+# ActQuant：对称 8-bit 激活量化自定义 autograd
 class ActQuant(torch.autograd.Function):
     """
     Implements a custom autograd function for activation quantization.
@@ -242,6 +249,7 @@ class ActQuant(torch.autograd.Function):
         return grad_input
 
 
+# AutoBitLinear：在线/离线量化模式的 BitNet Linear 变体
 class AutoBitLinear(nn.Linear):
     def __init__(
         self,
@@ -293,6 +301,7 @@ class AutoBitLinear(nn.Linear):
         return output
 
 
+# replace_with_bitnet_linear：将 Linear 替换为 BitLinear/AutoBitLinear
 def replace_with_bitnet_linear(model, modules_to_not_convert: list[str] | None = None, quantization_config=None):
     """
     Public method that replaces the linear layers of the given model with bitnet quantized layers.
@@ -351,6 +360,7 @@ def replace_with_bitnet_linear(model, modules_to_not_convert: list[str] | None =
     return model
 
 
+# BitNetDeserialize：加载时将打包权重解包为计算 dtype
 class BitNetDeserialize:
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer

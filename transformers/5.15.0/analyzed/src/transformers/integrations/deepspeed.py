@@ -33,6 +33,7 @@ if is_torch_available():
 logger = logging.get_logger(__name__)
 
 
+# is_deepspeed_available：检测 deepspeed 包是否真实可用
 def is_deepspeed_available():
     package_exists = importlib.util.find_spec("deepspeed") is not None
 
@@ -54,6 +55,7 @@ else:
     from builtins import object as DeepSpeedConfig
 
 
+# HfDeepSpeedConfig：封装 DeepSpeed 配置，供 from_pretrained 等查询 ZeRO stage
 class HfDeepSpeedConfig(DeepSpeedConfig):  # noqa UP004
     """
     This object contains a DeepSpeed configuration dictionary and can be quickly queried for things like zero stage.
@@ -79,6 +81,7 @@ class HfDeepSpeedConfig(DeepSpeedConfig):  # noqa UP004
         super().__init__(config_file_or_dict)
 
 
+# HfTrainerDeepSpeedConfig：Trainer 专用，将 TrainingArguments 同步到 DS 配置
 class HfTrainerDeepSpeedConfig(HfDeepSpeedConfig):
     """
     The `HfTrainerDeepSpeedConfig` object is meant to be created during `TrainingArguments` object creation and has the
@@ -262,6 +265,7 @@ class HfTrainerDeepSpeedConfig(HfDeepSpeedConfig):
 _hf_deepspeed_config_weak_ref = None
 
 
+# set_hf_deepspeed_config：设置全局 weakref 以便非 Trainer 路径访问配置
 def set_hf_deepspeed_config(hf_deepspeed_config_obj):
     # this is a special weakref global object to allow us to get to Deepspeed config from APIs
     # that don't have an easy way to get to the Deepspeed config outside of the Trainer domain.
@@ -276,6 +280,7 @@ def unset_hf_deepspeed_config():
     _hf_deepspeed_config_weak_ref = None
 
 
+# is_deepspeed_zero3_enabled：当前是否启用 DeepSpeed ZeRO-3
 def is_deepspeed_zero3_enabled():
     if _hf_deepspeed_config_weak_ref is not None and _hf_deepspeed_config_weak_ref() is not None:
         return _hf_deepspeed_config_weak_ref().is_zero3()
@@ -290,6 +295,7 @@ def deepspeed_config():
         return None
 
 
+# initialize_weights_zero3：ZeRO-3 下初始化模型权重
 def initialize_weights_zero3(model):
     """
     DeepSpeed ZeRO-3 variant of `PreTrainedModel.initialize_weights`. Mirrors the `smart_apply`
@@ -436,6 +442,7 @@ def _apply_weight_conversions_to_state_dict(model, state_dict, weight_mapping):
     return new_state_dict
 
 
+# _load_state_dict_into_zero3_model：ZeRO-3 分片加载 state_dict
 def _load_state_dict_into_zero3_model(model_to_load, state_dict, load_config=None):
     """
     Loads state dict into a model specifically for Zero3, since DeepSpeed does not support the `transformers`
@@ -526,6 +533,7 @@ def _load_state_dict_into_zero3_model(model_to_load, state_dict, load_config=Non
     return error_msgs, missing_keys
 
 
+# deepspeed_optim_sched：创建 DeepSpeed 优化器与学习率调度器
 def deepspeed_optim_sched(trainer, hf_deepspeed_config, args, num_training_steps, model_parameters):
     """
     A convenience wrapper that deals with optimizer and lr scheduler configuration.
@@ -580,6 +588,7 @@ def deepspeed_optim_sched(trainer, hf_deepspeed_config, args, num_training_steps
     return optimizer, lr_scheduler
 
 
+# deepspeed_init：Trainer 侧 DeepSpeed 引擎初始化入口
 def deepspeed_init(trainer, num_training_steps, inference=False):
     """
     Init DeepSpeed, after updating the DeepSpeed configuration with any relevant Trainer's args.
@@ -647,6 +656,7 @@ def deepspeed_init(trainer, num_training_steps, inference=False):
     return optimizer, lr_scheduler
 
 
+# deepspeed_load_checkpoint：从 checkpoint 恢复 DeepSpeed 引擎
 def deepspeed_load_checkpoint(deepspeed_engine, checkpoint_path, load_module_strict=True):
     # it's possible that the user is trying to resume from model_path, which doesn't necessarily
     # contain a deepspeed checkpoint. e.g. examples just check if the dir exists and assume it's
@@ -671,6 +681,7 @@ def deepspeed_load_checkpoint(deepspeed_engine, checkpoint_path, load_module_str
         raise ValueError(f"Can't find a valid checkpoint at {checkpoint_path}")
 
 
+# propagate_args_to_deepspeed：将 TrainingArguments 传播到 DeepSpeed 配置
 def propagate_args_to_deepspeed(accelerator, args, auto_find_batch_size=False):
     """
     Sets values in the deepspeed plugin based on the TrainingArguments.
@@ -688,6 +699,7 @@ def propagate_args_to_deepspeed(accelerator, args, auto_find_batch_size=False):
     ds_plugin.hf_ds_config.trainer_config_process(args, auto_find_batch_size)
 
 
+# deepspeed_sp_compute_loss：序列并行场景下的 loss 计算封装
 def deepspeed_sp_compute_loss(accelerator, model, inputs, return_outputs, pc):
     """
     Computes the loss under sequence parallelism with `sp_backend="deepspeed"` and `sp_size > 1`.

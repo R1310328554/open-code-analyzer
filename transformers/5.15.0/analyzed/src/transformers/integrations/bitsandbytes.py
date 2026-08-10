@@ -1,3 +1,4 @@
+# bitsandbytes 集成：4bit/8bit 量化 Linear、反量化与 accelerate hook 迁移。
 import inspect
 
 from ..core_model_loading import ConversionOps
@@ -27,6 +28,7 @@ if is_accelerate_available():
 logger = logging.get_logger(__name__)
 
 
+# Bnb4bitQuantize：加载时将权重转为 bnb Params4bit
 class Bnb4bitQuantize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
@@ -61,6 +63,7 @@ class Bnb4bitQuantize(ConversionOps):
         return result
 
 
+# Bnb4bitDeserialize：从 checkpoint 6 键恢复 4bit 量化权重
 class Bnb4bitDeserialize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
@@ -96,6 +99,7 @@ class Bnb4bitDeserialize(ConversionOps):
         return {key_weight: new_value}
 
 
+# Bnb8bitQuantize：加载时将权重转为 bnb Int8Params
 class Bnb8bitQuantize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
@@ -125,6 +129,7 @@ class Bnb8bitQuantize(ConversionOps):
         return result
 
 
+# Bnb8bitDeserialize：从 checkpoint 恢复 8bit 量化权重与 SCB
 class Bnb8bitDeserialize(ConversionOps):
     def __init__(self, hf_quantizer):
         self.hf_quantizer = hf_quantizer
@@ -159,6 +164,7 @@ class Bnb8bitDeserialize(ConversionOps):
         return {key_weight: new_value}
 
 
+# replace_with_bnb_linear：将 Linear/Conv1D 替换为 bnb 量化层
 def replace_with_bnb_linear(
     model: torch.nn.Module,
     modules_to_not_convert: list[str] | None = None,
@@ -237,6 +243,7 @@ def replace_with_bnb_linear(
 
 
 # Copied from PEFT: https://github.com/huggingface/peft/blob/47b3712898539569c02ec5b3ed4a6c36811331a1/src/peft/utils/integrations.py#L41
+# dequantize_bnb_weight：辅助函数，反量化 4bit/8bit bnb 权重
 def dequantize_bnb_weight(weight: "torch.nn.Parameter", state=None):
     """
     Helper function to dequantize 4bit or 8bit bnb weights.
@@ -267,6 +274,7 @@ def dequantize_bnb_weight(weight: "torch.nn.Parameter", state=None):
     return dequantized
 
 
+# _create_accelerate_new_hook：基于旧 hook 克隆 accelerate offload hook
 def _create_accelerate_new_hook(old_hook):
     r"""
     Creates a new hook based on the old hook. Use it only if you know what you are doing !
@@ -284,6 +292,7 @@ def _create_accelerate_new_hook(old_hook):
     return new_hook
 
 
+# dequantize_and_replace：将量化模型反量化回普通 Linear（如 QLoRA 合并）
 def dequantize_and_replace(model, quantization_config=None, dtype=None):
     """
     Converts a quantized model into its dequantized original version. The newly converted model will have
@@ -329,6 +338,7 @@ def dequantize_and_replace(model, quantization_config=None, dtype=None):
     return model
 
 
+# validate_bnb_backend_availability：检查当前设备是否被 bnb 支持
 def validate_bnb_backend_availability(raise_exception=False):
     """
     Validates if the available devices are supported by bitsandbytes, optionally raising an exception if not.

@@ -1,3 +1,4 @@
+# Flash Attention 集成：FA2 前向封装，处理 dtype 修正与 MLA value 头维 padding。
 import torch
 
 from ..modeling_flash_attention_utils import _flash_attention_forward, flash_attn_supports_top_left_mask
@@ -6,9 +7,11 @@ from ..utils import logging
 
 logger = logging.get_logger(__name__)
 
+# _use_top_left_mask：当前 flash-attn 是否使用 top-left causal mask
 _use_top_left_mask = flash_attn_supports_top_left_mask()
 
 
+# get_target_dtype：query 为 float32 时推断 flash attention 目标 dtype
 def get_target_dtype(query: torch.Tensor, module: torch.nn.Module) -> torch.dtype:
     """If the query is in float32, return a target dtype compatible with flash attention. Return None otherwise."""
     if query.dtype == torch.float32:
@@ -23,6 +26,7 @@ def get_target_dtype(query: torch.Tensor, module: torch.nn.Module) -> torch.dtyp
     return None
 
 
+# flash_attention_forward：调用 _flash_attention_forward 的模型 attention 入口
 def flash_attention_forward(
     module: torch.nn.Module,
     query: torch.Tensor,

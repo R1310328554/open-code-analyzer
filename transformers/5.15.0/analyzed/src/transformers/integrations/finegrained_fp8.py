@@ -49,6 +49,7 @@ _FP8_MAX = torch.finfo(_FP8_DTYPE).max
 
 
 @functools.cache
+# _get_ue8m0_dtype：返回 torch.float8_e8m0fnu 或给出清晰升级提示
 def _get_ue8m0_dtype() -> torch.dtype:
     """Return ``torch.float8_e8m0fnu`` or raise a clear error on torch without FP8 support.
 
@@ -71,6 +72,7 @@ def _first_attr(obj, *names):
 
 
 @dataclass(frozen=True)
+# FineGrainedFP8：kernels-community/finegrained-fp8 Triton kernel 入口点
 class FineGrainedFP8:
     """Entry points exposed by the `kernels-community/finegrained-fp8` Triton kernel."""
 
@@ -86,6 +88,7 @@ _FINEGRAINED_FP8: FineGrainedFP8 | None = None
 
 
 @torch._dynamo.allow_in_graph
+# _load_finegrained_fp8_kernel：一次性加载 finegrained-fp8 到模块全局
 def _load_finegrained_fp8_kernel() -> None:
     """
     Load the finegrained-fp8 Triton kernel once into the `_FINEGRAINED_FP8` module global.
@@ -140,6 +143,7 @@ def _load_finegrained_fp8_kernel() -> None:
     )
 
 
+# load_finegrained_fp8_kernel：返回已加载的 FineGrainedFP8 bundle
 def load_finegrained_fp8_kernel() -> FineGrainedFP8:
     _load_finegrained_fp8_kernel()
     return _FINEGRAINED_FP8
@@ -179,6 +183,7 @@ def _alloc_expert_proj(
 
 
 @deprecate_kwarg("output_dtype", version="v5.16")
+# finegrained_fp8_linear：Triton 细粒度 FP8 矩阵乘 Linear 路径
 def finegrained_fp8_linear(
     input: torch.Tensor,
     weight: torch.Tensor,
@@ -210,6 +215,7 @@ def finegrained_fp8_linear(
 
 
 @deprecate_kwarg("output_dtype", version="v5.16")
+# fp8_linear：FP8 Linear 统一分发（DeepGEMM / Triton / torch fallback）
 def fp8_linear(
     input: torch.Tensor,
     weight: torch.Tensor,
@@ -288,6 +294,7 @@ def fp8_linear(
     return finegrained_fp8_linear(input, weight, weight_scale_inv, block_size, bias, activation_scale)
 
 
+# FP8Linear：块量化 FP8 权重 + 动态激活量化的 Linear 基类
 class FP8Linear(nn.Linear):
     # Internal, temporary flag — not public API, don't set it directly. `_disable_deepgemm_on_multi_device`
     # flips it True at load when the model spans >1 CUDA device in one process (DeepGEMM's context-bound
@@ -350,6 +357,7 @@ class FP8Linear(nn.Linear):
         )
 
 
+# FP8GroupedLinear：分组（如 MoE gate/up）FP8 Linear 变体
 class FP8GroupedLinear(FP8Linear):
     """FP8 drop-in for block-diagonal grouped linears.
 
@@ -421,6 +429,7 @@ class FP8GroupedLinear(FP8Linear):
         return y
 
 
+# fp8_batched_mm_experts_forward：batched matmul MoE 专家前向
 def fp8_batched_mm_experts_forward(
     self: torch.nn.Module,
     hidden_states: torch.Tensor,
@@ -495,6 +504,7 @@ def fp8_batched_mm_experts_forward(
     return final_hidden_states.to(hidden_states.dtype)
 
 
+# fp8_grouped_mm_experts_forward：grouped matmul MoE 专家前向
 def fp8_grouped_mm_experts_forward(
     self: torch.nn.Module,
     hidden_states: torch.Tensor,
@@ -589,6 +599,7 @@ def fp8_grouped_mm_experts_forward(
     return final_hidden_states.to(hidden_states.dtype)
 
 
+# FP8Experts：FP8 量化 MoE 专家模块（gate/up/down + scale）
 class FP8Experts(nn.Module):
     # Internal, temporary flag — not public API, don't set it directly. `_disable_deepgemm_on_multi_device`
     # flips it True at load when the model spans >1 CUDA device in one process (DeepGEMM's context-bound
@@ -754,6 +765,7 @@ class FP8Experts(nn.Module):
         )
 
 
+# FP8ExpertsInterface：ExpertsInterface 适配，注册 deepgemm/grouped_mm 实现
 class FP8ExpertsInterface(ExpertsInterface):
     """Interface for registering custom FP8 experts forward functions."""
 
@@ -798,6 +810,7 @@ def _disable_deepgemm_on_multi_device(model: nn.Module) -> None:
     )
 
 
+# replace_with_fp8_linear：按配置将 Linear 替换为 FP8Linear/FP8Experts
 def replace_with_fp8_linear(
     model, modules_to_not_convert: list[str] | None = None, quantization_config=None, pre_quantized=False
 ):
@@ -881,6 +894,7 @@ def replace_with_fp8_linear(
     return model
 
 
+# Fp8Quantize：加载时权重量化为 FP8 并写入 scale_inv
 class Fp8Quantize(ConversionOps):
     """
     A quantization operation that creates two tensors, weight and scale out of a weight.
@@ -955,6 +969,7 @@ class Fp8Quantize(ConversionOps):
         return Fp8Dequantize(self.hf_quantizer)
 
 
+# Fp8Dequantize：保存/转换时将 FP8 权重反量化
 class Fp8Dequantize(ConversionOps):
     """Dequantize FP8 weights using their per-block ``weight_scale_inv``.
 

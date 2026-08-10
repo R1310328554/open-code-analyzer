@@ -9,7 +9,10 @@
 # Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
 # an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 # specific language governing permissions and limitations under the License.
+limitations under the License.
 
+
+# ExecuTorch 导出：torch.export 封装 VLM/decoder-only/seq2seq 与 Static/Hybrid cache。
 import logging
 
 import torch
@@ -31,6 +34,7 @@ from ..pytorch_utils import (
 )
 
 
+# TorchExportableModuleForVLM：VLM 三分量（vision/connector/text）可导出包装
 class TorchExportableModuleForVLM:
     """
     A wrapper class for exporting Vision-Language Models (VLMs) like SmolVLM2 for ExecuTorch.
@@ -183,6 +187,7 @@ class TorchExportableModuleForVLM:
         """
 
 
+# TorchExportableModuleForDecoderOnlyLM：decoder-only LM 的 export 包装
 class TorchExportableModuleForDecoderOnlyLM(torch.nn.Module):
     """
     A recipe module designed to make a `PreTrainedModel` exportable with `torch.export`,
@@ -443,6 +448,7 @@ class TorchExportableModuleForDecoderOnlyLM(torch.nn.Module):
         return tokenizer.decode(generated_ids[0], skip_special_tokens=True)
 
 
+# get_head_shapes：从 config 解析 attention 头形状供 export 使用
 def get_head_shapes(config) -> tuple[int | list[int], int | list[int]]:
     """Returns a tuple `(num_heads, head_dim)` containing either 2 ints, or a list of int with the value for each
     layer."""
@@ -464,6 +470,7 @@ def get_head_shapes(config) -> tuple[int | list[int], int | list[int]]:
     return num_heads, head_dim
 
 
+# TorchExportableModuleWithStaticCache：StaticCache 固定长度 export 包装
 class TorchExportableModuleWithStaticCache(torch.nn.Module):
     """
     A recipe module designed to make a `PreTrainedModel` exportable with `torch.export`,
@@ -659,6 +666,7 @@ class TorchExportableModuleWithStaticCache(torch.nn.Module):
         return torch.tensor([response_tokens], dtype=torch.long, device=device)
 
 
+# TorchExportableModuleWithHybridCache：HybridCache export 包装
 class TorchExportableModuleWithHybridCache(torch.nn.Module):
     """
     A recipe module designed to make a `PreTrainedModel` exportable with `torch.export`,
@@ -770,6 +778,7 @@ class TorchExportableModuleWithHybridCache(torch.nn.Module):
         return outputs.logits
 
 
+# convert_and_export_with_cache：转换 cache 并 export 带缓存的生成模型
 def convert_and_export_with_cache(
     model: PreTrainedModel,
     example_input_ids: torch.Tensor | None = None,
@@ -836,6 +845,7 @@ def convert_and_export_with_cache(
         return exported_program
 
 
+# Seq2SeqLMEncoderExportableModule：seq2seq encoder 可导出模块
 class Seq2SeqLMEncoderExportableModule(torch.nn.Module):
     """
     A wrapper module designed to make a Seq2Seq LM encoder exportable with `torch.export`.
@@ -850,6 +860,7 @@ class Seq2SeqLMEncoderExportableModule(torch.nn.Module):
         return self.encoder(input_ids=input_ids).last_hidden_state
 
 
+# Seq2SeqLMDecoderExportableModuleWithStaticCache：seq2seq decoder + StaticCache
 class Seq2SeqLMDecoderExportableModuleWithStaticCache(torch.nn.Module):
     """
     A wrapper module designed to make a Seq2Seq LM decoder exportable with `torch.export`,
@@ -909,6 +920,7 @@ class Seq2SeqLMDecoderExportableModuleWithStaticCache(torch.nn.Module):
         return lm_logits
 
 
+# Seq2SeqLMExportableModule：完整 seq2seq 三分量 export 编排
 class Seq2SeqLMExportableModule(torch.nn.Module):
     def __init__(
         self, model, batch_size=1, max_hidden_seq_length=4096, cache_implementation="static", max_cache_length=1024
@@ -1049,6 +1061,7 @@ class Seq2SeqLMExportableModule(torch.nn.Module):
             return generated_ids
 
 
+# export_with_dynamic_cache：DynamicCache 路径的 export 辅助
 def export_with_dynamic_cache(
     model: PreTrainedModel,
     example_input_ids: torch.Tensor | None = None,
@@ -1083,6 +1096,7 @@ def export_with_dynamic_cache(
         return exported_program
 
 
+# register_dynamic_cache_export_support：注册 DynamicCache 的 export pytree 支持
 def register_dynamic_cache_export_support():
     """
     Utilities for `DynamicCache` <> torch.export support
