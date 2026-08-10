@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:05:27Z",
-  "files": [
-    "scim/client/src/main/java/org/keycloak/scim/client/ScimGroupsClient.java",
-    "scim/client/src/main/java/org/keycloak/scim/client/ScimResourceTypesClient.java",
-    "scim/client/src/main/java/org/keycloak/scim/client/ScimSchemasClient.java",
-    "scim/client/src/main/java/org/keycloak/scim/client/ScimUsersClient.java",
-    "scim/client/src/main/java/org/keycloak/scim/client/authorization/AuthorizationMethod.java",
-    "scim/client/src/main/java/org/keycloak/scim/client/authorization/OAuth2Bearer.java",
-    "scim/core/src/main/java/org/keycloak/scim/filter/ErrorListener.java",
-    "scim/core/src/main/java/org/keycloak/scim/filter/FilterUtils.java",
-    "scim/core/src/main/java/org/keycloak/scim/filter/ScimFilterException.java",
-    "scim/core/src/main/java/org/keycloak/scim/protocol/ForbiddenException.java",
-    "scim/core/src/main/java/org/keycloak/scim/protocol/request/PatchRequest.java",
-    "scim/core/src/main/java/org/keycloak/scim/protocol/request/SearchRequest.java",
-    "scim/core/src/main/java/org/keycloak/scim/protocol/response/ErrorResponse.java",
-    "scim/core/src/main/java/org/keycloak/scim/protocol/response/ListResponse.java",
-    "scim/core/src/main/java/org/keycloak/scim/protocol/response/ListResponseDeserializer.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3148,
-  "done": 2835
+  "done": 2850
 }
