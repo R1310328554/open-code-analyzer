@@ -14,6 +14,8 @@
 
 package nlp
 
+// reranker.go 对混合检索候选分块重打分，融合模型/向量/词项与 rank feature。
+
 import (
 	"encoding/json"
 	"math"
@@ -28,7 +30,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// SearchResult represents the result of a search operation
+// SearchResult 搜索中间结果：ID 列表、向量与字段映射。
 type SearchResult struct {
 	Total       int
 	IDs         []string
@@ -36,7 +38,7 @@ type SearchResult struct {
 	Field       map[string]map[string]interface{} // id -> fields
 }
 
-// Rerank performs reranking based on whether a reranker model is provided
+// Rerank 总入口：有 rerank 模型则 RerankByModel，否则按引擎走 Standard/Infinity 分支。
 // This implements the logic from rag/nlp/search.py L404-L429
 // Parameters:
 //   - rerankModel: the reranker model (can be nil)
@@ -85,7 +87,7 @@ func Rerank(
 	return RerankStandard(chunks, keywords, questionVector, query, tkWeight, vtWeight, cfield, qb, rankFeature)
 }
 
-// RerankByModel performs reranking using a reranker model
+// RerankByModel 调用外部 rerank API，与词项相似度按 tk/vt 权重混合。
 func RerankByModel(
 	rerankModel *models.RerankModel,
 	chunks []map[string]interface{},
@@ -189,7 +191,7 @@ func RerankByModel(
 	return sim, tsim, modelSim
 }
 
-// NormalizeRerankScores rescales reranker scores into [0, 1] for the
+// NormalizeRerankScores 将各厂商 rerank 分数归一化到 [0,1] 便于阈值过滤。
 // hybrid blend in RerankByModel. Mirrors the contract enforced by
 // Base.similarity / _normalize_rank in rag/llm/rerank_model.py.
 //
@@ -251,7 +253,7 @@ func NormalizeRerankScores(scores []float64) []float64 {
 	return scores
 }
 
-// RerankStandard performs standard reranking without a reranker model
+// RerankStandard ES 路径：混合向量余弦与词项重叠，叠加 tag/pagerank。
 // Used for Elasticsearch when no reranker model is provided
 func RerankStandard(
 	chunks []map[string]interface{},
@@ -327,7 +329,7 @@ func RerankStandard(
 	return sim, tsim, vsim
 }
 
-// RerankInfinityFallback is used as a fallback when no reranker model is provided for Infinity engine.
+// RerankInfinityFallback Infinity 引擎直接读取已有融合分数字段。
 // Infinity can return scores in various field names (SCORE, score, SIMILARITY, etc.),
 // so we check multiple possible field names. If no score is found, we default to 1.0
 // to ensure the chunk passes through any similarity threshold filters.
@@ -353,7 +355,7 @@ func RerankInfinityFallback(chunks []map[string]interface{}) (sim []float64, tsi
 	return sim, sim, sim
 }
 
-// HybridSimilarity calculates hybrid similarity between query and documents
+// HybridSimilarity 计算查询向量与各 chunk 向量的余弦及词项相似度加权。
 func HybridSimilarity(
 	avec []float64,
 	bvecs [][]float64,
@@ -393,7 +395,7 @@ func HybridSimilarity(
 	return sim, tsim, vsim
 }
 
-// TokenSimilarity calculates token-based similarity
+// TokenSimilarity 基于词权字典的重叠度计算词项相似度数组。
 func TokenSimilarity(atks []string, btkss [][]string, qb *QueryBuilder) []float64 {
 	atksDict, atksKeyOrder := tokensToDict(atks, qb)
 	btkssDicts := make([]map[string]float64, len(btkss))
@@ -863,7 +865,7 @@ func applyRankFeatureScoresForIDs(ids []string, field map[string]map[string]inte
 	return sim
 }
 
-// RerankWithKNN performs reranking using KNN scores (ES two-pass approach)
+// RerankWithKNN ES 两阶段 KNN：第二遍向量分与词项分加权并加 rank feature。
 // Matches Python's rerank_with_knn()
 //
 // TWO-PASS APPROACH (matching Python's Dealer._knn_scores + get_scores pattern):
@@ -1048,3 +1050,4 @@ func parseTagFeasRerank(tagFeasStr string) map[string]float64 {
 	}
 	return result
 }
+// reranker.go — 检索结果重排：模型重排、混合相似度与 rank feature 加分。

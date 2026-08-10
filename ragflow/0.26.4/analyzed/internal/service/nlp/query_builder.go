@@ -14,6 +14,8 @@
 
 package nlp
 
+// query_builder.go 构建全文检索 MatchTextExpr，对齐 Python FulltextQueryer。
+
 import (
 	"fmt"
 	"path/filepath"
@@ -30,7 +32,7 @@ import (
 )
 
 var (
-	// globalQueryBuilder is the global query builder instance
+	// globalQueryBuilder 进程级单例 QueryBuilder。
 	globalQueryBuilder *QueryBuilder
 	// qbOnce ensures the query builder is initialized only once
 	qbOnce sync.Once
@@ -38,14 +40,14 @@ var (
 	qbInitError error
 )
 
-// QueryBuilder provides functionality to build query expressions based on text, referencing Python's FulltextQueryer and QueryBase.
+// QueryBuilder 根据用户问句生成分词、同义词扩展与字段加权查询串。
 type QueryBuilder struct {
 	queryFields []string
 	termWeight  *TermWeightDealer
 	synonym     *Synonym
 }
 
-// InitQueryBuilder initializes the global QueryBuilder with the given wordnet directory.
+// InitQueryBuilder 初始化全局 QueryBuilder，需传入 WordNet 目录。
 // It should be called during the initialization phase of main.go, after tokenizer.Init.
 // The wordnetDir is typically filepath.Join(tokenizer.Config.DictPath, "wordnet")
 func InitQueryBuilder(wordnetDir string) error {
@@ -75,7 +77,7 @@ func InitQueryBuilderFromTokenizer(tokenizerDictPath string) error {
 	return InitQueryBuilder(wordnetDir)
 }
 
-// GetQueryBuilder returns the global QueryBuilder instance.
+// GetQueryBuilder 返回全局 QueryBuilder（未初始化时为 nil）。
 // Returns nil if InitQueryBuilder has not been called.
 func GetQueryBuilder() *QueryBuilder {
 	return globalQueryBuilder
@@ -99,7 +101,7 @@ func NewQueryBuilder() *QueryBuilder {
 	}
 }
 
-// IsChinese determines whether a line of text is primarily Chinese.
+// IsChinese 判断文本是否以中文为主（非纯字母片段占比 ≥0.7）。
 // Algorithm: split by whitespace, if segments <=3 return true; otherwise count ratio of non-pure-alphabet segments, return true if ratio >=0.7.
 func (qb *QueryBuilder) IsChinese(line string) bool {
 	fields := strings.Fields(line)
@@ -116,14 +118,14 @@ func (qb *QueryBuilder) IsChinese(line string) bool {
 	return float64(nonAlpha)/float64(len(fields)) >= 0.7
 }
 
-// SubSpecialChar escapes special characters for use in queries.
+// SubSpecialChar 转义 Lucene/ES 查询中的特殊字符。
 func (qb *QueryBuilder) SubSpecialChar(line string) string {
 	// Regex matches : { } / [ ] - * " ( ) | + ~ ^ and prepends backslash
 	re := regexp.MustCompile(`([:{}/\[\]\-\*"\(\)\|\+~\^])`)
 	return re.ReplaceAllString(line, `\$1`)
 }
 
-// RmWWW removes common stop words and question words from queries.
+// RmWWW 去除中英文疑问词与停用词，空结果时回退原文。
 func (qb *QueryBuilder) RmWWW(txt string) string {
 	patterns := []struct {
 		regex string
@@ -146,7 +148,7 @@ func (qb *QueryBuilder) RmWWW(txt string) string {
 	return txt
 }
 
-// AddSpaceBetweenEngZh adds spaces between English letters and Chinese characters to improve tokenization.
+// AddSpaceBetweenEngZh 在中英文交界处插入空格以改善分词。
 func (qb *QueryBuilder) AddSpaceBetweenEngZh(txt string) string {
 	// (ENG/ENG+NUM) + ZH: e.g., "ABC123中文" -> "ABC123 中文"
 	re1 := regexp.MustCompile(`([A-Za-z]+[0-9]*)([\x{4e00}-\x{9fa5}]+)`)
@@ -166,7 +168,7 @@ func (qb *QueryBuilder) AddSpaceBetweenEngZh(txt string) string {
 	return txt
 }
 
-// StrFullWidth2HalfWidth converts full-width characters to half-width characters.
+// StrFullWidth2HalfWidth 全角字符转半角（含全角空格）。
 // Algorithm: For each character:
 //   - Full-width space (U+3000) is converted to half-width space (U+0020).
 //   - For other characters, subtract 0xFEE0 from its code point.
@@ -190,7 +192,7 @@ func (qb *QueryBuilder) StrFullWidth2HalfWidth(ustring string) string {
 	return rstring.String()
 }
 
-// Traditional2Simplified converts traditional Chinese characters to simplified Chinese characters.
+// Traditional2Simplified 繁体转简体（gojianfan）。
 // Uses gojianfan library which provides conversion similar to Python's HanziConv.
 func (qb *QueryBuilder) Traditional2Simplified(line string) string {
 	return gojianfan.T2S(line)
@@ -208,7 +210,7 @@ func (qb *QueryBuilder) NeedFineGrainedTokenize(tk string) bool {
 	return true
 }
 
-// Question builds a full-text query expression based on input text.
+// Question 核心入口：中英文分支构建 MatchTextExpr 与关键词列表。
 // References Python FulltextQueryer.question method.
 func (qb *QueryBuilder) Question(txt string, tbl string, minMatch float64) (*types.MatchTextExpr, []string) {
 	// originalQuery stores the original input text for later use in query expression.
@@ -590,7 +592,7 @@ func (qb *QueryBuilder) Question(txt string, tbl string, minMatch float64) (*typ
 	return nil, keywords
 }
 
-// Paragraph builds a query expression based on content terms and keywords.
+// Paragraph 基于关键词列表构建段落级 MatchTextExpr（简化实现）。
 // References Python FulltextQueryer.paragraph method.
 func (qb *QueryBuilder) Paragraph(contentTks string, keywords []string, keywordsTopN int) *types.MatchTextExpr {
 	// Simplified implementation: merge keywords and content terms
@@ -635,7 +637,7 @@ func (qb *QueryBuilder) TokenSimilarity(atks string, btkss []string) []float64 {
 	return result
 }
 
-// HybridSimilarity calculates weighted combination of vector similarity and term similarity.
+// HybridSimilarity 向量与词项相似度加权组合（占位，待完整实现）。
 // To be implemented: requires vector cosine similarity calculation.
 func (qb *QueryBuilder) HybridSimilarity(avec []float64, bvecs [][]float64, atks string, btkss []string, tkweight float64, vtweight float64) ([]float64, []float64, []float64) {
 	// Placeholder implementation, returns zero values
@@ -650,3 +652,4 @@ func (qb *QueryBuilder) HybridSimilarity(avec []float64, bvecs [][]float64, atks
 func (qb *QueryBuilder) SetQueryFields(fields []string) {
 	qb.queryFields = fields
 }
+// query_builder.go — 全文检索查询构建：分词、同义词、词权与中英文分支。

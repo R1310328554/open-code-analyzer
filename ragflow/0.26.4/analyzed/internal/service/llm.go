@@ -16,6 +16,8 @@
 
 package service
 
+// llm.go 提供租户 LLM 配置查询、列表与 API Key 写入能力。
+
 import (
 	"fmt"
 	"ragflow/internal/entity"
@@ -27,13 +29,13 @@ import (
 
 var DB = dao.DB
 
-// LLMService LLM service
+// LLMService 封装租户 LLM 与全局 LLM 目录的数据访问。
 type LLMService struct {
 	tenantLLMDAO *dao.TenantLLMDAO
 	llmDAO       *dao.LLMDAO
 }
 
-// NewLLMService create LLM service
+// NewLLMService 构造 LLMService 实例。
 func NewLLMService() *LLMService {
 	return &LLMService{
 		tenantLLMDAO: dao.NewTenantLLMDAO(),
@@ -41,7 +43,7 @@ func NewLLMService() *LLMService {
 	}
 }
 
-// MyLLMItem represents a single LLM item in the response
+// MyLLMItem 表示「我的 LLM」响应中的单个模型条目。
 type MyLLMItem struct {
 	ID        string `json:"id"`
 	Type      string `json:"type"`
@@ -52,13 +54,13 @@ type MyLLMItem struct {
 	MaxTokens int64  `json:"max_tokens,omitempty"`
 }
 
-// MyLLMFactory represents the response structure for a factory in my LLMs
+// MyLLMFactory 按工厂分组展示租户已配置的 LLM 列表。
 type MyLLMFactory struct {
 	Tags string      `json:"tags"`
 	LLM  []MyLLMItem `json:"llm"`
 }
 
-// GetMyLLMs get my LLMs for a tenant
+// GetMyLLMs 查询租户已添加的 LLM，可按工厂聚合并可选返回详情。
 func (s *LLMService) GetMyLLMs(tenantID string, includeDetails bool) (map[string]MyLLMFactory, error) {
 	result := make(map[string]MyLLMFactory)
 
@@ -140,7 +142,7 @@ func (s *LLMService) GetMyLLMs(tenantID string, includeDetails bool) (map[string
 	return result, nil
 }
 
-// LLMListItem represents a single LLM item in the list response
+// LLMListItem 模型列表 API 的单条记录结构。
 type LLMListItem struct {
 	ID         string  `json:"id"`
 	LLMName    string  `json:"llm_name"`
@@ -157,10 +159,10 @@ type LLMListItem struct {
 	Tags       string  `json:"tags,omitempty"`
 }
 
-// ListLLMsResponse represents the response for list LLMs
+// ListLLMsResponse 按工厂分组的 LLM 列表响应。
 type ListLLMsResponse map[string][]LLMListItem
 
-// ListLLMs lists LLMs for a tenant with availability info
+// ListLLMs 列出租户可见模型并标注是否已配置密钥/可自部署可用。
 func (s *LLMService) ListLLMs(tenantID string, modelType string) (ListLLMsResponse, error) {
 	selfDeployed := map[string]bool{
 		"FastEmbed":  true,
@@ -320,7 +322,7 @@ func int64ToString(n int64) string {
 	return strconv.FormatInt(n, 10)
 }
 
-// SetAPIKeyRequest represents the request for setting API key
+// SetAPIKeyRequest 为某 LLM 工厂批量写入 API Key 的请求体。
 type SetAPIKeyRequest struct {
 	LLMFactory string `json:"llm_factory"`
 	APIKey     string `json:"api_key"`
@@ -332,13 +334,13 @@ type SetAPIKeyRequest struct {
 	MaxTokens  int64  `json:"max_tokens"`
 }
 
-// SetAPIKeyResult represents the result of setting API key
+// SetAPIKeyResult 设置 API Key 的操作结果。
 type SetAPIKeyResult struct {
 	Message string `json:"message"`
 	Success bool   `json:"success"`
 }
 
-// SetAPIKey sets API key for a LLM factory
+// SetAPIKey 为指定工厂下全部模型创建或更新 tenant_llm 记录。
 func (s *LLMService) SetAPIKey(tenantID string, req *SetAPIKeyRequest) (*SetAPIKeyResult, error) {
 	factory := req.LLMFactory
 	baseURL := req.BaseURL
@@ -404,3 +406,4 @@ func (s *LLMService) SetAPIKey(tenantID string, req *SetAPIKeyRequest) (*SetAPIK
 
 	return &SetAPIKeyResult{Message: "", Success: true}, nil
 }
+// llm.go — 租户 LLM 工厂/模型列表、可用性与 API Key 绑定管理。

@@ -16,6 +16,8 @@
 
 package service
 
+// metadata.go 提供文档元数据索引查询、扁平化统计与检索分块 enrichment。
+
 import (
 	"context"
 	"encoding/json"
@@ -28,21 +30,21 @@ import (
 	"ragflow/internal/engine/types"
 )
 
-// KBDocIDsMap maps a KB ID to its document IDs.
+// KBDocIDsMap 知识库 ID 到文档 ID 列表的映射。
 // Example: {"kb1": ["doc1", "doc2"], "kb2": ["doc3"]}
 type KBDocIDsMap map[string][]string
 
-// DocMetaMap maps a document ID to its metadata fields.
+// DocMetaMap 文档 ID 到 meta_fields 键值对的映射。
 // Example: {"doc1": {"author": "Zhang San", "date": "2024-01-01"}}
 type DocMetaMap map[string]map[string]interface{}
 
-// MetadataService provides common metadata operations
+// MetadataService 封装 DocEngine 元数据索引的通用读写。
 type MetadataService struct {
 	kbDAO     *dao.KnowledgebaseDAO
 	docEngine engine.DocEngine
 }
 
-// NewMetadataService creates a new metadata service
+// NewMetadataService 构造 MetadataService 实例。
 func NewMetadataService() *MetadataService {
 	return &MetadataService{
 		kbDAO:     dao.NewKnowledgebaseDAO(),
@@ -50,12 +52,12 @@ func NewMetadataService() *MetadataService {
 	}
 }
 
-// BuildMetadataIndexName constructs the metadata index name for a tenant
+// BuildMetadataIndexName 生成租户级文档元数据索引名 ragflow_doc_meta_{tenant}。
 func BuildMetadataIndexName(tenantID string) string {
 	return fmt.Sprintf("ragflow_doc_meta_%s", tenantID)
 }
 
-// GetTenantIDByKBID retrieves tenant ID from knowledge base ID
+// GetTenantIDByKBID 由知识库 ID 反查所属 tenant_id。
 func (s *MetadataService) GetTenantIDByKBID(kbID string) (string, error) {
 	return dao.GetTenantIDByKBID(kbID)
 }
@@ -68,13 +70,13 @@ func (s *MetadataService) GetTenantIDByKBIDs(kbIDs []string) (string, error) {
 	return dao.GetTenantIDByKBID(kbIDs[0])
 }
 
-// SearchMetadataResponse holds the result of a metadata search
+// SearchMetadataResponse 元数据搜索返回的索引名与记录列表。
 type SearchMetadataResponse struct {
 	IndexName       string
 	MetadataRecords []map[string]interface{}
 }
 
-// SearchMetadata searches the metadata index with the given parameters
+// SearchMetadata 在指定 KB 与 doc_ids 范围内搜索元数据文档。
 func (s *MetadataService) SearchMetadata(kbID, tenantID string, docIDs []string, size int) (*SearchMetadataResponse, error) {
 	searchReq := &types.SearchMetadataRequest{
 		TenantID: tenantID,
@@ -97,7 +99,7 @@ func (s *MetadataService) SearchMetadata(kbID, tenantID string, docIDs []string,
 	}, nil
 }
 
-// SearchMetadataByKBs searches the metadata index for multiple knowledge bases
+// SearchMetadataByKBs 跨多个知识库批量检索元数据。
 func (s *MetadataService) SearchMetadataByKBs(kbIDs []string, size int) (*SearchMetadataResponse, error) {
 	if len(kbIDs) == 0 {
 		return &SearchMetadataResponse{MetadataRecords: []map[string]interface{}{}}, nil
@@ -128,7 +130,7 @@ func (s *MetadataService) SearchMetadataByKBs(kbIDs []string, size int) (*Search
 	}, nil
 }
 
-// GetFlattedMetaByKBs returns flattened metadata in the format:
+// GetFlattedMetaByKBs 扁平化为 {字段名: {值: [doc_ids]}} 供过滤 UI 使用。
 // {field_name: {value: [doc_ids]}}
 func (s *MetadataService) GetFlattedMetaByKBs(kbIDs []string) (common.MetaData, error) {
 	if len(kbIDs) == 0 {
@@ -237,7 +239,7 @@ func (s *MetadataService) GetFlattedMetaByKBs(kbIDs []string) (common.MetaData, 
 	return flattedMeta, nil
 }
 
-// CollectDocIDsByKB collects unique (kb_id, doc_id) pairs from chunks.
+// CollectDocIDsByKB 从检索分块中收集去重后的 kb_id→doc_ids。
 func CollectDocIDsByKB(chunks []map[string]interface{}) KBDocIDsMap {
 	seen := make(map[string]struct{})
 	result := make(KBDocIDsMap)
@@ -257,7 +259,7 @@ func CollectDocIDsByKB(chunks []map[string]interface{}) KBDocIDsMap {
 	return result
 }
 
-// ConvertSearchResultToDocMeta converts SearchMetadataResult chunks into a DocMetaMap.
+// ConvertSearchResultToDocMeta 将搜索引擎元数据命中转为 doc→fields 映射。
 // Pure function, no dependencies.
 func ConvertSearchResultToDocMeta(chunks []map[string]interface{}) DocMetaMap {
 	metaByDoc := make(DocMetaMap)
@@ -275,7 +277,7 @@ func ConvertSearchResultToDocMeta(chunks []map[string]interface{}) DocMetaMap {
 	return metaByDoc
 }
 
-// FetchDocMetaByKB fetches document metadata from ES for each KB.
+// FetchDocMetaByKB 按 KB 分组批量拉取文档 meta_fields。
 func (s *MetadataService) FetchDocMetaByKB(docIDsByKB KBDocIDsMap, tenantID string) DocMetaMap {
 	metaByDoc := make(DocMetaMap)
 	for kbID, docIDs := range docIDsByKB {
@@ -290,7 +292,7 @@ func (s *MetadataService) FetchDocMetaByKB(docIDsByKB KBDocIDsMap, tenantID stri
 	return metaByDoc
 }
 
-// AttachDocMetaToChunks attaches document metadata to matching chunks in-place.
+// AttachDocMetaToChunks 就地给分块附加 document_metadata（可字段白名单）。
 func AttachDocMetaToChunks(chunks []map[string]interface{}, metaByDoc DocMetaMap, metadataFields []string) {
 	filter := make(map[string]struct{}, len(metadataFields))
 	for _, f := range metadataFields {
@@ -321,7 +323,7 @@ func AttachDocMetaToChunks(chunks []map[string]interface{}, metaByDoc DocMetaMap
 	}
 }
 
-// EnrichChunksWithDocMetadata attaches document metadata to each chunk in-place.
+// EnrichChunksWithDocMetadata 组合 Collect/Fetch/Attach 三步 enrichment 流水线。
 // Combines CollectDocIDsByKB, FetchDocMetaByKB, and AttachDocMetaToChunks.
 func (s *MetadataService) EnrichChunksWithDocMetadata(chunks []map[string]interface{}, tenantID string, metadataFields []string) {
 	if len(chunks) == 0 || s.docEngine == nil {
@@ -366,7 +368,7 @@ func ExtractDocumentID(chunk map[string]interface{}) (string, bool) {
 	return docID, ok
 }
 
-// ExtractMetaFields extracts meta_fields from a chunk, handling different types
+// ExtractMetaFields 解析分块 meta_fields（支持 JSON 字符串与 Infinity 长度前缀格式）。
 func ExtractMetaFields(chunk map[string]interface{}) (map[string]interface{}, error) {
 	metaFieldsVal := chunk["meta_fields"]
 	if metaFieldsVal == nil {
@@ -463,7 +465,7 @@ func appendDocID(existing interface{}, docID string) []string {
 	return result
 }
 
-// ParseLengthPrefixedJSON parses Infinity's length-prefixed JSON format
+// ParseLengthPrefixedJSON 解析 Infinity 引擎的长度前缀 JSON 串（取首个对象）。
 // Format: [4-byte length (little-endian)][JSON][4-byte length][JSON]...
 // Returns the FIRST valid JSON object found
 func ParseLengthPrefixedJSON(data []byte) map[string]interface{} {
@@ -495,7 +497,7 @@ func ParseLengthPrefixedJSON(data []byte) map[string]interface{} {
 	return nil
 }
 
-// ParseAllLengthPrefixedJSON parses Infinity's length-prefixed JSON format
+// ParseAllLengthPrefixedJSON 解析并返回全部长度前缀 JSON 对象。
 // and returns ALL JSON objects found (for cases where multiple rows are concatenated)
 // Format: [4-byte length (little-endian)][JSON][4-byte length][JSON]...
 func ParseAllLengthPrefixedJSON(data []byte) []map[string]interface{} {
@@ -557,3 +559,4 @@ func ParseAllLengthPrefixedJSON(data []byte) []map[string]interface{} {
 	}
 	return results
 }
+// metadata.go — 文档元数据索引检索、扁平化与分块 enrichment。

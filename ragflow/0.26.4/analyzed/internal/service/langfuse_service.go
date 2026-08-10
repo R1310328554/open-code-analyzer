@@ -16,6 +16,8 @@
 
 package service
 
+// langfuse_service.go 实现租户 Langfuse API Key 的校验、存储与查询。
+
 import (
 	"context"
 	"errors"
@@ -28,7 +30,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// langfuseVerifier abstracts Langfuse credential verification so the business
+// langfuseVerifier 抽象 Langfuse 凭据校验，便于单测时注入 mock 而无需真实网络请求。
 // logic can be unit-tested without performing real network calls.
 type langfuseVerifier interface {
 	// AuthCheck mirrors the Python langfuse SDK auth_check().
@@ -37,7 +39,7 @@ type langfuseVerifier interface {
 	GetProject(ctx context.Context, host, publicKey, secretKey string) (string, string, error)
 }
 
-// defaultLangfuseVerifier uses a real LangfuseClient for verification.
+// defaultLangfuseVerifier 使用真实 LangfuseClient 执行在线校验。
 type defaultLangfuseVerifier struct{}
 
 func (defaultLangfuseVerifier) AuthCheck(ctx context.Context, host, publicKey, secretKey string) (bool, error) {
@@ -52,14 +54,14 @@ func (defaultLangfuseVerifier) GetProject(ctx context.Context, host, publicKey, 
 	return client.GetProject(ctx)
 }
 
-// LangfuseService implements the /langfuse/api-key business logic, mirroring
+// LangfuseService 实现 /langfuse/api-key 业务逻辑，对齐 Python TenantLangfuseService。
 // the Python TenantLangfuseService + langfuse_api handlers.
 type LangfuseService struct {
 	langfuseDAO *dao.LangfuseDAO
 	verifier    langfuseVerifier
 }
 
-// NewLangfuseService creates a LangfuseService with the default (live) verifier.
+// NewLangfuseService 创建带默认在线校验器的 LangfuseService。
 func NewLangfuseService() *LangfuseService {
 	return &LangfuseService{
 		langfuseDAO: dao.NewLangfuse(),
@@ -67,7 +69,7 @@ func NewLangfuseService() *LangfuseService {
 	}
 }
 
-// SetAPIKey validates and stores (insert or update) the Langfuse credentials
+// SetAPIKey 校验 Langfuse 公钥/私钥/Host 后按租户 upsert 凭据。
 // for a tenant.
 func (s *LangfuseService) SetAPIKey(tenantID, secretKey, publicKey, host string) (*entity.TenantLangfuse, common.ErrorCode, error) {
 	if secretKey == "" || publicKey == "" || host == "" {
@@ -96,7 +98,7 @@ func (s *LangfuseService) SetAPIKey(tenantID, secretKey, publicKey, host string)
 	return row, common.CodeSuccess, nil
 }
 
-// GetAPIKey returns the stored credentials enriched with the Langfuse project
+// GetAPIKey 返回已存凭据并调用 Langfuse API 补充 project id/name。
 // id/name.
 func (s *LangfuseService) GetAPIKey(tenantID string) (*entity.LangfuseInfoResponse, common.ErrorCode, string, error) {
 	row, err := s.langfuseDAO.GetByTenantID(tenantID)
@@ -129,7 +131,7 @@ func (s *LangfuseService) GetAPIKey(tenantID string) (*entity.LangfuseInfoRespon
 	return info, common.CodeSuccess, "success", nil
 }
 
-// DeleteAPIKey removes the stored credentials for a tenant.
+// DeleteAPIKey 删除租户已保存的 Langfuse 凭据。
 func (s *LangfuseService) DeleteAPIKey(tenantID string) (bool, common.ErrorCode, string, error) {
 	if err := s.langfuseDAO.DeleteExistingByTenantID(tenantID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -139,3 +141,4 @@ func (s *LangfuseService) DeleteAPIKey(tenantID string) (bool, common.ErrorCode,
 	}
 	return true, common.CodeSuccess, "", nil
 }
+// langfuse_service.go — 租户 Langfuse 凭据 CRUD，校验密钥并回填项目信息。

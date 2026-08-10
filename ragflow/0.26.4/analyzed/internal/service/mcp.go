@@ -16,6 +16,8 @@
 
 package service
 
+// mcp.go 管理租户 MCP（Model Context Protocol）服务器配置与工具发现。
+
 import (
 	"bytes"
 	"context"
@@ -42,13 +44,13 @@ const (
 	mcpServerDateFormat         = "2006-01-02T15:04:05"
 )
 
-// MCPService handles MCP server operations.
+// MCPService 封装 MCP 服务器的增删改查、导入与测试。
 type MCPService struct {
 	mcpServerDAO *dao.MCPServerDAO
 	tenantDAO    *dao.TenantDAO
 }
 
-// NewMCPService creates an MCP service.
+// NewMCPService 创建 MCP 业务服务实例。
 func NewMCPService() *MCPService {
 	return &MCPService{
 		mcpServerDAO: dao.NewMCPServerDAO(),
@@ -56,7 +58,7 @@ func NewMCPService() *MCPService {
 	}
 }
 
-// CreateMCPServerRequest is the request payload for creating an MCP server.
+// CreateMCPServerRequest 创建 MCP 服务器的请求体。
 type CreateMCPServerRequest struct {
 	Name        string          `json:"name"`
 	URL         string          `json:"url"`
@@ -67,7 +69,7 @@ type CreateMCPServerRequest struct {
 	Timeout     float64         `json:"timeout,omitempty"`
 }
 
-// CreateMCPServerResponse is the response payload for creating an MCP server.
+// CreateMCPServerResponse 创建成功后的 MCP 服务器摘要。
 type CreateMCPServerResponse struct {
 	ID          string         `json:"id"`
 	TenantID    string         `json:"tenant_id"`
@@ -79,10 +81,10 @@ type CreateMCPServerResponse struct {
 	Headers     entity.JSONMap `json:"headers"`
 }
 
-// UpdateMCPServerRequest is the raw request payload for updating an MCP server.
+// UpdateMCPServerRequest PATCH 更新时的原始 JSON 字段映射。
 type UpdateMCPServerRequest map[string]json.RawMessage
 
-// MCPServerListItem is an MCP server item in the list response.
+// MCPServerListItem 列表接口中的 MCP 服务器条目。
 type MCPServerListItem struct {
 	ID          string         `json:"id"`
 	Name        string         `json:"name"`
@@ -106,7 +108,7 @@ type ExportMCPServerResponse struct {
 	MCPServers map[string]ExportMCPServer `json:"mcpServers"`
 }
 
-// ListMCPServersResponse is the response payload for listing MCP servers.
+// ListMCPServersResponse 分页列表响应结构。
 type ListMCPServersResponse struct {
 	MCPServers []*MCPServerListItem `json:"mcp_servers"`
 	Total      int64                `json:"total"`
@@ -114,7 +116,7 @@ type ListMCPServersResponse struct {
 
 const maxMCPFetchTimeoutSec = 60
 
-// CreateMCPServer creates an MCP server owned by a tenant.
+// CreateMCPServer 校验 URL/类型后拉取工具列表并持久化 MCP 配置。
 func (s *MCPService) CreateMCPServer(tenantID string, req CreateMCPServerRequest) (*CreateMCPServerResponse, common.ErrorCode, error) {
 	if req.Timeout < 0 || req.Timeout > maxMCPFetchTimeoutSec {
 		return nil, common.CodeDataError, errors.New("Invalid timeout.")
@@ -280,7 +282,7 @@ func newExportMCPServerResponse(server *entity.MCPServer) *ExportMCPServerRespon
 	}
 }
 
-// UpdateMCPServer updates an MCP server owned by a tenant.
+// UpdateMCPServer 部分更新 MCP 服务器，必要时重新拉取 tools。
 func (s *MCPService) UpdateMCPServer(tenantID, mcpID string, req UpdateMCPServerRequest) (*entity.MCPServer, common.ErrorCode, error) {
 	server, err := s.mcpServerDAO.GetByIDAndTenant(mcpID, tenantID)
 	if err != nil {
@@ -418,7 +420,7 @@ func isMCPServerNotFound(err error) bool {
 	return errors.Is(err, gorm.ErrRecordNotFound)
 }
 
-// ListMCPServers lists MCP servers owned by a tenant.
+// ListMCPServers 按关键词/排序分页列出租户 MCP 服务器。
 func (s *MCPService) ListMCPServers(tenantID string, ids []string, keywords string, page, pageSize int, orderby string, desc bool) (*ListMCPServersResponse, common.ErrorCode, error) {
 	servers, total, err := s.mcpServerDAO.ListMCPServers(tenantID, ids, keywords, orderby, desc)
 	if err != nil {
@@ -457,7 +459,7 @@ func (s *MCPService) ListMCPServers(tenantID string, ids []string, keywords stri
 	}, common.CodeSuccess, nil
 }
 
-// DeleteMCPServer deletes an MCP server owned by a tenant.
+// DeleteMCPServer 删除指定租户下的 MCP 服务器记录。
 func (s *MCPService) DeleteMCPServer(tenantID, mcpID string) (bool, common.ErrorCode, error) {
 	server, err := s.mcpServerDAO.GetByID(mcpID)
 	if err != nil {
@@ -544,7 +546,7 @@ var (
 	ErrMCPTestFailed  = errors.New("MCP test failed")
 )
 
-// ImportResult is a single per-server outcome in the bulk import response,
+// ImportResult 批量导入时单个服务器的成功/失败结果。
 // matching the shape returned by Python's import_multiple.
 type ImportResult struct {
 	Server  string `json:"server"`
@@ -555,7 +557,7 @@ type ImportResult struct {
 	Message string `json:"message,omitempty"`
 }
 
-// ImportServers bulk-imports MCP servers from a {"mcpServers": {name: config}} map.
+// ImportServers 从 mcpServers 映射批量导入，重名自动加后缀。
 func (s *MCPService) ImportServers(tenantID string, servers map[string]map[string]interface{}, timeoutSeconds float64) ([]ImportResult, error) {
 	if timeoutSeconds <= 0 {
 		timeoutSeconds = defaultMCPFetchTimeoutSec
@@ -681,7 +683,7 @@ func (s *MCPService) nextAvailableMCPName(base, tenantID string) (string, error)
 	}
 }
 
-// TestServerRequest is the body of POST /mcp/servers/:mcp_id/test. The mcp_id
+// TestServerRequest 测试连接请求体，允许预览未保存的 URL/头/变量。
 // from the URL path is threaded through to the connect call for log
 // correlation; the connection itself is opened from the request body so the
 // user can preview unsaved edits — matching Python's test_mcp.
@@ -693,7 +695,7 @@ type TestServerRequest struct {
 	Timeout    float64                `json:"timeout,omitempty"`
 }
 
-// TestServer opens a live MCP session and returns the tools the server advertises.
+// TestServer 建立临时 MCP 会话并返回工具清单，含 SSRF 预检。
 func (s *MCPService) TestServer(mcpID string, req *TestServerRequest) ([]map[string]interface{}, error) {
 	if req == nil || req.URL == "" {
 		return nil, fmt.Errorf("%w: Invalid MCP url.", ErrMCPInvalidURL)
@@ -820,3 +822,4 @@ func normalizeMCPServerSliceIndex(index, length int) int {
 	}
 	return index
 }
+// mcp.go — MCP 服务器 CRUD、工具发现、批量导入与连接测试。

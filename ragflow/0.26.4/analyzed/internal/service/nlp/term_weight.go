@@ -14,6 +14,8 @@
 
 package nlp
 
+// term_weight.go 计算查询词项权重，供 QueryBuilder 与 Reranker 使用。
+
 import (
 	"encoding/json"
 	"math"
@@ -29,7 +31,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// TermWeightDealer calculates term weights for text processing
+// TermWeightDealer 词项权重计算器，加载 NER 与 term.freq 资源。
 // Reference: rag/nlp/term_weight.py
 type TermWeightDealer struct {
 	stopWords map[string]struct{}
@@ -37,13 +39,13 @@ type TermWeightDealer struct {
 	df        map[string]int    // document frequency
 }
 
-// TermWeight represents a term and its weight
+// TermWeight 单个词项及其浮点权重。
 type TermWeight struct {
 	Term   string
 	Weight float64
 }
 
-// NewTermWeightDealer creates a new TermWeightDealer
+// NewTermWeightDealer 从 rag/res 加载 ner.json 与 term.freq。
 func NewTermWeightDealer(resPath string) *TermWeightDealer {
 	d := &TermWeightDealer{
 		stopWords: initStopWords(),
@@ -72,7 +74,7 @@ func NewTermWeightDealer(resPath string) *TermWeightDealer {
 	return d
 }
 
-// initStopWords initializes the stop words set
+// initStopWords 初始化中英文停用词表。
 func initStopWords() map[string]struct{} {
 	words := []string{
 		"请问", "您", "你", "我", "他", "是", "的", "就", "有", "于",
@@ -87,7 +89,7 @@ func initStopWords() map[string]struct{} {
 	return stopWords
 }
 
-// loadDict loads a dictionary file
+// loadDict 读取 term\tfreq 格式词频文件为 map。
 // Format: term\tfreq or just term
 func loadDict(fnm string) map[string]int {
 	res := make(map[string]int)
@@ -122,7 +124,7 @@ func loadDict(fnm string) map[string]int {
 	return res
 }
 
-// Pretoken preprocesses and tokenizes text
+// Pretoken 预处理文本：分词、去停用词与标点过滤。
 // Reference: term_weight.py L92-114
 func (d *TermWeightDealer) Pretoken(txt string, num bool, stpwd bool) []string {
 	patt := `[~—\t @#%!<>,\.\?":;'\{\}\[\]_=\(\)\|，。？》•●○↓《；'：""【¥ 】…￥！、·（）×\` + "`" + `&/「」\]`
@@ -519,3 +521,4 @@ func (d *TermWeightDealer) GetNE() map[string]string {
 func (d *TermWeightDealer) GetDF() map[string]int {
 	return d.df
 }
+// term_weight.go — 词项权重计算：停用词、NER、词频与 IDF 加权。

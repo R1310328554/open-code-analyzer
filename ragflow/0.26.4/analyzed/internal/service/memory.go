@@ -16,6 +16,8 @@
 
 package service
 
+// memory.go 实现 Agent 长期记忆的创建、更新、消息检索与权限控制。
+
 import (
 	"context"
 	"errors"
@@ -36,9 +38,9 @@ import (
 )
 
 const (
-	// MemoryNameLimit is the maximum length allowed for memory names
+	// MemoryNameLimit 记忆名称最大长度（字符）。
 	MemoryNameLimit = 128
-	// MemorySizeLimit is the maximum memory size in bytes (5MB)
+	// MemorySizeLimit 记忆容量上限（5MB）。
 	MemorySizeLimit = 5242880
 )
 
@@ -46,16 +48,16 @@ const (
 // MemoryTypeProcedural, and CalculateMemoryType are defined in the dao package
 // and imported as dao.MemoryType, dao.MemoryTypeRaw, etc.
 
-// TenantPermission defines the access permission levels for memory resources
+// TenantPermission 记忆资源的租户级访问权限枚举。
 // Note: This type is specific to the service layer
 type TenantPermission string
 
 const (
-	// TenantPermissionMe restricts access to the owner only
+	// TenantPermissionMe 仅创建者本人可访问。
 	TenantPermissionMe TenantPermission = "me"
-	// TenantPermissionTeam allows access within the same team
+	// TenantPermissionTeam 同团队成员可访问。
 	TenantPermissionTeam TenantPermission = "team"
-	// TenantPermissionAll allows access to all tenants
+	// TenantPermissionAll 对所有租户开放（预留）。
 	TenantPermissionAll TenantPermission = "all"
 )
 
@@ -72,7 +74,7 @@ var validPermissions = map[TenantPermission]bool{
 	TenantPermissionAll:  true,
 }
 
-// ForgettingPolicy defines the strategy for forgetting old memory entries
+// ForgettingPolicy 记忆条目遗忘策略（如 FIFO）。
 type ForgettingPolicy string
 
 const (
@@ -85,7 +87,7 @@ var validForgettingPolicies = map[ForgettingPolicy]bool{
 	ForgettingPolicyFIFO: true,
 }
 
-// ResourceNotFoundError marks client-visible missing memory/message resources.
+// ResourceNotFoundError 表示记忆或消息资源不存在，供 API 层映射 404。
 type ResourceNotFoundError struct {
 	Resource string
 	ID       string
@@ -99,10 +101,10 @@ func (e *ResourceNotFoundError) Error() string {
 // Note: CalculateMemoryType and GetMemoryTypeHuman functions have been moved to dao package
 // Use dao.CalculateMemoryType() and dao.GetMemoryTypeHuman() instead
 
-// PromptAssembler handles the assembly of system prompts for memory extraction
+// PromptAssembler 按记忆类型组装 LLM 提取系统提示词。
 type PromptAssembler struct{}
 
-// SYSTEM_BASE_TEMPLATE is the base template for the system prompt used in memory extraction
+// SYSTEM_BASE_TEMPLATE 记忆提取系统提示的基础模板骨架。
 // It includes placeholders for type-specific instructions, timestamp format, and max items
 var SYSTEM_BASE_TEMPLATE = `**Memory Extraction Specialist**
 You are an expert at analyzing conversations to extract structured memory.
@@ -119,7 +121,7 @@ You are an expert at analyzing conversations to extract structured memory.
 6. Maximum {max_items} items per type
 `
 
-// TYPE_INSTRUCTIONS contains specific instructions for each memory type extraction
+// TYPE_INSTRUCTIONS 各记忆类型（语义/情节/程序性）的提取说明。
 var TYPE_INSTRUCTIONS = map[string]string{
 	"semantic": `
 **EXTRACT SEMANTIC KNOWLEDGE:**
@@ -150,14 +152,14 @@ var TYPE_INSTRUCTIONS = map[string]string{
 `,
 }
 
-// OUTPUT_TEMPLATES defines the output format for each memory type
+// OUTPUT_TEMPLATES 各类型 JSON 输出格式示例片段。
 var OUTPUT_TEMPLATES = map[string]string{
 	"semantic":   `"semantic": [{"content": "Clear factual statement", "valid_at": "timestamp or empty", "invalid_at": "timestamp or empty"}]`,
 	"episodic":   `"episodic": [{"content": "Narrative event description", "valid_at": "event start timestamp", "invalid_at": "event end timestamp or empty"}]`,
 	"procedural": `"procedural": [{"content": "Actionable instructions", "valid_at": "procedure effective timestamp", "invalid_at": "procedure expiration timestamp or empty"}]`,
 }
 
-// AssembleSystemPrompt generates a complete system prompt for memory extraction
+// AssembleSystemPrompt 根据请求的记忆类型生成完整系统提示词。
 //
 // Parameters:
 //   - memoryTypes: Array of memory type names to extract (e.g., ["semantic", "episodic"])
@@ -245,14 +247,14 @@ func generateOutputFormat(typesToExtract []string) string {
 	return strings.Join(outputParts, ",\n")
 }
 
-// MemoryService handles business logic for memory operations
+// MemoryService 记忆 CRUD、消息搜索与 DocEngine 索引交互。
 // It provides methods for creating, updating, deleting, and querying memories
 type MemoryService struct {
 	memoryDAO *dao.MemoryDAO
 	docEngine engine.DocEngine
 }
 
-// NewMemoryService creates a new MemoryService instance
+// NewMemoryService 构造 MemoryService 并绑定 MemoryDAO 与 DocEngine。
 //
 // Returns:
 //   - *MemoryService: Initialized service instance with DAO
@@ -263,7 +265,7 @@ func NewMemoryService() *MemoryService {
 	}
 }
 
-// CreateMemoryRequest defines the request structure for creating a memory
+// CreateMemoryRequest 创建记忆时的必填/可选字段。
 type CreateMemoryRequest struct {
 	// Name is the memory name (required, max 128 characters)
 	Name string `json:"name" binding:"required"`
@@ -279,7 +281,7 @@ type CreateMemoryRequest struct {
 	TenantLLMID *string `json:"tenant_llm_id"`
 }
 
-// UpdateMemoryRequest defines the request structure for updating a memory
+// UpdateMemoryRequest 部分更新记忆配置，仅非空字段生效。
 // All fields are optional, only provided fields will be updated
 type UpdateMemoryRequest struct {
 	// Name is the new memory name (optional)
@@ -312,7 +314,7 @@ type UpdateMemoryRequest struct {
 	UserPrompt *string `json:"user_prompt"`
 }
 
-// CreateMemoryResponse defines the response structure for memory operations
+// CreateMemoryResponse API 返回的记忆详情，含可读 memory_type 数组。
 // Uses struct embedding to extend Memory struct with API-specific fields
 type CreateMemoryResponse struct {
 	entity.Memory
@@ -320,7 +322,7 @@ type CreateMemoryResponse struct {
 	MemoryType []string `json:"memory_type"`
 }
 
-// ListMemoryResponse defines the response structure for listing memories
+// ListMemoryResponse 分页列表响应，含 memory_list 与 total_count。
 type ListMemoryResponse struct {
 	// MemoryList is the array of memory objects
 	MemoryList []map[string]interface{} `json:"memory_list"`
@@ -328,7 +330,7 @@ type ListMemoryResponse struct {
 	TotalCount int64 `json:"total_count"`
 }
 
-// CreateMemory creates a new memory with the given parameters
+// CreateMemory 校验类型与模型 ID，自动生成系统提示并写入数据库。
 // It validates the request, generates a unique name if needed, and creates the memory record
 //
 // Parameters:
@@ -437,7 +439,7 @@ func (s *MemoryService) CreateMemory(tenantID string, req *CreateMemoryRequest) 
 	return formatRetDataFromMemory(createdMemory), nil
 }
 
-// UpdateMemory updates an existing memory with the provided fields
+// UpdateMemory 增量更新记忆；非空记忆禁止改 embedding/类型等关键字段。
 // Only the fields specified in the request will be updated (partial update)
 //
 // Parameters:
@@ -747,7 +749,7 @@ func sameStringSet(a, b []string) bool {
 	return true
 }
 
-// DeleteMemory deletes a memory by ID
+// DeleteMemory 按 ID 删除记忆记录（关联消息索引清理待实现）。
 // It also deletes associated message indexes before removing the memory record
 //
 // Parameters:
@@ -780,7 +782,7 @@ func (s *MemoryService) DeleteMemory(memoryID string) error {
 	return nil
 }
 
-// ForgetMessage marks a memory message as forgotten by setting forget_at.
+// ForgetMessage 软删除消息：写入 forget_at 而非物理删除文档。
 // This mirrors Python memory_api_service.forget_message and keeps the message
 // record for retention/cleanup policies instead of deleting it immediately.
 func (s *MemoryService) ForgetMessage(ctx context.Context, userID string, memoryID string, messageID int64) error {
@@ -817,7 +819,7 @@ func (s *MemoryService) ForgetMessage(ctx context.Context, userID string, memory
 	return nil
 }
 
-// AddMessage filters inaccessible memories and queues the raw message for
+// AddMessage 过滤无权限记忆后将原始对话入队，供异步提取结构化记忆。
 // memory extraction. The currentUserID is used only for access control; msg.UserID
 // is the attribution stored on the message and may differ for API-token callers.
 func (s *MemoryService) AddMessage(ctx context.Context, currentUserID string, memoryIDs []string, msg MemoryMessage) (bool, string, error) {
@@ -1393,7 +1395,7 @@ func (s *MemoryService) requireMemoryAccess(ctx context.Context, userID string, 
 	return nil, &ResourceNotFoundError{Resource: "Memory", ID: memoryID}
 }
 
-// ListMemories retrieves a paginated list of memories with optional filters
+// ListMemories 按租户/类型/关键词分页列出用户可访问的记忆。
 // When tenantIDs is empty, it retrieves all tenants associated with the user
 //
 // Parameters:
@@ -1461,7 +1463,7 @@ func (s *MemoryService) ListMemories(userID string, tenantIDs []string, memoryTy
 	}, nil
 }
 
-// GetMemoryConfig retrieves the full configuration of a memory by ID
+// GetMemoryConfig 返回单条记忆的完整配置与 owner_name。
 //
 // Parameters:
 //   - memoryID: The ID of the memory to retrieve
@@ -1821,3 +1823,4 @@ func formatRetDataFromMemoryListItem(memory *entity.MemoryListItem) *CreateMemor
 	}
 	return resp
 }
+// memory.go — 长期记忆 CRUD、消息检索/遗忘与提示词组装，对齐 Python MemoryService。

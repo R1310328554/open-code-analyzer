@@ -14,6 +14,8 @@
 
 package nlp
 
+// synonym.go 为查询扩展提供同义词 lookup，对齐 Python synonym.Dealer。
+
 import (
 	"encoding/json"
 	"os"
@@ -28,7 +30,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Synonym provides synonym lookup functionality
+// Synonym 同义词查找器：本地 synonym.json + 可选 WordNet + Redis。
 // Reference: rag/nlp/synonym.py Dealer class
 type Synonym struct {
 	lookupNum  atomic.Int64
@@ -39,13 +41,13 @@ type Synonym struct {
 	resPath    string
 }
 
-// RedisClient interface for Redis operations
+// RedisClient Redis 读接口，用于热加载 kevin_synonyms。
 // This should be implemented by the caller if Redis support is needed
 type RedisClient interface {
 	Get(key string) (string, error)
 }
 
-// NewSynonym creates a new Synonym instance
+// NewSynonym 加载词典与 WordNet，初始化 lookup 计数与资源路径。
 // Reference: synonym.py Dealer.__init__
 // wordnetDir: path to wordnet directory (e.g., "/usr/share/infinity/resource/wordnet").
 //
@@ -116,7 +118,7 @@ func NewSynonym(redis RedisClient, resPath string, wordnetDir string) *Synonym {
 	return s
 }
 
-// load loads synonyms from Redis if available
+// load 按条件从 Redis 刷新同义词表（当前实现多为占位）。
 // Reference: synonym.py Dealer.load
 func (s *Synonym) load() {
 	//if s.redis == nil {
@@ -224,3 +226,4 @@ func (s *Synonym) GetLookupNum() int {
 func (s *Synonym) GetLoadTime() time.Time {
 	return s.loadTm
 }
+// synonym.go — 同义词查找：本地词典、WordNet 与可选 Redis 热更新。

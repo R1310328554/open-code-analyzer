@@ -16,6 +16,8 @@
 
 package service
 
+// load_prompt.go 负责从 rag/prompts 目录加载 Markdown 提示词模板并渲染变量。
+
 import (
 	"fmt"
 	"os"
@@ -31,7 +33,7 @@ var (
 	promptsBaseDir string
 )
 
-// thinkBlockRE strips think blocks from LLM responses.
+// thinkBlockRE 剥离 LLM 响应中的 redacted_thinking 块，与 Python 贪婪正则一致。
 //
 // This mirrors the Python original
 //
@@ -47,7 +49,7 @@ var (
 // rest of the response invisible to the caller.
 var thinkBlockRE = regexp.MustCompile(`^[\s\S]*</think>`)
 
-// jsonFenceRE matches markdown code fences around JSON responses.
+// jsonFenceRE 去除 JSON 响应外层的 ```json 代码围栏。
 // Mirrors Python's re.sub(r"(`{3}json\n|`{3}\n*$)", ..., flags=re.DOTALL).
 // Note: `\n*` is intentionally narrower than Go's `\s*` — Python only
 // matches newlines, not other whitespace, so a closing fence followed
@@ -55,7 +57,7 @@ var thinkBlockRE = regexp.MustCompile(`^[\s\S]*</think>`)
 var jsonFenceRE = regexp.MustCompile("```json\\n|```\\n*$")
 
 func init() {
-	// Strategy 1: Check working directory first (most reliable during development/tests)
+	// 策略 1：从当前工作目录向上查找 rag/prompts（开发/测试最可靠）。
 	cwd, err := os.Getwd()
 	if err == nil {
 		// Check if CWD has rag/prompts directly
@@ -74,7 +76,7 @@ func init() {
 		}
 	}
 
-	// Strategy 2: Walk up from executable (for production Docker where binary is in /ragflow/bin/)
+	// 策略 2：从可执行文件路径向上查找（生产 Docker 镜像常用）。
 	exe, err := os.Executable()
 	if err == nil {
 		dir := filepath.Dir(exe)
@@ -87,11 +89,11 @@ func init() {
 		}
 	}
 
-	// Final fallback
+	// 最终回退到 /ragflow 根目录。
 	promptsBaseDir = "/ragflow"
 }
 
-// LoadPrompt loads a prompt by name from the rag/prompts/ directory.
+// LoadPrompt 按名称加载 rag/prompts/{name}.md，结果进程内缓存。
 // It caches loaded prompts for subsequent calls.
 // Corresponds to rag/prompts/template.py:load_prompt()
 func LoadPrompt(name string) (string, error) {
@@ -116,7 +118,7 @@ func LoadPrompt(name string) (string, error) {
 	return cached, nil
 }
 
-// RenderPrompt renders a prompt template with the given variables.
+// RenderPrompt 渲染 {{ var }} 与 {{ var | filter(args) }} 模板语法。
 // Supports {{ variable }} and {{ variable | filter(args) }} syntax.
 // Corresponds to rag/prompts/generator.py template rendering (Jinja2).
 func RenderPrompt(template string, data map[string]interface{}) string {
@@ -151,7 +153,7 @@ func RenderPrompt(template string, data map[string]interface{}) string {
 	return result
 }
 
-// applyFilter applies a filter to a value with optional arguments.
+// applyFilter 对模板变量应用过滤器（目前支持 join）。
 func applyFilter(value interface{}, filter string, args string) string {
 	switch filter {
 	case "join":
@@ -169,7 +171,7 @@ func applyFilter(value interface{}, filter string, args string) string {
 	}
 }
 
-// stripQuotes removes matching surrounding single or double quotes.
+// stripQuotes 去掉过滤器参数两侧成对引号。
 func stripQuotes(s string) string {
 	if len(s) >= 2 {
 		if (s[0] == '\'' && s[len(s)-1] == '\'') || (s[0] == '"' && s[len(s)-1] == '"') {
@@ -178,3 +180,4 @@ func stripQuotes(s string) string {
 	}
 	return s
 }
+// load_prompt.go — 从 rag/prompts 加载并缓存提示词，支持简易 Jinja 渲染。

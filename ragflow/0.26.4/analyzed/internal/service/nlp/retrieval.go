@@ -16,6 +16,8 @@
 
 package nlp
 
+// retrieval.go 实现 RAG 混合检索：全文+向量搜索、重排、阈值与分页。
+
 import (
 	"context"
 	"fmt"
@@ -34,18 +36,18 @@ import (
 	"go.uber.org/zap"
 )
 
-// RetrievalService provides retrieval search functionality
+// RetrievalService 封装 DocEngine 检索、重排与分块后处理。
 type RetrievalService struct {
 	docEngine   engine.DocEngine
 	documentDAO *dao.DocumentDAO
 }
 
-// NewRetrievalService creates a new RetrievalService with the given doc engine
+// NewRetrievalService 注入 DocEngine 与 DocumentDAO 构造检索服务。
 func NewRetrievalService(docEngine engine.DocEngine, documentDAO *dao.DocumentDAO) *RetrievalService {
 	return &RetrievalService{docEngine: docEngine, documentDAO: documentDAO}
 }
 
-// RetrievalRequest request for retrieval search
+// RetrievalRequest 对外检索请求：问题、KB/Doc 过滤、分页与模型参数。
 type RetrievalRequest struct {
 	Question               string
 	TenantIDs              []string
@@ -63,14 +65,14 @@ type RetrievalRequest struct {
 	Highlight              *bool
 }
 
-// RetrievalResult result from retrieval search
+// RetrievalResult 返回分块列表、文档聚合与分页后总数。
 type RetrievalResult struct {
 	Chunks  []map[string]interface{}
 	DocAggs []map[string]interface{} // Aggregated document counts, sorted by count desc
 	Total   int64                    // Post-pagination chunk count (matches Python's len(ranks["chunks"]))
 }
 
-// Retrieval performs hybrid search + reranking + pagination
+// Retrieval 完整流水线：Search 拉候选 → Rerank → 阈值过滤 → 分页 → 可选 doc aggs。
 // - Calculate rerank limit and call Search() to fetch rerankLimit candidates for reranking
 // - Perform reranking via Rerank()
 // - Sort indices by score descending and filter by threshold
@@ -529,6 +531,7 @@ func (s *RetrievalService) Retrieval(ctx context.Context, req *RetrievalRequest)
 }
 
 // RetrievalSearchRequest is the request struct for RetrievalService.Search()
+// RetrievalSearchRequest 单次搜索引擎调用所需的租户/KB/向量等参数。
 type RetrievalSearchRequest struct {
 	Question            string
 	TenantIDs           []string
@@ -564,6 +567,7 @@ type RetrievalSearchResult struct {
 // - Non-empty question, with EmbeddingModel: hybrid search (fulltext + vector + fusion)
 //
 // Hybrid search path retries with lower thresholds if no results found.
+// Search 构建 MatchText/MatchDense/Fusion 表达式并调用 DocEngine.Search。
 func (s *RetrievalService) Search(ctx context.Context, req *RetrievalSearchRequest) (*RetrievalSearchResult, error) {
 	if req.Highlight == nil {
 		req.Highlight = func() *bool { v := false; return &v }()
@@ -781,6 +785,7 @@ func (s *RetrievalService) Search(ctx context.Context, req *RetrievalSearchReque
 }
 
 // GetVector computes query vector and returns MatchDenseExpr for hybrid search
+// GetVector 对问句嵌入并向 MatchDenseExpr 填充向量列名与相似度阈值。
 func (s *RetrievalService) GetVector(txt string, embModel *models.EmbeddingModel, topk int, similarity float64) (*types.MatchDenseExpr, error) {
 	embeddingConfig := &models.EmbeddingConfig{
 		Dimension: 0,
@@ -972,6 +977,7 @@ func RetrievalByChildren(chunks []map[string]interface{}, tenantIDs []string, do
 }
 
 // PruneDeletedChunks removes chunks whose documents no longer exist
+// PruneDeletedChunks 剔除数据库已标记删除的文档对应分块。
 func (s *RetrievalService) PruneDeletedChunks(result *RetrievalSearchResult) (*RetrievalSearchResult, error) {
 	if s.documentDAO == nil {
 		return nil, fmt.Errorf("documentDAO is not initialized")
@@ -1155,3 +1161,4 @@ func (s *RetrievalService) FetchChunkVectors(ctx context.Context, chunkIDs []str
 
 	return out, nil
 }
+// retrieval.go — 混合检索流水线：搜索、重排、阈值过滤与分页聚合。

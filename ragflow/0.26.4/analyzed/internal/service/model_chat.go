@@ -16,6 +16,8 @@
 
 package service
 
+// model_chat.go 为 ModelProviderService 提供同步/流式聊天封装。
+
 import (
 	"context"
 	"fmt"
@@ -26,6 +28,7 @@ import (
 	modelModule "ragflow/internal/entity/models"
 )
 
+// Chat 按 tenant+modelID 解析 ChatModel 并发起非流式对话。
 func (m *ModelProviderService) Chat(tenantID, modelID string, messages []modelModule.Message, config *modelModule.ChatConfig) (*modelModule.ChatResponse, error) {
 	chatModel, err := m.GetChatModel(tenantID, modelID)
 	if err != nil {
@@ -34,6 +37,7 @@ func (m *ModelProviderService) Chat(tenantID, modelID string, messages []modelMo
 	return chatModel.ModelDriver.ChatWithMessages(*chatModel.ModelName, messages, chatModel.APIConfig, config)
 }
 
+// ChatStream 返回增量文本 channel，底层驱动 ChatStreamlyWithSender。
 func (m *ModelProviderService) ChatStream(ctx context.Context, tenantID, modelID string, messages []modelModule.Message, config *modelModule.ChatConfig) (<-chan string, error) {
 	chatModel, err := m.GetChatModel(tenantID, modelID)
 	if err != nil {
@@ -67,16 +71,18 @@ func chatStreamWithContext(ctx context.Context, chatModel *modelModule.ChatModel
 	return ch
 }
 
-// TenantStreamAdapter adapts tenant/model-aware chat streaming to AskService.
+// TenantStreamAdapter 将租户+模型绑定的流式聊天适配给 AskService 接口。
 type TenantStreamAdapter struct {
 	LLM      *ModelProviderService
 	TenantID string
 	ModelID  string
 }
 
+// ChatStream 委托 ModelProviderService.ChatStream 并固定 tenant/model 上下文。
 func (a *TenantStreamAdapter) ChatStream(ctx context.Context, messages []modelModule.Message, config *modelModule.ChatConfig) (<-chan string, error) {
 	if a.LLM == nil {
 		return nil, fmt.Errorf("streaming LLM not configured")
 	}
 	return a.LLM.ChatStream(ctx, a.TenantID, a.ModelID, messages, config)
 }
+// model_chat.go — ModelProviderService 同步/流式聊天与 AskService 流适配器。

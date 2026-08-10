@@ -14,7 +14,7 @@
 //  limitations under the License.
 //
 
-// memory_message_service.go — real MemorySaver port.
+// memory_message_service.go — MemorySaver 的 Go 移植：对话回合持久化入口。
 //
 // Port of api.db.joint_services.memory_message_service.queue_save_to_memory_task
 // from the Python runtime.
@@ -65,7 +65,7 @@ import (
 	models "ragflow/internal/entity/models"
 )
 
-// ErrEmbedderNotWired is returned by QueueSaveToMemoryTask when
+// ErrEmbedderNotWired 嵌入模型未接入时返回（旧测试桩保留）。
 // the embedding-model call is reached. The Go runtime has no
 // embedding model port yet; until one lands, callers see this
 // error and know to fall back to the Python Canvas.
@@ -76,7 +76,7 @@ var ErrEmbedderNotWired = errors.New(
 		"ships (Phase 8b follow-up)",
 )
 
-// MemoryMessage is the wire shape for QueueSaveToMemoryTask. It
+// MemoryMessage 入队保存时的消息结构，对齐 Python message_dict。
 // mirrors the Python `message_dict` built in
 // agent/component/message.py:_save_to_memory:
 //
@@ -95,27 +95,27 @@ type MemoryMessage struct {
 	AgentResponse string
 }
 
-// MemoryFailure describes one memory that failed to save.
+// MemoryFailure 单条记忆保存失败的原因描述。
 type MemoryFailure struct {
 	MemoryID string
 	FailMsg  string
 }
 
-// QueueSaveResult is the return value. NotFound / Failed mirror
+// QueueSaveResult 批量结果：NotFound 为找不到的记忆，Failed 为写入失败。
 // the Python `not_found_memory` / `failed_memory` lists.
 type QueueSaveResult struct {
 	NotFound []string
 	Failed   []MemoryFailure
 }
 
-// MemoryMessageService is the Go port of
+// MemoryMessageService 对应 Python memory_message_service 模块。
 // api.db.joint_services.memory_message_service.
 type MemoryMessageService struct {
 	memories *MemoryService
 	taskDAO  *dao.TaskDAO
 }
 
-// NewMemoryMessageService constructs a service bound to the
+// NewMemoryMessageService 绑定 MemoryService，供 Message 组件注入。
 // supplied MemoryService. Caller is expected to register this as
 // the default MemorySaver in the Message component via
 // `component.SetMemorySaver(...)` at boot.
@@ -126,7 +126,7 @@ func NewMemoryMessageService(memories *MemoryService) *MemoryMessageService {
 	}
 }
 
-// QueueSaveToMemoryTask runs the memory-persistence flow for the
+// QueueSaveToMemoryTask 同步执行：查记忆 → 建 raw 消息 → 嵌入入库 → 建 Task → 入 Redis 队列。
 // supplied memory_ids + message. See package comment for the
 // step-by-step contract. The function is synchronous — the Python
 // async version awaits `embed_and_save` and Redis calls; this Go port does the
@@ -192,7 +192,7 @@ func (s *MemoryMessageService) QueueSaveToMemoryTask(
 	return res, nil
 }
 
-// generateRawMessageID returns the Redis auto-increment id used by the Python
+// generateRawMessageID 生成 raw message ID，优先 Redis 自增否则纳秒时间戳。
 // side (`REDIS_CONN.generate_auto_increment_id(namespace="memory")`).
 func generateRawMessageID() int64 {
 	if redisClient := redisengine.Get(); redisClient != nil {
@@ -203,7 +203,7 @@ func generateRawMessageID() int64 {
 	return time.Now().UnixNano()
 }
 
-// buildRawMessage constructs the raw_message envelope that gets
+// buildRawMessage 构造 raw 消息文档字段，供 ES/Infinity 索引与提取器消费。
 // passed to embed_and_save (and persisted in the message table
 // for the async extractor to read).
 func buildRawMessage(
@@ -241,7 +241,7 @@ func buildRawMessage(
 	return out
 }
 
-// buildTaskRow constructs the Task row the async extractor polls.
+// buildTaskRow 创建 memory 类型 Task 行，digest 存 message_id。
 func buildTaskRow(rawMessageID int64, memoryID string) map[string]any {
 	return map[string]any{
 		"id":        newUUIDString(),
@@ -297,7 +297,7 @@ func (s *MemoryMessageService) embedAndSave(ctx context.Context, mem *CreateMemo
 	return nil
 }
 
-// embedAndSave is kept for older unit tests; production uses the method above.
+// embedAndSave 旧单测桩：生产路径使用 (*MemoryMessageService).embedAndSave。
 func embedAndSave(_ context.Context, _ *CreateMemoryResponse, _ map[string]any) error {
 	return ErrEmbedderNotWired
 }
@@ -370,3 +370,4 @@ func mapStringAny(in map[string]any) map[string]interface{} {
 	}
 	return out
 }
+// memory_message_service.go — 对话回合入队记忆提取：嵌入原始消息并创建异步任务。

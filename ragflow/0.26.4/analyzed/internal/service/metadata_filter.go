@@ -16,6 +16,8 @@
 
 package service
 
+// metadata_filter.go 用 LLM 或手工条件过滤文档元数据，支持 ES 下推。
+
 import (
 	"context"
 	"encoding/json"
@@ -35,20 +37,20 @@ import (
 	modelModule "ragflow/internal/entity/models"
 )
 
-// MetaFilterCondition represents a single filter condition
+// MetaFilterCondition 单条元数据过滤条件：字段、运算符与值。
 type MetaFilterCondition struct {
 	Key   string      `json:"key"`
 	Value interface{} `json:"value"`
 	Op    string      `json:"op"`
 }
 
-// MetaFilterResult represents the result of LLM-generated filter
+// MetaFilterResult LLM 生成的条件列表与 and/or 逻辑组合。
 type MetaFilterResult struct {
 	Conditions []MetaFilterCondition `json:"conditions"`
 	Logic      string                `json:"logic"`
 }
 
-// compareValues compares two metadata values for relational operators
+// compareValues 比较元数据值：优先数值比较，失败则字典序字符串比较。
 // (>, <, >=, <=). It attempts numeric comparison first so that
 // lexicographic ordering like "10" < "2" or "100" < "20" no longer
 // produces wrong results for years, prices, counts, etc. If either
@@ -82,16 +84,16 @@ func compareValues(val1, val2, op string) bool {
 	return false
 }
 
-// ManualValueResolver is a callback function to transform manual filter values
+// ManualValueResolver 手工模式下对条件值做租户侧归一化的回调。
 type ManualValueResolver func(map[string]interface{}) map[string]interface{}
 
-// NoMatchDocIDSentinel forces retrieval to return no documents when filters match nothing.
+// NoMatchDocIDSentinel 条件非空但零命中时返回的占位 doc_id，强制空检索。
 const NoMatchDocIDSentinel = "-999"
 
 // metaFilterTemplateCache caches the template content
 var metaFilterTemplateCache string
 
-// getMetaFilterTemplate loads and caches the meta_filter.md template
+// getMetaFilterTemplate 加载并缓存 rag/prompts/meta_filter.md 模板。
 func getMetaFilterTemplate() (string, error) {
 	if metaFilterTemplateCache != "" {
 		return metaFilterTemplateCache, nil
@@ -123,7 +125,7 @@ func getMetaFilterTemplate() (string, error) {
 	return templateContent, nil
 }
 
-// renderMetaFilterTemplate renders the Jinja2-like template from meta_filter.md
+// renderMetaFilterTemplate 替换模板变量并处理 {% if constraints %} 块。
 func renderMetaFilterTemplate(currentDate, metadataKeys, question, constraints string) (string, error) {
 	templateContent, err := getMetaFilterTemplate()
 	if err != nil {
@@ -151,7 +153,7 @@ func renderMetaFilterTemplate(currentDate, metadataKeys, question, constraints s
 	return strings.TrimSpace(result), nil
 }
 
-// genMetaFilterPrompt builds the prompt for LLM-based metadata filter generation
+// genMetaFilterPrompt 组装元数据过滤 LLM 系统提示词。
 func genMetaFilterPrompt(metaDataJSON, question, constraintsJSON, currentDate string) string {
 	prompt, err := renderMetaFilterTemplate(currentDate, metaDataJSON, question, constraintsJSON)
 	if err != nil {
@@ -162,7 +164,7 @@ func genMetaFilterPrompt(metaDataJSON, question, constraintsJSON, currentDate st
 	return prompt
 }
 
-// GenMetaFilter generates filter conditions using LLM based on metadata and question.
+// GenMetaFilter 调用聊天模型根据用户问题与元数据键值生成过滤 JSON。
 func GenMetaFilter(ctx context.Context, chatModel *modelModule.ChatModel, metaData common.MetaData, question string, constraints map[string]string) (*MetaFilterResult, error) {
 	if chatModel == nil {
 		return nil, fmt.Errorf("chat model is nil")
@@ -244,7 +246,7 @@ func GenMetaFilter(ctx context.Context, chatModel *modelModule.ChatModel, metaDa
 	return &result, nil
 }
 
-// ApplyMetaFilter applies filter conditions to metadata and returns matching doc IDs.
+// ApplyMetaFilter 将条件转为 common.MetaCondition 并委托 common.MetaFilter 求 doc_ids。
 // It converts service-layer MetaFilterCondition to common.MetaCondition, then delegates
 // all conditions and their logic to common.MetaFilter which handles multi-condition
 // AND/OR merging internally. This eliminates the duplicate merge logic that previously
@@ -265,7 +267,7 @@ func ApplyMetaFilter(metaData common.MetaData, filters []MetaFilterCondition, lo
 	})
 }
 
-// convertToMetaCondition converts a MetaFilterCondition to common.MetaCondition,
+// convertToMetaCondition 归一化运算符并将 in/not in 的逗号串转为数组。
 // normalizing operator symbols and value types for compatibility with common.MetaFilter.
 //
 // Operator normalization:
@@ -575,7 +577,7 @@ func metaFilterValues(value interface{}) []string {
 	}
 }
 
-// MetadataConditionToDocIDs applies metadata_condition against pre-loaded
+// MetadataConditionToDocIDs 对预加载扁平元数据应用 metadata_condition 得逗号分隔 doc_ids。
 // metadata and returns a comma-separated doc ID string.
 // Returns "-999" when conditions are non-empty but match nothing.
 func MetadataConditionToDocIDs(metaData common.MetaData, metadataCondition map[string]interface{}) string {
@@ -598,7 +600,7 @@ func MetadataConditionToDocIDs(metaData common.MetaData, metadataCondition map[s
 	return strings.Join(filtered, ",")
 }
 
-// ApplyMetaDataFilter applies metadata filtering rules and returns filtered doc_ids
+// ApplyMetaDataFilter 统一入口：auto/semi_auto/manual 三模式，优先 ES 元数据下推。
 // Supports three modes:
 // - auto: generate filter conditions via LLM
 // - semi_auto: generate conditions using selected metadata keys only via LLM
@@ -793,3 +795,4 @@ func constrainDocIDs(baseDocIDs, filteredDocIDs []string) []string {
 	}
 	return result
 }
+// metadata_filter.go — LLM 生成元数据过滤条件，支持 auto/semi_auto/manual 三模式。

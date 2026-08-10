@@ -16,6 +16,8 @@
 
 package service
 
+// model_service.go 管理租户模型提供商、实例、模型目录与驱动配置解析。
+
 import (
 	"encoding/json"
 	"errors"
@@ -32,7 +34,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// parseModelName parses a composite model name in format "model@instance@provider" or "model@provider"
+// parseModelName 解析复合模型名 model@instance@provider，保留名称内嵌的 @ 字符。
 // Returns modelName, instanceName, providerName separately.
 //
 // The composite key is right-anchored: providerName is always the *last*
@@ -63,7 +65,7 @@ func parseModelName(compositeName string) (modelName, instanceName, providerName
 	return strings.Join(parts[:n-2], "@"), parts[n-2], parts[n-1], nil
 }
 
-// splitRightAnchoredModelName is a bare-name-tolerant variant of
+// splitRightAnchoredModelName 右锚定拆分，Builtin/TEI 短路径可接受无 provider 后缀。
 // parseModelName used by the Builtin / TEI short-circuit branches in
 // GetModelConfigFromProviderInstance.
 //
@@ -124,6 +126,7 @@ func newModelDriverForBaseURL(driver modelModule.ModelDriver, providerName, regi
 	return newDriver, nil
 }
 
+// NewModelProviderService 构造 ModelProviderService 并初始化各 DAO。
 func NewModelProviderService() *ModelProviderService {
 	return &ModelProviderService{
 		modelProviderDAO:     dao.NewTenantModelProviderDAO(),
@@ -135,6 +138,7 @@ func NewModelProviderService() *ModelProviderService {
 	}
 }
 
+// ModelProviderService 租户模型提供商与实例、模型映射的聚合服务。
 type ModelProviderService struct {
 	modelProviderDAO     *dao.TenantModelProviderDAO
 	modelInstanceDAO     *dao.TenantModelInstanceDAO
@@ -144,7 +148,7 @@ type ModelProviderService struct {
 	userTenantDAO        *dao.UserTenantDAO
 }
 
-// CheckConnectionRequest carries the credentials and optional instance selector
+// CheckConnectionRequest 检测提供商连通性时的密钥/区域/BaseURL 参数。
 // for checking provider connectivity without creating a new model instance.
 type CheckConnectionRequest struct {
 	APIKey  string `json:"api_key"`
@@ -152,6 +156,7 @@ type CheckConnectionRequest struct {
 	BaseURL string `json:"base_url"`
 }
 
+// AddModelProvider 为租户 owner 注册模型提供商（幂等）。
 func (m *ModelProviderService) AddModelProvider(providerName, userID string) (common.ErrorCode, error) {
 	providerName = strings.TrimSpace(providerName)
 	providerName = strings.ToLower(providerName)
@@ -189,6 +194,7 @@ func (m *ModelProviderService) AddModelProvider(providerName, userID string) (co
 	return common.CodeSuccess, nil
 }
 
+// ListProvidersOfTenant 列出租户已添加的模型提供商及实例摘要。
 func (m *ModelProviderService) ListProvidersOfTenant(userID string) ([]map[string]interface{}, common.ErrorCode, error) {
 
 	tenants, err := m.userTenantDAO.GetByUserIDAndRole(userID, "owner")
@@ -338,6 +344,7 @@ func (m *ModelProviderService) ListSupportedModels(providerName, instanceName, u
 	return result, nil
 }
 
+// CreateProviderInstance 创建提供商实例并校验 API Key 连通性。
 func (m *ModelProviderService) CreateProviderInstance(providerName, instanceName, apiKey, baseURL, region, userID string) (common.ErrorCode, error) {
 	providerName = strings.TrimSpace(providerName)
 	providerName = strings.ToLower(providerName)
@@ -788,7 +795,7 @@ func (m *ModelProviderService) ShowTask(providerName, instanceName, taskID, user
 	return taskResponse, common.CodeSuccess, nil
 }
 
-// ListTenantAddedModels returns the list of models the tenant has "added"
+// ListTenantAddedModels 返回租户已添加模型列表，供 GET /api/v1/models 使用。
 // across all of their provider instances. It is the Go port of Python's
 // models_api_service.list_tenant_added_models
 // (api/apps/services/models_api_service.py:300) and is the response
@@ -1486,7 +1493,7 @@ func (m *ModelProviderService) getModelInstanceAndProviderByID(modelID *string, 
 	return result, nil
 }
 
-// ChatToModelWithMessages sends messages to the model with messages array
+// ChatToModelWithMessages 按 provider/instance/model 解析驱动并发起聊天。
 func (m *ModelProviderService) ChatToModelWithMessages(providerName, instanceName, modelName, modelID *string, userID string, messages []modelModule.Message, apiConfig *modelModule.APIConfig, modelConfig *modelModule.ChatConfig) (*modelModule.ChatResponse, common.ErrorCode, error) {
 
 	var err error
@@ -1553,7 +1560,7 @@ func (m *ModelProviderService) ChatToModelWithMessages(providerName, instanceNam
 	return response, common.CodeSuccess, nil
 }
 
-// ChatToModelStreamWithSender streams chat response directly via sender function ( the best performance, no channel)
+// ChatToModelStreamWithSender 通过 sender 回调流式输出，避免 channel 拷贝开销。
 func (m *ModelProviderService) ChatToModelStreamWithSender(providerName, instanceName, modelName, modelID *string, userID string, messages []modelModule.Message, apiConfig *modelModule.APIConfig, modelConfig *modelModule.ChatConfig, sender func(*string, *string) error) (common.ErrorCode, error) {
 
 	var err error
@@ -1642,7 +1649,7 @@ func validateEmbeddingDimension(model *modelModule.Model, requested int) error {
 	return nil
 }
 
-// EmbedText sends texts to the embedding model
+// EmbedText 调用嵌入模型对文本批量向量化。
 func (m *ModelProviderService) EmbedText(providerName, instanceName, modelName, modelID *string, userID string, texts []string, apiConfig *modelModule.APIConfig, modelConfig *modelModule.EmbeddingConfig) ([]modelModule.EmbeddingData, common.ErrorCode, error) {
 
 	var err error
@@ -2700,3 +2707,4 @@ func (m *ModelProviderService) GetChatModelConfig(tenantID string, llmID string)
 	}
 	return m.GetModelConfigFromProviderInstance(tenantID, modelType, llmID)
 }
+// model_service.go — 租户模型提供商/实例/模型 CRUD、连接检测与驱动解析。
