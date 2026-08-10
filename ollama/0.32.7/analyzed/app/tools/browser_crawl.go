@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// Package tools 网页抓取：通过 ollama.com web_fetch 提取页面正文与链接。
 package tools
 
 import (
@@ -8,17 +9,20 @@ import (
 	"fmt"
 )
 
+// CrawlContent 表示抓取页面的摘要与全文。
 // CrawlContent represents the content of a crawled page
 type CrawlContent struct {
 	Snippet  string `json:"snippet"`
 	FullText string `json:"full_text"`
 }
 
+// CrawlExtras 为抓取 API 返回的附加数据（如页面链接列表）。
 // CrawlExtras represents additional data from the crawl API
 type CrawlExtras struct {
 	Links []CrawlLink `json:"links"`
 }
 
+// CrawlLink 表示页面上发现的一条超链接。
 // CrawlLink represents a link found on a crawled page
 type CrawlLink struct {
 	URL  string `json:"url"`
@@ -26,6 +30,7 @@ type CrawlLink struct {
 	Text string `json:"text"`
 }
 
+// CrawlResult 表示单个 URL 的抓取结果。
 // CrawlResult represents a single crawl result
 type CrawlResult struct {
 	Title   string       `json:"title"`
@@ -34,11 +39,13 @@ type CrawlResult struct {
 	Extras  CrawlExtras  `json:"extras"`
 }
 
+// CrawlResponse 为抓取 API 的完整响应，按 URL 分组。
 // CrawlResponse represents the complete response from the crawl API
 type CrawlResponse struct {
 	Results map[string][]CrawlResult `json:"results"`
 }
 
+// BrowserCrawler 实现 get_webpage 工具，封装网页正文抓取。
 // BrowserCrawler tool for crawling web pages using ollama.com crawl API
 type BrowserCrawler struct{}
 
@@ -84,6 +91,7 @@ func (g *BrowserCrawler) Schema() map[string]any {
 	return schema
 }
 
+// Execute 解析 urls 参数并调用 performWebCrawl。
 func (g *BrowserCrawler) Execute(ctx context.Context, args map[string]any) (*CrawlResponse, error) {
 	urlsRaw, ok := args["urls"].([]any)
 	if !ok {
@@ -104,6 +112,7 @@ func (g *BrowserCrawler) Execute(ctx context.Context, args map[string]any) (*Cra
 	return g.performWebCrawl(ctx, urls)
 }
 
+// performWebCrawl 对每个 URL 调用 performWebFetch 并组装 CrawlResponse。
 // performWebCrawl handles the actual HTTP request to ollama.com crawl API
 func (g *BrowserCrawler) performWebCrawl(ctx context.Context, urls []string) (*CrawlResponse, error) {
 	result := &CrawlResponse{Results: make(map[string][]CrawlResult, len(urls))}

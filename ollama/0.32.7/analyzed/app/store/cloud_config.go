@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// Package store 云端配置读写：server.json 与 OLLAMA_NO_CLOUD 环境变量。
 package store
 
 import (
@@ -12,12 +13,15 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
+// serverConfigFilename 为用户主目录 ~/.ollama 下服务器配置文件名。
 const serverConfigFilename = "server.json"
 
+// serverConfig 对应 server.json 中与云端相关的字段。
 type serverConfig struct {
 	DisableOllamaCloud bool `json:"disable_ollama_cloud,omitempty"`
 }
 
+// CloudDisabled 返回是否应禁用云端功能；来源为环境变量或 server.json。
 // CloudDisabled returns whether cloud features should be disabled.
 // The source of truth is: OLLAMA_NO_CLOUD OR ~/.ollama/server.json:disable_ollama_cloud.
 func (s *Store) CloudDisabled() (bool, error) {
@@ -25,6 +29,7 @@ func (s *Store) CloudDisabled() (bool, error) {
 	return disabled, err
 }
 
+// CloudStatus 返回云端禁用状态及决策来源（none/env/config/both）。
 // CloudStatus returns whether cloud is disabled and the source of that decision.
 // Source is one of: "none", "env", "config", "both".
 func (s *Store) CloudStatus() (bool, string, error) {
@@ -41,6 +46,7 @@ func (s *Store) CloudStatus() (bool, string, error) {
 	return envDisabled || configDisabled, cloudStatusSource(envDisabled, configDisabled), nil
 }
 
+// SetCloudEnabled 将云端开关写入 ~/.ollama/server.json。
 // SetCloudEnabled writes the cloud setting to ~/.ollama/server.json.
 func (s *Store) SetCloudEnabled(enabled bool) error {
 	if err := s.ensureDB(); err != nil {
@@ -49,6 +55,7 @@ func (s *Store) SetCloudEnabled(enabled bool) error {
 	return setCloudEnabled(enabled)
 }
 
+// setCloudEnabled 更新 server.json 中的 disable_ollama_cloud 字段。
 func setCloudEnabled(enabled bool) error {
 	configPath, err := serverConfigPath()
 	if err != nil {
@@ -84,6 +91,7 @@ func setCloudEnabled(enabled bool) error {
 	return nil
 }
 
+// readServerConfigCloudDisabled 读取配置文件；无效 JSON 时视为未禁用。
 func readServerConfigCloudDisabled() (bool, error) {
 	configPath, err := serverConfigPath()
 	if err != nil {
@@ -106,6 +114,7 @@ func readServerConfigCloudDisabled() (bool, error) {
 	return false, nil
 }
 
+// serverConfigPath 返回 ~/.ollama/server.json 的绝对路径。
 func serverConfigPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -114,6 +123,7 @@ func serverConfigPath() (string, error) {
 	return filepath.Join(home, ".ollama", serverConfigFilename), nil
 }
 
+// cloudStatusSource 根据环境与配置两个开关组合返回来源标识。
 func cloudStatusSource(envDisabled bool, configDisabled bool) string {
 	switch {
 	case envDisabled && configDisabled:

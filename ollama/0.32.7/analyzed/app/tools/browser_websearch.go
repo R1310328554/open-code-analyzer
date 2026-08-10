@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// Package tools 浏览器内嵌搜索：调用 ollama.com web_search API。
 package tools
 
 import (
@@ -10,17 +11,20 @@ import (
 	"time"
 )
 
+// WebSearchContent 表示搜索结果的摘要与全文。
 // WebSearchContent represents the content of a search result
 type WebSearchContent struct {
 	Snippet  string `json:"snippet"`
 	FullText string `json:"full_text"`
 }
 
+// WebSearchMetadata 为搜索结果的元数据（如发布日期）。
 // WebSearchMetadata represents metadata for a search result
 type WebSearchMetadata struct {
 	PublishedDate *time.Time `json:"published_date,omitempty"`
 }
 
+// WebSearchResult 表示单条搜索结果。
 // WebSearchResult represents a single search result
 type WebSearchResult struct {
 	Title    string            `json:"title"`
@@ -29,11 +33,13 @@ type WebSearchResult struct {
 	Metadata WebSearchMetadata `json:"metadata"`
 }
 
+// WebSearchResponse 为搜索 API 的完整响应，按查询词分组。
 // WebSearchResponse represents the complete response from the websearch API
 type WebSearchResponse struct {
 	Results map[string][]WebSearchResult `json:"results"`
 }
 
+// BrowserWebSearch 实现 gpt_oss_web_search 工具。
 // BrowserWebSearch tool for searching the web using ollama.com search API
 type BrowserWebSearch struct{}
 
@@ -81,6 +87,7 @@ func (w *BrowserWebSearch) Schema() map[string]any {
 	return schema
 }
 
+// Execute 解析 queries 与 max_results 并执行搜索。
 func (w *BrowserWebSearch) Execute(ctx context.Context, args map[string]any) (any, error) {
 	queriesRaw, ok := args["queries"].([]any)
 	if !ok {
@@ -106,6 +113,7 @@ func (w *BrowserWebSearch) Execute(ctx context.Context, args map[string]any) (an
 	return w.performWebSearch(ctx, queries, maxResults)
 }
 
+// performWebSearch 对每个查询调用 performWebSearch 底层 HTTP 并转换结果格式。
 // performWebSearch handles the actual HTTP request to ollama.com search API
 func (w *BrowserWebSearch) performWebSearch(ctx context.Context, queries []string, maxResults int) (*WebSearchResponse, error) {
 	response := &WebSearchResponse{Results: make(map[string][]WebSearchResult, len(queries))}
@@ -135,6 +143,7 @@ func (w *BrowserWebSearch) performWebSearch(ctx context.Context, queries []strin
 	return response, nil
 }
 
+// truncateString 截断字符串至指定长度（用于摘要）。
 func truncateString(input string, limit int) string {
 	if limit <= 0 || len(input) <= limit {
 		return input

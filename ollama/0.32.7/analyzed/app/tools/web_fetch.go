@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// Package tools web_fetch 工具：经 ollama.com API 抓取用户提供的 URL 正文。
 package tools
 
 import (
@@ -16,12 +17,15 @@ import (
 	"github.com/ollama/ollama/auth"
 )
 
+// WebFetch 实现 web_fetch Agent 工具。
 type WebFetch struct{}
 
+// FetchRequest 为 ollama.com web_fetch API 的请求体。
 type FetchRequest struct {
 	URL string `json:"url"`
 }
 
+// FetchResponse 为 web_fetch API 返回的标题、正文与链接列表。
 type FetchResponse struct {
 	Title   string   `json:"title"`
 	Content string   `json:"content"`
@@ -58,6 +62,7 @@ func (w *WebFetch) Prompt() string {
 	return ""
 }
 
+// Execute 校验 URL 在白名单内后抓取页面，并将结果链接加入白名单。
 func (w *WebFetch) Execute(ctx context.Context, args map[string]any) (any, string, error) {
 	urlRaw, ok := args["url"]
 	if !ok {
@@ -82,6 +87,7 @@ func (w *WebFetch) Execute(ctx context.Context, args map[string]any) (any, strin
 	return result, "", nil
 }
 
+// performWebFetch 向 ollama.com/api/web_fetch 发送签名 POST 请求。
 func performWebFetch(ctx context.Context, targetURL string) (*FetchResponse, error) {
 	if err := ensureCloudEnabledForTool(ctx, "web fetch is unavailable"); err != nil {
 		return nil, err

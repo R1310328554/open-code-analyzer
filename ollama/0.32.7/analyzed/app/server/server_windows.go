@@ -1,3 +1,4 @@
+// Package server（Windows）提供 Windows 平台下的进程管理与路径常量。
 package server
 
 import (
@@ -14,11 +15,13 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// pidFile 与 serverLogPath 分别为 Ollama 服务 PID 与日志在 Windows 上的存放路径。
 var (
 	pidFile       = filepath.Join(os.Getenv("LOCALAPPDATA"), "Ollama", "ollama.pid")
 	serverLogPath = filepath.Join(os.Getenv("LOCALAPPDATA"), "Ollama", "server.log")
 )
 
+// commandContext 创建隐藏窗口且独立进程组的 exec.Cmd。
 func commandContext(ctx context.Context, name string, arg ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, name, arg...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -29,6 +32,7 @@ func commandContext(ctx context.Context, name string, arg ...string) *exec.Cmd {
 	return cmd
 }
 
+// terminate 通过 AttachConsole 与 CTRL_BREAK/CTRL_C 事件请求进程优雅退出。
 func terminate(proc *os.Process) error {
 	dll, err := windows.LoadDLL("kernel32.dll")
 	if err != nil {
@@ -76,8 +80,10 @@ func terminate(proc *os.Process) error {
 	return nil
 }
 
+// STILL_ACTIVE 为 Windows GetExitCodeProcess 表示进程仍在运行的退出码。
 const STILL_ACTIVE = 259
 
+// terminated 查询进程退出码以判断是否已结束。
 func terminated(pid int) (bool, error) {
 	hProcess, err := windows.OpenProcess(windows.PROCESS_QUERY_INFORMATION, false, uint32(pid))
 	if err != nil {
@@ -101,6 +107,7 @@ func terminated(pid int) (bool, error) {
 	return true, nil
 }
 
+// ollamaServeProcess 通过 wmic 检查指定 PID 是否为 ollama serve。
 func ollamaServeProcess(pid int) bool {
 	cmd := exec.Command("wmic", "process", "where", fmt.Sprintf("ProcessId=%d", pid), "get", "CommandLine", "/value")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
@@ -123,6 +130,7 @@ func ollamaServeProcess(pid int) bool {
 	return false
 }
 
+// reapServers 使用 taskkill 终止除当前进程外的外部 ollama serve 实例。
 // reapServers kills external ollama serve processes except our own.
 func reapServers() error {
 	// Get current process ID to avoid killing ourselves

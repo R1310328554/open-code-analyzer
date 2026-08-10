@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// Package tools 实现 gpt-oss 浏览器工具：搜索、打开页面、页内查找与状态栈。
 package tools
 
 import (
@@ -14,6 +15,7 @@ import (
 	"github.com/ollama/ollama/app/ui/responses"
 )
 
+// PageType 区分搜索结果页与普通网页。
 type PageType string
 
 const (
@@ -21,9 +23,13 @@ const (
 	PageTypeWebpage       PageType = "webpage"
 )
 
+// DefaultViewTokens 为 displayPage 默认向模型展示的 token 上限。
 // DefaultViewTokens is the number of tokens to show to the model used when calling displayPage
 const DefaultViewTokens = 1024
 
+/*
+Browser 工具为 gpt-oss 提供网页浏览能力：通常先搜索再打开链接或在页内查找。
+每次 Execute 返回完整 BrowserStateData；ui.go 负责在工具、界面与数据库间同步状态。
 /*
 The Browser tool provides web browsing capability for gpt-oss.
 The model uses the tool by usually doing a search first and then choosing to either open a page,
@@ -41,15 +47,18 @@ A new Browser object is created per request - the state is reconstructed by ui.g
 The initialization of the browser will receive a `responses.BrowserStateData` with the stitched history.
 */
 
+// BrowserState 在单会话内持有浏览器数据并加读写锁保护。
 // BrowserState manages the browsing session on a per-chat basis
 type BrowserState struct {
 	mu   sync.RWMutex
 	Data *responses.BrowserStateData
 }
+// Browser 封装浏览会话状态与页面栈操作。
 type Browser struct {
 	state *BrowserState
 }
 
+// State 返回当前浏览器状态快照（只读）。
 // State is only accessed in a single thread, as each chat has its own browser state
 func (b *Browser) State() *responses.BrowserStateData {
 	b.state.mu.RLock()
@@ -57,11 +66,13 @@ func (b *Browser) State() *responses.BrowserStateData {
 	return b.state.Data
 }
 
+// savePage 将页面写入 URL 索引并压入访问栈。
 func (b *Browser) savePage(page *responses.Page) {
 	b.state.Data.URLToPage[page.URL] = page
 	b.state.Data.PageStack = append(b.state.Data.PageStack, page.URL)
 }
 
+// getPageFromStack 按 URL 从缓存 map 取页面。
 func (b *Browser) getPageFromStack(url string) (*responses.Page, error) {
 	page, ok := b.state.Data.URLToPage[url]
 	if !ok {
@@ -70,6 +81,7 @@ func (b *Browser) getPageFromStack(url string) (*responses.Page, error) {
 	return page, nil
 }
 
+// NewBrowser 从已有状态重建 Browser；state 为 nil 时初始化空栈。
 func NewBrowser(state *responses.BrowserStateData) *Browser {
 	if state == nil {
 		state = &responses.BrowserStateData{
@@ -87,11 +99,13 @@ func NewBrowser(state *responses.BrowserStateData) *Browser {
 	}
 }
 
+// BrowserSearch 实现 browser.search 工具。
 type BrowserSearch struct {
 	Browser
 	webSearch *BrowserWebSearch
 }
 
+// NewBrowserSearch 构造浏览器搜索工具实例。
 // NewBrowserSearch creates a new browser search instance
 func NewBrowserSearch(bb *Browser) *BrowserSearch {
 	if bb == nil {
@@ -111,6 +125,7 @@ func NewBrowserSearch(bb *Browser) *BrowserSearch {
 	}
 }
 
+// Name 返回工具标识 browser.search。
 func (b *BrowserSearch) Name() string {
 	return "browser.search"
 }
@@ -127,6 +142,7 @@ func (b *BrowserSearch) Schema() map[string]any {
 	return map[string]any{}
 }
 
+// Execute 执行搜索并将结果页压栈后返回格式化视图。
 func (b *BrowserSearch) Execute(ctx context.Context, args map[string]any) (any, string, error) {
 	query, ok := args["query"].(string)
 	if !ok {
@@ -176,6 +192,7 @@ func (b *BrowserSearch) Execute(ctx context.Context, args map[string]any) (any, 
 	return b.state.Data, pageText, nil
 }
 
+// buildSearchResultsPageCollection 将多查询搜索结果汇总为一条结果页。
 func (b *Browser) buildSearchResultsPageCollection(query string, results *WebSearchResponse) *responses.Page {
 	page := &responses.Page{
 		URL:       "search_results_" + query,
@@ -220,6 +237,7 @@ func (b *Browser) buildSearchResultsPageCollection(query string, results *WebSea
 	return page
 }
 
+// buildSearchResultsPage 为单条搜索结果构建详情页。
 func (b *Browser) buildSearchResultsPage(result *WebSearchResult, linkIdx int) *responses.Page {
 	page := &responses.Page{
 		URL:       result.URL,
@@ -262,6 +280,7 @@ func (b *Browser) buildSearchResultsPage(result *WebSearchResult, linkIdx int) *
 	return page
 }
 
+// getEndLoc 按 ViewTokens 估算视口应展示到第几行。
 // getEndLoc calculates the end location for viewport based on token limits
 func (b *Browser) getEndLoc(loc, numLines, totalLines int, lines []string) int {
 	if numLines <= 0 {
@@ -299,6 +318,7 @@ func (b *Browser) getEndLoc(loc, numLines, totalLines int, lines []string) int {
 	return min(loc+numLines, totalLines)
 }
 
+// joinLinesWithNumbers 将行列表格式化为带 Ln: 前缀的文本（对齐 Python 实现）。
 // joinLinesWithNumbers creates a string with line numbers, matching Python's join_lines
 func (b *Browser) joinLinesWithNumbers(lines []string) string {
 	var builder strings.Builder
@@ -317,6 +337,7 @@ func (b *Browser) joinLinesWithNumbers(lines []string) string {
 	return builder.String()
 }
 
+// processMarkdownLinks 将 Markdown 链接替换为【id†标题†域名】格式并建立链接表。
 // processMarkdownLinks finds all markdown links in the text and replaces them with the special format
 // Returns the processed text and a map of link IDs to URLs
 func processMarkdownLinks(text string) (string, map[int]string) {
@@ -369,6 +390,7 @@ func processMarkdownLinks(text string) (string, map[int]string) {
 	return processedText, links
 }
 
+// wrapLines 按指定宽度对文本软换行，保留空行。
 func wrapLines(text string, width int) []string {
 	if width <= 0 {
 		width = 80
@@ -424,6 +446,7 @@ func wrapLines(text string, width int) []string {
 	return wrapped
 }
 
+// displayPage 格式化页面标题、URL 与行号视口供模型阅读。
 // displayPage formats and returns the page display for the model
 func (b *Browser) displayPage(page *responses.Page, cursor, loc, numLines int) (string, error) {
 	totalLines := len(page.Lines)
@@ -461,11 +484,13 @@ func (b *Browser) displayPage(page *responses.Page, cursor, loc, numLines int) (
 	return displayBuilder.String(), nil
 }
 
+// BrowserOpen 实现 browser.open 工具：打开链接或直接 URL。
 type BrowserOpen struct {
 	Browser
 	crawlPage *BrowserCrawler
 }
 
+// NewBrowserOpen 构造浏览器打开工具实例。
 func NewBrowserOpen(bb *Browser) *BrowserOpen {
 	if bb == nil {
 		bb = &Browser{
@@ -500,6 +525,7 @@ func (b *BrowserOpen) Schema() map[string]any {
 	return map[string]any{}
 }
 
+// Execute 按 cursor/id/loc 打开或展示页面；直接 URL 需通过 url 策略白名单。
 func (b *BrowserOpen) Execute(ctx context.Context, args map[string]any) (any, string, error) {
 	// Get cursor parameter first
 	cursor := -1
@@ -654,6 +680,7 @@ func (b *BrowserOpen) Execute(ctx context.Context, args map[string]any) (any, st
 	return b.state.Data, pageText, nil
 }
 
+// buildPageFromCrawlResult 将爬虫 API 结果转换为 Page 并处理 Markdown 链接。
 // buildPageFromCrawlResult creates a Page from crawl API results
 func (b *Browser) buildPageFromCrawlResult(requestedURL string, crawlResponse *CrawlResponse) (*responses.Page, error) {
 	// Initialize page with defaults
@@ -717,10 +744,12 @@ func (b *Browser) buildPageFromCrawlResult(requestedURL string, crawlResponse *C
 	return page, nil
 }
 
+// BrowserFind 实现 browser.find 工具：在当前页搜索关键词。
 type BrowserFind struct {
 	Browser
 }
 
+// NewBrowserFind 构造页内查找工具实例。
 func NewBrowserFind(bb *Browser) *BrowserFind {
 	return &BrowserFind{
 		Browser: *bb,
@@ -743,6 +772,7 @@ func (b *BrowserFind) Schema() map[string]any {
 	return map[string]any{}
 }
 
+// Execute 在指定或当前页搜索 pattern 并生成结果页。
 func (b *BrowserFind) Execute(ctx context.Context, args map[string]any) (any, string, error) {
 	pattern, ok := args["pattern"].(string)
 	if !ok {
@@ -798,6 +828,7 @@ func (b *BrowserFind) Execute(ctx context.Context, args map[string]any) (any, st
 	return b.state.Data, pageText, nil
 }
 
+// buildFindResultsPage 汇总页内匹配片段并限制最多 50 条结果。
 func (b *Browser) buildFindResultsPage(pattern string, page *responses.Page) *responses.Page {
 	findPage := &responses.Page{
 		Title:     fmt.Sprintf("Find results for text: `%s` in `%s`", pattern, page.Title),

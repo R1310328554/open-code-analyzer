@@ -1,5 +1,6 @@
 //go:build darwin
 
+// Package server（darwin）提供 macOS 平台下的进程管理与路径常量。
 package server
 
 import (
@@ -15,19 +16,23 @@ import (
 	"syscall"
 )
 
+// pidFile 与 serverLogPath 分别为 Ollama 服务 PID 与日志在 macOS 上的存放路径。
 var (
 	pidFile       = filepath.Join(os.Getenv("HOME"), "Library", "Application Support", "Ollama", "ollama.pid")
 	serverLogPath = filepath.Join(os.Getenv("HOME"), ".ollama", "logs", "server.log")
 )
 
+// commandContext 创建带上下文的 exec.Cmd。
 func commandContext(ctx context.Context, name string, arg ...string) *exec.Cmd {
 	return exec.CommandContext(ctx, name, arg...)
 }
 
+// terminate 向进程发送 SIGINT 请求优雅退出。
 func terminate(proc *os.Process) error {
 	return proc.Signal(os.Interrupt)
 }
 
+// terminated 通过 signal(0) 探测进程是否已结束。
 func terminated(pid int) (bool, error) {
 	proc, err := os.FindProcess(pid)
 	if err != nil {
@@ -46,6 +51,7 @@ func terminated(pid int) (bool, error) {
 	return false, nil
 }
 
+// ollamaServeProcess 检查指定 PID 是否正在运行 ollama serve。
 func ollamaServeProcess(pid int) bool {
 	output, err := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "args=").Output()
 	if err != nil {
@@ -56,6 +62,7 @@ func ollamaServeProcess(pid int) bool {
 	return ollamaServeArgs(strings.Fields(strings.TrimSpace(string(output))))
 }
 
+// reapServers 终止除当前进程外的所有外部 ollama serve 实例（如端口冲突时）。
 // reapServers kills external ollama serve processes except our own.
 func reapServers() error {
 	// Get our own PID to avoid killing ourselves

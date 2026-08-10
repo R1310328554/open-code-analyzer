@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// Package store 为桌面应用提供 SQLite 持久化：设置、聊天、用户与图片缓存。
 // Package store provides a simple JSON file store for the desktop application
 // to save and load data such as ollama server configuration, messages,
 // login information and more.
@@ -19,11 +20,13 @@ import (
 	"github.com/ollama/ollama/app/types/not"
 )
 
+// File 表示消息附件的文件名与二进制数据。
 type File struct {
 	Filename string `json:"filename"`
 	Data     []byte `json:"data"`
 }
 
+// User 为从 ollama.com 缓存的登录用户摘要信息。
 type User struct {
 	Name     string    `json:"name"`
 	Email    string    `json:"email"`
@@ -31,6 +34,7 @@ type User struct {
 	CachedAt time.Time `json:"cachedAt"`
 }
 
+// Message 表示聊天中的一条消息，含思考、工具调用与附件。
 type Message struct {
 	Role              string           `json:"role"`
 	Content           string           `json:"content"`
@@ -48,6 +52,7 @@ type Message struct {
 	ThinkingTimeEnd   *time.Time       `json:"thinkingTimeEnd,omitempty" ts_type:"Date | undefined" ts_transform:"__VALUE__ && new Date(__VALUE__)"`
 }
 
+// MessageOptions 为 NewMessage 的可选字段集合。
 // MessageOptions contains optional parameters for creating a Message
 type MessageOptions struct {
 	Model             string
@@ -61,6 +66,7 @@ type MessageOptions struct {
 	ThinkingTimeEnd   *time.Time
 }
 
+// NewMessage 按角色与内容构造消息，opts 可填充模型、附件等。
 // NewMessage creates a new Message with the given options
 func NewMessage(role, content string, opts *MessageOptions) Message {
 	now := time.Now()
@@ -86,23 +92,27 @@ func NewMessage(role, content string, opts *MessageOptions) Message {
 	return msg
 }
 
+// ToolCall 表示模型发起的一次工具调用。
 type ToolCall struct {
 	Type     string       `json:"type"`
 	Function ToolFunction `json:"function"`
 }
 
+// ToolFunction 描述工具调用的函数名、参数与结果。
 type ToolFunction struct {
 	Name      string `json:"name"`
 	Arguments string `json:"arguments"`
 	Result    any    `json:"result,omitempty"`
 }
 
+// Model 表示本地已安装模型的名称与摘要信息。
 type Model struct {
 	Model      string     `json:"model"`                 // Model name
 	Digest     string     `json:"digest,omitempty"`      // Model digest from the registry
 	ModifiedAt *time.Time `json:"modified_at,omitempty"` // When the model was last modified locally
 }
 
+// Chat 表示一次完整对话会话及其浏览器状态。
 type Chat struct {
 	ID           string          `json:"id"`
 	Messages     []Message       `json:"messages"`
@@ -111,6 +121,7 @@ type Chat struct {
 	BrowserState json.RawMessage `json:"browser_state,omitempty" ts_type:"BrowserStateData"`
 }
 
+// NewChat 创建带指定 ID 的新会话并初始化时间戳。
 // NewChat creates a new Chat with the ID, with CreatedAt timestamp initialized
 func NewChat(id string) *Chat {
 	return &Chat{
@@ -120,6 +131,7 @@ func NewChat(id string) *Chat {
 	}
 }
 
+// Settings 汇总桌面应用与 Ollama 服务的用户偏好设置。
 type Settings struct {
 	// Expose is a boolean that indicates if the ollama server should
 	// be exposed to the network
@@ -174,6 +186,7 @@ type Settings struct {
 	AutoUpdateEnabled bool
 }
 
+// Store 是应用数据访问入口；DBPath 可覆盖默认 SQLite 路径。
 type Store struct {
 	// DBPath allows overriding the default database path (mainly for testing)
 	DBPath string
@@ -194,6 +207,7 @@ var defaultDBPath = func() string {
 	}
 }()
 
+// legacyConfigPath 为旧版 config.json 的路径（迁移来源）。
 // legacyConfigPath is the path to the old config.json file
 var legacyConfigPath = func() string {
 	switch runtime.GOOS {
@@ -206,12 +220,14 @@ var legacyConfigPath = func() string {
 	}
 }()
 
+// legacyData 为 config.json 中需迁移的字段子集。
 // legacyData represents the old config.json structure (only fields we need to migrate)
 type legacyData struct {
 	ID           string `json:"id"`
 	FirstTimeRun bool   `json:"first-time-run"`
 }
 
+// ensureDB 懒加载初始化 SQLite；首次打开时执行 config 与云端设置迁移。
 func (s *Store) ensureDB() error {
 	// Fast path: check if db is already initialized
 	if s.db != nil {
@@ -270,6 +286,7 @@ func (s *Store) ensureDB() error {
 	return nil
 }
 
+// migrateCloudSetting 一次性将 airplane_mode 写入 server.json 云端开关。
 // migrateCloudSetting migrates legacy airplane_mode into server.json exactly once.
 // After this, cloud state is sourced from server.json OR OLLAMA_NO_CLOUD.
 func (s *Store) migrateCloudSetting(database *database) error {
@@ -299,6 +316,7 @@ func (s *Store) migrateCloudSetting(database *database) error {
 	return nil
 }
 
+// migrateFromConfig 从 legacy config.json 迁移设备 ID 与首次运行标记。
 // migrateFromConfig attempts to migrate ID and FirstTimeRun from config.json
 func (s *Store) migrateFromConfig(database *database) error {
 	configPath := legacyConfigPath
@@ -345,6 +363,7 @@ func (s *Store) migrateFromConfig(database *database) error {
 	return nil
 }
 
+// ID 返回本设备的唯一标识符。
 func (s *Store) ID() (string, error) {
 	if err := s.ensureDB(); err != nil {
 		return "", err
@@ -353,6 +372,7 @@ func (s *Store) ID() (string, error) {
 	return s.db.getID()
 }
 
+// HasCompletedFirstRun 返回用户是否已完成首次运行。
 func (s *Store) HasCompletedFirstRun() (bool, error) {
 	if err := s.ensureDB(); err != nil {
 		return false, err
@@ -361,6 +381,7 @@ func (s *Store) HasCompletedFirstRun() (bool, error) {
 	return s.db.getHasCompletedFirstRun()
 }
 
+// SetHasCompletedFirstRun 标记首次运行引导已完成。
 func (s *Store) SetHasCompletedFirstRun(hasCompleted bool) error {
 	if err := s.ensureDB(); err != nil {
 		return err
@@ -369,6 +390,7 @@ func (s *Store) SetHasCompletedFirstRun(hasCompleted bool) error {
 	return s.db.setHasCompletedFirstRun(hasCompleted)
 }
 
+// Settings 加载用户设置，并为模型目录等字段填充默认值。
 func (s *Store) Settings() (Settings, error) {
 	if err := s.ensureDB(); err != nil {
 		return Settings{}, fmt.Errorf("load settings: %w", err)
@@ -399,6 +421,7 @@ func (s *Store) Settings() (Settings, error) {
 	return settings, nil
 }
 
+// SetSettings 持久化用户设置。
 func (s *Store) SetSettings(settings Settings) error {
 	if err := s.ensureDB(); err != nil {
 		return err
@@ -407,6 +430,7 @@ func (s *Store) SetSettings(settings Settings) error {
 	return s.db.setSettings(settings)
 }
 
+// Chats 列出全部会话摘要。
 func (s *Store) Chats() ([]Chat, error) {
 	if err := s.ensureDB(); err != nil {
 		return nil, err
@@ -415,10 +439,12 @@ func (s *Store) Chats() ([]Chat, error) {
 	return s.db.getAllChats()
 }
 
+// Chat 加载指定会话（含附件二进制）。
 func (s *Store) Chat(id string) (*Chat, error) {
 	return s.ChatWithOptions(id, true)
 }
 
+// ChatWithOptions 加载会话；loadAttachmentData 控制是否读取附件数据。
 func (s *Store) ChatWithOptions(id string, loadAttachmentData bool) (*Chat, error) {
 	if err := s.ensureDB(); err != nil {
 		return nil, err
@@ -432,6 +458,7 @@ func (s *Store) ChatWithOptions(id string, loadAttachmentData bool) (*Chat, erro
 	return chat, nil
 }
 
+// SetChat 保存或更新整个会话。
 func (s *Store) SetChat(chat Chat) error {
 	if err := s.ensureDB(); err != nil {
 		return err
@@ -440,6 +467,7 @@ func (s *Store) SetChat(chat Chat) error {
 	return s.db.saveChat(chat)
 }
 
+// DeleteChat 删除会话及其关联图片目录。
 func (s *Store) DeleteChat(id string) error {
 	if err := s.ensureDB(); err != nil {
 		return err
@@ -460,6 +488,7 @@ func (s *Store) DeleteChat(id string) error {
 	return nil
 }
 
+// WindowSize 返回主窗口宽高。
 func (s *Store) WindowSize() (int, int, error) {
 	if err := s.ensureDB(); err != nil {
 		return 0, 0, err
@@ -468,6 +497,7 @@ func (s *Store) WindowSize() (int, int, error) {
 	return s.db.getWindowSize()
 }
 
+// SetWindowSize 保存主窗口尺寸。
 func (s *Store) SetWindowSize(width, height int) error {
 	if err := s.ensureDB(); err != nil {
 		return err
@@ -476,6 +506,7 @@ func (s *Store) SetWindowSize(width, height int) error {
 	return s.db.setWindowSize(width, height)
 }
 
+// UpdateLastMessage 更新会话最后一条消息。
 func (s *Store) UpdateLastMessage(chatID string, message Message) error {
 	if err := s.ensureDB(); err != nil {
 		return err
@@ -484,6 +515,7 @@ func (s *Store) UpdateLastMessage(chatID string, message Message) error {
 	return s.db.updateLastMessage(chatID, message)
 }
 
+// AppendMessage 向会话追加消息。
 func (s *Store) AppendMessage(chatID string, message Message) error {
 	if err := s.ensureDB(); err != nil {
 		return err
@@ -492,6 +524,7 @@ func (s *Store) AppendMessage(chatID string, message Message) error {
 	return s.db.appendMessage(chatID, message)
 }
 
+// UpdateChatBrowserState 仅更新会话的浏览器工具状态 JSON。
 func (s *Store) UpdateChatBrowserState(chatID string, state json.RawMessage) error {
 	if err := s.ensureDB(); err != nil {
 		return err
@@ -500,6 +533,7 @@ func (s *Store) UpdateChatBrowserState(chatID string, state json.RawMessage) err
 	return s.db.updateChatBrowserState(chatID, state)
 }
 
+// User 返回缓存的登录用户；未登录时为 nil。
 func (s *Store) User() (*User, error) {
 	if err := s.ensureDB(); err != nil {
 		return nil, err
@@ -508,6 +542,7 @@ func (s *Store) User() (*User, error) {
 	return s.db.getUser()
 }
 
+// SetUser 缓存登录用户信息并记录时间戳。
 func (s *Store) SetUser(user User) error {
 	if err := s.ensureDB(); err != nil {
 		return err
@@ -517,6 +552,7 @@ func (s *Store) SetUser(user User) error {
 	return s.db.setUser(user)
 }
 
+// ClearUser 清除本地缓存的用户信息。
 func (s *Store) ClearUser() error {
 	if err := s.ensureDB(); err != nil {
 		return err
@@ -525,6 +561,7 @@ func (s *Store) ClearUser() error {
 	return s.db.clearUser()
 }
 
+// Close 关闭底层数据库连接。
 func (s *Store) Close() error {
 	s.dbMu.Lock()
 	defer s.dbMu.Unlock()

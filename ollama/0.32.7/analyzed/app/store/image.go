@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// Package store 图片缓存：按会话目录存储聊天附件图片。
 package store
 
 import (
@@ -11,6 +12,7 @@ import (
 	"strings"
 )
 
+// Image 表示磁盘上已保存的图片引用（路径、大小、MIME）。
 type Image struct {
 	Filename string `json:"filename"`
 	Path     string `json:"path"`
@@ -18,11 +20,13 @@ type Image struct {
 	MimeType string `json:"mime_type,omitempty"`
 }
 
+// Bytes 从磁盘加载本 Image 的二进制内容。
 // Bytes loads image data from disk for a given ImageData reference
 func (i *Image) Bytes() ([]byte, error) {
 	return ImgBytes(i.Path)
 }
 
+// ImgBytes 从给定路径读取图片文件字节。
 // ImgBytes reads image data from the specified file path
 func ImgBytes(path string) ([]byte, error) {
 	if path == "" {
@@ -37,6 +41,7 @@ func ImgBytes(path string) ([]byte, error) {
 	return data, nil
 }
 
+// ImgDir 返回当前 Store 下图片缓存根目录（db 同级的 cache/images）。
 // ImgDir returns the directory path for storing images for a specific chat
 func (s *Store) ImgDir() string {
 	dbPath := s.DBPath
@@ -47,6 +52,7 @@ func (s *Store) ImgDir() string {
 	return filepath.Join(storeDir, "cache", "images")
 }
 
+// ImgToFile 将图片写入按 chatID 分目录的文件并返回 Image 引用。
 // ImgToFile saves image data to disk and returns ImageData reference
 func (s *Store) ImgToFile(chatID string, imageBytes []byte, filename, mimeType string) (Image, error) {
 	baseImageDir := s.ImgDir()
@@ -109,6 +115,7 @@ func (s *Store) ImgToFile(chatID string, imageBytes []byte, filename, mimeType s
 	}, nil
 }
 
+// sanitize 将文件名过滤为字母数字与连字符，防止路径遍历。
 // sanitize removes unsafe characters from filenames
 func sanitize(filename string) string {
 	// Convert to safe characters only

@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// Package tools web_search 工具：经 ollama.com API 执行网页搜索。
 package tools
 
 import (
@@ -16,19 +17,23 @@ import (
 	"github.com/ollama/ollama/auth"
 )
 
+// WebSearch 实现 web_search Agent 工具。
 type WebSearch struct{}
 
+// SearchRequest 为 ollama.com web_search API 的请求体。
 type SearchRequest struct {
 	Query      string `json:"query"`
 	MaxResults int    `json:"max_results,omitempty"`
 }
 
+// SearchResult 表示单条搜索结果。
 type SearchResult struct {
 	Title   string `json:"title"`
 	URL     string `json:"url"`
 	Content string `json:"content"`
 }
 
+// SearchResponse 为 web_search API 的响应体。
 type SearchResponse struct {
 	Results []SearchResult `json:"results"`
 }
@@ -68,6 +73,7 @@ func (g *WebSearch) Schema() map[string]any {
 	return schema
 }
 
+// Execute 执行搜索并将结果 URL 加入直接访问白名单。
 func (w *WebSearch) Execute(ctx context.Context, args map[string]any) (any, string, error) {
 	rawQuery, ok := args["query"]
 	if !ok {
@@ -95,6 +101,7 @@ func (w *WebSearch) Execute(ctx context.Context, args map[string]any) (any, stri
 	return result, "", nil
 }
 
+// performWebSearch 向 ollama.com/api/web_search 发送签名 POST 请求。
 func performWebSearch(ctx context.Context, query string, maxResults int) (*SearchResponse, error) {
 	if err := ensureCloudEnabledForTool(ctx, "web search is unavailable"); err != nil {
 		return nil, err

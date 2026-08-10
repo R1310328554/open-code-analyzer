@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// Package store 提供桌面应用 SQLite 持久化：聊天、设置、附件与模式迁移。
 package store
 
 import (
@@ -12,10 +13,12 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// currentSchemaVersion 为当前数据库模式版本号；结构变更时需递增并添加迁移。
 // currentSchemaVersion defines the current database schema version.
 // Increment this when making schema changes that require migrations.
 const currentSchemaVersion = 16
 
+// database 封装 SQLite 连接；WAL 模式下读写并发由 SQLite 自身协调，无需应用层锁。
 // database wraps the SQLite connection.
 // SQLite handles its own locking for concurrent access:
 // - Multiple readers can access the database simultaneously
@@ -26,6 +29,7 @@ type database struct {
 	conn *sql.DB
 }
 
+// newDatabase 打开 SQLite 并初始化/迁移模式。
 func newDatabase(dbPath string) (*database, error) {
 	// Open database connection
 	conn, err := sql.Open("sqlite3", dbPath+"?_foreign_keys=on&_journal_mode=WAL&_busy_timeout=5000&_txlock=immediate")
@@ -50,12 +54,14 @@ func newDatabase(dbPath string) (*database, error) {
 	return db, nil
 }
 
+// Close 执行 WAL checkpoint 后关闭数据库连接。
 func (db *database) Close() error {
 	_, _ = db.conn.Exec("PRAGMA wal_checkpoint(TRUNCATE);")
 
 	return db.conn.Close()
 }
 
+// init 创建表结构、执行迁移并清理历史孤儿记录。
 func (db *database) init() error {
 	if _, err := db.conn.Exec("PRAGMA foreign_keys = ON"); err != nil {
 		return fmt.Errorf("enable foreign keys: %w", err)
@@ -170,6 +176,7 @@ func (db *database) init() error {
 	return nil
 }
 
+// migrate 按版本号逐步执行 schema 升级直至 currentSchemaVersion。
 // migrate handles database schema migrations
 func (db *database) migrate() error {
 	// Get current schema version
@@ -281,6 +288,7 @@ func (db *database) migrate() error {
 	return nil
 }
 
+// migrateV1ToV2 为 settings 表添加 context_length 与 survey 列。
 // migrateV1ToV2 adds the context_length column to the settings table
 func (db *database) migrateV1ToV2() error {
 	_, err := db.conn.Exec(`ALTER TABLE settings ADD COLUMN context_length INTEGER NOT NULL DEFAULT 4096;`)
@@ -300,6 +308,7 @@ func (db *database) migrateV1ToV2() error {
 	return nil
 }
 
+// migrateV2ToV3 创建 attachments 附件表。
 // migrateV2ToV3 creates the attachments table
 func (db *database) migrateV2ToV3() error {
 	_, err := db.conn.Exec(`
@@ -323,6 +332,7 @@ func (db *database) migrateV2ToV3() error {
 	return nil
 }
 
+// migrateV3ToV4 为 messages 表添加 tool_result 列。
 func (db *database) migrateV3ToV4() error {
 	_, err := db.conn.Exec(`ALTER TABLE messages ADD COLUMN tool_result TEXT;`)
 	if err != nil && !duplicateColumnError(err) {
@@ -337,6 +347,7 @@ func (db *database) migrateV3ToV4() error {
 	return nil
 }
 
+// migrateV4ToV5 为 settings 表添加 airplane_mode 列。
 // migrateV4ToV5 adds the airplane_mode column to the settings table
 func (db *database) migrateV4ToV5() error {
 	_, err := db.conn.Exec(`ALTER TABLE settings ADD COLUMN airplane_mode BOOLEAN NOT NULL DEFAULT 0;`)
@@ -352,6 +363,7 @@ func (db *database) migrateV4ToV5() error {
 	return nil
 }
 
+// migrateV5ToV6 为 settings 添加 turbo、websearch、selected_model、sidebar_open 列。
 // migrateV5ToV6 adds the turbo_enabled, websearch_enabled, selected_model, sidebar_open columns to the settings table
 func (db *database) migrateV5ToV6() error {
 	_, err := db.conn.Exec(`ALTER TABLE settings ADD COLUMN turbo_enabled BOOLEAN NOT NULL DEFAULT 0;`)
@@ -382,6 +394,7 @@ func (db *database) migrateV5ToV6() error {
 	return nil
 }
 
+// migrateV6ToV7 为 attachments 表补充 message_id 索引。
 // migrateV6ToV7 adds the missing index for the attachments table
 func (db *database) migrateV6ToV7() error {
 	_, err := db.conn.Exec(`CREATE INDEX IF NOT EXISTS idx_attachments_message_id ON attachments(message_id);`)
@@ -397,6 +410,7 @@ func (db *database) migrateV6ToV7() error {
 	return nil
 }
 
+// migrateV7ToV8 为 settings 添加 think_enabled 与 think_level 列。
 // migrateV7ToV8 adds the think_enabled and think_level columns to the settings table
 func (db *database) migrateV7ToV8() error {
 	_, err := db.conn.Exec(`ALTER TABLE settings ADD COLUMN think_enabled BOOLEAN NOT NULL DEFAULT 0;`)
@@ -417,6 +431,7 @@ func (db *database) migrateV7ToV8() error {
 	return nil
 }
 
+// migrateV8ToV9 为 chats 表添加 browser_state 列。
 // migrateV8ToV9 adds browser_state to chats and bumps schema
 func (db *database) migrateV8ToV9() error {
 	_, err := db.conn.Exec(`
@@ -431,6 +446,7 @@ func (db *database) migrateV8ToV9() error {
 	return nil
 }
 
+// migrateV9ToV10 创建 users 缓存表。
 // migrateV9ToV10 adds users table
 func (db *database) migrateV9ToV10() error {
 	_, err := db.conn.Exec(`
@@ -449,6 +465,7 @@ func (db *database) migrateV9ToV10() error {
 	return nil
 }
 
+// migrateV10ToV11 从 settings 删除已废弃的 remote 列。
 // migrateV10ToV11 removes the remote column from the settings table
 func (db *database) migrateV10ToV11() error {
 	_, err := db.conn.Exec(`ALTER TABLE settings DROP COLUMN remote`)
@@ -464,6 +481,7 @@ func (db *database) migrateV10ToV11() error {
 	return nil
 }
 
+// migrateV11ToV12 为向后兼容恢复 remote 列（已废弃）。
 // migrateV11ToV12 brings back the remote column for backwards compatibility (deprecated)
 func (db *database) migrateV11ToV12() error {
 	_, err := db.conn.Exec(`ALTER TABLE settings ADD COLUMN remote TEXT NOT NULL DEFAULT ''`)
@@ -479,6 +497,7 @@ func (db *database) migrateV11ToV12() error {
 	return nil
 }
 
+// migrateV12ToV13 添加 cloud_setting_migrated 标记列。
 // migrateV12ToV13 adds cloud_setting_migrated to settings.
 func (db *database) migrateV12ToV13() error {
 	_, err := db.conn.Exec(`ALTER TABLE settings ADD COLUMN cloud_setting_migrated BOOLEAN NOT NULL DEFAULT 0`)
@@ -494,6 +513,7 @@ func (db *database) migrateV12ToV13() error {
 	return nil
 }
 
+// migrateV13ToV14 将 context_length 默认值 4096 改为 0（由 VRAM 分层推导）。
 // migrateV13ToV14 changes the default context_length from 4096 to 0.
 // When context_length is 0, the ollama server uses VRAM-based tiered defaults.
 func (db *database) migrateV13ToV14() error {
@@ -510,6 +530,7 @@ func (db *database) migrateV13ToV14() error {
 	return nil
 }
 
+// migrateV14ToV15 为 settings 添加 auto_update_enabled 列。
 // migrateV14ToV15 adds the auto_update_enabled column to the settings table
 func (db *database) migrateV14ToV15() error {
 	_, err := db.conn.Exec(`ALTER TABLE settings ADD COLUMN auto_update_enabled BOOLEAN NOT NULL DEFAULT 1`)
@@ -525,6 +546,7 @@ func (db *database) migrateV14ToV15() error {
 	return nil
 }
 
+// migrateV15ToV16 为 settings 添加 last_home_view 列。
 // migrateV15ToV16 adds the last_home_view column to the settings table
 func (db *database) migrateV15ToV16() error {
 	_, err := db.conn.Exec(`ALTER TABLE settings ADD COLUMN last_home_view TEXT NOT NULL DEFAULT 'launch'`)
@@ -540,6 +562,7 @@ func (db *database) migrateV15ToV16() error {
 	return nil
 }
 
+// cleanupOrphanedData 清理外键约束修复前产生的孤儿 tool_calls/attachments/messages。
 // cleanupOrphanedData removes orphaned records that may exist due to the foreign key bug
 func (db *database) cleanupOrphanedData() error {
 	_, err := db.conn.Exec(`
@@ -569,14 +592,17 @@ func (db *database) cleanupOrphanedData() error {
 	return nil
 }
 
+// duplicateColumnError 判断是否为 SQLite 重复列错误（迁移幂等）。
 func duplicateColumnError(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "duplicate column name")
 }
 
+// columnNotExists 判断是否为列不存在错误（DROP 迁移幂等）。
 func columnNotExists(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "no such column")
 }
 
+// getAllChats 列出全部会话，附带首条用户消息摘要与最近更新时间。
 func (db *database) getAllChats() ([]Chat, error) {
 	// Query chats with their first user message and latest update time
 	query := `
@@ -648,6 +674,7 @@ func (db *database) getAllChats() ([]Chat, error) {
 	return chats, nil
 }
 
+// getChatWithOptions 加载指定会话；loadAttachmentData 控制是否读取附件二进制。
 func (db *database) getChatWithOptions(id string, loadAttachmentData bool) (*Chat, error) {
 	query := `
 		SELECT id, title, created_at, browser_state
@@ -689,6 +716,7 @@ func (db *database) getChatWithOptions(id string, loadAttachmentData bool) (*Cha
 	return &chat, nil
 }
 
+// saveChat 以事务保存会话；browser_state 使用 COALESCE 避免无意覆盖。
 func (db *database) saveChat(chat Chat) error {
 	tx, err := db.conn.Begin()
 	if err != nil {
@@ -749,6 +777,7 @@ func (db *database) saveChat(chat Chat) error {
 	return tx.Commit()
 }
 
+// updateChatBrowserState 仅更新会话的 browser_state 字段。
 // updateChatBrowserState updates only the browser_state for a chat
 func (db *database) updateChatBrowserState(chatID string, state json.RawMessage) error {
 	_, err := db.conn.Exec(`UPDATE chats SET browser_state = ? WHERE id = ?`, string(state), chatID)
@@ -758,6 +787,7 @@ func (db *database) updateChatBrowserState(chatID string, state json.RawMessage)
 	return nil
 }
 
+// deleteChat 删除会话并在删除后触发 WAL checkpoint。
 func (db *database) deleteChat(id string) error {
 	_, err := db.conn.Exec("DELETE FROM chats WHERE id = ?", id)
 	if err != nil {
@@ -769,6 +799,7 @@ func (db *database) deleteChat(id string) error {
 	return nil
 }
 
+// updateLastMessage 更新会话最后一条消息及其附件、工具调用。
 func (db *database) updateLastMessage(chatID string, msg Message) error {
 	tx, err := db.conn.Begin()
 	if err != nil {
@@ -860,6 +891,7 @@ func (db *database) updateLastMessage(chatID string, msg Message) error {
 	return tx.Commit()
 }
 
+// appendMessage 向会话追加一条新消息。
 func (db *database) appendMessage(chatID string, msg Message) error {
 	tx, err := db.conn.Begin()
 	if err != nil {
@@ -883,6 +915,7 @@ func (db *database) appendMessage(chatID string, msg Message) error {
 	return tx.Commit()
 }
 
+// getMessages 按 id 顺序加载会话全部消息。
 func (db *database) getMessages(chatID string, loadAttachmentData bool) ([]Message, error) {
 	query := `
 		SELECT id, role, content, thinking, stream, model_name, created_at, updated_at, thinking_time_start, thinking_time_end, tool_result
@@ -965,6 +998,7 @@ func (db *database) getMessages(chatID string, loadAttachmentData bool) ([]Messa
 	return messages, nil
 }
 
+// insertMessage 在事务中插入消息及其附件。
 func (db *database) insertMessage(tx *sql.Tx, chatID string, msg Message) (int64, error) {
 	query := `
 		INSERT INTO messages (chat_id, role, content, thinking, stream, model_name, created_at, updated_at, thinking_time_start, thinking_time_end, tool_result)
@@ -1025,6 +1059,7 @@ func (db *database) insertMessage(tx *sql.Tx, chatID string, msg Message) (int64
 	return messageID, nil
 }
 
+// getAttachments 加载消息附件；loadData 为 false 时不读取 BLOB 内容。
 func (db *database) getAttachments(messageID int64, loadData bool) ([]File, error) {
 	var query string
 	if loadData {
@@ -1066,6 +1101,7 @@ func (db *database) getAttachments(messageID int64, loadData bool) ([]File, erro
 	return attachments, nil
 }
 
+// getToolCalls 加载消息关联的全部工具调用记录。
 func (db *database) getToolCalls(messageID int64) ([]ToolCall, error) {
 	query := `
 		SELECT type, function_name, function_arguments, function_result
@@ -1113,6 +1149,7 @@ func (db *database) getToolCalls(messageID int64) ([]ToolCall, error) {
 	return toolCalls, nil
 }
 
+// insertAttachment 在事务中插入一条附件记录。
 func (db *database) insertAttachment(tx *sql.Tx, messageID int64, file File) error {
 	query := `
 		INSERT INTO attachments (message_id, filename, data)
@@ -1122,6 +1159,7 @@ func (db *database) insertAttachment(tx *sql.Tx, messageID int64, file File) err
 	return err
 }
 
+// insertToolCall 在事务中插入一条工具调用记录。
 func (db *database) insertToolCall(tx *sql.Tx, messageID int64, tc ToolCall) error {
 	query := `
 		INSERT INTO tool_calls (message_id, type, function_name, function_arguments, function_result)
@@ -1148,8 +1186,10 @@ func (db *database) insertToolCall(tx *sql.Tx, messageID int64, tc ToolCall) err
 	return err
 }
 
+// Settings operations 以下为 settings 表读写辅助函数。
 // Settings operations
 
+// getID 返回设备唯一标识 device_id。
 func (db *database) getID() (string, error) {
 	var id string
 	err := db.conn.QueryRow("SELECT device_id FROM settings").Scan(&id)
@@ -1159,6 +1199,7 @@ func (db *database) getID() (string, error) {
 	return id, nil
 }
 
+// setID 写入设备唯一标识。
 func (db *database) setID(id string) error {
 	_, err := db.conn.Exec("UPDATE settings SET device_id = ?", id)
 	if err != nil {
@@ -1167,6 +1208,7 @@ func (db *database) setID(id string) error {
 	return nil
 }
 
+// getHasCompletedFirstRun 返回用户是否已完成首次运行引导。
 func (db *database) getHasCompletedFirstRun() (bool, error) {
 	var hasCompletedFirstRun bool
 	err := db.conn.QueryRow("SELECT has_completed_first_run FROM settings").Scan(&hasCompletedFirstRun)
@@ -1176,6 +1218,7 @@ func (db *database) getHasCompletedFirstRun() (bool, error) {
 	return hasCompletedFirstRun, nil
 }
 
+// setHasCompletedFirstRun 更新首次运行完成标记。
 func (db *database) setHasCompletedFirstRun(hasCompletedFirstRun bool) error {
 	_, err := db.conn.Exec("UPDATE settings SET has_completed_first_run = ?", hasCompletedFirstRun)
 	if err != nil {
@@ -1184,6 +1227,7 @@ func (db *database) setHasCompletedFirstRun(hasCompletedFirstRun bool) error {
 	return nil
 }
 
+// getSettings 从数据库读取全部用户设置字段。
 func (db *database) getSettings() (Settings, error) {
 	var s Settings
 
@@ -1198,6 +1242,7 @@ func (db *database) getSettings() (Settings, error) {
 	return s, nil
 }
 
+// setSettings 持久化用户设置；last_home_view 会校验合法取值。
 func (db *database) setSettings(s Settings) error {
 	lastHomeView := strings.ToLower(strings.TrimSpace(s.LastHomeView))
 	validLaunchView := map[string]struct{}{
@@ -1228,6 +1273,7 @@ func (db *database) setSettings(s Settings) error {
 	return nil
 }
 
+// isCloudSettingMigrated 返回 airplane_mode 到云端配置的一次性迁移是否已完成。
 func (db *database) isCloudSettingMigrated() (bool, error) {
 	var migrated bool
 	err := db.conn.QueryRow("SELECT cloud_setting_migrated FROM settings").Scan(&migrated)
@@ -1237,6 +1283,7 @@ func (db *database) isCloudSettingMigrated() (bool, error) {
 	return migrated, nil
 }
 
+// setCloudSettingMigrated 标记云端设置迁移状态。
 func (db *database) setCloudSettingMigrated(migrated bool) error {
 	_, err := db.conn.Exec("UPDATE settings SET cloud_setting_migrated = ?", migrated)
 	if err != nil {
@@ -1245,6 +1292,7 @@ func (db *database) setCloudSettingMigrated(migrated bool) error {
 	return nil
 }
 
+// getAirplaneMode 读取旧版 airplane_mode 设置（迁移用）。
 func (db *database) getAirplaneMode() (bool, error) {
 	var airplaneMode bool
 	err := db.conn.QueryRow("SELECT airplane_mode FROM settings").Scan(&airplaneMode)
@@ -1254,6 +1302,7 @@ func (db *database) getAirplaneMode() (bool, error) {
 	return airplaneMode, nil
 }
 
+// getWindowSize 返回窗口宽高像素值。
 func (db *database) getWindowSize() (int, int, error) {
 	var width, height int
 	err := db.conn.QueryRow("SELECT window_width, window_height FROM settings").Scan(&width, &height)
@@ -1263,6 +1312,7 @@ func (db *database) getWindowSize() (int, int, error) {
 	return width, height, nil
 }
 
+// setWindowSize 保存窗口尺寸。
 func (db *database) setWindowSize(width, height int) error {
 	_, err := db.conn.Exec("UPDATE settings SET window_width = ?, window_height = ?", width, height)
 	if err != nil {
@@ -1271,6 +1321,7 @@ func (db *database) setWindowSize(width, height int) error {
 	return nil
 }
 
+// isConfigMigrated 返回 legacy config.json 是否已迁移至 SQLite。
 func (db *database) isConfigMigrated() (bool, error) {
 	var migrated bool
 	err := db.conn.QueryRow("SELECT config_migrated FROM settings").Scan(&migrated)
@@ -1280,6 +1331,7 @@ func (db *database) isConfigMigrated() (bool, error) {
 	return migrated, nil
 }
 
+// setConfigMigrated 标记 config.json 迁移完成。
 func (db *database) setConfigMigrated(migrated bool) error {
 	_, err := db.conn.Exec("UPDATE settings SET config_migrated = ?", migrated)
 	if err != nil {
@@ -1288,6 +1340,7 @@ func (db *database) setConfigMigrated(migrated bool) error {
 	return nil
 }
 
+// getSchemaVersion 读取当前 schema 版本号。
 func (db *database) getSchemaVersion() (int, error) {
 	var version int
 	err := db.conn.QueryRow("SELECT schema_version FROM settings").Scan(&version)
@@ -1297,6 +1350,7 @@ func (db *database) getSchemaVersion() (int, error) {
 	return version, nil
 }
 
+// setSchemaVersion 写入 schema 版本号。
 func (db *database) setSchemaVersion(version int) error {
 	_, err := db.conn.Exec("UPDATE settings SET schema_version = ?", version)
 	if err != nil {
@@ -1305,6 +1359,7 @@ func (db *database) setSchemaVersion(version int) error {
 	return nil
 }
 
+// getUser 返回缓存的登录用户信息；无记录时返回 nil。
 func (db *database) getUser() (*User, error) {
 	var user User
 	err := db.conn.QueryRow(`
@@ -1322,6 +1377,7 @@ func (db *database) getUser() (*User, error) {
 	return &user, nil
 }
 
+// setUser 替换缓存的用户信息（先清空再插入）。
 func (db *database) setUser(user User) error {
 	if err := db.clearUser(); err != nil {
 		return fmt.Errorf("before set: %w", err)
@@ -1338,6 +1394,7 @@ func (db *database) setUser(user User) error {
 	return nil
 }
 
+// clearUser 删除全部缓存用户记录。
 func (db *database) clearUser() error {
 	_, err := db.conn.Exec("DELETE FROM users")
 	if err != nil {

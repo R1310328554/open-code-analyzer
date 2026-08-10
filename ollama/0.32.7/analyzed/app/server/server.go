@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// Package server 管理桌面应用内嵌的 Ollama 服务进程：启动、重启、优雅退出与日志轮转。
 package server
 
 import (
@@ -22,8 +23,10 @@ import (
 	"github.com/ollama/ollama/app/store"
 )
 
+// restartDelay 为服务异常退出后再次启动前的等待间隔。
 const restartDelay = time.Second
 
+// Server 表示受管 Ollama 服务进程，负责按用户设置拉起 ollama serve。
 // Server is a managed ollama server process
 type Server struct {
 	store *store.Store
@@ -32,6 +35,7 @@ type Server struct {
 	dev   bool // true if running with the dev flag
 }
 
+// InferenceCompute 描述从服务日志解析出的一条推理计算设备信息。
 type InferenceCompute struct {
 	Library string
 	Variant string
@@ -41,16 +45,19 @@ type InferenceCompute struct {
 	VRAM    string
 }
 
+// InferenceInfo 汇总推理设备列表及 VRAM 推导的默认上下文长度。
 type InferenceInfo struct {
 	Computes             []InferenceCompute
 	DefaultContextLength int
 }
 
+// New 构造 Server；devMode 为 true 时启用开发模式行为。
 func New(s *store.Store, devMode bool) *Server {
 	p := resolvePath("ollama")
 	return &Server{store: s, bin: p, dev: devMode}
 }
 
+// resolvePath 依次在应用包、开发 dist 目录与系统 PATH 中定位 ollama 可执行文件。
 func resolvePath(name string) string {
 	// look in the app bundle first
 	if exe, _ := os.Executable(); exe != "" {
@@ -83,6 +90,7 @@ func resolvePath(name string) string {
 	return name
 }
 
+// ollamaServeArgs 判断进程命令行是否为 ollama serve/start。
 func ollamaServeArgs(args []string) bool {
 	if len(args) < 2 {
 		return false
@@ -106,6 +114,7 @@ func ollamaServeArgs(args []string) bool {
 	return false
 }
 
+// cleanup 读取 PID 文件，若发现仍在运行的旧进程则优雅终止。
 // cleanup checks the pid file for a running ollama process
 // and shuts it down gracefully if it is running
 func cleanup() error {
@@ -140,6 +149,7 @@ func cleanup() error {
 	return stop(proc)
 }
 
+// stop 先尝试优雅终止进程，5 秒内未退出则强制 Kill。
 // stop waits for a process with the provided pid to exit by polling
 // `terminated(pid)`. If the process has not exited within 5 seconds, it logs a
 // warning and kills the process.
@@ -175,6 +185,7 @@ func stop(proc *os.Process) error {
 	}
 }
 
+// Run 在循环中启动 ollama serve，异常退出时按 restartDelay 延迟后自动重启。
 func (s *Server) Run(ctx context.Context) error {
 	l, err := openRotatingLog()
 	if err != nil {
@@ -227,6 +238,7 @@ func (s *Server) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
+// cmd 根据 Store 设置组装 serve 子进程及其环境变量（主机、CORS、模型路径等）。
 func (s *Server) cmd(ctx context.Context) (*exec.Cmd, error) {
 	settings, err := s.store.Settings()
 	if err != nil {
@@ -283,6 +295,7 @@ func (s *Server) cmd(ctx context.Context) (*exec.Cmd, error) {
 	return cmd, nil
 }
 
+// openRotatingLog 创建或追加服务器日志文件，启动前执行日志轮转。
 func openRotatingLog() (io.WriteCloser, error) {
 	// TODO consider rotation based on size or time, not just every server invocation
 	dir := filepath.Dir(serverLogPath)
@@ -298,6 +311,7 @@ func openRotatingLog() (io.WriteCloser, error) {
 	return f, nil
 }
 
+// GetInferenceInfo 轮询 server.log，解析推理设备与默认上下文长度；ctx 超时则放弃等待。
 // Attempt to retrieve inference compute information from the server
 // log.  Set ctx to timeout to control how long to wait for the logs to appear
 func GetInferenceInfo(ctx context.Context) (*InferenceInfo, error) {
