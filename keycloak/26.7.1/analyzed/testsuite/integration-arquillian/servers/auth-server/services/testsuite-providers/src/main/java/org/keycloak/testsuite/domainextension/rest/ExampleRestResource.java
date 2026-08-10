@@ -25,29 +25,39 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.AuthenticationManager;
 
+/**
+ * 域扩展示例根 REST 资源，挂载公司与需认证的公司子路径。
+ */
 public class ExampleRestResource {
 
+	/** 当前 Keycloak 会话。 */
 	private final KeycloakSession session;
+    /** Bearer 令牌认证结果，可为 null。 */
     private final AuthenticationManager.AuthResult auth;
 	
+	/**
+	 * @param session Keycloak 会话
+	 */
 	public ExampleRestResource(KeycloakSession session) {
 		this.session = session;
         this.auth = new AppAuthManager.BearerTokenAuthenticator(session).authenticate();
 	}
 	
+    /** 返回无需额外认证的公司资源子路径。 */
     @Path("companies")
     public CompanyResource getCompanyResource() {
         return new CompanyResource(session);
     }
 
-    // Same like "companies" endpoint, but REST endpoint is authenticated with Bearer token and user must be in realm role "admin"
-    // Just for illustration purposes
+    // 与 "companies" 端点功能相同，但需 Bearer 令牌且用户须具备 realm 角色 "admin"，仅作演示
+    /** 返回需 realm 管理员角色才能访问的公司资源子路径。 */
     @Path("companies-auth")
     public CompanyResource getCompanyResourceAuthenticated() {
         checkRealmAdmin();
         return new CompanyResource(session);
     }
 
+    /** 校验当前 Bearer 令牌持有者是否具备 realm 管理员角色。 */
     private void checkRealmAdmin() {
         if (auth == null) {
             throw new NotAuthorizedException("Bearer");

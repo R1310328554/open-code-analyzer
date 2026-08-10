@@ -35,14 +35,22 @@ import org.keycloak.testsuite.domainextension.spi.ExampleService;
 
 import org.jboss.resteasy.reactive.NoCache;
 
+/**
+ * 公司资源的 JAX-RS 端点，提供 CRUD 风格的 REST 操作。
+ */
 public class CompanyResource {
 
+	/** 当前 Keycloak 会话。 */
 	private final KeycloakSession session;
 	
+	/**
+	 * @param session Keycloak 会话
+	 */
 	public CompanyResource(KeycloakSession session) {
 		this.session = session;
 	}
 
+    /** 列出当前 Realm 下的全部公司。 */
     @GET
     @Path("")
     @NoCache
@@ -51,6 +59,7 @@ public class CompanyResource {
         return session.getProvider(ExampleService.class).listCompanies();
     }
 
+    /** 删除当前 Realm 下的全部公司记录。 */
     @DELETE
     @Path("")
     @NoCache
@@ -58,6 +67,12 @@ public class CompanyResource {
         session.getProvider(ExampleService.class).deleteAllCompanies();
     }
 
+    /**
+     * 创建新公司并返回 201 Created 响应。
+     *
+     * @param rep 待创建的公司表示对象
+     * @return 指向新资源的响应
+     */
     @POST
     @Path("")
     @NoCache
@@ -67,6 +82,12 @@ public class CompanyResource {
         return Response.created(session.getContext().getUri().getAbsolutePathBuilder().path(rep.getId()).build()).build();
     }
 
+    /**
+     * 按标识查询单个公司。
+     *
+     * @param id 公司标识
+     * @return 公司表示对象
+     */
     @GET
     @NoCache
     @Path("{id}")

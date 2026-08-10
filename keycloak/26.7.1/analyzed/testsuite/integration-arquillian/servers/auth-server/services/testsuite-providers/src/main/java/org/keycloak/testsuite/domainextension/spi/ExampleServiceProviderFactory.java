@@ -19,6 +19,9 @@ package org.keycloak.testsuite.domainextension.spi;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link ExampleService} 提供方工厂接口，用于 SPI 注册与实例化。
+ */
 public interface ExampleServiceProviderFactory extends ProviderFactory<ExampleService> {
 
 }

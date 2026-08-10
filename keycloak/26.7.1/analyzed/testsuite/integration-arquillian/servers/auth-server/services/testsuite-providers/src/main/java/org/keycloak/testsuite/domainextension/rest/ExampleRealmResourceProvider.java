@@ -20,14 +20,22 @@ package org.keycloak.testsuite.domainextension.rest;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.resource.RealmResourceProvider;
 
+/**
+ * 域扩展示例 Realm 资源提供者，将请求委托给 {@link ExampleRestResource}。
+ */
 public class ExampleRealmResourceProvider implements RealmResourceProvider {
 
+    /** 当前 Keycloak 会话。 */
     private KeycloakSession session;
 
+    /**
+     * @param session Keycloak 会话
+     */
     public ExampleRealmResourceProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** {@inheritDoc} 返回根 REST 资源实例。 */
     @Override
     public Object getResource() {
         return new ExampleRestResource(session);

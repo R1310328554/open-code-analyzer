@@ -23,17 +23,19 @@ import java.util.List;
 import org.keycloak.connections.jpa.entityprovider.JpaEntityProvider;
 
 /**
+ * 示例 JPA 实体提供方，向 Keycloak 注册自定义 {@link Company} 实体及数据库变更日志。
+ *
  * @author <a href="mailto:erik.mulder@docdatapayments.com">Erik Mulder</a>
- * 
- * Example JpaEntityProvider.
  */
 public class ExampleJpaEntityProvider implements JpaEntityProvider {
 
+    /** {@inheritDoc} 返回需纳入持久化上下文的实体类列表。 */
     @Override
     public List<Class<?>> getEntities() {
         return Collections.<Class<?>>singletonList(Company.class);
     }
 
+    /** {@inheritDoc} 返回 Liquibase 变更日志资源路径。 */
     @Override
     public String getChangelogLocation() {
     	return "META-INF/example-changelog.xml";
@@ -43,6 +45,7 @@ public class ExampleJpaEntityProvider implements JpaEntityProvider {
     public void close() {
     }
 
+    /** {@inheritDoc} 返回创建该提供方的工厂标识。 */
     @Override
     public String getFactoryId() {
         return ExampleJpaEntityProviderFactory.ID;

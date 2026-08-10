@@ -22,10 +22,17 @@ import java.util.Map;
 import org.keycloak.provider.Provider;
 
 /**
+ * 两栖组件测试提供方接口，用于验证组件生命周期与配置注入。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface TestAmphibianProvider extends Provider {
 
+    /**
+     * 获取当前提供方的配置详情快照。
+     *
+     * @return 键值对形式的配置详情
+     */
     Map<String, Object> getDetails();
 
 }

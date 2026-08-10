@@ -23,24 +23,32 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.services.resource.RealmResourceProviderFactory;
 
+/**
+ * 域扩展示例 Realm 资源提供者工厂，注册 {@code example} 扩展端点。
+ */
 public class ExampleRealmResourceProviderFactory implements RealmResourceProviderFactory {
 
+    /** 工厂唯一标识符。 */
     public static final String ID = "example";
 
+    /** {@inheritDoc} 返回工厂标识。 */
     @Override
     public String getId() {
         return ID;
     }
 
+    /** {@inheritDoc} 创建 Realm 资源提供者实例。 */
     @Override
     public RealmResourceProvider create(KeycloakSession session) {
         return new ExampleRealmResourceProvider(session);
     }
 
+    /** {@inheritDoc} 初始化工厂配置。 */
     @Override
     public void init(Scope config) {
     }
 
+    /** {@inheritDoc} 会话工厂就绪后的回调。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
     }

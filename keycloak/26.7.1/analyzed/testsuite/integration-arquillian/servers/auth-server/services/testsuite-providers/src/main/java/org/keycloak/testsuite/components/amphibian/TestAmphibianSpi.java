@@ -22,24 +22,30 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 两栖组件 SPI 定义，注册测试用 {@link TestAmphibianProvider} 及其工厂。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class TestAmphibianSpi implements Spi {
+    /** {@inheritDoc} 该 SPI 对外可见，非内部专用。 */
     @Override
     public boolean isInternal() {
         return false;
     }
 
+    /** {@inheritDoc} 返回 SPI 名称。 */
     @Override
     public String getName() {
         return "test-amphibian";
     }
 
+    /** {@inheritDoc} 返回提供方接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return TestAmphibianProvider.class;
     }
 
+    /** {@inheritDoc} 返回提供方工厂接口类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return TestAmphibianProviderFactory.class;

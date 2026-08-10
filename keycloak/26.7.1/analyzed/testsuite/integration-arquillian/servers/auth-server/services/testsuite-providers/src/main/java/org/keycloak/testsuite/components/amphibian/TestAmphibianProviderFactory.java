@@ -20,6 +20,8 @@ package org.keycloak.testsuite.components.amphibian;
 import org.keycloak.component.AmphibianProviderFactory;
 
 /**
+ * 两栖组件测试提供方工厂接口，支持单例与 per-realm 两种部署模式。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface TestAmphibianProviderFactory<T extends TestAmphibianProvider> extends AmphibianProviderFactory<T> {

@@ -24,28 +24,33 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * 示例 JPA 实体提供方工厂，负责创建 {@link ExampleJpaEntityProvider} 实例。
+ *
  * @author <a href="mailto:erik.mulder@docdatapayments.com">Erik Mulder</a>
- * 
- * Example JpaEntityProviderFactory.
  */
 public class ExampleJpaEntityProviderFactory implements JpaEntityProviderFactory {
 
+	/** 工厂唯一标识符。 */
 	protected static final String ID = "example-entity-provider";
 	
+    /** {@inheritDoc} 创建 JPA 实体提供方实例。 */
     @Override
     public JpaEntityProvider create(KeycloakSession session) {
         return new ExampleJpaEntityProvider();
     }
 
+    /** {@inheritDoc} 返回工厂标识。 */
     @Override
     public String getId() {
         return ID;
     }
 
+    /** {@inheritDoc} 初始化工厂配置。 */
     @Override
     public void init(Scope config) {
     }
 
+    /** {@inheritDoc} 会话工厂就绪后的回调。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
     }
