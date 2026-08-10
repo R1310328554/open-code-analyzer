@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T06:34:25Z",
   "files": [
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPStorageMapperFactory.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPStorageMapperManager.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPStorageMapperSpi.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPTransaction.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/PasswordUpdateCallback.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/TxAwareLDAPUserModelDelegate.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/UserAttributeLDAPStorageMapper.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/UserAttributeLDAPStorageMapperFactory.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/CommonLDAPGroupMapper.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/CommonLDAPGroupMapperConfig.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/LDAPGroupMapperMode.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/MembershipType.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/UserRolesRetrieveStrategy.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/group/GroupLDAPStorageMapper.java",
-    "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/group/GroupLDAPStorageMapperFactory.java",
     "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/group/GroupMapperConfig.java",
     "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/group/GroupTreeResolver.java",
     "federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/role/RoleLDAPStorageMapper.java",
@@ -33,5 +18,5 @@
     "federation/sssd/src/main/java/org/jvnet/libpam/UnixUser.java"
   ],
   "remaining_pending": 5278,
-  "done": 690
+  "done": 705
 }

@@ -688,3 +688,18 @@
 2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPMappersComparator.java wave23b ldap hardcoded mappers
 2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPOperationDecorator.java wave23b ldap hardcoded mappers
 2026-08-10T06:33:45Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPStorageMapper.java wave23b ldap hardcoded mappers
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPStorageMapperFactory.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPStorageMapperManager.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPStorageMapperSpi.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/LDAPTransaction.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/PasswordUpdateCallback.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/TxAwareLDAPUserModelDelegate.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/UserAttributeLDAPStorageMapper.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/UserAttributeLDAPStorageMapperFactory.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/CommonLDAPGroupMapper.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/CommonLDAPGroupMapperConfig.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/LDAPGroupMapperMode.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/MembershipType.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/UserRolesRetrieveStrategy.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/group/GroupLDAPStorageMapper.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/group/GroupLDAPStorageMapperFactory.java wave24a ldap mapper mgr + group membership
