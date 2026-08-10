@@ -20,21 +20,29 @@ import java.util.Set;
 
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * RS256（RSA PKCS#1 SHA-256）服务端签名 SPI 工厂。
+ * <p>创建 {@link AsymmetricSignatureProvider}，并声明 RSA 私钥 JWK 所需 claims。</p>
+ */
 public class RS256SignatureProviderFactory implements SignatureProviderFactory {
 
+    /** SPI 工厂标识：{@code RS256}。 */
     public static final String ID = Algorithm.RS256;
 
     @Override
+    /** @return {@link #ID} */
     public String getId() {
         return ID;
     }
 
     @Override
+    /** @param session 当前会话 @return RS256 RSA 签名提供者 */
     public SignatureProvider create(KeycloakSession session) {
         return new AsymmetricSignatureProvider(session, Algorithm.RS256);
     }
 
     @Override
+    /** @return RSA 私钥 JWK 导出所需的 claim 集合 */
     public Set<String> getJwkPrivateKeyClaims() {
         return RSA_PRIVATE_JWK_CLAIMS;
     }

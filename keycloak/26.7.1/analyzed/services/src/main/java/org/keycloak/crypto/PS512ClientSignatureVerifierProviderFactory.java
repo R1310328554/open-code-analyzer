@@ -18,16 +18,23 @@ package org.keycloak.crypto;
 
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * PS512（RSA-PSS SHA-512）客户端 JWS 验签 SPI 工厂。
+ * <p>注册 ID 为 {@link Algorithm#PS512}，创建 {@link AsymmetricClientSignatureVerifierProvider}。</p>
+ */
 public class PS512ClientSignatureVerifierProviderFactory implements ClientSignatureVerifierProviderFactory {
 
+    /** SPI 工厂标识：{@code PS512}。 */
     public static final String ID = Algorithm.PS512;
 
     @Override
+    /** @return {@link #ID} */
     public String getId() {
         return ID;
     }
 
     @Override
+    /** @param session 当前会话 @return PS512 客户端验签提供者 */
     public ClientSignatureVerifierProvider create(KeycloakSession session) {
         return new AsymmetricClientSignatureVerifierProvider(session, Algorithm.PS512);
     }

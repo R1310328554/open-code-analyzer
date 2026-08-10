@@ -21,26 +21,36 @@ import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 客户端 HMAC JWS 签名验证提供者。
+ * <p>为 HS256/384/512 等对称算法创建 {@link ClientMacSignatureVerifierContext}。</p>
+ */
 public class MacSecretClientSignatureVerifierProvider implements ClientSignatureVerifierProvider {
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** HMAC 签名算法标识（如 HS512）。 */
     private final String algorithm;
 
+    /** @param session 当前会话 @param algorithm HMAC 算法名 */
     public MacSecretClientSignatureVerifierProvider(KeycloakSession session, String algorithm) {
         this.session = session;
         this.algorithm = algorithm;
     }
 
     @Override
+    /** 从客户端共享密钥创建 HMAC 验签上下文。 */
     public SignatureVerifierContext verifier(ClientModel client, JWSInput input) throws VerificationException {
         return new ClientMacSignatureVerifierContext(session, client, algorithm);
     }
 
     @Override
+    /** @return 本提供者绑定的 HMAC 算法名 */
     public String getAlgorithm() {
         return algorithm;
     }
 
     @Override
+    /** @return 恒为 false，表示对称 HMAC 算法 */
     public boolean isAsymmetricAlgorithm() {
         return false;
     }
