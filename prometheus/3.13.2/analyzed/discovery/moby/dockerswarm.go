@@ -11,6 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Docker Swarm 服务发现：通过 Swarm API 按 role（services/nodes/tasks）
+// 发现编排目标，映射为带 dockerswarm_* meta 标签的抓取地址。
+
+// Docker Swarm 服务发现：通过 Swarm API 按 role（services/nodes/tasks）
+// 发现编排目标，映射为带 dockerswarm_* meta 标签的抓取地址。
+
+// Docker Swarm 服务发现：通过 Swarm API 按 role（services/nodes/tasks）
+// 发现编排目标，映射为带 dockerswarm_* meta 标签的抓取地址。
+
+// Docker Swarm 服务发现：通过 Swarm API 按 role（services/nodes/tasks）
+// 发现编排目标，映射为带 dockerswarm_* meta 标签的抓取地址。
+
 package moby
 
 import (
@@ -36,6 +48,7 @@ const (
 	swarmLabel = model.MetaLabelPrefix + "dockerswarm_"
 )
 
+// Docker Swarm SD 默认配置（60s 刷新、80 端口、空过滤器）。
 // DefaultDockerSwarmSDConfig is the default Docker Swarm SD configuration.
 var DefaultDockerSwarmSDConfig = DockerSwarmSDConfig{
 	RefreshInterval:  model.Duration(60 * time.Second),
@@ -48,6 +61,7 @@ func init() {
 	discovery.RegisterConfig(&DockerSwarmSDConfig{})
 }
 
+// Docker Swarm SD 配置：daemon 地址、role、端口、过滤器与刷新间隔。
 // DockerSwarmSDConfig is the configuration for Docker Swarm based service discovery.
 type DockerSwarmSDConfig struct {
 	HTTPClientConfig config.HTTPClientConfig `yaml:",inline"`
@@ -111,6 +125,7 @@ func (c *DockerSwarmSDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return c.HTTPClientConfig.Validate()
 }
 
+// Discovery 包装 refresh.Discovery，按 role 分发到 services/nodes/tasks 刷新。
 // Discovery periodically performs Docker Swarm requests. It implements
 // the Discoverer interface.
 type Discovery struct {
@@ -122,6 +137,7 @@ type Discovery struct {
 }
 
 // NewDiscovery returns a new Discovery which periodically refreshes its targets.
+// 创建 Swarm Discovery：配置 moby client 与 refresh 包装器。
 func NewDiscovery(conf *DockerSwarmSDConfig, opts discovery.DiscovererOptions) (*Discovery, error) {
 	m, ok := opts.Metrics.(*dockerswarmMetrics)
 	if !ok {
@@ -187,6 +203,7 @@ func NewDiscovery(conf *DockerSwarmSDConfig, opts discovery.DiscovererOptions) (
 	return d, nil
 }
 
+// 按 role 调用 refreshServices/refreshNodes/refreshTasks 获取目标组。
 func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	switch d.role {
 	case "services":

@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Docker 单机服务发现：通过 Docker Engine API 列出容器，
+// 将 TCP 暴露端口或网络 IP 映射为抓取目标及容器/网络 meta 标签。
+
 package moby
 
 import (
@@ -53,6 +56,7 @@ const (
 	dockerLabelPortPublicIP         = dockerLabelPortPrefix + "public_ip"
 )
 
+// Docker SD 默认配置（60s 刷新、80 端口、localhost host 网络主机名）。
 // DefaultDockerSDConfig is the default Docker SD configuration.
 var DefaultDockerSDConfig = DockerSDConfig{
 	RefreshInterval:    model.Duration(60 * time.Second),
@@ -67,6 +71,7 @@ func init() {
 	discovery.RegisterConfig(&DockerSDConfig{})
 }
 
+// Docker SD 配置：daemon 地址、端口、过滤器、host 网络主机名与网络匹配策略。
 // DockerSDConfig is the configuration for Docker (non-swarm) based service discovery.
 type DockerSDConfig struct {
 	HTTPClientConfig config.HTTPClientConfig `yaml:",inline"`
@@ -127,6 +132,7 @@ type DockerDiscovery struct {
 }
 
 // NewDockerDiscovery returns a new DockerDiscovery which periodically refreshes its targets.
+// 创建 DockerDiscovery：配置 moby client 与 refresh 包装器。
 func NewDockerDiscovery(conf *DockerSDConfig, opts discovery.DiscovererOptions) (*DockerDiscovery, error) {
 	m, ok := opts.Metrics.(*dockerMetrics)
 	if !ok {
@@ -193,6 +199,7 @@ func NewDockerDiscovery(conf *DockerSDConfig, opts discovery.DiscovererOptions) 
 	return d, nil
 }
 
+// 列出容器并按网络/端口构建 __address__ 目标与 docker_* meta 标签。
 func (d *DockerDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	tg := &targetgroup.Group{
 		Source: "Docker",

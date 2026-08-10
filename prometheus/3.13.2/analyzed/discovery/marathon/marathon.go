@@ -11,6 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Marathon 服务发现：通过 Marathon REST API 拉取应用与任务列表，
+// 将 Mesos 容器实例映射为 host:port 抓取目标及 Marathon meta 标签。
+
+// Marathon 服务发现：通过 Marathon REST API 拉取应用与任务列表，
+// 将 Mesos 容器实例映射为 host:port 抓取目标及 Marathon meta 标签。
+
+// Marathon 服务发现：通过 Marathon REST API 拉取应用与任务列表，
+// 将 Mesos 容器实例映射为 host:port 抓取目标及 Marathon meta 标签。
+
+// Marathon 服务发现：通过 Marathon REST API 拉取应用与任务列表，
+// 将 Mesos 容器实例映射为 host:port 抓取目标及 Marathon meta 标签。
+
 package marathon
 
 import (
@@ -59,6 +71,7 @@ const (
 	portDefinitionLabelPrefix = metaLabelPrefix + "port_definition_label_"
 )
 
+// Marathon SD 默认配置（30s 刷新间隔与默认 HTTP 客户端）。
 // DefaultSDConfig is the default Marathon SD configuration.
 var DefaultSDConfig = SDConfig{
 	RefreshInterval:  model.Duration(30 * time.Second),
@@ -69,6 +82,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// Marathon SD 配置：服务器列表、刷新间隔、auth_token 与 HTTP 客户端。
 // SDConfig is the configuration for services running on Marathon.
 type SDConfig struct {
 	Servers          []string                `yaml:"servers,omitempty"`
@@ -129,6 +143,7 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 
 const appListPath string = "/v2/apps/?embed=apps.tasks"
 
+// Discovery 包装 refresh.Discovery，周期性拉取 Marathon 应用列表。
 // Discovery provides service discovery based on a Marathon instance.
 type Discovery struct {
 	*refresh.Discovery
@@ -139,6 +154,7 @@ type Discovery struct {
 }
 
 // NewDiscovery returns a new Marathon Discovery.
+// 创建 Marathon Discovery：配置 DC/OS token 认证与 refresh 包装器。
 func NewDiscovery(conf SDConfig, opts discovery.DiscovererOptions) (*Discovery, error) {
 	m, ok := opts.Metrics.(*marathonMetrics)
 	if !ok {
@@ -226,6 +242,7 @@ func (rt *authTokenFileRoundTripper) RoundTrip(request *http.Request) (*http.Res
 	return rt.rt.RoundTrip(request)
 }
 
+// 刷新目标：拉取应用列表并清理已消失服务的空 targetgroup。
 func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	targetMap, err := d.fetchTargetGroups(ctx)
 	if err != nil {
@@ -338,6 +355,7 @@ type appList struct {
 type appListClient func(ctx context.Context, client *http.Client, url string) (*appList, error)
 
 // fetchApps requests a list of applications from a marathon server.
+// HTTP GET 请求 Marathon /v2/apps 接口并解析 JSON 响应。
 func fetchApps(ctx context.Context, client *http.Client, url string) (*appList, error) {
 	request, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	if err != nil {
@@ -412,6 +430,7 @@ func createTargetGroup(app *app) *targetgroup.Group {
 	return tg
 }
 
+// 为单个 Marathon 应用的每个 task/port 组合生成抓取目标标签集。
 func targetsForApp(app *app) []model.LabelSet {
 	targets := make([]model.LabelSet, 0, len(app.Tasks))
 

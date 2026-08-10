@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Linode 服务发现内部指标：刷新失败计数 prometheus_sd_linode_failures_total。
+// 同时持有 refresh 包通用指标实例化器，供 refresh.Discovery 记录耗时与失败。
+
 package linode
 
 import (
@@ -21,6 +24,7 @@ import (
 
 var _ discovery.DiscovererMetrics = (*linodeMetrics)(nil)
 
+// Linode SD 专用 DiscovererMetrics 实现。
 type linodeMetrics struct {
 	refreshMetrics discovery.RefreshMetricsInstantiator
 
@@ -29,6 +33,7 @@ type linodeMetrics struct {
 	metricRegisterer discovery.MetricRegisterer
 }
 
+// 注册 Linode SD 失败计数指标并绑定 refresh 通用指标实例化器。
 func newDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	m := &linodeMetrics{
 		refreshMetrics: rmi,
@@ -46,11 +51,13 @@ func newDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetric
 	return m
 }
 
+// Register 将 failuresCount 注册到 Prometheus registerer。
 // Register implements discovery.DiscovererMetrics.
 func (m *linodeMetrics) Register() error {
 	return m.metricRegisterer.RegisterMetrics()
 }
 
+// Unregister 从 registerer 移除 Linode SD 失败计数指标。
 // Unregister implements discovery.DiscovererMetrics.
 func (m *linodeMetrics) Unregister() {
 	m.metricRegisterer.UnregisterMetrics()

@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Linode 服务发现：通过 Linode API 列出云实例，映射公网 IPv4 为抓取地址，
+// 附加区域/规格/标签等 meta 标签；支持事件轮询以减少全量刷新频率。
+
 package linode
 
 import (
@@ -69,6 +72,7 @@ const (
 	regionFilterTemplate = `{"region": "%s"}`
 )
 
+// Linode SD 默认配置（80 端口、60s 刷新间隔、空区域过滤）。
 // DefaultSDConfig is the default Linode SD configuration.
 var DefaultSDConfig = SDConfig{
 	TagSeparator:     ",",
@@ -82,6 +86,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// Linode SD 配置：HTTP 客户端、刷新间隔、端口、标签分隔符与区域过滤。
 // SDConfig is the configuration for Linode based service discovery.
 type SDConfig struct {
 	HTTPClientConfig config.HTTPClientConfig `yaml:",inline"`
@@ -121,6 +126,7 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return c.HTTPClientConfig.Validate()
 }
 
+// Discovery 包装 refresh.Discovery，周期性拉取 Linode 实例列表。
 // Discovery periodically performs Linode requests. It implements
 // the Discoverer interface.
 type Discovery struct {
@@ -137,6 +143,7 @@ type Discovery struct {
 }
 
 // NewDiscovery returns a new Discovery which periodically refreshes its targets.
+// 创建 Linode Discovery：配置 linodego 客户端与 refresh 包装器。
 func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*Discovery, error) {
 	m, ok := opts.Metrics.(*linodeMetrics)
 	if !ok {
@@ -180,6 +187,7 @@ func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*Discovery,
 	return d, nil
 }
 
+// 刷新逻辑：优先检查 Events API，无变更时跳过全量拉取。
 func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	needsRefresh := true
 	ts := time.Now().UTC()
@@ -227,6 +235,7 @@ func (d *Discovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	return d.lastResults, nil
 }
 
+// 全量拉取实例/IP/IPv6 范围并构建带 Linode meta 标签的目标列表。
 func (d *Discovery) refreshData(ctx context.Context) ([]*targetgroup.Group, error) {
 	tg := &targetgroup.Group{
 		Source: "Linode",

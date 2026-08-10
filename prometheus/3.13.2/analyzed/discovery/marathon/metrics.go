@@ -11,6 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Marathon 服务发现指标占位：复用 refresh 包通用指标，无额外专用计数器。
+
+// Marathon 服务发现指标占位：复用 refresh 包通用指标，无额外专用计数器。
+
+// Marathon 服务发现指标占位：复用 refresh 包通用指标，无额外专用计数器。
+
+// Marathon 服务发现指标占位：复用 refresh 包通用指标，无额外专用计数器。
+
 package marathon
 
 import (
@@ -23,6 +31,7 @@ type marathonMetrics struct {
 	refreshMetrics discovery.RefreshMetricsInstantiator
 }
 
+// Register 为空操作：Marathon SD 不注册额外 Prometheus 指标。
 // Register implements discovery.DiscovererMetrics.
 func (*marathonMetrics) Register() error {
 	return nil

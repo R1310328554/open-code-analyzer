@@ -11,6 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Kubernetes 服务发现内部指标：Informer 事件计数（按 role/event）与 WATCH/LIST 失败计数。
+// 指标在首次 WithLabelValues 调用时注册，避免未使用的 role 暴露空时序。
+
+// Kubernetes 服务发现内部指标：Informer 事件计数（按 role/event）与 WATCH/LIST 失败计数。
+// 指标在首次 WithLabelValues 调用时注册，避免未使用的 role 暴露空时序。
+
+// Kubernetes 服务发现内部指标：Informer 事件计数（按 role/event）与 WATCH/LIST 失败计数。
+// 指标在首次 WithLabelValues 调用时注册，避免未使用的 role 暴露空时序。
+
+// Kubernetes 服务发现内部指标：Informer 事件计数（按 role/event）与 WATCH/LIST 失败计数。
+
 package kubernetes
 
 import (
@@ -28,6 +39,7 @@ type kubernetesMetrics struct {
 	metricRegisterer discovery.MetricRegisterer
 }
 
+// 注册 prometheus_sd_kubernetes_* 指标并预初始化各 role 标签组合。
 func newDiscovererMetrics(reg prometheus.Registerer, _ discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	m := &kubernetesMetrics{
 		eventCount: prometheus.NewCounterVec(
@@ -75,11 +87,13 @@ func newDiscovererMetrics(reg prometheus.Registerer, _ discovery.RefreshMetricsI
 	return m
 }
 
+// Register 延迟注册指标向量，确保所有 label 组合已预创建。
 // Register implements discovery.DiscovererMetrics.
 func (m *kubernetesMetrics) Register() error {
 	return m.metricRegisterer.RegisterMetrics()
 }
 
+// Unregister 从 registerer 移除全部 Kubernetes SD 指标。
 // Unregister implements discovery.DiscovererMetrics.
 func (m *kubernetesMetrics) Unregister() {
 	m.metricRegisterer.UnregisterMetrics()

@@ -11,6 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Discovery Manager 级 Prometheus 指标：失败配置数、已发现目标数、
+// 接收/发送/延迟更新计数与各 scrape job 最后更新时间戳。
+
+// Discovery Manager 级 Prometheus 指标：失败配置数、已发现目标数、
+// 接收/发送/延迟更新计数与各 scrape job 最后更新时间戳。
+
+// Discovery Manager 级 Prometheus 指标：失败配置数、已发现目标数、
+// 接收/发送/延迟更新计数与各 scrape job 最后更新时间戳。
+
+// Discovery Manager 级 Prometheus 指标：失败配置数、已发现目标数、
+// 接收/发送/延迟更新计数与各 scrape job 最后更新时间戳。
+
 package discovery
 
 import (
@@ -19,6 +31,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// Manager 运行时指标集合，按 manager name 与 config 标签区分。
 // Metrics to be used with a discovery manager.
 type Metrics struct {
 	FailedConfigs     prometheus.Gauge
@@ -29,6 +42,7 @@ type Metrics struct {
 	LastUpdated       *prometheus.GaugeVec
 }
 
+// 创建并注册 prometheus_sd_* 系列 Manager 指标。
 func NewManagerMetrics(registerer prometheus.Registerer, sdManagerName string) (*Metrics, error) {
 	m := &Metrics{}
 
@@ -102,6 +116,7 @@ func NewManagerMetrics(registerer prometheus.Registerer, sdManagerName string) (
 }
 
 // Unregister unregisters all metrics.
+// 注销 Manager 全部指标（不含各 SD 机制独立指标）。
 func (m *Metrics) Unregister(registerer prometheus.Registerer) {
 	registerer.Unregister(m.FailedConfigs)
 	registerer.Unregister(m.DiscoveredTargets)

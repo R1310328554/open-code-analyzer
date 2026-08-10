@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 服务发现管理器：协调多个 SD Provider 的生命周期与目标聚合，
+// 将各机制产生的 targetgroup 合并后通过 SyncCh 推送给抓取管理器。
+
 package discovery
 
 import (
@@ -36,6 +39,7 @@ type poolKey struct {
 	provider string
 }
 
+// Provider 封装单个 Discoverer 实例、配置、取消函数与订阅的 scrape job 集合。
 // Provider holds a Discoverer instance, its configuration, cancel func and its subscribers.
 type Provider struct {
 	name   string
@@ -88,6 +92,7 @@ func CreateAndRegisterSDMetrics(reg prometheus.Registerer) (*SDMetrics, error) {
 }
 
 // NewManager is the Discovery Manager constructor.
+// 创建 Discovery Manager：注册指标并初始化目标池与触发通道。
 func NewManager(ctx context.Context, logger *slog.Logger, registerer prometheus.Registerer, sdMetrics *SDMetrics, options ...func(*Manager)) *Manager {
 	if logger == nil {
 		logger = promslog.NewNopLogger()
@@ -165,6 +170,7 @@ func FeatureRegistry(fr features.Collector) func(*Manager) {
 	}
 }
 
+// Manager 维护 Provider 列表，聚合目标并按 updatert 节流后发送更新。
 // Manager maintains a set of discovery providers and sends each update to a map channel.
 // Targets are grouped by the target set name.
 type Manager struct {
@@ -217,6 +223,7 @@ func (m *Manager) UnregisterMetrics() {
 }
 
 // Run starts the background processing.
+// 启动 sender goroutine，阻塞直到 context 取消并清理 Discoverer。
 func (m *Manager) Run() error {
 	go m.sender()
 	<-m.ctx.Done()
@@ -231,6 +238,7 @@ func (m *Manager) SyncCh() <-chan map[string][]*targetgroup.Group {
 
 // ApplyConfig checks if discovery provider with supplied config is already running and keeps them as is.
 // Remaining providers are then stopped and new required providers are started using the provided config.
+// 应用 SD 配置：复用未变 Provider、停止 obsolete、启动新 Provider。
 func (m *Manager) ApplyConfig(cfg map[string]Configs) error {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
@@ -408,6 +416,7 @@ func (m *Manager) updater(ctx context.Context, p *Provider, updates chan []*targ
 	}
 }
 
+// 聚合发送循环：指数退避节流 triggerSend，推送 allGroups 到 syncCh。
 func (m *Manager) sender() {
 	defer func() {
 		close(m.syncCh)
@@ -521,6 +530,7 @@ func (m *Manager) allGroups() map[string][]*targetgroup.Group {
 }
 
 // registerProviders returns a number of failed SD config.
+// 为 scrape job 注册 SD 配置，去重相同配置并统计失败数。
 func (m *Manager) registerProviders(cfgs Configs, setName string) int {
 	var (
 		failed int

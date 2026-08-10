@@ -11,6 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Kubernetes Pod 角色发现：监听 Pod Informer，为每个容器/端口组合生成抓取目标，
+// 可选附加 Node/Namespace/Deployment/Job 元数据标签。
+
+// Kubernetes Pod 角色发现：监听 Pod Informer，为每个容器/端口组合生成抓取目标，
+// 可选附加 Node/Namespace/Deployment/Job 元数据标签。
+
+// Kubernetes Pod 角色发现：监听 Pod Informer，为每个容器/端口组合生成抓取目标，
+// 可选附加 Node/Namespace/Deployment/Job 元数据标签。
+
+// Kubernetes Pod 角色发现：监听 Pod Informer，为每个容器/端口组合生成抓取目标，
+// 可选附加 Node/Namespace/Deployment/Job 元数据标签。
+
 package kubernetes
 
 import (
@@ -42,6 +54,7 @@ const (
 	jobIndex        = "job"
 )
 
+// Pod 发现器：workqueue 驱动，支持关联 Informer 级联刷新。
 // Pod discovers new pod targets.
 type Pod struct {
 	podInf                 cache.SharedIndexInformer
@@ -60,6 +73,7 @@ type Pod struct {
 }
 
 // NewPod creates a new pod discovery.
+// 创建 Pod 发现器，按需注册 Node/Namespace/ReplicaSet/Job 变更回调。
 func NewPod(l *slog.Logger, pods cache.SharedIndexInformer, nodes, namespace, replicaSets, jobs cache.SharedInformer, withDeploymentMetadata, withJobMetadata, withCronJobMetadata bool, eventCount *prometheus.CounterVec) *Pod {
 	if l == nil {
 		l = promslog.NewNopLogger()
@@ -278,6 +292,7 @@ const (
 	podControllerName             = metaLabelPrefix + "pod_controller_name"
 )
 
+// 获取 Pod 的控制器 OwnerReference，用于解析 Deployment/Job 归属。
 // GetControllerOf returns a pointer to a copy of the controllerRef if controllee has a controller
 // https://github.com/kubernetes/apimachinery/blob/cd2cae2b39fa57e8063fa1f5f13cfe9862db3d41/pkg/apis/meta/v1/controller_ref.go
 func GetControllerOf(controllee metav1.Object) *metav1.OwnerReference {
@@ -289,6 +304,7 @@ func GetControllerOf(controllee metav1.Object) *metav1.OwnerReference {
 	return nil
 }
 
+// 生成 Pod 级 meta 标签（IP、Phase、Ready、控制器名称等）。
 func podLabels(pod *apiv1.Pod, replicaSetInf, jobInf cache.SharedInformer, withDeploymentMetadata, withJobMetadata, withCronJobMetadata bool) model.LabelSet {
 	ls := model.LabelSet{
 		podIPLabel:       lv(pod.Status.PodIP),
@@ -363,6 +379,7 @@ func (p *Pod) findPodContainerID(statuses *[]apiv1.ContainerStatus, containerNam
 	return cStatus.ContainerID
 }
 
+// 构建 Pod targetgroup：按容器端口或 PodIP 生成 __address__ 目标。
 func (p *Pod) buildPod(pod *apiv1.Pod) *targetgroup.Group {
 	tg := &targetgroup.Group{
 		Source: podSource(pod),

@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// refresh 包通用 SD 指标定义：刷新失败计数、耗时 Summary 与 Histogram，
+// 置于 discovery 包以避免 discovery 与 refresh 之间的循环依赖。
+
 package discovery
 
 import (
@@ -19,6 +22,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// RefreshMetricsVecs 持有 refresh 机制共用的 CounterVec/SummaryVec/HistogramVec。
 // RefreshMetricsVecs are metric vectors for the "refresh" package.
 // We define them here in the "discovery" package in order to avoid a cyclic dependency between
 // "discovery" and "refresh".
@@ -32,6 +36,7 @@ type RefreshMetricsVecs struct {
 
 var _ RefreshMetricsManager = (*RefreshMetricsVecs)(nil)
 
+// 创建 refresh 指标向量，延迟注册直至首次记录数据。
 func NewRefreshMetrics(reg prometheus.Registerer) RefreshMetricsManager {
 	m := &RefreshMetricsVecs{
 		failuresVec: prometheus.NewCounterVec(
@@ -71,6 +76,7 @@ func NewRefreshMetrics(reg prometheus.Registerer) RefreshMetricsManager {
 }
 
 // Instantiate returns metrics out of metric vectors for a given mechanism and config.
+// 为指定 SD 机制与 scrape job 实例化具体 Counter/Summary/Histogram 指标。
 func (m *RefreshMetricsVecs) Instantiate(mech, config string) *RefreshMetrics {
 	return &RefreshMetrics{
 		Failures:          m.failuresVec.WithLabelValues(mech, config),
@@ -89,6 +95,7 @@ func (m *RefreshMetricsVecs) Unregister() {
 	m.metricRegisterer.UnregisterMetrics()
 }
 
+// 删除指定 mechanism/config 标签组合的 refresh 指标时序（scrape job 移除时调用）。
 // DeleteLabelValues deletes refresh metrics for a specific mechanism and config. Smart to use this when a scrape job is removed.
 func (m *RefreshMetricsVecs) DeleteLabelValues(mech, config string) {
 	m.failuresVec.DeleteLabelValues(mech, config)

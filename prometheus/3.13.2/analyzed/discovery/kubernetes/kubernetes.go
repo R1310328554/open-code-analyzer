@@ -11,6 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Kubernetes 服务发现：通过 client-go Informer 监听 Pod/Service/Endpoints/Node 等
+// 资源变更，按 role 配置将 K8s 对象映射为 Prometheus 抓取目标与 meta 标签。
+
+// Kubernetes 服务发现：通过 client-go Informer 监听 Pod/Service/Endpoints/Node 等
+// 资源变更，按 role 配置将 K8s 对象映射为 Prometheus 抓取目标与 meta 标签。
+
+// Kubernetes 服务发现：通过 client-go Informer 监听 Pod/Service/Endpoints/Node 等
+// 资源变更，按 role 配置将 K8s 对象映射为 Prometheus 抓取目标与 meta 标签。
+
+// Kubernetes 服务发现：通过 client-go Informer 监听 Pod/Service/Endpoints/Node 等
+// 资源变更，按 role 配置将 K8s 对象映射为 Prometheus 抓取目标与 meta 标签。
+
 package kubernetes
 
 import (
@@ -59,6 +71,7 @@ const (
 	presentValue    = model.LabelValue("true")
 )
 
+// Kubernetes SD 默认配置（HTTP 客户端与 kubeconfig 相关默认值）。
 // DefaultSDConfig is the default Kubernetes SD configuration.
 var DefaultSDConfig = SDConfig{
 	HTTPClientConfig: config.DefaultHTTPClientConfig,
@@ -68,6 +81,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// Kubernetes SD 角色：node/pod/service/endpoints/endpointslice/ingress。
 // Role is role of the service in Kubernetes.
 type Role string
 
@@ -104,6 +118,7 @@ const (
 	MetricLabelRoleUpdate = "update"
 )
 
+// Kubernetes SD 配置：API 地址、kubeconfig、命名空间过滤、标签/字段选择器与附加元数据。
 // SDConfig is the configuration for Kubernetes service discovery.
 type SDConfig struct {
 	APIServer          config.URL              `yaml:"api_server,omitempty"`
@@ -250,6 +265,7 @@ func (c *NamespaceDiscovery) UnmarshalYAML(unmarshal func(any) error) error {
 	return unmarshal((*plain)(c))
 }
 
+// Discovery 实现 Discoverer：按 role 创建 Informer 并协调子发现器。
 // Discovery implements the discoverer interface for discovering
 // targets from Kubernetes.
 type Discovery struct {
@@ -265,6 +281,7 @@ type Discovery struct {
 	metrics            *kubernetesMetrics
 }
 
+// 解析命名空间发现配置，支持 own_namespace 与显式列表。
 func (d *Discovery) getNamespaces() []string {
 	namespaces := d.namespaceDiscovery.Names
 	includeOwnNamespace := d.namespaceDiscovery.IncludeOwnNamespace
@@ -281,6 +298,7 @@ func (d *Discovery) getNamespaces() []string {
 }
 
 // New creates a new Kubernetes discovery for the given role.
+// 创建 Kubernetes Discovery：构建 rest.Config 与 client-go 客户端。
 func New(l *slog.Logger, metrics discovery.DiscovererMetrics, conf *SDConfig) (*Discovery, error) {
 	m, ok := metrics.(*kubernetesMetrics)
 	if !ok {
@@ -355,6 +373,7 @@ func New(l *slog.Logger, metrics discovery.DiscovererMetrics, conf *SDConfig) (*
 	return d, nil
 }
 
+// 将 YAML selectors 映射为各资源类型的 label/field 选择器。
 func mapSelector(rawSelector []SelectorConfig) roleSelector {
 	rs := roleSelector{}
 	for _, resourceSelectorRaw := range rawSelector {
@@ -386,6 +405,7 @@ func mapSelector(rawSelector []SelectorConfig) roleSelector {
 const resyncDisabled = 0
 
 // Run implements the discoverer interface.
+// Discoverer 主循环：按 role 启动对应 Informer 与子发现器 goroutine。
 func (d *Discovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	d.Lock()
 
@@ -977,6 +997,7 @@ func addObjectAnnotationsAndLabels(labelSet model.LabelSet, objectMeta metav1.Ob
 	}
 }
 
+// 将 K8s 对象名称、标签与注解写入 meta 标签集。
 func addObjectMetaLabels(labelSet model.LabelSet, objectMeta metav1.ObjectMeta, role Role) {
 	labelSet[model.LabelName(metaLabelPrefix+string(role)+"_name")] = lv(objectMeta.Name)
 	addObjectAnnotationsAndLabels(labelSet, objectMeta, string(role))

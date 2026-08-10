@@ -11,6 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Kubernetes Node 角色发现：监听 Node Informer 事件，将节点地址与条件状态
+// 映射为 kubelet 抓取目标（含 __address__ 与各地址类型 meta 标签）。
+
+// Kubernetes Node 角色发现：监听 Node Informer 事件，将节点地址与条件状态
+// 映射为 kubelet 抓取目标（含 __address__ 与各地址类型 meta 标签）。
+
+// Kubernetes Node 角色发现：监听 Node Informer 事件，将节点地址与条件状态
+// 映射为 kubelet 抓取目标（含 __address__ 与各地址类型 meta 标签）。
+
+// Kubernetes Node 角色发现：监听 Node Informer 事件，将节点地址与条件状态
+// 映射为 kubelet 抓取目标（含 __address__ 与各地址类型 meta 标签）。
+
 package kubernetes
 
 import (
@@ -37,6 +49,7 @@ const (
 	NodeLegacyHostIP = "LegacyHostIP"
 )
 
+// Node 发现器：基于 workqueue 异步处理 Node 增删改事件。
 // Node discovers Kubernetes nodes.
 type Node struct {
 	logger   *slog.Logger
@@ -46,6 +59,7 @@ type Node struct {
 }
 
 // NewNode returns a new node discovery.
+// 创建 Node 发现器并注册 Informer 事件处理器。
 func NewNode(l *slog.Logger, inf cache.SharedInformer, eventCount *prometheus.CounterVec) *Node {
 	if l == nil {
 		l = promslog.NewNopLogger()
@@ -94,6 +108,7 @@ func (n *Node) enqueue(obj any) {
 }
 
 // Run implements the Discoverer interface.
+// 等待 Informer 同步后启动 workqueue 处理循环。
 func (n *Node) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	defer n.queue.ShutDown()
 
@@ -183,6 +198,7 @@ func nodeLabels(n *apiv1.Node) model.LabelSet {
 	return ls
 }
 
+// 构建 Node targetgroup：kubelet 端口与节点地址/条件 meta 标签。
 func (n *Node) buildNode(node *apiv1.Node) *targetgroup.Group {
 	tg := &targetgroup.Group{
 		Source: nodeSource(node),
@@ -210,6 +226,7 @@ func (n *Node) buildNode(node *apiv1.Node) *targetgroup.Group {
 	return tg
 }
 
+// 按优先级选择节点抓取地址（InternalIP → ExternalIP → HostName 等）。
 // nodeAddress returns the provided node's address, based on the priority:
 // 1. NodeInternalIP
 // 2. NodeInternalDNS

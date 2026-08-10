@@ -11,6 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Kubernetes Service 角色发现：监听 Service Informer，为每个 ServicePort
+// 生成 cluster DNS 形式的抓取地址与端口/类型 meta 标签。
+
+// Kubernetes Service 角色发现：监听 Service Informer，为每个 ServicePort
+// 生成 cluster DNS 形式的抓取地址与端口/类型 meta 标签。
+
+// Kubernetes Service 角色发现：监听 Service Informer，为每个 ServicePort
+// 生成 cluster DNS 形式的抓取地址与端口/类型 meta 标签。
+
+// Kubernetes Service 角色发现：监听 Service Informer，为每个 ServicePort
+// 生成 cluster DNS 形式的抓取地址与端口/类型 meta 标签。
+
 package kubernetes
 
 import (
@@ -31,6 +43,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// Service 发现器：workqueue 异步处理 Service 资源变更。
 // Service implements discovery of Kubernetes services.
 type Service struct {
 	logger                *slog.Logger
@@ -42,6 +55,7 @@ type Service struct {
 }
 
 // NewService returns a new service discovery.
+// 创建 Service 发现器并注册 Informer 与 Namespace 变更处理器。
 func NewService(l *slog.Logger, inf cache.SharedIndexInformer, namespace cache.SharedInformer, eventCount *prometheus.CounterVec) *Service {
 	if l == nil {
 		l = promslog.NewNopLogger()
@@ -206,6 +220,7 @@ func serviceLabels(svc *apiv1.Service) model.LabelSet {
 	return ls
 }
 
+// 构建 Service targetgroup：name.namespace.svc:port 地址与各端口标签。
 func (s *Service) buildService(svc *apiv1.Service) *targetgroup.Group {
 	tg := &targetgroup.Group{
 		Source: serviceSource(svc),

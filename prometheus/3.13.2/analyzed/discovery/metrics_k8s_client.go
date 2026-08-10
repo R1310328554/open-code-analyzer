@@ -11,6 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Kubernetes client-go 全局指标桥接：将 k8s.io/client-go 内置 HTTP 请求
+// 与 workqueue 指标映射到 prometheus_sd_kubernetes_* 命名空间，避免多实例重叠。
+
+// Kubernetes client-go 全局指标桥接：将 k8s.io/client-go 内置 HTTP 请求
+// 与 workqueue 指标映射到 prometheus_sd_kubernetes_* 命名空间，避免多实例重叠。
+
+// Kubernetes client-go 全局指标桥接：将 k8s.io/client-go 内置 HTTP 请求
+// 与 workqueue 指标映射到 prometheus_sd_kubernetes_* 命名空间，避免多实例重叠。
+
+// Kubernetes client-go 全局指标桥接：将 k8s.io/client-go 内置 HTTP 请求
+// 与 workqueue 指标映射到 prometheus_sd_kubernetes_* 命名空间，避免多实例重叠。
+
 package discovery
 
 import (
@@ -24,6 +36,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
+// client-go 指标为全局单例，须在 Manager 层统一注册而非各 K8s SD 实例内。
 // This file registers metrics used by the Kubernetes Go client (k8s.io/client-go).
 // Unfortunately, k8s.io/client-go metrics are global.
 // If we instantiate multiple k8s SD instances, their k8s/client-go metrics will overlap.
@@ -122,6 +135,7 @@ func (noopMetric) Observe(float64) {}
 func (noopMetric) Set(float64)     {}
 
 // Definition of client-go metrics adapters for HTTP requests observation.
+// HTTP 请求指标适配器：将 client-go RequestResult/Latency 写入 CounterVec/SummaryVec。
 type clientGoRequestMetricAdapter struct{}
 
 // Returns all of the Prometheus metrics derived from k8s.io/client-go.
@@ -139,6 +153,7 @@ func clientGoMetrics() []prometheus.Collector {
 	}
 }
 
+// 注册 client-go HTTP 与 workqueue 指标到 Prometheus registerer。
 func RegisterK8sClientMetricsWithPrometheus(registerer prometheus.Registerer) error {
 	clientGoRequestMetrics.RegisterWithK8sGoClient()
 	clientGoWorkloadMetrics.RegisterWithK8sGoClient()
@@ -170,6 +185,7 @@ func (clientGoRequestMetricAdapter) Observe(_ context.Context, _ string, u url.U
 }
 
 // Definition of client-go workqueue metrics provider definition.
+// workqueue 指标提供者：为各队列名创建 depth/latency/duration 等指标句柄。
 type clientGoWorkqueueMetricsProvider struct{}
 
 func (f *clientGoWorkqueueMetricsProvider) RegisterWithK8sGoClient() {
