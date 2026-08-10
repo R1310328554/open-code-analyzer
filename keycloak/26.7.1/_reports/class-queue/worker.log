@@ -358,3 +358,18 @@
 2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/adapters/action/AdminAction.java wave12b account representations + admin actions
 2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/adapters/action/GlobalRequestResult.java wave12b account representations + admin actions
 2026-08-10T06:01:31Z DONE core/src/main/java/org/keycloak/representations/adapters/action/LogoutAction.java wave12b account representations + admin actions
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/AdminEventRepresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/ApplicationRepresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/AuthDetailsRepresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/AuthenticationExecutionExportRepresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/AuthenticationExecutionInfoRepresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/AuthenticationExecutionRepresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/AuthenticationFlowRepresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/AuthenticatorConfigInfoRepresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/AuthenticatorConfigRepresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/CertificateRepresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/ClaimRepresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/ClientInitialAccessCreatePresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/ClientInitialAccessPresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/ClientMappingsRepresentation.java wave13b idm admin/auth representations
+2026-08-10T06:03:08Z DONE core/src/main/java/org/keycloak/representations/idm/ClientPoliciesRepresentation.java wave13b idm admin/auth representations

@@ -15,23 +15,8 @@
     "core/src/main/java/org/keycloak/representations/docker/DockerResponseToken.java",
     "core/src/main/java/org/keycloak/representations/dpop/DPoP.java",
     "core/src/main/java/org/keycloak/representations/idm/AbstractAuthenticationExecutionRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/AbstractUserRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/AdminEventRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ApplicationRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/AuthDetailsRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/AuthenticationExecutionExportRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/AuthenticationExecutionInfoRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/AuthenticationExecutionRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/AuthenticationFlowRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/AuthenticatorConfigInfoRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/AuthenticatorConfigRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/CertificateRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClaimRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientInitialAccessCreatePresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientInitialAccessPresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientMappingsRepresentation.java",
-    "core/src/main/java/org/keycloak/representations/idm/ClientPoliciesRepresentation.java"
+    "core/src/main/java/org/keycloak/representations/idm/AbstractUserRepresentation.java"
   ],
   "remaining_pending": 5608,
-  "done": 360
+  "done": 375
 }
