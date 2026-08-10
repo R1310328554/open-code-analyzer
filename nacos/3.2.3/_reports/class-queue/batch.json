@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T04:11:37Z",
-  "files": [
-    "core/src/main/java/com/alibaba/nacos/core/remote/event/RemotingHeartBeatEvent.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/AddressTransportFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/BaseGrpcServer.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/ConnectionGeneratorService.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/ConnectionGeneratorServiceDelegate.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/ConnectionGeneratorServiceImpl.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/GrpcBiStreamRequestAcceptor.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/GrpcClusterServer.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/GrpcConnection.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/GrpcConnectionInterceptor.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/GrpcRequestAcceptor.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/GrpcSdkServer.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/GrpcServerConstants.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/InvokeSource.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/PushAckIdGenerator.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 827,
-  "done": 1695
+  "done": 1710
 }
