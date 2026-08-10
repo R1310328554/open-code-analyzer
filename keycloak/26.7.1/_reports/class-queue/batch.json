@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:17:53Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/authorization/AuthorizationSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/Decision.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/UserManagedPermissionUtil.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/attribute/Attributes.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/fgap/AdminPermissionsSchema.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/fgap/evaluation/FGAPDecision.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/fgap/evaluation/FGAPEvaluation.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/fgap/evaluation/FGAPPolicyEvaluator.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/fgap/evaluation/partial/PartialEvaluationContext.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/fgap/evaluation/partial/PartialEvaluationPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/fgap/evaluation/partial/PartialEvaluationStorageProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/fgap/evaluation/partial/PartialEvaluator.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/fgap/evaluation/partial/ResourceTypePolicyEvaluator.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/fgap/evaluation/partial/UserResourceTypePolicyEvaluator.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/identity/Identity.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3028,
-  "done": 2955
+  "done": 2970
 }
