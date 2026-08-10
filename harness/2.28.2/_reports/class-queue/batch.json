@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:11:58Z",
-  "files": [
-    "mock/mockscm/mock.go",
-    "mock/mockscm/mock_gen.go",
-    "operator/manager/manager.go",
-    "operator/manager/rpc/client.go",
-    "operator/manager/rpc/error.go",
-    "operator/manager/rpc/server.go",
-    "operator/manager/rpc/server_oss.go",
-    "operator/manager/rpc/types.go",
-    "operator/manager/rpc2/client.go",
-    "operator/manager/rpc2/handler.go",
-    "operator/manager/rpc2/server.go",
-    "operator/manager/rpc2/server_oss.go",
-    "operator/manager/rpc2/types.go",
-    "operator/manager/setup.go",
-    "operator/manager/teardown.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 178,
-  "done": 195
+  "done": 210
 }
