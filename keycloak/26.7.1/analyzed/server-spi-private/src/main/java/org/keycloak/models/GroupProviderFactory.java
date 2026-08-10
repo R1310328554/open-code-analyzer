@@ -19,8 +19,18 @@ package org.keycloak.models;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link GroupProvider} 的 {@link org.keycloak.provider.ProviderFactory} 工厂接口。
+ * <p>管理 realm 组层次结构的持久化与查询。</p>
+ */
 public interface GroupProviderFactory<T extends GroupProvider> extends ProviderFactory<T> {
 
+    /**
+     * 组路径中斜杠是否转义存储。
+     * <p>默认使用 {@link GroupProvider#DEFAULT_ESCAPE_SLASHES}。</p>
+     *
+     * @return 是否转义斜杠
+     */
     default boolean escapeSlashesInGroupPath() {
         return GroupProvider.DEFAULT_ESCAPE_SLASHES;
     }

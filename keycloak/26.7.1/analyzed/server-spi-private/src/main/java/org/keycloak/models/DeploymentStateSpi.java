@@ -21,25 +21,33 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 部署状态 SPI，注册 {@link DeploymentStateProvider} 提供者类型。
+ */
 public class DeploymentStateSpi implements Spi {
 
+    /** SPI 名称常量：{@code deploymentState}。 */
     public static final String NAME = "deploymentState";
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@link #NAME} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** 部署状态提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return DeploymentStateProvider.class;
     }
 
+    /** 部署状态工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return DeploymentStateProviderFactory.class;

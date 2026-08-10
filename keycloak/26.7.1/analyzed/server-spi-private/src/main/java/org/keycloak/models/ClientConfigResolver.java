@@ -18,34 +18,43 @@
 package org.keycloak.models;
 
 /**
- * TODO: remove this class entirely?
+ * 客户端配置解析器：对 {@link ClientModel} 常用布尔/属性访问的薄封装。
+ * <p>遗留类，后续可能移除；新代码应直接使用 {@link ClientModel}。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ClientConfigResolver {
+    /** 被解析的客户端模型。 */
     protected ClientModel client;
 
+    /** @param client 目标客户端 */
     public ClientConfigResolver(ClientModel client) {
         this.client = client;
     }
 
+    /** @param name 客户端属性名
+     * @return 属性值 */
     public String resolveAttribute(String name) {
         return client.getAttribute(name);
     }
 
+    /** @return 是否启用前端通道登出 */
     public boolean isFrontchannelLogout() {
         return client.isFrontchannelLogout();
     }
 
+    /** @return 是否需要用户同意 */
     boolean isConsentRequired() {
         return client.isConsentRequired();
     }
 
+    /** @return 是否启用标准授权码流程 */
     boolean isStandardFlowEnabled() {
         return client.isStandardFlowEnabled();
     }
 
+    /** @return 是否启用服务账户 */
     boolean isServiceAccountsEnabled() {
         return client.isServiceAccountsEnabled();
     }

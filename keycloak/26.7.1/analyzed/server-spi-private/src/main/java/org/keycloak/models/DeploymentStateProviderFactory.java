@@ -19,5 +19,8 @@ package org.keycloak.models;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link DeploymentStateProvider} 的 {@link org.keycloak.provider.ProviderFactory} 工厂接口。
+ */
 public interface DeploymentStateProviderFactory extends ProviderFactory<DeploymentStateProvider> {
 }

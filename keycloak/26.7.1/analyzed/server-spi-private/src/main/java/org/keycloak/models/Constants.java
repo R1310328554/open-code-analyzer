@@ -26,11 +26,16 @@ import org.keycloak.crypto.Algorithm;
 import org.keycloak.models.utils.SystemClientUtil;
 
 /**
+ * Keycloak 核心常量：内置客户端 ID、默认超时、认证会话 note 键、WebAuthn 策略默认值等。
+ * <p>供 server-spi、services 与 admin 模块共享引用。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public final class Constants {
+    /** 管理控制台内置客户端 ID。 */
     public static final String ADMIN_CONSOLE_CLIENT_ID = "security-admin-console";
+    /** Admin CLI 内置客户端 ID。 */
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
 
     public static final String ACCOUNT_MANAGEMENT_CLIENT_ID = "account";
@@ -42,6 +47,7 @@ public final class Constants {
     public static final String AUTH_BASE_URL_PROP = "${authBaseUrl}";
     public static final String AUTH_ADMIN_URL_PROP = "${authAdminUrl}";
 
+    /** 系统预置客户端 ID 集合（不可删除）。 */
     public static final Collection<String> defaultClients = Arrays.asList(ACCOUNT_MANAGEMENT_CLIENT_ID, ACCOUNT_CONSOLE_CLIENT_ID, ADMIN_CLI_CLIENT_ID, BROKER_SERVICE_CLIENT_ID, REALM_MANAGEMENT_CLIENT_ID, ADMIN_CONSOLE_CLIENT_ID, ADMIN_PERMISSIONS_CLIENT_ID, SystemClientUtil.SYSTEM_CLIENT_ID);
 
     public static final String INSTALLED_APP_URN = "urn:ietf:wg:oauth:2.0:oob";
@@ -55,35 +61,30 @@ public final class Constants {
     public static final String AUTHZ_UMA_AUTHORIZATION = "uma_authorization";
     public static final String[] AUTHZ_DEFAULT_AUTHORIZATION_ROLES = {AUTHZ_UMA_AUTHORIZATION};
 
-    // 5 minutes
+    /** 默认访问令牌有效期：5 分钟。 */
     public static final int DEFAULT_ACCESS_TOKEN_LIFESPAN = 300;
 
-    // 15 minutes
+    /** 隐式流程访问令牌默认有效期：15 分钟。 */
     public static final int DEFAULT_ACCESS_TOKEN_LIFESPAN_FOR_IMPLICIT_FLOW_TIMEOUT = 900;
-    // 30 days
+    /** 离线会话空闲超时默认：30 天。 */
     public static final int DEFAULT_OFFLINE_SESSION_IDLE_TIMEOUT = 2592000;
-    // KEYCLOAK-7688 Offline Session Max for Offline Token
-    // 60 days
+    /** 离线会话最大生命周期默认：60 天（KEYCLOAK-7688）。 */
     public static final int DEFAULT_OFFLINE_SESSION_MAX_LIFESPAN = 5184000;
     public static final String DEFAULT_SIGNATURE_ALGORITHM = Algorithm.RS256;
     public static final String INTERNAL_SIGNATURE_ALGORITHM = Algorithm.HS512;
 
-    public static final int DEFAULT_SESSION_IDLE_TIMEOUT = 1800; // 30 minutes
-    public static final int DEFAULT_SESSION_MAX_LIFESPAN = 36000; // 10 hours
+    /** 用户会话空闲超时默认：30 分钟。 */
+    public static final int DEFAULT_SESSION_IDLE_TIMEOUT = 1800;
+    /** 用户会话最大生命周期默认：10 小时。 */
+    public static final int DEFAULT_SESSION_MAX_LIFESPAN = 36000;
 
-    /**
-     * Default "Login timeout" (in the admin console). 30 minutes
-     */
+    /** 管理控制台「登录超时」默认：30 分钟。 */
     public static final int DEFAULT_ACCESS_CODE_LIFESPAN_LOGIN = 1800;
 
-    /**
-     * Default "Client Login Timeout" (in the admin console). 1 minute
-     */
+    /** 管理控制台「客户端登录超时」默认：1 分钟。 */
     public static final int DEFAULT_ACCESS_CODE_LIFESPAN = 60;
 
-    /**
-     * Default for both "Login action timeout" and "User-Initiated Action Lifespan" (in the admin console). 5 minutes
-     */
+    /** 「登录操作超时」与「用户发起操作生命周期」默认：5 分钟。 */
     public static final int DEFAULT_ACCESS_CODE_LIFESPAN_USER_ACTION = 300;
 
     public static final int DEFAULT_ACTION_TOKEN_GENERATED_BY_ADMIN_LIFESPAN = 12 * 60 * 60;
@@ -98,7 +99,7 @@ public final class Constants {
     public static final String WEBAUTHN_POLICY_OPTION_YES = "Yes";
     public static final String WEBAUTHN_POLICY_OPTION_NO = "No";
 
-    // Prefix used for the realm attributes and other places
+    /** WebAuthn 无密码策略在 realm 属性等处的键前缀。 */
     public static final String WEBAUTHN_PASSWORDLESS_PREFIX = "Passwordless";
 
     public static final String VERIFY_EMAIL_KEY = "VERIFY_EMAIL_KEY";
@@ -111,6 +112,7 @@ public final class Constants {
     public static final String SKIP_LOGOUT = "skip_logout";
     public static final String KEY = "key";
 
+    /** 认证流程中当前执行的 Keycloak 操作（Required Action / AIA）标识。 */
     public static final String KC_ACTION = "kc_action";
 
     public static final String KC_ACTION_PARAMETER = "kc_action_parameter";
@@ -119,8 +121,8 @@ public final class Constants {
     public static final String KC_ACTION_STATUS = "kc_action_status";
     public static final String KC_ACTION_EXECUTING = "kc_action_executing";
     /**
-     * Auth session attribute whether an AIA is enforced, which means it cannot be cancelled.
-     * <p>Example use case: the action behind the AIA is also defined on the user (for example, UPDATE_PASSWORD).</p>
+     * 认证会话属性：AIA（Application-Initiated Action）是否被强制执行（不可取消）。
+     * <p>示例：AIA 对应的操作同时为用户必需操作（如 UPDATE_PASSWORD）。</p>
      */
     public static final String KC_ACTION_ENFORCED = "kc_action_enforced";
     public static final int KC_ACTION_MAX_AGE = 300;
@@ -137,66 +139,60 @@ public final class Constants {
     public static final String TEMPLATE_ATTR_REQUIRED_ACTIONS = "requiredActions";
     public static final String IGNORE_ACCEPT_LANGUAGE_HEADER = "IGNORE_ACCEPT_LANGUAGE_HEADER";
 
-    // Prefix for user attributes used in various "context"data maps
+    // 各类上下文数据映射中用户属性的键前缀
     public static final String USER_ATTRIBUTES_PREFIX = "user.attributes.";
 
-    // Roles already granted by a mapper when updating brokered users.
+    // 更新代理用户时映射器已授予的角色
     public static final String MAPPER_GRANTED_ROLES = "MAPPER_GRANTED_ROLES";
 
-    // Groups already assigned by a mapper when updating brokered users.
+    // 更新代理用户时映射器已分配的组
     public static final String MAPPER_GRANTED_GROUPS = "MAPPER_GRANTED_GROUPS";
 
     public static final String MAPPER_SESSION_NOTES = "MAPPER_SESSION_NOTES";
 
-    // Indication to admin-rest-endpoint that realm keys should be re-generated
+    // 指示 admin REST 端点重新生成 realm 密钥
     public static final String GENERATE = "GENERATE";
 
     public static final int DEFAULT_MAX_RESULTS = 100;
-    /**
-    * Used by {@code DefaultValue} annotation for when a REST endpoints max size default is set by {@link #DEFAULT_MAX_RESULTS}.
-    */
+    /** {@code DefaultValue} 注解使用的字符串形式默认分页上限（{@link #DEFAULT_MAX_RESULTS}）。 */
     public static final String DEFAULT_MAX_RESULTS_STR = "" + DEFAULT_MAX_RESULTS;
 
-    // Delimiter to be used in the configuration of authenticators (and some other components) in case that we need to save
-    // multiple values into single string
+    // 认证器（等组件）配置中多值合并为单字符串时的分隔符
     public static final String CFG_DELIMITER = "##";
 
     public static final String INCLUDE_REDIRECTS = "+";
 
-    // Better performance to use this instead of String.split
+    // 解析 {@link #CFG_DELIMITER} 的正则，性能优于 String.split
     public static final Pattern CFG_DELIMITER_PATTERN = Pattern.compile("\\s*" + CFG_DELIMITER + "\\s*");
 
     public static final String OFFLINE_ACCESS_SCOPE_CONSENT_TEXT = "${offlineAccessScopeConsentText}";
 
     /**
-     * If set as an attribute in the {@link KeycloakSession}, indicates that the storage should batch write operations.
+     * 设为 {@link KeycloakSession} 属性时，指示存储层批量写入。
      */
     public static final String STORAGE_BATCH_ENABLED = "org.keycloak.storage.batch_enabled";
 
-    /**
-     * If {@code #STORAGE_BATCH_ENABLED} is set, indicates the batch size.
-     */
+    /** 在 {@code #STORAGE_BATCH_ENABLED} 启用时指定批大小。 */
     public static final String STORAGE_BATCH_SIZE = "org.keycloak.storage.batch_size";
 
     public static final String SNAPSHOT_VERSION = "999.0.0-SNAPSHOT";
 
-    // Client Polices Realm Attributes Keys
+    // 客户端策略（Client Policies）realm 属性键
     public static final String CLIENT_PROFILES = "client-policies.profiles";
     public static final String CLIENT_POLICIES = "client-policies.policies";
 
 
-    // Authentication session note, which contains loa of current authentication in progress
+    // 认证会话 note：当前进行中的认证 LoA（Level of Assurance）
     public static final String LEVEL_OF_AUTHENTICATION = "level-of-authentication";
 
-    // Key in authentication execution config (AuthenticationExecutionModel), storing the configured authentication reference value
+    // 认证执行配置键：存储配置的认证参考值
     public static final String AUTHENTICATION_EXECUTION_REFERENCE_VALUE = "default.reference.value";
     public static final String AUTHENTICATION_EXECUTION_REFERENCE_MAX_AGE = "default.reference.maxAge";
 
-    // Authentication session note containing a serialized map of successfully completed authentication executions and their associated times
+    // 认证会话 note：已完成认证执行及其时间的序列化映射
     public static final String AUTHENTICATORS_COMPLETED = "authenticators-completed";
 
-    // Authentication session (and user session) note, which contains map with authenticated levels and the times of their authentications,
-    // so it is possible to check when particular level expires and needs to be re-authenticated
+    // 认证/用户会话 note：各 LoA 及认证时间，用于判断何时需重新认证
     public static final String LOA_MAP = "loa-map";
 
     public static final String REQUESTED_LEVEL_OF_AUTHENTICATION = "requested-level-of-authentication";
@@ -216,47 +212,47 @@ public final class Constants {
 
     public static final String TOTP_SECRET_KEY = "TOTP_SECRET_KEY";
 
-    // Sent to clients when authentication session expired, but user is already logged-in in current browser
+    // 认证会话过期但浏览器已登录时返回客户端的错误消息键
     public static final String AUTHENTICATION_EXPIRED_MESSAGE = "authentication_expired";
 
     // attribute name used in apps to mark that it is an admin console and its azp is allowed
     public static final String SECURITY_ADMIN_CONSOLE_ATTR = "security.admin.console";
 
-    //attribute name used to mark a client as realm client
+    // 标记客户端为 realm 内置客户端的属性名
     public static final String REALM_CLIENT = "realm_client";
 
-    // Note used to store the authentication flow requested
+    // 认证会话 note：请求的认证流程
     public static final String REQUESTED_AUTHENTICATION_FLOW = "requested-authentication-flow";
 
     public static final String AUTHENTICATION_FLOW_LEVEL_OF_AUTHENTICATION = "authentication-flow-level-of-authentication";
 
-    // Note used to store the acr values if it is matched by client policy condition
+    // 认证会话 note：客户端策略条件匹配的 ACR 值
     public static final String CLIENT_POLICY_REQUESTED_ACR = "client-policy-requested-acr";
 
-    //attribute name used to set clients from requested audience in standard token exchange
+    // 标准令牌交换中请求受众对应客户端的属性名
     public static final String REQUESTED_AUDIENCE_CLIENTS = "req-aud-clients";
-    // claim used in refresh token to know the requested audience
+    // 刷新令牌中记录请求受众的 claim
     public static final String REQUESTED_AUDIENCE = "req-aud";
-    // Note in clientSessionContext specifying token grant type used
+    // 客户端会话上下文 note：令牌授予类型
     public static final String GRANT_TYPE = OAuth2Constants.GRANT_TYPE;
-    // Note in client session to know the subject client
+    // 客户端会话 note：令牌交换主体客户端
     public static final String TOKEN_EXCHANGE_SUBJECT_CLIENT = "token_exchange_subject_client";
 
-    // Note in transient userSession specifying that it was created from "persistent" user session for the temporary purpose. The values of this note could be "online" and "offline"
+    // 临时用户会话 note：由持久会话派生（值可为 online/offline）
     public static final String CREATED_FROM_PERSISTENT = "created_from_persistent";
     public static final String CREATED_FROM_PERSISTENT_ONLINE = "online";
     public static final String CREATED_FROM_PERSISTENT_OFFLINE = "offline";
 
-    // Provider ID of the openid-connect protocol
+    // OpenID Connect 协议提供者 ID
     public static final String OIDC_PROTOCOL = "openid-connect";
 
-    // Internal note for storing authorization details response in client session context
+    // 客户端会话上下文内部 note：授权详情响应
     public static final String AUTHORIZATION_DETAILS_RESPONSE = "authorization_details_response";
 
-    // Internal note for storing the authorization request uri
+    // 客户端会话上下文内部 note：授权请求 URI
     public static final String AUTHORIZATION_REQUEST_URI = "authorization_request_uri";
 
-    // This attribute can be used in a realm import definition to signal that default client scopes should be created in addition to the client scopes defined by the realm import definition.
-    // When this attribute is omitted or set to false, the default client scopes are not created if at least one other client scope is defined by the realm import definition.
+    // realm 导入属性：除导入定义中的作用域外是否创建默认客户端作用域
+    // 省略或为 false 且导入已定义至少一个作用域时，不创建默认作用域
     public static final String CREATE_DEFAULT_CLIENT_SCOPES = "CreateDefaultClientScopes";
 }

@@ -19,5 +19,9 @@ package org.keycloak.models;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link ClientScopeProvider} 的 {@link org.keycloak.provider.ProviderFactory} 工厂接口。
+ * <p>管理 realm 下客户端作用域（Client Scope）的持久化与查询。</p>
+ */
 public interface ClientScopeProviderFactory<T extends ClientScopeProvider> extends ProviderFactory<T> {
 }

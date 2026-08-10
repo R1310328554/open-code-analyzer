@@ -20,8 +20,13 @@ package org.keycloak.models;
 import org.keycloak.migration.MigrationModel;
 import org.keycloak.provider.Provider;
 
+/**
+ * 部署状态提供者 SPI：暴露数据库迁移/版本等部署元数据。
+ * <p>供启动流程判断 schema 版本与迁移需求。</p>
+ */
 public interface DeploymentStateProvider extends Provider {
 
+    /** @return 当前部署的 {@link org.keycloak.migration.MigrationModel} */
     MigrationModel getMigrationModel();
 
 }

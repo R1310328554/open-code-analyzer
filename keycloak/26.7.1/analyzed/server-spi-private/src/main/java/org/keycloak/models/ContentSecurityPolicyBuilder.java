@@ -19,19 +19,24 @@ package org.keycloak.models;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Content-Security-Policy（CSP）响应头构建器：链式添加/合并指令并序列化为 HTTP 头值。
+ * <p>默认策略限制 frame-src/frame-ancestors 为 {@code 'self'}，object-src 为 {@code 'none'}。</p>
+ */
 public class ContentSecurityPolicyBuilder {
 
-    // constants for directive names used in the class
+    // 本类使用的 CSP 指令名常量
     public static final String DIRECTIVE_NAME_FRAME_SRC = "frame-src";
     public static final String DIRECTIVE_NAME_FRAME_ANCESTORS = "frame-ancestors";
     public static final String DIRECTIVE_NAME_OBJECT_SRC = "object-src";
 
-    // constants for specific directive value keywords
+    // CSP 指令值关键字
     public static final String DIRECTIVE_VALUE_SELF = "'self'";
     public static final String DIRECTIVE_VALUE_NONE = "'none'";
 
     private final Map<String, String> directives = new LinkedHashMap<>();
 
+    /** 创建带 Keycloak 默认 CSP 指令的构建器。 */
     public static ContentSecurityPolicyBuilder create() {
         return new ContentSecurityPolicyBuilder()
                 .add(DIRECTIVE_NAME_FRAME_SRC, DIRECTIVE_VALUE_SELF)
@@ -39,10 +44,12 @@ public class ContentSecurityPolicyBuilder {
                 .add(DIRECTIVE_NAME_OBJECT_SRC, DIRECTIVE_VALUE_NONE);
     }
 
+    /** 从已有 CSP 头字符串解析并创建构建器。 */
     public static ContentSecurityPolicyBuilder create(String directives) {
         return new ContentSecurityPolicyBuilder().parse(directives);
     }
 
+    /** 设置 {@code frame-src} 指令（{@code null} 移除）。 */
     public ContentSecurityPolicyBuilder frameSrc(String frameSrc) {
         if (frameSrc == null) {
             directives.remove(DIRECTIVE_NAME_FRAME_SRC);
@@ -52,14 +59,17 @@ public class ContentSecurityPolicyBuilder {
         return this;
     }
 
+    /** 追加 {@code frame-src} 源。 */
     public ContentSecurityPolicyBuilder addFrameSrc(String frameSrc) {
         return add(DIRECTIVE_NAME_FRAME_SRC, frameSrc);
     }
 
+    /** @return frame-ancestors 是否为默认 {@code 'self'} */
     public boolean isDefaultFrameAncestors() {
         return DIRECTIVE_VALUE_SELF.equals(directives.get(DIRECTIVE_NAME_FRAME_ANCESTORS));
     }
 
+    /** 设置 {@code frame-ancestors} 指令（{@code null} 移除）。 */
     public ContentSecurityPolicyBuilder frameAncestors(String frameancestors) {
         if (frameancestors == null) {
             directives.remove(DIRECTIVE_NAME_FRAME_ANCESTORS);
@@ -69,10 +79,12 @@ public class ContentSecurityPolicyBuilder {
         return this;
     }
 
+    /** 追加 {@code frame-ancestors} 源。 */
     public ContentSecurityPolicyBuilder addFrameAncestors(String frameancestors) {
         return add(DIRECTIVE_NAME_FRAME_ANCESTORS, frameancestors);
     }
 
+    /** @return 分号分隔的 CSP 头字符串 */
     public String build() {
         StringBuilder sb = new StringBuilder();
         if (!directives.isEmpty()) {
@@ -106,8 +118,8 @@ public class ContentSecurityPolicyBuilder {
         return this;
     }
 
-    // W3C Working Draft: https://www.w3.org/TR/CSP/
-    // Only managing spaces not the other whitespaces defined in the spec
+    // W3C CSP 草案：https://www.w3.org/TR/CSP/
+    // 仅处理空格，不解析规范中的其他空白符
     private ContentSecurityPolicyBuilder parse(String value) {
         if (value == null) {
             return this;

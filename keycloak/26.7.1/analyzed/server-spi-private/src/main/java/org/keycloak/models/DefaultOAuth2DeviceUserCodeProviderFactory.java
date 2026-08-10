@@ -20,10 +20,13 @@ package org.keycloak.models;
 import org.keycloak.Config;
 
 /**
+ * {@link DefaultOAuth2DeviceUserCodeProvider} 的默认工厂，提供者 ID 为 {@code default}。
+ *
  * @author <a href="mailto:h2-wada@nri.co.jp">Hiroyuki Wada</a>
  */
 public class DefaultOAuth2DeviceUserCodeProviderFactory implements OAuth2DeviceUserCodeProviderFactory {
 
+    /** 创建默认设备用户码提供者实例。 */
     @Override
     public OAuth2DeviceUserCodeProvider create(KeycloakSession session) {
         return new DefaultOAuth2DeviceUserCodeProvider();
@@ -44,6 +47,7 @@ public class DefaultOAuth2DeviceUserCodeProviderFactory implements OAuth2DeviceU
 
     }
 
+    /** @return 工厂标识 {@code default} */
     @Override
     public String getId() {
         return "default";

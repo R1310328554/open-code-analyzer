@@ -19,5 +19,9 @@ package org.keycloak.models;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link ClientProvider} 的 {@link org.keycloak.provider.ProviderFactory} 工厂接口。
+ * <p>按存储后端（JPA、Infinispan 等）实例化客户端 CRUD 提供者。</p>
+ */
 public interface ClientProviderFactory<T extends ClientProvider> extends ProviderFactory<T> {
 }

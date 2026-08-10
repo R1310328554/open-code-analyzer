@@ -17,10 +17,15 @@
 
 package org.keycloak.models;
 
+/**
+ * 客户端注册访问令牌（Client Registration Access Token）相关 realm/客户端属性键名。
+ */
 public class ClientRegistrationAccessTokenConstants {
 
+	/** 是否启用客户端注册访问令牌轮换。 */
 	public static final String ROTATION_ENABLED = "client.registration.access.token.enabled";
 
+	// 工具类，禁止实例化
 	private ClientRegistrationAccessTokenConstants(){}
 
 }
