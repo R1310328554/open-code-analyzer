@@ -22,6 +22,8 @@ import org.keycloak.marshalling.Marshalling;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * realm 被删除时广播的会话集群事件，触发各节点清理该 realm 的会话数据。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.REALM_REMOVED_SESSION_EVENT)

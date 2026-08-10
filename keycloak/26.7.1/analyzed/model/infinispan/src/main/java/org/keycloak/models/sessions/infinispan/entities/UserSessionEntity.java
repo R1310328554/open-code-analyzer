@@ -38,6 +38,10 @@ import org.infinispan.protostream.annotations.ProtoTypeId;
 import org.jboss.logging.Logger;
 
 /**
+ * 用户会话 Infinispan 实体，保存登录用户、客户端会话 ID 集合及刷新时间等。
+ * <p>
+ * 跨数据中心合并时通过 {@link #mergeRemoteEntityWithLocalEntity} 取较大的 {@code lastSessionRefresh}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 @ProtoTypeId(Marshalling.USER_SESSION_ENTITY)
@@ -49,38 +53,52 @@ public class UserSessionEntity extends SessionEntity {
 
     public static final Logger logger = Logger.getLogger(UserSessionEntity.class);
 
-    // Metadata attribute, which contains the lastSessionRefresh available on remoteCache. Used in decide whether we need to write to remoteCache (DC) or not
+    /** 元数据键：远程缓存上的 lastSessionRefresh，用于判断是否需要写回远程 DC。 */
     public static final String LAST_SESSION_REFRESH_REMOTE = "lsrr";
 
+    /** 会话唯一 ID。 */
     private final String id;
 
+    /** 关联用户 ID。 */
     private String user;
 
+    /** 身份代理（broker）侧会话 ID。 */
     private String brokerSessionId;
+    /** 身份代理侧用户 ID。 */
     private String brokerUserId;
 
+    /** 登录时使用的用户名。 */
     private String loginUsername;
 
+    /** 客户端 IP 地址。 */
     private String ipAddress;
 
+    /** 认证方式（如 pwd、otp 等）。 */
     private String authMethod;
 
+    /** 是否勾选“记住我”。 */
     private boolean rememberMe;
 
+    /** 会话创建时间戳（秒）。 */
     private int started;
 
+    /** 上次会话刷新时间戳（秒）。 */
     private int lastSessionRefresh;
 
+    /** 会话状态（如 LOGGED_IN、LOGGING_OUT 等）。 */
     private UserSessionModel.State state;
 
+    /** 已认证的客户端会话 ID 集合。 */
     private final Set<String> clientSessions = ConcurrentHashMap.newKeySet();
 
+    /** 会话级 notes 键值对。 */
     private Map<String, String> notes = new ConcurrentHashMap<>();
 
     public UserSessionEntity(String id) {
         this.id = id;
     }
 
+    /** Protostream 反序列化工厂方法。 */
     @ProtoFactory
     static UserSessionEntity protoFactory(String realmId, String id, String user, String loginUsername, String ipAddress, String authMethod, boolean rememberMe, int started, int lastSessionRefresh, Map<String, String> notes, UserSessionModel.State state, String brokerSessionId, String brokerUserId, Set<String> clientSessions) {
         var entity = new UserSessionEntity(id);
@@ -230,6 +248,7 @@ public class UserSessionEntity extends SessionEntity {
           clientSessions);
     }
 
+    /** 将远程实体与本地副本合并，保留较大的 lastSessionRefresh 并记录远程刷新值。 */
     @Override
     public SessionEntityWrapper mergeRemoteEntityWithLocalEntity(SessionEntityWrapper localEntityWrapper) {
         int lsrRemote = getLastSessionRefresh();
@@ -240,7 +259,7 @@ public class UserSessionEntity extends SessionEntity {
         } else {
             UserSessionEntity localUserSession = (UserSessionEntity) localEntityWrapper.getEntity();
 
-            // local lastSessionRefresh should always contain the bigger
+            // 本地 lastSessionRefresh 应始终取较大值
             if (lsrRemote < localUserSession.getLastSessionRefresh()) {
                 setLastSessionRefresh(localUserSession.getLastSessionRefresh());
             }
@@ -255,12 +274,14 @@ public class UserSessionEntity extends SessionEntity {
         return entityWrapper;
     }
 
+    /** 根据 realm/用户上下文创建新用户会话实体并初始化时间戳。 */
     public static UserSessionEntity create(String id, RealmModel realm, UserModel user, String loginUsername, String ipAddress, String authMethod, boolean rememberMe, String brokerSessionId, String brokerUserId) {
         UserSessionEntity entity = new UserSessionEntity(id);
         updateSessionEntity(entity, realm, user, loginUsername, ipAddress, authMethod, rememberMe, brokerSessionId, brokerUserId);
         return entity;
     }
 
+    /** 用 realm/用户字段更新已有实体并重置 started/lastSessionRefresh。 */
     public static void updateSessionEntity(UserSessionEntity entity, RealmModel realm, UserModel user, String loginUsername, String ipAddress, String authMethod, boolean rememberMe, String brokerSessionId, String brokerUserId) {
         entity.setRealmId(realm.getId());
         entity.setUser(user.getId());
@@ -277,6 +298,7 @@ public class UserSessionEntity extends SessionEntity {
         entity.setLastSessionRefresh(currentTime);
     }
 
+    /** 从 {@link UserSessionModel} 快照构建实体；离线会话导入时跳过 loginUsername（KEYCLOAK-5350）。 */
     public static UserSessionEntity createFromModel(UserSessionModel userSession) {
         UserSessionEntity entity = new UserSessionEntity(userSession.getId());
         entity.setRealmId(userSession.getRealm().getId());
@@ -289,11 +311,9 @@ public class UserSessionEntity extends SessionEntity {
         entity.setRememberMe(userSession.isRememberMe());
         entity.setState(userSession.getState());
         if (userSession instanceof OfflineUserSessionModel offline) {
-            // this is a hack so that UserModel doesn't have to be available when offline token is imported.
-            // see related JIRA - KEYCLOAK-5350 and corresponding test
+            // 离线 token 导入时 UserModel 可能不可用，直接使用 userId（KEYCLOAK-5350）
             entity.setUser(offline.getUserId());
-            // NOTE: Hack
-            // We skip calling entity.setLoginUsername(userSession.getLoginUsername())
+            // 有意跳过 setLoginUsername
         } else {
             entity.setLoginUsername(userSession.getLoginUsername());
             entity.setUser(userSession.getUser().getId());

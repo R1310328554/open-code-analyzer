@@ -30,14 +30,12 @@ import org.infinispan.Cache;
 import org.infinispan.distribution.DistributionManager;
 
 /**
- * A {@link ExpirationTask} implementation that uses the {@link DistributionManager} from an Infinispan {@link Cache}.
+ * 利用 Infinispan {@link DistributionManager} 将 realm 过期检查分散到各集群节点的 {@link ExpirationTask}。
  * <p>
- * It takes advantage of the {@link DistributionManager} to assign Keycloak instances to distinct {@link RealmModel},
- * allowing a distributed check of expired session through the cluster.
+ * 仅当本节点为 realm 键的 primary owner 时才执行 purge。
  * <p>
- * A consistent hash is not updated at the same time in all Keycloak cluster members. It is possible some realms are not
- * checked during an iteration, or the same realms are checked by multiple Keycloak instances. In the latter case, we rely on
- * database locking.
+ * 一致性哈希视图在各成员间非同步更新，可能出现 realm 未被检查或由多节点重复检查；
+ * 后者场景依赖数据库锁去重。
  */
 class DistributionAwareExpirationTask extends BaseExpirationTask implements Predicate<RealmModel> {
 
@@ -53,6 +51,7 @@ class DistributionAwareExpirationTask extends BaseExpirationTask implements Pred
         return this;
     }
 
+    /** 本节点是否为该 realm 在缓存拓扑中的 primary owner。 */
     @Override
     public final boolean test(RealmModel realm) {
         return distributionManager.getCacheTopology().getDistribution(realm.getId()).isPrimary();

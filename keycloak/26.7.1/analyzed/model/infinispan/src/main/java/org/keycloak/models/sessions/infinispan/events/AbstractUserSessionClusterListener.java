@@ -27,6 +27,10 @@ import org.keycloak.provider.Provider;
 import org.jboss.logging.Logger;
 
 /**
+ * 用户会话集群事件的抽象监听器基类。
+ * <p>
+ * 通过 {@link KeycloakModelUtils#runJobInTransaction} 在事务中获取指定类型的 Provider 并处理事件。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class AbstractUserSessionClusterListener<SE extends SessionClusterEvent, T extends Provider> implements ClusterListener {
@@ -35,6 +39,7 @@ public abstract class AbstractUserSessionClusterListener<SE extends SessionClust
 
     private final KeycloakSessionFactory sessionFactory;
 
+    /** 处理事件时从会话中解析的 Provider 类型。 */
     private final Class<T> providerClazz;
 
     public AbstractUserSessionClusterListener(KeycloakSessionFactory sessionFactory, Class<T> providerClazz) {
@@ -57,5 +62,6 @@ public abstract class AbstractUserSessionClusterListener<SE extends SessionClust
         });
     }
 
+    /** 子类实现：在目标 Provider 上处理具体用户会话集群事件。 */
     protected abstract void eventReceived(T provider, SE sessionEvent);
 }

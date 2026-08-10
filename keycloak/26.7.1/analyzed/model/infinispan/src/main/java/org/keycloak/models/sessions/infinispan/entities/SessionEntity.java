@@ -24,20 +24,24 @@ import org.infinispan.api.annotations.indexing.Basic;
 import org.infinispan.protostream.annotations.ProtoField;
 
 /**
- * Represents an entity containing data about a session, i.e. an object that is stored in infinispan cache.
- * Due to conflict management in {@code InfinispanChangelogBasedTransaction} that use Infinispan's {@code replace()}
- * method, overriding {@link #hashCode()} and {@link #equals(java.lang.Object)} is <b>mandatory</b> in descendants.
+ * 会话实体的抽象基类，表示存入 Infinispan 缓存的会话数据对象。
+ * <p>
+ * {@code InfinispanChangelogBasedTransaction} 通过 Infinispan 的 {@code replace()} 做冲突合并，
+ * 因此子类<b>必须</b>正确实现 {@link #hashCode()} 与 {@link #equals(java.lang.Object)}。
  *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public abstract class SessionEntity {
 
+    /** 所属 realm 的 ID。 */
     private String realmId;
+    /** 是否为离线会话（仅持久化会话环境支持）。 */
     private boolean isOffline;
 
     /**
-     * Returns realmId ID.
-     * @return
+     * 返回所属 realm 的 ID。
+     *
+     * @return realm ID
      */
     @ProtoField(1)
     @Basic
@@ -57,7 +61,7 @@ public abstract class SessionEntity {
     }
 
     @Deprecated(since = "26.4", forRemoval = true)
-    //no longer used
+    // 已不再使用；默认将远程实体与本地元数据合并
     public SessionEntityWrapper mergeRemoteEntityWithLocalEntity(SessionEntityWrapper localEntityWrapper) {
         if (localEntityWrapper == null) {
             return new SessionEntityWrapper<>(this);
@@ -86,6 +90,7 @@ public abstract class SessionEntity {
         isOffline = offline;
     }
 
+    /** 子类可覆盖：是否在合并/更新时评估删除条件。 */
     public boolean shouldEvaluateRemoval() {
         return false;
     }

@@ -28,11 +28,14 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 单次使用对象的值实体，以 notes 映射存储附加属性（如 action token 元数据）。
+ *
  * @author hmlnarik
  */
 @ProtoTypeId(Marshalling.SINGLE_USE_OBJECT_VALUE_ENTITY)
 public class SingleUseObjectValueEntity implements SingleUseObjectValueModel {
 
+    /** 不可变 notes 映射，键值均为字符串。 */
     private final Map<String, String> notes;
 
     @ProtoFactory
@@ -42,7 +45,7 @@ public class SingleUseObjectValueEntity implements SingleUseObjectValueModel {
             return;
         }
         var copy = new HashMap<>(notes);
-        // protostream does not support null values for primitive types as string
+        // protostream 不支持字符串字段的 null 值，需预先剔除
         copy.values().removeIf(Objects::isNull);
         this.notes = Map.copyOf(copy);
     }

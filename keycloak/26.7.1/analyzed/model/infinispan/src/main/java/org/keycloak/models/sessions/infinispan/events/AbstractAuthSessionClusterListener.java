@@ -29,6 +29,10 @@ import org.keycloak.sessions.AuthenticationSessionProvider;
 import org.jboss.logging.Logger;
 
 /**
+ * 认证会话集群事件的抽象监听器基类。
+ * <p>
+ * 在独立事务中获取 {@link InfinispanAuthenticationSessionProvider}，并在缓存允许调用时处理事件。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class AbstractAuthSessionClusterListener <SE extends SessionClusterEvent> implements ClusterListener {
@@ -44,6 +48,7 @@ public abstract class AbstractAuthSessionClusterListener <SE extends SessionClus
 
     @Override
     public void eventReceived(ClusterEvent event) {
+        // 在短事务中分发到嵌入式认证会话 Provider
         KeycloakModelUtils.runJobInTransaction(sessionFactory, (KeycloakSession session) -> {
             InfinispanAuthenticationSessionProvider provider = (InfinispanAuthenticationSessionProvider) session.getProvider(AuthenticationSessionProvider.class,
                     InfinispanUtils.EMBEDDED_PROVIDER_ID);
@@ -61,5 +66,6 @@ public abstract class AbstractAuthSessionClusterListener <SE extends SessionClus
         });
     }
 
+    /** 子类实现：在 Provider 上处理具体认证会话集群事件。 */
     protected abstract void eventReceived(InfinispanAuthenticationSessionProvider provider, SE sessionEvent);
 }

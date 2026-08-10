@@ -22,6 +22,8 @@ import org.keycloak.marshalling.Marshalling;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 清除指定 realm 下全部用户登录失败记录的集群事件。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.REMOVE_ALL_USER_LOGIN_FAILURES_EVENT)

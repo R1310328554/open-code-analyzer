@@ -18,23 +18,21 @@
 package org.keycloak.models.sessions.infinispan.expiration;
 
 /**
- * Lifecycle methods for the user and client session expiration task.
+ * 用户/客户端会话过期清理任务的生命周期接口。
  * <p>
- * The task must remove the expired sessions from the database. The {@link #start()} is invoked when Keycloak starts
- * and, respectively, {@link #stop()} when Keycloak is shutdown.
+ * 实现负责从数据库删除过期会话；{@link #start()} 在 Keycloak 启动时调用，{@link #stop()} 在关闭时调用。
  */
 public interface ExpirationTask {
 
     /**
-     * Starts the expiration task.
+     * 启动过期清理任务。
      * <p>
-     * This method is only invoked when Keycloak starts, and the implementation is responsible to schedule future
-     * invocation, to prevent the database growing.
+     * 仅在 Keycloak 启动时调用一次；实现需自行调度后续轮次，防止数据库无限增长。
      */
     void start();
 
     /**
-     * Stops the expiration task.
+     * 停止过期清理任务并释放调度资源。
      */
     void stop();
 

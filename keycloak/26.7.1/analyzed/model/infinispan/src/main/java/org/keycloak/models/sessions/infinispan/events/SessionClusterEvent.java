@@ -28,17 +28,24 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoReserved;
 
 /**
+ * 会话相关集群事件的抽象基类，携带 realm、事件键及来源节点/站点信息。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoReserved(numbers = {3}, names = {"resendingEvent"})
 public abstract class SessionClusterEvent implements ClusterEvent {
 
+    /** 目标 realm ID。 */
     private String realmId;
+    /** 集群通知分组键，同键事件批量发送。 */
     private String eventKey;
+    /** 发起节点所属站点（多站点部署）。 */
     private String siteId;
+    /** 发起节点的 Infinispan 节点名。 */
     private String nodeId;
 
 
+    /** 反射创建事件实例并填充 realm、eventKey 及当前节点信息。 */
     public static <T extends SessionClusterEvent> T createEvent(Class<T> eventClass, String eventKey, KeycloakSession session, String realmId) {
         try {
             T event = eventClass.getDeclaredConstructor().newInstance();
@@ -50,6 +57,7 @@ public abstract class SessionClusterEvent implements ClusterEvent {
     }
 
 
+    /** 从当前会话的 Infinispan 连接填充 realm、eventKey 与节点元数据。 */
     void setData(KeycloakSession session, String eventKey, String realmId) {
         this.realmId = realmId;
         this.eventKey = eventKey;

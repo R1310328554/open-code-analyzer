@@ -40,20 +40,23 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.jboss.logging.Logger;
 
 /**
- * ${@link BaseExpirationTask} contains the main logic to remove expired sessions from the database.
+ * 从数据库清理过期会话的核心逻辑基类。
  * <p>
- * The implementation only need to provide a {@link Predicate}, by implementing {@link #realmFilter()}. This
- * {@link Predicate} decides if the session belonging to the {@link RealmModel} must be checked in this round.
+ * 子类只需实现 {@link #realmFilter()}，返回 {@link Predicate} 以决定本轮由本实例检查哪些 {@link RealmModel}。
  */
 abstract class BaseExpirationTask implements ExpirationTask {
 
     protected static final Logger log = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    /** 当前调度中的 purge 任务引用，用于取消与链式调度。 */
     private final AtomicReference<PurgeExpiredTask> currentTask = new AtomicReference<>();
     private final KeycloakSessionFactory factory;
+    /** 两轮 purge 之间的间隔（秒）。 */
     private final int delaySeconds;
     private final ScheduledExecutorService scheduledExecutorService;
+    /** purge 完成后回调，可用于记录耗时指标。 */
     private final Consumer<Duration> onTaskExecuted;
+    /** 单线程执行器，串行运行 purge 避免并发写库。 */
     private final ExecutorService executorService;
 
     BaseExpirationTask(KeycloakSessionFactory factory, ScheduledExecutorService scheduledExecutorService, int delaySeconds, Consumer<Duration> onTaskExecuted) {
@@ -63,7 +66,7 @@ abstract class BaseExpirationTask implements ExpirationTask {
         this.onTaskExecuted = Objects.requireNonNullElse(onTaskExecuted, value -> {
         });
         this.executorService = Executors.newSingleThreadExecutor(r -> {
-            //create daemon threads
+            // 创建守护线程，避免阻塞 JVM 退出
             Thread t = new Thread(r);
             t.setDaemon(true);
             t.setName("user-session-purge-expired");
@@ -86,6 +89,7 @@ abstract class BaseExpirationTask implements ExpirationTask {
         executorService.shutdown();
     }
 
+    /** 遍历通过 realm 过滤器的 realm，调用持久化层删除过期会话。 */
     void purgeExpired() {
         log.debug("PurgeExpired database sessions started");
         long start = System.nanoTime();
@@ -109,8 +113,10 @@ abstract class BaseExpirationTask implements ExpirationTask {
         }
     }
 
+    /** 子类提供：决定本实例负责检查哪些 realm。 */
     abstract Predicate<RealmModel> realmFilter();
 
+    /** 完成一轮后链式调度下一轮 purge。 */
     private void scheduleNextTask() {
         var existingTask = currentTask.get();
         var newTask = createAndSchedule();

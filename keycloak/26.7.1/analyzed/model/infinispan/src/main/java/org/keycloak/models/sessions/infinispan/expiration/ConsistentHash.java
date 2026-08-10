@@ -45,16 +45,13 @@ import org.infinispan.commons.hash.MurmurHash3;
 import org.jboss.logging.Logger;
 
 /**
- * A consistent hash for expiration, relying on the external Infinispan.
+ * 基于外部 Infinispan 的一致性哈希，用于在集群节点间分配 realm 过期检查职责。
  * <p>
- * Each Keycloak instance will add itself, periodically, to the remote cache, and it relies on the Hot Rod client
- * listener to keep the membership up to date.
+ * 各 Keycloak 实例定期向远程缓存写入心跳，并通过 Hot Rod 客户端监听器维护成员列表。
  * <p>
- * During network partitions, it has a probability of two or more Keycloak instances to be assigned to the same realm.
- * In this scenario, we rely on the database lock to keep data consistent.
+ * 网络分区时可能出现多个实例被分配到同一 realm，此时依赖数据库锁保证一致性。
  * <p>
- * Keycloak instances starting and stopping information may not be available in real time, and it is possible some
- * realms not being checked during an iteration.
+ * 节点上下线信息非实时，某些迭代中部分 realm 可能未被检查。
  */
 @ClientListener(includeCurrentState = true)
 class ConsistentHash {
@@ -63,10 +60,13 @@ class ConsistentHash {
 
     private static final int MIN_HEARTBEAT_PERIOD_SECONDS = 30;
     private static final int LIFESPAN_MULTIPLIER = 3;
+    /** 每轮过期检查周期内发送的心跳次数。 */
     private static final int HEARTBEATS_PER_EXPIRATION_ROUND = 4;
     private static final int STOP_TIMEOUT_MILLISECONDS = 500;
+    /** 成员键前缀，用于区分 Keycloak 节点条目。 */
     private static final String MEMBER_KEY_PREFIX = "node:";
 
+    /** 当前已知集群成员（node:uuid 形式）的有序集合快照来源。 */
     private final Set<String> membership = ConcurrentHashMap.newKeySet();
     private final String nodeUUID;
     private final String nodeName;
@@ -118,29 +118,35 @@ class ConsistentHash {
         }
     }
 
+    /** 返回基于当前成员快照的 realm 过滤器：仅本节点 hash 命中的 realm 为 true。 */
     Predicate<RealmModel> consistentHashSnapshot() {
         return new HashingPredicate(membership.stream().sorted().toList(), nodeUUID);
     }
 
+    /** 当前已知集群成员数量。 */
     int size() {
         return membership.size();
     }
 
+    /** Hot Rod 监听器：新节点心跳写入时加入成员集。 */
     @ClientCacheEntryCreated
     public void onKeycloakConnected(ClientCacheEntryCreatedEvent<String> event) {
         addKeycloakNode(event.getKey());
     }
 
+    /** 心跳续期时刷新成员集。 */
     @ClientCacheEntryModified
     public void onHeartbeat(ClientCacheEntryModifiedEvent<String> event) {
         addKeycloakNode(event.getKey());
     }
 
+    /** 心跳 TTL 到期时从成员集移除节点。 */
     @ClientCacheEntryExpired
     public void onMissingHeartbeat(ClientCacheEntryExpiredEvent<String> event) {
         removeKeycloakNode(event.getKey());
     }
 
+    /** 节点主动下线或条目被删除时移除成员。 */
     @ClientCacheEntryRemoved
     public void onKeycloakDisconnect(ClientCacheEntryRemovedEvent<String> event) {
         removeKeycloakNode(event.getKey());
@@ -160,11 +166,13 @@ class ConsistentHash {
         }
     }
 
+    /** 向远程缓存写入带 TTL 的心跳并注册自身为成员。 */
     private void sendHeartBeat() {
         cache.putAsync(nodeUUID, nodeName, heartBeatLifespan, TimeUnit.SECONDS);
         addKeycloakNode(nodeUUID);
     }
 
+    /** 对 realm ID 做 MurmurHash3 取模，判断本节点是否为该 realm 的负责者。 */
     private record HashingPredicate(List<String> members, String myUUID) implements Predicate<RealmModel> {
 
         @Override

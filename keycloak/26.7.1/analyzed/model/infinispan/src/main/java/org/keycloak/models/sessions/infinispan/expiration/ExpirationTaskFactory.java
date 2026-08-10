@@ -38,17 +38,17 @@ import org.infinispan.client.hotrod.RemoteCache;
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.WORK_CACHE_NAME;
 
 /**
- * Provides factory method to instantiate an {@link ExpirationTask}.
+ * {@link ExpirationTask} 工厂：按 Infinispan 部署模式（嵌入式/远程）创建对应实现。
  * <p>
- * The {@link ExpirationTask} is not started.
+ * 返回的实例尚未调用 {@link ExpirationTask#start()}。
  */
 public final class ExpirationTaskFactory {
 
     /**
-     * Creates a {@link ExpirationTask} based on the Keycloak configuration.
+     * 根据 Keycloak 配置创建 {@link ExpirationTask}；若启用 metrics 则注册耗时 Timer。
      *
-     * @param session The current {@link KeycloakSession}.
-     * @return A new instance of {@link ExpirationTask}. This instance is not started yet.
+     * @param session 当前 {@link KeycloakSession}
+     * @return 尚未启动的新 {@link ExpirationTask} 实例
      */
     public static ExpirationTask create(KeycloakSession session, int expirationPeriodSeconds) {
         Consumer<Duration> onTaskExecuted = null;
@@ -63,13 +63,12 @@ public final class ExpirationTaskFactory {
     }
 
     /**
-     * Creates a {@link ExpirationTask} based on the configuration provided by the parameters.
+     * 根据显式参数创建 {@link ExpirationTask}。
      *
-     * @param session                     The current {@link KeycloakSession}.
-     * @param expirationTaskPeriodSeconds The period when the database is checked for expired sessions.
-     * @param onTaskExecuted              An optional {@link Consumer<Duration>}. It is invoked when a database expiration
-     *                                    check finishes with its duration, in nanoseconds.
-     * @return A new instance of {@link ExpirationTask}. This instance is not started yet.
+     * @param session                     当前 {@link KeycloakSession}
+     * @param expirationTaskPeriodSeconds 检查数据库过期会话的周期（秒）
+     * @param onTaskExecuted              可选回调；每轮 purge 完成时以纳秒精度报告耗时
+     * @return 尚未启动的新 {@link ExpirationTask} 实例
      */
     public static ExpirationTask create(KeycloakSession session, int expirationTaskPeriodSeconds, Consumer<Duration> onTaskExecuted) {
         var connectionProvider = session.getProvider(InfinispanConnectionProvider.class);
@@ -78,22 +77,25 @@ public final class ExpirationTaskFactory {
         if (InfinispanUtils.isEmbeddedInfinispan()) {
             var workCache = connectionProvider.getCache(WORK_CACHE_NAME);
             if (workCache.getCacheConfiguration().clustering().cacheMode().isClustered()) {
+                // 嵌入式集群：按 DistributionManager 分片 realm
                 var distributionManager = workCache.getAdvancedCache().getDistributionManager();
                 return new DistributionAwareExpirationTask(session.getKeycloakSessionFactory(), schedulerExecutor, expirationTaskPeriodSeconds, onTaskExecuted, distributionManager);
             }
 
+            // 单机嵌入式：本地检查全部 realm
             return new LocalExpirationTask(session.getKeycloakSessionFactory(), schedulerExecutor, expirationTaskPeriodSeconds, onTaskExecuted);
         }
 
+        // 远程 Infinispan：通过 ConsistentHash 心跳协调分片
         RemoteCache<String, String> workCache = connectionProvider.getRemoteCache(WORK_CACHE_NAME);
         String nodeName = connectionProvider.getNodeInfo().nodeName();
         return new RemoteExpirationTask(session.getKeycloakSessionFactory(), schedulerExecutor, expirationTaskPeriodSeconds, onTaskExecuted, workCache, nodeName);
     }
 
     /**
-     * Checks if the local instance is responsible to clean up expired sessions from {@code realm}.
+     * 判断本实例是否负责清理指定 {@code realm} 的过期会话。
      * <p>
-     * Provided for testing purposes only! Do not invoke in production.
+     * 仅供测试使用，生产环境勿调用。
      */
     public static boolean isSelectedForExpireSessionsInRealm(KeycloakSession session, RealmModel realm) {
         return getEventTask(session)
@@ -103,18 +105,18 @@ public final class ExpirationTaskFactory {
     }
 
     /**
-     * Manually trigger the expiration task, bypassing any scheduling.
+     * 手动触发一次过期清理，绕过调度器。
      * <p>
-     * Provided for testing purposes only! Do not invoke in production.
+     * 仅供测试使用，生产环境勿调用。
      */
     public static void manualTriggerTask(KeycloakSession session) {
         getEventTask(session).ifPresent(BaseExpirationTask::purgeExpired);
     }
 
     /**
-     * Returns the number of Keycloak instance when running with an external Infinispan cluster.
+     * 返回外部 Infinispan 集群模式下已知 Keycloak 实例数量。
      * <p>
-     * Testing purpose only! Do not invoke in production.
+     * 仅供测试使用，生产环境勿调用。
      */
     public static int membersSize(KeycloakSession session) {
         return getEventTask(session)
@@ -124,6 +126,7 @@ public final class ExpirationTaskFactory {
                 .orElse(0);
     }
 
+    /** 从 {@link InfinispanUserSessionProviderFactory} 取得底层 {@link BaseExpirationTask}。 */
     private static Optional<BaseExpirationTask> getEventTask(KeycloakSession session) {
         ProviderFactory<UserSessionProvider> provider = session.getKeycloakSessionFactory().getProviderFactory(UserSessionProvider.class);
         if (!(provider instanceof InfinispanUserSessionProviderFactory iuspf)) {
