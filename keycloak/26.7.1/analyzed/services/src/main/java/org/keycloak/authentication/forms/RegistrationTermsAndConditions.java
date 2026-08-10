@@ -38,13 +38,19 @@ import org.keycloak.models.utils.FormMessage;
 import org.keycloak.provider.ConfiguredProvider;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * 注册条款与条件表单动作：要求用户在提交注册前勾选接受条款。
+ */
 public class RegistrationTermsAndConditions implements FormAction, FormActionFactory, ConfiguredProvider {
 
+	/** Provider ID：registration-terms-and-conditions。 */
 	public static final String PROVIDER_ID = "registration-terms-and-conditions";
 
+    /** 表单字段名：条款接受复选框。 */
 	protected static final String FIELD = "termsAccepted";
 
 	@Override
+	/** @return 管理控制台显示名称 */
 	public String getDisplayType() {
 		return "Terms and conditions";
 	}
@@ -74,11 +80,13 @@ public class RegistrationTermsAndConditions implements FormAction, FormActionFac
 	}
 
 	@Override
+	/** 标记注册页需要展示条款接受复选框。 */
 	public void buildPage(FormContext context, LoginFormsProvider form) {
 		form.setAttribute("termsAcceptanceRequired", true);
 	}
 
 	@Override
+	/** 校验用户已勾选 termsAccepted 字段。 */
 	public void validate(ValidationContext context) {
 		MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
 		if (formData.containsKey(FIELD)) {
@@ -96,6 +104,7 @@ public class RegistrationTermsAndConditions implements FormAction, FormActionFac
 	}
 
 	@Override
+	/** @return 条款校验不要求已识别用户 */
 	public boolean requiresUser() {
 		return false;
 	}
@@ -111,6 +120,7 @@ public class RegistrationTermsAndConditions implements FormAction, FormActionFac
 	}
 
 	@Override
+	/** @return 帮助说明：要求用户接受条款与条件后再提交注册 */
 	public String getHelpText() {
 		return "Asks the user to accept terms and conditions before submitting its registration form.";
 	}
@@ -121,6 +131,7 @@ public class RegistrationTermsAndConditions implements FormAction, FormActionFac
 	}
 
 	@Override
+	/** @return 自身作为单例表单动作 */
 	public FormAction create(KeycloakSession session) {
 		return this;
 	}
@@ -141,6 +152,7 @@ public class RegistrationTermsAndConditions implements FormAction, FormActionFac
 	}
 
 	@Override
+	/** @return Provider ID */
 	public String getId() {
 		return PROVIDER_ID;
 	}

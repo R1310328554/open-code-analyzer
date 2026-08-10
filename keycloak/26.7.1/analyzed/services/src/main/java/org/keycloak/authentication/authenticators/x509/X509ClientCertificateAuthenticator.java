@@ -49,6 +49,7 @@ import static org.keycloak.authentication.authenticators.util.AuthenticatorUtils
  */
 public class X509ClientCertificateAuthenticator extends AbstractX509ClientCertificateAuthenticator {
 
+    /** 日志记录器。 */
     private final static Logger logger = Logger.getLogger(X509ClientCertificateAuthenticator.class);
 
     @Override
@@ -57,6 +58,7 @@ public class X509ClientCertificateAuthenticator extends AbstractX509ClientCertif
     }
 
     @Override
+    /** 校验证书链、提取用户身份、查找用户并可选展示身份确认页。 */
     public void authenticate(AuthenticationFlowContext context) {
 
         try {
@@ -65,8 +67,7 @@ public class X509ClientCertificateAuthenticator extends AbstractX509ClientCertif
 
             X509Certificate[] certs = getCertificateChain(context);
             if (certs == null || certs.length == 0) {
-                // No x509 client cert, fall through and
-                // continue processing the rest of the authentication flow
+                // 无客户端证书时跳过本步骤，继续后续认证流程
                 logger.debug("[authenticate] x509 client certificate is not available for mutual SSL.");
                 context.attempted();
                 return;
@@ -86,7 +87,7 @@ public class X509ClientCertificateAuthenticator extends AbstractX509ClientCertif
                 return;
             }
 
-            // Validate X509 client certificate
+            // 校验 X509 客户端证书（信任链、时效、密钥用途、策略与吊销状态）
             try {
                 CertificateValidator.CertificateValidatorBuilder builder = certificateValidationParameters(context.getSession(), config);
                 CertificateValidator validator = builder.build(certs);
@@ -98,9 +99,9 @@ public class X509ClientCertificateAuthenticator extends AbstractX509ClientCertif
                          .checkRevocationStatus();
             } catch(Exception e) {
                 logger.error(e.getMessage(), e);
-                // TODO use specific locale to load error messages
+                // TODO：使用特定 locale 加载本地化错误消息
                 String errorMessage = "Certificate validation's failed.";
-                // TODO is calling form().setErrors enough to show errors on login screen?
+                // TODO：form().setErrors 是否足以在登录页展示错误
                 context.challenge(createErrorResponse(context, certs[0].getSubjectDN().getName(),
                         errorMessage, "Certificate revoked or incorrect."));
                 context.attempted();
@@ -169,18 +170,14 @@ public class X509ClientCertificateAuthenticator extends AbstractX509ClientCertif
             }
             context.setUser(user);
 
-            // Check whether to display the identity confirmation
+            // 判断是否展示证书身份确认页
             if (!config.getConfirmationPageDisallowed()) {
-                // Calling forceChallenge was the only way to display
-                // a form to let users either choose the user identity from certificate
-                // or to ignore it and proceed to a normal login screen. Attempting
-                // to call the method "challenge" results in a wrong/unexpected behavior.
+                // 须用 forceChallenge 展示确认页，让用户接受证书身份或改用用户名密码登录
                 context.forceChallenge(createSuccessResponse(context, certs[0].getSubjectDN().toString()));
-                // Do not set the flow status yet, we want to display a form to let users
-                // choose whether to accept the identity from certificate or to specify username/password explicitly
+                // 暂不标记成功，等待用户在确认页做出选择
             }
             else {
-                // Bypass the confirmation page and log the user in
+                // 跳过确认页直接登录
                 context.success(UserCredentialModel.CLIENT_CERT);
             }
         }
@@ -190,6 +187,7 @@ public class X509ClientCertificateAuthenticator extends AbstractX509ClientCertif
         }
     }
 
+    /** 构建证书认证失败时的 X509 确认/错误页响应。 */
     private Response createErrorResponse(AuthenticationFlowContext context,
                                          String subjectDN,
                                          String errorMessage,
@@ -198,11 +196,13 @@ public class X509ClientCertificateAuthenticator extends AbstractX509ClientCertif
         return createResponse(context, subjectDN, false, errorMessage, errorParameters);
     }
 
+    /** 构建证书认证成功时的 X509 确认页响应。 */
     private Response createSuccessResponse(AuthenticationFlowContext context,
                                            String subjectDN) {
         return createResponse(context, subjectDN, true, null, null);
     }
 
+    /** 组装 X509 确认页表单数据与错误消息。 */
     private Response createResponse(AuthenticationFlowContext context,
                                          String subjectDN,
                                          boolean isUserEnabled,
@@ -236,6 +236,7 @@ public class X509ClientCertificateAuthenticator extends AbstractX509ClientCertif
         return form.createX509ConfirmPage();
     }
 
+    /** 调试输出会话容器属性名。 */
     private void dumpContainerAttributes(AuthenticationFlowContext context) {
 
         Map<String, Object> attributeNames = context.getSession().getAttributes();
@@ -244,6 +245,7 @@ public class X509ClientCertificateAuthenticator extends AbstractX509ClientCertif
         }
     }
 
+    /** 检查用户是否已启用。 */
     private boolean userEnabled(AuthenticationFlowContext context, UserModel user) {
         if (!user.isEnabled()) {
             context.getEvent().user(user);
@@ -253,6 +255,7 @@ public class X509ClientCertificateAuthenticator extends AbstractX509ClientCertif
         return true;
     }
 
+    /** 检查用户是否存在。 */
     private boolean invalidUser(AuthenticationFlowContext context, UserModel user) {
         if (user == null) {
             context.getEvent().error(Errors.USER_NOT_FOUND);
@@ -262,6 +265,7 @@ public class X509ClientCertificateAuthenticator extends AbstractX509ClientCertif
     }
 
     @Override
+    /** 处理用户在 X509 确认页的提交（确认或取消）。 */
     public void action(AuthenticationFlowContext context) {
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
         if (formData.containsKey("cancel")) {

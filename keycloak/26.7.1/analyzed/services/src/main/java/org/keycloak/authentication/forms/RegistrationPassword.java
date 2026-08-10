@@ -51,13 +51,15 @@ import org.keycloak.services.validation.Validation;
  * @version $Revision: 1 $
  */
 public class RegistrationPassword implements FormAction, FormActionFactory {
+    /** Provider ID：registration-password-action。 */
     public static final String PROVIDER_ID = "registration-password-action";
 
-    // Configuration option
+    // 配置选项
+    /** 配置键：是否在注册表单上直接设置密码（而非邮箱验证后）。 */
     public static final String ALWAYS_SET_PASSWORD_ON_REGISTER_FORM = "always_set_password_on_register_form";
 
-    // Authentication note to signal that password fields should not be rendered on the registration page, but rather "update password" required action should be added
-    // to the user account
+    // 认证备注：启用邮箱验证时不在注册页收集密码，改为添加 UPDATE_PASSWORD 必需操作
+    /** 认证会话备注键：标记需在邮箱验证后更新密码。 */
     private static final String UPDATE_PASSWORD_AFTER_EMAIL_VERIFICATION_NOTE = "update_password_after_email_verification_note";
 
     @Override
@@ -66,6 +68,7 @@ public class RegistrationPassword implements FormAction, FormActionFactory {
     }
 
     @Override
+    /** @return 是否在注册表单设置密码的配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return ProviderConfigurationBuilder.create()
                 .property()
@@ -80,6 +83,7 @@ public class RegistrationPassword implements FormAction, FormActionFactory {
     }
 
     @Override
+    /** 校验密码非空、与确认密码一致且符合领域密码策略。 */
     public void validate(ValidationContext context) {
         if (isVerifyEmail(context)) {
             context.success();
@@ -112,6 +116,7 @@ public class RegistrationPassword implements FormAction, FormActionFactory {
     }
 
     @Override
+    /** 将密码写入用户凭证存储，或添加 UPDATE_PASSWORD 必需操作。 */
     public void success(FormContext context) {
         UserModel user = context.getUser();
 
@@ -130,6 +135,7 @@ public class RegistrationPassword implements FormAction, FormActionFactory {
     }
 
     @Override
+    /** 根据邮箱验证配置决定是否展示密码字段。 */
     public void buildPage(FormContext context, LoginFormsProvider form) {
         if (isVerifyEmail(context)) {
             context.getAuthenticationSession().setAuthNote(UPDATE_PASSWORD_AFTER_EMAIL_VERIFICATION_NOTE, "true");
@@ -138,13 +144,14 @@ public class RegistrationPassword implements FormAction, FormActionFactory {
         }
     }
 
+    /** 判断是否应在邮箱验证后再设置密码。 */
     private boolean isVerifyEmail(FormContext context) {
         String alwaysSetPasswordCfg = context.getAuthenticatorConfig() == null ? null : context.getAuthenticatorConfig().getConfig().get(ALWAYS_SET_PASSWORD_ON_REGISTER_FORM);
         if ("true".equals(alwaysSetPasswordCfg)) return false;
 
         if (context.getRealm().isVerifyEmail()) return true;
 
-        // Check if verifyEmail is set as default required action. In that case, newly registered users are also required to verify their emails
+        // 若 VERIFY_EMAIL 为默认必需操作，新注册用户也需验证邮箱
         RequiredActionProviderModel verifyEmailAction = context.getRealm().getRequiredActionProviderByAlias(UserModel.RequiredAction.VERIFY_EMAIL.name());
         return verifyEmailAction != null && verifyEmailAction.isDefaultAction();
     }
@@ -174,6 +181,7 @@ public class RegistrationPassword implements FormAction, FormActionFactory {
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Password Validation";
     }
@@ -213,6 +221,7 @@ public class RegistrationPassword implements FormAction, FormActionFactory {
     }
 
     @Override
+    /** @return Provider ID */
     public String getId() {
         return PROVIDER_ID;
     }

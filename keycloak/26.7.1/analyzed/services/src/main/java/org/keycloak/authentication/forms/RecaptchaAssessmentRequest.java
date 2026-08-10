@@ -21,10 +21,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import static java.lang.String.format;
 
+/**
+ * reCAPTCHA Enterprise 评估请求体：封装 token、siteKey 与 expectedAction 事件数据。
+ */
 public class RecaptchaAssessmentRequest {
+    /** 评估事件载荷。 */
     @JsonProperty("event")
     private Event event;
 
+    /**
+     * 构造 Enterprise 评估请求。
+     * @param token 用户提交的 reCAPTCHA 响应令牌
+     * @param siteKey 站点密钥
+     * @param action 期望的动作名称
+     */
     public RecaptchaAssessmentRequest(String token, String siteKey, String action) {
         this.event = new Event(token, siteKey, action);
     }
@@ -41,13 +51,17 @@ public class RecaptchaAssessmentRequest {
         this.event = event;
     }
 
+    /** reCAPTCHA Enterprise 评估事件字段。 */
     public static class Event {
+        /** 用户响应令牌。 */
         @JsonProperty("token")
         private String token;
 
+        /** 站点密钥。 */
         @JsonProperty("siteKey")
         private String siteKey;
 
+        /** 期望的动作名称。 */
         @JsonProperty("expectedAction")
         private String action;
 

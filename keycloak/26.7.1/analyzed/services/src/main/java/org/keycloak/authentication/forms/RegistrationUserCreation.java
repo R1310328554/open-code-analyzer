@@ -68,6 +68,7 @@ import static org.keycloak.services.managers.AuthenticationManager.NEW_USER_REGI
  */
 public class RegistrationUserCreation implements FormAction, FormActionFactory {
 
+    /** Provider ID：registration-user-creation。 */
     public static final String PROVIDER_ID = "registration-user-creation";
 
     @Override
@@ -81,6 +82,7 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
     }
 
     @Override
+    /** 校验用户档案字段及组织邀请令牌（若存在）。 */
     public void validate(ValidationContext context) {
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
         context.getEvent().detail(Details.REGISTER_METHOD, "form");
@@ -130,11 +132,13 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
     }
 
     @Override
+    /** 检查是否已有其他用户正在认证（防止浏览器回退导致异常状态）。 */
     public void buildPage(FormContext context, LoginFormsProvider form) {
         checkNotOtherUserAuthenticating(context);
     }
 
     @Override
+    /** 创建用户、处理条款接受、组织成员关系及登录事件。 */
     public void success(FormContext context) {
         checkNotOtherUserAuthenticating(context);
 
@@ -160,7 +164,7 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
         user.setEnabled(true);
 
         if ("on".equals(formData.getFirst(RegistrationTermsAndConditions.FIELD))) {
-            // if accepted terms and conditions checkbox, remove action and add the attribute if enabled
+            // 若勾选条款复选框，移除 TERMS_AND_CONDITIONS 必需操作并记录接受时间
             RequiredActionProviderModel tacModel = context.getRealm().getRequiredActionProviderByAlias(
                     UserModel.RequiredAction.TERMS_AND_CONDITIONS.name());
             if (tacModel != null && tacModel.isEnabled()) {
@@ -186,9 +190,10 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
         }
     }
 
+    /** 若上下文中已有用户则抛出认证流程异常（浏览器回退场景）。 */
     private void checkNotOtherUserAuthenticating(FormContext context) {
         if (context.getUser() != null) {
-            // the user probably did some back navigation in the browser, hitting this page in a strange state
+            // 用户可能通过浏览器回退进入异常状态
             context.getEvent().detail(Details.EXISTING_USER, context.getUser().getUsername());
             throw new AuthenticationFlowException(AuthenticationFlowError.GENERIC_AUTHENTICATION_ERROR, Errors.DIFFERENT_USER_AUTHENTICATING, Messages.EXPIRED_ACTION);
         }
@@ -221,6 +226,7 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Registration User Profile Creation";
     }
@@ -259,16 +265,18 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
     }
 
     @Override
+    /** @return Provider ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 移除 reCAPTCHA 与密码字段，避免污染用户档案数据。 */
     private MultivaluedMap<String, String> normalizeFormParameters(MultivaluedMap<String, String> formParams) {
         MultivaluedHashMap<String, String> copy = new MultivaluedHashMap<>(formParams);
 
-        // Remove google recaptcha form property to avoid length errors
+        // 移除 reCAPTCHA 字段以避免长度校验错误
         copy.remove(RegistrationPage.FIELD_RECAPTCHA_RESPONSE);
-        // Remove "password" and "password-confirm" to avoid leaking them in the user-profile data
+        // 移除密码字段，防止泄露至用户档案
         copy.remove(RegistrationPage.FIELD_PASSWORD);
         copy.remove(RegistrationPage.FIELD_PASSWORD_CONFIRM);
 
@@ -276,9 +284,9 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
     }
 
     /**
-     * Get user profile instance for current HTTP request (KeycloakSession) and for given context. This assumes that there is
-     * single user registered within HTTP request, which is always the case in Keycloak
+     * 获取或创建当前 HTTP 请求的用户档案实例（Keycloak 注册流程中每请求仅一名用户）。
      */
+    /** 从会话缓存或表单数据创建 REGISTRATION 上下文用户档案。 */
     public UserProfile getOrCreateUserProfile(FormContext formContext, MultivaluedMap<String, String> formData) {
         KeycloakSession session = formContext.getSession();
         UserProfile profile = (UserProfile) session.getAttribute("UP_REGISTER");
@@ -291,6 +299,7 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
         return profile;
     }
 
+    /** 校验组织邀请令牌有效性及邮箱匹配。 */
     private boolean validateOrganizationInvitation(ValidationContext context, MultivaluedMap<String, String> formData, String email) {
         if (Organizations.isEnabled(context.getSession())) {
             Consumer<List<FormMessage>> error = messages -> {
@@ -325,7 +334,7 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
                 return false;
             }
 
-            // make sure the organization is set to the session so that UP org-related validators can run
+            // 将会组织写入会话，以便用户档案组织校验器运行
             session.getContext().setOrganization(organization);
             session.setAttribute(InviteOrgActionToken.class.getName(), token);
 
@@ -334,7 +343,7 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
                 return false;
             }
 
-            // Validate that the invitation still exists in the database
+            // 校验邀请记录在数据库中仍有效
             InvitationManager invitationManager = provider.getInvitationManager();
             OrganizationInvitationModel invitation = invitationManager.getById(token.getId());
 
@@ -352,6 +361,7 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
         return true;
     }
 
+    /** 将新用户加入邀请组织并删除已使用的邀请记录。 */
     private void addOrganizationMember(FormContext context, UserModel user) {
         if (Organizations.isEnabled(context.getSession())) {
             InviteOrgActionToken token = (InviteOrgActionToken) context.getSession().getAttribute(InviteOrgActionToken.class.getName());
@@ -363,7 +373,7 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
                 provider.addManagedMember(orgModel, user);
                 context.getAuthenticationSession().setRedirectUri(token.getRedirectUri());
 
-                // Delete the invitation since it has been used
+                // 邀请已使用，从数据库删除
                 InvitationManager invitationManager = provider.getInvitationManager();
                 invitationManager.remove(token.getId());
 

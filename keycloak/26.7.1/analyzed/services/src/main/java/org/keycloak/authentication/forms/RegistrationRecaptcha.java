@@ -41,16 +41,23 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.jboss.logging.Logger;
 
+/**
+ * 标准 Google reCAPTCHA 注册表单动作：通过 siteverify API 校验用户响应。
+ */
 public class RegistrationRecaptcha extends AbstractRegistrationRecaptcha {
 
     private static final Logger LOGGER = Logger.getLogger(RegistrationRecaptcha.class);
+    /** Provider ID：registration-recaptcha-action。 */
     public static final String PROVIDER_ID = "registration-recaptcha-action";
 
-    // option keys
+    // 配置键常量
+    /** 配置键：reCAPTCHA 密钥。 */
     public static final String SECRET_KEY = "secret.key";
+    /** 旧版配置键：secret（已迁移至 secret.key）。 */
     public static final String OLD_SECRET = "secret";
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "reCAPTCHA";
     }
@@ -69,12 +76,14 @@ public class RegistrationRecaptcha extends AbstractRegistrationRecaptcha {
     }
 
     @Override
+    /** 检查 site key 与 secret key 均已配置。 */
     protected boolean validateConfig(Map<String, String> config) {
         return !StringUtil.isNullOrEmpty(config.get(SITE_KEY)) &&
                 (!StringUtil.isNullOrEmpty(config.get(SECRET_KEY)) || !StringUtil.isNullOrEmpty(config.get(OLD_SECRET)));
     }
 
     @Override
+    /** 调用 Google siteverify API 验证 captcha 令牌。 */
     protected boolean validate(ValidationContext context, String captcha, Map<String, String> config) {
         LOGGER.trace("Verifying reCAPTCHA using non-enterprise API");
         CloseableHttpClient httpClient = context.getSession().getProvider(HttpClientProvider.class).getHttpClient();
@@ -83,7 +92,7 @@ public class RegistrationRecaptcha extends AbstractRegistrationRecaptcha {
         List<NameValuePair> formparams = new LinkedList<>();
         String secret = config.get(SECRET_KEY);
         if (StringUtil.isNullOrEmpty(secret)) {
-            // migrate old config name to the new one
+            // 将旧配置键 secret 迁移至 secret.key
             secret = config.get(OLD_SECRET);
             if (!StringUtil.isNullOrEmpty(secret)) {
                 config.put(SECRET_KEY, secret);
@@ -115,16 +124,19 @@ public class RegistrationRecaptcha extends AbstractRegistrationRecaptcha {
     }
 
     @Override
+    /** @return 标准 reCAPTCHA api.js 脚本 URL */
     protected String getScriptUrl(Map<String, String> config, String userLanguageTag) {
         return "https://www." + getRecaptchaDomain(config) + "/recaptcha/api.js?hl=" + userLanguageTag;
     }
 
     @Override
+    /** @return Provider ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** @return 站点密钥、密钥及基类通用配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         List<ProviderConfigProperty> properties = ProviderConfigurationBuilder.create()
                 .property()

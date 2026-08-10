@@ -24,21 +24,28 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import static java.lang.String.format;
 
+/**
+ * reCAPTCHA Enterprise 评估响应：包含风险评分、令牌属性及账户防御评估结果。
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RecaptchaAssessmentResponse {
 
+    /** 评估资源名称。 */
     @JsonProperty("name")
     private String name;
 
+    /** 风险分析结果（评分与原因）。 */
     @JsonProperty("riskAnalysis")
     private RiskAnalysis riskAnalysis;
 
+    /** 令牌有效性及元数据。 */
     @JsonProperty("tokenProperties")
     private TokenProperties tokenProperties;
 
     @JsonProperty("event")
     private Event event;
 
+    /** 账户防御评估标签。 */
     @JsonProperty("accountDefenderAssessment")
     private AccountDefenderAssessment accountDefenderAssessment;
 
@@ -89,8 +96,10 @@ public class RecaptchaAssessmentResponse {
         this.accountDefenderAssessment = accountDefenderAssessment;
     }
 
+    /** 风险分析：评分（0.0–1.0）及判定原因。 */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class RiskAnalysis {
+        /** 风险评分，越高越可信。 */
         @JsonProperty("score")
         private double score;
 
@@ -118,6 +127,7 @@ public class RecaptchaAssessmentResponse {
         }
     }
 
+    /** 令牌属性：有效性、主机名、动作及创建时间。 */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class TokenProperties {
         @JsonProperty("valid")
@@ -183,6 +193,7 @@ public class RecaptchaAssessmentResponse {
 
     }
 
+    /** 评估事件上下文（用户代理、IP 等）。 */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Event {
 
@@ -257,6 +268,7 @@ public class RecaptchaAssessmentResponse {
         }
     }
 
+    /** 账户防御评估标签列表。 */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class AccountDefenderAssessment {
 

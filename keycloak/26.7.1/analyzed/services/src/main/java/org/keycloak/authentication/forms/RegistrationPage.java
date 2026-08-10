@@ -44,16 +44,25 @@ import org.keycloak.services.messages.Messages;
  */
 public class RegistrationPage implements FormAuthenticator, FormAuthenticatorFactory {
 
+    /** 表单字段：密码确认。 */
     public static final String FIELD_PASSWORD_CONFIRM = "password-confirm";
+    /** 表单字段：密码。 */
     public static final String FIELD_PASSWORD = "password";
+    /** 表单字段：邮箱。 */
     public static final String FIELD_EMAIL = "email";
+    /** 表单字段：用户名。 */
     public static final String FIELD_USERNAME = "username";
+    /** 表单字段：姓。 */
     public static final String FIELD_LAST_NAME = "lastName";
+    /** 表单字段：名。 */
     public static final String FIELD_FIRST_NAME = "firstName";
+    /** 表单字段：reCAPTCHA 响应。 */
     public static final String FIELD_RECAPTCHA_RESPONSE = "g-recaptcha-response";
+    /** Provider ID：registration-page-form。 */
     public static final String PROVIDER_ID = "registration-page-form";
 
     @Override
+    /** 渲染注册页；组织邀请场景下预填邮箱并设置组织名称。 */
     public Response render(FormContext context, LoginFormsProvider form) {
         if (Organizations.isEnabled(context.getSession())) {
             try {
@@ -86,11 +95,13 @@ public class RegistrationPage implements FormAuthenticator, FormAuthenticatorFac
     }
 
     @Override
+    /** @return 管理控制台显示名称 */
     public String getDisplayType() {
         return "Registration Page";
     }
 
     @Override
+    /** @return 帮助说明：注册页表单控制器 */
     public String getHelpText() {
         return "This is the controller for the registration page";
     }
@@ -121,6 +132,7 @@ public class RegistrationPage implements FormAuthenticator, FormAuthenticatorFac
     }
 
     @Override
+    /** @return 自身作为单例表单认证器 */
     public FormAuthenticator create(KeycloakSession session) {
         return this;
     }
@@ -141,6 +153,7 @@ public class RegistrationPage implements FormAuthenticator, FormAuthenticatorFac
     }
 
     @Override
+    /** @return Provider ID */
     public String getId() {
         return PROVIDER_ID;
     }

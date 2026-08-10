@@ -40,12 +40,19 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.jboss.logging.Logger;
 
+/**
+ * Google reCAPTCHA Enterprise 注册表单动作：通过 Assessments API 校验令牌并评估风险评分。
+ */
 public class RegistrationRecaptchaEnterprise extends AbstractRegistrationRecaptcha {
+    /** Provider ID：registration-recaptcha-enterprise。 */
     public static final String PROVIDER_ID = "registration-recaptcha-enterprise";
 
-    // option keys
+    // 配置键常量
+    /** 配置键：Google Cloud 项目 ID。 */
     public static final String PROJECT_ID = "project.id";
+    /** 配置键：启用 reCAPTCHA Enterprise API 的 Google API 密钥。 */
     public static final String API_KEY = "api.key";
+    /** 配置键：最低风险评分阈值（含，0.0–1.0）。 */
     public static final String SCORE_THRESHOLD = "score.threshold";
 
     private static final Logger LOGGER = Logger.getLogger(RegistrationRecaptchaEnterprise.class);
@@ -61,11 +68,13 @@ public class RegistrationRecaptchaEnterprise extends AbstractRegistrationRecaptc
     }
 
     @Override
+    /** @return Provider ID */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** 检查项目 ID、站点密钥、API 密钥、动作名及评分阈值均已配置。 */
     protected boolean validateConfig(Map<String, String> config) {
         return !(Stream.of(PROJECT_ID, SITE_KEY, API_KEY, ACTION)
                 .anyMatch(key -> StringUtil.isNullOrEmpty(config.get(key)))
@@ -73,12 +82,14 @@ public class RegistrationRecaptchaEnterprise extends AbstractRegistrationRecaptc
     }
 
     @Override
+    /** @return Enterprise recaptcha/enterprise.js 脚本 URL */
     protected String getScriptUrl(Map<String, String> config, String userLanguageTag) {
         return "https://www." + getRecaptchaDomain(config) + "/recaptcha/enterprise.js?hl=" + userLanguageTag;
 
     }
 
     @Override
+    /** 调用 Enterprise Assessments API 并校验令牌有效性与风险评分。 */
     protected boolean validate(ValidationContext context, String captcha, Map<String, String> config) {
         LOGGER.trace("Requesting assessment of Google reCAPTCHA Enterprise");
         try {
@@ -99,7 +110,7 @@ public class RegistrationRecaptchaEnterprise extends AbstractRegistrationRecaptc
             String tokenAction = assessment.getTokenProperties().getAction();
             String expectedAction = assessment.getEvent().getExpectedAction();
             if (!tokenAction.equals(expectedAction)) {
-                // This may indicates that an attacker is attempting to falsify actions
+                // 动作名不匹配可能表示攻击者伪造 reCAPTCHA 动作
                 LOGGER.warnf("The action name of the reCAPTCHA token '%s' does not match the expected action '%s'!",
                         tokenAction, expectedAction);
                 return false;
@@ -118,6 +129,7 @@ public class RegistrationRecaptchaEnterprise extends AbstractRegistrationRecaptc
         return false;
     }
 
+    /** 构建 Enterprise Assessments API 的 HTTP POST 请求。 */
     private HttpPost buildAssessmentRequest(String captcha, Map<String, String> config) throws IOException {
 
         String url = String.format("https://recaptchaenterprise.googleapis.com/v1/projects/%s/assessments?key=%s",
@@ -134,6 +146,7 @@ public class RegistrationRecaptchaEnterprise extends AbstractRegistrationRecaptc
     }
 
     @Override
+    /** @return 项目 ID、站点密钥、API 密钥、评分阈值及基类配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         List<ProviderConfigProperty> properties = ProviderConfigurationBuilder.create()
                 .property()
@@ -168,6 +181,7 @@ public class RegistrationRecaptchaEnterprise extends AbstractRegistrationRecaptc
         return properties;
     }
 
+    /** 从配置中解析 double 值，失败时返回 null。 */
     private Double parseDoubleFromConfig(Map<String, String> config, String key) {
         String value = config.getOrDefault(key, "");
         try {

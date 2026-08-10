@@ -49,25 +49,35 @@ import org.keycloak.services.messages.Messages;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 import org.jboss.logging.Logger;
+/**
+ * 删除账户必需操作：允许用户自行删除账户，需客户端拥有 delete-account 角色。
+ * 支持通过 AIA（Application Initiated Action）触发。
+ */
 public class DeleteAccount implements RequiredActionProvider, RequiredActionFactory {
 
+  /** Provider ID：delete_account。 */
   public static final String PROVIDER_ID = "delete_account";
 
+  /** 表单属性键：是否由 AIA 触发。 */
   private static final String TRIGGERED_FROM_AIA = "triggered_from_aia";
 
+  /** 日志记录器。 */
   private static final Logger logger = Logger.getLogger(DeleteAccount.class);
 
     @Override
+  /** @return 管理控制台显示文本 */
   public String getDisplayText() {
     return "Delete Account";
   }
 
   @Override
+  /** 无自动触发逻辑。 */
   public void evaluateTriggers(RequiredActionContext context) {
 
   }
 
   @Override
+  /** 展示删除账户确认页；无权限时显示错误。 */
   public void requiredActionChallenge(RequiredActionContext context) {
       if (!clientHasDeleteAccountRole(context)) {
         context.challenge(context.form().setError(Messages.DELETE_ACCOUNT_LACK_PRIVILEDGES).createForm("error.ftl"));
@@ -79,6 +89,7 @@ public class DeleteAccount implements RequiredActionProvider, RequiredActionFact
 
 
   @Override
+  /** 执行用户删除、记录事件并清理认证会话。 */
   public void processAction(RequiredActionContext context) {
     KeycloakSession session = context.getSession();
     EventBuilder eventBuilder = context.getEvent();
@@ -123,7 +134,7 @@ public class DeleteAccount implements RequiredActionProvider, RequiredActionFact
           .user(keycloakContext.getAuthenticationSession().getAuthenticatedUser())
           .detail(Details.REASON, "does not have the required roles for user deletion")
           .error(Errors.USER_DELETE_ERROR);
-      //deletingAccountForbidden
+      // 无删除权限时展示 forbidden 错误页
       context.challenge(context.form().setAttribute(TRIGGERED_FROM_AIA, isCurrentActionTriggeredFromAIA(context)).setError(Messages.DELETE_ACCOUNT_LACK_PRIVILEDGES).createForm("delete-account-confirm.ftl"));
     } catch (Exception exception) {
       logger.error("unexpected error happened during account deletion", exception);
@@ -136,22 +147,26 @@ public class DeleteAccount implements RequiredActionProvider, RequiredActionFact
     }
   }
 
+  /** 从认证会话移除本必需操作并设置 KcAction 状态。 */
   private void cleanSession(RequiredActionContext context, RequiredActionContext.KcActionStatus status) {
     context.getAuthenticationSession().removeRequiredAction(PROVIDER_ID);
     context.getAuthenticationSession().removeAuthNote(AuthenticationProcessor.CURRENT_AUTHENTICATION_EXECUTION);
     AuthenticationManager.setKcActionStatus(PROVIDER_ID, status, context.getAuthenticationSession());
   }
 
+  /** 检查当前用户是否拥有 account 客户端的 delete-account 角色。 */
   private boolean clientHasDeleteAccountRole(RequiredActionContext context) {
     RoleModel deleteAccountRole = context.getRealm().getClientByClientId(Constants.ACCOUNT_MANAGEMENT_CLIENT_ID).getRole(AccountRoles.DELETE_ACCOUNT);
     return deleteAccountRole != null && context.getUser().hasRole(deleteAccountRole);
   }
 
+  /** 判断本操作是否由客户端发起的 AIA 触发。 */
   private boolean isCurrentActionTriggeredFromAIA(RequiredActionContext context) {
     return Objects.equals(context.getAuthenticationSession().getClientNote(Constants.KC_ACTION), PROVIDER_ID);
   }
 
   @Override
+  /** @return 自身作为单例 Provider */
   public RequiredActionProvider create(KeycloakSession session) {
     return this;
   }
@@ -172,16 +187,19 @@ public class DeleteAccount implements RequiredActionProvider, RequiredActionFact
   }
 
   @Override
+  /** @return Provider ID */
   public String getId() {
     return PROVIDER_ID;
   }
 
   @Override
+  /** @return 支持客户端发起的 AIA 触发 */
   public InitiatedActionSupport initiatedActionSupport() {
     return InitiatedActionSupport.SUPPORTED;
   }
 
   @Override
+  /** @return 最大认证年龄（0 表示每次均需重新认证） */
   public int getMaxAuthAge(KeycloakSession session) {
     return 0;
   }
@@ -191,6 +209,7 @@ public class DeleteAccount implements RequiredActionProvider, RequiredActionFact
       return Collections.emptyList();
   }
 
+  /** 删除成功后移除认证会话。 */
   private void removeAuthenticationSession(RequiredActionContext context, KeycloakSession session) {
     AuthenticationSessionModel authSession = context.getAuthenticationSession();
     new AuthenticationSessionManager(session).removeAuthenticationSession(authSession.getRealm(), authSession, true);

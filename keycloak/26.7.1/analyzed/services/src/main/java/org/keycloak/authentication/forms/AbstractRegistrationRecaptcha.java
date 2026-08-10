@@ -46,15 +46,24 @@ import org.keycloak.utils.StringUtil;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 注册表单 reCAPTCHA 抽象基类：同时实现 {@link FormAction} 与 {@link FormActionFactory}，负责在注册页注入 reCAPTCHA 脚本并校验用户响应。
+ */
 public abstract class AbstractRegistrationRecaptcha implements FormAction, FormActionFactory {
 
+    /** 表单字段名：reCAPTCHA 响应令牌。 */
     public static final String G_RECAPTCHA_RESPONSE = "g-recaptcha-response";
+    /** 管理控制台引用分类。 */
     public static final String RECAPTCHA_REFERENCE_CATEGORY = "recaptcha";
 
-    // option keys
+    // 配置键常量
+    /** 配置键：reCAPTCHA 站点密钥。 */
     public static final String SITE_KEY = "site.key";
+    /** 配置键：reCAPTCHA 动作名称（如 register）。 */
     public static final String ACTION = "action";
+    /** 配置键：是否为 reCAPTCHA v3（隐形/评分型）。 */
     public static final String INVISIBLE = "recaptcha.v3";
+    /** 配置键：是否使用 recaptcha.net 域名。 */
     public static final String USE_RECAPTCHA_NET = "useRecaptchaNet";
 
     private static final Logger LOGGER = Logger.getLogger(AbstractRegistrationRecaptcha.class);
@@ -77,11 +86,13 @@ public abstract class AbstractRegistrationRecaptcha implements FormAction, FormA
         };
     }
 
+    /** 根据配置返回 recaptcha.net 或 google.com 域名。 */
     protected String getRecaptchaDomain(Map<String, String> config) {
         return Boolean.parseBoolean(config.get(USE_RECAPTCHA_NET)) ? "recaptcha.net" : "google.com";
     }
 
     @Override
+    /** 向注册页注入 reCAPTCHA 脚本与站点密钥等属性。 */
     public void buildPage(FormContext context, LoginFormsProvider form) {
         LOGGER.trace("Building page with reCAPTCHA");
 
@@ -109,11 +120,14 @@ public abstract class AbstractRegistrationRecaptcha implements FormAction, FormA
         form.addScript(getScriptUrl(config, userLanguageTag));
     }
 
+    /** @return reCAPTCHA JavaScript 脚本 URL */
     protected abstract String getScriptUrl(Map<String, String> config, String userLanguageTag);
 
+    /** 检查 reCAPTCHA 配置是否完整有效。 */
     protected abstract boolean validateConfig(Map<String, String> config);
 
     @Override
+    /** 校验表单提交的 reCAPTCHA 响应令牌。 */
     public void validate(ValidationContext context) {
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
         String captcha = formData.getFirst(G_RECAPTCHA_RESPONSE);
@@ -136,6 +150,7 @@ public abstract class AbstractRegistrationRecaptcha implements FormAction, FormA
 
     }
 
+    /** 子类实现：向 Google API 验证 captcha 令牌。 */
     protected abstract boolean validate(ValidationContext context, String captcha, Map<String, String> config);
 
     @Override
@@ -143,6 +158,7 @@ public abstract class AbstractRegistrationRecaptcha implements FormAction, FormA
     }
 
     @Override
+    /** @return 注册 reCAPTCHA 不要求已识别用户 */
     public boolean requiresUser() {
         return false;
     }
@@ -179,6 +195,7 @@ public abstract class AbstractRegistrationRecaptcha implements FormAction, FormA
     }
 
     @Override
+    /** @return 动作名、recaptcha.net 及 v3 开关等配置项 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return ProviderConfigurationBuilder.create()
                 .property()
