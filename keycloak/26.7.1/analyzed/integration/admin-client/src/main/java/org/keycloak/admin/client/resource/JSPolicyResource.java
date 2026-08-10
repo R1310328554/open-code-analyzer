@@ -31,31 +31,41 @@ import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 
 /**
+ * 单个 JavaScript 策略的管理 REST 资源。
+ * <p>
+ * 支持读取、更新、删除 JS 策略，并查询关联策略、依赖策略及受保护资源。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface JSPolicyResource {
 
+    /** 获取当前 JS 策略的表示对象。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     JSPolicyRepresentation toRepresentation();
 
+    /** 更新 JS 策略配置（含脚本内容）。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     void update(JSPolicyRepresentation representation);
 
+    /** 删除当前 JS 策略。 */
     @DELETE
     void remove();
 
+    /** 列出引用本策略的关联策略。 */
     @Path("/associatedPolicies")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> associatedPolicies();
 
+    /** 列出依赖本策略的其他策略。 */
     @Path("/dependentPolicies")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> dependentPolicies();
 
+    /** 列出受本策略保护的资源。 */
     @Path("/resources")
     @GET
     @Produces("application/json")

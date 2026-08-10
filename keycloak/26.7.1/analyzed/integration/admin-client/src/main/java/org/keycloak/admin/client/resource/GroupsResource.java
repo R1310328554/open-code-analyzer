@@ -34,24 +34,30 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.GroupRepresentation;
 
 /**
+ * 领域内用户组集合的管理 REST 资源。
+ * <p>
+ * 支持组列表查询（含搜索、分页、层级展开）、计数、创建及按 ID 访问单个组。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface GroupsResource {
 
     /**
-     * Get all groups.
-     * @return A list containing all groups.
+     * 获取所有组。
+     *
+     * @return 包含所有组的列表
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<GroupRepresentation> groups();
 
     /**
-     * Get groups by pagination params.
-     * @param first index of the first element (pagination offset).
-     * @param max the maximum number of results.
-     * @return A list containing the slice of all groups.
+     * 按分页参数获取组列表。
+     *
+     * @param first 分页起始索引
+     * @param max 最大返回数量
+     * @return 组列表切片
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -59,11 +65,12 @@ public interface GroupsResource {
     List<GroupRepresentation> groups(@QueryParam("first") Integer first, @QueryParam("max") Integer max);
 
     /**
-     * Get groups by pagination params.
-     * @param search A {@code String} representing either an exact or partial group name.
-     * @param first index of the first element (pagination offset).
-     * @param max the maximum number of results.
-     * @return A list containing the slice of all groups.
+     * 按名称搜索并分页获取组列表。
+     *
+     * @param search 精确或部分组名
+     * @param first 分页起始索引
+     * @param max 最大返回数量
+     * @return 组列表切片
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -73,14 +80,14 @@ public interface GroupsResource {
                                      @QueryParam("max") Integer max);
 
     /**
-     * Get groups by pagination params.
-     * @param search A {@code String} representing either an exact or partial group name.
-     * @param first index of the first element (pagination offset).
-     * @param max the maximum number of results.
-     * @param briefRepresentation if {@code true}, each returned group representation will only contain basic information
-     *                            (id, name, path, and parentId). If {@code false}, the complete representations of the groups
-     *                            are returned (including role mappings and attributes).
-     * @return A list containing the slice of all groups.
+     * 按名称搜索并分页获取组列表，可选择简要表示。
+     *
+     * @param search 精确或部分组名
+     * @param first 分页起始索引
+     * @param max 最大返回数量
+     * @param briefRepresentation 若为 {@code true}，仅返回基本信息（id、name、path、parentId）；
+     *                            若为 {@code false}，返回完整表示（含角色映射与属性）
+     * @return 组列表切片
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -91,17 +98,16 @@ public interface GroupsResource {
                                      @QueryParam("briefRepresentation") @DefaultValue("true") boolean briefRepresentation);
 
     /**
-     * Get groups by pagination params.
-     * @param search A {@code String} representing either an exact or partial group name.
-     * @param exact if {@code true}, the groups will be searched using exact match for the {@code search} param. If false,
-     *      *              the method returns all groups that partially match the specified name.
-     * @param first index of the first element (pagination offset).
-     * @param max the maximum number of results.
-     * @param briefRepresentation if {@code true}, each returned group representation will only contain basic information
-     *                            (id, name, path, and parentId). If {@code false}, the complete representations of the groups
-     *                            are returned (including role mappings and attributes).
-     * @param subGroupsCount if {@code true}, the count of subgroups is returned for each subgroup. Defaults to true. Parameter supported since Keycloak 26.3. For older versions, it is always true.
-     * @return A list containing the slice of all groups.
+     * 按名称搜索并分页获取组列表，支持精确匹配与子组计数。
+     *
+     * @param search 精确或部分组名
+     * @param exact 若为 {@code true}，对 {@code search} 精确匹配；否则部分匹配
+     * @param first 分页起始索引
+     * @param max 最大返回数量
+     * @param briefRepresentation 若为 {@code true}，仅返回基本信息；否则返回完整表示
+     * @param subGroupsCount 若为 {@code true}，为每个组返回子组数量；默认为 true。
+     *                       自 Keycloak 26.3 起支持；旧版本中始终为 true
+     * @return 组列表切片
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -114,16 +120,14 @@ public interface GroupsResource {
                                      @QueryParam("subGroupsCount") @DefaultValue("true") Boolean subGroupsCount);
 
     /**
-     * Get groups by pagination params.
-     * @param search A {@code String} representing either an exact or partial group name.
-     * @param exact if {@code true}, the groups will be searched using exact match for the {@code search} param. If false,
-     *      *              the method returns all groups that partially match the specified name.
-     * @param first index of the first element (pagination offset).
-     * @param max the maximum number of results.
-     * @param briefRepresentation if {@code true}, each returned group representation will only contain basic information
-     *                            (id, name, path, and parentId). If {@code false}, the complete representations of the groups
-     *                            are returned (including role mappings and attributes).
-     * @return A list containing the slice of all groups.
+     * 按名称搜索并分页获取组列表，支持精确匹配。
+     *
+     * @param search 精确或部分组名
+     * @param exact 若为 {@code true}，对 {@code search} 精确匹配；否则部分匹配
+     * @param first 分页起始索引
+     * @param max 最大返回数量
+     * @param briefRepresentation 若为 {@code true}，仅返回基本信息；否则返回完整表示
+     * @return 组列表切片
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -135,8 +139,9 @@ public interface GroupsResource {
                                      @QueryParam("briefRepresentation") @DefaultValue("true") boolean briefRepresentation);
 
     /**
-     * Counts all groups.
-     * @return A map containing key "count" with number of groups as value.
+     * 统计所有组的数量。
+     *
+     * @return 键为 {@code count}、值为组数量的映射
      */
     @GET
     @Path("count")
@@ -145,9 +150,10 @@ public interface GroupsResource {
     Map<String, Long> count();
 
     /**
-     * Counts groups by name search.
-     * @param search max number of occurrences
-     * @return A map containing key "count" with number of groups as value which matching with search.
+     * 按名称搜索统计匹配的组数量。
+     *
+     * @param search 组名搜索条件
+     * @return 键为 {@code count}、值为匹配组数量的映射
      */
     @GET
     @Path("count")
@@ -156,9 +162,10 @@ public interface GroupsResource {
     Map<String, Long> count(@QueryParam("search") String search);
 
     /**
-     * Counts groups by name search.
-     * @param onlyTopGroups <code>true</code> or <code>false</code> for filter only top level groups count
-     * @return A map containing key "count" with number of top level groups.
+     * 统计顶级组数量。
+     *
+     * @param onlyTopGroups {@code true} 时仅统计顶级组；{@code false} 时统计所有组
+     * @return 键为 {@code count}、值为组数量的映射
      */
     @GET
     @Path("count")
@@ -167,26 +174,29 @@ public interface GroupsResource {
     Map<String, Long> count(@QueryParam("top") @DefaultValue("true") boolean onlyTopGroups);
 
     /**
-     * create or add a top level realm groupSet or create child.  This will update the group and set the parent if it exists.  Create it and set the parent
-     * if the group doesn't exist.
+     * 创建顶级组或添加子组。若组已存在则更新并设置父级；不存在则创建并设置父级。
      *
-     * @param rep
+     * @param rep 组表示对象
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     Response add(GroupRepresentation rep);
 
+    /** 按 ID 获取单个组资源。 */
     @Path("{id}")
     GroupResource group(@PathParam("id") String id);
 
+    /** 按查询表达式搜索组。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<GroupRepresentation> query(@QueryParam("q") String searchQuery);
 
+    /** 按查询表达式搜索组，可选择是否填充层级结构。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<GroupRepresentation> query(@QueryParam("q") String searchQuery, @QueryParam("populateHierarchy") boolean populateHierarchy);
 
+    /** 按查询表达式搜索组，支持分页与简要表示。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<GroupRepresentation> query(@QueryParam("q") String searchQuery,

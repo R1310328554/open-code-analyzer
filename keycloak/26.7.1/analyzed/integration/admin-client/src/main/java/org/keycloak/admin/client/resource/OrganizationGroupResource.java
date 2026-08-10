@@ -35,30 +35,47 @@ import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.MemberRepresentation;
 
 /**
- * Resource for managing a single organization group.
+ * 组织内单个用户组的管理 REST 资源。
+ * <p>
+ * 支持组 CRUD、子组管理、角色映射及成员增删查等操作。
  */
 public interface OrganizationGroupResource {
 
+    /**
+     * 获取组织组的表示对象。
+     *
+     * @param subGroupsCount 是否返回子组数量
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     GroupRepresentation toRepresentation(@QueryParam("subGroupsCount") boolean subGroupsCount);
 
     /**
-     * Role mapping resource.
+     * 角色映射资源。
      *
-     * @return a role mapping resource.
+     * @return 角色映射管理资源
      * @since Keycloak server 26.7.0
      */
     @Path("role-mappings")
     RoleMappingResource roles();
 
+    /** 更新组织组属性。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     Response update(GroupRepresentation rep);
 
+    /** 删除当前组织组。 */
     @DELETE
     void delete();
 
+    /**
+     * 获取子组的分页列表，支持名称搜索。
+     *
+     * @param search 组名搜索条件
+     * @param exact 是否精确匹配
+     * @param first 分页起始位置
+     * @param max 最大返回数量
+     */
     @GET
     @Path("children")
     @Produces(MediaType.APPLICATION_JSON)
@@ -69,11 +86,19 @@ public interface OrganizationGroupResource {
             @QueryParam("max") Integer max
     );
 
+    /** 创建或添加子组。 */
     @POST
     @Path("children")
     @Consumes(MediaType.APPLICATION_JSON)
     Response addSubGroup(GroupRepresentation rep);
 
+    /**
+     * 获取组成员的分页列表。
+     *
+     * @param first 分页起始位置
+     * @param max 最大返回数量
+     * @param briefRepresentation 是否返回简要成员表示
+     */
     @GET
     @Path("members")
     @Produces(MediaType.APPLICATION_JSON)
@@ -83,10 +108,12 @@ public interface OrganizationGroupResource {
             @QueryParam("briefRepresentation") Boolean briefRepresentation
     );
 
+    /** 将用户添加为本组成员。 */
     @PUT
     @Path("members/{userId}")
     void addMember(@PathParam("userId") String userId);
 
+    /** 将用户从本组移除。 */
     @DELETE
     @Path("members/{userId}")
     void removeMember(@PathParam("userId") String userId);

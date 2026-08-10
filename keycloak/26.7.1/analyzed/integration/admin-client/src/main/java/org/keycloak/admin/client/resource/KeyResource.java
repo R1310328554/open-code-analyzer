@@ -24,10 +24,15 @@ import jakarta.ws.rs.core.MediaType;
 import org.keycloak.representations.idm.KeysMetadataRepresentation;
 
 /**
+ * 领域签名与加密密钥元数据 REST 资源。
+ * <p>
+ * 返回当前领域中活跃密钥的 JWK 集合及算法信息，供客户端验证令牌签名使用。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface KeyResource {
 
+    /** 获取领域密钥元数据（含 active 与 passive 密钥列表）。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     KeysMetadataRepresentation getKeyMetadata();

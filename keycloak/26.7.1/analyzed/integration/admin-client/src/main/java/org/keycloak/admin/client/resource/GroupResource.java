@@ -36,18 +36,21 @@ import org.keycloak.representations.idm.ManagementPermissionRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 
 /**
+ * 单个用户组的管理 REST 资源。
+ * <p>
+ * 支持组 CRUD、细粒度权限管理、子组层级、角色映射及成员查询等操作。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface GroupResource {
 
     /**
-     * Enables or disables the fine grain permissions feature.
-     * Returns the updated status of the server in the
-     * {@link ManagementPermissionReference}.
+     * 启用或禁用细粒度权限功能。
+     * 返回更新后的服务器状态，封装于 {@link ManagementPermissionReference} 中。
      *
-     * @param status status request to apply
-     * @return permission reference indicating the updated status
+     * @param status 要应用的权限状态请求
+     * @return 指示更新后权限状态的引用对象
      */
     @PUT
     @Path("/management/permissions")
@@ -56,9 +59,9 @@ public interface GroupResource {
     ManagementPermissionReference setPermissions(ManagementPermissionRepresentation status);
 
     /**
-     * Returns indicator if the fine grain permissions are enabled or not.
+     * 返回细粒度权限是否已启用。
      *
-     * @return current representation of the permissions feature
+     * @return 当前权限功能的表示对象
      */
     @GET
     @Path("/management/permissions")
@@ -66,34 +69,35 @@ public interface GroupResource {
     ManagementPermissionReference getPermissions();
 
     /**
-     * Does not expand hierarchy.  Subgroups will not be set.
+     * 获取组表示对象，不展开层级（子组字段不会被填充）。
      *
-     * @return
+     * @return 当前组的表示对象
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     GroupRepresentation toRepresentation();
 
     /**
-     * Update group
+     * 更新组属性。
      *
-     * @param rep
+     * @param rep 组表示对象
      */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     void update(GroupRepresentation rep);
 
+    /** 删除当前组。 */
     @DELETE
     void remove();
 
     /**
-     * Get the paginated list of subgroups belonging to this group.
+     * 获取本组下子组的分页列表。
      *
-     * @param first the position of the first result to be returned.
-     * @param max the maximum number of results that are to be returned.
-     * @param briefRepresentation if {@code true}, each returned subgroup representation will only contain basic information
-     *                           (id, name, path, and parentId). If {@code false}, the complete representations of the subgroups
-     *                            are returned (include role mappings and attributes).
+     * @param first 分页起始位置
+     * @param max 返回结果的最大数量
+     * @param briefRepresentation 若为 {@code true}，每个子组仅含基本信息
+     *                           （id、name、path、parentId）；若为 {@code false}，返回完整表示
+     *                           （含角色映射与属性）
      */
     @GET
     @Path("children")
@@ -102,14 +106,15 @@ public interface GroupResource {
     List<GroupRepresentation> getSubGroups(@QueryParam("first") Integer first, @QueryParam("max") Integer max, @QueryParam("briefRepresentation") Boolean briefRepresentation);
 
     /**
-     * Get the paginated list of subgroups belonging to this group.
+     * 获取本组下子组的分页列表。
      *
-     * @param first the position of the first result to be returned.
-     * @param max the maximum number of results that are to be returned.
-     * @param briefRepresentation if {@code true}, each returned subgroup representation will only contain basic information
-     *                           (id, name, path, and parentId). If {@code false}, the complete representations of the subgroups
-     *                            are returned (include role mappings and attributes).
-     * @param subGroupsCount if {@code true}, the count of subgroups is returned for each subgroup. Defaults to true. Parameter supported since Keycloak 26.3. For older versions, it is always true.
+     * @param first 分页起始位置
+     * @param max 返回结果的最大数量
+     * @param briefRepresentation 若为 {@code true}，每个子组仅含基本信息
+     *                           （id、name、path、parentId）；若为 {@code false}，返回完整表示
+     *                           （含角色映射与属性）
+     * @param subGroupsCount 若为 {@code true}，为每个子组返回其子组数量；默认为 true。
+     *                       自 Keycloak 26.3 起支持；旧版本中始终为 true
      */
     @GET
     @Path("children")
@@ -120,17 +125,15 @@ public interface GroupResource {
                                            @QueryParam("subGroupsCount") Boolean subGroupsCount);
 
     /**
-     * Get the paginated list of subgroups belonging to this group, filtered according to the specified parameters.
+     * 按指定参数过滤，获取本组下子组的分页列表。
      *
-     * @param search a {@code String} representing either an exact group name or a partial name. If empty or {@code null}
-     *              then all subgroups of this group are returned. Parameter available since Keycloak server 25. Will be ignored on older Keycloak versions with the default value null.
-     * @param exact if {@code true}, the subgroups will be searched using exact match for the {@code search} param. If false
-     *              or {@code null}, the method returns all subgroups that partially match the specified name. Parameter available since Keycloak server 25. Will be ignored on older Keycloak versions with the default value null.
-     * @param first the position of the first result to be returned.
-     * @param max the maximum number of results that are to be returned.
-     * @param briefRepresentation if {@code true}, each returned subgroup representation will only contain basic information
-     *                           (id, name, path, and parentId). If {@code false}, the complete representations of the subgroups
-     *                            are returned (including role mappings and attributes).
+     * @param search 精确或部分组名；为空或 {@code null} 时返回所有子组。
+     *               自 Keycloak 25 起可用；旧版本忽略此参数
+     * @param exact 若为 {@code true}，对 {@code search} 进行精确匹配；否则部分匹配。
+     *              自 Keycloak 25 起可用；旧版本忽略此参数
+     * @param first 分页起始位置
+     * @param max 返回结果的最大数量
+     * @param briefRepresentation 若为 {@code true}，每个子组仅含基本信息；否则返回完整表示
      */
     @GET
     @Path("children")
@@ -144,18 +147,17 @@ public interface GroupResource {
             @QueryParam("briefRepresentation") Boolean briefRepresentation);
 
     /**
-     * Get the paginated list of subgroups belonging to this group, filtered according to the specified parameters.
+     * 按指定参数过滤，获取本组下子组的分页列表。
      *
-     * @param search a {@code String} representing either an exact group name or a partial name. If empty or {@code null}
-     *              then all subgroups of this group are returned. Parameter available since Keycloak server 25. Will be ignored on older Keycloak versions with the default value null.
-     * @param exact if {@code true}, the subgroups will be searched using exact match for the {@code search} param. If false
-     *              or {@code null}, the method returns all subgroups that partially match the specified name. Parameter available since Keycloak server 25. Will be ignored on older Keycloak versions with the default value null.
-     * @param first the position of the first result to be returned.
-     * @param max the maximum number of results that are to be returned.
-     * @param briefRepresentation if {@code true}, each returned subgroup representation will only contain basic information
-     *                           (id, name, path, and parentId). If {@code false}, the complete representations of the subgroups
-     *                            are returned (including role mappings and attributes).
-     * @param subGroupsCount if {@code true}, the count of subgroups is returned for each subgroup. Defaults to true. Parameter supported since Keycloak 26.3. For older versions, it is always true.
+     * @param search 精确或部分组名；为空或 {@code null} 时返回所有子组。
+     *               自 Keycloak 25 起可用；旧版本忽略此参数
+     * @param exact 若为 {@code true}，对 {@code search} 进行精确匹配；否则部分匹配。
+     *              自 Keycloak 25 起可用；旧版本忽略此参数
+     * @param first 分页起始位置
+     * @param max 返回结果的最大数量
+     * @param briefRepresentation 若为 {@code true}，每个子组仅含基本信息；否则返回完整表示
+     * @param subGroupsCount 若为 {@code true}，为每个子组返回其子组数量；默认为 true。
+     *                       自 Keycloak 26.3 起支持；旧版本中始终为 true
      */
     @GET
     @Path("children")
@@ -170,10 +172,9 @@ public interface GroupResource {
             @QueryParam("subGroupsCount") Boolean subGroupsCount);
 
     /**
-     * Set or create child.  This will just set the parent if it exists.  Create it and set the parent
-     * if the group doesn't exist.
+     * 设置或创建子组。若子组已存在则更新其父级；不存在则创建并设置父级。
      *
-     * @param rep
+     * @param rep 子组表示对象
      */
     @POST
     @Path("children")
@@ -181,16 +182,16 @@ public interface GroupResource {
     @Consumes(MediaType.APPLICATION_JSON)
     Response subGroup(GroupRepresentation rep);
 
-
+    /** 获取本组的角色映射资源。 */
     @Path("role-mappings")
     RoleMappingResource roles();
 
     /**
-     * Get users
-     * <p/>
-     * Returns a list of all users in group.
+     * 获取组成员列表。
+     * <p>
+     * 返回组内所有用户，最多 100 条。
      *
-     * @return  Returns a max size of 100 users
+     * @return 用户表示对象列表
      */
     @GET
     @Path("/members")
@@ -198,13 +199,11 @@ public interface GroupResource {
     List<UserRepresentation> members();
 
     /**
-     * Get users
-     * <p/>
-     * Returns a list of users, filtered according to query parameters
+     * 按分页参数获取组成员列表。
      *
-     * @param firstResult Pagination offset
-     * @param maxResults  Pagination size
-     * @return
+     * @param firstResult 分页偏移量
+     * @param maxResults 分页大小
+     * @return 用户表示对象列表
      */
     @GET
     @Path("/members")
@@ -213,16 +212,14 @@ public interface GroupResource {
                                      @QueryParam("max") Integer maxResults);
 
     /**
-     * Get users
-     * <p/>
-     * Returns a list of users, filtered according to query parameters
+     * 按分页参数获取组成员列表，可选择简要表示。
      *
-     * @param firstResult Pagination offset
-     * @param maxResults  Pagination size
-     * @param briefRepresentation Only return basic information (only guaranteed to return id, username, created, first and last name,
-     *      email, enabled state, email verification state, federation link, and access.
-     *      Note that it means that namely user attributes, required actions, and not before are not returned.)
-     * @return
+     * @param firstResult 分页偏移量
+     * @param maxResults 分页大小
+     * @param briefRepresentation 若为 true，仅返回基本信息（id、username、created、
+     *      first/last name、email、enabled、emailVerified、federationLink、access）；
+     *      用户属性、必需操作及 not-before 等字段不会返回
+     * @return 用户表示对象列表
      */
     @GET
     @Path("/members")

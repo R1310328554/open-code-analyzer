@@ -28,28 +28,47 @@ import org.keycloak.util.DPoPGenerator;
 import static org.keycloak.OAuth2Constants.DPOP_HTTP_HEADER;
 
 /**
+ * DPoP（Demonstrating Proof-of-Possession）认证请求过滤器。
+ * <p>
+ * 在 {@link BearerAuthFilter} 基础上，为出站请求附加 RSA 签名的 DPoP 证明头；
+ * 令牌端点请求与常规 Admin REST 请求采用不同的证明生成策略。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DPoPAuthFilter extends BearerAuthFilter {
 
+    /** 是否为令牌端点请求模式。 */
     private final boolean tokenRequest;
 
+    /**
+     * 构造 DPoP 认证过滤器。
+     *
+     * @param tokenManager 令牌管理器，提供访问令牌与 DPoP 密钥对
+     * @param tokenRequest {@code true} 表示仅对 {@code /token} 端点附加 DPoP 证明；
+     *                     {@code false} 表示对 Admin API 请求附加 DPoP 证明及 DPoP 授权头
+     */
     public DPoPAuthFilter(TokenManager tokenManager, boolean tokenRequest) {
         super(tokenManager);
         this.tokenRequest = tokenRequest;
     }
 
+    /**
+     * 为出站请求生成并附加 DPoP 证明头。
+     * <p>
+     * 令牌请求模式下仅对 {@code /token} URI 生成不含访问令牌的证明；
+     * 常规模式下同时设置 {@code DPoP} 授权头与绑定访问令牌的证明。
+     */
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
         String requestUri = requestContext.getUri().toString();
         if (tokenRequest) {
             if (requestUri.endsWith("/token")) {
-                // Request for obtain new accessToken or refresh-token request
+                // 获取新访问令牌或刷新令牌时的请求
                 String dpop = DPoPGenerator.generateRsaSignedDPoPProof(tokenManager.getDpopKeyPair(), requestContext.getMethod(), requestUri, null);
                 requestContext.getHeaders().add(DPOP_HTTP_HEADER, dpop);
             }
         } else {
-            // Regular request to admin REST API
+            // 发往 Admin REST API 的常规请求
             String accessToken = tokenManager.getAccessTokenString();
             String dpop = DPoPGenerator.generateRsaSignedDPoPProof(tokenManager.getDpopKeyPair(), requestContext.getMethod(), requestUri, accessToken);
             requestContext.getHeaders().add(DPOP_HTTP_HEADER, dpop);
@@ -60,6 +79,7 @@ public class DPoPAuthFilter extends BearerAuthFilter {
     }
 
 
+    /** 返回 DPoP 授权头前缀（{@code DPoP}）。 */
     @Override
     protected String getAuthHeaderPrefix() {
         return DPOP_HTTP_HEADER;

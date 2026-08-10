@@ -29,18 +29,25 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.authorization.GroupPolicyRepresentation;
 
 /**
+ * 组策略（Group Policy）集合的管理 REST 资源。
+ * <p>
+ * 组策略基于用户所属组进行授权决策；提供创建、按 ID/名称查询的端点。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface GroupPoliciesResource {
 
+    /** 创建新的组策略。 */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     Response create(GroupPolicyRepresentation representation);
 
+    /** 按 ID 获取单个组策略资源。 */
     @Path("{id}")
     GroupPolicyResource findById(@PathParam("id") String id);
 
+    /** 按名称搜索组策略。 */
     @Path("/search")
     @GET
     @Produces(MediaType.APPLICATION_JSON)

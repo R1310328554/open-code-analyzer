@@ -30,16 +30,28 @@ import jakarta.ws.rs.core.Response;
 
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 
+/**
+ * 组织内身份提供程序集合的管理 REST 资源。
+ * <p>
+ * 支持将领域 IdP 关联到组织、列出已关联 IdP 及按 ID 访问单个 IdP 资源。
+ */
 public interface OrganizationIdentityProvidersResource {
 
+    /**
+     * 将指定 ID 的身份提供程序关联到当前组织。
+     *
+     * @param id 身份提供程序 ID 或别名
+     */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     Response addIdentityProvider(String id);
 
+    /** 列出当前组织关联的所有身份提供程序。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<IdentityProviderRepresentation> getIdentityProviders();
 
+    /** 按 ID 获取单个组织身份提供程序资源。 */
     @Path("{id}")
     OrganizationIdentityProviderResource get(@PathParam("id") String id);
 }

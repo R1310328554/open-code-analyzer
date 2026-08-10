@@ -33,31 +33,36 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 
 /**
+ * 领域内身份提供程序（Identity Provider）集合的管理 REST 资源。
+ * <p>
+ * 支持 IdP 实例的创建、查询、按别名访问及配置导入等操作。
+ *
  * @author pedroigor
  */
 public interface IdentityProvidersResource {
 
+    /** 按别名获取单个身份提供程序资源。 */
     @Path("instances/{alias}")
     IdentityProviderResource get(@PathParam("alias") String alias);
 
+    /** 列出所有身份提供程序实例。 */
     @GET
     @Path("instances")
     @Produces(MediaType.APPLICATION_JSON)
     List<IdentityProviderRepresentation> findAll();
 
     /**
-     * Get the paginated list of identity providers, filtered according to the specified parameters.
+     * 按指定参数分页查询身份提供程序列表。
      *
-     * @param type Type of identity provider. See the class org.keycloak.models.IdentityProviderType for the available values. When parameter is omitted, there is no filtering by type.
-     *             This parameter is available since Keycloak 26.5.0
-     * @param capability Capability of identity provider. Used just if type is omitted. See the class org.keycloak.models.IdentityProviderCapability for the available values. When parameter is omitted, there is no filtering by capability.
-     *                   This parameter is available since Keycloak 26.5.0
-     * @param search Filter to search specific providers by name. Search can be prefixed (name*), contains (*name*) or exact (\"name\"). Default prefixed.
-     * @param briefRepresentation Boolean which defines whether brief representations are returned (default: false).
-     *                            If true, only basic data like ID, alias, providerId and enabled status will be returned in the result
-     * @param firstResult Pagination offset
-     * @param maxResults Maximum results size (defaults to 100)
-     * @return The list of providers.
+     * @param type IdP 类型，参见 {@code org.keycloak.models.IdentityProviderType}；
+     *             省略时不按类型过滤。自 Keycloak 26.5.0 起可用
+     * @param capability IdP 能力，参见 {@code org.keycloak.models.IdentityProviderCapability}；
+     *                   仅在未指定 type 时生效；省略时不按能力过滤。自 Keycloak 26.5.0 起可用
+     * @param search 按名称搜索，支持前缀（name*）、包含（*name*）或精确（"name"）匹配，默认前缀
+     * @param briefRepresentation 若为 true，仅返回 ID、alias、providerId 及 enabled 等基本信息
+     * @param firstResult 分页偏移量
+     * @param maxResults 最大返回数量（默认 100）
+     * @return 匹配的身份提供程序列表
      */
     @GET
     @Path("instances")
@@ -66,6 +71,7 @@ public interface IdentityProvidersResource {
                                               @QueryParam("search") String search, @QueryParam("briefRepresentation") Boolean briefRepresentation,
                                               @QueryParam("first") Integer firstResult, @QueryParam("max") Integer maxResults);
 
+    /** 按名称搜索并分页查询身份提供程序（不含 type/capability 过滤）。 */
     @GET
     @Path("instances")
     @Produces(MediaType.APPLICATION_JSON)
@@ -73,16 +79,15 @@ public interface IdentityProvidersResource {
                                               @QueryParam("first") Integer firstResult, @QueryParam("max") Integer maxResults);
 
     /**
-     * Get the paginated list of identity providers, filtered according to the specified parameters.
+     * 按指定参数分页查询身份提供程序列表，支持仅返回领域级 IdP。
      *
-     * @param search Filter to search specific providers by name. Search can be prefixed (name*), contains (*name*) or exact (\"name\"). Default prefixed.
-     * @param briefRepresentation Boolean which defines whether brief representations are returned (default: false).
-     *                            If true, only basic data like ID, alias, providerId and enabled status will be returned in the result
-     * @param firstResult Pagination offset
-     * @param maxResults Maximum results size (defaults to 100)
-     * @param realmOnly Boolean which defines if only realm-level IDPs (not associated with orgs) should be returned (default: false).
-     *                  Parameter available since Keycloak server 26. Will be ignored on older Keycloak versions with the default value false
-     * @return The list of providers.
+     * @param search 按名称搜索，支持前缀、包含或精确匹配
+     * @param briefRepresentation 若为 true，仅返回基本信息
+     * @param firstResult 分页偏移量
+     * @param maxResults 最大返回数量（默认 100）
+     * @param realmOnly 若为 true，仅返回领域级 IdP（未关联组织的 IdP）。
+     *                  自 Keycloak 26 起可用；旧版本忽略此参数
+     * @return 匹配的身份提供程序列表
      */
     @GET
     @Path("instances")
@@ -91,22 +96,26 @@ public interface IdentityProvidersResource {
                                               @QueryParam("first") Integer firstResult, @QueryParam("max") Integer maxResults,
                                               @QueryParam("realmOnly") Boolean realmOnly);
 
+    /** 创建新的身份提供程序实例。 */
     @POST
     @Path("instances")
     @Consumes(MediaType.APPLICATION_JSON)
     Response create(IdentityProviderRepresentation identityProvider);
 
+    /** 按提供程序 ID 获取 IdP 工厂/配置信息。 */
     @GET
     @Path("/providers/{provider_id}")
     @Produces(MediaType.APPLICATION_JSON)
     Response getIdentityProviders(@PathParam("provider_id") String providerId);
 
+    /** 从 multipart 表单数据导入 IdP 配置。 */
     @POST
     @Path("import-config")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_JSON)
     Map<String, String> importFrom(Object data);
 
+    /** 从 JSON 映射导入 IdP 配置。 */
     @POST
     @Path("import-config")
     @Consumes(MediaType.APPLICATION_JSON)
