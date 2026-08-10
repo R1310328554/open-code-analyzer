@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T13:17:47Z",
   "files": [
-    "services/src/main/java/org/keycloak/services/resources/admin/ClientResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ClientRoleMappingsResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ClientScopeEvaluateResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ClientScopeEvaluateScopeMappingsResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ClientScopeResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ClientScopesResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ClientTypesResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ClientsResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ComponentResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/GroupResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/GroupsResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/IdentityProviderResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/IdentityProvidersResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/KeyResource.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/ProtocolMappersResource.java",
     "services/src/main/java/org/keycloak/services/resources/admin/RealmAdminResource.java",
     "services/src/main/java/org/keycloak/services/resources/admin/RealmLocalizationResource.java",
     "services/src/main/java/org/keycloak/services/resources/admin/RealmsAdminResource.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/services/resources/admin/ext/AdminRealmResourceProviderFactory.java"
   ],
   "remaining_pending": 898,
-  "done": 5070
+  "done": 5085
 }
