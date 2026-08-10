@@ -102,8 +102,8 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
- * Utility for XML Signature <b>Note:</b> You can change the canonicalization method type by using the system property
- * "picketlink.xmlsig.canonicalization"
+ * XML 数字签名工具类，支持 SAML 断言与文档的签名与验证。
+ * <p><b>说明：</b>可通过系统属性 {@code picketlink.xmlsig.canonicalization} 更改规范化方法。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @author alessio.soldano@jboss.com
@@ -111,6 +111,7 @@ import org.xml.sax.SAXException;
  */
 public class XMLSignatureUtil {
 
+    /** 日志记录器。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
     // Set some system properties and Santuario providers. Run this block before any other class initialization.
@@ -126,11 +127,10 @@ public class XMLSignatureUtil {
 
     private static final XMLSignatureFactory fac = getXMLSignatureFactory();
 
-    /**
-     * By default, we include the keyinfo in the signature
-     */
+    /** 是否在签名中包含 KeyInfo，默认为 true。 */
     private static boolean includeKeyInfoInSignature = true;
 
+    /** 利用 KeyInfo 中 KeyName 提示从 {@link KeyLocator} 选取验证密钥的选择器。 */
     private static class KeySelectorUtilizingKeyNameHint extends KeySelector {
 
         private final KeyLocator locator;
@@ -178,10 +178,10 @@ public class XMLSignatureUtil {
     }
 
     /**
-     * Returns the element that contains the signature for the passed element.
+     * 查找与指定元素关联的 ds:Signature 元素。
      *
-     * @param element The element to search for the signature
-     * @return The signature element or null
+     * @param element 待查找签名的元素
+     * @return 签名元素，未找到则返回 null
      */
     public static Element getSignature(Element element) {
         Document doc = element.getOwnerDocument();
@@ -224,9 +224,9 @@ public class XMLSignatureUtil {
     }
 
     /**
-     * Use this method to not include the KeyInfo in the signature
+     * 设置是否在签名中包含 KeyInfo。
      *
-     * @param includeKeyInfoInSignature
+     * @param includeKeyInfoInSignature 是否包含 KeyInfo
      *
      * @since v2.0.1
      */
@@ -453,16 +453,16 @@ public class XMLSignatureUtil {
     }
 
     /**
-     * Validate a signed document with the given public key. All elements that contain a Signature are checked,
-     * this way both assertions and the containing document are verified when signed.
+     * 使用 {@link KeyLocator} 验证已签名文档。
+     * <p>检查所有含 Signature 的元素；若根文档未完全签名，则要求全部断言均已签名。</p>
      *
-     * @param signedDoc
-     * @param locator
+     * @param signedDoc 已签名的 DOM 文档
+     * @param locator 验证密钥定位器
      *
-     * @return
+     * @return 验证通过返回 true
      *
-     * @throws MarshalException
-     * @throws XMLSignatureException
+     * @throws MarshalException 反序列化异常
+     * @throws XMLSignatureException 签名验证异常
      */
     @SuppressWarnings("unchecked")
     public static boolean validate(Document signedDoc, final KeyLocator locator) throws MarshalException, XMLSignatureException {
@@ -513,6 +513,7 @@ public class XMLSignatureUtil {
         return false;
     }
 
+    /** 验证单个签名节点，使用全新 signedNodes 集合。 */
     public static boolean validateSingleNode(Node signatureNode, final KeyLocator locator) throws MarshalException, XMLSignatureException {
         return validateSingleNode(signatureNode, locator, new HashSet<>());
     }
@@ -718,14 +719,11 @@ public class XMLSignatureUtil {
     }
 
     /**
-     * <p>
-     * Creates a {@code KeyValueType} that wraps the specified public key. This method supports DSA and RSA keys.
-     * </p>
+     * 根据公钥创建 {@code KeyValueType}，支持 DSA 与 RSA。
      *
-     * @param key the {@code PublicKey} that will be represented as a {@code KeyValueType}.
+     * @param key 待表示为 KeyValue 的 {@code PublicKey}
      *
-     * @return the constructed {@code KeyValueType} or {@code null} if the specified key is neither a DSA nor a RSA
-     *         key.
+     * @return 构造的 {@code KeyValueType}；非 DSA/RSA 密钥时抛出异常
      */
     public static KeyValueType createKeyValue(PublicKey key) {
         if (key instanceof RSAPublicKey) {
@@ -787,6 +785,7 @@ public class XMLSignatureUtil {
         signature.sign(dsc);
     }
 
+    /** 构造含 KeyName、X509 证书或 KeyValue 的 KeyInfo。 */
     public static KeyInfo createKeyInfo(String keyName, PublicKey publicKey, X509Certificate x509Certificate) throws KeyException {
         KeyInfoFactory keyInfoFactory = fac.getKeyInfoFactory();
 

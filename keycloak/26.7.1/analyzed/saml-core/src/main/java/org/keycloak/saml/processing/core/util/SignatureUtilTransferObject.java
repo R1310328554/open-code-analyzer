@@ -23,40 +23,53 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 /**
- * A Transfer Object used by {@link XMLSignatureUtil}
+ * {@link XMLSignatureUtil} 签名操作使用的传输对象（DTO）。
+ * <p>封装待签文档、密钥对、摘要/签名算法及 X509 证书等参数。</p>
  *
  * @author anil saldhana
  */
 public class SignatureUtilTransferObject {
 
+    /** 用于签名的 X509 证书。 */
     private X509Certificate x509Certificate;
 
+    /** 待签名的 DOM 文档。 */
     private Document documentToBeSigned;
 
+    /** KeyInfo 中的密钥名称提示。 */
     private String keyName;
 
+    /** 签名用密钥对。 */
     private KeyPair keyPair;
 
+    /** 签名元素插入位置的参考兄弟节点。 */
     private Node nextSibling;
 
+    /** 摘要算法 URI（如 SHA-256）。 */
     private String digestMethod;
 
+    /** Reference 元素的 URI 属性值。 */
     private String referenceURI;
 
+    /** 签名算法 URI。 */
     private String signatureMethod;
 
+    /** 返回待签名的 DOM 文档。 */
     public Document getDocumentToBeSigned() {
         return documentToBeSigned;
     }
 
+    /** 设置待签名的 DOM 文档。 */
     public void setDocumentToBeSigned(Document documentToBeSigned) {
         this.documentToBeSigned = documentToBeSigned;
     }
 
+    /** 返回签名密钥对。 */
     public KeyPair getKeyPair() {
         return keyPair;
     }
 
+    /** 设置签名密钥对。 */
     public void setKeyPair(KeyPair keyPair) {
         this.keyPair = keyPair;
     }
@@ -94,9 +107,9 @@ public class SignatureUtilTransferObject {
     }
 
     /**
-     * Get the {@link X509Certificate} used for signing
+     * 获取用于签名的 {@link X509Certificate}。
      *
-     * @return
+     * @return X509 证书
      *
      * @since 2.5.0
      */
@@ -105,9 +118,9 @@ public class SignatureUtilTransferObject {
     }
 
     /**
-     * Set the {@link X509Certificate} used for signing
+     * 设置用于签名的 {@link X509Certificate}。
      *
-     * @param x509Certificate
+     * @param x509Certificate X509 证书
      *
      * @since 2.5.0
      */
@@ -115,6 +128,7 @@ public class SignatureUtilTransferObject {
         this.x509Certificate = x509Certificate;
     }
 
+    /** 返回 KeyInfo 密钥名称。 */
     public String getKeyName() {
         return keyName;
     }

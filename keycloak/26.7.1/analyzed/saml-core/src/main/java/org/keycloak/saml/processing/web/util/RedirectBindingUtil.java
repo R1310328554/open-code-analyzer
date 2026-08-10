@@ -27,7 +27,8 @@ import org.keycloak.saml.common.util.StringUtil;
 import org.keycloak.saml.processing.api.util.DeflateUtil;
 
 /**
- * Utility class for SAML HTTP/Redirect binding
+ * SAML HTTP-Redirect 绑定编解码与 URL 构造工具类。
+ * <p>支持 Deflate 压缩、Base64 编码、URL 编解码及目标查询字符串组装。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jan 14, 2009
@@ -35,13 +36,13 @@ import org.keycloak.saml.processing.api.util.DeflateUtil;
 public class RedirectBindingUtil {
 
     /**
-     * URL encode the string
+     * 使用 SAML 字符集对字符串进行 URL 编码。
      *
-     * @param str
+     * @param str 待编码字符串
      *
-     * @return
+     * @return URL 编码结果
      *
-     * @throws IOException
+     * @throws IOException 编码异常
      */
     public static String urlEncode(String str) throws IOException {
         return URLEncoder.encode(str, GeneralConstants.SAML_CHARSET_NAME);
@@ -115,13 +116,13 @@ public class RedirectBindingUtil {
     }
 
     /**
-     * Apply deflate compression followed by base64 encoding and URL encoding
+     * 对字节数组依次执行 Deflate 压缩、Base64 编码与 URL 编码（Redirect 绑定标准流程）。
      *
-     * @param stringToEncode
+     * @param stringToEncode 待编码字节数组
      *
-     * @return
+     * @return 编码后的 URL 安全字符串
      *
-     * @throws IOException
+     * @throws IOException 压缩或编码异常
      */
     public static String deflateBase64URLEncode(byte[] stringToEncode) throws IOException {
         byte[] deflatedMsg = DeflateUtil.encode(stringToEncode);
@@ -156,14 +157,14 @@ public class RedirectBindingUtil {
     }
 
     /**
-     * Apply URL decoding, followed by base64 decoding followed by deflate decompression
+     * URL 解码 → Base64 解码 → Deflate 解压，返回输入流。
      *
-     * @param encodedString
-     * @param maxInflatingSize
+     * @param encodedString 编码后的 SAML 参数字符串
+     * @param maxInflatingSize 解压允许的最大字节数（防炸弹攻击）
      *
-     * @return
+     * @return 解压后的 SAML 消息流
      *
-     * @throws IOException
+     * @throws IOException 解码或解压异常
      */
     public static InputStream urlBase64DeflateDecode(String encodedString, long maxInflatingSize) throws IOException {
         byte[] deflatedString = urlBase64Decode(encodedString);
@@ -199,13 +200,13 @@ public class RedirectBindingUtil {
     }
 
     /**
-     * Get the Query String for the destination url
+     * 构造 Redirect 绑定的目标 URL 查询字符串。
      *
-     * @param urlEncodedRequest
-     * @param urlEncodedRelayState
-     * @param sendRequest either going to be saml request or response
+     * @param urlEncodedRequest 已 URL 编码的 SAML 请求/响应
+     * @param urlEncodedRelayState 可选 RelayState
+     * @param sendRequest true 时使用 SAMLRequest，false 时使用 SAMLResponse
      *
-     * @return
+     * @return 查询参数字符串（不含前导 ?）
      */
     public static String getDestinationQueryString(String urlEncodedRequest, String urlEncodedRelayState, boolean sendRequest) {
         StringBuilder sb = new StringBuilder();
@@ -242,11 +243,13 @@ public class RedirectBindingUtil {
     }
 
     /**
-     * A Destination holder that holds the destination host url and the destination query string
+     * Redirect 目标 URL 与查询字符串的持有者，支持链式配置。
      */
     public static class RedirectBindingUtilDestHolder {
 
+        /** 目标主机 URL（不含查询串）。 */
         private String destination;
+        /** 已编码的查询字符串。 */
         private String destinationQueryString;
 
         public RedirectBindingUtilDestHolder setDestinationQueryString(String dest) {

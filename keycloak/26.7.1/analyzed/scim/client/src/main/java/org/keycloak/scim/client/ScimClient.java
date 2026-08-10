@@ -17,28 +17,25 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.client.HttpClient;
 
 /**
- * <p>A client for interacting with a SCIM 2.0 compliant server. This client provides methods for performing
- * CRUD operations on SCIM resources such as users and groups, as well as retrieving the service provider configuration.
+ * <p>与 SCIM 2.0 兼容服务器交互的客户端，支持用户、组等资源的 CRUD 及服务端配置查询。</p>
  *
- * <p>This client is not designed as a standalone SCIM client library, but rather for internal use within Keycloak for testing and integration purposes.
- * It is built on top of {@link SimpleHttp} client.
+ * <p>本客户端供 Keycloak 内部测试与集成使用，非独立 SCIM 库；基于 {@link SimpleHttp} 实现。</p>
  *
- * <p>In order to create instances of this client you will need a {@link HttpClient} instance. At runtime, this instance
- * is available from the {@link org.keycloak.connections.httpclient.HttpClientProvider} provider.
+ * <p>创建实例需 {@link HttpClient}，运行时可通过 {@link org.keycloak.connections.httpclient.HttpClientProvider} 获取。</p>
  *
- * <p>Example usage:
+ * <p>用法示例：
  * <pre>
  * try (ScimClient scimClient = ScimClient.create(httpClient)
  *         .withBaseUrl("https://scim.example.com")
  *         .withAuthorization(new ScimClient.Builder.OAuth2Bearer("https://auth.examplecom/realms/master/protocol/openid-connect/token", "client-id", "client-secret"))
  *         .build()) {
- *     // Use scimClient to perform operations, e.g.:
  *     ScimUser user = scimClient.users().get("user-id");
  * }
  * </pre>
  */
 public final class ScimClient implements AutoCloseable {
 
+    /** SCIM JSON 媒体类型。 */
     private static final String APPLICATION_SCIM_JSON = "application/scim+json";
 
     private final SimpleHttp http;
@@ -53,14 +50,17 @@ public final class ScimClient implements AutoCloseable {
         return new Builder(httpClient);
     }
 
+    /** 返回 Users 资源客户端。 */
     public ScimUsersClient users() {
         return new ScimUsersClient(this);
     }
 
+    /** 返回 Groups 资源客户端。 */
     public ScimGroupsClient groups() {
         return new ScimGroupsClient(this);
     }
 
+    /** 返回 ServiceProviderConfig 客户端。 */
     public ScimConfigClient config() {
         return new ScimConfigClient(this);
     }
@@ -74,10 +74,10 @@ public final class ScimClient implements AutoCloseable {
     }
 
     /**
-     * Execute a raw GET request to the given path relative to the SCIM base URL.
-     * Throws {@link ScimClientException} if the response status is not successful.
+     * 对 SCIM 基址下的相对路径执行原始 GET 请求。
+     * 非成功状态码时抛出 {@link ScimClientException}。
      *
-     * @param path the path relative to the SCIM base URL (e.g., "InvalidType")
+     * @param path 相对路径（如 "InvalidType"）
      */
     public void get(String path) {
         execute(doGet(path));
@@ -184,6 +184,7 @@ public final class ScimClient implements AutoCloseable {
 
     public static class Builder {
 
+        /** 默认 SCIM API 路径前缀。 */
         private static final String DEFAULT_API_PATH = "/scim/v2/";
 
         private final ScimClient client;
@@ -193,10 +194,10 @@ public final class ScimClient implements AutoCloseable {
         }
 
         /**
-         * The base URL of the SCIM server, e.g. "https://scim.example.com". The default API path "/scim/v2/" will be appended to this base URL.
+         * 设置 SCIM 服务器基址（如 https://scim.example.com），自动追加默认路径 /scim/v2/。
          *
-         * @param baseUrl the base URL of the SCIM server
-         * @return this builder for chaining
+         * @param baseUrl SCIM 服务器基址
+         * @return 当前构建器
          */
         public Builder withBaseUrl(String baseUrl) {
             client.setBaseUrl(baseUrl + DEFAULT_API_PATH);
@@ -216,9 +217,9 @@ public final class ScimClient implements AutoCloseable {
         }
 
         /**
-         * Builds the {@link ScimClient} instance with the configured settings. The client will be connected and ready to use after this method is called.
+         * 构建并返回配置完成的 {@link ScimClient} 实例。
          *
-         * @return the connected {@link ScimClient} instance
+         * @return 可用的 ScimClient
          */
         public ScimClient build() {
             return client.connect();

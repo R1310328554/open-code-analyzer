@@ -1,20 +1,23 @@
 package org.keycloak.scim.client;
 
 /**
- * Fluent builder for SCIM filter expressions. Supports all SCIM filter operators and logical combinations.
+ * SCIM 过滤表达式的流式构建器，支持比较、逻辑运算符与括号分组。
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
 public class ResourceFilter {
 
+    /** 创建新的过滤器构建器实例。 */
     public static ResourceFilter filter() {
         return new ResourceFilter();
     }
 
+    /** 累积的过滤表达式字符串。 */
     private final StringBuilder filter = new StringBuilder();
 
-    // Comparison operators
+    // 比较运算符
 
+    /** 等于（eq）比较。 */
     public ResourceFilter eq(String property, String value) {
         append(property + " eq " + quote(value));
         return this;
@@ -77,8 +80,9 @@ public class ResourceFilter {
         return this;
     }
 
-    // Logical operators
+    // 逻辑运算符
 
+    /** 追加逻辑与（and）。 */
     public ResourceFilter and() {
         filter.append(" and ");
         return this;
@@ -94,7 +98,7 @@ public class ResourceFilter {
         return this;
     }
 
-    // Grouping
+    // 分组括号
 
     public ResourceFilter lparen() {
         filter.append("(");
@@ -106,6 +110,7 @@ public class ResourceFilter {
         return this;
     }
 
+    /** 生成完整的 SCIM filter 查询字符串。 */
     public String build() {
         return filter.toString();
     }

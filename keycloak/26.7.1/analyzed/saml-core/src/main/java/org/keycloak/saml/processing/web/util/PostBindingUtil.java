@@ -26,32 +26,34 @@ import org.keycloak.saml.common.PicketLinkLoggerFactory;
 import org.keycloak.saml.common.constants.GeneralConstants;
 
 /**
- * Utility for the HTTP/Post binding
+ * SAML HTTP-POST 绑定编解码工具类。
+ * <p>提供 Base64 编解码及 HTML 特殊字符转义，用于 POST 表单传输 SAML 消息。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since May 22, 2009
  */
 public class PostBindingUtil {
 
+    /** 日志记录器。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
     /**
-     * Apply base64 encoding on the message
+     * 对 SAML 消息字符串进行 Base64 编码。
      *
-     * @param stringToEncode
+     * @param stringToEncode 待编码字符串
      *
-     * @return
+     * @return Base64 编码结果
      */
     public static String base64Encode(String stringToEncode) throws IOException {
         return Base64.getEncoder().encodeToString(stringToEncode.getBytes(GeneralConstants.SAML_CHARSET));
     }
 
     /**
-     * Apply base64 decoding on the message and return the byte array
+     * 对 Base64 编码字符串解码为字节数组。
      *
-     * @param encodedString
+     * @param encodedString 已编码字符串
      *
-     * @return
+     * @return 解码后的字节数组
      */
     public static byte[] base64Decode(String encodedString) {
         if (encodedString == null)
@@ -66,11 +68,11 @@ public class PostBindingUtil {
     }
 
     /**
-     * Apply base64 decoding on the message and return the stream
+     * 解码 Base64 字符串并返回 {@link InputStream}。
      *
-     * @param encodedString
+     * @param encodedString 已编码字符串
      *
-     * @return
+     * @return 解码数据输入流
      */
     public static InputStream base64DecodeAsStream(String encodedString) {
         if (encodedString == null)
@@ -79,6 +81,12 @@ public class PostBindingUtil {
         return new ByteArrayInputStream(base64Decode(encodedString));
     }
 
+    /**
+     * 转义 HTML 中的双引号、尖括号等特殊字符，防止 XSS。
+     *
+     * @param toEscape 待转义字符串
+     * @return 转义后的字符串
+     */
     public static String escapeHTML(String toEscape) {
         StringBuilder escaped = new StringBuilder();
 

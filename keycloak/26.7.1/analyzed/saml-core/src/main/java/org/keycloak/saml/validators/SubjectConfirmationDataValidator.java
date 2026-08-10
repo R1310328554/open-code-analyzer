@@ -27,11 +27,14 @@ import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * SAML SubjectConfirmationData 元素校验器。
+ * <p>校验时间窗口、Recipient 与 InResponseTo 是否与期望请求匹配。</p>
  *
  * @author rmartinc
  */
 public class SubjectConfirmationDataValidator {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(SubjectConfirmationDataValidator.class);
     private final SubjectConfirmationDataType subjectConfirmationData;
     private final String inResponseTo;
@@ -51,6 +54,7 @@ public class SubjectConfirmationDataValidator {
         this.destinationValidator = destinationValidator;
     }
 
+    /** {@link SubjectConfirmationDataValidator} 构建器。 */
     public static class Builder {
 
         private final String assertionId;
@@ -66,6 +70,7 @@ public class SubjectConfirmationDataValidator {
             this.destinationValidator = destinationValidator;
         }
 
+        /** 设置期望的 InResponseTo（对应 AuthnRequest ID）。 */
         public Builder inResponseTo(String inResponseTo) {
             this.inResponseTo = inResponseTo;
             return this;
@@ -76,6 +81,7 @@ public class SubjectConfirmationDataValidator {
             return this;
         }
 
+        /** 添加允许的 Recipient URL。 */
         public Builder allowedRecipient(String... allowedRecipients) {
             this.allowedRecipients.addAll(Arrays.asList(allowedRecipients));
             return this;
@@ -86,6 +92,7 @@ public class SubjectConfirmationDataValidator {
         }
     }
 
+    /** 执行 SubjectConfirmationData 全部校验规则。 */
     public boolean isValid() {
         if (subjectConfirmationData == null) {
             return true;

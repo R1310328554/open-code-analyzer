@@ -44,27 +44,31 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * Utility for XML Encryption <b>Note: </b> This utility is currently using Apache XML Security library API. JSR-106 is
- * not yet
- * final. Until that happens,we rely on the non-standard API.
+ * XML 加密工具类。
+ * <p><b>说明：</b>当前基于 Apache XML Security 库 API 实现；JSR-106 标准尚未定稿，故使用非标准 API。</p>
+ * <p>支持元素加密/解密、对称密钥包装传输及多种 RSA/AES 算法配置。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since May 4, 2009
  */
 public class XMLEncryptionUtil {
 
+    /**
+     * 解密密钥定位器接口。
+     * <p>根据 {@link EncryptedData} 提供可用于解密的私钥列表。</p>
+     */
     public interface DecryptionKeyLocator {
 
         /**
-         * Provides a list of private keys that are suitable for decrypting
-         * the given {@code encryptedData}.
+         * 返回适合解密给定 {@code encryptedData} 的私钥列表。
          *
-         * @param encryptedData data that need to be decrypted
-         * @return a list of private keys
+         * @param encryptedData 待解密的数据
+         * @return 私钥列表
          */
         List<PrivateKey> getKeys(EncryptedData encryptedData);
     }
 
+    /** 日志记录器。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
     static {
@@ -72,8 +76,10 @@ public class XMLEncryptionUtil {
         org.apache.xml.security.Init.init();
     }
 
+    /** ds:KeyInfo 元素本地名称常量。 */
     public static final String DS_KEY_INFO = "ds:KeyInfo";
 
+    /** 默认 RSA 密钥包装算法（RSA-OAEP-MGF1P）。 */
     private static final String RSA_ENCRYPTION_SCHEME = XMLCipher.RSA_OAEP_11;
 
     /**
@@ -110,10 +116,12 @@ public class XMLEncryptionUtil {
         }
     }
 
+    /** 将 XML 加密算法 URI 映射为 JCE 密钥算法名称。 */
     public static String getJCEKeyAlgorithmFromURI(String algorithm) {
         return JCEMapper.getJCEKeyAlgorithmFromURI(algorithm);
     }
 
+    /** 从算法 URI 解析密钥长度（位）。 */
     public static int getKeyLengthFromURI(String algorithm) {
         return JCEMapper.getKeyLengthFromURI(algorithm);
     }
@@ -139,22 +147,21 @@ public class XMLEncryptionUtil {
     }
 
     /**
-     * Given an element in a Document, encrypt the element and replace the element in the document with the encrypted
-     * data
+     * 加密文档中指定元素，并用加密数据替换原元素。
      *
-     * @param elementQName QName of the element that we like to encrypt
-     * @param document The document with the element to encrypt
-     * @param publicKey The public Key to wrap the secret key
-     * @param secretKey The secret key to use for encryption
-     * @param keySize The size of the public key
-     * @param wrappingElementQName A QName of an element that will wrap the encrypted element
-     * @param addEncryptedKeyInKeyInfo Need for the EncryptedKey to be placed in ds:KeyInfo
-     * @param encryptionAlgorithm The encryption algorithm
-     * @param keyEncryptionAlgorithm The wrap algorithm for the secret key (can be null, default is used depending the publicKey type)
-     * @param keyEncryptionDigestMethod An optional digestMethod to use (can be null)
-     * @param keyEncryptionMgfAlgorithm The xenc11 MGF Algorithm to use (can be null)
+     * @param elementQName 待加密元素的 QName
+     * @param document 包含待加密元素的文档
+     * @param publicKey 用于包装对称密钥的公钥
+     * @param secretKey 用于数据加密的对称密钥
+     * @param keySize 公钥/密钥尺寸（位）
+     * @param wrappingElementQName 包裹加密结果的外层元素 QName
+     * @param addEncryptedKeyInKeyInfo 是否将 EncryptedKey 放入 ds:KeyInfo
+     * @param encryptionAlgorithm 数据加密算法（可为 null，按 secretKey 推断）
+     * @param keyEncryptionAlgorithm 对称密钥包装算法（可为 null）
+     * @param keyEncryptionDigestMethod 可选摘要算法（可为 null）
+     * @param keyEncryptionMgfAlgorithm xenc11 MGF 算法（可为 null）
      *
-     * @throws ProcessingException
+     * @throws ProcessingException 加密失败时抛出
      */
     public static void encryptElement(QName elementQName, Document document, PublicKey publicKey, SecretKey secretKey,
                                       int keySize, QName wrappingElementQName, boolean addEncryptedKeyInKeyInfo, String encryptionAlgorithm,
@@ -269,16 +276,15 @@ public class XMLEncryptionUtil {
     }
 
     /**
-     * Decrypts an encrypted element inside a document. It tries to use all
-     * keys provided by {@code decryptionKeyLocator} and if it does not
-     * succeed it throws {@link ProcessingException}.
+     * 解密文档中的加密元素。
+     * <p>依次尝试 {@code decryptionKeyLocator} 提供的全部私钥；均失败则抛出 {@link ProcessingException}。</p>
      *
-     * @param documentWithEncryptedElement document containing encrypted element
-     * @param decryptionKeyLocator decryption key locator
+     * @param documentWithEncryptedElement 含加密元素的文档
+     * @param decryptionKeyLocator 解密密钥定位器
      *
-     * @return the document with the encrypted element replaced by the data element
+     * @return 解密后替换为明文数据元素的根元素
      *
-     * @throws ProcessingException when decrypting was not successful
+     * @throws ProcessingException 解密失败时抛出
      */
     public static Element decryptElementInDocument(Document documentWithEncryptedElement, DecryptionKeyLocator decryptionKeyLocator)
             throws ProcessingException {

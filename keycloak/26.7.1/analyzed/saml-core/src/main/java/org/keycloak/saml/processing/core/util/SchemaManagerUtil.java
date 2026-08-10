@@ -20,13 +20,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Manages the schemas for PicketLink
+ * PicketLink SAML 处理所需的 XML Schema 路径管理工具。
+ * <p>集中返回 W3C、SAML、XACML、WS-Trust 等规范对应的 XSD 资源路径列表。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 30, 2011
  */
 public class SchemaManagerUtil {
 
+    /** 返回 W3C XML Schema 定义路径列表。 */
     public static List<String> getXMLSchemas() {
         List<String> list = new ArrayList<>();
 
@@ -34,6 +36,7 @@ public class SchemaManagerUtil {
         return list;
     }
 
+    /** 返回 XML 数字签名（XMLDSig）Schema 路径列表。 */
     public static List<String> getXMLDSig() {
         List<String> list = new ArrayList<>();
 
@@ -41,6 +44,7 @@ public class SchemaManagerUtil {
         return list;
     }
 
+    /** 返回 XML 加密（XMLEnc）Schema 路径列表。 */
     public static List<String> getXMLEnc() {
         List<String> list = new ArrayList<>();
 
@@ -48,6 +52,7 @@ public class SchemaManagerUtil {
         return list;
     }
 
+    /** 返回 XACML 2.0 策略与上下文 Schema 路径列表。 */
     public static List<String> getXACMLSchemas() {
         List<String> list = new ArrayList<>();
 
@@ -56,6 +61,7 @@ public class SchemaManagerUtil {
         return list;
     }
 
+    /** 返回 SAML 2.0 断言、协议、元数据等 Schema 路径列表。 */
     public static List<String> getSAML2Schemas() {
         List<String> list = new ArrayList<>();
 
@@ -71,6 +77,7 @@ public class SchemaManagerUtil {
         return list;
     }
 
+    /** 返回 SAML 1.0/1.1 断言与协议 Schema 路径列表。 */
     public static List<String> getSAML11Schemas() {
         List<String> list = new ArrayList<>();
 
@@ -80,6 +87,7 @@ public class SchemaManagerUtil {
         return list;
     }
 
+    /** 返回 WS-Trust 1.3 及相关 WS-Security Schema 路径列表。 */
     public static List<String> getWSTrustSchemas() {
         List<String> list = new ArrayList<>();
 
@@ -91,6 +99,7 @@ public class SchemaManagerUtil {
         return list;
     }
 
+    /** 返回上述全部 Schema 的合并列表，用于统一校验配置。 */
     public static List<String> getSchemas() {
         List<String> list = new ArrayList<>();
         list.addAll(getXMLSchemas());

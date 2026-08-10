@@ -36,16 +36,22 @@ import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 import org.jboss.logging.Logger;
 
 /**
- * Conditions validation as per Section 2.5 of https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf
+ * SAML 断言 Conditions 元素校验器，遵循 SAML Core 2.0 规范第 2.5 节。
+ * <p>校验有效期、AudienceRestriction、OneTimeUse、ProxyRestriction 等条件。</p>
  * @author hmlnarik
  */
 public class ConditionsValidator {
 
+    /** 日志记录器。 */
     private static final Logger LOG = Logger.getLogger(ConditionsValidator.class);
 
+    /** 条件校验结果枚举，支持按 SAML 2.5.1.1 合并多个条件结果。 */
     public enum Result {
+        /** 条件有效。 */
         VALID           { @Override public Result joinResult(Result otherResult) { return otherResult; } },
+        /** 无法判定（未知条件类型等）。 */
         INDETERMINATE   { @Override public Result joinResult(Result otherResult) { return otherResult == INVALID ? INVALID : INDETERMINATE; } },
+        /** 条件无效。 */
         INVALID         { @Override public Result joinResult(Result otherResult) { return INVALID; } };
 
         /**
@@ -56,6 +62,7 @@ public class ConditionsValidator {
         protected abstract Result joinResult(Result otherResult);
     };
 
+    /** {@link ConditionsValidator} 的流式构建器。 */
     public static class Builder {
 
         private final String assertionId;
@@ -74,11 +81,13 @@ public class ConditionsValidator {
             this.destinationValidator = destinationValidator;
         }
 
+        /** 设置时钟偏差容忍毫秒数。 */
         public Builder clockSkewInMillis(int clockSkewInMillis) {
             this.clockSkewInMillis = clockSkewInMillis;
             return this;
         }
 
+        /** 添加允许的 Audience URI。 */
         public Builder addAllowedAudience(URI... allowedAudiences) {
             this.allowedAudiences.addAll(Arrays.asList(allowedAudiences));
             return this;
@@ -114,6 +123,7 @@ public class ConditionsValidator {
         this.destinationValidator = destinationValidator;
     }
 
+    /** 执行全部条件校验，返回断言是否有效。 */
     public boolean isValid() {
         if (conditions == null) {
             return true;
@@ -167,6 +177,15 @@ public class ConditionsValidator {
         return validateExpiration(assertionId, notBefore, notOnOrAfter, now, clockSkewInMillis)? Result.VALID : Result.INVALID;
     }
 
+    /**
+     * 校验 notBefore/notOnOrAfter 时间窗口（含时钟偏差）。
+     * @param assertionId 断言 ID（用于日志）
+     * @param notBefore 生效起始时间
+     * @param notOnOrAfter 失效时间（不含）
+     * @param now 当前时间
+     * @param clockSkewInMillis 时钟偏差毫秒数
+     * @return 在有效窗口内返回 true
+     */
     protected static boolean validateExpiration(String assertionId, XMLGregorianCalendar notBefore, XMLGregorianCalendar notOnOrAfter, XMLGregorianCalendar now, int clockSkewInMillis) {
         if (notBefore == null && notOnOrAfter == null) {
             return true;
