@@ -32,11 +32,21 @@ import org.keycloak.representations.idm.authorization.PermissionRequest;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
+/**
+ * UMA 权限端点：接收 {@link PermissionRequest} 列表并返回权限票据或 RPT。
+ */
 public class PermissionService extends AbstractPermissionService {
 
+    /** 授权 Provider 实例。 */
     private final AuthorizationProvider authorization;
+    /** 目标资源服务器。 */
     private final ResourceServer resourceServer;
 
+    /**
+     * @param identity 调用方身份
+     * @param resourceServer 资源服务器
+     * @param authorization 授权上下文
+     */
     public PermissionService(KeycloakIdentity identity, ResourceServer resourceServer, AuthorizationProvider authorization) {
         super(identity, resourceServer, authorization);
         this.resourceServer = resourceServer;
@@ -46,6 +56,7 @@ public class PermissionService extends AbstractPermissionService {
     @POST
     @Consumes("application/json")
     @Produces("application/json")
+    /** 批量提交权限请求并委托父类处理 UMA 授权流程。 */
     public Response create(List<PermissionRequest> request) {
         return super.create(request);
     }

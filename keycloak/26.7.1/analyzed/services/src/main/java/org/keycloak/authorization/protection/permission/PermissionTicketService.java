@@ -54,12 +54,19 @@ import org.keycloak.services.ErrorResponseException;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
+/**
+ * 权限票据 CRUD 与查询端点：支持所有者托管访问（OMA）场景下的细粒度授权。
+ */
 public class PermissionTicketService {
 
+    /** 授权 Provider。 */
     private final AuthorizationProvider authorization;
+    /** 当前调用身份。 */
     private final KeycloakIdentity identity;
+    /** 所属资源服务器。 */
     private final ResourceServer resourceServer;
 
+    /** 构造权限票据服务。 */
     public PermissionTicketService(KeycloakIdentity identity, ResourceServer resourceServer, AuthorizationProvider authorization) {
         this.identity = identity;
         this.resourceServer = resourceServer;
@@ -69,6 +76,7 @@ public class PermissionTicketService {
     @POST
     @Consumes("application/json")
     @Produces("application/json")
+    /** 创建权限票据：校验资源/作用域/请求方并可选立即标记为已授予。 */
     public Response create(PermissionTicketRepresentation representation) {
         PermissionTicketStore ticketStore = authorization.getStoreFactory().getPermissionTicketStore();
         if (representation == null)
@@ -135,6 +143,7 @@ public class PermissionTicketService {
 
     @PUT
     @Consumes("application/json")
+    /** 更新已有权限票据（仅所有者可改，资源服务器亦可）。 */
     public Response update(PermissionTicketRepresentation representation) {
         if (representation == null || representation.getId() == null) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "invalid_ticket", Response.Status.BAD_REQUEST);
@@ -154,6 +163,7 @@ public class PermissionTicketService {
     @Path("{id}")
     @DELETE
     @Consumes("application/json")
+    /** 删除权限票据；所有者可删，请求方亦可删除自身票据。 */
     public Response delete(@PathParam("id") String id) {
         if (id == null) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "invalid_ticket", Response.Status.BAD_REQUEST);
@@ -171,6 +181,7 @@ public class PermissionTicketService {
         return Response.noContent().build();
     }
 
+    /** 按 ID 加载票据，不存在或不属于当前资源服务器时抛出 400。 */
     private PermissionTicket getPermissionTicket(String id) {
         PermissionTicketStore ticketStore = authorization.getStoreFactory().getPermissionTicketStore();
         PermissionTicket ticket = ticketStore.findById(resourceServer, id);
@@ -184,6 +195,7 @@ public class PermissionTicketService {
 
     @GET
     @Produces("application/json")
+    /** 按资源/作用域/所有者/请求方/授予状态等条件分页查询票据。 */
     public Response find(@QueryParam("scopeId") String scopeId,
                          @QueryParam("resourceId") String resourceId,
                          @QueryParam("owner") String owner,
@@ -207,6 +219,7 @@ public class PermissionTicketService {
     @Path("/count")
     @GET
     @Produces("application/json")
+    /** 返回符合过滤条件的权限票据数量。 */
     public Response getPermissionCount(@QueryParam("scopeId") String scopeId,
                                        @QueryParam("resourceId") String resourceId,
                                        @QueryParam("owner") String owner,
@@ -221,6 +234,7 @@ public class PermissionTicketService {
         return Response.ok().entity(count).build();
     }
 
+    /** 将查询参数转换为 {@link PermissionTicket.FilterOption} 过滤映射。 */
     private Map<PermissionTicket.FilterOption, String> getFilters(StoreFactory storeFactory,
                                            String resourceId,
                                            String scopeId,
@@ -259,6 +273,7 @@ public class PermissionTicketService {
         return filters;
     }
 
+    /** 将用户名或 ID 解析为领域用户 ID。 */
     private String getUserId(String userIdOrName) {
         UserProvider userProvider = authorization.getKeycloakSession().users();
         RealmModel realm = authorization.getRealm();

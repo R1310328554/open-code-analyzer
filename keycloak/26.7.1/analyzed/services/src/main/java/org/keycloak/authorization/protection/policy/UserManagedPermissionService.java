@@ -53,13 +53,21 @@ import org.jboss.resteasy.reactive.NoCache;
 /**
  * @author <a href="mailto:federico@martel-innovate.com">Federico M. Facca</a>
  */
+/**
+ * 所有者托管访问策略 API：创建/更新/删除/查询绑定资源的 UMA 权限。
+ */
 public class UserManagedPermissionService {
 
+    /** 资源服务器。 */
     private final ResourceServer resourceServer;
+    /** 当前资源所有者身份。 */
     private final Identity identity;
+    /** 授权 Provider。 */
     private final AuthorizationProvider authorization;
+    /** 管理 API 权限服务委托，用于实际策略持久化。 */
     private final PermissionService delegate;
 
+    /** 构造 UMA 权限管理服务并初始化管理端委托。 */
     public UserManagedPermissionService(KeycloakIdentity identity, ResourceServer resourceServer, AuthorizationProvider authorization, AdminEventBuilder eventBuilder) {
         this.identity = identity;
         this.resourceServer = resourceServer;
@@ -71,6 +79,7 @@ public class UserManagedPermissionService {
     @Path("{resourceId}")
     @Consumes("application/json")
     @Produces("application/json")
+    /** 为指定资源创建 UMA 权限策略并设置所有者为当前身份。 */
     public Response create(@PathParam("resourceId") String resourceId, UmaPermissionRepresentation representation) {
         if (representation.getId() != null) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "Newly created uma policies should not have an id", Response.Status.BAD_REQUEST);
@@ -88,6 +97,7 @@ public class UserManagedPermissionService {
     @PUT
     @Consumes("application/json")
     @Produces("application/json")
+    /** 更新 UMA 权限；禁止变更关联资源 ID。 */
     public Response update(@PathParam("policyId") String policyId, String payload) {
         UmaPermissionRepresentation representation;
 
@@ -111,6 +121,7 @@ public class UserManagedPermissionService {
 
     @Path("{policyId}")
     @DELETE
+    /** 删除 UMA 权限策略。 */
     public Response delete(@PathParam("policyId") String policyId) {
         checkRequest(getAssociatedResourceId(policyId), null);
         PolicyTypeResourceService.class.cast(delegate.getResource(policyId)).delete();
@@ -120,6 +131,7 @@ public class UserManagedPermissionService {
     @Path("{policyId}")
     @GET
     @Produces("application/json")
+    /** 按策略 ID 查询 UMA 权限表示。 */
     public Response findById(@PathParam("policyId") String policyId) {
         checkRequest(getAssociatedResourceId(policyId), null);
         return PolicyTypeResourceService.class.cast(delegate.getResource(policyId)).findById(null);
@@ -128,6 +140,7 @@ public class UserManagedPermissionService {
     @GET
     @NoCache
     @Produces("application/json")
+    /** 分页搜索当前所有者名下的 UMA 权限策略。 */
     public Response find(@QueryParam("name") String name,
                          @QueryParam("resource") String resource,
                          @QueryParam("scope") String scope,
@@ -136,6 +149,7 @@ public class UserManagedPermissionService {
         return  delegate.findAll(null, name, "uma", null, resource, scope, true, identity.getId(), null, firstResult, maxResult);
     }
 
+    /** 加载策略模型，不存在时返回 404。 */
     private Policy getPolicy(@PathParam("policyId") String policyId) {
         Policy existing = authorization.getStoreFactory().getPolicyStore().findById(resourceServer, policyId);
 
@@ -146,6 +160,7 @@ public class UserManagedPermissionService {
         return existing;
     }
 
+    /** 校验资源存在、OMA 启用、远程管理及作用域合法性。 */
     private void checkRequest(String resourceId, UmaPermissionRepresentation representation) {
         ResourceStore resourceStore = this.authorization.getStoreFactory().getResourceStore();
         Resource resource = resourceStore.findById(resourceServer, resourceId);
@@ -187,6 +202,7 @@ public class UserManagedPermissionService {
         }
     }
 
+    /** 获取策略关联的首个资源 ID。 */
     private String getAssociatedResourceId(String policyId) {
         return getPolicy(policyId).getResources().iterator().next().getId();
     }

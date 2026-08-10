@@ -26,8 +26,12 @@ import org.keycloak.services.managers.AuthenticationManager.AuthResult;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
+/**
+ * 从当前 HTTP 请求或给定 Bearer 字符串解析 {@link AccessToken}。
+ */
 public class Tokens {
 
+    /** 从当前请求 Authorization 头解析 Bearer 访问令牌。 */
     public static AccessToken getAccessToken(KeycloakSession keycloakSession) {
         AuthResult authResult = new AppAuthManager.BearerTokenAuthenticator(keycloakSession).authenticate();
 
@@ -38,6 +42,7 @@ public class Tokens {
         return null;
     }
 
+    /** 校验给定令牌字符串并返回 {@link AccessToken}；无效时返回 {@code null}。 */
     public static AccessToken getAccessToken(String accessToken, KeycloakSession keycloakSession) {
         AuthResult authResult = new AppAuthManager.BearerTokenAuthenticator(keycloakSession)
                 .setTokenString(accessToken)

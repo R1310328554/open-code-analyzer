@@ -21,19 +21,28 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.broker.kubernetes.KubernetesConstants.SERVICE_ACCOUNT_TOKEN_PATH;
 
+/**
+ * Kubernetes OIDC 发现与 JWKS 公钥加载器：必要时附带 Pod ServiceAccount 令牌。
+ */
 public class KubernetesJwksEndpointLoader implements PublicKeyLoader {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(KubernetesJwksEndpointLoader.class);
 
+    /** Keycloak 会话。 */
     private final KeycloakSession session;
+    /** Kubernetes OIDC issuer。 */
     private final String issuer;
 
+    /** @param session Keycloak 会话
+     * @param issuer OIDC issuer URL */
     public KubernetesJwksEndpointLoader(KeycloakSession session, String issuer) {
         this.session = session;
         this.issuer = issuer;
     }
 
     @Override
+    /** 通过 well-known 发现 JWKS URI 并加载签名公钥。 */
     public PublicKeysWrapper loadKeys() throws Exception {
         SimpleHttp simpleHttp = SimpleHttp.create(session);
 
@@ -56,6 +65,7 @@ public class KubernetesJwksEndpointLoader implements PublicKeyLoader {
         return JWKSUtils.getKeyWrappersForUse(jwks, JWK.Use.SIG);
     }
 
+    /** 读取 Pod ServiceAccount 令牌；issuer 匹配时用于认证 JWKS 请求。 */
     private String getToken(String issuer) {
         try {
             File file = new File(SERVICE_ACCOUNT_TOKEN_PATH);

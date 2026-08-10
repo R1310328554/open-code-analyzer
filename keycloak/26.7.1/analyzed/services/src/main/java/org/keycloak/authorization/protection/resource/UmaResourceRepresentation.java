@@ -28,12 +28,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
+/**
+ * 扩展 {@link ResourceRepresentation}，适配 UMA 资源注册 JSON 字段命名。
+ */
 public class UmaResourceRepresentation extends ResourceRepresentation {
 
+    /** 默认构造。 */
     public UmaResourceRepresentation() {
 
     }
 
+    /** 从通用资源表示复制字段。 */
     public UmaResourceRepresentation(ResourceRepresentation resource) {
         setId(resource.getId());
         setName(resource.getName());
@@ -46,6 +51,7 @@ public class UmaResourceRepresentation extends ResourceRepresentation {
         setOwnerManagedAccess(resource.getOwnerManagedAccess());
     }
 
+    /** 从授权模型 {@link Resource} 构建 UMA 表示。 */
     public UmaResourceRepresentation(Resource resource) {
         setId(resource.getId());
         setName(resource.getName());
@@ -59,12 +65,14 @@ public class UmaResourceRepresentation extends ResourceRepresentation {
         setAttributes(resource.getAttributes());
     }
 
+    /** @return UMA 字段 {@code resource_scopes} 对应的作用域集合 */
     @JsonProperty("resource_scopes")
     @Override
     public Set<ScopeRepresentation> getScopes() {
         return super.getScopes();
     }
 
+    /** 设置 UMA {@code resource_scopes} 作用域。 */
     @JsonProperty("resource_scopes")
     @Override
     public void setScopes(Set<ScopeRepresentation> scopes) {
