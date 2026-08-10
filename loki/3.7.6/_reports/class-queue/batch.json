@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T23:30:39Z",
   "files": [
-    "pkg/tool/audit/config.go",
-    "pkg/tool/client/alerts.go",
-    "pkg/tool/client/client.go",
-    "pkg/tool/client/rules.go",
-    "pkg/tool/commands/audit.go",
-    "pkg/tool/commands/rules.go",
-    "pkg/tool/printer/printer.go",
-    "pkg/tool/rules/compare.go",
-    "pkg/tool/rules/parser.go",
-    "pkg/tool/rules/rules.go",
-    "pkg/tool/rules/rwrulefmt/rulefmt.go",
-    "pkg/tracing/config.go",
-    "pkg/tracing/otel_kv.go",
-    "pkg/ui/cluster.go",
-    "pkg/ui/config.go",
     "pkg/ui/goldfish.go",
     "pkg/ui/handler.go",
     "pkg/ui/metrics.go",
@@ -33,5 +18,5 @@
     "pkg/util/constants/internal_streams.go"
   ],
   "remaining_pending": 142,
-  "done": 1380
+  "done": 1395
 }
