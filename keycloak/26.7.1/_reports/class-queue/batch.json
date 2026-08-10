@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:25:12Z",
-  "files": [
-    "services/src/main/java/org/keycloak/services/util/DefaultClientSessionContext.java",
-    "services/src/main/java/org/keycloak/services/util/LocaleUtil.java",
-    "services/src/main/java/org/keycloak/services/util/MtlsHoKTokenUtil.java",
-    "services/src/main/java/org/keycloak/services/util/ObjectMapperResolver.java",
-    "services/src/main/java/org/keycloak/services/util/ResolveRelative.java",
-    "services/src/main/java/org/keycloak/services/util/ScopeMappedUtil.java",
-    "services/src/main/java/org/keycloak/services/util/UserSessionUtil.java",
-    "services/src/main/java/org/keycloak/services/util/ViteManifest.java",
-    "services/src/main/java/org/keycloak/services/util/WellKnownProviderUtil.java",
-    "services/src/main/java/org/keycloak/services/validation/Validation.java",
-    "services/src/main/java/org/keycloak/services/x509/AbstractClientCertificateFromHttpHeadersLookup.java",
-    "services/src/main/java/org/keycloak/services/x509/AbstractClientCertificateFromHttpHeadersLookupFactory.java",
-    "services/src/main/java/org/keycloak/services/x509/ApacheProxySslClientCertificateLookup.java",
-    "services/src/main/java/org/keycloak/services/x509/ApacheProxySslClientCertificateLookupFactory.java",
-    "services/src/main/java/org/keycloak/services/x509/DefaultClientCertificateLookup.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 838,
-  "done": 5145
+  "done": 5160
 }
