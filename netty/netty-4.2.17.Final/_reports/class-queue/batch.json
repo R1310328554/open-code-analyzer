@@ -15,23 +15,8 @@
     "resolver-dns/src/main/java/io/netty/resolver/dns/NoopAuthoritativeDnsServerCache.java",
     "resolver-dns/src/main/java/io/netty/resolver/dns/NoopDnsCache.java",
     "resolver-dns/src/main/java/io/netty/resolver/dns/NoopDnsCnameCache.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/NoopDnsQueryLifecycleObserver.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/NoopDnsQueryLifecycleObserverFactory.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/PreferredAddressTypeComparator.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/ResolvConf.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/RotationalDnsServerAddresses.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/RoundRobinDnsAddressResolverGroup.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/SequentialDnsServerAddressStream.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/SequentialDnsServerAddressStreamProvider.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/ShuffledDnsServerAddressStream.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/SingletonDnsServerAddressStreamProvider.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/SingletonDnsServerAddresses.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/TcpDnsQueryContext.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/ThreadLocalNameServerAddressStream.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/UniSequentialDnsServerAddressStreamProvider.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/UnixResolverDnsServerAddressStreamProvider.java",
-    "resolver-dns/src/main/java/io/netty/resolver/dns/UnixResolverOptions.java"
+    "resolver-dns/src/main/java/io/netty/resolver/dns/NoopDnsQueryLifecycleObserver.java"
   ],
   "remaining_pending": 398,
-  "done": 1500
+  "done": 1515
 }
