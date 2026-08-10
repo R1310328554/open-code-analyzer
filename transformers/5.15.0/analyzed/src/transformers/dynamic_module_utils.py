@@ -46,6 +46,7 @@ from .utils.import_utils import VersionComparison, split_package_version
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
 
+# _sanitize_module_name：将 Hub 模块名转为合法 Python 标识符
 def _sanitize_module_name(name: str) -> str:
     r"""
     Tries to sanitize a module name so that it can be used as a Python module.
@@ -82,6 +83,7 @@ def _sanitize_module_name(name: str) -> str:
 _HF_REMOTE_CODE_LOCK = threading.Lock()
 
 
+# init_hf_modules：创建 HF_MODULES_CACHE 并加入 sys.path
 def init_hf_modules():
     """
     Creates the cache directory for modules with an init, and adds it to the Python path.
@@ -98,6 +100,7 @@ def init_hf_modules():
         importlib.invalidate_caches()
 
 
+# create_dynamic_module：在缓存目录递归创建动态模块包结构
 def create_dynamic_module(name: str | os.PathLike) -> None:
     """
     Creates a dynamic module in the cache directory for modules.
@@ -343,6 +346,7 @@ def _compute_local_source_files_hash(
     return source_files_hash.hexdigest()[:16]
 
 
+# get_cached_module_file：下载/缓存 Hub 上的 .py 模块文件
 def get_cached_module_file(
     pretrained_model_name_or_path: str | os.PathLike,
     module_file: str,
@@ -513,6 +517,7 @@ def get_cached_module_file(
     return os.path.join(full_submodule, module_file)
 
 
+# get_class_from_dynamic_module：从远程模块按类名加载并实例化
 def get_class_from_dynamic_module(
     class_reference: str,
     pretrained_model_name_or_path: str | os.PathLike,
@@ -623,6 +628,7 @@ def get_class_from_dynamic_module(
     return get_class_in_module(class_name, final_module, force_reload=force_download)
 
 
+# custom_object_save：保存自定义类源码以便 from_pretrained 复现
 def custom_object_save(obj: Any, folder: str | os.PathLike, config: dict | None = None) -> list[str]:
     """
     Save the modeling files corresponding to a custom model/configuration/tokenizer etc. in a given folder. Optionally
@@ -709,6 +715,7 @@ def _raise_timeout_error(signum, frame):
 TIME_OUT_REMOTE_CODE = 15
 
 
+# resolve_trust_remote_code：校验 trust_remote_code 与用户确认流程
 def resolve_trust_remote_code(
     trust_remote_code, model_name, has_local_code, has_remote_code, error_message=None, upstream_repo=None
 ):

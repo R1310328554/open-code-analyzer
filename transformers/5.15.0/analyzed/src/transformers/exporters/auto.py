@@ -24,6 +24,7 @@ from .exporter_executorch import ExecutorchConfig, ExecutorchExporter
 from .exporter_onnx import OnnxConfig, OnnxExporter
 
 
+# AUTO_EXPORTER_MAPPING：export_format 字符串 → Exporter 实现类
 AUTO_EXPORTER_MAPPING = {
     "executorch": ExecutorchExporter,
     "dynamo": DynamoExporter,
@@ -39,6 +40,7 @@ AUTO_EXPORT_CONFIG_MAPPING = {
 logger = logging.get_logger(__name__)
 
 
+# AutoExportConfig：从 dict 反序列化并实例化对应 ExportConfig
 class AutoExportConfig:
     """
     The Auto-HF export config class that takes care of automatically dispatching to the correct
@@ -67,6 +69,7 @@ class AutoExportConfig:
         return target_cls.from_dict(export_config_dict)
 
 
+# AutoHfExporter：根据 ExportConfig 构造具体 HfExporter 实例
 class AutoHfExporter:
     """
     The Auto-HF expoerter class that takes care of automatically instantiating to the correct
@@ -157,6 +160,7 @@ class AutoHfExporter:
         return True
 
 
+# register_exporter：运行时注册自定义导出后端
 def register_exporter(name: str):
     def register_exporter_fn(cls):
         if name in AUTO_EXPORTER_MAPPING:
@@ -181,5 +185,6 @@ def register_export_config(name: str):
     return register_export_config_fn
 
 
+# get_hf_exporter：AutoHfExporter.from_config 的便捷封装
 def get_hf_exporter(export_config) -> HfExporter:
     return AutoHfExporter.from_config(export_config)

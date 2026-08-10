@@ -41,6 +41,7 @@ logger = logging.get_logger(__name__)
 _FUSION_DISCOVERY_CACHE: dict[str, dict[type, dict[str, type[nn.Module]]]] = {}
 
 
+# ModuleFusionSpec：融合族基类，定义可融合模块与权重 transform
 class ModuleFusionSpec:
     """Base recipe for a fusion family.
 
@@ -91,6 +92,7 @@ class _FusedPatchEmbeddingMixin:
         return hidden_states.view(-1, self.embed_dim)
 
 
+# PatchEmbeddingsFusionSpec：Conv patch embedding → Linear 融合
 class PatchEmbeddingsFusionSpec(ModuleFusionSpec):
     """Fuse compatible Conv3d patch embeddings into flattened Linear projections."""
 
@@ -252,6 +254,7 @@ def _iter_enabled_fusions(fusion_config: Mapping[str, bool | Mapping[str, Any]])
     return enabled_fusions
 
 
+# register_fusion_patches：按 fusion_config 注册运行时 patch 与 checkpoint 映射
 def register_fusion_patches(
     cls: "type[PreTrainedModel]", config, fusion_config: Mapping[str, bool | Mapping[str, Any]] | None = None
 ) -> None:

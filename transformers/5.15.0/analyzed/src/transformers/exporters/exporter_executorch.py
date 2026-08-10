@@ -106,6 +106,7 @@ if is_executorch_available():
 logger = logging.get_logger(__name__)
 
 
+# ExecutorchExporter：XNNPACK/CUDA 分区、FX 修复与 runtime assert 清理
 class ExecutorchExporter(DynamoExporter):
     """Exporter that converts a [`PreTrainedModel`] to an ExecuTorch `ExecutorchProgramManager`.
 

@@ -66,6 +66,7 @@ if is_torch_available():
 logger = logging.get_logger(__file__)
 
 
+# DynamoExporter：签名 patch、动态 shape 与 Cache pytree 注册
 class DynamoExporter(HfExporter):
     """Exporter that converts a [`PreTrainedModel`] to an `ExportedProgram`.
 
@@ -80,6 +81,7 @@ class DynamoExporter(HfExporter):
     ```
     """
 
+    # required_packages：导出依赖 torch（含 torch.export API）
     required_packages = ["torch"]
     min_versions = {"torch": "2.11.0"}
     tested_versions = {"torch": "2.12.0"}

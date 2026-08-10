@@ -11,12 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# generation 包懒加载入口：GenerationConfig、LogitsProcessor、StoppingCriteria 与流式输出。
+
 
 from typing import TYPE_CHECKING
 
 from ..utils import OptionalDependencyNotAvailable, _LazyModule, is_rich_available, is_torch_available
 
 
+# _import_structure：_LazyModule 按需导入 generation 子模块符号
 _import_structure = {
     "configuration_utils": [
         "BaseWatermarkingConfig",

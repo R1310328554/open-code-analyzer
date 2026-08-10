@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 分布式训练工具：torch.distributed 初始化、FSDP2 设备网格与 DCP 分布式 checkpoint 读写。
+
 from __future__ import annotations
 
 import os
@@ -27,12 +29,14 @@ if is_torch_available():
     import torch
 
 
+# _is_torch_distributed_initialized：检测 torch.distributed 是否已初始化
 def _is_torch_distributed_initialized() -> bool:
     if not is_torch_distributed_available():
         return False
     return torch.distributed.is_initialized()
 
 
+# is_dtensor：判断对象是否为 PyTorch DTensor 分片张量
 def is_dtensor(obj) -> bool:
     if not is_torch_distributed_available():
         return False
@@ -57,6 +61,7 @@ def is_local_dist_rank_0() -> bool:
     return _is_torch_distributed_initialized() and int(os.environ.get("LOCAL_RANK", "-1")) == 0
 
 
+# _ensure_torch_distributed：按 RANK/LOCAL_RANK 自动 init_process_group
 def _ensure_torch_distributed(device_type: str | None = None):
     """Initialize torch.distributed if not already initialized.
 
@@ -113,6 +118,7 @@ def _distributed_barrier():
         torch.distributed.barrier()
 
 
+# initialize_fully_sharded_data_parallelism：构建 FSDP2 device_mesh（需 torch>=2.7）
 def initialize_fully_sharded_data_parallelism(distributed_config: DistributedConfig):
     # `fully_shard` itself only needs torch>=2.6, but distributed checkpoint save/load
     # (DCP + HuggingFaceStorageWriter) needs 2.7, so that is the effective requirement.
@@ -144,6 +150,7 @@ def initialize_fully_sharded_data_parallelism(distributed_config: DistributedCon
     return device_map, mesh
 
 
+# gather_full_state_dict：FSDP 分片参数聚合为完整 CPU state_dict（仅 rank 0）
 def gather_full_state_dict(model) -> dict[str, torch.Tensor]:
     """Gather FSDP-sharded params to full plain CPU tensors.
 
@@ -163,6 +170,7 @@ def gather_full_state_dict(model) -> dict[str, torch.Tensor]:
     return {}
 
 
+# save_model_checkpoint_distributed：DCP + HuggingFaceStorageWriter 写出 HF 格式分片
 def save_model_checkpoint_distributed(model, checkpoint_dir: str) -> None:
     """Save model parameters as standard HF-format sharded safetensors using
     DCP + HuggingFaceStorageWriter with consolidation enabled.

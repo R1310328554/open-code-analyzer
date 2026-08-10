@@ -84,6 +84,7 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__file__)
 
 
+# OnnxExporter：torch.onnx.export + custom_translation_table + IR fixes
 class OnnxExporter(DynamoExporter):
     """Exporter that converts a [`PreTrainedModel`] to an ONNX `ONNXProgram`.
 
@@ -988,3 +989,5 @@ def apply_onnx_ir_fixes(onnx_program: ONNXProgram) -> None:
     for fix in _IR_FIXES:
         for graph in graphs:
             fix(graph)
+# 模块 src/transformers/exporters/exporter_onnx.py：Transformers 5.15.0 wave3a 中文文档注释。
+

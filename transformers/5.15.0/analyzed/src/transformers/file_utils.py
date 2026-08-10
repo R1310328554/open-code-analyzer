@@ -17,6 +17,7 @@ File utilities: utilities related to download and cache models
 This module should not be updated anymore and is only left for backward compatibility.
 """
 
+# 以下 re-export 保持旧脚本 from transformers.file_utils import ... 仍可用
 from . import __version__
 
 # Backward compatibility imports, to make sure all those objects can be found in file_utils

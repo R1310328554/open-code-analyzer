@@ -55,6 +55,7 @@ PreTrainedFeatureExtractor = Union["SequenceFeatureExtractor"]
 SpecificFeatureExtractorType = TypeVar("SpecificFeatureExtractorType", bound="FeatureExtractionMixin")
 
 
+# BatchFeature：pad/__call__ 返回的字典，可转为 PyTorch/NumPy 张量
 class BatchFeature(UserDict):
     r"""
     Holds the output of the [`~SequenceFeatureExtractor.pad`] and feature extractor specific `__call__` methods.
@@ -263,6 +264,7 @@ class BatchFeature(UserDict):
         return self
 
 
+# FeatureExtractionMixin：from_pretrained/save_pretrained 与 JSON 配置
 class FeatureExtractionMixin(PushToHubMixin):
     """
     This is a feature extraction mixin used to provide saving/loading functionality for sequential and audio feature

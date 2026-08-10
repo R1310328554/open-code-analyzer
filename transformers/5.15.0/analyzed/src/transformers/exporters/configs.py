@@ -12,6 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# 导出配置 dataclass：ExportFormat 枚举与 Dynamo/ONNX/ExecuTorch 各后端参数。
+
 import copy
 from dataclasses import dataclass
 from enum import Enum
@@ -24,6 +26,7 @@ from ..utils import logging
 logger = logging.get_logger(__name__)
 
 
+# ExportFormat：标识导出后端（executorch/dynamo/onnx）
 class ExportFormat(Enum):
     """Identifies the export backend. Stored in [`ExportConfigMixin`] for serialisation round-trips."""
 
@@ -33,6 +36,7 @@ class ExportFormat(Enum):
 
 
 @dataclass
+# ExportConfigMixin：导出配置的 to_dict/from_dict 序列化基类
 class ExportConfigMixin:
     """
     Base class for all export configuration dataclasses.
@@ -73,6 +77,7 @@ class ExportConfigMixin:
 
 
 @dataclass
+# DynamoConfig：torch.export 导出参数（dynamic、strict 等）
 class DynamoConfig(ExportConfigMixin):
     """
     Configuration class for exporting models via `torch.export`.
@@ -107,6 +112,7 @@ class DynamoConfig(ExportConfigMixin):
 
 
 @dataclass
+# OnnxConfig：ONNX 导出参数（opset、优化级别等）
 class OnnxConfig(DynamoConfig):
     """
     Configuration class for exporting models to ONNX via `torch.onnx.export`.
@@ -150,6 +156,7 @@ class OnnxConfig(DynamoConfig):
 
 
 @dataclass
+# ExecutorchConfig：ExecuTorch 后端与分区器配置
 class ExecutorchConfig(DynamoConfig):
     """
     Configuration class for exporting models to ExecuTorch format.

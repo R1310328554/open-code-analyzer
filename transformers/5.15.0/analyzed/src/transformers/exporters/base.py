@@ -40,6 +40,7 @@ if TYPE_CHECKING:
         from ..modeling_utils import PreTrainedModel
 
 
+# HfExporter：所有导出后端的 ABC，子类实现 export()
 class HfExporter(ABC):
     """
     Abstract base class for all Transformers exporters.
@@ -56,6 +57,7 @@ class HfExporter(ABC):
     def __init__(self):
         self.validate_environment()
 
+    # validate_environment：检查 required_packages 与 min/tested 版本
     def validate_environment(self, *args, **kwargs):
         """Check `required_packages` are installed and warn on version drift from `tested_versions`."""
         # Single pass: ``_is_package_available`` returns both existence and version, so we collect
@@ -98,6 +100,7 @@ class HfExporter(ABC):
                 f"If you hit issues, try the tested versions."
             )
 
+    # export：子类将 PreTrainedModel 导出为目标格式（ExportedProgram/ONNX 等）
     @abstractmethod
     def export(
         self,

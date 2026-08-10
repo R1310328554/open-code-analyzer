@@ -74,6 +74,7 @@ if is_torch_available():
 # `@register_fx_node_fix` decorators, or direct list-append for cases that can't be expressed
 # as dotted paths). The export pipeline drives them via the backend-keyed helpers below.
 
+# _PATCHES：按 backend 索引的可逆 monkey-patch 注册表
 _PATCHES: dict[str, list[tuple[Any, str, callable]]] = {}
 _FX_NODE_FIXES: dict[str, list[callable]] = {}
 _FX_PROGRAM_FIXES: dict[str, list[callable]] = {}
@@ -104,6 +105,7 @@ def patch_attributes(patches: list[tuple[Any, str, callable]]):
 
 
 @contextlib.contextmanager
+# apply_patches：安装并 yield 指定 backend 的全部 patch，退出时还原
 def apply_patches(backend: str):
     """Install `_PATCHES[backend]` for the duration of the block."""
     with patch_attributes(_PATCHES.get(backend, [])):
@@ -341,6 +343,7 @@ def module_dtype(model: PreTrainedModel | torch.nn.Module) -> torch.dtype | None
 _OUTPUT_FLAGS = ("use_cache", "output_attentions", "output_hidden_states", "return_dict", "return_loss")
 
 
+# prepare_for_export：设置 attention 实现、应用 patch 并清理不可导出状态
 def prepare_for_export(
     model: PreTrainedModel | torch.nn.Module, inputs: MutableMapping[str, Any]
 ) -> tuple[PreTrainedModel | torch.nn.Module, MutableMapping[str, Any], dict[str, Any]]:
@@ -879,6 +882,7 @@ def decompose_multimodal(model: PreTrainedModel, inputs: dict[str, Any]) -> dict
     }
 
 
+# decompose_for_generation：将生成式 forward 拆分为 prefill + decode
 def decompose_for_generation(
     model: PreTrainedModel, inputs: dict[str, Any], generation_config: Any = None, multi_token_decode: bool = False
 ) -> dict[str, tuple[torch.nn.Module, dict]]:

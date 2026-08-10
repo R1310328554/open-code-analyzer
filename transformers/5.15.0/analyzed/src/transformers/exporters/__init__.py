@@ -12,6 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# exporters 包入口：导出 Auto 工厂、HfExporter 基类及 Dynamo/ONNX/ExecuTorch 后端。
+
 from .auto import AutoExportConfig, AutoHfExporter, get_hf_exporter, register_export_config, register_exporter
 from .base import HfExporter
 from .configs import DynamoConfig, ExecutorchConfig, ExportConfigMixin, ExportFormat, OnnxConfig

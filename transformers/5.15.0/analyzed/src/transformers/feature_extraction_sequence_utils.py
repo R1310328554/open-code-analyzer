@@ -25,6 +25,7 @@ from .utils import PaddingStrategy, TensorType, is_torch_tensor, logging, to_num
 logger = logging.get_logger(__name__)
 
 
+# SequenceFeatureExtractor：feature_size/sampling_rate/padding 等通用字段
 class SequenceFeatureExtractor(FeatureExtractionMixin):
     """
     This is a general feature extraction class for speech recognition.
@@ -48,6 +49,7 @@ class SequenceFeatureExtractor(FeatureExtractionMixin):
 
         super().__init__(**kwargs)
 
+    # pad：按 padding_side 将 batch 内序列对齐到 max_length 或 batch 最长
     def pad(
         self,
         processed_features: BatchFeature
