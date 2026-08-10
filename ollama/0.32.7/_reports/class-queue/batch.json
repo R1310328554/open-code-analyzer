@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T16:00:33Z",
-  "files": [
-    "discover/native_probe_windows.go",
-    "discover/runner.go",
-    "discover/types.go",
-    "discover/vulkan.go",
-    "discover/vulkan_refine_stub.go",
-    "discover/vulkan_refine_windows.go",
-    "envconfig/config.go",
-    "format/bytes.go",
-    "format/format.go",
-    "format/time.go",
-    "fs/config.go",
-    "fs/ggml/ggml.go",
-    "fs/ggml/gguf.go",
-    "fs/ggml/type.go",
-    "fs/gguf/gguf.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 223,
-  "done": 225
+  "done": 240
 }
