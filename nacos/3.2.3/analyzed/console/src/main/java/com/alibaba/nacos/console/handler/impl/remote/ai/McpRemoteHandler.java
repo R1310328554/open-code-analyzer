@@ -35,6 +35,7 @@ import com.alibaba.nacos.console.handler.impl.remote.NacosMaintainerClientHolder
 import org.springframework.stereotype.Service;
 
 /**
+ * MCP Server 远程 Handler：通过 {@link NacosMaintainerClientHolder} 调用远端 AI 运维 API 完成 CRUD；批量导入在远程模式下不可用。
  * Remote implementation of Mcp handler.
  *
  * @author xiweng.yy
@@ -44,12 +45,15 @@ import org.springframework.stereotype.Service;
 @EnabledAiHandler
 public class McpRemoteHandler implements McpHandler {
     
+    /** 运维客户端持有者，提供 AI Maintainer 远程访问能力 */
     private final NacosMaintainerClientHolder clientHolder;
     
+    /** 注入运维客户端持有者 */
     public McpRemoteHandler(NacosMaintainerClientHolder clientHolder) {
         this.clientHolder = clientHolder;
     }
     
+    /** 分页列出远端 MCP Server，支持精确或模糊搜索。 */
     @Override
     public Page<McpServerBasicInfo> listMcpServers(String namespaceId, String mcpName,
         String search, int pageNo,
@@ -63,6 +67,7 @@ public class McpRemoteHandler implements McpHandler {
         }
     }
     
+    /** 按命名空间、名称、ID 与版本获取远端 MCP Server 详情。 */
     @Override
     public McpServerDetailInfo getMcpServer(String namespaceId, String mcpName, String mcpId,
         String version)
@@ -71,6 +76,7 @@ public class McpRemoteHandler implements McpHandler {
             mcpId, version);
     }
     
+    /** 在远端创建 MCP Server，可选附带工具与端点规格。 */
     @Override
     public String createMcpServer(String namespaceId, McpServerBasicInfo serverSpecification,
         McpToolSpecification toolSpecification, McpEndpointSpec endpointSpecification)
@@ -81,6 +87,7 @@ public class McpRemoteHandler implements McpHandler {
                 endpointSpecification);
     }
     
+    /** 更新远端 MCP Server；可选发布为 latest 并覆盖已有实例。 */
     @Override
     public void updateMcpServer(String namespaceId, boolean isPublish,
         McpServerBasicInfo serverSpecification,
@@ -92,6 +99,7 @@ public class McpRemoteHandler implements McpHandler {
                 toolSpecification, endpointSpecification, overrideExisting);
     }
     
+    /** 删除远端指定 MCP Server 版本。 */
     @Override
     public void deleteMcpServer(String namespaceId, String mcpName, String mcpId, String version)
         throws NacosException {
@@ -99,6 +107,7 @@ public class McpRemoteHandler implements McpHandler {
             version);
     }
     
+    /** 远程模式不支持 MCP 批量导入，抛出 {@code SERVER_NOT_IMPLEMENTED}。 */
     @Override
     public McpServerImportValidationResult validateImport(String namespaceId,
         McpServerImportRequest request)
@@ -108,6 +117,7 @@ public class McpRemoteHandler implements McpHandler {
             "MCP import functionality is not supported in remote mode");
     }
     
+    /** 远程模式不支持 MCP 批量导入，抛出 {@code SERVER_NOT_IMPLEMENTED}。 */
     @Override
     public McpServerImportResponse executeImport(String namespaceId, McpServerImportRequest request)
         throws NacosException {

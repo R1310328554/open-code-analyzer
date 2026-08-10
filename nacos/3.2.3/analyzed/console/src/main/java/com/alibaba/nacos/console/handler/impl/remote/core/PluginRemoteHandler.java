@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 插件管理远程 Handler：通过 {@link NacosMaintainerClientHolder} 调用远端 Naming Maintainer API 查询插件列表与详情，并将 Map 响应转换为 VO。
  * Remote implementation of PluginHandler that handles plugin-related operations via HTTP.
  *
  * @author WangzJi
@@ -39,48 +40,69 @@ import java.util.Map;
 @EnabledRemoteHandler
 public class PluginRemoteHandler implements PluginHandler {
     
+    /** JSON 字段名：插件 ID */
     private static final String FIELD_PLUGIN_ID = "pluginId";
     
+    /** JSON 字段名：插件类型 */
     private static final String FIELD_PLUGIN_TYPE = "pluginType";
     
+    /** JSON 字段名：插件名称 */
     private static final String FIELD_PLUGIN_NAME = "pluginName";
     
+    /** JSON 字段名：是否启用 */
     private static final String FIELD_ENABLED = "enabled";
     
+    /** JSON 字段名：是否关键插件 */
     private static final String FIELD_CRITICAL = "critical";
     
+    /** JSON 字段名：是否可配置 */
     private static final String FIELD_CONFIGURABLE = "configurable";
     
+    /** JSON 字段名：是否互斥型插件 */
     private static final String FIELD_EXCLUSIVE = "exclusive";
     
+    /** JSON 字段名：集群总节点数 */
     private static final String FIELD_TOTAL_NODE_COUNT = "totalNodeCount";
     
+    /** JSON 字段名：可用节点数 */
     private static final String FIELD_AVAILABLE_NODE_COUNT = "availableNodeCount";
     
+    /** JSON 字段名：插件运行配置 */
     private static final String FIELD_CONFIG = "config";
     
+    /** JSON 字段名：配置项定义列表 */
     private static final String FIELD_CONFIG_DEFINITIONS = "configDefinitions";
     
+    /** JSON 字段名：配置项键 */
     private static final String FIELD_KEY = "key";
     
+    /** JSON 字段名：配置项显示名 */
     private static final String FIELD_NAME = "name";
     
+    /** JSON 字段名：配置项描述 */
     private static final String FIELD_DESCRIPTION = "description";
     
+    /** JSON 字段名：配置项默认值 */
     private static final String FIELD_DEFAULT_VALUE = "defaultValue";
     
+    /** JSON 字段名：配置项是否必填 */
     private static final String FIELD_REQUIRED = "required";
     
+    /** JSON 字段名：配置项类型 */
     private static final String FIELD_TYPE = "type";
     
+    /** JSON 字段名：枚举可选值列表 */
     private static final String FIELD_ENUM_VALUES = "enumValues";
     
+    /** 运维客户端持有者，提供 Naming Maintainer 远程访问能力 */
     private final NacosMaintainerClientHolder clientHolder;
     
+    /** 注入运维客户端持有者 */
     public PluginRemoteHandler(NacosMaintainerClientHolder clientHolder) {
         this.clientHolder = clientHolder;
     }
     
+    /** 列出远端插件并转换为 {@link PluginInfoVO} 列表。 */
     @Override
     public List<PluginInfoVO> listPlugins(String pluginType) throws NacosException {
         List<Map<String, Object>> rawList =
@@ -92,6 +114,7 @@ public class PluginRemoteHandler implements PluginHandler {
         return result;
     }
     
+    /** 获取远端指定插件的详细配置与定义。 */
     @Override
     public PluginDetailVO getPluginDetail(String pluginType, String pluginName)
         throws NacosException {
@@ -100,6 +123,7 @@ public class PluginRemoteHandler implements PluginHandler {
         return convertToPluginDetailVO(raw);
     }
     
+    /** 启用或禁用远端插件，支持仅本地节点生效。 */
     @Override
     public void updatePluginStatus(String pluginType, String pluginName, boolean enabled,
         boolean localOnly)
@@ -108,6 +132,7 @@ public class PluginRemoteHandler implements PluginHandler {
             enabled, localOnly);
     }
     
+    /** 更新远端插件运行配置，支持仅本地节点生效。 */
     @Override
     public void updatePluginConfig(String pluginType, String pluginName, Map<String, String> config,
         boolean localOnly) throws NacosException {
@@ -115,6 +140,7 @@ public class PluginRemoteHandler implements PluginHandler {
             localOnly);
     }
     
+    /** 查询远端指定插件在各集群节点上的可用性映射。 */
     @Override
     public Map<String, Boolean> getPluginAvailability(String pluginType, String pluginName)
         throws NacosException {
@@ -122,6 +148,7 @@ public class PluginRemoteHandler implements PluginHandler {
             pluginName);
     }
     
+    /** 将远端返回的 Map 转换为 {@link PluginInfoVO}。 */
     private PluginInfoVO convertToPluginInfoVO(Map<String, Object> raw) {
         PluginInfoVO vo = new PluginInfoVO();
         vo.setPluginId((String) raw.get(FIELD_PLUGIN_ID));
@@ -141,6 +168,7 @@ public class PluginRemoteHandler implements PluginHandler {
     }
     
     @SuppressWarnings("unchecked")
+    /** 将远端返回的 Map 转换为 {@link PluginDetailVO}。 */
     private PluginDetailVO convertToPluginDetailVO(Map<String, Object> raw) {
         PluginDetailVO vo = new PluginDetailVO();
         vo.setPluginId((String) raw.get(FIELD_PLUGIN_ID));
@@ -161,6 +189,7 @@ public class PluginRemoteHandler implements PluginHandler {
     }
     
     @SuppressWarnings("unchecked")
+    /** 将远端配置项定义 Map 列表转换为 {@link ConfigItemDefinition} 列表。 */
     private List<ConfigItemDefinition> convertToConfigItemDefinitions(
         List<Map<String, Object>> rawList) {
         List<ConfigItemDefinition> result = new ArrayList<>(rawList.size());

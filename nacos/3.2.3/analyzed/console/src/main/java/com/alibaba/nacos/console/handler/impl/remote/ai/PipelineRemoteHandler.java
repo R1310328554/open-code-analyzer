@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Service;
 
 /**
+ * AI 流水线远程 Handler：通过 {@link NacosMaintainerClientHolder} 查询远端流水线执行记录，并将 JSON 响应反序列化为领域模型。
  * Remote implementation of Pipeline handler.
  *
  * <p>Calls remote Nacos server through maintainer client for Pipeline operations.</p>
@@ -41,12 +42,15 @@ import org.springframework.stereotype.Service;
 @EnabledAiHandler
 public class PipelineRemoteHandler implements PipelineHandler {
     
+    /** 运维客户端持有者，提供 AI Maintainer 远程访问能力 */
     private final NacosMaintainerClientHolder clientHolder;
     
+    /** 注入运维客户端持有者 */
     public PipelineRemoteHandler(NacosMaintainerClientHolder clientHolder) {
         this.clientHolder = clientHolder;
     }
     
+    /** 按流水线 ID 获取远端执行详情。 */
     @Override
     public PipelineExecution getPipeline(String pipelineId) throws NacosException {
         JsonNode jsonNode =
@@ -54,6 +58,7 @@ public class PipelineRemoteHandler implements PipelineHandler {
         return JacksonUtils.toObj(jsonNode.toString(), PipelineExecution.class);
     }
     
+    /** 按资源类型、名称、命名空间与版本分页列出远端流水线执行记录。 */
     @Override
     public Page<PipelineExecution> listPipelines(String resourceType, String resourceName,
         String namespaceId, String version, int pageNo, int pageSize) throws NacosException {

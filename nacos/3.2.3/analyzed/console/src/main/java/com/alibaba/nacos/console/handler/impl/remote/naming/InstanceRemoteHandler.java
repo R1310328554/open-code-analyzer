@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
+ * 服务实例远程 Handler：分页列表、更新与注销实例，通过 {@link NacosMaintainerClientHolder} 调用远端 Naming Maintainer API。
  * Remote Implementation of InstanceHandler that handles instance-related operations.
  *
  * @author xiweng.yy
@@ -40,12 +41,15 @@ import java.util.List;
 @Conditional(ConditionFunctionEnabled.ConditionNamingEnabled.class)
 public class InstanceRemoteHandler implements InstanceHandler {
     
+    /** 运维客户端持有者，提供 Naming Maintainer 远程访问能力 */
     private final NacosMaintainerClientHolder clientHolder;
     
+    /** 注入运维客户端持有者 */
     public InstanceRemoteHandler(NacosMaintainerClientHolder clientHolder) {
         this.clientHolder = clientHolder;
     }
     
+    /** 从远端拉取实例列表并在本地内存分页。 */
     @Override
     public Page<? extends Instance> listInstances(String namespaceId,
         String serviceNameWithoutGroup, String groupName,
@@ -55,6 +59,7 @@ public class InstanceRemoteHandler implements InstanceHandler {
         return PageUtil.subPage(instances, page, pageSize);
     }
     
+    /** 更新远端持久化实例元数据。 */
     @Override
     public void updateInstance(InstanceForm instanceForm, Instance instance) throws NacosException {
         clientHolder.getNamingMaintainerService()
@@ -62,6 +67,7 @@ public class InstanceRemoteHandler implements InstanceHandler {
                 instanceForm.getServiceName(), instance);
     }
     
+    /** 从远端服务注销指定实例。 */
     @Override
     public void removeInstance(InstanceForm instanceForm, Instance instance) throws NacosException {
         clientHolder.getNamingMaintainerService()

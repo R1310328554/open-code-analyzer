@@ -34,6 +34,7 @@ import org.springframework.context.annotation.Conditional;
 import java.util.List;
 
 /**
+ * 服务管理远程 Handler：CRUD、订阅者查询、集群元数据更新，通过 {@link NacosMaintainerClientHolder} 调用远端 Naming Maintainer API。
  * Remote Implementation of ServiceHandler that handles service-related operations.
  *
  * @author xiweng.yy
@@ -43,12 +44,15 @@ import java.util.List;
 @Conditional(ConditionFunctionEnabled.ConditionNamingEnabled.class)
 public class ServiceRemoteHandler implements ServiceHandler {
     
+    /** 运维客户端持有者，提供 Naming Maintainer 远程访问能力 */
     private final NacosMaintainerClientHolder clientHolder;
     
+    /** 注入运维客户端持有者 */
     public ServiceRemoteHandler(NacosMaintainerClientHolder clientHolder) {
         this.clientHolder = clientHolder;
     }
     
+    /** 在远端创建服务并附带元数据与选择器。 */
     @Override
     public void createService(ServiceForm serviceForm, ServiceMetadata serviceMetadata)
         throws Exception {
@@ -56,6 +60,7 @@ public class ServiceRemoteHandler implements ServiceHandler {
         clientHolder.getNamingMaintainerService().createService(service);
     }
     
+    /** 删除远端指定服务。 */
     @Override
     public void deleteService(String namespaceId, String serviceName, String groupName)
         throws Exception {
@@ -63,6 +68,7 @@ public class ServiceRemoteHandler implements ServiceHandler {
             serviceName);
     }
     
+    /** 更新远端服务元数据与选择器。 */
     @Override
     public void updateService(ServiceForm serviceForm, ServiceMetadata serviceMetadata)
         throws Exception {
@@ -70,11 +76,13 @@ public class ServiceRemoteHandler implements ServiceHandler {
         clientHolder.getNamingMaintainerService().updateService(servicePojo);
     }
     
+    /** 获取远端支持的服务选择器类型列表。 */
     @Override
     public List<String> getSelectorTypeList() throws NacosException {
         return clientHolder.getNamingMaintainerService().listSelectorTypes();
     }
     
+    /** 分页查询远端服务的订阅者列表，可选聚合模式。 */
     @Override
     public Page<SubscriberInfo> getSubscribers(int pageNo, int pageSize, String namespaceId,
         String serviceName,
@@ -83,6 +91,7 @@ public class ServiceRemoteHandler implements ServiceHandler {
             .getSubscribers(namespaceId, groupName, serviceName, pageNo, pageSize, aggregation);
     }
     
+    /** 分页列出远端服务，可选附带实例详情或忽略空服务。 */
     @Override
     public Object getServiceList(boolean withInstances, String namespaceId, int pageNo,
         int pageSize,
@@ -96,6 +105,7 @@ public class ServiceRemoteHandler implements ServiceHandler {
                 pageSize);
     }
     
+    /** 获取远端服务详情（含集群与实例摘要）。 */
     @Override
     public ServiceDetailInfo getServiceDetail(String namespaceId, String serviceName,
         String groupName)
@@ -104,6 +114,7 @@ public class ServiceRemoteHandler implements ServiceHandler {
             serviceName);
     }
     
+    /** 更新远端服务下指定集群的健康检查与扩展元数据。 */
     @Override
     public void updateClusterMetadata(String namespaceId, String groupName, String serviceName,
         String clusterName,
@@ -121,6 +132,7 @@ public class ServiceRemoteHandler implements ServiceHandler {
         clientHolder.getNamingMaintainerService().updateCluster(service, clusterInfo);
     }
     
+    /** 将表单与元数据组装为 {@link Service} POJO 供远端 API 调用。 */
     private Service buildService(ServiceForm serviceForm, ServiceMetadata metadata) {
         Service service = new Service();
         service.setNamespaceId(serviceForm.getNamespaceId());

@@ -48,6 +48,7 @@ import java.util.Map;
 import static com.alibaba.nacos.api.common.Constants.ALL_PATTERN;
 
 /**
+ * 配置管理远程 Handler：分页查询、发布/删除、导入导出、Beta 灰度与监听器查询，通过 {@link NacosMaintainerClientHolder} 调用远端 Config Maintainer API。
  * Remote Implementation of ConfigHandler for handling internal configuration operations.
  *
  * @author xiweng.yy
@@ -57,16 +58,20 @@ import static com.alibaba.nacos.api.common.Constants.ALL_PATTERN;
 @Conditional(ConditionFunctionEnabled.ConditionConfigEnabled.class)
 public class ConfigRemoteHandler implements ConfigHandler {
     
+    /** 运维客户端持有者，提供 Config Maintainer 远程访问能力 */
     private final NacosMaintainerClientHolder clientHolder;
     
+    /** 配置导入导出远程服务（HTTP 直连远端节点） */
     private final ConfigImportAndExportService importAndExportService;
     
+    /** 注入运维客户端持有者与导入导出服务 */
     public ConfigRemoteHandler(NacosMaintainerClientHolder clientHolder,
         ConfigImportAndExportService importAndExportService) {
         this.clientHolder = clientHolder;
         this.importAndExportService = importAndExportService;
     }
     
+    /** 分页查询远端配置列表，dataId 含通配符时自动切换模糊搜索。 */
     @Override
     public Page<ConfigBasicInfo> getConfigList(int pageNo, int pageSize, String dataId,
         String group,
@@ -77,6 +82,7 @@ public class ConfigRemoteHandler implements ConfigHandler {
             configAdvanceInfo);
     }
     
+    /** 获取远端单条配置完整详情，不存在时返回 null。 */
     @Override
     public ConfigDetailInfo getConfigDetail(String dataId, String group, String namespaceId)
         throws NacosException {
@@ -90,6 +96,7 @@ public class ConfigRemoteHandler implements ConfigHandler {
         }
     }
     
+    /** 发布或更新远端配置，含 Beta 灰度分支。 */
     @Override
     public Boolean publishConfig(ConfigForm configForm, ConfigRequestInfo configRequestInfo)
         throws NacosException {
@@ -110,6 +117,7 @@ public class ConfigRemoteHandler implements ConfigHandler {
         }
     }
     
+    /** 删除远端指定配置。 */
     @Override
     public Boolean deleteConfig(String dataId, String group, String namespaceId, String tag,
         String clientIp,
@@ -117,12 +125,14 @@ public class ConfigRemoteHandler implements ConfigHandler {
         return clientHolder.getConfigMaintainerService().deleteConfig(dataId, group, namespaceId);
     }
     
+    /** 按 ID 批量删除远端配置。 */
     @Override
     public Boolean batchDeleteConfigs(List<Long> ids, String clientIp, String srcUser)
         throws NacosException {
         return clientHolder.getConfigMaintainerService().deleteConfigs(ids);
     }
     
+    /** 按配置内容关键字分页搜索远端配置。 */
     @Override
     public Page<ConfigBasicInfo> getConfigListByContent(String search, int pageNo, int pageSize,
         String dataId,
@@ -132,6 +142,7 @@ public class ConfigRemoteHandler implements ConfigHandler {
             configAdvanceInfo);
     }
     
+    /** 查询远端指定配置的客户端监听器状态，可选聚合模式。 */
     @Override
     public ConfigListenerInfo getListeners(String dataId, String group, String namespaceId,
         boolean aggregation)
@@ -140,6 +151,7 @@ public class ConfigRemoteHandler implements ConfigHandler {
             aggregation);
     }
     
+    /** 按客户端 IP 查询远端其订阅的全部配置及 MD5 状态。 */
     @Override
     public ConfigListenerInfo getAllSubClientConfigByIp(String ip, boolean all, String namespaceId,
         boolean aggregation)
@@ -148,6 +160,7 @@ public class ConfigRemoteHandler implements ConfigHandler {
             namespaceId, aggregation);
     }
     
+    /** 委托导入导出服务从远端导出配置 ZIP。 */
     @Override
     public ResponseEntity<byte[]> exportConfig(String dataId, String group, String namespaceId,
         String appName,
@@ -155,6 +168,7 @@ public class ConfigRemoteHandler implements ConfigHandler {
         return importAndExportService.exportConfig(dataId, group, namespaceId, appName, ids);
     }
     
+    /** 委托导入导出服务向远端导入配置 ZIP 并批量发布。 */
     @Override
     public Result<Map<String, Object>> importAndPublishConfig(String srcUser, String namespaceId,
         SameConfigPolicy policy, MultipartFile file, String srcIp, String requestIpApp)
@@ -163,6 +177,7 @@ public class ConfigRemoteHandler implements ConfigHandler {
             requestIpApp);
     }
     
+    /** 将选中配置克隆到远端目标命名空间，支持重命名 group/dataId。 */
     @Override
     public Result<Map<String, Object>> cloneConfig(String srcUser, String namespaceId,
         List<SameNamespaceCloneConfigBean> configBeansList, SameConfigPolicy policy, String srcIp,
@@ -180,6 +195,7 @@ public class ConfigRemoteHandler implements ConfigHandler {
                 policy));
     }
     
+    /** 移除远端 Beta 灰度配置。 */
     @Override
     public boolean removeBetaConfig(String dataId, String group, String namespaceId,
         String remoteIp,
@@ -187,6 +203,7 @@ public class ConfigRemoteHandler implements ConfigHandler {
         return clientHolder.getConfigMaintainerService().stopBeta(dataId, group, namespaceId);
     }
     
+    /** 查询远端 Beta 灰度配置详情，404 时返回 null。 */
     @Override
     public ConfigGrayInfo queryBetaConfig(String dataId, String group, String namespaceId)
         throws NacosException {
@@ -194,14 +211,15 @@ public class ConfigRemoteHandler implements ConfigHandler {
             return clientHolder.getConfigMaintainerService().queryBeta(dataId, group, namespaceId);
         } catch (NacosException e) {
             if (NacosException.NOT_FOUND == e.getErrCode()) {
-                // admin api return 404, means the config is not in beta.
+                // 管理 API 返回 404 表示该配置未处于 Beta 灰度。
                 return null;
             }
-            // other exception throw it.
+            // 其他异常继续向上抛出。
             throw e;
         }
     }
     
+    /** 按高级过滤条件分页搜索远端配置详情。 */
     private Page<ConfigBasicInfo> listConfigInfo(String search, int pageNo, int pageSize,
         String dataId,
         String groupName, String namespaceId, Map<String, Object> configAdvanceInfo)
@@ -216,6 +234,7 @@ public class ConfigRemoteHandler implements ConfigHandler {
                 pageNo, pageSize);
     }
     
+    /** 从高级搜索参数映射中安全提取字符串值。 */
     private String getInfoFromAdvanceInfo(Map<String, Object> configAdvanceInfo, String key) {
         return configAdvanceInfo.containsKey(key) ? (String) configAdvanceInfo.get(key)
             : StringUtils.EMPTY;

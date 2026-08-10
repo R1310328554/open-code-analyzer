@@ -60,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 配置导入导出远程服务：通过 HTTP 向随机选取的健康 Nacos 节点发送 multipart 导入请求或 GET 导出请求。
  * Nacos config import and export service.
  *
  * @author xiweng.yy
@@ -68,29 +69,35 @@ import java.util.Map;
 @EnabledRemoteHandler
 public class ConfigImportAndExportService {
     
+    /** 配置导入导出服务日志记录器 */
     private static final Logger LOGGER =
         LoggerFactory.getLogger(ConfigImportAndExportService.class);
     
+    /** 远端配置导入 API URL 模板 */
     private static final String REMOTE_CONFIG_IMPORT_URL = "http://%s%s/v3/admin/cs/config/import";
     
+    /** 远端配置导出 API URL 模板 */
     private static final String REMOTE_CONFIG_EXPORT_URL = "http://%s%s/v3/admin/cs/config/export";
     
+    /** 远程服务器连接器，负责选取健康节点并附加鉴权信息 */
     private final RemoteServerConnector remoteServerConnector;
     
+    /** 注入远程服务器连接器 */
     public ConfigImportAndExportService(RemoteServerConnector remoteServerConnector) {
         this.remoteServerConnector = remoteServerConnector;
     }
     
     /**
+     * 向远端 Nacos 节点导入配置 ZIP 文件。
      * Do import config to remote server.
      *
-     * @param sourceUser    source user from console request
-     * @param namespaceId   namespace id from console request
-     * @param policy        conflict policy
-     * @param importFile    imported config file
-     * @param sourceIp      source ip from console request
-     * @param sourceApp     source app from console request
-     * @return Maps of import success and failed count
+     * @param sourceUser    控制台请求来源用户
+     * @param namespaceId   目标命名空间 ID
+     * @param policy        同名配置冲突策略
+     * @param importFile    待导入的配置文件
+     * @param sourceIp      控制台请求来源 IP
+     * @param sourceApp     控制台请求来源应用
+     * @return 导入成功与失败计数的映射
      */
     public Result<Map<String, Object>> importConfig(String sourceUser, String namespaceId,
         SameConfigPolicy policy,
@@ -135,15 +142,16 @@ public class ConfigImportAndExportService {
     }
     
     /**
+     * 从远端 Nacos 节点导出配置为二进制 ZIP 响应。
      * Do export config to from server.
      *
-     * @param dataId        data id of export config
-     * @param group         group name of export config
-     * @param namespaceId   namespace of export config
-     * @param appName       app name of export config
-     * @param ids           storage id of export config
-     * @return export file entity
-     * @throws Exception    any exception during export config
+     * @param dataId        导出配置的 dataId
+     * @param group         导出配置的 group
+     * @param namespaceId   导出配置的命名空间
+     * @param appName       导出配置的应用名
+     * @param ids           导出配置的存储 ID 列表
+     * @return 导出文件字节实体
+     * @throws Exception    导出过程中的任意异常
      */
     public ResponseEntity<byte[]> exportConfig(String dataId, String group, String namespaceId,
         String appName,
@@ -173,11 +181,14 @@ public class ConfigImportAndExportService {
         }
     }
     
+    /** 导出 HTTP 响应处理器，解析 Content-Disposition 并返回字节实体。 */
     static class ExportHttpClientResponseHandler
         extends AbstractHttpClientResponseHandler<ResponseEntity<byte[]>> {
         
+        /** 响应头中的 Content-Disposition，用于保留导出文件名 */
         private String contentDisposition;
         
+        /** 从响应头提取 Content-Disposition 后委托父类处理。 */
         @Override
         public ResponseEntity<byte[]> handleResponse(ClassicHttpResponse response)
             throws IOException {
@@ -190,6 +201,7 @@ public class ConfigImportAndExportService {
             return super.handleResponse(response);
         }
         
+        /** 读取响应实体字节流并封装为 Spring {@link ResponseEntity}。 */
         @Override
         public ResponseEntity<byte[]> handleEntity(HttpEntity entity) throws IOException {
             InputStream inputStream = entity.getContent();

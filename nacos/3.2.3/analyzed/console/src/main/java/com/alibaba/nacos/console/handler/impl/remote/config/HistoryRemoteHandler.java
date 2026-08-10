@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
+ * 配置历史远程 Handler：查询变更记录、上一版本及按命名空间列举配置，通过 {@link NacosMaintainerClientHolder} 调用远端 Config Maintainer API。
  * Remote Implementation of HistoryHandler for handling internal configuration operations.
  *
  * @author xiweng.yy
@@ -40,12 +41,15 @@ import java.util.List;
 @Conditional(ConditionFunctionEnabled.ConditionConfigEnabled.class)
 public class HistoryRemoteHandler implements HistoryHandler {
     
+    /** 运维客户端持有者，提供 Config Maintainer 远程访问能力 */
     private final NacosMaintainerClientHolder clientHolder;
     
+    /** 注入运维客户端持有者 */
     public HistoryRemoteHandler(NacosMaintainerClientHolder clientHolder) {
         this.clientHolder = clientHolder;
     }
     
+    /** 按 nid 获取远端单条配置历史详情。 */
     @Override
     public ConfigHistoryDetailInfo getConfigHistoryInfo(String dataId, String group,
         String namespaceId, Long nid)
@@ -54,6 +58,7 @@ public class HistoryRemoteHandler implements HistoryHandler {
             namespaceId, nid);
     }
     
+    /** 分页列出远端指定配置的历史变更记录。 */
     @Override
     public Page<ConfigHistoryBasicInfo> listConfigHistory(String dataId, String group,
         String namespaceId,
@@ -62,6 +67,7 @@ public class HistoryRemoteHandler implements HistoryHandler {
             .listConfigHistory(dataId, group, namespaceId, pageNo, pageSize);
     }
     
+    /** 获取远端指定历史记录的前一版本详情。 */
     @Override
     public ConfigHistoryDetailInfo getPreviousConfigHistoryInfo(String dataId, String group,
         String namespaceId,
@@ -70,6 +76,7 @@ public class HistoryRemoteHandler implements HistoryHandler {
             namespaceId, id);
     }
     
+    /** 按命名空间（租户）列出远端全部配置基本信息。 */
     @Override
     public List<ConfigBasicInfo> getConfigsByTenant(String namespaceId) throws NacosException {
         return clientHolder.getConfigMaintainerService().getConfigListByNamespace(namespaceId);

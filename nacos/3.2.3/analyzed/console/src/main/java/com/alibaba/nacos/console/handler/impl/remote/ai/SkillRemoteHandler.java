@@ -42,6 +42,7 @@ import com.alibaba.nacos.core.model.form.PageForm;
 import org.springframework.stereotype.Service;
 
 /**
+ * Skill 远程 Handler：ZIP 上传、草稿、提审、发布与可见范围管理均通过 {@link NacosMaintainerClientHolder} 调用远端 AI 运维 API。
  * Remote implementation of Skill handler.
  *
  * <p>Calls remote Nacos server through maintainer client for Skill operations.</p>
@@ -53,12 +54,15 @@ import org.springframework.stereotype.Service;
 @EnabledAiHandler
 public class SkillRemoteHandler implements SkillHandler {
     
+    /** 运维客户端持有者，提供 AI Maintainer 远程访问能力 */
     private final NacosMaintainerClientHolder clientHolder;
     
+    /** 注入运维客户端持有者 */
     public SkillRemoteHandler(NacosMaintainerClientHolder clientHolder) {
         this.clientHolder = clientHolder;
     }
     
+    /** 获取远端 Skill 管理端元数据详情。 */
     @Override
     public SkillMeta getSkill(SkillForm form) throws NacosException {
         return clientHolder.getAiMaintainerService().skill().getSkillMeta(
@@ -66,6 +70,7 @@ public class SkillRemoteHandler implements SkillHandler {
             form.getSkillName());
     }
     
+    /** 获取远端指定版本的 Skill 完整内容。 */
     @Override
     public Skill getSkillVersion(SkillForm form) throws NacosException {
         return clientHolder.getAiMaintainerService().skill().getSkillVersionDetail(
@@ -74,11 +79,13 @@ public class SkillRemoteHandler implements SkillHandler {
             form.getVersion());
     }
     
+    /** 下载远端指定版本 Skill 内容（委托 getSkillVersion）。 */
     @Override
     public Skill downloadSkillVersion(SkillForm form) throws NacosException {
         return getSkillVersion(form);
     }
     
+    /** 删除远端 Skill 及其全部版本。 */
     @Override
     public void deleteSkill(SkillForm form) throws NacosException {
         clientHolder.getAiMaintainerService().skill().deleteSkill(
@@ -86,6 +93,7 @@ public class SkillRemoteHandler implements SkillHandler {
             form.getSkillName());
     }
     
+    /** 分页列出远端 Skill 摘要，支持所有者、范围与业务标签过滤；无结果时返回空页。 */
     @Override
     public Page<SkillSummary> listSkills(SkillListForm skillListForm,
         AiResourceFilterableForm filterableForm,
@@ -111,6 +119,7 @@ public class SkillRemoteHandler implements SkillHandler {
         return result;
     }
     
+    /** 从 ZIP 包上传单个 Skill 到远端命名空间。 */
     @Override
     public String uploadSkillFromZip(SkillUploadRequest request) throws NacosException {
         return clientHolder.getAiMaintainerService().skill().uploadSkillFromZip(
@@ -118,6 +127,7 @@ public class SkillRemoteHandler implements SkillHandler {
             request.getTargetVersion(), request.getCommitMsg());
     }
     
+    /** 批量从 ZIP 上传 Skill 到远端，可选覆盖已有草稿。 */
     @Override
     public BatchUploadResult batchUploadSkillsFromZip(String namespaceId, byte[] zipBytes,
         boolean overwrite)
@@ -126,6 +136,7 @@ public class SkillRemoteHandler implements SkillHandler {
             zipBytes, overwrite);
     }
     
+    /** 在远端基于已有版本创建 Skill 草稿。 */
     @Override
     public String createDraft(SkillDraftCreateForm form) throws NacosException {
         return clientHolder.getAiMaintainerService().skill().createDraft(form.getNamespaceId(),
@@ -134,6 +145,7 @@ public class SkillRemoteHandler implements SkillHandler {
             form.getCommitMsg());
     }
     
+    /** 更新远端当前 Skill 草稿内容。 */
     @Override
     public void updateDraft(SkillUpdateForm form) throws NacosException {
         clientHolder.getAiMaintainerService().skill().updateDraft(form.getNamespaceId(),
@@ -141,18 +153,21 @@ public class SkillRemoteHandler implements SkillHandler {
             form.getSetAsLatest(), form.getCommitMsg());
     }
     
+    /** 删除远端当前 Skill 草稿。 */
     @Override
     public void deleteDraft(SkillForm form) throws NacosException {
         clientHolder.getAiMaintainerService().skill().deleteDraft(form.getNamespaceId(),
             form.getSkillName());
     }
     
+    /** 提交远端 Skill 版本进入流水线审核。 */
     @Override
     public String submit(SkillSubmitForm form) throws NacosException {
         return clientHolder.getAiMaintainerService().skill()
             .submit(form.getNamespaceId(), form.getSkillName(), form.getVersion());
     }
     
+    /** 发布远端已通过审核的 Skill 版本。 */
     @Override
     public void publish(SkillPublishForm form) throws NacosException {
         clientHolder.getAiMaintainerService().skill()
@@ -160,6 +175,7 @@ public class SkillRemoteHandler implements SkillHandler {
                 form.getUpdateLatestLabel());
     }
     
+    /** 强制发布远端 Skill 版本，跳过流水线校验。 */
     @Override
     public void forcePublish(SkillPublishForm form) throws NacosException {
         clientHolder.getAiMaintainerService().skill()
@@ -167,30 +183,35 @@ public class SkillRemoteHandler implements SkillHandler {
                 form.getUpdateLatestLabel());
     }
     
+    /** 将远端已审核 Skill 版本重新编辑为草稿。 */
     @Override
     public void redraft(SkillPublishForm form) throws NacosException {
         clientHolder.getAiMaintainerService().skill()
             .redraft(form.getNamespaceId(), form.getSkillName(), form.getVersion());
     }
     
+    /** 更新远端 Skill 运行时路由标签。 */
     @Override
     public void updateLabels(SkillLabelsUpdateForm form) throws NacosException {
         clientHolder.getAiMaintainerService().skill()
             .updateLabels(form.getNamespaceId(), form.getSkillName(), form.getLabels());
     }
     
+    /** 更新远端 Skill 业务标签。 */
     @Override
     public void updateBizTags(SkillBizTagsUpdateForm form) throws NacosException {
         clientHolder.getAiMaintainerService().skill()
             .updateBizTags(form.getNamespaceId(), form.getSkillName(), form.getBizTags());
     }
     
+    /** 切换远端 Skill 指定范围的上线/下线状态。 */
     @Override
     public void changeOnlineStatus(SkillOnlineForm form, boolean online) throws NacosException {
         clientHolder.getAiMaintainerService().skill().changeOnlineStatus(form.getNamespaceId(),
             form.getSkillName(), form.getScope(), form.getVersion(), online);
     }
     
+    /** 更新远端 Skill 可见范围。 */
     @Override
     public void updateScope(SkillScopeForm form) throws NacosException {
         clientHolder.getAiMaintainerService().skill().updateScope(form.getNamespaceId(),
