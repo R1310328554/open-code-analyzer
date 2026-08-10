@@ -8,21 +8,23 @@ import org.antlr.v4.runtime.CommonTokenStream;
 
 
 /**
- * Utility class for parsing SCIM filter expressions using ANTLR.
+ * 使用 ANTLR 解析 SCIM 过滤表达式的工具类。
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
 public class FilterUtils {
 
+    /** 过滤表达式允许的最大字符长度。 */
     public static final int MAX_FILTER_LENGTH = 2048;
+    /** 过滤表达式允许的最大嵌套深度。 */
     public static final int MAX_FILTER_DEPTH = 10;
 
     /**
-     * Parses a SCIM filter expression string into an abstract syntax tree.
+     * 将 SCIM 过滤表达式字符串解析为抽象语法树（AST）。
      *
-     * @param filterExpression the filter expression to parse (RFC 7644 section 3.4.2.2)
-     * @return the parsed filter context (AST root)
-     * @throws ScimFilterException if the filter expression has syntax errors
+     * @param filterExpression 待解析的过滤表达式（RFC 7644 第 3.4.2.2 节）
+     * @return 解析后的过滤器上下文（AST 根节点）
+     * @throws ScimFilterException 过滤表达式存在语法错误时抛出
      */
     public static ScimFilterParser.FilterContext parseFilter(String filterExpression) {
         if (StringUtil.isBlank(filterExpression)) {
@@ -39,7 +41,7 @@ public class FilterUtils {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         ScimFilterParser parser = new ScimFilterParser(tokens);
 
-        // Custom error listener
+        // 自定义错误监听器
         ErrorListener errorListener = new ErrorListener();
         parser.removeErrorListeners();
         parser.addErrorListener(errorListener);
@@ -56,10 +58,10 @@ public class FilterUtils {
     }
 
     /**
-     * Extracts the comparison value from a parsed {@code compValue} node as a string.
+     * 从已解析的 {@code compValue} 节点提取比较值字符串。
      *
-     * @param ctx the comparison value context from the parse tree
-     * @return the extracted value, or {@code null} for NULL literals
+     * @param ctx 解析树中的比较值上下文
+     * @return 提取的值；NULL 字面量返回 {@code null}
      */
     public static String extractCompValue(ScimFilterParser.CompValueContext ctx) {
         if (ctx.STRING() != null) {
@@ -74,8 +76,8 @@ public class FilterUtils {
     }
 
     /**
-     * Validates that the nesting depth of parenthesized groups and value path brackets does not exceed {@link #MAX_FILTER_DEPTH}.
-     * Runs before ANTLR parsing to avoid building a deep parse tree that could cause a {@code StackOverflowError}.
+     * 校验括号分组与值路径方括号的嵌套深度不超过 {@link #MAX_FILTER_DEPTH}。
+     * <p>在 ANTLR 解析前执行，避免构建过深解析树导致 {@code StackOverflowError}。</p>
      */
     private static void validateFilterDepth(String filterExpression) {
         int depth = 0;
@@ -83,10 +85,10 @@ public class FilterUtils {
         boolean inString = false;
         for (int i = 0; i < filterExpression.length(); i++) {
             char c = filterExpression.charAt(i);
-            // skip characters inside quoted string literals — they are values, not structural
+            // 跳过引号字符串内的字符——它们是值而非结构符号
             if (inString) {
                 if (c == '\\' && i + 1 < filterExpression.length()) {
-                    i++; // skip escaped character
+                    i++; // 跳过转义字符
                     continue;
                 }
                 if (c == '"') {
@@ -96,7 +98,7 @@ public class FilterUtils {
             }
             switch (c) {
                 case '"' -> inString = true;
-                // parenthesized groups and value path brackets both produce recursive grammar rules
+                // 括号分组与值路径方括号均会触发递归语法规则
                 case '(', '[' -> maxDepth = Math.max(maxDepth, ++depth);
                 case ')', ']' -> depth = Math.max(0, depth - 1);
             }
@@ -107,6 +109,7 @@ public class FilterUtils {
         }
     }
 
+    /** 校验比较运算符对 null 值的合法性（仅 {@code eq} 与 {@code ne} 允许）。 */
     private static void validateNullCompValues(ScimFilterParser.FilterContext filterCtx) {
         new ScimFilterParserBaseVisitor<Void>() {
             @Override
@@ -124,8 +127,8 @@ public class FilterUtils {
     }
 
     /**
-     * Unescapes a JSON string value (without surrounding quotes) per RFC 8259.
-     * Unicode escape sequences are handled by the ANTLR lexer.
+     * 按 RFC 8259 对 JSON 字符串值（不含外围引号）进行反转义。
+     * <p>Unicode 转义序列由 ANTLR 词法分析器处理。</p>
      */
     public static String unescapeJsonString(String s) {
         if (s.indexOf('\\') == -1) {

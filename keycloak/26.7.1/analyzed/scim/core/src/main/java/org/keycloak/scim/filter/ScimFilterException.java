@@ -18,12 +18,17 @@
 package org.keycloak.scim.filter;
 
 /**
- * Exception thrown when an SCIM filter expression is invalid or cannot be processed.
+ * 当 SCIM 过滤表达式无效或无法处理时抛出的异常。
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
 public class ScimFilterException extends RuntimeException {
 
+    /**
+     * 构造带错误消息的过滤器异常。
+     *
+     * @param message 描述无效过滤条件的原因
+     */
     public ScimFilterException(String message) {
         super(message);
     }

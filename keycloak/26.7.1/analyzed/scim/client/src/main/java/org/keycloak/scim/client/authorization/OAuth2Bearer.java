@@ -10,15 +10,16 @@ import org.keycloak.representations.AccessTokenResponse;
 import org.apache.http.HttpHeaders;
 
 /**
- * An implementation of {@link AuthorizationMethod} that obtains an access token using the
- * OAuth 2.0 Client Credentials grant type and sets the appropriate Authorization header for requests.
+ * {@link AuthorizationMethod} 的实现：通过 OAuth 2.0 客户端凭据（Client Credentials）授权类型
+ * 获取访问令牌，并在请求中设置 {@code Authorization: Bearer} 头。
  *
- * @param tokenEndpoint the token endpoint URL to obtain the access token from
- * @param clientId      the client ID
- * @param clientSecret  the client secret
+ * @param tokenEndpoint 用于获取访问令牌的令牌端点 URL
+ * @param clientId      客户端 ID
+ * @param clientSecret  客户端密钥
  */
 public record OAuth2Bearer(String tokenEndpoint, String clientId, String clientSecret) implements AuthorizationMethod {
 
+    /** 获取访问令牌并写入 Bearer 授权头。 */
     @Override
     public void onBefore(SimpleHttp http, SimpleHttpRequest request) {
         try {
