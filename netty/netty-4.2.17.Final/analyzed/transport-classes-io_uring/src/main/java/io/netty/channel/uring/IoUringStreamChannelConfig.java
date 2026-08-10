@@ -21,8 +21,13 @@ import io.netty.util.internal.ObjectUtil;
 
 import java.util.Map;
 
+/**
+ * io_uring 流式通道配置基类：管理 {@link IoUringChannelOption#IO_URING_BUFFER_GROUP_ID}。
+ * <p>指定接收时使用的 io_uring buffer ring 组 id。</p>
+ */
 abstract class IoUringStreamChannelConfig extends IoUringChannelConfig {
 
+    /** io_uring 接收 buffer ring 的 buffer group id；-1 表示未使用 ring */
     private volatile short bufferGroupId = -1;
 
     IoUringStreamChannelConfig(AbstractIoUringChannel channel) {
@@ -58,10 +63,12 @@ abstract class IoUringStreamChannelConfig extends IoUringChannelConfig {
         );
     }
 
+    /** 返回当前配置的 buffer group id */
     short getBufferGroupId() {
         return bufferGroupId;
     }
 
+    /** 设置接收使用的 buffer ring 组 id（须在 {@link IoUringIoHandlerConfig} 中已注册） */
     IoUringStreamChannelConfig setBufferGroupId(short bufferGroupId) {
         this.bufferGroupId = (short) ObjectUtil.checkPositiveOrZero(bufferGroupId, "bufferGroupId");
         return this;

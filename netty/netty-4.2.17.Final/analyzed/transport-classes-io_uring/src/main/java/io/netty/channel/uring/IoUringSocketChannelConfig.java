@@ -31,10 +31,15 @@ import java.util.Map;
 import static io.netty.channel.ChannelOption.*;
 
 
+/**
+ * {@link IoUringSocketChannel} 的 TCP 套接字配置：标准 socket 选项与 io_uring 零拷贝阈值。
+ * <p>含 TCP_CORK、TCP_QUICKACK、IP_TRANSPARENT、IO_URING_WRITE_ZERO_COPY_THRESHOLD 等。</p>
+ */
 final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implements SocketChannelConfig {
     private volatile boolean allowHalfClosure;
     private volatile boolean tcpFastopen;
 
+    /** 禁用 io_uring 零拷贝写的阈值 sentinel */
     static final int DISABLE_WRITE_ZERO_COPY = -1;
     private volatile int writeZeroCopyThreshold = DISABLE_WRITE_ZERO_COPY;
 
@@ -219,6 +224,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Get the {@code TCP_CORK} option on the socket. See {@code man 7 tcp} for more details.
+     * <p>读取 TCP_CORK（粘包）选项状态。</p>
      */
     public boolean isTcpCork() {
         try {
@@ -230,6 +236,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Get the {@code SO_BUSY_POLL} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public int getSoBusyPoll() {
         try {
@@ -243,6 +250,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
      * Get the {@code TCP_NOTSENT_LOWAT} option on the socket. See {@code man 7 tcp} for more details.
      *
      * @return value is a uint32_t
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public long getTcpNotSentLowAt() {
         try {
@@ -254,6 +262,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Get the {@code TCP_KEEPIDLE} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public int getTcpKeepIdle() {
         try {
@@ -265,6 +274,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Get the {@code TCP_KEEPINTVL} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public int getTcpKeepIntvl() {
         try {
@@ -276,6 +286,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Get the {@code TCP_KEEPCNT} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public int getTcpKeepCnt() {
         try {
@@ -287,6 +298,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Get the {@code TCP_USER_TIMEOUT} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public int getTcpUserTimeout() {
         try {
@@ -373,6 +385,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Set the {@code TCP_CORK} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public IoUringSocketChannelConfig setTcpCork(boolean tcpCork) {
         try {
@@ -385,6 +398,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Set the {@code SO_BUSY_POLL} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public IoUringSocketChannelConfig setSoBusyPoll(int loopMicros) {
         try {
@@ -399,6 +413,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
      * Set the {@code TCP_NOTSENT_LOWAT} option on the socket. See {@code man 7 tcp} for more details.
      *
      * @param tcpNotSentLowAt is a uint32_t
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public IoUringSocketChannelConfig setTcpNotSentLowAt(long tcpNotSentLowAt) {
         try {
@@ -421,6 +436,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Set the {@code TCP_KEEPIDLE} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public IoUringSocketChannelConfig setTcpKeepIdle(int seconds) {
         try {
@@ -433,6 +449,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Set the {@code TCP_KEEPINTVL} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public IoUringSocketChannelConfig setTcpKeepIntvl(int seconds) {
         try {
@@ -445,6 +462,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * @deprecated use {@link #setTcpKeepCnt(int)}
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public IoUringSocketChannelConfig setTcpKeepCntl(int probes) {
@@ -453,6 +471,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Set the {@code TCP_KEEPCNT} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public IoUringSocketChannelConfig setTcpKeepCnt(int probes) {
         try {
@@ -465,6 +484,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Set the {@code TCP_USER_TIMEOUT} option on the socket. See {@code man 7 tcp} for more details.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public IoUringSocketChannelConfig setTcpUserTimeout(int milliseconds) {
         try {
@@ -477,6 +497,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Returns {@code true} if <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_TRANSPARENT</a> is enabled,
+     * <p>是否启用 IP_TRANSPARENT 透明代理。</p>
      * {@code false} otherwise.
      */
     public boolean isIpTransparent() {
@@ -489,6 +510,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * If {@code true} is used <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_TRANSPARENT</a> is enabled,
+     * <p>启用或禁用 IP_TRANSPARENT；默认禁用。</p>
      * {@code false} for disable it. Default is disabled.
      */
     public IoUringSocketChannelConfig setIpTransparent(boolean transparent) {
@@ -517,6 +539,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
     /**
      * Set the {@code TCP_QUICKACK} option on the socket. See <a href="https://linux.die.net/man/7/tcp">TCP_QUICKACK</a>
      * for more details.
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public IoUringSocketChannelConfig setTcpQuickAck(boolean quickAck) {
         try {
@@ -529,6 +552,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Returns {@code true} if <a href="https://linux.die.net/man/7/tcp">TCP_QUICKACK</a> is enabled, {@code false}
+     * <p>TCP_QUICKACK 是否已启用。</p>
      * otherwise.
      */
     public boolean isTcpQuickAck() {
@@ -541,6 +565,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Enables client TCP fast open. See this <a href="https://lwn.net/Articles/508865/">LWN article</a> for more info.
+     * <p>启用客户端 TCP FastOpen 连接。</p>
      */
     public IoUringSocketChannelConfig setTcpFastOpenConnect(boolean fastOpenConnect) {
         this.tcpFastopen = fastOpenConnect;
@@ -549,6 +574,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
 
     /**
      * Returns {@code true} if {@code TCP_FASTOPEN_CONNECT} is enabled, {@code false} otherwise.
+     * <p>客户端 TCP FastOpen 是否已启用。</p>
      */
     public boolean isTcpFastOpenConnect() {
         return tcpFastopen;
@@ -649,7 +675,7 @@ final class IoUringSocketChannelConfig extends IoUringStreamChannelConfig implem
     }
 
     boolean shouldWriteZeroCopy(int amount) {
-        // This can reduce one read operation on a volatile field.
+        // 局部变量缓存阈值，减少 volatile 读取
         int threshold = this.getWriteZeroCopyThreshold();
         return threshold != DISABLE_WRITE_ZERO_COPY && amount >= threshold;
     }

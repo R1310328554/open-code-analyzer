@@ -24,11 +24,15 @@ import java.nio.ByteBuffer;
  *     size_t iov_len;     // Number of bytes to transfer
  * };
  * }</pre>
+ * <p>Linux {@code struct iovec} 的 ByteBuffer 读写辅助；用于 writev/recvmsg 等 SQE。</p>
+ * <p>根据 {@link Native#SIZEOF_SIZE_T} 选择 32/64 位 iov_base 与 iov_len 布局。</p>
  */
+/** iovec 字段编解码工具（堆外 ByteBuffer 布局与内核一致） */
 final class Iov {
 
     private Iov() { }
 
+    /** 写入 iov_base 与 iov_len 到 buffer 当前 position 处的 iovec 槽位 */
     static void set(ByteBuffer buffer, long bufferAddress, int length) {
         int position = buffer.position();
         if (Native.SIZEOF_SIZE_T == 4) {
@@ -41,6 +45,7 @@ final class Iov {
         }
     }
 
+    /** 从 iovec 读取 iov_base（缓冲区起始地址） */
     static long getBufferAddress(ByteBuffer iov) {
         if (Native.SIZEOF_SIZE_T == 4) {
             return iov.getInt(iov.position() + Native.IOVEC_OFFSETOF_IOV_BASE);
@@ -49,6 +54,7 @@ final class Iov {
         return iov.getLong(iov.position() + Native.IOVEC_OFFSETOF_IOV_BASE);
     }
 
+    /** 从 iovec 读取 iov_len（传输字节数） */
     static int getBufferLength(ByteBuffer iov) {
         if (Native.SIZEOF_SIZE_T == 4) {
             return iov.getInt(iov.position() + Native.IOVEC_OFFSETOF_IOV_LEN);

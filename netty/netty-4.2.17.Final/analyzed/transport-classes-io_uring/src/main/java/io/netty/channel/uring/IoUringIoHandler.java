@@ -50,15 +50,17 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * {@link IoHandler} which is implemented in terms of the Linux-specific {@code io_uring} API.
+ * <p>基于 Linux io_uring 的 {@link IoHandler}：管理 SQ/CQ、eventfd 唤醒、buffer ring 与 I/O 注册。</p>
  */
 public final class IoUringIoHandler implements IoHandler {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(IoUringIoHandler.class);
+    /** eventfd 唤醒门已关闭标志（销毁阶段防止向已关闭 fd 写入） */
     private static final int WAKEUP_CLOSED = 1 << 30;
 
     private final RingBuffer ringBuffer;
     private final IntObjectMap<IoUringBufferRing> registeredIoUringBufferRing;
     private final IntObjectMap<DefaultIoUringIoRegistration> registrations;
-    // The maximum number of bytes for an InetAddress / Inet6Address
+    // accept/connect 时编码 sockaddr 的临时字节数组长度
     private final byte[] inet4AddressArray = new byte[SockaddrIn.IPV4_ADDRESS_LENGTH];
     private final byte[] inet6AddressArray = new byte[SockaddrIn.IPV6_ADDRESS_LENGTH];
 
@@ -91,13 +93,13 @@ public final class IoUringIoHandler implements IoHandler {
     private final ThreadAwareExecutor executor;
 
     IoUringIoHandler(ThreadAwareExecutor executor, IoUringIoHandlerConfig config) {
-        // Ensure that we load all native bits as otherwise it may fail when try to use native methods in IovArray
+        // 预加载原生库，避免 IovArray 等 JNI 调用时类加载失败
         IoUring.ensureAvailability();
         this.executor = requireNonNull(executor, "executor");
         requireNonNull(config, "config");
         int setupFlags = Native.setupFlags(config.singleIssuer());
 
-        //The default cq size is always twice the ringSize.
+        // 默认 CQ 大小为 SQ 两倍；显式 setCqSize 时启用 IORING_SETUP_CQSIZE
         // It only makes sense when the user actually specifies the cq ring size.
         int cqSize = 2 * config.getRingSize();
         if (config.needSetupCqeSize()) {
@@ -151,7 +153,7 @@ public final class IoUringIoHandler implements IoHandler {
     @Override
     public void initialize() {
         ringBuffer.enable();
-        // Fill all buffer rings now.
+        // 初始化阶段预填所有已注册的 buffer ring
         for (IoUringBufferRing bufferRing : registeredIoUringBufferRing.values()) {
             bufferRing.initialize();
         }
@@ -174,7 +176,7 @@ public final class IoUringIoHandler implements IoHandler {
             long timeoutNanos = context.deadlineNanos() == -1 ? -1 : context.delayNanos(System.nanoTime());
             submitAndWaitWithTimeout(submissionQueue, false, timeoutNanos);
         } else {
-            // Even if we have some completions already pending we can still try to even fetch more.
+            // 已有 CQE 时仍可尝试提交 SQ 并拉取更多完成事件
             submitAndClearNow(submissionQueue);
         }
 
@@ -239,7 +241,7 @@ public final class IoUringIoHandler implements IoHandler {
 
         int submitted = submissionQueue.submitAndGetNow();
 
-        // Clear the iovArray as we can re-use it now as things are considered stable after submission:
+        // 提交后 iovArray/msgHdr 内容已稳定，可清空复用（见 io_uring_prep_sendmsg）
         // See https://man7.org/linux/man-pages/man3/io_uring_prep_sendmsg.3.html
         iovArray.clear();
         msgHdrMemoryArray.clear();
@@ -285,6 +287,7 @@ public final class IoUringIoHandler implements IoHandler {
         }
     }
 
+    /** CQE 分发：eventfd/ring 令牌走特殊路径，其余走 fast/slow registration 路径 */
     private boolean handle(int res, int flags, long udata, ByteBuffer extraCqeData) {
         try {
             if (udata == EVENTFD_TOKEN) {
@@ -334,7 +337,7 @@ public final class IoUringIoHandler implements IoHandler {
             byte op = pendingOps.op(slot);
             long userData = pendingOps.userData(slot);
 
-            // Recycle if this completion is terminal (no more CQEs expected for this SQE).
+            // 非 IORING_CQE_F_MORE 时回收 slow-path pending slot
             if ((flags & Native.IORING_CQE_F_MORE) == 0) {
                 pendingOps.release(slot);
             }
@@ -563,7 +566,7 @@ public final class IoUringIoHandler implements IoHandler {
     }
 
     private int nextRegistrationId() {
-        //registrationId must stay positive because id > 0
+        // registrationId 须为正，以与 EVENTFD/RINGFD 等特殊 token 区分
         //it is used to distinguish normal fast-path completions from non-registration tokens.
         int id = nextRegistrationId;
         nextRegistrationId = id == Integer.MAX_VALUE ? 1 : id + 1;
@@ -596,12 +599,12 @@ public final class IoUringIoHandler implements IoHandler {
                 return INVALID_ID;
             }
             if ((ioOps.flags() & Native.IOSQE_CQE_SKIP_SUCCESS) != 0) {
-                // Because we expect at least 1 completion per submission we can't support IOSQE_CQE_SKIP_SUCCESS
+                // 每提交至少需一次 CQE，不支持 IOSQE_CQE_SKIP_SUCCESS
                 // as it will only produce a completion on failure.
                 throw new IllegalArgumentException("IOSQE_CQE_SKIP_SUCCESS not supported");
             }
             long userData = ioOps.userData();
-            // Use the fast path when the full submission can still be encoded into packed UserData.
+            // userData 可压缩为 short 时走 fast path（id+op+data 打包进 udata）
             if (canUseFastPath(userData)) {
                 long packedSeq = UserData.encode(id, ioOps.opcode(), (short) userData);
                 if (executor.isExecutorThread(Thread.currentThread())) {
@@ -780,6 +783,7 @@ public final class IoUringIoHandler implements IoHandler {
 
     /**
      * {@code byte[]} that can be used as temporary storage to encode the ipv4 address
+     * <p>accept 解析 IPv4 sockaddr 时复用的临时缓冲区。</p>
      */
     byte[] inet4AddressArray() {
         return inet4AddressArray;
@@ -787,6 +791,7 @@ public final class IoUringIoHandler implements IoHandler {
 
     /**
      * {@code byte[]} that can be used as temporary storage to encode the ipv6 address
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     byte[] inet6AddressArray() {
         return inet6AddressArray;
@@ -796,6 +801,7 @@ public final class IoUringIoHandler implements IoHandler {
      * Create a new {@link IoHandlerFactory} that can be used to create {@link IoUringIoHandler}s.
      *
      * @return factory
+     * <p>使用默认 {@link IoUringIoHandlerConfig} 创建工厂。</p>
      */
     public static IoHandlerFactory newFactory() {
         return newFactory(new IoUringIoHandlerConfig());
@@ -807,6 +813,7 @@ public final class IoUringIoHandler implements IoHandler {
      *
      * @param  ringSize     the size of the ring.
      * @return              factory
+      * <p>Netty io_uring 传输 API；详见上方英文说明。</p>
      */
     public static IoHandlerFactory newFactory(int ringSize) {
         IoUringIoHandlerConfig configuration = new IoUringIoHandlerConfig();
@@ -819,6 +826,7 @@ public final class IoUringIoHandler implements IoHandler {
      * Each {@link IoUringIoHandler} will use same option
      * @param config the io_uring configuration
      * @return factory
+     * <p>按给定配置克隆 ring/CQ/worker/buffer ring 选项；singleIssuer 时不可换线程驱动。</p>
      */
     public static IoHandlerFactory newFactory(IoUringIoHandlerConfig config) {
         IoUring.ensureAvailability();

@@ -31,7 +31,12 @@ import java.util.Map;
 import static io.netty.channel.ChannelOption.TCP_FASTOPEN;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
+/**
+ * {@link IoUringServerSocketChannel} 的服务端套接字配置。
+ * <p>含 SO_BACKLOG、SO_REUSEPORT、IP_FREEBIND、TCP_DEFER_ACCEPT、TCP FastOpen 等 Linux 选项。</p>
+ */
 final class IoUringServerSocketChannelConfig extends IoUringChannelConfig implements ServerSocketChannelConfig {
+    /** listen  backlog 队列长度 */
     private volatile int backlog = NetUtil.SOMAXCONN;
     private volatile int pendingFastOpenRequestsThreshold;
 
@@ -223,6 +228,7 @@ final class IoUringServerSocketChannelConfig extends IoUringChannelConfig implem
 
     /**
      * Returns {@code true} if the SO_REUSEPORT option is set.
+     * <p>是否已设置 SO_REUSEPORT（多进程/线程同端口 accept）。</p>
      */
     public boolean isReusePort() {
         try {
@@ -239,6 +245,7 @@ final class IoUringServerSocketChannelConfig extends IoUringChannelConfig implem
      *
      * Be aware this method needs be called before
      * {@link io.netty.channel.socket.ServerSocketChannel#bind(java.net.SocketAddress)} to have any affect.
+     * <p>须在 bind 之前调用才生效。</p>
      */
     public IoUringServerSocketChannelConfig setReusePort(boolean reusePort) {
         try {
@@ -251,6 +258,7 @@ final class IoUringServerSocketChannelConfig extends IoUringChannelConfig implem
 
     /**
      * Returns {@code true} if <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_FREEBIND</a> is enabled,
+     * <p>是否启用 IP_TRANSPARENT 透明代理。</p>
      * {@code false} otherwise.
      */
     public boolean isFreeBind() {
@@ -263,6 +271,7 @@ final class IoUringServerSocketChannelConfig extends IoUringChannelConfig implem
 
     /**
      * If {@code true} is used <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_FREEBIND</a> is enabled,
+     * <p>启用或禁用 IP_TRANSPARENT；默认禁用。</p>
      * {@code false} for disable it. Default is disabled.
      */
     public IoUringServerSocketChannelConfig setFreeBind(boolean freeBind) {
@@ -276,6 +285,7 @@ final class IoUringServerSocketChannelConfig extends IoUringChannelConfig implem
 
     /**
      * Returns {@code true} if <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_TRANSPARENT</a> is enabled,
+     * <p>是否启用 IP_TRANSPARENT 透明代理。</p>
      * {@code false} otherwise.
      */
     public boolean isIpTransparent() {
@@ -288,6 +298,7 @@ final class IoUringServerSocketChannelConfig extends IoUringChannelConfig implem
 
     /**
      * If {@code true} is used <a href="https://man7.org/linux/man-pages/man7/ip.7.html">IP_TRANSPARENT</a> is enabled,
+     * <p>启用或禁用 IP_TRANSPARENT；默认禁用。</p>
      * {@code false} for disable it. Default is disabled.
      */
     public IoUringServerSocketChannelConfig setIpTransparent(boolean transparent) {
@@ -301,6 +312,7 @@ final class IoUringServerSocketChannelConfig extends IoUringChannelConfig implem
 
     /**
      * Set the {@code TCP_DEFER_ACCEPT} option on the socket. See {@code man 7 tcp} for more details.
+     * <p>设置 TCP_DEFER_ACCEPT（延迟 accept 直至客户端发送数据）。</p>
      */
     public IoUringServerSocketChannelConfig setTcpDeferAccept(int deferAccept) {
         try {
@@ -313,6 +325,7 @@ final class IoUringServerSocketChannelConfig extends IoUringChannelConfig implem
 
     /**
      * Returns a positive value if <a href="https://linux.die.net/man/7/tcp">TCP_DEFER_ACCEPT</a> is enabled.
+     * <p>TCP_DEFER_ACCEPT 已启用时返回正数。</p>
      */
     public int getTcpDeferAccept() {
         try {
@@ -324,6 +337,7 @@ final class IoUringServerSocketChannelConfig extends IoUringChannelConfig implem
 
     /**
      * Returns threshold value of number of pending for fast open connect.
+     * <p>返回 FastOpen 未完成请求阈值。</p>
      *
      * @see <a href="https://tools.ietf.org/html/rfc7413#appendix-A.2">RFC 7413 Passive Open</a>
      */
@@ -339,6 +353,7 @@ final class IoUringServerSocketChannelConfig extends IoUringChannelConfig implem
      * for security.
      *
      * @see <a href="https://tools.ietf.org/html/rfc7413#appendix-A.2">RFC 7413 Passive Open</a>
+     * <p>启用服务端 TCP FastOpen；listen 前设置；阈值为安全起见限制未完成 TFO 请求数。</p>
      */
     public IoUringServerSocketChannelConfig setTcpFastopen(int pendingFastOpenRequestsThreshold) {
         this.pendingFastOpenRequestsThreshold = checkPositiveOrZero(pendingFastOpenRequestsThreshold,

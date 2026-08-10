@@ -25,6 +25,7 @@ import java.util.Set;
 /**
  * Configuration class for an {@link IoUringIoHandler},
  * managing the settings for a {@link RingBuffer} and its io_uring file descriptor.
+ * <p>{@link IoUringIoHandler} 的配置：SQ/CQ 大小、iowq worker、buffer ring 与 SINGLE_ISSUER 等。</p>
  *
  * <h3>Option Map</h3>
  * These options are used exclusively during the initialization of the {@link IoUringIoHandler}
@@ -103,11 +104,13 @@ import java.util.Set;
 
 public final class IoUringIoHandlerConfig {
 
+    /** io_uring 提交队列（SQ）环大小，须为 2 的幂 */
     private int ringSize = IoUring.DEFAULT_RING_SIZE;
     private int cqSize = IoUring.DEFAULT_CQ_SIZE;
     private int maxBoundedWorker;
     private int maxUnboundedWorker;
     private Set<IoUringBufferRingConfig> bufferRingConfigs;
+    /** 是否启用 IORING_SETUP_SINGLE_ISSUER（单线程提交，性能更好） */
     private boolean singleIssuer = true;
 
     public IoUringIoHandlerConfig() { }
@@ -123,6 +126,7 @@ public final class IoUringIoHandlerConfig {
     /**
      * Return the ring size of the io_uring instance.
      * @return the ring size of the io_uring instance.
+     * <p>返回 SQ 环条目数（默认 4096）。</p>
      */
     public int getRingSize() {
         return ringSize;
@@ -130,6 +134,7 @@ public final class IoUringIoHandlerConfig {
 
     /**
      * Return the size of the io_uring cqe.
+     * <p>返回 CQ 大小。</p>
      * @return the cq size of the io_uring.
      */
     public int getCqSize() {
@@ -138,6 +143,7 @@ public final class IoUringIoHandlerConfig {
 
     /**
      * Return the maximum number of bounded iowq worker threads.
+     * <p>返回有界 iowq worker 上限。</p>
      * @return the maximum number of bounded iowq worker threads.
      */
     public int getMaxBoundedWorker() {
@@ -146,6 +152,7 @@ public final class IoUringIoHandlerConfig {
 
     /**
      * Return the maximum number of unbounded iowq worker threads.
+     * <p>返回无界 iowq worker 上限。</p>
      * @return the maximum number of unbounded iowq worker threads.
      */
     public int getMaxUnboundedWorker() {
@@ -156,6 +163,7 @@ public final class IoUringIoHandlerConfig {
      * Set the ring size of the io_uring instance.
      * @param ringSize the ring size of the io_uring instance.
      * @return reference to this, so the API can be used fluently
+     * <p>设置 SQ 大小；大批量并发提交时应适当增大。</p>
      */
     public IoUringIoHandlerConfig setRingSize(int ringSize) {
         this.ringSize = ObjectUtil.checkPositive(ringSize, "ringSize");
@@ -167,6 +175,7 @@ public final class IoUringIoHandlerConfig {
      * @param cqSize the size of the io_uring cqe.
      * @throws IllegalArgumentException if cqSize is less than ringSize, or not a power of 2
      * @return reference to this, so the API can be used fluently
+     * <p>设置 CQ 大小；multishot/高并发 CQE 场景建议显式配置。</p>
      */
     public IoUringIoHandlerConfig setCqSize(int cqSize) {
         ObjectUtil.checkPositive(cqSize, "cqSize");
@@ -188,6 +197,7 @@ public final class IoUringIoHandlerConfig {
 
     /**
      * Set the maximum number of bounded iowq worker threads.
+     * <p>设置有界 iowq worker 上限。</p>
      * @param maxBoundedWorker the maximum number of bounded iowq worker threads,
      *                         or 0 for the Linux kernel default
      * @return reference to this, so the API can be used fluently
@@ -199,6 +209,7 @@ public final class IoUringIoHandlerConfig {
 
     /**
      * Set the maximum number of unbounded iowq worker threads.
+     * <p>设置无界 iowq worker 上限。</p>
      * @param maxUnboundedWorker the maximum number of unbounded iowq worker threads,
      *                           of 0 for the Linux kernel default
      * @return reference to this, so the API can be used fluently
@@ -214,6 +225,7 @@ public final class IoUringIoHandlerConfig {
      *
      * @param ringConfig        the buffer ring configuration to append.
      * @return reference to this, so the API can be used fluently
+     * <p>注册 io_uring 接收 buffer ring；各配置的 bufferGroupId 须唯一。</p>
      */
     public IoUringIoHandlerConfig setBufferRingConfig(IoUringBufferRingConfig... ringConfig) {
         Set<IoUringBufferRingConfig> configSet = new HashSet<>(ringConfig.length);
@@ -236,6 +248,7 @@ public final class IoUringIoHandlerConfig {
      *
      * @param singleIssuer  {@code true} if {@code IORING_SETUP_SINGLE_ISSUER} should be used, {@code false} otherwise
      * @return reference to this, so the API can be used fluently
+     * <p>默认 true：仅允许单线程提交 SQE；false 可换驱动线程但牺牲性能。</p>
      */
     public IoUringIoHandlerConfig setSingleIssuer(boolean singleIssuer) {
         this.singleIssuer = singleIssuer;
@@ -244,6 +257,7 @@ public final class IoUringIoHandlerConfig {
 
     /**
      * Get the list of buffer ring configurations.
+     * <p>返回 buffer ring 配置副本。</p>
      * @return the copy of buffer ring configurations.
      */
     public List<IoUringBufferRingConfig> getBufferRingConfigs() {
@@ -267,7 +281,7 @@ public final class IoUringIoHandlerConfig {
     }
 
     IoUringIoHandlerConfig verifyAndClone() {
-        // Ensure that we load all native bits as otherwise it may fail when try to use native methods in IovArray
+        // 校验前确保原生库已加载并检查 CQSIZE/buffer ring 内核能力
         IoUring.ensureAvailability();
 
         if (needSetupCqeSize()) {

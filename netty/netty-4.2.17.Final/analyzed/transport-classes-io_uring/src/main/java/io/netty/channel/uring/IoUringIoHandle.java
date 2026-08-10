@@ -19,6 +19,7 @@ import io.netty.channel.IoHandle;
 
 /**
  * {@link IoHandle} implementation for io_uring.
+ * <p>io_uring 传输的 {@link IoHandle} 标记接口；通道实现此接口以注册到 {@link IoUringIoHandler}。</p>
  */
 public interface IoUringIoHandle extends IoHandle {
 

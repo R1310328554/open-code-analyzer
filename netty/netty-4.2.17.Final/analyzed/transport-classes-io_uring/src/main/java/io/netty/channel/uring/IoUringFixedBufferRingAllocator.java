@@ -22,8 +22,10 @@ import io.netty.util.internal.ObjectUtil;
 /**
  * {@link IoUringBufferRingAllocator} implementation which uses a fixed size for the buffers that are returned by
  * {@link #allocate()}.
+ * <p>固定 buffer 大小的 {@link IoUringBufferRingAllocator}；每次 {@link #allocate()} 返回相同容量。</p>
  */
 public final class IoUringFixedBufferRingAllocator extends AbstractIoUringBufferRingAllocator {
+    /** 环中每个 buffer 的固定字节容量 */
     private final int bufferSize;
 
     /**
@@ -34,6 +36,7 @@ public final class IoUringFixedBufferRingAllocator extends AbstractIoUringBuffer
      *                          and then slice out the buffers or {@code false} if we should do one allocation
      *                          per buffer.
      * @param bufferSize        the size of the buffers that are allocated.
+     * <p>指定分配器、大块/逐块分配策略与固定 buffer 大小。</p>
      */
     public IoUringFixedBufferRingAllocator(ByteBufAllocator allocator, boolean largeAllocation, int bufferSize) {
         super(allocator, largeAllocation);
@@ -45,6 +48,7 @@ public final class IoUringFixedBufferRingAllocator extends AbstractIoUringBuffer
      *
      * @param allocator     the {@link ByteBufAllocator} to use.
      * @param bufferSize    the size of the buffers that are allocated.
+     * <p>使用默认逐 buffer 分配策略。</p>
      */
     public IoUringFixedBufferRingAllocator(ByteBufAllocator allocator, int bufferSize) {
         this(allocator, false, bufferSize);
@@ -54,12 +58,14 @@ public final class IoUringFixedBufferRingAllocator extends AbstractIoUringBuffer
      * Create a new instance
      *
      * @param bufferSize    the size of the buffers that are allocated.
+     * <p>使用 {@link ByteBufAllocator#DEFAULT} 与逐 buffer 分配。</p>
      */
     public IoUringFixedBufferRingAllocator(int bufferSize) {
         this(ByteBufAllocator.DEFAULT, bufferSize);
     }
 
     @Override
+    /** 固定大小实现：始终返回 {@link #bufferSize} */
     protected int nextBufferSize() {
         return bufferSize;
     }

@@ -28,6 +28,10 @@ import java.io.File;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
+/**
+ * 基于 io_uring 的 Unix 域 {@link ServerDomainSocketChannel}。
+ * <p>bind 后 listen；关闭时尝试删除域套接字文件。</p>
+ */
 public final class IoUringServerDomainSocketChannel extends AbstractIoUringServerChannel
         implements ServerDomainSocketChannel {
 
@@ -36,6 +40,7 @@ public final class IoUringServerDomainSocketChannel extends AbstractIoUringServe
 
     private final IoUringServerSocketChannelConfig config;
 
+    /** 绑定后的本地域套接字路径 */
     private volatile DomainSocketAddress local;
 
     public IoUringServerDomainSocketChannel() {
@@ -45,7 +50,7 @@ public final class IoUringServerDomainSocketChannel extends AbstractIoUringServe
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (local != null) {
-                    // Delete the socket file if possible.
+                    // 通道关闭时删除域套接字文件
                     File socketFile = new File(local.path());
                     boolean success = socketFile.delete();
                     if (!success && logger.isDebugEnabled()) {
@@ -57,6 +62,7 @@ public final class IoUringServerDomainSocketChannel extends AbstractIoUringServe
     }
 
     @Override
+    /** accept 成功后创建 {@link IoUringDomainSocketChannel} 子通道 */
     Channel newChildChannel(int fd, ByteBuffer acceptedAddressMemory) throws Exception {
         return new IoUringDomainSocketChannel(this, new LinuxSocket(fd));
     }

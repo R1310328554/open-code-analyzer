@@ -20,6 +20,7 @@ import io.netty.channel.IoOps;
 /**
  * {@link IoOps} for implementation for
  * <a href="https://github.com/axboe/liburing/blob/liburing-2.8/src/include/liburing.h">Io_uring</a>.
+ * <p>不可变 {@code io_uring_sqe} 快照，由 {@link IoUringIoHandler} 入队到 SQ。</p>
  */
 public final class IoUringIoOps implements IoOps {
 
@@ -39,6 +40,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Create a new instance which represents the {@code io_uring_sqe} struct.
+     * <p>已废弃：userData 请使用 long 重载。</p>
      * @deprecated use
      * {@link #IoUringIoOps(byte, byte, short, int, long, long, int, int, long, short, short, int, long)} instead.
      */
@@ -50,6 +52,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Create a new instance which represents the {@code io_uring_sqe} struct.
+     * <p>创建新实例。</p>
      *
      * <pre>{@code
      *  struct io_uring_sqe {
@@ -193,6 +196,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Returns the data that is passed as part of this {@link IoUringIoOps}.
+     * <p>返回 SQE 附带的 userData。</p>
      *
      * @return  data.
      * @deprecated use {@link #userData()} instead.
@@ -249,6 +253,7 @@ public final class IoUringIoOps implements IoOps {
      *                  The value to use here is returned by {@link io.netty.channel.IoRegistration#submit(IoOps)}.
      * @param data      the data
      * @return          ops.
+     * <p>构造异步取消 SQE；userData 为先前 submit 返回的 token。</p>
      */
     static IoUringIoOps newAsyncCancel(byte flags, long userData, short data) {
         // Best effort to cancel the
@@ -259,6 +264,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Returns a new {@code OP_CLOSE} {@link IoUringIoOps}.
+     * <p>构造 IORING_OP_CLOSE SQE。</p>
      *
      * @param fd        the filedescriptor
      * @param flags     the flags.
@@ -273,6 +279,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Returns a new {@code OP_POLL_ADD} {@link IoUringIoOps}.
+     * <p>构造 IORING_OP_POLL_ADD SQE。</p>
      *
      * @param fd        the filedescriptor
      * @param flags     the flags.
@@ -289,6 +296,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Returns a new {@code OP_SENDMSG} {@link IoUringIoOps}.
+     * <p>构造 IORING_OP_SENDMSG SQE。</p>
      *
      * @param fd        the filedescriptor
      * @param flags     the flags.
@@ -304,6 +312,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Returns a new {@code OP_CONNECT} {@link IoUringIoOps}.
+     * <p>构造 IORING_OP_CONNECT SQE。</p>
      *
      * @param fd                    the filedescriptor
      * @param flags                 the flags.
@@ -322,6 +331,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Returns a new {@code OP_CONNECT} {@link IoUringIoOps}.
+     * <p>构造 IORING_OP_CONNECT SQE。</p>
      *
      * @param fd                    the filedescriptor
      * @param flags                 the flags.
@@ -338,6 +348,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Returns a new {@code OP_ACCEPT} {@link IoUringIoOps}.
+     * <p>构造 IORING_OP_ACCEPT SQE。</p>
      *
      * @param fd                                    the filedescriptor
      * @param flags                                 the flags.
@@ -358,6 +369,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Returns a new {@code OP_WRITEV} {@link IoUringIoOps}.
+     * <p>构造 IORING_OP_WRITEV SQE。</p>
      *
      * @param fd                                    the filedescriptor
      * @param flags                                 the flags.
@@ -376,6 +388,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Returns a new {@code OP_WRITE} {@link IoUringIoOps}.
+     * <p>构造 IORING_OP_WRITE SQE。</p>
      *
      * @param fd                                    the filedescriptor
      * @param flags                                 the flags.
@@ -403,6 +416,7 @@ public final class IoUringIoOps implements IoOps {
      * @param length                                the length of the buffer.
      * @param data                                  the data
      * @return                                      ops.
+     * <p>构造 IORING_OP_RECV；配合 buffer ring 时可传 bid。</p>
      */
     static IoUringIoOps newRecv(
             int fd, byte flags, short ioPrio, int recvFlags, long memoryAddress, int length, short data) {
@@ -431,6 +445,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Returns a new {@code OP_RECVMSG} {@link IoUringIoOps}.
+     * <p>构造 IORING_OP_RECVMSG SQE。</p>
      *
      * @param fd                                    the filedescriptor
      * @param flags                                 the flags.
@@ -448,6 +463,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Returns a new {@code OP_SEND} {@link IoUringIoOps}.
+     * <p>构造 IORING_OP_SEND SQE。</p>
      *
      * @param fd                                    the filedescriptor
      * @param flags                                 the flags.
@@ -466,6 +482,7 @@ public final class IoUringIoOps implements IoOps {
 
     /**
      * Returns a new {@code OP_SHUTDOWN} {@link IoUringIoOps}.
+     * <p>构造 IORING_OP_SHUTDOWN SQE。</p>
      *
      * @param fd                                    the filedescriptor
      * @param flags                                 the flags.
@@ -491,6 +508,7 @@ public final class IoUringIoOps implements IoOps {
      * @param splice_flags                              the flag
      * @param data                                      the data
      * @return                                          ops.
+     * <p>构造 splice 零拷贝 SQE，用于 FileRegion 等路径。</p>
      */
     static IoUringIoOps newSplice(int fd_in, long off_in,
                                          int fd_out, long off_out,

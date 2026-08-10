@@ -58,11 +58,15 @@ package io.netty.channel.uring;
  *      __u32   tcpi_total_retrans;
  * };
  * }</pre>
+ * <p>Linux {@code tcp_info} 结构体的 Java 视图，由 {@link LinuxSocket#getTcpInfo} 填充。</p>
+ * <p>各 {@code info[i]} 对应内核字段，供 RTT、拥塞窗口等诊断使用。</p>
  */
 public final class IoUringTcpInfo {
 
+    /** 与内核 tcp_info 字段一一对应的 32 个 long 槽位 */
     final long[] info = new long[32];
 
+    /** TCP 连接状态（tcpi_state） */
     public int state() {
         return (int) info[0];
     }
@@ -155,6 +159,7 @@ public final class IoUringTcpInfo {
         return info[22];
     }
 
+    /** 平滑 RTT（tcpi_rtt，微秒） */
     public long rtt() {
         return info[23];
     }
@@ -167,6 +172,7 @@ public final class IoUringTcpInfo {
         return info[25];
     }
 
+    /** 发送拥塞窗口（tcpi_snd_cwnd） */
     public long sndCwnd() {
         return info[26];
     }
@@ -187,6 +193,7 @@ public final class IoUringTcpInfo {
         return info[30];
     }
 
+    /** 累计重传次数（tcpi_total_retrans） */
     public long totalRetrans() {
         return info[31];
     }

@@ -22,13 +22,16 @@ import io.netty.channel.RecvByteBufAllocator;
 import io.netty.channel.unix.PreferredDirectByteBufAllocator;
 import io.netty.util.UncheckedBooleanSupplier;
 
+/**
+ * io_uring 接收字节分配器句柄：强制 direct buffer，并在有数据时持续读以批量处理 CQE。
+ * <p>POLLRDHUP 时继续 drain 直至读尽。</p>
+ */
 final class IoUringRecvByteAllocatorHandle extends RecvByteBufAllocator.DelegatingHandle
         implements RecvByteBufAllocator.ExtendedHandle {
     private final PreferredDirectByteBufAllocator preferredDirectByteBufAllocator =
             new PreferredDirectByteBufAllocator();
 
-    // We need to continue reading as long as we received something when using io_uring. Otherwise
-    // we will not be able to batch things in an efficient way.
+    // io_uring 下只要上次读到数据就应继续读，否则无法高效批量处理 CQE
     private final UncheckedBooleanSupplier defaultSupplier = () -> lastBytesRead() > 0;
 
     IoUringRecvByteAllocatorHandle(RecvByteBufAllocator.ExtendedHandle handle) {
@@ -52,20 +55,20 @@ final class IoUringRecvByteAllocatorHandle extends RecvByteBufAllocator.Delegati
 
     @Override
     public ByteBuf allocate(ByteBufAllocator alloc) {
-        // We need to ensure we always allocate a direct ByteBuf as we can only use a direct buffer to read via JNI.
+        // JNI 读路径仅支持 direct ByteBuf
         preferredDirectByteBufAllocator.updateAllocator(alloc);
         return delegate().allocate(preferredDirectByteBufAllocator);
     }
 
     @Override
     public boolean continueReading() {
-        // Ensure we use the our own supplier that will take care of reading data until there is nothing left.
+        // 使用默认 supplier：lastBytesRead>0 时继续读
         return continueReading(defaultSupplier);
     }
 
     @Override
     public boolean continueReading(UncheckedBooleanSupplier maybeMoreDataSupplier) {
-        // If we received an POLLRDHUP we need to continue draining the input until there is nothing left.
+        // 收到 POLLRDHUP 后须 drain 输入直至无数据
         return ((RecvByteBufAllocator.ExtendedHandle) delegate()).continueReading(maybeMoreDataSupplier)
                 || rdHupReceived;
     }

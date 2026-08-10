@@ -30,6 +30,10 @@ import java.util.Queue;
 
 import static io.netty.channel.unix.Errors.ioResult;
 
+/**
+ * 基于 io_uring 的 TCP {@link SocketChannel}。
+ * <p>支持 SEND_ZC/SENDMSG_ZC 零拷贝写及内核持有 buffer 时的延迟释放队列。</p>
+ */
 public final class IoUringSocketChannel extends AbstractIoUringStreamChannel implements SocketChannel {
     private final IoUringSocketChannelConfig config;
 
@@ -73,12 +77,13 @@ public final class IoUringSocketChannel extends AbstractIoUringStreamChannel imp
         return new IoUringSocketUnsafe();
     }
 
-    // Marker object that is used to mark a batch of buffers that were used with zero-copy write operations.
+    // 零拷贝写批次结束标记，zcWriteQueue 中分隔各批 buffer
     private static final Object ZC_BATCH_MARKER = new Object();
 
     private final class IoUringSocketUnsafe extends IoUringStreamUnsafe {
         /**
          * Queue that holds buffers that we can't release yet as the kernel still holds a reference to these.
+         * <p>内核仍引用时暂存 ByteBuf，收到 IORING_CQE_F_NOTIF 后 release。</p>
          */
         private Queue<Object> zcWriteQueue;
 
@@ -100,7 +105,7 @@ public final class IoUringSocketChannel extends AbstractIoUringStreamChannel imp
                     }
                     return 1;
                 }
-                // Should not use send_zc, just use normal write.
+                // 不满足阈值或类型时回退普通 write
             }
             return super.scheduleWriteSingle(msg);
         }
@@ -117,8 +122,7 @@ public final class IoUringSocketChannel extends AbstractIoUringStreamChannel imp
 
                 IovArray iovArray = handler.iovArray();
                 int offset = iovArray.count();
-                // Limit to the maximum number of fragments to ensure we don't get an error when we have too many
-                // buffers.
+                // 限制 iov 片段数不超过 MAX_SKB_FRAGS
                 iovArray.maxCount(Native.MAX_SKB_FRAGS);
                 try {
                     in.forEachFlushedMessage(new ChannelOutboundBuffer.MessageProcessor() {
@@ -194,7 +198,7 @@ public final class IoUringSocketChannel extends AbstractIoUringStreamChannel imp
                 // We only want to reset these if IORING_CQE_F_NOTIF is not set.
                 // If it's set we know this is only an extra notification for a write but we already handled
                 // the write completions before.
-                // See https://man7.org/linux/man-pages/man2/io_uring_enter.2.html section: IORING_OP_SEND_ZC
+                // IORING_CQE_F_NOTIF 表示内核已释放 buffer 引用，可安全 release
                 writeId = 0;
                 writeOpCode = 0;
 
@@ -228,7 +232,7 @@ public final class IoUringSocketChannel extends AbstractIoUringStreamChannel imp
                             }
                             res -= readable;
                         } while (res > 0);
-                        // Add the marker so we know when we need to stop releasing
+                        // 批次 marker：NOTIF 处理时释放到 marker 为止
                         zcWriteQueue.add(ZC_BATCH_MARKER);
                     } else {
                         // We don't expect any extra notification, just directly let the buffer be released.

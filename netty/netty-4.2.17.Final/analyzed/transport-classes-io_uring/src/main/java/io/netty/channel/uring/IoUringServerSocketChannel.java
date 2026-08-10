@@ -24,14 +24,15 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
+/**
+ * 基于 io_uring 的 TCP {@link ServerSocketChannel}。
+ * <p>通过 IORING_OP_ACCEPT 接受连接；支持 TCP FastOpen 等服务端选项。</p>
+ */
 public final class IoUringServerSocketChannel extends AbstractIoUringServerChannel implements ServerSocketChannel {
     private final IoUringServerSocketChannelConfig config;
 
     public IoUringServerSocketChannel() {
-        // We don't use a blocking fd for the server channel at the moment as
-        // there is no support for IORING_CQE_F_SOCK_NONEMPTY and IORING_ACCEPT_DONTWAIT
-        // at the moment. Once these land in the kernel we should check if we can use these and if so make
-        // the fd blocking to get rid of POLLIN etc.
+        // 内核尚不支持 SOCK_NONEMPTY/ACCEPT_DONTWAIT，服务端 fd 暂用非阻塞 + POLLIN
         // See:
         //
         //  - https://lore.kernel.org/netdev/20240509180627.204155-1-axboe@kernel.dk/
@@ -50,7 +51,7 @@ public final class IoUringServerSocketChannel extends AbstractIoUringServerChann
         IoUringIoHandler handler = registration().attachment();
         LinuxSocket socket = new LinuxSocket(fd);
         if (acceptedAddressMemory != null) {
-            // We didnt use ACCEPT_MULTISHOT And so can depend on the addresses.
+            // 非 multi-shot accept 时可从 CQE 缓冲区解析对端地址
             final InetSocketAddress address;
             if (socket.isIpv6()) {
                 byte[] ipv6Array = handler.inet6AddressArray();
