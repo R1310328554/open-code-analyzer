@@ -15,23 +15,8 @@
     "app/tools/tools.go",
     "app/tools/url_policy.go",
     "app/tools/web_fetch.go",
-    "app/tools/web_search.go",
-    "app/types/not/found.go",
-    "app/types/not/valids.go",
-    "app/ui/app.go",
-    "app/ui/app/codegen/gotypes.gen.ts",
-    "app/ui/app/eslint.config.js",
-    "app/ui/app/src/api.ts",
-    "app/ui/app/src/hooks/useChats.ts",
-    "app/ui/app/src/hooks/useCloudStatus.ts",
-    "app/ui/app/src/hooks/useDeleteChat.ts",
-    "app/ui/app/src/hooks/useFeaturedModels.ts",
-    "app/ui/app/src/hooks/useHealth.ts",
-    "app/ui/app/src/hooks/useMessageAutoscroll.ts",
-    "app/ui/app/src/hooks/useModelCapabilities.ts",
-    "app/ui/app/src/hooks/useModels.ts",
-    "app/ui/app/src/hooks/useQueryBatcher.ts"
+    "app/tools/web_search.go"
   ],
   "remaining_pending": 403,
-  "done": 30
+  "done": 45
 }
