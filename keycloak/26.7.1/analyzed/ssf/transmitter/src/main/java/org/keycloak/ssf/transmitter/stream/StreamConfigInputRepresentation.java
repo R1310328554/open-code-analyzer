@@ -6,19 +6,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Wire-format DTO for the request body of {@code POST /streams} (SSF spec
- * §8.1.1.2). Carries the receiver-writable subset of a stream configuration
- * plus nothing else: the transmitter generates {@code stream_id}, {@code iss},
- * {@code aud}, {@code events_supported}, {@code events_delivered} and the
- * Keycloak {@code kc_*} extensions itself, so those fields are intentionally
- * absent from the input type. Jackson's default
- * {@code FAIL_ON_UNKNOWN_PROPERTIES} behaviour rejects any such field with
- * 400 at bind time.
+ * {@code POST /streams}（SSF §8.1.1.2）请求体的 wire 格式 DTO。
+ * 仅携带接收方可写子集：{@code stream_id}、{@code iss}、{@code aud}、
+ * {@code events_supported}、{@code events_delivered} 及 Keycloak {@code kc_*} 扩展
+ * 由发送方生成，故刻意不在输入类型中出现。Jackson 默认 {@code FAIL_ON_UNKNOWN_PROPERTIES}
+ * 会在绑定阶段以 400 拒绝未知字段。
  *
- * <p>{@link StreamConfigUpdateRepresentation} extends this class and adds
- * {@code stream_id} so PATCH/PUT requests can identify the existing stream
- * they target — create requests must not carry a receiver-supplied
- * {@code stream_id}.
+ * <p>{@link StreamConfigUpdateRepresentation} 继承本类并添加 {@code stream_id}，
+ * 供 PATCH/PUT 定位已有流；创建请求 MUST NOT 携带接收方提供的 {@code stream_id}。</p>
  *
  * @see https://openid.github.io/sharedsignals/openid-sharedsignals-framework-1_0.html#section-8.1.1
  */
@@ -34,6 +29,8 @@ public class StreamConfigInputRepresentation {
     @JsonProperty("delivery")
     protected StreamDeliveryConfig delivery;
 
+    // ------------------------------------------------------------------
+    //  遗留 SSE CAEP 1.0 ID1 兼容字段
     // ------------------------------------------------------------------
     //  Legacy compatibility fields for SSE CAEP 1.0 ID1
     // See: https://openid.net/specs/openid-sse-framework-1_0.html#rfc.section.7.1.2

@@ -17,19 +17,15 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Represents a stream configuration in the SSF transmitter.
+ * SSF 发送方中的流配置表示，对应 OpenID Shared Signals Framework 规范。
  *
- * See: https://openid.net/specs/openid-sharedsignals-framework-1_0-final.html
+ * 参见：https://openid.net/specs/openid-sharedsignals-framework-1_0-final.html
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class StreamConfig {
 
-    /**
-     * Transmitter-Supplied, REQUIRED. A string that uniquely identifies the stream.
-     * A Transmitter MUST generate a unique ID for each of its non-deleted streams at the time of stream creation.
-     * Transmitters SHOULD use character set described in Section 2.3 of [RFC3986] to generate the stream ID
-     */
+    /** 发送方提供，必填。唯一标识流的字符串；创建时 MUST 生成唯一 ID（建议遵循 RFC3986 §2.3 字符集）。 */
     @JsonProperty("stream_id")
     protected String streamId;
 
@@ -172,9 +168,11 @@ public class StreamConfig {
     @JsonProperty("format")
     protected String format;
 
+    /** 接收方 SSF 配置文件（如 SSF_1_0、SSE_CAEP），不参与 JSON 序列化。 */
     @JsonIgnore
     protected SsfProfile profile;
 
+    /** 接收方客户端是否启用 SSF，内部门控用，不暴露于 wire。 */
     @JsonIgnore
     protected Boolean enabled;
 
@@ -264,14 +262,10 @@ public class StreamConfig {
     }
 
     /**
-     * Deep-ish copy constructor. Creates a draft snapshot that callers
-     * can mutate (merge receiver fields, re-derive poll endpoint URL,
-     * recompute {@code events_delivered}) without touching the stored
-     * instance. A validation failure on the draft leaves the stored
-     * config untouched. Mutable collections ({@code audience},
-     * {@code eventsSupported}, {@code eventsRequested},
-     * {@code eventsDelivered}) and the {@code delivery} sub-object are
-     * defensively copied; primitives and immutable strings are shared.
+     * 近似深拷贝构造函数。创建可变的草稿快照，供调用方合并接收方字段、
+     * 重新推导轮询端点 URL、重算 {@code events_delivered}，而不改动已存储实例。
+     * 草稿校验失败时已存配置不受影响。可变集合与 {@code delivery} 子对象防御性复制；
+     * 基本类型与不可变字符串共享引用。
      */
     public StreamConfig(StreamConfig other) {
         if (other == null) {

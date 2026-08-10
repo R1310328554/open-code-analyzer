@@ -7,11 +7,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Represents the delivery configuration for a stream.
+ * 流的投递配置，描述 SET 的投递方式（push/poll）、端点 URL 及鉴权头等。
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StreamDeliveryConfig {
 
+    /** 投递方法 URI（如 push、poll），对应 SSF §6.1。 */
     @JsonProperty("method")
     private String method;
 
@@ -28,10 +29,8 @@ public class StreamDeliveryConfig {
     }
 
     /**
-     * Shallow-ish copy constructor used by {@link StreamConfig#StreamConfig(StreamConfig)}
-     * so a draft delivery config can be mutated (e.g. by
-     * {@code finalizePollEndpointUrlIfApplicable}) without touching the
-     * stored instance.
+     * 浅拷贝构造函数，供 {@link StreamConfig#StreamConfig(StreamConfig)} 使用，
+     * 使草稿投递配置可在不改动已存实例的情况下被修改（例如 {@code finalizePollEndpointUrlIfApplicable}）。
      */
     public StreamDeliveryConfig(StreamDeliveryConfig other) {
         if (other == null) {

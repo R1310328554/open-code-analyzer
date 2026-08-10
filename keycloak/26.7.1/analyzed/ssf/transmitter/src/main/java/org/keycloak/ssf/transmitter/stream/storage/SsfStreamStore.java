@@ -10,14 +10,14 @@ import org.keycloak.ssf.transmitter.stream.StreamConfig;
 import org.keycloak.ssf.transmitter.stream.StreamVerificationConfig;
 
 /**
- * Interface for storing and retrieving SSF stream configurations.
+ * SSF 流配置的存储与检索接口，抽象持久化层（客户端属性等）。
  */
 public interface SsfStreamStore {
 
     /**
-     * Saves a stream configuration.
+     * 持久化流配置。
      *
-     * @param streamConfig The stream configuration to save
+     * @param streamConfig 待保存的流配置
      */
     void saveStream(StreamConfig streamConfig);
 
@@ -39,10 +39,10 @@ public interface SsfStreamStore {
     StreamStatus getStreamStatus(String streamId);
 
     /**
-     * Gets a stream configuration by ID.
+     * 按流 ID 获取配置。
      *
-     * @param streamId The stream ID
-     * @return The stream configuration, or null if not found
+     * @param streamId 流 ID
+     * @return 流配置，未找到返回 null
      */
     StreamConfig getStream(String streamId);
 
@@ -54,28 +54,16 @@ public interface SsfStreamStore {
     List<StreamConfig> getAvailableStreams(ClientModel receiverClient);
 
     /**
-     * Returns every stream configuration eligible for event delivery —
-     * i.e. attached to a client that is an <em>enabled</em> SSF receiver.
-     * Implementations MUST exclude both clients that are not configured as
-     * SSF receivers and receivers whose client is disabled, so the
-     * transmitter stops delivering to a receiver the operator has switched
-     * off — the per-client counterpart to the realm-level transmitter
-     * disable.
+     * 返回符合事件投递条件的全部流配置——即绑定到<em>已启用</em> SSF 接收方客户端的流。
+     * 实现 MUST 排除未配置为 SSF 接收方或客户端已禁用的接收方。
      *
-     * <p>This is the dispatch-enumeration entry point and is deliberately
-     * stricter than the management lookups ({@link #getStream} /
-     * {@link #getAvailableStreams}), which resolve a disabled client's
-     * stream so admin flows can still read and delete it.
+     * <p>此为分发枚举入口，比 {@link #getStream}/{@link #getAvailableStreams} 更严格；
+     * 后者仍解析已禁用客户端的流以供管理端读写/删除。</p>
      *
-     * <p>This does <strong>not</strong> filter by per-stream
-     * {@code StreamStatusValue} — a stream owned by an eligible client is
-     * returned regardless of whether it is {@code enabled}, {@code paused},
-     * or {@code disabled}; the dispatcher applies the per-stream status
-     * filter in {@code SecurityEventTokenDispatcher#dispatchEvent} before
-     * actually delivering an event.
+     * <p>不按单流 {@code StreamStatusValue} 过滤——分发器在
+     * {@code SecurityEventTokenDispatcher#dispatchEvent} 中应用 per-stream 状态门控。</p>
      *
-     * <p>Used when there is no specific client context on the session, e.g.
-     * when the event listener fans an event out to all receivers.
+     * <p>用于 session 无特定客户端上下文时（例如事件监听器向所有接收方扇出）。</p>
      */
     List<StreamConfig> findStreamsForSsfReceiverClients();
 

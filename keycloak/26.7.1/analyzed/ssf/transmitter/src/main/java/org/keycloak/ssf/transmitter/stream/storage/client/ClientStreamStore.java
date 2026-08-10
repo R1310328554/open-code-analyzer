@@ -33,11 +33,15 @@ import org.keycloak.vault.VaultStringSecret;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 基于客户端属性的 SSF 流存储实现：将流状态拆分为多个 {@code ssf.stream.*} 属性，
+ * 接收方级配置（如 {@code ssf.profile}）在流删除后仍保留。
+ */
 public class ClientStreamStore implements SsfStreamStore {
 
     protected static final Logger log = Logger.getLogger(ClientStreamStore.class);
 
-    // ----- Receiver-level configuration (survives stream delete) -------------
+    // ----- 接收方级配置（流删除后仍保留） ----------------------------------------
     public static final String SSF_ENABLED_KEY = SsfUtil.SSF_ENABLED_KEY;
     public static final String SSF_PROFILE_KEY = "ssf.profile";
     public static final String SSF_AUTO_VERIFY_STREAM_KEY = "ssf.autoVerifyStream";
@@ -47,26 +51,13 @@ public class ClientStreamStore implements SsfStreamStore {
     public static final String SSF_STREAM_SUPPORTED_EVENTS_KEY = "ssf.supportedEvents";
 
     /**
-     * Subset of {@link #SSF_STREAM_SUPPORTED_EVENTS_KEY} that the
-     * native event listener will <em>not</em> auto-emit for this
-     * receiver. The event types stay in the supported set (so a
-     * receiver can still accept them on the wire and an admin can
-     * still fire them) but Keycloak's automatic mapping in
-     * {@link org.keycloak.ssf.transmitter.event.SsfTransmitterEventListener}
-     * skips them — they only flow through the synthetic-emit endpoint.
+     * {@link #SSF_STREAM_SUPPORTED_EVENTS_KEY} 的子集：原生事件监听器<em>不会</em>为此接收方自动 emit。
+     * 事件类型仍在支持集合中，但 {@link org.keycloak.ssf.transmitter.event.SsfTransmitterEventListener}
+     * 的自动映射会跳过——仅能通过合成 emit 端点触发。
      *
-     * <p>Use case: an SSF receiver advertises {@code CaepSessionRevoked}
-     * (Apple School Manager devices need to honour it when fired) but
-     * the operator doesn't want every Keycloak-side application logout
-     * to translate to a device-level revoke. Adding {@code CaepSessionRevoked}
-     * here disables auto-emit while keeping the synthetic-emit path
-     * available for the events that should actually trigger a revoke
-     * (e.g. an admin-issued logout via a custom integration that calls
-     * the emit endpoint).
+     * <p>典型场景：接收方声明 {@code CaepSessionRevoked}，但操作员不希望每次应用登出都触发设备级撤销。</p>
      *
-     * <p>Stored as a comma-separated alias list, same shape as
-     * {@link #SSF_STREAM_SUPPORTED_EVENTS_KEY}. Empty/absent =
-     * everything supported is auto-emitted (current default behaviour).
+     * <p>以逗号分隔别名存储；空/缺失表示支持的事件均自动 emit（默认行为）。</p>
      */
     public static final String SSF_EMIT_ONLY_EVENTS_KEY = "ssf.emitOnlyEvents";
     public static final String SSF_PUSH_ENDPOINT_CONNECT_TIMEOUT_MILLIS_KEY = "ssf.pushEndpointConnectTimeoutMillis";
@@ -156,7 +147,7 @@ public class ClientStreamStore implements SsfStreamStore {
      */
     public static final String SSF_LAST_ACTIVITY_TIMESLOT_KEY = "ssf.stream.lastActivityTimeslot";
 
-    // ----- Per-stream state (cleared on stream delete) -----------------------
+    // ----- 单流状态（流删除时清除） -------------------------------------------
     public static final String SSF_STREAM_ID_KEY = "ssf.stream.id";
     public static final String SSF_STATUS_KEY = "ssf.stream.status";
     public static final String SSF_STATUS_REASON_KEY = "ssf.stream.statusReason";
@@ -427,9 +418,8 @@ public class ClientStreamStore implements SsfStreamStore {
     }
 
     /**
-     * Removes the SSF stream registration (and all associated attributes) from
-     * the given client. Returns {@code true} if a stream existed and was
-     * removed, {@code false} if no stream was registered for the client.
+     * 从给定客户端移除 SSF 流注册及全部关联属性。
+     * 存在并已移除返回 {@code true}，无注册流返回 {@code false}。
      */
     public boolean deleteStreamForClient(ClientModel client) {
         StreamConfig streamConfig = extractStreamConfig(client);

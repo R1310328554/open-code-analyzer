@@ -3,19 +3,16 @@ package org.keycloak.ssf.transmitter.stream;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Wire-format DTO for the request body of {@code PATCH /streams} (SSF spec
- * §8.1.1.3, merge semantics) and {@code PUT /streams} (§8.1.1.4, replace
- * semantics).
+ * {@code PATCH /streams}（SSF §8.1.1.3 合并语义）与 {@code PUT /streams}
+ *（§8.1.1.4 替换语义）请求体的 wire 格式 DTO。
  *
- * <p>Adds {@code stream_id} to {@link StreamConfigInputRepresentation} so
- * the caller can identify the existing stream to update. Everything else —
- * the receiver-writable fields and the {@code mergeInto}/{@code replaceInto}
- * helpers — is inherited from {@link StreamConfigInputRepresentation}.
- * Transmitter-controlled fields are absent by design; Jackson rejects them
- * at bind time with 400 via {@code FAIL_ON_UNKNOWN_PROPERTIES}.
+ * <p>在 {@link StreamConfigInputRepresentation} 基础上添加 {@code stream_id}，
+ * 供调用方标识待更新流。其余接收方可写字段均继承自父类。
+ * 发送方控制字段刻意缺失；Jackson 通过 {@code FAIL_ON_UNKNOWN_PROPERTIES} 在绑定时返回 400。</p>
  */
 public class StreamConfigUpdateRepresentation extends StreamConfigInputRepresentation {
 
+    /** 待更新/替换的目标流 ID。 */
     @JsonProperty("stream_id")
     protected String streamId;
 

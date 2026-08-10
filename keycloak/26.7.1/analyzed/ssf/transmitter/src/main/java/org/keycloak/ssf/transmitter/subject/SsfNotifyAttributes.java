@@ -14,19 +14,16 @@ import org.keycloak.organization.OrganizationProvider;
 import org.keycloak.organization.utils.Organizations;
 
 /**
- * Helpers for reading and writing the {@code ssf.notify.<clientId>}
- * user / organization attribute that controls per-stream subject
- * subscription filtering.
+ * 读写 {@code ssf.notify.<clientId>} 用户/组织属性的辅助类，
+ * 控制 per-stream 主体订阅过滤（纳入/排除/移除墓碑）。
  */
 public final class SsfNotifyAttributes {
 
     public static final String ATTRIBUTE_PREFIX = "ssf.notify.";
     /**
-     * Tombstone attribute prefix written when a subject is removed
-     * from a stream. Stores the epoch-second at which the removal
-     * happened so the dispatcher can keep delivering events for the
-     * spec-recommended grace window (SSF 1.0 §9.3 — "Malicious Subject
-     * Removal" defense). Cleared on re-add or explicit exclude.
+     * 主体从流移除时写入的墓碑属性前缀，记录移除时刻的 epoch 秒，
+     * 供分发器在规范建议的宽限期（SSF 1.0 §9.3 恶意主体移除防御）内继续投递。
+     * 重新纳入或显式排除时清除。
      */
     public static final String REMOVED_AT_PREFIX = "ssf.notifyRemovedAt.";
 
@@ -55,7 +52,7 @@ public final class SsfNotifyAttributes {
         return REMOVED_AT_PREFIX + clientId;
     }
 
-    // -- user --
+    // -- 用户 --
 
     public static void setForUser(UserModel user, String clientId) {
         String attributeKey = attributeKey(clientId);

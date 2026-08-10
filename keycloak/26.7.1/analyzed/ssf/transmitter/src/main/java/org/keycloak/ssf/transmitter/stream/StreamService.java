@@ -51,18 +51,17 @@ import org.keycloak.utils.KeycloakSessionUtil;
 import org.jboss.logging.Logger;
 
 /**
- * Service for managing SSF streams.
+ * SSF 流管理服务：负责流的创建、更新、替换、删除、状态变更及校验逻辑。
+ * 实现 SSF §8.1 规范中的接收方与管理端流生命周期操作。
  */
 public class StreamService {
 
     protected static final Logger log = Logger.getLogger(StreamService.class);
 
     /**
-     * Length caps for receiver-supplied fields on {@code /streams}
-     * POST/PATCH/PUT. Chosen so that even a maximally-populated stream fits
-     * inside the client attribute value column with a safety margin — see
-     * {@link ClientStreamStore#MAX_STREAM_CONFIG_JSON_BYTES} for the overall
-     * total-size guard. Violations produce {@link SsfException} → HTTP 400.
+     * {@code /streams} POST/PATCH/PUT 上接收方字段的长度上限。
+     * 确保即使字段填满的流也能写入客户端属性列并留有余量——总体大小另见
+     * {@link ClientStreamStore#MAX_STREAM_CONFIG_JSON_BYTES}。违规抛出 {@link SsfException} → HTTP 400。
      */
     protected static final int MAX_DESCRIPTION_LENGTH = 255;
     protected static final int MAX_EVENTS_REQUESTED_COUNT = 32;
@@ -100,18 +99,12 @@ public class StreamService {
     }
 
     /**
-     * Creates a new stream from a receiver-supplied {@link StreamConfigInputRepresentation}
-     * request body (SSF spec §8.1.1.2).
+     * 根据接收方提供的 {@link StreamConfigInputRepresentation} 请求体（SSF §8.1.1.2）创建新流。
      *
-     * <p>Transmitter-controlled fields ({@code stream_id}, {@code iss},
-     * {@code aud}, {@code events_supported}, {@code events_delivered}, the
-     * {@code kc_*} extensions, …) are computed here and are intentionally
-     * absent from {@link StreamConfigUpdateRepresentation}/{@link StreamConfigInputRepresentation} so a
-     * receiver cannot supply them over the wire: Jackson rejects unknown
-     * fields with 400 at bind time.
+     * <p>发送方控制字段在此计算，刻意不在输入 DTO 中出现；Jackson 对未知字段返回 400。</p>
      *
-     * @param input The receiver-supplied create request.
-     * @return The created stream configuration.
+     * @param input 接收方创建请求
+     * @return 已创建的流配置
      */
     public StreamConfig createStream(StreamConfigInputRepresentation input, ClientModel receiverClient) {
         return createStream(receiverClient, input, false);
@@ -810,10 +803,10 @@ public class StreamService {
     }
 
     /**
-     * Gets a stream by ID.
+     * 按 ID 获取流配置。
      *
-     * @param streamId The stream ID
-     * @return The stream configuration, or null if not found
+     * @param streamId 流 ID
+     * @return 流配置，未找到时返回 null
      */
     public StreamConfig getStream(String streamId) {
         return streamStore.getStream(streamId);
@@ -1282,10 +1275,10 @@ public class StreamService {
     }
 
     /**
-     * Deletes a stream.
+     * 删除指定流，并级联清理关联的发件箱行。
      *
-     * @param streamId The stream ID
-     * @return true if the stream was deleted, false if not found
+     * @param streamId 流 ID
+     * @return 删除成功返回 true，未找到返回 false
      */
     public boolean deleteStream(String streamId) {
         StreamConfig existingStream = streamStore.getStream(streamId);

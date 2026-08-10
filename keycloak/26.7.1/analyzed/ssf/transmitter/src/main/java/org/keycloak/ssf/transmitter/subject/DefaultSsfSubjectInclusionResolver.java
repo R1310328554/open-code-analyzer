@@ -5,13 +5,11 @@ import org.keycloak.models.OrganizationModel;
 import org.keycloak.models.UserModel;
 
 /**
- * Stateless default {@link SsfSubjectInclusionResolver} that delegates
- * to the {@link SsfNotifyAttributes} static helpers — i.e. reads the
- * {@code ssf.notify.<receiverClientId>} attribute on the user / org.
+ * 无状态默认 {@link SsfSubjectInclusionResolver}，委托 {@link SsfNotifyAttributes}
+ * 静态辅助方法——即读取用户/组织上的 {@code ssf.notify.<receiverClientId>} 属性。
  *
- * <p>Subclass and override individual methods to layer additional
- * inclusion sources on top of the attribute check (typically with
- * {@code super.isXxx(...) || extraCheck(...)}).
+ * <p>可子类化并重写个别方法，在属性检查之上叠加额外纳入来源
+ * （通常 {@code super.isXxx(...) || extraCheck(...)}）。</p>
  */
 public class DefaultSsfSubjectInclusionResolver implements SsfSubjectInclusionResolver {
 

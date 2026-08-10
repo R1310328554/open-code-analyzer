@@ -13,7 +13,8 @@ import org.keycloak.ssf.transmitter.stream.storage.SsfStreamStore;
 import org.jboss.logging.Logger;
 
 /**
- * Service for handling SSF stream verification.
+ * SSF 流验证服务：生成并同步投递 stream-verification SET，
+ * 统一处理接收方、管理员与发送方自动触发的验证路径。
  */
 public class StreamVerificationService {
 
@@ -54,21 +55,15 @@ public class StreamVerificationService {
     }
 
     /**
-     * Triggers a verification event for a stream.
+     * 为指定流触发验证事件。
      *
-     * <p>Serves as the single centralized entry point for all verification
-     * flows — receiver-initiated (via {@code POST /streams/verify}),
-     * admin-initiated (via the SSF admin resource), and transmitter-initiated
-     * automatic post-create dispatch. Stamps {@code ssf.stream.lastVerifiedAt}
-     * on the receiver client for the explicit paths (receiver / admin)
-     * only — transmitter-initiated auto-fires are skipped so they do not
-     * consume the {@code min_verification_interval} rate-limit window.
+     * <p>所有验证流程的集中入口——接收方 {@code POST /streams/verify}、管理端资源、
+     * 以及发送方创建后自动派发。仅显式路径（接收方/管理员）写入
+     * {@code ssf.stream.lastVerifiedAt}；发送方自动触发不占用 {@code min_verification_interval} 限流窗口。</p>
      *
-     * @param verificationRequest The verification request
-     * @param initiator           Which entry point invoked this dispatch — used
-     *                            as the {@code initiator} label on
-     *                            {@code keycloak.ssf.verification.requests}.
-     * @return true if the verification was triggered, false if the stream was not found
+     * @param verificationRequest 验证请求
+     * @param initiator           触发来源，用作指标 {@code keycloak.ssf.verification.requests} 的 initiator 标签
+     * @return 验证已触发返回 true，流不存在返回 false
      */
     public boolean triggerVerification(StreamVerificationRequest verificationRequest,
                                        SsfMetricsBinder.VerificationInitiator initiator) {
