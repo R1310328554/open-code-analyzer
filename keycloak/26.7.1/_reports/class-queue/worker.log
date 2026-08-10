@@ -2143,3 +2143,18 @@
 2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/Import.java wave73b quarkus CLI commands
 2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/ImportRealmMixin.java wave73b quarkus CLI commands
 2026-08-10T09:05:15Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/Main.java wave73b quarkus CLI commands
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/KeycloakMain.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/KeycloakRecorder.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/Messages.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/Providers.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/QuarkusProfileConfigResolver.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/QuarkusSingleProfileConfigResolver.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/ExecutionExceptionHandler.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/Help.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/HelpFactory.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/OptionRenderer.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/Picocli.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/PropertyException.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/ShortErrorMessageHandler.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/SubCommandListRenderer.java wave73a quarkus runtime + CLI helpers
+2026-08-10T09:06:37Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/AbstractAutoBuildCommand.java wave73a quarkus runtime + CLI helpers

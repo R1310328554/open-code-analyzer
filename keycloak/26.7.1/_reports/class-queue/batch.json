@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T09:03:32Z",
-  "files": [
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/KeycloakMain.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/KeycloakRecorder.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/Messages.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/Providers.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/QuarkusProfileConfigResolver.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/QuarkusSingleProfileConfigResolver.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/ExecutionExceptionHandler.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/Help.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/HelpFactory.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/OptionRenderer.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/Picocli.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/PropertyException.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/ShortErrorMessageHandler.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/SubCommandListRenderer.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/cli/command/AbstractAutoBuildCommand.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3808,
-  "done": 2175
+  "done": 2190
 }
