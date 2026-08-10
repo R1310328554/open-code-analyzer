@@ -1,5 +1,7 @@
 package mempool
 
+// mempool 包 MemPool 将固定总量内存划分为多档 slab，每档通过带缓冲 channel 借还 []byte，耗尽时 Get 阻塞直至 Put 归还。
+
 import (
 	"fmt"
 	"sync"
@@ -64,6 +66,7 @@ func (s *slab) put(buf []byte) {
 	s.buffer <- buf
 }
 
+// MemPool 实现 Allocator；未归还缓冲会导致 channel 耗尽并阻塞后续 Get。
 // MemPool is an Allocator implementation that uses a fixed size memory pool
 // that is split into multiple slabs of different buffer sizes.
 // Buffers are re-cycled and need to be returned back to the pool, otherwise
@@ -84,6 +87,7 @@ func New(name string, buckets []Bucket, r prometheus.Registerer) *MemPool {
 	return a
 }
 
+// Get 选择首个 size 足够的 slab；超出最大档则递增 size-exceeded 错误计数。
 // Get satisfies Allocator interface
 // Allocating a buffer from an exhausted pool/slab, or allocating a buffer that
 // exceeds the largest slab size will return an error.
@@ -98,6 +102,7 @@ func (a *MemPool) Get(size int) ([]byte, error) {
 	return nil, fmt.Errorf("no slab found for size: %d", size)
 }
 
+// Put 按 cap(buffer) 匹配 slab；归还时不清零内存，依赖固定宽度覆写保证安全。
 // Put satisfies Allocator interface
 // Every buffer allocated with Get(size int) needs to be returned to the pool
 // using Put(buffer []byte) so it can be re-cycled.
@@ -112,3 +117,4 @@ func (a *MemPool) Put(buffer []byte) bool {
 	}
 	return false
 }
+// wait_duration_seconds 记录 channel 取缓冲阻塞时间，用于诊断池容量不足。

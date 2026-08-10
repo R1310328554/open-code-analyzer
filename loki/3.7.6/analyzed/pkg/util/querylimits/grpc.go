@@ -1,5 +1,7 @@
 package querylimits
 
+// querylimits 包 grpc 子模块通过 metadata 在 gRPC 链路透传 QueryLimits：客户端拦截器注入，服务端拦截器解析并写回 context。
+
 import (
 	"context"
 
@@ -12,6 +14,7 @@ const (
 	lowerQueryLimitsContextHeaderName = "x-loki-query-limits-context"
 )
 
+// injectIntoGRPCRequest 序列化 limits 与 limitsContext 到 x-loki-query-limits 头。
 func injectIntoGRPCRequest(ctx context.Context) (context.Context, error) {
 	// inject into GRPC metadata
 	md, ok := metadata.FromOutgoingContext(ctx)
@@ -42,6 +45,7 @@ func injectIntoGRPCRequest(ctx context.Context) (context.Context, error) {
 	return newCtx, nil
 }
 
+// ClientQueryLimitsInterceptor 为一元 RPC 包装 inject 后再调用 invoker。
 func ClientQueryLimitsInterceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	ctx, err := injectIntoGRPCRequest(ctx)
 	if err != nil {
@@ -60,6 +64,7 @@ func StreamClientQueryLimitsInterceptor(ctx context.Context, desc *grpc.StreamDe
 	return streamer(ctx, desc, cc, method, opts...)
 }
 
+// extractFromGRPCRequest 从入站 metadata 取首值反序列化，无头则原样返回 ctx。
 func extractFromGRPCRequest(ctx context.Context) (context.Context, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -112,6 +117,7 @@ func StreamServerQueryLimitsInterceptor(srv interface{}, ss grpc.ServerStream, _
 	})
 }
 
+// serverStream 包装 grpc.ServerStream，Context 返回注入 limits 后的 ctx。
 type serverStream struct {
 	ctx context.Context
 	grpc.ServerStream
@@ -120,3 +126,4 @@ type serverStream struct {
 func (ss serverStream) Context() context.Context {
 	return ss.ctx
 }
+// 流式 Server/Client 拦截器与一元版本共享 inject/extract，保证跨 hop 限额一致。

@@ -1,16 +1,20 @@
 package pool
 
+// pool 包 BufferPool 提供按尺寸分桶的 bytes.Buffer 对象池：minSize 至 maxSize 按 factor 几何递增，Get 时 Reset 后复用底层 cap。
+
 import (
 	"bytes"
 	"sync"
 )
 
+// BufferPool 每桶独立 sync.Pool，Put 时按 Cap 归入首个足够大的桶。
 // BufferPool is a bucketed pool for variably bytes buffers.
 type BufferPool struct {
 	buckets []sync.Pool
 	sizes   []int
 }
 
+// NewBuffer 参数非法时 panic；sizes 切片记录各桶容量上界供 Get/Put 匹配。
 // NewBuffer a new Pool with size buckets for minSize to maxSize
 // increasing by the given factor.
 func NewBuffer(minSize, maxSize int, factor float64) *BufferPool {
@@ -36,6 +40,7 @@ func NewBuffer(minSize, maxSize int, factor float64) *BufferPool {
 	}
 }
 
+// Get 找不到合适桶时直接分配 cap=sz 的新 Buffer，超大缓冲不入池。
 // Get returns a byte buffer that fits the given size.
 func (p *BufferPool) Get(sz int) *bytes.Buffer {
 	for i, bktSize := range p.sizes {
@@ -67,3 +72,4 @@ func (p *BufferPool) Put(s *bytes.Buffer) {
 		return
 	}
 }
+// Put 对 nil 缓冲 no-op；超过 maxSize 的 Buffer 丢弃不复用，防止池无限膨胀。

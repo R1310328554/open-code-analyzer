@@ -1,5 +1,7 @@
 package mempool
 
+// mempool 包 bucket 子类型描述内存池 slab 配置：Size 为缓冲个数，Capacity 为单块字节容量，支持人类可读字符串解析。
+
 import (
 	"errors"
 	"fmt"
@@ -40,6 +42,7 @@ func (b Bucket) String() string {
 	return fmt.Sprintf("%dx%s", b.Size, datasize.ByteSize(b.Capacity).String())
 }
 
+// Buckets 为多个 slab 的切片，String 输出逗号分隔便于日志与 flag 展示。
 type Buckets []Bucket
 
 func (b Buckets) String() string {
@@ -49,3 +52,4 @@ func (b Buckets) String() string {
 	}
 	return strings.Join(s, ",")
 }
+// Parse 容量解析失败时会 panic，调用方应在配置加载阶段提前校验格式。

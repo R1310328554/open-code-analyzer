@@ -1,5 +1,7 @@
 package mempool
 
+// mempool 内部 metrics 结构注册 slab 级 Prometheus 指标：可用缓冲数、错误计数、访问次数与等待时长直方图。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -14,6 +16,7 @@ type metrics struct {
 	waitDuration            *prometheus.HistogramVec
 }
 
+// opTypeGet/opTypePut 作为 accesses_total 的 op 标签值区分借还与归还。
 const (
 	opTypeGet = "get"
 	opTypePut = "put"
@@ -51,3 +54,4 @@ func newMetrics(r prometheus.Registerer, name string) *metrics {
 		}, []string{"slab"}),
 	}
 }
+// 指标 namespace 固定为 constants.Loki，subsystem 为 mempool 便于 Grafana 面板分组。

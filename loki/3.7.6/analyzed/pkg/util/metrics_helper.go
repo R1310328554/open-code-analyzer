@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util 包 metrics_helper 聚合多租户 Prometheus 注册表指标：将 Gather 输出按 metric 名索引，支持跨 user 求和/取 max 并重建 ConstMetric。
+
 import (
 	"bytes"
 	"errors"
@@ -25,6 +27,7 @@ var (
 	}
 )
 
+// singleValueWithLabels 保存单条序列的浮点值与标签值切片，供 map 聚合。
 // Data for single value (counter/gauge) with labels.
 type singleValueWithLabels struct {
 	Value       float64
@@ -58,6 +61,7 @@ func (m singleValueWithLabelsMap) WriteToMetricChannel(out chan<- prometheus.Met
 	}
 }
 
+// MetricFamilyMap 假设 Gather 输出 metric 名唯一，重复名时 NewMetricFamilyMap 报错。
 // MetricFamilyMap is a map of metric names to their family (metrics with same name, but different labels)
 // Keeping map of metric name to its family makes it easier to do searches later.
 type MetricFamilyMap map[string]*dto.MetricFamily
@@ -134,6 +138,7 @@ func (mfm MetricFamilyMap) sumOfSingleValuesWithLabels(metric string, labelNames
 	}
 }
 
+// MetricFamiliesPerUser 每个元素对应一个 tenant 的 MetricFamilyMap 与可选标签变换函数。
 // MetricFamiliesPerUser is a collection of metrics gathered via calling Gatherer.Gather() method on different
 // gatherers, one per user.
 type MetricFamiliesPerUser []struct {
@@ -438,6 +443,7 @@ func maxMetric(mf *dto.MetricFamily, fn func(*dto.Metric) float64) float64 {
 func counterValue(m *dto.Metric) float64 { return m.GetCounter().GetValue() }
 func gaugeValue(m *dto.Metric) float64   { return m.GetGauge().GetValue() }
 
+// SummaryData 合并多路 summary 的 sampleCount、sampleSum 与同 quantile 值累加。
 // SummaryData keeps all data needed to create summary metric
 type SummaryData struct {
 	sampleCount uint64
@@ -464,6 +470,7 @@ func (s *SummaryData) Metric(desc *prometheus.Desc, labelValues ...string) prome
 	return prometheus.MustNewConstSummary(desc, s.sampleCount, s.sampleSum, s.quantiles, labelValues...)
 }
 
+// HistogramData 按 upperBound 累加 cumulative count；Metric 后勿再修改 buckets map。
 // HistogramData keeps data required to build histogram Metric.
 type HistogramData struct {
 	sampleCount uint64
@@ -569,6 +576,7 @@ type UserRegistry struct {
 	lastGather MetricFamilyMap
 }
 
+// UserRegistries 软删除时保留 counter/summary/histogram 末次 Gather，避免计数重置。
 // UserRegistries holds Prometheus registries for multiple users, guaranteeing
 // multi-thread safety and stable ordering.
 type UserRegistries struct {
@@ -847,3 +855,4 @@ func RegisterCounterVec(registerer prometheus.Registerer, namespace, name, help 
 func HumanizeBytes(val uint64) string {
 	return strings.Replace(humanize.Bytes(val), " ", "", 1)
 }
+// RegisterCounterVec 遇 AlreadyRegisteredError 时复用已有 CounterVec，行为同 MustRegister。

@@ -9,6 +9,7 @@ import (
 	"github.com/go-kit/log/level"
 )
 
+// GetFirstAddressOf 按名称顺序遍历网卡，优先返回非 APIPA 的 IPv4，失败时打 warn 日志。
 // GetFirstAddressOf returns the first IPv4 address of the supplied interface names, omitting any 169.254.x.x automatic private IPs if possible.
 func GetFirstAddressOf(names []string, logger log.Logger) (string, error) {
 	var ipAddr string
@@ -44,6 +45,7 @@ func GetFirstAddressOf(names []string, logger log.Logger) (string, error) {
 	return ipAddr, nil
 }
 
+// filterIPs 在 *net.IPNet 上取 To4，遇 169.254 链路本地地址继续扫描后续地址。
 // filterIPs attempts to return the first non automatic private IP (APIPA / 169.254.x.x) if possible, only returning APIPA if available and no other valid IP is found.
 func filterIPs(addrs []net.Addr) string {
 	var ipAddr string
@@ -59,3 +61,4 @@ func filterIPs(addrs []net.Addr) string {
 	}
 	return ipAddr
 }
+// 仅当全部候选均为 APIPA 时才回退使用 169.254 地址并记录 using automatic private ip。

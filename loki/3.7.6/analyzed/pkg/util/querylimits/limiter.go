@@ -1,5 +1,7 @@
 package querylimits
 
+// querylimits 包 Limiter 装饰 limiter.CombinedLimits：当 context 携带更严格的 per-request QueryLimits 时覆盖租户默认配置。
+
 import (
 	"context"
 	"strings"
@@ -12,6 +14,7 @@ import (
 	logutil "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// Limiter 嵌入 CombinedLimits 并持有 logger，各 Max* 方法先读 original 再比 request。
 type Limiter struct {
 	logger log.Logger
 	limiter.CombinedLimits
@@ -24,6 +27,7 @@ func NewLimiter(log log.Logger, original limiter.CombinedLimits) *Limiter {
 	}
 }
 
+// MaxQueryLength 在 request 更严且非零时采用 request 值，否则保留 original。
 // MaxQueryLength returns the limit of the length (in time) of a query.
 func (l *Limiter) MaxQueryLength(ctx context.Context, userID string) time.Duration {
 	original := l.CombinedLimits.MaxQueryLength(ctx, userID)
@@ -36,6 +40,7 @@ func (l *Limiter) MaxQueryLength(ctx context.Context, userID string) time.Durati
 	return time.Duration(requestLimits.MaxQueryLength)
 }
 
+// MaxQueryLookback 逻辑同 MaxQueryLength：仅当请求限额更小才生效。
 // MaxQueryLookback returns the max lookback period of queries.
 func (l *Limiter) MaxQueryLookback(ctx context.Context, userID string) time.Duration {
 	original := l.CombinedLimits.MaxQueryLookback(ctx, userID)
@@ -84,6 +89,7 @@ func (l *Limiter) QueryTimeout(ctx context.Context, userID string) time.Duration
 	return time.Duration(requestLimits.QueryTimeout)
 }
 
+// RequiredLabels 取 original 与 request 标签名的并集，形成最严格必选标签集合。
 func (l *Limiter) RequiredLabels(ctx context.Context, userID string) []string {
 	original := l.CombinedLimits.RequiredLabels(ctx, userID)
 	requestLimits := ExtractQueryLimitsFromContext(ctx)
@@ -120,6 +126,7 @@ func (l *Limiter) RequiredNumberLabels(ctx context.Context, userID string) int {
 	return requestLimits.RequiredNumberLabels
 }
 
+// MaxQueryBytesRead 比较 MaxQueryBytesRead.Val()，request 更小时限制扫描字节总量。
 func (l *Limiter) MaxQueryBytesRead(ctx context.Context, userID string) int {
 	original := l.CombinedLimits.MaxQueryBytesRead(ctx, userID)
 	requestLimits := ExtractQueryLimitsFromContext(ctx)
@@ -130,3 +137,4 @@ func (l *Limiter) MaxQueryBytesRead(ctx context.Context, userID string) int {
 	level.Debug(logutil.WithContext(ctx, l.logger)).Log("msg", "using request limit", "limit", "MaxQueryBytesRead", "tenant", userID, "query-limit", requestLimits.MaxQueryBytesRead.Val(), "original-limit", original)
 	return requestLimits.MaxQueryBytesRead.Val()
 }
+// 采用更严 request limit 时会 Debug 日志记录 tenant、query-limit 与 original-limit 便于审计。

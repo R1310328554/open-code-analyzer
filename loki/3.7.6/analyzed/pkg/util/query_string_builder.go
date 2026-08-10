@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util 包 QueryStringBuilder 封装 url.Values，为 HTTP 客户端统一构造查询串，支持标量与多值数组参数。
+
 import (
 	"net/url"
 	"strconv"
@@ -41,8 +43,10 @@ func (b *QueryStringBuilder) SetFloat32(name string, value float32) {
 	b.SetString(name, strconv.FormatFloat(float64(value), 'f', -1, 32))
 }
 
+// Encode 委托 url.Values.Encode，输出 application/x-www-form-urlencoded 格式。
 // Encode returns the URL-encoded query string based on key-value
 // parameters added to the builder calling Set functions.
 func (b *QueryStringBuilder) Encode() string {
 	return b.values.Encode()
 }
+// SetStringArray 对同名键多次 Add，适配 repeated query 参数语义。

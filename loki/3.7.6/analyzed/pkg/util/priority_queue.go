@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util 包 PriorityQueue 基于 container/heap 实现线程安全优先级队列：同 Key 去重、Cond 阻塞 Dequeue，可选 Gauge 跟踪队列长度。
+
 import (
 	"container/heap"
 	"sync"
@@ -7,6 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// PriorityQueue 用 hit map 防止同一 Op.Key 重复入队，Priority 越大越先出队。
 // PriorityQueue is a priority queue.
 type PriorityQueue struct {
 	lock        sync.Mutex
@@ -18,6 +21,7 @@ type PriorityQueue struct {
 	lengthGauge prometheus.Gauge
 }
 
+// Op 接口抽象待调度任务，Key 用于去重，Priority 为 int64 优先级。
 // Op is an operation on the priority queue.
 type Op interface {
 	Key() string
@@ -62,6 +66,7 @@ func (pq *PriorityQueue) Length() int {
 	return len(pq.queue)
 }
 
+// Close 设置 closing 并 Broadcast；空队列时 Dequeue 返回 nil 表示优雅结束。
 // Close signals that the queue should be closed when it is empty.
 // A closed queue will not accept new items.
 func (pq *PriorityQueue) Close() {
@@ -81,6 +86,7 @@ func (pq *PriorityQueue) DiscardAndClose() {
 	pq.cond.Broadcast()
 }
 
+// Enqueue 在 closed 前 panic；重复 Key 返回 false 且不改变堆顺序。
 // Enqueue adds an operation to the queue in priority order. Returns
 // true if added; false if the operation was already on the queue.
 func (pq *PriorityQueue) Enqueue(op Op) bool {
@@ -105,6 +111,7 @@ func (pq *PriorityQueue) Enqueue(op Op) bool {
 	return true
 }
 
+// Dequeue 在 closing/closed 且队列为空时置 closed=true 并返回 nil。
 // Dequeue will return the op with the highest priority; block if queue is
 // empty; returns nil if queue is closed.
 func (pq *PriorityQueue) Dequeue() Op {
@@ -127,3 +134,4 @@ func (pq *PriorityQueue) Dequeue() Op {
 	}
 	return op
 }
+// DiscardAndClose 立即清空堆与 hit，适合取消全部待处理任务并唤醒阻塞消费者。
