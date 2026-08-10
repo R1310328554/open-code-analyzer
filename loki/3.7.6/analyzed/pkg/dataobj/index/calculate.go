@@ -1,5 +1,8 @@
 package index
 
+// Calculator 从 logs data object 读取 streams 与 logs section，
+// 并行计算布隆过滤器、流统计与列索引并写入 indexobj.Builder。
+
 import (
 	"context"
 	"errors"
@@ -19,6 +22,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/streams"
 )
 
+// logsIndexCalculation 定义 logs section 的三阶段计算：Prepare、ProcessBatch、Flush。
 type logsIndexCalculation interface {
 	// Prepare is called before the first batch of logs is processed in order to initialize any state.
 	Prepare(ctx context.Context, section *dataobj.Section, stats logs.Stats) error
@@ -30,6 +34,7 @@ type logsIndexCalculation interface {
 	Flush(ctx context.Context, context *logsCalculationContext) error
 }
 
+// logsCalculationContext 携带租户、对象路径、section 索引与 stream ID 映射等上下文。
 type logsCalculationContext struct {
 	tenantID       string
 	objectPath     string
@@ -46,6 +51,7 @@ func getLogsCalculationSteps() []logsIndexCalculation {
 	}
 }
 
+// Calculator 非并发安全，通过 builderMtx 串行访问底层 indexobj.Builder。
 // Calculator is used to calculate the indexes for a logs object and write them to the builder.
 // It reads data from the logs object in order to build bloom filters and per-section stream metadata.
 type Calculator struct {
@@ -75,6 +81,7 @@ func (c *Calculator) IsFull() bool {
 
 // Calculate reads the log data from the input logs object and appends the resulting indexes to calculator's builder.
 // Calculate is not thread-safe.
+// Calculate 先并行处理 streams section 建立 ID 映射，再并行处理 logs section。
 func (c *Calculator) Calculate(ctx context.Context, logger log.Logger, reader *dataobj.Object, objectPath string) error {
 	g, streamsCtx := errgroup.WithContext(ctx)
 	g.SetLimit(runtime.GOMAXPROCS(0))
@@ -128,6 +135,7 @@ func (c *Calculator) Calculate(ctx context.Context, logger log.Logger, reader *d
 	return nil
 }
 
+// processStreamsSection 逐批读取流记录并 AppendStream，填充旧 ID 到新 ID 映射。
 func (c *Calculator) processStreamsSection(ctx context.Context, section *dataobj.Section, streamIDLookup map[int64]int64) error {
 	streamSection, err := streams.Open(ctx, section)
 	if err != nil {
@@ -170,6 +178,7 @@ func (c *Calculator) processStreamsSection(ctx context.Context, section *dataobj
 }
 
 // processLogsSection reads information from the logs section in order to build index information in the c.indexobjBuilder.
+// processLogsSection 执行列统计准备、按批 ProcessBatch 与各 calculation 的 Flush。
 func (c *Calculator) processLogsSection(ctx context.Context, sectionLogger log.Logger, objectPath string, section *dataobj.Section, sectionIdx int64, streamIDLookup map[int64]int64) error {
 	logsBuf := make([]logs.Record, 8192)
 
@@ -243,3 +252,4 @@ func (c *Calculator) processLogsSection(ctx context.Context, sectionLogger log.L
 	level.Info(sectionLogger).Log("msg", "finished processing logs section", "rowsProcessed", cnt)
 	return nil
 }
+// 计算步骤包含流统计与列值布隆两类，均在 logs section 级别独立执行。

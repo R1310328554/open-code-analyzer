@@ -1,5 +1,8 @@
 package dataobj
 
+// decoder 从 rangeReader 解码 data object：
+// 支持头部预读、legacy 尾部元数据回退，以及 section 按需读取。
+
 import (
 	"bytes"
 	"context"
@@ -14,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/util/bufpool"
 )
 
+// minimumPrefetchBytes 为解码前至少预读的字节数，默认十六 KB。
 // minimumPrefetchBytes is the minimum number of bytes to prefetch before
 // decoding.
 const minimumPrefetchBytes int64 = 16 * 1024
@@ -27,6 +31,7 @@ type decoder struct {
 	prefetchedRangeReader rangeReader
 }
 
+// Metadata 并行预读头部并解析文件级元数据，legacy 格式则回退读尾部。
 func (d *decoder) Metadata(ctx context.Context) (*filemd.Metadata, error) {
 	prefetchBytes := d.effectivePrefetchBytes()
 
@@ -96,6 +101,7 @@ func (d *decoder) Metadata(ctx context.Context) (*filemd.Metadata, error) {
 	return decodeFileMetadata(br)
 }
 
+// readFirstBytes 从对象起始处读取指定字节数到缓冲区。
 func (d *decoder) readFirstBytes(ctx context.Context, readSize int64, buf []byte) (int, error) {
 	rc, err := d.rr.ReadRange(ctx, 0, readSize)
 	if err != nil {
@@ -112,6 +118,7 @@ func (d *decoder) readFirstBytes(ctx context.Context, readSize int64, buf []byte
 	return n, nil
 }
 
+// legacyMetadata 处理 THOR 魔数的旧格式，元数据位于文件尾部。
 func (d *decoder) legacyMetadata(ctx context.Context, buf []byte) (*filemd.Metadata, error) {
 	objectSize, err := d.objectSize(ctx)
 	if err != nil {
@@ -183,6 +190,7 @@ func (d *decoder) objectSize(ctx context.Context) (int64, error) {
 	return d.size, nil
 }
 
+// header 表示新格式文件头，仅含元数据区长度字段。
 type header struct {
 	MetadataSize uint64
 }
@@ -200,6 +208,7 @@ func (d *decoder) header(headData []byte) (header, error) {
 	return header{MetadataSize: uint64(metadataSize)}, nil
 }
 
+// tailer 表示 legacy 格式尾部，含元数据长度与文件总大小。
 type tailer struct {
 	MetadataSize uint64
 	FileSize     uint64
@@ -224,6 +233,7 @@ func (d *decoder) tailer(ctx context.Context, tailData []byte) (tailer, error) {
 	}, nil
 }
 
+// SectionReader 为指定 section 构造按范围读取的 SectionReader。
 func (d *decoder) SectionReader(metadata *filemd.Metadata, section *filemd.SectionInfo, extensionData []byte) SectionReader {
 	rr := d.rr
 	if d.prefetchedRangeReader != nil {
@@ -259,6 +269,7 @@ func (d *decoder) setPrefetchedBytes(offset int64, data []byte) {
 
 var errMissingSectionType = errors.New("missing section type")
 
+// getSectionType 根据 TypeRef 从字典解析 section 的命名空间、种类与版本。
 // getSectionType returns the [SectionType] for the given section.
 func getSectionType(md *filemd.Metadata, section *filemd.SectionInfo) (SectionType, error) {
 	if section.TypeRef == 0 || section.TypeRef >= uint32(len(md.Types)) {
@@ -285,3 +296,4 @@ func getSectionType(md *filemd.Metadata, section *filemd.SectionInfo) (SectionTy
 		Version:   rawType.Version,
 	}, nil
 }
+// decoder 层负责将对象存储字节流解析为可遍历的 section 元数据。

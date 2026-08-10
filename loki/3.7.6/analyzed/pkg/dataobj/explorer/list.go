@@ -1,5 +1,8 @@
 package explorer
 
+// list 实现对象存储目录浏览 API：
+// 按 path 前缀迭代 bucket，返回文件列表、子目录与父路径导航信息。
+
 import (
 	"encoding/json"
 	"net/http"
@@ -17,6 +20,7 @@ type listResponse struct {
 	Current string     `json:"current"`
 }
 
+// fileInfo 描述单个对象的相对名、大小与最后修改时间。
 type fileInfo struct {
 	Name         string    `json:"name"`
 	Size         int64     `json:"size"`
@@ -93,3 +97,4 @@ func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+// list 接口 path 为空时表示根目录，parent 在根级返回空字符串。

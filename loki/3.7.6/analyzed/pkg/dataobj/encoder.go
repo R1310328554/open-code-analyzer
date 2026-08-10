@@ -24,6 +24,7 @@ const (
 	fileFormatVersion = 0x1
 )
 
+// encoder 将多个 section 编码为层级化 data object，元数据置于头部、各 section 数据与元数据区连续排列。
 // encoder encodes a data object. Data objects are hierarchical, split into
 // distinct sections that contain their own hierarchy.
 type encoder struct {
@@ -39,6 +40,7 @@ type encoder struct {
 	typeRefLookup    map[SectionType]uint32
 }
 
+// sectionInfo 记录单个 section 的类型、数据/元数据区域句柄与租户信息。
 type sectionInfo struct {
 	Type SectionType
 
@@ -52,6 +54,7 @@ type sectionInfo struct {
 	ExtensionData []byte
 }
 
+// newEncoder 基于 scratch.Store 创建编码器，section 先缓冲后 Flush 输出。
 // newEncoder creates a new Encoder which writes a data object to the provided
 // writer.
 func newEncoder(store scratch.Store) *encoder {
@@ -60,6 +63,7 @@ func newEncoder(store scratch.Store) *encoder {
 	}
 }
 
+// AppendSection 追加 section 数据与元数据到内部 store，并累计字节计数。
 // AppendSection appends a section to the data object. AppendSection panics if
 // typ is not SectionTypeLogs or SectionTypeStreams.
 func (enc *encoder) AppendSection(typ SectionType, opts *WriteSectionOptions, data, metadata []byte) {
@@ -83,6 +87,7 @@ func (enc *encoder) AppendSection(typ SectionType, opts *WriteSectionOptions, da
 	enc.totalBytes += len(data) + len(metadata)
 }
 
+// getTypeRef 为 SectionType 分配或查找类型引用，维护字典与 rawTypes 表。
 // getTypeRef returns the type reference for the given type or creates a new
 // one.
 func (enc *encoder) getTypeRef(typ SectionType) uint32 {
@@ -130,6 +135,7 @@ func (enc *encoder) initDictionary() {
 	enc.dictionaryLookup = map[string]uint32{"": 0}
 }
 
+// getDictionaryKey 为字符串分配字典索引，零索引保留为无效项。
 // getDictionaryKey returns the dictionary key for the given text or creates a
 // new entry.
 func (enc *encoder) getDictionaryKey(text string) uint32 {
@@ -146,6 +152,7 @@ func (enc *encoder) getDictionaryKey(text string) uint32 {
 	return key
 }
 
+// Metadata 两遍扫描 section 列表，先布局元数据区再布局数据区偏移。
 func (enc *encoder) Metadata() (*filemd.Metadata, error) {
 	enc.initDictionary()
 
@@ -199,6 +206,7 @@ func (enc *encoder) Metadata() (*filemd.Metadata, error) {
 	return md, nil
 }
 
+// encodeSize 估算完整编码后的对象字节数，含头、体、尾与 protobuf 元数据。
 // encodeSize reports the final encoded size of the object.
 func (enc *encoder) encodeSize(computedMetadata *filemd.Metadata) int64 {
 	var size int64
@@ -225,6 +233,7 @@ func (enc *encoder) encodeSize(computedMetadata *filemd.Metadata) int64 {
 // Bytes returns the total number of bytes appended to the data object.
 func (enc *encoder) Bytes() int { return enc.totalBytes }
 
+// Flush 生成可流式读取的 snapshot，调用方须在完成后调用 Reset。
 // Flush converts all accumulated data into a [snapshot], allowing for streaming
 // encoded bytes. [snapshot.Close] should be called when the snapshot is no
 // longer needed to release sections.
@@ -296,6 +305,7 @@ func (enc *encoder) Flush() (*snapshot, error) {
 	return snapshot, nil
 }
 
+// Reset 清空 section 缓冲、字典与类型表，准备下一轮编码。
 // Reset resets the Encoder to a fresh state.
 func (enc *encoder) Reset() {
 	enc.totalBytes = 0
@@ -309,6 +319,7 @@ func (enc *encoder) Reset() {
 	enc.typeRefLookup = nil
 }
 
+// countingWriter 包装 Writer 并统计已写字节数，用于尺寸观测。
 type countingWriter struct {
 	w     streamio.Writer
 	count int64
@@ -327,3 +338,4 @@ func (cw *countingWriter) WriteByte(c byte) error {
 	cw.count++
 	return nil
 }
+// 编码器采用先 metadata 后 data 的连续布局，便于单次预读覆盖全部 section 元数据。

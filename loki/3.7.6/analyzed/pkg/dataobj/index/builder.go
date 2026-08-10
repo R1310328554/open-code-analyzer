@@ -1,5 +1,8 @@
 package index
 
+// index Builder 消费 Kafka metastore 写入事件，按分区缓冲并触发索引构建：
+// 达到 EventsPerIndex 或 MaxIdleTime 时提交 indexer 异步建索引并 commit offset。
+
 import (
 	"context"
 	"errors"
@@ -25,6 +28,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/scratch"
 )
 
+// ErrPartitionRevoked 在 rebalance 撤销分区时作为 context cancel 原因。
 var ErrPartitionRevoked = errors.New("partition revoked")
 
 type triggerType string
@@ -45,6 +49,7 @@ func (tt triggerType) String() string {
 	}
 }
 
+// bufferedEvent 将 metastore 事件与原始 Kafka record 绑定以便后续 commit。
 type bufferedEvent struct {
 	event  metastore.ObjectWrittenEvent
 	record *kgo.Record
@@ -66,6 +71,7 @@ const (
 	defaultIndexConsumerGroup = "index-builder"
 )
 
+// calculator 接口抽象索引计算与 Flush，便于单元测试注入 mock。
 // An interface for the methods needed from a calculator. Useful for testing.
 type calculator interface {
 	Calculate(context.Context, log.Logger, *dataobj.Object, string) error
@@ -75,6 +81,7 @@ type calculator interface {
 	IsFull() bool
 }
 
+// kafkaClient 接口封装 PollRecords 与 CommitRecords，便于测试替换。
 // An interface for the methods needed from a kafka client. Useful for testing.
 type kafkaClient interface {
 	PollRecords(context.Context, int) kgo.Fetches
@@ -82,6 +89,7 @@ type kafkaClient interface {
 	Close()
 }
 
+// Builder 协调 Kafka 消费、分区状态机、indexer 与 flush 定时器。
 type Builder struct {
 	services.Service
 
@@ -109,6 +117,7 @@ type Builder struct {
 	activeCalculations map[int32]context.CancelCauseFunc
 }
 
+// NewIndexBuilder 装配 calculator、serialIndexer、Kafka reader 与 Prometheus 指标。
 func NewIndexBuilder(
 	cfg Config,
 	mCfg metastore.Config,
@@ -315,6 +324,7 @@ func (p *Builder) stopping(failureCase error) error {
 }
 
 // processRecord processes a single record. It is not safe for concurrent use.
+// processRecord 反序列化事件、缓冲并在满足阈值时 submitBuild 与 commit。
 func (p *Builder) processRecord(ctx context.Context, record *kgo.Record) {
 	calculationCtx, eventsToIndex := p.appendRecord(ctx, record)
 	if len(eventsToIndex) == 0 {
@@ -444,6 +454,7 @@ func (p *Builder) flushPartition(ctx context.Context, partition int32) {
 }
 
 // bufferAndTryProcess is the unified method that handles both buffering and processing decisions
+// bufferAndTryProcess 统一缓冲与触发判断，原子标记 isProcessing 并返回待处理事件副本。
 func (p *Builder) bufferAndTryProcess(ctx context.Context, partition int32, newEvent *bufferedEvent, trigger triggerType) (context.Context, []bufferedEvent) {
 	p.partitionsMutex.Lock()
 	defer p.partitionsMutex.Unlock()
@@ -495,6 +506,7 @@ func (p *Builder) bufferAndTryProcess(ctx context.Context, partition int32, newE
 	return calculationCtx, eventsToProcess
 }
 
+// commitRecords 带指数退避重试 Kafka offset 提交，失败时递增 commit 失败指标。
 func (p *Builder) commitRecords(ctx context.Context, records []*kgo.Record) error {
 	if len(records) == 0 {
 		return nil
@@ -521,3 +533,4 @@ func (p *Builder) commitRecords(ctx context.Context, records []*kgo.Record) erro
 	}
 	return lastErr
 }
+// Builder 主循环 PollRecords 处理各分区，停止时先终止 indexer 再关闭 Kafka 客户端。

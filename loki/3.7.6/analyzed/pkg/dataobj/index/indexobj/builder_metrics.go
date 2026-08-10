@@ -1,5 +1,8 @@
 package indexobj
 
+// builderMetrics 为 indexobj.Builder 提供 Prometheus  instrumentation：
+// 涵盖 append/flush 耗时、尺寸估计与各 section 子 metrics。
+
 import (
 	"errors"
 
@@ -12,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/streams"
 )
 
+// builderMetrics 聚合 pointers、streams、indexpointers 与 dataobj 子指标。
 // builderMetrics provides instrumnetation for a [Builder].
 type builderMetrics struct {
 	pointers      *pointers.Metrics
@@ -34,6 +38,7 @@ type builderMetrics struct {
 	builtSize    prometheus.Histogram
 }
 
+// newBuilderMetrics 初始化全部 Counter、Gauge 与 Histogram 指标描述符。
 // newBuilderMetrics creates a new set of [builderMetrics] for instrumenting
 // logs objects.
 func newBuilderMetrics() *builderMetrics {
@@ -116,12 +121,14 @@ func newBuilderMetrics() *builderMetrics {
 	}
 }
 
+// ObserveConfig 将 TargetPageSize 与 TargetObjectSize 写入配置 Gauge。
 // ObserveConfig updates config metrics based on the provided [BuilderConfig].
 func (m *builderMetrics) ObserveConfig(cfg logsobj.BuilderBaseConfig) {
 	m.targetPageSize.Set(float64(cfg.TargetPageSize))
 	m.targetObjectSize.Set(float64(cfg.TargetObjectSize))
 }
 
+// Register 向 Registerer 注册本包与子 section 的全部 collectors。
 // Register registers metrics to report to reg.
 func (m *builderMetrics) Register(reg prometheus.Registerer) error {
 	var errs []error
@@ -148,6 +155,7 @@ func (m *builderMetrics) Register(reg prometheus.Registerer) error {
 	return errors.Join(errs...)
 }
 
+// Unregister 从 Registerer 移除已注册的 metrics，用于热重载或测试清理。
 // Unregister unregisters metrics from the provided Registerer.
 func (m *builderMetrics) Unregister(reg prometheus.Registerer) {
 	m.indexPointers.Unregister(reg)
@@ -169,3 +177,4 @@ func (m *builderMetrics) Unregister(reg prometheus.Registerer) {
 	reg.Unregister(m.flushFailures)
 	reg.Unregister(m.flushTotal)
 }
+// append 与 build 直方图启用原生桶因子一点一，便于细粒度延迟观测。

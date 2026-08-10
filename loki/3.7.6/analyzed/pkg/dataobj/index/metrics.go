@@ -1,5 +1,8 @@
 package index
 
+// index 包 Prometheus 指标：Builder 侧 commit 与 processing delay，
+// indexer 侧请求数、构建耗时、队列深度与端到端处理延迟。
+
 import (
 	"strconv"
 	"sync"
@@ -17,6 +20,7 @@ var (
 	)
 )
 
+// processingDelayCollector 仅导出活跃分区的处理延迟，避免 partition 标签基数爆炸。
 // processingDelayCollector implements prometheus.Collector to dynamically report
 // processing delay only for active partitions, preventing cardinality explosion.
 type processingDelayCollector struct {
@@ -61,6 +65,7 @@ func (c *processingDelayCollector) delete(partition int32) {
 	delete(c.delays, partition)
 }
 
+// builderMetrics 跟踪 Kafka commit 成功/失败与各分区最新 processing delay。
 type builderMetrics struct {
 	// Error counters
 	commitFailures prometheus.Counter
@@ -125,16 +130,19 @@ func (p *builderMetrics) incCommitsTotal() {
 	p.commitsTotal.Inc()
 }
 
+// setProcessingDelay 计算 record 写入时间与当前处理时间的差值并缓存。
 func (p *builderMetrics) setProcessingDelay(partition int32, recordTimestamp time.Time) {
 	if !recordTimestamp.IsZero() {
 		p.processingDelay.set(partition, time.Since(recordTimestamp).Seconds())
 	}
 }
 
+// deletePartitionMetrics 在分区 revoke 时移除对应 delay 条目，控制指标基数。
 func (p *builderMetrics) deletePartitionMetrics(partition int32) {
 	p.processingDelay.delete(partition)
 }
 
+// indexerMetrics 记录 build 请求吞吐、末次构建耗时与 ingest 端到端延迟。
 type indexerMetrics struct {
 	// Request counters
 	totalRequests prometheus.Counter
@@ -229,3 +237,4 @@ func (m *indexerMetrics) setQueueDepth(depth int) {
 func (m *indexerMetrics) setEndToEndProcessingTime(duration time.Duration) {
 	m.endToEndProcessingTime.Set(duration.Seconds())
 }
+// 端到端处理时间衡量从 distributor 写 Kafka 到索引可查的完整 ingest 路径延迟。

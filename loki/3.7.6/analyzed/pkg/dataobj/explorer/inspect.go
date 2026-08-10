@@ -1,5 +1,8 @@
 package explorer
 
+// inspect 提供 data object 结构探查 API：
+// 解析 streams/logs/pointers/indexpointers 各 section 的列、页与时间范围统计。
+
 import (
 	"context"
 	"encoding/json"
@@ -18,12 +21,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/sections/streams"
 )
 
+// FileMetadata 为 inspect 响应根结构，含各 section 摘要与可选错误信息。
 type FileMetadata struct {
 	Sections     []SectionMetadata `json:"sections"`
 	Error        string            `json:"error,omitempty"`
 	LastModified time.Time         `json:"lastModified,omitempty"`
 }
 
+// ColumnWithPages 描述单列的压缩统计、页列表与基数等元信息。
 type ColumnWithPages struct {
 	Name             string     `json:"name,omitempty"`
 	Type             string     `json:"type"`
@@ -61,6 +66,7 @@ type PageInfo struct {
 	ValuesCount      uint64 `json:"values_count"`
 }
 
+// SectionMetadata 汇总单个 section 的类型、列数、时间分布与压缩尺寸。
 type SectionMetadata struct {
 	Type                  string            `json:"type"`
 	TotalCompressedSize   uint64            `json:"totalCompressedSize"`
@@ -72,6 +78,7 @@ type SectionMetadata struct {
 	MaxTimestamp          time.Time         `json:"maxTimestamp"`
 }
 
+// handleInspect 读取指定文件并返回 JSON 格式的 FileMetadata。
 func (s *Service) handleInspect(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -104,6 +111,7 @@ func (s *Service) handleInspect(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// inspectFile 打开 data object 并按 section 类型分派到对应 inspect 函数。
 func inspectFile(ctx context.Context, bucket objstore.BucketReader, path string) FileMetadata {
 	obj, err := dataobj.FromBucket(ctx, bucket, path, 0)
 	if err != nil {
@@ -279,6 +287,7 @@ func inspectPointersSection(ctx context.Context, ty dataobj.SectionType, sec *po
 	return meta, nil
 }
 
+// inspectLogsSection 调用 logs.ReadStats 并展开列级页信息为 JSON 友好结构。
 func inspectLogsSection(ctx context.Context, ty dataobj.SectionType, sec *logs.Section) (SectionMetadata, error) {
 	stats, err := logs.ReadStats(ctx, sec)
 	if err != nil {
@@ -375,3 +384,4 @@ func inspectStreamsSection(ctx context.Context, ty dataobj.SectionType, sec *str
 
 	return meta, nil
 }
+// inspect 将 protobuf 枚举前缀剥离，便于前端直接展示压缩与编码类型名称。

@@ -1,5 +1,8 @@
 package index
 
+// serialIndexer 以单 worker 串行执行索引构建：
+// 下载对象、Calculator 计算、Flush 上传索引并更新 metastore 目录。
+
 import (
 	"bytes"
 	"context"
@@ -22,6 +25,7 @@ import (
 )
 
 // buildRequest represents a request to build an index
+// buildRequest 携带待索引事件、分区、触发类型与结果 channel。
 type buildRequest struct {
 	events     []bufferedEvent
 	partition  int32
@@ -42,6 +46,7 @@ type indexerConfig struct {
 	QueueSize int // Size of the build request queue
 }
 
+// indexer 接口扩展 dskit Service，submitBuild 阻塞直至单次构建完成。
 // indexer handles serialized index building operations
 type indexer interface {
 	services.Service
@@ -51,6 +56,7 @@ type indexer interface {
 }
 
 // serialIndexer implements Indexer with a single worker goroutine using dskit Service
+// serialIndexer 通过 buildRequestChan 队列与独立 download/build worker 协作。
 type serialIndexer struct {
 	services.Service
 
@@ -134,6 +140,7 @@ func (si *serialIndexer) stopping(_ error) error {
 }
 
 // submitBuild submits a build request and waits for completion
+// submitBuild 向 worker 投递请求并等待 buildResult，返回可 commit 的 record 切片。
 func (si *serialIndexer) submitBuild(ctx context.Context, events []bufferedEvent, partition int32, trigger triggerType) ([]*kgo.Record, error) {
 	// Check if service is running
 	if si.State() != services.Running {
@@ -271,6 +278,7 @@ func getEarliestIndexedRecord(logger log.Logger, events []metastore.ObjectWritte
 // returns the index path and the number of events processed or an error if the index object is not created.
 // The number of events processed can be less than the number of events if the builder becomes full
 // when the trigger is triggerTypeAppend.
+// buildIndex 并行下载各对象、逐条 Calculate，builder 满或全部处理完后 flushIndex。
 func (si *serialIndexer) buildIndex(ctx context.Context, events []metastore.ObjectWrittenEvent, partition int32) (string, int, error) {
 	if len(events) == 0 {
 		return "", 0, nil
@@ -391,6 +399,7 @@ func downloadObject(ctx context.Context, bucket objstore.Bucket, path string) ([
 
 // downloadWorker processes downloads from the input downloadQueue and writes the resulting buffer to the downloadedObjects output channel.
 // It exits when downloadQueue is closed.
+// downloadWorker 从队列顺序下载对象，关闭 downloadQueue 后关闭输出 channel。
 func downloadWorker(ctx context.Context, logger log.Logger, downloadQueue chan metastore.ObjectWrittenEvent, objectBucket objstore.Bucket, downloadedObjects chan downloadedObject) {
 	level.Debug(logger).Log("msg", "download worker started")
 	defer func() {
@@ -433,6 +442,7 @@ func (si *serialIndexer) processObject(ctx context.Context, objLogger log.Logger
 }
 
 // flushIndex flushes the current calculator state to an index object
+// flushIndex 将 calculator 刷为 index object 上传并写入 metastore ToC 条目。
 func (si *serialIndexer) flushIndex(ctx context.Context, partition int32) (string, error) {
 	tenantTimeRanges := si.calculator.TimeRanges()
 	if len(tenantTimeRanges) == 0 {
@@ -483,6 +493,7 @@ func (si *serialIndexer) updateMetrics(buildTime time.Duration, earliestIndexedR
 	}
 }
 
+// ObjectKey 对 index object 内容做 SHA-224 哈希，生成 indexes/ 前缀的对象路径。
 // ObjectKey generates the object key for storing an index object in object storage.
 // This is a public wrapper around the generateObjectKey functionality.
 func ObjectKey(ctx context.Context, object *dataobj.Object) (string, error) {
@@ -504,3 +515,4 @@ func ObjectKey(ctx context.Context, object *dataobj.Object) (string, error) {
 
 	return fmt.Sprintf("indexes/%s/%s", sumStr[:2], sumStr[2:]), nil
 }
+// 索引对象键由内容哈希决定，相同内容会映射到同一路径便于去重。

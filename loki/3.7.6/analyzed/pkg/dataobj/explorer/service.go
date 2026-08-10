@@ -1,5 +1,8 @@
 package explorer
 
+// explorer 包提供 data object 调试与浏览 HTTP 服务：
+// 挂载 list、inspect、download 与 provider 四类 REST 端点。
+
 import (
 	"context"
 	"encoding/json"
@@ -18,6 +21,7 @@ type Service struct {
 	logger log.Logger
 }
 
+// New 创建 explorer 服务实例，running 阶段阻塞至 context 取消。
 func New(bucket objstore.Bucket, logger log.Logger) (*Service, error) {
 	s := &Service{
 		bucket: bucket,
@@ -34,6 +38,7 @@ func (s *Service) running(ctx context.Context) error {
 	return nil
 }
 
+// Handler 返回挂载前缀 /dataobj 与包含四个 API 路由的 ServeMux。
 func (s *Service) Handler() (string, http.Handler) {
 	mux := http.NewServeMux()
 
@@ -46,6 +51,7 @@ func (s *Service) Handler() (string, http.Handler) {
 	return "/dataobj", mux
 }
 
+// handleProvider 返回底层 bucket 的存储提供商名称 JSON。
 func (s *Service) handleProvider(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -58,3 +64,4 @@ func (s *Service) handleProvider(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+// explorer 主要用于运维与开发阶段检查对象存储中的 data object 布局。

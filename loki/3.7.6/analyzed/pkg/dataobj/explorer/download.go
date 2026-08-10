@@ -1,5 +1,8 @@
 package explorer
 
+// download 处理 dataobj explorer 的文件下载 HTTP 接口：
+// 从对象存储按 query 参数 file 流式返回原始对象字节。
+
 import (
 	"fmt"
 	"io"
@@ -45,3 +48,4 @@ func (s *Service) handleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+// 下载接口仅支持 GET，Content-Length 取自 bucket Attributes 的 Size。

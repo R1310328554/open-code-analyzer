@@ -1,3 +1,4 @@
+// indexobj 包构建面向索引的 data object，聚合 streams、pointers 与 indexpointers section。
 // Package indexobj provides tooling for creating index-oriented data objects.
 package indexobj
 
@@ -28,12 +29,14 @@ var (
 	ErrBuilderEmpty = errors.New("builder empty")
 )
 
+// Builder 按租户维护 streams/pointers/indexpointers 子 builder，达到 TargetObjectSize 时置 builderFull 需 Flush。
 // A Builder constructs a logs-oriented data object from a set of incoming
 // log data. Log data is appended by calling [LogBuilder.Append]. A complete
 // data object is constructed by by calling [LogBuilder.Flush].
 //
 // Methods on Builder are not goroutine-safe; callers are responsible for
 // synchronization.
+// Builder 非 goroutine-safe，内含 LRU 标签缓存与各租户 section builder 映射。
 type Builder struct {
 	cfg     logsobj.BuilderBaseConfig
 	metrics *builderMetrics
@@ -64,6 +67,7 @@ const (
 	builderStateDirty
 )
 
+// NewBuilder 校验配置、创建 scratch 底层 dataobj.Builder 与各 metrics 句柄。
 // NewBuilder creates a new [Builder] which stores log-oriented data objects.
 //
 // NewBuilder returns an error if the provided config is invalid.
@@ -161,6 +165,7 @@ func (b *Builder) getStreamsBuilderForTenant(tenantID string) *streams.Builder {
 	return tenantStreams
 }
 
+// AppendStream 在 stream section 记录标签与时间范围，返回对象内 stream ID。
 // AppendStream appends a stream to the object's stream section, returning the stream ID within this object.
 func (b *Builder) AppendStream(tenantID string, stream streams.Stream) (int64, error) {
 	b.metrics.appendsTotal.Inc()
@@ -228,6 +233,7 @@ func (b *Builder) getPointersBuilderForTenant(tenantID string) *pointers.Builder
 //
 // Once a Builder is full, call [Builder.Flush] to flush the buffered data,
 // then call Append again with the same entry.
+// ObserveLogLine 向 pointers section 记录单条 log 行的时间戳与大小观测。
 func (b *Builder) ObserveLogLine(tenantID string, path string, section int64, streamIDInObject int64, streamIDInIndex int64, ts time.Time, uncompressedSize int64) error {
 	// Check whether the buffer is full before a stream can be appended; this is
 	// tends to overestimate, but we may still go over our target size.
@@ -264,6 +270,7 @@ func (b *Builder) ObserveLogLine(tenantID string, path string, section int64, st
 //
 // Once a Builder is full, call [Builder.Flush] to flush the buffered data,
 // then call Append again with the same entry.
+// AppendColumnIndex 将列名、索引与布隆字节写入 pointers section。
 func (b *Builder) AppendColumnIndex(tenantID string, path string, section int64, columnName string, columnIndex int64, valuesBloom []byte) error {
 	// Check whether the buffer is full before a stream can be appended; this is
 	// tends to overestimate, but we may still go over our target size.
@@ -310,6 +317,7 @@ func (b *Builder) estimatedSize() int {
 	return size
 }
 
+// TimeRanges 汇总各租户 streams builder 的 min/max 时间，供 metastore ToC 使用。
 // TimeRanges returns the time range of the data in the builder, by tenant.
 func (b *Builder) TimeRanges() []multitenancy.TimeRange {
 	timeRanges := make([]multitenancy.TimeRange, 0, len(b.streams))
@@ -324,6 +332,7 @@ func (b *Builder) TimeRanges() []multitenancy.TimeRange {
 	return timeRanges
 }
 
+// Flush 将所有租户 section append 到 dataobj.Builder 后输出完整 Object 并重置状态。
 // Flush flushes all buffered data to the buffer provided. Calling Flush can result
 // in a no-op if there is no buffered data to flush.
 //
@@ -409,6 +418,7 @@ func (b *Builder) observeObject(ctx context.Context, obj *dataobj.Object) error 
 	return errors.Join(errs...)
 }
 
+// Reset 清空各 map 与尺寸估计，builderFull 复位以便继续 Append。
 // Reset discards pending data and resets the builder to an empty state.
 func (b *Builder) Reset() {
 	b.builder.Reset()
@@ -436,3 +446,4 @@ func (b *Builder) RegisterMetrics(reg prometheus.Registerer) error {
 func (b *Builder) UnregisterMetrics(reg prometheus.Registerer) {
 	b.metrics.Unregister(reg)
 }
+// indexobj Builder 在 Flush 后自动 Reset，成功路径会观测各 section 的 Prometheus 指标。
