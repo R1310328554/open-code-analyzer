@@ -1,5 +1,7 @@
 package baidubce
 
+// bos_storage_client 对接百度 BOS 对象存储，实现 Loki chunk 的读写、列举与删除；通过 Prometheus 直方图记录各 BOS 操作耗时。
+
 import (
 	"context"
 	"flag"
@@ -37,6 +39,7 @@ func init() {
 	bosRequestDuration.Register()
 }
 
+// BOSStorageConfig 包含 bucket 名、endpoint 与 BCE 访问密钥对。
 type BOSStorageConfig struct {
 	BucketName      string         `yaml:"bucket_name"`
 	Endpoint        string         `yaml:"endpoint"`
@@ -57,11 +60,13 @@ func (cfg *BOSStorageConfig) RegisterFlagsWithPrefix(prefix string, f *flag.Flag
 	f.Var(&cfg.SecretAccessKey, prefix+"bos.secret-access-key", "Baidu Cloud Engine (BCE) Secret Access Key.")
 }
 
+// BOSObjectStorage 持有配置与 bos.Client，实现 client.ObjectClient 接口。
 type BOSObjectStorage struct {
 	cfg    *BOSStorageConfig
 	client *bos.Client
 }
 
+// NewBOSObjectStorage 用 Ak/Sk 与 Endpoint 创建 BOS SDK 客户端。
 func NewBOSObjectStorage(cfg *BOSStorageConfig) (*BOSObjectStorage, error) {
 	clientConfig := bos.BosClientConfiguration{
 		Ak:               cfg.AccessKeyID,
@@ -198,6 +203,7 @@ func (b *BOSObjectStorage) DeleteObject(ctx context.Context, objectKey string) e
 	})
 }
 
+// IsObjectNotFoundErr 仅 BceServiceError 且 Code 为 NoSuchKey 时视为对象不存在。
 func (b *BOSObjectStorage) IsObjectNotFoundErr(err error) bool {
 	switch realErr := errors.Cause(err).(type) {
 	// Client exception indicates an exception encountered when the client attempts to send a request to the BOS and transmits data.
@@ -220,3 +226,4 @@ func (b *BOSObjectStorage) Stop() {}
 
 // TODO(dannyk): implement for client
 func (b *BOSObjectStorage) IsRetryableErr(error) bool { return false }
+// List 分页遍历 Contents 与 CommonPrefixes，LastModified 按 RFC3339 解析为 time.Time。

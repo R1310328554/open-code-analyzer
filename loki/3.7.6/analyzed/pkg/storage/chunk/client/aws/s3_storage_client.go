@@ -1,5 +1,7 @@
 package aws
 
+// s3_storage_client 实现 chunk.ObjectClient，支持多 bucket 哈希分片、hedged 读、SSE-KMS/SSE-S3、自定义 chunk 分隔符及可观测的 S3 请求指标。
+
 import (
 	"context"
 	"crypto/tls"
@@ -67,6 +69,7 @@ func init() {
 }
 
 // S3Config specifies config for storing chunks on AWS S3.
+// S3Config 聚合 endpoint、凭证、HTTP/TLS、签名版本、存储类与退避重试等 S3 连接参数。
 type S3Config struct {
 	S3               flagext.URLValue
 	S3ForcePathStyle bool
@@ -163,6 +166,7 @@ type s3Interface interface {
 	s3.ListObjectsV2APIClient
 }
 
+// S3ObjectClient 持有普通与 hedged 两套 S3 客户端及解析后的 SSE 配置。
 type S3ObjectClient struct {
 	cfg S3Config
 
@@ -173,6 +177,7 @@ type S3ObjectClient struct {
 }
 
 // NewS3ObjectClient makes a new S3-backed ObjectClient.
+// NewS3ObjectClient 解析 bucket 列表、构建双客户端并初始化服务端加密参数。
 func NewS3ObjectClient(cfg S3Config, hedgingCfg hedging.Config) (*S3ObjectClient, error) {
 	bucketNames, err := buckets(cfg)
 	if err != nil {
@@ -442,6 +447,7 @@ func (a *S3ObjectClient) DeleteObject(ctx context.Context, objectKey string) err
 }
 
 // bucketFromKey maps a key to a bucket name
+// bucketFromKey 对 object key 做 FNV-32a 哈希，在多个 bucket 间均匀分布 chunk。
 func (a *S3ObjectClient) bucketFromKey(key string) string {
 	if len(a.bucketNames) == 0 {
 		return ""
@@ -642,6 +648,7 @@ func isContextErr(err error) bool {
 }
 
 // IsStorageTimeoutErr returns true if error means that object cannot be retrieved right now due to server-side timeouts.
+// IsStorageTimeoutErr 区分客户端取消与服务器侧超时/连接重置，决定是否可重试。
 func IsStorageTimeoutErr(err error) bool {
 	// TODO(dannyk): move these out to be generic
 	// context errors are all client-side
@@ -681,6 +688,7 @@ func IsStorageTimeoutErr(err error) bool {
 }
 
 // IsStorageThrottledErr returns true if error means that object cannot be retrieved right now due to throttling.
+// IsStorageThrottledErr 识别 429/5xx/SlowDown 等限流与服务不可用错误码。
 func IsStorageThrottledErr(err error) bool {
 	var apiError smithy.APIError
 	if errors.As(err, &apiError) {
@@ -720,3 +728,4 @@ func (a *S3ObjectClient) rewriteKey(key string) string {
 	}
 	return key
 }
+// PutObject 默认附加 SHA256 checksum 以满足 Object Lock 合规 bucket 的上传要求。

@@ -1,5 +1,7 @@
 package cassandra
 
+// storage_client 实现 Cassandra 版 chunk.IndexClient 与 ObjectClient：读写分离 session、可选查询并发信号量、TLS/认证及自动创建 keyspace。
+
 import (
 	"bytes"
 	"context"
@@ -27,6 +29,7 @@ import (
 )
 
 // Config for a StorageClient
+// Config 涵盖 Cassandra 地址、一致性、复制因子、SSL、认证、重试与表选项等连接参数。
 type Config struct {
 	Addresses                string              `yaml:"addresses"`
 	Port                     int                 `yaml:"port"`
@@ -147,6 +150,7 @@ func (g *gocqlLogger) Error(msg string, fields ...gocql.LogField) {
 	level.Error(g.logger).Log(keyvals...)
 }
 
+// session 创建 gocql 会话；若 keyspace 不存在则先 createKeyspace 再重连。
 func (cfg *Config) session(name string, _ prometheus.Registerer) (*gocql.Session, *gocql.ClusterConfig, error) {
 	cluster := gocql.NewCluster(strings.Split(cfg.Addresses, ",")...)
 	cluster.Port = cfg.Port
@@ -291,6 +295,7 @@ func (cfg *Config) createKeyspace() error {
 }
 
 // StorageClient implements chunk.IndexClient and chunk.ObjectClient for Cassandra.
+// StorageClient 维护 read/write 双 session、cluster 配置副本及 querySemaphore 限流。
 type StorageClient struct {
 	cfg                Config
 	schemaCfg          config.SchemaConfig
@@ -304,6 +309,7 @@ type StorageClient struct {
 }
 
 // NewStorageClient returns a new StorageClient.
+// NewStorageClient 分别建立 index-read 与 index-write 会话并可选初始化并发限制。
 func NewStorageClient(cfg Config, schemaCfg config.SchemaConfig, registerer prometheus.Registerer) (*StorageClient, error) {
 	readSession, readClusterConfig, err := cfg.session("index-read", registerer)
 	if err != nil {
@@ -340,6 +346,7 @@ func (s *StorageClient) Stop() {
 
 // Cassandra batching isn't really useful in this case, its more to do multiple
 // atomic writes.  Therefore we just do a bunch of writes in parallel.
+// writeBatch 缓冲 index 写入与删除条目；Cassandra batch 在此场景改为并行单条写入。
 type writeBatch struct {
 	entries []index.Entry
 	deletes []index.Entry
@@ -729,3 +736,4 @@ func (noopConvictionPolicy) AddFailure(err error, host *gocql.HostInfo) bool {
 
 // Implementats gocql.ConvictionPolicy.
 func (noopConvictionPolicy) Reset(_ *gocql.HostInfo) {}
+// HostSelectionPolicy 支持 round-robin 与 token-aware；CustomAuthenticators 启用自定义认证器。

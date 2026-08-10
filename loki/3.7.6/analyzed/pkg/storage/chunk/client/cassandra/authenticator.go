@@ -1,5 +1,7 @@
 package cassandra
 
+// authenticator 提供 CustomPasswordAuthenticator，在 Cassandra 握手时限制可接受的认证器名称列表，同时复用标准用户名/密码挑战-响应格式。
+
 import (
 	"fmt"
 
@@ -8,6 +10,7 @@ import (
 
 // CustomPasswordAuthenticator provides the default behaviour for Username/Password authentication with
 // Cassandra while allowing users to specify a non-default Authenticator to accept.
+// CustomPasswordAuthenticator 白名单 ApprovedAuthenticators，非列表内认证器将被拒绝。
 type CustomPasswordAuthenticator struct {
 	ApprovedAuthenticators []string
 	Username               string
@@ -25,6 +28,7 @@ func (p CustomPasswordAuthenticator) approve(authenticator string) bool {
 
 // Challenge verifies the name of the authenticator and formats the provided username and password
 // into a response
+// Challenge 校验 authenticator 名后将 username\0password 编码为响应字节。
 func (p CustomPasswordAuthenticator) Challenge(req []byte) ([]byte, gocql.Authenticator, error) {
 	if !p.approve(string(req)) {
 		return nil, nil, fmt.Errorf("unexpected authenticator %q", req)
@@ -38,6 +42,8 @@ func (p CustomPasswordAuthenticator) Challenge(req []byte) ([]byte, gocql.Authen
 }
 
 // Success returns nil by default, identical to the default PasswordAuthenticator
+// Success 认证成功后无额外处理，行为与默认 PasswordAuthenticator 一致。
 func (p CustomPasswordAuthenticator) Success(_ []byte) error {
 	return nil
 }
+// approve 线性扫描 ApprovedAuthenticators，匹配 server 下发的认证器名称。

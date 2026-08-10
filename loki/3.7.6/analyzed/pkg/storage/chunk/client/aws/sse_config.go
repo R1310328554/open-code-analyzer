@@ -1,5 +1,7 @@
 package aws
 
+// sse_config 将 bucket_s3.SSEConfig 解析为 S3 PutObject 所需的 SSE 字段，支持 AES256（SSE-S3）与 aws:kms（SSE-KMS）及 KMS 加密上下文。
+
 import (
 	"encoding/base64"
 	"encoding/json"
@@ -16,6 +18,7 @@ const (
 
 // SSEParsedConfig configures server side encryption (SSE)
 // struct used internally to configure AWS S3
+// SSEParsedConfig 为内部结构，ServerSideEncryption 与可选 KMS 键/上下文指针供 SDK 使用。
 type SSEParsedConfig struct {
 	ServerSideEncryption string
 	KMSKeyID             *string
@@ -23,6 +26,7 @@ type SSEParsedConfig struct {
 }
 
 // NewSSEParsedConfig creates a struct to configure server side encryption (SSE)
+// NewSSEParsedConfig 校验 SSE 类型；KMS 模式要求 KMSKeyID 并解析 JSON 加密上下文。
 func NewSSEParsedConfig(cfg bucket_s3.SSEConfig) (*SSEParsedConfig, error) {
 	switch cfg.Type {
 	case bucket_s3.SSES3:
@@ -49,6 +53,7 @@ func NewSSEParsedConfig(cfg bucket_s3.SSEConfig) (*SSEParsedConfig, error) {
 	}
 }
 
+// parseKMSEncryptionContext 校验 JSON 后 base64 编码，供 x-amz-server-side-encryption-context 使用。
 func parseKMSEncryptionContext(kmsEncryptionContext string) (*string, error) {
 	if kmsEncryptionContext == "" {
 		return nil, nil
@@ -64,3 +69,4 @@ func parseKMSEncryptionContext(kmsEncryptionContext string) (*string, error) {
 
 	return &parsedKMSEncryptionContext, nil
 }
+// 空 SSE 类型返回错误；SSE-S3 仅设置 AES256 算法无需额外密钥材料。

@@ -1,5 +1,7 @@
 package cassandra
 
+// table_client 实现 index.TableClient，负责 Cassandra 中 chunk/index 表的创建、列举与删除；连接断开时自动 reconnectTableSession 并重试。
+
 import (
 	"context"
 	"fmt"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/series/index"
 )
 
+// tableClient 持有 gocql session 与 clusterConfig，mutex 保护 session 重建。
 type tableClient struct {
 	cfg           Config
 	session       *gocql.Session
@@ -21,6 +24,7 @@ type tableClient struct {
 }
 
 // NewTableClient returns a new TableClient.
+// NewTableClient 以 table-manager 客户端名打开 session 并返回 tableClient。
 func NewTableClient(_ context.Context, cfg Config, registerer prometheus.Registerer) (index.TableClient, error) {
 	session, clusterConfig, err := cfg.session("table-manager", registerer)
 	if err != nil {
@@ -45,6 +49,7 @@ func (c *tableClient) reconnectTableSession() error {
 	return nil
 }
 
+// ListTables 读取 keyspace 元数据；ErrNoConnections 时重连后重试 listTables。
 func (c *tableClient) ListTables(_ context.Context) ([]string, error) {
 	result, err := c.listTables()
 	//
@@ -125,6 +130,7 @@ func (c *tableClient) Stop() {
 	c.session.Close()
 }
 
+// getCreateTableQuery 生成 hash/range/value 主键表 DDL，可选附加 TableOptions WITH 子句。
 func (c *tableClient) getCreateTableQuery(desc *config.TableDesc) (query string) {
 	query = fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
@@ -138,3 +144,4 @@ func (c *tableClient) getCreateTableQuery(desc *config.TableDesc) (query string)
 	}
 	return
 }
+// DescribeTable/UpdateTable 为占位实现；DeleteTable 执行 DROP TABLE IF EXISTS。

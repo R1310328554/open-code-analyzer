@@ -1,5 +1,7 @@
 package congestion
 
+// config 定义存储拥塞控制配置：总开关、AIMD 控制器、有限重试与 hedging 策略，通过 congestion-control.* 前缀注册 CLI/YAML 标志。
+
 import (
 	"flag"
 	"fmt"
@@ -23,6 +25,7 @@ func (c *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	c.Hedge.RegisterFlagsWithPrefix(prefix+"hedge.", f)
 }
 
+// AIMD 参数：起始窗口、上限与遇限流时的乘性退避因子（默认减半）。
 type AIMD struct {
 	Start         uint    `yaml:"start"`
 	UpperBound    uint    `yaml:"upper_bound"`
@@ -74,3 +77,4 @@ func (c *HedgerConfig) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.StringVar(&c.Strategy, prefix+"strategy", "", "Congestion control hedge strategy to use (default: none, options: 'limited').")
 	// TODO hedge configs
 }
+// RetrierConfig 支持 limited 策略与最大重试次数；HedgerConfig 嵌入 hedging.Config 供后续扩展。

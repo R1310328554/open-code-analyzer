@@ -1,5 +1,7 @@
 package congestion
 
+// controller 实现 AIMD（加性增/乘性减）拥塞控制，包装 ObjectClient 的 GetObject：在速率限制下退避、配合 Retrier 重试并对成功/失败调整吞吐窗口。
+
 import (
 	"context"
 	"errors"
@@ -16,6 +18,7 @@ import (
 
 // AIMDController implements the Additive-Increase/Multiplicative-Decrease algorithm which is used in TCP congestion avoidance.
 // https://en.wikipedia.org/wiki/Additive_increase/multiplicative_decrease
+// AIMDController 内嵌真实 ObjectClient，rate.Limiter 控制每秒请求数并上报 metrics。
 type AIMDController struct {
 	inner client.ObjectClient
 
@@ -30,6 +33,7 @@ type AIMDController struct {
 	logger log.Logger
 }
 
+// NewAIMDController 用 Start/UpperBound 初始化 limiter，backoffFactor 默认 0.5。
 func NewAIMDController(cfg Config) *AIMDController {
 	lowerBound := rate.Limit(cfg.Controller.AIMD.Start)
 	upperBound := rate.Limit(cfg.Controller.AIMD.UpperBound)
@@ -87,6 +91,7 @@ func (a *AIMDController) PutObject(ctx context.Context, objectKey string, object
 	return a.inner.PutObject(ctx, objectKey, object)
 }
 
+// GetObject 唯一实现拥塞避免的路径；内层客户端必须禁用自身重试以免双重退避。
 func (a *AIMDController) GetObject(ctx context.Context, objectKey string) (io.ReadCloser, int64, error) {
 	// Only GetObject implements congestion avoidance; the other methods are either non-idempotent which means they
 	// cannot be retried, or are too low volume to care about
@@ -174,6 +179,7 @@ func (a *AIMDController) Stop() {
 
 // additiveIncrease increases the number of requests per second that can be sent linearly.
 // it should never exceed the defined upper bound.
+// additiveIncrease 成功后将 limit 线性加一，不超过 upperBound。
 func (a *AIMDController) additiveIncrease() {
 	newLimit := a.limiter.Limit() + 1
 
@@ -189,6 +195,7 @@ func (a *AIMDController) additiveIncrease() {
 
 // multiplicativeDecrease reduces the number of requests per second that can be sent exponentially.
 // it should never be set lower than 1.
+// multiplicativeDecrease 遇限流/超时后按 backoffFactor 乘性降速，下限为 1。
 func (a *AIMDController) multiplicativeDecrease() {
 	newLimit := math.Ceil(math.Max(1, float64(a.limiter.Limit())*a.backoffFactor))
 
@@ -205,6 +212,7 @@ func (a *AIMDController) getRetrier() Retrier  { return a.retrier }
 func (a *AIMDController) getHedger() Hedger    { return a.hedger }
 func (a *AIMDController) getMetrics() *Metrics { return a.metrics }
 
+// NoopController 禁用拥塞控制时 Wrap 直接返回内层客户端，方法体为测试占位。
 type NoopController struct {
 	retrier Retrier
 	hedger  Hedger
@@ -259,3 +267,4 @@ func (n *NoopController) withMetrics(m *Metrics) Controller {
 func (n *NoopController) getRetrier() Retrier  { return n.retrier }
 func (n *NoopController) getHedger() Hedger    { return n.hedger }
 func (n *NoopController) getMetrics() *Metrics { return n.metrics }
+// Allow 热循环探针比 Reserve 更快；stats 上下文记录 congestion control 引入的额外延迟。

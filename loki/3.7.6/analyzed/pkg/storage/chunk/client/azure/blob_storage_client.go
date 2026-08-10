@@ -1,5 +1,7 @@
 package azure
 
+// blob_storage_client 实现 Azure Blob 对象存储后端，支持共享密钥、连接字符串、托管身份、联合令牌与服务主体等多种认证及 hedged 下载管道。
+
 import (
 	"context"
 	"errors"
@@ -83,6 +85,7 @@ var (
 )
 
 // BlobStorageConfig defines the configurable flags that can be defined when using azure blob storage.
+// BlobStorageConfig 定义 Azure 环境、账户、容器、OAuth 与上传/下载缓冲及重试策略。
 type BlobStorageConfig struct {
 	Environment             string         `yaml:"environment"`
 	StorageAccountName      string         `yaml:"account_name"`
@@ -180,6 +183,7 @@ func (bm *BlobStorageMetrics) Unregister() {
 
 // BlobStorage is used to interact with azure blob storage for setting or getting time series chunks.
 // Implements ObjectStorage
+// BlobStorage 封装 containerURL、普通与 hedging pipeline 及 Prometheus 指标。
 type BlobStorage struct {
 	// blobService storage.Serv
 	cfg *BlobStorageConfig
@@ -195,6 +199,7 @@ type BlobStorage struct {
 }
 
 // NewBlobStorage creates a new instance of the BlobStorage struct.
+// NewBlobStorage 构建双 pipeline、解析容器 URL 并初始化指标收集器。
 func NewBlobStorage(cfg *BlobStorageConfig, metrics BlobStorageMetrics, hedgingCfg hedging.Config) (*BlobStorage, error) {
 	blobStorage := &BlobStorage{
 		cfg:     cfg,
@@ -348,6 +353,7 @@ func (b *BlobStorage) PutObject(ctx context.Context, objectKey string, object io
 	})
 }
 
+// getBlobURL 将 chunk ID 中冒号替换为 ChunkDelimiter 并选择 hedging 或普通 pipeline。
 func (b *BlobStorage) getBlobURL(blobID string, hedging bool) (azblob.BlockBlobURL, error) {
 	blobID = strings.ReplaceAll(blobID, ":", b.cfg.ChunkDelimiter)
 
@@ -678,6 +684,7 @@ type ParsedConnectionString struct {
 
 // parseConnectionString dissects a connection string into url, account and key
 // (copied from github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/internal/shared)
+// parseConnectionString 解析分号键值对，支持 AccountKey 或 SharedAccessSignature 认证。
 func parseConnectionString(connectionString string) (ParsedConnectionString, error) {
 	const (
 		defaultScheme = "https"
@@ -742,3 +749,4 @@ func parseConnectionString(connectionString string) (ParsedConnectionString, err
 
 // TODO(dannyk): implement for client
 func (b *BlobStorage) IsRetryableErr(error) bool { return false }
+// GetObject 用 ReadCloserWithContextCancelFunc 包装，关闭 reader 时释放请求超时 context。

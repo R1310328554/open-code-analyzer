@@ -1,5 +1,7 @@
 package aws
 
+// mock 提供 DynamoDB 与 S3 的内存模拟实现，供单元测试与 inmemory 后端使用；支持模拟未处理项、吞吐超限及可配置错误注入。
+
 import (
 	"bytes"
 	"context"
@@ -20,6 +22,7 @@ import (
 
 const arnPrefix = "arn:"
 
+// mockDynamoDBClient 线程安全地模拟 DynamoDB 客户端，可按 hash/range 键有序存储条目。
 type mockDynamoDBClient struct {
 	dynamodb.Client
 
@@ -39,6 +42,7 @@ type mockDynamoDBTable struct {
 type mockDynamoDBItem map[string]types.AttributeValue
 
 // nolint
+// newMockDynamoDB 创建可注入未处理批次与 ProvisionedThroughput 错误的 mock。
 func newMockDynamoDB(unprocessed int, provisionedErr int) *mockDynamoDBClient {
 	return &mockDynamoDBClient{
 		tables:         map[string]*mockDynamoDBTable{},
@@ -63,6 +67,7 @@ func (m *mockDynamoDBClient) createTable(name string) {
 	}
 }
 
+// BatchWriteItem 按 hash/range 排序插入；unprocessed>0 时返回未处理项模拟重试。
 func (m *mockDynamoDBClient) BatchWriteItem(_ context.Context, params *dynamodb.BatchWriteItemInput, _ ...func(*dynamodb.Options)) (*dynamodb.BatchWriteItemOutput, error) {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
@@ -172,6 +177,7 @@ func (m *mockDynamoDBClient) BatchGetItem(_ context.Context, params *dynamodb.Ba
 	return resp, nil
 }
 
+// Query 支持 hash 等值、range GE/BeginsWith 及 value 的 FilterExpression（仅 v=:v）。
 func (m *mockDynamoDBClient) Query(_ context.Context, params *dynamodb.QueryInput, _ ...func(*dynamodb.Options)) (*dynamodb.QueryOutput, error) {
 	result := &dynamodb.QueryOutput{
 		Items: []map[string]types.AttributeValue{},
@@ -361,6 +367,7 @@ func (m *mockDynamoDBClient) ListTagsOfResource(_ context.Context, input *dynamo
 	}, nil
 }
 
+// mockS3 内存 S3 客户端，PutObject/GetObject 在 map 中读写对象字节。
 type mockS3 struct {
 	s3.Client
 	sync.RWMutex
@@ -399,3 +406,4 @@ func (m *mockS3) GetObject(_ context.Context, params *s3.GetObjectInput, _ ...fu
 		Body: io.NopCloser(bytes.NewReader(buf)),
 	}, nil
 }
+// CreateTable/DescribeTable/UpdateTable/TagResource 完整模拟表生命周期与 ARN 标签操作。
