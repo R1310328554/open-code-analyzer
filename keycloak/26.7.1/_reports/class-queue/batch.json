@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:52:38Z",
-  "files": [
-    "services/src/main/java/org/keycloak/services/clientpolicy/condition/ClientScopesConditionFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/condition/ClientUpdaterContextCondition.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/condition/ClientUpdaterContextConditionFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/condition/ClientUpdaterSourceGroupsCondition.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/condition/ClientUpdaterSourceGroupsConditionFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/condition/ClientUpdaterSourceHostsCondition.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/condition/ClientUpdaterSourceHostsConditionFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/condition/ClientUpdaterSourceRolesCondition.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/condition/ClientUpdaterSourceRolesConditionFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/condition/GrantTypeCondition.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/condition/GrantTypeConditionFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/condition/IdentityProviderCondition.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/condition/IdentityProviderConditionFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/AbstractAdminClientCRUDContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/AbstractDynamicClientCRUDContext.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1168,
-  "done": 4815
+  "done": 4830
 }
