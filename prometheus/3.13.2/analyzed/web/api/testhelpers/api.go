@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// testhelpers 包提供 Prometheus HTTP API 测试用的实例构造与依赖注入工具。
 // Package testhelpers provides utilities for testing the Prometheus HTTP API.
 // This file contains helper functions for creating test API instances and managing test lifecycles.
 package testhelpers
@@ -37,12 +38,14 @@ import (
 	"github.com/prometheus/prometheus/util/notifications"
 )
 
+// RulesRetriever 返回当前活跃的规则组与告警规则列表。
 // RulesRetriever provides a list of active rules and alerts.
 type RulesRetriever interface {
 	RuleGroups() []*rules.Group
 	AlertingRules() []*rules.AlertingRule
 }
 
+// TargetRetriever 提供抓取目标（活跃/丢弃）及 scrape pool 配置查询。
 // TargetRetriever provides the list of active/dropped targets to scrape or not.
 type TargetRetriever interface {
 	TargetsActive() map[string][]*scrape.Target
@@ -51,17 +54,20 @@ type TargetRetriever interface {
 	ScrapePoolConfig(string) (*config.ScrapeConfig, error)
 }
 
+// ScrapePoolsRetriever 返回所有 scrape pool 名称。
 // ScrapePoolsRetriever provide the list of all scrape pools.
 type ScrapePoolsRetriever interface {
 	ScrapePools() []string
 }
 
+// AlertmanagerRetriever 返回已配置与已丢弃的 Alertmanager URL。
 // AlertmanagerRetriever provides a list of all/dropped AlertManager URLs.
 type AlertmanagerRetriever interface {
 	Alertmanagers() []*url.URL
 	DroppedAlertmanagers() []*url.URL
 }
 
+// TSDBAdminStats 封装测试所需的 TSDB 管理接口（删除、快照、统计等）。
 // TSDBAdminStats provides TSDB admin statistics.
 type TSDBAdminStats interface {
 	CleanTombstones() error
@@ -72,6 +78,7 @@ type TSDBAdminStats interface {
 	BlockMetas() ([]tsdb.BlockMeta, error)
 }
 
+// APIConfig 汇总构造测试 API 所需的 LazyLoader 依赖与可选覆盖项。
 // APIConfig holds configuration for creating a test API instance.
 type APIConfig struct {
 	// Core dependencies.
@@ -95,11 +102,13 @@ type APIConfig struct {
 	Now      func() time.Time
 }
 
+// APIWrapper 暴露 http.Handler 供 httptest 直接调用。
 // APIWrapper wraps the API and provides a handler for testing.
 type APIWrapper struct {
 	Handler http.Handler
 }
 
+// PrometheusVersion 对应 /status/buildinfo 返回的构建信息字段。
 // PrometheusVersion contains build information about Prometheus.
 type PrometheusVersion struct {
 	Version   string `json:"version"`
@@ -110,6 +119,7 @@ type PrometheusVersion struct {
 	GoVersion string `json:"goVersion"`
 }
 
+// RuntimeInfo 对应 /status/runtimeinfo 的运行时诊断字段。
 // RuntimeInfo contains runtime information about Prometheus.
 type RuntimeInfo struct {
 	StartTime           time.Time `json:"startTime"`
@@ -127,6 +137,7 @@ type RuntimeInfo struct {
 	StorageRetention    string    `json:"storageRetention"`
 }
 
+// NewAPIParams 是 v1.NewAPI 的完整参数集合，供测试直接传入。
 // NewAPIParams holds all the parameters needed to create a v1.API instance.
 type NewAPIParams struct {
 	QueryEngine           promql.QueryEngine
@@ -150,6 +161,7 @@ type NewAPIParams struct {
 	Registerer            prometheus.Registerer
 }
 
+// PrepareAPI 为未设置的 LazyLoader 填充空实现/测试引擎，并返回可用的 NewAPIParams。
 // PrepareAPI creates a NewAPIParams with sensible defaults for testing.
 func PrepareAPI(t *testing.T, cfg APIConfig) NewAPIParams {
 	t.Helper()

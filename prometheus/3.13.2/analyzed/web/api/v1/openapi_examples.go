@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 本文件为 OpenAPI 各端点提供请求/响应示例，嵌入生成的 spec 供 API 消费者参考。
 // This file contains example request bodies and response data for OpenAPI documentation.
 // Examples are included in the generated spec to provide realistic usage scenarios for API consumers.
 package v1
@@ -25,6 +26,7 @@ import (
 
 // Example builders for request bodies.
 
+// queryPostExamples 提供 POST /query 的 instant query 示例集合。
 func queryPostExamples() *orderedmap.Map[string, *base.Example] {
 	examples := orderedmap.New[string, *base.Example]()
 
@@ -54,6 +56,7 @@ func queryPostExamples() *orderedmap.Map[string, *base.Example] {
 }
 
 // queryRangePostExamples returns examples for POST /query_range endpoint.
+// queryRangePostExamples 提供 POST /query_range 区间查询示例。
 func queryRangePostExamples() *orderedmap.Map[string, *base.Example] {
 	examples := orderedmap.New[string, *base.Example]()
 
@@ -82,6 +85,7 @@ func queryRangePostExamples() *orderedmap.Map[string, *base.Example] {
 }
 
 // queryExemplarsPostExamples returns examples for POST /query_exemplars endpoint.
+// queryExemplarsPostExamples 提供 POST /query_exemplars 示例。
 func queryExemplarsPostExamples() *orderedmap.Map[string, *base.Example] {
 	examples := orderedmap.New[string, *base.Example]()
 
@@ -137,6 +141,7 @@ func parseQueryPostExamples() *orderedmap.Map[string, *base.Example] {
 }
 
 // labelsPostExamples returns examples for POST /labels endpoint.
+// labelsPostExamples 提供 POST /labels 标签名查询示例。
 func labelsPostExamples() *orderedmap.Map[string, *base.Example] {
 	examples := orderedmap.New[string, *base.Example]()
 
@@ -241,6 +246,7 @@ func seriesPostExamples() *orderedmap.Map[string, *base.Example] {
 // Example builders for response bodies.
 
 // queryResponseExamples returns examples for /query response.
+// queryResponseExamples 构造 /query 典型 vector/scalar 成功响应示例。
 func queryResponseExamples() *orderedmap.Map[string, *base.Example] {
 	examples := orderedmap.New[string, *base.Example]()
 
@@ -294,6 +300,7 @@ func queryResponseExamples() *orderedmap.Map[string, *base.Example] {
 }
 
 // queryRangeResponseExamples returns examples for /query_range response.
+// queryRangeResponseExamples 构造 /query_range matrix 响应示例。
 func queryRangeResponseExamples() *orderedmap.Map[string, *base.Example] {
 	examples := orderedmap.New[string, *base.Example]()
 
@@ -436,6 +443,7 @@ func targetsResponseExamples() *orderedmap.Map[string, *base.Example] {
 }
 
 // rulesResponseExamples returns examples for /rules response.
+// rulesResponseExamples 构造 /rules 端点响应示例。
 func rulesResponseExamples() *orderedmap.Map[string, *base.Example] {
 	examples := orderedmap.New[string, *base.Example]()
 

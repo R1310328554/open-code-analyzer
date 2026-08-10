@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 本文件实现 storage、rules、scrape 等接口的 Fake/Lazy 测试替身。
 // This file contains mock implementations of API dependencies for testing.
 package testhelpers
 
@@ -32,6 +33,7 @@ import (
 	"github.com/prometheus/prometheus/util/annotations"
 )
 
+// LazyLoader 延迟执行 loader，每个测试实例只初始化一次 mock。
 // LazyLoader allows lazy initialization of mocks per test.
 type LazyLoader[T any] struct {
 	loader func() T
@@ -52,6 +54,7 @@ func (l *LazyLoader[T]) Get() T {
 	return *l.value
 }
 
+// FakeQueryable 用内存 series 列表实现 Querier/ChunkQuerier。
 // FakeQueryable implements storage.SampleAndChunkQueryable with configurable behavior.
 type FakeQueryable struct {
 	series []storage.Series
@@ -225,6 +228,7 @@ func (*FakeChunkSeriesIterator) Err() error {
 	return nil
 }
 
+// FakeSeries 以 FPoint 切片模拟浮点时序。
 // FakeSeries implements storage.Series.
 type FakeSeries struct {
 	labels  labels.Labels
@@ -288,6 +292,7 @@ func (*FakeSeriesIterator) Err() error {
 	return nil
 }
 
+// FakeHistogramSeries 以 HPoint 切片模拟原生直方图时序。
 // FakeHistogramSeries implements storage.Series for histogram data.
 type FakeHistogramSeries struct {
 	labels     labels.Labels
@@ -351,6 +356,7 @@ func (*FakeHistogramSeriesIterator) Err() error {
 	return nil
 }
 
+// FakeExemplarQueryable 返回空的 ExemplarQuerier。
 // FakeExemplarQueryable implements storage.ExemplarQueryable.
 type FakeExemplarQueryable struct{}
 
@@ -365,6 +371,7 @@ func (*FakeExemplarQuerier) Select(_, _ int64, _ ...[]*labels.Matcher) ([]exempl
 	return nil, nil
 }
 
+// FakeRulesRetriever 从预设 groups 中提取 alerting rules。
 // FakeRulesRetriever implements v1.RulesRetriever.
 type FakeRulesRetriever struct {
 	groups []*rules.Group
@@ -472,16 +479,19 @@ func (*FakeTSDBAdminStats) BlockMetas() ([]tsdb.BlockMeta, error) {
 	return []tsdb.BlockMeta{}, nil
 }
 
+// NewEmptyQueryable 返回不含任何 series 的 FakeQueryable。
 // NewEmptyQueryable returns a queryable with no series.
 func NewEmptyQueryable() storage.SampleAndChunkQueryable {
 	return &FakeQueryable{series: []storage.Series{}}
 }
 
+// NewQueryableWithSeries 用指定 series 构造 FakeQueryable。
 // NewQueryableWithSeries returns a queryable with the given series.
 func NewQueryableWithSeries(series []storage.Series) storage.SampleAndChunkQueryable {
 	return &FakeQueryable{series: series}
 }
 
+// TSDBNotReadyQueryable 始终返回 tsdb.ErrNotReady，用于测试未就绪场景。
 // TSDBNotReadyQueryable implements storage.SampleAndChunkQueryable that returns tsdb.ErrNotReady.
 type TSDBNotReadyQueryable struct{}
 

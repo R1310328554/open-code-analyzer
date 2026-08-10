@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 本文件提供 GET/POST 便捷方法，执行 API 并解析 JSON 为 Response。
 // This file provides HTTP request builders for testing API endpoints.
 package testhelpers
 
@@ -24,6 +25,7 @@ import (
 	"testing"
 )
 
+// Response 封装 HTTP 结果与可选 JSON map，支持链式断言与 OpenAPI 校验。
 // Response wraps an HTTP response with parsed JSON data.
 // It supports method chaining for assertions.
 //
@@ -49,6 +51,7 @@ type Response struct {
 	responseHeader http.Header
 }
 
+// GET 构造 query 参数（键值对）并调用 API Handler。
 // GET sends a GET request to the API and returns a Response with parsed JSON.
 // queryParams should be pairs of key-value strings.
 func GET(t *testing.T, api *APIWrapper, path string, queryParams ...string) *Response {
@@ -73,6 +76,7 @@ func GET(t *testing.T, api *APIWrapper, path string, queryParams ...string) *Res
 	return executeRequest(t, api, req)
 }
 
+// POST 以 application/x-www-form-urlencoded 提交表单字段。
 // POST sends a POST request to the API with the given body and returns a Response with parsed JSON.
 // bodyParams should be pairs of key-value strings for form data.
 func POST(t *testing.T, api *APIWrapper, path string, bodyParams ...string) *Response {
@@ -94,6 +98,7 @@ func POST(t *testing.T, api *APIWrapper, path string, bodyParams ...string) *Res
 }
 
 // executeRequest executes an HTTP request and parses the response as JSON.
+// executeRequest 录制响应、尝试 JSON 反序列化，并保留原始请求供 OpenAPI 校验。
 func executeRequest(t *testing.T, api *APIWrapper, req *http.Request) *Response {
 	t.Helper()
 

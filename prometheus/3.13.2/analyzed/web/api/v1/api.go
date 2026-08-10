@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// v1 包实现 Prometheus HTTP API（/api/v1）：PromQL 查询、元数据、目标、规则、TSDB 管理与远程读写。
+
 package v1
 
 import (
@@ -63,6 +65,7 @@ import (
 	"github.com/prometheus/prometheus/util/stats"
 )
 
+// status 表示 API JSON 响应中的 status 字段取值。
 type status string
 
 const (
@@ -108,6 +111,7 @@ var (
 	errorNotAcceptable = errorType{ErrorNotAcceptable, "not_acceptable"}
 )
 
+// OverrideErrorCode 允许调用方自定义各 errorType 对应的 HTTP 状态码。
 // OverrideErrorCode can be used to override status code for different error types.
 // Return false to fall back to default status code.
 type OverrideErrorCode func(errorNum, error) (code int, override bool)
@@ -123,11 +127,13 @@ func (e *apiError) Error() string {
 	return fmt.Sprintf("%s: %s", e.typ.str, e.err)
 }
 
+// ScrapePoolsRetriever 返回所有 scrape pool 名称。
 // ScrapePoolsRetriever provide the list of all scrape pools.
 type ScrapePoolsRetriever interface {
 	ScrapePools() []string
 }
 
+// TargetRetriever 提供抓取目标及 pool 配置。
 // TargetRetriever provides the list of active/dropped targets to scrape or not.
 type TargetRetriever interface {
 	TargetsActive() map[string][]*scrape.Target
@@ -136,18 +142,21 @@ type TargetRetriever interface {
 	ScrapePoolConfig(string) (*config.ScrapeConfig, error)
 }
 
+// AlertmanagerRetriever 返回 Alertmanager 发现结果。
 // AlertmanagerRetriever provides a list of all/dropped AlertManager URLs.
 type AlertmanagerRetriever interface {
 	Alertmanagers() []*url.URL
 	DroppedAlertmanagers() []*url.URL
 }
 
+// RulesRetriever 返回规则组与告警规则。
 // RulesRetriever provides a list of active rules and alerts.
 type RulesRetriever interface {
 	RuleGroups() []*rules.Group
 	AlertingRules() []*rules.AlertingRule
 }
 
+// StatsRenderer 将 PromQL 引擎统计信息转换为 API 可序列化结构。
 // StatsRenderer converts engine statistics into a format suitable for the API.
 type StatsRenderer func(context.Context, *stats.Statistics, string) stats.QueryStats
 
@@ -186,6 +195,7 @@ type RuntimeInfo struct {
 	StorageRetention    string    `json:"storageRetention"`
 }
 
+// Response 是写入客户端的统一 JSON 信封（status/data/error/warnings）。
 // Response contains a response to a HTTP API request.
 type Response struct {
 	Status    status   `json:"status"`
@@ -205,6 +215,7 @@ type apiFuncResult struct {
 
 type apiFunc func(r *http.Request) apiFuncResult
 
+// TSDBAdminStats 定义 TSDB 管理端点所需的删除、快照与统计接口。
 // TSDBAdminStats defines the tsdb interfaces used by the v1 API for admin operations as well as statistics.
 type TSDBAdminStats interface {
 	CleanTombstones() error
@@ -220,6 +231,7 @@ type QueryOpts interface {
 	LookbackDelta() time.Duration
 }
 
+// API 聚合查询引擎、存储与各 retriever，向 route.Router 注册 REST 端点。
 // API can register a set of endpoints in a router and handle
 // them using the provided storage and query engine.
 type API struct {
@@ -267,6 +279,7 @@ type API struct {
 	parser parser.Parser
 }
 
+// NewAPI 装配 remote read/write、OTLP、OpenAPI 与默认 JSONCodec。
 // NewAPI returns an initialized API type.
 func NewAPI(
 	qe promql.QueryEngine,
@@ -378,6 +391,7 @@ func NewAPI(
 	return a
 }
 
+// InstallCodec 追加响应编码器；先安装的 codec 在 Accept 协商中优先级更高。
 // InstallCodec adds codec to this API's available codecs.
 // Codecs installed first take precedence over codecs installed later when evaluating wildcards in Accept headers.
 // The first installed codec is used as a fallback when the Accept header cannot be satisfied or if there is no Accept header.
@@ -397,6 +411,7 @@ func setUnavailStatusOnTSDBNotReady(r apiFuncResult) apiFuncResult {
 	return r
 }
 
+// Register 注册 query、labels、targets、rules、admin、remote 等全部 /api/v1 路由。
 // Register the API's endpoints in the given router.
 func (api *API) Register(r *route.Router) {
 	wrap := func(f apiFunc) http.HandlerFunc {
@@ -516,6 +531,7 @@ func (*API) options(*http.Request) apiFuncResult {
 	return apiFuncResult{nil, nil, nil, nil}
 }
 
+// query 处理即时 PromQL 查询（GET/POST），支持 limit 与 stats 参数。
 func (api *API) query(r *http.Request) (result apiFuncResult) {
 	limit, err := parseLimitParam(r.FormValue("limit"))
 	if err != nil {
@@ -617,6 +633,7 @@ func extractQueryOpts(r *http.Request) (promql.QueryOpts, error) {
 	return promql.NewPrometheusQueryOpts(r.FormValue("stats") == "all", duration), nil
 }
 
+// queryRange 处理区间 PromQL 查询，解析 start/end/step。
 func (api *API) queryRange(r *http.Request) (result apiFuncResult) {
 	limit, err := parseLimitParam(r.FormValue("limit"))
 	if err != nil {
@@ -772,6 +789,7 @@ func returnAPIError(err error) *apiError {
 	return &apiError{errorExec, err}
 }
 
+// labelNames 返回时间范围内存在的标签名列表。
 func (api *API) labelNames(r *http.Request) apiFuncResult {
 	limit, err := parseLimitParam(r.FormValue("limit"))
 	if err != nil {
@@ -970,6 +988,7 @@ var (
 	maxTimeFormatted = MaxTime.Format(time.RFC3339Nano)
 )
 
+// series 按 match[] 选择器返回时序标签集。
 func (api *API) series(r *http.Request) (result apiFuncResult) {
 	ctx := r.Context()
 
@@ -1176,6 +1195,7 @@ func (api *API) scrapePools(r *http.Request) apiFuncResult {
 	return apiFuncResult{data: res, err: nil, warnings: nil, finalizer: nil}
 }
 
+// targets 返回 active/dropped 抓取目标及全局 URL 选项。
 func (api *API) targets(r *http.Request) apiFuncResult {
 	getSortedPools := func(targets map[string][]*scrape.Target) ([]string, int) {
 		var n int
@@ -1587,6 +1607,7 @@ type RecordingRule struct {
 	Type string `json:"type"`
 }
 
+// rules 列出 recording/alerting 规则，支持分页与 exclude_alerts。
 func (api *API) rules(r *http.Request) apiFuncResult {
 	if err := r.ParseForm(); err != nil {
 		return apiFuncResult{nil, &apiError{errorBadData, fmt.Errorf("error parsing form values: %w", err)}, nil, nil}
@@ -2147,6 +2168,7 @@ func (api *API) cleanTombstones(*http.Request) apiFuncResult {
 	return apiFuncResult{nil, nil, nil, nil}
 }
 
+// respond 按 Accept 协商 codec，序列化 success 响应并写入 warnings/infos。
 // Query string is needed to get the position information for the annotations, and it
 // can be empty if the position information isn't needed.
 func (api *API) respond(w http.ResponseWriter, req *http.Request, data any, warnings annotations.Annotations, query string) {
@@ -2197,6 +2219,7 @@ func (api *API) negotiateCodec(req *http.Request, resp *Response) (Codec, error)
 	return defaultCodec, nil
 }
 
+// respondError 将 apiError 映射为 JSON error 响应及对应 HTTP 状态码。
 func (api *API) respondError(w http.ResponseWriter, apiErr *apiError, data any) {
 	json := jsoniter.ConfigCompatibleWithStandardLibrary
 	b, err := json.Marshal(&Response{
@@ -2262,6 +2285,7 @@ func parseTimeParam(r *http.Request, paramName string, defaultValue time.Time) (
 	return result, nil
 }
 
+// parseTime 支持 Unix 浮点秒、RFC3339Nano 及 MinTime/MaxTime 边界常量。
 func parseTime(s string) (time.Time, error) {
 	if t, err := strconv.ParseFloat(s, 64); err == nil {
 		s, ns := math.Modf(t)
@@ -2344,6 +2368,7 @@ func toHintLimit(limit int) int {
 	return limit
 }
 
+// truncateResults 对 Vector/Matrix 结果按 limit 截断并标记是否 truncated。
 // truncateResults truncates result for queryRange() and query().
 // No truncation for other types(Scalars or Strings).
 func truncateResults(result *promql.Result, limit int) (*promql.Result, bool) {

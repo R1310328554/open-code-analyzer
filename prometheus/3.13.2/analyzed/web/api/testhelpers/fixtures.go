@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 本文件提供 API 测试用的时序、规则组等固定样例数据。
 // This file provides test fixture data for API tests.
 package testhelpers
 
@@ -27,6 +28,7 @@ import (
 
 var testParser = parser.NewParser(parser.Options{})
 
+// FixtureSeries 返回单条 up 时序，时间戳相对当前时刻以便查询命中。
 // FixtureSeries creates a simple series with the "up" metric.
 func FixtureSeries() []storage.Series {
 	// Use timestamps relative to "now" so queries work.
@@ -43,6 +45,7 @@ func FixtureSeries() []storage.Series {
 	}
 }
 
+// FixtureMultipleSeries 返回多条 up 与 http_requests_total 样例时序。
 // FixtureMultipleSeries creates multiple series for testing.
 func FixtureMultipleSeries() []storage.Series {
 	// Use timestamps relative to "now" so queries work.
@@ -72,6 +75,7 @@ func FixtureMultipleSeries() []storage.Series {
 	}
 }
 
+// FixtureRuleGroups 构造含一条 recording 与一条 alerting 规则的 example 组。
 // FixtureRuleGroups creates a simple set of rule groups for testing.
 func FixtureRuleGroups() []*rules.Group {
 	// Create a simple recording rule.
@@ -111,11 +115,13 @@ func FixtureRuleGroups() []*rules.Group {
 	return []*rules.Group{group}
 }
 
+// FixtureEmptyRuleGroups 返回空规则组列表。
 // FixtureEmptyRuleGroups returns an empty set of rule groups.
 func FixtureEmptyRuleGroups() []*rules.Group {
 	return []*rules.Group{}
 }
 
+// FixtureSingleSeries 构造单点浮点样本的简易时序。
 // FixtureSingleSeries creates a single series for simple tests.
 func FixtureSingleSeries(metricName string, value float64) []storage.Series {
 	return []storage.Series{
@@ -128,6 +134,7 @@ func FixtureSingleSeries(metricName string, value float64) []storage.Series {
 	}
 }
 
+// FixtureHistogramSeries 返回带 FloatHistogram 样本的测试时序。
 // FixtureHistogramSeries creates a series with native histogram data.
 func FixtureHistogramSeries() []storage.Series {
 	// Use timestamps relative to "now" so queries work.

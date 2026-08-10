@@ -20,6 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// testutil 测试辅助：封装 goleak 泄漏检测，并忽略 OpenCensus、klog 等依赖产生的已知协程。
+
 package testutil
 
 import (
@@ -28,6 +30,7 @@ import (
 	"go.uber.org/goleak"
 )
 
+// TolerantVerifyLeak 在 TestMain 中调用 goleak，同时排除依赖库启动的后台 goroutine 误报。
 // TolerantVerifyLeak verifies go leaks but excludes the go routines that are
 // launched as side effects of some of our dependencies.
 func TolerantVerifyLeak(m *testing.M) {

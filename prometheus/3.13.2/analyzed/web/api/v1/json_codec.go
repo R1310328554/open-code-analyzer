@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// json_codec 注册 PromQL/labels/exemplar 的 jsoniter 自定义编码，匹配 Prometheus API JSON 格式。
+
 package v1
 
 import (
@@ -24,6 +26,7 @@ import (
 	"github.com/prometheus/prometheus/util/jsonutil"
 )
 
+// init 为 Vector/Matrix/Series/Sample 等类型注册 unsafe 指针 JSON 编码器。
 func init() {
 	jsoniter.RegisterTypeEncoderFunc("promql.Vector", unsafeMarshalVectorJSON, neverEmpty)
 	jsoniter.RegisterTypeEncoderFunc("promql.Matrix", unsafeMarshalMatrixJSON, neverEmpty)
@@ -35,6 +38,7 @@ func init() {
 	jsoniter.RegisterTypeEncoderFunc("labels.Labels", unsafeMarshalLabelsJSON, labelsIsEmpty)
 }
 
+// JSONCodec 作为默认 codec，始终 CanEncode 并使用标准库兼容 jsoniter 序列化。
 // JSONCodec is a Codec that encodes API responses as JSON.
 type JSONCodec struct{}
 
@@ -51,6 +55,7 @@ func (JSONCodec) Encode(resp *Response) ([]byte, error) {
 	return json.Marshal(resp)
 }
 
+// unsafeMarshalSeriesJSON 输出 metric + values/histograms 数组的 series JSON。
 // unsafeMarshalSeriesJSON writes something like the following:
 //
 //	{
@@ -103,11 +108,13 @@ func marshalSeriesJSON(s promql.Series, stream *jsoniter.Stream) {
 	stream.WriteObjectEnd()
 }
 
+// neverEmpty 恒为 false，使 jsoniter 对空集合仍输出 [] 而非省略字段。
 // In the Prometheus API we render an empty object as `[]` or similar.
 func neverEmpty(unsafe.Pointer) bool {
 	return false
 }
 
+// unsafeMarshalSampleJSON 输出带 value 或 histogram 字段的 instant vector 元素。
 // unsafeMarshalSampleJSON writes something like the following for normal value samples:
 //
 //	{
@@ -237,6 +244,7 @@ func labelsIsEmpty(ptr unsafe.Pointer) bool {
 	return labelsPtr.IsEmpty()
 }
 
+// unsafeMarshalVectorJSON 将 Vector 编码为 sample 数组。
 // Marshal a Vector as `[sample,sample,...]` - empty Vector is `[]`.
 func unsafeMarshalVectorJSON(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 	v := *((*promql.Vector)(ptr))
@@ -250,6 +258,7 @@ func unsafeMarshalVectorJSON(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 	stream.WriteArrayEnd()
 }
 
+// unsafeMarshalMatrixJSON 将 Matrix 编码为 series 对象数组。
 // Marshal a Matrix as `[series,series,...]` - empty Matrix is `[]`.
 func unsafeMarshalMatrixJSON(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 	m := *((*promql.Matrix)(ptr))

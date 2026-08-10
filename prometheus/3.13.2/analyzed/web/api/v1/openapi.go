@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 本文件动态构建 Prometheus /api/v1 的 OpenAPI 3.1/3.2 YAML 规范，支持路径过滤。
 // This file implements OpenAPI 3.2 specification generation for the Prometheus HTTP API.
 // It provides dynamic spec building with optional path filtering.
 package v1
@@ -35,6 +36,7 @@ const (
 	openAPIVersion32 = "3.2.0"
 )
 
+// OpenAPIOptions 控制包含路径、ExternalURL、API 版本与 search limit 上限。
 // OpenAPIOptions configures the OpenAPI spec builder.
 type OpenAPIOptions struct {
 	// IncludePaths filters which paths to include in the spec.
@@ -54,6 +56,7 @@ type OpenAPIOptions struct {
 	MaxSearchLimit int
 }
 
+// OpenAPIBuilder 缓存 3.1/3.2 两份 YAML，选项变更时 rebuild。
 // OpenAPIBuilder builds and caches OpenAPI specifications.
 type OpenAPIBuilder struct {
 	mu           sync.RWMutex
@@ -63,6 +66,7 @@ type OpenAPIBuilder struct {
 	logger       *slog.Logger
 }
 
+// NewOpenAPIBuilder 构造后立即 rebuild 生成缓存 spec。
 // NewOpenAPIBuilder creates a new OpenAPI builder with the given options.
 func NewOpenAPIBuilder(opts OpenAPIOptions, logger *slog.Logger) *OpenAPIBuilder {
 	b := &OpenAPIBuilder{
@@ -98,6 +102,7 @@ func (b *OpenAPIBuilder) rebuild() {
 	b.cachedYAML32 = yamlBytes32
 }
 
+// ServeOpenAPI 按 ?openapi_version= 返回 3.1（默认）或 3.2 YAML。
 // ServeOpenAPI returns the OpenAPI specification as YAML.
 // By default, serves OpenAPI 3.1.0. Use ?openapi_version=3.2 for OpenAPI 3.2.0.
 func (b *OpenAPIBuilder) ServeOpenAPI(w http.ResponseWriter, r *http.Request) {
@@ -123,6 +128,7 @@ func (b *OpenAPIBuilder) ServeOpenAPI(w http.ResponseWriter, r *http.Request) {
 	w.Write(yamlData)
 }
 
+// WrapHandler 当前为透传，预留 OpenAPI 运行时校验扩展点。
 // WrapHandler returns the handler unchanged (no validation).
 func (*OpenAPIBuilder) WrapHandler(next http.HandlerFunc) http.HandlerFunc {
 	return next
@@ -167,6 +173,7 @@ func (b *OpenAPIBuilder) shouldIncludePathForVersion(path, version string) bool 
 }
 
 // buildDocument creates the OpenAPI document for the specified version using high-level structs.
+// buildDocument 组装 info/servers/tags/paths/components 完整 OpenAPI 文档。
 func (b *OpenAPIBuilder) buildDocument(version string) *v3.Document {
 	return &v3.Document{
 		Version:    version,
@@ -272,6 +279,7 @@ func (b *OpenAPIBuilder) buildPaths(version string) *v3.Paths {
 }
 
 // getAllPathDefinitions returns all path definitions.
+// getAllPathDefinitions 注册 query、labels、admin、remote 等全部路径项。
 func (b *OpenAPIBuilder) getAllPathDefinitions() *orderedmap.Map[string, *v3.PathItem] {
 	paths := orderedmap.New[string, *v3.PathItem]()
 

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// testwal 为 WAL 测试生成可配置的 Series/Sample/Histogram/Exemplar 等 record 批次。
+
 package testwal
 
 import (
@@ -24,6 +26,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/record"
 )
 
+// RecordsCase 描述 WAL record 生成参数；Series ref 在 [RefPadding, RefPadding+Series) 内单调递增。
 // RecordsCase represents record generation option in a form of a test case.
 //
 // Generated Series will have refs that monotonic and deterministic, in range of [RefPadding, RefPadding+Series).
@@ -52,6 +55,7 @@ type RecordsCase struct {
 	NoST bool
 }
 
+// Records 聚合 GenerateRecords 产出的各类 WAL record 切片。
 // Records represents batches of generated WAL records.
 type Records struct {
 	Series          []record.RefSeries
@@ -62,6 +66,7 @@ type Records struct {
 	Metadata        []record.RefMetadata
 }
 
+// newTestHist 构造指数分桶的测试用 Histogram，正负桶计数随 ref 变化。
 func newTestHist(i int) *histogram.Histogram {
 	return &histogram.Histogram{
 		Schema:          2,
@@ -76,6 +81,7 @@ func newTestHist(i int) *histogram.Histogram {
 	}
 }
 
+// GenerateRecords 按 RecordsCase 为每条 series 填充样本、直方图、浮点直方图与 exemplar。
 // GenerateRecords generates batches of WAL records for a given RecordsCase.
 // Batches represents set of series with the given number of counter samples, histograms, etc. per each series ref.
 func GenerateRecords(c RecordsCase) (ret Records) {

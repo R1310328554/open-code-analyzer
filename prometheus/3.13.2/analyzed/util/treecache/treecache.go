@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// treecache 在本地缓存 ZooKeeper 子树数据，并通过 watch 事件增量更新。
+
 package treecache
 
 import (
@@ -46,6 +48,7 @@ func init() {
 	prometheus.MustRegister(numWatchers)
 }
 
+// ZookeeperLogger 将 slog.Logger 适配为 go-zookeeper 的 Logger 接口。
 // ZookeeperLogger wraps a *slog.Logger into a zk.Logger.
 type ZookeeperLogger struct {
 	logger *slog.Logger
@@ -61,6 +64,7 @@ func (zl ZookeeperLogger) Printf(s string, i ...any) {
 	zl.logger.Info(s, i...)
 }
 
+// ZookeeperTreeCache 递归 watch 指定 ZK 路径，将节点数据变更推送到 events channel。
 // A ZookeeperTreeCache keeps data from all children of a Zookeeper path
 // locally cached and updated according to received events.
 type ZookeeperTreeCache struct {
@@ -74,6 +78,7 @@ type ZookeeperTreeCache struct {
 	logger *slog.Logger
 }
 
+// ZookeeperTreeCacheEvent 表示某 ZK 路径的数据更新；Data 为 nil 表示节点已删除。
 // A ZookeeperTreeCacheEvent models a Zookeeper event for a path.
 type ZookeeperTreeCacheEvent struct {
 	Path string
@@ -88,6 +93,7 @@ type zookeeperTreeCacheNode struct {
 	children map[string]*zookeeperTreeCacheNode
 }
 
+// NewZookeeperTreeCache 启动后台 loop 递归订阅 path 及其子节点。
 // NewZookeeperTreeCache creates a new ZookeeperTreeCache for a given path.
 func NewZookeeperTreeCache(conn *zk.Conn, path string, events chan ZookeeperTreeCacheEvent, logger *slog.Logger) *ZookeeperTreeCache {
 	tc := &ZookeeperTreeCache{
@@ -110,6 +116,7 @@ func NewZookeeperTreeCache(conn *zk.Conn, path string, events chan ZookeeperTree
 	return tc
 }
 
+// Stop 通知 loop 退出，排空 head.events 后关闭对外 events channel。
 // Stop stops the tree cache.
 func (tc *ZookeeperTreeCache) Stop() {
 	tc.stop <- struct{}{}
@@ -127,6 +134,7 @@ func (tc *ZookeeperTreeCache) Stop() {
 	}()
 }
 
+// loop 处理初始同步、ZK 事件、失败重试与 Stop 信号的主循环。
 func (tc *ZookeeperTreeCache) loop(path string) {
 	defer tc.wg.Done()
 
@@ -211,6 +219,7 @@ func (tc *ZookeeperTreeCache) loop(path string) {
 	}
 }
 
+// recursiveNodeUpdate 对单节点 GetW/ChildrenW，更新本地缓存并注册 data/child watcher。
 func (tc *ZookeeperTreeCache) recursiveNodeUpdate(path string, node *zookeeperTreeCacheNode) error {
 	data, _, dataWatcher, err := tc.conn.GetW(path)
 	switch {
@@ -280,6 +289,7 @@ func (tc *ZookeeperTreeCache) recursiveNodeUpdate(path string, node *zookeeperTr
 	return nil
 }
 
+// resyncState 在 ZK 重连成功后删除新树中已不存在的旧子节点。
 func (tc *ZookeeperTreeCache) resyncState(path string, currentState, previousState *zookeeperTreeCacheNode) {
 	for child, previousNode := range previousState.children {
 		if currentNode, present := currentState.children[child]; present {
@@ -290,6 +300,7 @@ func (tc *ZookeeperTreeCache) resyncState(path string, currentState, previousSta
 	}
 }
 
+// recursiveDelete 停止 watcher 并向 events 发送 Data=nil 表示路径删除。
 func (tc *ZookeeperTreeCache) recursiveDelete(path string, node *zookeeperTreeCacheNode) {
 	if !node.stopped {
 		node.done <- struct{}{}

@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// codec 定义 API 响应编码抽象：Content-Type 协商、CanEncode 与 Encode。
+
 package v1
 
 import "github.com/munnerz/goautoneg"
 
+// Codec 接口负责将 Response 编码为客户端可消费的 MIME 类型字节流。
 // A Codec performs encoding of API responses.
 type Codec interface {
 	// ContentType returns the MIME time that this Codec emits.
@@ -27,6 +30,7 @@ type Codec interface {
 	Encode(resp *Response) ([]byte, error)
 }
 
+// MIMEType 表示 type/subtype，用于 Accept 头匹配。
 type MIMEType struct {
 	Type    string
 	SubType string

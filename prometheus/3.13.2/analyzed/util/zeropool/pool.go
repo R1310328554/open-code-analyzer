@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// zeropool 提供类型安全的零分配 sync.Pool 替代方案，规避 staticcheck SA6002；代码源自 colega/zeropool。
 // Package zeropool provides a zero-allocation type-safe alternative for sync.Pool, used to workaround staticheck SA6002.
 // The contents of this package are brought from https://github.com/colega/zeropool because "little copying is better than little dependency".
 
@@ -18,6 +19,7 @@ package zeropool
 
 import "sync"
 
+// Pool[T] 用双 sync.Pool 复用 *T 指针，Get 返回值拷贝、Put 归还时避免额外堆分配。
 // Pool is a type-safe pool of items that does not allocate pointers to items.
 // That is not entirely true, it does allocate sometimes, but not most of the time,
 // just like the usual sync.Pool pools items most of the time, except when they're evicted.
@@ -34,6 +36,7 @@ type Pool[T any] struct {
 	pointers sync.Pool
 }
 
+// New 指定 items 池为空时创建新 T 的工厂函数。
 // New creates a new Pool[T] with the given function to create new items.
 // A Pool must not be copied after first use.
 func New[T any](item func() T) Pool[T] {
@@ -47,6 +50,7 @@ func New[T any](item func() T) Pool[T] {
 	}
 }
 
+// Get 从 items 池取 *T 并拷贝值；零值 Pool 且池空时返回 T 零值。
 // Get returns an item from the pool, creating a new one if necessary.
 // Get may be called concurrently from multiple goroutines.
 func (p *Pool[T]) Get() T {
@@ -64,6 +68,7 @@ func (p *Pool[T]) Get() T {
 	return item
 }
 
+// Put 从 pointers 池复用或新建 *T，写入 item 后放回 items 池。
 // Put adds an item to the pool.
 func (p *Pool[T]) Put(item T) {
 	var ptr *T

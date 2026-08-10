@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 本文件为 Response 提供链式断言，基于 testify/require 校验 JSON 响应。
 // This file provides assertion helpers for validating API responses in tests.
 package testhelpers
 
@@ -22,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// RequireSuccess 断言 status 为 success，支持方法链继续断言。
 // RequireSuccess asserts that the response has status "success" and returns the response for chaining.
 func (r *Response) RequireSuccess() *Response {
 	r.t.Helper()
@@ -30,6 +32,7 @@ func (r *Response) RequireSuccess() *Response {
 	return r
 }
 
+// RequireError 断言 status 为 error。
 // RequireError asserts that the response has status "error" and returns the response for chaining.
 func (r *Response) RequireError() *Response {
 	r.t.Helper()
@@ -38,6 +41,7 @@ func (r *Response) RequireError() *Response {
 	return r
 }
 
+// RequireStatusCode 校验 HTTP 状态码。
 // RequireStatusCode asserts that the response has the given HTTP status code and returns the response for chaining.
 func (r *Response) RequireStatusCode(expectedCode int) *Response {
 	r.t.Helper()
@@ -45,6 +49,7 @@ func (r *Response) RequireStatusCode(expectedCode int) *Response {
 	return r
 }
 
+// RequireJSONPathExists 断言 $. 风格路径存在（不支持数组下标）。
 // RequireJSONPathExists asserts that a JSON path exists and returns the response for chaining.
 func (r *Response) RequireJSONPathExists(path string) *Response {
 	r.t.Helper()
@@ -131,6 +136,7 @@ func (r *Response) RequireSome(path string, predicate func(any) bool) *Response 
 	return r
 }
 
+// getJSONPath 按点分路径逐级访问 map；含 [ 的路径暂不支持。
 // getJSONPath extracts a value from a JSON object using a simple path notation.
 // Supports paths like "$.data", "$.data.groups", "$.data.groups[0]".
 func getJSONPath(data map[string]any, path string) any {
@@ -163,18 +169,21 @@ func getJSONPath(data map[string]any, path string) any {
 	return current
 }
 
+// RequireVectorResult 组合断言 success 且 resultType 为 vector。
 // RequireVectorResult is a convenience helper for checking vector query results.
 func (r *Response) RequireVectorResult() *Response {
 	r.t.Helper()
 	return r.RequireSuccess().RequireEquals("$.data.resultType", "vector")
 }
 
+// RequireMatrixResult 组合断言 success 且 resultType 为 matrix。
 // RequireMatrixResult is a convenience helper for checking matrix query results.
 func (r *Response) RequireMatrixResult() *Response {
 	r.t.Helper()
 	return r.RequireSuccess().RequireEquals("$.data.resultType", "matrix")
 }
 
+// RequireScalarResult 组合断言 success 且 resultType 为 scalar。
 // RequireScalarResult is a convenience helper for checking scalar query results.
 func (r *Response) RequireScalarResult() *Response {
 	r.t.Helper()
@@ -207,6 +216,7 @@ func (r *Response) RequireTargetCount(minCount int) *Response {
 	return r
 }
 
+// DebugJSON 将状态码、原始 body 与解析后的 JSON 写入测试日志。
 // DebugJSON is a helper for debugging JSON responses in tests.
 func (r *Response) DebugJSON() *Response {
 	r.t.Helper()

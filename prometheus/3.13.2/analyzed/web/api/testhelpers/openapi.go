@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 本文件加载 golden OpenAPI 规范，校验测试请求/响应是否符合 3.1 与 3.2。
 // This file provides OpenAPI-specific test utilities for validating spec compliance.
 package testhelpers
 
@@ -38,6 +39,7 @@ var (
 )
 
 // loadOpenAPIValidators loads and caches both OpenAPI 3.1 and 3.2 validators from golden files.
+// loadOpenAPIValidators 从 testdata 读取并缓存 3.1/3.2 两份 validator（sync.Once）。
 func loadOpenAPIValidators() (v31, v32 validator.Validator, err error) {
 	openAPIValidatorOnce.Do(func() {
 		// Load OpenAPI 3.1 validator.
@@ -92,6 +94,7 @@ func loadOpenAPIValidators() (v31, v32 validator.Validator, err error) {
 	return openAPIValidator31, openAPIValidator32, nil
 }
 
+// ValidateOpenAPI 对当前 Response 关联的请求与响应分别做 3.1、3.2 合规校验。
 // ValidateOpenAPI validates the request and response against both OpenAPI 3.1 and 3.2 specifications.
 // This ensures API endpoints are compatible with both OpenAPI versions.
 // Returns the response for chaining.
@@ -118,6 +121,7 @@ func (r *Response) ValidateOpenAPI() *Response {
 }
 
 // validateRequestWithVersion validates the HTTP request against a specific OpenAPI version's spec.
+// validateRequestWithVersion 重建 httptest 请求体并调用 libopenapi-validator。
 func (r *Response) validateRequestWithVersion(v validator.Validator, version string) {
 	r.t.Helper()
 
@@ -189,6 +193,7 @@ func (r *Response) validateResponseWithVersion(v validator.Validator, version st
 }
 
 // isPathNotFoundError checks if the validation errors indicate a path was not found in the spec.
+// isPathNotFoundError 识别路径不在 spec 中的错误（如 3.1 不含 /notifications/live）。
 func isPathNotFoundError(errors []*valerrors.ValidationError) bool {
 	for _, err := range errors {
 		errStr := err.Error()
