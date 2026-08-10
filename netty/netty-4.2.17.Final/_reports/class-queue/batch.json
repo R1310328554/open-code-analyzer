@@ -15,23 +15,8 @@
     "common/src/main/java/io/netty/util/BooleanSupplier.java",
     "common/src/main/java/io/netty/util/ByteProcessor.java",
     "common/src/main/java/io/netty/util/ByteProcessorUtils.java",
-    "common/src/main/java/io/netty/util/CharsetUtil.java",
-    "common/src/main/java/io/netty/util/Constant.java",
-    "common/src/main/java/io/netty/util/ConstantPool.java",
-    "common/src/main/java/io/netty/util/DefaultAttributeMap.java",
-    "common/src/main/java/io/netty/util/DomainMappingBuilder.java",
-    "common/src/main/java/io/netty/util/DomainNameMapping.java",
-    "common/src/main/java/io/netty/util/DomainNameMappingBuilder.java",
-    "common/src/main/java/io/netty/util/DomainWildcardMappingBuilder.java",
-    "common/src/main/java/io/netty/util/HashedWheelTimer.java",
-    "common/src/main/java/io/netty/util/HashingStrategy.java",
-    "common/src/main/java/io/netty/util/IllegalReferenceCountException.java",
-    "common/src/main/java/io/netty/util/IntSupplier.java",
-    "common/src/main/java/io/netty/util/LeakPresenceDetector.java",
-    "common/src/main/java/io/netty/util/Mapping.java",
-    "common/src/main/java/io/netty/util/NetUtil.java",
-    "common/src/main/java/io/netty/util/NetUtilInitializations.java"
+    "common/src/main/java/io/netty/util/CharsetUtil.java"
   ],
   "remaining_pending": 818,
-  "done": 1080
+  "done": 1095
 }
