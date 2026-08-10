@@ -23,6 +23,9 @@ import io.netty.util.internal.ObjectUtil;
 import static io.netty.handler.codec.http3.Http3FrameValidationUtils.frameTypeUnexpected;
 import static io.netty.handler.codec.http3.Http3FrameValidationUtils.validateFrameWritten;
 
+/**
+ * 出站帧类型守卫：只允许写入 {@code T} 类型，类型不匹配则 fail promise。
+ */
 class Http3FrameTypeOutboundValidationHandler<T extends Http3Frame> extends ChannelOutboundHandlerAdapter {
 
     private final Class<T> frameType;

@@ -54,12 +54,15 @@ import java.net.SocketAddress;
  * <p>
  * For simplicity, it converts to chunked encoding unless the entire stream
  * is a single header.
+ * <p>适配层：把 HTTP/3 的 HEADERS/DATA 帧映射为 HTTP/1.1 风格的 {@link HttpRequest}/
+ * {@link HttpResponse} + {@link HttpContent}，便于复用现有 HTTP 业务 handler（如聚合器、路由）。
  */
 public final class Http3FrameToHttpObjectCodec extends Http3RequestStreamInboundHandler
         implements ChannelOutboundHandler {
 
     private final boolean isServer;
     private final boolean validateHeaders;
+    /** 入站翻译进行中：流提前关闭时需补发 EMPTY_LAST_CONTENT。 */
     private boolean inboundTranslationInProgress;
 
     public Http3FrameToHttpObjectCodec(final boolean isServer,
@@ -84,8 +87,7 @@ public final class Http3FrameToHttpObjectCodec extends Http3RequestStreamInbound
 
         final CharSequence status = headers.status();
 
-        // 100-continue response is a special case where we should not send a fin,
-        // but we need to decode it as a FullHttpResponse to play nice with HttpObjectAggregator.
+        // 100 Continue 不能带 FIN，需作为 FullHttpMessage 一次性交给下游
         if (null != status && HttpResponseStatus.CONTINUE.codeAsText().contentEquals(status)) {
             final FullHttpMessage fullMsg = newFullMessage(id, headers, ctx.alloc());
             ctx.fireChannelRead(fullMsg);
@@ -93,7 +95,7 @@ public final class Http3FrameToHttpObjectCodec extends Http3RequestStreamInbound
         }
 
         if (headers.method() == null && status == null) {
-            // Must be trailers!
+            // 无 :method 且无 :status → trailer 段
             LastHttpContent last = new DefaultLastHttpContent(Unpooled.EMPTY_BUFFER, validateHeaders);
             HttpConversionUtil.addHttp3ToHttpHeaders(id, headers, last.trailingHeaders(),
                     HttpVersion.HTTP_1_1, true, true);
@@ -102,6 +104,7 @@ public final class Http3FrameToHttpObjectCodec extends Http3RequestStreamInbound
         } else {
             HttpMessage req = newMessage(id, headers);
             if (!HttpUtil.isContentLengthSet(req)) {
+                // HTTP/3 无 Content-Length 时模拟 chunked 传输编码
                 req.headers().add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
             }
             inboundTranslationInProgress = true;
@@ -137,8 +140,7 @@ public final class Http3FrameToHttpObjectCodec extends Http3RequestStreamInbound
         if (!(msg instanceof HttpObject)) {
             throw new UnsupportedMessageTypeException(msg, HttpObject.class);
         }
-        // 100-continue is typically a FullHttpResponse, but the decoded
-        // Http3HeadersFrame should not handles as a end of stream.
+        // 100 Continue 出站必须是 FullHttpResponse，且不能 shutdown 输出（非流结束）
         if (msg instanceof HttpResponse) {
             final HttpResponse res = (HttpResponse) msg;
             if (res.status().equals(HttpResponseStatus.CONTINUE)) {
@@ -154,11 +156,9 @@ public final class Http3FrameToHttpObjectCodec extends Http3RequestStreamInbound
             }
         }
 
-        // this combiner is created lazily if we need multiple write calls
+        // combiner 在需要多次 write 且需统一完成 promise 时懒创建
         PromiseCombiner combiner = null;
-        // With the last content, *if* we write anything here, we need to wait for that write to complete before
-        // closing. To do that, we need to unvoid the promise. So if we write anything *and* this is the last message
-        // we will unvoid.
+        // LastHttpContent 写完后须等前序 write 刷盘再 shutdownOutput，故 unvoid promise
         boolean isLast = msg instanceof LastHttpContent;
 
         if (msg instanceof HttpMessage) {
@@ -196,9 +196,7 @@ public final class Http3FrameToHttpObjectCodec extends Http3RequestStreamInbound
                                 ctx, new DefaultHttp3DataFrame(last.content().retain()), promise, combiner, true);
                     }
                 }
-                // The shutdown is always done via the listener to ensure previous written data is correctly drained
-                // before QuicStreamChannel.shutdownOutput() is called. Missing to do so might cause previous queued
-                // data to be failed with a ClosedChannelException.
+                // 通过 listener 延迟 shutdownOutput，避免队列中前序 DATA 被 ClosedChannelException 丢弃
                 promise = promise.unvoid().addListener(QuicStreamChannel.SHUTDOWN_OUTPUT);
             } finally {
                 // Release LastHttpContent, we retain the content if we need it.
@@ -217,6 +215,7 @@ public final class Http3FrameToHttpObjectCodec extends Http3RequestStreamInbound
     /**
      * Write a message. If there is a combiner, add a new write promise to that combiner. If there is no combiner
      * ({@code null}), use the {@code outerPromise} directly as the write promise.
+     * <p>无 combiner 时单次 write 直接绑定 outerPromise；有 combiner 时各子 write 独立 promise 再 finish 合并。
      */
     private static ChannelPromise writeWithOptionalCombiner(
             ChannelHandlerContext ctx,
@@ -238,6 +237,7 @@ public final class Http3FrameToHttpObjectCodec extends Http3RequestStreamInbound
 
     private Http3Headers toHttp3Headers(HttpMessage msg) {
         if (msg instanceof HttpRequest) {
+            // HTTP/3 伪头 :scheme 固定为 https
             msg.headers().set(
                     HttpConversionUtil.ExtensionHeaderNames.SCHEME.text(), HttpScheme.HTTPS);
         }

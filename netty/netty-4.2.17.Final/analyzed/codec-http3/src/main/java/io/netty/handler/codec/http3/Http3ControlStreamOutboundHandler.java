@@ -26,12 +26,20 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.netty.handler.codec.http3.Http3CodecUtils.closeOnFailure;
 
+/**
+ * 本端控制流出站 handler：流激活时写入流类型前缀与本地 SETTINGS，
+ * 并校验 MAX_PUSH_ID / GOAWAY 的单调性约束。
+ */
 final class Http3ControlStreamOutboundHandler
         extends Http3FrameTypeDuplexValidationHandler<Http3ControlStreamFrame> {
     private final boolean server;
+    /** 编解码器，在流类型前缀写出后插入 pipeline 首部。 */
     private final ChannelHandler codec;
+    /** 已发送的最大 push ID，用于禁止回退 MAX_PUSH_ID。 */
     private Long sentMaxPushId;
+    /** 已发送 GOAWAY 中的流 ID，后续 GOAWAY 只能更小或相等。 */
     private Long sendGoAwayId;
+    /** channelActive 时发送一次后即置 null，便于 GC。 */
     private Http3SettingsFrame localSettings;
 
     Http3ControlStreamOutboundHandler(boolean server, Http3SettingsFrame localSettings, ChannelHandler codec) {
@@ -53,21 +61,18 @@ final class Http3ControlStreamOutboundHandler
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        // We need to write 0x00 into the stream before doing anything else.
+        // 控制流首字节必须是变长整数 0x00（HTTP3_CONTROL_STREAM_TYPE）
         // See https://tools.ietf.org/html/draft-ietf-quic-http-32#section-6.2.1
-        // Just allocate 8 bytes which would be the max needed.
         ByteBuf buffer = ctx.alloc().buffer(8);
         Http3CodecUtils.writeVariableLengthInteger(buffer, Http3CodecUtils.HTTP3_CONTROL_STREAM_TYPE);
         ctx.write(buffer);
-        // Add the encoder and decoder in the pipeline so we can handle Http3Frames. This needs to happen after
-        // we did write the type via a ByteBuf.
+        // 流类型前缀必须作为原始 ByteBuf 先写出，再挂载帧编解码器
         ctx.pipeline().addFirst(codec);
 
         assert localSettings != null;
-        // If writing of the local settings fails let's just teardown the connection.
+        // SETTINGS 发送失败则整连接 teardown
         closeOnFailure(ctx.writeAndFlush(localSettings));
 
-        // Let the GC collect localSettings.
         localSettings = null;
 
         ctx.fireChannelActive();
@@ -76,7 +81,7 @@ final class Http3ControlStreamOutboundHandler
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         if (evt instanceof ChannelInputShutdownEvent) {
-            // See https://tools.ietf.org/html/draft-ietf-quic-http-32#section-6.2.1
+            // 控制流半关闭视为关键流异常，触发 H3_CLOSED_CRITICAL_STREAM
             Http3CodecUtils.criticalStreamClosed(ctx);
         }
         ctx.fireUserEventTriggered(evt);
@@ -105,7 +110,7 @@ final class Http3ControlStreamOutboundHandler
     private boolean handleHttp3MaxPushIdFrame(ChannelPromise promise, Http3MaxPushIdFrame maxPushIdFrame) {
         long id = maxPushIdFrame.id();
 
-        // See https://datatracker.ietf.org/doc/html/draft-ietf-quic-http-32#section-7.2.7
+        // MAX_PUSH_ID 只能单调递增，不可缩小推送上限
         if (sentMaxPushId != null && id < sentMaxPushId) {
             promise.setFailure(new Http3Exception(Http3ErrorCode.H3_ID_ERROR, "MAX_PUSH_ID reduced limit."));
             return false;
@@ -118,7 +123,7 @@ final class Http3ControlStreamOutboundHandler
     private boolean handleHttp3GoAwayFrame(ChannelPromise promise, Http3GoAwayFrame goAwayFrame) {
         long id = goAwayFrame.id();
 
-        // See https://tools.ietf.org/html/draft-ietf-quic-http-32#section-5.2
+        // 服务端 GOAWAY 的 id 必须指向推送流（id % 4 == 2）
         if (server && id % 4 != 0) {
             promise.setFailure(new Http3Exception(Http3ErrorCode.H3_ID_ERROR,
                     "GOAWAY id not valid : " + id));
@@ -137,7 +142,7 @@ final class Http3ControlStreamOutboundHandler
 
     @Override
     public boolean isSharable() {
-        // This handle keeps state so we cant reuse it.
+        // 维护 sentMaxPushId / sendGoAwayId 等状态，不可共享
         return false;
     }
 }

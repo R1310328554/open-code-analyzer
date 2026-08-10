@@ -17,6 +17,7 @@ package io.netty.handler.codec.http3;
 
 /**
  * Marker interface that is implemented by all HTTP3 frames.
+ * <p>所有 HTTP/3 帧类型的根标记接口；{@link #type()} 返回 RFC 9114 定义的帧类型整数值。
  */
 public interface Http3Frame {
     /**

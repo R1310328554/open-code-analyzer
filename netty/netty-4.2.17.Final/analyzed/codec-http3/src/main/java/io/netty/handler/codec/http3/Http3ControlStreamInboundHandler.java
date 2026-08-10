@@ -40,11 +40,18 @@ import static io.netty.handler.codec.http3.Http3ErrorCode.QPACK_ENCODER_STREAM_E
 import static io.netty.handler.codec.http3.QpackUtil.toIntOrThrow;
 import static io.netty.util.internal.ThrowableUtil.unknownStackTrace;
 
+/**
+ * 对端控制流入站 handler：强制首帧为 SETTINGS，解析后按需创建 QPACK 单向流，
+ * 并校验 GOAWAY / MAX_PUSH_ID / CANCEL_PUSH 的协议约束。
+ */
 final class Http3ControlStreamInboundHandler extends Http3FrameTypeInboundValidationHandler<Http3ControlStreamFrame> {
     final boolean server;
+    /** 非 null 时把合法控制帧 fire 给用户的 handler。 */
     private final ChannelHandler controlFrameHandler;
     private final QpackEncoder qpackEncoder;
+    /** 对端出站控制流 handler，客户端校验 CANCEL_PUSH 时需读取其 sentMaxPushId。 */
     private final Http3ControlStreamOutboundHandler remoteControlStreamHandler;
+    /** 是否已读过首帧（必须是 SETTINGS）。 */
     private boolean firstFrameRead;
     private Long receivedGoawayId;
     private Long receivedMaxPushId;
@@ -78,7 +85,7 @@ final class Http3ControlStreamInboundHandler extends Http3FrameTypeInboundValida
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
-        // The user want's to be notified about control frames, add the handler to the pipeline.
+        // 用户关心控制帧时，将其 handler 挂到 pipeline 尾部接收 fireChannelRead
         if (controlFrameHandler != null) {
             ctx.pipeline().addLast(controlFrameHandler);
         }
@@ -94,6 +101,7 @@ final class Http3ControlStreamInboundHandler extends Http3FrameTypeInboundValida
     @Override
     void channelRead(ChannelHandlerContext ctx, Http3ControlStreamFrame frame) throws QpackException {
         boolean isSettingsFrame = frame instanceof Http3SettingsFrame;
+        // RFC 9114：控制流第一帧必须是 SETTINGS
         if (!firstFrameRead && !isSettingsFrame) {
             connectionError(ctx, H3_MISSING_SETTINGS, "Missing settings frame.", forwardControlFrames());
             ReferenceCountUtil.release(frame);
@@ -116,8 +124,7 @@ final class Http3ControlStreamInboundHandler extends Http3FrameTypeInboundValida
         } else if (frame instanceof Http3CancelPushFrame) {
             valid = handleHttp3CancelPushFrame(ctx, (Http3CancelPushFrame) frame);
         } else {
-            // We don't need to do any special handling for Http3UnknownFrames as we either pass these to the next#
-            // handler or release these directly.
+            // Http3UnknownFrame 无需特殊校验，转发或释放即可
             assert frame instanceof Http3UnknownFrame;
             valid = true;
         }
@@ -127,8 +134,7 @@ final class Http3ControlStreamInboundHandler extends Http3FrameTypeInboundValida
             return;
         }
 
-        // The user did specify ChannelHandler that should be notified about control stream frames.
-        // Let's forward the frame so the user can do something with it.
+        // 用户注册了 controlFrameHandler 时才向上游传递
         ctx.fireChannelRead(frame);
     }
 
@@ -143,9 +149,11 @@ final class Http3ControlStreamInboundHandler extends Http3FrameTypeInboundValida
             }
         };
         if (qpackAttributes.dynamicTableDisabled()) {
+            // 动态表禁用时仍调用 configureDynamicTable(0,0) 完成 encoder 初始化
             qpackEncoder.configureDynamicTable(qpackAttributes, 0, 0);
             return true;
         }
+        // 根据 SETTINGS 中的 QPACK 参数创建 encoder/decoder 单向流
         quicChannel.createStream(QuicStreamType.UNIDIRECTIONAL,
                 new QPackEncoderStreamInitializer(qpackEncoder, qpackAttributes,
                         settingsFrame
@@ -170,12 +178,14 @@ final class Http3ControlStreamInboundHandler extends Http3FrameTypeInboundValida
 
     private boolean handleHttp3GoAwayFrame(ChannelHandlerContext ctx, Http3GoAwayFrame goAwayFrame) {
         long id = goAwayFrame.id();
+        // 客户端：GOAWAY id 必须对应请求流（id % 4 == 0）
         if (!server && id % 4 != 0) {
             connectionError(ctx, H3_FRAME_UNEXPECTED, "GOAWAY received with ID of non-request stream.",
                     forwardControlFrames());
             return false;
         }
         if (receivedGoawayId != null && id > receivedGoawayId) {
+            // 新 GOAWAY 的 id 不能大于先前收到的（只能缩小 graceful 窗口）
             connectionError(ctx, H3_ID_ERROR,
                     "GOAWAY received with ID larger than previously received.", forwardControlFrames());
             return false;
@@ -186,6 +196,7 @@ final class Http3ControlStreamInboundHandler extends Http3FrameTypeInboundValida
 
     private boolean handleHttp3MaxPushIdFrame(ChannelHandlerContext ctx, Http3MaxPushIdFrame frame) {
         long id = frame.id();
+        // MAX_PUSH_ID 仅服务端可接收
         if (!server) {
             connectionError(ctx, H3_FRAME_UNEXPECTED, "MAX_PUSH_ID received by client.",
                     forwardControlFrames());
@@ -213,14 +224,13 @@ final class Http3ControlStreamInboundHandler extends Http3FrameTypeInboundValida
     public void channelReadComplete(ChannelHandlerContext ctx) {
         ctx.fireChannelReadComplete();
 
-        // control streams should always be processed, no matter what the user is doing in terms of
-        // configuration and AUTO_READ.
+        // control 流必须持续读取，即使用户关闭了 AUTO_READ
         Http3CodecUtils.readIfNoAutoRead(ctx);
     }
 
     @Override
     public boolean isSharable() {
-        // Not sharable as it keeps state.
+        // 持有 firstFrameRead、GOAWAY 等 per-connection 状态
         return false;
     }
 
@@ -233,6 +243,7 @@ final class Http3ControlStreamInboundHandler extends Http3FrameTypeInboundValida
         ctx.fireUserEventTriggered(evt);
     }
 
+    /** QPACK 单向流建立时的公共逻辑：先写 stream type 前缀，再通知子类绑定 stream。 */
     private abstract static class AbstractQPackStreamInitializer extends ChannelInboundHandlerAdapter {
         private final int streamType;
         protected final QpackAttributes attributes;
@@ -244,9 +255,7 @@ final class Http3ControlStreamInboundHandler extends Http3FrameTypeInboundValida
 
         @Override
         public final void channelActive(ChannelHandlerContext ctx) {
-            // We need to write the streamType into the stream before doing anything else.
-            // See https://tools.ietf.org/html/draft-ietf-quic-http-32#section-6.2.1
-            // Just allocate 8 bytes which would be the max needed.
+            // 单向流首字节为 stream type（encoder=0x02, decoder=0x03）
             ByteBuf buffer = ctx.alloc().buffer(8);
             Http3CodecUtils.writeVariableLengthInteger(buffer, streamType);
             closeOnFailure(ctx.writeAndFlush(buffer));

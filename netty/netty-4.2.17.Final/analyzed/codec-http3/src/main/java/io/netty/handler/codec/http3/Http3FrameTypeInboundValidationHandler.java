@@ -22,6 +22,9 @@ import io.netty.util.internal.ObjectUtil;
 import static io.netty.handler.codec.http3.Http3FrameValidationUtils.frameTypeUnexpected;
 import static io.netty.handler.codec.http3.Http3FrameValidationUtils.validateFrameRead;
 
+/**
+ * 入站帧类型守卫：只向下游传递 {@code T} 类型帧，其余触发连接错误或交由子类处理。
+ */
 class Http3FrameTypeInboundValidationHandler<T extends Http3Frame> extends ChannelInboundHandlerAdapter {
 
     protected final Class<T> frameType;
@@ -44,6 +47,7 @@ class Http3FrameTypeInboundValidationHandler<T extends Http3Frame> extends Chann
         ctx.fireChannelRead(frame);
     }
 
+    /** 收到非预期类型时的默认处理：连接级 H3_FRAME_UNEXPECTED。 */
     void readFrameDiscarded(ChannelHandlerContext ctx, Object discardedFrame) {
         frameTypeUnexpected(ctx, discardedFrame);
     }

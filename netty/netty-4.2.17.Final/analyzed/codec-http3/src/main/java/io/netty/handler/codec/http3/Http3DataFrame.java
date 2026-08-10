@@ -20,6 +20,8 @@ import io.netty.buffer.ByteBufHolder;
 
 /**
  * See <a href="https://tools.ietf.org/html/draft-ietf-quic-http-32#section-7.2.1">DATA</a>.
+ * <p>HTTP/3 消息体承载帧，payload 即原始字节；可同时出现在请求流与推送流上。
+ * 继承 {@link ByteBufHolder} 以便与 Netty 引用计数模型一致。
  */
 public interface Http3DataFrame extends ByteBufHolder, Http3RequestStreamFrame, Http3PushStreamFrame {
 

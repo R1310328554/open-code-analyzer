@@ -17,6 +17,8 @@ package io.netty.handler.codec.http3;
 
 /**
  * See <a href="https://tools.ietf.org/html/draft-ietf-quic-http-32#section-7.2.6">GOAWAY</a>.
+ * <p>优雅关闭信号：携带最后一个仍可能被对端处理的请求流 ID；
+ * 客户端收到的 ID 必须是请求流（id % 4 == 0），服务端则必须是推送流（id % 4 == 2）。
  */
 public interface Http3GoAwayFrame extends Http3ControlStreamFrame {
 

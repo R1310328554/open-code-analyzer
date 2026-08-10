@@ -20,6 +20,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * An exception related to violate the HTTP3 spec.
+ * <p>携带 {@link Http3ErrorCode}，用于触发 QUIC 连接级或流级关闭；
+ * 上层 handler 捕获后通常调用 {@link Http3CodecUtils#connectionError} 或 {@link Http3CodecUtils#streamError}。
  */
 public final class Http3Exception extends Exception {
     private final Http3ErrorCode errorCode;

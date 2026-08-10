@@ -21,6 +21,7 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.StringUtil;
 import org.jetbrains.annotations.Nullable;
 
+/** 帧类型运行时校验的共享工具：instanceof 检查 + 意外类型的统一错误处理。 */
 final class Http3FrameValidationUtils {
 
     private Http3FrameValidationUtils() {

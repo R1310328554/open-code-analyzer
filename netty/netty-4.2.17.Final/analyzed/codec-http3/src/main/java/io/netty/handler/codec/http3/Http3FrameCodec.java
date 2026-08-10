@@ -55,22 +55,34 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
  * Decodes / encodes {@link Http3Frame}s.
+ * <p>每个 QUIC 流挂载一个实例：入站将 {@link QuicStreamFrame} 字节解析为 typed frame，
+ * 出站序列化为 type + length + payload。HEADERS/PUSH_PROMISE 依赖 QPACK，
+ * 在 encoder/decoder 流就绪前通过 Read/WriteResumptionListener 挂起读写。
  */
 final class Http3FrameCodec extends ByteToMessageDecoder implements ChannelOutboundHandler {
     private final Http3FrameTypeValidator validator;
     private final long maxHeaderListSize;
     private final int maxUnknownFramePayloadLength;
+    /** 连接级共享，动态表状态跨流复用。 */
     private final QpackDecoder qpackDecoder;
     private final QpackEncoder qpackEncoder;
+    /** 出站 HEADERS 序列化状态（如是否已发 final headers）。 */
     private final Http3RequestStreamCodecState encodeState;
+    /** 入站 HEADERS 解码状态。 */
     private final Http3RequestStreamCodecState decodeState;
     private final Http3Settings.NonStandardHttp3SettingsValidator nonStandardSettingsValidator;
+    /** 是否为该流上读到的第一帧（配合 validator 做首帧约束）。 */
     private boolean firstFrame = true;
+    /** 一旦触发 connectionError，后续入站字节直接丢弃。 */
     private boolean error;
+    /** 当前正在组装的帧类型，-1 表示待读 type 字段。 */
     private long type = -1;
+    /** 当前帧剩余 payload 字节数，-1 表示待读 length 字段。 */
     private int payLoadLength = -1;
     private QpackAttributes qpackAttributes;
+    /** QPACK decoder 流未就绪时挂起 decode。 */
     private ReadResumptionListener readResumptionListener;
+    /** QPACK encoder 流未就绪时排队出站 HEADERS/PUSH_PROMISE。 */
     private WriteResumptionListener writeResumptionListener;
 
     static Http3FrameCodecFactory newFactory(QpackDecoder qpackDecoder,
@@ -81,7 +93,7 @@ final class Http3FrameCodec extends ByteToMessageDecoder implements ChannelOutbo
         checkPositive(maxHeaderListSize, "maxHeaderListSize");
         checkPositive(maxUnknownFramePayloadLength, "maxUnknownFramePayloadLength");
 
-        // QPACK decoder and encoder are shared between streams in a connection.
+        // QPACK decoder/encoder 在连接内跨流共享
         return (validator, encodeState, decodeState,
                 nonStandardSettingsValidator) -> new Http3FrameCodec(validator, qpackDecoder,
                 maxHeaderListSize, maxUnknownFramePayloadLength, qpackEncoder,
@@ -177,13 +189,13 @@ final class Http3FrameCodec extends ByteToMessageDecoder implements ChannelOutbo
             }
             long localType = readVariableLengthInteger(in, typeLen);
             if (Http3CodecUtils.isReservedHttp2FrameType(localType)) {
-                // See https://tools.ietf.org/html/draft-ietf-quic-http-32#section-7.2.8
+                // HTTP/2 保留帧类型在 HTTP/3 中非法
                 connectionError(ctx, Http3ErrorCode.H3_FRAME_UNEXPECTED,
                         "Reserved type for HTTP/2 received.", true);
                 return;
             }
             try {
-                // Validate if the type is valid for the current stream first.
+                // 按流类型（控制/请求/推送/QPACK）校验帧是否允许出现
                 validator.validate(localType, firstFrame);
             } catch (Http3Exception e) {
                 connectionError(ctx, e, true);
@@ -255,6 +267,7 @@ final class Http3FrameCodec extends ByteToMessageDecoder implements ChannelOutbo
                 }
                 assert qpackAttributes != null;
                 if (!qpackAttributes.dynamicTableDisabled() && !qpackAttributes.decoderStreamAvailable()) {
+                    // 动态表启用但 decoder 流尚未建立，挂起直到 SETTINGS 处理完毕
                     assert readResumptionListener != null;
                     readResumptionListener.suspended();
                     return 0;
@@ -303,6 +316,7 @@ final class Http3FrameCodec extends ByteToMessageDecoder implements ChannelOutbo
 
                 assert qpackAttributes != null;
                 if (!qpackAttributes.dynamicTableDisabled() && !qpackAttributes.decoderStreamAvailable()) {
+                    // 动态表启用但 decoder 流尚未建立，挂起直到 SETTINGS 处理完毕
                     assert readResumptionListener != null;
                     readResumptionListener.suspended();
                     return 0;
@@ -395,6 +409,7 @@ final class Http3FrameCodec extends ByteToMessageDecoder implements ChannelOutbo
 
     /**
      * Decode the header block into header fields.
+     * <p>通过 QPACK 解压字段块；若动态表条目尚未同步则返回 false 并挂起读取。
      *
      * @param ctx {@link ChannelHandlerContext} for this handler.
      * @param headers to be populated by decode.
@@ -444,6 +459,7 @@ final class Http3FrameCodec extends ByteToMessageDecoder implements ChannelOutbo
 
         if ((msg instanceof Http3HeadersFrame || msg instanceof Http3PushPromiseFrame) &&
                 !qpackAttributes.dynamicTableDisabled() && !qpackAttributes.encoderStreamAvailable()) {
+            // encoder 流未就绪：排队等待，避免乱序写出 QPACK 依赖的 HEADERS
             writeResumptionListener = WriteResumptionListener.newListener(ctx, this);
             writeResumptionListener.enqueue(msg, promise);
             return;
@@ -661,8 +677,11 @@ final class Http3FrameCodec extends ByteToMessageDecoder implements ChannelOutbo
 
     private static final class ReadResumptionListener
             implements Runnable, GenericFutureListener<Future<? super QuicStreamChannel>> {
+        /** 解码因 QPACK 未就绪而暂停。 */
         private static final int STATE_SUSPENDED = 0b1000_0000;
+        /** 挂起期间收到了 read() 请求，恢复后需补调 ctx.read()。 */
         private static final int STATE_READ_PENDING = 0b0100_0000;
+        /** 挂起期间 channelReadComplete 被跳过，恢复后需补 fire。 */
         private static final int STATE_READ_COMPLETE_PENDING = 0b0010_0000;
 
         private final ChannelHandlerContext ctx;
@@ -749,6 +768,7 @@ final class Http3FrameCodec extends ByteToMessageDecoder implements ChannelOutbo
 
     private static final class WriteResumptionListener
             implements GenericFutureListener<Future<? super QuicStreamChannel>> {
+        /** PendingWriteQueue 中的 flush 占位符。 */
         private static final Object FLUSH = new Object();
         private final PendingWriteQueue queue;
         private final ChannelHandlerContext ctx;
@@ -794,8 +814,7 @@ final class Http3FrameCodec extends ByteToMessageDecoder implements ChannelOutbo
                         codec.write0(ctx, ReferenceCountUtil.retain(entry), queue.remove());
                     }
                 }
-                // indicate that writes do not need to be enqueued. As we are on the eventloop, no other writes can
-                // happen while we are draining, hence we would not write out of order.
+                // drain 完成前不会有并发 write，可安全清空 listener 避免后续误排队
                 codec.writeResumptionListener = null;
             } finally {
                 if (flushSeen) {
@@ -814,6 +833,7 @@ final class Http3FrameCodec extends ByteToMessageDecoder implements ChannelOutbo
 
     /**
      * A factory for creating codec for HTTP3 frames.
+     * <p>由 {@link Http3ConnectionHandler} 持有，为每条 QUIC 流注入不同的 validator 与 stream state。
      */
     @FunctionalInterface
     interface Http3FrameCodecFactory {

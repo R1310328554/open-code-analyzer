@@ -24,6 +24,10 @@ import java.net.SocketAddress;
 import static io.netty.handler.codec.http3.Http3FrameValidationUtils.frameTypeUnexpected;
 import static io.netty.handler.codec.http3.Http3FrameValidationUtils.validateFrameWritten;
 
+/**
+ * 双向帧类型校验基类：入站继承 {@link Http3FrameTypeInboundValidationHandler}，
+ * 出站同样限制为 {@code T}，供控制流 handler 在读写两侧统一约束帧集合。
+ */
 class Http3FrameTypeDuplexValidationHandler<T extends Http3Frame> extends Http3FrameTypeInboundValidationHandler<T>
         implements ChannelOutboundHandler {
 

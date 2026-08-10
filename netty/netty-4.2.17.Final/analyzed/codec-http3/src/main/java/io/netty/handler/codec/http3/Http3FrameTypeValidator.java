@@ -15,10 +15,18 @@
  */
 package io.netty.handler.codec.http3;
 
+/**
+ * 按流类型校验帧类型是否合法；{@link Http3FrameCodec} 解码首帧前调用。
+ */
 @FunctionalInterface
 interface Http3FrameTypeValidator {
 
+    /** 不做任何校验，用于 QPACK 专用流等场景。 */
     Http3FrameTypeValidator NO_VALIDATION = (type, first) -> { };
 
+    /**
+     * @param type  帧类型整数值
+     * @param first 是否为该 QUIC 流上读到的第一帧
+     */
     void validate(long type, boolean first) throws Http3Exception;
 }
