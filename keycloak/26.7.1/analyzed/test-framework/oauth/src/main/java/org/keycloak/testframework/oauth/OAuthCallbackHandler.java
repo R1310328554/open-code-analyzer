@@ -14,8 +14,14 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.apache.http.client.methods.HttpPost;
 
+/**
+ * OAuth 授权回调 HTTP 处理器，返回便于 WebDriver 断言的 HTML 页面。
+ * <p>
+ * 对授权码回调或 form_post 响应渲染成功/失败提示，并列出表单 POST 参数。
+ */
 class OAuthCallbackHandler implements HttpHandler {
 
+    /** {@inheritDoc} 生成 HTML 回调页面并返回 HTTP 200。 */
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);

@@ -11,8 +11,15 @@ import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.testframework.realm.ClientBuilder;
 import org.keycloak.testframework.realm.ClientConfig;
 
+/**
+ * OAuth 集成测试的默认客户端配置。
+ * <p>
+ * 创建 {@code test-app} 机密客户端，启用服务账户、直接访问授权与 JWT 授权授予，
+ * 并添加 audience 协议映射器。
+ */
 public class DefaultOAuthClientConfiguration implements ClientConfig {
 
+    /** {@inheritDoc} 应用默认 OAuth 测试客户端属性与 audience 映射器。 */
     @Override
     public ClientBuilder configure(ClientBuilder client) {
         ProtocolMapperRepresentation audienceMapper = new ProtocolMapperRepresentation();
