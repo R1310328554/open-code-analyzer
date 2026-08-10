@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T23:04:52Z",
   "files": [
-    "pkg/storage/bloom/v1/block_writer.go",
-    "pkg/storage/bloom/v1/bloom.go",
-    "pkg/storage/bloom/v1/bloom_builder.go",
-    "pkg/storage/bloom/v1/bloom_querier.go",
-    "pkg/storage/bloom/v1/bloom_tester.go",
-    "pkg/storage/bloom/v1/bloom_tokenizer.go",
-    "pkg/storage/bloom/v1/bounds.go",
-    "pkg/storage/bloom/v1/builder.go",
-    "pkg/storage/bloom/v1/filter/boom.go",
-    "pkg/storage/bloom/v1/filter/buckets.go",
-    "pkg/storage/bloom/v1/filter/partitioned.go",
-    "pkg/storage/bloom/v1/filter/scalable.go",
-    "pkg/storage/bloom/v1/fuse.go",
-    "pkg/storage/bloom/v1/index.go",
-    "pkg/storage/bloom/v1/index_builder.go",
     "pkg/storage/bloom/v1/index_querier.go",
     "pkg/storage/bloom/v1/merge.go",
     "pkg/storage/bloom/v1/metrics.go",
@@ -33,5 +18,5 @@
     "pkg/storage/bucket/filesystem/bucket_client.go"
   ],
   "remaining_pending": 382,
-  "done": 1140
+  "done": 1155
 }
