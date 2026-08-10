@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T19:54:50Z",
   "files": [
-    "web/src/pages/agent/hooks/use-build-structured-output.ts",
-    "web/src/pages/agent/hooks/use-build-webhook-url.ts",
-    "web/src/pages/agent/hooks/use-cache-chat-log.ts",
-    "web/src/pages/agent/hooks/use-calculate-sheet-right.ts",
-    "web/src/pages/agent/hooks/use-cancel-dataflow.ts",
-    "web/src/pages/agent/hooks/use-change-node-name.ts",
-    "web/src/pages/agent/hooks/use-chat-logic.ts",
-    "web/src/pages/agent/hooks/use-connection-drag.ts",
-    "web/src/pages/agent/hooks/use-download-output.ts",
-    "web/src/pages/agent/hooks/use-dropdown-position.ts",
-    "web/src/pages/agent/hooks/use-export-json.ts",
-    "web/src/pages/agent/hooks/use-fetch-data.ts",
-    "web/src/pages/agent/hooks/use-fetch-pipeline-log.ts",
-    "web/src/pages/agent/hooks/use-filter-child-node-ids.ts",
-    "web/src/pages/agent/hooks/use-find-mcp-by-id.ts",
     "web/src/pages/agent/hooks/use-form-values.ts",
     "web/src/pages/agent/hooks/use-is-mcp.ts",
     "web/src/pages/agent/hooks/use-is-pipeline.ts",
@@ -33,5 +18,5 @@
     "web/src/pages/agent/hooks/use-stop-message.ts"
   ],
   "remaining_pending": 174,
-  "done": 1560
+  "done": 1575
 }
