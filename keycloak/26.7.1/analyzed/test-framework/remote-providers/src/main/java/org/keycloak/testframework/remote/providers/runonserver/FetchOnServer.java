@@ -23,10 +23,22 @@ import java.io.Serializable;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * 在 Keycloak 服务器端执行并返回结果的远程可序列化任务。
+ * <p>
+ * 与 {@link RunOnServer} 不同，本接口的 {@link #run(KeycloakSession)} 会产出返回值，
+ * 由 {@link RunOnServerRealmResourceProvider} 序列化为 JSON 传回测试进程。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface FetchOnServer extends Serializable {
 
+    /**
+     * 在服务器 {@link KeycloakSession} 上下文中执行任务并返回结果。
+     *
+     * @param session 当前 Keycloak 会话
+     * @return 可 JSON 序列化的结果对象，若无返回值可为 {@code null}
+     * @throws IOException 序列化或 I/O 失败时抛出
+     */
     Object run(KeycloakSession session) throws IOException;
 
 }
