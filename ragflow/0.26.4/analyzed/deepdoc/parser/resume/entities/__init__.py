@@ -13,3 +13,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+简历实体子包：学历、公司名等领域词典与归一化工具。
+"""
+
+

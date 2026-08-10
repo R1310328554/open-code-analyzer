@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+公司名称归一化：去噪、分词、地域后缀与知名公司/行业标签匹配。
+"""
+
+
 
 import logging
 import re
@@ -36,6 +41,7 @@ with open(os.path.join(current_file_path, "res/corp_tag.json"), "r", encoding="u
 
 
 def baike(cid, default_v=0):
+    # 查询公司百科词条长度（corp_baike_len.csv）
     global GOODS
     try:
         return GOODS.loc[str(cid), "len"]
@@ -45,6 +51,7 @@ def baike(cid, default_v=0):
 
 
 def corpNorm(nm, add_region=True):
+    # 繁简/全半角转换，剥离公司后缀与地域，保留区域括号
     global CORP_TKS
     if not nm or not isinstance(nm, str):
         return ""
@@ -82,6 +89,7 @@ def corpNorm(nm, add_region=True):
 
 
 def rmNoise(n):
+    # 去除括号内容与标点噪声
     n = re.sub(r"[\(（][^()（）]+[)）]", "", n)
     n = re.sub(r"[,. &（）()]+", "", n)
     return n
@@ -96,6 +104,7 @@ CORP_TAG = {corpNorm(rmNoise(c), False): v for c, v in CORP_TAG.items()}
 
 
 def is_good(nm):
+    # 判断归一化公司名是否命中优质公司白名单
     global GOOD_CORP
     if nm.find("外派") >= 0:
         return False
@@ -111,6 +120,7 @@ def is_good(nm):
 
 
 def corp_tag(nm):
+    # 返回公司行业/规模等标签列表
     global CORP_TAG
     nm = rmNoise(nm)
     nm = corpNorm(nm, False)

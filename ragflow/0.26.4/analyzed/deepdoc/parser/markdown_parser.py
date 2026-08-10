@@ -14,6 +14,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Markdown 解析：提取表格/代码块/标题等元素，支持按分隔符与 token 分块。
+"""
+
+
 
 import logging
 import re
@@ -22,10 +27,12 @@ from markdown import markdown
 
 
 class RAGFlowMarkdownParser:
+    # 从 Markdown 中分离表格与正文，可选渲染为 HTML
     def __init__(self, chunk_token_num=128):
         self.chunk_token_num = int(chunk_token_num)
 
     def extract_tables_and_remainder(self, markdown_text, separate_tables=True):
+        # 识别 GFM/HTML 表格，返回剥离表格后的文本与表格列表
         tables = []
         working_text = markdown_text
 
@@ -124,6 +131,7 @@ class RAGFlowMarkdownParser:
 
 
 class MarkdownElementExtractor:
+    # 按围栏代码、表格、标题等 protected range 提取结构化元素
     def __init__(self, markdown_content):
         self.markdown_content = markdown_content
         self.lines = markdown_content.split("\n")
@@ -293,6 +301,7 @@ class MarkdownElementExtractor:
         return sections
 
     def extract_elements(self, delimiter=None, include_meta=False):
+        # 主入口：合并 protected 区间后按 delimiter 或默认规则切 section
         """Extract individual elements (headers, code blocks, lists, etc.)"""
         sections = []
 

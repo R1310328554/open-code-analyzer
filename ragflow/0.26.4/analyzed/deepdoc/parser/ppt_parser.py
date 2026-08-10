@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+PowerPoint 解析：按位置排序 shape，提取文本框、表格与组合图形内容。
+"""
+
+
 
 import logging
 from io import BytesIO
@@ -20,17 +25,20 @@ from pptx import Presentation
 
 
 class RAGFlowPptParser:
+    # 基于 python-pptx 按页返回拼接文本
     def __init__(self):
         super().__init__()
         self._shape_cache = {}
 
     def __sort_shapes(self, shapes):
+        # 按 top/left 网格排序，结果缓存避免重复排序
         cache_key = id(shapes)
         if cache_key not in self._shape_cache:
             self._shape_cache[cache_key] = sorted(shapes, key=lambda x: ((x.top if x.top is not None else 0) // 10, x.left if x.left is not None else 0))
         return self._shape_cache[cache_key]
 
     def __get_bulleted_text(self, paragraph):
+        # 识别项目符号段落并缩进层级前缀
         is_bulleted = bool(paragraph._p.xpath("./a:pPr/a:buChar")) or bool(paragraph._p.xpath("./a:pPr/a:buAutoNum")) or bool(paragraph._p.xpath("./a:pPr/a:buBlip"))
         if is_bulleted:
             return f"{'  ' * paragraph.level}.{paragraph.text}"
@@ -38,6 +46,7 @@ class RAGFlowPptParser:
             return paragraph.text
 
     def __extract(self, shape):
+        # 递归处理文本框、表格(shape_type=19)与组合(shape_type=6)
         try:
             # First try to get text content
             if hasattr(shape, "has_text_frame") and shape.has_text_frame:
@@ -81,6 +90,7 @@ class RAGFlowPptParser:
             return ""
 
     def __call__(self, fnm, from_page, to_page, callback=None):
+        # 返回 [slide_text, ...] 列表，支持页码区间
         ppt = Presentation(fnm) if isinstance(fnm, str) else Presentation(BytesIO(fnm))
         txts = []
         self.total_page = len(ppt.slides)

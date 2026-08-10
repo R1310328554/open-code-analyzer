@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+DeepDoc PDF 核心解析：版面检测、OCR、表格结构识别、阅读顺序合并与 position tag。
+"""
+
+
 
 import asyncio
 import logging
@@ -54,8 +59,11 @@ if LOCK_KEY_pdfplumber not in sys.modules:
 
 
 class RAGFlowPdfParser:
+    # 基于 ONNX/Ascend 版面模型 + OCR + XGBoost 段落拼接的 PDF 解析器
     def __init__(self, **kwargs):
         """
+        初始化 OCR、版面/表格识别器及 updown_concat XGBoost 模型。
+
         If you have trouble downloading HuggingFace models, -_^ this might help!!
 
         For Linux:
@@ -796,6 +804,7 @@ class RAGFlowPdfParser:
         self.boxes.append(bxs)
 
     def _layouts_rec(self, ZM, drop=True):
+        # 对每页渲染图运行版面检测，丢弃页眉页脚等噪声块
         assert len(self.page_images) == len(self.boxes)
         self.boxes, self.page_layout = self.layouter(self.page_images, self.boxes, ZM, drop=drop)
         # cumlative Y
@@ -888,6 +897,7 @@ class RAGFlowPdfParser:
         return boxes
 
     def _text_merge(self, zoomin=3):
+        # 同行/相邻文本框按标点与 XGBoost 特征合并
         # merge adjusted boxes
         bxs = self._assign_column(self.boxes, zoomin)
 
@@ -1030,6 +1040,7 @@ class RAGFlowPdfParser:
         self.boxes = new_boxes
 
     def _concat_downward(self, concat_between_pages=True):
+        # 跨行/跨页向下拼接，DFS 寻找可读段落链
         self.boxes = Recognizer.sort_Y_firstly(self.boxes, 0)
         return
 
@@ -1206,6 +1217,7 @@ class RAGFlowPdfParser:
             self.boxes.pop(i)
 
     def _extract_table_figure(self, need_image, ZM, return_html, need_position, separate_tables_figures=False):
+        # 裁剪表格/图片区域，可选 HTML 与 position tag
         tables = {}
         figures = {}
         # extract figure and table boxes
@@ -1527,6 +1539,7 @@ class RAGFlowPdfParser:
             logging.exception("total_page_number")
 
     def __images__(self, fnm, zoomin=3, page_from=0, page_to=MAXIMUM_PAGE_NUMBER, callback=None):
+        # pdfplumber 渲染页图、提取字符、触发 OCR 与版面流水线
         self.lefted_chars = []
         self.mean_height = []
         self.mean_width = []
@@ -1672,6 +1685,7 @@ class RAGFlowPdfParser:
             self.__images__(fnm, zoomin * 3, page_from, page_to, callback)
 
     def __call__(self, fnm, need_image=True, zoomin=3, return_html=False, auto_rotate_tables=None):
+        # 完整解析入口：返回 (sections, tables) 及 outlines
         """
         Parse a PDF file.
 
@@ -1699,6 +1713,7 @@ class RAGFlowPdfParser:
         return self.__filterout_scraps(deepcopy(self.boxes), zoomin), tbls
 
     def parse_into_bboxes(self, fnm, callback=None, zoomin=3, from_page=0, to_page=MAXIMUM_PAGE_NUMBER):
+        # 解析为带 layout 类型与 bbox 的中间结构，供可视化或二次处理
         self.outlines = extract_pdf_outlines(fnm)
         batch_size = max(1, int(os.getenv("PDF_PARSER_PAGE_BATCH_SIZE", "50")))
         if isinstance(fnm, str):
@@ -1874,6 +1889,7 @@ class RAGFlowPdfParser:
         return poss
 
     def crop(self, text, ZM=3, need_position=False):
+        # 按 @@page\tx0\ty0\tx1\ty1## tag 从页图裁剪区域
         imgs = []
         poss = self.extract_positions(text)
         if not poss:
@@ -1999,6 +2015,7 @@ class RAGFlowPdfParser:
 
 
 class PlainParser:
+    # 轻量 PDF 文本提取：pypdf 逐页 extract_text，无版面分析
     def __call__(self, filename, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, **kwargs):
         lines = []
         try:
@@ -2020,6 +2037,7 @@ class PlainParser:
 
 
 class VisionParser(RAGFlowPdfParser):
+    # 整页渲染后调用 vision LLM 逐页描述，适用于扫描件或复杂版式
     def __init__(self, vision_model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.vision_model = vision_model

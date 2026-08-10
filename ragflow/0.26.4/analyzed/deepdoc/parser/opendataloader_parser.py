@@ -1,3 +1,7 @@
+"""
+OpenDataLoader PDF 解析：调用远程服务返回结构化 JSON/Markdown，映射为 section 与裁剪 tag。
+"""
+
 from __future__ import annotations
 
 import logging
@@ -28,6 +32,7 @@ from deepdoc.parser.utils import extract_pdf_outlines
 
 
 class OpenDataLoaderContentType(str, Enum):
+    # OpenDataLoader 元素类型枚举
     IMAGE = "image"
     TABLE = "table"
     TEXT = "text"
@@ -36,6 +41,7 @@ class OpenDataLoaderContentType(str, Enum):
 
 @dataclass
 class _BBox:
+    # 页码与 PDF 坐标系下的边界框
     page_no: int
     x0: float
     y0: float
@@ -57,6 +63,7 @@ def _as_float(v) -> Optional[float]:
 
 
 def _bbox_from_element(el: dict) -> Optional[_BBox]:
+    # 从 JSON 元素解析 bbox，兼容多种字段名
     bb = el.get("bounding box") or el.get("bounding_box") or el.get("bbox")
     pn = el.get("page number")
     if pn is None:
@@ -82,6 +89,7 @@ def _bbox_from_element(el: dict) -> Optional[_BBox]:
 
 
 def _iter_elements(node: Any) -> Iterable[dict]:
+    # 深度优先遍历 JSON 树，yield 带 type 的叶子元素
     if isinstance(node, dict):
         if "type" in node and ("content" in node or "text" in node or "cells" in node):
             yield node
@@ -121,6 +129,7 @@ def _element_html(el: dict) -> str:
 
 
 class OpenDataLoaderParser(RAGFlowPdfParser):
+    # 通过 OPENDATALOADER_APISERVER 远程解析 PDF
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.page_images: list[Image.Image] = []
@@ -136,7 +145,7 @@ class OpenDataLoaderParser(RAGFlowPdfParser):
             self.timeout = 600
 
     def check_installation(self) -> bool:
-        """Return True when the OpenDataLoader service is reachable."""
+        """检测 OpenDataLoader 服务 /health 是否可达。"""
         if not self.api_url:
             self.logger.warning("[OpenDataLoader] OPENDATALOADER_APISERVER is not set. Start the opendataloader service and set the env var.")
             return False
@@ -326,6 +335,8 @@ class OpenDataLoaderParser(RAGFlowPdfParser):
         return [(txt, "")]
 
     def parse_pdf(
+        # 上传 PDF、拉取 JSON/Markdown 并转为 sections/tables
+
         self,
         filepath: str | PathLike[str],
         binary: BytesIO | bytes | None = None,

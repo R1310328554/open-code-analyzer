@@ -12,6 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+PaddleOCR 云端 API 解析：支持 VL/PP-OCR/Structure 等算法，输出 Markdown section 与表格。
+"""
+
+
 from __future__ import annotations
 
 import json
@@ -71,6 +76,7 @@ _MARKDOWN_IMAGE_PATTERN = re.compile(
 
 
 def _remove_images_from_markdown(markdown: str) -> str:
+    # 剥离 Markdown 中的 img/div 块，减少冗余 token
     return _MARKDOWN_IMAGE_PATTERN.sub("", markdown)
 
 
@@ -88,7 +94,7 @@ def _normalize_bbox(bbox: list[Any] | tuple[Any, ...]) -> tuple[float, float, fl
 
 @dataclass
 class PaddleOCRVLConfig:
-    """Configuration for PaddleOCR-VL algorithm."""
+    """PaddleOCR-VL 算法参数：版面检测、图表/印章识别、VLM 采样等。"""
 
     use_doc_orientation_classify: Optional[bool] = False
     use_doc_unwarping: Optional[bool] = False
@@ -119,7 +125,7 @@ class PaddleOCRVLConfig:
 
 @dataclass
 class PaddleOCRConfig:
-    """Main configuration for PaddleOCR parser."""
+    """PaddleOCR 解析器主配置：API 地址、算法选择与超时。"""
 
     base_url: str = "https://paddleocr.aistudio-app.com"
     access_token: Optional[str] = None
@@ -133,7 +139,7 @@ class PaddleOCRConfig:
 
     @classmethod
     def from_dict(cls, config: Optional[dict[str, Any]]) -> "PaddleOCRConfig":
-        """Create configuration from dictionary."""
+        """从 dict 构建 PaddleOCRConfig，合并 algorithm_config。"""
         if not config:
             return cls()
 
@@ -177,7 +183,7 @@ _DEFAULT_BASE_URL = "https://paddleocr.aistudio-app.com"
 
 
 class PaddleOCRParser(RAGFlowPdfParser):
-    """Parser for PDF documents using PaddleOCR API."""
+    """基于 PaddleOCR AI Studio API 的 PDF/图片解析器。"""
 
     _ZOOMIN = 2
 
@@ -247,6 +253,7 @@ class PaddleOCRParser(RAGFlowPdfParser):
 
     # Public methods
     def check_installation(self) -> tuple[bool, str]:
+        # 校验 access_token 与 API 连通性
         """Check if the parser is properly installed and configured."""
         if not self.access_token:
             return False, "[PaddleOCR] Access token not configured"
@@ -254,6 +261,8 @@ class PaddleOCRParser(RAGFlowPdfParser):
         return True, ""
 
     def parse_pdf(
+        # 上传 PDF 二进制，请求解析并转为 sections/tables
+
         self,
         filepath: str | PathLike[str],
         binary: BytesIO | bytes | None = None,
@@ -324,6 +333,8 @@ class PaddleOCRParser(RAGFlowPdfParser):
         return sections, tables
 
     def parse_image(
+        # 单张图片 OCR/版面解析入口
+
         self,
         filepath: str | PathLike[str],
         binary: BytesIO | bytes | None = None,

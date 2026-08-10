@@ -13,7 +13,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+学历编码词典：ID 与中文/英文学历名称双向映射。
+"""
 
+
+
+# 招聘系统学历 ID -> 显示名
 TBL = {
     "94": "EMBA",
     "6": "MBA",
@@ -31,14 +37,17 @@ TBL = {
     "89": "高中",
 }
 
+# 显示名 -> ID 反向表
 TBL_ = {v: k for k, v in TBL.items()}
 
 
 def get_name(id):
+    # 由学历 ID 取显示名
     return TBL.get(str(id), "")
 
 
 def get_id(nm):
+    # 由学历名称（大写）取 ID
     if not nm:
         return ""
     return TBL_.get(nm.upper().strip(), "")

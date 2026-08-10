@@ -14,7 +14,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+JSON/JSONL 解析：按结构保真地切分为不超过 max_chunk_size 的子对象。
+"""
 
+
+
+# 分块逻辑参考 langchain_text_splitters/json.py
 # The following documents are mainly referenced, and only adaptation modifications have been made
 # from https://github.com/langchain-ai/langchain/blob/master/libs/text-splitters/langchain_text_splitters/json.py
 
@@ -25,12 +31,14 @@ from rag.nlp import find_codec
 
 
 class RAGFlowJsonParser:
+    # 自动识别 JSONL，递归拆分嵌套 dict/list
     def __init__(self, max_chunk_size: int = 2000, min_chunk_size: int | None = None):
         super().__init__()
         self.max_chunk_size = max_chunk_size * 2
         self.min_chunk_size = min_chunk_size if min_chunk_size is not None else max(max_chunk_size - 200, 50)
 
     def __call__(self, binary):
+        # 解码二进制并按 JSON/JSONL 路径返回字符串 chunk 列表
         encoding = find_codec(binary)
         txt = binary.decode(encoding, errors="ignore")
 
@@ -42,12 +50,12 @@ class RAGFlowJsonParser:
 
     @staticmethod
     def _json_size(data: dict) -> int:
-        """Calculate the size of the serialized JSON object."""
+        """计算序列化 JSON 对象的字节长度。"""
         return len(json.dumps(data, ensure_ascii=False))
 
     @staticmethod
     def _set_nested_dict(d: dict, path: list[str], value: Any) -> None:
-        """Set a value in a nested dictionary based on the given path."""
+        """按路径在嵌套 dict 中写入值。"""
         for key in path[:-1]:
             d = d.setdefault(key, {})
         d[path[-1]] = value
@@ -70,7 +78,7 @@ class RAGFlowJsonParser:
         chunks: list[dict] | None,
     ) -> list[dict]:
         """
-        Split json into maximum size dictionaries while preserving structure.
+        在保持结构的前提下将 JSON 拆成不超过 max_chunk_size 的子 dict。
         """
         current_path = current_path or []
         chunks = chunks or [{}]
@@ -101,7 +109,7 @@ class RAGFlowJsonParser:
         json_data,
         convert_lists: bool = False,
     ) -> list[dict]:
-        """Splits JSON into a list of JSON chunks"""
+        """将 JSON 拆分为 dict chunk 列表。"""
 
         if convert_lists:
             preprocessed_data = self._list_to_dict_preprocessing(json_data)
@@ -120,7 +128,7 @@ class RAGFlowJsonParser:
         convert_lists: bool = False,
         ensure_ascii: bool = True,
     ) -> list[str]:
-        """Splits JSON into a list of JSON formatted strings"""
+        """将 JSON 拆分为 JSON 字符串列表。"""
 
         chunks = self.split_json(json_data=json_data, convert_lists=convert_lists)
 
@@ -152,6 +160,7 @@ class RAGFlowJsonParser:
         return all_chunks
 
     def is_jsonl_format(self, txt: str, sample_limit: int = 10, threshold: float = 0.8) -> bool:
+        # 抽样判断是否为逐行 JSON（非整体 JSON 数组/对象）
         lines = [line.strip() for line in txt.strip().splitlines() if line.strip()]
         if not lines:
             return False

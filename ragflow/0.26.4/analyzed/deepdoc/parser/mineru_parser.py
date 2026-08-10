@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+MinerU PDF 解析适配：本地 CLI 或远程 API，将 MinerU 输出转为 RAGFlow section/table。
+"""
+
+
 import json
 import html
 import logging
@@ -46,6 +51,7 @@ if LOCK_KEY_pdfplumber not in sys.modules:
 
 
 class MinerUContentType(StrEnum):
+    # MinerU 块类型：图片、表格、正文、公式等
     IMAGE = "image"
     TABLE = "table"
     TEXT = "text"
@@ -58,6 +64,7 @@ class MinerUContentType(StrEnum):
     DISCARDED = "discarded"
 
 
+# RAGFlow 语言名到 MinerU OCR 语言码的映射
 # Mapping from language names to MinerU language codes
 LANGUAGE_TO_MINERU_MAP = {
     "English": "en",
@@ -86,7 +93,7 @@ LANGUAGE_TO_MINERU_MAP = {
 
 
 class MinerUBackend(StrEnum):
-    """MinerU processing backend options."""
+    """MinerU 处理后端：pipeline、各类 VLM 引擎或 HTTP 客户端。"""
 
     PIPELINE = "pipeline"  # Traditional multimodel pipeline (default)
     VLM_TRANSFORMERS = "vlm-transformers"  # Vision-language model using HuggingFace Transformers
@@ -98,7 +105,7 @@ class MinerUBackend(StrEnum):
 
 
 class MinerULanguage(StrEnum):
-    """MinerU supported languages for OCR (pipeline backend only)."""
+    """MinerU pipeline 后端支持的 OCR 语言枚举。"""
 
     CH = "ch"  # Chinese
     CH_SERVER = "ch_server"  # Chinese (server)
@@ -120,7 +127,7 @@ class MinerULanguage(StrEnum):
 
 
 class MinerUParseMethod(StrEnum):
-    """MinerU PDF parsing methods (pipeline backend only)."""
+    """MinerU pipeline 解析模式：auto/txt/ocr。"""
 
     AUTO = "auto"  # Automatically determine the method based on the file type
     TXT = "txt"  # Use text extraction method
@@ -129,7 +136,7 @@ class MinerUParseMethod(StrEnum):
 
 @dataclass
 class MinerUParseOptions:
-    """Options for MinerU PDF parsing."""
+    """MinerU 解析选项：后端、语言、公式/表格开关等。"""
 
     backend: MinerUBackend = MinerUBackend.PIPELINE
     lang: Optional[MinerULanguage] = None  # language for OCR (pipeline backend only)
@@ -142,6 +149,7 @@ class MinerUParseOptions:
 
 
 class MinerUParser(RAGFlowPdfParser):
+    # 调用 MinerU 解析 PDF，读取 zip/json 输出并映射为 RAGFlow 结构
     def __init__(self, mineru_path: str = "mineru", mineru_api: str = "", mineru_server_url: str = ""):
         self.mineru_api = mineru_api.rstrip("/")
         self.mineru_server_url = mineru_server_url.rstrip("/")
@@ -230,6 +238,7 @@ class MinerUParser(RAGFlowPdfParser):
         return section.strip()
 
     def check_installation(self, backend: str = "pipeline", server_url: Optional[str] = None) -> tuple[bool, str]:
+        # 检测 MinerU CLI 或 API 是否可用
         reason = ""
 
         valid_backends = ["pipeline", "vlm-http-client", "vlm-transformers", "vlm-vllm-engine", "vlm-mlx-engine", "vlm-vllm-async-engine", "vlm-lmdeploy-engine"]
@@ -729,6 +738,8 @@ class MinerUParser(RAGFlowPdfParser):
                     outputs[idx]["vlm_description"] = desc
 
     def parse_pdf(
+        # 主入口：运行 MinerU、读取输出、可选 VLM 增强图片
+
         self,
         filepath: str | PathLike[str],
         binary: BytesIO | bytes,

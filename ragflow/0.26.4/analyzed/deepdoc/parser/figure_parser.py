@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+图表视觉增强：调用 IMAGE2TEXT 模型为 DOCX/PDF/Excel 内嵌图生成描述并回填。
+"""
+
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 
@@ -28,8 +33,10 @@ from rag.nlp import append_context2table_image4pdf
 from rag.utils.lazy_image import ensure_pil_image, open_image_for_processing, is_image_like
 
 
+# 将无位置信息的 figure 数据包装为 VisionFigureParser 输入格式
 # need to delete before pr
 def vision_figure_parser_figure_data_wrapper(figures_data_without_positions):
+    # 补齐占位 bbox，供视觉模型批量描述
     if not figures_data_without_positions:
         return []
     res = []
@@ -47,6 +54,7 @@ def vision_figure_parser_figure_data_wrapper(figures_data_without_positions):
 
 
 def vision_figure_parser_docx_wrapper(sections, tbls, callback=None, **kwargs):
+    # DOCX 解析后可选调用视觉模型增强 figure 表格项
     if not sections:
         return tbls
     try:
@@ -67,6 +75,7 @@ def vision_figure_parser_docx_wrapper(sections, tbls, callback=None, **kwargs):
 
 
 def vision_figure_parser_figure_xlsx_wrapper(images, callback=None, **kwargs):
+    # Excel 内嵌图片的视觉描述增强
     tbls = []
     if not images:
         return []
@@ -100,6 +109,7 @@ def vision_figure_parser_figure_xlsx_wrapper(images, callback=None, **kwargs):
 
 
 def vision_figure_parser_pdf_wrapper(tbls, callback=None, **kwargs):
+    # PDF 解析结果中 figure 项的视觉增强，可附加上下文
     if not tbls:
         return []
     sections = kwargs.get("sections")
@@ -142,6 +152,7 @@ def vision_figure_parser_pdf_wrapper(tbls, callback=None, **kwargs):
 
 
 def vision_figure_parser_docx_wrapper_naive(chunks, idx_lst, callback=None, **kwargs):
+    # 朴素 DOCX 分块路径：并发为指定 chunk 追加图片描述
     if not chunks:
         return []
     try:
@@ -199,6 +210,7 @@ shared_executor = ThreadPoolExecutor(max_workers=10)
 
 
 class VisionFigureParser:
+    # 批量调用 vision LLM 为 figure 生成描述并重组 (figure, desc) 结构
     def __init__(self, vision_model, figures_data, *args, **kwargs):
         self.vision_model = vision_model
         self.figure_contexts = kwargs.get("figure_contexts") or []
@@ -208,6 +220,7 @@ class VisionFigureParser:
         assert not self.positions or (len(self.figures) == len(self.positions))
 
     def _extract_figures_info(self, figures_data):
+        # 解析 figures_data 多种形态，填充 figures/descriptions/positions
         self.figures = []
         self.descriptions = []
         self.positions = []
@@ -249,6 +262,7 @@ class VisionFigureParser:
         return self.assembled
 
     def __call__(self, **kwargs):
+        # 线程池并发描述各图，支持 PDF 页内上下文 prompt
         callback = kwargs.get("callback", lambda prog, msg: None)
 
         @timeout(30, 3)

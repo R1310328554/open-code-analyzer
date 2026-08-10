@@ -13,11 +13,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+简历结构化后处理：清理解析中间字段，归一化教育/工作经历并回填 basic 摘要。
+"""
+
+
 
 import datetime
 
 
 def refactor(cv):
+    # 删除 raw_txt 等临时键，列表化各段经历并按时间排序写回 basic
     for n in [
         "raw_txt",
         "parser_name",

@@ -14,6 +14,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+HTML 解析：剥离样式/脚本，递归抽取块级文本与表格，按 token 预算分块。
+"""
+
+
 
 from rag.nlp import find_codec, rag_tokenizer
 import logging
@@ -25,16 +30,20 @@ import html
 
 
 def get_encoding(file):
+    # 用 chardet 探测本地 HTML 文件编码
     with open(file, "rb") as f:
         tmp = chardet.detect(f.read())
         return tmp["encoding"]
 
 
+# 参与块合并的 HTML 标签
 BLOCK_TAGS = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "div", "article", "section", "aside", "ul", "ol", "li", "table", "pre", "code", "blockquote", "figure", "figcaption"]
+# 标题标签到 Markdown 前缀的映射
 TITLE_TAGS = {"h1": "#", "h2": "##", "h3": "###", "h4": "####", "h5": "#####", "h6": "######"}
 
 
 class RAGFlowHtmlParser:
+    # 将 HTML 转为纯文本 section 列表，超大块按 CJK/空格边界切分
     def __call__(self, fnm, binary=None, chunk_token_num=512):
         if binary:
             encoding = find_codec(binary)
@@ -46,6 +55,7 @@ class RAGFlowHtmlParser:
 
     @classmethod
     def parser_txt(cls, txt, chunk_token_num):
+        # BeautifulSoup 清洗后递归读文本，合并块并分 chunk
         if not isinstance(txt, str):
             raise TypeError("txt type should be string!")
 
@@ -78,6 +88,7 @@ class RAGFlowHtmlParser:
 
     @classmethod
     def split_table(cls, html_table, chunk_token_num=512):
+        # 按行 token 数将宽 HTML 表拆成多个子表
         soup = BeautifulSoup(html_table, "html.parser")
         rows = soup.find_all("tr")
         tables = []
@@ -243,6 +254,7 @@ class RAGFlowHtmlParser:
 
     @classmethod
     def chunk_block(cls, block_txt_list, chunk_token_num=512):
+        # 贪心合并块直至达到 chunk_token_num 上限
         chunks = []
         current_block = ""
         current_token_count = 0

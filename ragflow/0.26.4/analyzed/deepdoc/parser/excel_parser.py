@@ -10,6 +10,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Excel/CSV 表格解析：多引擎加载、HTML/Markdown 导出、内嵌图片提取与行级语义化。
+"""
+
+
 
 import logging
 import re
@@ -22,13 +27,16 @@ from openpyxl import Workbook, load_workbook
 from rag.nlp import find_codec
 from rag.utils.lazy_image import LazyImage
 
+# 非法控制字符正则（源自 openpyxl/cell/cell.py）
 # copied from `/openpyxl/cell/cell.py`
 ILLEGAL_CHARACTERS_RE = re.compile(r"[\000-\010]|[\013-\014]|[\016-\037]")
 
 
 class RAGFlowExcelParser:
+    # 支持 xlsx/xls/csv，openpyxl 失败时回退 pandas/calamine
     @staticmethod
     def _load_excel_to_workbook(file_like_object):
+        # 按文件头识别 Excel/CSV，必要时将 CSV 转为 Workbook
         if isinstance(file_like_object, bytes):
             file_like_object = BytesIO(file_like_object)
 
@@ -109,6 +117,8 @@ class RAGFlowExcelParser:
     @staticmethod
     def _extract_images_from_worksheet(ws, sheetname=None):
         """
+        从工作表提取嵌入图片并封装为 LazyImage 及单元格锚点信息。
+
         Extract images from a worksheet and enrich them with vision-based descriptions.
 
         Returns: List[dict]
@@ -202,6 +212,7 @@ class RAGFlowExcelParser:
         return list(ws.iter_rows(min_row=1, max_row=actual_rows))
 
     def html(self, fnm, chunk_rows=256):
+        # 将各 sheet 转为带 caption 的 HTML 表格，按 chunk_rows 分片
         from html import escape
 
         file_like_object = BytesIO(fnm) if not isinstance(fnm, str) else fnm
@@ -252,6 +263,7 @@ class RAGFlowExcelParser:
         return tb_chunks
 
     def markdown(self, fnm):
+        # 读取首个 sheet 并输出 Markdown 表格
         import pandas as pd
 
         file_like_object = BytesIO(fnm) if not isinstance(fnm, str) else fnm
@@ -266,6 +278,7 @@ class RAGFlowExcelParser:
         return df.to_markdown(index=False)
 
     def __call__(self, fnm):
+        # 逐行拼接「表头：值」字段，非默认 sheet 名追加后缀
         file_like_object = BytesIO(fnm) if not isinstance(fnm, str) else fnm
         wb = RAGFlowExcelParser._load_excel_to_workbook(file_like_object)
 
@@ -298,6 +311,7 @@ class RAGFlowExcelParser:
 
     @staticmethod
     def row_number(fnm, binary):
+        # 统计 Excel 有效行数或 CSV/txt 行数
         if fnm.split(".")[-1].lower().find("xls") >= 0:
             wb = RAGFlowExcelParser._load_excel_to_workbook(BytesIO(binary))
             total = 0

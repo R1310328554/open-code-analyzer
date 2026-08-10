@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+EPUB 电子书解析：按 spine 阅读顺序提取 XHTML 章节，委托 HTML 解析器分块。
+"""
+
+
 
 import logging
 import warnings
@@ -22,10 +27,12 @@ from xml.etree import ElementTree
 
 from .html_parser import RAGFlowHtmlParser
 
+# OPF 包描述命名空间
 # OPF XML namespaces
 _OPF_NS = "http://www.idpf.org/2007/opf"
 _CONTAINER_NS = "urn:oasis:names:tc:opendocument:xmlns:container"
 
+# 含可读 XHTML 正文的 MIME 类型
 # Media types that contain readable XHTML content
 _XHTML_MEDIA_TYPES = {"application/xhtml+xml", "text/html", "text/xml"}
 
@@ -33,10 +40,13 @@ logger = logging.getLogger(__name__)
 
 
 class RAGFlowEpubParser:
-    """Parse EPUB files by extracting XHTML content in spine (reading) order
+    """按 spine 阅读顺序解析 EPUB：提取 XHTML 并分块。
+
+    Parse EPUB files by extracting XHTML content in spine (reading) order
     and delegating to RAGFlowHtmlParser for chunking."""
 
     def __call__(self, fnm, binary=None, chunk_token_num=512):
+        # 打开 ZIP 包，逐 spine 项读取 HTML 并合并分块结果
         if binary is not None:
             if not binary:
                 logger.warning(
@@ -72,7 +82,7 @@ class RAGFlowEpubParser:
 
     @staticmethod
     def _get_spine_items(zf):
-        """Return content file paths in spine (reading) order."""
+        """按 spine 顺序返回内容文件路径。"""
         # 1. Find the OPF file path from META-INF/container.xml
         try:
             container_xml = zf.read("META-INF/container.xml")
@@ -132,5 +142,5 @@ class RAGFlowEpubParser:
 
     @staticmethod
     def _fallback_xhtml_order(zf):
-        """Fallback: return all .xhtml/.html files sorted alphabetically."""
+        """回退：按字母序返回全部 .xhtml/.html 文件。"""
         return sorted(n for n in zf.namelist() if n.lower().endswith((".xhtml", ".html", ".htm")) and not n.startswith("META-INF/"))
