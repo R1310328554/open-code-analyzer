@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T21:48:10Z",
-  "files": [
-    "pkg/dataobj/consumer/downscale.go",
-    "pkg/dataobj/consumer/flush.go",
-    "pkg/dataobj/consumer/flush_committer.go",
-    "pkg/dataobj/consumer/http.go",
-    "pkg/dataobj/consumer/logsobj/builder.go",
-    "pkg/dataobj/consumer/logsobj/builder_metrics.go",
-    "pkg/dataobj/consumer/logsobj/factory.go",
-    "pkg/dataobj/consumer/logsobj/pool.go",
-    "pkg/dataobj/consumer/logsobj/sort.go",
-    "pkg/dataobj/consumer/logsobj/sorter.go",
-    "pkg/dataobj/consumer/metastore.go",
-    "pkg/dataobj/consumer/metrics.go",
-    "pkg/dataobj/consumer/processor.go",
-    "pkg/dataobj/consumer/service.go",
-    "pkg/dataobj/dataobj.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1222,
-  "done": 315
+  "done": 330
 }
