@@ -39,8 +39,11 @@ import static io.netty.handler.codec.http3.Http3RequestStreamCodecState.NO_STATE
 
 /**
  * {@link ByteToMessageDecoder} which helps to detect the type of unidirectional stream.
+ * <p>HTTP/3 单向流首字节起为变长整数流类型；本 handler 缓冲足够字节后读取 type（及 push 流的 pushId），
+ * 再 {@link ChannelPipeline#replace} 为对应专用 handler。连接级 Attribute 保证每类远程流仅出现一次。
  */
 abstract class Http3UnidirectionalStreamInboundHandler extends ByteToMessageDecoder {
+    /** 标记父连接是否已收到对端控制流。 */
     private static final AttributeKey<Boolean> REMOTE_CONTROL_STREAM = AttributeKey.valueOf("H3_REMOTE_CONTROL_STREAM");
     private static final AttributeKey<Boolean> REMOTE_QPACK_DECODER_STREAM =
             AttributeKey.valueOf("H3_REMOTE_QPACK_DECODER_STREAM");
@@ -130,6 +133,7 @@ abstract class Http3UnidirectionalStreamInboundHandler extends ByteToMessageDeco
         }
     }
 
+    /** 连接级 Attribute 原子占位：首次见到该 QPACK/控制流类型时返回 true。 */
     private boolean ensureStreamNotExistsYet(ChannelHandlerContext ctx, AttributeKey<Boolean> key) {
         return ctx.channel().parent().attr(key).setIfAbsent(true) == null;
     }
@@ -180,6 +184,7 @@ abstract class Http3UnidirectionalStreamInboundHandler extends ByteToMessageDeco
         ctx.pipeline().replace(this, null, unknownStreamHandlerFactory.apply(streamType));
     }
 
+    /** 默认未知流处理器：释放所有入站消息（符合 RFC 对未知扩展流的处理建议）。 */
     static final class ReleaseHandler extends ChannelInboundHandlerAdapter {
         static final ReleaseHandler INSTANCE = new ReleaseHandler();
 

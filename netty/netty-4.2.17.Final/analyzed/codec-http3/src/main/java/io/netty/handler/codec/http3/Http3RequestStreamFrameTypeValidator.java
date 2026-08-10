@@ -17,9 +17,12 @@ package io.netty.handler.codec.http3;
 
 /**
  * Validate that the frame type is valid for a request stream.
+ * <p>请求流只允许消息体相关帧；若出现 CANCEL_PUSH、GOAWAY、MAX_PUSH_ID、SETTINGS 等
+ * 控制流帧类型，立即以 {@code H3_FRAME_UNEXPECTED} 拒绝。
  */
 final class Http3RequestStreamFrameTypeValidator implements Http3FrameTypeValidator {
 
+    /** 单例：帧类型校验无 per-stream 状态，可全局复用。 */
     static final Http3RequestStreamFrameTypeValidator INSTANCE = new Http3RequestStreamFrameTypeValidator();
 
     private Http3RequestStreamFrameTypeValidator() { }

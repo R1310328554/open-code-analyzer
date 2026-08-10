@@ -41,6 +41,8 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
  *
  * Non-standard settings are ignored
  * Reserved HTTP/2 setting identifiers are rejected.
+ * <p>类型安全的 SETTINGS 容器：{@link #put(long, Long)} 校验标准项取值范围，
+ * 非标准项由 {@link NonStandardHttp3SettingsValidator} 决定是否接纳；HTTP/2 保留 id 直接拒绝。
  *
  */
 public final class Http3Settings implements Iterable<Map.Entry<Long, Long>> {
@@ -382,6 +384,7 @@ public final class Http3Settings implements Iterable<Map.Entry<Long, Long>> {
     /**
      * Allows to handle non-standard settings. By default non-standard settings will be ignore as defined by the
      * RFC.
+     * <p>扩展点：返回 {@code true} 时将未知 setting id 写入 map，否则按 RFC 静默忽略。
      */
     public interface NonStandardHttp3SettingsValidator {
         /**

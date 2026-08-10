@@ -25,6 +25,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.LongFunction;
 import java.util.function.Supplier;
 
+/**
+ * 服务端侧单向流入站分派：push 流仅由服务端发起，客户端不得向服务端打开 push 流，
+ * 故 {@link #initPushStream} 直接触发 {@code H3_STREAM_CREATION_ERROR}。
+ */
 final class Http3UnidirectionalStreamInboundServerHandler extends Http3UnidirectionalStreamInboundHandler {
 
     Http3UnidirectionalStreamInboundServerHandler(Http3FrameCodecFactory codecFactory,

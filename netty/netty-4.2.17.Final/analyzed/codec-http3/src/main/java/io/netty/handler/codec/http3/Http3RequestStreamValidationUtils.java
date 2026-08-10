@@ -30,8 +30,14 @@ import static io.netty.handler.codec.http.HttpUtil.normalizeAndGetContentLength;
 import static io.netty.handler.codec.http3.Http3ErrorCode.H3_MESSAGE_ERROR;
 import static io.netty.handler.codec.http3.Http3FrameValidationUtils.frameTypeUnexpected;
 
+/**
+ * 请求流读写侧协议校验的静态工具方法：Content-Length 一致性、HTTP/3 禁用头、
+ * 客户端 GOAWAY 后写帧限制，以及流提前关闭时的 QPACK {@code streamAbandoned} 通知。
+ */
 final class Http3RequestStreamValidationUtils {
+    /** 当前 HEADERS 帧未携带或未修改 Content-Length。 */
     static final long CONTENT_LENGTH_NOT_MODIFIED = -1;
+    /** 帧校验失败，调用方应中止传播并关闭/报错。 */
     static final long INVALID_FRAME_READ = -2;
 
     private Http3RequestStreamValidationUtils() {
@@ -53,6 +59,7 @@ final class Http3RequestStreamValidationUtils {
                                        BooleanSupplier goAwayReceivedSupplier,
                                        Http3RequestStreamCodecState encodeState) {
         if (goAwayReceivedSupplier.getAsBoolean() && !encodeState.started()) {
+            // 已收 GOAWAY 且本流尚未写出任何帧：RFC 要求不得再开新请求
             String type = StringUtil.simpleClassName(frame);
             ReferenceCountUtil.release(frame);
             promise.setFailure(new Http3Exception(Http3ErrorCode.H3_FRAME_UNEXPECTED,
@@ -81,6 +88,7 @@ final class Http3RequestStreamValidationUtils {
             return INVALID_FRAME_READ;
         }
         if (decodeState.receivedFinalHeaders()) {
+            // trailers 帧：解析并规范化 Content-Length（若有）
             long length = normalizeAndGetContentLength(
                     headersFrame.headers().getAll(HttpHeaderNames.CONTENT_LENGTH), false, true);
             if (length != CONTENT_LENGTH_NOT_MODIFIED) {
@@ -106,6 +114,7 @@ final class Http3RequestStreamValidationUtils {
     static boolean validateOnStreamClosure(ChannelHandlerContext ctx, long expectedLength, long seenLength,
                                            boolean clientHeadRequest) {
         try {
+            // 流关闭时以 length=0 做最终长度核对（HEAD 请求允许零体）
             verifyContentLength(0, expectedLength, seenLength, true, clientHeadRequest);
             return true;
         } catch (Http3Exception e) {
@@ -118,6 +127,7 @@ final class Http3RequestStreamValidationUtils {
     static void sendStreamAbandonedIfRequired(ChannelHandlerContext ctx, QpackAttributes qpackAttributes,
                                               QpackDecoder qpackDecoder, Http3RequestStreamCodecState decodeState) {
         if (!qpackAttributes.dynamicTableDisabled() && !decodeState.terminated()) {
+            // 流在未收到完整 trailers 前关闭：通知 QPACK 解码器放弃该流上的头部块引用
             final long streamId = ((QuicStreamChannel) ctx.channel()).streamId();
             if (qpackAttributes.decoderStreamAvailable()) {
                 qpackDecoder.streamAbandoned(qpackAttributes.decoderStream(), streamId);

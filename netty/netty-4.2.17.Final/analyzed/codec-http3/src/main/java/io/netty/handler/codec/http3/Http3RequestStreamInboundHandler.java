@@ -27,6 +27,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * {@link ChannelInboundHandlerAdapter} which makes it easy to handle
  * <a href="https://tools.ietf.org/html/draft-ietf-quic-http-32#section-7">HTTP3 request streams</a>.
+ * <p>模板方法基类：{@link #channelRead(ChannelHandlerContext, Object)} 按帧类型分派到
+ * {@link Http3HeadersFrame}/{@link Http3DataFrame} 子类实现，未知帧默认释放丢弃（符合 RFC）。
  */
 public abstract class Http3RequestStreamInboundHandler extends ChannelInboundHandlerAdapter {
     private static final InternalLogger logger =
@@ -48,6 +50,7 @@ public abstract class Http3RequestStreamInboundHandler extends ChannelInboundHan
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt == ChannelInputShutdownEvent.INSTANCE) {
+            // 对端 FIN：请求/响应体已全部到达，子类可在此完成收尾
             channelInputClosed(ctx);
         }
         ctx.fireUserEventTriggered(evt);
@@ -132,6 +135,7 @@ public abstract class Http3RequestStreamInboundHandler extends ChannelInboundHan
      */
     @Nullable
     protected final QuicStreamChannel controlStream(ChannelHandlerContext ctx) {
+        // 经父 QUIC 连接 Channel 查找本地控制流，用于发送 GOAWAY 等控制帧
         return Http3.getLocalControlStream(ctx.channel().parent());
     }
 }

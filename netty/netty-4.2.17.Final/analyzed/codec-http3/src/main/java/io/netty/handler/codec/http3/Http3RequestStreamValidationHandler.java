@@ -31,6 +31,10 @@ import static io.netty.handler.codec.http3.Http3RequestStreamValidationUtils.val
 import static io.netty.handler.codec.http3.Http3RequestStreamValidationUtils.validateHeaderFrameRead;
 import static io.netty.handler.codec.http3.Http3RequestStreamValidationUtils.validateOnStreamClosure;
 
+/**
+ * 请求流双向协议校验：出站拦截客户端非法写（如 GOAWAY 后首帧、客户端发 PUSH_PROMISE），
+ * 入站校验 HEADERS 禁用的 hop-by-hop 头、Content-Length 与 DATA 累计长度，并在读半关闭时触发 QPACK 流废弃。
+ */
 final class Http3RequestStreamValidationHandler extends Http3FrameTypeDuplexValidationHandler<Http3RequestStreamFrame> {
     private final boolean server;
     private final BooleanSupplier goAwayReceivedSupplier;
@@ -39,8 +43,11 @@ final class Http3RequestStreamValidationHandler extends Http3FrameTypeDuplexVali
     private final Http3RequestStreamCodecState decodeState;
     private final Http3RequestStreamCodecState encodeState;
 
+    /** 客户端 HEAD 请求：响应体应为空，Content-Length 校验需特殊处理。 */
     private boolean clientHeadRequest;
+    /** 来自 trailers 或响应头的 Content-Length，{@code -1} 表示未知/chunked。 */
     private long expectedLength = -1;
+    /** 已收到的 DATA 载荷累计字节数。 */
     private long seenLength;
 
     static ChannelHandler newServerValidator(QpackAttributes qpackAttributes, QpackDecoder decoder,

@@ -23,6 +23,8 @@ import io.netty.util.internal.StringUtil;
 /**
  * Abstract base class that users can extend to init HTTP/3 request-streams. This initializer
  * will automatically add HTTP/3 codecs etc to the {@link ChannelPipeline} as well.
+ * <p>客户端主动打开请求流时使用：从父连接 pipeline 取得 {@link Http3ConnectionHandler}，
+ * 依次挂载编解码器、出入站帧顺序校验与协议校验 handler，再调用 {@link #initRequestStream} 添加业务逻辑。
  */
 public abstract class Http3RequestStreamInitializer extends ChannelInitializer<QuicStreamChannel> {
 
@@ -38,9 +40,9 @@ public abstract class Http3RequestStreamInitializer extends ChannelInitializer<Q
         Http3RequestStreamEncodeStateValidator encodeStateValidator = new Http3RequestStreamEncodeStateValidator();
         Http3RequestStreamDecodeStateValidator decodeStateValidator = new Http3RequestStreamDecodeStateValidator();
 
-        // Add the encoder and decoder in the pipeline so we can handle Http3Frames
+        // 编解码器：将 ByteBuf 与 Http3RequestStreamFrame 互转
         pipeline.addLast(connectionHandler.newCodec(encodeStateValidator, decodeStateValidator));
-        // Add the handler that will validate what we write and receive on this stream.
+        // 出入站帧顺序与帧类型校验（HEADERS → DATA → trailers 状态机）
         pipeline.addLast(encodeStateValidator);
         pipeline.addLast(decodeStateValidator);
         pipeline.addLast(connectionHandler.newRequestStreamValidationHandler(ch, encodeStateValidator,

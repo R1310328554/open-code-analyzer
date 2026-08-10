@@ -27,8 +27,11 @@ import java.util.function.LongFunction;
 
 /**
  * Handler that handles <a href="https://tools.ietf.org/html/draft-ietf-quic-http-32">HTTP3</a> for the server-side.
+ * <p>服务端连接级 handler：对入站双向流自动装配请求流 pipeline（编解码 + 校验 + 用户 {@code requestStreamHandler}），
+ * 对入站单向流挂载 {@link Http3UnidirectionalStreamInboundServerHandler} 识别控制/QPACK/push 流类型。
  */
 public final class Http3ServerConnectionHandler extends Http3ConnectionHandler {
+    /** 每个新请求流末尾追加的业务处理器，接收 {@link Http3HeadersFrame} 与 {@link Http3DataFrame}。 */
     private final ChannelHandler requestStreamHandler;
 
     /**
@@ -128,6 +131,7 @@ public final class Http3ServerConnectionHandler extends Http3ConnectionHandler {
 
     @Override
     void initBidirectionalStream(ChannelHandlerContext ctx, QuicStreamChannel streamChannel) {
+        // 客户端发起的请求流：codec → 状态校验 → 协议校验 → 用户 handler
         ChannelPipeline pipeline = streamChannel.pipeline();
         Http3RequestStreamEncodeStateValidator encodeStateValidator = new Http3RequestStreamEncodeStateValidator();
         Http3RequestStreamDecodeStateValidator decodeStateValidator = new Http3RequestStreamDecodeStateValidator();
@@ -141,6 +145,7 @@ public final class Http3ServerConnectionHandler extends Http3ConnectionHandler {
 
     @Override
     void initUnidirectionalStream(ChannelHandlerContext ctx, QuicStreamChannel streamChannel) {
+        // 服务端收到的单向流：解析流类型前缀后分派到控制/QPACK/未知流 handler
         final long maxTableCapacity = maxTableCapacity();
         streamChannel.pipeline().addLast(
                 new Http3UnidirectionalStreamInboundServerHandler(codecFactory, nonStandardSettingsValidator,

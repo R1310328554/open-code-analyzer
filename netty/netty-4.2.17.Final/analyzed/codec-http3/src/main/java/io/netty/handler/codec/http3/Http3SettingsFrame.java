@@ -21,6 +21,9 @@ import java.util.Map;
 
 /**
  * See <a href="https://tools.ietf.org/html/draft-ietf-quic-http-32#section-7.2.4">SETTINGS</a>.
+ * <p>控制流上的 SETTINGS 帧接口：连接建立后双方交换 {@link Http3Settings} 键值对以协商
+ * QPACK 与扩展能力。{@link #settings()} 提供类型安全访问；带 {@code @Deprecated} 的
+ * {@code get}/{@code put} 保留向后兼容。
  */
 public interface Http3SettingsFrame extends Http3ControlStreamFrame, Iterable<Map.Entry<Long, Long>> {
 

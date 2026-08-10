@@ -45,18 +45,27 @@ import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
  * for a server. New push streams can be initiated using the various {@code newPushStream} methods. It is required to
  * add the {@link ChannelHandler} returned from {@link #controlStreamListener()} to the {@link QuicChannel} associated
  * with this manager.
+ * <p>服务端 push 生命周期管理：{@link #reserveNextPushId()} 分配 ID → {@link #newPushStream} 建单向流 →
+ * 映射表跟踪 {@code PUSH_ID_GENERATED → AWAITING → QuicStreamChannel}；{@link #controlStreamListener()}
+ * 响应客户端 {@link Http3CancelPushFrame}。
  */
 public final class Http3ServerPushStreamManager {
     private static final AtomicLongFieldUpdater<Http3ServerPushStreamManager> nextIdUpdater =
             newUpdater(Http3ServerPushStreamManager.class, "nextId");
+    /** 客户端 CANCEL_PUSH 早于流建立：标记为已取消，建流成功后立即关闭。 */
     private static final Object CANCELLED_STREAM = new Object();
+    /** Push ID 已预留，尚未调用 {@link #newPushStream}。 */
     private static final Object PUSH_ID_GENERATED = new Object();
+    /** 已发起建流，等待 {@link QuicStreamChannel} 变为 active。 */
     private static final Object AWAITING_STREAM_ESTABLISHMENT = new Object();
 
     private final QuicChannel channel;
+    /** pushId → 状态占位符或已建立的 {@link QuicStreamChannel}。 */
     private final ConcurrentMap<Long, Object> pushStreams;
+    /** 须挂到 {@link QuicChannel} pipeline，监听控制流上的 CANCEL_PUSH。 */
     private final ChannelInboundHandler controlStreamListener;
 
+    /** 下一个待分配的 push ID（单调递增）。 */
     private volatile long nextId;
 
     /**
@@ -81,6 +90,7 @@ public final class Http3ServerPushStreamManager {
             @Override
             public void channelRead(ChannelHandlerContext ctx, Object msg) {
                 if (msg instanceof Http3CancelPushFrame) {
+                    // 客户端取消 push：关闭已建流或标记 AWAITING 为 CANCELLED
                     final long pushId = ((Http3CancelPushFrame) msg).id();
                     if (pushId >= nextId) {
                         connectionError(ctx, H3_ID_ERROR, "CANCEL_PUSH id greater than the last known id", true);
@@ -281,6 +291,7 @@ public final class Http3ServerPushStreamManager {
     private static void sendCancelPushIfFailed(Future<QuicStreamChannel> future, long pushId, QuicChannel channel) {
         // https://quicwg.org/base-drafts/draft-ietf-quic-http.html#name-cancel_push
         // If we can not establish the stream, we can not send the promised push response, so send a CANCEL_PUSH
+        // 建流失败时主动发 CANCEL_PUSH，避免客户端一直等待已承诺的 push 响应
         if (!future.isSuccess()) {
             final QuicStreamChannel localControlStream = Http3.getLocalControlStream(channel);
             assert localControlStream != null;

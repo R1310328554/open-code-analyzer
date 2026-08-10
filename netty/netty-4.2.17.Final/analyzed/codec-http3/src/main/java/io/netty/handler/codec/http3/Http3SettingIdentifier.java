@@ -24,6 +24,11 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * HTTP/3 SETTINGS 帧中标准设置项的 IANA 注册标识符枚举。
+ * <p>控制流上交换的键值对协商 QPACK 动态表容量、字段块上限、CONNECT 扩展等连接级能力；
+ * {@link #fromId(long)} 用于解码时将原始 id 映射回类型安全枚举。
+ */
 public enum Http3SettingIdentifier {
 
     /**
@@ -35,6 +40,7 @@ public enum Http3SettingIdentifier {
      * HTTP/3 SETTINGS registry (IANA)</a>.
      * <br>
      * Controls the maximum size of the dynamic table used by QPACK.
+     * <p>对端 QPACK 动态表允许的最大字节数；编码器不得超出此容量插入新条目。
      */
     HTTP3_SETTINGS_QPACK_MAX_TABLE_CAPACITY(0x1),
 
@@ -49,6 +55,7 @@ public enum Http3SettingIdentifier {
      * HTTP/3 SETTINGS registry (IANA)</a>.
      * <br>
      * Specifies the upper bound on the total size of HTTP field sections accepted by a peer.
+     * <p>单条 HEADERS（含 QPACK 编码开销）对端可接受的最大字节数。
      */
     HTTP3_SETTINGS_MAX_FIELD_SECTION_SIZE(0x6),
 
@@ -61,6 +68,7 @@ public enum Http3SettingIdentifier {
      * HTTP/3 SETTINGS registry (IANA)</a>.
      * <br>
      * Indicates the maximum number of streams that can be blocked waiting for QPACK instructions.
+     * <p>等待 QPACK 解码器指令而阻塞的最大请求流数量。
      */
     HTTP3_SETTINGS_QPACK_BLOCKED_STREAMS(0x7),
 
@@ -73,6 +81,7 @@ public enum Http3SettingIdentifier {
      * HTTP/3 SETTINGS registry (IANA)</a>.
      * <br>
      * Enables use of the CONNECT protocol in HTTP/3 when set to 1; disabled when 0.
+     * <p>为 1 时允许在 HTTP/3 上使用 CONNECT 方法建立隧道（如 WebTransport 前置）。
      */
     HTTP3_SETTINGS_ENABLE_CONNECT_PROTOCOL(0x8),
 
@@ -85,11 +94,13 @@ public enum Http3SettingIdentifier {
      * HTTP/3 SETTINGS registry (IANA)</a>.
      * <br>
      * Enables use of the CONNECT protocol in HTTP/3 when set to 1; disabled when 0.
+     * <p>为 1 时启用 HTTP/3 Datagram 扩展，可在 QUIC DATAGRAM 帧上承载应用数据。
      */
     HTTP3_SETTINGS_H3_DATAGRAM(0x33);
 
     private final long id;
 
+    /** id → 枚举常量，供 {@link #fromId(long)} O(1) 查找。 */
     private static final Map<Long, Http3SettingIdentifier> LOOKUP = Collections.unmodifiableMap(
         Arrays.stream(values()).collect(Collectors.toMap(Http3SettingIdentifier::id, Function.identity()))
     );

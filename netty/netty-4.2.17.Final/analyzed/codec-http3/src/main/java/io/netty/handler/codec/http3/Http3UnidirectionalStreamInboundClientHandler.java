@@ -24,6 +24,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.LongFunction;
 import java.util.function.Supplier;
 
+/**
+ * 客户端侧单向流入站分派：在读到 push 流类型前缀后校验 MAX_PUSH_ID 约束，
+ * 并将自身替换为用户提供的 push 流 handler。
+ */
 final class Http3UnidirectionalStreamInboundClientHandler extends Http3UnidirectionalStreamInboundHandler {
     private final LongFunction<ChannelHandler> pushStreamHandlerFactory;
 
@@ -45,6 +49,7 @@ final class Http3UnidirectionalStreamInboundClientHandler extends Http3Unidirect
     @Override
     void initPushStream(ChannelHandlerContext ctx, long pushId) {
         // See https://tools.ietf.org/html/draft-ietf-quic-http-32#section-4.4
+        // push ID 不得超过本地已发送的 MAX_PUSH_ID；否则连接级 H3_ID_ERROR
         Long maxPushId = remoteControlStreamHandler.sentMaxPushId();
         if (maxPushId == null) {
             Http3CodecUtils.connectionError(ctx, Http3ErrorCode.H3_ID_ERROR,

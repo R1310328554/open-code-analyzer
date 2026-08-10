@@ -28,6 +28,8 @@ import io.netty.buffer.ByteBufHolder;
  *      Frame Payload (..),
  *    }
  * </pre>
+ * <p>规范未定义的帧类型：payload 原样保留在 {@link ByteBuf} 中，可出现在请求流、push 流或控制流。
+ * 默认 handler 会释放丢弃；应用可识别自定义 type 并自行处理。
  */
 public interface Http3UnknownFrame extends
         Http3RequestStreamFrame, Http3PushStreamFrame, Http3ControlStreamFrame, ByteBufHolder {
