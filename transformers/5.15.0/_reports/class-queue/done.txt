@@ -1,0 +1,15 @@
+.circleci/create_circleci_config.py
+.circleci/parse_test_outputs.py
+.github/scripts/assign_reviewers.py
+benchmark_v2/benchmark_scripts/continuous_batching_overall.py
+benchmark_v2/framework/benchmark_config.py
+benchmark_v2/framework/benchmark_runner.py
+benchmark_v2/framework/data_classes.py
+benchmark_v2/framework/hardware_metrics.py
+benchmark_v2/run_benchmarks.py
+conftest.py
+scripts/check_tokenizers.py
+scripts/distributed/torch-distributed-gpu-test.py
+scripts/stale.py
+setup.py
+src/transformers/__init__.py
