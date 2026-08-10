@@ -9,35 +9,50 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 
 /**
- * Per the docker auth v2 spec, access is defined like this:
- *
- *        {
- *        "type": "repository",
- *        "name": "samalba/my-app",
- *        "actions": [
- *           "push",
- *           "pull"
- *         ]
- *        }
- *
+ * Docker Registry v2 认证规范中的访问权限（access）条目。
+ * <p>
+ * JSON 格式示例：
+ * <pre>
+ * {
+ *   "type": "repository",
+ *   "name": "samalba/my-app",
+ *   "actions": ["push", "pull"]
+ * }
+ * </pre>
+ * 亦可通过 {@code scope} 查询参数（{@code type:name:actions}）构造。
  */
 public class DockerAccess {
 
+    /** scope 参数中类型字段的索引。 */
     public static final int ACCESS_TYPE = 0;
+    /** scope 参数中仓库名称字段的索引。 */
     public static final int REPOSITORY_NAME = 1;
+    /** scope 参数中权限列表字段的索引。 */
     public static final int PERMISSIONS = 2;
+    /** URL 解码使用的字符编码。 */
     public static final String DECODE_ENCODING = "UTF-8";
 
+    /** 访问类型（如 repository）。 */
     @JsonProperty("type")
     protected String type;
+    /** 资源名称（如镜像仓库路径）。 */
     @JsonProperty("name")
     protected String name;
+    /** 允许的操作列表（如 push、pull）。 */
     @JsonProperty("actions")
     protected List<String> actions;
 
+    /** 默认无参构造器。 */
     public DockerAccess() {
     }
 
+    /**
+     * 从 Docker scope 查询参数解析访问权限。
+     * <p>
+     * 格式为 {@code type:name:action1,action2,...}，经 URL 解码后按 {@code :} 分割。
+     *
+     * @param scopeParam scope 查询参数字符串
+     */
     public DockerAccess(final String scopeParam) {
         if (scopeParam != null) {
             try {

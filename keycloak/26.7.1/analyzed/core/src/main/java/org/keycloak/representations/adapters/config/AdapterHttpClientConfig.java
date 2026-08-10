@@ -18,72 +18,52 @@
 package org.keycloak.representations.adapters.config;
 
 /**
- * Configuration options relevant for configuring http client that can be used by adapter.
- *
- * NOTE: keep in sync with adapters/saml/core/src/main/java/org/keycloak/adapters/AdapterHttpClientConfig.java until unified.
+ * adapter 所用 HTTP 客户端的配置选项接口。
+ * <p>
+ * 注意：在统一之前需与 {@code adapters/saml/core/.../AdapterHttpClientConfig.java} 保持同步。
  *
  * @author hmlnarik
  */
 public interface AdapterHttpClientConfig {
 
-    /**
-     * Returns truststore filename.
-     */
+    /** 返回信任库（truststore）文件路径。 */
     String getTruststore();
 
-    /**
-     * Returns truststore password.
-     */
+    /** 返回信任库密码。 */
     String getTruststorePassword();
 
-    /**
-     * Returns keystore with client keys.
-     */
+    /** 返回客户端密钥库（keystore）文件路径。 */
     String getClientKeystore();
 
-    /**
-     * Returns keystore password.
-     */
+    /** 返回客户端密钥库密码。 */
     String getClientKeystorePassword();
 
     /**
-     * Returns boolean flag whether any hostname verification is done on the server's
-     * certificate, {@code true} means that verification is not done.
-     * @return
+     * 是否跳过对服务端证书的主机名校验。
+     *
+     * @return {@code true} 表示不校验主机名
      */
     boolean isAllowAnyHostname();
 
     /**
-     * Returns boolean flag whether any trust management and hostname verification is done.
+     * 是否禁用信任管理与主机名校验。
      * <p>
-     * <i>NOTE</i> Disabling trust manager is a security hole, so only set this option
-     * if you cannot or do not want to verify the identity of the
-     * host you are communicating with.
+     * <i>注意</i>：禁用信任管理器会造成安全漏洞，仅在无法或不需要验证通信对端身份时启用。
      */
     boolean isDisableTrustManager();
 
-    /**
-     * Returns size of connection pool.
-     */
+    /** 返回 HTTP 连接池大小。 */
     int getConnectionPoolSize();
 
-    /**
-     * Returns URL of HTTP proxy.
-     */
+    /** 返回 HTTP 代理 URL。 */
     String getProxyUrl();
 
-    /**
-     * Returns timeout for socket waiting for data in milliseconds.
-     */
+    /** 返回等待套接字数据的超时时间（毫秒）。 */
     long getSocketTimeout();
 
-    /**
-     * Returns timeout for establishing the connection with the remote host in milliseconds.
-     */
+    /** 返回与远程主机建立连接的超时时间（毫秒）。 */
     long getConnectionTimeout();
 
-    /**
-     * Returns the connection time-to-live
-     */
+    /** 返回连接存活时间（TTL，毫秒）。 */
     long getConnectionTTL();
 }

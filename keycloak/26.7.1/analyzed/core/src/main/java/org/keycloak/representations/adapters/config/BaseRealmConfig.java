@@ -21,21 +21,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 /**
- * Common Realm Configuration
+ * Keycloak adapter 的 realm 级公共配置基类，定义 realm 名称、公钥、认证服务器地址等核心连接参数。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @JsonPropertyOrder({"realm", "realm-public-key", "auth-server-url", "ssl-required"})
 public class BaseRealmConfig {
+    /** Realm 名称。 */
     @JsonProperty("realm")
     protected String realm;
+    /** Realm 公钥（PEM 或 Base64）。 */
     @JsonProperty("realm-public-key")
     protected String realmKey;
+    /** Keycloak 认证服务器根 URL。 */
     @JsonProperty("auth-server-url")
     protected String authServerUrl;
+    /** SSL 要求级别（如 external、all、none）。 */
     @JsonProperty("ssl-required")
     protected String sslRequired;
+    /** 机密端口（HTTPS 端口）。 */
     @JsonProperty("confidential-port")
     protected int confidentialPort;
 

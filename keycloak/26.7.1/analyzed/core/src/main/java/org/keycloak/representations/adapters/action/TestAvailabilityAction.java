@@ -18,19 +18,33 @@
 package org.keycloak.representations.adapters.action;
 
 /**
+ * 测试 adapter 可用性的管理动作，用于管理端探测受管客户端是否在线。
+ * <p>
+ * 动作类型为 {@link #TEST_AVAILABILITY}，继承 {@link AdminAction} 的通用令牌字段。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class TestAvailabilityAction extends AdminAction {
 
+    /** 动作类型常量：测试可用性。 */
     public static final String TEST_AVAILABILITY = "TEST_AVAILABILITY";
 
+    /** 默认无参构造器。 */
     public TestAvailabilityAction() {
     }
 
+    /**
+     * 构造测试可用性的管理动作。
+     *
+     * @param id 动作 ID
+     * @param expiration 过期时间（秒）
+     * @param resource 目标资源
+     */
     public TestAvailabilityAction(String id, int expiration, String resource) {
         super(id, expiration, resource, TEST_AVAILABILITY);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean validate() {
         return TEST_AVAILABILITY.equals(action);

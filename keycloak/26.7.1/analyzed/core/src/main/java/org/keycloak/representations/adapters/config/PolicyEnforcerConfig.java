@@ -33,47 +33,63 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * Keycloak Policy Enforcer（策略执行器）的配置表示，定义路径级授权规则、执行模式与缓存策略。
+ * <p>
+ * 供 Java adapter 在应用层拦截请求并执行 UMA/Authorization 策略。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class PolicyEnforcerConfig {
 
+    /** 全局执行模式，默认 ENFORCING。 */
     @JsonProperty("enforcement-mode")
     private EnforcementMode enforcementMode = EnforcementMode.ENFORCING;
 
+    /** 路径级授权配置列表。 */
     @JsonProperty("paths")
     @JsonInclude(Include.NON_EMPTY)
     private List<PathConfig> paths = new ArrayList<>();
 
+    /** 路径匹配缓存配置。 */
     @JsonProperty("path-cache")
     @JsonInclude(Include.NON_EMPTY)
     private PathCacheConfig pathCacheConfig;
 
+    /** 是否延迟加载路径配置。 */
     @JsonProperty("lazy-load-paths")
     private Boolean lazyLoadPaths = Boolean.FALSE;
 
+    /** 拒绝访问时的重定向 URL。 */
     @JsonProperty("on-deny-redirect-to")
     @JsonInclude(Include.NON_NULL)
     private String onDenyRedirectTo;
 
+    /** 用户托管访问（UMA）配置。 */
     @JsonProperty("user-managed-access")
     @JsonInclude(Include.NON_NULL)
     private UserManagedAccessConfig userManagedAccess;
 
+    /** 声明信息点（Claim Information Point）配置。 */
     @JsonProperty("claim-information-point")
     @JsonInclude(Include.NON_NULL)
     private Map<String, Map<String, Object>> claimInformationPointConfig;
 
+    /** 是否将 HTTP 方法映射为 scope。 */
     @JsonProperty("http-method-as-scope")
     private Boolean httpMethodAsScope;
 
+    /** Realm 名称。 */
     private String realm;
 
+    /** 认证服务器 URL。 */
     @JsonProperty("auth-server-url")
     private String authServerUrl;
 
+    /** 客户端凭证。 */
     @JsonProperty("credentials")
     protected Map<String, Object> credentials = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
+    /** 客户端资源名称。 */
     @JsonProperty("resource")
     private String resource;
 
@@ -173,8 +189,17 @@ public class PolicyEnforcerConfig {
         this.resource = resource;
     }
 
+    /**
+     * 单条路径的授权配置，可包含 HTTP 方法、scope 及执行模式。
+     */
     public static class PathConfig {
 
+        /**
+         * 从 {@link ResourceRepresentation} 批量创建路径配置。
+         *
+         * @param resourceDescription 授权资源描述
+         * @return 路径配置集合
+         */
         public static Set<PathConfig> createPathConfigs(ResourceRepresentation resourceDescription) {
             Set<PathConfig> pathConfigs = new HashSet<>();
 
@@ -206,24 +231,35 @@ public class PolicyEnforcerConfig {
             return pathConfigs;
         }
 
+        /** 资源名称。 */
         private String name;
+        /** 资源类型。 */
         private String type;
+        /** 路径模式（可含 {@code {param}} 占位符）。 */
         private String path;
+        /** HTTP 方法级配置列表。 */
         private List<MethodConfig> methods = new ArrayList<>();
+        /** 所需 scope 列表。 */
         private List<String> scopes = new ArrayList<>();
+        /** 资源 ID。 */
         private String id;
 
+        /** 该路径的执行模式。 */
         @JsonProperty("enforcement-mode")
         private EnforcementMode enforcementMode = EnforcementMode.ENFORCING;
 
+        /** 路径级声明信息点配置。 */
         @JsonProperty("claim-information-point")
         private Map<String, Map<String, Object>> claimInformationPointConfig;
 
+        /** 父路径配置（实例化路径时引用）。 */
         @JsonIgnore
         private PathConfig parentConfig;
 
+        /** 是否已失效（需重新加载）。 */
         private boolean invalidated;
 
+        /** 是否为静态路径（非模板实例）。 */
         private boolean staticPath;
 
         public String getPath() {
@@ -302,11 +338,13 @@ public class PolicyEnforcerConfig {
                     '}';
         }
 
+        /** 路径是否包含 {@code {}} 模板占位符。 */
         @JsonIgnore
         public boolean hasPattern() {
             return getPath().indexOf("{") != -1;
         }
 
+        /** 是否为父路径的实例化副本。 */
         @JsonIgnore
         public boolean isInstance() {
             return this.parentConfig != null;
@@ -320,6 +358,7 @@ public class PolicyEnforcerConfig {
             return parentConfig;
         }
 
+        /** 标记该路径配置已失效。 */
         public void invalidate() {
             this.invalidated = true;
         }
@@ -337,11 +376,17 @@ public class PolicyEnforcerConfig {
         }
     }
 
+    /**
+     * HTTP 方法级 scope 授权配置。
+     */
     public static class MethodConfig {
 
+        /** HTTP 方法名（如 GET、POST）。 */
         private String method;
+        /** 所需 scope 列表。 */
         private List<String> scopes = new ArrayList<>();
 
+        /** scope 执行模式，默认 ALL（需满足全部 scope）。 */
         @JsonProperty("scopes-enforcement-mode")
         private ScopeEnforcementMode scopesEnforcementMode = ScopeEnforcementMode.ALL;
 
@@ -370,10 +415,13 @@ public class PolicyEnforcerConfig {
         }
     }
 
+    /** 路径匹配结果缓存配置。 */
     public static class PathCacheConfig {
 
+        /** 最大缓存条目数，默认 1000。 */
         @JsonProperty("max-entries")
         int maxEntries = 1000;
+        /** 缓存条目存活时间（毫秒），默认 30000。 */
         @JsonProperty("lifespan")
         long lifespan = 30000;
 
@@ -394,18 +442,27 @@ public class PolicyEnforcerConfig {
         }
     }
 
+    /** 策略执行模式枚举。 */
     public enum EnforcementMode {
+        /** 宽松模式：未匹配路径允许访问。 */
         PERMISSIVE,
+        /** 强制模式：未匹配路径拒绝访问。 */
         ENFORCING,
+        /** 禁用策略执行。 */
         DISABLED
     }
 
+    /** scope 校验模式枚举。 */
     public enum ScopeEnforcementMode {
+        /** 需持有全部 scope。 */
         ALL,
+        /** 持有任一 scope 即可。 */
         ANY,
+        /** 不校验 scope。 */
         DISABLED
     }
 
+    /** 用户托管访问（UMA）占位配置类。 */
     public static class UserManagedAccessConfig {
 
     }

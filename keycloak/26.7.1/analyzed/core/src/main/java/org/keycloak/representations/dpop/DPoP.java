@@ -22,23 +22,34 @@ import org.keycloak.representations.JsonWebToken;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * DPoP（Demonstrating Proof-of-Possession）证明 JWT，继承 {@link JsonWebToken}。
+ * <p>
+ * 携带 HTTP 方法（htm）、URI（htu）及关联访问令牌哈希（ath），用于绑定令牌与客户端密钥对。
+ *
  * @author <a href="mailto:dmitryt@backbase.com">Dmitry Telegin</a>
  */
 public class DPoP extends JsonWebToken {
 
+    /** 访问令牌哈希声明键（ath）。 */
     private static final String ATH = "ath";
+    /** HTTP 方法声明键（htm）。 */
     private static final String HTM = "htm";
+    /** HTTP URI 声明键（htu）。 */
     private static final String HTU = "htu";
 
+    /** 关联访问令牌的哈希值（ath 声明）。 */
     @JsonProperty(ATH)
     private String accessTokenHash;
 
+    /** 请求 HTTP 方法（htm 声明，如 GET、POST）。 */
     @JsonProperty(HTM)
     private String httpMethod;
 
+    /** 请求 HTTP URI（htu 声明）。 */
     @JsonProperty(HTU)
     private String httpUri;
 
+    /** 签名 JWK 的 thumbprint（运行时填充，非 JWT 声明）。 */
     private String thumbprint;
 
     public String getAccessTokenHash() {

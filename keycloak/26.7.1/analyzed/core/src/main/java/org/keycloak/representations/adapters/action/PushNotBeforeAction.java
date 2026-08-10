@@ -18,30 +18,48 @@
 package org.keycloak.representations.adapters.action;
 
 /**
+ * 向 adapter 推送 realm {@code notBefore} 时间戳的管理动作，使 adapter 拒绝早于该时刻签发的令牌。
+ * <p>
+ * 动作类型为 {@link #PUSH_NOT_BEFORE}，由 {@link AdminAction} 基类承载通用字段。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PushNotBeforeAction extends AdminAction {
 
+    /** 动作类型常量：推送 notBefore。 */
     public static final String PUSH_NOT_BEFORE = "PUSH_NOT_BEFORE";
+    /** 新的 notBefore 值（Unix 秒级时间戳）。 */
     protected int notBefore;
 
+    /** 默认无参构造器。 */
     public PushNotBeforeAction() {
     }
 
+    /**
+     * 构造推送 notBefore 的管理动作。
+     *
+     * @param id 动作 ID
+     * @param expiration 过期时间（秒）
+     * @param resource 目标资源
+     * @param notBefore 新的 notBefore 时间戳
+     */
     public PushNotBeforeAction(String id, int expiration, String resource, int notBefore) {
         super(id, expiration, resource, PUSH_NOT_BEFORE);
         this.notBefore = notBefore;
     }
 
+    /** 返回 notBefore 时间戳。 */
     public int getNotBefore() {
         return notBefore;
     }
 
+    /** 设置 notBefore 时间戳。 */
     public void setNotBefore(int notBefore) {
         this.notBefore = notBefore;
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean validate() {
         return PUSH_NOT_BEFORE.equals(action);

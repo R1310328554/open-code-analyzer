@@ -3,26 +3,38 @@ package org.keycloak.representations.docker;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Creates a response understandable by the docker client in the form:
- *
- {
- "token" : "eyJh...nSQ",
- "expires_in" : 300,
- "issued_at" : "2016-09-02T10:56:33Z"
- }
+ * Docker Registry 客户端可理解的认证成功响应，JSON 格式如下：
+ * <pre>
+ * {
+ *   "token": "eyJh...nSQ",
+ *   "expires_in": 300,
+ *   "issued_at": "2016-09-02T10:56:33Z"
+ * }
+ * </pre>
  */
 public class DockerResponse {
 
+    /** Bearer 令牌字符串。 */
     @JsonProperty("token")
     private String token;
+    /** 令牌有效期（秒）。 */
     @JsonProperty("expires_in")
     private Integer expires_in;
+    /** 令牌签发时间（ISO 8601）。 */
     @JsonProperty("issued_at")
     private String issued_at;
 
+    /** 默认无参构造器。 */
     public DockerResponse() {
     }
 
+    /**
+     * 构造 Docker 认证响应。
+     *
+     * @param token 令牌字符串
+     * @param expires_in 有效期（秒）
+     * @param issued_at 签发时间
+     */
     public DockerResponse(final String token, final Integer expires_in, final String issued_at) {
         this.token = token;
         this.expires_in = expires_in;

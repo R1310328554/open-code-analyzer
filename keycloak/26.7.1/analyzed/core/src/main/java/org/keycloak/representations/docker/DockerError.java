@@ -6,36 +6,38 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * JSON Representation of a Docker Error in the following format:
- *
- *
+ * Docker Registry 错误响应的 JSON 表示，格式如下：
+ * <pre>
  * {
- *  "code": "UNAUTHORIZED",
- *  "message": "access to the requested resource is not authorized",
- *  "detail": [
- *    {
- *      "Type": "repository",
- *      "Name": "samalba/my-app",
- *      "Action": "pull"
- *    },
- *    {
- *      "Type": "repository",
- *      "Name": "samalba/my-app",
- *      "Action": "push"
- *    }
- *  ]
+ *   "code": "UNAUTHORIZED",
+ *   "message": "access to the requested resource is not authorized",
+ *   "detail": [
+ *     { "Type": "repository", "Name": "samalba/my-app", "Action": "pull" },
+ *     { "Type": "repository", "Name": "samalba/my-app", "Action": "push" }
+ *   ]
  * }
+ * </pre>
  */
 public class DockerError {
 
 
+    /** 错误代码（如 UNAUTHORIZED）。 */
     @JsonProperty("code")
     private final String errorCode;
+    /** 人类可读的错误消息。 */
     @JsonProperty("message")
     private final String message;
+    /** 错误详情列表，每项描述被拒绝的访问权限。 */
     @JsonProperty("detail")
     private final List<DockerAccess> dockerErrorDetails;
 
+    /**
+     * 构造 Docker 错误对象。
+     *
+     * @param errorCode 错误代码
+     * @param message 错误消息
+     * @param dockerErrorDetails 访问权限详情列表
+     */
     public DockerError(final String errorCode, final String message, final List<DockerAccess> dockerErrorDetails) {
         this.errorCode = errorCode;
         this.message = message;

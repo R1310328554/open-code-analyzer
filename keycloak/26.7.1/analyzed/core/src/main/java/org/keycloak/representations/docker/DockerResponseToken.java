@@ -8,27 +8,24 @@ import org.keycloak.representations.JsonWebToken;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- *  * {
- *    "iss": "auth.docker.com",
- *    "sub": "jlhawn",
- *    "aud": "registry.docker.com",
- *    "exp": 1415387315,
- *    "nbf": 1415387015,
- *    "iat": 1415387015,
- *    "jti": "tYJCO1c6cnyy7kAn0c7rKPgbV1H1bFws",
- *    "access": [
- *        {
- *        "type": "repository",
- *        "name": "samalba/my-app",
- *        "actions": [
- *           "push"
- *         ]
- *        }
- *    ]
+ * Docker Registry 认证 JWT 令牌，继承 {@link JsonWebToken} 并携带 {@link DockerAccess} 访问权限列表。
+ * <p>
+ * JSON 载荷示例：
+ * <pre>
+ * {
+ *   "iss": "auth.docker.com",
+ *   "sub": "jlhawn",
+ *   "aud": "registry.docker.com",
+ *   "exp": 1415387315,
+ *   "access": [
+ *     { "type": "repository", "name": "samalba/my-app", "actions": ["push"] }
+ *   ]
  * }
+ * </pre>
  */
 public class DockerResponseToken extends JsonWebToken {
 
+    /** Docker 访问权限条目列表。 */
     @JsonProperty("access")
     protected List<DockerAccess> accessItems = new ArrayList<>();
 

@@ -22,7 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 /**
- * Configuration for Java based adapters
+ * Java adapter 的完整配置类，继承 {@link BaseAdapterConfig} 并实现 {@link AdapterHttpClientConfig}。
+ * <p>
+ * 涵盖 TLS/信任库、HTTP 连接池、节点注册、令牌存储、策略执行器（Policy Enforcer）及 PKCE 等高级选项。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @author <a href="mailto:brad.culley@spartasystems.com">Brad Culley</a>
@@ -45,61 +47,86 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 public class AdapterConfig extends BaseAdapterConfig implements AdapterHttpClientConfig {
 
+    /** 是否允许任意主机名（跳过证书主机名校验）。 */
     @JsonProperty("allow-any-hostname")
     protected boolean allowAnyHostname;
+    /** 是否禁用信任管理器。 */
     @JsonProperty("disable-trust-manager")
     protected boolean disableTrustManager;
+    /** 信任库文件路径。 */
     @JsonProperty("truststore")
     protected String truststore;
+    /** 信任库密码。 */
     @JsonProperty("truststore-password")
     protected String truststorePassword;
+    /** 客户端密钥库文件路径。 */
     @JsonProperty("client-keystore")
     protected String clientKeystore;
+    /** 客户端密钥库密码。 */
     @JsonProperty("client-keystore-password")
     protected String clientKeystorePassword;
+    /** 客户端私钥密码。 */
     @JsonProperty("client-key-password")
     protected String clientKeyPassword;
+    /** HTTP 连接池大小，默认 20。 */
     @JsonProperty("connection-pool-size")
     protected int connectionPoolSize = 20;
+    /** 是否始终刷新令牌。 */
     @JsonProperty("always-refresh-token")
     protected boolean alwaysRefreshToken = false;
+    /** 启动时是否向 Keycloak 注册节点。 */
     @JsonProperty("register-node-at-startup")
     protected boolean registerNodeAtStartup = false;
+    /** 节点注册周期（秒），-1 表示禁用。 */
     @JsonProperty("register-node-period")
     protected int registerNodePeriod = -1;
+    /** 令牌存储方式（如 session、cookie）。 */
     @JsonProperty("token-store")
     protected String tokenStore;
+    /** adapter 状态 Cookie 路径。 */
     @JsonProperty("adapter-state-cookie-path")
     protected String tokenCookiePath;
+    /** 用作 Principal 的用户属性名。 */
     @JsonProperty("principal-attribute")
     protected String principalAttribute;
+    /** 登录时是否关闭 session ID 变更。 */
     @JsonProperty("turn-off-change-session-id-on-login")
     protected Boolean turnOffChangeSessionIdOnLogin;
+    /** 令牌最小剩余有效时间（秒），低于此值则刷新。 */
     @JsonProperty("token-minimum-time-to-live")
     protected int tokenMinimumTimeToLive = 0;
+    /** JWKS 请求最小间隔（秒）。 */
     @JsonProperty("min-time-between-jwks-requests")
     protected int minTimeBetweenJwksRequests = 10;
+    /** 公钥缓存 TTL（秒），默认 86400（1 天）。 */
     @JsonProperty("public-key-cache-ttl")
     protected int publicKeyCacheTtl = 86400; // 1 day
+    /** 策略执行器（Policy Enforcer）配置。 */
     @JsonProperty("policy-enforcer")
     protected PolicyEnforcerConfig policyEnforcerConfig;
     // https://tools.ietf.org/html/rfc7636
+    /** 是否启用 PKCE（RFC 7636）。 */
     @JsonProperty("enable-pkce")
     protected boolean pkce = false;
+    /** 是否忽略 OAuth 查询参数。 */
     @JsonProperty("ignore-oauth-query-parameter")
     protected boolean ignoreOAuthQueryParameter = false;
+    /** 是否校验令牌 audience。 */
     @JsonProperty("verify-token-audience")
     protected boolean verifyTokenAudience = false;
 
+    /** 套接字读取超时（毫秒），-1 表示默认。 */
     @JsonProperty("socket-timeout-millis")
     protected long socketTimeout = -1L;
+    /** 连接建立超时（毫秒），-1 表示默认。 */
     @JsonProperty("connection-timeout-millis")
     protected long connectionTimeout = -1L;
+    /** 连接 TTL（毫秒），-1 表示默认。 */
     @JsonProperty("connection-ttl-millis")
     protected long connectionTTL = -1L;
 
     /**
-     * The Proxy url to use for requests to the auth-server, configurable via the adapter config property {@code proxy-url}.
+     * 访问认证服务器的 HTTP 代理 URL，对应配置项 {@code proxy-url}。
      */
     @JsonProperty("proxy-url")
     protected String proxyUrl;
@@ -322,6 +349,9 @@ public class AdapterConfig extends BaseAdapterConfig implements AdapterHttpClien
         this.connectionTTL = connectionTTL;
     }
 
+    /**
+     * 返回 realm 信息端点 URL（{@code auth-server-url/realms/{realm}}）。
+     */
     @JsonIgnore
     public String getRealmInfoUrl() {
         return authServerUrl + "/realms/" + realm;
