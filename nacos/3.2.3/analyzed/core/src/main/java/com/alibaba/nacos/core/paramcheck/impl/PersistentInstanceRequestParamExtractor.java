@@ -26,12 +26,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 持久化实例注册 gRPC 请求参数提取器：逻辑与 {@link InstanceRequestParamExtractor} 类似，面向 {@link com.alibaba.nacos.api.naming.remote.request.PersistentInstanceRequest}。
  * Param extractor for {@link com.alibaba.nacos.api.naming.remote.request.PersistentInstanceRequest}.
  *
  * @author blake.qiu
  */
 public class PersistentInstanceRequestParamExtractor extends AbstractRpcParamExtractor {
     
+    /** 提取持久化实例请求的命名空间、服务名及实例网络/元数据字段。 */
     @Override
     public List<ParamInfo> extractParam(Request request) {
         PersistentInstanceRequest req = (PersistentInstanceRequest) request;

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 配置模糊监听 gRPC 请求参数提取器：从 groupKeyPattern 解析命名空间 ID 并封装为 {@link ParamInfo}。
  * Extractor for parameters of {@link ConfigFuzzyWatchRequest}. This extractor retrieves parameter information from the
  * request object and constructs {@link ParamInfo} instances representing the namespace ID, group, and data IDs
  * contained in the request's contexts.
@@ -37,6 +38,7 @@ import java.util.List;
 public class ConfigFuzzyWatchRequestParamsExtractor extends AbstractRpcParamExtractor {
     
     /**
+     * 从模糊监听请求中解析命名空间等参数。
      * Extracts parameter information from the given request.
      *
      * @param request The request object to extract parameter information from.
@@ -47,7 +49,7 @@ public class ConfigFuzzyWatchRequestParamsExtractor extends AbstractRpcParamExtr
     public List<ParamInfo> extractParam(Request request) throws NacosException {
         ConfigFuzzyWatchRequest req = (ConfigFuzzyWatchRequest) request;
         List<ParamInfo> paramInfos = new ArrayList<>();
-        // Extract namespace ID and group from the context
+        // 从 groupKeyPattern 解析命名空间 ID
         ParamInfo paramInfo1 = new ParamInfo();
         paramInfo1
             .setNamespaceId(FuzzyGroupKeyPattern.getNamespaceFromPattern(req.getGroupKeyPattern()));

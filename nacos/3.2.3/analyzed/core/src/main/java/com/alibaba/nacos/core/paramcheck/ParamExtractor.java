@@ -19,6 +19,7 @@ package com.alibaba.nacos.core.paramcheck;
 import java.util.List;
 
 /**
+ * 参数提取器通用接口：将请求对象 {@code T} 转换为待校验对象 {@code R} 列表。
  * ParamExtractor interface.
  *
  * @param <T> the type parameter
@@ -27,6 +28,7 @@ import java.util.List;
 public interface ParamExtractor<T, R> {
     
     /**
+     * 从请求对象中提取待校验参数列表。
      * Extract param.
      *
      * @param params the params

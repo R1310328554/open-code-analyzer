@@ -25,12 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 通用配置 gRPC 请求参数提取器：从 {@link com.alibaba.nacos.api.config.remote.request.AbstractConfigRequest} 提取 dataId、group、tenant（命名空间）。
  * The type Config request param extractor {@link AbstractConfigRequest}.
  *
  * @author zhuoguang
  */
 public class ConfigRequestParamExtractor extends AbstractRpcParamExtractor {
     
+    /** 解析配置读写类 RPC 请求的核心三元组字段。 */
     @Override
     public List<ParamInfo> extractParam(Request request) {
         AbstractConfigRequest req = (AbstractConfigRequest) request;

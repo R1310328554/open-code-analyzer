@@ -42,6 +42,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
+ * HTTP 参数校验 Servlet 过滤器：解析 Controller 方法上的 {@link ExtractorManager.Extractor}，提取 {@link ParamInfo} 并调用 {@link com.alibaba.nacos.common.paramcheck.ParamCheckerManager} 校验。
  * ParamCheckerFilter to http filter.
  *
  * @author 985492783@qq.com
@@ -49,12 +50,15 @@ import java.util.List;
  */
 public class ParamCheckerFilter implements Filter {
     
+    /** Controller 请求路径到 Handler 方法的映射缓存。 */
     private final ControllerMethodsCache methodsCache;
     
+    /** 注入方法缓存，用于根据 HTTP 请求定位待校验的 Controller 方法。 */
     public ParamCheckerFilter(ControllerMethodsCache methodsCache) {
         this.methodsCache = methodsCache;
     }
     
+    /** 若全局开关开启则提取并校验参数，失败时返回 400 JSON；否则直接放行。 */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
         throws IOException, ServletException {
@@ -104,6 +108,7 @@ public class ParamCheckerFilter implements Filter {
     }
     
     /**
+     * 生成参数校验失败的 400 JSON 响应。
      * Generate 400 response.
      *
      * @param response the response

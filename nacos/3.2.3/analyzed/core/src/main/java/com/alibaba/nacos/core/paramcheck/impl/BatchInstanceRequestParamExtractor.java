@@ -26,12 +26,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 批量实例注册 gRPC 请求参数提取器：提取服务级命名空间/组/服务名，并为每个 {@link com.alibaba.nacos.api.naming.pojo.Instance} 生成独立 {@link ParamInfo}。
  * Param Extractor and check for grpc batch instance request{@link BatchInstanceRequest}.
  *
  * @author zhuoguang
  */
 public class BatchInstanceRequestParamExtractor extends AbstractRpcParamExtractor {
     
+    /** 解析 {@link BatchInstanceRequest} 中的服务信息与实例列表字段。 */
     @Override
     public List<ParamInfo> extractParam(Request request) {
         BatchInstanceRequest req = (BatchInstanceRequest) request;

@@ -23,6 +23,7 @@ import com.alibaba.nacos.common.paramcheck.ParamInfo;
 import java.util.List;
 
 /**
+ * gRPC/RPC 请求参数提取器抽象基类，从 {@link com.alibaba.nacos.api.remote.request.Request} 子类解析命名空间、服务名等字段供参数校验使用。
  * Abstract ParamExtractor class for rpc request.
  *
  * @author zhuoguang
@@ -30,6 +31,7 @@ import java.util.List;
 public abstract class AbstractRpcParamExtractor implements ParamExtractor<Request, ParamInfo> {
     
     /**
+     * 从 RPC 请求中提取待校验参数。
      * Extract param.
      *
      * @param request the request

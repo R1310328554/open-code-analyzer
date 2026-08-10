@@ -26,12 +26,14 @@ import com.alibaba.nacos.core.paramcheck.AbstractRpcParamExtractor;
 import java.util.List;
 
 /**
+ * MCP Server gRPC 请求参数提取器：提取 namespaceId、mcpName、mcpId；发布 MCP Server 时优先使用 ServerSpecification 中的名称。
  * Naocs mcp server grpc request param extractor.
  *
  * @author xiweng.yy
  */
 public class McpServerRequestParamExtractor extends AbstractRpcParamExtractor {
     
+    /** 从 {@link com.alibaba.nacos.api.ai.remote.request.AbstractMcpRequest} 提取 MCP 相关标识字段。 */
     @Override
     public List<ParamInfo> extractParam(Request request) throws NacosException {
         AbstractMcpRequest mcpRequest = (AbstractMcpRequest) request;

@@ -26,12 +26,14 @@ import com.alibaba.nacos.core.paramcheck.AbstractRpcParamExtractor;
 import java.util.List;
 
 /**
+ * Nacos A2A（Agent 与 Agent Card）gRPC 请求参数提取器：提取命名空间与 Agent 名称，发布 Agent Card 时优先使用 Card 内名称。
  * Nacos A2A(Agent & Agent Card) grpc request param extractor.
  *
  * @author xiweng.yy
  */
 public class AgentRequestParamExtractor extends AbstractRpcParamExtractor {
     
+    /** 从 {@link com.alibaba.nacos.api.ai.remote.request.AbstractAgentRequest} 提取 namespaceId 与 agentName。 */
     @Override
     public List<ParamInfo> extractParam(Request request) throws NacosException {
         AbstractAgentRequest agentRequest = (AbstractAgentRequest) request;

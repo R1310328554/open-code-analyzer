@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * 参数校验 Servlet 过滤器 Spring 配置：注册 {@link ParamCheckerFilter} 并绑定 {@link com.alibaba.nacos.core.code.ControllerMethodsCache}。
  * ParamCheckerFilter registration.
  *
  * @author 985492783@qq.com
@@ -32,6 +33,7 @@ import org.springframework.context.annotation.Configuration;
 @NacosWebBean
 public class CheckConfiguration {
     
+    /** 将参数校验过滤器注册到全局 URL 模式 {@code /*}，执行顺序为 8。 */
     @Bean
     public FilterRegistrationBean<ParamCheckerFilter> checkerFilterRegistration(
         ParamCheckerFilter checkerFilter) {
@@ -43,6 +45,7 @@ public class CheckConfiguration {
         return registration;
     }
     
+    /** 构造 {@link ParamCheckerFilter} Bean，注入 Controller 方法缓存。 */
     @Bean
     public ParamCheckerFilter checkerFilter(ControllerMethodsCache methodsCache) {
         return new ParamCheckerFilter(methodsCache);

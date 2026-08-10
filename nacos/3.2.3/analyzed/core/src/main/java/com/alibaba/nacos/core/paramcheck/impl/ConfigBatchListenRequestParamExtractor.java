@@ -25,12 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 配置批量监听 gRPC 请求参数提取器：遍历监听上下文，提取 tenant、group、dataId 供格式校验。
  * Param extractor and checker for grpc config batch listen request{@link ConfigBatchListenRequest}.
  *
  * @author zhuoguang
  */
 public class ConfigBatchListenRequestParamExtractor extends AbstractRpcParamExtractor {
     
+    /** 从 {@link ConfigBatchListenRequest} 的 ConfigListenContext 列表构建 ParamInfo。 */
     @Override
     public List<ParamInfo> extractParam(Request request) {
         ConfigBatchListenRequest req = (ConfigBatchListenRequest) request;

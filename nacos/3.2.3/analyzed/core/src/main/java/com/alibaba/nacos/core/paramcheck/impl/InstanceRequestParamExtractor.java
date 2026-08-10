@@ -26,12 +26,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 单实例注册 gRPC 请求参数提取器：合并服务级与实例级 IP、端口、集群、元数据字段。
  * Param extractor for {@link InstanceRequest}.
  *
  * @author zhuoguang
  */
 public class InstanceRequestParamExtractor extends AbstractRpcParamExtractor {
     
+    /** 从 {@link InstanceRequest} 提取命名空间、服务名及实例详情。 */
     @Override
     public List<ParamInfo> extractParam(Request request) {
         InstanceRequest req = (InstanceRequest) request;

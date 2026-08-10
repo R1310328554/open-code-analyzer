@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
+ * HTTP 请求参数提取器抽象基类，从 {@link jakarta.servlet.http.HttpServletRequest} 解析待校验字段并封装为 {@link com.alibaba.nacos.common.paramcheck.ParamInfo} 列表。
  * Extract param from http-request.
  *
  * @author zhuoguang
@@ -31,6 +32,7 @@ public abstract class AbstractHttpParamExtractor
     implements ParamExtractor<HttpServletRequest, ParamInfo> {
     
     /**
+     * 从 HTTP 请求中提取待校验参数。
      * Extract param.
      *
      * @param request the request

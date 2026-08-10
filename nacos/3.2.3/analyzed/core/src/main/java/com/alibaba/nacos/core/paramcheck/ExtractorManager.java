@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 参数提取器管理器：通过 SPI 加载 HTTP/gRPC 提取器实现，并提供 {@link Extractor} 注解供 Controller 或 gRPC Handler 指定提取策略。
  * param checker to manager Extractor.
  *
  * @author 985492783@qq.com
@@ -41,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ExtractorManager {
     
     /**
+     * 声明 HTTP 或 gRPC 请求应使用的参数提取器类；ParamChecker 优先读取方法上的注解，缺失时回退到 Controller/Handler 类级别。
      * ParamChecker will first look for the Checker annotation in the handler method, and if that annotation is null, it
      * will try to find the Checker annotation on the class where the handler method is located, and then load in the
      * target ParamExtractor in the Checker annotation.
@@ -51,6 +53,7 @@ public class ExtractorManager {
     public @interface Extractor {
         
         /**
+         * 指定 HTTP 参数提取器实现类，仅对 @Controller 类或方法生效。
          * Configure a Class to locate a specific Extractor, which takes effect only on the @Controller annotated class
          * or method.
          *
@@ -59,6 +62,7 @@ public class ExtractorManager {
         Class<? extends AbstractHttpParamExtractor> httpExtractor() default DefaultHttpExtractor.class;
         
         /**
+         * 指定 gRPC 参数提取器实现类，仅对 grpcHandler 生效。
          * Configure a Class to locate a specific Extractor, which takes effect only on grpcHandler.
          *
          * @return Class<? extends AbstractRpcParamExtractor>
@@ -66,6 +70,7 @@ public class ExtractorManager {
         Class<? extends AbstractRpcParamExtractor> rpcExtractor() default DefaultGrpcExtractor.class;
     }
     
+    /** 默认 HTTP 提取器：不提取任何参数，返回空列表。 */
     public static class DefaultHttpExtractor extends AbstractHttpParamExtractor {
         
         @Override
@@ -74,6 +79,7 @@ public class ExtractorManager {
         }
     }
     
+    /** 默认 gRPC 提取器：不提取任何参数，返回空列表。 */
     public static class DefaultGrpcExtractor extends AbstractRpcParamExtractor {
         
         @Override
@@ -82,12 +88,15 @@ public class ExtractorManager {
         }
     }
     
+    /** gRPC 提取器类 → 单例实例 缓存。 */
     private static Map<Class<? extends AbstractRpcParamExtractor>, AbstractRpcParamExtractor> rpcManager =
         new ConcurrentHashMap<>();
     
+    /** HTTP 提取器类 → 单例实例 缓存。 */
     private static Map<Class<? extends AbstractHttpParamExtractor>, AbstractHttpParamExtractor> httpManager =
         new ConcurrentHashMap<>();
     
+    /** 启动时通过 SPI 加载所有 HTTP/gRPC 参数提取器实现。 */
     static {
         NacosServiceLoader.load(AbstractHttpParamExtractor.class).forEach(checker -> {
             httpManager.put(checker.getClass(), checker);
@@ -97,11 +106,13 @@ public class ExtractorManager {
         });
     }
     
+    /** 按注解配置获取 gRPC 提取器，未注册时返回 {@link DefaultGrpcExtractor}。 */
     public static AbstractRpcParamExtractor getRpcExtractor(Extractor extractor) {
         return rpcManager.computeIfAbsent(extractor.rpcExtractor(),
             (key) -> new DefaultGrpcExtractor());
     }
     
+    /** 按注解配置获取 HTTP 提取器，未注册时返回 {@link DefaultHttpExtractor}。 */
     public static AbstractHttpParamExtractor getHttpExtractor(Extractor extractor) {
         return httpManager.computeIfAbsent(extractor.httpExtractor(),
             (key) -> new DefaultHttpExtractor());
