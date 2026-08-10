@@ -23,8 +23,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation for Nacos Property name of  Nacos Configuration to bind a field from annotated {@link
- * NacosConfigurationProperties} Properties Object.
+ * 指定 {@link NacosConfigurationProperties} 绑定对象中字段对应的 Nacos 配置属性名。
+ *
+ * <p>当字段名与配置键不一致时，通过 {@link #value()} 显式映射。</p>
  *
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
  * @see NacosConfigurationProperties
@@ -37,9 +38,9 @@ import java.lang.annotation.Target;
 public @interface NacosProperty {
     
     /**
-     * The property name of Nacos Configuration to bind a field.
+     * Nacos 配置中的属性名，用于绑定到标注字段。
      *
-     * @return property name
+     * @return 配置属性名
      */
     String value();
     

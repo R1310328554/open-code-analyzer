@@ -20,7 +20,9 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * config abilities of nacos server.
+ * Nacos 配置服务端能力描述。
+ *
+ * <p>描述服务端对客户端请求的扩展能力支持情况。</p>
  *
  * @author liuzunfei
  * @version $Id: ServerConfigAbility.java, v 0.1 2021年01月24日 00:09 AM liuzunfei Exp $
@@ -29,15 +31,15 @@ public class ServerConfigAbility implements Serializable {
     
     private static final long serialVersionUID = -4976152499731684230L;
     
-    /**
-     * support remote metrics get.
-     */
+    /** 是否支持远程获取指标数据。 */
     private boolean supportRemoteMetrics;
     
+    /** 是否支持远程指标采集。 */
     public boolean isSupportRemoteMetrics() {
         return supportRemoteMetrics;
     }
     
+    /** 设置是否支持远程指标采集。 */
     public void setSupportRemoteMetrics(boolean supportRemoteMetrics) {
         this.supportRemoteMetrics = supportRemoteMetrics;
     }

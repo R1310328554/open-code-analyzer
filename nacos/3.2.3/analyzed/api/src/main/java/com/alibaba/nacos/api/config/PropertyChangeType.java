@@ -17,21 +17,17 @@
 package com.alibaba.nacos.api.config;
 
 /**
- * Property Change Type.
+ * 配置属性变更类型枚举。
+ *
+ * <p>用于 {@link ConfigChangeItem} 标识键值的新增、修改或删除。</p>
  *
  * @author rushsky518
  */
 public enum PropertyChangeType {
-    /**
-     * add.
-     */
+    /** 新增属性。 */
     ADDED,
-    /**
-     * modified.
-     */
+    /** 修改已有属性。 */
     MODIFIED,
-    /**
-     * deleted.
-     */
+    /** 删除属性。 */
     DELETED
 }

@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.config.filter;
 
 /**
- * Config Filter Interface default implementation.
+ * {@link IConfigFilter} 的抽象基类，便于扩展自定义配置过滤器。
+ *
+ * <p>子类可覆写过滤逻辑，在配置拉取或发布链路中介入处理。</p>
  *
  * @author luyanbo(RobberPhex)
  */

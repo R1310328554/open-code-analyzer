@@ -30,7 +30,9 @@ import java.lang.annotation.Target;
 import static com.alibaba.nacos.api.common.Constants.DEFAULT_GROUP;
 
 /**
- * An annotation for Nacos configuration Properties for binding POJO as Properties Object.
+ * 将 Nacos 配置绑定到 POJO 的配置属性注解。
+ *
+ * <p>类似 Spring {@code @ConfigurationProperties}，支持前缀、自动刷新等选项。</p>
  *
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
  * @see PropertyKeyConst
@@ -42,76 +44,72 @@ import static com.alibaba.nacos.api.common.Constants.DEFAULT_GROUP;
 public @interface NacosConfigurationProperties {
     
     /**
-     * config prefix name.
+     * 配置键前缀，绑定字段时自动拼接。
      *
-     * @return default value is <code>""</code>
+     * @return 默认空字符串
      */
     String prefix() default "";
     
     /**
-     * Nacos Group ID.
+     * Nacos 配置分组 ID。
      *
-     * @return default value {@link Constants#DEFAULT_GROUP};
+     * @return 默认 {@link Constants#DEFAULT_GROUP}
      */
     String groupId() default DEFAULT_GROUP;
     
     /**
-     * Nacos Data ID.
+     * Nacos 配置 Data ID（必填）。
      *
-     * @return required value.
+     * @return Data ID
      */
     String dataId();
     
     /**
-     * config style.
+     * 配置内容格式。
      *
-     * @return default value is {@link ConfigType#UNSET}
+     * @return 默认 {@link ConfigType#UNSET}
      */
     ConfigType type() default ConfigType.UNSET;
     
     /**
-     * It indicates the properties of current doBind bean is auto-refreshed when Nacos configuration is changed.
+     * Nacos 配置变更时是否自动刷新绑定对象属性。
      *
-     * @return default value is <code>false</code>
+     * @return 默认 {@code false}
      */
     boolean autoRefreshed() default false;
     
     /**
-     * Flag to indicate that when binding to this object invalid fields should be ignored. Invalid means invalid
-     * according to the binder that is used, and usually this means fields of the wrong type (or that cannot be coerced
-     * into the correct type).
+     * 绑定过程中是否忽略无效字段（类型不匹配或无法 coercion 的字段）。
      *
-     * @return the flag value (default false)
+     * @return 默认 {@code false}
      */
     boolean ignoreInvalidFields() default false;
     
     /**
-     * Flag to indicate that when binding to this object fields with periods in their names should be ignored.
+     * 是否忽略属性名中包含点号的嵌套字段。
      *
-     * @return the flag value (default false)
+     * @return 默认 {@code false}
      */
     boolean ignoreNestedProperties() default false;
     
     /**
-     * Flag to indicate that when binding to this object unknown fields should be ignored. An unknown field could be a
-     * sign of a mistake in the Properties.
+     * 是否忽略配置中存在但 POJO 中无对应字段的未知属性。
      *
-     * @return the flag value (default true)
+     * @return 默认 {@code true}
      */
     boolean ignoreUnknownFields() default true;
     
     /**
-     * Flag to indicate that an exception should be raised if a Validator is available and validation fails. If it is
-     * set to false, validation errors will be swallowed. They will be logged, but not propagated to the caller.
+     * 校验失败时是否抛出异常；为 {@code false} 时仅记录日志不向上传播。
      *
-     * @return the flag value (default true)
+     * @return 默认 {@code true}
      */
     boolean exceptionIfInvalid() default true;
     
     /**
-     * The {@link NacosProperties} attribute, If not specified, it will use global Nacos Properties.
+     * 绑定使用的 {@link NacosProperties}；未指定时使用全局 Nacos 属性。
      *
-     * @return the default value is {@link NacosProperties}
+     * @return Nacos 客户端属性
      */
     NacosProperties properties() default @NacosProperties;
     

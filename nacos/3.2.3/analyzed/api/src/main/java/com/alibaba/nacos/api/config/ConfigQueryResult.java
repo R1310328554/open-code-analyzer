@@ -19,10 +19,9 @@ package com.alibaba.nacos.api.config;
 import java.io.Serializable;
 
 /**
- * Config query result containing content and metadata.
+ * 配置查询结果，包含配置内容及 MD5 等元数据。
  *
- * <p>This class provides access to configuration content along with
- * its metadata like MD5 hash for CAS operations.</p>
+ * <p>可用于 CAS（Compare-And-Swap）发布等需要内容校验的场景。</p>
  *
  * @author nacos
  * @since 3.0
@@ -31,62 +30,69 @@ public class ConfigQueryResult implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
-    /**
-     * Configuration content.
-     */
+    /** 配置内容正文。 */
     private String content;
     
-    /**
-     * MD5 hash of the content.
-     */
+    /** 配置内容的 MD5 摘要，用于 CAS 校验。 */
     private String md5;
     
-    /**
-     * Configuration type (json, yaml, properties, etc.).
-     */
+    /** 配置类型（json、yaml、properties 等）。 */
     private String configType;
     
-    /**
-     * Encrypted data key (if encryption is enabled).
-     */
+    /** 加密数据密钥（启用加密时非空）。 */
     private String encryptedDataKey;
     
+    /** 无参构造，供序列化或框架实例化使用。 */
     public ConfigQueryResult() {
     }
     
+    /**
+     * 构造包含内容与 MD5 的查询结果。
+     *
+     * @param content 配置内容
+     * @param md5     内容 MD5
+     */
     public ConfigQueryResult(String content, String md5) {
         this.content = content;
         this.md5 = md5;
     }
     
+    /** 获取配置内容。 */
     public String getContent() {
         return content;
     }
     
+    /** 设置配置内容。 */
     public void setContent(String content) {
         this.content = content;
     }
     
+    /** 获取内容 MD5 摘要。 */
     public String getMd5() {
         return md5;
     }
     
+    /** 设置内容 MD5 摘要。 */
     public void setMd5(String md5) {
         this.md5 = md5;
     }
     
+    /** 获取配置类型。 */
     public String getConfigType() {
         return configType;
     }
     
+    /** 设置配置类型。 */
     public void setConfigType(String configType) {
         this.configType = configType;
     }
     
+    /** 获取加密数据密钥。 */
     public String getEncryptedDataKey() {
         return encryptedDataKey;
     }
     
+    /** 设置加密数据密钥。 */
     public void setEncryptedDataKey(String encryptedDataKey) {
         this.encryptedDataKey = encryptedDataKey;
     }

@@ -23,18 +23,20 @@ import java.lang.reflect.Constructor;
 import java.util.Properties;
 
 /**
- * Config Factory.
+ * 配置服务工厂，通过反射创建 {@link ConfigService} 客户端实例。
+ *
+ * <p>默认加载 {@code com.alibaba.nacos.client.config.NacosConfigService} 实现类。</p>
  *
  * @author Nacos
  */
 public class ConfigFactory {
     
     /**
-     * Create Config.
+     * 根据初始化参数创建配置服务实例。
      *
-     * @param properties init param
-     * @return ConfigService
-     * @throws NacosException Exception
+     * @param properties 客户端初始化属性（如 serverAddr、namespace 等）
+     * @return 配置服务实例
+     * @throws NacosException 创建失败时抛出
      */
     public static ConfigService createConfigService(Properties properties) throws NacosException {
         try {
@@ -49,11 +51,11 @@ public class ConfigFactory {
     }
     
     /**
-     * Create Config.
+     * 根据 Nacos 服务端地址创建配置服务实例。
      *
-     * @param serverAddr serverList
-     * @return Config
-     * @throws NacosException create configService failed Exception
+     * @param serverAddr Nacos 服务端地址列表
+     * @return 配置服务实例
+     * @throws NacosException 创建失败时抛出
      */
     public static ConfigService createConfigService(String serverAddr) throws NacosException {
         Properties properties = new Properties();

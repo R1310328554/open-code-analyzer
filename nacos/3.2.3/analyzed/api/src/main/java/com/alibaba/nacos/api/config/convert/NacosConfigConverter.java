@@ -17,27 +17,27 @@
 package com.alibaba.nacos.api.config.convert;
 
 /**
- * Nacos Config Converter.
+ * Nacos 配置字符串到目标类型的转换器接口。
  *
- * @param <T> the target type that wanted
+ * @param <T> 目标 Java 类型
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
  * @since 0.2.0
  */
 public interface NacosConfigConverter<T> {
     
     /**
-     * can convert to be target type or not.
+     * 判断是否可将配置转换为目标类型。
      *
-     * @param targetType the type of target
-     * @return If can , return <code>true</code>, or <code>false</code>
+     * @param targetType 目标类型
+     * @return 支持转换返回 {@code true}，否则 {@code false}
      */
     boolean canConvert(Class<T> targetType);
     
     /**
-     * Convert the Nacos' config of type S to target type T.
+     * 将 Nacos 配置字符串转换为目标类型实例。
      *
-     * @param config the Nacos's config to convert, which must be an instance of S (never {@code null})
-     * @return the converted object, which must be an instance of T (potentially {@code null})
+     * @param config 待转换的配置文本（非 {@code null}）
+     * @return 转换结果，可能为 {@code null}
      */
     T convert(String config);
     

@@ -23,7 +23,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation which extends value to support auto-refresh.
+ * 注入 Nacos 配置值的注解，支持配置变更后自动刷新。
+ *
+ * <p>可用于字段、方法、参数等注入点，{@link #value()} 为 dataId/group 等表达式。</p>
  *
  * @author <a href="mailto:huangxiaoyu1018@gmail.com">hxy1991</a>
  * @since 0.2.0
@@ -34,16 +36,16 @@ import java.lang.annotation.Target;
 public @interface NacosValue {
     
     /**
-     * The actual value expression: e.g. "#{systemProperties.myProp}".
+     * 配置值表达式，例如 {@code ${my.config.key}}。
      *
-     * @return value expression
+     * @return 配置表达式
      */
     String value();
     
     /**
-     * It indicates that the currently bound property is auto-refreshed when Nacos configuration is changed.
+     * 配置变更时是否自动刷新当前绑定属性。
      *
-     * @return default value is <code>false</code>
+     * @return 默认 {@code false}
      */
     boolean autoRefreshed() default false;
     

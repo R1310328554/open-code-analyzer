@@ -22,50 +22,36 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Config data type.
+ * Nacos 配置数据类型枚举。
+ *
+ * <p>标识配置内容的格式，发布与解析时用于选择对应处理器。</p>
  *
  * @author liaochuntao
  **/
 public enum ConfigType {
     
-    /**
-     * config type is "properties".
-     */
+    /** Properties 格式配置。 */
     PROPERTIES("properties"),
     
-    /**
-     * config type is "xml".
-     */
+    /** XML 格式配置。 */
     XML("xml"),
     
-    /**
-     * config type is "json".
-     */
+    /** JSON 格式配置。 */
     JSON("json"),
     
-    /**
-     * config type is "text".
-     */
+    /** 纯文本格式配置。 */
     TEXT("text"),
     
-    /**
-     * config type is "html".
-     */
+    /** HTML 格式配置。 */
     HTML("html"),
     
-    /**
-     * config type is "yaml".
-     */
+    /** YAML 格式配置。 */
     YAML("yaml"),
     
-    /**
-     * config type is "toml".
-     */
+    /** TOML 格式配置。 */
     TOML("toml"),
     
-    /**
-     * not a real type.
-     */
+    /** 未指定类型，由服务端或客户端推断。 */
     UNSET("unset");
     
     private final String type;
@@ -82,19 +68,21 @@ public enum ConfigType {
         this.type = type;
     }
     
+    /** 获取类型字符串标识。 */
     public String getType() {
         return type;
     }
     
+    /** 获取默认配置类型（{@link #TEXT}）。 */
     public static ConfigType getDefaultType() {
         return TEXT;
     }
     
     /**
-     * check input type is valid.
+     * 校验给定字符串是否为合法配置类型。
      *
-     * @param type config type
-     * @return it the type valid
+     * @param type 待校验的类型字符串
+     * @return 合法返回 {@code true}，否则 {@code false}
      */
     public static Boolean isValidType(String type) {
         if (StringUtils.isBlank(type)) {

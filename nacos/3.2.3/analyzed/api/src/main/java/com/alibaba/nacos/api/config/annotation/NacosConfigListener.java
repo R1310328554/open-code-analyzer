@@ -30,7 +30,9 @@ import java.lang.annotation.Target;
 import static com.alibaba.nacos.api.common.Constants.DEFAULT_GROUP;
 
 /**
- * Annotation that marks a method as a listener for Nacos Config change.
+ * 标记方法为 Nacos 配置变更监听器。
+ *
+ * <p>配置变更时框架回调标注方法，可配合 {@link NacosConfigConverter} 做类型转换。</p>
  *
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
  * @since 0.2.0
@@ -41,45 +43,44 @@ import static com.alibaba.nacos.api.common.Constants.DEFAULT_GROUP;
 public @interface NacosConfigListener {
     
     /**
-     * Nacos Group ID.
+     * Nacos 配置分组 ID。
      *
-     * @return default value {@link Constants#DEFAULT_GROUP};
+     * @return 默认 {@link Constants#DEFAULT_GROUP}
      */
     String groupId() default DEFAULT_GROUP;
     
     /**
-     * Nacos Data ID.
+     * Nacos 配置 Data ID（必填）。
      *
-     * @return required value.
+     * @return Data ID
      */
     String dataId();
     
     /**
-     * Nacos Config type.
+     * 配置内容类型。
      *
-     * @return default value is {@link ConfigType#UNSET}
+     * @return 默认 {@link ConfigType#UNSET}
      */
     ConfigType type() default ConfigType.UNSET;
     
     /**
-     * Specify {@link NacosConfigConverter Nacos configuraion convertor} class to convert target type instance.
+     * 指定 {@link NacosConfigConverter} 实现类，将配置字符串转为方法参数类型。
      *
-     * @return The implementation class of {@link NacosConfigConverter}
+     * @return 转换器实现类
      */
     Class<? extends NacosConfigConverter> converter() default NacosConfigConverter.class;
     
     /**
-     * The {@link NacosProperties} attribute, If not specified, it will use global Nacos Properties.
+     * 监听器使用的 {@link NacosProperties}；未指定时使用全局 Nacos 属性。
      *
-     * @return the default value is {@link NacosProperties}
+     * @return Nacos 客户端属性
      */
     NacosProperties properties() default @NacosProperties;
     
     /**
-     * Maximum timeout value of execution in milliseconds, which is used to prevent long-time blocking execution
-     * impacting others.
+     * 监听器回调最大执行超时（毫秒），防止长时间阻塞影响其他配置。
      *
-     * @return default value is 1000
+     * @return 默认 1000 毫秒
      */
     long timeout() default 1000L;
     

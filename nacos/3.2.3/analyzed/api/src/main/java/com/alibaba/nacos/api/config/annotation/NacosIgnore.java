@@ -23,7 +23,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation for ignore field from annotated {@link NacosConfigurationProperties} Properties Object.
+ * 标记 {@link NacosConfigurationProperties} 绑定对象中需忽略的字段。
+ *
+ * <p>被标注字段不会参与配置到 POJO 的自动绑定。</p>
  *
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
  * @see NacosConfigurationProperties

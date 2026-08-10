@@ -19,7 +19,9 @@ package com.alibaba.nacos.api.config.ability;
 import java.io.Serializable;
 
 /**
- * config abilities of nacos client.
+ * Nacos 配置客户端能力描述。
+ *
+ * <p>用于客户端与服务端协商支持的扩展特性（如远程指标采集）。</p>
  *
  * @author liuzunfei
  * @version $Id: ClientConfigAbility.java, v 0.1 2021年01月24日 00:09 AM liuzunfei Exp $
@@ -28,15 +30,15 @@ public class ClientConfigAbility implements Serializable {
     
     private static final long serialVersionUID = 2442741206510725737L;
     
-    /**
-     * support remote metrics get.
-     */
+    /** 是否支持远程获取指标数据。 */
     private boolean supportRemoteMetrics;
     
+    /** 是否支持远程指标采集。 */
     public boolean isSupportRemoteMetrics() {
         return supportRemoteMetrics;
     }
     
+    /** 设置是否支持远程指标采集。 */
     public void setSupportRemoteMetrics(boolean supportRemoteMetrics) {
         this.supportRemoteMetrics = supportRemoteMetrics;
     }
