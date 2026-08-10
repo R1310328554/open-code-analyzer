@@ -26,6 +26,7 @@ import java.util.Set;
 
 /**
  * Nacos AI Component enabled filter.
+ * <p>Nacos AI 模块包扫描排除过滤器：当 function mode 非 ai 或 {@link #AI_ENABLED_KEY} 为 false 时，排除 {@code com.alibaba.nacos.ai} 包下组件的加载。</p>
  *
  * @author xiweng.yy
  */
@@ -33,6 +34,7 @@ public class AiEnabledFilter implements NacosPackageExcludeFilter {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(AiEnabledFilter.class);
     
+    /** 配置项：是否启用 AI 扩展（默认 true） */
     public static final String AI_ENABLED_KEY = "nacos.extension.ai.enabled";
     
     @Override
@@ -43,7 +45,7 @@ public class AiEnabledFilter implements NacosPackageExcludeFilter {
     @Override
     public boolean isExcluded(String className, Set<String> annotationNames) {
         String functionMode = EnvUtil.getFunctionMode();
-        // When not specified ai mode, AI module should be disabled
+        // function mode 非空且非 ai 时禁用 AI 模块
         if (StringUtils.isNotEmpty(functionMode)
             && !EnvUtil.FUNCTION_MODE_AI.equals(functionMode)) {
             LOGGER.warn(

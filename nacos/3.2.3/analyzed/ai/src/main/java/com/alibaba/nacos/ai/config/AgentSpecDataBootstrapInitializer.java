@@ -58,6 +58,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Bootstrap built-in AgentSpecs into an empty AI namespace after cluster startup.
+ * <p>集群就绪后向空 AI 命名空间导入内置 AgentSpec：从 {@code data/agentspec-data.zip} 读取种子包，通过配置中心 marker 协调多节点并发，并支持缺失 AGENTS.md 内容的修复导入。</p>
  *
  * @author nacos
  */
@@ -68,10 +69,13 @@ public class AgentSpecDataBootstrapInitializer
     private static final Logger LOGGER =
         LoggerFactory.getLogger(AgentSpecDataBootstrapInitializer.class);
     
+    /** 配置中心 bootstrap 互斥 marker 的 dataId */
     private static final String BOOTSTRAP_MARKER_DATA_ID = "nacos.ai.agentspec.bootstrap";
     
+    /** bootstrap marker 所在配置分组 */
     private static final String BOOTSTRAP_MARKER_GROUP = "nacos_internal";
     
+    /** marker 超过 10 分钟视为 stale，可清理后重试 */
     private static final long BOOTSTRAP_MARKER_STALE_MILLIS = 10 * 60 * 1000L;
     
     private static final String RESOURCE_TYPE_AGENTSPEC = "agentspec";
@@ -114,6 +118,7 @@ public class AgentSpecDataBootstrapInitializer
         this.configQueryChainService = configQueryChainService;
     }
     
+    /** 根上下文 ApplicationReady 时异步触发一次 bootstrap */
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
         if (event.getApplicationContext().getParent() != null) {
@@ -125,6 +130,7 @@ public class AgentSpecDataBootstrapInitializer
         bootstrapExecutor.execute(this::bootstrapBuiltInAgentSpecs);
     }
     
+    /** 主 bootstrap 流程：读包、规划、抢 marker、并发导入、释放 marker */
     private void bootstrapBuiltInAgentSpecs() {
         boolean markerCreated = false;
         try {
@@ -199,6 +205,7 @@ public class AgentSpecDataBootstrapInitializer
         }
     }
     
+    /** 从 bundled zip 解析全部 AgentSpec 种子包 */
     private List<AgentSpecSeedArchiveReader.AgentSpecPackage> readAgentSpecPackages()
         throws IOException {
         Resource bundledAgentSpecArchive = resolveBundledAgentSpecArchive();
@@ -207,11 +214,13 @@ public class AgentSpecDataBootstrapInitializer
         }
     }
     
+    /** 定位 Nacos home 下 data/agentspec-data.zip */
     private Resource resolveBundledAgentSpecArchive() {
         Path archivePath = Paths.get(EnvUtil.getNacosHome(), "data", "agentspec-data.zip");
         return new FileSystemResource(archivePath);
     }
     
+    /** 单包导入：调用 {@link AgentSpecOperationService#bootstrapAgentSpecFromZip} */
     private ImportTaskResult importBuiltInAgentSpec(
         AgentSpecSeedArchiveReader.AgentSpecPackage pkg) {
         try {
@@ -229,12 +238,14 @@ public class AgentSpecDataBootstrapInitializer
         }
     }
     
+    /** 默认命名空间是否已有任意 AI 资源 */
     private boolean hasExistingAiData() {
         Page<AiResource> page =
             aiResourcePersistService.list(Constants.DEFAULT_NAMESPACE_ID, null, null, null, 1, 1);
         return page != null && page.getTotalCount() > 0;
     }
     
+    /** 对比 bundled 与已存在资源，决定需导入的包列表或跳过原因 */
     private BootstrapPlan buildBootstrapPlan(
         List<AgentSpecSeedArchiveReader.AgentSpecPackage> packages) {
         boolean existingAiData = hasExistingAiData();
@@ -269,6 +280,7 @@ public class AgentSpecDataBootstrapInitializer
         return BootstrapPlan.bootstrap(missing, existingBuiltInCount);
     }
     
+    /** 已存在内置 AgentSpec 但 AGENTS.md 内容缺失时需 repair 重导 */
     private boolean needsBuiltInRepair(AgentSpecSeedArchiveReader.AgentSpecPackage pkg) {
         try {
             AgentSpec bundled = AgentSpecZipParser.parseAgentSpecFromZip(pkg.getZipBytes(),
@@ -296,6 +308,7 @@ public class AgentSpecDataBootstrapInitializer
         }
     }
     
+    /** 比较 bundled 与当前版本的 AGENTS.md 是否缺失 */
     private static boolean isBundledAgentsContentMissing(AgentSpec current, AgentSpec bundled) {
         if (bundled == null) {
             return false;
@@ -311,6 +324,7 @@ public class AgentSpecDataBootstrapInitializer
         return StringUtils.isBlank(currentAgentsContent);
     }
     
+    /** 从资源 map 中提取 AGENTS.md 文本内容 */
     private static String extractAgentsContent(Map<String, AgentSpecResource> resources) {
         if (resources == null || resources.isEmpty()) {
             return null;
@@ -331,6 +345,7 @@ public class AgentSpecDataBootstrapInitializer
         return null;
     }
     
+    /** 通过发布配置 marker 尝试获取集群内 bootstrap 互斥锁 */
     private boolean tryAcquireBootstrapMarker() {
         for (int i = 0; i < 2; i++) {
             try {
@@ -360,6 +375,7 @@ public class AgentSpecDataBootstrapInitializer
         return false;
     }
     
+    /** 查询 marker 时间戳，判断是否超过 stale 阈值 */
     private boolean isBootstrapMarkerStale() {
         try {
             ConfigQueryChainRequest request = ConfigQueryChainRequest.buildConfigQueryChainRequest(
@@ -377,6 +393,7 @@ public class AgentSpecDataBootstrapInitializer
         }
     }
     
+    /** bootstrap 结束或 stale 清理时删除 marker 配置 */
     private void releaseBootstrapMarker() {
         try {
             configOperationService.deleteConfig(BOOTSTRAP_MARKER_DATA_ID, BOOTSTRAP_MARKER_GROUP,
@@ -386,6 +403,7 @@ public class AgentSpecDataBootstrapInitializer
         }
     }
     
+    /** 内部：是否执行 bootstrap、跳过原因及待导入包列表 */
     private static final class BootstrapPlan {
         
         private final boolean shouldBootstrap;
@@ -432,6 +450,7 @@ public class AgentSpecDataBootstrapInitializer
         }
     }
     
+    /** 单任务导入成功/失败结果 */
     private static final class ImportTaskResult {
         
         private final String agentSpecName;

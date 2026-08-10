@@ -21,12 +21,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Loggers holder.
+ * <p>Address 模块 SLF4J 日志持有者：统一使用 logger 名 {@code com.alibaba.nacos.address.main}。</p>
  *
  * @author pbting
  * @date 2019-07-04 4:34 PM
  */
 public class Loggers {
     
+    /** Address Server 主流程日志 */
     public static final Logger ADDRESS_LOGGER =
         LoggerFactory.getLogger("com.alibaba.nacos.address.main");
 }

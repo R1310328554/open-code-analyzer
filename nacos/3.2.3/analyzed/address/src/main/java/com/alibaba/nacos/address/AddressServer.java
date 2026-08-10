@@ -21,6 +21,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * support address server.
+ * <p>Nacos 地址服务器（Address Server）Spring Boot 启动入口：扫描 {@code com.alibaba.nacos} 包并启动独立进程，对外提供集群节点 IP 的注册、查询与删除能力，供客户端发现 Nacos 集群地址。</p>
  *
  * @author nacos
  * @since 1.1.0
@@ -28,6 +29,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication(scanBasePackages = "com.alibaba.nacos")
 public class AddressServer {
     
+    /** 启动 Address Server 应用 */
     public static void main(String[] args) {
         
         SpringApplication.run(AddressServer.class, args);

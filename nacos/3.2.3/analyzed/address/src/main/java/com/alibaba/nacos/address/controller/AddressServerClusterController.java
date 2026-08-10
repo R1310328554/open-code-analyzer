@@ -47,6 +47,7 @@ import java.util.Optional;
 
 /**
  * Address server cluster controller.
+ * <p>地址服务器集群节点 REST 控制器：映射 {@code /nacos/v1/as/nodes}，支持 POST 注册与 DELETE 移除指定 IP 列表；底层通过 {@link InstanceOperator} 写入 Nacos 命名服务。</p>
  *
  * @author pbting
  * @since 1.1.0
@@ -78,6 +79,7 @@ public class AddressServerClusterController {
     
     /**
      * Create new cluster.
+     * <p>向指定 product/cluster 注册 IP 列表；自动创建集群元数据并校验 IP 格式。</p>
      *
      * @param product Ip list of products to be associated
      * @param cluster Ip list of product cluster to be associated
@@ -89,11 +91,11 @@ public class AddressServerClusterController {
     public ResponseEntity<String> postCluster(@RequestParam(required = false) String product,
         @RequestParam(required = false) String cluster, @RequestParam(name = "ips") String ips) {
         
-        //1. prepare the storage name for product and cluster
+        // 1. 解析存储侧 product/cluster 名称
         String productName = addressServerGeneratorManager.generateProductName(product);
         String clusterName = addressServerManager.getDefaultClusterNameIfEmpty(cluster);
         
-        //2. prepare the response name for product and cluster to client
+        // 2. 解析返回给客户端的原始 product/cluster 名称
         String rawProductName = addressServerManager.getRawProductName(product);
         String rawClusterName = addressServerManager.getRawClusterName(cluster);
         Loggers.ADDRESS_LOGGER.info(
@@ -122,6 +124,10 @@ public class AddressServerClusterController {
         return responseEntity;
     }
     
+    /**
+     * 注册集群节点：校验服务非 ephemeral、确保集群元数据存在、校验并注册各 Instance。
+     * @return 含 IP 校验结果与数量的 Result
+     */
     private Result registerCluster(String serviceName, String productName, String clusterName,
         String ips)
         throws NacosException {
@@ -160,6 +166,7 @@ public class AddressServerClusterController {
     
     /**
      * Delete cluster.
+     * <p>从指定 product/cluster 删除 IP 列表；ips 为空返回 400；服务不存在返回 404。</p>
      *
      * @param product Ip list of products to be associated
      * @param cluster Ip list of product cluster to be associated
@@ -195,10 +202,10 @@ public class AddressServerClusterController {
                     .body("product=" + rawProductName + " not found.");
             }
             if (StringUtils.isBlank(ips)) {
-                // delete all ips from the cluster
+                // ips 为空时不允许删除
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ips must not be empty.");
             }
-            // delete specified ip list
+            // 删除指定 IP 列表对应的 Instance
             String[] ipArray = addressServerManager.splitIps(ips);
             String checkResult = InternetAddressUtil.checkIps(ipArray);
             if (InternetAddressUtil.checkOk(checkResult)) {
@@ -220,6 +227,7 @@ public class AddressServerClusterController {
         return responseEntity;
     }
     
+    /** 内部结果：IP 校验消息与处理的 IP 数量 */
     private class Result {
         
         private final String checkResult;

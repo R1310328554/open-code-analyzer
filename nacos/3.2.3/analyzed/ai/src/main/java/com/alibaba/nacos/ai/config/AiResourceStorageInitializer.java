@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * registers the built storages via {@link AiResourceStorageRouter#join(AiResourceStorage)}.
  * This ordering ensures {@link com.alibaba.nacos.core.plugin.PluginManager} can discover
  * AI storage plugins on startup.</p>
+ * <p>在根上下文 refresh 完成后通过 SPI 加载 {@link AiResourceStorageBuilder}，构建并注册各类型 {@link AiResourceStorage}，保证 PluginManager 启动时可发现 AI 存储插件。</p>
  *
  * <p><b>Why {@link ContextRefreshedEvent}:</b> the same ordering could be done with
  * {@code ApplicationReadyEvent} plus {@code @Order}, but refresh completes after non-lazy
@@ -62,6 +63,7 @@ public class AiResourceStorageInitializer implements ApplicationListener<Context
     
     private final AtomicBoolean registered = new AtomicBoolean(false);
     
+    /** 根上下文首次 refresh 时注册全部 AI 存储 SPI 实现 */
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         if (event.getApplicationContext().getParent() != null) {

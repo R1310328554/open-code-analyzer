@@ -26,12 +26,17 @@ import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * nacos web security configuration.
+ * <p>Address Server 模块 Spring Security 配置：对 {@code /nacos/v1/as/**} 路径要求 HTTP Basic 认证，并禁用 CSRF（REST API 场景）。</p>
  *
  * @author onewe
  */
 @Configuration
 public class AddressServerSecurityConfiguration {
     
+    /**
+     * 注册 Address Server 专用 {@link SecurityFilterChain}，优先级 99。
+     * <p>仅保护地址服务 API，不影响其他 Nacos 模块安全链。</p>
+     */
     @Bean
     @Order(99)
     public SecurityFilterChain addressServerSecurityFilterChain(HttpSecurity http)

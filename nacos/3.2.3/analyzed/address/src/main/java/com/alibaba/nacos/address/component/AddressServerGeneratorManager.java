@@ -29,6 +29,7 @@ import java.util.List;
 
 /**
  * will generator some result by the input parameter.
+ * <p>地址服务器结果生成器：根据产品名、集群名、IP 列表等输入，生成 Nacos 服务名、{@link Instance} 列表及客户端响应文本。</p>
  *
  * @author pbting
  * @date 2019-07-01 8:53 PM
@@ -39,6 +40,7 @@ public class AddressServerGeneratorManager {
     
     /**
      * Generate product name.
+     * <p>生成产品域名标识：空或默认 {@link AddressServerConstants#DEFAULT_PRODUCT} 时返回 {@link AddressServerConstants#ALIWARE_NACOS_DEFAULT_PRODUCT_NAME}，否则按模板格式化。</p>
      *
      * @param name name
      * @return product
@@ -55,6 +57,7 @@ public class AddressServerGeneratorManager {
     
     /**
      * Note: if the parameter inputted is empty then will return the empty list.
+     * <p>将 IP 数组转换为持久化 {@link Instance} 列表；缺省端口时使用 {@link AddressServerConstants#DEFAULT_SERVER_PORT}；metadata 写入 app 与 tenant。</p>
      *
      * @param serviceName service name
      * @param clusterName cluster name
@@ -86,6 +89,7 @@ public class AddressServerGeneratorManager {
         return instanceList;
     }
     
+    /** 解析 ip:port 字符串，无端口时补默认 8848 */
     private String[] generateIpAndPort(String ip) {
         String[] result = InternetAddressUtil.splitIpPortStr(ip);
         if (result.length != InternetAddressUtil.SPLIT_IP_PORT_RESULT_LENGTH) {
@@ -97,6 +101,7 @@ public class AddressServerGeneratorManager {
     
     /**
      * Generate response ips.
+     * <p>将实例列表格式化为 {@code ip:port\n} 多行文本，供 GET 接口直接返回。</p>
      *
      * @param instanceList an instance set will generate string response to client.
      * @return the result of response to client
@@ -115,6 +120,7 @@ public class AddressServerGeneratorManager {
     
     /**
      * Generate nacos service name.
+     * <p>若 raw 服务名未含默认分组，则拼接 {@link Constants#DEFAULT_GROUP} 与 {@link AddressServerConstants#GROUP_SERVICE_NAME_SEP}。</p>
      *
      * @param rawServiceName the raw service name will not contain the {@link Constants#DEFAULT_GROUP}.
      * @return the nacos service name

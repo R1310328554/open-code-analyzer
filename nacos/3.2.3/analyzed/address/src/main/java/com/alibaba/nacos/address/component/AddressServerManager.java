@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * This class holds the IP list of the CAI's address service.
+ * <p>地址服务器管理辅助类：规范化产品名、集群名，并将逗号分隔的 IP 字符串拆分为数组。</p>
  *
  * @author deshao
  * @date 2016/4/28 20:58
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AddressServerManager {
     
+    /** 空产品名时返回 {@link AddressServerConstants#DEFAULT_PRODUCT} */
     public String getRawProductName(String name) {
         
         if (StringUtils.isBlank(name)) {
@@ -44,6 +46,7 @@ public class AddressServerManager {
     /**
      * If the name is empty then return the default {@link UtilsAndCommons#DEFAULT_CLUSTER_NAME}, or return the source
      * name by input.
+     * <p>集群名为空时返回 {@link AddressServerConstants#DEFAULT_GET_CLUSTER}（serverlist）。</p>
      *
      * @param name name
      * @return default cluster name
@@ -57,6 +60,7 @@ public class AddressServerManager {
         return name;
     }
     
+    /** 与 {@link #getDefaultClusterNameIfEmpty(String)} 等价，供响应体展示用 */
     public String getRawClusterName(String name) {
         
         return getDefaultClusterNameIfEmpty(name);
@@ -64,6 +68,7 @@ public class AddressServerManager {
     
     /**
      * Split ips.
+     * <p>按 {@link AddressServerConstants#MULTI_IPS_SEPARATOR} 拆分多 IP 字符串；空白输入返回空数组。</p>
      *
      * @param ips multi ip will separator by the ','
      * @return array of ip

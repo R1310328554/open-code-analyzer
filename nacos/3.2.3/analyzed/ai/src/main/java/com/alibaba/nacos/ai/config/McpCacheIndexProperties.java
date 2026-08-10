@@ -20,6 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * MCP Cache Index configuration properties. Centralized configuration management for MCP cache index related settings.
+ * <p>MCP 缓存索引配置属性，绑定前缀 {@code nacos.mcp.cache}：控制启用、容量、过期、清理与同步间隔。</p>
  *
  * @author misselvexu
  */
@@ -28,26 +29,31 @@ public class McpCacheIndexProperties {
     
     /**
      * Whether MCP cache is enabled.
+     * <p>是否启用 MCP 服务端索引内存缓存。</p>
      */
     private boolean enabled = true;
     
     /**
      * Maximum size of the cache.
+     * <p>缓存最大条目数，默认 10000。</p>
      */
     private int maxSize = 10000;
     
     /**
      * Cache entry expiration time in seconds.
+     * <p>单条缓存过期时间（秒），默认 3600。</p>
      */
     private long expireTimeSeconds = 3600;
     
     /**
      * Cache cleanup interval in seconds.
+     * <p>过期条目清理周期（秒），默认 300。</p>
      */
     private long cleanupIntervalSeconds = 300;
     
     /**
      * Cache synchronization interval in seconds.
+     * <p>与配置中心同步 MCP 索引的周期（秒），默认 300。</p>
      */
     private long syncIntervalSeconds = 300;
     

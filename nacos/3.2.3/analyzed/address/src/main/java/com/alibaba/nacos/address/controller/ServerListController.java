@@ -39,6 +39,7 @@ import java.util.Optional;
 
 /**
  * Server list controller.
+ * <p>地址服务器列表查询控制器：GET {@code /{product}/{cluster}}，返回该集群下所有实例的 {@code ip:port} 文本列表。</p>
  *
  * @author pbting
  * @since 1.1.0
@@ -61,6 +62,7 @@ public class ServerListController {
     
     /**
      * Get cluster.
+     * <p>按 product/cluster 路径变量查询服务实例；服务或集群不存在时返回 404。</p>
      *
      * @param product will get Ip list of that products to be associated
      * @param cluster will get Ip list of that product cluster to be associated

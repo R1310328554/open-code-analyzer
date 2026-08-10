@@ -38,6 +38,7 @@ import org.springframework.context.annotation.Primary;
 
 /**
  * MCP server index configuration class.
+ * <p>MCP 服务端索引 Spring 配置：按 {@code nacos.mcp.cache.enabled} 条件注册 {@link MemoryMcpCacheIndex}、定时同步线程池及 {@link CachedMcpServerIndex} 或 {@link PlainMcpServerIndex}。</p>
  *
  * @author misselvexu
  */
@@ -55,6 +56,7 @@ public class McpServerIndexConfiguration {
     
     /**
      * Create memory cache index Bean.
+     * <p>缓存启用时创建 {@link MemoryMcpCacheIndex} Bean。</p>
      */
     @Bean
     @ConditionalOnProperty(name = "nacos.mcp.cache.enabled", havingValue = "true",
@@ -69,6 +71,7 @@ public class McpServerIndexConfiguration {
     
     /**
      * Create scheduled task executor Bean.
+     * <p>为 MCP 缓存后台同步创建单线程守护 ScheduledExecutorService。</p>
      */
     @Bean
     @ConditionalOnProperty(name = "nacos.mcp.cache.enabled", havingValue = "true",
@@ -76,7 +79,7 @@ public class McpServerIndexConfiguration {
     public ScheduledExecutorService mcpCacheScheduledExecutor() {
         LOGGER.info("Creating ScheduledExecutorService for MCP cache with syncInterval={}s",
             cacheProperties.getSyncIntervalSeconds());
-        // Manually create thread pool, following Alibaba coding standards
+        // 手动创建线程池，遵循阿里编码规范（命名守护线程 + CallerRunsPolicy）
         return new ScheduledThreadPoolExecutor(1, r -> {
             Thread t = new Thread(r, "mcp-cache-sync");
             t.setDaemon(true);
@@ -86,6 +89,7 @@ public class McpServerIndexConfiguration {
     
     /**
      * Create the primary MCP server index Bean when cache is enabled.
+     * <p>缓存开启时的 {@link Primary} {@link McpServerIndex} 实现。</p>
      */
     @Bean
     @Primary
@@ -104,6 +108,7 @@ public class McpServerIndexConfiguration {
     
     /**
      * Create the primary MCP server index Bean when cache is disabled.
+     * <p>显式关闭缓存时使用 {@link PlainMcpServerIndex} 直接查配置。</p>
      */
     @Bean
     @Primary

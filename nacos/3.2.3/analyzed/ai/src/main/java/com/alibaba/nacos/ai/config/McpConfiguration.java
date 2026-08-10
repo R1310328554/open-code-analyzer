@@ -23,6 +23,7 @@ import javax.annotation.PostConstruct;
 
 /**
  * AI MCP spring configuration.
+ * <p>AI MCP 模块 Spring 配置：启动时扫描 {@code com.alibaba.nacos.ai.controller} 包，预热 {@link ControllerMethodsCache} 以加速 MCP 路由解析。</p>
  *
  * @author xiweng.yy
  */
@@ -35,6 +36,7 @@ public class McpConfiguration {
         this.methodsCache = methodsCache;
     }
     
+    /** 初始化 MCP 控制器方法缓存 */
     @PostConstruct
     public void init() {
         methodsCache.initClassMethod("com.alibaba.nacos.ai.controller");
