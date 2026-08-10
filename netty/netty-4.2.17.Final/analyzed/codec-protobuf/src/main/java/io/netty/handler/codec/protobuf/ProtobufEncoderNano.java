@@ -55,6 +55,8 @@ import io.netty.handler.codec.MessageToMessageEncoder;
  *     ch.write(res);
  * }
  * </pre>
+ * <p>protobuf-nano 编码器：预按 {@link MessageNano#getSerializedSize()} 分配堆 {@link ByteBuf}，
+ * 通过 {@link CodedOutputByteBufferNano} 直接写入底层数组，避免 toByteArray 的额外拷贝。</p>
  */
 @ChannelHandler.Sharable
 public class ProtobufEncoderNano extends MessageToMessageEncoder<MessageNano> {
@@ -66,6 +68,7 @@ public class ProtobufEncoderNano extends MessageToMessageEncoder<MessageNano> {
     protected void encode(
             ChannelHandlerContext ctx, MessageNano msg, List<Object> out) throws Exception {
         final int size = msg.getSerializedSize();
+        // 精确容量分配，writerIndex 手动设为实际写入长度
         final ByteBuf buffer = ctx.alloc().heapBuffer(size, size);
         final byte[] array = buffer.array();
         CodedOutputByteBufferNano cobbn = CodedOutputByteBufferNano.newInstance(array,

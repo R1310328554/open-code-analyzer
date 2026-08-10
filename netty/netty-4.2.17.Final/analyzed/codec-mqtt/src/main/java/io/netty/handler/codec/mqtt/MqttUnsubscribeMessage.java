@@ -19,6 +19,8 @@ package io.netty.handler.codec.mqtt;
 /**
  * See <a href="https://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html#unsubscribe">
  *     MQTTV3.1/unsubscribe</a>
+ * <p>UNSUBSCRIBE 报文：客户端批量取消订阅，可变头含报文标识符，载荷为主题过滤器列表。
+ * broker 以 {@link MqttUnsubAckMessage} 确认，QoS 1 下需匹配同一 messageId。</p>
  */
 public final class MqttUnsubscribeMessage extends MqttMessage {
 
@@ -29,6 +31,7 @@ public final class MqttUnsubscribeMessage extends MqttMessage {
         super(mqttFixedHeader, variableHeader, payload);
     }
 
+    /** 3.x 兼容构造：自动补空 MQTT 5 属性。 */
     public MqttUnsubscribeMessage(
             MqttFixedHeader mqttFixedHeader,
             MqttMessageIdVariableHeader variableHeader,

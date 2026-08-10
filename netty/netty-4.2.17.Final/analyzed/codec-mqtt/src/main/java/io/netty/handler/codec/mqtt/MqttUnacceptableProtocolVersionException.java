@@ -20,6 +20,8 @@ import io.netty.handler.codec.DecoderException;
 /**
  * A {@link MqttUnacceptableProtocolVersionException} which is thrown when
  * a CONNECT request contains unacceptable protocol version.
+ * <p>CONNECT 协议名或级别无法识别时抛出，{@link MqttVersion#fromProtocolNameAndLevel} 会据此拒绝握手。
+ * 对应 CONNACK 返回码 0x01（3.x）或 0x84（5.0 不支持协议版本）。</p>
  */
 public final class MqttUnacceptableProtocolVersionException extends DecoderException {
 

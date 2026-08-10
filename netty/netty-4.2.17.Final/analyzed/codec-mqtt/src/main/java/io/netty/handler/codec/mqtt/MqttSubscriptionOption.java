@@ -17,12 +17,18 @@ package io.netty.handler.codec.mqtt;
 
 /**
  * Model the SubscriptionOption used in Subscribe MQTT v5 packet
+ * <p>MQTT 5 订阅选项：除 QoS 外还控制本地投递、保留消息转发及订阅时是否下发已有 retain。
+ * 3.x 客户端仅需 QoS，可通过 {@link #onlyFromQos} 构造默认选项。</p>
  */
 public final class MqttSubscriptionOption {
 
+    /** 订阅时对已有 retain 消息的处理策略（对应 SUBSCRIBE 载荷中的 Retain Handling 字段）。 */
     public enum RetainedHandlingPolicy {
+        /** 订阅即下发匹配主题的 retain 消息。 */
         SEND_AT_SUBSCRIBE(0),
+        /** 仅当该订阅尚无活跃会话时下发 retain。 */
         SEND_AT_SUBSCRIBE_IF_NOT_YET_EXISTS(1),
+        /** 订阅时不推送 retain，仅接收后续新 publish。 */
         DONT_SEND_AT_SUBSCRIBE(2);
 
         private final int value;
@@ -50,10 +56,13 @@ public final class MqttSubscriptionOption {
     }
 
     private final MqttQoS qos;
+    /** 为 true 时 broker 不向发布该订阅的同一客户端回环投递（No Local 位）。 */
     private final boolean noLocal;
+    /** 为 true 时转发 retain 消息时保留原 RETAIN 标志。 */
     private final boolean retainAsPublished;
     private final RetainedHandlingPolicy retainHandling;
 
+    /** 仅指定 QoS 的便捷工厂，其余选项取 MQTT 5 默认值。 */
     public static MqttSubscriptionOption onlyFromQos(MqttQoS qos) {
         return new MqttSubscriptionOption(qos, false, false, RetainedHandlingPolicy.SEND_AT_SUBSCRIBE);
     }

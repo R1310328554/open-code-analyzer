@@ -23,6 +23,8 @@ import java.util.List;
 
 /**
  * Payload of the {@link MqttSubscribeMessage}
+ * <p>SUBSCRIBE 载荷：不可变主题订阅列表，每项含过滤器及 QoS/订阅选项（MQTT 5）。
+ * 列表顺序与 SUBACK 原因码顺序严格对应。</p>
  */
 public final class MqttSubscribePayload {
 
@@ -43,7 +45,7 @@ public final class MqttSubscribePayload {
             builder.append(topicSubscriptions.get(i)).append(", ");
         }
         if (!topicSubscriptions.isEmpty()) {
-            builder.setLength(builder.length() - 2);
+            builder.setLength(builder.length() - 2); // 去掉末尾 ", "
         }
         return builder.append(']').toString();
     }

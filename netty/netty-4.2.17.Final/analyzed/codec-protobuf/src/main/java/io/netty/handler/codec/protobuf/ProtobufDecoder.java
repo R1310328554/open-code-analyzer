@@ -62,10 +62,13 @@ import java.util.List;
  *     ch.write(res);
  * }
  * </pre>
+ * <p>将已分帧的 {@link ByteBuf} 反序列化为 protobuf 消息。须配合前置帧解码器使用（TCP 流式传输必需）。
+ * 构造时保存 prototype 的默认实例；运行时优先走 {@code getParserForType()}（protobuf ≥2.5），否则回退 Builder.mergeFrom。</p>
  */
 @Sharable
 public class ProtobufDecoder extends MessageToMessageDecoder<ByteBuf> {
 
+    /** 运行时探测 protobuf 2.5+ 是否提供 getParserForType，避免旧版 API 不可用。 */
     private static final boolean HAS_PARSER;
 
     static {
@@ -97,6 +100,7 @@ public class ProtobufDecoder extends MessageToMessageDecoder<ByteBuf> {
 
     public ProtobufDecoder(MessageLite prototype, ExtensionRegistryLite extensionRegistry) {
         super(ByteBuf.class);
+        // 存默认实例而非传入对象本身，保证类型模板稳定
         this.prototype = ObjectUtil.checkNotNull(prototype, "prototype").getDefaultInstanceForType();
         this.extensionRegistry = extensionRegistry;
     }
@@ -108,6 +112,7 @@ public class ProtobufDecoder extends MessageToMessageDecoder<ByteBuf> {
         final int offset;
         final int length = msg.readableBytes();
         if (msg.hasArray()) {
+            // 堆缓冲区：直接引用底层数组，零拷贝
             array = msg.array();
             offset = msg.arrayOffset() + msg.readerIndex();
         } else {

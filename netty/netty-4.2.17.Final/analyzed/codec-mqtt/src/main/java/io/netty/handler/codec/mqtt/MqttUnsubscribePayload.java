@@ -23,6 +23,8 @@ import java.util.List;
 
 /**
  * Payload of the {@link MqttUnsubscribeMessage}
+ * <p>UNSUBSCRIBE 载荷：待取消订阅的主题过滤器列表（非 topic name，可含通配符）。
+ * 构造后列表不可变，顺序与 MQTT 5 UNSUBACK 原因码一一对应。</p>
  */
 public final class MqttUnsubscribePayload {
 

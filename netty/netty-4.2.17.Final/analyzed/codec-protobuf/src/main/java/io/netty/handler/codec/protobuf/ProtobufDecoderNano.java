@@ -58,6 +58,8 @@ import io.netty.util.internal.ObjectUtil;
  *     ch.write(res);
  * }
  * </pre>
+ * <p>针对 protobuf-nano（轻量、无反射代码生成）的解码器。每次 decode 反射创建空实例再 mergeFrom，
+ * 适合 Android/嵌入式场景；与标准 {@link ProtobufDecoder} 不可混用同一消息类型。</p>
  */
 @Sharable
 public class ProtobufDecoderNano extends MessageToMessageDecoder<ByteBuf> {
@@ -83,6 +85,7 @@ public class ProtobufDecoderNano extends MessageToMessageDecoder<ByteBuf> {
             array = ByteBufUtil.getBytes(msg, msg.readerIndex(), length, false);
             offset = 0;
         }
+        // nano 无 prototype 模式：无参构造 + mergeFrom 填充字段
         MessageNano prototype = clazz.getConstructor().newInstance();
         out.add(MessageNano.mergeFrom(prototype, array, offset, length));
     }

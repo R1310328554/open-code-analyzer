@@ -57,6 +57,8 @@ import static io.netty.buffer.Unpooled.*;
  *     ch.write(res);
  * }
  * </pre>
+ * <p>将 {@link MessageLite} 或尚未 build 的 Builder 序列化为 {@link ByteBuf}。
+ * 输出为 wrappedBuffer（引用 toByteArray 结果），通常还需后置帧编码器添加长度前缀。</p>
  */
 @Sharable
 public class ProtobufEncoder extends MessageToMessageEncoder<MessageLiteOrBuilder> {
@@ -72,6 +74,7 @@ public class ProtobufEncoder extends MessageToMessageEncoder<MessageLiteOrBuilde
             return;
         }
         if (msg instanceof MessageLite.Builder) {
+            // 允许直接写入 Builder，内部 build 后再序列化
             out.add(wrappedBuffer(((MessageLite.Builder) msg).build().toByteArray()));
         }
     }

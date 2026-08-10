@@ -19,6 +19,8 @@ package io.netty.handler.codec.mqtt;
 /**
  * See <a href="https://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html#subscribe">
  *     MQTTV3.1/subscribe</a>
+ * <p>SUBSCRIBE 报文：客户端一次性订阅多个主题过滤器，可变头含报文标识符（MQTT 5 还可带属性），
+ * 载荷为 {@link MqttSubscribePayload}。QoS 1/2 下需 broker 以 SUBACK 逐条回应。</p>
  */
 public final class MqttSubscribeMessage extends MqttMessage {
 
@@ -29,6 +31,7 @@ public final class MqttSubscribeMessage extends MqttMessage {
         super(mqttFixedHeader, variableHeader, payload);
     }
 
+    /** 3.x 兼容构造：自动补空属性，便于旧代码迁移到 5.0 API。 */
     public MqttSubscribeMessage(
             MqttFixedHeader mqttFixedHeader,
             MqttMessageIdVariableHeader variableHeader,
@@ -41,6 +44,7 @@ public final class MqttSubscribeMessage extends MqttMessage {
         return (MqttMessageIdVariableHeader) super.variableHeader();
     }
 
+    /** 返回含 MQTT 5 属性的完整可变头视图。 */
     public MqttMessageIdAndPropertiesVariableHeader idAndPropertiesVariableHeader() {
         return (MqttMessageIdAndPropertiesVariableHeader) super.variableHeader();
     }

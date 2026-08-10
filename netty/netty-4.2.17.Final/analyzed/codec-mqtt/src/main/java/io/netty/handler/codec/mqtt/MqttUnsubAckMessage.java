@@ -19,6 +19,8 @@ package io.netty.handler.codec.mqtt;
 /**
  * See <a href="https://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html#unsuback">
  *     MQTTV3.1/unsuback</a>
+ * <p>UNSUBACK 报文：broker 对 {@link MqttUnsubscribeMessage} 的确认。3.x 通常无载荷；
+ * MQTT 5 可为每个取消订阅的主题附带原因码，{@link #payload()} 经 {@link MqttUnsubAckPayload#withEmptyDefaults} 归一化。</p>
  */
 public final class MqttUnsubAckMessage extends MqttMessage {
 
@@ -33,11 +35,14 @@ public final class MqttUnsubAckMessage extends MqttMessage {
                                MqttUnsubAckPayload payload) {
         this(mqttFixedHeader, fallbackVariableHeader(variableHeader), payload);
     }
+
+    /** 3.x 无载荷构造：payload 传 null 时自动替换为共享空实例。 */
     public MqttUnsubAckMessage(MqttFixedHeader mqttFixedHeader,
                                MqttMessageIdVariableHeader variableHeader) {
         this(mqttFixedHeader, variableHeader, null);
     }
 
+    /** 将仅含 messageId 的旧式可变头升级为带属性的 5.0 视图。 */
     private static MqttMessageIdAndPropertiesVariableHeader fallbackVariableHeader(
             MqttMessageIdVariableHeader variableHeader) {
         if (variableHeader instanceof MqttMessageIdAndPropertiesVariableHeader) {

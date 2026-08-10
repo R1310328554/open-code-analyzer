@@ -24,11 +24,14 @@ import java.util.List;
 
 /**
  * Payload for MQTT unsuback message as in V5.
+ * <p>UNSUBACK 载荷（MQTT 5）：与 UNSUBSCRIBE 主题列表一一对应的原因码。
+ * 3.x 无此载荷；{@link #withEmptyDefaults} 将 null 归一化为共享空单例，避免重复分配。</p>
  */
 public final class MqttUnsubAckPayload {
 
     private final List<MqttReasonCodes.UnsubAck> unsubscribeReasonCodes;
 
+    /** 无原因码的共享空载荷，供 3.x 兼容路径复用。 */
     private static final MqttUnsubAckPayload EMPTY = new MqttUnsubAckPayload();
 
     public static MqttUnsubAckPayload withEmptyDefaults(MqttUnsubAckPayload payload) {
@@ -60,6 +63,7 @@ public final class MqttUnsubAckPayload {
         this.unsubscribeReasonCodes = Collections.unmodifiableList(list);
     }
 
+    /** 以 short 形式返回各原因码的无符号字节值。 */
     public List<Short> unsubscribeReasonCodes() {
         return typedReasonCodesToOrdinal();
     }

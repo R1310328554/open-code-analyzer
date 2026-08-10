@@ -21,12 +21,15 @@ import io.netty.util.internal.StringUtil;
 /**
  * Contains a topic name and Qos Level.
  * This is part of the {@link MqttSubscribePayload}
+ * <p>单条主题订阅：含过滤器字符串及订阅选项。过滤器可含 {@code +}/{@code #} 通配符；
+ * {@link #setTopicFilter} 支持服务端主题重写而无需客户端重配。</p>
  */
 public final class MqttTopicSubscription {
 
     private String topicFilter;
     private final MqttSubscriptionOption option;
 
+    /** 3.x 风格构造：仅 QoS，内部包装为默认 {@link MqttSubscriptionOption}。 */
     public MqttTopicSubscription(String topicFilter, MqttQoS qualityOfService) {
         this.topicFilter = topicFilter;
         this.option = MqttSubscriptionOption.onlyFromQos(qualityOfService);
@@ -56,6 +59,7 @@ public final class MqttTopicSubscription {
      * Many IoT devices do not support reconfiguration or upgrade, so it is hard to
      * change their subscribed topics. To resolve this issue, MQTT server may offer
      * topic rewrite capability.
+     * <p>服务端可在解码后、业务处理前改写过滤器，解决固件无法变更订阅主题的场景。</p>
      *
      * @param topicFilter Topic to rewrite to
      */
