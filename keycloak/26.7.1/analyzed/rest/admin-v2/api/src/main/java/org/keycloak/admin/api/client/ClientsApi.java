@@ -26,10 +26,19 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+/**
+ * 客户端集合的 Admin API v2 JAX-RS 资源。
+ * <p>
+ * 支持分页列表查询（含字段筛选、排序与 SCIM 风格过滤）、创建新客户端，
+ * 并通过 {@link #client(String)} 路由到单个客户端子资源。
+ */
 @Tag(name = KeycloakOpenAPI.Admin.Tags.CLIENTS_V2)
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public interface ClientsApi {
 
+    /**
+     * 列出领域中的客户端，支持 {@link ListOptions} 过滤、排序与分页。
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -41,10 +50,14 @@ public interface ClientsApi {
     })
     Stream<BaseClientRepresentation> getClients(@BeanParam ListOptions params);
 
+    /** 使用默认列表选项获取全部客户端。 */
     default Stream<BaseClientRepresentation> getClients() {
         return getClients(new ListOptions());
     }
 
+    /**
+     * 在领域中创建新客户端。
+     */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -54,6 +67,11 @@ public interface ClientsApi {
     })
     Response createClient(@Valid BaseClientRepresentation client);
 
+    /**
+     * 按 clientId 路由到单个客户端子 API。
+     *
+     * @param id 客户端 clientId
+     */
     @Path("{id}")
     ClientApi client(@PathParam("id") String id);
 }

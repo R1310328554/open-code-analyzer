@@ -5,10 +5,17 @@ import java.util.Map;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+/**
+ * 角色映射的 REST 表示，汇总用户在领域级与客户端级的角色分配。
+ * <p>
+ * 用于管理 UI 展示或编辑用户的有效角色映射，包含领域角色列表及按客户端 ID 分组的客户端角色。
+ */
 public final class RoleMappingRepresentation {
+    /** 领域级角色映射列表。 */
     @Schema(description = "Realm role mappings")
     private List<RoleRepresentation> realmMappings;
 
+    /** 按客户端 ID 索引的客户端角色映射。 */
     @Schema(description = "Client role mappings keyed by client ID")
     private Map<String, ClientMappingRepresentation> clientMappings;
 
@@ -36,12 +43,21 @@ public final class RoleMappingRepresentation {
         this.clientMappings = clientMappings;
     }
 
+    /**
+     * 单个角色的简要表示，可用于领域角色或客户端角色。
+     */
     public static class RoleRepresentation {
+        /** 角色内部 ID。 */
         private String id;
+        /** 角色名称。 */
         private String name;
+        /** 角色描述。 */
         private String description;
+        /** 是否为复合角色（包含子角色）。 */
         private boolean composite;
+        /** 是否为客户端角色（false 表示领域角色）。 */
         private boolean clientRole;
+        /** 角色所属容器 ID（领域或客户端的内部 ID）。 */
         private String containerId;
 
         public RoleRepresentation() {
@@ -105,9 +121,15 @@ public final class RoleMappingRepresentation {
         }
     }
 
+    /**
+     * 某个客户端下的角色映射集合。
+     */
     public static class ClientMappingRepresentation {
+        /** 客户端内部 ID。 */
         private String id;
+        /** 客户端可读 clientId。 */
         private String client;
+        /** 该客户端下分配的角色列表。 */
         private List<RoleRepresentation> mappings;
 
         public ClientMappingRepresentation() {

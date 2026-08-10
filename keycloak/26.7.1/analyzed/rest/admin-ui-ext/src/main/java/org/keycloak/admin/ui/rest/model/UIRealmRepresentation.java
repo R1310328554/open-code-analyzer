@@ -22,8 +22,14 @@ package org.keycloak.admin.ui.rest.model;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.userprofile.config.UPConfig;
 
+/**
+ * 面向管理 UI 的领域表示，在标准 {@link RealmRepresentation} 基础上附加用户配置文件配置。
+ * <p>
+ * 用于领域设置页面一次性返回领域属性与用户 Profile 声明式配置。
+ */
 public class UIRealmRepresentation extends RealmRepresentation {
 
+    /** 用户配置文件（User Profile）的声明式配置。 */
     private UPConfig upConfig;
 
     public UPConfig getUpConfig() {
