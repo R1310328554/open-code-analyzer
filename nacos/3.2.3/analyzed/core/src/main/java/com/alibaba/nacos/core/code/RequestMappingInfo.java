@@ -22,6 +22,7 @@ import com.alibaba.nacos.core.code.condition.PathRequestCondition;
 import java.util.Comparator;
 
 /**
+ * 请求映射信息：聚合路径条件与参数条件，供 {@link ControllerMethodsCache} 匹配 HTTP 请求。
  * Request mapping information. to find the matched method by request
  *
  * @author horizonzy
@@ -29,18 +30,23 @@ import java.util.Comparator;
  */
 public class RequestMappingInfo {
     
+    /** HTTP 方法与路径表达式条件。 */
     private PathRequestCondition pathRequestCondition;
     
+    /** 请求参数匹配条件。 */
     private ParamRequestCondition paramRequestCondition;
     
+    /** 返回参数匹配条件。 */
     public ParamRequestCondition getParamRequestCondition() {
         return paramRequestCondition;
     }
     
+    /** 设置参数匹配条件。 */
     public void setParamRequestCondition(ParamRequestCondition paramRequestCondition) {
         this.paramRequestCondition = paramRequestCondition;
     }
     
+    /** 设置路径匹配条件。 */
     public void setPathRequestCondition(PathRequestCondition pathRequestCondition) {
         this.pathRequestCondition = pathRequestCondition;
     }
@@ -52,8 +58,10 @@ public class RequestMappingInfo {
             + paramRequestCondition + '}';
     }
     
+    /** 按参数表达式数量降序排序，优先匹配约束更多的映射。 */
     public static class RequestMappingInfoComparator implements Comparator<RequestMappingInfo> {
         
+        /** 参数条件越多优先级越高。 */
         @Override
         public int compare(RequestMappingInfo o1, RequestMappingInfo o2) {
             return Integer.compare(o2.getParamRequestCondition().getExpressions().size(),

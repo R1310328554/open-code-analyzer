@@ -51,6 +51,7 @@ import java.util.concurrent.ConcurrentMap;
 import static com.alibaba.nacos.sys.env.Constants.REQUEST_PATH_SEPARATOR;
 
 /**
+ * Controller 方法缓存：扫描 {@link RequestMapping} 注解，按 HTTP 方法与路径索引到 {@link Method}，供 Nacos 自研 HTTP 分发（如鉴权 Filter）快速解析目标处理器。
  * Method cache.
  *
  * @author nkorange
@@ -61,13 +62,22 @@ public class ControllerMethodsCache {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ControllerMethodsCache.class);
     
+    /** 映射条件组合到 Controller 方法。 */
     private ConcurrentMap<RequestMappingInfo, Method> methods = new ConcurrentHashMap<>();
     
+    /** 按「HTTP 方法 + 路径」键索引候选 {@link RequestMappingInfo} 列表。 */
     private final ConcurrentMap<String, List<RequestMappingInfo>> urlLookup =
         new ConcurrentHashMap<>();
     
+    /** 已扫描过的 Controller 类，避免重复注册。 */
     private final Set<Class> scannedClass = new HashSet<>();
     
+    /**
+     * 根据 HTTP 请求解析并返回最匹配的 Controller 方法。
+     *
+     * @param request 当前 HTTP 请求
+     * @return 匹配的方法，未命中返回 null
+     */
     public Method getMethod(HttpServletRequest request) {
         String path = getPath(request);
         String httpMethod = request.getMethod();
@@ -97,12 +107,14 @@ public class ControllerMethodsCache {
         return methods.get(bestMatch);
     }
     
+    /** 解析请求上下文路径，空则回退 {@link EnvUtil#getContextPath()}。 */
     private String resolveContextPath(HttpServletRequest request) {
         String requestContextPath = request.getContextPath();
         return StringUtils.isEmpty(requestContextPath) ? EnvUtil.getContextPath()
             : requestContextPath;
     }
     
+    /** 从 URI 路径中剥离 servlet 上下文前缀。 */
     private String stripContextPath(String path, String contextPath) {
         if (StringUtils.isEmpty(path) || StringUtils.isEmpty(contextPath)) {
             return path;
@@ -114,6 +126,7 @@ public class ControllerMethodsCache {
         return path;
     }
     
+    /** 将 request URI 解析为不含 query 的路径字符串。 */
     private String getPath(HttpServletRequest request) {
         try {
             return new URI(request.getRequestURI()).getPath();
@@ -123,6 +136,7 @@ public class ControllerMethodsCache {
         }
     }
     
+    /** 按请求参数条件过滤候选映射列表。 */
     private List<RequestMappingInfo> findMatchedInfo(List<RequestMappingInfo> requestMappingInfos,
         HttpServletRequest request) {
         List<RequestMappingInfo> matchedInfo = new ArrayList<>();
@@ -137,7 +151,7 @@ public class ControllerMethodsCache {
     }
     
     /**
-     * find target method from this package.
+     * 扫描指定包下带 {@link RequestMapping} 的类并注册 URL 到方法的映射。
      *
      * @param packageName package name
      */
@@ -151,7 +165,7 @@ public class ControllerMethodsCache {
     }
     
     /**
-     * find target method from class list.
+     * 批量扫描给定 Controller 类列表并注册映射。
      *
      * @param classesList class list
      */
@@ -162,7 +176,7 @@ public class ControllerMethodsCache {
     }
     
     /**
-     * find target method from target class.
+     * 扫描单个 Controller 类的方法级与组合注解映射。
      *
      * @param clazz {@link Class}
      */
@@ -183,7 +197,7 @@ public class ControllerMethodsCache {
                     requestMethods = new RequestMethod[1];
                     requestMethods[0] = RequestMethod.GET;
                 }
-                // FIXME: vipserver needs multiple http methods mapping
+                // FIXME: vipserver 需要同一映射支持多种 HTTP 方法
                 for (RequestMethod requestMethod : requestMethods) {
                     String[] value = requestMapping.value();
                     if (value.length > 0) {
@@ -202,6 +216,7 @@ public class ControllerMethodsCache {
         scannedClass.add(clazz);
     }
     
+    /** 解析 Get/Post/Put/Delete/Patch 等组合注解并写入缓存。 */
     private void parseSubAnnotations(Method method, String classPath) {
         
         final GetMapping getMapping = method.getAnnotation(GetMapping.class);
@@ -234,6 +249,7 @@ public class ControllerMethodsCache {
         
     }
     
+    /** 将指定 HTTP 方法与路径组合注册到 urlLookup。 */
     private void put(RequestMethod requestMethod, String classPath, String[] requestPaths,
         String[] requestParams,
         Method method) {
@@ -248,13 +264,14 @@ public class ControllerMethodsCache {
         }
     }
     
+    /** 建立 urlKey、参数条件与 Method 的三元关联。 */
     private void addUrlAndMethodRelation(String urlKey, String[] requestParam, Method method) {
         RequestMappingInfo requestMappingInfo = new RequestMappingInfo();
         requestMappingInfo.setPathRequestCondition(new PathRequestCondition(urlKey));
         requestMappingInfo.setParamRequestCondition(new ParamRequestCondition(requestParam));
         List<RequestMappingInfo> requestMappingInfos =
             urlLookup.computeIfAbsent(urlKey, k -> new ArrayList<>());
-        // For issue #4701.
+        // 兼容 #4701：同时注册带尾斜杠的 urlKey
         urlLookup.computeIfAbsent(urlKey + "/", k -> requestMappingInfos);
         requestMappingInfos.add(requestMappingInfo);
         methods.put(requestMappingInfo, method);

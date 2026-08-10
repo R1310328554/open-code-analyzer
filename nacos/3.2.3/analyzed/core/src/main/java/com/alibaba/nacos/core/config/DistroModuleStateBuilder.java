@@ -22,12 +22,14 @@ import com.alibaba.nacos.sys.module.AbstractServerModuleStateBuilder;
 import com.alibaba.nacos.sys.module.ModuleState;
 
 /**
+ * Distro 一致性模块状态构建器：汇总数据同步、校验与加载相关的超时/重试/间隔配置。
  * distro state builder.
  * @author 985492783@qq.com
  * @date 2023/4/7 0:37
  */
 public class DistroModuleStateBuilder extends AbstractServerModuleStateBuilder {
     
+    /** 从环境读取 Distro 各项毫秒级参数并写入 {@link ModuleState}。 */
     @Override
     public ModuleState build() {
         ModuleState moduleState = new ModuleState(DistroConstants.DISTRO_MODULE);
@@ -55,6 +57,7 @@ public class DistroModuleStateBuilder extends AbstractServerModuleStateBuilder {
         return moduleState;
     }
     
+    /** 单机模式下不暴露 Distro 模块状态。 */
     @Override
     public boolean isIgnore() {
         return EnvUtil.getStandaloneMode();

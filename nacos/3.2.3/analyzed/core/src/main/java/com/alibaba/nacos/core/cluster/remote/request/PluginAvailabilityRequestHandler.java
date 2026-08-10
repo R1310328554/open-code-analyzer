@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * {@link PluginAvailabilityRequest} 处理器：通过 {@link PluginManager} 查询单插件或全部插件启用状态。
  * Handler for PluginAvailabilityRequest.
  *
  * @author WangzJi
@@ -41,12 +42,26 @@ import java.util.Map;
 public class PluginAvailabilityRequestHandler
     extends RequestHandler<PluginAvailabilityRequest, PluginAvailabilityResponse> {
     
+    /** 插件生命周期与可用性管理器。 */
     private final PluginManager pluginManager;
     
+    /**
+     * 注入插件管理器。
+     *
+     * @param pluginManager 插件管理器实例
+     */
     public PluginAvailabilityRequestHandler(PluginManager pluginManager) {
         this.pluginManager = pluginManager;
     }
     
+    /**
+     * 处理插件可用性查询：参数非法时返回 FAIL，否则按单插件或全量模式应答。
+     *
+     * @param request 查询请求
+     * @param meta RPC 元数据
+     * @return 可用性响应
+     * @throws NacosException 处理异常
+     */
     @Override
     public PluginAvailabilityResponse handle(PluginAvailabilityRequest request, RequestMeta meta)
         throws NacosException {
@@ -61,6 +76,7 @@ public class PluginAvailabilityRequestHandler
         return handleSinglePluginRequest(request.getPluginId());
     }
     
+    /** 构造带错误消息的失败响应。 */
     private PluginAvailabilityResponse createErrorResponse(String message) {
         PluginAvailabilityResponse response = new PluginAvailabilityResponse();
         response.setResultCode(ResponseCode.FAIL.getCode());
@@ -68,6 +84,7 @@ public class PluginAvailabilityRequestHandler
         return response;
     }
     
+    /** 列出全部插件并返回 pluginId → 是否启用的映射。 */
     private PluginAvailabilityResponse handleQueryAllRequest() {
         List<PluginInfo> plugins = pluginManager.listAllPlugins();
         Map<String, Boolean> availabilityMap = new HashMap<>(plugins.size());
@@ -81,6 +98,7 @@ public class PluginAvailabilityRequestHandler
         return response;
     }
     
+    /** 查询单个插件是否可用并写入响应。 */
     private PluginAvailabilityResponse handleSinglePluginRequest(String pluginId) {
         boolean available = pluginManager.isPluginAvailable(pluginId);
         

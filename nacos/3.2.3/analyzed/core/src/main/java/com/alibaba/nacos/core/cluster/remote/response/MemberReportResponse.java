@@ -22,25 +22,35 @@ import com.alibaba.nacos.api.remote.response.Response;
 import com.alibaba.nacos.core.cluster.Member;
 
 /**
+ * 集群成员上报 RPC 响应：回传对端节点的 {@link Member} 快照。
  * MemberReportResponse.
  *
  * @author : huangtianhui
  */
 public class MemberReportResponse extends Response {
     
+    /** 响应中携带的成员节点信息。 */
     private Member node;
     
+    /** 无参构造，供序列化反序列化使用。 */
     public MemberReportResponse() {
     }
     
+    /**
+     * 构造带成员信息的响应。
+     *
+     * @param node 成员节点
+     */
     public MemberReportResponse(Member node) {
         this.node = node;
     }
     
+    /** 获取响应中的成员节点。 */
     public Member getNode() {
         return node;
     }
     
+    /** 设置响应中的成员节点。 */
     public void setNode(Member node) {
         this.node = node;
     }

@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * 控制台路径提示 Filter 配置：在合并部署模式下注册 {@link NacosConsolePathTipFilter}，引导用户访问正确的 Console 路径。
  * nacos console path filter config.
  * @author cxhello
  * @date 2025/7/24
@@ -32,6 +33,11 @@ import org.springframework.context.annotation.Configuration;
 @NacosWebBean
 public class ConsolePathTipConfig {
     
+    /**
+     * 注册控制台路径提示 Servlet Filter，默认合并部署生效，顺序为 7。
+     *
+     * @return Filter 注册 Bean
+     */
     @Bean
     @ConditionalOnProperty(name = Constants.NACOS_DEPLOYMENT_TYPE,
         havingValue = Constants.NACOS_DEPLOYMENT_TYPE_MERGED, matchIfMissing = true)

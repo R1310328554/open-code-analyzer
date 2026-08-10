@@ -23,29 +23,39 @@ import com.alibaba.nacos.common.notify.listener.Subscriber;
 import com.alibaba.nacos.core.utils.Loggers;
 
 /**
+ * 动态配置抽象基类：订阅 {@link ServerConfigChangeEvent}，在服务端配置变更时从环境重新加载并记录日志。
  * Nacos abstract dynamic config.
  *
  * @author xiweng.yy
  */
 public abstract class AbstractDynamicConfig extends Subscriber<ServerConfigChangeEvent> {
     
+    /** 配置项名称，用于日志标识。 */
     private final String configName;
     
+    /**
+     * 注册为 NotifyCenter 订阅者并保存配置名。
+     *
+     * @param configName 配置模块名称
+     */
     protected AbstractDynamicConfig(String configName) {
         this.configName = configName;
         NotifyCenter.registerSubscriber(this);
     }
     
+    /** 收到服务端配置变更事件后触发 {@link #resetConfig()}。 */
     @Override
     public void onEvent(ServerConfigChangeEvent event) {
         resetConfig();
     }
     
+    /** 订阅 {@link ServerConfigChangeEvent} 类型。 */
     @Override
     public Class<? extends Event> subscribeType() {
         return ServerConfigChangeEvent.class;
     }
     
+    /** 从环境重新加载配置；失败时保留旧值并打 WARN 日志。 */
     protected void resetConfig() {
         try {
             getConfigFromEnv();
@@ -57,12 +67,12 @@ public abstract class AbstractDynamicConfig extends Subscriber<ServerConfigChang
     }
     
     /**
-     * Execute get config from env actually.
+     * 子类实现：从环境变量或配置文件实际读取并更新内存中的配置字段。
      */
     protected abstract void getConfigFromEnv();
     
     /**
-     * Print config content.
+     * 子类实现：返回当前配置的可读摘要，供日志输出。
      *
      * @return config content
      */

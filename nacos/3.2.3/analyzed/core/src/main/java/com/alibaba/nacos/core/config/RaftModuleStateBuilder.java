@@ -23,14 +23,17 @@ import com.alibaba.nacos.sys.module.AbstractServerModuleStateBuilder;
 import com.alibaba.nacos.sys.module.ModuleState;
 
 /**
+ * Raft 一致性模块状态构建器：读取 JRaft 选举、快照、线程池、复制与 Disruptor 等运行时参数。
  * raft state builder.
  * @author 985492783@qq.com
  * @date 2023/4/6 11:26
  */
 public class RaftModuleStateBuilder extends AbstractServerModuleStateBuilder {
     
+    /** 环境变量键前缀：{@code nacos.core.protocol.raft.data.}。 */
     public static final String SPLICE_CHARACTER = RaftSysConstants.RAFT_CONFIG_PREFIX + ".";
     
+    /** 组装 Raft 模块全部可观测配置项到 {@link ModuleState}。 */
     @Override
     public ModuleState build() {
         ModuleState moduleState = new ModuleState(RaftSysConstants.RAFT_STATE);
@@ -111,18 +114,39 @@ public class RaftModuleStateBuilder extends AbstractServerModuleStateBuilder {
         return moduleState;
     }
     
+    /**
+     * 读取整型 Raft 配置，解析失败时使用默认值。
+     *
+     * @param key 配置键（不含前缀）
+     * @param defaultValue 默认值
+     * @return 整型配置值
+     */
     public static int stringToInt(String key, int defaultValue) {
         return ConvertUtils.toInt(getProperty(key), defaultValue);
     }
     
+    /**
+     * 读取布尔型 Raft 配置。
+     *
+     * @param key 配置键
+     * @param defaultValue 默认值
+     * @return 布尔配置值
+     */
     public static boolean stringToBoolean(String key, boolean defaultValue) {
         return ConvertUtils.toBoolean(getProperty(key), defaultValue);
     }
     
+    /**
+     * 按 Raft 前缀拼接后从 {@link EnvUtil} 读取字符串配置。
+     *
+     * @param key 相对配置键
+     * @return 配置值或 null
+     */
     public static String getProperty(String key) {
         return EnvUtil.getProperty(SPLICE_CHARACTER + key);
     }
     
+    /** 单机模式下不暴露 Raft 模块状态。 */
     @Override
     public boolean isIgnore() {
         return EnvUtil.getStandaloneMode();

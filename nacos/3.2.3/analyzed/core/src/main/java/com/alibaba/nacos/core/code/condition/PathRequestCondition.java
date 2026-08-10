@@ -19,6 +19,7 @@ package com.alibaba.nacos.core.code.condition;
 import static com.alibaba.nacos.sys.env.Constants.REQUEST_PATH_SEPARATOR;
 
 /**
+ * 请求路径匹配条件：将「HTTP 方法 + 路径」编码为单一字符串并解析为 {@link PathExpression}。
  * request path info. method:{@link org.springframework.web.bind.annotation.RequestMapping#method()} path: {@link
  * org.springframework.web.bind.annotation.RequestMapping#value()} or {@link org.springframework.web.bind.annotation.RequestMapping#value()}
  *
@@ -27,12 +28,19 @@ import static com.alibaba.nacos.sys.env.Constants.REQUEST_PATH_SEPARATOR;
  */
 public class PathRequestCondition {
     
+    /** 解析后的方法与路径表达式。 */
     private final PathExpression pathExpression;
     
+    /**
+     * 由 {@code METHOD/path} 格式字符串构造路径条件。
+     *
+     * @param pathExpression 方法与路径的组合键
+     */
     public PathRequestCondition(String pathExpression) {
         this.pathExpression = parseExpressions(pathExpression);
     }
     
+    /** 按 {@link Constants#REQUEST_PATH_SEPARATOR} 拆分方法与路径段。 */
     private PathExpression parseExpressions(String pathExpression) {
         String[] split = pathExpression.split(REQUEST_PATH_SEPARATOR);
         String method = split[0];
@@ -45,12 +53,16 @@ public class PathRequestCondition {
         return "PathRequestCondition{" + "pathExpression=" + pathExpression + '}';
     }
     
+    /** 不可变的路径表达式：HTTP 方法名与 URI 路径模板。 */
     static class PathExpression {
         
+        /** HTTP 方法名（如 GET、POST）。 */
         private final String method;
         
+        /** 映射 URI 路径（含类级与方法级前缀）。 */
         private final String path;
         
+        /** 构造方法与路径组合。 */
         PathExpression(String method, String path) {
             this.method = method;
             this.path = path;

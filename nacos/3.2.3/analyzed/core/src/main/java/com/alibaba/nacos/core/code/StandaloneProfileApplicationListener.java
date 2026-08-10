@@ -31,6 +31,7 @@ import static com.alibaba.nacos.sys.env.Constants.STANDALONE_MODE_PROPERTY_NAME;
 import static com.alibaba.nacos.sys.env.Constants.STANDALONE_SPRING_PROFILE;
 
 /**
+ * 单机模式 Profile 监听器：在环境准备阶段若检测到 standalone 配置，自动激活 {@link Constants#STANDALONE_SPRING_PROFILE}。
  * Standalone {@link Profile} {@link ApplicationListener} for {@link ApplicationEnvironmentPreparedEvent}.
  *
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
@@ -43,6 +44,11 @@ public class StandaloneProfileApplicationListener
     private static final Logger LOGGER =
         LoggerFactory.getLogger(StandaloneProfileApplicationListener.class);
     
+    /**
+     * 读取 standalone 开关并激活对应 Spring Profile，同时输出当前激活 Profile 日志。
+     *
+     * @param event 环境准备事件
+     */
     @Override
     public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
         
@@ -59,6 +65,7 @@ public class StandaloneProfileApplicationListener
         
     }
     
+    /** 最高优先级，尽早确定 Profile 以免后续 Bean 条件装配出错。 */
     @Override
     public int getOrder() {
         return HIGHEST_PRECEDENCE;
