@@ -35,6 +35,8 @@ import java.util.List;
 
 /**
  * {@link ByteToMessageDecoder} which allows to be notified once a full {@code ClientHello} was received.
+ *
+ * <p>累积 TLS 记录直至完整 ClientHello 可用，再调用 {@link #lookup} 异步解析 SNI 等扩展；子类在 {@link #onLookupComplete} 中完成后续 pipeline 配置。</p>
  */
 public abstract class SslClientHelloHandler<T> extends ByteToMessageDecoder implements ChannelOutboundHandler {
 
@@ -44,6 +46,7 @@ public abstract class SslClientHelloHandler<T> extends ByteToMessageDecoder impl
      */
     public static final int MAX_CLIENT_HELLO_LENGTH = 0xFFFFFF;
 
+    // 默认上限 64KB：足够容纳常见 ClientHello，又避免过大缓冲占用内存
     // Let's use a default limit of 64kb which should be big enough for almost everything in practice but still
     // small enough to not allocate to much memory.
     static final int DEFAULT_MAX_CLIENT_HELLO_LENGTH = 64 * 1024;
@@ -52,9 +55,12 @@ public abstract class SslClientHelloHandler<T> extends ByteToMessageDecoder impl
             InternalLoggerFactory.getInstance(SslClientHelloHandler.class);
 
     private final int maxClientHelloLength;
+    /** 检测到非 TLS 记录或致命错误后为 true，停止继续解析。 */
     private boolean handshakeFailed;
+    /** 异步 lookup 进行中时抑制 {@link #read}，避免重入。 */
     private boolean suppressRead;
     private boolean readPending;
+    /** 跨 TLS 记录分片时暂存握手载荷。 */
     private ByteBuf handshakeBuffer;
     private int aggregatedBytes;
     private int handshakeLength = -1;
@@ -86,6 +92,7 @@ public abstract class SslClientHelloHandler<T> extends ByteToMessageDecoder impl
                         case SslUtils.SSL_CONTENT_TYPE_ALERT:
                             final int len = SslUtils.getEncryptedPacketLength(in, readerIndex, true);
 
+                            // 非 TLS 记录：触发 SNI 失败事件并关闭连接
                             // Not an SSL/TLS packet
                             if (len == SslUtils.NOT_ENCRYPTED) {
                                 handshakeFailed = true;
@@ -100,6 +107,7 @@ public abstract class SslClientHelloHandler<T> extends ByteToMessageDecoder impl
                                 // Not enough data
                                 return;
                             }
+                            // 已加密或非 ClientHello 握手：无需 SNI，直接 select(null)
                             // No ClientHello
                             select(ctx, null);
                             return;
@@ -221,6 +229,7 @@ public abstract class SslClientHelloHandler<T> extends ByteToMessageDecoder impl
                 // Just rethrow as in this case we also closed the channel
                 throw e;
             } catch (Exception e) {
+                // 解析异常时降级：忽略 SNI，使用默认上下文
                 // unexpected encoding, ignore sni and use default
                 if (logger.isDebugEnabled()) {
                     logger.debug("Unexpected client hello packet: " + ByteBufUtil.hexDump(in), e);
@@ -280,6 +289,7 @@ public abstract class SslClientHelloHandler<T> extends ByteToMessageDecoder impl
                     }
                 });
 
+                // clientHello 所有权已交给 FutureListener，此处不再 release
                 // Ownership was transferred to the FutureListener.
                 clientHello = null;
             }

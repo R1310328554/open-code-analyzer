@@ -95,10 +95,13 @@ import javax.net.ssl.TrustManagerFactory;
  * p.addLast("ssl", {@link #newHandler(ByteBufAllocator, String, int) sslCtx.newHandler(channel.alloc(), host, port)});
  * ...
  * </pre>
+ *
+ * <p>安全套接字协议工厂：基于 JDK {@link SSLContext} 或 OpenSSL {@code SSL_CTX} 创建 {@link SSLEngine}/{@link SslHandler}；推荐通过 {@link SslContextBuilder} 构建。</p>
  */
 public abstract class SslContext {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(SslContext.class);
 
+    /** 系统属性：控制客户端默认端点校验算法（HTTPS/LDAP/NONE）。 */
     private static final String DEFAULT_ENDPOINT_VERIFICATION_ALGORITHM_PROPERTY =
             "io.netty.handler.ssl.defaultEndpointVerificationAlgorithm";
 
@@ -112,9 +115,11 @@ public abstract class SslContext {
      *     <li>{@code "NONE"} — don't enable endpoint verification by default; this is the Netty 4.1 behavior.</li>
      * </ul>
      */
+    /** Netty 4.2 默认端点校验算法（通常 HTTPS）；4.1 兼容可通过 NONE 关闭。 */
     protected static final String defaultEndpointVerificationAlgorithm;
     static final String ALIAS = "key";
 
+    /** 共享 X.509 证书工厂，用于 PEM 解析。 */
     static final CertificateFactory X509_CERT_FACTORY;
     static {
         try {
@@ -140,8 +145,10 @@ public abstract class SslContext {
         }
     }
 
+    /** 是否为 StartTLS 模式（首包明文）。 */
     private final boolean startTls;
     private final AttributeMap attributes = new DefaultAttributeMap();
+    /** 会话恢复控制器（0-RTT/票据等）。 */
     final ResumptionController resumptionController;
     private static final String OID_PKCS5_PBES2 = "1.2.840.113549.1.5.13";
     private static final String PBES2 = "PBES2";
@@ -150,6 +157,8 @@ public abstract class SslContext {
      * Returns the default server-side implementation provider currently in use.
      *
      * @return {@link SslProvider#OPENSSL} if OpenSSL is available. {@link SslProvider#JDK} otherwise.
+     *
+     * <p>OpenSSL 可用时优先 OPENSSL，否则回退 JDK。</p>
      */
     public static SslProvider defaultServerProvider() {
         return defaultProvider();
@@ -164,6 +173,7 @@ public abstract class SslContext {
         return defaultProvider();
     }
 
+    /** 根据 {@link OpenSsl#isAvailable()} 选择默认 SSL 后端。 */
     private static SslProvider defaultProvider() {
         if (OpenSsl.isAvailable()) {
             return SslProvider.OPENSSL;

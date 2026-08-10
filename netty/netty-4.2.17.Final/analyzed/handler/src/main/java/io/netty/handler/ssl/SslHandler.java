@@ -165,10 +165,13 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
  * based on monitoring and debugging of it.
  * For more details see
  * <a href="https://github.com/netty/netty/issues/832">#832</a> in our issue tracker.
+ *
+ * <p>为 {@link Channel} 提供 TLS/SSL 与 StartTLS：驱动 {@link SSLEngine} 完成握手、加解密与 {@code close_notify} 优雅关闭；通过 {@link SslHandshakeCompletionEvent} 感知握手结果。</p>
  */
 public class SslHandler extends ByteToMessageDecoder implements ChannelOutboundHandler {
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(SslHandler.class);
+    /** 连接已重置/关闭等可忽略的异常消息模式。 */
     private static final Pattern IGNORABLE_ERROR_MESSAGE = Pattern.compile(
             "^.*(?:connection.*(?:reset|closed|abort|broken)|broken.*pipe).*$", Pattern.CASE_INSENSITIVE);
     private static final int STATE_SENT_FIRST_MESSAGE = 1;
@@ -193,9 +196,12 @@ public class SslHandler extends ByteToMessageDecoder implements ChannelOutboundH
     /**
      * <a href="https://tools.ietf.org/html/rfc5246#section-6.2">2^14</a> which is the maximum sized plaintext chunk
      * allowed by the TLS RFC.
+     *
+     * <p>TLS 规范允许的单块明文最大长度（16KB）。</p>
      */
     private static final int MAX_PLAINTEXT_LENGTH = 16 * 1024;
 
+    /** 按引擎实现（OpenSSL/JDK/Conscrypt）分派 unwrap/wrap 与缓冲策略。 */
     private enum SslEngineType {
         TCNATIVE(true, COMPOSITE_CUMULATOR) {
             @Override
@@ -307,6 +313,7 @@ public class SslHandler extends ByteToMessageDecoder implements ChannelOutboundH
                     toByteBuffer(out, writerIndex, out.writableBytes()));
                 out.writerIndex(writerIndex + result.bytesProduced());
 
+                // Android 5.0 Conscrypt 未正确更新 bytesConsumed 的变通修复
                 // This is a workaround for a bug in Android 5.0. Android 5.0 does not correctly update the
                 // SSLEngineResult.bytesConsumed() in some cases and just return 0.
                 //
@@ -344,6 +351,7 @@ public class SslHandler extends ByteToMessageDecoder implements ChannelOutboundH
             @Override
             ByteBuf allocateWrapBuffer(SslHandler handler, ByteBufAllocator allocator,
                                        int pendingBytes, int numComponents) {
+                // JDK 路径：wrap 输出至少按单 TLS 记录大小分配，通常使用 heap 缓冲
                 // For JDK we don't have a good source for the max wrap overhead. We need at least one packet buffer
                 // size, but may be able to fit more in based on the total requested.
                 return allocator.heapBuffer(Math.max(pendingBytes, handler.engine.getSession().getPacketBufferSize()));
@@ -430,11 +438,14 @@ public class SslHandler extends ByteToMessageDecoder implements ChannelOutboundH
     private final boolean startTls;
     private final ResumptionController resumptionController;
 
+    /** 在 EventLoop 上执行 SSLEngine 委托任务（unwrap 路径）。 */
     private final SslTasksRunner sslTaskRunnerForUnwrap = new SslTasksRunner(true);
     private final SslTasksRunner sslTaskRunner = new SslTasksRunner(false);
 
     private SslHandlerCoalescingBufferQueue pendingUnencryptedWrites;
+    /** 握手完成时完成的 Promise（成功或失败）。 */
     private Promise<Channel> handshakePromise = new LazyChannelPromise();
+    /** close_notify 交换完成时的 Promise。 */
     private final LazyChannelPromise sslClosePromise = new LazyChannelPromise();
 
     private int packetLength;
@@ -616,6 +627,8 @@ public class SslHandler extends ByteToMessageDecoder implements ChannelOutboundH
 
     /**
      * Returns the {@link SSLEngine} which is used by this handler.
+     *
+     * <p>返回本 handler 持有的 {@link SSLEngine} 实例。</p>
      */
     public SSLEngine engine() {
         return engine;
@@ -640,6 +653,8 @@ public class SslHandler extends ByteToMessageDecoder implements ChannelOutboundH
      *
      * @return the {@link Future} for the initial TLS handshake if {@link #renegotiate()} was not invoked.
      *         The {@link Future} for the most recent {@linkplain #renegotiate() TLS renegotiation} otherwise.
+     *
+     * <p>监听 TLS 握手完成；也可通过 userEvent 接收 {@link SslHandshakeCompletionEvent}。</p>
      */
     public Future<Channel> handshakeFuture() {
         return handshakePromise;
@@ -783,6 +798,7 @@ public class SslHandler extends ByteToMessageDecoder implements ChannelOutboundH
         return new IllegalStateException("pendingUnencryptedWrites is null, handlerRemoved0 called?");
     }
 
+    /** 出站明文经 wrap 加密后写入 pipeline（StartTLS 首包可保持明文）。 */
     @Override
     public void write(final ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (!(msg instanceof ByteBuf)) {
@@ -1426,6 +1442,7 @@ public class SslHandler extends ByteToMessageDecoder implements ChannelOutboundH
         PlatformDependent.throwException(cause);
     }
 
+    /** 入站密文 unwrap 为明文并驱动握手/close_notify 状态机。 */
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws SSLException {
         if (isStateSet(STATE_PROCESS_TASK)) {

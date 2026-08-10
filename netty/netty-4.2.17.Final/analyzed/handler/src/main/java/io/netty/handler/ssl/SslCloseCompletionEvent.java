@@ -17,9 +17,12 @@ package io.netty.handler.ssl;
 
 /**
  * Event that is fired once the close_notify was received or if an failure happens before it was received.
+ *
+ * <p>TLS 关闭阶段完成事件：成功收到对端 {@code close_notify} 或关闭流程因错误终止。</p>
  */
 public final class SslCloseCompletionEvent extends SslCompletionEvent {
 
+    /** 已成功完成 close_notify 握手的单例事件。 */
     public static final SslCloseCompletionEvent SUCCESS = new SslCloseCompletionEvent();
 
     /**

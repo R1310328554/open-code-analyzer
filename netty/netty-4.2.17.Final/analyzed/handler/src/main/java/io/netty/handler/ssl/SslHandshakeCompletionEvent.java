@@ -19,9 +19,12 @@ package io.netty.handler.ssl;
 /**
  * Event that is fired once the SSL handshake is complete, which may be because it was successful or there
  * was an error.
+ *
+ * <p>TLS 握手结束事件；监听 {@link SslHandshakeCompletionEvent#SUCCESS} 或 {@link #cause()} 判断成败。</p>
  */
 public final class SslHandshakeCompletionEvent extends SslCompletionEvent {
 
+    /** 握手成功的单例事件（无 cause）。 */
     public static final SslHandshakeCompletionEvent SUCCESS = new SslHandshakeCompletionEvent();
 
     /**

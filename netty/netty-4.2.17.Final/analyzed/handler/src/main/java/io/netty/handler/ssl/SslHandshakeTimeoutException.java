@@ -19,6 +19,8 @@ import javax.net.ssl.SSLHandshakeException;
 
 /**
  * {@link SSLHandshakeException} that is used when a handshake failed due a configured timeout.
+ *
+ * <p>握手超过 {@link SslHandler#setHandshakeTimeoutMillis(long)} 配置时限时抛出。</p>
  */
 public final class SslHandshakeTimeoutException extends SSLHandshakeException {
 

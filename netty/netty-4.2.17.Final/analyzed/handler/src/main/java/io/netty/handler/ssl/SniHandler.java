@@ -33,12 +33,17 @@ import io.netty.util.internal.PlatformDependent;
  * support SNI, the server could have multiple host name bound on a single IP.
  * The client will send host name in the handshake data so server could decide
  * which certificate to choose for the host name.</p>
+ *
+ * <p>服务端 SNI 处理器：解析 ClientHello 中的主机名，异步映射到对应 {@link SslContext}，再替换为 {@link SslHandler} 完成 TLS 握手。</p>
  */
 public class SniHandler extends AbstractSniHandler<SslContext> {
+    /** 查找未完成时的占位选择（无上下文、无主机名）。 */
     private static final Selection EMPTY_SELECTION = new Selection(null, null);
 
+    /** 域名到 {@link SslContext} 的异步映射（可为 {@link DomainNameMapping} 适配）。 */
     protected final AsyncMapping<String, SslContext> mapping;
 
+    /** 当前已选定的 SNI 主机名与 {@link SslContext}。 */
     private volatile Selection selection = EMPTY_SELECTION;
 
     /**
@@ -124,6 +129,8 @@ public class SniHandler extends AbstractSniHandler<SslContext> {
 
     /**
      * @return the selected hostname
+     *
+     * <p>返回最近一次 SNI 解析选中的主机名。</p>
      */
     public String hostname() {
         return selection.hostname;
@@ -131,6 +138,8 @@ public class SniHandler extends AbstractSniHandler<SslContext> {
 
     /**
      * @return the selected {@link SslContext}
+     *
+     * <p>返回与 SNI 主机名关联的 {@link SslContext}。</p>
      */
     public SslContext sslContext() {
         return selection.context;
@@ -184,6 +193,7 @@ public class SniHandler extends AbstractSniHandler<SslContext> {
             ctx.pipeline().replace(this, SslHandler.class.getName(), sslHandler);
             sslHandler = null;
         } finally {
+            // replace 失败时 SslHandler 未入 pipeline，需手动 release SSLEngine（见 netty#5678）
             // Since the SslHandler was not inserted into the pipeline the ownership of the SSLEngine was not
             // transferred to the SslHandler.
             // See https://github.com/netty/netty/issues/5678
@@ -222,6 +232,7 @@ public class SniHandler extends AbstractSniHandler<SslContext> {
         }
     }
 
+    /** 保存 SNI 查找结果：SSL 上下文与主机名。 */
     private static final class Selection {
         final SslContext context;
         final String hostname;

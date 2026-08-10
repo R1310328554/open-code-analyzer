@@ -23,11 +23,15 @@ import java.util.regex.Pattern;
  * Converts OpenSSL signature Algorithm names to
  * <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#Signature">
  *     Java signature Algorithm names</a>.
+ *
+ * <p>将 OpenSSL/BoringSSL 签名算法命名转换为 Java {@link java.security.Signature} 标准名。</p>
  */
+/** OpenSSL 签名算法名到 Java 标准名的转换工具（包内使用）。 */
 final class SignatureAlgorithmConverter {
 
     private SignatureAlgorithmConverter() { }
 
+    // OpenSSL 当前使用多种命名格式（如 ecdsa-with-SHA384、hmacWithSHA384、dsa_with_SHA224），正则统一匹配
     // OpenSSL has 3 different formats it uses at the moment we will match against all of these.
     // For example:
     //              ecdsa-with-SHA384
@@ -50,6 +54,8 @@ final class SignatureAlgorithmConverter {
     /**
      * Converts an OpenSSL algorithm name to a Java algorithm name and return it,
      * or return {@code null} if the conversation failed because the format is not known.
+     *
+     * <p>匹配成功时返回 {@code ALGORITHMwithDIGEST} 形式；无法识别则返回 {@code null}。</p>
      */
     static String toJavaName(String opensslName) {
         if (opensslName == null) {

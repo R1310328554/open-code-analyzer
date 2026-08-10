@@ -20,6 +20,8 @@ import javax.net.ssl.SSLException;
 /**
  * {@link SSLException} which signals that the exception was caused by an {@link javax.net.ssl.SSLEngine} which was
  * closed already.
+ *
+ * <p>表示操作发生时 {@link javax.net.ssl.SSLEngine} 已关闭，无法继续 wrap/unwrap。</p>
  */
 public final class SslClosedEngineException extends SSLException {
 

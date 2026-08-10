@@ -51,6 +51,8 @@ import static io.netty.util.internal.ObjectUtil.deepCheckNotNull;
 
 /**
  * Builder for configuring a new SslContext for creation.
+ *
+ * <p>流式配置并构建 {@link SslContext}：证书、信任链、密码套件、ALPN、SNI、会话缓存等。</p>
  */
 public final class SslContextBuilder {
     @SuppressWarnings("rawtypes")
@@ -194,6 +196,7 @@ public final class SslContextBuilder {
         return new SslContextBuilder(true).keyManager(keyManager);
     }
 
+    /** {@code true} 表示构建服务端上下文。 */
     private final boolean forServer;
     private SslProvider provider;
     private Provider sslContextProvider;
@@ -216,6 +219,7 @@ public final class SslContextBuilder {
     private SecureRandom secureRandom;
     private String keyStoreType = KeyStore.getDefaultType();
     private String endpointIdentificationAlgorithm;
+    /** 扩展 {@link SslContextOption} 键值对。 */
     private final Map<SslContextOption<?>, Object> options = new HashMap<SslContextOption<?>, Object>();
     private final List<SNIServerName> serverNames;
 
@@ -224,11 +228,13 @@ public final class SslContextBuilder {
         if (!forServer) {
             endpointIdentificationAlgorithm = SslContext.defaultEndpointVerificationAlgorithm;
         }
-        serverNames = forServer ? null : new ArrayList<>(2); // Only for clients.
+        serverNames = forServer ? null : new ArrayList<>(2); // 仅客户端可配置 SNI 扩展
     }
 
     /**
      * Configure a {@link SslContextOption}.
+     *
+     * <p>设置实现相关的扩展选项；{@code value} 为 null 时移除。</p>
      */
     public <T> SslContextBuilder option(SslContextOption<T> option, T value) {
         if (value == null) {
@@ -241,6 +247,8 @@ public final class SslContextBuilder {
 
     /**
      * The {@link SslContext} implementation to use. {@code null} uses the default one.
+     *
+     * <p>指定 JDK 或 OpenSSL 等 {@link SslProvider}；null 使用运行时默认。</p>
      */
     public SslContextBuilder sslProvider(SslProvider provider) {
         this.provider = provider;
@@ -655,6 +663,8 @@ public final class SslContextBuilder {
 
     /**
      * Sets the client authentication mode.
+     *
+     * <p>服务端双向 TLS：是否要求/请求客户端证书。</p>
      */
     public SslContextBuilder clientAuth(ClientAuth clientAuth) {
         this.clientAuth = checkNotNull(clientAuth, "clientAuth");
@@ -682,6 +692,8 @@ public final class SslContextBuilder {
 
     /**
      * {@code true} if the first write request shouldn't be encrypted.
+     *
+     * <p>StartTLS：插入 handler 后首段写操作保持明文。</p>
      */
     public SslContextBuilder startTls(boolean startTls) {
         this.startTls = startTls;

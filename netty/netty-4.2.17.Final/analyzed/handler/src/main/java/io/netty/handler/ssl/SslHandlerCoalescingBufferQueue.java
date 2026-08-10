@@ -28,9 +28,12 @@ import static io.netty.buffer.ByteBufUtil.ensureWritableSuccess;
  * Each call to SSL_write will introduce about ~100 bytes of overhead. This coalescing queue attempts to increase
  * goodput by aggregating the plaintext in chunks of {@link #wrapDataSize}. If many small chunks are written
  * this can increase goodput, decrease the amount of calls to SSL_write, and decrease overall encryption operations.
+ *
+ * <p>{@link SslHandler} 出站明文合并队列：按 {@link #wrapDataSize} 聚合小写，减少 {@code SSL_write} 调用与加密开销。</p>
  */
 abstract class SslHandlerCoalescingBufferQueue extends AbstractCoalescingBufferQueue {
 
+    /** 首块缓冲是否分配为 direct（OpenSSL 路径通常为 true）。 */
     private final boolean wantsDirectBuffer;
 
     SslHandlerCoalescingBufferQueue(Channel channel, int initSize, boolean wantsDirectBuffer) {
@@ -38,6 +41,7 @@ abstract class SslHandlerCoalescingBufferQueue extends AbstractCoalescingBufferQ
         this.wantsDirectBuffer = wantsDirectBuffer;
     }
 
+    /** 单次 wrap 目标明文大小（由 {@link SslHandler#setWrapDataSize(int)} 决定）。 */
     protected abstract int wrapDataSize();
 
     @Override
@@ -72,6 +76,7 @@ abstract class SslHandlerCoalescingBufferQueue extends AbstractCoalescingBufferQ
 
     private static boolean attemptCopyToCumulation(ByteBuf cumulation, ByteBuf next, int wrapDataSize) {
         final int inReadableBytes = next.readableBytes();
+        // 空缓冲直接 release，无需合并
         // Nothing to copy so just release the buffer.
         if (inReadableBytes == 0) {
             next.release();

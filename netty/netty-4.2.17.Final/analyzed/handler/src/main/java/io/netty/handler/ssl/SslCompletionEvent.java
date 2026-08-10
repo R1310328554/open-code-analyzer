@@ -17,8 +17,13 @@ package io.netty.handler.ssl;
 
 import io.netty.util.internal.ObjectUtil;
 
+/**
+ * SSL 相关异步操作的完成事件基类（握手、SNI、关闭等）。
+ * {@link #cause()} 为 {@code null} 表示成功。
+ */
 public abstract class SslCompletionEvent {
 
+    /** 失败原因；成功时为 {@code null}。 */
     private final Throwable cause;
 
     SslCompletionEvent() {
@@ -31,6 +36,8 @@ public abstract class SslCompletionEvent {
 
     /**
      * Return {@code true} if the completion was successful
+     *
+     * <p>无异常即视为操作成功完成。</p>
      */
     public final boolean isSuccess() {
         return cause == null;

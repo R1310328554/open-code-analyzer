@@ -34,6 +34,8 @@ import java.lang.reflect.Field;
  * & session identifier for a TLS session.
  * This can be very useful, for instance the {@link WiresharkSslMasterKeyHandler} implementation will
  * log the secret & identifier in a format that is consumable by Wireshark -- allowing easy decryption of pcap/tcpdumps.
+ *
+ * <p>握手成功后导出 TLS 主密钥与会话 ID，供 Wireshark 等工具离线解密抓包（需显式启用系统属性）。</p>
  */
 public abstract class SslMasterKeyHandler extends ChannelInboundHandlerAdapter {
 
@@ -41,6 +43,8 @@ public abstract class SslMasterKeyHandler extends ChannelInboundHandlerAdapter {
 
     /**
      * The JRE SSLSessionImpl cannot be imported
+     *
+     * <p>JDK 内部 {@code sun.security.ssl.SSLSessionImpl} 类（不可直接 import）。</p>
      */
     private static final Class<?> SSL_SESSIONIMPL_CLASS;
 
@@ -123,12 +127,14 @@ public abstract class SslMasterKeyHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public final void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+        // 仅在握手成功且 handler 启用时导出主密钥
         //only try to log the session info if the ssl handshake has successfully completed.
         if (evt == SslHandshakeCompletionEvent.SUCCESS && masterKeyHandlerEnabled()) {
             final SslHandler handler = ctx.pipeline().get(SslHandler.class);
             final SSLEngine engine = handler.engine();
             final SSLSession sslSession = engine.getSession();
 
+            // OpenJDK 未公开 master secret API，对 Sun SSLSessionImpl 使用反射读取
             //the OpenJDK does not expose a way to get the master secret, so try to use reflection to get it.
             if (isSunSslEngineAvailable() && sslSession.getClass().equals(SSL_SESSIONIMPL_CLASS)) {
                 final SecretKey secretKey;

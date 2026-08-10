@@ -26,10 +26,13 @@ import io.netty.util.internal.ObjectUtil;
  * of {@link SslContext} and may depend on the nature of the SSL implementation it belongs
  * to.
  *
+ * <p>类型安全的 {@link SslContext} 扩展配置项；具体可用选项取决于 JDK/OpenSSL 实现。</p>
+ *
  * @param <T>   the type of the value which is valid for the {@link SslContextOption}
  */
 public class SslContextOption<T> extends AbstractConstant<SslContextOption<T>> {
 
+    /** 全局选项常量池，按名称去重注册。 */
     private static final ConstantPool<SslContextOption<Object>> pool = new ConstantPool<SslContextOption<Object>>() {
         @Override
         protected SslContextOption<Object> newConstant(int id, String name) {
@@ -79,6 +82,8 @@ public class SslContextOption<T> extends AbstractConstant<SslContextOption<T>> {
     /**
      * Validate the value which is set for the {@link SslContextOption}. Sub-classes
      * may override this for special checks.
+     *
+     * <p>设置前校验选项值；子类可覆盖以添加范围或类型约束。</p>
      */
     public void validate(T value) {
         ObjectUtil.checkNotNull(value, "value");

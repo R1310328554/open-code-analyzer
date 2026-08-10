@@ -18,8 +18,11 @@ package io.netty.handler.ssl;
 /**
  * Event that is fired once we did a selection of a {@link SslContext} based on the {@code SNI hostname},
  * which may be because it was successful or there was an error.
+ *
+ * <p>基于 SNI 主机名选定 {@link SslContext} 后触发；{@link #isSuccess()} 为 true 表示映射成功。</p>
  */
 public final class SniCompletionEvent extends SslCompletionEvent {
+    /** 客户端 SNI 扩展中的主机名；解析失败或未提供时为 {@code null}。 */
     private final String hostname;
 
     public SniCompletionEvent(String hostname) {
@@ -37,6 +40,8 @@ public final class SniCompletionEvent extends SslCompletionEvent {
 
     /**
      * Returns the SNI hostname send by the client if we were able to parse it, {@code null} otherwise.
+     *
+     * <p>返回客户端发送的 SNI 主机名；无法解析时返回 {@code null}。</p>
      */
     public String hostname() {
         return hostname;
