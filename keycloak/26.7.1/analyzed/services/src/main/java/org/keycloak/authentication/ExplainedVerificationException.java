@@ -19,32 +19,39 @@ package org.keycloak.authentication;
 import org.keycloak.common.VerificationException;
 
 /**
+ * 携带事件错误码的 {@link org.keycloak.common.VerificationException} 子类，便于记录审计事件。
  *
  * @author hmlnarik
  */
 public class ExplainedVerificationException extends VerificationException {
+    /** 写入事件系统的错误标识。 */
     private final String errorEvent;
 
+    /** @param errorEvent 事件错误码 */
     public ExplainedVerificationException(String errorEvent) {
         super();
         this.errorEvent = errorEvent;
     }
 
+    /** @param errorEvent 事件错误码 @param message 异常消息 */
     public ExplainedVerificationException(String errorEvent, String message) {
         super(message);
         this.errorEvent = errorEvent;
     }
 
+    /** @param errorEvent 事件错误码 @param message 异常消息 @param cause 原因 */
     public ExplainedVerificationException(String errorEvent, String message, Throwable cause) {
         super(message);
         this.errorEvent = errorEvent;
     }
 
+    /** @param errorEvent 事件错误码 @param cause 原因 */
     public ExplainedVerificationException(String errorEvent, Throwable cause) {
         super(cause);
         this.errorEvent = errorEvent;
     }
 
+    /** @return 事件错误码 */
     public String getErrorEvent() {
         return errorEvent;
     }

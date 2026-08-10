@@ -57,31 +57,40 @@ import static org.keycloak.services.managers.AuthenticationManager.FORCED_REAUTH
 import static org.keycloak.services.managers.AuthenticationManager.PASSWORD_VALIDATED;
 import static org.keycloak.services.managers.AuthenticationManager.SSO_AUTH;
 
+/**
+ * 认证流程通用工具类，提供 SSO 状态检测、回调工厂 ID 管理、执行项查询及会话注销等辅助方法。
+ */
 public class AuthenticatorUtil {
 
     private static final Logger logger = Logger.getLogger(AuthenticatorUtil.class);
 
+    /** 认证会话 note 键，用于存储已注册回调工厂 ID 列表。 */
     // It is used for identification of note included in authentication session for storing callback provider factories
     public static String CALLBACKS_FACTORY_IDS_NOTE = "callbacksFactoryProviderIds";
 
 
+    /** 判断当前认证是否通过 SSO 完成。 */
     public static boolean isSSOAuthentication(AuthenticationSessionModel authSession) {
         return "true".equals(authSession.getAuthNote(SSO_AUTH));
     }
 
+    /** 判断是否要求强制重新认证。 */
     public static boolean isForcedReauthentication(AuthenticationSessionModel authSession) {
         return "true".equals(authSession.getAuthNote(FORCED_REAUTHENTICATION));
     }
 
+    /** 判断密码是否已在当前认证会话中验证通过。 */
     public static boolean isPasswordValidated(AuthenticationSessionModel authSession) {
         return "true".equals(authSession.getAuthNote(PASSWORD_VALIDATED));
     }
 
+    /** 判断当前认证是否从其他流程分叉而来。 */
     public static boolean isForkedFlow(AuthenticationSessionModel authSession) {
         return authSession.getAuthNote(AuthenticationProcessor.FORKED_FROM) != null;
     }
 
     /**
+     * 将 {@link AuthenticationFlowCallbackFactory} 回调工厂 ID 写入认证会话 note。
      * Set authentication session note for callbacks defined for {@link AuthenticationFlowCallbackFactory) factories
      *
      * @param authSession   authentication session
@@ -106,6 +115,7 @@ public class AuthenticatorUtil {
     }
 
     /**
+     * 从认证会话 note 中读取已注册的回调工厂 ID 集合。
      * Get set of Authentication factories IDs defined in authentication session as CALLBACKS_FACTORY_IDS_NOTE
      *
      * @param authSession authentication session
@@ -133,6 +143,7 @@ public class AuthenticatorUtil {
      * @param realm
      * @param flowId
      * @param providerId
+     * 递归获取指定流程下所有匹配 provider_id 的执行项。
      * @return all executions of given "provider_id" type. This is deep (recursive) obtain of executions of the particular flow
      */
     public static List<AuthenticationExecutionModel> getExecutionsByType(RealmModel realm, String flowId, String providerId) {
@@ -148,6 +159,7 @@ public class AuthenticatorUtil {
     }
 
     /**
+     * 从执行项向上查找顶层父认证流程。
      * Useful if we need to find top-level flow from executionModel
      *
      * @param realm
@@ -171,6 +183,7 @@ public class AuthenticatorUtil {
 
 
     /**
+     * 注销除当前认证会话外的所有用户会话（必需操作上下文）。
      * Logouts all sessions that are different to the current authentication session
      * managed in the action context.
      *
@@ -184,6 +197,7 @@ public class AuthenticatorUtil {
     }
 
     /**
+     * 注销除当前认证会话外的所有用户会话（操作令牌上下文）。
      * Logouts all sessions that are different to the current authentication session
      * managed in the action token context.
      *
@@ -229,7 +243,8 @@ public class AuthenticatorUtil {
 
     /**
      * @param session
-     * @return all credential providers available
+     * @return 当前会话可用的全部凭证提供者流
+
      */
     public static Stream<CredentialProvider> getCredentialProviders(KeycloakSession session) {
         return session.getKeycloakSessionFactory().getProviderFactoriesStream(CredentialProvider.class)
@@ -238,7 +253,7 @@ public class AuthenticatorUtil {
     }
 
     /**
-     * Get the list of credentials used in the authentication.
+     * 获取当前认证会话中已使用的凭证 ID 列表。
      * @param authSession The authentication session
      * @return The immutable list of credentials (empty returned if none)
      */
@@ -255,7 +270,7 @@ public class AuthenticatorUtil {
     }
 
     /**
-     * Adds the credentials to the credentials used in the authentication session.
+     * 向认证会话的已用凭证列表追加一条凭证 ID。
      * @param authSession The authentication session
      * @param credential The credential to add
      */

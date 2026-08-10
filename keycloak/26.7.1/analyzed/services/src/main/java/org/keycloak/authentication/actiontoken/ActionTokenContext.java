@@ -38,17 +38,20 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.sessions.RootAuthenticationSessionModel;
 
 /**
+ * 操作令牌处理上下文，封装会话、请求、事件及认证流程委托。
  *
  * @author hmlnarik
  */
 public class ActionTokenContext<T extends JsonWebToken> {
 
     @FunctionalInterface
+    /** 认证流程处理函数式接口。 */
     public interface ProcessAuthenticateFlow {
         Response processFlow(boolean action, String execution, AuthenticationSessionModel authSession, String flowPath, AuthenticationFlowModel flow, String errorMessage, AuthenticationProcessor processor);
     };
 
     @FunctionalInterface
+    /** 身份代理（Broker）登录流程处理函数式接口。 */
     public interface ProcessBrokerFlow {
         Response brokerLoginFlow(String authSessionId, String code, String execution, String clientId, String tabId, String clientData, String flowPath);
     };
@@ -67,6 +70,7 @@ public class ActionTokenContext<T extends JsonWebToken> {
     private final ProcessAuthenticateFlow processAuthenticateFlow;
     private final ProcessBrokerFlow processBrokerFlow;
 
+    /** 构造操作令牌上下文。 */
     public ActionTokenContext(KeycloakSession session, RealmModel realm, UriInfo uriInfo,
       ClientConnection clientConnection, HttpRequest request,
       EventBuilder event, ActionTokenHandler<T> handler, String executionId, String clientData,
@@ -112,11 +116,12 @@ public class ActionTokenContext<T extends JsonWebToken> {
         return request;
     }
 
+    /** 为指定客户端创建指向账户服务的认证会话。 */
     public AuthenticationSessionModel createAuthenticationSessionForClient(String clientId)
       throws UriBuilderException, IllegalArgumentException {
         AuthenticationSessionModel authSession;
 
-        // set up the account service as the endpoint to call.
+        // 将账户服务配置为 OIDC 重定向端点
         ClientModel client = clientId != null ? realm.getClientByClientId(clientId) : SystemClientUtil.getSystemClient(realm);
         
         RootAuthenticationSessionModel rootAuthSession = new AuthenticationSessionManager(session).createAuthenticationSession(realm, true);
@@ -133,6 +138,7 @@ public class ActionTokenContext<T extends JsonWebToken> {
         return authSession;
     }
 
+    /** @return 认证会话是否为本轮新创建 */
     public boolean isAuthenticationSessionFresh() {
         return authenticationSessionFresh;
     }
@@ -141,6 +147,7 @@ public class ActionTokenContext<T extends JsonWebToken> {
         return authenticationSession;
     }
 
+    /** 设置当前认证会话并同步事件中的客户端信息。 */
     public void setAuthenticationSession(AuthenticationSessionModel authenticationSession, boolean isFresh) {
         this.authenticationSession = authenticationSession;
         this.authenticationSessionFresh = isFresh;
@@ -162,10 +169,12 @@ public class ActionTokenContext<T extends JsonWebToken> {
         this.executionId = executionId;
     }
 
+    /** 委托执行浏览器认证流程。 */
     public Response processFlow(boolean action, String flowPath, AuthenticationFlowModel flow, String errorMessage, AuthenticationProcessor processor) {
         return processAuthenticateFlow.processFlow(action, getExecutionId(), getAuthenticationSession(), flowPath, flow, errorMessage, processor);
     }
 
+    /** 委托执行 Broker 登录流程。 */
     public Response brokerFlow(String authSessionId, String code, String flowPath) {
         ClientModel client = authenticationSession.getClient();
         return processBrokerFlow.brokerLoginFlow(authSessionId, code, getExecutionId(), client.getClientId(), authenticationSession.getTabId(), clientData, flowPath);

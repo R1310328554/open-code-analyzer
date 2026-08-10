@@ -20,6 +20,7 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.representations.JsonWebToken;
 
 /**
+ * 操作令牌处理器工厂 SPI，用于注册具体 {@link ActionTokenHandler} 实现。
  *
  * @author hmlnarik
  */

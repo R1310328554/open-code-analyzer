@@ -48,15 +48,22 @@ import org.keycloak.utils.StringUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * 默认浏览器认证流程实现，处理 REQUIRED/ALTERNATIVE/CONDITIONAL 执行项及子流程递归。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class DefaultAuthenticationFlow implements AuthenticationFlow {
     private static final Logger logger = Logger.getLogger(DefaultAuthenticationFlow.class);
+    /** 当前流程下的全部执行项。 */
     private final List<AuthenticationExecutionModel> executions;
+    /** 认证处理器。 */
     private final AuthenticationProcessor processor;
+    /** 认证流程模型。 */
     private final AuthenticationFlowModel flow;
+    /** 当前流程是否已成功完成。 */
     private boolean successful = false;
+    /** 备选执行项失败时收集的异常列表。 */
     private List<AuthenticationFlowException> afeList = new ArrayList<>();
 
     public DefaultAuthenticationFlow(AuthenticationProcessor processor, AuthenticationFlowModel flow) {
@@ -65,6 +72,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
         this.executions = processor.getRealm().getAuthenticationExecutionsStream(flow.getId()).collect(Collectors.toList());
     }
 
+    /** 判断执行项是否已处理完毕。 */
     protected boolean isProcessed(AuthenticationExecutionModel model) {
         return isProcessed(processor, model);
     }
@@ -78,11 +86,13 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
                 || status == AuthenticationSessionModel.ExecutionStatus.SETUP_REQUIRED;
     }
 
+    /** 通过工厂创建认证器实例。 */
     protected Authenticator createAuthenticator(AuthenticatorFactory factory) {
         return factory.create(processor.getSession());
     }
 
     @Override
+    /** 处理表单提交等用户 action，含切换组织、尝试其他方式等分支。 */
     public Response processAction(String actionExecution) {
         logger.debugv("processAction: {0}", actionExecution);
 
@@ -98,23 +108,23 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
             MultivaluedMap<String, String> inputData = processor.getRequest().getDecodedFormParameters();
             String authExecId = inputData.getFirst(Constants.AUTHENTICATION_EXECUTION);
 
-            // User clicked on "switch organization" link
+            // 用户点击「切换组织」链接
             if (inputData.containsKey("switchOrganization")) {
                 logger.trace("User clicked on link 'Switch Organization'");
                 AuthenticationSessionModel authSession = processor.getAuthenticationSession();
-                // preserve the username so the user doesn't have to re-enter it after flow reset
+                // 保留用户名以便流程重置后无需重新输入
                 String attemptedUsername = authSession.getAuthNote(AbstractUsernameFormAuthenticator.ATTEMPTED_USERNAME);
                 if (attemptedUsername != null) {
                     authSession.setClientNote(OIDCLoginProtocol.LOGIN_HINT_PARAM, attemptedUsername);
                 }
                 authSession.removeClientNote(OrganizationModel.ORGANIZATION_ATTRIBUTE);
-                // clear the cached organization from the session context so it is re-evaluated after flow reset
+                // 清除会话上下文中缓存的组织以便重新评估
                 processor.getSession().getContext().setOrganization(null);
                 processor.resetFlow();
                 return processor.authenticate();
             }
 
-            // User clicked on "try another way" link
+            // 用户点击「尝试其他方式」链接
             if (inputData.containsKey("tryAnotherWay")) {
                 logger.trace("User clicked on link 'Try Another Way'");
 
@@ -122,13 +132,13 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
                 return createSelectAuthenticatorsScreen(model);
             }
 
-            // check if the user has switched to a new authentication execution, and if so switch to it.
+            // 检查用户是否切换到新的认证执行项
             if (authExecId != null && !authExecId.isEmpty()) {
 
                 processor.getAuthenticationSession().removeAuthNote(AuthenticationProcessor.AUTHENTICATION_SELECTOR_SCREEN_DISPLAYED);
                 List<AuthenticationSelectionOption> selectionOptions = createAuthenticationSelectionList(model);
 
-                // Check if switch to the requested authentication execution is allowed
+                // 校验请求的认证执行项切换是否被允许
                 selectionOptions.stream()
                         .filter(authSelectionOption -> authExecId.equals(authSelectionOption.getAuthExecId()))
                         .findFirst()
@@ -146,7 +156,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
             }
         }
 
-        //handle case where execution is a flow - This can happen during user registration for example
+        // 执行项为子流程时（例如用户注册场景）
         if (model.isAuthenticatorFlow()) {
             logger.debug("execution is flow");
             AuthenticationFlow authenticationFlow = processor.createFlowExecution(model.getFlowId(), model);
@@ -160,7 +170,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
             }
         }
 
-        //handle normal execution case
+        // 普通认证器执行项
         AuthenticatorFactory factory = getAuthenticatorFactory(model);
         Authenticator authenticator = createAuthenticator(factory);
         AuthenticationProcessor.Result result = processor.createAuthenticatorContext(model, authenticator, executions);
@@ -180,6 +190,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
 
 
     /**
+     * action 执行完成后查找下一待处理流程并继续认证（递归向上处理父流程）。
      * Called after "actionExecutionModel" execution is finished (Either successful or attempted). Find the next appropriate authentication
      * flow where the authentication should continue and continue with authentication process.
      * The method recursively continues with the parent flow
@@ -210,6 +221,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
 
 
     /**
+     * 当子执行项成功后，递归标记父流程执行项为成功并返回首个未完成的祖先流程 ID。
      * This method makes sure that the parent flow's corresponding execution is considered successful if its contained
      * executions are successful.
      * The purpose is for when an execution is validated through an action, to make sure its parent flow can be successful
@@ -246,7 +258,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
     }
 
     /**
-     * Create screen where user can select from multiple authentication methods (Usually displayed when user clicks on 'try another way' link during authentication)
+     * 创建认证方式选择界面（用户点击「尝试其他方式」时展示）。
      *
      * @param executionModel Last execution (should be typically available in the methods)
      * @return response with the screen to be displayed to the user
@@ -260,6 +272,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
     }
 
     @Override
+    /** 按 REQUIRED/ALTERNATIVE 规则遍历并执行认证流程。 */
     public Response processFlow() {
         logger.debugf("processFlow: %s", flow.getAlias());
 
@@ -274,18 +287,18 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
             }
         }
 
-        //separate flow elements into required and alternative elements
+        // 将执行项分为 REQUIRED 与 ALTERNATIVE 两组
         List<AuthenticationExecutionModel> requiredList = new ArrayList<>();
         List<AuthenticationExecutionModel> alternativeList = new ArrayList<>();
 
         fillListsOfExecutions(executions.stream(), requiredList, alternativeList);
 
-        //handle required elements : all required elements need to be executed
+        // 处理 REQUIRED 执行项：全部需成功
         boolean requiredElementsSuccessful = true;
         Iterator<AuthenticationExecutionModel> requiredIListIterator = requiredList.listIterator();
         while (requiredIListIterator.hasNext()) {
             AuthenticationExecutionModel required = requiredIListIterator.next();
-            //Conditional flows must be considered disabled (non-existent) if their condition evaluates to false.
+            // 条件子流程条件为 false 时视为禁用
             //If the flow has been processed before it will not be removed to consider its execution status.
             if (required.isConditional() && !isProcessed(required) && isConditionalSubflowDisabled(required)) {
                 requiredIListIterator.remove();
@@ -296,21 +309,21 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
             if (response != null) {
                 return response;
             }
-            // Some required elements were not successful and did not return response.
+            // 部分 REQUIRED 执行项未成功且无响应时可提前终止
             // We can break as we know that the whole subflow would be considered unsuccessful as well
             if (!requiredElementsSuccessful) {
                 break;
             }
         }
 
-        //Evaluate alternative elements only if there are no required elements. This may also occur if there was only condition elements
+        // 无 REQUIRED 执行项时才评估 ALTERNATIVE
         if (requiredList.isEmpty()) {
-            //check if an alternative is already successful, in case we are returning in the flow after an action
+            // action 返回后检查是否已有 ALTERNATIVE 成功
             if (alternativeList.stream().anyMatch(alternative -> processor.isSuccessful(alternative) || isSetupRequired(alternative))) {
                 return onFlowExecutionsSuccessful();
             }
 
-            //handle alternative elements: the first alternative element to be satisfied is enough
+            // ALTERNATIVE：首个满足即可
             for (AuthenticationExecutionModel alternative : alternativeList) {
                 try {
                     Response response = processSingleFlowExecutionModel(alternative, true);
@@ -321,7 +334,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
                         return onFlowExecutionsSuccessful();
                     }
                 } catch (AuthenticationFlowException afe) {
-                    //consuming the error is not good here from an administrative point of view, but the user, since he has alternatives, should be able to go to another alternative and continue
+                    // 管理视角不理想，但用户可尝试其他 ALTERNATIVE 继续
                     afeList.add(afe);
                     setExecutionStatus(alternative, AuthenticationSessionModel.ExecutionStatus.ATTEMPTED);
                 }
@@ -336,7 +349,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
 
 
     /**
-     * Just iterates over executionsToProcess and fill "requiredList" and "alternativeList" according to it
+     * 遍历执行项并按类型填入 requiredList 与 alternativeList。
      */
     void fillListsOfExecutions(Stream<AuthenticationExecutionModel> executionsToProcess, List<AuthenticationExecutionModel> requiredList, List<AuthenticationExecutionModel> alternativeList) {
         executionsToProcess
@@ -361,7 +374,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
 
 
     /**
-     * Checks if the conditional subflow passed in parameter is disabled.
+     * 判断条件子流程是否因条件不满足而被禁用。
      * @param model
      * @return
      */
@@ -399,7 +412,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
         ConditionalAuthenticator authenticator = (ConditionalAuthenticator) createAuthenticator(factory);
         AuthenticationProcessor.Result context = processor.createAuthenticatorContext(model, authenticator, executionList);
 
-        // Always store result for future re-evaluation. It is a chance that some condition is evaluated multiple times during the flow,
+        // 存储条件评估结果供后续复用（流程中可能多次评估）
         // but this is expected as "conditions of condition" can be changed during the flow (EG. when acr level is reached or when user is added to the context)
         boolean matchCondition = authenticator.matchCondition(context);
         setExecutionStatus(model,
@@ -445,7 +458,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
         logger.debugv("authenticator: {0}", factory.getId());
         UserModel authUser = processor.getAuthenticationSession().getAuthenticatedUser();
 
-        //If executions are alternative, get the actual execution to show based on user preference
+        // ALTERNATIVE 执行项时按用户偏好选择实际展示的执行项
         List<AuthenticationSelectionOption> selectionOptions = createAuthenticationSelectionList(model);
         if (!selectionOptions.isEmpty() && calledFromFlow) {
             List<AuthenticationSelectionOption> finalSelectionOptions = selectionOptions.stream().filter(aso -> !aso.getAuthenticationExecution().isAuthenticatorFlow() && !isProcessed(aso.getAuthenticationExecution())).collect(Collectors.toList());
@@ -469,7 +482,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
             }
             if (!authenticator.configuredFor(processor.getSession(), processor.getRealm(), authUser)) {
                 if (factory.isUserSetupAllowed() && model.isRequired() && authenticator.areRequiredActionsEnabled(processor.getSession(), processor.getRealm())) {
-                    //This means that having even though the user didn't validate the
+                    // 用户尚未完成凭证配置但允许设置 REQUIRED ACTION
                     logger.debugv("authenticator SETUP_REQUIRED: {0}", factory.getId());
                     setExecutionStatus(model, AuthenticationSessionModel.ExecutionStatus.SETUP_REQUIRED);
                     authenticator.setRequiredActions(processor.getSession(), processor.getRealm(), processor.getAuthenticationSession().getAuthenticatedUser());
@@ -493,7 +506,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
         return processResult(context, false);
     }
 
-    // Used for debugging purpose only. Log alias of authenticator (for non-flow executions) or alias of authenticationFlow (for flow executions)
+    // 调试用：记录认证器或子流程别名
     private String logExecutionAlias(AuthenticationExecutionModel executionModel) {
         if (executionModel.isAuthenticatorFlow()) {
             // Resolve authenticationFlow model in case of debug logging. Otherwise don't lookup flowModel just because of logging and return only flowId
@@ -510,7 +523,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
     }
 
     /**
-     * This method creates the list of authenticators that is presented to the user. For a required execution, this is
+     * 构建向用户展示的认证方式选择列表（含凭证优先级排序）。
      * only the credentials associated to the authenticator, and for an alternative execution, this is all other alternative
      * executions in the flow, including the credentials.
      * <p>
@@ -524,6 +537,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
     }
 
 
+    /** 根据认证器返回状态更新执行项状态并决定下一步响应。 */
     public Response processResult(AuthenticationProcessor.Result result, boolean isAction) {
         AuthenticationExecutionModel execution = result.getExecution();
         FlowStatus status = result.getStatus();
@@ -568,17 +582,20 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
         }
     }
 
+    /** 记录当前执行项并返回挑战响应。 */
     public Response sendChallenge(AuthenticationProcessor.Result result, AuthenticationExecutionModel execution) {
         processor.getAuthenticationSession().setAuthNote(AuthenticationProcessor.CURRENT_AUTHENTICATION_EXECUTION, execution.getId());
         return result.getChallenge();
     }
 
     @Override
+    /** @return 当前流程是否成功 */
     public boolean isSuccessful() {
         return successful;
     }
 
     @Override
+    /** @return 备选执行项收集的异常列表 */
     public List<AuthenticationFlowException> getFlowExceptions(){
         return afeList;
     }
@@ -589,13 +606,13 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
         logger.tracef("Set execution status: Execution: %s, status: %s", logExecutionAlias(authExecutionModel), status);
 
         if (authExecutionModel.isAuthenticatorFlow() && status == CommonClientSessionModel.ExecutionStatus.SUCCESS) {
-            // Trigger callbacks after flow was successfully finished
+            // 子流程成功后触发回调检查
             processor.getRealm().getAuthenticationExecutionsStream(authExecutionModel.getFlowId()).forEach(this::checkAuthCallback);
         }
     }
 
     private void checkAuthCallback(AuthenticationExecutionModel execution) {
-        // We will trigger the callback just if particular authenticator, which corresponds to this callback, was finished with SUCCESS or condition was evaluated to true
+        // 仅当对应认证器 SUCCESS 或条件为 true 时触发回调
         CommonClientSessionModel.ExecutionStatus executionStatus = processor.getAuthenticationSession().getExecutionStatus().get(execution.getId());
         if (executionStatus == CommonClientSessionModel.ExecutionStatus.SUCCESS || executionStatus == CommonClientSessionModel.ExecutionStatus.EVALUATED_TRUE) {
             if (!execution.isAuthenticatorFlow()) {
@@ -610,7 +627,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
         }
     }
 
-    // This is triggered when current flow is successful due the fact that it's executions passed.
+    // 当前流程所有执行项通过后触发，可执行顶层成功回调
     // It is opportunity to do some last "generic" checks before considering whole authentication as successful
     private Response onFlowExecutionsSuccessful() {
         if (flow.isTopLevel()) {
@@ -623,7 +640,7 @@ public class DefaultAuthenticationFlow implements AuthenticationFlow {
     }
 
     /**
-     * Execute callbacks defined for each {@see AuthenticationFlowCallbackFactory} class in top authentication flow if success
+     * 顶层认证流程成功后执行各 {@link AuthenticationFlowCallbackFactory} 注册的成功回调。
      */
     private void executeTopFlowSuccessCallbacks() {
         final AuthenticationSessionModel authSession = processor.getAuthenticationSession();

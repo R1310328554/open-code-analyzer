@@ -36,29 +36,38 @@ import org.keycloak.services.ServicesLogger;
 import org.jboss.logging.Logger;
 
 /**
+ * 客户端认证流程实现，按 REQUIRED/ALTERNATIVE 执行项依次尝试客户端认证器。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientAuthenticationFlow implements AuthenticationFlow {
 
     private static final Logger logger = Logger.getLogger(ClientAuthenticationFlow.class);
 
+    /** 首个优先级最高的备选挑战响应。 */
     Response alternativeChallenge = null;
+    /** 认证处理器。 */
     AuthenticationProcessor processor;
+    /** 客户端认证流程模型。 */
     AuthenticationFlowModel flow;
 
+    /** 客户端认证是否已成功。 */
     private boolean success;
 
+    /** @param processor 认证处理器 @param flow 客户端认证流程模型 */
     public ClientAuthenticationFlow(AuthenticationProcessor processor, AuthenticationFlowModel flow) {
         this.processor = processor;
         this.flow = flow;
     }
 
     @Override
+    /** 客户端认证流程不支持 action 处理。 */
     public Response processAction(String actionExecution) {
         throw new IllegalStateException("Not supposed to be invoked");
     }
 
     @Override
+    /** 依次执行客户端认证器并匹配客户端配置的认证方式。 */
     public Response processFlow() {
         List<AuthenticationExecutionModel> executions = findExecutionsToRun();
 
@@ -77,8 +86,8 @@ public class ClientAuthenticationFlow implements AuthenticationFlow {
             if (client != null) {
                 String expectedClientAuthType = client.getClientAuthenticatorType();
 
-                // Fallback to secret just in case (for backwards compatibility).
-                // Also for public clients, ignore the "clientAuthenticatorType", which is set to them and stick to the
+                // 向后兼容：未配置时回退到默认 secret 认证方式
+                // 公开客户端忽略 clientAuthenticatorType，使用基于 client_id 的默认认证
                 // default, which set the client just based on "client_id" parameter
                 if (expectedClientAuthType == null || client.isPublicClient()) {
                     if (expectedClientAuthType == null) {
@@ -87,7 +96,7 @@ public class ClientAuthenticationFlow implements AuthenticationFlow {
                     expectedClientAuthType = KeycloakModelUtils.getDefaultClientAuthenticatorType();
                 }
 
-                // Check if client authentication matches
+                // 校验当前认证器是否与客户端期望的认证方式一致
                 if (factory.getId().equals(expectedClientAuthType)) {
                     Response response = processResult(context);
                     if (response != null) return response;
@@ -105,7 +114,7 @@ public class ClientAuthenticationFlow implements AuthenticationFlow {
             }
         }
 
-        // Check if any alternative challenge was identified
+        // 若存在备选挑战则返回该挑战
         if (alternativeChallenge != null) {
             processor.getEvent().error(Errors.INVALID_CLIENT);
             return alternativeChallenge;
@@ -114,6 +123,7 @@ public class ClientAuthenticationFlow implements AuthenticationFlow {
         throw new AuthenticationFlowException("Invalid client or Invalid client credentials", AuthenticationFlowError.CLIENT_NOT_FOUND);
     }
 
+    /** 确定待执行的认证执行项（优先 REQUIRED，否则 ALTERNATIVE）。 */
     protected List<AuthenticationExecutionModel> findExecutionsToRun() {
         List<AuthenticationExecutionModel> alternativeExecutions = new LinkedList<>();
         Optional<AuthenticationExecutionModel> requiredExecution = processor.getRealm().getAuthenticationExecutionsStream(flow.getId())
@@ -140,6 +150,7 @@ public class ClientAuthenticationFlow implements AuthenticationFlow {
         return executionsToRun;
     }
 
+    /** 根据认证器执行结果决定后续处理或抛出异常。 */
     protected Response processResult(AuthenticationProcessor.Result result) {
         AuthenticationExecutionModel execution = result.getExecution();
         FlowStatus status = result.getStatus();
@@ -160,7 +171,7 @@ public class ClientAuthenticationFlow implements AuthenticationFlow {
             return sendChallenge(result, execution);
         } else if (status == FlowStatus.CHALLENGE) {
 
-            // Make sure the first priority alternative challenge is used
+            // 仅保留首个优先级最高的备选挑战
             if (alternativeChallenge == null) {
                 alternativeChallenge = result.getChallenge();
             }
@@ -176,6 +187,7 @@ public class ClientAuthenticationFlow implements AuthenticationFlow {
         }
     }
 
+    /** 记录失败事件并返回挑战响应。 */
     public Response sendChallenge(AuthenticationProcessor.Result result, AuthenticationExecutionModel execution) {
         logger.debugv("client authenticator: sending challenge for authentication execution {0}", execution.getAuthenticator());
 
@@ -194,6 +206,7 @@ public class ClientAuthenticationFlow implements AuthenticationFlow {
     }
 
     @Override
+    /** @return 客户端认证是否成功 */
     public boolean isSuccessful() {
         return success;
     }

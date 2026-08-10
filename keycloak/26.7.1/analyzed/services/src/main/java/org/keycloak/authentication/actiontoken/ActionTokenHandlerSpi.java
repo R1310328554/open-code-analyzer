@@ -21,28 +21,34 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 操作令牌处理器 SPI 描述，Provider 类型为 {@link ActionTokenHandler}。
  *
  * @author hmlnarik
  */
 public class ActionTokenHandlerSpi implements Spi {
 
     @Override
+    /** @return 是否为 Keycloak 内部 SPI */
     public boolean isInternal() {
         return true;
     }
 
     @Override
+    /** @return SPI 名称 actionTokenHandler */
     public String getName() {
         return NAME;
     }
+    /** SPI 注册名。 */
     private static final String NAME = "actionTokenHandler";
 
     @Override
+    /** @return Provider 接口类 */
     public Class<? extends Provider> getProviderClass() {
         return ActionTokenHandler.class;
     }
 
     @Override
+    /** @return Provider 工厂接口类 */
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ActionTokenHandlerFactory.class;
     }

@@ -38,22 +38,36 @@ import org.keycloak.services.resources.LoginActionsService;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
+ * {@link RequiredActionContext} 的默认实现，封装必需操作执行期间的状态与表单辅助方法。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class RequiredActionContextResult implements RequiredActionContext {
+    /** 当前认证会话。 */
     protected AuthenticationSessionModel authenticationSession;
+    /** 领域模型。 */
     protected RealmModel realm;
+    /** 事件构建器。 */
     protected EventBuilder eventBuilder;
+    /** Keycloak 会话。 */
     protected KeycloakSession session;
+    /** 必需操作执行状态。 */
     protected Status status;
+    /** 失败时的错误消息。 */
     protected String errorMessage;
+    /** 挑战响应（如需展示表单）。 */
     protected Response challenge;
+    /** 当前 HTTP 请求。 */
     protected HttpRequest httpRequest;
+    /** 目标用户。 */
     protected UserModel user;
+    /** 必需操作工厂。 */
     protected RequiredActionFactory factory;
+    /** 必需操作配置。 */
     protected RequiredActionConfigModel config;
 
+    /** 构造必需操作上下文。 */
     public RequiredActionContextResult(AuthenticationSessionModel authSession,
                                        RealmModel realm, EventBuilder eventBuilder, KeycloakSession session,
                                        HttpRequest httpRequest,
@@ -73,6 +87,7 @@ public class RequiredActionContextResult implements RequiredActionContext {
         return config;
     }
 
+    /** @return 必需操作工厂 */
     public RequiredActionFactory getFactory() {
         return factory;
     }
@@ -128,6 +143,7 @@ public class RequiredActionContextResult implements RequiredActionContext {
     }
 
     @Override
+    /** 设置挑战响应并标记状态为 CHALLENGE。 */
     public void challenge(Response response) {
         status = Status.CHALLENGE;
         challenge = response;
@@ -135,23 +151,27 @@ public class RequiredActionContextResult implements RequiredActionContext {
     }
 
     @Override
+    /** 标记必需操作失败。 */
     public void failure(String errorMessage) {
         this.errorMessage = errorMessage;
         status = Status.FAILURE;
     }
 
     @Override
+    /** 标记必需操作成功完成。 */
     public void success() {
         status = Status.SUCCESS;
 
     }
 
     @Override
+    /** 标记用户取消必需操作。 */
     public void cancel() {
         status = Status.CANCELLED;
     }
 
     @Override
+    /** 标记忽略本次必需操作。 */
     public void ignore() {
         status = Status.IGNORE;
     }
@@ -162,6 +182,7 @@ public class RequiredActionContextResult implements RequiredActionContext {
     }
 
     @Override
+    /** 构建带会话码的必需操作 URL。 */
     public URI getActionUrl(String code) {
         ClientModel client = authenticationSession.getClient();
         return LoginActionsService.requiredActionProcessor(getUriInfo())
@@ -178,6 +199,7 @@ public class RequiredActionContextResult implements RequiredActionContext {
     }
 
     @Override
+    /** 生成或复用客户端会话码。 */
     public String generateCode() {
         ClientSessionCode<AuthenticationSessionModel> accessCode = new ClientSessionCode<>(session, getRealm(), getAuthenticationSession());
         authenticationSession.getParentSession().setTimestamp(Time.currentTime());
@@ -193,6 +215,7 @@ public class RequiredActionContextResult implements RequiredActionContext {
     }
 
     @Override
+    /** 获取预配置 action URI 的登录表单提供者。 */
     public LoginFormsProvider form() {
         String accessCode = generateCode();
         URI action = getActionUrl(accessCode);

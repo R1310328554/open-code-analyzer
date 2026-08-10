@@ -48,13 +48,19 @@ import org.keycloak.services.resources.LoginActionsService;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
-* @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
-* @version $Revision: 1 $
-*/
+ * 表单认证子流程，协调 FormAuthenticator 与多个 FormAction 的渲染与校验。
+ *
+ * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
+ * @version $Revision: 1 $
+ */
 public class FormAuthenticationFlow implements AuthenticationFlow {
+    /** 认证处理器。 */
     AuthenticationProcessor processor;
+    /** 表单执行项模型。 */
     AuthenticationExecutionModel formExecution;
+    /** 表单关联的 FormAction 执行项列表。 */
     private final List<AuthenticationExecutionModel> formActionExecutions;
+    /** 表单认证器实例。 */
     private final FormAuthenticator formAuthenticator;
 
 
@@ -68,6 +74,7 @@ public class FormAuthenticationFlow implements AuthenticationFlow {
         formAuthenticator = processor.getSession().getProvider(FormAuthenticator.class, execution.getAuthenticator());
     }
 
+    /** {@link FormContext} 实现，委托给 {@link AuthenticationProcessor}。 */
     private class FormContextImpl implements FormContext {
         AuthenticationExecutionModel executionModel;
         AuthenticatorConfigModel authenticatorConfig;
@@ -141,6 +148,7 @@ public class FormAuthenticationFlow implements AuthenticationFlow {
 
     }
 
+    /** FormAction 校验上下文实现。 */
     private class ValidationContextImpl extends FormContextImpl implements ValidationContext {
         FormAction action;
         String error;
@@ -176,6 +184,7 @@ public class FormAuthenticationFlow implements AuthenticationFlow {
     }
 
     @Override
+    /** 依次校验各 FormAction 并汇总错误或触发 success 回调。 */
     public Response processAction(String actionExecution) {
         if (!actionExecution.equals(formExecution.getId())) {
             throw new AuthenticationFlowException("action is not current execution", AuthenticationFlowError.INTERNAL_ERROR);
@@ -256,7 +265,7 @@ public class FormAuthenticationFlow implements AuthenticationFlow {
         for (ValidationContextImpl context : successes) {
             context.action.success(context);
         }
-        // set status and required actions only if form is fully successful
+        // 仅当表单全部校验通过时更新执行状态与必需操作
         for (Map.Entry<String, AuthenticationSessionModel.ExecutionStatus> entry : executionStatus.entrySet()) {
             processor.getAuthenticationSession().setExecutionStatus(entry.getKey(), entry.getValue());
         }
@@ -269,6 +278,7 @@ public class FormAuthenticationFlow implements AuthenticationFlow {
         return null;
     }
 
+    /** 构建表单提交 action URL。 */
     public URI getActionUrl(String executionId, String code) {
         ClientModel client = processor.getAuthenticationSession().getClient();
         UriBuilder builder = LoginActionsService.registrationFormProcessor(processor.getUriInfo())
@@ -290,15 +300,17 @@ public class FormAuthenticationFlow implements AuthenticationFlow {
 
 
     @Override
+    /** 渲染表单页面，必要时转发上游错误消息。 */
     public Response processFlow() {
 
-        // KEYCLOAK-16143: Propagate forwarded error messages if present
+        // KEYCLOAK-16143：转发上游错误消息到表单
         FormMessage forwardedErrorMessage = processor.getAndRemoveForwardedErrorMessage();
         List<FormMessage> errors = forwardedErrorMessage != null ? Collections.singletonList(forwardedErrorMessage) : null;
 
         return renderForm(null, errors);
     }
 
+    /** 组装登录表单并调用 FormAuthenticator 渲染。 */
     public Response renderForm(MultivaluedMap<String, String> formData, List<FormMessage> errors) {
         String executionId = formExecution.getId();
         processor.getAuthenticationSession().setAuthNote(AuthenticationProcessor.CURRENT_AUTHENTICATION_EXECUTION, executionId);
@@ -322,6 +334,7 @@ public class FormAuthenticationFlow implements AuthenticationFlow {
     }
 
     @Override
+    /** 表单流程本身不标记成功，由父流程判定。 */
     public boolean isSuccessful() {
         return false;
     }

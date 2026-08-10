@@ -21,14 +21,17 @@ import org.keycloak.exceptions.TokenVerificationException;
 import org.keycloak.representations.JsonWebToken;
 
 /**
+ * 携带事件错误码与用户消息的令牌校验异常，可用于 {@code ErrorPage.error()} 展示。
  * Token verification exception that bears an error to be logged via event system
  * and a message to show to the user e.g. via {@code ErrorPage.error()}.
  * 
  * @author hmlnarik
  */
 public class ExplainedTokenVerificationException extends TokenVerificationException {
+    /** 写入事件系统的错误标识。 */
     private final String errorEvent;
 
+    /** 从 {@link ExplainedVerificationException} 包装构造。 */
     public ExplainedTokenVerificationException(JsonWebToken token, ExplainedVerificationException cause) {
         super(token, cause.getMessage(), cause);
         this.errorEvent = cause.getErrorEvent();
@@ -54,6 +57,7 @@ public class ExplainedTokenVerificationException extends TokenVerificationExcept
         this.errorEvent = errorEvent;
     }
 
+    /** @return 事件错误码 */
     public String getErrorEvent() {
         return errorEvent;
     }

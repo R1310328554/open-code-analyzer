@@ -27,11 +27,13 @@ import org.keycloak.TokenVerifier.Predicate;
 import org.keycloak.representations.JsonWebToken;
 
 /**
+ * 操作令牌校验工具，提供 {@link TokenVerifier} 谓词组合与受众检查辅助方法。
  *
  * @author hmlnarik
  */
 public class TokenUtils {
     /**
+     * 构造 {@link TokenVerifier} 谓词，条件为 false 时抛出 {@link ExplainedTokenVerificationException}。
      * Returns a predicate for use in {@link TokenVerifier} using the given boolean-returning function.
      * When the function return {@code false}, this predicate throws a {@link ExplainedTokenVerificationException}
      * with {@code message} and {@code errorEvent} set from {@code errorMessage} and {@code errorEvent}, .
@@ -73,6 +75,7 @@ public class TokenUtils {
 
     
     /**
+     * 条件为 true 时才应用内层谓词，否则直接通过。
      * Returns a predicate that is applied only if the given {@code condition} evaluates to {@true}. In case
      * it evaluates to {@code false}, the predicate passes.
      * @param <T>
@@ -84,11 +87,13 @@ public class TokenUtils {
         return t -> (! condition.test(t)) || predicate.test(t);
     }
 
+    /** 将多个谓词包装为数组（便于 varargs 调用）。 */
     public static <T extends JsonWebToken> Predicate<? super T>[] predicates(Predicate<? super T>... predicate) {
         return predicate;
     }
 
     /**
+     * 检查令牌是否包含全部请求的 audience，返回缺失集合。
      * Check that all requested audiences from parameter "requestedAudience" are available in the accessToken. If some are missing, return the missing audiences.
      * Assumption is, that token does not contain any additional audiences, which is true for example during token-exchange
      *

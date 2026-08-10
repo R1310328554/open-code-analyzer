@@ -35,6 +35,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 默认操作令牌实现，用于密码重置邮件等链接场景，封装用户、操作 ID 与过期时间。
  * Part of action token that is intended to be used e.g. in link sent in password-reset email.
  * The token encapsulates user, expected action and its time of expiry.
  *
@@ -42,7 +43,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class DefaultActionToken extends DefaultActionTokenKey implements SingleUseObjectValueModel {
 
+    /** JSON 字段：复合认证会话 ID。 */
     public static final String JSON_FIELD_AUTHENTICATION_SESSION_ID = "asid";
+    /** JSON 字段：关联邮箱。 */
     public static final String JSON_FIELD_EMAIL = "eml";
 
     @JsonProperty(value = JSON_FIELD_AUTHENTICATION_SESSION_ID)
@@ -51,6 +54,7 @@ public class DefaultActionToken extends DefaultActionTokenKey implements SingleU
     @JsonProperty(value = JSON_FIELD_EMAIL)
     private String email;
 
+    /** 基础校验：操作验证 nonce 必须存在。 */
     public static final Predicate<DefaultActionTokenKey> ACTION_TOKEN_BASIC_CHECKS = t -> {
         if (t.getActionVerificationNonce() == null) {
             throw new VerificationException("Nonce not present.");
@@ -60,7 +64,7 @@ public class DefaultActionToken extends DefaultActionTokenKey implements SingleU
     };
 
     /**
-     * Single-use random value used for verification whether the relevant action is allowed.
+     * 默认无参构造，供 Jackson 反序列化使用。
      */
     public DefaultActionToken() {
         super(null, null, 0, null);
@@ -114,7 +118,7 @@ public class DefaultActionToken extends DefaultActionTokenKey implements SingleU
     }
 
     /**
-     * Sets value of the given note
+     * 设置扩展 note 并返回原值。
      * @return original value (or {@code null} when no value was present)
      */
     public final String setNote(String name, String value) {
@@ -125,7 +129,7 @@ public class DefaultActionToken extends DefaultActionTokenKey implements SingleU
     }
 
     /**
-     * Removes given note, and returns original value (or {@code null} when no value was present)
+     * 移除 note 并返回原值。
      * @return see description
      */
     public final String removeNote(String name) {
@@ -142,7 +146,7 @@ public class DefaultActionToken extends DefaultActionTokenKey implements SingleU
     }
 
     /**
-     * Updates the following fields and serializes this token into a signed JWT. The list of updated fields follows:
+     * 填充 id/issuedAt/issuer/audience 后将令牌序列化为签名 JWT。
      * <ul>
      * <li>{@code id}: random nonce</li>
      * <li>{@code issuedAt}: Current time</li>
@@ -155,6 +159,7 @@ public class DefaultActionToken extends DefaultActionTokenKey implements SingleU
      * @param uri
      * @return
      */
+    /** 序列化并签名令牌为 JWT 字符串。 */
     public String serialize(KeycloakSession session, RealmModel realm, UriInfo uri) {
         String issuerUri = getIssuer(realm, uri);
         String id = getId();
