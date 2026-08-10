@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T01:01:00Z",
   "files": [
-    "handler/src/main/java/io/netty/handler/ssl/util/OpenJdkSelfSignedCertGenerator.java",
-    "handler/src/main/java/io/netty/handler/ssl/util/SelfSignedCertificate.java",
-    "handler/src/main/java/io/netty/handler/ssl/util/SimpleKeyManagerFactory.java",
-    "handler/src/main/java/io/netty/handler/ssl/util/SimpleTrustManagerFactory.java",
-    "handler/src/main/java/io/netty/handler/ssl/util/ThreadLocalInsecureRandom.java",
-    "handler/src/main/java/io/netty/handler/ssl/util/TrustManagerFactoryWrapper.java",
-    "handler/src/main/java/io/netty/handler/ssl/util/X509KeyManagerWrapper.java",
-    "handler/src/main/java/io/netty/handler/stream/ChunkedFile.java",
-    "handler/src/main/java/io/netty/handler/stream/ChunkedInput.java",
-    "handler/src/main/java/io/netty/handler/stream/ChunkedNioFile.java",
-    "handler/src/main/java/io/netty/handler/stream/ChunkedNioStream.java",
-    "handler/src/main/java/io/netty/handler/stream/ChunkedStream.java",
-    "handler/src/main/java/io/netty/handler/stream/ChunkedWriteHandler.java",
-    "handler/src/main/java/io/netty/handler/timeout/IdleState.java",
-    "handler/src/main/java/io/netty/handler/timeout/IdleStateEvent.java",
     "handler/src/main/java/io/netty/handler/timeout/IdleStateHandler.java",
     "handler/src/main/java/io/netty/handler/timeout/ReadTimeoutException.java",
     "handler/src/main/java/io/netty/handler/timeout/ReadTimeoutHandler.java",
@@ -33,5 +18,5 @@
     "handler-proxy/src/main/java/io/netty/handler/proxy/ProxyConnectionEvent.java"
   ],
   "remaining_pending": 488,
-  "done": 1410
+  "done": 1425
 }
