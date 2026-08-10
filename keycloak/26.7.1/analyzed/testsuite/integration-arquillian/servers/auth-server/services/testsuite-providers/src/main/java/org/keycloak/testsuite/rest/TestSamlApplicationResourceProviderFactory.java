@@ -30,14 +30,20 @@ import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.services.resource.RealmResourceProviderFactory;
 
 /**
+ * SAML 测试应用 {@link RealmResourceProvider} 工厂，维护 SAML 适配器动作队列。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class TestSamlApplicationResourceProviderFactory implements RealmResourceProviderFactory {
 
+    /** 管理端登出动作队列。 */
     private final BlockingQueue<LogoutAction> adminLogoutActions = new LinkedBlockingDeque<>();
+    /** Push-not-before 动作队列。 */
     private final BlockingQueue<PushNotBeforeAction> pushNotBeforeActions = new LinkedBlockingDeque<>();
+    /** 可用性测试动作队列。 */
     private final BlockingQueue<TestAvailabilityAction> testAvailabilityActions = new LinkedBlockingDeque<>();
 
+    /** {@inheritDoc} 创建带共享 SAML 动作队列的 {@link TestSamlApplicationResourceProvider}。 */
     @Override
     public RealmResourceProvider create(KeycloakSession session) {
         return new TestSamlApplicationResourceProvider(session, adminLogoutActions, pushNotBeforeActions, testAvailabilityActions);
@@ -55,6 +61,7 @@ public class TestSamlApplicationResourceProviderFactory implements RealmResource
     public void close() {
     }
 
+    /** {@inheritDoc} 提供者 ID 为 {@code saml-app}。 */
     @Override
     public String getId() {
         return "saml-app";

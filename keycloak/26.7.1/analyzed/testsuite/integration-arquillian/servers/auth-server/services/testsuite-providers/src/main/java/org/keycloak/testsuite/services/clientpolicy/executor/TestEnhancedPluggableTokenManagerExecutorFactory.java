@@ -28,12 +28,16 @@ import org.keycloak.services.clientpolicy.executor.ClientPolicyExecutorProvider;
 import org.keycloak.services.clientpolicy.executor.ClientPolicyExecutorProviderFactory;
 
 /**
+ * {@link TestEnhancedPluggableTokenManagerExecutor} 的 SPI 工厂。
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class TestEnhancedPluggableTokenManagerExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "test-enhanced-token-mgr";
 
+    /** {@inheritDoc} 创建执行器实例。 */
     @Override
     public ClientPolicyExecutorProvider create(KeycloakSession session) {
         return new TestEnhancedPluggableTokenManagerExecutor(session);
@@ -51,16 +55,19 @@ public class TestEnhancedPluggableTokenManagerExecutorFactory implements ClientP
     public void close() {
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 无详细帮助文本。 */
     @Override
     public String getHelpText() {
         return "NA";
     }
 
+    /** {@inheritDoc} 无额外配置属性。 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return Collections.emptyList();

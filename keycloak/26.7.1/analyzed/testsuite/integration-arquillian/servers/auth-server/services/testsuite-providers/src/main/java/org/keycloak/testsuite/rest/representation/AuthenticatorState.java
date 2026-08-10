@@ -20,24 +20,32 @@ package org.keycloak.testsuite.rest.representation;
 import java.io.Serializable;
 
 /**
+ * 认证器状态表示，用于测试 REST 端点传递客户端与用户上下文。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class AuthenticatorState implements Serializable {
+    /** OAuth 客户端 ID。 */
     private String clientId;
+    /** 当前用户名。 */
     private String username;
 
+    /** 返回客户端 ID。 */
     public String getClientId() {
         return clientId;
     }
 
+    /** 设置客户端 ID。 */
     public void setClientId(String clientId) {
         this.clientId = clientId;
     }
 
+    /** 返回用户名。 */
     public String getUsername() {
         return username;
     }
 
+    /** 设置用户名。 */
     public void setUsername(String username) {
         this.username = username;
     }

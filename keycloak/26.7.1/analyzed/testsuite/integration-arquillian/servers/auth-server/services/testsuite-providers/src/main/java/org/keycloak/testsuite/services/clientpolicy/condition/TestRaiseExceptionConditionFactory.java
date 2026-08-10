@@ -29,12 +29,16 @@ import org.keycloak.services.clientpolicy.condition.ClientPolicyConditionProvide
 import org.keycloak.services.clientpolicy.condition.ClientPolicyConditionProviderFactory;
 
 /**
+ * {@link TestRaiseExceptionCondition} 的 SPI 工厂，用于集成测试注册故意抛异常的条件。
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class TestRaiseExceptionConditionFactory implements ClientPolicyConditionProviderFactory {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "test-raise-exception";
 
+    /** {@inheritDoc} 创建 {@link TestRaiseExceptionCondition} 实例。 */
     @Override
     public ClientPolicyConditionProvider create(KeycloakSession session) {
         return new TestRaiseExceptionCondition(session);
@@ -52,21 +56,25 @@ public class TestRaiseExceptionConditionFactory implements ClientPolicyCondition
     public void close() {
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 无帮助文本。 */
     @Override
     public String getHelpText() {
         return null;
     }
 
+    /** {@inheritDoc} 无额外配置属性。 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return Collections.emptyList();
     }
 
+    /** {@inheritDoc} 始终受支持。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return true;

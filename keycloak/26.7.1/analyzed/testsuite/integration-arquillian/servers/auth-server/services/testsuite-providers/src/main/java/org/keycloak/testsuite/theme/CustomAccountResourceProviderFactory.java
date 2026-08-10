@@ -13,24 +13,32 @@ import org.keycloak.services.resource.AccountResourceProviderFactory;
 
 import org.jboss.resteasy.reactive.NoCache;
 
+/**
+ * 自定义账户控制台 {@link AccountResourceProvider} 工厂，提供简单 HTML 测试页面。
+ */
 public class CustomAccountResourceProviderFactory implements AccountResourceProviderFactory, AccountResourceProvider {
+  /** 提供者 ID，用于主题扩展注册。 */
   public static final String ID = "ext-custom-account-console";
 
+  /** {@inheritDoc} 返回 {@link #ID}。 */
   @Override
   public String getId() {
     return ID;
   }
 
+  /** {@inheritDoc} 返回自身作为资源提供者。 */
   @Override
   public AccountResourceProvider create(KeycloakSession session) {
     return this;
   }
 
+  /** {@inheritDoc} JAX-RS 资源根对象。 */
   @Override
   public Object getResource() {
     return this;
   }
 
+  /** 返回自定义账户控制台 HTML 主页。 */
   @GET
   @NoCache
   @Produces(MediaType.TEXT_HTML)

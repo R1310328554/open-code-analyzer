@@ -81,22 +81,36 @@ import static java.util.Objects.requireNonNull;
 
 
 /**
+ * 集成测试 REST 资源提供者，暴露 Infinispan、事件队列、特性开关等测试端点。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class TestingResourceProvider implements RealmResourceProvider {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 已暂停的定时器任务上下文。 */
     private final Map<String, TimerProvider.TimerTaskContext> suspendedTimerTasks;
 
+    /** 当前 HTTP 请求。 */
     private final HttpRequest request;
 
+    /** 所属工厂，用于 truststore SPI 测试状态共享。 */
     private final TestingResourceProviderFactory factory;
 
+    /** {@inheritDoc} 返回自身作为 JAX-RS 资源。 */
     @Override
     public Object getResource() {
         return this;
     }
 
+    /**
+     * 构造测试资源提供者。
+     *
+     * @param session Keycloak 会话
+     * @param factory 所属工厂
+     * @param suspendedTimerTasks 暂停的定时器任务映射
+     */
     public TestingResourceProvider(KeycloakSession session, TestingResourceProviderFactory factory, Map<String, TimerProvider.TimerTaskContext> suspendedTimerTasks) {
         this.session = session;
         this.factory = factory;
@@ -104,6 +118,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         this.request = session.getContext().getHttpRequest();
     }
 
+    /** 启用 Infinispan 测试时间服务。 */
     @POST
     @Path("/set-testing-infinispan-time-service")
     @Produces(MediaType.APPLICATION_JSON)
@@ -112,6 +127,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         return Response.noContent().build();
     }
 
+    /** 恢复 Infinispan 默认时间服务。 */
     @POST
     @Path("/revert-testing-infinispan-time-service")
     @Produces(MediaType.APPLICATION_JSON)
@@ -120,6 +136,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         return Response.noContent().build();
     }
 
+    /** 从测试事件队列中轮询一条用户事件。 */
     @POST
     @Path("/poll-event-queue")
     @Produces(MediaType.APPLICATION_JSON)
@@ -132,6 +149,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         }
     }
 
+    /** 从测试管理事件队列中轮询一条管理事件。 */
     @POST
     @Path("/poll-admin-event-queue")
     @Produces(MediaType.APPLICATION_JSON)
@@ -144,6 +162,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         }
     }
 
+    /** 清空用户事件测试队列。 */
     @POST
     @Path("/clear-event-queue")
     @Produces(MediaType.APPLICATION_JSON)
@@ -152,6 +171,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         return Response.noContent().build();
     }
 
+    /** 清空管理事件测试队列。 */
     @POST
     @Path("/clear-admin-event-queue")
     @Produces(MediaType.APPLICATION_JSON)
@@ -164,6 +184,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
     public void close() {
     }
 
+    /** 返回测试两栖组件的详细信息映射。 */
     @GET
     @Path("/test-amphibian-component")
     @Produces(MediaType.APPLICATION_JSON)
@@ -178,6 +199,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
                         }));
     }
 
+    /** 设置 Kerberos 配置文件路径系统属性。 */
     @PUT
     @Path("/set-krb5-conf-file")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -185,6 +207,12 @@ public class TestingResourceProvider implements RealmResourceProvider {
         System.setProperty("java.security.krb5.conf", krb5ConfFile);
     }
 
+    /**
+     * 在服务器端执行序列化的 {@link RunOnServer} 或 {@link FetchOnServer} 任务。
+     *
+     * @param runOnServer Base64 编码的序列化任务
+     * @return 执行结果 JSON 或异常编码
+     */
     @POST
     @Path("/run-on-server")
     @Consumes(MediaType.TEXT_PLAIN_UTF_8)
@@ -208,6 +236,13 @@ public class TestingResourceProvider implements RealmResourceProvider {
     }
 
 
+    /**
+     * 在服务器端反射执行模型层单元测试方法。
+     *
+     * @param testClassName 测试类全限定名
+     * @param testMethodName 接受 {@link KeycloakSession} 的测试方法名
+     * @return {@code SUCCESS} 或序列化异常
+     */
     @POST
     @Path("/run-model-test-on-server")
     @Consumes(MediaType.TEXT_PLAIN_UTF_8)
@@ -231,14 +266,17 @@ public class TestingResourceProvider implements RealmResourceProvider {
         }
     }
 
+    /** 在 profile.properties 中设置特性开关状态。 */
     private void setFeatureInProfileFile(File file, Profile.Feature featureProfile, String newState) {
         doWithProperties(file, props -> props.setProperty(PropertiesProfileConfigResolver.getPropertyKey(featureProfile), newState));
     }
 
+    /** 从 profile.properties 中移除特性配置项。 */
     private void unsetFeatureInProfileFile(File file, Profile.Feature featureProfile) {
         doWithProperties(file, props -> props.remove(PropertiesProfileConfigResolver.getPropertyKey(featureProfile)));
     }
 
+    /** 读取、修改并写回 profile.properties 文件。 */
     private void doWithProperties(File file, Consumer<Properties> callback) {
 
         Properties properties = new Properties();
@@ -263,6 +301,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         }
     }
 
+    /** 返回当前已禁用的特性集合。 */
     @GET
     @Path("/list-disabled-features")
     @Produces(MediaType.APPLICATION_JSON)
@@ -270,6 +309,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         return Profile.getInstance().getDisabledFeatures();
     }
 
+    /** 启用指定特性并返回更新后的禁用特性集合。 */
     @POST
     @Path("/enable-feature/{feature}")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -278,6 +318,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         return updateFeature(feature, true);
     }
 
+    /** 禁用指定特性并返回更新后的禁用特性集合。 */
     @POST
     @Path("/disable-feature/{feature}")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -286,6 +327,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         return updateFeature(feature, false);
     }
 
+    /** 将特性重置为 profile 默认配置。 */
     @POST
     @Path("/reset-feature/{feature}")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -302,13 +344,14 @@ public class TestingResourceProvider implements RealmResourceProvider {
         FeatureDeployerUtil.initBeforeChangeFeature(feature);
 
         String jbossServerConfigDir = System.getProperty("jboss.server.config.dir");
-        // If we are in jboss-based container, we need to write profile.properties file, otherwise the change in system property will disappear after restart
+        // 在 JBoss 容器中需写入 profile.properties，否则重启后系统属性变更会丢失
         if (jbossServerConfigDir != null) {
             File file = new File(jbossServerConfigDir, "profile.properties");
             unsetFeatureInProfileFile(file, feature);
         }
     }
 
+    /** 更新特性开关状态，必要时持久化到 profile.properties 并重新部署 SPI。 */
     private Set<Profile.Feature> updateFeature(String featureKey, boolean shouldEnable) {
         Collection<Profile.Feature> features = null;
 
@@ -336,7 +379,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
                 FeatureDeployerUtil.initBeforeChangeFeature(feature);
 
                 String jbossServerConfigDir = System.getProperty("jboss.server.config.dir");
-                // If we are in jboss-based container, we need to write profile.properties file, otherwise the change in system property will disappear after restart
+                // 在 JBoss 容器中需写入 profile.properties，否则重启后系统属性变更会丢失
                 if (jbossServerConfigDir != null) {
                     setFeatureInProfileFile(new File(jbossServerConfigDir, "profile.properties"), feature, shouldEnable ? "enabled" : "disabled");
                 }
@@ -360,14 +403,13 @@ public class TestingResourceProvider implements RealmResourceProvider {
     }
 
     /**
-     * This will send POST request to specified URL with specified form parameters. It's not easily possible to "trick" web driver to send POST
-     * request with custom parameters, which are not directly available in the form.
+     * 生成自动提交 POST 表单的 HTML 页面，用于模拟 WebDriver 难以发送的自定义 POST 请求。
      * <p>
-     * See URLUtils.sendPOSTWithWebDriver for more details
+     * 详见 URLUtils.sendPOSTWithWebDriver
      *
-     * @param postRequestUrl        Absolute URL. It can include query parameters etc. The POST request will be send to this URL
-     * @param encodedFormParameters Encoded parameters in the form of "param1=value1&param2=value2"
-     * @return
+     * @param postRequestUrl 目标 POST 绝对 URL，可含查询参数
+     * @param encodedFormParameters URL 编码的表单参数，格式为 {@code param1=value1&param2=value2}
+     * @return 含自动提交表单的 HTML 响应
      */
     @GET
     @Path("/simulate-post-request")
@@ -376,14 +418,14 @@ public class TestingResourceProvider implements RealmResourceProvider {
                                         @QueryParam("encodedFormParameters") String encodedFormParameters) {
         Map<String, String> params = new HashMap<>();
 
-        // Parse parameters to use in the POST request
+        // 解析 POST 请求参数
         for (String param : encodedFormParameters.split("&")) {
             String[] paramParts = param.split("=");
             String value = paramParts.length == 2 ? paramParts[1] : "";
             params.put(paramParts[0], value);
         }
 
-        // Send the POST request "manually"
+        // 手动构造自动提交 POST 表单 HTML
         StringBuilder builder = new StringBuilder();
 
         builder.append("<HTML>");
@@ -416,6 +458,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
 
     }
 
+    /** 按名称查找 Realm，不存在时抛出 404。 */
     private RealmModel getRealmByName(String realmName) {
         RealmProvider realmProvider = session.getProvider(RealmProvider.class);
         RealmModel realm = realmProvider.getRealmByName(realmName);
@@ -425,6 +468,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         return realm;
     }
 
+    /** 禁用 truststore SPI 并保存原始提供者以便恢复。 */
     @GET
     @Path("/disable-truststore-spi")
     @NoCache
@@ -434,6 +478,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         factory.setProvider(null);
     }
 
+    /** 修改 truststore SPI 的主机名验证策略。 */
     @GET
     @Path("/modify-truststore-spi-hostname-policy")
     @NoCache
@@ -449,6 +494,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         fact.setProvider(newTrustProvider);
     }
 
+    /** 恢复先前禁用的 truststore SPI 提供者。 */
     @GET
     @Path("/reenable-truststore-spi")
     @NoCache
@@ -460,6 +506,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         factory.setProvider(this.factory.truststoreProvider);
     }
 
+    /** 返回带编程式 Cache-Control max-age 的无内容响应，用于测试 @NoCache 行为。 */
     @GET
     @Path("/no-cache-annotated-endpoint")
     @Produces(MediaType.APPLICATION_JSON)
@@ -473,6 +520,7 @@ public class TestingResourceProvider implements RealmResourceProvider {
         return Response.noContent().cacheControl(cacheControl).build();
     }
 
+    /** 返回空白 HTML 页面，供测试占位使用。 */
     @GET
     @Path("/blank")
     @Produces(MediaType.TEXT_HTML_UTF_8)

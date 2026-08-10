@@ -90,18 +90,34 @@ import static org.keycloak.common.crypto.CryptoConstants.EC_KEY_SECP384R1;
 import static org.keycloak.common.crypto.CryptoConstants.EC_KEY_SECP521R1;
 
 /**
+ * OIDC 集成测试端点资源，提供密钥生成、请求对象签名、CIBA 与 Intent 绑定等测试 API。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class TestingOIDCEndpointsApplicationResource {
 
+    /** PEM 格式私钥的响应键名。 */
     public static final String PRIVATE_KEY = "privateKey";
+    /** PEM 格式公钥的响应键名。 */
     public static final String PUBLIC_KEY = "publicKey";
 
+    /** 共享 OIDC 客户端测试数据。 */
     private final TestApplicationResourceProviderFactory.OIDCClientData clientData;
+    /** 认证通道请求映射，键为 binding message。 */
     private final ConcurrentMap<String, TestAuthenticationChannelRequest> authenticationChannelRequests;
+    /** CIBA 客户端通知请求映射。 */
     private final ConcurrentMap<String, ClientNotificationEndpointRequest> cibaClientNotifications;
+    /** Intent ID 到客户端 ID 的绑定映射。 */
     private final ConcurrentMap<String, String> intentClientBindings;
 
+    /**
+     * 构造 OIDC 测试端点资源。
+     *
+     * @param oidcClientData OIDC 客户端共享数据
+     * @param authenticationChannelRequests 认证通道请求存储
+     * @param cibaClientNotifications CIBA 通知存储
+     * @param intentClientBindings Intent 绑定存储
+     */
     public TestingOIDCEndpointsApplicationResource(TestApplicationResourceProviderFactory.OIDCClientData oidcClientData,
             ConcurrentMap<String, TestAuthenticationChannelRequest> authenticationChannelRequests, ConcurrentMap<String, ClientNotificationEndpointRequest> cibaClientNotifications,
             ConcurrentMap<String, String> intentClientBindings) {
@@ -111,6 +127,7 @@ public class TestingOIDCEndpointsApplicationResource {
         this.intentClientBindings = intentClientBindings;
     }
 
+    /** 按 JWA 算法生成签名或加密密钥对并加入客户端数据。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/generate-keys")
@@ -158,7 +175,7 @@ public class TestingOIDCEndpointsApplicationResource {
                 case JWEConstants.RSA1_5:
                 case JWEConstants.RSA_OAEP:
                 case JWEConstants.RSA_OAEP_256:
-                    // for JWE KEK Key Encryption
+                    // JWE KEK 密钥加密用途
                     keyType = KeyType.RSA;
                     keyUse = KeyUse.ENC;
                     keyPair = KeyUtils.generateRsaKeyPair(2048);
@@ -168,7 +185,7 @@ public class TestingOIDCEndpointsApplicationResource {
             }
 
             TestApplicationResourceProviderFactory.OIDCKeyData keyData = new TestApplicationResourceProviderFactory.OIDCKeyData();
-            keyData.setKid(kid); // Can be null. It will be generated in that case
+            keyData.setKid(kid); // 可为 null，此时将自动生成
             keyData.setKeyPair(keyPair);
             keyData.setKeyType(keyType);
             keyData.setCurve(curve);
@@ -185,6 +202,7 @@ public class TestingOIDCEndpointsApplicationResource {
         return getKeysAsPem();
     }
 
+    /** 以 PEM 格式返回当前第一组密钥对。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/get-keys-as-pem")
@@ -199,11 +217,12 @@ public class TestingOIDCEndpointsApplicationResource {
         return res;
     }
 
+    /** 以 Base64 编码 DER 格式返回当前第一组密钥对。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/get-keys-as-base64")
     public Map<String, String> getKeysAsBase64() {
-        // It seems that PemUtils.decodePrivateKey, decodePublicKey can only treat RSA type keys, not EC type keys. Therefore, these are not used.
+        // PemUtils.decodePrivateKey/decodePublicKey 仅支持 RSA，EC 密钥需直接编码 DER
         TestApplicationResourceProviderFactory.OIDCKeyData keyData = clientData.getFirstKey();
         String privateKeyPem = Base64.getEncoder().encodeToString(keyData.getSigningKeyPair().getPrivate().getEncoded());
         String publicKeyPem = Base64.getEncoder().encodeToString(keyData.getSigningKeyPair().getPublic().getEncoded());
@@ -214,6 +233,7 @@ public class TestingOIDCEndpointsApplicationResource {
         return res;
     }
 
+    /** 返回当前客户端密钥对应的 JWKS。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/get-jwks")
@@ -247,6 +267,7 @@ public class TestingOIDCEndpointsApplicationResource {
     }
 
 
+    /** 根据查询参数构造并签名 OIDC 授权请求对象。 */
     @GET
     @Path("/set-oidc-request")
     @Produces(org.keycloak.utils.MediaType.APPLICATION_JWT)
@@ -272,6 +293,7 @@ public class TestingOIDCEndpointsApplicationResource {
         setOidcRequest(oidcRequest, jwaAlgorithm);
     }
 
+    /** 注册 Base64 编码的请求对象并签名。 */
     @GET
     @Path("/register-oidc-request")
     @Produces(org.keycloak.utils.MediaType.APPLICATION_JWT)
@@ -281,6 +303,7 @@ public class TestingOIDCEndpointsApplicationResource {
         setOidcRequest(oidcRequest, jwaAlgorithm);
     }
 
+    /** 使用对称密钥（客户端密钥）注册并签名请求对象。 */
     @GET
     @Path("/register-oidc-request-symmetric-sig")
     @Produces(org.keycloak.utils.MediaType.APPLICATION_JWT)
@@ -290,6 +313,7 @@ public class TestingOIDCEndpointsApplicationResource {
         setOidcRequest(oidcRequest, jwaAlgorithm, clientSecret);
     }
 
+    /** 反序列化 Base64Url 编码的授权端点请求对象。 */
     private AuthorizationEndpointRequestObject deserializeOidcRequest(String encodedRequestObject) {
         byte[] serializedRequestObject = Base64Url.decode(encodedRequestObject);
         AuthorizationEndpointRequestObject oidcRequest = null;
@@ -301,6 +325,7 @@ public class TestingOIDCEndpointsApplicationResource {
         return oidcRequest;
     }
 
+    /** 使用非对称密钥签名并保存 OIDC 请求对象。 */
     private void setOidcRequest(Object oidcRequest, String jwaAlgorithm) {
         if (!isSupportedAlgorithm(jwaAlgorithm)) throw new BadRequestException("Unknown argument: " + jwaAlgorithm);
 
@@ -334,6 +359,7 @@ public class TestingOIDCEndpointsApplicationResource {
         }
     }
 
+    /** 使用 HMAC 对称密钥签名并保存 OIDC 请求对象。 */
     private void setOidcRequest(Object oidcRequest, String jwaAlgorithm, String clientSecret) {
         if (!isSupportedAlgorithm(jwaAlgorithm)) throw new BadRequestException("Unknown argument: " + jwaAlgorithm);
         if ("none".equals(jwaAlgorithm)) {
@@ -361,6 +387,7 @@ public class TestingOIDCEndpointsApplicationResource {
         }
     }
 
+    /** 判断签名算法是否在测试端点支持范围内。 */
     private boolean isSupportedAlgorithm(String signingAlgorithm) {
         if (signingAlgorithm == null) return false;
         boolean ret = false;
@@ -387,6 +414,7 @@ public class TestingOIDCEndpointsApplicationResource {
         return ret;
     }
 
+    /** 返回当前已保存的 OIDC 请求 JWT 字符串。 */
     @GET
     @Path("/get-oidc-request")
     @Produces(org.keycloak.utils.MediaType.APPLICATION_JWT)
@@ -395,6 +423,7 @@ public class TestingOIDCEndpointsApplicationResource {
         return clientData.getOidcRequest();
     }
 
+    /** 设置 sector identifier 关联的重定向 URI 列表。 */
     @GET
     @Path("/set-sector-identifier-redirect-uris")
     @Produces(MediaType.APPLICATION_JSON)
@@ -403,6 +432,7 @@ public class TestingOIDCEndpointsApplicationResource {
         clientData.getSectorIdentifierRedirectUris().addAll(redirectUris);
     }
 
+    /** 返回 sector identifier 关联的重定向 URI 列表。 */
     @GET
     @Path("/get-sector-identifier-redirect-uris")
     @Produces(MediaType.APPLICATION_JSON)
@@ -410,78 +440,103 @@ public class TestingOIDCEndpointsApplicationResource {
         return clientData.getSectorIdentifierRedirectUris();
     }
 
+    /** 授权端点请求对象 POJO，映射 OIDC/CIBA 授权参数。 */
     public static class AuthorizationEndpointRequestObject extends JsonWebToken {
 
+        /** 客户端 ID。 */
         @JsonProperty(OIDCLoginProtocol.CLIENT_ID_PARAM)
         String clientId;
 
+        /** 响应类型。 */
         @JsonProperty(OIDCLoginProtocol.RESPONSE_TYPE_PARAM)
         String responseType;
 
+        /** 响应模式。 */
         @JsonProperty(OIDCLoginProtocol.RESPONSE_MODE_PARAM)
         String responseMode;
 
+        /** 重定向 URI。 */
         @JsonProperty(OIDCLoginProtocol.REDIRECT_URI_PARAM)
         String redirectUriParam;
 
+        /** OAuth state 参数。 */
         @JsonProperty(OIDCLoginProtocol.STATE_PARAM)
         String state;
 
+        /** 请求的 scope。 */
         @JsonProperty(OIDCLoginProtocol.SCOPE_PARAM)
         String scope;
 
+        /** 登录提示。 */
         @JsonProperty(OIDCLoginProtocol.LOGIN_HINT_PARAM)
         String loginHint;
 
+        /** prompt 参数。 */
         @JsonProperty(OIDCLoginProtocol.PROMPT_PARAM)
         String prompt;
 
+        /** nonce 参数。 */
         @JsonProperty(OIDCLoginProtocol.NONCE_PARAM)
         String nonce;
 
+        /** max_age 参数。 */
         Integer max_age;
 
+        /** UI 语言偏好。 */
         @JsonProperty(OIDCLoginProtocol.UI_LOCALES_PARAM)
         String uiLocales;
 
+        /** 认证上下文类参考（ACR）。 */
         @JsonProperty(OIDCLoginProtocol.ACR_PARAM)
         String acr;
 
+        /** OAuth display 参数。 */
         @JsonProperty(OAuth2Constants.DISPLAY)
         String display;
 
+        /** PKCE code challenge。 */
         @JsonProperty(OIDCLoginProtocol.CODE_CHALLENGE_PARAM)
         String codeChallenge;
 
+        /** PKCE code challenge 方法。 */
         @JsonProperty(OIDCLoginProtocol.CODE_CHALLENGE_METHOD_PARAM)
         String codeChallengeMethod;
 
+        /** DPoP 公钥 JKT 指纹。 */
         @JsonProperty(OIDCLoginProtocol.DPOP_JKT)
         String dpopJkt;
 
+        /** 身份提供者提示。 */
         @JsonProperty(AdapterConstants.KC_IDP_HINT)
         String idpHint;
 
+        /** Keycloak 用户操作提示。 */
         @JsonProperty(Constants.KC_ACTION)
         String action;
 
-        // CIBA
+        // CIBA 相关参数
 
+        /** CIBA 客户端通知令牌。 */
         @JsonProperty(CibaGrantType.CLIENT_NOTIFICATION_TOKEN)
         String clientNotificationToken;
 
+        /** CIBA login hint 令牌。 */
         @JsonProperty(CibaGrantType.LOGIN_HINT_TOKEN)
         String loginHintToken;
 
+        /** ID Token hint。 */
         @JsonProperty(OIDCLoginProtocol.ID_TOKEN_HINT)
         String idTokenHint;
 
+        /** CIBA 用户码。 */
         @JsonProperty(CibaGrantType.USER_CODE)
         String userCode;
 
+        /** CIBA 绑定消息。 */
         @JsonProperty(CibaGrantType.BINDING_MESSAGE)
         String bindingMessage;
 
+        /** CIBA 请求的令牌有效期。 */
         Integer requested_expiry;
 
         public String getClientId() {
@@ -678,6 +733,7 @@ public class TestingOIDCEndpointsApplicationResource {
 
     }
 
+    /** 接收 CIBA 认证通道请求并存储供测试检索。 */
     @POST
     @Path("/request-authentication-channel")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -693,7 +749,7 @@ public class TestingOIDCEndpointsApplicationResource {
             throw new RuntimeException("Failed to parse bearer token", e);
         }
 
-        // required
+        // 必填参数校验
         String authenticationChannelId = bearerToken.getId();
         if (authenticationChannelId == null) throw new BadRequestException("missing parameter : " + HttpAuthenticationChannelProvider.AUTHENTICATION_CHANNEL_ID);
 
@@ -706,19 +762,18 @@ public class TestingOIDCEndpointsApplicationResource {
         String scope = request.getScope();
         if (scope == null) throw new BadRequestException("missing parameter : " + OAuth2Constants.SCOPE);
 
-        // optional
-        // for testing purpose
+        // 可选参数；用于测试场景
         String bindingMessage = request.getBindingMessage();
         if (bindingMessage != null && bindingMessage.equals("GODOWN")) throw new BadRequestException("intentional error : GODOWN");
 
-        // binding_message is optional so that it can be null .
-        // only one CIBA flow without binding_message can be accepted per test method by this test mechanism.
+        // binding_message 可为 null；无 binding_message 的 CIBA 流程在测试机制中每个测试方法仅接受一次
         if (bindingMessage == null) bindingMessage = ChannelRequestDummyKey;
         authenticationChannelRequests.put(bindingMessage, new TestAuthenticationChannelRequest(request, rawBearerToken));
 
         return Response.status(Status.CREATED).build();
     }
 
+    /** 按 binding message 检索已存储的认证通道请求。 */
     @GET
     @Path("/get-authentication-channel")
     @Produces(MediaType.APPLICATION_JSON)
@@ -728,9 +783,11 @@ public class TestingOIDCEndpointsApplicationResource {
         return authenticationChannelRequests.get(bindingMessage);
     }
 
+    /** 无 binding message 时使用的占位键。 */
     private static final String ChannelRequestDummyKey = "channel_request_dummy_key";
 
 
+    /** 接收 CIBA 客户端通知并存储。 */
     @POST
     @Path("/push-ciba-client-notification")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -747,6 +804,7 @@ public class TestingOIDCEndpointsApplicationResource {
     }
 
 
+    /** 取出并移除指定通知令牌的 CIBA 客户端通知。 */
     @GET
     @Path("/get-pushed-ciba-client-notification")
     @Produces(MediaType.APPLICATION_JSON)
@@ -759,6 +817,7 @@ public class TestingOIDCEndpointsApplicationResource {
         return request;
     }
 
+    /** 将 Intent ID 绑定到指定客户端 ID。 */
     @GET
     @Path("/bind-intent-with-client")
     @Produces(MediaType.APPLICATION_JSON)
@@ -768,6 +827,7 @@ public class TestingOIDCEndpointsApplicationResource {
         return Response.noContent().build();
     }
 
+    /** 检查 Intent 是否已绑定到指定客户端。 */
     @POST
     @Path("/check-intent-client-bound")
     @Consumes(MediaType.APPLICATION_JSON)

@@ -29,23 +29,29 @@ import org.keycloak.services.clientpolicy.executor.ClientPolicyExecutorProvider;
 import org.jboss.logging.Logger;
 
 /**
+ * 测试用可插拔令牌管理执行器，在令牌响应阶段移除 {@code sub} 声明。
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class TestEnhancedPluggableTokenManagerExecutor implements ClientPolicyExecutorProvider<ClientPolicyExecutorConfigurationRepresentation> {
 
     private static final Logger logger = Logger.getLogger(TestEnhancedPluggableTokenManagerExecutor.class);
 
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
 
+    /** 创建执行器实例。 */
     public TestEnhancedPluggableTokenManagerExecutor(KeycloakSession session) {
         this.session = session;
     }
 
+    /** {@inheritDoc} 返回 {@link TestEnhancedPluggableTokenManagerExecutorFactory#PROVIDER_ID}。 */
     @Override
     public String getProviderId() {
         return TestEnhancedPluggableTokenManagerExecutorFactory.PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 在 {@link ClientPolicyEvent#TOKEN_RESPONSE} 时修改访问令牌。 */
     @Override
     public void executeOnEvent(ClientPolicyContext context) throws ClientPolicyException {
         ClientPolicyEvent event = context.getEvent();
@@ -56,6 +62,7 @@ public class TestEnhancedPluggableTokenManagerExecutor implements ClientPolicyEx
         }
     }
 
+    /** 清除 subject 声明并重新构建令牌响应。 */
     private void dropSubClaimAndBuildTokenResponse(TokenManager.AccessTokenResponseBuilder builder) throws ClientPolicyException {
         builder.getAccessToken().subject(null);
         builder.build();

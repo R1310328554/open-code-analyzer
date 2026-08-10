@@ -29,14 +29,19 @@ import org.keycloak.timer.TimerProvider;
 import org.keycloak.truststore.TruststoreProvider;
 
 /**
+ * 集成测试用 {@link RealmResourceProvider} 工厂，提供测试端点与共享状态。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class TestingResourceProviderFactory implements RealmResourceProviderFactory {
 
+    /** 已暂停的定时器任务上下文映射。 */
     private Map<String, TimerProvider.TimerTaskContext> suspendedTimerTasks = new ConcurrentHashMap<>();
 
+    /** 禁用 truststore SPI 时保存的原始提供者，用于恢复。 */
     protected TruststoreProvider truststoreProvider;
 
+    /** {@inheritDoc} 创建 {@link TestingResourceProvider} 实例。 */
     @Override
     public RealmResourceProvider create(KeycloakSession session) {
         return new TestingResourceProvider(session, this, suspendedTimerTasks);
@@ -54,6 +59,7 @@ public class TestingResourceProviderFactory implements RealmResourceProviderFact
     public void close() {
     }
 
+    /** {@inheritDoc} 提供者 ID 为 {@code testing}。 */
     @Override
     public String getId() {
         return "testing";

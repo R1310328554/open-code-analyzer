@@ -26,40 +26,51 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.infinispan.client.hotrod.ServerStatistics;
 
 /**
+ * 远程 Infinispan 缓存统计信息表示，用于测试套件查询缓存指标。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class RemoteCacheStats {
 
+    /** 本地存储操作次数。 */
     @JsonProperty(ServerStatistics.STORES)
     private Integer stores;
 
+    /** 全局存储操作次数。 */
     @JsonProperty("globalStores")
     private Integer globalStores;
 
+    /** 其他未显式映射的统计项。 */
     private Map<String, String> otherStats = new HashMap<>();
 
 
+    /** 返回本地存储次数。 */
     public Integer getStores() {
         return stores;
     }
 
+    /** 设置本地存储次数。 */
     public void setStores(Integer stores) {
         this.stores = stores;
     }
 
+    /** 返回全局存储次数。 */
     public Integer getGlobalStores() {
         return globalStores;
     }
 
+    /** 设置全局存储次数。 */
     public void setGlobalStores(Integer globalStores) {
         this.globalStores = globalStores;
     }
 
+    /** 返回其他统计项映射。 */
     @JsonAnyGetter
     public Map<String, String> getOtherStats() {
         return otherStats;
     }
 
+    /** 动态添加未映射的统计项。 */
     @JsonAnySetter
     public void setOtherStats(String name, String value) {
         otherStats.put(name, value);
