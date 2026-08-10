@@ -22,28 +22,34 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * 凭证 {@link CredentialProvider} 的 {@link ProviderFactory} 工厂接口。
+ * <p>{@link #getId()} 返回值会出现在管理控制台的可选提供者列表中。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface CredentialProviderFactory<T extends CredentialProvider> extends ProviderFactory<CredentialProvider> {
     /**
-     * This is the name of the provider and will be showed in the admin console as an option.
+     * 提供者标识，用于管理控制台展示与 SPI 选择。
      *
-     * @return
+     * @return 提供者 ID
      */
     @Override
     String getId();
 
+    /** 默认空实现，子类可读取配置。 */
     @Override
     default void init(Config.Scope config) {
 
     }
 
+    /** 默认空实现，会话工厂就绪后回调。 */
     @Override
     default void postInit(KeycloakSessionFactory factory) {
 
     }
 
+    /** 默认空实现，无资源需释放。 */
     @Override
     default void close() {
 

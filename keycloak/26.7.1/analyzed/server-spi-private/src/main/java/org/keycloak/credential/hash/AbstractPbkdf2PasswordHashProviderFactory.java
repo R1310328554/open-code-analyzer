@@ -23,19 +23,21 @@ import org.keycloak.Config;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * PBKDF2 密码哈希工厂的抽象基类，统一管理密码填充长度配置。
+ * <p>在 FIPS 等模式下，PBKDF2 可能要求最短密码长度；填充不影响已有密码的校验兼容性。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class AbstractPbkdf2PasswordHashProviderFactory implements PasswordHashProviderFactory {
 
     public static final String MAX_PADDING_LENGTH_PROPERTY = "max-padding-length";
 
-    // Minimum password length before password is encoded. If the provided password is shorter than the configured count of characters by this option,
-    // then the padding with '\0' character would be used. By default, it is 0, so no padding used.
-    // This can be used as for example in fips mode (BCFIPS), the pbkdf2 function does not allow less than 14 characters (112 bits).
-    // Regarding backwards compatibility, there is no issue with adding this option against already existing DB of passwords as password value without padding can be verified
-    // against the password with padding as it produces same encoded value.
+    // 编码前密码的最小长度；不足时用 '\0' 填充。默认 0 表示不填充。
+    // 例如 FIPS（BCFIPS）模式下 PBKDF2 要求至少 14 字符（112 位）。
+    // 向后兼容：已有未填充密码仍可与填充后编码结果正确校验。
     private int maxPaddingLength = 0;
 
+    /** 从配置读取 {@link #MAX_PADDING_LENGTH_PROPERTY}，默认 0。 */
     @Override
     public void init(Config.Scope config) {
         this.maxPaddingLength = config.getInt(MAX_PADDING_LENGTH_PROPERTY, 0);
@@ -49,10 +51,12 @@ public abstract class AbstractPbkdf2PasswordHashProviderFactory implements Passw
     public void close() {
     }
 
+    /** @return 密码填充目标长度 */
     public int getMaxPaddingLength() {
         return maxPaddingLength;
     }
 
+    /** 设置密码填充目标长度（主要用于测试）。 */
     public void setMaxPaddingLength(int maxPaddingLength) {
         this.maxPaddingLength = maxPaddingLength;
     }

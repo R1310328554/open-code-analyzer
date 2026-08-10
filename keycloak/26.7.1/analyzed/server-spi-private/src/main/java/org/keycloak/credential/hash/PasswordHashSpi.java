@@ -22,26 +22,33 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 密码哈希 SPI，注册 {@link PasswordHashProvider} 提供者类型。
+ *
  * @author <a href="mailto:me@tsudot.com">Kunal Kerkar</a>
  */
 public class PasswordHashSpi implements Spi {
 
+    /** SPI 名称常量：{@code password-hashing}。 */
     public static final String NAME = "password-hashing";
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return {@link #NAME} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** 密码哈希提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return PasswordHashProvider.class;
     }
 
+    /** 密码哈希工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return PasswordHashProviderFactory.class;

@@ -32,7 +32,7 @@ import org.keycloak.models.PasswordPolicy;
 import org.keycloak.models.credential.PasswordCredentialModel;
 
 /**
- * Implementation PBKDF2 password hash algorithm.
+ * PBKDF2 密码哈希算法实现，支持可配置迭代次数、盐值、派生密钥长度与密码填充。
  *
  * @author <a href="mailto:me@tsudot.com">Kunal Kerkar</a>
  */
@@ -45,11 +45,20 @@ public class Pbkdf2PasswordHashProvider implements PasswordHashProvider {
 
     private final int maxPaddingLength;
     private final int derivedKeySize;
+    /** 默认派生密钥位数（512 位）。 */
     public static final int DEFAULT_DERIVED_KEY_SIZE = 512;
 
+    /** 四参数构造器，派生密钥长度使用 {@link #DEFAULT_DERIVED_KEY_SIZE}。 */
     public Pbkdf2PasswordHashProvider(String providerId, String pbkdf2Algorithm, int defaultIterations, int minPbkdf2PasswordLengthForPadding) {
         this(providerId, pbkdf2Algorithm, defaultIterations, minPbkdf2PasswordLengthForPadding, DEFAULT_DERIVED_KEY_SIZE);
     }
+    /**
+     * @param providerId 提供者 ID（如 {@code pbkdf2-sha256}）
+     * @param pbkdf2Algorithm JCA 算法名（如 {@code PBKDF2WithHmacSHA256}）
+     * @param defaultIterations 默认哈希迭代次数
+     * @param maxPaddingLength 密码填充目标长度
+     * @param derivedKeySize 派生密钥位数
+     */
     public Pbkdf2PasswordHashProvider(String providerId, String pbkdf2Algorithm, int defaultIterations, int maxPaddingLength, int derivedKeySize) {
         this.providerId = providerId;
         this.pbkdf2Algorithm = pbkdf2Algorithm;
@@ -58,6 +67,7 @@ public class Pbkdf2PasswordHashProvider implements PasswordHashProvider {
         this.derivedKeySize = derivedKeySize;
     }
 
+    /** 校验凭证的算法、迭代次数与密钥长度是否符合当前密码策略。 */
     @Override
     public boolean policyCheck(PasswordPolicy policy, PasswordCredentialModel credential) {
         int policyHashIterations = policy != null ? policy.getHashIterations() : -1;
@@ -70,6 +80,7 @@ public class Pbkdf2PasswordHashProvider implements PasswordHashProvider {
                 && derivedKeySize == keySize(credential);
     }
 
+    /** 生成带随机盐的新 {@link PasswordCredentialModel}。 */
     @Override
     public PasswordCredentialModel encodedCredential(String rawPassword, int iterations) {
         if (iterations == -1) {
@@ -82,6 +93,7 @@ public class Pbkdf2PasswordHashProvider implements PasswordHashProvider {
         return PasswordCredentialModel.createFromValues(providerId, salt, iterations, encodedPassword);
     }
 
+    /** 仅返回 Base64 编码的哈希值（不含盐与元数据）。 */
     @Override
     public String encode(String rawPassword, int iterations) {
         if (iterations == -1) {
@@ -92,6 +104,7 @@ public class Pbkdf2PasswordHashProvider implements PasswordHashProvider {
         return encodedCredential(rawPassword, iterations, salt, derivedKeySize);
     }
 
+    /** 用相同盐与迭代次数重新编码明文，与存储值比对。 */
     @Override
     public boolean verify(String rawPassword, PasswordCredentialModel credential) {
         return encodedCredential(rawPassword, credential.getPasswordCredentialData().getHashIterations(), credential.getPasswordSecretData().getSalt(), keySize(credential)).equals(credential.getPasswordSecretData().getValue());
@@ -106,6 +119,7 @@ public class Pbkdf2PasswordHashProvider implements PasswordHashProvider {
         }
     }
 
+    /** 无状态实现，关闭操作为空。 */
     public void close() {
     }
 
@@ -139,6 +153,7 @@ public class Pbkdf2PasswordHashProvider implements PasswordHashProvider {
         }
     }
 
+    /** @return 当前使用的 PBKDF2 JCA 算法名 */
     public String getPbkdf2Algorithm() {
         return pbkdf2Algorithm;
     }

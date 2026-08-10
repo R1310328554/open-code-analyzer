@@ -20,6 +20,8 @@ package org.keycloak.credential.hash;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link PasswordHashProvider} 的 {@link ProviderFactory} 工厂接口。
+ *
  * @author <a href="mailto:me@tsudot.com">Kunal Kerkar</a>
  */
 public interface PasswordHashProviderFactory extends ProviderFactory<PasswordHashProvider> {
