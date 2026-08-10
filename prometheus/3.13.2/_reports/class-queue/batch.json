@@ -15,23 +15,8 @@
     "prompb/remote.pb.go",
     "prompb/types.pb.go",
     "promql/durations.go",
-    "promql/engine.go",
-    "promql/functions.go",
-    "promql/histogram_stats_iterator.go",
-    "promql/info.go",
-    "promql/parser/ast.go",
-    "promql/parser/features.go",
-    "promql/parser/functions.go",
-    "promql/parser/generated_parser.y.go",
-    "promql/parser/lex.go",
-    "promql/parser/parse.go",
-    "promql/parser/posrange/posrange.go",
-    "promql/parser/prettier.go",
-    "promql/parser/printer.go",
-    "promql/parser/value.go",
-    "promql/promqltest/cmd/migrate/main.go",
-    "promql/promqltest/test.go"
+    "promql/engine.go"
   ],
   "remaining_pending": 324,
-  "done": 180
+  "done": 195
 }
