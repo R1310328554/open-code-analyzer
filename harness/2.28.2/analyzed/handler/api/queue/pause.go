@@ -14,8 +14,8 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// HandlePause returns an http.HandlerFunc that processes
-// an http.Request to pause the scheduler.
+// HandlePause 返回暂停调度器的 HTTP 处理器。
+// 调用 scheduler.Pause 后成功时返回 204 No Content。
 func HandlePause(scheduler core.Scheduler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

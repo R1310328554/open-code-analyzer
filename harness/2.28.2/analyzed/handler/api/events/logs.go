@@ -28,8 +28,8 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleLogStream creates an http.HandlerFunc that streams builds logs
-// to the http.Response in an event stream format.
+// HandleLogStream 返回按步骤尾随（tail）日志行的 SSE 流处理器。
+// 将每条日志行 JSON 编码后以 data 事件推送，并定期发送 ping 保活。
 func HandleLogStream(
 	repos core.RepositoryStore,
 	builds core.BuildStore,

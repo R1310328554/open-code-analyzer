@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// Package queue 提供调度队列管理相关的 HTTP 处理器。
 package queue
 
 import (
@@ -14,8 +15,8 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// HandleItems returns an http.HandlerFunc that writes a
-// json-encoded list of queue items to the response body.
+// HandleItems 返回列出当前未完成（排队/运行中）阶段项的 HTTP 处理器。
+// 响应为 JSON 编码的阶段列表。
 func HandleItems(store core.StageStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

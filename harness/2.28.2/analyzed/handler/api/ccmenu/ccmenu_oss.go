@@ -23,7 +23,7 @@ import (
 	"github.com/drone/drone/handler/api/render"
 )
 
-// Handler returns a no-op http.HandlerFunc.
+// Handler 返回 CCMenu XML 端点的 HTTP 处理器；OSS 版未实现。
 func Handler(core.RepositoryStore, core.BuildStore, string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		render.NotImplemented(w, render.ErrNotImplemented)

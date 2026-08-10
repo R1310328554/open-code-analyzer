@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// Package card 提供流水线步骤卡片（Card）的 CRUD HTTP 处理器。
 package card
 
 import (
@@ -19,8 +20,9 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleCreate returns an http.HandlerFunc that processes http
-// requests to create a new card.
+// HandleCreate 返回创建新卡片的 HTTP 处理器。
+// 请求体为 JSON 格式的 core.CardInput，含卡片数据与 schema；
+// 路径参数定位仓库、构建、阶段与步骤，成功后返回步骤 ID。
 func HandleCreate(
 	buildStore core.BuildStore,
 	cardStore core.CardStore,
@@ -30,28 +32,32 @@ func HandleCreate(
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
-			namespace = chi.URLParam(r, "owner")
-			name      = chi.URLParam(r, "name")
+			namespace = chi.URLParam(r, "owner") // 仓库命名空间（所有者）
+			name      = chi.URLParam(r, "name")   // 仓库名称
 		)
 
+		// 解析 URL 中的构建编号
 		buildNumber, err := strconv.ParseInt(chi.URLParam(r, "build"), 10, 64)
 		if err != nil {
 			render.BadRequest(w, err)
 			return
 		}
 
+		// 解析阶段序号
 		stageNumber, err := strconv.Atoi(chi.URLParam(r, "stage"))
 		if err != nil {
 			render.BadRequest(w, err)
 			return
 		}
 
+		// 解析步骤序号
 		stepNumber, err := strconv.Atoi(chi.URLParam(r, "step"))
 		if err != nil {
 			render.BadRequest(w, err)
 			return
 		}
 
+		// 解码请求体中的卡片输入
 		in := new(core.CardInput)
 		err = json.NewDecoder(r.Body).Decode(in)
 		if err != nil {
@@ -59,6 +65,7 @@ func HandleCreate(
 			return
 		}
 
+		// 逐级查找仓库、构建、阶段与步骤
 		repo, err := repoStore.FindName(r.Context(), namespace, name)
 		if err != nil {
 			render.NotFound(w, err)
@@ -84,14 +91,14 @@ func HandleCreate(
 			bytes.NewBuffer(in.Data),
 		)
 
-		/// create card
+		// 创建卡片并持久化
 		err = cardStore.Create(r.Context(), step.ID, data)
 		if err != nil {
 			render.InternalError(w, err)
 			return
 		}
 
-		// add schema
+		// 将 schema 写入步骤并更新
 		step.Schema = in.Schema
 		err = stepStore.Update(r.Context(), step)
 		if err != nil {

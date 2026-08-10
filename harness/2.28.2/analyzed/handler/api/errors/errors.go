@@ -12,32 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package errors 定义 API 层统一的 JSON 错误类型与常用错误常量。
 package errors
 
 var (
-	// ErrInvalidToken is returned when the api request token is invalid.
+	// ErrInvalidToken 表示请求令牌无效或缺失。
 	ErrInvalidToken = New("Invalid or missing token")
 
-	// ErrUnauthorized is returned when the user is not authorized.
+	// ErrUnauthorized 表示用户未通过身份认证。
 	ErrUnauthorized = New("Unauthorized")
 
-	// ErrForbidden is returned when user access is forbidden.
+	// ErrForbidden 表示用户无权访问目标资源。
 	ErrForbidden = New("Forbidden")
 
-	// ErrNotFound is returned when a resource is not found.
+	// ErrNotFound 表示请求的资源不存在。
 	ErrNotFound = New("Not Found")
 )
 
-// Error represents a json-encoded API error.
+// Error 表示可 JSON 序列化的 API 错误响应体。
 type Error struct {
-	Message string `json:"message"`
+	Message string `json:"message"` // 面向客户端的错误描述
 }
 
+// Error 实现 error 接口，返回错误消息文本。
 func (e *Error) Error() string {
 	return e.Message
 }
 
-// New returns a new error message.
+// New 构造带指定消息文本的 API 错误。
 func New(text string) error {
 	return &Error{Message: text}
 }

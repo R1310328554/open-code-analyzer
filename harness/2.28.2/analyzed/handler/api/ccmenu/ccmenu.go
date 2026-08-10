@@ -16,8 +16,8 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// Handler returns an http.HandlerFunc that writes an svg status
-// badge to the response.
+// Handler 返回输出 CCTray XML 格式构建状态的 HTTP 处理器。
+// 根据 URL 中的 owner/name 定位仓库，取最新构建并序列化为 CCProjects。
 func Handler(
 	repos core.RepositoryStore,
 	builds core.BuildStore,
@@ -33,6 +33,7 @@ func Handler(
 			return
 		}
 
+		// 使用仓库计数器获取最新构建
 		build, err := builds.FindNumber(r.Context(), repo.ID, repo.Counter)
 		if err != nil {
 			w.WriteHeader(404)

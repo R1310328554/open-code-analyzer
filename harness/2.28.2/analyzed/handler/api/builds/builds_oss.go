@@ -14,6 +14,7 @@
 
 // +build oss
 
+// Package builds 提供构建相关 HTTP 处理器；本文件为 OSS 构建变体的占位实现。
 package builds
 
 import (
@@ -23,15 +24,17 @@ import (
 	"github.com/drone/drone/handler/api/render"
 )
 
+// notImplemented 是 OSS 版统一返回「未实现」的占位处理器。
 var notImplemented = func(w http.ResponseWriter, r *http.Request) {
 	render.NotImplemented(w, render.ErrNotImplemented)
 }
 
-// HandleIncomplete returns a no-op http.HandlerFunc.
+// HandleIncomplete 返回查询未完成构建的 HTTP 处理器；OSS 版未实现。
 func HandleIncomplete(repos core.RepositoryStore) http.HandlerFunc {
 	return notImplemented
 }
 
+// HandleRunningStatus 返回查询运行中构建状态的 HTTP 处理器；OSS 版未实现。
 func HandleRunningStatus(repos core.RepositoryStore) http.HandlerFunc {
 	return notImplemented
 }

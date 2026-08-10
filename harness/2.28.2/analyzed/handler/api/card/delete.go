@@ -17,8 +17,8 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleDelete returns an http.HandlerFunc that processes http
-// requests to delete a card.
+// HandleDelete 返回删除指定步骤卡片的 HTTP 处理器。
+// 先确认卡片存在，再执行删除；成功时返回 204 No Content。
 func HandleDelete(
 	buildStore core.BuildStore,
 	cardStore core.CardStore,
@@ -50,6 +50,7 @@ func HandleDelete(
 			return
 		}
 
+		// 按路径参数逐级解析并定位步骤
 		repo, err := repoStore.FindName(r.Context(), namespace, name)
 		if err != nil {
 			render.NotFound(w, err)
@@ -71,6 +72,7 @@ func HandleDelete(
 			return
 		}
 
+		// 确认卡片存在后再删除
 		_, err = cardStore.Find(r.Context(), step.ID)
 		if err != nil {
 			render.NotFound(w, err)

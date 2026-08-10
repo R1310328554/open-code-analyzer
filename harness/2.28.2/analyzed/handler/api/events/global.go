@@ -25,8 +25,8 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// HandleGlobal creates an http.HandlerFunc that streams builds events
-// to the http.Response in an event stream format.
+// HandleGlobal 返回全局构建事件 SSE 流处理器。
+// 根据用户仓库成员关系与事件可见性（public/internal/private）过滤推送内容。
 func HandleGlobal(
 	repos core.RepositoryStore,
 	events core.Pubsub,
@@ -45,6 +45,7 @@ func HandleGlobal(
 			return
 		}
 
+		// 构建当前用户有权接收事件的仓库 slug 集合
 		access := map[string]struct{}{}
 		user, authenticated := request.UserFrom(r.Context())
 		if authenticated {
@@ -81,9 +82,11 @@ func HandleGlobal(
 				f.Flush()
 			case event := <-events:
 				_, authorized := access[event.Repository]
+				// 公开事件对所有订阅者可见
 				if event.Visibility == core.VisibilityPublic {
 					authorized = true
 				}
+				// 内部事件对已登录用户可见
 				if event.Visibility == core.VisibilityInternal && authenticated {
 					authorized = true
 				}

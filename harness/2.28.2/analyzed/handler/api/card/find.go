@@ -17,7 +17,8 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleFind returns an http.HandlerFunc that writes a json-encoded
+// HandleFind 返回查询指定步骤卡片数据的 HTTP 处理器。
+// 成功时将卡片 JSON 内容直接写入响应体。
 func HandleFind(
 	buildStore core.BuildStore,
 	cardStore core.CardStore,
@@ -70,6 +71,7 @@ func HandleFind(
 			return
 		}
 
+		// 读取卡片数据并以 application/json 流式返回
 		cardData, err := cardStore.Find(r.Context(), step.ID)
 		if err != nil {
 			render.NotFound(w, err)

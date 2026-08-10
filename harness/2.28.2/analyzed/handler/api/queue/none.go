@@ -23,18 +23,22 @@ import (
 	"github.com/drone/drone/handler/api/render"
 )
 
+// notImplemented 是 OSS 版队列 API 的统一占位处理器。
 var notImplemented = func(w http.ResponseWriter, r *http.Request) {
 	render.NotImplemented(w, render.ErrNotImplemented)
 }
 
+// HandleItems 返回列出队列项的 HTTP 处理器；OSS 版未实现。
 func HandleItems(store core.StageStore) http.HandlerFunc {
 	return notImplemented
 }
 
+// HandlePause 返回暂停调度器的 HTTP 处理器；OSS 版未实现。
 func HandlePause(core.Scheduler) http.HandlerFunc {
 	return notImplemented
 }
 
+// HandleResume 返回恢复调度器的 HTTP 处理器；OSS 版未实现。
 func HandleResume(core.Scheduler) http.HandlerFunc {
 	return notImplemented
 }

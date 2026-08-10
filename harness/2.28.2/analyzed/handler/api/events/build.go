@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package events 提供 Server-Sent Events（SSE）形式的实时事件与日志流处理器。
 package events
 
 import (
@@ -28,18 +29,14 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// interval at which the client is pinged to prevent
-// reverse proxy and load balancers from closing the
-// connection.
+// pingInterval 为 SSE 心跳间隔，防止反向代理或负载均衡器关闭空闲连接。
 var pingInterval = time.Second * 30
 
-// implements a 24-hour timeout for connections. This
-// should not be necessary, but is put in place just
-// in case we encounter dangling connections.
+// timeout 为连接最长存活时间（24 小时），用于清理可能遗留的悬挂连接。
 var timeout = time.Hour * 24
 
-// HandleEvents creates an http.HandlerFunc that streams builds events
-// to the http.Response in an event stream format.
+// HandleEvents 返回按仓库过滤的构建事件 SSE 流处理器。
+// 仅推送 slug 匹配当前仓库的 pubsub 事件，并以 text/event-stream 格式写入响应。
 func HandleEvents(
 	repos core.RepositoryStore,
 	events core.Pubsub,
@@ -62,6 +59,7 @@ func HandleEvents(
 			return
 		}
 
+		// 设置 SSE 响应头并禁用缓冲
 		h := w.Header()
 		h.Set("Content-Type", "text/event-stream")
 		h.Set("Cache-Control", "no-cache")
@@ -99,6 +97,7 @@ func HandleEvents(
 				io.WriteString(w, ": ping\n\n")
 				f.Flush()
 			case event := <-events:
+				// 仅转发属于当前仓库的事件
 				if event.Repository == repo.Slug {
 					io.WriteString(w, "data: ")
 					w.Write(event.Data)

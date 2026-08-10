@@ -23,10 +23,12 @@ import (
 	"github.com/drone/drone/handler/api/render"
 )
 
+// notImplemented 是 OSS 版卡片 API 的统一占位处理器。
 var notImplemented = func(w http.ResponseWriter, r *http.Request) {
 	render.NotImplemented(w, render.ErrNotImplemented)
 }
 
+// HandleCreate 返回创建卡片的 HTTP 处理器；OSS 版未实现。
 func HandleCreate(
 	buildStore core.BuildStore,
 	cardStore core.CardStore,
@@ -37,6 +39,7 @@ func HandleCreate(
 	return notImplemented
 }
 
+// HandleDelete 返回删除卡片的 HTTP 处理器；OSS 版未实现。
 func HandleDelete(
 	buildStore core.BuildStore,
 	cardStore core.CardStore,
@@ -47,6 +50,7 @@ func HandleDelete(
 	return notImplemented
 }
 
+// HandleFind 返回查询单张卡片的 HTTP 处理器；OSS 版未实现。
 func HandleFind(
 	buildStore core.BuildStore,
 	cardStore core.CardStore,
@@ -57,6 +61,7 @@ func HandleFind(
 	return notImplemented
 }
 
+// HandleFindAll 返回查询全部卡片的 HTTP 处理器；OSS 版未实现。
 func HandleFindAll(
 	buildStore core.BuildStore,
 	cardStore core.CardStore,
@@ -65,6 +70,7 @@ func HandleFindAll(
 	return notImplemented
 }
 
+// HandleFindData 返回查询卡片原始数据的 HTTP 处理器；OSS 版未实现。
 func HandleFindData(
 	buildStore core.BuildStore,
 	cardStore core.CardStore,
