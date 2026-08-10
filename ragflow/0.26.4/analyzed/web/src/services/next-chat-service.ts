@@ -1,3 +1,7 @@
+/**
+ * next-chat-service.ts — 新版聊天应用 CRUD、会话/消息管理及 TTS/思维导图/相关问题 API。
+ */
+
 import api from '@/utils/api';
 import { registerNextServer } from '@/utils/register-server';
 
@@ -23,6 +27,7 @@ const {
   fetchExternalChatInfo,
 } = api;
 
+/** 聊天 REST 方法表：chat/session/message 及 TTS/mindmap 等扩展。 */
 const methods = {
   createChat: {
     url: createChat,
@@ -102,6 +107,7 @@ const methods = {
   },
 } as const;
 
+/** 默认导出：新版聊天 API 客户端。 */
 const chatService = registerNextServer<keyof typeof methods>(methods);
 
 export default chatService;

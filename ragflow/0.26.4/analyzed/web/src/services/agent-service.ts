@@ -1,3 +1,7 @@
+/**
+ * agent-service.ts — Agent 画布 CRUD、调试、日志、Webhook 追踪及共享页 trace 等 API 封装。
+ */
+
 import {
   IAgentLogsRequest,
   IPipeLineListRequest,
@@ -29,6 +33,7 @@ const {
   cancelCanvas,
 } = api;
 
+/** registerNextServer 方法表：Agent 画布核心 REST 端点映射。 */
 const methods = {
   getAgent: {
     url: getAgent,
@@ -124,8 +129,10 @@ const methods = {
   },
 } as const;
 
+/** 默认导出：通过方法名调用 registerNextServer 生成的 Agent API 客户端。 */
 const agentService = registerNextServer<keyof typeof methods>(methods);
 
+/** 更新 Agent 元数据（title/dsl/avatar/permission/release 等）。 */
 export const updateAgent = (
   agentId: string,
   params: {
@@ -140,6 +147,7 @@ export const updateAgent = (
   return request(updateAgentApi(agentId), { method: 'put', data: params });
 };
 
+/** 更新 Agent 标签（逗号拼接提交）。 */
 export const updateAgentTags = (agentId: string, tags: string[]) => {
   return request(api.updateAgentTags(agentId), {
     method: 'put',
@@ -147,6 +155,7 @@ export const updateAgentTags = (agentId: string, tags: string[]) => {
   });
 };
 
+/** 拉取 Agent 消息执行 trace（需登录态）。 */
 export const fetchTrace = (data: { canvas_id: string; message_id: string }) => {
   return request.get(
     methods.trace.url({
@@ -156,14 +165,19 @@ export const fetchTrace = (data: { canvas_id: string; message_id: string }) => {
   );
 };
 
-// Used by the shared/embedded chat page where the only credential available
+// 共享/嵌入聊天页专用：仅凭 share APIToken 拉 trace（修复 #14985）
 // is the share (beta) APIToken (fixes #14985).
+/** 共享链接场景拉取 trace（使用 shared_id + message_id）。 */
 export const fetchSharedTrace = (data: {
   shared_id: string;
   message_id: string;
 }) => {
   return request.get(api.sharedTrace(data.shared_id, data.message_id));
 };
+/**
+ * 按画布 ID 分页查询 Agent 会话日志。
+ * 日期参数格式化为本地 wall-clock 字符串，避免 UTC 偏移导致筛选错位。
+ */
 export const fetchAgentLogsByCanvasId = (
   canvasId: string,
   params: IAgentLogsRequest,
@@ -175,6 +189,7 @@ export const fetchAgentLogsByCanvasId = (
   // local datetime makes the backend compare it as-is against stored dates.
   // from_date snaps to the start of the day (00:00:00), to_date to the end
   // (23:59:59), so the full picked day range is covered.
+  /** 将 Date 转为 YYYY-MM-DD HH:mm:ss；结束日期取当日 23:59:59。 */
   const normalizeDate = (value: string | Date | undefined, isEnd = false) => {
     if (!(value instanceof Date)) return value;
     const day = dayjs(value);
@@ -194,14 +209,17 @@ export const fetchAgentLogsByCanvasId = (
   });
 };
 
+/** 获取单个 Agent 会话详情。 */
 export const fetchAgentLogsById = (canvasId: string, sessionId: string) => {
   return request.get(api.fetchAgentSessionById(canvasId, sessionId));
 };
 
+/** 列出 Pipeline 类型 Agent（复用 listAgents 接口）。 */
 export const fetchPipeLineList = (params: IPipeLineListRequest) => {
   return request.get(api.listAgents, { params: params });
 };
 
+/** 查询 Webhook 触发 trace 记录。 */
 export const fetchWebhookTrace = (
   id: string,
   params: IAgentWebhookTraceRequest,
@@ -209,14 +227,17 @@ export const fetchWebhookTrace = (
   return request.get(api.fetchWebhookTrace(id), { params: params });
 };
 
+/** 为 Agent 画布创建新会话。 */
 export function createAgentSession({ id, name }: { id: string; name: string }) {
   return request.post(api.createAgentSession(id), { data: { name } });
 }
 
+/** 删除指定 Agent 会话。 */
 export const deleteAgentSession = (canvasId: string, sessionId: string) => {
   return request.delete(api.fetchAgentSessionById(canvasId, sessionId));
 };
 
+/** 向 Agent 上传附件文件。 */
 export const uploadAgentFile = (agentId: string, data: FormData) => {
   return request(api.uploadAgentFile(agentId), {
     method: 'post',

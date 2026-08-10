@@ -1,3 +1,7 @@
+/**
+ * llm-service.ts — LLM 提供商/实例/模型管理 API（默认模型、连接验证、启停状态等）。
+ */
+
 import api from '@/utils/api';
 import { registerNextServer } from '@/utils/register-server';
 
@@ -18,6 +22,7 @@ const {
   updateModelStatus,
 } = api;
 
+/** LLM 提供商 REST 方法表。 */
 const methods = {
   listAllAddedModels: {
     url: listAllAddedModels,
@@ -81,6 +86,7 @@ const methods = {
   },
 } as const;
 
+/** 默认导出：LLM 管理 API 客户端。 */
 const llmService = registerNextServer<keyof typeof methods>(methods);
 
 export default llmService;
