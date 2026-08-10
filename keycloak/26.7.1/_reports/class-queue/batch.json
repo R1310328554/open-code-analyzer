@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T08:29:03Z",
   "files": [
-    "model/jpa/src/main/java/org/keycloak/models/workflow/expression/PredicateEvaluator.java",
-    "model/jpa/src/main/java/org/keycloak/organization/jpa/JpaInvitationManager.java",
-    "model/jpa/src/main/java/org/keycloak/organization/jpa/JpaOrganizationProvider.java",
-    "model/jpa/src/main/java/org/keycloak/organization/jpa/JpaOrganizationProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/organization/jpa/OrganizationAdapter.java",
-    "model/jpa/src/main/java/org/keycloak/revoketokens/jpa/JpaRevokedTokenProvider.java",
-    "model/jpa/src/main/java/org/keycloak/revoketokens/jpa/JpaRevokedTokenProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/revoketokens/jpa/RevokedTokenExpirationAction.java",
-    "model/jpa/src/main/java/org/keycloak/singleobject/jpa/JpaSingleUseObjectProvider.java",
-    "model/jpa/src/main/java/org/keycloak/singleobject/jpa/JpaSingleUseObjectProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/singleobject/jpa/SingleUseObjectEntity.java",
-    "model/jpa/src/main/java/org/keycloak/singleobject/jpa/SingleUseObjectExpirationAction.java",
-    "model/jpa/src/main/java/org/keycloak/singleobject/jpa/SingleUseObjectSerialization.java",
-    "model/jpa/src/main/java/org/keycloak/storage/configuration/jpa/JpaServerConfigStorageProvider.java",
-    "model/jpa/src/main/java/org/keycloak/storage/configuration/jpa/JpaServerConfigStorageProviderFactory.java",
     "model/jpa/src/main/java/org/keycloak/storage/configuration/jpa/entity/ServerConfigEntity.java",
     "model/jpa/src/main/java/org/keycloak/storage/jpa/JpaHashUtils.java",
     "model/jpa/src/main/java/org/keycloak/storage/jpa/JpaUserFederatedStorageProvider.java",
@@ -33,5 +18,5 @@
     "model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserRoleMappingEntity.java"
   ],
   "remaining_pending": 4138,
-  "done": 1830
+  "done": 1845
 }

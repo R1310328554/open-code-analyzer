@@ -1798,3 +1798,18 @@
 2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/expression/ErrorListener.java wave61b workflow events + expression evaluators
 2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/expression/EvaluatorUtils.java wave61b workflow events + expression evaluators
 2026-08-10T08:28:47Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/expression/EventEvaluator.java wave61b workflow events + expression evaluators
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/models/workflow/expression/PredicateEvaluator.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/organization/jpa/JpaInvitationManager.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/organization/jpa/JpaOrganizationProvider.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/organization/jpa/JpaOrganizationProviderFactory.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/organization/jpa/OrganizationAdapter.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/revoketokens/jpa/JpaRevokedTokenProvider.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/revoketokens/jpa/JpaRevokedTokenProviderFactory.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/revoketokens/jpa/RevokedTokenExpirationAction.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/singleobject/jpa/JpaSingleUseObjectProvider.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/singleobject/jpa/JpaSingleUseObjectProviderFactory.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/singleobject/jpa/SingleUseObjectEntity.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/singleobject/jpa/SingleUseObjectExpirationAction.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/singleobject/jpa/SingleUseObjectSerialization.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/storage/configuration/jpa/JpaServerConfigStorageProvider.java wave62a org/revoked/single-use/server-config JPA
+2026-08-10T08:31:21Z DONE model/jpa/src/main/java/org/keycloak/storage/configuration/jpa/JpaServerConfigStorageProviderFactory.java wave62a org/revoked/single-use/server-config JPA
