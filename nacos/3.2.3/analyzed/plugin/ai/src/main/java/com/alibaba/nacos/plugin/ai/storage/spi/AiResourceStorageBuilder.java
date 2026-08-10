@@ -17,11 +17,10 @@
 package com.alibaba.nacos.plugin.ai.storage.spi;
 
 /**
- * Builder SPI for creating {@link AiResourceStorage} instances.
+ * 用于创建 {@link AiResourceStorage} 实例的 Builder SPI。
  *
- * <p>Since SPI-loaded classes are instantiated via no-arg constructors, this builder pattern allows
- * creating storage implementations. Each storage provider should implement this builder and register
- * it via SPI (META-INF/services).</p>
+ * <p>SPI 加载的类通常通过无参构造实例化，因此采用 Builder 模式组装存储实现。
+ * 每个存储 provider 应实现本接口并通过 SPI（META-INF/services）注册。</p>
  *
  * @author mosong.lp
  * @since 3.2.0
@@ -29,16 +28,16 @@ package com.alibaba.nacos.plugin.ai.storage.spi;
 public interface AiResourceStorageBuilder {
     
     /**
-     * Type identifier, corresponding to {@link AiResourceStorage#type()}.
+     * 类型标识，与 {@link AiResourceStorage#type()} 对应。
      *
-     * @return storage provider type, e.g. "nacos_config", "oss"
+     * @return 存储 provider 类型，例如 {@code "nacos_config"}、{@code "oss"}
      */
     String type();
     
     /**
-     * Build an {@link AiResourceStorage} instance.
+     * 构建 {@link AiResourceStorage} 实例。
      *
-     * @return a fully initialized {@link AiResourceStorage} instance
+     * @return 已完成初始化的 {@link AiResourceStorage} 实例
      */
     AiResourceStorage build();
 }

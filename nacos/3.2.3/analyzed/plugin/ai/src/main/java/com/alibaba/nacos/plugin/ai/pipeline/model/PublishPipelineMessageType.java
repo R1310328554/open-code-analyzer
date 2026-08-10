@@ -17,7 +17,7 @@
 package com.alibaba.nacos.plugin.ai.pipeline.model;
 
 /**
- * Semantic type of {@link PublishPipelineResult#getMessage()} for clients that render review output.
+ * {@link PublishPipelineResult#getMessage()} 的语义类型，供客户端按格式渲染审核输出。
  *
  * @author qiacheng.cxy
  * @since 3.2.0
@@ -25,40 +25,45 @@ package com.alibaba.nacos.plugin.ai.pipeline.model;
 public enum PublishPipelineMessageType {
     
     /**
-     * Plain text.
+     * 纯文本消息。
      */
     TEXT("text"),
     
     /**
-     * JSON payload.
+     * JSON 结构化载荷。
      */
     JSON("json"),
     
     /**
-     * Markdown (e.g. skill-scanner {@code --format markdown} stdout).
+     * Markdown 格式（例如 skill-scanner {@code --format markdown} 标准输出）。
      */
     MARKDOWN("markdown"),
     
     /**
-     * HTML fragment or document.
+     * HTML 片段或完整文档。
      */
     HTML("html");
     
+    /** 对外 API 使用的 wire 值（小写）。 */
     private final String code;
     
+    /** @param code 对外 wire 值 */
     PublishPipelineMessageType(String code) {
         this.code = code;
     }
     
     /**
-     * Wire / API value (lowercase), e.g. {@code markdown}.
+     * 返回对外 API / 序列化使用的 wire 值（小写），例如 {@code markdown}。
      */
     public String getCode() {
         return code;
     }
     
     /**
-     * Resolve from API wire value, or null if unknown.
+     * 根据 API wire 值解析枚举；未知或空值时返回 {@code null}。
+     *
+     * @param code wire 字符串
+     * @return 匹配的枚举，或 {@code null}
      */
     public static PublishPipelineMessageType fromCode(String code) {
         if (code == null || code.isEmpty()) {

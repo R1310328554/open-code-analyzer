@@ -19,11 +19,11 @@ package com.alibaba.nacos.plugin.ai.pipeline.model;
 import com.alibaba.nacos.plugin.ai.pipeline.spi.PublishPipelineService;
 
 /**
- * Publish pipeline resource type enumeration.
+ * 发布流水线所支持的 AI 资源类型枚举。
  *
- * <p>Each AI resource type corresponds to an enum value. Pipeline plugins declare supported types
- * via {@link PublishPipelineService#pipelineResourceTypes()}, and {@code PublishPipelineManager}
- * routes to the corresponding plugin list by resource type.</p>
+ * <p>每种 AI 资源类型对应一个枚举值。流水线插件通过
+ * {@link PublishPipelineService#pipelineResourceTypes()} 声明支持的类型，
+ * {@code PublishPipelineManager} 再按资源类型路由到对应插件链。</p>
  *
  * @author mosong.lp
  * @since 3.2.0
@@ -31,17 +31,17 @@ import com.alibaba.nacos.plugin.ai.pipeline.spi.PublishPipelineService;
 public enum PublishPipelineResourceType {
     
     /**
-     * Skill resource type.
+     * Skill 技能资源。
      */
     SKILL,
     
     /**
-     * Prompt resource type.
+     * Prompt 提示词资源。
      */
     PROMPT,
     
     /**
-     * AgentSpec resource type.
+     * AgentSpec Agent 规格资源。
      */
     AGENTSPEC
 }

@@ -17,10 +17,10 @@
 package com.alibaba.nacos.plugin.ai.storage.model;
 
 /**
- * Storage key for AI resource storage abstraction.
+ * AI 资源存储抽象的统一存储键。
  *
- * <p>Similar to Nacos's dataId/group/tenant encapsulation, this is a unified structure for upper layers.
- * For specific implementations, it is an opaque key carrying a provider identifier.</p>
+ * <p>类似 Nacos 对 dataId/group/tenant 的封装，向上层提供一致结构；
+ * 对具体实现而言，它是携带 provider 标识的不透明键。</p>
  *
  * @author mosong.lp
  * @since 3.2.0
@@ -28,41 +28,51 @@ package com.alibaba.nacos.plugin.ai.storage.model;
 public class StorageKey {
     
     /**
-     * Storage provider identifier, e.g. "nacos_config", "oss".
-     * Corresponds to the provider field in Storage JSON.
+     * 存储 provider 标识，例如 {@code "nacos_config"}、{@code "oss"}。
+     * 与 Storage JSON 中的 provider 字段对应。
      */
     private String provider;
     
     /**
-     * Internal key used by the specific storage implementation.
-     * Opaque to upper layers, e.g.:
+     * 具体存储实现使用的内部键，对上层不透明，例如：
      * <ul>
-     *   <li>nacos_config: "namespace:group:dataId"</li>
-     *   <li>oss: "bucket/objectPath"</li>
+     *   <li>nacos_config: {@code "namespace:group:dataId"}</li>
+     *   <li>oss: {@code "bucket/objectPath"}</li>
      * </ul>
      */
     private String key;
     
+    /** 无参构造。 */
     public StorageKey() {
     }
     
+    /**
+     * 构造指定 provider 与内部键的存储键。
+     *
+     * @param provider 存储 provider 标识
+     * @param key      实现相关的内部键
+     */
     public StorageKey(String provider, String key) {
         this.provider = provider;
         this.key = key;
     }
     
+    /** @return 存储 provider 标识 */
     public String getProvider() {
         return provider;
     }
     
+    /** @param provider 存储 provider 标识 */
     public void setProvider(String provider) {
         this.provider = provider;
     }
     
+    /** @return 实现相关的内部键 */
     public String getKey() {
         return key;
     }
     
+    /** @param key 实现相关的内部键 */
     public void setKey(String key) {
         this.key = key;
     }

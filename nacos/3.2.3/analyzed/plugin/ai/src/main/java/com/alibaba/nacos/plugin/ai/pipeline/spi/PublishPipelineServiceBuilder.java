@@ -19,15 +19,14 @@ package com.alibaba.nacos.plugin.ai.pipeline.spi;
 import java.util.Properties;
 
 /**
- * Builder SPI for creating {@link PublishPipelineService} instances.
+ * 用于创建 {@link PublishPipelineService} 实例的 Builder SPI。
  *
- * <p>Since SPI-loaded classes are instantiated via no-arg constructors, this builder pattern allows
- * creating pipeline service implementations. Each pipeline plugin should implement this builder and
- * register it via SPI (META-INF/services).</p>
+ * <p>SPI 加载的类通常通过无参构造实例化，因此采用 Builder 模式组装流水线实现。
+ * 每个流水线插件应实现本接口并通过 SPI（META-INF/services）注册。</p>
  *
- * <p>The {@link #build(Properties)} method receives per-plugin configuration properties from the
- * pipeline config (for example {@code nacos.plugin.{pluginName}.{type}.*}), allowing each plugin
- * to be initialized with custom parameters such as API endpoints, timeouts, etc.</p>
+ * <p>{@link #build(Properties)} 接收来自流水线配置的 per-plugin 属性
+ *（例如 {@code nacos.plugin.{pluginName}.{type}.*}），便于各插件以自定义参数
+ *（API 端点、超时等）完成初始化。</p>
  *
  * @author mosong.lp
  * @since 3.2.0
@@ -35,21 +34,21 @@ import java.util.Properties;
 public interface PublishPipelineServiceBuilder {
     
     /**
-     * Pipeline plugin identifier, corresponding to {@link PublishPipelineService#pipelineId()}.
+     * 流水线插件标识，与 {@link PublishPipelineService#pipelineId()} 对应。
      *
-     * @return pipeline plugin id, e.g. "ai-review", "manual-confirm"
+     * @return 流水线插件 ID，例如 {@code "ai-review"}、{@code "manual-confirm"}
      */
     String pipelineId();
     
     /**
-     * Build a {@link PublishPipelineService} instance with the given configuration properties.
+     * 根据给定配置属性构建 {@link PublishPipelineService} 实例。
      *
-     * <p>The properties are sourced from pipeline configuration, keyed by this builder's
-     * {@link #pipelineId()}. For example, if pipelineId is "ai-review", properties may contain
-     * entries like "endpoint", "timeout", etc.</p>
+     * <p>属性来源于流水线配置，键名与本 Builder 的 {@link #pipelineId()} 关联。
+     * 例如 pipelineId 为 {@code "ai-review"} 时，可能包含 {@code endpoint}、
+     * {@code timeout} 等条目。</p>
      *
-     * @param properties per-node configuration properties, never null (may be empty)
-     * @return a fully initialized {@link PublishPipelineService} instance
+     * @param properties 节点级配置属性，永不为 {@code null}（可为空）
+     * @return 已完成初始化的 {@link PublishPipelineService} 实例
      */
     PublishPipelineService build(Properties properties);
 }

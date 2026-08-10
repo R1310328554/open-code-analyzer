@@ -17,13 +17,17 @@
 package com.alibaba.nacos.plugin.ai.pipeline.model;
 
 /**
- * Skill-specific publish pipeline context, extending common fields with Skill's multi-file structure.
+ * Skill 资源专用的发布流水线上下文。
+ *
+ * <p>继承 {@link ResourceFilesPipelineContext}，构造时自动将资源类型设为
+ * {@link PublishPipelineResourceType#SKILL}，供 Skill 多文件结构的发布与安全审计使用。</p>
  *
  * @author mosong.lp
  * @since 3.2.0
  */
 public class SkillPipelineContext extends ResourceFilesPipelineContext {
     
+    /** 初始化 Skill 类型的文件型流水线上下文。 */
     public SkillPipelineContext() {
         setResourceType(PublishPipelineResourceType.SKILL);
     }

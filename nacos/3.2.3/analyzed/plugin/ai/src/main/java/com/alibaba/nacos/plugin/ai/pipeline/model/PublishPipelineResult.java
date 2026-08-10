@@ -19,7 +19,7 @@ package com.alibaba.nacos.plugin.ai.pipeline.model;
 import java.util.List;
 
 /**
- * Result of a single publish pipeline plugin execution.
+ * 单个发布流水线插件执行后的审核结果。
  *
  * @author mosong.lp
  * @since 3.2.0
@@ -27,30 +27,36 @@ import java.util.List;
 public class PublishPipelineResult {
     
     /**
-     * Whether the review passed. The pipeline engine uses this to decide whether to continue
-     * executing the next pipeline plugin.
+     * 审核是否通过。流水线引擎据此决定是否继续执行下一个插件。
      */
     private boolean passed;
     
     /**
-     * Review message. Contains review opinions, suggestions, error descriptions, etc.
-     * When passed is false, this should describe the reason for rejection.
+     * 审核消息，可包含审核意见、改进建议、错误描述等。
+     * 当 {@link #passed} 为 {@code false} 时应说明拒绝原因。
      */
     private String message;
     
     /**
-     * Semantic type of {@link #message} (e.g. markdown report from skill-scanner).
+     * {@link #message} 的语义类型（例如 skill-scanner 输出的 Markdown 报告）。
      */
     private PublishPipelineMessageType type;
     
     /**
-     * Per-criterion audit outcomes for this plugin run.
+     * 本次插件运行各检查项的审计结果列表。
      */
     private List<Checkpoint> checkpoints;
     
+    /** 无参构造。 */
     public PublishPipelineResult() {
     }
     
+    /**
+     * 构造审核结果，消息类型默认为纯文本。
+     *
+     * @param passed  是否通过
+     * @param message 审核消息
+     */
     public PublishPipelineResult(boolean passed, String message) {
         this.passed = passed;
         this.message = message;
@@ -58,14 +64,22 @@ public class PublishPipelineResult {
     }
     
     /**
-     * Create a passed result (message treated as plain text).
+     * 创建通过结果，消息按纯文本处理。
+     *
+     * @param message 通过说明
+     * @return 审核通过结果
      */
     public static PublishPipelineResult pass(String message) {
         return pass(message, PublishPipelineMessageType.TEXT, null);
     }
     
     /**
-     * Create a passed result with explicit message type and audit checkpoints.
+     * 创建通过结果，可指定消息类型与检查点列表。
+     *
+     * @param message      通过说明
+     * @param type         消息语义类型
+     * @param checkpoints  各检查项审计结果
+     * @return 审核通过结果
      */
     public static PublishPipelineResult pass(String message, PublishPipelineMessageType type,
         List<Checkpoint> checkpoints) {
@@ -78,14 +92,22 @@ public class PublishPipelineResult {
     }
     
     /**
-     * Create a rejected result (message treated as plain text).
+     * 创建拒绝结果，消息按纯文本处理。
+     *
+     * @param message 拒绝原因
+     * @return 审核拒绝结果
      */
     public static PublishPipelineResult reject(String message) {
         return reject(message, PublishPipelineMessageType.TEXT, null);
     }
     
     /**
-     * Create a rejected result with explicit message type and audit checkpoints.
+     * 创建拒绝结果，可指定消息类型与检查点列表。
+     *
+     * @param message      拒绝原因
+     * @param type         消息语义类型
+     * @param checkpoints  各检查项审计结果
+     * @return 审核拒绝结果
      */
     public static PublishPipelineResult reject(String message, PublishPipelineMessageType type,
         List<Checkpoint> checkpoints) {
@@ -97,34 +119,42 @@ public class PublishPipelineResult {
         return r;
     }
     
+    /** @return 是否通过审核 */
     public boolean isPassed() {
         return passed;
     }
     
+    /** @param passed 是否通过审核 */
     public void setPassed(boolean passed) {
         this.passed = passed;
     }
     
+    /** @return 审核消息正文 */
     public String getMessage() {
         return message;
     }
     
+    /** @param message 审核消息正文 */
     public void setMessage(String message) {
         this.message = message;
     }
     
+    /** @return 消息语义类型 */
     public PublishPipelineMessageType getType() {
         return type;
     }
     
+    /** @param type 消息语义类型 */
     public void setType(PublishPipelineMessageType type) {
         this.type = type;
     }
     
+    /** @return 各检查项审计结果 */
     public List<Checkpoint> getCheckpoints() {
         return checkpoints;
     }
     
+    /** @param checkpoints 各检查项审计结果 */
     public void setCheckpoints(List<Checkpoint> checkpoints) {
         this.checkpoints = checkpoints;
     }

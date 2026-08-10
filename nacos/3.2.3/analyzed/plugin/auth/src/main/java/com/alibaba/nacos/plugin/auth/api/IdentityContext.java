@@ -20,34 +20,37 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Identity Context.
+ * 身份上下文，在认证/鉴权链路中传递请求侧提取的身份参数。
+ *
+ * <p>以键值对形式保存从 HTTP 请求、Token 或插件中间结果解析出的身份字段，
+ * 供后续鉴权插件读取与扩展。</p>
  *
  * @author Wuyfee
  */
 public class IdentityContext {
     
     /**
-     * get context from request.
+     * 从请求或上游插件写入的上下文参数表。
      */
     private final Map<String, Object> param = new HashMap<>();
     
     /**
-     * get key from context.
+     * 按键获取上下文参数。
      *
-     * @param key key of request
-     * @return value of param key
+     * @param key 参数键
+     * @return 参数值，不存在时返回 {@code null}
      */
     public Object getParameter(String key) {
         return param.get(key);
     }
     
     /**
-     * Get identity by key.
+     * 按键获取身份参数，支持类型转换与默认值回退。
      *
-     * @param key          identity name
-     * @param defaultValue default value when the value is {@code null} or the value is not expected class type
-     * @param <T>          classes type of identity value
-     * @return identity value
+     * @param key          身份参数名
+     * @param defaultValue 当值为 {@code null} 或类型不匹配时使用的默认值（不可为 {@code null}）
+     * @param <T>          期望的返回值类型
+     * @return 转换后的身份值，或默认值
      */
     public <T> T getParameter(String key, T defaultValue) {
         if (null == defaultValue) {
@@ -66,10 +69,10 @@ public class IdentityContext {
     }
     
     /**
-     * put key and value to param.
+     * 写入身份上下文键值对。
      *
-     * @param key   key of request
-     * @param value value of request's key
+     * @param key   参数键
+     * @param value 参数值
      */
     public void setParameter(String key, Object value) {
         param.put(key, value);

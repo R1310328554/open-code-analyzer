@@ -20,12 +20,12 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.plugin.ai.storage.model.StorageKey;
 
 /**
- * AI resource storage SPI interface.
+ * AI 资源存储 SPI 接口。
  *
- * <p>Similar to Nacos's multi-datasource/multi-storage implementation, each storage provider implements this interface.
- * It only cares about how to read/write by key, and is designed for generic AI resources (Skill, Prompt, etc.).</p>
+ * <p>类似 Nacos 多数据源/多存储后端的设计，每个存储 provider 实现本接口，
+ * 仅关注如何按 key 读写内容，面向 Skill、Prompt 等通用 AI 资源。</p>
  *
- * <p>Implementations should be created via {@link AiResourceStorageBuilder}.</p>
+ * <p>实现类应通过 {@link AiResourceStorageBuilder} 创建实例。</p>
  *
  * @author mosong.lp
  * @since 3.2.0
@@ -33,35 +33,35 @@ import com.alibaba.nacos.plugin.ai.storage.model.StorageKey;
 public interface AiResourceStorage {
     
     /**
-     * Type identifier, corresponding to {@link StorageKey#getProvider()}.
+     * 类型标识，与 {@link StorageKey#getProvider()} 对应。
      *
-     * @return storage provider type, e.g. "nacos_config", "oss"
+     * @return 存储 provider 类型，例如 {@code "nacos_config"}、{@code "oss"}
      */
     String type();
     
     /**
-     * Save content to storage.
+     * 将内容写入存储。
      *
-     * @param storageKey the storage key identifying the resource location
-     * @param content    the content to save as byte array
-     * @throws NacosException if save operation fails
+     * @param storageKey 标识资源位置的存储键
+     * @param content    待保存的字节内容
+     * @throws NacosException 保存失败时抛出
      */
     void save(StorageKey storageKey, byte[] content) throws NacosException;
     
     /**
-     * Get content from storage.
+     * 从存储读取内容。
      *
-     * @param storageKey the storage key identifying the resource location
-     * @return the content as byte array, or null if not found
-     * @throws NacosException if get operation fails
+     * @param storageKey 标识资源位置的存储键
+     * @return 字节内容；不存在时返回 {@code null}
+     * @throws NacosException 读取失败时抛出
      */
     byte[] get(StorageKey storageKey) throws NacosException;
     
     /**
-     * Delete content from storage.
+     * 从存储删除内容。
      *
-     * @param storageKey the storage key identifying the resource location
-     * @throws NacosException if delete operation fails
+     * @param storageKey 标识资源位置的存储键
+     * @throws NacosException 删除失败时抛出
      */
     void delete(StorageKey storageKey) throws NacosException;
 }

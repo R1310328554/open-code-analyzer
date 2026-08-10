@@ -21,16 +21,15 @@ import com.alibaba.nacos.plugin.ai.pipeline.model.PublishPipelineResourceType;
 import com.alibaba.nacos.plugin.ai.pipeline.model.PublishPipelineResult;
 
 /**
- * Publish pipeline service SPI interface.
+ * 发布流水线服务 SPI 接口。
  *
- * <p>Inspired by {@code ConfigChangePluginService}, this interface provides an interception/review mechanism
- * before AI resource publishing. It is designed for generic AI resources (Skill, Prompt, MCP, etc.),
- * not limited to a single resource type.</p>
+ * <p>借鉴 {@code ConfigChangePluginService} 的拦截/审核思路，在 AI 资源正式发布前
+ * 插入可插拔的审核环节，面向 Skill、Prompt、MCP 等通用 AI 资源，不限于单一类型。</p>
  *
- * <p>Multiple pipeline plugins are sorted by {@link #getPreferOrder()} and executed serially.
- * The next plugin is executed only after the previous one passes.</p>
+ * <p>多个流水线插件按 {@link #getPreferOrder()} 升序串行执行，仅当前一个插件
+ * 返回通过后才会继续执行下一个。</p>
  *
- * <p>Implementations should be created via {@link PublishPipelineServiceBuilder}.</p>
+ * <p>实现类应通过 {@link PublishPipelineServiceBuilder} 创建实例。</p>
  *
  * @author mosong.lp
  * @since 3.2.0
@@ -38,34 +37,34 @@ import com.alibaba.nacos.plugin.ai.pipeline.model.PublishPipelineResult;
 public interface PublishPipelineService {
     
     /**
-     * Unique identifier for this pipeline plugin, e.g. "ai-review", "manual-confirm".
+     * 本流水线插件的唯一标识，例如 {@code "ai-review"}、{@code "manual-confirm"}。
      *
-     * @return pipeline plugin id
+     * @return 流水线插件 ID
      */
     String pipelineId();
     
     /**
-     * Execute the review/interception logic.
+     * 执行审核/拦截逻辑。
      *
-     * @param context publish context containing resource metadata, version info, file contents, etc.
-     * @return review result with passed status and comments
+     * @param context 发布上下文，含资源元数据、版本信息、文件内容等
+     * @return 审核结果，包含是否通过与说明信息
      */
     PublishPipelineResult execute(PublishPipelineContext context);
     
     /**
-     * Execution order. Lower values execute first.
-     * Inspired by {@code ConfigChangePluginService.getOrder()}.
+     * 执行顺序，数值越小越先执行。
+     * 设计思路参考 {@code ConfigChangePluginService.getOrder()}。
      *
-     * @return order value
+     * @return 排序权重
      */
     int getPreferOrder();
     
     /**
-     * Declare the resource types this plugin supports for review.
-     * Inspired by {@code ConfigChangePluginService.pointcutMethodNames()},
-     * used by {@code PublishPipelineManager} to route to the corresponding plugin list by resource type.
+     * 声明本插件支持审核的资源类型。
+     * 设计思路参考 {@code ConfigChangePluginService.pointcutMethodNames()}，
+     * 供 {@code PublishPipelineManager} 按资源类型路由到对应插件链。
      *
-     * @return array of supported resource types
+     * @return 支持的资源类型数组
      */
     PublishPipelineResourceType[] pipelineResourceTypes();
 }

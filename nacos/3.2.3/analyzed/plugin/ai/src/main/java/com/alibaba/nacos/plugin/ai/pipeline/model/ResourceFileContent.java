@@ -17,7 +17,7 @@
 package com.alibaba.nacos.plugin.ai.pipeline.model;
 
 /**
- * Resource file content, representing a single file in storage.
+ * 资源文件内容模型，表示存储中的单个文本文件。
  *
  * @author mosong.lp
  * @since 3.2.0
@@ -25,35 +25,46 @@ package com.alibaba.nacos.plugin.ai.pipeline.model;
 public class ResourceFileContent {
     
     /**
-     * File path, e.g. "templates/config_check.json", "SKILL.md".
+     * 文件相对路径，例如 {@code "templates/config_check.json"}、{@code "SKILL.md"}。
      */
     private String filePath;
     
     /**
-     * File content (text).
+     * 文件文本内容。
      */
     private String content;
     
+    /** 无参构造。 */
     public ResourceFileContent() {
     }
     
+    /**
+     * 构造指定路径与内容的文件模型。
+     *
+     * @param filePath 文件路径
+     * @param content  文本内容
+     */
     public ResourceFileContent(String filePath, String content) {
         this.filePath = filePath;
         this.content = content;
     }
     
+    /** @return 文件路径 */
     public String getFilePath() {
         return filePath;
     }
     
+    /** @param filePath 文件路径 */
     public void setFilePath(String filePath) {
         this.filePath = filePath;
     }
     
+    /** @return 文件文本内容 */
     public String getContent() {
         return content;
     }
     
+    /** @param content 文件文本内容 */
     public void setContent(String content) {
         this.content = content;
     }
