@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T01:17:56Z",
-  "files": [
-    "transport/src/main/java/io/netty/channel/ChannelHandlerContext.java",
-    "transport/src/main/java/io/netty/channel/ChannelHandlerMask.java",
-    "transport/src/main/java/io/netty/channel/ChannelId.java",
-    "transport/src/main/java/io/netty/channel/ChannelInboundHandler.java",
-    "transport/src/main/java/io/netty/channel/ChannelInboundHandlerAdapter.java",
-    "transport/src/main/java/io/netty/channel/ChannelInboundInvoker.java",
-    "transport/src/main/java/io/netty/channel/ChannelInitializer.java",
-    "transport/src/main/java/io/netty/channel/ChannelMetadata.java",
-    "transport/src/main/java/io/netty/channel/ChannelOption.java",
-    "transport/src/main/java/io/netty/channel/ChannelOutboundBuffer.java",
-    "transport/src/main/java/io/netty/channel/ChannelOutboundHandler.java",
-    "transport/src/main/java/io/netty/channel/ChannelOutboundHandlerAdapter.java",
-    "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
-    "transport/src/main/java/io/netty/channel/ChannelPipeline.java",
-    "transport/src/main/java/io/netty/channel/ChannelPipelineException.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 338,
-  "done": 1575
+  "done": 1590
 }
