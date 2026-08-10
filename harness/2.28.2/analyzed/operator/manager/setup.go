@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// setup 封装构建阶段开始前的初始化依赖与执行逻辑。
 type setup struct {
 	Builds core.BuildStore
 	Events core.Pubsub
@@ -36,6 +37,7 @@ type setup struct {
 	Users  core.UserStore
 }
 
+// do 持久化阶段与步骤、更新构建状态、发布事件并推送 SCM 状态。
 func (s *setup) do(ctx context.Context, stage *core.Stage) error {
 	logger := logrus.WithField("stage.id", stage.ID)
 
@@ -149,9 +151,7 @@ func (s *setup) do(ctx context.Context, stage *core.Stage) error {
 	return nil
 }
 
-// TODO(bradrydzewski) this should really be encapsulated into a single
-// function call that internally uses a database transaction so that we
-// can rollback if any operations fail.
+// createSteps 批量创建阶段下的所有步骤记录（当前未在 do 中调用）。
 func (s *setup) createSteps(ctx context.Context, stage *core.Stage) error {
 	var errs error
 	for _, step := range stage.Steps {
@@ -163,9 +163,7 @@ func (s *setup) createSteps(ctx context.Context, stage *core.Stage) error {
 	return errs
 }
 
-// helper function that updates the build status from pending to running.
-// This accounts for the fact that another agent may have already updated
-// the build status, which may happen if two stages execute concurrently.
+// updateBuild 将构建状态从 pending 转为 running；并发时乐观锁冲突则静默跳过。
 func (s *setup) updateBuild(ctx context.Context, build *core.Build) (bool, error) {
 	if build.Status != core.StatusPending {
 		return false, nil

@@ -26,76 +26,76 @@ import (
 	"github.com/drone/drone/operator/manager"
 )
 
-// Server is a no-op rpc server.
+// Server 是 OSS 构建下的空实现 RPC 服务器，所有方法返回未实现错误。
 type Server struct {
 	manager manager.BuildManager
 	secret  string
 }
 
-// NewServer returns a no-op rpc server.
+// NewServer 返回不做任何操作的 OSS 版 RPC 服务器。
 func NewServer(manager.BuildManager, string) *Server {
 	return &Server{}
 }
 
-// Request requests the next available build stage for execution.
+// Request OSS 版未实现，返回错误。
 func (Server) Request(ctx context.Context, args *manager.Request) (*core.Stage, error) {
 	return nil, errors.New("not implemented")
 }
 
-// Accept accepts the build stage for execution.
+// Accept OSS 版未实现，返回错误。
 func (Server) Accept(ctx context.Context, stage int64, machine string) error {
 	return errors.New("not implemented")
 }
 
-// Netrc returns a valid netrc for execution.
+// Netrc OSS 版未实现，返回错误。
 func (Server) Netrc(ctx context.Context, repo int64) (*core.Netrc, error) {
 	return nil, errors.New("not implemented")
 }
 
-// Details fetches build details
+// Details OSS 版未实现，返回错误。
 func (Server) Details(ctx context.Context, stage int64) (*manager.Context, error) {
 	return nil, errors.New("not implemented")
 }
 
-// Before signals the build step is about to start.
+// Before OSS 版未实现，返回错误。
 func (Server) Before(ctx context.Context, step *core.Step) error {
 	return errors.New("not implemented")
 }
 
-// After signals the build step is complete.
+// After OSS 版未实现，返回错误。
 func (Server) After(ctx context.Context, step *core.Step) error {
 	return errors.New("not implemented")
 }
 
-// Before signals the build stage is about to start.
+// BeforeAll OSS 版未实现，返回错误。
 func (Server) BeforeAll(ctx context.Context, stage *core.Stage) error {
 	return errors.New("not implemented")
 }
 
-// After signals the build stage is complete.
+// AfterAll OSS 版未实现，返回错误。
 func (Server) AfterAll(ctx context.Context, stage *core.Stage) error {
 	return errors.New("not implemented")
 }
 
-// Watch watches for build cancellation requests.
+// Watch OSS 版未实现，返回错误。
 func (Server) Watch(ctx context.Context, stage int64) (bool, error) {
 	return false, errors.New("not implemented")
 }
 
-// Write writes a line to the build logs
+// Write OSS 版未实现，返回错误。
 func (Server) Write(ctx context.Context, step int64, line *core.Line) error {
 	return errors.New("not implemented")
 }
 
-// Upload uploads the full logs
+// Upload OSS 版未实现，返回错误。
 func (Server) Upload(ctx context.Context, step int64, r io.Reader) error {
 	return errors.New("not implemented")
 }
 
-// UploadBytes uploads the full logs
+// UploadBytes OSS 版未实现，返回错误。
 func (Server) UploadBytes(ctx context.Context, step int64, b []byte) error {
 	return errors.New("not implemented")
 }
 
-// ServeHTTP is an empty handler.
+// ServeHTTP OSS 版空处理器，不响应任何 RPC 请求。
 func (Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {}

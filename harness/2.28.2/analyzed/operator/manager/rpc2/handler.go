@@ -16,6 +16,7 @@
 
 */
 
+// rpc2 包实现基于 chi 路由的 v2 RESTful RPC HTTP 处理器（非 OSS 构建）。
 package rpc2
 
 import (
@@ -34,13 +35,12 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// default http request timeout
+// defaultTimeout 为 v2 RPC HTTP 请求默认超时。
 var defaultTimeout = time.Second * 30
 
 var noContext = context.Background()
 
-// HandleJoin returns an http.HandlerFunc that makes an
-// http.Request to join the cluster.
+// HandleJoin 处理 Agent 加入集群的占位请求（当前为 no-op）。
 //
 // POST /rpc/v2/nodes/:machine
 func HandleJoin() http.HandlerFunc {
@@ -49,8 +49,7 @@ func HandleJoin() http.HandlerFunc {
 	}
 }
 
-// HandleLeave returns an http.HandlerFunc that makes an
-// http.Request to leave the cluster.
+// HandleLeave 处理 Agent 离开集群的占位请求（当前为 no-op）。
 //
 // DELETE /rpc/v2/nodes/:machine
 func HandleLeave() http.HandlerFunc {
@@ -59,8 +58,7 @@ func HandleLeave() http.HandlerFunc {
 	}
 }
 
-// HandlePing returns an http.HandlerFunc that makes an
-// http.Request to ping the server and confirm connectivity.
+// HandlePing 处理连通性探测请求，返回 200 表示服务可达。
 //
 // GET /rpc/v2/ping
 func HandlePing() http.HandlerFunc {
@@ -69,8 +67,7 @@ func HandlePing() http.HandlerFunc {
 	}
 }
 
-// HandleRequest returns an http.HandlerFunc that processes an
-// http.Request to request a stage from the queue for execution.
+// HandleRequest 从调度队列长轮询请求下一个可执行阶段。
 //
 // POST /rpc/v2/stage
 func HandleRequest(m manager.BuildManager) http.HandlerFunc {
@@ -94,8 +91,7 @@ func HandleRequest(m manager.BuildManager) http.HandlerFunc {
 	}
 }
 
-// HandleAccept returns an http.HandlerFunc that processes an
-// http.Request to accept ownership of the stage.
+// HandleAccept 接受指定阶段的执行权并绑定 Agent 机器名。
 //
 // POST /rpc/v2/stage/{stage}?machine=
 func HandleAccept(m manager.BuildManager) http.HandlerFunc {
@@ -112,8 +108,7 @@ func HandleAccept(m manager.BuildManager) http.HandlerFunc {
 	}
 }
 
-// HandleInfo returns an http.HandlerFunc that processes an
-// http.Request to get the build details.
+// HandleInfo 返回阶段构建详情、netrc 凭据及含密钥的仓库信息。
 //
 // POST /rpc/v2/build/{build}
 func HandleInfo(m manager.BuildManager) http.HandlerFunc {
@@ -144,8 +139,7 @@ func HandleInfo(m manager.BuildManager) http.HandlerFunc {
 	}
 }
 
-// HandleUpdateStage returns an http.HandlerFunc that processes
-// an http.Request to update a stage.
+// HandleUpdateStage 根据阶段状态调用 BeforeAll 或 AfterAll 更新阶段。
 //
 // PUT /rpc/v2/stage/{stage}
 func HandleUpdateStage(m manager.BuildManager) http.HandlerFunc {
@@ -172,8 +166,7 @@ func HandleUpdateStage(m manager.BuildManager) http.HandlerFunc {
 	}
 }
 
-// HandleUpdateStep returns an http.HandlerFunc that processes
-// an http.Request to update a step.
+// HandleUpdateStep 根据步骤状态调用 Before 或 After 更新步骤。
 //
 // POST /rpc/v2/step/{step}
 func HandleUpdateStep(m manager.BuildManager) http.HandlerFunc {
@@ -200,9 +193,7 @@ func HandleUpdateStep(m manager.BuildManager) http.HandlerFunc {
 	}
 }
 
-// HandleWatch returns an http.HandlerFunc that accepts a
-// blocking http.Request that watches a build for cancellation
-// events.
+// HandleWatch 阻塞监听构建取消事件，超时返回 204 供客户端重试。
 //
 // GET /rpc/v2/build/{build}/watch
 func HandleWatch(m manager.BuildManager) http.HandlerFunc {
@@ -223,8 +214,7 @@ func HandleWatch(m manager.BuildManager) http.HandlerFunc {
 	}
 }
 
-// HandleLogBatch returns an http.HandlerFunc that accepts an
-// http.Request to submit a stream of logs to the system.
+// HandleLogBatch 批量提交步骤的多行实时日志。
 //
 // POST /rpc/v2/step/{step}/logs/batch
 func HandleLogBatch(m manager.BuildManager) http.HandlerFunc {
@@ -253,8 +243,7 @@ func HandleLogBatch(m manager.BuildManager) http.HandlerFunc {
 	}
 }
 
-// HandleLogUpload returns an http.HandlerFunc that accepts an
-// http.Request to upload and persist logs for a pipeline stage.
+// HandleLogUpload 上传并持久化步骤完整日志。
 //
 // POST /rpc/v2/step/{step}/logs/upload
 func HandleLogUpload(m manager.BuildManager) http.HandlerFunc {
@@ -271,8 +260,7 @@ func HandleLogUpload(m manager.BuildManager) http.HandlerFunc {
 	}
 }
 
-// HandleCardUpload returns an http.HandlerFunc that accepts an
-// http.Request to upload and persist a card for a pipeline step.
+// HandleCardUpload 上传并持久化步骤可视化卡片。
 //
 // POST /rpc/v2/step/{step}/card
 func HandleCardUpload(m manager.BuildManager) http.HandlerFunc {
@@ -296,17 +284,17 @@ func HandleCardUpload(m manager.BuildManager) http.HandlerFunc {
 	}
 }
 
-// write a 200 Status OK to the response body.
+// writeJSON 将对象序列化为 JSON 写入响应。
 func writeJSON(w http.ResponseWriter, v interface{}) {
 	json.NewEncoder(w).Encode(v)
 }
 
-// write a 200 Status OK to the response body.
+// writeOK 返回 HTTP 200 空响应体。
 func writeOK(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// write an error message to the response body.
+// writeError 将错误映射为 204/409/500 等状态码并写入消息。
 func writeError(w http.ResponseWriter, err error) {
 	if err == context.DeadlineExceeded {
 		w.WriteHeader(204) // should retry

@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// teardown 封装构建阶段完成后的收尾、下游调度与状态汇总逻辑。
 type teardown struct {
 	Builds    core.BuildStore
 	Events    core.Pubsub
@@ -40,6 +41,7 @@ type teardown struct {
 	Webhook   core.WebhookSender
 }
 
+// do 更新步骤与阶段、清理日志流、调度/跳过下游阶段并在构建完成时发布事件。
 func (t *teardown) do(ctx context.Context, stage *core.Stage) error {
 	logger := logrus.WithField("stage.id", stage.ID)
 	logger.Debugln("manager: stage is complete. teardown")
@@ -209,9 +211,7 @@ func (t *teardown) do(ctx context.Context, stage *core.Stage) error {
 	return nil
 }
 
-// cancelDownstream is a helper function that tests for
-// downstream stages and cancels them based on the overall
-// pipeline state.
+// cancelDownstream 根据流水线成败状态将不满足条件的 waiting 阶段标记为 skipped。
 func (t *teardown) cancelDownstream(
 	ctx context.Context,
 	stages []*core.Stage,
@@ -272,9 +272,7 @@ func (t *teardown) cancelDownstream(
 	return errs
 }
 
-// scheduleDownstream is a helper function that tests for
-// downstream stages and schedules stages if all dependencies
-// and execution requirements are met.
+// scheduleDownstream 在依赖满足时将 waiting 下游阶段置为 pending 并加入调度队列。
 func (t *teardown) scheduleDownstream(
 	ctx context.Context,
 	stage *core.Stage,
@@ -333,10 +331,7 @@ func (t *teardown) scheduleDownstream(
 	return errs
 }
 
-// resync updates the stage from the database. Note that it does
-// not update the Version field. This is by design. It prevents
-// the current go routine from updating a stage that has been
-// updated by another go routine.
+// resync 从数据库刷新阶段状态字段（不更新 Version，避免覆盖并发写入）。
 func (t *teardown) resync(ctx context.Context, stage *core.Stage) error {
 	updated, err := t.Stages.Find(ctx, stage.ID)
 	if err != nil {

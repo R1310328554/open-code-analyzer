@@ -4,4 +4,5 @@
 
 // +build !oss
 
+// rpc2 包定义 v2 RESTful RPC 客户端占位（非 OSS 构建；客户端逻辑在其他模块实现）。
 package rpc2

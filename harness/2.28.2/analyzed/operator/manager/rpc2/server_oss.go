@@ -22,12 +22,10 @@ import (
 	"github.com/drone/drone/operator/manager"
 )
 
-// Server wraps the chi Router in a custom type for wire
-// injection purposes.
+// Server OSS 版将 http.Handler 包装为 Wire 可注入类型，实际返回 404 处理器。
 type Server http.Handler
 
-// NewServer returns a new rpc server that enables remote
-// interaction with the build controller using the http transport.
+// NewServer OSS 版返回 NotFound 处理器，不提供 v2 RPC 功能。
 func NewServer(manager manager.BuildManager, secret string) Server {
 	return Server(http.NotFoundHandler())
 }

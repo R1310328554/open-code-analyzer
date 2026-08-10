@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// manager 包封装 Drone 构建运行器与服务器之间的复杂构建操作，提供简化的 BuildManager 接口。
 package manager
 
 import (
@@ -29,13 +30,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// noContext 为不携带取消/超时的后台上下文，用于部分数据库操作。
 var noContext = context.Background()
 
 var _ BuildManager = (*Manager)(nil)
 
 type (
-	// Context represents the minimum amount of information
-	// required by the runner to execute a build.
+	// Context 包含运行器执行一次构建所需的最小上下文信息。
 	Context struct {
 		Repo    *core.Repository `json:"repository"`
 		Build   *core.Build      `json:"build"`
@@ -45,52 +46,49 @@ type (
 		System  *core.System     `json:"system"`
 	}
 
-	// BuildManager encapsulates complex build operations and provides
-	// a simplified interface for build runners.
+	// BuildManager 封装复杂构建操作，为构建运行器提供简化接口。
 	BuildManager interface {
-		// Request requests the next available build stage for execution.
+		// Request 从调度队列请求下一个可执行的构建阶段。
 		Request(ctx context.Context, args *Request) (*core.Stage, error)
 
-		// Accept accepts the build stage for execution.
+		// Accept 接受指定构建阶段并在给定机器上锁定执行权。
 		Accept(ctx context.Context, stage int64, machine string) (*core.Stage, error)
 
-		// Netrc returns a valid netrc for execution.
+		// Netrc 返回用于克隆仓库的有效 netrc 凭据。
 		Netrc(ctx context.Context, repo int64) (*core.Netrc, error)
 
-		// Details fetches build details
+		// Details 获取指定阶段的完整构建上下文（仓库、配置、密钥等）。
 		Details(ctx context.Context, stage int64) (*Context, error)
 
-		// Before signals the build step is about to start.
+		// Before 在构建步骤开始执行前更新状态并创建日志流。
 		Before(ctx context.Context, step *core.Step) error
 
-		// After signals the build step is complete.
+		// After 在构建步骤完成后更新状态并清理日志流。
 		After(ctx context.Context, step *core.Step) error
 
-		// BeforeAll signals the build stage is about to start.
+		// BeforeAll 在构建阶段开始执行前进行初始化（持久化步骤、发布事件等）。
 		BeforeAll(ctx context.Context, stage *core.Stage) error
 
-		// AfterAll signals the build stage is complete.
+		// AfterAll 在构建阶段完成后执行收尾（调度下游、更新构建状态等）。
 		AfterAll(ctx context.Context, stage *core.Stage) error
 
-		// Watch watches for build cancellation requests.
+		// Watch 监听构建取消请求，返回是否应停止执行。
 		Watch(ctx context.Context, stage int64) (bool, error)
 
-		// Write writes a line to the build logs
+		// Write 向构建日志流写入一行实时日志。
 		Write(ctx context.Context, step int64, line *core.Line) error
 
-		// Upload uploads the full logs
+		// Upload 上传步骤的完整日志内容。
 		Upload(ctx context.Context, step int64, r io.Reader) error
 
-		// UploadBytes uploads the full logs
+		// UploadBytes 以字节切片形式上传步骤完整日志。
 		UploadBytes(ctx context.Context, step int64, b []byte) error
 
-		// UploadCard creates a new card
+		// UploadCard 为指定步骤创建可视化卡片。
 		UploadCard(ctx context.Context, step int64, input *core.CardInput) error
 	}
 
-	// Request provides filters when requesting a pending
-	// build from the queue. This allows an agent, for example,
-	// to request a build that matches its architecture and kernel.
+	// Request 定义从队列请求待执行构建时的过滤条件（架构、内核、标签等）。
 	Request struct {
 		Kind    string            `json:"kind"`
 		Type    string            `json:"type"`
@@ -102,7 +100,7 @@ type (
 	}
 )
 
-// New returns a new Manager.
+// New 构造并返回实现 BuildManager 接口的 Manager 实例。
 func New(
 	builds core.BuildStore,
 	cards core.CardStore,
@@ -145,8 +143,7 @@ func New(
 	}
 }
 
-// Manager provides a simplified interface to the build runner so that it
-// can more easily interact with the server.
+// Manager 为构建运行器提供简化接口，便于与 Drone 服务器交互。
 type Manager struct {
 	Builds    core.BuildStore
 	Cards     core.CardStore
@@ -168,7 +165,7 @@ type Manager struct {
 	Webhook   core.WebhookSender
 }
 
-// Request requests the next available build stage for execution.
+// Request 从调度器请求与过滤条件匹配的下一个可用构建阶段。
 func (m *Manager) Request(ctx context.Context, args *Request) (*core.Stage, error) {
 	logger := logrus.WithFields(
 		logrus.Fields{
@@ -203,10 +200,7 @@ func (m *Manager) Request(ctx context.Context, args *Request) (*core.Stage, erro
 	return stage, nil
 }
 
-// Accept accepts the build stage for execution. It is possible for multiple
-// agents to pull the same stage from the queue. The system uses optimistic
-// locking at the database-level to prevent multiple agents from executing the
-// same stage.
+// Accept 接受构建阶段执行权；多 Agent 竞争时通过数据库乐观锁保证唯一执行。
 func (m *Manager) Accept(ctx context.Context, id int64, machine string) (*core.Stage, error) {
 	logger := logrus.WithFields(
 		logrus.Fields{
@@ -244,9 +238,7 @@ func (m *Manager) Accept(ctx context.Context, id int64, machine string) (*core.S
 	return stage, err
 }
 
-// handleDetailsError marks a stage as error when Details() fails after the
-// stage has already been loaded from the database. It uses a two-step
-// approach to ensure the stage is always persisted even if teardown fails:
+// handleDetailsError 在 Details 失败时将阶段标记为错误并触发收尾，确保状态持久化。
 func (m *Manager) handleDetailsError(ctx context.Context, stage *core.Stage, err error) (*Context, error) {
 	logrus.WithFields(logrus.Fields{
 		"stage.id":      stage.ID,
@@ -278,7 +270,7 @@ func (m *Manager) handleDetailsError(ctx context.Context, stage *core.Stage, err
 	return nil, err
 }
 
-// Details fetches build details.
+// Details 加载并组装指定阶段的完整构建上下文（仓库、配置、密钥、YAML 转换等）。
 func (m *Manager) Details(ctx context.Context, id int64) (*Context, error) {
 	logger := logrus.WithField("step-id", id)
 	logger.Debugln("manager: fetching stage details")
@@ -390,7 +382,7 @@ func (m *Manager) Details(ctx context.Context, id int64) (*Context, error) {
 	}, nil
 }
 
-// Before signals the build step is about to start.
+// Before 在步骤开始前创建日志流并通过 updater 持久化步骤状态。
 func (m *Manager) Before(ctx context.Context, step *core.Step) error {
 	logger := logrus.WithFields(
 		logrus.Fields{
@@ -418,7 +410,7 @@ func (m *Manager) Before(ctx context.Context, step *core.Step) error {
 	return updater.do(ctx, step)
 }
 
-// After signals the build step is complete.
+// After 在步骤完成后更新状态并删除临时日志流。
 func (m *Manager) After(ctx context.Context, step *core.Step) error {
 	logger := logrus.WithFields(
 		logrus.Fields{
@@ -452,7 +444,7 @@ func (m *Manager) After(ctx context.Context, step *core.Step) error {
 	return errs
 }
 
-// BeforeAll signals the build stage is about to start.
+// BeforeAll 委托 setup 执行阶段开始前的初始化流程。
 func (m *Manager) BeforeAll(ctx context.Context, stage *core.Stage) error {
 	s := &setup{
 		Builds: m.Builds,
@@ -466,7 +458,7 @@ func (m *Manager) BeforeAll(ctx context.Context, stage *core.Stage) error {
 	return s.do(ctx, stage)
 }
 
-// AfterAll signals the build stage is complete.
+// AfterAll 委托 teardown 执行阶段完成后的收尾流程。
 func (m *Manager) AfterAll(ctx context.Context, stage *core.Stage) error {
 	t := &teardown{
 		Builds:    m.Builds,
@@ -483,8 +475,7 @@ func (m *Manager) AfterAll(ctx context.Context, stage *core.Stage) error {
 	return t.do(ctx, stage)
 }
 
-// Netrc returns netrc file with a valid, non-expired token
-// that can be used to clone the repository.
+// Netrc 生成包含有效未过期令牌、可用于克隆仓库的 netrc 凭据。
 func (m *Manager) Netrc(ctx context.Context, id int64) (*core.Netrc, error) {
 	logger := logrus.WithField("repo.id", id)
 
@@ -511,7 +502,7 @@ func (m *Manager) Netrc(ctx context.Context, id int64) (*core.Netrc, error) {
 	return netrc, err
 }
 
-// Watch watches for build cancellation requests.
+// Watch 轮询调度器与数据库，检测构建是否已被取消或完成。
 func (m *Manager) Watch(ctx context.Context, id int64) (bool, error) {
 	ok, err := m.Scheduler.Cancelled(ctx, id)
 	// we expect a context cancel error here which
@@ -543,7 +534,7 @@ func (m *Manager) Watch(ctx context.Context, id int64) (bool, error) {
 	return build.IsDone(), nil
 }
 
-// Write writes a line to the build logs.
+// Write 向指定步骤的实时日志流写入一行。
 func (m *Manager) Write(ctx context.Context, step int64, line *core.Line) error {
 	err := m.Logz.Write(ctx, step, line)
 	if err != nil {
@@ -554,7 +545,7 @@ func (m *Manager) Write(ctx context.Context, step int64, line *core.Line) error 
 	return err
 }
 
-// Upload uploads the full logs.
+// Upload 将步骤完整日志持久化到日志存储。
 func (m *Manager) Upload(ctx context.Context, step int64, r io.Reader) error {
 	err := m.Logs.Create(ctx, step, r)
 	if err != nil {
@@ -565,7 +556,7 @@ func (m *Manager) Upload(ctx context.Context, step int64, r io.Reader) error {
 	return err
 }
 
-// UploadBytes uploads the full logs.
+// UploadBytes 以字节形式上传并持久化步骤完整日志。
 func (m *Manager) UploadBytes(ctx context.Context, step int64, data []byte) error {
 	buf := bytes.NewBuffer(data)
 	err := m.Logs.Create(ctx, step, buf)
@@ -577,7 +568,7 @@ func (m *Manager) UploadBytes(ctx context.Context, step int64, data []byte) erro
 	return err
 }
 
-// UploadCard creates card for step.
+// UploadCard 为指定步骤创建并持久化可视化卡片。
 func (m *Manager) UploadCard(ctx context.Context, stepId int64, input *core.CardInput) error {
 	data := ioutil.NopCloser(
 		bytes.NewBuffer(input.Data),

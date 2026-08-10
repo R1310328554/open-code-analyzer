@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// mockscm 包提供 go-scm SCM 服务接口的 GoMock 模拟生成入口（非 OSS 构建）。
 package mockscm
 
 //go:generate mockgen -package=mockscm -destination=mock_gen.go github.com/drone/go-scm/scm ContentService,GitService,OrganizationService,PullRequestService,RepositoryService,UserService

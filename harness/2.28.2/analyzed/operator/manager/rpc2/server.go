@@ -16,12 +16,10 @@ import (
 	"github.com/go-chi/chi/middleware"
 )
 
-// Server wraps the chi Router in a custom type for wire
-// injection purposes.
+// Server 将 chi 路由器包装为自定义类型，便于 Wire 依赖注入。
 type Server http.Handler
 
-// NewServer returns a new rpc server that enables remote
-// interaction with the build controller using the http transport.
+// NewServer 创建注册全部 v2 RPC 路由并启用令牌鉴权的 HTTP 处理器。
 func NewServer(manager manager.BuildManager, secret string) Server {
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
@@ -42,6 +40,7 @@ func NewServer(manager manager.BuildManager, secret string) Server {
 	return Server(r)
 }
 
+// authorization 返回校验 X-Drone-Token 的中间件；空令牌直接拒绝访问。
 func authorization(token string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

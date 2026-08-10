@@ -11,16 +11,14 @@ import (
 	"github.com/drone/drone/operator/manager"
 )
 
-// details provides the runner with the build details and
-// includes all environment data required to execute the build.
+// details 向运行器提供完整构建上下文、netrc 及含密钥的仓库信息。
 type details struct {
 	*manager.Context
 	Netrc *core.Netrc `json:"netrc"`
 	Repo  *repository `json:"repository"`
 }
 
-// repository wraps a repository object to include the secret
-// when the repository is marshaled to json.
+// repository 包装仓库对象，在 JSON 序列化时显式包含 secret 字段。
 type repository struct {
 	*core.Repository
 	Secret string `json:"secret"`

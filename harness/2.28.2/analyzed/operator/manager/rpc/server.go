@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// rpc 包实现基于 HTTP 的 v1 RPC 服务端处理器（非 OSS 构建）。
 package rpc
 
 import (
@@ -18,20 +19,18 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// default http request timeout
+// defaultTimeout 为 HTTP 请求默认超时时间。
 var defaultTimeout = time.Second * 30
 
 var noContext = context.Background()
 
-// Server is an rpc handler that enables remote interaction
-// between the server and controller using the http transport.
+// Server 是基于 HTTP 的 RPC 处理器，供远程 Agent 调用 BuildManager。
 type Server struct {
 	manager manager.BuildManager
 	secret  string
 }
 
-// NewServer returns a new rpc server that enables remote
-// interaction with the build controller using the http transport.
+// NewServer 创建绑定 BuildManager 与共享密钥的 RPC HTTP 处理器。
 func NewServer(manager manager.BuildManager, secret string) *Server {
 	return &Server{
 		manager: manager,
@@ -39,6 +38,7 @@ func NewServer(manager manager.BuildManager, secret string) *Server {
 	}
 }
 
+// ServeHTTP 校验 X-Drone-Token 并按路径分发 RPC 端点。
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if s.secret == "" {
 		w.WriteHeader(401) // not found
@@ -76,6 +76,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleRequest 处理队列阶段请求（长轮询）。
 func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
@@ -95,6 +96,7 @@ func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(stage)
 }
 
+// handleAccept 处理 Agent 接受阶段执行权的请求。
 func (s *Server) handleAccept(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	in := &acceptRequest{}
@@ -111,6 +113,7 @@ func (s *Server) handleAccept(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(out)
 }
 
+// handleNetrc 返回指定仓库的 netrc 克隆凭据。
 func (s *Server) handleNetrc(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	in := &netrcRequest{}
@@ -127,6 +130,7 @@ func (s *Server) handleNetrc(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(netrc)
 }
 
+// handleDetails 返回构建上下文及仓库密钥（单独字段传递）。
 func (s *Server) handleDetails(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	in := &detailsRequest{}
@@ -147,6 +151,7 @@ func (s *Server) handleDetails(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(out)
 }
 
+// handleBefore 在步骤开始前更新状态并返回持久化后的步骤。
 func (s *Server) handleBefore(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	in := &stepRequest{}
@@ -163,6 +168,7 @@ func (s *Server) handleBefore(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(in.Step)
 }
 
+// handleAfter 在步骤完成后更新状态并返回最新版本。
 func (s *Server) handleAfter(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	in := &stepRequest{}
@@ -179,6 +185,7 @@ func (s *Server) handleAfter(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(in.Step)
 }
 
+// handleBeforeAll 在阶段开始前执行 setup 逻辑。
 func (s *Server) handleBeforeAll(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	in := &stageRequest{}
@@ -195,6 +202,7 @@ func (s *Server) handleBeforeAll(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(in.Stage)
 }
 
+// handleAfterAll 在阶段完成后执行 teardown 逻辑。
 func (s *Server) handleAfterAll(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	in := &stageRequest{}
@@ -211,6 +219,7 @@ func (s *Server) handleAfterAll(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(in.Stage)
 }
 
+// handleWrite 接收单行日志并写入实时日志流。
 func (s *Server) handleWrite(w http.ResponseWriter, r *http.Request) {
 	in := writePool.Get().(*writeRequest)
 	in.Line = nil
@@ -230,6 +239,7 @@ func (s *Server) handleWrite(w http.ResponseWriter, r *http.Request) {
 	writePool.Put(in)
 }
 
+// handleUpload 接收并持久化步骤完整日志。
 func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	in := r.FormValue("id")
@@ -246,6 +256,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// handleWatch 长轮询监听构建取消或完成事件。
 func (s *Server) handleWatch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
@@ -267,11 +278,13 @@ func (s *Server) handleWatch(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// writeBadRequest 将 JSON 解析等错误以 500 返回以便客户端重试。
 func writeBadRequest(w http.ResponseWriter, err error) {
 	w.WriteHeader(500) // should retry
 	io.WriteString(w, err.Error())
 }
 
+// writeError 将业务错误映射为 409/524/400 等 HTTP 状态码。
 func writeError(w http.ResponseWriter, err error) {
 	if err == context.DeadlineExceeded {
 		w.WriteHeader(524) // should retry

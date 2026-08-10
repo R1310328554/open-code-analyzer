@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// rpc 包实现基于 HTTP 的 v1 远程过程调用客户端，供 Agent 与 Drone 服务器通信（非 OSS 构建）。
 package rpc
 
 import (
@@ -30,18 +31,17 @@ import (
 
 var _ manager.BuildManager = (*Client)(nil)
 
+// bufpool 复用 JSON 编码缓冲区，减轻 Agent 高频小请求的 GC 压力。
 var bufpool = bpool.NewBufferPool(64)
 
-// Client defines an RPC client.
+// Client 是基于 HTTP 重试客户端的 RPC 调用方。
 type Client struct {
 	token  string
 	server string
 	client *retryablehttp.Client
 }
 
-// NewClient returns a new rpc client that is able to
-// interact with a remote build controller using the
-// http transport.
+// NewClient 创建可通过 HTTP 与远程构建控制器交互的 RPC 客户端。
 func NewClient(server, token string) *Client {
 	client := retryablehttp.NewClient()
 	client.RetryMax = 30
@@ -55,10 +55,7 @@ func NewClient(server, token string) *Client {
 	}
 }
 
-// SetDebug enabled debug-level logging within the retryable
-// http.Client. This can be useful if you are debugging network
-// connectivity issues and want to monitor disconnects,
-// reconnects, and retries.
+// SetDebug 启用 retryablehttp 客户端的调试日志，便于排查网络连接与重试问题。
 func (s *Client) SetDebug(debug bool) {
 	if debug == true {
 		s.client.Logger = log.New(os.Stderr, "", log.LstdFlags)
@@ -67,7 +64,7 @@ func (s *Client) SetDebug(debug bool) {
 	}
 }
 
-// Request requests the next available build stage for execution.
+// Request 长轮询请求下一个可执行的构建阶段；客户端超时不视为错误。
 func (s *Client) Request(ctx context.Context, args *manager.Request) (*core.Stage, error) {
 	timeout, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
@@ -86,13 +83,13 @@ func (s *Client) Request(ctx context.Context, args *manager.Request) (*core.Stag
 	return out, err
 }
 
-// Accept accepts the build stage for execution.
+// Accept 向服务器声明接受指定阶段的执行权。
 func (s *Client) Accept(ctx context.Context, stage int64, machine string) (*core.Stage, error) {
 	in := &acceptRequest{Stage: stage, Machine: machine}
 	return nil, s.send(noContext, "/rpc/v1/accept", in, nil)
 }
 
-// Netrc returns a valid netrc for execution.
+// Netrc 获取用于克隆仓库的有效 netrc 凭据。
 func (s *Client) Netrc(ctx context.Context, repo int64) (*core.Netrc, error) {
 	in := &netrcRequest{repo}
 	out := &core.Netrc{}
@@ -100,7 +97,7 @@ func (s *Client) Netrc(ctx context.Context, repo int64) (*core.Netrc, error) {
 	return out, err
 }
 
-// Details fetches build details
+// Details 获取指定阶段的完整构建上下文，并补全仓库密钥字段。
 func (s *Client) Details(ctx context.Context, stage int64) (*manager.Context, error) {
 	in := &detailsRequest{Stage: stage}
 	out := &buildContextToken{}
@@ -115,7 +112,7 @@ func (s *Client) Details(ctx context.Context, stage int64) (*manager.Context, er
 	return out.Context, nil
 }
 
-// Before signals the build step is about to start.
+// Before 通知服务器步骤即将开始，并同步返回的 ID 与版本号。
 func (s *Client) Before(ctx context.Context, step *core.Step) error {
 	in := &stepRequest{Step: step}
 	out := &core.Step{}
@@ -131,7 +128,7 @@ func (s *Client) Before(ctx context.Context, step *core.Step) error {
 	return err
 }
 
-// After signals the build step is complete.
+// After 通知服务器步骤已完成，并同步乐观锁版本号。
 func (s *Client) After(ctx context.Context, step *core.Step) error {
 	in := &stepRequest{Step: step}
 	out := &core.Step{}
@@ -146,7 +143,7 @@ func (s *Client) After(ctx context.Context, step *core.Step) error {
 	return err
 }
 
-// BeforeAll signals the build stage is about to start.
+// BeforeAll 通知服务器阶段即将开始，并同步阶段与各步骤的 ID/版本。
 func (s *Client) BeforeAll(ctx context.Context, stage *core.Stage) error {
 	in := &stageRequest{Stage: stage}
 	out := &core.Stage{}
@@ -166,7 +163,7 @@ func (s *Client) BeforeAll(ctx context.Context, stage *core.Stage) error {
 	return err
 }
 
-// AfterAll signals the build stage is complete.
+// AfterAll 通知服务器阶段已完成，并同步时间戳与版本号。
 func (s *Client) AfterAll(ctx context.Context, stage *core.Stage) error {
 	in := &stageRequest{Stage: stage}
 	out := &core.Stage{}
@@ -183,6 +180,7 @@ func (s *Client) AfterAll(ctx context.Context, stage *core.Stage) error {
 	return err
 }
 
+// Watch 监听指定构建是否应取消或结束。
 func (s *Client) Watch(ctx context.Context, build int64) (bool, error) {
 	in := &watchRequest{build}
 	out := &watchResponse{}
@@ -190,6 +188,7 @@ func (s *Client) Watch(ctx context.Context, build int64) (bool, error) {
 	return out.Done, err
 }
 
+// Write 向服务器发送单行实时日志。
 func (s *Client) Write(ctx context.Context, step int64, line *core.Line) error {
 	in := writePool.Get().(*writeRequest)
 	in.Step = step
@@ -199,20 +198,24 @@ func (s *Client) Write(ctx context.Context, step int64, line *core.Line) error {
 	return err
 }
 
+// Upload 上传步骤完整日志流。
 func (s *Client) Upload(ctx context.Context, step int64, r io.Reader) error {
 	endpoint := "/rpc/v1/upload?id=" + fmt.Sprint(step)
 	return s.upload(noContext, endpoint, r)
 }
 
+// UploadBytes 以字节形式上传步骤完整日志。
 func (s *Client) UploadBytes(ctx context.Context, step int64, data []byte) error {
 	endpoint := "/rpc/v1/upload?id=" + fmt.Sprint(step)
 	return s.upload(noContext, endpoint, data)
 }
 
+// UploadCard v1 RPC 不支持卡片上传，始终返回错误。
 func (s *Client) UploadCard(ctx context.Context, step int64, input *core.CardInput) error {
 	return errors.New("rpc upload card not supported")
 }
 
+// send 序列化请求体、附加令牌并通过 retryablehttp 发送 POST 请求。
 func (s *Client) send(ctx context.Context, path string, in, out interface{}) error {
 	// Source a buffer from a pool. The agent may generate a
 	// large number of small requests for log entries. This will
@@ -273,6 +276,7 @@ func (s *Client) send(ctx context.Context, path string, in, out interface{}) err
 	return json.NewDecoder(res.Body).Decode(out)
 }
 
+// upload 以原始 body 上传日志数据到指定端点。
 func (s *Client) upload(ctx context.Context, path string, body interface{}) error {
 	url := s.server + path
 	req, err := retryablehttp.NewRequest("POST", url, body)
@@ -298,9 +302,7 @@ func (s *Client) upload(ctx context.Context, path string, body interface{}) erro
 	return nil
 }
 
-// helper function returns true if the http.Request should be
-// retried based on error and http status code. This function
-// is used by the retryablehttp.Client.
+// retryFunc 根据错误与 HTTP 状态码判断是否应重试；日志写入路径不重试。
 func retryFunc(ctx context.Context, resp *http.Response, err error) (bool, error) {
 	// do not retry on context.Canceled or context.DeadlineExceeded
 	if ctx.Err() != nil {
