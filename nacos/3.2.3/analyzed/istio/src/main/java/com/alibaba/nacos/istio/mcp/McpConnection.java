@@ -23,6 +23,8 @@ import io.grpc.stub.StreamObserver;
 import istio.mcp.v1alpha1.Mcp;
 
 /**
+ * MCP gRPC 连接实现：将 {@link istio.mcp.v1alpha1.Mcp.Resources} 推送到客户端并更新 {@link WatchedStatus}。
+ *
  * @author special.fy
  */
 public class McpConnection extends AbstractConnection<Mcp.Resources> {
@@ -32,6 +34,7 @@ public class McpConnection extends AbstractConnection<Mcp.Resources> {
     }
     
     @Override
+    /** 向 MCP 流写入资源响应，并记录最新 version/nonce 到订阅状态。 */
     public synchronized void push(Mcp.Resources response, WatchedStatus watchedStatus) {
         if (Loggers.MAIN.isDebugEnabled()) {
             Loggers.MAIN.debug("Mcp.Resources: {}", response.toString());
@@ -39,7 +42,7 @@ public class McpConnection extends AbstractConnection<Mcp.Resources> {
         
         this.streamObserver.onNext(response);
         
-        // Update watched status
+        // 更新订阅状态中的最新版本与 nonce
         watchedStatus.setLatestVersion(response.getSystemVersionInfo());
         watchedStatus.setLatestNonce(response.getNonce());
         

@@ -33,7 +33,9 @@ import org.yaml.snakeyaml.Yaml;
 import java.util.Map;
 
 /**
- * Listener for IstioConfig.
+ * Istio 配置变更处理器：订阅 {@link IstioConfigChangeEvent}，解析 VirtualService/DestinationRule YAML 并触发 XDS 配置推送。
+ *
+ * <p>仅接受 {@code networking.istio.io/v1alpha3} 且含 metadata/spec 的配置内容。</p>
  *
  * @author junwei
  */
@@ -45,6 +47,7 @@ public class IstioConfigProcessor {
     
     private NacosResourceManager resourceManager;
     
+    /** 推送原因标识：配置变更。 */
     public static final String CONFIG_REASON = "config";
     
     private static final String VIRTUAL_SERVICE = "VirtualService";
@@ -53,8 +56,10 @@ public class IstioConfigProcessor {
     
     private static final String API_VERSION = "networking.istio.io/v1alpha3";
     
+    /** SnakeYAML 解析器，用于校验与反序列化 Istio CRD。 */
     Yaml yaml = new Yaml();
     
+    /** 注册 NotifyCenter 订阅者，监听 Istio 配置变更事件。 */
     public IstioConfigProcessor() {
         NotifyCenter.registerSubscriber(new Subscriber() {
             
@@ -87,6 +92,12 @@ public class IstioConfigProcessor {
         });
     }
     
+    /**
+     * 校验 YAML 内容是否为支持的 Istio VirtualService 或 DestinationRule。
+     *
+     * @param content 配置 YAML 文本
+     * @return 格式与 apiVersion/kind 合法时返回 true
+     */
     public boolean isContentValid(String content) {
         if (content == null || content.trim().isEmpty()) {
             Loggers.MAIN.warn("Configuration content is null or empty.");
@@ -109,6 +120,12 @@ public class IstioConfigProcessor {
             && obj.containsKey("spec");
     }
     
+    /**
+     * 尝试将内容解析为 {@link VirtualService} 或 {@link DestinationRule} 并记录日志。
+     *
+     * @param content 配置 YAML 文本
+     * @return 解析成功返回 true
+     */
     public boolean tryParseContent(String content) {
         
         if (content == null || content.trim().isEmpty()) {

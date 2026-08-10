@@ -38,7 +38,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.alibaba.nacos.istio.api.ApiConstants.SERVICE_ENTRY_COLLECTION;
 
 /**
- * nacos mcp service.
+ * Nacos MCP（Mesh Configuration Protocol）gRPC 服务：管理客户端长连接、处理订阅/ACK 并推送 ServiceEntry 等资源。
+ *
+ * <p>实现 {@link ResourceSourceGrpc.ResourceSourceImplBase}，与 {@link ApiGeneratorFactory} 协作生成 MCP 资源。</p>
  *
  * @author nkorange
  * @since 1.1.4
@@ -46,6 +48,7 @@ import static com.alibaba.nacos.istio.api.ApiConstants.SERVICE_ENTRY_COLLECTION;
 @Service
 public class NacosMcpService extends ResourceSourceGrpc.ResourceSourceImplBase {
     
+    /** connectionId 到 MCP 连接的映射。 */
     private final Map<String, AbstractConnection<Mcp.Resources>> connections =
         new ConcurrentHashMap<>(16);
     
@@ -55,6 +58,7 @@ public class NacosMcpService extends ResourceSourceGrpc.ResourceSourceImplBase {
     @Autowired
     NacosResourceManager resourceManager;
     
+    /** 是否存在至少一个 MCP 客户端连接。 */
     public boolean hasClientConnection() {
         return connections.size() != 0;
     }
@@ -63,9 +67,9 @@ public class NacosMcpService extends ResourceSourceGrpc.ResourceSourceImplBase {
     public StreamObserver<Mcp.RequestResources> establishResourceStream(
         StreamObserver<Mcp.Resources> responseObserver) {
         
-        // TODO add authN
+        // TODO 增加 MCP 连接鉴权
         
-        // Init snapshot of nacos service info.
+        // 建立流时初始化 Nacos 服务资源快照
         resourceManager.initResourceSnapshot();
         AbstractConnection<Mcp.Resources> newConnection = new McpConnection(responseObserver);
         
@@ -75,7 +79,7 @@ public class NacosMcpService extends ResourceSourceGrpc.ResourceSourceImplBase {
             
             @Override
             public void onNext(Mcp.RequestResources requestResources) {
-                // init connection
+                // 首包：分配 connectionId 并登记连接
                 if (initRequest) {
                     newConnection.setConnectionId(requestResources.getSinkNode().getId());
                     connections.put(newConnection.getConnectionId(), newConnection);
@@ -159,13 +163,14 @@ public class NacosMcpService extends ResourceSourceGrpc.ResourceSourceImplBase {
             return false;
         }
         
-        // This request is ack, we should record nonce.
+        // 客户端 ACK：记录 nonce，本次不再推送
         watchedStatus.setAckedNonce(requestResources.getResponseNonce());
         Loggers.MAIN.info("mcp: ack, type {}, connection-id {}, nonce {}", type, connectionId,
             requestResources.getResponseNonce());
         return false;
     }
     
+    /** 服务/配置变更事件触发时，向所有已订阅 ServiceEntry 的连接推送 MCP 资源。 */
     public void handleEvent(PushRequest pushRequest) {
         if (connections.size() == 0) {
             return;
@@ -185,6 +190,7 @@ public class NacosMcpService extends ResourceSourceGrpc.ResourceSourceImplBase {
         }
     }
     
+    /** 按 collection 类型调用生成器构建带 nonce 与版本号的 MCP Resources 响应。 */
     private Mcp.Resources buildMcpResourcesResponse(String type, PushRequest pushRequest) {
         @SuppressWarnings("unchecked")
         ApiGenerator<Resource> serviceEntryGenerator =

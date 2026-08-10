@@ -26,18 +26,26 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * Istio 资源快照：在某时刻冻结 Nacos 服务列表与版本号，供单次 XDS/MCP 推送使用。
+ *
+ * <p>版本格式为 ISO 时间戳加自增后缀，保证每次推送可区分。</p>
+ *
  * @author special.fy
  */
 public class ResourceSnapshot {
     
+    /** 版本号后缀自增序列。 */
     private static AtomicLong versionSuffix = new AtomicLong(0);
     
+    /** 快照内的 Istio 资源集合（主要为服务映射）。 */
     private final IstioResources istioResources;
     
     private IstioConfig istioConfig;
     
+    /** 快照是否已完成初始化。 */
     private boolean isCompleted;
     
+    /** 快照版本字符串，写入 XDS/MCP systemVersionInfo。 */
     private String version;
     
     public ResourceSnapshot(IstioConfig istioConfig) {
@@ -46,6 +54,7 @@ public class ResourceSnapshot {
         this.istioConfig = istioConfig;
     }
     
+    /** 从 ResourceManager 拉取服务数据并生成版本号（仅首次有效）。 */
     public synchronized void initResourceSnapshot(NacosResourceManager manager) {
         if (isCompleted) {
             return;
@@ -58,11 +67,13 @@ public class ResourceSnapshot {
         isCompleted = true;
     }
     
+    /** 生成带时间戳与递增后缀的快照版本。 */
     private void generateVersion() {
         String time = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX").format(new Date());
         version = time + "/" + versionSuffix.getAndIncrement();
     }
     
+    /** 将 ResourceManager 中的服务映射写入 IstioResources。 */
     private void initIstioResources(NacosResourceManager manager) {
         istioResources.setIstioServiceMap(manager.services());
     }

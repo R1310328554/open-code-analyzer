@@ -29,7 +29,9 @@ import static com.alibaba.nacos.sys.env.EnvUtil.FUNCTION_MODE_NAMING;
 import static com.alibaba.nacos.sys.env.EnvUtil.FUNCTION_MODE_MICROSERVICE;
 
 /**
- * Istio module enabled filter by spring packages scan.
+ * Istio 模块启用过滤器：在 Spring 包扫描阶段决定是否加载 {@link com.alibaba.nacos.istio.IstioApp} 包下组件。
+ *
+ * <p>命名模式未启用或 {@code nacos.extension.naming.istio.enabled=false} 时排除 Istio 包。</p>
  *
  * @author xiweng.yy
  */
@@ -37,6 +39,7 @@ public class IstioEnabledFilter implements NacosPackageExcludeFilter {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(IstioEnabledFilter.class);
     
+    /** 配置项：是否启用 Istio 扩展（默认 false）。 */
     private static final String ISTIO_ENABLED_KEY = "nacos.extension.naming.istio.enabled";
     
     @Override
@@ -47,7 +50,7 @@ public class IstioEnabledFilter implements NacosPackageExcludeFilter {
     @Override
     public boolean isExcluded(String className, Set<String> annotationNames) {
         String functionMode = EnvUtil.getFunctionMode();
-        // When not specified naming mode or specified all mode, the naming module not start and load.
+        // 非 naming/microservice 功能模式下命名模块未启动，Istio 依赖命名故一并禁用
         if (isNamingDisabled(functionMode)) {
             LOGGER.warn(
                 "Istio module disabled because function mode is {}, and Istio depend naming module",
@@ -61,6 +64,7 @@ public class IstioEnabledFilter implements NacosPackageExcludeFilter {
         return istioDisabled;
     }
     
+    /** 当前功能模式是否未启用命名（及 Istio 所依赖的命名能力）。 */
     private boolean isNamingDisabled(String functionMode) {
         if (StringUtils.isEmpty(functionMode)) {
             return false;

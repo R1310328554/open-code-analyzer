@@ -35,14 +35,20 @@ import static com.alibaba.nacos.istio.api.ApiConstants.SERVICE_ENTRY_PROTO;
 import static com.alibaba.nacos.istio.util.IstioCrdUtil.buildServiceEntry;
 
 /**
+ * ServiceEntry MCP 资源生成器：将 Nacos 服务快照转换为 istio.mcp {@link Resource} 列表。
+ *
+ * <p>每个 {@link IstioService} 经 {@link com.alibaba.nacos.istio.util.IstioCrdUtil#buildServiceEntry} 包装为 ServiceEntry protobuf。</p>
+ *
  * @author special.fy
  */
 public class ServiceEntryMcpGenerator implements ApiGenerator<Resource> {
     
+    /** 本次 generate 过程中收集的 ServiceEntry 包装对象。 */
     private List<ServiceEntryWrapper> serviceEntries;
     
     private static volatile ServiceEntryMcpGenerator singleton = null;
     
+    /** 获取 ServiceEntry MCP 生成器单例。 */
     public static ServiceEntryMcpGenerator getInstance() {
         if (singleton == null) {
             synchronized (ServiceEntryMcpGenerator.class) {
@@ -55,6 +61,7 @@ public class ServiceEntryMcpGenerator implements ApiGenerator<Resource> {
     }
     
     @Override
+    /** 根据推送请求中的资源快照生成全量 MCP ServiceEntry Resource 列表。 */
     public List<Resource> generate(PushRequest pushRequest) {
         List<Resource> result = new ArrayList<>();
         serviceEntries = new ArrayList<>(16);
@@ -89,6 +96,7 @@ public class ServiceEntryMcpGenerator implements ApiGenerator<Resource> {
     }
     
     @Override
+    /** MCP ServiceEntry 暂不支持增量生成，返回空列表。 */
     public List<io.envoyproxy.envoy.service.discovery.v3.Resource> deltaGenerate(
         PushRequest pushRequest) {
         return new ArrayList<>();

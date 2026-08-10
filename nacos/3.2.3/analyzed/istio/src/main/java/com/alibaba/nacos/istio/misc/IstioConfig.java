@@ -20,7 +20,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * Stores some configurations for Istio integration.
+ * Istio 集成配置项：MCP 服务开关/端口、全量推送、防抖参数及域名后缀等。
+ *
+ * <p>值来自 Spring {@code @Value} 注入的 {@code nacos.istio.*} 属性。</p>
  *
  * @author nkorange
  * @since 1.1.4
@@ -28,20 +30,26 @@ import org.springframework.stereotype.Component;
 @Component
 public class IstioConfig {
     
+    /** 是否启用 MCP gRPC 服务端。 */
     @Value("${nacos.istio.mcp.server.enabled:false}")
     private boolean serverEnabled = false;
+    /** MCP gRPC 监听端口（默认 18848）。 */
     @Value("${nacos.istio.mcp.server.port:18848}")
     private int serverPort = 18848;
     
+    /** 是否默认以全量方式推送 Istio 资源。 */
     @Value("${nacos.istio.server.full:true}")
     private boolean fullEnabled = true;
     
+    /** 推送防抖最大等待毫秒数（超时强制推送）。 */
     @Value("${nacos.istio.debounce.max:5000}")
     private long debounceMax;
     
+    /** 防抖静默窗口毫秒数（无新事件后延迟推送）。 */
     @Value("${nacos.istio.debounce.after:100}")
     private long debounceAfter;
     
+    /** 生成 ServiceEntry 主机名时使用的域名后缀。 */
     @Value("${nacos.istio.domain.suffix:nacos}")
     private String domainSuffix;
     

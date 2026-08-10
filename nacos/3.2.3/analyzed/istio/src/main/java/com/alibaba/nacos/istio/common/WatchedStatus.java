@@ -20,22 +20,33 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * 客户端对某类 Istio 资源的订阅与 ACK 状态：记录最新/已确认的版本、nonce 及订阅资源集合。
+ *
+ * <p>用于 XDS/MCP 长连接上的增量推送与 ACK 校验。</p>
+ *
  * @author special.fy
  */
 public class WatchedStatus {
     
+    /** 资源类型或 MCP collection 名称。 */
     private String type;
     
+    /** 上一次响应是否为 ACK（非 NACK）。 */
     private boolean lastAckOrNack;
     
+    /** 客户端最近一次订阅的资源名称集合。 */
     private Set<String> lastSubscribe;
     
+    /** 服务端已推送的最新版本号。 */
     private String latestVersion;
     
+    /** 服务端已推送的最新 nonce。 */
     private String latestNonce;
     
+    /** 客户端已 ACK 的版本号。 */
     private String ackedVersion;
     
+    /** 客户端已 ACK 的 nonce。 */
     private String ackedNonce;
     
     public String getType() {

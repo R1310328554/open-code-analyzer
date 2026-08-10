@@ -34,13 +34,16 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
- * EventProcessor.
+ * Istio 推送事件处理器：异步消费 {@link PushRequest} 队列，在有客户端连接时触发 XDS/MCP 推送。
+ *
+ * <p>Spring 容器根上下文刷新后启动守护线程轮询事件；依赖 {@link NacosResourceManager}、{@link NacosXdsService}、{@link NacosMcpService}。</p>
  *
  * @author special.fy
  */
 @Component
 public class EventProcessor implements ApplicationListener<ContextRefreshedEvent> {
     
+    /** 事件队列 poll 最大等待毫秒数。 */
     private static final int MAX_WAIT_EVENT_TIME = 100;
     
     private NacosMcpService nacosMcpService;
@@ -49,6 +52,7 @@ public class EventProcessor implements ApplicationListener<ContextRefreshedEvent
     
     private NacosResourceManager resourceManager;
     
+    /** 待处理的推送请求阻塞队列。 */
     private final BlockingQueue<PushRequest> requests;
     
     public EventProcessor() {
@@ -56,9 +60,9 @@ public class EventProcessor implements ApplicationListener<ContextRefreshedEvent
     }
     
     /**
-     * notify.
+     * 将推送请求放入队列；队列满时记录警告并恢复中断标志。
      *
-     * @param pushRequest push request
+     * @param pushRequest 待处理的推送请求
      */
     public void notify(PushRequest pushRequest) {
         try {
@@ -66,11 +70,12 @@ public class EventProcessor implements ApplicationListener<ContextRefreshedEvent
         } catch (InterruptedException e) {
             Loggers.MAIN.warn("There are too many events, this event {} will be ignored.",
                 pushRequest.getReason());
-            // set the interrupted flag
+            // 恢复线程中断标志
             Thread.currentThread().interrupt();
         }
     }
     
+    /** 启动守护线程消费推送事件。 */
     private void handleEvents() {
         Consumer handleEvents = new Consumer("handle events");
         handleEvents.setDaemon(true);
@@ -99,8 +104,7 @@ public class EventProcessor implements ApplicationListener<ContextRefreshedEvent
             PushRequest lastEvent = null;
             while (true) {
                 try {
-                    // Today we only care about service event,
-                    // so we simply ignore event until the last task has been completed.
+                    // 当前仅关注服务变更事件；上一异步任务未完成前合并等待
                     PushRequest pushRequest =
                         requests.poll(MAX_WAIT_EVENT_TIME, TimeUnit.MILLISECONDS);
                     if (pushRequest != null) {
@@ -121,10 +125,12 @@ public class EventProcessor implements ApplicationListener<ContextRefreshedEvent
         }
     }
     
+    /** 是否存在 MCP 或 XDS 客户端连接。 */
     private boolean hasClientConnection() {
         return nacosMcpService.hasClientConnection() || nacosXdsService.hasClientConnection();
     }
     
+    /** 有新事件且上一任务已完成（或尚未提交）时需提交新任务。 */
     private boolean needNewTask(boolean hasNewEvent, Future<Void> task) {
         return hasNewEvent && (task == null || task.isDone());
     }
@@ -137,6 +143,7 @@ public class EventProcessor implements ApplicationListener<ContextRefreshedEvent
             this.pushRequest = pushRequest;
         }
         
+        /** 创建资源快照并依次交给 XDS（全量/增量）与 MCP 处理。 */
         @Override
         public Void call() throws Exception {
             ResourceSnapshot snapshot = resourceManager.createResourceSnapshot();
@@ -148,6 +155,7 @@ public class EventProcessor implements ApplicationListener<ContextRefreshedEvent
         }
     }
     
+    /** 懒加载并校验 ResourceManager、XdsService、McpService 依赖是否就绪。 */
     private boolean checkDependenceReady() {
         if (null == resourceManager) {
             resourceManager = ApplicationUtils.getBean(NacosResourceManager.class);

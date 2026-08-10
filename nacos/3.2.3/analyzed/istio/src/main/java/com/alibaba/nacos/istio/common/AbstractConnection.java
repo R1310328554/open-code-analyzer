@@ -23,18 +23,24 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * AbstractConnection maintains the life cycle of the connection.
+ * gRPC 长连接的抽象基类，维护连接标识、订阅资源状态及向客户端推送消息的生命周期。
+ *
+ * <p>子类实现 {@link #push} 将 Istio 资源响应写入 {@link StreamObserver}。</p>
  *
  * @author special.fy
  */
 public abstract class AbstractConnection<MessageT> {
     
+    /** 全局连接序号生成器，用于构造唯一 connectionId。 */
     private static AtomicLong connectIdGenerator = new AtomicLong(0);
     
+    /** 客户端 ID 与序号组合而成的连接标识。 */
     private String connectionId;
     
+    /** 向客户端写入响应的 gRPC 流观察者。 */
     protected StreamObserver<MessageT> streamObserver;
     
+    /** 按资源类型索引的订阅/ACK 状态表。 */
     private final Map<String, WatchedStatus> watchedResources;
     
     public AbstractConnection(StreamObserver<MessageT> streamObserver) {
@@ -42,6 +48,7 @@ public abstract class AbstractConnection<MessageT> {
         this.watchedResources = new HashMap<>(1 << 4);
     }
     
+    /** 基于客户端 ID 与自增序号生成并设置 connectionId。 */
     public void setConnectionId(String clientId) {
         long id = connectIdGenerator.getAndIncrement();
         this.connectionId = clientId + "-" + id;
@@ -51,19 +58,21 @@ public abstract class AbstractConnection<MessageT> {
         return connectionId;
     }
     
+    /** 注册某资源类型的订阅状态。 */
     public void addWatchedResource(String resourceType, WatchedStatus watchedStatus) {
         watchedResources.put(resourceType, watchedStatus);
     }
     
+    /** 按资源类型查询订阅状态。 */
     public WatchedStatus getWatchedStatusByType(String resourceType) {
         return watchedResources.get(resourceType);
     }
     
     /**
-     * Push data to grpc connection.
+     * 向 gRPC 连接推送资源响应并更新订阅状态。
      *
-     * @param message response
-     * @param watchedStatus watched status
+     * @param message 待推送的响应消息
+     * @param watchedStatus 该资源类型的订阅/ACK 状态
      */
     public abstract void push(MessageT message, WatchedStatus watchedStatus);
 }

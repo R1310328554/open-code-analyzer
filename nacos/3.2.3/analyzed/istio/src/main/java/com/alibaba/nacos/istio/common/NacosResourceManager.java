@@ -24,11 +24,16 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
+ * Nacos Istio 资源管理器：维护当前 {@link ResourceSnapshot}，并从 {@link NacosServiceInfoResourceWatcher} 聚合服务视图。
+ *
+ * <p>为 XDS/MCP 推送提供一致的资源快照与 {@link IstioConfig} 访问入口。</p>
+ *
  * @author special.fy
  */
 @Component
 public class NacosResourceManager {
     
+    /** 当前生效的 Istio 资源快照。 */
     private ResourceSnapshot resourceSnapshot;
     
     @Autowired
@@ -41,6 +46,7 @@ public class NacosResourceManager {
         resourceSnapshot = new ResourceSnapshot(istioConfig);
     }
     
+    /** 返回服务名到 {@link IstioService} 的快照副本。 */
     public Map<String, IstioService> services() {
         return serviceInfoResourceWatcher.snapshot();
     }
@@ -49,19 +55,23 @@ public class NacosResourceManager {
         return istioConfig;
     }
     
+    /** 线程安全地获取当前资源快照。 */
     public synchronized ResourceSnapshot getResourceSnapshot() {
         return resourceSnapshot;
     }
     
+    /** 线程安全地更新资源快照。 */
     public synchronized void setResourceSnapshot(ResourceSnapshot resourceSnapshot) {
         this.resourceSnapshot = resourceSnapshot;
     }
     
+    /** 用当前 Nacos 服务数据初始化已有快照（不新建实例）。 */
     public void initResourceSnapshot() {
         ResourceSnapshot resourceSnapshot = getResourceSnapshot();
         resourceSnapshot.initResourceSnapshot(this);
     }
     
+    /** 创建新快照、填充服务数据并设为当前快照后返回。 */
     public ResourceSnapshot createResourceSnapshot() {
         ResourceSnapshot resourceSnapshot = new ResourceSnapshot(istioConfig);
         resourceSnapshot.initResourceSnapshot(this);

@@ -32,29 +32,41 @@ import java.util.Map;
 import static com.alibaba.nacos.istio.api.ApiConstants.*;
 
 /**
+ * Istio API 生成器工厂，按 typeUrl 路由到 XDS/MCP 各类 {@link com.alibaba.nacos.istio.api.ApiGenerator} 实现。
+ *
+ * <p>启动时注册 ServiceEntry、Cluster、Endpoint、Listener、Route 等资源的生成器；未匹配类型时回退到 {@link com.alibaba.nacos.istio.mcp.EmptyMcpGenerator} 或 {@link com.alibaba.nacos.istio.xds.EmptyXdsGenerator}。</p>
+ *
  * @author special.fy
  */
 @Component
 public class ApiGeneratorFactory {
     
+    /** typeUrl 到 {@link ApiGenerator} 实例的映射表。 */
     private final Map<String, ApiGenerator<?>> apiGeneratorMap;
     
+    /** 构造时注册 MCP over XDS、XDS 各类型及 MCP ServiceEntry 生成器。 */
     public ApiGeneratorFactory() {
         apiGeneratorMap = new HashMap<>(2);
-        // mcp over xds
+        // MCP over XDS：ServiceEntry 走 XDS 通道
         apiGeneratorMap.put(SERVICE_ENTRY_PROTO_PACKAGE, ServiceEntryXdsGenerator.getInstance());
-        // TODO Support other api generator
+        // TODO 支持更多 API 生成器
         
-        //xds
+        // XDS 资源类型：Cluster / Endpoint / Listener / Route
         apiGeneratorMap.put(CLUSTER_TYPE, CdsGenerator.getInstance());
         apiGeneratorMap.put(ENDPOINT_TYPE, EdsGenerator.getInstance());
         apiGeneratorMap.put(LISTENER_TYPE, LdsGenerator.getInstance());
         apiGeneratorMap.put(ROUTE_TYPE, RdsGenerator.getInstance());
         
-        // mcp
+        // MCP 资源集合：ServiceEntry
         apiGeneratorMap.put(SERVICE_ENTRY_COLLECTION, ServiceEntryMcpGenerator.getInstance());
     }
     
+    /**
+     * 按 typeUrl 获取对应 API 生成器；未知类型按 MCP/XDS 前缀返回空生成器。
+     *
+     * @param typeUrl Envoy/Istio 资源 type URL
+     * @return 匹配的生成器或空实现
+     */
     public ApiGenerator<?> getApiGenerator(String typeUrl) {
         ApiGenerator<?> apiGenerator = apiGeneratorMap.get(typeUrl);
         return apiGenerator != null ? apiGenerator : (typeUrl.startsWith(MCP_PREFIX)

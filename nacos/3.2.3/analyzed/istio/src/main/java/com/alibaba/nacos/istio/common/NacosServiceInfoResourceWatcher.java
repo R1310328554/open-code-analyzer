@@ -46,15 +46,22 @@ import static com.alibaba.nacos.istio.util.IstioExecutor.cycleDebounce;
 import static com.alibaba.nacos.istio.util.IstioExecutor.debouncePushChange;
 
 /**
+ * Nacos 命名服务变更监听器：将注册/注销/实例变更事件转换为 {@link PushRequest}，经防抖后通知 {@link EventProcessor}。
+ *
+ * <p>维护 {@code serviceName -> IstioService} 内存视图，供 MCP/XDS 生成 ServiceEntry 等资源。</p>
+ *
  * @author special.fy
  */
 @org.springframework.stereotype.Service
 public class NacosServiceInfoResourceWatcher extends SmartSubscriber {
     
+    /** Istio 服务名到封装后的 {@link IstioService} 映射。 */
     private final Map<String, IstioService> serviceInfoMap = new ConcurrentHashMap<>(16);
     
+    /** 待防抖合并的推送请求队列。 */
     private final Queue<PushRequest> pushRequestQueue = new ConcurrentLinkedQueue<>();
     
+    /** 是否尚未完成首次全量服务加载。 */
     private boolean isInitial = true;
     
     @Autowired
@@ -70,6 +77,7 @@ public class NacosServiceInfoResourceWatcher extends SmartSubscriber {
         NotifyCenter.registerSubscriber(this, NamingEventPublisherFactory.getInstance());
     }
     
+    /** 返回当前服务映射的浅拷贝快照。 */
     public Map<String, IstioService> snapshot() {
         return new HashMap<>(serviceInfoMap);
     }
@@ -92,7 +100,7 @@ public class NacosServiceInfoResourceWatcher extends SmartSubscriber {
         }
         
         if (event instanceof ClientOperationEvent.ClientRegisterServiceEvent) {
-            // If service changed, push to all subscribers.
+            // 服务注册变更：更新本地视图并入队推送请求
             ClientOperationEvent.ClientRegisterServiceEvent clientRegisterServiceEvent =
                 (ClientOperationEvent.ClientRegisterServiceEvent) event;
             Service service = clientRegisterServiceEvent.getService();
@@ -145,6 +153,7 @@ public class NacosServiceInfoResourceWatcher extends SmartSubscriber {
         }
     }
     
+    /** 启动时遍历各命名空间已有服务，构建初始 IstioService 并触发全量推送。 */
     private void init() {
         Set<String> namespaces = ServiceManager.getInstance().getAllNamespaces();
         for (String namespace : namespaces) {
@@ -165,6 +174,11 @@ public class NacosServiceInfoResourceWatcher extends SmartSubscriber {
         }
     }
     
+    /**
+     * 根据 Nacos {@link Service} 更新本地 IstioService；无效服务则移除。
+     *
+     * @return 是否需要全量推送（服务移除或首次出现时为 true）
+     */
     private boolean update(String serviceName, Service service) {
         ServiceInfo serviceInfo = serviceStorage.getPushData(service);
         if (!serviceInfo.isValid()) {

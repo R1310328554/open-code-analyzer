@@ -24,12 +24,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 空 MCP 资源生成器：对未注册的 MCP collection 返回空资源列表，避免推送失败。
+ *
  * @author special.fy
  */
 public class EmptyMcpGenerator implements ApiGenerator<Resource> {
     
+    /** 单例实例（双重检查锁）。 */
     private volatile static EmptyMcpGenerator singleton = null;
     
+    /** 获取空 MCP 生成器单例。 */
     public static EmptyMcpGenerator getInstance() {
         if (singleton == null) {
             synchronized (EmptyMcpGenerator.class) {
@@ -42,11 +46,13 @@ public class EmptyMcpGenerator implements ApiGenerator<Resource> {
     }
     
     @Override
+    /** 全量推送：返回空 MCP Resource 列表。 */
     public List<Resource> generate(PushRequest pushRequest) {
         return new ArrayList<>();
     }
     
     @Override
+    /** 增量推送：返回空列表（MCP 空生成器不支持增量内容）。 */
     public List<io.envoyproxy.envoy.service.discovery.v3.Resource> deltaGenerate(
         PushRequest pushRequest) {
         return new ArrayList<>();
