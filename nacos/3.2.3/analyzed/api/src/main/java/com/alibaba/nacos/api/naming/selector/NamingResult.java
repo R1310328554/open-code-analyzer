@@ -22,7 +22,9 @@ import com.alibaba.nacos.api.selector.client.SelectResult;
 import java.util.List;
 
 /**
- * Naming select result.
+ * 命名服务选择结果。
+ *
+ * <p>继承 {@link SelectResult}，封装 {@link NamingSelector} 筛选后的 {@link Instance} 列表。</p>
  *
  * @author lideyou
  */

@@ -17,70 +17,52 @@
 package com.alibaba.nacos.api.plugin;
 
 /**
- * Plugin type enumeration, supports all Nacos plugin types.
+ * 插件类型枚举，涵盖 Nacos 全部插件类别。
+ *
+ * <p>每种类型对应唯一 type 字符串与描述，供 {@link PluginProvider} 与 SPI 发现使用。</p>
  *
  * @author WangzJi
  * @since 3.2.0
  */
 public enum PluginType {
     
-    /**
-     * Authentication plugin.
-     */
+    /** 认证插件。 */
     AUTH("auth", "Authentication plugin"),
     
-    /**
-     * Datasource dialect plugin.
-     */
+    /** 数据源方言插件。 */
     DATASOURCE_DIALECT("datasource-dialect", "Datasource dialect plugin"),
     
-    /**
-     * Config change plugin.
-     */
+    /** 配置变更插件。 */
     CONFIG_CHANGE("config-change", "Config change plugin"),
     
-    /**
-     * Encryption plugin.
-     */
+    /** 加密插件。 */
     ENCRYPTION("encryption", "Encryption plugin"),
     
-    /**
-     * Trace plugin.
-     */
+    /** 链路追踪插件。 */
     TRACE("trace", "Trace plugin"),
     
-    /**
-     * Environment plugin.
-     */
+    /** 环境变量插件。 */
     ENVIRONMENT("environment", "Environment plugin"),
     
-    /**
-     * Control plugin.
-     */
+    /** 流量控制插件。 */
     CONTROL("control", "Control plugin"),
     
-    /**
-     * Visibility plugin.
-     */
+    /** 可见性插件。 */
     VISIBILITY("visibility", "Visibility plugin"),
     
-    /**
-     * AI publish pipeline plugin.
-     */
+    /** AI 发布流水线插件。 */
     AI_PIPELINE("ai-pipeline", "AI publish pipeline plugin"),
     
-    /**
-     * AI resource storage plugin.
-     */
+    /** AI 资源存储插件。 */
     AI_STORAGE("ai-storage", "AI resource storage plugin"),
     
-    /**
-     * AI resource import plugin.
-     */
+    /** AI 资源导入插件。 */
     AI_RESOURCE_IMPORT("ai-resource-import", "AI resource import plugin");
     
+    /** 类型标识字符串。 */
     private final String type;
     
+    /** 类型描述。 */
     private final String description;
     
     PluginType(String type, String description) {
@@ -88,20 +70,22 @@ public enum PluginType {
         this.description = description;
     }
     
+    /** 返回类型标识字符串。 */
     public String getType() {
         return type;
     }
     
+    /** 返回类型描述。 */
     public String getDescription() {
         return description;
     }
     
     /**
-     * Get PluginType from type string.
+     * 根据 type 字符串解析 PluginType。
      *
-     * @param type type string
-     * @return PluginType
-     * @throws IllegalArgumentException if type is unknown
+     * @param type 类型字符串
+     * @return 对应的 PluginType
+     * @throws IllegalArgumentException 未知类型时抛出
      */
     public static PluginType fromType(String type) {
         for (PluginType pt : values()) {

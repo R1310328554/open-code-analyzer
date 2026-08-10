@@ -20,49 +20,53 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Static holder for PluginStateChecker.
- * Bridges singleton pattern plugin managers with Spring-managed UnifiedPluginManager.
- * Uses AtomicReference to ensure thread safety.
+ * {@link PluginStateChecker} 静态持有者。
+ *
+ * <p>桥接单例模式插件 Manager 与 Spring 管理的 UnifiedPluginManager；
+ * 使用 {@link AtomicReference} 保证线程安全。</p>
  *
  * @author WangzJi
  * @since 3.2.0
  */
 public class PluginStateCheckerHolder {
     
+    /** 全局 PluginStateChecker 实例引用。 */
     private static final AtomicReference<PluginStateChecker> INSTANCE = new AtomicReference<>();
     
+    /** 私有构造，禁止实例化。 */
     private PluginStateCheckerHolder() {
     }
     
     /**
-     * Set the PluginStateChecker instance.
+     * 设置 PluginStateChecker 实例。
      *
-     * @param checker the PluginStateChecker instance
+     * @param checker PluginStateChecker 实例
      */
     public static void setInstance(PluginStateChecker checker) {
         INSTANCE.set(checker);
     }
     
     /**
-     * Get the PluginStateChecker instance.
+     * 获取 PluginStateChecker 实例。
      *
-     * @return Optional containing the PluginStateChecker instance, or empty if not set
+     * @return 包含实例的 Optional，未设置时为空
      */
     public static Optional<PluginStateChecker> getInstance() {
         return Optional.ofNullable(INSTANCE.get());
     }
     
     /**
-     * Check if a plugin is enabled.
-     * Returns true if no checker is set (backward compatibility).
+     * 检查插件是否已启用。
+     * 未设置 checker 时返回 true（向后兼容）。
      *
-     * @param pluginType plugin type string
-     * @param pluginName plugin name
-     * @return true if plugin is enabled or no checker is set
+     * @param pluginType 插件类型字符串
+     * @param pluginName 插件名称
+     * @return 已启用或未设置 checker 时返回 true
      */
     public static boolean isPluginEnabled(String pluginType, String pluginName) {
         PluginStateChecker checker = INSTANCE.get();
         if (checker == null) {
+            // 无 checker 时默认视为启用，保持旧版行为
             return true;
         }
         return checker.isPluginEnabled(pluginType, pluginName);

@@ -21,37 +21,39 @@ import com.alibaba.nacos.api.naming.pojo.Instance;
 import java.util.List;
 
 /**
- * Naming selector context.
+ * 命名服务选择器上下文。
+ *
+ * <p>为 {@link NamingSelector} 提供当前服务标识、集群范围及候选 {@link Instance} 列表，供自定义路由/负载策略使用。</p>
  *
  * @author lideyou
  */
 public interface NamingContext {
     
     /**
-     * Get service name.
+     * 获取服务名。
      *
-     * @return service name
+     * @return 服务名
      */
     String getServiceName();
     
     /**
-     * Get group name.
+     * 获取分组名。
      *
-     * @return group name
+     * @return 分组名
      */
     String getGroupName();
     
     /**
-     * Get clusters.
+     * 获取集群列表（逗号分隔）。
      *
-     * @return clusters
+     * @return 集群标识
      */
     String getClusters();
     
     /**
-     * Get current instances.
+     * 获取当前候选实例列表。
      *
-     * @return current instances
+     * @return 实例列表
      */
     List<Instance> getInstances();
 }

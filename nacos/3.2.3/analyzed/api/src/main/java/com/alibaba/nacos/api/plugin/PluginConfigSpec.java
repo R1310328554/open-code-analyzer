@@ -20,8 +20,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Plugin configuration specification interface.
- * Allows plugins to declare configurable properties.
+ * 插件配置规格接口。
+ *
+ * <p>允许插件声明可配置属性列表，并在运行时应用/读取键值对配置。</p>
  *
  * @author WangzJi
  * @since 3.2.0
@@ -29,23 +30,23 @@ import java.util.Map;
 public interface PluginConfigSpec {
     
     /**
-     * Get configuration item definitions.
+     * 获取配置项定义列表。
      *
-     * @return list of configuration item definitions
+     * @return 配置项定义集合
      */
     List<ConfigItemDefinition> getConfigDefinitions();
     
     /**
-     * Apply configuration to the plugin.
+     * 将配置应用到插件实例。
      *
-     * @param config configuration key-value pairs
+     * @param config 配置键值对
      */
     void applyConfig(Map<String, String> config);
     
     /**
-     * Get current configuration.
+     * 获取当前生效的配置。
      *
-     * @return current configuration as key-value pairs
+     * @return 当前配置键值对
      */
     Map<String, String> getCurrentConfig();
 }

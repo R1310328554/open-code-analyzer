@@ -19,24 +19,26 @@ package com.alibaba.nacos.api.naming.spi.generator;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 
 /**
- * Generator SPI for Instance Id.
+ * 实例 ID 生成器 SPI。
+ *
+ * <p>允许插件自定义 {@link Instance} 唯一标识的生成策略；通过 {@link #type()} 区分不同实现。</p>
  *
  * @author xiweng.yy
  */
 public interface InstanceIdGenerator {
     
     /**
-     * Generate instance id.
+     * 根据实例信息生成唯一 ID。
      *
-     * @param instance instance
-     * @return instance id
+     * @param instance 实例对象
+     * @return 实例 ID
      */
     String generateInstanceId(Instance instance);
     
     /**
-     * Generator type.
+     * 返回生成器类型标识。
      *
-     * @return type
+     * @return 类型名称
      */
     String type();
 }

@@ -17,30 +17,24 @@
 package com.alibaba.nacos.api.plugin;
 
 /**
- * Configuration item type enumeration.
+ * 插件配置项类型枚举。
+ *
+ * <p>定义 {@link ConfigItemDefinition} 支持的数据类型，供控制台渲染对应输入控件。</p>
  *
  * @author WangzJi
  * @since 3.2.0
  */
 public enum ConfigItemType {
     
-    /**
-     * String type configuration.
-     */
+    /** 字符串类型配置。 */
     STRING,
     
-    /**
-     * Number type configuration.
-     */
+    /** 数值类型配置。 */
     NUMBER,
     
-    /**
-     * Boolean type configuration.
-     */
+    /** 布尔类型配置。 */
     BOOLEAN,
     
-    /**
-     * Enumeration type configuration.
-     */
+    /** 枚举类型配置（需配合 enumValues）。 */
     ENUM
 }

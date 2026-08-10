@@ -19,13 +19,12 @@ package com.alibaba.nacos.api.plugin;
 import java.util.Map;
 
 /**
- * Plugin provider SPI interface.
+ * 插件提供者 SPI 接口。
  *
- * <p>Each plugin type should have one implementation to provide plugin instances.
- * This interface enables automatic plugin discovery through SPI mechanism,
- * eliminating the need to manually register each plugin type in UnifiedPluginManager.
+ * <p>每种 {@link PluginType} 应有一个实现，通过 Java SPI 自动发现插件实例，
+ * 无需在 UnifiedPluginManager 中手动注册各类型。</p>
  *
- * <p>Example implementation:
+ * <p>示例实现：
  * <pre>{@code
  * public class AuthPluginProvider implements PluginProvider<AuthPluginService> {
  *     @Override
@@ -40,32 +39,32 @@ import java.util.Map;
  * }
  * }</pre>
  *
- * @param <T> the plugin service type
+ * @param <T> 插件服务类型
  * @author WangzJi
  * @since 3.2.0
  */
 public interface PluginProvider<T> {
     
     /**
-     * Get the plugin type this provider manages.
+     * 获取本提供者管理的插件类型。
      *
-     * @return plugin type
+     * @return 插件类型
      */
     PluginType getPluginType();
     
     /**
-     * Get all plugin instances managed by this provider.
-     * Key is the plugin name, value is the plugin instance.
+     * 获取本提供者管理的全部插件实例。
+     * 键为插件名称，值为插件实例。
      *
-     * @return map of plugin name to plugin instance
+     * @return 插件名称到实例的映射
      */
     Map<String, T> getAllPlugins();
     
     /**
-     * Get the order of this provider. Lower values have higher priority.
-     * Used when multiple providers exist for same type.
+     * 获取提供者优先级，数值越小优先级越高。
+     * 同类型存在多个提供者时用于排序。
      *
-     * @return order value, default is 0
+     * @return 排序值，默认为 0
      */
     default int getOrder() {
         return 0;

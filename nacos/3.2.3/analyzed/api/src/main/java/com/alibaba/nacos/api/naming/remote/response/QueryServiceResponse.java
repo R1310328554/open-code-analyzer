@@ -21,36 +21,41 @@ import com.alibaba.nacos.api.remote.response.Response;
 import com.alibaba.nacos.api.remote.response.ResponseCode;
 
 /**
- * Nacos naming query request.
+ * Nacos 命名服务查询响应。
+ *
+ * <p>客户端发起服务查询请求后，服务端返回此 {@link Response}，成功时携带 {@link ServiceInfo} 实例列表与元数据。</p>
  *
  * @author xiweng.yy
  */
 public class QueryServiceResponse extends Response {
     
+    /** 查询到的服务详情（含实例列表）。 */
     private ServiceInfo serviceInfo;
     
+    /** 无参构造，供序列化框架使用。 */
     public QueryServiceResponse() {
     }
     
+    /** 私有构造，封装成功响应中的服务信息。 */
     private QueryServiceResponse(ServiceInfo serviceInfo) {
         this.serviceInfo = serviceInfo;
     }
     
     /**
-     * Build Success response.
+     * 构建成功响应。
      *
-     * @param serviceInfo service info
-     * @return service query response
+     * @param serviceInfo 服务详情
+     * @return 服务查询响应
      */
     public static QueryServiceResponse buildSuccessResponse(ServiceInfo serviceInfo) {
         return new QueryServiceResponse(serviceInfo);
     }
     
     /**
-     * Build fail response.
+     * 构建失败响应。
      *
-     * @param message message
-     * @return service query response
+     * @param message 错误消息
+     * @return 服务查询响应
      */
     public static QueryServiceResponse buildFailResponse(String message) {
         QueryServiceResponse queryServiceResponse = new QueryServiceResponse();
@@ -59,10 +64,12 @@ public class QueryServiceResponse extends Response {
         return queryServiceResponse;
     }
     
+    /** 返回服务详情。 */
     public ServiceInfo getServiceInfo() {
         return serviceInfo;
     }
     
+    /** 设置服务详情。 */
     public void setServiceInfo(ServiceInfo serviceInfo) {
         this.serviceInfo = serviceInfo;
     }

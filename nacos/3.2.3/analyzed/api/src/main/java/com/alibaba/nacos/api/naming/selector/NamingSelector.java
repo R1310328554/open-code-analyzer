@@ -19,7 +19,9 @@ package com.alibaba.nacos.api.naming.selector;
 import com.alibaba.nacos.api.selector.client.Selector;
 
 /**
- * Naming selector.
+ * 命名服务选择器接口。
+ *
+ * <p>扩展通用 {@link Selector}，基于 {@link NamingContext} 对实例列表执行自定义筛选，返回 {@link NamingResult}。</p>
  *
  * @author lideyou
  */

@@ -17,8 +17,9 @@
 package com.alibaba.nacos.api.plugin;
 
 /**
- * Plugin state checker interface.
- * Used to decouple plugin managers from core module.
+ * 插件状态检查器接口。
+ *
+ * <p>解耦各插件 Manager 与 core 模块，由 {@link PluginStateCheckerHolder} 桥接 Spring 管理的实现。</p>
  *
  * @author WangzJi
  * @since 3.0.0
@@ -26,11 +27,11 @@ package com.alibaba.nacos.api.plugin;
 public interface PluginStateChecker {
     
     /**
-     * Check if plugin is enabled.
+     * 检查指定插件是否已启用。
      *
-     * @param pluginType plugin type string
-     * @param pluginName plugin name
-     * @return true if plugin is enabled, false otherwise
+     * @param pluginType 插件类型字符串
+     * @param pluginName 插件名称
+     * @return 已启用返回 true，否则 false
      */
     boolean isPluginEnabled(String pluginType, String pluginName);
 }

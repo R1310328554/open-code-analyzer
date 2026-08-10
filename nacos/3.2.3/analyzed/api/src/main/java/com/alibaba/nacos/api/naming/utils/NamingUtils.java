@@ -33,30 +33,34 @@ import static com.alibaba.nacos.api.common.Constants.DEFAULT_NAMESPACE_ID;
 import static com.alibaba.nacos.api.common.Constants.NUMBER_PATTERN_STRING;
 
 /**
- * NamingUtils.
+ * 命名服务工具类。
+ *
+ * <p>提供服务名/分组拼接与解析、实例合法性校验等静态方法，贯穿客户端与服务端命名 API。</p>
  *
  * @author nkorange
  * @since 1.0.0
  */
 public class NamingUtils {
     
+    /** 集群名称合法字符正则。 */
     private static final Pattern CLUSTER_NAME_PATTERN =
         Pattern.compile(CLUSTER_NAME_PATTERN_STRING);
     
+    /** 纯数字字符串正则。 */
     private static final Pattern NUMBER_PATTERN = Pattern.compile(NUMBER_PATTERN_STRING);
     
     /**
-     * Returns a combined string with serviceName and groupName. serviceName can not be nil.
+     * 将服务名与分组名拼接为 {@code groupName@@serviceName} 格式。
      *
-     * <p>In most cases, serviceName can not be nil. In other cases, for search or anything, See {@link
-     * com.alibaba.nacos.api.naming.utils.NamingUtils#getGroupedNameOptional(String, String)}
+     * <p>多数场景下 serviceName 不可为空；若需宽松拼接，参见 {@link
+     * com.alibaba.nacos.api.naming.utils.NamingUtils#getGroupedNameOptional(String, String)}。</p>
      *
-     * <p>etc:
+     * <p>示例：</p>
      * <p>serviceName | groupName | result</p>
      * <p>serviceA    | groupA    | groupA@@serviceA</p>
-     * <p>nil         | groupA    | threw IllegalArgumentException</p>
+     * <p>nil         | groupA    | 抛出 IllegalArgumentException</p>
      *
-     * @return 'groupName@@serviceName'
+     * @return {@code groupName@@serviceName}
      */
     public static String getGroupedName(final String serviceName, final String groupName) {
         if (StringUtils.isBlank(serviceName)) {
@@ -67,9 +71,11 @@ public class NamingUtils {
             throw new IllegalArgumentException("Param 'groupName' is illegal, groupName is blank");
         }
         final String resultGroupedName = groupName + Constants.SERVICE_INFO_SPLITER + serviceName;
+        // 复用 intern 减少重复字符串占用
         return resultGroupedName.intern();
     }
     
+    /** 拼接命名空间、分组与服务名，构成全局唯一服务键。 */
     public static String getServiceKey(String namespace, String group, String serviceName) {
         if (StringUtils.isBlank(namespace)) {
             namespace = DEFAULT_NAMESPACE_ID;
@@ -79,15 +85,16 @@ public class NamingUtils {
     }
     
     /**
-     * parse service key items for serviceKey. item[0] for namespace item[1] for group item[2] for service name
+     * 解析服务键为 [namespace, group, serviceName] 三段。
      *
-     * @param serviceKey serviceKey.
-     * @return
+     * @param serviceKey 服务键
+     * @return 解析后的字符串数组
      */
     public static String[] parseServiceKey(String serviceKey) {
         return serviceKey.split(Constants.SERVICE_INFO_SPLITER);
     }
     
+    /** 从 {@code group@@service} 格式字符串中提取服务名。 */
     public static String getServiceName(final String serviceNameWithGroup) {
         if (StringUtils.isBlank(serviceNameWithGroup)) {
             return StringUtils.EMPTY;
@@ -98,6 +105,7 @@ public class NamingUtils {
         return serviceNameWithGroup.split(Constants.SERVICE_INFO_SPLITER)[1];
     }
     
+    /** 从 {@code group@@service} 格式字符串中提取分组名；无分隔符时返回默认分组。 */
     public static String getGroupName(final String serviceNameWithGroup) {
         if (StringUtils.isBlank(serviceNameWithGroup)) {
             return StringUtils.EMPTY;
@@ -109,10 +117,10 @@ public class NamingUtils {
     }
     
     /**
-     * Check serviceName is compatibility mode or not.
+     * 判断服务名是否为兼容模式（含 {@code @@} 分隔符）。
      *
-     * @param serviceName serviceName
-     * @return if serviceName is compatibility mode, return true
+     * @param serviceName 服务名
+     * @return 若为兼容模式格式则返回 true
      */
     public static boolean isServiceNameCompatibilityMode(final String serviceName) {
         return !StringUtils.isBlank(serviceName)
@@ -120,15 +128,15 @@ public class NamingUtils {
     }
     
     /**
-     * check combineServiceName format. the serviceName can't be blank.
+     * 校验组合服务名格式，serviceName 不可为空。
      * <pre>
-     * serviceName = "@@";                 the length = 0; illegal
-     * serviceName = "group@@";            the length = 1; illegal
-     * serviceName = "@@serviceName";      the length = 2; illegal
-     * serviceName = "group@@serviceName"; the length = 2; legal
+     * serviceName = "@@";                 长度 = 0；非法
+     * serviceName = "group@@";            长度 = 1；非法
+     * serviceName = "@@serviceName";      长度 = 2；非法
+     * serviceName = "group@@serviceName"; 长度 = 2；合法
      * </pre>
      *
-     * @param combineServiceName such as: groupName@@serviceName
+     * @param combineServiceName 组合服务名，如 groupName@@serviceName
      */
     public static void checkServiceNameFormat(String combineServiceName) {
         String[] split = combineServiceName.split(Constants.SERVICE_INFO_SPLITER);
@@ -143,32 +151,32 @@ public class NamingUtils {
     }
     
     /**
-     * Returns a combined string with serviceName and groupName. Such as 'groupName@@serviceName'
-     * <p>This method works similar with {@link com.alibaba.nacos.api.naming.utils.NamingUtils#getGroupedName} But not
-     * verify any parameters.
+     * 将服务名与分组名拼接，不做参数校验。
      *
-     * </p> etc:
+     * <p>行为类似 {@link com.alibaba.nacos.api.naming.utils.NamingUtils#getGroupedName}，但不验证参数合法性。</p>
+     *
+     * <p>示例：</p>
      * <p>serviceName | groupName | result</p>
      * <p>serviceA    | groupA    | groupA@@serviceA</p>
      * <p>nil         | groupA    | groupA@@</p>
      * <p>nil         | nil       | @@</p>
      *
-     * @return 'groupName@@serviceName'
+     * @return {@code groupName@@serviceName}
      */
     public static String getGroupedNameOptional(final String serviceName, final String groupName) {
         return groupName + Constants.SERVICE_INFO_SPLITER + serviceName;
     }
     
     /**
-     * <p>Check instance param about keep alive.</p>
+     * 校验实例保活相关参数是否合法。
      *
      * <pre>
-     * heart beat timeout must > heart beat interval
-     * ip delete timeout must  > heart beat interval
+     * 心跳超时必须 &gt; 心跳间隔
+     * IP 删除超时必须 &gt; 心跳间隔
      * </pre>
      *
-     * @param instance need checked instance
-     * @throws NacosException if check failed, throw exception
+     * @param instance 待校验的实例
+     * @throws NacosException 校验失败时抛出
      */
     public static void checkInstanceIsLegal(Instance instance) throws NacosException {
         if (null == instance) {
@@ -192,10 +200,10 @@ public class NamingUtils {
     }
     
     /**
-     * check batch register is Ephemeral.
+     * 校验批量注册场景下实例必须为临时实例。
      *
-     * @param instance instance
-     * @throws NacosException NacosException
+     * @param instance 实例对象
+     * @throws NacosException 非临时实例时抛出
      */
     public static void checkInstanceIsEphemeral(Instance instance) throws NacosException {
         if (!instance.isEphemeral()) {
@@ -207,10 +215,10 @@ public class NamingUtils {
     }
     
     /**
-     * Batch verify the validity of instances.
+     * 批量校验实例列表的合法性（去重后逐条校验）。
      *
-     * @param instances List of instances to be registered
-     * @throws NacosException Nacos
+     * @param instances 待注册实例列表
+     * @throws NacosException 任一实例校验失败时抛出
      */
     public static void batchCheckInstanceIsLegal(List<Instance> instances) throws NacosException {
         Set<Instance> newInstanceSet = new HashSet<>(instances);
@@ -221,10 +229,10 @@ public class NamingUtils {
     }
     
     /**
-     * Check string is a number or not.
+     * 判断字符串是否为纯数字。
      *
-     * @param str a string of digits
-     * @return if it is a string of digits, return true
+     * @param str 待检测字符串
+     * @return 若为数字字符串则返回 true
      */
     public static boolean isNumber(String str) {
         return !StringUtils.isEmpty(str) && NUMBER_PATTERN.matcher(str).matches();

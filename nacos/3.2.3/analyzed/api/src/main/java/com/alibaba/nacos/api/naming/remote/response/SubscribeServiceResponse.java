@@ -20,17 +20,28 @@ import com.alibaba.nacos.api.naming.pojo.ServiceInfo;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * Nacos naming subscribe service response.
+ * Nacos 命名服务订阅响应。
+ *
+ * <p>客户端订阅或取消订阅服务后，服务端返回此 {@link Response}；成功时携带最新 {@link ServiceInfo} 快照。</p>
  *
  * @author xiweng.yy
  */
 public class SubscribeServiceResponse extends Response {
     
+    /** 订阅服务的详情快照。 */
     private ServiceInfo serviceInfo;
     
+    /** 无参构造，供序列化框架使用。 */
     public SubscribeServiceResponse() {
     }
     
+    /**
+     * 构造带结果码与服务详情的订阅响应。
+     *
+     * @param resultCode  结果码
+     * @param message     响应消息
+     * @param serviceInfo 服务详情
+     */
     public SubscribeServiceResponse(int resultCode, String message, ServiceInfo serviceInfo) {
         super();
         setResultCode(resultCode);
@@ -38,10 +49,12 @@ public class SubscribeServiceResponse extends Response {
         this.serviceInfo = serviceInfo;
     }
     
+    /** 返回服务详情。 */
     public ServiceInfo getServiceInfo() {
         return serviceInfo;
     }
     
+    /** 设置服务详情。 */
     public void setServiceInfo(ServiceInfo serviceInfo) {
         this.serviceInfo = serviceInfo;
     }
