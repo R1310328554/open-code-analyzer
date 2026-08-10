@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T13:25:12Z",
   "files": [
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/UserPermissionEvaluator.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/UserPermissionManagement.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/UserPermissions.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/UserPermissionsV2.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/info/ServerInfoAdminResource.java",
-    "services/src/main/java/org/keycloak/services/securityprofile/DefaultSecurityProfileProvider.java",
-    "services/src/main/java/org/keycloak/services/securityprofile/DefaultSecurityProfileProviderFactory.java",
-    "services/src/main/java/org/keycloak/services/util/AuthenticationFlowURLHelper.java",
-    "services/src/main/java/org/keycloak/services/util/AuthorizationContextUtil.java",
-    "services/src/main/java/org/keycloak/services/util/BrowserHistoryHelper.java",
-    "services/src/main/java/org/keycloak/services/util/CacheControlUtil.java",
-    "services/src/main/java/org/keycloak/services/util/CertificateInfoHelper.java",
-    "services/src/main/java/org/keycloak/services/util/Chunk.java",
-    "services/src/main/java/org/keycloak/services/util/DPoPUtil.java",
-    "services/src/main/java/org/keycloak/services/util/DateUtil.java",
     "services/src/main/java/org/keycloak/services/util/DefaultClientSessionContext.java",
     "services/src/main/java/org/keycloak/services/util/LocaleUtil.java",
     "services/src/main/java/org/keycloak/services/util/MtlsHoKTokenUtil.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/services/x509/DefaultClientCertificateLookup.java"
   ],
   "remaining_pending": 838,
-  "done": 5130
+  "done": 5145
 }
