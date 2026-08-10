@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:09:24Z",
-  "files": [
-    "services/src/main/java/org/keycloak/services/resources/IdentityBrokerService.java",
-    "services/src/main/java/org/keycloak/services/resources/KeycloakApplication.java",
-    "services/src/main/java/org/keycloak/services/resources/KeycloakOpenAPI.java",
-    "services/src/main/java/org/keycloak/services/resources/LoadBalancerResource.java",
-    "services/src/main/java/org/keycloak/services/resources/LoginActionsService.java",
-    "services/src/main/java/org/keycloak/services/resources/LoginActionsServiceChecks.java",
-    "services/src/main/java/org/keycloak/services/resources/LoginActionsServiceException.java",
-    "services/src/main/java/org/keycloak/services/resources/LogoutSessionCodeChecks.java",
-    "services/src/main/java/org/keycloak/services/resources/PublicRealmResource.java",
-    "services/src/main/java/org/keycloak/services/resources/RealmsResource.java",
-    "services/src/main/java/org/keycloak/services/resources/ServerMetadataResource.java",
-    "services/src/main/java/org/keycloak/services/resources/SessionCodeChecks.java",
-    "services/src/main/java/org/keycloak/services/resources/ShutdownDelayInitiatedEvent.java",
-    "services/src/main/java/org/keycloak/services/resources/ThemeResource.java",
-    "services/src/main/java/org/keycloak/services/resources/WelcomeResource.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 958,
-  "done": 5025
+  "done": 5040
 }
