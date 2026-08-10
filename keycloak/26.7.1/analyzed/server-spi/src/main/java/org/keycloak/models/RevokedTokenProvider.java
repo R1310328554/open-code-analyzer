@@ -20,6 +20,7 @@ package org.keycloak.models;
 import org.keycloak.provider.Provider;
 
 /**
+ * 已撤销令牌管理 Provider：存储被撤销的令牌 ID，在剩余有效期内拒绝验证。
  * Manages revoked tokens.
  * <p>
  * When a token is revoked (e.g. via logout or token revocation endpoint), its ID is stored so that subsequent
@@ -31,6 +32,7 @@ import org.keycloak.provider.Provider;
 public interface RevokedTokenProvider extends Provider {
 
     /**
+     * 记录令牌为已撤销状态。
      * Records a token as revoked.
      *
      * @param id              the unique identifier of the token (typically its {@code jti} claim).
@@ -41,6 +43,7 @@ public interface RevokedTokenProvider extends Provider {
     boolean put(String id, long lifespanSeconds);
 
     /**
+     * 检查令牌是否已被撤销。
      * Checks whether a token has been revoked.
      *
      * @param id the unique identifier of the token (typically its {@code jti} claim).

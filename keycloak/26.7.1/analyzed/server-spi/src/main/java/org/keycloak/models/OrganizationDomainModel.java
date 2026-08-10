@@ -20,6 +20,7 @@ package org.keycloak.models;
 import java.io.Serializable;
 
 /**
+ * 组织互联网域名模型：支持精确与通配符模式匹配。
  * Model implementation of an organization internet domain.
  * 
  * <p>Supports pattern-based domain matching:
@@ -33,6 +34,7 @@ import java.io.Serializable;
 public class OrganizationDomainModel implements Serializable {
 
     /**
+     * 用于将 IdP 与组织所有域名关联的特殊值；用户邮箱域名匹配时将自动重定向到该 IdP。
      * Value used to link an identity provider with all domains from the organization. If the user's email domain matches
      * any of the organization domains, automatic redirection to the identity will be performed.
      */
@@ -41,19 +43,24 @@ public class OrganizationDomainModel implements Serializable {
     private final String name;
     private final boolean verified;
 
+    /** @param name 域名（未验证） */
     public OrganizationDomainModel(String name) {
         this(name, false);
     }
 
+    /** @param name 域名
+     * @param verified 是否已验证 */
     public OrganizationDomainModel(String name, boolean verified) {
         this.name = name == null ? null : name.trim().toLowerCase();
         this.verified = verified;
     }
 
+    /** @return 域名（小写） */
     public String getName() {
         return this.name;
     }
 
+    /** @return 域名是否已验证 */
     public boolean isVerified() {
         return this.verified;
     }

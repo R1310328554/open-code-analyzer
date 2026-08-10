@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * 协议映射器模型：定义用户数据到协议声明（Claim）的映射规则。
  * Specifies a mapping from user data to a protocol claim assertion.
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -54,42 +55,52 @@ public class ProtocolMapperModel implements Serializable {
         }
     }
 
+    /** @return 映射器唯一标识符 */
     public String getId() {
         return id;
     }
 
+    /** @param id 映射器唯一标识符 */
     public void setId(String id) {
         this.id = id;
     }
 
+    /** @return 映射器名称 */
     public String getName() {
         return name;
     }
 
+    /** @param name 映射器名称 */
     public void setName(String name) {
         this.name = name;
     }
 
+    /** @return 协议类型（如 openid-connect） */
     public String getProtocol() {
         return protocol;
     }
 
+    /** @param protocol 协议类型 */
     public void setProtocol(String protocol) {
         this.protocol = protocol;
     }
 
+    /** @return 映射器实现类型 ID */
     public String getProtocolMapper() {
         return protocolMapper;
     }
 
+    /** @param protocolMapper 映射器实现类型 ID */
     public void setProtocolMapper(String protocolMapper) {
         this.protocolMapper = protocolMapper;
     }
 
+    /** @return 映射器配置项 */
     public Map<String, String> getConfig() {
         return config;
     }
 
+    /** @param config 映射器配置项 */
     public void setConfig(Map<String, String> config) {
         this.config = config;
     }
