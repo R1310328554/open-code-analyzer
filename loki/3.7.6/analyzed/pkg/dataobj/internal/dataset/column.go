@@ -1,5 +1,7 @@
 package dataset
 
+// column 定义 dataset 列抽象：ColumnType 描述物理/逻辑类型，Column 接口按页迭代，MemColumn 为内存实现。
+
 import (
 	"context"
 
@@ -7,6 +9,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/result"
 )
 
+// 辅助类型：ColumnType 与 ColumnDesc 描述列元数据与压缩统计。
 // Helper types.
 type (
 	// ColumnType represents the type of data stored in a column. Column types
@@ -36,6 +39,7 @@ type (
 	}
 )
 
+// Column 表示 dataset 中的一列，按 Page 分片以控制单次读取内存。
 // A Column represents a sequence of values within a dataset. Columns are split
 // up across one or more [Page]s to limit the amount of memory needed to read a
 // portion of the column at a time.
@@ -47,6 +51,7 @@ type Column interface {
 	ListPages(ctx context.Context) result.Seq[Page]
 }
 
+// MemColumn 在内存中持有同类型 Page 切片，供构建与测试使用。
 // MemColumn holds a set of pages of a common type.
 type MemColumn struct {
 	Desc  ColumnDesc // Description of the column.
@@ -70,3 +75,4 @@ func (c *MemColumn) ListPages(_ context.Context) result.Seq[Page] {
 		return nil
 	})
 }
+// ListPages 通过 result.Seq 顺序产出各 Page，便于流式读取。

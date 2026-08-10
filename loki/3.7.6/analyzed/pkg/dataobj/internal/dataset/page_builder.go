@@ -1,5 +1,7 @@
 package dataset
 
+// page_builder 在单页内累积 presence 位图与编码值：达到大小/行数阈值前 Append，Flush 产出 MemPage 与 CRC。
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/streamio"
 )
 
+// pageBuilder 双缓冲：presence 不压缩，values 经 compressWriter 可选压缩。
 // pageBuilder accumulates sequences of [Value] in memory until reaching a
 // configurable size limit. A [MemPage] can then be created from a PageBuiler
 // by calling [pageBuilder.Flush].
@@ -104,6 +107,7 @@ func (b *pageBuilder) canAppend(n, valueSize int) bool {
 	return true
 }
 
+// Append 估算 valueSize 判断是否超 PageSizeHint，满页返回 false 触发切页。
 // Append appends value into the pageBuilder. Append returns true if the data
 // was appended; false if the pageBuilder is full.
 func (b *pageBuilder) Append(value Value) bool {
@@ -248,6 +252,7 @@ func (b *pageBuilder) EstimatedSize() int {
 // Rows returns the number of rows appended to the pageBuilder.
 func (b *pageBuilder) Rows() int { return b.rows }
 
+// Flush 先 flush 编码器并 Close 压缩流，拼接 uvarint 头与 CRC 写入 MemPage。
 // Flush converts data in pageBuilder into a [MemPage], and returns it.
 // Afterwards, pageBuilder is reset to a fresh state and can be reused. Flush
 // returns an error if the pageBuilder is empty.
@@ -351,3 +356,4 @@ func (b *pageBuilder) Reset() {
 	b.minValue = Value{}
 	b.maxValue = Value{}
 }
+// StoreRangeStats 开启时在页内跟踪 min/max，供列级统计聚合使用。

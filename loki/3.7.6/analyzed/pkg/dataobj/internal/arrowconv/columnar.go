@@ -1,5 +1,7 @@
 package arrowconv
 
+// columnar 子模块：将 Loki columnar.RecordBatch 零拷贝或浅拷贝转为 Apache Arrow RecordBatch，供 Arrow 生态工具消费。
+
 import (
 	"fmt"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/columnar"
 )
 
+// ToRecordBatch 按 schema 逐列复制 validity 与值缓冲区，构建 Arrow 数组。
 // ToRecordBatch converts a columnar RecordBatch into an Arrow RecordBatch using
 // the provided schema for the output types.
 func ToRecordBatch(src *columnar.RecordBatch, schema *arrow.Schema) (arrow.RecordBatch, error) {
@@ -32,7 +35,8 @@ func ToRecordBatch(src *columnar.RecordBatch, schema *arrow.Schema) (arrow.Recor
 		}
 
 		switch field.Type.ID() {
-		case arrow.INT64:
+		// 整型列复制 values 缓冲区并保留 null 位图，构造 Int64Array。
+case arrow.INT64:
 			srcInt64 := srcCol.(*columnar.Number[int64])
 			srcBytes := arrow.GetBytes(srcInt64.Values())
 			dstBytes := make([]byte, len(srcBytes))
@@ -70,7 +74,8 @@ func ToRecordBatch(src *columnar.RecordBatch, schema *arrow.Schema) (arrow.Recor
 			)
 			arr = array.NewUint64Data(data)
 
-		case arrow.BINARY:
+		// BINARY/STRING 列额外复制 offsets，以支持变长字节与 UTF-8 字符串。
+case arrow.BINARY:
 			srcBinary := srcCol.(*columnar.UTF8)
 			srcBytes := srcBinary.Data()
 			dstBytes := make([]byte, len(srcBytes))
@@ -146,3 +151,4 @@ func ToRecordBatch(src *columnar.RecordBatch, schema *arrow.Schema) (arrow.Recor
 
 	return array.NewRecordBatch(schema, arrs, nrows), nil
 }
+// 不支持的 Arrow 列类型返回错误，避免静默丢弃数据。

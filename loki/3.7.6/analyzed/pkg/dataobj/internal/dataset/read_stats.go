@@ -1,9 +1,12 @@
 package dataset
 
+// read_stats 注册 dataset 读取路径的 xcap 指标：主/次列、页下载、行读取与压缩字节等可观测统计项。
+
 import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// 下列 Stat* 变量在 RowReader 与 downloader 中 Observe，聚合类型多为 Sum。
 // xcap statistics for dataset reader operations.
 var (
 	// Column statistics
@@ -37,5 +40,7 @@ var (
 	StatSecondaryColumnUncompressedBytes = xcap.NewStatisticInt64("secondary.pages.uncompressed.bytes", xcap.AggregationTypeSum)
 
 	// Read operation statistics
-	StatReadCalls = xcap.NewStatisticInt64("read.calls", xcap.AggregationTypeSum)
+	// StatReadCalls 记录 RowReader.Read 调用次数，衡量扫描轮次。
+StatReadCalls = xcap.NewStatisticInt64("read.calls", xcap.AggregationTypeSum)
 )
+// 页缓存命中与下载耗时指标便于调优 Prefetch 与对象存储访问模式。

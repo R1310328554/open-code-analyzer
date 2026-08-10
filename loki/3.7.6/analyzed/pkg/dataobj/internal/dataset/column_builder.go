@@ -1,5 +1,7 @@
 package dataset
 
+// column_builder 将 Value 序列写入多个 MemPage：按 PageSizeHint 或 PageMaxRowCount 切页，并可选收集列级统计。
+
 import (
 	"fmt"
 	"sync"
@@ -9,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/metadata/datasetmd"
 )
 
+// BuilderOptions 配置页大小、编码、压缩及统计收集策略。
 // BuilderOptions configures common settings for building pages.
 type BuilderOptions struct {
 	// PageSizeHint is the soft limit for the size of the page. Builders try to
@@ -75,6 +78,7 @@ func (o *CompressionOptions) init() {
 	}
 }
 
+// ColumnBuilder 缓冲 Value，满页时 flush 为 MemPage 并累计行数。
 // A ColumnBuilder builds a sequence of [Value] entries of a common type into a
 // column. Values are accumulated into a buffer and then flushed into
 // [MemPage]s once the size of data exceeds a configurable limit.
@@ -112,6 +116,7 @@ func NewColumnBuilder(tag string, opts BuilderOptions) (*ColumnBuilder, error) {
 	}, nil
 }
 
+// Append 按行号写入；若跳行则先 Backfill NULL，行号逆序则报错。
 // Append adds a new value into cb with the given zero-indexed row number. If
 // the row number is higher than the current number of rows in cb, null values
 // are added up to the new row.
@@ -195,6 +200,7 @@ func (cb *ColumnBuilder) append(row int, value Value) bool {
 	return cb.pageBuilder.Append(value)
 }
 
+// Flush 汇总所有页为 MemColumn 并重置 builder，可立即复用。
 // Flush converts data in cb into a [MemColumn]. Afterwards, cb is reset to a
 // fresh state and can be reused.
 func (cb *ColumnBuilder) Flush() (*MemColumn, error) {
@@ -245,3 +251,4 @@ func (cb *ColumnBuilder) Reset() {
 	cb.pages = nil
 	cb.pageBuilder.Reset()
 }
+// EstimatedSize 含已切页压缩大小与当前页估算，用于内存与存储预算。

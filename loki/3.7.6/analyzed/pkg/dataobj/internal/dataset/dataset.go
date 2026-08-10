@@ -1,3 +1,4 @@
+// dataset 包定义只读列式 Dataset：列拆分为 Page，值序列化为 Value。
 // Package dataset contains utilities for working with datasets. Datasets hold
 // columnar data across multiple pages.
 package dataset
@@ -8,6 +9,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/result"
 )
 
+// Dataset 接口提供 ListColumns、ListPages、ReadPages 三种批量访问路径。
 // A Dataset holds a collection of [Columns], each of which is split into a set
 // of [Pages] and further split into a sequence of [Values].
 //
@@ -31,6 +33,7 @@ type Dataset interface {
 	ReadPages(ctx context.Context, pages []Page) result.Seq[PageData]
 }
 
+// FromMemory 用 MemColumn 切片构造 memDataset，适合测试与内存管道。
 // FromMemory returns an in-memory [Dataset] from the given list of
 // [MemColumn]s.
 func FromMemory(columns []*MemColumn) Dataset {
@@ -81,6 +84,7 @@ func (d memDataset) ReadPages(ctx context.Context, pages []Page) result.Seq[Page
 	})
 }
 
+// Row 表示同一行索引下各列 Value 的切片，Size 统计行内字节占用。
 // A Row in a Dataset is a set of values across multiple columns with the same
 // row number.
 type Row struct {
@@ -105,3 +109,4 @@ func (r Row) SizeOfColumns(idxs []int) int64 {
 	}
 	return size
 }
+// memDataset 实现保证列与页顺序稳定，便于上层缓存与谓词剪枝。

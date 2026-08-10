@@ -1,5 +1,7 @@
 package dataset
 
+// row_reader 从 Dataset 按行读取：谓词下分主/次列两阶段，结合页统计做 range 剪枝与批量 Prefetch。
+
 import (
 	"context"
 	"errors"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// RowReaderOptions 指定列集、谓词链与是否 Prefetch 页数据。
 // RowReaderOptions configures how a [RowReader] will read [Row]s.
 type RowReaderOptions struct {
 	Dataset Dataset // Dataset to read from.
@@ -38,6 +41,7 @@ type RowReaderOptions struct {
 	Prefetch bool
 }
 
+// RowReader 通过 rowReaderDownloader 包装列，Open 后 Read 对齐有效行范围。
 // A RowReader reads [Row]s from a [Dataset].
 type RowReader struct {
 	opts  RowReaderOptions
@@ -79,6 +83,7 @@ func (r *RowReader) Open(ctx context.Context) error {
 	return nil
 }
 
+// Read 先读主列并过滤，再 Fill 次列；无谓词时一次 ReadColumns 读全列。
 // Read reads up to the next len(s) rows from r and stores them into s. It
 // returns the number of rows read and any error encountered. At the end of the
 // Dataset, Read returns 0, [io.EOF].
@@ -666,6 +671,7 @@ func (r *RowReader) fillPrimaryMask(mask *bitmask.Mask) {
 	}
 }
 
+// buildPredicateRanges 用页 min/max 估计哪些行范围可能满足谓词。
 // buildPredicateRanges returns a set of rowRanges that are valid to read based
 // on the provided predicate. If p is nil or the predicate is unsupported, the
 // entire dataset range is valid.
@@ -743,6 +749,7 @@ func (r *RowReader) buildPredicateRanges(ctx context.Context, p Predicate) (rang
 	}
 }
 
+// simplifyNotPredicate 对 Not 应用德摩根律，使页级剪枝与行级求值一致。
 // simplifyNotPredicate applies De Morgan's laws to a NotPredicate to permit
 // page filtering.
 //
@@ -942,3 +949,4 @@ func (r *RowReader) predicateColumns(p Predicate, keep func(c Column) bool) ([]C
 
 	return ret, idxs, nil
 }
+// 谓词列交换行时使用 swap 而非 copy，避免 Values 切片别名导致内存损坏。

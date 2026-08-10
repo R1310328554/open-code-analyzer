@@ -1,5 +1,7 @@
 package dataset
 
+// page_reader 解码单页：先读 presence 位图再读稠密值，materializeSparseArray 按位图展开含 NULL 的 columnar 数组。
+
 import (
 	"context"
 	"errors"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/memory"
 )
 
+// pageReader 维护页内行游标、bitmap/value 解码器及解压 closer。
 type pageReader struct {
 	page         Page
 	physicalType datasetmd.PhysicalType
@@ -37,6 +40,7 @@ func newPageReader(p Page, physicalType datasetmd.PhysicalType, compression data
 	return &pr
 }
 
+// Read 必要时 re-init 页，skipUnwantedRows 后再 materialize 稀疏数组。
 // Read returns an array of up to the next count values from the page.
 // At the end of the page, Read returns nil, io.EOF.
 //
@@ -178,6 +182,7 @@ func (pr *pageReader) init(ctx context.Context) error {
 	return nil
 }
 
+// materializeSparseArray 将稠密值按 validity 位图插入 NULL 槽位。
 // materializeSparseArray materializes a dense array into a sparse [Value] slice
 // based on a presence bitmap. If denseValues is nil, a [columnar.Null] is
 // returned with the length of validity.
@@ -300,6 +305,7 @@ func materializeNulls(alloc *memory.Allocator, typ datasetmd.PhysicalType, valid
 	}
 }
 
+// Seek 仅相对当前 Page 行号，与 columnReader 的全局行号由上层换算。
 // Seek sets the row offset for the next Read call, interpreted according to
 // whence:
 //
@@ -387,3 +393,4 @@ func (pr *pageReader) getPresenceDecoder() *bitmapDecoder {
 	}
 	return pr.presenceDec
 }
+// init 调用 MemPage.open 解压并绑定 presence/value 解码器，EOF 时主动 Close。

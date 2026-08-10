@@ -1,5 +1,7 @@
 package dataset
 
+// column_stats 在列构建期聚合统计：可选 HyperLogLog 基数估计与跨页 min/max 范围，写入 datasetmd.Statistics。
+
 import (
 	"fmt"
 
@@ -26,6 +28,7 @@ func newHyperLogLog() (*hyperloglog.Sketch, error) {
 	return hyperloglog.NewSketch(12, true)
 }
 
+// columnStatsBuilder 按 StatisticsOptions 决定是否维护 HLL 草图。
 type columnStatsBuilder struct {
 	opts StatisticsOptions
 
@@ -33,6 +36,7 @@ type columnStatsBuilder struct {
 	hll *hyperloglog.Sketch
 }
 
+// newColumnStatsBuilder 在需要基数统计时初始化 2^12 寄存器 HLL。
 // ColumnStatsBuilder is for column-level statistics
 func newColumnStatsBuilder(opts StatisticsOptions) (*columnStatsBuilder, error) {
 	result := &columnStatsBuilder{
@@ -65,6 +69,7 @@ func (csb *columnStatsBuilder) Append(value Value) {
 	}
 }
 
+// Flush 合并页级 min/max 与 HLL 估计，输出列级 Statistics 指针。
 // Flush builds the column-level stats both from the given pages and any internal
 // state
 func (csb *columnStatsBuilder) Flush(pages []*MemPage) *datasetmd.Statistics {
@@ -113,3 +118,4 @@ func (csb *columnStatsBuilder) buildRangeStats(pages []*MemPage, dst *datasetmd.
 		panic(fmt.Sprintf("ColumnStatsBuilder.buildStats: failed to marshal max value: %s", err))
 	}
 }
+// Append 对非空非零值 MarshalBinary 后插入 HLL，用于近似 distinct 计数。

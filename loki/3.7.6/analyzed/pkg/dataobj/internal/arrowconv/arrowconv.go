@@ -1,3 +1,4 @@
+// arrowconv 包在 Apache Arrow 标量/类型与 dataset.Value 之间提供双向转换。
 // Package arrowconv provides helper utilities for converting between Arrow and
 // dataset values.
 package arrowconv
@@ -13,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/metadata/datasetmd"
 )
 
+// DatasetType 将 Arrow 物理类型映射为 dataset 物理类型，不支持时返回 false。
 // DatasetType returns the [datasetmd.ValueType] that corresponds to the given
 // Arrow type.
 //
@@ -43,6 +45,7 @@ func DatasetType(arrowType arrow.DataType) (datasetmd.PhysicalType, bool) {
 	return datasetmd.PHYSICAL_TYPE_UNSPECIFIED, false
 }
 
+// FromScalar 把 Arrow 标量转为 dataset.Value；空标量返回 nil Value。
 // FromScalar converts a [scalar.Scalar] into a [dataset.Value] of the
 // specified type.
 //
@@ -99,6 +102,7 @@ func FromScalar(s scalar.Scalar, toType datasetmd.PhysicalType) dataset.Value {
 	}
 }
 
+// ToScalar 把 dataset.Value 转为指定 Arrow 类型的标量，类型不匹配时 panic。
 // ToScalar converts a [dataset.Value] into a [scalar.Scalar] of the specified
 // type.
 //
@@ -158,3 +162,4 @@ func ToScalar(v dataset.Value, toType arrow.DataType) scalar.Scalar {
 		panic(fmt.Sprintf("arrowconv.ToScalar: unsupported conversion to Arrow type %s", toType))
 	}
 }
+// TIMESTAMP 与 INT64 共用底层整型，BINARY 与 STRING 均映射为字节序列。

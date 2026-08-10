@@ -1,5 +1,7 @@
 package dataset
 
+// column_reader 跨 Page 顺序读取整列：维护页范围、pageReader 与 Seek，将多页 columnar.Array 拼接返回。
+
 import (
 	"context"
 	"errors"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/memory"
 )
 
+// columnReader 跟踪 nextRow、当前页索引及底层 pageReader。
 type columnReader struct {
 	column      Column
 	initialized bool // Whether the column reader has been initialized.
@@ -34,6 +37,7 @@ func newColumnReader(column Column) *columnReader {
 	return &cr
 }
 
+// Read 最多读取 count 个值，跨页时用 columnar.Concat 合并临时数组。
 // Read returns an array of up to the next count values from the column. At the
 // end of the column, Read returns nil, io.EOF.
 //
@@ -158,6 +162,7 @@ func (cr *columnReader) init(ctx context.Context) error {
 	return nil
 }
 
+// Seek 支持 SeekStart/Current/End，定位列内下一行读取起点。
 // Seek sets the row offset for the next Read call, interpreted according to
 // whence:
 //
@@ -201,6 +206,7 @@ func (cr *columnReader) Seek(offset int64, whence int) (int64, error) {
 	return cr.nextRow, nil
 }
 
+// Reset 绑定新 Column 并清空页缓存，便于复用 reader 实例。
 // Reset resets the column reader to read from the start of the provided
 // column. This permits reusing a column reader rather than allocating a new
 // one.
@@ -229,3 +235,4 @@ func (cr *columnReader) Close() error {
 	}
 	return nil
 }
+// init 遍历 ListPages 构建每页全局行范围，供二分查找定位页。

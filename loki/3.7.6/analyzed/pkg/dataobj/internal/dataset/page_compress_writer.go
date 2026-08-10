@@ -1,5 +1,7 @@
 package dataset
 
+// page_compress_writer 实现 streamio.Writer：在 bufio 后挂 Snappy/Zstd/直通写入器，统计未压缩字节数。
+
 import (
 	"bufio"
 	"bytes"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/util/bufpool"
 )
 
+// compressWriter 通过 Reset 切换底层压缩器，Close 时必须 flush 以写 Zstd 帧尾。
 // A compressWriter is a [streamio.Writer] that compresses data passed to it.
 type compressWriter struct {
 	// To be able to implmeent [io.ByteWriter], we always write directly to buf,
@@ -80,6 +83,7 @@ func (c *compressWriter) Flush() error {
 	return nil
 }
 
+// Reset 复用支持 Reset 的 WriteCloser，否则按 CompressionType 新建压缩器。
 // Reset discards the writer's state and switches the compressor to write to w.
 // This permits reusing a compressWriter rather than allocating a new one.
 func (c *compressWriter) Reset(w io.Writer) {
@@ -140,6 +144,7 @@ type nopCloseWriter struct{ w io.Writer }
 func (w nopCloseWriter) Write(p []byte) (n int, err error) { return w.w.Write(p) }
 func (w nopCloseWriter) Close() error                      { return nil }
 
+// deferredZstdCompressor 缓冲明文，Flush 时用共享 Encoder EncodeAll 一次性压缩。
 type deferredZstdCompressor struct {
 	inner       io.Writer     // Writer to send compressed data to
 	zstdEncoder *zstd.Encoder // Compressor
@@ -168,3 +173,4 @@ func (c *deferredZstdCompressor) Flush() error {
 func (c *deferredZstdCompressor) Close() error {
 	return nil
 }
+// CompressionOptions 缓存 zstd.Encoder，减少多列构建时的分配开销。

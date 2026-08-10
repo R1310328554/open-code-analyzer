@@ -1,14 +1,18 @@
 package dataset
 
+// predicate 定义 RowReader 行过滤表达式：And/Or/Not 组合与 Equal/In/比较谓词，以及 ValueSet 集合类型。
+
 import (
 	"fmt"
 	"iter"
 	"unsafe"
 )
 
+// Predicate 为 sealed 接口，各具体类型通过 isPredicate 标记实现。
 // Predicate is an expression used to filter rows in a [RowReader].
 type Predicate interface{ isPredicate() }
 
+// Equal/In/GreaterThan/LessThan 引用 Column+Value；FuncPredicate 不支持页级剪枝。
 // Suppported predicates..
 type (
 	// An AndPredicate is a [Predicate] which asserts that a row may only be
@@ -85,6 +89,7 @@ func (GreaterThanPredicate) isPredicate() {}
 func (LessThanPredicate) isPredicate()    {}
 func (FuncPredicate) isPredicate()        {}
 
+// WalkPredicate 深度优先遍历谓词树，fn 返回 false 时剪枝子树。
 // WalkPredicate traverses a predicate in depth-first order: it starts by
 // calling fn(p). If fn(p) returns true, WalkPredicate is invoked recursively
 // with fn for each of the non-nil children of p, followed by a call of
@@ -127,6 +132,7 @@ type ValueSet interface {
 	Size() int
 }
 
+// Int64Set/Uint64Set/BinaryValueSet 实现 ValueSet，供 InPredicate 快速 Contains。
 type Int64Set struct {
 	values map[int64]Value
 }
@@ -232,3 +238,4 @@ func (s BinaryValueSet) Size() int {
 func unsafeString(in []byte) string {
 	return unsafe.String(unsafe.SliceData(in), len(in))
 }
+// BinaryValueSet 用 unsafeString 键化字节切片，避免拷贝大字符串键。

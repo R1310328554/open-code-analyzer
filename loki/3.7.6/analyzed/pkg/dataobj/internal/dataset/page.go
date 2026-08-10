@@ -1,5 +1,7 @@
 package dataset
 
+// page 定义 Page 二进制布局：presence 位图 + 编码值区，支持 Snappy/Zstd 解压与 CRC32 校验。
+
 import (
 	"bytes"
 	"context"
@@ -16,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/dataobj/internal/util/bufpool"
 )
 
+// PageData 格式：<uvarint 位图长> <presence> <values>；PageDesc 存元数据。
 // Helper types.
 type (
 	// PageData holds the raw data for a page. Data is formatted as:
@@ -46,6 +49,7 @@ type (
 	Pages []Page
 )
 
+// Page 接口暴露 PageDesc 与 ReadPage；MemPage 为内存驻留实现。
 // A Page holds an encoded and optionally compressed sequence of [Value]s
 // within a [Column].
 type Page interface {
@@ -83,6 +87,7 @@ type openedPage struct {
 	ValueData    []byte
 }
 
+// open 校验 CRC 后按压缩类型解压值区，返回 openedPage 与释放资源的 Closer。
 // open the page for decoding. The page is validated for its CRC32 checksum.
 //
 // The page value data will be decompressed with the given compression type.
@@ -214,3 +219,4 @@ var getZstdDecoder = sync.OnceValues(func() (*zstd.Decoder, error) {
 	// Using a concurrency of 0 will use GOMAXPROCS workers.
 	return zstd.NewReader(nil, zstd.WithDecoderConcurrency(0))
 })
+// 全局 zstd 解码器用 DecodeAll 支持并发，Snappy 读器来自 sync.Pool。
