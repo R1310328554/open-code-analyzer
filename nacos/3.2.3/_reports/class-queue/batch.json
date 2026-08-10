@@ -15,23 +15,8 @@
     "persistence/src/main/java/com/alibaba/nacos/persistence/repository/embedded/sql/limiter/SqlTypeLimiter.java",
     "persistence/src/main/java/com/alibaba/nacos/persistence/repository/extrnal/ExternalStoragePaginationHelperImpl.java",
     "persistence/src/main/java/com/alibaba/nacos/persistence/utils/ConnectionCheckUtil.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/utils/DatasourcePlatformUtil.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/utils/DerbyUtils.java",
-    "persistence/src/main/java/com/alibaba/nacos/persistence/utils/PersistenceExecutor.java",
-    "prometheus/src/main/java/com/alibaba/nacos/prometheus/PrometheusApp.java",
-    "prometheus/src/main/java/com/alibaba/nacos/prometheus/api/ApiConstants.java",
-    "prometheus/src/main/java/com/alibaba/nacos/prometheus/conf/PrometheusSecurityConfiguration.java",
-    "prometheus/src/main/java/com/alibaba/nacos/prometheus/controller/PrometheusController.java",
-    "prometheus/src/main/java/com/alibaba/nacos/prometheus/exception/PrometheusApiExceptionHandler.java",
-    "prometheus/src/main/java/com/alibaba/nacos/prometheus/filter/PrometheusAuthFilter.java",
-    "prometheus/src/main/java/com/alibaba/nacos/prometheus/utils/PrometheusUtils.java",
-    "server/src/main/java/com/alibaba/nacos/NacosServerBasicApplication.java",
-    "server/src/main/java/com/alibaba/nacos/NacosServerWebApplication.java",
-    "server/src/main/java/com/alibaba/nacos/server/AbstractNacosWebBeanTypeFilter.java",
-    "server/src/main/java/com/alibaba/nacos/server/NacosNormalBeanTypeFilter.java",
-    "server/src/main/java/com/alibaba/nacos/server/NacosWebBeanPostProcessorConfiguration.java",
-    "server/src/main/java/com/alibaba/nacos/server/NacosWebBeanTypeFilter.java"
+    "persistence/src/main/java/com/alibaba/nacos/persistence/utils/DatasourcePlatformUtil.java"
   ],
   "remaining_pending": 377,
-  "done": 2130
+  "done": 2145
 }
