@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T12:49:50Z",
   "files": [
-    "services/src/main/java/org/keycloak/protocol/util/ClientCliInstallationUtil.java",
-    "services/src/main/java/org/keycloak/provider/DefaultProviderLoader.java",
-    "services/src/main/java/org/keycloak/provider/DefaultProviderLoaderFactory.java",
-    "services/src/main/java/org/keycloak/provider/DeploymentProviderLoader.java",
-    "services/src/main/java/org/keycloak/provider/FileSystemProviderLoaderFactory.java",
-    "services/src/main/java/org/keycloak/provider/ProviderManager.java",
-    "services/src/main/java/org/keycloak/scripting/AbstractEvaluatableScriptAdapter.java",
-    "services/src/main/java/org/keycloak/scripting/CompiledEvaluatableScriptAdapter.java",
-    "services/src/main/java/org/keycloak/scripting/DefaultScriptingProvider.java",
-    "services/src/main/java/org/keycloak/scripting/DefaultScriptingProviderFactory.java",
-    "services/src/main/java/org/keycloak/scripting/UncompiledEvaluatableScriptAdapter.java",
-    "services/src/main/java/org/keycloak/services/CorsErrorResponseException.java",
-    "services/src/main/java/org/keycloak/services/DefaultComponentFactoryProviderFactory.java",
-    "services/src/main/java/org/keycloak/services/DefaultKeycloakContext.java",
-    "services/src/main/java/org/keycloak/services/DefaultKeycloakSession.java",
     "services/src/main/java/org/keycloak/services/DefaultKeycloakSessionFactory.java",
     "services/src/main/java/org/keycloak/services/DefaultKeycloakTransactionManager.java",
     "services/src/main/java/org/keycloak/services/DefaultPermissions.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/services/clientpolicy/ClientProfile.java"
   ],
   "remaining_pending": 1198,
-  "done": 4770
+  "done": 4785
 }
