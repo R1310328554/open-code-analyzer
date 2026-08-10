@@ -1,3 +1,5 @@
+// GraphHeatmapHelpers 单元测试：验证 isHeatmapData 对各类 API 结果类型的判定逻辑。
+
 import { DataTableProps } from './DataTable';
 import { isHeatmapData } from './GraphHeatmapHelpers';
 
@@ -43,6 +45,7 @@ describe('GraphHeatmapHelpers', () => {
     expect(isHeatmapData(data)).toBe(false);
   });
 
+// 两条以上 le 标签且非 le 标签一致时判定为 histogram heatmap 输入。
   it('isHeatmapData should return true for valid heatmap data', () => {
     const data = {
       resultType: 'matrix',

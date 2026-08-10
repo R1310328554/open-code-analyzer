@@ -1,3 +1,5 @@
+// React 数据获取 Hooks：封装 Prometheus API 请求与启动页就绪/WAL 重放轮询。
+
 import { useState, useEffect } from 'react';
 import { API_PATH } from '../constants/constants';
 import { WALReplayStatus } from '../types/types';
@@ -17,6 +19,7 @@ export interface FetchStateReadyInterval {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// useFetch 在 url/options 变化时发起 fetch，禁用缓存并携带同源凭证。
 export const useFetch = <T extends Record<string, any>>(url: string, options?: RequestInit): FetchState<T> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [response, setResponse] = useState<APIResponse<T>>({ status: 'start fetching' } as any);
@@ -46,6 +49,7 @@ export const useFetch = <T extends Record<string, any>>(url: string, options?: R
 
 let wasReady = false;
 
+// useFetchReadyInterval 供 withStartingIndicator 轮询 /-/ready 与 WAL 重放进度。
 // This is used on the starting page to periodically check if the server is ready yet,
 // and check the status of the WAL replay.
 export const useFetchReadyInterval = (pathPrefix: string, options?: RequestInit): FetchStateReadyInterval => {
@@ -58,6 +62,7 @@ export const useFetchReadyInterval = (pathPrefix: string, options?: RequestInit)
     if (wasReady) {
       setReady(true);
     } else {
+// mounted 标志防止组件卸载后仍 setState，wasReady 模块变量避免重复轮询。
       // This helps avoid a memory leak.
       let mounted = true;
 

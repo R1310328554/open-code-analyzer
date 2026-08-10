@@ -1,3 +1,5 @@
+// GraphHelpers 单元测试：覆盖 SI 刻度 formatValue、parseValue 与 Flot getOptions 配置。
+
 import { formatValue, parseValue, getOptions } from './GraphHelpers';
 import moment from 'moment';
 require('../../vendor/flot/jquery.flot'); // need for $.colors
@@ -79,6 +81,7 @@ describe('GraphHelpers', () => {
       expect(parseValue('asd')).toBeNull();
     });
   });
+// getOptions 用例校验 stacked、本地时区 tooltip 与 exemplar 双标签块渲染。
   describe('Plot options', () => {
     it('should configure options properly if stacked prop is true', () => {
       expect(getOptions(true, false)).toMatchObject({

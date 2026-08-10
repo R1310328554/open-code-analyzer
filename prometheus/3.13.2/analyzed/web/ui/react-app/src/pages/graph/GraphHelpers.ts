@@ -1,3 +1,5 @@
+// Prometheus 图表核心工具：Flot 配置、数值格式化、序列归一化与 exemplar 去密集化。
+
 import $ from 'jquery';
 
 import { escapeHTML } from '../../utils';
@@ -7,6 +9,7 @@ import { colorPool } from './ColorPool';
 import { prepareHeatmapData } from './GraphHeatmapHelpers';
 import { GraphDisplayMode } from './Panel';
 
+// formatValue 为 Y 轴 tickFormatter，按绝对值量级附加 SI 前缀（k/M/G… 或 m/µ/n…）。
 export const formatValue = (y: number | null): string => {
   if (y === null) {
     return 'null';
@@ -55,6 +58,7 @@ export const formatValue = (y: number | null): string => {
   throw Error("couldn't format a value, this is a bug");
 };
 
+// getHoverColor 在非堆叠模式用 rgba；堆叠模式手动混合 RGB 以兼容 Flot 透明度缺陷。
 export const getHoverColor = (color: string, opacity: number, stacked: boolean): string => {
   const { r, g, b } = $.color.parse(color);
   if (!stacked) {
@@ -79,6 +83,7 @@ export const toHoverColor =
     color: getHoverColor(series.color, i !== index ? 0.3 : 1, stacked),
   });
 
+// getOptions 返回 Flot 选项：时间轴、十字线、tooltip 模板及按 stacked 调整的线宽/填充。
 export const getOptions = (stacked: boolean, useLocalTime: boolean): jquery.flot.plotOptions => {
   return {
     grid: {
@@ -146,6 +151,7 @@ export const getOptions = (stacked: boolean, useLocalTime: boolean): jquery.flot
       lines: true,
     },
     series: {
+// stack 在 normalizeData 逐 series 设置；exemplar 点符号不支持 Flot 堆叠。
       stack: false, // Stacking is set on a per-series basis because exemplar symbols don't support it.
       heatmap: false,
       lines: {
@@ -161,12 +167,14 @@ export const getOptions = (stacked: boolean, useLocalTime: boolean): jquery.flot
   };
 };
 
+// normalizeData 按 resolution 插 null、分配 colorPool 颜色，Heatmap 模式调用 prepareHeatmapData。
 export const normalizeData = ({ queryParams, data, exemplars, displayMode }: GraphProps): GraphData => {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const { startTime, endTime, resolution } = queryParams!;
 
   let sum = 0;
   const values: number[] = [];
+// exemplar 按时间分桶后按值降序，保留与上一 exemplar 相差≥2σ 的点以防重叠。
   // Exemplars are grouped into buckets by time to use for de-densifying.
   const buckets: { [time: number]: GraphExemplar[] } = {};
   for (const exemplar of exemplars || []) {
@@ -192,6 +200,7 @@ export const normalizeData = ({ queryParams, data, exemplars, displayMode }: Gra
   const deviation = stdDeviation(sum, values);
 
   const series = data.result.map(({ values, histograms, metric }, index) => {
+// 在 startTime..endTime 步进上对齐 values/histograms，缺失步填 null 形成断点。
     // Insert nulls for all missing steps.
     const data = [];
     let valuePos = 0;
@@ -245,6 +254,7 @@ export const normalizeData = ({ queryParams, data, exemplars, displayMode }: Gra
   };
 };
 
+// parseValue 将 API 字符串转为数字；±Inf 等 parseFloat 为 NaN 时返回 null 显示为间隙。
 export const parseValue = (value: string): null | number => {
   const val = parseFloat(value);
   // "+Inf", "-Inf", "+Inf" will be parsed into NaN by parseFloat(). They
@@ -252,6 +262,7 @@ export const parseValue = (value: string): null | number => {
   return isNaN(val) ? null : val;
 };
 
+// exemplarSymbol 在 Flot 上绘制旋转 45° 的蓝色方块标记 trace exemplar。
 const exemplarSymbol = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
   // Center the symbol on the point.
   y = y - 3.5;

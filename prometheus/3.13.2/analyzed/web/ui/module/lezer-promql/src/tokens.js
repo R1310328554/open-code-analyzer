@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Lezer PromQL 词法扩展：将标识符在特定语法上下文中特化为关键字 token。
+
 import {
   And,
   Avg,
@@ -51,6 +53,7 @@ import {
   FillRight,
 } from "./parser.terms.js";
 
+// keywordTokens 映射始终可特化的 PromQL 关键字（inf/nan/bool/on/offset 等）。
 const keywordTokens = {
   inf: inf,
   nan: nan,
@@ -66,6 +69,7 @@ export const specializeIdentifier = (value, stack) => {
   return keywordTokens[value.toLowerCase()] || -1;
 };
 
+// contextualKeywordTokens 列出仅在当前 LR 栈可 shift 时才生效的聚合/修饰/逻辑关键字。
 const contextualKeywordTokens = {
   avg: Avg,
   atan2: Atan2,
@@ -94,6 +98,7 @@ const contextualKeywordTokens = {
   fill_right: FillRight,
 };
 
+// extendIdentifier 处理 start/end/@ 修饰符及上下文关键字，依赖 stack.canShift 消歧。
 export const extendIdentifier = (value, stack) => {
   if (value === "start" && stack.canShift(StartFn)) {
     return StartFn;

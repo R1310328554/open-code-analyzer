@@ -1,3 +1,5 @@
+// Prometheus 热力图辅助：识别 histogram heatmap 查询结果并将 cumulative 桶转为增量值。
+
 import { DataTableProps } from './DataTable';
 import { GraphProps, GraphSeries } from './Graph';
 
@@ -5,6 +7,7 @@ export function isHeatmapData(data: DataTableProps['data']) {
   if (data?.resultType === 'scalar' || data?.resultType === 'string' || !data?.result?.length || data?.result?.length < 2) {
     return false;
   }
+// 将 result 断言为 GraphProps 类型以便访问 metric 字段。
   // Type assertion to prevent TS2349 error.
   const result = data.result as GraphProps['data']['result'];
   const firstLabels = Object.keys(result[0].metric).filter((label) => label !== 'le');
@@ -15,6 +18,7 @@ export function isHeatmapData(data: DataTableProps['data']) {
   });
 }
 
+// prepareHeatmapData 按 le 排序后做相邻 cumulative 差分，得到各桶独立计数。
 export function prepareHeatmapData(buckets: GraphSeries[]) {
   if (!buckets.every((a) => a.labels.le)) {
     return buckets;
@@ -43,6 +47,7 @@ export function prepareHeatmapData(buckets: GraphSeries[]) {
   return result;
 }
 
+// promValueToNumber 解析 Prometheus 特殊浮点字符串（NaN/±Inf）为 JS 数值。
 export function promValueToNumber(s: string) {
   switch (s) {
     case 'NaN':

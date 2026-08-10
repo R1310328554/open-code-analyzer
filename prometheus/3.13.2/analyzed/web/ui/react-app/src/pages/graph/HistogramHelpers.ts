@@ -1,7 +1,11 @@
+// 原生 histogram 可视化辅助：指数/线性刻度下零轴位置、桶宽与正负值边界计算。
+
 export type ScaleType = 'linear' | 'exponential';
 
+// calculateDefaultExpBucketWidth 用末桶或倒数第二桶的对数差作为默认指数桶宽。
 // Calculates a default width of exponential histogram bucket ranges. If the last bucket is [0, 0],
 // the width is calculated using the second to last bucket. returns error if the last bucket is [-0, 0],
+// 末桶为 [0,0] 时回退到前一桶；仅单桶 [-0,0] 时抛错无法推断宽度。
 export function calculateDefaultExpBucketWidth(
   last: [number, string, string, string],
   buckets: [number, string, string, string][]
@@ -20,6 +24,7 @@ export function calculateDefaultExpBucketWidth(
   }
 }
 
+// findMinPositive 扫描桶左/右边界，返回最小正数；全负或无桶时返回 0。
 // Finds the lowest positive value from the bucket ranges
 // Returns 0 if no positive values are found or if there are no buckets.
 export function findMinPositive(buckets: [number, string, string, string][]) {
@@ -45,6 +50,7 @@ export function findMinPositive(buckets: [number, string, string, string][]) {
   return 0; // all buckets are negative
 }
 
+// findMaxNegative 在首个非负桶前取上一桶右界，或返回最后负桶边界。
 // Finds the lowest negative value from the bucket ranges
 // Returns 0 if no negative values are found or if there are no buckets.
 export function findMaxNegative(buckets: [number, string, string, string][]) {
@@ -70,6 +76,7 @@ export function findMaxNegative(buckets: [number, string, string, string][]) {
   return parseFloat(buckets[buckets.length - 1][2]); // all buckets are negative
 }
 
+// findZeroAxisLeft 在线性刻度按比例插值；指数刻度结合 widthNegative 与 zero bucket 居中。
 // Calculates the left position of the zero axis as a percentage string.
 export function findZeroAxisLeft(
   scale: ScaleType,
@@ -103,6 +110,7 @@ export function findZeroAxisLeft(
   }
 }
 
+// showZeroAxis 仅在零轴位于 5%–95% 宽度时显示，避免与范围标签重叠。
 // Determines if the zero axis should be shown such that the zero label does not overlap with the range labels.
 // The zero axis is shown if it is between 5% and 95% of the graph.
 export function showZeroAxis(zeroAxisLeft: string) {
@@ -113,6 +121,7 @@ export function showZeroAxis(zeroAxisLeft: string) {
   return false;
 }
 
+// findZeroBucket 返回左≤0 且右≥0 的桶索引，不存在则 -1。
 // Finds the index of the bucket whose range includes zero
 export function findZeroBucket(buckets: [number, string, string, string][]): number {
   for (let i = 0; i < buckets.length; i++) {
