@@ -1,4 +1,6 @@
-// Package checkpoint provides production-grade checkpoint management.
+// checkpoint.go — 生产级检查点管理：接口、版本链、并发冲突检测与深拷贝。
+
+// Package checkpoint 提供生产级检查点持久化与管理。
 package checkpoint
 
 import (
@@ -13,8 +15,8 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// BaseCheckpointer is the canonical checkpoint persistence interface.
-// It provides the standard Get/Put/List contract used by graph and pregel packages.
+// BaseCheckpointer 标准检查点持久化接口（Get/Put/List）。
+// graph 与 pregel 包均通过此契约读写检查点。
 // All concrete checkpoint implementations (MemorySaver, SqliteSaver, PostgresSaver)
 // satisfy this interface.
 type BaseCheckpointer interface {
@@ -23,52 +25,52 @@ type BaseCheckpointer interface {
 	List(ctx context.Context, config map[string]interface{}, limit int) ([]map[string]interface{}, error)
 }
 
-// CheckpointMetadata contains metadata about a checkpoint.
+// CheckpointMetadata 检查点元数据（ID、线程、步骤、来源等）。
 type CheckpointMetadata struct {
-	// ID is the unique identifier for this checkpoint
+	// ID 检查点唯一标识
 	ID string
-	// ParentID is the ID of the parent checkpoint
+	// ParentID 父检查点 ID，用于谱系追踪
 	ParentID string
-	// ThreadID is the thread this checkpoint belongs to
+	// ThreadID 所属执行线程
 	ThreadID string
-	// Step is the step number when this checkpoint was created
+	// Step 创建时的步骤序号
 	Step int
-	// CreatedAt is the timestamp when this checkpoint was created
+	// CreatedAt 创建时间戳
 	CreatedAt time.Time
-	// Source indicates where this checkpoint came from
+	// Source 检查点来源（节点/边/中断等）
 	Source CheckpointSource
-	// Custom metadata
+	// Metadata 自定义扩展元数据
 	Metadata map[string]interface{}
 }
 
-// CheckpointSource indicates the source of a checkpoint.
+// CheckpointSource 标记检查点产生原因。
 type CheckpointSource string
 
 const (
-	SourceNode      CheckpointSource = "node"      // Created after node execution
-	SourceEdge      CheckpointSource = "edge"      // Created after edge traversal
-	SourceInterrupt CheckpointSource = "interrupt" // Created on interrupt
-	SourceManual    CheckpointSource = "manual"    // Manually created
-	SourceResume    CheckpointSource = "resume"    // Created on resume
+	SourceNode      CheckpointSource = "node"      // 节点执行后      // Created after node execution
+	SourceEdge      CheckpointSource = "edge"      // 边遍历后      // Created after edge traversal
+	SourceInterrupt CheckpointSource = "interrupt" // 中断时 // Created on interrupt
+	SourceManual    CheckpointSource = "manual"    // 手动创建    // Manually created
+	SourceResume    CheckpointSource = "resume"    // 恢复时    // Created on resume
 )
 
-// PendingWrite represents a write that hasn't been applied yet.
+// PendingWrite 尚未应用到状态的待写操作。
 type PendingWrite struct {
-	// Channel is the channel to write to
+	// Channel 目标通道名
 	Channel string
-	// Value is the value to write
+	// Value 待写入值
 	Value interface{}
-	// Overwrite indicates if this should bypass reducers
+	// Overwrite 是否绕过 reducer 直接覆盖
 	Overwrite bool
-	// Node that initiated this write
+	// Node 发起写入的节点
 	Node string
-	// Timestamp when this write was created
+	// Timestamp 写入创建时间
 	Timestamp time.Time
-	// TaskID is the ID of the task that created this write
+	// TaskID 创建该写入的任务 ID
 	TaskID string
 }
 
-// NewPendingWrite creates a new pending write.
+// NewPendingWrite 构造待写记录并填充时间戳。
 func NewPendingWrite(channel string, value interface{}, overwrite bool, node, taskID string) *PendingWrite {
 	return &PendingWrite{
 		Channel:   channel,
@@ -80,27 +82,27 @@ func NewPendingWrite(channel string, value interface{}, overwrite bool, node, ta
 	}
 }
 
-// Checkpoint represents a complete checkpoint with versioning.
+// Checkpoint 完整检查点，含版本号与通道版本追踪。
 type Checkpoint struct {
 	// ID is the unique identifier
 	ID string
-	// Version is the checkpoint version (monotonically increasing)
+	// Version 单调递增版本号
 	Version int
-	// ParentID is the ID of the parent checkpoint (for lineage tracking)
+	// ParentID 父检查点 ID，构成版本链
 	ParentID string
-	// ChannelVersions tracks versions of each channel
+	// ChannelVersions 各通道版本号
 	ChannelVersions map[string]int
-	// VersionsSeen tracks which channel versions each node has seen
+	// VersionsSeen 各节点已见的通道版本
 	VersionsSeen map[string]map[string]int
-	// State is the current state
+	// State 当前图状态快照
 	State map[string]interface{}
-	// PendingWrites are writes that haven't been applied yet
+	// PendingWrites 未应用的待写列表
 	PendingWrites []PendingWrite
-	// Metadata about this checkpoint
+	// Metadata 检查点元数据
 	Metadata CheckpointMetadata
 }
 
-// NewCheckpoint creates a new checkpoint.
+// NewCheckpoint 为指定线程与步骤创建新检查点。
 func NewCheckpoint(threadID string, step int) *Checkpoint {
 	id := uuid.New().String()
 	return &Checkpoint{
@@ -121,7 +123,7 @@ func NewCheckpoint(threadID string, step int) *Checkpoint {
 	}
 }
 
-// Clone creates a deep copy of the checkpoint.
+// Clone 深拷贝检查点，生成新 ID 并设置 ParentID。
 func (c *Checkpoint) Clone() *Checkpoint {
 	newID := uuid.New().String()
 	clone := &Checkpoint{
@@ -177,12 +179,12 @@ func (c *Checkpoint) Clone() *Checkpoint {
 	return clone
 }
 
-// IncrementChannel increments the version of a channel.
+// IncrementChannel 递增指定通道版本号。
 func (c *Checkpoint) IncrementChannel(channel string) {
 	c.ChannelVersions[channel]++
 }
 
-// MarkSeen marks that a node has seen a channel's current version.
+// MarkSeen 记录节点已消费通道当前版本。
 func (c *Checkpoint) MarkSeen(node, channel string) {
 	if _, ok := c.VersionsSeen[node]; !ok {
 		c.VersionsSeen[node] = make(map[string]int)
@@ -190,7 +192,7 @@ func (c *Checkpoint) MarkSeen(node, channel string) {
 	c.VersionsSeen[node][channel] = c.ChannelVersions[channel]
 }
 
-// HasSeen checks if a node has seen a channel's version.
+// HasSeen 判断节点是否已见通道最新版本。
 func (c *Checkpoint) HasSeen(node, channel string) bool {
 	if versions, ok := c.VersionsSeen[node]; ok {
 		if version, ok := versions[channel]; ok {
@@ -200,7 +202,7 @@ func (c *Checkpoint) HasSeen(node, channel string) bool {
 	return false
 }
 
-// AddPendingWrite adds a pending write.
+// AddPendingWrite 追加一条待写操作。
 func (c *Checkpoint) AddPendingWrite(channel string, value interface{}, overwrite bool, node string) {
 	c.PendingWrites = append(c.PendingWrites, PendingWrite{
 		Channel:   channel,
@@ -210,12 +212,12 @@ func (c *Checkpoint) AddPendingWrite(channel string, value interface{}, overwrit
 	})
 }
 
-// ClearPendingWrites clears all pending writes.
+// ClearPendingWrites 清空所有待写。
 func (c *Checkpoint) ClearPendingWrites() {
 	c.PendingWrites = make([]PendingWrite, 0)
 }
 
-// ToMap converts the checkpoint to a map for storage.
+// ToMap 转为 map 供持久化层序列化。
 func (c *Checkpoint) ToMap() map[string]interface{} {
 	result := make(map[string]interface{})
 
@@ -271,7 +273,7 @@ func (c *Checkpoint) ToMap() map[string]interface{} {
 	return result
 }
 
-// FromMap creates a checkpoint from a map.
+// FromMap 从存储 map 反序列化为 Checkpoint。
 func FromMap(data map[string]interface{}) (*Checkpoint, error) {
 	c := &Checkpoint{
 		ID:              getString(data, "id"),
@@ -355,7 +357,7 @@ func FromMap(data map[string]interface{}) (*Checkpoint, error) {
 	return c, nil
 }
 
-// Helper functions
+// 辅助函数 — 从 map 安全提取标量字段
 func getString(data map[string]any, key string) string {
 	if val, ok := data[key].(string); ok {
 		return val
@@ -377,7 +379,7 @@ func getBool(data map[string]any, key string, defaultVal bool) bool {
 	return defaultVal
 }
 
-// CheckpointTuple represents a checkpoint with its parent and version information.
+// CheckpointTuple 检查点元组：含配置、父配置与元数据。
 type CheckpointTuple struct {
 	// Config is the configuration used to fetch this checkpoint
 	Config *types.RunnableConfig
@@ -389,7 +391,7 @@ type CheckpointTuple struct {
 	Metadata map[string]interface{}
 }
 
-// NewCheckpointTuple creates a new checkpoint tuple.
+// NewCheckpointTuple 构造检查点元组并填充摘要元数据。
 func NewCheckpointTuple(config *types.RunnableConfig, checkpoint *Checkpoint, parentConfig *types.RunnableConfig) *CheckpointTuple {
 	if config == nil {
 		config = types.NewRunnableConfig()
@@ -413,7 +415,7 @@ func NewCheckpointTuple(config *types.RunnableConfig, checkpoint *Checkpoint, pa
 	}
 }
 
-// PutWrites represents a set of writes to apply to a checkpoint.
+// PutWrites 批量写入请求，绑定任务 ID。
 type PutWrites struct {
 	// Config is the configuration for the checkpoint
 	Config *types.RunnableConfig
@@ -423,7 +425,7 @@ type PutWrites struct {
 	TaskID string
 }
 
-// NewPutWrites creates a new PutWrites.
+// NewPutWrites 构造 PutWrites 实例。
 func NewPutWrites(config *types.RunnableConfig, writes []PendingWrite, taskID string) *PutWrites {
 	return &PutWrites{
 		Config: config,
@@ -432,13 +434,13 @@ func NewPutWrites(config *types.RunnableConfig, writes []PendingWrite, taskID st
 	}
 }
 
-// CheckpointListFilter represents filter criteria for listing checkpoints.
+// CheckpointListFilter 列出检查点的过滤条件。
 type CheckpointListFilter struct {
 	ThreadID string
 	Limit    int
 }
 
-// CheckpointListResponse represents a checkpoint in list results.
+// CheckpointListResponse 列表接口返回的单条摘要。
 type CheckpointListResponse struct {
 	ID        string
 	ThreadID  string
@@ -447,13 +449,13 @@ type CheckpointListResponse struct {
 	Metadata  map[string]interface{}
 }
 
-// LineageEntry represents an entry in a checkpoint lineage.
+// LineageEntry 检查点谱系中的一条记录。
 type LineageEntry struct {
 	Checkpoint *Checkpoint
 	Metadata   map[string]interface{}
 }
 
-// VersionConflictError is raised when there is a version conflict.
+// VersionConflictError 版本冲突错误（并发写入检测）。
 type VersionConflictError struct {
 	CurrentVersion  int
 	ExpectedVersion int
@@ -471,14 +473,14 @@ func (e *VersionConflictError) Error() string {
 	)
 }
 
-// CheckpointManager manages checkpoints with versioning and concurrency control.
+// CheckpointManager 内存检查点管理器，含版本链与冲突检测。
 type CheckpointManager struct {
 	mu          sync.RWMutex
 	checkpoints map[string][]*Checkpoint // threadID -> checkpoints
 	maxVersions int                      // Maximum versions to keep per thread
 }
 
-// NewCheckpointManager creates a new checkpoint manager.
+// NewCheckpointManager 创建管理器，maxVersions 控制每线程保留数。
 func NewCheckpointManager(maxVersions int) *CheckpointManager {
 	if maxVersions <= 0 {
 		maxVersions = constants.DefaultCheckpointMaxVersions
@@ -490,7 +492,7 @@ func NewCheckpointManager(maxVersions int) *CheckpointManager {
 	}
 }
 
-// RunnableConfigToMap converts a types.RunnableConfig to the map[string]interface{}
+// RunnableConfigToMap 将 RunnableConfig 转为 checkpointer 使用的 map 配置。
 // format used by BaseCheckpointer implementations. This provides a single adaptation
 // point so callers do not need to manually construct config maps.
 func RunnableConfigToMap(cfg *types.RunnableConfig) map[string]interface{} {
@@ -505,7 +507,7 @@ func RunnableConfigToMap(cfg *types.RunnableConfig) map[string]interface{} {
 	return result
 }
 
-// Save saves a checkpoint with version conflict detection.
+// Save 保存检查点，检测 ParentID 与版本序号冲突。
 func (cm *CheckpointManager) Save(ctx context.Context, checkpoint *Checkpoint) error {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
@@ -554,7 +556,7 @@ func (cm *CheckpointManager) Save(ctx context.Context, checkpoint *Checkpoint) e
 	return nil
 }
 
-// PutWrites applies writes to a checkpoint with version-chain conflict detection.
+// PutWrites 基于版本链原子应用写入，拒绝 stale checkpoint_id。
 // Uses a monotonic checkpoint version chain instead of a transient activeWrites map
 // to avoid the TOCTOU race (activeWrites is cleared on success, allowing a stale
 // concurrent writer to slip past undetected).
@@ -610,7 +612,7 @@ func (cm *CheckpointManager) PutWrites(ctx context.Context, config *types.Runnab
 	return nil
 }
 
-// Load loads the latest checkpoint for a thread.
+// Load 加载线程最新检查点（深拷贝返回）。
 func (cm *CheckpointManager) Load(ctx context.Context, threadID string) (*Checkpoint, error) {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
@@ -623,7 +625,7 @@ func (cm *CheckpointManager) Load(ctx context.Context, threadID string) (*Checkp
 	return checkpoints[len(checkpoints)-1].Clone(), nil
 }
 
-// LoadByCheckpointID loads a specific checkpoint by ID.
+// LoadByCheckpointID 按 ID 跨线程查找并克隆检查点。
 func (cm *CheckpointManager) LoadByCheckpointID(ctx context.Context, checkpointID string) (*Checkpoint, error) {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
@@ -639,7 +641,7 @@ func (cm *CheckpointManager) LoadByCheckpointID(ctx context.Context, checkpointI
 	return nil, fmt.Errorf("checkpoint not found: %s", checkpointID)
 }
 
-// List lists checkpoints for a thread.
+// List 列出线程最近 limit 条检查点（新→旧）。
 func (cm *CheckpointManager) List(ctx context.Context, threadID string, limit int) ([]*Checkpoint, error) {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
@@ -663,7 +665,7 @@ func (cm *CheckpointManager) List(ctx context.Context, threadID string, limit in
 	return result, nil
 }
 
-// GetTuple loads a checkpoint and its parent as a tuple.
+// GetTuple 加载最新检查点及其父检查点元组。
 func (cm *CheckpointManager) GetTuple(ctx context.Context, config *types.RunnableConfig) (*CheckpointTuple, error) {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
@@ -698,7 +700,7 @@ func (cm *CheckpointManager) GetTuple(ctx context.Context, config *types.Runnabl
 	return NewCheckpointTuple(config, latest, parentConfig), nil
 }
 
-// GetTupleByVersion gets a checkpoint tuple by version.
+// GetTupleByVersion 按版本号获取检查点元组。
 func (cm *CheckpointManager) GetTupleByVersion(ctx context.Context, config *types.RunnableConfig, version int) (*CheckpointTuple, error) {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
@@ -734,7 +736,7 @@ func (cm *CheckpointManager) GetTupleByVersion(ctx context.Context, config *type
 	return NewCheckpointTuple(config, target, parentConfig), nil
 }
 
-// GetLineage gets the lineage (history) of checkpoints for a thread.
+// GetLineage 获取线程检查点谱系历史。
 func (cm *CheckpointManager) GetLineage(ctx context.Context, threadID string, limit int) ([]*CheckpointTuple, error) {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
@@ -769,7 +771,7 @@ func (cm *CheckpointManager) GetLineage(ctx context.Context, threadID string, li
 	return result, nil
 }
 
-// GetVersion gets a specific version of a checkpoint.
+// GetVersion 按版本号获取单个检查点。
 func (cm *CheckpointManager) GetVersion(ctx context.Context, threadID string, version int) (*Checkpoint, error) {
 	cm.mu.RLock()
 	defer cm.mu.RUnlock()
@@ -784,7 +786,7 @@ func (cm *CheckpointManager) GetVersion(ctx context.Context, threadID string, ve
 	return nil, fmt.Errorf("version not found: %d", version)
 }
 
-// Delete deletes a checkpoint.
+// Delete 按 ID 删除检查点。
 func (cm *CheckpointManager) Delete(ctx context.Context, checkpointID string) error {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
@@ -802,7 +804,7 @@ func (cm *CheckpointManager) Delete(ctx context.Context, checkpointID string) er
 	return fmt.Errorf("checkpoint not found: %s", checkpointID)
 }
 
-// ClearThread clears all checkpoints for a thread.
+// ClearThread 清空指定线程全部检查点。
 func (cm *CheckpointManager) ClearThread(ctx context.Context, threadID string) error {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
@@ -811,7 +813,7 @@ func (cm *CheckpointManager) ClearThread(ctx context.Context, threadID string) e
 	return nil
 }
 
-// ClearAll clears all checkpoints.
+// ClearAll 清空所有线程检查点。
 func (cm *CheckpointManager) ClearAll(ctx context.Context) error {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
@@ -820,7 +822,7 @@ func (cm *CheckpointManager) ClearAll(ctx context.Context) error {
 	return nil
 }
 
-// deepCopy creates a deep copy of a value using JSON serialization.
+// deepCopy 深拷贝值；map/slice 走专用路径，其余 JSON 往返。
 // Maps and slices are handled via dedicated deep-copy helpers.
 // For other types, JSON marshal/unmarshal provides a reliable deep copy
 // (converting numbers to float64 consistently).
@@ -852,7 +854,7 @@ func deepCopy(val any) any {
 	return result
 }
 
-// deepCopyMap creates a deep copy of a map.
+// deepCopyMap 递归深拷贝 map。
 func deepCopyMap(src map[string]any) map[string]any {
 	result := make(map[string]any, len(src))
 	for key, val := range src {
@@ -861,7 +863,7 @@ func deepCopyMap(src map[string]any) map[string]any {
 	return result
 }
 
-// deepCopySlice creates a deep copy of a slice.
+// deepCopySlice 递归深拷贝 slice。
 func deepCopySlice(slice []any) []any {
 	result := make([]any, len(slice))
 	for i, val := range slice {
@@ -869,3 +871,5 @@ func deepCopySlice(slice []any) []any {
 	}
 	return result
 }
+
+// CheckpointManager 用单调版本链替代 transient activeWrites，避免 TOCTOU 竞态。

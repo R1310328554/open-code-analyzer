@@ -1,6 +1,8 @@
-// Package checkpoint provides checkpoint implementations for LangGraph Go.
+// memory.go — 内存检查点存储：实现 BaseCheckpointer，flat map 格式。
+
+// Package checkpoint 提供 LangGraph Go 检查点实现。
 //
-// MemorySaver implements BaseCheckpointer for flat map[string]interface{} checkpoints.
+// MemorySaver 以 flat map 实现 BaseCheckpointer，适合测试与单机。
 // CheckpointManager provides rich versioning and conflict detection for *Checkpoint structs.
 // See checkpoint.go for the full versioned API.
 package checkpoint
@@ -15,7 +17,7 @@ import (
 	"ragflow/internal/harness/graph/constants"
 )
 
-// MemorySaver is an in-memory checkpoint saver implementing BaseCheckpointer.
+// MemorySaver 线程安全的内存检查点保存器。
 type MemorySaver struct {
 	mu          sync.RWMutex
 	checkpoints map[string]map[string]interface{}
@@ -31,7 +33,7 @@ type checkpointEntry struct {
 	ParentID   string
 }
 
-// NewMemorySaver creates a new in-memory checkpoint saver.
+// NewMemorySaver 创建空内存 saver。
 func NewMemorySaver() *MemorySaver {
 	return &MemorySaver{
 		checkpoints: make(map[string]map[string]interface{}),
@@ -39,7 +41,7 @@ func NewMemorySaver() *MemorySaver {
 	}
 }
 
-// Get retrieves the latest checkpoint for a thread.
+// Get 按 thread_id 或 checkpoint_id 读取检查点（深拷贝）。
 func (s *MemorySaver) Get(ctx context.Context, config map[string]interface{}) (map[string]interface{}, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -68,7 +70,7 @@ func (s *MemorySaver) Get(ctx context.Context, config map[string]interface{}) (m
 	return deepCopyMap(versions[len(versions)-1].Checkpoint), nil
 }
 
-// Put saves a new checkpoint.
+// Put 追加新版本并更新线程最新快照。
 func (s *MemorySaver) Put(ctx context.Context, config map[string]interface{}, checkpoint map[string]interface{}) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -100,7 +102,7 @@ func (s *MemorySaver) Put(ctx context.Context, config map[string]interface{}, ch
 	return nil
 }
 
-// List lists checkpoints for a thread.
+// List 倒序返回最近 limit 条版本摘要。
 func (s *MemorySaver) List(ctx context.Context, config map[string]interface{}, limit int) ([]map[string]interface{}, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -130,7 +132,7 @@ func (s *MemorySaver) List(ctx context.Context, config map[string]interface{}, l
 	return result, nil
 }
 
-// GetState retrieves a specific checkpoint by ID.
+// GetState 返回 CheckpointState（含元数据）。
 func (s *MemorySaver) GetState(ctx context.Context, config map[string]interface{}) (*CheckpointState, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -166,8 +168,10 @@ func (s *MemorySaver) GetState(ctx context.Context, config map[string]interface{
 	return nil, fmt.Errorf("checkpoint not found: %s", checkpointID)
 }
 
-// CheckpointState represents a checkpoint with its metadata.
+// CheckpointState 检查点数据与配置元数据的组合。
 type CheckpointState struct {
 	Checkpoint map[string]interface{}
 	Metadata   map[string]interface{}
 }
+
+// 与 CheckpointManager（*Checkpoint 结构体）互补：MemorySaver 面向 map 契约。

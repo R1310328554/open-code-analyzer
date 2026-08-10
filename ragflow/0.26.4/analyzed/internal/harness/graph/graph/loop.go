@@ -1,4 +1,6 @@
-// Package graph — Loop macro support.
+// loop.go — Loop 宏：将子图包装为单节点循环，支持中断恢复与迭代检查点。
+
+// Package graph — Loop 宏节点支持。
 //
 // NewLoopNodeFunc wraps a compiled sub-graph in a NodeFunc closure that
 // repeatedly invokes the sub-graph until a LoopCondition returns true.
@@ -37,13 +39,13 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// LoopCondition is the per-iteration exit predicate invoked AFTER each
-// completed iteration. Return (true, nil) to terminate the loop; the
+// LoopCondition 每轮迭代完成后的退出谓词；
+// 返回 (true,nil) 终止循环，next 为最终输出。
 // `next` value becomes the loop's final output.
 // Return (false, nil) to continue to the next iteration.
 type LoopCondition func(ctx context.Context, iteration int, prev, next interface{}) (bool, error)
 
-// LoopOption configures NewLoopNodeFunc.
+// LoopOption 配置循环节点行为。
 type LoopOption func(*loopOptions)
 
 type loopOptions struct {
@@ -51,7 +53,7 @@ type loopOptions struct {
 	checkpointIDPrefix string
 }
 
-// WithLoopMaxIterations caps the loop at n iterations. Default 1024.
+// WithLoopMaxIterations 最大迭代次数，默认 1024。
 func WithLoopMaxIterations(maxIterations int) LoopOption {
 	return func(o *loopOptions) {
 		if maxIterations >= 0 {
@@ -60,7 +62,7 @@ func WithLoopMaxIterations(maxIterations int) LoopOption {
 	}
 }
 
-// WithLoopCheckpointIDPrefix sets a stable prefix for per-iteration
+// WithLoopCheckpointIDPrefix 每轮子图检查点 ID 前缀。
 // sub-graph checkpoint IDs. Defaults to the node key.
 func WithLoopCheckpointIDPrefix(prefix string) LoopOption {
 	return func(o *loopOptions) {
@@ -81,22 +83,22 @@ func getLoopOptions(opts []LoopOption) *loopOptions {
 	return o
 }
 
-// Sentinel errors.
+// 哨兵错误 — 循环专用
 var (
 	ErrLoopMaxIterationsExceeded = errors.New("graph: loop max iterations exceeded")
 	ErrLoopSubgraphInterrupted   = errors.New("graph: sub-graph interrupted")
 	ErrLoopResumeStateInvalid    = errors.New("graph: loop resume state invalid")
 )
 
-// loopStateCtxKey is the context key for storing loop sub-graph state
-// during checkpoint restore. It is separate from the interrupt resume
+// loopStateCtxKey 存储循环子图状态的 context 键，
+// 与 interrupt resume 分离，避免 UserFillUp 误消费。
 // values so that UserFillUp's consumeNextResumeValue doesn't accidentally
 // consume the loop state instead of the user's follow-up input.
 type loopStateCtxKeyType struct{}
 
 var loopStateCtxKey = loopStateCtxKeyType{}
 
-// loopInterruptState is the JSON-serialised loop state saved when the
+// loopInterruptState 子图中断时序列化的循环快照。
 // sub-graph emits an interrupt.
 type loopInterruptState struct {
 	Iteration       int             `json:"iteration"`
@@ -104,7 +106,7 @@ type loopInterruptState struct {
 	UserFillUpValue json.RawMessage `json:"user_fill_up_value,omitempty"`
 }
 
-// NewLoopNodeFunc wraps a compiled sub-graph into a NodeFunc that loops.
+// NewLoopNodeFunc 将子图包装为循环 NodeFunc，外层图视为单节点。
 //
 // The returned NodeFunc can be added directly to a StateGraph via
 // sg.AddNode(key, nodeFunc). The outer graph sees one node; the loop
@@ -139,7 +141,7 @@ func NewLoopNodeFunc(
 	return nodeFunc, nil
 }
 
-// runLoop implements the loop node body.
+// runLoop 循环体：恢复/迭代/子图调用/中断重抛。
 func runLoop(
 	ctx context.Context,
 	key string,
@@ -242,7 +244,7 @@ func runLoop(
 	}
 }
 
-// loadLoopSnapshot reads the loop state from context (set by the engine
+// loadLoopSnapshot 从 context 或 resume 值加载循环快照。
 // during checkpoint restore). Falls back to interrupt resume values for
 // backward compatibility.
 func loadLoopSnapshot(ctx context.Context) (loopInterruptState, bool) {
@@ -277,3 +279,5 @@ func loadLoopSnapshot(ctx context.Context) (loopInterruptState, bool) {
 	}
 	return loopInterruptState{}, false
 }
+
+// 子图中断时通过 interrupt.Interrupt 编码 iteration/input 供外层恢复。

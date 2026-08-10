@@ -1,4 +1,6 @@
-// Package graph — Parallel macro support.
+// parallel.go — Parallel 宏：对输入切片并行/顺序调用子图，支持中断增量恢复。
+
+// Package graph — Parallel 宏节点支持。
 //
 // NewParallelNodeFunc wraps a compiled sub-graph in a NodeFunc closure
 // that invokes the sub-graph once per item in the input slice, with
@@ -30,14 +32,14 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// ParallelOption configures NewParallelNodeFunc.
+// ParallelOption 配置并行节点并发度等行为。
 type ParallelOption func(*parallelOptions)
 
 type parallelOptions struct {
 	maxConcurrency int
 }
 
-// WithParallelMaxConcurrency caps the number of concurrent sub-graph
+// WithParallelMaxConcurrency 限制并发子图调用数；≤1 为顺序执行。
 // invocations. ≤ 1 = sequential (no goroutines). Default 0 (sequential).
 func WithParallelMaxConcurrency(maxConcurrency int) ParallelOption {
 	return func(o *parallelOptions) {
@@ -55,13 +57,13 @@ func getParallelOptions(opts []ParallelOption) *parallelOptions {
 	return o
 }
 
-// Sentinel errors.
+// 哨兵错误 — 并行专用
 var (
 	ErrParallelResumeStateInvalid = errors.New("graph: parallel resume state invalid")
 	ErrParallelItemFailed         = errors.New("graph: parallel item failed")
 )
 
-// parallelInterruptState is persisted when a parallel node is interrupted.
+// parallelInterruptState 并行节点中断时持久化的进度快照。
 type parallelInterruptState struct {
 	OriginalInputsJSON []byte            `json:"original_inputs_json"`
 	CompletedResults   map[int]any       `json:"completed_results"`
@@ -70,14 +72,14 @@ type parallelInterruptState struct {
 	ItemCheckpoints    map[string][]byte `json:"item_checkpoints,omitempty"`
 }
 
-// parallelItemResult is the per-item outcome from the fan-out goroutines.
+// parallelItemResult 单项 fan-out 执行结果。
 type parallelItemResult struct {
 	index  int
 	output interface{}
 	err    error
 }
 
-// NewParallelNodeFunc wraps a compiled sub-graph into a NodeFunc that
+// NewParallelNodeFunc 将子图包装为对 []any 并行 fan-out 的 NodeFunc。
 // parallel-fanouts over its input slice.
 //
 // The returned NodeFunc expects input of type []any and returns []any.
@@ -125,7 +127,7 @@ func NewParallelNodeFunc(
 	return nodeFunc, nil
 }
 
-// runParallel implements the parallel fan-out body.
+// runParallel 并行体：恢复已完成项、fan-out、收集中断/错误。
 func runParallel(
 	ctx context.Context,
 	key string,
@@ -219,7 +221,7 @@ func runParallel(
 	return outputs, nil
 }
 
-// fanOutItems fans out sub-graph invocations across items.
+// fanOutItems 按索引 fan-out 子图，支持信号量限流。
 func fanOutItems(
 	ctx context.Context,
 	key string,
@@ -296,7 +298,7 @@ func fanOutItems(
 	return resultCh
 }
 
-// loadParallelSnapshot reads the parallel state from interrupt resume values.
+// loadParallelSnapshot 从 resume 值加载并行中断快照。
 func loadParallelSnapshot(ctx context.Context) (*parallelInterruptState, bool) {
 	values := interrupt.GetResumeValues(ctx)
 	for _, v := range values {
@@ -317,7 +319,7 @@ func loadParallelSnapshot(ctx context.Context) (*parallelInterruptState, bool) {
 	return nil, false
 }
 
-// itemCheckpointStore provides per-item checkpoint storage for sub-graphs.
+// itemCheckpointStore 并行项级检查点桥接存储。
 type itemCheckpointStore struct {
 	mu   sync.Mutex
 	data map[string][]byte
@@ -380,3 +382,5 @@ func getItemCheckpointStore(ctx context.Context) *itemCheckpointStore {
 	}
 	return nil
 }
+
+// 中断时保存 CompletedResults 与 InterruptedIndices，恢复仅重跑未完成项。

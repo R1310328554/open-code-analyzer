@@ -1,4 +1,6 @@
-// Package graph provides CompiledStateGraph implementation for subgraph support.
+// compiled.go — CompiledStateGraph：子图嵌套、命名空间与检查点迁移。
+
+// Package graph 提供支持子图的 CompiledStateGraph 实现。
 package graph
 
 import (
@@ -12,27 +14,27 @@ import (
 	"github.com/google/uuid"
 )
 
-// CompiledStateGraph represents a compiled state graph with full subgraph support.
+// CompiledStateGraph 已编译状态图，支持嵌套子图与检查点命名空间。
 // This corresponds to Python's CompiledStateGraph in graph/state.py
 type CompiledStateGraph struct {
 	*compiledGraph
 
-	// subgraphs maps subgraph names to their compiled graphs
+	// subgraphs 子图名 → 已编译 CompiledStateGraph
 	subgraphs map[string]*CompiledStateGraph
 
-	// parent is the parent graph (nil for root graph)
+	// parent 父图指针，根图为 nil
 	parent *CompiledStateGraph
 
-	// namespace is the checkpoint namespace for this graph
+	// namespace 本图检查点命名空间
 	namespace string
 
-	// checkpointMap maps parent checkpoint IDs to child checkpoint IDs
+	// checkpointMap 父子检查点 ID 双向映射
 	checkpointMap map[string]string
 
 	mu sync.RWMutex
 }
 
-// NewCompiledStateGraph creates a new compiled state graph.
+// NewCompiledStateGraph 从 compiledGraph 或自身包装构造 CSG。
 func NewCompiledStateGraph(base types.CompiledGraph) *CompiledStateGraph {
 	switch v := base.(type) {
 	case *compiledGraph:
@@ -50,7 +52,7 @@ func NewCompiledStateGraph(base types.CompiledGraph) *CompiledStateGraph {
 	}
 }
 
-// AddSubgraph adds a subgraph to this compiled graph.
+// AddSubgraph 编译并注册命名子图，构建层级 namespace。
 func (c *CompiledStateGraph) AddSubgraph(name string, subgraph types.StateGraph) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -81,7 +83,7 @@ func (c *CompiledStateGraph) AddSubgraph(name string, subgraph types.StateGraph)
 	return nil
 }
 
-// GetSubgraph retrieves a subgraph by name.
+// GetSubgraph 按名称获取子图。
 func (c *CompiledStateGraph) GetSubgraph(name string) (*CompiledStateGraph, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -90,7 +92,7 @@ func (c *CompiledStateGraph) GetSubgraph(name string) (*CompiledStateGraph, bool
 	return subgraph, exists
 }
 
-// GetSubgraphs returns all subgraphs.
+// GetSubgraphs 返回子图映射副本。
 func (c *CompiledStateGraph) GetSubgraphs() map[string]*CompiledStateGraph {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -103,7 +105,7 @@ func (c *CompiledStateGraph) GetSubgraphs() map[string]*CompiledStateGraph {
 	return result
 }
 
-// Invoke executes the graph with subgraph support.
+// Invoke 注入 checkpoint_ns 后委托底层 compiledGraph.Invoke。
 func (c *CompiledStateGraph) Invoke(ctx context.Context, input interface{}, config ...*types.RunnableConfig) (interface{}, error) {
 	// Set up namespace in config
 	rc := &types.RunnableConfig{}
@@ -121,7 +123,7 @@ func (c *CompiledStateGraph) Invoke(ctx context.Context, input interface{}, conf
 	return c.compiledGraph.Invoke(ctx, input, rc)
 }
 
-// Stream executes the graph with streaming and subgraph support.
+// Stream 带命名空间的流式执行入口。
 func (c *CompiledStateGraph) Stream(ctx context.Context, input interface{}, mode types.StreamMode, config ...*types.RunnableConfig) (<-chan interface{}, <-chan error) {
 	// Set up namespace in config
 	rc := &types.RunnableConfig{}
@@ -137,7 +139,7 @@ func (c *CompiledStateGraph) Stream(ctx context.Context, input interface{}, mode
 	return c.compiledGraph.Stream(ctx, input, mode, rc)
 }
 
-// MigrateCheckpoint migrates a checkpoint from parent to subgraph or vice versa.
+// MigrateCheckpoint 在父图与子图间迁移/映射检查点 ID。
 func (c *CompiledStateGraph) MigrateCheckpoint(
 	ctx context.Context,
 	threadID string,
@@ -178,28 +180,28 @@ func (c *CompiledStateGraph) MigrateCheckpoint(
 	return newCheckpointID, nil
 }
 
-// GetNamespace returns the checkpoint namespace for this graph.
+// GetNamespace 返回本图检查点命名空间。
 func (c *CompiledStateGraph) GetNamespace() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.namespace
 }
 
-// GetParent returns the parent graph.
+// GetParent 返回父 CompiledStateGraph。
 func (c *CompiledStateGraph) GetParent() *CompiledStateGraph {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.parent
 }
 
-// IsRoot returns true if this is the root graph (no parent).
+// IsRoot 是否为根图（无父图）。
 func (c *CompiledStateGraph) IsRoot() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.parent == nil
 }
 
-// GetCheckpointMap returns the checkpoint mapping.
+// GetCheckpointMap 返回检查点 ID 映射副本。
 func (c *CompiledStateGraph) GetCheckpointMap() map[string]string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -212,7 +214,7 @@ func (c *CompiledStateGraph) GetCheckpointMap() map[string]string {
 	return result
 }
 
-// buildSubgraphNamespace builds the namespace for a subgraph.
+// buildSubgraphNamespace 用 NSSep 拼接父子命名空间。
 func buildSubgraphNamespace(parentNS, subgraphName string) string {
 	if parentNS == "" {
 		return subgraphName
@@ -220,7 +222,7 @@ func buildSubgraphNamespace(parentNS, subgraphName string) string {
 	return parentNS + constants.NSSep + subgraphName
 }
 
-// buildTaskPath builds the task path for checkpoint migration.
+// buildTaskPath 构建任务路径供检查点迁移使用。
 func buildTaskPath(namespace, subgraphName string) string {
 	if namespace == "" {
 		return subgraphName + string(constants.NSEnd)
@@ -228,7 +230,9 @@ func buildTaskPath(namespace, subgraphName string) string {
 	return namespace + string(constants.NSSep) + subgraphName + string(constants.NSEnd)
 }
 
-// generateCheckpointID generates a new checkpoint ID.
+// generateCheckpointID 生成带 ckp_ 前缀的 UUID 检查点 ID。
 func generateCheckpointID() string {
 	return "ckp_" + uuid.New().String()
 }
+
+// 对应 Python CompiledStateGraph；子图共享父 checkpointer 但 namespace 隔离。

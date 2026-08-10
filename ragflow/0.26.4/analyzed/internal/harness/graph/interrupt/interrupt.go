@@ -1,4 +1,6 @@
-// Package interrupt provides interrupt functionality for LangGraph Go.
+// interrupt.go — 图中断/恢复：GraphInterrupt、resume 值队列与 context 管理。
+
+// Package interrupt 提供 LangGraph Go 可恢复中断机制。
 package interrupt
 
 import (
@@ -15,7 +17,7 @@ import (
 // contextKey is the key for interrupt context in context.Context.
 type contextKey struct{}
 
-// SubGraphStateCtxKey is the context key for sub-graph checkpoint state
+// SubGraphStateCtxKey 子图检查点状态 context 键（loop/parallel 共用）。
 // (e.g. Loop iteration, currentInput). Defined here so that both the
 // engine (pregel) and the sub-graph node (graph/loop.go) can access it
 // without import cycles.
@@ -23,7 +25,7 @@ type SubGraphStateCtxKeyType struct{}
 
 var SubGraphStateCtxKey = SubGraphStateCtxKeyType{}
 
-// WithInterruptContext creates a new context with interrupt support.
+// WithInterruptContext 注入 interruptContext 支持 resume 值消费。
 func WithInterruptContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, contextKey{}, &interruptContext{
 		resumeValues: make([]interface{}, 0),
@@ -31,7 +33,7 @@ func WithInterruptContext(ctx context.Context) context.Context {
 	})
 }
 
-// GetInterruptContext retrieves the interrupt context from the context.
+// GetInterruptContext 从 context 获取 interruptContext。
 func GetInterruptContext(ctx context.Context) *interruptContext {
 	if ic, ok := ctx.Value(contextKey{}).(*interruptContext); ok {
 		return ic
@@ -39,12 +41,12 @@ func GetInterruptContext(ctx context.Context) *interruptContext {
 	return nil
 }
 
-// IsInterruptContext checks if the context has interrupt support.
+// IsInterruptContext 判断 context 是否含中断支持。
 func IsInterruptContext(ctx context.Context) bool {
 	return GetInterruptContext(ctx) != nil
 }
 
-// Interrupt interrupts the graph with a resumable exception from within a node.
+// Interrupt 在节点内触发可恢复 GraphInterrupt；
 // The value is surfaced to the client and can be used to request input required to resume execution.
 //
 // In a given node, the first invocation of this function raises a GraphInterrupt
@@ -92,7 +94,7 @@ func Interrupt(ctx context.Context, value interface{}) (interface{}, error) {
 	}
 }
 
-// interruptContext holds the context for interrupts.
+// interruptContext 维护 resume 值队列与消费索引。
 type interruptContext struct {
 	mu           sync.Mutex
 	resumeValues []interface{}
@@ -109,7 +111,7 @@ var globalContext = &interruptContext{
 	index:        0,
 }
 
-// consumeNextResumeValue atomically reads the next resume value and advances
+// consumeNextResumeValue 原子消费下一个 resume 值并推进索引。
 // the index under a single lock (avoids TOCTOU between separate lock acquisitions).
 func (ic *interruptContext) consumeNextResumeValue() (interface{}, bool) {
 	if ic == nil {
@@ -199,7 +201,7 @@ func (ic *interruptContext) reset() {
 	ic.nullResume = nil
 }
 
-// GetResumeValues returns the current resume values from context.
+// GetResumeValues 返回 resume 值副本（loop/parallel 恢复用）。
 func GetResumeValues(ctx context.Context) []interface{} {
 	var ic *interruptContext
 	if ctx != nil {
@@ -246,7 +248,7 @@ func GetNullResume(ctx context.Context, consume bool) interface{} {
 	return v
 }
 
-// Reset clears the interrupt context.
+// Reset 重置中断上下文；仅重置当前请求 context，避免污染全局。
 // When a per-request context is found, only that context is reset.
 // The global fallback context is only reset when no per-request context
 // exists, preventing concurrent requests from corrupting each other.
@@ -259,7 +261,7 @@ func Reset(ctx context.Context) {
 	globalContext.reset()
 }
 
-// generateInterruptID generates a unique ID for an interrupt.
+// generateInterruptID 基于值哈希与进程计数器生成唯一中断 ID。
 // The ID combines a hash of the value with a process-unique counter so that
 // two interrupts with the same value (e.g. "Please provide input") are still
 // distinguishable.
@@ -269,12 +271,12 @@ func generateInterruptID(value interface{}) string {
 	return fmt.Sprintf("%x_%d", h[:8], n)
 }
 
-// IsInterrupt checks if an error is a GraphInterrupt.
+// IsInterrupt 判断 error 是否为 GraphInterrupt。
 func IsInterrupt(err error) bool {
 	return errors.IsGraphInterrupt(err)
 }
 
-// GetInterruptValue extracts the user-supplied interrupt value from a GraphInterrupt error.
+// GetInterruptValue 从 GraphInterrupt 解包用户传入的原始 value。
 // Unlike returning the *types.Interrupt envelope directly, this unwraps to the .Value field
 // so callers get the value they originally passed to Interrupt(ctx, value).
 func GetInterruptValue(err error) (interface{}, bool) {
@@ -292,7 +294,7 @@ func GetInterruptValue(err error) (interface{}, bool) {
 	return nil, false
 }
 
-// SetResumeValues sets the resume values for testing.
+// SetResumeValues 测试用：预设 resume 值队列。
 func SetResumeValues(ctx context.Context, values []interface{}) {
 	ic := GetInterruptContext(ctx)
 	if ic == nil {
@@ -300,3 +302,5 @@ func SetResumeValues(ctx context.Context, values []interface{}) {
 	}
 	ic.setResumeValues(values)
 }
+
+// 同一节点多次 Interrupt 按调用顺序匹配 resume 值；须启用 checkpointer。

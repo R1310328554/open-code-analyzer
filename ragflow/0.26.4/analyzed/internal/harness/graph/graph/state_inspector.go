@@ -1,4 +1,6 @@
-// Package graph provides state inspection API for compiled graphs.
+// state_inspector.go — 图状态检视 API：get_state/update_state/history/fork。
+
+// Package graph 提供已编译图的状态检视与手动注入 API。
 //
 // This corresponds to Python LangGraph's get_state() / update_state() /
 // get_state_history() on PregelProtocol.
@@ -15,12 +17,12 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// StateSnapshot represents the state of the graph at a particular checkpoint.
+// StateSnapshot 某检查点处的图状态快照（对标 Python StateSnapshot）。
 // This mirrors Python's langgraph.types.StateSnapshot.
 type StateSnapshot struct {
-	// Values are the current values of channels (i.e., the graph state).
+	// Values 各通道当前值（即图状态）
 	Values map[string]interface{} `json:"values"`
-	// Next are the names of nodes to execute next.
+	// Next 下一步待执行节点名
 	Next []string `json:"next,omitempty"`
 	// Config is the RunnableConfig used to fetch this snapshot.
 	Config *types.RunnableConfig `json:"config"`
@@ -36,7 +38,7 @@ type StateSnapshot struct {
 	Interrupts []*types.Interrupt `json:"interrupts,omitempty"`
 }
 
-// StateUpdate describes an update to apply to the graph state.
+// StateUpdate 手动状态更新描述（对标 Python StateUpdate）。
 // This mirrors Python's StateUpdate tuple.
 type StateUpdate struct {
 	Values   map[string]interface{} // state values to write
@@ -45,24 +47,24 @@ type StateUpdate struct {
 	ThreadID string                 // thread ID to target
 }
 
-// StateInspector provides state inspection and manipulation for compiled graphs.
+// StateInspector 状态检视接口，compiledGraph 与 CSG 均实现。
 // Implemented by compiledGraph and CompiledStateGraph.
 type StateInspector interface {
-	// GetState retrieves the state at the given config.
+	// GetState 按 thread_id/checkpoint_id 获取状态快照。
 	// When config contains only thread_id, returns the latest state.
 	// When config also contains checkpoint_id, returns that specific state.
 	GetState(ctx context.Context, config *types.RunnableConfig) (*StateSnapshot, error)
 
-	// GetStateHistory returns an iterator of state snapshots for the given config,
+	// GetStateHistory 倒序返回检查点历史快照列表。
 	// starting from the most recent and going backward.
 	GetStateHistory(ctx context.Context, config *types.RunnableConfig, limit int, before *types.RunnableConfig) ([]*StateSnapshot, error)
 
-	// UpdateState applies updates to the graph state at the given config.
+	// UpdateState 手动注入状态并创建新检查点（时光旅行/中断解决）。
 	// This enables manual state injection (time travel, interrupt resolution).
 	// Returns the config for the new checkpoint created by the update.
 	UpdateState(ctx context.Context, config *types.RunnableConfig, update *StateUpdate) (*types.RunnableConfig, error)
 
-	// ForkThread clones a checkpoint from one thread to another.
+	// ForkThread 将源线程检查点克隆到新线程（时间旅行分叉）。
 	// sourceCheckpointID: empty = latest checkpoint in source thread.
 	ForkThread(ctx context.Context, sourceThreadID, newThreadID string, sourceCheckpointID string) (*types.RunnableConfig, error)
 }
@@ -261,7 +263,7 @@ func (cg *compiledGraph) UpdateState(ctx context.Context, config *types.Runnable
 
 // ---- helpers ----
 
-// getCheckpointer performs a safe type assertion on the stored checkpointer.
+// getCheckpointer 安全断言 checkpointer 为 BaseCheckpointer。
 // Returns a BaseCheckpointer or a descriptive error if the cast fails.
 func (cg *compiledGraph) getCheckpointer() (checkpoint.BaseCheckpointer, error) {
 	cp, ok := cg.checkpointer.(checkpoint.BaseCheckpointer)
@@ -271,7 +273,7 @@ func (cg *compiledGraph) getCheckpointer() (checkpoint.BaseCheckpointer, error) 
 	return cp, nil
 }
 
-// buildCheckpointerConfig builds a checkpointer config from a RunnableConfig.
+// buildCheckpointerConfig 从 RunnableConfig 提取 checkpointer 配置 map。
 func buildCheckpointerConfig(config *types.RunnableConfig) map[string]interface{} {
 	cpConfig := make(map[string]interface{})
 	if config != nil && config.Configurable != nil {
@@ -288,7 +290,7 @@ func buildCheckpointerConfig(config *types.RunnableConfig) map[string]interface{
 	return cpConfig
 }
 
-// extractMeta extracts metadata from checkpoint data.
+// extractMeta 从检查点数据提取 step/last_completed_node 等元信息。
 func extractMeta(cpData map[string]interface{}) map[string]interface{} {
 	meta := make(map[string]interface{})
 	if v, ok := cpData["__step__"]; ok {
@@ -300,7 +302,7 @@ func extractMeta(cpData map[string]interface{}) map[string]interface{} {
 	return meta
 }
 
-// determineNextFromCheckpoint reads the checkpoint and checkpoint data
+// determineNextFromCheckpoint 推断下一批待执行节点（当前返回 nil）。
 // to determine which nodes would run next.
 func (cg *compiledGraph) determineNextFromCheckpoint(cpData map[string]interface{}) []string {
 	// Return nil because the stored __last_completed_node__ is already
@@ -329,7 +331,7 @@ func (csg *CompiledStateGraph) UpdateState(ctx context.Context, config *types.Ru
 
 // ---- Task type used in StateSnapshot ----
 
-// Task represents a pending or completed task for state inspection.
+// Task 状态快照中的待办/已完成任务描述。
 type Task struct {
 	ID        string      `json:"id"`
 	Name      string      `json:"name"`
@@ -339,7 +341,7 @@ type Task struct {
 	Result    interface{} `json:"result,omitempty"`
 }
 
-// CheckpointConflictError indicates a checkpoint version conflict during UpdateState.
+// CheckpointConflictError UpdateState 时检查点版本冲突。
 type CheckpointConflictError struct {
 	Message string
 }
@@ -411,3 +413,5 @@ func (cg *compiledGraph) ForkThread(ctx context.Context, sourceThreadID, newThre
 func init() {
 	_ = (*CheckpointConflictError)(nil)
 }
+
+// UpdateState 勿将元数据键写入 cpData，否则 inline Pregel 会误当作通道恢复。

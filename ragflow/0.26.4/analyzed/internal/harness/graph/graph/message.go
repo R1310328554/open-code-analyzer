@@ -1,5 +1,8 @@
 package graph
 
+// message.go — 消息型图：Message/MessagesState、AddMessages reducer 与 OpenAI 格式转换。
+
+
 import (
 	"context"
 	"fmt"
@@ -9,7 +12,7 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// Message represents a message in the conversation.
+// Message 对话消息（角色、内容、去重 ID、扩展元数据）。
 type Message struct {
 	ID      string                 // Unique identifier for deduplication
 	Role    string                 // e.g., "user", "assistant", "system"
@@ -17,7 +20,7 @@ type Message struct {
 	Extra   map[string]interface{} // Additional metadata
 }
 
-// NewMessage creates a new message without an ID.
+// NewMessage 创建无 ID 消息（不参与 ID 去重）。
 func NewMessage(role, content string) *Message {
 	return &Message{
 		ID:      "",
@@ -27,7 +30,7 @@ func NewMessage(role, content string) *Message {
 	}
 }
 
-// NewMessageWithID creates a new message with an ID.
+// NewMessageWithID 创建带 ID 消息，供 reducer 更新合并。
 func NewMessageWithID(id, role, content string) *Message {
 	return &Message{
 		ID:      id,
@@ -37,7 +40,7 @@ func NewMessageWithID(id, role, content string) *Message {
 	}
 }
 
-// MessagesState represents the state for message-based graphs.
+// MessagesState 消息图状态：消息列表 + 扩展字段。
 // It contains a list of messages and optional additional fields.
 type MessagesState struct {
 	Messages []*Message
@@ -73,7 +76,7 @@ func (s *MessagesState) GetMessagesByRole(role string) []*Message {
 	return filtered
 }
 
-// AddMessagesReducer is a reducer function that adds messages to the state.
+// AddMessagesReducer 按 ID 去重/更新的消息合并 reducer。
 // It performs deduplication based on message ID.
 func AddMessagesReducer(existing interface{}, updates interface{}) (interface{}, error) {
 	msgs, ok := updates.([]*Message)
@@ -145,14 +148,14 @@ func AddMessagesReducer(existing interface{}, updates interface{}) (interface{},
 	return result, nil
 }
 
-// MessageGraph is a graph specialized for message-based workflows.
+// MessageGraph 专用于聊天/消息工作流的图包装器。
 // It automatically manages a messages channel with the AddMessages reducer.
 type MessageGraph struct {
 	graph           *stateGraph
 	messagesChannel string
 }
 
-// NewMessageGraph creates a new message-based graph.
+// NewMessageGraph 创建带 messages 通道的消息图。
 func NewMessageGraph() *MessageGraph {
 	// Create a simple state schema with messages field
 	stateSchema := map[string]interface{}{
@@ -191,7 +194,7 @@ func (g *MessageGraph) SetEntryPoint(node string) error {
 	return g.graph.SetEntryPoint(node)
 }
 
-// Build returns a compiled message graph.
+// Build 编译并返回 CompiledGraph。
 func (g *MessageGraph) Build() (types.CompiledGraph, error) {
 	return g.graph.Compile()
 }
@@ -216,7 +219,7 @@ func (g *MessageGraph) GetMessages(ctx context.Context, channelRegistry *channel
 	return []*Message{}, nil
 }
 
-// GetMessagesFromState extracts messages from state.
+// GetMessagesFromState 从状态 map 提取 []*Message。
 func GetMessagesFromState(state map[string]interface{}) ([]*Message, error) {
 	messages, ok := state["messages"]
 	if !ok {
@@ -241,7 +244,7 @@ func GetMessagesFromState(state map[string]interface{}) ([]*Message, error) {
 	}
 }
 
-// AddMessagesToState adds messages to the state.
+// AddMessagesToState 向状态追加消息。
 func AddMessagesToState(state map[string]interface{}, msgs ...*Message) error {
 	existing, err := GetMessagesFromState(state)
 	if err != nil {
@@ -255,7 +258,7 @@ func AddMessagesToState(state map[string]interface{}, msgs ...*Message) error {
 	return nil
 }
 
-// MessageRole constants
+// MessageRole 标准角色常量
 const (
 	MessageRoleUser      = "user"
 	MessageRoleAssistant = "assistant"
@@ -264,22 +267,22 @@ const (
 	MessageRoleFunction  = "function"
 )
 
-// HumanMessage creates a user message.
+// HumanMessage 构造 user 角色消息。
 func HumanMessage(content string) *Message {
 	return NewMessage(MessageRoleUser, content)
 }
 
-// AIMessage creates an assistant message.
+// AIMessage 构造 assistant 角色消息。
 func AIMessage(content string) *Message {
 	return NewMessage(MessageRoleAssistant, content)
 }
 
-// SystemMessage creates a system message.
+// SystemMessage 构造 system 角色消息。
 func SystemMessage(content string) *Message {
 	return NewMessage(MessageRoleSystem, content)
 }
 
-// ToolMessage creates a tool message.
+// ToolMessage 构造 tool 角色消息并附加 tool_call_id。
 func ToolMessage(content string, toolCallID string) *Message {
 	msg := NewMessage(MessageRoleTool, content)
 	if msg.Extra == nil {
@@ -289,7 +292,7 @@ func ToolMessage(content string, toolCallID string) *Message {
 	return msg
 }
 
-// FunctionMessage creates a function message.
+// FunctionMessage 构造 function 角色消息并附加 name。
 func FunctionMessage(content string, name string) *Message {
 	msg := NewMessage(MessageRoleFunction, content)
 	if msg.Extra == nil {
@@ -299,7 +302,7 @@ func FunctionMessage(content string, name string) *Message {
 	return msg
 }
 
-// MessageHelper provides utility functions for working with messages.
+// MessageHelper 消息格式化与检索工具集。
 type MessageHelper struct {
 }
 
@@ -348,7 +351,7 @@ func FilterMessagesByRole(msgs []*Message, roles ...string) []*Message {
 	return filtered
 }
 
-// MessagesFilter provides message filtering capabilities.
+// MessagesFilter 链式消息过滤器（角色/分页/谓词）。
 type MessagesFilter struct {
 	roles     []string
 	limit     int
@@ -432,7 +435,7 @@ func (f *MessagesFilter) Filter(msgs []*Message) []*Message {
 	return result
 }
 
-// GraphError represents a graph-related error.
+// GraphError 图模块通用错误类型。
 type GraphError struct {
 	Message string
 	Code    string
@@ -445,9 +448,9 @@ func (e *GraphError) Error() string {
 	return e.Message
 }
 
-// OpenAI format conversion utilities
+// OpenAI Chat Completions 格式互转
 
-// OpenAIChatMessage represents a message in OpenAI's chat completion API format.
+// OpenAIChatMessage OpenAI 聊天 API 消息结构。
 type OpenAIChatMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
@@ -455,7 +458,7 @@ type OpenAIChatMessage struct {
 	// Additional fields like function_call, tool_calls can be added as needed
 }
 
-// ToOpenAIChatMessage converts a Message to OpenAI chat message format.
+// ToOpenAIChatMessage 转为 OpenAI 单条消息。
 func (m *Message) ToOpenAIChatMessage() *OpenAIChatMessage {
 	return &OpenAIChatMessage{
 		Role:    m.Role,
@@ -464,7 +467,7 @@ func (m *Message) ToOpenAIChatMessage() *OpenAIChatMessage {
 	}
 }
 
-// MessagesToOpenAIFormat converts a slice of Messages to OpenAI chat completion format.
+// MessagesToOpenAIFormat 批量转为 OpenAI 消息数组。
 func MessagesToOpenAIFormat(messages []*Message) []OpenAIChatMessage {
 	result := make([]OpenAIChatMessage, len(messages))
 	for i, msg := range messages {
@@ -476,7 +479,7 @@ func MessagesToOpenAIFormat(messages []*Message) []OpenAIChatMessage {
 	return result
 }
 
-// OpenAIFormatToMessages converts OpenAI format messages back to Messages.
+// OpenAIFormatToMessages 从 OpenAI 格式还原为 Message 列表。
 func OpenAIFormatToMessages(openaiMessages []OpenAIChatMessage) []*Message {
 	result := make([]*Message, len(openaiMessages))
 	for i, msg := range openaiMessages {
@@ -492,3 +495,5 @@ func OpenAIFormatToMessages(openaiMessages []OpenAIChatMessage) []*Message {
 	}
 	return result
 }
+
+// AddMessagesReducer：同 ID 更新、无 ID 追加、保留无 ID 历史消息。

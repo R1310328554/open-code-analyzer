@@ -1,4 +1,6 @@
-// Package graph provides graph building capabilities for Harness-Go.
+// graph.go — StateGraph 构建器：节点/边/通道/reducer 与编译为 compiledGraph。
+
+// Package graph 提供 Harness-Go 状态图构建与编译能力。
 package graph
 
 import (
@@ -12,10 +14,10 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// Interface compliance checks.
+// 接口合规性编译期断言
 var _ types.StateGraph = (*stateGraph)(nil)
 
-// stateGraph is a graph whose nodes communicate by reading and writing to a shared state.
+// stateGraph 节点通过共享状态通道读写的状态图。
 type stateGraph struct {
 	nodes            map[string]*types.Node
 	edges            []*types.Edge
@@ -32,7 +34,7 @@ type stateGraph struct {
 	NodeTriggerMode  types.NodeTriggerMode
 }
 
-// NewStateGraph creates a new StateGraph with the given state schema.
+// NewStateGraph 按状态 schema 创建空 StateGraph。
 func NewStateGraph(stateSchema interface{}) types.StateGraph {
 	return &stateGraph{
 		nodes:            make(map[string]*types.Node),
@@ -122,27 +124,27 @@ func (g *stateGraph) AddNodeWithOptions(name string, fn types.NodeFunc, opts typ
 	return node
 }
 
-// WithStatePreHandler wraps the node with a pre-execution state transform.
+// WithStatePreHandler 节点选项：执行前状态变换。
 func WithStatePreHandler(fn types.NodeFunc) func(*types.NodeOptions) {
 	return func(opts *types.NodeOptions) { opts.StatePre = fn }
 }
 
-// WithStatePostHandler wraps the node with a post-execution state transform.
+// WithStatePostHandler 节点选项：执行后状态变换。
 func WithStatePostHandler(fn types.NodeFunc) func(*types.NodeOptions) {
 	return func(opts *types.NodeOptions) { opts.StatePost = fn }
 }
 
-// WithFieldMapping sets field-level routing for this node's output.
+// WithFieldMapping 节点输出字段级路由映射。
 func WithFieldMapping(mappings ...types.FieldMapping) func(*types.NodeOptions) {
 	return func(opts *types.NodeOptions) { opts.FieldMapping = append(opts.FieldMapping, mappings...) }
 }
 
-// MapFields creates a FieldMapping from source to target path.
+// MapFields 创建源→目标字段映射。
 func MapFields(from, to string) types.FieldMapping {
 	return types.FieldMapping{From: from, To: to}
 }
 
-// MapTo creates a FieldMapping that maps entire output to a target path.
+// MapTo 将整个输出映射到目标路径。
 func MapTo(to string) types.FieldMapping {
 	return types.FieldMapping{To: to}
 }
@@ -202,7 +204,7 @@ func (g *stateGraph) AddDataEdge(from, to string, mappings ...types.FieldMapping
 	return nil
 }
 
-// --- types.StateGraph interface methods ---
+// --- StateGraph 接口方法 ---
 
 func (g *stateGraph) GetChannels() map[string]interface{} {
 	result := make(map[string]interface{}, len(g.channels))
@@ -268,6 +270,7 @@ func (g *stateGraph) AddChannelWithReducer(name string, channel interface{}, red
 	}
 }
 
+// Validate 校验入口/出口、可达性与 schema。
 func (g *stateGraph) Validate() error {
 	if g.entryPoint == "" {
 		return fmt.Errorf("no entry point set")
@@ -333,12 +336,12 @@ func (g *stateGraph) configureChannelsFromSchema() error {
 	return nil
 }
 
-// --- Compile and CompiledGraph ---
+// --- 编译与 compiledGraph ---
 
-// CompileOption configures CompiledGraph behavior at compile time.
+// CompileOption 编译期配置 compiledGraph 的函数选项。
 type CompileOption func(*compiledGraph)
 
-// compiledGraph is a compiled, executable graph.
+// compiledGraph 已编译可执行图，委托 Pregel 引擎运行。
 type compiledGraph struct {
 	graph           *stateGraph
 	checkpointer    interface{} // checkpoint.BaseCheckpointer
@@ -372,12 +375,14 @@ func (g *stateGraph) Compile(opts ...interface{}) (types.CompiledGraph, error) {
 	return cg, nil
 }
 
+// WithCheckpointer 编译时注入 checkpointer。
 func WithCheckpointer(checkpointer interface{}) CompileOption {
 	return func(cg *compiledGraph) {
 		cg.checkpointer = checkpointer
 	}
 }
 
+// WithInterrupts 指定节点执行前中断。
 func WithInterrupts(nodes ...string) CompileOption {
 	return func(cg *compiledGraph) {
 		for _, node := range nodes {
@@ -386,6 +391,7 @@ func WithInterrupts(nodes ...string) CompileOption {
 	}
 }
 
+// WithInterruptsAfter 指定节点执行后中断。
 func WithInterruptsAfter(nodes ...string) CompileOption {
 	return func(cg *compiledGraph) {
 		for _, node := range nodes {
@@ -394,18 +400,21 @@ func WithInterruptsAfter(nodes ...string) CompileOption {
 	}
 }
 
+// WithRecursionLimit 设置 Pregel 最大超步数。
 func WithRecursionLimit(limit int) CompileOption {
 	return func(cg *compiledGraph) {
 		cg.recursionLimit = limit
 	}
 }
 
+// WithDebug 开启调试模式。
 func WithDebug(debug bool) CompileOption {
 	return func(cg *compiledGraph) {
 		cg.debug = debug
 	}
 }
 
+// WithNodeTriggerMode 设置节点触发模式。
 func WithNodeTriggerMode(mode types.NodeTriggerMode) CompileOption {
 	return func(cg *compiledGraph) {
 		cg.nodeTriggerMode = mode
@@ -446,6 +455,7 @@ func (cg *compiledGraph) Stream(ctx context.Context, input interface{}, mode typ
 	return outputCh, errCh
 }
 
+// run 委托 types.PregelRunFunc 执行 Pregel 引擎。
 func (cg *compiledGraph) run(ctx context.Context, input interface{}, config *types.RunnableConfig, streamMode types.StreamMode) (interface{}, error) {
 	if types.PregelRunFunc == nil {
 		return nil, fmt.Errorf("graph: pregel engine not installed")
@@ -453,7 +463,7 @@ func (cg *compiledGraph) run(ctx context.Context, input interface{}, config *typ
 	return types.PregelRunFunc(ctx, cg, input, config, streamMode)
 }
 
-// --- types.CompiledGraph interface methods ---
+// --- CompiledGraph 接口方法 ---
 
 func (cg *compiledGraph) GetGraph() types.StateGraph          { return cg.graph }
 func (cg *compiledGraph) GetCheckpointer() interface{}        { return cg.checkpointer }
@@ -461,3 +471,5 @@ func (cg *compiledGraph) GetInterrupts() map[string]bool      { return cg.interr
 func (cg *compiledGraph) GetInterruptsAfter() map[string]bool { return cg.interruptsAfter }
 func (cg *compiledGraph) GetRecursionLimit() int              { return cg.recursionLimit }
 func (cg *compiledGraph) IsDebug() bool                       { return cg.debug }
+
+// AddNodeWithOptions 支持重试策略、标签、触发器与字段映射。

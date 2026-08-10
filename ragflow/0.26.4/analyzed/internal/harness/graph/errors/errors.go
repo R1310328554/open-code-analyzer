@@ -1,4 +1,6 @@
-// Package errors provides error types for Agent Harness Go.
+// errors.go — Harness 图引擎错误码、上下文包装与专用异常类型。
+
+// Package errors 定义 Agent Harness Go 错误类型与辅助函数。
 package errors
 
 import (
@@ -7,35 +9,35 @@ import (
 	"strings"
 )
 
-// ErrorCode represents specific error codes for Agent Harness.
+// ErrorCode 机器可读错误码枚举。
 type ErrorCode string
 
 const (
-	// ErrorCodeGraphRecursionLimit is raised when the graph exhausts the maximum number of steps.
+	// ErrorCodeGraphRecursionLimit 图超步/递归深度耗尽
 	ErrorCodeGraphRecursionLimit ErrorCode = "GRAPH_RECURSION_LIMIT"
-	// ErrorCodeInvalidConcurrentGraphUpdate is raised for invalid concurrent graph updates.
+	// ErrorCodeInvalidConcurrentGraphUpdate 非法并发图更新
 	ErrorCodeInvalidConcurrentGraphUpdate ErrorCode = "INVALID_CONCURRENT_GRAPH_UPDATE"
-	// ErrorCodeInvalidGraphNodeReturnValue is raised for invalid node return values.
+	// ErrorCodeInvalidGraphNodeReturnValue 节点返回值类型非法
 	ErrorCodeInvalidGraphNodeReturnValue ErrorCode = "INVALID_GRAPH_NODE_RETURN_VALUE"
-	// ErrorCodeMultipleSubgraphs is raised when multiple subgraphs are detected.
+	// ErrorCodeMultipleSubgraphs 检测到多个子图冲突
 	ErrorCodeMultipleSubgraphs ErrorCode = "MULTIPLE_SUBGRAPHS"
-	// ErrorCodeInvalidChatHistory is raised for invalid chat history.
+	// ErrorCodeInvalidChatHistory 聊天历史格式非法
 	ErrorCodeInvalidChatHistory ErrorCode = "INVALID_CHAT_HISTORY"
-	// ErrorCodeCheckpointConflict is raised when there is a checkpoint version conflict.
+	// ErrorCodeCheckpointConflict 检查点版本冲突
 	ErrorCodeCheckpointConflict ErrorCode = "CHECKPOINT_CONFLICT"
-	// ErrorCodeInvalidState is raised when the state is invalid.
+	// ErrorCodeInvalidState 状态校验失败
 	ErrorCodeInvalidState ErrorCode = "INVALID_STATE"
-	// ErrorCodeNodeNotFound is raised when a node is not found.
+	// ErrorCodeNodeNotFound 节点不存在
 	ErrorCodeNodeNotFound ErrorCode = "NODE_NOT_FOUND"
-	// ErrorCodeChannelNotFound is raised when a channel is not found.
+	// ErrorCodeChannelNotFound 通道不存在
 	ErrorCodeChannelNotFound ErrorCode = "CHANNEL_NOT_FOUND"
-	// ErrorCodeTimeout is raised when a timeout occurs.
+	// ErrorCodeTimeout 执行超时
 	ErrorCodeTimeout ErrorCode = "TIMEOUT"
-	// ErrorCodeCancellation is raised when the execution is cancelled.
+	// ErrorCodeCancellation 执行被取消或中断
 	ErrorCodeCancellation ErrorCode = "CANCELLATION"
 )
 
-// CreateErrorMessage creates an error message with troubleshooting information.
+// CreateErrorMessage 生成带文档链接的排障友好错误信息。
 // The URL points to the Harness-Go documentation (not the Python LangGraph docs).
 func CreateErrorMessage(message string, errorCode ErrorCode) string {
 	return fmt.Sprintf(
@@ -45,7 +47,7 @@ func CreateErrorMessage(message string, errorCode ErrorCode) string {
 	)
 }
 
-// ErrorContext provides additional context about an error.
+// ErrorContext 带错误码、堆栈与元数据的富错误上下文。
 type ErrorContext struct {
 	// ErrorCode is the specific error code.
 	ErrorCode ErrorCode
@@ -59,7 +61,7 @@ type ErrorContext struct {
 	Metadata map[string]interface{}
 }
 
-// NewErrorContext creates a new error context.
+// NewErrorContext 捕获堆栈并包装底层 cause。
 func NewErrorContext(code ErrorCode, message string, cause error) *ErrorContext {
 	return &ErrorContext{
 		ErrorCode:  code,
@@ -140,7 +142,7 @@ func captureStackTrace(skip int) []string {
 	return stack
 }
 
-// WrapError wraps an error with additional context.
+// WrapError 为已有错误追加 ErrorContext 层。
 func WrapError(err error, code ErrorCode, message string) error {
 	if err == nil {
 		return nil
@@ -160,7 +162,7 @@ func WrapError(err error, code ErrorCode, message string) error {
 	return NewErrorContext(code, message, err)
 }
 
-// GetErrorCode extracts the error code from an error.
+// GetErrorCode 从错误链提取 ErrorCode。
 func GetErrorCode(err error) ErrorCode {
 	if err == nil {
 		return ""
@@ -185,7 +187,7 @@ func GetErrorCode(err error) ErrorCode {
 	return ""
 }
 
-// GetErrorStack extracts the stack trace from an error.
+// GetErrorStack 提取 ErrorContext 堆栈帧。
 func GetErrorStack(err error) []string {
 	if err == nil {
 		return nil
@@ -198,7 +200,7 @@ func GetErrorStack(err error) []string {
 	return nil
 }
 
-// FormatError formats an error for display.
+// FormatError 格式化多层包装错误供展示。
 func FormatError(err error) string {
 	if err == nil {
 		return ""
@@ -225,7 +227,7 @@ func FormatError(err error) string {
 	return sb.String()
 }
 
-// ChainError creates a chain of errors for better debugging.
+// ChainError 链接两个错误形成 cause 链。
 func ChainError(base error, newErr error) error {
 	if newErr == nil {
 		return base
@@ -238,7 +240,7 @@ func ChainError(base error, newErr error) error {
 	return fmt.Errorf("%s: %w", newErr, base)
 }
 
-// EmptyChannelError is raised when a channel is empty (never updated yet).
+// EmptyChannelError 通道尚未写入任何值。
 type EmptyChannelError struct {
 	Message string
 }
@@ -256,7 +258,7 @@ func IsEmptyChannelError(err error) bool {
 	return ok
 }
 
-// GraphRecursionError is raised when the graph has exhausted the maximum number of steps.
+// GraphRecursionError Pregel 递归/超步上限触达。
 type GraphRecursionError struct {
 	Limit int
 }
@@ -275,7 +277,7 @@ func IsGraphRecursionError(err error) bool {
 	return ok
 }
 
-// InvalidUpdateError is raised when attempting to update a channel with an invalid set of updates.
+// InvalidUpdateError 通道更新参数非法。
 type InvalidUpdateError struct {
 	Message string
 }
@@ -290,7 +292,7 @@ func IsInvalidUpdateError(err error) bool {
 	return ok
 }
 
-// GraphBubbleUp is the base type for exceptions that bubble up from subgraphs.
+// GraphBubbleUp 子图向上冒泡异常的基类。
 type GraphBubbleUp struct {
 	Message string
 	Cause   error
@@ -310,7 +312,7 @@ func (e *GraphBubbleUp) Unwrap() error {
 	return e.Cause
 }
 
-// GraphInterrupt is raised when a subgraph is interrupted.
+// GraphInterrupt 图执行被 interrupt.Interrupt 暂停。
 type GraphInterrupt struct {
 	Interrupts []interface{}
 }
@@ -325,7 +327,7 @@ func IsGraphInterrupt(err error) bool {
 	return ok
 }
 
-// ParentCommand is raised when a command should be sent to the parent graph.
+// ParentCommand 子图请求向父图发送 Command。
 type ParentCommand struct {
 	Command interface{}
 }
@@ -340,7 +342,7 @@ func IsParentCommand(err error) bool {
 	return ok
 }
 
-// EmptyInputError is raised when graph receives an empty input.
+// EmptyInputError 图收到空输入。
 type EmptyInputError struct {
 	Message string
 }
@@ -358,7 +360,7 @@ func IsEmptyInputError(err error) bool {
 	return ok
 }
 
-// TaskNotFound is raised when the executor is unable to find a task.
+// TaskNotFound 执行器找不到指定任务。
 type TaskNotFound struct {
 	TaskID string
 }
@@ -373,7 +375,7 @@ func IsTaskNotFound(err error) bool {
 	return ok
 }
 
-// InvalidNodeError is raised when a node is invalid.
+// InvalidNodeError 节点定义或配置非法。
 type InvalidNodeError struct {
 	NodeName string
 	Message  string
@@ -383,7 +385,7 @@ func (e *InvalidNodeError) Error() string {
 	return fmt.Sprintf("invalid node '%s': %s", e.NodeName, e.Message)
 }
 
-// InvalidEdgeError is raised when an edge is invalid.
+// InvalidEdgeError 边定义非法。
 type InvalidEdgeError struct {
 	From    string
 	To      string
@@ -394,7 +396,7 @@ func (e *InvalidEdgeError) Error() string {
 	return fmt.Sprintf("invalid edge from '%s' to '%s': %s", e.From, e.To, e.Message)
 }
 
-// ChannelNotFoundError is raised when a channel is not found.
+// ChannelNotFoundError 通道名未注册。
 type ChannelNotFoundError struct {
 	ChannelName string
 }
@@ -403,7 +405,7 @@ func (e *ChannelNotFoundError) Error() string {
 	return fmt.Sprintf("channel not found: %s", e.ChannelName)
 }
 
-// NodeNotFoundError is raised when a node is not found.
+// NodeNotFoundError 节点名不存在于图中。
 type NodeNotFoundError struct {
 	NodeName string
 }
@@ -411,3 +413,5 @@ type NodeNotFoundError struct {
 func (e *NodeNotFoundError) Error() string {
 	return fmt.Sprintf("node not found: %s", e.NodeName)
 }
+
+// IsGraphInterrupt/IsParentCommand 等类型断言辅助用于引擎分支处理。

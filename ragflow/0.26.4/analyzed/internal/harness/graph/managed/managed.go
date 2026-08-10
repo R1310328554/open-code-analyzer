@@ -1,4 +1,6 @@
-// Package managed provides managed value types for runtime injection.
+// managed.go — 运行时托管值、PregelScratchpad 与 Runtime 上下文注入。
+
+// Package managed 提供运行时注入的托管值类型与 Runtime。
 package managed
 
 import (
@@ -10,7 +12,7 @@ import (
 	"sync"
 )
 
-// ManagedValue represents a value that is managed by the runtime.
+// ManagedValue 由运行时管理的动态值接口。
 type ManagedValue interface {
 	// Get returns the current value of the managed value.
 	Get(scratchpad interface{}) (interface{}, error)
@@ -20,7 +22,7 @@ type ManagedValue interface {
 	Name() string
 }
 
-// ManagedValueMapping is a concurrency-safe collection of managed values keyed by name.
+// ManagedValueMapping 线程安全的托管值注册表。
 type ManagedValueMapping struct {
 	mu   sync.RWMutex
 	data map[string]ManagedValue
@@ -67,7 +69,7 @@ func (m *ManagedValueMapping) Names() []string {
 	return names
 }
 
-// IsLastStep provides information about whether the current step is the last step.
+// IsLastStep 托管值：当前是否为最后一步。
 type IsLastStep struct {
 	// Value indicates if this is the last step.
 	Value bool
@@ -115,7 +117,7 @@ func IsManagedValue(val interface{}) bool {
 	return ok
 }
 
-// CurrentStep provides information about the current step number.
+// CurrentStep 托管值：当前步骤序号。
 type CurrentStep struct {
 	// Value is the current step number.
 	Value int
@@ -162,7 +164,7 @@ func (v *CurrentStep) Copy() ManagedValue {
 	}
 }
 
-// ConfigValue provides access to configurable values.
+// ConfigValue 从 scratchpad configurable 读取配置项。
 type ConfigValue struct {
 	// Key is the configuration key.
 	Key string
@@ -203,7 +205,7 @@ func (v *ConfigValue) Copy() ManagedValue {
 	}
 }
 
-// TaskID provides access to the current task ID.
+// TaskID 托管值：当前任务 ID。
 type TaskID struct {
 	// Value is the task ID.
 	Value string
@@ -240,7 +242,7 @@ func (v *TaskID) Copy() ManagedValue {
 	}
 }
 
-// NodeName provides access to the current node name.
+// NodeName 托管值：当前节点名。
 type NodeName struct {
 	// Value is the node name.
 	Value string
@@ -277,7 +279,7 @@ func (v *NodeName) Copy() ManagedValue {
 	}
 }
 
-// ManagedValueSpec specifies a managed value.
+// ManagedValueSpec 托管值规格（工厂 + 默认值）。
 type ManagedValueSpec struct {
 	// Name is the name of the managed value.
 	Name string
@@ -343,7 +345,7 @@ func GetManagedValueName(val interface{}) string {
 	return ""
 }
 
-// ExtractManagedValues extracts managed values from a struct.
+// ExtractManagedValues 从 struct 反射提取 ManagedValue 字段。
 func ExtractManagedValues(obj interface{}) []ManagedValue {
 	result := []ManagedValue{}
 
@@ -371,7 +373,7 @@ func ExtractManagedValues(obj interface{}) []ManagedValue {
 	return result
 }
 
-// ExtractManagedValueSpecs extracts managed value specs from a struct.
+// ExtractManagedValueSpecs 从 struct 提取 ManagedValueSpec 字段。
 func ExtractManagedValueSpecs(obj interface{}) []*ManagedValueSpec {
 	result := []*ManagedValueSpec{}
 
@@ -399,7 +401,7 @@ func ExtractManagedValueSpecs(obj interface{}) []*ManagedValueSpec {
 	return result
 }
 
-// PregelScratchpad provides temporary storage for graph execution.
+// PregelScratchpad 图执行期任务级临时存储 map。
 type PregelScratchpad map[string]interface{}
 
 // NewPregelScratchpad creates a new scratchpad.
@@ -483,7 +485,7 @@ func (p PregelScratchpad) Clone() PregelScratchpad {
 	return clone
 }
 
-// ConfigKey represents keys used in runtime configuration.
+// ConfigKey 运行时配置 map 的保留键名。
 const (
 	ManagedConfigKeyTaskID       = "__task_id__"
 	ManagedConfigKeyRuntime      = "__runtime__"
@@ -496,7 +498,7 @@ const (
 	ManagedConfigKeyConfigurable = "__configurable__"
 )
 
-// Runtime provides runtime information for graph execution.
+// Runtime 图执行运行时上下文（对标 Python runtime.py）。
 // This corresponds to Python's Runtime class in runtime.py
 type Runtime struct {
 	// TaskID is the ID of the current task.
@@ -520,7 +522,7 @@ type Runtime struct {
 	Previous interface{}
 }
 
-// NewRuntime creates a new runtime.
+// NewRuntime 创建空 Runtime 实例。
 func NewRuntime() *Runtime {
 	return &Runtime{
 		TaskID:       "",
@@ -535,7 +537,7 @@ func NewRuntime() *Runtime {
 	}
 }
 
-// Clone creates a copy of the runtime.
+// Clone 浅拷贝 Runtime（Configurable 深拷贝 map）。
 func (r *Runtime) Clone() *Runtime {
 	return &Runtime{
 		TaskID:       r.TaskID,
@@ -550,7 +552,7 @@ func (r *Runtime) Clone() *Runtime {
 	}
 }
 
-// Merge merges two runtimes together.
+// Merge 合并两个 Runtime，other 非空字段覆盖。
 // If a value is not provided in the other runtime, the value from the current runtime is used.
 func (r *Runtime) Merge(other *Runtime) *Runtime {
 	if other == nil {
@@ -609,7 +611,7 @@ func (r *Runtime) Get(ctx context.Context, key string) (interface{}, bool) {
 	return val, ok
 }
 
-// Override creates a new runtime with the given overrides.
+// Override 按 overrides map 创建新 Runtime 副本。
 func (r *Runtime) Override(overrides map[string]interface{}) *Runtime {
 	newRuntime := r.Clone()
 
@@ -662,7 +664,7 @@ func cloneMap(src map[string]any) map[string]any {
 	return clone
 }
 
-// DEFAULT_RUNTIME is the default runtime instance with nil values.
+// DEFAULT_RUNTIME 全局默认 Runtime；Configurable 为 nil 防误写。
 // Configurable is nil (not an empty map) so that direct mutation via Set
 // panics with nil pointer dereference rather than silently corrupting a
 // shared global. Callers must use Clone() to obtain a safe copy.
@@ -774,7 +776,7 @@ func SetWriter(config map[string]interface{}, writer interface{}) {
 	config[ManagedConfigKeyWriter] = writer
 }
 
-// PatchConfig patches a config with new values.
+// PatchConfig 浅合并 config map。
 func PatchConfig(base map[string]interface{}, updates map[string]interface{}) map[string]interface{} {
 	if base == nil {
 		base = make(map[string]interface{})
@@ -793,7 +795,7 @@ func PatchConfig(base map[string]interface{}, updates map[string]interface{}) ma
 	return result
 }
 
-// PatchConfigurable patches the configurable section of a config.
+// PatchConfigurable 深拷贝并合并 configurable 段。
 func PatchConfigurable(base map[string]interface{}, updates map[string]interface{}) map[string]interface{} {
 	if base == nil {
 		base = make(map[string]interface{})
@@ -859,7 +861,7 @@ func SetCheckpointNS(config map[string]interface{}, ns string) {
 	config[ManagedConfigKeyCheckpointNS] = ns
 }
 
-// ParseCheckpointNS parses a checkpoint namespace to extract node path.
+// ParseCheckpointNS 解析检查点命名空间为节点路径段。
 func ParseCheckpointNS(ns string) []string {
 	if ns == "" {
 		return []string{}
@@ -867,7 +869,7 @@ func ParseCheckpointNS(ns string) []string {
 	return splitCheckpointNS(ns)
 }
 
-// RecastCheckpointNS recasts a checkpoint namespace by removing task ID.
+// RecastCheckpointNS 去除命名空间末尾 task UUID 段。
 func RecastCheckpointNS(ns string) string {
 	parts := splitCheckpointNS(ns)
 	if len(parts) == 0 {
@@ -906,7 +908,7 @@ func isTaskID(s string) bool {
 	return uuidRE.MatchString(s)
 }
 
-// StreamWriter is a function that writes to the output stream.
+// StreamWriter 自定义流写入函数类型。
 type StreamWriter func(interface{})
 
 // NewStreamWriter creates a new stream writer.
@@ -919,7 +921,7 @@ func (w StreamWriter) Write(value interface{}) {
 	w(value)
 }
 
-// FormatCheckpoint formats a checkpoint for debug output.
+// FormatCheckpoint 格式化检查点 map 供调试输出。
 func FormatCheckpoint(checkpoint map[string]interface{}) string {
 	if checkpoint == nil {
 		return "{}"
@@ -966,3 +968,5 @@ func FormatDuration(d int64) string {
 		return fmt.Sprintf("%.1fh", float64(d)/3600000)
 	}
 }
+
+// GetRuntime/SetRuntime 等辅助函数桥接 config 与 Runtime；scratchpad 计数器供引擎统计。

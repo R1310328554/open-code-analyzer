@@ -1,4 +1,6 @@
-// Package graph provides graph building capabilities for LangGraph Go.
+// state.go — 状态 schema 校验、harness 标签解析与内置 reducer 注册表。
+
+// Package graph 状态 schema 与字段注解处理。
 package graph
 
 import (
@@ -10,15 +12,15 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// Annotation holds metadata for a state field.
+// Annotation 状态字段元数据（reducer、工具元信息）。
 type Annotation struct {
-	// Reducer specifies a custom reducer function for this field.
+	// Reducer 字段级自定义 reducer 函数
 	Reducer types.ReducerFunc
-	// Optional metadata for documentation or tooling.
+	// Metadata 文档或工具链扩展元数据
 	Metadata map[string]interface{}
 }
 
-// fieldInfo holds processed information about a state field.
+// fieldInfo 解析后的字段信息（类型、通道、注解）。
 type fieldInfo struct {
 	Name       string
 	Type       reflect.Type
@@ -26,7 +28,7 @@ type fieldInfo struct {
 	Annotation *Annotation
 }
 
-// validateStateSchema validates the state schema.
+// validateStateSchema 校验 struct/map schema 并提取 fieldInfo。
 // It returns a map of field names to fieldInfo, or an error.
 func validateStateSchema(schema interface{}) (map[string]*fieldInfo, error) {
 	if schema == nil {
@@ -77,7 +79,7 @@ func validateStateSchema(schema interface{}) (map[string]*fieldInfo, error) {
 	return fieldInfos, nil
 }
 
-// processField extracts field information and annotations.
+// processField 解析 struct 字段与 harness 标签并创建通道。
 func processField(field reflect.StructField) (*fieldInfo, error) {
 	info := &fieldInfo{
 		Name: field.Name,
@@ -110,7 +112,7 @@ func processField(field reflect.StructField) (*fieldInfo, error) {
 	return info, nil
 }
 
-// parseAnnotation parses a harness struct tag into an Annotation.
+// parseAnnotation 解析 harness 标签（如 reducer=add）。
 // Format: "reducer=add" or "reducer=custom,meta=value"
 func parseAnnotation(tag string) (*Annotation, error) {
 	annotation := &Annotation{
@@ -145,7 +147,7 @@ func parseAnnotation(tag string) (*Annotation, error) {
 	return annotation, nil
 }
 
-// reducers is a registry of built-in reducer functions.
+// reducers 内置 reducer 名称注册表（add/append/merge）。
 var reducers = map[string]types.ReducerFunc{
 	// Add reducer for numeric types
 	"add": func(current, update interface{}) interface{} {
@@ -199,15 +201,17 @@ var reducers = map[string]types.ReducerFunc{
 	},
 }
 
-// ValidateStateSchema validates the graph's state schema.
+// ValidateStateSchema 编译前校验图状态 schema。
 // This should be called during graph compilation or explicitly by users.
 func (g *stateGraph) ValidateStateSchema() error {
 	_, err := validateStateSchema(g.stateSchema)
 	return err
 }
 
-// GetStateSchemaInfo returns processed information about the state schema.
+// GetStateSchemaInfo 返回字段级通道/reducer 信息供调试。
 // Useful for debugging and tooling.
 func (g *stateGraph) GetStateSchemaInfo() (map[string]*fieldInfo, error) {
 	return validateStateSchema(g.stateSchema)
 }
+
+// harness 标签示例：`harness:"reducer=append"`；map schema 通道需 AddChannel 动态注册。

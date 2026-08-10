@@ -1,5 +1,8 @@
 package checkpoint
 
+// nats.go — NATS JetStream KV 检查点持久化：多租户共享桶、History 与后台 GC。
+
+
 import (
 	"context"
 	"encoding/json"
@@ -14,7 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// NATSSaver implements BaseCheckpointer using NATS KV Store (JetStream-backed).
+// NATSSaver 基于 NATS KV（JetStream）实现 BaseCheckpointer。
 //
 // Design:
 //   - Single NATS KV bucket shared by all tenants and graph instances.
@@ -67,26 +70,26 @@ type NATSSaver struct {
 
 // NATSConfig configures the NATS checkpoint saver.
 type NATSConfig struct {
-	// Bucket is the NATS KV bucket name. Default: "checkpoints".
+	// Bucket NATS KV 桶名，默认 checkpoints
 	Bucket string
 
-	// History is max versions per key. Each graph instance keeps only
+	// History 每 key 保留的最大版本数，旧版由 NATS 自动淘汰
 	// this many recent checkpoints. Older versions are auto-evicted by NATS.
 	// Default: 3.
 	History int
 
-	// Replicas is the number of replicas for the KV bucket.
+	// Replicas KV 桶副本数（1=R1，3=R3 生产集群）
 	// 1 = R1 (fast, single node). 3 = R3 (production cluster). Default: 1.
 	Replicas int
 
-	// MaxGraphIdle controls when a graph instance is considered completed.
+	// MaxGraphIdle 图实例空闲超过此时间则由 GC 清理
 	// If a key's latest checkpoint is older than this, the background GC
 	// will purge all checkpoints for that graph instance.
 	// Active graphs checkpoint every few seconds, so they never trigger this.
 	// Default: 30 minutes. 0 disables background GC.
 	MaxGraphIdle time.Duration
 
-	// GCInterval controls how often the background GC runs. Default: 10 minutes.
+	// GCInterval 后台 GC 扫描间隔，默认 10 分钟
 	GCInterval time.Duration
 }
 
@@ -108,7 +111,7 @@ func (c *NATSConfig) defaults() {
 	}
 }
 
-// NewNATSSaver creates a NATS-backed checkpoint saver.
+// NewNATSSaver 创建/获取 KV 桶并可选启动后台 GC。
 // The JetStream must already be created from an active NATS connection.
 // Call Close() to stop background GC and release resources.
 func NewNATSSaver(js jetstream.JetStream, cfg *NATSConfig) (*NATSSaver, error) {
@@ -148,9 +151,9 @@ func NewNATSSaver(js jetstream.JetStream, cfg *NATSConfig) (*NATSSaver, error) {
 	return s, nil
 }
 
-// ---- Key encoding ----
+// ---- 键编码 ----
 
-// encodeKey builds the KV key for a checkpoint.
+// encodeKey 构建 KV 键，当前直接使用 thread_id。
 // Key format: "{tenant_id}:{thread_id}"
 //
 // NATS KV key restrictions: alphanumeric, dashes, underscores, equal signs, dots.
@@ -159,7 +162,7 @@ func encodeKey(threadID string) string {
 	return threadID
 }
 
-// ---- BaseCheckpointer implementation ----
+// ---- BaseCheckpointer 实现 ----
 
 // Get retrieves the latest checkpoint for a thread.
 //
@@ -214,7 +217,7 @@ func (s *NATSSaver) Put(ctx context.Context, config map[string]interface{}, chec
 	return nil
 }
 
-// List returns a list of checkpoints for a thread.
+// List 通过 History 倒序返回检查点摘要。
 //
 // Config keys:
 //   - constants.ConfigKeyThreadID (string, required): thread ID.
@@ -259,7 +262,7 @@ func (s *NATSSaver) List(ctx context.Context, config map[string]interface{}, lim
 	return results, nil
 }
 
-// ---- Garbage Collection ----
+// ---- 垃圾回收 ----
 //
 // GC原理：
 //
@@ -274,7 +277,7 @@ func (s *NATSSaver) List(ctx context.Context, config map[string]interface{}, lim
 //   NATS KV 的 History=N 在 GC 之上提供了一层增量保护：
 //   活跃 graph 的超旧版本会被 NATS 自动丢弃，防止单个 key 无限膨胀。
 
-// runGC periodically scans for completed graph instances and purges them.
+// runGC 定时扫描并清理已完成/废弃的图实例 key。
 func (s *NATSSaver) runGC(interval time.Duration) {
 	defer s.wg.Done()
 
@@ -291,7 +294,7 @@ func (s *NATSSaver) runGC(interval time.Duration) {
 	}
 }
 
-// collectGarbage scans all keys and purges graph instances that are idle.
+// collectGarbage 删除最新 checkpoint 早于 MaxGraphIdle 的 key。
 // An idle graph instance = a completed/abandoned graph = eligible for cleanup.
 func (s *NATSSaver) collectGarbage() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -330,7 +333,7 @@ func (s *NATSSaver) collectGarbage() {
 	}
 }
 
-// PurgeTenant deletes all checkpoint data for a specific tenant.
+// PurgeTenant 按租户前缀批量删除检查点 key。
 func (s *NATSSaver) PurgeTenant(ctx context.Context, tenantID string) (int, error) {
 	prefix := tenantID + ":"
 
@@ -351,12 +354,12 @@ func (s *NATSSaver) PurgeTenant(ctx context.Context, tenantID string) (int, erro
 	return purged, nil
 }
 
-// PurgeThread deletes checkpoint data for a specific thread.
+// PurgeThread 删除单线程全部检查点。
 func (s *NATSSaver) PurgeThread(ctx context.Context, threadID string) error {
 	return s.kv.Delete(ctx, encodeKey(threadID))
 }
 
-// Close stops background GC and releases resources.
+// Close 停止 GC 协程并等待退出。
 func (s *NATSSaver) Close() error {
 	s.mu.Lock()
 	if s.stopped {
@@ -371,7 +374,7 @@ func (s *NATSSaver) Close() error {
 	return nil
 }
 
-// ---- Helpers ----
+// ---- 辅助函数 ----
 
 func getStringConfig(config map[string]interface{}, key string) (string, error) {
 	if config == nil {
@@ -390,3 +393,5 @@ func getStringConfig(config map[string]interface{}, key string) (string, error) 
 	}
 	return s, nil
 }
+
+// Layer1：NATS History 自动淘汰；Layer2：后台 GC 清理 dormant 图实例。

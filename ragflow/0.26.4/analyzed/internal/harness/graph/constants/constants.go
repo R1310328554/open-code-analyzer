@@ -1,109 +1,111 @@
-// Package constants provides constants for LangGraph Go.
+// constants.go — Harness 图引擎保留键、配置键与 Pregel 命名约定。
+
+// Package constants 定义 LangGraph Go 全局常量。
 package constants
 
-// Reserved write keys.
+// 保留写入键 — 节点/引擎内部通信
 const (
-	// Input is for values passed as input to the graph.
+	// Input 图输入值
 	Input = "__input__"
-	// Interrupt is for dynamic interrupts raised by nodes.
+	// Interrupt 节点触发的动态中断
 	Interrupt = "__interrupt__"
-	// Resume is for values passed to resume a node after an interrupt.
+	// Resume 中断恢复传入值
 	Resume = "__resume__"
-	// Error is for errors raised by nodes.
+	// Error 节点错误
 	Error = "__error__"
-	// NoWrites is a marker to signal node didn't write anything.
+	// NoWrites 标记节点无写入
 	NoWrites = "__no_writes__"
-	// Tasks is for Send objects returned by nodes/edges.
+	// Tasks 节点/边返回的 Send 任务
 	Tasks = "__pregel_tasks"
-	// Return is for writes of a task where we simply record the return value.
+	// Return 记录任务返回值
 	Return = "__return__"
-	// Previous is the implicit branch that handles each node's Control values.
+	// Previous 处理节点 Control 值的隐式分支
 	Previous = "__previous__"
 )
 
-// Reserved cache namespaces.
+// 保留缓存命名空间
 const (
-	// CacheNSWrites is the cache namespace for node writes.
+	// CacheNSWrites 节点写入缓存命名空间
 	CacheNSWrites = "__pregel_ns_writes"
 )
 
-// Reserved config.configurable keys.
+// RunnableConfig.Configurable 保留键
 const (
-	// ConfigKeySend holds the write function that accepts writes to state/edges/reserved keys.
+	// ConfigKeySend Pregel 写入函数（状态/边/保留键）
 	ConfigKeySend = "__pregel_send"
-	// ConfigKeyRead holds the read function that returns a copy of the current state.
+	// ConfigKeyRead 返回当前状态副本的读取函数
 	ConfigKeyRead = "__pregel_read"
-	// ConfigKeyCall holds the call function that accepts a node/func, args and returns a future.
+	// ConfigKeyCall 子图/函数调用入口
 	ConfigKeyCall = "__pregel_call"
-	// ConfigKeyCheckpointer holds a BaseCheckpointSaver passed from parent graph to child graphs.
+	// ConfigKeyCheckpointer 父图传递给子图的 checkpointer
 	ConfigKeyCheckpointer = "__pregel_checkpointer"
-	// ConfigKeyStream holds a StreamProtocol passed from parent graph to child graphs.
+	// ConfigKeyStream 流式协议对象
 	ConfigKeyStream = "__pregel_stream"
-	// ConfigKeyCache holds a BaseCache made available to subgraphs.
+	// ConfigKeyCache 子图可用缓存
 	ConfigKeyCache = "__pregel_cache"
-	// ConfigKeyResuming holds a boolean indicating if subgraphs should resume from a previous checkpoint.
+	// ConfigKeyResuming 子图是否从先前检查点恢复
 	ConfigKeyResuming = "__pregel_resuming"
-	// ConfigKeyTaskID holds the task ID for the current task.
+	// ConfigKeyTaskID 当前任务 ID
 	ConfigKeyTaskID = "__pregel_task_id"
-	// ConfigKeyThreadID holds the thread ID for the current invocation.
+	// ConfigKeyThreadID 执行线程 ID
 	ConfigKeyThreadID = "thread_id"
-	// ConfigKeyCheckpointMap holds a mapping of checkpoint_ns -> checkpoint_id for parent graphs.
+	// ConfigKeyCheckpointMap 父图 checkpoint_ns → checkpoint_id 映射
 	ConfigKeyCheckpointMap = "checkpoint_map"
-	// ConfigKeyCheckpointID holds the current checkpoint_id, if any.
+	// ConfigKeyCheckpointID 当前检查点 ID
 	ConfigKeyCheckpointID = "checkpoint_id"
-	// ConfigKeyCheckpointNS holds the current checkpoint_ns, "" for root graph.
+	// ConfigKeyCheckpointNS 检查点命名空间（根图为空）
 	ConfigKeyCheckpointNS = "checkpoint_ns"
-	// ConfigKeyNodeFinished holds a callback to be called when a node is finished.
+	// ConfigKeyNodeFinished 节点完成回调
 	ConfigKeyNodeFinished = "__pregel_node_finished"
-	// ConfigKeyScratchpad holds a mutable dict for temporary storage scoped to the current task.
+	// ConfigKeyScratchpad 当前任务临时 scratchpad
 	ConfigKeyScratchpad = "__pregel_scratchpad"
-	// ConfigKeyRunnerSubmit holds a function that receives tasks from runner.
+	// ConfigKeyRunnerSubmit runner 任务提交函数
 	ConfigKeyRunnerSubmit = "__pregel_runner_submit"
-	// ConfigKeyDurability holds the durability mode.
+	// ConfigKeyDurability 持久化/耐久模式
 	ConfigKeyDurability = "__pregel_durability"
-	// ConfigKeyRuntime holds a Runtime instance with context, store, stream writer, etc.
+	// ConfigKeyRuntime 运行时上下文（store、stream 等）
 	ConfigKeyRuntime = "__pregel_runtime"
-	// ConfigKeyResumeMap holds a mapping of task ns -> resume value for resuming tasks.
+	// ConfigKeyResumeMap 任务命名空间 → 恢复值映射
 	ConfigKeyResumeMap = "__pregel_resume_map"
 )
 
-// Other constants.
+// 其他 Pregel/检查点常量
 const (
-	// Push denotes push-style tasks, ie. those created by Send objects.
+	// Push Send 触发的 push 式任务
 	Push = "__pregel_push"
-	// Pull denotes pull-style tasks, ie. those triggered by edges.
+	// Pull 边触发的 pull 式任务
 	Pull = "__pregel_pull"
-	// NSSep separates each level of a checkpoint namespace hierarchy (e.g. "parent|child").
+	// NSSep 检查点命名空间层级分隔符
 	NSSep = "|"
-	// NSEnd separates the namespace from the task_id within each level (e.g. "ns:task_id").
+	// NSEnd 命名空间与 task_id 分隔符
 	NSEnd = ":"
-	// Conf is the key for the configurable dict in RunnableConfig.
+	// Conf RunnableConfig 中 configurable 键名
 	Conf = "configurable"
-	// NullTaskID is the task_id to use for writes that are not associated with a task.
+	// NullTaskID 非任务关联写入使用的占位 task_id
 	NullTaskID = "00000000-0000-0000-0000-000000000000"
-	// Overwrite is the dict key for the overwrite value.
+	// Overwrite 覆盖写入标记键
 	Overwrite = "__overwrite__"
-	// DefaultCheckpointMaxVersions is the default maximum number of checkpoint versions retained.
+	// DefaultCheckpointMaxVersions 每线程默认保留检查点版本数
 	DefaultCheckpointMaxVersions = 100
-	// DefaultCheckpointListLimit is the default page size for listing checkpoints.
+	// DefaultCheckpointListLimit 列出检查点默认分页大小
 	DefaultCheckpointListLimit = 10
-	// DefaultRecursionLimit is the default maximum Pregel superstep count.
+	// DefaultRecursionLimit Pregel 默认最大超步数
 	DefaultRecursionLimit = 50
 )
 
-// Public constants.
+// 公开常量 — 图节点与追踪标签
 const (
-	// TagNoStream is a tag to disable streaming for a chat model.
+	// TagNoStream 禁用流式输出标签
 	TagNoStream = "nostream"
-	// TagHidden is a tag to hide a node/edge from certain tracing/streaming environments.
+	// TagHidden 在追踪/流式环境中隐藏节点
 	TagHidden = "langsmith:hidden"
-	// End is the last (maybe virtual) node in graph-style Pregel.
+	// End 图式 Pregel 终止虚拟节点
 	End = "__end__"
-	// Start is the first (maybe virtual) node in graph-style Pregel.
+	// Start 图式 Pregel 起始虚拟节点
 	Start = "__start__"
 )
 
-// Reserved contains all reserved keys.
+// Reserved 所有保留键的快速查找表
 var Reserved = map[string]bool{
 	TagHidden:              true,
 	Input:                  true,
@@ -135,7 +137,9 @@ var Reserved = map[string]bool{
 	Conf:                   true,
 }
 
-// IsReserved checks if a key is reserved.
+// IsReserved 判断键是否为引擎保留键
 func IsReserved(key string) bool {
 	return Reserved[key]
 }
+
+// 用户自定义状态键不得与 Reserved 冲突，否则行为未定义。
