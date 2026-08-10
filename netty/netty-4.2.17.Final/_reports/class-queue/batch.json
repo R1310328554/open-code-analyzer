@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T01:31:56Z",
-  "files": [
-    "transport/src/main/java/io/netty/channel/oio/AbstractOioChannel.java",
-    "transport/src/main/java/io/netty/channel/oio/AbstractOioMessageChannel.java",
-    "transport/src/main/java/io/netty/channel/oio/OioByteStreamChannel.java",
-    "transport/src/main/java/io/netty/channel/oio/OioEventLoopGroup.java",
-    "transport/src/main/java/io/netty/channel/pool/AbstractChannelPoolHandler.java",
-    "transport/src/main/java/io/netty/channel/pool/AbstractChannelPoolMap.java",
-    "transport/src/main/java/io/netty/channel/pool/ChannelHealthChecker.java",
-    "transport/src/main/java/io/netty/channel/pool/ChannelPool.java",
-    "transport/src/main/java/io/netty/channel/pool/ChannelPoolHandler.java",
-    "transport/src/main/java/io/netty/channel/pool/ChannelPoolMap.java",
-    "transport/src/main/java/io/netty/channel/pool/FixedChannelPool.java",
-    "transport/src/main/java/io/netty/channel/pool/SimpleChannelPool.java",
-    "transport/src/main/java/io/netty/channel/socket/ChannelInputShutdownEvent.java",
-    "transport/src/main/java/io/netty/channel/socket/ChannelInputShutdownReadComplete.java",
-    "transport/src/main/java/io/netty/channel/socket/ChannelOutputShutdownEvent.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 218,
-  "done": 1695
+  "done": 1710
 }
