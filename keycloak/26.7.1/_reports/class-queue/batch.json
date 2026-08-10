@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/services/managers/BruteForceProtector.java",
     "server-spi-private/src/main/java/org/keycloak/services/managers/BruteForceProtectorFactory.java",
     "server-spi-private/src/main/java/org/keycloak/services/managers/BruteForceProtectorSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/services/resource/AccountResourceProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/services/resource/AccountResourceProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/services/resource/AccountResourceSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/services/resource/RealmResourceProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/services/resource/RealmResourceProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/services/resource/RealmResourceSPI.java",
-    "server-spi-private/src/main/java/org/keycloak/services/scheduled/NamedSessionTask.java",
-    "server-spi-private/src/main/java/org/keycloak/services/scheduled/ScheduledTaskRunner.java",
-    "server-spi-private/src/main/java/org/keycloak/services/ui/extend/UiPageProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/services/ui/extend/UiPageProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/services/ui/extend/UiPageSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/services/ui/extend/UiTabProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/services/ui/extend/UiTabProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/services/ui/extend/UiTabSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/sessions/AuthenticationSessionProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/sessions/AuthenticationSessionSpi.java"
+    "server-spi-private/src/main/java/org/keycloak/services/resource/AccountResourceProvider.java"
   ],
   "remaining_pending": 2548,
-  "done": 3420
+  "done": 3435
 }
