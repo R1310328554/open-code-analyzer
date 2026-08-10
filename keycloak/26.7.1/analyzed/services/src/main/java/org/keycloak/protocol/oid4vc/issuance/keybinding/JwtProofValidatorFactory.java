@@ -20,13 +20,19 @@ package org.keycloak.protocol.oid4vc.issuance.keybinding;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.protocol.oid4vc.model.ProofType;
 
+/**
+ * 创建 {@link JwtProofValidator} 的工厂，proof 类型为 {@link ProofType#JWT}。
+ * <p>默认注入 {@link TrustedAttestationKeyResolver} 解析 attestation/kid 密钥。</p>
+ */
 public class JwtProofValidatorFactory implements ProofValidatorFactory {
 
+    /** @return proof 类型 {@link ProofType#JWT} */
     @Override
     public String getId() {
         return ProofType.JWT;
     }
 
+    /** 创建绑定可信密钥解析器的 JWT proof 校验器。 */
     @Override
     public JwtProofValidator create(KeycloakSession session) {
         AttestationKeyResolver keyResolver = new TrustedAttestationKeyResolver(session);

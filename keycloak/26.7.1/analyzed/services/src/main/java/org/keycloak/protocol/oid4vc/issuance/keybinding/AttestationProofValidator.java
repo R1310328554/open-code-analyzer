@@ -40,7 +40,8 @@ import org.apache.commons.codec.binary.Hex;
 import static org.keycloak.protocol.oid4vc.model.ErrorType.INVALID_NONCE;
 
 /**
- * Validates attestation proofs as per OID4VCI specification.
+ * 按 OID4VCI 规范校验 attestation 类型 proof。
+ * <p>解析 attestation JWT、验证 attested_keys，并对 nonce 做一次性防重放保护。</p>
  *
  * @author <a href="mailto:Rodrick.Awambeng@adorsys.com">Rodrick Awambeng</a>
  * @see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-attestation-proof-type">
@@ -48,8 +49,13 @@ import static org.keycloak.protocol.oid4vc.model.ErrorType.INVALID_NONCE;
  */
 public class AttestationProofValidator extends AbstractProofValidator {
 
+    /** 解析 attestation JWT 签名密钥的可信密钥解析器。 */
     private final AttestationKeyResolver keyResolver;
 
+    /**
+     * @param session Keycloak 会话
+     * @param keyResolver attestation 公钥解析器
+     */
     public AttestationProofValidator(KeycloakSession session, AttestationKeyResolver keyResolver) {
         super(session);
         this.keyResolver = keyResolver;
@@ -77,8 +83,7 @@ public class AttestationProofValidator extends AbstractProofValidator {
                 throw new VCIssuerException(ErrorType.INVALID_PROOF, "No valid attested keys found in attestation proof");
             }
 
-            // Nonce replay protection
-            //
+            // nonce 防重放：写入单次使用缓存
             String nonce = attestationBody.getNonce();
             if (nonce != null) {
                 RealmModel realmModel = keycloakSession.getContext().getRealm();

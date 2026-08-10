@@ -27,33 +27,34 @@ import org.keycloak.common.VerificationException;
 import org.keycloak.provider.Provider;
 
 /**
+ * OID4VCI c_nonce（密码学 nonce）的生成与校验提供方。
+ * <p>JWT 实现将受众等信息编码进 nonce，供 proof/attestation 防重放。</p>
+ *
  * @author Pascal Knüppel
  */
 public interface CNonceHandler extends Provider {
 
     /**
-     * used to build a cNonce in any style. For jwt-based cNonces we will additionally require the audience-values that
-     * should be added into the cNonce
+     * 构建 c_nonce 字符串。JWT 实现会将 {@code audiences} 写入 aud 声明。
      *
-     * @param audiences         the audiences for jwt-based cNonces
-     * @param additionalDetails additional attributes that might be required to build the cNonce and that are handler
-     *                          specific
-     * @return the cNonce in string representation
+     * @param audiences JWT c_nonce 的目标受众列表
+     * @param additionalDetails 实现特定的附加属性（如 source endpoint）
+     * @return c_nonce 字符串
      */
     public String buildCNonce(List<String> audiences, @Nullable Map<String, Object> additionalDetails);
 
     /**
-     * must verify the validity of a cNonce value that has been issued by the {@link #buildCNonce(List, Map)} method.
+     * 校验由 {@link #buildCNonce(List, Map)} 签发的 c_nonce 是否仍有效。
      *
-     * @param cNonce            the cNonce to validate
-     * @param audiences         the expected audiences for jwt-based cNonces
-     * @param additionalDetails additional attributes that might be required to build the cNonce and that are handler
-     *                          specific
+     * @param cNonce 待校验的 c_nonce
+     * @param audiences 期望的 JWT aud 值
+     * @param additionalDetails 实现特定的附加校验属性
+     * @throws VerificationException nonce 无效、过期或签名失败
      */
     public void verifyCNonce(String cNonce, List<String> audiences, @Nullable Map<String, Object> additionalDetails) throws VerificationException;
 
     @Override
     default void close() {
-        // do nothing
+        // 无资源需释放
     }
 }

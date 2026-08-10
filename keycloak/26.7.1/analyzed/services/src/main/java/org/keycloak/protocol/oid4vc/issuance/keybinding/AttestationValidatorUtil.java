@@ -77,7 +77,8 @@ import static org.keycloak.protocol.oid4vc.model.ProofType.JWT;
 import static org.keycloak.services.clientpolicy.executor.FapiConstant.ALLOWED_ALGORITHMS;
 
 /**
- * Utility for validating attestation JWTs as per OID4VCI spec.
+ * 按 OID4VCI 规范校验 key attestation JWT 的工具类。
+ * <p>负责 JWS 头/载荷校验、x5c 链验证、抗抵赖级别匹配及 c_nonce 校验。</p>
  *
  * @author <a href="mailto:Rodrick.Awambeng@adorsys.com">Rodrick Awambeng</a>
  */
@@ -85,7 +86,9 @@ public class AttestationValidatorUtil {
 
     private static final Logger LOGGER = Logger.getLogger(AttestationValidatorUtil.class);
 
+    /** attestation JWT 标准 typ 值。 */
     public static final String ATTESTATION_JWT_TYP = "key-attestation+jwt";
+    /** 已弃用的旧版 typ，为向后兼容仍接受。 */
     @Deprecated
     public static final String LEGACY_ATTESTATION_JWT_TYP = "keyattestation+jwt";
     private static final String CACERTS_PATH = System.getProperty("javax.net.ssl.trustStore",
@@ -94,12 +97,10 @@ public class AttestationValidatorUtil {
             "javax.net.ssl.trustStorePassword", "changeit").toCharArray();
 
     /**
-     * @param requireExpForJwtProof           OID4VCI D.1: {@code exp} MUST be present when the attestation is used with the
-     *                                        {@code jwt} proof type (embedded {@code key_attestation} header).
-     * @param proofTypeKeyForSigningAlgPolicy {@link org.keycloak.protocol.oid4vc.model.ProofType} value
-     *                                        ({@code jwt} or {@code attestation}) to resolve
-     *                                        {@code proof_signing_alg_values_supported}; if {@code null}, only
-     *                                        FAPI {@code ALLOWED_ALGORITHMS} is enforced.
+     * @param requireExpForJwtProof OID4VCI D.1：与 {@code jwt} proof 联用时 attestation 必须含 {@code exp}
+     * @param proofTypeKeyForSigningAlgPolicy 用于解析 {@code proof_signing_alg_values_supported} 的
+     *                                        {@link org.keycloak.protocol.oid4vc.model.ProofType}（{@code jwt} 或 {@code attestation}）；
+     *                                        为 {@code null} 时仅强制 FAPI {@code ALLOWED_ALGORITHMS}
      */
     public static KeyAttestationJwtBody validateAttestationJwt(
             String attestationJwt,
@@ -118,7 +119,7 @@ public class AttestationValidatorUtil {
 
         String payloadString = new String(jwsInput.getContent(), StandardCharsets.UTF_8);
 
-        // Validate that payload is JSON
+        // 确认载荷为合法 JSON
         try {
             JsonSerialization.mapper.readTree(payloadString);
         } catch (JsonProcessingException e) {
@@ -138,7 +139,7 @@ public class AttestationValidatorUtil {
         JWSHeader header = jwsInput.getHeader();
         validateJwsHeader(keycloakSession, header, vcIssuanceContext, proofTypeKeyForSigningAlgPolicy);
 
-        // Verify the signature
+        // 校验 attestation JWT 签名
         Map<String, Object> rawHeader = JsonSerialization.mapper.convertValue(
                 jwsInput.getHeader(), new TypeReference<>() {
                 });
@@ -190,7 +191,7 @@ public class AttestationValidatorUtil {
             throw new VCIssuerException(ErrorType.INVALID_PROOF, "Key attestation has expired");
         }
 
-        // Get resistance level requirements from configuration
+        // 从凭证元数据读取 key_attestations_required 抗抵赖要求
         KeyAttestationsRequired attestationRequirements = getAttestationRequirements(vcIssuanceContext);
         validateResistanceLevel(attestationBody, attestationRequirements);
 
@@ -201,7 +202,7 @@ public class AttestationValidatorUtil {
             throw new VCIssuerException(ErrorType.INVALID_PROOF, "Missing 'nonce' in attestation");
         }
 
-        // Validate nonce if present. If provided, it must correspond to a nonce value provided by Keycloak.
+        // 校验 nonce：须为 Keycloak 此前签发的 c_nonce
         if (attestationBody.getNonce() != null) {
             try {
                 cNonceHandler.verifyCNonce(
@@ -216,7 +217,7 @@ public class AttestationValidatorUtil {
             }
         }
 
-        // Store attested keys in context for later use
+        // 将 attested_keys 写入发放上下文供后续 proof 绑定
         if (attestationBody.getAttestedKeys() != null) {
             vcIssuanceContext.setAttestedKeys(attestationBody.getAttestedKeys());
         }
@@ -238,27 +239,20 @@ public class AttestationValidatorUtil {
     }
 
     /**
-     * validates the configured key_attestations_required attribute against the given attestationBody
+     * 将 attestation 体与元数据中的 {@code key_attestations_required} 配置比对。
      *
-     * @param attestationBody         the body to be validated
-     * @param attestationRequirements the configuration object that is also displayed in the metadata endpoint
+     * @param attestationBody 待校验的 attestation JWT 载荷
+     * @param attestationRequirements 元数据端点暴露的配置对象
      */
     private static void validateResistanceLevel(KeyAttestationJwtBody attestationBody,
                                                 KeyAttestationsRequired attestationRequirements) {
-        // if the KeyAttestationRequired object is null it is not necessary to validate it because the issuer does
-        // not require it:
-        // From the spec:
-        // ----
-        // If the Credential Issuer does not require a key attestation, this parameter MUST NOT be present in the
-        // metadata.
-        // ---
-        // Meaning if the object is null we do not need to validate the resistance level
+        // 若配置为 null 表示发行方不要求 key attestation，无需校验抗抵赖级别（见 OID4VCI 元数据规范）
         if (attestationRequirements != null) {
-            // Validate key_storage if present in attestation and required by config
+            // 校验 key_storage 抗抵赖级别
             validateResistanceLevel(attestationBody.getKeyStorage(),
                     attestationRequirements.getKeyStorage(),
                     "key_storage");
-            // Validate user_authentication if present in attestation and required by config
+            // 校验 user_authentication 抗抵赖级别
             validateResistanceLevel(attestationBody.getUserAuthentication(),
                     attestationRequirements.getUserAuthentication(),
                     "user_authentication");
@@ -266,13 +260,12 @@ public class AttestationValidatorUtil {
     }
 
     /**
-     * Validates the given key_attestations (key_storage or user_authentication) against the current configuration as
-     * provided by the metadata endpoint.
+     * 将 attestation 提供的级别与元数据接受的级别比对。
      *
-     * @param providedLevels the attestation levels to be validated
-     * @param acceptedLevels the attestation levels as exposed by the metadata endpoint
-     * @param levelType      either "key_storage" or "user_authentication"
-     * @throws VCIssuerException if the required resistance level is not met
+     * @param providedLevels attestation JWT 中声明的级别列表
+     * @param acceptedLevels 元数据端点接受的级别列表
+     * @param levelType {@code key_storage} 或 {@code user_authentication}
+     * @throws VCIssuerException 未满足要求的抗抵赖级别时抛出
      */
     private static void validateResistanceLevel(List<String> providedLevels,
                                                 List<String> acceptedLevels,
@@ -280,18 +273,16 @@ public class AttestationValidatorUtil {
             throws VCIssuerException {
 
         if (acceptedLevels == null || acceptedLevels.isEmpty()) {
-            // We accept all provided levels
+            // 未配置接受列表时接受任意提供级别
             return;
         }
 
-        // If both key_storage and user_authentication parameters are absent, the key_attestations_required
-        // parameter may be empty, indicating a key attestation is needed without additional constraints.
-        // from: https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-12.2.4
+        // 规范允许空约束：仅需 attestation 但不要求具体 key_storage/user_authentication 级别
         if (providedLevels == null || providedLevels.isEmpty()) {
             throw new VCIssuerException(ErrorType.INVALID_PROOF, levelType + " is required but was missing.");
         }
 
-        // Check each provided level against the accepted levels
+        // 检查提供级别是否与接受列表有交集
         boolean foundMatch = providedLevels.stream().anyMatch(acceptedLevels::contains);
         if (!foundMatch) {
             throw new VCIssuerException(ErrorType.INVALID_PROOF,
@@ -301,7 +292,7 @@ public class AttestationValidatorUtil {
     }
 
     /**
-     * Credential Issuer metadata {@code proof_signing_alg_values_supported} for the given proof type, if configured.
+     * 从凭证配置解析指定 proof 类型的 {@code proof_signing_alg_values_supported}。
      */
     private static Optional<List<String>> resolveProofSigningAlgorithms(
             VCIssuanceContext vcIssuanceContext, String proofTypeKey) {
@@ -360,8 +351,8 @@ public class AttestationValidatorUtil {
     }
 
     /**
-     * Validates x5c certificate chain and converts leaf certificate key to JWK.
-     * Can be reused by proof validators that accept x5c as proof key source.
+     * 校验 x5c 证书链并将叶子证书公钥转为 JWK。
+     * <p>可被接受 x5c 作为证明密钥来源的 proof 校验器复用。</p>
      */
     static JWK resolveJwkFromValidatedX5c(List<String> x5cList, String alg) throws VCIssuerException {
 
@@ -370,17 +361,17 @@ public class AttestationValidatorUtil {
             List<X509Certificate> certChain = new ArrayList<>();
 
             for (String certBase64 : x5cList) {
-                // Use Keycloak's Base64 implementation for decoding x5c certificates
+                // 使用 Base64 解码 x5c 中的 DER 证书
                 byte[] certBytes = Base64.getMimeDecoder().decode(certBase64);
                 try (InputStream in = new ByteArrayInputStream(certBytes)) {
                     certChain.add((X509Certificate) cf.generateCertificate(in));
                 }
             }
 
-            // Create a certificate path
+            // 构建 CertPath 供 PKIX 校验
             CertPath certPath = cf.generateCertPath(certChain);
 
-            // Check if this is a self-signed certificate
+            // 拒绝自签名证书用于 key attestation
             X509Certificate firstCert = certChain.get(0);
             boolean isSelfSigned = firstCert.getSubjectX500Principal().equals(firstCert.getIssuerX500Principal());
 
@@ -389,14 +380,14 @@ public class AttestationValidatorUtil {
                         "Self-signed certificates are not accepted for key attestation");
             }
 
-            // Validate certificate chain
+            // 使用系统信任库做 PKIX 链验证
             CertPathValidator validator = CertPathValidator.getInstance("PKIX");
             PKIXParameters params = new PKIXParameters(getTrustAnchors());
             params.setRevocationEnabled(false);
 
             validator.validate(certPath, params);
 
-            // Get public key from first certificate
+            // 取链首（叶子）证书公钥
             PublicKey publicKey = certChain.get(0).getPublicKey();
             return convertPublicKeyToJWK(publicKey, alg, certChain);
 

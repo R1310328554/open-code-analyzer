@@ -27,14 +27,29 @@ import org.keycloak.jose.jwk.JWKParser;
 import org.keycloak.jose.jwk.OKPPublicJWK;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * {@link ProofValidator} 抽象基类，封装 JWK 到签名验证器的通用转换逻辑。
+ * <p>子类（JWT/Attestation proof）复用 {@link #getVerifier(JWK, String)} 完成密钥绑定校验。</p>
+ */
 public abstract class AbstractProofValidator implements ProofValidator {
 
+    /** 当前 Keycloak 会话，用于获取 {@link SignatureProvider}。 */
     protected final KeycloakSession keycloakSession;
 
+    /**
+     * @param keycloakSession 当前请求会话
+     */
     protected AbstractProofValidator(KeycloakSession keycloakSession) {
         this.keycloakSession = keycloakSession;
     }
 
+    /**
+     * 根据 JWK 与 JWS 算法构建签名验证上下文。
+     *
+     * @param jwk 证明或 attestation 中的公钥
+     * @param jwsAlgorithm JWS 头中的 alg 值
+     * @return 可用于校验签名的 {@link SignatureVerifierContext}
+     */
     protected SignatureVerifierContext getVerifier(JWK jwk, String jwsAlgorithm) throws VerificationException {
         SignatureProvider signatureProvider = keycloakSession.getProvider(SignatureProvider.class, jwsAlgorithm);
         KeyWrapper keyWrapper = getKeyWrapper(jwk, jwsAlgorithm);
@@ -46,11 +61,10 @@ public abstract class AbstractProofValidator implements ProofValidator {
         KeyWrapper keyWrapper = new KeyWrapper();
         keyWrapper.setType(jwk.getKeyType());
 
-        // Use the algorithm provided by the caller, and not the one inside the jwk (if any)
-        // As jws validation will also check that one against the value "none"
+        // 使用调用方传入的算法，而非 JWK 内嵌算法（若有），避免与 JWS 校验逻辑冲突
         keyWrapper.setAlgorithm(algorithm);
 
-        // Set the curve if any
+        // 若为 OKP 密钥则设置曲线参数
         if (jwk.getOtherClaim(OKPPublicJWK.CRV, String.class) != null) {
             keyWrapper.setCurve(jwk.getOtherClaim(OKPPublicJWK.CRV, String.class));
         }

@@ -21,17 +21,20 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.protocol.oid4vc.model.ProofType;
 
 /**
- * Factory for creating AttestationProofValidator instances with configurable trusted keys.
+ * 创建带可信密钥配置的 {@link AttestationProofValidator} 实例的工厂。
+ * <p>默认使用 {@link TrustedAttestationKeyResolver} 解析 attestation 签名密钥。</p>
  *
  * @author <a href="mailto:Rodrick.Awambeng@adorsys.com">Rodrick Awambeng</a>
  */
 public class AttestationProofValidatorFactory implements ProofValidatorFactory {
 
+    /** @return proof 类型标识 {@link ProofType#ATTESTATION} */
     @Override
     public String getId() {
         return ProofType.ATTESTATION;
     }
 
+    /** 创建绑定 Realm 可信密钥的 attestation proof 校验器。 */
     @Override
     public AttestationProofValidator create(KeycloakSession session) {
         AttestationKeyResolver resolver = new TrustedAttestationKeyResolver(session);

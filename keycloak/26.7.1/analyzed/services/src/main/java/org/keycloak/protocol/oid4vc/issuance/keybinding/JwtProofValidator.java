@@ -59,7 +59,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.jboss.logging.Logger;
 
 /**
- * Validates the conformance and authenticity of presented JWT proofs.
+ * 校验客户端提交的 JWT 类型 cryptographic binding proof 的合规性与真实性。
+ * <p>支持 jwk/kid/x5c 密钥来源、可选 key_attestation 头及 c_nonce 校验。</p>
  *
  * @see "https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-jwt-proof-type"
  */
@@ -67,12 +68,18 @@ public class JwtProofValidator extends AbstractProofValidator {
 
     private static final Logger LOGGER = Logger.getLogger(JwtProofValidator.class);
 
+    /** JWT proof 要求的 typ 值。 */
     public static final String PROOF_JWT_TYP = "openid4vci-proof+jwt";
+    /** 当前实现支持的密码学绑定方法。 */
     private static final String CRYPTOGRAPHIC_BINDING_METHOD_JWK = "jwk";
+    /** JWS 头中 key attestation JWT 的声明名。 */
     private static final String KEY_ATTESTATION_CLAIM = "key_attestation";
     
+    /** proof iat 允许的最大年龄（秒）。 */
     private static final int PROOF_MAX_AGE_SECONDS = 30;
+    /** 允许的未来时钟偏差（秒）。 */
     private static final int PROOF_FUTURE_SKEW_SECONDS = 10;
+    /** 解析 kid 对应可信公钥的解析器。 */
     private final AttestationKeyResolver keyResolver;
 
     public JwtProofValidator(KeycloakSession keycloakSession, AttestationKeyResolver keyResolver) {
@@ -95,19 +102,16 @@ public class JwtProofValidator extends AbstractProofValidator {
     }
 
     /*
-     * Validates a proof provided by the client if any.
+     * 校验客户端提交的 JWT proof 数组。
+     * <p>若凭证配置不要求 proof 则返回 {@code null}；否则返回校验通过的 JWK 列表用于密钥绑定。</p>
      *
-     * Returns null if there is no need to include a key binding in the credential
-     *
-     * Return the JWK to be included as key binding in the JWK if the provided proof was correctly validated
-     *
-     * @param vcIssuanceContext
-     * @return
-     * @throws VCIssuerException
-     * @throws JWSInputException
-     * @throws VerificationException
-     * @throws IllegalStateException: is credential type badly configured
-     * @throws IOException
+     * @param vcIssuanceContext 凭证发放上下文
+     * @return 绑定公钥 JWK 列表，或 {@code null}
+     * @throws VCIssuerException proof 无效或配置不匹配
+     * @throws JWSInputException JWT 解析失败
+     * @throws VerificationException 签名或 nonce 校验失败
+     * @throws IllegalStateException 凭证类型配置错误
+     * @throws IOException 载荷反序列化失败
      */
     private List<JWK> validateJwtProof(VCIssuanceContext vcIssuanceContext) throws VCIssuerException, JWSInputException, VerificationException, IOException {
 
@@ -119,10 +123,10 @@ public class JwtProofValidator extends AbstractProofValidator {
 
         List<String> jwtProofs = optionalProof.get();
 
-        // Check key binding config for jwt. Only type supported.
+        // 检查 JWT 密码学绑定配置（当前仅支持 jwk 方法）
         checkCryptographicKeyBinding(vcIssuanceContext);
 
-        // Validate all JWT proofs in the array
+        // 逐条校验 proofs.jwt 数组中的 JWT
         List<JWK> validJwks = new ArrayList<>();
 
         for (int i = 0; i < jwtProofs.size(); i++) {
@@ -145,7 +149,7 @@ public class JwtProofValidator extends AbstractProofValidator {
         JWSHeader jwsHeader = jwsInput.getHeader();
         validateJwsHeader(vcIssuanceContext, jwsHeader);
 
-        // Parse raw JOSE header claims so we can resolve optional key_attestation consistently.
+        // 解析原始 JOSE 头以便一致处理可选 key_attestation
         Map<String, Object> headerClaims = JsonSerialization.mapper.convertValue(jwsHeader,
                 new TypeReference<>() {
                 });
@@ -153,7 +157,7 @@ public class JwtProofValidator extends AbstractProofValidator {
         validateNoPrivateKeyInHeaderClaims(algorithm, headerClaims);
         KeyAttestationInfo attestationInfo = resolveHeaderAttestation(vcIssuanceContext, headerClaims);
 
-        // Handle both JWK and kid cases for the proof key
+        // 从 jwk/kid/x5c 解析 proof 签名公钥
         JWK jwk;
         if (jwsHeader.getKey() != null) {
             jwk = jwsHeader.getKey();
@@ -161,7 +165,7 @@ public class JwtProofValidator extends AbstractProofValidator {
             if (attestationInfo.isPresent()) {
                 List<JWK> attestedKeys = attestationInfo.attestedKeys();
 
-                // Resolve key from attestation using kid
+                // 从 attestation 的 attested_keys 中按 kid 匹配
                 jwk = attestedKeys.stream()
                         .filter(k -> jwsHeader.getKeyId().equals(k.getKeyId()))
                         .findFirst()
@@ -180,7 +184,7 @@ public class JwtProofValidator extends AbstractProofValidator {
             throw new VCIssuerException(ErrorType.INVALID_PROOF, "Missing binding key. JWT must contain either jwk, kid, or x5c in header.");
         }
 
-        // If a key attestation is present, proof key must be one of attested_keys.
+        // 若存在 key_attestation，proof 公钥须属于 attested_keys
         if (attestationInfo.isPresent()) {
             boolean attested = attestationInfo.attestedKeys().stream()
                     .anyMatch(attestedKey -> jwkMaterialEquals(attestedKey, jwk));
@@ -190,7 +194,7 @@ public class JwtProofValidator extends AbstractProofValidator {
             }
         }
 
-        // Rest of the validation
+        // 校验载荷声明并验证 JWS 签名
         AccessToken proofPayload = JsonSerialization.readValue(jwsInput.getContent(), AccessToken.class);
         validateProofPayload(vcIssuanceContext, proofPayload);
 
@@ -207,15 +211,13 @@ public class JwtProofValidator extends AbstractProofValidator {
     }
 
     private void checkCryptographicKeyBinding(VCIssuanceContext vcIssuanceContext) {
-        // If the credential configuration does not require cryptographic holder binding, the metadata will omit
-        // cryptographic_binding_methods_supported and proof_types_supported. In that case, we must not enforce
-        // JWT-based cryptographic binding.
+        // 元数据未声明绑定方法时不强制 JWT proof；但若客户端仍提交 proof 则拒绝
         if (vcIssuanceContext.getCredentialConfig().getCryptographicBindingMethodsSupported() == null ||
                 vcIssuanceContext.getCredentialConfig().getCryptographicBindingMethodsSupported().isEmpty()) {
             return;
         }
 
-        // If binding is required, this implementation currently only supports the "jwk" method.
+        // 需要绑定时当前实现仅支持 jwk 方法
         if (!vcIssuanceContext.getCredentialConfig().getCryptographicBindingMethodsSupported()
                 .contains(CRYPTOGRAPHIC_BINDING_METHOD_JWK)) {
             throw new IllegalStateException("This SD-JWT implementation only supports jwk as cryptographic binding method");
@@ -231,10 +233,7 @@ public class JwtProofValidator extends AbstractProofValidator {
         CredentialRequest credentialRequest = vcIssuanceContext.getCredentialRequest();
         Proofs proofs = credentialRequest != null ? credentialRequest.getProofs() : null;
 
-        // If no proof types are configured for this credential configuration, cryptographic binding is
-        // not required, and we must not enforce presence of proofs. However, if a JWT proof is supplied,
-        // reject it explicitly rather than silently ignoring an unconfigured proof input.
-        // Note: do not use Optional.map(getProofTypesSupported): a null ProofTypesSupported must still run this logic.
+        // 未配置 proof_types 时不强制 proof；但若客户端仍提交 JWT proof 则显式拒绝
         if (proofTypesSupported == null
                 || proofTypesSupported.getSupportedProofTypes() == null
                 || proofTypesSupported.getSupportedProofTypes().isEmpty()) {
@@ -251,7 +250,7 @@ public class JwtProofValidator extends AbstractProofValidator {
         Optional.ofNullable(supportedProofTypes.get(ProofType.JWT))
                 .orElseThrow(() -> new VCIssuerException(ErrorType.INVALID_PROOF, "SD-JWT supports only jwt proof type."));
 
-        // At this point, JWT is an explicitly supported proof type and must be enforced.
+        // 已声明支持 JWT proof 时必须提供有效 proof
         if (proofs == null || proofs.getJwt() == null || proofs.getJwt().isEmpty()) {
             throw new VCIssuerException(ErrorType.INVALID_PROOF, "Credential configuration requires a proof of type: " + ProofType.JWT);
         }
@@ -264,12 +263,12 @@ public class JwtProofValidator extends AbstractProofValidator {
     }
 
     /**
-     * As we limit accepted algorithm to the ones listed by the issuer, we can omit checking for "none"
-     * The Algorithm enum class does not list the none value anyway.
+     * 校验 JWS 头：alg、typ、互斥的 jwk/kid/x5c 及 trust_chain 拒绝。
+     * <p>算法须为发行方支持的非对称算法，且 typ 须为 {@link #PROOF_JWT_TYP}。</p>
      *
-     * @param vcIssuanceContext
-     * @param jwsHeader
-     * @throws VCIssuerException
+     * @param vcIssuanceContext 发放上下文（含 proof 签名算法白名单）
+     * @param jwsHeader 待校验的 JWS 头
+     * @throws VCIssuerException 头字段不合规
      */
     private void validateJwsHeader(VCIssuanceContext vcIssuanceContext, JWSHeader jwsHeader) throws VCIssuerException {
         String alg = Optional.ofNullable(jwsHeader.getAlgorithm())
@@ -279,8 +278,7 @@ public class JwtProofValidator extends AbstractProofValidator {
             throw new VCIssuerException(ErrorType.INVALID_PROOF, "Proof signature algorithm not supported: " + alg);
         }
 
-        // As we limit accepted algorithm to the ones listed by the server, we can omit checking for "none"
-        // The Algorithm enum class does not list the none value anyway.
+        // 算法已在白名单约束，无需单独拒绝 alg=none
         Optional.ofNullable(vcIssuanceContext.getCredentialConfig())
                 .map(SupportedCredentialConfiguration::getProofTypesSupported)
                 .map(ProofTypesSupported::getSupportedProofTypes)
@@ -302,7 +300,7 @@ public class JwtProofValidator extends AbstractProofValidator {
             throw new VCIssuerException(ErrorType.INVALID_PROOF, "Header claims kid, jwk, and x5c are mutually exclusive");
         }
 
-        // OID4VCI F.1: trust_chain is not implemented (OpenID Federation verification); reject explicitly.
+        // OID4VCI F.1：未实现 trust_chain（OpenID Federation），显式拒绝
         if (jwsHeader.getOtherClaims() != null && jwsHeader.getOtherClaims().get("trust_chain") != null) {
             throw new VCIssuerException(ErrorType.INVALID_PROOF,
                     "trust_chain JOSE header is not supported");
@@ -347,7 +345,7 @@ public class JwtProofValidator extends AbstractProofValidator {
     }
 
     /**
-     * Compare key material instead of object identity so we can correctly match keys even when kid is absent.
+     * 比较公钥材料而非对象引用，以便在缺少 kid 时仍能正确匹配 attested_keys。
      */
     private boolean jwkMaterialEquals(JWK left, JWK right) {
         if (left == null || right == null) {
@@ -363,13 +361,13 @@ public class JwtProofValidator extends AbstractProofValidator {
             return Objects.equals(leftPublicKey.getAlgorithm(), rightPublicKey.getAlgorithm())
                     && Arrays.equals(leftPublicKey.getEncoded(), rightPublicKey.getEncoded());
         } catch (RuntimeException e) {
-            // If one key cannot be parsed into a public key, treat as non-match and let caller fail with INVALID_PROOF.
+            // 无法解析为公钥时视为不匹配，由调用方返回 INVALID_PROOF
             return false;
         }
     }
 
     /**
-     * Rejects proofs containing private key material in their JWK header claim.
+     * 拒绝 JWK 头声明中包含私钥材料的 proof。
      */
     void validateNoPrivateKeyInHeaderClaims(String algorithm, Map<String, Object> headerClaims) {
         Object jwkClaim = headerClaims.get("jwk");
@@ -412,8 +410,7 @@ public class JwtProofValidator extends AbstractProofValidator {
         String expectedClientId = requestToken != null ? requestToken.getIssuedFor() : null;
         String proofIssuer = proofPayload.getIssuer();
 
-        // OID4VCI F.1: For client-bound flows, iss is optional, but if present it must match requesting client_id.
-        // For anonymous flows, iss must be omitted.
+        // OID4VCI F.1：客户端绑定流 iss 可选但须匹配 client_id；匿名流不得含 iss
         if (expectedClientId == null || expectedClientId.isBlank()) {
             if (proofIssuer != null) {
                 throw new VCIssuerException(ErrorType.INVALID_PROOF, "Issuer claim must be omitted for anonymous flow");
@@ -423,8 +420,7 @@ public class JwtProofValidator extends AbstractProofValidator {
                     "Issuer claim must be the client_id of the request: " + expectedClientId);
         }
 
-        // The audience of the proof MUST be the Credential Issuer Identifier.
-        // https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-jwt-proof-type
+        // proof 的 aud 必须为凭证发行方标识符（单值）
         String credentialIssuer = OID4VCIssuerWellKnownProvider.getIssuer(keycloakSession.getContext());
         String[] audiences = Optional.ofNullable(proofPayload.getAudience())
                 .orElseThrow(() -> new VCIssuerException(ErrorType.INVALID_PROOF,
@@ -434,7 +430,7 @@ public class JwtProofValidator extends AbstractProofValidator {
                     "Proof not produced for this audience. Audience claim must be single value: " + credentialIssuer + " but are " + Arrays.asList(audiences));
         }
 
-        // Validate mandatory iat.
+        // 校验必填 iat 及 exp/nbf 时间窗口
         Long iat = Optional.ofNullable(proofPayload.getIat())
                 .orElseThrow(() -> new VCIssuerException(ErrorType.INVALID_PROOF, "Missing proof issuing time. iat claim must be provided."));
         long now = Time.currentTime();

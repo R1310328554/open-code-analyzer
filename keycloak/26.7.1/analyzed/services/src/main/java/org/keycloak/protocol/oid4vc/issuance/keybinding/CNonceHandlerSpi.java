@@ -23,12 +23,16 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * OID4VCI c_nonce 处理 SPI，注册 {@link CNonceHandler} 实现。
+ *
  * @author Pascal Knüppel
  */
 public class CNonceHandlerSpi implements Spi {
 
+    /** SPI 注册名称。 */
     public static final String SPI_NAME = "oid4vci-c-nonce-spi";
 
+    /** 内部 SPI。 */
     @Override
     public boolean isInternal() {
         return true;

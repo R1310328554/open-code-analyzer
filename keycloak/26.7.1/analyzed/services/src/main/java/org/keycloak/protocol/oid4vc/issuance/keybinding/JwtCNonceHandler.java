@@ -52,20 +52,28 @@ import org.keycloak.saml.RandomSecret;
 import org.jboss.logging.Logger;
 
 /**
+ * 基于 JWT 的 {@link CNonceHandler} 实现。
+ * <p>使用 Realm 活跃签名密钥签发 c_nonce，校验 iss/aud/salt/exp 及可选附加声明。</p>
+ *
  * @author Pascal Knüppel
  */
 public class JwtCNonceHandler implements CNonceHandler {
 
+    /** 附加声明键：标识 nonce 来源端点。 */
     public static final String SOURCE_ENDPOINT = OID4VCIConstants.SOURCE_ENDPOINT;
 
+    /** salt 最小长度基准（字节经 Base64 编码后字符数）。 */
     public static final int NONCE_DEFAULT_LENGTH = 50;
 
+    /** salt 长度的随机附加偏移上限。 */
     public static final int NONCE_LENGTH_RANDOM_OFFSET = 15;
 
     private static final Logger logger = Logger.getLogger(JwtCNonceHandler.class);
 
+    /** 当前会话。 */
     private final KeycloakSession keycloakSession;
 
+    /** 用于签发 c_nonce 的 Realm 活跃签名密钥。 */
     private final KeyWrapper signingKey;
 
     public JwtCNonceHandler(KeycloakSession keycloakSession) {
@@ -77,13 +85,13 @@ public class JwtCNonceHandler implements CNonceHandler {
     public String buildCNonce(List<String> audiences, Map<String, Object> additionalDetails) {
         RealmModel realm = keycloakSession.getContext().getRealm();
         final String issuer = OID4VCIssuerWellKnownProvider.getIssuer(keycloakSession.getContext());
-        // TODO discussion about the attribute name to use
+        // TODO：Realm 属性名待讨论
         final Integer nonceLifetimeSeconds = realm.getAttribute(OID4VCIConstants.C_NONCE_LIFETIME_IN_SECONDS, 60);
         audiences = Optional.ofNullable(audiences).orElseGet(Collections::emptyList);
         final long nowSeconds = Time.currentTime();
         final long expiresAt = nowSeconds + nonceLifetimeSeconds;
         final int nonceLength = NONCE_DEFAULT_LENGTH + SecretGenerator.nextInt(NONCE_LENGTH_RANDOM_OFFSET);
-        // this generated value itself is basically just a salt-value for the generated token, which itself is the nonce.
+        // strongSalt 作为 JWT 内嵌盐值，整个 JWT 字符串即为 c_nonce
         final String strongSalt = Base64.getEncoder().encodeToString(RandomSecret.createRandomSecret(nonceLength));
 
         JsonWebToken jwtCNonce = new JwtCNonce().salt(strongSalt)
@@ -167,9 +175,16 @@ public class JwtCNonceHandler implements CNonceHandler {
                                                                                  signingKey.getAlgorithm())
                                                                     .verifier(signingKey);
         verifier.verifierContext(signatureVerifier);
-        verifier.verify(); // throws a VerificationException on failure
+        verifier.verify(); // 失败时抛出 VerificationException
     }
 
+    /**
+     * 校验 JWT 附加声明与期望值是否相等。
+     *
+     * @param key 声明名
+     * @param object 期望值
+     * @param actualValue JWT 中的实际值
+     */
     protected boolean checkAttributeEquality(String key, Object object, Object actualValue) throws VerificationException {
         boolean isEqual = Objects.equals(object, actualValue);
         if (!isEqual) {
@@ -183,6 +198,12 @@ public class JwtCNonceHandler implements CNonceHandler {
         return isEqual;
     }
 
+    /**
+     * 选择 Realm 签名密钥：优先 ES256，失败时回退 RS256。
+     *
+     * @param realm 当前 Realm
+     * @return 用于签发 c_nonce 的密钥包装
+     */
     protected KeyWrapper selectSigningKey(RealmModel realm) {
         KeyWrapper signingKey;
         try {
@@ -191,7 +212,7 @@ public class JwtCNonceHandler implements CNonceHandler {
             logger.debugf("Failed to find active ES256 signing key for realm %s. Falling back to RSA...",
                          realm.getName());
             logger.debug(ex.getMessage(), ex);
-            // use RSA only as fallback since the preferred algorithm by OpenID4VC is elliptic curve
+            // OpenID4VC 偏好椭圆曲线，RSA 仅作回退
             signingKey = keycloakSession.keys().getActiveKey(realm, KeyUse.SIG, Algorithm.RS256);
         }
         return signingKey;

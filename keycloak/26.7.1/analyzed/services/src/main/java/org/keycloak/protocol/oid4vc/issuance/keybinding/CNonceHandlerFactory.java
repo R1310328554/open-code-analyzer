@@ -23,13 +23,15 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link CNonceHandler} 的 {@link ProviderFactory}。
+ *
  * @author Pascal Knüppel
  */
 public interface CNonceHandlerFactory extends ProviderFactory<CNonceHandler> {
 
     @Override
     default void init(Config.Scope config) {
-        // do nothing
+        // 无操作
     }
 
     @Override

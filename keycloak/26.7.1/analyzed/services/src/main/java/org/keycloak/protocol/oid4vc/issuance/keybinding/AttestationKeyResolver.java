@@ -22,15 +22,20 @@ import java.util.Map;
 import org.keycloak.jose.jwk.JWK;
 
 /**
- * Interface for resolving attestation public keys by kid for JWT attestation validation.
- * Implementations may use local registries, remote JWKS, or other trusted sources.
+ * 按 kid 解析 attestation 公钥的接口，供 JWT attestation 校验使用。
+ * <p>实现可从本地注册表、远程 JWKS 或其他可信源解析密钥。</p>
  *
  * @author <a href="mailto:Rodrick.Awambeng@adorsys.com">Rodrick Awambeng</a>
  */
 public interface AttestationKeyResolver {
     /**
-     * Resolves a JWK for the given kid, header, and payload context.
-     * Returns null if the key cannot be resolved or is not trusted.
+     * 根据 kid、JWS 头与载荷上下文解析 JWK。
+     * <p>无法解析或密钥不可信时返回 {@code null}。</p>
+     *
+     * @param kid JWT 头中的 key id
+     * @param header JWS 头声明映射
+     * @param payload attestation JWT 载荷声明
+     * @return 可信公钥 JWK，或 {@code null}
      */
     JWK resolveKey(String kid, Map<String, Object> header, Map<String, Object> payload);
 }
