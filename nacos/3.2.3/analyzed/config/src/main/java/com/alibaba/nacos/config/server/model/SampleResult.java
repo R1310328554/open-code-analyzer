@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
+ * 采样结果封装：用于长轮询/监听诊断，返回各 groupKey 对应的监听状态快照。
  * SampleResult.
  *
  * @author Nacos
@@ -28,12 +29,15 @@ public class SampleResult implements Serializable {
     
     private static final long serialVersionUID = 2587823382317389453L;
     
+    /** groupKey → 监听状态描述 的映射（键为 dataId+group+tenant 组合） */
     private Map<String, String> lisentersGroupkeyStatus;
     
+    /** @return 各 groupKey 的监听状态映射 */
     public Map<String, String> getLisentersGroupkeyStatus() {
         return lisentersGroupkeyStatus;
     }
     
+    /** @param lisentersGroupkeyStatus 监听状态映射 */
     public void setLisentersGroupkeyStatus(Map<String, String> lisentersGroupkeyStatus) {
         this.lisentersGroupkeyStatus = lisentersGroupkeyStatus;
     }

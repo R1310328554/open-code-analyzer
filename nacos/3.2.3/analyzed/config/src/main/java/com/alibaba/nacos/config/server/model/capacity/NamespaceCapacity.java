@@ -17,6 +17,8 @@
 package com.alibaba.nacos.config.server.model.capacity;
 
 /**
+ * 命名空间级配置容量：在 {@link Capacity} 基础上绑定 namespaceId，
+ * 用于限制整个租户/命名空间下的配置总量。
  * Namespace Capacity.
  *
  * @author hexu.hxy
@@ -26,6 +28,7 @@ public class NamespaceCapacity extends Capacity {
     
     private static final long serialVersionUID = -1238179608935781384L;
     
+    /** 命名空间 ID（tenant） */
     private String namespaceId;
     
     public String getNamespaceId() {

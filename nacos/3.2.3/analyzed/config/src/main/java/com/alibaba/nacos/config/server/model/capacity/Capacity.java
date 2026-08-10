@@ -23,6 +23,8 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 
 /**
+ * 配置容量基类：记录配额（quota）、已用量（usage）及单条/聚合大小上限，
+ * 供 {@link GroupCapacity} 与 {@link NamespaceCapacity} 继承扩展。
  * Capacity.
  *
  * @author hexu.hxy
@@ -33,20 +35,28 @@ public class Capacity implements Serializable {
     private static final long serialVersionUID = 77343194329627468L;
     
     @JsonSerialize(using = ToStringSerializer.class)
+    /** 容量记录主键 ID */
     private Long id;
     
+    /** 允许的配置条目数量上限（配额） */
     private Integer quota;
     
+    /** 当前已使用的配置条目数 */
     private Integer usage;
     
+    /** 单条配置内容最大字节数 */
     private Integer maxSize;
     
+    /** 单条配置允许的最大聚合子项数量 */
     private Integer maxAggrCount;
     
+    /** 单条配置聚合内容总大小上限（字节） */
     private Integer maxAggrSize;
     
+    /** 记录创建时间 */
     private Timestamp gmtCreate;
     
+    /** 记录最近修改时间 */
     private Timestamp gmtModified;
     
     public Long getId() {

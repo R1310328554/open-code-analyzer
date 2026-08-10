@@ -17,17 +17,26 @@
 package com.alibaba.nacos.config.server.model;
 
 /**
+ * Nacos 默认配置缓存后处理器：实现 {@link ConfigCachePostProcessor} SPI，
+ * 在配置写入内存缓存后执行 MD5 等后处理逻辑（当前实现为空操作，保留扩展点）。
  * The type Nacos config cache md 5 post processor.
  *
  * @author Sunrisea
  */
 public class NacosConfigCachePostProcessor implements ConfigCachePostProcessor {
     
+    /** {@inheritDoc} 返回处理器标识 "nacos"，供 {@link ConfigCachePostProcessorDelegate} 路由。 */
     @Override
     public String getName() {
         return "nacos";
     }
     
+    /**
+     * 配置缓存写入后的后处理钩子。
+     *
+     * @param configCache 已更新的内存缓存条目
+     * @param content     配置正文内容
+     */
     @Override
     public void postProcess(ConfigCache configCache, String content) {
     }

@@ -17,6 +17,8 @@
 package com.alibaba.nacos.config.server.model.capacity;
 
 /**
+ * 分组级配置容量：在 {@link Capacity} 基础上绑定 groupName，
+ * 用于限制单个配置分组下的条目数与内容大小。
  * Group Capacity.
  *
  * @author hexu.hxy
@@ -26,6 +28,7 @@ public class GroupCapacity extends Capacity {
     
     private static final long serialVersionUID = 5888791286289014878L;
     
+    /** 配置分组名称 */
     private String groupName;
     
     public String getGroupName() {

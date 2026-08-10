@@ -23,6 +23,8 @@ import com.alibaba.nacos.api.model.NacosForm;
 import org.springframework.http.HttpStatus;
 
 /**
+ * 配置 HTTP 请求表单基类：封装发布/更新配置所需的 dataId、group、命名空间、
+ * 正文、标签、灰度规则及元数据字段，实现 {@link NacosForm} 参数校验。
  * ConfigForm.
  *
  * @author dongyafei
@@ -32,44 +34,62 @@ public class ConfigForm implements NacosForm, Cloneable {
     
     private static final long serialVersionUID = 4124932564086863921L;
     
+    /** 配置 dataId，全局唯一标识配置名 */
     private String dataId;
     
     /**
+     * 配置分组（已废弃，请改用 {@link ConfigFormV3#groupName}）。
      * Deprecated, please use {@link ConfigFormV3#groupName} replaced.
      */
     @Deprecated
     private String group;
     
+    /** 命名空间 ID，默认为空字符串表示 public 命名空间 */
     private String namespaceId = StringUtils.EMPTY;
     
+    /** 配置正文内容 */
     private String content;
     
+    /** 标签维度值，用于标签路由场景 */
     private String tag;
     
+    /** 关联应用名称，便于控制台检索 */
     private String appName;
     
+    /** 操作来源用户 */
     private String srcUser;
     
+    /** 配置标签，逗号分隔 */
     private String configTags;
     
+    /** 加密配置的数据密钥 */
     private String encryptedDataKey;
     
+    /** 灰度配置名称 */
     private String grayName;
     
+    /** 灰度匹配规则表达式 */
     private String grayRuleExp;
     
+    /** 灰度版本号 */
     private String grayVersion;
     
+    /** 灰度优先级，数值越大优先级越高 */
     private int grayPriority;
     
+    /** 配置描述说明 */
     private String desc;
     
+    /** 配置用途说明 */
     private String use;
     
+    /** 配置生效范围或影响说明 */
     private String effect;
     
+    /** 配置内容类型（text、json、yaml 等） */
     private String type;
     
+    /** 配置内容 Schema 定义 */
     private String schema;
     
     public ConfigForm() {
@@ -261,6 +281,7 @@ public class ConfigForm implements NacosForm, Cloneable {
     }
     
     /**
+     * 校验表单参数，并额外要求 content 非空。
      * Validate form parameter and include validate `content` parameters.
      *
      * @throws NacosApiException NacosApiException

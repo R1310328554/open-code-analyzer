@@ -24,6 +24,8 @@ import com.alibaba.nacos.api.model.NacosForm;
 import org.springframework.http.HttpStatus;
 
 /**
+ * 更新配置容量表单：用于控制台或 OpenAPI 调整命名空间/分组的
+ * 配额、单条大小及聚合上限，至少需提供一项容量参数。
  * This form is used to update capacity-related configurations.
  *
  * @author Nacos
@@ -32,16 +34,22 @@ public class UpdateCapacityForm implements NacosForm {
     
     private static final long serialVersionUID = -1912905276914026856L;
     
+    /** 目标配置分组，与 namespaceId 二选一或同时指定 */
     private String groupName;
     
+    /** 目标命名空间 ID */
     private String namespaceId;
     
+    /** 配置条目数量配额上限 */
     private Integer quota;
     
+    /** 单条配置内容最大字节数 */
     private Integer maxSize;
     
+    /** 单条配置最大聚合子项数 */
     private Integer maxAggrCount;
     
+    /** 单条配置聚合内容总大小上限 */
     private Integer maxAggrSize;
     
     public String getGroupName() {
@@ -101,6 +109,7 @@ public class UpdateCapacityForm implements NacosForm {
     }
     
     /**
+     * 校验 namespaceId 与 groupName：二者均为空时触发全量容量初始化并抛错。
      * Check namespaceId and groupName.
      *
      * @param capacityService capacity service

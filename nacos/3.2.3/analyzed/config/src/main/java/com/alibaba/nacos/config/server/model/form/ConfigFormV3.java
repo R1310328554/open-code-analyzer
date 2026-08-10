@@ -22,6 +22,8 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import org.springframework.http.HttpStatus;
 
 /**
+ * Nacos HTTP 配置表单 V3：使用 groupName 替代已废弃的 group 字段，
+ * 与 OpenAPI v3 命名保持一致，校验时将 groupName 同步至父类 group。
  * Nacos HTTP config form v3, use `groupName` replace `group`.
  *
  * @author xiweng.yy
@@ -30,6 +32,7 @@ public class ConfigFormV3 extends ConfigForm {
     
     private static final long serialVersionUID = 1105715502736280287L;
     
+    /** 配置分组名称（V3 API 标准字段） */
     private String groupName;
     
     public String getGroupName() {
@@ -51,6 +54,7 @@ public class ConfigFormV3 extends ConfigForm {
     }
     
     /**
+     * 模糊搜索 API 专用校验：允许 groupName 与 dataId 为空以查询全部配置。
      * Validate for blur search API, which allow user input empty groupName and dataId to search all configs.
      *
      * @throws NacosApiException when form parameters is invalid.

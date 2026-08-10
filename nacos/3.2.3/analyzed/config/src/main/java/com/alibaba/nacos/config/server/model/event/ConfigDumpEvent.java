@@ -19,6 +19,8 @@ package com.alibaba.nacos.config.server.model.event;
 import com.alibaba.nacos.common.notify.Event;
 
 /**
+ * 配置落盘事件：集群节点间同步配置到本地磁盘时使用，
+ * 携带完整配置元数据与正文，支持 Beta、标签、灰度及批量导入场景。
  * ConfigDumpEvent.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -27,36 +29,52 @@ public class ConfigDumpEvent extends Event {
     
     private static final long serialVersionUID = -8776888606458370294L;
     
+    /** 是否为删除操作（true 表示从磁盘移除该配置） */
     private boolean remove;
     
+    /** 命名空间 ID */
     private String namespaceId;
     
+    /** 配置 dataId */
     private String dataId;
     
+    /** 配置 group */
     private String group;
     
+    /** 加密配置的数据密钥 */
     private String encryptedDataKey;
     
+    /** 是否为 Beta 灰度配置 */
     private boolean isBeta;
     
+    /** 是否来自批量导入/同步 */
     private boolean isBatch;
     
+    /** 批量导入时的字段分隔符编码 */
     private int delimiter;
     
+    /** 标签维度标识 */
     private String tag;
     
+    /** 灰度配置名称 */
     private String grayName;
     
+    /** 灰度匹配规则表达式 */
     private String grayRule;
     
+    /** 配置正文内容 */
     private String content;
     
+    /** Beta 灰度生效的目标 IP 列表 */
     private String betaIps;
     
+    /** 发起落盘操作的节点 IP */
     private String handleIp;
     
+    /** 配置内容类型（如 text、json） */
     private String type;
     
+    /** 配置最后修改时间戳（毫秒） */
     private long lastModifiedTs;
     
     public int getDelimiter() {
@@ -187,10 +205,12 @@ public class ConfigDumpEvent extends Event {
         this.grayRule = grayRule;
     }
     
+    /** @return 流式构建 {@link ConfigDumpEvent} 的 Builder */
     public static ConfigDumpEventBuilder builder() {
         return new ConfigDumpEventBuilder();
     }
     
+    /** {@link ConfigDumpEvent} 的流式构建器，支持链式设置各落盘字段。 */
     public static final class ConfigDumpEventBuilder {
         
         private boolean remove;
@@ -309,6 +329,7 @@ public class ConfigDumpEvent extends Event {
         }
         
         /**
+         * 根据 Builder 中已设置的字段构建落盘事件实例。
          * Build a configDumpEvent.
          *
          * @return ConfigDumpEvent object instance.

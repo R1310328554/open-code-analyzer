@@ -21,6 +21,8 @@ import com.alibaba.nacos.common.notify.Event;
 import java.util.Set;
 
 /**
+ * 配置模糊监听批量事件：客户端通过 groupKey 模式批量订阅配置变更时发布，
+ * 携带连接 ID、已有 groupKey 集合、匹配模式及是否处于初始化阶段。
  * This event represents a batch fuzzy listening event for configurations. It is used to notify the server about a batch
  * of fuzzy listening requests from clients. Each request contains a client ID, a set of existing group keys associated
  * with the client, a key group pattern, and a flag indicating whether the client is initializing.
@@ -32,27 +34,36 @@ public class ConfigFuzzyWatchEvent extends Event {
     
     private static final long serialVersionUID = 1953965691384930209L;
     
+    /** 发起模糊监听请求的客户端连接 ID */
     /**
      * ID of the client making the request.
+      * <p>配置模糊监听事件；详见类级说明。</p>
      */
     private String connectionId;
     
+    /** 用于匹配 groupKey 的 Ant 风格或通配模式 */
     /**
      * Pattern for matching group keys.
+      * <p>配置模糊监听事件；详见类级说明。</p>
      */
     private String groupKeyPattern;
     
+    /** 客户端当前已订阅的 groupKey 集合，用于增量比对 */
     /**
      * Set of existing group keys associated with the client.
+      * <p>配置模糊监听事件；详见类级说明。</p>
      */
     private Set<String> clientExistingGroupKeys;
     
+    /** 客户端是否处于首次初始化订阅阶段 */
     /**
      * Flag indicating whether the client is initializing.
+      * <p>配置模糊监听事件；详见类级说明。</p>
      */
     private boolean isInitializing;
     
     /**
+     * 构造模糊监听批量事件。
      * Constructs a new ConfigBatchFuzzyListenEvent with the specified parameters.
      *
      * @param connectionId                ID of the client making the request
@@ -70,6 +81,7 @@ public class ConfigFuzzyWatchEvent extends Event {
     }
     
     /**
+     * 获取发起请求的客户端连接 ID。
      * Get the ID of the client making the request.
      *
      * @return The client ID
@@ -79,6 +91,7 @@ public class ConfigFuzzyWatchEvent extends Event {
     }
     
     /**
+     * 设置客户端连接 ID。
      * Set the ID of the client making the request.
      *
      * @param connectionId The client ID to be set
@@ -88,6 +101,7 @@ public class ConfigFuzzyWatchEvent extends Event {
     }
     
     /**
+     * 获取 groupKey 匹配模式。
      * Get the pattern for matching group keys.
      *
      * @return The key group pattern
@@ -97,6 +111,7 @@ public class ConfigFuzzyWatchEvent extends Event {
     }
     
     /**
+     * 设置 groupKey 匹配模式。
      * Set the pattern for matching group keys.
      *
      * @param groupKeyPattern The key group pattern to be set
@@ -106,6 +121,7 @@ public class ConfigFuzzyWatchEvent extends Event {
     }
     
     /**
+     * 获取客户端已有 groupKey 集合。
      * Get the set of existing group keys associated with the client.
      *
      * @return The set of existing group keys
@@ -115,6 +131,7 @@ public class ConfigFuzzyWatchEvent extends Event {
     }
     
     /**
+     * 设置客户端已有 groupKey 集合。
      * Set the set of existing group keys associated with the client.
      *
      * @param clientExistingGroupKeys The set of existing group keys to be set
@@ -124,6 +141,7 @@ public class ConfigFuzzyWatchEvent extends Event {
     }
     
     /**
+     * 判断客户端是否处于初始化阶段。
      * Check whether the client is initializing.
      *
      * @return True if the client is initializing, otherwise false
@@ -133,6 +151,7 @@ public class ConfigFuzzyWatchEvent extends Event {
     }
     
     /**
+     * 设置客户端初始化标志。
      * Set the flag indicating whether the client is initializing.
      *
      * @param initializing True if the client is initializing, otherwise false

@@ -20,6 +20,8 @@ import com.alibaba.nacos.common.JustForTest;
 import com.alibaba.nacos.common.notify.Event;
 
 /**
+ * Raft 数据库错误恢复事件：Raft 持久层发生异常并完成恢复后发布，
+ * 供测试或运维链路感知存储层自愈（标记 {@link JustForTest}，生产慎用）。
  * RaftDBErrorRecoverEvent.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
