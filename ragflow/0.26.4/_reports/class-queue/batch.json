@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:19:42Z",
-  "files": [
-    "rag/flow/chunker/title_chunker/common.py",
-    "rag/flow/chunker/title_chunker/group_chunker.py",
-    "rag/flow/chunker/title_chunker/hierarchy_chunker.py",
-    "rag/flow/chunker/title_chunker/schema.py",
-    "rag/flow/chunker/title_chunker/title_chunker.py",
-    "rag/flow/chunker/token_chunker.py",
-    "rag/flow/extractor/__init__.py",
-    "rag/flow/extractor/extractor.py",
-    "rag/flow/extractor/schema.py",
-    "rag/flow/file.py",
-    "rag/flow/parser/__init__.py",
-    "rag/flow/parser/parser.py",
-    "rag/flow/parser/pdf_chunk_metadata.py",
-    "rag/flow/parser/schema.py",
-    "rag/flow/parser/utils.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 534,
-  "done": 1215
+  "done": 1230
 }
