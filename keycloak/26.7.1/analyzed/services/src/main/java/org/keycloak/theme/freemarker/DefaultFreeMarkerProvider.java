@@ -17,15 +17,21 @@ import freemarker.core.TemplateClassResolver;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 
+/**
+ * 默认 FreeMarker 模板提供者。
+ * <p>加载主题模板、注入 {@code kcSanitize} 方法并渲染为 HTML 字符串；支持可选的模板缓存以提升性能。</p>
+ */
 public class DefaultFreeMarkerProvider implements FreeMarkerProvider {
     private final ConcurrentHashMap<String, Template> cache;
     private final KeycloakSanitizerMethod kcSanitizeMethod;
 
+    /** 注入模板缓存与 HTML  sanitizer 方法（cache 可为 null 禁用缓存）。 */
     public DefaultFreeMarkerProvider(ConcurrentHashMap<String, Template> cache, KeycloakSanitizerMethod kcSanitizeMethod) {
         this.cache = cache;
         this.kcSanitizeMethod = kcSanitizeMethod;
     }
 
+    /** 渲染指定主题模板；data 为 Map 时自动注入 kcSanitize。 */
     @Override
     public String processTemplate(Object data, String templateName, Theme theme) throws FreeMarkerException {
         if (data instanceof Map) {
@@ -55,11 +61,11 @@ public class DefaultFreeMarkerProvider implements FreeMarkerProvider {
         }
     }
 
+    /** 创建 FreeMarker 配置并加载主题模板；.ftl 文件启用 HTML 输出格式防 XSS。 */
     private Template getTemplate(String templateName, Theme theme) throws IOException {
         Configuration cfg = new Configuration(Configuration.VERSION_2_3_32);
 
-        // Assume *.ftl files are html.  This lets freemarker know how to
-        // sanitize and prevent XSS attacks.
+        // 假定 *.ftl 为 HTML，启用 HTMLOutputFormat 以 sanitize 输出、防止 XSS
         if (templateName.toLowerCase().endsWith(".ftl")) {
             cfg.setOutputFormat(HTMLOutputFormat.INSTANCE);
         }
@@ -69,6 +75,7 @@ public class DefaultFreeMarkerProvider implements FreeMarkerProvider {
         return cfg.getTemplate(templateName, "UTF-8");
     }
 
+    /** 从 {@link Theme} 加载模板 URL 的 FreeMarker TemplateLoader。 */
     static class ThemeTemplateLoader extends URLTemplateLoader {
 
         private Theme theme;
@@ -77,6 +84,7 @@ public class DefaultFreeMarkerProvider implements FreeMarkerProvider {
             this.theme = theme;
         }
 
+        /** 委托 theme.getTemplate 获取模板资源 URL。 */
         @Override
         protected URL getURL(String name) {
             try {
@@ -88,6 +96,7 @@ public class DefaultFreeMarkerProvider implements FreeMarkerProvider {
 
     }
 
+    /** 无资源需释放。 */
     @Override
     public void close() {
 

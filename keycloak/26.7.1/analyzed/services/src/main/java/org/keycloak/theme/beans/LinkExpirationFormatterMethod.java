@@ -14,7 +14,8 @@ import freemarker.template.TemplateMethodModelEx;
 import freemarker.template.TemplateModelException;
 
 /**
- * Method used to format the link expiration time period in emails.
+ * 邮件中链接过期时间的格式化方法。
+ * <p>将分钟数转换为本地化的「X 天/小时/分钟/秒」可读字符串，供 FreeMarker 模板在邮件正文中展示。</p>
  *
  * @author Vlastimil Elias (velias at redhat dot com)
  */
@@ -23,12 +24,14 @@ public class LinkExpirationFormatterMethod implements TemplateMethodModelEx {
     protected final Properties messages;
     protected final Locale locale;
 
+    /** 绑定消息 bundle 与区域设置。 */
     public LinkExpirationFormatterMethod(Properties messages, Locale locale) {
         this.messages = messages;
         this.locale = locale;
     }
 
     @SuppressWarnings("rawtypes")
+    /** 接收分钟数参数，转换为本地化时间段描述。 */
     @Override
     public Object exec(List arguments) throws TemplateModelException {
         Object val = arguments.isEmpty() ? null : arguments.get(0);
@@ -36,15 +39,16 @@ public class LinkExpirationFormatterMethod implements TemplateMethodModelEx {
             return "";
 
         try {
-            //input value is in minutes, as defined in EmailTemplateProvider!
+            // 输入值为分钟，与 EmailTemplateProvider 约定一致
             return format(Long.parseLong(val.toString().trim()) * 60);
         } catch (NumberFormatException e) {
-            // not a number, return it as is
+            // 非数字则原样返回
             return val.toString();
         }
 
     }
 
+    /** 将秒数归一化为最大合适单位并拼接本地化单位名。 */
     protected String format(long valueInSeconds) {
 
         String unitKey = "seconds";

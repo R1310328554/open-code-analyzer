@@ -26,17 +26,22 @@ import freemarker.template.TemplateMethodModelEx;
 import freemarker.template.TemplateModelException;
 
 /**
+ * FreeMarker 高级消息格式化方法。
+ * <p>支持直接格式化字符串，或通过 {@code ${key}} 语法从消息 bundle 查找并格式化。实现 {@link freemarker.template.TemplateMethodModelEx} 供模板调用。</p>
+ *
  * @author <a href="mailto:gerbermichi@me.com">Michael Gerber</a>
  */
 public class AdvancedMessageFormatterMethod implements TemplateMethodModelEx {
     private final Properties messages;
     private final Locale locale;
 
+    /** 绑定区域与消息 bundle。 */
     public AdvancedMessageFormatterMethod(Locale locale, Properties messages) {
         this.locale = locale;
         this.messages = messages;
     }
 
+    /** 执行格式化：首参为消息键或模板字符串，其余为占位符参数。 */
     @Override
     public Object exec(List list) throws TemplateModelException {
         if (list.size() >= 1) {

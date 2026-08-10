@@ -29,16 +29,21 @@ import jakarta.ws.rs.core.UriBuilder;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 登录页区域切换 Bean。
+ * <p>封装当前语言、RTL 方向及 realm 支持的语言列表，注入 FreeMarker 上下文供语言选择器渲染。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class LocaleBean {
 
     private final String current;
     private final String currentLanguageTag;
+    /** 当前语言是否为从右到左书写。 */
     private final boolean rtl; // right-to-left language
     private final List<Locale> supported;
     private static final ConcurrentHashMap<String, Boolean> bidiMap = new ConcurrentHashMap<>();
 
+    /** 根据 realm 支持语言与消息 bundle 构建区域 Bean。 */
     public LocaleBean(RealmModel realm, java.util.Locale current, UriBuilder uriBuilder, Properties messages) {
         this.currentLanguageTag = current.toLanguageTag();
         this.current = messages.getProperty("locale_" + this.currentLanguageTag, this.currentLanguageTag);
@@ -57,6 +62,7 @@ public class LocaleBean {
                 .collect(Collectors.toList());
     }
 
+    /** 判断显示名称对应的书写方向是否为 LTR。 */
     protected static boolean isLeftToRight(String current) {
         // Some languages that are RTL have an English name in Java locales, like 'dv' aka Divehi as stated in
         // https://github.com/keycloak/keycloak/issues/33833#issuecomment-2446965307.
@@ -71,25 +77,27 @@ public class LocaleBean {
         return bidiMap.computeIfAbsent(current, l -> new Bidi(l, Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT).isLeftToRight());
     }
 
+    /** 返回当前语言的本地化显示名。 */
     public String getCurrent() {
         return current;
     }
 
+    /** 返回当前 BCP 47 语言标签。 */
     public String getCurrentLanguageTag() {
         return currentLanguageTag;
     }
 
-    /**
-     * Whether it is Right-to-Left language or not.
-     */
+    /** 当前语言是否为 RTL（从右到左）。 */
     public boolean isRtl() {
         return rtl;
     }
 
+    /** 返回 realm 支持的语言列表（含标签、显示名与切换 URL）。 */
     public List<Locale> getSupported() {
         return supported;
     }
 
+    /** 单个可选语言的标签、显示名与切换链接。 */
     public static class Locale {
 
         private final String languageTag;
@@ -102,14 +110,17 @@ public class LocaleBean {
             this.url = url;
         }
 
+        /** 返回 BCP 47 语言标签。 */
         public String getLanguageTag() {
             return languageTag;
         }
 
+        /** 返回切换至该语言的 URL（含 kc_locale 参数）。 */
         public String getUrl() {
             return url;
         }
 
+        /** 返回本地化显示名。 */
         public String getLabel() {
             return label;
         }

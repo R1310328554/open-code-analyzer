@@ -26,6 +26,10 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * 主题资源属性解析器。
+ * <p>从 theme.properties 读取 styles/stylesCommon/scripts/favicons 配置，支持扁平空格分隔列表与 {@code type.id} 结构化条目两种格式。</p>
+ */
 public final class ThemeResourcesParser {
 
     private static final String STYLES = "styles";
@@ -36,9 +40,11 @@ public final class ThemeResourcesParser {
     private static final Pattern RESOURCE_KEY = Pattern.compile("^(styles|stylesCommon|scripts|favicons)\\.([^.]+)$");
     private static final Pattern ATTRIBUTE_KEY = Pattern.compile("^(styles|stylesCommon|scripts|favicons)\\.([^.]+)\\.(.+)$");
 
+    /** 工具类，禁止实例化。 */
     private ThemeResourcesParser() {
     }
 
+    /** 解析 properties 并构建 {@link ThemeResources}；null 时返回空集合。 */
     public static ThemeResources parse(Properties properties) {
         if (properties == null) {
             return ThemeResources.empty();
@@ -57,6 +63,7 @@ public final class ThemeResourcesParser {
         );
     }
 
+    /** 解析某一资源类型（styles/scripts 等）的全部描述符。 */
     private static List<ThemeResourceDescriptor> parseType(Properties properties, String type, boolean favicon) {
         List<ThemeResourceDescriptor> result = new ArrayList<>();
 
@@ -110,11 +117,13 @@ public final class ThemeResourcesParser {
         return result;
     }
 
+    /** 由路径快速构建描述符。 */
     private static ThemeResourceDescriptor buildDescriptor(String path, boolean favicon) {
         ThemeResourceDescriptor.Builder builder = ThemeResourceDescriptor.builder(path);
         return favicon ? builder.buildFavicon() : builder.build();
     }
 
+    /** 兼容旧版 favIcon/favIconType 单值配置。 */
     private static List<ThemeResourceDescriptor> parseLegacyFavicon(Properties properties) {
         String favIcon = properties.getProperty("favIcon");
         if (favIcon == null || favIcon.isBlank()) {
@@ -129,6 +138,7 @@ public final class ThemeResourcesParser {
         return List.of(builder.buildFavicon());
     }
 
+    /** 按 order 属性或自然序对资源 id 排序。 */
     private static void sortIds(List<String> ids, String orderProperty) {
         if (orderProperty != null && !orderProperty.isBlank()) {
             List<String> order = new ArrayList<>();
@@ -149,6 +159,7 @@ public final class ThemeResourcesParser {
         ids.sort(ThemeResourcesParser::compareNaturalOrder);
     }
 
+    /** 数字 id 按数值比较，否则按字典序。 */
     private static int compareNaturalOrder(String left, String right) {
         try {
             int leftNumber = Integer.parseInt(left);

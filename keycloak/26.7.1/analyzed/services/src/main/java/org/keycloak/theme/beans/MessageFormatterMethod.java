@@ -35,31 +35,37 @@ import freemarker.template.TemplateModelException;
 import static java.util.Optional.ofNullable;
 
 /**
+ * FreeMarker 消息格式化方法。
+ * <p>从消息 bundle 查找键值，解析 {@code ${}} 占位符后按区域设置格式化，实现 {@link freemarker.template.TemplateMethodModelEx}。</p>
+ *
  * @author <a href="mailto:gerbermichi@me.com">Michael Gerber</a>
  */
 public class MessageFormatterMethod implements TemplateMethodModelEx {
     private final Properties messages;
     private final Locale locale;
 
+    /** 使用 Properties 消息 bundle 构造。 */
     public MessageFormatterMethod(Locale locale, Properties messages) {
         this.locale = locale;
         this.messages = messages;
     }
 
+    /** 使用 Map 消息源构造（转为 Properties）。 */
     public MessageFormatterMethod(Locale locale, Map<Object, Object> messages) {
         this.locale = locale;
         this.messages = new Properties();
         this.messages.putAll(ofNullable(messages).orElse(Map.of()));
     }
 
+    /** 首参为消息键，其余为 MessageFormat 占位符参数。 */
     @Override
     public Object exec(List list) throws TemplateModelException {
         if (list.size() >= 1) {
-            // resolve any remaining ${} expressions
+            // 解析参数中残留的 ${} 表达式
             List<Object> resolved = resolve(list.subList(1, list.size()));
             String key = list.get(0).toString();
             String value = messages.getOrDefault(key, key).toString();
-            // try to also resolve placeholders if present in the message bundle
+            // 若 bundle 值本身含占位符，同样解析
             value = (String) resolve(List.of(value)).get(0);
             return new MessageFormat(value, locale).format(resolved.toArray());
         } else {
@@ -67,6 +73,7 @@ public class MessageFormatterMethod implements TemplateMethodModelEx {
         }
     }
 
+    /** 将 FreeMarker 模型对象转为 Java 对象并解析变量引用。 */
     private List<Object> resolve(List<Object> list) {
         ArrayList<Object> result = new ArrayList<>();
         for (Object item: list) {

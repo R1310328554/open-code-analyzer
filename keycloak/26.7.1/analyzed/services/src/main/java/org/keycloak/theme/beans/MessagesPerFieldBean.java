@@ -22,7 +22,8 @@ import java.util.Map;
 import org.keycloak.forms.login.MessageType;
 
 /**
- * Bean used to hold form messages per field. Stored under <code>messagesPerField</code> key in Freemarker context.
+ * 按表单字段聚合消息的 Bean。
+ * <p>以 {@code messagesPerField} 键存入 FreeMarker 上下文，支持按字段查询错误/警告及条件输出 CSS 类名。</p>
  *
  * @author Vlastimil Elias (velias at redhat dot com)
  */
@@ -30,6 +31,7 @@ public class MessagesPerFieldBean {
 
     private Map<String, MessageBean> messagesPerField = new HashMap<String, MessageBean>();
 
+    /** 向指定字段追加消息；field 为 null 时使用 global。 */
     public void addMessage(String field, String messageText, MessageType messageType) {
         if (messageText == null || messageText.trim().isEmpty())
             return;
@@ -45,20 +47,20 @@ public class MessagesPerFieldBean {
     }
 
     /**
-     * Check if message for given field exists
+     * 检查指定字段是否已有消息。
      *
-     * @param field
-     * @return
+     * @param field 字段名
+     * @return 存在则 true
      */
     public boolean exists(String field) {
         return messagesPerField.containsKey(field);
     }
 
     /**
-     * Check if exists error message for given fields
+     * 检查给定字段中是否存在错误类型消息。
      *
-     * @param fields
-     * @return
+     * @param fields 待检查的字段名
+     * @return 任一字段有错误则 true
      */
     public boolean existsError(String... fields) {
         for (String field : fields) {
@@ -69,10 +71,10 @@ public class MessagesPerFieldBean {
     }
 
     /**
-     * Get first error message for given fields
+     * 返回给定字段中首个错误消息的文本。
      *
-     * @param fields
-     * @return message text or empty string
+     * @param fields 待检查的字段名
+     * @return 消息文本，无错误时返回空字符串
      */
     public String getFirstError(String... fields) {
         for (String field : fields) {
@@ -84,10 +86,10 @@ public class MessagesPerFieldBean {
     }
 
     /**
-     * Get message for given field.
+     * 获取指定字段的消息摘要。
      *
-     * @param fieldName
-     * @return message text or empty string
+     * @param fieldName 字段名
+     * @return 消息文本，不存在时返回空字符串
      */
     public String get(String fieldName) {
         MessageBean mb = messagesPerField.get(fieldName);
@@ -99,11 +101,11 @@ public class MessagesPerFieldBean {
     }
 
     /**
-     * Print text if message for given field exists. Useful eg. to add css styles for fields with message.
+     * 若字段存在消息则返回给定文本（用于条件输出 CSS 类等）。
      *
-     * @param fieldName to check for
-     * @param text to print
-     * @return text if message exists for given field, else empty string
+     * @param fieldName 待检查字段名
+     * @param text 存在消息时要输出的文本
+     * @return 有消息时返回 text，否则空字符串
      */
     public String printIfExists(String fieldName, String text) {
         if (exists(fieldName))
