@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T17:09:40Z",
-  "files": [
-    "api/db/services/file_commit_service.py",
-    "api/db/services/file_service.py",
-    "api/db/services/knowledgebase_service.py",
-    "api/db/services/langfuse_service.py",
-    "api/db/services/llm_service.py",
-    "api/db/services/mcp_server_service.py",
-    "api/db/services/memory_service.py",
-    "api/db/services/pipeline_operation_log_service.py",
-    "api/db/services/search_service.py",
-    "api/db/services/system_settings_service.py",
-    "api/db/services/task_service.py",
-    "api/db/services/tenant_llm_service.py",
-    "api/db/services/tenant_model_group_mapping_service.py",
-    "api/db/services/tenant_model_group_service.py",
-    "api/db/services/tenant_model_instance_service.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1554,
-  "done": 195
+  "done": 210
 }
