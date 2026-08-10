@@ -27,16 +27,18 @@ import java.util.Optional;
 import org.keycloak.models.ProtocolMapperModel;
 
 /**
- * This class acts as delegate for a {@link ProtocolMapperModel} implementation and adds additional functionality for
- * OpenId4VC credentials
+ * {@link ProtocolMapperModel} 的 OID4VCI 协议映射器委托。
+ * <p>扩展 claim 路径、是否必填及元数据显示等 VC 专用配置。</p>
  *
  * @author Pascal Knüppel
  */
 public class Oid4vcProtocolMapperModel extends ProtocolMapperModel {
 
-    public static final String PATH = "claim.name"; // TODO discuss if we can rename this.
-                                                         //      Renaming it would break existing installations
+    /** claim 在凭证中的点分路径配置键。 */
+    public static final String PATH = "claim.name"; // TODO 讨论是否可重命名（会破坏现有安装）
+    /** 该 claim 是否为 VC 必填项。 */
     public static final String MANDATORY = "vc.mandatory";
+    /** 元数据端点中的 claim 显示文本。 */
     public static final String DISPLAY = "vc.display";
 
     private final ProtocolMapperModel protocolMapper;
@@ -46,6 +48,7 @@ public class Oid4vcProtocolMapperModel extends ProtocolMapperModel {
     }
 
     /**
+     * 返回 claim 在凭证 JSON 中的点分路径段列表。
      * @return the path of the attribute where it can be extracted
      */
     public List<String> getPath()
@@ -62,6 +65,7 @@ public class Oid4vcProtocolMapperModel extends ProtocolMapperModel {
                                                      .orElse(null));
     }
 
+    /** 该映射 claim 是否标记为必填。 */
     public boolean isMandatory()
     {
         return Optional.ofNullable(protocolMapper.getConfig().get(MANDATORY)).map(Boolean::valueOf).orElse(false);
@@ -76,6 +80,7 @@ public class Oid4vcProtocolMapperModel extends ProtocolMapperModel {
         }
     }
 
+    /** 获取元数据展示用显示名。 */
     public String getDisplay()
     {
         return protocolMapper.getConfig().get(DISPLAY);

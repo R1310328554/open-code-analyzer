@@ -24,29 +24,37 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 授权缓存 SPI，注册 {@link CachedStoreFactoryProvider} 提供者类型。
+ * <p>仅在 {@link org.keycloak.common.Profile.Feature#AUTHORIZATION} 特性启用时可用。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class CachedStoreFactorySpi implements Spi {
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code authorizationCache}。 */
     @Override
     public String getName() {
         return "authorizationCache";
     }
 
+    /** 授权缓存存储工厂提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return CachedStoreFactoryProvider.class;
     }
 
+    /** 授权缓存工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return CachedStoreProviderFactory.class;
     }
 
+    /** 是否启用：取决于 AUTHORIZATION 特性开关。 */
     @Override
     public boolean isEnabled() {
         return Profile.isFeatureEnabled(Profile.Feature.AUTHORIZATION);

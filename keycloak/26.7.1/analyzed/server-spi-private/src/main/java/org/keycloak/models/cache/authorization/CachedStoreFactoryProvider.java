@@ -21,6 +21,9 @@ package org.keycloak.models.cache.authorization;
 import org.keycloak.authorization.store.StoreFactory;
 
 /**
+ * 带缓存的授权存储工厂提供者接口，扩展 {@link org.keycloak.authorization.store.StoreFactory}。
+ * <p>为授权服务（策略、资源、权限等）提供 Infinispan 缓存层。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface CachedStoreFactoryProvider extends StoreFactory {

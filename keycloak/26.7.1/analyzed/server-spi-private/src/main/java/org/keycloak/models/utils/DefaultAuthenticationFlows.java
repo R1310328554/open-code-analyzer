@@ -36,27 +36,37 @@ import org.keycloak.representations.idm.IdentityProviderRepresentation;
 
 
 /**
+ * 领域默认认证流程初始化与迁移工具类。
+ * <p>创建 browser、direct grant、registration、reset credentials、client auth、first broker login 等内置流程及其执行步骤。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class DefaultAuthenticationFlows {
 
+    /** 用户自助注册顶层流程别名。 */
     public static final String REGISTRATION_FLOW = "registration";
     public static final String REGISTRATION_FORM_FLOW = "registration form";
+    /** 浏览器 SSO 登录流程别名。 */
     public static final String BROWSER_FLOW = "browser";
+    /** Direct Grant（ROPC）流程别名。 */
     public static final String DIRECT_GRANT_FLOW = "direct grant";
+    /** 忘记密码/重置凭证流程别名。 */
     public static final String RESET_CREDENTIALS_FLOW = "reset credentials";
     public static final String LOGIN_FORMS_FLOW = "forms";
     public static final String SAML_ECP_FLOW = "saml ecp";
     public static final String DOCKER_AUTH = "docker auth";
 
+    /** 客户端认证流程别名。 */
     public static final String CLIENT_AUTHENTICATION_FLOW = "clients";
+    /** IdP 首次联合登录流程别名。 */
     public static final String FIRST_BROKER_LOGIN_FLOW = "first broker login";
     public static final String FIRST_BROKER_LOGIN_HANDLE_EXISTING_SUBFLOW = "Handle Existing Account";
 
     public static final String IDP_REVIEW_PROFILE_CONFIG_ALIAS = "review profile config";
     public static final String IDP_CREATE_UNIQUE_USER_CONFIG_ALIAS = "create unique user config";
 
+    /** 为新领域添加全部缺失的内置认证流程。 */
     public static void addFlows(RealmModel realm) {
         if (realm.getFlowByAlias(BROWSER_FLOW) == null) browserFlow(realm);
         if (realm.getFlowByAlias(DIRECT_GRANT_FLOW) == null) directGrantFlow(realm, false);
@@ -68,6 +78,7 @@ public class DefaultAuthenticationFlows {
         if (realm.getFlowByAlias(DOCKER_AUTH) == null) dockerAuthenticationFlow(realm);
     }
 
+    /** 迁移旧领域：补全缺失流程并保留已有配置。 */
     public static void migrateFlows(RealmModel realm) {
         if (realm.getFlowByAlias(BROWSER_FLOW) == null) browserFlow(realm, true);
         if (realm.getFlowByAlias(DIRECT_GRANT_FLOW) == null) directGrantFlow(realm, true);
@@ -79,6 +90,7 @@ public class DefaultAuthenticationFlows {
         if (realm.getFlowByAlias(DOCKER_AUTH) == null) dockerAuthenticationFlow(realm);
     }
 
+    /** 创建或迁移用户注册流程及表单子流程。 */
     public static void registrationFlow(RealmModel realm, boolean migrate) {
         AuthenticationFlowModel registrationFlow = new AuthenticationFlowModel();
         registrationFlow.setAlias(REGISTRATION_FLOW);

@@ -36,12 +36,16 @@ import org.keycloak.storage.OnUpdateComponent;
 import org.jboss.logging.Logger;
 
 /**
+ * 领域组件（Component）生命周期与配置工具类。
+ * <p>解析 {@link org.keycloak.component.ComponentFactory}、获取配置属性定义，并在创建/更新/删除时通知相关提供者。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ComponentUtil {
 
     private static final Logger logger = Logger.getLogger(ComponentUtil.class);
 
+    /** 从 REST 表示获取组件配置属性定义（含通用属性）。 */
     public static Map<String, ProviderConfigProperty> getComponentConfigProperties(KeycloakSession session, ComponentRepresentation component) {
         return getComponentConfigProperties(session, component.getProviderType(), component.getProviderId());
     }
@@ -54,6 +58,7 @@ public class ComponentUtil {
         return getComponentFactory(session, component.getProviderType(), component.getProviderId());
     }
 
+    /** 按组件模型解析对应的 {@link ComponentFactory}。 */
     public static ComponentFactory getComponentFactory(KeycloakSession session, ComponentModel component) {
         return getComponentFactory(session, component.getProviderType(), component.getProviderId());
     }
@@ -92,6 +97,7 @@ public class ComponentUtil {
         return cf;
     }
 
+    /** 组件创建后通知工厂及 {@link org.keycloak.storage.OnCreateComponent} 用户提供者。 */
     public static void notifyCreated(KeycloakSession session, RealmModel realm, ComponentModel model) {
         ComponentFactory factory = getComponentFactory(session, model);
         factory.onCreate(session, realm, model);
@@ -100,6 +106,7 @@ public class ComponentUtil {
             ((OnCreateComponent) users).onCreate(session, realm, model);
         }
     }
+    /** 组件更新后通知工厂及 {@link org.keycloak.storage.OnUpdateComponent} 用户提供者。 */
     public static void notifyUpdated(KeycloakSession session, RealmModel realm, ComponentModel oldModel, ComponentModel newModel) {
         ComponentFactory factory = getComponentFactory(session, newModel);
         factory.onUpdate(session, realm, oldModel, newModel);
@@ -108,12 +115,13 @@ public class ComponentUtil {
             ((OnUpdateComponent) users).onUpdate(session, realm, oldModel, newModel);
         }
     }
+    /** 组件删除前调用工厂的 {@code preRemove}；损坏的提供者仅记录警告。 */
     public static void notifyPreRemove(KeycloakSession session, RealmModel realm, ComponentModel model) {
         try {
             ComponentFactory factory = getComponentFactory(session, model);
             factory.preRemove(session, realm, model);
         } catch (IllegalArgumentException iae) {
-            // We allow to remove broken providers without throwing an exception
+            // 允许删除已损坏的提供者而不抛异常
             logger.warn(iae.getMessage());
         }
     }

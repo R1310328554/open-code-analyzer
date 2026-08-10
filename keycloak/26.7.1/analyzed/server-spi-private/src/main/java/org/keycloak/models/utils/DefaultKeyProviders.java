@@ -27,12 +27,17 @@ import org.keycloak.keys.KeyProvider;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 领域默认密钥提供者（KeyProvider 组件）初始化工具类。
+ * <p>为新领域创建 RSA 签名/加密、HMAC 与 AES 等自动生成密钥组件。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultKeyProviders {
 
+    /** 默认密钥组件优先级。 */
     public static final String DEFAULT_PRIORITY = "100";
 
+    /** 为领域创建全部缺失的自动生成密钥提供者。 */
     public static void createProviders(RealmModel realm) {
         if (!hasProvider(realm, "rsa-generated")) {
             createRsaKeyProvider("rsa-generated", realm);
@@ -77,6 +82,7 @@ public class DefaultKeyProviders {
         realm.addComponentModel(generated);
     }
 
+    /** 创建 HS512 HMAC 签名密钥提供者（若尚不存在）。 */
     public static void createSecretProvider(RealmModel realm) {
         if (hasProvider(realm, "hmac-generated", Algorithm.HS512)) return;
         ComponentModel generated = new ComponentModel();
@@ -93,6 +99,7 @@ public class DefaultKeyProviders {
         realm.addComponentModel(generated);
     }
 
+    /** 创建 AES 加密密钥提供者（若尚不存在）。 */
     public static void createAesProvider(RealmModel realm) {
         if (hasProvider(realm, "aes-generated")) return;
         ComponentModel generated = new ComponentModel();
@@ -118,6 +125,7 @@ public class DefaultKeyProviders {
                         && (algorithm == null || algorithm.equals(component.getConfig().getFirst("algorithm"))));
     }
 
+    /** 使用给定 PEM 私钥/证书创建 RSA 签名与加密提供者，并补全 HMAC/AES。 */
     public static void createProviders(RealmModel realm, String privateKeyPem, String certificatePem) {
         if (!hasProvider(realm, "rsa")) {
             ComponentModel rsa = new ComponentModel();

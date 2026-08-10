@@ -32,6 +32,8 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 
 /**
+ * {@link ClientModel} 的懒加载委托实现。
+ * <p>首次访问时才通过 {@link java.util.function.Supplier} 解析真实客户端，避免在仅需 ID 的场景触发数据库查询。</p>
  *
  * @author hmlnarik
  */
@@ -41,15 +43,18 @@ public class ClientModelLazyDelegate implements ClientModel {
 
     private final AtomicMarkableReference<ClientModel> delegate = new AtomicMarkableReference<>(null, false);
 
+    /** 已知客户端 ID 的懒委托变体，{@link #getId()} 无需加载完整模型。 */
     public static class WithId extends ClientModelLazyDelegate {
 
         private final String id;
 
+        /** @param id 客户端内部 ID；@param delegateSupplier 延迟加载真实客户端的供应器 */
         public WithId(String id, Supplier<ClientModel> delegateSupplier) {
             super(delegateSupplier);
             this.id = id;
         }
 
+        /** 按会话与领域 ID 查找客户端并包装为懒委托。 */
         public WithId(KeycloakSession session, RealmModel realm, String id) {
             super(() -> session.clients().getClientById(realm, id));
             this.id = id;
@@ -75,10 +80,12 @@ public class ClientModelLazyDelegate implements ClientModel {
         }
     }
 
+    /** @param delegateSupplier 延迟解析真实 {@link ClientModel} 的供应器 */
     public ClientModelLazyDelegate(Supplier<ClientModel> delegateSupplier) {
         this.delegateSupplier = delegateSupplier;
     }
 
+    /** 线程安全地懒加载并返回真实客户端；解析失败时抛出 {@link ModelIllegalStateException}。 */
     private ClientModel getDelegate() {
         if (! delegate.isMarked()) {
             delegate.compareAndSet(null, delegateSupplier == null ? null : delegateSupplier.get(), false, true);
@@ -90,6 +97,7 @@ public class ClientModelLazyDelegate implements ClientModel {
         return ref;
     }
 
+    /** 将内存变更持久化到底层客户端模型。 */
     @Override
     public void updateClient() {
         getDelegate().updateClient();

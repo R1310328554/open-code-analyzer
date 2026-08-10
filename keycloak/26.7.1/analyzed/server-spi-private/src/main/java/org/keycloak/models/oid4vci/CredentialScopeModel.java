@@ -35,26 +35,25 @@ import org.keycloak.utils.StringUtil;
 import static org.keycloak.constants.OID4VCIConstants.OID4VC_PROTOCOL;
 
 /**
- * This class acts as delegate for a {@link ClientScopeModel} implementation and adds additional functionality for
- * OpenId4VC credentials
+ * {@link ClientScopeModel} 的 OID4VCI 可验证凭证范围委托。
+ * <p>在客户端范围之上封装 VC 格式、签发、绑定、元数据等 OpenID4VCI 配置属性。</p>
  *
  * @author Pascal Knüppel
  */
 public class CredentialScopeModel implements ClientScopeModel {
 
+    /** 默认加密绑定方法：JWK。 */
     public static final String CRYPTOGRAPHIC_BINDING_METHODS_DEFAULT = "jwk";
 
     public static final String VC_BUILD_CONFIG_HASH_ALGORITHM_DEFAULT = "SHA-256";
     public static final String VC_BUILD_CONFIG_SD_JWT_VISIBLE_CLAIMS_DEFAULT = "id,iat,nbf,exp,jti";
     public static final String VC_BUILD_CONFIG_TOKEN_JWS_TYPE_DEFAULT_SD_JWT_VC = "dc+sd-jwt";
     public static final String VC_BUILD_CONFIG_TOKEN_JWS_TYPE_DEFAULT_JWT_VC = "vc+jwt";
-    public static final Integer VC_EXPIRY_IN_SECONDS_DEFAULT = 31536000; // 1 year
+    public static final Integer VC_EXPIRY_IN_SECONDS_DEFAULT = 31536000; // 默认有效期 1 年（秒）
     public static final String VC_FORMAT_DEFAULT = VCFormat.SD_JWT_VC;
     public static final Integer VC_SD_JWT_NUMBER_OF_DECOYS_DEFAULT = 10;
 
-    /**
-     * the credential configuration id as provided in the metadata endpoint
-     */
+    /** 元数据端点中的凭证配置 ID 属性键。 */
     public static final String VC_CONFIGURATION_ID = "vc.credential_configuration_id";
     public static final String VC_IDENTIFIER = "vc.credential_identifier";
     public static final String VC_FORMAT = "vc.format";
@@ -62,19 +61,13 @@ public class CredentialScopeModel implements ClientScopeModel {
     public static final String VC_ISSUER_DID = "vc.issuer_did";
     public static final String VCT = "vc.verifiable_credential_type";
 
-    /**
-     * the value that is added into the "types"-attribute of a verifiable credential
-     */
+    /** 写入可验证凭证 types 属性的值。 */
     public static final String VC_SUPPORTED_TYPES = "vc.supported_credential_types";
 
-    /**
-     * the value that is entered into the "@contexts"-attribute of a verifiable credential
-     */
+    /** 写入可验证凭证 @contexts 属性的值。 */
     public static final String VC_CONTEXTS = "vc.credential_contexts";
 
-    /**
-     * The credential signature algorithm. If it is not configured, then the realm active key is used to sign the verifiable credential
-     */
+    /** 凭证签名算法；未配置时使用领域当前活跃密钥。 */
     public static final String VC_SIGNING_ALG = "vc.credential_signing_alg";
 
     /**
@@ -172,6 +165,7 @@ public class CredentialScopeModel implements ClientScopeModel {
      */
     private final ClientScopeModel clientScope;
 
+    /** @param clientScope 底层客户端范围，协议必须为 OID4VC */
     public CredentialScopeModel(ClientScopeModel clientScope) {
         this.clientScope = clientScope;
         assert OID4VC_PROTOCOL.equals(clientScope.getProtocol());
@@ -189,6 +183,7 @@ public class CredentialScopeModel implements ClientScopeModel {
         return clientScope.getName();
     }
 
+    /** 获取凭证配置 ID，缺省为范围名称。 */
     public String getCredentialConfigurationId() {
         return Optional.ofNullable(clientScope.getAttribute(VC_CONFIGURATION_ID)).orElse(clientScope.getName());
     }
@@ -205,6 +200,7 @@ public class CredentialScopeModel implements ClientScopeModel {
         clientScope.setAttribute(VC_IDENTIFIER, credentialIdentifier);
     }
 
+    /** 获取 VC 格式（如 SD-JWT-VC），缺省 {@link #VC_FORMAT_DEFAULT}。 */
     public String getFormat() {
         return Optional.ofNullable(clientScope.getAttribute(VC_FORMAT)).orElse(VC_FORMAT_DEFAULT);
     }
@@ -213,6 +209,7 @@ public class CredentialScopeModel implements ClientScopeModel {
         clientScope.setAttribute(VC_FORMAT, credentialFormat);
     }
 
+    /** 凭证有效期（秒），缺省 {@link #VC_EXPIRY_IN_SECONDS_DEFAULT}。 */
     public Integer getExpiryInSeconds() {
         return Optional.ofNullable(clientScope.getAttribute(VC_EXPIRY_IN_SECONDS))
                 .map(Integer::parseInt)
@@ -364,9 +361,7 @@ public class CredentialScopeModel implements ClientScopeModel {
         clientScope.setAttribute(VC_DISPLAY, vcDisplay);
     }
 
-    /**
-     * Whether cryptographic holder binding is required for this credential configuration.
-     */
+    /** 此凭证配置是否要求加密持有者绑定。 */
     public boolean isBindingRequired() {
         return Boolean.parseBoolean(clientScope.getAttribute(VC_BINDING_REQUIRED));
     }
@@ -544,6 +539,7 @@ public class CredentialScopeModel implements ClientScopeModel {
         return clientScope.getParameterizedScopeRegexp();
     }
 
+    /** 返回 OID4VC 协议下的协议映射器流。 */
     public Stream<Oid4vcProtocolMapperModel> getOid4vcProtocolMappersStream() {
         return clientScope.getProtocolMappersStream()
                 .filter(pm -> OID4VC_PROTOCOL.equals(pm.getProtocol()))

@@ -45,6 +45,8 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 
 /**
+ * 轻量（临时）用户适配器，基于内存存储且可 JSON 序列化。
+ * <p>用于 {@link org.keycloak.common.Profile.Feature#TRANSIENT_USERS} 特性：用户数据随会话存在，不写入持久化用户存储。</p>
  *
  * @author hmlnarik
  */
@@ -67,18 +69,22 @@ public class LightweightUserAdapter extends AbstractInMemoryUserAdapter {
 
     private Consumer<LightweightUserAdapter> updateHandler = a -> {};
 
+    /** 轻量用户 ID 前缀，用于识别临时用户。 */
     public static final String ID_PREFIX = "lightweight-";
 
     private final Set<LightweightConsentEntity> consents = new HashSet<>();
 
+    /** 判断用户模型是否为启用了 TRANSIENT_USERS 特性下的轻量用户。 */
     public static boolean isLightweightUser(UserModel user) {
         return Profile.isFeatureEnabled(Feature.TRANSIENT_USERS) && user instanceof LightweightUserAdapter;
     }
 
+    /** 按 ID 前缀判断是否为轻量用户。 */
     public static boolean isLightweightUser(String id) {
         return Profile.isFeatureEnabled(Feature.TRANSIENT_USERS) && id != null && id.startsWith(ID_PREFIX);
     }
 
+    /** 去掉 {@link #ID_PREFIX} 后返回原始会话关联 ID。 */
     public static String getLightweightUserId(String id) {
         return id == null || id.length() < ID_PREFIX.length()
           ? null
@@ -102,6 +108,7 @@ public class LightweightUserAdapter extends AbstractInMemoryUserAdapter {
     protected LightweightUserAdapter() {
     }
 
+    /** 从 JSON 字符串反序列化轻量用户并绑定会话与领域。 */
     public static LightweightUserAdapter fromString(KeycloakSession session, RealmModel realm, String serializedForm) {
         if (serializedForm == null) {
             return null;
@@ -116,11 +123,13 @@ public class LightweightUserAdapter extends AbstractInMemoryUserAdapter {
         }
     }
 
+    /** 轻量用户无持久化凭证，返回 {@link EmptyCredentialManager#INSTANCE}。 */
     @Override
     public SubjectCredentialManager credentialManager() {
         return EmptyCredentialManager.INSTANCE;
     }
 
+    /** 将当前用户状态序列化为 JSON 字符串。 */
     public String serialize() {
         try {
             return JsonSerialization.writeValueAsString(this);
@@ -243,6 +252,7 @@ public class LightweightUserAdapter extends AbstractInMemoryUserAdapter {
         update();
     }
 
+    /** 设置状态变更回调，每次 mutating 操作后触发（如写回会话）。 */
     public void setUpdateHandler(Consumer<LightweightUserAdapter> updateHandler) {
         this.updateHandler = updateHandler == null ? lua -> {} : updateHandler;
     }
@@ -251,6 +261,7 @@ public class LightweightUserAdapter extends AbstractInMemoryUserAdapter {
         updateHandler.accept(this);
     }
 
+    /** 添加 OAuth 同意记录并触发更新回调。 */
     public void addConsent(UserConsentModel consent) {
         if (consent != null) {
             consents.add(LightweightConsentEntity.fromModel(consent));
@@ -262,6 +273,7 @@ public class LightweightUserAdapter extends AbstractInMemoryUserAdapter {
         return LightweightConsentEntity.toModel(realm, getConsentEntityByClient(clientInternalId));
     }
 
+    /** 撤销指定客户端的同意记录。 */
     public boolean revokeConsentForClient(String clientInternalId) {
         if (clientInternalId != null) {
             final boolean res = consents.removeIf(lce -> clientInternalId.equals(lce.getClientId()));
@@ -299,6 +311,7 @@ public class LightweightUserAdapter extends AbstractInMemoryUserAdapter {
           .orElse(null);
     }
 
+    /** 返回所有已存储同意记录的流。 */
     public Stream<UserConsentModel> getConsentsStream() {
         return consents.stream()
           .map(lce -> LightweightConsentEntity.toModel(realm, lce));

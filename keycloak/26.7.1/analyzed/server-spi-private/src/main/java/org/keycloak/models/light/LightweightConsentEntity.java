@@ -32,6 +32,8 @@ import org.keycloak.models.UserConsentModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 /**
+ * 轻量用户 OAuth 同意记录的内存实体。
+ * <p>序列化存储已授权客户端范围 ID 及参数化 scope 参数，可在 {@link UserConsentModel} 与 JSON 之间转换。</p>
  *
  * @author hmlnarik
  */
@@ -43,6 +45,7 @@ class LightweightConsentEntity {
     private final MultivaluedHashMap<String, String> parameters = new MultivaluedHashMap<>();
     private Long lastUpdatedDate;
 
+    /** 从 {@link UserConsentModel} 构建轻量同意实体（含创建/更新时间戳）。 */
     public static LightweightConsentEntity fromModel(UserConsentModel model) {
         long currentTime = Time.currentTimeMillis();
 
@@ -59,6 +62,7 @@ class LightweightConsentEntity {
         return consentEntity;
     }
 
+    /** 将轻量同意实体还原为 {@link UserConsentModel}；客户端不存在时抛出 {@link ModelException}。 */
     public static UserConsentModel toModel(RealmModel realm, LightweightConsentEntity entity) {
         if (entity == null) {
             return null;
@@ -118,6 +122,7 @@ class LightweightConsentEntity {
         return String.format("%s@%08x", "LightweightConsentEntity", System.identityHashCode(this));
     }
 
+    /** 关联客户端的内部 ID。 */
     public String getClientId() {
         return clientId;
     }
@@ -138,6 +143,7 @@ class LightweightConsentEntity {
         return grantedClientScopesIds;
     }
 
+    /** 添加已授权客户端范围 ID，可选附带参数化 scope 的参数列表。 */
     public void addGrantedClientScopesId(String clientScopeId, List<String> parameters) {
         if (clientScopeId == null) {
             return;

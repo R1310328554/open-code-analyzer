@@ -20,11 +20,21 @@ package org.keycloak.models.utils;
 import org.keycloak.models.credential.OTPCredentialModel;
 
 /**
+ * OTP 凭证校验工具类。
+ * <p>根据 {@link org.keycloak.models.credential.OTPCredentialModel} 子类型（TOTP 或 HOTP）选择对应验证器。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class CredentialValidation {
 
+    /**
+     * 校验一次性密码令牌是否有效。
+     * @param token 用户输入的 OTP
+     * @param credentialModel 存储的 OTP 凭证
+     * @param lookAheadWindow 时间/计数窗口容差
+     * @return TOTP/HOTP 校验通过返回 true
+     */
     public static boolean validOTP(String token, OTPCredentialModel credentialModel, int lookAheadWindow) {
         if (credentialModel.getOTPCredentialData().getSubType().equals(OTPCredentialModel.TOTP)) {
             TimeBasedOTP validator = new TimeBasedOTP(credentialModel.getOTPCredentialData().getAlgorithm(),

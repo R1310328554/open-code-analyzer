@@ -27,11 +27,15 @@ import org.keycloak.protocol.LoginProtocol;
 import org.keycloak.protocol.LoginProtocolFactory;
 
 /**
+ * 领域默认客户端范围初始化工具类。
+ * <p>委托各 {@link org.keycloak.protocol.LoginProtocolFactory} 创建协议默认 scope，并提供 {@code offline_access} 内置范围。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DefaultClientScopes {
 
     /**
+     * 为领域创建各登录协议的默认客户端范围。
      *
      * @param session
      * @param realm
@@ -44,7 +48,8 @@ public class DefaultClientScopes {
     }
 
 
-    // Asumption is that newRealm and offlineRole are not null AND offline_access clientScope doesn't yet exists in the realm. Caller of this method is supposed to ensure that.
+    // 假定 newRealm 与 offlineRole 非空且 offline_access 范围尚不存在；由调用方保证前提条件
+    /** 创建 {@code offline_access} 可选客户端范围并映射 offline 角色。 */
     public static void createOfflineAccessClientScope(RealmModel newRealm, RoleModel offlineRole) {
         ClientScopeModel offlineAccessScope = newRealm.addClientScope(OAuth2Constants.OFFLINE_ACCESS);
         offlineAccessScope.setDescription("OpenID Connect built-in scope: offline_access");
@@ -53,7 +58,7 @@ public class DefaultClientScopes {
         offlineAccessScope.setProtocol("openid-connect");
         offlineAccessScope.addScopeMapping(offlineRole);
 
-        // Optional scope. Needs to be requested by scope parameter
+        // 可选 scope，需通过 scope 参数显式请求
         newRealm.addDefaultClientScope(offlineAccessScope, false);
     }
 }
