@@ -21,6 +21,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 组件创建回调：在新建存储组件时触发。
+ * <p>目前仅硬编码类（如 UserStorageManager）实现；未来可能开放给扩展实现。</p>
  * Callback for component creation.  Only hardcoded classes like UserStorageManager implement it.  In future we
  * may allow anybody to implement this interface.
  *
@@ -28,5 +30,9 @@ import org.keycloak.models.RealmModel;
  * @version $Revision: 1 $
  */
 public interface OnCreateComponent {
+    /** 组件创建时调用。
+     * @param session Keycloak 会话
+     * @param realm 所属 Realm
+     * @param model 新组件模型 */
     void onCreate(KeycloakSession session, RealmModel realm, ComponentModel model);
 }

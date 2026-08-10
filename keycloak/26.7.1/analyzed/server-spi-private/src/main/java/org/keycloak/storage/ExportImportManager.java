@@ -28,20 +28,27 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 
 /**
+ * 导入导出管理器：管理 Realm 的导入、更新与导出。
  * Manage importing and updating of realms for the store.
  *
  * @author Alexander Schwartz
  */
 public interface ExportImportManager {
+    /** 将 Realm 表示导入到新 Realm（含用户导入回调）。 */
     void importRealm(RealmRepresentation rep, RealmModel newRealm, Runnable userImport);
 
+    /** 对已有 Realm 执行部分导入。 */
     PartialImportResults partialImportRealm(RealmModel realm, InputStream requestBody);
 
+    /** 根据表示更新已有 Realm。 */
     void updateRealm(RealmRepresentation rep, RealmModel realm);
 
+    /** 在 Realm 中创建用户。 */
     UserModel createUser(RealmModel realm, UserRepresentation userRep);
 
+    /** 导出 Realm 并通过回调写入。 */
     void exportRealm(RealmModel realm, ExportOptions options, ExportAdapter callback);
 
+    /** 从输入流导入 Realm 并返回模型。 */
     RealmModel importRealm(InputStream requestBody);
 }

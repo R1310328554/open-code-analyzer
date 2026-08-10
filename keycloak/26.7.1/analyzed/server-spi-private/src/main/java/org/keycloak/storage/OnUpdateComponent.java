@@ -21,6 +21,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 组件更新回调：在存储组件配置变更时触发。
+ * <p>目前仅硬编码类（如 UserStorageManager）实现；未来可能开放给扩展实现。</p>
  * Callback for component update.  Only hardcoded classes like UserStorageManager implement it.  In future we
  * may allow anybody to implement this interface.
  *
@@ -28,5 +30,10 @@ import org.keycloak.models.RealmModel;
  * @version $Revision: 1 $
  */
 public interface OnUpdateComponent {
+    /** 组件更新时调用。
+     * @param session Keycloak 会话
+     * @param realm 所属 Realm
+     * @param oldModel 更新前组件模型
+     * @param newModel 更新后组件模型 */
     void onUpdate(KeycloakSession session, RealmModel realm, ComponentModel oldModel, ComponentModel newModel);
 }

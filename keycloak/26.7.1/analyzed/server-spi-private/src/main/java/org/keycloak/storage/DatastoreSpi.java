@@ -19,23 +19,30 @@ package org.keycloak.storage;
 
 import org.keycloak.provider.Spi;
 
+/**
+ * 数据存储 SPI：注册 {@link DatastoreProvider} 与 {@link DatastoreProviderFactory}。
+ */
 public class DatastoreSpi implements Spi {
 
+    /** @return 内部 SPI，不对外暴露 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code datastore} */
     @Override
     public String getName() {
         return "datastore";
     }
 
+    /** @return 提供者接口 {@link DatastoreProvider} */
     @Override
     public Class<DatastoreProvider> getProviderClass() {
         return DatastoreProvider.class;
     }
 
+    /** @return 工厂接口 {@link DatastoreProviderFactory} */
     @Override
     public Class<DatastoreProviderFactory> getProviderFactoryClass() {
         return DatastoreProviderFactory.class;

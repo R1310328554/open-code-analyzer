@@ -19,6 +19,9 @@ package org.keycloak.storage;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link DatastoreProvider} 工厂：创建数据存储提供者实例。
+ */
 public interface DatastoreProviderFactory extends ProviderFactory<DatastoreProvider> {
     
 }

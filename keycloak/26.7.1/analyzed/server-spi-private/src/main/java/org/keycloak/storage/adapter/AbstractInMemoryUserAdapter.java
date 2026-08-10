@@ -38,30 +38,50 @@ import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.storage.StorageId;
 
 /**
+ * 内存用户适配器抽象基类：在内存中维护用户属性、角色、组与必需操作。
+ * <p>供测试及内存用户提供者使用；支持只读模式。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public abstract class AbstractInMemoryUserAdapter extends UserModelDefaultMethods {
+    /** 创建时间戳。 */
     private Long createdTimestamp = Time.currentTimeMillis();
+    /** 邮箱是否已验证。 */
     private boolean emailVerified;
+    /** 用户是否启用。 */
     private boolean enabled;
 
+    /** 已授予角色 ID 集合。 */
     private Set<String> roleIds = new HashSet<>();
+    /** 已加入组 ID 集合。 */
     private Set<String> groupIds = new HashSet<>();
 
+    /** 用户属性映射。 */
     private MultivaluedHashMap<String, String> attributes = new MultivaluedHashMap<>();
+    /** 待执行的必需操作集合。 */
     private Set<String> requiredActions = new HashSet<>();
+    /** 联邦链接标识。 */
     private String federationLink;
+    /** 服务账户关联客户端内部 ID。 */
     private String serviceAccountClientLink;
 
+    /** Keycloak 会话。 */
     protected KeycloakSession session;
+    /** 所属 Realm。 */
     protected RealmModel realm;
+    /** 用户 ID。 */
     protected String id;
+    /** 是否只读。 */
     private boolean readonly;
 
+    /** 无参构造，供子类使用。 */
     protected AbstractInMemoryUserAdapter() {
     }
 
+    /** @param session Keycloak 会话
+     * @param realm 所属 Realm
+     * @param id 用户 ID */
     protected AbstractInMemoryUserAdapter(KeycloakSession session, RealmModel realm, String id) {
         this.session = session;
         this.realm = realm;
@@ -79,17 +99,21 @@ public abstract class AbstractInMemoryUserAdapter extends UserModelDefaultMethod
         setSingleAttribute(UserModel.USERNAME, username);
     }
 
+    /** 授予 Realm 默认角色并加入默认组。 */
     public void addDefaults() {
         this.grantRole(realm.getDefaultRole());
 
         realm.getDefaultGroupsStream().forEach(this::joinGroup);
     }
 
+    /** 设置只读模式。 */
     public void setReadonly(boolean flag) {
         readonly = flag;
     }
 
+    /** 只读模式下抛出 {@link ReadOnlyException}。 */
     protected void checkReadonly() {
+        // 只读模式下禁止写入
         if (readonly) throw new ReadOnlyException("In-memory user model is not writable");
     }
 

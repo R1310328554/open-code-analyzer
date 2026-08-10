@@ -20,12 +20,14 @@ package org.keycloak.sessions;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link StickySessionEncoderProvider} 工厂：创建粘性会话编码提供者实例。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface StickySessionEncoderProviderFactory extends ProviderFactory<StickySessionEncoderProvider> {
 
     /**
-     * For testing purpose only
+     * 仅用于测试：设置是否附加路由信息
      */
     void setShouldAttachRoute(boolean shouldAttachRoute);
 

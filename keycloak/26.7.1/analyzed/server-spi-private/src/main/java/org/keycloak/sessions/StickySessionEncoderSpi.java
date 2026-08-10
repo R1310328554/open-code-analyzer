@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 粘性会话编码 SPI：注册 {@link StickySessionEncoderProvider} 与 {@link StickySessionEncoderProviderFactory}。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class StickySessionEncoderSpi implements Spi {
 
+    /** @return 内部 SPI，不对外暴露 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code stickySessionEncoder} */
     @Override
     public String getName() {
         return "stickySessionEncoder";
     }
 
+    /** @return 提供者接口 {@link StickySessionEncoderProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return StickySessionEncoderProvider.class;
     }
 
+    /** @return 工厂接口 {@link StickySessionEncoderProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return StickySessionEncoderProviderFactory.class;

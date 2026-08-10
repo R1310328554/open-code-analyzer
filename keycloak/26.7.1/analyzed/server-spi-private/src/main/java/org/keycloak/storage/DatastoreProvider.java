@@ -31,31 +31,47 @@ import org.keycloak.models.UserSessionProvider;
 import org.keycloak.provider.Provider;
 import org.keycloak.sessions.AuthenticationSessionProvider;
 
-
+/**
+ * 数据存储提供者：聚合 Realm、用户、客户端、会话等各模型子提供者。
+ * <p>作为 Keycloak 持久化层的统一入口，供 {@link org.keycloak.models.KeycloakSession} 使用。</p>
+ */
 public interface DatastoreProvider extends Provider {
+    /** @return 认证会话提供者 */
     AuthenticationSessionProvider authSessions();
 
+    /** @return 客户端作用域提供者 */
     ClientScopeProvider clientScopes();
 
+    /** @return 客户端提供者 */
     ClientProvider clients();
 
+    /** @return 组提供者 */
     GroupProvider groups();
 
+    /** @return 身份提供者存储 */
     IdentityProviderStorageProvider identityProviders();
 
+    /** @return 用户登录失败记录提供者 */
     UserLoginFailureProvider loginFailures();
 
+    /** @return Realm 提供者 */
     RealmProvider realms();
 
+    /** @return 角色提供者 */
     RoleProvider roles();
 
+    /** @return 单次使用对象提供者 */
     SingleUseObjectProvider singleUseObjects();
 
+    /** @return 用户提供者 */
     UserProvider users();
 
+    /** @return 用户会话提供者 */
     UserSessionProvider userSessions();
 
+    /** @return 导入导出管理器 */
     ExportImportManager getExportImportManager();
 
+    /** @return 已撤销令牌提供者 */
     RevokedTokenProvider revokedTokens();
 }
