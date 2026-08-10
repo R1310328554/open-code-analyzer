@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:06:07Z",
-  "files": [
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3ControlStreamFrameTypeValidator.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3ControlStreamInboundHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3ControlStreamOutboundHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3DataFrame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3ErrorCode.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3Exception.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3Frame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3FrameCodec.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3FrameToHttpObjectCodec.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3FrameTypeDuplexValidationHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3FrameTypeInboundValidationHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3FrameTypeOutboundValidationHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3FrameTypeValidator.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3FrameValidationUtils.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3GoAwayFrame.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1118,
-  "done": 795
+  "done": 810
 }
