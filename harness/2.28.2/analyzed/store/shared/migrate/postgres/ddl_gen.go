@@ -4,6 +4,7 @@ import (
 	"database/sql"
 )
 
+// migrations 按顺序列出全部待执行的命名 DDL 迁移。
 var migrations = []struct {
 	name string
 	stmt string
@@ -206,8 +207,7 @@ var migrations = []struct {
 	},
 }
 
-// Migrate performs the database migration. If the migration fails
-// and error is returned.
+// Migrate 执行 Postgres 数据库 schema 迁移；失败时返回错误。
 func Migrate(db *sql.DB) error {
 	if err := createTable(db); err != nil {
 		return err
@@ -218,7 +218,7 @@ func Migrate(db *sql.DB) error {
 	}
 	for _, migration := range migrations {
 		if _, ok := completed[migration.name]; ok {
-
+			// 已执行则跳过
 			continue
 		}
 
@@ -233,16 +233,19 @@ func Migrate(db *sql.DB) error {
 	return nil
 }
 
+// createTable 创建 migrations 跟踪表。
 func createTable(db *sql.DB) error {
 	_, err := db.Exec(migrationTableCreate)
 	return err
 }
 
+// insertMigration 记录已完成的迁移名称。
 func insertMigration(db *sql.DB, name string) error {
 	_, err := db.Exec(migrationInsert, name)
 	return err
 }
 
+// selectCompleted 查询已执行迁移名称集合。
 func selectCompleted(db *sql.DB) (map[string]struct{}, error) {
 	migrations := map[string]struct{}{}
 	rows, err := db.Query(migrationSelect)
@@ -261,7 +264,7 @@ func selectCompleted(db *sql.DB) (map[string]struct{}, error) {
 }
 
 //
-// migration table ddl and sql
+// migrations 跟踪表 DDL 与 SQL
 //
 
 var migrationTableCreate = `

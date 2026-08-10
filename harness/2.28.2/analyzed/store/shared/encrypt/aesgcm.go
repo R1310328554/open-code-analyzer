@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// encrypt 包实现数据库字段加解密；Aesgcm 使用 AES-GCM 算法。
 package encrypt
 
 import (
@@ -28,7 +29,7 @@ type Aesgcm struct {
 	Compat bool
 }
 
-// Encrypt encrypts the plaintext using aesgcm.
+// Encrypt 使用 AES-GCM 加密明文字符串，密文含随机 nonce 前缀。
 func (e *Aesgcm) Encrypt(plaintext string) ([]byte, error) {
 	gcm, err := cipher.NewGCM(e.block)
 	if err != nil {
@@ -44,7 +45,7 @@ func (e *Aesgcm) Encrypt(plaintext string) ([]byte, error) {
 	return gcm.Seal(nonce, nonce, []byte(plaintext), nil), nil
 }
 
-// Decrypt decrypts the ciphertext using aesgcm.
+// Decrypt 使用 AES-GCM 解密密文；Compat 模式下失败时返回原文。
 func (e *Aesgcm) Decrypt(ciphertext []byte) (string, error) {
 	gcm, err := cipher.NewGCM(e.block)
 	if err != nil {
@@ -52,11 +53,8 @@ func (e *Aesgcm) Decrypt(ciphertext []byte) (string, error) {
 	}
 
 	if len(ciphertext) < gcm.NonceSize() {
-		// if the decryption utility is running in compatibility
-		// mode, it will return the ciphertext as plain text if
-		// decryption fails. This should be used when running the
-		// database in mixed-mode, where there is a mix of encrypted
-		// and unencrypted content.
+		// 兼容模式下解密失败时直接返回密文字符串，
+		// 适用于数据库中混存加密与明文内容的过渡期。
 		if e.Compat {
 			return string(ciphertext), nil
 		}
@@ -68,11 +66,8 @@ func (e *Aesgcm) Decrypt(ciphertext []byte) (string, error) {
 		ciphertext[gcm.NonceSize():],
 		nil,
 	)
-	// if the decryption utility is running in compatibility
-	// mode, it will return the ciphertext as plain text if
-	// decryption fails. This should be used when running the
-	// database in mixed-mode, where there is a mix of encrypted
-	// and unencrypted content.
+	// 兼容模式下解密失败时直接返回密文字符串，
+	// 适用于数据库中混存加密与明文内容的过渡期。
 	if err != nil && e.Compat {
 		return string(ciphertext), nil
 	}

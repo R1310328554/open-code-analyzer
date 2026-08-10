@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// encrypt 包在无密钥时以明文存储字段值的 none 策略。
 package encrypt
 
-// none is an encryption strategy that stores secret
-// values in plain text. This is the default strategy
-// when no key is specified.
+// none 以明文存储字段值；未配置密钥时的默认策略。
 type none struct {
 }
 
+// Encrypt 直接返回明文字节。
 func (*none) Encrypt(plaintext string) ([]byte, error) {
 	return []byte(plaintext), nil
 }
 
+// Decrypt 将密文字节转为字符串返回。
 func (*none) Decrypt(ciphertext []byte) (string, error) {
 	return string(ciphertext), nil
 }

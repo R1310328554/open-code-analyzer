@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// sqlite 包定义 SQLite 数据库迁移的 go:generate 入口。
 package sqlite
 
+// 由 togo 从 SQL 模板生成 SQLite DDL（见 ddl_gen.go）。
 //go:generate togo ddl -package sqlite -dialect sqlite3

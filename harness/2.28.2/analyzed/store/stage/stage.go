@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// stage 包实现 core.StageStore，负责构建阶段的 CRUD 与状态查询。
 package stage
 
 import (
@@ -21,15 +22,17 @@ import (
 	"github.com/drone/drone/store/shared/db"
 )
 
-// New returns a new StageStore.
+// New 创建并返回 core.StageStore 实现。
 func New(database *db.DB) core.StageStore {
 	return &stageStore{database}
 }
 
+// stageStore 是 core.StageStore 的数据库实现。
 type stageStore struct {
 	db *db.DB
 }
 
+// List 返回指定构建下的全部阶段（按 stage_number 排序）。
 func (s *stageStore) List(ctx context.Context, id int64) ([]*core.Stage, error) {
 	var out []*core.Stage
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -50,6 +53,7 @@ func (s *stageStore) List(ctx context.Context, id int64) ([]*core.Stage, error) 
 	return out, err
 }
 
+// ListState 按状态列出阶段；MySQL 对 pending/running 走辅助表。
 func (s *stageStore) ListState(ctx context.Context, state string) ([]*core.Stage, error) {
 	var out []*core.Stage
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -57,10 +61,7 @@ func (s *stageStore) ListState(ctx context.Context, state string) ([]*core.Stage
 			"stage_status": state,
 		}
 		query := queryState
-		// this is a workaround because mysql does not support
-		// partial or filtered indexes for low-cardinality values.
-		// For mysql we use a separate table to track pending and
-		// running jobs to avoid full table scans.
+		// MySQL 不支持低基数部分索引；pending/running 改查 stages_unfinished 辅助表以避免全表扫描。
 		if (state == "pending" || state == "running") &&
 			s.db.Driver() == db.Mysql {
 			query = queryStateMysql
@@ -79,6 +80,7 @@ func (s *stageStore) ListState(ctx context.Context, state string) ([]*core.Stage
 	return out, err
 }
 
+// ListSteps 返回构建下各阶段及其关联步骤。
 func (s *stageStore) ListSteps(ctx context.Context, id int64) ([]*core.Stage, error) {
 	var out []*core.Stage
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -99,14 +101,12 @@ func (s *stageStore) ListSteps(ctx context.Context, id int64) ([]*core.Stage, er
 	return out, err
 }
 
+// ListIncomplete 列出 pending/running 的未完成阶段。
 func (s *stageStore) ListIncomplete(ctx context.Context) ([]*core.Stage, error) {
 	var out []*core.Stage
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
 		stmt := queryUnfinished
-		// this is a workaround because mysql does not support
-		// partial or filtered indexes for low-cardinality values.
-		// For mysql we use a separate table to track pending and
-		// running jobs to avoid full table scans.
+		// MySQL 不支持低基数部分索引；pending/running 改查 stages_unfinished 辅助表以避免全表扫描。
 		if s.db.Driver() == db.Mysql {
 			stmt = queryUnfinishedMysql
 		}
@@ -120,6 +120,7 @@ func (s *stageStore) ListIncomplete(ctx context.Context) ([]*core.Stage, error) 
 	return out, err
 }
 
+// Find 按主键 ID 查找阶段。
 func (s *stageStore) Find(ctx context.Context, id int64) (*core.Stage, error) {
 	out := &core.Stage{ID: id}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -134,6 +135,7 @@ func (s *stageStore) Find(ctx context.Context, id int64) (*core.Stage, error) {
 	return out, err
 }
 
+// FindNumber 按构建 ID 与阶段序号查找。
 func (s *stageStore) FindNumber(ctx context.Context, id int64, number int) (*core.Stage, error) {
 	out := &core.Stage{BuildID: id, Number: number}
 	err := s.db.View(func(queryer db.Queryer, binder db.Binder) error {
@@ -148,6 +150,7 @@ func (s *stageStore) FindNumber(ctx context.Context, id int64, number int) (*cor
 	return out, err
 }
 
+// Create 插入新阶段；Postgres 使用 RETURNING 获取 ID。
 func (s *stageStore) Create(ctx context.Context, stage *core.Stage) error {
 	if s.db.Driver() == db.Postgres {
 		return s.createPostgres(ctx, stage)
@@ -155,6 +158,7 @@ func (s *stageStore) Create(ctx context.Context, stage *core.Stage) error {
 	return s.create(ctx, stage)
 }
 
+// create 在非 Postgres 驱动下插入阶段。
 func (s *stageStore) create(ctx context.Context, stage *core.Stage) error {
 	stage.Version = 1
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
@@ -172,6 +176,7 @@ func (s *stageStore) create(ctx context.Context, stage *core.Stage) error {
 	})
 }
 
+// createPostgres 在 Postgres 下插入阶段并 RETURNING ID。
 func (s *stageStore) createPostgres(ctx context.Context, stage *core.Stage) error {
 	stage.Version = 1
 	return s.db.Lock(func(execer db.Execer, binder db.Binder) error {
@@ -184,6 +189,7 @@ func (s *stageStore) createPostgres(ctx context.Context, stage *core.Stage) erro
 	})
 }
 
+// Update 以乐观锁方式更新阶段状态与元数据。
 func (s *stageStore) Update(ctx context.Context, stage *core.Stage) error {
 	versionNew := stage.Version + 1
 	versionOld := stage.Version

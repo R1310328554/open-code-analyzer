@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// encrypt 包提供数据库字符串字段的加解密工厂与接口。
 package encrypt
 
 import (
@@ -19,18 +20,16 @@ import (
 	"errors"
 )
 
-// indicates key size is too small.
+// errKeySize 表示加密密钥长度不足（须为 32 字节）。
 var errKeySize = errors.New("encryption key must be 32 bytes")
 
-// Encrypter provides database field encryption and decryption.
-// Encrypted values are currently limited to strings, which is
-// reflected in the interface design.
+// Encrypter 提供数据库字段加解密；当前仅支持字符串类型。
 type Encrypter interface {
 	Encrypt(plaintext string) ([]byte, error)
 	Decrypt(ciphertext []byte) (string, error)
 }
 
-// New provides a new database field encrypter.
+// New 根据密钥创建 Encrypter；空密钥返回明文 none 实现。
 func New(key string) (Encrypter, error) {
 	if key == "" {
 		return &none{}, nil

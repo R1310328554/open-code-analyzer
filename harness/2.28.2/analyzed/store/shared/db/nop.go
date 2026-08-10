@@ -12,11 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// db 包提供非 SQLite 驱动下的空操作锁实现（Locker 接口）。
 package db
 
+// nopLocker 是 Locker 接口的空实现，用于非 SQLite 驱动（无需读写锁）。
 type nopLocker struct{}
 
+// Lock 获取写锁（空操作）。
 func (nopLocker) Lock()    {}
+// Unlock 释放写锁（空操作）。
 func (nopLocker) Unlock()  {}
+// RLock 获取读锁（空操作）。
 func (nopLocker) RLock()   {}
+// RUnlock 释放读锁（空操作）。
 func (nopLocker) RUnlock() {}

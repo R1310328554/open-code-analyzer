@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// step 包提供步骤记录的 SQL 扫描与参数转换辅助函数。
 package step
 
 import (
@@ -24,8 +25,7 @@ import (
 	"github.com/jmoiron/sqlx/types"
 )
 
-// helper function converts the Step structure to a set
-// of named query parameters.
+// toParams 将 Step 结构体转换为命名查询参数字典。
 func toParams(from *core.Step) map[string]interface{} {
 	return map[string]interface{}{
 		"step_id":         from.ID,
@@ -46,13 +46,13 @@ func toParams(from *core.Step) map[string]interface{} {
 	}
 }
 
+// encodeSlice 将依赖切片序列化为 JSONText。
 func encodeSlice(v []string) types.JSONText {
 	raw, _ := json.Marshal(v)
 	return types.JSONText(raw)
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
 func scanRow(scanner db.Scanner, dest *core.Step) error {
 	depJSON := types.JSONText{}
 	err := scanner.Scan(
@@ -76,8 +76,8 @@ func scanRow(scanner db.Scanner, dest *core.Step) error {
 	return err
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
+// scanRows 批量扫描步骤记录。
 func scanRows(rows *sql.Rows) ([]*core.Step, error) {
 	defer rows.Close()
 

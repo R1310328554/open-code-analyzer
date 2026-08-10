@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// stage 包定义用于 LEFT JOIN 步骤表的可空中间结构。
 package stage
 
 import (
@@ -22,6 +23,7 @@ import (
 	"github.com/jmoiron/sqlx/types"
 )
 
+// nullStep 封装 LEFT JOIN steps 时各字段的可空 SQL 类型。
 type nullStep struct {
 	ID        sql.NullInt64
 	StageID   sql.NullInt64
@@ -40,7 +42,7 @@ type nullStep struct {
 	Schema    sql.NullString
 }
 
-func (s *nullStep) value() *core.Step {
+// value 将 nullStep 转换为 core.Step；step_id 为 0 时不附加步骤。
 	var dependsOn []string
 	json.Unmarshal(s.DependsOn, &dependsOn)
 

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// stage 包提供阶段记录的 SQL 扫描与参数转换辅助函数。
 package stage
 
 import (
@@ -24,8 +25,7 @@ import (
 	"github.com/jmoiron/sqlx/types"
 )
 
-// helper function converts the Stage structure to a set
-// of named query parameters.
+// toParams 将 Stage 结构体转换为命名查询参数字典。
 func toParams(stage *core.Stage) map[string]interface{} {
 	return map[string]interface{}{
 		"stage_id":         stage.ID,
@@ -58,18 +58,19 @@ func toParams(stage *core.Stage) map[string]interface{} {
 	}
 }
 
+// encodeSlice 将字符串切片序列化为 JSONText。
 func encodeSlice(v []string) types.JSONText {
 	raw, _ := json.Marshal(v)
 	return types.JSONText(raw)
 }
 
+// encodeParams 将标签 map 序列化为 JSONText。
 func encodeParams(v map[string]string) types.JSONText {
 	raw, _ := json.Marshal(v)
 	return types.JSONText(raw)
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
 func scanRow(scanner db.Scanner, dest *core.Stage) error {
 	depJSON := types.JSONText{}
 	labJSON := types.JSONText{}
@@ -107,8 +108,8 @@ func scanRow(scanner db.Scanner, dest *core.Stage) error {
 	return err
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
+// scanRowStep 扫描含 LEFT JOIN 步骤字段的阶段行。
 func scanRowStep(scanner db.Scanner, stage *core.Stage, step *nullStep) error {
 	depJSON := types.JSONText{}
 	labJSON := types.JSONText{}
@@ -163,8 +164,8 @@ func scanRowStep(scanner db.Scanner, stage *core.Stage, step *nullStep) error {
 	return err
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
+// scanRows 批量扫描阶段记录。
 func scanRows(rows *sql.Rows) ([]*core.Stage, error) {
 	defer rows.Close()
 
@@ -180,8 +181,8 @@ func scanRows(rows *sql.Rows) ([]*core.Stage, error) {
 	return stages, nil
 }
 
-// helper function scans the sql.Row and copies the column
-// values to the destination object.
+// scanRow 扫描 sql.Row，将列值复制到目标对象。
+// scanRowsWithSteps 批量扫描阶段及其关联步骤（按 stage_id 聚合）。
 func scanRowsWithSteps(rows *sql.Rows) ([]*core.Stage, error) {
 	defer rows.Close()
 
