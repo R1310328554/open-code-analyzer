@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:35:20Z",
-  "files": [
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo4_2_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo4_6_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo6_0_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo8_0_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo8_0_2.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo9_0_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo9_0_4.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/RealmMigration.java",
-    "model/storage-private/src/main/java/org/keycloak/models/cache/CacheCrlProvider.java",
-    "model/storage-private/src/main/java/org/keycloak/models/cache/CacheCrlProviderFactory.java",
-    "model/storage-private/src/main/java/org/keycloak/models/cache/CacheCrlProviderSpi.java",
-    "model/storage-private/src/main/java/org/keycloak/models/cache/CachePublicKeyProvider.java",
-    "model/storage-private/src/main/java/org/keycloak/models/cache/CachePublicKeyProviderFactory.java",
-    "model/storage-private/src/main/java/org/keycloak/models/cache/CachePublicKeyProviderSpi.java",
-    "model/storage-private/src/main/java/org/keycloak/models/cache/CacheRealmProvider.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4078,
-  "done": 1905
+  "done": 1920
 }

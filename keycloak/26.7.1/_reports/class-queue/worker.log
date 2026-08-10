@@ -1873,3 +1873,18 @@
 2026-08-10T08:37:01Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo3_4_1.java wave64a migrators 26.6-26.7 and 2.x-4.0
 2026-08-10T08:37:01Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo3_4_2.java wave64a migrators 26.6-26.7 and 2.x-4.0
 2026-08-10T08:37:01Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo4_0_0.java wave64a migrators 26.6-26.7 and 2.x-4.0
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo4_2_0.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo4_6_0.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo6_0_0.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo8_0_0.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo8_0_2.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo9_0_0.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo9_0_4.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/migration/migrators/RealmMigration.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CacheCrlProvider.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CacheCrlProviderFactory.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CacheCrlProviderSpi.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CachePublicKeyProvider.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CachePublicKeyProviderFactory.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CachePublicKeyProviderSpi.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
+2026-08-10T08:37:16Z DONE model/storage-private/src/main/java/org/keycloak/models/cache/CacheRealmProvider.java wave64b migrators 4.2-9.x + cache CRL/PK/realm SPIs
