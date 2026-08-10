@@ -22,13 +22,17 @@ import io.netty.util.internal.StringUtil;
 /**
  * See <a href="https://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html#fixed-header">
  *     MQTTV3.1/fixed-header</a>
+ * <p>MQTT 固定头：消息类型、DUP/QoS/Retain 标志，以及剩余长度（可变头+载荷的字节数）。</p>
  */
 public final class MqttFixedHeader {
 
     private final MqttMessageType messageType;
+    /** 重传标志，QoS&gt;0 时标识是否为重复投递。 */
     private final boolean isDup;
     private final MqttQoS qosLevel;
+    /** PUBLISH 时 broker 是否应保留该消息。 */
     private final boolean isRetain;
+    /** 本包剩余部分（可变头+payload）的字节长度。 */
     private final int remainingLength;
 
     public MqttFixedHeader(

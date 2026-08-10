@@ -15,6 +15,7 @@
  */
 package io.netty.handler.codec.mqtt;
 
+/** MQTT 编解码器的默认阈值常量，供 {@link MqttDecoder}/{@link MqttEncoder} 构造时使用。 */
 public final class MqttConstant {
 
     private MqttConstant() {
@@ -22,17 +23,20 @@ public final class MqttConstant {
 
     /**
      * Default max bytes in message
+     * <p>单条 MQTT 报文允许的最大字节数，超出则 {@link MqttDecoder} 抛出 {@link io.netty.handler.codec.TooLongFrameException}。</p>
      */
     public static final int DEFAULT_MAX_BYTES_IN_MESSAGE = 8092;
 
     /**
      * min client id length
+     * <p>MQTT 3.1 规范要求 clientId 至少 1 字节（3.1.1/5.0 允许零长度）。</p>
      */
     public static final int MIN_CLIENT_ID_LENGTH = 1;
 
     /**
      * Default max client id length,In the mqtt3.1 protocol,
      * the default maximum Client Identifier length is 23
+     * <p>MQTT 3.1 协议下 clientId 默认上限 23 字节；3.1.1/5.0 由服务端自行决定。</p>
      */
     public static final int DEFAULT_MAX_CLIENT_ID_LENGTH = 23;
 

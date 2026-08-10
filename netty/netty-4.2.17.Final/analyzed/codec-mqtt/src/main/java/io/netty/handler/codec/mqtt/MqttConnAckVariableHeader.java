@@ -20,13 +20,17 @@ import io.netty.util.internal.StringUtil;
 
 /**
  * Variable header of {@link MqttConnectMessage}
+ * <p>CONNACK 可变头：连接返回码、session present 标志，MQTT 5 还可携带属性（如 reason string）。</p>
  */
 public final class MqttConnAckVariableHeader {
 
+    /** 服务端返回的连接结果码。 */
     private final MqttConnectReturnCode connectReturnCode;
 
+    /** 是否复用了 broker 上已存在的会话状态（仅当 clean session=false 时有意义）。 */
     private final boolean sessionPresent;
 
+    /** MQTT 5 扩展属性；3.x 解码路径使用 {@link MqttProperties#NO_PROPERTIES}。 */
     private final MqttProperties properties;
 
     public MqttConnAckVariableHeader(MqttConnectReturnCode connectReturnCode, boolean sessionPresent) {

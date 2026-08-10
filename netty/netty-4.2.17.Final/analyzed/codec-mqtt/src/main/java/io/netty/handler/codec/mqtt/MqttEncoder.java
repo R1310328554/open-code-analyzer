@@ -67,10 +67,12 @@ import static io.netty.handler.codec.mqtt.MqttProperties.WILL_DELAY_INTERVAL;
  * as described here <a href="https://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html">MQTTV3.1</a>
  * or v5.0 as described here <a href="https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html">MQTTv5.0</a> -
  * depending on the version specified in the first CONNECT message that goes through the channel.
+ * <p>{@link ChannelHandler.Sharable} 单例 {@link #INSTANCE}：无 per-channel 状态，版本由 CONNECT 写入 Channel 属性。</p>
  */
 @ChannelHandler.Sharable
 public final class MqttEncoder extends MessageToMessageEncoder<MqttMessage> {
 
+    /** 全局共享编码器实例，pipeline 中可直接 addLast(INSTANCE)。 */
     public static final MqttEncoder INSTANCE = new MqttEncoder();
 
     private MqttEncoder() {
@@ -88,6 +90,7 @@ public final class MqttEncoder extends MessageToMessageEncoder<MqttMessage> {
      *
      * @param message MQTT message to encode
      * @return ByteBuf with encoded bytes
+     * <p>按 {@link MqttMessageType} 分派到各 encode* 方法；CONNECT 时同步 {@link MqttCodecUtil#setMqttVersion}。</p>
      */
     static ByteBuf doEncode(ChannelHandlerContext ctx,
                      MqttMessage message) {
@@ -149,7 +152,7 @@ public final class MqttEncoder extends MessageToMessageEncoder<MqttMessage> {
                 (byte) variableHeader.version());
         setMqttVersion(ctx, mqttVersion);
 
-        // MQTT 3.1 and 3.1.1 require the Password Flag to be 0 when the User Name Flag is 0.
+        // MQTT 3.1/3.1.1：未设 User Name 标志时 Password 标志必须为 0
         if ((mqttVersion == MqttVersion.MQTT_3_1 || mqttVersion == MqttVersion.MQTT_3_1_1) &&
                 !variableHeader.hasUserName() && variableHeader.hasPassword()) {
             throw new EncoderException("Without a username, the password MUST be not set");

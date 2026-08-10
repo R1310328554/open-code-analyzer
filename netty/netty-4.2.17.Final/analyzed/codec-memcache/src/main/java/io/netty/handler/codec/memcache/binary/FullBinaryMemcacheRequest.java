@@ -21,6 +21,8 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * A {@link BinaryMemcacheRequest} that also includes the content.
+ * <p>带完整 value 载荷的二进制 Memcache 请求（如 SET），同时继承
+ * {@link FullMemcacheMessage} 的引用计数与 ByteBuf 生命周期语义。</p>
  */
 @UnstableApi
 public interface FullBinaryMemcacheRequest extends BinaryMemcacheRequest, FullMemcacheMessage {

@@ -18,6 +18,7 @@ package io.netty.handler.codec.mqtt;
 
 /**
  * See <a href="https://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html#connect">MQTTV3.1/connect</a>
+ * <p>CONNECT 报文：客户端建立会话的入口，携带协议名/版本、连接标志及 clientId、遗嘱、认证等 payload。</p>
  */
 public final class MqttConnectMessage extends MqttMessage {
 

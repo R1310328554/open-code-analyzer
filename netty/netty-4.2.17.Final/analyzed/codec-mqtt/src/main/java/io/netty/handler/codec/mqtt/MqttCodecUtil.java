@@ -23,10 +23,16 @@ import io.netty.util.AttributeKey;
 
 import static io.netty.handler.codec.mqtt.MqttConstant.MIN_CLIENT_ID_LENGTH;
 
+/**
+ * MQTT 编解码内部工具：Channel 属性存协议版本、字段合法性校验、固定头规范化。
+ * <p>CONNECT 解析后通过 {@link #setMqttVersion} 写入版本，后续报文按 3.1/3.1.1/5.0 分支处理。</p>
+ */
 final class MqttCodecUtil {
 
+    /** 绑定在 Channel 上，记录本连接协商出的 MQTT 协议版本。 */
     static final AttributeKey<MqttVersion> MQTT_VERSION_KEY = AttributeKey.valueOf("NETTY_CODEC_MQTT_VERSION");
 
+    /** 未收到 CONNECT 前默认按 MQTT 3.1.1 语义解码。 */
     static MqttVersion getMqttVersion(ChannelHandlerContext ctx) {
         Attribute<MqttVersion> attr = ctx.channel().attr(MQTT_VERSION_KEY);
         MqttVersion version = attr.get();
@@ -45,7 +51,7 @@ final class MqttCodecUtil {
         if (topicName == null) {
             return false;
         }
-        // publish topic name must not contain any wildcard
+        // PUBLISH 主题名禁止通配符 #/+ 及 NUL（与 SUBSCRIBE 过滤语法不同）
         for (int i = 0; i < topicName.length(); i++) {
             char c = topicName.charAt(i);
             if (c == '#' || c == '+' || c == '\0') {
@@ -65,6 +71,7 @@ final class MqttCodecUtil {
 
     /**
      * Determine if a client identifier is valid.
+     * <p>3.1 强制长度 1–max；3.1.1/5.0 允许零长度与更长 ID；acceptNulBytes 控制是否容忍内嵌 NUL。</p>
      * @param mqttVersion The MQTT version semantics to use.
      * @param maxClientIdLength The max client id length.
      * @param clientId The client id value.
@@ -88,6 +95,7 @@ final class MqttCodecUtil {
         throw new IllegalArgumentException(mqttVersion + " is unknown mqtt version");
     }
 
+    /** 校验固定头与消息类型的协议约束（如 SUBSCRIBE 必须 QoS 1，AUTH 仅 MQTT 5）。 */
     static MqttFixedHeader validateFixedHeader(ChannelHandlerContext ctx, MqttFixedHeader mqttFixedHeader) {
         switch (mqttFixedHeader.messageType()) {
             case PUBREL:
@@ -107,6 +115,10 @@ final class MqttCodecUtil {
         }
     }
 
+    /**
+     * 将固定头中对该消息类型无意义的 DUP/QoS/Retain 位清零，便于 equals/编码一致性。
+     * <p>例如 CONNECT/CONNACK 规范要求 QoS=0 且 Retain=0。</p>
+     */
     static MqttFixedHeader resetUnusedFields(MqttFixedHeader mqttFixedHeader) {
         switch (mqttFixedHeader.messageType()) {
             case CONNECT:

@@ -23,6 +23,7 @@ import io.netty.util.internal.StringUtil;
 
 /**
  * Payload of {@link MqttConnectMessage}
+ * <p>CONNECT 载荷：clientId、可选遗嘱（主题+消息+属性）、用户名与密码（均为 UTF-8 字符串或原始字节）。</p>
  */
 public final class MqttConnectPayload {
 
@@ -102,6 +103,7 @@ public final class MqttConnectPayload {
         return willMessage == null ? null : new String(willMessage, CharsetUtil.UTF_8);
     }
 
+    /** 遗嘱消息原始字节（MQTT 5 允许非 UTF-8 载荷）。 */
     public byte[] willMessageInBytes() {
         return willMessage;
     }
@@ -118,6 +120,7 @@ public final class MqttConnectPayload {
         return password == null ? null : new String(password, CharsetUtil.UTF_8);
     }
 
+    /** 密码原始字节，toString 中刻意掩码为 ****。 */
     public byte[] passwordInBytes() {
         return password;
     }

@@ -18,16 +18,18 @@ package io.netty.handler.codec.mqtt;
 
 /**
  * Return Code of {@link MqttConnAckMessage}
+ * <p>CONNACK 连接返回码：0x00–0x05 为 MQTT 3.x 语义，0x80 及以上为 MQTT 5 扩展原因码。
+ * {@link #valueOf(byte)} 通过预填数组 O(1) 查表，避免每次线性扫描枚举。</p>
  */
 public enum MqttConnectReturnCode {
     CONNECTION_ACCEPTED((byte) 0x00),
-    //MQTT 3 codes
+    // MQTT 3.x 连接拒绝码（0x01–0x05）
     CONNECTION_REFUSED_UNACCEPTABLE_PROTOCOL_VERSION((byte) 0X01),
     CONNECTION_REFUSED_IDENTIFIER_REJECTED((byte) 0x02),
     CONNECTION_REFUSED_SERVER_UNAVAILABLE((byte) 0x03),
     CONNECTION_REFUSED_BAD_USER_NAME_OR_PASSWORD((byte) 0x04),
     CONNECTION_REFUSED_NOT_AUTHORIZED((byte) 0x05),
-    //MQTT 5 codes
+    // MQTT 5 连接拒绝码（0x80+，语义更细粒度）
     CONNECTION_REFUSED_UNSPECIFIED_ERROR((byte) 0x80),
     CONNECTION_REFUSED_MALFORMED_PACKET((byte) 0x81),
     CONNECTION_REFUSED_PROTOCOL_ERROR((byte) 0x82),
@@ -50,6 +52,7 @@ public enum MqttConnectReturnCode {
     CONNECTION_REFUSED_SERVER_MOVED((byte) 0x9D),
     CONNECTION_REFUSED_CONNECTION_RATE_EXCEEDED((byte) 0x9F);
 
+    /** 按无符号字节值索引的查表数组（长度 160 覆盖 0x00–0x9F 有效区间）。 */
     private static final MqttConnectReturnCode[] VALUES;
 
     static {

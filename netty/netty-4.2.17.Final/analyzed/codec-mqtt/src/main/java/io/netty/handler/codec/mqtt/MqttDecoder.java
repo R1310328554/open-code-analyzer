@@ -77,6 +77,8 @@ import static io.netty.handler.codec.mqtt.MqttSubscriptionOption.RetainedHandlin
  * or
  * <a href="https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html">v5.0</a>, depending on the
  * version specified in the CONNECT message that first goes through the channel.
+ * <p>基于 {@link ReplayingDecoder} 的三段式状态机：固定头 → 可变头 → 载荷。
+ * CONNECT 解析后会写入 Channel 的 MQTT 版本属性，后续报文按协商版本分支。</p>
  */
 public final class MqttDecoder extends ReplayingDecoder<DecoderState> {
 
@@ -84,6 +86,7 @@ public final class MqttDecoder extends ReplayingDecoder<DecoderState> {
      * States of the decoder.
      * We start at READ_FIXED_HEADER, followed by
      * READ_VARIABLE_HEADER and finally READ_PAYLOAD.
+     * <p>跨多次 {@link #decode} 调用通过 checkpoint 续传半包；BAD_MESSAGE 则持续丢弃直至断连。</p>
      */
     enum DecoderState {
         READ_FIXED_HEADER,
@@ -94,14 +97,17 @@ public final class MqttDecoder extends ReplayingDecoder<DecoderState> {
 
     private MqttFixedHeader mqttFixedHeader;
     private Object variableHeader;
+    /** 当前报文可变头+载荷尚未消费的字节数（来自 remaining length）。 */
     private int bytesRemainingInVariablePart;
 
     private final int maxBytesInMessage;
     private final int maxClientIdLength;
+    /** true 时严格校验 UTF-8（拒绝畸形序列与 U+0000）；false 保留旧版宽松行为。 */
     private final boolean strictUtf8Validation;
     // Lazily-initialised UTF-8 decoder reused across calls in the same channel/decoder
     // instance. ReplayingDecoder is invoked from a single thread per channel, so a non
     // thread-safe CharsetDecoder is safe to cache here.
+    /** 单 Channel 单线程解码，可安全复用非线程安全的 CharsetDecoder。 */
     private CharsetDecoder utf8Decoder;
 
     public MqttDecoder() {
@@ -128,6 +134,7 @@ public final class MqttDecoder extends ReplayingDecoder<DecoderState> {
      *                              rejected as a Malformed Packet. If {@code false}, the legacy
      *                              behaviour is preserved, malformed bytes are silently replaced
      *                              with {@code U+FFFD} and U+0000 is accepted.
+     * <p>maxBytesInMessage 限制 remaining length，防止超大帧耗尽内存。</p>
      */
     public MqttDecoder(int maxBytesInMessage, int maxClientIdLength, boolean strictUtf8Validation) {
         super(DecoderState.READ_FIXED_HEADER);
@@ -156,9 +163,7 @@ public final class MqttDecoder extends ReplayingDecoder<DecoderState> {
                     variableHeader = decodeVariableHeader(ctx, buffer, mqttFixedHeader);
                 } catch (Signal signal) {
                     if (bytesRemainingBeforeVariableHeader > maxBytesInMessage) {
-                        // We couldn't parse the complete message, and it's already too large.
-                        // Swallow the Signal (we don't need more data) and instead bail out
-                        // and throw the TooLongFrameException below.
+                        // 可变头已超限：吞掉 Signal，下方统一抛 TooLongFrameException
                         bailOut = true;
                     } else {
                         // Ask for REPLAY if the current message is within maxBytesInMessage.
@@ -198,7 +203,7 @@ public final class MqttDecoder extends ReplayingDecoder<DecoderState> {
             }
 
             case BAD_MESSAGE:
-                // Keep discarding until disconnection.
+                // 已产出 invalidMessage，持续 skip 直至连接关闭，避免脏字节干扰后续帧
                 buffer.skipBytes(actualReadableBytes());
                 break;
 
@@ -208,6 +213,7 @@ public final class MqttDecoder extends ReplayingDecoder<DecoderState> {
         }
     }
 
+    /** 解码失败时进入 BAD_MESSAGE 状态，封装为 {@link MqttMessage#DECODE_FAILURE} 供上层处理。 */
     private MqttMessage invalidMessage(Throwable cause) {
       checkpoint(DecoderState.BAD_MESSAGE);
       return MqttMessageFactory.newInvalidMessage(mqttFixedHeader, variableHeader, cause);
@@ -222,6 +228,7 @@ public final class MqttDecoder extends ReplayingDecoder<DecoderState> {
      *
      * @param buffer the buffer to decode from
      * @return the fixed header
+     * <p>首字节高 4 位为消息类型，低 4 位为 DUP/QoS/Retain；随后为 MQTT 变长 remaining length。</p>
      */
     private static MqttFixedHeader decodeFixedHeader(ChannelHandlerContext ctx, ByteBuf buffer) {
         short b1 = buffer.readUnsignedByte();
@@ -737,6 +744,7 @@ public final class MqttDecoder extends ReplayingDecoder<DecoderState> {
      * Reads {@code length} bytes from {@code buffer} and decodes them as a strictly validated
      * UTF-8 Encoded String per MQTT 3.1.1 and MQTT 5.0.
      * Throws a {@link DecoderException} if the sequence is malformed or contains U+0000.
+     * <p>MQTT 规定 UTF-8 Encoded String 不得含 U+0000；畸形 UTF-8 视为 Malformed Packet。</p>
      */
     private String readStrictUtf8(ByteBuf buffer, int length) {
         if (length == 0) {

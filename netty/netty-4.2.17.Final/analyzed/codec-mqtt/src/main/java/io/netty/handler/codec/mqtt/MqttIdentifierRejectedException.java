@@ -20,6 +20,8 @@ import io.netty.handler.codec.DecoderException;
 /**
  * A {@link MqttIdentifierRejectedException} which is thrown when a CONNECT request contains invalid client identifier,
  * will topic name, or username, or when a PUBLISH message contains an invalid topic name.
+ * <p>标识符校验失败时抛出：CONNECT 中的 clientId/遗嘱主题/用户名，或 PUBLISH 中的主题名不符合 MQTT 规则
+ * （如含通配符、NUL 字节等）。</p>
  */
 public final class MqttIdentifierRejectedException extends DecoderException {
 

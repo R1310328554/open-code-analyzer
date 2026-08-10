@@ -18,6 +18,7 @@ package io.netty.handler.codec.mqtt;
 
 /**
  * See <a href="https://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html#connack">MQTTV3.1/connack</a>
+ * <p>CONNACK 报文：服务端对 CONNECT 的应答，仅含可变头（返回码、session present），无 payload。</p>
  */
 public final class MqttConnAckMessage extends MqttMessage {
 

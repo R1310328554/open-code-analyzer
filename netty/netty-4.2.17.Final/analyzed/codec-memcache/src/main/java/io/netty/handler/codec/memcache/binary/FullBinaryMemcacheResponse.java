@@ -21,6 +21,8 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * A {@link BinaryMemcacheResponse} that also includes the content.
+ * <p>带完整 value 载荷的二进制 Memcache 响应（如 GET 命中），支持 copy/duplicate/replace
+ * 等 ByteBuf 视图操作而不丢失 header 元数据。</p>
  */
 @UnstableApi
 public interface FullBinaryMemcacheResponse extends BinaryMemcacheResponse, FullMemcacheMessage {

@@ -22,11 +22,14 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * The default implementation of a {@link FullBinaryMemcacheResponse}.
+ * <p>二进制 Memcache 响应的默认实现：在 {@link DefaultBinaryMemcacheResponse} 的 key/extras
+ * 之上再持有完整 value 载荷，并同步维护 total body length。</p>
  */
 @UnstableApi
 public class DefaultFullBinaryMemcacheResponse extends DefaultBinaryMemcacheResponse
     implements FullBinaryMemcacheResponse {
 
+    /** 响应 value 字节内容（GET 命中时的实际数据）。 */
     private final ByteBuf content;
 
     /**
@@ -50,6 +53,7 @@ public class DefaultFullBinaryMemcacheResponse extends DefaultBinaryMemcacheResp
         ByteBuf content) {
         super(key, extras);
         this.content = ObjectUtil.checkNotNull(content, "content");
+        // body 长度 = key + extras + value，与二进制协议 remaining body 字段一致
         setTotalBodyLength(keyLength() + extrasLength() + content.readableBytes());
     }
 
@@ -133,6 +137,7 @@ public class DefaultFullBinaryMemcacheResponse extends DefaultBinaryMemcacheResp
         return newInstance(key, extras, content);
     }
 
+    /** 复制元数据（opcode、status 等）到新实例，供 copy/duplicate/replace 复用。 */
     private FullBinaryMemcacheResponse newInstance(ByteBuf key, ByteBuf extras, ByteBuf content) {
         DefaultFullBinaryMemcacheResponse newInstance = new DefaultFullBinaryMemcacheResponse(key, extras, content);
         copyMeta(newInstance);

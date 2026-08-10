@@ -20,17 +20,23 @@ import io.netty.util.internal.StringUtil;
 
 /**
  * Variable Header for the {@link MqttConnectMessage}
+ * <p>CONNECT 可变头：协议名/级别、连接标志（遗嘱、clean session、认证位）、keep-alive 及 MQTT 5 属性。</p>
  */
 public final class MqttConnectVariableHeader {
 
+    /** 协议名，如 "MQTT" 或历史 "MQIsdp"。 */
     private final String name;
+    /** 协议级别字节，与 {@link MqttVersion} 对应。 */
     private final int version;
     private final boolean hasUserName;
     private final boolean hasPassword;
     private final boolean isWillRetain;
     private final int willQos;
+    /** 是否设置遗嘱消息（客户端异常断开时 broker 代为发布）。 */
     private final boolean isWillFlag;
+    /** true 表示 clean start，不恢复持久会话。 */
     private final boolean isCleanSession;
+    /** 心跳间隔（秒），0 表示禁用 keep-alive。 */
     private final int keepAliveTimeSeconds;
     private final MqttProperties properties;
 
