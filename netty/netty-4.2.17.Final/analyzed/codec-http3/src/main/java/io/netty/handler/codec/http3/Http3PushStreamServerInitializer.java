@@ -28,9 +28,12 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 /**
  * Abstract base class that users can extend to init HTTP/3 push-streams for servers. This initializer
  * will automatically add HTTP/3 codecs etc to the {@link ChannelPipeline} as well.
+ * <p>服务端 push 流初始化器：在 pipeline 装配前先写入流类型前缀（push stream type + Push ID），
+ * 再挂载编解码器、出站状态校验与用户 {@link #initPushStream} 处理器。
  */
 public abstract class Http3PushStreamServerInitializer extends ChannelInitializer<QuicStreamChannel> {
 
+    /** 与 {@link Http3PushPromiseFrame#id()} 对应的 Push ID，写入流首两个变长整数。 */
     private final long pushId;
 
     protected Http3PushStreamServerInitializer(long pushId) {
@@ -48,6 +51,7 @@ public abstract class Http3PushStreamServerInitializer extends ChannelInitialize
         // We need to write stream type into the stream before doing anything else.
         // See https://tools.ietf.org/html/draft-ietf-quic-http-32#section-6.2.1
         // Just allocate 16 bytes which would be the max needed to write 2 variable length ints.
+        // RFC 9114 §6.2.1：单向流首字节起为 HTTP/3 流类型，push 流紧随其后写 Push ID
         ByteBuf buffer = ch.alloc().buffer(16);
         writeVariableLengthInteger(buffer, Http3CodecUtils.HTTP3_PUSH_STREAM_TYPE);
         writeVariableLengthInteger(buffer, pushId);
@@ -72,6 +76,7 @@ public abstract class Http3PushStreamServerInitializer extends ChannelInitialize
     /**
      * Initialize the {@link QuicStreamChannel} to handle {@link Http3PushStreamFrame}s. At the point of calling this
      * method it is already valid to write {@link Http3PushStreamFrame}s as the codec is already in the pipeline.
+     * <p>编解码器与出站帧类型校验已就绪，可开始发送 push 响应 HEADERS/DATA。
      *
      * @param ch the {QuicStreamChannel} for the push stream.
      */

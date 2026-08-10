@@ -17,6 +17,8 @@ package io.netty.handler.codec.http3;
 
 /**
  * Validate that the frame type is valid for a push stream.
+ * <p>Push 流只允许 HEADERS/DATA 等消息体相关帧；控制流帧（SETTINGS、GOAWAY、
+ * MAX_PUSH_ID、CANCEL_PUSH、PUSH_PROMISE）在此出现即 {@code H3_FRAME_UNEXPECTED}。
  */
 final class Http3PushStreamFrameTypeValidator implements Http3FrameTypeValidator {
 

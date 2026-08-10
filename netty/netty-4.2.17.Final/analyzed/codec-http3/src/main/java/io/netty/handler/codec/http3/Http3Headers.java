@@ -22,34 +22,45 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
+/**
+ * HTTP/3 头部容器接口，扩展通用 {@link Headers} 并提供伪头部（pseudo-header）的便捷读写。
+ * <p>伪头部以 {@code :} 开头，承载请求/响应元数据（如 {@code :method}、{@code :status}），
+ * 在 QPACK 解码顺序上必须位于所有普通头部之前。
+ */
 public interface Http3Headers extends Headers<CharSequence, CharSequence, Http3Headers> {
 
     /**
      * HTTP/2 (and HTTP/3) pseudo-headers names.
+     * <p>HTTP/3 沿用 HTTP/2 伪头部命名；{@link #flag} 位掩码用于 {@link Http3HeadersSink} 校验必填项与去重。
      */
     enum PseudoHeaderName {
         /**
          * {@code :method}.
+         * <p>请求方法，如 GET、POST、CONNECT。
          */
         METHOD(":method", true, 0x1),
 
         /**
          * {@code :scheme}.
+         * <p>URI 方案，通常为 {@code https}。
          */
         SCHEME(":scheme", true, 0x2),
 
         /**
          * {@code :authority}.
+         * <p>目标主机与端口；缺失时可用 {@code Host} 普通头部替代（RFC 9110 §7.2）。
          */
         AUTHORITY(":authority", true, 0x4),
 
         /**
          * {@code :path}.
+         * <p>请求路径与查询串；OPTIONS 对 {@code *} 有特殊规则。
          */
         PATH(":path", true, 0x8),
 
         /**
          * {@code :status}.
+         * <p>三位 HTTP 状态码，仅出现在响应侧。
          */
         STATUS(":status", false, 0x10),
 
@@ -59,6 +70,7 @@ public interface Http3Headers extends Headers<CharSequence, CharSequence, Http3H
          * Used for Extended CONNECT requests as defined in RFC 9220.
          * This pseudo-header is only valid for CONNECT requests and indicates
          * the desired protocol for the connection (e.g., "webtransport", "websocket").
+         * <p>Extended CONNECT 专用：声明隧道内要协商的上层协议（WebTransport、WebSocket 等）。
          *
          * @see <a href="https://www.rfc-editor.org/rfc/rfc9220.html">RFC 9220: Bootstrapping WebSockets with HTTP/3</a>
          */
@@ -68,8 +80,10 @@ public interface Http3Headers extends Headers<CharSequence, CharSequence, Http3H
         private static final byte PSEUDO_HEADER_PREFIX_BYTE = (byte) PSEUDO_HEADER_PREFIX;
 
         private final AsciiString value;
+        /** {@code true} 表示该伪头部仅用于请求上下文（如 {@code :method}），{@code false} 表示响应专用（如 {@code :status}）。 */
         private final boolean requestOnly;
         // The position of the bit in the flag indicates the type of the header field
+        // 每个枚举常量对应 flag 中的一位，便于用位或/位与统计已收到的伪头部集合
         private final int flag;
         private static final CharSequenceMap<PseudoHeaderName> PSEUDO_HEADERS = new CharSequenceMap<PseudoHeaderName>();
 
@@ -92,6 +106,7 @@ public interface Http3Headers extends Headers<CharSequence, CharSequence, Http3H
 
         /**
          * Indicates whether the specified header follows the pseudo-header format (begins with ':' character)
+         * <p>仅检查首字符是否为 {@code :}，不保证是 RFC 定义的合法伪头部名。
          *
          * @param headerName    the header name to check.
          * @return              {@code true} if the header follow the pseudo-header format
@@ -128,6 +143,7 @@ public interface Http3Headers extends Headers<CharSequence, CharSequence, Http3H
 
         /**
          * Indicates whether the pseudo-header is to be used in a request context.
+         * <p>{@code true} 时该字段只能出现在请求头块中，用于区分请求/响应伪头部混用。
          *
          * @return {@code true} if the pseudo-header is to be used in a request context
          */
@@ -135,6 +151,7 @@ public interface Http3Headers extends Headers<CharSequence, CharSequence, Http3H
             return requestOnly;
         }
 
+        /** 返回该伪头部在 {@code receivedPseudoHeaders} 位掩码中对应的标志位。 */
         public int getFlag() {
              return flag;
         }
@@ -144,12 +161,14 @@ public interface Http3Headers extends Headers<CharSequence, CharSequence, Http3H
      * Returns an iterator over all HTTP/3 headers. The iteration order is as follows:
      *   1. All pseudo headers (order not specified).
      *   2. All non-pseudo headers (in insertion order).
+     * <p>迭代顺序保证伪头部先于普通头部，符合 HTTP/3 头部块语义。
      */
     @Override
     Iterator<Entry<CharSequence, CharSequence>> iterator();
 
     /**
      * Equivalent to {@link #getAll(Object)} but no intermediate list is generated.
+     * <p>按名遍历多值头部，避免 {@code getAll} 分配中间 {@code List}。
      * @param name the name of the header to retrieve
      * @return an {@link Iterator} of header values corresponding to {@code name}.
      */
@@ -200,6 +219,7 @@ public interface Http3Headers extends Headers<CharSequence, CharSequence, Http3H
      * <p>
      * This pseudo-header is used for Extended CONNECT requests as defined in RFC 9220.
      * Common values include "webtransport" and "websocket".
+     * <p>为 Extended CONNECT 设置目标协议标识。
      *
      * @param value the value for the header.
      * @return      this instance itself.
@@ -267,6 +287,7 @@ public interface Http3Headers extends Headers<CharSequence, CharSequence, Http3H
      * Returns {@code true} if a header with the {@code name} and {@code value} exists, {@code false} otherwise.
      * <p>
      * If {@code caseInsensitive} is {@code true} then a case insensitive compare is done on the value.
+     * <p>值比较可选大小写不敏感，便于匹配 {@code Content-Type} 等头部。
      *
      * @param name              the name of the header to find
      * @param value             the value of the header to find

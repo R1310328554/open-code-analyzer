@@ -17,6 +17,8 @@ package io.netty.handler.codec.http3;
 
 /**
  * See <a href="https://tools.ietf.org/html/draft-ietf-quic-http-32#section-7.2.5">PUSH_PROMISE</a>.
+ * <p>服务端在请求/推送流上向客户端承诺一条 server push：携带 Push ID 与 push 请求的
+ * 伪头部/字段；客户端随后可在对应单向 push 流上接收完整响应。
  */
 public interface Http3PushPromiseFrame extends Http3RequestStreamFrame {
 
@@ -27,6 +29,7 @@ public interface Http3PushPromiseFrame extends Http3RequestStreamFrame {
 
     /**
      * Returns the push id.
+     * <p>与后续 {@link Http3PushStreamServerInitializer} 写入流前缀中的 Push ID 一致。
      *
      * @return the id.
      */
@@ -34,6 +37,7 @@ public interface Http3PushPromiseFrame extends Http3RequestStreamFrame {
 
     /**
      * Returns the carried headers.
+     * <p>描述被 push 资源的请求行等价信息（{@code :method}、{@code :path} 等）。
      *
      * @return the headers.
      */

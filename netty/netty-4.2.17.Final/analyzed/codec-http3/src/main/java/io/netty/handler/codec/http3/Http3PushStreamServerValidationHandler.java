@@ -17,6 +17,8 @@ package io.netty.handler.codec.http3;
 
 /**
  * See <a href="https://tools.ietf.org/html/draft-ietf-quic-http-32#section-4.1">HTTP Message Exchanges</a>.
+ * <p>服务端 push 流出站帧类型校验：仅允许 {@link Http3PushStreamFrame} 子类型经 pipeline 写出，
+ * 无 per-stream 状态，故使用单例且 {@link #isSharable()} 为 {@code true}。
  */
 final class Http3PushStreamServerValidationHandler
         extends Http3FrameTypeOutboundValidationHandler<Http3PushStreamFrame> {

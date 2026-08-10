@@ -24,13 +24,19 @@ import static io.netty.handler.codec.http3.Http3RequestStreamValidationUtils.val
 import static io.netty.handler.codec.http3.Http3RequestStreamValidationUtils.validateHeaderFrameRead;
 import static io.netty.handler.codec.http3.Http3RequestStreamValidationUtils.validateOnStreamClosure;
 
+/**
+ * 客户端 push 流入站校验：核对 HEADERS/DATA 与 {@code Content-Length} 一致性，
+ * 并在读半关闭时触发 QPACK 流废弃通知。
+ */
 final class Http3PushStreamClientValidationHandler
         extends Http3FrameTypeInboundValidationHandler<Http3RequestStreamFrame> {
     private final QpackAttributes qpackAttributes;
     private final QpackDecoder qpackDecoder;
     private final Http3RequestStreamCodecState decodeState;
 
+    /** 来自响应头的 Content-Length，{@code -1} 表示 chunked/未知。 */
     private long expectedLength = -1;
+    /** 已收到的 DATA 载荷累计字节数。 */
     private long seenLength;
 
     Http3PushStreamClientValidationHandler(QpackAttributes qpackAttributes, QpackDecoder qpackDecoder,
@@ -44,6 +50,7 @@ final class Http3PushStreamClientValidationHandler
     @Override
     void channelRead(ChannelHandlerContext ctx, Http3RequestStreamFrame frame) {
         if (frame instanceof Http3PushPromiseFrame) {
+            // PUSH_PROMISE 在关联请求流上校验，push 流本身只收响应
             ctx.fireChannelRead(frame);
             return;
         }
@@ -73,6 +80,7 @@ final class Http3PushStreamClientValidationHandler
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
+            // 流提前关闭时通知 QPACK 解码器放弃未完成的头部块引用
             sendStreamAbandonedIfRequired(ctx, qpackAttributes, qpackDecoder, decodeState);
             if (!validateOnStreamClosure(ctx, expectedLength, seenLength, false)) {
                 return;

@@ -17,6 +17,8 @@ package io.netty.handler.codec.http3;
 
 /**
  * Thrown if {@link Http3Headers} validation fails for some reason.
+ * <p>由 {@link Http3HeadersSink} 等在 QPACK 逐字段解码时抛出，表示伪头部顺序、
+ * 必填项缺失或 trailer 含伪头部等语义违规；通常导致连接或流以 H3 错误码关闭。
  */
 public final class Http3HeadersValidationException extends RuntimeException {
 

@@ -25,6 +25,11 @@ import static io.netty.handler.codec.http3.Http3RequestStreamEncodeStateValidato
 import static io.netty.handler.codec.http3.Http3RequestStreamEncodeStateValidator.isStreamStarted;
 import static io.netty.handler.codec.http3.Http3RequestStreamEncodeStateValidator.isTrailersReceived;
 
+/**
+ * 入站 HTTP 消息帧顺序校验器，实现 {@link Http3RequestStreamCodecState} 供 QPACK 与内容长度校验查询。
+ * <p>状态机与 {@link Http3RequestStreamEncodeStateValidator} 共用 {@link State} 定义：
+ * None → Headers（1xx）→ FinalHeaders → Trailers，非法帧触发 {@code H3_FRAME_UNEXPECTED}。
+ */
 final class Http3RequestStreamDecodeStateValidator extends ChannelInboundHandlerAdapter
         implements Http3RequestStreamCodecState {
     private State state = State.None;

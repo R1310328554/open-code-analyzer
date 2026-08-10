@@ -25,6 +25,8 @@ import static io.netty.handler.codec.http3.Http3RequestStreamCodecState.NO_STATE
 /**
  * Abstract base class that users can extend to init HTTP/3 push-streams for clients. This initializer
  * will automatically add HTTP/3 codecs etc to the {@link ChannelPipeline} as well.
+ * <p>客户端侧 push 流初始化器：仅适用于服务端发起的单向流，自动装配编解码器、
+ * 解码状态校验与 {@link Http3PushStreamClientValidationHandler}，子类在 {@link #initPushStream} 中挂载业务逻辑。
  */
 public abstract class Http3PushStreamClientInitializer extends ChannelInitializer<QuicStreamChannel> {
 
@@ -44,6 +46,7 @@ public abstract class Http3PushStreamClientInitializer extends ChannelInitialize
         ChannelPipeline pipeline = ch.pipeline();
         Http3RequestStreamDecodeStateValidator decodeStateValidator = new Http3RequestStreamDecodeStateValidator();
         // Add the encoder and decoder in the pipeline, so we can handle Http3Frames
+        // 编解码器 + 入站帧顺序校验；push 流出站无状态故 encode 侧用 NO_STATE
         pipeline.addLast(connectionHandler.newCodec(NO_STATE, decodeStateValidator));
         pipeline.addLast(decodeStateValidator);
         // Add the handler that will validate what we write and receive on this stream.
@@ -54,6 +57,7 @@ public abstract class Http3PushStreamClientInitializer extends ChannelInitialize
     /**
      * Initialize the {@link QuicStreamChannel} to handle {@link Http3PushStreamFrame}s. At the point of calling this
      * method it is already valid to write {@link Http3PushStreamFrame}s as the codec is already in the pipeline.
+     * <p>此时 pipeline 已就绪，可直接向 push 流写入或订阅 {@link Http3PushStreamFrame}。
      *
      * @param ch the {QuicStreamChannel} for the push stream.
      */

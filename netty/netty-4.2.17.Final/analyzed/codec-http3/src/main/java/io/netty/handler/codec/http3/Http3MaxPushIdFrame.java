@@ -17,6 +17,8 @@ package io.netty.handler.codec.http3;
 
 /**
  * See <a href="https://tools.ietf.org/html/draft-ietf-quic-http-32#section-7.2.7">MAX_PUSH_ID</a>.
+ * <p>客户端在控制流上发送，告知服务端后续 {@link Http3PushPromiseFrame} 可使用的最大 Push ID；
+ * 服务端不得分配超过该值的 push 流。
  */
 public interface Http3MaxPushIdFrame extends Http3ControlStreamFrame {
 
@@ -27,6 +29,7 @@ public interface Http3MaxPushIdFrame extends Http3ControlStreamFrame {
 
     /**
      * Returns the maximum value for a Push ID that the server can use.
+     * <p>Push ID 单调递增，此值为当前允许的上界（含）。
      *
      * @return the id.
      */

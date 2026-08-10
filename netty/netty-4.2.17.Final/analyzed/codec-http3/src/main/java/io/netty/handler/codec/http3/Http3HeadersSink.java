@@ -32,17 +32,26 @@ import static io.netty.handler.codec.http3.Http3Headers.PseudoHeaderName.hasPseu
 /**
  * {@link BiConsumer} that does add header names and values to
  * {@link Http3Headers} while also validate these.
+ * <p>QPACK 解码器逐字段回调此 sink：累计头部列表字节长度、校验伪头部顺序与必填项，
+ * 并在 {@link #finish()} 中按 HTTP 方法（CONNECT/OPTIONS/其它）做最终完整性检查。
  */
 final class Http3HeadersSink implements BiConsumer<CharSequence, CharSequence> {
     private final Http3Headers headers;
+    /** {@code SETTINGS_MAX_FIELD_SECTION_SIZE} 等限制下的头部块最大字节数。 */
     private final long maxHeaderListSize;
+    /** 是否执行 RFC 9114 语义校验（伪头部顺序、必填项、trailer 规则）。 */
     private final boolean validate;
+    /** {@code true} 表示当前解码的是 trailer 块（不得含伪头部）。 */
     private final boolean trailer;
     private long headersLength;
     private boolean exceededMaxLength;
+    /** 首个字段级校验失败时缓存，避免继续写入并延迟到 finish 抛出。 */
     private Http3HeadersValidationException validationException;
+    /** 上一字段类型，用于检测「普通头部之后出现伪头部」违规。 */
     private HeaderType previousType;
+    /** 根据已见伪头部推断当前为请求还是响应头块。 */
     private boolean request;
+    /** 已收到伪头部的位掩码，每位对应 {@link Http3Headers.PseudoHeaderName#getFlag()}。 */
     private int receivedPseudoHeaders;
 
     Http3HeadersSink(Http3Headers headers, long maxHeaderListSize, boolean validate, boolean trailer) {
@@ -54,6 +63,7 @@ final class Http3HeadersSink implements BiConsumer<CharSequence, CharSequence> {
 
     /**
      * This method must be called after the sink is used.
+     * <p>头部块解码结束后调用：检查总长度、延迟的字段错误，以及各 HTTP 方法所需的伪头部集合。
      */
     void finish() throws Http3HeadersValidationException, Http3Exception {
         if (exceededMaxLength) {
@@ -141,6 +151,7 @@ final class Http3HeadersSink implements BiConsumer<CharSequence, CharSequence> {
      * Find host header field in case the :authority pseudo header is not specified.
      * See:
      * https://www.rfc-editor.org/rfc/rfc9110#section-7.2
+     * <p>RFC 9110 允许用 {@code Host} 普通头部替代 {@code :authority}。
      */
     private boolean authorityOrHostHeaderReceived() {
         return (receivedPseudoHeaders & AUTHORITY.getFlag()) == AUTHORITY.getFlag() ||
@@ -154,6 +165,7 @@ final class Http3HeadersSink implements BiConsumer<CharSequence, CharSequence> {
 
         if (exceededMaxLength || validationException != null) {
             // We don't store the header since we've already failed validation requirements.
+            // 已超限或已有校验错误时跳过写入，避免部分无效头部块污染 Http3Headers
             return;
         }
 
@@ -169,6 +181,7 @@ final class Http3HeadersSink implements BiConsumer<CharSequence, CharSequence> {
         headers.add(name, value);
     }
 
+    /** 单字段校验：伪头部顺序、合法名、禁止重复。 */
     private void validate(Http3Headers headers, CharSequence name) {
         if (hasPseudoHeaderFormat(name)) {
             if (previousType == HeaderType.REGULAR_HEADER) {
@@ -197,6 +210,7 @@ final class Http3HeadersSink implements BiConsumer<CharSequence, CharSequence> {
         }
     }
 
+    /** 区分普通头部、请求伪头部与响应伪头部，用于顺序校验。 */
     private enum HeaderType {
         REGULAR_HEADER,
         REQUEST_PSEUDO_HEADER,

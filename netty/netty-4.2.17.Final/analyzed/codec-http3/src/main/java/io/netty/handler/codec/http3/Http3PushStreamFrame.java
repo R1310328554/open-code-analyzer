@@ -18,6 +18,8 @@ package io.netty.handler.codec.http3;
 /**
  * Marker interface for frames that can be sent and received on a
  * <a href="https://tools.ietf.org/html/draft-ietf-quic-http-32#section-7">HTTP3 push stream</a>.
+ * <p>Push 流为服务端发起的单向 QUIC 流，典型帧序为 HEADERS（响应头）+ DATA（实体）；
+ * 不含 PUSH_PROMISE、SETTINGS 等控制流帧类型。
  */
 public interface Http3PushStreamFrame extends Http3Frame {
 }
