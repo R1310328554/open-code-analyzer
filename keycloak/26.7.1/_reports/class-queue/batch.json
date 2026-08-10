@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T14:26:13Z",
   "files": [
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/annotations/InjectPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/annotations/InjectWebDriver.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/AbstractLoginPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/AbstractPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/AdminPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/ConsentPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/ErrorPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/InfoPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/InstalledAppRedirectPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/LoginConfigTotpPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/LoginExpiredPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/LoginPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/LoginPasswordResetPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/LoginPasswordUpdatePage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/LoginUpdateProfilePage.java",
     "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/LoginUsernamePage.java",
     "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/LogoutConfirmPage.java",
     "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/OAuthGrantPage.java",
@@ -33,5 +18,5 @@
     "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/AssertionUtils.java"
   ],
   "remaining_pending": 238,
-  "done": 5730
+  "done": 5745
 }
