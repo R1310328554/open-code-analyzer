@@ -1,3 +1,4 @@
+// Safetensors IO：MLX 原生加载/保存与迭代器。
 package mlx
 
 // #include "generated.h"
@@ -11,12 +12,14 @@ import (
 	"unsafe"
 )
 
+// SafetensorsFile 表示已加载的 safetensors 文件句柄。
 // SafetensorsFile represents a loaded safetensors file.
 type SafetensorsFile struct {
 	arrays   C.mlx_map_string_to_array
 	metadata C.mlx_map_string_to_string
 }
 
+// loadSafetensorsStream darwin 用 CPU 流，其余平台用 GPU 流。
 func loadSafetensorsStream() C.mlx_stream {
 	if runtime.GOOS == "darwin" {
 		return C.mlx_default_cpu_stream_new()
@@ -24,6 +27,7 @@ func loadSafetensorsStream() C.mlx_stream {
 	return C.mlx_default_gpu_stream_new()
 }
 
+// LoadSafetensorsNative 用 MLX C API 加载 safetensors。
 // LoadSafetensorsNative loads a safetensors file using MLX's native loader.
 func LoadSafetensorsNative(path string) (*SafetensorsFile, error) {
 	var arrays C.mlx_map_string_to_array
@@ -42,6 +46,7 @@ func LoadSafetensorsNative(path string) (*SafetensorsFile, error) {
 	return &SafetensorsFile{arrays: arrays, metadata: metadata}, nil
 }
 
+// Get 按名称取张量，不存在返回 nil。
 // Get retrieves a tensor by name.
 func (s *SafetensorsFile) Get(name string) *Array {
 	cName := C.CString(name)
@@ -60,6 +65,7 @@ func (s *SafetensorsFile) Get(name string) *Array {
 	return arr
 }
 
+// GetMetadata 读取 safetensors 元数据键值。
 // GetMetadata retrieves a metadata value by key.
 func (s *SafetensorsFile) GetMetadata(key string) string {
 	cKey := C.CString(key)
@@ -72,6 +78,7 @@ func (s *SafetensorsFile) GetMetadata(key string) string {
 	return C.GoString(cValue)
 }
 
+// Free 释放 arrays 与 metadata 映射。
 // Free releases the loaded safetensors maps.
 func (s *SafetensorsFile) Free() {
 	if s == nil {
@@ -81,6 +88,7 @@ func (s *SafetensorsFile) Free() {
 	C.mlx_map_string_to_string_free(s.metadata)
 }
 
+// Load 迭代返回 path 中各 tensor 名称与 Array。
 func Load(path string) iter.Seq2[string, *Array] {
 	return func(yield func(string, *Array) bool) {
 		sf, err := LoadSafetensorsNative(path)
@@ -109,11 +117,13 @@ func Load(path string) iter.Seq2[string, *Array] {
 	}
 }
 
+// SaveSafetensors 无元数据保存 safetensors。
 // SaveSafetensors saves arrays to a safetensors file without metadata.
 func SaveSafetensors(path string, arrays map[string]*Array) error {
 	return SaveSafetensorsWithMetadata(path, arrays, nil)
 }
 
+// SaveSafetensorsWithMetadata 带元数据保存 safetensors。
 // SaveSafetensorsWithMetadata saves arrays to a safetensors file with metadata.
 func SaveSafetensorsWithMetadata(path string, arrays map[string]*Array, metadata map[string]string) error {
 	cPath := C.CString(path)

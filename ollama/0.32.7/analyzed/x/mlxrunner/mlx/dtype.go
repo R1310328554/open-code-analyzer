@@ -1,10 +1,13 @@
+// MLX 数据类型：DType 枚举、String 与 JSON 反序列化。
 package mlx
 
 // #include "generated.h"
 import "C"
 
+// DType 映射 C 侧 MLX dtype 常量。
 type DType int
 
+// String 返回 BOOL/U8/F32 等可读缩写。
 func (t DType) String() string {
 	switch t {
 	case DTypeBool:
@@ -40,6 +43,7 @@ func (t DType) String() string {
 	}
 }
 
+// UnmarshalJSON 从 JSON 字符串解析 DType。
 func (t *DType) UnmarshalJSON(b []byte) error {
 	switch string(b) {
 	case `"BOOL"`:

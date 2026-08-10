@@ -1,3 +1,4 @@
+// MLX CGO 绑定生成器：tree-sitter 解析 C 头并渲染 Go 模板。
 package main
 
 import (
@@ -15,8 +16,10 @@ import (
 )
 
 //go:embed *.gotmpl
+// 嵌入 Go 模板文件供代码生成使用。
 var fsys embed.FS
 
+// optionalSymbols 列出可选符号（如 CUDA 构建无 float16/bfloat16）。
 // optionalSymbols lists symbols that may not be present in all builds
 // (e.g., float16/bfloat16 are unavailable in CUDA builds of MLX).
 var optionalSymbols = map[string]bool{
@@ -26,6 +29,7 @@ var optionalSymbols = map[string]bool{
 	"mlx_array_data_bfloat16": true,
 }
 
+// Function 保存从 C 头解析出的函数签名信息。
 type Function struct {
 	Type,
 	Name,
@@ -34,6 +38,7 @@ type Function struct {
 	Optional bool
 }
 
+// ParseFunction 从 AST 节点提取返回类型、名、参数与调用参数列表。
 func ParseFunction(node *tree_sitter.Node, tc *tree_sitter.TreeCursor, source []byte) Function {
 	var fn Function
 	fn.Name = node.ChildByFieldName("declarator").Utf8Text(source)
@@ -59,6 +64,7 @@ func ParseFunction(node *tree_sitter.Node, tc *tree_sitter.TreeCursor, source []
 	return fn
 }
 
+// ParseParameters 解析形参列表为逗号分隔的标识符串。
 func ParseParameters(node *tree_sitter.Node, tc *tree_sitter.TreeCursor, source []byte) string {
 	var s []string
 	for _, child := range node.Children(tc) {
@@ -80,6 +86,7 @@ func ParseParameters(node *tree_sitter.Node, tc *tree_sitter.TreeCursor, source 
 	return strings.Join(s, ", ")
 }
 
+// main 解析 C 头文件并执行模板生成 generated.h 等。
 func main() {
 	var output string
 	flag.StringVar(&output, "output", ".", "Output directory for generated files")

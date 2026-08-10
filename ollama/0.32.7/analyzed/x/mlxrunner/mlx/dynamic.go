@@ -1,3 +1,4 @@
+// MLX 动态库加载：libmlxc 搜索路径、变体兼容与 init。
 package mlx
 
 // #include "dynamic.h"
@@ -24,6 +25,7 @@ var (
 	initLoadedPath string
 )
 
+// CheckInit 返回 MLX 动态库初始化错误（若有）。
 // CheckInit returns any error that occurred during MLX dynamic library initialization.
 func CheckInit() error {
 	if initLoadedPath != "" {
@@ -35,6 +37,7 @@ func CheckInit() error {
 	return initError
 }
 
+// LoadedLibraryPath 返回已加载的 libmlxc 路径。
 // LoadedLibraryPath returns the MLX dynamic library path selected by this package.
 func LoadedLibraryPath() (string, error) {
 	if initLoadedPath != "" {
@@ -46,8 +49,10 @@ func LoadedLibraryPath() (string, error) {
 	return "", fmt.Errorf("MLX dynamic library not loaded")
 }
 
+// tryLoadFromDir 在目录中 glob libmlxc.* 并尝试 dlopen。
 // tryLoadFromDir searches a directory for the mlxc shared library and loads it.
 func tryLoadFromDir(dir string) bool {
+	// Windows 为 mlxc.dll；Unix 为 libmlxc.so/.dylib。
 	// On Windows, MSVC produces mlxc.dll (no lib prefix)
 	// On Unix, it's libmlxc.so or libmlxc.dylib
 	pattern := "libmlxc.*"
@@ -80,6 +85,7 @@ func tryLoadFromDir(dir string) bool {
 	return false
 }
 
+// libOllamaRoots 返回生产/开发环境下 MLX 库候选根目录。
 // libOllamaRoots returns candidate directories for MLX dynamic libraries.
 // Production: exe_dir/lib/ollama (Windows release layout),
 // exe_dir/../lib/ollama (standard bin/lib layout), and exe_dir (macOS bundle).
@@ -87,6 +93,7 @@ func tryLoadFromDir(dir string) bool {
 func libOllamaRoots() []string {
 	var roots []string
 
+	// 相对可执行文件的生产路径。
 	// Production paths relative to executable
 	if exe, err := os.Executable(); err == nil {
 		if eval, err := filepath.EvalSymlinks(exe); err == nil {
@@ -106,6 +113,7 @@ func libOllamaRoots() []string {
 		}
 	}
 
+	// 开发路径：build/lib/ollama 及 build/*/lib/ollama；逆序优先高版本 Metal。
 	// Development paths: build/lib/ollama and build/*/lib/ollama.
 	// Reverse-sort and filter the glob results so higher-versioned Metal
 	// builds (e.g., metal-v4) are tried before lower ones (metal-v3),
@@ -145,6 +153,7 @@ func libOllamaRoots() []string {
 	return roots
 }
 
+// repoBuildDirs 从 cwd 向上找 go.mod 并收集 build/ 目录。
 // repoBuildDirs returns candidate build/ directories relative to cwd and repo root.
 func repoBuildDirs() []string {
 	var dirs []string
@@ -167,6 +176,7 @@ func repoBuildDirs() []string {
 	return dirs
 }
 
+// prependLibraryPath 将库目录 prepend 到 DYLD/LD_LIBRARY_PATH。
 // prependLibraryPath prepends dir to the platform's dynamic library search
 // path so the linker finds colocated libmlx before any stale copies.
 // Called once after successful library load.
@@ -194,6 +204,7 @@ func init() {
 		return
 	}
 
+	// OLLAMA_LLM_LIBRARY 强制指定 mlx_* 变体子目录。
 	// OLLAMA_LLM_LIBRARY overrides variant selection (e.g., "mlx_metal_v3").
 	// When set to an mlx_* value, only that specific subdir is tried.
 	// The GGML runner ignores mlx_* values (see discover/runner.go).
@@ -229,6 +240,7 @@ func findMLXLibrary(forcedVariant string) bool {
 	return false
 }
 
+// tryLoadFromMLXSubdirs 在 dir 下 glob mlx_*，过滤不兼容变体后逆序尝试加载。
 // tryLoadFromMLXSubdirs globs for mlx_* subdirs within dir, filters out
 // incompatible variants, tries the remainder in reverse sorted order (so
 // higher-versioned variants are preferred), and returns true on first
@@ -252,6 +264,7 @@ func tryLoadFromMLXSubdirs(dir string) bool {
 	return false
 }
 
+// isCompatibleMLXVariant 检查 MLX 变体是否与当前 OS/Metal 版本兼容。
 // isCompatibleMLXVariant checks whether an MLX variant directory is
 // compatible with the current OS. On macOS, dlopen does NOT enforce
 // the deployment target for dynamically loaded libraries, so we must
@@ -261,6 +274,7 @@ func isCompatibleMLXVariant(name string) bool {
 	if runtime.GOOS != "darwin" {
 		return true // non-macOS variants use dlopen failure for filtering
 	}
+	// Metal 变体命名：生产 mlx_metal_vN，开发 metal-vN。
 	// Metal variant naming:
 	//   Production: mlx_metal_v3, mlx_metal_v4
 	//   Dev build:  metal-v3, metal-v4
@@ -276,6 +290,7 @@ func isCompatibleMLXVariant(name string) bool {
 		if err != nil {
 			return true // unknown format, try it
 		}
+		// Metal 4.x 需 macOS 26+。
 		// Metal 4.x requires macOS 26+
 		if metalVer >= 4 && macOSMajorVersion() < 26 {
 			return false

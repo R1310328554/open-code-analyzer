@@ -1,3 +1,4 @@
+// 门控 Delta 递归：GPU 融合核、图实现与 GatedDelta 一步前向。
 package mlx
 
 import "math"
@@ -163,12 +164,14 @@ for (int i = 0; i < n_per_t; ++i) {
 }
 `
 
+// gatedDeltaRecurrenceDims 从输入 shape 恢复的 batch/head 几何。
 // gatedDeltaRecurrenceDims are the batch and head geometry of one scan,
 // recovered from the input shapes.
 type gatedDeltaRecurrenceDims struct {
 	B, T, Hk, Dk, Hv, Dv int
 }
 
+// resolveGatedDeltaRecurrenceDims 校验 GPU 核契约；失败则走图实现。
 // resolveGatedDeltaRecurrenceDims validates the inputs against the GPU
 // kernels' contract and recovers the launch geometry. ok=false routes to
 // the graph implementation: shapes that disagree, Dk not a multiple of the
@@ -208,6 +211,7 @@ func resolveGatedDeltaRecurrenceDims(q, k, v, g, beta, state *Array) (gatedDelta
 	return dims, true
 }
 
+// repeatHeadsForGatedDelta 将 Hk 头重复为 Hv 头（GQA）。
 func repeatHeadsForGatedDelta(x *Array, repeatFactor int) *Array {
 	if repeatFactor <= 1 {
 		return x
@@ -218,6 +222,7 @@ func repeatHeadsForGatedDelta(x *Array, repeatFactor int) *Array {
 	return Reshape(x, int32(shape[0]), int32(shape[1]), int32(shape[2]*repeatFactor), int32(shape[3]))
 }
 
+// gatedDeltaRecurrenceGraph 用图算子实现门控 delta 扫描。
 func gatedDeltaRecurrenceGraph(q, k, v, g, beta, state *Array) (y, nextState *Array) {
 	if q == nil || k == nil || v == nil || g == nil || beta == nil || state == nil {
 		return nil, nil
@@ -292,6 +297,7 @@ func gatedDeltaRecurrenceGraph(q, k, v, g, beta, state *Array) (y, nextState *Ar
 	return Concatenate(outs, 1), nextState
 }
 
+// gatedDeltaRecurrence 运行扫描；符合 GPU 契约则走核，否则图实现。
 // gatedDeltaRecurrence runs the scan. Inputs that fit the GPU kernels'
 // contract run there (CUDA or Metal, with the graph implementation covering
 // boxes where neither can run); anything else runs the graph implementation
@@ -319,6 +325,7 @@ func gatedDeltaRecurrence(q, k, v, g, beta, state *Array) (y, nextState *Array) 
 	return y, nextState
 }
 
+// gatedDeltaMaxTokens 限制融合扫描长度（当前 token + 10 token draft）。
 // gatedDeltaMaxTokens caps the fused scan length at the current token plus
 // a ten-token draft — several times the depth the EV controller selects in
 // practice. SeqT is a template argument, so every accepted length compiles
@@ -360,6 +367,7 @@ var (
 	}
 )
 
+// gatedDeltaGraph 融合门控 delta 一步的图实现：RMS norm、decay gate 与扫描。
 // gatedDeltaGraph is the graph implementation of the fused gated-delta step
 // over the kernels' contract domain: q/k RMS norm and scaling, the decay
 // gate, and the (per-token, for captureAll) scan. Geometry is recovered
@@ -414,6 +422,7 @@ func gatedDeltaGraph(packed, ba, dtBias, aExp, state *Array, captureAll bool) (y
 	return Concatenate(outs, 1), state, interior
 }
 
+// 融合扫描消费因果卷积输出 [q|k|v] 与 [beta|alpha]，单 launch 完成 norm/gate/递归。
 // The fused scan consumes the activated causal-conv output rows [q | k | v]
 // plus the packed [beta | alpha] projection and performs q/k RMS norm and
 // scaling, the decay gate, and the gated-delta recurrence in one launch.
@@ -556,18 +565,21 @@ T gdn_logaddexp(T x, T y) {
 }
 `
 
+// gatedDeltaInvScale 返回 key 维 dk 的 q/k 归一化 scale。
 // gatedDeltaInvScale is the q/k norm scale for key dimension dk; the
 // kernel's qk_scale input and the graph implementation share these bits.
 func gatedDeltaInvScale(dk int) float32 {
 	return float32(1.0 / math.Sqrt(float64(dk)))
 }
 
+// gatedDeltaDims 为内核实例化的 batch/head 几何。
 // gatedDeltaDims are the batch and head geometry the kernel is instantiated
 // for, recovered from the input shapes.
 type gatedDeltaDims struct {
 	B, Hk, Dk, Hv, Dv, PackedDim, T int
 }
 
+// GatedDelta 单 launch 完成 q/k norm、decay gate 与门控 delta 扫描。
 // GatedDelta runs the whole gated-delta step — q/k norms, decay gate, and
 // the scan — in one launch over the activated causal-conv output. packed is
 // [B, T, 2*Hk*Dk + Hv*Dv] with rows packed [q | k | v], ba is [B, T, 2*Hv]
@@ -576,6 +588,7 @@ type gatedDeltaDims struct {
 // one-launch kernels' contract run there; anything else runs the same step
 // as graph ops.
 //
+// mask 非 nil 时为 [B,T] bool，padding 行在核预处理前中性化。
 // When mask is non-nil, it must be a [B, T] bool tensor identifying real
 // (true) vs. padded (false) positions. Padded rows are neutralized before
 // the kernels' own preprocessing: zeroed conv rows make the q/k/v norms
@@ -638,6 +651,7 @@ func GatedDelta(packed, ba, dtBias, aExp, state, mask *Array, captureAll bool) (
 	return outs[0], outs[1], interior
 }
 
+// resolveGatedDeltaDims 校验 GatedDelta 融合核输入契约。
 func resolveGatedDeltaDims(packed, ba, dtBias, aExp, state *Array) (gatedDeltaDims, bool) {
 	var dims gatedDeltaDims
 	if packed == nil || ba == nil || dtBias == nil || aExp == nil || state == nil {
@@ -677,6 +691,7 @@ func resolveGatedDeltaDims(packed, ba, dtBias, aExp, state *Array) (gatedDeltaDi
 	return dims, true
 }
 
+// sliceGatedDeltaStates 从 state_seq 张量切出各时间步 interior state。
 func sliceGatedDeltaStates(stateSeq *Array, dims gatedDeltaDims) []*Array {
 	interior := make([]*Array, dims.T-1)
 	for t := range interior {
@@ -688,6 +703,7 @@ func sliceGatedDeltaStates(stateSeq *Array, dims gatedDeltaDims) []*Array {
 	return interior
 }
 
+// exactShape 检查 Array 维度是否与给定 shape 完全一致。
 func exactShape(value *Array, shape ...int) bool {
 	dims := value.Dims()
 	if len(dims) != len(shape) {

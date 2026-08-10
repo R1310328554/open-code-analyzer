@@ -1,3 +1,4 @@
+// MLX 内存：活跃/缓存/峰值统计、PrettyBytes 与 Metal wired limit。
 package mlx
 
 // #include "generated.h"
@@ -31,6 +32,7 @@ func (b TebiByte) String() string {
 	return strconv.FormatFloat(float64(b)/(1<<(4*10)), 'f', 2, 64) + " TiB"
 }
 
+// PrettyBytes 将字节数格式化为 B/KiB/MiB/GiB/TiB。
 func PrettyBytes(n int) fmt.Stringer {
 	switch {
 	case n < 1<<10:
@@ -46,28 +48,33 @@ func PrettyBytes(n int) fmt.Stringer {
 	}
 }
 
+// ActiveMemory 返回当前活跃分配字节数。
 func ActiveMemory() int {
 	var active C.size_t
 	C.mlx_get_active_memory(&active)
 	return int(active)
 }
 
+// CacheMemory 返回 MLX 缓存占用字节数。
 func CacheMemory() int {
 	var cache C.size_t
 	C.mlx_get_cache_memory(&cache)
 	return int(cache)
 }
 
+// PeakMemory 返回峰值内存字节数。
 func PeakMemory() int {
 	var peak C.size_t
 	C.mlx_get_peak_memory(&peak)
 	return int(peak)
 }
 
+// ResetPeakMemory 重置峰值计数。
 func ResetPeakMemory() {
 	C.mlx_reset_peak_memory()
 }
 
+// MaxRecommendedWorkingSetSize 返回设备建议的 Metal 常驻内存上限。
 // MaxRecommendedWorkingSetSize returns the device's recommended upper bound
 // for resident Metal allocations.
 func MaxRecommendedWorkingSetSize() (int, error) {
@@ -92,6 +99,7 @@ func MaxRecommendedWorkingSetSize() (int, error) {
 	return int(size), nil
 }
 
+// SetWiredLimit 设置 MLX 常驻 Metal 内存上限，返回旧值。
 // SetWiredLimit sets the maximum amount of Metal memory MLX keeps resident and
 // returns the previous limit.
 func SetWiredLimit(limit int) (int, error) {
@@ -108,6 +116,7 @@ func SetWiredLimit(limit int) (int, error) {
 	return int(previous), nil
 }
 
+// Memory 供 slog 输出内存统计。
 type Memory struct{}
 
 func (Memory) LogValue() slog.Value {
@@ -126,6 +135,7 @@ type (
 	TebiByte int
 )
 
+// ClearCache 清空 MLX 分配缓存。
 func ClearCache() {
 	C.mlx_clear_cache()
 }

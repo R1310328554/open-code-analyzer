@@ -1,7 +1,9 @@
+// 深度可分离一维卷积 + SiLU：Metal 融合核与图算子回退。
 package mlx
 
 import "fmt"
 
+// B/T 为运行时标量而非模板参数，任意窗口长度共享同一编译流水线。
 // B and T arrive as runtime scalars rather than template arguments so
 // windows of any length share one compiled pipeline; only the channel
 // geometry specializes the kernel.
@@ -55,6 +57,7 @@ func depthwiseConvSiLUGraph(x, w *Array) *Array {
 	return SiLU(Conv1d(x, Reshape(w, Cdim, K, 1), nil, 1, 0, 1, Cdim))
 }
 
+// DepthwiseConvSiLU 计算有效 depthwise conv 的 SiLU：x [B,T+K-1,C]、w [C,K] → [B,T,C]。
 // DepthwiseConvSiLU computes SiLU of a valid depthwise conv: x
 // [B, T+K-1, C] and w [C, K] give [B, T, C], each output reading the K
 // trailing input rows starting at its own index. Inputs that fit the fused

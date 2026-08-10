@@ -1,3 +1,4 @@
+// MLX Array 封装：C 句柄生命周期、构造、Pin/Sweep 与数据访问。
 package mlx
 
 // #include "generated.h"
@@ -17,6 +18,7 @@ import (
 	"github.com/ollama/ollama/logutil"
 )
 
+// Array 封装 C.mlx_array 句柄、调试名与 pin 计数。
 type Array struct {
 	ctx    C.mlx_array
 	name   string
@@ -28,8 +30,10 @@ var (
 	arraysMu sync.Mutex
 )
 
+// 构造工具
 // constructor utilities
 
+// New 创建命名 Array；追踪模式下进入 traceScratch。
 func New(name string) *Array {
 	t := &Array{name: name}
 
@@ -49,6 +53,7 @@ type scalarTypes interface {
 	~bool | ~int | ~float32 | ~float64 | ~complex64
 }
 
+// FromValue 从 Go 标量构造 MLX 标量 Array。
 func FromValue[T scalarTypes](t T) *Array {
 	tt := New("")
 	switch v := any(t).(type) {
@@ -75,6 +80,7 @@ type arrayTypes interface {
 		~complex64
 }
 
+// FromValues 从 Go 切片与 shape 构造张量。
 func FromValues[S ~[]E, E arrayTypes](s S, shape ...int) *Array {
 	if len(shape) == 0 {
 		panic("shape must be provided for non-scalar tensors")
@@ -125,18 +131,22 @@ func FromValues[S ~[]E, E arrayTypes](s S, shape ...int) *Array {
 	return tt
 }
 
+// Set 将 other 的 C 句柄赋给本 Array。
 func (t *Array) Set(other *Array) {
 	C.mlx_array_set(&t.ctx, other.ctx)
 }
 
+// Clone 复制句柄到新 Array（共享底层）。
 func (t *Array) Clone() *Array {
 	tt := New(t.name)
 	C.mlx_array_set(&tt.ctx, t.ctx)
 	return tt
 }
 
+// 生命周期：Pin/Unpin 与 Sweep
 // lifecycle utilities
 
+// Pin 标记张量使用中，Sweep 时保留。
 // Pin marks arrays as in-use so they are retained during Sweep.
 func Pin(s ...*Array) {
 	for _, t := range s {
@@ -146,6 +156,7 @@ func Pin(s ...*Array) {
 	}
 }
 
+// Unpin 解除 pin，允许 Sweep 释放。
 // Unpin marks arrays as no longer in-use, allowing Sweep to free them.
 func Unpin(s ...*Array) {
 	for _, t := range s {
@@ -157,6 +168,7 @@ func Unpin(s ...*Array) {
 	}
 }
 
+// Sweep 释放未 pin 的中间张量；MLX 在无图引用时真正回收。
 // Sweep releases all unpinned arrays, primarily intermediate tensors. MLX will truly
 // free them when there are no other references, including dependencies in the graph.
 func Sweep() {
@@ -175,6 +187,7 @@ func Sweep() {
 	arrays = arrays[:n]
 }
 
+// 杂项：Valid/String/LogValue
 // misc. utilities
 
 func (t *Array) Valid() bool {
@@ -203,6 +216,7 @@ func (t *Array) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
+// 形状：Size/Dims/DType
 // shape utilities
 
 func (t *Array) Size() int {
@@ -234,6 +248,7 @@ func (t *Array) DType() DType {
 	return DType(C.mlx_array_dtype(t.ctx))
 }
 
+// 数据：Int/Float/Ints/Floats/Save
 // data utilities
 
 func (t *Array) Int() int {
@@ -303,6 +318,7 @@ func (t *Array) Save(name string) error {
 	return nil
 }
 
+// LogArrays 按字节数降序记录所有存活张量。
 // LogArrays logs all live arrays, sorted by size
 func LogArrays() {
 	arraysMu.Lock()

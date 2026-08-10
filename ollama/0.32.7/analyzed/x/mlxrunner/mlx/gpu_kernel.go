@@ -1,3 +1,4 @@
+// 自定义 GPU 内核：Metal/CUDA 源、模板参数与图回退。
 package mlx
 
 // #include <stdlib.h>
@@ -10,12 +11,14 @@ import (
 	"unsafe"
 )
 
+// gpuSource 保存单后端（Metal/CUDA）的内核源码与头。
 // gpuSource is one backend's implementation of a kernel.
 type gpuSource struct {
 	source string
 	header string
 }
 
+// gpuKernel 自定义核：各后端源 + 图回退；契约校验由调用方负责。
 // gpuKernel is a custom kernel with per-backend sources and a graph
 // fallback. Either backend may be absent; a backend that cannot be created
 // or launched disables itself permanently. Contract checks belong to the
@@ -27,6 +30,7 @@ type gpuKernel struct {
 	metal   gpuSource
 	cuda    gpuSource
 
+	// fallback 在无可用 GPU 后端时用图算子计算相同输出。
 	// fallback computes the same outputs with graph ops when no GPU
 	// backend can run the launch.
 	fallback func(launch gpuLaunch) []*Array
@@ -40,6 +44,7 @@ type gpuKernel struct {
 	cudaDisabled bool
 }
 
+// gpuDTypeArg/gpuIntArg 命名 launch 的模板 dtype/int 参数。
 // gpuDTypeArg and gpuIntArg name template arguments for one launch.
 type gpuDTypeArg struct {
 	name  string
@@ -51,6 +56,7 @@ type gpuIntArg struct {
 	value int
 }
 
+// gpuOutputSpec 声明单次 launch 的一个输出缓冲。
 // gpuOutputSpec declares one kernel output buffer.
 type gpuOutputSpec struct {
 	name  string
@@ -58,6 +64,7 @@ type gpuOutputSpec struct {
 	dtype DType
 }
 
+// gpuLaunch 为 gpuKernel.run 的每次调用配置（grid/threadGroup/inputs）。
 // gpuLaunch is the per-call configuration for gpuKernel.run. Grid and
 // thread-group units are shared across backends.
 type gpuLaunch struct {
@@ -88,6 +95,7 @@ func cStringVector(values []string) (C.mlx_vector_string, func(), bool) {
 	return vec, cleanup, ok
 }
 
+// run 按 CUDA→Metal→fallback 顺序尝试执行；均失败则 panic。
 // run executes the kernel with the first backend that works, in CUDA,
 // Metal, fallback order. It panics if no variant can run the launch.
 func (k *gpuKernel) run(launch gpuLaunch) []*Array {
@@ -158,6 +166,7 @@ func (k *gpuKernel) getMetal() (C.mlx_fast_metal_kernel, bool) {
 			outputs,
 			cSource,
 			cHeader,
+			// ensure_row_contiguous 使内核可线性索引输入。
 			// ensure_row_contiguous, so kernels can index inputs linearly.
 			C.bool(true),
 			C.bool(false),

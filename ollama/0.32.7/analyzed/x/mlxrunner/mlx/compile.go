@@ -1,3 +1,4 @@
+// MLX 图编译：Compile/Compile1/2/3 与 CGO 闭包回调。
 package mlx
 
 // #include <stdlib.h>
@@ -14,9 +15,11 @@ import (
 	"unsafe"
 )
 
+// CompileFunc 为可编译函数的签名。
 // CompileFunc is the signature of a function that can be compiled.
 type CompileFunc func(inputs ...*Array) []*Array
 
+// CompileOption 配置 Compile 行为。
 // CompileOption configures Compile behavior.
 type CompileOption func(*compileConfig)
 
@@ -24,6 +27,7 @@ type compileConfig struct {
 	shapeless bool
 }
 
+// Shapeless 用符号 shape 追踪一次，之后接受任意输入 shape。
 // Shapeless traces the function once against symbolic shapes so the compiled
 // graph accepts any input shape afterwards. Without this option, MLX re-traces
 // on each new (shape, dtype) combination and caches each specialization.
@@ -31,6 +35,7 @@ func Shapeless() CompileOption {
 	return func(c *compileConfig) { c.shapeless = true }
 }
 
+// Compile 返回 fn 的编译版本；嵌套 compile 时内联以允许外层融合。
 // Compile returns a compiled version of fn. When called during another
 // compile's trace, fn is inlined directly so outer compiles can fuse through
 // inner ones.
@@ -90,6 +95,7 @@ func Compile(name string, fn CompileFunc, opts ...CompileOption) CompileFunc {
 	}
 }
 
+// Compile1 编译一元函数。
 // Compile1 compiles a unary function. See Compile.
 func Compile1(name string, fn func(*Array) *Array, opts ...CompileOption) func(*Array) *Array {
 	cf := Compile(name, func(in ...*Array) []*Array {
@@ -100,6 +106,7 @@ func Compile1(name string, fn func(*Array) *Array, opts ...CompileOption) func(*
 	}
 }
 
+// Compile2 编译二元函数。
 // Compile2 compiles a binary function. See Compile.
 func Compile2(name string, fn func(*Array, *Array) *Array, opts ...CompileOption) func(*Array, *Array) *Array {
 	cf := Compile(name, func(in ...*Array) []*Array {
@@ -110,6 +117,7 @@ func Compile2(name string, fn func(*Array, *Array) *Array, opts ...CompileOption
 	}
 }
 
+// Compile3 编译三元函数。
 // Compile3 compiles a ternary function. See Compile.
 func Compile3(name string, fn func(*Array, *Array, *Array) *Array, opts ...CompileOption) func(*Array, *Array, *Array) *Array {
 	cf := Compile(name, func(in ...*Array) []*Array {
@@ -120,10 +128,12 @@ func Compile3(name string, fn func(*Array, *Array, *Array) *Array, opts ...Compi
 	}
 }
 
+// tracing 为 compile 回调执行中标志；MLX 此层单线程，普通 bool 即可。
 // tracing is true while a compile callback is running. Since MLX is
 // single-threaded at this level a plain Go bool suffices.
 var tracing bool
 
+// traceScratch 收集追踪期创建的 Array，回调结束统一释放。
 // traceScratch collects arrays created during a compile trace so they can be
 // freed as a group when the callback returns.
 var traceScratch []*Array
@@ -140,6 +150,7 @@ func closureCallback(res *C.mlx_vector_array, input C.mlx_vector_array, payload 
 	handle := *(*cgo.Handle)(payload)
 	fn := handle.Value().(CompileFunc)
 
+	// 追踪时收集中间张量，回调结束释放，效果等同单 op。
 	// When tracing, we track all of the intermediates that are created and free them separately at the end of
 	// the process. This will give the effect of a single op - inputs are owned by the original caller (via
 	// the MLX layer) and outputs are transferred back to MLX to create a new Go side tensor.
