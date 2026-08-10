@@ -508,3 +508,18 @@
 2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/provider/ScriptProviderDescriptor.java wave17b info/oidc/provider/userprofile reps
 2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/provider/ScriptProviderMetadata.java wave17b info/oidc/provider/userprofile reps
 2026-08-10T06:14:44Z DONE core/src/main/java/org/keycloak/representations/userprofile/config/UPAttribute.java wave17b info/oidc/provider/userprofile reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/userprofile/config/UPAttributePermissions.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/userprofile/config/UPAttributeRequired.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/userprofile/config/UPAttributeSelector.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/userprofile/config/UPConfig.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/userprofile/config/UPGroup.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/workflows/AbstractWorkflowComponentRepresentation.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/workflows/MultivaluedHashMapValueDeserializer.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/workflows/MultivaluedHashMapValueSerializer.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/workflows/StepExecutionStatus.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/workflows/WorkflowConcurrencyRepresentation.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/workflows/WorkflowConstants.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/workflows/WorkflowRepresentation.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/workflows/WorkflowScheduleRepresentation.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/workflows/WorkflowStateRepresentation.java wave18a userprofile config + workflows reps
+2026-08-10T06:16:47Z DONE core/src/main/java/org/keycloak/representations/workflows/WorkflowStepRepresentation.java wave18a userprofile config + workflows reps
