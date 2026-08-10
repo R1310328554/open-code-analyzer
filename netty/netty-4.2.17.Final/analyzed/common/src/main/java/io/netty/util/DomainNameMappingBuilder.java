@@ -28,6 +28,7 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
  *
  * @param <V> concrete type of value objects
  * @deprecated Use {@link DomainWildcardMappingBuilder}
+ * <p>构建不可变 {@link DomainNameMapping}；已废弃，推荐 {@link DomainWildcardMappingBuilder}。</p>
  */
 @Deprecated
 public final class DomainNameMappingBuilder<V> {
@@ -40,6 +41,7 @@ public final class DomainNameMappingBuilder<V> {
      *
      * @param defaultValue the default value for {@link DomainNameMapping#map(String)} to return
      *                     when nothing matches the input
+     * <p>默认容量 4，指定无匹配时的默认返回值。</p>
      */
     public DomainNameMappingBuilder(V defaultValue) {
         this(4, defaultValue);
@@ -51,6 +53,7 @@ public final class DomainNameMappingBuilder<V> {
      * @param initialCapacity initial capacity for the internal map
      * @param defaultValue    the default value for {@link DomainNameMapping#map(String)} to return
      *                        when nothing matches the input
+     * <p>指定内部 LinkedHashMap 初始容量与默认值。</p>
      */
     public DomainNameMappingBuilder(int initialCapacity, V defaultValue) {
         this.defaultValue = checkNotNull(defaultValue, "defaultValue");
@@ -68,6 +71,7 @@ public final class DomainNameMappingBuilder<V> {
      * @param hostname the host name (optionally wildcard)
      * @param output   the output value that will be returned by {@link DomainNameMapping#map(String)}
      *                 when the specified host name matches the specified input host name
+     * <p>添加主机名到值的映射，支持 DNS 通配符模式。</p>
      */
     public DomainNameMappingBuilder<V> add(String hostname, V output) {
         map.put(checkNotNull(hostname, "hostname"), checkNotNull(output, "output"));
@@ -79,6 +83,7 @@ public final class DomainNameMappingBuilder<V> {
      * Attempts to add new mappings to the result object will cause {@link UnsupportedOperationException} to be thrown
      *
      * @return new {@link DomainNameMapping} instance
+     * <p>生成不可变映射实例，内部使用数组存储以优化 {@link #map(String)} 性能。</p>
      */
     public DomainNameMapping<V> build() {
         return new ImmutableDomainNameMapping<V>(defaultValue, map);
@@ -89,6 +94,7 @@ public final class DomainNameMappingBuilder<V> {
      * Mapping is represented by two arrays: keys and values. Key domainNamePatterns[i] is associated with values[i].
      *
      * @param <V> concrete type of value objects
+     * <p>不可变域名映射：用平行数组 {@code domainNamePatterns} 与 {@code values} 存储规则。</p>
      */
     private static final class ImmutableDomainNameMapping<V> extends DomainNameMapping<V> {
         private static final String REPR_HEADER = "ImmutableDomainNameMapping(default: ";
@@ -97,7 +103,9 @@ public final class DomainNameMappingBuilder<V> {
         private static final int REPR_CONST_PART_LENGTH =
             REPR_HEADER.length() + REPR_MAP_OPENING.length() + REPR_MAP_CLOSING.length();
 
+        /** 规范化后的域名模式数组。 */
         private final String[] domainNamePatterns;
+        /** 与模式一一对应的值数组。 */
         private final V[] values;
         private final Map<String, V> map;
 
@@ -187,6 +195,7 @@ public final class DomainNameMappingBuilder<V> {
          *                               e.g. {@link #domainNamePatterns#length}
          * @param estimatedMappingLength estimated size taken by one mapping
          * @return estimated length of string returned by {@link #toString()}
+         * <p>预估 {@link #toString()} 所需缓冲区大小，避免多次扩容。</p>
          */
         private static int estimateBufferSize(int defaultValueLength,
                                               int numberOfMappings,

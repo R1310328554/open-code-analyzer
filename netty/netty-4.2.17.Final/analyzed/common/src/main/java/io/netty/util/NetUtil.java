@@ -48,43 +48,51 @@ import static io.netty.util.AsciiString.indexOf;
  * This class borrowed some of its methods from a  modified fork of the
  * <a href="https://svn.apache.org/repos/asf/harmony/enhanced/java/branches/java6/classlib/modules/luni/
  * src/main/java/org/apache/harmony/luni/util/Inet6Util.java">Inet6Util class</a> which was part of Apache Harmony.
+ * <p>网络相关常量与 IP 地址解析/格式化工具类；静态块初始化 loopback、网卡列表与 SOMAXCONN。部分 IPv6 逻辑借鉴 Apache Harmony Inet6Util。</p>
  */
 public final class NetUtil {
 
     /**
      * The {@link Inet4Address} that represents the IPv4 loopback address '127.0.0.1'
+     * <p>IPv4 回环地址 127.0.0.1。</p>
      */
     public static final Inet4Address LOCALHOST4;
 
     /**
      * The {@link Inet6Address} that represents the IPv6 loopback address '::1'
+     * <p>IPv6 回环地址 ::1。</p>
      */
     public static final Inet6Address LOCALHOST6;
 
     /**
      * The {@link InetAddress} that represents the loopback address. If IPv6 stack is available, it will refer to
      * {@link #LOCALHOST6}.  Otherwise, {@link #LOCALHOST4}.
+     * <p>本机 loopback 地址，IPv6 可用时优先 LOCALHOST6。</p>
      */
     public static final InetAddress LOCALHOST;
 
     /**
      * The loopback {@link NetworkInterface} of the current machine
+     * <p>本机 loopback 网络接口（可能为 null）。</p>
      */
     public static final NetworkInterface LOOPBACK_IF;
 
     /**
      * An unmodifiable Collection of all the interfaces on this machine.
+     * <p>本机全部网络接口的不可变集合。</p>
      */
     public static final Collection<NetworkInterface> NETWORK_INTERFACES;
 
     /**
      * The SOMAXCONN value of the current machine.  If failed to get the value,  {@code 200} is used as a
      * default value for Windows and {@code 128} for others.
+     * <p>系统 listen  backlog 上限 SOMAXCONN；读 /proc 或 sysctl 失败则用平台默认值。</p>
      */
     public static final int SOMAXCONN;
 
     /**
      * This defines how many words (represented as ints) are needed to represent an IPv6 address
+     * <p>IPv6 地址按 16 位字划分，共 8 个字。</p>
      */
     private static final int IPV6_WORD_COUNT = 8;
 
@@ -125,11 +133,13 @@ public final class NetUtil {
 
     /**
      * {@code true} if IPv4 should be used even if the system supports both IPv4 and IPv6.
+     * <p>系统属性 java.net.preferIPv4Stack：强制 IPv4 栈。</p>
      */
     private static final boolean IPV4_PREFERRED = SystemPropertyUtil.getBoolean("java.net.preferIPv4Stack", false);
 
     /**
      * {@code true} if an IPv6 address should be preferred when a host has both an IPv4 address and an IPv6 address.
+     * <p>系统属性 java.net.preferIPv6Addresses 是否为 true。</p>
      */
     private static final boolean IPV6_ADDRESSES_PREFERRED;
 
@@ -152,6 +162,7 @@ public final class NetUtil {
         NETWORK_INTERFACES = NetUtilInitializations.networkInterfaces();
 
         // Create IPv4 loopback address.
+        // 构造 IPv4/IPv6 回环地址常量
         LOCALHOST4 = NetUtilInitializations.createLocalhost4();
 
         // Create IPv6 loopback address.
@@ -163,15 +174,18 @@ public final class NetUtil {
         LOCALHOST = loopback.address();
 
         // As a SecurityManager may prevent reading the somaxconn file we wrap this in a privileged block.
+        // 特权块读取 somaxconn，避免 SecurityManager 拦截
         //
         // See https://github.com/netty/netty/issues/3680
         SOMAXCONN = AccessController.doPrivileged(new SoMaxConnAction());
     }
 
+    /** 在特权上下文中探测平台 SOMAXCONN。 */
     private static final class SoMaxConnAction implements PrivilegedAction<Integer> {
         @Override
         public Integer run() {
             // Determine the default somaxconn (server socket backlog) value of the platform.
+            // 按平台设默认值，Linux 尝试读 /proc/sys/net/core/somaxconn
             // The known defaults:
             // - Windows NT Server 4.0+: 200
             // - Mac OS X: 128
@@ -199,6 +213,7 @@ public final class NetUtil {
                     }
                 } else {
                     // Try to get from sysctl
+                    // macOS/BSD 可尝试 sysctl kern.ipc.somaxconn
                     Integer tmp = null;
                     if (SystemPropertyUtil.getBoolean("io.netty.net.somaxconn.trySysctl", false)) {
                         tmp = sysctlGetInt("kern.ipc.somaxconn");
@@ -231,6 +246,7 @@ public final class NetUtil {
      * which is expected to return the numeric value for for {@code sysctlKey}.
      * @param sysctlKey The key which the return value corresponds to.
      * @return The <a href ="https://www.freebsd.org/cgi/man.cgi?sysctl(8)">sysctl</a> value for {@code sysctlKey}.
+     * <p>执行 sysctl 命令并解析指定键的整数值。</p>
      */
     private static Integer sysctlGetInt(String sysctlKey) throws IOException {
         Process process = new ProcessBuilder("sysctl", sysctlKey).start();
@@ -281,6 +297,7 @@ public final class NetUtil {
 
     /**
      * Creates an byte[] based on an ipAddressString. No error handling is performed here.
+     * <p>将 IP 字符串转为 4 或 16 字节数组；无效输入返回 null，不抛异常。</p>
      */
     public static byte[] createByteArrayFromIpAddressString(String ipAddressString) {
 
@@ -306,6 +323,7 @@ public final class NetUtil {
     /**
      * Creates an {@link InetAddress} based on an ipAddressString or might return null if it can't be parsed.
      * No error handling is performed here.
+     * <p>解析 IP 为 InetAddress，支持 IPv6 zone id（%scope）。</p>
      */
     public static InetAddress createInetAddressFromIpAddressString(String ipAddressString) {
         if (isValidIpV4Address(ipAddressString)) {
@@ -387,6 +405,7 @@ public final class NetUtil {
 
     /**
      * Convert {@link Inet4Address} into {@code int}
+     * <p>IPv4 四字节转为 32 位整数（网络序语义的大端 int）。</p>
      */
     public static int ipv4AddressToInt(Inet4Address ipAddress) {
         byte[] octets = ipAddress.getAddress();
@@ -399,6 +418,7 @@ public final class NetUtil {
 
     /**
      * Converts a 32-bit integer into an IPv4 address.
+     * <p>32 位整数格式化为点分十进制 IPv4 字符串。</p>
      */
     public static String intToIpAddress(int i) {
         StringBuilder buf = new StringBuilder(15);
@@ -417,6 +437,7 @@ public final class NetUtil {
      *
      * @throws IllegalArgumentException
      *         if {@code length} is not {@code 4} nor {@code 16}
+     * <p>字节数组转 IP 字符串；长度须为 4 或 16。</p>
      */
     public static String bytesToIpAddress(byte[] bytes) {
         return bytesToIpAddress(bytes, 0, bytes.length);
@@ -427,6 +448,7 @@ public final class NetUtil {
      *
      * @throws IllegalArgumentException
      *         if {@code length} is not {@code 4} nor {@code 16}
+     * <p>字节数组转 IP 字符串；长度须为 4 或 16。</p>
      */
     public static String bytesToIpAddress(byte[] bytes, int offset, int length) {
         switch (length) {
@@ -458,6 +480,7 @@ public final class NetUtil {
         }
 
         // strip "[]"
+        // 去掉 IPv6 字面量的方括号
         int start;
         char c = ip.charAt(0);
         if (c == '[') {
@@ -476,6 +499,7 @@ public final class NetUtil {
         int compressBegin;
         if (c == ':') {
             // an IPv6 address can start with "::" or with a number
+            // 允许 :: 压缩或普通十六进制段开头
             if (ip.charAt(start + 1) != ':') {
                 return false;
             }
@@ -516,6 +540,7 @@ public final class NetUtil {
                 break;
             case '.':
                 // case for the last 32-bits represented as IPv4 x:x:x:x:x:x:d.d.d.d
+                // IPv4 嵌入 IPv6 尾部的混合格式
 
                 // check a normal case (6 single colons)
                 if (compressBegin < 0 && colons != 6 ||
@@ -526,6 +551,7 @@ public final class NetUtil {
                 }
 
                 // Verify this address is of the correct structure to contain an IPv4 address.
+                // 须为 IPv4-Mapped 或 IPv4-Compatible 前缀结构
                 // It must be IPv4-Mapped or IPv4-Compatible
                 // (see https://tools.ietf.org/html/rfc4291#section-2.5.5).
                 int ipv4Start = i - wordLen;
@@ -554,6 +580,7 @@ public final class NetUtil {
                 return isValidIpV4Address(ip, ipv4Start, ipv4End);
             case '%':
                 // strip the interface name/index after the percent sign
+                // 截断 zone id（接口名/索引）
                 end = i;
                 break loop;
             default:
@@ -562,6 +589,7 @@ public final class NetUtil {
         }
 
         // normal case without compression
+        // 无 :: 压缩时须恰好 7 个冒号分隔 8 段
         if (compressBegin < 0) {
             return colons == 7 && wordLen > 0;
         }
@@ -614,6 +642,7 @@ public final class NetUtil {
 
     /**
      * Takes a {@link CharSequence} and parses it to see if it is a valid IPV4 address.
+     * <p>校验 CharSequence 是否为合法 IPv4 点分十进制。</p>
      *
      * @return true, if the string represents an IPV4 address in dotted
      *         notation, false otherwise
@@ -674,7 +703,8 @@ public final class NetUtil {
     /**
      * Returns the {@link Inet6Address} representation of a {@link CharSequence} IP address.
      * <p>
-     * This method will treat all IPv4 type addresses as "IPv4 mapped" (see {@link #getByName(CharSequence, boolean)})
+     * This method will treat all IPv4 type addresses as "IPv4 mapped"
+     * <p>CharSequence 转 Inet6Address；IPv4 默认按 mapped 格式扩展为 16 字节。</p> (see {@link #getByName(CharSequence, boolean)})
      * @param ip {@link CharSequence} IP address to be converted to a {@link Inet6Address}
      * @return {@link Inet6Address} representation of the {@code ip} or {@code null} if not a valid IP address.
      */
@@ -710,6 +740,7 @@ public final class NetUtil {
 
     /**
      * Returns the byte array representation of a {@link CharSequence} IP address.
+     * <p>核心 IPv6/混合格式解析器，输出 16 字节；支持 :: 压缩与尾部 IPv4。</p>
      * <p>
      * The {@code ipv4Mapped} parameter specifies how IPv4 addresses should be treated.
      * "IPv4 mapped" format as
@@ -751,7 +782,8 @@ public final class NetUtil {
                     compressLength -= 2;
                 }
 
-                // The value integer holds at most 4 bytes from right (most significant) to left (least significant).
+                // The value integer holds at most 4 bytes from right
+                // 十六进制段按位拼入 16 位字 (most significant) to left (least significant).
                 // The following bit shifting is used to extract and re-order the individual bytes to achieve a
                 // left (most significant) to right (least significant) ordering.
                 bytes[currentIndex++] = (byte) (((value & 0xf) << 4) | ((value >> 4) & 0xf));
@@ -793,7 +825,8 @@ public final class NetUtil {
                 }
                 value <<= (IPV4_MAX_CHAR_BETWEEN_SEPARATOR - tmp) << 2;
 
-                // The value integer holds at most 3 bytes from right (most significant) to left (least significant).
+                // The value integer holds at most 3 bytes from right
+                // IPv4 段按十进制拼入单字节 (most significant) to left (least significant).
                 // The following bit shifting is to restructure the bytes to be left (most significant) to
                 // right (least significant) while also accounting for each IPv4 digit is base 10.
                 begin = (value & 0xf) * 100 + ((value >> 4) & 0xf) * 10 + ((value >> 8) & 0xf);
@@ -871,6 +904,7 @@ public final class NetUtil {
             bytes[currentIndex++] = (byte) ((((value >> 8) & 0xf) << 4) | ((value >> 12) & 0xf));
         }
 
+        // :: 压缩：将已解析后缀移到数组尾部，中间填 0
         if (currentIndex < bytes.length) {
             int toBeCopiedLength = currentIndex - compressBegin;
             int targetIndex = bytes.length - toBeCopiedLength;
@@ -881,6 +915,7 @@ public final class NetUtil {
 
         if (ipv4Separators > 0) {
             // We only support IPv4-Mapped addresses [1] because IPv4-Compatible addresses are deprecated [2].
+            // 尾部 IPv4 时写入 ff:ff 映射标记（字节 10-11）
             // [1] https://tools.ietf.org/html/rfc4291#section-2.5.5.2
             // [2] https://tools.ietf.org/html/rfc4291#section-2.5.5.1
             bytes[10] = bytes[11] = (byte) 0xff;
@@ -891,6 +926,7 @@ public final class NetUtil {
 
     /**
      * Returns the {@link String} representation of an {@link InetSocketAddress}.
+     * <p>InetSocketAddress 格式化为 host:port，IPv6 主机加方括号。</p>
      * <p>
      * The output does not include Scope ID.
      * @param addr {@link InetSocketAddress} to be converted to an address string
@@ -913,6 +949,7 @@ public final class NetUtil {
 
     /**
      * Returns the {@link String} representation of a host port combo.
+     * <p>host 与 port 格式化为 socket 地址字符串。</p>
      */
     public static String toSocketAddressString(String host, int port) {
         String portStr = String.valueOf(port);
@@ -938,6 +975,7 @@ public final class NetUtil {
      * Returns the {@link String} representation of an {@link InetAddress}.
      * <ul>
      * <li>Inet4Address results are identical to {@link InetAddress#getHostAddress()}</li>
+     * <p>InetAddress 转字符串；IPv6 遵循 RFC 5952 压缩规则。</p>
      * <li>Inet6Address results adhere to
      * <a href="https://tools.ietf.org/html/rfc5952#section-4">rfc 5952 section 4</a></li>
      * </ul>
@@ -954,6 +992,7 @@ public final class NetUtil {
      * Returns the {@link String} representation of an {@link InetAddress}.
      * <ul>
      * <li>Inet4Address results are identical to {@link InetAddress#getHostAddress()}</li>
+     * <p>InetAddress 转字符串；IPv6 遵循 RFC 5952 压缩规则。</p>
      * <li>Inet6Address results adhere to
      * <a href="https://tools.ietf.org/html/rfc5952#section-4">rfc 5952 section 4</a> if
      * {@code ipv4Mapped} is false.  If {@code ipv4Mapped} is true then "IPv4 mapped" format
@@ -993,6 +1032,7 @@ public final class NetUtil {
         }
 
         // Find longest run of 0s, tie goes to first found instance
+        // RFC 5952：找最长连续零段用于 :: 压缩（并列取最先）
         int currentStart = -1;
         int currentLength;
         int shortestStart = -1;
@@ -1020,12 +1060,14 @@ public final class NetUtil {
             }
         }
         // Ignore the longest streak if it is only 1 long
+        // 仅一段零不压缩
         if (shortestLength == 1) {
             shortestLength = 0;
             shortestStart = -1;
         }
 
         // Translate to string taking into account longest consecutive 0s
+        // 按压缩区间输出十六进制段或 IPv4 映射尾
         final int shortestEnd = shortestStart + shortestLength;
         final StringBuilder b = new StringBuilder(IPV6_MAX_CHAR_COUNT);
         if (shortestEnd < 0) { // Optimization when there is no compressing needed
@@ -1097,6 +1139,7 @@ public final class NetUtil {
 
     /**
      * A constructor to stop this class being constructed.
+     * <p>工具类禁止实例化。</p>
      */
     private NetUtil() {
         // Unused

@@ -25,16 +25,21 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * Default {@link AttributeMap} implementation which not exibit any blocking behaviour on attribute lookup while using a
  * copy-on-write approach on the modify path.<br> Attributes lookup and remove exibit {@code O(logn)} time worst-case
  * complexity, hence {@code attribute::set(null)} is to be preferred to {@code remove}.
+ * <p>默认 {@link AttributeMap} 实现：查找无阻塞，修改走写时复制（COW）。
+ * 查找与删除最坏 {@code O(log n)}，因此优先用 {@code attribute.set(null)} 而非 {@code remove}。</p>
  */
 public class DefaultAttributeMap implements AttributeMap {
 
+    /** 用于 CAS 更新 attributes 数组的原子字段更新器。 */
     private static final AtomicReferenceFieldUpdater<DefaultAttributeMap, DefaultAttribute[]> ATTRIBUTES_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(DefaultAttributeMap.class, DefaultAttribute[].class, "attributes");
+    /** 空属性数组单例，表示尚未绑定任何属性。 */
     private static final DefaultAttribute[] EMPTY_ATTRIBUTES = new DefaultAttribute[0];
 
     /**
      * Similarly to {@code Arrays::binarySearch} it perform a binary search optimized for this use case, in order to
      * save polymorphic calls (on comparator side) and unnecessary class checks.
+     * <p>类似 {@code Arrays.binarySearch}，但按 {@link AttributeKey#id()} 直接比较，避免多态比较器开销。</p>
      */
     private static int searchAttributeByKey(DefaultAttribute[] sortedAttributes, AttributeKey<?> key) {
         int low = 0;
@@ -61,6 +66,10 @@ public class DefaultAttributeMap implements AttributeMap {
         return -(low + 1);
     }
 
+    /**
+     * 按 key.id 升序将新属性插入已排序数组的副本中。
+     * 从尾部向前扫描，因新 key 的 id 通常较大，可减少移动次数。
+     */
     private static void orderedCopyOnInsert(DefaultAttribute[] sortedSrc, int srcLength, DefaultAttribute[] copy,
                                             DefaultAttribute toInsert) {
         // let's walk backward, because as a rule of thumb, toInsert.key.id() tends to be higher for new keys
@@ -82,6 +91,7 @@ public class DefaultAttributeMap implements AttributeMap {
         }
     }
 
+    /** 按 key.id 排序的属性数组，volatile 保证读可见性。 */
     private volatile DefaultAttribute[] attributes = EMPTY_ATTRIBUTES;
 
     @SuppressWarnings("unchecked")
@@ -100,6 +110,7 @@ public class DefaultAttributeMap implements AttributeMap {
                     return attribute;
                 }
                 // let's try replace the removed attribute with a new one
+                // 槽位存在但已逻辑删除，用新 Attribute 替换
                 if (newAttribute == null) {
                     newAttribute = new DefaultAttribute<T>(this, key);
                 }
@@ -114,6 +125,7 @@ public class DefaultAttributeMap implements AttributeMap {
                 newAttributes = new DefaultAttribute[count + 1];
                 orderedCopyOnInsert(attributes, count, newAttributes, newAttribute);
             }
+            // CAS 成功则返回，失败则重试（其他线程已修改数组）
             if (ATTRIBUTES_UPDATER.compareAndSet(this, attributes, newAttributes)) {
                 return newAttribute;
             }
@@ -126,6 +138,7 @@ public class DefaultAttributeMap implements AttributeMap {
         return searchAttributeByKey(attributes, key) >= 0;
     }
 
+    /** 仅当槽位上的 Attribute 实例与 value 一致时才从数组中移除（CAS 循环）。 */
     private <T> void removeAttributeIfMatch(AttributeKey<T> key, DefaultAttribute<T> value) {
         for (;;) {
             final DefaultAttribute[] attributes = this.attributes;
@@ -154,6 +167,7 @@ public class DefaultAttributeMap implements AttributeMap {
         }
     }
 
+    /** 单个属性的 COW 包装：值存于 AtomicReference，生命周期由 map 引用管理。 */
     private static final class DefaultAttribute<T> extends AtomicReference<T> implements Attribute<T> {
 
         private static final AtomicReferenceFieldUpdater<DefaultAttribute, DefaultAttributeMap> MAP_UPDATER =
@@ -161,6 +175,7 @@ public class DefaultAttributeMap implements AttributeMap {
                                                        DefaultAttributeMap.class, "attributeMap");
         private static final long serialVersionUID = -2661411462200283011L;
 
+        /** 所属 map；置 null 表示该 Attribute 已从 map 逻辑移除。 */
         private volatile DefaultAttributeMap attributeMap;
         private final AttributeKey<T> key;
 

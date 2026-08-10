@@ -34,6 +34,7 @@ import static io.netty.util.internal.StringUtil.commonSuffixOfLength;
  * and {@code downloads.netty.io}.
  * </p>
  * @deprecated Use {@link DomainWildcardMappingBuilder}}
+ * <p>域名到值的映射，支持 DNS 通配符；已废弃，请改用 {@link DomainWildcardMappingBuilder}。</p>
  */
 @Deprecated
 public class DomainNameMapping<V> implements Mapping<String, V> {
@@ -48,6 +49,7 @@ public class DomainNameMapping<V> implements Mapping<String, V> {
      *
      * @param defaultValue the default value for {@link #map(String)} to return when nothing matches the input
      * @deprecated use {@link DomainNameMappingBuilder} to create and fill the mapping instead
+     * <p>默认容量创建有序映射；冲突时以先添加的规则为准。</p>
      */
     @Deprecated
     public DomainNameMapping(V defaultValue) {
@@ -61,6 +63,7 @@ public class DomainNameMapping<V> implements Mapping<String, V> {
      * @param initialCapacity initial capacity for the internal map
      * @param defaultValue    the default value for {@link #map(String)} to return when nothing matches the input
      * @deprecated use {@link DomainNameMappingBuilder} to create and fill the mapping instead
+     * <p>指定初始容量创建有序映射。</p>
      */
     @Deprecated
     public DomainNameMapping(int initialCapacity, V defaultValue) {
@@ -85,6 +88,7 @@ public class DomainNameMapping<V> implements Mapping<String, V> {
      * @param output   the output value that will be returned by {@link #map(String)} when the specified host name
      *                 matches the specified input host name
      * @deprecated use {@link DomainNameMappingBuilder} to create and fill the mapping instead
+     * <p>添加主机名模式与输出值的映射，hostname 会经 {@link #normalizeHostname} 规范化。</p>
      */
     @Deprecated
     public DomainNameMapping<V> add(String hostname, V output) {
@@ -94,6 +98,7 @@ public class DomainNameMapping<V> implements Mapping<String, V> {
 
     /**
      * Simple function to match <a href="https://en.wikipedia.org/wiki/Wildcard_DNS_record">DNS wildcard</a>.
+     * <p>简单 DNS 通配符匹配：{@code *.domain} 可匹配 domain 及其一级子域。</p>
      */
     static boolean matches(String template, String hostName) {
         if (template.startsWith("*.")) {
@@ -105,6 +110,7 @@ public class DomainNameMapping<V> implements Mapping<String, V> {
 
     /**
      * IDNA ASCII conversion and case normalization
+     * <p>IDNA 转 ASCII 并统一为小写（Locale.US）。</p>
      */
     static String normalizeHostname(String hostname) {
         if (needsNormalization(hostname)) {
@@ -113,6 +119,7 @@ public class DomainNameMapping<V> implements Mapping<String, V> {
         return hostname.toLowerCase(Locale.US);
     }
 
+    /** 若含非 ASCII 字符则需 IDN 规范化。 */
     private static boolean needsNormalization(String hostname) {
         final int length = hostname.length();
         for (int i = 0; i < length; i++) {
@@ -129,6 +136,7 @@ public class DomainNameMapping<V> implements Mapping<String, V> {
         if (hostname != null) {
             hostname = normalizeHostname(hostname);
 
+            // 按 LinkedHashMap 插入顺序遍历，先匹配者优先
             for (Map.Entry<String, V> entry : map.entrySet()) {
                 if (matches(entry.getKey(), hostname)) {
                     return entry.getValue();
@@ -140,6 +148,7 @@ public class DomainNameMapping<V> implements Mapping<String, V> {
 
     /**
      * Returns a read-only {@link Map} of the domain mapping patterns and their associated value objects.
+     * <p>返回域名模式到值的只读映射视图。</p>
      */
     public Map<String, V> asMap() {
         return unmodifiableMap;

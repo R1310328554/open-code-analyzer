@@ -31,6 +31,9 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
+/**
+ * {@link NetUtil} 静态初始化辅助类：创建本地回环地址、枚举网卡并探测 loopback 接口。
+ */
 final class NetUtilInitializations {
     /**
      * The logger being used by this class
@@ -40,6 +43,7 @@ final class NetUtilInitializations {
     private NetUtilInitializations() {
     }
 
+    /** 构造 IPv4 回环地址 127.0.0.1（hostname 为 "localhost"）。 */
     static Inet4Address createLocalhost4() {
         byte[] LOCALHOST4_BYTES = {127, 0, 0, 1};
 
@@ -54,6 +58,7 @@ final class NetUtilInitializations {
         return localhost4;
     }
 
+    /** 构造 IPv6 回环地址 ::1。 */
     static Inet6Address createLocalhost6() {
         byte[] LOCALHOST6_BYTES = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
 
@@ -68,6 +73,7 @@ final class NetUtilInitializations {
         return localhost6;
     }
 
+    /** 枚举本机所有网络接口，失败时记录警告并返回空列表的不可变视图。 */
     static Collection<NetworkInterface> networkInterfaces() {
         List<NetworkInterface> networkInterfaces = new ArrayList<NetworkInterface>();
         try {
@@ -89,6 +95,10 @@ final class NetUtilInitializations {
         return Collections.unmodifiableList(networkInterfaces);
     }
 
+    /**
+     * 确定本机 loopback 网络接口及其 InetAddress。
+     * 优先通过地址 isLoopbackAddress 判断（避免 Windows 上 isLoopback() 过慢），失败则回退硬编码 ::1/127.0.0.1。
+     */
     static NetworkIfaceAndInetAddress determineLoopback(
             Collection<NetworkInterface> networkInterfaces, Inet4Address localhost4, Inet6Address localhost6) {
         // Retrieve the list of available network interfaces.
@@ -168,6 +178,7 @@ final class NetUtilInitializations {
         return new NetworkIfaceAndInetAddress(loopbackIface, loopbackAddr);
     }
 
+    /** loopback 接口与其 InetAddress 的简单值对象。 */
     static final class NetworkIfaceAndInetAddress {
         private final NetworkInterface iface;
         private final InetAddress address;

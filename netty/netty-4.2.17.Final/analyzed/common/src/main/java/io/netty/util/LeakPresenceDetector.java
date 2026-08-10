@@ -79,15 +79,21 @@ import java.util.function.Supplier;
  * {@code -Dio.netty.util.LeakPresenceDetector.trackCreationStack=true} system property.
  *
  * @param <T> The resource type to detect
+ * <p>面向测试的「存在性」泄漏检测器：不记录详细访问栈，但对每个资源计数，避免漏报；
+ * 测试结束前须释放 scope 内全部资源，静态块内分配需用 {@link #staticInitializer} 包裹。</p>
  */
 public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
     private static final String TRACK_CREATION_STACK_PROPERTY = "io.netty.util.LeakPresenceDetector.trackCreationStack";
+    /** 是否记录资源创建栈（调试用，默认 false）。 */
     private static final boolean TRACK_CREATION_STACK =
             SystemPropertyUtil.getBoolean(TRACK_CREATION_STACK_PROPERTY, false);
+    /** 默认全局资源作用域。 */
     private static final ResourceScope GLOBAL = new ResourceScope("global");
 
+    /** 当前处于 staticInitializer 块内的嵌套深度计数。 */
     private static int staticInitializerCount;
 
+    /** 扫描栈帧是否包含 {@code <clinit>}，判定是否在静态初始化器中分配。 */
     private static boolean inStaticInitializerSlow(StackTraceElement[] stackTrace) {
         for (StackTraceElement element : stackTrace) {
             if (element.getMethodName().equals("<clinit>")) {
@@ -97,6 +103,7 @@ public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
         return false;
     }
 
+    /** 快速路径：计数非零时才做完整栈扫描。 */
     private static boolean inStaticInitializerFast() {
         // This plain field access is safe. The worst that can happen is that we see non-zero where we shouldn't.
         return staticInitializerCount != 0 && inStaticInitializerSlow(Thread.currentThread().getStackTrace());
@@ -117,6 +124,7 @@ public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
      * @param supplier A code block to run
      * @return The value returned by the {@code supplier}
      * @param <R> The supplier return type
+     * <p>必须在静态初始化器上下文中调用；执行期间递增计数，使块内分配不被跟踪。</p>
      */
     public static <R> R staticInitializer(Supplier<R> supplier) {
         if (!inStaticInitializerSlow(Thread.currentThread().getStackTrace())) {
@@ -138,6 +146,7 @@ public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
      * Create a new detector for the given resource type.
      *
      * @param resourceType The resource type
+     * <p>为指定资源类型创建检测器；采样间隔固定为 0（全量跟踪）。</p>
      */
     public LeakPresenceDetector(Class<?> resourceType) {
         super(resourceType, 0);
@@ -172,6 +181,7 @@ public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
      * {@link #check()} to tell which scope to check for open resources. By default, the global scope is returned.
      *
      * @return The resource scope to use
+     * <p>返回当前线程所属资源作用域；子类可覆盖以支持并行测试隔离。</p>
      */
     protected ResourceScope currentScope() throws AllocationProhibitedException {
         return GLOBAL;
@@ -179,6 +189,7 @@ public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
 
     @Override
     public final ResourceLeakTracker<T> track(T obj) {
+        // 静态初始化器内分配不跟踪
         if (inStaticInitializerFast()) {
             return null;
         }
@@ -200,6 +211,7 @@ public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
      * exception is thrown.
      *
      * @throws IllegalStateException If there is a leak, or if the leak detector is not a {@link LeakPresenceDetector}.
+     * <p>检查当前 scope 是否仍有未关闭资源；须通过系统属性注册本检测器实现。</p>
      */
     public static void check() {
         // for LeakPresenceDetector, this is cheap.
@@ -216,6 +228,7 @@ public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
         ((LeakPresenceDetector<Object>) detector).currentScope().check();
     }
 
+    /** 轻量跟踪器：打开时递增 scope 计数，close 时递减。 */
     private static final class PresenceTracker<T> extends AtomicBoolean implements ResourceLeakTracker<T> {
         private final ResourceScope scope;
 
@@ -256,12 +269,15 @@ public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
     /**
      * A resource scope keeps track of the resources for a particular set of threads. Different scopes can be checked
      * for leaks separately, to enable parallel test execution.
+     * <p>资源作用域：维护未关闭资源计数，支持分 scope 独立泄漏检查。</p>
      */
     public static final class ResourceScope implements Closeable {
         final String name;
+        /** 当前 scope 内仍打开的资源数量。 */
         final LongAdder openResourceCounter = new LongAdder();
         final Map<PresenceTracker<?>, Throwable> creationStacks =
                 TRACK_CREATION_STACK ? new ConcurrentHashMap<>() : null;
+        /** 引用计数：close 递减，为 0 时执行 check 并禁止再分配。 */
         int closed;
 
         /**
@@ -274,12 +290,14 @@ public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
             closed = 1;
         }
 
+        /** scope 已关闭时禁止再分配或释放资源。 */
         void checkOpen() {
             if (closed == 0) {
                 throw new AllocationProhibitedException("Resource scope '" + name + "' already closed");
             }
         }
 
+        /** 检查并重置计数；非零表示泄漏，可选附带创建栈。 */
         void check() {
             long n = openResourceCounter.sumThenReset();
             if (n != 0) {
@@ -313,6 +331,7 @@ public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
          * Check whether there are any open resources left, and {@link #close()} would throw.
          *
          * @return {@code true} if there are open resources
+         * <p>是否仍有未关闭资源（不重置计数）。</p>
          */
         public boolean hasOpenResources() {
             return openResourceCounter.sum() > 0;
@@ -321,6 +340,7 @@ public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
         /**
          * Close this scope. Closing a scope will prevent new resources from being allocated (or released) in this
          * scope. The call also throws an exception if there are any resources left open.
+         * <p>关闭 scope：引用归零时执行泄漏检查并禁止后续分配。</p>
          */
         @Override
         public void close() {
@@ -330,6 +350,7 @@ public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
         }
     }
 
+    /** 可选：记录资源创建时的诊断信息（静态块 vs 普通泄漏）。 */
     private static final class LeakCreation extends Throwable {
         final Thread thread = Thread.currentThread();
         String message;
@@ -354,6 +375,7 @@ public class LeakPresenceDetector<T> extends ResourceLeakDetector<T> {
      * {@link ResourceScope} is closed, or because the current thread cannot be associated with a particular scope.
      * <p>
      * Some code in Netty will treat this exception specially to avoid allocation loops.
+     * <p>表示当前禁止分配（如 scope 已关闭）；Netty 内部会特殊处理以避免分配死循环。</p>
      */
     public static final class AllocationProhibitedException extends IllegalStateException {
         public AllocationProhibitedException(String s) {

@@ -19,17 +19,21 @@ package io.netty.util;
 /**
  * An {@link IllegalStateException} which is raised when a user attempts to access a {@link ReferenceCounted} whose
  * reference count has been decreased to 0 (and consequently freed).
+ * <p>当用户访问引用计数已降为 0（并已释放）的 {@link ReferenceCounted} 对象时抛出的 {@link IllegalStateException}。</p>
  */
 public class IllegalReferenceCountException extends IllegalStateException {
 
     private static final long serialVersionUID = -2507492394288153468L;
 
+    /** 无参构造，用于默认异常消息。 */
     public IllegalReferenceCountException() { }
 
+    /** 根据当前引用计数构造异常。 */
     public IllegalReferenceCountException(int refCnt) {
         this("refCnt: " + refCnt);
     }
 
+    /** 根据当前引用计数与增减量构造异常，便于诊断 retain/release 误用。 */
     public IllegalReferenceCountException(int refCnt, int increment) {
         this("refCnt: " + refCnt + ", " + (increment > 0? "increment: " + increment : "decrement: " + -increment));
     }

@@ -17,6 +17,7 @@ package io.netty.util;
 
 /**
  * Represents a supplier of {@code int}-valued results.
+ * <p>表示可供应 {@code int} 类型结果的函数式接口。</p>
  */
 public interface IntSupplier {
 
@@ -24,6 +25,7 @@ public interface IntSupplier {
      * Gets a result.
      *
      * @return a result
+     * <p>获取一个 int 结果，实现可能抛出异常。</p>
      */
     int get() throws Exception;
 }

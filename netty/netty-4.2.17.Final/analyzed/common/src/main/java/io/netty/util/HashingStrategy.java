@@ -17,6 +17,7 @@ package io.netty.util;
 
 /**
  * Abstraction for hash code generation and equality comparison.
+ * <p>哈希码生成与相等性比较的抽象策略，用于自定义集合键比较逻辑。</p>
  */
 public interface HashingStrategy<T> {
     /**
@@ -33,6 +34,7 @@ public interface HashingStrategy<T> {
      * return different results results. However this property is desirable.</li>
      * <li>if {@code obj} is {@code null} then this method return {@code 0}</li>
      * </ul>
+     * <p>为对象生成哈希码，须与 {@link #equals(Object, Object)} 保持与 {@code Object.hashCode/equals} 相同的契约。</p>
      */
     int hashCode(T obj);
 
@@ -51,12 +53,14 @@ public interface HashingStrategy<T> {
      * <li>if {@code a} is {@code null} and {@code b} is non-{@code null}, or {@code a} is non-{@code null} and
      * {@code b} is {@code null} then this method returns {@code false}</li>
      * </ul>
+     * <p>自定义相等性判断，须满足自反、对称、传递与一致性等约束。</p>
      */
     boolean equals(T a, T b);
 
     /**
      * A {@link HashingStrategy} which delegates to java's {@link Object#hashCode()}
      * and {@link Object#equals(Object)}.
+     * <p>委托给 Java 默认 {@code hashCode/equals} 的标准策略实例。</p>
      */
     @SuppressWarnings("rawtypes")
     HashingStrategy JAVA_HASHER = new HashingStrategy() {
