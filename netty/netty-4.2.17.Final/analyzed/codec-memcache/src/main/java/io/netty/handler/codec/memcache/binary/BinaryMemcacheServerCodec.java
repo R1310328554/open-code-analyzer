@@ -24,6 +24,10 @@ import io.netty.util.internal.UnstableApi;
  * Use this codec if you need to implement a server that speaks the memcache binary protocol.
  * Internally, it combines the {@link BinaryMemcacheRequestDecoder} and the
  * {@link BinaryMemcacheResponseEncoder} to request decoding and response encoding.
+ *
+ * <p>服务端侧二进制 Memcache 复合编解码器：入站 {@link BinaryMemcacheRequestDecoder} 解析客户端请求，
+ * 出站 {@link BinaryMemcacheResponseEncoder} 写响应。与 {@link BinaryMemcacheClientCodec} 方向相反，
+ * 通常置于 server bootstrap 的 pipeline 前端。</p>
  */
 @UnstableApi
 public class BinaryMemcacheServerCodec extends
@@ -33,6 +37,9 @@ public class BinaryMemcacheServerCodec extends
         this(AbstractBinaryMemcacheDecoder.DEFAULT_MAX_CHUNK_SIZE);
     }
 
+    /**
+     * @param decodeChunkSize value 分片解码上限，透传给 {@link BinaryMemcacheRequestDecoder}。
+     */
     public BinaryMemcacheServerCodec(int decodeChunkSize) {
         super(new BinaryMemcacheRequestDecoder(decodeChunkSize), new BinaryMemcacheResponseEncoder());
     }

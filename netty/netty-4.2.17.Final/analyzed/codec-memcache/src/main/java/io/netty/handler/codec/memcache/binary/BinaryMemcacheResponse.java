@@ -19,6 +19,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * Represents a full {@link BinaryMemcacheResponse}, which contains the header and optional key and extras.
+ *
+ * <p>二进制 Memcache 响应消息头：24 字节头中第 7–8 字节为 {@link #status()}（请求侧同位置为 reserved），
+ * 取值见 {@link BinaryMemcacheResponseStatus}。</p>
  */
 @UnstableApi
 public interface BinaryMemcacheResponse extends BinaryMemcacheMessage {

@@ -20,6 +20,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * The encoder which takes care of encoding the response headers.
+ *
+ * <p>服务端出站响应头编码：与 {@link BinaryMemcacheResponseDecoder#decodeHeader} 字段顺序一致，
+ * status 占 reserved 位置，opaque 原样回传以便客户端匹配请求。</p>
  */
 @UnstableApi
 public class BinaryMemcacheResponseEncoder

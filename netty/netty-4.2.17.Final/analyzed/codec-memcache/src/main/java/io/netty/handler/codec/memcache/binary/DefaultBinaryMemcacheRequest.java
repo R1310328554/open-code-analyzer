@@ -20,6 +20,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * The default implementation of the {@link BinaryMemcacheRequest}.
+ *
+ * <p>{@link BinaryMemcacheRequest} 的默认实现：构造时自动设置 magic 为 {@link #REQUEST_MAGIC_BYTE}（0x80），
+ * key/extras 的引用计数由父类 {@link AbstractBinaryMemcacheMessage} 统一管理。</p>
  */
 @UnstableApi
 public class DefaultBinaryMemcacheRequest extends AbstractBinaryMemcacheMessage implements BinaryMemcacheRequest {
@@ -29,6 +32,7 @@ public class DefaultBinaryMemcacheRequest extends AbstractBinaryMemcacheMessage 
      */
     public static final byte REQUEST_MAGIC_BYTE = (byte) 0x80;
 
+    /** 24 字节头中第 7–8 字节，请求侧保留字段（响应侧为 status）。 */
     private short reserved;
 
     /**

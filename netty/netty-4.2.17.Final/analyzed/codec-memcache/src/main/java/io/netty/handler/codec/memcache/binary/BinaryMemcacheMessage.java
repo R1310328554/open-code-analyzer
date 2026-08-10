@@ -28,6 +28,10 @@ import io.netty.util.internal.UnstableApi;
  *
  * @see BinaryMemcacheRequest
  * @see BinaryMemcacheResponse
+ *
+ * <p>二进制 Memcache 报文头的公共契约：对应协议 24 字节固定头中的 magic、opcode、key/extras 长度、
+ * body 总长、opaque 关联号、CAS 等字段；value 本体仍通过后续 {@link io.netty.handler.codec.memcache.MemcacheContent}
+ * 分片传递，不在本接口内承载。</p>
  */
 @UnstableApi
 public interface BinaryMemcacheMessage extends MemcacheMessage {
@@ -99,6 +103,8 @@ public interface BinaryMemcacheMessage extends MemcacheMessage {
      * Note that this may be 0, since the body is optional.
      *
      * @return the total body length.
+     *
+     * <p>body 总长 = extras + key + value 字节数，解码器据此判断 value 分片何时结束。</p>
      */
     int totalBodyLength();
 
@@ -115,6 +121,8 @@ public interface BinaryMemcacheMessage extends MemcacheMessage {
      * Returns the opaque value.
      *
      * @return the opaque value.
+     *
+     * <p>客户端自定义的 32 位请求关联号，响应中原样带回，用于异步匹配 req/resp。</p>
      */
     int opaque();
 
@@ -159,6 +167,8 @@ public interface BinaryMemcacheMessage extends MemcacheMessage {
      * Returns a {@link ByteBuf} representation of the optional extras.
      *
      * @return the optional extras.
+     *
+     * <p>extras 为命令相关元数据（如 SET 的 flags/expiration），长度由 {@link #extrasLength()} 限定。</p>
      */
     ByteBuf extras();
 

@@ -20,6 +20,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * The encoder part which takes care of encoding the request headers.
+ *
+ * <p>客户端出站请求头编码：字段顺序与 {@link BinaryMemcacheRequestDecoder#decodeHeader} 严格对称，
+ * 共 24 字节；extras/key/value 由 {@link AbstractBinaryMemcacheEncoder} 按 body 布局追加。</p>
  */
 @UnstableApi
 public class BinaryMemcacheRequestEncoder

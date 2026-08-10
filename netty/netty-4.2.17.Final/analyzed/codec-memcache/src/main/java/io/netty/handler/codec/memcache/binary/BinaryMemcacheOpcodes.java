@@ -22,6 +22,9 @@ import io.netty.util.internal.UnstableApi;
  * <p/>
  * This class can be extended if a custom application needs to implement a superset of the normally supported
  * operations by a vanilla memcached protocol.
+ *
+ * <p>Memcache 二进制协议 opcode 常量表。带 Q 后缀的命令（如 GETQ、SETQ）为「quiet」变体：
+ * 成功时不回响应包，用于 pipeline 批量操作以减少 RTT；无 Q 后缀则每条命令均有对应响应。</p>
  */
 @UnstableApi
 public final class BinaryMemcacheOpcodes {
@@ -39,9 +42,11 @@ public final class BinaryMemcacheOpcodes {
     public static final byte DECREMENT = 0x06;
     public static final byte QUIT = 0x07;
     public static final byte FLUSH = 0x08;
+    /** quiet GET：命中时不单独回包，常与 pipeline 末端的非 quiet 命令配合。 */
     public static final byte GETQ = 0x09;
     public static final byte NOOP = 0x0a;
     public static final byte VERSION = 0x0b;
+    /** GET 且响应中带 key（用于未知 key 是否存在的探测场景）。 */
     public static final byte GETK = 0x0c;
     public static final byte GETKQ = 0x0d;
     public static final byte APPEND = 0x0e;
@@ -57,7 +62,9 @@ public final class BinaryMemcacheOpcodes {
     public static final byte FLUSHQ = 0x18;
     public static final byte APPENDQ = 0x19;
     public static final byte PREPENDQ = 0x1a;
+    /** 刷新过期时间而不改写 value。 */
     public static final byte TOUCH = 0x1c;
+    /** Get-And-Touch：读取 value 同时延长 TTL。 */
     public static final byte GAT = 0x1d;
     public static final byte GATQ = 0x1e;
     public static final byte GATK = 0x23;

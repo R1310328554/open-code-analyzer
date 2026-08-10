@@ -22,11 +22,15 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * The default implementation of a {@link FullBinaryMemcacheRequest}.
+ *
+ * <p>聚合后的完整二进制请求：在 {@link DefaultBinaryMemcacheRequest} 基础上持有 value {@link #content()}，
+ * 构造时按 key + extras + content 自动回填 {@link #totalBodyLength()}，实现 {@link FullBinaryMemcacheRequest}。</p>
  */
 @UnstableApi
 public class DefaultFullBinaryMemcacheRequest extends DefaultBinaryMemcacheRequest
     implements FullBinaryMemcacheRequest {
 
+    /** 完整 value 载荷；与 key/extras 分属不同 ByteBuf，release 时各自释放。 */
     private final ByteBuf content;
 
     /**
@@ -133,6 +137,7 @@ public class DefaultFullBinaryMemcacheRequest extends DefaultBinaryMemcacheReque
         return newInstance(key, extras, content);
     }
 
+    /** 复制头字段（含 reserved）到新实例，供 copy/duplicate/replace 共用。 */
     private DefaultFullBinaryMemcacheRequest newInstance(ByteBuf key, ByteBuf extras, ByteBuf content) {
         DefaultFullBinaryMemcacheRequest newInstance = new DefaultFullBinaryMemcacheRequest(key, extras, content);
         copyMeta(newInstance);

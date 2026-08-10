@@ -20,6 +20,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * The default implementation of the {@link BinaryMemcacheResponse}.
+ *
+ * <p>{@link BinaryMemcacheResponse} 的默认实现：magic 固定为 {@link #RESPONSE_MAGIC_BYTE}（0x81），
+ * {@link #status()} 承载协议结果码，见 {@link BinaryMemcacheResponseStatus}。</p>
  */
 @UnstableApi
 public class DefaultBinaryMemcacheResponse extends AbstractBinaryMemcacheMessage implements BinaryMemcacheResponse {
@@ -29,6 +32,7 @@ public class DefaultBinaryMemcacheResponse extends AbstractBinaryMemcacheMessage
      */
     public static final byte RESPONSE_MAGIC_BYTE = (byte) 0x81;
 
+    /** 响应状态码，占 24 字节头第 7–8 字节。 */
     private short status;
 
     /**

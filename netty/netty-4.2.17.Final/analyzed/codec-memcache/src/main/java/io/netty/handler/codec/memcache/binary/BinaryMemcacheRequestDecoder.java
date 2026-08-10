@@ -21,6 +21,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * The decoder part which takes care of decoding the request-specific headers.
+ *
+ * <p>服务端入站解码器：按 Memcache 二进制请求头布局依次读取 magic、opcode、key/extras 长度、
+ * reserved、body 总长、opaque、CAS，再交由父类状态机解析 extras、key 与 value 分片。</p>
  */
 @UnstableApi
 public class BinaryMemcacheRequestDecoder
@@ -42,7 +45,7 @@ public class BinaryMemcacheRequestDecoder
         header.setKeyLength(in.readShort());
         header.setExtrasLength(in.readByte());
         header.setDataType(in.readByte());
-        header.setReserved(in.readShort());
+        header.setReserved(in.readShort()); // 请求头特有：响应头同位置为 status
         header.setTotalBodyLength(in.readInt());
         header.setOpaque(in.readInt());
         header.setCas(in.readLong());
@@ -51,6 +54,7 @@ public class BinaryMemcacheRequestDecoder
 
     @Override
     protected BinaryMemcacheRequest buildInvalidMessage() {
+        // 解码失败时构造占位对象并附带 DecoderResult，避免 pipeline 中断
         return new DefaultBinaryMemcacheRequest(Unpooled.EMPTY_BUFFER, Unpooled.EMPTY_BUFFER);
     }
 }

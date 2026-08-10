@@ -21,6 +21,9 @@ import io.netty.util.internal.UnstableApi;
 
 /**
  * The decoder which takes care of decoding the response headers.
+ *
+ * <p>客户端入站响应解码器：与 {@link BinaryMemcacheRequestDecoder} 对称，但第 7–8 字节解析为
+ * status 而非 reserved，magic 通常为 0x81。</p>
  */
 @UnstableApi
 public class BinaryMemcacheResponseDecoder
@@ -42,7 +45,7 @@ public class BinaryMemcacheResponseDecoder
         header.setKeyLength(in.readShort());
         header.setExtrasLength(in.readByte());
         header.setDataType(in.readByte());
-        header.setStatus(in.readShort());
+        header.setStatus(in.readShort()); // 响应头特有：请求头同位置为 reserved
         header.setTotalBodyLength(in.readInt());
         header.setOpaque(in.readInt());
         header.setCas(in.readLong());

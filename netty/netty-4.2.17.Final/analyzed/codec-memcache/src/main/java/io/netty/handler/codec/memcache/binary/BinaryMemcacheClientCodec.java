@@ -35,12 +35,19 @@ import java.util.concurrent.atomic.AtomicLong;
  * close - the list is not 0 (this is turned off by default). You can also define a chunk size for the
  * content, which defaults to 8192. This chunk size is the maximum, so if smaller chunks arrive they
  * will be passed up the pipeline and not queued up to the chunk size.
+ *
+ * <p>客户端侧二进制 Memcache 复合编解码器：出站 {@link BinaryMemcacheRequestEncoder} 写请求，
+ * 入站 {@link BinaryMemcacheResponseDecoder} 读响应。可选的「未完成响应检测」在连接关闭时
+ * 若仍有未配对的请求则抛出 {@link PrematureChannelClosureException}，便于排查 pipeline 丢响应或
+ * 未正确消费 {@link LastMemcacheContent} 的问题。</p>
  */
 @UnstableApi
 public final class BinaryMemcacheClientCodec extends
         CombinedChannelDuplexHandler<BinaryMemcacheResponseDecoder, BinaryMemcacheRequestEncoder> {
 
+    /** 是否在 channel 关闭时对未收到响应的请求计数非零而 fail-fast。 */
     private final boolean failOnMissingResponse;
+    /** 已发出完整请求、尚未收到对应完整响应的计数（以 LastMemcacheContent 为界）。 */
     private final AtomicLong requestResponseCounter = new AtomicLong();
 
     /**
@@ -70,6 +77,7 @@ public final class BinaryMemcacheClientCodec extends
         init(new Decoder(decodeChunkSize), new Encoder());
     }
 
+    /** 包装请求编码器：在完整请求（含 value 末尾分片）发出后递增未完成响应计数。 */
     private final class Encoder extends BinaryMemcacheRequestEncoder {
 
         @Override
@@ -82,6 +90,7 @@ public final class BinaryMemcacheClientCodec extends
         }
     }
 
+    /** 包装响应解码器：收到完整响应后递减计数，并在 channel 失活时校验是否仍有挂起请求。 */
     private final class Decoder extends BinaryMemcacheResponseDecoder {
 
         Decoder(int chunkSize) {

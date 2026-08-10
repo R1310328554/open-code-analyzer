@@ -29,6 +29,10 @@ import static io.netty.util.internal.StringUtil.className;
  *
  * It aggregates {@link BinaryMemcacheMessage}s and {@link MemcacheContent} into {@link FullBinaryMemcacheRequest}s
  * or {@link FullBinaryMemcacheResponse}s.
+ *
+ * <p>二进制 Memcache 专用聚合器：将 {@link BinaryMemcacheMessage} 头与后续 value 分片合并为
+ * {@link DefaultFullBinaryMemcacheRequest} 或 {@link DefaultFullBinaryMemcacheResponse}，
+ * 业务 handler 一次处理完整报文而无需手动拼接分片。</p>
  */
 @UnstableApi
 public class BinaryMemcacheObjectAggregator extends AbstractMemcacheObjectAggregator<BinaryMemcacheMessage> {
@@ -56,6 +60,7 @@ public class BinaryMemcacheObjectAggregator extends AbstractMemcacheObjectAggreg
         throw new Error("Unexpected memcache message type: " + className(start));
     }
 
+    /** 复制请求头元数据并 retain key/extras，value 由聚合器传入的合并 content 承载。 */
     private static FullBinaryMemcacheRequest toFullRequest(BinaryMemcacheRequest request, ByteBuf content) {
         ByteBuf key = request.key() == null ? null : request.key().retain();
         ByteBuf extras = request.extras() == null ? null : request.extras().retain();
@@ -75,6 +80,7 @@ public class BinaryMemcacheObjectAggregator extends AbstractMemcacheObjectAggreg
         return fullRequest;
     }
 
+    /** 响应路径：额外复制 status 字段（请求头中的 reserved 在响应位置被 status 取代）。 */
     private static FullBinaryMemcacheResponse toFullResponse(BinaryMemcacheResponse response, ByteBuf content) {
         ByteBuf key = response.key() == null ? null : response.key().retain();
         ByteBuf extras = response.extras() == null ? null : response.extras().retain();
