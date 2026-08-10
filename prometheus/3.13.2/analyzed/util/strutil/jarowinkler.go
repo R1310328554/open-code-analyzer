@@ -11,8 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Jaro-Winkler 字符串相似度：预编译搜索词，对候选串批量打分，ASCII 与 Unicode 分路径优化。
+
 package strutil
 
+// JaroWinklerMatcher 预计算固定搜索词，避免对每个候选重复 ASCII 检测与 rune 转换；非并发安全。
 // JaroWinklerMatcher pre-computes the encoding of a fixed search term so that
 // it can be scored against many candidate strings without repeating the ASCII
 // check or rune conversion on the term for every call. The first Score call
@@ -24,6 +27,7 @@ type JaroWinklerMatcher struct {
 	termRunes []rune // pre-converted runes; set when !termASCII or on first Unicode candidate
 }
 
+// NewJaroWinklerMatcher 构造匹配器，纯 ASCII 词走字节路径。
 // NewJaroWinklerMatcher returns a matcher for the given term.
 func NewJaroWinklerMatcher(term string) *JaroWinklerMatcher {
 	if isASCII(term) {
@@ -32,6 +36,7 @@ func NewJaroWinklerMatcher(term string) *JaroWinklerMatcher {
 	return &JaroWinklerMatcher{term: term, termRunes: []rune(term)}
 }
 
+// Score 返回 [0,1] 相似度，1 表示完全相同。
 // Score returns the Jaro-Winkler similarity between the matcher's term and s,
 // in [0.0, 1.0] where 1.0 means identical strings.
 func (m *JaroWinklerMatcher) Score(s string) float64 {
@@ -52,6 +57,7 @@ func (m *JaroWinklerMatcher) Score(s string) float64 {
 	return jaroWinklerRunes(m.termRunes, []rune(s))
 }
 
+// jaroWinklerString 在 ASCII 字符串上直接计算 Jaro-Winkler，避免 []rune 分配。
 // jaroWinklerString implements the Jaro-Winkler algorithm directly on ASCII
 // strings, avoiding any []rune conversion.
 func jaroWinklerString(s1, s2 string) float64 {
@@ -120,6 +126,7 @@ func jaroWinklerString(s1, s2 string) float64 {
 	return jaro + float64(prefixLen)*p*(1.0-jaro)
 }
 
+// jaroWinklerRunes 在预转换 rune 切片上实现 Unicode 路径。
 // jaroWinklerRunes implements the Jaro-Winkler algorithm over pre-converted
 // rune slices for the Unicode path.
 func jaroWinklerRunes(r1, r2 []rune) float64 {

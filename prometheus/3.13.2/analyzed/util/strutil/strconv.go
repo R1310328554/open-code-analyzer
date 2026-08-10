@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 标签与 UI 链接工具：生成 Graph/Table 表达式 URL，以及 Prometheus 标签名清洗规则。
+
 package strutil
 
 import (
@@ -23,6 +25,7 @@ import (
 
 var invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 
+// TableLinkForExpression 生成指向表格视图的 /graph 相对链接（g0.tab=1）。
 // TableLinkForExpression creates an escaped relative link to the table view of
 // the provided expression.
 func TableLinkForExpression(expr string) string {
@@ -30,6 +33,7 @@ func TableLinkForExpression(expr string) string {
 	return fmt.Sprintf("/graph?g0.expr=%s&g0.tab=1", escapedExpression)
 }
 
+// GraphLinkForExpression 生成指向图形视图的 /graph 相对链接（g0.tab=0）。
 // GraphLinkForExpression creates an escaped relative link to the graph view of
 // the provided expression.
 func GraphLinkForExpression(expr string) string {
@@ -37,6 +41,7 @@ func GraphLinkForExpression(expr string) string {
 	return fmt.Sprintf("/graph?g0.expr=%s&g0.tab=0", escapedExpression)
 }
 
+// SanitizeLabelName 将非法字符替换为下划线（不处理数字开头等完整规则）。
 // SanitizeLabelName replaces anything that doesn't match
 // client_label.LabelNameRE with an underscore.
 // Note: this does not handle all Prometheus label name restrictions (such as
@@ -46,6 +51,7 @@ func SanitizeLabelName(name string) string {
 	return invalidLabelCharRE.ReplaceAllString(name, "_")
 }
 
+// SanitizeFullLabelName 完整清洗标签名，空串返回单个下划线。
 // SanitizeFullLabelName replaces any invalid character with an underscore, and
 // if given an empty string, returns a string containing a single underscore.
 func SanitizeFullLabelName(name string) string {

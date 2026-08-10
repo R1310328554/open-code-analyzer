@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 查询统计：计时器分组、样本计数（含逐步统计）、OpenTelemetry span 与 JSON 导出，供引擎与 API 返回查询性能与资源消耗。
+
 package stats
 
 import (
@@ -23,6 +25,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// QueryTiming 标识 PromQL 执行各阶段（求值/排序/排队等）的计时槽位。
 // QueryTiming identifies the code area or functionality in which time is spent
 // during a query.
 type QueryTiming int
@@ -77,6 +80,7 @@ func (s QueryTiming) SpanOperation() string {
 	}
 }
 
+// stepStat 表示某一步时间戳上的单个统计值（毫秒时间戳 + 计数值）。
 // stepStat represents a single statistic for a given step timestamp.
 type stepStat struct {
 	T int64
@@ -92,6 +96,7 @@ func (s stepStat) MarshalJSON() ([]byte, error) {
 	return json.Marshal([...]any{float64(s.T) / 1000, s.V})
 }
 
+// queryTimings 将各 QueryTiming 计时器映射为 JSON 可序列化的秒级时长。
 // queryTimings with all query timers mapped to durations.
 type queryTimings struct {
 	EvalTotalTime        float64 `json:"evalTotalTime"`
@@ -102,6 +107,7 @@ type queryTimings struct {
 	ExecTotalTime        float64 `json:"execTotalTime"`
 }
 
+// querySamples 聚合查询过程中的样本扫描/读取统计及逐步明细。
 type querySamples struct {
 	TotalQueryableSamplesPerStep []stepStat `json:"totalQueryableSamplesPerStep,omitempty"`
 	TotalQueryableSamples        int64      `json:"totalQueryableSamples"`
@@ -110,12 +116,14 @@ type querySamples struct {
 	PeakSamples                  int        `json:"peakSamples"`
 }
 
+// BuiltinStats 封装 Prometheus 核心内置的 timings 与 samples 统计。
 // BuiltinStats holds the statistics that Prometheus's core gathers.
 type BuiltinStats struct {
 	Timings queryTimings  `json:"timings,omitempty"`
 	Samples *querySamples `json:"samples,omitempty"`
 }
 
+// QueryStats 接口允许引擎扩展自定义统计，Builtin() 返回内置部分。
 // QueryStats holds BuiltinStats and any other stats the particular
 // implementation wants to collect.
 type QueryStats interface {
@@ -126,6 +134,7 @@ func (s *BuiltinStats) Builtin() BuiltinStats {
 	return *s
 }
 
+// NewQueryStats 从 Statistics 的 TimerGroup 与 QuerySamples 构建 BuiltinStats。
 // NewQueryStats makes a QueryStats struct with all QueryTimings found in the
 // given TimerGroup.
 func NewQueryStats(s *Statistics) QueryStats {
@@ -179,6 +188,7 @@ func (qs *QuerySamples) TotalSamplesPerStepMap() *TotalSamplesPerStep {
 	return &ts
 }
 
+// SamplesReadPerStepMap 将逐步读取样本数转为 timestamp→count 映射，未启用时返回 nil。
 // SamplesReadPerStepMap returns the per-step samples read as a map
 // (timestamp -> count), or nil if per-step stats are disabled.
 func (qs *QuerySamples) SamplesReadPerStepMap() *TotalSamplesPerStep {
@@ -217,6 +227,7 @@ func (qs *QuerySamples) samplesReadPerStepPoints() []stepStat {
 	return ts
 }
 
+// SpanTimer 同时驱动 OpenTelemetry span 与 Prometheus 计时器/Observer。
 // SpanTimer unifies tracing and timing, to reduce repetition.
 type SpanTimer struct {
 	timer     *Timer
@@ -246,6 +257,7 @@ func (s *SpanTimer) Finish() {
 	}
 }
 
+// Statistics 聚合一次查询的计时器组与样本统计。
 type Statistics struct {
 	Timers  *QueryTimers
 	Samples *QuerySamples
@@ -258,7 +270,8 @@ type QueryTimers struct {
 type TotalSamplesPerStep map[int64]int
 
 type QuerySamples struct {
-	// PeakSamples represent the highest count of samples considered
+	// PeakSamples 记录求值过程中同时持有的最大样本数，用于 MaxSamples 限流。
+// PeakSamples represent the highest count of samples considered
 	// while evaluating a query. It corresponds to the peak value of
 	// currentSamples, which is in turn compared against the MaxSamples
 	// configured in the engine.
@@ -320,6 +333,7 @@ func (qs *QuerySamples) StepTrackingEnabled() bool {
 	return qs.EnablePerStepStats
 }
 
+// IncrementSamplesAtStep 按步索引累加 TotalSamples 与 TotalSamplesPerStep。
 // IncrementSamplesAtStep increments the total samples count. Use this if you know the step index.
 func (qs *QuerySamples) IncrementSamplesAtStep(i int, samples int64) {
 	if qs == nil {
@@ -346,6 +360,7 @@ func (qs *QuerySamples) IncrementSamplesAtTimestamp(t, samples int64) {
 	}
 }
 
+// IncrementSamplesReadAtStep 按步索引累加 SamplesRead 与 SamplesReadPerStep。
 // IncrementSamplesReadAtStep increments the samples-read count.
 // Use this when you know the step index.
 func (qs *QuerySamples) IncrementSamplesReadAtStep(i int, n int64) {
@@ -371,6 +386,7 @@ func (qs *QuerySamples) IncrementSamplesReadAtTimestamp(t, n int64) {
 	}
 }
 
+// UpdatePeak 若当前样本数超过 PeakSamples 则更新峰值。
 // UpdatePeak updates the peak number of samples considered in
 // the evaluation of a query as used with the MaxSamples limit.
 func (qs *QuerySamples) UpdatePeak(samples int) {
@@ -406,6 +422,7 @@ func (*QuerySamples) NewChild() *QuerySamples {
 	return NewQuerySamples(false)
 }
 
+// NewChildWithStepTracking 创建启用逐步跟踪的子 QuerySamples 并初始化步网格。
 // NewChildWithStepTracking creates a child QuerySamples with per-step tracking
 // enabled and initializes its per-step arrays via InitStepTracking.
 func NewChildWithStepTracking(start, end, interval int64) *QuerySamples {
@@ -414,6 +431,7 @@ func NewChildWithStepTracking(start, end, interval int64) *QuerySamples {
 	return qs
 }
 
+// MergeSamplesReadFromSubquery 将子查询的读取统计合并到父查询步网格，支持 offset 与窗口间隙过滤。
 // MergeSamplesReadFromSubquery merges only SamplesRead and SamplesReadPerStep from
 // the child (subquery) into the parent. TotalSamples and TotalSamplesPerStep are
 // not merged, because the outer range-eval loop already counts those when it

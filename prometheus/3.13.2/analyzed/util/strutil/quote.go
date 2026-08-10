@@ -50,6 +50,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // ========================================================================
 
+// PromQL 字符串字面量解析：改编自 Go strconv，统一单/双引号与反引号，支持转义序列解码。
+
 package strutil
 
 import (
@@ -57,9 +59,11 @@ import (
 	"unicode/utf8"
 )
 
+// ErrSyntax 表示字符串字面量语法不合法。
 // ErrSyntax indicates that a value does not have the right syntax for the target type.
 var ErrSyntax = errors.New("invalid syntax")
 
+// Unquote 解析 PromQL 引号字符串，返回解码后的内容。
 // Unquote interprets s as a single-quoted, double-quoted, or backquoted
 // Prometheus query language string literal, returning the string value that s
 // quotes.
@@ -110,6 +114,7 @@ func Unquote(s string) (t string, err error) {
 	return string(buf), nil
 }
 
+// unquoteChar 解码转义串首字符，返回码点、是否多字节、剩余串与错误。
 // unquoteChar decodes the first character or byte in the escaped string
 // or character literal represented by the string s.
 // It returns four values:
@@ -231,6 +236,7 @@ func unquoteChar(s string, quote byte) (value rune, multibyte bool, tail string,
 	return value, multibyte, tail, err
 }
 
+// contains 线性扫描 s 是否含字节 c。
 // contains reports whether the string contains the byte c.
 func contains(s string, c byte) bool {
 	for i := 0; i < len(s); i++ {

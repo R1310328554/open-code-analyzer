@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Context 测试桩：MockContext 提供可控 Done/Err，MockContextErrAfter 在若干次 Err 后返回 Canceled。
+
 package testutil
 
 import (
@@ -20,17 +22,20 @@ import (
 	"go.uber.org/atomic"
 )
 
+// MockContext 是 context.Context 的简易测试替身。
 // A MockContext provides a simple stub implementation of a Context.
 type MockContext struct {
 	Error  error
 	DoneCh chan struct{}
 }
 
+// Deadline 始终返回零值与 false（无截止时间）。
 // Deadline always will return not set.
 func (*MockContext) Deadline() (deadline time.Time, ok bool) {
 	return time.Time{}, false
 }
 
+// Done 返回 DoneCh，供测试触发取消。
 // Done returns a read channel for listening to the Done event.
 func (c *MockContext) Done() <-chan struct{} {
 	return c.DoneCh
@@ -46,6 +51,7 @@ func (*MockContext) Value(any) any {
 	return nil
 }
 
+// MockContextErrAfter 在 Err 被调用 FailAfter 次后返回 context.Canceled。
 // MockContextErrAfter is a MockContext that will return an error after a certain
 // number of calls to Err().
 type MockContextErrAfter struct {

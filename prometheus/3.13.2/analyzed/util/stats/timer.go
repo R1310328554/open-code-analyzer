@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 查询计时器：可启停的 Timer 累加运行时长，TimerGroup 按名称管理多段计时。
+
 package stats
 
 import (
@@ -20,6 +22,7 @@ import (
 	"time"
 )
 
+// Timer 在 Start/Stop 之间累加 duration，ElapsedTime 返回自上次 Start 起的经过时间。
 // A Timer that can be started and stopped and accumulates the total time it
 // was running (the time between Start() and Stop()).
 type Timer struct {
@@ -29,12 +32,14 @@ type Timer struct {
 	duration time.Duration
 }
 
+// Start 记录当前时刻作为段起点。
 // Start the timer.
 func (t *Timer) Start() *Timer {
 	t.start = time.Now()
 	return t
 }
 
+// Stop 将本段 elapsed 累加到 duration。
 // Stop the timer.
 func (t *Timer) Stop() {
 	t.duration += time.Since(t.start)
@@ -45,6 +50,7 @@ func (t *Timer) ElapsedTime() time.Duration {
 	return time.Since(t.start)
 }
 
+// Duration 返回累计秒数（浮点）。
 // Duration returns the duration value of the timer in seconds.
 func (t *Timer) Duration() float64 {
 	return t.duration.Seconds()
@@ -55,16 +61,19 @@ func (t *Timer) String() string {
 	return fmt.Sprintf("%s: %s", t.name, t.duration)
 }
 
+// TimerGroup 为单次查询维护多个命名 Timer 实例。
 // A TimerGroup represents a group of timers relevant to a single query.
 type TimerGroup struct {
 	timers map[fmt.Stringer]*Timer
 }
 
+// NewTimerGroup 初始化空的 fmt.Stringer→Timer 映射。
 // NewTimerGroup constructs a new TimerGroup.
 func NewTimerGroup() *TimerGroup {
 	return &TimerGroup{timers: map[fmt.Stringer]*Timer{}}
 }
 
+// GetTimer 按名称获取或懒创建 Timer，creation 顺序用于 String 排序。
 // GetTimer gets (and creates, if necessary) the Timer for a given code section.
 func (t *TimerGroup) GetTimer(name fmt.Stringer) *Timer {
 	if timer, exists := t.timers[name]; exists {

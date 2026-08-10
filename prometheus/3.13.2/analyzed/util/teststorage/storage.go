@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 测试用 TSDB：临时目录打开单块 DB，默认启用 exemplar，t.Cleanup 自动关闭并删除数据。
+
 package teststorage
 
 import (
@@ -26,6 +28,7 @@ import (
 
 type Option func(opt *tsdb.Options)
 
+// New 创建 TestStorage 并通过 t.Cleanup 注册自动 Close。
 // New returns a new TestStorage for testing purposes
 // that removes all associated files on closing.
 //
@@ -40,6 +43,7 @@ func New(t testing.TB, o ...Option) *TestStorage {
 	return s
 }
 
+// NewWithError 创建 TestStorage 并将错误返回给调用方（需手动 Close）。
 // NewWithError returns a new TestStorage for user facing tests, which reports
 // errors directly.
 //
@@ -73,6 +77,7 @@ func NewWithError(o ...Option) (*TestStorage, error) {
 	return &TestStorage{DB: db, dir: dir}, nil
 }
 
+// TestStorage 嵌入 *tsdb.DB 并持有临时目录路径以便删除。
 type TestStorage struct {
 	*tsdb.DB
 	dir string

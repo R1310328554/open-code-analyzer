@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 测试临时目录：MkdirTemp 封装、Close 重试删除、DirHash 对目录内容做 SHA256 指纹。
+
 package testutil
 
 import (
@@ -38,7 +40,8 @@ const (
 )
 
 type (
-	// Closer is the interface that wraps the Close method.
+	// Closer 封装目录清理的 Close 方法。
+// Closer is the interface that wraps the Close method.
 	Closer interface {
 		// Close reaps the underlying directory and its children. The directory
 		// could be deleted by its users already.
@@ -47,7 +50,8 @@ type (
 
 	nilCloser bool
 
-	// TemporaryDirectory models a closeable path for transient POSIX disk
+	// TemporaryDirectory 表示可关闭的临时路径，供测试读写后清理。
+// TemporaryDirectory models a closeable path for transient POSIX disk
 	// activities.
 	TemporaryDirectory interface {
 		Closer
@@ -75,6 +79,7 @@ func (c callbackCloser) Close() {
 	c.fn()
 }
 
+// NewCallbackCloser 返回关闭时执行 fn 的 Closer。
 // NewCallbackCloser returns a Closer that calls the provided function upon
 // closing.
 func NewCallbackCloser(fn func()) Closer {
@@ -102,6 +107,7 @@ func (t temporaryDirectory) Path() string {
 	return t.path
 }
 
+// NewTemporaryDirectory 在系统 temp 下创建目录并绑定 testing.TB 做断言清理。
 // NewTemporaryDirectory creates a new temporary directory for transient POSIX
 // activities.
 func NewTemporaryDirectory(name string, t testing.TB) (handler TemporaryDirectory) {
@@ -121,6 +127,7 @@ func NewTemporaryDirectory(name string, t testing.TB) (handler TemporaryDirector
 	return handler
 }
 
+// DirHash 遍历目录文件，将内容、大小、名称与修改时间写入 SHA256。
 // DirHash returns a hash of all files attributes and their content within a directory.
 func DirHash(t *testing.T, path string) []byte {
 	hash := sha256.New()

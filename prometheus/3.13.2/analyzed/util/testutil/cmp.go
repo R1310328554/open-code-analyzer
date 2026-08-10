@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 测试断言辅助：基于 go-cmp 的 RequireEqual，对 labels 等 Prometheus 结构使用定制比较器。
+
 package testutil
 
 import (
@@ -23,6 +25,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
+// RequireEqual 以 labels.Equal 等选项替代 testify 的 DeepEqual 做结构比较。
 // RequireEqual is a replacement for require.Equal using go-cmp adapted for
 // Prometheus data structures, instead of DeepEqual.
 func RequireEqual(t testing.TB, expected, actual any, msgAndArgs ...any) {
@@ -30,6 +33,7 @@ func RequireEqual(t testing.TB, expected, actual any, msgAndArgs ...any) {
 	RequireEqualWithOptions(t, expected, actual, nil, msgAndArgs...)
 }
 
+// RequireEqualWithOptions 允许传入额外 cmp.Option 并输出 diff。
 // RequireEqualWithOptions works like RequireEqual but allows extra cmp.Options.
 func RequireEqualWithOptions(t testing.TB, expected, actual any, extra []cmp.Option, msgAndArgs ...any) {
 	t.Helper()

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 测试端口分配：监听 :0 获取未占用高端口，进程内 usedPorts 列表避免并行测试冲突。
+
 package testutil
 
 import (
@@ -25,6 +27,7 @@ var (
 	usedPorts []int
 )
 
+// RandomUnprivilegedPort 返回未在 usedPorts 中登记过的随机非特权端口。
 // RandomUnprivilegedPort returns valid unprivileged random port number which can be used for testing.
 func RandomUnprivilegedPort(t *testing.T) int {
 	t.Helper()

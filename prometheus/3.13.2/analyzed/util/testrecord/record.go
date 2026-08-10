@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// WAL/record 基准测试数据生成：构造 RefSample/直方图多种分布（现实/最坏/ST 变体）供编码压测。
+
 package testrecord
 
 import (
@@ -22,6 +24,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/record"
 )
 
+// RefSamplesCase 命名不同 RefSample 生成场景。
 type RefSamplesCase string
 
 const (
@@ -82,6 +85,7 @@ func GenTestRefSamplesCase(t testing.TB, c RefSamplesCase) []record.RefSample {
 	return ret
 }
 
+// HistSTCase 选择直方图样本 Start Time 字段的填充模式。
 // HistSTCase selects the start-time pattern for histogram test data generators.
 type HistSTCase string
 
@@ -95,6 +99,7 @@ const (
 // HistSTCases is the standard set of histogram ST cases for benchmarks.
 var HistSTCases = []HistSTCase{HistNoST, HistConstST, HistPrevTST, HistVariableST}
 
+// applyHistST 按 stCase 为直方图样本批量设置 ST。
 // applyHistST sets the ST field on histogram samples according to the given case.
 func applyHistST(out []record.RefHistogramSample, stCase HistSTCase) {
 	switch stCase {
@@ -118,6 +123,7 @@ func applyHistST(out []record.RefHistogramSample, stCase HistSTCase) {
 	}
 }
 
+// GenExpHistograms 生成 n 个指数桶直方图（schema=1）及递增 ref。
 // GenExpHistograms generates n standard exponential histograms (schema=1)
 // with incrementing refs, same timestamp, and realistic bucket distributions.
 // The stCase parameter controls how the ST field is populated.
@@ -150,6 +156,7 @@ func GenExpHistograms(n int, stCase HistSTCase) []record.RefHistogramSample {
 	return out
 }
 
+// GenCustomBucketHistograms 生成 n 个自定义桶（NHCB）直方图。
 // GenCustomBucketHistograms generates n custom-bucket (NHCB) histograms (schema=-53)
 // with incrementing refs. The stCase parameter controls how the ST field is populated.
 func GenCustomBucketHistograms(n int, stCase HistSTCase) []record.RefHistogramSample {
@@ -174,6 +181,7 @@ func GenCustomBucketHistograms(n int, stCase HistSTCase) []record.RefHistogramSa
 	return out
 }
 
+// GenFloatHistograms 将整型直方图转为 FloatHistogram 样本并保留 ST。
 // GenFloatHistograms converts int histograms to float histograms, preserving ST.
 func GenFloatHistograms(src []record.RefHistogramSample) []record.RefFloatHistogramSample {
 	out := make([]record.RefFloatHistogramSample, len(src))
@@ -188,6 +196,7 @@ func GenFloatHistograms(src []record.RefHistogramSample) []record.RefFloatHistog
 	return out
 }
 
+// HistDataCase 将基准表名称与直方图生成函数配对。
 // HistDataCase pairs a name with a histogram generator for benchmark tables.
 type HistDataCase struct {
 	Name string

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 子序列模糊匹配：Prometheus UI 自动补全评分，奖励连续匹配并惩罚间隔，非精确分缩放至 0.999 以下。
+
 // The scoring algorithm is inspired by two JavaScript libraries:
 // https://github.com/Nexucis/fuzzy (MIT License), used by the Prometheus UI,
 // which itself was inspired by https://github.com/mattyork/fuzzy (MIT License).
@@ -20,8 +22,10 @@ package strutil
 import "strings"
 
 // Non-exact matches are scaled below 1.0 so rounded scores stay distinguishable from exact matches.
+// subsequenceNonExactScoreScale 使非精确匹配得分始终低于 1.0。
 const subsequenceNonExactScoreScale = 0.999
 
+// SubsequenceMatcher 预编译搜索模式，批量打分候选串；非并发安全。
 // SubsequenceMatcher pre-computes the encoding of a fixed search pattern so
 // that it can be scored against many candidate strings without repeating the
 // ASCII check or rune conversion on the pattern for every call. The first
@@ -42,6 +46,7 @@ func NewSubsequenceMatcher(pattern string) *SubsequenceMatcher {
 	return &SubsequenceMatcher{pattern: pattern, patternLen: len(pattern), patternRunes: []rune(pattern)}
 }
 
+// Score 用贪心子序列匹配计算 [0,1] 归一化得分，1 为精确匹配。
 // Score computes a fuzzy match score between the matcher's pattern and text
 // using a greedy character matching algorithm. Characters in pattern must
 // appear in text in order (subsequence matching).
@@ -91,6 +96,7 @@ func (m *SubsequenceMatcher) Score(text string) float64 {
 	return matchSubsequenceRunes(m.patternRunes, []rune(text))
 }
 
+// isASCII 判断字符串是否仅含 ASCII 码点。
 // isASCII reports whether s contains only ASCII characters.
 func isASCII(s string) bool {
 	for _, c := range s {
@@ -101,6 +107,7 @@ func isASCII(s string) bool {
 	return true
 }
 
+// matchSubsequenceString 在 ASCII 路径上用 IndexByte 扫描并累积区间平方分。
 // matchSubsequenceString is the string-native implementation of the scoring
 // algorithm for ASCII inputs. It uses strings.IndexByte for character scanning,
 // with divisions by textLen replaced by a precomputed reciprocal multiply.
@@ -190,6 +197,7 @@ func matchSubsequenceString(pattern, text string) float64 {
 	return normalizeSubsequenceScore(bestScore, patternLen)
 }
 
+// matchSubsequenceRunes 在 rune 切片上实现 Unicode 评分逻辑。
 // matchSubsequenceRunes implements the scoring algorithm over pre-converted
 // rune slices for the Unicode path.
 func matchSubsequenceRunes(patternSlice, textSlice []rune) float64 {

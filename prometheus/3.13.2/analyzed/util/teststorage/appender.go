@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// storage.Appendable 测试 mock：记录 Append/Commit 样本、注入错误、链式转发，支持 V1/V2 Appender 与 stale 样本比较容错。
+
 package teststorage
 
 import (
@@ -37,6 +39,7 @@ import (
 	"github.com/prometheus/prometheus/util/testutil"
 )
 
+// Sample 聚合测试中一次 append 的标签、元数据、ST/T、浮点/直方图/exemplar。
 // Sample represents test, combined sample for mocking storage.AppenderV2.
 type Sample struct {
 	MF    string
@@ -96,6 +99,7 @@ func (s Sample) Equals(other Sample) bool {
 		slices.EqualFunc(s.ES, other.ES, exemplar.Exemplar.Equals)
 }
 
+// IsStale 按 Sum 或 V 是否为 stale NaN 判断过期标记样本。
 // IsStale returns whether the sample represents a stale sample, according to
 // https://prometheus.io/docs/specs/native_histograms/#staleness-markers.
 func (s Sample) IsStale() bool {
@@ -113,6 +117,7 @@ var sampleComparer = cmp.Comparer(func(a, b Sample) bool {
 	return a.Equals(b)
 })
 
+// RequireEqual 用 go-cmp 比较 []Sample，并对连续 stale 样本顺序做重排容错。
 // RequireEqual is a special require equal that correctly compare Prometheus structures.
 //
 // In comparison to testutil.RequireEqual, this function adds special logic for comparing []Samples.
@@ -178,6 +183,7 @@ func includeStaleNaNs(s []Sample) bool {
 	return false
 }
 
+// Appendable 模拟 Appendable，记录 pending/committed/rollback 样本并支持错误注入。
 // Appendable is a storage.Appendable mock.
 // It allows recording all samples that were added through the appender and injecting errors.
 // Appendable will panic if more than one Appender is open.
@@ -199,6 +205,7 @@ type Appendable struct {
 	next compatAppendable
 }
 
+// NewAppendable 创建空的 Appendable mock。
 // NewAppendable returns mock Appendable.
 func NewAppendable() *Appendable {
 	return &Appendable{}
@@ -209,12 +216,14 @@ type compatAppendable interface {
 	storage.AppendableV2
 }
 
+// Then 将后续 Append 调用链到另一个 Appendable。
 // Then chains another appender from the provided Appendable for the Appender calls.
 func (a *Appendable) Then(appendable compatAppendable) *Appendable {
 	a.next = appendable
 	return a
 }
 
+// WithErrs 配置 Append/Exemplar/Commit 阶段的注入错误。
 // WithErrs allows injecting errors to the appender.
 func (a *Appendable) WithErrs(appendErrFn func(ls labels.Labels) error, appendExemplarsError, commitErr error) *Appendable {
 	a.appendErrFn = appendErrFn
@@ -223,6 +232,7 @@ func (a *Appendable) WithErrs(appendErrFn func(ls labels.Labels) error, appendEx
 	return a
 }
 
+// SkipRecording 关闭样本记录以降低基准测试分配，Result* 将为空。
 // SkipRecording enables or disables recording appended samples.
 // If skipped, Appendable allocs less, but Result*() methods will give always empty results. This is useful for benchmarking.
 func (a *Appendable) SkipRecording(skipRecording bool) *Appendable {
@@ -230,6 +240,7 @@ func (a *Appendable) SkipRecording(skipRecording bool) *Appendable {
 	return a
 }
 
+// PendingSamples 返回尚未 Commit 的 pending 样本副本。
 // PendingSamples returns pending samples (samples appended without commit).
 func (a *Appendable) PendingSamples() []Sample {
 	a.mtx.Lock()
@@ -243,6 +254,7 @@ func (a *Appendable) PendingSamples() []Sample {
 	return ret
 }
 
+// ResultSamples 返回已 Commit 的样本副本。
 // ResultSamples returns committed samples.
 func (a *Appendable) ResultSamples() []Sample {
 	a.mtx.Lock()
@@ -318,6 +330,7 @@ func (a *Appendable) String() string {
 
 var errClosedAppender = errors.New("appender was already committed/rolledback")
 
+// baseAppender 实现 Commit/Rollback 与错误状态检查，供 V1/V2 嵌入。
 type baseAppender struct {
 	err error
 
@@ -376,6 +389,7 @@ func (a *baseAppender) Rollback() error {
 	return nil
 }
 
+// appender 实现 storage.Appender（V1）接口并可选转发 next。
 type appender struct {
 	baseAppender
 
@@ -422,6 +436,7 @@ func (a *appender) Append(ref storage.SeriesRef, ls labels.Labels, t int64, v fl
 	return computeOrCheckRef(ref, ls)
 }
 
+// computeOrCheckRef 用 labels hash 作为 mock series ref，并校验传入 ref 一致性。
 func computeOrCheckRef(ref storage.SeriesRef, ls labels.Labels) (storage.SeriesRef, error) {
 	h := ls.Hash()
 	if ref == 0 {
@@ -538,6 +553,7 @@ func (a *appender) UpdateMetadata(ref storage.SeriesRef, l labels.Labels, m meta
 	return computeOrCheckRef(ref, l)
 }
 
+// appenderV2 实现 storage.AppenderV2，单次 Append 携带 ST 与 AOptions。
 type appenderV2 struct {
 	baseAppender
 
