@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:09:57Z",
-  "files": [
-    "pkg/engine/internal/planner/physical/join.go",
-    "pkg/engine/internal/planner/physical/limit.go",
-    "pkg/engine/internal/planner/physical/merge.go",
-    "pkg/engine/internal/planner/physical/metastore_planner.go",
-    "pkg/engine/internal/planner/physical/optimizer.go",
-    "pkg/engine/internal/planner/physical/parallelize.go",
-    "pkg/engine/internal/planner/physical/plan.go",
-    "pkg/engine/internal/planner/physical/planner.go",
-    "pkg/engine/internal/planner/physical/pointersscan.go",
-    "pkg/engine/internal/planner/physical/printer.go",
-    "pkg/engine/internal/planner/physical/projection.go",
-    "pkg/engine/internal/planner/physical/range_aggregate.go",
-    "pkg/engine/internal/planner/physical/scanset.go",
-    "pkg/engine/internal/planner/physical/sort_order.go",
-    "pkg/engine/internal/planner/physical/topk.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 982,
-  "done": 555
+  "done": 570
 }
