@@ -19,7 +19,8 @@ package io.netty.util.internal.logging;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * Logger factory which creates an
+ * 创建 <a href="https://commons.apache.org/logging/">Apache Commons Logging</a> 日志器的工厂。
+ * <p>Logger factory which creates an
  * <a href="https://commons.apache.org/logging/">Apache Commons Logging</a>
  * logger.
  *
@@ -27,8 +28,10 @@ import org.apache.commons.logging.LogFactory;
  * {@link Slf4JLoggerFactory}.
  */
 @Deprecated
+/** 已弃用的 Commons Logging 工厂单例。 */
 public class CommonsLoggerFactory extends InternalLoggerFactory {
 
+        /** 全局单例实例。 */
     public static final InternalLoggerFactory INSTANCE = new CommonsLoggerFactory();
 
     /**
@@ -38,6 +41,7 @@ public class CommonsLoggerFactory extends InternalLoggerFactory {
     public CommonsLoggerFactory() {
     }
 
+        /** 按名称创建 {@link CommonsLogger} 实例。 */
     @Override
     public InternalLogger newInstance(String name) {
         return new CommonsLogger(LogFactory.getLog(name), name);

@@ -18,19 +18,23 @@ package io.netty.util.internal.logging;
 import org.slf4j.Logger;
 
 /**
- * <a href="https://www.slf4j.org/">SLF4J</a> logger.
+ * 普通（非位置感知）SLF4J {@link InternalLogger} 适配器，直接委托底层 {@link Logger}。
+ * <p><a href="https://www.slf4j.org/">SLF4J</a> logger.</p>
  */
 final class Slf4JLogger extends AbstractInternalLogger {
 
     private static final long serialVersionUID = 108038972685130825L;
 
+        /** 底层 SLF4J Logger。 */
     private final transient Logger logger;
 
+        /** 包装 SLF4J Logger。 */
     Slf4JLogger(Logger logger) {
         super(logger.getName());
         this.logger = logger;
     }
 
+        // --- TRACE 级别：启用检查与各级别委托 ---
     @Override
     public boolean isTraceEnabled() {
         return logger.isTraceEnabled();
@@ -61,6 +65,7 @@ final class Slf4JLogger extends AbstractInternalLogger {
         logger.trace(msg, t);
     }
 
+        // --- DEBUG 级别：启用检查与各级别委托 ---
     @Override
     public boolean isDebugEnabled() {
         return logger.isDebugEnabled();
@@ -91,6 +96,7 @@ final class Slf4JLogger extends AbstractInternalLogger {
         logger.debug(msg, t);
     }
 
+        // --- INFO 级别：启用检查与各级别委托 ---
     @Override
     public boolean isInfoEnabled() {
         return logger.isInfoEnabled();
@@ -121,6 +127,7 @@ final class Slf4JLogger extends AbstractInternalLogger {
         logger.info(msg, t);
     }
 
+        // --- WARN 级别：启用检查与各级别委托 ---
     @Override
     public boolean isWarnEnabled() {
         return logger.isWarnEnabled();
@@ -151,6 +158,7 @@ final class Slf4JLogger extends AbstractInternalLogger {
         logger.warn(msg, t);
     }
 
+        // --- ERROR 级别：启用检查与各级别委托 ---
     @Override
     public boolean isErrorEnabled() {
         return logger.isErrorEnabled();

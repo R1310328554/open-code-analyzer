@@ -16,27 +16,18 @@
 package io.netty.util.internal.logging;
 
 /**
- * The log level that {@link InternalLogger} can log at.
+ * {@link InternalLogger} 支持的内部日志级别枚举。
+ * <p>The log level that {@link InternalLogger} can log at.</p>
  */
 public enum InternalLogLevel {
-    /**
-     * 'TRACE' log level.
-     */
+    /** 最细粒度追踪，通常仅用于诊断。（'TRACE' 级别）。 */
     TRACE,
-    /**
-     * 'DEBUG' log level.
-     */
+    /** 调试信息，开发阶段常用。（'DEBUG' 级别）。 */
     DEBUG,
-    /**
-     * 'INFO' log level.
-     */
+    /** 一般性运行信息。（'INFO' 级别）。 */
     INFO,
-    /**
-     * 'WARN' log level.
-     */
+    /** 潜在问题或降级提示。（'WARN' 级别）。 */
     WARN,
-    /**
-     * 'ERROR' log level.
-     */
+    /** 错误事件，通常需关注。（'ERROR' 级别）。 */
     ERROR
 }

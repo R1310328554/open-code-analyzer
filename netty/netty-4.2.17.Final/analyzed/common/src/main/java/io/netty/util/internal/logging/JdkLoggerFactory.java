@@ -19,12 +19,14 @@ package io.netty.util.internal.logging;
 import java.util.logging.Logger;
 
 /**
- * Logger factory which creates a
+ * 创建 <a href="https://docs.oracle.com/javase/7/docs/technotes/guides/logging/">java.util.logging</a> 日志器的工厂。
+ * <p>Logger factory which creates a
  * <a href="https://docs.oracle.com/javase/7/docs/technotes/guides/logging/">java.util.logging</a>
  * logger.
  */
 public class JdkLoggerFactory extends InternalLoggerFactory {
 
+        /** 全局单例。 */
     public static final InternalLoggerFactory INSTANCE = new JdkLoggerFactory();
 
     /**
@@ -34,6 +36,7 @@ public class JdkLoggerFactory extends InternalLoggerFactory {
     public JdkLoggerFactory() {
     }
 
+        /** 按名称获取 JUL Logger 并包装为 {@link JdkLogger}。 */
     @Override
     public InternalLogger newInstance(String name) {
         return new JdkLogger(Logger.getLogger(name));

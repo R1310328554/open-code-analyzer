@@ -17,17 +17,24 @@ package io.netty.util.internal.logging;
 
 import org.apache.logging.log4j.LogManager;
 
+/**
+ * 创建 Apache Log4J2 日志器的工厂。
+ * <p>Netty 在 classpath 探测链中优先于 Log4J 1.x 选用 Log4J2。</p>
+ */
 public final class Log4J2LoggerFactory extends InternalLoggerFactory {
 
+        /** 全局单例，供 {@link InternalLoggerFactory} 自动选择。 */
     public static final InternalLoggerFactory INSTANCE = new Log4J2LoggerFactory();
 
-    /**
+        /**
+     * 已弃用，请使用 {@link #INSTANCE}。
      * @deprecated Use {@link #INSTANCE} instead.
      */
     @Deprecated
     public Log4J2LoggerFactory() {
     }
 
+        /** 通过 LogManager 获取 Log4J2 Logger 并包装为 {@link Log4J2Logger}。 */
     @Override
     public InternalLogger newInstance(String name) {
         return new Log4J2Logger(LogManager.getLogger(name));

@@ -19,7 +19,9 @@ package io.netty.util.internal.logging;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * Creates an {@link InternalLogger} or changes the default factory
+ * 创建 {@link InternalLogger} 并管理默认日志工厂实现。
+ * 按 SLF4J → Log4J2 → Log4J → JUL 顺序探测 classpath。
+ * <p>Creates an {@link InternalLogger} or changes the default factory
  * implementation.  This factory allows you to choose what logging framework
  * Netty should use.  The default factory is {@link Slf4JLoggerFactory}.  If SLF4J
  * is not available, {@link Log4JLoggerFactory} is used.  If Log4J is not available,
@@ -35,9 +37,11 @@ import io.netty.util.internal.ObjectUtil;
  */
 public abstract class InternalLoggerFactory {
 
+        /** 全局默认工厂，懒加载且 volatile 保证可见性。 */
     private static volatile InternalLoggerFactory defaultFactory;
 
     @SuppressWarnings("UnusedCatchParameter")
+        /** 按优先级链式探测可用日志框架。 */
     private static InternalLoggerFactory newDefaultFactory(String name) {
         InternalLoggerFactory f = useSlf4JLoggerFactory(name);
         if (f != null) {
@@ -57,6 +61,7 @@ public abstract class InternalLoggerFactory {
         return useJdkLoggerFactory(name);
     }
 
+        /** 尝试使用 SLF4J 作为默认实现。 */
     private static InternalLoggerFactory useSlf4JLoggerFactory(String name) {
         try {
             InternalLoggerFactory f = Slf4JLoggerFactory.getInstanceWithNopCheck();
@@ -65,11 +70,12 @@ public abstract class InternalLoggerFactory {
         } catch (LinkageError ignore) {
             return null;
         } catch (Exception ignore) {
-            // We catch Exception and not ReflectiveOperationException as we still support java 6
+            // 兼容 Java 6，捕获 Exception 而非 ReflectiveOperationException
             return null;
         }
     }
 
+    /** 尝试使用 Log4J2 作为默认实现。 */
     private static InternalLoggerFactory useLog4J2LoggerFactory(String name) {
         try {
             InternalLoggerFactory f = Log4J2LoggerFactory.INSTANCE;
@@ -78,11 +84,12 @@ public abstract class InternalLoggerFactory {
         } catch (LinkageError ignore) {
             return null;
         } catch (Exception ignore) {
-            // We catch Exception and not ReflectiveOperationException as we still support java 6
+            // 兼容 Java 6
             return null;
         }
     }
 
+    /** 尝试使用 Log4J 1.x 作为默认实现。 */
     private static InternalLoggerFactory useLog4JLoggerFactory(String name) {
         try {
             InternalLoggerFactory f = Log4JLoggerFactory.INSTANCE;
@@ -96,14 +103,16 @@ public abstract class InternalLoggerFactory {
         }
     }
 
+        /** 回退到 java.util.logging（JUL）。 */
     private static InternalLoggerFactory useJdkLoggerFactory(String name) {
         InternalLoggerFactory f = JdkLoggerFactory.INSTANCE;
         f.newInstance(name).debug("Using java.util.logging as the default logging framework");
         return f;
     }
 
-    /**
-     * Returns the default factory.  The initial default factory is
+        /**
+     * 返回默认工厂；首次调用时自动探测。
+     * <p>Returns the default factory.  The initial default factory is
      * {@link JdkLoggerFactory}.
      */
     public static InternalLoggerFactory getDefaultFactory() {
@@ -113,29 +122,33 @@ public abstract class InternalLoggerFactory {
         return defaultFactory;
     }
 
-    /**
-     * Changes the default factory.
+        /**
+     * 替换默认工厂（应尽早调用且仅一次）。
+     * <p>Changes the default factory.</p>
      */
     public static void setDefaultFactory(InternalLoggerFactory defaultFactory) {
         InternalLoggerFactory.defaultFactory = ObjectUtil.checkNotNull(defaultFactory, "defaultFactory");
     }
 
-    /**
-     * Creates a new logger instance with the name of the specified class.
+        /**
+     * 以类全限定名创建日志器。
+     * <p>Creates a new logger instance with the name of the specified class.</p>
      */
     public static InternalLogger getInstance(Class<?> clazz) {
         return getInstance(clazz.getName());
     }
 
-    /**
-     * Creates a new logger instance with the specified name.
+        /**
+     * 以指定名称创建日志器。
+     * <p>Creates a new logger instance with the specified name.</p>
      */
     public static InternalLogger getInstance(String name) {
         return getDefaultFactory().newInstance(name);
     }
 
-    /**
-     * Creates a new logger instance with the specified name.
+        /**
+     * 子类实现：创建具名日志器实例。
+     * <p>Creates a new logger instance with the specified name.</p>
      */
     protected abstract InternalLogger newInstance(String name);
 

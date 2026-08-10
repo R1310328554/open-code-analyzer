@@ -43,11 +43,13 @@ import java.text.MessageFormat;
 import java.util.HashSet;
 import java.util.Set;
 
+// 贡献者：lizongbo 建议数组参数特殊处理；Joern Huxhorn 指出 double[] 遗漏并建议深拷贝
 // contributors: lizongbo: proposed special treatment of array parameter values
 // Joern Huxhorn: pointed out double[] omission, suggested deep array copy
 
 /**
- * Formats messages according to very simple substitution rules. Substitutions
+ * 按 SLF4J 风格 {@code {}} 占位符格式化日志消息，性能优于 {@link MessageFormat}。
+ * <p>Formats messages according to very simple substitution rules. Substitutions
  * can be made 1, 2 or more arguments.
  * <p/>
  * <p/>
@@ -109,11 +111,14 @@ import java.util.Set;
  * {@link #arrayFormat(String, Object[])} methods for more details.
  */
 public final class MessageFormatter {
+        /** 格式化锚点：成对花括号占位符。 */
     private static final String DELIM_STR = "{}";
+        /** 转义字符，用于输出字面量 {@code {}}。 */
     private static final char ESCAPE_CHAR = '\\';
 
-    /**
-     * Performs single argument substitution for the 'messagePattern' passed as
+        /**
+     * 单参数占位符替换。
+     * <p>Performs single argument substitution for the 'messagePattern' passed as
      * parameter.
      * <p/>
      * For example,
@@ -133,8 +138,9 @@ public final class MessageFormatter {
         return arrayFormat(messagePattern, new Object[]{arg});
     }
 
-    /**
-     * Performs a two argument substitution for the 'messagePattern' passed as
+        /**
+     * 双参数占位符替换。
+     * <p>Performs a two argument substitution for the 'messagePattern' passed as
      * parameter.
      * <p/>
      * For example,
@@ -157,8 +163,9 @@ public final class MessageFormatter {
         return arrayFormat(messagePattern, new Object[]{argA, argB});
     }
 
-    /**
-     * Same principle as the {@link #format(String, Object)} and
+        /**
+     * 可变参数数组版格式化；末位 {@link Throwable} 作为关联异常。
+     * <p>Same principle as the {@link #format(String, Object)} and
      * {@link #format(String, Object, Object)} methods except that any number of
      * arguments can be passed in an array.
      *
@@ -183,7 +190,7 @@ public final class MessageFormatter {
 
         int j = messagePattern.indexOf(DELIM_STR);
         if (j == -1) {
-            // this is a simple string
+                        // 无占位符，直接返回原模板
             return new FormattingTuple(messagePattern, throwable);
         }
 
@@ -193,11 +200,11 @@ public final class MessageFormatter {
         do {
             boolean notEscaped = j == 0 || messagePattern.charAt(j - 1) != ESCAPE_CHAR;
             if (notEscaped) {
-                // normal case
+                                // 普通占位符，非转义
                 sbuf.append(messagePattern, i, j);
             } else {
                 sbuf.append(messagePattern, i, j - 1);
-                // check that escape char is not is escaped: "abc x:\\{}"
+                                // 检测双反斜杠转义："abc x:\\{}"
                 notEscaped = j >= 2 && messagePattern.charAt(j - 2) == ESCAPE_CHAR;
             }
 
@@ -214,11 +221,12 @@ public final class MessageFormatter {
             j = messagePattern.indexOf(DELIM_STR, i);
         } while (j != -1);
 
-        // append the characters following the last {} pair.
+                // 追加最后一个 {} 之后的剩余文本
         sbuf.append(messagePattern, i, messagePattern.length());
         return new FormattingTuple(sbuf.toString(), L <= lastArrIdx? throwable : null);
     }
 
+        /** 递归追加参数：处理 null、数值、数组及循环引用。 */
     // special treatment of array values was suggested by 'lizongbo'
     private static void deeplyAppendParameter(StringBuilder sbuf, Object o,
                                               Set<Object[]> seenSet) {
@@ -229,7 +237,7 @@ public final class MessageFormatter {
         Class<?> objClass = o.getClass();
         if (!objClass.isArray()) {
             if (Number.class.isAssignableFrom(objClass)) {
-                // Prevent String instantiation for some number types
+                                // 数值类型直接 append 原始值，避免 String 装箱
                 if (objClass == Long.class) {
                     sbuf.append(((Long) o).longValue());
                 } else if (objClass == Integer.class || objClass == Short.class || objClass == Byte.class) {
@@ -245,8 +253,7 @@ public final class MessageFormatter {
                 safeObjectAppend(sbuf, o);
             }
         } else {
-            // check for primitive array types because they
-            // unfortunately cannot be cast to Object[]
+                        // 基本类型数组无法转为 Object[]，需逐类型处理
             sbuf.append('[');
             if (objClass == boolean[].class) {
                 booleanArrayAppend(sbuf, (boolean[]) o);
@@ -271,6 +278,7 @@ public final class MessageFormatter {
         }
     }
 
+        /** 安全调用 toString，失败时输出占位符并打印诊断。 */
     private static void safeObjectAppend(StringBuilder sbuf, Object o) {
         try {
             String oAsString = o.toString();
@@ -284,6 +292,7 @@ public final class MessageFormatter {
         }
     }
 
+        /** 对象数组展开；seenSet 检测循环引用，重复则输出 "..."。 */
     private static void objectArrayAppend(StringBuilder sbuf, Object[] a, Set<Object[]> seenSet) {
         if (a.length == 0) {
             return;
@@ -297,13 +306,14 @@ public final class MessageFormatter {
                 sbuf.append(", ");
                 deeplyAppendParameter(sbuf, a[i], seenSet);
             }
-            // allow repeats in siblings
+                        // 兄弟节点允许重复引用同一数组
             seenSet.remove(a);
         } else {
             sbuf.append("...");
         }
     }
 
+        /** boolean 基本类型数组逗号分隔展开。 */
     private static void booleanArrayAppend(StringBuilder sbuf, boolean[] a) {
         if (a.length == 0) {
             return;
@@ -315,6 +325,7 @@ public final class MessageFormatter {
         }
     }
 
+        /** byte 基本类型数组逗号分隔展开。 */
     private static void byteArrayAppend(StringBuilder sbuf, byte[] a) {
         if (a.length == 0) {
             return;
@@ -326,6 +337,7 @@ public final class MessageFormatter {
         }
     }
 
+        /** char 基本类型数组逗号分隔展开。 */
     private static void charArrayAppend(StringBuilder sbuf, char[] a) {
         if (a.length == 0) {
             return;
@@ -337,6 +349,7 @@ public final class MessageFormatter {
         }
     }
 
+        /** short 基本类型数组逗号分隔展开。 */
     private static void shortArrayAppend(StringBuilder sbuf, short[] a) {
         if (a.length == 0) {
             return;
@@ -348,6 +361,7 @@ public final class MessageFormatter {
         }
     }
 
+        /** int 基本类型数组逗号分隔展开。 */
     private static void intArrayAppend(StringBuilder sbuf, int[] a) {
         if (a.length == 0) {
             return;
@@ -359,6 +373,7 @@ public final class MessageFormatter {
         }
     }
 
+        /** long 基本类型数组逗号分隔展开。 */
     private static void longArrayAppend(StringBuilder sbuf, long[] a) {
         if (a.length == 0) {
             return;
@@ -370,6 +385,7 @@ public final class MessageFormatter {
         }
     }
 
+        /** float 基本类型数组逗号分隔展开。 */
     private static void floatArrayAppend(StringBuilder sbuf, float[] a) {
         if (a.length == 0) {
             return;
@@ -381,6 +397,7 @@ public final class MessageFormatter {
         }
     }
 
+        /** double 基本类型数组逗号分隔展开。 */
     private static void doubleArrayAppend(StringBuilder sbuf, double[] a) {
         if (a.length == 0) {
             return;
@@ -392,6 +409,7 @@ public final class MessageFormatter {
         }
     }
 
+        /** 工具类禁止实例化。 */
     private MessageFormatter() {
     }
 }

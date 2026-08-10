@@ -40,13 +40,15 @@
 package io.netty.util.internal.logging;
 
 /**
- * <em>Internal-use-only</em> logger used by Netty.  <strong>DO NOT</strong>
+ * Netty 内部专用日志接口，<strong>禁止</strong>在 Netty 外部直接使用。
+ * <p><em>Internal-use-only</em> logger used by Netty.  <strong>DO NOT</strong>
  * access this class outside of Netty.
  */
 public interface InternalLogger {
 
     /**
      * Return the name of this {@link InternalLogger} instance.
+     * <p>返回此日志器实例的名称。</p>
      *
      * @return name of this logger instance
      */
@@ -54,6 +56,7 @@ public interface InternalLogger {
 
     /**
      * Is the logger instance enabled for the TRACE level?
+     * <p>是否启用 TRACE 级别。</p>
      *
      * @return True if this Logger is enabled for the TRACE level,
      *         false otherwise.
@@ -62,6 +65,7 @@ public interface InternalLogger {
 
     /**
      * Log a message at the TRACE level.
+     * <p>以 TRACE 级别记录消息。</p>
      *
      * @param msg the message string to be logged
      */
@@ -70,6 +74,7 @@ public interface InternalLogger {
     /**
      * Log a message at the TRACE level according to the specified format
      * and argument.
+     * <p>TRACE 级别按格式与单个参数记录，禁用时避免多余对象创建。</p>
      * <p/>
      * <p>This form avoids superfluous object creation when the logger
      * is disabled for the TRACE level. </p>
@@ -82,6 +87,7 @@ public interface InternalLogger {
     /**
      * Log a message at the TRACE level according to the specified format
      * and arguments.
+     * <p>TRACE 级别双参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous object creation when the logger
      * is disabled for the TRACE level. </p>
@@ -95,6 +101,7 @@ public interface InternalLogger {
     /**
      * Log a message at the TRACE level according to the specified format
      * and arguments.
+     * <p>TRACE 级别可变参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous string concatenation when the logger
      * is disabled for the TRACE level. However, this variant incurs the hidden
@@ -110,6 +117,7 @@ public interface InternalLogger {
     /**
      * Log an exception (throwable) at the TRACE level with an
      * accompanying message.
+     * <p>TRACE 级别记录带消息的异常。</p>
      *
      * @param msg the message accompanying the exception
      * @param t   the exception (throwable) to log
@@ -118,6 +126,7 @@ public interface InternalLogger {
 
     /**
      * Log an exception (throwable) at the TRACE level.
+     * <p>TRACE 级别仅记录异常。</p>
      *
      * @param t   the exception (throwable) to log
      */
@@ -125,6 +134,7 @@ public interface InternalLogger {
 
     /**
      * Is the logger instance enabled for the DEBUG level?
+     * <p>是否启用 DEBUG 级别。</p>
      *
      * @return True if this Logger is enabled for the DEBUG level,
      *         false otherwise.
@@ -133,6 +143,7 @@ public interface InternalLogger {
 
     /**
      * Log a message at the DEBUG level.
+     * <p>以 DEBUG 级别记录消息。</p>
      *
      * @param msg the message string to be logged
      */
@@ -141,6 +152,7 @@ public interface InternalLogger {
     /**
      * Log a message at the DEBUG level according to the specified format
      * and argument.
+     * <p>DEBUG 级别单参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous object creation when the logger
      * is disabled for the DEBUG level. </p>
@@ -153,6 +165,7 @@ public interface InternalLogger {
     /**
      * Log a message at the DEBUG level according to the specified format
      * and arguments.
+     * <p>DEBUG 级别双参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous object creation when the logger
      * is disabled for the DEBUG level. </p>
@@ -166,6 +179,7 @@ public interface InternalLogger {
     /**
      * Log a message at the DEBUG level according to the specified format
      * and arguments.
+     * <p>DEBUG 级别可变参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous string concatenation when the logger
      * is disabled for the DEBUG level. However, this variant incurs the hidden
@@ -182,6 +196,7 @@ public interface InternalLogger {
     /**
      * Log an exception (throwable) at the DEBUG level with an
      * accompanying message.
+     * <p>DEBUG 级别记录带消息的异常。</p>
      *
      * @param msg the message accompanying the exception
      * @param t   the exception (throwable) to log
@@ -190,6 +205,7 @@ public interface InternalLogger {
 
     /**
      * Log an exception (throwable) at the DEBUG level.
+     * <p>DEBUG 级别仅记录异常。</p>
      *
      * @param t   the exception (throwable) to log
      */
@@ -197,6 +213,7 @@ public interface InternalLogger {
 
     /**
      * Is the logger instance enabled for the INFO level?
+     * <p>是否启用 INFO 级别。</p>
      *
      * @return True if this Logger is enabled for the INFO level,
      *         false otherwise.
@@ -205,6 +222,7 @@ public interface InternalLogger {
 
     /**
      * Log a message at the INFO level.
+     * <p>以 INFO 级别记录消息。</p>
      *
      * @param msg the message string to be logged
      */
@@ -213,6 +231,7 @@ public interface InternalLogger {
     /**
      * Log a message at the INFO level according to the specified format
      * and argument.
+     * <p>INFO 级别单参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous object creation when the logger
      * is disabled for the INFO level. </p>
@@ -225,6 +244,7 @@ public interface InternalLogger {
     /**
      * Log a message at the INFO level according to the specified format
      * and arguments.
+     * <p>INFO 级别双参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous object creation when the logger
      * is disabled for the INFO level. </p>
@@ -238,6 +258,7 @@ public interface InternalLogger {
     /**
      * Log a message at the INFO level according to the specified format
      * and arguments.
+     * <p>INFO 级别可变参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous string concatenation when the logger
      * is disabled for the INFO level. However, this variant incurs the hidden
@@ -254,6 +275,7 @@ public interface InternalLogger {
     /**
      * Log an exception (throwable) at the INFO level with an
      * accompanying message.
+     * <p>INFO 级别记录带消息的异常。</p>
      *
      * @param msg the message accompanying the exception
      * @param t   the exception (throwable) to log
@@ -262,6 +284,7 @@ public interface InternalLogger {
 
     /**
      * Log an exception (throwable) at the INFO level.
+     * <p>INFO 级别仅记录异常。</p>
      *
      * @param t   the exception (throwable) to log
      */
@@ -269,6 +292,7 @@ public interface InternalLogger {
 
     /**
      * Is the logger instance enabled for the WARN level?
+     * <p>是否启用 WARN 级别。</p>
      *
      * @return True if this Logger is enabled for the WARN level,
      *         false otherwise.
@@ -277,6 +301,7 @@ public interface InternalLogger {
 
     /**
      * Log a message at the WARN level.
+     * <p>以 WARN 级别记录消息。</p>
      *
      * @param msg the message string to be logged
      */
@@ -285,6 +310,7 @@ public interface InternalLogger {
     /**
      * Log a message at the WARN level according to the specified format
      * and argument.
+     * <p>WARN 级别单参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous object creation when the logger
      * is disabled for the WARN level. </p>
@@ -297,6 +323,7 @@ public interface InternalLogger {
     /**
      * Log a message at the WARN level according to the specified format
      * and arguments.
+     * <p>WARN 级别可变参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous string concatenation when the logger
      * is disabled for the WARN level. However, this variant incurs the hidden
@@ -313,6 +340,7 @@ public interface InternalLogger {
     /**
      * Log a message at the WARN level according to the specified format
      * and arguments.
+     * <p>WARN 级别双参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous object creation when the logger
      * is disabled for the WARN level. </p>
@@ -326,6 +354,7 @@ public interface InternalLogger {
     /**
      * Log an exception (throwable) at the WARN level with an
      * accompanying message.
+     * <p>WARN 级别记录带消息的异常。</p>
      *
      * @param msg the message accompanying the exception
      * @param t   the exception (throwable) to log
@@ -334,6 +363,7 @@ public interface InternalLogger {
 
     /**
      * Log an exception (throwable) at the WARN level.
+     * <p>WARN 级别仅记录异常。</p>
      *
      * @param t   the exception (throwable) to log
      */
@@ -341,6 +371,7 @@ public interface InternalLogger {
 
     /**
      * Is the logger instance enabled for the ERROR level?
+     * <p>是否启用 ERROR 级别。</p>
      *
      * @return True if this Logger is enabled for the ERROR level,
      *         false otherwise.
@@ -349,6 +380,7 @@ public interface InternalLogger {
 
     /**
      * Log a message at the ERROR level.
+     * <p>以 ERROR 级别记录消息。</p>
      *
      * @param msg the message string to be logged
      */
@@ -357,6 +389,7 @@ public interface InternalLogger {
     /**
      * Log a message at the ERROR level according to the specified format
      * and argument.
+     * <p>ERROR 级别单参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous object creation when the logger
      * is disabled for the ERROR level. </p>
@@ -369,6 +402,7 @@ public interface InternalLogger {
     /**
      * Log a message at the ERROR level according to the specified format
      * and arguments.
+     * <p>ERROR 级别双参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous object creation when the logger
      * is disabled for the ERROR level. </p>
@@ -382,6 +416,7 @@ public interface InternalLogger {
     /**
      * Log a message at the ERROR level according to the specified format
      * and arguments.
+     * <p>ERROR 级别可变参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous string concatenation when the logger
      * is disabled for the ERROR level. However, this variant incurs the hidden
@@ -398,6 +433,7 @@ public interface InternalLogger {
     /**
      * Log an exception (throwable) at the ERROR level with an
      * accompanying message.
+     * <p>ERROR 级别记录带消息的异常。</p>
      *
      * @param msg the message accompanying the exception
      * @param t   the exception (throwable) to log
@@ -406,6 +442,7 @@ public interface InternalLogger {
 
     /**
      * Log an exception (throwable) at the ERROR level.
+     * <p>ERROR 级别仅记录异常。</p>
      *
      * @param t   the exception (throwable) to log
      */
@@ -413,6 +450,7 @@ public interface InternalLogger {
 
     /**
      * Is the logger instance enabled for the specified {@code level}?
+     * <p>检查指定 {@link InternalLogLevel} 是否启用。</p>
      *
      * @return True if this Logger is enabled for the specified {@code level},
      *         false otherwise.
@@ -421,6 +459,7 @@ public interface InternalLogger {
 
     /**
      * Log a message at the specified {@code level}.
+     * <p>按指定级别记录消息。</p>
      *
      * @param msg the message string to be logged
      */
@@ -429,6 +468,7 @@ public interface InternalLogger {
     /**
      * Log a message at the specified {@code level} according to the specified format
      * and argument.
+     * <p>指定级别单参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous object creation when the logger
      * is disabled for the specified {@code level}. </p>
@@ -441,6 +481,7 @@ public interface InternalLogger {
     /**
      * Log a message at the specified {@code level} according to the specified format
      * and arguments.
+     * <p>指定级别双参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous object creation when the logger
      * is disabled for the specified {@code level}. </p>
@@ -454,6 +495,7 @@ public interface InternalLogger {
     /**
      * Log a message at the specified {@code level} according to the specified format
      * and arguments.
+     * <p>指定级别可变参数格式化记录。</p>
      * <p/>
      * <p>This form avoids superfluous string concatenation when the logger
      * is disabled for the specified {@code level}. However, this variant incurs the hidden
@@ -471,6 +513,7 @@ public interface InternalLogger {
     /**
      * Log an exception (throwable) at the specified {@code level} with an
      * accompanying message.
+     * <p>指定级别记录带消息的异常。</p>
      *
      * @param msg the message accompanying the exception
      * @param t   the exception (throwable) to log
@@ -479,6 +522,7 @@ public interface InternalLogger {
 
     /**
      * Log an exception (throwable) at the specified {@code level}.
+     * <p>指定级别仅记录异常。</p>
      *
      * @param t   the exception (throwable) to log
      */

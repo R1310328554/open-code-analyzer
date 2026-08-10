@@ -26,13 +26,18 @@ import java.security.PrivilegedAction;
 
 import static io.netty.util.internal.logging.AbstractInternalLogger.EXCEPTION_MESSAGE;
 
+/**
+ * Log4J2 {@link ExtendedLoggerWrapper} 适配器，实现 {@link InternalLogger}。
+ * 启动时检测 API 版本，过旧则拒绝使用。
+ */
 class Log4J2Logger extends ExtendedLoggerWrapper implements InternalLogger {
 
     private static final long serialVersionUID = 5485418394879791397L;
+        /** true 表示 Log4J2 过旧，仅支持 format+varargs 签名。 */
     private static final boolean VARARGS_ONLY;
 
     static {
-        // Older Log4J2 versions have only log methods that takes the format + varargs. So we should not use
+                // 旧版 Log4J2 仅有 format+varargs 的 log 方法 So we should not use
         // Log4J2 if the version is too old.
         // See https://github.com/netty/netty/issues/8217
         VARARGS_ONLY = AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
@@ -42,16 +47,17 @@ class Log4J2Logger extends ExtendedLoggerWrapper implements InternalLogger {
                     Logger.class.getMethod("debug", String.class, Object.class);
                     return false;
                 } catch (NoSuchMethodException ignore) {
-                    // Log4J2 version too old.
+                                        // Log4J2 版本过旧
                     return true;
                 } catch (SecurityException ignore) {
-                    // We could not detect the version so we will use Log4J2 if its on the classpath.
+                                        // 无法检测版本时仍尝试使用 classpath 上的 Log4J2
                     return false;
                 }
             }
         });
     }
 
+        /** 包装 Log4J2 Logger；版本不匹配则抛异常。 */
     Log4J2Logger(Logger logger) {
         super((ExtendedLogger) logger, logger.getName(), logger.getMessageFactory());
         if (VARARGS_ONLY) {
@@ -59,11 +65,13 @@ class Log4J2Logger extends ExtendedLoggerWrapper implements InternalLogger {
         }
     }
 
+        /** 返回 Log4J2 logger 名称。 */
     @Override
     public String name() {
         return getName();
     }
 
+        // --- 各级别仅记录异常（使用默认消息） ---
     @Override
     public void trace(Throwable t) {
         log(Level.TRACE, EXCEPTION_MESSAGE, t);
@@ -89,11 +97,13 @@ class Log4J2Logger extends ExtendedLoggerWrapper implements InternalLogger {
         log(Level.ERROR, EXCEPTION_MESSAGE, t);
     }
 
+        /** 将 {@link InternalLogLevel} 转为 Log4J2 {@link Level} 并检查是否启用。 */
     @Override
     public boolean isEnabled(InternalLogLevel level) {
         return isEnabled(toLevel(level));
     }
 
+        /** 指定内部级别记录纯文本消息。 */
     @Override
     public void log(InternalLogLevel level, String msg) {
         log(toLevel(level), msg);
@@ -124,6 +134,7 @@ class Log4J2Logger extends ExtendedLoggerWrapper implements InternalLogger {
         log(toLevel(level), EXCEPTION_MESSAGE, t);
     }
 
+        /** {@link InternalLogLevel} → Log4J2 {@link Level} 映射。 */
     private static Level toLevel(InternalLogLevel level) {
         switch (level) {
             case INFO:

@@ -18,12 +18,14 @@ package io.netty.util.internal.logging;
 import org.apache.log4j.Logger;
 
 /**
- * Logger factory which creates an
+ * 创建 <a href="https://logging.apache.org/log4j/1.2/index.html">Apache Log4J</a> 日志器的工厂。
+ * <p>Logger factory which creates an
  * <a href="https://logging.apache.org/log4j/1.2/index.html">Apache Log4J</a>
  * logger.
  */
 public class Log4JLoggerFactory extends InternalLoggerFactory {
 
+        /** 全局单例。 */
     public static final InternalLoggerFactory INSTANCE = new Log4JLoggerFactory();
 
     /**
@@ -33,6 +35,7 @@ public class Log4JLoggerFactory extends InternalLoggerFactory {
     public Log4JLoggerFactory() {
     }
 
+        /** 按名称创建 {@link Log4JLogger}。 */
     @Override
     public InternalLogger newInstance(String name) {
         return new Log4JLogger(Logger.getLogger(name));

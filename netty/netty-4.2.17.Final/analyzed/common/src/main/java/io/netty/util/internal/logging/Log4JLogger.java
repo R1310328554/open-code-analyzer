@@ -43,31 +43,34 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 /**
- * <a href="https://logging.apache.org/log4j/1.2/index.html">Apache Log4J</a>
- * logger.
+ * Log4J 1.x {@link InternalLogger} 适配器，兼容无 TRACE 级别的旧版 Log4J。
+ * <p><a href="https://logging.apache.org/log4j/1.2/index.html">Apache Log4J</a> logger.</p>
  */
 class Log4JLogger extends AbstractInternalLogger {
 
     private static final long serialVersionUID = 2851357342488183058L;
 
+        /** 底层 Log4J Logger。 */
     private final transient Logger logger;
 
-    /**
-     * Following the pattern discussed in pages 162 through 168 of "The complete
-     * log4j manual".
+        /**
+     * 本类 FQCN，遵循 log4j 手册 162–168 页推荐的 caller 定位模式。
+     * <p>Following the pattern discussed in pages 162 through 168 of "The complete
+     * log4j manual".</p>
      */
     static final String FQCN = Log4JLogger.class.getName();
 
-    // Does the log4j version in use recognize the TRACE level?
-    // The trace level was introduced in log4j 1.2.12.
+        /** 当前 Log4J 是否支持 TRACE（1.2.12+）；否则 TRACE 映射到 DEBUG。 */
     final boolean traceCapable;
 
+        /** 包装 Log4J Logger 并探测 TRACE 能力。 */
     Log4JLogger(Logger logger) {
         super(logger.getName());
         this.logger = logger;
         traceCapable = isTraceCapable();
     }
 
+        /** 运行时探测 isTraceEnabled 是否存在。 */
     private boolean isTraceCapable() {
         try {
             logger.isTraceEnabled();
@@ -81,6 +84,7 @@ class Log4JLogger extends AbstractInternalLogger {
      * Is this logger instance enabled for the TRACE level?
      *
      * @return True if this Logger is enabled for level TRACE, false otherwise.
+     * <p>是否启用 TRACE（不支持时等同 DEBUG）。</p>
      */
     @Override
     public boolean isTraceEnabled() {
@@ -96,6 +100,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *
      * @param msg
      *          - the message object to be logged
+     * <p>TRACE 级别记录消息。</p>
      */
     @Override
     public void trace(String msg) {
@@ -115,6 +120,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the format string
      * @param arg
      *          the argument
+     * <p>TRACE 级别格式化记录。</p>
      */
     @Override
     public void trace(String format, Object arg) {
@@ -140,6 +146,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the first argument
      * @param argB
      *          the second argument
+     * <p>TRACE 级别格式化记录。</p>
      */
     @Override
     public void trace(String format, Object argA, Object argB) {
@@ -163,6 +170,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the format string
      * @param arguments
      *          an array of arguments
+     * <p>TRACE 级别格式化记录。</p>
      */
     @Override
     public void trace(String format, Object... arguments) {
@@ -180,6 +188,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the message accompanying the exception
      * @param t
      *          the exception (throwable) to log
+     * <p>TRACE 级别记录异常。</p>
      */
     @Override
     public void trace(String msg, Throwable t) {
@@ -190,6 +199,7 @@ class Log4JLogger extends AbstractInternalLogger {
      * Is this logger instance enabled for the DEBUG level?
      *
      * @return True if this Logger is enabled for level DEBUG, false otherwise.
+     * <p>是否启用 DEBUG。</p>
      */
     @Override
     public boolean isDebugEnabled() {
@@ -201,6 +211,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *
      * @param msg
      *          - the message object to be logged
+     * <p>DEBUG 级别记录消息。</p>
      */
     @Override
     public void debug(String msg) {
@@ -220,6 +231,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the format string
      * @param arg
      *          the argument
+     * <p>DEBUG 级别格式化记录。</p>
      */
     @Override
     public void debug(String format, Object arg) {
@@ -244,6 +256,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the first argument
      * @param argB
      *          the second argument
+     * <p>DEBUG 级别格式化记录。</p>
      */
     @Override
     public void debug(String format, Object argA, Object argB) {
@@ -265,6 +278,7 @@ class Log4JLogger extends AbstractInternalLogger {
      * @param format
      *          the format string
      * @param arguments an array of arguments
+     * <p>DEBUG 级别格式化记录。</p>
      */
     @Override
     public void debug(String format, Object... arguments) {
@@ -281,6 +295,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the message accompanying the exception
      * @param t
      *          the exception (throwable) to log
+     * <p>DEBUG 级别记录异常。</p>
      */
     @Override
     public void debug(String msg, Throwable t) {
@@ -291,6 +306,7 @@ class Log4JLogger extends AbstractInternalLogger {
      * Is this logger instance enabled for the INFO level?
      *
      * @return True if this Logger is enabled for the INFO level, false otherwise.
+     * <p>是否启用 INFO。</p>
      */
     @Override
     public boolean isInfoEnabled() {
@@ -302,6 +318,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *
      * @param msg
      *          - the message object to be logged
+     * <p>INFO 级别记录消息。</p>
      */
     @Override
     public void info(String msg) {
@@ -320,6 +337,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the format string
      * @param arg
      *          the argument
+     * <p>INFO 级别格式化记录。</p>
      */
     @Override
     public void info(String format, Object arg) {
@@ -366,6 +384,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the format string
      * @param argArray
      *          an array of arguments
+     * <p>INFO 级别格式化记录。</p>
      */
     @Override
     public void info(String format, Object... argArray) {
@@ -383,6 +402,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the message accompanying the exception
      * @param t
      *          the exception (throwable) to log
+     * <p>INFO 级别记录异常。</p>
      */
     @Override
     public void info(String msg, Throwable t) {
@@ -393,6 +413,7 @@ class Log4JLogger extends AbstractInternalLogger {
      * Is this logger instance enabled for the WARN level?
      *
      * @return True if this Logger is enabled for the WARN level, false otherwise.
+     * <p>是否启用 WARN。</p>
      */
     @Override
     public boolean isWarnEnabled() {
@@ -404,6 +425,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *
      * @param msg
      *          - the message object to be logged
+     * <p>WARN 级别记录消息。</p>
      */
     @Override
     public void warn(String msg) {
@@ -423,6 +445,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the format string
      * @param arg
      *          the argument
+     * <p>WARN 级别格式化记录。</p>
      */
     @Override
     public void warn(String format, Object arg) {
@@ -447,6 +470,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the first argument
      * @param argB
      *          the second argument
+     * <p>WARN 级别格式化记录。</p>
      */
     @Override
     public void warn(String format, Object argA, Object argB) {
@@ -486,6 +510,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the message accompanying the exception
      * @param t
      *          the exception (throwable) to log
+     * <p>WARN 级别记录异常。</p>
      */
     @Override
     public void warn(String msg, Throwable t) {
@@ -496,6 +521,7 @@ class Log4JLogger extends AbstractInternalLogger {
      * Is this logger instance enabled for level ERROR?
      *
      * @return True if this Logger is enabled for level ERROR, false otherwise.
+     * <p>是否启用 ERROR。</p>
      */
     @Override
     public boolean isErrorEnabled() {
@@ -507,6 +533,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *
      * @param msg
      *          - the message object to be logged
+     * <p>ERROR 级别记录消息。</p>
      */
     @Override
     public void error(String msg) {
@@ -526,6 +553,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the format string
      * @param arg
      *          the argument
+     * <p>ERROR 级别格式化记录。</p>
      */
     @Override
     public void error(String format, Object arg) {
@@ -550,6 +578,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the first argument
      * @param argB
      *          the second argument
+     * <p>ERROR 级别格式化记录。</p>
      */
     @Override
     public void error(String format, Object argA, Object argB) {
@@ -589,6 +618,7 @@ class Log4JLogger extends AbstractInternalLogger {
      *          the message accompanying the exception
      * @param t
      *          the exception (throwable) to log
+     * <p>ERROR 级别记录异常。</p>
      */
     @Override
     public void error(String msg, Throwable t) {

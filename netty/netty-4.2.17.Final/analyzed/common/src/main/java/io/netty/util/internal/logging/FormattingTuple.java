@@ -40,22 +40,28 @@
 package io.netty.util.internal.logging;
 
 /**
- * Holds the results of formatting done by {@link MessageFormatter}.
+ * 保存 {@link MessageFormatter} 格式化后的结果：最终消息文本与可选异常。
+ * <p>Holds the results of formatting done by {@link MessageFormatter}.</p>
  */
 public final class FormattingTuple {
 
+        /** 格式化后的日志消息。 */
     private final String message;
+        /** 与消息关联的异常（可为 null）。 */
     private final Throwable throwable;
 
+        /** 构造格式化结果元组。 */
     public FormattingTuple(String message, Throwable throwable) {
         this.message = message;
         this.throwable = throwable;
     }
 
+        /** 返回格式化后的消息字符串。 */
     public String getMessage() {
         return message;
     }
 
+        /** 返回关联异常，无则 null。 */
     public Throwable getThrowable() {
         return throwable;
     }

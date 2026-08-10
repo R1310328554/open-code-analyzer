@@ -22,12 +22,14 @@ import org.slf4j.helpers.NOPLoggerFactory;
 import org.slf4j.spi.LocationAwareLogger;
 
 /**
- * Logger factory which creates a <a href="https://www.slf4j.org/">SLF4J</a>
- * logger.
+ * 创建 <a href="https://www.slf4j.org/">SLF4J</a> 日志器的工厂；
+ * 若底层实现支持 {@link LocationAwareLogger} 则选用位置感知包装。
+ * <p>Logger factory which creates a SLF4J logger.</p>
  */
 public class Slf4JLoggerFactory extends InternalLoggerFactory {
 
     @SuppressWarnings("deprecation")
+        /** 默认单例（允许 NOP 实现）。 */
     public static final InternalLoggerFactory INSTANCE = new Slf4JLoggerFactory();
 
     /**
@@ -37,6 +39,7 @@ public class Slf4JLoggerFactory extends InternalLoggerFactory {
     public Slf4JLoggerFactory() {
     }
 
+        /** failIfNOP 为 true 时拒绝 SLF4J NOP 空实现。 */
     Slf4JLoggerFactory(boolean failIfNOP) {
         assert failIfNOP; // Should be always called with true.
         if (LoggerFactory.getILoggerFactory() instanceof NOPLoggerFactory) {
@@ -44,21 +47,24 @@ public class Slf4JLoggerFactory extends InternalLoggerFactory {
         }
     }
 
+        /** 获取 SLF4J Logger 并选择合适包装器。 */
     @Override
     public InternalLogger newInstance(String name) {
         return wrapLogger(LoggerFactory.getLogger(name));
     }
 
-    // package-private for testing.
+        /** 测试可见：LocationAware 则用 {@link LocationAwareSlf4JLogger}，否则 {@link Slf4JLogger}。 */
     static InternalLogger wrapLogger(Logger logger) {
         return logger instanceof LocationAwareLogger ?
                 new LocationAwareSlf4JLogger((LocationAwareLogger) logger) : new Slf4JLogger(logger);
     }
 
+        /** 供工厂探测使用：classpath 有 SLF4J 但拒绝 NOP 时返回实例。 */
     static InternalLoggerFactory getInstanceWithNopCheck() {
         return NopInstanceHolder.INSTANCE_WITH_NOP_CHECK;
     }
 
+        /** 延迟持有 failIfNOP 单例，避免类加载顺序问题。 */
     private static final class NopInstanceHolder {
         private static final InternalLoggerFactory INSTANCE_WITH_NOP_CHECK = new Slf4JLoggerFactory(true);
     }

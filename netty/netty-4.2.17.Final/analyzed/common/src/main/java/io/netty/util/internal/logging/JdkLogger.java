@@ -44,15 +44,18 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 /**
- * <a href="https://java.sun.com/javase/6/docs/technotes/guides/logging/index.html">java.util.logging</a>
- * logger.
+ * 基于 <a href="https://java.sun.com/javase/6/docs/technotes/guides/logging/index.html">java.util.logging</a> 的
+ * {@link InternalLogger} 适配器，将 Netty 级别映射到 JUL Level。
+ * <p>java.util.logging logger.</p>
  */
 class JdkLogger extends AbstractInternalLogger {
 
     private static final long serialVersionUID = -1767272577989225979L;
 
+        /** 底层 JUL Logger 实例。 */
     private final transient Logger logger;
 
+        /** 包装给定 JUL Logger。 */
     JdkLogger(Logger logger) {
         super(logger.getName());
         this.logger = logger;
@@ -62,6 +65,7 @@ class JdkLogger extends AbstractInternalLogger {
      * Is this logger instance enabled for the FINEST level?
      *
      * @return True if this Logger is enabled for level FINEST, false otherwise.
+     * <p>是否启用 FINEST（对应 TRACE）。</p>
      */
     @Override
     public boolean isTraceEnabled() {
@@ -73,6 +77,7 @@ class JdkLogger extends AbstractInternalLogger {
      *
      * @param msg
      *          - the message object to be logged
+     * <p>FINEST 级别记录消息。</p>
      */
     @Override
     public void trace(String msg) {
@@ -94,6 +99,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the format string
      * @param arg
      *          the argument
+     * <p>FINEST 级别格式化记录。</p>
      */
     @Override
     public void trace(String format, Object arg) {
@@ -118,6 +124,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the first argument
      * @param argB
      *          the second argument
+     * <p>FINEST 级别格式化记录。</p>
      */
     @Override
     public void trace(String format, Object argA, Object argB) {
@@ -140,6 +147,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the format string
      * @param argArray
      *          an array of arguments
+     * <p>FINEST 级别格式化记录。</p>
      */
     @Override
     public void trace(String format, Object... argArray) {
@@ -156,6 +164,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the message accompanying the exception
      * @param t
      *          the exception (throwable) to log
+     * <p>FINEST 级别记录异常与消息。</p>
      */
     @Override
     public void trace(String msg, Throwable t) {
@@ -168,6 +177,7 @@ class JdkLogger extends AbstractInternalLogger {
      * Is this logger instance enabled for the FINE level?
      *
      * @return True if this Logger is enabled for level FINE, false otherwise.
+     * <p>是否启用 FINE（对应 DEBUG）。</p>
      */
     @Override
     public boolean isDebugEnabled() {
@@ -179,6 +189,7 @@ class JdkLogger extends AbstractInternalLogger {
      *
      * @param msg
      *          - the message object to be logged
+     * <p>FINE 级别记录消息。</p>
      */
     @Override
     public void debug(String msg) {
@@ -199,6 +210,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the format string
      * @param arg
      *          the argument
+     * <p>FINE 级别格式化记录。</p>
      */
     @Override
     public void debug(String format, Object arg) {
@@ -223,6 +235,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the first argument
      * @param argB
      *          the second argument
+     * <p>FINE 级别格式化记录。</p>
      */
     @Override
     public void debug(String format, Object argA, Object argB) {
@@ -245,6 +258,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the format string
      * @param argArray
      *          an array of arguments
+     * <p>FINE 级别格式化记录。</p>
      */
     @Override
     public void debug(String format, Object... argArray) {
@@ -261,6 +275,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the message accompanying the exception
      * @param t
      *          the exception (throwable) to log
+     * <p>FINE 级别记录异常与消息。</p>
      */
     @Override
     public void debug(String msg, Throwable t) {
@@ -273,6 +288,7 @@ class JdkLogger extends AbstractInternalLogger {
      * Is this logger instance enabled for the INFO level?
      *
      * @return True if this Logger is enabled for the INFO level, false otherwise.
+     * <p>是否启用 INFO 级别。</p>
      */
     @Override
     public boolean isInfoEnabled() {
@@ -284,6 +300,7 @@ class JdkLogger extends AbstractInternalLogger {
      *
      * @param msg
      *          - the message object to be logged
+     * <p>INFO 级别记录消息。</p>
      */
     @Override
     public void info(String msg) {
@@ -304,6 +321,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the format string
      * @param arg
      *          the argument
+     * <p>INFO 级别格式化记录。</p>
      */
     @Override
     public void info(String format, Object arg) {
@@ -350,6 +368,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the format string
      * @param argArray
      *          an array of arguments
+     * <p>INFO 级别格式化记录。</p>
      */
     @Override
     public void info(String format, Object... argArray) {
@@ -367,6 +386,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the message accompanying the exception
      * @param t
      *          the exception (throwable) to log
+     * <p>INFO 级别记录异常与消息。</p>
      */
     @Override
     public void info(String msg, Throwable t) {
@@ -380,6 +400,7 @@ class JdkLogger extends AbstractInternalLogger {
      *
      * @return True if this Logger is enabled for the WARNING level, false
      *         otherwise.
+     * <p>是否启用 WARNING（对应 WARN）。</p>
      */
     @Override
     public boolean isWarnEnabled() {
@@ -391,6 +412,7 @@ class JdkLogger extends AbstractInternalLogger {
      *
      * @param msg
      *          - the message object to be logged
+     * <p>WARNING 级别记录消息。</p>
      */
     @Override
     public void warn(String msg) {
@@ -412,6 +434,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the format string
      * @param arg
      *          the argument
+     * <p>WARNING 级别格式化记录。</p>
      */
     @Override
     public void warn(String format, Object arg) {
@@ -436,6 +459,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the first argument
      * @param argB
      *          the second argument
+     * <p>WARNING 级别格式化记录。</p>
      */
     @Override
     public void warn(String format, Object argA, Object argB) {
@@ -475,6 +499,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the message accompanying the exception
      * @param t
      *          the exception (throwable) to log
+     * <p>WARNING 级别记录异常与消息。</p>
      */
     @Override
     public void warn(String msg, Throwable t) {
@@ -487,6 +512,7 @@ class JdkLogger extends AbstractInternalLogger {
      * Is this logger instance enabled for level SEVERE?
      *
      * @return True if this Logger is enabled for level SEVERE, false otherwise.
+     * <p>是否启用 SEVERE（对应 ERROR）。</p>
      */
     @Override
     public boolean isErrorEnabled() {
@@ -498,6 +524,7 @@ class JdkLogger extends AbstractInternalLogger {
      *
      * @param msg
      *          - the message object to be logged
+     * <p>SEVERE 级别记录消息。</p>
      */
     @Override
     public void error(String msg) {
@@ -519,6 +546,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the format string
      * @param arg
      *          the argument
+     * <p>SEVERE 级别格式化记录。</p>
      */
     @Override
     public void error(String format, Object arg) {
@@ -543,6 +571,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the first argument
      * @param argB
      *          the second argument
+     * <p>SEVERE 级别格式化记录。</p>
      */
     @Override
     public void error(String format, Object argA, Object argB) {
@@ -582,6 +611,7 @@ class JdkLogger extends AbstractInternalLogger {
      *          the message accompanying the exception
      * @param t
      *          the exception (throwable) to log
+     * <p>SEVERE 级别记录异常与消息。</p>
      */
     @Override
     public void error(String msg, Throwable t) {
@@ -596,9 +626,10 @@ class JdkLogger extends AbstractInternalLogger {
      * this instance's JDK14 logger.
      *
      * See bug report #13 for more details.
+     * <p>写入 LogRecord 并委托底层 JUL Logger。</p>
      */
     private void log(String callerFQCN, Level level, String msg, Throwable t) {
-        // millis and thread are filled by the constructor
+                // 毫秒与时间戳由 LogRecord 构造器填充
         LogRecord record = new LogRecord(level, msg);
         record.setLoggerName(name());
         record.setThrown(t);
@@ -606,11 +637,14 @@ class JdkLogger extends AbstractInternalLogger {
         logger.log(record);
     }
 
+        /** 本类 FQCN，用于定位调用栈。 */
     static final String SELF = JdkLogger.class.getName();
+        /** 父类 FQCN，跳过包装层栈帧。 */
     static final String SUPER = AbstractInternalLogger.class.getName();
 
-    /**
-     * Fill in caller data if possible.
+        /**
+     * 从栈追踪填充真实调用类与方法，修正 JUL 默认 caller 信息。
+     * <p>Fill in caller data if possible.
      *
      * @param record
      *          The record to update
@@ -638,8 +672,7 @@ class JdkLogger extends AbstractInternalLogger {
 
         if (found != -1) {
             StackTraceElement ste = steArray[found];
-            // setting the class name has the side effect of setting
-            // the needToInferCaller variable to false.
+                        // 设置类名会同时将 needToInferCaller 置为 false
             record.setSourceClassName(ste.getClassName());
             record.setSourceMethodName(ste.getMethodName());
         }
