@@ -24,8 +24,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleFind returns an http.HandlerFunc that writes json-encoded
-// build details to the response body.
+// HandleFind 返回 HTTP 处理器，按构建编号查询构建详情及其 stage 列表。
 func HandleFind(
 	repos core.RepositoryStore,
 	builds core.BuildStore,
@@ -60,6 +59,7 @@ func HandleFind(
 	}
 }
 
+// buildWithStages 将构建与其 stage 列表组合为 API 响应结构。
 type buildWithStages struct {
 	*core.Build
 	Stages []*core.Stage `json:"stages,omitempty"`

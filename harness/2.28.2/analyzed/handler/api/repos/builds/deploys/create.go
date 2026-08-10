@@ -12,4 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// deploys 包定义仓库部署目标相关的 HTTP API 处理器。
+// 本文件为占位实现，部署创建处理器尚未在此包中提供。
 package deploys

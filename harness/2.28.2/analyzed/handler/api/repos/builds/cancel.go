@@ -27,8 +27,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleCancel returns an http.HandlerFunc that processes http
-// requests to cancel a pending or running build.
+// HandleCancel 返回 HTTP 处理器，取消处于 pending 或 running 状态的构建。
 func HandleCancel(
 	users core.UserStore,
 	repos core.RepositoryStore,
@@ -74,12 +73,11 @@ func HandleCancel(
 			return
 		}
 
+		// 已完成（非 pending/running）的构建视为不可再取消。
 		done := build.Status != core.StatusPending &&
 			build.Status != core.StatusRunning
 
-		// do not cancel the build if the build status is
-		// complete. only cancel the build if the status is
-		// running or pending.
+		// 仅对 pending 或 running 构建执行取消：更新状态并通知调度器。
 		if !done {
 			build.Status = core.StatusKilled
 			build.Finished = time.Now().Unix()
@@ -117,6 +115,7 @@ func HandleCancel(
 					WithField("name", name).
 					Debugln("api: cannot repository owner")
 			} else {
+				// 向 SCM 推送构建已取消的外部状态。
 				err := status.Send(r.Context(), user, &core.StatusInput{
 					Repo:  repo,
 					Build: build,
@@ -142,6 +141,7 @@ func HandleCancel(
 				Debugln("api: cannot list build stages")
 		}
 
+		// 将未完成的 stage/step 标记为 killed 或 skipped。
 		for _, stage := range stagez {
 			if stage.IsDone() {
 				continue
@@ -198,9 +198,7 @@ func HandleCancel(
 
 		build.Stages = stagez
 
-		// do not trigger a webhook if the build was already
-		// complete. only trigger a webhook if the build was
-		// pending or running and then cancelled.
+		// 仅在实际取消 pending/running 构建时触发 webhook 通知。
 		if !done {
 			payload := &core.WebhookData{
 				Event:  core.WebhookEventBuild,

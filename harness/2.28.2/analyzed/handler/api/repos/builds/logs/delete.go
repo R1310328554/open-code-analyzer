@@ -24,8 +24,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleDelete returns an http.HandlerFunc that processes http
-// requests to delete the logs.
+// HandleDelete 返回 HTTP 处理器，删除指定构建步骤的日志数据。
 func HandleDelete(
 	repos core.RepositoryStore,
 	builds core.BuildStore,

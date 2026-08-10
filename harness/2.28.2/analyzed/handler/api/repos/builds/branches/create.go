@@ -12,4 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// branches 包定义仓库构建分支相关的 HTTP API 处理器。
+// 本文件为占位实现，分支创建处理器尚未在此包中提供。
 package branches

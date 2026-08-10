@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// render 包提供 API 响应的统一 JSON 渲染与标准 HTTP 错误封装。
 package render
 
 import (
@@ -24,7 +25,7 @@ import (
 	"github.com/drone/drone/handler/api/errors"
 )
 
-// indent the json-encoded API responses
+// indent 控制 JSON 响应是否缩进输出，由环境变量 HTTP_JSON_INDENT 决定。
 var indent bool
 
 func init() {
@@ -34,83 +35,73 @@ func init() {
 }
 
 var (
-	// ErrInvalidToken is returned when the api request token is invalid.
+	// ErrInvalidToken 表示 API 请求令牌无效或缺失。
 	ErrInvalidToken = errors.New("Invalid or missing token")
 
-	// ErrUnauthorized is returned when the user is not authorized.
+	// ErrUnauthorized 表示用户未通过认证。
 	ErrUnauthorized = errors.New("Unauthorized")
 
-	// ErrForbidden is returned when user access is forbidden.
+	// ErrForbidden 表示用户无权访问目标资源。
 	ErrForbidden = errors.New("Forbidden")
 
-	// ErrNotFound is returned when a resource is not found.
+	// ErrNotFound 表示请求的资源不存在。
 	ErrNotFound = errors.New("Not Found")
 
-	// ErrNotImplemented is returned when an endpoint is not implemented.
+	// ErrNotImplemented 表示接口尚未实现。
 	ErrNotImplemented = errors.New("Not Implemented")
 )
 
-// ErrorCode writes the json-encoded error message to the response.
+// ErrorCode 将错误信息编码为 JSON 并以指定 HTTP 状态码写入响应。
 func ErrorCode(w http.ResponseWriter, err error, status int) {
 	JSON(w, &errors.Error{Message: err.Error()}, status)
 }
 
-// InternalError writes the json-encoded error message to the response
-// with a 500 internal server error.
+// InternalError 返回 500 内部服务器错误 JSON 响应。
 func InternalError(w http.ResponseWriter, err error) {
 	ErrorCode(w, err, 500)
 }
 
-// InternalErrorf writes the json-encoded error message to the response
-// with a 500 internal server error.
+// InternalErrorf 按格式化字符串构造错误并返回 500 响应。
 func InternalErrorf(w http.ResponseWriter, format string, a ...interface{}) {
 	ErrorCode(w, fmt.Errorf(format, a...), 500)
 }
 
-// NotImplemented writes the json-encoded error message to the
-// response with a 501 not found status code.
+// NotImplemented 返回 501 未实现 JSON 响应。
 func NotImplemented(w http.ResponseWriter, err error) {
 	ErrorCode(w, err, 501)
 }
 
-// NotFound writes the json-encoded error message to the response
-// with a 404 not found status code.
+// NotFound 返回 404 未找到 JSON 响应。
 func NotFound(w http.ResponseWriter, err error) {
 	ErrorCode(w, err, 404)
 }
 
-// NotFoundf writes the json-encoded error message to the response
-// with a 404 not found status code.
+// NotFoundf 按格式化字符串构造错误并返回 404 响应。
 func NotFoundf(w http.ResponseWriter, format string, a ...interface{}) {
 	ErrorCode(w, fmt.Errorf(format, a...), 404)
 }
 
-// Unauthorized writes the json-encoded error message to the response
-// with a 401 unauthorized status code.
+// Unauthorized 返回 401 未授权 JSON 响应。
 func Unauthorized(w http.ResponseWriter, err error) {
 	ErrorCode(w, err, 401)
 }
 
-// Forbidden writes the json-encoded error message to the response
-// with a 403 forbidden status code.
+// Forbidden 返回 403 禁止访问 JSON 响应。
 func Forbidden(w http.ResponseWriter, err error) {
 	ErrorCode(w, err, 403)
 }
 
-// BadRequest writes the json-encoded error message to the response
-// with a 400 bad request status code.
+// BadRequest 返回 400 错误请求 JSON 响应。
 func BadRequest(w http.ResponseWriter, err error) {
 	ErrorCode(w, err, 400)
 }
 
-// BadRequestf writes the json-encoded error message to the response
-// with a 400 bad request status code.
+// BadRequestf 按格式化字符串构造错误并返回 400 响应。
 func BadRequestf(w http.ResponseWriter, format string, a ...interface{}) {
 	ErrorCode(w, fmt.Errorf(format, a...), 400)
 }
 
-// JSON writes the json-encoded error message to the response
-// with a 400 bad request status code.
+// JSON 将任意值编码为 JSON 并以指定状态码写入响应体。
 func JSON(w http.ResponseWriter, v interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

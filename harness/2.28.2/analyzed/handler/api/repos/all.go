@@ -23,8 +23,7 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// HandleAll returns an http.HandlerFunc that processes http
-// requests to list all repositories in the database.
+// HandleAll 返回 HTTP 处理器，分页列出数据库中的全部仓库。
 func HandleAll(repos core.RepositoryStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
@@ -40,6 +39,7 @@ func HandleAll(repos core.RepositoryStore) http.HandlerFunc {
 		case 0, 1:
 			offset = 0
 		default:
+			// 将页码转换为数据库查询偏移量。
 			offset = (offset - 1) * limit
 		}
 		repo, err := repos.ListAll(r.Context(), limit, offset)

@@ -25,8 +25,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleCreate returns an http.HandlerFunc that processes http
-// requests to create a build for the specified commit.
+// HandleCreate 返回 HTTP 处理器，为指定提交手动触发一次构建。
 func HandleCreate(
 	users core.UserStore,
 	repos core.RepositoryStore,
@@ -57,12 +56,11 @@ func HandleCreate(
 			return
 		}
 
-		// if the user does not provide a branch, assume the
-		// default repository branch.
+		// 未指定分支时使用仓库默认分支。
 		if branch == "" {
 			branch = repo.Branch
 		}
-		// expand the branch to a git reference.
+		// 将分支名展开为 Git 引用路径。
 		ref := scm.ExpandRef(branch, "refs/heads")
 
 		var commit *core.Commit
@@ -102,6 +100,7 @@ func HandleCreate(
 			hook.Action = action
 		}
 
+		// 将查询参数（除令牌与 commit/branch 外）附加到 hook 参数表。
 		for key, value := range r.URL.Query() {
 			if key == "access_token" ||
 				key == "commit" ||

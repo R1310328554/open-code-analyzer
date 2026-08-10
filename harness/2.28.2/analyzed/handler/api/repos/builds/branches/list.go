@@ -24,8 +24,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleList returns an http.HandlerFunc that writes a json-encoded
-// list of build history to the response body.
+// HandleList 返回 HTTP 处理器，列出仓库各分支最近一次构建记录并以 JSON 写入响应。
 func HandleList(
 	repos core.RepositoryStore,
 	builds core.BuildStore,

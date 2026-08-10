@@ -24,8 +24,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleLast returns an http.HandlerFunc that writes json-encoded
-// build details to the the response body for the latest build.
+// HandleLast 返回 HTTP 处理器，查询指定分支或引用下最新一次构建详情。
 func HandleLast(
 	repos core.RepositoryStore,
 	builds core.BuildStore,

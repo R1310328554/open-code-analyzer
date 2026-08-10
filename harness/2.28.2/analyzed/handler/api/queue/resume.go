@@ -14,8 +14,7 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// HandleResume returns an http.HandlerFunc that processes
-// an http.Request to pause the scheduler.
+// HandleResume 返回 HTTP 处理器，恢复已暂停的构建调度器。
 func HandleResume(scheduler core.Scheduler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
