@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:52:24Z",
-  "files": [
-    "web/src/pages/agent/form/title-chunker-form/hook.ts",
-    "web/src/pages/agent/form/tool-form/mcp-form/use-values.ts",
-    "web/src/pages/agent/form/tool-form/mcp-form/use-watch-change.ts",
-    "web/src/pages/agent/form/tool-form/use-values.ts",
-    "web/src/pages/agent/form/tool-form/use-watch-change.ts",
-    "web/src/pages/agent/form/user-fill-up-form/use-values.ts",
-    "web/src/pages/agent/form/user-fill-up-form/use-watch-change.ts",
-    "web/src/pages/agent/form/variable-aggregator-form/schema.ts",
-    "web/src/pages/agent/form/variable-aggregator-form/use-handle-name-change.ts",
-    "web/src/pages/agent/form/variable-aggregator-form/use-watch-change.ts",
-    "web/src/pages/agent/form/variable-assigner-form/use-build-logical-options.ts",
-    "web/src/pages/agent/gobal-variable-sheet/constant.ts",
-    "web/src/pages/agent/hooks/use-add-node.ts",
-    "web/src/pages/agent/hooks/use-agent-tool-initial-values.ts",
-    "web/src/pages/agent/hooks/use-build-dsl.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 204,
-  "done": 1545
+  "done": 1560
 }
