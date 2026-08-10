@@ -25,40 +25,42 @@ import java.util.List;
 import java.util.Properties;
 
 /**
- * Client AuthService.
+ * 客户端认证服务 SPI 接口，定义登录与身份上下文获取能力。
+ *
+ * <p>各认证插件（如 Nacos 内置、OIDC 等）实现此接口，由
+ * {@link ClientAuthPluginManager} 加载并在 SDK 请求发出前注入凭证。</p>
  *
  * @author wuyfee
  */
 public interface ClientAuthService extends Closeable {
     
     /**
-     * login(request) to service and get response.
+     * 向 Nacos 服务端发起登录请求并获取凭证。
      *
-     * @param properties login auth information.
-     * @return boolean whether login success.
+     * @param properties 登录所需的认证信息（用户名、密码、clientId 等）
+     * @return 登录是否成功
      */
     Boolean login(Properties properties);
     
     /**
-     * set login serverList.
+     * 设置 Nacos 服务端地址列表。
      *
-     * @param serverList login server list;
+     * @param serverList 服务端地址列表
      */
     void setServerList(List<String> serverList);
     
     /**
-     * http request template.
+     * 注入 HTTP 请求模板，供登录与令牌刷新使用。
      *
-     * @param nacosRestTemplate nacos http request template.
+     * @param nacosRestTemplate Nacos HTTP 请求模板
      */
     void setNacosRestTemplate(NacosRestTemplate nacosRestTemplate);
     
     /**
-     * get login identity context.
+     * 获取当前登录身份上下文，用于在后续请求中携带认证信息。
      *
-     * @param resource resource for this request, some of plugin implementation will use this resource to generate their
-     *                 identity context. If no need to use can ignore it.
-     * @return LoginIdentityContext this plugin loginIdentityContext.
+     * @param resource 本次请求涉及的资源；部分插件实现会据此生成差异化凭证，无需时可忽略
+     * @return 本插件维护的登录身份上下文
      */
     LoginIdentityContext getLoginIdentityContext(RequestResource resource);
     

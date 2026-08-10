@@ -22,7 +22,10 @@ import java.io.Serializable;
 import java.util.Properties;
 
 /**
- * Resource used in authorization.
+ * 授权体系中的资源描述，标识受权限保护的业务实体。
+ *
+ * <p>由命名空间、分组、名称、类型及扩展属性组成，服务端认证插件据此判断
+ * 当前身份是否拥有访问权限。</p>
  *
  * @author nkorange
  * @author mai.jh
@@ -32,18 +35,36 @@ public class Resource implements Serializable {
     
     private static final long serialVersionUID = 925971662931204553L;
     
+    /**
+     * 空资源占位符，表示无需绑定具体资源的授权场景。
+     */
     public static final Resource EMPTY_RESOURCE =
         new Resource(StringUtils.EMPTY, StringUtils.EMPTY, StringUtils.EMPTY,
             StringUtils.EMPTY, null);
     
+    /**
+     * 资源所属命名空间 ID。
+     */
     private final String namespaceId;
     
+    /**
+     * 资源所属分组。
+     */
     private final String group;
     
+    /**
+     * 资源名称（如服务名或 dataId）。
+     */
     private final String name;
     
+    /**
+     * 资源类型，参见 {@link com.alibaba.nacos.plugin.auth.constant.SignType}。
+     */
     private final String type;
     
+    /**
+     * 资源扩展属性，用于携带 AI 类型等附加信息。
+     */
     private final Properties properties;
     
     public Resource(String namespaceId, String group, String name, String type,

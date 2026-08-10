@@ -22,7 +22,9 @@ import com.alibaba.nacos.api.plugin.PluginType;
 import java.util.Map;
 
 /**
- * Auth plugin provider implementation.
+ * 认证插件提供者，向 Nacos 插件框架暴露所有已注册的 {@link AuthPluginService}。
+ *
+ * <p>实现 {@link PluginProvider} 接口，供插件管理模块查询 AUTH 类型插件列表。</p>
  *
  * @author WangzJi
  * @since 3.2.0

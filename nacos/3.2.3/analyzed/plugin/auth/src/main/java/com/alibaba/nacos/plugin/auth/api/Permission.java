@@ -19,7 +19,9 @@ package com.alibaba.nacos.plugin.auth.api;
 import java.io.Serializable;
 
 /**
- * Permission to auth.
+ * 授权权限模型，描述对某一资源可执行的操作类型。
+ *
+ * <p>由 {@link Resource} 与 action 字符串组成，action 取值参见 {@link com.alibaba.nacos.plugin.auth.constant.ActionTypes}。</p>
  *
  * @author nkorange
  * @author mai.jh
@@ -31,12 +33,12 @@ public class Permission implements Serializable {
     private static final long serialVersionUID = -3583076254743606551L;
     
     /**
-     * An unique key of resource.
+     * 受保护资源的唯一标识。
      */
     private Resource resource;
     
     /**
-     * Action on resource, refer to class ActionTypes.
+     * 对资源执行的操作类型，参见 {@link com.alibaba.nacos.plugin.auth.constant.ActionTypes}。
      */
     private String action;
     

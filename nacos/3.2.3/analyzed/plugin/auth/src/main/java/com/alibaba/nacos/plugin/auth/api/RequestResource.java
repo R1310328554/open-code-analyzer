@@ -19,24 +19,33 @@ package com.alibaba.nacos.plugin.auth.api;
 import com.alibaba.nacos.plugin.auth.constant.SignType;
 
 /**
- * Request resources.
+ * 客户端请求资源描述，用于标识一次 API 调用所涉及的业务资源。
+ *
+ * <p>通过 Builder 模式构建，支持 naming、config、lock、ai 等多种请求类型，
+ * 客户端认证插件可据此生成对应的 {@link LoginIdentityContext}。</p>
  *
  * @author xiweng.yy
  */
 public class RequestResource {
     
     /**
-     * Request type: naming or config.
+     * 请求类型：naming 或 config 等，参见 {@link SignType}。
      */
     private String type;
     
+    /**
+     * 资源所属命名空间。
+     */
     private String namespace;
     
+    /**
+     * 资源所属分组。
+     */
     private String group;
     
     /**
-     * For type: naming, the resource should be service name.
-     * For type: config, the resource should be config dataId.
+     * 具体资源名称。
+     * <p>naming 类型时为服务名；config 类型时为 dataId。</p>
      */
     private String resource;
     
@@ -73,9 +82,9 @@ public class RequestResource {
     }
     
     /**
-     * Create new naming request resource builder.
+     * 创建 naming 类型请求资源的 Builder。
      *
-     * @return naming request resource builder
+     * @return naming 请求资源构建器
      */
     public static Builder namingBuilder() {
         Builder result = new Builder();
@@ -84,9 +93,9 @@ public class RequestResource {
     }
     
     /**
-     * Create new config request resource builder.
+     * 创建 config 类型请求资源的 Builder。
      *
-     * @return config request resource builder
+     * @return config 请求资源构建器
      */
     public static Builder configBuilder() {
         Builder result = new Builder();
@@ -95,9 +104,9 @@ public class RequestResource {
     }
     
     /**
-     * Create new lock request resource builder.
+     * 创建 lock 类型请求资源的 Builder。
      *
-     * @return lock request resource builder
+     * @return lock 请求资源构建器
      */
     public static Builder lockBuilder() {
         Builder result = new Builder();
@@ -106,9 +115,9 @@ public class RequestResource {
     }
     
     /**
-     * Create new AI request resource builder.
+     * 创建 AI 类型请求资源的 Builder。
      *
-     * @return ai request resource builder
+     * @return AI 请求资源构建器
      */
     public static Builder aiBuilder() {
         Builder result = new Builder();
@@ -116,6 +125,9 @@ public class RequestResource {
         return result;
     }
     
+    /**
+     * {@link RequestResource} 的流式构建器。
+     */
     public static class Builder {
         
         private String type;
@@ -146,9 +158,9 @@ public class RequestResource {
         }
         
         /**
-         * Build request resource.
+         * 构建 {@link RequestResource} 实例。
          *
-         * @return request resource
+         * @return 组装完成的请求资源对象
          */
         public RequestResource build() {
             RequestResource result = new RequestResource();

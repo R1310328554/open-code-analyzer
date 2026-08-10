@@ -19,7 +19,9 @@ package com.alibaba.nacos.plugin.auth.exception;
 import com.alibaba.nacos.api.exception.NacosException;
 
 /**
- * Exception to be thrown if authorization is failed.
+ * 访问授权失败时抛出的异常。
+ *
+ * <p>当身份校验或权限校验未通过时，认证插件应抛出此异常以拒绝请求。</p>
  *
  * @author nkorange
  * @author mai.jh

@@ -29,7 +29,10 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * ClientAuthService classLoader.
+ * 客户端认证插件管理器，负责通过 SPI 加载并管理 {@link ClientAuthService} 实例。
+ *
+ * <p>在客户端 SDK 启动时调用 {@link #init} 完成插件初始化，
+ * 服务端列表变更时通过 {@link #refreshServerList} 同步更新。</p>
  *
  * @author wuyfee
  */
@@ -38,12 +41,15 @@ public class ClientAuthPluginManager implements Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientAuthPluginManager.class);
     
     /**
-     * The relationship of context type and {@link ClientAuthService}.
+     * 已加载的 {@link ClientAuthService} 实例集合。
      */
     private final Set<ClientAuthService> clientAuthServiceHashSet = new HashSet<>();
     
     /**
-     * init ClientAuthService.
+     * 初始化客户端认证插件，注入服务端列表与 HTTP 模板。
+     *
+     * @param serverList         Nacos 服务端地址列表
+     * @param nacosRestTemplate  HTTP 请求模板
      */
     public void init(List<String> serverList, NacosRestTemplate nacosRestTemplate) {
         
@@ -63,9 +69,9 @@ public class ClientAuthPluginManager implements Closeable {
     }
     
     /**
-     * refresh ClientAuthService server list.
+     * 刷新所有已加载插件的服务端地址列表。
      *
-     * @param serverList the new server list.
+     * @param serverList 新的服务端地址列表
      */
     public void refreshServerList(List<String> serverList) {
         for (ClientAuthService clientAuthService : clientAuthServiceHashSet) {
@@ -74,9 +80,9 @@ public class ClientAuthPluginManager implements Closeable {
     }
     
     /**
-     * get all ClientAuthService instance.
+     * 获取所有已加载的 {@link ClientAuthService} 实例。
      *
-     * @return ClientAuthService Set.
+     * @return 客户端认证服务实例集合
      */
     public Set<ClientAuthService> getAuthServiceSpiImplSet() {
         return clientAuthServiceHashSet;

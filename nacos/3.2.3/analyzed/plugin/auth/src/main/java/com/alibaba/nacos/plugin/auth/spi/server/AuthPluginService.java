@@ -26,7 +26,10 @@ import com.alibaba.nacos.plugin.auth.exception.AccessException;
 import java.util.Collection;
 
 /**
- * Auth service.
+ * 服务端认证插件 SPI 接口，定义身份校验与权限校验的核心能力。
+ *
+ * <p>各认证实现（Nacos 内置、LDAP、OIDC 等）需实现此接口并通过
+ * {@link java.util.ServiceLoader} 注册，由 {@link AuthPluginManager} 统一管理。</p>
  *
  * @author Wuyfee
  * @author xiweng.yy
@@ -34,54 +37,54 @@ import java.util.Collection;
 public interface AuthPluginService {
     
     /**
-     * Define which identity information needed from request. e.q: username, password, accessToken.
+     * 声明本插件需要从请求中提取的身份信息字段名（如 username、password、accessToken）。
      *
-     * @return identity names
+     * @return 身份字段名集合
      */
     Collection<String> identityNames();
     
     /**
-     * Judgement whether this plugin enable auth for this action and type.
+     * 判断本插件是否对指定操作类型和资源类型启用认证。
      *
-     * @param action action of request, see {@link ActionTypes}
-     * @param type   type of request, see {@link com.alibaba.nacos.plugin.auth.constant.SignType}
-     * @return @return {@code true} if enable auth, otherwise {@code false}
+     * @param action 请求操作类型，参见 {@link ActionTypes}
+     * @param type   请求资源类型，参见 {@link com.alibaba.nacos.plugin.auth.constant.SignType}
+     * @return 启用认证返回 {@code true}，否则返回 {@code false}
      */
     boolean enableAuth(ActionTypes action, String type);
     
     /**
-     * To validate whether the identity context from request is legal or illegal.
+     * 校验请求中的身份上下文是否合法（身份认证）。
      *
-     * @param identityContext where we can find the user information
-     * @param resource        resource about this user information
-     * @return {@link AuthResult} of validate result
-     * @throws AccessException if authentication is failed
+     * @param identityContext 从请求中提取的用户身份信息
+     * @param resource        本次请求关联的资源
+     * @return 校验结果
+     * @throws AccessException 身份认证失败时抛出
      */
     AuthResult validateIdentity(IdentityContext identityContext, Resource resource)
         throws AccessException;
     
     /**
-     * Validate the identity whether has the resource authority.
+     * 校验已认证身份是否拥有指定资源的访问权限（权限认证）。
      *
-     * @param identityContext where we can find the user information.
-     * @param permission      permission to auth.
-     * @return {@link AuthResult} of validate result
-     * @throws AccessException if authentication is failed
+     * @param identityContext 已验证的用户身份信息
+     * @param permission      待校验的权限
+     * @return 校验结果
+     * @throws AccessException 权限校验失败时抛出
      */
     AuthResult validateAuthority(IdentityContext identityContext, Permission permission)
         throws AccessException;
     
     /**
-     * AuthPluginService Name which for conveniently find AuthPluginService instance.
+     * 返回本插件的唯一服务名称，用于 {@link AuthPluginManager} 索引与查找。
      *
-     * @return AuthServiceName mark a AuthPluginService instance.
+     * @return 认证服务名称
      */
     String getAuthServiceName();
     
     /**
-     * Is the plugin enable login.
+     * 本插件是否需要客户端登录流程。
      *
-     * @return {@code true} if plugin need login, otherwise {@code false}
+     * @return 需要登录返回 {@code true}，否则返回 {@code false}
      * @since 2.2.2
      */
     default boolean isLoginEnabled() {
@@ -89,9 +92,9 @@ public interface AuthPluginService {
     }
     
     /**
-     * Whether need administrator .
+     * 本插件是否要求管理员角色才能访问。
      *
-     * @return if need the administrator role.
+     * @return 需要管理员角色返回 {@code true}
      */
     default boolean isAdminRequest() {
         return true;

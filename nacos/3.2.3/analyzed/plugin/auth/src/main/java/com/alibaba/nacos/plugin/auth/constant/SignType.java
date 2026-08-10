@@ -17,21 +17,30 @@
 package com.alibaba.nacos.plugin.auth.constant;
 
 /**
- * Auth sign type.
+ * 认证签名类型常量，标识请求所属的业务模块。
+ *
+ * <p>用于 {@link com.alibaba.nacos.plugin.auth.api.RequestResource} 与
+ * {@link com.alibaba.nacos.plugin.auth.spi.server.AuthPluginService#enableAuth} 中的类型匹配。</p>
  *
  * @author xiweng.yy
  */
 public class SignType {
     
+    /** 服务发现（Naming）模块。 */
     public static final String NAMING = "naming";
     
+    /** 配置管理（Config）模块。 */
     public static final String CONFIG = "config";
     
+    /** 分布式锁（Lock）模块。 */
     public static final String LOCK = "lock";
     
+    /** AI 能力模块。 */
     public static final String AI = "ai";
     
+    /** 控制台管理模块。 */
     public static final String CONSOLE = "console";
     
+    /** 显式指定资源类型。 */
     public static final String SPECIFIED = "specified";
 }

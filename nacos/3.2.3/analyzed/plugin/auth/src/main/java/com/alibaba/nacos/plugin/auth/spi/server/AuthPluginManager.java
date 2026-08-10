@@ -31,7 +31,10 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Load Plugins.
+ * 服务端认证插件管理器，负责通过 SPI 加载并按名称索引 {@link AuthPluginService} 实例。
+ *
+ * <p>采用单例模式，在类加载时自动扫描并注册所有认证插件实现。
+ * 查找插件时会检查 {@link PluginStateCheckerHolder} 中的启用状态。</p>
  *
  * @author Wuyfee
  * @author xiweng.yy
@@ -43,7 +46,7 @@ public class AuthPluginManager {
     private static final AuthPluginManager INSTANCE = new AuthPluginManager();
     
     /**
-     * The relationship of context type and {@link AuthPluginService}.
+     * 认证服务名称与 {@link AuthPluginService} 实例的映射。
      */
     private final Map<String, AuthPluginService> authServiceMap = new HashMap<>();
     
@@ -51,6 +54,9 @@ public class AuthPluginManager {
         initAuthServices();
     }
     
+    /**
+     * 通过 SPI 扫描并注册所有 {@link AuthPluginService} 实现。
+     */
     private void initAuthServices() {
         Collection<AuthPluginService> authPluginServices =
             NacosServiceLoader.load(AuthPluginService.class);
@@ -73,13 +79,13 @@ public class AuthPluginManager {
     }
     
     /**
-     * get AuthPluginService instance which AuthPluginService.getType() is type.
+     * 按认证服务名称查找对应的 {@link AuthPluginService} 实例。
      *
-     * @param authServiceName AuthServiceName, mark a AuthPluginService instance.
-     * @return AuthPluginService instance.
+     * @param authServiceName 认证服务名称，标识一个 {@link AuthPluginService} 实例
+     * @return 匹配的认证插件实例；未找到或插件已禁用时返回空
      */
     public Optional<AuthPluginService> findAuthServiceSpiImpl(String authServiceName) {
-        // Check if plugin is enabled
+        // 检查插件是否已启用
         if (!PluginStateCheckerHolder.isPluginEnabled(PluginType.AUTH.getType(), authServiceName)) {
             LOGGER.debug("[AuthPluginManager] Plugin AUTH:{} is disabled", authServiceName);
             return Optional.empty();
@@ -88,9 +94,9 @@ public class AuthPluginManager {
     }
     
     /**
-     * Get all registered auth plugins.
+     * 获取所有已注册的认证插件。
      *
-     * @return unmodifiable map of auth service name to AuthPluginService
+     * @return 不可修改的认证服务名称到 {@link AuthPluginService} 的映射
      */
     public Map<String, AuthPluginService> getAllPlugins() {
         return Collections.unmodifiableMap(authServiceMap);
