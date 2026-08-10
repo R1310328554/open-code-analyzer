@@ -520,3 +520,15 @@ web/ui/react-app/src/utils/index.ts
 web/ui/react-app/src/utils/utils.test.ts
 web/ui/ui.go
 web/web.go
+web/ui/module/lezer-promql/src/tokens.js
+web/ui/react-app/config-overrides.js
+web/ui/react-app/src/globals.ts
+web/ui/react-app/src/hooks/useFetch.ts
+web/ui/react-app/src/hooks/useMedia.ts
+web/ui/react-app/src/pages/graph/ColorPool.ts
+web/ui/react-app/src/pages/graph/GraphHeatmapHelpers.test.ts
+web/ui/react-app/src/pages/graph/GraphHeatmapHelpers.ts
+web/ui/react-app/src/pages/graph/GraphHelpers.test.ts
+web/ui/react-app/src/pages/graph/GraphHelpers.ts
+web/ui/react-app/src/pages/graph/HistogramHelpers.ts
+web/ui/react-app/src/pages/index.ts
