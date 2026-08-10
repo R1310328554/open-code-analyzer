@@ -1768,3 +1768,18 @@
 2026-08-10T04:15:30Z DONE core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/tls/OptionalTlsProtocolNegotiator.java wave58a [0:15] core grpc filter/negotiator/tls
 2026-08-10T04:15:30Z DONE core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/tls/SdkDefaultTlsProtocolNegotiatorBuilder.java wave58a [0:15] core grpc filter/negotiator/tls
 2026-08-10T04:15:30Z DONE core/src/main/java/com/alibaba/nacos/core/remote/tls/RpcServerSslContextRefresher.java wave58a [0:15] core grpc filter/negotiator/tls
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/api/ApiGeneratorFactory.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/common/AbstractConnection.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/common/Debounce.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/common/EventProcessor.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/common/IstioConfigProcessor.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/common/NacosResourceManager.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/common/NacosServiceInfoResourceWatcher.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/common/ResourceSnapshot.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/common/WatchedStatus.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/config/IstioEnabledFilter.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/mcp/EmptyMcpGenerator.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/mcp/McpConnection.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/mcp/NacosMcpService.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/mcp/ServiceEntryMcpGenerator.java wave59b [15:30] istio common/mcp/config
+2026-08-10T04:17:18Z DONE istio/src/main/java/com/alibaba/nacos/istio/misc/IstioConfig.java wave59b [15:30] istio common/mcp/config

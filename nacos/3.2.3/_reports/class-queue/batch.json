@@ -15,23 +15,8 @@
     "core/src/main/java/io/grpc/netty/shaded/io/grpc/netty/NettyChannelHelper.java",
     "istio/src/main/java/com/alibaba/nacos/istio/IstioApp.java",
     "istio/src/main/java/com/alibaba/nacos/istio/api/ApiConstants.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/api/ApiGenerator.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/api/ApiGeneratorFactory.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/common/AbstractConnection.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/common/Debounce.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/common/EventProcessor.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/common/IstioConfigProcessor.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/common/NacosResourceManager.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/common/NacosServiceInfoResourceWatcher.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/common/ResourceSnapshot.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/common/WatchedStatus.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/config/IstioEnabledFilter.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/mcp/EmptyMcpGenerator.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/mcp/McpConnection.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/mcp/NacosMcpService.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/mcp/ServiceEntryMcpGenerator.java",
-    "istio/src/main/java/com/alibaba/nacos/istio/misc/IstioConfig.java"
+    "istio/src/main/java/com/alibaba/nacos/istio/api/ApiGenerator.java"
   ],
   "remaining_pending": 767,
-  "done": 1740
+  "done": 1755
 }
