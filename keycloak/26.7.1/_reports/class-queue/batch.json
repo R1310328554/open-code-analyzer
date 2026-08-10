@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T07:05:00Z",
-  "files": [
-    "js/libs/keycloak-admin-client/src/defs/componentTypeRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/configPropertyRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/credentialRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/effectiveMessageBundleRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/evaluationResultRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/eventRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/eventTypes.ts",
-    "js/libs/keycloak-admin-client/src/defs/featureRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/federatedIdentityRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/globalRequestResult.ts",
-    "js/libs/keycloak-admin-client/src/defs/groupRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/identityProviderMapperRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/identityProviderMapperTypeRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/identityProviderRepresentation.ts",
-    "js/libs/keycloak-admin-client/src/defs/issuedUserVerifiableCredentialRepresentation.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4918,
-  "done": 1065
+  "done": 1080
 }
