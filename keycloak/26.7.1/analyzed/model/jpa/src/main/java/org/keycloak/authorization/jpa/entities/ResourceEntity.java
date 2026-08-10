@@ -46,10 +46,14 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 /**
+ * 授权资源 JPA 实体，映射 RESOURCE_SERVER_RESOURCE 表。
+ * <p>表示资源服务器下的受保护资源，可绑定 URI、scope 与自定义属性。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Entity
 @Table(name = "RESOURCE_SERVER_RESOURCE", uniqueConstraints = {
+        // 同一资源服务器、所有者下资源名唯一
         @UniqueConstraint(columnNames = {"NAME", "RESOURCE_SERVER_ID", "OWNER"})
 })
 @NamedQueries(
@@ -70,46 +74,54 @@ import org.hibernate.annotations.FetchMode;
 )
 public class ResourceEntity {
 
+    /** 资源 UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
-    @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
+    @Access(AccessType.PROPERTY)
     private String id;
 
+    /** 资源名称。 */
     @Column(name = "NAME")
     private String name;
 
+    /** 展示名称。 */
     @Column(name = "DISPLAY_NAME")
     private String displayName;
 
+    /** 资源 URI 集合（RESOURCE_URIS 表）。 */
     @ElementCollection(fetch = FetchType.LAZY)
     @Column(name = "VALUE")
     @CollectionTable(name = "RESOURCE_URIS", joinColumns = { @JoinColumn(name="RESOURCE_ID") })
     private Set<String> uris;
 
+    /** 资源类型（如 urn:... 或自定义类型）。 */
     @Column(name = "TYPE")
     private String type;
 
+    /** 图标 URI。 */
     @Column(name = "ICON_URI")
     private String iconUri;
 
+    /** 资源所有者 ID（用户或客户端）。 */
     @Column(name = "OWNER")
     private String owner;
 
+    /** 是否启用 UMA 所有者托管访问（Owner-Managed Access）。 */
     @Column(name = "OWNER_MANAGED_ACCESS")
     private boolean ownerManagedAccess;
 
+    /** 所属资源服务器 ID（字符串外键，非 JPA 关联）。 */
     @Column(name = "RESOURCE_SERVER_ID")
     private String resourceServer;
 
+    /** 资源关联的 scope 列表（RESOURCE_SCOPE 表）。 */
     @OneToMany(fetch = FetchType.LAZY, cascade = {})
     @JoinTable(name = "RESOURCE_SCOPE", joinColumns = @JoinColumn(name = "RESOURCE_ID"), inverseJoinColumns = @JoinColumn(name = "SCOPE_ID"))
     @Fetch(FetchMode.SELECT)
     @BatchSize(size = 20)
     private List<ScopeEntity> scopes;
 
-    // Explicitly not using OrphanRemoval as we're handling the removal manually through HQL but at the same time we still
-    // want to remove elements from the entity's collection in a manual way. Without this, Hibernate would do a duplicit
-    // delete query.
+    // 显式禁用 orphanRemoval：属性删除由 HQL 处理，但仍需手动从集合移除以避免 Hibernate 重复 DELETE
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = false, mappedBy="resource", fetch = FetchType.LAZY)
     @Fetch(FetchMode.SELECT)
     @BatchSize(size = 20)

@@ -29,6 +29,8 @@ import org.keycloak.authorization.store.ScopeStore;
 import org.keycloak.authorization.store.StoreFactory;
 
 /**
+ * JPA 授权存储工厂，聚合策略、资源、scope、权限票据等子 Store。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class JPAStoreFactory implements StoreFactory {
@@ -38,8 +40,10 @@ public class JPAStoreFactory implements StoreFactory {
     private final ResourceStore resourceStore;
     private final ScopeStore scopeStore;
     private final JPAPermissionTicketStore permissionTicketStore;
+    /** 只读模式下 Adapter 会拒绝写操作。 */
     private boolean readOnly;
 
+    /** 用同一 EntityManager 初始化各子 Store 实例。 */
     public JPAStoreFactory(EntityManager entityManager, AuthorizationProvider provider) {
         policyStore = new JPAPolicyStore(entityManager, provider);
         resourceServerStore = new JPAResourceServerStore(entityManager, provider);

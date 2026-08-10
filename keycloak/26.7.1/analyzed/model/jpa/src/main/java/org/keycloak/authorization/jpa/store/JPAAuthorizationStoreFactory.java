@@ -30,10 +30,14 @@ import org.keycloak.models.KeycloakSession;
 import static org.keycloak.models.jpa.JpaRealmProviderFactory.PROVIDER_PRIORITY;
 
 /**
+ * JPA 授权存储工厂 SPI 实现，id 为 {@code jpa}。
+ * <p>为每个 {@link KeycloakSession} 创建 {@link JPAStoreFactory}，共享 JPA EntityManager。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class JPAAuthorizationStoreFactory implements AuthorizationStoreFactory {
 
+    /** 创建绑定当前会话 EntityManager 的 JPA 存储工厂。 */
     @Override
     public StoreFactory create(KeycloakSession session) {
         AuthorizationProvider provider = session.getProvider(AuthorizationProvider.class);
@@ -59,6 +63,7 @@ public class JPAAuthorizationStoreFactory implements AuthorizationStoreFactory {
         return session.getProvider(JpaConnectionProvider.class).getEntityManager();
     }
 
+    /** 与 JpaRealmProvider 同优先级。 */
     @Override
     public int order() {
         return PROVIDER_PRIORITY;

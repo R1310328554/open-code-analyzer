@@ -56,6 +56,9 @@ import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
 import static org.keycloak.utils.StreamsUtil.closing;
 
 /**
+ * 授权策略的 JPA 存储实现。
+ * <p>支持 Criteria 动态查询、按资源/scope/类型检索及依赖策略流式查找。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class JPAPolicyStore implements PolicyStore {
@@ -67,6 +70,7 @@ public class JPAPolicyStore implements PolicyStore {
         this.provider = provider;
     }
 
+    /** 根据表示创建策略实体并持久化。 */
     @Override
     public Policy create(ResourceServer resourceServer, AbstractPolicyRepresentation representation) {
         PolicyEntity entity = new PolicyEntity();
@@ -196,6 +200,7 @@ public class JPAPolicyStore implements PolicyStore {
             }
         });
 
+        // 未指定 owner 时默认只查系统策略（owner 为 null）
         if (!attributes.containsKey(Policy.FilterOption.OWNER) && !attributes.containsKey(Policy.FilterOption.ANY_OWNER)) {
             predicates.add(builder.isNull(root.get("owner")));
         }
@@ -252,7 +257,7 @@ public class JPAPolicyStore implements PolicyStore {
             return Collections.emptyList();
         }
 
-        // Use separate subquery to handle DB2 and MSSSQL
+        // 使用独立子查询以兼容 DB2 与 MSSQL
         TypedQuery<PolicyEntity> query = entityManager.createNamedQuery("findPolicyIdByScope", PolicyEntity.class);
 
         query.setFlushMode(FlushModeType.COMMIT);
@@ -269,9 +274,10 @@ public class JPAPolicyStore implements PolicyStore {
         return list;
     }
 
+    /** 按资源与 scope 组合查找 scope 类型策略；resource 为 null 时查无资源绑定的策略。 */
     @Override
     public void findByScopes(ResourceServer resourceServer, Resource resource, List<Scope> scopes, Consumer<Policy> consumer) {
-        // Use separate subquery to handle DB2 and MSSSQL
+        // 使用独立子查询以兼容 DB2 与 MSSQL
         TypedQuery<PolicyEntity> query;
 
         if (resource == null) {
@@ -336,6 +342,7 @@ public class JPAPolicyStore implements PolicyStore {
         return findDependentPolicies(resourceServer, resourceType, groupResourceType, associatedPolicyType, configKey, List.of(configValue));
     }
 
+    /** 查找依赖指定资源类型与关联策略类型的策略；Oracle 走 NamedQuery，其他库走 Criteria。 */
     @Override
     public Stream<Policy> findDependentPolicies(ResourceServer resourceServer, String resourceType, String groupResourceType, String associatedPolicyType, String configKey, List<String> configValues) {
         String dbProductName = entityManager.unwrap(Session.class).doReturningWork(connection -> connection.getMetaData().getDatabaseProductName());

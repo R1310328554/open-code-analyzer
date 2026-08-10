@@ -31,10 +31,14 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 /**
+ * UMA 权限票据 JPA 实体，映射 RESOURCE_SERVER_PERM_TICKET 表。
+ * <p>记录资源所有者与请求者之间的权限申请/授予状态，可关联策略与 scope。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Entity
 @Table(name = "RESOURCE_SERVER_PERM_TICKET", uniqueConstraints = {
+        // 同一 owner/requester/资源/scope 组合唯一
         @UniqueConstraint(columnNames = {"OWNER", "REQUESTER", "RESOURCE_SERVER_ID", "RESOURCE_ID", "SCOPE_ID"})
 })
 @NamedQueries(
@@ -49,36 +53,44 @@ import jakarta.persistence.UniqueConstraint;
 )
 public class PermissionTicketEntity {
 
+    /** 票据 UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name = "ID", length = 36)
     @Access(AccessType.PROPERTY)
-    // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     private String id;
 
+    /** 资源所有者用户 ID。 */
     @Column(name = "OWNER")
     private String owner;
 
+    /** 权限请求者用户 ID。 */
     @Column(name = "REQUESTER")
     private String requester;
 
+    /** 票据创建时间（毫秒）。 */
     @Column(name = "CREATED_TIMESTAMP")
     private Long createdTimestamp;
 
+    /** 授予时间（毫秒），null 表示尚未授予。 */
     @Column(name = "GRANTED_TIMESTAMP")
     private Long grantedTimestamp;
 
+    /** 关联的受保护资源。 */
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "RESOURCE_ID")
     private ResourceEntity resource;
 
+    /** 可选 scope；null 表示资源级权限。 */
     @ManyToOne(optional = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "SCOPE_ID")
     private ScopeEntity scope;
 
+    /** 所属资源服务器。 */
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "RESOURCE_SERVER_ID")
     private ResourceServerEntity resourceServer;
 
+    /** 授予后关联的用户托管策略，可为 null。 */
     @ManyToOne(optional = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "POLICY_ID")
     private PolicyEntity policy;
@@ -147,6 +159,7 @@ public class PermissionTicketEntity {
         this.grantedTimestamp = grantedTimestamp;
     }
 
+    /** 是否已授予（grantedTimestamp 非空）。 */
     public boolean isGranted() {
         return grantedTimestamp != null;
     }

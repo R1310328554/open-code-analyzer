@@ -51,6 +51,9 @@ import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
 import static org.keycloak.utils.StreamsUtil.closing;
 
 /**
+ * UMA 权限票据的 JPA 存储实现。
+ * <p>支持 Criteria 动态过滤、按资源/scope 查询及已授予资源列表。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class JPAPermissionTicketStore implements PermissionTicketStore {
@@ -63,6 +66,7 @@ public class JPAPermissionTicketStore implements PermissionTicketStore {
         this.provider = provider;
     }
 
+    /** 按过滤条件统计匹配的权限票据数量。 */
     @Override
     public long count(ResourceServer resourceServer, Map<PermissionTicket.FilterOption, String> attributes) {
         CriteriaBuilder builder = entityManager.getCriteriaBuilder();
@@ -80,6 +84,7 @@ public class JPAPermissionTicketStore implements PermissionTicketStore {
         return closing(query.getResultStream()).count();
     }
 
+    /** 构建 Criteria 谓词；非管理员时限制为当前用户作为 owner 或 requester。 */
     private List<Predicate> getPredicates(CriteriaBuilder builder,
                                           Root<PermissionTicketEntity> root,
                                           ResourceServer resourceServer,
@@ -97,6 +102,7 @@ public class JPAPermissionTicketStore implements PermissionTicketStore {
                 if (resourceServerClient.isServiceAccountsEnabled()) {
                     UserModel serviceAccount = session.users().getServiceAccount(resourceServerClient);
 
+                    // 资源服务器服务账号视为管理员视角，不限制 owner/requester
                     if (serviceAccount != null && serviceAccount.equals(currentUser)) {
                         currentUser = null;
                     }
@@ -154,6 +160,7 @@ public class JPAPermissionTicketStore implements PermissionTicketStore {
         return predicates;
     }
 
+    /** 创建新的权限申请票据并持久化。 */
     @Override
     public PermissionTicket create(ResourceServer resourceServer, Resource resource, Scope scope, String requester) {
         PermissionTicketEntity entity = new PermissionTicketEntity();
@@ -228,7 +235,7 @@ public class JPAPermissionTicketStore implements PermissionTicketStore {
             return Collections.emptyList();
         }
 
-        // Use separate subquery to handle DB2 and MSSSQL
+        // 使用独立子查询以兼容 DB2 与 MSSQL
         TypedQuery<String> query = entityManager.createNamedQuery("findPermissionIdByScope", String.class);
 
         query.setFlushMode(FlushModeType.COMMIT);
@@ -277,6 +284,7 @@ public class JPAPermissionTicketStore implements PermissionTicketStore {
         return list;
     }
 
+    /** 查询指定用户已授予的权限票据。 */
     @Override
     public List<PermissionTicket> findGranted(ResourceServer resourceServer, String userId) {
         Map<PermissionTicket.FilterOption, String> filters = new EnumMap<>(PermissionTicket.FilterOption.class);
@@ -298,6 +306,7 @@ public class JPAPermissionTicketStore implements PermissionTicketStore {
         return find(resourceServer, filters, null, null);
     }
 
+    /** 查询请求者已授予的资源 ID 列表，可按名称模糊过滤。 */
     @Override
     public List<Resource> findGrantedResources(String requester, String name, Integer first, Integer max) {
         TypedQuery<String> query = name == null ? 
@@ -326,6 +335,7 @@ public class JPAPermissionTicketStore implements PermissionTicketStore {
         return list;
     }
 
+    /** 查询所有者视角下已授予的资源列表。 */
     @Override
     public List<Resource> findGrantedOwnerResources(String owner, Integer firstResult, Integer maxResults) {
         TypedQuery<String> query = entityManager.createNamedQuery("findGrantedOwnerResources", String.class);

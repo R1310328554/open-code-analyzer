@@ -32,10 +32,14 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 /**
+ * 授权 scope JPA 实体，映射 RESOURCE_SERVER_SCOPE 表。
+ * <p>表示资源服务器下可授予的操作范围（如 view、edit）。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Entity
 @Table(name = "RESOURCE_SERVER_SCOPE", uniqueConstraints = {
+        // 同一资源服务器内 scope 名唯一
         @UniqueConstraint(columnNames = {"NAME", "RESOURCE_SERVER_ID"})
 })
 @NamedQueries(
@@ -47,20 +51,25 @@ import jakarta.persistence.UniqueConstraint;
 )
 public class ScopeEntity {
 
+    /** scope UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
-    @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
+    @Access(AccessType.PROPERTY)
     private String id;
 
+    /** scope 名称。 */
     @Column(name = "NAME")
     private String name;
 
+    /** 展示名称。 */
     @Column(name = "DISPLAY_NAME")
     private String displayName;
 
+    /** 图标 URI。 */
     @Column(name = "ICON_URI")
     private String iconUri;
 
+    /** 所属资源服务器。 */
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "RESOURCE_SERVER_ID")
     private ResourceServerEntity resourceServer;
@@ -81,6 +90,7 @@ public class ScopeEntity {
         this.name = name;
     }
 
+    /** 空或纯空白展示名规范化为 null。 */
     public void setDisplayName(String displayName) {
         if (displayName != null && !"".equals(displayName.trim())) {
             this.displayName = displayName;

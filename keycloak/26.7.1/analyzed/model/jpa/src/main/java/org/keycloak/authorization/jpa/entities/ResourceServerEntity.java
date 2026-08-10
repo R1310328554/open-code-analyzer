@@ -27,22 +27,29 @@ import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.PolicyEnforcementMode;
 
 /**
+ * 资源服务器 JPA 实体，映射 RESOURCE_SERVER 表。
+ * <p>与 OAuth 客户端一一对应，存储策略执行模式与决策策略等授权配置。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Entity
 @Table(name = "RESOURCE_SERVER")
 public class ResourceServerEntity {
 
+    /** 资源服务器 ID，通常等于客户端 ID。 */
     @Id
     @Column(name="ID", length = 36)
     private String id;
 
+    /** 是否允许远程资源管理（UMA）。 */
     @Column(name = "ALLOW_RS_REMOTE_MGMT")
     private boolean allowRemoteResourceManagement;
 
+    /** 策略执行模式：强制、宽松或禁用。 */
     @Column(name = "POLICY_ENFORCE_MODE")
     private PolicyEnforcementMode policyEnforcementMode = PolicyEnforcementMode.ENFORCING;
 
+    /** 顶层决策策略，默认一致通过。 */
     @Column(name = "DECISION_STRATEGY")
     private DecisionStrategy decisionStrategy = DecisionStrategy.UNANIMOUS;
 
@@ -70,6 +77,7 @@ public class ResourceServerEntity {
         this.policyEnforcementMode = policyEnforcementMode;
     }
 
+    /** 设置决策策略；不支持 CONSENSUS。 */
     public void setDecisionStrategy(DecisionStrategy decisionStrategy) {
         if (DecisionStrategy.CONSENSUS.equals(decisionStrategy)) {
             throw new IllegalArgumentException("Strategy " + decisionStrategy + " not supported");

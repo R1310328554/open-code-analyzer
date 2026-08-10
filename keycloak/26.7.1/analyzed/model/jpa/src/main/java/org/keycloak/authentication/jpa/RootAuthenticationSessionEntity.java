@@ -38,19 +38,23 @@ import org.keycloak.connections.jpa.AsynchronousCommitAllowed;
 import org.hibernate.annotations.DynamicUpdate;
 
 @NamedQueries({
+        // 按 realm 批量删除根认证会话
         @NamedQuery(
                 name = "deleteRootAuthSessionByRealm",
                 query = "DELETE FROM RootAuthenticationSessionEntity sess" +
                         " WHERE sess.realmId = :realmId"),
+        // 查找 realm 内已过期的根会话 ID
         @NamedQuery(
                 name = "findExpiredRootAuthSessionIdsByRealm",
                 query = "SELECT sess.id FROM RootAuthenticationSessionEntity sess" +
                         " WHERE sess.realmId = :realmId AND sess.timestamp < :timestamp"
         ),
+        // 按 ID 列表删除已过期的根会话
         @NamedQuery(
                 name = "deleteExpiredRootAuthSessionByIds",
                 query = "DELETE FROM RootAuthenticationSessionEntity e WHERE e.id IN :ids AND e.timestamp < :timestamp"
         ),
+        // 幂等插入：主键冲突时忽略（PostgreSQL on conflict）
         @NamedQuery(
                 name = "insertRootAuthSessionIfAbsent",
                 query = "insert into RootAuthenticationSessionEntity (id, realmId, timestamp, version) values (:id, :realmId, :timestamp, 0)" +
@@ -60,22 +64,28 @@ import org.hibernate.annotations.DynamicUpdate;
 @Entity
 @Table(name = "ROOT_AUTH_SESSION")
 @DynamicUpdate
+/** JPA 实体，映射 ROOT_AUTH_SESSION 表，表示 realm 下的根认证会话（可包含多个标签页子会话）。 */
 public class RootAuthenticationSessionEntity implements AsynchronousCommitAllowed {
 
+    /** 根会话 UUID。 */
     @Id
     @Column(name = "ID", length = 36)
     private String id;
 
+    /** 所属 realm ID。 */
     @Column(name = "REALM_ID")
     private String realmId;
 
+    /** 创建或最后活动时间戳（秒）。 */
     @Column(name = "TIMESTAMP")
     private long timestamp;
 
+    /** 乐观锁版本号。 */
     @Version
     @Column(name = "VERSION")
     private int version;
 
+    /** 按 tabId 索引的子认证会话集合，级联删除孤儿记录。 */
     @OneToMany(mappedBy = "rootAuthenticationSession", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @MapKey(name = "tabId")
     private Map<String, AuthenticationSessionEntity> authenticationSessions = new HashMap<>();
@@ -120,6 +130,7 @@ public class RootAuthenticationSessionEntity implements AsynchronousCommitAllowe
         this.authenticationSessions = authenticationSessions;
     }
 
+    /** 仅按 id 判等，忽略 realm 与子会话集合。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

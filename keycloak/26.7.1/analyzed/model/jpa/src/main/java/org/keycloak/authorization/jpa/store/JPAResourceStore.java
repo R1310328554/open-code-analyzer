@@ -47,6 +47,9 @@ import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
 import static org.keycloak.utils.StreamsUtil.closing;
 
 /**
+ * 授权资源的 JPA 存储实现。
+ * <p>支持按 owner、URI、scope、类型等条件检索与分页。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class JPAResourceStore implements ResourceStore {
@@ -59,6 +62,7 @@ public class JPAResourceStore implements ResourceStore {
         this.provider = provider;
     }
 
+    /** 创建资源并关联资源服务器与所有者。 */
     @Override
     public Resource create(ResourceServer resourceServer, String id, String name, String owner) {
         ResourceEntity entity = new ResourceEntity();
@@ -183,8 +187,7 @@ public class JPAResourceStore implements ResourceStore {
                     predicates.add(builder.lower(root.join("uris")).in(value[0].toLowerCase()));
                     break;
                 case URI_NOT_NULL:
-                    // predicates.add(builder.isNotEmpty(root.get("uris"))); looks like there is a bug in hibernate and this line doesn't work: https://hibernate.atlassian.net/browse/HHH-6686
-                    // Workaround
+                    // Hibernate isNotEmpty 存在 bug (HHH-6686)，用集合 size 判断非空
                     Expression<Integer> urisSize = builder.size(root.get("uris"));
                     predicates.add(builder.notEqual(urisSize, 0));
                     break;

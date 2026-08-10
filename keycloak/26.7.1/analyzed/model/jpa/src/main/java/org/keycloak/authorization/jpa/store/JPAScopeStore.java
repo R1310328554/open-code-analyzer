@@ -41,6 +41,8 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
 
 /**
+ * 授权 scope 的 JPA 存储实现。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class JPAScopeStore implements ScopeStore {
@@ -53,6 +55,7 @@ public class JPAScopeStore implements ScopeStore {
         this.provider = provider;
     }
 
+    /** 自动生成 ID 创建 scope。 */
     @Override
     public Scope create(final ResourceServer resourceServer, final String name) {
         return create(resourceServer, null, name);

@@ -32,6 +32,9 @@ import org.keycloak.models.jpa.JpaModel;
 import static org.keycloak.authorization.UserManagedPermissionUtil.updatePolicy;
 
 /**
+ * {@link PermissionTicket} 的 JPA 适配器，封装 {@link PermissionTicketEntity}。
+ * <p>授予权限时会同步更新关联的用户托管策略。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -82,6 +85,7 @@ public class PermissionTicketAdapter implements PermissionTicket, JpaModel<Permi
         return entity.getGrantedTimestamp();
     }
 
+    /** 设置授予时间并触发用户托管策略更新。 */
     @Override
     public void setGrantedTimestamp(Long millis) {
         entity.setGrantedTimestamp(millis);
@@ -142,6 +146,7 @@ public class PermissionTicketAdapter implements PermissionTicket, JpaModel<Permi
         return getId().hashCode();
     }
 
+    /** 将领域模型转为 JPA 实体引用；已是 Adapter 时直接返回底层实体。 */
     public static PermissionTicketEntity toEntity(EntityManager em, PermissionTicket permission) {
         if (permission instanceof PermissionTicketAdapter) {
             return ((PermissionTicketAdapter)permission).getEntity();

@@ -34,6 +34,9 @@ import org.keycloak.models.ModelException;
 import org.keycloak.storage.StorageId;
 
 /**
+ * 资源服务器的 JPA 存储实现。
+ * <p>创建与客户端绑定的 ResourceServer；删除时手动按依赖顺序清理子实体以规避 FK 问题。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class JPAResourceServerStore implements ResourceServerStore {
@@ -46,6 +49,7 @@ public class JPAResourceServerStore implements ResourceServerStore {
         this.provider = provider;
     }
 
+    /** 为本地存储客户端创建资源服务器实体。 */
     @Override
     public ResourceServer create(ClientModel client) {
         String clientId = client.getId();
@@ -61,15 +65,14 @@ public class JPAResourceServerStore implements ResourceServerStore {
         return new ResourceServerAdapter(entity, entityManager, provider.getStoreFactory());
     }
 
+    /** 删除资源服务器及其下所有权限票据、策略、资源与 scope（手动顺序以避免 FK 冲突）。 */
     @Override
     public void delete(ClientModel client) {
         String id = client.getId();
         ResourceServerEntity entity = entityManager.find(ResourceServerEntity.class, id);
         if (entity == null) return;
 
-        // reordering deletions to avoid FK issues, but it is not a fix, but only a workaround
-        // proper fix would be to refactor the whole mess with bidirectional relationships with proper cascade-on-delete behavior.
-        // this method would become just a one-liner entityManager.remove(entity);
+        // 调整删除顺序以规避外键约束；理想方案是重构双向关联并启用级联删除
         {
             TypedQuery<String> query = entityManager.createNamedQuery("findPermissionTicketIdByServerId", String.class);
 
@@ -81,10 +84,7 @@ public class JPAResourceServerStore implements ResourceServerStore {
             }
         }
 
-        //This didn't work, had to loop through and remove each policy individually
-        //entityManager.createNamedQuery("deletePolicyByResourceServer")
-        //        .setParameter("serverId", id).executeUpdate();
-
+        // 批量 delete NamedQuery 无效，需逐条清除关联策略后删除
         {
             TypedQuery<String> query = entityManager.createNamedQuery("findPolicyIdByServerId", String.class);
             query.setParameter("serverId", id);

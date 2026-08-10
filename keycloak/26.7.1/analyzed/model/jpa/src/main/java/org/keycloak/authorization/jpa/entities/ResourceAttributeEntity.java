@@ -29,26 +29,33 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
+ * 资源自定义属性 JPA 实体，映射 RESOURCE_ATTRIBUTE 表。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @NamedQueries({
+        // 按资源 ID 与属性名删除
         @NamedQuery(name="deleteResourceAttributesByNameAndResource", query="delete from ResourceAttributeEntity attr where attr.resource.id = :resourceId and attr.name = :name")
 })
 @Table(name="RESOURCE_ATTRIBUTE")
 @Entity
 public class ResourceAttributeEntity {
 
+    /** 属性 UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
-    @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
+    @Access(AccessType.PROPERTY)
     private String id;
 
+    /** 所属资源。 */
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name = "RESOURCE_ID")
     private ResourceEntity resource;
 
+    /** 属性名。 */
     @Column(name = "NAME")
     private String name;
+    /** 属性值。 */
     @Column(name = "VALUE")
     private String value;
 

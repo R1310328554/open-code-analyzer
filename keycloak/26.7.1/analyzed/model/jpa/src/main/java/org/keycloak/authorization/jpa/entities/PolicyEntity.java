@@ -50,10 +50,14 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.Nationalized;
 
 /**
+ * 授权策略 JPA 实体，映射 RESOURCE_SERVER_POLICY 表。
+ * <p>支持多种策略类型、关联策略、资源/scope 绑定及键值配置。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Entity
 @Table(name = "RESOURCE_SERVER_POLICY", uniqueConstraints = {
+        // 同一资源服务器内策略名唯一
         @UniqueConstraint(columnNames = {"NAME", "RESOURCE_SERVER_ID"})
 })
 @NamedQueries(
@@ -75,52 +79,63 @@ import org.hibernate.annotations.Nationalized;
 
 public class PolicyEntity {
 
+    /** 策略 UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name = "ID", length = 36)
     @Access(AccessType.PROPERTY)
-    // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     private String id;
 
+    /** 策略名称。 */
     @Column(name = "NAME")
     private String name;
 
+    /** 策略描述（支持 Unicode）。 */
     @Nationalized
     @Column(name = "DESCRIPTION")
     private String description;
 
+    /** 策略类型（如 role、group、scope、uma 等）。 */
     @Column(name = "TYPE")
     private String type;
 
+    /** 多关联策略的决策策略，默认一致通过。 */
     @Column(name = "DECISION_STRATEGY")
     private DecisionStrategy decisionStrategy = DecisionStrategy.UNANIMOUS;
 
+    /** 逻辑类型：正向或否定。 */
     @Column(name = "LOGIC")
     private Logic logic = Logic.POSITIVE;
 
+    /** 策略类型相关的键值配置（POLICY_CONFIG 表）。 */
     @ElementCollection(fetch = FetchType.LAZY)
     @MapKeyColumn(name = "NAME")
     @Column(name = "VALUE", columnDefinition = "TEXT")
     @CollectionTable(name = "POLICY_CONFIG", joinColumns = {@JoinColumn(name = "POLICY_ID")})
     private Map<String, String> config;
 
+    /** 所属资源服务器。 */
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "RESOURCE_SERVER_ID")
     private ResourceServerEntity resourceServer;
 
+    /** 聚合/依赖的关联策略集合（ASSOCIATED_POLICY 表）。 */
     @OneToMany(fetch = FetchType.EAGER, cascade = {})
     @JoinTable(name = "ASSOCIATED_POLICY", joinColumns = @JoinColumn(name = "POLICY_ID"), inverseJoinColumns = @JoinColumn(name = "ASSOCIATED_POLICY_ID"))
     @Fetch(FetchMode.SELECT)
     @BatchSize(size = 20)
     private Set<PolicyEntity> associatedPolicies;
 
+    /** 策略绑定的资源集合（RESOURCE_POLICY 表）。 */
     @OneToMany(fetch = FetchType.LAZY, cascade = {})
     @JoinTable(name = "RESOURCE_POLICY", joinColumns = @JoinColumn(name = "POLICY_ID"), inverseJoinColumns = @JoinColumn(name = "RESOURCE_ID"))
     private Set<ResourceEntity> resources;
 
+    /** 策略绑定的 scope 集合（SCOPE_POLICY 表）。 */
     @OneToMany(fetch = FetchType.LAZY, cascade = {})
     @JoinTable(name = "SCOPE_POLICY", joinColumns = @JoinColumn(name = "POLICY_ID"), inverseJoinColumns = @JoinColumn(name = "SCOPE_ID"))
     private Set<ScopeEntity> scopes;
 
+    /** 用户托管策略的所有者 ID，系统策略为 null。 */
     @Column(name = "OWNER")
     private String owner;
 
