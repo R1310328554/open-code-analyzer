@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T02:26:55Z",
   "files": [
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/request/AgentEndpointRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/request/BatchAgentEndpointRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/request/McpServerEndpointRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/request/QueryAgentCardRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/request/QueryMcpServerRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/request/QueryPromptRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/request/ReleaseAgentCardRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/request/ReleaseMcpServerRequest.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/response/AgentEndpointResponse.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/response/McpServerEndpointResponse.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/response/QueryAgentCardResponse.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/response/QueryMcpServerResponse.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/response/QueryPromptResponse.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/response/ReleaseAgentCardResponse.java",
-    "api/src/main/java/com/alibaba/nacos/api/ai/remote/response/ReleaseMcpServerResponse.java",
     "api/src/main/java/com/alibaba/nacos/api/annotation/NacosApi.java",
     "api/src/main/java/com/alibaba/nacos/api/annotation/NacosInjected.java",
     "api/src/main/java/com/alibaba/nacos/api/annotation/NacosProperties.java",
@@ -33,5 +18,5 @@
     "api/src/main/java/com/alibaba/nacos/api/config/ConfigChangeEvent.java"
   ],
   "remaining_pending": 2147,
-  "done": 360
+  "done": 375
 }
