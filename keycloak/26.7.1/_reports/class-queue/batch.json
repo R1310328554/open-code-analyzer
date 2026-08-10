@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:54:59Z",
-  "files": [
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/DynamicClientUnregisterContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/DynamicClientUpdateContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/DynamicClientUpdatedContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/DynamicClientViewContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/IdentityBrokeringAPIContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/IdentityProviderContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/ImplicitHybridTokenResponse.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/JWTAuthorizationGrantContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/LogoutRequestContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/PreAuthorizationRequestContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/PreTokenRequestContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/ResourceOwnerPasswordCredentialsContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/ResourceOwnerPasswordCredentialsResponseContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/SamlAuthnRequestContext.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/context/SamlLogoutRequestContext.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1138,
-  "done": 4845
+  "done": 4860
 }
