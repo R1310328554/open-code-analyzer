@@ -17,29 +17,53 @@
 package com.alibaba.nacos.plugin.control.tps.rule;
 
 /**
- * tps control point.
+ * TPS 限流点管控规则。
+ *
+ * <p>将限流点名称与其对应的 {@link RuleDetail} 绑定，供 TPS 屏障加载与应用。</p>
  *
  * @author liuzunfei
  * @version $Id: TpsControlPoint.java, v 0.1 2021年01月09日 12:38 PM liuzunfei Exp $
  */
 public class TpsControlRule {
     
+    /** 限流点名称。 */
     private String pointName;
     
+    /** 限流点级规则明细。 */
     private RuleDetail pointRule;
     
+    /**
+     * 获取限流点名称。
+     *
+     * @return 限流点名称
+     */
     public String getPointName() {
         return pointName;
     }
     
+    /**
+     * 设置限流点名称。
+     *
+     * @param pointName 限流点名称
+     */
     public void setPointName(String pointName) {
         this.pointName = pointName;
     }
     
+    /**
+     * 获取限流点规则明细。
+     *
+     * @return 规则明细
+     */
     public RuleDetail getPointRule() {
         return pointRule;
     }
     
+    /**
+     * 设置限流点规则明细。
+     *
+     * @param pointRule 规则明细
+     */
     public void setPointRule(RuleDetail pointRule) {
         this.pointRule = pointRule;
     }

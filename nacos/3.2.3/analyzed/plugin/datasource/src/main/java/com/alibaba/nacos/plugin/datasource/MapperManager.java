@@ -34,7 +34,10 @@ import static com.alibaba.nacos.api.common.Constants.Exception.FIND_DATASOURCE_E
 import static com.alibaba.nacos.api.common.Constants.Exception.FIND_TABLE_ERROR_CODE;
 
 /**
- * DataSource Plugin Mapper Management.
+ * 数据源插件 Mapper 管理器。
+ *
+ * <p>通过 SPI 加载各数据库方言的 {@link Mapper} 实现，按数据源类型与表名索引，
+ * 供持久化层按表查找对应 SQL 映射器。</p>
  *
  * @author hyx
  **/
@@ -43,10 +46,13 @@ public class MapperManager {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(MapperManager.class);
     
+    /** 数据源类型 →（表名 → Mapper）二级索引。 */
     public static final Map<String, Map<String, Mapper>> MAPPER_SPI_MAP = new HashMap<>();
     
+    /** 单例实例。 */
     private static final MapperManager INSTANCE = new MapperManager();
     
+    /** 是否启用 Mapper 调用日志代理。 */
     private boolean dataSourceLogEnable;
     
     private MapperManager() {
@@ -54,8 +60,10 @@ public class MapperManager {
     }
     
     /**
-     * Get the instance of MapperManager.
-     * @return The instance of MapperManager.
+     * 获取 MapperManager 单例并设置日志开关。
+     *
+     * @param isDataSourceLogEnable 是否启用数据源 SQL 日志
+     * @return MapperManager 实例
      */
     public static MapperManager instance(boolean isDataSourceLogEnable) {
         INSTANCE.dataSourceLogEnable = isDataSourceLogEnable;
@@ -63,7 +71,7 @@ public class MapperManager {
     }
     
     /**
-     * The init method.
+     * 初始化加载所有 SPI 注册的 Mapper 实现。
      */
     public synchronized void loadInitial() {
         Collection<Mapper> mappers = NacosServiceLoader.load(Mapper.class);
@@ -76,8 +84,9 @@ public class MapperManager {
     }
     
     /**
-     * To join mapper in MAPPER_SPI_MAP.
-     * @param mapper The mapper you want join.
+     * 动态注册 Mapper 到 SPI 映射表。
+     *
+     * @param mapper 待注册的 Mapper 实现
      */
     public static synchronized void join(Mapper mapper) {
         if (Objects.isNull(mapper)) {
@@ -87,6 +96,7 @@ public class MapperManager {
         LOGGER.info("[MapperManager] join successfully.");
     }
     
+    /** 将 Mapper 写入二级索引，同表名已存在则跳过。 */
     private static void putMapper(Mapper mapper) {
         Map<String, Mapper> mapperMap =
             MAPPER_SPI_MAP.computeIfAbsent(mapper.getDataSource(), key -> new HashMap<>(16));
@@ -94,11 +104,12 @@ public class MapperManager {
     }
     
     /**
-     * Get the mapper by table name.
+     * 按数据源类型与表名查找 Mapper。
      *
-     * @param tableName  table name.
-     * @param dataSource the datasource.
-     * @return mapper.
+     * @param dataSource 数据源类型（如 mysql、derby）
+     * @param tableName  表名
+     * @param <R>        Mapper 子类型
+     * @return 匹配的 Mapper，启用日志时返回代理包装
      */
     public <R extends Mapper> R findMapper(String dataSource, String tableName) {
         if (LOGGER.isDebugEnabled()) {
@@ -126,9 +137,9 @@ public class MapperManager {
     }
     
     /**
-     * Get all mappers.
+     * 获取全部已注册 Mapper 的只读视图。
      *
-     * @return unmodifiable map of all mappers
+     * @return 不可修改的二级映射表
      */
     public Map<String, Map<String, Mapper>> getAllMappers() {
         return Collections.unmodifiableMap(MAPPER_SPI_MAP);

@@ -19,24 +19,26 @@ package com.alibaba.nacos.plugin.control.tps.barrier.creator;
 import com.alibaba.nacos.plugin.control.tps.barrier.TpsBarrier;
 
 /**
- * tps barrier creator.
+ * TPS 限流屏障创建器 SPI 接口。
+ *
+ * <p>管控插件通过 SPI 加载不同实现，为各限流点按需创建 {@link TpsBarrier} 实例。</p>
  *
  * @author shiyiyue
  */
 public interface TpsBarrierCreator {
     
     /**
-     * get name.
+     * 获取创建器唯一标识名。
      *
-     * @return
+     * @return 创建器名称
      */
     String getName();
     
     /**
-     * create tps barrier.
+     * 为指定限流点创建 TPS 屏障。
      *
-     * @param pointName pointName.
-     * @return
+     * @param pointName 限流点名称
+     * @return 新建的 TPS 限流屏障
      */
     TpsBarrier createTpsBarrier(String pointName);
 }

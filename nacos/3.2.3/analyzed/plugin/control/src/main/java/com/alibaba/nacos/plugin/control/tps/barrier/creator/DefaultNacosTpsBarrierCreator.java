@@ -20,17 +20,31 @@ import com.alibaba.nacos.plugin.control.tps.barrier.TpsBarrier;
 import com.alibaba.nacos.plugin.control.tps.barrier.DefaultNacosTpsBarrier;
 
 /**
- * default nacos tps barrier creator.
+ * Nacos 默认 TPS 限流屏障创建器。
+ *
+ * <p>按限流点名称实例化 {@link DefaultNacosTpsBarrier}，作为内置 SPI 实现供
+ * {@link TpsBarrierCreator} 机制加载。</p>
  *
  * @author shiyiyue
  */
 public class DefaultNacosTpsBarrierCreator implements TpsBarrierCreator {
     
+    /**
+     * 返回创建器标识名 {@code nacos}。
+     *
+     * @return 创建器名称
+     */
     @Override
     public String getName() {
         return "nacos";
     }
     
+    /**
+     * 为指定限流点创建默认 Nacos TPS 屏障实例。
+     *
+     * @param pointName 限流点名称
+     * @return 新建的 {@link DefaultNacosTpsBarrier}
+     */
     @Override
     public TpsBarrier createTpsBarrier(String pointName) {
         return new DefaultNacosTpsBarrier(pointName);

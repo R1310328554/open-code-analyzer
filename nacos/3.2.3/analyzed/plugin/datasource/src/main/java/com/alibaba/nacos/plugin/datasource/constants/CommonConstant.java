@@ -17,11 +17,14 @@
 package com.alibaba.nacos.plugin.datasource.constants;
 
 /**
- * Datasource plugin common constant.
+ * 数据源插件公共常量。
+ *
+ * <p>集中定义数据源插件相关的配置项键名。</p>
  *
  * @author xiweng.yy
  */
 public class CommonConstant {
     
+    /** 是否启用数据源 Mapper SQL 调用日志的配置键。 */
     public static final String NACOS_PLUGIN_DATASOURCE_LOG = "nacos.plugin.datasource.log.enabled";
 }

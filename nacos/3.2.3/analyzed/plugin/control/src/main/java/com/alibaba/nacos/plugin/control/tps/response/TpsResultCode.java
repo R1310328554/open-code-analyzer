@@ -17,26 +17,35 @@
 package com.alibaba.nacos.plugin.control.tps.response;
 
 /**
- * tps result code.
+ * TPS 限流校验结果码常量。
+ *
+ * <p>定义限流点放行、监控放行、拒绝及跳过校验等状态码，供 {@link TpsCheckResponse} 使用。</p>
  *
  * @author shiyiyue
  */
 public class TpsResultCode {
     
+    /** 限流点规则校验通过。 */
     public static final int PASS_BY_POINT = 200;
     
     /**
-     * rule denied,but pass by monitor.
+     * 规则拒绝但监控模式放行。
+     *
+     * <p>限流规则命中拒绝条件，但当前为 monitor 模式，仅记录不拦截。</p>
      */
     public static final int PASS_BY_MONITOR = 201;
     
     /**
-     * deny by point rule.
+     * 被限流点规则拒绝。
+     *
+     * <p>超出限流点配置的 TPS 上限，请求被拦截。</p>
      */
     public static final int DENY_BY_POINT = 300;
     
     /**
-     * skip.
+     * 跳过 TPS 校验。
+     *
+     * <p>限流点未注册或管控未启用时直接放行。</p>
      */
     public static final int CHECK_SKIP = 100;
     

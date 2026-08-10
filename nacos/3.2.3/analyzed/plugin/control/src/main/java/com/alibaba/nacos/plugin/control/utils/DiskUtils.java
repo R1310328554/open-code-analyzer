@@ -33,7 +33,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
- * IO operates on the utility class.
+ * 磁盘文件读写工具类。
+ *
+ * <p>提供 UTF-8 文本读取、二进制写入及静默删除能力，供管控插件持久化规则等场景使用。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -41,25 +43,31 @@ public final class DiskUtils {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(DiskUtils.class);
     
+    /** 磁盘空间不足（中文系统消息）。 */
     private static final String NO_SPACE_CN = "设备上没有空间";
     
+    /** 磁盘空间不足（英文系统消息）。 */
     private static final String NO_SPACE_EN = "No space left on device";
     
+    /** 超出磁盘配额（中文系统消息）。 */
     private static final String DISK_QUOTA_CN = "超出磁盘限额";
     
+    /** 超出磁盘配额（英文系统消息）。 */
     private static final String DISK_QUOTA_EN = "Disk quota exceeded";
     
+    /** 文件读写统一使用的 UTF-8 字符集。 */
     private static final Charset CHARSET = StandardCharsets.UTF_8;
     
     /**
-     * read this file content.
+     * 以 UTF-8 编码读取文件全部文本内容。
      *
-     * @param file {@link File}
-     * @return content
+     * <p>分块解码并正确处理跨块的多字节字符，避免非 ASCII 内容损坏。</p>
+     *
+     * @param file 待读取文件
+     * @return 文件文本内容，读取失败时返回 {@code null}
      */
     public static String readFile(File file) {
-        // CharsetDecoder is documented as not safe for concurrent use, so allocate one per call
-        // instead of sharing a static instance across threads.
+        // CharsetDecoder 非线程安全，每次调用独立创建解码器实例
         CharsetDecoder decoder = CHARSET.newDecoder();
         try (FileChannel fileChannel = new FileInputStream(file).getChannel()) {
             StringBuilder text = new StringBuilder();
@@ -72,14 +80,11 @@ public final class DiskUtils {
                 while (charBuffer.hasRemaining()) {
                     text.append(charBuffer.get());
                 }
-                // compact() preserves any bytes the decoder did not consume - typically the leading
-                // bytes of a multi-byte UTF-8 character that straddles the 4096-byte chunk boundary.
-                // The previous clear() silently discarded those bytes, corrupting any non-ASCII
-                // content longer than one chunk.
+                // compact() 保留未消费的字节，通常是跨 4096 边界的多字节 UTF-8 字符首部
                 buffer.compact();
                 charBuffer.clear();
             }
-            // Flush the trailing partial input and any decoder state once the stream is exhausted.
+            // 流读完后刷新解码器，输出尾部残留字符
             buffer.flip();
             decoder.decode(buffer, charBuffer, true);
             decoder.flush(charBuffer);
@@ -94,12 +99,12 @@ public final class DiskUtils {
     }
     
     /**
-     * Writes the contents to the target file.
+     * 将字节内容写入目标文件。
      *
-     * @param file    target file
-     * @param content content
-     * @param append  write append mode
-     * @return write success
+     * @param file    目标文件
+     * @param content 待写入内容
+     * @param append  是否追加模式
+     * @return 写入成功返回 {@code true}
      */
     public static boolean writeFile(File file, byte[] content, boolean append) {
         try (FileChannel fileChannel = new FileOutputStream(file, append).getChannel()) {
@@ -109,6 +114,7 @@ public final class DiskUtils {
         } catch (IOException ioe) {
             if (ioe.getMessage() != null) {
                 String errMsg = ioe.getMessage();
+                // 磁盘满或超出配额时主动退出进程，避免数据损坏
                 if (NO_SPACE_CN.equals(errMsg) || NO_SPACE_EN.equals(errMsg)
                     || errMsg.contains(DISK_QUOTA_CN) || errMsg
                         .contains(DISK_QUOTA_EN)) {
@@ -120,6 +126,11 @@ public final class DiskUtils {
         return false;
     }
     
+    /**
+     * 静默删除文件或目录，不抛出异常。
+     *
+     * @param file 待删除的文件或目录
+     */
     public static void deleteQuietly(File file) {
         Objects.requireNonNull(file, "file");
         FileUtils.deleteQuietly(file);
