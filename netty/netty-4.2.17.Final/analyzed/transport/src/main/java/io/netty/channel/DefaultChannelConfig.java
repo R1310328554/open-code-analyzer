@@ -43,6 +43,8 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
  * The default {@link ChannelConfig} implementation.
+ * <p>{@link ChannelConfig} 的默认实现：管理连接超时、自动读/关、写缓冲水位、
+ * {@link ByteBufAllocator}、接收缓冲分配器等通道级配置项。</p>
  */
 public class DefaultChannelConfig implements ChannelConfig {
     private static final MessageSizeEstimator DEFAULT_MSG_SIZE_ESTIMATOR = DefaultMessageSizeEstimator.DEFAULT;
@@ -55,31 +57,45 @@ public class DefaultChannelConfig implements ChannelConfig {
             AtomicReferenceFieldUpdater.newUpdater(
                     DefaultChannelConfig.class, WriteBufferWaterMark.class, "writeBufferWaterMark");
 
+    /** 所属 {@link Channel} */
     protected final Channel channel;
 
+    /** 出站 {@link ByteBuf} 分配器 */
     private volatile ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
+    /** 入站接收缓冲分配策略 */
     private volatile RecvByteBufAllocator rcvBufAllocator;
+    /** 消息大小估算器，用于写缓冲水位计算 */
     private volatile MessageSizeEstimator msgSizeEstimator = DEFAULT_MSG_SIZE_ESTIMATOR;
 
+    /** 连接超时（毫秒），默认 30000 */
     private volatile int connectTimeoutMillis = DEFAULT_CONNECT_TIMEOUT;
+    /** 单次写自旋次数上限 */
     private volatile int writeSpinCount = 16;
+    /** 单次 EventLoop 迭代最多写入的消息数 */
     private volatile int maxMessagesPerWrite = Integer.MAX_VALUE;
 
     @SuppressWarnings("FieldMayBeFinal")
+    /** 是否自动读：1 表示开启 */
     private volatile int autoRead = 1;
+    /** 通道不可读/不可写时是否自动关闭 */
     private volatile boolean autoClose = true;
+    /** 写缓冲高低水位标记 */
     private volatile WriteBufferWaterMark writeBufferWaterMark = WriteBufferWaterMark.DEFAULT;
+    /** 是否将同一 EventExecutorGroup 固定绑定到单个子 Executor */
     private volatile boolean pinEventExecutor = true;
 
+    /** 使用默认 {@link AdaptiveRecvByteBufAllocator} 创建配置。 */
     public DefaultChannelConfig(Channel channel) {
         this(channel, new AdaptiveRecvByteBufAllocator());
     }
 
+    /** 指定接收缓冲分配器创建配置。 */
     protected DefaultChannelConfig(Channel channel, RecvByteBufAllocator allocator) {
         setRecvByteBufAllocator(allocator, channel.metadata());
         this.channel = channel;
     }
 
+    /** 返回所有已支持的 {@link ChannelOption} 及其当前值。 */
     @Override
     @SuppressWarnings("deprecation")
     public Map<ChannelOption<?>, Object> getOptions() {
@@ -91,6 +107,7 @@ public class DefaultChannelConfig implements ChannelConfig {
                 SINGLE_EVENTEXECUTOR_PER_GROUP, MAX_MESSAGES_PER_WRITE);
     }
 
+    /** 从给定选项数组填充结果 Map；子类可扩展选项集合。 */
     protected Map<ChannelOption<?>, Object> getOptions(
             Map<ChannelOption<?>, Object> result, ChannelOption<?>... options) {
         if (result == null) {
@@ -102,6 +119,7 @@ public class DefaultChannelConfig implements ChannelConfig {
         return result;
     }
 
+    /** 批量设置配置项；未知选项返回 {@code false} 且不影响其他项。 */
     @SuppressWarnings("unchecked")
     @Override
     public boolean setOptions(Map<ChannelOption<?>, ?> options) {
@@ -117,6 +135,7 @@ public class DefaultChannelConfig implements ChannelConfig {
         return setAllOptions;
     }
 
+    /** 读取单个 {@link ChannelOption} 的当前值。 */
     @Override
     @SuppressWarnings({ "unchecked", "deprecation" })
     public <T> T getOption(ChannelOption<T> option) {
@@ -164,6 +183,7 @@ public class DefaultChannelConfig implements ChannelConfig {
         return null;
     }
 
+    /** 设置单个 {@link ChannelOption}；不支持的选项返回 {@code false}。 */
     @Override
     @SuppressWarnings("deprecation")
     public <T> boolean setOption(ChannelOption<T> option, T value) {
@@ -202,15 +222,18 @@ public class DefaultChannelConfig implements ChannelConfig {
         return true;
     }
 
+    /** 校验选项名与值的合法性。 */
     protected <T> void validate(ChannelOption<T> option, T value) {
         ObjectUtil.checkNotNull(option, "option").validate(value);
     }
 
+    /** 返回连接超时（毫秒）。 */
     @Override
     public int getConnectTimeoutMillis() {
         return connectTimeoutMillis;
     }
 
+    /** 设置连接超时（毫秒），须 {@code >= 0}。 */
     @Override
     public ChannelConfig setConnectTimeoutMillis(int connectTimeoutMillis) {
         checkPositiveOrZero(connectTimeoutMillis, "connectTimeoutMillis");
@@ -258,6 +281,7 @@ public class DefaultChannelConfig implements ChannelConfig {
     /**
      * Get the maximum number of message to write per eventloop run. Once this limit is
      * reached we will continue to process other events before trying to write the remaining messages.
+     * <p>单次 EventLoop 运行中最多写入的消息数，达到上限后先处理其他事件再继续写。</p>
      */
     public int getMaxMessagesPerWrite() {
         return maxMessagesPerWrite;
@@ -266,24 +290,24 @@ public class DefaultChannelConfig implements ChannelConfig {
      /**
      * Set the maximum number of message to write per eventloop run. Once this limit is
      * reached we will continue to process other events before trying to write the remaining messages.
+     * <p>设置单次 EventLoop 运行中的最大写入消息数。</p>
      */
     public ChannelConfig setMaxMessagesPerWrite(int maxMessagesPerWrite) {
         this.maxMessagesPerWrite = ObjectUtil.checkPositive(maxMessagesPerWrite, "maxMessagesPerWrite");
         return this;
     }
 
+    /** 返回写自旋次数。 */
     @Override
     public int getWriteSpinCount() {
         return writeSpinCount;
     }
 
+    /** 设置写自旋次数；{@link Integer#MAX_VALUE} 会被减 1 以避免与内部特殊值冲突。 */
     @Override
     public ChannelConfig setWriteSpinCount(int writeSpinCount) {
         checkPositive(writeSpinCount, "writeSpinCount");
-        // Integer.MAX_VALUE is used as a special value in the channel implementations to indicate the channel cannot
-        // accept any more data, and results in the writeOp being set on the selector (or execute a runnable which tries
-        // to flush later because the writeSpinCount quantum has been exhausted). This strategy prevents additional
-        // conditional logic in the channel implementations, and shouldn't be noticeable in practice.
+        // Integer.MAX_VALUE 在通道实现中用作特殊标记，表示不可再写；此处减 1 避免与内部逻辑冲突
         if (writeSpinCount == Integer.MAX_VALUE) {
             --writeSpinCount;
         }
@@ -291,23 +315,27 @@ public class DefaultChannelConfig implements ChannelConfig {
         return this;
     }
 
+    /** 返回出站 {@link ByteBufAllocator}。 */
     @Override
     public ByteBufAllocator getAllocator() {
         return allocator;
     }
 
+    /** 设置出站 {@link ByteBufAllocator}。 */
     @Override
     public ChannelConfig setAllocator(ByteBufAllocator allocator) {
         this.allocator = ObjectUtil.checkNotNull(allocator, "allocator");
         return this;
     }
 
+    /** 返回入站接收缓冲分配器。 */
     @SuppressWarnings("unchecked")
     @Override
     public <T extends RecvByteBufAllocator> T getRecvByteBufAllocator() {
         return (T) rcvBufAllocator;
     }
 
+    /** 设置入站接收缓冲分配器。 */
     @Override
     public ChannelConfig setRecvByteBufAllocator(RecvByteBufAllocator allocator) {
         rcvBufAllocator = checkNotNull(allocator, "allocator");
@@ -316,6 +344,7 @@ public class DefaultChannelConfig implements ChannelConfig {
 
     /**
      * Set the {@link RecvByteBufAllocator} which is used for the channel to allocate receive buffers.
+     * <p>设置接收缓冲分配器；若为 {@link MaxMessagesRecvByteBufAllocator} 则同步默认单次最大读消息数。</p>
      * @param allocator the allocator to set.
      * @param metadata Used to set the {@link ChannelMetadata#defaultMaxMessagesPerRead()} if {@code allocator}
      * is of type {@link MaxMessagesRecvByteBufAllocator}.
@@ -329,11 +358,13 @@ public class DefaultChannelConfig implements ChannelConfig {
         setRecvByteBufAllocator(allocator);
     }
 
+    /** 是否开启自动读。 */
     @Override
     public boolean isAutoRead() {
         return autoRead == 1;
     }
 
+    /** 设置自动读；从关到开时会触发 {@link Channel#read()}。 */
     @Override
     public ChannelConfig setAutoRead(boolean autoRead) {
         boolean oldAutoRead = AUTOREAD_UPDATER.getAndSet(this, autoRead ? 1 : 0) == 1;
@@ -348,25 +379,30 @@ public class DefaultChannelConfig implements ChannelConfig {
     /**
      * Is called once {@link #setAutoRead(boolean)} is called with {@code false} and {@link #isAutoRead()} was
      * {@code true} before.
+     * <p>自动读从开启变为关闭时的钩子，子类可覆写以执行额外逻辑。</p>
      */
     protected void autoReadCleared() { }
 
+    /** 是否在不可读/不可写时自动关闭通道。 */
     @Override
     public boolean isAutoClose() {
         return autoClose;
     }
 
+    /** 设置是否在不可读/不可写时自动关闭。 */
     @Override
     public ChannelConfig setAutoClose(boolean autoClose) {
         this.autoClose = autoClose;
         return this;
     }
 
+    /** 返回写缓冲高水位（字节）。 */
     @Override
     public int getWriteBufferHighWaterMark() {
         return writeBufferWaterMark.high();
     }
 
+    /** 设置写缓冲高水位，须不低于当前低水位。 */
     @Override
     public ChannelConfig setWriteBufferHighWaterMark(int writeBufferHighWaterMark) {
         checkPositiveOrZero(writeBufferHighWaterMark, "writeBufferHighWaterMark");
@@ -385,11 +421,13 @@ public class DefaultChannelConfig implements ChannelConfig {
         }
     }
 
+    /** 返回写缓冲低水位（字节）。 */
     @Override
     public int getWriteBufferLowWaterMark() {
         return writeBufferWaterMark.low();
     }
 
+    /** 设置写缓冲低水位，须不高于当前高水位。 */
     @Override
     public ChannelConfig setWriteBufferLowWaterMark(int writeBufferLowWaterMark) {
         checkPositiveOrZero(writeBufferLowWaterMark, "writeBufferLowWaterMark");
@@ -408,22 +446,26 @@ public class DefaultChannelConfig implements ChannelConfig {
         }
     }
 
+    /** 同时设置写缓冲高低水位。 */
     @Override
     public ChannelConfig setWriteBufferWaterMark(WriteBufferWaterMark writeBufferWaterMark) {
         this.writeBufferWaterMark = checkNotNull(writeBufferWaterMark, "writeBufferWaterMark");
         return this;
     }
 
+    /** 返回写缓冲水位标记对象。 */
     @Override
     public WriteBufferWaterMark getWriteBufferWaterMark() {
         return writeBufferWaterMark;
     }
 
+    /** 返回消息大小估算器。 */
     @Override
     public MessageSizeEstimator getMessageSizeEstimator() {
         return msgSizeEstimator;
     }
 
+    /** 设置消息大小估算器。 */
     @Override
     public ChannelConfig setMessageSizeEstimator(MessageSizeEstimator estimator) {
         this.msgSizeEstimator = ObjectUtil.checkNotNull(estimator, "estimator");

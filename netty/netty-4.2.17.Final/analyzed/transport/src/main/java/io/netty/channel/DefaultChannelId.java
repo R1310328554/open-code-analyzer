@@ -33,25 +33,31 @@ import static io.netty.util.internal.MacAddressUtil.parseMAC;
 
 /**
  * The default {@link ChannelId} implementation.
+ * <p>默认 {@link ChannelId}：由机器 MAC、进程 ID、序列号、时间戳与随机数组成，
+ * 保证进程内唯一且可排序；支持短文本与长文本两种字符串形式。</p>
  */
 public final class DefaultChannelId implements ChannelId {
 
     private static final long serialVersionUID = 809640043754842613L;
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(DefaultChannelId.class);
+    /** 本 JVM 实例的机器标识（通常为 MAC 地址字节） */
     private static final byte[] MACHINE_ID;
     private static final int PROCESS_ID_LEN = 4;
+    /** 本 JVM 进程 ID */
     private static final int PROCESS_ID;
     private static final int SEQUENCE_LEN = 4;
     private static final int TIMESTAMP_LEN = 8;
     private static final int RANDOM_LEN = 4;
 
+    /** 进程内递增序列，用于区分同一纳秒内的多个 ID */
     private static final AtomicInteger nextSequence = new AtomicInteger();
 
     private static final char[] HEX_CHARS = "0123456789abcdef".toCharArray();
 
     /**
      * Returns a new {@link DefaultChannelId} instance.
+     * <p>生成新的全局唯一通道 ID。</p>
      */
     public static DefaultChannelId newInstance() {
         return new DefaultChannelId(MACHINE_ID,
@@ -111,6 +117,7 @@ public final class DefaultChannelId implements ChannelId {
         MACHINE_ID = machineId;
     }
 
+    /** 通过 Java 9+ {@link ProcessHandle#pid()} 获取进程 ID。 */
     static int processHandlePid(ClassLoader loader) {
         // pid is positive on unix, non{-1,0} on windows
         int nilValue = -1;
@@ -134,6 +141,7 @@ public final class DefaultChannelId implements ChannelId {
         return nilValue;
     }
 
+    /** 通过 JMX RuntimeMXBean 或 Android {@code Process.myPid()} 获取进程 ID。 */
     static int jmxPid(ClassLoader loader) {
         String value;
         try {
@@ -179,6 +187,7 @@ public final class DefaultChannelId implements ChannelId {
         return pid;
     }
 
+    /** 自动检测当前进程 ID：优先 ProcessHandle，其次 JMX/Android。 */
     static int defaultProcessId() {
         ClassLoader loader = PlatformDependent.getClassLoader(DefaultChannelId.class);
         int processId = processHandlePid(loader);
@@ -188,18 +197,27 @@ public final class DefaultChannelId implements ChannelId {
         return jmxPid(loader);
     }
 
+    /** 机器 MAC 地址字节 */
     private final byte[] machineId;
+    /** 进程 ID */
     private final int processId;
+    /** 进程内序列号 */
     private final int sequence;
+    /** 创建时的时间戳（纳秒与毫秒混合） */
     private final long timestamp;
+    /** 随机分量，降低碰撞概率 */
     private final int random;
+    /** 预计算的 hashCode */
     private final int hashCode;
 
+    /** 短文本形式缓存（仅 random 部分） */
     private transient String shortValue;
+    /** 长文本形式缓存（完整十六进制） */
     private transient String longValue;
 
     /**
      * Visible for testing
+     * <p>包可见构造函数，供单元测试构造确定性 ID。</p>
      */
     DefaultChannelId(final byte[] machineId, final int processId, final int sequence,
                      final long timestamp, final int random) {
@@ -220,6 +238,7 @@ public final class DefaultChannelId implements ChannelId {
         return h;
     }
 
+    /** 返回短文本 ID（8 位十六进制 random）。 */
     @Override
     public String asShortText() {
         String shortValue = this.shortValue;
@@ -231,6 +250,7 @@ public final class DefaultChannelId implements ChannelId {
         return shortValue;
     }
 
+    /** 返回长文本 ID（machineId-processId-sequence-timestamp-random）。 */
     @Override
     public String asLongText() {
         String longValue = this.longValue;
@@ -280,10 +300,11 @@ public final class DefaultChannelId implements ChannelId {
         return hashCode;
     }
 
+    /** 按 machineId、processId、sequence、timestamp、random 无符号顺序比较。 */
     @Override
     public int compareTo(final ChannelId o) {
         if (this == o) {
-            // short circuit
+            // 同一实例，短路返回
             return 0;
         }
         if (o instanceof DefaultChannelId) {
@@ -340,6 +361,7 @@ public final class DefaultChannelId implements ChannelId {
                 && Arrays.equals(machineId, other.machineId);
     }
 
+    /** 默认 toString 使用短文本形式。 */
     @Override
     public String toString() {
         return asShortText();

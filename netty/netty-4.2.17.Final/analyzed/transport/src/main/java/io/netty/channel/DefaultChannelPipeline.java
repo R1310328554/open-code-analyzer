@@ -41,6 +41,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 /**
  * The default {@link ChannelPipeline} implementation.  It is usually created
  * by a {@link Channel} implementation when the {@link Channel} is created.
+ * <p>默认 {@link ChannelPipeline}：以双向链表（head/tail 哨兵 + handler 节点）组织
+ * {@link ChannelHandler}，负责入站事件自 head 向 tail 传播、出站操作自 tail 向 head 委托。
+ * 通常由 {@link Channel} 构造时创建。</p>
  */
 public class DefaultChannelPipeline implements ChannelPipeline {
 
@@ -49,6 +52,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     private static final String HEAD_NAME = generateName0(HeadContext.class);
     private static final String TAIL_NAME = generateName0(TailContext.class);
 
+    /** 按 handler 类型缓存自动生成的 Pipeline 名称 */
     private static final FastThreadLocal<Map<Class<?>, String>> nameCaches =
             new FastThreadLocal<Map<Class<?>, String>>() {
         @Override
@@ -60,16 +64,24 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     private static final AtomicReferenceFieldUpdater<DefaultChannelPipeline, MessageSizeEstimator.Handle> ESTIMATOR =
             AtomicReferenceFieldUpdater.newUpdater(
                     DefaultChannelPipeline.class, MessageSizeEstimator.Handle.class, "estimatorHandle");
+    /** 链表头：对接 {@link Channel.Unsafe}，处理底层 I/O */
     final HeadContext head;
+    /** 链表尾：默认入站事件终点 */
     final TailContext tail;
 
+    /** 所属 {@link Channel} */
     private final Channel channel;
+    /** 预创建的已成功 future，避免重复分配 */
     private final ChannelFuture succeededFuture;
+    /** 不可取消的 void promise */
     private final VoidChannelPromise voidPromise;
+    /** 是否在出站消息上调用 touch 以辅助泄漏检测 */
     private final boolean touch = ResourceLeakDetector.isEnabled();
 
+    /** EventExecutorGroup 到固定子 Executor 的映射，保证同组 handler 事件顺序 */
     private Map<EventExecutorGroup, EventExecutor> childExecutors;
     private volatile MessageSizeEstimator.Handle estimatorHandle;
+    /** 是否尚未完成首次 register，影响 handlerAdded 调度 */
     private boolean firstRegistration = true;
 
     /**
@@ -79,15 +91,18 @@ public class DefaultChannelPipeline implements ChannelPipeline {
      * We only keep the head because it is expected that the list is used infrequently and its size is small.
      * Thus full iterations to do insertions is assumed to be a good compromised to saving memory and tail management
      * complexity.
+     * <p>待处理 handlerAdded 回调的单向链表头；列表较短，仅保留 head 以简化内存与尾部管理。</p>
      */
     private PendingHandlerCallback pendingHandlerCallbackHead;
 
     /**
      * Set to {@code true} once the {@link AbstractChannel} is registered.Once set to {@code true} the value will never
      * change.
+     * <p>通道注册到 EventLoop 后为 {@code true}，且不再变回 {@code false}。</p>
      */
     private boolean registered;
 
+    /** 构造与指定 {@link Channel} 绑定的 Pipeline，初始化 head/tail 哨兵。 */
     protected DefaultChannelPipeline(Channel channel) {
         this.channel = ObjectUtil.checkNotNull(channel, "channel");
         succeededFuture = new SucceededChannelFuture(channel, null);
@@ -141,11 +156,13 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         }
         return childExecutor;
     }
+    /** 返回所属 {@link Channel}。 */
     @Override
     public final Channel channel() {
         return channel;
     }
 
+    /** 在 Pipeline 最前（head 之后）添加 handler。 */
     @Override
     public final ChannelPipeline addFirst(String name, ChannelHandler handler) {
         return addFirst(null, name, handler);
@@ -217,6 +234,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         nextCtx.prev = newCtx;
     }
 
+    /** 在 Pipeline 末尾（tail 之前）添加 handler。 */
     @Override
     public final ChannelPipeline addLast(String name, ChannelHandler handler) {
         return addLast(null, name, handler);
@@ -235,6 +253,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         tail.prev = newCtx;
     }
 
+    /** 在名为 {@code baseName} 的 handler 之前插入新 handler。 */
     @Override
     public final ChannelPipeline addBefore(String baseName, String name, ChannelHandler handler) {
         return addBefore(null, baseName, name, handler);
@@ -261,6 +280,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return name;
     }
 
+    /** 在名为 {@code baseName} 的 handler 之后插入新 handler。 */
     @Override
     public final ChannelPipeline addAfter(String baseName, String name, ChannelHandler handler) {
         return addAfter(null, baseName, name, handler);
@@ -361,6 +381,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return StringUtil.simpleClassName(handlerType) + "#0";
     }
 
+    /** 从 Pipeline 移除指定 handler。 */
     @Override
     public final ChannelPipeline remove(ChannelHandler handler) {
         remove(getContextOrDie(handler));
@@ -731,6 +752,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     /**
      * Returns the {@link String} representation of this pipeline.
      */
+    /** 返回 Pipeline 中 handler 名称与类型的字符串表示。 */
     @Override
     public final String toString() {
         StringBuilder buf = new StringBuilder()
@@ -759,6 +781,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return buf.toString();
     }
 
+    /** 从 head 向 tail 传播 channelRegistered 入站事件。 */
     @Override
     public final ChannelPipeline fireChannelRegistered() {
         if (head.executor().inEventLoop()) {
@@ -883,6 +906,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return this;
     }
 
+    /** 从 head 向 tail 传播 exceptionCaught 入站事件。 */
     @Override
     public final ChannelPipeline fireExceptionCaught(Throwable cause) {
         if (head.executor().inEventLoop()) {
@@ -911,6 +935,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return this;
     }
 
+    /** 从 head 向 tail 传播 channelRead 入站事件。 */
     @Override
     public final ChannelPipeline fireChannelRead(Object msg) {
         if (head.executor().inEventLoop()) {
@@ -1046,16 +1071,19 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return tail.writeAndFlush(msg);
     }
 
+    /** 创建新的可写 {@link ChannelPromise}。 */
     @Override
     public final ChannelPromise newPromise() {
         return new DefaultChannelPromise(channel);
     }
 
+    /** 创建支持进度通知的 {@link ChannelProgressivePromise}。 */
     @Override
     public final ChannelProgressivePromise newProgressivePromise() {
         return new DefaultChannelProgressivePromise(channel);
     }
 
+    /** 返回预分配的成功 future，避免重复创建。 */
     @Override
     public final ChannelFuture newSucceededFuture() {
         return succeededFuture;
@@ -1066,6 +1094,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return new FailedChannelFuture(channel, null, cause);
     }
 
+    /** 返回 void promise，不可注册监听器或 await/sync。 */
     @Override
     public final ChannelPromise voidPromise() {
         return voidPromise;

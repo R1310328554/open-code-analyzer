@@ -17,16 +17,23 @@ package io.netty.channel;
 
 import io.netty.util.concurrent.EventExecutor;
 
+/**
+ * {@link DefaultChannelPipeline} 使用的 {@link ChannelHandlerContext} 实现，
+ * 持有对 {@link ChannelHandler} 的直接引用并在 {@link #handler()} 中返回。
+ */
 final class DefaultChannelHandlerContext extends AbstractChannelHandlerContext {
 
+    /** 本 Context 绑定的处理器实例 */
     private final ChannelHandler handler;
 
+    /** 创建 Pipeline 中的 handler 上下文节点。 */
     DefaultChannelHandlerContext(
             DefaultChannelPipeline pipeline, EventExecutor executor, String name, ChannelHandler handler) {
         super(pipeline, executor, name, handler.getClass());
         this.handler = handler;
     }
 
+    /** 返回绑定的 {@link ChannelHandler}。 */
     @Override
     public ChannelHandler handler() {
         return handler;

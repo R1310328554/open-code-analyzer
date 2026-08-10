@@ -25,12 +25,19 @@ import io.netty.util.concurrent.PromiseCombiner;
  * Class which is used to consolidate multiple channel futures into one, by
  * listening to the individual futures and producing an aggregated result
  * (success/failure) when all futures have completed.
+ * <p>已废弃：将多个 {@link ChannelFuture} 聚合为一个 {@link ChannelPromise}，
+ * 全部成功时标记聚合 promise 成功，任一失败则标记失败。请改用 {@link PromiseCombiner}。</p>
  */
 @Deprecated
 public final class ChannelPromiseAggregator
     extends PromiseAggregator<Void, ChannelFuture>
     implements ChannelFutureListener {
 
+    /**
+     * 创建聚合器，在全部 constituent future 完成后通知 {@code aggregatePromise}。
+     *
+     * @param aggregatePromise 聚合结果 promise
+     */
     public ChannelPromiseAggregator(ChannelPromise aggregatePromise) {
         super(aggregatePromise);
     }

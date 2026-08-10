@@ -31,18 +31,27 @@ import io.netty.util.internal.ObjectUtil;
  *
  * <p>This functionality is useful for aggregating or partitioning writes into fixed size buffers for framing protocols
  * such as HTTP2.
+ * <p>与 {@link Channel} 绑定的字节 FIFO 合并队列：生产者按 {@link ByteBuf} 入队，
+ * 消费者可按任意长度取出并合并为单个缓冲区；适用于 HTTP/2 等分帧协议的写聚合与拆分。
+ * 每个缓冲区可关联 {@link ChannelPromise}，其字节全部消费并完成 {@link #remove} 时触发完成。</p>
  */
 public final class CoalescingBufferQueue extends AbstractCoalescingBufferQueue {
+    /** 关联通道，用于分配器与可写性跟踪 */
     private final Channel channel;
 
+    /** 使用默认初始容量 4 创建队列。 */
     public CoalescingBufferQueue(Channel channel) {
         this(channel, 4);
     }
 
+    /** 指定底层队列初始容量。 */
     public CoalescingBufferQueue(Channel channel, int initSize) {
         this(channel, initSize, false);
     }
 
+    /**
+     * @param updateWritability {@code true} 时根据队列字节数更新 {@link Channel#isWritable()}
+     */
     public CoalescingBufferQueue(Channel channel, int initSize, boolean updateWritability) {
         super(updateWritability ? channel : null, initSize);
         this.channel = ObjectUtil.checkNotNull(channel, "channel");
@@ -52,6 +61,8 @@ public final class CoalescingBufferQueue extends AbstractCoalescingBufferQueue {
      * Remove a {@link ByteBuf} from the queue with the specified number of bytes. Any added buffer who's bytes are
      * fully consumed during removal will have it's promise completed when the passed aggregate {@link ChannelPromise}
      * completes.
+     * <p>从队列取出最多 {@code bytes} 可读字节并合并为 {@link ByteBuf}；
+     * 被完全消费的入队缓冲区的 promise 在 {@code aggregatePromise} 完成时一并完成。</p>
      *
      * @param bytes the maximum number of readable bytes in the returned {@link ByteBuf}, if {@code bytes} is greater
      *              than {@link #readableBytes} then a buffer of length {@link #readableBytes} is returned.
@@ -64,11 +75,13 @@ public final class CoalescingBufferQueue extends AbstractCoalescingBufferQueue {
 
     /**
      *  Release all buffers in the queue and complete all listeners and promises.
+     *  <p>释放队列中全部缓冲区并以 {@code cause} 失败所有关联 promise 与监听器。</p>
      */
     public void releaseAndFailAll(Throwable cause) {
         releaseAndFailAll(channel, cause);
     }
 
+    /** 将 {@code next} 合并进 {@code cumulation}；优先使用 {@link CompositeByteBuf}。 */
     @Override
     protected ByteBuf compose(ByteBufAllocator alloc, ByteBuf cumulation, ByteBuf next) {
         if (cumulation instanceof CompositeByteBuf) {
@@ -79,6 +92,7 @@ public final class CoalescingBufferQueue extends AbstractCoalescingBufferQueue {
         return composeIntoComposite(alloc, cumulation, next);
     }
 
+    /** 队列为空时返回的空缓冲区。 */
     @Override
     protected ByteBuf removeEmptyValue() {
         return Unpooled.EMPTY_BUFFER;

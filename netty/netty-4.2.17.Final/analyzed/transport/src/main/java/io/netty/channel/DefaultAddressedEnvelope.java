@@ -25,19 +25,25 @@ import java.net.SocketAddress;
 
 /**
  * The default {@link AddressedEnvelope} implementation.
+ * <p>{@link AddressedEnvelope} 的默认实现：封装消息体、收件人地址与可选发件人地址，
+ * 若消息为 {@link ReferenceCounted} 则委托引用计数操作。</p>
  *
  * @param <M> the type of the wrapped message
  * @param <A> the type of the recipient address
  */
 public class DefaultAddressedEnvelope<M, A extends SocketAddress> implements AddressedEnvelope<M, A> {
 
+    /** 封装的消息体 */
     private final M message;
+    /** 发件人地址，可为 {@code null} */
     private final A sender;
+    /** 收件人地址 */
     private final A recipient;
 
     /**
      * Creates a new instance with the specified {@code message}, {@code recipient} address, and
      * {@code sender} address.
+     * <p>创建带消息、收件人与发件人地址的实例；recipient 与 sender 不能同时为 {@code null}。</p>
      */
     public DefaultAddressedEnvelope(M message, A recipient, A sender) {
         ObjectUtil.checkNotNull(message, "message");
@@ -53,21 +59,25 @@ public class DefaultAddressedEnvelope<M, A extends SocketAddress> implements Add
     /**
      * Creates a new instance with the specified {@code message} and {@code recipient} address.
      * The sender address becomes {@code null}.
+     * <p>仅指定消息与收件人地址，发件人为 {@code null}。</p>
      */
     public DefaultAddressedEnvelope(M message, A recipient) {
         this(message, recipient, null);
     }
 
+    /** 返回封装的消息体。 */
     @Override
     public M content() {
         return message;
     }
 
+    /** 返回发件人地址。 */
     @Override
     public A sender() {
         return sender;
     }
 
+    /** 返回收件人地址。 */
     @Override
     public A recipient() {
         return recipient;

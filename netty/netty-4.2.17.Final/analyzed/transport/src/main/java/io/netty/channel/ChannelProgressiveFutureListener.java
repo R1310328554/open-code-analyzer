@@ -22,7 +22,9 @@ import java.util.EventListener;
 /**
  * An {@link EventListener} listener which will be called once the sending task associated with future is
  * being transferred.
+ * <p>{@link ChannelProgressiveFuture} 的渐进式进度监听器：在关联发送任务传输过程中
+ * 周期性回调 {@link GenericProgressiveFutureListener#operationProgressed} 报告进度。</p>
  */
 public interface ChannelProgressiveFutureListener extends GenericProgressiveFutureListener<ChannelProgressiveFuture> {
-    // Just a type alias
+    // 仅为类型别名，便于语义化注册渐进式通道 future 监听器
 }

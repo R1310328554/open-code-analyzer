@@ -27,14 +27,19 @@ import java.net.SocketAddress;
 
 /**
  *  Combines a {@link ChannelInboundHandler} and a {@link ChannelOutboundHandler} into one {@link ChannelHandler}.
+ *  <p>将入站与出站处理器合并为单个 {@link ChannelHandler}，在 Pipeline 中占一个槽位，
+ *  内部通过 {@link DelegatingChannelHandlerContext} 分别委托给 inbound/outbound 处理器。</p>
  */
 public class CombinedChannelDuplexHandler<I extends ChannelInboundHandler, O extends ChannelOutboundHandler>
         extends ChannelDuplexHandler {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(CombinedChannelDuplexHandler.class);
 
+    /** 入站处理器的委托 Context */
     private DelegatingChannelHandlerContext inboundCtx;
+    /** 出站处理器的委托 Context */
     private DelegatingChannelHandlerContext outboundCtx;
+    /** {@link #handlerAdded} 是否已调用 */
     private volatile boolean handlerAdded;
 
     private I inboundHandler;
@@ -44,6 +49,7 @@ public class CombinedChannelDuplexHandler<I extends ChannelInboundHandler, O ext
      * Creates a new uninitialized instance. A class that extends this handler must invoke
      * {@link #init(ChannelInboundHandler, ChannelOutboundHandler)} before adding this handler into a
      * {@link ChannelPipeline}.
+     * <p>创建未初始化实例；子类必须在加入 {@link ChannelPipeline} 前调用 {@link #init}。</p>
      */
     protected CombinedChannelDuplexHandler() {
         ensureNotSharable();
@@ -51,6 +57,7 @@ public class CombinedChannelDuplexHandler<I extends ChannelInboundHandler, O ext
 
     /**
      * Creates a new instance that combines the specified two handlers into one.
+     * <p>用指定的入站与出站处理器创建已初始化实例。</p>
      */
     public CombinedChannelDuplexHandler(I inboundHandler, O outboundHandler) {
         ensureNotSharable();
@@ -59,6 +66,7 @@ public class CombinedChannelDuplexHandler<I extends ChannelInboundHandler, O ext
 
     /**
      * Initialized this handler with the specified handlers.
+     * <p>绑定入站与出站处理器；类型冲突或重复初始化时抛出异常。</p>
      *
      * @throws IllegalStateException if this handler was not constructed via the default constructor or
      *                               if this handler does not implement all required handler interfaces
@@ -93,14 +101,17 @@ public class CombinedChannelDuplexHandler<I extends ChannelInboundHandler, O ext
         }
     }
 
+    /** 返回绑定的入站处理器。 */
     protected final I inboundHandler() {
         return inboundHandler;
     }
 
+    /** 返回绑定的出站处理器。 */
     protected final O outboundHandler() {
         return outboundHandler;
     }
 
+    /** 确认 handler 已加入 Pipeline，否则抛出 {@link IllegalStateException}。 */
     private void checkAdded() {
         if (!handlerAdded) {
             throw new IllegalStateException("handler not added to pipeline yet");
@@ -109,6 +120,7 @@ public class CombinedChannelDuplexHandler<I extends ChannelInboundHandler, O ext
 
     /**
      * Removes the {@link ChannelInboundHandler} that was combined in this {@link CombinedChannelDuplexHandler}.
+     * <p>从 Pipeline 移除合并的入站处理器（调用其 {@link ChannelHandler#handlerRemoved}）。</p>
      */
     public final void removeInboundHandler() {
         checkAdded();
@@ -117,6 +129,7 @@ public class CombinedChannelDuplexHandler<I extends ChannelInboundHandler, O ext
 
     /**
      * Removes the {@link ChannelOutboundHandler} that was combined in this {@link CombinedChannelDuplexHandler}.
+     * <p>从 Pipeline 移除合并的出站处理器。</p>
      */
     public final void removeOutboundHandler() {
         checkAdded();
@@ -162,8 +175,7 @@ public class CombinedChannelDuplexHandler<I extends ChannelInboundHandler, O ext
             }
         };
 
-        // The inboundCtx and outboundCtx were created and set now it's safe to call removeInboundHandler() and
-        // removeOutboundHandler().
+        // inboundCtx/outboundCtx 已就绪，此后可安全调用 removeInboundHandler/removeOutboundHandler
         handlerAdded = true;
 
         try {
@@ -357,10 +369,12 @@ public class CombinedChannelDuplexHandler<I extends ChannelInboundHandler, O ext
         }
     }
 
+    /** 委托 Context：将 Pipeline 事件路由至特定 handler，支持独立移除。 */
     private static class DelegatingChannelHandlerContext implements ChannelHandlerContext {
 
         private final ChannelHandlerContext ctx;
         private final ChannelHandler handler;
+        /** 是否已从组合 handler 中逻辑移除 */
         boolean removed;
 
         DelegatingChannelHandlerContext(ChannelHandlerContext ctx, ChannelHandler handler) {
@@ -585,6 +599,7 @@ public class CombinedChannelDuplexHandler<I extends ChannelInboundHandler, O ext
             return ctx.channel().hasAttr(key);
         }
 
+        /** 在所属 EventLoop 上触发 handlerRemoved 并标记 removed。 */
         final void remove() {
             EventExecutor executor = executor();
             if (executor.inEventLoop()) {
