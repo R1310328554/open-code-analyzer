@@ -28,16 +28,21 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
+ * 自动生成 RSA 加密密钥的 {@link KeyProviderFactory}，ID 为 {@code rsa-enc-generated}。
+ * <p>生成 RSA 密钥对及自签名证书，用途固定为 {@link KeyUse#ENC}，支持 RSA1_5/OAEP 等 JWE 算法。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class GeneratedRsaEncKeyProviderFactory extends AbstractGeneratedRsaKeyProviderFactory {
 
     private static final Logger logger = Logger.getLogger(GeneratedRsaEncKeyProviderFactory.class);
 
+    /** 工厂标识 {@code rsa-enc-generated}。 */
     public static final String ID = "rsa-enc-generated";
 
     private static final String HELP_TEXT = "Generates RSA keys for key encryption and creates a self-signed certificate";
 
+    /** 设置 KEY_USE 为 ENC 并创建 {@link ImportedRsaKeyProvider}（复用导入 RSA 加载逻辑）。 */
     @Override
     public KeyProvider create(KeycloakSession session, ComponentModel model) {
         model.put(Attributes.KEY_USE, KeyUse.ENC.name());
@@ -61,11 +66,13 @@ public class GeneratedRsaEncKeyProviderFactory extends AbstractGeneratedRsaKeyPr
         return ID;
     }
 
+    /** 仅接受加密用途 {@link KeyUse#ENC}。 */
     @Override
     protected boolean isValidKeyUse(KeyUse keyUse) {
         return keyUse.equals(KeyUse.ENC);
     }
 
+    /** 校验 RSA 密钥加密算法（RSA1_5、RSA-OAEP 等）。 */
     @Override
     protected boolean isSupportedRsaAlgorithm(String algorithm) {
         return algorithm.equals(Algorithm.RSA1_5)

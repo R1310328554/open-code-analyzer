@@ -23,14 +23,18 @@ import org.keycloak.models.RealmModel;
 
 
 /**
+ * 导入 RSA 密钥提供者：从组件配置加载外部 RSA 公私钥及证书链。
+ * <p>继承 {@link AbstractRsaKeyProvider}，加载后通过 {@link KeyNoteUtils} 缓存密钥并跟踪证书过期。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ImportedRsaKeyProvider extends AbstractRsaKeyProvider {
 
+    /** @param realm 当前领域 @param model 含 PEM 密钥材料的组件配置 */
     public ImportedRsaKeyProvider(RealmModel realm, ComponentModel model) {
         super(realm, model);
 
-        // in imported key we check the notAfter of the certificate
+        // 导入密钥需检查证书 notAfter 过期时间并写入 model note
         KeyNoteUtils.attachKeyNotes(model, KeyWrapper.class.getName(), this.key);
     }
 }

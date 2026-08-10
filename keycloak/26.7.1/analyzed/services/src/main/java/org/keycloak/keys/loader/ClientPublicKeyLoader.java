@@ -46,6 +46,9 @@ import org.keycloak.util.JsonSerialization;
 import org.jboss.logging.Logger;
 
 /**
+ * 客户端公钥加载器：从 OIDC 客户端配置获取 JWT 签名/加密验证所需的公钥。
+ * <p>支持 JWKS URL、内联 JWKS JSON 及客户端证书/公钥 PEM 三种来源。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientPublicKeyLoader implements PublicKeyLoader {
@@ -56,18 +59,21 @@ public class ClientPublicKeyLoader implements PublicKeyLoader {
     private final ClientModel client;
     private final JWK.Use keyUse;
 
+    /** 默认加载签名用途（{@link JWK.Use#SIG}）公钥。 */
     public ClientPublicKeyLoader(KeycloakSession session, ClientModel client) {
         this.session = session;
         this.client = client;
         this.keyUse = JWK.Use.SIG;
     }
 
+    /** @param session Keycloak 会话 @param client 目标客户端 @param keyUse JWK 用途（SIG/ENC） */
     public ClientPublicKeyLoader(KeycloakSession session, ClientModel client, JWK.Use keyUse) {
         this.session = session;
         this.client = client;
         this.keyUse = keyUse;
     }
 
+    /** 按客户端 OIDC 高级配置加载公钥；失败时返回 {@link PublicKeysWrapper#EMPTY}。 */
     @Override
     public PublicKeysWrapper loadKeys() throws Exception {
         OIDCAdvancedConfigWrapper config = OIDCAdvancedConfigWrapper.fromClientModel(client);
@@ -94,6 +100,7 @@ public class ClientPublicKeyLoader implements PublicKeyLoader {
         }
     }
 
+    /** 从客户端证书或公钥 PEM 构建签名验证用 {@link KeyWrapper}。 */
     private static KeyWrapper getSignatureValidationKey(CertificateRepresentation certInfo) throws ModelException {
         KeyWrapper keyWrapper = new KeyWrapper();
         String encodedCertificate = certInfo.getCertificate();
@@ -111,7 +118,7 @@ public class ClientPublicKeyLoader implements PublicKeyLoader {
         String kid = null;
         if (encodedCertificate != null) {
             X509Certificate clientCert = KeycloakModelUtils.getCertificate(encodedCertificate);
-            // Check if we have kid in DB, generate otherwise
+            // 优先使用数据库 kid，缺失时根据公钥生成
             kid = certInfo.getKid() != null ? certInfo.getKid() : KeyUtils.createKeyId(clientCert.getPublicKey());
             keyWrapper.setKid(kid);
             keyWrapper.setPublicKey(clientCert.getPublicKey());

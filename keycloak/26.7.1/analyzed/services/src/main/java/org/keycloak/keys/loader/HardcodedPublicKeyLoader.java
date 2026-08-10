@@ -30,6 +30,8 @@ import org.keycloak.keys.PublicKeyLoader;
 import org.jboss.logging.Logger;
 
 /**
+ * 硬编码公钥加载器：从 PEM 编码字符串解析 RSA/EC/EdDSA 公钥供 JWT 验证使用。
+ * <p>实现 {@link PublicKeyLoader}，算法无法识别或密钥为空时返回 {@link PublicKeysWrapper#EMPTY}。</p>
  *
  * @author hmlnarik
  */
@@ -39,13 +41,14 @@ public class HardcodedPublicKeyLoader implements PublicKeyLoader {
 
     private final KeyWrapper keyWrapper;
 
+    /** @param kid 密钥 ID @param encodedKey PEM 编码公钥 @param algorithm JWS 算法名称 */
     public HardcodedPublicKeyLoader(String kid, String encodedKey, String algorithm) {
         if (encodedKey != null && !encodedKey.trim().isEmpty()) {
             KeyWrapper kw = new KeyWrapper();
             kw.setKid(kid);
             kw.setUse(KeyUse.SIG);
             kw.setAlgorithm(algorithm);
-            // depending the algorithm load the correct key from the encoded string
+            // 按算法类型从 PEM 字符串解码 RSA/EC/EdDSA 公钥
             if (JavaAlgorithm.isRSAJavaAlgorithm(algorithm)) {
                 kw.setType(KeyType.RSA);
                 kw.setPublicKey(PemUtils.decodePublicKey(encodedKey, KeyType.RSA));
@@ -66,6 +69,7 @@ public class HardcodedPublicKeyLoader implements PublicKeyLoader {
         }
     }
 
+    /** @return 包含单个硬编码公钥的包装，或空包装 */
     @Override
     public PublicKeysWrapper loadKeys() throws Exception {
         return keyWrapper != null
@@ -73,6 +77,7 @@ public class HardcodedPublicKeyLoader implements PublicKeyLoader {
                 : PublicKeysWrapper.EMPTY;
     }
 
+    /** @return 构造时解析并缓存的公钥 */
     protected KeyWrapper getSavedPublicKey() {
         return keyWrapper;
     }

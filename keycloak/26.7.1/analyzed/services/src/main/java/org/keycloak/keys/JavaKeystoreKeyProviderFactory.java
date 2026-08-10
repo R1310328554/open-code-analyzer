@@ -53,13 +53,18 @@ import static org.keycloak.provider.ProviderConfigProperty.LIST_TYPE;
 import static org.keycloak.provider.ProviderConfigProperty.STRING_TYPE;
 
 /**
+ * Java 密钥库密钥 {@link KeyProviderFactory}，ID 为 {@code java-keystore}。
+ * <p>从领域隔离的 keystores 目录加载 JKS/PKCS12 等文件，校验证书链并支持 Vault 密码引用。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class JavaKeystoreKeyProviderFactory implements KeyProviderFactory {
     private static final Logger logger = Logger.getLogger(JavaKeystoreKeyProviderFactory.class);
 
+    /** 工厂标识 {@code java-keystore}。 */
     public static final String ID = "java-keystore";
 
+    /** SPI 初始化参数：密钥库文件父目录路径键。 */
     public static final String KEYSTORES_PATH_INIT_KEY = "keystores-path";
 
     public static final String KEYSTORE_KEY = "keystore";
@@ -77,7 +82,7 @@ public class JavaKeystoreKeyProviderFactory implements KeyProviderFactory {
 
     public static final String KEYSTORE_TYPE_KEY = "keystoreType";
 
-    // Initialization of this property is postponed to "init()" due the CryptoProvider must be set
+    // 密钥库类型配置项延迟至 init() 初始化（需 CryptoProvider 就绪）
     private ProviderConfigProperty keystoreTypeProperty;
 
     public static final String KEY_ALIAS_KEY = "keyAlias";
@@ -91,6 +96,7 @@ public class JavaKeystoreKeyProviderFactory implements KeyProviderFactory {
     private List<ProviderConfigProperty> configProperties;
     private Path keystoresPath;
 
+    /** 解析 keystores 根目录并构建支持的密钥库类型配置项。 */
     @Override
     public void init(Config.Scope config) {
         this.keystoresPath = Paths.get(config.get(KEYSTORES_PATH_INIT_KEY, System.getProperty("kc.home.dir") + "/data")).normalize();
@@ -115,11 +121,13 @@ public class JavaKeystoreKeyProviderFactory implements KeyProviderFactory {
                 .build();
     }
 
+    /** 创建 {@link JavaKeystoreKeyProvider}，传入 Vault 转录器解析密码。 */
     @Override
     public KeyProvider create(KeycloakSession session, ComponentModel model) {
         return new JavaKeystoreKeyProvider(keystoresPath, session.getContext().getRealm(), model, session.vault());
     }
 
+    /** 校验配置、限制密钥库路径在领域目录内，并试加载密钥验证证书链。 */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
         String kid = model.get(KID_KEY);
@@ -161,10 +169,11 @@ public class JavaKeystoreKeyProviderFactory implements KeyProviderFactory {
     }
 
     /**
-     * <p>Validates the certificate chain in the store entry if it exists.</p>
+     * 校验密钥库条目中的 X509 证书链（若存在）。
+     * <p>以链末证书为信任锚进行 PKIX 验证。</p>
      *
-     * @param certificates
-     * @throws GeneralSecurityException
+     * @param certificates 证书链
+     * @throws GeneralSecurityException 验证失败
      */
     private static void validateCertificateChain(List<X509Certificate> certificates) throws GeneralSecurityException {
         if (certificates == null || certificates.isEmpty()) {
@@ -173,7 +182,7 @@ public class JavaKeystoreKeyProviderFactory implements KeyProviderFactory {
 
         Set<TrustAnchor> anchors = new HashSet<>();
 
-        // consider the last certificate in the chain as the most trusted cert
+        // 将证书链最后一个证书视为信任锚
         anchors.add(new TrustAnchor(certificates.get(certificates.size() - 1), null));
 
         PKIXParameters params = new PKIXParameters(anchors);
@@ -186,7 +195,7 @@ public class JavaKeystoreKeyProviderFactory implements KeyProviderFactory {
         validator.validate(certPath, params);
     }
 
-    // merge the algorithms supported for RSA and EC keys and provide them as one configuration property
+    // 合并 RSA/EC/HMAC/AES/EdDSA/ECDH 支持的算法为单一配置项
     private static ProviderConfigProperty mergedAlgorithmProperties() {
         List<String> algorithms = Stream.of(
                         List.of(Algorithm.AES, Algorithm.EdDSA),

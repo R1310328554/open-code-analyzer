@@ -60,20 +60,29 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.vault.VaultTranscriber;
 
 /**
+ * Java 密钥库（JKS/PKCS12 等）密钥提供者：从文件加载 RSA/EC/EdDSA/OCT 密钥并封装为 {@link KeyWrapper}。
+ * <p>支持多种 JWS/JWE 算法，密钥缓存在组件 model note 中；路径可相对领域 keystores 目录解析。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class JavaKeystoreKeyProvider implements KeyProvider {
 
+    /** 密钥启用/活跃状态。 */
     private final KeyStatus status;
 
+    /** 密钥组件配置模型。 */
     private final ComponentModel model;
 
+    /** Vault 转录器，用于解析密钥库/密钥密码。 */
     private final VaultTranscriber vault;
 
+    /** 已加载的密钥包装对象。 */
     private final KeyWrapper key;
 
+    /** 组件配置的 JWS/JWE 算法名称。 */
     private final String algorithm;
 
+    /** @param keystoresPath 领域密钥库根目录 @param realm 当前领域 @param model 组件配置 @param vault Vault 密码解析 */
     public JavaKeystoreKeyProvider(Path keystoresPath, RealmModel realm, ComponentModel model, VaultTranscriber vault) {
         this.model = model;
         this.vault = vault;
@@ -90,10 +99,11 @@ public class JavaKeystoreKeyProvider implements KeyProvider {
         this.key = tmpKey;
     }
 
+    /** 从密钥库文件加载密钥；按算法分派至 RSA/EC/EdDSA/OCT 加载器。 */
     protected KeyWrapper loadKey(Path keystoresPath, RealmModel realm, ComponentModel model) {
         Path keystorePath = Paths.get(model.get(JavaKeystoreKeyProviderFactory.KEYSTORE_KEY));
         if (!keystorePath.isAbsolute()) {
-            // resolve the path from the keystores directory if file exists, if not use previous file for backwards compatibility
+            // 相对路径优先从领域 keystores 目录解析；不存在则回退旧路径以保持兼容
             Path path = keystoresPath.resolve(realm.getName()).resolve(keystorePath);
             if (Files.exists(path)) {
                 keystorePath = path;
@@ -138,7 +148,7 @@ public class JavaKeystoreKeyProvider implements KeyProvider {
     }
 
     private KeyStore loadKeyStore(FileInputStream inputStream, String keystorePath) throws KeyStoreException, CertificateException, IOException, NoSuchAlgorithmException {
-        // Use "JKS" as default type for backwards compatibility
+        // 向后兼容：未指定类型时默认 JKS，否则按文件/配置检测
         String keystoreType = KeystoreUtil.getKeystoreType(model.get(JavaKeystoreKeyProviderFactory.KEYSTORE_TYPE_KEY), keystorePath, "JKS");
         KeyStore keyStore = KeyStore.getInstance(keystoreType);
         String keystorePwd = model.get(JavaKeystoreKeyProviderFactory.KEYSTORE_PASSWORD_KEY);
@@ -250,7 +260,7 @@ public class JavaKeystoreKeyProvider implements KeyProvider {
 
         if (!certificateChain.isEmpty()) {
             if (certificate != null && !certificate.equals(certificateChain.get(0))) {
-                // just in case the chain does not contain the end-user certificate
+                // 证书链未包含终端实体证书时将其插入链首
                 certificateChain.add(0, certificate);
             }
             key.setCertificateChain(certificateChain);
@@ -280,6 +290,7 @@ public class JavaKeystoreKeyProvider implements KeyProvider {
         return keyWrapper;
     }
 
+    /** @return 包含单个已加载密钥的流 */
     @Override
     public Stream<KeyWrapper> getKeysStream() {
         return Stream.of(key);

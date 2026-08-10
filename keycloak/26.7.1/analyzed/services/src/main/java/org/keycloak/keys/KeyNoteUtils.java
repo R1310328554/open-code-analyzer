@@ -27,6 +27,8 @@ import org.keycloak.crypto.KeyWrapper;
 import org.jboss.logging.Logger;
 
 /**
+ * 密钥组件 model note 工具类：缓存已加载 {@link KeyWrapper} 并跟踪 X509 证书过期状态。
+ * <p>过期时将活跃密钥降级为 {@link KeyStatus#PASSIVE} 并禁用组件 active 标志。</p>
  *
  * @author rmartinc
  */
@@ -38,14 +40,12 @@ public class KeyNoteUtils {
     }
 
     /**
-     * Creates two notes in the model to save the key in the cached model. The first
-     * note <em>name</em> is the key itself. The second note is the date the
-     * certificate expires <em>name.notAfter</em>, if there is a certificate
-     * defined in the key (second note can be missing).
+     * 在组件 model 中写入密钥缓存 note 及证书过期时间 note。
+     * <p>第一个 note（{@code name}）保存 {@link KeyWrapper}；若存在证书则追加 {@code name.notAfter} 记录最早过期时间。</p>
      *
-     * @param model The model component to attach the notes
-     * @param name The name of the note
-     * @param key The key to attach
+     * @param model 目标组件模型
+     * @param name note 名称
+     * @param key 待缓存的密钥
      */
     public static void attachKeyNotes(ComponentModel model, String name, KeyWrapper key) {
         model.setNote(name, key);
@@ -71,13 +71,11 @@ public class KeyNoteUtils {
     }
 
     /**
-     * Retrieves the key from the note in the model if available. The second key
-     * for expiration date is also checked to see if the certificate is expired.
-     * If expired the key is transformed into passive.
+     * 从 model note 检索缓存密钥；若证书已过期则将状态降为 PASSIVE。
      *
-     * @param model The model with the keys
-     * @param name The name of the key
-     * @return The attached key or null
+     * @param model 含 note 的组件模型
+     * @param name note 名称
+     * @return 缓存的 {@link KeyWrapper}，不存在时返回 null
      */
     public static KeyWrapper retrieveKeyFromNotes(ComponentModel model, String name) {
         KeyWrapper key = model.getNote(name);
@@ -88,6 +86,7 @@ public class KeyNoteUtils {
         return key;
     }
 
+    /** 检查证书是否过期；过期时记录警告、降级密钥并禁用 active。 */
     private static void checkNotAfter(ComponentModel model, KeyWrapper key, Date notAfter) {
         if (new Date(Time.currentTimeMillis()).compareTo(notAfter) > 0) {
             logger.warnf("Certificate chain for kid '%s' (%s) is not valid anymore, disabling it (certificate expired on %s)",

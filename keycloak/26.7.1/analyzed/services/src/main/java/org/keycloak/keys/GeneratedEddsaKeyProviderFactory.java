@@ -37,27 +37,34 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
+ * 自动生成 EdDSA 密钥的 {@link KeyProviderFactory}，ID 为 {@code eddsa-generated}。
+ * <p>校验/生成 Ed25519/Ed448 曲线密钥对，并在缺少匹配签名密钥时创建回退组件。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class GeneratedEddsaKeyProviderFactory extends AbstractEddsaKeyProviderFactory {
 
     private static final Logger logger = Logger.getLogger(GeneratedEddsaKeyProviderFactory.class);
 
+    /** 工厂标识 {@code eddsa-generated}。 */
     public static final String ID = "eddsa-generated";
 
     private static final String HELP_TEXT = "Generates EdDSA keys";
 
+    /** 默认 EdDSA 曲线（Ed25519）。 */
     public static final String DEFAULT_EDDSA_ELLIPTIC_CURVE = Algorithm.Ed25519;
 
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES = AbstractEddsaKeyProviderFactory.configurationBuilder()
             .property(EDDSA_ELLIPTIC_CURVE_PROPERTY)
             .build();
 
+    /** 为当前领域创建 {@link GeneratedEddsaKeyProvider} 实例。 */
     @Override
     public KeyProvider create(KeycloakSession session, ComponentModel model) {
         return new GeneratedEddsaKeyProvider(session.getContext().getRealm(), model);
     }
 
+    /** EdDSA 签名算法缺失时自动添加低优先级回退密钥组件。 */
     @Override
     public boolean createFallbackKeys(KeycloakSession session, KeyUse keyUse, String algorithm) {
         if (keyUse.equals(KeyUse.SIG) && algorithm.equals(Algorithm.EdDSA)) {
@@ -97,6 +104,7 @@ public class GeneratedEddsaKeyProviderFactory extends AbstractEddsaKeyProviderFa
         return ID;
     }
 
+    /** 校验曲线配置；无密钥或曲线变更时自动生成 EdDSA 密钥对。 */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
         super.validateConfiguration(session, realm, model);
@@ -118,6 +126,7 @@ public class GeneratedEddsaKeyProviderFactory extends AbstractEddsaKeyProviderFa
         }
     }
 
+    /** 生成指定曲线的 EdDSA 密钥对并写入组件配置。 */
     private void generateKeys(ComponentModel model, String curveName) {
         KeyPair keyPair;
         try {
@@ -130,6 +139,7 @@ public class GeneratedEddsaKeyProviderFactory extends AbstractEddsaKeyProviderFa
         }
     }
 
+    /** 从 Base64 公钥解析 Twisted Edwards 曲线名称。 */
     private String getCurveFromPublicKey(String publicEddsaKeyBase64Encoded) {
         try {
             KeyFactory kf = KeyFactory.getInstance("EdDSA");

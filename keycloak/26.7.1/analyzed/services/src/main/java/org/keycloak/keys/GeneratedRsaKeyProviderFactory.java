@@ -28,20 +28,25 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
+ * 自动生成 RSA 签名密钥的 {@link KeyProviderFactory}，ID 为 {@code rsa-generated}。
+ * <p>生成 RSA 密钥对及自签名证书，支持 RS256/PS256 等签名算法；向后兼容未设置 KEY_USE 的旧配置。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class GeneratedRsaKeyProviderFactory extends AbstractGeneratedRsaKeyProviderFactory {
 
     private static final Logger logger = Logger.getLogger(GeneratedRsaKeyProviderFactory.class);
 
+    /** 工厂标识 {@code rsa-generated}。 */
     public static final String ID = "rsa-generated";
 
     private static final String HELP_TEXT = "Generates RSA signature keys and creates a self-signed certificate";
 
+    /** 创建匿名 {@link AbstractRsaKeyProvider} 子类实例；未配置 KEY_USE 时默认为 SIG。 */
     @Override
     public KeyProvider create(KeycloakSession session, ComponentModel model) {
         if (model.getConfig().get(Attributes.KEY_USE) == null) {
-            // for backward compatibility : it allows "enc" key use for "rsa-generated" provider
+            // 向后兼容：未设置 KEY_USE 时默认签名用途（旧版 rsa-generated 曾允许 enc）
             model.put(Attributes.KEY_USE, KeyUse.SIG.name());
         }
         return new AbstractRsaKeyProvider(session.getContext().getRealm(), model){};
@@ -64,11 +69,13 @@ public class GeneratedRsaKeyProviderFactory extends AbstractGeneratedRsaKeyProvi
         return ID;
     }
 
+    /** 仅接受签名用途 {@link KeyUse#SIG}。 */
     @Override
     protected boolean isValidKeyUse(KeyUse keyUse) {
         return keyUse.equals(KeyUse.SIG);
     }
 
+    /** 校验 RSA 签名算法（RS256/PS256/RS384 等）。 */
     @Override
     protected boolean isSupportedRsaAlgorithm(String algorithm) {
         return algorithm.equals(Algorithm.RS256) 

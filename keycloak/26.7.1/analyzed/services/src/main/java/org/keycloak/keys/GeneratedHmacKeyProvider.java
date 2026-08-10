@@ -24,10 +24,14 @@ import org.keycloak.crypto.KeyUse;
 
 
 /**
+ * 自动生成 HMAC 对称密钥提供者：从组件配置加载 HS256/HS384/HS512 签名密钥。
+ * <p>继承 {@link AbstractGeneratedSecretKeyProvider}，密钥类型为 {@link KeyType#OCT}，用途为签名。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class GeneratedHmacKeyProvider extends AbstractGeneratedSecretKeyProvider {
 
+    /** @param model 密钥组件配置，含算法与密钥材料 */
     public GeneratedHmacKeyProvider(ComponentModel model) {
         super(model, KeyUse.SIG, KeyType.OCT, model.get(Attributes.ALGORITHM_KEY, Algorithm.HS256));
     }

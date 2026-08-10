@@ -26,10 +26,14 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 导入 RSA 加密密钥的 {@link KeyProviderFactory}，ID 为 {@code rsa-enc}。
+ * <p>从 PEM/组件配置加载外部 RSA 密钥对，用途固定为 {@link KeyUse#ENC}，可选生成自签名证书。</p>
+ *
  * @author <a href="mailto:f.b.rissi@gmail.com">Filipe Bojikian Rissi</a>
  */
 public class ImportedRsaEncKeyProviderFactory extends AbstractImportedRsaKeyProviderFactory {
 
+    /** 工厂标识 {@code rsa-enc}。 */
     public static final String ID = "rsa-enc";
 
     private static final String HELP_TEXT = "RSA for key encryption provider that can optionally generated a self-signed certificate";
@@ -38,6 +42,7 @@ public class ImportedRsaEncKeyProviderFactory extends AbstractImportedRsaKeyProv
             .property(Attributes.RS_ENC_ALGORITHM_PROPERTY)
             .build();
 
+    /** 设置 KEY_USE 为 ENC 并创建 {@link ImportedRsaKeyProvider}。 */
     @Override
     public KeyProvider create(KeycloakSession session, ComponentModel model) {
         model.put(Attributes.KEY_USE, KeyUse.ENC.name());
@@ -54,11 +59,13 @@ public class ImportedRsaEncKeyProviderFactory extends AbstractImportedRsaKeyProv
         return CONFIG_PROPERTIES;
     }
 
+    /** 仅接受加密用途 {@link KeyUse#ENC}。 */
     @Override
     protected boolean isValidKeyUse(KeyUse keyUse) {
         return keyUse.equals(KeyUse.ENC);
     }
 
+    /** 校验 RSA 密钥加密算法。 */
     @Override
     protected boolean isSupportedRsaAlgorithm(String algorithm) {
         return algorithm.equals(Algorithm.RSA1_5)

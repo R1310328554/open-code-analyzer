@@ -26,10 +26,14 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 导入 RSA 签名密钥的 {@link KeyProviderFactory}，ID 为 {@code rsa}。
+ * <p>从 PEM/组件配置加载外部 RSA 密钥，支持 RS256/PS256 等签名算法；向后兼容未设置 KEY_USE 的旧配置。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ImportedRsaKeyProviderFactory extends AbstractImportedRsaKeyProviderFactory {
 
+    /** 工厂标识 {@code rsa}。 */
     public static final String ID = "rsa";
 
     private static final String HELP_TEXT = "RSA signature key provider that can optionally generated a self-signed certificate";
@@ -38,10 +42,11 @@ public class ImportedRsaKeyProviderFactory extends AbstractImportedRsaKeyProvide
             .property(Attributes.RS_ALGORITHM_PROPERTY)
             .build();
 
+    /** 创建 {@link ImportedRsaKeyProvider}；未配置 KEY_USE 时默认为 SIG。 */
     @Override
     public KeyProvider create(KeycloakSession session, ComponentModel model) {
         if (model.getConfig().get(Attributes.KEY_USE) == null) {
-            // for backward compatibility : it allows "enc" key use for "rsa" provider
+            // 向后兼容：未设置 KEY_USE 时默认签名用途
             model.put(Attributes.KEY_USE, KeyUse.SIG.name());
         }
         return new ImportedRsaKeyProvider(session.getContext().getRealm(), model);
@@ -57,11 +62,13 @@ public class ImportedRsaKeyProviderFactory extends AbstractImportedRsaKeyProvide
         return CONFIG_PROPERTIES;
     }
 
+    /** 仅接受签名用途 {@link KeyUse#SIG}。 */
     @Override
     protected boolean isValidKeyUse(KeyUse keyUse) {
         return keyUse.equals(KeyUse.SIG);
     }
 
+    /** 校验 RSA 签名算法。 */
     @Override
     protected boolean isSupportedRsaAlgorithm(String algorithm) {
         return algorithm.equals(Algorithm.RS256)

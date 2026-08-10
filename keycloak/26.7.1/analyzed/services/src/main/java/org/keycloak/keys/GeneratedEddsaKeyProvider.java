@@ -31,15 +31,20 @@ import org.keycloak.models.RealmModel;
 import org.jboss.logging.Logger;
 
 /**
+ * 自动生成 EdDSA 密钥提供者：从组件配置读取 Base64 编码的 EdDSA 公私钥并封装为 {@link KeyWrapper}。
+ * <p>继承 {@link AbstractEddsaKeyProvider}，在 {@link #loadKey} 中解码 PKCS#8/X509 格式密钥。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class GeneratedEddsaKeyProvider extends AbstractEddsaKeyProvider {
     private static final Logger logger = Logger.getLogger(GeneratedEddsaKeyProvider.class);
 
+    /** @param realm 当前领域 @param model 密钥组件配置 */
     public GeneratedEddsaKeyProvider(RealmModel realm, ComponentModel model) {
         super(realm, model);
     }
 
+    /** 从组件配置解码 EdDSA 密钥对；失败时记录警告并返回 null。 */
     @Override
     protected KeyWrapper loadKey(RealmModel realm, ComponentModel model) {
         String privateEddsaKeyBase64Encoded = model.getConfig().getFirst(GeneratedEddsaKeyProviderFactory.EDDSA_PRIVATE_KEY_KEY);
