@@ -19,7 +19,10 @@ package io.netty.channel;
  * An IO event that is dispatched to an {@link IoHandle} as a result of a previous submitted {@link IoOps}.
  *
  * Concrete {@link IoHandle} implementations support different concrete {@link IoEvent} implementations.
+ * <p>先前提交的 {@link IoOps} 完成后分派给 {@link IoHandle} 的 I/O 事件标记接口。
+ * 具体 {@link IoHandle} 实现对应不同的 {@link IoEvent} 子类型。</p>
  */
 public interface IoEvent {
     // Marker interface.
+    // 标记接口，无方法定义。
 }

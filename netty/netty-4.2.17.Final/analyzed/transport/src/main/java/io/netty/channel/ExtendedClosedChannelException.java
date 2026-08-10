@@ -17,8 +17,17 @@ package io.netty.channel;
 
 import java.nio.channels.ClosedChannelException;
 
+/**
+ * 扩展的 {@link ClosedChannelException}，用于在通道已关闭时携带原始失败原因。
+ * <p>内部类；通过 {@link #fillInStackTrace()} 跳过堆栈填充以降低异常创建开销。</p>
+ */
 final class ExtendedClosedChannelException extends ClosedChannelException {
 
+    /**
+     * 构造异常并可选地设置 {@code cause}。
+     *
+     * @param cause 底层失败原因，可为 {@code null}
+     */
     ExtendedClosedChannelException(Throwable cause) {
         if (cause != null) {
             initCause(cause);
@@ -26,6 +35,7 @@ final class ExtendedClosedChannelException extends ClosedChannelException {
     }
 
     // Suppress a warning since the method doesn't need synchronization
+    // 无需同步；不填充堆栈以降低开销
     @Override
     public Throwable fillInStackTrace() {
         return this;

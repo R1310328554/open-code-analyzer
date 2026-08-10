@@ -20,7 +20,10 @@ package io.netty.channel;
 // * These submitted {@link IoOps} will result in {@link IoEvent}s on the related {@link IoHandle}.
  * Concrete {@link IoRegistration} implementations support different concrete {@link IoOps} implementations and
  * will so also "produce" concrete {@link IoEvent}s.
+ * <p>可通过 {@link IoRegistration#submit(IoOps)} 提交的 I/O 操作标记接口。
+ * 具体 {@link IoRegistration} 实现支持不同的 {@link IoOps} 子类型，并产生对应的 {@link IoEvent}。</p>
  */
 public interface IoOps {
     // Marker interface.
+    // 标记接口，无方法定义。
 }

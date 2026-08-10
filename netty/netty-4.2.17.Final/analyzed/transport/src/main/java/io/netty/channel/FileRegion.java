@@ -24,8 +24,10 @@ import java.nio.channels.WritableByteChannel;
 /**
  * A region of a file that is sent via a {@link Channel} which supports
  * <a href="https://en.wikipedia.org/wiki/Zero-copy">zero-copy file transfer</a>.
+ * <p>通过支持零拷贝传输的 {@link Channel} 发送的文件区域，实现 {@link ReferenceCounted}。</p>
  *
  * <h3>Upgrade your JDK / JRE</h3>
+ * <p>使用零拷贝前请将 JDK 升级至 1.6.0_18 或更高版本。</p>
  *
  * {@link FileChannel#transferTo(long, long, WritableByteChannel)} has at least
  * four known bugs in the old versions of Sun JDK and perhaps its derived ones.
@@ -43,22 +45,26 @@ import java.nio.channels.WritableByteChannel;
  * </ul>
  *
  * <h3>Check your operating system and JDK / JRE</h3>
+ * <p>若操作系统或 JDK 不支持零拷贝，使用 {@link FileRegion} 可能失败或性能更差（如 Windows 上大文件）。</p>
  *
  * If your operating system (or JDK / JRE) does not support zero-copy file
  * transfer, sending a file with {@link FileRegion} might fail or yield worse
  * performance.  For example, sending a large file doesn't work well in Windows.
  *
  * <h3>Not all transports support it</h3>
+ * <p>并非所有传输实现都支持 {@link FileRegion}。</p>
  */
 public interface FileRegion extends ReferenceCounted {
 
     /**
      * Returns the offset in the file where the transfer began.
+     * <p>返回文件中传输起始位置的偏移量。</p>
      */
     long position();
 
     /**
      * Returns the bytes which was transferred already.
+     * <p>返回已传输的字节数（已弃用，请使用 {@link #transferred()}）。</p>
      *
      * @deprecated Use {@link #transferred()} instead.
      */
@@ -67,6 +73,8 @@ public interface FileRegion extends ReferenceCounted {
 
     /**
      * Returns the bytes which was transferred already.
+     * <p>返回已传输的字节数。部分异步传输（如 io_uring 对非 {@link DefaultFileRegion} 的分块发送）
+     * 在字节入队提交时即递增计数，可能早于实际送达对端；通道关闭或写失败后计数可能偏大。</p>
      * <p>
      * Note: some asynchronous transports (such as the {@code io_uring} transport when falling
      * back to a chunked send for non-{@link DefaultFileRegion} implementations) advance this
@@ -78,11 +86,13 @@ public interface FileRegion extends ReferenceCounted {
 
     /**
      * Returns the number of bytes to transfer.
+     * <p>返回待传输的总字节数。</p>
      */
     long count();
 
     /**
      * Transfers the content of this file region to the specified channel.
+     * <p>将本文件区域内容传输到目标通道；{@code position} 为相对本区域起始的偏移。</p>
      *
      * @param target    the destination of the transfer
      * @param position  the relative offset of the file where the transfer

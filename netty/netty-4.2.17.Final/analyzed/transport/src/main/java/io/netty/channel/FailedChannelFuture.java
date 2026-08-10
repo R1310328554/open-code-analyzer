@@ -23,13 +23,17 @@ import io.netty.util.internal.PlatformDependent;
  * The {@link CompleteChannelFuture} which is failed already.  It is
  * recommended to use {@link Channel#newFailedFuture(Throwable)}
  * instead of calling the constructor of this future.
+ * <p>已处于失败状态的 {@link CompleteChannelFuture}。建议通过
+ * {@link Channel#newFailedFuture(Throwable)} 创建，而非直接调用本类构造器。</p>
  */
 final class FailedChannelFuture extends CompleteChannelFuture {
 
+    /** 失败原因 */
     private final Throwable cause;
 
     /**
      * Creates a new instance.
+     * <p>创建与指定 {@link Channel} 关联、已标记为失败的 future。</p>
      *
      * @param channel the {@link Channel} associated with this future
      * @param cause   the cause of failure
@@ -39,22 +43,26 @@ final class FailedChannelFuture extends CompleteChannelFuture {
         this.cause = ObjectUtil.checkNotNull(cause, "cause");
     }
 
+    /** 返回失败原因。 */
     @Override
     public Throwable cause() {
         return cause;
     }
 
+    /** 恒为 {@code false}。 */
     @Override
     public boolean isSuccess() {
         return false;
     }
 
+    /** 同步等待并重新抛出失败原因。 */
     @Override
     public ChannelFuture sync() {
         PlatformDependent.throwException(cause);
         return this;
     }
 
+    /** 不可中断地同步并重新抛出失败原因。 */
     @Override
     public ChannelFuture syncUninterruptibly() {
         PlatformDependent.throwException(cause);

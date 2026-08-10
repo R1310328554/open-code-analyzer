@@ -46,19 +46,30 @@ import java.util.concurrent.atomic.AtomicReference;
  * This is for <strong>advanced use-cases only</strong>, where the user wants to own the {@link Thread} that drives the
  * {@link IoEventLoop} to also do other work. Care must be taken that the {@link #runNow() or
  * {@link #waitAndRun()}} methods are called in a timely fashion.
+ * <p>由用户线程手动驱动的 {@link IoEventLoop}：须定期调用 {@link #runNow()} 或 {@link #run(long)}
+ * 推进 I/O 与已提交任务。仅适用于高级场景，用户在同一线程上兼做其他工作时须及时调用驱动方法。</p>
  */
 public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements IoEventLoop {
+    /** 唤醒占位任务，用于打断阻塞等待 */
     private static final Runnable WAKEUP_TASK = () -> {
         // NOOP
     };
+    /** 生命周期：运行中 */
     private static final int ST_STARTED = 0;
+    /** 生命周期：优雅关闭中 */
     private static final int ST_SHUTTING_DOWN = 1;
+    /** 生命周期：已 shutdown */
     private static final int ST_SHUTDOWN = 2;
+    /** 生命周期：已终止 */
     private static final int ST_TERMINATED = 3;
 
+    /** 当前生命周期状态 */
     private final AtomicInteger state;
+    /** 终止完成的 Future */
     private final Promise<?> terminationFuture = new DefaultPromise<Void>(GlobalEventExecutor.INSTANCE);
+    /** 跨线程提交的任务队列 */
     private final Queue<Runnable> taskQueue = PlatformDependent.newMpscQueue();
+    /** 非阻塞 I/O 运行上下文 */
     private final IoHandlerContext nonBlockingContext = new IoHandlerContext() {
         @Override
         public boolean canBlock() {
@@ -78,21 +89,32 @@ public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements
             return -1;
         }
     };
+    /** 允许阻塞等待 I/O 的运行上下文 */
     private final BlockingIoHandlerContext blockingContext = new BlockingIoHandlerContext();
+    /** 父 EventLoopGroup，可为 null */
     private final IoEventLoopGroup parent;
+    /** 驱动本 EventLoop 的用户线程 */
     private final AtomicReference<Thread> owningThread;
+    /** 底层 I/O 处理器 */
     private final IoHandler handler;
+    /** 时间源，用于定时与超时 */
     private final Ticker ticker;
 
+    /** 优雅关闭静默期（纳秒） */
     private volatile long gracefulShutdownQuietPeriod;
+    /** 优雅关闭总超时（纳秒） */
     private volatile long gracefulShutdownTimeout;
+    /** 优雅关闭开始时间 */
     private long gracefulShutdownStartTime;
+    /** 上次任务执行时间 */
     private long lastExecutionTime;
+    /** 是否已完成 handler 初始化 */
     private boolean initialized;
 
     /**
      * This allows to specify additional blocking conditions which will be used by the {@link IoHandler} to decide
      * whether it is allowed to block or not.
+     * <p>子类可覆盖以追加阻塞条件，供 {@link IoHandler} 判断是否允许阻塞。</p>
      */
     protected boolean canBlock() {
         return true;
@@ -102,6 +124,7 @@ public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements
      * Create a new {@link IoEventLoop} that is owned by the user and so needs to be driven by the user with the given
      * {@link Thread}. This means that the user is responsible to call either {@link #runNow()} or
      * {@link #run(long)} to execute IO or tasks that were submitted to this {@link IoEventLoop}.
+     * <p>使用指定线程与 {@link IoHandlerFactory} 创建手动驱动的 EventLoop。</p>
      *
      * @param owningThread      the {@link Thread} that executes the IO and tasks for this {@link IoEventLoop}. The
      *                          user will use this {@link Thread} to call {@link #runNow()} or {@link #run(long)} to
@@ -125,6 +148,8 @@ public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements
      *                          {@link #setOwningThread(Thread)}.
      * @param factory           the {@link IoHandlerFactory} that will be used to create the {@link IoHandler} that is
      *                          used by this {@link IoEventLoop}.
+     * <p>可指定父 {@link IoEventLoopGroup}；{@code owningThread} 为 {@code null} 时须稍后
+     * {@link #setOwningThread(Thread)}。</p>
      */
     public ManualIoEventLoop(IoEventLoopGroup parent, Thread owningThread, IoHandlerFactory factory) {
         this(parent, owningThread, factory, Ticker.systemTicker());
@@ -134,6 +159,7 @@ public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements
      * Create a new {@link IoEventLoop} that is owned by the user and so needs to be driven by the user with the given
      * {@link Thread}. This means that the user is responsible to call either {@link #runNow()} or
      * {@link #run(long)} to execute IO or tasks that were submitted to this {@link IoEventLoop}.
+     * <p>可自定义 {@link Ticker}；若 ticker 快于系统时间，可能需手动 {@link #wakeup()}。</p>
      *
      * @param parent            the parent {@link IoEventLoopGroup} or {@code null} if no parent.
      * @param owningThread      the {@link Thread} that executes the IO and tasks for this {@link IoEventLoop}. The
@@ -154,6 +180,7 @@ public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements
         state = new AtomicInteger(ST_STARTED);
     }
 
+    /** 返回本 EventLoop 使用的时间源。 */
     @Override
     public final Ticker ticker() {
         return ticker;
@@ -162,6 +189,7 @@ public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements
     /**
      * Poll and run tasks from the task queue, until the task queue is empty or the given deadline is exceeded.<br>
      * If {@code timeoutNanos} is less or equals 0, no deadline is applied.
+     * <p>非阻塞地运行任务队列中的任务，直至队列为空或超过 {@code timeoutNanos} 截止时间。</p>
      *
      * @param timeoutNanos the maximum time in nanoseconds to run tasks.
      */
@@ -276,6 +304,7 @@ public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements
      *                                If {@code = 0}, no timeout is applied; if {@code < 0} it just perform I/O tasks.
      * @return the number of IO and tasks executed.
      * @throws IllegalStateException if the method is not called from the owning {@link Thread}.
+     * <p>非阻塞执行就绪 I/O 与任务；必须在构造时指定的 owning 线程上调用。</p>
      */
     public final int runNow(long runAllTasksTimeoutNanos) {
         checkCurrentThread();
@@ -290,6 +319,7 @@ public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements
      * <strong>Must be called from the owning {@link Thread} that was passed as a parameter on construction.</strong>
      *
      * @return the number of IO and tasks executed.
+     * <p>非阻塞执行就绪 I/O 与任务（无任务运行超时限制）。</p>
      */
     public final int runNow() {
         checkCurrentThread();
@@ -309,6 +339,7 @@ public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements
      *                  there is some IO / tasks ready, if {@code -1} will not block at all and just return directly
      *                  if there is nothing to run (like {@link #runNow()}).
      * @return          the number of IO and tasks executed.
+     * <p>可阻塞等待 I/O/任务就绪；{@code waitNanos} 控制最长阻塞时间。</p>
      */
     public final int run(long waitNanos, long runAllTasksTimeoutNanos) {
         checkCurrentThread();
@@ -334,11 +365,13 @@ public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements
      *                  there is some IO / tasks ready, if {@code -1} will not block at all and just return directly
      *                  if there is nothing to run (like {@link #runNow()}).
      * @return          the number of IO and tasks executed.
+     * <p>阻塞版驱动入口，任务运行无额外超时。</p>
      */
     public final int run(long waitNanos) {
         return run(waitNanos, 0);
     }
 
+    /** 断言当前线程为 owning 线程。 */
     private void checkCurrentThread() {
         if (!inEventLoop(Thread.currentThread())) {
             throw new IllegalStateException();
@@ -347,6 +380,7 @@ public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements
 
     /**
      * Force a wakeup and so the {@link #run(long)} method will unblock and return even if there was nothing to do.
+     * <p>强制唤醒，使 {@link #run(long)} 等阻塞调用尽快返回。</p>
      */
     public final void wakeup() {
         if (isShuttingDown()) {
@@ -432,6 +466,7 @@ public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements
      * not set in the constructor already.
      *
      * @param owningThread The owning thread
+     * <p>设置驱动线程；仅当构造时未指定且尚未设置时可调用一次。</p>
      */
     public final void setOwningThread(Thread owningThread) {
         Objects.requireNonNull(owningThread, "owningThread");
@@ -646,8 +681,10 @@ public class ManualIoEventLoop extends AbstractScheduledEventExecutor implements
         }
     }
 
+    /** 允许在无待处理任务/定时任务且 {@link #canBlock()} 为真时阻塞的 I/O 上下文 */
     private class BlockingIoHandlerContext implements IoHandlerContext {
         // this is a positive amount of nanos or Long.MAX_VALUE for no limit
+        // 最大阻塞纳秒数，Long.MAX_VALUE 表示无上限
         long maxBlockingNanos = Long.MAX_VALUE;
 
         @Override

@@ -20,11 +20,14 @@ import static io.netty.util.internal.ObjectUtil.checkPositive;
 /**
  * The {@link RecvByteBufAllocator} that always yields the same buffer
  * size prediction.  This predictor ignores the feed back from the I/O thread.
+ * <p>始终返回固定缓冲区大小预测的 {@link RecvByteBufAllocator}，忽略 I/O 线程的读反馈。</p>
  */
 public class FixedRecvByteBufAllocator extends DefaultMaxMessagesRecvByteBufAllocator {
 
+    /** 每次读操作建议的缓冲区容量（字节） */
     private final int bufferSize;
 
+    /** 固定容量预测的实现 */
     private final class HandleImpl extends MaxMessageHandle {
         private final int bufferSize;
 
@@ -32,6 +35,7 @@ public class FixedRecvByteBufAllocator extends DefaultMaxMessagesRecvByteBufAllo
             this.bufferSize = bufferSize;
         }
 
+        /** 始终返回构造时指定的固定容量。 */
         @Override
         public int guess() {
             return bufferSize;
@@ -41,6 +45,7 @@ public class FixedRecvByteBufAllocator extends DefaultMaxMessagesRecvByteBufAllo
     /**
      * Creates a new predictor that always returns the same prediction of
      * the specified buffer size.
+     * <p>创建每次读均预测相同缓冲区大小的分配器。</p>
      */
     public FixedRecvByteBufAllocator(int bufferSize) {
         checkPositive(bufferSize, "bufferSize");
@@ -53,6 +58,7 @@ public class FixedRecvByteBufAllocator extends DefaultMaxMessagesRecvByteBufAllo
         return new HandleImpl(bufferSize);
     }
 
+    /** 配置是否在可能仍有数据时继续读；支持链式调用。 */
     @Override
     public FixedRecvByteBufAllocator respectMaybeMoreData(boolean respectMaybeMoreData) {
         super.respectMaybeMoreData(respectMaybeMoreData);

@@ -23,11 +23,15 @@ import io.netty.util.concurrent.ThreadAwareExecutor;
  *<p>
  * All the methods are expected to be called from the {@link IoHandler} on which this {@link IoHandle}
  * was registered via {@link IoHandler#register(IoHandle)}.
+ * <p>可注册到 {@link IoHandler} 的 I/O 句柄。所有方法须在 {@link ThreadAwareExecutor} 线程上调用
+ * （{@link ThreadAwareExecutor#isExecutorThread(Thread)} 为 {@code true}），
+ * 且通常由注册本句柄的 {@link IoHandler} 回调。</p>
  */
 public interface IoHandle extends AutoCloseable {
 
     /**
      * Be called once there is something to handle.
+     * <p>有待处理的 I/O 事件时回调；{@link IoEvent} 仅在方法执行期间有效，不得逃逸。</p>
      *
      * @param registration  the {@link IoRegistration} for this {@link IoHandle}.
      * @param ioEvent       the {@link IoEvent} that must be handled. The {@link IoEvent} is only valid
@@ -38,6 +42,7 @@ public interface IoHandle extends AutoCloseable {
     /**
      * Called once this {@link IoHandle} was registered and so will start to receive events
      * via {@link #handle(IoRegistration, IoEvent)}.
+     * <p>注册完成后调用，此后可通过 {@link #handle(IoRegistration, IoEvent)} 接收事件。</p>
      */
     default void registered() {
         // Noop by default.
@@ -46,6 +51,7 @@ public interface IoHandle extends AutoCloseable {
     /**
      * Called once this {@link IoHandle} was unregistered and so will not receive any more events
      * via {@link #handle(IoRegistration, IoEvent)}.
+     * <p>注销完成后调用，此后不再接收 {@link IoEvent}。</p>
      */
     default void unregistered() {
         // Noop by default.
@@ -55,6 +61,8 @@ public interface IoHandle extends AutoCloseable {
      * Called once the {@link IoHandle} should be closed. Even once this method is called this handle might
      * still receive events via {@link #handle(IoRegistration, IoEvent)} (if it was previous be registered and so its
      * {@link #registered()} method was called) until the {@link #unregistered()} method is called.
+     * <p>请求关闭句柄时调用。在 {@link #unregistered()} 之前，若此前已注册，仍可能收到
+     * {@link #handle(IoRegistration, IoEvent)} 事件。</p>
      */
     void close() throws Exception;
 }

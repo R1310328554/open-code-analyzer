@@ -20,9 +20,11 @@ import io.netty.util.concurrent.Future;
 
 /**
  * {@link EventLoop} that allows to register / deregister {@link IoHandle} instances.
+ * <p>支持注册/注销 {@link IoHandle} 的 {@link EventLoop}。</p>
  */
 public interface IoEventLoop extends EventLoop, IoEventLoopGroup {
 
+    /** 单线程 EventLoop 始终返回自身。 */
     @Override
     default IoEventLoop next() {
         return this;
@@ -30,6 +32,7 @@ public interface IoEventLoop extends EventLoop, IoEventLoopGroup {
 
     /**
      * Register the {@link IoHandle} to the {@link EventLoop} for I/O processing.
+     * <p>将 {@link IoHandle} 注册到本 {@link EventLoop} 以进行 I/O 处理。</p>
      *
      * @param handle        the {@link IoHandle} to register.
      * @return              the {@link Future} that is notified once the operations completes.
@@ -37,10 +40,12 @@ public interface IoEventLoop extends EventLoop, IoEventLoopGroup {
     Future<IoRegistration> register(IoHandle handle);
 
     // Force sub-classes to implement.
+    // 强制子类实现兼容性检查
     @Override
     boolean isCompatible(Class<? extends IoHandle> handleType);
 
     // Force sub-classes to implement.
+    // 强制子类实现 I/O 处理器类型检查
     @Override
     boolean isIoType(Class<? extends IoHandler> handlerType);
 }

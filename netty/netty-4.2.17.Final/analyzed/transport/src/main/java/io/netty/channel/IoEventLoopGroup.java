@@ -19,6 +19,7 @@ import io.netty.util.concurrent.Future;
 
 /**
  * {@link EventLoopGroup} for {@link IoEventLoop}s.
+ * <p>管理 {@link IoEventLoop} 的 {@link EventLoopGroup}。</p>
  */
 public interface IoEventLoopGroup extends EventLoopGroup {
 
@@ -45,6 +46,7 @@ public interface IoEventLoopGroup extends EventLoopGroup {
 
     /**
      * Register the {@link IoHandle} to the {@link EventLoop} for I/O processing.
+     * <p>将 {@link IoHandle} 注册到组内选中的 {@link EventLoop} 进行 I/O 处理。</p>
      *
      * @param handle        the {@link IoHandle} to register.
      * @return              the {@link Future} that is notified once the operations completes.
@@ -56,6 +58,7 @@ public interface IoEventLoopGroup extends EventLoopGroup {
     /**
      * Returns {@code true} if the given type is compatible with this {@link IoEventLoopGroup} and so can be registered
      * to the contained {@link IoEventLoop}s, {@code false} otherwise.
+     * <p>若给定 {@link IoHandle} 类型与本组兼容、可注册到所含 {@link IoEventLoop}，则返回 {@code true}。</p>
      *
      * @param handleType    the type of the {@link IoHandle}.
      * @return              if compatible of not.
@@ -67,6 +70,7 @@ public interface IoEventLoopGroup extends EventLoopGroup {
     /**
      * Returns {@code true} if the given {@link IoHandler} type is used by this {@link IoEventLoopGroup},
      * {@code false} otherwise.
+     * <p>若本组使用的 {@link IoHandler} 类型与给定类型一致，则返回 {@code true}。</p>
      *
      * @param handlerType the type of the {@link IoHandler}.
      * @return            if used or not.
