@@ -139,7 +139,7 @@ projects:
   - python
   - go
   - typescript
-  status: in_progress
+  status: complete
   version: "0.26.4"
 - id: prometheus
   url: https://github.com/prometheus/prometheus
