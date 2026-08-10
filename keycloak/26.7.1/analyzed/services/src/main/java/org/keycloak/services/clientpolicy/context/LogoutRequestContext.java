@@ -24,31 +24,44 @@ import org.keycloak.services.clientpolicy.ClientPolicyContext;
 import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 
 /**
+ * OIDC 登出请求客户端策略上下文。
+ * <p>在 RP 发起登出端点请求时触发，携带客户端与可选请求参数。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class LogoutRequestContext implements ClientPolicyContext, ClientModelContext {
 
+    /** 发起登出的客户端 */
     private final ClientModel client;
+    /** 登出请求参数（可为 null） */
     private final MultivaluedMap<String, String> params;
 
+    /**
+     * @param client 客户端模型
+     * @param params 登出请求参数
+     */
     public LogoutRequestContext(ClientModel client, MultivaluedMap<String, String> params) {
         this.client = client;
         this.params = params;
     }
 
+    /** @param client 客户端模型（无额外参数） */
     public LogoutRequestContext(ClientModel client) {
         this(client, null);
     }
 
+    /** {@inheritDoc} @return {@link ClientPolicyEvent#LOGOUT_REQUEST} */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.LOGOUT_REQUEST;
     }
 
+    /** @return 登出请求参数 */
     public MultivaluedMap<String, String> getParams() {
         return params;
     }
 
+    /** {@inheritDoc} @return 客户端模型 */
     @Override
     public ClientModel getClient() {
         return client;

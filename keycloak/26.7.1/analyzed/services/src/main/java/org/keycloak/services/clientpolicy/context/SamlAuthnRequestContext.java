@@ -22,19 +22,23 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 
 /**
- *  <p>Context for the saml authn request.</p>
+ * SAML 认证请求（AuthnRequest）客户端策略上下文。
+ * <p>在 SP 发起 SAML 单点登录认证请求时触发，继承 {@link AbstractSamlRequestContext} 暴露请求、客户端与绑定。</p>
  *
  * @author rmartinc
  */
 public class SamlAuthnRequestContext extends AbstractSamlRequestContext<AuthnRequestType> {
 
+    /**
+     * @param request SAML AuthnRequest
+     * @param client 发起请求的客户端
+     * @param protocolBinding SAML 协议绑定 URI
+     */
     public SamlAuthnRequestContext(final AuthnRequestType request, final ClientModel client, final String protocolBinding) {
         super(request, client, protocolBinding);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} @return {@link ClientPolicyEvent#SAML_AUTHN_REQUEST} */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.SAML_AUTHN_REQUEST;

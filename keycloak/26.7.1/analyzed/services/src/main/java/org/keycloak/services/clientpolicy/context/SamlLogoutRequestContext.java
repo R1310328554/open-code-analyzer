@@ -22,19 +22,23 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.services.clientpolicy.ClientPolicyEvent;
 
 /**
- * <p>Context for the saml logout request.</p>
+ * SAML 登出请求（LogoutRequest）客户端策略上下文。
+ * <p>在处理 SAML 单点登出请求时触发，继承 {@link AbstractSamlRequestContext} 暴露请求、客户端与绑定。</p>
  *
  * @author rmartinc
  */
 public class SamlLogoutRequestContext extends AbstractSamlRequestContext<LogoutRequestType> {
 
+    /**
+     * @param request SAML LogoutRequest
+     * @param client 发起请求的客户端
+     * @param protocolBinding SAML 协议绑定 URI
+     */
     public SamlLogoutRequestContext(final LogoutRequestType request, final ClientModel client, final String protocolBinding) {
         super(request, client, protocolBinding);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} @return {@link ClientPolicyEvent#SAML_LOGOUT_REQUEST} */
     @Override
     public ClientPolicyEvent getEvent() {
         return ClientPolicyEvent.SAML_LOGOUT_REQUEST;
