@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:57:13Z",
-  "files": [
-    "src/transformers/integrations/accelerate.py",
-    "src/transformers/integrations/aqlm.py",
-    "src/transformers/integrations/awq.py",
-    "src/transformers/integrations/bitnet.py",
-    "src/transformers/integrations/bitsandbytes.py",
-    "src/transformers/integrations/compressed_tensors.py",
-    "src/transformers/integrations/deepgemm.py",
-    "src/transformers/integrations/deepspeed.py",
-    "src/transformers/integrations/eager_paged.py",
-    "src/transformers/integrations/eetq.py",
-    "src/transformers/integrations/executorch.py",
-    "src/transformers/integrations/fbgemm_fp8.py",
-    "src/transformers/integrations/finegrained_fp8.py",
-    "src/transformers/integrations/flash_attention.py",
-    "src/transformers/integrations/flash_paged.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2559,
-  "done": 105
+  "done": 120
 }
