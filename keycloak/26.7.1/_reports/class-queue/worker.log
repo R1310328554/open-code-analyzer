@@ -703,3 +703,18 @@
 2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/UserRolesRetrieveStrategy.java wave24a ldap mapper mgr + group membership
 2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/group/GroupLDAPStorageMapper.java wave24a ldap mapper mgr + group membership
 2026-08-10T06:37:26Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/group/GroupLDAPStorageMapperFactory.java wave24a ldap mapper mgr + group membership
+2026-08-10T06:37:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/group/GroupMapperConfig.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/group/GroupTreeResolver.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/role/RoleLDAPStorageMapper.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/role/RoleLDAPStorageMapperFactory.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/membership/role/RoleMapperConfig.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/msad/LDAPServerPolicyHintsDecorator.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/msad/MSADUserAccountControlStorageMapper.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/msad/MSADUserAccountControlStorageMapperFactory.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/msad/UserAccountControl.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/msadlds/MSADLDSUserAccountControlStorageMapper.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/ldap/src/main/java/org/keycloak/storage/ldap/mappers/msadlds/MSADLDSUserAccountControlStorageMapperFactory.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/sssd/src/main/java/org/freedesktop/sssd/infopipe/InfoPipe.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/sssd/src/main/java/org/jvnet/libpam/PAM.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/sssd/src/main/java/org/jvnet/libpam/PAMException.java wave24b ldap role/msad + sssd
+2026-08-10T06:37:48Z DONE federation/sssd/src/main/java/org/jvnet/libpam/UnixUser.java wave24b ldap role/msad + sssd
