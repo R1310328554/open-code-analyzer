@@ -1,3 +1,4 @@
+// SeriesResult 为 label matcher 匹配到的序列标签集合，元素复用 query.Metric。
 // Result type for /api/v1/series endpoint.
 
 import { Metric } from "./query";

@@ -1,3 +1,6 @@
+// 查询页直方图辅助：指数桶宽度、零轴位置与 bucket 边界字符串格式化。
+
+// calculateDefaultExpBucketWidth 由末桶或倒数第二桶的对数差估计 exp 桶宽。
 // Calculates a default width of exponential histogram bucket ranges. If the last bucket is [0, 0],
 // the width is calculated using the second to last bucket. returns error if the last bucket is [-0, 0],
 export function calculateDefaultExpBucketWidth(
@@ -23,6 +26,7 @@ export function calculateDefaultExpBucketWidth(
   }
 }
 
+// findMinPositive 扫描桶左右边界，返回最小正边界，无则 0。
 // Finds the lowest positive value from the bucket ranges
 // Returns 0 if no positive values are found or if there are no buckets.
 export function findMinPositive(buckets: [number, string, string, string][]) {
@@ -48,6 +52,7 @@ export function findMinPositive(buckets: [number, string, string, string][]) {
   return 0; // all buckets are negative
 }
 
+// findMaxNegative 返回最大负边界（最接近零的负侧值），全正桶时返回 0。
 // Finds the lowest negative value from the bucket ranges
 // Returns 0 if no negative values are found or if there are no buckets.
 export function findMaxNegative(buckets: [number, string, string, string][]) {
@@ -73,6 +78,7 @@ export function findMaxNegative(buckets: [number, string, string, string][]) {
   return parseFloat(buckets[buckets.length - 1][2]); // all buckets are negative
 }
 
+// findZeroAxisLeft 在线性/对数刻度下计算零轴 CSS left 百分比。
 // Calculates the left position of the zero axis as a percentage string.
 export function findZeroAxisLeft(
   scale: string,
@@ -106,6 +112,7 @@ export function findZeroAxisLeft(
   }
 }
 
+// showZeroAxis 仅当零轴落在 5%–95% 宽度内时显示，避免与边界标签重叠。
 // Determines if the zero axis should be shown such that the zero label does not overlap with the range labels.
 // The zero axis is shown if it is between 5% and 95% of the graph.
 export function showZeroAxis(zeroAxisLeft: string) {
@@ -116,6 +123,7 @@ export function showZeroAxis(zeroAxisLeft: string) {
   return false;
 }
 
+// findZeroBucket 返回包含 0 的桶索引，不存在则 -1。
 // Finds the index of the bucket whose range includes zero
 export function findZeroBucket(
   buckets: [number, string, string, string][]
@@ -133,6 +141,7 @@ export function findZeroBucket(
 const leftDelim = (br: number): string => (br === 3 || br === 1 ? "[" : "(");
 const rightDelim = (br: number): string => (br === 3 || br === 0 ? "]" : ")");
 
+// bucketRangeString 按 boundaryRule 选择 [ ] ( ) 并格式化 left -> right 展示串。
 export const bucketRangeString = ([
   boundaryRule,
   leftBoundary,

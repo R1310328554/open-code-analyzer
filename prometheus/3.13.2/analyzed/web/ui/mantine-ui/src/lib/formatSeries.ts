@@ -4,6 +4,7 @@ import {
 } from "../promql/utils";
 import { escapeString } from "./escapeString";
 
+// formatSeries 将标签 map 格式化为 PromQL 向量选择器或扩展字符集的 {...} 语法。
 // TODO: Maybe replace this with the new PromLens-derived serialization code in src/promql/serialize.ts?
 export const formatSeries = (labels: { [key: string]: string }): string => {
   if (labels === null) {

@@ -1,3 +1,5 @@
+// CodeMirror 6 主题：PromQL 编辑器的基础/明暗样式、自动补全与语法高亮配色。
+
 import { HighlightStyle } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
@@ -160,6 +162,7 @@ export const baseTheme = EditorView.theme({
   },
 });
 
+// lightTheme 在 baseTheme 之上叠加浅色背景下的选中、补全与图标颜色。
 export const lightTheme = EditorView.theme(
   {
     ".cm-tooltip": {
@@ -234,6 +237,7 @@ export const lightTheme = EditorView.theme(
   { dark: false }
 );
 
+// darkTheme 适配 Mantine 暗色模式：caret、选中区与补全面板对比度。
 export const darkTheme = EditorView.theme(
   {
     ".cm-content": {
@@ -292,6 +296,7 @@ export const darkTheme = EditorView.theme(
   { dark: true }
 );
 
+// promqlHighlighter 为浅色主题下的 PromQL Lezer 标签着色方案。
 export const promqlHighlighter = HighlightStyle.define([
   { tag: tags.number, color: "#09885a" },
   { tag: tags.string, color: "#a31515" },
@@ -307,6 +312,7 @@ export const promqlHighlighter = HighlightStyle.define([
   { tag: tags.comment, color: "#888", fontStyle: "italic" },
 ]);
 
+// darkPromqlHighlighter 在暗色背景下提高数字、字符串与标签名可读性。
 export const darkPromqlHighlighter = HighlightStyle.define([
   { tag: tags.number, color: "#22c55e" },
   { tag: tags.string, color: "#fca5a5" },

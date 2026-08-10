@@ -1,4 +1,6 @@
+// SelfMetricsResult 为 Prometheus 进程自身 exposition 的 ProtoJSON MetricFamily 数组。
 // Result type for /api/v1/status/self_metrics endpoint.
+// 字段命名与 protobuf JSON 映射一致，便于直接反序列化 client_model。
 // The response uses the standard ProtoJSON format for io.prometheus.client.MetricFamily.
 // See https://protobuf.dev/programming-guides/json/
 
@@ -41,6 +43,7 @@ export interface ProtoBucketSpan {
   length: number;
 }
 
+// ProtoHistogram 支持经典桶与原生指数直方图的 span/delta 字段。
 export interface ProtoHistogram {
   sampleCount: string;
   sampleCountFloat?: number;
@@ -80,6 +83,7 @@ export interface ProtoMetric {
   timestampMs?: string;
 }
 
+// ProtoMetricFamily 对应 MetricFamily：name、help、type 与 metric 样本列表。
 export interface ProtoMetricFamily {
   name: string;
   help: string;

@@ -1,3 +1,5 @@
+// formatTime 模块单元测试：Prometheus 时长解析/格式化与人类可读 duration 输出。
+
 import {
   humanizeDuration,
   formatPrometheusDuration,
@@ -26,6 +28,7 @@ describe("parsePrometheusDuration", () => {
   });
 });
 
+// formatPrometheusDuration 验证 ms 到 d 各档位及负值、省略零分量行为。
 describe("formatPrometheusDuration", () => {
   test('returns "0s" for 0 milliseconds', () => {
     expect(formatPrometheusDuration(0)).toBe("0s");
@@ -78,6 +81,7 @@ describe("formatPrometheusDuration", () => {
   });
 });
 
+// humanizeDuration 测试带空格与小数秒的展示格式，区别于紧凑 Prometheus 串。
 describe("humanizeDuration", () => {
   test('returns "0s" for 0 milliseconds', () => {
     expect(humanizeDuration(0)).toBe("0s");
