@@ -1933,3 +1933,18 @@
 2026-08-10T04:29:59Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/InstanceOperatorClientImpl.java wave64a [0:15] naming controllers/core operators
 2026-08-10T04:29:59Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/InstancePatchObject.java wave64a [0:15] naming controllers/core operators
 2026-08-10T04:29:59Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/Operator.java wave64a [0:15] naming controllers/core operators
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/OperatorV2Impl.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/ServiceOperator.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/ServiceOperatorV2Impl.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/SubscribeManager.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/ServiceManager.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/cleaner/AbstractNamingCleaner.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/cleaner/EmptyServiceAutoCleanerV2.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/cleaner/ExpiredMetadataCleaner.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/cleaner/NamingCleaner.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/client/AbstractClient.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/client/Client.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/client/ClientAttributes.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/client/ClientSyncData.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/client/ClientSyncDatumSnapshot.java wave64b [15:30] naming core v2 service/client
+2026-08-10T04:30:22Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/client/factory/ClientFactory.java wave64b [15:30] naming core v2 service/client
