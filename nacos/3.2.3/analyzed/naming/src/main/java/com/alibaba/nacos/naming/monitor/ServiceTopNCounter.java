@@ -21,7 +21,9 @@ import com.alibaba.nacos.naming.core.v2.pojo.Service;
 import com.alibaba.nacos.naming.misc.UtilsAndCommons;
 
 /**
- * Service topN counter.
+ * 服务变更次数 TopN 计数器。
+ *
+ * <p>继承 {@link BaseTopNCounter}，以「命名空间@@分组@@服务名」为键统计各服务变更频率，供 {@link NamingDynamicMeterRefreshService} 定时刷新到 Micrometer。</p>
  *
  * @author xiweng.yy
  */
@@ -31,6 +33,7 @@ public class ServiceTopNCounter extends BaseTopNCounter<Service> {
         super();
     }
     
+    /** 将 {@link Service} 转为 TopN 计数键（namespace@@groupedServiceName）。 */
     @Override
     protected String keyToString(Service service) {
         return service.getNamespace() + UtilsAndCommons.NAMESPACE_SERVICE_CONNECTOR

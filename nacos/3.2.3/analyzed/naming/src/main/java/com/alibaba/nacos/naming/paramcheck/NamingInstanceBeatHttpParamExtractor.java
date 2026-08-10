@@ -28,12 +28,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Naming instance beat http param extractor.
+ * 实例心跳 HTTP 请求参数提取器。
+ *
+ * <p>解析心跳接口的服务名、分组、IP、端口、命名空间及 beat JSON 体，可能返回两条 {@link ParamInfo}（主参数 + beat 内嵌实例信息）。</p>
  *
  * @author zhuoguang
  */
 public class NamingInstanceBeatHttpParamExtractor extends AbstractHttpParamExtractor {
     
+    /** 提取心跳请求参数，beat 非空时额外解析 {@link RsInfo} 字段。 */
     @Override
     public List<ParamInfo> extractParam(HttpServletRequest request) {
         ParamInfo paramInfo = new ParamInfo();

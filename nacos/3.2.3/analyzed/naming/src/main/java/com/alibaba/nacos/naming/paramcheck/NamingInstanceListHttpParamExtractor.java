@@ -26,12 +26,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Naming instance list http param extractor.
+ * 实例列表查询 HTTP 请求参数提取器。
+ *
+ * <p>解析 serviceName、groupName、namespaceId 与 clusters 参数，支持 group@@service 组合格式，供实例列表接口的参数校验使用。</p>
  *
  * @author zhuoguang
  */
 public class NamingInstanceListHttpParamExtractor extends AbstractHttpParamExtractor {
     
+    /** 提取实例列表查询所需 ParamInfo。 */
     @Override
     public List<ParamInfo> extractParam(HttpServletRequest request) {
         ParamInfo paramInfo = new ParamInfo();

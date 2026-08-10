@@ -25,7 +25,10 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * UpdateSwitchForm.
+ * 更新运行时开关（Switch）的 HTTP 请求表单。
+ *
+ * <p>用于运维接口修改 {@code SwitchDomain} 中指定条目的开关值，包含调试标志、条目名与新值；提交前需通过 {@link #validate()} 校验必填参数。</p>
+ *
  * @author dongyafei
  * @date 2022/9/15
  */
@@ -33,19 +36,22 @@ public class UpdateSwitchForm implements Serializable {
     
     private static final long serialVersionUID = -1580959130954136990L;
     
+    /** 是否为调试模式更新（影响日志与校验行为）。 */
     private boolean debug;
     
+    /** 开关条目名称，对应 SwitchDomain 中的配置键。 */
     private String entry;
     
+    /** 开关新值（字符串形式，由条目类型解析）。 */
     private String value;
     
     public UpdateSwitchForm() {
     }
     
     /**
-     * check param.
+     * 校验 entry 与 value 必填，缺失时抛出 {@link NacosApiException}。
      *
-     * @throws NacosApiException NacosApiException
+     * @throws NacosApiException 参数缺失或非法
      */
     public void validate() throws NacosApiException {
         if (StringUtils.isBlank(entry)) {
@@ -58,14 +64,17 @@ public class UpdateSwitchForm implements Serializable {
         }
     }
     
+    /** 返回是否调试模式。 */
     public boolean getDebug() {
         return debug;
     }
     
+    /** 设置调试模式标志。 */
     public void setDebug(boolean debug) {
         this.debug = debug;
     }
     
+    /** 返回开关条目名。 */
     public String getEntry() {
         return entry;
     }
@@ -74,6 +83,7 @@ public class UpdateSwitchForm implements Serializable {
         this.entry = entry;
     }
     
+    /** 返回开关新值。 */
     public String getValue() {
         return value;
     }

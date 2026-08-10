@@ -26,15 +26,19 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * pending push task metrics collector.
+ * 待处理推送任务数指标采集器。
+ *
+ * <p>定时从 {@link NamingSubscriberServiceV2Impl} 读取推送队列积压数，更新 {@link MetricsMonitor#getPushPendingTaskCount()} Gauge。</p>
  *
  * @author <a href="mailto:liuyixiao0821@gmail.com">liuyixiao</a>
  */
 @Service
 public class PushPendingTaskCountMetricsCollector {
     
+    /** 采集间隔（秒）。 */
     private static final long DELAY_SECONDS = 2;
     
+    /** 单线程守护调度器。 */
     private static ScheduledExecutorService executorService =
         ExecutorFactory.newSingleScheduledExecutorService(r -> {
             Thread thread =
@@ -43,6 +47,7 @@ public class PushPendingTaskCountMetricsCollector {
             return thread;
         });
     
+    /** 注入 v2 推送服务并启动定时采集。 */
     @Autowired
     public PushPendingTaskCountMetricsCollector(
         NamingSubscriberServiceV2Impl namingSubscriberServiceV2) {

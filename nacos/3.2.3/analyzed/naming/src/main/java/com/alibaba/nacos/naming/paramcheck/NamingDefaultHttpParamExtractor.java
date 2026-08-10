@@ -28,12 +28,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Naming default http param extractor.
+ * Naming 默认 HTTP 请求参数提取器。
+ *
+ * <p>从 {@link HttpServletRequest} 解析 IP、端口、命名空间、集群、服务名、分组与元数据等字段，组装为 {@link ParamInfo} 供参数校验插件使用；支持多种参数别名。</p>
  *
  * @author zhuoguang
  */
 public class NamingDefaultHttpParamExtractor extends AbstractHttpParamExtractor {
     
+    /** 提取通用实例操作 HTTP 参数并解析 group@@service 组合格式。 */
     @Override
     public List<ParamInfo> extractParam(HttpServletRequest request) throws NacosException {
         ParamInfo paramInfo = new ParamInfo();
@@ -58,16 +61,19 @@ public class NamingDefaultHttpParamExtractor extends AbstractHttpParamExtractor 
         return paramInfos;
     }
     
+    /** 读取 namespaceId 请求参数。 */
     private String getAliasNamespaceId(HttpServletRequest request) {
         String namespaceid = request.getParameter("namespaceId");
         return namespaceid;
     }
     
+    /** 读取 ip 请求参数。 */
     private String getAliasIp(HttpServletRequest request) {
         String ip = request.getParameter("ip");
         return ip;
     }
     
+    /** 读取 port 或 checkPort 请求参数。 */
     private String getAliasPort(HttpServletRequest request) {
         String port = request.getParameter("port");
         if (StringUtils.isBlank(port)) {
@@ -76,6 +82,7 @@ public class NamingDefaultHttpParamExtractor extends AbstractHttpParamExtractor 
         return port;
     }
     
+    /** 读取 serviceName 或 serviceNameParam 请求参数。 */
     private String getAliasServiceName(HttpServletRequest request) {
         String serviceName = request.getParameter("serviceName");
         if (StringUtils.isBlank(serviceName)) {
@@ -84,6 +91,7 @@ public class NamingDefaultHttpParamExtractor extends AbstractHttpParamExtractor 
         return serviceName;
     }
     
+    /** 读取 groupName 或 groupNameParam 请求参数。 */
     private String getAliasGroupName(HttpServletRequest request) {
         String groupName = request.getParameter("groupName");
         if (StringUtils.isBlank(groupName)) {
@@ -92,6 +100,7 @@ public class NamingDefaultHttpParamExtractor extends AbstractHttpParamExtractor 
         return groupName;
     }
     
+    /** 读取 clusterName、cluster 或 clusters 请求参数。 */
     private String getAliasClusterName(HttpServletRequest request) {
         String clusterName = request.getParameter("clusterName");
         if (StringUtils.isBlank(clusterName)) {

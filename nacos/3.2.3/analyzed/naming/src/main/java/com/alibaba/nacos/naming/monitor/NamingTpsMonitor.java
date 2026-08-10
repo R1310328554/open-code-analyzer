@@ -21,14 +21,18 @@ import com.alibaba.nacos.plugin.control.tps.TpsControlManager;
 import com.alibaba.nacos.plugin.control.tps.request.TpsCheckRequest;
 
 /**
- * Tps and flow control monitor singleton for Naming.
+ * Naming 模块 TPS 与流控监控单例。
+ *
+ * <p>封装 {@link TpsControlManager}，在 RPC 推送与 Distro 同步/校验成功或失败时上报 TPS 采样点，供插件化流控策略统计与限流。</p>
  *
  * @author xiweng.yy
  */
 public class NamingTpsMonitor {
     
+    /** 全局单例。 */
     private static final NamingTpsMonitor INSTANCE = new NamingTpsMonitor();
     
+    /** 插件中心提供的 TPS 流控管理器。 */
     private final TpsControlManager tpsControlManager =
         ControlManagerCenter.getInstance().getTpsControlManager();
     
@@ -37,12 +41,14 @@ public class NamingTpsMonitor {
         registerDistroMonitorPoint();
     }
     
+    /** 注册 RPC 推送相关 TPS 监控点。 */
     private void registerPushMonitorPoint() {
         tpsControlManager.registerTpsPoint(TpsMonitorItem.NAMING_RPC_PUSH.name());
         tpsControlManager.registerTpsPoint(TpsMonitorItem.NAMING_RPC_PUSH_SUCCESS.name());
         tpsControlManager.registerTpsPoint(TpsMonitorItem.NAMING_RPC_PUSH_FAIL.name());
     }
     
+    /** 注册 Distro 同步与校验相关 TPS 监控点。 */
     private void registerDistroMonitorPoint() {
         tpsControlManager.registerTpsPoint(TpsMonitorItem.NAMING_DISTRO_SYNC.name());
         tpsControlManager.registerTpsPoint(TpsMonitorItem.NAMING_DISTRO_SYNC_SUCCESS.name());
@@ -57,10 +63,10 @@ public class NamingTpsMonitor {
     }
     
     /**
-     * Apply RPC push success.
+     * 上报 RPC 推送成功 TPS 采样。
      *
-     * @param clientId client id
-     * @param clientIp client ip
+     * @param clientId 客户端 ID
+     * @param clientIp 客户端 IP
      */
     public static void rpcPushSuccess(String clientId, String clientIp) {
         INSTANCE.tpsControlManager
@@ -70,10 +76,10 @@ public class NamingTpsMonitor {
     }
     
     /**
-     * Apply RPC push fail.
+     * 上报 RPC 推送失败 TPS 采样。
      *
-     * @param clientId client id
-     * @param clientIp client ip
+     * @param clientId 客户端 ID
+     * @param clientIp 客户端 IP
      */
     public static void rpcPushFail(String clientId, String clientIp) {
         INSTANCE.tpsControlManager
@@ -83,10 +89,10 @@ public class NamingTpsMonitor {
     }
     
     /**
-     * Apply distro sync success.
+     * 上报 Distro 数据同步成功 TPS 采样。
      *
-     * @param clientId client id
-     * @param clientIp client ip
+     * @param clientId 客户端 ID
+     * @param clientIp 客户端 IP
      */
     public static void distroSyncSuccess(String clientId, String clientIp) {
         INSTANCE.tpsControlManager.check(
@@ -97,10 +103,10 @@ public class NamingTpsMonitor {
     }
     
     /**
-     * Apply distro sync fail.
+     * 上报 Distro 数据同步失败 TPS 采样。
      *
-     * @param clientId client id
-     * @param clientIp client ip
+     * @param clientId 客户端 ID
+     * @param clientIp 客户端 IP
      */
     public static void distroSyncFail(String clientId, String clientIp) {
         INSTANCE.tpsControlManager.check(
@@ -111,10 +117,10 @@ public class NamingTpsMonitor {
     }
     
     /**
-     * Apply distro verify success.
+     * 上报 Distro 数据校验成功 TPS 采样。
      *
-     * @param clientId client id
-     * @param clientIp client ip
+     * @param clientId 客户端 ID
+     * @param clientIp 客户端 IP
      */
     public static void distroVerifySuccess(String clientId, String clientIp) {
         INSTANCE.tpsControlManager.check(
@@ -125,10 +131,10 @@ public class NamingTpsMonitor {
     }
     
     /**
-     * Apply distro verify fail.
+     * 上报 Distro 数据校验失败 TPS 采样。
      *
-     * @param clientId client id
-     * @param clientIp client ip
+     * @param clientId 客户端 ID
+     * @param clientIp 客户端 IP
      */
     public static void distroVerifyFail(String clientId, String clientIp) {
         INSTANCE.tpsControlManager.check(

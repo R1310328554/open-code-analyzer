@@ -22,7 +22,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.io.Serializable;
 
 /**
- * Metrics Information.
+ * Naming 模块监控指标视图对象（旧版）。
+ *
+ * <p>汇总服务数、实例数、订阅数、各类客户端数量及 CPU/负载/内存等运行时指标；已废弃，请使用 {@link com.alibaba.nacos.api.naming.pojo.maintainer.MetricsInfo}。</p>
+ *
  * @author dongyafei
  * @date 2022/9/15
  * @deprecated use {@link com.alibaba.nacos.api.naming.pojo.maintainer.MetricsInfo} replaced.
@@ -33,28 +36,40 @@ public class MetricsInfoVo implements Serializable {
     
     private static final long serialVersionUID = -5064297490423743871L;
     
+    /** 节点运行状态（如 UP/DOWN）。 */
     private String status;
     
+    /** 当前注册的服务总数。 */
     private Integer serviceCount;
     
+    /** 当前注册的实例总数。 */
     private Integer instanceCount;
     
+    /** 订阅关系总数。 */
     private Integer subscribeCount;
     
+    /** 客户端连接总数。 */
     private Integer clientCount;
     
+    /** 基于长连接的 v2 客户端数量。 */
     private Integer connectionBasedClientCount;
     
+    /** 临时 IP:Port 客户端数量（v1 协议）。 */
     private Integer ephemeralIpPortClientCount;
     
+    /** 持久 IP:Port 客户端数量（v1 协议）。 */
     private Integer persistentIpPortClientCount;
     
+    /** 本节点负责的客户端数量（Distro 分片）。 */
     private Integer responsibleClientCount;
     
+    /** CPU 使用率（已从新 API 移除）。 */
     private Float cpu;
     
+    /** 系统负载（已从新 API 移除）。 */
     private Float load;
     
+    /** 内存使用率（已从新 API 移除）。 */
     private Float mem;
     
     public MetricsInfoVo() {
@@ -157,10 +172,10 @@ public class MetricsInfoVo implements Serializable {
     }
     
     /**
-     * Transfer to {@link MetricsInfo}, the new metrics info will remove cpu/load/memory information, due to cost many performance and low accuracy.
+     * 转换为新版 {@link MetricsInfo}，不含 CPU/负载/内存字段（采集开销大且精度低）。
      *
-     * @param metricsInfoVo the old metrics info.
-     * @return new metrics info.
+     * @param metricsInfoVo 旧版指标视图对象
+     * @return 新版 MetricsInfo 实例
      */
     public static MetricsInfo toNewMetricsInfo(MetricsInfoVo metricsInfoVo) {
         MetricsInfo metricsInfo = new MetricsInfo();

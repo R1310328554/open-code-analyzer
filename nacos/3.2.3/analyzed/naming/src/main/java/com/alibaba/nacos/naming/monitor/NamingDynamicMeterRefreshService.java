@@ -28,20 +28,24 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * dynamic meter refresh service.
+ * Naming 动态 Micrometer 指标刷新服务。
+ *
+ * <p>定时将 {@link ServiceTopNCounter} 中变更最频繁的服务 TopN 写入独立注册表，并周期性清零计数器，供 Grafana 等监控面板展示热点服务。</p>
  *
  * @author <a href="mailto:liuyixiao0821@gmail.com">liuyixiao</a>
  */
 @Service
 public class NamingDynamicMeterRefreshService {
     
+    /** 服务变更 TopN 专用 Micrometer 注册表。 */
     private static final String TOPN_SERVICE_CHANGE_REGISTRY =
         NacosMeterRegistryCenter.TOPN_SERVICE_CHANGE_REGISTRY;
     
+    /** TopN 榜单保留的服务数量。 */
     private static final int SERVICE_CHANGE_N = 10;
     
     /**
-     * refresh service change count top n per 30s.
+     * 每 30 秒刷新服务变更 TopN 指标到 Micrometer。
      */
     @Scheduled(cron = "0/30 * * * * *")
     public void refreshTopnServiceChangeCount() {
@@ -59,7 +63,7 @@ public class NamingDynamicMeterRefreshService {
     }
     
     /**
-     * reset service change count to 0 every week.
+     * 每周一零点清零服务变更计数器，避免长期累积失真。
      */
     @Scheduled(cron = "0 0 0 ? * 1")
     public void resetTopnServiceChangeCount() {

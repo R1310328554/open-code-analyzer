@@ -30,7 +30,9 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Logger thread for print performance.
+ * Naming 性能日志定时输出组件。
+ *
+ * <p>周期性将服务数、实例数、推送耗时、Distro 同步统计等写入 PERFORMANCE 日志，并定时采集/重置 {@link MetricsMonitor} 指标，便于运维排查性能瓶颈。</p>
  *
  * @author nacos
  */
@@ -38,8 +40,10 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class PerformanceLoggerThread {
     
+    /** 性能日志输出周期（秒）。 */
     private static final long PERIOD = 60;
     
+    /** Spring 容器就绪后启动性能日志定时任务。 */
     @PostConstruct
     public void init() {
         start();
@@ -51,7 +55,7 @@ public class PerformanceLoggerThread {
     }
     
     /**
-     * Refresh metrics.
+     * 每日零点重置全部 MetricsMonitor 指标。
      */
     @Scheduled(cron = "0 0 0 * * ?")
     public void refreshMetrics() {
@@ -59,7 +63,7 @@ public class PerformanceLoggerThread {
     }
     
     /**
-     * collect metrics.
+     * 每 15 秒采集服务总数与平均推送耗时。
      */
     @Scheduled(cron = "0/15 * * * * ?")
     public void collectMetrics() {
@@ -68,8 +72,10 @@ public class PerformanceLoggerThread {
         MetricsMonitor.getAvgPushCostMonitor().set(getAvgPushCost());
     }
     
+    /** 性能日志输出 Runnable，由 GlobalExecutor 定时调度。 */
     class PerformanceLogTask implements Runnable {
         
+        /** 日志轮次计数，每 10 次输出表头。 */
         private int logCount = 0;
         
         @Override
@@ -109,6 +115,7 @@ public class PerformanceLoggerThread {
             
         }
         
+        /** 输出 v2 Distro 同步/校验统计到 PERFORMANCE 日志。 */
         private void printDistroMonitor() {
             Optional<DistroRecord> v2Record = DistroRecordsHolder.getInstance()
                 .getRecordIfExist(DistroClientDataProcessor.TYPE);
@@ -124,6 +131,7 @@ public class PerformanceLoggerThread {
         }
     }
     
+    /** 计算当前周期内平均推送耗时（毫秒），无样本时返回 -1。 */
     private long getAvgPushCost() {
         int size = MetricsMonitor.getTotalPushCountForAvg().get();
         long totalCost = MetricsMonitor.getTotalPushCostForAvg().get();

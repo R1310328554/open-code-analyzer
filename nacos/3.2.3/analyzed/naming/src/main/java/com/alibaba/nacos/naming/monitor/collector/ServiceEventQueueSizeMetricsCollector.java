@@ -26,15 +26,19 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * ServiceEvent queue size metrics collector.
+ * 服务事件队列长度指标采集器。
+ *
+ * <p>定时读取 {@link NotifyCenter} 中 ServiceSubscribedEvent 与 ServiceChangedEvent 发布者队列深度，写入 {@link MetricsMonitor}。</p>
  *
  * @author <a href="mailto:liuyixiao0821@gmail.com">liuyixiao</a>
  */
 @Service
 public class ServiceEventQueueSizeMetricsCollector {
     
+    /** 采集间隔（秒）。 */
     private static final long DELAY_SECONDS = 2;
     
+    /** 单线程守护调度器。 */
     private static ScheduledExecutorService executorService =
         ExecutorFactory.newSingleScheduledExecutorService(r -> {
             Thread thread =
@@ -43,6 +47,7 @@ public class ServiceEventQueueSizeMetricsCollector {
             return thread;
         });
     
+    /** 构造时启动定时采集 ServiceEvent 队列长度。 */
     public ServiceEventQueueSizeMetricsCollector() {
         executorService.scheduleWithFixedDelay(() -> {
             MetricsMonitor.getServiceSubscribedEventQueueSize().set(

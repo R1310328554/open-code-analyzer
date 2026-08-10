@@ -17,54 +17,56 @@
 package com.alibaba.nacos.naming.monitor;
 
 /**
- * Naming Tps monitor items.
+ * Naming 模块 TPS 监控点枚举。
+ *
+ * <p>每个枚举值对应 {@link TpsControlManager} 中注册的一个 TPS 采样点，覆盖 RPC 推送与 Distro 同步/校验的成功与失败路径。</p>
  *
  * @author xiweng.yy
  */
 public enum TpsMonitorItem {
     
     /**
-     * Naming rpc total push.
+     * RPC 推送总次数 TPS 监控点。
      */
     NAMING_RPC_PUSH,
     
     /**
-     * Naming rpc success push.
+     * RPC 推送成功次数 TPS 监控点。
      */
     NAMING_RPC_PUSH_SUCCESS,
     
     /**
-     * Naming rpc failed push.
+     * RPC 推送失败次数 TPS 监控点。
      */
     NAMING_RPC_PUSH_FAIL,
     
     /**
-     * Naming rpc distro sync total count.
+     * Distro 数据同步总次数 TPS 监控点。
      */
     NAMING_DISTRO_SYNC,
     
     /**
-     * Naming rpc distro sync success count.
+     * Distro 数据同步成功次数 TPS 监控点。
      */
     NAMING_DISTRO_SYNC_SUCCESS,
     
     /**
-     * Naming rpc distro sync fail count.
+     * Distro 数据同步失败次数 TPS 监控点。
      */
     NAMING_DISTRO_SYNC_FAIL,
     
     /**
-     * Naming rpc distro verify fail count.
+     * Distro 数据校验总次数 TPS 监控点。
      */
     NAMING_DISTRO_VERIFY,
     
     /**
-     * Naming rpc distro verify fail count.
+     * Distro 数据校验成功次数 TPS 监控点。
      */
     NAMING_DISTRO_VERIFY_SUCCESS,
     
     /**
-     * Naming rpc distro verify fail count.
+     * Distro 数据校验失败次数 TPS 监控点。
      */
     NAMING_DISTRO_VERIFY_FAIL,
 }

@@ -20,7 +20,10 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * InstanceDetailInfoVo.
+ * 实例详情视图对象（旧版 HTTP API 响应）。
+ *
+ * <p>封装服务名、IP、端口、集群、权重、健康状态、实例 ID 与元数据，供运维查询接口返回；v2 HTTP API 移除后将废弃。</p>
+ *
  * @author dongyafei
  * @date 2022/9/7
  * @deprecated will be removed after v2 http api removed.
@@ -30,20 +33,28 @@ public class InstanceDetailInfoVo implements Serializable {
     
     private static final long serialVersionUID = -8983967044228959560L;
     
+    /** 所属服务名（不含分组前缀）。 */
     private String serviceName;
     
+    /** 实例 IP 地址。 */
     private String ip;
     
+    /** 实例端口号。 */
     private Integer port;
     
+    /** 所属集群名称。 */
     private String clusterName;
     
+    /** 负载均衡权重。 */
     private Double weight;
     
+    /** 当前健康状态。 */
     private Boolean healthy;
     
+    /** 实例唯一标识。 */
     private String instanceId;
     
+    /** 实例元数据键值对。 */
     private Map<String, String> metadata;
     
     public InstanceDetailInfoVo() {

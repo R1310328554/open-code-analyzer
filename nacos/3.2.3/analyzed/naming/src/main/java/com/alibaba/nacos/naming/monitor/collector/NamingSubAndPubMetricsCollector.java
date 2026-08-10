@@ -29,15 +29,19 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * v1 and v2 naming subscriber and publisher metrics collector.
+ * v1/v2 订阅者与发布者数量指标采集器。
+ *
+ * <p>定时遍历各 {@link Client} 管理器，统计发布/订阅服务数并写入 {@link MetricsMonitor} 的 v1/v2 Gauge。</p>
  *
  * @author <a href="mailto:liuyixiao0821@gmail.com">liuyixiao</a>
  */
 @Service
 public class NamingSubAndPubMetricsCollector {
     
+    /** 采集任务初始延迟与执行间隔（秒）。 */
     private static final long DELAY_SECONDS = 5;
     
+    /** 单线程守护调度器，执行订阅/发布计数采集。 */
     private static ScheduledExecutorService executorService =
         ExecutorFactory.newSingleScheduledExecutorService(r -> {
             Thread thread = new Thread(r, "nacos.naming.monitor.NamingSubAndPubMetricsCollector");
@@ -45,6 +49,7 @@ public class NamingSubAndPubMetricsCollector {
             return thread;
         });
     
+    /** 注入各 Client 管理器并启动定时采集任务。 */
     @Autowired
     public NamingSubAndPubMetricsCollector(
         ConnectionBasedClientManager connectionBasedClientManager,
