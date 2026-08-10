@@ -22,12 +22,16 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * {@link UpperCasePasswordPolicyProvider} 的工厂，策略 ID 为 {@link #ID}（{@code upperCase}）。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class UpperCasePasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
 
+    /** 策略 ID：{@code upperCase}。 */
     public static final String ID = "upperCase";
 
+    /** 创建 {@link UpperCasePasswordPolicyProvider} 实例。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         return new UpperCasePasswordPolicyProvider(session.getContext());
@@ -45,6 +49,7 @@ public class UpperCasePasswordPolicyProviderFactory implements PasswordPolicyPro
     public void close() {
     }
 
+    /** @return 管理控制台显示名称“Uppercase Characters” */
     @Override
     public String getDisplayName() {
         return "Uppercase Characters";
@@ -65,6 +70,7 @@ public class UpperCasePasswordPolicyProviderFactory implements PasswordPolicyPro
         return false;
     }
 
+    /** @return 策略 ID {@link #ID} */
     @Override
     public String getId() {
         return ID;

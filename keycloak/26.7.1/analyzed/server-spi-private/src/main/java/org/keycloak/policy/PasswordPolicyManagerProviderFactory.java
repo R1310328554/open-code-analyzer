@@ -20,6 +20,8 @@ package org.keycloak.policy;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link PasswordPolicyManagerProvider} 的 SPI 工厂接口。
+ *
  * @author <a href="mailto:roelof.naude@epiuse.com">Roelof Naude</a>
  */
 public interface PasswordPolicyManagerProviderFactory extends ProviderFactory<PasswordPolicyManagerProvider> {

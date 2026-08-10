@@ -22,18 +22,23 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 特殊字符密码策略：要求密码至少包含指定数量的非字母数字字符。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class SpecialCharsPasswordPolicyProvider implements PasswordPolicyProvider {
 
+    /** 违反策略时的 i18n 消息键。 */
     private static final String ERROR_MESSAGE = "invalidPasswordMinSpecialCharsMessage";
 
     private KeycloakContext context;
 
+    /** @param context Keycloak 上下文 */
     public SpecialCharsPasswordPolicyProvider(KeycloakContext context) {
         this.context = context;
     }
 
+    /** 统计非字母数字字符数量并与策略最小值比较。 */
     @Override
     public PolicyError validate(String username, String password) {
         int min = context.getRealm().getPasswordPolicy().getPolicyConfig(SpecialCharsPasswordPolicyProviderFactory.ID);
@@ -51,6 +56,7 @@ public class SpecialCharsPasswordPolicyProvider implements PasswordPolicyProvide
         return validate(user.getUsername(), password);
     }
 
+    /** 解析最小特殊字符个数配置，缺省为 1。 */
     @Override
     public Object parseConfig(String value) {
         return parseInteger(value, 1);

@@ -26,18 +26,23 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 正则表达式密码策略：要求密码整体匹配 realm 配置的 {@link Pattern}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class RegexPatternsPasswordPolicyProvider implements PasswordPolicyProvider {
 
+    /** 违反策略时的 i18n 消息键。 */
     private static final String ERROR_MESSAGE = "invalidPasswordRegexPatternMessage";
 
     private KeycloakContext context;
 
+    /** @param context Keycloak 上下文 */
     public RegexPatternsPasswordPolicyProvider(KeycloakContext context) {
         this.context = context;
     }
 
+    /** 使用 {@link Matcher#matches()} 校验密码是否匹配策略正则。 */
     @Override
     public PolicyError validate(String username, String password) {
         Pattern pattern = context.getRealm().getPasswordPolicy().getPolicyConfig(RegexPatternsPasswordPolicyProviderFactory.ID);
@@ -53,6 +58,12 @@ public class RegexPatternsPasswordPolicyProvider implements PasswordPolicyProvid
         return validate(user.getUsername(), password);
     }
 
+    /**
+     * 将策略配置编译为 {@link Pattern}。
+     * @param value 正则表达式字符串
+     * @return 编译后的 Pattern
+     * @throws PasswordPolicyConfigException 配置为空、仅空白或语法无效时
+     */
     @Override
     public Object parseConfig(String value) {
         if (value == null) {

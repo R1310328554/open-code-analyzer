@@ -33,6 +33,9 @@ import org.keycloak.provider.ProviderEventListener;
 import org.keycloak.representations.idm.ClientScopeRepresentation;
 
 /**
+ * 登录协议工厂的抽象基类：处理 realm/客户端默认 Client Scope 的创建与绑定。
+ * <p>监听 {@link ClientModel.ClientProtocolUpdatedEvent}，在客户端协议变更时自动附加默认 scope。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -42,6 +45,7 @@ public abstract class AbstractLoginProtocolFactory implements LoginProtocolFacto
     public void init(Config.Scope config) {
     }
 
+    /** 注册客户端协议更新事件监听器，自动为新协议客户端添加默认 scope。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         factory.register(new ProviderEventListener() {
@@ -57,26 +61,33 @@ public abstract class AbstractLoginProtocolFactory implements LoginProtocolFacto
     }
 
 
+    /**
+     * 为新 realm 创建本协议的默认 Client Scope，可选地同步到已有客户端。
+     * @param newRealm 新创建的 realm
+     * @param addScopesToExistingClients 是否将 scope 附加到 realm 内已有客户端
+     */
     @Override
     public void createDefaultClientScopes(RealmModel newRealm, boolean addScopesToExistingClients) {
         createDefaultClientScopesImpl(newRealm);
 
-        // Create default client scopes for realm built-in clients too
+        // 同时为 realm 内已有客户端附加默认 client scope
         if (addScopesToExistingClients) {
             addDefaultClientScopes(newRealm, newRealm.getClientsStream());
         }
     }
 
     /**
-     * Impl should create default client scopes. This is called usually when new realm is created
+     * 子类实现：创建本协议的默认 Client Scope（通常在新建 realm 时调用）。
      */
     protected abstract void createDefaultClientScopesImpl(RealmModel newRealm);
 
 
+    /** 为单个新客户端附加与本协议匹配的默认/可选 Client Scope。 */
     protected void addDefaultClientScopes(RealmModel realm, ClientModel newClient) {
         addDefaultClientScopes(realm, Stream.of(newClient));
     }
 
+    /** 批量为客户端流附加与本协议匹配的默认与可选 Client Scope。 */
     protected void addDefaultClientScopes(RealmModel realm, Stream<ClientModel> newClients) {
         Set<ClientScopeModel> defaultClientScopes = realm.getDefaultClientScopesStream(true)
                 .filter(clientScope -> Objects.equals(getId(), clientScope.getProtocol()))
@@ -97,11 +108,12 @@ public abstract class AbstractLoginProtocolFactory implements LoginProtocolFacto
             newClients.forEach(addNonDefault);
     }
 
+    /** 子类实现：为客户端设置协议相关的默认配置。 */
     protected abstract void addDefaults(ClientModel clientModel);
 
     @Override
     public void addClientScopeDefaults(ClientScopeRepresentation clientModel) {
-        // do nothing
+        // 默认无额外 scope 默认值
     }
 
     @Override

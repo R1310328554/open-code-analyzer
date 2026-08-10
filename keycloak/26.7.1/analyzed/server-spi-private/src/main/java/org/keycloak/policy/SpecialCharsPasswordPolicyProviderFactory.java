@@ -22,12 +22,16 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * {@link SpecialCharsPasswordPolicyProvider} 的工厂，策略 ID 为 {@link #ID}（{@code specialChars}）。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class SpecialCharsPasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
 
+    /** 策略 ID：{@code specialChars}。 */
     public static final String ID = "specialChars";
 
+    /** 创建 {@link SpecialCharsPasswordPolicyProvider} 实例。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         return new SpecialCharsPasswordPolicyProvider(session.getContext());
@@ -45,6 +49,7 @@ public class SpecialCharsPasswordPolicyProviderFactory implements PasswordPolicy
     public void close() {
     }
 
+    /** @return 管理控制台显示名称“Special Characters” */
     @Override
     public String getDisplayName() {
         return "Special Characters";
@@ -65,6 +70,7 @@ public class SpecialCharsPasswordPolicyProviderFactory implements PasswordPolicy
         return false;
     }
 
+    /** @return 策略 ID {@link #ID} */
     @Override
     public String getId() {
         return ID;

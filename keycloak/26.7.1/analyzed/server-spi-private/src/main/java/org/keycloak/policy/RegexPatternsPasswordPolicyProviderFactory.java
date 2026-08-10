@@ -22,17 +22,23 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * {@link RegexPatternsPasswordPolicyProvider} 的工厂，策略 ID 为 {@link #ID}（{@code regexPattern}）。
+ * <p>支持在同一 realm 配置多条不同正则策略（{@link #isMultiplSupported()} 为 {@code true}）。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class RegexPatternsPasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
 
+    /** 策略 ID：{@code regexPattern}。 */
     public static final String ID = "regexPattern";
 
+    /** @return 策略 ID {@link #ID} */
     @Override
     public String getId() {
         return ID;
     }
 
+    /** 创建 {@link RegexPatternsPasswordPolicyProvider} 实例。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         return new RegexPatternsPasswordPolicyProvider(session.getContext());
@@ -46,6 +52,7 @@ public class RegexPatternsPasswordPolicyProviderFactory implements PasswordPolic
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** @return 管理控制台显示名称“Regular Expression” */
     @Override
     public String getDisplayName() {
         return "Regular Expression";
@@ -61,6 +68,7 @@ public class RegexPatternsPasswordPolicyProviderFactory implements PasswordPolic
         return "";
     }
 
+    /** @return {@code true}，允许配置多条正则策略 */
     @Override
     public boolean isMultiplSupported() {
         return true;

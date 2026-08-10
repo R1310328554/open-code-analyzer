@@ -22,25 +22,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 密码策略 SPI：注册各 {@link PasswordPolicyProvider} 实现及其 {@link PasswordPolicyProviderFactory}。
+ * <p>内部 SPI，名称 {@code password-policy}。</p>
+ *
  * @author <a href="mailto:roelof.naude@epiuse.com">Roelof Naude</a>
  */
 public class PasswordPolicySpi implements Spi {
 
+    /** @return 始终为 {@code true}，表示内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code password-policy} */
     @Override
     public String getName() {
         return "password-policy";
     }
 
+    /** @return 提供者接口 {@link PasswordPolicyProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return PasswordPolicyProvider.class;
     }
 
+    /** @return 工厂接口 {@link PasswordPolicyProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return PasswordPolicyProviderFactory.class;

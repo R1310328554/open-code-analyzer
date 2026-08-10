@@ -22,17 +22,22 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * {@link NotUsernamePasswordPolicyProvider} 的工厂，策略 ID 为 {@link #ID}（{@code notUsername}）。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class NotUsernamePasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
 
+    /** 策略 ID：{@code notUsername}。 */
     public static final String ID = "notUsername";
 
+    /** @return 策略 ID {@link #ID} */
     @Override
     public String getId() {
         return ID;
     }
 
+    /** 创建 {@link NotUsernamePasswordPolicyProvider} 实例。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         return new NotUsernamePasswordPolicyProvider(session.getContext());
@@ -46,6 +51,7 @@ public class NotUsernamePasswordPolicyProviderFactory implements PasswordPolicyP
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** @return 管理控制台显示名称“Not Username” */
     @Override
     public String getDisplayName() {
         return "Not Username";

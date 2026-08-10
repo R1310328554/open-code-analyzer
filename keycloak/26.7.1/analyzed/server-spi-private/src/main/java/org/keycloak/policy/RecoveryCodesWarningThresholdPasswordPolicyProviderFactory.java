@@ -27,6 +27,9 @@ import org.keycloak.models.UserModel;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 /**
+ * 恢复码余量警告阈值密码策略（已弃用）：工厂与提供者合一。
+ * <p>请改用恢复码 Required Action 配置警告阈值；未来版本可能移除此策略。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  *
  * @deprecated Please use rather the recovery codes required action to configure warning threshold for recovery codes. This password policy may be removed in the future versions.
@@ -36,6 +39,7 @@ public class RecoveryCodesWarningThresholdPasswordPolicyProviderFactory implemen
 
     private KeycloakSession session;
 
+    /** 保存会话并返回自身作为 {@link PasswordPolicyProvider} 实例。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         this.session = session;
@@ -54,21 +58,25 @@ public class RecoveryCodesWarningThresholdPasswordPolicyProviderFactory implemen
     public void close() {
     }
 
+    /** @return 策略 ID {@link PasswordPolicy#RECOVERY_CODES_WARNING_THRESHOLD_ID} */
     @Override
     public String getId() {
         return PasswordPolicy.RECOVERY_CODES_WARNING_THRESHOLD_ID;
     }
 
+    /** 不校验密码内容，始终返回 {@code null}。 */
     @Override
     public PolicyError validate(RealmModel realm, UserModel user, String password) {
         return null;
     }
 
+    /** 不校验密码内容，始终返回 {@code null}。 */
     @Override
     public PolicyError validate(String user, String password) {
         return null;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayName() {
         return "Recovery Codes Warning Threshold";
@@ -89,11 +97,13 @@ public class RecoveryCodesWarningThresholdPasswordPolicyProviderFactory implemen
         return false;
     }
 
+    /** 解析整数阈值配置，缺省为 {@link PasswordPolicy#RECOVERY_CODES_WARNING_THRESHOLD_DEFAULT}。 */
     @Override
     public Object parseConfig(String value) {
         return parseInteger(value, PasswordPolicy.RECOVERY_CODES_WARNING_THRESHOLD_DEFAULT);
     }
 
+    /** @return 是否启用 {@link Profile.Feature#RECOVERY_CODES} 特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.RECOVERY_CODES);
