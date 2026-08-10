@@ -20,7 +20,8 @@ package org.keycloak.protocol.oidc;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * A factory that creates {@link TokenIntrospectionProvider} instances.
+ * {@link TokenIntrospectionProvider} 的 SPI 工厂接口。
+ * <p>按令牌类型注册不同的自省实现。</p>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */

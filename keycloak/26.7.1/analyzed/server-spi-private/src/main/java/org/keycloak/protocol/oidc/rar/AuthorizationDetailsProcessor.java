@@ -24,40 +24,33 @@ import org.keycloak.provider.Provider;
 import org.keycloak.representations.AuthorizationDetailsJSONRepresentation;
 
 /**
- * Provider interface for processing authorization_details parameter in OAuth2/OIDC authorization and token requests.
- * This follows the RAR (Rich Authorization Requests) specification and allows different
- * implementations to handle various types of authorization details.
- * The authorization_details parameter can be used in both authorization requests and token requests
- * (as specified for example in the OpenID for Verifiable Credential Issuance specification).
+ * 授权详情（{@code authorization_details}）处理器接口，遵循 RAR（Rich Authorization Requests）规范。
+ * <p>支持在授权请求与令牌请求中处理不同类型的 authorization_details（如可验证凭证签发场景）。</p>
  *
  * @author <a href="mailto:Forkim.Akwichek@adorsys.com">Forkim Akwichek</a>
  */
 public interface AuthorizationDetailsProcessor<ADR extends AuthorizationDetailsJSONRepresentation> extends Provider {
 
-    /**
-     * Checks if this processor should be regarded as supported in the running context.
-     */
+    /** 检查当前运行上下文中是否支持本处理器。 */
+
     boolean isSupported();
 
     /**
-     * @return supported type of authorization_details "type" claim, which this processor is able to process. This should usually correspond with the "providerId" of
-     * the {@link AuthorizationDetailsProcessorFactory}, which created this processor
+     * @return 本处理器支持的 authorization_details {@code type} 声明值，通常对应 {@link AuthorizationDetailsProcessorFactory} 的 providerId
      */
     String getSupportedType();
 
     /**
-     * @return supported Java type of {@link AuthorizationDetailsJSONRepresentation} subclass, which this processor can create in the token response
+     * @return 令牌响应中可创建的 {@link AuthorizationDetailsJSONRepresentation} 子类 Java 类型
      */
     Class<ADR> getSupportedResponseJavaType();
 
-    /**
-     * Validates an authorization detail against supported credentials and other constraints.
-     */
+    /** 校验单条授权详情是否符合支持的凭证类型及其他约束。 */
+
     ADR validateAuthorizationDetail(AuthorizationDetailsJSONRepresentation authzDetail) throws InvalidAuthorizationDetailsException;
 
     /**
-     * Processes the authorization_details parameter and returns a response if this processor
-     * is able to handle the given authorization_details parameter.
+     * 处理 authorization_details 参数中的单条成员；无法处理时返回 {@code null}。
      *
      * @param userSession                   the user session
      * @param clientSessionCtx              the client session context
@@ -69,8 +62,7 @@ public interface AuthorizationDetailsProcessor<ADR extends AuthorizationDetailsJ
                 AuthorizationDetailsJSONRepresentation authorizationDetailsMember) throws InvalidAuthorizationDetailsException;
 
     /**
-     * Method is invoked in cases when authorization_details parameter is missing in the request. It allows processor to
-     * generate authorization details response in such a case
+     * 请求中缺少 authorization_details 时调用，允许处理器仍生成响应。
      *
      * @param userSession      the user session
      * @param clientSessionCtx the client session context
@@ -80,8 +72,7 @@ public interface AuthorizationDetailsProcessor<ADR extends AuthorizationDetailsJ
                                                 ClientSessionContext clientSessionCtx) throws InvalidAuthorizationDetailsException;
 
     /**
-     * Method is invoked when authorization_details was used in the authorization request but is missing from the token request.
-     * This method should process the stored authorization_details and ensure they are returned in the token response.
+     * 授权请求中使用了 authorization_details 但令牌请求中缺失时调用，处理已存储的授权详情。
      *
      * @param userSession       the user session
      * @param clientSessionCtx  the client session context
@@ -93,8 +84,7 @@ public interface AuthorizationDetailsProcessor<ADR extends AuthorizationDetailsJ
                                           AuthorizationDetailsJSONRepresentation storedAuthDetailsMember) throws InvalidAuthorizationDetailsException;
 
     /**
-     * Hook method called after authorization_details are processed and before the token response is created.
-     * This allows authorization details processors to perform post-processing actions (e.g., creating state objects).
+     * 授权详情处理完成、令牌响应创建前的钩子，用于后处理（如创建状态对象）。
      *
      * @param userSession      the user session
      * @param clientSessionCtx the client session context
@@ -106,8 +96,7 @@ public interface AuthorizationDetailsProcessor<ADR extends AuthorizationDetailsJ
 
 
     /**
-     * Sanitize authorization details before they are sent as part of the Token Response
-     * https://github.com/keycloak/keycloak/issues/50079
+     * 在令牌响应中发送前清理授权详情（见 keycloak#50079）。
      *
      * @param authzDetail The typed authorization detail
      * @return A sanitized clone of the authorization detail
@@ -117,8 +106,8 @@ public interface AuthorizationDetailsProcessor<ADR extends AuthorizationDetailsJ
     }
 
     /**
-     * @param authzDetailsResponse all the authorizationDetails. May contain also authorizationDetails entries, with different "type" than the type understandable by this processor
-     * @return sublist of the list provided by "authDetailsResponse" parameter, which will contain just the authorizationDetails of the corresponding type of this processor.
+     * @param authzDetailsResponse 全部授权详情列表（可能含其他 type）
+     * @return 仅包含本处理器对应 type 的子列表
      */
     default List<ADR> getSupportedAuthorizationDetails(List<AuthorizationDetailsJSONRepresentation> authzDetailsResponse) {
         if (authzDetailsResponse == null) {

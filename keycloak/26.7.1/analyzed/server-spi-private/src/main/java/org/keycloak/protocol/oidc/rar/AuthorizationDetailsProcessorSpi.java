@@ -21,30 +21,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
- * SPI for authorization details processors that handle the authorization_details parameter
- * in OAuth2/OIDC authorization and token requests as per RAR (Rich Authorization Requests) specification.
- * The authorization_details parameter can be used in both authorization requests and token requests
- * as specified in the OpenID for Verifiable Credential Issuance specification.
+ * 授权详情处理器 SPI：按 RAR 规范注册 {@code authorization_details} 处理器。
+ * <p>内部 SPI，名称 {@code authorization-details-processor}。</p>
  *
  * @author <a href="mailto:Forkim.Akwichek@adorsys.com">Forkim Akwichek</a>
  */
 public class AuthorizationDetailsProcessorSpi implements Spi {
 
+    /** @return 始终为 {@code true}，表示内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code authorization-details-processor} */
     @Override
     public String getName() {
         return "authorization-details-processor";
     }
 
+    /** @return 提供者接口 {@link AuthorizationDetailsProcessor} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return AuthorizationDetailsProcessor.class;
     }
 
+    /** @return 工厂接口 {@link AuthorizationDetailsProcessorFactory} */
     @Override
     public Class<? extends ProviderFactory<AuthorizationDetailsProcessor<?>>> getProviderFactoryClass() {
         return AuthorizationDetailsProcessorFactory.class;

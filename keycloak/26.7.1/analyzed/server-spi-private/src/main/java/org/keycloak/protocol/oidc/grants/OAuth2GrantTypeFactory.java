@@ -20,15 +20,14 @@ package org.keycloak.protocol.oidc.grants;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * Provider interface for OAuth 2.0 grant types
+ * {@link OAuth2GrantType} 的 SPI 工厂接口。
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a>
  */
 public interface OAuth2GrantTypeFactory extends ProviderFactory<OAuth2GrantType> {
 
     /**
-     * @return usually like 3-letters shortcut of specific grants. It can be useful for example in the tokens when the amount of characters should be limited and hence using full grant name
-     * is not ideal. Shortcut should be unique across grants.
+     * @return grant 的短缩写（通常 3 字符），用于令牌等字符数受限场景；各 grant 间应唯一
      */
     String getShortcut();
 }

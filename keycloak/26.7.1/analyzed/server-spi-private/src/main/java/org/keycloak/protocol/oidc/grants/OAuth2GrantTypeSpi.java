@@ -22,29 +22,35 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
- * <p>A {@link Spi} to support pluggable OAuth 2.0 grant types in Token Endpoint.
+ * OAuth 2.0 授权类型 SPI：在 Token 端点注册可插拔的 grant 实现。
+ * <p>内部 SPI，名称 {@link #SPI_NAME}（{@code oauth2-grant-type}）。</p>
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a>
  */
 public class OAuth2GrantTypeSpi implements Spi {
 
+    /** SPI 名称常量：{@code oauth2-grant-type}。 */
     public static final String SPI_NAME = "oauth2-grant-type";
 
+    /** @return 始终为 {@code true}，表示内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@link #SPI_NAME} */
     @Override
     public String getName() {
         return SPI_NAME;
     }
 
+    /** @return 提供者接口 {@link OAuth2GrantType} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return OAuth2GrantType.class;
     }
 
+    /** @return 工厂接口 {@link OAuth2GrantTypeFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return OAuth2GrantTypeFactory.class;

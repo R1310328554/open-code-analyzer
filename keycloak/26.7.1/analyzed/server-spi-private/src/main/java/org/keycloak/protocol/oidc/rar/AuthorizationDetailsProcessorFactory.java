@@ -21,18 +21,19 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * Factory for creating AuthorizationDetailsProcessor instances.
+ * {@link AuthorizationDetailsProcessor} 的 SPI 工厂接口。
  *
  * @author <a href="mailto:Forkim.Akwichek@adorsys.com">Forkim Akwichek</a>
  */
 public interface AuthorizationDetailsProcessorFactory extends ProviderFactory<AuthorizationDetailsProcessor<?>> {
 
+    /** 创建 {@link AuthorizationDetailsProcessor} 实例。 */
     @Override
     AuthorizationDetailsProcessor<?> create(KeycloakSession session);
 
     @Override
     default void postInit(KeycloakSessionFactory factory) {
-        // Default implementation does nothing
+        // 默认无 postInit 逻辑
     }
 
     @Override

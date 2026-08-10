@@ -22,26 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
- * <p>A {@link Spi} to support additional tokens types to the OAuth2 Token Introspection Endpoint.
+ * OAuth2 令牌自省 SPI：为 Token Introspection 端点注册额外的令牌类型支持。
+ * <p>内部 SPI，名称 {@code oauth2-token-introspection}。</p>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class TokenIntrospectionSpi implements Spi {
+    /** @return 始终为 {@code true}，表示内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code oauth2-token-introspection} */
     @Override
     public String getName() {
         return "oauth2-token-introspection";
     }
 
+    /** @return 提供者接口 {@link TokenIntrospectionProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return TokenIntrospectionProvider.class;
     }
 
+    /** @return 工厂接口 {@link TokenIntrospectionProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return TokenIntrospectionProviderFactory.class;

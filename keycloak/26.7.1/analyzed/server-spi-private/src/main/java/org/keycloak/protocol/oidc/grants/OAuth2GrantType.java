@@ -43,45 +43,37 @@ import org.keycloak.services.clientpolicy.ClientPolicyException;
 import org.keycloak.services.cors.Cors;
 
 /**
- * Provider interface for OAuth 2.0 grant types
+ * OAuth 2.0 授权类型（Grant Type）提供者接口：处理 Token 端点上的各类 grant 请求。
+ * <p>每种 grant 实现 {@link #process(Context)} 完成令牌签发逻辑。</p>
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a>
  */
 public interface OAuth2GrantType extends Provider {
 
-    /**
-     * Returns the event type associated with this OAuth 2.0 grant type.
-     *
-     * @return event type
-     */
+    /** @return 与本 grant 类型关联的 {@link EventType} */
+
     EventType getEventType();
 
     /**
-     * @return request parameters, which can be duplicated for the particular grant type. The grant request is typically rejected if
-     * request contains multiple values of some parameter, which is not listed here
+     * @return 本 grant 允许重复出现的请求参数名集合；未列出的参数若出现多值则通常拒绝请求
      */
     default Set<String> getSupportedMultivaluedRequestParameters() {
         return Collections.emptySet();
     }
 
     /**
-     * Name of the "token" parameters, which this grant type supports. As 'token' parameter is considered a parameter containing possibly long
-     * token (for example big JWT or SAML assertion) with unbounded data (For example possibly big amount of roles inside JWT).
-     * Example of such parameter is for example 'subject_token' parameter case of token exchange grant.
-     *
-     * @return set of strings with the "token" parameters supported by this grant type
+     * @return 本 grant 支持的“令牌型”参数名集合（如 token exchange 的 {@code subject_token}，可能含大型 JWT/SAML）
      */
     Set<String> getTokenParameterNames();
 
-    /**
-     * Pre-process client policies for the given grant
-     */
+    /** 在 grant 处理前执行客户端策略预处理。 */
+
     default void preProcess(KeycloakSession session, MultivaluedMap<String, String> formParams) throws ClientPolicyException {
-        // do nothing
+        // 默认无预处理
     }
 
     /**
-     * Processes grant request.
+     * 处理 grant 请求并返回令牌响应。
      * @param context grant request context
      *
      * @return token response
@@ -89,12 +81,8 @@ public interface OAuth2GrantType extends Provider {
     Response process(Context context);
 
     /**
-     * Check if the token issued from this grant type is allowed for the current request.
-     * This allows grant types to restrict token usage to specific endpoints or contexts.
-     * The default implementation returns {@code true}, meaning tokens are allowed at all endpoints.
-     * Grant types that need to restrict token usage (e.g., pre-authorized code tokens that should
-     * only be accepted at the credential endpoint) should override this method to implement
-     * specific endpoint restrictions.
+     * 检查本 grant 签发的令牌是否允许用于当前请求（可限制特定端点）。
+     * <p>默认返回 {@code true}；需限制用途的 grant 应覆盖此方法。</p>
      *
      * @param session the Keycloak session
      * @param token   the access token
@@ -104,6 +92,7 @@ public interface OAuth2GrantType extends Provider {
         return true;
     }
 
+    /** Grant 请求上下文：封装会话、客户端、表单参数、CORS 等运行时信息。 */
     public static class Context {
         protected KeycloakSession session;
         protected RealmModel realm;
@@ -121,6 +110,7 @@ public interface OAuth2GrantType extends Provider {
         protected String grantType;
         protected LoginProtocol protocol;
 
+        /** 从会话与请求参数构建 grant 上下文。 */
         public Context(KeycloakSession session, Object clientConfig, Map<String, String> clientAuthAttributes,
                 MultivaluedMap<String, String> formParams, EventBuilder event, Cors cors, Object tokenManager) {
             this.session = session;
@@ -163,6 +153,7 @@ public interface OAuth2GrantType extends Provider {
             this.clientAuthAttributes = clientAuthAttributes;
         }
 
+        /** @return 当前客户端模型 */
         public ClientModel getClient() {
             return client;
         }
@@ -195,6 +186,7 @@ public interface OAuth2GrantType extends Provider {
             return headers;
         }
 
+        /** @return 当前 realm */
         public RealmModel getRealm() {
             return realm;
         }
@@ -207,6 +199,7 @@ public interface OAuth2GrantType extends Provider {
             return response;
         }
 
+        /** @return Keycloak 会话 */
         public KeycloakSession getSession() {
             return session;
         }
@@ -215,6 +208,7 @@ public interface OAuth2GrantType extends Provider {
             return tokenManager;
         }
 
+        /** @return 请求中的 grant_type 参数值 */
         public String getGrantType() {
             return grantType;
         }

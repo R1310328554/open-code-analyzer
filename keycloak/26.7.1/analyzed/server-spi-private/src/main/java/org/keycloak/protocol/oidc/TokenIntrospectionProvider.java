@@ -23,17 +23,19 @@ import org.keycloak.events.EventBuilder;
 import org.keycloak.provider.Provider;
 
 /**
- * Provides introspection for a determined OAuth2 token type.
+ * OAuth2 令牌自省（Token Introspection）提供者接口：针对特定令牌类型执行自省。
+ * <p>实现类在 OAuth2 Token Introspection 端点中解析并返回令牌元数据。</p>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface TokenIntrospectionProvider extends Provider {
 
     /**
-     * Introspect the <code>token</code>.
+     * 对指定令牌执行自省。
      *
      * @param token the token to introspect.
-     * @return the response with the information about the token
+     * @param event 事件构建器，用于记录自省相关事件
+     * @return 包含令牌信息的 HTTP 响应
      */
     Response introspect(String token, EventBuilder event);
 }

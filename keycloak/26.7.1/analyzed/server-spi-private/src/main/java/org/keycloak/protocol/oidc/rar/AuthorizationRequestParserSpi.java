@@ -21,24 +21,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 授权请求解析器 SPI：注册 {@link AuthorizationRequestParserProvider} 及工厂。
+ * <p>内部 SPI，名称 {@code authorization-request-parser}。</p>
+ *
  * @author <a href="mailto:dgozalob@redhat.com">Daniel Gozalo</a>
  */
 public class AuthorizationRequestParserSpi implements Spi {
+    /** @return 始终为 {@code true}，表示内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code authorization-request-parser} */
     @Override
     public String getName() {
         return "authorization-request-parser";
     }
 
+    /** @return 提供者接口 {@link AuthorizationRequestParserProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return AuthorizationRequestParserProvider.class;
     }
 
+    /** @return 工厂接口 {@link AuthorizationRequestParserProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return AuthorizationRequestParserProviderFactory.class;

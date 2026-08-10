@@ -19,6 +19,8 @@ package org.keycloak.protocol.oidc.rar;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link AuthorizationRequestParserProvider} 的 SPI 工厂接口。
+ *
  * @author <a href="mailto:dgozalob@redhat.com">Daniel Gozalo</a>
  */
 public interface AuthorizationRequestParserProviderFactory extends ProviderFactory<AuthorizationRequestParserProvider> { }
