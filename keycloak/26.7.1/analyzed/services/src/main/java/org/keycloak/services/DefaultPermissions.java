@@ -22,22 +22,29 @@ import static org.keycloak.authorization.fgap.AdminPermissionsSchema.REALMS_RESO
 import static org.keycloak.authorization.fgap.AdminPermissionsSchema.USERS_RESOURCE_TYPE;
 
 
+/**
+ * {@link Permissions} 默认实现：基于 Bearer {@link AccessToken} 与 FGAP 评估用户/组/Realm 管理权限。
+ * <p>通过 {@link AdminPermissions#evaluator} 懒加载 {@link AdminPermissionEvaluator}。</p>
+ */
 public class DefaultPermissions implements Permissions {
 
     private final KeycloakSession session;
     private final KeycloakContext context;
     private AdminPermissionEvaluator realmAuth;
 
+    /** @param session Keycloak 会话 @param context 当前请求上下文 */
     public DefaultPermissions(KeycloakSession session, KeycloakContext context) {
         this.session = session;
         this.context = context;
     }
 
+    /** {@inheritDoc} 无模型实例时的权限检查 */
     @Override
     public boolean hasPermission(String resourceType, String scope) {
         return hasPermission(null, resourceType, scope);
     }
 
+    /** {@inheritDoc} 按资源类型（用户/组/Realm）与 scope 评估权限 */
     @Override
     public boolean hasPermission(Model model, String realmResourceType, String scope) {
         return switch (realmResourceType) {
@@ -107,19 +114,21 @@ public class DefaultPermissions implements Permissions {
         return false;
     }
 
+    /** {@inheritDoc} 判断组是否拥有管理员角色 */
     @Override
     public boolean isAdminGroup(GroupModel group) {
         return AdminRoles.groupHasAdminRoles(group);
     }
 
+    /** {@inheritDoc} 判断用户是否通过直接角色或组继承拥有管理员权限 */
     @Override
     public boolean isAdminUser(UserModel user) {
-        // Direct role mappings (with composite resolution)
+        // 直接角色映射（含复合角色解析）
         if (user.getRoleMappingsStream()
                 .anyMatch(AdminRoles::isAdminRoleOrComposite)) {
             return true;
         }
-        // Group-inherited roles
+        // 组继承的管理员角色
         return user.getGroupsStream().anyMatch(AdminRoles::groupHasAdminRoles);
     }
 

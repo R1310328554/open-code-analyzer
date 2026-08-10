@@ -55,6 +55,10 @@ import org.keycloak.theme.ThemeManagerFactory;
 
 import org.jboss.logging.Logger;
 
+/**
+ * {@link KeycloakSessionFactory} 默认实现基类：管理 SPI/Provider 工厂注册、热部署与缓存失效。
+ * <p>负责按依赖顺序初始化工厂、解析默认 Provider、支持 ProviderManager 动态部署/卸载。</p>
+ */
 public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFactory {
 
     private static final Logger logger = Logger.getLogger(DefaultKeycloakSessionFactory.class);
@@ -88,19 +92,21 @@ public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFa
         }
     }
 
+    /** 初始化所有 Provider 工厂并注册管理权限监听器。 */
     public void init() {
         initProviderFactories();
 
         AdminPermissions.registerListener(this);
     }
 
+    /** 初始化全部 Provider 工厂（含组件工厂优先 postInit）。 */
     protected void initProviderFactories() {
         initProviderFactories(true, factoriesMap);
     }
 
     protected void initProviderFactories(boolean updateComponentFactory, Map<Class<? extends Provider>, Map<String, ProviderFactory>> factories) {
         if (updateComponentFactory) {
-            // Component factory must be initialized first, so that postInit in other factories can use component factories
+            // 组件工厂须最先初始化，以便其他工厂的 postInit 可使用组件工厂
             updateComponentFactoryProviderFactory();
             if (componentFactoryPF != null) {
                 componentFactoryPF.postInit(this);
@@ -152,7 +158,10 @@ public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFa
 
     }
 
-    public void deploy(ProviderManager pm) {
+    /**
+     * 热部署 ProviderManager 中的新 SPI/工厂，替换旧工厂并刷新主题缓存。
+     * @param pm 待部署的 Provider 管理器
+     */
         registerNewSpis(pm);
 
         Map<Class<? extends Provider>, Map<String, ProviderFactory>> copy = getFactoriesCopy();
@@ -182,7 +191,7 @@ public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFa
 
         }
         factoriesMap = copy;
-        // need to update the default provider map
+        // 热部署后需重建默认 Provider 映射
         checkProvider();
         boolean cfChanged = false;
         for (ProviderFactory factory : undeployed) {
@@ -211,6 +220,7 @@ public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFa
         }
     }
 
+    /** 卸载 ProviderManager 加载的工厂并关闭实例。 @param pm 待卸载的管理器 */
     public void undeploy(ProviderManager pm) {
         logger.debug("undeploy");
         // we make a copy to avoid concurrent access exceptions
@@ -233,6 +243,7 @@ public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFa
         }
     }
 
+    /** 重建各 SPI 的默认 Provider ID 映射。 */
     protected void checkProvider() {
         // make sure to recreated the default providers map
         provider.clear();
@@ -254,7 +265,12 @@ public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFa
         }
     }
 
-    public static String resolveDefaultProvider(Map<String, ProviderFactory> factories, Spi spi) {
+    /**
+     * 解析 SPI 的默认 Provider ID（配置项、唯一工厂、order 或 "default"）。
+     * @param factories 已加载工厂映射
+     * @param spi 目标 SPI
+     * @return 默认 Provider ID，无法解析时 {@code null}
+     */
         if (factories == null) {
             return null;
         }
@@ -343,6 +359,7 @@ public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFa
         return true;
     }
 
+    /** {@inheritDoc} @return 已注册 SPI 集合 */
     @Override
     public Set<Spi> getSpis() {
         return spis;
@@ -358,6 +375,7 @@ public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFa
         return null;
     }
 
+    /** {@inheritDoc} 按默认 Provider ID 获取工厂 */
     @Override
     public <T extends Provider> ProviderFactory<T> getProviderFactory(Class<T> clazz) {
          return getProviderFactory(clazz, provider.get(clazz));
@@ -379,6 +397,7 @@ public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFa
           : this.componentFactoryPF.getProviderFactory(clazz, realmId, componentId, modelGetter);
     }
 
+    /** {@inheritDoc} 通知支持 {@link InvalidationHandler} 的工厂失效缓存 */
     @Override
     public void invalidate(KeycloakSession session, InvalidableObjectType type, Object... ids) {
         factoriesMap.values().stream()
@@ -422,6 +441,7 @@ public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFa
         return null;
     }
 
+    /** {@inheritDoc} 按依赖逆序关闭所有 Provider 工厂。 */
     @Override
     public void close() {
         // Create a tree-structure to represent reverse relation of ProviderFactory#dependsOn to Providers
@@ -471,12 +491,14 @@ public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFa
         }
     }
 
+    /** 判断工厂是否属于 Keycloak 内部包（非 examples）。 */
     public static boolean isInternal(ProviderFactory<?> factory) {
         String packageName = factory.getClass().getPackage().getName();
         return packageName.startsWith("org.keycloak") && !packageName.startsWith("org.keycloak.examples");
     }
 
     /**
+     * @return Keycloak 服务器启动时间戳（毫秒）
      * @return timestamp of Keycloak server startup
      */
     @Override
@@ -488,10 +510,12 @@ public abstract class DefaultKeycloakSessionFactory implements KeycloakSessionFa
         this.componentFactoryPF = (ComponentFactoryProviderFactory) getProviderFactory(ComponentFactoryProvider.class);
     }
 
+    /** 标记服务器引导流程已完成。 */
     public void setBootstrapCompleted() {
         this.bootstrapCompleted = true;
     }
 
+    /** @return 引导是否已完成 */
     public boolean isBootstrapCompleted() {
         return this.bootstrapCompleted;
     }

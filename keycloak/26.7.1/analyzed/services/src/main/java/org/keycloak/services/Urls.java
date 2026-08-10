@@ -37,18 +37,23 @@ import org.keycloak.services.resources.admin.AdminRoot;
 import org.keycloak.utils.StringUtil;
 
 /**
+ * Keycloak 服务端点 URL 构建工具：Realm 登录、令牌、联邦、SAML 与客户端注册等路径。
+ * <p>基于 JAX-RS {@link UriBuilder} 与资源类路径注解生成绝对 URI。</p>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class Urls {
 
+    /** Admin Console 根 URL。 @param baseUri 服务器基址 @param realmName Realm 名 */
     public static URI adminConsoleRoot(URI baseUri, String realmName) {
         return UriBuilder.fromUri(baseUri).path(AdminRoot.class).path("{realm}/console/").build(realmName);
     }
 
+    /** Account Console 基路径 {@link UriBuilder}。 */
     public static UriBuilder accountBase(URI baseUri) {
         return realmBase(baseUri).path(RealmsResource.class, "getAccountService");
     }
 
+    /** IdP 认证回调（Broker 响应）URL。 */
     public static URI identityProviderAuthnResponse(URI baseUri, String providerAlias, String realmName) {
         return realmBase(baseUri).path(RealmsResource.class, "getBrokerService")
                 .path(IdentityBrokerService.class, "getEndpoint")
@@ -62,6 +67,7 @@ public class Urls {
                 .build(realmName, providerAlias, client_id);
     }
 
+    /** 发起 IdP 登录并重定向，附带 session_code/client_id 等查询参数。 */
     public static URI identityProviderAuthnRequest(URI baseUri, String providerAlias, String realmName, String accessCode, String clientId, String tabId, String clientData, String loginHint) {
         UriBuilder uriBuilder = realmBase(baseUri).path(RealmsResource.class, "getBrokerService")
                 .path(IdentityBrokerService.class, "performLogin");
@@ -123,6 +129,7 @@ public class Urls {
                 .build(realmName);
     }
 
+    /** OIDC 登出确认页 URL。 */
     public static URI logoutConfirm(URI baseUri, String realmName) {
         return realmLogout(baseUri).path(LogoutEndpoint.class, "logoutConfirmAction").build(realmName);
     }
@@ -163,14 +170,17 @@ public class Urls {
         return loginActionsBase(baseUri).path(LoginActionsService.class, "usernameReminder");
     }
 
+    /** Realm Issuer 字符串（{base}/realms/{realm}）。 */
     public static String realmIssuer(URI baseUri, String realmName) {
         return realmBase(baseUri).path("{realm}").build(realmName).toString();
     }
 
+    /** {@code /realms/{realm}} 基路径构建器。 */
     public static UriBuilder realmBase(URI baseUri) {
         return UriBuilder.fromUri(baseUri).path(RealmsResource.class);
     }
 
+    /** 交互式登录页（authenticate）URL。 */
     public static URI realmLoginPage(URI baseUri, String realmName) {
         return loginActionsBase(baseUri).path(LoginActionsService.class, "authenticate").build(realmName);
     }
@@ -194,6 +204,7 @@ public class Urls {
         return tokenBase(baseUri).path(OIDCLoginProtocolService.class, "logout");
     }
 
+    /** Realm OIDC 令牌端点 URL。 */
     public static URI tokenEndpoint(URI baseUri, String realmName) {
         return tokenBase(baseUri).path(OIDCLoginProtocolService.class, "token").build(realmName);
     }
@@ -223,6 +234,7 @@ public class Urls {
         return themeBase(baseUri).path(Version.RESOURCES_VERSION).build();
     }
 
+    /** LoginActions 服务基路径（重置密码、Required Action 等）。 */
     public static UriBuilder loginActionsBase(URI baseUri) {
         return realmBase(baseUri).path(RealmsResource.class, "getLoginActionsService");
     }
@@ -235,10 +247,12 @@ public class Urls {
         return UriBuilder.fromUri(baseUri).path(ThemeResource.class);
     }
 
+    /** Realm SAML 协议入口 URL。 */
     public static URI samlRequestEndpoint(final URI baseUri, final String realmName) {
         return realmBase(baseUri).path(RealmsResource.class, "getProtocol").build(realmName, SamlProtocol.LOGIN_PROTOCOL);
     }
 
+    /** 动态客户端注册（OIDC）端点 URL。 */
     public static URI clientRegistration(URI baseUri, String realm, String protocol, String clientId) {
         return realmBase(baseUri).path(RealmsResource.class, "getClientsService").path(ClientRegistrationService.class, "provider").path(OIDCClientRegistrationProvider.class, "getOIDC").build(realm, protocol, clientId);
     }

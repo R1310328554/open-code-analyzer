@@ -25,18 +25,22 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.utils.KeycloakSessionUtil;
 
 /**
+ * 携带 HTML 错误页响应的 {@link WebApplicationException}；获取响应时标记事务回滚。
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ErrorPageException extends WebApplicationException {
 
+    /** 无认证会话时使用 {@link ErrorPage#error} 构建响应。 */
     public ErrorPageException(KeycloakSession session, Response.Status status, String errorMessage, Object... parameters) {
         super(errorMessage, ErrorPage.error(session, null, status, errorMessage, parameters));
     }
 
+    /** 绑定认证会话的错误页异常。 */
     public ErrorPageException(KeycloakSession session, AuthenticationSessionModel authSession, Response.Status status, String errorMessage, Object... parameters) {
         super(errorMessage, ErrorPage.error(session, authSession, status, errorMessage, parameters));
     }
 
+    /** 直接使用已有 {@link Response}。 @param response 错误响应 */
     public ErrorPageException(Response response) {
         super((Throwable) null, response);
     }
@@ -45,7 +49,7 @@ public class ErrorPageException extends WebApplicationException {
     public Response getResponse() {
         KeycloakSession session = KeycloakSessionUtil.getKeycloakSession();
         if (session != null) {
-            // set rollback if exception is thrown to not commit changes into database
+            // 抛出异常时标记回滚，避免将变更写入数据库
             session.getTransactionManager().setRollbackOnly();
         }
         return super.getResponse();

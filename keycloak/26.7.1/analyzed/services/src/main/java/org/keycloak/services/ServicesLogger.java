@@ -42,6 +42,8 @@ import static org.jboss.logging.Logger.Level.WARN;
 
 
 /**
+ * Keycloak Services 模块主日志接口（JBoss Logging {@code @MessageLogger}）。
+ * <p>项目代码 {@code KC-SERVICES}，涵盖认证、导入导出、客户端注册与 SPI 等运维消息。</p>
  * Main logger for the Keycloak Services module.
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
@@ -49,12 +51,15 @@ import static org.jboss.logging.Logger.Level.WARN;
 @MessageLogger(projectCode="KC-SERVICES", length=4)
 public interface ServicesLogger extends BasicLogger {
 
+    /** Services 模块全局 LOGGER 实例。 */
     ServicesLogger LOGGER = Logger.getMessageLogger(MethodHandles.lookup(), ServicesLogger.class, "org.keycloak.services");
 
+    /** 从指定来源加载配置。 @param from 配置来源 */
     @LogMessage(level = INFO)
     @Message(id=1, value="Loading config from %s")
     void loadingFrom(Object from);
 
+    /** 数据模型迁移失败。 @param t 根因 */
     @LogMessage(level = ERROR)
     @Message(id=2, value="Failed to migrate datamodel")
     void migrationFailure(@Cause Throwable t);
@@ -219,10 +224,12 @@ public interface ServicesLogger extends BasicLogger {
     @Message(id=46, value="Multiple values found '%s' for protocol mapper '%s' but expected just single value")
     void multipleValuesForMapper(String attrValue, String mapper);
 
+    /** 外部工厂实现内部 SPI 时的兼容性警告。 */
     @LogMessage(level = WARN)
     @Message(id=47, value="%s (%s) is implementing the internal SPI %s. This SPI is internal and may change without notice")
     void spiMayChange(String factoryId, String factoryClass, String spiName);
 
+    /** 事务回滚过程中发生异常。 */
     @LogMessage(level = ERROR)
     @Message(id=48, value="Exception during rollback")
     void exceptionDuringRollback(@Cause RuntimeException e);
@@ -470,6 +477,7 @@ public interface ServicesLogger extends BasicLogger {
     @Message(id=110, value="Environment variable '%s' is deprecated, use '%s' instead")
     void usingDeprecatedEnvironmentVariable(String deprecated, String supported);
 
+    /** 首次启动创建初始 admin 用户。 @param userName 用户名 */
     @LogMessage(level = INFO)
     @Message(id=111, value="Created initial admin user with username %s")
     void createdInitialAdminUser(String userName);

@@ -29,6 +29,8 @@ import org.keycloak.transaction.JtaTransactionManagerLookup;
 import org.keycloak.transaction.JtaTransactionWrapper;
 
 /**
+ * {@link KeycloakTransactionManager} 默认实现：协调 prepare、主事务与 afterCompletion 三阶段提交/回滚。
+ * <p>支持 {@link JTAPolicy#REQUIRES_NEW} 时挂起现有 JTA 并创建新事务；集成 {@link TracingProvider} 追踪。</p>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultKeycloakTransactionManager implements KeycloakTransactionManager {
@@ -40,13 +42,15 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
     private boolean rollback;
     private final KeycloakSession session;
     private JTAPolicy jtaPolicy = JTAPolicy.REQUIRES_NEW;
-    // Used to prevent double committing/rollback if there is an uncaught exception
+    // 防止未捕获异常导致重复 commit/rollback
     protected boolean completed;
 
+    /** @param session 所属 Keycloak 会话 */
     public DefaultKeycloakTransactionManager(KeycloakSession session) {
         this.session = session;
     }
 
+    /** {@inheritDoc} 注册主阶段参与者；若已 begin 则自动启动子事务 */
     @Override
     public void enlist(KeycloakTransaction transaction) {
         if (completed) {
@@ -59,6 +63,7 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
         transactions.add(transaction);
     }
 
+    /** {@inheritDoc} 注册主事务成功提交后才 commit 的参与者 */
     @Override
     public void enlistAfterCompletion(KeycloakTransaction transaction) {
         if (completed) {
@@ -71,6 +76,7 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
         afterCompletion.add(transaction);
     }
 
+    /** {@inheritDoc} 注册两阶段 prepare 阶段参与者（先于主事务 commit） */
     @Override
     public void enlistPrepare(KeycloakTransaction transaction) {
         if (completed) {
@@ -94,6 +100,7 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
 
     }
 
+    /** {@inheritDoc} 按 JTA 策略启动事务并 begin 所有已登记子事务 */
     @Override
     public void begin() {
         if (completed) {
@@ -134,6 +141,7 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
         active = true;
     }
 
+    /** {@inheritDoc} 依次 commit prepare → 主 → afterCompletion；失败则回滚 */
     @Override
     public void commit() {
         if (completed) {
@@ -164,7 +172,7 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
                 }
             }
 
-            // Don't commit "afterCompletion" if commit of some main transaction failed
+            // 主事务 commit 失败时不 commit afterCompletion 参与者
             if (exception == null) {
                 for (KeycloakTransaction tx : afterCompletion) {
                     try {
@@ -196,6 +204,7 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
         });
     }
 
+    /** {@inheritDoc} 回滚所有已登记子事务 */
     @Override
     public void rollback() {
         if (completed) {
@@ -237,11 +246,13 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
         });
     }
 
+    /** {@inheritDoc} 标记当前事务仅可回滚 */
     @Override
     public void setRollbackOnly() {
         rollback = true;
     }
 
+    /** {@inheritDoc} @return 是否已标记或子事务要求回滚 */
     @Override
     public boolean getRollbackOnly() {
         if (rollback) {
@@ -257,6 +268,7 @@ public class DefaultKeycloakTransactionManager implements KeycloakTransactionMan
         return false;
     }
 
+    /** {@inheritDoc} @return 事务是否已 begin 且未完成 */
     @Override
     public boolean isActive() {
         return active;

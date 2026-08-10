@@ -22,20 +22,26 @@ import java.io.InputStream;
 
 import org.keycloak.http.FormPartValue;
 
+/**
+ * {@link FormPartValue} 实现：以字符串或 {@link InputStream} 持有 multipart 表单字段值。
+ */
 public class FormPartValueImpl implements FormPartValue {
 
     private String value;
     private InputStream inputStream;
 
+    /** 文本字段值。 @param value 字符串内容 */
     public FormPartValueImpl(String value) {
         this.value = value;
     }
 
+    /** 二进制/文件上传字段。 @param inputStream 字段输入流 */
     public FormPartValueImpl(InputStream inputStream) {
         this.inputStream = inputStream;
         this.value = null;
     }
 
+    /** {@inheritDoc} 流式字段时抛出异常 */
     @Override
     public String asString() {
         if (inputStream != null) {
@@ -44,6 +50,7 @@ public class FormPartValueImpl implements FormPartValue {
         return value;
     }
 
+    /** {@inheritDoc} 字符串字段时转为 {@link ByteArrayInputStream} */
     @Override
     public InputStream asInputStream() {
         if (inputStream == null) {

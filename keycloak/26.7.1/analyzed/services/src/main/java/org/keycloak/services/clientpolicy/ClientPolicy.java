@@ -24,6 +24,7 @@ import java.util.List;
 import org.keycloak.services.clientpolicy.condition.ClientPolicyConditionProvider;
 
 /**
+ * 客户端策略运行时模型：名称、启用状态、条件模式、条件 Provider 列表与关联 Profile 名。
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 class ClientPolicy implements Serializable {
@@ -35,10 +36,12 @@ class ClientPolicy implements Serializable {
     protected List<ClientPolicyConditionProvider> conditions;
     protected List<String> profiles;
 
+    /** @return 策略名称 */
     public String getName() {
         return name;
     }
 
+    /** @param name 策略名称 */
     public void setName(String name) {
         this.name = name;
     }
@@ -51,6 +54,7 @@ class ClientPolicy implements Serializable {
         this.description = description;
     }
 
+    /** @return 是否启用 */
     public boolean isEnable() {
         return enable;
     }
@@ -59,6 +63,7 @@ class ClientPolicy implements Serializable {
         this.enable = enable;
     }
 
+    /** @return 条件求值模式 {@link ClientPolicyMode} */
     public ClientPolicyMode getMode() {
         return mode;
     }
@@ -67,6 +72,7 @@ class ClientPolicy implements Serializable {
         this.mode = mode;
     }
 
+    /** @return 已解析的条件 Provider 列表 */
     public List<ClientPolicyConditionProvider> getConditions() {
         return conditions;
     }
@@ -75,6 +81,7 @@ class ClientPolicy implements Serializable {
         this.conditions = conditions;
     }
 
+    /** @return 关联的 Client Profile 名称列表 */
     public List<String> getProfiles() {
         return profiles;
     }

@@ -24,6 +24,7 @@ import java.util.List;
 import org.keycloak.services.clientpolicy.executor.ClientPolicyExecutorProvider;
 
 /**
+ * 客户端配置文件运行时模型：聚合名称、描述与 {@link ClientPolicyExecutorProvider} 执行器列表。
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 class ClientProfile implements Serializable {
@@ -32,6 +33,7 @@ class ClientProfile implements Serializable {
     protected String description;
     protected List<ClientPolicyExecutorProvider> executors;
 
+    /** @return Profile 名称 */
     public String getName() {
         return name;
     }
@@ -40,6 +42,7 @@ class ClientProfile implements Serializable {
         this.name = name;
     }
 
+    /** @return Profile 描述 */
     public String getDescription() {
         return description;
     }
@@ -48,10 +51,12 @@ class ClientProfile implements Serializable {
         this.description = description;
     }
 
+    /** @return 已配置并初始化的 Executor Provider 列表 */
     public List<ClientPolicyExecutorProvider> getExecutors() {
         return executors;
     }
 
+    /** @param executors Executor Provider 列表 */
     public void setExecutors(List<ClientPolicyExecutorProvider> executors) {
         this.executors = executors;
     }

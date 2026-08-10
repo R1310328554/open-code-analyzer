@@ -26,6 +26,8 @@ import org.keycloak.representations.idm.OAuth2ErrorRepresentation;
 import org.keycloak.utils.KeycloakSessionUtil;
 
 /**
+ * OAuth2/Admin JSON 错误异常：延迟构建 {@link OAuth2ErrorRepresentation} 或返回预构建 {@link Response}。
+ * <p>调用 {@link #getResponse()} 时标记事务 {@code rollback-only}。</p>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ErrorResponseException extends WebApplicationException {
@@ -35,6 +37,7 @@ public class ErrorResponseException extends WebApplicationException {
     private final String errorDescription;
     private final Response.Status status;
 
+    /** OAuth2 风格错误（error + error_description）。 */
     public ErrorResponseException(String error, String errorDescription, Response.Status status) {
         super(error, status);
         this.response = null;
@@ -43,6 +46,7 @@ public class ErrorResponseException extends WebApplicationException {
         this.status = status;
     }
 
+    /** 使用已构建的 JSON 响应体。 @param response 完整响应 */
     public ErrorResponseException(Response response) {
         this.response = response;
         this.error = null;
@@ -50,10 +54,12 @@ public class ErrorResponseException extends WebApplicationException {
         this.status = null;
     }
 
+    /** @return OAuth2 error 代码 */
     public String getError() {
         return error;
     }
 
+    /** @return OAuth2 error_description */
     public String getErrorDescription() {
         return errorDescription;
     }
@@ -62,7 +68,7 @@ public class ErrorResponseException extends WebApplicationException {
     public Response getResponse() {
         KeycloakSession session = KeycloakSessionUtil.getKeycloakSession();
         if (session != null) {
-            // This has to happen, since calling getResponse() with non-null result leads to
+            // 必须在此时标记回滚：Resteasy 对非 null 响应直接返回而不走 ErrorHandler
             // directly returning the result instead of
             // propagating exception to KeycloakErrorHandler.toResponse(Throwable) which would ensure rollback on other exception types.
             //

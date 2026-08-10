@@ -56,6 +56,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.jboss.logging.Logger;
 
 /**
+ * 客户端策略/配置文件工具类：读写 Realm 属性 JSON、校验全局/领域配置并构建运行时 {@link ClientPolicy} 模型。
  * Utilities for treating client policies/profiles
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
@@ -64,11 +65,13 @@ public class ClientPoliciesUtil {
 
     private static final Logger logger = Logger.getLogger(ClientPoliciesUtil.class);
 
+    /** 从 classpath 或 conf 目录读取 JSON 配置文件。 @param name 文件名（不含 .json） */
     public static InputStream getJsonFileFromClasspathOrConfFolder(String name) throws IOException {
         final String fileName = name + ".json";
         return FileUtils.getJsonFileFromClasspathOrConfFolder(fileName);
     }
 
+    /** 读取并校验全局 Client Profile 列表。 */
     public static List<ClientProfileRepresentation> readGlobalClientProfilesRepresentation(KeycloakSession session, String name) throws ClientPolicyException {
         if (name == null) {
             return Collections.emptyList();
@@ -80,6 +83,7 @@ public class ClientPoliciesUtil {
         }
     }
 
+    /** 读取并校验全局 Client Policy 列表（依赖已校验的 profile）。 */
     public static List<ClientPolicyRepresentation> readGlobalClientPoliciesRepresentation(KeycloakSession session, String name,
             List<ClientProfileRepresentation> profiles) throws ClientPolicyException {
         if (name == null) {
@@ -93,6 +97,7 @@ public class ClientPoliciesUtil {
     }
 
     /**
+     * 获取 Realm 内已有客户端配置文件表示（非 null）。
      * gets existing client profiles in a realm as representation.
      * not return null.
      */
@@ -107,6 +112,7 @@ public class ClientPoliciesUtil {
     }
 
     /**
+     * 按名称解析客户端配置文件并绑定 Executor Provider（含全局配置）。
      * Gets existing client profile of given name with resolved executor providers. It can be profile from realm or from global client profiles.
      */
     static ClientProfile getClientProfileModel(KeycloakSession session, RealmModel realm, ClientProfilesRepresentation profilesRep, List<ClientProfileRepresentation> globalClientProfiles, String profileName) throws ClientPolicyException {
@@ -151,7 +157,7 @@ public class ClientPoliciesUtil {
         ComponentModel componentModel = new JsonConfigComponentModel(ClientPolicyExecutorProvider.class, realm.getId(), providerId, config);
         ClientPolicyExecutorProvider executorProvider = session.getComponentProvider(ClientPolicyExecutorProvider.class, componentModel.getId(), sessionFactory -> componentModel);
         if (executorProvider == null) {
-            // condition's provider not found. just skip it.
+            // Executor/Condition Provider 未找到时抛出 IllegalStateException
             throw new IllegalStateException("Executor with provider ID " + providerId + " not found");
         }
 
@@ -161,6 +167,7 @@ public class ClientPoliciesUtil {
     }
 
     /**
+     * 加载并校验 Keycloak 内置全局客户端配置文件 JSON。
      * get validated and modified global (built-in) client profiles set on keycloak app as representation.
      * it is loaded from json file enclosed in keycloak's binary.
      * not return null.
@@ -218,6 +225,7 @@ public class ClientPoliciesUtil {
     }
 
     /**
+     * 加载并校验 Keycloak 内置全局客户端策略 JSON。
      * get validated and modified global (built-in) client policies set on keycloak app as representation.
      * it is loaded from json file enclosed in keycloak's binary.
      * not return null.
@@ -239,6 +247,7 @@ public class ClientPoliciesUtil {
      * convert client profiles as representation to json.
      * can return null.
      */
+    /** Client Profiles 表示 → JSON 字符串。 */
     public static String convertClientProfilesRepresentationToJson(ClientProfilesRepresentation reps) throws ClientPolicyException {
         try {
             return JsonSerialization.writeValueAsString(reps);
@@ -378,6 +387,7 @@ public class ClientPoliciesUtil {
     }
 
     /**
+     * 获取 Realm 内已启用的客户端策略运行时模型列表。
      * Gets existing enabled client policies in a realm.
      * not return null.
      */
@@ -403,12 +413,12 @@ public class ClientPoliciesUtil {
         // constructing existing policies (representation -> model)
         List<ClientPolicy> policyList = new ArrayList<>();
         for (ClientPolicyRepresentation policyRep: policiesRep) {
-            // ignore policy without name
+            // 忽略无名称策略
             if (policyRep.getName() == null) {
                 logger.warnf("Ignored client policy without name in the realm %s", realm.getName());
                 continue;
             }
-            // pick up only enabled policy
+            // 仅加载 enabled=true 的策略
             if (policyRep.isEnabled() == null || policyRep.isEnabled() == false) {
                 continue;
             }
@@ -458,6 +468,7 @@ public class ClientPoliciesUtil {
      * convert client policies as representation to json.
      * can return null.
      */
+    /** Client Policies 表示 → JSON 字符串。 */
     public static String convertClientPoliciesRepresentationToJson(ClientPoliciesRepresentation reps) throws ClientPolicyException {
         try {
             return JsonSerialization.writeValueAsString(reps);
@@ -479,6 +490,7 @@ public class ClientPoliciesUtil {
     }
 
     /**
+     * 校验待更新的客户端策略列表（名称、模式、条件与 profile 引用）。
      * Validates the policies passed with the profiles.
      * @param session The session
      * @param proposedPoliciesRepList The policies to validate

@@ -18,9 +18,11 @@
 package org.keycloak.services;
 
 /**
+ * JSP/登录表单请求参数名常量：供旧版登录主题与安全过滤器共享键名。
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface JspRequestParameters {
+    /** 安全校验失败时写入 request 的错误消息属性键。 */
     public static final String KEYCLOAK_SECURITY_FAILURE_MESSAGE = "KEYCLOAK_SECURITY_FAILURE_MESSAGE";
 }
