@@ -22,6 +22,8 @@ import com.alibaba.nacos.api.model.v2.ErrorCode;
 import org.springframework.http.HttpStatus;
 
 /**
+ * 分页查询 API 通用表单，携带 pageNo 与 pageSize 并做正整数校验。
+ * <p>实现 {@link NacosForm}，默认第 1 页、每页 100 条。</p>
  * Nacos HTTP page API form.
  *
  * @author xiweng.yy
@@ -30,10 +32,13 @@ public class PageForm implements NacosForm {
     
     private static final long serialVersionUID = -8912131925234465033L;
     
+    /** 页码，从 1 开始，默认 1。 */
     private int pageNo = 1;
     
+    /** 每页条数，默认 100。 */
     private int pageSize = 100;
     
+    /** 校验 pageNo、pageSize 均为正整数，否则抛出参数校验异常。 */
     @Override
     public void validate() throws NacosApiException {
         if (pageNo < 1) {
@@ -52,18 +57,22 @@ public class PageForm implements NacosForm {
         }
     }
     
+    /** 获取当前页码。 */
     public int getPageNo() {
         return pageNo;
     }
     
+    /** 设置页码。 */
     public void setPageNo(int pageNo) {
         this.pageNo = pageNo;
     }
     
+    /** 获取每页条数。 */
     public int getPageSize() {
         return pageSize;
     }
     
+    /** 设置每页条数。 */
     public void setPageSize(int pageSize) {
         this.pageSize = pageSize;
     }

@@ -17,18 +17,23 @@
 package com.alibaba.nacos.core.model.request;
 
 /**
+ * 更新集群成员发现（Lookup）类型的 HTTP 请求体。
+ * <p>type 字段指定新的 Lookup 实现类型（如 file、address-server）。</p>
  * Update member lookup type.
  *
  * @author wuzhiguo
  */
 public class LookupUpdateRequest {
     
+    /** 成员发现机制类型。 */
     private String type;
     
+    /** 获取 Lookup 类型。 */
     public String getType() {
         return type;
     }
     
+    /** 设置 Lookup 类型。 */
     public void setType(String type) {
         this.type = type;
     }

@@ -29,6 +29,8 @@ import java.time.Duration;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
+ * gRPC 服务端线程池指标采集器，定时刷新 SDK 与 Cluster 两套 RpcExecutor 的 Micrometer 指标。
+ * <p>通过 {@code nacos.metric.grpc.server.executor.enabled} 开关控制，默认 15 秒采集一次。</p>
  * Used to collect grpc server executor metrics.
  *
  * @author Daydreamer-ia
@@ -36,12 +38,15 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Component
 public class GrpcServerThreadPoolMonitor implements SchedulingConfigurer {
     
+    /** 面向客户端 SDK 的 gRPC 服务端。 */
     @Resource
     private GrpcSdkServer sdkServer;
     
+    /** 面向集群节点间通信的 gRPC 服务端。 */
     @Resource
     private GrpcClusterServer clusterServer;
     
+    /** 注册固定频率任务：采集两套 gRPC 线程池的任务数、队列长度、活跃线程等指标。 */
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
         Boolean enabled =
@@ -50,7 +55,7 @@ public class GrpcServerThreadPoolMonitor implements SchedulingConfigurer {
             return;
         }
         taskRegistrar.addFixedRateTask(new IntervalTask(() -> {
-            // sdk server
+            // SDK 侧 gRPC 线程池指标
             ThreadPoolExecutor sdkServerRpcExecutor = sdkServer.getRpcExecutor();
             MetricsMonitor.getSdkServerExecutorMetric().getTaskCount()
                 .set(sdkServerRpcExecutor.getTaskCount());
@@ -67,7 +72,7 @@ public class GrpcServerThreadPoolMonitor implements SchedulingConfigurer {
             MetricsMonitor.getSdkServerExecutorMetric().getPoolSize()
                 .set(sdkServerRpcExecutor.getPoolSize());
             
-            // cluster server
+            // 集群间 gRPC 线程池指标
             ThreadPoolExecutor clusterServerRpcExecutor = clusterServer.getRpcExecutor();
             MetricsMonitor.getClusterServerExecutorMetric().getTaskCount()
                 .set(clusterServerRpcExecutor.getTaskCount());

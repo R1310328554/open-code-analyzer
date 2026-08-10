@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Raft 运维命令 HTTP 表单（v3 API），支持 transferLeader、doSnapshot 等管理操作。
+ * <p>校验 command 与 value 必填，可转换为 JRaft 执行参数 Map。</p>
  * Raft command form.
  *
  * @author yunye
@@ -34,20 +36,21 @@ import java.util.Map;
 public class RaftCommandForm implements NacosForm {
     
     /**
-     * Target raft group id, If null or empty, will do command for all group.
+     * 目标 Raft Group ID；为空则对所有 Group 执行命令。
      */
     private String groupId;
     
     /**
-     * Raft command. Valid values:  "transferLeader", "doSnapshot", "resetRaftCluster", "removePeer".
+     * Raft 命令名。有效值：transferLeader、doSnapshot、resetRaftCluster、removePeer。
      */
     private String command;
     
     /**
-     * Command value. The format: {raft_server_ip}:{raft_port}[,{raft_server_ip}:{raft_port}]
+     * 命令参数值，格式：{ip}:{port} 或逗号分隔的多节点列表。
      */
     private String value;
     
+    /** 校验 command 与 value 非空。 */
     @Override
     public void validate() throws NacosApiException {
         if (StringUtils.isBlank(command)) {
@@ -62,32 +65,38 @@ public class RaftCommandForm implements NacosForm {
         }
     }
     
+    /** 获取目标 Raft Group ID。 */
     public String getGroupId() {
         return groupId;
     }
     
+    /** 设置目标 Raft Group ID。 */
     public void setGroupId(String groupId) {
         this.groupId = groupId;
     }
     
+    /** 获取 Raft 命令名。 */
     public String getCommand() {
         return command;
     }
     
+    /** 设置 Raft 命令名。 */
     public void setCommand(String command) {
         this.command = command;
     }
     
+    /** 获取命令参数值。 */
     public String getValue() {
         return value;
     }
     
+    /** 设置命令参数值。 */
     public void setValue(String value) {
         this.value = value;
     }
     
     /**
-     * convert to raft execute arguments.
+     * 转换为 JRaft 命令执行所需的参数 Map（含 GROUP_ID、COMMAND_NAME、COMMAND_VALUE）。
      *
      * @return args map.
      */

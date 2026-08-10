@@ -22,32 +22,41 @@ import com.alibaba.nacos.api.model.v2.ErrorCode;
 import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
+ * 动态调整日志级别的 HTTP 请求体，指定 logger 名称与目标级别。
+ * <p>实现 {@link NacosForm}，logName 与 logLevel 均为必填。</p>
  * Request entity for log operator interface.
  *
  * @author wuzhiguo
  */
 public class LogUpdateRequest implements NacosForm {
     
+    /** Logger 名称（通常为包名或类名）。 */
     private String logName;
     
+    /** 目标日志级别（如 DEBUG、INFO、WARN）。 */
     private String logLevel;
     
+    /** 获取 Logger 名称。 */
     public String getLogName() {
         return logName;
     }
     
+    /** 设置 Logger 名称。 */
     public void setLogName(String logName) {
         this.logName = logName;
     }
     
+    /** 获取目标日志级别。 */
     public String getLogLevel() {
         return logLevel;
     }
     
+    /** 设置目标日志级别。 */
     public void setLogLevel(String logLevel) {
         this.logLevel = logLevel;
     }
     
+    /** 校验 logName 与 logLevel 均非空。 */
     @Override
     public void validate() throws NacosApiException {
         if (StringUtils.isBlank(logName)) {

@@ -19,21 +19,26 @@ package com.alibaba.nacos.core.listener.startup;
 import org.slf4j.Logger;
 
 /**
+ * Nacos Web API 模块启动阶段，对应 {@link NacosStartUp#WEB_START_UP_PHASE}。
+ * <p>负责 Open API / gRPC 等对外服务层的启动日志与耗时统计。</p>
  * Nacos Server Web API start up phase.
  *
  * @author xiweng.yy
  */
 public class NacosWebStartUp extends AbstractNacosStartUp {
     
+    /** 注册为 web 启动阶段实现。 */
     public NacosWebStartUp() {
         super(NacosStartUp.WEB_START_UP_PHASE);
     }
     
+    /** 启动日志阶段名："Nacos Server API"。 */
     @Override
     protected String getPhaseNameInStartingInfo() {
         return "Nacos Server API";
     }
     
+    /** 输出 Web API 启动成功及耗时（毫秒）。 */
     @Override
     public void logStarted(Logger logger) {
         long endTimestamp = System.currentTimeMillis();

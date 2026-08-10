@@ -21,18 +21,24 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
+ * 固定容量的小顶堆优先队列，用于维护 TopN 最大元素（O(log N) 插入）。
+ * <p>队列满时，仅当新元素优于堆顶（ comparator 意义下更大）才替换堆顶。</p>
  * Fixed size priority queue.
  *
  * @author xiweng.yy
  */
 public class FixedSizePriorityQueue<T> {
     
+    /** 堆底层数组，长度等于容量上限。 */
     private Object[] elements;
     
+    /** 当前堆中元素个数。 */
     private int size;
     
+    /** 元素比较器，堆顶为 comparator 意义下的最小值。 */
     private Comparator<T> comparator;
     
+    /** 指定容量与比较器创建固定大小优先队列。 */
     public FixedSizePriorityQueue(int capacity, Comparator<T> comparator) {
         elements = new Object[capacity];
         size = 0;
@@ -40,8 +46,7 @@ public class FixedSizePriorityQueue<T> {
     }
     
     /**
-     * Offer queue, if queue is full and offer element is not bigger than the first element in queue, offer element will
-     * be ignored.
+     * 入队：未满则上浮插入；已满时仅当新元素大于堆顶才替换堆顶并下沉，否则忽略。
      *
      * @param element new element.
      */
@@ -58,6 +63,7 @@ public class FixedSizePriorityQueue<T> {
         }
     }
     
+    /** 将 index 处元素向上调整至堆有序。 */
     private void siftUp(int index) {
         while (index > 0) {
             int parentIndex = (index - 1) / 2;
@@ -69,6 +75,7 @@ public class FixedSizePriorityQueue<T> {
         }
     }
     
+    /** 从堆顶向下调整至堆有序。 */
     private void siftDown() {
         int index = 0;
         while (index * 2 + 1 < size) {
@@ -87,6 +94,7 @@ public class FixedSizePriorityQueue<T> {
         }
     }
     
+    /** 交换堆中两个下标的元素。 */
     private void swap(int i, int j) {
         Object temp = elements[i];
         elements[i] = elements[j];
@@ -94,7 +102,7 @@ public class FixedSizePriorityQueue<T> {
     }
     
     /**
-     * Transfer queue to list without order.
+     * 将堆中元素拷贝为链表（不保证排序顺序）。
      *
      * @return list
      */

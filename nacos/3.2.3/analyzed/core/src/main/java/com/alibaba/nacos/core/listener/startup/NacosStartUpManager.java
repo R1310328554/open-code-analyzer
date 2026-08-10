@@ -26,20 +26,27 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Nacos 启动阶段管理器（单例），通过 SPI 加载各 {@link NacosStartUp} 实现并按阶段切换当前上下文。
+ * <p>记录已启动阶段列表，失败时可逆序清理。</p>
  * Nacos start up phase manager.
  *
  * @author xiweng.yy
  */
 public class NacosStartUpManager {
     
+    /** 全局单例实例。 */
     private static final NacosStartUpManager INSTANCE = new NacosStartUpManager();
     
+    /** 当前正在执行的启动阶段名称。 */
     private String currentStartUpPhase;
     
+    /** 阶段名 → 启动实现 的映射表。 */
     private final Map<String, NacosStartUp> startUpMap;
     
+    /** 按启动顺序记录已成功进入的阶段（用于逆序回滚）。 */
     private final List<NacosStartUp> startedList;
     
+    /** 通过 SPI 加载所有 {@link NacosStartUp} 实现并建立阶段映射。 */
     private NacosStartUpManager() {
         startUpMap = new HashMap<>();
         for (NacosStartUp each : NacosServiceLoader.load(NacosStartUp.class)) {
@@ -48,12 +55,13 @@ public class NacosStartUpManager {
         startedList = new ArrayList<>(startUpMap.size());
     }
     
+    /** 按阶段名查找启动实现，未知阶段返回 null。 */
     private NacosStartUp getStartUp(String phase) {
         return startUpMap.get(phase);
     }
     
     /**
-     * Mark step into new nacos start up phase.
+     * 标记进入新的启动阶段，并将该阶段加入已启动列表。
      * @param phase phase name.
      * @throws IllegalArgumentException when phase is unknown.
      */
@@ -67,7 +75,7 @@ public class NacosStartUpManager {
     }
     
     /**
-     * Get current nacos start up phase.
+     * 获取当前启动阶段的 {@link NacosStartUp} 实现。
      * @return current start up phase.
      * @throws IllegalStateException when nacos not start up.
      */
@@ -79,7 +87,7 @@ public class NacosStartUpManager {
     }
     
     /**
-     * Get reversed nacos start up which has been started list.
+     * 返回已启动阶段的逆序列表，便于失败时从后向前清理资源。
      * @return reversed nacos start up
      */
     public static List<NacosStartUp> getReverseStartedList() {

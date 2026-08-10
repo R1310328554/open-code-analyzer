@@ -26,23 +26,28 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * TopN 计数器抽象基类，按 key 累加计数并支持取 TopN 快照。
+ * <p>通过 {@link TopNConfig} 开关控制是否采集；取 TopN 时使用 {@link FixedSizePriorityQueue} 维护前 N 名。</p>
  * Nacos base topN counter.
  *
  * @author xiweng.yy
  */
 public abstract class BaseTopNCounter<T> {
     
+    /** 按计数值升序比较（小顶堆取 TopN 最大项）。 */
     private final Comparator<Pair<String, AtomicInteger>> comparator;
     
+    /** key → 累计计数 的并发 Map，取 TopN 时会替换为新 Map 以实现快照隔离。 */
     protected ConcurrentMap<T, AtomicInteger> dataCount;
     
+    /** 初始化并发计数 Map 与比较器。 */
     protected BaseTopNCounter() {
         dataCount = new ConcurrentHashMap<>();
         this.comparator = Comparator.comparingInt(value -> value.getSecond().get());
     }
     
     /**
-     * Get topN counter by PriorityQueue.
+     * 交换当前计数快照并返回 TopN 列表（按计数降序语义由小顶堆维护）。
      *
      * @param topN topN
      * @return topN counter
@@ -63,7 +68,7 @@ public abstract class BaseTopNCounter<T> {
     }
     
     /**
-     * Transfer key from type T to String.
+     * 将泛型 key 转为字符串，供 TopN 结果展示。
      *
      * @param t key
      * @return String
@@ -71,7 +76,7 @@ public abstract class BaseTopNCounter<T> {
     protected abstract String keyToString(T t);
     
     /**
-     * Increment 1 count for target key.
+     * 为目标 key 计数加 1（TopN 未启用时忽略）。
      *
      * @param t key
      */
@@ -82,7 +87,7 @@ public abstract class BaseTopNCounter<T> {
     }
     
     /**
-     * Increment specified count for target key.
+     * 为目标 key 增加指定计数值。
      *
      * @param t     key
      * @param count count
@@ -94,7 +99,7 @@ public abstract class BaseTopNCounter<T> {
     }
     
     /**
-     * Directly set count for target key.
+     * 直接设置目标 key 的计数值。
      *
      * @param t     key
      * @param count new count
@@ -105,10 +110,12 @@ public abstract class BaseTopNCounter<T> {
         }
     }
     
+    /** 清空所有计数。 */
     public void reset() {
         dataCount.clear();
     }
     
+    /** 检查 TopN 功能是否启用（委托 {@link TopNConfig}）。 */
     protected boolean checkEnabled() {
         return TopNConfig.getInstance().isEnabled();
     }

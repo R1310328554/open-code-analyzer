@@ -20,6 +20,8 @@ import com.alibaba.nacos.api.exception.api.NacosApiException;
 import com.alibaba.nacos.api.model.NacosForm;
 
 /**
+ * HTTP 聚合查询 API 的表单参数，控制是否对下游结果做聚合。
+ * <p>实现 {@link NacosForm}，默认 {@code aggregation=true}。</p>
  * Nacos HTTP Aggregatable API Form.
  *
  * @author xiweng.yy
@@ -28,16 +30,20 @@ public class AggregationForm implements NacosForm {
     
     private static final long serialVersionUID = 3585575371677025046L;
     
+    /** 是否启用结果聚合，默认 true。 */
     private boolean aggregation = Boolean.TRUE;
     
+    /** 本表单无额外校验规则。 */
     @Override
     public void validate() throws NacosApiException {
     }
     
+    /** 是否开启聚合。 */
     public boolean isAggregation() {
         return aggregation;
     }
     
+    /** 设置是否开启聚合。 */
     public void setAggregation(boolean aggregation) {
         this.aggregation = aggregation;
     }
