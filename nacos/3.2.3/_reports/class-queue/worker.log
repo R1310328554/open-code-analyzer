@@ -2458,3 +2458,18 @@
 2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/server/AuthPluginManager.java wave81b [15:30] auth api/constants + client/server spi
 2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/server/AuthPluginProvider.java wave81b [15:30] auth api/constants + client/server spi
 2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/server/AuthPluginService.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/model/PublishPipelineContext.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/model/PublishPipelineMessageType.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/model/PublishPipelineResourceType.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/model/PublishPipelineResult.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/model/ResourceFileContent.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/model/ResourceFilesPipelineContext.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/model/SkillPipelineContext.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/spi/PublishPipelineService.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/pipeline/spi/PublishPipelineServiceBuilder.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/storage/AiResourceStorageRouter.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/storage/model/StorageKey.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/storage/spi/AiResourceStorage.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/storage/spi/AiResourceStorageBuilder.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/AuthResult.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:15:03Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/IdentityContext.java wave81a [0:15] ai pipeline/storage + auth api start
