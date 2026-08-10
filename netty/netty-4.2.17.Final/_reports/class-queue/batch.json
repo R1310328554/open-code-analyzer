@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T01:28:00Z",
   "files": [
-    "transport/src/main/java/io/netty/channel/group/ChannelGroupFutureListener.java",
-    "transport/src/main/java/io/netty/channel/group/ChannelMatcher.java",
-    "transport/src/main/java/io/netty/channel/group/ChannelMatchers.java",
-    "transport/src/main/java/io/netty/channel/group/CombinedIterator.java",
-    "transport/src/main/java/io/netty/channel/group/DefaultChannelGroup.java",
-    "transport/src/main/java/io/netty/channel/group/DefaultChannelGroupFuture.java",
-    "transport/src/main/java/io/netty/channel/group/VoidChannelGroupFuture.java",
-    "transport/src/main/java/io/netty/channel/internal/ChannelUtils.java",
-    "transport/src/main/java/io/netty/channel/local/LocalAddress.java",
-    "transport/src/main/java/io/netty/channel/local/LocalChannel.java",
-    "transport/src/main/java/io/netty/channel/local/LocalChannelRegistry.java",
-    "transport/src/main/java/io/netty/channel/local/LocalEventLoopGroup.java",
-    "transport/src/main/java/io/netty/channel/local/LocalIoHandle.java",
-    "transport/src/main/java/io/netty/channel/local/LocalIoHandler.java",
-    "transport/src/main/java/io/netty/channel/local/LocalIoOps.java",
     "transport/src/main/java/io/netty/channel/local/LocalServerChannel.java",
     "transport/src/main/java/io/netty/channel/nio/AbstractNioByteChannel.java",
     "transport/src/main/java/io/netty/channel/nio/AbstractNioChannel.java",
@@ -33,5 +18,5 @@
     "transport/src/main/java/io/netty/channel/oio/AbstractOioByteChannel.java"
   ],
   "remaining_pending": 248,
-  "done": 1650
+  "done": 1665
 }
