@@ -1,5 +1,8 @@
 package config
 
+// Promtail 顶层配置：global、server、clients、positions、scrape_configs、limits 与 WAL。
+// Setup 合并已弃用单 client 块与 CLI external-labels，校验 relabel UTF-8。
+
 import (
 	"flag"
 	"fmt"
@@ -22,10 +25,12 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/flagext"
 )
 
+// 横切选项占位结构，预留未来全局 Promtail 行为开关。
 // Options contains cross-cutting promtail configurations
 type Options struct {
 }
 
+// 主配置体：抓取任务、推送 clients、positions 文件与 tracing/WAL 等子块。
 // Config for promtail, describing what files to watch.
 type Config struct {
 	Global       GlobalConfig  `yaml:"global,omitempty"`
@@ -42,6 +47,7 @@ type Config struct {
 	WAL             wal.Config            `yaml:"wal"`
 }
 
+// 解析 YAML 并校验 scrape_configs 中 job_name 唯一性。
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
 func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	// We want to set c to the defaults and then overwrite it with the input.
@@ -88,6 +94,7 @@ func (c Config) String() string {
 	return string(b)
 }
 
+// 遍历各 scrape job 的 relabel_configs，按 UTF-8 规则校验。
 func (c *Config) Validate() error {
 	var errors []error
 	for i := range c.ScrapeConfig {
@@ -101,6 +108,7 @@ func (c *Config) Validate() error {
 	return multierror.New(errors...).Err()
 }
 
+// 合并废弃 ClientConfig、同步 Push API 日志级别、CLI external-labels 到各 client。
 func (c *Config) Setup(l log.Logger) {
 	if c.ClientConfig.URL.URL != nil {
 		level.Warn(l).Log("msg", "use of CLI client.* and config file Client block are both deprecated in favour of the config file Clients block and will be removed in a future release")
@@ -130,6 +138,7 @@ func (c *Config) Setup(l log.Logger) {
 	}
 }
 
+// 全局配置：file_watch 等对所有 scrape target 生效的默认值。
 // GlobalConfig holds configuration settings which apply to all targets.
 // Individual scrape jobs can override the defaults.
 type GlobalConfig struct {

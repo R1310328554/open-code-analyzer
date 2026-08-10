@@ -5,6 +5,9 @@
 
 package consulagent
 
+// Consul Agent API 服务发现：轮询 agent 健康检查生成 Promtail scrape 目标。
+// 改编自 Prometheus consul SD，支持 stale 读、标签/服务过滤与元数据标签展开。
+
 import (
 	"context"
 	"encoding/json"
@@ -63,6 +66,7 @@ const (
 )
 
 var (
+// 默认 SD 配置：localhost:8500、30s 刷新、AllowStale 与 http scheme。
 	// DefaultSDConfig is the default Consul SD configuration.
 	DefaultSDConfig = SDConfig{
 		TagSeparator:    ",",
@@ -77,6 +81,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// Consul Agent SD 配置：server、token、datacenter、services/tags 过滤与 TLS。
 // SDConfig is the configuration for Consul service discovery.
 type SDConfig struct {
 	Server       string        `yaml:"server,omitempty"`
@@ -140,6 +145,7 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+// Discovery 通过 Agent API 周期性拉取服务实例并输出 targetgroup.Group。
 // Discovery retrieves target information from a Consul server
 // and updates them via watches.
 type Discovery struct {
@@ -156,6 +162,7 @@ type Discovery struct {
 	metrics          *consulMetrics
 }
 
+// 构建 consul.Client、HTTP transport 与 consulMetrics，初始化 watched 过滤条件。
 // NewDiscovery returns a new Discovery for the given config.
 func NewDiscovery(conf *SDConfig, logger *slog.Logger, metrics discovery.DiscovererMetrics) (*Discovery, error) {
 	m, ok := metrics.(*consulMetrics)
@@ -216,6 +223,7 @@ func NewDiscovery(conf *SDConfig, logger *slog.Logger, metrics discovery.Discove
 }
 
 // shouldWatch returns whether the service of the given name should be watched.
+// 综合服务名与 tags 过滤，决定是否为该 service 启动 watchService。
 func (d *Discovery) shouldWatch(name string, tags []string) bool {
 	return d.shouldWatchFromName(name) && d.shouldWatchFromTags(tags)
 }
@@ -257,6 +265,7 @@ tagOuter:
 }
 
 // Get the local datacenter if not specified.
+// 配置未指定 datacenter 时从 Agent Self API 读取本地 DC 名称。
 func (d *Discovery) getDatacenter() error {
 	// If the datacenter was not set from clientConf, let's get it from the local Consul agent
 	// (Consul default is to use local node's datacenter if one isn't given for a query).
@@ -304,6 +313,7 @@ func (d *Discovery) initialize(ctx context.Context) {
 	}
 }
 
+// Discoverer 主循环：动态 watchServices 或固定服务列表 watchService。
 // Run implements the Discoverer interface.
 func (d *Discovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	if d.finalizer != nil {
@@ -337,6 +347,7 @@ func (d *Discovery) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	}
 }
 
+// Agent.Services 发现新服务并启动 watch；已删除服务 cancel 并发送空 target 清理。
 // Watch the catalog for new services we would like to watch. This is called only
 // when we don't know yet the names of the services and need to ask Consul the
 // entire list of services.
@@ -411,6 +422,7 @@ func (d *Discovery) watchServices(ctx context.Context, ch chan<- []*targetgroup.
 }
 
 // consulService contains data belonging to the same service.
+// 单 Consul 服务的 watch 状态：标签、公共 labels 与 RPC 延迟指标引用。
 type consulService struct {
 	name               string
 	tags               []string
@@ -461,6 +473,7 @@ func (d *Discovery) watchService(ctx context.Context, ch chan<- []*targetgroup.G
 }
 
 // Get updates for a service.
+// AgentHealthServiceByName 拉实例，展开节点/服务 meta 与 tagged address 为 meta 标签。
 func (srv *consulService) watch(ctx context.Context, ch chan<- []*targetgroup.Group, agent *consul.Agent) {
 	srv.logger.Debug("Watching service", "service", srv.name, "tags", strings.Join(srv.tags, ","))
 

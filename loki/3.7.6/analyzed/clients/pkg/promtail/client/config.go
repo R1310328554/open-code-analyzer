@@ -1,5 +1,8 @@
 package client
 
+// Promtail HTTP 推送客户端配置：URL、batch 窗口/大小、退避、外部标签与多租户。
+// 默认值与 Helm chart 应对齐；支持 YAML 与已弃用的 CLI flag。
+
 import (
 	"flag"
 	"time"
@@ -11,6 +14,7 @@ import (
 	lokiflag "github.com/grafana/loki/v3/pkg/util/flagext"
 )
 
+// 修改默认 batch/退避/超时时需同步 Helm chart 与 fluent-bit 默认值。
 // NOTE the helm chart for promtail and fluent-bit also have defaults for these values, please update to match if you make changes here.
 const (
 	BatchWait      = 1 * time.Second
@@ -21,6 +25,7 @@ const (
 	Timeout        = 10 * time.Second
 )
 
+// 单 client 块：BatchWait/BatchSize、HTTP 客户端、Headers、TenantID 与限流丢弃策略。
 // Config describes configuration for an HTTP pusher client.
 type Config struct {
 	// Note even though the command line flag arguments which use this config
@@ -50,6 +55,7 @@ type Config struct {
 	DropRateLimitedBatches bool `yaml:"drop_rate_limited_batches"`
 }
 
+// 注册带前缀的 client.* 命令行 flag（均已标记 deprecated）。
 // RegisterFlags with prefix registers flags where every name is prefixed by
 // prefix. If prefix is a non-empty string, prefix should end with a period.
 func (c *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
@@ -67,11 +73,13 @@ func (c *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.BoolVar(&c.DropRateLimitedBatches, prefix+"client.drop-rate-limited-batches", false, "Do not retry batches that have been rate limited by Loki (deprecated).")
 }
 
+// 无前缀注册全部 client 相关 flag。
 // RegisterFlags registers flags.
 func (c *Config) RegisterFlags(flags *flag.FlagSet) {
 	c.RegisterFlagsWithPrefix("", flags)
 }
 
+// YAML 反序列化：未设 URL 时填充默认退避与 batch，并校验 HTTPClientConfig。
 // UnmarshalYAML implement Yaml Unmarshaler
 func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type raw Config

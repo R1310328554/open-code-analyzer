@@ -1,5 +1,8 @@
 package client
 
+// Promtail Loki HTTP 推送客户端：按租户 batch、重试、限流丢弃与行长度截断。
+// 实现 api.EntryHandler，通过 snappy protobuf POST 至 distributor/ingester。
+
 import (
 	"bufio"
 	"bytes"
@@ -50,6 +53,7 @@ var Reasons = []string{ReasonGeneric, ReasonRateLimited, ReasonStreamLimited, Re
 
 var UserAgent = fmt.Sprintf("promtail/%s", build.Version)
 
+// Promtail client 侧 Prometheus 指标：编码/发送/丢弃字节与条目、重试与延迟。
 type Metrics struct {
 	encodedBytes                 *prometheus.CounterVec
 	sentBytes                    *prometheus.CounterVec
@@ -65,6 +69,7 @@ type Metrics struct {
 	countersWithHostTenantReason []*prometheus.CounterVec
 }
 
+// 注册或复用 promtail_* 计数器与 histogram，支持 AlreadyRegistered 合并。
 func NewMetrics(reg prometheus.Registerer) *Metrics {
 	var m Metrics
 
@@ -151,6 +156,7 @@ func mustRegisterOrGet(reg prometheus.Registerer, c prometheus.Collector) promet
 	return c
 }
 
+// 可 Stop/StopNow 的 Loki 推送客户端接口，继承 EntryHandler。
 // Client pushes entries to Loki and can be stopped
 type Client interface {
 	api.EntryHandler
@@ -159,6 +165,7 @@ type Client interface {
 	Name() string
 }
 
+// client 结构体：HTTP 客户端、entries channel、外部标签与行大小限制。
 // Client for pushing logs in snappy-compressed protos over HTTP.
 type client struct {
 	name    string
@@ -181,9 +188,11 @@ type client struct {
 	maxLineSizeTruncate bool
 }
 
+// 自定义 http.RoundTripper 包装器，供 NewWithTripperware 注入 TLS/代理等。
 // Tripperware can wrap a roundtripper.
 type Tripperware func(http.RoundTripper) http.RoundTripper
 
+// 构造并启动 run goroutine 的公开工厂，参数含 limits 与 logger。
 // New makes a new Client.
 func New(metrics *Metrics, cfg Config, maxStreams, maxLineSize int, maxLineSizeTruncate bool, logger log.Logger) (Client, error) {
 	return newClient(metrics, cfg, maxStreams, maxLineSize, maxLineSizeTruncate, logger)
@@ -241,6 +250,7 @@ func newClient(metrics *Metrics, cfg Config, maxStreams, maxLineSize int, maxLin
 	return c, nil
 }
 
+// 在标准 client 上替换 Transport，便于测试或中间件注入。
 // NewWithTripperware creates a new Loki client with a custom tripperware.
 func NewWithTripperware(metrics *Metrics, cfg Config, maxStreams, maxLineSize int, maxLineSizeTruncate bool, logger log.Logger, tp Tripperware) (Client, error) {
 	c, err := newClient(metrics, cfg, maxStreams, maxLineSize, maxLineSizeTruncate, logger)
@@ -269,6 +279,7 @@ func (c *client) initBatchMetrics(tenantID string) {
 	}
 }
 
+// 主循环：收 Entry、按租户 batch、超 BatchSize/BatchWait 或 channel 关闭时发送。
 func (c *client) run() {
 	batches := map[string]*batch{}
 
@@ -378,6 +389,7 @@ func batchIsRateLimited(status int) bool {
 	return status == 429
 }
 
+// encode 后带指数退避重试 POST；429 可配置直接丢弃以免 HOL 阻塞。
 func (c *client) sendBatch(tenantID string, batch *batch) {
 	buf, entriesCount, err := batch.encode()
 	if err != nil {
@@ -439,6 +451,7 @@ func (c *client) sendBatch(tenantID string, batch *batch) {
 	}
 }
 
+// 构造 POST 请求，多租户时设置 X-Scope-OrgID 与自定义 Headers。
 func (c *client) send(ctx context.Context, tenantID string, buf []byte) (int, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.cfg.Timeout)
 	defer cancel()
@@ -483,6 +496,7 @@ func (c *client) send(ctx context.Context, tenantID string, buf []byte) (int, er
 	return resp.StatusCode, err
 }
 
+// 租户 ID 优先级：__tenant_id__ 标签 > 配置 TenantID > 空（单租户）。
 func (c *client) getTenantID(labels model.LabelSet) string {
 	// Check if it has been overridden while processing the pipeline stages
 	if value, ok := labels[ReservedLabelTenantID]; ok {
@@ -499,12 +513,14 @@ func (c *client) getTenantID(labels model.LabelSet) string {
 	return ""
 }
 
+// 关闭 entries channel 并等待 run goroutine 刷完 pending batch。
 // Stop the client.
 func (c *client) Stop() {
 	c.once.Do(func() { close(c.entries) })
 	c.wg.Wait()
 }
 
+// cancel 上下文以中止重试，再调用 Stop 排空队列。
 // StopNow stops the client without retries
 func (c *client) StopNow() {
 	// cancel will stop retrying http requests.

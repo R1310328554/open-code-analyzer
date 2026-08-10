@@ -1,5 +1,8 @@
 package limit
 
+// Promtail 限流与推送约束配置：读行速率、max_streams、max_line_size 及截断策略。
+// 供 client.Manager 与 scrape 路径共用，0 表示禁用对应限制。
+
 import (
 	"flag"
 
@@ -16,6 +19,7 @@ type Config struct {
 	MaxLineSizeTruncate bool             `mapstructure:"max_line_size_truncate" yaml:"max_line_size_truncate" json:"max_line_size_truncate"`
 }
 
+// 注册 limit.* 与 max-streams/max-line-size 等命令行 flag。
 func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.Float64Var(&cfg.ReadlineRate, prefix+"limit.readline-rate", 10000, "The rate limit in log lines per second that this instance of Promtail may push to Loki.")
 	f.IntVar(&cfg.ReadlineBurst, prefix+"limit.readline-burst", 10000, "The cap in the quantity of burst lines that this instance of Promtail may push to Loki.")

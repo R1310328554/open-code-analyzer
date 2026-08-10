@@ -1,5 +1,8 @@
 package positions
 
+// Promtail 读取进度 positions：持久化各文件/journal 偏移，定期 sync 与过期清理。
+// FileTarget 存整数 offset，JournalTarget 存 cursor 字符串。
+
 import (
 	"flag"
 	"fmt"
@@ -21,6 +24,7 @@ const (
 	journalKeyPrefix = "journal-"
 )
 
+// positions 配置：YAML 文件路径、sync 周期、只读与损坏 YAML 忽略选项。
 // Config describes where to get position information from.
 type Config struct {
 	SyncPeriod        time.Duration `mapstructure:"sync_period" yaml:"sync_period"`
@@ -42,6 +46,7 @@ func (cfg *Config) RegisterFlags(flags *flag.FlagSet) {
 	cfg.RegisterFlagsWithPrefix("", flags)
 }
 
+// positions 实现：内存 map + 定时写盘，mutex 保护并发读写。
 // Positions tracks how far through each file we've read.
 type positions struct {
 	logger    log.Logger
@@ -52,6 +57,7 @@ type positions struct {
 	done      chan struct{}
 }
 
+// positions.yaml 磁盘格式：顶层 positions 键映射 path → offset/cursor。
 // File format for the positions data.
 type File struct {
 	Positions map[string]string `yaml:"positions"`
@@ -80,6 +86,7 @@ type Positions interface {
 	Stop()
 }
 
+// 读盘初始化 map 并启动 run 定时 save/cleanup goroutine。
 // New makes a new Positions.
 func New(logger log.Logger, cfg Config) (Positions, error) {
 	positionData, err := readPositionsFile(cfg, logger)
@@ -180,11 +187,13 @@ func (p *positions) save() {
 	}
 }
 
+// 生成带 cursor- 前缀的 positions 键，cleanup 不会删除此类条目。
 // CursorKey returns a key that can be saved as a cursor that is never deleted.
 func CursorKey(key string) string {
 	return fmt.Sprintf("%s%s", cursorKeyPrefix, key)
 }
 
+// 删除磁盘上已不存在的普通文件 path，保留 cursor-/journal- 前缀键。
 func (p *positions) cleanup() {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
@@ -213,6 +222,7 @@ func (p *positions) cleanup() {
 	}
 }
 
+// 读取并 strict YAML 解析 positions 文件，不存在则返回空 map。
 func readPositionsFile(cfg Config, logger log.Logger) (map[string]string, error) {
 	cleanfn := filepath.Clean(cfg.PositionsFile)
 	buf, err := os.ReadFile(cleanfn)

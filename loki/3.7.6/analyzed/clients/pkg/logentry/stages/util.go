@@ -1,5 +1,8 @@
 package stages
 
+// logentry stages 通用工具：预定义时间格式解析、无年份时间戳推断与 extracted 值转字符串。
+// 供 timestamp 等阶段复用，含 Debug/Inspect 全局开关控制日志分配开销。
+
 import (
 	"fmt"
 	"math"
@@ -9,12 +12,14 @@ import (
 )
 
 var (
+// Debug 为 true 时才分配 debug 级日志字符串，避免 pipeline 高频路径上的额外开销。
 	// Debug is used to wrap debug log statements, the go-kit logger won't let us introspect the current log level
 	// so this global is used for that purpose. This allows us to skip allocations of log messages at the
 	// debug level when debug level logging is not enabled. Log level allocations can become very expensive
 	// as we log numerous log entries per log line at debug level.
 	Debug = false
 
+// Inspect 开启时在阶段间输出 diff，便于调试 Promtail pipeline 行为。
 	// Inspect is used to debug promtail pipelines by showing diffs between pipeline stages
 	Inspect = false
 )
@@ -23,6 +28,7 @@ const (
 	ErrTimestampContainsYear = "timestamp '%s' is expected to not contain the year date component"
 )
 
+// 将预定义布局名（如 RFC3339、UnixMs）或 Go layout 字符串转为 parser 闭包。
 // convertDateLayout converts pre-defined date format layout into date format
 func convertDateLayout(predef string, location *time.Location) parser {
 	switch predef {
@@ -129,6 +135,7 @@ func convertDateLayout(predef string, location *time.Location) parser {
 	}
 }
 
+// 解析不含年份的时间串，按当前时间补全年份并处理跨年夜边界。
 // parseTimestampWithoutYear parses the input timestamp without the year component,
 // assuming the timestamp is related to a point in time close to "now", and correctly
 // handling the edge cases around new year's eve
@@ -162,6 +169,7 @@ func parseTimestampWithoutYear(layout string, location *time.Location, timestamp
 	return parsedTime, nil
 }
 
+// 将 extracted 中的数值/布尔/字符串统一转为 string，供模板与后续阶段使用。
 // getString will convert the input variable to a string if possible
 func getString(unk interface{}) (string, error) {
 

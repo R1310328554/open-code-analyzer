@@ -1,5 +1,8 @@
 package client
 
+// WAL WriteTo 适配器：将 TSDB 段内 series 标签与 WAL 条目重组为 api.Entry 送入 client。
+// 维护 HeadSeriesRef → LabelSet 缓存，段回收时 SeriesReset 清理过期映射。
+
 import (
 	"fmt"
 	"sync"
@@ -16,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// 实现 wal.WriteTo：StoreSeries 缓存标签，AppendEntries 查表后写入 client channel。
 // clientWriteTo implements a wal.WriteTo that re-builds entries with the stored series, and the received entries. After,
 // sends each to the provided Client channel.
 type clientWriteTo struct {
@@ -34,6 +38,7 @@ type clientWriteTo struct {
 	toClient chan<- api.Entry
 }
 
+// 构造带空 series/segment 映射的 WriteTo，目标为 Promtail client 输入 channel。
 // newClientWriteTo creates a new clientWriteTo
 func newClientWriteTo(toClient chan<- api.Entry, logger log.Logger) *clientWriteTo {
 	return &clientWriteTo{
@@ -44,6 +49,7 @@ func newClientWriteTo(toClient chan<- api.Entry, logger log.Logger) *clientWrite
 	}
 }
 
+// 批量写入 series 标签与所在 segment 号，供后续 WAL 条目关联。
 func (c *clientWriteTo) StoreSeries(series []record.RefSeries, segment int) {
 	c.seriesLock.Lock()
 	defer c.seriesLock.Unlock()
@@ -56,6 +62,7 @@ func (c *clientWriteTo) StoreSeries(series []record.RefSeries, segment int) {
 	}
 }
 
+// 删除 segmentNum 及更早 segment 中的 series 缓存，配合 WAL 段删除。
 // SeriesReset will delete all cache entries that were last seen in segments numbered equal or lower than segmentNum
 func (c *clientWriteTo) SeriesReset(segmentNum int) {
 	c.seriesLock.Lock()
@@ -71,6 +78,7 @@ func (c *clientWriteTo) SeriesReset(segmentNum int) {
 	}
 }
 
+// 按 Ref 查标签，逐条组装 Entry 写入 toClient；未知 series 仅 debug 日志。
 func (c *clientWriteTo) AppendEntries(entries wal.RefEntries) error {
 	var entry api.Entry
 	c.seriesLock.RLock()

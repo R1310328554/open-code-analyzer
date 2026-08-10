@@ -5,6 +5,9 @@
 
 package consulagent
 
+// Consul Agent 服务发现的 Prometheus 指标：RPC 失败计数与按 endpoint/call 的延迟 Summary。
+// 实现 discovery.DiscovererMetrics，Register/Unregister 委托 MetricRegisterer。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -23,6 +26,7 @@ type consulMetrics struct {
 	metricRegisterer discovery.MetricRegisterer
 }
 
+// 创建 Counter/SummaryVec 并绑定 agent/services 与 agent/service 标签组合。
 func newDiscovererMetrics(reg prometheus.Registerer, _ discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	m := &consulMetrics{
 		rpcFailuresCount: prometheus.NewCounter(
@@ -54,11 +58,13 @@ func newDiscovererMetrics(reg prometheus.Registerer, _ discovery.RefreshMetricsI
 	return m
 }
 
+// 向 Prometheus registry 注册本 discoverer 的全部 collector。
 // Register implements discovery.DiscovererMetrics.
 func (m *consulMetrics) Register() error {
 	return m.metricRegisterer.RegisterMetrics()
 }
 
+// 从 registry 注销指标，Discoverer 停止时调用。
 // Unregister implements discovery.DiscovererMetrics.
 func (m *consulMetrics) Unregister() {
 	m.metricRegisterer.UnregisterMetrics()

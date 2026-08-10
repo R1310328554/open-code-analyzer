@@ -1,5 +1,8 @@
 package client
 
+// 调试型 Client：将本应推送 Loki 的 Entry 以彩色表格形式打印到 stdout。
+// 启动前 dump 各 client YAML 配置，适用于 dry-run 与 pipeline 联调。
+
 import (
 	"fmt"
 	"os"
@@ -29,6 +32,7 @@ func init() {
 	}
 }
 
+// 实现 Client 接口的 stdout logger，tabwriter 对齐时间戳/标签/行内容。
 type logger struct {
 	*tabwriter.Writer
 	sync.Mutex
@@ -37,6 +41,7 @@ type logger struct {
 	once sync.Once
 }
 
+// 校验 cfgs 后打印黄色配置摘要，启动 run 打印每条 Entry。
 // NewLogger creates a new client logger that logs entries instead of sending them.
 func NewLogger(metrics *Metrics, log log.Logger, cfgs ...Config) (Client, error) {
 	// make sure the clients config is valid
@@ -72,6 +77,7 @@ func (l *logger) Chan() chan<- api.Entry {
 	return l.entries
 }
 
+// 循环读 entries channel，蓝/黄着色输出时间戳、标签与日志行并 Flush。
 func (l *logger) run() {
 	for e := range l.entries {
 		fmt.Fprint(l.Writer, blue.Sprint(e.Timestamp.Format("2006-01-02T15:04:05.999999999-0700")))

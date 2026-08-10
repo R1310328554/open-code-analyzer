@@ -1,5 +1,8 @@
 package client
 
+// Promtail 远程写入管理器：实例化多 client、可选 WAL watcher，fan-out 或 WAL 回放路径。
+// WriterEventsNotifier 将 WAL 段清理/写入事件订阅到 clientWriteTo 与 watcher。
+
 import (
 	"fmt"
 	"strings"
@@ -14,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/wal"
 )
 
+// WAL 写入/清理事件通知接口，Manager 构造时向 watcher 注册订阅者。
 // WriterEventsNotifier implements a notifier that's received by the Manager, to which wal.Watcher can subscribe for
 // writer events.
 type WriterEventsNotifier interface {
@@ -22,10 +26,12 @@ type WriterEventsNotifier interface {
 }
 
 var (
+// 空实现 Notifier，WAL 未启用时避免 nil 判断。
 	// NilNotifier is a no-op WriterEventsNotifier.
 	NilNotifier = nilNotifier{}
 )
 
+// SubscribeCleanup/SubscribeWrite 均为空操作。
 // nilNotifier implements WriterEventsNotifier with no-ops callbacks.
 type nilNotifier struct{}
 
@@ -33,10 +39,12 @@ func (n nilNotifier) SubscribeCleanup(_ wal.CleanupEventSubscriber) {}
 
 func (n nilNotifier) SubscribeWrite(_ wal.WriteEventSubscriber) {}
 
+// 仅需 Stop 的可停止组件，WAL watcher 等统一生命周期管理。
 type Stoppable interface {
 	Stop()
 }
 
+// 管理多 Client 与 WAL watcher：entries channel 入口，WAL 模式消费丢弃或 fan-out。
 // Manager manages remote write client instantiation, and connects the related components to orchestrate the flow of api.Entry
 // from the scrape targets, to the remote write clients themselves.
 //
@@ -54,6 +62,7 @@ type Manager struct {
 	wg sync.WaitGroup
 }
 
+// 按配置创建各 client、可选 WAL watcher 并启动 consume 或 forward 例程。
 // NewManager creates a new Manager
 func NewManager(metrics *Metrics, logger log.Logger, limits limit.Config, reg prometheus.Registerer, walCfg wal.Config, notifier WriterEventsNotifier, clientCfgs ...Config) (*Manager, error) {
 	var fake struct{}
@@ -117,6 +126,7 @@ func NewManager(metrics *Metrics, logger log.Logger, limits limit.Config, reg pr
 	return manager, nil
 }
 
+// WAL 启用时丢弃 pipeline 直送条目，实际数据由 WAL 回放经 clientWriteTo 注入。
 // startWithConsume starts the main manager routine, which reads and discards entries from the exposed channel.
 // This is necessary since to treat the WAL-enabled manager the same way as the WAL-disabled one, the processing pipeline
 // send entries both to the WAL writer, and the channel exposed by the manager. In the case the WAL is enabled, these entries
@@ -133,6 +143,7 @@ func (m *Manager) startWithConsume() {
 	}()
 }
 
+// 无 WAL 时将 Manager channel 条目 fan-out 到每个 client 的 Chan。
 // startWithForward starts the main manager routine, which reads entries from the exposed channel, and forwards them
 // doing a fan-out across all inner clients.
 func (m *Manager) startWithForward() {
@@ -170,6 +181,7 @@ func (m *Manager) Chan() chan<- api.Entry {
 	return m.entries
 }
 
+// 关闭 entries、等待 forward/consume、停止 watcher 再 Stop 各 client。
 func (m *Manager) Stop() {
 	// first stop the receiving channel
 	m.once.Do(func() { close(m.entries) })
