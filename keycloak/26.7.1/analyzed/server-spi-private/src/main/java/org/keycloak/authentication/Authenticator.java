@@ -27,6 +27,9 @@ import org.keycloak.models.UserModel;
 import org.keycloak.provider.Provider;
 
 /**
+ * 自定义认证器 SPI：在认证流程中校验请求、发起挑战或处理表单 action。
+ * <p>实现类须同时提供 {@link AuthenticatorFactory}。</p>
+ *
  * This interface is for users that want to add custom authenticators to an authentication flow.
  * You must implement this interface as well as an AuthenticatorFactory.
  *
@@ -36,6 +39,9 @@ import org.keycloak.provider.Provider;
 public interface Authenticator extends Provider {
 
     /**
+     * 认证器入口：检查 HTTP 请求是否满足要求，否则通过 context.challenge 返回挑战。
+     * action URL 须指向 login-actions/authenticate 或 registration 并携带 code 与 execution。
+     *
      * Initial call for the authenticator.  This method should check the current HTTP request to determine if the request
      * satisfies the Authenticator's requirements.  If it doesn't, it should send back a challenge response by calling
      * the AuthenticationFlowContext.challenge(Response).  If this challenge is a authentication, the action URL
@@ -57,6 +63,8 @@ public interface Authenticator extends Provider {
     void authenticate(AuthenticationFlowContext context);
 
     /**
+     * 表单 action 回调时调用。
+     *
      * Called from a form action invocation.
      *
      * @param context
@@ -65,6 +73,8 @@ public interface Authenticator extends Provider {
 
 
     /**
+     * 是否要求用户已识别（getUser 非 null）。
+     *
      * Does this authenticator require that the user has already been identified?  That AuthenticatorContext.getUser() is not null?
      *
      * @return
@@ -72,6 +82,8 @@ public interface Authenticator extends Provider {
     boolean requiresUser();
 
     /**
+     * 该用户是否已配置此认证器所需凭证。
+     *
      * Is this authenticator configured for this user.
      *
      * @param session
@@ -82,12 +94,16 @@ public interface Authenticator extends Provider {
     boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user);
 
     /**
+     * 为用户注册配置此认证器所需的 Required Action。
+     *
      * Set actions to configure authenticator
      *
      */
     void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user);
 
     /**
+     * 若认证器依赖 Required Action，可覆盖返回对应工厂列表。
+     *
      * Overwrite this if the authenticator is associated with
      * @return
      */
@@ -96,6 +112,8 @@ public interface Authenticator extends Provider {
     }
 
     /**
+     * 检查领域是否已启用本认证器所需的全部 Required Action。
+     *
      * Checks if all required actions are configured in the realm and are enabled
      * @return
      */

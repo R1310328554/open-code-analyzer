@@ -20,6 +20,9 @@ package org.keycloak.authentication;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * 认证器工厂：Keycloak 启动时创建单例，负责实例化 {@link Authenticator}。
+ * <p>须在 META-INF/services/org.keycloak.authentication.AuthenticatorFactory 中注册实现类。</p>
+ *
  * Factory for creating Authenticator instances.  This is a singleton and created when Keycloak boots.
  *
  * You must specify a file

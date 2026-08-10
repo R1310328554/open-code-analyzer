@@ -19,6 +19,8 @@
 package org.keycloak.authentication;
 
 /**
+ * 创建 {@link AuthenticationFlowCallback} 的工厂，主要作为标记接口。
+ *
  * Factory to create {@link AuthenticationFlowCallback} instances. Mostly used as marker interface.
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>

@@ -21,6 +21,8 @@ package org.keycloak.authentication;
 import org.keycloak.models.AuthenticationFlowModel;
 
 /**
+ * 认证流程生命周期回调：在父流程或顶层流程成功结束时触发。
+ *
  * Callback to be triggered during various lifecycle events of authentication flow.
  *
  * The {@link AuthenticatorFactory}, which creates this Authenticator should implement {@link AuthenticationFlowCallbackFactory} interface.
@@ -30,6 +32,8 @@ import org.keycloak.models.AuthenticationFlowModel;
 public interface AuthenticationFlowCallback extends Authenticator {
 
     /**
+     * 父认证流程成功结束后触发；本认证器须在该流程中已成功执行。
+     *
      * Triggered after the authentication flow is successfully finished. The target authentication flow is the one where this
      * authenticator is configured. Authenticator should finish successfully in the flow (or being evaluated to true in case of Conditional Authenticator)
      * in order to trigger this callback at the successful end of the flow
@@ -40,6 +44,8 @@ public interface AuthenticationFlowCallback extends Authenticator {
 
 
     /**
+     * 顶层认证流程成功结束后触发，适合最终校验。
+     *
      * Triggered after the top authentication flow is successfully finished.
      * It is really suitable for last verification of successful authentication
      *

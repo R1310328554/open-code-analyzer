@@ -46,16 +46,26 @@ import static org.keycloak.scim.services.Error.invalidSyntax;
 import static org.keycloak.scim.services.Error.resourceNotFound;
 import static org.keycloak.scim.services.Error.toResponse;
 
+/**
+ * 单个 SCIM 资源类型的 CRUD 与搜索端点实现。
+ * <p>处理 create/get/search/update/patch/delete，并记录管理事件与 meta 信息。</p>
+ */
 public class ScimResourceTypeResource<R extends ResourceTypeRepresentation> {
 
     private static final Logger logger = Logger.getLogger(ScimResourceTypeResource.class);
+    /** SCIM JSON 媒体类型。 */
     private static final String APPLICATION_SCIM_JSON = "application/scim+json";
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 资源类型 SPI 提供者。 */
     private final ScimResourceTypeProvider<R> resourceTypeProvider;
+    /** 资源表示类的 Jackson 反序列化类型。 */
     private final Class<? extends ResourceTypeRepresentation> resourceTypeClazz;
+    /** 管理审计事件构建器。 */
     private final AdminEventBuilder adminEvent;
 
+    /** 绑定会话、提供者与管理事件上下文。 */
     public ScimResourceTypeResource(KeycloakSession session, ScimResourceTypeProvider<R> resourceTypeProvider, AdminEventBuilder adminEvent) {
         this.session = session;
         this.resourceTypeProvider = resourceTypeProvider;
@@ -63,6 +73,7 @@ public class ScimResourceTypeResource<R extends ResourceTypeRepresentation> {
         this.adminEvent = adminEvent.resource(resourceTypeProvider.getAdminEventResourceType());
     }
 
+    /** SCIM POST：创建资源，请求体不得预置 id。 */
     @POST
     @Consumes({APPLICATION_SCIM_JSON, MediaType.APPLICATION_JSON})
     @Produces(APPLICATION_SCIM_JSON)
@@ -85,6 +96,7 @@ public class ScimResourceTypeResource<R extends ResourceTypeRepresentation> {
                 });
     }
 
+    /** SCIM GET by id，支持 attributes/excludedAttributes 过滤返回字段。 */
     @Path("{id}")
     @GET
     @Produces(APPLICATION_SCIM_JSON)
@@ -106,6 +118,7 @@ public class ScimResourceTypeResource<R extends ResourceTypeRepresentation> {
         return Response.ok().entity(resource).build();
     }
 
+    /** SCIM GET 集合：将查询参数封装为 {@link SearchRequest} 并委托 search。 */
     @GET
     @Produces(APPLICATION_SCIM_JSON)
     public Response getAll(@QueryParam("filter") String filterExpression,
@@ -115,7 +128,7 @@ public class ScimResourceTypeResource<R extends ResourceTypeRepresentation> {
                            @QueryParam("sortOrder") String sortOrder,
                            @QueryParam("startIndex") Integer startIndex,
                            @QueryParam("count") Integer count) {
-        // Delegate to common search logic
+        // 委托给统一的 search 逻辑
         return search(SearchRequest.builder().withFilter(filterExpression)
                         .withAttributes(attributes != null ? List.of(attributes.split(",")) : null)
                         .withExcludedAttributes(excludedAttributes != null ? List.of(excludedAttributes.split(",")) : null)
@@ -125,6 +138,7 @@ public class ScimResourceTypeResource<R extends ResourceTypeRepresentation> {
                         .withCount(count).build());
     }
 
+    /** SCIM .search POST：按 filter/分页/排序查询资源列表或单例资源。 */
     @Path(".search")
     @POST
     @Consumes({APPLICATION_SCIM_JSON, MediaType.APPLICATION_JSON})
@@ -156,6 +170,7 @@ public class ScimResourceTypeResource<R extends ResourceTypeRepresentation> {
         }
     }
 
+    /** SCIM DELETE：删除指定 id 的资源。 */
     @Path("{id}")
     @DELETE
     @Produces(APPLICATION_SCIM_JSON)
@@ -182,6 +197,7 @@ public class ScimResourceTypeResource<R extends ResourceTypeRepresentation> {
         }
     }
 
+    /** SCIM PUT：全量替换资源，路径 id 须与 body id 一致。 */
     @Path("{id}")
     @PUT
     @Consumes({APPLICATION_SCIM_JSON, MediaType.APPLICATION_JSON})
@@ -211,6 +227,7 @@ public class ScimResourceTypeResource<R extends ResourceTypeRepresentation> {
                 });
     }
 
+    /** SCIM PATCH：按 PatchOp 操作局部更新资源。 */
     @Path("{id}")
     @PATCH
     @Consumes({APPLICATION_SCIM_JSON, MediaType.APPLICATION_JSON})
@@ -239,6 +256,7 @@ public class ScimResourceTypeResource<R extends ResourceTypeRepresentation> {
     }
 
     @SuppressWarnings("unchecked")
+    /** 反序列化请求体；未知属性或解析失败转为 400。 */
     private R parseResourceTypePayload(InputStream is) {
         try {
             return  (R) JsonSerialization.readValue(is, resourceTypeClazz);
@@ -250,6 +268,7 @@ public class ScimResourceTypeResource<R extends ResourceTypeRepresentation> {
         }
     }
 
+    /** 填充 meta（resourceType、created、lastModified、location）。 */
     private void setMetadata(R resource) {
         Meta meta = new Meta();
         meta.setResourceType(resourceTypeProvider.getName());
@@ -272,6 +291,7 @@ public class ScimResourceTypeResource<R extends ResourceTypeRepresentation> {
         resource.setMeta(meta);
     }
 
+    /** 执行持久化回调，成功时设置 meta 并返回指定 HTTP 状态。 */
     private Response onPersist(R resource, Status status, BiFunction<ScimResourceTypeProvider<R>, R, R> consumer) {
         try {
             R r = consumer.apply(resourceTypeProvider, resource);
@@ -284,10 +304,12 @@ public class ScimResourceTypeResource<R extends ResourceTypeRepresentation> {
         }
     }
 
+    /** 按 id 获取资源（无属性过滤）。 */
     private R getResource(String id) {
         return getResource(id, null, null);
     }
 
+    /** 按 id 获取资源，支持属性包含/排除列表。 */
     private R getResource(String id, List<String> attributes, List<String> excludedAttributes) {
         if (id == null) {
             return null;

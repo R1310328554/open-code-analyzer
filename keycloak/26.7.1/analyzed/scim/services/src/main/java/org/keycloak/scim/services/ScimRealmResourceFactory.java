@@ -27,10 +27,15 @@ import org.keycloak.urls.UrlType;
 
 import org.jboss.logging.Logger;
 
+/**
+ * SCIM 领域资源提供者工厂：校验 Bearer 令牌、受众与客户端类型后暴露 {@link ScimRealmResource}。
+ * <p>仅在领域启用 SCIM API 且 {@link Feature#SCIM_API} 特性开启时生效。</p>
+ */
 public class ScimRealmResourceFactory implements RealmResourceProviderFactory, EnvironmentDependentProviderFactory {
 
     private static final Logger logger = Logger.getLogger(ScimRealmResourceFactory.class);
 
+    /** 创建 SCIM 提供者；未启用 SCIM 时返回 null 并记录警告。 */
     @Override
     public RealmResourceProvider create(KeycloakSession session) {
         RealmModel realm = session.getContext().getRealm();
@@ -38,6 +43,7 @@ public class ScimRealmResourceFactory implements RealmResourceProviderFactory, E
         if (realm.isScimApiEnabled()) {
             return new RealmResourceProvider() {
 
+                /** 认证并校验令牌受众后返回 SCIM 根资源。 */
                 @Override
                 public Object getResource() {
                     AuthResult authResult = new BearerTokenAuthenticator(session).authenticate();
@@ -99,25 +105,30 @@ public class ScimRealmResourceFactory implements RealmResourceProviderFactory, E
         return null;
     }
 
+    /** 工厂初始化（无额外配置）。 */
     @Override
     public void init(Scope config) {
     }
 
+    /** 启动后回调（占位）。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         factory.toString();
     }
 
+    /** 关闭工厂（无资源释放）。 */
     @Override
     public void close() {
 
     }
 
+    /** 提供者 ID，固定为 "scim"。 */
     @Override
     public String getId() {
         return "scim";
     }
 
+    /** 是否支持：取决于 SCIM_API 特性是否启用。 */
     @Override
     public boolean isSupported(Scope config) {
         return Profile.isFeatureEnabled(Feature.SCIM_API);
