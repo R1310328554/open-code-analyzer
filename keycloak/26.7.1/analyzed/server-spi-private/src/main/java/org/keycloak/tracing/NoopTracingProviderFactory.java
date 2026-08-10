@@ -22,10 +22,16 @@ import org.keycloak.common.Profile;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
+/**
+ * 空操作追踪提供者工厂：提供单例 {@link NoopTracingProvider}。
+ * <p>当 OpenTelemetry 禁用时作为默认提供者；启用时优先级最低。</p>
+ */
 public class NoopTracingProviderFactory implements TracingProviderFactory {
+    /** 提供者标识符 {@code noop} */
     public static final String PROVIDER_ID = "noop";
     private static TracingProvider SINGLETON;
 
+    /** @return 共享的单例 {@link NoopTracingProvider} */
     @Override
     public TracingProvider create(KeycloakSession session) {
         if (SINGLETON == null) {
@@ -49,18 +55,20 @@ public class NoopTracingProviderFactory implements TracingProviderFactory {
         SINGLETON = null;
     }
 
+    /** @return {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** @return 根据 OpenTelemetry 特性开关决定工厂排序优先级 */
     @Override
     public int order() {
-        // If OTel is disabled, this provider should be the default - no tracing
-        // If OTel is enabled, this provider should be the last one to consider
+        // OpenTelemetry 禁用时作为默认提供者；启用时优先级最低
         return !Profile.isFeatureEnabled(Profile.Feature.OPENTELEMETRY) ? 1000 : -1000;
     }
 
+    /** @return 始终为 {@code true}，空操作提供者始终可用 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return true;

@@ -20,10 +20,14 @@ package org.keycloak.timer;
 import org.keycloak.models.KeycloakSessionTask;
 
 /**
+ * 定时任务接口：在 Keycloak 会话上下文中执行的周期性任务。
+ * <p>继承 {@link KeycloakSessionTask}，默认以类名作为任务名称。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface ScheduledTask extends KeycloakSessionTask {
 
+    /** @return 任务名称，默认为实现类简单名 */
     default String getTaskName() {
         return getClass().getSimpleName();
     }

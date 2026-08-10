@@ -30,17 +30,19 @@ import org.keycloak.models.utils.UserModelDelegate;
 import static org.keycloak.common.util.ObjectUtil.isEqualOrBothNull;
 
 /**
- * This will perform update operation for particular attribute/property just if the existing value is not already same.
- * In other words, just "real updates" will be passed to the delegate.
+ * 用户模型委托：仅当新值与现有值不同时才向底层委托执行更新。
+ * <p>过滤无变化的 setter 调用，避免不必要的存储写入。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class UpdateOnlyChangeUserModelDelegate extends UserModelDelegate {
 
+    /** @param delegate 被包装的用户模型 */
     public UpdateOnlyChangeUserModelDelegate(UserModel delegate) {
         super(delegate);
     }
 
+    /** 仅当用户名变化时更新。 */
     @Override
     public void setUsername(String username) {
         if (!isEqualOrBothNull(getUsername(), username)) {
@@ -48,6 +50,7 @@ public class UpdateOnlyChangeUserModelDelegate extends UserModelDelegate {
         }
     }
 
+    /** 仅当启用状态变化时更新。 */
     @Override
     public void setEnabled(boolean enabled) {
         if (!isEqualOrBothNull(isEnabled(), enabled)) {
@@ -55,6 +58,7 @@ public class UpdateOnlyChangeUserModelDelegate extends UserModelDelegate {
         }
     }
 
+    /** 仅当单值属性变化时更新。 */
     @Override
     public void setSingleAttribute(String name, String value) {
         if (!isEqualOrBothNull(getFirstAttribute(name), value)) {
@@ -62,6 +66,7 @@ public class UpdateOnlyChangeUserModelDelegate extends UserModelDelegate {
         }
     }
 
+    /** 仅当多值属性列表变化时更新。 */
     @Override
     public void setAttribute(String name, List<String> values) {
         if (!isEqualOrBothNull(getAttributeStream(name).collect(Collectors.toList()), values)) {
@@ -69,6 +74,7 @@ public class UpdateOnlyChangeUserModelDelegate extends UserModelDelegate {
         }
     }
 
+    /** 仅当属性存在时才移除。 */
     @Override
     public void removeAttribute(String name) {
         if (getAttributeStream(name).count() > 0) {
@@ -76,6 +82,7 @@ public class UpdateOnlyChangeUserModelDelegate extends UserModelDelegate {
         }
     }
 
+    /** 仅当必需操作尚未存在时才添加。 */
     @Override
     public void addRequiredAction(String action) {
         if (action != null && getRequiredActionsStream().noneMatch(action::equals)) {
@@ -83,6 +90,7 @@ public class UpdateOnlyChangeUserModelDelegate extends UserModelDelegate {
         }
     }
 
+    /** 仅当必需操作已存在时才移除。 */
     @Override
     public void removeRequiredAction(String action) {
         if (action != null && getRequiredActionsStream().anyMatch(action::equals)) {
@@ -133,6 +141,7 @@ public class UpdateOnlyChangeUserModelDelegate extends UserModelDelegate {
         }
     }
 
+    /** 仅当用户尚未直接拥有该角色时才授予。 */
     @Override
     public void grantRole(RoleModel role) {
         if (!hasDirectRole(role)) {
@@ -140,6 +149,7 @@ public class UpdateOnlyChangeUserModelDelegate extends UserModelDelegate {
         }
     }
 
+    /** 仅当用户已直接拥有该角色时才删除映射。 */
     @Override
     public void deleteRoleMapping(RoleModel role) {
         if (hasDirectRole(role)) {
@@ -168,6 +178,7 @@ public class UpdateOnlyChangeUserModelDelegate extends UserModelDelegate {
         }
     }
 
+    /** 仅当用户尚未直接属于该组时才加入。 */
     @Override
     public void joinGroup(GroupModel group) {
         if (!RoleUtils.isDirectMember(getGroupsStream(),group)) {
@@ -176,6 +187,7 @@ public class UpdateOnlyChangeUserModelDelegate extends UserModelDelegate {
 
     }
 
+    /** 仅当用户已直接属于该组时才离开。 */
     @Override
     public void leaveGroup(GroupModel group) {
         if (RoleUtils.isDirectMember(getGroupsStream(),group)) {

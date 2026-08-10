@@ -31,11 +31,15 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * {@link RoleStorageProvider} 的组件工厂接口。
+ * <p>基于 {@link ComponentModel} 创建角色存储提供者实例。</p>
+ */
 public interface RoleStorageProviderFactory<T extends RoleStorageProvider> extends ComponentFactory<T, RoleStorageProvider> {
 
 
     /**
-     * called per Keycloak transaction.
+     * 每个 Keycloak 事务调用一次，创建提供者实例。
      *
      * @param session
      * @param model
@@ -45,7 +49,7 @@ public interface RoleStorageProviderFactory<T extends RoleStorageProvider> exten
     T create(KeycloakSession session, ComponentModel model);
 
     /**
-     * This is the name of the provider.
+     * 返回提供者标识名称。
      *
      * @return
      */
@@ -79,8 +83,7 @@ public interface RoleStorageProviderFactory<T extends RoleStorageProvider> exten
     }
 
     /**
-     * Called when RoleStorageProviderModel is created.  This allows you to do initialization of any additional configuration
-     * you need to add.
+     * 创建 RoleStorageProviderModel 时调用，用于初始化额外配置。
      *
      * @param session
      * @param realm
@@ -91,7 +94,7 @@ public interface RoleStorageProviderFactory<T extends RoleStorageProvider> exten
     }
 
     /**
-     * configuration properties that are common across all RoleStorageProvider implementations
+     * 所有 {@link RoleStorageProvider} 实现共用的配置属性。
      *
      * @return
      */

@@ -23,16 +23,31 @@ import java.util.Set;
 import org.keycloak.provider.Provider;
 
 /**
+ * 主题提供者：按名称与类型加载主题资源。
+ * <p>多个 {@link ThemeProvider} 按 {@link #getProviderPriority()} 优先级合并。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface ThemeProvider extends Provider {
 
+    /** @return 提供者优先级，数值越大优先级越高 */
     int getProviderPriority();
 
+    /**
+     * 按名称与类型获取主题。
+     * @param name 主题名称
+     * @param type 主题类型
+     * @throws IOException 读取主题资源失败时
+     */
     Theme getTheme(String name, Theme.Type type) throws IOException;
 
+    /** @param type 主题类型
+     * @return 该类型下可用主题名称集合 */
     Set<String> nameSet(Theme.Type type);
 
+    /** @param name 主题名称
+     * @param type 主题类型
+     * @return 是否存在指定主题 */
     boolean hasTheme(String name, Theme.Type type);
 
 }

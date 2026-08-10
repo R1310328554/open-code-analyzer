@@ -26,23 +26,31 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 角色存储 SPI：注册 {@link RoleStorageProvider} 及工厂。
+ * <p>内部 SPI，名称 {@code role-storage}；定义缓存与优先级等通用配置。</p>
+ */
 public class RoleStorageProviderSpi implements Spi {
 
+    /** @return 始终为 {@code true}，表示内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code role-storage} */
     @Override
     public String getName() {
         return "role-storage";
     }
 
+    /** @return 提供者接口 {@link RoleStorageProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return RoleStorageProvider.class;
     }
 
+    /** @return 工厂接口 {@link RoleStorageProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return RoleStorageProviderFactory.class;
@@ -51,7 +59,7 @@ public class RoleStorageProviderSpi implements Spi {
     private static final List<ProviderConfigProperty> commonConfig;
 
     static {
-        //corresponds to properties defined in CacheableStorageProviderModel and PrioritizedComponentModel
+        // 对应 CacheableStorageProviderModel 与 PrioritizedComponentModel 中定义的属性
         List<ProviderConfigProperty> config = ProviderConfigurationBuilder.create()
                 .property()
                 .name("enabled").type(ProviderConfigProperty.BOOLEAN_TYPE).add()
@@ -73,6 +81,7 @@ public class RoleStorageProviderSpi implements Spi {
         commonConfig = Collections.unmodifiableList(config);
     }
 
+    /** @return 所有角色存储实现共用的不可变配置属性列表 */
     public static List<ProviderConfigProperty> commonConfig() {
         return commonConfig;
     }

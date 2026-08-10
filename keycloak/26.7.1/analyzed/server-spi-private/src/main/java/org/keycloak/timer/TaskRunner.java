@@ -17,18 +17,19 @@
 package org.keycloak.timer;
 
 /**
- * Wrapper around {@link ScheduledTask}.
+ * {@link ScheduledTask} 的运行器包装接口。
+ * <p>同时继承 {@link Runnable}，供 {@link TimerProvider} 调度执行。</p>
  */
 public interface TaskRunner extends Runnable {
 
     /**
-     * Returns the task.
+     * 返回被包装的定时任务。
      * @return
      */
     ScheduledTask getTask();
 
     /**
-     * Name of the task.
+     * 返回任务名称。
      * @return
      */
     default String getTaskName() {
