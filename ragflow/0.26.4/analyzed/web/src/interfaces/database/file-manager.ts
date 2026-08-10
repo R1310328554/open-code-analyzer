@@ -1,3 +1,6 @@
+// file-manager.ts — 文件管理器：文件/文件夹实体与列表 API 响应。
+
+/** 租户文件实体：存储路径、关联知识库与父文件夹。 */
 export interface IFile {
   create_date: string;
   create_time: number;
@@ -16,6 +19,7 @@ export interface IFile {
   has_child_folder?: boolean;
 }
 
+/** 文件夹实体：层级 parent_id 与租户归属。 */
 export interface IFolder {
   create_date: string;
   create_time: number;
@@ -32,6 +36,7 @@ export interface IFolder {
   source_type: string;
 }
 
+/** 文件列表 API 响应：当前目录文件、父文件夹与总数。 */
 export type IFetchFileListResult = {
   files: IFile[];
   parent_folder: IFolder;
