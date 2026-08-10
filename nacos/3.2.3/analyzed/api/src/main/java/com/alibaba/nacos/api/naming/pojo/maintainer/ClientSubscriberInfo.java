@@ -19,50 +19,65 @@ package com.alibaba.nacos.api.naming.pojo.maintainer;
 import java.io.Serializable;
 
 /**
- * Nacos naming client subscriber information.
+ * 命名客户端订阅者信息。
+ *
+ * <p>描述订阅某服务的客户端身份、应用名与连接地址。</p>
  *
  * @author xiweng.yy
  */
 public class ClientSubscriberInfo implements Serializable {
     
+    /** 序列化版本号。 */
     private static final long serialVersionUID = 1889748153147644741L;
     
+    /** 客户端唯一标识。 */
     private String clientId;
     
+    /** 应用名称。 */
     private String appName;
     
+    /** 客户端 SDK/代理标识。 */
     private String agent;
     
+    /** 客户端连接地址（通常为 IP:端口）。 */
     private String address;
     
+    /** 获取客户端 ID。 */
     public String getClientId() {
         return clientId;
     }
     
+    /** 设置客户端 ID。 */
     public void setClientId(String clientId) {
         this.clientId = clientId;
     }
     
+    /** 获取应用名。 */
     public String getAppName() {
         return appName;
     }
     
+    /** 设置应用名。 */
     public void setAppName(String appName) {
         this.appName = appName;
     }
     
+    /** 获取客户端代理标识。 */
     public String getAgent() {
         return agent;
     }
     
+    /** 设置客户端代理标识。 */
     public void setAgent(String agent) {
         this.agent = agent;
     }
     
+    /** 获取客户端地址。 */
     public String getAddress() {
         return address;
     }
     
+    /** 设置客户端地址。 */
     public void setAddress(String address) {
         this.address = address;
     }

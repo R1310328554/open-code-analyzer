@@ -17,28 +17,39 @@
 package com.alibaba.nacos.api.naming.remote;
 
 /**
- * Retain all naming module request type constants.
+ * 命名模块 gRPC 远程请求类型常量集合。
+ *
+ * <p>各常量值为请求路由标识，供客户端与服务端匹配处理器。</p>
  *
  * @author liuzunfei
  * @author xiweng.yy
  */
 public class NamingRemoteConstants {
     
+    /** 注册单个实例。 */
     public static final String REGISTER_INSTANCE = "registerInstance";
     
+    /** 批量注册实例。 */
     public static final String BATCH_REGISTER_INSTANCE = "batchRegisterInstance";
     
+    /** 注销实例。 */
     public static final String DE_REGISTER_INSTANCE = "deregisterInstance";
     
+    /** 查询服务实例列表。 */
     public static final String QUERY_SERVICE = "queryService";
     
+    /** 订阅服务变更。 */
     public static final String SUBSCRIBE_SERVICE = "subscribeService";
     
+    /** 向订阅者推送服务变更通知。 */
     public static final String NOTIFY_SUBSCRIBER = "notifySubscriber";
     
+    /** 列出命名空间下服务。 */
     public static final String LIST_SERVICE = "listService";
     
+    /** 转发实例注册/变更到对端节点。 */
     public static final String FORWARD_INSTANCE = "forwardInstance";
     
+    /** 转发实例心跳到对端节点。 */
     public static final String FORWARD_HEART_BEAT = "forwardHeartBeat";
 }

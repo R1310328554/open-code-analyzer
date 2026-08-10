@@ -21,29 +21,40 @@ import com.alibaba.nacos.api.remote.request.ServerRequest;
 import static com.alibaba.nacos.api.common.Constants.Naming.NAMING_MODULE;
 
 /**
- * Abstract fuzzy watch notify request, including basic fuzzy watch notify information.
+ * 模糊订阅（Fuzzy Watch）通知请求的抽象基类。
+ *
+ * <p>携带同步类型 {@link #syncType}，模块固定为命名模块。</p>
  *
  * @author tanyongquan
  */
 public abstract class AbstractFuzzyWatchNotifyRequest extends ServerRequest {
     
+    /** 模糊订阅同步类型标识。 */
     private String syncType;
     
+    /** 无参构造。 */
     public AbstractFuzzyWatchNotifyRequest() {
     }
     
-    public AbstractFuzzyWatchNotifyRequest(String syncType) {
+    /**
+     * 指定同步类型构造。
+     *
+     * @param syncType 同步类型
+     */
         this.syncType = syncType;
     }
     
+    /** 获取同步类型。 */
     public String getSyncType() {
         return syncType;
     }
     
+    /** 设置同步类型。 */
     public void setSyncType(String syncType) {
         this.syncType = syncType;
     }
     
+    /** 返回命名模块标识 {@link com.alibaba.nacos.api.common.Constants.Naming#NAMING_MODULE}。 */
     @Override
     public String getModule() {
         return NAMING_MODULE;

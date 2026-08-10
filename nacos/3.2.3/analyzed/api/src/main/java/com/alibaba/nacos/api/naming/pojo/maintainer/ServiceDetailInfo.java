@@ -22,120 +22,139 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * Service detail information for nacos maintain client, contain service detail information and cluster information.
+ * 运维客户端使用的服务详情，包含元数据、保护阈值、选择器及集群映射。
  *
  * @author xiweng.yy
  */
 public class ServiceDetailInfo implements Serializable {
     
+    /** 序列化版本号。 */
     private static final long serialVersionUID = 6351606608785841722L;
     
+    /** 命名空间 ID。 */
     private String namespaceId;
     
+    /** 服务名。 */
     private String serviceName;
     
+    /** 分组名。 */
     private String groupName;
     
+    /** 集群名到 {@link ClusterInfo} 的映射。 */
     private Map<String, ClusterInfo> clusterMap;
     
+    /** 服务级元数据。 */
     private Map<String, String> metadata;
     
+    /** 健康实例保护阈值（0~1）。 */
     private float protectThreshold;
     
+    /** 服务实例选择器。 */
     private Selector selector;
     
+    /** 是否为临时服务。 */
     private Boolean ephemeral;
     
     /**
-     * Getter method for property <tt>serviceName</tt>.
+     * 获取服务名。
      *
-     * @return property value of serviceName
+     * @return 服务名
      */
     public String getServiceName() {
         return serviceName;
     }
     
     /**
-     * Setter method for property <tt>serviceName </tt>.
+     * 设置服务名。
      *
-     * @param serviceName value to be assigned to property serviceName
+     * @param serviceName 服务名
      */
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
     }
     
+    /** 获取分组名。 */
     public String getGroupName() {
         return groupName;
     }
     
+    /** 设置分组名。 */
     public void setGroupName(String groupName) {
         this.groupName = groupName;
     }
     
     /**
-     * Getter method for property <tt>clusterMap</tt>.
+     * 获取集群映射。
      *
-     * @return property value of clusterMap
+     * @return 集群名到详情的映射
      */
     public Map<String, ClusterInfo> getClusterMap() {
         return clusterMap;
     }
     
     /**
-     * Setter method for property <tt>clusterMap </tt>.
+     * 设置集群映射。
      *
-     * @param clusterMap value to be assigned to property clusterMap
+     * @param clusterMap 集群映射
      */
     public void setClusterMap(Map<String, ClusterInfo> clusterMap) {
         this.clusterMap = clusterMap;
     }
     
     /**
-     * Getter method for property <tt>metadata</tt>.
+     * 获取服务元数据。
      *
-     * @return property value of metadata
+     * @return 元数据映射
      */
     public Map<String, String> getMetadata() {
         return metadata;
     }
     
     /**
-     * Setter method for property <tt>metadata </tt>.
+     * 设置服务元数据。
      *
-     * @param metadata value to be assigned to property metadata
+     * @param metadata 元数据映射
      */
     public void setMetadata(Map<String, String> metadata) {
         this.metadata = metadata;
     }
     
+    /** 获取命名空间 ID。 */
     public String getNamespaceId() {
         return namespaceId;
     }
     
+    /** 设置命名空间 ID。 */
     public void setNamespaceId(String namespaceId) {
         this.namespaceId = namespaceId;
     }
     
+    /** 获取保护阈值。 */
     public float getProtectThreshold() {
         return protectThreshold;
     }
     
+    /** 设置保护阈值。 */
     public void setProtectThreshold(float protectThreshold) {
         this.protectThreshold = protectThreshold;
     }
     
+    /** 获取选择器。 */
     public Selector getSelector() {
         return selector;
     }
     
+    /** 设置选择器。 */
     public void setSelector(Selector selector) {
         this.selector = selector;
     }
     
+    /** 是否为临时服务。 */
     public Boolean isEphemeral() {
         return ephemeral;
     }
     
+    /** 设置是否临时服务。 */
     public void setEphemeral(boolean ephemeral) {
         this.ephemeral = ephemeral;
     }
