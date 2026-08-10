@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T17:00:01Z",
   "files": [
-    "agent/tools/pubmed.py",
-    "agent/tools/qweather.py",
-    "agent/tools/retrieval.py",
-    "agent/tools/searxng.py",
-    "agent/tools/tavily.py",
-    "agent/tools/tushare.py",
-    "agent/tools/wencai.py",
-    "agent/tools/wikipedia.py",
-    "agent/tools/yahoofinance.py",
-    "api/__init__.py",
-    "api/apps/__init__.py",
-    "api/apps/auth/__init__.py",
-    "api/apps/auth/github.py",
-    "api/apps/auth/oauth.py",
-    "api/apps/auth/oidc.py",
     "api/apps/backward_compat.py",
     "api/apps/llm_app.py",
     "api/apps/restful_apis/_generation_params.py",
@@ -33,5 +18,5 @@
     "api/apps/restful_apis/file2document_api.py"
   ],
   "remaining_pending": 1644,
-  "done": 90
+  "done": 105
 }
