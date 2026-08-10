@@ -18,15 +18,21 @@
 package org.keycloak.partialimport;
 
 /**
- * Enum for each resource type that can be partially imported.
+ * 部分导入支持的 realm 资源类型枚举。
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public enum ResourceType {
-    USER, GROUP, CLIENT, IDP, IDP_MAPPER, REALM_ROLE, CLIENT_ROLE;
+    /** 用户 */ USER,
+    /** 组 */ GROUP,
+    /** 客户端 */ CLIENT,
+    /** 身份提供者 */ IDP,
+    /** 身份提供者映射器 */ IDP_MAPPER,
+    /** Realm 角色 */ REALM_ROLE,
+    /** 客户端角色 */ CLIENT_ROLE;
 
     /**
-     * Used to create the admin path in events.
+     * 生成管理事件中使用的 admin 路径片段。
      *
      * @return The resource portion of the path.
      */
@@ -43,6 +49,7 @@ public enum ResourceType {
         }
     }
 
+    /** @return 资源类型的可读显示名称 */
     @Override
     public String toString() {
         switch(this) {

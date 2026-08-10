@@ -20,7 +20,8 @@ package org.keycloak.partialimport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * This class represents a single result for a resource imported.
+ * 部分导入中单个资源的处理结果。
+ * <p>记录操作类型、资源类型、名称、ID 及原始表示对象。</p>
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
@@ -42,18 +43,22 @@ public class PartialImportResult {
         this.representation = representation;
     };
 
+    /** 创建“跳过”结果。 */
     public static PartialImportResult skipped(ResourceType resourceType, String resourceName, String id, Object representation) {
         return new PartialImportResult(Action.SKIPPED, resourceType, resourceName, id, representation);
     }
 
+    /** 创建“新增”结果。 */
     public static PartialImportResult added(ResourceType resourceType, String resourceName, String id, Object representation) {
         return new PartialImportResult(Action.ADDED, resourceType, resourceName, id, representation);
     }
 
+    /** 创建“覆盖”结果。 */
     public static PartialImportResult overwritten(ResourceType resourceType, String resourceName, String id, Object representation) {
         return new PartialImportResult(Action.OVERWRITTEN, resourceType, resourceName, id, representation);
     }
 
+    /** @return 导入操作类型 */
     public Action getAction() {
         return action;
     }
@@ -62,6 +67,7 @@ public class PartialImportResult {
         this.action = action;
     }
 
+    /** @return 资源类型 */
     public ResourceType getResourceType() {
         return resourceType;
     }
@@ -70,6 +76,7 @@ public class PartialImportResult {
         this.resourceType = resourceType;
     }
 
+    /** @return 资源名称 */
     public String getResourceName() {
         return resourceName;
     }
@@ -78,6 +85,7 @@ public class PartialImportResult {
         this.resourceName = resourceName;
     }
 
+    /** @return 资源 ID */
     public String getId() {
         return id;
     }
@@ -86,6 +94,7 @@ public class PartialImportResult {
         this.id = id;
     }
 
+    /** @return 原始资源表示对象（JSON 序列化时忽略） */
     @JsonIgnore
     public Object getRepresentation() {
         return representation;

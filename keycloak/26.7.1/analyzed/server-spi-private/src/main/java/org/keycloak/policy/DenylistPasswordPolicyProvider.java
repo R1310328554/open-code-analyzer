@@ -7,7 +7,8 @@ import org.keycloak.policy.DenylistPasswordPolicyProviderFactory.FileBasedPasswo
 import org.keycloak.policy.DenylistPasswordPolicyProviderFactory.PasswordDenylist;
 
 /**
- * Checks a password against a configured password denylist.
+ * 密码黑名单策略提供者：校验密码是否出现在已配置的黑名单文件中。
+ * <p>使用 {@link DenylistPasswordPolicyProviderFactory.PasswordDenylist} 进行大小写不敏感的包含检查。</p>
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
  */
@@ -19,13 +20,15 @@ public class DenylistPasswordPolicyProvider implements PasswordPolicyProvider {
 
   private final DenylistPasswordPolicyProviderFactory factory;
 
+  /** @param context Keycloak 上下文
+   * @param factory 黑名单策略工厂 */
   public DenylistPasswordPolicyProvider(KeycloakContext context, DenylistPasswordPolicyProviderFactory factory) {
     this.context = context;
     this.factory = factory;
   }
 
   /**
-   * Checks whether the provided password is contained in the configured blacklist.
+   * 检查密码是否命中已配置的黑名单。
    *
    * @param username
    * @param password
@@ -58,8 +61,8 @@ public class DenylistPasswordPolicyProvider implements PasswordPolicyProvider {
   }
 
   /**
-   * Parses the allowed configuration for a {@link DenylistPasswordPolicyProvider}.
-   * Supported syntax is {@¢ode passwordBlacklist(fileName)}
+   * 解析 {@link DenylistPasswordPolicyProvider} 的策略配置。
+   * 支持语法 {@¢ode passwordBlacklist(fileName)}
    *
    * Example configurations:
    * <ul>
@@ -81,6 +84,6 @@ public class DenylistPasswordPolicyProvider implements PasswordPolicyProvider {
 
   @Override
   public void close() {
-    //noop
+    // 无资源需释放
   }
 }

@@ -22,10 +22,13 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * {@link DefaultPasswordPolicyManagerProvider} 的工厂，ID 为 {@code default}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultPasswordPolicyManagerProviderFactory implements PasswordPolicyManagerProviderFactory {
 
+    /** 创建默认密码策略管理器实例。 */
     @Override
     public PasswordPolicyManagerProvider create(KeycloakSession session) {
         return new DefaultPasswordPolicyManagerProvider(session);
@@ -43,6 +46,7 @@ public class DefaultPasswordPolicyManagerProviderFactory implements PasswordPoli
     public void close() {
     }
 
+    /** @return 工厂 ID {@code default} */
     @Override
     public String getId() {
         return "default";

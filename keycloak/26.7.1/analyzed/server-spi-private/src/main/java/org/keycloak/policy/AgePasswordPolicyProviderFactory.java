@@ -23,16 +23,21 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.PasswordPolicy;
 
 /**
+ * {@link AgePasswordPolicyProvider} 的工厂：注册“近期未使用（天数）”密码策略。
+ *
  * @author <a href="mailto:dev.maciej.mierzwa@gmail.com">Maciej Mierzwa</a>
  */
 public class AgePasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
+    /** 默认禁止重复使用的历史窗口：30 天。 */
     public static final Integer DEFAULT_AGE_DAYS = 30;
 
+    /** @return 策略 ID {@link PasswordPolicy#PASSWORD_AGE} */
     @Override
     public String getId() {
         return PasswordPolicy.PASSWORD_AGE;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayName() {
         return "Not Recently Used (In Days)";
@@ -53,6 +58,7 @@ public class AgePasswordPolicyProviderFactory implements PasswordPolicyProviderF
         return false;
     }
 
+    /** 创建 {@link AgePasswordPolicyProvider} 实例。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         return new AgePasswordPolicyProvider(session);

@@ -22,6 +22,8 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 数字字符密码策略：要求密码至少包含指定数量的数字。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DigitsPasswordPolicyProvider implements PasswordPolicyProvider {
@@ -30,10 +32,12 @@ public class DigitsPasswordPolicyProvider implements PasswordPolicyProvider {
 
     private KeycloakContext context;
 
+    /** @param context Keycloak 上下文 */
     public DigitsPasswordPolicyProvider(KeycloakContext context) {
         this.context = context;
     }
 
+    /** 统计密码中数字字符数量并与策略最小值比较。 */
     @Override
     public PolicyError validate(String username, String password) {
         int min = context.getRealm().getPasswordPolicy().getPolicyConfig(DigitsPasswordPolicyProviderFactory.ID);
@@ -51,6 +55,7 @@ public class DigitsPasswordPolicyProvider implements PasswordPolicyProvider {
         return validate(user.getUsername(), password);
     }
 
+    /** 解析最小数字个数配置，缺省为 1。 */
     @Override
     public Object parseConfig(String value) {
         return value != null ? Integer.valueOf(value) : Integer.valueOf(1);

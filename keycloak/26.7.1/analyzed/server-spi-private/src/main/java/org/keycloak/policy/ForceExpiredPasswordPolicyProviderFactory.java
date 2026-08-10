@@ -25,12 +25,17 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 强制密码过期策略：工厂与提供者合一，用于标记密码必须在指定天数后过期。
+ * <p>{@link #validate} 方法不执行密码内容校验，过期逻辑由其他组件处理。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ForceExpiredPasswordPolicyProviderFactory implements PasswordPolicyProviderFactory, PasswordPolicyProvider {
 
+    /** 默认密码过期天数：365 天。 */
     public static final Integer DEFAULT_VALUE = 365;
 
+    /** 返回自身作为 {@link PasswordPolicyProvider} 实例。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         return this;
@@ -48,11 +53,13 @@ public class ForceExpiredPasswordPolicyProviderFactory implements PasswordPolicy
     public void close() {
     }
 
+    /** @return 策略 ID {@link PasswordPolicy#FORCE_EXPIRED_ID} */
     @Override
     public String getId() {
         return PasswordPolicy.FORCE_EXPIRED_ID;
     }
 
+    /** 不校验密码内容，始终返回 {@code null}。 */
     @Override
     public PolicyError validate(RealmModel realm, UserModel user, String password) {
         return null;
@@ -83,6 +90,7 @@ public class ForceExpiredPasswordPolicyProviderFactory implements PasswordPolicy
         return false;
     }
 
+    /** 解析过期天数配置，缺省为 {@link #DEFAULT_VALUE}。 */
     @Override
     public Object parseConfig(String value) {
         return value != null ? Integer.valueOf(value) : DEFAULT_VALUE;

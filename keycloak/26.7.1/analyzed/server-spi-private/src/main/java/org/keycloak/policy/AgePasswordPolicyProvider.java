@@ -30,6 +30,9 @@ import org.keycloak.models.credential.PasswordCredentialModel;
 import org.jboss.logging.Logger;
 
 /**
+ * 密码“年龄”策略提供者：禁止在指定天数内重复使用当前或历史密码。
+ * <p>校验当前密码及 {@link PasswordCredentialModel#PASSWORD_HISTORY} 中仍在策略窗口内的历史密码。</p>
+ *
  * @author <a href="mailto:dev.maciej.mierzwa@gmail.com">Maciej Mierzwa</a>
  */
 public class AgePasswordPolicyProvider implements PasswordPolicyProvider {
@@ -37,22 +40,31 @@ public class AgePasswordPolicyProvider implements PasswordPolicyProvider {
     public static final Logger logger = Logger.getLogger(AgePasswordPolicyProvider.class);
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public AgePasswordPolicyProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 无 realm/用户上下文时不执行校验。 */
     @Override
     public PolicyError validate(String user, String password) {
         return null;
     }
 
+    /**
+     * 校验新密码是否与当前密码或策略窗口内的历史密码相同。
+     * @param realm realm 模型
+     * @param user 用户模型
+     * @param password 待校验的新密码
+     * @return 违反策略时返回 {@link PolicyError}，否则 {@code null}
+     */
     @Override
     public PolicyError validate(RealmModel realm, UserModel user, String password) {
         PasswordPolicy policy = session.getContext().getRealm().getPasswordPolicy();
         int passwordAgePolicyValue = policy.getPolicyConfig(PasswordPolicy.PASSWORD_AGE);
 
         if (passwordAgePolicyValue != -1) {
-            //current password check
+            // 当前密码校验
             if (user.credentialManager().getStoredCredentialsByTypeStream(PasswordCredentialModel.TYPE)
                     .map(PasswordCredentialModel::createFromCredentialModel)
                     .anyMatch(passwordCredential -> {
@@ -80,6 +92,7 @@ public class AgePasswordPolicyProvider implements PasswordPolicyProvider {
         return null;
     }
 
+    /** 将策略配置解析为整数天数，无效时使用工厂默认值。 */
     @Override
     public Object parseConfig(String value) {
         return parseInteger(value, AgePasswordPolicyProviderFactory.DEFAULT_AGE_DAYS);

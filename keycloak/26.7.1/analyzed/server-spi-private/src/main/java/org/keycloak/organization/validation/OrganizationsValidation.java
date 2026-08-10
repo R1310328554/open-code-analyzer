@@ -18,14 +18,25 @@ package org.keycloak.organization.validation;
 
 import org.keycloak.validate.BuiltinValidators;
 
+/**
+ * 组织相关字段校验工具类。
+ * <p>当前提供组织重定向 URL 的 URI 格式校验。</p>
+ */
 public class OrganizationsValidation {
+    /**
+     * 校验组织重定向 URL 是否为合法 URI。
+     * @param redirectUrl 待校验的重定向 URL
+     * @throws OrganizationValidationException URL 无效时抛出
+     */
     public static void validateUrl(String redirectUrl) {
         if (!BuiltinValidators.uriValidator().validate(redirectUrl).isValid()) {
             throw new OrganizationValidationException("Organization redirect URL is not valid.");
         }
     }
 
+    /** 组织字段校验失败时抛出的运行时异常。 */
     public static class OrganizationValidationException extends RuntimeException {
+        /** @param message 校验失败描述 */
         public OrganizationValidationException(String message) {
             super(message);
         }

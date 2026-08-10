@@ -18,10 +18,12 @@
 package org.keycloak.partialimport;
 
 /**
- * Enum for actions taken by PartialImport.
+ * 部分导入（PartialImport）对单个资源执行的操作类型。
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public enum Action {
-    ADDED, SKIPPED, OVERWRITTEN
+    /** 新增资源。 */ ADDED,
+    /** 跳过（已存在且未覆盖）。 */ SKIPPED,
+    /** 覆盖已有资源。 */ OVERWRITTEN
 }

@@ -21,30 +21,40 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 组织（Organization）SPI：注册 {@link OrganizationProvider} 及其工厂。
+ * <p>内部 SPI，名称 {@value #NAME}；仅在 {@link org.keycloak.common.Profile.Feature#ORGANIZATION} 特性启用时可用。</p>
+ */
 public class OrganizationSpi implements Spi {
 
+    /** SPI 名称：{@code organization}。 */
     public static final String NAME = "organization";
 
+    /** @return 始终为 {@code true}，表示内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@link #NAME} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** @return 提供者接口 {@link OrganizationProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return OrganizationProvider.class;
     }
 
+    /** @return 工厂接口 {@link OrganizationProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return OrganizationProviderFactory.class;
     }
 
+    /** @return 是否启用组织特性（{@link Profile.Feature#ORGANIZATION}） */
     @Override
     public boolean isEnabled() {
         return Profile.isFeatureEnabled(Profile.Feature.ORGANIZATION);

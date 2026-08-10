@@ -22,10 +22,13 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * {@link DigitsPasswordPolicyProvider} 的工厂，策略 ID 为 {@link #ID}（{@code digits}）。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DigitsPasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
 
+    /** 策略 ID：{@code digits}。 */
     public static final String ID = "digits";
 
     @Override
@@ -33,6 +36,7 @@ public class DigitsPasswordPolicyProviderFactory implements PasswordPolicyProvid
         return ID;
     }
 
+    /** 创建 {@link DigitsPasswordPolicyProvider} 实例。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         return new DigitsPasswordPolicyProvider(session.getContext());
@@ -46,6 +50,7 @@ public class DigitsPasswordPolicyProviderFactory implements PasswordPolicyProvid
     public void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** @return 管理控制台显示名称“Digits” */
     @Override
     public String getDisplayName() {
         return "Digits";

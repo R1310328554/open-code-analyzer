@@ -46,34 +46,31 @@ import com.google.common.hash.Funnels;
 import org.jboss.logging.Logger;
 
 /**
- * Creates {@link DenylistPasswordPolicyProvider} instances.
+ * 创建 {@link DenylistPasswordPolicyProvider} 实例的工厂。
  * <p>
- * Password denylists are simple text files where every line is a denylisted password delimited by a newline character {@code \n}.
- * <p>Denylists can be configured via the <em>Authentication: Password Policy</em> section in the admin-console.
- * A denylist-file is referred to by its name in the policy configuration.
+ * 密码黑名单为纯文本文件，每行一个禁止使用的密码，以换行符 {@code \n} 分隔。
+ * <p>可在管理控制台 <em>Authentication: Password Policy</em> 中配置，策略中通过文件名引用黑名单文件。
  *
- * <h1>Denylist location</h1>
- * <p>Users can provide custom denylists by adding a denylist password file to the configured denylist folder.
+ * <h1>黑名单文件位置</h1>
+ * <p>用户可将自定义黑名单文件放入配置的黑名单目录。
  * <p>
- * <p>The location of the password-blacklists folder is derived as follows</p>
+ * <p>password-blacklists 目录按以下优先级解析：</p>
  * <ol>
- * <li>the value of the System property {@code keycloak.password.blacklists.path} if configured - fails if folder is missing</li>
- * <li>the value of the SPI config property: {@code blacklistsPath} when explicitly configured - fails if folder is missing</li>
- * <li>otherwise {@code $KC_HOME/data/password-blacklists/} if nothing else is configured</li>
+ * <li>系统属性 {@code keycloak.password.blacklists.path}（目录必须存在）</li>
+ * <li>SPI 配置属性 {@code blacklistsPath}（目录必须存在）</li>
+ * <li>否则使用 {@code $KC_HOME/data/password-blacklists/}</li>
  * </ol>
  *
- * To configure the denylist folder via CLI use {@code --spi-password-policy-password-blacklist-blacklists-path=/path/to/denylistsFolder}
+ * CLI 配置示例：{@code --spi-password-policy-password-blacklist-blacklists-path=/path/to/denylistsFolder}
  *
- * <p>Note that the preferred way for configuration is to copy the password file to the {@code $KC_HOME/data/password-blacklists/} folder</p>
- * <p>A password denylist with the filename {@code 10_million_passwords.txt}
- * that is located beneath {@code $KC_HOME/data/keycloak/blacklists/} can be referred to as {@code 10_million_passwords.txt} in the <em>Authentication: Password Policy</em> configuration.
+ * <p>推荐将密码文件复制到 {@code $KC_HOME/data/password-blacklists/} 目录。</p>
+ * <p>例如 {@code 10_million_passwords.txt} 位于 {@code $KC_HOME/data/keycloak/blacklists/} 下时，在 <em>Authentication: Password Policy</em> 中引用为 {@code 10_million_passwords.txt}。
  *
- * <h1>False positives</h1>
+ * <h1>误报（False positives）</h1>
  * <p>
- * The current implementation uses a probabilistic data-structure called {@link BloomFilter} which allows for fast and memory efficient containment checks, e.g. whether a given password is contained in a denylist,
- * with the possibility for false positives. By default a false positive probability {@link #DEFAULT_FALSE_POSITIVE_PROBABILITY} is used.
+ * 实现使用 {@link BloomFilter} 进行快速、省内存的包含检查，存在极低概率的误报。默认误报率见 {@link #DEFAULT_FALSE_POSITIVE_PROBABILITY}。
  *
- * To change the false positive probability via CLI configuration use {@code --spi-password-policy-password-blacklist-false-positive-probability=0.00001}
+ * CLI 调整误报率：{@code --spi-password-policy-password-blacklist-false-positive-probability=0.00001}
  * </p>
  *
  * @author <a href="mailto:thomas.darimont@gmail.com">Thomas Darimont</a>
@@ -82,6 +79,7 @@ public class DenylistPasswordPolicyProviderFactory implements PasswordPolicyProv
 
     private static final Logger LOG = Logger.getLogger(DenylistPasswordPolicyProviderFactory.class);
 
+    /** 策略 ID：{@code passwordBlacklist}。 */
     public static final String ID = "passwordBlacklist";
 
     public static final String SYSTEM_PROPERTY = "keycloak.password.blacklists.path";
@@ -106,6 +104,7 @@ public class DenylistPasswordPolicyProviderFactory implements PasswordPolicyProv
 
     private Config.Scope config;
 
+    /** 懒加载黑名单根目录并创建 {@link DenylistPasswordPolicyProvider}。 */
     @Override
     public PasswordPolicyProvider create(KeycloakSession session) {
         if (this.denylistsBasePath == null) {
@@ -157,9 +156,7 @@ public class DenylistPasswordPolicyProviderFactory implements PasswordPolicyProv
     }
 
     /**
-     * Method to obtain the default location for the list folder. The method
-     * will return the <em>data</em> directory of the Keycloak instance concatenated
-     * with <em>/password-blacklists/</em>.
+     * 返回 Keycloak 实例 <em>data</em> 目录下的默认黑名单文件夹路径（{@code /password-blacklists/}）。
      *
      * @return The default path used by the provider to lookup the lists
      * when no other configuration is in place.
@@ -169,7 +166,7 @@ public class DenylistPasswordPolicyProviderFactory implements PasswordPolicyProv
     }
 
     /**
-     * Resolves and potentially registers a {@link PasswordDenylist} for the given {@code denylistName}.
+     * 解析并注册指定 {@code denylistName} 的 {@link PasswordDenylist}。
      *
      * @param denylistName
      * @return
@@ -252,8 +249,8 @@ public class DenylistPasswordPolicyProviderFactory implements PasswordPolicyProv
     }
 
     /**
-     * Builds a pre-computed Bloom filter (.bloom) file from a plaintext password denylist file.
-     * Each line is treated as one password (lowercased before insertion).
+     * 从明文密码黑名单生成预计算的 Bloom 过滤器（.bloom）文件。
+     * 每行视为一个密码，插入前转为小写。
      *
      * @param inputFile  path to the plaintext password list (one password per line, UTF-8)
      * @param outputFile path for the generated .bloom file
@@ -278,8 +275,7 @@ public class DenylistPasswordPolicyProviderFactory implements PasswordPolicyProv
     }
 
     /**
-     * A {@link PasswordDenylist} describes a list of too easy to guess
-     * or potentially leaked passwords that users should not be able to use.
+     * {@link PasswordDenylist}：描述过于简单或可能泄露、禁止用户使用的密码集合。
      */
     public interface PasswordDenylist {
 
@@ -290,7 +286,7 @@ public class DenylistPasswordPolicyProviderFactory implements PasswordPolicyProv
         String getName();
 
         /**
-         * Checks whether a given {@code password} is contained in this {@link PasswordDenylist}.
+         * 检查 {@code password} 是否在本黑名单中。
          *
          * @param password
          * @return
@@ -299,11 +295,8 @@ public class DenylistPasswordPolicyProviderFactory implements PasswordPolicyProv
     }
 
     /**
-     * A {@link FileBasedPasswordDenylist} uses password-denylist files
-     * to construct a {@link PasswordDenylist}.
-     * <p>
-     * This implementation uses a dynamically sized {@link BloomFilter}
-     * with a provided default false positive probability.
+     * 基于文件的 {@link PasswordDenylist}：从黑名单文件构建 {@link BloomFilter}。
+     * <p>支持明文列表与预计算 .bloom 二进制文件两种加载方式。</p>
      *
      * @see BloomFilter
      */
@@ -368,10 +361,8 @@ public class DenylistPasswordPolicyProviderFactory implements PasswordPolicyProv
             return denylist.mightContain(password);
         }
 
-        /**
-         * Check the modification time and file size and reload if it has changed since the last load.
-         * Uses double-checked locking to avoid redundant reloads by concurrent threads.
-         */
+        /** 按修改时间与文件大小检测变更，必要时热重载；使用双重检查锁避免并发重复加载。 */
+
         private void reloadIfNeeded() {
             if (checkIntervalMillis == 0) {
                 return;
@@ -401,9 +392,8 @@ public class DenylistPasswordPolicyProviderFactory implements PasswordPolicyProv
         }
 
         /**
-         * Loads the denylist into a {@link BloomFilter}.
-         * If the configured file ends with {@code .bloom}, it is loaded as a pre-computed Bloom filter binary.
-         * Otherwise, it is read as a plaintext password list.
+         * 将黑名单加载为 {@link BloomFilter}。
+         * 文件名以 {@code .bloom} 结尾时反序列化预计算二进制，否则从明文列表构建。
          *
          * @return the {@link BloomFilter} backing a password denylist
          */
@@ -504,14 +494,11 @@ public class DenylistPasswordPolicyProviderFactory implements PasswordPolicyProv
         }
 
         /**
-         * Discovers password denylists location.
-         * <p>
-         * The following discovery options are currently implemented:
-         * <p>
+         * 探测密码黑名单根目录位置。
          * <ol>
-         *   <li>system property {@code keycloak.password.blacklists.path} if present</li>
-         *   <li>SPI config property {@code blacklistsPath}</li>
-         *   <li>fallback to the {@code /data/password-blacklists} folder of the currently running Keycloak instance</li>
+         *   <li>系统属性 {@code keycloak.password.blacklists.path}</li>
+         *   <li>SPI 配置 {@code blacklistsPath}</li>
+         *   <li>回退到当前 Keycloak 实例的 {@code /data/password-blacklists}</li>
          * </ol>
          *
          * @param config spi config

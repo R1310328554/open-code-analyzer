@@ -26,16 +26,21 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 默认密码策略管理器：按 realm 已启用的策略顺序依次调用各 {@link PasswordPolicyProvider} 校验密码。
+ * <p>任一策略返回 {@link PolicyError} 即终止并返回该错误。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultPasswordPolicyManagerProvider implements PasswordPolicyManagerProvider {
 
     private KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public DefaultPasswordPolicyManagerProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 在指定 realm 与用户上下文中校验密码。 */
     @Override
     public PolicyError validate(RealmModel realm, UserModel user, String password) {
         for (PasswordPolicyProvider p : getProviders(realm, session)) {
@@ -47,6 +52,7 @@ public class DefaultPasswordPolicyManagerProvider implements PasswordPolicyManag
         return null;
     }
 
+    /** 使用当前会话 realm 校验密码（无用户模型）。 */
     @Override
     public PolicyError validate(String user, String password) {
         for (PasswordPolicyProvider p : getProviders(session)) {
@@ -67,6 +73,7 @@ public class DefaultPasswordPolicyManagerProvider implements PasswordPolicyManag
 
     }
 
+    /** 按 realm 密码策略配置顺序解析全部 {@link PasswordPolicyProvider}。 */
     private List<PasswordPolicyProvider> getProviders(RealmModel realm, KeycloakSession session) {
         LinkedList<PasswordPolicyProvider> list = new LinkedList<>();
         PasswordPolicy policy = realm.getPasswordPolicy();
