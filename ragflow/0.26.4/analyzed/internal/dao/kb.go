@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// kb.go — 知识库（Knowledgebase）数据访问层：租户权限、解析配置深合并、重名去重及文档计数原子更新。
+
 //
 
 package dao
@@ -28,9 +30,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// GetTenantIDByKBID is a convenience function that retrieves the tenant ID
-// for a given knowledge base ID. It is a package-level helper so both the
-// service and engine layers can use it without circular imports.
+// GetTenantIDByKBID 包级辅助函数：按知识库 ID 返回 tenant_id，供 service 与 engine 共用以避免循环依赖。
 func GetTenantIDByKBID(kbID string) (string, error) {
 	kbDAO := NewKnowledgebaseDAO()
 	kb, err := kbDAO.GetByID(kbID)
@@ -40,40 +40,40 @@ func GetTenantIDByKBID(kbID string) (string, error) {
 	return kb.TenantID, nil
 }
 
-// KnowledgebaseDAO knowledge base data access object
+// KnowledgebaseDAO 知识库表的数据访问对象。
 type KnowledgebaseDAO struct{}
 
-// IsNotFoundErr returns true if the error indicates a record not found
+// IsNotFoundErr 判断错误是否为 GORM 记录未找到。
 func IsNotFoundErr(err error) bool {
 	return errors.Is(err, gorm.ErrRecordNotFound)
 }
 
-// NewKnowledgebaseDAO create knowledge base DAO
+// NewKnowledgebaseDAO 创建知识库 DAO 实例。
 func NewKnowledgebaseDAO() *KnowledgebaseDAO {
 	return &KnowledgebaseDAO{}
 }
 
-// Create creates a new knowledge base record
+// Create 插入新知识库记录。
 func (dao *KnowledgebaseDAO) Create(kb *entity.Knowledgebase) error {
 	return DB.Create(kb).Error
 }
 
-// Update updates a knowledge base record
+// Update 全量保存知识库实体。
 func (dao *KnowledgebaseDAO) Update(kb *entity.Knowledgebase) error {
 	return DB.Save(kb).Error
 }
 
-// UpdateByID updates a knowledge base by ID with the given fields
+// UpdateByID 按 ID 部分更新知识库字段。
 func (dao *KnowledgebaseDAO) UpdateByID(id string, updates map[string]interface{}) error {
 	return DB.Model(&entity.Knowledgebase{}).Where("id = ?", id).Updates(updates).Error
 }
 
-// Delete soft deletes a knowledge base by setting status to invalid
+// Delete 软删除：将 status 设为 invalid。
 func (dao *KnowledgebaseDAO) Delete(id string) error {
 	return DB.Model(&entity.Knowledgebase{}).Where("id = ?", id).Update("status", string(entity.StatusInvalid)).Error
 }
 
-// GetByID retrieves a knowledge base by ID
+// GetByID 按 ID 查询有效状态的知识库。
 func (dao *KnowledgebaseDAO) GetByID(id string) (*entity.Knowledgebase, error) {
 	var kb entity.Knowledgebase
 	err := DB.Where("id = ? AND status = ?", id, string(entity.StatusValid)).First(&kb).Error
@@ -83,7 +83,7 @@ func (dao *KnowledgebaseDAO) GetByID(id string) (*entity.Knowledgebase, error) {
 	return &kb, nil
 }
 
-// GetByIDAndTenantID retrieves a knowledge base by ID and tenant ID
+// GetByIDAndTenantID 按 ID 与租户 ID 联合查询有效知识库。
 func (dao *KnowledgebaseDAO) GetByIDAndTenantID(id, tenantID string) (*entity.Knowledgebase, error) {
 	var kb entity.Knowledgebase
 	err := DB.Where("id = ? AND tenant_id = ? AND status = ?", id, tenantID, string(entity.StatusValid)).First(&kb).Error
@@ -93,14 +93,14 @@ func (dao *KnowledgebaseDAO) GetByIDAndTenantID(id, tenantID string) (*entity.Kn
 	return &kb, nil
 }
 
-// GetByIDs retrieves multiple knowledge bases by IDs
+// GetByIDs 批量按 ID 查询有效知识库。
 func (dao *KnowledgebaseDAO) GetByIDs(ids []string) ([]*entity.Knowledgebase, error) {
 	var kbs []*entity.Knowledgebase
 	err := DB.Where("id IN ? AND status = ?", ids, string(entity.StatusValid)).Find(&kbs).Error
 	return kbs, err
 }
 
-// GetByName retrieves a knowledge base by name and tenant ID
+// GetByName 按名称与租户 ID 查询知识库。
 func (dao *KnowledgebaseDAO) GetByName(name, tenantID string) (*entity.Knowledgebase, error) {
 	var kb entity.Knowledgebase
 	err := DB.Where("name = ? AND tenant_id = ? AND status = ?", name, tenantID, string(entity.StatusValid)).First(&kb).Error
@@ -110,14 +110,14 @@ func (dao *KnowledgebaseDAO) GetByName(name, tenantID string) (*entity.Knowledge
 	return &kb, nil
 }
 
-// GetByCreatedBy retrieves knowledge bases created by a specific user
+// GetByCreatedBy 列出指定用户创建的有效知识库。
 func (dao *KnowledgebaseDAO) GetByCreatedBy(createdBy string) ([]*entity.Knowledgebase, error) {
 	var kbs []*entity.Knowledgebase
 	err := DB.Where("created_by = ? AND status = ?", createdBy, string(entity.StatusValid)).Find(&kbs).Error
 	return kbs, err
 }
 
-// Query retrieves knowledge bases with filters
+// Query 按 map 条件筛选有效知识库。
 func (dao *KnowledgebaseDAO) Query(filters map[string]interface{}) ([]*entity.Knowledgebase, error) {
 	var kbs []*entity.Knowledgebase
 	query := DB.Where("status = ?", string(entity.StatusValid))
@@ -132,7 +132,7 @@ func (dao *KnowledgebaseDAO) Query(filters map[string]interface{}) ([]*entity.Kn
 	return kbs, err
 }
 
-// QueryOne retrieves a single knowledge base with filters
+// QueryOne 按条件查询单条有效知识库。
 func (dao *KnowledgebaseDAO) QueryOne(filters map[string]interface{}) (*entity.Knowledgebase, error) {
 	var kb entity.Knowledgebase
 	query := DB.Where("status = ?", string(entity.StatusValid))
@@ -150,7 +150,7 @@ func (dao *KnowledgebaseDAO) QueryOne(filters map[string]interface{}) (*entity.K
 	return &kb, nil
 }
 
-// Count returns the count of knowledge bases matching the filters
+// Count 统计符合筛选条件的知识库数量。
 func (dao *KnowledgebaseDAO) Count(filters map[string]interface{}) (int64, error) {
 	var count int64
 	query := DB.Model(&entity.Knowledgebase{}).Where("status = ?", string(entity.StatusValid))
@@ -165,8 +165,7 @@ func (dao *KnowledgebaseDAO) Count(filters map[string]interface{}) (int64, error
 	return count, err
 }
 
-// GetByTenantIDs retrieves knowledge bases by tenant IDs with pagination
-// This matches the Python get_by_tenant_ids method
+// GetByTenantIDs 按租户列表分页查询（含团队权限），对齐 Python get_by_tenant_ids。
 func (dao *KnowledgebaseDAO) GetByTenantIDs(tenantIDs []string, userID string, pageNumber, itemsPerPage int, orderby string, desc bool, keywords, parserID string) ([]*entity.KnowledgebaseListItem, int64, error) {
 	var kbs []*entity.KnowledgebaseListItem
 	var total int64
@@ -213,8 +212,7 @@ func (dao *KnowledgebaseDAO) GetByTenantIDs(tenantIDs []string, userID string, p
 	return kbs, total, nil
 }
 
-// GetAllByTenantIDs retrieves all permitted knowledge bases by tenant IDs
-// This matches the Python get_all_kb_by_tenant_ids method
+// GetAllByTenantIDs 返回用户可访问的全部知识库，对齐 Python get_all_kb_by_tenant_ids。
 func (dao *KnowledgebaseDAO) GetAllByTenantIDs(tenantIDs []string, userID string) ([]*entity.Knowledgebase, error) {
 	var kbs []*entity.Knowledgebase
 
@@ -226,8 +224,7 @@ func (dao *KnowledgebaseDAO) GetAllByTenantIDs(tenantIDs []string, userID string
 	return kbs, err
 }
 
-// GetDetail retrieves detailed knowledge base information with joined pipeline data
-// This matches the Python get_detail method
+// GetDetail 联表返回知识库详情及关联流水线名称，对齐 Python get_detail。
 func (dao *KnowledgebaseDAO) GetDetail(kbID string) (*entity.KnowledgebaseDetail, error) {
 	var detail entity.KnowledgebaseDetail
 
@@ -253,12 +250,7 @@ func (dao *KnowledgebaseDAO) GetDetail(kbID string) (*entity.KnowledgebaseDetail
 	return &detail, nil
 }
 
-// Accessible checks if a knowledge base is accessible by a user.
-// This matches the Python accessible method:
-// 1. KB must exist and be VALID
-// 2. If user is the owner tenant, return true
-// 3. If permission is "me", only owner tenant can access
-// 4. If permission is "team", user must be a member of the tenant
+// Accessible 判断用户是否可访问知识库：所有者、me 权限仅本人、team 需为租户成员。
 func (dao *KnowledgebaseDAO) Accessible(kbID, userID string) bool {
 	var kb entity.Knowledgebase
 	err := DB.Where("id = ? AND status = ?", kbID, string(entity.StatusValid)).First(&kb).Error
@@ -266,12 +258,12 @@ func (dao *KnowledgebaseDAO) Accessible(kbID, userID string) bool {
 		return false
 	}
 
-	// User is the owner tenant itself
+	// 请求用户即知识库所属租户
 	if kb.TenantID == userID {
 		return true
 	}
 
-	// If permission is "me", only the owner can access
+	// me 权限下非所有者不可访问
 	if kb.Permission == string(entity.TenantPermissionMe) {
 		return false
 	}
@@ -287,8 +279,7 @@ func (dao *KnowledgebaseDAO) Accessible(kbID, userID string) bool {
 	return count > 0
 }
 
-// Accessible4Deletion checks if a knowledge base can be deleted by a user
-// This matches the Python accessible4deletion method
+// Accessible4Deletion 判断用户是否为知识库创建者从而可删除。
 func (dao *KnowledgebaseDAO) Accessible4Deletion(kbID, userID string) bool {
 	var count int64
 	err := DB.Model(&entity.Knowledgebase{}).
@@ -301,8 +292,7 @@ func (dao *KnowledgebaseDAO) Accessible4Deletion(kbID, userID string) bool {
 	return count > 0
 }
 
-// DuplicateName generates a unique name by appending parentheses if name already exists
-// This matches the Python duplicate_name function behavior
+// DuplicateName 若名称冲突则追加 (n) 后缀生成唯一名，对齐 Python duplicate_name。
 func (dao *KnowledgebaseDAO) DuplicateName(name, tenantID string) string {
 	const maxRetries = 1000
 
@@ -330,6 +320,7 @@ func (dao *KnowledgebaseDAO) DuplicateName(name, tenantID string) string {
 	return currentName
 }
 
+// splitNameCounter 解析文件名末尾 (数字) 后缀，返回主干与计数。
 func splitNameCounter(name string) (string, int) {
 	if !strings.HasSuffix(name, ")") {
 		return name, 0
@@ -349,8 +340,7 @@ func splitNameCounter(name string) (string, int) {
 	return strings.TrimRight(name[:leftBracketIndex], " "), counter
 }
 
-// AtomicIncreaseDocNumByID atomically increments the document count
-// This matches the Python atomic_increase_doc_num_by_id method
+// AtomicIncreaseDocNumByID 原子递增 doc_num，对齐 Python atomic_increase_doc_num_by_id。
 func (dao *KnowledgebaseDAO) AtomicIncreaseDocNumByID(kbID string) error {
 	return DB.Model(&entity.Knowledgebase{}).
 		Where("id = ?", kbID).
@@ -359,8 +349,7 @@ func (dao *KnowledgebaseDAO) AtomicIncreaseDocNumByID(kbID string) error {
 		}).Error
 }
 
-// DecreaseDocumentNum decreases document, chunk, and token counts
-// This matches the Python decrease_document_num_in_delete method
+// DecreaseDocumentNum 删除文档时递减 doc_num、chunk_num、token_num。
 func (dao *KnowledgebaseDAO) DecreaseDocumentNum(kbID string, docNum, chunkNum, tokenNum int64) error {
 	return DB.Model(&entity.Knowledgebase{}).
 		Where("id = ?", kbID).
@@ -371,8 +360,7 @@ func (dao *KnowledgebaseDAO) DecreaseDocumentNum(kbID string, docNum, chunkNum, 
 		}).Error
 }
 
-// GetKBIDsByTenantID retrieves all knowledge base IDs for a tenant
-// This matches the Python get_kb_ids method
+// GetKBIDsByTenantID 返回租户下全部有效知识库 ID。
 func (dao *KnowledgebaseDAO) GetKBIDsByTenantID(tenantID string) ([]string, error) {
 	var kbIDs []string
 	err := DB.Model(&entity.Knowledgebase{}).
@@ -381,8 +369,7 @@ func (dao *KnowledgebaseDAO) GetKBIDsByTenantID(tenantID string) ([]string, erro
 	return kbIDs, err
 }
 
-// GetAllIDs retrieves all knowledge base IDs
-// This matches the Python get_all_ids method
+// GetAllIDs 返回系统中全部有效知识库 ID。
 func (dao *KnowledgebaseDAO) GetAllIDs() ([]string, error) {
 	var kbIDs []string
 	err := DB.Model(&entity.Knowledgebase{}).
@@ -391,8 +378,7 @@ func (dao *KnowledgebaseDAO) GetAllIDs() ([]string, error) {
 	return kbIDs, err
 }
 
-// UpdateParserConfig updates the parser configuration with deep merge
-// This matches the Python update_parser_config method
+// UpdateParserConfig 深合并更新 parser_config JSON。
 func (dao *KnowledgebaseDAO) UpdateParserConfig(id string, config map[string]interface{}) error {
 	var kb entity.Knowledgebase
 	if err := DB.Where("id = ? AND status = ?", id, string(entity.StatusValid)).First(&kb).Error; err != nil {
@@ -405,8 +391,7 @@ func (dao *KnowledgebaseDAO) UpdateParserConfig(id string, config map[string]int
 		Update("parser_config", mergedConfig).Error
 }
 
-// DeleteFieldMap removes the field_map from parser_config
-// This matches the Python delete_field_map method
+// DeleteFieldMap 从 parser_config 中移除 field_map 键。
 func (dao *KnowledgebaseDAO) DeleteFieldMap(id string) error {
 	var kb entity.Knowledgebase
 	if err := DB.Where("id = ? AND status = ?", id, string(entity.StatusValid)).First(&kb).Error; err != nil {
@@ -422,8 +407,7 @@ func (dao *KnowledgebaseDAO) DeleteFieldMap(id string) error {
 	return nil
 }
 
-// GetFieldMap retrieves field mappings from multiple knowledge bases
-// This matches the Python get_field_map method
+// GetFieldMap 合并多个知识库的 field_map 配置。
 func (dao *KnowledgebaseDAO) GetFieldMap(ids []string) (map[string]interface{}, error) {
 	conf := make(map[string]interface{})
 	kbs, err := dao.GetByIDs(ids)
@@ -445,8 +429,7 @@ func (dao *KnowledgebaseDAO) GetFieldMap(ids []string) (map[string]interface{}, 
 	return conf, nil
 }
 
-// GetKBByIDAndUserID retrieves a knowledge base by ID and user ID with tenant join
-// This matches the Python get_kb_by_id method
+// GetKBByIDAndUserID 通过 user_tenant 关联按 KB ID 与用户 ID 查询。
 func (dao *KnowledgebaseDAO) GetKBByIDAndUserID(kbID, userID string) ([]*entity.Knowledgebase, error) {
 	var kbs []*entity.Knowledgebase
 	err := DB.Model(&entity.Knowledgebase{}).
@@ -457,8 +440,7 @@ func (dao *KnowledgebaseDAO) GetKBByIDAndUserID(kbID, userID string) ([]*entity.
 	return kbs, err
 }
 
-// GetKBByNameAndUserID retrieves a knowledge base by name and user ID with tenant join
-// This matches the Python get_kb_by_name method
+// GetKBByNameAndUserID 通过 user_tenant 关联按名称与用户 ID 查询。
 func (dao *KnowledgebaseDAO) GetKBByNameAndUserID(kbName, userID string) ([]*entity.Knowledgebase, error) {
 	var kbs []*entity.Knowledgebase
 	err := DB.Model(&entity.Knowledgebase{}).
@@ -469,8 +451,7 @@ func (dao *KnowledgebaseDAO) GetKBByNameAndUserID(kbName, userID string) ([]*ent
 	return kbs, err
 }
 
-// GetList retrieves knowledge bases with filtering by ID and name
-// This matches the Python get_list method
+// GetList 带 ID/名称筛选的分页列表，对齐 Python get_list。
 func (dao *KnowledgebaseDAO) GetList(tenantIDs []string, userID string, pageNumber, itemsPerPage int, orderby string, desc bool, id, name string) ([]*entity.Knowledgebase, int64, error) {
 	var kbs []*entity.Knowledgebase
 	var total int64
@@ -510,7 +491,7 @@ func (dao *KnowledgebaseDAO) GetList(tenantIDs []string, userID string, pageNumb
 	return kbs, total, nil
 }
 
-// mergeConfig performs a deep merge of configuration maps
+// mergeConfig 递归深合并两个 JSON 配置 map，数组去重合并。
 func mergeConfig(old, new map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 	for k, v := range old {
@@ -547,13 +528,13 @@ func mergeConfig(old, new map[string]interface{}) map[string]interface{} {
 	return result
 }
 
-// DeleteByTenantID deletes all knowledge bases by tenant ID (hard delete)
+// DeleteByTenantID 按租户 ID 硬删除全部知识库。
 func (dao *KnowledgebaseDAO) DeleteByTenantID(tenantID string) (int64, error) {
 	result := DB.Unscoped().Where("tenant_id = ?", tenantID).Delete(&entity.Knowledgebase{})
 	return result.RowsAffected, result.Error
 }
 
-// GetKBIDsByTenantID gets all knowledge base IDs by tenant ID
+// GetKBIDsByTenantIDSimple 返回租户下全部知识库 ID（含无效状态）。
 func (dao *KnowledgebaseDAO) GetKBIDsByTenantIDSimple(tenantID string) ([]string, error) {
 	var kbIDs []string
 	err := DB.Model(&entity.Knowledgebase{}).

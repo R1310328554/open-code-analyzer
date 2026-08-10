@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// file_commit.go — 文件版本提交 DAO：记录文件夹快照提交及其包含的文件变更明细，支持分页与排序白名单。
+
 //
 
 package dao
@@ -20,15 +22,15 @@ import (
 	"ragflow/internal/entity"
 )
 
-// FileCommitDAO file commit data access object
+// FileCommitDAO 文件提交（快照）表的数据访问对象。
 type FileCommitDAO struct{}
 
-// NewFileCommitDAO create file commit DAO
+// NewFileCommitDAO 创建 FileCommitDAO 实例。
 func NewFileCommitDAO() *FileCommitDAO {
 	return &FileCommitDAO{}
 }
 
-// GetByID gets a file commit by ID
+// GetByID 按 ID 查询提交记录。
 func (dao *FileCommitDAO) GetByID(id string) (*entity.FileCommit, error) {
 	var commit entity.FileCommit
 	err := DB.Where("id = ?", id).First(&commit).Error
@@ -38,17 +40,17 @@ func (dao *FileCommitDAO) GetByID(id string) (*entity.FileCommit, error) {
 	return &commit, nil
 }
 
-// Create creates a new file commit record
+// Create 插入新的文件提交记录。
 func (dao *FileCommitDAO) Create(commit *entity.FileCommit) error {
 	return DB.Create(commit).Error
 }
 
-// UpdateTreeState updates the tree_state field for a commit
+// UpdateTreeState 更新提交对应的目录树状态 JSON。
 func (dao *FileCommitDAO) UpdateTreeState(id string, treeState string) error {
 	return DB.Model(&entity.FileCommit{}).Where("id = ?", id).Update("tree_state", treeState).Error
 }
 
-// GetLatestByFolderID gets the latest (most recent) commit for a folder
+// GetLatestByFolderID 获取文件夹下最新一条提交（按 create_time 降序）。
 func (dao *FileCommitDAO) GetLatestByFolderID(folderID string) (*entity.FileCommit, error) {
 	var commit entity.FileCommit
 	err := DB.Where("folder_id = ?", folderID).
@@ -60,8 +62,7 @@ func (dao *FileCommitDAO) GetLatestByFolderID(folderID string) (*entity.FileComm
 	return &commit, nil
 }
 
-// allowedFileCommitSorts is the whitelist of safe column names for
-// ListByFolderID's orderBy parameter to prevent SQL injection.
+// allowedFileCommitSorts 为 ListByFolderID 排序字段白名单，防止 SQL 注入。
 var allowedFileCommitSorts = map[string]string{
 	"create_time": "create_time",
 	"create_date": "create_date",
@@ -69,7 +70,7 @@ var allowedFileCommitSorts = map[string]string{
 	"update_date": "update_date",
 }
 
-// ListByFolderID lists commits for a folder with pagination
+// ListByFolderID 分页列出文件夹下的提交历史。
 func (dao *FileCommitDAO) ListByFolderID(folderID string, page, pageSize int, orderBy string, desc bool) ([]*entity.FileCommit, int64, error) {
 	var commits []*entity.FileCommit
 	var total int64
@@ -80,7 +81,7 @@ func (dao *FileCommitDAO) ListByFolderID(folderID string, page, pageSize int, or
 		return nil, 0, err
 	}
 
-	// Sanitize orderBy against whitelist; fall back to create_time.
+	// 校验 orderBy 是否在白名单内，非法时回退 create_time
 	safeCol, ok := allowedFileCommitSorts[orderBy]
 	if !ok {
 		safeCol = "create_time"
@@ -107,34 +108,34 @@ func (dao *FileCommitDAO) ListByFolderID(folderID string, page, pageSize int, or
 	return commits, total, nil
 }
 
-// FileCommitItemDAO file commit item data access object
+// FileCommitItemDAO 提交明细（单文件变更）表的数据访问对象。
 type FileCommitItemDAO struct{}
 
-// NewFileCommitItemDAO create file commit item DAO
+// NewFileCommitItemDAO 创建 FileCommitItemDAO 实例。
 func NewFileCommitItemDAO() *FileCommitItemDAO {
 	return &FileCommitItemDAO{}
 }
 
-// Create creates a new file commit item record
+// Create 插入新的提交明细记录。
 func (dao *FileCommitItemDAO) Create(item *entity.FileCommitItem) error {
 	return DB.Create(item).Error
 }
 
-// ListByCommitID lists all items for a commit
+// ListByCommitID 列出某次提交包含的全部文件变更项。
 func (dao *FileCommitItemDAO) ListByCommitID(commitID string) ([]*entity.FileCommitItem, error) {
 	var items []*entity.FileCommitItem
 	err := DB.Where("commit_id = ?", commitID).Order("create_time ASC").Find(&items).Error
 	return items, err
 }
 
-// ListByFileID lists all commit items for a specific file (for version history)
+// ListByFileID 列出某文件的全部历史提交明细（版本历史）。
 func (dao *FileCommitItemDAO) ListByFileID(fileID string) ([]*entity.FileCommitItem, error) {
 	var items []*entity.FileCommitItem
 	err := DB.Where("file_id = ?", fileID).Order("create_time DESC").Find(&items).Error
 	return items, err
 }
 
-// GetByCommitIDAndFileID gets a single commit item by commit and file ID
+// GetByCommitIDAndFileID 按提交 ID 与文件 ID 精确查询单条明细。
 func (dao *FileCommitItemDAO) GetByCommitIDAndFileID(commitID, fileID string) (*entity.FileCommitItem, error) {
 	var item entity.FileCommitItem
 	err := DB.Where("commit_id = ? AND file_id = ?", commitID, fileID).First(&item).Error

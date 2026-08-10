@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// document.go — 文档（Document）数据访问层：提供知识库内文档的 CRUD、分页列表、解析状态聚合及分块配置查询。
+
 //
 
 package dao
@@ -23,20 +25,20 @@ import (
 	"gorm.io/gorm"
 )
 
-// DocumentDAO document data access object
+// DocumentDAO 文档表的数据访问对象。
 type DocumentDAO struct{}
 
-// NewDocumentDAO create document DAO
+// NewDocumentDAO 创建文档 DAO 实例。
 func NewDocumentDAO() *DocumentDAO {
 	return &DocumentDAO{}
 }
 
-// Create create document
+// Create 插入新文档记录。
 func (dao *DocumentDAO) Create(document *entity.Document) error {
 	return DB.Create(document).Error
 }
 
-// GetByID get document by ID
+// GetByID 按主键查询文档。
 func (dao *DocumentDAO) GetByID(id string) (*entity.Document, error) {
 	var document entity.Document
 	err := DB.First(&document, "id = ?", id).Error
@@ -46,7 +48,7 @@ func (dao *DocumentDAO) GetByID(id string) (*entity.Document, error) {
 	return &document, nil
 }
 
-// GetByAuthorID get documents by author ID
+// GetByAuthorID 按创建者分页列出文档并预加载作者信息。
 func (dao *DocumentDAO) GetByAuthorID(authorID string, offset, limit int) ([]*entity.Document, int64, error) {
 	var documents []*entity.Document
 	var total int64
@@ -60,23 +62,23 @@ func (dao *DocumentDAO) GetByAuthorID(authorID string, offset, limit int) ([]*en
 	return documents, total, err
 }
 
-// Update update document
+// Update 全量保存文档实体。
 func (dao *DocumentDAO) Update(document *entity.Document) error {
 	return DB.Save(document).Error
 }
 
-// UpdateByID updates document by ID with the given fields
+// UpdateByID 按 ID 部分更新指定字段。
 func (dao *DocumentDAO) UpdateByID(id string, updates map[string]interface{}) error {
 	return DB.Model(&entity.Document{}).Where("id = ?", id).Updates(updates).Error
 }
 
-// Delete hard-deletes document by ID. Returns rows affected.
+// Delete 按 ID 硬删除文档，返回受影响行数。
 func (dao *DocumentDAO) Delete(id string) (int64, error) {
 	result := DB.Where("id = ?", id).Delete(&entity.Document{})
 	return result.RowsAffected, result.Error
 }
 
-// List list documents
+// List 分页列出全部文档并统计总数。
 func (dao *DocumentDAO) List(offset, limit int) ([]*entity.Document, int64, error) {
 	var documents []*entity.Document
 	var total int64
@@ -89,7 +91,7 @@ func (dao *DocumentDAO) List(offset, limit int) ([]*entity.Document, int64, erro
 	return documents, total, err
 }
 
-// DocumentListOptions contains filters for listing documents in a dataset.
+// DocumentListOptions 知识库内文档列表的筛选与排序参数。
 type DocumentListOptions struct {
 	KbID               string
 	Keywords           string
@@ -107,7 +109,7 @@ type DocumentListOptions struct {
 	Limit              int
 }
 
-// ListByKBID list documents by knowledge base ID
+// ListByKBID 按知识库 ID 分页列出文档（默认按创建时间降序）。
 func (dao *DocumentDAO) ListByKBID(kbID, keywords string, offset, limit int) ([]*entity.DocumentListItem, int64, error) {
 	return dao.ListByKBIDWithOptions(DocumentListOptions{
 		KbID:     kbID,
@@ -119,7 +121,7 @@ func (dao *DocumentDAO) ListByKBID(kbID, keywords string, offset, limit int) ([]
 	})
 }
 
-// ListByKBIDWithOptions lists documents by knowledge base ID with filters.
+// ListByKBIDWithOptions 带多条件筛选的文档列表查询，关联流水线与用户昵称。
 func (dao *DocumentDAO) ListByKBIDWithOptions(opts DocumentListOptions) ([]*entity.DocumentListItem, int64, error) {
 	var documents []*entity.DocumentListItem
 	var total int64
@@ -153,7 +155,7 @@ func (dao *DocumentDAO) ListByKBIDWithOptions(opts DocumentListOptions) ([]*enti
 	return documents, total, err
 }
 
-// GetFilterByKBID returns aggregate filter counts for documents in a dataset.
+// GetFilterByKBID 返回数据集中后缀与解析状态的聚合计数，供前端筛选项使用。
 func (dao *DocumentDAO) GetFilterByKBID(opts DocumentListOptions) (map[string]interface{}, int64, error) {
 	var rows []struct {
 		ID     string  `gorm:"column:id"`
@@ -189,7 +191,7 @@ func (dao *DocumentDAO) GetFilterByKBID(opts DocumentListOptions) (map[string]in
 	}, int64(len(rows)), nil
 }
 
-// ListIDsByKBIDWithOptions lists matching document IDs without pagination.
+// ListIDsByKBIDWithOptions 按筛选条件返回匹配的文档 ID 列表（不分页）。
 func (dao *DocumentDAO) ListIDsByKBIDWithOptions(opts DocumentListOptions) ([]string, error) {
 	var ids []string
 	query := DB.Table("document").
@@ -203,6 +205,7 @@ func (dao *DocumentDAO) ListIDsByKBIDWithOptions(opts DocumentListOptions) ([]st
 	return ids, nil
 }
 
+// applyDocumentListFilters 将 DocumentListOptions 中的关键词、类型、后缀等条件应用到 GORM 查询。
 func applyDocumentListFilters(query *gorm.DB, opts DocumentListOptions, qualified bool) *gorm.DB {
 	column := func(name string) string {
 		if qualified {
@@ -243,6 +246,7 @@ func applyDocumentListFilters(query *gorm.DB, opts DocumentListOptions, qualifie
 	return query
 }
 
+// documentListOrderColumn 将 API 排序字段映射为带表前缀的安全列名。
 func documentListOrderColumn(orderBy string) string {
 	switch orderBy {
 	case "update_time":
@@ -260,7 +264,7 @@ func documentListOrderColumn(orderBy string) string {
 	}
 }
 
-// GetByKBID retrieves all documents in a knowledge base ordered by create time.
+// GetByKBID 获取知识库内全部文档，按创建时间升序排列。
 func (dao *DocumentDAO) GetByKBID(kbID string) ([]*entity.Document, int64, error) {
 	var documents []*entity.Document
 	var total int64
@@ -274,8 +278,7 @@ func (dao *DocumentDAO) GetByKBID(kbID string) ([]*entity.Document, int64, error
 	return documents, total, err
 }
 
-// GetChunkingConfig returns the document, dataset, and tenant fields used to
-// build a parsing task digest, mirroring DocumentService.get_chunking_config.
+// GetChunkingConfig 联表查询文档、知识库与租户字段，用于构建解析任务摘要（对齐 Python get_chunking_config）。
 func (dao *DocumentDAO) GetChunkingConfig(docID string) (map[string]interface{}, error) {
 	var row struct {
 		ID           string         `gorm:"column:id"`
@@ -340,13 +343,13 @@ func (dao *DocumentDAO) GetChunkingConfig(docID string) (map[string]interface{},
 	return config, nil
 }
 
-// DeleteByTenantID deletes all documents by tenant ID (hard delete)
+// DeleteByTenantID 按租户 ID 硬删除全部文档。
 func (dao *DocumentDAO) DeleteByTenantID(tenantID string) (int64, error) {
 	result := DB.Unscoped().Where("tenant_id = ?", tenantID).Delete(&entity.Document{})
 	return result.RowsAffected, result.Error
 }
 
-// GetAllDocIDsByKBIDs gets all document IDs by knowledge base IDs
+// GetAllDocIDsByKBIDs 批量返回各知识库下的文档 ID 与 kb_id 映射。
 func (dao *DocumentDAO) GetAllDocIDsByKBIDs(kbIDs []string) ([]map[string]string, error) {
 	var docs []struct {
 		ID   string `gorm:"column:id"`
@@ -364,7 +367,7 @@ func (dao *DocumentDAO) GetAllDocIDsByKBIDs(kbIDs []string) ([]map[string]string
 	return result, nil
 }
 
-// GetByIDs retrieves documents by multiple IDs
+// GetByIDs 按 ID 列表批量查询文档。
 func (dao *DocumentDAO) GetByIDs(ids []string) ([]*entity.Document, error) {
 	if len(ids) == 0 {
 		return nil, nil
@@ -377,7 +380,7 @@ func (dao *DocumentDAO) GetByIDs(ids []string) ([]*entity.Document, error) {
 	return documents, nil
 }
 
-// GetByIDsAndTenantIDs retrieves documents by IDs scoped to knowledgebase owners.
+// GetByIDsAndTenantIDs 在租户权限范围内按 ID 批量查询文档。
 func (dao *DocumentDAO) GetByIDsAndTenantIDs(ids, tenantIDs []string) ([]*entity.Document, error) {
 	if len(ids) == 0 || len(tenantIDs) == 0 {
 		return nil, nil
@@ -393,21 +396,21 @@ func (dao *DocumentDAO) GetByIDsAndTenantIDs(ids, tenantIDs []string) ([]*entity
 	return documents, nil
 }
 
-// GetByDocumentIDAndDatasetID retrieves a document by document ID and dataset/KB ID.
+// GetByDocumentIDAndDatasetID 按文档 ID 与数据集（知识库）ID 精确查询。
 func (dao *DocumentDAO) GetByDocumentIDAndDatasetID(documentID, datasetID string) (*entity.Document, error) {
 	var document entity.Document
 	err := DB.Where("id = ? AND kb_id = ?", documentID, datasetID).First(&document).Error
 	return &document, err
 }
 
-// CountByTenantID counts documents by tenant ID
+// CountByTenantID 统计租户创建的文档数量。
 func (dao *DocumentDAO) CountByTenantID(tenantID string) (int64, error) {
 	var count int64
 	err := DB.Model(&entity.Document{}).Where("created_by = ?", tenantID).Count(&count).Error
 	return count, err
 }
 
-// SumSizeByDatasetID returns the total document size for a dataset.
+// SumSizeByDatasetID 汇总数据集中所有文档的字节总大小。
 func (dao *DocumentDAO) SumSizeByDatasetID(datasetID string) (int64, error) {
 	var total int64
 	err := DB.Model(&entity.Document{}).
@@ -417,8 +420,7 @@ func (dao *DocumentDAO) SumSizeByDatasetID(datasetID string) (int64, error) {
 	return total, err
 }
 
-// GetParsingStatusByKBID aggregates document parsing status counts for a
-// dataset, mirroring DocumentService.get_parsing_status_by_kb_ids in Python.
+// GetParsingStatusByKBID 按解析状态聚合统计，对齐 Python get_parsing_status_by_kb_ids。
 func (dao *DocumentDAO) GetParsingStatusByKBID(kbID string) (map[string]int64, error) {
 	result := map[string]int64{
 		"unstart_count": 0,
@@ -459,14 +461,14 @@ func (dao *DocumentDAO) GetParsingStatusByKBID(kbID string) (map[string]int64, e
 	return result, nil
 }
 
+// GetByNameAndKBID 按文件名与知识库 ID 查询同名文档列表。
 func (dao *DocumentDAO) GetByNameAndKBID(name, kbID string) ([]*entity.Document, error) {
 	var docs []*entity.Document
 	err := DB.Where("name = ? AND kb_id = ?", name, kbID).Find(&docs).Error
 	return docs, err
 }
 
-// ListNamesByKbID returns every document name in a dataset, used to compute a
-// non-colliding upload filename (mirrors Python duplicate_name).
+// ListNamesByKbID 返回数据集中全部文档名，用于生成不冲突的上传文件名（对齐 Python duplicate_name）。
 func (dao *DocumentDAO) ListNamesByKbID(kbID string) ([]string, error) {
 	var names []string
 	err := DB.Model(&entity.Document{}).Where("kb_id = ?", kbID).Pluck("name", &names).Error

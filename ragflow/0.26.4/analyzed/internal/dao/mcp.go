@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// mcp.go — MCP（Model Context Protocol）服务器 DAO：租户级 MCP 端点的 CRUD、名称唯一性检查及安全排序字段映射。
+
 //
 
 package dao
@@ -26,25 +28,25 @@ import (
 	"gorm.io/gorm"
 )
 
-// MCPServerDAO MCP server data access object.
+// MCPServerDAO MCP 服务器配置表的数据访问对象。
 type MCPServerDAO struct{}
 
-// InvalidMCPServerOrderByError matches the Python list endpoint's error shape
-// for unknown MCPServer ordering fields.
+// InvalidMCPServerOrderByError 未知排序字段时返回与 Python 列表接口一致的错误形态。
 type InvalidMCPServerOrderByError struct {
 	Field string
 }
 
+// Error 格式化 AttributeError 风格的错误消息。
 func (e *InvalidMCPServerOrderByError) Error() string {
 	return fmt.Sprintf("AttributeError(%q)", fmt.Sprintf("type object 'MCPServer' has no attribute '%s'", e.Field))
 }
 
-// NewMCPServerDAO creates an MCP server DAO.
+// NewMCPServerDAO 创建 MCPServerDAO 实例。
 func NewMCPServerDAO() *MCPServerDAO {
 	return &MCPServerDAO{}
 }
 
-// GetByID returns an MCP server by ID.
+// GetByID 按 ID 查询 MCP 服务器，未找到返回 (nil, nil)。
 func (dao *MCPServerDAO) GetByID(id string) (*entity.MCPServer, error) {
 	var server entity.MCPServer
 	if err := DB.Where("id = ?", id).First(&server).Error; err != nil {
@@ -56,7 +58,7 @@ func (dao *MCPServerDAO) GetByID(id string) (*entity.MCPServer, error) {
 	return &server, nil
 }
 
-// ExistsByNameAndTenant returns whether an MCP server name already exists for a tenant.
+// ExistsByNameAndTenant 检查租户下 MCP 名称是否已占用。
 func (dao *MCPServerDAO) ExistsByNameAndTenant(name, tenantID string) (bool, error) {
 	var count int64
 	if err := DB.Model(&entity.MCPServer{}).
@@ -67,12 +69,12 @@ func (dao *MCPServerDAO) ExistsByNameAndTenant(name, tenantID string) (bool, err
 	return count > 0, nil
 }
 
-// CreateMCPServer creates an MCP server.
+// CreateMCPServer 插入新的 MCP 服务器配置。
 func (dao *MCPServerDAO) CreateMCPServer(server *entity.MCPServer) error {
 	return DB.Create(server).Error
 }
 
-// ListMCPServers returns MCP servers for a tenant with optional filtering.
+// ListMCPServers 按租户列出 MCP 服务器，支持 ID 过滤、关键词与排序。
 func (dao *MCPServerDAO) ListMCPServers(tenantID string, ids []string, keywords string, orderby string, desc bool) ([]*entity.MCPServer, int64, error) {
 	var servers []*entity.MCPServer
 	var total int64
@@ -110,7 +112,7 @@ func (dao *MCPServerDAO) ListMCPServers(tenantID string, ids []string, keywords 
 	return servers, total, nil
 }
 
-// GetByIDAndTenant returns an MCP server owned by a tenant.
+// GetByIDAndTenant 按 ID 与 tenant_id 查询（租户隔离）。
 func (dao *MCPServerDAO) GetByIDAndTenant(id, tenantID string) (*entity.MCPServer, error) {
 	var server entity.MCPServer
 	if err := DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&server).Error; err != nil {
@@ -119,7 +121,7 @@ func (dao *MCPServerDAO) GetByIDAndTenant(id, tenantID string) (*entity.MCPServe
 	return &server, nil
 }
 
-// DeleteMCPServer deletes an MCP server owned by a tenant.
+// DeleteMCPServer 删除租户拥有的 MCP 服务器，返回是否删除成功。
 func (dao *MCPServerDAO) DeleteMCPServer(id, tenantID string) (bool, error) {
 	result := DB.Where("id = ? AND tenant_id = ?", id, tenantID).Delete(&entity.MCPServer{})
 	if result.Error != nil {
@@ -128,7 +130,7 @@ func (dao *MCPServerDAO) DeleteMCPServer(id, tenantID string) (bool, error) {
 	return result.RowsAffected > 0, nil
 }
 
-// UpdateMCPServer updates an MCP server owned by a tenant.
+// UpdateMCPServer 部分更新租户 MCP 服务器配置。
 func (dao *MCPServerDAO) UpdateMCPServer(id, tenantID string, updates map[string]interface{}) (bool, error) {
 	result := DB.Model(&entity.MCPServer{}).
 		Where("id = ? AND tenant_id = ?", id, tenantID).
@@ -139,6 +141,7 @@ func (dao *MCPServerDAO) UpdateMCPServer(id, tenantID string, updates map[string
 	return result.RowsAffected > 0, nil
 }
 
+// mcpServerOrderColumn 将 API 排序字段映射为数据库列名，非法字段返回错误。
 func mcpServerOrderColumn(orderby string) (string, error) {
 	switch orderby {
 	case "id":

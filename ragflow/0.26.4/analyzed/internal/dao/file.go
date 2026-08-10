@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// file.go — 租户文件树数据访问层：管理文件夹层级、根目录初始化、知识库镜像目录及并发去重逻辑。
+
 //
 
 package dao
@@ -24,15 +26,15 @@ import (
 	"strings"
 )
 
-// FileDAO file data access object
+// FileDAO 文件表的数据访问对象。
 type FileDAO struct{}
 
-// NewFileDAO create file DAO
+// NewFileDAO 创建文件 DAO 实例。
 func NewFileDAO() *FileDAO {
 	return &FileDAO{}
 }
 
-// GetByID gets file by ID
+// GetByID 按 ID 查询文件或文件夹记录。
 func (dao *FileDAO) GetByID(id string) (*entity.File, error) {
 	var file entity.File
 	err := DB.Where("id = ?", id).First(&file).Error
@@ -42,7 +44,7 @@ func (dao *FileDAO) GetByID(id string) (*entity.File, error) {
 	return &file, nil
 }
 
-// GetByPfID gets files by parent folder ID with pagination and filtering
+// GetByPfID 按父文件夹分页列出子项，支持关键词搜索与排序。
 func (dao *FileDAO) GetByPfID(tenantID, pfID string, page, pageSize int, orderby string, desc bool, keywords string) ([]*entity.File, int64, error) {
 	var files []*entity.File
 	var total int64
@@ -50,24 +52,24 @@ func (dao *FileDAO) GetByPfID(tenantID, pfID string, page, pageSize int, orderby
 	query := DB.Model(&entity.File{}).
 		Where("tenant_id = ? AND parent_id = ? AND id != ?", tenantID, pfID, pfID)
 
-	// Apply keyword filter
+	// 应用文件名关键词模糊过滤
 	if keywords != "" {
 		query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(keywords)+"%")
 	}
 
-	// Count total
+	// 统计符合条件的总数
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// Apply ordering
+	// 应用排序字段与升降序
 	orderDirection := "ASC"
 	if desc {
 		orderDirection = "DESC"
 	}
 	query = query.Order(orderby + " " + orderDirection)
 
-	// Apply pagination
+	// 应用分页偏移与条数限制
 	if page > 0 && pageSize > 0 {
 		offset := (page - 1) * pageSize
 		if err := query.Offset(offset).Limit(pageSize).Find(&files).Error; err != nil {
@@ -82,7 +84,7 @@ func (dao *FileDAO) GetByPfID(tenantID, pfID string, page, pageSize int, orderby
 	return files, total, nil
 }
 
-// GetRootFolder gets or creates root folder for tenant
+// GetRootFolder 获取或懒创建租户根目录（parent_id 指向自身）。
 func (dao *FileDAO) GetRootFolder(tenantID string) (*entity.File, error) {
 	var file entity.File
 	err := DB.Where("tenant_id = ? AND parent_id = id", tenantID).First(&file).Error
@@ -90,7 +92,7 @@ func (dao *FileDAO) GetRootFolder(tenantID string) (*entity.File, error) {
 		return &file, nil
 	}
 
-	// Create root folder if not exists
+	// 根目录不存在时自动创建
 	fileID := utility.GenerateToken()
 	file = entity.File{
 		ID:        fileID,
@@ -109,7 +111,7 @@ func (dao *FileDAO) GetRootFolder(tenantID string) (*entity.File, error) {
 	return &file, nil
 }
 
-// GetParentFolder gets parent folder of a file
+// GetParentFolder 查询指定文件的直接父文件夹。
 func (dao *FileDAO) GetParentFolder(fileID string) (*entity.File, error) {
 	var file entity.File
 	err := DB.Where("id = ?", fileID).First(&file).Error
@@ -125,14 +127,14 @@ func (dao *FileDAO) GetParentFolder(fileID string) (*entity.File, error) {
 	return &parentFile, nil
 }
 
-// ListByParentID lists all files by parent ID (including subfolders)
+// ListByParentID 列出父目录下全部直接子项。
 func (dao *FileDAO) ListByParentID(parentID string) ([]*entity.File, error) {
 	var files []*entity.File
 	err := DB.Where("parent_id = ? AND id != ?", parentID, parentID).Find(&files).Error
 	return files, err
 }
 
-// GetFolderSize calculates folder size recursively
+// GetFolderSize 递归累加文件夹及子树内所有文件大小。
 func (dao *FileDAO) GetFolderSize(folderID string) (int64, error) {
 	var size int64
 
@@ -162,7 +164,7 @@ func (dao *FileDAO) GetFolderSize(folderID string) (int64, error) {
 	return size, nil
 }
 
-// HasChildFolder checks if folder has child folders
+// HasChildFolder 判断文件夹是否含有子文件夹。
 func (dao *FileDAO) HasChildFolder(folderID string) (bool, error) {
 	var count int64
 	err := DB.Model(&entity.File{}).
@@ -171,7 +173,7 @@ func (dao *FileDAO) HasChildFolder(folderID string) (bool, error) {
 	return count > 0, err
 }
 
-// GetAllParentFolders gets all parent folders in path (from current to root)
+// GetAllParentFolders 从当前节点向上收集至根的路径链。
 func (dao *FileDAO) GetAllParentFolders(startID string) ([]*entity.File, error) {
 	var parentFolders []*entity.File
 	currentID := startID
@@ -185,7 +187,7 @@ func (dao *FileDAO) GetAllParentFolders(startID string) ([]*entity.File, error) 
 
 		parentFolders = append(parentFolders, &file)
 
-		// Stop if we've reached the root folder (parent_id == id)
+		// 到达根节点（parent_id 等于自身 id）时停止向上遍历
 		if file.ParentID == file.ID {
 			break
 		}
@@ -195,23 +197,23 @@ func (dao *FileDAO) GetAllParentFolders(startID string) ([]*entity.File, error) 
 	return parentFolders, nil
 }
 
-// Create creates a new file
+// Create 插入新文件记录。
 func (dao *FileDAO) Create(file *entity.File) error {
 	return DB.Create(file).Error
 }
 
-// UpdateByID updates a file by ID
+// UpdateByID 按 ID 部分更新文件字段。
 func (dao *FileDAO) UpdateByID(id string, updates map[string]interface{}) error {
 	return DB.Model(&entity.File{}).Where("id = ?", id).Updates(updates).Error
 }
 
-// DeleteByTenantID deletes all files by tenant ID (hard delete)
+// DeleteByTenantID 按租户硬删除全部文件记录。
 func (dao *FileDAO) DeleteByTenantID(tenantID string) (int64, error) {
 	result := DB.Unscoped().Where("tenant_id = ?", tenantID).Delete(&entity.File{})
 	return result.RowsAffected, result.Error
 }
 
-// DeleteByIDs deletes files by IDs (hard delete)
+// DeleteByIDs 按 ID 列表批量硬删除。
 func (dao *FileDAO) DeleteByIDs(ids []string) (int64, error) {
 	if len(ids) == 0 {
 		return 0, nil
@@ -220,14 +222,14 @@ func (dao *FileDAO) DeleteByIDs(ids []string) (int64, error) {
 	return result.RowsAffected, result.Error
 }
 
-// GetAllIDsByTenantID gets all file IDs by tenant ID
+// GetAllIDsByTenantID 返回租户下全部文件 ID。
 func (dao *FileDAO) GetAllIDsByTenantID(tenantID string) ([]string, error) {
 	var ids []string
 	err := DB.Model(&entity.File{}).Where("tenant_id = ?", tenantID).Pluck("id", &ids).Error
 	return ids, err
 }
 
-// GetByIDs gets files by multiple IDs
+// GetByIDs 按 ID 列表批量查询文件。
 func (dao *FileDAO) GetByIDs(ids []string) ([]*entity.File, error) {
 	var files []*entity.File
 	if len(ids) == 0 {
@@ -237,28 +239,28 @@ func (dao *FileDAO) GetByIDs(ids []string) ([]*entity.File, error) {
 	return files, err
 }
 
-// ListAllFilesByParentID lists all files by parent folder ID
+// ListAllFilesByParentID 列出父目录下全部直接子文件。
 func (dao *FileDAO) ListAllFilesByParentID(parentID string) ([]*entity.File, error) {
 	var files []*entity.File
 	err := DB.Where("parent_id = ? AND id != ?", parentID, parentID).Find(&files).Error
 	return files, err
 }
 
-// ListNonFolderByParentID lists non-folder files directly under a parent folder.
+// ListNonFolderByParentID 列出父目录下非文件夹类型的直接子项。
 func (dao *FileDAO) ListNonFolderByParentID(parentID string) ([]*entity.File, error) {
 	var files []*entity.File
 	err := DB.Where("parent_id = ? AND id != ? AND type != ?", parentID, parentID, "folder").Find(&files).Error
 	return files, err
 }
 
-// ListFolderByParentID lists sub-folders directly under a parent folder.
+// ListFolderByParentID 列出父目录下的直接子文件夹。
 func (dao *FileDAO) ListFolderByParentID(parentID string) ([]*entity.File, error) {
 	var files []*entity.File
 	err := DB.Where("parent_id = ? AND type = ?", parentID, "folder").Find(&files).Error
 	return files, err
 }
 
-// GetByParentIDAndName gets file by parent folder ID and name
+// GetByParentIDAndName 按父目录 ID 与文件名精确查询。
 func (dao *FileDAO) GetByParentIDAndName(parentID, name string) (*entity.File, error) {
 	var file entity.File
 	err := DB.Where("parent_id = ? AND name = ?", parentID, name).First(&file).Error
@@ -268,7 +270,7 @@ func (dao *FileDAO) GetByParentIDAndName(parentID, name string) (*entity.File, e
 	return &file, nil
 }
 
-// GetIDListByID recursively gets list of file IDs by traversing folder structure
+// GetIDListByID 按路径名数组递归解析并收集文件 ID 链。
 func (dao *FileDAO) GetIDListByID(id string, names []string, count int, res []string) ([]string, error) {
 	if count < len(names) {
 		file, err := dao.GetByParentIDAndName(id, names[count])
@@ -281,7 +283,7 @@ func (dao *FileDAO) GetIDListByID(id string, names []string, count int, res []st
 	return res, nil
 }
 
-// CreateFolder creates a folder in the database
+// CreateFolder 在指定父目录下创建文件夹记录。
 func (dao *FileDAO) CreateFolder(parentID, tenantID, name, fileType string) (*entity.File, error) {
 	file := &entity.File{
 		ID:         utility.GenerateToken(),
@@ -299,12 +301,12 @@ func (dao *FileDAO) CreateFolder(parentID, tenantID, name, fileType string) (*en
 	return file, nil
 }
 
-// Insert inserts a new file record
+// Insert 插入新文件记录（Create 别名）。
 func (dao *FileDAO) Insert(file *entity.File) error {
 	return DB.Create(file).Error
 }
 
-// IsParentFolderExist checks if parent folder exists
+// IsParentFolderExist 检查父文件夹 ID 是否存在。
 func (dao *FileDAO) IsParentFolderExist(parentID string) bool {
 	var count int64
 	err := DB.Model(&entity.File{}).Where("id = ?", parentID).Count(&count).Error
@@ -314,7 +316,7 @@ func (dao *FileDAO) IsParentFolderExist(parentID string) bool {
 	return true
 }
 
-// Query retrieves files by conditions
+// Query 按名称、父目录、租户等可选条件查询文件。
 func (dao *FileDAO) Query(name string, parentID string, tenantID string) []*entity.File {
 	var files []*entity.File
 	query := DB.Model(&entity.File{})
@@ -331,12 +333,12 @@ func (dao *FileDAO) Query(name string, parentID string, tenantID string) []*enti
 	return files
 }
 
-// Delete deletes a file by ID (hard delete)
+// Delete 按 ID 硬删除单个文件。
 func (dao *FileDAO) Delete(id string) error {
 	return DB.Unscoped().Where("id = ?", id).Delete(&entity.File{}).Error
 }
 
-// GetDatasetIDByFileID gets dataset ID by file ID
+// GetDatasetIDByFileID 通过 file2document 关联查询文件所属知识库 ID。
 func (dao *FileDAO) GetDatasetIDByFileID(fileID string) ([]string, error) {
 	var datasetIDs []string
 	rows, err := DB.Model(&entity.File{}).
@@ -362,19 +364,16 @@ func (dao *FileDAO) GetDatasetIDByFileID(fileID string) ([]string, error) {
 	return datasetIDs, nil
 }
 
-// reparentAndDeleteFolder safely removes a duplicate folder by first
-// reparenting any child records to the kept folder, then hard-deleting
-// the duplicate row. This prevents orphaned children when cleaning up
-// duplicates created by race conditions.
+// reparentAndDeleteFolder 先将重复文件夹的子项迁移到保留节点，再硬删除重复行，避免竞态产生的孤儿记录。
 func reparentAndDeleteFolder(dupID, keepID string) error {
-	// Reparent any child files/folders from the duplicate to the kept folder
+	// 将重复文件夹下的子项 parent_id 改指向保留文件夹
 	if err := DB.Model(&entity.File{}).
 		Where("parent_id = ?", dupID).
 		Update("parent_id", keepID).Error; err != nil {
 		return fmt.Errorf("failed to reparent children from %s to %s: %w", dupID, keepID, err)
 	}
 
-	// Hard-delete the duplicate folder row
+	// 硬删除重复的文件夹行
 	if err := DB.Unscoped().Where("id = ?", dupID).Delete(&entity.File{}).Error; err != nil {
 		return fmt.Errorf("failed to delete duplicate folder %s: %w", dupID, err)
 	}
@@ -382,13 +381,10 @@ func reparentAndDeleteFolder(dupID, keepID string) error {
 	return nil
 }
 
-// DatasetFolderName is the folder name for dataset
+// DatasetFolderName 知识库镜像根文件夹的固定名称。
 const DatasetFolderName = ".knowledgebase"
 
-// InitDatasetDocs initializes dataset documents for tenant.
-// This matches Python's FileService.init_dataset_docs method.
-// Deduplicates duplicate entries that may have been created by
-// concurrent race conditions (TOCTOU).
+// InitDatasetDocs 为租户初始化 .knowledgebase 镜像目录树，对齐 Python init_dataset_docs，并去重竞态产生的重复文件夹。
 func (dao *FileDAO) InitDatasetDocs(rootID, tenantID string, file2DocumentDAO *File2DocumentDAO) error {
 	var existing []*entity.File
 	err := DB.Where("name = ? AND parent_id = ? AND tenant_id = ?", DatasetFolderName, rootID, tenantID).
@@ -447,8 +443,7 @@ func (dao *FileDAO) InitDatasetDocs(rootID, tenantID string, file2DocumentDAO *F
 	return nil
 }
 
-// newAFileFromDataset creates a new file from knowledgebase, or returns the existing one.
-// Deduplicates duplicate entries that may have been created by race conditions.
+// newAFileFromDataset 创建或返回知识库对应的文件夹节点，并处理并发重复。
 func (dao *FileDAO) newAFileFromDataset(tenantID, name, parentID string) (*entity.File, error) {
 	var existingFiles []*entity.File
 	err := DB.Where("tenant_id = ? AND parent_id = ? AND name = ?", tenantID, parentID, name).Order("create_time ASC").Find(&existingFiles).Error
@@ -488,7 +483,7 @@ func (dao *FileDAO) newAFileFromDataset(tenantID, name, parentID string) (*entit
 	return file, nil
 }
 
-// addFileFromKB adds a file record from knowledgebase document
+// addFileFromKB 为知识库文档创建镜像文件及 file2document 映射。
 func (dao *FileDAO) addFileFromKB(doc *entity.Document, datasetFolderID, tenantID string, file2DocumentDAO *File2DocumentDAO) error {
 	var f2dCount int64
 	err := DB.Model(&entity.File2Document{}).

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// license.go — 许可证持久化 DAO：存储与读取系统许可证字符串，供启动时校验模块使用。
+
 //
 
 package dao
@@ -21,15 +23,15 @@ import (
 	"time"
 )
 
-// LicenseDAO license data access object
+// LicenseDAO 许可证表的数据访问对象。
 type LicenseDAO struct{}
 
-// NewLicenseDAO create license DAO
+// NewLicenseDAO 创建 LicenseDAO 实例。
 func NewLicenseDAO() *LicenseDAO {
 	return &LicenseDAO{}
 }
 
-// Create creates a new license record
+// Create 写入新的许可证记录（含创建时间）。
 func (dao *LicenseDAO) Create(licenseID, licenseStr string) error {
 	license := entity.License{
 		ID:        licenseID,
@@ -39,7 +41,7 @@ func (dao *LicenseDAO) Create(licenseID, licenseStr string) error {
 	return DB.Create(license).Error
 }
 
-// GetLatest gets the latest license record by creation time
+// GetLatest 按 created_at 降序取最新一条许可证。
 func (dao *LicenseDAO) GetLatest() (*entity.License, error) {
 	var license entity.License
 	err := DB.Order("created_at DESC").First(&license).Error

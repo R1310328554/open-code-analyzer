@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// langfuse.go — 租户 Langfuse 可观测性凭证 DAO：管理 public/secret key 与 host 的 CRUD 及 upsert 保存。
+
 //
 
 package dao
@@ -25,17 +27,15 @@ import (
 	"ragflow/internal/entity"
 )
 
-// LangfuseDAO is the data access object for tenant Langfuse credentials.
+// LangfuseDAO 租户 Langfuse 集成凭证的数据访问对象。
 type LangfuseDAO struct{}
 
-// NewLangfuse creates a new Langfuse DAO.
+// NewLangfuse 创建 LangfuseDAO 实例。
 func NewLangfuse() *LangfuseDAO {
 	return &LangfuseDAO{}
 }
 
-// GetByTenantID returns the Langfuse credentials row for a tenant.
-// It returns (nil, nil) when no row exists, mirroring the Python
-// TenantLangfuseService.filter_by_tenant behaviour (DoesNotExist -> None).
+// GetByTenantID 按租户查询凭证；无记录时返回 (nil, nil)，对齐 Python DoesNotExist→None。
 func (dao *LangfuseDAO) GetByTenantID(tenantID string) (*entity.TenantLangfuse, error) {
 	var row entity.TenantLangfuse
 	err := DB.Where("tenant_id = ?", tenantID).First(&row).Error
@@ -48,12 +48,12 @@ func (dao *LangfuseDAO) GetByTenantID(tenantID string) (*entity.TenantLangfuse, 
 	return &row, nil
 }
 
-// Create inserts a new Langfuse credentials row (mirrors save).
+// Create 插入新的 Langfuse 凭证行。
 func (dao *LangfuseDAO) Create(row *entity.TenantLangfuse) error {
 	return DB.Create(row).Error
 }
 
-// UpdateByTenantID updates the Langfuse credentials row for a tenant
+// UpdateByTenantID 按 tenant_id 部分更新凭证字段。
 func (dao *LangfuseDAO) UpdateByTenantID(tenantID string, updates map[string]any) error {
 	res := DB.Model(&entity.TenantLangfuse{}).Where("tenant_id = ?", tenantID).Updates(updates)
 	if res.Error != nil {
@@ -65,8 +65,7 @@ func (dao *LangfuseDAO) UpdateByTenantID(tenantID string, updates map[string]any
 	return nil
 }
 
-// DeleteByTenantID deletes the Langfuse credentials row for a tenant
-// (mirrors delete_model / delete_ty_tenant_id).
+// DeleteByTenantID 删除租户凭证行，无记录时返回 ErrRecordNotFound。
 func (dao *LangfuseDAO) DeleteByTenantID(tenantID string) error {
 	res := DB.Where("tenant_id = ?", tenantID).Delete(&entity.TenantLangfuse{})
 	if res.Error != nil {
@@ -78,6 +77,7 @@ func (dao *LangfuseDAO) DeleteByTenantID(tenantID string) error {
 	return nil
 }
 
+// SaveByTenantID 按 tenant_id upsert 凭证（冲突时更新 key 与 host）。
 func (dao *LangfuseDAO) SaveByTenantID(row *entity.TenantLangfuse) error {
 	return DB.Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "tenant_id"}},
@@ -89,6 +89,7 @@ func (dao *LangfuseDAO) SaveByTenantID(row *entity.TenantLangfuse) error {
 	}).Create(row).Error
 }
 
+// DeleteExistingByTenantID 事务内删除已存在的租户凭证行。
 func (dao *LangfuseDAO) DeleteExistingByTenantID(tenantID string) error {
 	return DB.Transaction(func(tx *gorm.DB) error {
 		var row entity.TenantLangfuse

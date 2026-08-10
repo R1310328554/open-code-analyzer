@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// llm.go — 全局 LLM 模型与厂商工厂 DAO：查询系统预置的大语言模型目录及有效状态的厂商列表。
+
 //
 
 package dao
@@ -20,15 +22,15 @@ import (
 	"ragflow/internal/entity"
 )
 
-// LLMDAO LLM data access object
+// LLMDAO 全局 LLM 模型表的数据访问对象。
 type LLMDAO struct{}
 
-// NewLLMDAO create LLM DAO
+// NewLLMDAO 创建 LLMDAO 实例。
 func NewLLMDAO() *LLMDAO {
 	return &LLMDAO{}
 }
 
-// GetAll gets all LLMs
+// GetAll 返回全部 LLM 模型记录。
 func (dao *LLMDAO) GetAll() ([]*entity.LLM, error) {
 	var llms []*entity.LLM
 	err := DB.Find(&llms).Error
@@ -38,7 +40,7 @@ func (dao *LLMDAO) GetAll() ([]*entity.LLM, error) {
 	return llms, nil
 }
 
-// GetAllValid gets all valid LLMs
+// GetAllValid 返回 status=1 的有效 LLM 模型。
 func (dao *LLMDAO) GetAllValid() ([]*entity.LLM, error) {
 	var llms []*entity.LLM
 	err := DB.Where("status = ?", "1").Find(&llms).Error
@@ -48,7 +50,7 @@ func (dao *LLMDAO) GetAllValid() ([]*entity.LLM, error) {
 	return llms, nil
 }
 
-// GetByFactory gets LLMs by factory
+// GetByFactory 按厂商 ID（fid）列出模型。
 func (dao *LLMDAO) GetByFactory(factory string) ([]*entity.LLM, error) {
 	var llms []*entity.LLM
 	err := DB.Where("fid = ?", factory).Find(&llms).Error
@@ -58,7 +60,7 @@ func (dao *LLMDAO) GetByFactory(factory string) ([]*entity.LLM, error) {
 	return llms, nil
 }
 
-// GetByFactoryAndName gets LLM by factory and name
+// GetByFactoryAndName 按厂商与模型名精确查询。
 func (dao *LLMDAO) GetByFactoryAndName(factory, name string) (*entity.LLM, error) {
 	var llm entity.LLM
 	err := DB.Where("fid = ? AND llm_name = ?", factory, name).First(&llm).Error
@@ -68,15 +70,15 @@ func (dao *LLMDAO) GetByFactoryAndName(factory, name string) (*entity.LLM, error
 	return &llm, nil
 }
 
-// LLMFactoryDAO LLM factory data access object
+// LLMFactoryDAO LLM 厂商工厂表的数据访问对象。
 type LLMFactoryDAO struct{}
 
-// NewLLMFactoryDAO create LLM factory DAO
+// NewLLMFactoryDAO 创建 LLMFactoryDAO 实例。
 func NewLLMFactoryDAO() *LLMFactoryDAO {
 	return &LLMFactoryDAO{}
 }
 
-// GetAllValid gets all valid LLM factories
+// GetAllValid 返回 status=1 的有效厂商列表。
 func (dao *LLMFactoryDAO) GetAllValid() ([]*entity.LLMFactories, error) {
 	var factories []*entity.LLMFactories
 	err := DB.Where("status = ?", "1").Find(&factories).Error
@@ -86,7 +88,7 @@ func (dao *LLMFactoryDAO) GetAllValid() ([]*entity.LLMFactories, error) {
 	return factories, nil
 }
 
-// GetByName gets LLM factory by name
+// GetByName 按厂商名称查询工厂记录。
 func (dao *LLMFactoryDAO) GetByName(name string) (*entity.LLMFactories, error) {
 	var factory entity.LLMFactories
 	err := DB.Where("name = ?", name).First(&factory).Error

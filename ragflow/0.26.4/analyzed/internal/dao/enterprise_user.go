@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// enterprise_user.go — 企业用户（Enterprise User）DAO 占位模块
+// 本文件为 dao 包占位声明，企业版相关 DAO 实现将在此扩展；当前版本仅保留 package dao 以维持编译单元与模块边界完整性。
+
 //
 
 package dao

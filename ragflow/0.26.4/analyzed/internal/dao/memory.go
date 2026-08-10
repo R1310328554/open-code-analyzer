@@ -14,9 +14,8 @@
 //  limitations under the License.
 //
 
-// Package dao implements the data access layer
-// This file implements Memory-related database operations
-// Consistent with Python memory_service.py
+// memory.go — Agent 记忆（Memory）数据访问层：
+// 位标志类型、租户筛选列表及与 Python memory_service.py 对齐的 CRUD。
 package dao
 
 import (
@@ -26,16 +25,15 @@ import (
 	"strings"
 )
 
-// Memory type bit flag constants, consistent with Python MemoryType enum
+// Memory 类型位标志常量，与 Python MemoryType 枚举一致
 const (
-	MemoryTypeRaw        = 0b0001 // Raw memory (binary: 0001)
-	MemoryTypeSemantic   = 0b0010 // Semantic memory (binary: 0010)
-	MemoryTypeEpisodic   = 0b0100 // Episodic memory (binary: 0100)
-	MemoryTypeProcedural = 0b1000 // Procedural memory (binary: 1000)
+	MemoryTypeRaw        = 0b0001 // 原始记忆（二进制 0001）
+	MemoryTypeSemantic   = 0b0010 // 语义记忆（二进制 0010）
+	MemoryTypeEpisodic   = 0b0100 // 情景记忆（二进制 0100）
+	MemoryTypeProcedural = 0b1000 // 程序性记忆（二进制 1000）
 )
 
-// MemoryTypeMap maps memory type names to bit flags
-// Exported for use by service package
+// MemoryTypeMap 记忆类型名称到位标志的映射，供 service 包使用
 var MemoryTypeMap = map[string]int{
 	"raw":        MemoryTypeRaw,
 	"semantic":   MemoryTypeSemantic,
@@ -43,13 +41,13 @@ var MemoryTypeMap = map[string]int{
 	"procedural": MemoryTypeProcedural,
 }
 
-// CalculateMemoryType converts memory type names array to bit flags integer
+// CalculateMemoryType 将类型名称数组合并为位标志整数
 //
 // Parameters:
-//   - memoryTypeNames: Memory type names array
+//   - memoryTypeNames: 记忆类型名称数组
 //
 // Returns:
-//   - int64: Bit flags integer
+//   - int64: 位标志整数值
 //
 // Example:
 //
@@ -65,13 +63,13 @@ func CalculateMemoryType(memoryTypeNames []string) int64 {
 	return int64(memoryType)
 }
 
-// GetMemoryTypeHuman converts memory type bit flags to human-readable names
+// GetMemoryTypeHuman 将位标志解码为可读类型名称列表
 //
 // Parameters:
-//   - memoryType: Bit flags integer representing memory types
+//   - memoryType: 表示记忆类型的位标志整数
 //
 // Returns:
-//   - []string: Array of human-readable memory type names
+//   - []string: 可读类型名称数组
 //
 // Example:
 //
@@ -93,41 +91,41 @@ func GetMemoryTypeHuman(memoryType int64) []string {
 	return result
 }
 
-// MemoryDAO handles all Memory-related database operations
+// MemoryDAO 处理全部 Memory 相关数据库操作
 type MemoryDAO struct{}
 
-// NewMemoryDAO creates a new MemoryDAO instance
+// NewMemoryDAO 创建 MemoryDAO 实例
 //
 // Returns:
-//   - *MemoryDAO: Initialized DAO instance
+//   - *MemoryDAO: 已初始化的 DAO 实例
 func NewMemoryDAO() *MemoryDAO {
 	return &MemoryDAO{}
 }
 
-// Create inserts a new memory record into the database
+// Create 向数据库插入新的记忆记录
 //
 // Parameters:
-//   - memory: Memory model pointer
+//   - memory: 记忆实体指针
 //
 // Returns:
-//   - error: Database operation error
+//   - error: 数据库操作错误
 func (dao *MemoryDAO) Create(memory *entity.Memory) error {
 	return DB.Create(memory).Error
 }
 
-// GetByID retrieves a memory record by ID from database
+// GetByID 按 ID 从数据库查询记忆记录
 //
 // Parameters:
-//   - id: Memory ID
+//   - id: 记忆 ID
 //
 // Returns:
-//   - *model.Memory: Memory model pointer
+//   - *entity.Memory: 记忆实体指针
 //   - error: Database operation error
 func (dao *MemoryDAO) GetByID(id string) (*entity.Memory, error) {
 	return dao.GetByIDWithContext(context.Background(), id)
 }
 
-// GetByIDWithContext retrieves a memory record by ID from database with context.
+// GetByIDWithContext 带 context 按 ID 查询记忆，支持超时与取消。
 func (dao *MemoryDAO) GetByIDWithContext(ctx context.Context, id string) (*entity.Memory, error) {
 	var memory entity.Memory
 	err := DB.WithContext(ctx).Where("id = ?", id).First(&memory).Error
@@ -137,13 +135,13 @@ func (dao *MemoryDAO) GetByIDWithContext(ctx context.Context, id string) (*entit
 	return &memory, nil
 }
 
-// GetByTenantID retrieves all memories for a tenant
+// GetByTenantID 列出租户下的全部记忆
 //
 // Parameters:
-//   - tenantID: Tenant ID
+//   - tenantID: 租户 ID
 //
 // Returns:
-//   - []*model.Memory: Memory model pointer array
+//   - []*entity.Memory: 记忆实体指针数组
 //   - error: Database operation error
 func (dao *MemoryDAO) GetByTenantID(tenantID string) ([]*entity.Memory, error) {
 	var memories []*entity.Memory
@@ -151,15 +149,14 @@ func (dao *MemoryDAO) GetByTenantID(tenantID string) ([]*entity.Memory, error) {
 	return memories, err
 }
 
-// GetByNameAndTenant checks if memory exists by name and tenant ID
-// Used for duplicate name deduplication
+// GetByNameAndTenant 按名称与租户检查记忆是否存在，用于重名去重
 //
 // Parameters:
-//   - name: Memory name
+//   - name: 记忆名称
 //   - tenantID: Tenant ID
 //
 // Returns:
-//   - []*model.Memory: Matching memory list (for existence check)
+//   - []*entity.Memory: 匹配的记忆列表（存在性检查）
 //   - error: Database operation error
 func (dao *MemoryDAO) GetByNameAndTenant(name string, tenantID string) ([]*entity.Memory, error) {
 	var memories []*entity.Memory
@@ -167,10 +164,10 @@ func (dao *MemoryDAO) GetByNameAndTenant(name string, tenantID string) ([]*entit
 	return memories, err
 }
 
-// GetByIDs retrieves memories by multiple IDs
+// GetByIDs 按 ID 列表批量查询记忆
 //
 // Parameters:
-//   - ids: Memory ID list
+//   - ids: 记忆 ID 列表
 //
 // Returns:
 //   - []*model.Memory: Memory model pointer array
@@ -181,22 +178,20 @@ func (dao *MemoryDAO) GetByIDs(ids []string) ([]*entity.Memory, error) {
 	return memories, err
 }
 
-// UpdateByID updates a memory by ID
-// Supports partial updates - only updates passed fields
-// Automatically handles field type conversions
+// UpdateByID 按 ID 部分更新记忆，自动转换 memory_type 与 temperature 字段类型
 //
 // Parameters:
 //   - id: Memory ID
-//   - updates: Fields to update map
+//   - updates: 待更新字段 map
 //
 // Returns:
 //   - error: Database operation error
 //
-// Field type handling:
-//   - memory_type: []string converts to bit flags integer
-//   - temperature: string converts to float64
-//   - name: Uses string value directly
-//   - permissions, forgetting_policy: Uses string value directly
+// 字段类型处理说明：
+//   - memory_type: []string 转为位标志整数
+//   - temperature: string 转为 float64
+//   - name: 直接使用字符串
+//   - permissions、forgetting_policy: 直接使用字符串
 //
 // Example:
 //
@@ -225,7 +220,7 @@ func (dao *MemoryDAO) UpdateByID(id string, updates map[string]interface{}) erro
 	return DB.Model(&entity.Memory{}).Where("id = ?", id).Updates(updates).Error
 }
 
-// DeleteByID deletes a memory by ID
+// DeleteByID 按 ID 删除记忆记录
 //
 // Parameters:
 //   - id: Memory ID
@@ -240,14 +235,13 @@ func (dao *MemoryDAO) DeleteByID(id string) error {
 	return DB.Where("id = ?", id).Delete(&entity.Memory{}).Error
 }
 
-// GetWithOwnerNameByID retrieves a memory with owner name by ID
-// Joins with User table to get owner's nickname
+// GetWithOwnerNameByID 联表 user 查询记忆详情并填充 owner_name
 //
 // Parameters:
 //   - id: Memory ID
 //
 // Returns:
-//   - *model.MemoryListItem: Memory detail with owner name populated
+//   - *entity.MemoryListItem: 含所有者昵称的记忆详情
 //   - error: Database operation error
 //
 // Example:
@@ -281,21 +275,19 @@ func (dao *MemoryDAO) GetWithOwnerNameByID(id string) (*entity.MemoryListItem, e
 	}, nil
 }
 
-// GetByFilter retrieves memories with optional filters
-// Supports filtering by tenant_id, memory_type, storage_type, and keywords
-// Returns paginated results with owner_name from user table JOIN
+// GetByFilter 多条件筛选记忆列表，支持租户、类型位标志、存储类型与关键词分页
 //
 // Parameters:
-//   - tenantIDs: Array of tenant IDs to filter by (empty means all tenants)
-//   - memoryTypes: Array of memory type names to filter by (empty means all types)
-//   - storageType: Storage type to filter by (empty means all types)
-//   - keywords: Keywords to search in memory names (empty means no keyword filter)
-//   - page: Page number (1-based)
-//   - pageSize: Number of items per page
+//   - tenantIDs: 租户 ID 数组（空表示不限）
+//   - memoryTypes: 记忆类型名称数组（空表示全部）
+//   - storageType: 存储类型（空表示全部）
+//   - keywords: 名称关键词（空表示不过滤）
+//   - page: 页码（从 1 开始）
+//   - pageSize: 每页条数
 //
 // Returns:
-//   - []*model.MemoryListItem: Memory list items with owner name populated
-//   - int64: Total count of matching memories
+//   - []*entity.MemoryListItem: 含 owner_name 的记忆列表项
+//   - int64: 匹配总数
 //   - error: Database operation error
 //
 // Example:
