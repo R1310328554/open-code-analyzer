@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// HTTP 服务发现：周期性 GET 配置的 URL，解析 JSON 格式的 targetgroup 列表，支持源消失时发送空更新。
+
 package http
 
 import (
@@ -38,7 +40,8 @@ import (
 )
 
 var (
-	// DefaultSDConfig is the default HTTP SD configuration.
+	// HTTP SD 默认配置（60s 刷新、默认 HTTP 客户端）。
+// DefaultSDConfig is the default HTTP SD configuration.
 	DefaultSDConfig = SDConfig{
 		HTTPClientConfig: config.DefaultHTTPClientConfig,
 		RefreshInterval:  model.Duration(60 * time.Second),
@@ -51,6 +54,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// HTTP SD 配置：目标 URL、刷新间隔与 HTTP 客户端选项。
 // SDConfig is the configuration for HTTP based discovery.
 type SDConfig struct {
 	HTTPClientConfig config.HTTPClientConfig `yaml:",inline"`
@@ -102,6 +106,7 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 
 const httpSDURLLabel = model.MetaLabelPrefix + "url"
 
+// Discovery 实现基于 HTTP JSON 端点的服务发现。
 // Discovery provides service discovery functionality based
 // on HTTP endpoints that return target groups in JSON format.
 type Discovery struct {
@@ -114,6 +119,7 @@ type Discovery struct {
 }
 
 // NewDiscovery returns a new HTTP discovery for the given config.
+// 创建 HTTP Discovery：配置客户端并包装 refresh.Discovery。
 func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*Discovery, error) {
 	m, ok := opts.Metrics.(*httpMetrics)
 	if !ok {
@@ -150,6 +156,7 @@ func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*Discovery,
 	return d, nil
 }
 
+// 拉取 URL、校验 Content-Type/状态码，反序列化 targetgroup 并补全 meta 标签。
 func (d *Discovery) Refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	req, err := http.NewRequest(http.MethodGet, d.url, http.NoBody)
 	if err != nil {
@@ -217,6 +224,7 @@ func (d *Discovery) Refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 }
 
 // urlSource returns a source ID for the i-th target group per URL.
+// 为同一 URL 下第 i 个 target group 生成唯一 source ID。
 func urlSource(url string, i int) string {
 	return fmt.Sprintf("%s:%d", url, i)
 }

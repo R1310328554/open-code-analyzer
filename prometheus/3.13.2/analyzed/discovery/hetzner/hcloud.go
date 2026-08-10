@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Hetzner Cloud 服务发现：通过 hcloud-go API 列出云服务器与私有网络，将实例元数据映射为 Prometheus meta 标签与抓取地址。
+
+// Hetzner Cloud 服务发现：通过 hcloud-go API 列出云服务器与私有网络，将实例元数据映射为 Prometheus meta 标签与抓取地址。
+
 package hetzner
 
 import (
@@ -51,6 +55,7 @@ const (
 	hetznerLabelHcloudLabelPresent                  = hetznerHcloudLabelPrefix + "labelpresent_"
 )
 
+// hcloudDiscovery 实现 Discoverer 接口：周期性刷新 Hetzner Cloud 目标。
 // Discovery periodically performs Hetzner Cloud requests. It implements
 // the Discoverer interface.
 type hcloudDiscovery struct {
@@ -61,6 +66,7 @@ type hcloudDiscovery struct {
 }
 
 // newHcloudDiscovery returns a new hcloudDiscovery which periodically refreshes its targets.
+// 构造 hcloudDiscovery：配置 HTTP 客户端与 API 端点。
 func newHcloudDiscovery(conf *SDConfig, _ *slog.Logger) (*hcloudDiscovery, error) {
 	d := &hcloudDiscovery{
 		port:          conf.Port,
@@ -82,6 +88,7 @@ func newHcloudDiscovery(conf *SDConfig, _ *slog.Logger) (*hcloudDiscovery, error
 	return d, nil
 }
 
+// 分页拉取服务器与网络，组装 __address__ 及 hcloud_* meta 标签。
 func (d *hcloudDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	servers, err := d.client.Server.AllWithOpts(ctx, hcloud.ServerListOpts{ListOpts: hcloud.ListOpts{
 		PerPage:       50,

@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Kubernetes Endpoints 角色发现（已弃用）：基于 Informer 监听 Endpoints/Service/Pod，构建带端口与 Pod 元数据的抓取目标；K8s v1.33+ 请改用 EndpointSlice。
+
+// Kubernetes Endpoints 角色发现（已弃用）：基于 Informer 监听 Endpoints/Service/Pod，构建带端口与 Pod 元数据的抓取目标；K8s v1.33+ 请改用 EndpointSlice。
+
 package kubernetes
 
 import (
@@ -31,6 +35,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// Endpoints 发现器：watch Endpoints 资源并生成 targetgroup（已弃用）。
 // Endpoints discovers new endpoint targets.
 //
 // Deprecated: The Endpoints API is deprecated starting in K8s v1.33+. Use EndpointSlice.
@@ -57,6 +62,7 @@ type Endpoints struct {
 	queue *workqueue.Typed[string]
 }
 
+// 构造 Endpoints 发现器并注册 Endpoints/Service/Pod 事件处理器。
 // NewEndpoints returns a new endpoints discovery.
 //
 // Deprecated: The Endpoints API is deprecated starting in K8s v1.33+. Use NewEndpointSlice.
@@ -259,6 +265,7 @@ func (e *Endpoints) enqueue(obj any) {
 }
 
 // Run implements the Discoverer interface.
+// Discoverer 主循环：等待缓存同步后处理队列并推送 targetgroup。
 func (e *Endpoints) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	defer e.queue.ShutDown()
 
@@ -344,6 +351,7 @@ const (
 	endpointAddressTargetNameLabel = metaLabelPrefix + "endpoint_address_target_name"
 )
 
+// 将 Endpoints 子集地址/端口展开为 target，附加 Pod 与 Service 标签。
 func (e *Endpoints) buildEndpoints(eps *apiv1.Endpoints) *targetgroup.Group {
 	tg := &targetgroup.Group{
 		Source: endpointsSource(eps),
@@ -502,6 +510,7 @@ func (e *Endpoints) buildEndpoints(eps *apiv1.Endpoints) *targetgroup.Group {
 	return tg
 }
 
+// 从 TargetRef 解析关联 Pod 对象以附加容器端口标签。
 func (e *Endpoints) resolvePodRef(ref *apiv1.ObjectReference) *apiv1.Pod {
 	if ref == nil || ref.Kind != "Pod" {
 		return nil

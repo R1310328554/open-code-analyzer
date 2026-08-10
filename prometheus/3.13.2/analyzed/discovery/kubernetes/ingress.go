@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Kubernetes Ingress 角色发现：监听 Ingress 资源，将规则中的 host/path 与 TLS 推断的 scheme 映射为黑盒探测目标。
+
+// Kubernetes Ingress 角色发现：监听 Ingress 资源，将规则中的 host/path 与 TLS 推断的 scheme 映射为黑盒探测目标。
+
 package kubernetes
 
 import (
@@ -30,6 +34,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// Ingress 发现器：基于 Informer watch Ingress 并生成 host 级 target。
 // Ingress implements discovery of Kubernetes ingress.
 type Ingress struct {
 	logger                *slog.Logger
@@ -41,6 +46,7 @@ type Ingress struct {
 }
 
 // NewIngress returns a new ingress discovery.
+// 构造 Ingress 发现器并注册 Ingress/Namespace 事件处理。
 func NewIngress(l *slog.Logger, inf cache.SharedIndexInformer, namespace cache.SharedInformer, eventCount *prometheus.CounterVec) *Ingress {
 	ingressAddCount := eventCount.WithLabelValues(RoleIngress.String(), MetricLabelRoleAdd)
 	ingressUpdateCount := eventCount.WithLabelValues(RoleIngress.String(), MetricLabelRoleUpdate)
@@ -232,6 +238,7 @@ func tlsHosts(ingressTLS []v1.IngressTLS) []string {
 	return hosts
 }
 
+// 遍历 Ingress rules，按 TLS 配置决定 http/https 并展开 path target。
 func (i *Ingress) buildIngress(ingress v1.Ingress) *targetgroup.Group {
 	tg := &targetgroup.Group{
 		Source: ingressSource(ingress),
@@ -267,6 +274,7 @@ func (i *Ingress) buildIngress(ingress v1.Ingress) *targetgroup.Group {
 	return tg
 }
 
+// 通配符 DNS 模式匹配：支持 *.example.com 形式与精确 host 相等。
 // matchesHostnamePattern returns true if the host matches a wildcard DNS
 // pattern or pattern and host are equal.
 func matchesHostnamePattern(pattern, host string) bool {

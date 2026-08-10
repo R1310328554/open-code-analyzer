@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// install 包：通过 blank import 副作用注册所有内置服务发现配置类型。
+// 主程序 import 此包即可启用 aws/consul/kubernetes 等 SD 机制。
+
+// 副作用包：各 discovery 子包 init 中调用 RegisterConfig 完成注册。
 // Package install has the side-effect of registering all builtin
 // service discovery config types.
 package install

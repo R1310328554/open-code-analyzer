@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Hetzner Robot 专用服务器发现：通过 Robot Web Service JSON API列出物理/专用服务器并映射为抓取目标。
+
+// Hetzner Robot 专用服务器发现：通过 Robot Web Service JSON API列出物理/专用服务器并映射为抓取目标。
+
 package hetzner
 
 import (
@@ -42,6 +46,7 @@ const (
 
 var userAgent = version.PrometheusUserAgent()
 
+// robotDiscovery 实现 Discoverer：周期性请求 Robot /server 端点。
 // Discovery periodically performs Hetzner Robot requests. It implements
 // the Discoverer interface.
 type robotDiscovery struct {
@@ -52,6 +57,7 @@ type robotDiscovery struct {
 }
 
 // newRobotDiscovery returns a new robotDiscovery which periodically refreshes its targets.
+// 构造 robotDiscovery：配置 Transport 与超时。
 func newRobotDiscovery(conf *SDConfig, _ *slog.Logger) (*robotDiscovery, error) {
 	d := &robotDiscovery{
 		port:     conf.Port,
@@ -70,6 +76,7 @@ func newRobotDiscovery(conf *SDConfig, _ *slog.Logger) (*robotDiscovery, error) 
 	return d, nil
 }
 
+// GET /server 解析 JSON，填充 robot_* 与公共 IP 地址标签。
 func (d *robotDiscovery) refresh(context.Context) ([]*targetgroup.Group, error) {
 	req, err := http.NewRequest(http.MethodGet, d.endpoint+"/server", http.NoBody)
 	if err != nil {
@@ -130,6 +137,7 @@ func (d *robotDiscovery) refresh(context.Context) ([]*targetgroup.Group, error) 
 	return []*targetgroup.Group{{Source: "hetzner", Targets: targets}}, nil
 }
 
+// Robot API 返回的服务器列表 JSON 结构体映射。
 type serversList []struct {
 	Server struct {
 		ServerIP     string `json:"server_ip"`

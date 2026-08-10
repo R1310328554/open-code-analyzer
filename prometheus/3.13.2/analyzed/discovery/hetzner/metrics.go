@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Hetzner 服务发现指标占位：实现 DiscovererMetrics，刷新耗时由通用 refresh 指标提供。
+
 package hetzner
 
 import (
@@ -23,6 +25,7 @@ type hetznerMetrics struct {
 	refreshMetrics discovery.RefreshMetricsInstantiator
 }
 
+// 注册指标（Hetzner 发现器无额外计数器）。
 // Register implements discovery.DiscovererMetrics.
 func (*hetznerMetrics) Register() error {
 	return nil

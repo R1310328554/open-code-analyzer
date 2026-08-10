@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Kubernetes EndpointSlice 角色发现：Informer 监听 EndpointSlice 与关联 Service/Pod，支持双栈去重、拓扑与就绪/服务条件等 meta 标签。
+
+// Kubernetes EndpointSlice 角色发现：Informer 监听 EndpointSlice 与关联 Service/Pod，支持双栈去重、拓扑与就绪/服务条件等 meta 标签。
+
 package kubernetes
 
 import (
@@ -34,6 +38,7 @@ import (
 
 const serviceIndex = "service"
 
+// EndpointSlice 发现器：推荐替代已弃用的 Endpoints API。
 // EndpointSlice discovers new endpoint targets.
 type EndpointSlice struct {
 	logger *slog.Logger
@@ -59,6 +64,7 @@ type EndpointSlice struct {
 }
 
 // NewEndpointSlice returns a new endpointslice discovery.
+// 构造 EndpointSlice 发现器并注册资源变更事件处理器。
 func NewEndpointSlice(l *slog.Logger, eps cache.SharedIndexInformer, svc, pod, node, namespace, rs, job cache.SharedInformer, withDeploymentMetadata, withJobMetadata, withCronJobMetadata bool, eventCount *prometheus.CounterVec) *EndpointSlice {
 	if l == nil {
 		l = promslog.NewNopLogger()
@@ -305,6 +311,7 @@ const (
 	endpointSliceEndpointTopologyLabelPresentPrefix = metaLabelPrefix + "endpointslice_endpoint_topology_present_"
 )
 
+// 将 EndpointSlice 端点与端口展开为 target，合并 Pod/Service/Node 元数据。
 func (e *EndpointSlice) buildEndpointSlice(eps v1.EndpointSlice) *targetgroup.Group {
 	tg := &targetgroup.Group{
 		Source: endpointSliceSource(eps),
@@ -518,6 +525,7 @@ func (e *EndpointSlice) resolvePodRef(ref *apiv1.ObjectReference) *apiv1.Pod {
 	return obj.(*apiv1.Pod)
 }
 
+// 判断是否为双栈 Service 的次要地址族切片，避免重复生成 target。
 // nonPrimaryIPFamilySlice reports whether eps is the secondary slice of a
 // dual-stack service, i.e. its address type does not match the service's
 // primary IP family. Targets from such slices would duplicate those of the

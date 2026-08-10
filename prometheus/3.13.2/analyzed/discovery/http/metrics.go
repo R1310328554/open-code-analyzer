@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// HTTP 服务发现指标：注册 prometheus_sd_http_failures_total 计数刷新失败次数。
+
 package http
 
 import (
@@ -29,6 +31,7 @@ type httpMetrics struct {
 	metricRegisterer discovery.MetricRegisterer
 }
 
+// 创建并注册 HTTP SD 失败计数器。
 func newDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	m := &httpMetrics{
 		refreshMetrics: rmi,
@@ -46,6 +49,7 @@ func newDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetric
 	return m
 }
 
+// 向 Registerer 注册 HTTP SD 指标。
 // Register implements discovery.DiscovererMetrics.
 func (m *httpMetrics) Register() error {
 	return m.metricRegisterer.RegisterMetrics()

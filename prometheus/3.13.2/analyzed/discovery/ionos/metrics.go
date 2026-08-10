@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IONOS 服务发现指标占位：实现 DiscovererMetrics，无额外 Prometheus 计数器。
+
 package ionos
 
 import (
@@ -23,6 +25,7 @@ type ionosMetrics struct {
 	refreshMetrics discovery.RefreshMetricsInstantiator
 }
 
+// 注册指标（IONOS 发现器当前为空实现）。
 // Register implements discovery.DiscovererMetrics.
 func (*ionosMetrics) Register() error {
 	return nil

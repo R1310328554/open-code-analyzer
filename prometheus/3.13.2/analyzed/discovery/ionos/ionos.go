@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IONOS Cloud 服务发现入口：按 datacenter_id 发现数据中心内虚拟机，通过官方 SDK 拉取服务器列表并映射为抓取目标。
+
+// IONOS Cloud 服务发现入口：按 datacenter_id 发现数据中心内虚拟机，通过官方 SDK 拉取服务器列表并映射为抓取目标。
+
 package ionos
 
 import (
@@ -36,11 +40,13 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// Discovery 包装 refresh.Discovery，委托 serverDiscovery 执行刷新。
 // Discovery periodically performs IONOS Cloud target discovery. It implements
 // the Discoverer interface.
 type Discovery struct{}
 
 // NewDiscovery returns a new refresh.Discovery for IONOS Cloud.
+// 构造 IONOS refresh.Discovery 并绑定 server refresher。
 func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*refresh.Discovery, error) {
 	m, ok := opts.Metrics.(*ionosMetrics)
 	if !ok {
@@ -68,6 +74,7 @@ func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*refresh.Di
 	), nil
 }
 
+// IONOS SD 默认配置（80 端口、60s 刷新）。
 // DefaultSDConfig is the default IONOS Cloud service discovery configuration.
 var DefaultSDConfig = SDConfig{
 	HTTPClientConfig: config.DefaultHTTPClientConfig,
@@ -75,6 +82,7 @@ var DefaultSDConfig = SDConfig{
 	Port:             80,
 }
 
+// IONOS SD 配置：datacenter_id、HTTP 客户端与刷新间隔。
 // SDConfig configuration to use for IONOS Cloud Discovery.
 type SDConfig struct {
 	// DatacenterID: IONOS Cloud data center ID used to discover targets.
@@ -106,6 +114,7 @@ func (c SDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discovery.Dis
 }
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
+// YAML 解析：校验 datacenter_id 非空并验证 HTTP 客户端配置。
 func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	*c = DefaultSDConfig
 	type plain SDConfig

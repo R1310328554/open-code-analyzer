@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Kubernetes 客户端适配层：仅暴露 SD 所需的 API 组访问器，通过方法值闭包减小二进制体积。
+
+// Kubernetes 客户端适配层：仅暴露 SD 所需的 API 组访问器，通过方法值闭包减小二进制体积。
+
 package kubernetes
 
 import (
@@ -22,6 +26,7 @@ import (
 	networkingv1client "k8s.io/client-go/kubernetes/typed/networking/v1"
 )
 
+// k8sClient 接口：限定 discovery 使用的 Core/Apps/Batch/Discovery/Networking 客户端。
 // k8sClient exposes only the API-group accessors discovery uses. It is
 // satisfied by both clientAdapter and the fake clientset used in tests.
 type k8sClient interface {
@@ -32,6 +37,7 @@ type k8sClient interface {
 	NetworkingV1() networkingv1client.NetworkingV1Interface
 }
 
+// clientAdapter 用方法值闭包包装 Clientset，避免反射拖入全部 API 组。
 // clientAdapter captures the used API-group accessors as method-value closures.
 // Keeping the concrete clientset out of an interface-typed field avoids forcing
 // the linker, via reflection, to retain every API group and resource client,
@@ -46,6 +52,7 @@ type clientAdapter struct {
 
 // newClientAdapter wraps a concrete clientset, exposing only the API groups
 // discovery uses.
+// 从完整 Clientset 创建仅含所需 API 组的 adapter。
 func newClientAdapter(c *kubernetes.Clientset) *clientAdapter {
 	return &clientAdapter{
 		coreV1:       c.CoreV1,
@@ -56,6 +63,7 @@ func newClientAdapter(c *kubernetes.Clientset) *clientAdapter {
 	}
 }
 
+// 返回 core/v1 API 组客户端（Pod/Service/Endpoints 等）。
 // CoreV1 returns the core/v1 API-group client.
 func (a *clientAdapter) CoreV1() corev1client.CoreV1Interface { return a.coreV1() }
 
@@ -65,6 +73,7 @@ func (a *clientAdapter) AppsV1() appsv1client.AppsV1Interface { return a.appsV1(
 // BatchV1 returns the batch/v1 API-group client.
 func (a *clientAdapter) BatchV1() batchv1client.BatchV1Interface { return a.batchV1() }
 
+// 返回 discovery/v1 API 组客户端（EndpointSlice）。
 // DiscoveryV1 returns the discovery/v1 API-group client.
 func (a *clientAdapter) DiscoveryV1() discoveryv1client.DiscoveryV1Interface {
 	return a.discoveryV1()

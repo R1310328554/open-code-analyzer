@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Hetzner 服务发现入口：统一 SDConfig 按 role 分发到 Robot 专用服务器或 Hetzner Cloud API 子发现器。
+
 package hetzner
 
 import (
@@ -41,6 +43,7 @@ const (
 	hetznerLabelPublicIPv6Network = hetznerLabelPrefix + "public_ipv6_network"
 )
 
+// Hetzner SD 默认配置（80 端口、60s 刷新间隔）。
 // DefaultSDConfig is the default Hetzner SD configuration.
 var DefaultSDConfig = SDConfig{
 	Port:             80,
@@ -52,6 +55,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// Hetzner SD 配置：HTTP 客户端、刷新间隔、端口、role 与 label 选择器。
 // SDConfig is the configuration for Hetzner based service discovery.
 type SDConfig struct {
 	HTTPClientConfig config.HTTPClientConfig `yaml:",inline"`
@@ -77,6 +81,7 @@ func (*SDConfig) NewDiscovererMetrics(_ prometheus.Registerer, rmi discovery.Ref
 func (*SDConfig) Name() string { return "hetzner" }
 
 // NewDiscoverer returns a Discoverer for the Config.
+// 按 SDConfig 构造 Hetzner Discovery 实例。
 func (c *SDConfig) NewDiscoverer(opts discovery.DiscovererOptions) (discovery.Discoverer, error) {
 	return NewDiscovery(c, opts)
 }
@@ -85,6 +90,7 @@ type refresher interface {
 	refresh(context.Context) ([]*targetgroup.Group, error)
 }
 
+// Hetzner 角色枚举：robot（专用服务器）或 hcloud（云主机）。
 // Role is the Role of the target within the Hetzner Ecosystem.
 type Role string
 
@@ -138,6 +144,7 @@ type Discovery struct {
 }
 
 // NewDiscovery returns a new Discovery which periodically refreshes its targets.
+// 包装 refresh.Discovery，注入 hetzner 刷新函数与指标。
 func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*refresh.Discovery, error) {
 	m, ok := opts.Metrics.(*hetznerMetrics)
 	if !ok {
@@ -161,6 +168,7 @@ func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*refresh.Di
 	), nil
 }
 
+// 按 role 选择 hcloud 或 robot 具体 refresher 实现。
 func newRefresher(conf *SDConfig, l *slog.Logger) (refresher, error) {
 	switch conf.Role {
 	case HetznerRoleHcloud:

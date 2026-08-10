@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IONOS Cloud 服务器发现：调用 DatacentersServersGet API 列出 VM，提取 NIC IP、可用区与启动卷等元数据作为 meta 标签。
+
+// IONOS Cloud 服务器发现：调用 DatacentersServersGet API 列出 VM，提取 NIC IP、可用区与启动卷等元数据作为 meta 标签。
+
 package ionos
 
 import (
@@ -52,6 +56,7 @@ const (
 	nicDefaultName = "unnamed"
 )
 
+// IONOS 服务器发现器：SDK 客户端、端口与数据中心 ID。
 type serverDiscovery struct {
 	*refresh.Discovery
 	client       *ionoscloud.APIClient
@@ -83,6 +88,7 @@ func newServerDiscovery(conf *SDConfig, _ *slog.Logger) (*serverDiscovery, error
 	return d, nil
 }
 
+// 拉取数据中心内全部服务器，跳过无 IP 实例并组装 target 标签。
 func (d *serverDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	api := d.client.ServersApi
 
@@ -159,6 +165,7 @@ func (d *serverDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, er
 	return []*targetgroup.Group{{Source: "ionos", Targets: targets}}, nil
 }
 
+// join 在首尾附加分隔符，便于 relabel 时解析多值 IP 列表。
 // join returns strings.Join with additional separators at beginning and end.
 func join(elems []string, sep string) string {
 	return sep + strings.Join(elems, sep) + sep
