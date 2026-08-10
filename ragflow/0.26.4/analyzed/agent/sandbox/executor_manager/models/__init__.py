@@ -12,4 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Executor Manager 数据模型包。
+
+包含执行状态枚举与 Pydantic 请求/响应结构。
+"""
+
 #

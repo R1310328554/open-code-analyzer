@@ -12,6 +12,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Executor Manager API 速率限制。
+
+基于客户端 IP 限流，超限时返回结构化 CodeExecutionResult。
+"""
+
 #
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -21,10 +27,12 @@ from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
+# 以请求来源 IP 作为限流键
 limiter = Limiter(key_func=get_remote_address)
 
 
 async def rate_limit_exceeded_handler(request: Request, exc: Exception) -> JSONResponse:
+    """429 时返回与 /run 一致的错误结构，便于客户端统一处理。"""
     if isinstance(exc, RateLimitExceeded):
         return JSONResponse(
             content=CodeExecutionResult(

@@ -12,6 +12,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+在 Docker 沙箱容器内执行用户代码的核心服务。
+
+负责打包 runner、注入参数、收集 stdout 结构化结果与 artifacts。
+"""
+
 #
 import asyncio
 import base64
@@ -26,10 +32,12 @@ from models.enums import ResourceLimitType, ResultStatus, RuntimeErrorType, Supp
 from models.schemas import ArtifactItem, CodeExecutionRequest, CodeExecutionResult, ExecutionStructuredResult
 from utils.common import async_run_command
 
+# runner 在 stdout 中输出该前缀 + Base64 JSON，供服务端解析 main() 返回值
 RESULT_MARKER_PREFIX = "__RAGFLOW_RESULT__:"
 
 
 def _extract_result_envelope(stdout: str) -> tuple[str, ExecutionStructuredResult | None]:
+    """从 stdout 剥离结构化结果标记行，返回净化后的输出与信封。"""
     if not stdout:
         return "", None
 
@@ -57,6 +65,9 @@ def _extract_result_envelope(stdout: str) -> tuple[str, ExecutionStructuredResul
 
 
 def _build_execution_bundle(req: CodeExecutionRequest, workdir: str) -> dict[str, str | bytes]:
+    """
+    按语言生成用户代码、runner 脚本与 args.json 的本地打包内容。
+    """
     arguments = req.arguments or {}
     args_source = json.dumps(arguments, ensure_ascii=False)
     args_name = "args.json"
@@ -177,6 +188,7 @@ if (fs.existsSync(mainPath)) {
 
 
 def _build_container_run_args(language: SupportLanguage, task_id: str, container: str, runner_name: str) -> list[str]:
+    """构造 docker exec + timeout 命令行，在隔离工作目录运行 runner。"""
     run_args = [
         "docker",
         "exec",
@@ -194,7 +206,11 @@ def _build_container_run_args(language: SupportLanguage, task_id: str, container
 
 
 async def execute_code(req: CodeExecutionRequest):
+    """
+    分配容器、打包代码、执行 runner 并映射退出码为 ResultStatus。
+    """
     language = req.language
+    # 从池中获取空闲容器；池满则快速失败
     container = await allocate_container_blocking(language)
     if not container:
         return CodeExecutionResult(
@@ -230,6 +246,7 @@ async def execute_code(req: CodeExecutionRequest):
         if returncode != 0:
             raise RuntimeError(f"Directory creation failed: {stderr}")
 
+        # 将代码与 runner 以 tar 流注入容器内任务目录
         tar_proc = await asyncio.create_subprocess_exec("tar", "czf", "-", "-C", workdir, code_name, runner_name, str(bundle["args_name"]), stdout=asyncio.subprocess.PIPE)
         tar_stdout, _ = await tar_proc.communicate()
 
@@ -272,7 +289,7 @@ async def execute_code(req: CodeExecutionRequest):
                     artifacts=artifacts,
                     result=structured_result,
                 )
-            elif returncode == 124:
+            elif returncode == 124:  # GNU timeout 超时退出码
                 return CodeExecutionResult(
                     status=ResultStatus.RESOURCE_LIMIT_EXCEEDED,
                     stdout="",
@@ -281,7 +298,7 @@ async def execute_code(req: CodeExecutionRequest):
                     resource_limit_type=ResourceLimitType.TIME,
                     time_used_ms=time_used_ms,
                 )
-            elif returncode == 137:
+            elif returncode == 137:  # OOM killer 终止
                 return CodeExecutionResult(
                     status=ResultStatus.RESOURCE_LIMIT_EXCEEDED,
                     stdout="",
@@ -308,6 +325,7 @@ async def execute_code(req: CodeExecutionRequest):
         return CodeExecutionResult(status=ResultStatus.PROGRAM_RUNNER_ERROR, stdout="", stderr=str(e), exit_code=-3, detail="internal_error")
 
     finally:
+        # 清理容器内与宿主机临时目录，并将容器归还队列
         cleanup_tasks = [async_run_command("docker", "exec", container, "rm", "-rf", f"/workspace/{task_id}"), async_run_command("rm", "-rf", workdir)]
         await asyncio.gather(*cleanup_tasks, return_exceptions=True)
         await release_container(container, language)
@@ -324,10 +342,13 @@ ALLOWED_ARTIFACT_EXTENSIONS = {
     ".html": "text/html",
 }
 MAX_ARTIFACT_COUNT = 10
-MAX_ARTIFACT_SIZE = 10 * 1024 * 1024  # 10MB per file
+MAX_ARTIFACT_SIZE = 10 * 1024 * 1024  # 单文件大小上限 10MB
 
 
 async def _collect_artifacts(container: str, task_id: str, host_workdir: str) -> list[ArtifactItem]:
+    """
+    扫描 artifacts/ 目录，按扩展名白名单读取并 Base64 编码返回。
+    """
     artifacts_path = f"/workspace/{task_id}/artifacts"
 
     # List files in the artifacts directory inside the container
@@ -347,7 +368,7 @@ async def _collect_artifacts(container: str, task_id: str, host_workdir: str) ->
         return []
 
     raw_names = [line.split("/")[-1] for line in stdout.strip().splitlines() if line.strip()]
-    # Sanitize: reject names with path traversal or control characters
+    # 过滤路径穿越与隐藏文件名
     filenames = [n for n in raw_names if n and "/" not in n and "\\" not in n and ".." not in n and not n.startswith(".")]
     if not filenames:
         return []
@@ -385,7 +406,7 @@ async def _collect_artifacts(container: str, task_id: str, host_workdir: str) ->
         if file_size == 0:
             continue
 
-        # Read file content via docker exec (docker cp doesn't work with gVisor tmpfs)
+        # gVisor tmpfs 下 docker cp 不可用，改用 exec base64 读取
         returncode, content_b64, stderr = await async_run_command(
             "docker",
             "exec",
@@ -414,7 +435,7 @@ async def _collect_artifacts(container: str, task_id: str, host_workdir: str) ->
 
 
 def analyze_error_result(stderr: str, exit_code: int) -> CodeExecutionResult:
-    """Analyze the error result and classify it"""
+    """根据 stderr 关键词将非零退出码映射为业务错误类型。"""
     if "Permission denied" in stderr:
         return CodeExecutionResult(
             status=ResultStatus.UNAUTHORIZED_ACCESS,

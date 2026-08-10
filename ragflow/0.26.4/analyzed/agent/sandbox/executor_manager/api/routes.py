@@ -12,13 +12,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Executor Manager 的 FastAPI 路由定义。
+
+挂载根路径健康检查与 POST /run 代码执行接口。
+"""
+
 #
 from fastapi import APIRouter
 
 from api.handlers import healthz_handler, run_code_handler
 
+# 沙箱执行服务对外路由
 router = APIRouter()
 
-router.get("/")(healthz_handler)
+router.get("/")(healthz_handler)  # 根路径存活检查
 router.get("/healthz")(healthz_handler)
-router.post("/run")(run_code_handler)
+router.post("/run")(run_code_handler)  # 提交代码执行

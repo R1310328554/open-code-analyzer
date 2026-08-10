@@ -12,6 +12,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+自管沙箱 Executor Manager 的 FastAPI 应用入口。
+
+注册 API 路由、容器池 lifespan 与请求速率限制异常处理。
+"""
+
 #
 from api.routes import router as api_router
 from core.config import init
@@ -19,7 +25,8 @@ from fastapi import FastAPI
 from services.limiter import limiter, rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
+# 启动时初始化容器池，关闭时 teardown
 app = FastAPI(lifespan=init())
 app.include_router(api_router)
-app.state.limiter = limiter
+app.state.limiter = limiter  # slowapi 需要从 app.state 读取
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)

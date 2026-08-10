@@ -15,10 +15,10 @@
 #
 
 """
-Sandbox client for agent components.
+Agent 组件使用的沙箱客户端。
 
-This module provides a unified interface for agent components to interact
-with the configured sandbox provider.
+从系统设置加载沙箱 Provider，并提供统一的代码执行、健康检查
+与 Provider 信息查询入口。
 """
 
 import json
@@ -32,16 +32,13 @@ from agent.sandbox.providers.base import ExecutionResult, SandboxProviderConfigE
 logger = logging.getLogger(__name__)
 
 
-# Global provider manager instance
+# 全局 Provider 管理器单例
 _provider_manager: Optional[ProviderManager] = None
 
 
 def get_provider_manager() -> ProviderManager:
     """
-    Get the global provider manager instance.
-
-    Returns:
-        ProviderManager instance with active provider loaded
+    获取全局 Provider 管理器；首次调用时从系统设置加载并初始化。
     """
     global _provider_manager
 
@@ -56,10 +53,7 @@ def get_provider_manager() -> ProviderManager:
 
 def _load_provider_from_settings() -> None:
     """
-    Load sandbox provider from system settings and configure the provider manager.
-
-    This function resolves the active provider type, then loads configuration
-    from system settings.
+    从系统设置解析 Provider 类型与配置，实例化并注册到管理器。
     """
     global _provider_manager
 
@@ -70,7 +64,7 @@ def _load_provider_from_settings() -> None:
         provider_type = _resolve_provider_type()
         config = _load_provider_config(provider_type)
 
-        # Import and instantiate the provider
+        # 按类型映射到具体 Provider 类并实例化
         from agent.sandbox.providers import (
             SelfManagedProvider,
             AliyunCodeInterpreterProvider,
@@ -94,7 +88,7 @@ def _load_provider_from_settings() -> None:
         provider_class = provider_classes[provider_type]
         provider = provider_class()
 
-        # Initialize the provider
+        # 初始化 Provider；local/ssh 配置错误时直接抛出
         if not provider.initialize(config):
             message = f"Failed to initialize sandbox provider: {provider_type}. Config keys: {list(config.keys())}"
             if provider_type in {"local", "ssh"}:
@@ -102,7 +96,7 @@ def _load_provider_from_settings() -> None:
             logger.error(message)
             return
 
-        # Set the active provider
+        # 注册为当前活跃 Provider
         _provider_manager.set_provider(provider_type, provider)
         logger.info(f"Sandbox provider '{provider_type}' initialized successfully")
 
@@ -116,6 +110,8 @@ def _load_provider_from_settings() -> None:
 
 
 def _load_provider_config_from_settings(provider_type: str) -> Dict[str, Any]:
+    """从系统设置读取 sandbox.{provider_type} 的 JSON 配置。"""
+    """从系统设置读取 sandbox.{provider_type} 的 JSON 配置。"""
     provider_config_settings = SystemSettingsService.get_by_name(f"sandbox.{provider_type}")
     if not provider_config_settings:
         logger.warning(f"No configuration found for provider: {provider_type}")
@@ -129,6 +125,8 @@ def _load_provider_config_from_settings(provider_type: str) -> Dict[str, Any]:
 
 
 def _resolve_provider_type() -> str:
+    """解析 sandbox.provider_type，缺省为 self_managed。"""
+    """解析 sandbox.provider_type，缺省为 self_managed。"""
     provider_type_settings = SystemSettingsService.get_by_name("sandbox.provider_type")
     if not provider_type_settings:
         return "self_managed"
@@ -141,9 +139,7 @@ def _load_provider_config(provider_type: str) -> Dict[str, Any]:
 
 def reload_provider() -> None:
     """
-    Reload the sandbox provider from system settings.
-
-    Use this function when sandbox settings have been updated.
+    清空单例并重新从系统设置加载 Provider（管理端修改配置后调用）。
     """
     global _provider_manager
     _provider_manager = None
@@ -152,21 +148,9 @@ def reload_provider() -> None:
 
 def execute_code(code: str, language: str = "python", timeout: int = 30, arguments: Optional[Dict[str, Any]] = None) -> ExecutionResult:
     """
-    Execute code in the configured sandbox.
+    在已配置沙箱中执行代码（Agent 组件主入口）。
 
-    This is the main entry point for agent components to execute code.
-
-    Args:
-        code: Source code to execute
-        language: Programming language (python, nodejs, javascript)
-        timeout: Maximum execution time in seconds
-        arguments: Optional arguments dict to pass to main() function
-
-    Returns:
-        ExecutionResult containing stdout, stderr, exit_code, and metadata
-
-    Raises:
-        RuntimeError: If no provider is configured or execution fails
+    创建临时实例、执行代码并在 finally 中销毁实例。
     """
     provider_manager = get_provider_manager()
 
@@ -183,17 +167,17 @@ def execute_code(code: str, language: str = "python", timeout: int = 30, argumen
         timeout,
     )
 
-    # Create a sandbox instance
+    # 按语言模板创建一次性沙箱实例
     instance = provider.create_instance(template=language)
 
     try:
-        # Execute the code
+        # 在实例内执行用户代码
         result = provider.execute_code(instance_id=instance.instance_id, code=code, language=language, timeout=timeout, arguments=arguments)
 
         return result
 
     finally:
-        # Clean up the instance
+        # 无论成功与否都尝试销毁实例
         try:
             provider.destroy_instance(instance.instance_id)
         except Exception as e:
@@ -202,10 +186,7 @@ def execute_code(code: str, language: str = "python", timeout: int = 30, argumen
 
 def health_check() -> bool:
     """
-    Check if the sandbox provider is healthy.
-
-    Returns:
-        True if provider is configured and healthy, False otherwise
+    检查沙箱 Provider 是否已配置且健康。
     """
     try:
         provider_manager = get_provider_manager()
@@ -223,13 +204,7 @@ def health_check() -> bool:
 
 def get_provider_info() -> Dict[str, Any]:
     """
-    Get information about the current sandbox provider.
-
-    Returns:
-        Dictionary with provider information:
-        - provider_type: Type of the active provider
-        - configured: Whether provider is configured
-        - healthy: Whether provider is healthy
+    返回当前 Provider 类型、是否已配置及健康状态摘要。
     """
     try:
         provider_manager = get_provider_manager()

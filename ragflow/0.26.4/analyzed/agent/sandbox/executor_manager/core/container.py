@@ -12,6 +12,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+自管沙箱的 Docker 容器池管理。
+
+维护 Python/Node.js 双队列、并发信号量，以及容器的创建、分配与回收。
+"""
+
 #
 import asyncio
 import contextlib
@@ -24,12 +30,18 @@ from utils.common import async_run_command
 
 from core.logger import logger
 
+# 各语言可用容器名队列；锁与信号量协调并发分配
 _CONTAINER_QUEUES: dict[SupportLanguage, Queue] = {}
 _CONTAINER_LOCK: asyncio.Lock = asyncio.Lock()
 _CONTAINER_EXECUTION_SEMAPHORES: dict[SupportLanguage, asyncio.Semaphore] = {}
 
 
 async def init_containers(size: int) -> tuple[int, int]:
+    """
+    预热容器池：每种语言创建 size 个 gVisor 沙箱容器。
+
+    返回 (成功数, 总任务数)。
+    """
     global _CONTAINER_QUEUES
     _CONTAINER_QUEUES = {SupportLanguage.PYTHON: Queue(), SupportLanguage.NODEJS: Queue()}
 
@@ -59,6 +71,7 @@ async def init_containers(size: int) -> tuple[int, int]:
 
 
 async def teardown_containers():
+    """应用关闭时强制删除池中全部容器。"""
     async with _CONTAINER_LOCK:
         while not _CONTAINER_QUEUES[SupportLanguage.PYTHON].empty():
             name = _CONTAINER_QUEUES[SupportLanguage.PYTHON].get_nowait()
@@ -69,7 +82,7 @@ async def teardown_containers():
 
 
 async def _prepare_container(name: str, language: SupportLanguage) -> bool:
-    """Prepare a single container"""
+    """清理同名残留容器后创建并加入队列。"""
     with contextlib.suppress(Exception):
         await async_run_command("docker", "rm", "-f", name, timeout=5)
 
@@ -80,7 +93,9 @@ async def _prepare_container(name: str, language: SupportLanguage) -> bool:
 
 
 async def create_container(name: str, language: SupportLanguage) -> bool:
-    """Asynchronously create a container"""
+    """
+    以只读根文件系统、gVisor runtime 与内存上限创建沙箱容器。
+    """
     create_args = [
         "docker",
         "run",
@@ -88,7 +103,7 @@ async def create_container(name: str, language: SupportLanguage) -> bool:
         "--runtime=runsc",
         "--name",
         name,
-        "--read-only",
+        "--read-only",  # 根文件系统只读，工作目录使用 tmpfs
         "--tmpfs",
         "/workspace:rw,exec,size=100M,uid=65534,gid=65534",
         "--tmpfs",
@@ -110,6 +125,7 @@ async def create_container(name: str, language: SupportLanguage) -> bool:
         logger.info("Set default SANDBOX_MAX_MEMORY: 256m")
         create_args.extend(["--memory", "256m"])
 
+    # 可选挂载 seccomp 配置文件进一步限制系统调用
     if env_setting_enabled("SANDBOX_ENABLE_SECCOMP", "false"):
         logger.info(f"SANDBOX_ENABLE_SECCOMP: {os.getenv('SANDBOX_ENABLE_SECCOMP')}")
         create_args.extend(["--security-opt", "seccomp=/app/seccomp-profile-default.json"])
@@ -127,6 +143,7 @@ async def create_container(name: str, language: SupportLanguage) -> bool:
             logger.error(f"❌ Container creation failed {name}: {stderr}")
             return False
 
+        # Node 镜像将 node_modules 复制到可写 workspace
         if language == SupportLanguage.NODEJS:
             copy_cmd = ["docker", "exec", name, "bash", "-c", "cp -a /app/node_modules /workspace/"]
             return_code, _, stderr = await async_run_command(*copy_cmd, timeout=10)
@@ -141,7 +158,7 @@ async def create_container(name: str, language: SupportLanguage) -> bool:
 
 
 async def recreate_container(name: str, language: SupportLanguage) -> bool:
-    """Asynchronously recreate a container"""
+    """删除崩溃容器并按原配置重建。"""
     logger.info(f"🛠️ Recreating container: {name}")
     try:
         await async_run_command("docker", "rm", "-f", name, timeout=5)
@@ -153,7 +170,7 @@ async def recreate_container(name: str, language: SupportLanguage) -> bool:
 
 
 async def release_container(name: str, language: SupportLanguage):
-    """Asynchronously release a container"""
+    """执行完毕后归还容器；若已退出则尝试重建。"""
     async with _CONTAINER_LOCK:
         if await container_is_running(name):
             _CONTAINER_QUEUES[language].put(name)
@@ -166,7 +183,9 @@ async def release_container(name: str, language: SupportLanguage):
 
 
 async def allocate_container_blocking(language: SupportLanguage, timeout=10) -> str:
-    """Asynchronously allocate an available container"""
+    """
+    在超时窗口内阻塞式分配可用容器；失败返回空字符串。
+    """
     start_time = asyncio.get_running_loop().time()
     while asyncio.get_running_loop().time() - start_time < timeout:
         try:
@@ -183,7 +202,7 @@ async def allocate_container_blocking(language: SupportLanguage, timeout=10) -> 
 
 
 async def container_is_running(name: str) -> bool:
-    """Asynchronously check the container status"""
+    """通过 docker inspect 判断容器是否仍在运行。"""
     try:
         return_code, stdout, _ = await async_run_command("docker", "inspect", "-f", "{{.State.Running}}", name, timeout=2)
         return return_code == 0 and stdout.strip() == "true"

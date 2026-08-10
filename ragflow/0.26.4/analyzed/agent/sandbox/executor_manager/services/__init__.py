@@ -12,4 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Executor Manager 业务服务层。
+
+包含容器内代码执行编排与 API 速率限制。
+"""
+
 #

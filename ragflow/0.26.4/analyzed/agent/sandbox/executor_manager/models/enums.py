@@ -12,16 +12,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+沙箱代码执行相关的枚举定义。
+
+涵盖支持语言、结果状态、资源限制与未授权访问类型。
+"""
+
 #
 from enum import Enum
 
 
 class SupportLanguage(str, Enum):
+    """沙箱支持的用户代码语言。"""
     PYTHON = "python"
     NODEJS = "nodejs"
 
 
 class ResultStatus(str, Enum):
+    """代码执行结果的顶层状态分类。"""
     SUCCESS = "success"
     PROGRAM_ERROR = "program_error"
     RESOURCE_LIMIT_EXCEEDED = "resource_limit_exceeded"
@@ -31,17 +39,20 @@ class ResultStatus(str, Enum):
 
 
 class ResourceLimitType(str, Enum):
+    """资源超限时的具体限制维度。"""
     TIME = "time"
     MEMORY = "memory"
     OUTPUT = "output"
 
 
 class UnauthorizedAccessType(str, Enum):
+    """沙箱拦截的未授权行为类型。"""
     DISALLOWED_SYSCALL = "disallowed_syscall"
     FILE_ACCESS = "file_access"
     NETWORK_ACCESS = "network_access"
 
 
 class RuntimeErrorType(str, Enum):
+    """用户程序异常退出时的细分原因。"""
     SIGNALLED = "signalled"
     NONZERO_EXIT = "nonzero_exit"

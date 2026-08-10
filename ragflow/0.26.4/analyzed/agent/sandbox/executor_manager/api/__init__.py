@@ -12,4 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Executor Manager 的 HTTP API 包。
+
+包含路由注册与 /run、/healthz 等请求处理器。
+"""
+
 #
