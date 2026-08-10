@@ -39,39 +39,57 @@ import org.keycloak.services.ErrorResponseException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
+ * Bitbucket OAuth2 社交身份提供者。
+ * <p>通过 Bitbucket REST API 获取用户资料与邮箱，支持外部令牌交换校验。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class BitbucketIdentityProvider extends AbstractOAuth2IdentityProvider implements SocialIdentityProvider {
 
+	/** Bitbucket OAuth2 授权端点 URL。 */
 	public static final String AUTH_URL = "https://bitbucket.org/site/oauth2/authorize";
+	/** Bitbucket OAuth2 令牌端点 URL。 */
 	public static final String TOKEN_URL = "https://bitbucket.org/site/oauth2/access_token";
+	/** Bitbucket 用户资料 API 端点。 */
 	public static final String USER_URL = "https://api.bitbucket.org/2.0/user";
+	/** Bitbucket 用户邮箱列表 API 端点。 */
 	public static final String USER_EMAIL_URL = "https://api.bitbucket.org/2.0/user/emails";
+	/** 请求访问用户邮箱的 OAuth scope。 */
 	public static final String EMAIL_SCOPE = "email";
+	/** 请求访问账户基本信息的 OAuth scope。 */
 	public static final String ACCOUNT_SCOPE = "account";
+	/** 默认 OAuth scope（账户信息）。 */
 	public static final String DEFAULT_SCOPE = ACCOUNT_SCOPE;
 
+	/** 构造 Bitbucket IdP，注入授权/令牌 URL 并补全默认 scope。 */
 	public BitbucketIdentityProvider(KeycloakSession session, OAuth2IdentityProviderConfig config) {
 		super(session, config);
 		config.setAuthorizationUrl(AUTH_URL);
 		config.setTokenUrl(TOKEN_URL);
 		String defaultScope = config.getDefaultScope();
 
+		// 未配置默认 scope 时，同时请求 account 与 email
 		if (defaultScope ==  null || defaultScope.trim().equals("")) {
 			config.setDefaultScope(ACCOUNT_SCOPE + " " + EMAIL_SCOPE);
 		}
 	}
 
+	/** 支持通过外部令牌交换进行身份联邦。 */
 	@Override
 	protected boolean supportsExternalExchange() {
 		return true;
 	}
 
+	/** 外部交换校验时使用的用户资料端点。 */
 	@Override
 	protected String getProfileEndpointForValidation(EventBuilder event) {
 		return USER_URL;
 	}
 
+	/**
+	 * 通过 UserInfo 端点校验外部 subject token 并提取联邦身份。
+	 * <p>校验响应 type 为 user 且包含 account_id。</p>
+	 */
 	@Override
 	protected BrokeredIdentityContext validateExternalTokenThroughUserInfo(EventBuilder event, String subjectToken, String subjectTokenType) {
 		event.detail("validation_method", "user info");
@@ -105,6 +123,7 @@ public class BitbucketIdentityProvider extends AbstractOAuth2IdentityProvider im
 			throw new ErrorResponseException(OAuthErrorException.INVALID_TOKEN, "invalid token", Response.Status.BAD_REQUEST);
 
 		}
+		// Bitbucket API 以 type=error 返回错误详情
 		if (type.equals("error")) {
 			JsonNode errorNode = profile.get("error");
 			if (errorNode != null) {
@@ -134,6 +153,7 @@ public class BitbucketIdentityProvider extends AbstractOAuth2IdentityProvider im
 		return extractUserInfo(subjectToken, profile);
 	}
 
+	/** 从 Bitbucket 用户 JSON 提取联邦身份，并尝试拉取主邮箱。 */
 	private BrokeredIdentityContext extractUserInfo(String subjectToken, JsonNode profile) {
 		BrokeredIdentityContext user = new BrokeredIdentityContext(getJsonProperty(profile, "account_id"), getConfig());
 		String username = getJsonProperty(profile, "username");
@@ -146,6 +166,7 @@ public class BitbucketIdentityProvider extends AbstractOAuth2IdentityProvider im
 		try {
 			JsonNode emails = SimpleHttp.create(session).doGet(USER_EMAIL_URL).header("Authorization", "Bearer " + subjectToken).asJson();
 
+			// 邮箱 API 返回 paginated values 数组，取首条 type=email 记录
 			// {"pagelen":10,"values":[{"is_primary":true,"is_confirmed":true,"type":"email","email":"bburke@redhat.com","links":{"self":{"href":"https://api.bitbucket.org/2.0/user/emails/bburke@redhat.com"}}}],"page":1,"size":1}
 			JsonNode emailJson = emails.get("values");
 			if (emailJson != null) {
@@ -164,6 +185,7 @@ public class BitbucketIdentityProvider extends AbstractOAuth2IdentityProvider im
 		return user;
 	}
 
+	/** 使用 access token 调用 Bitbucket 用户 API 获取联邦身份。 */
 	@Override
 	protected BrokeredIdentityContext doGetFederatedIdentity(String accessToken) {
 		try {
@@ -195,6 +217,7 @@ public class BitbucketIdentityProvider extends AbstractOAuth2IdentityProvider im
 		}
 	}
 
+	/** 返回默认 OAuth scope。 */
 	@Override
 	protected String getDefaultScopes() {
 		return DEFAULT_SCOPE;

@@ -27,32 +27,41 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
+ * Facebook 社交身份提供者工厂。
+ * <p>注册 provider id {@code facebook}，并提供额外 profile 字段配置项。</p>
+ *
  * @author Pedro Igor
  */
 public class FacebookIdentityProviderFactory extends AbstractIdentityProviderFactory<FacebookIdentityProvider> implements SocialIdentityProviderFactory<FacebookIdentityProvider> {
 
+    /** Facebook IdP 的 provider id。 */
     public static final String PROVIDER_ID = "facebook";
 
+    /** 管理控制台显示名称。 */
     @Override
     public String getName() {
         return "Facebook";
     }
 
+    /** 创建 Facebook IdP 实例。 */
     @Override
     public FacebookIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new FacebookIdentityProvider(session, new FacebookIdentityProviderConfig(model));
     }
 
+    /** 创建默认 OAuth2 配置。 */
     @Override
     public OAuth2IdentityProviderConfig createConfig() {
         return new OAuth2IdentityProviderConfig();
     }
 
+    /** 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 定义管理端可配置的额外 profile 字段属性。 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return ProviderConfigurationBuilder.create()

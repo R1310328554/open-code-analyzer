@@ -34,17 +34,27 @@ import org.keycloak.saml.common.util.StringUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
+ * Facebook OAuth2 社交身份提供者。
+ * <p>通过 Graph API 获取用户资料，支持可配置额外字段与外部令牌交换。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class FacebookIdentityProvider extends AbstractOAuth2IdentityProvider<FacebookIdentityProviderConfig> implements SocialIdentityProvider<FacebookIdentityProviderConfig> {
 
+	/** Facebook OAuth 授权端点。 */
 	public static final String AUTH_URL = "https://graph.facebook.com/oauth/authorize";
+	/** Facebook OAuth 令牌端点。 */
 	public static final String TOKEN_URL = "https://graph.facebook.com/oauth/access_token";
+	/** Graph API 用户资料端点（默认字段集）。 */
 	public static final String PROFILE_URL = "https://graph.facebook.com/me?fields=id,name,email,first_name,last_name";
+    /** Facebook debug_token 端点，用于校验 access token。 */
     public static final String DEBUG_TOKEN_URL = "https://graph.facebook.com/debug_token";
+	/** 默认 OAuth scope，请求用户邮箱。 */
 	public static final String DEFAULT_SCOPE = "email";
+	/** 追加自定义 profile 字段时的 URL 分隔符。 */
 	protected static final String PROFILE_URL_FIELDS_SEPARATOR = ",";
 
+	/** 构造 Facebook IdP 并设置授权/令牌/UserInfo URL。 */
 	public FacebookIdentityProvider(KeycloakSession session, FacebookIdentityProviderConfig config) {
 		super(session, config);
 		config.setAuthorizationUrl(AUTH_URL);
@@ -52,6 +62,7 @@ public class FacebookIdentityProvider extends AbstractOAuth2IdentityProvider<Fac
 		config.setUserInfoUrl(PROFILE_URL);
 	}
 
+	/** 拉取 Facebook 用户资料并映射为联邦身份。 */
 	protected BrokeredIdentityContext doGetFederatedIdentity(String accessToken) {
 		try {
 			final String fetchedFields = getConfig().getFetchedFields();
@@ -65,6 +76,7 @@ public class FacebookIdentityProvider extends AbstractOAuth2IdentityProvider<Fac
 		}
 	}
 
+    /** 调用 debug_token 校验 token 归属的应用 client id。 */
     private void verifyToken(String accessToken) throws IOException {
         JsonNode response = SimpleHttp.create(session).doGet(DEBUG_TOKEN_URL)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + getConfig().getClientId() + "|" + getConfig().getClientSecret())
@@ -88,16 +100,19 @@ public class FacebookIdentityProvider extends AbstractOAuth2IdentityProvider<Fac
         }
     }
 
+	/** 支持外部令牌交换。 */
 	@Override
 	protected boolean supportsExternalExchange() {
 		return true;
 	}
 
+	/** 外部交换校验使用的 profile 端点。 */
 	@Override
 	protected String getProfileEndpointForValidation(EventBuilder event) {
 		return PROFILE_URL;
 	}
 
+	/** 从 Graph API JSON 提取 id、邮箱、姓名等并构建联邦身份。 */
 	@Override
 	protected BrokeredIdentityContext extractIdentityFromProfile(EventBuilder event, JsonNode profile) {
 		String id = getJsonProperty(profile, "id");
@@ -110,6 +125,7 @@ public class FacebookIdentityProvider extends AbstractOAuth2IdentityProvider<Fac
 
 		String username = getJsonProperty(profile, "username");
 
+		// Facebook 可能无 username，回退至 email 或 id
 		if (username == null) {
             if (email != null) {
                 username = email;
@@ -137,6 +153,7 @@ public class FacebookIdentityProvider extends AbstractOAuth2IdentityProvider<Fac
 	}
 
 
+	/** 返回默认 OAuth scope。 */
     @Override
 	protected String getDefaultScopes() {
 		return DEFAULT_SCOPE;

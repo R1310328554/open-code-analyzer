@@ -28,22 +28,29 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
+ * Google 社交身份提供者工厂。
+ * <p>注册 provider id {@code google}，提供 prompt、hostedDomain、offlineAccess 等管理端配置。</p>
+ *
  * @author Pedro Igor
  */
 public class GoogleIdentityProviderFactory extends AbstractIdentityProviderFactory<GoogleIdentityProvider> implements SocialIdentityProviderFactory<GoogleIdentityProvider> {
 
+    /** Google IdP 的 provider id。 */
     public static final String PROVIDER_ID = "google";
 
+    /** 管理控制台显示名称。 */
     @Override
     public String getName() {
         return "Google";
     }
 
+    /** 创建 Google IdP 实例。 */
     @Override
     public GoogleIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new GoogleIdentityProvider(session, new GoogleIdentityProviderConfig(model));
     }
 
+    /** 创建默认配置并预置 Google issuer URL。 */
     @Override
     public GoogleIdentityProviderConfig createConfig() {
         GoogleIdentityProviderConfig config = new  GoogleIdentityProviderConfig();
@@ -51,14 +58,16 @@ public class GoogleIdentityProviderFactory extends AbstractIdentityProviderFacto
         return config;
     }
 
+    /** 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 定义 Google OIDC 授权参数与 JWT Authorization Grant 相关配置项。 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
-        // The supported authentication URI parameters can be found in the google identity documentation
+        // Google 认证 URI 参数参见官方 OpenID Connect 文档
         // See: https://developers.google.com/identity/openid-connect/openid-connect#authenticationuriparameters
         List<ProviderConfigProperty> providerConfigProperties = ProviderConfigurationBuilder.create()
                 .property().name("prompt")
@@ -86,7 +95,7 @@ public class GoogleIdentityProviderFactory extends AbstractIdentityProviderFacto
                 .add().build();
 
         if (Profile.isFeatureEnabled(Profile.Feature.JWT_AUTHORIZATION_GRANT)) {
-            //easier to add to previous builder when feature will be supported
+            // JWT Authorization Grant 功能开启时追加相关配置项
             providerConfigProperties.addAll(ProviderConfigurationBuilder.create()
                     .property().name(JWTAuthorizationGrantConfig.JWT_AUTHORIZATION_GRANT_ENABLED)
                     .label("JWT Authorization Grant")

@@ -23,27 +23,35 @@ import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * GitLab 社交身份提供者工厂。
+ * <p>注册 provider id {@code gitlab} 并创建 {@link GitLabIdentityProvider} 实例。</p>
+ *
  * @author Pedro Igor
  */
 public class GitLabIdentityProviderFactory extends AbstractIdentityProviderFactory<GitLabIdentityProvider> implements SocialIdentityProviderFactory<GitLabIdentityProvider> {
 
+    /** GitLab IdP 的 provider id。 */
     public static final String PROVIDER_ID = "gitlab";
 
+    /** 管理控制台显示名称。 */
     @Override
     public String getName() {
         return "GitLab";
     }
 
+    /** 创建 GitLab IdP 实例。 */
     @Override
     public GitLabIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new GitLabIdentityProvider(session, new OIDCIdentityProviderConfig(model));
     }
 
+    /** 创建默认 OIDC 配置。 */
     @Override
     public OIDCIdentityProviderConfig createConfig() {
         return new OIDCIdentityProviderConfig();
     }
 
+    /** 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;

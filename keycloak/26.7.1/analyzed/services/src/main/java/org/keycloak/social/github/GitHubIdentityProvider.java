@@ -39,12 +39,18 @@ import org.keycloak.util.BasicAuthHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
+ * GitHub OAuth2 社交身份提供者。
+ * <p>支持自定义 base/api URL、JSON 令牌响应格式，以及主邮箱回退查询。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class GitHubIdentityProvider extends AbstractOAuth2IdentityProvider implements SocialIdentityProvider {
 
+    /** 默认 GitHub Web 站点根 URL。 */
     public static final String DEFAULT_BASE_URL = "https://github.com";
+    /** OAuth 授权路径片段。 */
     public static final String AUTH_FRAGMENT = "/login/oauth/authorize";
+    /** OAuth 令牌路径片段。 */
     public static final String TOKEN_FRAGMENT = "/login/oauth/access_token";
     public static final String DEFAULT_AUTH_URL = DEFAULT_BASE_URL + AUTH_FRAGMENT;
     public static final String DEFAULT_TOKEN_URL = DEFAULT_BASE_URL + TOKEN_FRAGMENT;
@@ -69,15 +75,16 @@ public class GitHubIdentityProvider extends AbstractOAuth2IdentityProvider imple
     @Deprecated
     public static final String EMAIL_URL = DEFAULT_EMAIL_URL;
 
+    /** 默认 scope，含读取用户邮箱权限。 */
     public static final String DEFAULT_SCOPE = "user:email";
 
-    /** Base URL key in config map. */
+    /** 配置 map 中自定义 GitHub Web 根 URL 的键。 */
     protected static final String BASE_URL_KEY = "baseUrl";
-    /** API URL key in config map. */
+    /** 配置 map 中自定义 GitHub API 根 URL 的键。 */
     protected static final String API_URL_KEY = "apiUrl";
-    /** API URL key in config map. */
+    /** 配置 map 中是否启用 GitHub JSON 令牌响应格式的键。 */
     protected static final String GITHUB_JSON_FORMAT_KEY = "githubJsonFormat";
-    /** Email URL key in config map. */
+    /** 配置 map 中邮箱 API URL 的键（运行时写入）。 */
     protected static final String EMAIL_URL_KEY = "emailUrl";
 
     private final String authUrl;
@@ -86,6 +93,7 @@ public class GitHubIdentityProvider extends AbstractOAuth2IdentityProvider imple
     private final String emailUrl;
     private final boolean githubJsonFormat;
 
+    /** 根据 base/api URL 配置组装授权、令牌、profile 与邮箱端点。 */
     public GitHubIdentityProvider(KeycloakSession session, OAuth2IdentityProviderConfig config) {
         super(session, config);
 
@@ -105,12 +113,12 @@ public class GitHubIdentityProvider extends AbstractOAuth2IdentityProvider imple
     }
 
     /**
-     * Get URL from config with default value fallback.
+     * 从配置读取 URL，空值回退默认值并去除末尾斜杠。
      *
-     * @param config Identity provider configuration.
-     * @param key Key to look for value in config's config map.
-     * @param defaultValue Default value if value at key is null or empty string.
-     * @return URL for specified key in the configuration with default value fallback.
+     * @param config 身份提供者配置
+     * @param key 配置 map 中的键
+     * @param defaultValue 键值为空时的默认 URL
+     * @return 规范化后的 URL
      */
     protected static String getUrlFromConfig(OAuth2IdentityProviderConfig config, String key, String defaultValue) {
         String url = config.getConfig().get(key);
@@ -123,6 +131,7 @@ public class GitHubIdentityProvider extends AbstractOAuth2IdentityProvider imple
         return url;
     }
 
+	/** 支持外部令牌交换。 */
 	@Override
 	protected boolean supportsExternalExchange() {
 		return true;
@@ -133,6 +142,7 @@ public class GitHubIdentityProvider extends AbstractOAuth2IdentityProvider imple
 		return profileUrl;
 	}
 
+    /** 若启用 JSON 格式，在令牌请求上设置 Accept: application/json。 */
     @Override
     public SimpleHttpRequest authenticateTokenRequest(SimpleHttpRequest tokenRequest) {
         SimpleHttpRequest simpleHttp = super.authenticateTokenRequest(tokenRequest);
@@ -142,6 +152,7 @@ public class GitHubIdentityProvider extends AbstractOAuth2IdentityProvider imple
         return simpleHttp;
     }
 
+    /** 从 GitHub /user JSON 提取 login、name、email 等字段。 */
     @Override
 	protected BrokeredIdentityContext extractIdentityFromProfile(EventBuilder event, JsonNode profile) {
 		BrokeredIdentityContext user = new BrokeredIdentityContext(getJsonProperty(profile, "id"), getConfig());
@@ -157,6 +168,7 @@ public class GitHubIdentityProvider extends AbstractOAuth2IdentityProvider imple
 		return user;
 	}
 
+	/** 获取 GitHub 用户资料；profile 无 email 时查询主邮箱列表。 */
 	@Override
 	protected BrokeredIdentityContext doGetFederatedIdentity(String accessToken) {
 		try (SimpleHttpResponse response = SimpleHttp.create(session).doGet(profileUrl)
@@ -182,6 +194,7 @@ public class GitHubIdentityProvider extends AbstractOAuth2IdentityProvider imple
 		}
 	}
 
+	/** 遍历 /user/emails 响应，返回标记为 primary 的邮箱地址。 */
 	private String searchEmail(String accessToken) {
 		try (SimpleHttpResponse response = SimpleHttp.create(session).doGet(emailUrl)
                         .header("Authorization", "Bearer " + accessToken)
@@ -212,6 +225,7 @@ public class GitHubIdentityProvider extends AbstractOAuth2IdentityProvider imple
 		}
 	}
 
+    /** 通过 GitHub Applications API 校验 token 是否属于当前 client id。 */
     private void verifyToken(String accessToken) throws IOException {
         String tokenUrl = DEFAULT_APPLICATIONS_URL + "/" + getConfig().getClientId() + "/token";
         SimpleHttpResponse response = SimpleHttp.create(session).doPost(tokenUrl)
@@ -236,6 +250,7 @@ public class GitHubIdentityProvider extends AbstractOAuth2IdentityProvider imple
     }
 
 
+	/** 返回默认 OAuth scope。 */
     @Override
 	protected String getDefaultScopes() {
 		return DEFAULT_SCOPE;

@@ -19,19 +19,23 @@ package org.keycloak.social.facebook;
 import org.keycloak.broker.oidc.mappers.AbstractJsonUserAttributeMapper;
 
 /**
- * User attribute mapper.
- * 
+ * Facebook 用户属性映射器。
+ * <p>将 Facebook Graph API 返回的 JSON 字段映射到 Keycloak 用户属性。</p>
+ *
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class FacebookUserAttributeMapper extends AbstractJsonUserAttributeMapper {
 
+	/** 兼容的 IdP provider id 列表。 */
 	private static final String[] cp = new String[] { FacebookIdentityProviderFactory.PROVIDER_ID };
 
+	/** 返回仅支持 Facebook IdP 的 provider id 数组。 */
 	@Override
 	public String[] getCompatibleProviders() {
 		return cp;
 	}
 
+	/** 映射器唯一 id。 */
 	@Override
 	public String getId() {
 		return "facebook-user-attribute-mapper";

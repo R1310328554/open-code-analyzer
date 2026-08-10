@@ -19,19 +19,23 @@ package org.keycloak.social.google;
 import org.keycloak.broker.oidc.mappers.AbstractJsonUserAttributeMapper;
 
 /**
- * User attribute mapper.
- * 
+ * Google 用户属性映射器。
+ * <p>将 Google UserInfo JSON 字段映射到 Keycloak 用户属性。</p>
+ *
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class GoogleUserAttributeMapper extends AbstractJsonUserAttributeMapper {
 
+	/** 兼容的 IdP provider id 列表。 */
 	private static final String[] cp = new String[] { GoogleIdentityProviderFactory.PROVIDER_ID };
 
+	/** 返回仅支持 Google IdP 的 provider id 数组。 */
 	@Override
 	public String[] getCompatibleProviders() {
 		return cp;
 	}
 
+	/** 映射器唯一 id。 */
 	@Override
 	public String getId() {
 		return "google-user-attribute-mapper";

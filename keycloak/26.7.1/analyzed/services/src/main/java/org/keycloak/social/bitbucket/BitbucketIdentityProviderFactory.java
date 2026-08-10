@@ -23,27 +23,35 @@ import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * Bitbucket 社交身份提供者工厂。
+ * <p>注册 provider id {@code bitbucket} 并创建 {@link BitbucketIdentityProvider} 实例。</p>
+ *
  * @author Pedro Igor
  */
 public class BitbucketIdentityProviderFactory extends AbstractIdentityProviderFactory<BitbucketIdentityProvider> implements SocialIdentityProviderFactory<BitbucketIdentityProvider> {
 
+    /** Bitbucket IdP 在 Keycloak 中的 provider id。 */
     public static final String PROVIDER_ID = "bitbucket";
 
+    /** 管理控制台显示的 IdP 名称。 */
     @Override
     public String getName() {
         return "BitBucket";
     }
 
+    /** 根据 realm 配置创建 Bitbucket IdP 实例。 */
     @Override
     public BitbucketIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new BitbucketIdentityProvider(session, new OAuth2IdentityProviderConfig(model));
     }
 
+    /** 创建空的 OAuth2 IdP 配置对象。 */
     @Override
     public OAuth2IdentityProviderConfig createConfig() {
         return new OAuth2IdentityProviderConfig();
     }
 
+    /** 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;

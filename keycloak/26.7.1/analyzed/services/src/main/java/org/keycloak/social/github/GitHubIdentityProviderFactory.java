@@ -27,32 +27,41 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
+ * GitHub 社交身份提供者工厂。
+ * <p>注册 provider id {@code github}，并提供 base URL、API URL、JSON 格式等配置项。</p>
+ *
  * @author Pedro Igor
  */
 public class GitHubIdentityProviderFactory extends AbstractIdentityProviderFactory<GitHubIdentityProvider> implements SocialIdentityProviderFactory<GitHubIdentityProvider> {
 
+    /** GitHub IdP 的 provider id。 */
     public static final String PROVIDER_ID = "github";
 
+    /** 管理控制台显示名称。 */
     @Override
     public String getName() {
         return "GitHub";
     }
 
+    /** 创建 GitHub IdP 实例。 */
     @Override
     public GitHubIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new GitHubIdentityProvider(session, new OAuth2IdentityProviderConfig(model));
     }
 
+    /** 创建默认 OAuth2 配置。 */
     @Override
     public OAuth2IdentityProviderConfig createConfig() {
         return new OAuth2IdentityProviderConfig();
     }
 
+    /** 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 定义 GitHub 自建实例相关的 URL 与 JSON 格式配置属性。 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return ProviderConfigurationBuilder.create().property()
