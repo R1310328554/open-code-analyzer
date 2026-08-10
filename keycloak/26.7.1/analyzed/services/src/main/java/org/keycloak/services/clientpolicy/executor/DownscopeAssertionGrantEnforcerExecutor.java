@@ -38,11 +38,14 @@ import org.keycloak.services.clientpolicy.context.JWTAuthorizationGrantContext;
 import org.keycloak.services.clientpolicy.context.TokenExchangeRequestContext;
 
 /**
+ * 断言授权降 scope 强制执行器。
+ * <p>在令牌交换与 JWT 授权 grant 中，限制最终 access token 的 scope 不得超出初始断言/ subject_token 已包含的范围。</p>
  *
  * @author rmartinc
  */
 public class DownscopeAssertionGrantEnforcerExecutor implements ClientPolicyExecutorProvider {
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
 
     public DownscopeAssertionGrantEnforcerExecutor(KeycloakSession session) {
@@ -96,9 +99,9 @@ public class DownscopeAssertionGrantEnforcerExecutor implements ClientPolicyExec
                 : Collections.emptySet();
 
         if (scopeParam != null) {
-            // the user requested specific scopes, check they are allowed
+            // 用户显式请求 scope 时，校验均为初始令牌已有 scope 的子集
             Set<String> requestedScopes = TokenManager.parseScopeParameter(scopeParam).collect(Collectors.toSet());
-            // check all requested scopes are inside the token
+            // 移除已在令牌中的 scope，剩余即为非法请求
             requestedScopes.removeAll(tokenScopes);
             if (!requestedScopes.isEmpty()) {
                 throw new ClientPolicyException(OAuthErrorException.INVALID_SCOPE,
@@ -106,7 +109,7 @@ public class DownscopeAssertionGrantEnforcerExecutor implements ClientPolicyExec
             }
         }
 
-        // always add as allowed restricted scopes the ones that are default and not included in token
+        // 将客户端默认 scope（不含于令牌 scope 的部分）与令牌 scope 合并为允许的 restrictedScopes
         Set<String> restrictedScopes = client.getClientScopes(true).values().stream()
                 .filter(Predicate.not(ClientScopeModel::isIncludeInTokenScope))
                 .map(ClientScopeModel::getName)

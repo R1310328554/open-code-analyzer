@@ -28,12 +28,14 @@ import org.keycloak.services.clientpolicy.context.ClientCRUDContext;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Check that switch "fullScopeAllowed" is not enabled for the clients
+ * 禁用 fullScopeAllowed 执行器。
+ * <p>在客户端注册/更新时校验或自动配置，禁止客户端启用 fullScopeAllowed 开关。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class FullScopeDisabledExecutor implements ClientPolicyExecutorProvider<FullScopeDisabledExecutor.Configuration> {
 
+    /** 执行器运行时配置 */
     private FullScopeDisabledExecutor.Configuration configuration;
 
     @Override
@@ -61,6 +63,7 @@ public class FullScopeDisabledExecutor implements ClientPolicyExecutorProvider<F
     }
 
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
+        /** 为 true 时自动将 fullScopeAllowed 设为 false */
         @JsonProperty("auto-configure")
         protected Boolean autoConfigure;
 

@@ -27,14 +27,16 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
- * Check that switch "fullScopeAllowed" is not enabled for the clients
+ * {@link FullScopeDisabledExecutor} 的 Provider 工厂。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class FullScopeDisabledExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "full-scope-disabled";
 
+    /** 配置键：是否自动禁用 fullScopeAllowed */
     public static final String AUTO_CONFIGURE = "auto-configure";
 
     private static final ProviderConfigProperty AUTO_CONFIGURE_PROPERTY = new ProviderConfigProperty(
@@ -63,6 +65,7 @@ public class FullScopeDisabledExecutorFactory implements ClientPolicyExecutorPro
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "When present, then registered/updated clients will be verified to have 'fullScopeAllowed' switch disabled and eventually will be auto-configured for 'fullScopeAllowed' switch to be disabled";

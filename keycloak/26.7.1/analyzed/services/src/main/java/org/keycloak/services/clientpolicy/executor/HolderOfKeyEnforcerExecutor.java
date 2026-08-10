@@ -41,9 +41,15 @@ import org.keycloak.services.util.MtlsHoKTokenUtil;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * mTLS Holder-of-Key（HoK）令牌绑定强制执行器。
+ * <p>要求客户端在令牌、刷新、撤销、UserInfo 及登出等请求中出示与令牌 cnf 声明匹配的客户端证书。</p>
+ */
 public class HolderOfKeyEnforcerExecutor implements ClientPolicyExecutorProvider<HolderOfKeyEnforcerExecutor.Configuration> {
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
     public HolderOfKeyEnforcerExecutor(KeycloakSession session) {
@@ -61,6 +67,7 @@ public class HolderOfKeyEnforcerExecutor implements ClientPolicyExecutorProvider
     }
 
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
+        /** 是否在客户端 CRUD 时自动启用 useMtlsHoKToken */
         @JsonProperty("auto-configure")
         protected Boolean autoConfigure;
 
@@ -132,7 +139,7 @@ public class HolderOfKeyEnforcerExecutor implements ClientPolicyExecutorProvider
 
         RefreshToken refreshToken = session.tokens().decode(encodedRefreshToken, RefreshToken.class);
         if (refreshToken == null) {
-            // this executor does not treat this error case.
+            // 令牌解码失败时本执行器不处理
             return;
         }
 
@@ -146,7 +153,7 @@ public class HolderOfKeyEnforcerExecutor implements ClientPolicyExecutorProvider
 
         AccessToken accessToken = session.tokens().decode(encodedAccessToken, AccessToken.class);
         if (accessToken == null) {
-            // this executor does not treat this error case.
+            // 令牌解码失败时本执行器不处理
             return;
         }
 
@@ -161,7 +168,7 @@ public class HolderOfKeyEnforcerExecutor implements ClientPolicyExecutorProvider
 
         RefreshToken refreshToken = session.tokens().decode(encodedRevokeToken, RefreshToken.class);
         if (refreshToken == null) {
-            // this executor does not treat this error case.
+            // 令牌解码失败时本执行器不处理
             return;
         }
 
@@ -176,7 +183,7 @@ public class HolderOfKeyEnforcerExecutor implements ClientPolicyExecutorProvider
 
         RefreshToken refreshToken = session.tokens().decode(encodedRefreshToken, RefreshToken.class);
         if (refreshToken == null) {
-            // this executor does not treat this error case.
+            // 令牌解码失败时本执行器不处理
             return;
         }
 

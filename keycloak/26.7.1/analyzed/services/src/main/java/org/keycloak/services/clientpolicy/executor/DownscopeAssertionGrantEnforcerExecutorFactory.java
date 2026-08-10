@@ -25,14 +25,14 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
- * <p>Factory that enforces the grant to only use scopes that are already present in
- * the initial assertion. For the moment it can only be used in the Token Exchange
- * context.</p>
+ * {@link DownscopeAssertionGrantEnforcerExecutor} 的 Provider 工厂。
+ * <p>强制 grant 仅使用初始断言中已存在的 scope；当前适用于令牌交换等携带初始 token/assertion 的场景。</p>
  *
  * @author rmartinc
  */
 public class DownscopeAssertionGrantEnforcerExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "downscope-assertion-grant-enforcer";
 
     @Override
@@ -57,6 +57,7 @@ public class DownscopeAssertionGrantEnforcerExecutorFactory implements ClientPol
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return """

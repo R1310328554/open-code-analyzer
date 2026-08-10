@@ -25,12 +25,16 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * {@link ConfidentialClientAcceptExecutor} 的 Provider 工厂。
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ConfidentialClientAcceptExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "confidential-client";
 
+    /** @param session Keycloak 会话 @return 新的机密客户端准入执行器 */
     @Override
     public ClientPolicyExecutorProvider create(KeycloakSession session) {
         return new ConfidentialClientAcceptExecutor(session);
@@ -53,11 +57,13 @@ public class ConfidentialClientAcceptExecutorFactory implements ClientPolicyExec
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "On authorization endpoint and token endpoint, this executor checks whether the client is confidential client. If not, it denies its request.";
     }
 
+    /** @return 无额外配置项 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return Collections.emptyList();

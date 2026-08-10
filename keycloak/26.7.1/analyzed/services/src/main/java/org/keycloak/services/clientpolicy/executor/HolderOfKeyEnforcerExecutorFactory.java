@@ -25,8 +25,12 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * {@link HolderOfKeyEnforcerExecutor} 的 Provider 工厂。
+ */
 public class HolderOfKeyEnforcerExecutorFactory implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "holder-of-key-enforcer";
 
     public static final String AUTO_CONFIGURE = "auto-configure";
@@ -56,6 +60,7 @@ public class HolderOfKeyEnforcerExecutorFactory implements ClientPolicyExecutorP
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "It prohibits the client whose MTLS certificate does not match with the certificate thumbprint from the tokens.";

@@ -28,10 +28,14 @@ import org.keycloak.services.clientpolicy.context.ClientCRUDContext;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 用户同意（consentRequired）强制执行器。
+ * <p>在客户端注册/更新时校验或自动配置 {@code consentRequired} 开关为启用。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ConsentRequiredExecutor implements ClientPolicyExecutorProvider<ConsentRequiredExecutor.Configuration> {
 
+    /** 执行器运行时配置 */
     private ConsentRequiredExecutor.Configuration configuration;
 
     @Override
@@ -63,7 +67,9 @@ public class ConsentRequiredExecutor implements ClientPolicyExecutorProvider<Con
         return ConsentRequiredExecutor.Configuration.class;
     }
 
+    /** 执行器配置：是否自动开启 consentRequired */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
+        /** 为 true 时在注册/更新时自动设置 consentRequired */
         @JsonProperty("auto-configure")
         protected Boolean autoConfigure;
 
@@ -81,12 +87,14 @@ public class ConsentRequiredExecutor implements ClientPolicyExecutorProvider<Con
         return ConsentRequiredExecutorFactory.PROVIDER_ID;
     }
 
+    /** 按配置自动将 proposedClient 的 consentRequired 设为 true */
     private void autoConfigure(ClientRepresentation proposedClient) throws ClientPolicyException {
         if (configuration.isAutoConfigure()) {
             proposedClient.setConsentRequired(true);
         }
     }
 
+    /** 校验客户端表示必须启用 consentRequired */
     private void validate(ClientRepresentation proposedClient) throws ClientPolicyException {
         if (proposedClient.isConsentRequired() == null || !proposedClient.isConsentRequired()) {
             throw new ClientPolicyException(Errors.INVALID_REGISTRATION, "Client is required to enable consentRequired");
@@ -97,7 +105,7 @@ public class ConsentRequiredExecutor implements ClientPolicyExecutorProvider<Con
         if (clientToBeUpdated == null) {
             return;
         }
-        // We are not updating consentRequired in the representation, but it is already set to true on the client
+        // 表示未显式携带 consentRequired，但客户端已启用——视为合规
         if (proposedClient.isConsentRequired() == null && clientToBeUpdated.isConsentRequired()) {
             return;
         }

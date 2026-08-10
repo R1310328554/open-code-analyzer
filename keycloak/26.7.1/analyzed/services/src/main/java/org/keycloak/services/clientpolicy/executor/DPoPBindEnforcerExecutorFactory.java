@@ -24,14 +24,22 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * {@link DPoPBindEnforcerExecutor} 的 Provider 工厂。
+ * <p>暴露自动配置、授权码绑定及公开客户端 refresh token 绑定等选项。</p>
+ */
 public class DPoPBindEnforcerExecutorFactory  implements ClientPolicyExecutorProviderFactory {
 
+    /** 执行器 Provider 标识符 */
     public static final String PROVIDER_ID = "dpop-bind-enforcer";
 
+    /** 配置键：自动启用客户端 DPoP 设置 */
     public static final String AUTO_CONFIGURE = "auto-configure";
 
+    /** 配置键：强制授权码与 DPoP 公钥指纹绑定 */
     public static final String ENFORCE_AUTHORIZATION_CODE_BINDING_TO_DPOP = "enforce-authorization-code-binding-to-dpop";
 
+    /** 配置键：公开客户端仅绑定 refresh token */
     public static final String ALLOW_ONLY_REFRESH_BINDING = "allow-only-refresh-token-binding";
 
     private static final ProviderConfigProperty AUTO_CONFIGURE_PROPERTY = new ProviderConfigProperty(
@@ -68,6 +76,7 @@ public class DPoPBindEnforcerExecutorFactory  implements ClientPolicyExecutorPro
         return PROVIDER_ID;
     }
 
+    /** @return 执行器说明（英文原文保留） */
     @Override
     public String getHelpText() {
         return "It enforces a client to enable DPoP bind token setting.";

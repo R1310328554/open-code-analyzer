@@ -48,11 +48,18 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.OAuth2Constants.DPOP_HTTP_HEADER;
 
+/**
+ * DPoP 令牌绑定强制执行器。
+ * <p>在客户端 CRUD、授权、令牌、刷新、撤销及 UserInfo 等事件中强制启用并校验 DPoP 证明与令牌绑定。</p>
+ */
 public class DPoPBindEnforcerExecutor implements ClientPolicyExecutorProvider<DPoPBindEnforcerExecutor.Configuration> {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(DPoPBindEnforcerExecutor.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 执行器运行时配置 */
     private Configuration configuration;
 
     public DPoPBindEnforcerExecutor(KeycloakSession session) {
@@ -69,13 +76,17 @@ public class DPoPBindEnforcerExecutor implements ClientPolicyExecutorProvider<DP
         return Configuration.class;
     }
 
+    /** DPoP 绑定执行器配置项 */
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
+        /** 是否在客户端创建/更新时自动启用 useDPoP */
         @JsonProperty("auto-configure")
         protected Boolean autoConfigure;
 
+        /** 是否强制授权码请求携带 dpop_jkt 参数 */
         @JsonProperty("enforce-authorization-code-binding-to-dpop")
         protected Boolean enforceAuthorizationCodeBindingToDpop;
 
+        /** 公开客户端是否仅对 refresh token 强制 DPoP 绑定 */
         @JsonProperty("allow-only-refresh-token-binding")
         protected Boolean allowOnlyRefreshTokenBinding;
 
@@ -144,8 +155,7 @@ public class DPoPBindEnforcerExecutor implements ClientPolicyExecutorProvider<DP
                 checkTokenRevoke((TokenRevokeContext) context, request);
             }
             case USERINFO_REQUEST, BACKCHANNEL_TOKEN_REQUEST -> {
-                // Codes for processing these requests verifies DPoP.
-                // If this verification is done twice, DPoPReplayCheck fails. Therefore, the executor only checks existence of DPoP Proof
+                // 这些请求的后续处理已校验 DPoP；重复校验会导致重放检查失败，此处仅检查 DPoP 证明是否存在
                 if (request.getHttpHeaders().getHeaderString(OAuth2Constants.DPOP_HTTP_HEADER) == null) {
                     throw new ClientPolicyException(OAuthErrorException.INVALID_DPOP_PROOF, "DPoP proof is missing");
                 }
@@ -168,13 +178,13 @@ public class DPoPBindEnforcerExecutor implements ClientPolicyExecutorProvider<DP
 
     private void checkAuthorizationRequest(AuthorizationRequestContext authzRequestContext) throws ClientPolicyException {
         if (configuration.getEnforceAuthorizationCodeBindingToDpop() == Boolean.TRUE && authzRequestContext.getAuthorizationEndpointRequest().getDpopJkt() == null) {
-            // Checking only the presence of the parameter here. As long as parameter is present, it is automatically saved to authenticationSession and checked later in token request
+            // 此处仅检查 dpop_jkt 是否存在；存在时会在认证会话中保存并在令牌请求阶段校验
             throw new ClientPolicyException(OAuthErrorException.INVALID_REQUEST, "Missing parameter: dpop_jkt");
         }
     }
 
     private void checkPreTokenRequest(ClientModel client, HttpRequest request) throws ClientPolicyException {
-        // Require reliable client reference (depends on grant type / request shape)
+        // 令牌请求前要求客户端已启用 DPoP 且请求携带 DPoP 证明头
         if (client != null) {
             boolean isUseDPoP = OIDCAdvancedConfigWrapper.fromClientModel(client).isUseDPoP();
             String dpopHeader = request.getHttpHeaders().getHeaderString(DPOP_HTTP_HEADER);
@@ -193,7 +203,7 @@ public class DPoPBindEnforcerExecutor implements ClientPolicyExecutorProvider<DP
 
         AccessToken token = session.tokens().decode(encodedRevokeToken, AccessToken.class);
         if (token == null) {
-            // this executor does not treat this error case.
+            // 令牌解码失败时本执行器不处理，交由其他逻辑
             return;
         }
 

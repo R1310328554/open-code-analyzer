@@ -24,9 +24,13 @@ import java.util.Set;
 import org.keycloak.crypto.Algorithm;
 
 /**
+ * FAPI 相关常量定义。
+ * <p>集中维护 FAPI 安全配置文件允许的 JWS 签名算法集合。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public final class FapiConstant {
+    /** FAPI 允许的 JWS 算法（PS* 与 ES* 系列） */
     public static final Set<String> ALLOWED_ALGORITHMS = new LinkedHashSet<>(Arrays.asList(
             Algorithm.PS256,
             Algorithm.PS384,

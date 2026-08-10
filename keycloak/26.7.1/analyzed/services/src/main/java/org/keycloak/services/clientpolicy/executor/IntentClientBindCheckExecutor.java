@@ -41,10 +41,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
 /**
+ * Intent 与客户端绑定校验执行器。
+ * <p>在授权请求中从 claims 提取 intent 标识，调用外部端点验证其与当前 client_id 已绑定。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class IntentClientBindCheckExecutor implements ClientPolicyExecutorProvider<IntentClientBindCheckExecutor.Configuration> {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(IntentClientBindCheckExecutor.class);
 
     private final KeycloakSession session;
@@ -71,9 +75,11 @@ public class IntentClientBindCheckExecutor implements ClientPolicyExecutorProvid
 
     public static class Configuration extends ClientPolicyExecutorConfigurationRepresentation {
 
+        /** 外部 Intent 绑定校验 HTTP 端点 URL */
         @JsonProperty("intent-client-bind-check-endpoint")
         protected String intentClientBindCheckEndpoint;
 
+        /** claims 中 intent 声明的名称 */
         @JsonProperty("intent-name")
         protected String intentName;
 
@@ -180,6 +186,7 @@ public class IntentClientBindCheckExecutor implements ClientPolicyExecutorProvid
         return true;
     }
 
+    /** 发往绑定校验端点的 JSON 请求体 */
     public static class IntentBindCheckRequest implements Serializable {
 
         @JsonProperty("intent_id")
@@ -205,8 +212,10 @@ public class IntentClientBindCheckExecutor implements ClientPolicyExecutorProvid
         }
     }
 
+    /** 绑定校验端点返回的 JSON 响应 */
     public static class IntentBindCheckResponse implements Serializable {
 
+        /** 是否已绑定 intent 与 client_id */
         @JsonProperty("is_bound")
         private Boolean isBound;
 
