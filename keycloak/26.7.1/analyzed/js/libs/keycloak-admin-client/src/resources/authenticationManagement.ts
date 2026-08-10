@@ -10,19 +10,18 @@ import type RequiredActionProviderSimpleRepresentation from "../defs/requiredAct
 import type RequiredActionConfigInfoRepresentation from "../defs/requiredActionConfigInfoRepresentation.js";
 import type RequiredActionConfigRepresentation from "../defs/requiredActionConfigRepresentation.js";
 
+/**
+ * 认证管理 Admin 资源：Required Action、认证流（Flow）、执行器（Execution）及配置 CRUD。
+ * https://www.keycloak.org/docs-api/8.0/rest-api/index.html#_authentication_management_resource
+ */
 export class AuthenticationManagement extends Resource<{ realm?: string }> {
-  /**
-   * Authentication Management
-   * https://www.keycloak.org/docs-api/8.0/rest-api/index.html#_authentication_management_resource
-   */
-
-  //   Register a new required action
+  /** 注册新的 Required Action 提供者实例 */
   public registerRequiredAction = this.makeRequest<Record<string, any>>({
     method: "POST",
     path: "/register-required-action",
   });
 
-  // Get required actions. Returns a list of required actions.
+  /** 获取 Realm 已注册的 Required Action 列表 */
   public getRequiredActions = this.makeRequest<
     void,
     RequiredActionProviderRepresentation[]
@@ -31,7 +30,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     path: "/required-actions",
   });
 
-  // Get required action for alias
+  /** 按别名获取单个 Required Action 配置 */
   public getRequiredActionForAlias = this.makeRequest<{
     alias: string;
   }>({
@@ -41,6 +40,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     catchNotFound: true,
   });
 
+  /** 列出可用的客户端认证器（Client Authenticator）提供者 */
   public getClientAuthenticatorProviders = this.makeRequest<
     void,
     AuthenticationProviderRepresentation[]
@@ -49,6 +49,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     path: "/client-authenticator-providers",
   });
 
+  /** 列出可用的认证器（Authenticator）提供者 */
   public getAuthenticatorProviders = this.makeRequest<
     void,
     AuthenticationProviderRepresentation[]
@@ -57,6 +58,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     path: "/authenticator-providers",
   });
 
+  /** 列出可用的表单动作（Form Action）提供者 */
   public getFormActionProviders = this.makeRequest<
     void,
     AuthenticationProviderRepresentation[]
@@ -65,7 +67,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     path: "/form-action-providers",
   });
 
-  // Update required action
+  /** 更新指定别名的 Required Action 配置 */
   public updateRequiredAction = this.makeUpdateRequest<
     { alias: string },
     RequiredActionProviderRepresentation,
@@ -76,14 +78,14 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["alias"],
   });
 
-  // Delete required action
+  /** 删除指定别名的 Required Action */
   public deleteRequiredAction = this.makeRequest<{ alias: string }, void>({
     method: "DELETE",
     path: "/required-actions/{alias}",
     urlParamKeys: ["alias"],
   });
 
-  // Lower required action’s priority
+  /** 降低 Required Action 在 UI/流程中的显示优先级 */
   public lowerRequiredActionPriority = this.makeRequest<{
     alias: string;
   }>({
@@ -92,7 +94,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["alias"],
   });
 
-  // Raise required action’s priority
+  /** 提高 Required Action 的显示优先级 */
   public raiseRequiredActionPriority = this.makeRequest<{
     alias: string;
   }>({
@@ -101,7 +103,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["alias"],
   });
 
-  // Get unregistered required actions Returns a list of unregistered required actions.
+  /** 获取尚未注册到 Realm 的 Required Action 提供者列表 */
   public getUnregisteredRequiredActions = this.makeRequest<
     void,
     RequiredActionProviderSimpleRepresentation[]
@@ -110,11 +112,13 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     path: "/unregistered-required-actions",
   });
 
+  /** 列出 Realm 内所有认证流 */
   public getFlows = this.makeRequest<{}, AuthenticationFlowRepresentation[]>({
     method: "GET",
     path: "/flows",
   });
 
+  /** 按 ID 获取单个认证流 */
   public getFlow = this.makeRequest<
     { flowId: string },
     AuthenticationFlowRepresentation
@@ -124,6 +128,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["flowId"],
   });
 
+  /** 列出可用的表单（Form）提供者 */
   public getFormProviders = this.makeRequest<
     void,
     AuthenticationProviderRepresentation[]
@@ -132,6 +137,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     path: "/form-providers",
   });
 
+  /** 创建新认证流（Location 头返回新流 ID） */
   public createFlow = this.makeRequest<
     AuthenticationFlowRepresentation,
     AuthenticationFlowRepresentation
@@ -141,18 +147,21 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     returnResourceIdInLocationHeader: { field: "id" },
   });
 
+  /** 复制已有认证流并重命名 */
   public copyFlow = this.makeRequest<{ flow: string; newName: string }>({
     method: "POST",
     path: "/flows/{flow}/copy",
     urlParamKeys: ["flow"],
   });
 
+  /** 删除认证流 */
   public deleteFlow = this.makeRequest<{ flowId: string }>({
     method: "DELETE",
     path: "/flows/{flowId}",
     urlParamKeys: ["flowId"],
   });
 
+  /** 更新认证流定义 */
   public updateFlow = this.makeUpdateRequest<
     { flowId: string },
     AuthenticationFlowRepresentation
@@ -162,6 +171,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["flowId"],
   });
 
+  /** 获取认证流内的执行器（Execution）列表及状态 */
   public getExecutions = this.makeRequest<
     { flow: string },
     AuthenticationExecutionInfoRepresentation[]
@@ -171,6 +181,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["flow"],
   });
 
+  /** 向认证流添加执行器配置 */
   public addExecution = this.makeUpdateRequest<
     { flow: string },
     AuthenticationExecutionInfoRepresentation
@@ -180,6 +191,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["flow"],
   });
 
+  /** 向流中添加具体 Authenticator 执行步骤 */
   public addExecutionToFlow = this.makeRequest<
     { flow: string; provider: string },
     AuthenticationExecutionInfoRepresentation
@@ -190,6 +202,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     returnResourceIdInLocationHeader: { field: "id" },
   });
 
+  /** 向流中嵌套子认证流（sub-flow） */
   public addFlowToFlow = this.makeRequest<
     {
       flow: string;
@@ -206,6 +219,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     returnResourceIdInLocationHeader: { field: "id" },
   });
 
+  /** 更新流内执行器配置（启用/必需/条件等） */
   public updateExecution = this.makeUpdateRequest<
     { flow: string },
     AuthenticationExecutionInfoRepresentation
@@ -215,25 +229,28 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["flow"],
   });
 
+  /** 删除单个执行器 */
   public delExecution = this.makeRequest<{ id: string }>({
     method: "DELETE",
     path: "/executions/{id}",
     urlParamKeys: ["id"],
   });
 
+  /** 降低执行器在流内的优先级 */
   public lowerPriorityExecution = this.makeRequest<{ id: string }>({
     method: "POST",
     path: "/executions/{id}/lower-priority",
     urlParamKeys: ["id"],
   });
 
+  /** 提高执行器在流内的优先级 */
   public raisePriorityExecution = this.makeRequest<{ id: string }>({
     method: "POST",
     path: "/executions/{id}/raise-priority",
     urlParamKeys: ["id"],
   });
 
-  // Get required actions provider's configuration description
+  /** 获取 Required Action 提供者的可配置项元数据描述 */
   public getRequiredActionConfigDescription = this.makeRequest<
     { alias: string },
     RequiredActionConfigInfoRepresentation
@@ -243,7 +260,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["alias"],
   });
 
-  // Get the configuration of the RequiredAction provider in the current Realm.
+  /** 获取当前 Realm 中某 Required Action 的运行时配置 */
   public getRequiredActionConfig = this.makeRequest<
     { alias: string },
     RequiredActionConfigRepresentation
@@ -253,14 +270,14 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["alias"],
   });
 
-  // Remove the configuration from the RequiredAction provider in the current Realm.
+  /** 移除 Required Action 的 Realm 级配置 */
   public removeRequiredActionConfig = this.makeRequest<{ alias: string }>({
     method: "DELETE",
     path: "/required-actions/{alias}/config",
     urlParamKeys: ["alias"],
   });
 
-  // Update the configuration from the RequiredAction provider in the current Realm.
+  /** 更新 Required Action 的 Realm 级配置 */
   public updateRequiredActionConfig = this.makeUpdateRequest<
     { alias: string },
     RequiredActionConfigRepresentation,
@@ -271,6 +288,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["alias"],
   });
 
+  /** 获取 Authenticator 提供者的配置项元数据（按 providerId） */
   public getConfigDescription = this.makeRequest<
     { providerId: string },
     AuthenticatorConfigInfoRepresentation
@@ -280,6 +298,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["providerId"],
   });
 
+  /** 为执行器创建 Authenticator 配置实例 */
   public createConfig = this.makeRequest<
     AuthenticatorConfigRepresentation,
     AuthenticatorConfigRepresentation
@@ -290,6 +309,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     returnResourceIdInLocationHeader: { field: "id" },
   });
 
+  /** 更新 Authenticator 配置 */
   public updateConfig = this.makeRequest<
     AuthenticatorConfigRepresentation,
     void
@@ -299,6 +319,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 按 ID 获取 Authenticator 配置 */
   public getConfig = this.makeRequest<
     { id: string },
     AuthenticatorConfigRepresentation
@@ -308,6 +329,7 @@ export class AuthenticationManagement extends Resource<{ realm?: string }> {
     urlParamKeys: ["id"],
   });
 
+  /** 删除 Authenticator 配置 */
   public delConfig = this.makeRequest<{ id: string }>({
     method: "DELETE",
     path: "/config/{id}",
