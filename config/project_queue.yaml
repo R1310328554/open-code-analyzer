@@ -121,7 +121,7 @@ projects:
   url: https://github.com/ollama/ollama
   languages:
   - go
-  status: in_progress
+  status: complete
   version: "0.32.7"
 - id: kubernetes
   url: https://github.com/kubernetes/kubernetes
@@ -135,6 +135,12 @@ projects:
   note: 超大仓，先 src/ 标准库子集
 - id: ragflow
   url: https://github.com/infiniflow/ragflow
+  languages:
+  - python
+  - go
+  - typescript
+  status: in_progress
+  version: "0.26.4"
 - id: prometheus
   url: https://github.com/prometheus/prometheus
   languages:

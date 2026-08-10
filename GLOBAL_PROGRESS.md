@@ -23,6 +23,7 @@
 | nacos | 3.2.3 | 2537 | 0 ✅ |
 | keycloak | 26.7.1 | 5998 | 0 ✅ |
 | harness | 2.28.2 | 388 | 0 ✅ |
+| ollama | 0.32.7 | 463 | 0 ✅ |
 
-已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas / netty / nacos / keycloak / harness。  
-进行中：ollama 0.32.7（Go，pending=463）。
+已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas / netty / nacos / keycloak / harness / ollama。  
+进行中：ragflow 0.26.4（Python/Go/TS，pending=1764）。
