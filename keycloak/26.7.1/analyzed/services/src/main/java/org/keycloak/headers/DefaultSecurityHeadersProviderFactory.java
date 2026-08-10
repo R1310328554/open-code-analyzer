@@ -18,14 +18,19 @@ package org.keycloak.headers;
 
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 默认 {@link SecurityHeadersProvider} 工厂，ID 为 {@code default}。
+ */
 public class DefaultSecurityHeadersProviderFactory implements SecurityHeadersProviderFactory {
 
     @Override
+    /** 为会话创建 {@link DefaultSecurityHeadersProvider} 实例。 */
     public SecurityHeadersProvider create(KeycloakSession session) {
         return new DefaultSecurityHeadersProvider(session);
     }
 
     @Override
+    /** @return 工厂标识 {@code default} */
     public String getId() {
         return "default";
     }

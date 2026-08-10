@@ -29,14 +29,22 @@ import org.keycloak.crypto.KeyUse;
 import org.keycloak.crypto.KeyWrapper;
 import org.keycloak.models.RealmModel;
 
+/**
+ * 椭圆曲线（EC）密钥提供者抽象基类：加载组件配置中的 EC 密钥对并封装为 {@link KeyWrapper}。
+ * <p>子类实现 {@link #loadKey} 以支持生成或导入 EC 密钥；密钥类型为 {@link KeyType#EC}，可附带自签名 X509 证书。</p>
+ */
 public abstract class AbstractEcKeyProvider implements KeyProvider {
 
+    /** 密钥启用/活跃状态。 */
     private final KeyStatus status;
 
+    /** 密钥组件配置模型。 */
     private final ComponentModel model;
 
+    /** 已加载的 EC 密钥包装对象。 */
     private final KeyWrapper key;
 
+    /** 从组件配置加载 EC 密钥；结果缓存在 model note 中避免重复加载。 */
     public AbstractEcKeyProvider(RealmModel realm, ComponentModel model) {
         this.model = model;
         this.status = KeyStatus.from(model.get(Attributes.ACTIVE_KEY, true), model.get(Attributes.ENABLED_KEY, true));
@@ -49,13 +57,16 @@ public abstract class AbstractEcKeyProvider implements KeyProvider {
         }
     }
 
+    /** 子类实现：从配置或密钥库加载 EC 密钥对。 */
     protected abstract KeyWrapper loadKey(RealmModel realm, ComponentModel model);
 
     @Override
+    /** @return 包含单个 EC 密钥的流 */
     public Stream<KeyWrapper> getKeysStream() {
         return Stream.of(key);
     }
 
+    /** 由 EC 密钥对构建 {@link KeyWrapper}，设置 kid、算法、用途与可选证书。 */
     protected KeyWrapper createKeyWrapper(KeyPair keyPair, String algorithm, KeyUse keyUse,
                                           X509Certificate selfSignedCertificate) {
         KeyWrapper key = new KeyWrapper();

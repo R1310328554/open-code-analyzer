@@ -33,6 +33,8 @@ import org.keycloak.models.utils.HmacOTP;
 import org.keycloak.utils.TotpUtils;
 
 /**
+ * TOTP 配置/更新 FreeMarker Bean，用于 {@link UserModel.RequiredAction#CONFIGURE_TOTP} 必需操作页。
+ * <p>提供密钥、QR 码、手动输入链接、领域 OTP 策略及已注册 OTP 凭证列表。</p>
  * Used for UpdateTotp required action
  *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
@@ -50,10 +52,12 @@ public class TotpBean {
     private final List<String> supportedApplications;
     private final UserModel user;
 
+    /** 自动生成新 TOTP 密钥。 */
     public TotpBean(KeycloakSession session, RealmModel realm, UserModel user, UriBuilder uriBuilder) {
         this(session, realm, user, uriBuilder, null);
     }
 
+    /** @param secret 指定密钥；null 时自动生成 */
     public TotpBean(KeycloakSession session, RealmModel realm, UserModel user, UriBuilder uriBuilder, String secret) {
         this.session = session;
         this.realm = realm;
@@ -81,43 +85,53 @@ public class TotpBean {
                 .collect(Collectors.toList());
     }
 
+    /** @return 用户是否已配置 OTP 凭证 */
     public boolean isEnabled() {
         return enabled;
     }
 
+    /** @return 原始 TOTP 密钥（Base32 解码前） */
     public String getTotpSecret() {
         return totpSecret;
     }
 
+    /** @return Base32 编码后的密钥，供手动输入 */
     public String getTotpSecretEncoded() {
         return totpSecretEncoded;
     }
 
+    /** @return otpauth URI，供 QR 码生成 */
     public String getTotpSecretQrCode() {
         return totpSecretQrCode;
     }
 
+    /** @return 切换到手动输入模式的 action URL */
     public String getManualUrl() {
         return uriBuilder.replaceQueryParam("session_code").replaceQueryParam("mode", "manual")
             .replaceQueryParam("execution", UserModel.RequiredAction.CONFIGURE_TOTP.name()).build().toString();
     }
 
+    /** @return 切换到 QR 码模式的 action URL */
     public String getQrUrl() {
         return uriBuilder.replaceQueryParam("session_code").replaceQueryParam("mode", "qr").build().toString();
     }
 
+    /** @return 领域 OTP 策略（算法、位数、周期等） */
     public OTPPolicy getPolicy() {
         return realm.getOTPPolicy();
     }
 
+    /** @return 与当前 OTP 策略兼容的认证器应用名称列表 */
     public List<String> getSupportedApplications() {
         return supportedApplications;
     }
 
+    /** @return 用户已注册的 OTP 凭证列表（已启用时非空） */
     public List<CredentialModel> getOtpCredentials() {
         return otpCredentials;
     }
 
+    /** @return 当前用户名 */
     public String getUsername() {
         return user.getUsername();
     }

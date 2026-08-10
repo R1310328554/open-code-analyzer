@@ -37,15 +37,23 @@ import static jakarta.ws.rs.HttpMethod.OPTIONS;
 
 import static org.keycloak.models.BrowserSecurityHeaders.CONTENT_SECURITY_POLICY;
 
+/**
+ * 默认 {@link SecurityHeadersProvider}：按请求/响应 MediaType 写入领域配置的浏览器安全头。
+ * <p>REST（JSON/XML）与 HTML 页面采用不同头集合；HTML 响应支持 CSP frame-ancestors 动态调整。</p>
+ */
 public class DefaultSecurityHeadersProvider implements SecurityHeadersProvider {
 
     private static final Logger LOGGER = Logger.getLogger(DefaultSecurityHeadersProvider.class);
 
+    /** 领域级浏览器安全头键值（来自 {@link RealmModel#getBrowserSecurityHeaders()}）。 */
     private final Map<String, String> headerValues;
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** 本次响应的可选头配置；首次调用 {@link #options()} 时懒创建。 */
     private DefaultSecurityHeadersOptions options;
 
+    /** 从当前领域加载浏览器安全头配置。 */
     public DefaultSecurityHeadersProvider(KeycloakSession session) {
         this.session = session;
 
@@ -66,6 +74,7 @@ public class DefaultSecurityHeadersProvider implements SecurityHeadersProvider {
     }
 
     @Override
+    /** 根据 MediaType 与 options 向响应写入安全头。 */
     public void addHeaders(ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
         if (options != null && options.isSkipHeaders()) {
             return;
@@ -89,6 +98,7 @@ public class DefaultSecurityHeadersProvider implements SecurityHeadersProvider {
         }
     }
 
+    /** 写入通用安全头（HSTS、X-Content-Type-Options 等，不含 X-Frame-Options/CSP）。 */
     private void addGenericHeaders(MultivaluedMap<String, Object> headers) {
         addHeader(BrowserSecurityHeaders.STRICT_TRANSPORT_SECURITY, headers);
         addHeader(BrowserSecurityHeaders.X_CONTENT_TYPE_OPTIONS, headers);
@@ -96,6 +106,7 @@ public class DefaultSecurityHeadersProvider implements SecurityHeadersProvider {
         addHeader(BrowserSecurityHeaders.X_ROBOTS_TAG, headers);
     }
 
+    /** 写入 REST API 响应安全头（含 X-Frame-Options，不含 CSP）。 */
     private void addRestHeaders(MultivaluedMap<String, Object> headers) {
         addHeader(BrowserSecurityHeaders.STRICT_TRANSPORT_SECURITY, headers);
         addHeader(BrowserSecurityHeaders.X_FRAME_OPTIONS, headers);
@@ -104,12 +115,13 @@ public class DefaultSecurityHeadersProvider implements SecurityHeadersProvider {
         addHeader(BrowserSecurityHeaders.X_ROBOTS_TAG, headers);
     }
 
+    /** 写入 HTML 页面全部安全头，并按 options 调整 CSP/X-Frame-Options。 */
     private void addHtmlHeaders(MultivaluedMap<String, Object> headers) {
         for (BrowserSecurityHeaders header : BrowserSecurityHeaders.values()) {
             addHeader(header, headers);
         }
 
-        // TODO This will be refactored as part of introducing a more strict CSP header
+        // TODO：引入更严格 CSP 后将重构此逻辑
         if (options != null) {
             if (options.isAllowAnyFrameAncestor()) {
                 headers.remove(BrowserSecurityHeaders.X_FRAME_OPTIONS.getHeaderName());
@@ -119,7 +131,7 @@ public class DefaultSecurityHeadersProvider implements SecurityHeadersProvider {
             if (cspVal != null) {
                 ContentSecurityPolicyBuilder csp = ContentSecurityPolicyBuilder.create(cspVal.toString());
                 if (options.isAllowAnyFrameAncestor() && csp.isDefaultFrameAncestors()) {
-                    // only remove frame ancestors if defined to default 'self'
+                    // 仅当 frame-ancestors 为默认 'self' 时才移除
                     csp.frameAncestors(null);
                 }
 
@@ -133,6 +145,7 @@ public class DefaultSecurityHeadersProvider implements SecurityHeadersProvider {
         }
     }
 
+    /** 写入单个安全头，优先使用领域配置值。 */
     private void addHeader(BrowserSecurityHeaders header, MultivaluedMap<String, Object> headers) {
         String value = headerValues.getOrDefault(header.getKey(), header.getDefaultValue());
         if (value != null && !value.isEmpty()) {
@@ -141,7 +154,7 @@ public class DefaultSecurityHeadersProvider implements SecurityHeadersProvider {
     }
 
     /**
-     * Prevent responses without content-type unless explicitly safe to do so
+     * 判断无 Content-Type 的响应是否安全可接受。
      */
     private boolean isEmptyMediaTypeAllowed(ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
         if (!responseContext.hasEntity()) {
@@ -168,11 +181,13 @@ public class DefaultSecurityHeadersProvider implements SecurityHeadersProvider {
         return false;
     }
 
+    /** 判断是否为 REST（JSON/XML）响应。 */
     private boolean isRest(MediaType requestType, MediaType responseType) {
         MediaType mediaType = responseType != null ? responseType : requestType;
         return matches(mediaType, MediaType.APPLICATION_JSON_TYPE) || matches(mediaType, MediaType.APPLICATION_XML_TYPE);
     }
 
+    /** 判断是否为 HTML 或表单 URL 编码响应。 */
     private boolean isHtml(MediaType requestType, MediaType responseType) {
         if (matches(responseType, MediaType.TEXT_HTML_TYPE)) {
             return true;
@@ -182,6 +197,7 @@ public class DefaultSecurityHeadersProvider implements SecurityHeadersProvider {
         return false;
     }
 
+    /** 比较两个 MediaType 的 type/subtype（忽略大小写）。 */
     private boolean matches(MediaType a, MediaType b) {
         if (a == null) {
             return b == null;

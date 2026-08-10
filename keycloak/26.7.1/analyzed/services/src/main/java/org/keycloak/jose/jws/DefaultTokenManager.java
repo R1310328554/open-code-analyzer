@@ -66,17 +66,24 @@ import org.keycloak.util.TokenUtil;
 
 import org.jboss.logging.Logger;
 
+/**
+ * {@link TokenManager} 默认实现：JWT/JWE 编码解码、签名算法解析与 Logout Token 构建。
+ * <p>签名/加密算法按 Token 类别、客户端属性与领域默认值逐级回退。</p>
+ */
 public class DefaultTokenManager implements TokenManager {
 
     private static final Logger logger = Logger.getLogger(DefaultTokenManager.class);
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public DefaultTokenManager(KeycloakSession session) {
         this.session = session;
     }
 
     @Override
+    /** 按 Token 类别选择签名算法并编码为 JWS 字符串。 */
     public String encode(Token token) {
         String signatureAlgorithm = signatureAlgorithm(token.getCategory());
 
@@ -89,6 +96,7 @@ public class DefaultTokenManager implements TokenManager {
     }
 
     @Override
+    /** 验证 JWS 签名并反序列化为指定 Token 类型；失败返回 null。 */
     public <T extends Token> T decode(String token, Class<T> clazz) {
         if (token == null) {
             return null;
@@ -105,7 +113,7 @@ public class DefaultTokenManager implements TokenManager {
             }
 
             String kid = jws.getHeader().getKeyId();
-            // Backwards compatibility. Old offline tokens and cookies didn't have KID in the header
+            // 向后兼容：旧离线令牌/Cookie 头中无 KID，回退到领域活跃签名密钥
             if (kid == null) {
                 logger.debugf("KID is null in token. Using the realm active key to verify token signature.");
                 kid = session.keys().getActiveKey(session.getContext().getRealm(), KeyUse.SIG, signatureAlgorithm).getKid();
@@ -120,6 +128,7 @@ public class DefaultTokenManager implements TokenManager {
     }
 
     @Override
+    /** 解码客户端 JWT（支持 JWE 嵌套 JWS）；{@code allowNoneAlgorithm} 为 true 时允许 alg=none。 */
     public <T> T decodeClientJWT(String jwt, ClientModel client, BiConsumer<JOSE, ClientModel> jwtValidator, Class<T> clazz, boolean allowNoneAlgorithm) {
         if (jwt == null) {
             return null;
@@ -175,6 +184,7 @@ public class DefaultTokenManager implements TokenManager {
         return verifyJWS(client, clazz, (JWSInput) joseToken, allowNoneAlgorithm);
     }
 
+    /** 使用客户端签名验证器校验 JWS 并反序列化。 */
     private <T> T verifyJWS(ClientModel client, Class<T> clazz, JWSInput jws, boolean allowNoneAlgorithm) {
         try {
             String signatureAlgorithm = jws.getHeader().getAlgorithm().name();
@@ -196,6 +206,7 @@ public class DefaultTokenManager implements TokenManager {
     }
 
     @Override
+    /** 按 {@link TokenCategory} 解析签名算法名称。 */
     public String signatureAlgorithm(TokenCategory category) {
         switch (category) {
             case INTERNAL:
@@ -216,6 +227,7 @@ public class DefaultTokenManager implements TokenManager {
         }
     }
 
+    /** 客户端属性 → 领域默认 → 全局默认 三级回退解析签名算法。 */
     private String getSignatureAlgorithm(String clientAttribute) {
         RealmModel realm = session.getContext().getRealm();
         ClientModel client = session.getContext().getClient();
@@ -234,6 +246,7 @@ public class DefaultTokenManager implements TokenManager {
     }
 
     @Override
+    /** 先 JWS 签名，再按类别配置 JWE 加密（若需要）。 */
     public String encodeAndEncrypt(Token token) {
         String encodedToken = encode(token);
         if (isTokenEncryptRequired(token.getCategory())) {
@@ -242,6 +255,7 @@ public class DefaultTokenManager implements TokenManager {
         return encodedToken;
     }
 
+    /** 确定 JWS {@code typ} 头值（如 JWT、logout+jwt、at+jwt）。 */
     private String type(TokenCategory category) {
         switch (category) {
             case ACCESS:
@@ -256,12 +270,14 @@ public class DefaultTokenManager implements TokenManager {
         }
     }
 
+    /** 判断该 Token 类别是否同时配置了 CEK 管理与内容加密算法。 */
     private boolean isTokenEncryptRequired(TokenCategory category) {
         if (cekManagementAlgorithm(category) == null) return false;
         if (encryptAlgorithm(category) == null) return false;
         return true;
     }
 
+    /** 使用客户端加密公钥对已签名 JWT 进行 JWE 封装。 */
     private String getEncryptedToken(TokenCategory category, String encodedToken) {
         String encryptedToken = null;
 
@@ -291,6 +307,7 @@ public class DefaultTokenManager implements TokenManager {
     }
 
     @Override
+    /** 按 Token 类别返回 JWE 密钥管理算法（alg）。 */
     public String cekManagementAlgorithm(TokenCategory category) {
         if (category == null) return null;
         switch (category) {
@@ -308,6 +325,7 @@ public class DefaultTokenManager implements TokenManager {
         }
     }
 
+    /** 从客户端属性读取 CEK 管理算法。 */
     private String getCekManagementAlgorithm(String clientAttribute) {
         ClientModel client = session.getContext().getClient();
         String algorithm = client != null && clientAttribute != null ? client.getAttribute(clientAttribute) : null;
@@ -318,6 +336,7 @@ public class DefaultTokenManager implements TokenManager {
     }
 
     @Override
+    /** 按 Token 类别返回 JWE 内容加密算法（enc）。 */
     public String encryptAlgorithm(TokenCategory category) {
         if (category == null) return null;
         switch (category) {
@@ -336,10 +355,12 @@ public class DefaultTokenManager implements TokenManager {
         }
     }
 
+    /** 从客户端属性读取内容加密算法。 */
     private String getEncryptAlgorithm(String clientAttribute) {
         return getEncryptAlgorithm(clientAttribute, null);
     }
 
+    /** 从客户端属性读取 enc 算法，无配置时使用 defaultValue。 */
     private String getEncryptAlgorithm(String clientAttribute, String defaultValue) {
         ClientModel client = session.getContext().getClient();
         String algorithm = client != null && clientAttribute != null ? client.getAttribute(clientAttribute) : null;
@@ -349,13 +370,14 @@ public class DefaultTokenManager implements TokenManager {
         return defaultValue;
     }
 
+    /** 构建 Back-Channel Logout Token，含 sid、撤销离线令牌事件及协议映射器变换。 */
     public LogoutToken initLogoutToken(ClientModel client, UserModel user,
                                        AuthenticatedClientSessionModel clientSession) {
         LogoutToken token = new LogoutToken();
         token.id(SecretGenerator.getInstance().generateSecureID());
         token.issuedNow();
-        // From the spec "OpenID Connect Back-Channel Logout 1.0 incorporating errata set 1" at https://openid.net/specs/openid-connect-backchannel-1_0.html
-        // "OPs are encouraged to use short expiration times in Logout Tokens, preferably at most two minutes in the future [...]"
+        // 规范 OpenID Connect Back-Channel Logout 1.0 建议 Logout Token 过期时间不超过两分钟
+        // "OP 应使用较短过期时间， preferably 最多两分钟后过期"
         token.exp(Time.currentTime() + Duration.ofMinutes(2).getSeconds());
         token.issuer(clientSession.getNote(OIDCLoginProtocol.ISSUER));
         token.putEvents(TokenUtil.TOKEN_BACKCHANNEL_LOGOUT_EVENT, JsonSerialization.createObjectNode());
@@ -370,7 +392,7 @@ public class DefaultTokenManager implements TokenManager {
         }
         token.setSubject(user.getId());
 
-        // adjust the subject in the logout token in case we have an PairwiseSubMapper
+        // 若配置了 PairwiseSubMapper，通过 LogoutTokenMapper 调整 sub 声明
         ClientSessionContext clientSessionCtx = DefaultClientSessionContext.fromClientSessionScopeParameter(clientSession, session);
         ProtocolMapperUtils
             .getSortedProtocolMappers(session, clientSessionCtx)
@@ -383,6 +405,7 @@ public class DefaultTokenManager implements TokenManager {
         return token;
     }
 
+    /** 客户端要求 request object 签名但 JWE 解密内容非 JWS 时抛出异常。 */
     private void rejectUnsignedContentIfSignatureRequired(ClientModel client) {
         String requestedSignatureAlgorithm = OIDCAdvancedConfigWrapper.fromClientModel(client).getRequestObjectSignatureAlg();
         if (requestedSignatureAlgorithm != null) {

@@ -35,13 +35,18 @@ import org.keycloak.utils.StringUtil;
 
 import com.webauthn4j.data.AuthenticatorTransport;
 
+/**
+ * WebAuthn 认证器列表 FreeMarker Bean：展示用户已注册的 WebAuthn 凭证及元数据图标。
+ * <p>通过 {@link WebAuthnMetadataService} 解析 AAGUID 获取厂商名称与主题图标。</p>
+ */
 public class WebAuthnAuthenticatorsBean {
 
     private final List<WebAuthnAuthenticatorBean> authenticators;
 
+    /** @param credentialType WebAuthn 凭证类型 @param metadataService AAGUID 元数据服务 */
     public WebAuthnAuthenticatorsBean(KeycloakSession session, RealmModel realm, UserModel user, String credentialType,
                                       WebAuthnMetadataService metadataService) {
-        // should consider multiple credentials in the future, but only single credential supported now.
+        // 未来可支持多凭证；当前按类型加载全部已注册凭证
         this.authenticators = user.credentialManager().getStoredCredentialsByTypeStream(credentialType)
                 .map(WebAuthnCredentialModel::createFromCredentialModel)
                 .map(webAuthnCredential -> {
@@ -60,12 +65,16 @@ public class WebAuthnAuthenticatorsBean {
                 }).collect(Collectors.toList());
     }
 
+    /** @return 用户 WebAuthn 认证器视图列表 */
     public List<WebAuthnAuthenticatorBean> getAuthenticators() {
         return authenticators;
     }
 
+    /** 单个 WebAuthn 认证器的模板视图。 */
     public static class WebAuthnAuthenticatorBean {
+        /** 多传输方式时的默认图标 CSS 类。 */
         public static final String DEFAULT_ICON = "kcWebAuthnDefaultIcon";
+        /** 未知认证器/传输方式的图标 CSS 类。 */
         public static final String UNKNOWN_AUTH_ICON = "kcWebAuthnUnknownIcon";
 
         private final String credentialId;
@@ -87,34 +96,42 @@ public class WebAuthnAuthenticatorsBean {
             this.iconDark = iconDark;
         }
 
+        /** @return Base64Url 编码的凭证 ID */
         public String getCredentialId() {
             return this.credentialId;
         }
 
+        /** @return 用户自定义标签 */
         public String getLabel() {
             return this.label;
         }
 
+        /** @return 本地化格式的创建时间 */
         public String getCreatedAt() {
             return this.createdAt;
         }
 
+        /** @return 传输方式展示 Bean */
         public TransportsBean getTransports() {
             return transports;
         }
 
+        /** @return 认证器厂商/型号名称（来自 AAGUID 元数据） */
         public String getAuthenticatorProvider() {
             return authenticatorProvider;
         }
 
+        /** @return 浅色主题图标 CSS 类或 URL */
         public String getIconLight() {
             return iconLight;
         }
 
+        /** @return 深色主题图标 CSS 类或 URL */
         public String getIconDark() {
             return iconDark;
         }
 
+        /** WebAuthn 传输方式（USB/NFC/BLE 等）的展示信息。 */
         public static class TransportsBean {
             private final Set<String> displayNameProperties;
             private final String iconClass;
@@ -141,10 +158,10 @@ public class WebAuthnAuthenticatorsBean {
             }
 
             /**
-             * Converts set of available transport media to TransportsBean
+             * 将传输方式集合转换为模板展示 Bean。
              *
-             * @param transports set of available transport media
-             * @return TransportBean
+             * @param transports 可用传输方式集合
+             * @return TransportsBean
              */
             public static TransportsBean convertFromSet(Set<String> transports) {
                 if (CollectionUtil.isEmpty(transports)) {
@@ -184,9 +201,9 @@ public class WebAuthnAuthenticatorsBean {
                 private final String iconClass;
 
                 /**
-                 * @param displayNameProperty Message property - defined in messages_xx.properties
-                 * @param mapperName          used for mapping transport media name
-                 * @param iconClass           icon class for particular transport media - defined in theme.properties
+                 * @param displayNameProperty 消息键，定义于 messages_xx.properties
+                 * @param mapperName WebAuthn 传输名称映射值
+                 * @param iconClass 主题 properties 中定义的图标 CSS 类
                  */
                 Transport(String displayNameProperty, String mapperName, String iconClass) {
                     this.displayNameProperty = displayNameProperty;

@@ -24,10 +24,16 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.provider.ConfigurationValidationHelper;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
+/**
+ * EC 密钥提供者工厂抽象基类：定义通用组件配置项与校验逻辑。
+ * <p>配置包括优先级、启用/活跃状态及是否生成 X509 证书；并提供 NIST 曲线名到 SEC 命名的转换工具方法。</p>
+ */
 public abstract class AbstractEcKeyProviderFactory<T extends KeyProvider> implements KeyProviderFactory<T> {
 
+    /** 默认 EC 曲线（NIST P-256）。 */
     public static final String DEFAULT_EC_ELLIPTIC_CURVE = "P-256";
 
+    /** 构建 EC 密钥组件的标准配置属性列表。 */
     public final static ProviderConfigurationBuilder configurationBuilder() {
         return ProviderConfigurationBuilder.create()
                 .property(Attributes.PRIORITY_PROPERTY)
@@ -37,6 +43,7 @@ public abstract class AbstractEcKeyProviderFactory<T extends KeyProvider> implem
     }
 
     @Override
+    /** 校验 priority、enabled、active、generateCertificate 等配置项类型。 */
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
         ConfigurationValidationHelper.check(model)
                 .checkLong(Attributes.PRIORITY_PROPERTY, false)
@@ -45,8 +52,9 @@ public abstract class AbstractEcKeyProviderFactory<T extends KeyProvider> implem
                 .checkBoolean(Attributes.EC_GENERATE_CERTIFICATE_PROPERTY, false);
     }
 
+    /** 将 NIST 曲线名（如 P-256）转换为 SEC 命名（如 secp256r1），供密钥生成使用。 */
     public static String convertECDomainParmNistRepToSecRep(String ecInNistRep) {
-        // convert Elliptic Curve Domain Parameter Name in NIST to SEC which is used to generate its EC key
+        // 将 NIST 椭圆曲线域参数名转换为 SEC 命名（用于 EC 密钥生成）
         String ecInSecRep = null;
         switch(ecInNistRep) {
             case "P-256" :
@@ -59,7 +67,7 @@ public abstract class AbstractEcKeyProviderFactory<T extends KeyProvider> implem
                 ecInSecRep = "secp521r1";
                 break;
             default :
-                // return null
+                // 未知曲线名返回 null
         }
         return ecInSecRep;
     }
