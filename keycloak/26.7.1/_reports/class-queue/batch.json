@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T13:46:50Z",
   "files": [
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/GenericSubjectId.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/IssuerSubjectId.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/JwtSubjectId.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/OpaqueSubjectId.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/PhoneNumberSubjectId.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/SamlAssertionSubjectId.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/SubjectId.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/SubjectIdJsonDeserializer.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/SubjectIds.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/SubjectNotFoundException.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/SubjectParsingException.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/SubjectResolution.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/SubjectResolver.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/SubjectUserLookup.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/UriSubjectId.java",
     "ssf/services/src/main/java/org/keycloak/ssf/services/SsfBootstrap.java",
     "ssf/services/src/main/java/org/keycloak/ssf/services/SsfRealmResourceProvider.java",
     "ssf/services/src/main/java/org/keycloak/ssf/services/SsfRealmResourceProviderFactory.java",
@@ -33,5 +18,5 @@
     "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/SsfTransmitterServiceBuilder.java"
   ],
   "remaining_pending": 598,
-  "done": 5370
+  "done": 5385
 }
