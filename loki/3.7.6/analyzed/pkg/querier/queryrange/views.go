@@ -1,5 +1,7 @@
 package queryrange
 
+// views 提供 protobuf 序列化响应的零拷贝/懒解析视图：无需完整反序列化即可遍历 series 标签与哈希。
+
 import (
 	"fmt"
 	"io"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/querier/queryrange/queryrangebase"
 )
 
+// 通过 descriptor 预取 field number，molecule 遍历时直接定位嵌套消息字段。
 // Pull fiel numbers from protobuf message descriptions.
 var (
 	queryResponse               *QueryResponse
@@ -30,6 +33,7 @@ var (
 	labelsFieldNumber              = seriesIdentifierDescription.GetFieldDescriptor("labels").GetNumber()
 )
 
+// GetLokiSeriesResponseView 从 QueryResponse 字节流中提取 LokiSeriesResponse 子消息。
 // GetLokiSeriesResponseView returns a view on the series response of a
 // QueryResponse. Returns an error if the message was empty. Note: the method
 // does not verify that the reply is a properly encoded QueryResponse protobuf.
@@ -58,6 +62,7 @@ func GetLokiSeriesResponseView(data []byte) (view *LokiSeriesResponseView, err e
 	return
 }
 
+// LokiSeriesResponseView 延迟解析，ForEachSeries 迭代时才解码各 SeriesIdentifier。
 // LokiSeriesResponseView holds the raw bytes of a LokiSeriesResponse protobuf
 // message. It is decoded lazily view ForEachSeries.
 type LokiSeriesResponseView struct {
@@ -87,6 +92,7 @@ func (v *LokiSeriesResponseView) ProtoMessage()  {}
 
 // ForEachSeries iterates of the []logproto.SeriesIdentifier slice and pass a
 // view on each identifier to the callback supplied.
+// ForEachSeries 用 molecule 流式解析 Data 字段中的 series 条目并回调 fn。
 func (v *LokiSeriesResponseView) ForEachSeries(fn func(view *SeriesIdentifierView) error) error {
 	return molecule.MessageEach(codec.NewBuffer(v.buffer), func(fieldNum int32, value molecule.Value) (bool, error) {
 		if fieldNum == dataFieldNumber {
@@ -238,6 +244,7 @@ func (v *SeriesIdentifierView) Hash(b []byte, keyLabelPairs []string) (uint64, [
 // MergedSeriesResponseView holds references to all series responses that should
 // be merged before serialization to JSON. The de-duplication happens during the
 // ForEachUniqueSeries iteration.
+// MergedSeriesResponseView 合并多个 LokiSeriesResponseView，ForEachUniqueSeries 去重迭代。
 type MergedSeriesResponseView struct {
 	responses []*LokiSeriesResponseView
 	headers   []queryrangebase.PrometheusResponseHeader
@@ -371,3 +378,4 @@ func WriteSeriesResponseViewJSON(v *MergedSeriesResponseView, w io.Writer) error
 	s.WriteRaw("\n")
 	return s.Flush()
 }
+// MergeResponse 合并多个 view 的原始 buffer，避免重复 protobuf 编解码开销。

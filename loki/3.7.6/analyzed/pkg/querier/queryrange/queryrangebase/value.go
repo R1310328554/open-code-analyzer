@@ -1,5 +1,7 @@
 package queryrangebase
 
+// value 负责 PromQL 查询结果与 Loki SampleStream、storage.SeriesSet 之间的类型转换，供 queryrange 响应序列化与引擎对接。
+
 import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/model"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/querier/series"
 )
 
+// FromResult 解包 PromQL 引擎错误并委托 FromValue 转换 Scalar/Vector/Matrix。
 // FromResult transforms a promql query result into a samplestream
 func FromResult(res *promql.Result) ([]SampleStream, error) {
 	if res.Err != nil {
@@ -23,6 +26,7 @@ func FromResult(res *promql.Result) ([]SampleStream, error) {
 	return FromValue((res.Value))
 }
 
+// FromValue 按 promql.Value 类型映射为 logproto.LegacySample 序列流。
 func FromValue(value parser.Value) ([]SampleStream, error) {
 	switch v := value.(type) {
 	case promql.Scalar:
@@ -89,6 +93,7 @@ func mapPoints(pts ...promql.FPoint) []logproto.LegacySample {
 	return result
 }
 
+// ResponseToSamples 从 PrometheusResponse 提取 Vector/Matrix 类型的 SampleStream 切片。
 // ResponseToSamples is needed to map back from api response to the underlying series data
 func ResponseToSamples(resp Response) ([]SampleStream, error) {
 	promRes, ok := resp.(*PrometheusResponse)
@@ -111,6 +116,7 @@ func ResponseToSamples(resp Response) ([]SampleStream, error) {
 	)
 }
 
+// NewSeriesSet 将 SampleStream 转为按标签排序的内存 ConcreteSeriesSet。
 // NewSeriesSet returns an in memory storage.SeriesSet from a []SampleStream
 // As NewSeriesSet uses NewConcreteSeriesSet to implement SeriesSet, result will be sorted by label names.
 func NewSeriesSet(results []SampleStream) storage.SeriesSet {
@@ -133,3 +139,4 @@ func NewSeriesSet(results []SampleStream) storage.SeriesSet {
 	}
 	return series.NewConcreteSeriesSet(set)
 }
+// mapLabels 与 mapPoints 分别将 Prometheus labels 与 FPoint 转为 Loki 内部表示。

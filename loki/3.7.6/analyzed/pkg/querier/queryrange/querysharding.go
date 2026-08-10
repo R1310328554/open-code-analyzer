@@ -1,5 +1,7 @@
 package queryrange
 
+// querysharding 实现 LogQL AST 分片中间件：按存储周期配置将查询改写为多分片子查询，并控制 ingester 查询窗口内的分片绕过。
+
 import (
 	"context"
 	"fmt"
@@ -33,6 +35,7 @@ import (
 
 var errInvalidShardingRange = errors.New("Query does not fit in a single sharding configuration")
 
+// NewQueryShardMiddleware 组合 astMapperware 与 shardSplitter，无分片配置时透传。
 // NewQueryShardMiddleware creates a middleware which downstreams queries after AST mapping and query encoding.
 func NewQueryShardMiddleware(
 	logger log.Logger,
@@ -106,6 +109,7 @@ func newASTMapperware(
 	return ast
 }
 
+// astMapperware 使用 DownstreamEngine 与 ShardMapper 将可分片 AST 改写并执行。
 type astMapperware struct {
 	confs            ShardingConfigs
 	logger           log.Logger
@@ -122,6 +126,7 @@ type astMapperware struct {
 	shardAggregation []string
 }
 
+// checkQuerySizeLimit 按租户 MaxQuerierBytesRead 拒绝超大分片或不可分片查询。
 func (ast *astMapperware) checkQuerySizeLimit(ctx context.Context, bytesPerShard uint64, notShardable bool) error {
 	tenantIDs, err := tenant.TenantIDs(ctx)
 	if err != nil {
@@ -319,6 +324,7 @@ func (ast *astMapperware) Do(ctx context.Context, r queryrangebase.Request) (que
 	}
 }
 
+// shardSplitter 对 MinShardingLookback 内的近期数据走非分片路径，避免压垮 ingester。
 // shardSplitter middleware will only shard appropriate requests that do not extend past the MinShardingLookback interval.
 // This is used to send nonsharded requests to the ingesters in order to not overload them.
 // TODO(owen-d): export in cortex so we don't duplicate code
@@ -356,6 +362,7 @@ func hasShards(confs ShardingConfigs) bool {
 	return false
 }
 
+// ShardingConfigs 按时间范围选取唯一 PeriodConfig，跨多配置区间则拒绝分片。
 // ShardingConfigs is a slice of chunk shard configs
 type ShardingConfigs []config.PeriodConfig
 
@@ -396,6 +403,7 @@ func (confs ShardingConfigs) GetConf(start, end int64) (config.PeriodConfig, err
 }
 
 // NewSeriesQueryShardMiddleware creates a middleware which shards series queries.
+// NewSeriesQueryShardMiddleware 将 LokiSeriesRequest 按 RowShards 拆分为并行子请求。
 func NewSeriesQueryShardMiddleware(
 	logger log.Logger,
 	confs ShardingConfigs,
@@ -482,3 +490,4 @@ func (ss *seriesShardingHandler) Do(ctx context.Context, r queryrangebase.Reques
 	}
 	return ss.merger.MergeResponse(responses...)
 }
+// TSDB 分片策略由租户 TSDBShardingStrategy 解析版本并绑定 dynamicShardResolver。

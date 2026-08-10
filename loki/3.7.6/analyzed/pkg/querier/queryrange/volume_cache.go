@@ -1,5 +1,7 @@
 package queryrange
 
+// volume_cache 为 volume 查询配置 results cache：自定义 cache key、按比例 Extract 子区间 volume 并注册 middleware。
+
 import (
 	"context"
 	"flag"
@@ -20,10 +22,12 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/validation"
 )
 
+// VolumeSplitter 在通用 cache key 上追加 limit、aggregateBy 与 targetLabels。
 type VolumeSplitter struct {
 	cacheKeyLimits
 }
 
+// GenerateCacheKey 组合 userID、时间区间与 volume 特有参数形成唯一键。
 // GenerateCacheKey generates a cache key based on the userID, Request and interval.
 func (i VolumeSplitter) GenerateCacheKey(ctx context.Context, userID string, r resultscache.Request) string {
 	cacheKey := i.cacheKeyLimits.GenerateCacheKey(ctx, userID, r)
@@ -37,6 +41,7 @@ func (i VolumeSplitter) GenerateCacheKey(ctx context.Context, userID string, r r
 
 type VolumeExtractor struct{}
 
+// VolumeExtractor 假设 volume 在时间上均匀分布，按 overlap 比例缩放各 label volume。
 // Extract favors the ability to cache over exactness of results. It assumes a constant distribution
 // of log volumes over a range and will extract subsets proportionally.
 func (p VolumeExtractor) Extract(start, end int64, res resultscache.Response, resStart, resEnd int64) resultscache.Response {
@@ -62,6 +67,7 @@ func (p VolumeExtractor) ResponseWithoutHeaders(resp queryrangebase.Response) qu
 	}
 }
 
+// VolumeCacheConfig 内联 ResultsCacheConfig，flag 前缀 frontend.volume-results-cache。
 type VolumeCacheConfig struct {
 	queryrangebase.ResultsCacheConfig `yaml:",inline"`
 }
@@ -135,3 +141,4 @@ func NewVolumeCacheMiddleware(
 		metrics,
 	)
 }
+// volumeCacheMiddlewareNowTimeFunc 可注入固定时间，便于单元测试缓存 TTL 行为。

@@ -1,5 +1,7 @@
 package queryrange
 
+// serialize 在 HTTP 边界解码请求、调用 Handler 链并以 Codec 编码响应，支持可选 Parquet 输出格式。
+
 import (
 	"net/http"
 
@@ -9,6 +11,7 @@ import (
 	serverutil "github.com/grafana/loki/v3/pkg/util/server"
 )
 
+// serializeRoundTripper 实现 http.RoundTripper，供 grpc-gateway 或 proxy 调用。
 type serializeRoundTripper struct {
 	codec          queryrangebase.Codec
 	next           queryrangebase.Handler
@@ -45,6 +48,7 @@ func (rt *serializeRoundTripper) RoundTrip(r *http.Request) (*http.Response, err
 	return rt.codec.EncodeResponse(ctx, r, response)
 }
 
+// serializeHTTPHandler 为原生 HTTP handler，Parquet Accept 头走专用编码路径。
 type serializeHTTPHandler struct {
 	codec queryrangebase.Codec
 	next  queryrangebase.Handler
@@ -74,7 +78,8 @@ func (rt *serializeHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// TODO(karsten): use rt.codec.EncodeResponse(ctx, r, response) which is the central encoding logic instead.
+	// HTTP handler 路径尚未完全统一到 Codec.EncodeResponse，Parquet 仍单独处理。
+// TODO(karsten): use rt.codec.EncodeResponse(ctx, r, response) which is the central encoding logic instead.
 	if r.Header.Get("Accept") == ParquetType {
 		w.Header().Add("Content-Type", ParquetType)
 		if err := encodeResponseParquetTo(ctx, response, w); err != nil {
@@ -89,3 +94,4 @@ func (rt *serializeHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		serverutil.WriteError(err, w)
 	}
 }
+// DecodeRequest 与 EncodeResponse 由 queryrangebase.Codec 实现，保持与 gRPC 路径一致。

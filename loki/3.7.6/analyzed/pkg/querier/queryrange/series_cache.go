@@ -1,5 +1,7 @@
 package queryrange
 
+// series_cache 为 Loki series/metadata 查询配置 results cache：生成缓存键、提取子区间响应并控制是否缓存。
+
 import (
 	"context"
 	"flag"
@@ -20,11 +22,13 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/validation"
 )
 
+// cacheKeySeries 将 userID、matchers、split 区间编码为 series 缓存键。
 type cacheKeySeries struct {
 	Limits
 	transformer UserIDTransformer
 }
 
+// GenerateCacheKey 按 metadataSplitInterval 对齐当前时间窗口计算 interval 分量。
 // GenerateCacheKey generates a cache key based on the userID, matchers, split duration and the interval of the request.
 func (i cacheKeySeries) GenerateCacheKey(ctx context.Context, userID string, r resultscache.Request) string {
 	sr := r.(*LokiSeriesRequest)
@@ -49,6 +53,7 @@ func (i cacheKeySeries) joinMatchers(matchers []string) string {
 
 type seriesExtractor struct{}
 
+// seriesExtractor 为 no-op：series 列表无法按时间切分，整段响应直接命中缓存。
 // Extract extracts the series response for the specific time range.
 // It is a no-op since it is not possible to partition the series data by time range as it is just a list of kv pairs.
 func (p seriesExtractor) Extract(_, _ int64, res resultscache.Response, _, _ int64) resultscache.Response {
@@ -78,6 +83,7 @@ func (cfg *SeriesCacheConfig) Validate() error {
 	return cfg.ResultsCacheConfig.Validate()
 }
 
+// NewSeriesCacheMiddleware 包装 results cache 并注入 shouldCacheMetadataReq 策略。
 func NewSeriesCacheMiddleware(
 	logger log.Logger,
 	limits Limits,
@@ -108,6 +114,7 @@ func NewSeriesCacheMiddleware(
 	)
 }
 
+// shouldCacheMetadataReq 根据租户 limits 与请求特征决定是否写入 series 结果缓存。
 func shouldCacheMetadataReq(ctx context.Context, logger log.Logger, shouldCache queryrangebase.ShouldCacheFn, req queryrangebase.Request, l Limits) bool {
 	if shouldCache != nil && !shouldCache(ctx, req) {
 		return false
@@ -124,3 +131,4 @@ func shouldCacheMetadataReq(ctx context.Context, logger log.Logger, shouldCache 
 
 	return maxCacheFreshness == 0 || model.Time(req.GetEnd().UnixMilli()).Before(model.Now().Add(-maxCacheFreshness))
 }
+// joinMatchers 对 matcher 字符串排序后拼接，保证相同 selector 不同顺序命中同一键。

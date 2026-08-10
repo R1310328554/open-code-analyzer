@@ -1,5 +1,7 @@
 package queryrange
 
+// split_by_interval 按 schema 周期与租户 split duration 将 range 查询切分为多个时间子请求并合并响应。
+
 import (
 	"context"
 	"net/http"
@@ -22,6 +24,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/validation"
 )
 
+// lokiResult 包装子请求与结果 channel，供 Feed/Collect 流式调度。
 type lokiResult struct {
 	req queryrangebase.Request
 	ch  chan *packedResp
@@ -47,6 +50,7 @@ func NewSplitByMetrics(r prometheus.Registerer) *SplitByMetrics {
 	}
 }
 
+// splitByInterval 并行 Feed 子请求、Collect 响应后由 merger 合并。
 type splitByInterval struct {
 	configs  []config.PeriodConfig
 	next     queryrangebase.Handler
@@ -56,6 +60,7 @@ type splitByInterval struct {
 	splitter splitter
 }
 
+// SplitByIntervalMiddleware 注入 splitter 策略（default 或 instant metric align）。
 // SplitByIntervalMiddleware creates a new Middleware that splits log requests by a given interval.
 func SplitByIntervalMiddleware(configs []config.PeriodConfig, limits Limits, merger queryrangebase.Merger, splitter splitter, metrics *SplitByMetrics) queryrangebase.Middleware {
 	if metrics == nil {
@@ -74,6 +79,7 @@ func SplitByIntervalMiddleware(configs []config.PeriodConfig, limits Limits, mer
 	})
 }
 
+// Feed 启动 goroutine 将 lokiResult 投递到输出 channel 供 worker 消费。
 func (h *splitByInterval) Feed(ctx context.Context, input []*lokiResult) chan *lokiResult {
 	ch := make(chan *lokiResult)
 
@@ -278,3 +284,4 @@ func maxRangeVectorAndOffsetDuration(expr syntax.Expr) (time.Duration, time.Dura
 	})
 	return maxRVDuration, maxOffset
 }
+// splits histogram 使用指数桶 1–1024，便于观察 frontend 分片粒度分布。

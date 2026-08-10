@@ -1,5 +1,7 @@
 package queryrange
 
+// split_by_range 对 instant metric 查询按 range vector 区间拆分子查询，可选 splitAlign 与 splitByInterval 对齐。
+
 import (
 	"context"
 	"fmt"
@@ -20,6 +22,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/validation"
 )
 
+// splitByRange 使用 RangeMapper 改写 AST 并通过 DownstreamEngine 执行子查询。
 type splitByRange struct {
 	logger  log.Logger
 	next    queryrangebase.Handler
@@ -27,10 +30,12 @@ type splitByRange struct {
 	ng      *logql.DownstreamEngine
 	metrics *logql.MapperMetrics
 
-	// Whether to align rangeInterval align to splitByInterval in the subqueries.
+	// splitAlign 为 true 时子查询时间窗口与 frontend 全局 split 边界对齐。
+// Whether to align rangeInterval align to splitByInterval in the subqueries.
 	splitAlign bool
 }
 
+// NewSplitByRangeMiddleware 在 InstantMetricQuerySplitDuration 为 0 时透传。
 // NewSplitByRangeMiddleware creates a new Middleware that splits log requests by the range interval.
 func NewSplitByRangeMiddleware(logger log.Logger, engineOpts logql.EngineOpts, limits Limits, splitAlign bool, metrics *logql.MapperMetrics) queryrangebase.Middleware {
 	return queryrangebase.MiddlewareFunc(func(next queryrangebase.Handler) queryrangebase.Handler {
@@ -49,6 +54,7 @@ func NewSplitByRangeMiddleware(logger log.Logger, engineOpts logql.EngineOpts, l
 	})
 }
 
+// Do 仅处理 LokiInstantRequest，将 mapper stats 合并进最终响应 Statistics。
 func (s *splitByRange) Do(ctx context.Context, request queryrangebase.Request) (queryrangebase.Response, error) {
 	logger := util_log.WithContext(ctx, s.logger)
 
@@ -141,3 +147,4 @@ func (s *splitByRange) Do(ctx context.Context, request queryrangebase.Request) (
 		return nil, fmt.Errorf("unexpected downstream response type (%T)", res.Data.Type())
 	}
 }
+// DownstreamHandler 携带 splitAlign 标志，剥离 offset 并平移子查询时间范围。

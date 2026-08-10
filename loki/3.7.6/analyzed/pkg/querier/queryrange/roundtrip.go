@@ -1,5 +1,7 @@
 package queryrange
 
+// roundtrip 组装 query-frontend 中间件链与各类 Tripperware：日志/指标/元数据/Volume 等 API 的分片、缓存、限流与路由。
+
 import (
 	"context"
 	"flag"
@@ -31,11 +33,13 @@ import (
 )
 
 const (
-	// Parallelize the index stats requests, so it doesn't send a huge request to a single index-gw (i.e. {app=~".+"} for 30d).
+	// index stats 按 24h 切分并行请求，避免单次超大 matcher 压垮单个 index-gateway。
+// Parallelize the index stats requests, so it doesn't send a huge request to a single index-gw (i.e. {app=~".+"} for 30d).
 	// Indices are sharded by 24 hours, so we split the stats request in 24h intervals.
 	indexStatsQuerySplitInterval = 24 * time.Hour
 
-	// Limited queries only need to fetch up to the requested line limit worth of logs,
+	// limited 查询强制 splits=1 与低并行，防止多分片返回 GB 级日志淹没 frontend。
+// Limited queries only need to fetch up to the requested line limit worth of logs,
 	// Our defaults for splitting and parallelism are much too aggressive for large customers and result in
 	// potentially GB of logs being returned by all the shards and splits which will overwhelm the frontend
 	// Therefore we force max parallelism to `1` so that these queries are executed sequentially.
@@ -43,6 +47,7 @@ const (
 	limitedQuerySplits = 1
 )
 
+// Config 内联 queryrangebase.Config 并声明 index stats、volume、series 等结果缓存开关。
 // Config is the configuration for the queryrange tripperware
 type Config struct {
 	base.Config                  `yaml:",inline"`
@@ -124,6 +129,7 @@ func newResultsCacheFromConfig(cfg base.ResultsCacheConfig, registerer prometheu
 }
 
 // NewMiddleware returns a Middleware configured with middlewares to align, split and cache requests.
+// NewMiddleware 按 schema 与 limits 构建完整 frontend Handler 链并注册 metrics。
 func NewMiddleware(
 	cfg Config,
 	v1EngineOpts logql.EngineOpts,
@@ -369,6 +375,7 @@ func NewDetectedLabelsCardinalityFilter(rt base.Handler) base.Handler {
 		})
 }
 
+// roundTripper 为入口 Handler：记录查询日志、按 path 分发到对应 tripperware。
 type roundTripper struct {
 	logger log.Logger
 
@@ -658,6 +665,7 @@ func getOperation(path string) string {
 }
 
 // NewLogFilterTripperware creates a new frontend tripperware responsible for handling log requests.
+// NewLogFilterTripperware 为 range log 查询配置分片、缓存、ingester 窗口与 engine router。
 func NewLogFilterTripperware(cfg Config, engineOpts logql.EngineOpts, routerConfig RouterConfig, log log.Logger, limits Limits, schema config.SchemaConfig, merger base.Merger, iqo util.IngesterQueryOptions, c cache.Cache, metrics *Metrics, indexStatsTripperware base.Middleware, metricsNamespace string) (base.Middleware, error) {
 	var cacheMiddleware base.Middleware
 	if cfg.CacheResults {
@@ -981,6 +989,7 @@ func NewLabelsTripperware(
 }
 
 // NewMetricTripperware creates a new frontend tripperware responsible for handling metric queries
+// NewMetricTripperware 为 range metric 查询挂载 query sharding 与 results cache。
 func NewMetricTripperware(cfg Config, engineOpts logql.EngineOpts, routerConfig RouterConfig, log log.Logger, limits Limits, schema config.SchemaConfig, merger base.Merger, iqo util.IngesterQueryOptions, c cache.Cache, cacheGenNumLoader base.CacheGenNumberLoader, retentionEnabled bool, extractor base.Extractor, metrics *Metrics, indexStatsTripperware base.Middleware, metricsNamespace string, disableEngineRouter bool) (base.Middleware, error) {
 	cacheKey := cacheKeyLimits{limits, cfg.Transformer, iqo}
 	var queryCacheMiddleware base.Middleware
@@ -1409,3 +1418,4 @@ func NewDetectedFieldsTripperware(
 		return NewDetectedFieldsHandler(limitedHandler, logHandler, limits)
 	}), nil
 }
+// NewVolumeTripperware 与 NewIndexStatsTripperware 复用 sharedIndexTripperware 分片逻辑。

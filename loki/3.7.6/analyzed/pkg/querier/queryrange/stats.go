@@ -1,5 +1,7 @@
 package queryrange
 
+// stats 在 frontend HTTP 与中间件链中收集查询统计：按 queryType 记录 metrics 并将 stats 注入响应上下文。
+
 import (
 	"bufio"
 	"context"
@@ -51,6 +53,7 @@ var (
 	StatsHTTPMiddleware middleware.Interface = statsHTTPMiddleware(defaultMetricRecorder)
 )
 
+// recordQueryMetrics 根据 log/label/series/stats/volume 等类型调用对应 Record 函数。
 // recordQueryMetrics will be called from Query Frontend middleware chain for any type of query.
 func recordQueryMetrics(data *queryData) {
 	logger := log.With(util_log.Logger, "component", "frontend")
@@ -87,6 +90,7 @@ func (m metricRecorderFn) Record(data *queryData) {
 	m(data)
 }
 
+// queryData 携带 ctx、params、statistics 与 queryType 供 metricRecorder 使用。
 type queryData struct {
 	ctx        context.Context
 	params     logql.Params
@@ -100,6 +104,7 @@ type queryData struct {
 	recorded bool
 }
 
+// statsHTTPMiddleware 包装 HTTP ResponseWriter 拦截状态码并触发 metrics 记录。
 func statsHTTPMiddleware(recorder metricRecorder) middleware.Interface {
 	return middleware.Func(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -123,6 +128,7 @@ func statsHTTPMiddleware(recorder metricRecorder) middleware.Interface {
 }
 
 // StatsCollectorMiddleware compute the stats summary based on the actual duration of the request and inject it in the request context.
+// StatsCollectorMiddleware 在 Handler 返回前将 stats.Context 写入响应 Statistics 字段。
 func StatsCollectorMiddleware() queryrangebase.Middleware {
 	return queryrangebase.MiddlewareFunc(func(next queryrangebase.Handler) queryrangebase.Handler {
 		return queryrangebase.HandlerFunc(func(ctx context.Context, req queryrangebase.Request) (queryrangebase.Response, error) {
@@ -250,6 +256,7 @@ func StatsCollectorMiddleware() queryrangebase.Middleware {
 //
 // interceptor also implements net.Hijacker, to let the downstream Handler
 // hijack the connection. This is needed, for example, for working with websockets.
+// interceptor 捕获 WriteHeader 状态码，供 frontend 查询日志与 metrics 使用。
 type interceptor struct {
 	http.ResponseWriter
 	statusCode int
@@ -271,3 +278,4 @@ func (i *interceptor) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	}
 	return hj.Hijack()
 }
+// ctxKey stats 将 stats.Context 存入 request context，贯穿整条 middleware 链。

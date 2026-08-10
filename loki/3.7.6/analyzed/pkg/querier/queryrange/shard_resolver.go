@@ -1,5 +1,7 @@
 package queryrange
 
+// shard_resolver 根据 index stats 动态计算 TSDB 分片数与字节范围，chunk 存储则回退为固定 RowShards 策略。
+
 import (
 	"context"
 	"fmt"
@@ -28,6 +30,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/validation"
 )
 
+// shardResolverForConf 按 IndexType 返回 dynamicShardResolver 或 ConstantShards。
 func shardResolverForConf(
 	ctx context.Context,
 	conf config.PeriodConfig,
@@ -60,6 +63,7 @@ func shardResolverForConf(
 	return logql.ConstantShards(conf.RowShards), true
 }
 
+// dynamicShardResolver 通过 index stats 请求估算分片因子与每分片目标字节数。
 type dynamicShardResolver struct {
 	ctx context.Context
 	// TODO(owen-d): shouldn't have to fork handlers here -- one should just transparently handle the right logic
@@ -77,6 +81,7 @@ type dynamicShardResolver struct {
 }
 
 // getStatsForMatchers returns the index stats for all the groups in matcherGroups.
+// getStatsForMatchers 并发向 statsHandler 查询各 matcher 组的索引统计。
 func getStatsForMatchers(
 	ctx context.Context,
 	logger log.Logger,
@@ -181,6 +186,7 @@ func (r *dynamicShardResolver) GetStats(e syntax.Expr) (stats.Stats, error) {
 	return combined, nil
 }
 
+// Shards 返回分片数量与每分片预估读取字节，供 ShardMapper 改写 AST。
 func (r *dynamicShardResolver) Shards(e syntax.Expr) (int, uint64, error) {
 	ctx, sp := tracer.Start(r.ctx, "dynamicShardResolver.Shards")
 	defer sp.End()
@@ -218,6 +224,7 @@ func (r *dynamicShardResolver) Shards(e syntax.Expr) (int, uint64, error) {
 	return factor, bytesPerShard, nil
 }
 
+// ShardingRanges 将表达式拆分为带时间边界的分片子 AST 列表。
 func (r *dynamicShardResolver) ShardingRanges(expr syntax.Expr, targetBytesPerShard uint64) (
 	[]logproto.Shard,
 	[]logproto.ChunkRefGroup,
@@ -304,3 +311,4 @@ func (r *dynamicShardResolver) ShardingRanges(expr syntax.Expr, targetBytesPerSh
 
 	return casted.Response.Shards, casted.Response.ChunkGroups, err
 }
+// resolver 使用独立 stats context，避免与查询引擎 stats 互相覆盖。

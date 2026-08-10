@@ -16,6 +16,8 @@
 
 package series
 
+// series 提供内存版 storage.SeriesSet 实现：ConcreteSeries/Iterator 及DeletedSeries、EmptySeries 等辅助类型，源自 Prometheus 适配代码。
+
 import (
 	"sort"
 
@@ -27,12 +29,14 @@ import (
 	"github.com/prometheus/prometheus/util/annotations"
 )
 
+// ConcreteSeriesSet 在内存中按标签排序存储多条 series，支持顺序迭代。
 // ConcreteSeriesSet implements storage.SeriesSet.
 type ConcreteSeriesSet struct {
 	cur    int
 	series []storage.Series
 }
 
+// NewConcreteSeriesSet 构造时对 series 按 labels 排序以保证 At() 顺序稳定。
 // NewConcreteSeriesSet instantiates an in-memory series set from a series
 // Series will be sorted by labels.
 func NewConcreteSeriesSet(series []storage.Series) storage.SeriesSet {
@@ -64,6 +68,7 @@ func (c *ConcreteSeriesSet) Warnings() annotations.Annotations {
 	return nil
 }
 
+// ConcreteSeries 持有 labels 与 model.SamplePair 切片，Iterator 线性扫描样本。
 // ConcreteSeries implements storage.Series.
 type ConcreteSeries struct {
 	labels  labels.Labels
@@ -200,6 +205,7 @@ func (b byLabels) Len() int           { return len(b) }
 func (b byLabels) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
 func (b byLabels) Less(i, j int) bool { return labels.Compare(b[i].Labels(), b[j].Labels()) < 0 }
 
+// DeletedSeries 包装底层 series 并在 Iterator 中跳过 retention 删除区间。
 type DeletedSeries struct {
 	series           storage.Series
 	deletedIntervals []model.Interval
@@ -313,6 +319,7 @@ func (d *DeletedSeriesIterator) isDeleted(ts int64) bool {
 	return false
 }
 
+// emptySeries 表示无样本的占位 series，Iterator 立即返回 EOF。
 type emptySeries struct {
 	labels labels.Labels
 }
@@ -367,3 +374,4 @@ func (emptySeriesIterator) Next() chunkenc.ValueType {
 func (emptySeriesIterator) Err() error {
 	return nil
 }
+// byLabels 实现 sort.Interface，Compare 标签字典序决定 series 合并顺序。

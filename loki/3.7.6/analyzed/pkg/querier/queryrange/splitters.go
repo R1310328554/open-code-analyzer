@@ -1,5 +1,7 @@
 package queryrange
 
+// splitters 定义按时间 interval 切分各类 LokiRequest 的策略：日志、series、labels、index stats 等请求类型各有 factory。
+
 import (
 	"fmt"
 	"time"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/validation"
 )
 
+// splitter 接口按 execTime、租户 limits 与 interval 返回子请求切片。
 type splitter interface {
 	split(execTime time.Time, tenantIDs []string, request queryrangebase.Request, interval time.Duration) []queryrangebase.Request
 }
@@ -28,6 +31,7 @@ func newDefaultSplitter(limits Limits, iqo util.IngesterQueryOptions) *defaultSp
 	return &defaultSplitter{limits, iqo}
 }
 
+// split 按请求类型构造 LokiRequest/LokiSeriesRequest/LabelRequest 等子副本。
 func (s *defaultSplitter) split(execTime time.Time, tenantIDs []string, req queryrangebase.Request, interval time.Duration) []queryrangebase.Request {
 	var (
 		reqs             []queryrangebase.Request
@@ -52,7 +56,8 @@ func (s *defaultSplitter) split(execTime time.Time, tenantIDs []string, req quer
 			})
 		}
 	case *LokiSeriesRequest:
-		// metadata queries have end time inclusive.
+		// metadata 查询 end 含边界，ForInterval 保留 1ms gap 避免相邻 split 重复数据。
+// metadata queries have end time inclusive.
 		// Set endTimeInclusive to true so that ForInterval keeps a gap of 1ms between splits to
 		// avoid querying duplicate data in adjacent queries.
 		factory = func(start, end time.Time) {
@@ -194,6 +199,7 @@ func (s *defaultSplitter) split(execTime time.Time, tenantIDs []string, req quer
 	return reqs
 }
 
+// metricQuerySplitter 为 range metric 对齐 step 边界并缩小含大 range vector 的 split。
 type metricQuerySplitter struct {
 	limits Limits
 	iqo    util.IngesterQueryOptions
@@ -369,3 +375,4 @@ func ingesterQueryBounds(execTime time.Time, iqo util.IngesterQueryOptions, req 
 
 	return ingesterWindow, end, true
 }
+// ingesterQueryBounds 与 recentMetadataQueryBounds 控制近期数据 split 顺序与边界。

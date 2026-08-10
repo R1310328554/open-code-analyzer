@@ -1,5 +1,7 @@
 package queryrange
 
+// volume 中间件将 VolumeRequest 按 step 切分为多个时间桶子请求，并发执行后按标签聚合 volume 响应。
+
 import (
 	"context"
 	"sort"
@@ -19,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// NewVolumeMiddleware 非 VolumeRequest 直接透传给 next Handler。
 func NewVolumeMiddleware() queryrangebase.Middleware {
 	return queryrangebase.MiddlewareFunc(func(next queryrangebase.Handler) queryrangebase.Handler {
 		return queryrangebase.HandlerFunc(func(ctx context.Context, req queryrangebase.Request) (queryrangebase.Response, error) {
@@ -34,7 +37,8 @@ func NewVolumeMiddleware() queryrangebase.Middleware {
 			interval := time.Duration(volReq.Step * 1e6)
 
 			util.ForInterval(interval, startTS, endTS, true, func(start, end time.Time) {
-				// Always align to the end of the requested range
+				// 子请求以区间 end 为 map key，保证 range/instant volume 查询对齐到桶末尾。
+// Always align to the end of the requested range
 				// For range queries, this aligns to the end of the period we're returning a bytes aggregation for
 				// For instant queries, which are for "this instant", this aligns to the end of the requested range
 				reqs[end] = &logproto.VolumeRequest{
@@ -48,7 +52,8 @@ func NewVolumeMiddleware() queryrangebase.Middleware {
 				}
 			})
 
-			type f func(context.Context) (time.Time, definitions.Response, error)
+			// jobs 闭包捕获 bucket 与子请求，ForEachJob 并发调用下游并收集结果。
+type f func(context.Context) (time.Time, definitions.Response, error)
 			var jobs []f
 
 			for bucket, req := range reqs {
@@ -63,7 +68,8 @@ func NewVolumeMiddleware() queryrangebase.Middleware {
 				}))
 			}
 
-			// Update middleware stats
+			// AddSplitQueries 将子请求数写入 stats context，供查询统计与限流使用。
+// Update middleware stats
 			queryStatsCtx := stats.FromContext(ctx)
 			queryStatsCtx.AddSplitQueries(int64(len(jobs)))
 
@@ -209,3 +215,4 @@ func toPrometheusData(series map[string][]logproto.LegacySample, aggregateBySeri
 		Result:     result,
 	}
 }
+// ToPrometheusResponse 按 targetLabels 聚合各桶 volume 并转为 Prometheus 矩阵响应。
