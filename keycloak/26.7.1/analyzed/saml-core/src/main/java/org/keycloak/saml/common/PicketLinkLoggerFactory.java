@@ -18,22 +18,25 @@
 package org.keycloak.saml.common;
 
 /**
- * <p> Factory class to create {@link PicketLinkLogger} instances. </p> <p> The logger instances are created based on
- * the following patterns: <br/> <ul> <li>Tries to load a class with the same full qualified name of {@link
- * PicketLinkLogger} plus the "Impl" suffix;</li> <li>If no class is found fallback to the {@link
- * DefaultPicketLinkLogger} as the default logger implementation.</li> </ul> </p>
+ * 用于创建 {@link PicketLinkLogger} 实例的工厂类。
+ * <p>创建策略如下：</p>
+ * <ul>
+ *   <li>尝试加载与 {@link PicketLinkLogger} 全限定名加 "Impl" 后缀同名的类；</li>
+ *   <li>若未找到实现类，则回退到 {@link DefaultPicketLinkLogger} 作为默认日志实现。</li>
+ * </ul>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Silva</a>
  */
 public final class PicketLinkLoggerFactory {
 
+    /** 全局单例日志实例，在类加载时初始化。 */
     private static PicketLinkLogger LOGGER;
 
     static {
         try {
             LOGGER = (PicketLinkLogger) Class.forName(PicketLinkLogger.class.getName() + "Impl").newInstance();
         } catch (Exception e) {
-            // if no implementation is found uses the default implementation.
+            // 未找到自定义实现时使用默认实现
             LOGGER = new DefaultPicketLinkLogger();
         }
 
@@ -43,9 +46,9 @@ public final class PicketLinkLoggerFactory {
     }
 
     /**
-     * <p>Returns a {@link PicketLinkLogger} instance.</p>
+     * 返回已初始化的 {@link PicketLinkLogger} 实例。
      *
-     * @return
+     * @return 日志门面实例
      */
     public static PicketLinkLogger getLogger() {
         return LOGGER;

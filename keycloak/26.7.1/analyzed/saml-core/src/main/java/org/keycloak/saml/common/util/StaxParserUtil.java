@@ -63,15 +63,17 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 /**
- * Utility for the stax based parser
+ * StAX 解析辅助工具：属性读取、元素跳转、Schema 校验与 DOM 片段提取等。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Feb 8, 2010
  */
 public class StaxParserUtil {
 
+    /** 日志实例。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
+    /** 使用 XSD 校验输入文档的 StAX 流。 */
     public static void validate(InputStream doc, InputStream sch) throws ParsingException {
         try {
             XMLEventReader xmlEventReader = StaxParserUtil.getXMLEventReader(doc);
@@ -87,12 +89,11 @@ public class StaxParserUtil {
     }
 
     /**
-     * Bypass an entire XML element block from startElement to endElement.
-     * It is expected that the {@code xmlEventReader} is positioned at (has not yet read)
-     * the start element of the block it should bypass.
+     * 跳过从起始标签到匹配结束标签的整段 XML 元素。
+     * 调用时 {@code xmlEventReader} 应位于待跳过块的起始元素之前（尚未读取）。
      *
-     * @param xmlEventReader
-     * @param tag Tag of the XML element that we need to bypass
+     * @param xmlEventReader 事件读取器
+     * @param tag 待跳过元素的 localPart
      *
      * @throws org.keycloak.saml.common.exceptions.ParsingException
      */
@@ -181,11 +182,11 @@ public class StaxParserUtil {
     }
 
     /**
-     * Given an {@code Attribute}, get its trimmed value
+     * 读取 {@code Attribute} 并返回 trim 后的值。
      *
-     * @param attribute
+     * @param attribute StAX 属性
      *
-     * @return
+     * @return 属性值或 null
      */
     public static String getAttributeValue(Attribute attribute) {
         if (attribute == null) {
@@ -466,12 +467,11 @@ public class StaxParserUtil {
     private static final String JDK_TRANSFORMER_PROPERTY = "picketlink.jdk.transformer";
 
     /**
-     * Given that the {@code XMLEventReader} is in {@code XMLStreamConstants.START_ELEMENT} mode, we parse into a DOM
-     * Element
+     * 当读取器位于 {@code START_ELEMENT} 时，将当前元素及其子树解析为 DOM {@link Element}。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader 事件读取器
      *
-     * @return
+     * @return DOM 根元素
      *
      * @throws ParsingException
      */
@@ -504,13 +504,12 @@ public class StaxParserUtil {
     }
 
     /**
-     * Get the element text. Following {@link XMLEventReader#getElementText()}:
-     * Precondition: the current event is START_ELEMENT.
-     * Postcondition: The current event is the corresponding END_ELEMENT.
+     * 读取元素文本（遵循 {@link XMLEventReader#getElementText()} 语义）。
+     * 前置：当前为 START_ELEMENT；后置：当前为对应 END_ELEMENT。
      *
-     * @param xmlEventReader
+     * @param xmlEventReader 事件读取器
      *
-     * @return A <b>trimmed</b> string value
+     * @return 已 <b>trim</b> 的文本
      *
      * @throws ParsingException
      */
@@ -543,11 +542,11 @@ public class StaxParserUtil {
     }
 
     /**
-     * Get the XML event reader
+     * 从输入流创建 {@link XMLEventReader}。
      *
-     * @param is
+     * @param is 输入流
      *
-     * @return
+     * @return 事件读取器
      */
     public static XMLEventReader getXMLEventReader(InputStream is) {
         XMLInputFactory xmlInputFactory;
@@ -888,12 +887,12 @@ public class StaxParserUtil {
     }
 
     /**
-     * Validate that the start element has the expected tag
+     * 校验起始元素 QName 是否与期望一致。
      *
-     * @param startElement
-     * @param tag
+     * @param startElement 起始元素
+     * @param tag 期望 QName
      *
-     * @throws RuntimeException mismatch
+     * @throws RuntimeException 标签不匹配时
      */
     public static void validate(StartElement startElement, QName tag) {
         if (! Objects.equals(startElement.getName(), tag)) {

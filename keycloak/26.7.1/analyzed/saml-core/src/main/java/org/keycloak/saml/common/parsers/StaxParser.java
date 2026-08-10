@@ -21,14 +21,14 @@ import javax.xml.stream.XMLEventReader;
 import org.keycloak.saml.common.exceptions.ParsingException;
 
 /**
- * Interface to indicate the parser.
+ * StAX 解析器标记接口，定义基于事件流的解析契约。
  */
 public interface StaxParser {
     /**
-     * Parse the event stream
+     * 解析 XML 事件流并返回 Java 对象。
      *
-     * @param xmlEventReader
-     * @return
+     * @param xmlEventReader StAX 事件读取器
+     * @return 解析结果
      * @throws ParsingException
      */
     Object parse(XMLEventReader xmlEventReader) throws ParsingException;

@@ -28,16 +28,19 @@ import org.keycloak.saml.common.util.StaxParserUtil;
 import org.w3c.dom.Element;
 
 /**
- * Parses any DOM tree to a list of DOM representations.
+ * 通用 DOM 解析器：将指定根元素下的所有子节点解析为 {@link Element} 列表。
  */
 public class AnyDomParser extends AbstractStaxParser<List<Element>, AnyDomParser.Dom> {
 
+    /** 子元素标记：任意 DOM 节点均按同一策略处理。 */
     public static enum Dom { ANY_DOM };
 
+    /** 以根元素 QName 构造解析器。 */
     public AnyDomParser(QName name) {
         super(name, Dom.ANY_DOM);
     }
 
+    /** 工厂方法：创建针对指定根元素的解析器实例。 */
     public static AnyDomParser getInstance(QName name) {
         return new AnyDomParser(name);
     }

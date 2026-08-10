@@ -22,13 +22,14 @@ import java.security.PrivilegedAction;
 import java.util.PropertyPermission;
 
 /**
- * Privileged Blocks
+ * 在 SecurityManager 环境下执行特权操作的辅助类（类加载、系统属性、TCCL 等）。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Dec 9, 2008
  */
 public class SecurityActions {
 
+    /** 从全限定类名提取包名，用于包访问检查。 */
     private static String extractPackageNameFromClassName(final String fullyQualifiedName) {
         final int lastDot = fullyQualifiedName.lastIndexOf('.');
         if (lastDot == -1) {
@@ -38,13 +39,12 @@ public class SecurityActions {
     }
 
     /**
-     * <p> Loads a {@link Class} using the <code>fullQualifiedName</code> supplied. This method tries first to load from
-     * the specified {@link Class}, if not found it will try to load from using TCL. </p>
+     * <p>按全限定名加载 {@link Class}：先使用 {@code theClass} 的类加载器，失败则尝试线程上下文类加载器（TCL）。</p>
      *
-     * @param theClass
-     * @param fullQualifiedName
+     * @param theClass 锚点类，用于获取类加载器
+     * @param fullQualifiedName 目标类全限定名
      *
-     * @return
+     * @return 已加载的 Class，未找到返回 null
      */
     public static Class<?> loadClass(final Class<?> theClass, final String fullQualifiedName) {
         SecurityManager sm = System.getSecurityManager();
@@ -208,9 +208,9 @@ public class SecurityActions {
     }
 
     /**
-     * Get the Thread Context ClassLoader
+     * 获取当前线程上下文类加载器（TCCL）。
      *
-     * @return
+     * @return 上下文 ClassLoader
      */
     public static ClassLoader getTCCL() {
         if (System.getSecurityManager() != null) {
@@ -227,9 +227,9 @@ public class SecurityActions {
     }
 
     /**
-     * Set the Thread Context ClassLoader
+     * 设置当前线程上下文类加载器。
      *
-     * @param paramCl
+     * @param paramCl 新的 ClassLoader
      */
     public static void setTCCL(final ClassLoader paramCl) {
         if (System.getSecurityManager() != null) {

@@ -38,21 +38,23 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 /**
- * Utility class that deals with StAX
+ * StAX 流式 XML 写入工具，封装 {@link XMLStreamWriter} 常用操作。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Oct 19, 2010
  */
 public class StaxUtil {
 
+    /** 日志实例。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
+    /** 已注册命名空间 URI 栈，用于 DOM 转 StAX 时去重 xmlns 声明。 */
     private static final ThreadLocal<Stack<String>> registeredNSStack = new ThreadLocal<Stack<String>>();
 
     /**
-     * Flush the stream writer
+     * 刷新 StAX 流写入器缓冲区。
      *
-     * @param writer
+     * @param writer XML 流写入器
      *
      * @throws org.keycloak.saml.common.exceptions.ProcessingException
      */
@@ -65,11 +67,11 @@ public class StaxUtil {
     }
 
     /**
-     * Get an {@code XMLEventWriter}
+     * 创建面向输出流的 {@code XMLEventWriter}（UTF-8）。
      *
-     * @param outStream
+     * @param outStream 目标输出流
      *
-     * @return
+     * @return 事件写入器
      *
      * @throws ProcessingException
      */
@@ -282,10 +284,10 @@ public class StaxUtil {
     }
 
     /**
-     * Write a DOM Node to the stream
+     * 将 DOM 节点递归写入 StAX 流。
      *
-     * @param writer
-     * @param node
+     * @param writer 流写入器
+     * @param node 待写入节点
      *
      * @throws ProcessingException
      */
@@ -307,7 +309,7 @@ public class StaxUtil {
                     writer.writeCData(node.getNodeValue());
                     break;
                 default:
-                    // Don't care
+                    // 其他节点类型忽略
             }
         } catch (DOMException e) {
             throw logger.processingError(e);
@@ -341,7 +343,7 @@ public class StaxUtil {
 
         writeStartElement(writer, domElementPrefix, domElement.getLocalName(), domElementNS);
 
-        // Should we register namespace
+        // 决定是否注册带前缀的命名空间
         if (! domElementPrefix.isEmpty() && !registeredNSStack.get().contains(domElementNS)) {
             // writeNameSpace(writer, domElementPrefix, domElementNS );
             registeredNSStack.get().push(domElementNS);
@@ -349,7 +351,7 @@ public class StaxUtil {
             writeNameSpace(writer, "xmlns", domElementNS);
         }
 
-        // Deal with Attributes
+        // 写入元素属性
         NamedNodeMap attrs = domElement.getAttributes();
         for (int i = 0, len = attrs.getLength(); i < len; ++i) {
             Attr attr = (Attr) attrs.item(i);
@@ -414,10 +416,9 @@ public class StaxUtil {
     }
 
     /**
-     * <p> Write an end element. The stream writer keeps track of which start element needs to be closed with an end
-     * tag. </p>
+     * <p>写入结束标签；StAX 写入器会自动匹配最近一次 {@code writeStartElement}。</p>
      *
-     * @param writer
+     * @param writer 流写入器
      *
      * @throws ProcessingException
      */

@@ -54,25 +54,30 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
- * Utility dealing with DOM
+ * DOM 文档创建、解析与序列化工具类。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jan 14, 2009
  */
 public class DocumentUtil {
 
+    /** 日志实例。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
+    /** 缓存的 {@link DocumentBuilderFactory}，线程安全延迟初始化。 */
     private static volatile DocumentBuilderFactory documentBuilderFactory;
 
+    /** SAX 特性：是否解析外部一般实体。 */
     public static final String feature_external_general_entities = "http://xml.org/sax/features/external-general-entities";
+    /** SAX 特性：是否解析外部参数实体。 */
     public static final String feature_external_parameter_entities = "http://xml.org/sax/features/external-parameter-entities";
+    /** Apache 特性：是否禁止 DOCTYPE 声明（防 XXE）。 */
     public static final String feature_disallow_doctype_decl = "http://apache.org/xml/features/disallow-doctype-decl";
 
     /**
-     * Create a new document
+     * 创建空白 DOM 文档。
      *
-     * @return
+     * @return 新文档实例
      *
      * @throws ParserConfigurationException
      */
@@ -87,11 +92,11 @@ public class DocumentUtil {
     }
 
     /**
-     * Create a document with the root element of the form &lt;someElement xmlns="customNamespace"
+     * 创建带默认命名空间根元素的文档（形如 &lt;element xmlns="..."/&gt;）。
      *
-     * @param baseNamespace
+     * @param baseNamespace 根元素默认命名空间 URI
      *
-     * @return
+     * @return 含指定根元素的文档
      *
      * @throws org.keycloak.saml.common.exceptions.ProcessingException
      */
@@ -107,11 +112,11 @@ public class DocumentUtil {
     }
 
     /**
-     * Parse a document from the string
+     * 从字符串解析 DOM 文档。
      *
-     * @param docString
+     * @param docString XML 文本
      *
-     * @return
+     * @return 解析后的文档
      *
      * @throws IOException
      * @throws SAXException
@@ -195,11 +200,11 @@ public class DocumentUtil {
     }
 
     /**
-     * Marshall a document into a String
+     * 将 DOM 文档序列化为字符串。
      *
-     * @param signedDoc
+     * @param signedDoc 待序列化文档
      *
-     * @return
+     * @return XML 字符串
      *
      * @throws TransformerFactoryConfigurationError
      * @throws TransformerException
@@ -235,13 +240,13 @@ public class DocumentUtil {
     }
 
     /**
-     * <p> Get an element from the document given its {@link QName} </p> <p> First an attempt to get the element based
-     * on its namespace is made, failing which an element with the localpart ignoring any namespace is returned. </p>
+     * <p>按 {@link QName} 在文档中查找元素。</p>
+     * <p>优先按命名空间匹配；失败则忽略命名空间仅匹配 localPart。</p>
      *
-     * @param doc
-     * @param elementQName
+     * @param doc 文档根
+     * @param elementQName 目标元素 QName
      *
-     * @return
+     * @return 匹配的首个元素，未找到返回 null
      */
     public static Element getElement(Document doc, QName elementQName) {
         NodeList nl = doc.getElementsByTagNameNS(elementQName.getNamespaceURI(), elementQName.getLocalPart());
@@ -339,11 +344,11 @@ public class DocumentUtil {
     }
 
     /**
-     * Get the document as a string while ignoring any exceptions
+     * 将文档转为字符串，异常时静默返回 null。
      *
-     * @param doc
+     * @param doc DOM 文档
      *
-     * @return
+     * @return XML 字符串或 null
      */
     public static String asString(Document doc) {
         String str = null;
@@ -382,6 +387,7 @@ public class DocumentUtil {
 
     };
 
+    /** 获取线程本地 {@link DocumentBuilder} 并重置后返回。 */
     public static DocumentBuilder getDocumentBuilder() throws ParserConfigurationException {
         DocumentBuilder res = XML_DOCUMENT_BUILDER.get();
         res.reset();
@@ -389,10 +395,9 @@ public class DocumentUtil {
     }
 
     /**
-     * <p> Creates a namespace aware {@link DocumentBuilderFactory}. The returned instance is cached and shared between
-     * different threads. </p>
+     * <p>创建启用命名空间且禁用外部实体的 {@link DocumentBuilderFactory}，实例跨线程缓存共享。</p>
      *
-     * @return
+     * @return 工厂实例
      */
     private static DocumentBuilderFactory getDocumentBuilderFactory() {
         if (documentBuilderFactory == null) {
@@ -419,7 +424,7 @@ public class DocumentUtil {
                         } catch (ParserConfigurationException e) {
                             throw logger.parserFeatureNotSupported(feature);
                         }
-                        // only place the fully initialized factory in the instance
+                        // 工厂完全配置后再写入静态字段
                         DocumentUtil.documentBuilderFactory = documentBuilderFactory;
                     } finally {
                         if (tccl_jaxp) {
@@ -434,13 +439,12 @@ public class DocumentUtil {
     }
 
     /**
-     * Get a (direct) child {@linkplain Element} from the parent {@linkplain Element}. 
+     * 在父元素下查找匹配命名空间与 localName 的直接子 {@linkplain Element}。
      *
-     * @param parent parent element
-     * @param targetNamespace namespace URI
-     * @param targetLocalName local name
-     * @return a child element matching the target namespace and localname, where {@linkplain Element#getParentNode()} is the parent input parameter
-     * @return
+     * @param parent 父元素
+     * @param targetNamespace 目标命名空间 URI
+     * @param targetLocalName 目标 localName
+     * @return 满足条件的直接子元素，否则 null
      */
     
     public static Element getDirectChildElement(Element parent, String targetNamespace, String targetLocalName) {

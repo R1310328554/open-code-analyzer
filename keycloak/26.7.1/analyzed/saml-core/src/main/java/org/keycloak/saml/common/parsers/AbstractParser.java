@@ -42,15 +42,17 @@ import org.keycloak.saml.common.util.SystemPropertiesUtil;
 import org.w3c.dom.Node;
 
 /**
- * Base class for parsers
+ * 基于 StAX 的 SAML/XML 解析器抽象基类，提供事件读取器创建与白空间过滤等通用能力。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Oct 12, 2010
  */
 public abstract class AbstractParser implements StaxParser {
 
+    /** 解析器共享日志实例。 */
     protected static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
+    /** 线程本地 {@link XMLInputFactory}，避免重复创建工厂实例。 */
     private static final ThreadLocal<XMLInputFactory> XML_INPUT_FACTORY = new ThreadLocal<XMLInputFactory>() {
         @Override
         protected XMLInputFactory initialValue() {
@@ -58,9 +60,9 @@ public abstract class AbstractParser implements StaxParser {
         }
 
         /**
-         * Get the JAXP {@link XMLInputFactory}
+         * 获取 JAXP {@link XMLInputFactory}，可按系统属性切换 TCCL。
          *
-         * @return
+         * @return 配置好的 XML 输入工厂
          */
         private XMLInputFactory getXMLInputFactory() {
             boolean tccl_jaxp = SystemPropertiesUtil.getSystemProperty(GeneralConstants.TCCL_JAXP, "false")
@@ -80,11 +82,11 @@ public abstract class AbstractParser implements StaxParser {
     };
 
     /**
-     * Parse an InputStream for payload
+     * 从输入流解析 SAML/XML 载荷。
      *
-     * @param stream
+     * @param stream 待解析输入流
      *
-     * @return
+     * @return 解析结果对象
      *
      * @throws {@link IllegalArgumentException}
      * @throws {@link IllegalArgumentException} when the configStream is null
@@ -94,15 +96,18 @@ public abstract class AbstractParser implements StaxParser {
         return parse(xmlEventReader);
     }
 
+    /** 从 {@link Source} 解析并返回对象。 */
     public Object parse(Source source) throws ParsingException {
         XMLEventReader xmlEventReader = createEventReader(source);
         return parse(xmlEventReader);
     }
 
+    /** 从 DOM {@link Node} 解析并返回对象。 */
     public Object parse(Node node) throws ParsingException {
         return parse(new DOMSource(node));
     }
 
+    /** 创建过滤空白字符后的 {@link XMLEventReader}。 */
     public static XMLEventReader createEventReader(InputStream configStream) throws ParsingException {
         if (configStream == null)
             throw logger.nullArgumentError("InputStream");
@@ -112,6 +117,7 @@ public abstract class AbstractParser implements StaxParser {
         return filterWhitespaces(xmlEventReader);
     }
 
+    /** 从 {@link Source} 创建过滤空白后的 {@link XMLEventReader}。 */
     public XMLEventReader createEventReader(Source source) throws ParsingException {
         if (source == null)
             throw logger.nullArgumentError("Source");
@@ -121,14 +127,15 @@ public abstract class AbstractParser implements StaxParser {
         return filterWhitespaces(xmlEventReader);
     }
 
+    /** 匹配纯空白字符的正则。 */
     private static final Pattern WHITESPACE_ONLY = Pattern.compile("\\s*");
 
     /**
-     * Creates a derived {@link XMLEventReader} that ignores all events except for: {@link StartElement},
-     * {@link EndElement}, and non-empty and non-whitespace-only {@link Characters}.
+     * 创建派生 {@link XMLEventReader}，仅保留 {@link StartElement}、{@link EndElement}
+     * 以及非空且非纯空白的 {@link Characters} 事件。
      * 
-     * @param xmlEventReader Original {@link XMLEventReader}
-     * @return Derived {@link XMLEventReader}
+     * @param xmlEventReader 原始 {@link XMLEventReader}
+     * @return 过滤后的 {@link XMLEventReader}
      * @throws XMLStreamException
      */
     private static XMLEventReader filterWhitespaces(XMLEventReader xmlEventReader) throws ParsingException {
@@ -138,7 +145,7 @@ public abstract class AbstractParser implements StaxParser {
             xmlEventReader = xmlInputFactory.createFilteredReader(xmlEventReader, new EventFilter() {
                 @Override
                 public boolean accept(XMLEvent xmlEvent) {
-                    // We are going to disregard characters that are new line and whitespace
+                    // 忽略换行与纯空白字符事件
                     if (xmlEvent.isCharacters()) {
                         Characters chars = xmlEvent.asCharacters();
                         String data = chars.getData();
@@ -152,7 +159,7 @@ public abstract class AbstractParser implements StaxParser {
             throw logger.parserException(ex);
         }
 
-        // Handle IBM JDK bug with Stax parsing when EventReader presented
+        // 处理 IBM JDK 在 StAX EventReader 上的已知缺陷
         if (Environment.IS_IBM_JAVA) {
             final XMLEventReader origReader = xmlEventReader;
 

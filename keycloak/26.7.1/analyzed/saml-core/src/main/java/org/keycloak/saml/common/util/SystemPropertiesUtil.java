@@ -19,14 +19,14 @@ package org.keycloak.saml.common.util;
 import javax.xml.XMLConstants;
 
 /**
- * Utility dealing with the system properties at the JVM level for PicketLink
+ * PicketLink/SAML 模块 JVM 级系统属性初始化与读取工具。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jul 1, 2011
  */
 public class SystemPropertiesUtil {
     static {
-        // XML Signature
+        // XML 签名：忽略换行以保持 canonical 一致性
         String xmlSec = "org.apache.xml.security.ignoreLineBreaks";
         if (StringUtil.isNullOrEmpty(SecurityActions.getSystemProperty(xmlSec, ""))) {
             SecurityActions.setSystemProperty(xmlSec, "true");
@@ -37,13 +37,13 @@ public class SystemPropertiesUtil {
             SecurityActions.setSystemProperty(xmlSecOpenJdk, "true");
         }
 
-        // For JAXP Validation
+        // JAXP Schema 校验工厂实现
         String schemaFactoryProperty = "javax.xml.validation.SchemaFactory:" + XMLConstants.W3C_XML_SCHEMA_NS_URI;
         if (StringUtil.isNullOrEmpty(SecurityActions.getSystemProperty(schemaFactoryProperty, ""))) {
             SecurityActions.setSystemProperty(schemaFactoryProperty, "org.apache.xerces.jaxp.validation.XMLSchemaFactory");
         }
 
-        // For the XACML Engine
+        // XACML 引擎：默认关闭 schema 校验
         String xacmlValidation = "org.jboss.security.xacml.schema.validation";
         if (StringUtil.isNullOrEmpty(SecurityActions.getSystemProperty(xacmlValidation, ""))) {
             SecurityActions.setSystemProperty(xacmlValidation, "false");
@@ -51,16 +51,16 @@ public class SystemPropertiesUtil {
     };
 
     /**
-     * No-op call such that the default system properties are set
+     * 触发静态初始化块，确保默认系统属性已设置（无其他副作用）。
      */
     public static void ensure() {
     }
 
     /**
-     * Get the System Property
-     * @param key key of the system property
-     * @param defaultValue default value to be returned if the system property is not set
-     * @return
+     * 读取系统属性，不存在时返回默认值。
+     * @param key 属性键
+     * @param defaultValue 默认值
+     * @return 属性值
      */
     public static String getSystemProperty(final String key, final String defaultValue){
         return SecurityActions.getSystemProperty(key,defaultValue);

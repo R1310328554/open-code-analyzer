@@ -54,36 +54,39 @@ import org.keycloak.saml.processing.core.util.JAXPValidationUtil;
 import org.w3c.dom.Document;
 
 /**
- * API for SAML2 Request
+ * SAML 2.0 请求（AuthnRequest、LogoutRequest 等）的构建、解析与序列化 API。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jan 5, 2009
  */
 public class SAML2Request {
 
+    /** 日志实例。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
+    /** 最近一次解析得到的文档持有者。 */
     private SAMLDocumentHolder samlDocumentHolder = null;
 
+    /** 默认 NameID 格式（transient）。 */
     private String nameIDFormat = JBossSAMLURIConstants.NAMEID_FORMAT_TRANSIENT.get();
 
     /**
-     * Set the NameIDFormat
+     * 设置 AuthnRequest 中 NameIDPolicy 的 format URI。
      *
-     * @param nameIDFormat
+     * @param nameIDFormat NameID 格式 URI 字符串
      */
     public void setNameIDFormat(String nameIDFormat) {
         this.nameIDFormat = nameIDFormat;
     }
 
     /**
-     * Create authentication request with protocolBinding defaulting to POST
+     * 创建认证请求，协议绑定默认为 HTTP-POST。
      *
-     * @param id
-     * @param assertionConsumerURL
-     * @param destination
-     * @param issuerValue
-     * @return
+     * @param id 请求 ID
+     * @param assertionConsumerURL ACS URL
+     * @param destination IdP 目标地址
+     * @param issuerValue 发起方标识
+     * @return AuthnRequestType 对象
      * @throws ConfigurationException
      */
     public AuthnRequestType createAuthnRequestType(String id, String assertionConsumerURL, String destination,
@@ -115,13 +118,13 @@ public class SAML2Request {
             authnRequest.setDestination(URI.create(destination));
         }
 
-        // Create an issuer
+        // 设置 Issuer
         NameIDType issuer = new NameIDType();
         issuer.setValue(issuerValue);
 
         authnRequest.setIssuer(issuer);
 
-        // Create a default NameIDPolicy
+        // 默认 NameIDPolicy：允许创建且使用配置的 format
         NameIDPolicyType nameIDPolicy = new NameIDPolicyType();
         nameIDPolicy.setAllowCreate(Boolean.TRUE);
         nameIDPolicy.setFormat(this.nameIDFormat == null ? null : URI.create(this.nameIDFormat));
@@ -163,11 +166,11 @@ public class SAML2Request {
     }
 
     /**
-     * Get the Underlying SAML2Object from the input stream
+     * 从输入流解析任意 SAML2 对象并包装为 {@link SAMLDocumentHolder}。
      *
-     * @param is
+     * @param is SAML XML 输入流
      *
-     * @return
+     * @return 对象与原始 DOM 的持有者
      *
      * @throws IOException
      * @throws ParsingException
@@ -260,11 +263,11 @@ public class SAML2Request {
     }
 
     /**
-     * Create a Logout Request
+     * 创建 LogoutRequest（含自动生成的 ID 与 IssueInstant）。
      *
-     * @param issuer
+     * @param issuer 发起方 NameID
      *
-     * @return
+     * @return LogoutRequestType
      *
      * @throws ConfigurationException
      */
@@ -339,10 +342,10 @@ public class SAML2Request {
     }
 
     /**
-     * Marshall the AuthnRequestType to an output stream
+     * 将 SAML 请求对象序列化写入输出流。
      *
-     * @param requestType
-     * @param os
+     * @param requestType 请求对象
+     * @param os 目标流
      *
      * @throws ProcessingException
      */

@@ -59,21 +59,23 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 /**
- * Utility to deal with JAXP Transformer
+ * JAXP {@link Transformer} 工厂与 StAX→DOM 转换工具。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Oct 22, 2010
  */
 public class TransformerUtil {
 
+    /** 日志实例。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
+    /** 缓存的 {@link TransformerFactory}。 */
     private static volatile TransformerFactory transformerFactory;
 
     /**
-     * Get the Default Transformer
+     * 获取默认 {@link Transformer}（省略 XML 声明、不缩进）。
      *
-     * @return
+     * @return 配置好的转换器
      *
      * @throws org.keycloak.saml.common.exceptions.ConfigurationException
      */
@@ -143,10 +145,9 @@ public class TransformerUtil {
     }
 
     /**
-     * Get the Custom Stax Source to DOM result transformer that has been written to get over the JDK transformer bugs
-     * (JDK6) as well as the issue of Xalan installing its Transformer (which does not support stax).
+     * 返回自定义 StAX→DOM 转换器，规避 JDK6 与 Xalan 不支持 StAX 的问题。
      *
-     * @return
+     * @return PicketLink 实现的 Transformer
      *
      * @throws ConfigurationException
      */
@@ -205,7 +206,7 @@ public class TransformerUtil {
     }
 
     /**
-     * Custom Project {@code Transformer} that can take in a {@link StAXSource} and transform into {@link DOMResult}
+     * 项目内自定义 {@code Transformer}：将 {@link StAXSource} 转为 {@link DOMResult}。
      *
      * @author anil
      */
@@ -241,7 +242,7 @@ public class TransformerUtil {
                 stack.push(parent);
 
                 if (holder.encounteredTextNode) {
-                    // Handling text node skips over the corresponding end element, see {@link XMLEventReader#getElementText()}
+                    // 文本节点已通过 getElementText 消费，对应结束标签已被跳过
                     return;
                 }
 

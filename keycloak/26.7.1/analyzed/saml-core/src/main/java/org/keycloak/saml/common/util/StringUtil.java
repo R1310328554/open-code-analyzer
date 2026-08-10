@@ -21,42 +21,43 @@ import org.keycloak.saml.common.PicketLinkLoggerFactory;
 
 
 /**
- * Utility dealing with Strings
+ * 字符串判空与相等性校验工具。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Oct 21, 2009
  */
 public class StringUtil {
 
+    /** 日志实例。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
     /**
-     * Check whether the passed string is null or empty
+     * 判断字符串非 null 且 trim 后非空。
      *
-     * @param str
+     * @param str 待检查字符串
      *
-     * @return
+     * @return 非空返回 true
      */
     public static boolean isNotNull(String str) {
         return str != null && !"".equals(str.trim());
     }
 
     /**
-     * Check whether the string is null or empty
+     * 判断字符串为 null 或长度为 0（不 trim）。
      *
-     * @param str
+     * @param str 待检查字符串
      *
-     * @return
+     * @return 为 null 或空串返回 true
      */
     public static boolean isNullOrEmpty(String str) {
         return str == null || str.isEmpty();
     }
 
     /**
-     * Match two strings else throw a {@link RuntimeException}
+     * 断言两字符串相等，否则抛出 {@link RuntimeException}。
      *
-     * @param first
-     * @param second
+     * @param first 期望值
+     * @param second 实际值
      */
     public static void match(String first, String second) {
         if (!first.equals(second))

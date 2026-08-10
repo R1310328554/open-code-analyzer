@@ -29,18 +29,22 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
- * Simple support for STaX type of parsing. Parses single element and allows processing its direct children.
+ * STAX 单元素解析框架：解析指定根元素并分发处理其直接子元素。
  *
- * @param <T> Java class that will be result of parsing this element
- * @param <E> Type containing all tokens that can be found in subelements of the element parsed by this parser, usually an enum
+ * @param <T> 解析结果对应的 Java 类型
+ * @param <E> 子元素标记类型，通常为枚举，用于映射 XML 子标签
  * @author hmlnarik
  */
 public abstract class AbstractStaxParser<T, E> implements StaxParser {
 
+    /** 解析器日志实例。 */
     protected static final PicketLinkLogger LOGGER = PicketLinkLoggerFactory.getLogger();
+    /** 期望的起始元素 QName。 */
     protected final QName expectedStartElement;
+    /** 未知子元素时使用的占位标记。 */
     private final E unknownElement;
 
+    /** 构造解析器并指定根元素与未知子元素标记。 */
     public AbstractStaxParser(QName expectedStartElement, E unknownElement) {
         this.unknownElement = unknownElement;
         this.expectedStartElement = expectedStartElement;
@@ -48,19 +52,19 @@ public abstract class AbstractStaxParser<T, E> implements StaxParser {
 
     @Override
     public T parse(XMLEventReader xmlEventReader) throws ParsingException {
-        // STATE: should be before the expected start element
+        // 状态：应位于期望起始元素之前
 
-        // Get the start element and validate it is the expected one
+        // 读取起始元素并校验是否为期望标签
         StartElement startElement = StaxParserUtil.getNextStartElement(xmlEventReader);
         final QName actualQName = startElement.getName();
         validateStartElement(startElement);
         T target = instantiateElement(xmlEventReader, startElement);
 
-        // STATE: Start element has been read.
+        // 状态：起始元素已读取
         QName currentSubelement = null;
 
         while (xmlEventReader.hasNext()) {
-            // STATE: the only end element that can be found at this phase must correspond to the expected start element
+            // 状态：此阶段唯一合法的结束元素应对应当前起始元素
             XMLEvent xmlEvent = StaxParserUtil.peekNextTag(xmlEventReader);
             if (xmlEvent == null) {
                 break;
@@ -70,21 +74,21 @@ public abstract class AbstractStaxParser<T, E> implements StaxParser {
                 EndElement endElement = (EndElement) xmlEvent;
                 final QName qName = endElement.getName();
 
-                // If leftover from processed subelement, just consume.
+                // 已处理子元素的残留结束标签，直接消费
                 if (Objects.equals(qName, currentSubelement)) {
                     StaxParserUtil.advance(xmlEventReader);
                     currentSubelement = null;
                     continue;
                 }
 
-                // If end element corresponding to this start element, stop processing.
+                // 遇到与当前起始元素匹配的结束标签，结束解析
                 if (Objects.equals(qName, actualQName)) {
-                    // consume the end element and finish parsing of this tag
+                    // 消费结束元素并完成当前标签解析
                     StaxParserUtil.advance(xmlEventReader);
                     break;
                 }
 
-                // No other case is valid
+                // 其他结束标签均视为非法
                 String elementName = StaxParserUtil.getElementName(endElement);
                 throw LOGGER.parserUnknownEndElement(elementName, xmlEvent.getLocation());
             }
@@ -97,7 +101,7 @@ public abstract class AbstractStaxParser<T, E> implements StaxParser {
             }
             processSubElement(xmlEventReader, target, token, startElement);
 
-            // If the XMLEventReader has not advanced inside processSubElement (hence using "==" and not "equals"), advance it.
+            // 若 processSubElement 未推进读取器（使用 == 而非 equals 判断），则跳过该子元素块
             if (StaxParserUtil.peek(xmlEventReader) == startElement) {
                 StaxParserUtil.bypassElementBlock(xmlEventReader);
                 if (LOGGER.isDebugEnabled()) {
@@ -105,8 +109,7 @@ public abstract class AbstractStaxParser<T, E> implements StaxParser {
                 }
             }
 
-            // In case of recursive nesting the same element, the corresponding end element MUST be handled
-            // in the {@code processSubElement} method and MUST NOT be consumed here.
+            // 递归嵌套同名元素时，对应结束标签必须在 {@code processSubElement} 中处理，此处不得消费
             if (Objects.equals(actualQName, currentSubelement) || isUnknownElement(token)) {
                 currentSubelement = null;
             }
@@ -115,45 +118,44 @@ public abstract class AbstractStaxParser<T, E> implements StaxParser {
     }
 
     /**
-     * Validates that the given startElement has the expected properties (namely {@link QName} matches the expected one).
-     * @param startElement
-     * @return
+     * 校验起始元素的 {@link QName} 是否与期望一致。
+     * @param startElement 待校验的起始元素
      */
     protected void validateStartElement(StartElement startElement) {
         StaxParserUtil.validate(startElement, expectedStartElement);
     }
 
+    /** 判断子元素标记是否表示未知/未识别元素。 */
     protected boolean isUnknownElement(E token) {
         return token == null || Objects.equals(token, unknownElement);
     }
 
+    /** 将子元素 QName 映射为标记枚举/常量。 */
     protected abstract E getElementFromName(QName name);
 
     /**
-     * Instantiates the target Java class representing the current element.<br>
-     * <b>Precondition:</b> Current event is the {@link StartElement}<br>
-     * <b>Postcondition:</b> Current event is the {@link StartElement} or the {@link EndElement} corresponding to the {@link StartElement}
-     * @param xmlEventReader
-     * @param element The XML event that was just read from the {@code xmlEventReader}
-     * @return
+     * 实例化表示当前 XML 元素的 Java 对象。<br>
+     * <b>前置条件：</b>当前事件为 {@link StartElement}<br>
+     * <b>后置条件：</b>当前事件仍为 {@link StartElement} 或与之对应的 {@link EndElement}
+     * @param xmlEventReader 事件读取器
+     * @param element 刚从 {@code xmlEventReader} 读取的起始元素
+     * @return 解析目标对象
      * @throws ParsingException
      */
     protected abstract T instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException;
 
     /**
-     * Processes the subelement of the element processed in {@link #instantiateElement} method.<br>
-     * <b>Precondition:</b> Current event: Last before the {@link StartElement} corresponding to the processed subelement, i.e.
-     *    event obtained by {@link XMLEventReader#next()} is the {@link StartElement} of the subelement being processed<br>
-     * <b>Postcondition:</b> Event obtained by {@link XMLEventReader#next()} is either
-     *    the same {@link StartElement} (i.e. no change in position which causes this subelement to be skipped),
-     *    the corresponding {@link EndElement}, or the event after the corresponding {@link EndElement}.
+     * 处理 {@link #instantiateElement} 所创建元素的一个直接子元素。<br>
+     * <b>前置条件：</b>当前位于待处理子元素 {@link StartElement} 之前，
+     * 下一次 {@link XMLEventReader#next()} 即为该子元素起始标签<br>
+     * <b>后置条件：</b>下一次 {@link XMLEventReader#next()} 为同一 {@link StartElement}（表示跳过）、
+     * 对应 {@link EndElement}，或结束标签之后的事件。
      * <p>
-     * Note that in case of recursive nesting the same element, the corresponding end element MUST be consumed in this method.
-     * @param xmlEventReader
-     * @param target Target object (the one created by the {@link #instantiateElement} method.
-     * @param element The constant corresponding to the current start element.
-     * @param elementDetail The XML event that was just read from the {@code xmlEventReader}
-     * @return
+     * 递归嵌套同名元素时，必须在子类中消费对应的结束标签。
+     * @param xmlEventReader 事件读取器
+     * @param target {@link #instantiateElement} 创建的目标对象
+     * @param element 当前子元素对应的标记常量
+     * @param elementDetail 刚从 {@code xmlEventReader} 读取的起始元素事件
      * @throws ParsingException
      */
     protected abstract void processSubElement(XMLEventReader xmlEventReader, T target, E element, StartElement elementDetail) throws ParsingException;

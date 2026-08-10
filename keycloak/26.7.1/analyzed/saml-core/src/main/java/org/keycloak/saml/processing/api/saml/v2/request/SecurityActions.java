@@ -21,7 +21,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 /**
- * Privileged Blocks
+ * SAML2 请求 API 包内特权操作辅助类（类加载与资源定位）。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Dec 9, 2008
@@ -29,16 +29,12 @@ import java.security.PrivilegedAction;
 class SecurityActions {
 
     /**
-     * <p>
-     * Loads a {@link Class} using the <code>fullQualifiedName</code> supplied. This method tries first to load from
-     * the
-     * specified {@link Class}, if not found it will try to load from using TCL.
-     * </p>
+     * <p>按全限定名加载 {@link Class}：先使用锚点类加载器，失败则尝试 TCL。</p>
      *
-     * @param theClass
-     * @param fullQualifiedName
+     * @param theClass 锚点类
+     * @param fullQualifiedName 目标类全限定名
      *
-     * @return
+     * @return 已加载的 Class 或 null
      */
     static Class<?> loadClass(final Class<?> theClass, final String fullQualifiedName) {
         SecurityManager sm = System.getSecurityManager();
@@ -124,12 +120,12 @@ class SecurityActions {
     }
 
     /**
-     * Load a resource based on the passed {@link Class} classloader. Failing which try with the Thread Context CL
+     * 通过类加载器加载 classpath 资源，失败时回退到线程上下文类加载器。
      *
-     * @param clazz
-     * @param resourceName
+     * @param clazz 锚点类
+     * @param resourceName 资源路径
      *
-     * @return
+     * @return 资源 URL 或 null
      */
     static URL loadResource(final Class<?> clazz, final String resourceName) {
         SecurityManager sm = System.getSecurityManager();
