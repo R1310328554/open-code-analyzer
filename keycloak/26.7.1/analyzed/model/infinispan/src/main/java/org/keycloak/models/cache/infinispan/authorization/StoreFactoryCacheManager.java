@@ -31,12 +31,19 @@ import org.infinispan.Cache;
 import org.jboss.logging.Logger;
 
 /**
+ * 授权 StoreFactory 的 Infinispan 缓存管理器，负责资源/作用域/策略/权限票据的失效传播。
+ * <p>
+ * 继承 {@link CacheManager}，将 {@link AuthorizationCacheInvalidationEvent} 展开为具体缓存键集合，
+ * 并配合流式谓词（InResource/InScope/InResourceServer）批量失效关联查询结果。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class StoreFactoryCacheManager extends CacheManager {
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(StoreFactoryCacheManager.class);
 
+    /** 构造授权缓存管理器。 */
     public StoreFactoryCacheManager(Cache<String, Revisioned> cache, Cache<String, Long> revisions) {
         super(cache, revisions);
     }
@@ -45,6 +52,7 @@ public class StoreFactoryCacheManager extends CacheManager {
         return logger;
     }
 
+    /** 从授权失效事件提取需失效的缓存键。 */
     @Override
     protected void addInvalidationsFromEvent(InvalidationEvent event, Set<String> invalidations) {
         if (event instanceof AuthorizationCacheInvalidationEvent) {
@@ -54,17 +62,20 @@ public class StoreFactoryCacheManager extends CacheManager {
         }
     }
 
+    /** 资源服务器更新时失效自身及按客户端 ID 的查询缓存。 */
     public void resourceServerUpdated(String id, Set<String> invalidations) {
         invalidations.add(id);
         invalidations.add(StoreFactoryCacheSession.getResourceServerByClientCacheKey(id));
     }
 
+    /** 资源服务器删除时额外失效所有关联 InResourceServer 谓词匹配的条目。 */
     public void resourceServerRemoval(String id, Set<String> invalidations) {
         resourceServerUpdated(id, invalidations);
 
         addInvalidations(InResourceServerPredicate.create(id), invalidations);
     }
 
+    /** 作用域更新时失效按 ID、名称、关联资源与权限票据的查询缓存。 */
     public void scopeUpdated(String id, String name, String serverId, Set<String> invalidations) {
         invalidations.add(id);
         invalidations.add(StoreFactoryCacheSession.getScopeByNameCacheKey(name, serverId));
@@ -72,11 +83,13 @@ public class StoreFactoryCacheManager extends CacheManager {
         invalidations.add(StoreFactoryCacheSession.getPermissionTicketByScope(id, serverId));
     }
 
+    /** 作用域删除时额外失效所有 InScope 谓词匹配的条目。 */
     public void scopeRemoval(String id, String name, String serverId, Set<String> invalidations) {
         scopeUpdated(id, name, serverId, invalidations);
         addInvalidations(InScopePredicate.create(id), invalidations);
     }
 
+    /** 资源更新时失效按 ID、名称、所有者、类型、URI、作用域及权限票据的查询缓存。 */
     public void resourceUpdated(String id, String name, String type, Set<String> uris, Set<String> scopes, String serverId, String owner, Set<String> invalidations) {
         invalidations.add(id);
         invalidations.add(StoreFactoryCacheSession.getResourceByNameCacheKey(name, owner, serverId));
@@ -107,11 +120,13 @@ public class StoreFactoryCacheManager extends CacheManager {
         }
     }
 
+    /** 资源删除时额外失效所有 InResource 谓词匹配的条目。 */
     public void resourceRemoval(String id, String name, String type, Set<String> uris, String owner, Set<String> scopes, String serverId, Set<String> invalidations) {
         resourceUpdated(id, name, type, uris, scopes, serverId, owner, invalidations);
         addInvalidations(InResourcePredicate.create(id), invalidations);
     }
 
+    /** 策略更新时失效按 ID、名称、资源、资源类型与作用域的查询缓存。 */
     public void policyUpdated(String id, String name, Set<String> resources, Set<String> resourceTypes, Set<String> scopes, String serverId, Set<String> invalidations) {
         invalidations.add(id);
         invalidations.add(StoreFactoryCacheSession.getPolicyByNameCacheKey(name, serverId));
@@ -141,6 +156,7 @@ public class StoreFactoryCacheManager extends CacheManager {
         }
     }
 
+    /** 权限票据更新时失效按 ID、所有者、请求者、资源与作用域的查询缓存。 */
     public void permissionTicketUpdated(String id, String owner, String requester, String resource, String resourceName, String scope, String serverId, Set<String> invalidations) {
         invalidations.add(id);
         invalidations.add(StoreFactoryCacheSession.getPermissionTicketByOwner(owner, serverId));
@@ -154,10 +170,12 @@ public class StoreFactoryCacheManager extends CacheManager {
         }
     }
 
+    /** 策略删除时复用更新逻辑展开失效键。 */
     public void policyRemoval(String id, String name, Set<String> resources, Set<String> resourceTypes, Set<String> scopes, String serverId, Set<String> invalidations) {
         policyUpdated(id, name, resources, resourceTypes, scopes, serverId, invalidations);
     }
 
+    /** 权限票据删除时复用更新逻辑展开失效键。 */
     public void permissionTicketRemoval(String id, String owner, String requester, String resource, String resourceName, String scope, String serverId, Set<String> invalidations) {
         permissionTicketUpdated(id, owner, requester, resource, resourceName, scope, serverId, invalidations);
     }

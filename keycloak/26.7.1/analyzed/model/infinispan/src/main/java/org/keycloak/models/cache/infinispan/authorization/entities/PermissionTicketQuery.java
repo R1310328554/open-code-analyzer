@@ -21,10 +21,16 @@ import java.util.Set;
 import org.keycloak.models.cache.infinispan.entities.Revisioned;
 
 /**
+ * 权限票据查询结果的通用接口。
+ * <p>
+ * 继承 {@link InResourceServer} 与 {@link Revisioned}，定义权限 ID 集合访问与失效判定。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface PermissionTicketQuery extends InResourceServer, Revisioned {
 
+    /** 返回查询命中的权限票据 ID 集合。 */
     Set<String> getPermissions();
+    /** 判断当前查询缓存是否因失效集合而过期。 */
     boolean isInvalid(Set<String> invalidations);
 }

@@ -22,20 +22,35 @@ import org.keycloak.authorization.model.Policy;
 import org.keycloak.models.cache.infinispan.entities.AbstractRevisioned;
 
 /**
+ * 权限票据（PermissionTicket）的 Infinispan 缓存快照实体。
+ * <p>
+ * 存储票据所有者、请求者、资源/作用域 ID、授予状态与时间戳等不可变字段，
+ * 实现 {@link InResourceServer} 以支持按资源服务器批量失效。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class CachedPermissionTicket extends AbstractRevisioned implements InResourceServer {
 
+    /** 权限票据请求者（被授权用户）ID。 */
     private final String requester;
+    /** 资源所有者 ID。 */
     private String owner;
+    /** 所属资源服务器 ID。 */
     private String resourceServerId;
+    /** 关联资源 ID。 */
     private String resourceId;
+    /** 关联作用域 ID，可为 null。 */
     private String scopeId;
+    /** 是否已授予。 */
     private boolean granted;
+    /** 创建时间戳。 */
     private Long createdTimestamp;
+    /** 授予时间戳。 */
     private Long grantedTimestamp;
+    /** 关联策略 ID，可为 null。 */
     private String policy;
 
+    /** 从 PermissionTicket 模型构造缓存快照。 */
     public CachedPermissionTicket(long revision, PermissionTicket permissionTicket) {
         super(revision, permissionTicket.getId());
         this.owner = permissionTicket.getOwner();

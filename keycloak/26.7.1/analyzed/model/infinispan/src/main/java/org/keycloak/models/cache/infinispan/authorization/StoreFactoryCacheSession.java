@@ -82,33 +82,59 @@ import org.keycloak.storage.StorageId;
 import org.jboss.logging.Logger;
 
 /**
+ * 授权 StoreFactory 的 Infinispan 缓存会话，实现 {@link CachedStoreFactoryProvider}。
+ * <p>
+ * 为资源服务器、作用域、资源、策略与权限票据提供带缓存的 Store 实现；
+ * 写操作在事务提交后批量失效本地缓存并广播集群失效事件。
+ * 内部嵌套五个 Cache 类分别包装各 Store 的 CRUD 与查询缓存逻辑。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
+    /** 日志记录器。 */
     protected static final Logger logger = Logger.getLogger(StoreFactoryCacheSession.class);
 
+    /** 授权缓存管理器。 */
     protected StoreFactoryCacheManager cache;
+    /** 当前是否处于 Keycloak 事务中。 */
     protected boolean transactionActive;
+    /** 事务是否已标记回滚。 */
     protected boolean setRollbackOnly;
 
+    /** 本会话中已管理的资源服务器适配器（按 ID）。 */
     protected Map<String, ResourceServerAdapter> managedResourceServers = new HashMap<>();
+    /** 本会话中已管理的作用域适配器（按 ID）。 */
     protected Map<String, ScopeAdapter> managedScopes = new HashMap<>();
+    /** 本会话中已管理的资源适配器（按 ID）。 */
     protected Map<String, ResourceAdapter> managedResources = new HashMap<>();
+    /** 本会话中已管理的策略适配器（按 ID）。 */
     protected Map<String, PolicyAdapter> managedPolicies = new HashMap<>();
+    /** 本会话中已管理的权限票据适配器（按 ID）。 */
     protected Map<String, PermissionTicketAdapter> managedPermissionTickets = new HashMap<>();
+    /** 待失效的缓存键集合，事务提交时批量处理。 */
     protected Set<String> invalidations = new HashSet<>();
-    protected Set<InvalidationEvent> invalidationEvents = new HashSet<>(); // Events to be sent across cluster
+    /** 待广播的集群失效事件集合。 */
+    protected Set<InvalidationEvent> invalidationEvents = new HashSet<>();
 
+    /** 会话启动时的缓存 revision 计数器，用于 revision 批次管理。 */
     protected final long startupRevision;
+    /** 底层 StoreFactory 委托，懒加载。 */
     protected StoreFactory delegate;
+    /** 当前 Keycloak 会话。 */
     protected KeycloakSession session;
+    /** 资源服务器 Store 缓存包装。 */
     protected ResourceServerCache resourceServerCache;
+    /** 作用域 Store 缓存包装。 */
     protected ScopeCache scopeCache;
+    /** 资源 Store 缓存包装。 */
     protected ResourceCache resourceCache;
+    /** 策略 Store 缓存包装。 */
     protected PolicyCache policyCache;
+    /** 权限票据 Store 缓存包装。 */
     protected PermissionTicketCache permissionTicketCache;
 
+    /** 构造授权缓存会话并注册事务回调。 */
     public StoreFactoryCacheSession(StoreFactoryCacheManager cache, KeycloakSession session) {
         this.cache = cache;
         this.startupRevision = cache.getCurrentCounter();
@@ -242,6 +268,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         };
     }
 
+    /** 事务提交/回滚后执行本地失效并广播集群失效事件。 */
     protected void runInvalidations() {
         for (String id : invalidations) {
             cache.invalidateObject(id);
@@ -250,6 +277,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         cache.sendInvalidationEvents(session, invalidationEvents, InfinispanCacheStoreFactoryProviderFactory.AUTHORIZATION_INVALIDATION_EVENTS);
     }
 
+    /** 注册资源服务器更新失效（含关联查询键与集群事件）。 */
     public void registerResourceServerInvalidation(String id) {
         cache.resourceServerUpdated(id, invalidations);
         ResourceServerAdapter adapter = managedResourceServers.get(id);
@@ -258,6 +286,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         invalidationEvents.add(ResourceServerUpdatedEvent.create(id));
     }
 
+    /** 注册作用域更新失效。 */
     public void registerScopeInvalidation(String id, String name, String serverId) {
         cache.scopeUpdated(id, name, serverId, invalidations);
         ScopeAdapter adapter = managedScopes.get(id);
@@ -266,6 +295,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         invalidationEvents.add(ScopeUpdatedEvent.create(id, name, serverId));
     }
 
+    /** 注册资源更新失效。 */
     public void registerResourceInvalidation(String id, String name, String type, Set<String> uris, Set<String> scopes, String serverId, String owner) {
         cache.resourceUpdated(id, name, type, uris, scopes, serverId, owner, invalidations);
         ResourceAdapter adapter = managedResources.get(id);
@@ -274,6 +304,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         invalidationEvents.add(ResourceUpdatedEvent.create(id, name, type, uris, owner, scopes, serverId));
     }
 
+    /** 注册策略更新失效，自动解析关联资源类型。 */
     public void registerPolicyInvalidation(String id, String name, Set<String> resources, Set<String> scopes, String defaultResourceType, String serverId) {
         Set<String> resourceTypes = getResourceTypes(resources, serverId);
         if (Objects.nonNull(defaultResourceType)) {
@@ -286,6 +317,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         invalidationEvents.add(PolicyUpdatedEvent.create(id, name, resources, resourceTypes, scopes, serverId));
     }
 
+    /** 注册权限票据更新失效。 */
     public void registerPermissionTicketInvalidation(String id, String owner, String requester, String resource, String resourceName, String scope, String serverId) {
         cache.permissionTicketUpdated(id, owner, requester, resource, resourceName, scope, serverId, invalidations);
         PermissionTicketAdapter adapter = managedPermissionTickets.get(id);
@@ -294,6 +326,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         invalidationEvents.add(PermissionTicketUpdatedEvent.create(id, owner, requester, resource, resourceName, scope, serverId));
     }
 
+    /** 从资源 ID 集合解析资源类型，用于策略失效键展开。 */
     private Set<String> getResourceTypes(Set<String> resources, String serverId) {
         if (resources == null) {
             return Collections.emptySet();
@@ -331,10 +364,12 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         return getDelegate().getPermissionTicketStore();
     }
 
+    /** 生成按客户端 ID 查询资源服务器的缓存键。 */
     public static String getResourceServerByClientCacheKey(String clientId) {
         return "resource.server.client.id." + clientId;
     }
 
+    /** 生成按作用域名称查询的缓存键。 */
     public static String getScopeByNameCacheKey(String name, String serverId) {
         return "scope.name." + name + "." + serverId;
     }
@@ -407,22 +442,26 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         return "permission.ticket.owner." + owner + "." + serverId;
     }
 
+    /** 懒加载底层 StoreFactory 委托。 */
     public StoreFactory getDelegate() {
         if (delegate != null) return delegate;
         delegate = session.getProvider(StoreFactory.class);
         return delegate;
     }
 
+    /** 缓存"模型不存在"占位条目，避免重复 DB 查询。 */
     private void setModelDoesNotExists(String id, Long loaded) {
         if (! invalidations.contains(id)) {
             cache.addRevisioned(new NonExistentItem(id, loaded), startupRevision);
         }
     }
 
+    /** 判断模型是否可能存在（未被标记不存在且未在失效集合中）。 */
     boolean modelMightExist(String id) {
         return invalidations.contains(id) || cache.get(id, NonExistentItem.class) == null;
     }
 
+    /** 资源服务器 Store 的缓存实现。 */
     protected class ResourceServerCache implements ResourceServerStore {
         @Override
         public ResourceServer create(ClientModel client) {
@@ -484,6 +523,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         }
     }
 
+    /** 作用域 Store 的缓存实现。 */
     protected class ScopeCache implements ScopeStore {
         @Override
         public Scope create(ResourceServer resourceServer, String name) {
@@ -579,6 +619,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         }
     }
 
+    /** 资源 Store 的缓存实现，含按名称/所有者/类型/URI/作用域的查询缓存。 */
     protected class ResourceCache implements ResourceStore {
 
         @Override
@@ -824,6 +865,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         }
     }
 
+    /** 策略 Store 的缓存实现，含按名称/资源/类型/作用域的查询缓存。 */
     protected class PolicyCache implements PolicyStore {
         @Override
         public Policy create(ResourceServer resourceServer, AbstractPolicyRepresentation representation) {
@@ -1078,6 +1120,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         }
     }
 
+    /** 权限票据 Store 的缓存实现，含按资源/作用域/授予用户的查询缓存。 */
     protected class PermissionTicketCache implements PermissionTicketStore {
         @Override
         public long count(ResourceServer resourceServer, Map<PermissionTicket.FilterOption, String> attributes) {
@@ -1209,6 +1252,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         }
     }
 
+    /** 将策略模型写入缓存（若尚未存在且未被失效）。 */
     void cachePolicy(Policy model) {
         String id = model.getId();
         if (cache.getCache().containsKey(id)) {
@@ -1226,6 +1270,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         return new CachedPolicy(loaded, model);
     }
 
+    /** 将资源模型写入缓存（若尚未存在且未被失效）。 */
     void cacheResource(Resource model) {
         String id = model.getId();
         if (cache.getCache().containsKey(id)) {
@@ -1239,6 +1284,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         cache.addRevisioned(new CachedResource(loaded, model), startupRevision);
     }
 
+    /** 将作用域模型写入缓存（若尚未存在且未被失效）。 */
     void cacheScope(Scope model) {
         String id = model.getId();
         if (cache.getCache().containsKey(id)) {

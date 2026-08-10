@@ -35,21 +35,37 @@ import org.keycloak.models.cache.infinispan.LazyLoader;
 import org.keycloak.models.cache.infinispan.entities.AbstractRevisioned;
 
 /**
+ * 授权资源（Resource）的 Infinispan 缓存快照实体。
+ * <p>
+ * 核心字段在构造时固化；URI、作用域 ID 与属性通过 {@link LazyLoader} 懒加载，
+ * 避免缓存条目过大。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class CachedResource extends AbstractRevisioned implements InResourceServer {
 
+    /** 所属资源服务器 ID。 */
     private final String resourceServerId;
+    /** 资源图标 URI。 */
     private final String iconUri;
+    /** 资源所有者 ID。 */
     private final String owner;
+    /** 资源类型标识。 */
     private final String type;
+    /** 资源名称。 */
     private final String name;
+    /** 资源显示名称。 */
     private final String displayName;
+    /** 是否启用所有者托管访问（UMA）。 */
     private final boolean ownerManagedAccess;
+    /** 关联作用域 ID 集合的懒加载器。 */
     private LazyLoader<Resource, Set<String>> scopesIds;
+    /** 资源 URI 集合的懒加载器。 */
     private LazyLoader<Resource, Set<String>> uris;
+    /** 资源属性映射的懒加载器。 */
     private LazyLoader<Resource, MultivaluedHashMap<String, String>> attributes;
 
+    /** 从 Resource 模型构造缓存快照。 */
     public CachedResource(long revision, Resource resource) {
         super(revision, resource.getId());
         this.name = resource.getName();
@@ -76,6 +92,7 @@ public class CachedResource extends AbstractRevisioned implements InResourceServ
         return this.displayName;
     }
 
+    /** 懒加载资源 URI 集合。 */
     public Set<String> getUris(KeycloakSession session, Supplier<Resource> source) {
         return this.uris.get(session, source);
     }
@@ -100,10 +117,12 @@ public class CachedResource extends AbstractRevisioned implements InResourceServ
         return this.resourceServerId;
     }
 
+    /** 懒加载关联作用域 ID 集合。 */
     public Set<String> getScopesIds(KeycloakSession session, Supplier<Resource> source) {
         return this.scopesIds.get(session, source);
     }
 
+    /** 懒加载资源属性映射。 */
     public Map<String, List<String>> getAttributes(KeycloakSession session, Supplier<Resource> source) {
         return attributes.get(session, source);
     }

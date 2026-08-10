@@ -17,8 +17,13 @@
 package org.keycloak.models.cache.infinispan.authorization.entities;
 
 /**
+ * 标记缓存实体关联到特定作用域的接口。
+ * <p>
+ * 供流式谓词（InScopePredicate）在批量失效时按作用域 ID 匹配查询结果。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface InScope {
+    /** 返回关联作用域 ID。 */
     String getScopeId();
 }

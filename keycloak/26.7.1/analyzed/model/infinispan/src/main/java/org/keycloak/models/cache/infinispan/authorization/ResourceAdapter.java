@@ -36,17 +36,28 @@ import org.keycloak.models.cache.infinispan.LazyModel;
 import org.keycloak.models.cache.infinispan.authorization.entities.CachedResource;
 
 /**
+ * 授权资源（Resource）的 Infinispan 缓存适配器，实现 {@link Resource} 与 {@link CachedModel}。
+ * <p>
+ * 读操作返回 {@link CachedResource} 快照；写操作加载 DB 委托并注册资源失效。
+ * 作用域、URI 与属性在首次访问时懒解析并缓存。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ResourceAdapter implements Resource, CachedModel<Resource> {
 
+    /** 惰性加载资源 DB 模型的供应器。 */
     private final Supplier<Resource> modelSupplier;
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 缓存的资源快照实体。 */
     protected final CachedResource cached;
+    /** 所属授权缓存会话。 */
     protected final StoreFactoryCacheSession cacheSession;
+    /** 数据库委托模型，写操作时懒加载。 */
     protected Resource updated;
 
+    /** 构造资源缓存适配器。 */
     public ResourceAdapter(CachedResource cached, StoreFactoryCacheSession cacheSession) {
         this.cached = cached;
         this.cacheSession = cacheSession;
@@ -54,6 +65,7 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
         this.modelSupplier = new LazyModel<>(this::getResourceModel);
     }
 
+    /** 获取用于更新的数据库委托，首次调用时注册资源失效。 */
     @Override
     public Resource getDelegateForUpdate() {
         if (updated == null) {
@@ -64,8 +76,10 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
         return updated;
     }
 
+    /** 缓存条目是否已被标记失效。 */
     protected boolean invalidated;
 
+    /** 标记本地缓存条目失效（不立即加载 DB）。 */
     protected void invalidateFlag() {
         invalidated = true;
 
@@ -82,6 +96,7 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
         return cached.getCacheTimestamp();
     }
 
+    /** 判断是否已切换到 DB 委托（更新或失效后重载）。 */
     protected boolean isUpdated() {
         if (updated != null) return true;
         if (!invalidated) return false;
@@ -168,8 +183,10 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
 
     }
 
+    /** 已解析的作用域列表，懒加载后不可变缓存。 */
     protected List<Scope> scopes;
 
+    /** 返回资源关联的作用域，未更新时从缓存 ID 列表懒解析。 */
     @Override
     public List<Scope> getScopes() {
         if (isUpdated()) return updated.getScopes();
@@ -200,12 +217,14 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
         updated.setOwnerManagedAccess(ownerManagedAccess);
     }
 
+    /** 更新作用域集合，移除的作用域会级联删除关联权限票据与策略引用。 */
     @Override
     public void updateScopes(Set<Scope> scopes) {
         Resource updated = getDelegateForUpdate();
 
         for (Scope scope : updated.getScopes()) {
             if (!scopes.contains(scope)) {
+                // 移除作用域时清理关联权限票据
                 PermissionTicketStore permissionStore = cacheSession.getPermissionTicketStore();
                 List<PermissionTicket> permissions = permissionStore.findByScope(getResourceServer(), scope);
 
@@ -285,6 +304,7 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
         return getId().hashCode();
     }
 
+    /** 从数据库加载资源模型（供 LazyModel 使用）。 */
     private Resource getResourceModel() {
         return cacheSession.getResourceStoreDelegate().findById(getResourceServer(), cached.getId());
     }

@@ -22,15 +22,24 @@ import org.keycloak.authorization.model.Scope;
 import org.keycloak.models.cache.infinispan.entities.AbstractRevisioned;
 
 /**
+ * 授权作用域（Scope）的 Infinispan 缓存快照实体。
+ * <p>
+ * 实现 {@link InResourceServer}，缓存名称、显示名称、图标 URI 与所属资源服务器 ID。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class CachedScope extends AbstractRevisioned implements InResourceServer {
 
+    /** 所属资源服务器 ID。 */
     private String resourceServerId;
+    /** 作用域名称。 */
     private String name;
+    /** 作用域显示名称。 */
     private String displayName;
+    /** 作用域图标 URI。 */
     private String iconUri;
 
+    /** 从 Scope 模型构造缓存快照。 */
     public CachedScope(long revision, Scope scope) {
         super(revision, scope.getId());
         this.name = scope.getName();

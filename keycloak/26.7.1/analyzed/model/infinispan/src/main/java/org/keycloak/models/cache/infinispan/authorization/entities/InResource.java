@@ -17,8 +17,13 @@
 package org.keycloak.models.cache.infinispan.authorization.entities;
 
 /**
+ * 标记缓存实体关联到特定资源的接口。
+ * <p>
+ * 供流式谓词（InResourcePredicate）在批量失效时按资源 ID 匹配查询结果。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface InResource {
+    /** 返回关联资源 ID。 */
     String getResourceId();
 }

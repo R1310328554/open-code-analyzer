@@ -22,19 +22,28 @@ import org.keycloak.authorization.model.Scope;
 import org.keycloak.models.cache.infinispan.authorization.entities.CachedScope;
 
 /**
+ * 授权作用域（Scope）的 Infinispan 缓存适配器，实现 {@link Scope} 与 {@link CachedModel}。
+ * <p>
+ * 读操作返回 {@link CachedScope} 快照；写操作加载 DB 委托并注册作用域失效。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ScopeAdapter implements Scope, CachedModel<Scope> {
+    /** 缓存的作用域快照实体。 */
     protected CachedScope cached;
+    /** 所属授权缓存会话。 */
     protected StoreFactoryCacheSession cacheSession;
+    /** 数据库委托模型，写操作时懒加载。 */
     protected Scope updated;
 
+    /** 构造作用域缓存适配器。 */
     public ScopeAdapter(CachedScope cached, StoreFactoryCacheSession cacheSession) {
         this.cached = cached;
         this.cacheSession = cacheSession;
     }
 
+    /** 获取用于更新的数据库委托，首次调用时注册作用域失效。 */
     @Override
     public Scope getDelegateForUpdate() {
         if (updated == null) {
@@ -45,8 +54,10 @@ public class ScopeAdapter implements Scope, CachedModel<Scope> {
         return updated;
     }
 
+    /** 缓存条目是否已被标记失效。 */
     protected boolean invalidated;
 
+    /** 标记本地缓存条目失效（不立即加载 DB）。 */
     protected void invalidateFlag() {
         invalidated = true;
 
@@ -63,6 +74,7 @@ public class ScopeAdapter implements Scope, CachedModel<Scope> {
         return cached.getCacheTimestamp();
     }
 
+    /** 判断是否已切换到 DB 委托（更新或失效后重载）。 */
     protected boolean isUpdated() {
         if (updated != null) return true;
         if (!invalidated) return false;

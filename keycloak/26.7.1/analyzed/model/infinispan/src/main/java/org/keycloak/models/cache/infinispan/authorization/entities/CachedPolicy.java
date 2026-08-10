@@ -36,23 +36,41 @@ import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.Logic;
 
 /**
+ * 授权策略（Policy）的 Infinispan 缓存快照实体。
+ * <p>
+ * 核心字段（类型、决策策略、逻辑、名称等）在构造时固化；关联策略、资源、作用域与配置
+ * 通过 {@link LazyLoader} 在首次访问时从 DB 委托懒加载。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class CachedPolicy extends AbstractRevisioned implements InResourceServer {
 
+    /** 策略类型（如 role、group、js 等）。 */
     private final String type;
+    /** 决策策略（一致/多数/否定等）。 */
     private final DecisionStrategy decisionStrategy;
+    /** 策略逻辑（正向/否定）。 */
     private final Logic logic;
+    /** 策略名称。 */
     private final String name;
+    /** 策略描述。 */
     private final String description;
+    /** 所属资源服务器 ID。 */
     private final String resourceServerId;
+    /** 关联策略 ID 集合的懒加载器。 */
     private final LazyLoader<Policy, Set<String>> associatedPoliciesIds;
+    /** 关联资源 ID 集合的懒加载器。 */
     private final LazyLoader<Policy, Set<String>> resourcesIds;
+    /** 关联资源名称集合的懒加载器。 */
     private final LazyLoader<Policy, Set<String>> resourcesNames;
+    /** 关联作用域 ID 集合的懒加载器。 */
     private final LazyLoader<Policy, Set<String>> scopesIds;
+    /** 策略配置键值对的懒加载器。 */
     private final LazyLoader<Policy, Map<String, String>> config;
+    /** 策略所有者 ID。 */
     private final String owner;
 
+    /** 从 Policy 模型构造缓存快照。 */
     public CachedPolicy(long revision, Policy policy) {
         super(revision, policy.getId());
         this.type = policy.getType();
@@ -86,6 +104,7 @@ public class CachedPolicy extends AbstractRevisioned implements InResourceServer
         return this.logic;
     }
 
+    /** 懒加载策略配置键值对。 */
     public Map<String, String> getConfig(KeycloakSession session, Supplier<Policy> policy) {
         return this.config.get(session, policy);
     }
@@ -98,18 +117,22 @@ public class CachedPolicy extends AbstractRevisioned implements InResourceServer
         return this.description;
     }
 
+    /** 懒加载关联策略 ID 集合。 */
     public Set<String> getAssociatedPoliciesIds(KeycloakSession session, Supplier<Policy> policy) {
         return this.associatedPoliciesIds.get(session, policy);
     }
 
+    /** 懒加载关联资源 ID 集合。 */
     public Set<String> getResourcesIds(KeycloakSession session, Supplier<Policy> policy) {
         return this.resourcesIds.get(session, policy);
     }
 
+    /** 懒加载关联资源名称集合。 */
     public Set<String> getResourceNames(KeycloakSession session, Supplier<Policy> policy) {
         return this.resourcesNames.get(session, policy);
     }
 
+    /** 懒加载关联作用域 ID 集合。 */
     public Set<String> getScopesIds(KeycloakSession session, Supplier<Policy> policy) {
         return this.scopesIds.get(session, policy);
     }
