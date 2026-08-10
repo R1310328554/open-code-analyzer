@@ -27,13 +27,16 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 import java.util.List;
 
 /**
- * The oracle implementation of HistoryConfigInfoMapper.
+ * {@link HistoryConfigInfoMapper} 的 Oracle 实现。
+ *
+ * <p>配置历史表 his_config_info 的过期清理与按 dataId/group/tenant 分页查询， 使用 Oracle {@code ROWID}、{@code OFFSET/FETCH} 与 {@code FETCH FIRST} 语法。</p>
  *
  * @author liam.fu
  **/
 public class HistoryConfigInfoMapperByOracle extends AbstractMapperByOracle
     implements HistoryConfigInfoMapper {
     
+    /** 分批删除早于指定时间的过期历史记录（FETCH FIRST 控制批次大小）。 */
     @Override
     public MapperResult removeConfigHistory(MapperContext context) {
         String sql =
@@ -43,6 +46,7 @@ public class HistoryConfigInfoMapperByOracle extends AbstractMapperByOracle
                 context.getWhereParameter(FieldConstant.LIMIT_SIZE)));
     }
     
+    /** 增量拉取已删除配置记录，按 nid 游标分页。 */
     @Override
     public MapperResult findDeletedConfig(MapperContext context) {
         return new MapperResult(
@@ -55,6 +59,7 @@ public class HistoryConfigInfoMapperByOracle extends AbstractMapperByOracle
                 context.getWhereParameter(FieldConstant.PAGE_SIZE)));
     }
     
+    /** 按 dataId/group/tenant 倒序分页查询配置变更历史。 */
     @Override
     public MapperResult pageFindConfigHistoryFetchRows(MapperContext context) {
         String sql =
@@ -69,6 +74,7 @@ public class HistoryConfigInfoMapperByOracle extends AbstractMapperByOracle
                 context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 按 nid 游标获取下一条历史记录，可选 gray_name 过滤。 */
     @Override
     public MapperResult getNextHistoryInfo(MapperContext context) {
         String sql =
@@ -92,6 +98,7 @@ public class HistoryConfigInfoMapperByOracle extends AbstractMapperByOracle
         return new MapperResult(sql, paramList);
     }
     
+    /** 返回 Oracle 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.ORACLE;

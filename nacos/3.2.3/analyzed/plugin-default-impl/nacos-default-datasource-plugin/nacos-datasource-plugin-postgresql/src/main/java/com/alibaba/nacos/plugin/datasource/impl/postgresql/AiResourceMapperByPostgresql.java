@@ -26,12 +26,15 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The postgresql implementation of {@link AiResourceMapper}.
+ * {@link AiResourceMapper} 的 PostgreSQL 实现。
+ *
+ * <p>使用 PostgreSQL {@code LIMIT … OFFSET …} 语法分页查询 AI 资源表。</p>
  *
  * @author nacos
  */
 public class AiResourceMapperByPostgresql extends AbstractMapper implements AiResourceMapper {
     
+    /** 按命名空间与扩展条件分页查询 AI 资源列表。 */
     @Override
     public MapperResult findAiResourceFetchRows(MapperContext context) {
         WhereBuilder where = new WhereBuilder(
@@ -40,6 +43,7 @@ public class AiResourceMapperByPostgresql extends AbstractMapper implements AiRe
                 + "FROM ai_resource");
         where.eq("namespace_id", context.getWhereParameter(FieldConstant.NAMESPACE_ID));
         
+        // 追加可选扩展查询条件
         appendExtraQueryCondition(where, context);
         
         MapperResult built = where.build();
@@ -49,11 +53,13 @@ public class AiResourceMapperByPostgresql extends AbstractMapper implements AiRe
         return new MapperResult(sql, built.getParamList());
     }
     
+    /** 返回 PostgreSQL 数据源标识。 */
     @Override
     public String getDataSource() {
         return DatabaseTypeConstant.POSTGRESQL;
     }
     
+    /** 从 PostgreSQL 可信函数白名单解析 SQL 函数片段。 */
     @Override
     public String getFunction(String functionName) {
         return TrustedPostgresqlFunctionEnum.getFunctionByName(functionName);

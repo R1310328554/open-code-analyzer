@@ -20,13 +20,16 @@ import com.alibaba.nacos.plugin.datasource.constants.DatabaseTypeConstant;
 import com.alibaba.nacos.plugin.datasource.impl.base.BaseConfigInfoBetaMapper;
 
 /**
- * The postgresql implementation of ConfigInfoBetaMapper.
+ * {@link com.alibaba.nacos.plugin.datasource.mapper.ConfigInfoBetaMapper} 的 PostgreSQL 实现。
+ *
+ * <p>Beta 配置 Mapper 的 PostgreSQL 数据源绑定，SQL 语句继承自基类 {@link BaseConfigInfoBetaMapper}。</p>
  *
  * @author Long Yu
  **/
 
 public class ConfigInfoBetaMapperByPostgresql extends BaseConfigInfoBetaMapper {
     
+    /** 返回 PostgreSQL 数据源类型标识。 */
     @Override
     public String getDataSource() {
         return DatabaseTypeConstant.POSTGRESQL;

@@ -28,18 +28,22 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * The oracle implementation of TenantCapacityMapper.
+ * {@link TenantCapacityMapper} 的 Oracle 实现。
+ *
+ * <p>租户级配置容量配额管理：用量增减、校正及从 config_info 初始化容量行。 分页扫描使用 Oracle {@code FETCH FIRST} 语法。</p>
  *
  * @author liam.fu
  **/
 public class TenantCapacityMapperByOracle extends AbstractMapperByOracle
     implements TenantCapacityMapper {
     
+    /** 返回 Oracle 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.ORACLE;
     }
     
+    /** 按 tenant_id 查询容量配额与当前用量。 */
     @Override
     public MapperResult select(MapperContext context) {
         String sql =
@@ -49,6 +53,7 @@ public class TenantCapacityMapperByOracle extends AbstractMapperByOracle
             Collections.singletonList(context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 分页扫描租户容量表以批量校正用量。 */
     @Override
     public MapperResult getCapacityList4CorrectUsage(MapperContext context) {
         String sql = "SELECT id, tenant_id FROM tenant_capacity WHERE id>? FETCH FIRST ? ROWS ONLY";
@@ -57,6 +62,7 @@ public class TenantCapacityMapperByOracle extends AbstractMapperByOracle
                 context.getWhereParameter(FieldConstant.LIMIT_SIZE)));
     }
     
+    /** 配额为零时按 max_size 上限递增租户用量。 */
     @Override
     public MapperResult incrementUsageWithDefaultQuotaLimit(MapperContext context) {
         return new MapperResult(
@@ -67,6 +73,7 @@ public class TenantCapacityMapperByOracle extends AbstractMapperByOracle
                 context.getWhereParameter(FieldConstant.USAGE)));
     }
     
+    /** 配额非零且未超限时将租户用量 +1。 */
     @Override
     public MapperResult incrementUsageWithQuotaLimit(MapperContext context) {
         return new MapperResult(
@@ -76,6 +83,7 @@ public class TenantCapacityMapperByOracle extends AbstractMapperByOracle
                 context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 无条件将指定租户用量 +1。 */
     @Override
     public MapperResult incrementUsage(MapperContext context) {
         return new MapperResult(
@@ -84,6 +92,7 @@ public class TenantCapacityMapperByOracle extends AbstractMapperByOracle
                 context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 用量大于零时将租户用量 -1。 */
     @Override
     public MapperResult decrementUsage(MapperContext context) {
         return new MapperResult(
@@ -92,6 +101,7 @@ public class TenantCapacityMapperByOracle extends AbstractMapperByOracle
                 context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 按 config_info 实际计数校正租户用量。 */
     @Override
     public MapperResult correctUsage(MapperContext context) {
         return new MapperResult(
@@ -102,6 +112,7 @@ public class TenantCapacityMapperByOracle extends AbstractMapperByOracle
                 context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 从 config_info 统计后 INSERT SELECT 初始化租户容量行。 */
     @Override
     public MapperResult insertTenantCapacity(MapperContext context) {
         List<Object> paramList = new ArrayList<>();

@@ -20,12 +20,15 @@ import com.alibaba.nacos.plugin.datasource.constants.DataSourceConstant;
 import com.alibaba.nacos.plugin.datasource.mapper.TenantInfoMapper;
 
 /**
- * The oracle implementation of TenantInfoMapper.
+ * {@link TenantInfoMapper} 的 Oracle 实现。
+ *
+ * <p>租户元数据 Mapper 的 Oracle 数据源绑定，CRUD SQL 由基类 {@link AbstractMapperByOracle} 提供。</p>
  *
  * @author liam.fu
  **/
 public class TenantInfoMapperByOracle extends AbstractMapperByOracle implements TenantInfoMapper {
     
+    /** 返回 Oracle 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.ORACLE;

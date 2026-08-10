@@ -26,7 +26,9 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 import java.util.Collections;
 
 /**
- * The postgresql implementation of ConfigInfoGrayMapper.
+ * {@link ConfigInfoGrayMapper} 的 PostgreSQL 实现。
+ *
+ * <p>灰度配置全量导出分页查询，按 id 排序并使用 {@code LIMIT … OFFSET …} 分页。</p>
  *
  * @author WangzJi
  **/
@@ -34,6 +36,7 @@ import java.util.Collections;
 public class ConfigInfoGrayMapperByPostgresql extends AbstractMapper
     implements ConfigInfoGrayMapper {
     
+    /** 分页拉取灰度配置用于全量 dump。 */
     @Override
     public MapperResult findAllConfigInfoGrayForDumpAllFetchRows(MapperContext context) {
         String sql =
@@ -43,11 +46,13 @@ public class ConfigInfoGrayMapperByPostgresql extends AbstractMapper
         return new MapperResult(sql, Collections.emptyList());
     }
     
+    /** 返回 PostgreSQL 数据源类型标识。 */
     @Override
     public String getDataSource() {
         return DatabaseTypeConstant.POSTGRESQL;
     }
     
+    /** 从 PostgreSQL 可信函数白名单解析 SQL 函数片段。 */
     @Override
     public String getFunction(String functionName) {
         return TrustedPostgresqlFunctionEnum.getFunctionByName(functionName);

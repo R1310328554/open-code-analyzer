@@ -22,17 +22,21 @@ import com.alibaba.nacos.plugin.datasource.mapper.AbstractMapper;
 import com.alibaba.nacos.plugin.datasource.mapper.ConfigMigrateMapper;
 
 /**
- * The type Config migrate mapper by postgresql.
+ * {@link ConfigMigrateMapper} 的 PostgreSQL 实现。
+ *
+ * <p>配置迁移相关 Mapper 的 PostgreSQL 数据源绑定，SQL 语句继承自接口默认定义。</p>
  *
  * @author WangzJi
  */
 public class ConfigMigrateMapperByPostgresql extends AbstractMapper implements ConfigMigrateMapper {
     
+    /** 返回 PostgreSQL 数据源类型标识。 */
     @Override
     public String getDataSource() {
         return DatabaseTypeConstant.POSTGRESQL;
     }
     
+    /** 从 PostgreSQL 可信函数白名单解析 SQL 函数片段。 */
     @Override
     public String getFunction(String functionName) {
         return TrustedPostgresqlFunctionEnum.getFunctionByName(functionName);

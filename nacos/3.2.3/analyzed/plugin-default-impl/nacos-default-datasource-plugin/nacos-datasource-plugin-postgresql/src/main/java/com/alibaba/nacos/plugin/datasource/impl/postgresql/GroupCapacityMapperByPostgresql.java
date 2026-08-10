@@ -29,18 +29,21 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * The PostgreSQL implementation of GroupCapacityMapper.
- * Override methods to remove MySQL backticks around 'usage' field.
+ * {@link com.alibaba.nacos.plugin.datasource.mapper.GroupCapacityMapper} 的 PostgreSQL 实现。
+ *
+ * <p>重写基类方法以去除 MySQL 对 {@code usage} 字段的反引号转义， 适配 PostgreSQL 语法并补充 {@code max_history_count} 列。</p>
  *
  * @author Long Yu
  **/
 public class GroupCapacityMapperByPostgresql extends BaseGroupCapacityMapper {
     
+    /** 返回 PostgreSQL 数据源类型标识。 */
     @Override
     public String getDataSource() {
         return DatabaseTypeConstant.POSTGRESQL;
     }
     
+    /** 按 group_id 查询容量配额与用量。 */
     @Override
     public MapperResult select(MapperContext context) {
         String sql =
@@ -50,6 +53,7 @@ public class GroupCapacityMapperByPostgresql extends BaseGroupCapacityMapper {
             Collections.singletonList(context.getWhereParameter(FieldConstant.GROUP_ID)));
     }
     
+    /** 从 config_info 统计 count 并插入新 group 容量行。 */
     @Override
     public MapperResult insertIntoSelect(MapperContext context) {
         List<Object> paramList = new ArrayList<>();
@@ -68,6 +72,7 @@ public class GroupCapacityMapperByPostgresql extends BaseGroupCapacityMapper {
         return new MapperResult(sql, paramList);
     }
     
+    /** 按 group 与默认 tenant 统计后插入容量行。 */
     @Override
     public MapperResult insertIntoSelectByWhere(MapperContext context) {
         final String sql =
@@ -89,6 +94,7 @@ public class GroupCapacityMapperByPostgresql extends BaseGroupCapacityMapper {
         return new MapperResult(sql, paramList);
     }
     
+    /** 配额为零时按 max_size 上限递增用量。 */
     @Override
     public MapperResult incrementUsageByWhereQuotaEqualZero(MapperContext context) {
         return new MapperResult(
@@ -98,6 +104,7 @@ public class GroupCapacityMapperByPostgresql extends BaseGroupCapacityMapper {
                 context.getWhereParameter(FieldConstant.USAGE)));
     }
     
+    /** 配额非零且未超限时将用量 +1。 */
     @Override
     public MapperResult incrementUsageByWhereQuotaNotEqualZero(MapperContext context) {
         return new MapperResult(
@@ -106,6 +113,7 @@ public class GroupCapacityMapperByPostgresql extends BaseGroupCapacityMapper {
                 context.getWhereParameter(FieldConstant.GROUP_ID)));
     }
     
+    /** 无条件将指定 group 用量 +1。 */
     @Override
     public MapperResult incrementUsageByWhere(MapperContext context) {
         return new MapperResult(
@@ -114,6 +122,7 @@ public class GroupCapacityMapperByPostgresql extends BaseGroupCapacityMapper {
                 context.getWhereParameter(FieldConstant.GROUP_ID)));
     }
     
+    /** 用量大于零时将指定 group 用量 -1。 */
     @Override
     public MapperResult decrementUsageByWhere(MapperContext context) {
         return new MapperResult(
@@ -122,6 +131,7 @@ public class GroupCapacityMapperByPostgresql extends BaseGroupCapacityMapper {
                 context.getWhereParameter(FieldConstant.GROUP_ID)));
     }
     
+    /** 按全表 config_info 计数校正 group 用量。 */
     @Override
     public MapperResult updateUsage(MapperContext context) {
         return new MapperResult(
@@ -130,6 +140,7 @@ public class GroupCapacityMapperByPostgresql extends BaseGroupCapacityMapper {
                 context.getWhereParameter(FieldConstant.GROUP_ID)));
     }
     
+    /** 按 group 与默认 tenant 统计校正用量。 */
     @Override
     public MapperResult updateUsageByWhere(MapperContext context) {
         return new MapperResult(

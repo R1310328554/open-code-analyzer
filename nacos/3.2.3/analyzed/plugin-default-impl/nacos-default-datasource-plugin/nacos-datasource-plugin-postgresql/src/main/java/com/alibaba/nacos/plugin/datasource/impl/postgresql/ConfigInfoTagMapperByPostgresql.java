@@ -20,13 +20,16 @@ import com.alibaba.nacos.plugin.datasource.constants.DatabaseTypeConstant;
 import com.alibaba.nacos.plugin.datasource.impl.base.BaseConfigInfoTagMapper;
 
 /**
- * The postgresql implementation of ConfigInfoTagMapper.
+ * {@link com.alibaba.nacos.plugin.datasource.mapper.ConfigInfoTagMapper} 的 PostgreSQL 实现。
+ *
+ * <p>带标签配置 Mapper 的 PostgreSQL 数据源绑定，SQL 语句继承自基类 {@link BaseConfigInfoTagMapper}。</p>
  *
  * @author hyx
  **/
 
 public class ConfigInfoTagMapperByPostgresql extends BaseConfigInfoTagMapper {
     
+    /** 返回 PostgreSQL 数据源类型标识。 */
     @Override
     public String getDataSource() {
         return DatabaseTypeConstant.POSTGRESQL;

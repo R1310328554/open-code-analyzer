@@ -20,32 +20,44 @@ import com.alibaba.nacos.plugin.datasource.constants.DatabaseTypeConstant;
 import com.alibaba.nacos.plugin.datasource.impl.enums.postgresql.TrustedPostgresqlFunctionEnum;
 
 /**
- * PostgreSQL database dialect.
+ * PostgreSQL 数据库方言实现。
+ *
+ * <p>声明数据源类型为 PostgreSQL，并通过 {@link TrustedPostgresqlFunctionEnum} 将通用函数名映射为 PostgreSQL 内置 SQL 片段； 分页拼接 {@code OFFSET ? LIMIT ?} 语法。</p>
  *
  * @author xiweng.yy
  */
 public class PostgresqlDatabaseDialect extends AbstractDatabaseDialect {
     
+    /** 返回 PostgreSQL 数据源类型标识。 */
     @Override
     public String getType() {
         return DatabaseTypeConstant.POSTGRESQL;
     }
     
+    /**
+     * 按函数名解析 PostgreSQL 可信 SQL 函数。
+     *
+     * @param functionName 逻辑函数名
+     * @return PostgreSQL 侧实际 SQL 函数表达式
+     */
     @Override
     public String getFunction(String functionName) {
         return TrustedPostgresqlFunctionEnum.getFunctionByName(functionName);
     }
     
+    /** 为 SQL 追加占位符形式的分页子句 {@code OFFSET ? LIMIT ?}。 */
     @Override
     public String getLimitPageSqlWithMark(String sql) {
         return sql + " OFFSET ? LIMIT ? ";
     }
     
+    /** 为 SQL 追加字面量 offset/limit 分页子句。 */
     @Override
     public String getLimitPageSql(String sql, int pageNo, int pageSize) {
         return sql + "  OFFSET " + getPagePrevNum(pageNo, pageSize) + " LIMIT " + pageSize;
     }
     
+    /** 按起始偏移量与页大小拼接分页子句。 */
     @Override
     public String getLimitPageSqlWithOffset(String sql, int startOffset, int pageSize) {
         return sql + "  OFFSET " + startOffset + " LIMIT " + pageSize;

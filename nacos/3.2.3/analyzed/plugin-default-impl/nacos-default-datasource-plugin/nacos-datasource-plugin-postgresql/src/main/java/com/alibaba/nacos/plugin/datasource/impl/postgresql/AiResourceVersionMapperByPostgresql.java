@@ -27,13 +27,16 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The postgresql implementation of {@link AiResourceVersionMapper}.
+ * {@link AiResourceVersionMapper} 的 PostgreSQL 实现。
+ *
+ * <p>按命名空间、资源名及可选 type/status/version 过滤， 按修改时间倒序分页查询 AI 资源版本。</p>
  *
  * @author nacos
  */
 public class AiResourceVersionMapperByPostgresql extends AbstractMapper
     implements AiResourceVersionMapper {
     
+    /** 分页查询 AI 资源版本记录。 */
     @Override
     public MapperResult findAiResourceVersionFetchRows(MapperContext context) {
         WhereBuilder where = new WhereBuilder(
@@ -44,14 +47,17 @@ public class AiResourceVersionMapperByPostgresql extends AbstractMapper
         
         Object type = context.getWhereParameter(FieldConstant.TYPE);
         if (type != null && StringUtils.isNotBlank(String.valueOf(type))) {
+            // 可选：按资源类型过滤
             where.and().eq("type", type);
         }
         Object status = context.getWhereParameter(FieldConstant.STATUS);
         if (status != null && StringUtils.isNotBlank(String.valueOf(status))) {
+            // 可选：按状态过滤
             where.and().eq("status", status);
         }
         Object version = context.getWhereParameter(FieldConstant.VERSION);
         if (version != null && StringUtils.isNotBlank(String.valueOf(version))) {
+            // 可选：按版本号过滤
             where.and().eq("version", version);
         }
         
@@ -62,11 +68,13 @@ public class AiResourceVersionMapperByPostgresql extends AbstractMapper
         return new MapperResult(sql, built.getParamList());
     }
     
+    /** 返回 PostgreSQL 数据源标识。 */
     @Override
     public String getDataSource() {
         return DatabaseTypeConstant.POSTGRESQL;
     }
     
+    /** 从 PostgreSQL 可信函数白名单解析 SQL 函数片段。 */
     @Override
     public String getFunction(String functionName) {
         return TrustedPostgresqlFunctionEnum.getFunctionByName(functionName);

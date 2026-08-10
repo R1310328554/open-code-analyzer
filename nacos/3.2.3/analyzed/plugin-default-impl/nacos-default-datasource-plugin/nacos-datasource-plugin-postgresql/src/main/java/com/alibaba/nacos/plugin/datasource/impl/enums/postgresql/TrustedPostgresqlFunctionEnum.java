@@ -20,21 +20,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The TrustedSqlFunctionEnum enum class is used to enumerate and manage a list of trusted built-in SQL functions.
- * By using this enum, you can verify whether a given SQL function is part of the trusted functions list
- * to avoid potential SQL injection risks.
+ * PostgreSQL 可信内置 SQL 函数枚举。
+ *
+ * <p>白名单校验函数名，防止 Mapper 动态 SQL 拼接时引入注入风险； 将跨数据库通用函数名映射为 PostgreSQL 等价写法。</p>
  *
  * @author caoyanan
  */
 public enum TrustedPostgresqlFunctionEnum {
     
-    /**
-     * NOW().
-     */
+    /** 当前时间：通用 {@code NOW()} 映射为 PostgreSQL {@code NOW()}。 */
     NOW("NOW()", "NOW()");
     
+    /** 函数名 → 枚举项的快速查找表。 */
     private static final Map<String, TrustedPostgresqlFunctionEnum> LOOKUP_MAP = new HashMap<>();
     
+    // 启动时填充函数名索引
     static {
         for (TrustedPostgresqlFunctionEnum entry : TrustedPostgresqlFunctionEnum.values()) {
             LOOKUP_MAP.put(entry.functionName, entry);
@@ -51,7 +51,7 @@ public enum TrustedPostgresqlFunctionEnum {
     }
     
     /**
-     * Get the function name.
+     * 按函数名返回对应 PostgreSQL SQL 函数片段。
      *
      * @param functionName function name
      * @return function
@@ -61,6 +61,7 @@ public enum TrustedPostgresqlFunctionEnum {
         if (entry != null) {
             return entry.function;
         }
+        // 非白名单函数名直接拒绝
         throw new IllegalArgumentException(
             String.format("Invalid function name: %s", functionName));
     }
