@@ -18,21 +18,21 @@
 package org.keycloak.protocol.oid4vc.issuance;
 
 /**
- * Interface to provide the current time
+ * 提供当前时间的接口，便于 OID4VCI 端点注入可测试的时间源。
  */
 public interface TimeProvider {
 
     /**
-     * Returns current time in seconds
+     * 返回当前 Unix 时间戳（秒）。
      *
-     * @return see description
+     * @return 自 1970-01-01 UTC 起的秒数
      */
     int currentTimeSeconds();
 
     /**
-     * Returns current time in milliseconds
+     * 返回当前 Unix 时间戳（毫秒）。
      *
-     * @return see description
+     * @return 自 1970-01-01 UTC 起的毫秒数
      */
     long currentTimeMillis();
 

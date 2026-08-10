@@ -24,17 +24,19 @@ import org.keycloak.wellknown.WellKnownProvider;
 import org.keycloak.wellknown.WellKnownProviderFactory;
 
 /**
- * {@link  WellKnownProviderFactory} implementation for JWT VC Issuer metadata at endpoint /.well-known/jwt-vc-issuer
- *
- * {@see https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-03.html#name-jwt-vc-issuer-metadata}
+ * JWT VC 签发者 Well-Known 元数据的 {@link WellKnownProviderFactory} 工厂。
+ * <p>提供方 ID 为 {@code jwt-vc-issuer}，可通过 Server Metadata 发现。</p>
+ * <p>{@see https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-03.html#name-jwt-vc-issuer-metadata}</p>
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public class JWTVCIssuerWellKnownProviderFactory implements WellKnownProviderFactory, OID4VCEnvironmentProviderFactory {
 
+    /** Well-Known 提供方 ID。 */
     public static final String PROVIDER_ID = "jwt-vc-issuer";
 
     @Override
+    /** @param session Keycloak 会话 @return JWT VC 签发者元数据提供方 */
     public WellKnownProvider create(KeycloakSession session) {
         return new JWTVCIssuerWellKnownProvider(session);
     }
@@ -55,11 +57,13 @@ public class JWTVCIssuerWellKnownProviderFactory implements WellKnownProviderFac
     }
 
     @Override
+    /** @return 提供方 ID {@value #PROVIDER_ID} */
     public String getId() {
         return PROVIDER_ID;
     }
 
     @Override
+    /** 可通过 Server Metadata 索引发现。 */
     public boolean isAvailableViaServerMetadata() {
         return true;
     }

@@ -74,9 +74,9 @@ import static org.keycloak.constants.OID4VCIConstants.BATCH_CREDENTIAL_ISSUANCE_
 import static org.keycloak.jose.jwk.RSAPublicJWK.RS256;
 
 /**
- * {@link WellKnownProvider} implementation to provide the .well-known/openid-credential-issuer endpoint, offering
- * the Credential Issuer Metadata as defined by the OID4VCI protocol
- * {@see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-11.2.2}
+ * OID4VCI 凭证签发者元数据的 {@link WellKnownProvider} 实现。
+ * <p>端点 {@code /.well-known/openid-credential-issuer}，返回 Credential Issuer Metadata，含支持的凭证配置、加密参数、批量签发能力等。</p>
+ * <p>{@see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-11.2.2}</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
@@ -84,9 +84,10 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
 
     private static final Logger LOGGER = Logger.getLogger(OID4VCIssuerWellKnownProvider.class);
 
+    /** Well-Known 提供方 ID。 */
     public static final String PROVIDER_ID = "openid-credential-issuer";
 
-    // Realm attributes for signed metadata configuration
+    // Realm 属性：签名元数据 JWT 的生命周期与算法
     public static final String SIGNED_METADATA_LIFESPAN_ATTR = "oid4vci.signed_metadata.lifespan";
     public static final String SIGNED_METADATA_ALG_ATTR = "oid4vci.signed_metadata.alg";
 
@@ -116,7 +117,7 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
             throw new NotFoundException("OID4VCI functionality is disabled for this realm");
         }
         CredentialIssuer issuer = getIssuerMetadata();
-        // Keep Date explicit for RFC7231 compliance and conformance-suite header validation.
+        // 显式设置 Date 响应头，满足 RFC7231 与一致性测试要求
         keycloakSession.getContext().getHttpResponse().setHeader(HttpHeaders.DATE, DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneOffset.UTC)));
         return getMetadataResponse(issuer, keycloakSession);
     }
@@ -124,8 +125,8 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
     public CredentialIssuer getIssuerMetadata() {
         KeycloakContext context = keycloakSession.getContext();
 
-        // Build encryption metadata.
-        // Request and response encryption are independent per OID4VCI.
+        // 构建请求/响应加密元数据（二者在 OID4VCI 中相互独立）
+        // OID4VCI 中请求加密与响应加密相互独立
         CredentialResponseEncryptionMetadata responseEnc = getCredentialResponseEncryption(keycloakSession);
         CredentialRequestEncryptionMetadata requestEnc = getCredentialRequestEncryption(keycloakSession);
 
@@ -135,7 +136,7 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
                     "This is allowed because request and response encryption are independent.");
         }
 
-        // Add deprecation headers/logs if the old realm-scoped route was used
+        // 若使用旧版 Realm 作用域路由，附加弃用头与日志
         addDeprecationHeadersIfOldRoute(keycloakSession);
 
         return new CredentialIssuer()
@@ -165,7 +166,7 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
             }
         }
 
-        // JSON metadata is mandatory and always supported.
+        // JSON 元数据为必选项，始终支持
         session.getContext().getHttpResponse().setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
         return issuer;
     }
@@ -175,11 +176,10 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
     }
 
     /**
-     * Returns the batch credential issuance configuration for the given realm.
-     * This method is public and static to facilitate testing without requiring session state management.
-     *
-     * @param realm The realm model
-     * @return The batch credential issuance configuration or null if not configured or invalid
+     * 返回指定 Realm 的批量凭证签发配置。
+     * <p>公开静态方法，便于单元测试无需完整会话状态。</p>
+     * @param realm Realm 模型
+     * @return 批量签发配置；未配置或无效时返回 null
      */
     public static CredentialIssuer.BatchCredentialIssuance getBatchCredentialIssuance(RealmModel realm) {
         String batchSize = realm.getAttribute(BATCH_CREDENTIAL_ISSUANCE_BATCH_SIZE);
@@ -200,11 +200,10 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
     }
 
     /**
-     * Generates signed metadata as a JWS using JsonWebToken infrastructure.
-     *
-     * @param metadata The CredentialIssuer metadata object to sign.
-     * @param session  The Keycloak session.
-     * @return Optional containing the compact JWS string if successful, empty if fallback to unsigned JSON is needed.
+     * 使用 JsonWebToken 基础设施将元数据签名为 JWS。
+     * @param metadata 待签名的 CredentialIssuer 元数据
+     * @param session Keycloak 会话
+     * @return 成功时为紧凑 JWS 字符串；失败时为空（回退到未签名 JSON）
      */
     public Optional<String> generateSignedMetadata(CredentialIssuer metadata, KeycloakSession session) {
         RealmModel realm = session.getContext().getRealm();
@@ -318,11 +317,9 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
     }
 
     /**
-     * Returns the credential response encryption for the issuer.
-     * Now determines supported algorithms from available realm keys.
-     *
-     * @param session The Keycloak session
-     * @return The credential response encryption metadata
+     * 返回凭证响应加密元数据；支持的算法由 Realm 可用密钥决定。
+     * @param session Keycloak 会话
+     * @return 响应加密元数据
      */
     public static CredentialResponseEncryptionMetadata getCredentialResponseEncryption(KeycloakSession session) {
         RealmModel realm = session.getContext().getRealm();
@@ -338,8 +335,7 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
     }
 
     /**
-     * Returns the credential request encryption metadata for the issuer.
-     * Determines supported algorithms and JWK Set from available realm keys
+     * 返回凭证请求加密元数据；从 Realm 加密密钥构建 JWKS 与支持算法列表。
      */
     public static CredentialRequestEncryptionMetadata getCredentialRequestEncryption(KeycloakSession session) {
         RealmModel realm = session.getContext().getRealm();
@@ -374,9 +370,7 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
     }
 
 
-    /**
-     * Returns the supported encryption algorithms from realm attributes.
-     */
+    /** 返回支持的非对称加密算法列表。 */
     public static List<String> getSupportedEncryptionAlgorithms(KeycloakSession session) {
 
         List<String> supportedEncryptionAlgorithms = CryptoUtils.getSupportedAsymmetricEncryptionAlgorithms(session);
@@ -388,9 +382,7 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
     }
 
 
-    /**
-     * Builds JWKS from realm encryption keys with use=enc.
-     */
+    /** 从 Realm 加密密钥（use=enc）构建 JWKS，排除对称 oct 密钥。 */
     private static JSONWebKeySet buildJwksForEncryption(KeycloakSession session) {
         RealmModel realm = session.getContext().getRealm();
         JSONWebKeySet jwks = JWKSServerUtils.getRealmJwks(session, realm);
@@ -406,9 +398,7 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
     }
 
 
-    /**
-     * Returns supported zip algorithms from realm attributes (optional).
-     */
+    /** 从 Realm 属性读取支持的压缩算法（可选，当前仅 DEFLATE）。 */
     private static List<String> getSupportedZipAlgorithms(RealmModel realm) {
         String zipAlgs = realm.getAttribute(ATTR_REQUEST_ZIP_ALGS);
         if (zipAlgs != null && !zipAlgs.isEmpty()) {
@@ -421,16 +411,12 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
     }
 
 
-    /**
-     * Returns the supported encryption methods from realm attributes.
-     */
+    /** 返回支持的内容加密方法（如 A256GCM）。 */
     private static List<String> getSupportedEncryptionMethods() {
         return List.of(JWEConstants.A256GCM);
     }
 
-    /**
-     * Returns whether encryption is required from realm attributes.
-     */
+    /** 根据 Realm 属性判断响应加密是否强制。 */
     private static boolean isEncryptionRequired(RealmModel realm) {
         String required = realm.getAttribute(ATTR_RESPONSE_ENCRYPTION_REQUIRED);
         return Boolean.parseBoolean(required);
@@ -438,9 +424,8 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
 
 
     /**
-     * Return the supported credentials from the current session.
-     * It will take into account the configured {@link CredentialBuilder}'s and their supported format
-     * and the credentials supported by the clients available in the session.
+     * 返回当前会话支持的凭证配置映射。
+     * <p>综合 {@link CredentialBuilder} 格式能力与 OID4VC 协议客户端范围。</p>
      */
     public static Map<String, SupportedCredentialConfiguration> getSupportedCredentials(KeycloakSession keycloakSession) {
         List<String> globalSupportedSigningAlgorithms = getSupportedAsymmetricSignatureAlgorithms(keycloakSession);
@@ -500,51 +485,41 @@ public class OID4VCIssuerWellKnownProvider implements WellKnownProvider {
         return config;
     }
 
-    /**
-     * Return the url of the issuer.
-     */
+    /** @return 凭证签发者标识符 URL（Realm Issuer） */
     public static String getIssuer(KeycloakContext context) {
         UriInfo frontendUriInfo = context.getUri(UrlType.FRONTEND);
         return Urls.realmIssuer(frontendUriInfo.getBaseUri(),
                 context.getRealm().getName());
     }
 
-    /**
-     * Return the nonce endpoint address
-     */
+    /** @return c_nonce 端点 URL */
     public static String getNonceEndpoint(KeycloakContext context) {
         return getIssuer(context) + "/protocol/" + OID4VCLoginProtocolFactory.PROTOCOL_ID + "/" +
                 OID4VCIssuerEndpoint.NONCE_PATH;
     }
 
-    /**
-     * Return the credentials endpoint address
-     */
+    /** @return 凭证端点 URL */
     public static String getCredentialsEndpoint(KeycloakContext context) {
         return getIssuer(context) + "/protocol/" + OID4VCLoginProtocolFactory.PROTOCOL_ID + "/" + OID4VCIssuerEndpoint.CREDENTIAL_PATH;
     }
 
-    /**
-     * Return the authorization servers from the issuer configuration.
-     */
+    /** @return 授权服务器列表（通常为签发者自身） */
     public static List<String> getAuthorizationServers(KeycloakSession session) {
         return List.of(getIssuer(session.getContext()));
     }
 
     /**
-     * Returns the supported asymmetric signature algorithms.
-     * Delegates to CryptoUtils for shared implementation with OIDCWellKnownProvider.
-     * This includes all asymmetric algorithms supported by Keycloak (RSA, EC, EdDSA).
+     * 返回支持的非对称签名算法（RSA、EC、EdDSA 等）。
+     * <p>委托 {@link CryptoUtils}，与 OIDC Well-Known 共享实现。</p>
      */
     public static List<String> getSupportedAsymmetricSignatureAlgorithms(KeycloakSession session) {
         return CryptoUtils.getSupportedAsymmetricSignatureAlgorithms(session);
     }
 
     /**
-     * Attach OID4VCI-specific deprecation headers (and a server WARN) when the old
-     * realm-scoped route is used.
-     * old: /realms/{realm}/.well-known/openid-credential-issuer
-     * new: /.well-known/openid-credential-issuer/realms/{realm}
+     * 使用旧版 Realm 作用域 Well-Known 路由时附加弃用响应头并记录 WARN。
+     * <p>旧：{@code /realms/{realm}/.well-known/openid-credential-issuer}</p>
+     * <p>新：{@code /.well-known/openid-credential-issuer/realms/{realm}}</p>
      */
     private void addDeprecationHeadersIfOldRoute(KeycloakSession session) {
         String requestPath = session.getContext().getUri().getRequestUri().getPath();

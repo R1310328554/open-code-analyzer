@@ -20,16 +20,19 @@ package org.keycloak.protocol.oid4vc.issuance;
 import org.keycloak.common.util.Time;
 
 /**
- * Implementation of the {@link TimeProvider} that delegates calls to the common {@link Time} class.
+ * {@link TimeProvider} 的默认实现，委托给 Keycloak 公共 {@link Time} 工具类。
+ * <p>生产环境使用系统时钟；测试可通过 {@link Time#setOffset} 偏移时间。</p>
  */
 public class OffsetTimeProvider implements TimeProvider {
 
     @Override
+    /** @return 当前 Unix 时间（秒） */
     public int currentTimeSeconds() {
         return Time.currentTime();
     }
 
     @Override
+    /** @return 当前 Unix 时间（毫秒） */
     public long currentTimeMillis() {
         return Time.currentTimeMillis();
     }

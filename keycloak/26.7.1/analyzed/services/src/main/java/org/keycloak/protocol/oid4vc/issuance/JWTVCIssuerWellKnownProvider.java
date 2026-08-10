@@ -37,9 +37,9 @@ import org.apache.http.HttpHeaders;
 import org.jboss.logging.Logger;
 
 /**
- * {@link WellKnownProvider} implementation for JWT VC Issuer metadata at endpoint /.well-known/jwt-vc-issuer
- * <p/>
- * {@see https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-03.html#name-jwt-vc-issuer-metadata}
+ * JWT VC 签发者元数据的 {@link WellKnownProvider} 实现，端点为 {@code /.well-known/jwt-vc-issuer}。
+ * <p>返回签发者标识符与 JWKS，供 SD-JWT VC 钱包解析。</p>
+ * <p>{@see https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-03.html#name-jwt-vc-issuer-metadata}</p>
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
@@ -47,6 +47,7 @@ public class JWTVCIssuerWellKnownProvider implements WellKnownProvider {
     private static final Logger LOGGER = Logger.getLogger(JWTVCIssuerWellKnownProvider.class);
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public JWTVCIssuerWellKnownProvider(KeycloakSession session) {
         this.session = session;
     }
@@ -62,7 +63,7 @@ public class JWTVCIssuerWellKnownProvider implements WellKnownProvider {
         RealmModel realm = session.getContext().getRealm();
 
         addDeprecationHeadersIfOldRoute();
-        // Keep Date explicit for RFC7231 compliance and conformance-suite header validation.
+        // 显式设置 Date 响应头，满足 RFC7231 与一致性测试套件要求
         session.getContext().getHttpResponse().setHeader(HttpHeaders.DATE, DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneOffset.UTC)));
 
         JWTVCIssuerMetadata config = new JWTVCIssuerMetadata();
@@ -75,9 +76,9 @@ public class JWTVCIssuerWellKnownProvider implements WellKnownProvider {
     }
 
     /**
-     * Attach deprecation headers/log for the legacy realm-scoped route:
-     * old: /realms/{realm}/.well-known/jwt-vc-issuer
-     * new: /.well-known/jwt-vc-issuer/realms/{realm}
+     * 若使用旧版 Realm 作用域路由，附加弃用响应头并记录 WARN 日志。
+     * <p>旧：{@code /realms/{realm}/.well-known/jwt-vc-issuer}</p>
+     * <p>新：{@code /.well-known/jwt-vc-issuer/realms/{realm}}</p>
      */
     private void addDeprecationHeadersIfOldRoute() {
         String requestPath = session.getContext().getUri().getRequestUri().getPath();

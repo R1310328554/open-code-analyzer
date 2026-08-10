@@ -25,16 +25,18 @@ import org.keycloak.util.AuthorizationDetailsParser;
 import static org.keycloak.OID4VCConstants.OPENID_CREDENTIAL;
 
 /**
- * Factory for creating OID4VCI-specific authorization details processors.
- * This factory is only enabled when the OID4VCI feature is available.
+ * 创建 OID4VCI 专用 {@link AuthorizationDetailsProcessor} 的工厂。
+ * <p>初始化时注册 {@link OID4VCAuthorizationDetailsParser}；仅在 OID4VCI 特性可用时启用。</p>
  *
  * @author <a href="mailto:Forkim.Akwichek@adorsys.com">Forkim Akwichek</a>
  */
 public class OID4VCAuthorizationDetailsProcessorFactory implements AuthorizationDetailsProcessorFactory, OID4VCEnvironmentProviderFactory {
 
+    /** 提供方 ID，与 {@code openid_credential} 授权细节类型一致。 */
     public static final String PROVIDER_ID = OPENID_CREDENTIAL;
 
     @Override
+    /** @param session Keycloak 会话 @return OID4VCI 授权细节处理器 */
     public OID4VCAuthorizationDetailsProcessor create(KeycloakSession session) {
         return new OID4VCAuthorizationDetailsProcessor(session);
     }
@@ -50,6 +52,7 @@ public class OID4VCAuthorizationDetailsProcessorFactory implements Authorization
     }
 
     @Override
+    /** 较高优先级，优先匹配 OID4VCI 授权细节类型。 */
     public int order() {
         // Higher order means higher priority - OID4VCI should be checked first
         return 100;

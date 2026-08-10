@@ -65,11 +65,16 @@ import static org.keycloak.protocol.oid4vc.utils.CredentialScopeUtils.findCreden
 import static org.keycloak.protocol.oid4vc.utils.CredentialScopeUtils.findCredentialScopeModelByName;
 import static org.keycloak.protocol.oidc.endpoints.AuthorizationEndpoint.LOGIN_SESSION_NOTE_ADDITIONAL_REQ_PARAMS_PREFIX;
 
+/**
+ * OID4VCI {@code openid_credential} 授权细节处理器：校验、构建令牌响应中的 authorization_details。
+ * <p>覆盖授权请求、访问令牌请求及缺失授权细节时的 scope 回退逻辑。</p>
+ */
 public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetailsProcessor<OID4VCAuthorizationDetail> {
     private static final Logger logger = Logger.getLogger(OID4VCAuthorizationDetailsProcessor.class);
 
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public OID4VCAuthorizationDetailsProcessor(KeycloakSession session) {
         this.session = session;
     }
@@ -111,13 +116,13 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
         List<String> credentialIdentifiers = requestAuthDetail.getCredentialIdentifiers();
         List<ClaimsDescription> claims = requestAuthDetail.getClaims();
 
-        // Validate type first
+        // 首先校验 type 字段
         if (!OPENID_CREDENTIAL.equals(type)) {
             logger.warnf("Invalid authorization_details type: %s", type);
             throw getInvalidRequestException("type: " + type + ", expected=" + OPENID_CREDENTIAL);
         }
 
-        // If authorization_servers is present, locations must be set to issuer identifier
+        // 若元数据声明 authorization_servers，locations 必须等于签发者标识符
         if (authorizationServers != null && !authorizationServers.isEmpty()) {
             List<String> locations = requestAuthDetail.getLocations();
             if (locations == null || locations.size() != 1 || !issuerIdentifier.equals(locations.get(0))) {
@@ -126,33 +131,33 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
             }
         }
 
-        // credential_configuration_id is REQUIRED
+        // credential_configuration_id 为必填
         if (Strings.isEmpty(credentialConfigurationId)) {
             logger.warnf("Missing credential_configuration_id in authorization_details");
             throw getInvalidRequestException("credential_configuration_id is required");
         }
 
-        // credential_identifiers not allowed
+        // 授权请求中不允许 credential_identifiers
         if (credentialIdentifiers != null) {
             // we also reject an empty array of credential identifiers
             logger.warnf("Property credential_identifiers not allowed in authorization_details");
             throw getInvalidRequestException("credential_identifiers not allowed");
         }
 
-        // Issued credential ID not allowed
+        // 授权请求中不允许 issued_credential_id
         if (requestAuthDetail.getIssuedCredentialId() != null) {
             logger.warnf("Property '%s' not allowed in authorization_details", ISSUED_CREDENTIAL_ID);
             throw getInvalidRequestException("Issued credential ID not allowed in authorization details");
         }
 
-        // Validate credential_configuration_id
+        // 校验 credential_configuration_id 是否在签发者元数据中支持
         SupportedCredentialConfiguration credConfig = supportedCredentials.get(credentialConfigurationId);
         if (credConfig == null) {
             logger.warnf("Unsupported credential_configuration_id: %s", credentialConfigurationId);
             throw getInvalidRequestException("Invalid credential configuration: unsupported credential_configuration_id: " + credentialConfigurationId);
         }
 
-        // Validate claims if present
+        // 若请求声明 claims，执行语义校验
         if (claims != null && !claims.isEmpty()) {
             validateClaims(claims, credConfig);
         }
@@ -162,7 +167,7 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
 
     @Override
     public OID4VCAuthorizationDetail sanitizeBeforeSendingTokenResponse(OID4VCAuthorizationDetail authzDetail) {
-        // Remove non-standard properties before sending authorization_details in the Token Response
+        // 发送令牌响应前移除非标准属性（issued_credential_id、credentials_offer_id）
         // https://github.com/keycloak/keycloak/pull/49958
         OID4VCAuthorizationDetail cloned = authzDetail.clone();
         cloned.setIssuedCredentialId(null);
@@ -170,22 +175,21 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
         return cloned;
     }
 
-    // Private ---------------------------------------------------------------------------------------------------------
+    // 私有辅助方法 ---------------------------------------------------------------------------------------------------
 
     private InvalidAuthorizationDetailsException getInvalidRequestException(String errorDescription) {
         return new InvalidAuthorizationDetailsException("Invalid authorization_details: " + errorDescription);
     }
 
     /**
-     * Validates that the requested claims are supported by the credential configuration.
-     * This performs semantic validation by checking if Keycloak supports the requested claims.
+     * 校验请求的 claims 是否被凭证配置支持（语义级校验）。
      *
-     * @param claims the list of claims to validate
-     * @param config the credential configuration to validate against
+     * @param claims 待校验的声明描述列表
+     * @param config 凭证配置元数据
      */
     private void validateClaims(List<ClaimsDescription> claims, SupportedCredentialConfiguration config) {
 
-        // Get the exposed claims from credential metadata
+        // 从凭证元数据获取对外暴露的 claims
         List<Claim> exposedClaims = null;
         if (config.getCredentialMetadata() != null && config.getCredentialMetadata().getClaims() != null && !config.getCredentialMetadata().getClaims().isEmpty()) {
             exposedClaims = config.getCredentialMetadata().getClaims();
@@ -195,19 +199,19 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
             throw getInvalidRequestException("Credential configuration does not expose any claims metadata");
         }
 
-        // Convert exposed claims to a set of paths for easy comparison
+        // 将暴露 claims 转为路径集合便于比对
         Set<String> exposedClaimPaths = exposedClaims.stream()
                 .filter(claim -> claim.getPath() != null && !claim.getPath().isEmpty())
                 .map(claim -> claim.getPath().toString())
                 .collect(Collectors.toSet());
 
-        // Validate each requested claim against exposed metadata
+        // 逐条校验请求 claim 是否在元数据中声明
         for (ClaimsDescription requestedClaim : claims) {
             if (requestedClaim.getPath() == null || requestedClaim.getPath().isEmpty()) {
                 throw getInvalidRequestException("Invalid claims description: path is required");
             }
 
-            // Validate the claims path pointer format according to OID4VCI specification
+            // 按 OID4VCI 规范校验 claims 路径指针格式
             if (!ClaimsPathPointer.isValidPath(requestedClaim.getPath())) {
                 throw getInvalidRequestException("Invalid claims path pointer: " + requestedClaim.getPath() +
                         ". Path must contain only strings, non-negative integers, and null values.");
@@ -215,14 +219,14 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
 
             String requestedPath = requestedClaim.getPath().toString();
 
-            // Check if the requested claim path exists in the exposed metadata
+            // 确认请求路径存在于元数据暴露集合中
             if (!exposedClaimPaths.contains(requestedPath)) {
                 throw getInvalidRequestException("Unsupported claim: " + requestedPath +
                         ". This claim is not supported by the credential configuration.");
             }
         }
 
-        // Check for conflicts using ClaimsPathPointer utility
+        // 使用 ClaimsPathPointer 检测冲突或矛盾声明
         if (!ClaimsPathPointer.validateClaimsDescriptions(claims)) {
             throw getInvalidRequestException("Invalid claims descriptions: conflicting or contradictory claims found");
         }
@@ -235,7 +239,7 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
             throw getInvalidRequestException("No credential_configuration_id in access token request.");
         }
 
-        // Handle AccessToken request with credential offer
+        // 处理带凭证发放的访问令牌请求（预授权或授权码）
         // Should work for pre-auth and auth-code grants
         //
         CredentialOfferState offerState = getCredentialOfferState(clientSessionCtx);
@@ -249,7 +253,7 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
             return responseAuthDetail;
         }
 
-        // Handle AccessToken request without credential offer
+        // 处理无凭证发放的访问令牌请求
         //
         RealmModel realmModel = clientSessionCtx.getClientSession().getRealm();
         CredentialScopeModel credScope = findCredentialScopeModelByConfigurationId(realmModel, clientSessionCtx::getClientScopesStream, requestedCredentialConfigurationId);
@@ -271,14 +275,14 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
     public List<OID4VCAuthorizationDetail> handleMissingAuthorizationDetails(UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
         RealmModel realmModel = userSession.getRealm();
 
-        // AccessToken request with credential offer
+        // 带凭证发放的访问令牌请求
         // Works for pre-auth and auth-code grants
         CredentialOfferState offerState = getCredentialOfferState(clientSessionCtx);
         if (offerState != null) {
             return offerState.getAuthorizationDetails();
         }
 
-        // AccessToken request with no credential offer and no auth details
+        // 无发放且无 authorization_details 时，按 scope 参数生成
         // This is likely a "scope only" request
         String scopeParam = clientSessionCtx.getScopeString();
         if (scopeParam == null) {
@@ -293,7 +297,7 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
                     throw getInvalidRequestException("User '" + userSession.getUser().getUsername() + "' does not have verifiable credential '" + credScope.getCredentialConfigurationId() + "'.");
                 }
 
-                // Generate `authorization_details` for the AccessToken Response
+                // 为访问令牌响应生成 authorization_details（与创建 offer 时逻辑一致）
                 // This is the same logic as we use when a credential offer is created
                 //
                 OID4VCAuthorizationDetail authDetail = generateResponseAuthorizationDetails(credScope, null);
@@ -321,7 +325,7 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
         try {
             return process(userSession, clientSessionCtx, storedAuthDetails);
         } catch (InvalidAuthorizationDetailsException e) {
-            // According to OID4VC spec, if authorization_details was used in authorization request,
+            // 按 OID4VCI 规范：授权请求使用了 authorization_details 则必须在令牌响应中返回
             // it is required to be returned in token response. If it cannot be processed, return invalid_request error
             throw new InvalidAuthorizationDetailsException("authorization_details was used in authorization request but cannot be processed for token response: " + e.getMessage());
         }
@@ -342,7 +346,7 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
             throw new InvalidAuthorizationDetailsException("Cannot find credential scope for credential configuration ID: " + credentialConfigId);
         }
 
-        // Create issued-credential and set its ID in authorization_details
+        // 创建已签发凭证记录并在 authorization_details 中写入其 ID
         IssuedVerifiableCredentialModel issuedCredential = createIssuedVerifiableCredential(userSession.getUser(), clientSessionCtx.getClientSession().getClient(), credentialScope);
         oid4vcAuthzDetailResponse.setIssuedCredentialId(issuedCredential.getId());
     }
@@ -363,7 +367,7 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
 
         authDetail.setCredentialConfigurationId(credConfigId);
 
-        // The AccessToken Response should have authorization_details when ...
+        // 访问令牌响应在以下情况应包含 authorization_details：
         //
         //  * provided in Authorization Request
         //  * provided in AccessToken Request
@@ -383,7 +387,7 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
     protected IssuedVerifiableCredentialModel createIssuedVerifiableCredential(UserModel userModel, ClientModel clientModel, CredentialScopeModel credentialScope) {
         String credentialScopeName = credentialScope.getName();
         try {
-            // Lookup the UserVerifiableCredential by client scope ID to get its ID
+            // 按客户端范围 ID 查找用户可验证凭证以获取其标识
             UserVerifiableCredentialModel verifiableCredential = session.users()
                     .getVerifiableCredentialByClientScope(userModel.getId(), credentialScope.getId());
             if (verifiableCredential == null) {
@@ -410,11 +414,11 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
 
         CredentialOfferState offerState = null;
 
-        // Check if we have a credential offer - this should work for pre-authorized
+        // 检查是否存在凭证发放（预授权流程）
         //
         String credOfferId = clientSessionCtx.getAttribute(CREDENTIALS_OFFER_ID_ATTR, String.class);
 
-        // Check if we have issuer_state - this should work for authorization_code
+        // 检查 issuer_state（授权码流程）
         //
         String issuerStateNote = clientSessionCtx.getClientSession().getNote(LOGIN_SESSION_NOTE_ADDITIONAL_REQ_PARAMS_PREFIX + ISSUER_STATE);
         if (credOfferId == null && issuerStateNote != null) {
@@ -428,7 +432,7 @@ public class OID4VCAuthorizationDetailsProcessor implements AuthorizationDetails
             offerState = Optional.ofNullable(offerStorage.getOfferStateById(credOfferId))
                     .orElseThrow(() -> new IllegalStateException("No credential offer state for: " + auxCredOfferId));
 
-            // Check same login client as the client for which the credential offer is target (in case of credential offer target for specific client only)
+            // 校验登录客户端与发放目标客户端一致（针对特定客户端的发放）
             String offerClientId = offerState.getTargetClientId();
             String loginClientId = clientSessionCtx.getClientSession().getClient().getClientId();
             if (offerClientId != null && !offerClientId.equals(loginClientId)) {

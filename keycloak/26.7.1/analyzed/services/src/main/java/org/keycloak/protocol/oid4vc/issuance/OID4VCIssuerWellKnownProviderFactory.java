@@ -26,9 +26,9 @@ import org.keycloak.wellknown.WellKnownProvider;
 import org.keycloak.wellknown.WellKnownProviderFactory;
 
 /**
- * {@link  WellKnownProviderFactory} implementation for the OID4VCI metadata
- * <p>
- * {@see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-11.2.2}
+ * OID4VCI 凭证签发者元数据的 {@link WellKnownProviderFactory} 工厂。
+ * <p>端点 {@code /.well-known/openid-credential-issuer}，返回 Credential Issuer Metadata。</p>
+ * <p>{@see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-11.2.2}</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
@@ -37,6 +37,7 @@ public class OID4VCIssuerWellKnownProviderFactory implements WellKnownProviderFa
     public static final String PROVIDER_ID = OID4VCConstants.WELL_KNOWN_OPENID_CREDENTIAL_ISSUER;
 
     @Override
+    /** @param session Keycloak 会话 @return OID4VCI 签发者元数据提供方 */
     public WellKnownProvider create(KeycloakSession session) {
         return new OID4VCIssuerWellKnownProvider(session);
     }
@@ -62,6 +63,7 @@ public class OID4VCIssuerWellKnownProviderFactory implements WellKnownProviderFa
     }
 
     @Override
+    /** 可通过 Server Metadata 发现。 */
     public boolean isAvailableViaServerMetadata() {
         return true;
     }

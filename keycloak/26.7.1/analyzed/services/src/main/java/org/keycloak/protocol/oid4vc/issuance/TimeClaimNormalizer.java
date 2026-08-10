@@ -32,13 +32,14 @@ import org.keycloak.utils.StringUtil;
 import org.jboss.logging.Logger;
 
 /**
- * Utility to apply correlation-mitigation to time-related claims
- * by either randomizing within a window or rounding to a unit.
- * <p>
- * Configuration via realm attributes (all optional):
- * - oid4vci.time.claims.strategy: off | randomize | round (default: off)
- * - oid4vci.time.randomize.window.seconds: integer seconds (default: 86400)
- * - oid4vci.time.round.unit: SECOND | MINUTE | HOUR | DAY (default: SECOND)
+ * 对凭证中与时间相关的声明（如 iat/exp）施加关联性缓解策略。
+ * <p>通过在窗口内随机化或按时间单位舍入，降低精确时间戳被用于用户关联的风险。</p>
+ * <p>通过 Realm 属性配置（均为可选）：</p>
+ * <ul>
+ *   <li>{@code oid4vci.time.claims.strategy}：{@code off} | {@code randomize} | {@code round}（默认 off）</li>
+ *   <li>{@code oid4vci.time.randomize.window.seconds}：随机化窗口秒数（默认 86400）</li>
+ *   <li>{@code oid4vci.time.round.unit}：{@code SECOND} | {@code MINUTE} | {@code HOUR} | {@code DAY}（默认 SECOND）</li>
+ * </ul>
  *
  * @author <a href="mailto:Rodrick.Awambeng@adorsys.com">Rodrick Awambeng</a>
  */
@@ -46,12 +47,14 @@ public class TimeClaimNormalizer {
 
     private static final Logger logger = Logger.getLogger(TimeClaimNormalizer.class);
 
+    /** 时间声明归一化策略。 */
     public enum Strategy {
         OFF,
         RANDOMIZE,
         ROUND
     }
 
+    /** 时间舍入粒度。 */
     public enum RoundUnit {
         SECOND,
         MINUTE,
@@ -63,14 +66,17 @@ public class TimeClaimNormalizer {
     private final int randomizeWindowSeconds;
     private final RoundUnit roundUnit;
 
+    /** 默认随机化窗口：24 小时（秒）。 */
     public static final int DEFAULT_RANDOMIZE_WINDOW = 86400; // 24h default
     public static final Strategy DEFAULT_STRATEGY = Strategy.OFF;
     public static final RoundUnit DEFAULT_ROUND_UNIT = RoundUnit.SECOND;
 
+    /** 从当前会话 Realm 读取归一化配置。 @param session Keycloak 会话 */
     public TimeClaimNormalizer(KeycloakSession session) {
         this(session.getContext().getRealm());
     }
 
+    /** 从指定 Realm 属性解析归一化配置。 @param realm Realm 模型 */
     public TimeClaimNormalizer(RealmModel realm) {
         this.strategy = parseStrategy(realm.getAttribute(OID4VCIConstants.TIME_CLAIMS_STRATEGY));
         this.randomizeWindowSeconds = parseRandomizeWindow(realm.getAttribute(OID4VCIConstants.TIME_RANDOMIZE_WINDOW_SECONDS));
@@ -84,6 +90,11 @@ public class TimeClaimNormalizer {
         this.roundUnit = roundUnit == null ? DEFAULT_ROUND_UNIT : roundUnit;
     }
 
+    /**
+     * 按配置策略归一化时间点。
+     * @param original 原始时间戳，可为 null
+     * @return 归一化后的时间；输入为 null 时返回 null
+     */
     public Instant normalize(Instant original) {
         if (original == null) {
             return null;
@@ -101,7 +112,7 @@ public class TimeClaimNormalizer {
     }
 
     private Instant round(Instant original) {
-        // Truncate in UTC by design to ensure consistent, timezone-independent rounding
+        // 刻意在 UTC 截断，确保舍入结果与时区无关
         ZonedDateTime zdt = original.atZone(ZoneOffset.UTC);
         return switch (roundUnit) {
             case SECOND -> zdt.truncatedTo(ChronoUnit.SECONDS).toInstant();

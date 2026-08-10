@@ -148,9 +148,9 @@ import static org.keycloak.protocol.oid4vc.model.ErrorType.INVALID_PROOF;
 import static org.keycloak.protocol.oid4vc.model.PreAuthorizedCodeGrant.PRE_AUTH_GRANT_TYPE;
 
 /**
- * Provides the (REST-)endpoints required for the OID4VCI protocol.
- * <p>
- * {@see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html}
+ * OID4VCI 协议所需的 REST 端点实现。
+ * <p>涵盖 nonce、credential、credential-offer 创建/获取等核心签发流程。</p>
+ * <p>{@see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html}</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
@@ -158,33 +158,23 @@ public class OID4VCIssuerEndpoint {
 
     private static final Logger LOGGER = Logger.getLogger(OID4VCIssuerEndpoint.class);
 
-    /**
-     * AccessToken claim attribute for storing a potential credentials offer id
-     */
+    /** 访问令牌自定义属性：关联的凭证发放 ID。 */
     public static final String CREDENTIALS_OFFER_ID_ATTR = "CREDENTIALS_OFFER_ID";
 
-    /**
-     * The maximum QR Code dimension
-     */
+    /** QR 码最大边长（像素）。 */
     public static final Integer MAX_QR_CODE_DIMENSION = 800;
 
     private Cors cors;
 
     /**
-     * Cached authentication result to prevent DPoP proof reuse.
-     * <p>
-     * This cache ensures that when authentication is performed multiple times during
-     * a single request processing (e.g., when issuing multiple credentials), the same
-     * authentication result is reused instead of re-authenticating, which would allow
-     * the same DPoP proof to be used multiple times.
+     * 缓存认证结果以防止 DPoP 证明被重复使用。
+     * <p>单次请求内多次认证（如批量签发）时复用同一结果，避免同一 DPoP 证明被多次消费。</p>
      */
     private AuthenticationManager.AuthResult cachedAuthResult;
 
     public static final String CREDENTIAL_OFFER_LIFESPAN_REALM_ATTRIBUTE_KEY = "credentialOfferLifespanS";
 
-    /**
-     * Default credential-offer lifespan is same as default "User-Initiated Action Lifespan" (5 minutes)
-     */
+    /** 默认凭证发放有效期，与用户主动操作码默认寿命相同（5 分钟）。 */
     public static final int DEFAULT_CREDENTIAL_OFFER_LIFESPAN_S = Constants.DEFAULT_ACCESS_CODE_LIFESPAN_USER_ACTION;
 
     public static final String DEFLATE_COMPRESSION = "DEF";
@@ -198,18 +188,12 @@ public class OID4VCIssuerEndpoint {
     private final AppAuthManager.BearerTokenAuthenticator bearerTokenAuthenticator;
     private final TimeProvider timeProvider;
 
-    // lifespan of credential offers in seconds
+    // 凭证发放有效期（秒）
     private final int credentialOfferLifespan;
 
     /**
-     * Credential builders are responsible for initiating the production of
-     * credentials in a specific format. Their output is an appropriate credential
-     * representation to be signed by a credential signer of the same format.
-     * <p></p>
-     * Due to technical constraints, we explicitly load credential builders into
-     * this map for they are configurable components. The key of the map is the
-     * credential {@link VCFormat} associated with the builder. The matching credential
-     * signer is directly loaded from the Keycloak container.
+     * 凭证构建器映射：按 {@link VCFormat} 格式键索引。
+     * <p>构建器产出待签名的格式特定凭证表示；对应 {@link CredentialSigner} 由容器按格式加载。</p>
      */
     private final Map<String, CredentialBuilder> credentialBuilders;
 
@@ -239,9 +223,8 @@ public class OID4VCIssuerEndpoint {
     }
 
     /**
-     * Create credential builders from configured component models in Keycloak.
-     *
-     * @return a map of the created credential builders with their supported formats as keys.
+     * 从 Keycloak 已配置的组件模型实例化凭证构建器。
+     * @return 格式键 → 构建器实例映射
      */
     private Map<String, CredentialBuilder> loadCredentialBuilders(KeycloakSession keycloakSession) {
         KeycloakSessionFactory keycloakSessionFactory = keycloakSession.getKeycloakSessionFactory();
@@ -252,11 +235,7 @@ public class OID4VCIssuerEndpoint {
                         credentialBuilder ->  credentialBuilder));
     }
 
-    /**
-     * Validates whether OID4VCI functionality is enabled for the realm.
-     * If disabled, logs the status, optionally records an event error, and throws
-     * a {@link CorsErrorResponseException}.
-     */
+    /** 校验 Realm 是否启用可验证凭证/OID4VCI；未启用时抛出 {@link CorsErrorResponseException}。 */
     private void checkIsOid4vciEnabled(EventBuilder eventBuilder) {
         RealmModel realm = session.getContext().getRealm();
         if (!realm.isVerifiableCredentialsEnabled()) {
@@ -276,11 +255,7 @@ public class OID4VCIssuerEndpoint {
         }
     }
 
-    /**
-     * Validates if the REST credential offer feature is enabled.
-     * If disabled, logs the status and throws
-     * a {@link CorsErrorResponseException}.
-     */
+    /** 校验 REST 凭证发放特性是否启用。 */
     private void checkRestCredentialOfferEnabled(EventBuilder eventBuilder) {
         if (!Profile.isFeatureEnabled(org.keycloak.common.Profile.Feature.OID4VC_VCI_REST_CREDENTIAL_OFFER)) {
             LOGGER.debugf("REST credential offer endpoint is disabled. Feature oid4vci-rest-credential-offer is not enabled.");
@@ -300,13 +275,8 @@ public class OID4VCIssuerEndpoint {
     }
 
     /**
-     * Validates whether the authenticated client is enabled for OID4VCI features.
-     * <p>
-     * If the client is not enabled, this method logs the status and throws a
-     * {@link CorsErrorResponseException} with an appropriate error message.
-     * </p>
-     *
-     * @throws CorsErrorResponseException if the client is not enabled for OID4VCI.
+     * 校验已认证客户端是否启用 OID4VCI。
+     * @throws CorsErrorResponseException 客户端未启用 OID4VCI 时
      */
     private void checkClientEnabled(EventBuilder eventBuilder) {
         AuthenticatedClientSessionModel clientSession = getAuthenticatedClientSession();
@@ -343,9 +313,8 @@ public class OID4VCIssuerEndpoint {
     }
 
     /**
-     * the OpenId4VCI nonce-endpoint
-     *
-     * @return a short-lived c_nonce value that must be presented in key-bound proofs at the credential endpoint.
+     * OID4VCI nonce 端点：签发短期 c_nonce。
+     * @return 须在凭证端点 key-bound proof 中提交的 c_nonce
      * @see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-16.html#name-nonce-endpoint">Nonce endpoint</a>
      * @see <a href="https://datatracker.ietf.org/doc/html/draft-demarco-nonce-endpoint#name-nonce-response">Nonce response</a>
      */
@@ -364,17 +333,17 @@ public class OID4VCIssuerEndpoint {
         String sourceEndpoint = OID4VCIssuerWellKnownProvider.getNonceEndpoint(session.getContext());
         String audience = OID4VCIssuerWellKnownProvider.getCredentialsEndpoint(session.getContext());
 
-        // Generate c_nonce for the response body
+        // 为响应体生成 c_nonce
         String bodyCNonce = cNonceHandler.buildCNonce(List.of(audience), Map.of(JwtCNonceHandler.SOURCE_ENDPOINT, sourceEndpoint));
 
-        // Generate separate DPoP nonce for the header
+        // 为 DPoP 响应头单独生成 nonce
         String headerDPoPNonce = cNonceHandler.buildCNonce(List.of(audience), Map.of(JwtCNonceHandler.SOURCE_ENDPOINT, sourceEndpoint));
 
         nonceResponse.setNonce(bodyCNonce);
 
         eventBuilder.success();
 
-        // RFC7231 recommends Date on origin server responses; OID4VCI conformance checks this explicitly.
+        // RFC7231 要求源站响应含 Date；OID4VCI 一致性测试显式校验
         Response.ResponseBuilder responseBuilder = Response.ok()
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .header(HttpHeaders.DATE, DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneOffset.UTC)))
@@ -387,11 +356,7 @@ public class OID4VCIssuerEndpoint {
         return responseBuilder.build();
     }
 
-    /**
-     * Handles CORS preflight requests for the /create-credential-offer endpoint.
-     * Preflight requests return CORS headers for all origins (standard CORS behavior).
-     * The actual request will validate origins against client configuration.
-     */
+    /** 处理 {@code /create-credential-offer} 的 CORS 预检；实际请求再按客户端配置校验 Origin。 */
     @OPTIONS
     @Path(CREATE_CREDENTIAL_OFFER_PATH)
     public Response createCredentialOfferPreflight() {
@@ -400,24 +365,20 @@ public class OID4VCIssuerEndpoint {
         return cors.add(Response.ok());
     }
 
-    /**
-     * Creates an authorization code grant offer that is bound to the calling user.
-     */
+    /** 创建绑定当前调用用户的授权码发放。 */
     public Response createCredentialOffer(String credConfigId) {
         return createCredentialOffer(credConfigId, false, null);
     }
 
-    /**
-     * Creates a Credential Offer that is bound to a specific user.
-     */
+    /** 创建绑定指定用户的凭证发放。 */
     public Response createCredentialOffer(String credConfigId, boolean preAuthorized, String targetUser) {
         return createCredentialOffer(credConfigId, preAuthorized, targetUser, null, OfferResponseType.URI, 0, 0);
     }
 
     /**
-     * Creates a Credential Offer that can be pre-authorized and/or bound to a specific target user.
+     * 创建可预授权且/或绑定特定目标用户的凭证发放。
      * <p>
-     * Credential Offer Validity Matrix for the supported request parameters "pre_authorized", "targetUser" combinations.
+     * 以下矩阵说明 {@code pre_authorized} 与 {@code targetUser} 参数组合的合法性：
      * </p>
      * +----------+----------+---------+--------------------------------------------+
      * | Pre-Auth | Username | Valid   | Notes                                      |
@@ -505,7 +466,7 @@ public class OID4VCIssuerEndpoint {
         checkRestCredentialOfferEnabled(eventBuilder);
         checkClientEnabled(eventBuilder);
 
-        // Verify required credConfigId
+        // 校验必填 credential_configuration_id
         //
         if (Strings.isEmpty(credentialConfigurationId)) {
             var errorMessage = "Missing credential configuration id";
@@ -514,7 +475,7 @@ public class OID4VCIssuerEndpoint {
                     ErrorType.INVALID_CREDENTIAL_OFFER_REQUEST.getValue(), errorMessage, Response.Status.BAD_REQUEST);
         }
 
-        // Verify image dimensions
+        // 校验 QR 码尺寸
         //
         if (List.of(OfferResponseType.QR, OfferResponseType.URI_QR).contains(responseType)) {
             if (width < 1 || height < 1 || MAX_QR_CODE_DIMENSION < width || MAX_QR_CODE_DIMENSION < height) {
@@ -528,7 +489,7 @@ public class OID4VCIssuerEndpoint {
 
         LOGGER.debugf("Create a credential offer for %s", credentialConfigurationId);
 
-        // For pre-auth offers, default the targetUser to the login user (self-issued offer)
+        // 预授权发放：未指定 target_user 时默认为当前登录用户（自签发）
         //
         if (preAuthorized && Strings.isEmpty(targetUser)) {
             targetUser = loginUserModel.getUsername();
@@ -538,7 +499,7 @@ public class OID4VCIssuerEndpoint {
             expiresAt = timeProvider.currentTimeSeconds() + credentialOfferLifespan;
         }
 
-        // Create the CredentialsOffer
+        // 构建 CredentialsOffer 对象
         //
         String targetClientId = clientModel.getClientId();
         String grantType = preAuthorized ? PRE_AUTH_GRANT_TYPE : AUTH_CODE_GRANT_TYPE;
@@ -557,7 +518,7 @@ public class OID4VCIssuerEndpoint {
                     ErrorType.INVALID_CREDENTIAL_OFFER_REQUEST.getValue(), ex.getMessage(), Response.Status.BAD_REQUEST);
         }
 
-        // Store the CredentialOfferState
+        // 持久化 CredentialOfferState
         //
         CredentialOfferStorage offerStorage = session.getProvider(CredentialOfferStorage.class);
         offerStorage.putOfferState(offerState);
@@ -566,7 +527,7 @@ public class OID4VCIssuerEndpoint {
         LOGGER.debugf("Stored credential offer state: [grant=%s, ids=%s, cid=%s, uid=%s, nonce=%s]",
                 grantType, credentialConfigurationIds, offerState.getTargetClientId(), targetUserId, offerState.getNonce());
 
-        // Add event details
+        // 写入事件详情
         eventBuilder.detail(Details.VERIFIABLE_CREDENTIAL_PRE_AUTHORIZED, String.valueOf(preAuthorized))
                 .detail(Details.RESPONSE_TYPE, responseType.toString())
                 .detail(Details.VERIFIABLE_CREDENTIAL_TARGET_CLIENT_ID, targetClientId)
@@ -578,7 +539,7 @@ public class OID4VCIssuerEndpoint {
                 .setIssuer(credOffer.getCredentialIssuer() + "/protocol/" + OID4VC_PROTOCOL + "/" + CREDENTIAL_OFFER_PATH)
                 .setNonce(offerState.getNonce());
 
-        // Respond with QR-Code as 'image/png'
+        // 以 image/png 返回 QR 码
         if (responseType == OfferResponseType.QR) {
             byte[] qrBytes = generateQrCode(credOfferURI, width, height);
             return cors.add(Response.ok()
@@ -587,7 +548,7 @@ public class OID4VCIssuerEndpoint {
                     .entity(qrBytes));
         }
 
-        // Respond with URI + QR-Code as 'application/json'
+        // 以 JSON 返回 URI 与 Base64 QR 码
         if (responseType == OfferResponseType.URI_QR) {
             byte[] qrBytes = generateQrCode(credOfferURI, width, height);
             String encodedBytes = Base64.getEncoder().encodeToString(qrBytes);
@@ -598,7 +559,7 @@ public class OID4VCIssuerEndpoint {
                     .entity(credOfferURI));
         }
 
-        // Respond with URI as 'application/json'
+        // 以 JSON 返回凭证发放 URI
         return cors.add(Response.ok()
                 .header(HttpHeaders.DATE, DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneOffset.UTC)))
                 .type(MediaType.APPLICATION_JSON)
@@ -615,9 +576,7 @@ public class OID4VCIssuerEndpoint {
         }
     }
 
-    /**
-     * Configures basic CORS for error responses before authentication
-     */
+    /** 在认证前配置基础 CORS（用于错误响应）。 */
     private void configureCors(boolean authenticated) {
         cors = Cors.builder()
                 .allowedMethods(HttpGet.METHOD_NAME, HttpOptions.METHOD_NAME)
@@ -628,9 +587,7 @@ public class OID4VCIssuerEndpoint {
         }
     }
 
-    /**
-     * Handles CORS preflight requests for credential offer endpoint
-     */
+    /** 处理凭证发放端点的 CORS 预检。 */
     @OPTIONS
     @Path(CREDENTIAL_OFFER_PATH + "/{nonce}")
     public Response getCredentialOfferPreflight(@PathParam("nonce") String nonce) {
@@ -639,9 +596,7 @@ public class OID4VCIssuerEndpoint {
         return cors.add(Response.ok());
     }
 
-    /**
-     * Provides an OID4VCI compliant credential offer
-     */
+    /** 返回符合 OID4VCI 规范的凭证发放 JSON。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path(CREDENTIAL_OFFER_PATH + "/{nonce}")
@@ -660,7 +615,7 @@ public class OID4VCIssuerEndpoint {
 
         checkIsOid4vciEnabled(eventBuilder);
 
-        // Retrieve the associated credential offer state
+        // 按 nonce 检索凭证发放状态（过期或领取前保留）
         // The credential offer state remains in storage until it expires or the associated credential is fetched
         CredentialOfferStorage offerStorage = session.getProvider(CredentialOfferStorage.class);
         CredentialOfferState offerState = offerStorage.getOfferStateByNonce(nonce);
@@ -670,7 +625,7 @@ public class OID4VCIssuerEndpoint {
             throw new BadRequestException(getErrorResponse(ErrorType.INVALID_CREDENTIAL_OFFER_REQUEST, errorMessage));
         }
 
-        // We treat the credential offer URI as an unprotected capability URL and rely solely on the later authorization step
+        // 发放 URI 视为无保护能力 URL，安全依赖后续授权步骤
         // i.e. an authenticated client/user session is not required nor checked against the offer state
         CredentialsOffer credOffer = offerState.getCredentialsOffer();
         LOGGER.debugf("Found credential offer: [ids=%s, cid=%s, uid=%s, nonce=%s]",
@@ -706,7 +661,7 @@ public class OID4VCIssuerEndpoint {
         String vcIssuanceFlow = clientSession.getNote(PreAuthorizedCodeGrantType.VC_ISSUANCE_FLOW);
 
         if (vcIssuanceFlow == null || !vcIssuanceFlow.equals(PRE_AUTH_GRANT_TYPE)) {
-            // Use getAuthResult() instead of bearerTokenAuthenticator.authenticate() directly
+            // 使用 getAuthResult() 复用缓存，防止 DPoP 证明重复使用
             // This ensures we benefit from the cachedAuthResult caching that prevents DPoP proof reuse
             AccessToken accessToken = getAuthResult().token();
             if (Arrays.stream(accessToken.getScope().split(" "))
@@ -755,9 +710,7 @@ public class OID4VCIssuerEndpoint {
         }
     }
 
-    /**
-     * Returns a verifiable credential
-     */
+    /** 凭证端点：校验请求并返回可验证凭证（支持批量与加密响应）。 */
     @POST
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_JWT})
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_JWT})
@@ -782,13 +735,13 @@ public class OID4VCIssuerEndpoint {
 
         CredentialIssuer issuerMetadata = new OID4VCIssuerWellKnownProvider(session).getIssuerMetadata();
 
-        // Validate request encryption
+        // 校验/解密凭证请求加密
         CredentialRequest credentialRequest = validateRequestEncryption(requestPayload, issuerMetadata, eventBuilder);
 
-        // Authenticate first to fail fast on auth errors
+        // 优先认证以便快速失败
         AuthenticationManager.AuthResult authResult = getAuthResult();
 
-        // Set client and user info in event
+        // 在事件中记录客户端与用户信息
         ClientModel clientModel = session.getContext().getClient();
         UserSessionModel userSession = authResult.session();
         UserModel userModel = userSession.getUser();
@@ -797,7 +750,7 @@ public class OID4VCIssuerEndpoint {
                 .session(userSession.getId())
                 .detail(Details.USERNAME, userModel.getUsername());
 
-        // Validate encryption parameters if present
+        // 校验响应加密参数（若提供）
         CredentialResponseEncryption encryptionParams = credentialRequest.getCredentialResponseEncryption();
         CredentialResponseEncryptionMetadata encryptionMetadata = OID4VCIssuerWellKnownProvider.getCredentialResponseEncryption(session);
         boolean isEncryptionRequired = Optional.ofNullable(encryptionMetadata)
@@ -834,11 +787,11 @@ public class OID4VCIssuerEndpoint {
             }
         }
 
-        // Check that client is enabled - call after authentication
+        // 认证后再校验客户端 OID4VCI 启用状态
         //
         checkClientEnabled(eventBuilder);
 
-        // Verify that we have credential_configuration_id or credential_identifier
+        // 凭证请求必须包含 configuration_id 或 identifier 之一
         //
         String requestedCredentialIdentifier = credentialRequest.getCredentialIdentifier();
         String requestedCredentialConfigurationId = credentialRequest.getCredentialConfigurationId();
@@ -859,7 +812,7 @@ public class OID4VCIssuerEndpoint {
 
         AccessToken accessToken = authResult.token();
 
-        // Retrieve the authorization_detail from the AccessToken
+        // 从访问令牌读取 authorization_details
         // Note, we always have authorization_details associated with the AccessToken JWT
         //
         List<OID4VCAuthorizationDetail> tokenAuthDetails = getAuthorizationDetailsResponse(accessToken);
@@ -877,14 +830,14 @@ public class OID4VCIssuerEndpoint {
         String authorizedCredentialConfigurationId = tokenAuthDetail.getCredentialConfigurationId();
         List<String> authorizedCredentialIdentifiers = Optional.ofNullable(tokenAuthDetail.getCredentialIdentifiers()).orElse(List.of());
 
-        // AccessToken authorization_details MUST contain a credential_configuration_id
+        // 访问令牌 authorization_details 必须含 credential_configuration_id
         if (authorizedCredentialConfigurationId == null) {
             var errorMessage = String.format("No credential_configuration_id in authorization_details: %s", tokenAuthDetail);
             eventBuilder.detail(Details.REASON, errorMessage).error(ErrorType.INVALID_CREDENTIAL_REQUEST.getValue());
             throw new BadRequestException(getErrorResponse(ErrorType.INVALID_CREDENTIAL_REQUEST, errorMessage));
         }
 
-        // Retrieve the optional credential offer state
+        // 可选：检索凭证发放状态（纯 scope 请求时可能不存在）
         // In case of credential request by scope, it will not be available
         //
         CredentialOfferState offerState = null;
@@ -900,7 +853,7 @@ public class OID4VCIssuerEndpoint {
                 throw new BadRequestException(getErrorResponse(ErrorType.INVALID_CREDENTIAL_REQUEST, errorMessage));
             }
 
-            // Verify not expired
+            // 校验发放未过期
             // The cache should have evicted the expired CredentialOfferState - we check anyway
             if (offerState.isExpired()) {
                 var errorMessage = "Credential offer has already expired";
@@ -909,7 +862,7 @@ public class OID4VCIssuerEndpoint {
                 throw new BadRequestException(getErrorResponse(ErrorType.INVALID_CREDENTIAL_REQUEST, errorMessage));
             }
 
-            // Verify the user login session
+            // 校验登录用户与发放目标用户一致
             //
             if (offerState.getTargetUserId() != null && !offerState.getTargetUserId().equals(userModel.getId())) {
                 var errorMessage = "Unexpected login user: " + userModel.getUsername();
@@ -918,7 +871,7 @@ public class OID4VCIssuerEndpoint {
                 throw new BadRequestException(getErrorResponse(ErrorType.INVALID_CREDENTIAL_REQUEST, errorMessage));
             }
 
-            // Verify the login client
+            // 校验登录客户端与发放目标客户端一致
             //
             if (offerState.getTargetClientId() != null && !offerState.getTargetClientId().equals(clientModel.getClientId())) {
                 var errorMessage = "Unexpected login client: " + clientModel.getClientId();
@@ -928,7 +881,7 @@ public class OID4VCIssuerEndpoint {
             }
         }
 
-        // Validate that authorization_details from the token matches the offer state
+        // 校验令牌 authorization_details 与发放状态一致
         // This ensures the correct access token is being used for the credential request
         if (offerState != null && !offerState.matchAuthorizationDetails(List.of(tokenAuthDetail))) {
             var errorMessage = "Authorization details in access token do not match the credential offer state. " +
@@ -938,7 +891,7 @@ public class OID4VCIssuerEndpoint {
             throw new BadRequestException(getErrorResponse(ErrorType.INVALID_CREDENTIAL_REQUEST, errorMessage));
         }
 
-        // Verify that the requested credential_configuration_id in the request matches one in the authorization_details
+        // 校验请求的 configuration_id 与 authorization_details 一致
         //
         if (!Strings.isEmpty(requestedCredentialConfigurationId)) {
 
@@ -957,7 +910,7 @@ public class OID4VCIssuerEndpoint {
             }
         }
 
-        // Verify that the requested credential_identifier in the request matches one in the authorization_details
+        // 校验请求的 identifier 在 authorization_details 列表中
         //
         if (!Strings.isEmpty(requestedCredentialIdentifier) && !authorizedCredentialIdentifiers.contains(requestedCredentialIdentifier)) {
             var errorMessage = "Credential identifier '" + requestedCredentialIdentifier + "' not found in authorization_details. " +
@@ -967,7 +920,7 @@ public class OID4VCIssuerEndpoint {
             throw new BadRequestException(getErrorResponse(ErrorType.UNKNOWN_CREDENTIAL_IDENTIFIER, errorMessage));
         }
 
-        // Find the credential configuration in the Issuer's metadata
+        // 在签发者元数据中查找凭证配置
         //
         SupportedCredentialConfiguration credConfig = getSupportedCredentials(session).get(authorizedCredentialConfigurationId);
         if (credConfig == null) {
@@ -976,7 +929,7 @@ public class OID4VCIssuerEndpoint {
             throw new BadRequestException(getErrorResponse(ErrorType.UNKNOWN_CREDENTIAL_CONFIGURATION, errorMessage));
         }
 
-        // Find credential client scope by requested/authorized credential_configuration_id
+        // 按 configuration_id 查找凭证客户端范围
         //
         CredentialScopeModel authorizedCredentialScope = CredentialScopeUtils.findCredentialScopeModelByConfigurationId(
                 realmModel, () -> clientModel.getClientScopes(false).values().stream(), authorizedCredentialConfigurationId);
@@ -999,7 +952,7 @@ public class OID4VCIssuerEndpoint {
 
         enforceProofContractForCredential(supportedCredential, credentialRequest.getProofs());
 
-        // Get the list of all proofs (handles single proof, multiple proofs, or none)
+        // 收集全部 proof（单个、多个或无）
         List<String> allProofs = getAllProofs(credentialRequest);
         if (allProofs.stream().anyMatch(p -> p == null || p.isBlank()))
             throw new BadRequestException(getErrorResponse(ErrorType.INVALID_PROOF, "Proof values must not be null or blank"));
@@ -1008,11 +961,11 @@ public class OID4VCIssuerEndpoint {
         CredentialResponse responseVO = new CredentialResponse();
 
         if (allProofs.isEmpty()) {
-            // Single issuance without proof
+            // 无 proof 的单次签发
             Object theCredential = getCredential(authResult, supportedCredential, tokenAuthDetail, credentialRequest, eventBuilder);
             responseVO.addCredential(theCredential);
         } else {
-            // Issue credentials for each proof
+            // 为每个 proof 分别签发凭证
             Proofs originalProofs = credentialRequest.getProofs();
             // Determine the proof type from the original proofs
             String proofType = originalProofs.getProofType();
@@ -1029,7 +982,7 @@ public class OID4VCIssuerEndpoint {
 
             for (String currentProof : allProofs) {
                 Proofs proofForIteration = Proofs.create(proofType, currentProof);
-                // Creating credential with keybinding to the current proof
+                // 使用当前 proof 进行密钥绑定并签发
                 credentialRequest.setProofs(proofForIteration);
                 Object theCredential = getCredential(authResult, supportedCredential, tokenAuthDetail, credentialRequest, eventBuilder);
                 responseVO.addCredential(theCredential);
@@ -1037,7 +990,7 @@ public class OID4VCIssuerEndpoint {
             credentialRequest.setProofs(originalProofs);
         }
 
-        // Encrypt all responses if encryption parameters are provided, except for error credential responses
+        // 若提供加密参数则加密响应（错误凭证响应除外）
         Response response;
         if (encryptionParams != null && !responseVO.getCredentials().isEmpty()) {
             String jwe = encryptCredentialResponse(eventBuilder, responseVO, encryptionParams, encryptionMetadata);
@@ -1053,14 +1006,14 @@ public class OID4VCIssuerEndpoint {
                     .build();
         }
 
-        // Mark event as successful
+        // 标记事件成功
         eventBuilder.detail(Details.SCOPE, supportedCredential.getScope())
                 .detail(Details.VERIFIABLE_CREDENTIAL_FORMAT, supportedCredential.getFormat())
                 .detail(Details.VERIFIABLE_CREDENTIALS_ISSUED, String.valueOf(responseVO.getCredentials().size()));
 
         eventBuilder.success();
 
-        // Clean up offer state after successful credential issuance
+        // 签发成功后清理发放状态，防止内存泄漏
         // This prevents memory leaks while ensuring the state remains available during the request
         if (offerState != null) {
             offerStorage.removeOfferState(offerState);
@@ -1164,12 +1117,11 @@ public class OID4VCIssuerEndpoint {
     }
 
     /**
-     * Decrypts a JWE-encoded Credential Request and validates it against metadata.
-     *
-     * @param jweString The JWE compact serialization
-     * @param metadata The CredentialRequestEncryptionMetadata
-     * @return The parsed CredentialRequest
-     * @throws JWEException If decryption or validation fails
+     * 解密 JWE 编码的凭证请求并按元数据校验 alg/enc/zip。
+     * @param jweString JWE 紧凑序列化字符串
+     * @param metadata 请求加密元数据
+     * @return 解析后的 CredentialRequest
+     * @throws JWEException 解密或校验失败
      */
     private CredentialRequest decryptCredentialRequest(String jweString, CredentialRequestEncryptionMetadata metadata) throws Exception {
         JWE jwe = new JWE(jweString);
@@ -1245,12 +1197,11 @@ public class OID4VCIssuerEndpoint {
 
 
     /**
-     * Decompresses content using the specified algorithm.
-     *
-     * @param content The compressed content
-     * @param zipAlgorithm The compression algorithm (e.g., "DEF")
-     * @return The decompressed content
-     * @throws JWEException If decompression fails
+     * 按指定算法解压 JWE 载荷。
+     * @param content 压缩内容
+     * @param zipAlgorithm 压缩算法（如 DEFLATE）
+     * @return 解压后的字节
+     * @throws JWEException 解压失败
      */
     // TODO handle compression/decompression transparently at the JWE software layer.
     private byte[] decompress(byte[] content, String zipAlgorithm) throws JWEException {
@@ -1265,11 +1216,8 @@ public class OID4VCIssuerEndpoint {
     }
 
     /**
-     * Normalizes legacy 'proof' field into 'proofs' and validates mutual exclusivity.
-     * <p>
-     * If a single 'proof' is present and 'proofs' is absent, converts it into a
-     * single-element JWT list under 'proofs' for backward compatibility.
-     * If both are present, throws a BadRequestException.
+     * 将旧版单字段 {@code proof} 归一化为 {@code proofs}，并校验二者互斥。
+     * <p>仅存在 proof 时转为 proofs 数组以保持向后兼容。</p>
      */
     private void normalizeProofFields(CredentialRequest credentialRequest) {
         if (credentialRequest == null) {
@@ -1389,13 +1337,12 @@ public class OID4VCIssuerEndpoint {
     }
 
     /**
-     * Encrypts a CredentialResponse as a JWE using the provided encryption parameters.
-     *
-     * @param response         The CredentialResponse to encrypt
-     * @param encryptionParams The encryption parameters (alg, enc, jwk)
-     * @return The compact JWE serialization
-     * @throws BadRequestException     If encryption parameters are invalid
-     * @throws WebApplicationException If encryption fails due to server issues
+     * 使用请求中的加密参数将 CredentialResponse 加密为 JWE。
+     * @param response 待加密的凭证响应
+     * @param encryptionParams 加密参数（alg、enc、jwk）
+     * @return JWE 紧凑序列化字符串
+     * @throws BadRequestException 加密参数无效
+     * @throws WebApplicationException 服务端加密失败
      */
     private String encryptCredentialResponse(EventBuilder eventBuilder, CredentialResponse response,
                                              CredentialResponseEncryption encryptionParams,
@@ -1465,9 +1412,7 @@ public class OID4VCIssuerEndpoint {
         }
     }
 
-    /**
-     * Compress content using the specified algorithm
-     */
+    /** 使用指定算法压缩 JWE 载荷。 */
     // TODO handle compression/decompression transparently at the JWE software layer.
     private byte[] compressContent(byte[] content, String zipAlgorithm) throws IOException {
         if (DEFLATE_COMPRESSION.equals(zipAlgorithm)) {
@@ -1478,10 +1423,9 @@ public class OID4VCIssuerEndpoint {
 
 
     /**
-     * Validate the encryption parameters for a credential response.
-     *
-     * @param encryptionParams The encryption parameters to validate
-     * @throws BadRequestException If the encryption parameters are invalid
+     * 校验凭证响应加密参数。
+     * @param encryptionParams 待校验的加密参数
+     * @throws BadRequestException 参数无效时
      */
     private void validateEncryptionParameters(CredentialResponseEncryption encryptionParams) {
         if (encryptionParams == null) {
@@ -1508,10 +1452,9 @@ public class OID4VCIssuerEndpoint {
     }
 
     /**
-     * Validates if the provided JWK is suitable for encryption.
-     *
-     * @param jwk The JWK to validate
-     * @return true if the JWK is valid for encryption, false otherwise
+     * 判断 JWK 是否可用于响应加密。
+     * @param jwk 待校验 JWK
+     * @return 适合加密时 true
      */
     private boolean isValidJwkForEncryption(JWK jwk) {
         if (jwk == null) {
@@ -1527,9 +1470,7 @@ public class OID4VCIssuerEndpoint {
                 metadata.getZipValuesSupported().contains(zip);
     }
 
-    /**
-     * Detect whether payload is a compact JWE by delegating to Keycloak JOSE parser.
-     */
+    /** 委托 Keycloak JOSE 解析器判断载荷是否为紧凑 JWE。 */
     private boolean isCompactJwePayload(String payload) {
         if (payload == null || payload.trim().isEmpty()) {
             return false;
@@ -1605,14 +1546,13 @@ public class OID4VCIssuerEndpoint {
     }
 
     /**
-     * Get a signed credential
-     *
-     * @param authResult          authResult containing the userSession to create the credential for
-     * @param credentialConfig    the supported credential configuration
-     * @param authDetail          Parsed OID4VC authorization_detail
-     * @param credentialRequestVO the credential request
-     * @param eventBuilder        the event builder for logging events
-     * @return the signed credential
+     * 构建、签名并返回可验证凭证。
+     * @param authResult 认证结果（含用户会话）
+     * @param credentialConfig 支持的凭证配置
+     * @param authDetail 解析后的 OID4VC authorization_detail
+     * @param credentialRequestVO 凭证请求
+     * @param eventBuilder 事件构建器
+     * @return 已签名的凭证对象
      */
     private Object getCredential(AuthenticationManager.AuthResult authResult,
                                  SupportedCredentialConfiguration credentialConfig,
@@ -1706,24 +1646,24 @@ public class OID4VCIssuerEndpoint {
         return getErrorResponseBuilder(errorType, errorDescription).build();
     }
 
-    // builds the unsigned credential by applying all protocol mappers.
+    // 应用全部协议映射器构建未签名凭证
     private VCIssuanceContext getVCToSign(List<OID4VCMapper> protocolMappers, SupportedCredentialConfiguration credentialConfig,
                                           AuthenticationManager.AuthResult authResult, OID4VCAuthorizationDetail authDetail, CredentialRequest credentialRequestVO,
                                           CredentialScopeModel credentialScopeModel, EventBuilder eventBuilder) {
 
-        // Compute issuance date and apply correlation-mitigation according to realm configuration
+        // 计算签发时间并按 Realm 配置做关联性缓解
         Instant issuance = Instant.ofEpochMilli(timeProvider.currentTimeMillis());
         TimeClaimNormalizer timeClaimNormalizer = new TimeClaimNormalizer(session);
         Instant normalizedIssuance = timeClaimNormalizer.normalize(issuance);
 
-        // Compute expiration date from client scope configuration and normalize it
+        // 按客户端范围配置计算过期时间并归一化
         // Note: The IssuedVerifiableCredentialModel.expiresAt and refresh token still use the full credential lifetime
         CredentialScopeModel clientScopeModel = credentialScopeModel;
         Integer refreshIntervalInSeconds = clientScopeModel.getRefreshIntervalInSeconds();
         Instant expiration = normalizedIssuance.plusSeconds(refreshIntervalInSeconds);
         Instant normalizedExpiration = timeClaimNormalizer.normalize(expiration);
 
-        // set the required claims
+        // 设置凭证必需声明（签发/过期/类型）
         VerifiableCredential vc = new VerifiableCredential()
                 .setIssuanceDate(normalizedIssuance)
                 .setExpirationDate(normalizedExpiration)
@@ -1736,18 +1676,18 @@ public class OID4VCIssuerEndpoint {
         protocolMappers
                 .forEach(mapper -> mapper.setClaimWithMetadataPrefix(subjectClaims, subjectClaimsWithMetadataPrefix));
 
-        // Validate that requested claims from authorization_details are present
+        // 校验 authorization_details 请求的 claims 均已解析
         String credentialConfigId = credentialConfig.getId();
         validateRequestedClaimsArePresent(subjectClaimsWithMetadataPrefix, credentialConfig, authResult.user(), authDetail, credentialConfigId, eventBuilder);
 
-        // Include all available claims
+        // 写入全部可用 subject claims
         subjectClaims.forEach((key, value) -> vc.getCredentialSubject().setClaims(key, value));
 
         protocolMappers.forEach(mapper -> mapper.setClaim(vc, authResult.session()));
 
         LOGGER.debugf("The credential to sign is: %s", vc);
 
-        // Build format-specific credential
+        // 调用格式特定构建器生成 CredentialBody
         CredentialBody credentialBody = this.findCredentialBuilder(credentialConfig)
                 .buildCredentialBody(vc, credentialConfig.getCredentialBuildConfig());
 
@@ -1758,9 +1698,7 @@ public class OID4VCIssuerEndpoint {
                 .setCredentialRequest(credentialRequestVO);
     }
 
-    /**
-     * Enforce key binding: Validate proof and bind associated key to credential in issuance context.
-     */
+    /** 强制密钥绑定：校验 proof 并将关联公钥写入签发上下文。 */
     private void enforceKeyBindingIfProofProvided(VCIssuanceContext vcIssuanceContext) {
         Proofs proofs = vcIssuanceContext.getCredentialRequest().getProofs();
         if (proofs == null) {
@@ -1768,7 +1706,7 @@ public class OID4VCIssuerEndpoint {
             return;
         }
 
-        // Validate each proof type that is present
+        // 校验各 proof 类型
         for (String proofType : proofs.getPresentProofTypes()) {
             validateProofs(vcIssuanceContext, proofType);
         }
@@ -1780,11 +1718,11 @@ public class OID4VCIssuerEndpoint {
             throw new BadRequestException(String.format("Unable to validate proofs of type %s", proofType));
         }
 
-        // Validate proof and bind public keys to credential
+        // 校验 proof 并将公钥绑定到凭证
         try {
             List<JWK> jwks = proofValidator.validateProof(vcIssuanceContext);
             if (jwks != null && !jwks.isEmpty()) {
-                // Bind the first JWK to the credential
+                // 将首个 JWK 绑定为密钥绑定
                 vcIssuanceContext.getCredentialBody().addKeyBinding(jwks.get(0));
             }
         } catch (VCIssuerException e) {
@@ -1812,19 +1750,18 @@ public class OID4VCIssuerEndpoint {
     }
 
     /**
-     * Validates that all requested claims from authorization_details are present in the available claims.
-     *
-     * @param allClaims        all available claims. These are the claims including metadata prefix with the resolved path
-     * @param credentialConfig Credential configuration
-     * @param user             the authenticated user
-     * @param authzDetail      the parsed oid4vc authorization_detail
-     * @param scope            the credential scope
-     * @param eventBuilder     the event builder for logging error events
-     * @throws BadRequestException if mandatory requested claims are missing
+     * 校验 authorization_details 请求的 claims 均存在于可用声明集合中。
+     * @param allClaims 含元数据前缀的可用声明映射
+     * @param credentialConfig 凭证配置
+     * @param user 已认证用户
+     * @param authzDetail 解析后的 OID4VC authorization_detail
+     * @param scope 凭证范围标识
+     * @param eventBuilder 事件构建器
+     * @throws BadRequestException 必填 claim 缺失时
      */
     private void validateRequestedClaimsArePresent(Map<String, Object> allClaims, SupportedCredentialConfiguration credentialConfig,
                                                    UserModel user, OID4VCAuthorizationDetail authzDetail, String scope, EventBuilder eventBuilder) {
-        // Protocol mappers from configuration
+        // 从凭证配置读取协议映射器声明
         Map<List<Object>, ClaimsDescription> claimsConfig = credentialConfig.getCredentialMetadata().getClaims()
                 .stream()
                 .map(claim -> {
@@ -1835,7 +1772,7 @@ public class OID4VCIssuerEndpoint {
 
         List<ClaimsDescription> claimsFromAuthzDetails = getClaimsFromAuthzDetails(scope, user, authzDetail);
 
-        // Merge claims from both protocolMappers and authorizationDetails. If either source specifies "mandatory" as true, claim is considered mandatory
+        // 合并映射器与 authorization_details 的 claims；任一方标记 mandatory 则视为必填
         for (ClaimsDescription claimDescription : claimsFromAuthzDetails) {
             List<Object> path = claimDescription.getPath();
             ClaimsDescription existing = claimsConfig.get(path);
@@ -1850,7 +1787,7 @@ public class OID4VCIssuerEndpoint {
 
         List<ClaimsDescription> claimsDescriptions = new ArrayList<>(claimsConfig.values());
 
-        // Validate that all requested claims are present in the available claims
+        // 确认全部请求 claims 存在于可用集合（不实际过滤，仅校验）
         // We use filterClaimsByAuthorizationDetails to check if claims can be found
         // but we don't actually filter - we just validate presence
         try {

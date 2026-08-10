@@ -24,10 +24,15 @@ import org.keycloak.protocol.oidc.endpoints.request.AuthorizationEndpointRequest
 import static org.keycloak.OAuth2Constants.ISSUER_STATE;
 import static org.keycloak.protocol.oid4vc.clientpolicy.CredentialClientPolicies.VC_POLICY_CREDENTIAL_OFFER_REQUIRED;
 
+/**
+ * OID4VCI 授权端点检查提供方：验证授权请求中的凭证范围是否与凭证发放（offer）一致。
+ * <p>当客户端策略要求凭证发放时，确保请求的 {@code credential_configuration_id} 已在 offer 中声明。</p>
+ */
 public class OID4VCAuthorizationCheckProvider implements AuthorizationEndpointCheckProvider {
 
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public OID4VCAuthorizationCheckProvider(KeycloakSession session) {
         this.session = session;
     }
@@ -37,18 +42,15 @@ public class OID4VCAuthorizationCheckProvider implements AuthorizationEndpointCh
         ClientModel client = context.getClient();
         AuthorizationEndpointRequest request = context.getAuthorizationEndpointRequest();
 
-        // Get the list of requested credential scopes that are associated with this client
-        //
+        // 获取与此客户端关联、且在授权请求中请求的凭证范围列表
         List<CredentialScopeModel> credScopes = CredentialScopeUtils.getCredentialScopesForAuthorization(client, request);
 
-        // Proceed when there are requested credential scopes
-        //
+        // 存在凭证范围请求时才执行后续校验
         if (!credScopes.isEmpty()) {
 
             PredicateCredentialClientPolicy offerRequiredPolicy = VC_POLICY_CREDENTIAL_OFFER_REQUIRED;
 
-            // Get the potential offer state derived from issuer_state
-            //
+            // 从 issuer_state 解析潜在的凭证发放状态
             String issuerStateParam = request.getAdditionalReqParams().get(ISSUER_STATE);
             CredentialOfferStorage offerStorage = session.getProvider(CredentialOfferStorage.class);
             CredentialOfferState offerState = Optional.ofNullable(issuerStateParam)
@@ -62,8 +64,7 @@ public class OID4VCAuthorizationCheckProvider implements AuthorizationEndpointCh
                     .map(CredentialsOffer::getCredentialConfigurationIds)
                     .orElse(List.of());
 
-            // Check whether each requested credential_configuration_id has actually been offered
-            //
+            // 校验每个请求的 credential_configuration_id 是否已在发放中提供
             for (CredentialScopeModel credScope : credScopes) {
                 String credConfigId = credScope.getCredentialConfigurationId();
 

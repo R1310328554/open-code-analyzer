@@ -16,9 +16,19 @@ import static org.keycloak.protocol.oid4vc.model.OID4VCAuthorizationDetail.CLAIM
 import static org.keycloak.protocol.oid4vc.model.OID4VCAuthorizationDetail.CREDENTIALS_OFFER_ID;
 import static org.keycloak.protocol.oid4vc.model.OID4VCAuthorizationDetail.ISSUED_CREDENTIAL_ID;
 
+/**
+ * OID4VCI {@code openid_credential} 类型的授权细节 JSON 解析器。
+ * <p>将通用 {@link AuthorizationDetailsJSONRepresentation} 填充为 {@link OID4VCAuthorizationDetail}。</p>
+ */
 public class OID4VCAuthorizationDetailsParser implements AuthorizationDetailsParser {
 
     @Override
+    /**
+     * 将授权细节转换为 OID4VCI 子类型。
+     * @param authzDetail 原始授权细节
+     * @param clazz 目标类型（仅支持 {@link OID4VCAuthorizationDetail}）
+     * @return 转换后的子类型实例
+     */
     public <T extends AuthorizationDetailsJSONRepresentation> T asSubtype(AuthorizationDetailsJSONRepresentation authzDetail, Class<T> clazz) {
         if (OID4VCAuthorizationDetail.class.equals(clazz)) {
             if (authzDetail instanceof OID4VCAuthorizationDetail) {
