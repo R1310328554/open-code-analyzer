@@ -35,29 +35,41 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
+ * URI 校验器：接受 {@link URI}、{@link URL} 或字符串；null 视为有效，必填请配合 {@link NotBlankValidator} 等。
  * URI validation - accepts {@link URI}, {@link URL} and single String. Null input is valid, use other validators (like
  * {@link NotBlankValidator} or {@link NotEmptyValidator} to force field as required.
  */
 public class UriValidator extends AbstractSimpleValidator implements ConfiguredProvider {
 
+    /** 单例实例。 */
     public static final UriValidator INSTANCE = new UriValidator();
 
+    /** 允许的 URI scheme 配置键。 */
     public static final String KEY_ALLOWED_SCHEMES = "allowedSchemes";
+    /** 是否允许 URI fragment 配置键。 */
     public static final String KEY_ALLOW_FRAGMENT = "allowFragment";
+    /** 是否要求 URL 可解析为有效 URL 的配置键。 */
     public static final String KEY_REQUIRE_VALID_URL = "requireValidUrl";
 
+    /** 默认允许的 scheme 列表（http、https）。 */
     public static final List<String> DEFAULT_ALLOWED_SCHEMES = Collections.unmodifiableList(Arrays.asList(
             "http",
             "https"
     ));
+    /** 无效 URI 错误消息键。 */
     public static final String MESSAGE_INVALID_URI = "error-invalid-uri";
+    /** 无效 scheme 错误消息键。 */
     public static final String MESSAGE_INVALID_SCHEME = "error-invalid-uri-scheme";
+    /** 不允许 fragment 时的错误消息键。 */
     public static final String MESSAGE_INVALID_FRAGMENT = "error-invalid-uri-fragment";
 
+    /** 默认允许 URI fragment。 */
     public static final boolean DEFAULT_ALLOW_FRAGMENT = true;
 
+    /** 默认要求 URL 有效。 */
     public static final boolean DEFAULT_REQUIRE_VALID_URL = true;
 
+    /** 校验器 ID。 */
     public static final String ID = "uri";
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
@@ -159,11 +171,12 @@ public class UriValidator extends AbstractSimpleValidator implements ConfiguredP
             valid = false;
         }
 
+        // 已有其他错误时不重复校验 URL 有效性，避免重复报错
         // Don't check if URL is valid if there are other problems with it; otherwise it could lead to duplicate errors.
         // This cannot be moved higher because it acts on differently based on environment (e.g. sometimes it checks
         // scheme, sometimes it doesn't).
         if (requireValidUrl && valid) {
-            uri.toURL(); // throws an exception
+            uri.toURL(); // 无效 URL 时抛出异常 // throws an exception
         }
 
         return valid;

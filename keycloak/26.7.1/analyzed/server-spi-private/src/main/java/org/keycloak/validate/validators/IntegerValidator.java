@@ -20,6 +20,7 @@ import org.keycloak.provider.ConfiguredProvider;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
+ * 整数校验器：接受 {@link Integer}/{@link Long} 或可解析为 {@link Long} 的字符串，支持 min/max 范围校验。
  * 
  * Validate input being integer number {@link Integer} or {@link Long}. Accepts String also if convertible to
  * {@link Long} by common {@link Long#parseLong(String)} operation.
@@ -28,7 +29,9 @@ import org.keycloak.validate.ValidatorConfig;
  */
 public class IntegerValidator extends AbstractNumberValidator implements ConfiguredProvider {
 
+    /** 校验器 ID。 */
     public static final String ID = "integer";
+    /** 单例实例。 */
     public static final IntegerValidator INSTANCE = new IntegerValidator();
 
     public IntegerValidator() {

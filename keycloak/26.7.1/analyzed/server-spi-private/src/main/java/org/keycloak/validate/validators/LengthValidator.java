@@ -31,6 +31,7 @@ import org.keycloak.validate.ValidationResult;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
+ * 字符串长度校验器：校验前默认 trim，可通过 {@link #KEY_TRIM_DISABLED} 禁用；至少配置 {@link #KEY_MIN} 或 {@link #KEY_MAX} 之一。
  * String value length validation - accepts plain string and collection of strings, for basic behavior like null/blank
  * values handling and collections support see {@link AbstractStringValidator}. Validator trims String value before the
  * length validation, can be disabled by {@link #KEY_TRIM_DISABLED} boolean configuration entry set to
@@ -40,16 +41,24 @@ import org.keycloak.validate.ValidatorConfig;
  */
 public class LengthValidator extends AbstractStringValidator implements ConfiguredProvider {
 
+    /** 单例实例。 */
     public static final LengthValidator INSTANCE = new LengthValidator();
 
+    /** 校验器 ID。 */
     public static final String ID = "length";
 
+    /** 长度无效错误消息键。 */
     public static final String MESSAGE_INVALID_LENGTH = "error-invalid-length";
+    /** 长度过短错误消息键。 */
     public static final String MESSAGE_INVALID_LENGTH_TOO_SHORT = "error-invalid-length-too-short";
+    /** 长度过长错误消息键。 */
     public static final String MESSAGE_INVALID_LENGTH_TOO_LONG = "error-invalid-length-too-long";
 
+    /** 最小长度配置键。 */
     public static final String KEY_MIN = "min";
+    /** 最大长度配置键。 */
     public static final String KEY_MAX = "max";
+    /** 禁用 trim 的配置键。 */
     public static final String KEY_TRIM_DISABLED = "trim-disabled";
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
@@ -105,6 +114,7 @@ public class LengthValidator extends AbstractStringValidator implements Configur
     }
     
     /**
+     * 根据配置的最小/最大长度边界选择对应的错误消息。
      * Select error message depending on the allowed length interval bound configuration.
      */
     protected String selectErrorMessage(ValidatorConfig config) {

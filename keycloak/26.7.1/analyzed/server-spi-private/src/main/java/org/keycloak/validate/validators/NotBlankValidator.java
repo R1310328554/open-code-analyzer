@@ -24,6 +24,7 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
+ * 非空白校验器：值须存在且非空白；字符串集合须至少含一个非空白元素。
  * Validate that value exists and is not empty nor blank. Supports String and collection of Strings as input. For
  * collection of Strings input has to contain at least one element and it have to be non-blank to satisfy this
  * validation. If collection contains something else than String, or if even one String in it is blank, then this
@@ -33,10 +34,13 @@ import org.keycloak.validate.ValidatorConfig;
  */
 public class NotBlankValidator implements SimpleValidator {
 
+    /** 校验器 ID。 */
     public static final String ID = "not-blank";
 
+    /** 空白值错误消息键。 */
     public static final String MESSAGE_BLANK = "error-invalid-blank";
 
+    /** 单例实例。 */
     public static final NotBlankValidator INSTANCE = new NotBlankValidator();
 
     @Override

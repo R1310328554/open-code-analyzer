@@ -30,9 +30,13 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+/**
+ * Java Stream 工具类：提供分页、分块、去重及 Hibernate 流关闭等辅助方法。
+ */
 public class StreamsUtil {
 
     /**
+     * 返回在终止操作时自动关闭的 Stream（如 Hibernate 文档要求的流）。
      * Returns the original stream that is closed on terminating operation.
      *
      * It is used, for example, for closing hibernate provided streams since it is required by hibernate documentation.
@@ -45,6 +49,7 @@ public class StreamsUtil {
     }
 
     /**
+     * 若 Stream 非空则返回；否则抛出指定异常。
      * Returns the original stream if the stream is not empty. Otherwise throws the provided exception.
      * @param stream Stream to be examined.
      * @param ex Exception to be thrown if the stream is empty.
@@ -60,6 +65,7 @@ public class StreamsUtil {
     }
 
     /**
+     * 按 {@code first} 与 {@code max} 对 Stream 执行 {@link Stream#skip(long) skip} 与 {@link Stream#limit(long) limit} 分页。
      * Returns the original stream that is limited with {@link Stream#skip(long) skip} and
      * {@link Stream#limit(long) limit} functions based on values of {@code first} and {@code max} parameters.
      * 
@@ -82,6 +88,8 @@ public class StreamsUtil {
     }
 
     /**
+     * 按 key 去重的谓词；不应用于并行 Stream。
+     * <p>需线程安全时可改用 {@code ConcurrentHashMap<Object, Boolean>} 替代 HashSet。</p>
      * distinctByKey is not supposed to be used with parallel streams
      *
      * To make this method synchronized use {@code ConcurrentHashMap<Object, Boolean>} instead of HashSet
@@ -93,6 +101,7 @@ public class StreamsUtil {
     }
 
     /**
+     * 将 Stream 按固定大小分块；最后一块可能小于 chunkSize，顺序取决于底层 Stream。
      * A Java stream utility that splits a stream into chunks of a fixed size. Last chunk in
      * the stream might be smaller than the desired size. Ordering guarantees
      * depend on underlying stream.
@@ -144,6 +153,7 @@ public class StreamsUtil {
     }
 
     /**
+     * 规避 JDK 21 中 sorted Stream 在 flatMap 内被 eager 求值的缺陷（JDK 24 已修复）。
      * This works around a bug in JDK 21 (but no longer in JDK 24) where a sorted stream has all its elements processed
      * when used inside of a flatmap and a terminal operation like limit() is used outside of it.
      * See StreamUtilTests.testSortedInsideOfFlatMapShouldRespectTerminalOperation for an example.

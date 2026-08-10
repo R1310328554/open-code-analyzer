@@ -23,6 +23,7 @@ import org.keycloak.validate.ValidatorConfig;
 import org.keycloak.validate.Validators;
 
 /**
+ * 校验器配置校验器：验证输入为 {@link ValidatorConfig} 且对 {@code inputHint} 指定校验器有效。
  * Validate that input value is {@link ValidatorConfig} and it is correct for validator (<code>inputHint</code> must be
  * ID of the validator config is for) by
  * {@link Validators#validateConfig(org.keycloak.models.KeycloakSession, String, ValidatorConfig)}. .
@@ -30,31 +31,38 @@ import org.keycloak.validate.Validators;
 public class ValidatorConfigValidator implements SimpleValidator {
 
     /**
+     * 配置校验通用错误：缺少配置值。
      * Generic error messages for config validations - missing config value
      */
     public static final String MESSAGE_CONFIG_MISSING_VALUE = "error-validator-config-missing-value";
     /**
+     * 配置校验通用错误：无效配置值。
      * Generic error messages for config validations - invalid config value
      */
     public static final String MESSAGE_CONFIG_INVALID_VALUE = "error-validator-config-invalid-value";
 
     /**
+     * 配置校验通用错误：期望数值。
      * Generic error messages for config validations - invalid config value - number expected
      */
     public static final String MESSAGE_CONFIG_INVALID_NUMBER_VALUE = "error-validator-config-invalid-number-value";
 
     /**
+     * 配置校验通用错误：期望布尔值。
      * Generic error messages for config validations - invalid config value - boolean expected
      */
     public static final String MESSAGE_CONFIG_INVALID_BOOLEAN_VALUE = "error-validator-config-invalid-boolean-value";
 
     /**
+     * 配置校验通用错误：期望字符串。
      * Generic error messages for config validations - invalid config value - string expected
      */
     public static final String MESSAGE_CONFIG_INVALID_STRING_VALUE = "error-validator-config-invalid-string-value";
 
+    /** 校验器 ID。 */
     public static final String ID = "validatorConfig";
 
+    /** 单例实例。 */
     public static final ValidatorConfigValidator INSTANCE = new ValidatorConfigValidator();
 
     public ValidatorConfigValidator() {

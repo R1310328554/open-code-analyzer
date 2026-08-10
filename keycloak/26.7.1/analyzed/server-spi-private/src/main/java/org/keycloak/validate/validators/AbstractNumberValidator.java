@@ -32,6 +32,7 @@ import org.keycloak.validate.ValidationResult;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
+ * 数值校验器抽象基类：通过 {@link #KEY_MIN} 与 {@link #KEY_MAX} 配置最小/最大值范围。
  * Abstract class for number validator. Supports min and max value validations using {@link #KEY_MIN} and
  * {@link #KEY_MAX} config options.
  * 
@@ -39,12 +40,18 @@ import org.keycloak.validate.ValidatorConfig;
  */
 public abstract class AbstractNumberValidator extends AbstractSimpleValidator implements ConfiguredProvider {
 
+    /** 无效数值错误消息键。 */
     public static final String MESSAGE_INVALID_NUMBER = "error-invalid-number";
+    /** 数值超出范围错误消息键。 */
     public static final String MESSAGE_NUMBER_OUT_OF_RANGE = "error-number-out-of-range";
+    /** 数值过小错误消息键。 */
     public static final String MESSAGE_NUMBER_OUT_OF_RANGE_TOO_SMALL = "error-number-out-of-range-too-small";
+    /** 数值过大错误消息键。 */
     public static final String MESSAGE_NUMBER_OUT_OF_RANGE_TOO_BIG = "error-number-out-of-range-too-big";
 
+    /** 最小值配置键。 */
     public static final String KEY_MIN = "min";
+    /** 最大值配置键。 */
     public static final String KEY_MAX = "max";
 
     private final ValidatorConfig defaultConfig;
@@ -67,7 +74,9 @@ public abstract class AbstractNumberValidator extends AbstractSimpleValidator im
         configProperties.add(property);
     }
 
+    /** 供反射使用的无参构造。 */
     public AbstractNumberValidator() {
+        // 供反射实例化
         // for reflection
         this(ValidatorConfig.EMPTY);
     }
@@ -100,6 +109,7 @@ public abstract class AbstractNumberValidator extends AbstractSimpleValidator im
             try {
                 number = convert(value, config);
             } catch (NumberFormatException ignore) {
+                // 转换失败，后续报告无效数值
                 // N/A
             }
         }
@@ -126,6 +136,7 @@ public abstract class AbstractNumberValidator extends AbstractSimpleValidator im
     }
     
     /**
+     * 根据配置的最小/最大边界选择对应的范围错误消息。
      * Select error message depending on the allowed range interval bound configuration.
      */
     protected String selectRangeErrorMessage(ValidatorConfig config) {
@@ -172,6 +183,7 @@ public abstract class AbstractNumberValidator extends AbstractSimpleValidator im
     }
 
     /**
+     * 将输入值转换为该校验器支持的 {@link Number} 类型。
      * Convert input value to instance of Number supported by this validator.
      * 
      * @param value to convert
@@ -183,6 +195,7 @@ public abstract class AbstractNumberValidator extends AbstractSimpleValidator im
     protected abstract Number convert(Object value, ValidatorConfig config);
 
     /**
+     * 从配置读取最小/最大边界数值。
      * Get config value for min and max validation bound as a Number supported by this validator
      * 
      * @param config to get from
@@ -192,6 +205,7 @@ public abstract class AbstractNumberValidator extends AbstractSimpleValidator im
     protected abstract Number getMinMaxConfig(ValidatorConfig config, String key);
 
     /**
+     * 比较两个同类型数值，判断第一个是否大于第二个。
      * Compare two numbers of supported type (fed by {@link #convert(Object, ValidatorConfig)} and
      * {@link #getMinMaxConfig(ValidatorConfig, String)} )
      * 

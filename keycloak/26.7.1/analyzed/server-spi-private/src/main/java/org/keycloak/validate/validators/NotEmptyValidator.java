@@ -25,6 +25,7 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
+ * 非空校验器：值不能为 null；字符串长度须 &gt; 0（不 trim）；{@link Collection}/{@link Map} 不能为空。
  * Check that input value is not empty. It means it is not null for all data types. For String it also have to be
  * non-empty string (no trim() performed). For {@link Collection} and {@link Map} it also means it is not empty.
  * 
@@ -32,10 +33,13 @@ import org.keycloak.validate.ValidatorConfig;
  */
 public class NotEmptyValidator implements SimpleValidator {
 
+    /** 单例实例。 */
     public static final NotEmptyValidator INSTANCE = new NotEmptyValidator();
 
+    /** 校验器 ID。 */
     public static final String ID = "not-empty";
 
+    /** 空值错误消息键。 */
     public static final String MESSAGE_ERROR_EMPTY = "error-empty";
 
     @Override

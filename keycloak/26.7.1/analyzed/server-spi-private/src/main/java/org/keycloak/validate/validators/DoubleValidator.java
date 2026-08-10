@@ -20,6 +20,7 @@ import org.keycloak.provider.ConfiguredProvider;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
+ * 双精度浮点数校验器：接受 {@link Number} 或可解析为 {@link Double} 的字符串，支持 min/max 范围校验。
  * Validate input being any kind of {@link Number}. Accepts String also if convertible to {@link Double} by common
  * {@link Double#parseDouble(String)}. Min and Max validation is based on {@link Double} precision also.
  * 
@@ -27,8 +28,10 @@ import org.keycloak.validate.ValidatorConfig;
  */
 public class DoubleValidator extends AbstractNumberValidator implements ConfiguredProvider {
 
+    /** 校验器 ID。 */
     public static final String ID = "double";
 
+    /** 单例实例。 */
     public static final DoubleValidator INSTANCE = new DoubleValidator();
 
     public DoubleValidator() {

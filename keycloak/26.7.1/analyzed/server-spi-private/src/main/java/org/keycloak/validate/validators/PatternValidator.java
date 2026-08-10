@@ -33,19 +33,25 @@ import org.keycloak.validate.ValidationResult;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
+ * 正则模式校验器：字符串须匹配配置的 Java {@link Pattern} 正则。
  * Validate String against configured RegEx pattern - accepts plain string and collection of strings, for basic behavior
  * like null/blank values handling and collections support see {@link AbstractStringValidator}.
  */
 public class PatternValidator extends AbstractStringValidator implements ConfiguredProvider {
 
+    /** 校验器 ID。 */
     public static final String ID = "pattern";
 
+    /** 单例实例。 */
     public static final PatternValidator INSTANCE = new PatternValidator();
 
+    /** 正则模式配置键。 */
     public static final String CFG_PATTERN = "pattern";
 
+    /** 模式不匹配默认错误消息键。 */
     public static final String MESSAGE_NO_MATCH = "error-pattern-no-match";
     
+    /** 自定义错误消息键配置项。 */
     public static final String CFG_ERROR_MESSAGE = "error-message";
     
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();

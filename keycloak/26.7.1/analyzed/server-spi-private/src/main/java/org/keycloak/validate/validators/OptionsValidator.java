@@ -31,6 +31,7 @@ import org.keycloak.validate.ValidationResult;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
+ * 选项枚举校验器：值须在 {@link #KEY_OPTIONS} 配置的允许列表中。
  * Validation against list of allowed values - accepts plain string and collection of strings (every value is validated against allowed values), for basic behavior like null/blank
  * values handling and collections support see {@link AbstractStringValidator}.
  * <p>
@@ -38,10 +39,13 @@ import org.keycloak.validate.ValidatorConfig;
  */
 public class OptionsValidator extends AbstractStringValidator implements ConfiguredProvider {
 
+    /** 单例实例。 */
     public static final OptionsValidator INSTANCE = new OptionsValidator();
 
+    /** 校验器 ID。 */
     public static final String ID = "options";
 
+    /** 允许选项列表配置键。 */
     public static final String KEY_OPTIONS = "options";
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();

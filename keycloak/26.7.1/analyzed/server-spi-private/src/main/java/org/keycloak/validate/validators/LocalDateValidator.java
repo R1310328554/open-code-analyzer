@@ -34,14 +34,18 @@ import org.keycloak.validate.ValidationResult;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
+ * 本地化日期格式校验器：按 Realm 或用户 Locale 的短日期格式校验。
  * A date validator that only takes into account the format associated with the current locale.
  */
 public class LocalDateValidator extends AbstractStringValidator implements ConfiguredProvider {
 
+    /** 单例实例。 */
     public static final LocalDateValidator INSTANCE = new LocalDateValidator();
 
+    /** 校验器 ID。 */
     public static final String ID = "local-date";
 
+    /** 无效日期错误消息键。 */
     public static final String MESSAGE_INVALID_DATE = "error-invalid-date";
 
     @Override

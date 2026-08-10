@@ -14,16 +14,21 @@ import org.keycloak.validate.ValidatorConfig;
 
 
 /**
+ * ISO 8601 / RFC 3339 日期格式校验器（如 HTML5 date 输入格式）。
  * A date validator that only takes into account the format associated with the current locale.
  */
 public class IsoDateValidator extends AbstractStringValidator implements ConfiguredProvider {
 
+    /** ISO 本地日期格式化器。 */
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
+    /** 无效日期错误消息键。 */
     public static final String MESSAGE_INVALID_DATE = "error-invalid-date";
 
+    /** 单例实例。 */
     public static final IsoDateValidator INSTANCE = new IsoDateValidator();
 
+    /** 校验器 ID。 */
     public static final String ID = "iso-date";
 
     @Override

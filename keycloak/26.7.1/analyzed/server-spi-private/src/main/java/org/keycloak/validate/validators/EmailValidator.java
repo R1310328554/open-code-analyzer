@@ -34,19 +34,25 @@ import org.keycloak.validate.ValidationResult;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
+ * 邮箱格式校验器：接受字符串或字符串集合；空值/集合行为见 {@link AbstractStringValidator}。
  * Email format validation - accepts plain string and collection of strings, for basic behavior like null/blank values
  * handling and collections support see {@link AbstractStringValidator}.
  */
 public class EmailValidator extends AbstractStringValidator implements ConfiguredProvider {
 
+    /** 校验器 ID。 */
     public static final String ID = "email";
 
+    /** 单例实例。 */
     public static final EmailValidator INSTANCE = new EmailValidator();
 
+    /** 无效邮箱错误消息键。 */
     public static final String MESSAGE_INVALID_EMAIL = "error-invalid-email";
 
+    /** 本地部分含非 ASCII 字符错误消息键。 */
     public static final String MESSAGE_NON_ASCII_LOCAL_PART_EMAIL = "error-non-ascii-local-part-email";
 
+    /** 邮箱本地部分最大长度配置键。 */
     public static final String MAX_LOCAL_PART_LENGTH_PROPERTY = "max-local-length";
 
     @Override
@@ -76,6 +82,7 @@ public class EmailValidator extends AbstractStringValidator implements Configure
         final RealmModel realm = session.getContext().getRealm();
         if (realm == null || realm.getSmtpConfig() == null || realm.getSmtpConfig().isEmpty()
                 || "true".equals(realm.getSmtpConfig().get(EmailSenderProvider.CONFIG_ALLOW_UTF8))) {
+            // 无 SMTP 配置或 allowutf8 启用时允许 UTF-8 非 ASCII 字符
             // UTF-8 non-ascii chars allowed because no smtp configuration or allowutf8 is enabled
             return;
         }
