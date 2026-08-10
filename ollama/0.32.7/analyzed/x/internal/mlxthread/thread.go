@@ -1,3 +1,4 @@
+// MLX 专用工作线程：单 OS 线程串行执行 MLX 调用。
 package mlxthread
 
 import (
@@ -9,8 +10,10 @@ import (
 	"sync/atomic"
 )
 
+// ErrStopped 表示 MLX 工作线程已停止。
 var ErrStopped = errors.New("mlx thread stopped")
 
+// Thread 为绑定单 OS 线程的长期工作 goroutine。
 type Thread struct {
 	name string
 
@@ -30,6 +33,7 @@ type result struct {
 	panic *panicError
 }
 
+// panicError 携带 worker 恢复时的 panic 值与栈，便于 fatal trace 定位。
 // panicError carries a value recovered from the worker goroutine together with
 // the stack captured at recovery, before the original stack unwinds. Because it
 // implements error, re-panicking with it makes the runtime print the original
@@ -43,6 +47,7 @@ func (p *panicError) Error() string {
 	return fmt.Sprintf("%v\n\nmlx worker stack:\n%s", p.value, p.stack)
 }
 
+// Start 创建锁定单 OS 线程的长期 worker，init 在 worker 上执行。
 // Start creates a long-lived worker goroutine locked to one OS thread.
 func Start(name string, init func() error) (*Thread, error) {
 	t := &Thread{
@@ -65,6 +70,7 @@ func Start(name string, init func() error) (*Thread, error) {
 	return t, nil
 }
 
+// Do 在锁定 OS 线程上运行 fn；排队时可取消，执行中需 fn 自行检查。
 // Do runs fn on the locked OS thread.
 //
 // Context cancellation only applies while the work is queued. Once the worker
@@ -81,6 +87,7 @@ func (t *Thread) Do(ctx context.Context, fn func() error) error {
 	return res.err
 }
 
+// Call 在 MLX 线程上运行 fn 并返回结果。
 func Call[T any](ctx context.Context, t *Thread, fn func() (T, error)) (T, error) {
 	var value T
 	err := t.Do(ctx, func() error {
@@ -91,6 +98,7 @@ func Call[T any](ctx context.Context, t *Thread, fn func() (T, error)) (T, error
 	return value, err
 }
 
+// Stop 在 worker 线程上执行 cleanup 后关闭 worker。
 // Stop runs cleanup on the locked OS thread and then shuts the worker down.
 func (t *Thread) Stop(ctx context.Context, cleanup func()) error {
 	ctx = contextOrBackground(ctx)
@@ -133,6 +141,7 @@ func (t *Thread) Stop(ctx context.Context, cleanup func()) error {
 
 func (t *Thread) loop(init func() error, initResult chan<- result) {
 	runtime.LockOSThread()
+	// 故意不解锁：MLX 线程局部状态归属此 worker 直至关闭。
 	// Deliberately do not unlock. MLX thread-local state belongs to this worker
 	// until shutdown so it cannot leak back to arbitrary Go goroutines.
 

@@ -1,3 +1,4 @@
+// Blob 写入：解析 plan、字节变换或 MLX 量化并存储层。
 package create
 
 import (
@@ -9,8 +10,10 @@ import (
 	"github.com/ollama/ollama/x/safetensors"
 )
 
+// mediaTypeImageTensor 为 Ollama 图像张量 blob 的 MIME 类型。
 const mediaTypeImageTensor = "application/vnd.ollama.image.tensor"
 
+// BlobStore 存储完成的 blob 并返回层信息；写入位置（本地或远程）由实现决定。
 // BlobStore stores a finished blob and returns its layer info. The writer
 // produces the blob bytes; where they are stored — the local model store, or a
 // remote target in a future networked create — is the store's concern.
@@ -18,6 +21,7 @@ type BlobStore interface {
 	WriteBlob(r io.Reader, mediaType, name string) (LayerInfo, error)
 }
 
+// WriteBlobs 执行 plan 中各 blob：解析源张量、生成字节并写入 store。
 // WriteBlobs executes a plan's blobs: for each blob it resolves the tensors'
 // sources, produces the blob bytes, and stores the result.
 func WriteBlobs(specs []BlobSpec, modelDir string, store BlobStore) ([]LayerInfo, error) {
@@ -35,6 +39,7 @@ func WriteBlobs(specs []BlobSpec, modelDir string, store BlobStore) ([]LayerInfo
 	return layers, nil
 }
 
+// writeBlob 解析各张量源并产出单个 blob。
 // writeBlob resolves each tensor's sources and produces the blob.
 func writeBlob(spec BlobSpec, src *sourceFiles, store BlobStore) (LayerInfo, error) {
 	needsMLX := blobNeedsMLX(spec)
@@ -62,6 +67,8 @@ func writeBlob(spec BlobSpec, src *sourceFiles, store BlobStore) (LayerInfo, err
 		}
 	}
 
+	// 量化器自行计算 blob 量化元数据，忽略 spec.Metadata；
+	// 仅 prequant blob 带 Metadata 且不走 MLX 路径。
 	// The quantizer computes the blob's quant metadata itself and ignores
 	// spec.Metadata; today only prequant blobs carry Metadata and they never
 	// take the MLX path.
@@ -83,6 +90,8 @@ func writeBlob(spec BlobSpec, src *sourceFiles, store BlobStore) (LayerInfo, err
 	return layer, nil
 }
 
+// quantizeInputReader 为单张量构造量化器消费的 safetensors reader：
+// FP8 解码为 weight+scale 对，expert 为字节堆叠 3D，否则为张量本身。
 // quantizeInputReader builds the safetensors-wrapped reader the quantizer
 // consumes for one tensor: a paired weight+scale for FP8 decode, a byte-stacked
 // 3D tensor for experts, or the tensor itself. The output tensor is always
@@ -126,12 +135,14 @@ func quantizeInputReader(ts TensorSpec, sources []*safetensors.TensorData) (io.R
 	}
 }
 
+// needsFP8Decode 判断变换是否需在 MLX 线程上反量化 block-FP8。
 // needsFP8Decode reports whether a transform dequantizes block-FP8 weights on
 // the MLX thread (a single tensor or a stacked per-expert group).
 func needsFP8Decode(t Transform) bool {
 	return t == TransformDecodeFP8 || t == TransformDecodeStackFP8
 }
 
+// blobNeedsMLX 判断 blob 是否任一张量需 MLX 路径（量化或 FP8 解码）。
 // blobNeedsMLX reports whether any of the blob's tensors require the MLX path
 // — either a quantization target or an FP8 decode (which cannot be done with
 // byte operations alone).
@@ -144,13 +155,16 @@ func blobNeedsMLX(spec BlobSpec) bool {
 	return false
 }
 
+// sourceFiles 打开并缓存源 safetensors，各分片只打开一次。
 // sourceFiles opens and caches the source safetensors files so each shard is
 // opened once across all the blobs that read from it.
+// sourceFiles 按文件名缓存 TensorExtractor。
 type sourceFiles struct {
 	dir   string
 	cache map[string]*safetensors.TensorExtractor
 }
 
+// newSourceFiles 构造源文件缓存。
 func newSourceFiles(dir string) *sourceFiles {
 	return &sourceFiles{dir: dir, cache: make(map[string]*safetensors.TensorExtractor)}
 }

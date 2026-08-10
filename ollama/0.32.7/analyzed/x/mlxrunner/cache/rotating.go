@@ -10,6 +10,7 @@ import (
 	"github.com/ollama/ollama/x/models/nn"
 )
 
+// RotatingKVCache 实现滑动窗口 attention，内存有界。
 // RotatingKVCache implements sliding window attention with bounded memory.
 type RotatingKVCache struct {
 	keys, values *mlx.Array
@@ -28,6 +29,7 @@ type RotatingKVCache struct {
 	lazySnapshots []*rotatingSnapshot
 }
 
+// NewRotatingKVCache 构造最大窗口 maxSize 的旋转 KV 缓存。
 func NewRotatingKVCache(maxSize int) *RotatingKVCache {
 	return &RotatingKVCache{maxSize: maxSize, step: 256}
 }
@@ -59,6 +61,7 @@ func (c *RotatingKVCache) Update(b *batch.Batch, keys, values *mlx.Array) *nn.KV
 func (c *RotatingKVCache) concat(keys, values *mlx.Array) (newK *mlx.Array, newV *mlx.Array) {
 	logutil.Trace("(*RotatingKVCache).concat", "keys_dim", keys.Dims(), "values_dim", values.Dims(), "offset", c.offset, "idx", c.idx, "max_size", c.maxSize)
 
+	// 线性化/trim/concat 前冻结 lazy 快照，避免其索引槽位被销毁。
 	// Freeze outstanding lazy snapshots: the linearize/trim/concat below
 	// reorders and drops the slots they name.
 	c.copyOutLazySnapshots()
@@ -69,11 +72,13 @@ func (c *RotatingKVCache) concat(keys, values *mlx.Array) (newK *mlx.Array, newV
 	} else {
 		if c.idx < c.keys.Dim(2) {
 			if c.offset <= c.maxSize {
+				// 未 wrap：槽 [c.idx,Dim) 为增长 padding 或 rewind 后 stale 数据。
 				// Not yet wrapped: slots [c.idx, Dim) are grow padding
 				// or stale post-rewind data, not live window content.
 				c.keys.Set(c.keys.Slice(mlx.Slice(), mlx.Slice(), mlx.Slice(0, c.idx), mlx.Slice()))
 				c.values.Set(c.values.Slice(mlx.Slice(), mlx.Slice(), mlx.Slice(0, c.idx), mlx.Slice()))
 			} else {
+				// 已 wrap：逻辑顺序为 idx..Dim 再 0..idx；线性化后 trim+concat。
 				// Wrapped: logical order is slots[idx..Dim) then slots[0..idx).
 				// Linearize so the trim + concat below operate on contiguous
 				// positions and preserve the last (maxSize - 1) old tokens.
@@ -87,6 +92,7 @@ func (c *RotatingKVCache) concat(keys, values *mlx.Array) (newK *mlx.Array, newV
 			}
 		}
 
+		// trim 至 max_size 维持滑动窗口。
 		// Trim to max_size to maintain sliding window
 		if trim := c.idx - c.maxSize + 1; trim > 0 {
 			c.keys.Set(c.keys.Slice(mlx.Slice(), mlx.Slice(), mlx.Slice(trim, c.keys.Dim(2)), mlx.Slice()))
@@ -113,6 +119,7 @@ func (c *RotatingKVCache) update(keys, values *mlx.Array) (*mlx.Array, *mlx.Arra
 
 	prev := c.offset
 
+	// 未满 max 时按需 grow buffer。
 	// Grow buffer if not yet at max
 	if c.keys == nil || (prev >= c.keys.Dim(2) && c.keys.Dim(2) < c.maxSize) {
 		newSize := min(c.step, c.maxSize-prev)
@@ -135,6 +142,7 @@ func (c *RotatingKVCache) update(keys, values *mlx.Array) (*mlx.Array, *mlx.Arra
 		c.idx = c.maxSize
 	}
 
+	// 达 max 时旋转写指针。
 	// Rotate when hitting max
 	if c.idx >= c.maxSize {
 		c.idx = 0
@@ -151,6 +159,7 @@ func (c *RotatingKVCache) update(keys, values *mlx.Array) (*mlx.Array, *mlx.Arra
 		c.values.Slice(mlx.Slice(), mlx.Slice(), mlx.Slice(0, validLen), mlx.Slice())
 }
 
+// View 返回只读 KV 历史供共享缓存的 assistant 模型使用；L=1 表示环序布局。
 // View returns the current cache contents as a read-only KV history, used by an
 // assistant model that shares this cache. It sets L=1 so rotatingApplier treats
 // the buffer as ring-ordered (its stored layout); L=1 is a layout selector, not
@@ -163,6 +172,7 @@ func (c *RotatingKVCache) View(b *batch.Batch) *nn.KVHistory {
 	K := k.Dim(2)
 	ringIdx := c.idx
 	if K > c.maxSize {
+		// concat 后超长 buffer 已为逻辑序，取尾部 maxSize 并重置 ringIdx。
 		// Post-concat oversize buffer: storage is in logical (oldest-first)
 		// order, so slice the trailing maxSize tokens. The slice is already
 		// in logical layout, so reset ringIdx to make the applier's gather
@@ -194,6 +204,7 @@ func (c *RotatingKVCache) State() []*mlx.Array {
 	}
 }
 
+// replaceBuffer 替换 keys/values buffer 并更新 pin。
 // replaceBuffer swaps in newK/newV as the cache's keys/values, unpinning the old
 // buffer and pinning the new one.
 func (c *RotatingKVCache) replaceBuffer(newK, newV *mlx.Array) {
@@ -203,6 +214,7 @@ func (c *RotatingKVCache) replaceBuffer(newK, newV *mlx.Array) {
 }
 
 func (c *RotatingKVCache) Free() {
+	// Free 前 copyOut lazy 快照。
 	// Freeing drops the buffer lazy snapshots index into; copy them out first.
 	c.copyOutLazySnapshots()
 	mlx.Unpin(c.keys, c.values)
@@ -217,6 +229,7 @@ func (c *RotatingKVCache) Offset() int { return c.offset }
 func (c *RotatingKVCache) PrepareSnapshots(offsets []int) { c.snapshots.prepare(c.offset, offsets) }
 func (c *RotatingKVCache) TakeSnapshots() []Snapshot      { return c.snapshots.take() }
 
+// captureStartBoundary 在写前用 Snapshot 捕获调度起点（完整 pre-write 窗口）。
 // captureStartBoundary captures a scheduled offset at the pre-write position via
 // the clone path (Snapshot), so the rollback point holds the full pre-write
 // window before concat/update reorders or drops it.
@@ -227,6 +240,7 @@ func (c *RotatingKVCache) captureStartBoundary(start int) {
 	c.snapshots.captureReached(start, func(int) Snapshot { return c.Snapshot(0) })
 }
 
+// captureLazySnapshots 为写入到达的调度 offset 记录快照；batched 用 lazy，单 token 用 clone。
 // captureLazySnapshots records a snapshot for each scheduled offset the write
 // reached after the start boundary. A batched write (concat) linearizes the
 // buffer into logical order, so each window is a contiguous slot slice captured
@@ -250,6 +264,7 @@ func (c *RotatingKVCache) captureLazySnapshots(start, end int, batched bool) {
 	}
 }
 
+// lazyRotatingSnapshot 将止于 o 的窗口记录为 lazy 快照；零宽返回 nil。
 // lazyRotatingSnapshot records the window ending at offset o as a lazy snapshot
 // into the current (logically ordered) buffer: window [o-liveLen, o) maps to
 // slots [sliceStart, sliceEnd), and restoring sets idx == liveLen so the buffer
@@ -277,6 +292,7 @@ func (c *RotatingKVCache) lazyRotatingSnapshot(o int) Snapshot {
 	return s
 }
 
+// rotatingSnapshot 为 RotatingKVCache 换出数据；初始 lazy 索引 buffer 槽位。
 // rotatingSnapshot holds paged-out data for a RotatingKVCache. Initially lazy:
 // the window lives in the issuing cache's buffer at slots [sliceStart, sliceEnd)
 // in logical order, and copyOut clones it into owned keys/values before a write
@@ -314,6 +330,7 @@ func (s *rotatingSnapshot) Close() {
 	}
 }
 
+// copyOut 将 lazy 快照克隆为拥有的窗口副本。
 // copyOut converts a lazy snapshot into an owned clone of its window slots. It
 // is a no-op once the snapshot already owns its data. The slots hold the window
 // in logical order, so the clone needs no reordering.
@@ -345,6 +362,7 @@ func (c *RotatingKVCache) dropLazySnapshot(s *rotatingSnapshot) {
 	}
 }
 
+// copyOutLazySnapshots 在破坏性写入前 clone 全部 lazy 快照。
 // copyOutLazySnapshots clones every outstanding lazy snapshot into owned data.
 // The destructive write paths (concat, update) call this before they trim,
 // linearize, or overwrite the slots a snapshot names. copyOut removes the
@@ -383,6 +401,7 @@ func (c *RotatingKVCache) Restore(snapshot Snapshot, target int) bool {
 		if target >= c.offset {
 			return target == c.offset
 		}
+		// 仅 buffer 未 wrap 时可用 live rewind；wrap 后需 snapshot。
 		// Live rewind is only safe before the buffer fills (offset <= maxSize);
 		// once wrapped, rewinding leaves an incomplete window, so a snapshot is
 		// required.
@@ -405,6 +424,7 @@ func (c *RotatingKVCache) Restore(snapshot Snapshot, target int) bool {
 		return false
 	}
 
+	// 快路径：本 cache 仍 lazy 的快照可直接 slice 为 buffer 无需 copy。
 	// Fast path: this cache's own still-lazy snapshot names the restored window
 	// in the live buffer, so slice it in as the new buffer (no copy) and re-point
 	// the snapshot to slots [0, liveLen), kept lazy.
@@ -448,6 +468,7 @@ func (c *RotatingKVCache) Restore(snapshot Snapshot, target int) bool {
 }
 
 func (c *RotatingKVCache) Merge(parent, child Snapshot) Snapshot {
+	// 旋转缓存子快照包含完整窗口，取代父快照。
 	// For rotating caches, the child snapshot supersedes the parent
 	// since it contains the full window state.
 	if parent != nil {
@@ -457,11 +478,13 @@ func (c *RotatingKVCache) Merge(parent, child Snapshot) Snapshot {
 }
 
 func (c *RotatingKVCache) Split(snapshot Snapshot, at int) (Snapshot, Snapshot) {
+	// 旋转缓存快照含完整窗口，无法在任意点干净 split。
 	// Rotating cache snapshots contain the full window state.
 	// Cannot cleanly split a ring buffer at an arbitrary point.
 	return nil, snapshot
 }
 
+// rotatingApplier 将滑动窗口存储约束叠加到逻辑 mask 上。
 // rotatingApplier composes the sliding-window storage restriction onto the
 // caller's logical mask. ringIdx is the write cursor at Update time: at L=1
 // decode the ring is not position-ordered (logical col j lives at slot
@@ -478,6 +501,7 @@ type rotatingApplier struct {
 
 func (r rotatingApplier) ApplyMask(logical nn.AttentionMask) nn.AttentionMask {
 	if r.L == 1 {
+		// 单 query decode：存储已 enforce 窗口，零/causal mask 可省略。
 		// Single-query decode: storage already enforces the window and every
 		// stored key's position <= absQ, so a zero or causal logical mask
 		// reduces to no mask — let SDPA dispatch to mode="".
@@ -485,6 +509,7 @@ func (r rotatingApplier) ApplyMask(logical nn.AttentionMask) nn.AttentionMask {
 			return nn.AttentionMask{}
 		}
 
+		// 张量 mask：先逻辑序物化，再 gather K 列到环槽序。
 		// Tensor-backed mask: materialize in logical order, then gather K cols
 		// into ring-slot order to align with the cache output.
 		arr := logical.AsArray(r.b, r.K, r.dtype)
@@ -495,6 +520,7 @@ func (r rotatingApplier) ApplyMask(logical nn.AttentionMask) nn.AttentionMask {
 	return logical.Intersect(nn.SlidingWindowMask(r.b, r.K, r.window, r.dtype))
 }
 
+// gatherRingCols 将 mask 的 K 轴从逻辑序重排为环槽序。
 // gatherRingCols reorders a [B, 1, L, K] mask's K axis from logical order
 // (col 0 = oldest) into ring-slot order (col 0 = slot 0): logical col j lives at
 // slot (ringIdx+j) mod K. A no-op when ringIdx % K == 0 or the K axis broadcasts

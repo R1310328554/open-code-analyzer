@@ -1,3 +1,4 @@
+// 副作用导入：注册 MLX runner 支持的各架构模型。
 package mlxrunner
 
 import (

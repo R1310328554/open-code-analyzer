@@ -1,4 +1,5 @@
-// Package mlxtest provides shared scaffolding for tests that exercise MLX
+// Package mlxtest 为通过 cgo 调用 MLX 的测试提供共享脚手架。
+// Package mlxtest provides shared scaffolding for tests that exercise MLX// Package mlxtest provides shared scaffolding for tests that exercise MLX
 // through the cgo wrapper in x/mlxrunner/mlx.
 package mlxtest
 
@@ -9,6 +10,7 @@ import (
 	"github.com/ollama/ollama/x/mlxrunner/mlx"
 )
 
+// SkipIfUnavailable 在 MLX 动态库不可加载时跳过测试。
 // SkipIfUnavailable skips the test when the MLX dynamic library cannot be
 // loaded (e.g. no MLX backend built for this platform).
 func SkipIfUnavailable(t *testing.T) {
@@ -18,6 +20,8 @@ func SkipIfUnavailable(t *testing.T) {
 	}
 }
 
+// Setup 准备原生 MLX 测试：不可用时跳过，并将 goroutine 固定到 OS 线程。
+// MLX 默认流缓存为线程局部，race detector 迁移 goroutine 会 panic。
 // Setup prepares a test that calls into MLX natively: it skips when MLX is
 // unavailable and pins the test goroutine to its OS thread for the duration
 // of the test.

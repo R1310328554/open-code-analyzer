@@ -1,3 +1,4 @@
+// MLX runner 子进程客户端：实现 llm.LlamaServer 接口。
 package mlxrunner
 
 import (
@@ -29,21 +30,25 @@ import (
 	"github.com/ollama/ollama/x/imagegen/manifest"
 )
 
+// Client 包装 MLX runner 子进程，为 LLM 实现 llm.LlamaServer。
 // Client wraps an MLX runner subprocess to implement llm.LlamaServer for LLM models.
 type Client struct {
 	port              int
 	modelName         string
 	contextLength     atomic.Int64
-	softContextLength int // recommended limit to avoid poor performance
+	softContextLength int // 推荐上下文上限，避免性能下降
+	// recommended limit to avoid poor performance
 	memory            atomic.Uint64
 	done              chan struct{}
-	doneErr           error // valid after done is closed
+	doneErr           error // done 关闭后有效
+	// valid after done is closed
 	client            *http.Client
 	status            *llm.StatusWriter
 	mu                sync.Mutex
 	cmd               *exec.Cmd
 }
 
+// NewClient 准备 MLX runner 客户端；子进程在 Load 时启动。
 // NewClient prepares a new MLX runner client for LLM models.
 // The subprocess is not started until Load() is called.
 func NewClient(modelName string, softContextLength int) (*Client, error) {
@@ -67,6 +72,7 @@ func NewClient(modelName string, softContextLength int) (*Client, error) {
 	return c, nil
 }
 
+// checkPlatformSupport 校验当前平台是否支持 MLX。
 func checkPlatformSupport() error {
 	switch runtime.GOOS {
 	case "darwin":
@@ -81,6 +87,7 @@ func checkPlatformSupport() error {
 	}
 }
 
+// WaitUntilRunning 等待子进程就绪（Ping 成功）。
 // WaitUntilRunning waits for the subprocess to be ready.
 func (c *Client) WaitUntilRunning(ctx context.Context) error {
 	timeout := time.After(envconfig.LoadTimeout())
@@ -110,6 +117,7 @@ func (c *Client) WaitUntilRunning(ctx context.Context) error {
 	}
 }
 
+// CompletionRequest 为 MLX completion HTTP 请求体。
 type CompletionRequest struct {
 	Prompt      string
 	Media       []llm.MediaData
@@ -118,6 +126,7 @@ type CompletionRequest struct {
 	TopLogprobs int
 }
 
+// CompletionResponse 为流式 completion 响应行。
 type CompletionResponse struct {
 	Content    string
 	Done       bool
@@ -133,6 +142,7 @@ type CompletionResponse struct {
 	Error *api.StatusError
 }
 
+// Close 终止子进程（先 SIGINT，超时则 Kill）。
 // Close terminates the subprocess.
 func (c *Client) Close() error {
 	c.mu.Lock()
@@ -152,6 +162,7 @@ func (c *Client) Close() error {
 	return nil
 }
 
+// Completion 向 runner 发送 completion 并流式回调响应。
 // Completion implements llm.LlamaServer.
 func (c *Client) Completion(ctx context.Context, req llm.CompletionRequest, fn func(llm.CompletionResponse)) error {
 	creq := CompletionRequest{
@@ -240,6 +251,7 @@ func (c *Client) ContextLength() int {
 	return int(c.contextLength.Load())
 }
 
+// reportedContextLength 在 soft 限制更小时返回 soft 上下文长度。
 func (c *Client) reportedContextLength(modelContextLength int) int {
 	if c.softContextLength > 0 && (modelContextLength == 0 || c.softContextLength < modelContextLength) {
 		return c.softContextLength
@@ -277,10 +289,12 @@ func (c *Client) HasExited() bool {
 	}
 }
 
+// Load 检查 GPU 显存是否足够并启动子进程。
 // Load checks whether the model fits in GPU memory and starts the subprocess.
 func (c *Client) Load(ctx context.Context, _ ml.SystemInfo, gpus []ml.DeviceInfo, requireFull bool) ([]ml.DeviceID, error) {
 	if len(gpus) > 0 {
 		modelSize := c.memory.Load()
+		// MLX 当前仅使用第一块 GPU。
 		// We currently only use the first GPU with MLX
 		available := gpus[0].FreeMemory
 		overhead := gpus[0].MinimumMemory() + envconfig.GpuOverhead()
@@ -298,6 +312,7 @@ func (c *Client) Load(ctx context.Context, _ ml.SystemInfo, gpus []ml.DeviceInfo
 		}
 	}
 
+	// 查找空闲端口。
 	// Find a free port
 	port := 0
 	if a, err := net.ResolveTCPAddr("tcp", "localhost:0"); err == nil {
@@ -311,6 +326,7 @@ func (c *Client) Load(ctx context.Context, _ ml.SystemInfo, gpus []ml.DeviceInfo
 	}
 	c.port = port
 
+	// 解析当前可执行文件路径。
 	// Get the current executable path
 	exe, err := os.Executable()
 	if err != nil {
@@ -320,10 +336,12 @@ func (c *Client) Load(ctx context.Context, _ ml.SystemInfo, gpus []ml.DeviceInfo
 		exe = eval
 	}
 
+	// 启动子进程：ollama runner --mlx-engine --model --port。
 	// Spawn subprocess: ollama runner --mlx-engine --model <name> --port <port>
 	cmd := exec.Command(exe, "runner", "--mlx-engine", "--model", c.modelName, "--port", strconv.Itoa(port))
 	cmd.Env = os.Environ()
 
+	// 设置 MLX 库路径（Linux LD_LIBRARY_PATH / Windows PATH）。
 	// Set library path environment variable for MLX libraries
 	// Linux: LD_LIBRARY_PATH, Windows: PATH
 	var libPathEnvVar string
@@ -364,6 +382,7 @@ func (c *Client) Load(ctx context.Context, _ ml.SystemInfo, gpus []ml.DeviceInfo
 		slog.Debug("mlx subprocess library path", libPathEnvVar, pathEnvVal)
 	}
 
+	// 将 MLX JIT 指向捆绑的 CUDA 头文件，避免与系统 CUDA 版本不匹配。
 	// Point MLX's JIT compiler at our bundled CUDA runtime headers.
 	// MLX resolves headers via $CUDA_PATH/include/*.h (and checks CUDA_HOME first).
 	// Always use bundled headers to avoid version mismatches with any
@@ -383,6 +402,7 @@ func (c *Client) Load(ctx context.Context, _ ml.SystemInfo, gpus []ml.DeviceInfo
 
 	status := llm.NewStatusWriter(os.Stderr)
 	c.status = status
+	// 共享 Write 时 os/exec 串行化，避免 status writer 并发碎片。
 	// os/exec serializes Write calls when shared, which keeps the status writer
 	// from seeing concurrent stdout/stderr fragments.
 	cmd.Stdout = status
@@ -393,6 +413,7 @@ func (c *Client) Load(ctx context.Context, _ ml.SystemInfo, gpus []ml.DeviceInfo
 		return nil, fmt.Errorf("failed to start mlx runner: %w", err)
 	}
 
+	// 子进程退出时 reap 并 close done。
 	// Reap subprocess when it exits
 	go func() {
 		c.doneErr = cmd.Wait()
@@ -417,6 +438,7 @@ func (c *Client) Pid() int {
 	return -1
 }
 
+// statusResponse 为 /v1/status 响应。
 type statusResponse struct {
 	Status        int
 	Progress      int
@@ -424,6 +446,7 @@ type statusResponse struct {
 	Memory        uint64
 }
 
+// Ping 健康检查并更新 contextLength 与 memory。
 // Ping implements llm.LlamaServer.
 func (c *Client) Ping(ctx context.Context) error {
 	reqURL := fmt.Sprintf("http://127.0.0.1:%d/v1/status", c.port)
@@ -474,6 +497,7 @@ func (c *Client) Tokenize(ctx context.Context, content string) ([]int, error) {
 	return tokens, nil
 }
 
+// currentMemory 通过 Ping 刷新并返回当前内存占用。
 func (c *Client) currentMemory() uint64 {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -494,6 +518,7 @@ func (c *Client) VRAMByGPU(id ml.DeviceID) uint64 {
 
 var _ llm.LlamaServer = (*Client)(nil)
 
+// setEnv 在 cmd.Env 中设置或替换环境变量。
 // setEnv sets or replaces an environment variable in cmd.Env.
 func setEnv(cmd *exec.Cmd, key, value string) {
 	entry := key + "=" + value

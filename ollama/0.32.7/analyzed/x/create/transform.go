@@ -1,3 +1,4 @@
+// 字节级张量变换：非 MLX 路径的 repack、标量与 expert 堆叠。
 package create
 
 import (
@@ -8,6 +9,8 @@ import (
 	"github.com/ollama/ollama/x/safetensors"
 )
 
+// applyByteTransform 仅用字节级操作从源张量生成 TensorSpec 输出；
+// decode_fp8 与量化由 MLX writer 路径单独处理。
 // applyByteTransform produces a TensorSpec's output tensor from its resolved
 // source tensors using only byte-level (non-MLX) operations. The MLX transform
 // (decode_fp8) and quantization are handled separately by the MLX writer path.
@@ -20,6 +23,7 @@ func applyByteTransform(ts TensorSpec, sources []*safetensors.TensorData) (*safe
 		return sources[0].WithName(ts.Name), nil
 
 	case TransformRepackFP4, TransformRelabelU8:
+		// 二者仅重标 header（dtype，fp4 repack 还改末维）；字节不变，复用 reader。
 		// Both relabel the header (dtype, and for the fp4 repack the last
 		// dimension); the bytes are unchanged, so the reader is reused.
 		if len(sources) != 1 {
@@ -54,6 +58,8 @@ func applyByteTransform(ts TensorSpec, sources []*safetensors.TensorData) (*safe
 	}
 }
 
+// stackExpertTensors 按给定顺序拼接各 expert 张量为 [experts,...]；
+// 行主序布局下堆叠字节即各 expert 块首尾相接。
 // stackExpertTensors concatenates per-expert tensors (in the given order) into
 // one [experts, ...] tensor. Row-major layout means the stacked bytes are
 // exactly the per-expert byte blocks back to back.

@@ -1,3 +1,4 @@
+// 图像生成模型 manifest：加载、解析 blob 与模型元数据。
 package manifest
 
 import (
@@ -13,14 +14,17 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
+// ManifestLayer 表示 manifest 中的一层。
 // ManifestLayer represents a layer in the manifest.
 type ManifestLayer struct {
 	MediaType string `json:"mediaType"`
 	Digest    string `json:"digest"`
 	Size      int64  `json:"size"`
-	Name      string `json:"name,omitempty"` // Path-style name: "component/tensor" or "path/to/config.json"
+	Name      string `json:"name,omitempty"` // 路径式名称：component/tensor 或 config 路径
+	// Path-style name: "component/tensor" or "path/to/config.json"
 }
 
+// Manifest 为 manifest JSON 结构。
 // Manifest represents the manifest JSON structure.
 type Manifest struct {
 	SchemaVersion int             `json:"schemaVersion"`
@@ -29,16 +33,19 @@ type Manifest struct {
 	Layers        []ManifestLayer `json:"layers"`
 }
 
+// ModelManifest 持有已解析 manifest 及辅助方法。
 // ModelManifest holds a parsed manifest with helper methods.
 type ModelManifest struct {
 	Manifest *Manifest
 	BlobDir  string
 }
 
+// DefaultBlobDir 返回 blob 存储目录（尊重 OLLAMA_MODELS）。
 func DefaultBlobDir() string {
 	return filepath.Join(envconfig.Models(), "blobs")
 }
 
+// DefaultManifestDir 返回 manifest 存储目录。
 // DefaultManifestDir returns the manifest storage directory.
 // Respects OLLAMA_MODELS.
 
@@ -46,6 +53,7 @@ func DefaultManifestDir() string {
 	return filepath.Join(envconfig.Models(), "manifests")
 }
 
+// LoadManifest 按模型名加载 manifest。
 // LoadManifest loads a manifest for the given model name.
 // Model name format: "modelname" or "modelname:tag" or "host/namespace/name:tag"
 func LoadManifest(modelName string) (*ModelManifest, error) {
@@ -67,8 +75,10 @@ func LoadManifest(modelName string) (*ModelManifest, error) {
 	}, nil
 }
 
+// resolveManifestPath 将模型名解析为 manifest 文件路径。
 // resolveManifestPath converts a model name to a manifest file path.
 func resolveManifestPath(modelName string) string {
+	// 解析模型名：默认 registry.ollama.ai/library/<name>/<tag>。
 	// Parse model name into components
 	// Default: registry.ollama.ai/library/<name>/<tag>
 	host := "registry.ollama.ai"
@@ -76,12 +86,14 @@ func resolveManifestPath(modelName string) string {
 	name := modelName
 	tag := "latest"
 
+	// 处理显式 tag。
 	// Handle explicit tag
 	if idx := strings.LastIndex(name, ":"); idx != -1 {
 		tag = name[idx+1:]
 		name = name[:idx]
 	}
 
+	// 处理 host/namespace/name 完整路径。
 	// Handle full path like "host/namespace/name"
 	parts := strings.Split(name, "/")
 	switch len(parts) {
@@ -97,13 +109,16 @@ func resolveManifestPath(modelName string) string {
 	return filepath.Join(DefaultManifestDir(), host, namespace, name, tag)
 }
 
+// BlobPath 由 digest 返回 blob 完整路径。
 // BlobPath returns the full path to a blob given its digest.
 func (m *ModelManifest) BlobPath(digest string) string {
+	// 将 sha256:abc123 转为 sha256-abc123 文件名。
 	// Convert "sha256:abc123" to "sha256-abc123"
 	blobName := strings.Replace(digest, ":", "-", 1)
 	return filepath.Join(m.BlobDir, blobName)
 }
 
+// GetTensorLayers 返回张量层，可按 component 前缀过滤。
 // GetTensorLayers returns tensor layers, optionally filtered by component.
 // If component is empty, returns all tensor layers (for LLM models).
 // If component is specified (e.g., "text_encoder", "transformer", "vae"),
@@ -121,6 +136,7 @@ func (m *ModelManifest) GetTensorLayers(component string) []ManifestLayer {
 	return layers
 }
 
+// GetConfigLayer 按路径返回 JSON config 层。
 // GetConfigLayer returns the config layer for a given path.
 func (m *ModelManifest) GetConfigLayer(configPath string) *ManifestLayer {
 	for _, layer := range m.Manifest.Layers {
@@ -131,6 +147,7 @@ func (m *ModelManifest) GetConfigLayer(configPath string) *ManifestLayer {
 	return nil
 }
 
+// ReadConfig 读取并返回 config 文件内容。
 // ReadConfig reads and returns the content of a config file.
 func (m *ModelManifest) ReadConfig(configPath string) ([]byte, error) {
 	layer := m.GetConfigLayer(configPath)
@@ -142,6 +159,7 @@ func (m *ModelManifest) ReadConfig(configPath string) ([]byte, error) {
 	return os.ReadFile(blobPath)
 }
 
+// ReadConfigJSON 读取并反序列化 config JSON。
 // ReadConfigJSON reads and unmarshals a config file.
 func (m *ModelManifest) ReadConfigJSON(configPath string, v any) error {
 	data, err := m.ReadConfig(configPath)
@@ -151,11 +169,13 @@ func (m *ModelManifest) ReadConfigJSON(configPath string, v any) error {
 	return json.Unmarshal(data, v)
 }
 
+// OpenBlob 打开 blob 供读取。
 // OpenBlob opens a blob for reading.
 func (m *ModelManifest) OpenBlob(digest string) (io.ReadCloser, error) {
 	return os.Open(m.BlobPath(digest))
 }
 
+// HasTensorLayers 判断 manifest 是否含张量层。
 // HasTensorLayers returns true if the manifest has any tensor layers.
 func (m *ModelManifest) HasTensorLayers() bool {
 	for _, layer := range m.Manifest.Layers {
@@ -166,6 +186,7 @@ func (m *ModelManifest) HasTensorLayers() bool {
 	return false
 }
 
+// TotalTensorSize 返回所有张量层的总字节数。
 // TotalTensorSize returns the total size in bytes of all tensor layers.
 func (m *ModelManifest) TotalTensorSize() int64 {
 	var total int64
@@ -177,6 +198,7 @@ func (m *ModelManifest) TotalTensorSize() int64 {
 	return total
 }
 
+// ModelInfo 为图像生成模型的元数据。
 // ModelInfo contains metadata about an image generation model.
 type ModelInfo struct {
 	Architecture   string
@@ -184,6 +206,7 @@ type ModelInfo struct {
 	Quantization   string
 }
 
+// GetModelInfo 从 manifest 与 config 读取模型元数据。
 // GetModelInfo returns metadata about an image generation model.
 func GetModelInfo(modelName string) (*ModelInfo, error) {
 	manifest, err := LoadManifest(modelName)
@@ -193,6 +216,7 @@ func GetModelInfo(modelName string) (*ModelInfo, error) {
 
 	info := &ModelInfo{}
 
+	// 从 model_index.json 读取架构、参数量与量化。
 	// Read model_index.json for architecture, parameter count, and quantization
 	if data, err := manifest.ReadConfig("model_index.json"); err == nil {
 		var index struct {
@@ -207,6 +231,7 @@ func GetModelInfo(modelName string) (*ModelInfo, error) {
 		}
 	}
 
+	// 回退：从首个张量 blob 的 __metadata__ 检测量化。
 	// Fallback: detect quantization from first tensor blob's __metadata__
 	if info.Quantization == "" {
 		info.Quantization = detectQuantizationFromBlobs(manifest)
@@ -215,6 +240,7 @@ func GetModelInfo(modelName string) (*ModelInfo, error) {
 		info.Quantization = "BF16"
 	}
 
+	// 回退：按张量总大小估算参数量（假设 BF16）。
 	// Fallback: estimate parameter count if not in config
 	if info.ParameterCount == 0 {
 		var totalSize int64
@@ -223,6 +249,7 @@ func GetModelInfo(modelName string) (*ModelInfo, error) {
 				totalSize += layer.Size
 			}
 		}
+		// 粗略按 BF16（2 字节/参数）估算。
 		// Assume BF16 (2 bytes/param) as rough estimate
 		info.ParameterCount = totalSize / 2
 	}
@@ -230,6 +257,7 @@ func GetModelInfo(modelName string) (*ModelInfo, error) {
 	return info, nil
 }
 
+// detectQuantizationFromBlobs 从首个张量 blob 头读取 quant_type。
 // detectQuantizationFromBlobs reads __metadata__ from the first tensor blob
 // to detect quantization type.
 func detectQuantizationFromBlobs(manifest *ModelManifest) string {
@@ -253,12 +281,14 @@ func detectQuantizationFromBlobs(manifest *ModelManifest) string {
 				}
 			}
 		}
+		// 仅检查首个张量 blob。
 		// Only check the first tensor blob
 		break
 	}
 	return ""
 }
 
+// ParseBlobTensorNames 解析 blob 头并返回主权重名（排除 scale/bias）。
 // ParseBlobTensorNames reads a safetensors blob and returns all "main" tensor names.
 // Filters out __metadata__, .scale, and .bias entries to return only primary weight tensors.
 func ParseBlobTensorNames(path string) ([]string, error) {
@@ -284,6 +314,7 @@ func ParseBlobTensorNames(path string) ([]string, error) {
 	return names, nil
 }
 
+// readBlobHeader 从 safetensors blob 读取 JSON 头字节。
 // readBlobHeader reads the JSON header bytes from a safetensors blob file.
 func readBlobHeader(path string) ([]byte, error) {
 	f, err := os.Open(path)

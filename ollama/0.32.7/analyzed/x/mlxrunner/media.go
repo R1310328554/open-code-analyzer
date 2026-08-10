@@ -17,6 +17,7 @@ import (
 
 var imgTagPattern = regexp.MustCompile(`\[img-(\d+)\]`)
 
+// mediaItem 表示请求 token 流中一处媒体：位置、长度、trie fold 与 prepared 项。
 // mediaItem is one media occurrence in a request's token stream: the
 // absolute position and length of its placeholder expansion, its trie-key
 // fold value, and the prepared item.
@@ -27,6 +28,7 @@ type mediaItem struct {
 	item   *base.PreparedItem
 }
 
+// foldValue 为媒体项生成 trie key 替代值：哈希原始字节与预处理维度，并置 bit31 避免与 token ID 冲突。
 // foldValue derives the trie-key substitute for a media item: a hash of the
 // raw bytes and the preprocessing dims (which pin the feature geometry for
 // given bytes), with bit 31 forced so it can never equal a token ID.
@@ -42,6 +44,7 @@ func foldValue(data []byte, dims []int) uint32 {
 	return (uint32(sum>>32) ^ uint32(sum)) | 1<<31
 }
 
+// requestMedia 管理单请求媒体特征：首次重叠时编码，展开 eval 完释放；nil 表示纯文本。
 // requestMedia manages one request's media features: encoded on first
 // use, released when the expansion is fully evaluated. A nil
 // *requestMedia is a text-only request; every method is nil-safe.
@@ -50,16 +53,19 @@ type requestMedia struct {
 	items    []mediaItem
 	inputLen int
 
+	// manifest 为请求级 batch 媒体视图；Features 原地切换供各 batch 共享。
 	// manifest is the request-scoped batch view of items; Features is
 	// toggled in place so every batch shares the same slice.
 	manifest []batch.MediaItem
 	features []*mlx.Array // parallel to items; nil until encoded
 
+	// layout 为请求单行 Batch.Layout，各 batch 共享。
 	// layout is the request's one-row Batch.Layout, shared by every batch
 	// like the manifest; nil when the model returned no layout.
 	layout []any
 }
 
+// openMedia 从请求构造 requestMedia；无媒体返回 nil。
 func (r *Runner) openMedia(request Request) *requestMedia {
 	if len(request.MediaItems) == 0 {
 		return nil
@@ -80,6 +86,7 @@ func (r *Runner) openMedia(request Request) *requestMedia {
 	return m
 }
 
+// rowLayout 返回请求的 Batch.Layout 行值。
 // rowLayout returns the request's per-row Batch.Layout value.
 func (m *requestMedia) rowLayout() []any {
 	if m == nil {
@@ -88,8 +95,10 @@ func (m *requestMedia) rowLayout() []any {
 	return m.layout
 }
 
+// atomic 判断媒体展开是否不可在内部切分 chunk。
 func (item *mediaItem) atomic() bool { return !item.item.Causal }
 
+// extendChunk 避免 chunk 严格落在 atomic 展开内部。
 // extendChunk keeps a chunk from ending strictly inside an atomic
 // expansion: cut before one starting inside the chunk, else grow to its
 // end, clipped one short of the prompt to preserve the decode seed.
@@ -113,6 +122,7 @@ func (m *requestMedia) extendChunk(pos, n int) int {
 	return n
 }
 
+// batchMedia 返回 [pos,pos+n) 的 manifest，首次重叠时编码并 pin 特征。
 // batchMedia returns the manifest for chunk [pos, pos+n), encoding and
 // pinning each item's features on first overlap; nothing evaluates here —
 // the consuming forward pulls the encoder.
@@ -128,6 +138,7 @@ func (m *requestMedia) batchMedia(pos, n int) []batch.MediaItem {
 			data := mlx.FromValues(item.item.MediaData, item.item.Dims...)
 			m.features[i] = m.model.EncodeMedia(item.item, data)
 			mlx.Pin(m.features[i])
+			// 上传已复制像素，此处释放 MediaData。
 			// The upload copied the pixels; free them here — release never
 			// passes the end of an expansion reaching the prompt's last token.
 			item.item.MediaData = nil
@@ -137,6 +148,7 @@ func (m *requestMedia) batchMedia(pos, n int) []batch.MediaItem {
 	return m.manifest
 }
 
+// release 释放 pos 之前已完全 eval 的媒体 pin 与像素缓冲。
 // release frees what items fully evaluated or restored at position pos no
 // longer need: the pinned features and the preprocessed pixel buffer.
 func (m *requestMedia) release(pos int) {
@@ -155,6 +167,7 @@ func (m *requestMedia) release(pos int) {
 	}
 }
 
+// close 在 pipeline 退出时 unpin 剩余特征。
 // close unpins whatever remains when the pipeline exits.
 func (m *requestMedia) close() {
 	if m == nil {
@@ -169,6 +182,7 @@ func (m *requestMedia) close() {
 	}
 }
 
+// expandMedia 将 [img-N] 标记 prompt 分词、PrepareMedia 展开并校验后绑定 cache 身份。
 // expandMedia tokenizes the [img-N]-tagged prompt into segments, expands
 // them in a single PrepareMedia call, and validates the authored items
 // before keying cache identity on them.
@@ -216,6 +230,7 @@ func (r *Runner) expandMedia(mm base.MediaModel, prompt string, media []llm.Medi
 	return prepared, items, nil
 }
 
+// bindItems 在校验范围后绑定各 item 到源 segment 字节并计算 fold。
 // bindItems validates the authored ranges before cache identity is keyed
 // on them and binds each item to its source segment's bytes.
 func bindItems(prepared *base.PreparedRequest, segments []base.Segment) ([]mediaItem, error) {
