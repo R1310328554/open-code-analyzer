@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:52:24Z",
-  "files": [
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/metadata/SsfTransmitterMetadataWellKnownProvider.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/metadata/SsfTransmitterMetadataWellKnownProviderFactory.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/metadata/TransmitterMetadataService.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/metrics/SsfMetricsBinder.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/outbox/SsfOutboxKinds.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/outbox/SsfPushDeliveryHandler.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/resources/AddSubjectRequest.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/resources/RemoveSubjectRequest.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/resources/SsfStreamManagementResource.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/resources/SsfStreamPollResource.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/resources/SsfStreamStatusResource.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/resources/SsfStreamVerificationResource.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/resources/SsfSubjectManagementResource.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/resources/SsfTransmitterResource.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/stream/DuplicateStreamConfigException.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 538,
-  "done": 5445
+  "done": 5460
 }
