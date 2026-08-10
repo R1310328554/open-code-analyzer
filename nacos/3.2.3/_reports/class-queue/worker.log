@@ -1978,3 +1978,18 @@
 2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/MetadataOperation.java wave65b [15:30] naming v2 index/metadata/events
 2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/NamingMetadataManager.java wave65b [15:30] naming v2 index/metadata/events
 2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/NamingMetadataOperateService.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/ServiceMetadata.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/ServiceMetadataProcessor.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/ServiceMetadataSnapshotOperation.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/pojo/BatchInstanceData.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/pojo/BatchInstancePublishInfo.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/pojo/HealthCheckInstancePublishInfo.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/pojo/InstancePublishInfo.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/pojo/Service.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/service/ClientOperationService.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/service/ClientOperationServiceProxy.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/service/impl/EphemeralClientOperationServiceImpl.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/service/impl/PersistentClientOperationServiceImpl.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/exception/ResponseExceptionHandler.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/HealthCheckReactor.java wave66a [0:15] naming v2 metadata/pojo/client ops/health
+2026-08-10T04:35:20Z DONE naming/src/main/java/com/alibaba/nacos/naming/healthcheck/HealthCheckStatus.java wave66a [0:15] naming v2 metadata/pojo/client ops/health

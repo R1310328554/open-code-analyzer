@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T04:33:31Z",
   "files": [
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/ServiceMetadata.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/ServiceMetadataProcessor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/ServiceMetadataSnapshotOperation.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/pojo/BatchInstanceData.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/pojo/BatchInstancePublishInfo.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/pojo/HealthCheckInstancePublishInfo.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/pojo/InstancePublishInfo.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/pojo/Service.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/service/ClientOperationService.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/service/ClientOperationServiceProxy.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/service/impl/EphemeralClientOperationServiceImpl.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/service/impl/PersistentClientOperationServiceImpl.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/exception/ResponseExceptionHandler.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/HealthCheckReactor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/HealthCheckStatus.java",
     "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/NacosHealthCheckTask.java",
     "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/RsInfo.java",
     "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/extend/AbstractHealthCheckProcessorExtend.java",
@@ -33,5 +18,5 @@
     "naming/src/main/java/com/alibaba/nacos/naming/healthcheck/heartbeat/InstanceBeatCheckTaskInterceptorChain.java"
   ],
   "remaining_pending": 557,
-  "done": 1950
+  "done": 1965
 }
