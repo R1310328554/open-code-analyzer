@@ -2233,3 +2233,18 @@
 2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/services/resources/DebugHostnameSettingsResource.java wave76b policy/services/health/metrics/jpa
 2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/jpa/AbstractJpaConnectionProviderFactory.java wave76b policy/services/health/metrics/jpa
 2026-08-10T09:14:22Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/storage/database/jpa/DatabaseIndexChecker.java wave76b policy/services/health/metrics/jpa
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/jaxrs/EmptyMultivaluedMap.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/jaxrs/QuarkusKeycloakApplication.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/jaxrs/QuarkusObjectMapperResolver.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/KeycloakHandlerChainCustomizer.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/KeycloakTracingCustomizer.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/QuarkusClientConnection.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/QuarkusHttpRequest.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/QuarkusHttpResponse.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/QuarkusKeycloakContext.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/SetResponseContentTypeHandler.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/TransactionalSessionHandler.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/web/VertxClientCertificateLookup.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/web/VertxClientCertificateLookupFactory.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/logging/ClearMappedDiagnosticContextFilter.java wave76a jaxrs/resteasy/web/logging integration
+2026-08-10T09:14:35Z DONE quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/logging/KeycloakLogFilter.java wave76a jaxrs/resteasy/web/logging integration

@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T09:12:30Z",
-  "files": [
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/jaxrs/EmptyMultivaluedMap.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/jaxrs/QuarkusKeycloakApplication.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/jaxrs/QuarkusObjectMapperResolver.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/KeycloakHandlerChainCustomizer.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/KeycloakTracingCustomizer.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/QuarkusClientConnection.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/QuarkusHttpRequest.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/QuarkusHttpResponse.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/QuarkusKeycloakContext.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/SetResponseContentTypeHandler.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/resteasy/TransactionalSessionHandler.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/web/VertxClientCertificateLookup.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/integration/web/VertxClientCertificateLookupFactory.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/logging/ClearMappedDiagnosticContextFilter.java",
-    "quarkus/runtime/src/main/java/org/keycloak/quarkus/runtime/logging/KeycloakLogFilter.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3718,
-  "done": 2265
+  "done": 2280
 }
