@@ -2443,3 +2443,18 @@
 2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/constant/OidcConstants.java wave80a [0:15] oidc auth providers/config/controllers
 2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/controller/OidcLoginController.java wave80a [0:15] oidc auth providers/config/controllers
 2026-08-10T05:12:08Z DONE plugin-default-impl/nacos-oidc-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/oidc/identity/OidcUserMapper.java wave80a [0:15] oidc auth providers/config/controllers
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/LoginIdentityContext.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/Permission.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/RequestResource.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/Resource.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/constant/ActionTypes.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/constant/Constants.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/constant/OidcProtocolConstants.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/constant/SignType.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/exception/AccessException.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/client/AbstractClientAuthService.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/client/ClientAuthPluginManager.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/client/ClientAuthService.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/server/AuthPluginManager.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/server/AuthPluginProvider.java wave81b [15:30] auth api/constants + client/server spi
+2026-08-10T05:14:21Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/server/AuthPluginService.java wave81b [15:30] auth api/constants + client/server spi

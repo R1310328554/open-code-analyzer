@@ -15,23 +15,8 @@
     "plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/storage/spi/AiResourceStorage.java",
     "plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/storage/spi/AiResourceStorageBuilder.java",
     "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/AuthResult.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/IdentityContext.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/LoginIdentityContext.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/Permission.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/RequestResource.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/Resource.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/constant/ActionTypes.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/constant/Constants.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/constant/OidcProtocolConstants.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/constant/SignType.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/exception/AccessException.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/client/AbstractClientAuthService.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/client/ClientAuthPluginManager.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/client/ClientAuthService.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/server/AuthPluginManager.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/server/AuthPluginProvider.java",
-    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/spi/server/AuthPluginService.java"
+    "plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/IdentityContext.java"
   ],
   "remaining_pending": 107,
-  "done": 2400
+  "done": 2415
 }
