@@ -19,6 +19,8 @@ package com.alibaba.nacos.config.server.result.code;
 import com.alibaba.nacos.common.model.core.IResultCode;
 
 /**
+ * 配置模块历史结果码枚举（已废弃，建议使用 {@link com.alibaba.nacos.api.model.v2.ErrorCode}）。
+ * 保留通用成功/错误码及配置导入相关错误码，消息字段已为中文。
  * ResultCodeEnum.
  *
  * @author klw
@@ -29,15 +31,11 @@ import com.alibaba.nacos.common.model.core.IResultCode;
 @Deprecated
 public enum ResultCodeEnum implements IResultCode {
     
-    /**
-     * Common code.
-     **/
+    /** 通用结果码（200 成功 / 500 服务器错误） */
     SUCCESS(200, "处理成功"),
     ERROR(500, "服务器内部错误"),
     
-    /**
-     * Config use 100001 ~ 100999.
-     **/
+    /** 配置业务专用码段：100001 ~ 100999 */
     NAMESPACE_NOT_EXIST(100001, "目标 namespace 不存在"),
     
     METADATA_ILLEGAL(100002, "导入的元数据非法"),
@@ -50,8 +48,10 @@ public enum ResultCodeEnum implements IResultCode {
     
     NO_SELECTED_CONFIG(100006, "没有选择任何配置");
     
+    /** HTTP 风格业务码 */
     private int code;
     
+    /** 面向用户的中文/英文提示信息 */
     private String msg;
     
     ResultCodeEnum(int code, String codeMsg) {

@@ -39,6 +39,8 @@ import static com.alibaba.nacos.api.common.Constants.ConfigChangedType.DELETE_CO
 import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_OVER_LIMIT;
 
 /**
+ * 配置模糊监听上下文：维护 groupKeyPattern → 订阅客户端集合，以及 pattern → 已匹配 groupKey 集合。
+ * 配置增删时同步更新匹配集合并决定是否推送；定期 trim 清理无效上下文。
  * fuzzy watch context for config.
  *
  * @author shiyiyue
@@ -47,12 +49,12 @@ import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_OVER_
 public class ConfigFuzzyWatchContextService {
     
     /**
-     * groupKeyPattern -> watched client id set.
+     * 模糊 pattern → 正在监听的 RPC 连接 ID 集合。
      */
     private final Map<String, Set<String>> watchedClientsMap = new ConcurrentHashMap<>();
     
     /**
-     * groupKeyPattern -> matched groupKeys set.
+     * 模糊 pattern → 当前已匹配到的 groupKey 集合（受上限保护）。
      */
     private final Map<String, Set<String>> matchedGroupKeysMap = new ConcurrentHashMap<>();
     
@@ -65,6 +67,7 @@ public class ConfigFuzzyWatchContextService {
     }
     
     /**
+     * 定期裁剪模糊监听上下文：无订阅客户端时移除 matchedGroupKeys；订阅集合为空时移除 watchedClients。
      * trim  fuzzy watch context. <br/> 1.remove watchedClients if watched client is empty. 2.remove matchedServiceKeys
      * if watchedClients is null. pattern matchedServiceKeys will be removed in second period to avoid frequently
      * matchedServiceKeys init.
@@ -108,6 +111,7 @@ public class ConfigFuzzyWatchContextService {
      *
      * @param groupKeyPattern groupKeyPattern.
      * @return
+      * <p>模糊监听上下文管理；详见类级说明。</p>
      */
     public Set<String> matchGroupKeys(String groupKeyPattern) {
         Set<String> stringSet = matchedGroupKeysMap.get(groupKeyPattern);
@@ -116,6 +120,8 @@ public class ConfigFuzzyWatchContextService {
     }
     
     /**
+     * 将单条 groupKey 的增删变更同步到各 pattern 的 matchedGroupKeys，返回是否需要通知客户端。
+     *
      * sync group key change to fuzzy context.
      *
      * @param groupKey    groupKey.
@@ -164,6 +170,8 @@ public class ConfigFuzzyWatchContextService {
     }
     
     /**
+     * 在负载保护模型下，删除配置导致匹配数下降时补全 matchedGroupKeys。
+     *
      * make matched group key when deleted configs on loa protection model.
      *
      * @param groupKeyPattern group key pattern.
@@ -206,6 +214,7 @@ public class ConfigFuzzyWatchContextService {
      * Matches the client effective group keys based on the specified group key pattern, client IP, and tag.
      *
      * @param groupKeyPattern The pattern to match group keys.
+      * <p>模糊监听上下文管理；详见类级说明。</p>
      */
     private void initMatchGroupKeys(String groupKeyPattern) throws NacosException {
         if (matchedGroupKeysMap.containsKey(groupKeyPattern)) {
@@ -257,12 +266,13 @@ public class ConfigFuzzyWatchContextService {
      * @param groupKeyPattern The group key pattern to associate with the listen connection.
      * @param connectId       The connection ID to be added.
      * @throws NacosException over max pattern count.
+      * <p>模糊监听上下文管理；详见类级说明。</p>
      */
     public synchronized void addFuzzyWatch(String groupKeyPattern, String connectId)
         throws NacosException {
         watchedClientsMap.computeIfAbsent(groupKeyPattern, k -> new HashSet<>());
         initMatchGroupKeys(groupKeyPattern);
-        // Add the connection ID to the set associated with the key pattern in keyPatternContext
+        // 将连接 ID 加入该 pattern 的订阅集合
         watchedClientsMap.get(groupKeyPattern).add(connectId);
     }
     
@@ -274,6 +284,7 @@ public class ConfigFuzzyWatchContextService {
      *
      * @param groupKeyPattern The group key pattern associated with the listen connection to be removed.
      * @param connectionId    The connection ID to be removed.
+      * <p>模糊监听上下文管理；详见类级说明。</p>
      */
     public synchronized void removeFuzzyListen(String groupKeyPattern, String connectionId) {
         // Retrieve the set of connection IDs associated with the group key pattern
@@ -288,6 +299,7 @@ public class ConfigFuzzyWatchContextService {
      * remove watch context for connection id.
      *
      * @param connectionId connection id.
+      * <p>模糊监听上下文管理；详见类级说明。</p>
      */
     public void clearFuzzyWatchContext(String connectionId) {
         for (Map.Entry<String, Set<String>> keyPatternContextEntry : watchedClientsMap.entrySet()) {
@@ -303,6 +315,7 @@ public class ConfigFuzzyWatchContextService {
      *
      * @param groupKey The group key to match with the key patterns.
      * @return The set of connection IDs matched with the group key.
+      * <p>模糊监听上下文管理；详见类级说明。</p>
      */
     public Set<String> getMatchedClients(String groupKey) {
         // Initialize a set to store the matched connection IDs

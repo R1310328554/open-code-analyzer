@@ -46,6 +46,9 @@ import static com.alibaba.nacos.config.server.utils.LogUtil.DUMP_LOG;
 import static com.alibaba.nacos.config.server.utils.LogUtil.FATAL_LOG;
 
 /**
+ * 配置本地缓存核心服务：维护 groupKey → {@link CacheItem} 的 JVM 缓存，并同步磁盘 dump。
+ * 提供正式/灰度配置的 dump、删除、MD5 查询、读写锁与客户端版本比对（isUptodate）。
+ * 变更后通过 {@link LocalDataChangeEvent} 触发 RPC 推送。
  * Config service.
  *
  * @author Nacos
@@ -61,7 +64,7 @@ public class ConfigCacheService {
     private static final String DISK_QUOTA_EN = "Disk quota exceeded";
     
     /**
-     * groupKey -> cacheItem.
+     * 全局配置缓存：groupKey（dataId+group+tenant）→ 缓存项。
      */
     static final ConcurrentHashMap<String, CacheItem> CACHE = new ConcurrentHashMap<>();
     
@@ -70,6 +73,8 @@ public class ConfigCacheService {
     }
     
     /**
+     * 将配置内容写入磁盘并更新本地缓存 MD5（可携带已知 MD5 跳过重复计算）。
+     *
      * Save config file and update md5 value in cache.
      *
      * @param dataId         dataId string value.
@@ -96,7 +101,7 @@ public class ConfigCacheService {
         
         try {
             
-            //check timestamp
+            // 校验持久化时间戳，忽略过期 dump
             boolean lastModifiedOutDated =
                 lastModifiedTs < ConfigCacheService.getLastModifiedTs(groupKey);
             if (lastModifiedOutDated) {
@@ -111,7 +116,7 @@ public class ConfigCacheService {
                 md5 = MD5Utils.md5Hex(content, PERSIST_ENCODE);
             }
             
-            //check md5 & update local disk cache.
+            // MD5 变化时落盘并更新磁盘缓存
             String localContentMd5 = ConfigCacheService.getContentMd5(groupKey);
             boolean md5Changed = !md5.equals(localContentMd5);
             if (md5Changed) {
@@ -126,7 +131,7 @@ public class ConfigCacheService {
                     groupKey, md5);
             }
             
-            //check  md5 and timestamp & update local jvm cache.
+            // 同步更新 JVM 缓存中的 MD5 与时间戳
             if (md5Changed) {
                 DUMP_LOG.info(
                     "[dump] md5 changed, update md5 and timestamp in jvm cache ,groupKey={}, newMd5={},oldMd5={},lastModifiedTs={}",
@@ -151,7 +156,7 @@ public class ConfigCacheService {
                 if (errMsg.contains(NO_SPACE_CN) || errMsg.contains(NO_SPACE_EN)
                     || errMsg.contains(DISK_QUOTA_CN)
                     || errMsg.contains(DISK_QUOTA_EN)) {
-                    // Protect from disk full.
+                    // 磁盘满等 IO 异常时记录致命日志
                     FATAL_LOG.error("Local Disk Full,Exit", ioe);
                     EnvUtil.systemExit();
                 }
@@ -174,6 +179,7 @@ public class ConfigCacheService {
      * @param type             file type.
      * @param encryptedDataKey encryptedDataKey.
      * @return dumpChange success or not.
+      * <p>配置 JVM/磁盘缓存核心；详见类级说明。</p>
      */
     public static boolean dump(String dataId, String group, String tenant, String content,
         long lastModifiedTs,
@@ -183,6 +189,8 @@ public class ConfigCacheService {
     }
     
     /**
+     * 灰度配置 dump：比较 MD5、灰度规则与时间戳后更新缓存与磁盘。
+     *
      * Save gray config file and update md5 value in cache.
      *
      * @param dataId         dataId string value.
@@ -280,6 +288,8 @@ public class ConfigCacheService {
     }
     
     /**
+     * 删除灰度配置：清理磁盘、JVM 灰度缓存并发布本地变更事件。
+     *
      * Delete gray config file, and delete cache.
      *
      * @param dataId   dataId string value.
@@ -292,13 +302,13 @@ public class ConfigCacheService {
         final String groupKey = GroupKey2.getKey(dataId, group, tenant);
         final int lockResult = tryWriteLock(groupKey);
         
-        // If data is non-existent.
+        // 缓存中不存在该 groupKey，视为删除成功
         if (0 == lockResult) {
             DUMP_LOG.info("[remove-ok] {} not exist.", groupKey);
             return true;
         }
         
-        // try to lock failed
+        // 写锁获取失败
         if (lockResult < 0) {
             DUMP_LOG.warn("[remove-error] write lock failed. {}", groupKey);
             return false;
@@ -335,6 +345,8 @@ public class ConfigCacheService {
     }
     
     /**
+     * 删除正式配置：清理磁盘与 CACHE 条目并通知监听方。
+     *
      * Delete config file, and delete cache.
      *
      * @param dataId dataId string value.
@@ -381,6 +393,7 @@ public class ConfigCacheService {
      * @param content          the content
      * @param lastModifiedTs   the last modified ts
      * @param encryptedDataKey the encrypted data key
+      * <p>配置 JVM/磁盘缓存核心；详见类级说明。</p>
      */
     public static void updateMd5(String groupKey, String md5, String content, long lastModifiedTs,
         String encryptedDataKey) {
@@ -405,6 +418,7 @@ public class ConfigCacheService {
      * @param content          the content
      * @param lastModifiedTs   the last modified ts
      * @param encryptedDataKey the encrypted data key
+      * <p>配置 JVM/磁盘缓存核心；详见类级说明。</p>
      */
     public static void updateGrayMd5(String groupKey, String grayName, String grayRule, String md5,
         String content,
@@ -423,6 +437,7 @@ public class ConfigCacheService {
     
     /**
      * Get and return content md5 value from cache. Empty string represents no data.
+      * <p>配置 JVM/磁盘缓存核心；详见类级说明。</p>
      */
     public static String getContentMd5(String groupKey) {
         return getContentMd5(groupKey, null, null);
@@ -481,6 +496,7 @@ public class ConfigCacheService {
      * @param groupKey groupKey string value.
      * @param grayName grayName string value.
      * @return Content Tag Md5 value.
+      * <p>配置 JVM/磁盘缓存核心；详见类级说明。</p>
      */
     public static String getContentGrayMd5(String groupKey, String grayName) {
         CacheItem item = CACHE.get(groupKey);
@@ -515,6 +531,7 @@ public class ConfigCacheService {
      *
      * @param groupKey groupKey string value.
      * @return CacheItem.
+      * <p>配置 JVM/磁盘缓存核心；详见类级说明。</p>
      */
     public static CacheItem getContentCache(String groupKey) {
         return CACHE.get(groupKey);
@@ -531,6 +548,7 @@ public class ConfigCacheService {
      * @param groupKey       groupKey.
      * @param grayName       grayName.
      * @param lastModifiedTs lastModifiedTs.
+      * <p>配置 JVM/磁盘缓存核心；详见类级说明。</p>
      */
     private static void updateGrayTimeStamp(String groupKey, String grayName, long lastModifiedTs) {
         CacheItem cache = makeSure(groupKey, null);
@@ -558,6 +576,7 @@ public class ConfigCacheService {
      *
      * @param groupKey groupKey string value.
      * @return 0 - No data and failed. Positive number - lock succeeded. Negative number - lock failed。
+      * <p>配置 JVM/磁盘缓存核心；详见类级说明。</p>
      */
     public static int tryReadLock(String groupKey) {
         CacheItem groupItem = CACHE.get(groupKey);
@@ -572,6 +591,7 @@ public class ConfigCacheService {
      * Release readLock.
      *
      * @param groupKey groupKey string value.
+      * <p>配置 JVM/磁盘缓存核心；详见类级说明。</p>
      */
     public static void releaseReadLock(String groupKey) {
         CacheItem item = CACHE.get(groupKey);
@@ -586,6 +606,7 @@ public class ConfigCacheService {
      *
      * @param groupKey groupKey string value.
      * @return 0 - No data and failed. Positive number 0 - Success. Negative number - lock failed。
+      * <p>配置 JVM/磁盘缓存核心；详见类级说明。</p>
      */
     static int tryWriteLock(String groupKey) {
         CacheItem groupItem = CACHE.get(groupKey);
@@ -619,6 +640,7 @@ public class ConfigCacheService {
      * @param groupKey         groupKey.
      * @param lastModifiedTs   lastModifiedTs.
      * @param encryptedDataKey encryptedDataKey.
+      * <p>配置 JVM/磁盘缓存核心；详见类级说明。</p>
      */
     private static void updateTimeStamp(String groupKey, long lastModifiedTs,
         String encryptedDataKey) {
@@ -633,6 +655,7 @@ public class ConfigCacheService {
      *
      * @param groupKey group key of config.
      * @return 0 - No data and failed. Positive number - lock succeeded. Negative number - lock failed.
+      * <p>配置 JVM/磁盘缓存核心；详见类级说明。</p>
      */
     public static int tryConfigReadLock(String groupKey) {
         

@@ -42,6 +42,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 基于 RPC 的配置变更推送器：订阅 {@link LocalDataChangeEvent}，向监听该 groupKey 的客户端推送变更通知。
+ * 内含 {@link RpcPushTask} 与 {@link RpcPushCallback}，支持 TPS 限流与退避重试。
  * ConfigChangeNotifier.
  *
  * @author liuzunfei
@@ -80,6 +82,8 @@ public class RpcConfigChangeNotifier extends Subscriber<LocalDataChangeEvent> {
     private ConnectionManager connectionManager;
     
     /**
+     * 配置模块适配入口：服务端配置变更时，向所有监听该 groupKey 的客户端发起 RPC 推送。
+     *
      * adaptor to config module ,when server side config change ,invoke this method.
      *
      * @param groupKey groupKey
@@ -247,11 +251,11 @@ public class RpcConfigChangeNotifier extends Subscriber<LocalDataChangeEvent> {
                 retryTask.getConnectionId());
             connectionManager.unregister(retryTask.getConnectionId());
         } else if (connectionManager.getConnection(retryTask.getConnectionId()) != null) {
-            // first time:delay 0s; second time:delay 2s; third time:delay 4s
+            // 退避策略：第 n 次重试延迟 n*2 秒
             ConfigExecutor.scheduleClientConfigNotifier(retryTask, retryTask.getTryTimes() * 2,
                 TimeUnit.SECONDS);
         } else {
-            // client is already offline, ignore task.
+            // 客户端已离线，忽略剩余重试
         }
     }
     

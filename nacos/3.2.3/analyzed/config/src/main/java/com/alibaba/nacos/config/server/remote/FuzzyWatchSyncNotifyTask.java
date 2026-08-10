@@ -28,6 +28,8 @@ import com.alibaba.nacos.plugin.control.tps.request.TpsCheckRequest;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 模糊监听同步推送任务：向客户端分批推送 {@link ConfigFuzzyWatchSyncRequest}。
+ * 配合 {@link FuzzyWatchSyncNotifyCallback} 完成批次计数与 init-finish 收尾。
  * Represents a task for pushing FuzzyListenNotifyDiffRequest to clients.
  *
  * @author stone-98
@@ -46,22 +48,22 @@ class FuzzyWatchSyncNotifyTask implements Runnable {
     final RpcPushService rpcPushService;
     
     /**
-     * The FuzzyListenNotifyDiffRequest to be pushed.
+     * 待推送的模糊监听同步请求。
      */
     ConfigFuzzyWatchSyncRequest notifyRequest;
     
     /**
-     * The maximum number of times to retry pushing the request.
+     * 推送失败时的最大重试次数。
      */
     int maxRetryTimes;
     
     /**
-     * The current number of attempts made to push the request.
+     * 当前已执行的推送尝试次数。
      */
     int tryTimes = 0;
     
     /**
-     * The ID of the connection associated with the client.
+     * 目标客户端 RPC 连接 ID。
      */
     String connectionId;
     
@@ -74,6 +76,7 @@ class FuzzyWatchSyncNotifyTask implements Runnable {
      * @param batchTaskCounter The batchTaskCounter counter for tracking the number of finished push batches
      * @param maxRetryTimes    The maximum number of times to retry pushing the request
      * @param connectionId     The ID of the connection associated with the client
+      * <p>模糊监听同步 RPC 推送任务；详见类级说明。</p>
      */
     public FuzzyWatchSyncNotifyTask(ConnectionManager connectionManager,
         RpcPushService rpcPushService,
@@ -92,6 +95,7 @@ class FuzzyWatchSyncNotifyTask implements Runnable {
      * Checks if the maximum number of retry times has been reached.
      *
      * @return true if the maximum number of retry times has been reached, otherwise false
+      * <p>模糊监听同步 RPC 推送任务；详见类级说明。</p>
      */
     public boolean isOverTimes() {
         return maxRetryTimes > 0 && this.tryTimes >= maxRetryTimes;
@@ -99,12 +103,13 @@ class FuzzyWatchSyncNotifyTask implements Runnable {
     
     /**
      * Executes the task, attempting to push the request to the client.
+      * <p>模糊监听同步 RPC 推送任务；详见类级说明。</p>
      */
     @Override
     public void run() {
         
         if (isOverTimes()) {
-            // If over the maximum retry times, log a warning and unregister the client connection
+            // 超过最大重试次数：记录告警并注销客户端连接
             Loggers.REMOTE_PUSH.warn(
                 "Push callback retry failed over times. groupKeyPattern={}, clientId={}, will unregister client.",
                 notifyRequest.getGroupKeyPattern(), connectionId);

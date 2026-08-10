@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
+ * 客户端 MD5 跟踪服务：记录各 IP 订阅的 groupKey 与 MD5，供控制台查询订阅状态与是否最新。
+ * 与 {@link ConfigCacheService#isUptodate} 配合判断客户端配置是否落后。
  * ClientTrackService which tracks client's md5 service and delete expired ip's records.
  *
  * @author Nacos
@@ -31,6 +33,8 @@ import java.util.concurrent.ConcurrentMap;
 public class ClientTrackService {
     
     /**
+     * 记录客户端对某 groupKey 上报的 MD5，并刷新活跃时间与轮询时间戳。
+     *
      * Put the specified value(ip/groupKey/clientMd5) into clientRecords Map.
      *
      * @param ip        ip string value.
@@ -48,6 +52,7 @@ public class ClientTrackService {
      * Get subscribe client count.
      *
      * @return subscribe client count.
+      * <p>客户端 MD5 跟踪；详见类级说明。</p>
      */
     public static int subscribeClientCount() {
         return clientRecords.size();
@@ -57,6 +62,7 @@ public class ClientTrackService {
      * Get all of subscriber count.
      *
      * @return all of subscriber count.
+      * <p>客户端 MD5 跟踪；详见类级说明。</p>
      */
     public static long subscriberCount() {
         long count = 0;
@@ -67,12 +73,14 @@ public class ClientTrackService {
     }
     
     /**
+     * 查询指定 IP 下各 groupKey 的订阅状态（是否最新、MD5、最后轮询时间）。
+     *
      * Groupkey ->  SubscriberStatus.
      */
     public static Map<String, SubscriberStatus> listSubStatus(String ip) {
         Map<String, SubscriberStatus> status = new HashMap<>(100);
         
-        // record here is non-null
+        // getClientRecord 保证返回非空记录
         ClientRecord record = getClientRecord(ip);
         for (Map.Entry<String, String> entry : record.getGroupKey2md5Map().entrySet()) {
             String groupKey = entry.getKey();
@@ -88,7 +96,7 @@ public class ClientTrackService {
     }
     
     /**
-     * Specify subscriber's ip and look up whether data is latest.
+     * 查询指定订阅者 IP 下各 groupKey 配置是否与服务器缓存一致。
      * groupKey -> isUptodate.
      */
     public static Map<String, Boolean> isClientUptodate(String ip) {
@@ -108,6 +116,7 @@ public class ClientTrackService {
      *
      * @param clientIp clientIp string value.
      * @return the record of specified client ip.
+      * <p>客户端 MD5 跟踪；详见类级说明。</p>
      */
     private static ClientRecord getClientRecord(String clientIp) {
         ClientRecord record = clientRecords.get(clientIp);
@@ -124,7 +133,7 @@ public class ClientTrackService {
     }
     
     /**
-     * All of client records, adding or deleting.
+     * 全局客户端记录表（IP → {@link ClientRecord}），支持并发读写与整表刷新。
      */
     static volatile ConcurrentMap<String, ClientRecord> clientRecords = new ConcurrentHashMap<>();
 }

@@ -35,6 +35,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
+ * 配置分页检索服务：通过有界队列 + 工作线程池异步执行 DB 查询，调用方阻塞等待结果。
+ * 支持精确/模糊搜索，队列满或超时时抛出 503 限流异常。
  * config detail service.
  *
  * @author 985492783@qq.com
@@ -52,19 +54,19 @@ public class ConfigDetailService {
     private ScheduledExecutorService clientEventExecutor;
     
     /**
-     * the max_capacity of eventLinkedBlockingQueue may be controlled by the properties {@link PropertiesConstant#SEARCH_MAX_CAPACITY}.
+     * 搜索任务队列最大容量，可通过 {@link PropertiesConstant#SEARCH_MAX_CAPACITY} 配置。
      */
     private static int maxCapacity = 4;
     
     private static final int MAX_CAPACITY = 32;
     
     /**
-     * the wait_timeout of search config business may be controlled by the properties {@link PropertiesConstant#SEARCH_WAIT_TIMEOUT}.
+     * 调用方等待搜索结果的超时毫秒数，可通过 {@link PropertiesConstant#SEARCH_WAIT_TIMEOUT} 配置。
      */
     private static long waitTimeout = 8000L;
     
     /**
-     * the max_thread of clientEventExecutor may be controlled by the properties {@link PropertiesConstant#SEARCH_MAX_THREAD}.
+     * 搜索工作线程数上限，可通过 {@link PropertiesConstant#SEARCH_MAX_THREAD} 配置。
      */
     private static int maxThread = 2;
     
@@ -88,7 +90,7 @@ public class ConfigDetailService {
     }
     
     /**
-     * init worker thread.
+     * 初始化有界队列与固定数量搜索工作线程（长期循环 take 任务）。
      */
     private void initWorker() {
         this.eventLinkedBlockingQueue = new LinkedBlockingQueue<>(maxCapacity);
@@ -124,7 +126,7 @@ public class ConfigDetailService {
     }
     
     /**
-     * block thread and use workerThread to search config.
+     * 阻塞当前线程，将搜索任务入队并由 worker 执行 DB 分页查询后唤醒返回。
      */
     public Page<ConfigInfo> findConfigInfoPage(String search, int pageNo, int pageSize,
         String dataId, String group,

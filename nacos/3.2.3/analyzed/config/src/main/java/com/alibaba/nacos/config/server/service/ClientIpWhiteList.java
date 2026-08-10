@@ -28,6 +28,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.alibaba.nacos.config.server.utils.LogUtil.DEFAULT_LOG;
 
 /**
+ * 客户端 IP 白名单服务：从元数据加载 ACL 配置，控制是否启用及合法 IP 列表。
+ * 用于限制仅白名单内客户端可执行特定配置操作。
  * Client ip whitelist.
  *
  * @author Nacos
@@ -44,6 +46,8 @@ public class ClientIpWhiteList {
     private static volatile boolean isOpen = false;
     
     /**
+     * 判断指定客户端 IP 是否在白名单中。
+     *
      * Judge whether specified client ip includes in the whitelist.
      *
      * @param clientIp clientIp string value.
@@ -62,6 +66,8 @@ public class ClientIpWhiteList {
     }
     
     /**
+     * 白名单功能是否已启用。
+     *
      * Whether start client ip whitelist.
      *
      * @return true: enable ; false disable
@@ -71,6 +77,8 @@ public class ClientIpWhiteList {
     }
     
     /**
+     * 从 JSON 内容加载白名单配置（开关与 IP 列表）。
+     *
      * Load white lists based content parameter value.
      *
      * @param content content string value.

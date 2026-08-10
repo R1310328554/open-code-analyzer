@@ -55,6 +55,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 配置写操作统一入口：发布/删除正式与灰度配置，协调持久化、迁移双写与变更事件。
+ * 支持 Beta/Tag 灰度发布、CAS 乐观锁、Istio 标签联动与操作审计追踪。
  * ConfigService.
  *
  * @author dongyafei
@@ -81,6 +83,8 @@ public class ConfigOperationService {
     }
     
     /**
+     * 发布或更新单条配置（含 Beta/Tag 灰度分支与正式 CAS/insert 逻辑）。
+     *
      * Adds or updates non-aggregated data.
      *
      * @throws NacosException NacosException.
@@ -102,7 +106,7 @@ public class ConfigOperationService {
         configInfo.setType(configForm.getType());
         configInfo.setEncryptedDataKey(encryptedDataKey);
         
-        //beta publish
+        // Beta 灰度发布：双写旧表并迁移至 Gray 模型
         if (StringUtils.isNotBlank(configRequestInfo.getBetaIps())) {
             configForm.setGrayName(BetaGrayRule.TYPE_BETA);
             configForm.setGrayRuleExp(configRequestInfo.getBetaIps());
@@ -114,7 +118,7 @@ public class ConfigOperationService {
             publishConfigGray(BetaGrayRule.TYPE_BETA, configForm, configRequestInfo);
             return Boolean.TRUE;
         }
-        // tag publish
+        // Tag 灰度发布：双写 Tag 表并同步 Gray
         if (StringUtils.isNotBlank(configForm.getTag())) {
             configForm.setGrayName(TagGrayRule.TYPE_TAG + "_" + configForm.getTag());
             configForm.setGrayRuleExp(configForm.getTag());
@@ -132,7 +136,7 @@ public class ConfigOperationService {
         configMigrateService.publishConfigMigrate(configForm, configRequestInfo,
             configForm.getEncryptedDataKey());
         
-        //formal publish
+        // 正式配置发布：CAS 或 insert/update
         if (StringUtils.isNotBlank(configRequestInfo.getCasMd5())) {
             configOperateResult =
                 configInfoPersistService.insertOrUpdateCas(configRequestInfo.getSrcIp(),
@@ -191,6 +195,8 @@ public class ConfigOperationService {
     }
     
     /**
+     * 发布 TagV2/Beta 等灰度配置：校验规则格式与版本数量上限后持久化。
+     *
      * publish gray config tag v2.
      *
      * @param configForm        ConfigForm
@@ -223,7 +229,7 @@ public class ConfigOperationService {
                 ErrorCode.CONFIG_GRAY_RULE_FORMAT_INVALID.getMsg());
         }
         
-        //version count check.
+        // 校验同一 dataId 下灰度版本数是否超限
         if (checkGrayVersionOverMaxCount(configForm.getDataId(), configForm.getGroup(),
             configForm.getNamespaceId(),
             configForm.getGrayName())) {
@@ -234,7 +240,7 @@ public class ConfigOperationService {
         
         ConfigInfo configInfo = new ConfigInfo(configForm.getDataId(), configForm.getGroup(),
             configForm.getNamespaceId(), configForm.getAppName(), configForm.getContent());
-        // set old md5
+        // CAS 发布时携带客户端已知 MD5
         if (StringUtils.isNotBlank(configRequestInfo.getCasMd5())) {
             configInfo.setMd5(configRequestInfo.getCasMd5());
         }
@@ -303,6 +309,8 @@ public class ConfigOperationService {
     }
     
     /**
+     * 同步删除配置：grayName 为空删正式配置，否则删指定灰度版本；并发布变更事件与审计日志。
+     *
      * Synchronously delete all pre-aggregation data under a dataId.
      */
     public Boolean deleteConfig(String dataId, String group, String namespaceId, String grayName,

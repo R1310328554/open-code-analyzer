@@ -29,6 +29,8 @@ import com.alibaba.nacos.plugin.control.tps.request.TpsCheckRequest;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 模糊监听配置变更推送任务：向指定 RPC 连接异步推送 {@link ConfigFuzzyWatchChangeNotifyRequest}。
+ * 支持 TPS 限流、超时回调与指数退避重试；超过最大重试次数则注销连接。
  * Represents a task for pushing notification to remote clients.
  */
 class FuzzyWatchChangeNotifyTask implements Runnable {
@@ -41,6 +43,7 @@ class FuzzyWatchChangeNotifyTask implements Runnable {
     private static final String POINT_FUZZY_WATCH_CONFIG_PUSH_FAIL =
         "POINT_FUZZY_WATCH_CONFIG_PUSH_FAIL";
     
+    /** 待推送的模糊监听变更通知请求体 */
     ConfigFuzzyWatchChangeNotifyRequest notifyRequest;
     
     final ConnectionManager connectionManager;
@@ -49,11 +52,14 @@ class FuzzyWatchChangeNotifyTask implements Runnable {
     
     int maxRetryTimes;
     
+    /** 当前已尝试推送次数（用于退避调度） */
     int tryTimes = 0;
     
     String connectionId;
     
     /**
+     * 构造模糊监听变更推送任务。
+     *
      * Constructs a RpcPushTask with the specified parameters.
      *
      * @param notifyRequest The notification request to be sent.
@@ -74,6 +80,7 @@ class FuzzyWatchChangeNotifyTask implements Runnable {
      * Checks if the number of retry times exceeds the maximum limit.
      *
      * @return {@code true} if the number of retry times exceeds the maximum limit; otherwise, {@code false}.
+      * <p>模糊监听变更 RPC 推送任务；详见类级说明。</p>
      */
     public boolean isOverTimes() {
         return maxRetryTimes > 0 && this.tryTimes >= maxRetryTimes;
@@ -88,7 +95,7 @@ class FuzzyWatchChangeNotifyTask implements Runnable {
                 notifyRequest.getGroupKey(), connectionId);
             connectionManager.unregister(connectionId);
         } else if (connectionManager.getConnection(connectionId) == null) {
-            // Client is already offline, ignore the task.
+            // 客户端已离线，忽略本次推送任务
             Loggers.REMOTE_PUSH.warn(
                 "Client is already offline, ignore the task. dataId={},groupKey={},tenant={},clientId={}",
                 notifyRequest.getGroupKey(), connectionId);

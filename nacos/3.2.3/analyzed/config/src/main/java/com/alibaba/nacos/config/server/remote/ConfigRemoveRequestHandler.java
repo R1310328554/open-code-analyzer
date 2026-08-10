@@ -39,6 +39,8 @@ import com.alibaba.nacos.plugin.auth.constant.SignType;
 import org.springframework.stereotype.Component;
 
 /**
+ * 配置删除 RPC 请求处理器：校验 namespace/dataId/group/tag 后调用 {@link ConfigOperationService#deleteConfig}。
+ * 集成 TPS 限流、鉴权、参数提取与 namespace 校验。
  * handler to remove config.
  *
  * @author liuzunfei
@@ -49,10 +51,13 @@ import org.springframework.stereotype.Component;
 public class ConfigRemoveRequestHandler
     extends RequestHandler<ConfigRemoveRequest, ConfigRemoveResponse> {
     
+    /** 正式配置持久化服务（构造注入，供扩展使用） */
     private final ConfigInfoPersistService configInfoPersistService;
     
+    /** 灰度配置持久化服务 */
     private final ConfigInfoGrayPersistService configInfoGrayPersistService;
     
+    /** 配置发布/删除统一操作入口 */
     private final ConfigOperationService configOperationService;
     
     public ConfigRemoveRequestHandler(ConfigInfoPersistService configInfoPersistService,
@@ -70,7 +75,7 @@ public class ConfigRemoveRequestHandler
     @ExtractorManager.Extractor(rpcExtractor = ConfigRequestParamExtractor.class)
     public ConfigRemoveResponse handle(ConfigRemoveRequest configRemoveRequest, RequestMeta meta)
         throws NacosException {
-        // check tenant
+        // 规范化并校验 tenant（namespace）
         String tenant = configRemoveRequest.getTenant();
         tenant = NamespaceUtil.processNamespaceParameter(tenant);
         String dataId = configRemoveRequest.getDataId();

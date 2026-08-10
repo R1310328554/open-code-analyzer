@@ -22,6 +22,8 @@ import com.alibaba.nacos.persistence.configuration.DatasourceConfiguration;
 import com.alibaba.nacos.sys.env.EnvUtil;
 
 /**
+ * 配置变更事件发布器：在集群非嵌入式存储模式下，通过 {@link NotifyCenter} 广播 {@link ConfigDataChangeEvent}。
+ * 嵌入式集群模式下单节点不重复发布，避免多副本重复通知。
  * ConfigChangePublisher.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -29,6 +31,8 @@ import com.alibaba.nacos.sys.env.EnvUtil;
 public class ConfigChangePublisher {
     
     /**
+     * 发布配置数据变更事件（嵌入式集群且非 standalone 时直接返回）。
+     *
      * Notify ConfigChange.
      *
      * @param event ConfigDataChangeEvent instance.

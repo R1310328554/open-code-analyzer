@@ -25,6 +25,8 @@ import com.alibaba.nacos.plugin.control.tps.request.TpsCheckRequest;
 import static com.alibaba.nacos.api.common.Constants.FUZZY_WATCH_INIT_NOTIFY;
 
 /**
+ * 模糊监听同步推送结果回调：处理批次计数、初始化完成通知与失败重试。
+ * 成功时若整批同步完成且为 INIT 类型，会追加推送 init-finish 请求。
  * Represents a callback for handling the result of an RPC push operation.
  *
  * @author stone-98
@@ -32,7 +34,7 @@ import static com.alibaba.nacos.api.common.Constants.FUZZY_WATCH_INIT_NOTIFY;
 class FuzzyWatchSyncNotifyCallback extends AbstractPushCallBack {
     
     /**
-     * The RpcPushTask associated with the callback.
+     * 关联的模糊监听同步推送任务实例。
      */
     FuzzyWatchSyncNotifyTask fuzzyWatchSyncNotifyTask;
     
@@ -40,6 +42,7 @@ class FuzzyWatchSyncNotifyCallback extends AbstractPushCallBack {
      * Constructs a new RpcPushCallback with the specified parameters.
      *
      * @param fuzzyWatchSyncNotifyTask The RpcPushTask associated with the callback
+      * <p>模糊监听同步推送回调；详见类级说明。</p>
      */
     public FuzzyWatchSyncNotifyCallback(FuzzyWatchSyncNotifyTask fuzzyWatchSyncNotifyTask) {
         super(3000L);
@@ -48,10 +51,11 @@ class FuzzyWatchSyncNotifyCallback extends AbstractPushCallBack {
     
     /**
      * Handles the successful completion of the RPC push operation.
+      * <p>模糊监听同步推送回调；详见类级说明。</p>
      */
     @Override
     public void onSuccess() {
-        // Check TPS limits
+        // 记录 TPS 成功/失败计量点
         TpsCheckRequest tpsCheckRequest = new TpsCheckRequest();
         tpsCheckRequest
             .setPointName(FuzzyWatchSyncNotifyTask.CONFIG_FUZZY_WATCH_CONFIG_SYNC_SUCCESS);
@@ -67,7 +71,7 @@ class FuzzyWatchSyncNotifyCallback extends AbstractPushCallBack {
                     ConfigFuzzyWatchSyncRequest.buildInitFinishRequest(
                         fuzzyWatchSyncNotifyTask.notifyRequest.getGroupKeyPattern());
                 
-                // Create RPC push task and push the request to the client
+                // 构造 finish 推送任务并调度到客户端
                 FuzzyWatchSyncNotifyTask fuzzyWatchSyncNotifyTaskFinish =
                     new FuzzyWatchSyncNotifyTask(
                         fuzzyWatchSyncNotifyTask.connectionManager,
@@ -83,6 +87,7 @@ class FuzzyWatchSyncNotifyCallback extends AbstractPushCallBack {
      * Handles the failure of the RPC push operation.
      *
      * @param e The exception thrown during the operation
+      * <p>模糊监听同步推送回调；详见类级说明。</p>
      */
     @Override
     public void onFail(Throwable e) {
@@ -91,7 +96,7 @@ class FuzzyWatchSyncNotifyCallback extends AbstractPushCallBack {
         tpsCheckRequest.setPointName(FuzzyWatchSyncNotifyTask.CONFIG_FUZZY_WATCH_CONFIG_SYNC_FAIL);
         ControlManagerCenter.getInstance().getTpsControlManager().check(tpsCheckRequest);
         
-        // Log the failure and retry the task
+        // 记录失败日志并重新调度推送任务
         Loggers.REMOTE_PUSH.warn("Push fail, groupKeyPattern={}, clientId={}",
             fuzzyWatchSyncNotifyTask.notifyRequest.getGroupKeyPattern(),
             fuzzyWatchSyncNotifyTask.connectionId, e);

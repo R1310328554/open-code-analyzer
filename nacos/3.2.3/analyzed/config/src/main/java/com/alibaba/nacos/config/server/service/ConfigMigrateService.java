@@ -71,6 +71,8 @@ import static com.alibaba.nacos.config.server.utils.LogUtil.DEFAULT_LOG;
 import static com.alibaba.nacos.config.server.utils.PropertyUtil.GRAY_MIGRATE_FLAG;
 
 /**
+ * 配置模型迁移服务：将历史 Beta/Tag 表数据双写或迁移至灰度（Gray）模型。
+ * 通常在配置同步通知链路中调用；支持命名空间迁移与旧表版本兼容。
  * migrate beta and tag to gray model. should only invoked from config sync notify.
  *
  * @author shiyiyue
@@ -85,37 +87,37 @@ public class ConfigMigrateService {
     private final String namespacePublic = "public";
     
     /**
-     * The Config info beta persist service.
+     * 历史 Beta 配置持久化服务。
      */
     ConfigInfoBetaPersistService configInfoBetaPersistService;
     
     /**
-     * The Config info tag persist service.
+     * 历史 Tag 配置持久化服务。
      */
     ConfigInfoTagPersistService configInfoTagPersistService;
     
     /**
-     * The Config info gray persist service.
+     * 灰度配置持久化服务（新模型）。
      */
     ConfigInfoGrayPersistService configInfoGrayPersistService;
     
     /**
-     * The Config info persist service.
+     * 正式配置持久化服务。
      */
     ConfigInfoPersistService configInfoPersistService;
     
     /**
-     * The Config migrate persist service.
+     * 迁移进度与双写状态持久化服务。
      */
     ConfigMigratePersistService configMigratePersistService;
     
     /**
-     * The Namespace persist service.
+     * 命名空间持久化服务（迁移 namespace 时使用）。
      */
     NamespacePersistService namespacePersistService;
     
     /**
-     * The Old table version.
+     * 是否为旧表结构版本（影响迁移分支逻辑）。
      */
     boolean oldTableVersion = false;
     
@@ -128,6 +130,7 @@ public class ConfigMigrateService {
      * @param configMigratePersistService  the config migrate persist service
      * @param namespacePersistService      the namespace persist service
      * @param configInfoPersistService     the config info persist service
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public ConfigMigrateService(ConfigInfoBetaPersistService configInfoBetaPersistService,
         ConfigInfoTagPersistService configInfoTagPersistService,
@@ -147,6 +150,7 @@ public class ConfigMigrateService {
      * migrate beta&tag to gray .
      *
      * @throws Exception the exception
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     @PostConstruct
     public void migrate() throws Exception {
@@ -166,6 +170,7 @@ public class ConfigMigrateService {
      * @param configInfo        configInfo.
      * @param configRequestInfo configRequestInfo.
      * @throws NacosApiException NacosApiException.
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void persistTagv1(ConfigForm configForm, ConfigInfo configInfo,
         ConfigRequestInfo configRequestInfo)
@@ -201,6 +206,7 @@ public class ConfigMigrateService {
      * @param configInfo        configInfo.
      * @param configRequestInfo configRequestInfo.
      * @throws NacosApiException NacosApiException.
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void persistBeta(ConfigForm configForm, ConfigInfo configInfo,
         ConfigRequestInfo configRequestInfo)
@@ -239,6 +245,7 @@ public class ConfigMigrateService {
      * @param grayName    grayName.
      * @param clientIp    clientIp.
      * @param srcUser     srcUser.
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void deleteConfigGrayV1(String dataId, String group, String namespaceId, String grayName,
         String clientIp,
@@ -262,6 +269,7 @@ public class ConfigMigrateService {
      * @param dataId dataId.
      * @param group  group.
      * @param tenant tenant.
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void checkMigrateBeta(String dataId, String group, String tenant) {
         ConfigInfoBetaWrapper configInfo4Beta =
@@ -305,6 +313,7 @@ public class ConfigMigrateService {
      * @param group  group.
      * @param tenant tenant.
      * @param tag    tag.
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void checkMigrateTag(String dataId, String group, String tenant, String tag) {
         ConfigInfoTagWrapper configInfo4Tag =
@@ -344,6 +353,7 @@ public class ConfigMigrateService {
      * Check changed config gray migrate state.
      *
      * @param changedConfigInfoGrayWrapper the changed config info gray wrapper
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void checkChangedConfigGrayMigrateState(
         ConfigInfoGrayWrapper changedConfigInfoGrayWrapper) {
@@ -427,6 +437,7 @@ public class ConfigMigrateService {
      * Check changed config migrate state.
      *
      * @param changedConfigInfoStateWrapper the config info state wrapper
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void checkChangedConfigMigrateState(
         ConfigInfoStateWrapper changedConfigInfoStateWrapper) {
@@ -491,6 +502,7 @@ public class ConfigMigrateService {
      * Check deleted config gray migrate state.
      *
      * @param deletedConfigInfoGrayStateWrapper the deleted config info gray state wrapper
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void checkDeletedConfigGrayMigrateState(
         ConfigInfoStateWrapper deletedConfigInfoGrayStateWrapper) {
@@ -533,6 +545,7 @@ public class ConfigMigrateService {
      * Check deleted config migrate state.
      *
      * @param deletedConfigInfoStateWrapper the deleted config info state wrapper
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void checkDeletedConfigMigrateState(
         ConfigInfoStateWrapper deletedConfigInfoStateWrapper) {
@@ -897,6 +910,7 @@ public class ConfigMigrateService {
      * @param group    the group
      * @param tenant   the tenant
      * @param grayName the gray name
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void namespaceMigrateGray(String dataId, String group, String tenant, String grayName) {
         try (ConfigPersistContext.Guard ignored = ConfigPersistContext.withSkipHistory()) {
@@ -919,6 +933,7 @@ public class ConfigMigrateService {
      * @param dataId the data id
      * @param group  the group
      * @param tenant the tenant
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void namespaceMigrate(String dataId, String group, String tenant) {
         try (ConfigPersistContext.Guard ignored = ConfigPersistContext.withSkipHistory()) {
@@ -941,6 +956,7 @@ public class ConfigMigrateService {
      * @param configRequestInfo the config request info
      * @param encryptedDataKey  the encrypted data key
      * @throws NacosException the nacos exception
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void publishConfigMigrate(ConfigForm configFormOrigin,
         ConfigRequestInfo configRequestInfo,
@@ -1019,6 +1035,7 @@ public class ConfigMigrateService {
      * @param configTags  the config tags
      * @param description the description
      * @throws NacosException the nacos exception
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void updateConfigMetadataMigrate(final String dataId,
         final String group, final String namespaceId, final String configTags,
@@ -1048,6 +1065,7 @@ public class ConfigMigrateService {
      * @param configFormOrigin  the config form origin
      * @param configRequestInfo the config request info
      * @throws NacosException the nacos exception
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void publishConfigGrayMigrate(String grayType, ConfigForm configFormOrigin,
         ConfigRequestInfo configRequestInfo) throws NacosException {
@@ -1131,6 +1149,7 @@ public class ConfigMigrateService {
      * @param tenant  the tenant
      * @param srcIp   the src ip
      * @param srcUser the src user
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void removeConfigInfoMigrate(String dataId, String group, String tenant, String srcIp,
         String srcUser) {
@@ -1153,6 +1172,7 @@ public class ConfigMigrateService {
      * @param grayName the gray name
      * @param srcIp    the src ip
      * @param srcUser  the src user
+      * <p>Beta/Tag 至 Gray 迁移；详见类级说明。</p>
      */
     public void removeConfigInfoGrayMigrate(String dataId, String group, String tenant,
         String grayName, String srcIp,
