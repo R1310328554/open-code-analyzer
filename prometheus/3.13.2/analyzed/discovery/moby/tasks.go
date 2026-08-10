@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Docker Swarm 任务角色发现：列出 Task 并合并 service/node/network 标签，按 PortStatus 或网络附件 IP 生成抓取 target。
+
+// Docker Swarm 任务角色发现：列出 Task 并合并 service/node/network 标签，按 PortStatus 或网络附件 IP 生成抓取 target。
+
+// Docker Swarm 任务角色发现：列出 Task 并合并 service/node/network 标签，按 PortStatus 或网络附件 IP 生成抓取 target。
+
 package moby
 
 import (
@@ -28,6 +34,7 @@ import (
 	"github.com/prometheus/prometheus/util/strutil"
 )
 
+// Swarm 任务与容器 label 前缀常量。
 const (
 	swarmLabelTaskPrefix           = swarmLabel + "task_"
 	swarmLabelTaskID               = swarmLabelTaskPrefix + "id"
@@ -39,6 +46,7 @@ const (
 	swarmLabelContainerLabelPrefix = swarmLabel + "container_label_"
 )
 
+// 刷新 tasks 角色：聚合 service/node/network 标签后展开 TCP 端口 target。
 func (d *Discovery) refreshTasks(ctx context.Context) ([]*targetgroup.Group, error) {
 	tg := &targetgroup.Group{
 		Source: "DockerSwarm",
@@ -83,6 +91,7 @@ func (d *Discovery) refreshTasks(ctx context.Context) ([]*targetgroup.Group, err
 			}
 		}
 
+// 合并所属 service 的 ID/name/mode 等公共标签。
 		maps.Copy(commonLabels, serviceLabels[s.ServiceID])
 
 		maps.Copy(commonLabels, nodeLabels[s.NodeID])
@@ -105,6 +114,7 @@ func (d *Discovery) refreshTasks(ctx context.Context) ([]*targetgroup.Group, err
 			tg.Targets = append(tg.Targets, labels)
 		}
 
+// 若无 PortStatus，则按网络附件 IP 与 service 端口配置生成 target。
 		for _, network := range s.NetworksAttachments {
 			for _, address := range network.Addresses {
 				var added bool

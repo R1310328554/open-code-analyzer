@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Nomad 服务发现指标：注册 prometheus_sd_nomad_failures_total 计数Nomad API 刷新失败次数。
+
 package nomad
 
 import (
@@ -24,11 +26,13 @@ var _ discovery.DiscovererMetrics = (*nomadMetrics)(nil)
 type nomadMetrics struct {
 	refreshMetrics discovery.RefreshMetricsInstantiator
 
+	// failuresCount 在 Services API 调用失败时递增。
 	failuresCount prometheus.Counter
 
 	metricRegisterer discovery.MetricRegisterer
 }
 
+// 创建并注册 Nomad SD 失败计数器。
 func newDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetricsInstantiator) discovery.DiscovererMetrics {
 	m := &nomadMetrics{
 		refreshMetrics: rmi,
@@ -46,11 +50,13 @@ func newDiscovererMetrics(reg prometheus.Registerer, rmi discovery.RefreshMetric
 	return m
 }
 
+// 向 Registerer 注册 Nomad SD 指标。
 // Register implements discovery.DiscovererMetrics.
 func (m *nomadMetrics) Register() error {
 	return m.metricRegisterer.RegisterMetrics()
 }
 
+// 注销 Nomad SD 指标。
 // Unregister implements discovery.DiscovererMetrics.
 func (m *nomadMetrics) Unregister() {
 	m.metricRegisterer.UnregisterMetrics()

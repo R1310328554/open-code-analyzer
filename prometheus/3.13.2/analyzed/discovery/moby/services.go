@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Docker Swarm 服务角色发现：列出 Service 及其 VirtualIP/TCP 端口，合并网络标签生成可抓取地址。
+
+// Docker Swarm 服务角色发现：列出 Service 及其 VirtualIP/TCP 端口，合并网络标签生成可抓取地址。
+
+// Docker Swarm 服务角色发现：列出 Service 及其 VirtualIP/TCP 端口，合并网络标签生成可抓取地址。
+
 package moby
 
 import (
@@ -28,6 +34,7 @@ import (
 	"github.com/prometheus/prometheus/util/strutil"
 )
 
+// Swarm 服务 meta 标签常量（service_id/name/mode/endpoint 等）。
 const (
 	swarmLabelServicePrefix                  = swarmLabel + "service_"
 	swarmLabelServiceEndpointPortName        = swarmLabelServicePrefix + "endpoint_port_name"
@@ -42,6 +49,7 @@ const (
 	swarmLabelServiceTaskContainerHostname   = swarmLabelServiceTaskPrefix + "container_hostname"
 )
 
+// 刷新 services 角色：遍历 VirtualIP 与 TCP PublishedPort 生成 target。
 func (d *Discovery) refreshServices(ctx context.Context) ([]*targetgroup.Group, error) {
 	tg := &targetgroup.Group{
 		Source: "DockerSwarm",
@@ -83,7 +91,8 @@ func (d *Discovery) refreshServices(ctx context.Context) ([]*targetgroup.Group, 
 			}
 
 			for _, e := range s.Endpoint.Ports {
-				if e.Protocol != network.TCP {
+	// 仅处理 TCP 协议端口，跳过 UDP 等非 TCP 暴露。
+			if e.Protocol != network.TCP {
 					continue
 				}
 				labels := model.LabelSet{
@@ -106,6 +115,7 @@ func (d *Discovery) refreshServices(ctx context.Context) ([]*targetgroup.Group, 
 				added = true
 			}
 
+// 无匹配 TCP 端口时回退到配置的默认 port 作为抓取地址。
 			if !added {
 				labels := model.LabelSet{}
 
@@ -127,6 +137,7 @@ func (d *Discovery) refreshServices(ctx context.Context) ([]*targetgroup.Group, 
 	return []*targetgroup.Group{tg}, nil
 }
 
+// 为 task 发现预取 service 标签与 Endpoint.Ports 映射。
 func (d *Discovery) getServicesLabelsAndPorts(ctx context.Context) (map[string]map[string]string, map[string][]swarm.PortConfig, error) {
 	services, err := d.client.ServiceList(ctx, client.ServiceListOptions{})
 	if err != nil {
@@ -152,6 +163,7 @@ func (d *Discovery) getServicesLabelsAndPorts(ctx context.Context) (map[string]m
 	return servicesLabels, servicesPorts, nil
 }
 
+// 从 ServiceSpec.Mode 推断 global 或 replicated 部署模式字符串。
 func getServiceValueMode(s swarm.Service) string {
 	if s.Spec.Mode.Global != nil {
 		return "global"

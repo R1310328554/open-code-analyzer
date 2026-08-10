@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Docker Swarm 服务发现指标占位：实现 DiscovererMetrics，Swarm 角色刷新指标由通用 refresh 框架注入。
+
+// Docker Swarm 服务发现指标占位：实现 DiscovererMetrics，Swarm 角色刷新指标由通用 refresh 框架注入。
+
+// Docker Swarm 服务发现指标占位：实现 DiscovererMetrics，Swarm 角色刷新指标由通用 refresh 框架注入。
+
 package moby
 
 import (
@@ -23,10 +29,12 @@ type dockerswarmMetrics struct {
 	refreshMetrics discovery.RefreshMetricsInstantiator
 }
 
+// 注册指标（Swarm 发现器无额外计数器）。
 // Register implements discovery.DiscovererMetrics.
 func (*dockerswarmMetrics) Register() error {
 	return nil
 }
 
+// 注销指标（空实现）。
 // Unregister implements discovery.DiscovererMetrics.
 func (*dockerswarmMetrics) Unregister() {}

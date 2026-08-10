@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OpenStack instance 角色发现：列出 Nova 虚拟机，关联 Neutron 端口与 floating IP，为每个私有 IP 生成抓取 target 及 flavor/image 元数据。
+
+// OpenStack instance 角色发现：列出 Nova 虚拟机，关联 Neutron 端口与 floating IP，为每个私有 IP 生成抓取 target 及 flavor/image 元数据。
+
+// OpenStack instance 角色发现：列出 Nova 虚拟机，关联 Neutron 端口与 floating IP，为每个私有 IP 生成抓取 target 及 flavor/image 元数据。
+
 package openstack
 
 import (
@@ -34,6 +40,7 @@ import (
 	"github.com/prometheus/prometheus/util/strutil"
 )
 
+// OpenStack 实例 meta 标签前缀与字段名常量。
 const (
 	openstackLabelPrefix         = model.MetaLabelPrefix + "openstack_"
 	openstackLabelAddressPool    = openstackLabelPrefix + "address_pool"
@@ -49,6 +56,7 @@ const (
 	openstackLabelUserID         = openstackLabelPrefix + "user_id"
 )
 
+// InstanceDiscovery 实现 instance 角色的 refresh 逻辑。
 // InstanceDiscovery discovers OpenStack instances.
 type InstanceDiscovery struct {
 	provider     *gophercloud.ProviderClient
@@ -73,6 +81,7 @@ func newInstanceDiscovery(provider *gophercloud.ProviderClient, opts *gopherclou
 	}
 }
 
+// floating IP 关联键：deviceID + fixed IP 用于匹配公网地址。
 type floatingIPKey struct {
 	deviceID string
 	fixed    string
@@ -227,7 +236,8 @@ func (i *InstanceDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, 
 						i.logger.Warn("Invalid type for address, expected string")
 						continue
 					}
-					if _, ok := floatingIPPresent[addr]; ok {
+		// 跳过已作为 floating IP 出现的地址，避免重复 target。
+			if _, ok := floatingIPPresent[addr]; ok {
 						continue
 					}
 					lbls := make(model.LabelSet, len(labels))

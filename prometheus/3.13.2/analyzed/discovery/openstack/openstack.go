@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OpenStack 服务发现入口：按 role 分发到 hypervisor/instance/loadbalancer子发现器，通过 gophercloud 认证并周期性刷新 target。
+
+// OpenStack 服务发现入口：按 role 分发到 hypervisor/instance/loadbalancer子发现器，通过 gophercloud 认证并周期性刷新 target。
+
+// OpenStack 服务发现入口：按 role 分发到 hypervisor/instance/loadbalancer子发现器，通过 gophercloud 认证并周期性刷新 target。
+
 package openstack
 
 import (
@@ -33,6 +39,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// OpenStack SD 默认配置（80 端口、60s 刷新、public 端点）。
 // DefaultSDConfig is the default OpenStack SD configuration.
 var DefaultSDConfig = SDConfig{
 	Port:            80,
@@ -44,6 +51,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// OpenStack SD 配置：Keystone 凭据、region、role 与 TLS/availability。
 // SDConfig is the configuration for OpenStack based service discovery.
 type SDConfig struct {
 	IdentityEndpoint            string           `yaml:"identity_endpoint"`
@@ -86,6 +94,7 @@ func (c *SDConfig) SetDirectory(dir string) {
 	c.TLSConfig.SetDirectory(dir)
 }
 
+// OpenStack 角色枚举：hypervisor、instance 或 loadbalancer。
 // Role is the role of the target in OpenStack.
 type Role string
 
@@ -145,6 +154,7 @@ type refresher interface {
 }
 
 // NewDiscovery returns a new OpenStack Discoverer which periodically refreshes its targets.
+// 构造 OpenStack refresh.Discovery 并绑定 role 对应 refresher。
 func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*refresh.Discovery, error) {
 	m, ok := opts.Metrics.(*openstackMetrics)
 	if !ok {
@@ -167,6 +177,7 @@ func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*refresh.Di
 	), nil
 }
 
+// 解析认证选项、配置 HTTP 客户端并按 role 实例化具体发现器。
 func newRefresher(conf *SDConfig, l *slog.Logger) (refresher, error) {
 	var opts gophercloud.AuthOptions
 	if conf.IdentityEndpoint == "" {
@@ -210,6 +221,7 @@ func newRefresher(conf *SDConfig, l *slog.Logger) (refresher, error) {
 		Timeout: time.Duration(conf.RefreshInterval),
 	}
 	availability := gophercloud.Availability(conf.Availability)
+// 按 role 选择 Hypervisor/Instance/LoadBalancer 发现实现。
 	switch conf.Role {
 	case OpenStackRoleHypervisor:
 		return newHypervisorDiscovery(client, &opts, conf.Port, conf.Region, availability, l), nil

@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Docker/Swarm 网络标签辅助：列出 overlay/bridge 网络，将 ID、名称、scope 与用户 label 映射为 meta 标签供 task/service 合并。
+
+// Docker/Swarm 网络标签辅助：列出 overlay/bridge 网络，将 ID、名称、scope 与用户 label 映射为 meta 标签供 task/service 合并。
+
+// Docker/Swarm 网络标签辅助：列出 overlay/bridge 网络，将 ID、名称、scope 与用户 label 映射为 meta 标签供 task/service 合并。
+
 package moby
 
 import (
@@ -32,12 +38,14 @@ const (
 	labelNetworkLabelPrefix = labelNetworkPrefix + "label_"
 )
 
+// 拉取全部 Docker 网络，按 network ID 返回可合并的标签 map。
 func getNetworksLabels(ctx context.Context, c *client.Client, labelPrefix string) (map[string]map[string]string, error) {
 	networks, err := c.NetworkList(ctx, client.NetworkListOptions{})
 	if err != nil {
 		return nil, err
 	}
 	labels := make(map[string]map[string]string, len(networks.Items))
+// 遍历每个网络：填充基础字段并 sanitize 用户自定义 label。
 	for _, network := range networks.Items {
 		labels[network.ID] = map[string]string{
 			labelPrefix + labelNetworkID:       network.ID,

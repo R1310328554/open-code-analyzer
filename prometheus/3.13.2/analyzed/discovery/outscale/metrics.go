@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Outscale 服务发现指标占位：实现 DiscovererMetrics，刷新类指标由通用 refresh 机制统一提供。
+
+// Outscale 服务发现指标占位：实现 DiscovererMetrics，刷新类指标由通用 refresh 机制统一提供。
+
+// Outscale 服务发现指标占位：实现 DiscovererMetrics，刷新类指标由通用 refresh 机制统一提供。
+
 package outscale
 
 import (
@@ -23,10 +29,12 @@ type outscaleMetrics struct {
 	refreshMetrics discovery.RefreshMetricsInstantiator
 }
 
+// 注册指标（Outscale 发现器无额外计数器）。
 // Register implements discovery.DiscovererMetrics.
 func (*outscaleMetrics) Register() error {
 	return nil
 }
 
+// 注销指标（空实现）。
 // Unregister implements discovery.DiscovererMetrics.
 func (*outscaleMetrics) Unregister() {}

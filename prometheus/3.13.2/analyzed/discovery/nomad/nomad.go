@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// HashiCorp Nomad 服务发现：通过 Nomad HTTP API 列出已注册服务实例，将 address/port/datacenter 等映射为 Prometheus meta 标签。
+
+// HashiCorp Nomad 服务发现：通过 Nomad HTTP API 列出已注册服务实例，将 address/port/datacenter 等映射为 Prometheus meta 标签。
+
+// HashiCorp Nomad 服务发现：通过 Nomad HTTP API 列出已注册服务实例，将 address/port/datacenter 等映射为 Prometheus meta 标签。
+
 package nomad
 
 import (
@@ -47,6 +53,7 @@ const (
 	nomadTags           = nomadLabel + "tags"
 )
 
+// Nomad SD 默认配置（4646 端点、60s 刷新、default 命名空间）。
 // DefaultSDConfig is the default nomad SD configuration.
 var DefaultSDConfig = SDConfig{
 	AllowStale:       true,
@@ -62,6 +69,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// Nomad SD 配置：server、region、namespace、allow_stale 与 HTTP 客户端。
 // SDConfig is the configuration for nomad based service discovery.
 type SDConfig struct {
 	AllowStale       bool                    `yaml:"allow_stale"`
@@ -105,6 +113,7 @@ func (c *SDConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	return c.HTTPClientConfig.Validate()
 }
 
+// Discovery 包装 refresh.Discovery，周期性调用 Nomad Services API。
 // Discovery periodically performs nomad requests. It implements
 // the Discoverer interface.
 type Discovery struct {
@@ -120,6 +129,7 @@ type Discovery struct {
 }
 
 // NewDiscovery returns a new Discovery which periodically refreshes its targets.
+// 构造 Nomad Discovery：配置 API 客户端并绑定 refresh 回调。
 func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*Discovery, error) {
 	m, ok := opts.Metrics.(*nomadMetrics)
 	if !ok {
@@ -167,6 +177,7 @@ func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*Discovery,
 	return d, nil
 }
 
+// List 服务 stub 后逐服务 Get 实例，组装 __address__ 与 nomad_* 标签。
 func (d *Discovery) refresh(context.Context) ([]*targetgroup.Group, error) {
 	opts := &nomad.QueryOptions{
 		AllowStale: d.allowStale,
@@ -203,7 +214,8 @@ func (d *Discovery) refresh(context.Context) ([]*targetgroup.Group, error) {
 				addr := net.JoinHostPort(instance.Address, strconv.FormatInt(int64(instance.Port), 10))
 				labels[model.AddressLabel] = model.LabelValue(addr)
 
-				if len(instance.Tags) > 0 {
+	// 将 Tags 用分隔符拼接为 nomad_tags meta 标签供 relabel 使用。
+			if len(instance.Tags) > 0 {
 					tags := d.tagSeparator + strings.Join(instance.Tags, d.tagSeparator) + d.tagSeparator
 					labels[nomadTags] = model.LabelValue(tags)
 				}

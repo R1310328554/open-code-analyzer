@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Docker Swarm 节点角色发现：列出 Swarm 节点，将 hostname、角色、Manager 状态与平台信息映射为抓取 target。
+
+// Docker Swarm 节点角色发现：列出 Swarm 节点，将 hostname、角色、Manager 状态与平台信息映射为抓取 target。
+
+// Docker Swarm 节点角色发现：列出 Swarm 节点，将 hostname、角色、Manager 状态与平台信息映射为抓取 target。
+
 package moby
 
 import (
@@ -26,6 +32,7 @@ import (
 	"github.com/prometheus/prometheus/util/strutil"
 )
 
+// Swarm 节点 meta 标签常量（node_id/role/address 等）。
 const (
 	swarmLabelNodePrefix               = swarmLabel + "node_"
 	swarmLabelNodeAddress              = swarmLabelNodePrefix + "address"
@@ -43,6 +50,7 @@ const (
 	swarmLabelNodeStatus               = swarmLabelNodePrefix + "status"
 )
 
+// 刷新 nodes 角色：NodeList 过滤后组装 __address__ 与 swarm node 标签。
 func (d *Discovery) refreshNodes(ctx context.Context) ([]*targetgroup.Group, error) {
 	tg := &targetgroup.Group{
 		Source: "DockerSwarm",
@@ -65,6 +73,7 @@ func (d *Discovery) refreshNodes(ctx context.Context) ([]*targetgroup.Group, err
 			swarmLabelNodeStatus:               model.LabelValue(n.Status.State),
 			swarmLabelNodeAddress:              model.LabelValue(n.Status.Addr),
 		}
+// Manager 节点额外附加 leader/reachability/manager_address 标签。
 		if n.ManagerStatus != nil {
 			labels[swarmLabelNodeManagerLeader] = model.LabelValue(strconv.FormatBool(n.ManagerStatus.Leader))
 			labels[swarmLabelNodeManagerReachability] = model.LabelValue(n.ManagerStatus.Reachability)
@@ -84,6 +93,7 @@ func (d *Discovery) refreshNodes(ctx context.Context) ([]*targetgroup.Group, err
 	return []*targetgroup.Group{tg}, nil
 }
 
+// 为 task 发现提供 node ID → 标签 map，供 tasks 合并节点元数据。
 func (d *Discovery) getNodesLabels(ctx context.Context) (map[string]map[string]string, error) {
 	nodes, err := d.client.NodeList(ctx, client.NodeListOptions{})
 	if err != nil {

@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Outscale 云 VM 服务发现入口：通过 OUTSCALE OAPI（osc-sdk-go）列出虚拟机并映射为 Prometheus 抓取目标。
+
+// Outscale 云 VM 服务发现入口：通过 OUTSCALE OAPI（osc-sdk-go）列出虚拟机并映射为 Prometheus 抓取目标。
+
+// Outscale 云 VM 服务发现入口：通过 OUTSCALE OAPI（osc-sdk-go）列出虚拟机并映射为 Prometheus 抓取目标。
+
 package outscale
 
 import (
@@ -35,6 +41,7 @@ const (
 	metaLabelPrefix = model.MetaLabelPrefix + "outscale_"
 )
 
+// Outscale SD 默认配置（eu-west-2、80 端口、60s 刷新）。
 // DefaultSDConfig is the default Outscale Service Discovery configuration.
 var DefaultSDConfig = SDConfig{
 	Port:             80,
@@ -43,6 +50,7 @@ var DefaultSDConfig = SDConfig{
 	Region:           "eu-west-2",
 }
 
+// Outscale SD 配置：endpoint、region、access_key 与 secret_key 来源。
 // SDConfig is the configuration for Outscale VM-based service discovery
 // using the OUTSCALE API (OAPI).
 type SDConfig struct {
@@ -99,6 +107,7 @@ func (c *SDConfig) SetDirectory(dir string) {
 	c.HTTPClientConfig.SetDirectory(dir)
 }
 
+// 解析 secret_key 或从 secret_key_file 读取密钥内容。
 func (c *SDConfig) SecretKeyValue() (config.Secret, error) {
 	if c.SecretKeyFile == "" {
 		return c.SecretKey, nil
@@ -119,6 +128,7 @@ func init() {
 	discovery.RegisterConfig(&SDConfig{})
 }
 
+// Discovery 包装 refresh.Discovery，委托 vmDiscovery 执行刷新。
 // Discovery periodically performs Outscale API requests.
 type Discovery struct{}
 
@@ -147,6 +157,7 @@ func NewDiscovery(conf *SDConfig, opts discovery.DiscovererOptions) (*refresh.Di
 }
 
 // loadClient builds an Outscale API client from SDConfig using the official osc-sdk-go (OAPI).
+// 从 SDConfig 构建 osc-sdk-go APIClient（自定义 endpoint 或区域默认 URL）。
 func loadClient(conf *SDConfig) (*osc.APIClient, error) {
 	rt, err := config.NewRoundTripperFromConfig(conf.HTTPClientConfig, "outscale_sd")
 	if err != nil {

@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OpenStack loadbalancer 角色发现：列出 Octavia LB，仅保留含 PROMETHEUS 协议 listener 的负载均衡器作为抓取目标。
+
+// OpenStack loadbalancer 角色发现：列出 Octavia LB，仅保留含 PROMETHEUS 协议 listener 的负载均衡器作为抓取目标。
+
+// OpenStack loadbalancer 角色发现：列出 Octavia LB，仅保留含 PROMETHEUS 协议 listener 的负载均衡器作为抓取目标。
+
 package openstack
 
 import (
@@ -32,6 +38,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// LoadBalancer meta 标签常量（VIP、operating_status、tags 等）。
 const (
 	openstackLabelLoadBalancerID                 = openstackLabelPrefix + "loadbalancer_id"
 	openstackLabelLoadBalancerName               = openstackLabelPrefix + "loadbalancer_name"
@@ -44,6 +51,7 @@ const (
 	openstackLabelLoadBalancerTags               = openstackLabelPrefix + "loadbalancer_tags"
 )
 
+// LoadBalancerDiscovery 实现 loadbalancer 角色的 refresh 逻辑。
 // LoadBalancerDiscovery discovers OpenStack load balancers.
 type LoadBalancerDiscovery struct {
 	provider     *gophercloud.ProviderClient
@@ -66,6 +74,7 @@ func newLoadBalancerDiscovery(provider *gophercloud.ProviderClient, opts *gopher
 	}
 }
 
+// 批量拉取 LB/listener/FIP，匹配 PROMETHEUS listener 端口生成 target。
 func (i *LoadBalancerDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	err := openstack.Authenticate(ctx, i.provider, *i.authOpts)
 	if err != nil {
@@ -153,6 +162,7 @@ func (i *LoadBalancerDiscovery) refresh(ctx context.Context) ([]*targetgroup.Gro
 
 		// Check if any listener has the PROMETHEUS protocol
 		for _, listener := range lbListeners {
+// Octavia PROMETHEUS 协议 listener 表示该 LB 暴露 Prometheus 指标端点。
 			if listener.Protocol == "PROMETHEUS" {
 				hasPrometheusListener = true
 				listenerPort = listener.ProtocolPort

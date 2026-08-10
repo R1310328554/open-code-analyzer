@@ -11,6 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OpenStack hypervisor 角色发现：通过 Nova Compute API 列出物理/虚拟 hypervisor，以 HostIP 与配置 port 作为抓取地址。
+
+// OpenStack hypervisor 角色发现：通过 Nova Compute API 列出物理/虚拟 hypervisor，以 HostIP 与配置 port 作为抓取地址。
+
+// OpenStack hypervisor 角色发现：通过 Nova Compute API 列出物理/虚拟 hypervisor，以 HostIP 与配置 port 作为抓取地址。
+
 package openstack
 
 import (
@@ -29,6 +35,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
+// Hypervisor meta 标签常量（hypervisor_id/hostname/status 等）。
 const (
 	openstackLabelHypervisorID       = openstackLabelPrefix + "hypervisor_id"
 	openstackLabelHypervisorHostIP   = openstackLabelPrefix + "hypervisor_host_ip"
@@ -38,6 +45,7 @@ const (
 	openstackLabelHypervisorType     = openstackLabelPrefix + "hypervisor_type"
 )
 
+// HypervisorDiscovery 实现 hypervisor 角色的 refresh 逻辑。
 // HypervisorDiscovery discovers OpenStack hypervisors.
 type HypervisorDiscovery struct {
 	provider     *gophercloud.ProviderClient
@@ -49,6 +57,7 @@ type HypervisorDiscovery struct {
 }
 
 // newHypervisorDiscovery returns a new hypervisor discovery.
+// 构造 HypervisorDiscovery：绑定 gophercloud Provider 与区域信息。
 func newHypervisorDiscovery(provider *gophercloud.ProviderClient, opts *gophercloud.AuthOptions,
 	port int, region string, availability gophercloud.Availability, l *slog.Logger,
 ) *HypervisorDiscovery {
@@ -58,6 +67,7 @@ func newHypervisorDiscovery(provider *gophercloud.ProviderClient, opts *gophercl
 	}
 }
 
+// 认证后分页拉取 hypervisor 列表，填充 HostIP 与状态 meta 标签。
 func (h *HypervisorDiscovery) refresh(ctx context.Context) ([]*targetgroup.Group, error) {
 	err := openstack.Authenticate(ctx, h.provider, *h.authOpts)
 	if err != nil {
