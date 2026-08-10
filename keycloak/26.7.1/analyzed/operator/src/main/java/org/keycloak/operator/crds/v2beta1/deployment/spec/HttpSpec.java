@@ -30,35 +30,46 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.sundr.builder.annotations.Buildable;
 
 /**
+ * Keycloak 部署的 HTTP/HTTPS 监听与 Kubernetes Service 暴露配置。
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class HttpSpec {
+    /** 存放 HTTPS TLS 证书的 Secret 名称。 */
     @JsonPropertyDescription("A secret containing the TLS configuration for HTTPS. Reference: https://kubernetes.io/docs/concepts/configuration/secret/#tls-secrets.")
     private String tlsSecret;
 
+    /** 是否启用 HTTP 监听器。 */
     @JsonPropertyDescription("Enables the HTTP listener.")
     private Boolean httpEnabled;
 
+    /** Pod 内 HTTP 监听端口。 */
     @JsonPropertyDescription("The used HTTP port.")
     private Integer httpPort = Constants.KEYCLOAK_HTTP_PORT;
 
+    /** Pod 内 HTTPS 监听端口。 */
     @JsonPropertyDescription("The used HTTPS port.")
     private Integer httpsPort = Constants.KEYCLOAK_HTTPS_PORT;
 
+    /** Service 对外暴露的 HTTP 端口（Pod 仍监听 {@link #httpPort}）。 */
     @JsonPropertyDescription("The HTTP port exposed on the Kubernetes Service. When set, the Service will use this port while the pod still listens on httpPort.")
     private Integer serviceHttpPort;
 
+    /** Service 对外暴露的 HTTPS 端口（Pod 仍监听 {@link #httpsPort}）。 */
     @JsonPropertyDescription("The HTTPS port exposed on the Kubernetes Service. When set, the Service will use this port while the pod still listens on httpsPort.")
     private Integer serviceHttpsPort;
 
+    /** Kubernetes Service 名称；未设置时默认为 Keycloak CR 名称加 "-service" 后缀。 */
     @JsonPropertyDescription("The name of the Kubernetes Service. When not set, the name defaults to the Keycloak CR name with a \"-service\" suffix.")
     private String serviceName;
 
+    /** 追加到 Service 对象的注解。 */
     @JsonPropertyDescription("Annotations to be appended to the Service object")
     Map<String, String> annotations;
 
+    /** 追加到 Service 对象的标签。 */
     @JsonPropertyDescription("Labels to be appended to the Service object")
     Map<String, String> labels;
 
@@ -119,30 +130,35 @@ public class HttpSpec {
         this.serviceName = serviceName;
     }
 
+    /** 解析 Keycloak CR 配置的 HTTP 端口，未配置时使用 {@link Constants#KEYCLOAK_HTTP_PORT}。 */
     public static int httpPort(Keycloak keycloak) {
         return httpSpec(keycloak)
                 .map(HttpSpec::getHttpPort)
                 .orElse(Constants.KEYCLOAK_HTTP_PORT);
     }
 
+    /** 解析 Keycloak CR 配置的 HTTPS 端口，未配置时使用 {@link Constants#KEYCLOAK_HTTPS_PORT}。 */
     public static int httpsPort(Keycloak keycloak) {
         return httpSpec(keycloak)
                 .map(HttpSpec::getHttpsPort)
                 .orElse(Constants.KEYCLOAK_HTTPS_PORT);
     }
 
+    /** 解析 Service 对外 HTTP 端口；未单独配置时回退到 Pod 监听端口。 */
     public static int serviceHttpPort(Keycloak keycloak) {
         return httpSpec(keycloak)
                 .map(s -> s.getServiceHttpPort() != null ? s.getServiceHttpPort() : s.getHttpPort())
                 .orElse(Constants.KEYCLOAK_HTTP_PORT);
     }
 
+    /** 解析 Service 对外 HTTPS 端口；未单独配置时回退到 Pod 监听端口。 */
     public static int serviceHttpsPort(Keycloak keycloak) {
         return httpSpec(keycloak)
                 .map(s -> s.getServiceHttpsPort() != null ? s.getServiceHttpsPort() : s.getHttpsPort())
                 .orElse(Constants.KEYCLOAK_HTTPS_PORT);
     }
 
+    /** 从 Keycloak CR 提取 {@link HttpSpec} 配置。 */
     private static Optional<HttpSpec> httpSpec(Keycloak keycloak) {
         return CRDUtils.keycloakSpecOf(keycloak)
                 .map(KeycloakSpec::getHttpSpec);

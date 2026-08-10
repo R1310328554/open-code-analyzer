@@ -21,12 +21,17 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.fabric8.generator.annotation.Required;
 import io.sundr.builder.annotations.Buildable;
 
+/**
+ * 信任库数据来源引用，指向 Secret 或 ConfigMap 中的信任材料。
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class TruststoreSource {
 
+    /** Secret 或 ConfigMap 的名称（必填）。 */
     @Required
     private String name;
+    /** 引用资源是否可选；为 true 时资源不存在不会导致启动失败。 */
     private Boolean optional;
 
     public Boolean getOptional() {

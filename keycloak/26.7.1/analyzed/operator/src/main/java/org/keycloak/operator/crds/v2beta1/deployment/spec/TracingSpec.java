@@ -27,37 +27,46 @@ import io.sundr.builder.annotations.Buildable;
 
 import static org.keycloak.operator.crds.v2beta1.deployment.spec.TelemetrySpec.convertResourceAttributesToString;
 
+/**
+ * OpenTelemetry 分布式追踪配置（部分字段已迁移至 {@link TelemetrySpec}）。
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class TracingSpec {
 
+    /** 是否启用 OpenTelemetry 追踪。 */
     @JsonPropertyDescription("Enables the OpenTelemetry tracing.")
     private Boolean enabled;
 
+    /** OpenTelemetry 采集端点地址。 */
     @JsonPropertyDescription("OpenTelemetry endpoint to connect to.")
     private String endpoint;
 
     /**
-     * @deprecated Use {@link TelemetrySpec#getServiceName()}
+     * @deprecated 请改用 {@link TelemetrySpec#getServiceName()}
      */
     @Deprecated
     @JsonPropertyDescription("DEPRECATED - use the 'telemetry.serviceName' instead. OpenTelemetry service name. Takes precedence over 'service.name' defined in the 'resourceAttributes' map.")
     private String serviceName;
 
+    /** 遥测数据传输协议，默认为 grpc。 */
     @JsonPropertyDescription("OpenTelemetry protocol used for the telemetry data (default 'grpc'). For more information, check the Tracing guide.")
     private String protocol;
 
+    /** 追踪采样器类型，默认为 traceidratio。 */
     @JsonPropertyDescription("OpenTelemetry sampler to use for tracing (default 'traceidratio'). For more information, check the Tracing guide.")
     private String samplerType;
 
+    /** 采样比率，取值区间 [0,1]，表示 Span 被采样的概率。 */
     @JsonPropertyDescription("OpenTelemetry sampler ratio. Probability that a span will be sampled. Expected double value in interval [0,1].")
     private Double samplerRatio;
 
+    /** 负载压缩方式；未设置则不压缩，可选 gzip 或 none。 */
     @JsonPropertyDescription("OpenTelemetry compression method used to compress payloads. If unset, compression is disabled. Possible values are: gzip, none.")
     private String compression;
 
     /**
-     * @deprecated Use {@link TelemetrySpec#getResourceAttributes()}
+     * @deprecated 请改用 {@link TelemetrySpec#getResourceAttributes()}
      */
     @Deprecated
     @JsonPropertyDescription("DEPRECATED - use the 'telemetry.resourceAttributes' instead. OpenTelemetry resource attributes present in the exported trace to characterize the telemetry producer.")
@@ -126,7 +135,7 @@ public class TracingSpec {
         return resourceAttributes;
     }
 
-    // resource attributes in format key=val delimited by comma
+    // 将资源属性序列化为 key=val 逗号分隔字符串
     @JsonIgnore
     public String getResourceAttributesString() {
         return convertResourceAttributesToString(getResourceAttributes());

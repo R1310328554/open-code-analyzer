@@ -22,10 +22,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.sundr.builder.annotations.Buildable;
 
+/**
+ * Keycloak 领域导入 Job 的配置规范。
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class ImportSpec {
 
+    /** 导入 Job 的调度策略（亲和性、容忍度等）。 */
     @JsonProperty("scheduling")
     @JsonPropertyDescription("In this section you can configure import jobs scheduling")
     private SchedulingSpec schedulingSpec;

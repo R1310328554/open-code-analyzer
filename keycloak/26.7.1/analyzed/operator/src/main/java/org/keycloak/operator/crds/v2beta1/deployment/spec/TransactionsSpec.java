@@ -23,10 +23,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.sundr.builder.annotations.Buildable;
 
+/**
+ * 数据库事务配置，控制是否启用 XA 分布式事务。
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class TransactionsSpec implements Serializable {
 
+    /** 当数据库不支持 XA 时，是否改用非 XA 数据源。 */
     @JsonPropertyDescription("Determine whether Keycloak should use a non-XA datasource in case the database does not support XA transactions.")
     private Boolean xaEnabled;
 

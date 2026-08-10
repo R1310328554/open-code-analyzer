@@ -32,29 +32,36 @@ import io.fabric8.generator.annotation.Default;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicyPeer;
 import io.sundr.builder.annotations.Buildable;
 
+/**
+ * Keycloak NetworkPolicy 配置规范，按端口维度限制入站流量来源。
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class NetworkPolicySpec {
 
-    // Copied from Kubernetes Documentation
+    // 摘自 Kubernetes 文档：描述 NetworkPolicyPeer 列表的语义（OR 组合、空列表表示不限制来源）
     private static final String RULE_DESCRIPTION = "A list of sources which should be able to access this endpoint. " +
             "Items in this list are combined using a logical OR operation. " +
             "If this field is empty or missing, this rule matches all sources (traffic not restricted by source). " +
             "If this field is present and contains at least one item, this rule allows traffic only if the traffic matches at least one item in the from list.";
 
+    /** 是否启用 NetworkPolicy 入站流量控制，默认为 true。 */
     @JsonProperty("enabled")
     @JsonPropertyDescription("Enables or disables the ingress traffic control.")
     @Default("true")
     private boolean networkPolicyEnabled = true;
 
+    /** 允许访问 HTTP 端口的来源规则列表。 */
     @JsonProperty("http")
     @JsonPropertyDescription(RULE_DESCRIPTION)
     private List<NetworkPolicyPeer> httpRules;
 
+    /** 允许访问 HTTPS 端口的来源规则列表。 */
     @JsonProperty("https")
     @JsonPropertyDescription(RULE_DESCRIPTION)
     private List<NetworkPolicyPeer> httpsRules;
 
+    /** 允许访问管理端口的来源规则列表。 */
     @JsonProperty("management")
     @JsonPropertyDescription(RULE_DESCRIPTION)
     private List<NetworkPolicyPeer> managementRules;
@@ -91,31 +98,37 @@ public class NetworkPolicySpec {
         this.managementRules = managementRules;
     }
 
+    /** 从 Keycloak CR 提取 {@link NetworkPolicySpec} 配置。 */
     public static Optional<NetworkPolicySpec> networkPolicySpecOf(Keycloak keycloak) {
         return CRDUtils.keycloakSpecOf(keycloak)
                 .map(KeycloakSpec::getNetworkPolicySpec);
     }
 
+    /** 判断 Keycloak CR 是否启用了 NetworkPolicy，未配置时默认为 true。 */
     public static boolean isNetworkPolicyEnabled(Keycloak keycloak) {
         return networkPolicySpecOf(keycloak)
                 .map(NetworkPolicySpec::isNetworkPolicyEnabled)
                 .orElse(true);
     }
 
+    /** 生成 Keycloak 实例对应的 NetworkPolicy 资源名称。 */
     public static String networkPolicyName(Keycloak keycloak) {
         return keycloak.getMetadata().getName() + Constants.KEYCLOAK_NETWORK_POLICY_SUFFIX;
     }
 
+    /** 解析 HTTP 端口的 NetworkPolicy 来源规则。 */
     public static Optional<List<NetworkPolicyPeer>> httpRules(Keycloak keycloak) {
         return networkPolicySpecOf(keycloak)
                 .map(NetworkPolicySpec::getHttpRules);
     }
 
+    /** 解析 HTTPS 端口的 NetworkPolicy 来源规则。 */
     public static Optional<List<NetworkPolicyPeer>> httpsRules(Keycloak keycloak) {
         return networkPolicySpecOf(keycloak)
                 .map(NetworkPolicySpec::getHttpsRules);
     }
 
+    /** 解析管理端口的 NetworkPolicy 来源规则。 */
     public static Optional<List<NetworkPolicyPeer>> managementRules(Keycloak keycloak) {
         return networkPolicySpecOf(keycloak)
                 .map(NetworkPolicySpec::getManagementRules);

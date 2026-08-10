@@ -25,23 +25,31 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.sundr.builder.annotations.Buildable;
 
+/**
+ * Keycloak Ingress 资源配置规范，控制外部 HTTP(S) 路由暴露。
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class IngressSpec {
 
+    /** 是否创建 Ingress 资源，默认为 true。 */
     @JsonProperty("enabled")
     private boolean ingressEnabled = true;
 
+    /** Ingress 控制器类名（如 nginx、openshift-default）。 */
     @JsonProperty("className")
     private String ingressClassName;
 
+    /** 追加到 Ingress 对象的注解。 */
     @JsonProperty("annotations")
     @JsonPropertyDescription("Additional annotations to be appended to the Ingress object")
     Map<String, String> annotations;
 
+    /** 用于重加密或 TLS 终止场景的 TLS Secret 名称。 */
     @JsonPropertyDescription("A secret containing the TLS configuration for re-encrypt or TLS termination scenarios. Reference: https://kubernetes.io/docs/concepts/configuration/secret/#tls-secrets.")
     private String tlsSecret;
 
+    /** 追加到 Ingress 对象的标签。 */
     @JsonProperty("labels")
     @JsonPropertyDescription("Additional labels to be appended to the Ingress object")
     Map<String, String> labels = new LinkedHashMap<String, String>();

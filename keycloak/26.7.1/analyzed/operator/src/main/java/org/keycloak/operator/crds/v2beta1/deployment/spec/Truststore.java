@@ -21,15 +21,21 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.sundr.builder.annotations.Buildable;
 
+/**
+ * 信任库（Truststore）配置，指定存放 CA 证书的 Secret 或 ConfigMap。
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class Truststore {
 
+    /** 已废弃字段，后续版本将移除。 */
     @JsonPropertyDescription("Not used. To be removed in later versions.")
     private String name;
 
+    /** 存放信任材料的 Secret（与 configMap 二选一）。 */
     @JsonPropertyDescription("The Secret containing the trust material - only set one of the other secret or configMap")
     private TruststoreSource secret;
+    /** 存放信任材料的 ConfigMap（与 secret 二选一）。 */
     @JsonPropertyDescription("The ConfigMap containing the trust material - only set one of the other secret or configMap")
     private TruststoreSource configMap;
 

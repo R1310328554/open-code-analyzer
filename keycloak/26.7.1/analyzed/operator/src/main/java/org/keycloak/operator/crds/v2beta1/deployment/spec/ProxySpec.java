@@ -22,11 +22,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.sundr.builder.annotations.Buildable;
 
 /**
+ * 反向代理相关配置，控制 Keycloak 接受的代理请求头。
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class ProxySpec {
+    /** 服务器应接受的代理头类型；配置错误可能导致安全漏洞。 */
     @JsonPropertyDescription("The proxy headers that should be accepted by the server. Misconfiguration might leave the server exposed to security vulnerabilities.")
     private String headers;
 

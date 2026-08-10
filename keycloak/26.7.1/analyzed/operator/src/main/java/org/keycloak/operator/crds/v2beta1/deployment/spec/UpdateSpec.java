@@ -33,6 +33,9 @@ import io.fabric8.generator.annotation.Default;
 import io.fabric8.generator.annotation.ValidationRule;
 import io.sundr.builder.annotations.Buildable;
 
+/**
+ * Keycloak 滚动/重建更新策略配置，包括更新 Job 调度与版本修订号。
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @ValidationRule(
@@ -41,21 +44,25 @@ import io.sundr.builder.annotations.Buildable;
 )
 public class UpdateSpec {
 
-    // those are the default, keep them in sync.
+    // 默认更新策略常量，需与 DEFAULT_JSON 保持同步
     private static final UpdateStrategy DEFAULT = UpdateStrategy.RECREATE_ON_IMAGE_CHANGE;
     private static final String DEFAULT_JSON = "RecreateOnImageChange";
 
+    /** 更新 Job 的 Pod 调度策略。 */
     @JsonProperty("scheduling")
     @JsonPropertyDescription("In this section you can configure the update job's scheduling")
     private SchedulingSpec schedulingSpec;
 
+    /** 更新策略类型，默认为镜像变更时重建。 */
     @JsonPropertyDescription("Sets the update strategy to use.")
     @Default(DEFAULT_JSON)
     private UpdateStrategy strategy;
 
+    /** 使用 Explicit 策略时的修订号，用于判断是否可执行滚动更新。 */
     @JsonPropertyDescription("When use the Explicit strategy, the revision signals if a rolling update can be used or not.")
     private String revision;
 
+    /** 追加到更新 Job 的额外标签。 */
     @JsonProperty("labels")
     @JsonPropertyDescription("Optionally set to add additional labels to the Job created for the update.")
     Map<String, String> labels = new LinkedHashMap<String, String>();
@@ -84,6 +91,7 @@ public class UpdateSpec {
         this.schedulingSpec = schedulingSpec;
     }
 
+    /** 从 Keycloak CR 解析更新策略，未配置时使用 {@link UpdateStrategy#RECREATE_ON_IMAGE_CHANGE}。 */
     public static UpdateStrategy getUpdateStrategy(Keycloak keycloak) {
         return CRDUtils.keycloakSpecOf(keycloak)
                 .map(KeycloakSpec::getUpdateSpec)
@@ -91,6 +99,7 @@ public class UpdateSpec {
                 .orElse(DEFAULT);
     }
 
+    /** 从 Keycloak CR 解析 Explicit 策略所需的修订号。 */
     public static Optional<String> getRevision(Keycloak keycloak) {
         return CRDUtils.keycloakSpecOf(keycloak)
                 .map(KeycloakSpec::getUpdateSpec)

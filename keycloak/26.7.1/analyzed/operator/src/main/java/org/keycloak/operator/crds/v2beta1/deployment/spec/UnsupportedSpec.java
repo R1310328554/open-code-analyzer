@@ -23,6 +23,10 @@ import io.fabric8.kubernetes.api.model.PodTemplateSpec;
 import io.sundr.builder.annotations.Buildable;
 import io.sundr.builder.annotations.BuildableReference;
 
+/**
+ * 不受官方支持的扩展配置，允许自定义 Pod 模板并与 Operator 默认配置合并。
+ * <p>使用风险自负，未来版本可能变更合并行为且不另行通知。</p>
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder",
         lazyCollectionInitEnabled = false, refs = {
@@ -31,6 +35,7 @@ import io.sundr.builder.annotations.BuildableReference;
 })
 public class UnsupportedSpec {
 
+    /** 自定义 Pod 模板，将与 Operator 默认模板合并。 */
     @JsonPropertyDescription("""
             You can configure that will be merged with the one configured by default by the operator.
             Use at your own risk, we reserve the possibility to remove/change the way any field gets merged in future releases without notice.
