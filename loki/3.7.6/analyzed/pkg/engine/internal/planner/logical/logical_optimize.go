@@ -1,5 +1,7 @@
 package logical
 
+// logical_optimize 对逻辑计划运行优化遍，当前主要将正则 BinOp 简化为子串/等值/OR 链。
+
 import (
 	"fmt"
 	"iter"
@@ -15,6 +17,7 @@ type optimizationPass interface {
 	Apply(*Plan) error
 }
 
+// Optimize 依次 Apply 各 optimizationPass，结束后用 ssaBuilder 重分配节点 ID。
 // Optimize performs optimizations on p.
 func Optimize(p *Plan) error {
 	passes := []optimizationPass{
@@ -35,6 +38,7 @@ func Optimize(p *Plan) error {
 	return nil
 }
 
+// simplifyRegexPass 复刻经典引擎 RegexSimplifier，把 MATCH_RE 转为更便宜的谓词。
 type simplifyRegexPass struct{}
 
 func (pass simplifyRegexPass) Apply(p *Plan) error {
@@ -87,6 +91,7 @@ func (pass simplifyRegexPass) Apply(p *Plan) error {
 	return nil
 }
 
+// shouldApply 跳过 MakeTable.Selector 内的正则，避免破坏 metastore 标签匹配器转换。
 func (pass simplifyRegexPass) shouldApply(b *BinOp) bool {
 	// We can only support regex simplification on actual regex operations.
 	if b.Op != types.BinaryOpMatchRe && b.Op != types.BinaryOpNotMatchRe {
@@ -166,6 +171,7 @@ func (pass simplifyRegexPass) walkReferences(v Value) iter.Seq[Instruction] {
 	}
 }
 
+// simplifyBinop 要求右操作数为字符串 Literal，NOT_MATCH 时在链尾追加 UnaryOpNot。
 func (pass simplifyRegexPass) simplifyBinop(b *BinOp) (simplified []Node, changed bool, err error) {
 	if b.Op != types.BinaryOpMatchRe && b.Op != types.BinaryOpNotMatchRe {
 		panic("simplifyRegex called with non-regex binary operation")
@@ -205,6 +211,7 @@ func (pass simplifyRegexPass) simplifyBinop(b *BinOp) (simplified []Node, change
 	return nodes, changed, nil
 }
 
+// simplifyRegex 按语法树 Op 分派：字面量变 substr/eq，交替变 OR 链，.* 透传源 Value。
 func (pass simplifyRegexPass) simplifyRegex(from Value, isMessage bool, reg *syntax.Regexp) ([]Node, bool) {
 	caseInsensitive := util.IsCaseInsensitive(reg)
 
@@ -460,6 +467,7 @@ func (pass simplifyRegexPass) simplifyRegexConcatAlternates(from Value, reg *syn
 	return nil, false
 }
 
+// chainOr 用 BinaryOpOr 将两段简化结果链接成析取表达式子图。
 func chainOr(left []Node, right ...Node) []Node {
 	if len(left) == 0 {
 		return append([]Node{}, right...)
@@ -486,3 +494,4 @@ func extractInstructions(nodes []Node) []Instruction {
 	}
 	return res
 }
+// 简化成功后替换原 BinOp 并修复 referrers；message 列与非 message 列等值/包含策略不同。

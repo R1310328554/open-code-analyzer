@@ -1,3 +1,4 @@
+// logical 包以 SSA 形式表示日志查询的中间计划：Value 为表达式，Instruction 为语句。
 // Package logical provides a logical query plan representation for data
 // processing operations.
 //
@@ -27,11 +28,14 @@
 // more [Instruction]s.
 package logical
 
+// 计划图由 Value 作操作数、Instruction 作消费者构成；可同时实现两接口的节点既定义又引用值。
+
 import (
 	"fmt"
 	"strings"
 )
 
+// Node 聚合 String 与 base()，是 Value 与 Instruction 的公共超集。
 // Node is a node in the logical plan. Every type that implements Node is either
 // a [Value], [Instruction], or both.
 //
@@ -43,6 +47,7 @@ type Node interface {
 	base() *baseNode
 }
 
+// Instruction 通过 Operands 暴露可修改的操作数指针，支持计划改写与下推。
 // An Instruction is an SSA instruction that computes a new [Value] or has some
 // effect.
 //
@@ -66,6 +71,7 @@ type Instruction interface {
 	isInstruction()
 }
 
+// Value.Name 返回 %%N 形式 SSA 标识；Referrers 维护反向引用供优化遍历。
 // A Value is an SSA value that can be referenced by an [Instruction].
 type Value interface {
 	Node
@@ -93,6 +99,7 @@ type Value interface {
 	isValue()
 }
 
+// Plan.Instructions 按发射顺序排列；首个 Return 的 Value 为计划最终输出。
 // A Plan represents a sequence of [Instruction]s that ultimately produce a
 // [Value].
 //
@@ -117,6 +124,7 @@ func (p Plan) String() string {
 	return sb.String()
 }
 
+// Plan.Value 线性扫描指令表，返回 Return 节点持有的根 Value。
 // Value returns the value of the RETURN instruction.
 func (p Plan) Value() Value {
 	for _, inst := range p.Instructions {
@@ -127,3 +135,4 @@ func (p Plan) Value() Value {
 	}
 	return nil
 }
+// Plan.String 对同时实现 Value 的指令打印「名 = 反汇编体」两行 SSA 文本。

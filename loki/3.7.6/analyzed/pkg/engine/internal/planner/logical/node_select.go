@@ -1,9 +1,12 @@
 package logical
 
+// node_select 定义 SELECT 关系算子：对表关系按 Predicate 布尔表达式过滤行。
+
 import (
 	"fmt"
 )
 
+// Select 同时是 Instruction 与 Value；Predicate 通常为 BinOp/UnaryOp 表达式子树。
 // The Select instruction filters rows from a table relation. Select implements
 // both [Instruction] and [Value].
 type Select struct {
@@ -11,7 +14,8 @@ type Select struct {
 
 	Table Value // The table relation to filter.
 
-	// Predicate is used to filter rows from Table. Each row is checked against
+	// Predicate 对每行求值，仅保留为 true 的行；可下推至 dataobj 扫描谓词。
+// Predicate is used to filter rows from Table. Each row is checked against
 	// the given Predicate, and only rows for which the Predicate is true are
 	// returned.
 	Predicate Value
@@ -25,6 +29,7 @@ var (
 // Name returns an identifier for the Select operation.
 func (s *Select) Name() string { return s.b.Name() }
 
+// String 打印 SELECT 表名与 predicate 操作数名，format_tree 将谓词挂为 Comments。
 // String returns the disassembled SSA form of the Select instruction.
 func (s *Select) String() string {
 	return fmt.Sprintf("SELECT %s [predicate=%s]", s.Table.Name(), s.Predicate.Name())
@@ -45,3 +50,4 @@ func (s *Select) Referrers() *[]Instruction { return &s.b.referrers }
 func (s *Select) base() *baseNode { return &s.b }
 func (s *Select) isInstruction()  {}
 func (s *Select) isValue()        {}
+// Operands 为 Table 与 Predicate 指针；Referrers 支持投影/谓词合并等优化改写。

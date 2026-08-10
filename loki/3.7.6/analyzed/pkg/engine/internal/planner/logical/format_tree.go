@@ -1,5 +1,7 @@
 package logical
 
+// format_tree 将逻辑计划 Value 树格式化为可读树形结构，供调试与测试打印。
+
 import (
 	"fmt"
 	"io"
@@ -8,6 +10,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/util/tree"
 )
 
+// PrintTree 递归遍历 Value 依赖图，经 treeFormatter 转为 tree.Node 后输出。
 // PrintTree prints the given value and its dependencies as a tree structure to
 // w.
 func PrintTree(w io.StringWriter, value Value) {
@@ -17,6 +20,7 @@ func PrintTree(w io.StringWriter, value Value) {
 	p.Print(t.convert(value))
 }
 
+// treeFormatter 按 Instruction/Value 类型分派 convert* 方法构建树节点。
 type treeFormatter struct{}
 
 func (t *treeFormatter) convert(value Value) *tree.Node {
@@ -53,6 +57,7 @@ func (t *treeFormatter) convert(value Value) *tree.Node {
 	}
 }
 
+// convertMakeTable 将 selector 作为子节点，属性展示 stream 选择表达式。
 func (t *treeFormatter) convertMakeTable(ast *MakeTable) *tree.Node {
 	node := tree.NewNode("MAKETABLE", ast.Name(),
 		tree.NewProperty("selector", false, ast.Selector.String()),
@@ -160,6 +165,7 @@ func (t *treeFormatter) convertLiteral(expr *Literal) *tree.Node {
 	)
 }
 
+// convertRangeAggregation 输出时间范围、步长、区间及 group_by/without 分组列。
 func (t *treeFormatter) convertRangeAggregation(r *RangeAggregation) *tree.Node {
 	properties := []tree.Property{
 		tree.NewProperty("table", false, r.Table.Name()),
@@ -217,3 +223,4 @@ func (t *treeFormatter) convertVectorAggregation(v *VectorAggregation) *tree.Nod
 
 	return node
 }
+// 未知 Value 类型会 panic；Sort/TopK 等节点属性含升降序与 NULL 排序位置。
