@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:32:09Z",
-  "files": [
-    "model/jpa/src/main/java/org/keycloak/storage/jpa/entity/FederatedUserVerifiableCredentialEntity.java",
-    "model/storage-private/src/main/java/org/keycloak/cluster/ClusterProviderFactory.java",
-    "model/storage-private/src/main/java/org/keycloak/cluster/ClusterSpi.java",
-    "model/storage-private/src/main/java/org/keycloak/exportimport/util/ExportUtils.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/MigrationModelManager.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo12_0_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo14_0_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo18_0_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo1_2_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo1_3_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo1_4_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo1_5_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo1_6_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo1_7_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo1_8_0.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4108,
-  "done": 1875
+  "done": 1890
 }
