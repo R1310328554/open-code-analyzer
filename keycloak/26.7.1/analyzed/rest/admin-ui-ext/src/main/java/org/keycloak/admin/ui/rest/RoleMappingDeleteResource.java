@@ -26,10 +26,17 @@ import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
+/**
+ * 批量删除用户/组/客户端/客户端范围/复合角色上的角色映射，并记录管理审计事件。
+ */
 public class RoleMappingDeleteResource {
+    /** Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 目标领域。 */
     private final RealmModel realm;
+    /** 权限评估器。 */
     private final AdminPermissionEvaluator auth;
+    /** 管理事件构建器。 */
     private final AdminEventBuilder adminEvent;
 
     public RoleMappingDeleteResource(KeycloakSession session, RealmModel realm, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
@@ -164,6 +171,7 @@ public class RoleMappingDeleteResource {
                 .success();
     }
 
+    /** 逐条解析角色 ID 并执行删除动作。 */
     private void deleteRoleMappings(List<RoleDeleteRequest> roles, java.util.function.Consumer<RoleModel> deleteAction) {
         for (RoleDeleteRequest roleRequest : roles) {
             RoleModel role = this.realm.getRoleById(roleRequest.getRoleId());

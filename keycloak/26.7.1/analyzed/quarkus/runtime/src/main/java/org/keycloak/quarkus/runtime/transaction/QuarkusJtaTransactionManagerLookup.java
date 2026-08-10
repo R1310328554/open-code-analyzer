@@ -26,17 +26,24 @@ import org.keycloak.transaction.JtaTransactionManagerLookup;
 
 import org.jboss.logging.Logger;
 
+/**
+ * Quarkus 运行时 {@link JtaTransactionManagerLookup} 实现，通过 CDI 获取 Jakarta {@link TransactionManager}。
+ */
 public class QuarkusJtaTransactionManagerLookup implements JtaTransactionManagerLookup {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(QuarkusJtaTransactionManagerLookup.class);
 
+    /** 懒加载并缓存的 JTA 事务管理器实例。 */
     private volatile TransactionManager tm;
 
+    /** {@inheritDoc} 首次调用时从 CDI 容器解析 {@link TransactionManager}。 */
     @Override
     public TransactionManager getTransactionManager() {
         if (tm == null) {
             synchronized (this) {
                 if (tm == null) {
+                    // 通过 Quarkus CDI 获取容器托管的 TransactionManager
                     tm = CDI.current().select(TransactionManager.class).get();
                     logger.tracev("TransactionManager = {0}", tm);
                     if (tm == null) {
@@ -57,11 +64,13 @@ public class QuarkusJtaTransactionManagerLookup implements JtaTransactionManager
 
     }
 
+    /** {@inheritDoc} 返回标识符 {@code quarkus}。 */
     @Override
     public String getId() {
         return "quarkus";
     }
 
+    /** {@inheritDoc} Quarkus 实现的优先级。 */
     @Override
     public int order() {
         return 100;

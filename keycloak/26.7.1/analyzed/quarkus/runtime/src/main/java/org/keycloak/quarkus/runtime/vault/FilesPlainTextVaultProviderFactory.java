@@ -22,9 +22,13 @@ import org.keycloak.config.VaultOptions;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.quarkus.runtime.configuration.Configuration;
 
+/**
+ * Quarkus 环境下基于明文文件的 {@link org.keycloak.vault.VaultProviderFactory}，仅当 {@link VaultOptions#VAULT} 配置为 {@code file} 时启用。
+ */
 public class FilesPlainTextVaultProviderFactory extends org.keycloak.vault.FilesPlainTextVaultProviderFactory
     implements EnvironmentDependentProviderFactory {
 
+    /** 工厂 SPI 标识符：{@code file}。 */
     public static final String ID = "file";
 
     @Override
@@ -32,6 +36,7 @@ public class FilesPlainTextVaultProviderFactory extends org.keycloak.vault.Files
         return ID;
     }
 
+    /** 当前 Quarkus 配置选中本工厂时返回 true。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return getId().equals(Configuration.getConfigValue(VaultOptions.VAULT).getValue());

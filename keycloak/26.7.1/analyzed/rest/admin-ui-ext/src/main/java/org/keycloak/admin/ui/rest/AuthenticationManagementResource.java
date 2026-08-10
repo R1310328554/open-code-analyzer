@@ -39,8 +39,12 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 
+/**
+ * Admin UI 认证管理 REST 资源：认证流列表、引用关系及必需操作（含 UI 元数据）。
+ */
 public class AuthenticationManagementResource extends RoleMappingResource {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(AuthenticationManagementResource.class);
 
     public AuthenticationManagementResource(KeycloakSession session, RealmModel realm, AdminPermissionEvaluator auth) {
@@ -65,6 +69,7 @@ public class AuthenticationManagementResource extends RoleMappingResource {
                     )
             )}
     )
+    /** 列出领域顶级认证流（排除 SAML ECP 内置流）及使用状态。 */
     public final List<Authentication> listIdentityProviders() {
         auth.realm().requireViewAuthenticationFlows();
 
@@ -94,6 +99,7 @@ public class AuthenticationManagementResource extends RoleMappingResource {
                     )
             )}
     )
+    /** 分页列出引用指定认证流的客户端或身份提供者。 */
     public final List<String> listUsed(@PathParam("id") String id, @PathParam("type") String type, @QueryParam("first") @DefaultValue("0") int first,
             @QueryParam("max") @DefaultValue("10") int max, @QueryParam("search") @DefaultValue("") String search) {
         auth.realm().requireViewAuthenticationFlows();
@@ -118,7 +124,7 @@ public class AuthenticationManagementResource extends RoleMappingResource {
     }
 
     /**
-     * Get required actions
+     * 获取必需操作列表。
      *
      * Returns a stream of required actions.
      */
@@ -136,6 +142,7 @@ public class AuthenticationManagementResource extends RoleMappingResource {
         return realm.getRequiredActionProvidersStream().map(this::toRepresentation);
     }
 
+    /** 将必需操作模型转换为含 {@code configurable} 标志的 Admin UI 表示。 */
     public ConfigurableRequiredActionProviderRepresentation toRepresentation(RequiredActionProviderModel model) {
         ConfigurableRequiredActionProviderRepresentation rep = new ConfigurableRequiredActionProviderRepresentation();
         rep.setAlias(model.getAlias());

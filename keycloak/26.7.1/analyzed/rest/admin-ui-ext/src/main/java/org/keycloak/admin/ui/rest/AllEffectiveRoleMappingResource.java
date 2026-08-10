@@ -32,6 +32,9 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import static org.keycloak.admin.ui.rest.model.RoleMapper.convertToEffectiveRole;
 
+/**
+ * 列出用户/组/客户端/客户端范围/复合角色的全部有效角色映射（含领域与客户端角色及子角色展开）。
+ */
 public class AllEffectiveRoleMappingResource extends RoleMappingResource {
     public AllEffectiveRoleMappingResource(KeycloakSession session, RealmModel realm, AdminPermissionEvaluator auth) {
         super(session, realm, auth);
@@ -191,6 +194,7 @@ public class AllEffectiveRoleMappingResource extends RoleMappingResource {
         return toSortedEffectiveRoles(addSubRoles(Stream.of(role)));
     }
 
+    /** 将角色流转换为 {@link EffectiveRole} 并按客户端/名称排序。 */
     private List<EffectiveRole> toSortedEffectiveRoles(Stream<RoleModel> roles) {
         return roles.map(roleModel -> convertToEffectiveRole(roleModel, realm))
                 .sorted(Comparator.comparing(EffectiveRole::isClientRole)
@@ -199,6 +203,7 @@ public class AllEffectiveRoleMappingResource extends RoleMappingResource {
                 .collect(Collectors.toList());
     }
 
+    /** 递归展开复合角色的子角色。 */
     private Stream<RoleModel> addSubRoles(Stream<RoleModel> roles) {
         return addSubRoles(roles, new HashSet<>());
     }
@@ -209,6 +214,7 @@ public class AllEffectiveRoleMappingResource extends RoleMappingResource {
         return Stream.concat(roleList.stream(), roleList.stream().flatMap(r -> addSubRoles(r.getCompositesStream().filter(s -> !visited.contains(s)), visited)));
     }
 
+    /** 自当前组向上收集父组链。 */
     private Stream<GroupModel> addParents(GroupModel group) {
         if (group.getParent() == null) {
             return Stream.of(group);

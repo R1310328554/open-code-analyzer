@@ -37,9 +37,14 @@ import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
+/**
+ * 列出当前可注册的非全局事件监听器 SPI 提供者，供 Admin UI 配置领域事件。
+ */
 public class AvailableEventListenersResource {
 
+    /** Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 权限评估器。 */
     private final AdminPermissionEvaluator auth;
 
     public AvailableEventListenersResource(KeycloakSession session, AdminPermissionEvaluator auth) {
@@ -64,6 +69,7 @@ public class AvailableEventListenersResource {
                     )
             )}
     )
+    /** 返回所有非全局 {@link EventListenerProviderFactory} 的 UI 模型列表。 */
     public final List<EventListener> listAvailableEventListeners() {
         auth.realm().requireViewEvents();
         this.auth.adminAuth().getRealm().getEventsListenersStream();
@@ -72,6 +78,7 @@ public class AvailableEventListenersResource {
 
         session.getKeycloakSessionFactory().getProviderFactoriesStream(EventListenerProvider.class).forEach(
                providerFactory -> {
+                    // 排除内置全局监听器，仅展示可 per-realm 配置的工厂
                     if (!((EventListenerProviderFactory) providerFactory).isGlobal()) {
                         result.add(ProviderMapper.convertToModel((EventListenerProviderFactory) providerFactory));
                     }

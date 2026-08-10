@@ -36,7 +36,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.jboss.logging.Logger;
 
+/**
+ * 用户搜索 REST 端点扩展：在标准用户查询结果上附加暴力破解锁定状态。
+ */
 public class BruteForceUsersResource {
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(BruteForceUsersResource.class);
 
     private final KeycloakSession session;
@@ -66,6 +70,7 @@ public class BruteForceUsersResource {
                     )
             )}
     )
+    /** 按多种条件搜索用户并附带 {@link BruteUser} 暴力破解状态。 */
     public final Stream<BruteUser> searchUser(@QueryParam("search") String search,
             @QueryParam("lastName") String last,
             @QueryParam("firstName") String first,
@@ -152,6 +157,7 @@ public class BruteForceUsersResource {
 
     }
 
+    /** 执行底层用户搜索并转换为带锁定信息的 {@link BruteUser} 流。 */
     private Stream<BruteUser> searchForUser(Map<String, String> attributes, RealmModel realm, UserPermissionEvaluator usersEvaluator, boolean briefRep, Integer firstResult, Integer maxResults, Boolean includeServiceAccounts) {
         attributes.put(UserModel.INCLUDE_SERVICE_ACCOUNT, includeServiceAccounts.toString());
 
@@ -165,6 +171,7 @@ public class BruteForceUsersResource {
         return toRepresentation(realm, usersEvaluator, briefRep, session.users().searchForUserStream(realm, attributes, firstResult, maxResults));
     }
 
+    /** 过滤可见用户并映射为 {@link BruteUser}。 */
     private Stream<BruteUser> toRepresentation(RealmModel realm, UserPermissionEvaluator usersEvaluator,
             boolean briefRep, Stream<UserModel> userModels) {
         if (!AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm)) {
@@ -180,6 +187,7 @@ public class BruteForceUsersResource {
         }).map(this::getBruteForceStatus);
     }
 
+    /** 从 {@link UserLoginFailureModel} 填充用户的暴力破解锁定详情。 */
     private BruteUser getBruteForceStatus(UserRepresentation user) {
         BruteUser bruteUser = new BruteUser(user);
         Map<String, Object> data = new HashMap<>();
@@ -210,6 +218,7 @@ public class BruteForceUsersResource {
         return bruteUser;
     }
 
+    /** 判断用户是否仍处于临时锁定窗口内。 */
     public boolean isTemporarilyDisabled(KeycloakSession session, RealmModel realm, UserRepresentation user) {
         UserLoginFailureModel failure = session.loginFailures().getUserLoginFailure(realm, user.getId());
         if (failure != null) {

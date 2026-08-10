@@ -45,6 +45,9 @@ import static org.keycloak.authorization.fgap.AdminPermissionsSchema.MAP_ROLES_C
 import static org.keycloak.authorization.fgap.AdminPermissionsSchema.MAP_ROLE_CLIENT_SCOPE;
 import static org.keycloak.authorization.fgap.AdminPermissionsSchema.MAP_ROLE_COMPOSITE;
 
+/**
+ * 按用户/组/客户端/客户端范围/复合角色查询当前管理员可分配的客户端角色（支持细粒度授权过滤）。
+ */
 public class AvailableRoleMappingResource extends RoleMappingResource {
     public AvailableRoleMappingResource(KeycloakSession session, RealmModel realm, AdminPermissionEvaluator auth) {
         super(session, realm, auth);
@@ -241,6 +244,7 @@ public class AvailableRoleMappingResource extends RoleMappingResource {
         return Collections.emptyList();
     }
 
+    /** 根据 FGAP 权限范围收集可映射的客户端角色 ID 集合。 */
     private Set<String> getRoleIdsWithPermissions(String roleResourceScope, String clientResourceScope) {
         Set<String> roleIds;
         if (AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm) && canPerformOnAllClients(clientResourceScope)) {
@@ -253,16 +257,19 @@ public class AvailableRoleMappingResource extends RoleMappingResource {
         return roleIds;
     }
 
+    /** 在指定角色 ID 集合内搜索客户端角色。 */
     private List<ClientRole> searchForClientRolesByIds(RealmModel realm, Stream<String> includedIDs, String search, int first, int max) {
         Stream<RoleModel> result = session.roles().searchForClientRolesStream(realm, includedIDs, search, first, max);
         return result.map(role -> RoleMapper.convertToModel(role, realm)).collect(Collectors.toList());
     }
 
+    /** 搜索客户端角色并排除已映射 ID。 */
     private List<ClientRole> searchForClientRolesByExcludedIds(RealmModel realm, String search, int first, int max, Stream<String> excludedIds) {
         Stream<RoleModel> result = session.roles().searchForClientRolesStream(realm, search, excludedIds, first, max);
         return result.map(role -> RoleMapper.convertToModel(role, realm)).collect(Collectors.toList());
     }
 
+    /** 判断管理员是否对所有客户端拥有指定映射权限。 */
     private boolean canPerformOnAllClients(String scope) {
         switch (scope) {
             case MAP_ROLES:

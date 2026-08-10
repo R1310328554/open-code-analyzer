@@ -24,11 +24,12 @@ import org.keycloak.utils.KeycloakSessionUtil;
  * <p>A {@link TransactionalSessionHandler} is responsible for managing transaction sessions and its lifecycle. Its subtypes
  * are usually related to components available from the underlying stack that runs on top of the request processing chain
  * as well as at the end in order to create transaction sessions and close them accordingly, respectively.
+ * 负责管理 Keycloak 事务会话及其生命周期；子类型通常嵌入底层请求处理链，在链首开启事务、在链尾关闭会话。
  */
 public interface TransactionalSessionHandler {
 
     /**
-     * begin a transaction if possible
+     * 在可能的情况下开启事务。
      *
      * @param session a session
      */
@@ -37,7 +38,7 @@ public interface TransactionalSessionHandler {
     }
 
     /**
-     * Closes a {@link KeycloakSession}.
+     * 关闭 {@link KeycloakSession} 并清除线程本地绑定。
      *
      * @param session a session
      */
@@ -49,6 +50,7 @@ public interface TransactionalSessionHandler {
     
             session.close();
         } finally {
+            // 确保线程上下文不再持有已关闭的会话引用
             KeycloakSessionUtil.setKeycloakSession(null);
         }
     }

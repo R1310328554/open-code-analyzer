@@ -32,6 +32,9 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
 import static org.keycloak.admin.ui.rest.model.RoleMapper.convertToModel;
 
+/**
+ * 列出用户/组/客户端/客户端范围上的有效客户端角色映射（含复合子角色展开）。
+ */
 public class EffectiveRoleMappingResource extends RoleMappingResource {
     public EffectiveRoleMappingResource(KeycloakSession session, RealmModel realm, AdminPermissionEvaluator auth) {
         super(session, realm, auth);
@@ -181,10 +184,11 @@ public class EffectiveRoleMappingResource extends RoleMappingResource {
     public final List<ClientRole> listCompositeRealmRoleMappings() {
         auth.roles().requireList(realm);
         final RoleModel defaultRole = this.realm.getDefaultRole();
-        //this definitely does not return what the descriptions says
+        // 当前实现仅返回默认领域角色的客户端子角色，与 OpenAPI 描述不完全一致
         return toSortedClientRoles(addSubClientRoles(Stream.of(defaultRole)));
     }
 
+    /** 展开复合角色并仅保留客户端角色。 */
     private Stream<RoleModel> addSubClientRoles(Stream<RoleModel> roles) {
         return addSubRoles(roles).filter(RoleModel::isClientRole);
     }
@@ -205,7 +209,7 @@ public class EffectiveRoleMappingResource extends RoleMappingResource {
     }
 
     private Stream<GroupModel> addParents(GroupModel group) {
-        //no cycle check here, I hope that's fine
+        // 父组链通常无环，此处未做环检测
         if (group.getParent() == null) {
             return Stream.of(group);
         }

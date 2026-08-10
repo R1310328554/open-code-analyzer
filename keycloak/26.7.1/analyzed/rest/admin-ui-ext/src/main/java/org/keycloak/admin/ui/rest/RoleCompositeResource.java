@@ -27,9 +27,15 @@ import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
+/**
+ * 查询指定角色的复合映射，按领域角色与客户端分组返回。
+ */
 public class RoleCompositeResource {
+    /** Keycloak 会话。 */
     protected final KeycloakSession session;
+    /** 目标领域。 */
     protected final RealmModel realm;
+    /** 权限评估器。 */
     protected final AdminPermissionEvaluator auth;
 
     public RoleCompositeResource(KeycloakSession session, RealmModel realm, AdminPermissionEvaluator auth) {
@@ -53,6 +59,7 @@ public class RoleCompositeResource {
                     schema = @Schema(implementation = RoleMappingRepresentation.class)
             )}
     )
+    /** 获取角色的复合子角色并按客户端分组。 */
     public RoleMappingRepresentation getCompositeRoleMappings(@PathParam("id") String id) {
         RoleModel role = this.realm.getRoleById(id);
         if (role == null) {
@@ -96,6 +103,7 @@ public class RoleCompositeResource {
         );
     }
 
+    /** 将 {@link RoleModel} 转为 REST 表示。 */
     private RoleRepresentation toRoleRepresentation(RoleModel role) {
         return new RoleRepresentation(
                 role.getId(),
