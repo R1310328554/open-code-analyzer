@@ -35,16 +35,24 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.jboss.logging.Logger;
 
 /**
+ * 认证流程 URL 构建辅助类。
+ * <p>生成登录操作端点的执行 URL，用于页面过期重定向及浏览器历史同步。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class AuthenticationFlowURLHelper {
 
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(AuthenticationFlowURLHelper.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 当前领域 */
     private final RealmModel realm;
+    /** 当前请求 URI 信息 */
     private final UriInfo uriInfo;
 
+    /** 构造 URL 辅助器。 */
     public AuthenticationFlowURLHelper(KeycloakSession session, RealmModel realm, UriInfo uriInfo) {
         this.session = session;
         this.realm = realm;
@@ -52,6 +60,7 @@ public class AuthenticationFlowURLHelper {
     }
 
 
+    /** 显示页面过期页面并重定向至最后执行步骤 URL。 */
     public Response showPageExpired(AuthenticationSessionModel authSession) {
         URI lastStepUrl = getLastExecutionUrl(authSession);
 
@@ -65,6 +74,7 @@ public class AuthenticationFlowURLHelper {
     }
 
 
+    /** 根据流程路径与执行 ID 构建登录操作 URL。 */
     public URI getLastExecutionUrl(String flowPath, String executionId, String clientId, String tabId, String clientData) {
         UriBuilder uriBuilder = LoginActionsService.loginActionsBaseUrl(uriInfo)
                 .path(flowPath);
@@ -80,6 +90,7 @@ public class AuthenticationFlowURLHelper {
     }
 
 
+    /** 从认证会话中提取参数并构建最后执行步骤 URL。 */
     public URI getLastExecutionUrl(AuthenticationSessionModel authSession) {
         String executionId = getExecutionId(authSession);
         String latestFlowPath = authSession.getAuthNote(AuthenticationProcessor.CURRENT_FLOW_PATH);
@@ -96,6 +107,7 @@ public class AuthenticationFlowURLHelper {
         return getLastExecutionUrl(latestFlowPath, executionId, authSession.getClient().getClientId(), authSession.getTabId(), clientData);
     }
 
+    /** 从认证会话 authNote 获取当前执行 ID。 */
     private String getExecutionId(AuthenticationSessionModel authSession) {
         return authSession.getAuthNote(AuthenticationProcessor.CURRENT_AUTHENTICATION_EXECUTION);
     }

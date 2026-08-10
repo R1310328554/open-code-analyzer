@@ -5,7 +5,8 @@ import java.util.Optional;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Represents a chunk from the Vite build manifest (see {@link ViteManifest}).
+ * Vite 构建 manifest 中的单个 chunk 条目（参见 {@link ViteManifest}）。
+ * <p>描述前端资源的文件名、入口标记、依赖导入及关联 CSS/静态资源。</p>
  */
 public record Chunk (
     @JsonProperty(required = true)

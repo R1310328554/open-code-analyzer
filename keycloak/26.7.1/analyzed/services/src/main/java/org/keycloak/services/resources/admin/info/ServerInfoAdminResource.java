@@ -98,25 +98,34 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 管理端服务器信息 REST 资源。
+ * <p>暴露主题、身份提供者、协议映射器、密码策略、特性开关、加密算法及 SPI 提供者等运行时元数据，
+ * 供 Admin Console 与客户端发现可用组件。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN , value = "")
 public class ServerInfoAdminResource {
 
+    /** 预构建的枚举值映射（事件类型、操作类型、资源类型、组类型） */
     private static final Map<String, List<String>> ENUMS = createEnumsMap(EventType.class, OperationType.class, ResourceType.class, GroupModel.Type.class);
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 当前管理认证上下文 */
     private final AdminAuth auth;
 
+    /** 构造服务器信息资源。 */
     public ServerInfoAdminResource(KeycloakSession session, AdminAuth auth) {
         this.session = session;
         this.auth = auth;
     }
 
     /**
-     * Get themes, social providers, auth providers, and event listeners available on this server
+     * 获取服务器可用主题、社交/身份提供者、协议映射器及密码策略等元信息。
+     * <p>拥有 realm 管理权限时可附加系统/CPU/内存信息。</p>
      *
-     * @return
+     * @return 服务器信息表示
      */
     @GET
     @NoCache
@@ -134,7 +143,7 @@ public class ServerInfoAdminResource {
                 info.setCpuInfo(CpuInfoRepresentation.create());
                 info.setMemoryInfo(MemoryInfoRepresentation.create());
             } else {
-                // If the user can manage his own realm just add the version information
+                // 非管理 realm 时仅返回版本信息
                 SystemInfoRepresentation systemInfo = new SystemInfoRepresentation();
                 systemInfo.setVersion(Version.VERSION);
                 info.setSystemInfo(systemInfo);
@@ -144,7 +153,7 @@ public class ServerInfoAdminResource {
         info.setProfileInfo(createProfileInfo());
         info.setFeatures(createFeatureRepresentations());
 
-        // True - asymmetric algorithms, false - symmetric algorithms
+        // true 表示非对称算法，false 表示对称算法
         Map<Boolean, List<String>> algorithms = session.getAllProviders(ClientSignatureVerifierProvider.class).stream()
                         .collect(
                                 Collectors.toMap(
@@ -174,6 +183,7 @@ public class ServerInfoAdminResource {
         return info;
     }
 
+    /** 构建参数化 scope 类型列表。 */
     private List<ParameterizedScopeTypeRepresentation> buildParameterizedScopeTypesList() {
         return session.getKeycloakSessionFactory()
                 .getProviderFactoriesStream(ParameterizedScopeTypeProvider.class)
@@ -184,6 +194,7 @@ public class ServerInfoAdminResource {
                 .collect(Collectors.toList());
     }
 
+    /** 收集全部 SPI 及其提供者元数据。 */
     private void setProviders(ServerInfoRepresentation info) {
         info.setComponentTypes(new HashMap<>());
         LinkedHashMap<String, SpiInfoRepresentation> spiReps = new LinkedHashMap<>();
@@ -243,6 +254,7 @@ public class ServerInfoAdminResource {
         info.setProviders(spiReps);
     }
 
+    /** 收集各类型可用主题及其语言区域。 */
     private void setThemes(ServerInfoRepresentation info) {
         info.setThemes(new HashMap<>());
 
@@ -256,8 +268,8 @@ public class ServerInfoAdminResource {
             for (String name : themeNames) {
                 try {
                     Theme theme = session.theme().getTheme(name, type);
-                    // Different name means the theme itself was not found and fallback to default theme was needed
-                    // Do not include abstract themes that can only be extended (like base)
+                    // 名称不一致表示主题未找到并已回退至默认主题
+                    // 排除仅可继承的抽象主题（如 base）
                     if (theme != null && name.equals(theme.getName()) && !theme.isAbstract()) {
                         ThemeInfoRepresentation ti = new ThemeInfoRepresentation();
                         ti.setName(name);
@@ -278,6 +290,7 @@ public class ServerInfoAdminResource {
         }
     }
 
+    /** 从主题消息中获取本地化描述。 */
     private String getThemeDescription(Theme theme) throws IOException {
         Locale locale = session.getContext().resolveLocale(null);
 
@@ -290,6 +303,7 @@ public class ServerInfoAdminResource {
         return enhancedMessages.getProperty(descriptionKey);
     }
 
+    /** 按已启用特性过滤 v2/v3 主题名称。 */
     private LinkedList<String> filterThemes(Theme.Type type, LinkedList<String> themeNames) {
         LinkedList<String> filteredNames = new LinkedList<>(themeNames);
         boolean filterAdminV2 = (type == Theme.Type.ADMIN) &&
@@ -312,12 +326,14 @@ public class ServerInfoAdminResource {
         return filteredNames;
     }
 
+    /** 收集社交身份提供者列表。 */
     private void setSocialProviders(ServerInfoRepresentation info) {
         info.setSocialProviders(new LinkedList<>());
         Stream<ProviderFactory> providerFactories = session.getKeycloakSessionFactory().getProviderFactoriesStream(SocialIdentityProvider.class);
         setIdentityProviders(providerFactories, info.getSocialProviders(), "Social");
     }
 
+    /** 收集用户定义与社交身份提供者列表。 */
     private void setIdentityProviders(ServerInfoRepresentation info) {
         info.setIdentityProviders(new LinkedList<>());
         Stream<ProviderFactory> providerFactories = session.getKeycloakSessionFactory().getProviderFactoriesStream(IdentityProvider.class);
@@ -327,6 +343,7 @@ public class ServerInfoAdminResource {
         setIdentityProviders(providerFactories, info.getIdentityProviders(), "Social");
     }
 
+    /** 将提供者工厂流转换为带分组名的 IdP 映射列表。 */
     public void setIdentityProviders(Stream<ProviderFactory> factories, List<Map<String, String>> providers, String groupName) {
         List<Map<String, String>> providerMaps = factories
                 .map(IdentityProviderFactory.class::cast)
@@ -342,6 +359,7 @@ public class ServerInfoAdminResource {
         providers.addAll(providerMaps);
     }
 
+    /** 收集各协议的客户端安装适配器信息。 */
     private void setClientInstallations(ServerInfoRepresentation info) {
         HashMap<String, List<ClientInstallationRepresentation>> clientInstallations = session.getKeycloakSessionFactory()
                 .getProviderFactoriesStream(ClientInstallationProvider.class)
@@ -358,6 +376,7 @@ public class ServerInfoAdminResource {
 
     }
 
+    /** 收集各协议可用的协议映射器类型。 */
     private void setProtocolMapperTypes(ServerInfoRepresentation info) {
         HashMap<String, List<ProtocolMapperTypeRepresentation>> protocolMappers = session.getKeycloakSessionFactory()
                 .getProviderFactoriesStream(ProtocolMapper.class)
@@ -373,6 +392,7 @@ public class ServerInfoAdminResource {
         info.setProtocolMapperTypes(protocolMappers);
     }
 
+    /** 收集各登录协议的内置协议映射器。 */
     private void setBuiltinProtocolMappers(ServerInfoRepresentation info) {
         Map<String, List<ProtocolMapperRepresentation>> protocolMappers = session.getKeycloakSessionFactory()
                 .getProviderFactoriesStream(LoginProtocol.class)
@@ -388,6 +408,7 @@ public class ServerInfoAdminResource {
         info.setBuiltinProtocolMappers(protocolMappers);
     }
 
+    /** 收集可用密码策略类型及其配置元数据。 */
     private void setPasswordPolicies(ServerInfoRepresentation info) {
         List<PasswordPolicyTypeRepresentation> passwordPolicyTypes= session.getKeycloakSessionFactory().getProviderFactoriesStream(PasswordPolicyProvider.class)
                 .map(PasswordPolicyProviderFactory.class::cast)
@@ -432,6 +453,7 @@ public class ServerInfoAdminResource {
         return Stream.concat(list1.stream(), list2.stream()).collect(Collectors.toList());
     }
 
+    /** 将枚举类转换为 camelCase 键名到枚举值列表的映射。 */
     private static Map<String, List<String>> createEnumsMap(Class... enums) {
         Map<String, List<String>> m = new HashMap<>();
         for (Class e : enums) {
@@ -449,6 +471,7 @@ public class ServerInfoAdminResource {
         return m;
     }
 
+    /** 构建当前 Profile 信息（名称及禁用/预览/实验特性）。 */
     private ProfileInfoRepresentation createProfileInfo() {
         ProfileInfoRepresentation info = new ProfileInfoRepresentation();
 
@@ -483,6 +506,7 @@ public class ServerInfoAdminResource {
         return featureRep;
     }
 
+    /** 构建全部特性开关表示列表。 */
     private static List<FeatureRepresentation> createFeatureRepresentations() {
         List<FeatureRepresentation> featureRepresentationList = new ArrayList<>();
         Profile profile = Profile.getInstance();
@@ -491,6 +515,7 @@ public class ServerInfoAdminResource {
         return featureRepresentationList;
     }
 
+    /** 构建加密提供者及客户端签名算法信息。 */
     private static CryptoInfoRepresentation createCryptoInfo(List<String> clientSignatureSymmetricAlgorithms, List<String> clientSignatureAsymmetricAlgorithms) {
         CryptoInfoRepresentation info = new CryptoInfoRepresentation();
 

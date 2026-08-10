@@ -51,25 +51,36 @@ import org.keycloak.util.Strings;
 import org.jboss.logging.Logger;
 
 /**
+ * 客户端证书/密钥信息辅助类。
+ * <p>在 ClientModel、ClientRepresentation 与 multipart 上传请求之间转换证书、公钥、私钥及 JWKS 数据。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class CertificateInfoHelper {
 
+    /** PEM 证书上传格式标识 */
     public static final String CERTIFICATE_PEM = "Certificate PEM";
+    /** PEM 公钥上传格式标识 */
     public static final String PUBLIC_KEY_PEM = "Public Key PEM";
+    /** JWKS 上传格式标识 */
     public static final String JSON_WEB_KEY_SET = "JSON Web Key Set";
 
     private static final Logger logger = Logger.getLogger(CertificateInfoHelper.class);
 
+    /** 私钥客户端属性后缀 */
     public static final String PRIVATE_KEY = "private.key";
+    /** X509 证书客户端属性后缀 */
     public static final String X509CERTIFICATE = "certificate";
+    /** 公钥客户端属性后缀 */
     public static final String PUBLIC_KEY = "public.key";
 
+    /** 密钥 ID 客户端属性后缀 */
     public static final String KID = "kid";
 
 
-    // CLIENT MODEL METHODS
+    // ClientModel 相关方法
 
+    /** 从 ClientModel 属性读取证书表示（支持 JWKS 字符串模式）。 */
     public static CertificateRepresentation getCertificateFromClient(ClientModel client, String attributePrefix) {
         String privateKeyAttribute = attributePrefix + "." + PRIVATE_KEY;
         String certificateAttribute = attributePrefix + "." + X509CERTIFICATE;
@@ -90,6 +101,7 @@ public class CertificateInfoHelper {
         return rep;
     }
 
+    /** 将 JWKS JSON 字符串转换为签名用途的 CertificateRepresentation。 */
     public static CertificateRepresentation jwksStringToSigCertificateRepresentation(String jwks) {
         if (jwks == null) {
             throw new IllegalStateException("The jwks is null!");
@@ -105,7 +117,7 @@ public class CertificateInfoHelper {
                 throw new IllegalStateException("Certificate not found for use sig");
             }
 
-            // set the public key as before and also the full jwks
+            // 同时设置公钥 PEM 与完整 JWKS
             PublicKey publicKey = JWKParser.create(publicKeyJwk).toPublicKey();
             String publicKeyPem = KeycloakModelUtils.getPemFromKey(publicKey);
             CertificateRepresentation info = new CertificateRepresentation();
@@ -118,6 +130,7 @@ public class CertificateInfoHelper {
         }
     }
 
+    /** 将证书表示写入 ClientModel 属性（公钥与证书互斥）。 */
     public static void updateClientModelCertificateInfo(ClientModel client, CertificateRepresentation rep, String attributePrefix) {
         if (rep.getPublicKey() == null && rep.getCertificate() == null) {
             throw new IllegalStateException("Both certificate and publicKey are null!");
@@ -143,6 +156,7 @@ public class CertificateInfoHelper {
         }
     }
 
+    /** 以 JWKS 字符串模式更新 OIDC 客户端密钥信息。 */
     public static void updateClientModelJwksString(ClientModel client, String attributePrefix, String jwks) {
         if (jwks == null) {
             throw new IllegalStateException("jwks string is null!");
@@ -174,8 +188,9 @@ public class CertificateInfoHelper {
     }
 
 
-    // CLIENT REPRESENTATION METHODS
+    // ClientRepresentation 相关方法
 
+    /** 将证书表示写入 ClientRepresentation 属性映射。 */
     public static void updateClientRepresentationCertificateInfo(ClientRepresentation client, CertificateRepresentation rep, String attributePrefix) {
         String privateKeyAttribute = attributePrefix + "." + PRIVATE_KEY;
         String certificateAttribute = attributePrefix + "." + X509CERTIFICATE;
@@ -196,6 +211,7 @@ public class CertificateInfoHelper {
         setOrRemoveAttr(client, kidAttribute, rep.getKid());
     }
 
+    /** 从 multipart 上传请求解析证书/公钥/JWKS 或密钥库。 */
     public static CertificateRepresentation getCertificateFromRequest(KeycloakSession session) throws IOException {
         CertificateRepresentation info = new CertificateRepresentation();
         MultivaluedMap<String, FormPartValue> uploadForm = session.getContext().getHttpRequest().getMultiPartFormParameters();
@@ -210,7 +226,7 @@ public class CertificateInfoHelper {
         try {
             fileEmpty = inputParts == null || Strings.isEmpty(inputParts.asString());
         } catch (Exception e) {
-            // ignore
+            // 忽略密钥读取失败
         }
 
         if (fileEmpty) {
@@ -221,7 +237,7 @@ public class CertificateInfoHelper {
             String pem = StreamUtil.readString(inputParts.asInputStream(), StandardCharsets.UTF_8);
             pem = PemUtils.removeBeginEnd(pem);
 
-            // Validate format
+            // 校验 PEM 格式
             KeycloakModelUtils.getCertificate(pem);
             info.setCertificate(pem);
             return info;

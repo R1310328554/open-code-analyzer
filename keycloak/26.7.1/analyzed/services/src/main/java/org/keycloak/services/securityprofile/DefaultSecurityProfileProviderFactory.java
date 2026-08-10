@@ -36,15 +36,18 @@ import org.keycloak.utils.FileUtils;
 import org.jboss.logging.Logger;
 
 /**
- * The default implementation for the security profile. It reads the configuration
- * from the file configured.
+ * 默认安全配置文件提供者工厂。
+ * <p>从 classpath 或 conf 目录读取 {@code name}.json 配置文件，
+ * 解析并校验全局客户端 Profile 与 Policy。</p>
  * @author rmartinc
  */
 public class DefaultSecurityProfileProviderFactory implements SecurityProfileProviderFactory {
 
     private static final Logger logger = Logger.getLogger(DefaultSecurityProfileProviderFactory.class);
 
+    /** 配置文件名（不含 .json 后缀） */
     private String name;
+    /** 缓存的安全配置（懒加载） */
     private volatile SecurityProfileConfiguration configuration;
 
     @Override
@@ -70,7 +73,7 @@ public class DefaultSecurityProfileProviderFactory implements SecurityProfilePro
 
     @Override
     public void postInit(KeycloakSessionFactory factory) {
-        // no-op
+        // 无额外初始化
     }
 
     @Override
@@ -83,6 +86,7 @@ public class DefaultSecurityProfileProviderFactory implements SecurityProfilePro
         return "default";
     }
 
+    /** 从 JSON 文件读取并校验安全配置（双重检查锁定）。 */
     protected SecurityProfileConfiguration readConfiguration(KeycloakSession session) {
         if (configuration == null) {
             synchronized (this) {
@@ -92,7 +96,7 @@ public class DefaultSecurityProfileProviderFactory implements SecurityProfilePro
                     try (InputStream is = FileUtils.getJsonFileFromClasspathOrConfFolder(file)) {
                         conf = JsonSerialization.readValue(is, SecurityProfileConfiguration.class);
                     }
-                    // read the list of client profiles and policies validated
+                    // 读取并校验客户端 Profile 与 Policy 列表
                     conf.setDefaultClientProfiles(ClientPoliciesUtil.readGlobalClientProfilesRepresentation(session, conf.getClientProfiles()));
                     conf.setDefaultClientPolicies(ClientPoliciesUtil.readGlobalClientPoliciesRepresentation(session, conf.getClientPolicies(),
                             conf.getDefaultClientProfiles()));

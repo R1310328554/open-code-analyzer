@@ -24,6 +24,8 @@ import org.keycloak.representations.idm.SecurityProfileConfiguration;
 import org.keycloak.securityprofile.SecurityProfileProvider;
 
 /**
+ * 默认安全配置文件提供者实现。
+ * <p>从 {@link SecurityProfileConfiguration} 读取客户端 Profile/Policy 默认配置。</p>
  *
  * @author rmartinc
  */

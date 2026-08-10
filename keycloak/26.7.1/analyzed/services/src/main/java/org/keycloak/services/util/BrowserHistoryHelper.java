@@ -31,30 +31,32 @@ import org.keycloak.utils.MediaType;
 import org.jboss.logging.Logger;
 
 /**
- * The point of this is to improve experience of browser history (back/forward/refresh buttons), but ensure there is no more redirects then necessary.
- *
- * Ideally we want to:
- * - Remove all POST requests from browser history, because browsers don't automatically re-send them when click "back" button. POSTS in history causes unfriendly dialogs and browser "Page is expired" pages.
- *
- * - Keep the browser URL to match the flow and execution from authentication session. This means that browser refresh works fine and show us the correct form.
- *
- * - Avoid redirects. This is possible with javascript based approach (JavascriptHistoryReplace). The RedirectAfterPostHelper requires one redirect after POST, but works even on browser without javascript and
- * on old browsers where "history.replaceState" is unsupported.
+ * 浏览器历史记录辅助抽象类。
+ * <p>改善认证流程中后退/前进/刷新体验，同时尽量减少不必要的重定向：</p>
+ * <ul>
+ *   <li>避免 POST 请求留在历史中（后退时浏览器不会自动重发）</li>
+ *   <li>保持 URL 与认证会话中的流程/执行步骤一致，使刷新能显示正确表单</li>
+ *   <li>优先使用 JavaScript history.replaceState 避免重定向</li>
+ * </ul>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class BrowserHistoryHelper {
 
-    // Request attribute, which specifies if flow was changed in this request (eg. click "register" from the login screen)
+    // 请求属性：标记本次请求是否切换了认证流程（如从登录页点击注册）
+    /** 是否应更新浏览器历史的会话属性键 */
     public static final String SHOULD_UPDATE_BROWSER_HISTORY = "SHOULD_UPDATE_BROWSER_HISTORY";
 
     protected static final Logger logger = Logger.getLogger(BrowserHistoryHelper.class);
 
+    /** 保存响应并按需更新浏览器历史（可能注入 JS 或重定向）。 */
     public abstract Response saveResponseAndRedirect(KeycloakSession session, AuthenticationSessionModel authSession, Response response, boolean actionRequest, HttpRequest httpRequest);
 
+    /** 加载先前缓存的响应（RedirectAfterPost 实现使用）。 */
     public abstract Response loadSavedResponse(KeycloakSession session, AuthenticationSessionModel authSession);
 
 
+    /** 判断是否应替换浏览器历史（POST 操作或流程切换时）。 */
     protected boolean shouldReplaceBrowserHistory(boolean actionRequest, KeycloakSession session) {
         if (actionRequest) {
             return true;
@@ -66,7 +68,8 @@ public abstract class BrowserHistoryHelper {
 
 
 
-    // Always rely on javascript for now
+    // 当前默认使用 JavaScript replaceState 方案
+    /** 返回浏览器历史辅助器单例（当前为 JavascriptHistoryReplace）。 */
     public static BrowserHistoryHelper getInstance() {
         return new JavascriptHistoryReplace();
         //return new RedirectAfterPostHelper();
@@ -74,8 +77,9 @@ public abstract class BrowserHistoryHelper {
     }
 
 
-    // IMPL
+    // 实现类
 
+    /** 通过注入 JavaScript history.replaceState 更新 URL，无需重定向。 */
     private static class JavascriptHistoryReplace extends BrowserHistoryHelper {
 
         private static final Pattern HEAD_END_PATTERN = Pattern.compile("</[hH][eE][aA][dD]>");
@@ -86,14 +90,14 @@ public abstract class BrowserHistoryHelper {
                 return response;
             }
 
-            // For now, handle just status 200 with String body. See if more is needed...
+            // 当前仅处理 200 状态且 body 为 String 的响应
             Object entity = response.getEntity();
             if (entity != null && entity instanceof String) {
                 String responseString = (String) entity;
 
                 URI lastExecutionURL = new AuthenticationFlowURLHelper(session, session.getContext().getRealm(), session.getContext().getUri()).getLastExecutionUrl(authSession);
 
-                // Inject javascript for history "replaceState"
+                // 注入 history.replaceState JavaScript 以同步 URL
                 String responseWithJavascript = responseWithJavascript(responseString, lastExecutionURL.toString());
 
                 return Response.fromResponse(response).entity(responseWithJavascript).build();
@@ -138,7 +142,8 @@ public abstract class BrowserHistoryHelper {
     }
 
 
-    // This impl is limited ATM. Saved request doesn't save response HTTP headers, so they may not be fully restored..
+    // RedirectAfterPost 实现：POST 后重定向至 GET，缓存响应体（不保存 HTTP 头）
+    /** POST 后 302 重定向并缓存 HTML 响应，兼容无 JS 浏览器。 */
     private static class RedirectAfterPostHelper extends BrowserHistoryHelper {
 
         private static final String CACHED_RESPONSE = "cached.response";
@@ -190,6 +195,7 @@ public abstract class BrowserHistoryHelper {
     }
 
 
+    /** 空实现：不修改浏览器历史。 */
     private static class NoOpHelper extends BrowserHistoryHelper {
 
         @Override

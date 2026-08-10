@@ -33,10 +33,17 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.keycloak.services.resources.admin.fgap.ModelRecord.UserModelRecord;
 
+/**
+ * 用户细粒度管理权限 V2 实现。
+ * <p>基于 {@link AdminPermissionsSchema} 与 {@link FineGrainedAdminPermissionEvaluator} 进行类型化权限评估，
+ * 替代 V1 的 scope 级策略模型。</p>
+ */
 class UserPermissionsV2 extends UserPermissions {
 
+    /** V2 细粒度权限评估器 */
     private final FineGrainedAdminPermissionEvaluator eval;
 
+    /** 构造 V2 用户权限管理器。 */
     UserPermissionsV2(KeycloakSession session, AuthorizationProvider authz, MgmtPermissionsV2 root) {
         super(session, authz, root);
         this.eval = new FineGrainedAdminPermissionEvaluator(session, root, resourceStore, policyStore);
@@ -150,7 +157,7 @@ class UserPermissionsV2 extends UserPermissions {
 
     @Override
     public boolean canResetPassword(UserModel user) {
-        // admin roles has the precedence over permissions
+        // 管理角色优先于细粒度权限判定
         if (root.hasOneAdminRole(AdminRoles.MANAGE_USERS)) {
             return true;
         }
@@ -166,7 +173,7 @@ class UserPermissionsV2 extends UserPermissions {
         }
     }
 
-    // todo this method should be removed and replaced by canImpersonate(user, client); once V1 is removed
+    // TODO：V1 移除后应删除此方法，统一使用 canImpersonate(user, client)
     @Override
     public boolean canClientImpersonate(ClientModel client, UserModel user) {
         return canImpersonate(user, client);

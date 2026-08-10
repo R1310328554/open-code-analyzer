@@ -50,17 +50,22 @@ import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.authorization.Permission;
 
 /**
- * Manages default policies for all users.
- *
+ * 用户细粒度管理权限 V1 实现。
+ * <p>为 Users 授权资源创建默认 manage/view/map-roles/impersonate 等权限策略，
+ * 并实现 {@link UserPermissionEvaluator} 与 {@link UserPermissionManagement} 的权限判定逻辑。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 class UserPermissions implements UserPermissionEvaluator, UserPermissionManagement {
 
+    /** map-roles 作用域名称 */
     private static final String MAP_ROLES_SCOPE="map-roles";
+    /** impersonate 作用域名称 */
     private static final String IMPERSONATE_SCOPE="impersonate";
+    /** user-impersonated 作用域名称 */
     private static final String USER_IMPERSONATED_SCOPE="user-impersonated";
+    /** manage-group-membership 作用域名称 */
     private static final String MANAGE_GROUP_MEMBERSHIP_SCOPE="manage-group-membership";
     private static final String MAP_ROLES_PERMISSION_USERS = "map-roles.permission.users";
     private static final String ADMIN_IMPERSONATING_PERMISSION = "admin-impersonating.permission.users";
@@ -68,15 +73,23 @@ class UserPermissions implements UserPermissionEvaluator, UserPermissionManageme
     private static final String MANAGE_GROUP_MEMBERSHIP_PERMISSION_USERS = "manage-group-membership.permission.users";
     private static final String MANAGE_PERMISSION_USERS = "manage.permission.users";
     private static final String VIEW_PERMISSION_USERS = "view.permission.users";
+    /** Users 授权资源名称 */
     private static final String USERS_RESOURCE = "Users";
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
+    /** 授权 Provider */
     private final AuthorizationProvider authz;
+    /** 根权限管理器 */
     protected final MgmtPermissions root;
+    /** 策略存储 */
     protected final PolicyStore policyStore;
+    /** 资源存储 */
     protected final ResourceStore resourceStore;
+    /** 无权限策略时是否自动授予（V1 兼容开关） */
     private boolean grantIfNoPermission = false;
 
+    /** 构造用户权限管理器。 */
     UserPermissions(KeycloakSession session, AuthorizationProvider authz, MgmtPermissions root) {
         this.session = session;
         this.authz = authz;
@@ -91,6 +104,7 @@ class UserPermissions implements UserPermissionEvaluator, UserPermissionManageme
     }
 
 
+    /** 初始化 Users 资源及全部默认权限策略。 */
     private void initialize() {
         ResourceServer server = root.initializeRealmResourceServer();
         if (server == null) return;
@@ -216,17 +230,11 @@ class UserPermissions implements UserPermissionEvaluator, UserPermissionManageme
     }
 
     /**
-     * Is admin allowed to manage all users?  In Authz terms, does the admin have the "manage" scope for the Users Authz resource?
+     * 管理员是否可管理全部用户（Authz 术语：是否拥有 Users 资源的 manage 作用域）。
+     * <p>在跨 realm 管理、Authz 未正确配置或 manage 权限无关联策略时，
+     * 回退至旧行为（检查 manage-users 角色）；否则使用授权策略引擎判定。</p>
      *
-     * This method will follow the old default behavior (does the admin have the manage-users role) if any of these conditions
-     * are met.:
-     * - The admin is from the master realm managing a different realm
-     * - If the Authz objects are not set up correctly for the Users resource in Authz
-     * - The "manage" permission for the Users resource has an empty associatedPolicy list.
-     *
-     * Otherwise, it will use the Authz policy engine to resolve this answer.
-     *
-     * @return
+     * @return 是否可管理
      */
     @Override
     public boolean canManage() {
@@ -250,10 +258,10 @@ class UserPermissions implements UserPermissionEvaluator, UserPermissionManageme
 
 
     /**
-     * Does current admin have manage permissions for this particular user?
+     * 当前管理员是否可管理指定用户（全局 manage 或组链 manage-members 权限）。
      *
-     * @param user
-     * @return
+     * @param user 目标用户
+     * @return 是否可管理
      */
     @Override
     public boolean canManage(UserModel user) {
@@ -280,17 +288,10 @@ class UserPermissions implements UserPermissionEvaluator, UserPermissionManageme
     }
 
     /**
-     * Is admin allowed to view all users?  In Authz terms, does the admin have the "view" scope for the Users Authz resource?
+     * 管理员是否可查看全部用户（Authz 术语：是否拥有 Users 资源的 view 作用域）。
+     * <p>回退条件与 {@link #canManage()} 类似，否则使用授权策略引擎判定。</p>
      *
-     * This method will follow the old default behavior (does the admin have the view-users role) if any of these conditions
-     * are met.:
-     * - The admin is from the master realm managing a different realm
-     * - If the Authz objects are not set up correctly for the Users resource in Authz
-     * - The "view" permission for the Users resource has an empty associatedPolicy list.
-     *
-     * Otherwise, it will use the Authz policy engine to resolve this answer.
-     *
-     * @return
+     * @return 是否可查看
      */
     @Override
     public boolean canView() {
@@ -306,15 +307,10 @@ class UserPermissions implements UserPermissionEvaluator, UserPermissionManageme
     }
 
     /**
-     * Does current admin have view permissions for this particular user?
+     * 当前管理员是否可查看指定用户（全局 view 或组链 view-members 权限）。
      *
-     * Evaluates in this order. If any true, return true:
-     * - canViewUsers
-     * - canManageUsers
-     *
-     *
-     * @param user
-     * @return
+     * @param user 目标用户
+     * @return 是否可查看
      */
     @Override
     public boolean canView(UserModel user) {
@@ -385,7 +381,7 @@ class UserPermissions implements UserPermissionEvaluator, UserPermissionManageme
         }
 
         Set<Policy> associatedPolicies = policy.getAssociatedPolicies();
-        // if no policies attached to permission then just do default behavior
+        // 权限未关联任何策略时采用默认允许行为
         if (associatedPolicies == null || associatedPolicies.isEmpty()) {
             return true;
         }
@@ -393,7 +389,7 @@ class UserPermissions implements UserPermissionEvaluator, UserPermissionManageme
         Map<String, List<String>> additionalClaims = Collections.emptyMap();
 
         if (requester != null) {
-            // make sure the requesting client id is available from the context as we are using a user identity that does not rely on token claims
+            // 使用用户身份评估时需将请求客户端 ID 放入上下文（不依赖令牌声明）
             additionalClaims = new HashMap<>();
             additionalClaims.put("kc.client.id", Arrays.asList(requester.getClientId()));
         }
@@ -488,10 +484,12 @@ class UserPermissions implements UserPermissionEvaluator, UserPermissionManageme
 
     }
 
+    /** 使用当前管理员身份检查是否拥有给定作用域权限。 */
     protected boolean hasPermission(String... scopes) {
         return hasPermission(null, scopes);
     }
 
+    /** 使用指定评估上下文检查是否拥有给定作用域权限。 */
     private boolean hasPermission(EvaluationContext context, String... scopes) {
         ResourceServer server = root.realmResourceServer();
 
@@ -525,6 +523,7 @@ class UserPermissions implements UserPermissionEvaluator, UserPermissionManageme
         return false;
     }
 
+    /** 删除 Users 资源及全部关联权限策略。 */
     private void deletePermissionSetup() {
         ResourceServer server = root.realmResourceServer();
         if (server == null) return;
@@ -565,15 +564,18 @@ class UserPermissions implements UserPermissionEvaluator, UserPermissionManageme
         }
     }
 
+    /** 使用指定上下文检查是否拥有 impersonate 作用域。 */
     private boolean canImpersonate(EvaluationContext context) {
         return hasPermission(context, IMPERSONATE_SCOPE);
     }
 
+    /** 沿用户所属组层级向上评估权限谓词。 */
     private boolean evaluateHierarchy(UserModel user, Predicate<GroupModel> eval) {
         Set<GroupModel> visited = new HashSet<>();
         return user.getGroupsStream().anyMatch(group -> evaluateHierarchy(eval, group, visited));
     }
 
+    /** 递归遍历组父链，避免循环访问。 */
     private boolean evaluateHierarchy(Predicate<GroupModel> eval, GroupModel group, Set<GroupModel> visited) {
         if (visited.contains(group)) return false;
         if (eval.test(group)) {
@@ -584,11 +586,13 @@ class UserPermissions implements UserPermissionEvaluator, UserPermissionManageme
         return evaluateHierarchy(eval, group.getParent(), visited);
     }
 
+    /** 通过组链 manage-members 权限判定是否可管理用户。 */
     private boolean canManageByGroup(UserModel user) {
         if (authz == null) return false;
         return evaluateHierarchy(user, root.groups()::canManageMembers);
     }
 
+    /** 通过组链 view-members 权限判定是否可查看用户。 */
     protected boolean canViewByGroup(UserModel user) {
         if (authz == null) return false;
         return evaluateHierarchy(user, root.groups()::canViewMembers);

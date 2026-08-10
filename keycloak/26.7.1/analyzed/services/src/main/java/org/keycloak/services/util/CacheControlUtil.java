@@ -25,16 +25,21 @@ import org.keycloak.models.KeycloakContext;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * HTTP 缓存控制工具类。
+ * <p>为认证页面与静态主题资源设置合适的 Cache-Control 头。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class CacheControlUtil {
 
+    /** 设置禁止浏览器缓存的 Cache-Control 头（防止后退按钮显示过期页面）。 */
     public static void noBackButtonCacheControlHeader(KeycloakSession session) {
         KeycloakContext context = session.getContext();
         HttpResponse response = context.getHttpResponse();
         response.setHeader("Cache-Control", "no-store, must-revalidate, max-age=0");
     }
 
+    /** 返回主题静态资源的默认 Cache-Control（max-age 来自 theme.staticMaxAge 配置）。 */
     public static CacheControl getDefaultCacheControl() {
         CacheControl cacheControl = new CacheControl();
         cacheControl.setNoTransform(false);
@@ -47,6 +52,7 @@ public class CacheControlUtil {
         return cacheControl;
     }
 
+    /** 返回强制 no-cache/no-store/must-revalidate 的 CacheControl。 */
     public static CacheControl noCache() {
 
         CacheControl cacheControl = new CacheControl();

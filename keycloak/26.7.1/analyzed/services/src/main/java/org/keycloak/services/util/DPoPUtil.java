@@ -91,21 +91,36 @@ import static org.keycloak.OAuth2Constants.DPOP_JWT_HEADER_TYPE;
 import static org.keycloak.utils.StringUtil.isNotBlank;
 
 /**
+ * DPoP（Demonstrating Proof-of-Possession）工具类。
+ * <p>验证 DPoP 证明 JWT、防重放、绑定访问令牌公钥指纹（cnf.jkt），
+ * 并通过临时 ProtocolMapper 将令牌类型设为 DPoP。</p>
+ *
  * @author <a href="mailto:dmitryt@backbase.com">Dmitry Telegin</a>
  */
 public class DPoPUtil {
 
+    /** DPoP 证明默认有效期（秒） */
     public static final int DEFAULT_PROOF_LIFETIME = 10;
+    /** 允许的时钟偏差（秒） */
     public static final int DEFAULT_ALLOWED_CLOCK_SKEW = 15; // sec;
+    /** cnf.jkt 类型标识 */
     public static final String DPOP_JKT_TYPE = "DPoP";
+    /** DPoP 访问令牌类型 */
     public static final String DPOP_TOKEN_TYPE = "DPoP";
+    /** Authorization 头 scheme 名称 */
     public static final String DPOP_SCHEME = "DPoP";
+    /** 会话中缓存已验证 DPoP 证明的属性键 */
     public final static String DPOP_SESSION_ATTRIBUTE = "dpop";
+    /** 仅将 DPoP 绑定应用于刷新令牌的会话属性键 */
     public final static String DPOP_BINDING_ONLY_REFRESH_TOKEN_SESSION_ATTRIBUTE = "dpop-binding-only-refresh-token";
 
+    /** DPoP 客户端配置模式 */
     public enum Mode {
+        /** 强制启用 DPoP */
         ENABLED,
+        /** 可选 DPoP */
         OPTIONAL,
+        /** 禁用 DPoP */
         DISABLED
     }
 
@@ -114,11 +129,8 @@ public class DPoPUtil {
     }
 
     /**
-     * creates a protocol mapper that cannot be modified by administration users and that is used to bind AccessTokens
-     * to specific DPoP keys. <br />
-     * <br />
-     * NOTE: The binding was solved with a protocol mapper to have generic solution for DPoP on all implemented
-     *       grantTypes, even custom-implemented grantTypes.
+     * 创建不可在管理 UI 修改的临时 ProtocolMapper，用于将访问令牌绑定到 DPoP 公钥。
+     * <p>采用 ProtocolMapper 方案以通用地支持所有授权类型（含自定义 grantType）的 DPoP 绑定。</p>
      */
     public static Stream<Map.Entry<ProtocolMapperModel, ProtocolMapper>> getTransientProtocolMapper() {
         final String PROVIDER_ID = DPOP_SCHEME.toLowerCase(Locale.ROOT) + "-protocol-mapper";
@@ -140,8 +152,7 @@ public class DPoPUtil {
     }
 
     /**
-     * If DPoP feature is enabled and either the client requires it or the current request contains a DPoP header,
-     * this method validates the proof and stores it in the session.
+     * 若 DPoP 特性已启用且客户端要求或请求携带 DPoP 头，则验证证明并存入会话。
      */
     public static void handleDPoPHeader(KeycloakSession keycloakSession,
                                         EventBuilder event,
@@ -211,7 +222,7 @@ public class DPoPUtil {
             if (key.getPublicKey() == null) {
                 throw new VerificationException("No public key in DPoP header");
             }
-            // JWKSUtils.getKeyWrapper() does actually never return the private key
+            // JWKSUtils.getKeyWrapper() 实际上不会返回私钥，但仍需显式检查
             KeycloakSessionFactory sessionFactory = session.getKeycloakSessionFactory();
             if (sessionFactory.getProviderFactory(SignatureProvider.class, algorithm) instanceof SignatureProviderFactory providerFactory) {
                 Set<String> jwkOther = jwk.getOtherClaims().keySet();
@@ -251,6 +262,7 @@ public class DPoPUtil {
 
     private static final Pattern WHITESPACES = Pattern.compile("\\s+");
 
+    /** 为访问令牌验证器附加 DPoP scheme 与绑定检查。 */
     public static TokenVerifier<AccessToken> withDPoPVerifier(TokenVerifier<AccessToken> verifier, RealmModel realm, DPoPUtil.Validator validator) {
         if (Profile.isFeatureEnabled(Profile.Feature.DPOP)) {
             verifier = verifier.tokenType(List.of(TokenUtil.TOKEN_TYPE_BEARER, TokenUtil.TOKEN_TYPE_DPOP))
@@ -287,6 +299,7 @@ public class DPoPUtil {
         return verifier;
     }
 
+    /** 验证访问令牌 cnf.jkt 与 DPoP 证明公钥指纹是否匹配。 */
     public static void validateBinding(AccessToken token, DPoP dPoP) throws VerificationException {
         try {
             TokenVerifier.createWithoutSignature(token)
@@ -300,12 +313,13 @@ public class DPoPUtil {
     }
 
 
+    /** 验证授权请求中的 dpop_jkt 与 DPoP 证明公钥指纹是否一致。 */
     public static void validateDPoPJkt(String dpopJkt, KeycloakSession session, EventBuilder event, Cors cors) {
         if (dpopJkt == null) {
-            // if Keycloak did not receive dpop_jkt in an authorization request, Keycloak needs not to verify whether DPoP Proof public key thumbprint matches dpop_jkt.
+            // 授权请求未携带 dpop_jkt 时无需校验指纹匹配
             return;
         }
-        // if Keycloak received dpop_jkt in an authorization request, Keycloak needs to verify whether DPoP Proof public key thumbprint matches dpop_jkt.
+        // 授权请求携带 dpop_jkt 时必须校验 DPoP 证明公钥指纹
         DPoP dPoP = session.getAttribute(DPoPUtil.DPOP_SESSION_ATTRIBUTE, DPoP.class);
         if (dPoP == null) {
             String errorMessage = "DPoP Proof missing";
@@ -355,6 +369,7 @@ public class DPoPUtil {
         return supportedAlgorithms.collect(Collectors.toList());
     }
 
+    /** 返回服务器支持的非对称 DPoP 签名算法列表。 */
     public static List<String> getDPoPSupportedAlgorithms(KeycloakSession session) {
         return getSupportedAlgorithms(session, SignatureProvider.class, false).stream()
                 .map(algorithm -> new AbstractMap.SimpleEntry<>(algorithm, session.getProvider(SignatureProvider.class, algorithm)))
@@ -429,24 +444,24 @@ public class DPoPUtil {
             long time = Time.currentTime();
             Long iat = t.getIat();
 
-            // Considering a clock skew, there are two cases about it:
-            //   case 1: a client's clock is ahead Keycloak's clock
-            //   case 2: a client's clock is behind Keycloak's clock
+            // 考虑时钟偏差有两种情况：客户端时钟快于/慢于 Keycloak
+            //   情况 1：客户端时钟快于 Keycloak
+            //   情况 2：客户端时钟慢于 Keycloak
             //
-            // To remedy case 1, the valid time slot is as follows:
+            // 修正情况 1：iat/nbf - clockSkew <= 当前时间
             //   current keycloak clock => "iat" - clock skew
             //   current keycloak clock => "nbf" - clock skew
-            // To remedy case 2, the valid time slot is as follows:
+            // 修正情况 2：当前时间 <= exp/iat + lifetime + clockSkew
             //   current keycloak clock <= "exp" + clock skew
             //     or
             //   current keycloak clock <= "iat" + life time + clock skew
             //
-            // Therefore, the valid time slot is as follows:
+            // 综合有效时间窗口：iat - clockSkew <= 当前时间 <= iat + lifetime + clockSkew
             //    "iat" - clock skew <= keycloak's clock <= "exp" + clock skew
             //      or
             //    "iat" - clock skew <= keycloak's clock <= iat" + life time + clock skew
             //
-            // Considering that these claim values are in seconds, the valid time slot uses <=, >=, instead of <, >.
+            // 声明值以秒为单位，故使用 <=/>= 而非 </>
 
             if (!(iat <= time + clockSkew && iat >= time - lifetime - clockSkew)) {
                 throw new DPoPVerificationException(t, "DPoP proof is not active");
@@ -504,6 +519,7 @@ public class DPoPUtil {
 
     }
 
+    /** DPoP 证明验证失败异常。 */
     public static class DPoPVerificationException extends TokenVerificationException {
 
         public DPoPVerificationException(DPoP token, String message) {
@@ -512,6 +528,7 @@ public class DPoPUtil {
 
     }
 
+    /** DPoP 证明验证器（流式构建 URI/方法/令牌后调用 validate）。 */
     public static class Validator {
 
         private URI uri;
@@ -528,6 +545,7 @@ public class DPoPUtil {
             this.session = session;
         }
 
+        /** 从 HTTP 请求提取 URI、方法、DPoP 头与 Authorization 头。 */
         public Validator request(HttpRequest request) {
             this.uri = request.getUri().getAbsolutePath();
             this.method = request.getHttpMethod();
@@ -561,6 +579,7 @@ public class DPoPUtil {
             return this;
         }
 
+        /** 执行 DPoP 证明完整验证链。 */
         public DPoP validate() throws VerificationException {
             return validateDPoP(session, uri, method, dPoP, accessToken, lifetime, clockSkew);
         }
@@ -568,8 +587,8 @@ public class DPoPUtil {
     }
 
     /**
-     * a custom protocol mapper that is not meant for configuration in the Admin-UI. This mapper is created on the
-     * fly for TokenRequests to bind the created generated AccessTokens to the key of the DPoP HTTP Header.
+     * 临时 DPoP ProtocolMapper（不在 Admin UI 配置）。
+     * <p>在令牌请求时动态创建，将生成的访问令牌绑定到 DPoP 头中的公钥。</p>
      */
     private static final class DpopProtocolMapper extends AbstractOIDCProtocolMapper
             implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper, TokenIntrospectionTokenMapper,
@@ -629,7 +648,7 @@ public class DPoPUtil {
             }
             cnf.setKeyThumbprint(dPoP.getThumbprint());
             cnf.setJktType(DPOP_JKT_TYPE);
-            // make sure that the token-type is set to DPoP. This will be resolved if the AccessTokenResponse is built.
+            // 确保令牌类型设为 DPoP（在构建 AccessTokenResponse 时生效）
             token.type(DPOP_TOKEN_TYPE);
             return super.transformAccessToken(token, mappingModel, session, userSession, clientSessionCtx);
         }
