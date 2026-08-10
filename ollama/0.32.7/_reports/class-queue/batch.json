@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:33:51Z",
-  "files": [
-    "api/client.go",
-    "api/types.go",
-    "app/assets/assets.go",
-    "app/auth/connect.go",
-    "app/cmd/app/app.go",
-    "app/cmd/app/app_darwin.go",
-    "app/cmd/app/app_windows.go",
-    "app/cmd/app/webview.go",
-    "app/dialog/cocoa/dlg_darwin.go",
-    "app/dialog/dlgs.go",
-    "app/dialog/dlgs_darwin.go",
-    "app/dialog/dlgs_windows.go",
-    "app/dialog/util.go",
-    "app/format/field.go",
-    "app/logrotate/logrotate.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 433,
-  "done": 15
+  "done": 30
 }
