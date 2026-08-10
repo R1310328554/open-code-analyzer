@@ -33,12 +33,21 @@ import org.eclipse.microprofile.config.ConfigValue;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.OPTION_PART_SEPARATOR;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.toDashCase;
 
+/**
+ * 基于 SmallRye/MicroProfile Config 的 Keycloak {@link org.keycloak.Config.ConfigProvider} 实现。
+ * 将 {@code kc.spi-*} 等命名空间映射为 SPI 配置作用域。
+ */
 public class MicroProfileConfigProvider implements Config.ConfigProvider {
 
+    /** Keycloak 配置命名空间根前缀。 */
     public static final String NS_KEYCLOAK = "kc";
+    /** Keycloak 属性前缀 {@code kc.}。 */
     public static final String NS_KEYCLOAK_PREFIX = NS_KEYCLOAK + ".";
+    /** SPI 配置前缀 {@code kc.spi-}。 */
     public static final String SPI_PREFIX = NS_KEYCLOAK_PREFIX + "spi" + OPTION_PART_SEPARATOR;
+    /** Quarkus 配置命名空间。 */
     public static final String NS_QUARKUS = "quarkus";
+    /** Quarkus 属性前缀 {@code quarkus.}。 */
     public static final String NS_QUARKUS_PREFIX = "quarkus" + ".";
 
     private final SmallRyeConfig config;
@@ -66,6 +75,7 @@ public class MicroProfileConfigProvider implements Config.ConfigProvider {
         return new MicroProfileScope(SPI_PREFIX, scope);
     }
 
+    /** 基于属性前缀的 MicroProfile 配置作用域。 */
     public class MicroProfileScope extends AbstractScope {
 
         private final String prefix;

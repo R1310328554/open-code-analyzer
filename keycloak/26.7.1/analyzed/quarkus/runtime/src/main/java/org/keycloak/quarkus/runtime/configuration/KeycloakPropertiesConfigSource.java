@@ -42,12 +42,18 @@ import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvi
 /**
  * A configuration source for {@code keycloak.conf}.
  */
+ * 从 {@code keycloak.conf} 加载 Keycloak 专用配置的属性文件配置源。
+
 public class KeycloakPropertiesConfigSource extends AbstractLocationConfigSourceLoader {
 
+    /** 配置文件优先级：略低于环境变量。 */
     public static final int PROPERTIES_FILE_ORDINAL = EnvConfigSource.ORDINAL - 1;
 
+    /** 指定配置文件路径的环境变量名。 */
     private static final String KEYCLOAK_CONFIG_FILE_ENV = "KC_CONFIG_FILE";
+    /** 默认配置文件名（位于 {@code conf/} 目录）。 */
     private static final String KEYCLOAK_CONF_FILE = "keycloak.conf";
+    /** 系统属性形式的配置文件路径键（{@code kc.config-file}）。 */
     public static final String KEYCLOAK_CONFIG_FILE_PROP = NS_KEYCLOAK_PREFIX + "config.file";
 
     @Override
@@ -60,6 +66,10 @@ public class KeycloakPropertiesConfigSource extends AbstractLocationConfigSource
         return new PropertiesConfigSource(transform(ConfigSourceUtil.urlToMap(url)), url.toString(), ordinal);
     }
 
+    /**
+     * 文件系统上的 {@code keycloak.conf} 配置源提供者。
+     * 解析顺序：系统属性 → 环境变量 → {@code $KC_HOME/conf/keycloak.conf}。
+     */
     public static class InFileSystem extends KeycloakPropertiesConfigSource implements ConfigSourceProvider {
 
         @Override

@@ -36,9 +36,12 @@ import io.smallrye.config.Priorities;
  * interceptor and will restart the context for anything not actively recursing.
  * This is needed in case the expression contains something that requires property mapping.
  */
+ * 在表达式解析之后再次触发属性映射，处理表达式内嵌套需映射的 kc 属性。
+
 @Priority(Priorities.LIBRARY + 299)
 public class NestedPropertyMappingInterceptor implements ConfigSourceInterceptor {
 
+    /** 当前递归解析链上的属性名集合，用于检测与限制重入。 */
     static final ThreadLocal<LinkedHashSet<String>> recursions = new ThreadLocal<>();
 
     @Override

@@ -46,9 +46,13 @@ import io.smallrye.config.PropertiesConfigSource;
  * A {@link org.eclipse.microprofile.config.spi.ConfigSource} based on the configuration properties persisted into the server
  * image.
  */
+ * 从服务器镜像中 {@code META-INF/keycloak-persisted.properties} 读取构建时持久化配置。
+
 public final class PersistedConfigSource extends PropertiesConfigSource {
 
+    /** 持久化配置源名称。 */
     public static final String NAME = "PersistedConfigSource";
+    /** 持久化属性在 JAR 内的资源路径。 */
     public static final String PERSISTED_PROPERTIES = "META-INF/keycloak-persisted.properties";
     private static final PersistedConfigSource INSTANCE = new PersistedConfigSource();
 
@@ -58,6 +62,8 @@ public final class PersistedConfigSource extends PropertiesConfigSource {
      * to ignore this config source. Otherwise, default values are not resolved at runtime because the property will be
      * resolved from this config source, if persisted.
      */
+ * 线程局部开关：禁用后可解析运行时当前值而非构建时持久化值。
+
     private static final ThreadLocal<Boolean> ENABLED = ThreadLocal.withInitial(() -> true);
 
     private PersistedConfigSource() {
@@ -131,8 +137,7 @@ public final class PersistedConfigSource extends PropertiesConfigSource {
             return PersistedConfigSource.class.getClassLoader().getResourceAsStream(PERSISTED_PROPERTIES);
         }
 
-        // https://bugs.openjdk.org/browse/JDK-8338445 - prevents us from picking the properties directly up from the classloader
-        // instead we'll manually open the jar
+        // Windows 上 JDK-8338445 导致类加载器无法直接读取资源，改用手动打开 JAR
         try (ZipInputStream is = new ZipInputStream(new FileInputStream(configFile))) {
             ZipEntry entry;
 

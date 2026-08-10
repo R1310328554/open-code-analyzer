@@ -19,6 +19,9 @@ package org.keycloak.quarkus.runtime.configuration;
 
 import org.keycloak.Config;
 
+/**
+ * {@link MicroProfileConfigProvider} 的简单工厂，供 Keycloak 服务加载器发现。
+ */
 public class MicroProfileConfigProviderFactory {
 
     public Config.ConfigProvider create() {

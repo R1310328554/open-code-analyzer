@@ -11,9 +11,13 @@ import java.util.stream.Collectors;
  * Used by option-name matching ({@link KcUnmatchedArgumentException}) and
  * feature-name validation ({@link org.keycloak.quarkus.runtime.configuration.mappers.FeaturePropertyMappers}).
  */
+ * 基于二元组余弦相似度的拼写建议工具，供 CLI 选项与特性名校验使用。
+
 public final class SimilarityUtil {
 
+    /** 默认最多返回的建议条数。 */
     public static final int DEFAULT_MAX_SUGGESTIONS = 5;
+    /** 默认最低相似度阈值。 */
     public static final double DEFAULT_MIN_SIMILARITY = 0.4;
 
     private SimilarityUtil() {

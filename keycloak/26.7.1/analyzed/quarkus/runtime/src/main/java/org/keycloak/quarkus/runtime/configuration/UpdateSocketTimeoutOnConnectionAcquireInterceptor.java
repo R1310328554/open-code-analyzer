@@ -41,10 +41,12 @@ import org.postgresql.PGConnection;
  * This will shorten the time between the transaction manager aborting the transaction but not cancelling the statement,
  * and finally freeing the connection and the Java thread as no SQL statement will run longer than the socket timeout.
  */
+ * 连接池获取连接时将网络/查询超时对齐事务超时，避免事务中止后 SQL 仍长时间占用连接与线程。
+
 @ApplicationScoped
 public class UpdateSocketTimeoutOnConnectionAcquireInterceptor implements AgroalPoolInterceptor {
 
-    // Executor is not closed during shutdown to avoid interfering with shutting down database connections
+    // 关闭阶段不关闭 Executor，以免干扰数据库连接收尾
     private final Executor executor;
     private final Integer transactionDefaultTimeout;
     private Class<?> pgClass;
@@ -69,8 +71,7 @@ public class UpdateSocketTimeoutOnConnectionAcquireInterceptor implements Agroal
             Optional<Integer> timeout = KeycloakModelUtils.getTransactionLimit();
             int timeoutMillis = timeout.map(integer -> integer * 1000).orElse(transactionDefaultTimeout);
             if (pgClass != null && connection instanceof ConnectionWrapper wrapper && wrapper.isWrapperFor(pgClass)) {
-                // PostgreSQL allows for a more graceful termination than the read timeout.
-                // That would then be only the last resort on network problems.
+                // PostgreSQL 优先设置 queryTimeout，比纯读超时更优雅地终止语句
                 wrapper.unwrap(PGConnection.class).setQueryTimeout((int) TimeUnit.MILLISECONDS.toSeconds(timeoutMillis));
                 timeoutMillis += 1000;
             }
@@ -82,6 +83,7 @@ public class UpdateSocketTimeoutOnConnectionAcquireInterceptor implements Agroal
 
     private static class InternalThreadFactory implements ThreadFactory {
 
+        /** JDBC 网络超时回调使用的守护线程名。 */
         private static final String THREAD_NAME = "jdbc-network-timeout";
 
         @Override

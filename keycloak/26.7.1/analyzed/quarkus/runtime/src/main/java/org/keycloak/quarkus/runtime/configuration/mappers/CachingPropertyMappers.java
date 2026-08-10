@@ -25,12 +25,20 @@ import io.smallrye.config.ConfigSourceInterceptorContext;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getOptionalKcValue;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * 缓存（Infinispan 本地/嵌入式/远程）相关属性映射：cache 类型、堆栈、
+ * 配置文件、JGroups mTLS、远程主机及 per-cache max-count 等。
+ */
 final class CachingPropertyMappers implements PropertyMapperGrouping {
 
+    /** 远程缓存主机已配置时的启用条件描述。 */
     private static final String REMOTE_HOST_SET = "remote host is set";
+    /** 多站点或 clusterless 特性启用时的条件描述模板。 */
     private static final String MULTI_SITE_OR_EMBEDDED_REMOTE_FEATURE_SET = "feature '%s' or '%s' is set".formatted(Profile.Feature.MULTI_SITE.getKey(), Profile.Feature.CLUSTERLESS.getKey());
+    /** 远程 Infinispan 必填远程主机时的特性条件描述。 */
     private static final String MULTI_SITE_FEATURE_SET = "feature '%s' or '%s' is set".formatted(Profile.Feature.MULTI_SITE.getKey(), Profile.Feature.CLUSTERLESS.getKey());
 
+    /** 缓存类型为嵌入式 Infinispan 时的启用条件描述。 */
     private static final String CACHE_STACK_SET_TO_ISPN = "'cache' type is set to '" + CachingOptions.Mechanism.ispn.name() + "'";
 
     @Override

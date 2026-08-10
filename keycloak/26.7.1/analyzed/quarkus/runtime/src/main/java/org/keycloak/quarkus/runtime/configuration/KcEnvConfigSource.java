@@ -34,15 +34,22 @@ import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvi
 
 import static io.smallrye.config.common.utils.StringUtil.replaceNonAlphanumericByUnderscores;
 
-// Not extending EnvConfigSource as it's too smart for our own good. It does unnecessary mapping of provided keys
-// leading to e.g. duplicate entries (like kc.db-password and kc.db.password), or incorrectly handling getters due to
-// how equals() is implemented. We don't need that here as we do our own mapping.
+/**
+ * Keycloak 环境变量配置源：将 {@code KC_}/{@code KCRAW_} 前缀的环境变量映射为 {@code kc.*} 属性。
+ * <p>
+ * 不继承 {@link io.smallrye.config.EnvConfigSource}，因其自动键名转换会导致重复项
+ * （如 {@code kc.db-password} 与 {@code kc.db.password}）及 getter 比较问题；此处自行完成映射。
+ */
 public class KcEnvConfigSource extends PropertiesConfigSource {
 
+    /** 配置源名称标识。 */
     public static final String NAME = "KcEnvVarConfigSource";
+    /** 显式指定环境变量键到 kc 属性名的映射前缀。 */
     public static final String KCKEY_PREFIX = "KCKEY_";
+    /** 原始值前缀：跳过 SmallRye 变量插值与额外转换。 */
     public static final String KCRAW_PREFIX = "KCRAW_";
 
+    /** 测试用环境变量覆盖表。 */
     static final Map<String, String> ENV_OVERRIDE = new HashMap<String, String>();
 
     public KcEnvConfigSource(Map<String, String> env) {
@@ -67,7 +74,7 @@ public class KcEnvConfigSource extends PropertiesConfigSource {
             if (isRaw) {
                 baseKey = key.substring(KCRAW_PREFIX.length());
 
-                // Fail fast if both KC_ and KCRAW_ are set for the same base key
+                // 同一基础键同时设置 KC_ 与 KCRAW_ 时快速失败
                 if (env.containsKey(kcPrefix + baseKey)) {
                     throw new IllegalArgumentException(
                             "Both " + kcPrefix + baseKey + " and " + KCRAW_PREFIX + baseKey
@@ -77,20 +84,20 @@ public class KcEnvConfigSource extends PropertiesConfigSource {
                 baseKey = key.substring(kcPrefix.length());
             }
 
-            // Resolve the transformed key
+            // 解析转换后的 kc 属性键
             String transformedKey;
             String actualKey = env.get(KCKEY_PREFIX + baseKey);
             if (actualKey != null) {
-                // use the explicit mapping
+                // 使用 KCKEY_ 显式映射
                 transformedKey = NS_KEYCLOAK_PREFIX + actualKey;
             } else {
-                // determine the mapping by convention / wildcard handling
+                // 按约定或通配符规则推断映射
                 transformedKey = NS_KEYCLOAK_PREFIX + baseKey.toLowerCase().replace("_", "-");
 
                 PropertyMapper<?> mapper = PropertyMappers.getMapper(transformedKey);
 
                 if (mapper != null && mapper.hasWildcard()) {
-                    // special case - wildcards don't follow the default conversion rule
+                    // 通配符属性不遵循默认下划线转连字符规则
                     WildcardPropertyMapper<?> wildcardPropertyMapper = (WildcardPropertyMapper<?>) mapper;
 
                     transformedKey = wildcardPropertyMapper.getKcKeyForEnvKey(key, transformedKey)
@@ -98,8 +105,8 @@ public class KcEnvConfigSource extends PropertiesConfigSource {
                 }
             }
 
-            // KCRAW_ values escape $ as $$ to prevent SmallRye Config variable interpolation
-            // Then replace \$ with \\ to prevent SmallRye's escapeDollarIfExists from consuming backslashes before dollars
+            // KCRAW_ 值将 $ 转义为 $$，避免 SmallRye 变量插值；
+            // 再将 \$ 替换为 \\，防止 escapeDollarIfExists 吞掉反斜杠
             properties.put(transformedKey, isRaw ? value.replace("$", "$$").replace("\\$", "\\\\") : value);
         }
 

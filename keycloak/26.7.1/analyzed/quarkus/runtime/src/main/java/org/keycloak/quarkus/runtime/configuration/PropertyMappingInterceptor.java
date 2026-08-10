@@ -41,25 +41,38 @@ import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvi
 
 /**
  * <p>This interceptor is responsible for mapping Keycloak properties to their corresponding properties in Quarkus.
+ * 负责将 Keycloak（{@code kc.*}）属性映射到 Quarkus 侧对应属性。
+
  *
  * <p>A single property in Keycloak may span a single or multiple properties on Quarkus and for each property we want to map
  * from Quarkus we should configure a {@link PropertyMapper}.
+ * 单个 kc 属性可 1:1 或 1:N 映射到 Quarkus；每个映射由 {@link PropertyMapper} 定义。
+
  *
  * <p>The {@link PropertyMapper} can either perform a 1:1 mapping where the value of a property from
  * Keycloak (e.g.: https.port) is mapped to a single properties in Quarkus, or perform a 1:N mapping where the value of a property
  * from Keycloak (e.g.: database) is mapped to multiple properties in Quarkus.
+ * 支持一对一（如 https.port）与一对多（如 database）两种映射模式。
+
  *
  * <p>This interceptor must execute after the {@link io.smallrye.config.ExpressionConfigSourceInterceptor} so that expressions
  * are properly resolved before executing this interceptor.
+ * 须在 {@link io.smallrye.config.ExpressionConfigSourceInterceptor} 之后执行，确保表达式已展开。
+
  *
  * <p>The {@link NestedPropertyMappingInterceptor} catches property mappings that need to be performed within expressions.
+ * 表达式内嵌套映射由 {@link NestedPropertyMappingInterceptor} 二次处理。
+
  *
  * <p>
  * The reason for the used priority is to always execute the interceptor before default Application Config Source interceptors
  */
+ * 优先级设为 APPLICATION-10，保证在默认应用拦截器之前运行。
+
 @Priority(Priorities.APPLICATION - 10)
 public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
 
+    /** 临时禁用映射逻辑（如校验原始 kc 值时）。 */
     private static final ThreadLocal<Boolean> disable = new ThreadLocal<>();
 
     private Boolean augmenting;
@@ -87,6 +100,8 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
      * We selectively exclude:
      * <li>Config keystore properties at build time
      */
+ * 按映射规则裁剪属性名迭代：暴露 Quarkus 侧键名及通配符键，构建时排除 config-keystore 相关项。
+
     @Override
     public Iterator<String> iterateNames(ConfigSourceInterceptorContext context) {
         Iterable<String> iterable = context::iterateNames;
@@ -95,12 +110,9 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
 
         boolean filterRuntime = isAugmenting(context);
 
-        // this will return different iterations when our configuration is initialized vs not.
-        // when the configuration is not initialized, we only need to worry about providing
-        // bootsrapping level options, so we can make simplistic assumptions about the presence of values
+        // 配置未初始化时仅暴露引导级选项，对值存在性做简化假设
 
-        // we also only do first level discovery - for example if an inferred value exists, we are not
-        // checking to see if it has wildcard or connected options
+        // 仅做第一层发现，不递归检查推断值的通配符或关联选项
 
         var baseStream = StreamSupport.stream(iterable.spliterator(), false).flatMap(name -> {
             final PropertyMapper<?> mapper = PropertyMappers.getMapper(name);
@@ -116,7 +128,7 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
 
             mappersWithoutValues.remove(mapper);
 
-            // only include additional mappings if we're on the from side of the mapping as the mapping may not be bi-directional
+            // 仅在映射 from 侧追加别名，因映射未必双向
             if (!name.equals(mappedMapper.getFrom())) {
                 return Stream.of(name);
             }
@@ -145,7 +157,7 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
             return allNames.stream();
         });
 
-        // include anything remaining that has a value - we currently only care about the to (typically quarkus) values
+        // 追加仍有推断值的 mapper 的 to（通常为 Quarkus）键
         var inferredValueStream = mappersWithoutValues.stream()
                 .filter(m -> hasInferredValue(m, context))
                 .map(m -> m.getTo());
@@ -155,7 +167,7 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
 
     private boolean isAugmenting(ConfigSourceInterceptorContext context) {
         if (augmenting == null) {
-            // see BuildTimeConfigurationReader - if a sys properties are excluded, then we're augmenting
+            // BuildTimeConfigurationReader：排除系统属性时表示处于 augment 阶段
             augmenting = context.proceed("file.separator") == null;
         }
         return augmenting;
@@ -176,14 +188,13 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
             var wildcardValue = wildcardMapper.extractWildcardValue(name).orElseThrow();
             wildCards.stream().map(w -> w.getTo(wildcardValue)).filter(to -> hasValue(to, context)).forEach(names::add);
         } else {
-            // this is not a wildcard value, but may map to wildcards
-            // the current example is something like log-level=wildcardCat1:level,wildcardCat2:level
+            // 非通配符键的值可能展开为多个通配符目标（如 log-level 语法）
             wildCards.stream().flatMap(w -> w.getToFromWildcardTransformer(value.getValue())).forEach(names::add);
         }
     }
 
     private boolean hasInferredValue(PropertyMapper<?> m, ConfigSourceInterceptorContext context) {
-        if (m.getCategory() == OptionCategory.CONFIG // advertising the keystore type causes the keystore to be used early
+        if (m.getCategory() == OptionCategory.CONFIG // 过早暴露 keystore 类型会导致 keystore 被提前启用
                 || m.hasWildcard()
                 || (m.getDefaultValue().isEmpty() && m.getMapFrom() == null)
                 || m.getTo().startsWith(NS_KEYCLOAK_PREFIX)) {
@@ -191,23 +202,23 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
         }
 
         if (m.getMapper() == null && m.getDefaultValue().isPresent() && m.getMapFrom() == null) {
-            return true; // the default will be used "as-is"
+            return true; // 无 mapper 时直接使用默认值
         }
 
         if (Configuration.isInitialized()) {
             return hasValue(m.getTo(), context);
         }
 
-        return m.getDefaultValue().isPresent(); // just make a simplistic assumption prior to init
+        return m.getDefaultValue().isPresent(); // 初始化前简化假设：有默认值即视为存在
     }
 
     private boolean hasValue(String key, ConfigSourceInterceptorContext context) {
         try {
             return !Configuration.isInitialized()
-                    || key.startsWith(NS_KEYCLOAK_PREFIX) // once we remove Scope.getPropertyNames, this check can be inverted like in hasInferredValue
+                    || key.startsWith(NS_KEYCLOAK_PREFIX) // kc 前缀键在初始化后始终视为“有值”
                     || Optional.ofNullable(context.restart(key)).map(ConfigValue::getValue).isPresent();
         } catch (Exception e) {
-            return false; // corner case - validation or other failure, we won't report it as having a value
+            return false; // 校验失败等边角情况，不视为有值
         }
     }
 
@@ -217,7 +228,7 @@ public class PropertyMappingInterceptor implements ConfigSourceInterceptor {
             return context.proceed(name);
         }
 
-        // Call through NestedPropertyMappingInterceptor to track what we are currently getting the value for
+        // 经 NestedPropertyMappingInterceptor 解析并跟踪当前正在求值的属性
         return NestedPropertyMappingInterceptor.getValueFromPropertyMappers(context, name, isAugmenting(context));
     }
 }

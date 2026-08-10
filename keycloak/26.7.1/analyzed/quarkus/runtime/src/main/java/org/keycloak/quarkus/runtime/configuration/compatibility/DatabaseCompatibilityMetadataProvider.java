@@ -28,11 +28,17 @@ import org.jboss.logging.Logger;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getConfigValue;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getOptionalKcValue;
 
+/**
+ * 数据库兼容性元数据提供者：收集 DB 类型、连接参数及不支持变更集的哈希，
+ * 供滚动升级兼容性检查使用。
+ */
 public class DatabaseCompatibilityMetadataProvider implements CompatibilityMetadataProvider {
 
     private static final Logger log = Logger.getLogger(DatabaseCompatibilityMetadataProvider.class);
 
+    /** 兼容性元数据提供者标识。 */
     public static final String ID = "database";
+    /** 不支持数据库变更集列表的 SHA-256 哈希键名。 */
     public static final String UNSUPPORTED_CHANGES_HASH_KEY = "unsupported-changeset-hash";
 
     @Override
@@ -41,7 +47,7 @@ public class DatabaseCompatibilityMetadataProvider implements CompatibilityMetad
         metadata.put(DatabaseOptions.DB.getKey(), getConfigValue(DatabaseOptions.DB).getValue());
         addOptional(DatabaseOptions.DB_SCHEMA, metadata);
 
-        // Only track DB_URL_* properties if the user has not explicitly configured a DB_URL
+        // 仅当用户未显式设置完整 DB_URL 时才跟踪 DB_URL_* 分项
         ConfigValue dbUrl = getConfigValue(DatabaseOptions.DB_URL);
         if (!dbUrl.getValue().equals(dbUrl.getRawValue())) {
             addOptional(DatabaseOptions.DB_URL_HOST, metadata);
@@ -73,7 +79,7 @@ public class DatabaseCompatibilityMetadataProvider implements CompatibilityMetad
 
     public static void addUnsupportedDatabaseChanges(Map<String, String> metadata) {
         try {
-            // Load JSON into memory and write to a JSON String in order to avoid whitespace changes impacting the hash
+            // 规范化 JSON 序列化后再哈希，避免空白差异影响结果
             Enumeration<URL> resources = DatabaseCompatibilityMetadataProvider.class.getClassLoader().getResources("/META-INF/rolling-upgrades-unsupported-changes.json");
             Set<ChangeSet> changeSets = new HashSet<>();
             Set<Migration> migrations = new HashSet<>();

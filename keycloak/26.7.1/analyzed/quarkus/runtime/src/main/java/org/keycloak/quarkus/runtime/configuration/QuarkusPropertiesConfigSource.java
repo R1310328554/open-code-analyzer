@@ -38,9 +38,13 @@ import static org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProvi
 /**
  * A configuration source for {@code quarkus.properties}.
  */
+ * 从 {@code conf/quarkus.properties} 加载且仅保留 {@code quarkus.*} 前缀属性的配置源。
+
 public final class QuarkusPropertiesConfigSource extends AbstractLocationConfigSourceLoader implements ConfigSourceProvider {
 
+    /** 配置文件名。 */
     private static final String FILE_NAME = "quarkus.properties";
+    /** 配置源注册名称。 */
     public static final String NAME = "KcQuarkusPropertiesConfigSource";
 
     @Override

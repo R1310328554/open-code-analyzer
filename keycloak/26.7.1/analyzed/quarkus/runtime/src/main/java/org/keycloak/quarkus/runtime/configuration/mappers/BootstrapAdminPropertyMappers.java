@@ -24,12 +24,18 @@ import org.keycloak.config.BootstrapAdminOptions;
 import static org.keycloak.quarkus.runtime.configuration.Configuration.getOptionalKcValue;
 import static org.keycloak.quarkus.runtime.configuration.mappers.PropertyMapper.fromOption;
 
+/**
+ * 引导管理员（bootstrap-admin）相关 {@link PropertyMapper} 分组：
+ * 用户名/密码与服务账户 client-id/secret 的 CLI 与配置映射。
+ */
 public final class BootstrapAdminPropertyMappers implements PropertyMapperGrouping {
 
+    /** 启用用户名选项时的校验提示：已设置 bootstrap 管理员密码。 */
     private static final String PASSWORD_SET = "bootstrap admin password is set";
+    /** 启用 client-id 选项时的校验提示：已设置 client secret。 */
     private static final String CLIENT_SECRET_SET = "bootstrap admin client secret is set";
 
-    // We prefer validators here to isEnabled so that the options show up in help
+    // 使用 addValidateEnabled 而非 isEnabled，使选项始终出现在帮助中
     @Override
     public List<PropertyMapper<?>> getPropertyMappers() {
         return List.of(

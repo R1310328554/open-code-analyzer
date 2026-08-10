@@ -26,9 +26,13 @@ import picocli.CommandLine;
 /**
  * Custom CommandLine.UnmatchedArgumentException with amended suggestions
  */
+ * 带改进拼写建议的 Picocli 未匹配参数异常。
+
 public class KcUnmatchedArgumentException extends CommandLine.UnmatchedArgumentException {
 
+    /** 未知选项时最多返回的建议数量。 */
     private static final int MAX_OPTION_SUGGESTIONS = 7;
+    /** 未知子命令时最多返回的建议数量。 */
     private static final int MAX_COMMAND_SUGGESTIONS = 3;
 
     public KcUnmatchedArgumentException(CommandLine commandLine, List<String> args) {
@@ -43,13 +47,15 @@ public class KcUnmatchedArgumentException extends CommandLine.UnmatchedArgumentE
      * see https://github.com/remkop/picocli/issues/2510 for issues with the
      * default picocli logic
      */
+ * 基于 {@link SimilarityUtil} 的余弦相似度生成建议，规避 Picocli 默认逻辑缺陷。
+
     @Override
     public List<String> getSuggestions() {
         String unmatched = this.getUnmatched().get(0);
         List<String> candidates;
         int maxSuggestions;
         if (isUnknownOption()) {
-            candidates = super.getSuggestions(); // can be a lengthy list of all options
+            candidates = super.getSuggestions(); // Picocli 可能返回全部选项的长列表
             maxSuggestions = MAX_OPTION_SUGGESTIONS;
         } else {
             candidates = new ArrayList<String>();

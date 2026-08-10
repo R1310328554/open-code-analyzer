@@ -29,9 +29,15 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 
+/**
+ * Keycloak 配置源提供者与 SmallRye 构建器定制：按固定优先级组装 CLI、环境变量、
+ * {@code quarkus.properties}、持久化属性及 {@code keycloak.conf} 等配置源。
+ */
 public class KeycloakConfigSourceProvider implements ConfigSourceProvider, ConfigBuilder {
 
+    /** 已注册的全部配置源列表（启动时初始化）。 */
     private static final List<ConfigSource> CONFIG_SOURCES = new ArrayList<>();
+    /** 配置源内部名称到用户可读显示名的映射。 */
     private static final Map<String, String> CONFIG_SOURCE_DISPLAY_NAMES = new HashMap<>();
 
     public KeycloakConfigSourceProvider() {
@@ -72,6 +78,8 @@ public class KeycloakConfigSourceProvider implements ConfigSourceProvider, Confi
     /**
      * For test purposes
      */
+ * 测试专用：清空已缓存的配置源以便重新加载。
+
     static void reload() {
         CONFIG_SOURCES.clear();
         CONFIG_SOURCE_DISPLAY_NAMES.clear();
@@ -101,7 +109,7 @@ public class KeycloakConfigSourceProvider implements ConfigSourceProvider, Confi
         if (configSource.contains("PropertiesConfigSource") && configSource.contains("!/application.properties")) {
             return "classpath application.properties";
         }
-        return configSource; // some other Quarkus configsource
+        return configSource; // 其他 Quarkus 内置配置源，原样返回名称
     }
 
     public static boolean isKeyStoreConfigSource(String configSourceName) {
