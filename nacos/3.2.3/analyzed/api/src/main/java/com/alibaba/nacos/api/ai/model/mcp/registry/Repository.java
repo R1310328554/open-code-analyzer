@@ -19,19 +19,25 @@ package com.alibaba.nacos.api.ai.model.mcp.registry;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * Repository per components.schemas.Repository.
+ * MCP Server 源码或制品仓库信息，对应 components.schemas.Repository。
+ *
+ * <p>用于 Registry 元数据中声明 Server 的来源仓库地址与标识。</p>
  *
  * @author xinluo
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Repository {
     
+    /** 仓库访问 URL。 */
     private String url;
     
+    /** 仓库来源类型（如 github、gitlab）。 */
     private String source;
     
+    /** 仓库唯一 ID。 */
     private String id;
     
+    /** 仓库内子目录路径（Monorepo 场景）。 */
     private String subfolder;
     
     public String getUrl() {

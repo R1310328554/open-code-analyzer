@@ -23,8 +23,10 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.util.List;
 
 /**
- * SseTransport per components.schemas.SseTransport.
- * Transport type using Server-Sent Events for MCP server communication.
+ * SSE（Server-Sent Events）传输配置，对应 components.schemas.SseTransport。
+ *
+ * <p>客户端通过 HTTP SSE 长连接与 MCP Server 通信，
+ * 适用于单向事件流场景。</p>
  *
  * @author xinluo
  */
@@ -33,10 +35,13 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SseTransport {
     
+    /** 传输类型，固定为 {@code sse}。 */
     private String type = "sse";
     
+    /** SSE 端点 URL。 */
     private String url;
     
+    /** 连接时附加的 HTTP 请求头。 */
     private List<KeyValueInput> headers;
     
     public String getType() {

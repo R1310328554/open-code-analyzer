@@ -20,23 +20,23 @@ import com.alibaba.nacos.api.ai.model.NacosAiConfigKeyCodec;
 import com.alibaba.nacos.api.utils.StringUtils;
 
 /**
- * Utility class for Prompt storage operations.
- * Mirrors {@link com.alibaba.nacos.api.ai.model.skills.SkillUtils} and
- * {@link com.alibaba.nacos.api.ai.model.agentspecs.AgentSpecUtils} patterns with Prompt-specific constants.
+ * Prompt 存储工具类，封装 Nacos Config group/dataId 构建规则。
+ *
+ * <p>设计模式与 {@link com.alibaba.nacos.api.ai.model.skills.SkillUtils}、
+ * {@link com.alibaba.nacos.api.ai.model.agentspecs.AgentSpecUtils} 一致，
+ * 提供 Prompt 专用的 group 前缀与版本化 group 构造方法。</p>
  *
  * @author nacos
  */
 public class PromptUtils {
     
     /**
-     * Prompt versioned group prefix. Each prompt version is stored in a group named
-     * {@code prompt__{enc_promptKey}__{enc_version}}.
+     * Prompt 版本化 group 前缀；每个版本存储于
+     * {@code prompt__{enc_promptKey}__{enc_version}} 形式的 group 中。
      */
     public static final String PROMPT_GROUP_PREFIX = "prompt__";
     
-    /**
-     * Main content dataId for prompt version storage.
-     */
+    /** Prompt 版本主内容 dataId（固定为 {@code content.json}）。 */
     public static final String PROMPT_MAIN_DATA_ID = "content.json";
     
     private static final String DOUBLE_UNDERSCORE = "__";
@@ -45,12 +45,12 @@ public class PromptUtils {
     }
     
     /**
-     * Build the Nacos Config group for a specific prompt version.
+     * 构建指定 Prompt 版本的 Nacos Config group。
      *
-     * @param promptKey prompt key (name)
-     * @param version   version string, e.g. "1.0.0"
-     * @return config group string, e.g. "prompt__{enc_promptKey}__{enc_version}"
-     * @throws IllegalArgumentException if promptKey or version is blank
+     * @param promptKey Prompt 键名
+     * @param version   版本号，如 {@code 1.0.0}
+     * @return 配置 group 字符串，如 {@code prompt__{enc_promptKey}__{enc_version}}
+     * @throws IllegalArgumentException 当 promptKey 或 version 为空时
      */
     public static String buildPromptVersionGroup(String promptKey, String version) {
         if (StringUtils.isBlank(promptKey)) {

@@ -22,7 +22,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Prompt meta summary for prompt list response.
+ * Prompt 元信息摘要，用于 Prompt 列表查询响应。
+ *
+ * <p>汇总单个 Prompt 的关键属性：最新版本、编辑/审核中版本、
+ * 在线版本数、标签映射及下载统计等。</p>
  *
  * @author nacos
  */
@@ -30,43 +33,40 @@ public class PromptMetaSummary implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
+    /** 元数据 schema 版本号。 */
     private int schemaVersion = 1;
     
+    /** Prompt 唯一键。 */
     private String promptKey;
     
+    /** Prompt 描述文本。 */
     private String description;
     
+    /** 业务标签列表。 */
     private List<String> bizTags = new ArrayList<>();
     
+    /** 业务标签逗号分隔字符串（展示用）。 */
     private String bizTagsStr;
     
+    /** 当前最新发布版本号。 */
     private String latestVersion;
     
+    /** 最后修改时间戳（毫秒）。 */
     private Long gmtModified;
     
-    /**
-     * The version currently being edited (draft).
-     */
+    /** 当前正在编辑的版本（草稿）。 */
     private String editingVersion;
     
-    /**
-     * The version currently under pipeline review.
-     */
+    /** 当前处于流水线审核中的版本。 */
     private String reviewingVersion;
     
-    /**
-     * Number of online versions.
-     */
+    /** 已上线版本数量。 */
     private Integer onlineCnt;
     
-    /**
-     * Label to version mapping, e.g. {"latest":"1.0.0","stable":"0.9.0"}.
-     */
+    /** 标签到版本号的映射，如 {@code {"latest":"1.0.0","stable":"0.9.0"}}。 */
     private Map<String, String> labels;
     
-    /**
-     * Total download count of this prompt (sum of all versions).
-     */
+    /** 该 Prompt 累计下载次数（所有版本之和）。 */
     private Long downloadCount;
     
     public int getSchemaVersion() {

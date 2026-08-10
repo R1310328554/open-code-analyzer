@@ -22,7 +22,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 
 /**
- * Remote per components.schemas.Remote.
+ * MCP Server 远程访问端点，对应 components.schemas.Remote。
+ *
+ * <p>描述无需本地安装、直接通过 URL 连接的远程 MCP Server，
+ * 可附加自定义 HTTP 请求头。</p>
  *
  * @author xinluo
  */
@@ -30,10 +33,13 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Remote {
     
+    /** 远程端点类型标识。 */
     private String type;
     
+    /** 远程 MCP Server 访问 URL。 */
     private String url;
     
+    /** 连接时附加的 HTTP 请求头列表。 */
     private List<KeyValueInput> headers;
     
     public String getType() {

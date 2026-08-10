@@ -22,10 +22,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Prompt entity for AI Prompt management.
+ * AI Prompt 实体，用于 Nacos Prompt 管理。
  *
- * <p>Prompt is stored as a Nacos configuration with fixed group "nacos-ai-prompt"
- * and dataId "{promptKey}.json". The content is stored as JSON format.</p>
+ * <p>Prompt 以 Nacos 配置形式存储：固定 group 为 {@code nacos-ai-prompt}，
+ * dataId 为 {@code {promptKey}.json}，内容为 JSON 格式。</p>
  *
  * @author nacos
  */
@@ -33,29 +33,19 @@ public class Prompt implements Serializable {
     
     private static final long serialVersionUID = 1L;
     
-    /**
-     * Prompt key (unique identifier within namespace).
-     */
+    /** Prompt 唯一键（命名空间内唯一标识）。 */
     private String promptKey;
     
-    /**
-     * Prompt version in format "major.minor.patch" (e.g., "1.0.0").
-     */
+    /** Prompt 版本号，格式为 {@code major.minor.patch}（如 {@code 1.0.0}）。 */
     private String version;
     
-    /**
-     * Prompt template content.
-     */
+    /** Prompt 模板正文，可含 {@code {{variableName}}} 占位符。 */
     private String template;
     
-    /**
-     * MD5 hash of the prompt content (for CAS operations).
-     */
+    /** Prompt 内容 MD5 摘要，用于 CAS 乐观锁更新。 */
     private String md5;
     
-    /**
-     * Variable definitions with optional default values. Null for legacy prompts without variable metadata.
-     */
+    /** 变量定义列表（含可选默认值）；旧版无变量元数据时为 {@code null}。 */
     private List<PromptVariable> variables;
     
     public Prompt() {
@@ -108,25 +98,24 @@ public class Prompt implements Serializable {
     }
     
     /**
-     * Render the prompt template by replacing variables with provided values.
+     * 渲染 Prompt 模板，将占位变量替换为实际值。
      *
-     * <p>Variables in the template are specified using {{variableName}} syntax.
-     * This method first applies default values from variable definitions,
-     * then overrides with user-provided values.</p>
+     * <p>模板中使用 {@code {{variableName}}} 语法声明变量。
+     * 先合并变量定义中的默认值，再以 {@code userVariables} 覆盖。</p>
      *
-     * <p>Example:
+     * <p>示例：
      * <pre>
      * Prompt prompt = new Prompt("greeting", "1.0.0", "Hello {{name}}, welcome to {{place}}!");
      * Map&lt;String, String&gt; userVars = new HashMap&lt;&gt;();
      * userVars.put("name", "Alice");
      * userVars.put("place", "Nacos");
      * String result = prompt.render(userVars);
-     * // Result: "Hello Alice, welcome to Nacos!"
+     * // 结果: "Hello Alice, welcome to Nacos!"
      * </pre>
      * </p>
      *
-     * @param userVariables map of variable names to their values (key: variable name, value: replacement value)
-     * @return rendered prompt content with variables replaced, or the original template if no values available
+     * @param userVariables 变量名到取值的映射（key 为变量名，value 为替换文本）
+     * @return 替换后的 Prompt 内容；无可用取值时返回原始模板
      */
     public String render(Map<String, String> userVariables) {
         if (template == null) {

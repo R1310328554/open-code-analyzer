@@ -26,15 +26,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * ServerResponse.
+ * MCP Registry 单条 Server 查询响应包装。
+ *
+ * <p>包含 {@link McpRegistryServerDetail} 主体及 {@code _meta} 扩展元数据，
+ * 用于 Registry API 返回单个 Server 条目。</p>
  *
  * @author xinluo
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ServerResponse {
     
+    /** MCP Server 详情主体。 */
     private McpRegistryServerDetail server;
     
+    /** Registry 扩展元数据（{@code _meta} 字段）。 */
     @JsonProperty("_meta")
     private Meta meta;
     
@@ -55,16 +60,20 @@ public class ServerResponse {
     }
     
     /**
-     * _meta wrapper allowing extension namespaces.
+     * {@code _meta} 元数据包装，支持官方与扩展命名空间。
+     *
+     * <p>官方信息存于 {@link #official}，其余键值通过 {@link #additionalMetadata} 透传。</p>
      *
      * @author xinluo
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Meta {
         
+        /** 官方 Registry 元数据。 */
         @JsonProperty("io.modelcontextprotocol.registry/official")
         private OfficialMeta official;
         
+        /** 其他扩展命名空间键值对。 */
         @JsonAnySetter
         private Map<String, Object> additionalMetadata = new HashMap<>();
         

@@ -20,7 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Prompt meta information.
+ * Prompt 完整元信息，继承 {@link PromptMetaSummary} 并扩展版本明细。
+ *
+ * <p>用于 Prompt 详情接口，同时兼容旧客户端的版本字符串列表
+ * 与新版的 {@link PromptVersionSummary} 明细结构。</p>
  *
  * @author nacos
  */
@@ -28,14 +31,10 @@ public class PromptMetaInfo extends PromptMetaSummary {
     
     private static final long serialVersionUID = 1L;
     
-    /**
-     * Version string list for backward compatibility with legacy clients.
-     */
+    /** 版本号字符串列表，兼容旧版客户端。 */
     private List<String> versions = new ArrayList<>();
     
-    /**
-     * Detailed version summaries including status, author, etc.
-     */
+    /** 各版本详细摘要（含状态、作者等）。 */
     private List<PromptVersionSummary> versionDetails = new ArrayList<>();
     
     public List<String> getVersions() {

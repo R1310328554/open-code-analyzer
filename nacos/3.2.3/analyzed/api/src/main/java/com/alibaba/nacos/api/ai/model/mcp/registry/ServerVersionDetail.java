@@ -18,9 +18,12 @@ package com.alibaba.nacos.api.ai.model.mcp.registry;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-/** 
- * ServerVersionDetail.
- * 
+/**
+ * MCP Server 版本详情，描述某一发布版本的元信息。
+ *
+ * <p>字段名与 Registry OpenAPI schema 保持一致（snake_case），
+ * 用于版本列表或历史查询响应。</p>
+ *
  * @author xinluo
  */
 @SuppressWarnings({"checkstyle:MethodName", "checkstyle:ParameterName", "checkstyle:MemberName",
@@ -28,10 +31,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ServerVersionDetail {
     
+    /** 版本号字符串。 */
     private String version;
     
+    /** 发布日期。 */
     private String release_date;
     
+    /** 是否为最新版本。 */
     private Boolean is_latest;
     
     public String getRelease_date() {

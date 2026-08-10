@@ -23,33 +23,46 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.List;
 
 /**
- * Package per components.schemas.Package.
+ * MCP Server 可安装包定义，对应 components.schemas.Package。
+ *
+ * <p>描述 Registry 中 Server 的安装来源、运行时参数、环境变量及传输层配置，
+ * 支持 stdio、streamable-http、sse 等多种 {@link #transport} 类型。</p>
  *
  * @author xinluo
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Package {
     
+    /** Registry 类型标识（如 npm、pypi）。 */
     private String registryType;
     
+    /** Registry 基础 URL。 */
     private String registryBaseUrl;
     
+    /** 包唯一标识符。 */
     private String identifier;
     
+    /** 包版本号。 */
     private String version;
     
+    /** 包文件 SHA-256 校验和。 */
     private String fileSha256;
     
+    /** 运行时提示（如 node、python）。 */
     private String runtimeHint;
     
+    /** 启动 Server 进程时的运行时参数列表。 */
     private List<Argument> runtimeArguments;
     
+    /** 安装包时的包管理器参数列表。 */
     private List<Argument> packageArguments;
     
+    /** 环境变量键值对列表。 */
     private List<KeyValueInput> environmentVariables;
     
     /**
-     * Transport field - required, supports multiple transport types (stdio/streamable-http/sse).
+     * 传输层配置（必填），支持 stdio、streamable-http、sse 等类型。
+     * 反序列化为 {@link StdioTransport}、{@link StreamableHttpTransport} 或 {@link SseTransport}。
      */
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", visible = true)
     @JsonSubTypes({
@@ -61,180 +74,180 @@ public class Package {
     private Object transport;
     
     /**
-     * Get registry type.
+     * 获取 Registry 类型。
      *
-     * @return registry type
+     * @return Registry 类型标识
      */
     public String getRegistryType() {
         return registryType;
     }
     
     /**
-     * Set registry type.
+     * 设置 Registry 类型。
      *
-     * @param registryType registry type
+     * @param registryType Registry 类型标识
      */
     public void setRegistryType(String registryType) {
         this.registryType = registryType;
     }
     
     /**
-     * Get registry base URL.
+     * 获取 Registry 基础 URL。
      *
-     * @return registry base URL
+     * @return 基础 URL
      */
     public String getRegistryBaseUrl() {
         return registryBaseUrl;
     }
     
     /**
-     * Set registry base URL.
+     * 设置 Registry 基础 URL。
      *
-     * @param registryBaseUrl registry base URL
+     * @param registryBaseUrl 基础 URL
      */
     public void setRegistryBaseUrl(String registryBaseUrl) {
         this.registryBaseUrl = registryBaseUrl;
     }
     
     /**
-     * Get identifier.
+     * 获取包标识符。
      *
-     * @return identifier
+     * @return 包 ID
      */
     public String getIdentifier() {
         return identifier;
     }
     
     /**
-     * Set identifier.
+     * 设置包标识符。
      *
-     * @param identifier identifier
+     * @param identifier 包 ID
      */
     public void setIdentifier(String identifier) {
         this.identifier = identifier;
     }
     
     /**
-     * Get version.
+     * 获取包版本。
      *
-     * @return version
+     * @return 版本号
      */
     public String getVersion() {
         return version;
     }
     
     /**
-     * Set version.
+     * 设置包版本。
      *
-     * @param version version
+     * @param version 版本号
      */
     public void setVersion(String version) {
         this.version = version;
     }
     
     /**
-     * Get file SHA 256.
+     * 获取包文件 SHA-256 校验和。
      *
-     * @return file SHA 256
+     * @return SHA-256 十六进制字符串
      */
     public String getFileSha256() {
         return fileSha256;
     }
     
     /**
-     * Set file SHA 256.
+     * 设置包文件 SHA-256 校验和。
      *
-     * @param fileSha256 file SHA 256
+     * @param fileSha256 SHA-256 字符串
      */
     public void setFileSha256(String fileSha256) {
         this.fileSha256 = fileSha256;
     }
     
     /**
-     * Get runtime hint.
+     * 获取运行时提示。
      *
-     * @return runtime hint
+     * @return 运行时标识
      */
     public String getRuntimeHint() {
         return runtimeHint;
     }
     
     /**
-     * Set runtime hint.
+     * 设置运行时提示。
      *
-     * @param runtimeHint runtime hint
+     * @param runtimeHint 运行时标识
      */
     public void setRuntimeHint(String runtimeHint) {
         this.runtimeHint = runtimeHint;
     }
     
     /**
-     * Get runtime arguments.
+     * 获取运行时参数列表。
      *
-     * @return runtime arguments
+     * @return 运行时 {@link Argument} 列表
      */
     public List<Argument> getRuntimeArguments() {
         return runtimeArguments;
     }
     
     /**
-     * Set runtime arguments.
+     * 设置运行时参数列表。
      *
-     * @param runtimeArguments runtime arguments
+     * @param runtimeArguments 运行时参数
      */
     public void setRuntimeArguments(List<Argument> runtimeArguments) {
         this.runtimeArguments = runtimeArguments;
     }
     
     /**
-     * Get package arguments.
+     * 获取包安装参数列表。
      *
-     * @return package arguments
+     * @return 包参数列表
      */
     public List<Argument> getPackageArguments() {
         return packageArguments;
     }
     
     /**
-     * Set package arguments.
+     * 设置包安装参数列表。
      *
-     * @param packageArguments package arguments
+     * @param packageArguments 包参数
      */
     public void setPackageArguments(List<Argument> packageArguments) {
         this.packageArguments = packageArguments;
     }
     
     /**
-     * Get environment variables.
+     * 获取环境变量列表。
      *
-     * @return environment variables
+     * @return 环境变量键值对
      */
     public List<KeyValueInput> getEnvironmentVariables() {
         return environmentVariables;
     }
     
     /**
-     * Set environment variables.
+     * 设置环境变量列表。
      *
-     * @param environmentVariables environment variables
+     * @param environmentVariables 环境变量
      */
     public void setEnvironmentVariables(List<KeyValueInput> environmentVariables) {
         this.environmentVariables = environmentVariables;
     }
     
     /**
-     * Get transport.
+     * 获取传输层配置对象。
      *
-     * @return transport
+     * @return 传输配置（stdio / streamable-http / sse）
      */
     public Object getTransport() {
         return transport;
     }
     
     /**
-     * Set transport.
+     * 设置传输层配置对象。
      *
-     * @param transport transport
+     * @param transport 传输配置
      */
     public void setTransport(Object transport) {
         this.transport = transport;

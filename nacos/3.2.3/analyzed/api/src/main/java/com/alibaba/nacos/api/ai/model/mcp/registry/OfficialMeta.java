@@ -20,7 +20,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * Official metadata inside _meta.
+ * MCP Registry 官方元数据，嵌于 {@code _meta} 扩展命名空间内。
+ *
+ * <p>对应 {@code io.modelcontextprotocol.registry/official} 键下的结构化信息，
+ * 描述 Server 在 Registry 中的发布、更新与状态。</p>
  *
  * @author xinluo
  */
@@ -28,81 +31,85 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OfficialMeta {
     
+    /** 首次发布时间戳（ISO-8601 字符串）。 */
     private String publishedAt;
     
+    /** 最近更新时间戳。 */
     private String updatedAt;
     
+    /** 是否为当前最新版本。 */
     private Boolean isLatest;
     
+    /** 发布状态（如 active、deprecated）。 */
     private String status;
     
     /**
-     * Get published at timestamp.
+     * 获取发布时间戳。
      *
-     * @return published at
+     * @return 发布时间
      */
     public String getPublishedAt() {
         return publishedAt;
     }
     
     /**
-     * Set published at timestamp.
+     * 设置发布时间戳。
      *
-     * @param publishedAt published at
+     * @param publishedAt 发布时间
      */
     public void setPublishedAt(String publishedAt) {
         this.publishedAt = publishedAt;
     }
     
     /**
-     * Get updated at timestamp.
+     * 获取更新时间戳。
      *
-     * @return updated at
+     * @return 更新时间
      */
     public String getUpdatedAt() {
         return updatedAt;
     }
     
     /**
-     * Set updated at timestamp.
+     * 设置更新时间戳。
      *
-     * @param updatedAt updated at
+     * @param updatedAt 更新时间
      */
     public void setUpdatedAt(String updatedAt) {
         this.updatedAt = updatedAt;
     }
     
     /**
-     * Get is latest flag.
+     * 获取是否为最新版本。
      *
-     * @return is latest
+     * @return 最新版本标志
      */
     public Boolean getIsLatest() {
         return isLatest;
     }
     
     /**
-     * Set is latest flag.
+     * 设置是否为最新版本。
      *
-     * @param isLatest is latest
+     * @param isLatest 最新版本标志
      */
     public void setIsLatest(Boolean isLatest) {
         this.isLatest = isLatest;
     }
     
     /**
-     * Get status.
+     * 获取发布状态。
      *
-     * @return status
+     * @return 状态字符串
      */
     public String getStatus() {
         return status;
     }
     
     /**
-     * Set status.
+     * 设置发布状态。
      *
-     * @param status status
+     * @param status 状态字符串
      */
     public void setStatus(String status) {
         this.status = status;
