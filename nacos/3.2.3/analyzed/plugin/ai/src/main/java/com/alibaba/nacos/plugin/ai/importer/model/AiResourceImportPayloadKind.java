@@ -17,30 +17,25 @@
 package com.alibaba.nacos.plugin.ai.importer.model;
 
 /**
- * Payload kind returned by an AI resource import plugin.
+ * AI 资源导入插件返回的载荷（Payload）类型枚举。
+ *
+ * <p>标识 {@link AiResourceImportArtifact} 中实际内容的编码形式，
+ * 便于下游资源操作器选择正确的解析与持久化路径。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public enum AiResourceImportPayloadKind {
     
-    /**
-     * MCP server detail payload.
-     */
+    /** MCP 服务器详情 JSON 载荷。 */
     MCP_DETAIL,
     
-    /**
-     * Standard skill zip payload.
-     */
+    /** 标准 Skill 压缩包（ZIP）二进制载荷。 */
     SKILL_ZIP,
     
-    /**
-     * Generic JSON payload.
-     */
+    /** 通用 JSON 文本载荷。 */
     JSON,
     
-    /**
-     * Generic binary payload.
-     */
+    /** 通用二进制字节载荷。 */
     BYTES
 }

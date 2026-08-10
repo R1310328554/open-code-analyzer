@@ -19,25 +19,30 @@ package com.alibaba.nacos.plugin.ai.pipeline.model;
 import java.util.Objects;
 
 /**
- * A single audit dimension reported by a publish pipeline security plugin.
+ * 发布流水线安全插件上报的单个审计检查项。
+ *
+ * <p>每个检查项对应一条可读的安全或合规维度，记录该项是否通过，
+ * 供发布结果汇总与控制台展示。</p>
  *
  * @author qiacheng.cxy
  */
 public class Checkpoint {
     
-    /**
-     * Human-readable name of the audit criterion.
-     */
+    /** 审计维度的可读名称，例如「敏感信息扫描」。 */
     private String title;
     
-    /**
-     * Whether this criterion passed.
-     */
+    /** 该审计维度是否通过。 */
     private boolean passed;
     
     public Checkpoint() {
     }
     
+    /**
+     * 构造指定标题与通过状态的检查项。
+     *
+     * @param title  审计维度名称
+     * @param passed 是否通过
+     */
     public Checkpoint(String title, boolean passed) {
         this.title = title;
         this.passed = passed;

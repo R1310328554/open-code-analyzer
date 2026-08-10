@@ -19,10 +19,10 @@ package com.alibaba.nacos.plugin.ai.importer.spi;
 import java.util.Properties;
 
 /**
- * Builder SPI for creating {@link AiResourceImportService} instances.
+ * 用于创建 {@link AiResourceImportService} 实例的构建器 SPI。
  *
- * <p>Since SPI-loaded classes are instantiated via no-arg constructors, this builder pattern allows
- * importers to be initialized with plugin-owned configuration.</p>
+ * <p>SPI 加载的类通常通过无参构造实例化，本构建器模式允许导入器
+ * 在创建时注入插件私有配置。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -30,18 +30,18 @@ import java.util.Properties;
 public interface AiResourceImportServiceBuilder {
     
     /**
-     * Importer implementation name.
+     * 导入器实现名称。
      *
-     * @return importer type, e.g. "mcp-registry"; corresponds to
-     *         {@link AiResourceImportService#importerType()}
+     * @return 导入器类型，例如 {@code mcp-registry}；与
+     *         {@link AiResourceImportService#importerType()} 对应
      */
     String importerType();
     
     /**
-     * Build an {@link AiResourceImportService} instance with the given properties.
+     * 使用给定配置属性构建 {@link AiResourceImportService} 实例。
      *
-     * @param properties importer configuration properties, never null
-     * @return initialized import service
+     * @param properties 导入器配置属性，永不为 null
+     * @return 已初始化的导入服务实例
      */
     AiResourceImportService build(Properties properties);
 }

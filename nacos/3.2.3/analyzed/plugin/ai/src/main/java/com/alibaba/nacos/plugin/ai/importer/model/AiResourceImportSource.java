@@ -20,42 +20,56 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Runtime import source resolved from operator-owned configuration.
+ * 由运维配置解析得到的运行时导入来源。
  *
- * <p>This model may contain source endpoint and secret references for importer runtime use, but
- * must not be returned to end users directly.</p>
+ * <p>模型可包含端点地址与凭据引用，供导入插件在服务端内部使用，
+ * 不得原样返回给终端用户。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class AiResourceImportSource {
     
+    /** 来源唯一标识，用户通过 sourceId 选择导入源。 */
     private String sourceId;
     
+    /** 控制台展示名称。 */
     private String displayName;
     
+    /** 来源描述信息。 */
     private String description;
     
+    /** 负责该来源的导入插件名称。 */
     private String pluginName;
     
+    /** 该来源支持的资源类型列表。 */
     private List<String> resourceTypes;
     
+    /** 外部 API 或服务端点 URL。 */
     private String endpoint;
     
+    /** 是否启用该导入来源。 */
     private boolean enabled;
     
+    /** 认证凭据引用（非明文密钥）。 */
     private String authRef;
     
+    /** HTTP 连接超时（毫秒）。 */
     private int connectTimeoutMillis;
     
+    /** HTTP 读取超时（毫秒）。 */
     private int readTimeoutMillis;
     
+    /** 搜索翻页最大页数限制。 */
     private int maxPageCount;
     
+    /** 单次导入最大条目数限制。 */
     private int maxItemCount;
     
+    /** 单个 Artifact 最大字节数限制。 */
     private long maxArtifactSize;
     
+    /** 插件自定义扩展属性。 */
     private Map<String, String> properties;
     
     public String getSourceId() {

@@ -19,25 +19,33 @@ package com.alibaba.nacos.plugin.ai.importer.model;
 import java.util.Map;
 
 /**
- * External AI resource summary returned by importer search.
+ * 导入插件搜索返回的外部 AI 资源摘要（候选项）。
  *
- * <p>Candidates are for user selection only and must not contain full importable payloads.</p>
+ * <p>候选项仅用于用户浏览与勾选，不得包含完整可导入载荷；
+ * 完整内容须通过 {@link com.alibaba.nacos.plugin.ai.importer.spi.AiResourceImportService#fetch}
+ * 单独拉取。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class AiResourceImportCandidate {
     
+    /** 资源类型标识。 */
     private String resourceType;
     
+    /** 外部系统唯一 ID，fetch 时作为定位键。 */
     private String externalId;
     
+    /** 候选资源名称。 */
     private String name;
     
+    /** 候选资源版本。 */
     private String version;
     
+    /** 候选资源描述。 */
     private String description;
     
+    /** 搜索侧附加元数据，不含完整载荷。 */
     private Map<String, String> metadata;
     
     public String getResourceType() {

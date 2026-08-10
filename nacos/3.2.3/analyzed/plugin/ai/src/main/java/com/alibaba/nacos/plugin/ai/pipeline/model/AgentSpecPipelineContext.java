@@ -17,12 +17,17 @@
 package com.alibaba.nacos.plugin.ai.pipeline.model;
 
 /**
- * AgentSpec-specific publish pipeline context.
+ * AgentSpec 资源专用的发布流水线上下文。
+ *
+ * <p>继承 {@link ResourceFilesPipelineContext}，构造时自动将资源类型
+ * 设为 {@link PublishPipelineResourceType#AGENTSPEC}，供 Agent 规格类
+ * 多文件资源的发布与安全审计流程使用。</p>
  *
  * @author nacos
  */
 public class AgentSpecPipelineContext extends ResourceFilesPipelineContext {
     
+    /** 初始化 AgentSpec 类型的文件型流水线上下文。 */
     public AgentSpecPipelineContext() {
         setResourceType(PublishPipelineResourceType.AGENTSPEC);
     }

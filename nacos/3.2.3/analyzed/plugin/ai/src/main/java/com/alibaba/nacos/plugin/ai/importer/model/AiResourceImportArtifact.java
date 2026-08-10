@@ -19,34 +19,44 @@ package com.alibaba.nacos.plugin.ai.importer.model;
 import java.util.Map;
 
 /**
- * Import boundary object fetched by an AI resource import plugin.
+ * AI 资源导入插件拉取到的导入边界对象（Artifact）。
  *
- * <p>The artifact is not a persistent Nacos resource model. Resource operators are responsible for
- * converting it into current Nacos domain services.</p>
+ * <p>Artifact 并非 Nacos 持久化资源模型本身；资源操作器负责将其转换为
+ * 当前 Nacos 领域服务可识别的领域对象后再写入存储。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class AiResourceImportArtifact {
     
+    /** 资源类型，例如 mcp 或 skill。 */
     private String resourceType;
     
+    /** 外部系统中的唯一标识。 */
     private String externalId;
     
+    /** 资源展示名称。 */
     private String name;
     
+    /** 资源版本号。 */
     private String version;
     
+    /** 资源描述信息。 */
     private String description;
     
+    /** 载荷编码类型，见 {@link AiResourceImportPayloadKind}。 */
     private AiResourceImportPayloadKind payloadKind;
     
+    /** 二进制载荷内容。 */
     private byte[] payload;
     
+    /** JSON 文本载荷内容（与 payload 二选一或互补使用）。 */
     private String payloadJson;
     
+    /** 载荷完整性校验和，用于去重与一致性验证。 */
     private String checksum;
     
+    /** 来源侧附加元数据键值对。 */
     private Map<String, String> sourceMetadata;
     
     public String getResourceType() {

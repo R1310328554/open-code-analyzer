@@ -19,34 +19,44 @@ package com.alibaba.nacos.plugin.ai.importer.model;
 import java.util.Map;
 
 /**
- * Context passed from Nacos import manager to an import plugin.
+ * Nacos 导入管理器传递给导入插件的请求上下文。
  *
- * <p>The context intentionally contains a resolved source instead of user-provided endpoint data.
- * Import plugins must use the source selected by Nacos.</p>
+ * <p>上下文携带已解析的 {@link AiResourceImportSource}，而非用户自行填写的端点信息，
+ * 导入插件必须使用 Nacos 选定的可信来源进行搜索与拉取。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class AiResourceImportContext {
     
+    /** 目标命名空间 ID。 */
     private String namespaceId;
     
+    /** 待导入的资源类型。 */
     private String resourceType;
     
+    /** 由服务端解析并注入的导入来源配置。 */
     private AiResourceImportSource source;
     
+    /** 搜索关键字或过滤条件。 */
     private String query;
     
+    /** 分页游标，首页可为空。 */
     private String cursor;
     
+    /** 单页返回条数上限。 */
     private int limit;
     
+    /** 插件扩展选项键值对。 */
     private Map<String, String> options;
     
+    /** 请求追踪 ID，便于日志关联。 */
     private String requestId;
     
+    /** 发起导入操作的用户标识。 */
     private String operator;
     
+    /** 客户端 IP 地址。 */
     private String clientIp;
     
     public String getNamespaceId() {

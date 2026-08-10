@@ -44,7 +44,10 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * JWT Token validator for OAuth2/OIDC tokens.
+ * OAuth2/OIDC JWT 令牌校验器。
+ *
+ * <p>基于 {@link JwksProvider} 提供的公钥验证签名，并校验过期时间、Issuer、
+ * Audience 等声明。支持 IdP 密钥轮换场景下的 JWKS 刷新重试。</p>
  *
  * @author WangzJi
  */
@@ -52,23 +55,23 @@ public class JwtTokenValidator {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtTokenValidator.class);
     
+    /** 单例实例。 */
     private static volatile JwtTokenValidator instance;
     
+    /** OIDC 认证配置。 */
     private final OidcAuthConfig config;
     
+    /** JWKS 公钥提供者。 */
     private final JwksProvider jwksProvider;
     
+    /** 懒加载的 JWT 处理器，持有当前 JWKS 对应的验签逻辑。 */
     private volatile ConfigurableJWTProcessor<SecurityContext> jwtProcessor;
     
-    /**
-     * Required claims for validation.
-     */
+    /** 校验时必须存在的 JWT 声明字段集合。 */
     private static final Set<String> REQUIRED_CLAIMS =
         new HashSet<>(Arrays.asList("sub", "iss", "exp", "iat"));
     
-    /**
-     * Supported Algorithms for OIDC.
-     */
+    /** OIDC 场景支持的 JWS 签名算法集合。 */
     private static final Set<JWSAlgorithm> SUPPORTED_ALGORITHMS = new HashSet<>(Arrays.asList(
         JWSAlgorithm.RS256, JWSAlgorithm.RS384, JWSAlgorithm.RS512,
         JWSAlgorithm.ES256, JWSAlgorithm.ES384, JWSAlgorithm.ES512,
@@ -80,9 +83,9 @@ public class JwtTokenValidator {
     }
     
     /**
-     * Get singleton instance.
+     * 获取单例实例。
      *
-     * @return JwtTokenValidator instance
+     * @return JwtTokenValidator 实例
      */
     public static JwtTokenValidator getInstance() {
         if (instance == null) {
@@ -96,11 +99,13 @@ public class JwtTokenValidator {
     }
     
     /**
-     * Validate a JWT token and return the claims.
+     * 校验 JWT 令牌并返回已验证的声明集合。
      *
-     * @param token JWT token string
-     * @return validated JWT claims
-     * @throws AccessException if validation fails
+     * <p>签名验证失败时会尝试刷新 JWKS 并重试一次，以应对 IdP 密钥轮换。</p>
+     *
+     * @param token JWT 令牌字符串
+     * @return 校验通过的 JWT 声明
+     * @throws AccessException 令牌为空、格式非法或校验未通过时抛出
      */
     public JWTClaimsSet validate(String token) throws AccessException {
         if (StringUtils.isBlank(token)) {
@@ -108,14 +113,13 @@ public class JwtTokenValidator {
         }
         
         try {
-            // Ensure processor is initialized (lazy init)
+            // 懒加载初始化 JWT 处理器
             ConfigurableJWTProcessor<SecurityContext> processor = getJwtProcessor();
             
-            // Process and validate the token (Parsing also happens inside process but we parse handled inside)
-            // Note: process(String) parses it.
+            // process 内部完成解析与签名验证
             JWTClaimsSet claims = processor.process(token, null);
             
-            // Additional validation
+            // 额外业务层声明校验
             validateClaims(claims);
             
             LOGGER.debug("Token validated successfully for subject: {}", claims.getSubject());
@@ -126,7 +130,7 @@ public class JwtTokenValidator {
             throw new AccessException("Invalid token format");
         } catch (BadJOSEException e) {
             LOGGER.warn("JWT signature verification failed: {}", e.getMessage());
-            // Try refreshing JWKS and retry once (key rotation scenario)
+            // 密钥轮换场景：刷新 JWKS 后重试一次
             return retryWithRefreshedJwks(token, e);
         } catch (JOSEException e) {
             LOGGER.warn("JWT processing error: {}", e.getMessage());
@@ -143,6 +147,9 @@ public class JwtTokenValidator {
         }
     }
     
+    /**
+     * 懒加载获取 JWT 处理器，首次调用时基于当前 JWKS 构建。
+     */
     private ConfigurableJWTProcessor<SecurityContext> getJwtProcessor() throws AccessException {
         if (jwtProcessor == null) {
             synchronized (this) {
@@ -159,6 +166,9 @@ public class JwtTokenValidator {
         return jwtProcessor;
     }
     
+    /**
+     * 根据给定 JWKS 创建配置好验签与声明校验规则的 JWT 处理器。
+     */
     private ConfigurableJWTProcessor<SecurityContext> createJwtProcessor(JWKSet jwkSet) {
         ConfigurableJWTProcessor<SecurityContext> processor = new DefaultJWTProcessor<>();
         
@@ -167,7 +177,7 @@ public class JwtTokenValidator {
             new ImmutableJWKSet<>(jwkSet));
         processor.setJWSKeySelector(keySelector);
         
-        // Configure claims verifier
+        // 配置 Issuer 与必填声明校验器
         processor.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier<>(
             new JWTClaimsSet.Builder()
                 .issuer(config.getIssuerUri())
@@ -178,27 +188,26 @@ public class JwtTokenValidator {
     }
     
     /**
-     * Retry validation with refreshed JWKS (for key rotation scenarios).
+     * 签名验证失败后刷新 JWKS 并重试校验（应对密钥轮换）。
      *
-     * @param token original token
-     * @param originalException original exception
-     * @return validated claims
-     * @throws AccessException if retry also fails
+     * @param token               原始 JWT 令牌
+     * @param originalException   首次验签失败的异常
+     * @return 重试成功后得到的声明集合
+     * @throws AccessException 刷新后仍校验失败时抛出
      */
     private JWTClaimsSet retryWithRefreshedJwks(String token, Exception originalException)
         throws AccessException {
         LOGGER.info("Retrying token validation with refreshed JWKS");
         
         try {
-            // Refresh JWKS
+            // 强制刷新 JWKS 缓存
             JWKSet jwkSet = jwksProvider.refreshJwkSet();
             
-            // Recreate processor with new keys
+            // 用新公钥重建处理器
             synchronized (this) {
                 this.jwtProcessor = createJwtProcessor(jwkSet);
             }
             
-            // Validate using new processor
             JWTClaimsSet claims = this.jwtProcessor.process(token, null);
             validateClaims(claims);
             
@@ -212,30 +221,30 @@ public class JwtTokenValidator {
     }
     
     /**
-     * Perform additional claims validation.
+     * 执行业务层附加声明校验：过期、生效时间、Audience 与 Issuer。
      *
-     * @param claims JWT claims
-     * @throws AccessException if validation fails
+     * @param claims JWT 声明集合
+     * @throws AccessException 任一校验项未通过时抛出
      */
     private void validateClaims(JWTClaimsSet claims) throws AccessException {
-        // Validate expiration
+        // 校验过期时间
         Date expirationTime = claims.getExpirationTime();
         if (expirationTime == null || expirationTime.before(new Date())) {
             throw new AccessException("Token has expired");
         }
         
-        // Validate not before (if present)
+        // 校验 not-before（若存在）
         Date notBeforeTime = claims.getNotBeforeTime();
         if (notBeforeTime != null && notBeforeTime.after(new Date())) {
             throw new AccessException("Token is not yet valid");
         }
         
-        // Validate audience (if client ID is configured)
+        // 校验 audience（若已配置 clientId）
         String clientId = config.getClientId();
         if (StringUtils.isNotBlank(clientId)) {
             List<String> audience = claims.getAudience();
             if (audience != null && !audience.isEmpty() && !audience.contains(clientId)) {
-                // Check if 'azp' (authorized party) matches
+                // 回退检查 azp（authorized party）声明
                 String azp = (String) claims.getClaim("azp");
                 if (!clientId.equals(azp)) {
                     String message = String.format(
@@ -255,11 +264,10 @@ public class JwtTokenValidator {
             }
         }
         
-        // Validate issuer
+        // 校验 Issuer，兼容末尾斜杠差异
         String issuer = claims.getIssuer();
         String expectedIssuer = config.getIssuerUri();
         if (StringUtils.isNotBlank(expectedIssuer) && !expectedIssuer.equals(issuer)) {
-            // Handle trailing slash difference
             String normalizedExpected = expectedIssuer.endsWith("/")
                 ? expectedIssuer.substring(0, expectedIssuer.length() - 1)
                 : expectedIssuer;
@@ -274,21 +282,23 @@ public class JwtTokenValidator {
     }
     
     /**
-     * Extract username from JWT claims.
+     * 从 JWT 声明中提取用户名。
      *
-     * @param claims JWT claims
-     * @return username
+     * <p>优先使用配置项指定的 claim，依次回退 preferred_username、email，最后使用 sub。</p>
+     *
+     * @param claims JWT 声明集合
+     * @return 解析得到的用户名
      */
     public String extractUsername(JWTClaimsSet claims) {
         String usernameClaim = config.getUsernameClaim();
         
-        // Try configured claim first
+        // 优先读取配置的 claim
         Object username = claims.getClaim(usernameClaim);
         if (username != null) {
             return username.toString();
         }
         
-        // Fallback to common claims
+        // 回退常见用户名声明
         String preferredUsername = (String) claims.getClaim("preferred_username");
         if (StringUtils.isNotBlank(preferredUsername)) {
             return preferredUsername;
@@ -299,27 +309,30 @@ public class JwtTokenValidator {
             return email;
         }
         
-        // Last resort: use subject
+        // 最终回退到 subject
         return claims.getSubject();
     }
     
     /**
-     * Extract roles from JWT claims.
+     * 从 JWT 声明中提取角色列表。
      *
-     * @param claims JWT claims
-     * @return list of roles
+     * <p>依次尝试配置的 roles claim、Keycloak 的 realm_access/resource_access 结构
+     * 以及 groups 声明；均未命中时返回空列表并记录警告日志。</p>
+     *
+     * @param claims JWT 声明集合
+     * @return 角色名称列表，可能为空
      */
     @SuppressWarnings("unchecked")
     public List<String> extractRoles(JWTClaimsSet claims) {
         String rolesClaim = config.getRolesClaim();
         
-        // Try configured claim
+        // 尝试配置的 roles claim
         Object roles = claims.getClaim(rolesClaim);
         if (roles instanceof List) {
             return (List<String>) roles;
         }
         
-        // Try realm_access.roles (Keycloak format)
+        // Keycloak realm_access.roles 格式
         Object realmAccess = claims.getClaim("realm_access");
         if (realmAccess instanceof java.util.Map) {
             Object realmRoles = ((java.util.Map<String, Object>) realmAccess).get("roles");
@@ -328,7 +341,7 @@ public class JwtTokenValidator {
             }
         }
         
-        // Try resource_access.<client_id>.roles (Keycloak format)
+        // Keycloak resource_access.<client_id>.roles 格式
         Object resourceAccess = claims.getClaim("resource_access");
         if (resourceAccess instanceof java.util.Map) {
             String clientId = config.getClientId();
@@ -345,13 +358,13 @@ public class JwtTokenValidator {
             }
         }
         
-        // Try groups claim (common in some providers)
+        // 部分 IdP 使用的 groups 声明
         Object groups = claims.getClaim("groups");
         if (groups instanceof List) {
             return (List<String>) groups;
         }
         
-        // Log warning when no roles found - helps diagnose IdP integration issues
+        // 未找到角色信息时记录诊断日志
         LOGGER.warn(
             "No roles found in JWT claims for user: {}. Checked claim paths: {}, realm_access.roles, "
                 + "resource_access.{}.roles, groups. Token may be missing role information.",
@@ -360,10 +373,10 @@ public class JwtTokenValidator {
     }
     
     /**
-     * Check if the claims indicate an admin user.
+     * 判断声明中的角色是否包含配置的管理员角色。
      *
-     * @param claims JWT claims
-     * @return true if admin
+     * @param claims JWT 声明集合
+     * @return 若用户拥有管理员角色则返回 {@code true}
      */
     public boolean isAdmin(JWTClaimsSet claims) {
         List<String> roles = extractRoles(claims);

@@ -20,19 +20,26 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Candidate page returned by an AI resource import plugin.
+ * AI 资源导入插件返回的候选资源分页结果。
+ *
+ * <p>封装一页 {@link AiResourceImportCandidate} 列表及游标分页信息，
+ * 供导入管理器向控制台返回可翻页的搜索结果。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class AiResourceImportCandidatePage {
     
+    /** 当前页的候选资源列表。 */
     private List<AiResourceImportCandidate> items;
     
+    /** 下一页游标，无更多数据时可为空。 */
     private String nextCursor;
     
+    /** 是否还有更多候选资源可拉取。 */
     private boolean hasMore;
     
+    /** 来源侧附加元数据（例如源标识、配额提示等）。 */
     private Map<String, String> sourceMetadata;
     
     public List<AiResourceImportCandidate> getItems() {

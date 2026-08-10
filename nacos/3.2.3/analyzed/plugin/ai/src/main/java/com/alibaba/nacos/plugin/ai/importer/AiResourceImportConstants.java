@@ -17,15 +17,19 @@
 package com.alibaba.nacos.plugin.ai.importer;
 
 /**
- * Common constants for AI resource import plugins.
+ * AI 资源导入插件使用的公共常量。
+ *
+ * <p>集中定义资源类型标识，供导入 SPI 与 Nacos 导入管理器对齐语义。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public final class AiResourceImportConstants {
     
+    /** MCP（Model Context Protocol）服务器资源类型标识。 */
     public static final String RESOURCE_TYPE_MCP = "mcp";
     
+    /** Skill 技能包资源类型标识。 */
     public static final String RESOURCE_TYPE_SKILL = "skill";
     
     private AiResourceImportConstants() {

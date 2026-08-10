@@ -23,11 +23,10 @@ import java.util.Collection;
 import java.util.Properties;
 
 /**
- * SPI for providing operator-owned import source presets.
+ * 提供运维侧预置导入来源的 SPI 接口。
  *
- * <p>Providers must only return sources derived from server configuration or trusted defaults.
- * End users still select a source id and must not provide network endpoints through request
- * parameters.</p>
+ * <p>实现类只能返回源自服务端配置或可信默认值的来源列表；
+ * 终端用户通过 sourceId 选择来源，不得通过请求参数自行指定网络端点。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -35,11 +34,11 @@ import java.util.Properties;
 public interface AiResourceImportSourceProvider {
     
     /**
-     * Load enabled import source presets from server properties.
+     * 从服务端配置加载已启用的导入来源预置列表。
      *
-     * @param properties server properties, never null
-     * @return import source presets
-     * @throws NacosException if preset configuration is invalid
+     * @param properties 服务端配置属性，永不为 null
+     * @return 导入来源预置集合
+     * @throws NacosException 预置配置无效时抛出
      */
     Collection<AiResourceImportSource> loadSources(Properties properties) throws NacosException;
 }

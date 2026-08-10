@@ -19,19 +19,26 @@ package com.alibaba.nacos.plugin.ai.importer.model;
 import java.util.Map;
 
 /**
- * User-selected external item that should be fetched by an importer.
+ * 用户从候选列表中勾选、待导入插件拉取的外部资源条目。
+ *
+ * <p>由控制台或 API 在用户确认导入时构造，作为
+ * {@link com.alibaba.nacos.plugin.ai.importer.spi.AiResourceImportService#fetch} 的定位参数。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
  */
 public class AiResourceImportItem {
     
+    /** 外部系统唯一标识。 */
     private String externalId;
     
+    /** 资源名称。 */
     private String name;
     
+    /** 资源版本。 */
     private String version;
     
+    /** 用户选择时附带的元数据。 */
     private Map<String, String> metadata;
     
     public String getExternalId() {

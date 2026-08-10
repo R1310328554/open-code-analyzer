@@ -37,7 +37,10 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Provider for fetching and caching JWKS (JSON Web Key Set) from OIDC provider.
+ * 从 OIDC 身份提供方拉取并缓存 JWKS（JSON Web Key Set）的提供者。
+ *
+ * <p>支持通过配置直接指定 JWKS 端点，或从 Issuer 的 well-known 发现文档自动解析。
+ * 拉取到的公钥集合供 {@link JwtTokenValidator} 校验 JWT 签名时使用。</p>
  *
  * @author WangzJi
  */
@@ -45,16 +48,22 @@ public class JwksProvider {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(JwksProvider.class);
     
+    /** JWKS 缓存在 Caffeine 中使用的固定键。 */
     private static final String CACHE_KEY = "jwks";
     
+    /** 单例实例，采用双重检查锁定懒加载。 */
     private static volatile JwksProvider instance;
     
+    /** OIDC 认证相关配置。 */
     private final OidcAuthConfig config;
     
+    /** 用于拉取 JWKS 与 OIDC 发现文档的 HTTP 客户端。 */
     private final HttpClient httpClient;
     
+    /** JWKS 本地缓存，过期时间由配置项控制。 */
     private final Cache<String, JWKSet> jwksCache;
     
+    /** 已解析或已配置的 JWKS 端点 URI，发现成功后会被缓存。 */
     private volatile String jwksUri;
     
     private JwksProvider() {
@@ -69,9 +78,9 @@ public class JwksProvider {
     }
     
     /**
-     * Get singleton instance.
+     * 获取单例实例。
      *
-     * @return JwksProvider instance
+     * @return JwksProvider 实例
      */
     public static JwksProvider getInstance() {
         if (instance == null) {
@@ -85,10 +94,10 @@ public class JwksProvider {
     }
     
     /**
-     * Get JWKS from cache or fetch from provider.
+     * 从缓存读取 JWKS，缓存未命中时从提供方拉取并写入缓存。
      *
-     * @return JWKSet
-     * @throws IOException if fetching fails
+     * @return JWKSet 公钥集合
+     * @throws IOException 拉取或解析失败时抛出
      */
     public JWKSet getJwkSet() throws IOException {
         JWKSet cached = jwksCache.getIfPresent(CACHE_KEY);
@@ -109,10 +118,12 @@ public class JwksProvider {
     }
     
     /**
-     * Force refresh JWKS cache.
+     * 强制刷新 JWKS 缓存并重新拉取。
      *
-     * @return refreshed JWKSet
-     * @throws IOException if fetching fails
+     * <p>适用于 IdP 密钥轮换导致签名验证失败的场景。</p>
+     *
+     * @return 刷新后的 JWKSet
+     * @throws IOException 拉取或解析失败时抛出
      */
     public JWKSet refreshJwkSet() throws IOException {
         jwksCache.invalidateAll();
@@ -120,10 +131,10 @@ public class JwksProvider {
     }
     
     /**
-     * Fetch JWKS from the provider's JWKS endpoint.
+     * 从 JWKS 端点 HTTP 拉取公钥集合。
      *
-     * @return JWKSet
-     * @throws IOException if fetching fails
+     * @return JWKSet 公钥集合
+     * @throws IOException 端点未配置、HTTP 失败或解析异常时抛出
      */
     private JWKSet fetchJwkSet() throws IOException {
         String uri = getJwksUri();
@@ -160,25 +171,25 @@ public class JwksProvider {
     }
     
     /**
-     * Get JWKS URI, discovering from OIDC configuration if needed.
+     * 获取 JWKS 端点 URI，必要时通过 OIDC 发现流程解析。
      *
-     * @return JWKS URI
-     * @throws IOException if discovery fails
+     * @return JWKS 端点 URI
+     * @throws IOException 发现或配置缺失时抛出
      */
     private String getJwksUri() throws IOException {
-        // Check if already discovered or configured
+        // 优先使用已发现或已缓存的 URI
         if (StringUtils.isNotBlank(jwksUri)) {
             return jwksUri;
         }
         
-        // Check if directly configured
+        // 其次读取静态配置
         String configuredJwksUri = config.getJwksUri();
         if (StringUtils.isNotBlank(configuredJwksUri)) {
             this.jwksUri = configuredJwksUri;
             return jwksUri;
         }
         
-        // Discover from OIDC well-known configuration
+        // 最后通过 Issuer well-known 端点自动发现
         String issuerUri = config.getIssuerUri();
         if (StringUtils.isBlank(issuerUri)) {
             throw new IOException("Issuer URI is not configured");
@@ -189,10 +200,12 @@ public class JwksProvider {
     }
     
     /**
-     * Discover OIDC configuration from well-known endpoint.
+     * 从 OIDC well-known 发现端点拉取并解析配置。
      *
-     * @param issuerUri OIDC issuer URI
-     * @throws IOException if discovery fails
+     * <p>解析成功后会把 jwks_uri 及各 OAuth 端点写回 {@link OidcAuthConfig}。</p>
+     *
+     * @param issuerUri OIDC Issuer URI
+     * @throws IOException 发现请求失败或响应解析异常时抛出
      */
     private void discoverOidcConfiguration(String issuerUri) throws IOException {
         String discoveryUrl = issuerUri.endsWith("/")
@@ -252,7 +265,7 @@ public class JwksProvider {
     }
     
     /**
-     * Clear the JWKS cache.
+     * 清空 JWKS 缓存及已解析的端点 URI。
      */
     public void clearCache() {
         jwksCache.invalidateAll();

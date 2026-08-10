@@ -25,10 +25,10 @@ import com.alibaba.nacos.plugin.ai.importer.model.AiResourceImportItem;
 import java.util.Set;
 
 /**
- * AI resource import service SPI.
+ * AI 资源导入服务 SPI 接口。
  *
- * <p>Implementations own only external source discovery and conversion to import artifacts. They
- * must not write Nacos resources directly.</p>
+ * <p>实现类仅负责外部来源的发现与转换为 {@link AiResourceImportArtifact}，
+ * 不得直接写入 Nacos 持久化存储；持久化由 Nacos 资源操作器完成。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -36,38 +36,38 @@ import java.util.Set;
 public interface AiResourceImportService {
     
     /**
-     * Importer implementation name, for example {@code mcp-registry}.
+     * 导入器实现名称，例如 {@code mcp-registry}。
      *
-     * @return importer type
+     * @return 导入器类型标识
      */
     String importerType();
     
     /**
-     * Resource types supported by this importer, for example {@code mcp} or {@code skill}.
+     * 该导入器支持的资源类型集合，例如 {@code mcp} 或 {@code skill}。
      *
-     * @return supported resource type set
+     * @return 支持的资源类型集合
      */
     Set<String> supportedResourceTypes();
     
     /**
-     * Search external candidates from the resolved source.
+     * 从已解析的来源搜索外部候选资源。
      *
-     * <p>The returned candidates must contain metadata only. Full importable payloads must be
-     * returned only from {@link #fetch(AiResourceImportContext, AiResourceImportItem)}.</p>
+     * <p>返回的候选项仅含元数据摘要；完整可导入载荷只能通过
+     * {@link #fetch(AiResourceImportContext, AiResourceImportItem)} 获取。</p>
      *
-     * @param context import context with resolved source and query options
-     * @return candidate page
-     * @throws NacosException if the source cannot be searched
+     * @param context 含已解析来源与查询选项的导入上下文
+     * @return 候选资源分页结果
+     * @throws NacosException 来源不可达或搜索失败时抛出
      */
     AiResourceImportCandidatePage search(AiResourceImportContext context) throws NacosException;
     
     /**
-     * Fetch a selected external item as an import artifact.
+     * 拉取用户选中的外部条目并转换为导入 Artifact。
      *
-     * @param context import context with resolved source and runtime limits
-     * @param item selected external item
-     * @return import artifact
-     * @throws NacosException if the artifact cannot be fetched or converted
+     * @param context 含已解析来源与运行时限额的导入上下文
+     * @param item    用户选中的外部资源条目
+     * @return 可交给资源操作器处理的导入 Artifact
+     * @throws NacosException 拉取或转换失败时抛出
      */
     AiResourceImportArtifact fetch(AiResourceImportContext context, AiResourceImportItem item)
         throws NacosException;
