@@ -66,12 +66,14 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicNameValuePair;
 
 /**
+ * 基于 Apache HttpClient 的链式 HTTP 工具类，供身份联邦 IdP 调用外部 REST API。
+ * <p>支持 GET/POST/PUT/DELETE/HEAD/PATCH、JSON/表单实体、Bearer/Basic 认证及响应大小限制。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  * @author Vlastimil Elias (velias at redhat dot com)
  * @author David Klassen (daviddd.kl@gmail.com)
  *
- * @deprecated An updated version of SimpleHttp is available in {@link org.keycloak.http.simple.SimpleHttp}. This
- * version will be deleted in Keycloak 27.0
+ * @deprecated 新版本见 {@link org.keycloak.http.simple.SimpleHttp}，本类将在 Keycloak 27.0 移除。
  */
 @Deprecated
 public class SimpleHttp {
@@ -104,6 +106,7 @@ public class SimpleHttp {
         this.maxConsumedResponseSize = maxConsumedResponseSize;
     }
 
+    /** 创建 DELETE 请求构建器，使用会话中的 {@link HttpClientProvider}。 */
     public static SimpleHttp doDelete(String url, KeycloakSession session) {
         HttpClientProvider provider = session.getProvider(HttpClientProvider.class);
         return doDelete(url, provider.getHttpClient(), provider.getMaxConsumedResponseSize());
@@ -113,6 +116,7 @@ public class SimpleHttp {
         return new SimpleHttp(url, "DELETE", client, maxConsumedResponseSize);
     }
 
+    /** 创建 GET 请求构建器。 */
     public static SimpleHttp doGet(String url, KeycloakSession session) {
         HttpClientProvider provider = session.getProvider(HttpClientProvider.class);
         return doGet(url, provider.getHttpClient(), provider.getMaxConsumedResponseSize());
@@ -122,6 +126,7 @@ public class SimpleHttp {
         return new SimpleHttp(url, "GET", client, maxConsumedResponseSize);
     }
 
+    /** 创建 POST 请求构建器。 */
     public static SimpleHttp doPost(String url, KeycloakSession session) {
         HttpClientProvider provider = session.getProvider(HttpClientProvider.class);
         return doPost(url, provider.getHttpClient(), provider.getMaxConsumedResponseSize());
@@ -131,6 +136,7 @@ public class SimpleHttp {
         return new SimpleHttp(url, "POST", client, maxConsumedResponseSize);
     }
 
+    /** 创建 PUT 请求构建器。 */
     public static SimpleHttp doPut(String url, KeycloakSession session) {
         HttpClientProvider provider = session.getProvider(HttpClientProvider.class);
         return doPut(url, provider.getHttpClient(), provider.getMaxConsumedResponseSize());
@@ -140,6 +146,7 @@ public class SimpleHttp {
         return new SimpleHttp(url, "PUT", client, maxConsumedResponseSize);
     }
 
+    /** 创建 HEAD 请求构建器。 */
     public static SimpleHttp doHead(String url, KeycloakSession session) {
         HttpClientProvider provider = session.getProvider(HttpClientProvider.class);
         return doHead(url, provider.getHttpClient(), provider.getMaxConsumedResponseSize());
@@ -149,6 +156,7 @@ public class SimpleHttp {
         return new SimpleHttp(url, "HEAD", client, maxConsumedResponseSize);
     }
 
+    /** 创建 PATCH 请求构建器。 */
     public static SimpleHttp doPatch(String url, KeycloakSession session) {
         HttpClientProvider provider = session.getProvider(HttpClientProvider.class);
         return doPatch(url, provider.getHttpClient(), provider.getMaxConsumedResponseSize());
@@ -158,6 +166,7 @@ public class SimpleHttp {
         return new SimpleHttp(url, "PATCH", client, maxConsumedResponseSize);
     }
 
+    /** 设置请求头（可链式调用）。 */
     public SimpleHttp header(String name, String value) {
         if (headers == null) {
             headers = new HashMap<>();
@@ -198,6 +207,7 @@ public class SimpleHttp {
         return entity;
     }
 
+    /** 设置 JSON 请求体对象。 */
     public SimpleHttp json(Object entity) {
         this.entity = entity;
         return this;
@@ -213,6 +223,7 @@ public class SimpleHttp {
         return this;
     }
 
+    /** 添加查询或表单参数。 */
     public SimpleHttp param(String name, String value) {
         if (params == null) {
             params = new HashMap<>();
@@ -241,17 +252,20 @@ public class SimpleHttp {
         return this;
     }
 
+    /** 设置 Bearer 令牌认证头。 */
     public SimpleHttp auth(String token) {
         header("Authorization", "Bearer " + token);
         return this;
     }
 
+    /** 设置 HTTP Basic 认证头。 */
     public SimpleHttp authBasic(final String username, final String password) {
         final String basicCredentials = String.format("%s:%s", username, password);
         header("Authorization", "Basic " + Base64.getEncoder().encodeToString(basicCredentials.getBytes()));
         return this;
     }
 
+    /** 若未设置 Accept，则默认 {@code application/json}。 */
     public SimpleHttp acceptJson() {
         if (headers == null || !headers.containsKey("Accept")) {
             header("Accept", "application/json");
@@ -280,6 +294,7 @@ public class SimpleHttp {
         return JsonSerialization.readValue(asString(), type);
     }
 
+    /** 执行请求并返回响应体字符串。 */
     public String asString() throws IOException {
         return asResponse().asString();
     }
@@ -288,6 +303,7 @@ public class SimpleHttp {
         return asResponse().getStatus();
     }
 
+    /** 执行请求并返回可多次读取的 {@link Response} 包装。 */
     public Response asResponse() throws IOException {
         return makeRequest();
     }
@@ -312,6 +328,8 @@ public class SimpleHttp {
     }
 
     /**
+     * 返回不含查询参数的基础 URL。
+     *
      * @return the URL without params
      */
     public String getUrl() {
@@ -401,6 +419,7 @@ public class SimpleHttp {
         return new UrlEncodedFormEntity(urlParameters, StandardCharsets.UTF_8);
     }
 
+    /** HTTP 响应包装，支持延迟读取、GZIP 解压与响应体大小限制。 */
     public static class Response implements AutoCloseable {
 
         private final HttpResponse response;

@@ -6,6 +6,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
+ * 创建 {@link LocalCache} 所需的配置记录，含名称、容量、过期策略与可选加载器。
+ *
  * Configuration {@code record} that encapsulates all configuration required in order to create a {@link LocalCache}.
  *
  * @param name the name of the cache
@@ -24,15 +26,19 @@ public record LocalCacheConfiguration<K, V>(String name, int maxSize, BiFunction
         Objects.requireNonNull(expirationMode, "A cache expiration mode must be configured");
     }
 
+    /** 是否配置了缓存未命中时的加载函数。 */
     public boolean hasLoader() {
         return loader != null;
     }
 
+    /** 创建配置构建器。 */
     public static <K, V> Builder<K, V> builder() {
         return new Builder<>();
     }
 
     /**
+     * {@link LocalCacheConfiguration} 构建器，简化缓存配置组装。
+     *
      * A builder class to simplify the creation of {@link LocalCacheConfiguration} objects.
      *
      * @param <K> the type of the cache Keys used for lookup
@@ -97,6 +103,7 @@ public record LocalCacheConfiguration<K, V>(String name, int maxSize, BiFunction
         }
     }
 
+    /** 缓存条目过期策略：禁用、创建后过期或访问后过期。 */
     public enum ExpirationMode {
         DISABLED,
         CREATE,

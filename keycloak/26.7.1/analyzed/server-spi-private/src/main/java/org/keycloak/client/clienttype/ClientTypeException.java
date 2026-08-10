@@ -21,6 +21,9 @@ package org.keycloak.client.clienttype;
 import org.keycloak.models.ModelException;
 
 /**
+ * 客户端类型配置与校验失败时抛出的 {@link ModelException} 子类。
+ * <p>通过 {@link Message} 枚举统一错误消息，便于服务层一致处理。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientTypeException extends ModelException {
@@ -29,10 +32,9 @@ public class ClientTypeException extends ModelException {
         super(message, parameters);
     }
 
+    /** 客户端类型相关错误消息枚举。 */
     public enum Message {
-        /**
-         * Register all client type exception messages through this enum to keep things consistent across the services.
-         */
+        /** 集中注册客户端类型异常消息，保证各服务文案一致。 */
         INVALID_CLIENT_TYPE("Invalid client type"),
         CANNOT_CHANGE_CLIENT_TYPE("Not supported to change client type"),
         INVALID_CLIENT_TYPE_PROVIDER("Did not find client type provider"),
@@ -49,6 +51,7 @@ public class ClientTypeException extends ModelException {
             this.message = message;
         }
 
+        /** 以当前消息模板构造 {@link ClientTypeException}。 */
         public ClientTypeException exception(Object... parameters) {
             return new ClientTypeException(message, parameters);
         }

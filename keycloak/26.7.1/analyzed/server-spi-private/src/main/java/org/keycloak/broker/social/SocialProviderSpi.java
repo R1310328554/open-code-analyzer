@@ -21,12 +21,16 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 社交身份提供者 SPI 注册项，将 {@link SocialIdentityProvider} 与工厂绑定到 Keycloak SPI 体系。
+ *
  * @author Pedro Igor
  */
 public class SocialProviderSpi implements Spi {
 
+    /** SPI 名称常量 {@code social}。 */
     public static final String SOCIAL_SPI_NAME = "social";
 
+    /** 内部 SPI，不对外暴露为可插拔扩展点。 */
     @Override
     public boolean isInternal() {
         return true;

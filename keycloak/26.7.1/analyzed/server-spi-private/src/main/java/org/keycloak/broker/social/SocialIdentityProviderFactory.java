@@ -19,6 +19,8 @@ package org.keycloak.broker.social;
 import org.keycloak.broker.provider.IdentityProviderFactory;
 
 /**
+ * 社交身份提供者工厂 SPI，扩展 {@link IdentityProviderFactory} 以注册社交 IdP 实现。
+ *
  * @author Pedro Igor
  */
 public interface SocialIdentityProviderFactory<I extends SocialIdentityProvider> extends IdentityProviderFactory<I> {

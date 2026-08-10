@@ -25,25 +25,27 @@ import org.keycloak.provider.Provider;
 import org.keycloak.representations.idm.ClientTypesRepresentation;
 
 /**
- * TODO:client-types javadoc
+ * 客户端类型管理器 SPI：加载、更新领域级客户端类型定义，并在创建/更新客户端时应用类型约束。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ClientTypeManager extends Provider {
 
-    // Constants for global types
+    // 内置全局客户端类型名称常量
     String STANDARD = "standard";
+    /** 服务账户客户端类型名称。 */
     String SERVICE_ACCOUNT = "service-account";
 
-    // TODO:client-types javadoc
+    /** 获取领域内已配置的客户端类型集合表示。 */
     ClientTypesRepresentation getClientTypes(RealmModel realm) throws ClientTypeException;
 
-    // Implementation is supposed also to validate clientTypes before persisting them
+    /** 校验并持久化领域客户端类型配置。 */
     void updateClientTypes(RealmModel realm, ClientTypesRepresentation clientTypes) throws ClientTypeException;
 
+    /** 按名称解析单个 {@link ClientType} 定义。 */
     ClientType getClientType(RealmModel realm, String typeName)  throws ClientTypeException;
 
-    // Create client, which delegates to the particular client type
+    /** 根据客户端关联的类型对其执行 augment 增强。 */
     ClientModel augmentClient(ClientModel client) throws ClientTypeException;
 
     @Override

@@ -3,10 +3,14 @@ package org.keycloak.cache;
 import org.keycloak.provider.Provider;
 
 /**
+ * 本地缓存提供者 SPI，抽象底层实现以创建非集群内存 {@link LocalCache} 实例。
+ *
  * A {@link Provider} to abstract the creation of local, non-clustered, in-memory caches from the underlying cache implementation.
  */
 public interface LocalCacheProvider extends Provider {
     /**
+     * 按配置创建新的 {@link LocalCache}；生命周期由调用方通过 {@link LocalCache#close()} 管理。
+     *
      * Creates a new {@link LocalCache} instance for local caching. {@link LocalCacheProvider} implementations
      * are not responsible for managing the lifecycle of created {@link LocalCache} instances. It is the responsibility
      * of {@link LocalCache} consumers to ensure that {@link LocalCache#close()} is called when the cache is no longer

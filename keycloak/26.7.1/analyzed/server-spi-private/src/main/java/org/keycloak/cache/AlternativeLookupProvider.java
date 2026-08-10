@@ -10,13 +10,22 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.provider.Provider;
 
+/**
+ * 替代查找提供者 SPI：通过 issuer、客户端属性或角色字符串解析实体，并配合本地缓存降低数据库负载。
+ * <p>典型用于 OIDC issuer 解析、客户端断言查找及 JWT 声明中的角色解析。</p>
+ */
 public interface AlternativeLookupProvider extends Provider {
 
+    /** 按 issuer URL 与 IdP 类型查找已配置的身份提供者。 */
     IdentityProviderModel lookupIdentityProviderFromIssuer(KeycloakSession session, IdentityProviderType type, String issuerUrl);
 
+    /** 按客户端属性映射查找匹配的 {@link ClientModel}。 */
     ClientModel lookupClientFromClientAttributes(KeycloakSession session, Map<String, String> attributes);
 
     /**
+     * 从字符串表示解析领域或客户端角色，结果经缓存加速。
+     * <p>领域角色直接使用角色名；客户端角色格式为 {@code client-id.role-name}。客户端 ID 可含点号，故从右向左尝试多种拆分以消除歧义。</p>
+     *
      * Looks up a role from its string representation, supporting both realm and client roles.
      * <p>
      * The method interprets the {@code roleName} parameter as follows:

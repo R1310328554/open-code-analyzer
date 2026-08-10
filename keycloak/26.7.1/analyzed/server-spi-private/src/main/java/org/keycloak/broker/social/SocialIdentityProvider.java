@@ -20,6 +20,9 @@ import org.keycloak.broker.provider.UserAuthenticationIdentityProvider;
 import org.keycloak.models.IdentityProviderModel;
 
 /**
+ * 社交登录身份联邦提供者 SPI，扩展 {@link UserAuthenticationIdentityProvider}。
+ * <p>标记 OAuth/OIDC 社交 IdP（Google、GitHub 等）实现的类型边界。</p>
+ *
  * @author Pedro Igor
  */
 public interface SocialIdentityProvider<C extends IdentityProviderModel> extends UserAuthenticationIdentityProvider<C> {
