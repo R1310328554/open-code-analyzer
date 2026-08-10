@@ -15,23 +15,8 @@
     "internal/harness/graph/graph/state.go",
     "internal/harness/graph/graph/state_inspector.go",
     "internal/harness/graph/interrupt/interrupt.go",
-    "internal/harness/graph/managed/managed.go",
-    "internal/harness/graph/pregel/async.go",
-    "internal/harness/graph/pregel/background.go",
-    "internal/harness/graph/pregel/cache.go",
-    "internal/harness/graph/pregel/cache_async.go",
-    "internal/harness/graph/pregel/callbacks.go",
-    "internal/harness/graph/pregel/engine.go",
-    "internal/harness/graph/pregel/init_pregel.go",
-    "internal/harness/graph/pregel/messages.go",
-    "internal/harness/graph/pregel/optimized.go",
-    "internal/harness/graph/pregel/otel_telemetry.go",
-    "internal/harness/graph/pregel/read.go",
-    "internal/harness/graph/pregel/remote.go",
-    "internal/harness/graph/pregel/retry.go",
-    "internal/harness/graph/pregel/retry_multi.go",
-    "internal/harness/graph/pregel/stream.go"
+    "internal/harness/graph/managed/managed.go"
   ],
   "remaining_pending": 804,
-  "done": 930
+  "done": 945
 }
