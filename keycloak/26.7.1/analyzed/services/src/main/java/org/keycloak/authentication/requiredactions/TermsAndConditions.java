@@ -32,11 +32,15 @@ import org.keycloak.models.UserModel;
 import org.keycloak.services.messages.Messages;
 
 /**
+ * 条款与条件必需操作：要求用户阅读并接受 realm 条款。
+ * <p>接受时在用户属性中记录时间戳；拒绝则清除属性并失败。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class TermsAndConditions implements RequiredActionProvider, RequiredActionFactory {
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = UserModel.RequiredAction.TERMS_AND_CONDITIONS.name();
+    /** 用户属性名：记录接受条款的时间戳。 */
     public static final String USER_ATTRIBUTE = "terms_and_conditions";
 
     @Override
@@ -66,6 +70,7 @@ public class TermsAndConditions implements RequiredActionProvider, RequiredActio
     }
 
 
+    /** 展示条款与条件表单。 */
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
         Response challenge = context.form()
@@ -74,9 +79,10 @@ public class TermsAndConditions implements RequiredActionProvider, RequiredActio
         context.challenge(challenge);
     }
 
+    /** 处理接受或拒绝：写入时间戳属性或失败。 */
     @Override
     public void processAction(RequiredActionContext context) {
-        // Keycloak 21.0.0 changed the user attribute name from lowercase to uppercase
+        // Keycloak 21.0.0 曾将属性名改为大写，此处同时清理遗留大写属性
         // this change was reverted, but it is still possible some attributes created
         // in Keycloak 21.0.0 will be present in the database, we need to remove it too.
         // See https://github.com/keycloak/keycloak/issues/17277 for more details

@@ -66,12 +66,15 @@ import org.jboss.logging.Logger;
 import static org.keycloak.models.AuthenticationExecutionModel.Requirement.DISABLED;
 
 /**
+ * 配置 OTP（TOTP）必需操作：引导用户注册基于时间的一次性密码凭证。
+ * <p>可选在 OTP 配置完成后自动添加恢复码必需操作。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class UpdateTotp implements RequiredActionProvider, RequiredActionFactory, CredentialRegistrator {
 
     private static final Logger log = Logger.getLogger(KeycloakModelUtils.class);
+    /** 配置键：OTP 配置后是否自动添加恢复码必需操作。 */
     public static final String ADD_RECOVERY_CODES = "add-recovery-codes";
 
     List<ProviderConfigProperty> ADD_RECOVERY_CODES_CONFIG_PROPERTIES = addRecoveryCodesConfig();
@@ -100,6 +103,7 @@ public class UpdateTotp implements RequiredActionProvider, RequiredActionFactory
     public void evaluateTriggers(RequiredActionContext context) {
     }
 
+    /** 展示 OTP 配置表单（含 mode 查询参数）。 */
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
         Response challenge = context.form()
@@ -108,6 +112,7 @@ public class UpdateTotp implements RequiredActionProvider, RequiredActionFactory
         context.challenge(challenge);
     }
 
+    /** 校验 TOTP 码并创建 OTP 凭证，可选触发恢复码配置。 */
     @Override
     public void processAction(RequiredActionContext context) {
         EventBuilder event = context.getEvent();
@@ -196,8 +201,7 @@ public class UpdateTotp implements RequiredActionProvider, RequiredActionFactory
     }
 
     /**
-     * Check if recovery codes are enabled in the authentication flow.
-     * This is the same logic that is applied in the account console to show if recovery codes can be set up.
+     * 检查认证流程中是否启用了恢复码（与账户控制台逻辑一致）。
      */
     private boolean isRecoveryCodesEnabledInAuthenticationFlow(RealmModel realm, KeycloakSession session) {
         return realm.getAuthenticationFlowsStream()
@@ -213,7 +217,7 @@ public class UpdateTotp implements RequiredActionProvider, RequiredActionFactory
                 ).anyMatch(s -> s.equals(RecoveryAuthnCodesCredentialModel.TYPE));
     }
 
-    // Returns true if flow is effectively disabled - either it's execution or some parent execution is disabled
+    // 流程或其父执行被禁用时返回 true
     private boolean isFlowEffectivelyDisabled(RealmModel realm, AuthenticationFlowModel flow) {
         while (!flow.isTopLevel()) {
             AuthenticationExecutionModel flowExecution = realm.getAuthenticationExecutionByFlowId(flow.getId());
@@ -230,6 +234,7 @@ public class UpdateTotp implements RequiredActionProvider, RequiredActionFactory
     }
 
     // Use separate method, so it's possible to override in the custom provider
+    /** 校验用户输入的 TOTP 码（子类可覆盖）。 */
     protected boolean validateOTPCredential(RequiredActionContext context, String token, OTPCredentialModel credentialModel, OTPPolicy policy) {
         return CredentialValidation.validOTP(token, credentialModel, policy.getLookAheadWindow());
     }

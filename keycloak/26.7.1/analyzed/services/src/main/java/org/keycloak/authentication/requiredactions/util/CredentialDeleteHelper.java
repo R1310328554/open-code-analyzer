@@ -45,6 +45,8 @@ import org.jboss.logging.Logger;
 import static org.keycloak.models.Constants.NO_LOA;
 
 /**
+ * 凭证删除辅助类：校验凭证可删除性及 LoA 是否满足阶梯认证要求。
+ * <p>例如删除双因素凭证需以对应 LoA 级别认证。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class CredentialDeleteHelper {
@@ -52,17 +54,16 @@ public class CredentialDeleteHelper {
     private static final Logger logger = Logger.getLogger(CredentialDeleteHelper.class);
 
     /**
-     * Removing credential of given ID of specified user. It does the necessary validation to validate if specified credential can be removed.
-     * In case of step-up authentication enabled, it verifies if user authenticated with corresponding level in order to be able to remove this credential.
+     * 删除指定用户的凭证并执行必要校验。
+     * 启用阶梯认证时，须以对应 LoA 级别认证方可删除（如删除双因素凭证需双因素认证）。
      *
-     * For instance removing 2nd-factor credential require authentication with 2nd-factor as well for security reasons.
-     *
-     * @param session
-     * @param user
-     * @param credentialId
-     * @param currentLoAProvider supplier of current authenticated level. Can be retrieved for instance from session or from the token
-     * @return removed credential. It can return null if credential was not found or if it was legacy format of federated credential ID
+     * @param session Keycloak 会话
+     * @param user 用户模型
+     * @param credentialId 凭证 ID
+     * @param currentLoAProvider 当前已认证 LoA 级别供应器
+     * @return 已删除凭证；联邦占位 ID 或未找到时可能为 null
      */
+    /** 删除凭证入口：处理存储凭证、联邦凭证与 legacy 占位 ID。 */
     public static CredentialModel removeCredential(KeycloakSession session, UserModel user, String credentialId, Supplier<Integer> currentLoAProvider) {
         CredentialModel credential = user.credentialManager().getStoredCredentialById(credentialId);
         if (credential == null) {
@@ -75,7 +76,7 @@ public class CredentialDeleteHelper {
                     return null;
                 }
             }
-            // Backwards compatibility with account console 1 - When stored credential is not found, it may be federated credential.
+            // 与账户控制台 1 向后兼容：未找到存储凭证时尝试 legacy 联邦占位 ID
             // In this case, it's ID needs to be something like "otp-id", which is returned by account REST GET endpoint as a placeholder
             // for federated credentials (See CredentialHelper.createUserStorageCredentialRepresentation )
             if (credentialId.endsWith("-id")) {
@@ -91,6 +92,7 @@ public class CredentialDeleteHelper {
         return credential;
     }
 
+    /** 校验凭证类型可删除且当前 LoA 满足要求。 */
     private static void checkIfCanBeRemoved(KeycloakSession session, UserModel user, String credentialType, Supplier<Integer> currentLoAProvider) {
         CredentialProvider credentialProvider = AuthenticatorUtil.getCredentialProviders(session)
                 .filter(credentialProvider1 -> credentialProvider1.supportsCredentialType(credentialType))
@@ -106,10 +108,11 @@ public class CredentialDeleteHelper {
             throw new BadRequestException("Credential type cannot be removed");
         }
 
-        // Check if current accessToken has permission to remove credential in case of step-up authentication was used
+        // 阶梯认证场景下校验当前 LoA 是否允许删除该类型凭证
         checkAuthenticatedLoASufficientForCredentialRemove(session, credentialType, currentLoAProvider);
     }
 
+    /** 比较当前 LoA 与删除该凭证类型所需的 LoA。 */
     private static void checkAuthenticatedLoASufficientForCredentialRemove(KeycloakSession session, String credentialType, Supplier<Integer> currentLoAProvider) {
         int requestedLoaForCredentialRemove = getRequestedLoaForCredential(session, credentialType);
 
@@ -119,6 +122,7 @@ public class CredentialDeleteHelper {
         }
     }
 
+    /** 从 browser 认证流程解析凭证类型对应的 LoA 级别。 */
     private static int getRequestedLoaForCredential(KeycloakSession session, String credentialType) {
         RealmModel realm = session.getContext().getRealm();
         ClientModel client = session.getContext().getClient();

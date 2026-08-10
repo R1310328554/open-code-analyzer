@@ -47,6 +47,8 @@ import org.keycloak.userprofile.ValidationException;
 import static java.util.Optional.ofNullable;
 
 /**
+ * 更新用户资料必需操作：通过 UserProfile 校验并更新用户属性。
+ * <p>邮箱变更且需验证时自动添加 UPDATE_EMAIL 必需操作。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -60,11 +62,13 @@ public class UpdateProfile implements RequiredActionProvider, RequiredActionFact
     public void evaluateTriggers(RequiredActionContext context) {
     }
 
+    /** 展示用户资料更新表单。 */
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
         context.challenge(createResponse(context, null, null));
     }
 
+    /** 校验并更新用户资料，记录 UPDATE_PROFILE 事件。 */
     @Override
     public void processAction(RequiredActionContext context) {
         EventBuilder event = context.getEvent();
@@ -94,10 +98,12 @@ public class UpdateProfile implements RequiredActionProvider, RequiredActionFact
         }
     }
 
+    /** @return 表单对应的必需操作类型 */
     protected UserModel.RequiredAction getResponseAction(){
         return UserModel.RequiredAction.UPDATE_PROFILE;
     }
 
+    /** 构建带错误与表单数据的资料更新响应。 */
     protected Response createResponse(RequiredActionContext context, MultivaluedMap<String, String> formData, List<FormMessage> errors) {
         LoginFormsProvider form = context.form();
 

@@ -96,16 +96,19 @@ import static org.keycloak.services.messages.Messages.WEBAUTHN_ERROR_REGISTRATIO
 import static org.keycloak.services.messages.Messages.WEBAUTHN_REGISTER_TITLE;
 
 /**
- * Required action for register WebAuthn 2-factor credential for the user
+ * WebAuthn 双因素凭证注册必需 action：调用 navigator.credentials.create() 注册安全密钥。
+ * <p>校验 attestation、AAGUID 与 authenticatorAttachment 等 realm 策略。</p>
  */
 public class WebAuthnRegister implements RequiredActionProvider, CredentialRegistrator {
 
+    /** 表单属性：WebAuthn 页面标题键。 */
     private static final String WEB_AUTHN_TITLE_ATTR = "webAuthnTitle";
     private static final Logger logger = Logger.getLogger(WebAuthnRegister.class);
 
     private final KeycloakSession session;
     private final CertPathTrustworthinessVerifier certPathtrustVerifier;
 
+    /** @param session Keycloak 会话 @param certPathtrustVerifier 证书路径信任校验器 */
     public WebAuthnRegister(KeycloakSession session, CertPathTrustworthinessVerifier certPathtrustVerifier) {
         this.session = session;
         this.certPathtrustVerifier = certPathtrustVerifier;
@@ -116,6 +119,7 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
         return InitiatedActionSupport.SUPPORTED;
     }
 
+    /** 生成 challenge 并渲染 webauthn-register.ftl 注册页。 */
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
         String actionParameter = context.getAuthenticationSession().getClientNote(Constants.KC_ACTION_PARAMETER);
@@ -126,7 +130,7 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
             return;
         }
 
-        // Use standard UTF-8 charset to get bytes from string.
+        // 使用 UTF-8 编码 userId，避免跨平台 charset 差异
         // Otherwise the platform's default charset is used and it might cause problems later when
         // decoded on different system.
         String userId = Base64Url.encode(userModel.getId().getBytes(StandardCharsets.UTF_8));
@@ -135,7 +139,7 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
         String challengeValue = Base64Url.encode(challenge.getValue());
         context.getAuthenticationSession().setAuthNote(WebAuthnConstants.AUTH_CHALLENGE_NOTE, challengeValue);
 
-        // construct parameters for calling WebAuthn API navigator.credential.create()
+        // 构建 navigator.credentials.create() 所需参数
 
         // mandatory
         WebAuthnPolicy policy = getWebAuthnPolicy(context);
@@ -189,6 +193,7 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
         context.challenge(form);
     }
 
+    /** @return realm 双因素 WebAuthn 策略（子类可覆盖） */
     protected WebAuthnPolicy getWebAuthnPolicy(RequiredActionContext context) {
         return context.getRealm().getWebAuthnPolicy();
     }
@@ -207,7 +212,7 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
     }
 
     /**
-     * Method to provide removal and deprecation hint
+     * 向后兼容旧事件类型（UPDATE_PASSWORD、UPDATE_TOTP 等）。
      * @deprecated For compatibility sake as long as we use @link {@link EventType#UPDATE_PASSWORD} , {@link EventType#UPDATE_TOTP} a.s.o.
      */
     @Deprecated
@@ -215,6 +220,7 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
         return context.getEvent().getEvent().getType();
     }
 
+    /** 解析并校验 WebAuthn 注册响应，创建凭证。 */
     @Override
     public void processAction(RequiredActionContext context) {
 
@@ -231,7 +237,7 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
                 .event(EventType.UPDATE_CREDENTIAL)
                 .detail(Details.CREDENTIAL_TYPE, getCredentialType());
 
-        // receive error from navigator.credentials.create()
+        // 处理 navigator.credentials.create() 返回的错误
         String errorMsgFromWebAuthnApi = params.getFirst(WebAuthnConstants.ERROR);
         if (errorMsgFromWebAuthnApi != null && !errorMsgFromWebAuthnApi.isEmpty()) {
             setErrorResponse(context, WEBAUTHN_ERROR_REGISTER_VERIFICATION, errorMsgFromWebAuthnApi, originalEventType);
@@ -260,7 +266,7 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
         }
         Challenge challenge = new DefaultChallenge(challengeNote);
         ServerProperty serverProperty = new ServerProperty(allOrigins, rpId, challenge);
-        // check User Verification by considering a malicious user might modify the result of calling WebAuthn API
+        // 考虑恶意用户可能篡改 WebAuthn API 结果，校验用户验证要求
         boolean isUserVerificationRequired = policy.getUserVerificationRequirement().equals(Constants.WEBAUTHN_POLICY_OPTION_REQUIRED);
 
         final String transportsParam = params.getFirst(WebAuthnConstants.TRANSPORTS);
@@ -300,7 +306,7 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
             credential.setAttestationStatementFormat(registrationData.getAttestationObject().getFormat());
             credential.setTransports(registrationData.getTransports());
 
-            // Save new webAuthn credential
+            // 保存新 WebAuthn 凭证
             WebAuthnCredentialProvider webAuthnCredProvider = (WebAuthnCredentialProvider) this.session.getProvider(CredentialProvider.class, getCredentialProviderId());
             WebAuthnCredentialModel newCredentialModel = webAuthnCredProvider.getCredentialModelFromCredentialInput(credential, label);
 
@@ -329,11 +335,9 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
     }
 
     /**
-     * Create WebAuthnRegistrationManager instance
-     * Can be overridden in subclasses to customize the used attestation validators
-     *
-     * @param policy The webauthn policy defined
-     * @return webauthn4j WebAuthnRegistrationManager instance
+     * 创建 {@link WebAuthnRegistrationManager} 实例（子类可定制 attestation 校验器）。
+     * @param policy realm WebAuthn 策略
+     * @return webauthn4j WebAuthnRegistrationManager 实例
      */
     protected WebAuthnRegistrationManager createWebAuthnRegistrationManager(WebAuthnPolicy policy) {
         List<AttestationStatementVerifier> verifiers = new ArrayList<>(6);
@@ -364,10 +368,10 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
     }
 
     /**
-     * Converts a list of human-readable webauthn signature methods (ES256, RS256, etc) into
-     * their <a href="https://www.iana.org/assignments/cose/cose.xhtml#algorithms"> COSE identifier</a> form.
+     * 将可读签名算法名（ES256、RS256 等）转换为
+     * <a href="https://www.iana.org/assignments/cose/cose.xhtml#algorithms">COSE 标识符</a>。
      *
-     * Returns the list of converted algorithm identifiers.
+     * @return 转换后的算法标识符列表
     **/
     private static List<Long> convertSignatureAlgorithms(List<String> signatureAlgorithmsList) {
         List<Long> algs = new ArrayList<>();
@@ -493,9 +497,8 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
     }
 
     /**
-     * Policy compliance checks for WebAuthn registration.
-     * Signature algorithm, user verification, and user presence are validated by webauthn4j via {@link RegistrationParameters}.
-     * The checks below cover remaining policies.
+     * WebAuthn 注册策略合规检查。
+     * 签名算法、用户验证与 presence 由 webauthn4j 通过 {@link RegistrationParameters} 校验；此处覆盖剩余策略项。
      */
     static class PolicyVerifier {
 
@@ -508,7 +511,7 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
             String aaguid = getAttestedCredentialData(registrationData).getAaguid().toString();
             List<String> acceptableAaguids = policy.getAcceptableAaguids();
             if (CollectionUtil.isNotEmpty(acceptableAaguids)) {
-                // AAGUID comes from the authenticator data itself; only real attestation cryptographically proves the authenticator model
+                // AAGUID 来自 authenticator 数据；仅真实 attestation 可密码学证明设备型号
                 if (NoneAttestationStatement.FORMAT.equals(registrationData.getAttestationObject().getFormat())) {
                     throw new WebAuthnException("Acceptable AAGUIDs require an attestation format other than 'none'.");
                 } else if (acceptableAaguids.stream().noneMatch(aaguid::equals)) {
@@ -518,7 +521,7 @@ public class WebAuthnRegister implements RequiredActionProvider, CredentialRegis
             }
         }
 
-        // Best-effort: authenticatorAttachment is client-reported (not in the attestation object), so not cryptographically verified
+        // 尽力校验：authenticatorAttachment 由客户端报告，无法密码学验证
         private static void verifyAuthenticatorAttachment(String authenticatorAttachment, WebAuthnPolicy policy) {
             String requiredAttachment = policy.getAuthenticatorAttachment();
             if (requiredAttachment == null || Constants.DEFAULT_WEBAUTHN_POLICY_NOT_SPECIFIED.equals(requiredAttachment)) {

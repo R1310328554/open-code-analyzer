@@ -23,12 +23,15 @@ import org.keycloak.models.KeycloakSession;
 import com.webauthn4j.verifier.attestation.trustworthiness.certpath.CertPathTrustworthinessVerifier;
 
 /**
+ * {@link WebAuthnPasswordlessRegister} 工厂：注册无密码 WebAuthn 凭证必需操作。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class WebAuthnPasswordlessRegisterFactory extends WebAuthnRegisterFactory {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "webauthn-register-passwordless";
 
+    /** @return {@link WebAuthnPasswordlessRegister} 实例 */
     @Override
     protected WebAuthnRegister createProvider(KeycloakSession session, CertPathTrustworthinessVerifier trustVerifier) {
         return new WebAuthnPasswordlessRegister(session, trustVerifier);

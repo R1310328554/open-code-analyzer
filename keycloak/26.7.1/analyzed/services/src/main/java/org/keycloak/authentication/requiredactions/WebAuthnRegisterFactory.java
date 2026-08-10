@@ -31,10 +31,16 @@ import com.webauthn4j.verifier.attestation.trustworthiness.certpath.CertPathTrus
 import com.webauthn4j.verifier.attestation.trustworthiness.certpath.DefaultCertPathTrustworthinessVerifier;
 import com.webauthn4j.verifier.attestation.trustworthiness.certpath.NullCertPathTrustworthinessVerifier;
 
+/**
+ * {@link WebAuthnRegister} 工厂：根据信任库创建带证书路径校验的 WebAuthn 注册必需操作。
+ * <p>需启用 {@link Profile.Feature#WEB_AUTHN} 特性。</p>
+ */
 public class WebAuthnRegisterFactory implements RequiredActionFactory, EnvironmentDependentProviderFactory {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "webauthn-register";
 
+    /** 按信任库可用性创建 {@link WebAuthnRegister} 实例。 */
     @Override
     public RequiredActionProvider create(KeycloakSession session) {
         WebAuthnRegister webAuthnRegister = null;
@@ -49,6 +55,7 @@ public class WebAuthnRegisterFactory implements RequiredActionFactory, Environme
         return webAuthnRegister;
     }
 
+    /** @return 绑定 session 与信任校验器的 {@link WebAuthnRegister} */
     protected WebAuthnRegister createProvider(KeycloakSession session, CertPathTrustworthinessVerifier trustVerifier) {
          return new WebAuthnRegister(session, trustVerifier);
     }
@@ -78,6 +85,7 @@ public class WebAuthnRegisterFactory implements RequiredActionFactory, Environme
         return "Webauthn Register";
     }
 
+    /** @return 是否启用 WEB_AUTHN 特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.WEB_AUTHN);

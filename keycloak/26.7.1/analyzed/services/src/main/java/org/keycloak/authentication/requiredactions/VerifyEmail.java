@@ -62,16 +62,20 @@ import org.jboss.logging.Logger;
 import static org.keycloak.services.managers.AuthenticationManager.NEW_USER_REGISTERED;
 
 /**
+ * 验证邮箱必需 action：向用户发送验证邮件并等待确认。
+ * <p>支持注册流程、AIA 触发及重发冷却限流；与 UPDATE_EMAIL 互斥。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class VerifyEmail implements RequiredActionProvider, RequiredActionFactory {
+    /** 重发验证邮件冷却期 auth note 前缀。 */
     public static final String EMAIL_RESEND_COOLDOWN_KEY_PREFIX = "verify-email-cooldown-";
     private static final Logger logger = Logger.getLogger(VerifyEmail.class);
 
-    // Auth note to set that verifyEmail is triggered during registration
+    // 标记验证邮箱在注册流程中触发
     private static final String VERIFY_EMAIL_DURING_REGISTRATION = "VERIFY_EMAIL_DURING_REGISTRATION";
 
+    /** realm 启用邮件验证且用户未验证时添加 VERIFY_EMAIL（不与 UPDATE_EMAIL 并存）。 */
     @Override
     public void evaluateTriggers(RequiredActionContext context) {
         if (context.getRealm().isVerifyEmail() && !context.getUser().isEmailVerified()) {
@@ -79,7 +83,7 @@ public class VerifyEmail implements RequiredActionProvider, RequiredActionFactor
                 logger.debug("Skipping VERIFY_EMAIL because the user has no email set");
                 return;
             }
-            // Don't add VERIFY_EMAIL if UPDATE_EMAIL is already present (UPDATE_EMAIL takes precedence)
+            // UPDATE_EMAIL 已存在时不添加 VERIFY_EMAIL（UPDATE_EMAIL 优先）
             if (context.getUser().getRequiredActionsStream().noneMatch(action -> UserModel.RequiredAction.UPDATE_EMAIL.name().equals(action))) {
                 context.getUser().addRequiredAction(UserModel.RequiredAction.VERIFY_EMAIL);
                 logger.debug("User is required to verify email");
@@ -99,12 +103,13 @@ public class VerifyEmail implements RequiredActionProvider, RequiredActionFactor
         process(context, true);
     }
 
+    /** 已验证则成功；否则发送验证邮件或展示等待页。 */
     private void process(RequiredActionContext context, boolean isChallenge) {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
 
         if (context.getUser().isEmailVerified()) {
             if ("true".equals(context.getAuthenticationSession().getAuthNote(NEW_USER_REGISTERED))) {
-                // If registration of the user happened in this authSession, but email was later verified in different authSession, this authSession should not continue
+                // 本 authSession 注册但邮箱在其他会话验证时，重定向重启登录
                 URI redirectToRestartUrl = Urls.realmLoginRestartPage(context.getUriInfo().getBaseUri(), context.getRealm().getName(),
                         authSession.getClient().getClientId(),
                         authSession.getTabId(),
@@ -134,7 +139,7 @@ public class VerifyEmail implements RequiredActionProvider, RequiredActionFactor
         Response challenge;
         authSession.setClientNote(AuthorizationEndpointBase.APP_INITIATED_FLOW, null);
 
-        // Do not allow resending e-mail by simple page refresh, i.e. when e-mail sent, it should be resent properly via email-verification endpoint
+        // 禁止刷新页面重发邮件；须通过验证端点或 processAction 重发
         if (!Objects.equals(authSession.getAuthNote(Constants.VERIFY_EMAIL_KEY), email) && !(isCurrentActionTriggeredFromAIA(context) && isChallenge)) {
             // Adding the cooldown entry first to prevent concurrent operations
             EmailCooldownManager.addCooldownEntry(context, EMAIL_RESEND_COOLDOWN_KEY_PREFIX);
@@ -152,6 +157,7 @@ public class VerifyEmail implements RequiredActionProvider, RequiredActionFactor
         return Objects.equals(context.getAuthenticationSession().getClientNote(Constants.KC_ACTION), getId());
     }
 
+    /** 用户请求重发验证邮件（受冷却限流约束）。 */
     @Override
     public void processAction(RequiredActionContext context) {
         logger.debugf("Re-sending email requested for user: %s", context.getUser().getUsername());
@@ -221,6 +227,7 @@ public class VerifyEmail implements RequiredActionProvider, RequiredActionFactor
     }
 
 
+    /** 构建验证令牌链接并发送验证邮件。 */
     private Response sendVerifyEmail(RequiredActionContext context, EventBuilder event) throws UriBuilderException, IllegalArgumentException {
         RealmModel realm = context.getRealm();
         UriInfo uriInfo = context.getUriInfo();

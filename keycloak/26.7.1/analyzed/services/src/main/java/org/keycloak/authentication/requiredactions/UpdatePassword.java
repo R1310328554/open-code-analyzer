@@ -54,6 +54,8 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.jboss.logging.Logger;
 
 /**
+ * 更新密码必需操作：在密码过期或管理员强制时引导用户设置新密码。
+ * <p>支持密码策略校验、确认匹配及可选注销其他会话。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -67,6 +69,7 @@ public class UpdatePassword implements RequiredActionProvider, RequiredActionFac
     }
 
 
+    /** 密码已验证且超过过期天数时添加 UPDATE_PASSWORD 必需操作。 */
     @Override
     public void evaluateTriggers(RequiredActionContext context) {
         if (!AuthenticatorUtil.isPasswordValidated(context.getAuthenticationSession())) {
@@ -93,6 +96,7 @@ public class UpdatePassword implements RequiredActionProvider, RequiredActionFac
         }
     }
 
+    /** 展示更新密码表单。 */
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
         Response challenge = context.form()
@@ -101,6 +105,7 @@ public class UpdatePassword implements RequiredActionProvider, RequiredActionFac
         context.challenge(challenge);
     }
 
+    /** 校验新密码与确认密码，更新凭证并记录事件。 */
     @Override
     public void processAction(RequiredActionContext context) {
         EventBuilder event = context.getEvent();
@@ -198,10 +203,11 @@ public class UpdatePassword implements RequiredActionProvider, RequiredActionFac
         return UserModel.RequiredAction.UPDATE_PASSWORD.name();
     }
 
+    /** 优先使用密码策略中的 maxAuthAge，否则回退默认值。 */
     @Override
     public int getMaxAuthAge(KeycloakSession session) {
         if (session == null) {
-            // session is null, support for legacy implementation, fallback to default maxAuthAge
+            // session 为 null 时向后兼容，回退默认 maxAuthAge
             return Constants.KC_ACTION_MAX_AGE;
         }
 

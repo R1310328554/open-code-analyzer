@@ -46,10 +46,13 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.utils.StringUtil;
 
 /**
+ * 删除凭证必需操作：通过 kc_action 参数引导用户确认并移除指定凭证。
+ * <p>支持 {@link CredentialDeleteHelper} 校验 LoA 与可删除性，兼容联邦凭证占位 ID。</p>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DeleteCredentialAction implements RequiredActionProvider, RequiredActionFactory, CredentialAction {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "delete_credential";
 
     @Override
@@ -83,6 +86,7 @@ public class DeleteCredentialAction implements RequiredActionProvider, RequiredA
 
     }
 
+    /** 从 kc_action 参数解析待删除凭证的类型。 */
     @Override
     public String getCredentialType(KeycloakSession session, AuthenticationSessionModel authenticationSession) {
         String credentialId = authenticationSession.getClientNote(Constants.KC_ACTION_PARAMETER);
@@ -107,6 +111,7 @@ public class DeleteCredentialAction implements RequiredActionProvider, RequiredA
         }
     }
 
+    /** 展示删除凭证确认表单。 */
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
         String credentialId = context.getAuthenticationSession().getClientNote(Constants.KC_ACTION_PARAMETER);
@@ -121,7 +126,7 @@ public class DeleteCredentialAction implements RequiredActionProvider, RequiredA
         String credentialLabel;
         CredentialModel credential = user.credentialManager().getStoredCredentialById(credentialId);
         if (credential == null) {
-            // Backwards compatibility with account console 1 - When stored credential is not found, it may be federated credential.
+            // 与账户控制台 1 向后兼容：未找到存储凭证时可能是联邦凭证占位 ID
             // In this case, it's ID needs to be something like "otp-id", which is returned by account REST GET endpoint as a placeholder
             // for federated credentials (See CredentialHelper.createUserStorageCredentialRepresentation )
             if (credentialId.endsWith("-id")) {
@@ -143,6 +148,7 @@ public class DeleteCredentialAction implements RequiredActionProvider, RequiredA
         context.challenge(challenge);
     }
 
+    /** 调用 {@link CredentialDeleteHelper#removeCredential} 执行删除并记录事件。 */
     @Override
     public void processAction(RequiredActionContext context) {
         EventBuilder event = context.getEvent();
@@ -185,10 +191,12 @@ public class DeleteCredentialAction implements RequiredActionProvider, RequiredA
         }
     }
 
+    /** @return 当前认证会话的 LoA 级别 */
     private int getCurrentLoa(KeycloakSession session, AuthenticationSessionModel authSession) {
         return new AcrStore(session, authSession).getLevelOfAuthenticationFromCurrentAuthentication();
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayText() {
         return "Delete Credential";

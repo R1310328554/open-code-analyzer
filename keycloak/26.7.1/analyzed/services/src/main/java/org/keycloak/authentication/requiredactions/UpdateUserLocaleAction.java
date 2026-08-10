@@ -15,6 +15,10 @@ import org.keycloak.models.LDAPConstants;
 import org.keycloak.models.UserModel;
 import org.keycloak.storage.UserStorageProvider;
 
+/**
+ * 更新用户语言环境必需操作：在认证流程中同步用户 locale 与 cookie。
+ * <p>优先使用用户请求 locale，其次用户属性，只读联邦用户可继承 cookie locale。</p>
+ */
 public class UpdateUserLocaleAction implements RequiredActionProvider, RequiredActionFactory {
 
     @Override
@@ -22,6 +26,7 @@ public class UpdateUserLocaleAction implements RequiredActionProvider, RequiredA
         return "Update User Locale";
     }
 
+    /** 根据请求 locale、用户属性或 cookie 更新 locale 设置。 */
     @Override
     public void evaluateTriggers(RequiredActionContext context) {
         String userRequestedLocale = context.getAuthenticationSession().getAuthNote(LocaleSelectorProvider.USER_REQUEST_LOCALE);
@@ -46,6 +51,7 @@ public class UpdateUserLocaleAction implements RequiredActionProvider, RequiredA
         }
     }
 
+    /** @return 用户是否为只读模式的联邦用户 */
     private boolean isReadOnlyFederatedUser(RequiredActionContext context) {
         String federationLink = context.getUser().getFederationLink();
         if (federationLink == null) {
@@ -86,6 +92,7 @@ public class UpdateUserLocaleAction implements RequiredActionProvider, RequiredA
     public void close() {
     }
 
+    /** @return 提供者标识符 update_user_locale */
     @Override
     public String getId() {
         return "update_user_locale";

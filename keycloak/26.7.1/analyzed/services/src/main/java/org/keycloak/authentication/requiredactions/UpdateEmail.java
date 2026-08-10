@@ -73,14 +73,21 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.services.messages.Messages.EMAIL_VERIFICATION_PENDING;
 
+/**
+ * 更新邮箱必需操作：允许用户修改邮箱，可选强制邮件验证流程。
+ * <p>需启用 {@link Profile.Feature#UPDATE_EMAIL}；支持冷却限流与待验证邮箱缓存。</p>
+ */
 public class UpdateEmail implements RequiredActionProvider, RequiredActionFactory, EnvironmentDependentProviderFactory {
 
     private static final Logger logger = Logger.getLogger(UpdateEmail.class);
 
+    /** 配置键：是否强制邮件验证（不受 realm 设置限制）。 */
     public static final String CONFIG_VERIFY_EMAIL = "verifyEmail";
     private static final String FORCE_EMAIL_VERIFICATION = "forceEmailVerification";
+    /** 重发验证邮件冷却期 auth note 前缀。 */
     public static final String EMAIL_RESEND_COOLDOWN_KEY_PREFIX = "update-email-cooldown-";
 
+    /** @return realm 是否启用 UPDATE_EMAIL 必需操作 */
     public static boolean isEnabled(RealmModel realm) {
         if (realm == null) {
             return false;
@@ -95,6 +102,7 @@ public class UpdateEmail implements RequiredActionProvider, RequiredActionFactor
         return model != null && model.isEnabled();
     }
 
+    /** @return 是否需对新邮箱执行验证流程 */
     public static boolean isVerifyEmailEnabled(RealmModel realm) {
         if (!isEnabled(realm)) {
             return false;
@@ -109,6 +117,7 @@ public class UpdateEmail implements RequiredActionProvider, RequiredActionFactor
         return isVerifyEmailEnabled(realm, config);
     }
 
+    /** 在会话中标记强制邮件验证。 */
     public static void forceEmailVerification(KeycloakSession session) {
         session.setAttribute(FORCE_EMAIL_VERIFICATION, true);
     }
@@ -128,6 +137,7 @@ public class UpdateEmail implements RequiredActionProvider, RequiredActionFactor
         return "Update Email";
     }
 
+    /** 有待验证邮箱时添加必需操作；与 VERIFY_EMAIL 互斥时移除后者。 */
     @Override
     public void evaluateTriggers(RequiredActionContext context) {
         UserModel user = context.getUser();
@@ -144,6 +154,7 @@ public class UpdateEmail implements RequiredActionProvider, RequiredActionFactor
         }
     }
 
+    /** 展示更新邮箱表单或发送确认邮件。 */
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
         if (isEnabled(context.getRealm())) {
@@ -151,7 +162,7 @@ public class UpdateEmail implements RequiredActionProvider, RequiredActionFactor
             UserModel user = context.getUser();
             UserProfile profile = profileProvider.create(UserProfileContext.UPDATE_EMAIL, user);
 
-            // skip and clear UPDATE_EMAIL required action if email is readonly
+            // 邮箱只读时跳过并清除 UPDATE_EMAIL 必需操作
             if (profile.getAttributes().isReadOnly(UserModel.EMAIL)) {
                 user.removeRequiredAction(UserModel.RequiredAction.UPDATE_EMAIL);
                 return;
@@ -161,7 +172,7 @@ public class UpdateEmail implements RequiredActionProvider, RequiredActionFactor
             String newEmail = formData.getFirst(UserModel.EMAIL);
 
             if (newEmail != null) {
-                // Remove VERIFY_EMAIL to ensure UPDATE_EMAIL takes precedence when both realm verification and forced verification are enabled.
+                // 同时启用 realm 验证与强制验证时，移除 VERIFY_EMAIL 以确保 UPDATE_EMAIL 优先
                 user.removeRequiredAction(UserModel.RequiredAction.VERIFY_EMAIL);
                 sendEmailUpdateConfirmation(context, false);
             } else {
@@ -182,6 +193,7 @@ public class UpdateEmail implements RequiredActionProvider, RequiredActionFactor
         }
     }
 
+    /** 校验新邮箱并直接更新或发送确认邮件。 */
     @Override
     public void processAction(RequiredActionContext context) {
         if (!isEnabled(context.getRealm())) {
@@ -215,8 +227,9 @@ public class UpdateEmail implements RequiredActionProvider, RequiredActionFactor
         sendEmailUpdateConfirmation(context, logoutSessions);
     }
 
+    /** 发送邮箱更新确认邮件并设置冷却与待验证状态。 */
     private void sendEmailUpdateConfirmation(RequiredActionContext context, boolean logoutSessions) {
-        // Check rate limiting cooldown
+        // 检查重发冷却限流
         Long remaining = EmailCooldownManager.retrieveCooldownEntry(context, EMAIL_RESEND_COOLDOWN_KEY_PREFIX);
         if (remaining != null) {
             // Pre-fill form with pending email during cooldown
@@ -287,6 +300,7 @@ public class UpdateEmail implements RequiredActionProvider, RequiredActionFactor
         context.success();
     }
 
+    /** 通过 UserProfile 校验新邮箱格式与唯一性。 */
     public static UserProfile validateEmailUpdate(KeycloakSession session, UserModel user, String newEmail) {
         MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
         formData.putSingle(UserModel.USERNAME, user.getUsername());
@@ -297,6 +311,7 @@ public class UpdateEmail implements RequiredActionProvider, RequiredActionFactor
         return profile;
     }
 
+    /** 立即更新邮箱并记录 UPDATE_EMAIL 事件。 */
     public static void updateEmailNow(EventBuilder event, UserModel user, UserProfile emailUpdateValidationResult) {
         user.removeRequiredAction(UserModel.RequiredAction.UPDATE_EMAIL);
         String oldEmail = user.getEmail();
@@ -349,6 +364,7 @@ public class UpdateEmail implements RequiredActionProvider, RequiredActionFactor
         return config;
     }
 
+    /** @return 是否启用 UPDATE_EMAIL 特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.UPDATE_EMAIL);

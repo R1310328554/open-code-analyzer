@@ -34,16 +34,23 @@ import org.keycloak.validate.ValidationError;
 
 import static org.keycloak.utils.CredentialHelper.createRecoveryCodesCredential;
 
+/**
+ * 恢复认证码必需操作：生成并保存一组一次性恢复码凭证。
+ * <p>需启用 {@link Profile.Feature#RECOVERY_CODES} 特性；支持剩余数量警告阈值配置。</p>
+ */
 public class RecoveryAuthnCodesAction implements RequiredActionProvider, RequiredActionFactory, EnvironmentDependentProviderFactory, CredentialRegistrator {
 
+    /** 表单隐藏字段：生成的恢复码列表。 */
     private static final String FIELD_GENERATED_RECOVERY_AUTHN_CODES_HIDDEN = "generatedRecoveryAuthnCodes";
     private static final String FIELD_GENERATED_AT_HIDDEN = "generatedAt";
     private static final String FIELD_USER_LABEL_HIDDEN = "userLabel";
+    /** 提供者标识符，与 {@link UserModel.RequiredAction#CONFIGURE_RECOVERY_AUTHN_CODES} 一致。 */
     public static final String PROVIDER_ID = UserModel.RequiredAction.CONFIGURE_RECOVERY_AUTHN_CODES.name();
     private static final RecoveryAuthnCodesAction INSTANCE = new RecoveryAuthnCodesAction();
 
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES;
 
+    /** 配置键：剩余恢复码数量警告阈值。 */
     public static final String WARNING_THRESHOLD = "warning_threshold";
 
     public static final int RECOVERY_CODES_WARNING_THRESHOLD_DEFAULT = 4;
@@ -99,12 +106,14 @@ public class RecoveryAuthnCodesAction implements RequiredActionProvider, Require
     public void evaluateTriggers(RequiredActionContext context) {
     }
 
+    /** 展示恢复码配置页面。 */
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
         Response challenge = context.form().createResponse(UserModel.RequiredAction.CONFIGURE_RECOVERY_AUTHN_CODES);
         context.challenge(challenge);
     }
 
+    /** 校验 auth note 防篡改后创建恢复码凭证。 */
     @Override
     public void processAction(RequiredActionContext reqActionContext) {
         EventBuilder event = reqActionContext.getEvent();
@@ -120,7 +129,7 @@ public class RecoveryAuthnCodesAction implements RequiredActionProvider, Require
 
         if (!generatedAtTimeString.equals(reqActionContext.getAuthenticationSession().getAuthNote(RecoveryAuthnCodesFormAuthenticator.GENERATED_AT_NOTE))
                 || !generatedCodesString.equals(reqActionContext.getAuthenticationSession().getAuthNote(RecoveryAuthnCodesFormAuthenticator.GENERATED_RECOVERY_AUTHN_CODES_NOTE))) {
-            // authn codes have been tampered, sent them again
+            // 恢复码被篡改，重新展示配置页
             requiredActionChallenge(reqActionContext);
             return;
         }
@@ -140,6 +149,7 @@ public class RecoveryAuthnCodesAction implements RequiredActionProvider, Require
         reqActionContext.success();
     }
 
+    /** 由生成参数构建 {@link RecoveryAuthnCodesCredentialModel}。 */
     protected RecoveryAuthnCodesCredentialModel createFromValues(List<String> generatedCodes, Long generatedAtTime, String generatedUserLabel) {
         return RecoveryAuthnCodesCredentialModel.createFromValues(generatedCodes,
                 generatedAtTime, generatedUserLabel);
@@ -149,6 +159,7 @@ public class RecoveryAuthnCodesAction implements RequiredActionProvider, Require
     public void close() {
     }
 
+    /** @return 是否启用恢复码特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.RECOVERY_CODES);
@@ -162,6 +173,7 @@ public class RecoveryAuthnCodesAction implements RequiredActionProvider, Require
         ).toList();
     }
 
+    /** 校验警告阈值配置为非负整数。 */
     @Override
     public void validateConfig(KeycloakSession session, RealmModel realm, RequiredActionConfigModel model) {
         RequiredActionFactory.super.validateConfig(session, realm, model);

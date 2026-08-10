@@ -40,6 +40,8 @@ import org.keycloak.userprofile.UserProfileProvider;
 import org.keycloak.userprofile.ValidationException;
 
 /**
+ * 验证用户资料必需操作：强制用户补全 UserProfile 要求的必填字段。
+ * <p>继承 {@link UpdateProfile}，不支持用户主动触发（AIA）。</p>
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class VerifyUserProfile extends UpdateProfile {
@@ -54,6 +56,7 @@ public class VerifyUserProfile extends UpdateProfile {
         return UserModel.RequiredAction.VERIFY_PROFILE;
     }
 
+    /** 资料校验通过则移除必需 action，否则保持。 */
     @Override
     public void evaluateTriggers(RequiredActionContext context) {
         UserModel user = context.getUser();
@@ -69,6 +72,7 @@ public class VerifyUserProfile extends UpdateProfile {
         }
     }
 
+    /** 校验资料完整性，不完整则展示带错误的表单。 */
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
         UserProfileProvider provider = context.getSession().getProvider(UserProfileProvider.class);
@@ -96,6 +100,7 @@ public class VerifyUserProfile extends UpdateProfile {
         }
     }
 
+    /** 收集需更新的字段名列表（逗号分隔）。 */
     private String collectFields(List<FormMessage> errors) {
         return errors.stream().map(FormMessage::getField).distinct().collect(Collectors.joining(","));
     }
