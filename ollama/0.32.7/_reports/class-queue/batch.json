@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T15:54:36Z",
   "files": [
-    "cmd/tui/chat/think.go",
-    "cmd/tui/confirm.go",
-    "cmd/tui/selector.go",
-    "cmd/tui/signin.go",
-    "cmd/tui/spinner.go",
-    "cmd/tui/tui.go",
-    "convert/convert.go",
-    "convert/convert_bert.go",
-    "convert/convert_commandr.go",
-    "convert/convert_deepseek2.go",
-    "convert/convert_deepseekocr.go",
-    "convert/convert_embeddinggemma.go",
-    "convert/convert_gemma.go",
-    "convert/convert_gemma2.go",
-    "convert/convert_gemma2_adapter.go",
     "convert/convert_gemma3.go",
     "convert/convert_gemma3n.go",
     "convert/convert_gemma4.go",
@@ -33,5 +18,5 @@
     "convert/convert_mixtral.go"
   ],
   "remaining_pending": 283,
-  "done": 150
+  "done": 165
 }
