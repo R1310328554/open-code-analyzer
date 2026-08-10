@@ -31,6 +31,10 @@ import jakarta.persistence.Table;
 import org.keycloak.storage.jpa.KeyUtils;
 
 /**
+ * 联邦用户必需操作 JPA 实体，映射 FED_USER_REQUIRED_ACTION 表。
+ * <p>
+ * 复合主键为 userId + action（如 UPDATE_PASSWORD、VERIFY_EMAIL）。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -46,17 +50,21 @@ import org.keycloak.storage.jpa.KeyUtils;
 @IdClass(FederatedUserRequiredActionEntity.Key.class)
 public class FederatedUserRequiredActionEntity {
 
+    /** 联邦用户 ID（复合主键之一）。 */
     @Id
     @Column(name="USER_ID")
     protected String userId;
 
+    /** 必需操作 alias（复合主键之一）。 */
     @Id
     @Column(name="REQUIRED_ACTION")
     protected String action;
 
+    /** 所属 realm ID。 */
     @Column(name = "REALM_ID")
     protected String realmId;
 
+    /** 用户存储提供者组件 ID。 */
     @Column(name = "STORAGE_PROVIDER_ID")
     protected String storageProviderId;
 
@@ -93,6 +101,7 @@ public class FederatedUserRequiredActionEntity {
         this.storageProviderId = storageProviderId;
     }
 
+    /** 复合主键：userId + action。 */
     public static class Key implements Serializable {
 
         protected String userId;

@@ -30,6 +30,11 @@ import jakarta.persistence.Table;
 import org.keycloak.storage.jpa.KeyUtils;
 
 /**
+ * Identity Broker 链接 JPA 实体，映射 BROKER_LINK 表。
+ * <p>
+ * 复合主键为 userId + identityProvider；记录外部 IdP 用户 ID、用户名及 token。
+ * 写入 userId 时经 {@link KeyUtils#assertValidKey(String)} 校验格式。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -48,25 +53,32 @@ import org.keycloak.storage.jpa.KeyUtils;
 @IdClass(BrokerLinkEntity.Key.class)
 public class BrokerLinkEntity {
 
+    /** Keycloak 用户 ID（复合主键之一）。 */
     @Id
     @Column(name = "USER_ID")
     private String userId;
 
+    /** 身份提供者 alias（复合主键之一）。 */
     @Id
     @Column(name = "IDENTITY_PROVIDER")
     protected String identityProvider;
 
+    /** 所属 realm ID。 */
     @Column(name = "REALM_ID")
     protected String realmId;
 
+    /** 联邦用户存储提供者组件 ID。 */
     @Column(name = "STORAGE_PROVIDER_ID")
     protected String storageProviderId;
 
+    /** 外部 IdP 侧用户 ID。 */
     @Column(name = "BROKER_USER_ID")
     protected String brokerUserId;
+    /** 外部 IdP 侧用户名。 */
     @Column(name = "BROKER_USERNAME")
     protected String brokerUserName;
 
+    /** Broker 会话 token（可选）。 */
     @Column(name = "TOKEN")
     protected String token;
 
@@ -127,6 +139,7 @@ public class BrokerLinkEntity {
         return token;
     }
 
+    /** 复合主键：userId + identityProvider。 */
     public static class Key implements Serializable {
 
         protected String userId;

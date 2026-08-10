@@ -27,6 +27,10 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
+ * 联邦用户凭证 JPA 实体，映射 FED_USER_CREDENTIAL 表。
+ * <p>
+ * 存储外部用户存储中的密码/WebAuthn 等凭证；{@link #priority} 决定同类型凭证顺序。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -45,39 +49,50 @@ import jakarta.persistence.Table;
 @Table(name="FED_USER_CREDENTIAL")
 @Entity
 public class FederatedUserCredentialEntity {
+    /** 凭证 UUID（主键）。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 密钥数据（JSON，含哈希盐等）。 */
     @Column(name="SECRET_DATA")
     protected String secretData;
 
+    /** 凭证元数据（JSON，类型相关配置）。 */
     @Column(name="CREDENTIAL_DATA")
     protected String credentialData;
 
+    /** 凭证类型（如 password、otp）。 */
     @Column(name="TYPE")
     protected String type;
 
+    /** 用户可见标签（如设备名）。 */
     @Column(name="USER_LABEL")
     protected String userLabel;
 
+    /** 创建时间（毫秒）。 */
     @Column(name="CREATED_DATE")
     protected Long createdDate;
 
+    /** 联邦用户 ID。 */
     @Column(name="USER_ID")
     protected String userId;
 
+    /** 所属 realm ID。 */
     @Column(name = "REALM_ID")
     protected String realmId;
 
+    /** 用户存储提供者组件 ID。 */
     @Column(name = "STORAGE_PROVIDER_ID")
     protected String storageProviderId;
 
+    /** 同用户同类型凭证的排序优先级。 */
     @Column(name="PRIORITY")
     protected int priority;
 
     @Deprecated // Needed just for backwards compatibility when migrating old credentials
+    /** 旧版 salt 列（迁移时按需转换为 secretData）。 */
     @Column(name="SALT")
     protected byte[] salt;
 

@@ -33,6 +33,10 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 /**
+ * 联邦用户对客户端的 OAuth consent JPA 实体，映射 FED_USER_CONSENT 表。
+ * <p>
+ * 同一 userId + clientId 唯一；支持外部客户端存储（clientStorageProvider + externalClientId）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @Entity
@@ -52,37 +56,47 @@ import jakarta.persistence.UniqueConstraint;
 })
 public class FederatedUserConsentEntity {
 
+    /** consent 记录 UUID（主键）。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 联邦用户 ID。 */
     @Column(name = "USER_ID")
     protected String userId;
 
+    /** 所属 realm ID。 */
     @Column(name = "REALM_ID")
     protected String realmId;
 
+    /** 用户存储提供者组件 ID。 */
     @Column(name = "STORAGE_PROVIDER_ID")
     protected String storageProviderId;
 
+    /** 内部客户端 ID（本地 CLIENT 表）。 */
     @Column(name="CLIENT_ID")
     protected String clientId;
 
+    /** 外部客户端存储提供者 ID（可选）。 */
     @Column(name="CLIENT_STORAGE_PROVIDER")
     protected String clientStorageProvider;
 
+    /** 外部客户端 ID（可选）。 */
     @Column(name="EXTERNAL_CLIENT_ID")
     protected String externalClientId;
 
+    /** consent 创建时间（毫秒）。 */
     @Column(name = "CREATED_DATE")
     private Long createdDate;
 
+    /** consent 最后更新时间（毫秒）。 */
     @Column(name = "LAST_UPDATED_DATE")
     private Long lastUpdatedDate;
 
 
 
+    /** 已授权的 client scope 集合（级联删除）。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "userConsent")
     Collection<FederatedUserConsentClientScopeEntity> grantedClientScopes = new ArrayList<>();
 

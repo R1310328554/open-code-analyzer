@@ -34,6 +34,11 @@ import jakarta.persistence.Table;
 import org.keycloak.models.jpa.entities.UserConsentClientScopeEntity;
 
 /**
+ * 联邦用户 consent 已授权 client scope JPA 实体，映射 FED_USER_CONSENT_CL_SCOPE 表。
+ * <p>
+ * 复合主键为 userConsent + scopeId + parameter；无参数 scope 用
+ * {@link UserConsentClientScopeEntity#NOT_AVAILABLE_PARAM} 占位。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @NamedQueries({
@@ -50,15 +55,18 @@ import org.keycloak.models.jpa.entities.UserConsentClientScopeEntity;
 @IdClass(FederatedUserConsentClientScopeEntity.Key.class)
 public class FederatedUserConsentClientScopeEntity {
 
+    /** 所属联邦用户 consent（复合主键之一）。 */
     @Id
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name = "USER_CONSENT_ID")
     protected FederatedUserConsentEntity userConsent;
 
+    /** 已授权 client scope ID（复合主键之一）。 */
     @Id
     @Column(name="SCOPE_ID")
     protected String scopeId;
 
+    /** scope 可选参数（复合主键之一）。 */
     @Id
     @Column(name="PARAMETER")
     protected String parameter;
@@ -109,6 +117,7 @@ public class FederatedUserConsentClientScopeEntity {
         return myKey.hashCode();
     }
 
+    /** 复合主键：userConsent + scopeId + parameter。 */
     public static class Key implements Serializable {
 
         protected FederatedUserConsentEntity userConsent;

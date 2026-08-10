@@ -29,16 +29,16 @@ import org.keycloak.crypto.JavaAlgorithm;
 import org.keycloak.models.jpa.entities.UserEntity;
 
 /**
- * Create hashes for long values stored in the database. Offers different variants for exact and lowercase search.
- * Keycloak uses lowercase search to approximate a case-insensitive search.
+ * 为数据库中长属性值生成哈希的工具类，支持精确匹配与小写匹配两种变体。
  * <p>
- * The lowercase function always uses the English locale to avoid changing hashes due to changing locales which can be surprising
- * and would be expensive to fix as all hashes would need to be re-calculated.
+ * Keycloak 使用小写哈希近似实现大小写不敏感搜索；小写转换固定使用 {@link Locale#ENGLISH}，
+ * 避免因 JVM 区域设置变化导致哈希不一致（全量重算代价极高）。
  *
  * @author Alexander Schwartz
  */
 public class JpaHashUtils {
 
+    /** 对输入字节序列计算 SHA-512 哈希。 */
     private static byte[] hash(byte[] inputBytes) {
         try {
             MessageDigest md = MessageDigest.getInstance(JavaAlgorithm.SHA512);
@@ -49,32 +49,34 @@ public class JpaHashUtils {
         }
     }
 
+    /** 为属性值（精确匹配）生成哈希。 */
     public static byte[] hashForAttributeValue(String value) {
         return JpaHashUtils.hash(value.getBytes(StandardCharsets.UTF_8));
     }
 
+    /** 为属性值（转英文小写后）生成哈希，用于大小写不敏感搜索。 */
     public static byte[] hashForAttributeValueLowerCase(String value) {
         return JpaHashUtils.hash(value.toLowerCase(Locale.ENGLISH).getBytes(StandardCharsets.UTF_8));
     }
 
+    /** 以英文小写比较两个源字符串是否相等。 */
     public static boolean compareSourceValueLowerCase(String value1, String value2) {
         return Objects.equals(value1.toLowerCase(Locale.ENGLISH), value2.toLowerCase(Locale.ENGLISH));
     }
 
+    /** 精确比较两个源字符串是否相等。 */
     public static boolean compareSourceValue(String value1, String value2) {
         return Objects.equals(value1, value2);
     }
 
     /**
-     * This method returns a predicate that returns true when user has all attributes specified in {@code customLongValueSearchAttributes} map
-     * <p />
-     * The check is performed by exact comparison on attribute name the value
-     * <p />
-     * This is necessary because database can return users without the searched attribute when a hash collision on long user attribute value occurs
+     * 返回谓词：当用户拥有 {@code customLongValueSearchAttributes} 中全部属性时为 true。
+     * <p>
+     * 按属性名与值精确比对；长属性哈希查询可能因碰撞返回不含该属性的用户，故需二次过滤。
      *
-     * @param customLongValueSearchAttributes required attributes
-     * @param valueComparator                 comparator for comparing attribute values
-     * @return predicate for filtering users based on attributes map
+     * @param customLongValueSearchAttributes 必需属性名值映射
+     * @param valueComparator                 属性值比较器
+     * @return 按属性映射过滤用户的谓词
      */
     public static java.util.function.Predicate<UserEntity> predicateForFilteringUsersByAttributes(Map<String, String> customLongValueSearchAttributes, BiPredicate<String, String> valueComparator) {
         return userEntity -> customLongValueSearchAttributes.isEmpty() || // are there some long attribute values

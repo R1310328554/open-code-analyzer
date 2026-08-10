@@ -31,6 +31,11 @@ import org.keycloak.storage.jpa.JpaHashUtils;
 import org.hibernate.annotations.Nationalized;
 
 /**
+ * 联邦用户属性 JPA 实体，映射 FED_USER_ATTRIBUTE 表。
+ * <p>
+ * 短值存 {@link #value}；超过 2024 字符的长值存 {@link #longValue}，并以
+ * {@link JpaHashUtils} 生成精确/小写哈希供索引查询。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -48,29 +53,38 @@ import org.hibernate.annotations.Nationalized;
 @Entity
 public class FederatedUserAttributeEntity {
 
+    /** 属性行 UUID（主键）。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 联邦用户 ID。 */
     @Column(name = "USER_ID")
     protected String userId;
 
+    /** 所属 realm ID。 */
     @Column(name = "REALM_ID")
     protected String realmId;
 
+    /** 用户存储提供者组件 ID。 */
     @Column(name = "STORAGE_PROVIDER_ID")
     protected String storageProviderId;
 
+    /** 属性名。 */
     @Column(name = "NAME")
     protected String name;
+    /** 短属性值（≤2024 字符）。 */
     @Column(name = "VALUE")
     protected String value;
 
+    /** 长属性值精确匹配哈希。 */
     @Column(name = "LONG_VALUE_HASH")
     private byte[] longValueHash;
+    /** 长属性值小写匹配哈希。 */
     @Column(name = "LONG_VALUE_HASH_LOWER_CASE")
     private byte[] longValueHashLowerCase;
+    /** 长属性值原文（Nationalized 列）。 */
     @Nationalized
     @Column(name = "LONG_VALUE")
     private String longValue;
@@ -104,7 +118,7 @@ public class FederatedUserAttributeEntity {
             this.longValue = null;
             this.longValueHash = null;
             this.longValueHashLowerCase = null;
-        } else if (value.length() > 2024) { // https://github.com/keycloak/keycloak/blob/2785bbd29bcc1b39d9abe90724333dd42af34b10/model/jpa/src/main/resources/META-INF/jpa-changelog-2.1.0.xml#L58
+        } else if (value.length() > 2024) { // 长属性阈值见 jpa-changelog-2.1.0.xml
             this.value = null;
             this.longValue = value;
             this.longValueHash = JpaHashUtils.hashForAttributeValue(value);

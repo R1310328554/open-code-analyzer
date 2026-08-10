@@ -28,6 +28,11 @@ import jakarta.persistence.Table;
 import org.keycloak.storage.jpa.KeyUtils;
 
 /**
+ * 联邦用户索引 JPA 实体，映射 FEDERATED_USER 表。
+ * <p>
+ * 为外部用户存储中的用户建立索引行，便于按 realm 枚举、导出及级联删除。
+ * id 即联邦用户 ID（{@link StorageId} 格式）。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -43,14 +48,17 @@ import org.keycloak.storage.jpa.KeyUtils;
 @Table(name="FEDERATED_USER")
 public class FederatedUser {
 
+    /** 联邦用户 ID（主键）；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID")
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 所属 realm ID。 */
     @Column(name = "REALM_ID")
     protected String realmId;
 
+    /** 用户存储提供者组件 ID。 */
     @Column(name = "STORAGE_PROVIDER_ID")
     protected String storageProviderId;
 

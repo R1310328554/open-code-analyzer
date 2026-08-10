@@ -26,6 +26,11 @@ import org.keycloak.storage.federated.UserFederatedStorageProvider;
 import org.keycloak.storage.federated.UserFederatedStorageProviderFactory;
 
 /**
+ * JPA 实现的 {@link UserFederatedStorageProvider} 工厂，SPI ID 为 {@code jpa}。
+ * <p>
+ * 从 {@link JpaConnectionProvider} 获取 {@link EntityManager} 并构造
+ * {@link JpaUserFederatedStorageProvider}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */

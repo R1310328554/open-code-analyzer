@@ -30,6 +30,10 @@ import jakarta.persistence.Table;
 import org.keycloak.storage.jpa.KeyUtils;
 
 /**
+ * 联邦用户组成员关系 JPA 实体，映射 FED_USER_GROUP_MEMBERSHIP 表。
+ * <p>
+ * 复合主键为 userId + groupId；写入 userId 时校验 {@link KeyUtils} 键格式。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -50,17 +54,21 @@ import org.keycloak.storage.jpa.KeyUtils;
 @IdClass(FederatedUserGroupMembershipEntity.Key.class)
 public class FederatedUserGroupMembershipEntity {
 
+    /** 联邦用户 ID（复合主键之一）。 */
     @Id
     @Column(name = "USER_ID")
     protected String userId;
 
+    /** 组 ID（复合主键之一）。 */
     @Id
     @Column(name = "GROUP_ID")
     protected String groupId;
 
+    /** 所属 realm ID。 */
     @Column(name = "REALM_ID")
     protected String realmId;
 
+    /** 用户存储提供者组件 ID。 */
     @Column(name = "STORAGE_PROVIDER_ID")
     protected String storageProviderId;
 
@@ -97,6 +105,7 @@ public class FederatedUserGroupMembershipEntity {
         this.storageProviderId = storageProviderId;
     }
 
+    /** 复合主键：userId + groupId。 */
     public static class Key implements Serializable {
 
         protected String userId;

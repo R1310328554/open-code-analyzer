@@ -28,7 +28,9 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
 /**
- * A JPA entity to store the key-value configuration.
+ * 服务器键值配置 JPA 实体，映射 SERVER_CONFIG 表。
+ * <p>
+ * 存储 Keycloak 服务器级配置项；{@link #version} 字段用于乐观锁并发控制。
  */
 @NamedQueries({
         @NamedQuery(
@@ -40,13 +42,16 @@ import jakarta.persistence.Version;
 @Entity
 public class ServerConfigEntity {
 
+    /** 配置键（主键）。 */
     @Id
     @Column(name = "SERVER_CONFIG_KEY")
     private String key;
 
+    /** 配置值。 */
     @Column(name = "VALUE")
     private String value;
 
+    /** 乐观锁版本号。 */
     @Version
     @Column(name = "VERSION")
     private int version;

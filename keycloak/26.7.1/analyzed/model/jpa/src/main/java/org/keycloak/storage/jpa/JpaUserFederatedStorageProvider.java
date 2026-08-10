@@ -83,6 +83,12 @@ import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
 import static org.keycloak.utils.StreamsUtil.closing;
 
 /**
+ * JPA 实现的 {@link UserFederatedStorageProvider}，同时实现 {@link UserCredentialStore}。
+ * <p>
+ * 为外部用户存储（LDAP 等）在本地库持久化联邦侧数据：属性、Broker 链接、consent、
+ * 组/角色、必需操作、凭证及可验证凭证。首次写入任意子数据时通过 {@link #createIndex}
+ * 确保 {@link FederatedUser} 索引行存在，便于枚举与导出。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -105,10 +111,7 @@ public class JpaUserFederatedStorageProvider implements
 
     }
 
-    /**
-     * We create an entry so that its easy to iterate over all things in the database.  Specifically useful for export
-     *
-     */
+    /** 确保 FEDERATED_USER 索引行存在，便于遍历库中全部联邦用户（如导出）。 */
     protected void createIndex(RealmModel realm, String userId) {
         if (em.find(FederatedUser.class, userId) == null) {
             FederatedUser fedUser = new FederatedUser();
@@ -159,7 +162,7 @@ public class JpaUserFederatedStorageProvider implements
 
     @Override
     public void removeAttribute(RealmModel realm, String userId, String name) {
-        //         createIndex(realm, user); don't need to create an index for removal
+        // 删除属性无需创建索引行
         deleteAttribute(realm, userId, name);
         em.flush();
     }
@@ -179,6 +182,7 @@ public class JpaUserFederatedStorageProvider implements
         return result;
     }
 
+    /** 按属性名值查询用户；长属性（>2024）走哈希索引并二次精确比对。 */
     @Override
     public Stream<String> getUsersByUserAttributeStream(RealmModel realm, String name, String value) {
         boolean longAttribute = value != null && value.length() > 2024;
@@ -410,7 +414,7 @@ public class JpaUserFederatedStorageProvider implements
         return model;
     }
 
-    // Update roles and protocolMappers to given consentEntity from the consentModel
+    /** 将 consent 模型中的已授权 scope 同步到 JPA 实体（增删差异项）。 */
     private void updateGrantedConsentEntity(FederatedUserConsentEntity consentEntity, UserConsentModel consentModel) {
         Collection<FederatedUserConsentClientScopeEntity> grantedClientScopeEntities = consentEntity.getGrantedClientScopes();
         Collection<FederatedUserConsentClientScopeEntity> scopesToRemove = new HashSet<>(grantedClientScopeEntities);
@@ -423,7 +427,7 @@ public class JpaUserFederatedStorageProvider implements
                 createFederatedUserConsentClientScopeEntity(consentEntity, clientScope, null, grantedClientScopeEntities, scopesToRemove);
             }
         }
-        // Those mappers were no longer on consentModel and will be removed
+        // consentModel 中已移除的 scope 需要从库中删除
         for (FederatedUserConsentClientScopeEntity toRemove : scopesToRemove) {
             grantedClientScopeEntities.remove(toRemove);
             em.remove(toRemove);
@@ -443,7 +447,7 @@ public class JpaUserFederatedStorageProvider implements
         grantedClientScopeEntity.setScopeId(clientScope.getId());
         grantedClientScopeEntity.setParameter(parameter);
 
-        // Check if it's already there
+        // 检查是否已存在，避免重复插入
         if (!grantedClientScopeEntities.contains(grantedClientScopeEntity)) {
             em.persist(grantedClientScopeEntity);
             em.flush();
@@ -455,7 +459,7 @@ public class JpaUserFederatedStorageProvider implements
 
     @Override
     public void setNotBeforeForUser(RealmModel realm, String userId, int notBefore) {
-        // Track it as attribute for now
+        // 暂以属性形式记录 notBefore
         String notBeforeStr = String.valueOf(notBefore);
         setSingleAttribute(realm, userId, "fedNotBefore", notBeforeStr);
     }
@@ -605,8 +609,7 @@ public class JpaUserFederatedStorageProvider implements
     }
 
     /**
-     * Validates if a credential with the same user label already exists for the given user.
-     * Excludes the credential itself if updating an existing one.
+     * 校验同一用户下是否已存在相同 userLabel 的凭证（更新时排除自身）。
      */
     private void validateDuplicateUserCredential(String userId, String userLabel, String credentialId) {
         if (userLabel != null) {
@@ -638,7 +641,7 @@ public class JpaUserFederatedStorageProvider implements
         entity.setRealmId(realm.getId());
         entity.setStorageProviderId(new StorageId(userId).getProviderId());
 
-        //add in linkedlist to last position
+        // 追加到链表末尾，priority 递增
         List<FederatedUserCredentialEntity> credentials = getStoredCredentialEntitiesStream(userId).collect(Collectors.toList());
         int priority = credentials.isEmpty() ? JpaUserCredentialStore.PRIORITY_DIFFERENCE : credentials.get(credentials.size() - 1).getPriority() + JpaUserCredentialStore.PRIORITY_DIFFERENCE;
         entity.setPriority(priority);
@@ -680,8 +683,7 @@ public class JpaUserFederatedStorageProvider implements
         model.setCreatedDate(entity.getCreatedDate());
         model.setUserLabel(entity.getUserLabel());
 
-        // Backwards compatibility - users from previous version still have "salt" in the DB filled.
-        // We migrate it to new secretData format on-the-fly
+        // 向后兼容：旧库中 salt 列非空时，运行时迁移为 secretData 格式
         if (entity.getSalt() != null) {
             String newSecretData = entity.getSecretData().replace("__SALT__", Base64.getEncoder().encodeToString(entity.getSalt()));
             entity.setSecretData(newSecretData);
@@ -793,10 +795,10 @@ public class JpaUserFederatedStorageProvider implements
 
     @Override
     public boolean moveCredentialTo(RealmModel realm, UserModel user, String id, String newPreviousCredentialId) {
-        // 1 - Create new list and move everything to it.
+        // 1 - 构建新列表并重排
         List<FederatedUserCredentialEntity> newList = this.getStoredCredentialEntitiesStream(user.getId()).collect(Collectors.toList());
 
-        // 2 - Find indexes of our and newPrevious credential
+        // 2 - 定位当前凭证与 newPrevious 凭证的下标
         int ourCredentialIndex = -1;
         int newPreviousCredentialIndex = -1;
         FederatedUserCredentialEntity ourCredential = null;
@@ -821,15 +823,15 @@ public class JpaUserFederatedStorageProvider implements
             return false;
         }
 
-        // 3 - Compute index where we move our credential
+        // 3 - 计算目标插入位置
         int toMoveIndex = newPreviousCredentialId==null ? 0 : newPreviousCredentialIndex + 1;
 
-        // 4 - Insert our credential to new position, remove it from the old position
+        // 4 - 插入到新位置并从旧位置移除
         newList.add(toMoveIndex, ourCredential);
         int indexToRemove = toMoveIndex < ourCredentialIndex ? ourCredentialIndex + 1 : ourCredentialIndex;
         newList.remove(indexToRemove);
 
-        // 5 - newList contains credentials in requested order now. Iterate through whole list and change priorities accordingly.
+        // 5 - 按新顺序重写全部 priority
         int expectedPriority = 0;
         for (FederatedUserCredentialEntity credential : newList) {
             expectedPriority += JpaUserCredentialStore.PRIORITY_DIFFERENCE;
@@ -850,6 +852,7 @@ public class JpaUserFederatedStorageProvider implements
         return ((Number)count).intValue();
     }
 
+    /** realm 删除前级联清理全部联邦用户相关表。 */
     @Override
     public void preRemove(RealmModel realm) {
         int num = em.createNamedQuery("deleteFederatedUserConsentClientScopesByRealm")
@@ -972,6 +975,7 @@ public class JpaUserFederatedStorageProvider implements
 
     }
 
+    /** 用户存储或客户端存储组件删除时，按 storageProviderId 清理联邦数据。 */
     @Override
     public void preRemove(RealmModel realm, ComponentModel model) {
         if (model.getProviderType().equals(UserStorageProvider.class.getName())) {
