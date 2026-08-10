@@ -20,27 +20,35 @@ import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.StringUtil;
 
 /**
- * A user event triggered by {@link IdleStateHandler} when a {@link Channel} is idle.
+ * {@link IdleStateHandler} 在 {@link Channel} 空闲时触发的用户事件。
  */
 public class IdleStateEvent {
+    /** 首次读空闲事件。 */
     public static final IdleStateEvent FIRST_READER_IDLE_STATE_EVENT =
             new DefaultIdleStateEvent(IdleState.READER_IDLE, true);
+    /** 读空闲事件（非首次）。 */
     public static final IdleStateEvent READER_IDLE_STATE_EVENT =
             new DefaultIdleStateEvent(IdleState.READER_IDLE, false);
+    /** 首次写空闲事件。 */
     public static final IdleStateEvent FIRST_WRITER_IDLE_STATE_EVENT =
             new DefaultIdleStateEvent(IdleState.WRITER_IDLE, true);
+    /** 写空闲事件（非首次）。 */
     public static final IdleStateEvent WRITER_IDLE_STATE_EVENT =
             new DefaultIdleStateEvent(IdleState.WRITER_IDLE, false);
+    /** 首次读写均空闲事件。 */
     public static final IdleStateEvent FIRST_ALL_IDLE_STATE_EVENT =
             new DefaultIdleStateEvent(IdleState.ALL_IDLE, true);
+    /** 读写均空闲事件（非首次）。 */
     public static final IdleStateEvent ALL_IDLE_STATE_EVENT =
             new DefaultIdleStateEvent(IdleState.ALL_IDLE, false);
 
+    /** 空闲类型。 */
     private final IdleState state;
+    /** 是否为该类型的首次空闲。 */
     private final boolean first;
 
     /**
-     * Constructor for sub-classes.
+     * 供子类使用的构造器。
      *
      * @param state the {@link IdleStateEvent} which triggered the event.
      * @param first {@code true} if its the first idle event for the {@link IdleStateEvent}.
@@ -51,14 +59,14 @@ public class IdleStateEvent {
     }
 
     /**
-     * Returns the idle state.
+     * 返回空闲状态类型。
      */
     public IdleState state() {
         return state;
     }
 
     /**
-     * Returns {@code true} if this was the first event for the {@link IdleState}
+     * 若为该 {@link IdleState} 的首次空闲事件则返回 {@code true}。
      */
     public boolean isFirst() {
         return first;
@@ -69,6 +77,7 @@ public class IdleStateEvent {
         return StringUtil.simpleClassName(this) + '(' + state + (first ? ", first" : "") + ')';
     }
 
+    /** 预分配字符串表示的默认实现，避免重复拼接。 */
     private static final class DefaultIdleStateEvent extends IdleStateEvent {
         private final String representation;
 

@@ -37,42 +37,34 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 
 /**
- * A {@link ChannelHandler} that adds support for writing a large data stream
- * asynchronously neither spending a lot of memory nor getting
- * {@link OutOfMemoryError}.  Large data streaming such as file
- * transfer requires complicated state management in a {@link ChannelHandler}
- * implementation.  {@link ChunkedWriteHandler} manages such complicated states
- * so that you can send a large data stream without difficulties.
+ * 支持异步分块写出大数据流的 {@link ChannelHandler}，避免一次性占用大量内存或 {@link OutOfMemoryError}。
  * <p>
- * To use {@link ChunkedWriteHandler} in your application, you have to insert
- * a new {@link ChunkedWriteHandler} instance:
+ * 文件传输等场景若自行实现 {@link ChannelHandler} 需维护复杂状态；本类负责分块读取与写出调度。
+ * <p>
+ * 用法：在 pipeline 中加入 {@link ChunkedWriteHandler}，然后 {@code write} 一个 {@link ChunkedInput}：
  * <pre>
  * {@link ChannelPipeline} p = ...;
  * p.addLast("streamer", <b>new {@link ChunkedWriteHandler}()</b>);
  * p.addLast("handler", new MyHandler());
  * </pre>
- * Once inserted, you can write a {@link ChunkedInput} so that the
- * {@link ChunkedWriteHandler} can pick it up and fetch the content of the
- * stream chunk by chunk and write the fetched chunk downstream:
  * <pre>
  * {@link Channel} ch = ...;
  * ch.write(new {@link ChunkedFile}(new File("video.mkv"));
  * </pre>
  *
- * <h3>Sending a stream which generates a chunk intermittently</h3>
+ * <h3>间歇产生分块的流</h3>
  *
- * Some {@link ChunkedInput} generates a chunk on a certain event or timing.
- * Such {@link ChunkedInput} implementation often returns {@code null} on
- * {@link ChunkedInput#readChunk(ChannelHandlerContext)}, resulting in the indefinitely suspended
- * transfer.  To resume the transfer when a new chunk is available, you have to
- * call {@link #resumeTransfer()}.
+ * 部分 {@link ChunkedInput} 仅在特定事件或时机产生下一块，{@link ChunkedInput#readChunk} 可能暂时返回 {@code null}，
+ * 此时传输会挂起；新数据就绪后须调用 {@link #resumeTransfer()} 恢复。
  */
 public class ChunkedWriteHandler extends ChannelDuplexHandler {
 
     private static final InternalLogger logger =
         InternalLoggerFactory.getInstance(ChunkedWriteHandler.class);
 
+    /** 待写出消息队列。 */
     private Queue<PendingWrite> queue;
+    /** 本 Handler 所在上下文。 */
     private volatile ChannelHandlerContext ctx;
 
     public ChunkedWriteHandler() {
@@ -102,7 +94,7 @@ public class ChunkedWriteHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Continues to fetch the chunks from the input.
+     * 继续从当前 {@link ChunkedInput} 读取并写出分块。
      */
     public void resumeTransfer() {
         final ChannelHandlerContext ctx = this.ctx;
@@ -112,7 +104,7 @@ public class ChunkedWriteHandler extends ChannelDuplexHandler {
         if (ctx.executor().inEventLoop()) {
             resumeTransfer0(ctx);
         } else {
-            // let the transfer resume on the next event loop round
+            // 在下一事件循环轮次恢复传输
             ctx.executor().execute(new Runnable() {
 
                 @Override
@@ -155,7 +147,7 @@ public class ChunkedWriteHandler extends ChannelDuplexHandler {
     @Override
     public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
         if (ctx.channel().isWritable()) {
-            // channel is writable again try to continue flushing
+            // 通道可写时继续 flush
             doFlush(ctx);
         }
         ctx.fireChannelWritabilityChanged();
@@ -207,9 +199,7 @@ public class ChunkedWriteHandler extends ChannelDuplexHandler {
     private void doFlush(final ChannelHandlerContext ctx) {
         final Channel channel = ctx.channel();
         if (!channel.isActive()) {
-            // Even after discarding all previous queued objects we should propagate the flush through
-            // to ensure previous written objects via writeAndFlush(...) that were not queued will be flushed and
-            // so eventually fail the promise.
+            // 丢弃队列后仍须 flush，以便未入队的 writeAndFlush 能失败其 Promise
             discard(null);
             ctx.flush();
             return;
@@ -230,14 +220,7 @@ public class ChunkedWriteHandler extends ChannelDuplexHandler {
             }
 
             if (currentWrite.promise.isDone()) {
-                // This might happen e.g. in the case when a write operation
-                // failed, but there are still unconsumed chunks left.
-                // Most chunked input sources would stop generating chunks
-                // and report end of input, but this doesn't work with any
-                // source wrapped in HttpChunkedInput.
-                // Note, that we're not trying to release the message/chunks
-                // as this had to be done already by someone who resolved the
-                // promise (using ChunkedInput.close method).
+                // 写已失败等情况下 Promise 已结束但分块未消费完（如 HttpChunkedInput 包装源）
                 // See https://github.com/netty/netty/issues/8700.
                 queue.remove();
                 continue;
@@ -253,7 +236,7 @@ public class ChunkedWriteHandler extends ChannelDuplexHandler {
                 try {
                     message = chunks.readChunk(allocator);
                     endOfInput = chunks.isEndOfInput();
-                    // No need to suspend when reached at the end.
+                    // 未到末尾且 readChunk 返回 null 时需挂起等待 resumeTransfer
                     suspend = message == null && !endOfInput;
 
                 } catch (final Throwable t) {
@@ -269,33 +252,27 @@ public class ChunkedWriteHandler extends ChannelDuplexHandler {
                 }
 
                 if (suspend) {
-                    // ChunkedInput.nextChunk() returned null and it has
-                    // not reached at the end of input. Let's wait until
-                    // more chunks arrive. Nothing to write or notify.
+                    // readChunk 返回 null 且未 EOF：等待更多数据，不写也不通知
                     break;
                 }
 
                 if (message == null) {
-                    // If message is null write an empty ByteBuf.
+                    // 最后一块为空时写出 EMPTY_BUFFER
                     // See https://github.com/netty/netty/issues/1671
                     message = Unpooled.EMPTY_BUFFER;
                 }
 
                 if (endOfInput) {
-                    // We need to remove the element from the queue before we call writeAndFlush() as this operation
-                    // may cause an action that also touches the queue.
+                    // writeAndFlush 可能触发再次 touch 队列，故先 remove
                     queue.remove();
                 }
-                // Flush each chunk to conserve memory
+                // 每块 flush 以控制内存占用
                 ChannelFuture f = ctx.writeAndFlush(message);
                 if (endOfInput) {
                     if (f.isDone()) {
                         handleEndOfInputFuture(f, chunks, currentWrite);
                     } else {
-                        // Register a listener which will close the input once the write is complete.
-                        // This is needed because the Chunk may have some resource bound that can not
-                        // be closed before it's not written.
-                        //
+                        // 写完成后再关闭输入（分块可能绑定须在写出后才能释放的资源）
                         // See https://github.com/netty/netty/issues/303
                         f.addListener((ChannelFutureListener) future ->
                                 handleEndOfInputFuture(future, chunks, currentWrite));
@@ -332,7 +309,7 @@ public class ChunkedWriteHandler extends ChannelDuplexHandler {
             closeInput(input);
             currentWrite.fail(future.cause());
         } else {
-            // read state of the input in local variables before closing it
+            // 关闭前读取进度与长度
             long inputProgress = input.progress();
             long inputLength = input.length();
             closeInput(input);
@@ -361,6 +338,7 @@ public class ChunkedWriteHandler extends ChannelDuplexHandler {
         }
     }
 
+    /** 队列中待写出的消息及其 Promise。 */
     private static final class PendingWrite {
         final Object msg;
         final ChannelPromise promise;
@@ -377,7 +355,7 @@ public class ChunkedWriteHandler extends ChannelDuplexHandler {
 
         void success(long total) {
             if (promise.isDone()) {
-                // No need to notify the progress or fulfill the promise because it's done already.
+                // Promise 已结束则无需再通知进度
                 return;
             }
             progress(total, total);

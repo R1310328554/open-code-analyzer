@@ -26,29 +26,34 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 /**
- * A {@link ChunkedInput} that fetches data from a file chunk by chunk.
+ * 按块从文件读取数据的 {@link ChunkedInput}。
  * <p>
- * If your operating system supports
- * <a href="https://en.wikipedia.org/wiki/Zero-copy">zero-copy file transfer</a>
- * such as {@code sendfile()}, you might want to use {@link FileRegion} instead.
+ * 若操作系统支持
+ * <a href="https://en.wikipedia.org/wiki/Zero-copy">零拷贝文件传输</a>
+ * （如 {@code sendfile()}），可考虑使用 {@link FileRegion}。
  */
 public class ChunkedFile implements ChunkedInput<ByteBuf> {
 
+    /** 底层随机访问文件。 */
     private final RandomAccessFile file;
+    /** 传输起始偏移。 */
     private final long startOffset;
+    /** 传输结束偏移（不含）。 */
     private final long endOffset;
+    /** 每次 readChunk 读取的最大字节数。 */
     private final int chunkSize;
+    /** 当前读指针位置。 */
     private long offset;
 
     /**
-     * Creates a new instance that fetches data from the specified file.
+     * 从指定文件创建实例（默认块大小）。
      */
     public ChunkedFile(File file) throws IOException {
         this(file, ChunkedStream.DEFAULT_CHUNK_SIZE);
     }
 
     /**
-     * Creates a new instance that fetches data from the specified file.
+     * 从指定文件创建实例。
      *
      * @param chunkSize the number of bytes to fetch on each
      *                  {@link #readChunk(ChannelHandlerContext)} call
@@ -58,14 +63,14 @@ public class ChunkedFile implements ChunkedInput<ByteBuf> {
     }
 
     /**
-     * Creates a new instance that fetches data from the specified file.
+     * 从 RandomAccessFile 创建实例（默认块大小）。
      */
     public ChunkedFile(RandomAccessFile file) throws IOException {
         this(file, ChunkedStream.DEFAULT_CHUNK_SIZE);
     }
 
     /**
-     * Creates a new instance that fetches data from the specified file.
+     * 从 RandomAccessFile 创建实例。
      *
      * @param chunkSize the number of bytes to fetch on each
      *                  {@link #readChunk(ChannelHandlerContext)} call
@@ -75,7 +80,7 @@ public class ChunkedFile implements ChunkedInput<ByteBuf> {
     }
 
     /**
-     * Creates a new instance that fetches data from the specified file.
+     * 从文件指定区间创建实例。
      *
      * @param offset the offset of the file where the transfer begins
      * @param length the number of bytes to transfer
@@ -97,21 +102,21 @@ public class ChunkedFile implements ChunkedInput<ByteBuf> {
     }
 
     /**
-     * Returns the offset in the file where the transfer began.
+     * 返回传输起始文件偏移。
      */
     public long startOffset() {
         return startOffset;
     }
 
     /**
-     * Returns the offset in the file where the transfer will end.
+     * 返回传输结束文件偏移（不含）。
      */
     public long endOffset() {
         return endOffset;
     }
 
     /**
-     * Returns the offset in the file where the transfer is happening currently.
+     * 返回当前读指针位置。
      */
     public long currentOffset() {
         return offset;
@@ -141,7 +146,7 @@ public class ChunkedFile implements ChunkedInput<ByteBuf> {
         }
 
         int chunkSize = (int) Math.min(this.chunkSize, endOffset - offset);
-        // Check if the buffer is backed by an byte array. If so we can optimize it a bit an safe a copy
+        // 堆缓冲区可直接 readFully 到 array，避免额外拷贝
 
         ByteBuf buf = allocator.heapBuffer(chunkSize);
         boolean release = true;

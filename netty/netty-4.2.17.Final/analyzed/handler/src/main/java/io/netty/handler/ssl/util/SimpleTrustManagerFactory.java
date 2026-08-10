@@ -29,21 +29,20 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.TrustManagerFactorySpi;
 
 /**
- * Helps to implement a custom {@link TrustManagerFactory}.
+ * 简化自定义 {@link TrustManagerFactory} 实现的抽象基类。
+ * <p>子类只需实现 {@code engineInit} 与 {@code engineGetTrustManagers}。</p>
  */
 public abstract class SimpleTrustManagerFactory extends TrustManagerFactory {
 
+    /** 占位 Provider。 */
     private static final Provider PROVIDER = new Provider("", 0.0, "") {
         private static final long serialVersionUID = -2680540247105807895L;
     };
 
     /**
-     * {@link SimpleTrustManagerFactorySpi} must have a reference to {@link SimpleTrustManagerFactory}
-     * to delegate its callbacks back to {@link SimpleTrustManagerFactory}.  However, it is impossible to do so,
-     * because {@link TrustManagerFactory} requires {@link TrustManagerFactorySpi} at construction time and
-     * does not provide a way to access it later.
-     *
-     * To work around this issue, we use an ugly hack which uses a {@link ThreadLocal}.
+     * {@link SimpleTrustManagerFactorySpi} 需持有父工厂引用以回调，
+     * 但 {@link TrustManagerFactory} 构造时即绑定 SPI 且之后无法访问。
+     * 通过 {@link FastThreadLocal} 在构造期间建立关联。
      */
     private static final FastThreadLocal<SimpleTrustManagerFactorySpi> CURRENT_SPI =
             new FastThreadLocal<SimpleTrustManagerFactorySpi>() {
@@ -54,14 +53,14 @@ public abstract class SimpleTrustManagerFactory extends TrustManagerFactory {
             };
 
     /**
-     * Creates a new instance.
+     * 创建新实例（默认空名称）。
      */
     protected SimpleTrustManagerFactory() {
         this("");
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
      * @param name the name of this {@link TrustManagerFactory}
      */
@@ -74,26 +73,27 @@ public abstract class SimpleTrustManagerFactory extends TrustManagerFactory {
     }
 
     /**
-     * Initializes this factory with a source of certificate authorities and related trust material.
+     * 使用 KeyStore 初始化信任材料。
      *
      * @see TrustManagerFactorySpi#engineInit(KeyStore)
      */
     protected abstract void engineInit(KeyStore keyStore) throws Exception;
 
     /**
-     * Initializes this factory with a source of provider-specific key material.
+     * 使用 Provider 特定参数初始化。
      *
      * @see TrustManagerFactorySpi#engineInit(ManagerFactoryParameters)
      */
     protected abstract void engineInit(ManagerFactoryParameters managerFactoryParameters) throws Exception;
 
     /**
-     * Returns one trust manager for each type of trust material.
+     * 返回各信任类型对应的 TrustManager 数组。
      *
      * @see TrustManagerFactorySpi#engineGetTrustManagers()
      */
     protected abstract TrustManager[] engineGetTrustManagers();
 
+    /** 内部 SPI，将 JDK 回调转发至 SimpleTrustManagerFactory 子类。 */
     static final class SimpleTrustManagerFactorySpi extends TrustManagerFactorySpi {
 
         private SimpleTrustManagerFactory parent;

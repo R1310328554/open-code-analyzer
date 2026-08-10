@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 The Netty Project
+ * Copyright 2014 The Netty Project
  *
  * The Netty Project licenses this file to you under the Apache License,
  * version 2.0 (the "License"); you may not use this file except in compliance
@@ -22,16 +22,23 @@ import java.security.KeyStore;
 import javax.net.ssl.ManagerFactoryParameters;
 import javax.net.ssl.TrustManager;
 
+/**
+ * 将已有 {@link TrustManager} 包装为 {@link javax.net.ssl.TrustManagerFactory}。
+ * <p>{@code engineInit} 为空操作；用于 {@link SslContext} 构建时直接注入自定义 TrustManager。</p>
+ */
 public final class TrustManagerFactoryWrapper extends SimpleTrustManagerFactory {
+    /** 被包装的信任管理器。 */
     private final TrustManager tm;
 
     public TrustManagerFactoryWrapper(TrustManager tm) {
         this.tm = ObjectUtil.checkNotNull(tm, "tm");
     }
 
+    /** 忽略 KeyStore 初始化。 */
     @Override
     protected void engineInit(KeyStore keyStore) throws Exception { }
 
+    /** 忽略 ManagerFactoryParameters 初始化。 */
     @Override
     protected void engineInit(ManagerFactoryParameters managerFactoryParameters)
             throws Exception { }

@@ -28,30 +28,34 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 
 /**
- * A {@link ChunkedInput} that fetches data from a file chunk by chunk using
- * NIO {@link FileChannel}.
+ * 通过 NIO {@link FileChannel} 按块从文件读取数据的 {@link ChunkedInput}。
  * <p>
- * If your operating system supports
- * <a href="https://en.wikipedia.org/wiki/Zero-copy">zero-copy file transfer</a>
- * such as {@code sendfile()}, you might want to use {@link FileRegion} instead.
+ * 若操作系统支持
+ * <a href="https://en.wikipedia.org/wiki/Zero-copy">零拷贝文件传输</a>
+ * （如 {@code sendfile()}），可考虑使用 {@link FileRegion}。
  */
 public class ChunkedNioFile implements ChunkedInput<ByteBuf> {
 
+    /** 文件通道。 */
     private final FileChannel in;
+    /** 传输起始偏移。 */
     private final long startOffset;
+    /** 传输结束偏移（不含）。 */
     private final long endOffset;
+    /** 每块最大字节数。 */
     private final int chunkSize;
+    /** 当前读指针。 */
     private long offset;
 
     /**
-     * Creates a new instance that fetches data from the specified file.
+     * 从 File 创建实例。
      */
     public ChunkedNioFile(File in) throws IOException {
         this(new RandomAccessFile(in, "r").getChannel());
     }
 
     /**
-     * Creates a new instance that fetches data from the specified file.
+     * 从 File 创建实例并指定块大小。
      *
      * @param chunkSize the number of bytes to fetch on each
      *                  {@link #readChunk(ChannelHandlerContext)} call
@@ -61,14 +65,14 @@ public class ChunkedNioFile implements ChunkedInput<ByteBuf> {
     }
 
     /**
-     * Creates a new instance that fetches data from the specified file.
+     * 从 FileChannel 创建实例（默认块大小）。
      */
     public ChunkedNioFile(FileChannel in) throws IOException {
         this(in, ChunkedStream.DEFAULT_CHUNK_SIZE);
     }
 
     /**
-     * Creates a new instance that fetches data from the specified file.
+     * 从 FileChannel 创建实例。
      *
      * @param chunkSize the number of bytes to fetch on each
      *                  {@link #readChunk(ChannelHandlerContext)} call
@@ -78,7 +82,7 @@ public class ChunkedNioFile implements ChunkedInput<ByteBuf> {
     }
 
     /**
-     * Creates a new instance that fetches data from the specified file.
+     * 从 FileChannel 指定区间创建实例。
      *
      * @param offset the offset of the file where the transfer begins
      * @param length the number of bytes to transfer
@@ -101,21 +105,21 @@ public class ChunkedNioFile implements ChunkedInput<ByteBuf> {
     }
 
     /**
-     * Returns the offset in the file where the transfer began.
+     * 返回传输起始偏移。
      */
     public long startOffset() {
         return startOffset;
     }
 
     /**
-     * Returns the offset in the file where the transfer will end.
+     * 返回传输结束偏移（不含）。
      */
     public long endOffset() {
         return endOffset;
     }
 
     /**
-     * Returns the offset in the file where the transfer is happening currently.
+     * 返回当前读指针。
      */
     public long currentOffset() {
         return offset;

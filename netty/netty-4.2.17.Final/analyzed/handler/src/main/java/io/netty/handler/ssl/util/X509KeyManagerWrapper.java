@@ -26,8 +26,13 @@ import javax.net.ssl.X509KeyManager;
 
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/**
+ * 将仅实现 {@link X509KeyManager} 的委托包装为 {@link X509ExtendedKeyManager}。
+ * <p>SSLEngine 路径下 {@code chooseEngine*Alias} 回退到基于 Socket 的别名选择（传 {@code null}）。</p>
+ */
 final class X509KeyManagerWrapper extends X509ExtendedKeyManager {
 
+    /** 被委托的密钥管理器。 */
     private final X509KeyManager delegate;
 
     X509KeyManagerWrapper(X509KeyManager delegate) {
@@ -64,11 +69,13 @@ final class X509KeyManagerWrapper extends X509ExtendedKeyManager {
         return delegate.getPrivateKey(var1);
     }
 
+    /** SSLEngine 客户端别名：委托 Socket 版选择逻辑。 */
     @Override
     public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine) {
         return delegate.chooseClientAlias(keyType, issuers, null);
     }
 
+    /** SSLEngine 服务端别名：委托 Socket 版选择逻辑。 */
     @Override
     public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine) {
         return delegate.chooseServerAlias(keyType, issuers, null);

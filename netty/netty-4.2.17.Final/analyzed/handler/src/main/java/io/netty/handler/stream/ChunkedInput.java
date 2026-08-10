@@ -20,27 +20,27 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * A data stream of indefinite length which is consumed by {@link ChunkedWriteHandler}.
+ * 长度不确定的数据流，由 {@link ChunkedWriteHandler} 分块消费并写出。
+ *
+ * @param <B> 每个分块的数据类型（通常为 {@link io.netty.buffer.ByteBuf}）
  */
 public interface ChunkedInput<B> {
 
     /**
-     * Return {@code true} if and only if there is no data left in the stream
-     * and the stream has reached at its end.
+     * 当流中无剩余数据且已到达末尾时返回 {@code true}。
      */
     boolean isEndOfInput() throws Exception;
 
     /**
-     * Releases the resources associated with the input.
+     * 释放与输入关联的资源。
      */
     void close() throws Exception;
 
     /**
      * @deprecated Use {@link #readChunk(ByteBufAllocator)}.
      *
-     * <p>Fetches a chunked data from the stream. Once this method returns the last chunk
-     * and thus the stream has reached at its end, any subsequent {@link #isEndOfInput()}
-     * call must return {@code true}.
+     * <p>从流中读取一个分块。当本方法返回最后一个分块后，
+     * 后续 {@link #isEndOfInput()} 必须返回 {@code true}。
      *
      * @param ctx The context which provides a {@link ByteBufAllocator} if buffer allocation is necessary.
      * @return the fetched chunk.
@@ -53,9 +53,8 @@ public interface ChunkedInput<B> {
     B readChunk(ChannelHandlerContext ctx) throws Exception;
 
     /**
-     * Fetches a chunked data from the stream. Once this method returns the last chunk
-     * and thus the stream has reached at its end, any subsequent {@link #isEndOfInput()}
-     * call must return {@code true}.
+     * 从流中读取一个分块。当本方法返回最后一个分块后，
+     * 后续 {@link #isEndOfInput()} 必须返回 {@code true}。
      *
      * @param allocator {@link ByteBufAllocator} if buffer allocation is necessary.
      * @return the fetched chunk.
@@ -67,14 +66,13 @@ public interface ChunkedInput<B> {
     B readChunk(ByteBufAllocator allocator) throws Exception;
 
     /**
-     * Returns the length of the input.
-     * @return  the length of the input if the length of the input is known.
-     *          a negative value if the length of the input is unknown.
+     * 返回输入总长度。
+     * @return  已知长度时为字节数；未知时为负值。
      */
     long length();
 
     /**
-     * Returns current transfer progress.
+     * 返回当前传输进度（已传输字节数）。
      */
     long progress();
 

@@ -32,21 +32,20 @@ import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509KeyManager;
 
 /**
- * Helps to implement a custom {@link KeyManagerFactory}.
+ * 简化自定义 {@link KeyManagerFactory} 实现的抽象基类。
+ * <p>子类只需实现 {@code engineInit} 与 {@code engineGetKeyManagers}，无需直接处理 SPI。</p>
  */
 public abstract class SimpleKeyManagerFactory extends KeyManagerFactory {
 
+    /** 占位 Provider，满足 KeyManagerFactory 构造要求。 */
     private static final Provider PROVIDER = new Provider("", 0.0, "") {
         private static final long serialVersionUID = -2680540247105807895L;
     };
 
     /**
-     * {@link SimpleKeyManagerFactorySpi} must have a reference to {@link SimpleKeyManagerFactory}
-     * to delegate its callbacks back to {@link SimpleKeyManagerFactory}.  However, it is impossible to do so,
-     * because {@link KeyManagerFactory} requires {@link KeyManagerFactorySpi} at construction time and
-     * does not provide a way to access it later.
-     *
-     * To work around this issue, we use an ugly hack which uses a {@link FastThreadLocal }.
+     * {@link SimpleKeyManagerFactorySpi} 需持有 {@link SimpleKeyManagerFactory} 以回调其方法，
+     * 但 {@link KeyManagerFactory} 构造时即固定 SPI 且之后无法访问。
+     * 因此通过 {@link FastThreadLocal} 在构造期间传递 SPI 与父实例的关联。
      */
     private static final FastThreadLocal<SimpleKeyManagerFactorySpi> CURRENT_SPI =
             new FastThreadLocal<SimpleKeyManagerFactorySpi>() {
@@ -57,14 +56,14 @@ public abstract class SimpleKeyManagerFactory extends KeyManagerFactory {
             };
 
     /**
-     * Creates a new instance.
+     * 创建新实例（默认空名称）。
      */
     protected SimpleKeyManagerFactory() {
         this(StringUtil.EMPTY_STRING);
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
      * @param name the name of this {@link KeyManagerFactory}
      */
@@ -75,26 +74,27 @@ public abstract class SimpleKeyManagerFactory extends KeyManagerFactory {
     }
 
     /**
-     * Initializes this factory with a source of certificate authorities and related key material.
+     * 使用 KeyStore 与密码初始化工厂。
      *
      * @see KeyManagerFactorySpi#engineInit(KeyStore, char[])
      */
     protected abstract void engineInit(KeyStore keyStore, char[] var2) throws Exception;
 
     /**
-     * Initializes this factory with a source of provider-specific key material.
+     * 使用 Provider 特定参数初始化工厂。
      *
      * @see KeyManagerFactorySpi#engineInit(ManagerFactoryParameters)
      */
     protected abstract void engineInit(ManagerFactoryParameters managerFactoryParameters) throws Exception;
 
     /**
-     * Returns one key manager for each type of key material.
+     * 返回各密钥类型对应的 KeyManager 数组。
      *
      * @see KeyManagerFactorySpi#engineGetKeyManagers()
      */
     protected abstract KeyManager[] engineGetKeyManagers();
 
+    /** 内部 SPI，将 JDK 回调转发至 SimpleKeyManagerFactory 子类。 */
     private static final class SimpleKeyManagerFactorySpi extends KeyManagerFactorySpi {
 
         private SimpleKeyManagerFactory parent;
@@ -138,6 +138,7 @@ public abstract class SimpleKeyManagerFactory extends KeyManagerFactory {
             return keyManagers.clone();
         }
 
+        /** 将非 Extended 的 X509KeyManager 包装为 X509ExtendedKeyManager。 */
         private static void wrapIfNeeded(KeyManager[] keyManagers) {
             for (int i = 0; i < keyManagers.length; i++) {
                 final KeyManager tm = keyManagers[i];

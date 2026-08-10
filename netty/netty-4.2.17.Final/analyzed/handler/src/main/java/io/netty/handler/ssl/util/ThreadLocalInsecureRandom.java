@@ -23,15 +23,17 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Insecure {@link SecureRandom} which relies on {@link PlatformDependent#threadLocalRandom()} for random number
- * generation.
+ * 非安全 {@link SecureRandom}，底层使用 {@link PlatformDependent#threadLocalRandom()} 生成随机数。
+ * <p>跳过熵收集以加速测试证书生成；<strong>禁止用于生产</strong>。</p>
  */
 final class ThreadLocalInsecureRandom extends SecureRandom {
 
     private static final long serialVersionUID = -8209473337192526191L;
 
+    /** 单例实例。 */
     private static final SecureRandom INSTANCE = new ThreadLocalInsecureRandom();
 
+    /** 返回共享的非安全 SecureRandom。 */
     static SecureRandom current() {
         return INSTANCE;
     }
@@ -43,9 +45,11 @@ final class ThreadLocalInsecureRandom extends SecureRandom {
         return "insecure";
     }
 
+    /** 忽略种子设置。 */
     @Override
     public void setSeed(byte[] seed) { }
 
+    /** 忽略种子设置。 */
     @Override
     public void setSeed(long seed) { }
 
@@ -96,6 +100,7 @@ final class ThreadLocalInsecureRandom extends SecureRandom {
         return random().nextGaussian();
     }
 
+    /** 获取当前线程的 ThreadLocalRandom。 */
     private static Random random() {
         return ThreadLocalRandom.current();
     }

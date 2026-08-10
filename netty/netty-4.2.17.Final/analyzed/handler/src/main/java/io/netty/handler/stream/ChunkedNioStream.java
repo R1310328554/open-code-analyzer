@@ -26,31 +26,33 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 /**
- * A {@link ChunkedInput} that fetches data from a {@link ReadableByteChannel}
- * chunk by chunk.  Please note that the {@link ReadableByteChannel} must
- * operate in blocking mode.  Non-blocking mode channels are not supported.
+ * 从 {@link ReadableByteChannel} 按块读取数据的 {@link ChunkedInput}。
+ * <p>通道须为<strong>阻塞模式</strong>；不支持非阻塞通道。</p>
  */
 public class ChunkedNioStream implements ChunkedInput<ByteBuf> {
 
+    /** 可读字节通道。 */
     private final ReadableByteChannel in;
 
+    /** 每块最大字节数。 */
     private final int chunkSize;
+    /** 已传输字节累计。 */
     private long offset;
 
     /**
-     * Associated ByteBuffer
+     * 复用的读缓冲（position 表示未刷出数据长度）。
      */
     private final ByteBuffer byteBuffer;
 
     /**
-     * Creates a new instance that fetches data from the specified channel.
+     * 从通道创建实例（默认块大小）。
      */
     public ChunkedNioStream(ReadableByteChannel in) {
         this(in, ChunkedStream.DEFAULT_CHUNK_SIZE);
     }
 
     /**
-     * Creates a new instance that fetches data from the specified channel.
+     * 从通道创建实例。
      *
      * @param chunkSize the number of bytes to fetch on each
      *                  {@link #readChunk(ChannelHandlerContext)} call
@@ -62,7 +64,7 @@ public class ChunkedNioStream implements ChunkedInput<ByteBuf> {
     }
 
     /**
-     * Returns the number of transferred bytes.
+     * 返回已传输字节数。
      */
     public long transferredBytes() {
         return offset;
@@ -71,11 +73,11 @@ public class ChunkedNioStream implements ChunkedInput<ByteBuf> {
     @Override
     public boolean isEndOfInput() throws Exception {
         if (byteBuffer.position() > 0) {
-            // A previous read was not over, so there is a next chunk in the buffer at least
+            // 上次 readChunk 未刷完，缓冲中仍有数据
             return false;
         }
         if (in.isOpen()) {
-            // Try to read a new part, and keep this part (no rewind)
+            // 预读一块以判断是否到达 EOF（不 rewind）
             int b = in.read(byteBuffer);
             if (b < 0) {
                 return true;
@@ -103,7 +105,7 @@ public class ChunkedNioStream implements ChunkedInput<ByteBuf> {
         if (isEndOfInput()) {
             return null;
         }
-        // buffer cannot be not be empty from there
+        // 此时 byteBuffer 中至少有一部分数据
         int readBytes = byteBuffer.position();
         for (;;) {
             int localReadBytes = in.read(byteBuffer);

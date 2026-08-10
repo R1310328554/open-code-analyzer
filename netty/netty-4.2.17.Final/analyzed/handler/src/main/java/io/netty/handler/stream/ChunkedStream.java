@@ -24,33 +24,34 @@ import java.io.InputStream;
 import java.io.PushbackInputStream;
 
 /**
- * A {@link ChunkedInput} that fetches data from an {@link InputStream} chunk by
- * chunk.
+ * 从 {@link InputStream} 按块读取数据的 {@link ChunkedInput}。
  * <p>
- * Please note that the {@link InputStream} instance that feeds data into
- * {@link ChunkedStream} must implement {@link InputStream#available()} as
- * accurately as possible, rather than using the default implementation.
- * Otherwise, {@link ChunkedStream} will generate many too small chunks or
- * block unnecessarily often.
+ * 供流的 {@link InputStream#available()} 应尽可能准确，
+ * 否则会产生过多小块或频繁阻塞。
  */
 public class ChunkedStream implements ChunkedInput<ByteBuf> {
 
+    /** 默认分块大小（8 KiB）。 */
     static final int DEFAULT_CHUNK_SIZE = 8192;
 
+    /** 带回退能力的输入流。 */
     private final PushbackInputStream in;
+    /** 每块最大字节数。 */
     private final int chunkSize;
+    /** 已传输字节数。 */
     private long offset;
+    /** 是否已关闭。 */
     private boolean closed;
 
     /**
-     * Creates a new instance that fetches data from the specified stream.
+     * 从输入流创建实例（默认块大小）。
      */
     public ChunkedStream(InputStream in) {
         this(in, DEFAULT_CHUNK_SIZE);
     }
 
     /**
-     * Creates a new instance that fetches data from the specified stream.
+     * 从输入流创建实例。
      *
      * @param chunkSize the number of bytes to fetch on each
      *                  {@link #readChunk(ChannelHandlerContext)} call
@@ -68,7 +69,7 @@ public class ChunkedStream implements ChunkedInput<ByteBuf> {
     }
 
     /**
-     * Returns the number of transferred bytes.
+     * 返回已传输字节数。
      */
     public long transferredBytes() {
         return offset;
@@ -121,7 +122,7 @@ public class ChunkedStream implements ChunkedInput<ByteBuf> {
         boolean release = true;
         ByteBuf buffer = allocator.buffer(chunkSize);
         try {
-            // transfer to buffer
+            // 从 InputStream 写入 ByteBuf
             int written = buffer.writeBytes(in, chunkSize);
             if (written < 0) {
                 return null;

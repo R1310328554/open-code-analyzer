@@ -39,29 +39,45 @@ import static io.netty.handler.ssl.util.SelfSignedCertificate.newSelfSignedCerti
 import static java.lang.invoke.MethodType.methodType;
 
 /**
- * Generates a self-signed certificate using {@code sun.security.x509} package provided by OpenJDK.
+ * 使用 OpenJDK 内部 {@code sun.security.x509} 包生成自签名 X.509 证书。
+ * <p>通过 {@link MethodHandle} 反射访问 JDK 专有 API，兼容 JDK 20+ 的 API 变更。</p>
  */
 final class OpenJdkSelfSignedCertGenerator {
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(OpenJdkSelfSignedCertGenerator.class);
+    /** X509CertInfo.set 方法句柄。 */
     private static final MethodHandle CERT_INFO_SET_HANDLE;
+    /** CertificateIssuerName 构造器句柄。 */
     private static final MethodHandle ISSUER_NAME_CONSTRUCTOR;
+    /** X509CertImpl 构造器句柄。 */
     private static final MethodHandle CERT_IMPL_CONSTRUCTOR;
+    /** X509CertInfo 构造器句柄。 */
     private static final MethodHandle X509_CERT_INFO_CONSTRUCTOR;
+    /** CertificateVersion 构造器句柄。 */
     private static final MethodHandle CERTIFICATE_VERSION_CONSTRUCTOR;
+    /** CertificateSubjectName 构造器句柄。 */
     private static final MethodHandle CERTIFICATE_SUBJECT_NAME_CONSTRUCTOR;
+    /** X500Name 构造器句柄。 */
     private static final MethodHandle X500_NAME_CONSTRUCTOR;
+    /** CertificateSerialNumber 构造器句柄。 */
     private static final MethodHandle CERTIFICATE_SERIAL_NUMBER_CONSTRUCTOR;
+    /** CertificateValidity 构造器句柄。 */
     private static final MethodHandle CERTIFICATE_VALIDITY_CONSTRUCTOR;
+    /** CertificateX509Key 构造器句柄。 */
     private static final MethodHandle CERTIFICATE_X509_KEY_CONSTRUCTOR;
+    /** CertificateAlgorithmId 构造器句柄。 */
     private static final MethodHandle CERTIFICATE_ALORITHM_ID_CONSTRUCTOR;
+    /** X509CertImpl.get 方法句柄。 */
     private static final MethodHandle CERT_IMPL_GET_HANDLE;
+    /** X509CertImpl.sign 方法句柄。 */
     private static final MethodHandle CERT_IMPL_SIGN_HANDLE;
+    /** AlgorithmId.get 静态方法句柄。 */
     private static final MethodHandle ALGORITHM_ID_GET_HANDLE;
 
+    /** 当前 JDK 是否支持 sun.security.x509 反射路径。 */
     private static final boolean SUPPORTED;
 
-    // Use reflection as JDK20+ did change things quite a bit.
+    // JDK 20+ 对内部 API 改动较大，使用反射探测可用性。
     static {
         final MethodHandles.Lookup lookup = MethodHandles.lookup();
 
@@ -277,6 +293,17 @@ final class OpenJdkSelfSignedCertGenerator {
         SUPPORTED = supported;
     }
 
+    /**
+     * 生成自签名证书并将 PEM 文件路径与私钥写入临时文件。
+     *
+     * @param fqdn      证书 CN（完全限定域名）
+     * @param keypair   密钥对
+     * @param random    用于序列号的随机源
+     * @param notBefore 生效时间
+     * @param notAfter  失效时间
+     * @param algorithm 密钥算法（RSA 或 EC）
+     * @return [证书路径, 私钥路径]
+     */
     static String[] generate(String fqdn, KeyPair keypair, SecureRandom random, Date notBefore, Date notAfter,
                              String algorithm) throws Exception {
         if (!SUPPORTED) {
@@ -286,7 +313,7 @@ final class OpenJdkSelfSignedCertGenerator {
         try {
             PrivateKey key = keypair.getPrivate();
 
-            // Prepare the information required for generating an X.509 certificate.
+            // 组装 X.509 证书所需字段。
             Object info = X509_CERT_INFO_CONSTRUCTOR.invoke();
             Object owner = X500_NAME_CONSTRUCTOR.invoke("CN=" + fqdn);
 
@@ -311,12 +338,12 @@ final class OpenJdkSelfSignedCertGenerator {
                     CERTIFICATE_ALORITHM_ID_CONSTRUCTOR.invoke(
                             ALGORITHM_ID_GET_HANDLE.invoke("1.2.840.113549.1.1.11")));
 
-            // Sign the cert to identify the algorithm that's used.
+            // 首次签名以确定实际签名算法 OID。
             Object cert = CERT_IMPL_CONSTRUCTOR.invoke(info);
             CERT_IMPL_SIGN_HANDLE.invoke(cert, key,
                     algorithm.equalsIgnoreCase("EC") ? "SHA256withECDSA" : "SHA256withRSA");
 
-            // Update the algorithm and sign again.
+            // 更新 algorithmID 后再次签名生成最终证书。
             CERT_INFO_SET_HANDLE.invoke(info, "algorithmID.algorithm",
                     CERT_IMPL_GET_HANDLE.invoke(cert, "x509.algorithm"));
             cert = CERT_IMPL_CONSTRUCTOR.invoke(info);
