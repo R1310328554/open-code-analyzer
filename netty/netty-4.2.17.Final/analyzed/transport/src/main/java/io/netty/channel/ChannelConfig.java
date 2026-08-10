@@ -61,22 +61,28 @@ import java.util.Map;
  * More options are available in the sub-types of {@link ChannelConfig}.  For
  * example, you can configure the parameters which are specific to a TCP/IP
  * socket as explained in {@link SocketChannelConfig}.
+ * <p>{@link Channel} 的可配置属性集合：连接超时、写缓冲水位、分配器、自动读等。
+ * 通用选项可通过 {@link #setOptions(Map)} 设置；传输专有选项需向下转型为
+ * {@link SocketChannelConfig} 等子接口。</p>
  */
 public interface ChannelConfig {
 
     /**
      * Return all set {@link ChannelOption}'s.
-     */
+     * <p>返回当前已设置的所有 {@link ChannelOption} 及其值。</p>
+          */
     Map<ChannelOption<?>, Object> getOptions();
 
     /**
      * Sets the configuration properties from the specified {@link Map}.
-     */
+     * <p>从 {@link Map} 批量设置配置项；未知选项被忽略。</p>
+          */
     boolean setOptions(Map<ChannelOption<?>, ?> options);
 
     /**
      * Return the value of the given {@link ChannelOption}
-     */
+     * <p>读取指定 {@link ChannelOption} 的当前值，未设置时返回 {@code null}。</p>
+          */
     <T> T getOption(ChannelOption<T> option);
 
     /**
@@ -97,6 +103,8 @@ public interface ChannelConfig {
      * }
      * </pre>
      *
+     * <p>设置单个 {@link ChannelOption}；子类实现须先调用 {@code super.setOption}。</p>
+     *
      * @return {@code true} if and only if the property has been set
      */
     <T> boolean setOption(ChannelOption<T> option, T value);
@@ -106,6 +114,8 @@ public interface ChannelConfig {
      * {@link Channel} does not support connect operation, this property is not
      * used at all, and therefore will be ignored.
      *
+     * <p>返回连接超时（毫秒）；不支持 connect 的通道忽略此配置。</p>
+     *
      * @return the connect timeout in milliseconds.  {@code 0} if disabled.
      */
     int getConnectTimeoutMillis();
@@ -114,6 +124,8 @@ public interface ChannelConfig {
      * Sets the connect timeout of the channel in milliseconds.  If the
      * {@link Channel} does not support connect operation, this property is not
      * used at all, and therefore will be ignored.
+     *
+     * <p>设置连接超时（毫秒）；{@code 0} 表示禁用。</p>
      *
      * @param connectTimeoutMillis the connect timeout in milliseconds.
      *                             {@code 0} to disable.
@@ -127,6 +139,7 @@ public interface ChannelConfig {
      * Returns the maximum number of messages to read per read loop.
      * a {@link ChannelInboundHandler#channelRead(ChannelHandlerContext, Object) channelRead()} event.
      * If this value is greater than 1, an event loop might attempt to read multiple times to procure multiple messages.
+     * <p>每次读循环最多触发的 {@code channelRead} 次数；已废弃，请用 {@link MaxMessagesRecvByteBufAllocator}。</p>
      */
     @Deprecated
     int getMaxMessagesPerRead();
@@ -137,6 +150,7 @@ public interface ChannelConfig {
      * <p>
      * Sets the maximum number of messages to read per read loop.
      * If this value is greater than 1, an event loop might attempt to read multiple times to procure multiple messages.
+     * <p>设置每次读循环的消息上限；已废弃。</p>
      */
     @Deprecated
     ChannelConfig setMaxMessagesPerRead(int maxMessagesPerRead);
@@ -147,7 +161,8 @@ public interface ChannelConfig {
      * It is similar to what a spin lock is used for in concurrency programming.
      * It improves memory utilization and write throughput depending on
      * the platform that JVM runs on.  The default value is {@code 16}.
-     */
+     * <p>返回写自旋次数上限：在底层 {@link WritableByteChannel#write} 返回非零前最多循环次数。</p>
+          */
     int getWriteSpinCount();
 
     /**
@@ -157,6 +172,8 @@ public interface ChannelConfig {
      * It improves memory utilization and write throughput depending on
      * the platform that JVM runs on.  The default value is {@code 16}.
      *
+     * <p>设置写自旋次数；过小降低吞吐，过大可能占用 CPU。</p>
+     *
      * @throws IllegalArgumentException
      *         if the specified value is {@code 0} or less than {@code 0}
      */
@@ -165,54 +182,63 @@ public interface ChannelConfig {
     /**
      * Returns {@link ByteBufAllocator} which is used for the channel
      * to allocate buffers.
-     */
+     * <p>返回通道分配 {@link ByteBuf} 时使用的 {@link ByteBufAllocator}。</p>
+          */
     ByteBufAllocator getAllocator();
 
     /**
      * Set the {@link ByteBufAllocator} which is used for the channel
      * to allocate buffers.
-     */
+     * <p>设置通道的 {@link ByteBufAllocator}。</p>
+          */
     ChannelConfig setAllocator(ByteBufAllocator allocator);
 
     /**
      * Returns {@link RecvByteBufAllocator} which is used for the channel to allocate receive buffers.
-     */
+     * <p>返回接收缓冲区分配策略 {@link RecvByteBufAllocator}。</p>
+          */
     <T extends RecvByteBufAllocator> T getRecvByteBufAllocator();
 
     /**
      * Set the {@link RecvByteBufAllocator} which is used for the channel to allocate receive buffers.
-     */
+     * <p>设置接收缓冲区分配策略。</p>
+          */
     ChannelConfig setRecvByteBufAllocator(RecvByteBufAllocator allocator);
 
     /**
      * Returns {@code true} if and only if {@link ChannelHandlerContext#read()} will be invoked automatically so that
      * a user application doesn't need to call it at all. The default value is {@code true}.
-     */
+     * <p>为 {@code true} 时事件循环在可读时自动调度读，用户无需手动 {@link ChannelHandlerContext#read()}。</p>
+          */
     boolean isAutoRead();
 
     /**
      * Sets if {@link ChannelHandlerContext#read()} will be invoked automatically so that a user application doesn't
      * need to call it at all. The default value is {@code true}.
-     */
+     * <p>设置是否自动读；关闭后须显式调用 {@link ChannelHandlerContext#read()} 才能继续接收。</p>
+          */
     ChannelConfig setAutoRead(boolean autoRead);
 
     /**
      * Returns {@code true} if and only if the {@link Channel} will be closed automatically and immediately on
      * write failure. The default is {@code true}.
-     */
+     * <p>为 {@code true} 时写失败会立即关闭通道。</p>
+          */
     boolean isAutoClose();
 
     /**
      * Sets whether the {@link Channel} should be closed automatically and immediately on write failure.
      * The default is {@code true}.
-     */
+     * <p>设置写失败时是否自动关闭通道。</p>
+          */
     ChannelConfig setAutoClose(boolean autoClose);
 
     /**
      * Returns the high water mark of the write buffer.  If the number of bytes
      * queued in the write buffer exceeds this value, {@link Channel#isWritable()}
      * will start to return {@code false}.
-     */
+     * <p>返回写缓冲高水位：排队字节超过此值时 {@link Channel#isWritable()} 变为 {@code false}。</p>
+          */
     int getWriteBufferHighWaterMark();
 
     /**
@@ -220,7 +246,8 @@ public interface ChannelConfig {
      * Sets the high water mark of the write buffer.  If the number of bytes
      * queued in the write buffer exceeds this value, {@link Channel#isWritable()}
      * will start to return {@code false}.
-     */
+     * <p>设置写缓冲高水位。</p>
+          */
     ChannelConfig setWriteBufferHighWaterMark(int writeBufferHighWaterMark);
 
     /**
@@ -229,7 +256,8 @@ public interface ChannelConfig {
      * {@linkplain #setWriteBufferHighWaterMark(int) high water mark} and then
      * dropped down below this value, {@link Channel#isWritable()} will start to return
      * {@code true} again.
-     */
+     * <p>返回写缓冲低水位：曾超过高水位后降至其下时 {@link Channel#isWritable()} 恢复 {@code true}。</p>
+          */
     int getWriteBufferLowWaterMark();
 
     /**
@@ -239,30 +267,35 @@ public interface ChannelConfig {
      * {@linkplain #setWriteBufferHighWaterMark(int) high water mark} and then
      * dropped down below this value, {@link Channel#isWritable()} will start to return
      * {@code true} again.
-     */
+     * <p>设置写缓冲低水位，须小于高水位。</p>
+          */
     ChannelConfig setWriteBufferLowWaterMark(int writeBufferLowWaterMark);
 
     /**
      * Returns {@link MessageSizeEstimator} which is used for the channel
      * to detect the size of a message.
-     */
+     * <p>返回用于估算出站消息大小的 {@link MessageSizeEstimator}。</p>
+          */
     MessageSizeEstimator getMessageSizeEstimator();
 
     /**
      * Set the {@link MessageSizeEstimator} which is used for the channel
      * to detect the size of a message.
-     */
+     * <p>设置消息大小估算器，影响 flush 进度与流量控制。</p>
+          */
     ChannelConfig setMessageSizeEstimator(MessageSizeEstimator estimator);
 
     /**
      * Returns the {@link WriteBufferWaterMark} which is used for setting the high and low
      * water mark of the write buffer.
-     */
+     * <p>返回写缓冲高低水位封装对象。</p>
+          */
     WriteBufferWaterMark getWriteBufferWaterMark();
 
     /**
      * Set the {@link WriteBufferWaterMark} which is used for setting the high and low
      * water mark of the write buffer.
-     */
+     * <p>一次性设置写缓冲高低水位。</p>
+          */
     ChannelConfig setWriteBufferWaterMark(WriteBufferWaterMark writeBufferWaterMark);
 }

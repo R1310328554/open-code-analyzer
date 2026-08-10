@@ -23,14 +23,18 @@ import java.util.Map;
 
 /**
  * Skeleton implementation of a {@link ChannelHandler}.
+ * <p>{@link ChannelHandler} 的骨架实现，提供 {@link Sharable} 检测、默认空实现的
+ * {@link #handlerAdded}/{@link #handlerRemoved}，以及将 {@link #exceptionCaught} 转发至管道的默认行为。</p>
  */
 public abstract class ChannelHandlerAdapter implements ChannelHandler {
 
     // Not using volatile because it's used only for a sanity check.
+    /** 标记处理器是否已加入管道，用于 {@link #ensureNotSharable()} 一致性检查（非 volatile，仅作断言）。 */
     boolean added;
 
     /**
      * Throws {@link IllegalStateException} if {@link ChannelHandlerAdapter#isSharable()} returns {@code true}
+     * <p>若本处理器标注为 {@link Sharable} 却持有每连接状态，则抛出 {@link IllegalStateException}。</p>
      */
     protected void ensureNotSharable() {
         if (isSharable()) {
@@ -41,6 +45,7 @@ public abstract class ChannelHandlerAdapter implements ChannelHandler {
     /**
      * Return {@code true} if the implementation is {@link Sharable} and so can be added
      * to different {@link ChannelPipeline}s.
+     * <p>检测类是否标注 {@link Sharable}；结果按线程缓存以避免重复反射与 volatile 读写。</p>
      */
     public boolean isSharable() {
         /**
@@ -63,6 +68,7 @@ public abstract class ChannelHandlerAdapter implements ChannelHandler {
 
     /**
      * Do nothing by default, sub-classes may override this method.
+     * <p>默认无操作；子类可在处理器加入管道后初始化资源。</p>
      */
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
@@ -71,6 +77,7 @@ public abstract class ChannelHandlerAdapter implements ChannelHandler {
 
     /**
      * Do nothing by default, sub-classes may override this method.
+     * <p>默认无操作；子类可在处理器从管道移除后释放资源。</p>
      */
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
@@ -80,8 +87,7 @@ public abstract class ChannelHandlerAdapter implements ChannelHandler {
     /**
      * Calls {@link ChannelHandlerContext#fireExceptionCaught(Throwable)} to forward
      * to the next {@link ChannelHandler} in the {@link ChannelPipeline}.
-     *
-     * Sub-classes may override this method to change behavior.
+     * <p>将未捕获异常沿管道向下游传播；子类可覆盖以自定义处理逻辑。</p>
      *
      * @deprecated is part of {@link ChannelInboundHandler}
      */

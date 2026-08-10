@@ -161,42 +161,57 @@ import java.util.concurrent.TimeUnit;
  *     // Connection established successfully
  * }
  * </pre>
+ * <p>Netty 中所有通道 I/O 均为异步：调用立即返回，实际结果通过本接口及其
+ * {@link ChannelFutureListener} 回调获知。优先使用 {@link #addListener(GenericFutureListener)}
+ * 而非在 I/O 线程中 {@link #await()}，以避免死锁与性能损失。</p>
  */
 public interface ChannelFuture extends Future<Void> {
 
     /**
      * Returns a channel where the I/O operation associated with this
      * future takes place.
+     * <p>返回与本 future 关联 I/O 操作所在的 {@link Channel}。</p>
      */
     Channel channel();
 
+    /** 添加完成监听器；返回 {@code this} 以支持链式调用。 */
     @Override
     ChannelFuture addListener(GenericFutureListener<? extends Future<? super Void>> listener);
 
+    /** 添加完成监听器；返回 {@code this} 以支持链式调用。 */
+    /** 批量添加完成监听器。 */
     @Override
     ChannelFuture addListeners(GenericFutureListener<? extends Future<? super Void>>... listeners);
 
+    /** 移除指定监听器。 */
     @Override
     ChannelFuture removeListener(GenericFutureListener<? extends Future<? super Void>> listener);
 
+    /** 移除指定监听器。 */
+    /** 批量移除监听器。 */
     @Override
     ChannelFuture removeListeners(GenericFutureListener<? extends Future<? super Void>>... listeners);
 
+    /** 阻塞直至完成；中断时抛出 {@link InterruptedException}。 */
     @Override
     ChannelFuture sync() throws InterruptedException;
 
+    /** 不可中断地阻塞直至完成。 */
     @Override
     ChannelFuture syncUninterruptibly();
 
+    /** 等待完成但不强制成功；可被中断。 */
     @Override
     ChannelFuture await() throws InterruptedException;
 
+    /** 不可中断地等待完成。 */
     @Override
     ChannelFuture awaitUninterruptibly();
 
     /**
      * Returns {@code true} if this {@link ChannelFuture} is a void future and so not allow to call any of the
      * following methods:
+     * <p>若为 void future（如 {@link Channel#voidPromise()}），则不允许注册监听器或 await/sync。
      * <ul>
      *     <li>{@link #addListener(GenericFutureListener)}</li>
      *     <li>{@link #addListeners(GenericFutureListener[])}</li>

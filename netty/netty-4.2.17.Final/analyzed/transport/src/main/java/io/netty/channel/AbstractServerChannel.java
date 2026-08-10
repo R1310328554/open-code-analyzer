@@ -20,29 +20,34 @@ import java.net.SocketAddress;
 /**
  * A skeletal server-side {@link Channel} implementation.  A server-side
  * {@link Channel} does not allow the following operations:
+ * <p>服务端 {@link Channel} 的骨架实现。监听套接字本身不接受客户端语义的操作，
+ * 以下出站能力均会抛出 {@link UnsupportedOperationException}：</p>
  * <ul>
- * <li>{@link #connect(SocketAddress, ChannelPromise)}</li>
- * <li>{@link #disconnect(ChannelPromise)}</li>
- * <li>{@link #write(Object, ChannelPromise)}</li>
- * <li>{@link #flush()}</li>
- * <li>and the shortcut methods which calls the methods mentioned above
+ * <li>{@link #connect(SocketAddress, ChannelPromise)} — 服务端通道不主动连接远端</li>
+ * <li>{@link #disconnect(ChannelPromise)} — 无对等连接可断开</li>
+ * <li>{@link #write(Object, ChannelPromise)} / {@link #flush()} — 数据经接受的子通道写出</li>
+ * <li>以及调用上述方法的便捷重载</li>
  * </ul>
  */
 public abstract class AbstractServerChannel extends AbstractChannel implements ServerChannel {
+    /** 服务端通道元数据：无连接语义，默认最大报文数 16。 */
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
 
     /**
      * Creates a new instance.
+     * <p>创建无父通道的服务端 {@link Channel} 实例。</p>
      */
     protected AbstractServerChannel() {
         super(null);
     }
 
+    /** 返回服务端通道固定元数据。 */
     @Override
     public ChannelMetadata metadata() {
         return METADATA;
     }
 
+    /** 服务端监听通道无固定远端地址，恒为 {@code null}。 */
     @Override
     public SocketAddress remoteAddress() {
         return null;
@@ -53,26 +58,31 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
         return null;
     }
 
+    /** 服务端通道不支持断开操作。 */
     @Override
     protected void doDisconnect() throws Exception {
         throw new UnsupportedOperationException();
     }
 
+    /** 创建服务端专用的 {@link AbstractUnsafe} 实现。 */
     @Override
     protected AbstractUnsafe newUnsafe() {
         return new DefaultServerUnsafe();
     }
 
+    /** 服务端通道不支持直接写出消息。 */
     @Override
     protected void doWrite(ChannelOutboundBuffer in) throws Exception {
         throw new UnsupportedOperationException();
     }
 
+    /** 出站消息过滤在服务端通道上不可用。 */
     @Override
     protected final Object filterOutboundMessage(Object msg) {
         throw new UnsupportedOperationException();
     }
 
+    /** 拦截 connect 请求并以失败完成对应的 {@link ChannelPromise}。 */
     private final class DefaultServerUnsafe extends AbstractUnsafe {
         @Override
         public void connect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {

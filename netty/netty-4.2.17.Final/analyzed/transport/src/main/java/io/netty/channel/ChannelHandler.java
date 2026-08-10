@@ -174,22 +174,28 @@ import java.lang.annotation.Target;
  * {@link ChannelPipeline} to find out more about inbound and outbound operations,
  * what fundamental differences they have, how they flow in a  pipeline,  and how to handle
  * the operation in your application.
+ * <p>通道处理器是 Netty 事件驱动模型的核心：通过 {@link ChannelHandlerContext} 与
+ * {@link ChannelPipeline} 交互，处理入站事件或拦截出站 I/O。含 per-channel 状态时
+ * 须为每个 {@link Channel} 创建新实例；标注 {@link Sharable} 的可安全复用。</p>
  */
 public interface ChannelHandler {
 
     /**
      * Gets called after the {@link ChannelHandler} was added to the actual context and it's ready to handle events.
+     * <p>处理器已加入 {@link ChannelPipeline} 且上下文就绪后调用，可用于初始化 per-channel 状态。</p>
      */
     void handlerAdded(ChannelHandlerContext ctx) throws Exception;
 
     /**
      * Gets called after the {@link ChannelHandler} was removed from the actual context and it doesn't handle events
      * anymore.
+     * <p>处理器从管道移除后调用，应在此释放占用的资源。</p>
      */
     void handlerRemoved(ChannelHandlerContext ctx) throws Exception;
 
     /**
      * Gets called if a {@link Throwable} was thrown.
+     * <p>管道中发生未捕获异常时调用；新代码应在 {@link ChannelInboundHandler} 中实现。</p>
      *
      * @deprecated if you want to handle this event you should implement {@link ChannelInboundHandler} and
      * implement the method there.
@@ -201,6 +207,7 @@ public interface ChannelHandler {
      * Indicates that the same instance of the annotated {@link ChannelHandler}
      * can be added to one or more {@link ChannelPipeline}s multiple times
      * without a race condition.
+     * <p>标记处理器实例可安全共享于多个管道（无 per-channel 可变状态）。
      * <p>
      * If this annotation is not specified, you have to create a new handler
      * instance every time you add it to a pipeline because it has unshared
@@ -214,6 +221,6 @@ public interface ChannelHandler {
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     @interface Sharable {
-        // no value
+        // 标记注解，无属性
     }
 }

@@ -20,8 +20,13 @@ import io.netty.util.concurrent.AbstractEventExecutorGroup;
 
 /**
  * Skeletal implementation of {@link EventLoopGroup}.
+ * <p>{@link EventLoopGroup} 的骨架实现，继承 {@link io.netty.util.concurrent.AbstractEventExecutorGroup}，
+ * 子类只需实现 {@link #next()} 以按组内策略选取 {@link EventLoop}。</p>
  */
 public abstract class AbstractEventLoopGroup extends AbstractEventExecutorGroup implements EventLoopGroup {
+    /**
+     * 按组内负载均衡策略返回下一个 {@link EventLoop}，供注册 {@link Channel} 时使用。
+     */
     @Override
     public abstract EventLoop next();
 }

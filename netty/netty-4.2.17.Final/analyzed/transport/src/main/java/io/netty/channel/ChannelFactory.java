@@ -17,11 +17,14 @@ package io.netty.channel;
 
 /**
  * Creates a new {@link Channel}.
+ * <p>用于创建 {@link Channel} 实例的工厂接口，与 {@link io.netty.bootstrap.ChannelFactory} 等价，
+ * 供 {@link io.netty.bootstrap.ServerBootstrap}、{@link io.netty.bootstrap.Bootstrap} 等引导类配置通道类型。</p>
  */
 @SuppressWarnings({ "ClassNameSameAsAncestorName", "deprecation" })
 public interface ChannelFactory<T extends Channel> extends io.netty.bootstrap.ChannelFactory<T> {
     /**
      * Creates a new channel.
+     * <p>创建并返回一个新的 {@link Channel} 实例；每次调用应产生独立对象（除非实现另有约定）。</p>
      */
     @Override
     T newChannel();

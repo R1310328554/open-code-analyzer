@@ -23,20 +23,20 @@ import io.netty.util.concurrent.GenericFutureListener;
  * Listens to the result of a {@link ChannelFuture}.  The result of the
  * asynchronous {@link Channel} I/O operation is notified once this listener
  * is added by calling {@link ChannelFuture#addListener(GenericFutureListener)}.
+ * <p>监听 {@link ChannelFuture} 完成结果的回调接口。通过
+ * {@link ChannelFuture#addListener(GenericFutureListener)} 注册后，I/O 线程在操作完成时调用
+ * {@link #operationComplete(Future)}。</p>
  *
  * <h3>Return the control to the caller quickly</h3>
- *
- * {@link #operationComplete(Future)} is directly called by an I/O
- * thread.  Therefore, performing a time consuming task or a blocking operation
- * in the handler method can cause an unexpected pause during I/O.  If you need
- * to perform a blocking operation on I/O completion, try to execute the
- * operation in a different thread using a thread pool.
+ * <p>{@link #operationComplete(Future)} 由 I/O 线程直接调用，不宜在其中执行阻塞或耗时任务；
+ * 如需阻塞后续逻辑，应提交到独立线程池处理。</p>
  */
 public interface ChannelFutureListener extends GenericFutureListener<ChannelFuture> {
 
     /**
      * A {@link ChannelFutureListener} that closes the {@link Channel} which is
      * associated with the specified {@link ChannelFuture}.
+     * <p>无论成功或失败，在 future 完成时关闭关联 {@link Channel} 的监听器。</p>
      */
     ChannelFutureListener CLOSE = new ChannelFutureListener() {
         @Override
@@ -48,6 +48,7 @@ public interface ChannelFutureListener extends GenericFutureListener<ChannelFutu
     /**
      * A {@link ChannelFutureListener} that closes the {@link Channel} when the
      * operation ended up with a failure or cancellation rather than a success.
+     * <p>仅在操作失败或取消时关闭 {@link Channel} 的监听器。</p>
      */
     ChannelFutureListener CLOSE_ON_FAILURE = new ChannelFutureListener() {
         @Override
@@ -61,6 +62,8 @@ public interface ChannelFutureListener extends GenericFutureListener<ChannelFutu
     /**
      * A {@link ChannelFutureListener} that forwards the {@link Throwable} of the {@link ChannelFuture} into the
      * {@link ChannelPipeline}. This mimics the old behavior of Netty 3.
+     * <p>操作失败时将 {@link ChannelFuture#cause()} 经 {@link ChannelPipeline#fireExceptionCaught(Throwable)}
+     * 传播，模拟 Netty 3 的异常处理方式。</p>
      */
     ChannelFutureListener FIRE_EXCEPTION_ON_FAILURE = new ChannelFutureListener() {
         @Override
