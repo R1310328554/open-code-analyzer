@@ -15,23 +15,8 @@
     "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/RSAKeyValueType.java",
     "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/ReferenceType.java",
     "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/RetrievalMethodType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/SPKIDataType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/SignatureMethodType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/SignaturePropertiesType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/SignaturePropertyType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/SignatureType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/SignatureValueType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/SignedInfoType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/TransformType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/TransformsType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/X509CertificateType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/X509DataType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/X509IssuerSerialType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmlenc/AgreementMethodType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmlenc/CipherDataType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmlenc/CipherReferenceType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmlenc/EncryptedDataType.java"
+    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/SPKIDataType.java"
   ],
   "remaining_pending": 3358,
-  "done": 2610
+  "done": 2625
 }
