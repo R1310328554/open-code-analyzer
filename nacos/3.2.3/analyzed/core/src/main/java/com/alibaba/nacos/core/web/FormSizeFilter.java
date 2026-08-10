@@ -29,6 +29,7 @@ import org.springframework.http.MediaType;
 import java.io.IOException;
 
 /**
+ * 限制 {@code application/x-www-form-urlencoded} 表单 POST 体大小，防止超大表单攻击。
  * A filter used to limit the size of form data; see: [#14423](https://github.com/alibaba/nacos/issues/14423)
  *
  * @author Huang Xiao
@@ -38,6 +39,7 @@ public class FormSizeFilter implements Filter {
     
     private final long maxFormSize;
     
+    /** @param maxFormSize 允许的最大表单字节数，-1 表示不限制。 */
     public FormSizeFilter(long maxFormSize) {
         this.maxFormSize = maxFormSize;
     }
@@ -46,6 +48,7 @@ public class FormSizeFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
         throws IOException, ServletException {
         HttpServletRequest req = (HttpServletRequest) request;
+        // 超限则直接返回 413 Payload Too Large
         if (exceededFormSize(req)) {
             HttpServletResponse resp = (HttpServletResponse) response;
             resp.sendError(HttpStatus.PAYLOAD_TOO_LARGE.value(), "Payload Too Large");
@@ -55,6 +58,7 @@ public class FormSizeFilter implements Filter {
     }
     
     /**
+     * 仅对 urlencoded 表单检查 Content-Length 是否超过 maxFormSize。
      * Check the size of form parameters.
      *
      * @param request HttpServletRequest

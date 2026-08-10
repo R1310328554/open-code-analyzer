@@ -19,6 +19,7 @@ package com.alibaba.nacos.core.utils;
 import com.alibaba.nacos.common.utils.NumberUtils;
 
 /**
+ * 远程 RPC 线程池配置工具：读取系统属性覆盖默认线程倍数与队列容量。
  * util of remote.
  *
  * @author liuzunfei
@@ -26,19 +27,19 @@ import com.alibaba.nacos.common.utils.NumberUtils;
  */
 public class RemoteUtils {
     
+    /** 远程模块类加载相关因子（预留常量）。 */
     public static final float LOADER_FACTOR = 0.1f;
     
-    /**
-     * Default remote execute times for CPU count of task processors.
-     */
+    /** 默认远程执行线程数 = CPU 核数 × 16。 */
+
     private static final int REMOTE_EXECUTOR_TIMES_OF_PROCESSORS = 1 << 4;
     
-    /**
-     * Default remote execute queue size: 16384.
-     */
+    /** 默认远程执行队列容量：16384（2^14）。 */
+
     private static final int REMOTE_EXECUTOR_QUEUE_SIZE = 1 << 14;
     
     /**
+     * 获取远程执行线程相对 CPU 核数的倍数，可通过 {@code remote.executor.times.of.processors} 覆盖。
      * get remote executors thread times of processors,default is 16. see the usage of this method for detail.
      *
      * @return times of processors.
@@ -53,6 +54,7 @@ public class RemoteUtils {
         }
     }
     
+    /** 获取远程执行队列大小，可通过 {@code remote.executor.queue.size} 覆盖。 */
     public static int getRemoteExecutorQueueSize() {
         String queueSizeString = System.getProperty("remote.executor.queue.size");
         if (NumberUtils.isDigits(queueSizeString)) {

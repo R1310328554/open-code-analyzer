@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * 可重复读取请求体的 {@link HttpServletRequest} 扩展接口，供过滤器链多次解析参数与 body。
  * ReuseHttpRequest.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -31,6 +32,7 @@ import java.util.Set;
 public interface ReuseHttpRequest extends HttpServletRequest {
     
     /**
+     * 获取已缓存的请求体：multipart 返回 parts，否则返回字符串或编码后的表单参数。
      * get request body.
      *
      * @return object
@@ -39,6 +41,7 @@ public interface ReuseHttpRequest extends HttpServletRequest {
     Object getBody() throws Exception;
     
     /**
+     * 将参数 Map 中各 key 的值数组去重后返回新 Map。
      * Remove duplicate values from the array.
      *
      * @param request {@link HttpServletRequest}
@@ -48,6 +51,7 @@ public interface ReuseHttpRequest extends HttpServletRequest {
         Map<String, String[]> tmp = request.getParameterMap();
         Map<String, String[]> result = new HashMap<>(tmp.size());
         Set<String> set = new HashSet<>();
+        // 逐 key 去重参数值并写入结果 Map
         for (Map.Entry<String, String[]> entry : tmp.entrySet()) {
             set.addAll(Arrays.asList(entry.getValue()));
             result.put(entry.getKey(), set.toArray(new String[0]));

@@ -39,12 +39,14 @@ import static com.alibaba.nacos.common.constant.HttpHeaderConsts.ACCEPT_ENCODING
 import static com.alibaba.nacos.common.http.param.MediaType.APPLICATION_JSON;
 
 /**
+ * Web 层通用工具：请求参数解析、编码、客户端 IP、异步 DeferredResult 与文件上传处理。
  * web utils.
  *
  * @author nkorange
  */
 public class WebUtils {
     
+    /** 请求参数中指定字符编码的键名。 */
     private static final String ENCODING_KEY = "encoding";
     
     private static final String COMMA = ",";
@@ -53,13 +55,16 @@ public class WebUtils {
     
     private static final String TMP_SUFFIX = ".tmp";
     
+    /** Nginx 代理传递的真实客户端 IP 头。 */
     public static final String X_REAL_IP = "X-Real-IP";
     
+    /** 多级代理链中的客户端 IP 列表头。 */
     public static final String X_FORWARDED_FOR = "X-Forwarded-For";
     
     private static final String X_FORWARDED_FOR_SPLIT_SYMBOL = ",";
     
     /**
+     * 读取必填请求参数，缺失时抛出 {@link IllegalArgumentException}。
      * get target value from parameterMap, if not found will throw {@link IllegalArgumentException}.
      *
      * @param req {@link HttpServletRequest}
@@ -76,6 +81,7 @@ public class WebUtils {
     }
     
     /**
+     * 读取可选请求参数，空白时返回 defaultValue。
      * get target value from parameterMap, if not found will return default value.
      *
      * @param req          {@link HttpServletRequest}
@@ -99,7 +105,9 @@ public class WebUtils {
      * @param value    value
      * @param encoding encode
      * @return Decoded data
+      * <p>Web 层通用工具；详见类级说明。</p>
      */
+    /** 按 encoding 参数（默认 UTF-8）解码并 trim 参数值。 */
     private static String resolveValue(String value, String encoding) {
         if (StringUtils.isEmpty(encoding)) {
             encoding = StandardCharsets.UTF_8.name();
@@ -112,6 +120,7 @@ public class WebUtils {
     }
     
     /**
+     * 解析 Accept-Encoding 头，取第一个编码并去掉分号后缀。
      * get accept encode from request.
      *
      * @param req {@link HttpServletRequest}
@@ -125,6 +134,7 @@ public class WebUtils {
     }
     
     /**
+     * 获取 User-Agent，缺失时回退 client-version 头。
      * Returns the value of the request header "user-agent" as a <code>String</code>.
      *
      * @param request HttpServletRequest
@@ -142,6 +152,7 @@ public class WebUtils {
     }
     
     /**
+     * 以 UTF-8 JSON 格式写响应体并设置 HTTP 状态码。
      * response data to client.
      *
      * @param response {@link HttpServletResponse}
@@ -158,6 +169,7 @@ public class WebUtils {
     }
     
     /**
+     * 将上传文件写入临时文件后交给 consumer 处理，结果写入 DeferredResult。
      * Handle file upload operations.
      *
      * @param multipartFile file
@@ -186,6 +198,7 @@ public class WebUtils {
     }
     
     /**
+     * 将 CompletableFuture 完成/异常结果绑定到 DeferredResult，超时则 join。
      * Register DeferredResult in the callback of CompletableFuture.
      *
      * @param deferredResult {@link DeferredResult}
@@ -215,6 +228,7 @@ public class WebUtils {
      * @param success        if future success, callback runnable
      * @param errorHandler   {@link Function}
      * @param <T>            target type
+      * <p>Web 层通用工具；详见类级说明。</p>
      */
     public static <T> void process(DeferredResult<T> deferredResult, CompletableFuture<T> future,
         Runnable success,
@@ -233,6 +247,7 @@ public class WebUtils {
     }
     
     /**
+     * 解析真实客户端 IP：优先 X-Forwarded-For 首段，其次 X-Real-IP，最后 remoteAddr。
      * get real client ip
      *
      * <p>first use X-Forwarded-For header    https://zh.wikipedia.org/wiki/X-Forwarded-For next nginx X-Real-IP last

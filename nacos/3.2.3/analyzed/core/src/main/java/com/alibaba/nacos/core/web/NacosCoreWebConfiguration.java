@@ -26,6 +26,7 @@ import org.springframework.util.unit.DataSize;
 import javax.annotation.PostConstruct;
 
 /**
+ * Core Web 模块 Spring 配置：注册表单大小过滤器并预热 Controller 方法缓存。
  * Nacos core web configuration.
  *
  * @author xiweng.yy
@@ -41,12 +42,14 @@ public class NacosCoreWebConfiguration {
         this.methodsCache = methodsCache;
     }
     
+    /** 启动时扫描 core.controller 包填充 {@link ControllerMethodsCache}。 */
     @PostConstruct
     public void init() {
         methodsCache.initClassMethod("com.alibaba.nacos.core.controller");
     }
     
     /**
+     * 注册 FormSizeFilter，order=5 需高于 AuthFilter 以确保校验生效。
      * auth admin filter registration.
      *
      * @param formSizeFilter form size filter
@@ -60,12 +63,13 @@ public class NacosCoreWebConfiguration {
         registration.setFilter(formSizeFilter);
         registration.addUrlPatterns("/*");
         registration.setName("formSizeFilter");
-        // Note: The priority must be higher than "com.alibaba.nacos.core.auth.AuthFilter", otherwise the verification will not take effect.
+        // 优先级须高于 AuthFilter，否则表单大小限制可能在鉴权前未生效
         registration.setOrder(5);
         return registration;
     }
     
     /**
+     * 创建 FormSizeFilter Bean，默认上限与 Tomcat max-http-form-post-size 一致（2MB）。
      * form size filter.
      *
      * @param maxFormSize max form size (default 2MB, same as Tomcat's default)

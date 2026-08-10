@@ -22,6 +22,7 @@ import io.grpc.internal.ServerStream;
 import io.grpc.netty.shaded.io.netty.channel.Channel;
 
 /**
+ * gRPC Netty 内部辅助类：通过反射字段链从 {@link ServerStream} 提取底层 {@link Channel}。
  * Get netty channel.
  *
  * @author Weizhan▪Yun
@@ -29,6 +30,7 @@ import io.grpc.netty.shaded.io.netty.channel.Channel;
  */
 public class NettyChannelHelper {
     
+    /** 从 NettyServerStream 读取 writeQueue 字段的 updater。 */
     private static final ReferenceFieldUpdater<NettyServerStream, WriteQueue> WRITE_QUEUE_GETTER =
         Updaters.newReferenceFieldUpdater(
             NettyServerStream.class, "writeQueue");
@@ -37,6 +39,7 @@ public class NettyChannelHelper {
         Updaters.newReferenceFieldUpdater(
             WriteQueue.class, "channel");
     
+    /** 若为 NettyServerStream 则返回关联 Netty Channel，否则 null。 */
     public static Channel getChannel(final ServerStream stream) {
         if (stream instanceof NettyServerStream) {
             return CHANNEL_GETTER.get(WRITE_QUEUE_GETTER.get((NettyServerStream) stream));

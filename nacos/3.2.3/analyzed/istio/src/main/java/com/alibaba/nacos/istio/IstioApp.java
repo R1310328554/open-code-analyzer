@@ -21,6 +21,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
+ * Nacos Istio/MCP 适配模块独立启动入口，启用定时任务与 Spring Boot 自动配置。
  * Istio starter.
  *
  * @author nkorange
@@ -30,6 +31,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 public class IstioApp {
     
+    /** 启动 Istio 适配 Spring Boot 应用。 */
     public static void main(String[] args) {
         SpringApplication.run(IstioApp.class, args);
     }

@@ -22,6 +22,7 @@ import io.envoyproxy.envoy.service.discovery.v3.Resource;
 import java.util.List;
 
 /**
+ * MCP/xDS 数据生成 SPI：根据 {@link PushRequest} 快照生成全量或增量 Envoy 资源。
  * This interface is used to generator mcp resources or xds data.
  *
  * @author special.fy
@@ -29,6 +30,7 @@ import java.util.List;
 public interface ApiGenerator<T> {
     
     /**
+     * 基于推送请求快照生成全量资源列表。
      * Generate data based on resource snapshot.
      *
      * @param pushRequest Push Request
@@ -37,6 +39,7 @@ public interface ApiGenerator<T> {
     List<T> generate(PushRequest pushRequest);
     
     /**
+     * 增量（Delta）模式生成 xDS {@link Resource} 列表。
      * Delta generate data based on resource snapshot.
      *
      * @param pushRequest Push Request

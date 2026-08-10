@@ -22,10 +22,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * 标记依赖 Web 容器的 Nacos Bean/配置类，便于模块装配时识别 Web 组件。
+ * 被标注的类型在 Web 模块启动时才应被实例化或扫描。
  * Annotation to mark custom nacos beans which force depend web container.
  *
  * @author xiweng.yy
  */
+/** 仅可用于类/接口/枚举等类型声明。 */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NacosWebBean {

@@ -17,41 +17,35 @@
 package com.alibaba.nacos.istio.api;
 
 /**
+ * Istio/MCP/xDS API 类型 URL 与资源集合名常量定义。
  * @author special.fy
  */
 public class ApiConstants {
     
-    /**
-     * Default api prefix of any type of google protocol buffer.
-     */
+    /** Google protobuf Any 类型 URL 默认前缀。 */
+
     public static final String API_TYPE_PREFIX = "type.googleapis.com/";
     
-    /**
-     * Istio crd type url for mcp over xds
-     * TODO Support other Istio crd, such as gateway, vs, dr and so on.
-     */
+    /** MCP over xDS 使用的 Istio CRD proto 包路径（待扩展 Gateway/VS/DR 等）。 */
+
     public static final String SERVICE_ENTRY_PROTO_PACKAGE =
         "networking.istio.io/v1alpha3/ServiceEntry";
     public static final String MESH_CONFIG_PROTO_PACKAGE = "core/v1alpha1/MeshConfig";
     
-    /**
-     * Istio crd type url for mcp
-     */
+    /** MCP 资源集合命名前缀与 ServiceEntry 集合标识。 */
+
     public static final String MCP_PREFIX = "istio/";
     public static final String SERVICE_ENTRY_COLLECTION =
         MCP_PREFIX + "networking/v1alpha3/serviceentries";
     
-    /**
-     * Istio crd type url of api.
-     */
+    /** MCP Resource 与 ServiceEntry 的完整 type URL。 */
+
     public static final String MCP_RESOURCE_PROTO = API_TYPE_PREFIX + "istio.mcp.v1alpha1.Resource";
     public static final String SERVICE_ENTRY_PROTO =
         API_TYPE_PREFIX + "istio.networking.v1alpha3.ServiceEntry";
     
-    /**
-     * Standard xds type url
-     * TODO Support lds, rds and sds
-     */
+    /** 标准 xDS 资源 type URL（Cluster/Endpoint/Listener/Route，LDS/RDS/SDS 待完善）。 */
+
     public static final String CLUSTER_TYPE = API_TYPE_PREFIX + "envoy.config.cluster.v3.Cluster";
     public static final String ENDPOINT_TYPE =
         API_TYPE_PREFIX + "envoy.config.endpoint.v3.ClusterLoadAssignment";

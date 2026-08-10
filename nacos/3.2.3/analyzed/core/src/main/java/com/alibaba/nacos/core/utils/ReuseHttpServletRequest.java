@@ -35,14 +35,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
+ * {@link HttpServletRequestWrapper} 实现：构造时缓存 body 与去重后的参数 Map，支持多次读取。
  * httprequest wrapper.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class ReuseHttpServletRequest extends HttpServletRequestWrapper implements ReuseHttpRequest {
     
+    /** 原始请求对象，用于读取 Content-Type 等元数据。 */
     private final HttpServletRequest target;
     
+    /** 请求体字节缓存，供 getInputStream/getBody 重复消费。 */
     private byte[] body;
     
     private Map<String, String[]> stringMap;
@@ -52,16 +55,19 @@ public class ReuseHttpServletRequest extends HttpServletRequestWrapper implement
      *
      * @param request The request to wrap
      * @throws IllegalArgumentException if the request is null
+      * <p>请求体缓存包装器；详见类级说明。</p>
      */
     public ReuseHttpServletRequest(HttpServletRequest request) throws IOException {
         super(request);
         this.target = request;
+        // 构造时一次性读尽 InputStream 并去重参数
         this.body = toBytes(request.getInputStream());
         this.stringMap = toDuplication(request);
     }
     
     @Override
     public Object getBody() throws Exception {
+        // multipart 表单直接返回 parts，否则解析 body 或表单参数
         if (StringUtils.containsIgnoreCase(target.getContentType(),
             MediaType.MULTIPART_FORM_DATA)) {
             return target.getParts();
@@ -76,6 +82,7 @@ public class ReuseHttpServletRequest extends HttpServletRequestWrapper implement
         }
     }
     
+    /** 将输入流完整读入字节数组。 */
     private byte[] toBytes(InputStream inputStream) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         byte[] buffer = new byte[1024];
@@ -113,6 +120,7 @@ public class ReuseHttpServletRequest extends HttpServletRequestWrapper implement
     @Override
     public ServletInputStream getInputStream() throws IOException {
         
+        // 基于缓存 body 构造可重复读取的 ServletInputStream
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(body);
         
         return new ServletInputStream() {

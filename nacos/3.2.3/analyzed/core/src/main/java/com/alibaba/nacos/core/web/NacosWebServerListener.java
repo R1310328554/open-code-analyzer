@@ -24,6 +24,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 /**
+ * Web 容器就绪监听器：设置 contextPath 并在主 WebServer 启动后标记节点 self ready。
  * Nacos web server listener which listen web container ready and listen the context path changed.
  *
  * @author xiweng.yy
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Component;
 @NacosWebBean
 public class NacosWebServerListener implements ApplicationListener<WebServerInitializedEvent> {
     
+    /** Spring Boot Actuator 管理端口的 server namespace，需忽略。 */
     private static final String SPRING_MANAGEMENT_CONTEXT_NAMESPACE = "management";
     
     private final ServerMemberManager serverMemberManager;
@@ -39,6 +41,7 @@ public class NacosWebServerListener implements ApplicationListener<WebServerInit
     public NacosWebServerListener(ServerMemberManager serverMemberManager,
         ServletContext servletContext) {
         this.serverMemberManager = serverMemberManager;
+        // 构造时同步 Servlet context path 到 EnvUtil
         EnvUtil.setContextPath(servletContext.getContextPath());
     }
     
@@ -46,10 +49,10 @@ public class NacosWebServerListener implements ApplicationListener<WebServerInit
     public void onApplicationEvent(WebServerInitializedEvent event) {
         String serverNamespace = event.getApplicationContext().getServerNamespace();
         if (SPRING_MANAGEMENT_CONTEXT_NAMESPACE.equals(serverNamespace)) {
-            // ignore
-            // fix#issue https://github.com/alibaba/nacos/issues/7230
+            // 忽略 management 端口事件，避免误标记节点就绪（issue #7230）
             return;
         }
+        // 主 Web 端口就绪后通知集群成员管理器
         serverMemberManager.setSelfReady(event.getWebServer().getPort());
     }
 }

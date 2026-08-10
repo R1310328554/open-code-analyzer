@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * 内存列表分页工具：基于 {@link Page} 模型计算页码、切片区间与总页数。
  * Page Utils.
  *
  * @author xiweng.yy
@@ -29,6 +30,7 @@ import java.util.List;
 public class PageUtil {
     
     /**
+     * 对内存列表做分页切片，返回当前页元素子列表。
      * Do page operation for input list.
      *
      * @param source    need paged source list
@@ -41,6 +43,7 @@ public class PageUtil {
         if (source.isEmpty()) {
             return source;
         }
+        // 计算当前页在源列表中的 [start, end) 区间
         PageMetadata metadata = calculatePageMetadata(page, pageSize, source.size());
         if (source.size() > metadata.start) {
             return source.subList(metadata.start, metadata.end);
@@ -49,6 +52,7 @@ public class PageUtil {
     }
     
     /**
+     * 封装 {@link Page} 对象：填充页码、总数、总页数与当前页数据。
      * Do page operation for input list.
      *
      * @param source    need paged source list
@@ -67,6 +71,7 @@ public class PageUtil {
         int totalCount = source.size();
         result.setTotalCount(totalCount);
         PageMetadata metadata = calculatePageMetadata(page, pageSize, totalCount);
+        // 总页数 = 整除页数 + 1（含不足一页的尾页）
         int pagesAvailable = (totalCount / pageSize) + 1;
         result.setPagesAvailable(pagesAvailable);
         if (totalCount > metadata.start) {
@@ -75,6 +80,7 @@ public class PageUtil {
         return result;
     }
     
+    /** 计算分页元数据：校正负页码并裁剪 end 不超过 totalCount。 */
     private static PageMetadata calculatePageMetadata(int page, int pageSize, int totalCount) {
         int start = (page - 1) * pageSize;
         if (start < 0) {
@@ -93,6 +99,7 @@ public class PageUtil {
         return result;
     }
     
+    /** 分页区间内部结构：start/end 为 subList 边界。 */
     private static class PageMetadata {
         
         private int start;
