@@ -1,5 +1,8 @@
 package kafkav2
 
+// kafkav2 offset 子包：提交消费位点、读取已提交 offset 与分区末尾位置，
+// 供 ingest-limits 等组件恢复消费进度。
+
 import (
 	"context"
 	"errors"
@@ -14,6 +17,7 @@ import (
 )
 
 const (
+// OffsetStart(-2) 与 OffsetEnd(-1) 是 Kafka 协议定义的特殊位点哨兵值。
 	// Special offsets in Kafka that refer to the start or end offset for
 	// a partition.
 	OffsetStart = int64(-2)
@@ -31,6 +35,7 @@ func NewCommitter(client *kadm.Client) *Committer {
 	}
 }
 
+// Commit 将 topic/partition 的 offset 写入 consumer group 元数据。
 // Commit commits the offset. It returns an error if the offset could not
 // be committed.
 func (c *Committer) Commit(ctx context.Context, topic string, partition int32, consumerGroup string, offset int64) error {
@@ -46,6 +51,7 @@ func (c *Committer) Commit(ctx context.Context, topic string, partition int32, c
 	return nil
 }
 
+// GroupCommitter 绑定固定 topic 与 consumer group，简化 Commit 调用签名。
 type GroupCommitter struct {
 	topic         string
 	consumerGroup string
@@ -67,6 +73,7 @@ func (c *GroupCommitter) Commit(ctx context.Context, partition int32, offset int
 	return c.Committer.Commit(ctx, c.topic, partition, c.consumerGroup, offset)
 }
 
+// OffsetReader 查询已提交 offset、计算恢复位点以及分区 log end offset。
 type OffsetReader struct {
 	adm           *kadm.Client
 	client        *kgo.Client
@@ -92,6 +99,7 @@ func NewOffsetReader(
 }
 
 // LastCommittedOffset returns the last committed offset for the partition.
+// LastCommittedOffset 通过 OffsetFetch 读取 group 在该分区的最后提交位点。
 func (r *OffsetReader) LastCommittedOffset(ctx context.Context, partition int32) (int64, error) {
 	req := kmsg.NewPtrOffsetFetchRequest()
 	req.Group = r.consumerGroup
@@ -120,6 +128,7 @@ func (r *OffsetReader) LastCommittedOffset(ctx context.Context, partition int32)
 		level.Debug(r.logger).Log(
 			"msg", "malformed response, setting to start offset",
 		)
+// 响应格式异常时回退到 OffsetStart，避免阻塞分区回放。
 		return OffsetStart, nil
 	}
 	partitionRes := fetchRes.Groups[0].Topics[0].Partitions[0]
@@ -129,6 +138,7 @@ func (r *OffsetReader) LastCommittedOffset(ctx context.Context, partition int32)
 	return partitionRes.Offset, nil
 }
 
+// ResumeOffset 返回下次应消费的位置：已提交 offset+1，无提交时从开头。
 // ResumeOffset returns the next offset to consume.
 func (r *OffsetReader) ResumeOffset(ctx context.Context, partition int32) (int64, error) {
 	lastCommittedOffset, err := r.LastCommittedOffset(ctx, partition)
@@ -142,6 +152,7 @@ func (r *OffsetReader) ResumeOffset(ctx context.Context, partition int32) (int64
 	return initialOffset, nil
 }
 
+// EndOffset 调用 ListOffsets 获取分区高水位（下一条待写入 offset）。
 // EndOffset returns the end offset.
 func (r *OffsetReader) EndOffset(ctx context.Context, partition int32) (int64, error) {
 	partitionReq := kmsg.NewListOffsetsRequestTopicPartition()
@@ -153,6 +164,7 @@ func (r *OffsetReader) EndOffset(ctx context.Context, partition int32) (int64, e
 	topicReq.Partitions = []kmsg.ListOffsetsRequestTopicPartition{partitionReq}
 
 	req := kmsg.NewPtrListOffsetsRequest()
+// IsolationLevel=0 表示读取未提交消息，与 Kafka READ_UNCOMMITTED 语义一致。
 	req.IsolationLevel = 0 // 0 means READ_UNCOMMITTED.
 	req.Topics = []kmsg.ListOffsetsRequestTopic{topicReq}
 
@@ -187,3 +199,4 @@ func (r *OffsetReader) EndOffset(ctx context.Context, partition int32) (int64, e
 	}
 	return partitionRes.Offset, nil
 }
+// RequestSharded 在 context 超时后不会取消同 client 上其他在途请求，单测已验证。

@@ -1,4 +1,6 @@
+// client 包为 distributor 等组件提供 ingest-limits-frontend 的 gRPC 客户端。
 // Package client provides gRPC client implementation for limits-frontend.
+// 典型场景：distributor push 前询问 frontend 是否超出 per-tenant 流/速率限额。
 // An example use case is the distributor, which needs to ask limits-frontend
 // if a push request has exceeded per-tenant limits.
 package client
@@ -25,6 +27,7 @@ import (
 )
 
 var (
+// LimitsRead 限定 ring 查询仅包含 ACTIVE 状态的 frontend 实例。
 	LimitsRead = ring.NewOp([]ring.InstanceState{ring.ACTIVE}, nil)
 )
 
@@ -40,6 +43,7 @@ var (
 	}, []string{"operation", "status_code"})
 )
 
+// Config 结构与 limits/client 类似，面向 frontend 而非后端 limits 分片。
 // Config contains the config for an ingest-limits-frontend client.
 type Config struct {
 	GRPCClientConfig             grpcclient.Config              `yaml:"grpc_client_config" doc:"description=Configures client gRPC connections to limits service."`
@@ -82,6 +86,7 @@ func (cfg *PoolConfig) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.DurationVar(&cfg.RemoteTimeout, prefix+".remote-timeout", 1*time.Second, "Timeout for the health check.")
 }
 
+// Client 嵌入 IngestLimitsFrontendClient 与 HealthClient。
 // Client is a gRPC client for the ingest-limits-frontend.
 type Client struct {
 	proto.IngestLimitsFrontendClient
@@ -89,6 +94,7 @@ type Client struct {
 	io.Closer
 }
 
+// NewClient 拨号到指定 frontend 地址并注册请求耗时 histogram。
 // NewClient returns a new Client for the specified ingest-limits-frontend.
 func NewClient(cfg Config, addr string) (*Client, error) {
 	opts := []grpc.DialOption{
@@ -113,6 +119,7 @@ func NewClient(cfg Config, addr string) (*Client, error) {
 	}, nil
 }
 
+// getInterceptors 为 frontend RPC 装配与 limits client 相同的中间件链。
 // getInterceptors returns the gRPC interceptors for the given Config.
 func getGRPCInterceptors(cfg *Config) ([]grpc.UnaryClientInterceptor, []grpc.StreamClientInterceptor) {
 	var (
@@ -139,6 +146,7 @@ func getGRPCInterceptors(cfg *Config) ([]grpc.UnaryClientInterceptor, []grpc.Str
 	return unaryInterceptors, streamInterceptors
 }
 
+// NewPool 基于 frontend ring 做服务发现与客户端健康检查。
 // NewPool returns a new pool of clients for the ingest-limits-frontend.
 func NewPool(
 	name string,
@@ -162,9 +170,11 @@ func NewPool(
 	)
 }
 
+// NewPoolFactory 返回按地址创建 Client 的 PoolAddrFunc。
 // NewPoolFactory returns a new factory for ingest-limits-frontend clients.
 func NewPoolFactory(cfg Config) ring_client.PoolFactory {
 	return ring_client.PoolAddrFunc(func(addr string) (ring_client.PoolClient, error) {
 		return NewClient(cfg, addr)
 	})
 }
+// frontendClients 指标跟踪当前 ring 池中活跃的 frontend gRPC 连接数。

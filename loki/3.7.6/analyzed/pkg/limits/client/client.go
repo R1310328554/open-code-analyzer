@@ -1,3 +1,4 @@
+// client 包实现 ingest-limits 后端的 gRPC 客户端与连接池工厂。
 // Package client provides gRPC client implementation for limits service.
 package client
 
@@ -21,6 +22,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/server"
 )
 
+// numClients 与 requestDuration 分别跟踪活跃客户端数与各 RPC 耗时分布。
 var (
 	numClients = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "loki_ingest_limits_clients",
@@ -33,6 +35,7 @@ var (
 	}, []string{"operation", "status_code"})
 )
 
+// Config 聚合 gRPC 拨号、连接池与可选拦截器；Internal 为 true 时不注入用户 ID。
 // Config contains the config for an ingest-limits client.
 type Config struct {
 	GRPCClientConfig             grpcclient.Config              `yaml:"grpc_client_config" doc:"description=Configures client gRPC connections to limits service."`
@@ -51,6 +54,7 @@ func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	cfg.PoolConfig.RegisterFlagsWithPrefix(prefix, f)
 }
 
+// PoolConfig 控制 ring 客户端池的清理周期、健康检查与远程超时。
 // PoolConfig contains the config for a pool of ingest-limits clients.
 type PoolConfig struct {
 	ClientCleanupPeriod     time.Duration `yaml:"client_cleanup_period"`
@@ -64,6 +68,7 @@ func (cfg *PoolConfig) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.DurationVar(&cfg.RemoteTimeout, prefix+".remote-timeout", 1*time.Second, "Timeout for the health check.")
 }
 
+// Client 组合 IngestLimitsClient、HealthClient 与 Closer，便于池化管理。
 // Client is a gRPC client for the ingest-limits.
 type Client struct {
 	proto.IngestLimitsClient
@@ -71,6 +76,7 @@ type Client struct {
 	io.Closer
 }
 
+// NewClient 装配 OTel stats handler、查询标签与用户头拦截器后拨号。
 // NewClient returns a new Client for the specified ingest-limits.
 func NewClient(cfg Config, addr string) (*Client, error) {
 	opts := []grpc.DialOption{
@@ -95,6 +101,7 @@ func NewClient(cfg Config, addr string) (*Client, error) {
 	}, nil
 }
 
+// getGRPCInterceptors 按 Internal 标志决定是否注入 ClientUserHeaderInterceptor。
 // getGRPCInterceptors returns the gRPC interceptors for the given ClientConfig.
 func getGRPCInterceptors(cfg *Config) ([]grpc.UnaryClientInterceptor, []grpc.StreamClientInterceptor) {
 	var (
@@ -121,6 +128,7 @@ func getGRPCInterceptors(cfg *Config) ([]grpc.UnaryClientInterceptor, []grpc.Str
 	return unaryInterceptors, streamInterceptors
 }
 
+// NewPool 基于 ring 服务发现创建 limits 实例客户端池。
 // NewPool returns a new pool of clients for the ingest-limits.
 func NewPool(
 	name string,
@@ -144,9 +152,11 @@ func NewPool(
 	)
 }
 
+// NewPoolFactory 供 dskit ring_client 按地址懒创建 Client。
 // NewPoolFactory returns a new factory for ingest-limits clients.
 func NewPoolFactory(cfg Config) ring_client.PoolFactory {
 	return ring_client.PoolAddrFunc(func(addr string) (ring_client.PoolClient, error) {
 		return NewClient(cfg, addr)
 	})
 }
+// frontend 与 distributor 通过该池向各 limits 分片发起 ExceedsLimits 等 RPC。

@@ -1,5 +1,7 @@
 package frontend
 
+// frontend 客户端装饰层：acceptedStreamsCache 过滤已接受流，降低 limits 后端 RPC 压力。
+
 import (
 	"context"
 	"math/rand"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/limits/proto"
 )
 
+// limitsClient 抽象 ExceedsLimits 与 UpdateRates，便于 ring 与 cache 装饰组合。
 type limitsClient interface {
 	// ExceedsLimits checks if any streams in the request have exceeded their
 	// limits. It returns a response containing any rejected streams and the
@@ -23,6 +26,7 @@ type limitsClient interface {
 	UpdateRates(context.Context, *proto.UpdateRatesRequest) (*proto.UpdateRatesResponse, error)
 }
 
+// cacheLimitsClient 在 miss 时委托 onMiss，命中缓存的流不再向后端查询。
 // A cacheLimitsClient uses caches to reduce the load on limits backends.
 type cacheLimitsClient struct {
 	acceptedStreamsCache *acceptedStreamsCache
@@ -38,6 +42,7 @@ func newCacheLimitsClient(acceptedStreamsCache *acceptedStreamsCache, onMiss lim
 }
 
 // ExceedsLimits implements the [limitsClient] interface.
+// ExceedsLimits 先 ExpireTTL 与 FilterInPlace，仅将未见过的流转发后端。
 func (c *cacheLimitsClient) ExceedsLimits(ctx context.Context, req *proto.ExceedsLimitsRequest) (*proto.ExceedsLimitsResponse, error) {
 	c.acceptedStreamsCache.ExpireTTL()
 	// Remove streams that have been accepted from the request. This means
@@ -59,6 +64,7 @@ func (c *cacheLimitsClient) ExceedsLimits(ctx context.Context, req *proto.Exceed
 	// There are some accepted streams we haven't seen before, so add them
 	// to the cache. We do not cache rejected streams at this time, so
 	// rejections must be filtered out before updating the cache.
+// 仅缓存被接受的流；拒绝结果不写入 cache，避免误跳过后续限流检查。
 	rejected := make(map[uint64]struct{})
 	for _, res := range resp.Results {
 		rejected[res.StreamHash] = struct{}{}
@@ -78,6 +84,7 @@ func (c *cacheLimitsClient) UpdateRates(ctx context.Context, req *proto.UpdateRa
 	return c.onMiss.UpdateRates(ctx, req)
 }
 
+// acceptedStreamsCache 按 tenant 维护 streamHash 集合，带 TTL 全量重置。
 type acceptedStreamsCache struct {
 	ttl time.Duration
 
@@ -108,6 +115,7 @@ func newAcceptedStreamsCache(ttl, maxJitter time.Duration, r prometheus.Register
 	return c
 }
 
+// ExpireTTL 双重检查锁：快路径读锁判断，过期后写锁清空 entries。
 // ExpireTTL expires the caches if the TTL has been exceeded.
 func (c *acceptedStreamsCache) ExpireTTL() {
 	// Fast path, first check the TTL with a read lock.
@@ -129,6 +137,7 @@ func (c *acceptedStreamsCache) ExpireTTL() {
 	}
 }
 
+// FilterInPlace 原地压缩 req.Streams 切片，移除已在缓存中的 streamHash。
 // FilterInPlace removes streams that are present in the cache.
 func (c *acceptedStreamsCache) FilterInPlace(req *proto.ExceedsLimitsRequest) {
 	c.mtx.RLock()
@@ -164,6 +173,8 @@ func (c *acceptedStreamsCache) Update(tenant string, streams []*proto.StreamMeta
 }
 
 // randDuration returns a random duration between [0, d].
+// randDuration 为 acceptedStreamsCache 初始过期时间注入抖动，避免齐刷刷失效。
 func randDuration(d time.Duration) time.Duration {
 	return time.Duration(rand.Int63n(d.Nanoseconds()))
 }
+// cacheSize 指标通过 GaugeFunc 实时暴露当前缓存条目总数。

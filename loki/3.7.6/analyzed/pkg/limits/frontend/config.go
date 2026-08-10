@@ -1,5 +1,7 @@
 package frontend
 
+// frontend 配置：limits 后端客户端、ring 分区数、assigned/accepted 两类缓存开关与 TTL。
+
 import (
 	"errors"
 	"flag"
@@ -12,6 +14,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// Config 聚合 ClientConfig、LifecyclerConfig 与实验性 acceptedStreams 缓存参数。
 // Config contains the config for an ingest-limits-frontend.
 type Config struct {
 	ClientConfig                   limits_client.Config  `yaml:"client_config"`
@@ -24,6 +27,7 @@ type Config struct {
 	AcceptedStreamsCacheTTLJitter  time.Duration         `yaml:"accepted_streams_cache_ttl_jitter"`
 }
 
+// RegisterFlags 注册 frontend 专用 CLI 标志，含分区数与缓存 TTL。
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	cfg.ClientConfig.RegisterFlagsWithPrefix("ingest-limits-frontend", f)
 	cfg.LifecyclerConfig.RegisterFlagsWithPrefix("ingest-limits-frontend.", f, util_log.Logger)
@@ -65,6 +69,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	)
 }
 
+// Validate 在启用缓存时要求 TTL 与 jitter 均为正数。
 func (cfg *Config) Validate() error {
 	if err := cfg.ClientConfig.GRPCClientConfig.Validate(); err != nil {
 		return fmt.Errorf("invalid gRPC client config: %w", err)
@@ -74,6 +79,7 @@ func (cfg *Config) Validate() error {
 			return errors.New("assigned partitions cache TTL must be a positive number, or the cache must be disabled")
 		}
 	}
+// acceptedStreams 缓存为实验特性，默认关闭以避免 stale 接受决策。
 	if cfg.AcceptedStreamsCacheEnabled {
 		if cfg.AcceptedStreamsCacheTTL <= 0 {
 			return errors.New("accepted streams cache TTL must be a positive number, or the cache must be disabled")
@@ -84,3 +90,4 @@ func (cfg *Config) Validate() error {
 	}
 	return nil
 }
+// NumPartitions 必须与 limits 后端 Kafka topic 分区数一致，用于 streamHash 路由。

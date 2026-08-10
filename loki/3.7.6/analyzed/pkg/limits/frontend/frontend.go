@@ -1,4 +1,6 @@
+// frontend 包实现 ingest limits 入口：接收 distributor RPC，聚合各 limits 分片响应。
 // Package frontend contains provides a frontend service for ingest limits.
+// 职责包括 exceeds limits 检查、UpdateRates 转发及 ring 生命周期管理。
 // It is responsible for receiving and answering gRPC requests from distributors,
 // such as exceeds limits requests, forwarding them to individual limits backends,
 // gathering and aggregating their responses (where required), and returning
@@ -21,6 +23,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/limits/proto"
 )
 
+// Frontend 组合 limitsClient、assignedPartitionsCache 与 ring Lifecycler。
 // Frontend is a frontend for the limits service. It is responsible for
 // receiving RPCs from clients, forwarding them to the correct limits
 // instances, and returning their responses.
@@ -41,6 +44,7 @@ type Frontend struct {
 	streamsRejected prometheus.Counter
 }
 
+// New 初始化 client 池、可选 acceptedStreams 装饰层并启动 subservices 管理器。
 // New returns a new Frontend.
 func New(cfg Config, ringName string, limitsRing ring.ReadRing, logger log.Logger, reg prometheus.Registerer) (*Frontend, error) {
 	f := &Frontend{
@@ -114,6 +118,7 @@ func New(cfg Config, ringName string, limitsRing ring.ReadRing, logger log.Logge
 }
 
 // ExceedsLimits implements proto.IngestLimitsFrontendClient.
+// ExceedsLimits 统计 streams 指标；整调用失败时将所有流标记为 ReasonFailed。
 func (f *Frontend) ExceedsLimits(ctx context.Context, req *proto.ExceedsLimitsRequest) (*proto.ExceedsLimitsResponse, error) {
 	f.streams.Add(float64(len(req.Streams)))
 	resp, err := f.limitsClient.ExceedsLimits(ctx, req)
@@ -144,6 +149,7 @@ func (f *Frontend) ExceedsLimits(ctx context.Context, req *proto.ExceedsLimitsRe
 	return resp, nil
 }
 
+// UpdateRates 失败时为每个流返回 rate=0 的占位结果。
 func (f *Frontend) UpdateRates(ctx context.Context, req *proto.UpdateRatesRequest) (*proto.UpdateRatesResponse, error) {
 	resp, err := f.limitsClient.UpdateRates(ctx, req)
 	if err != nil {
@@ -205,6 +211,7 @@ func (f *Frontend) stopping(_ error) error {
 	return services.StopManagerAndAwaitStopped(context.Background(), f.subservices)
 }
 
+// Flush/TransferOut 为 ring 接口空实现，frontend 无本地状态需迁移。
 // Flush implements ring.FlushTransferer. It transfers state to another ingest
 // limits frontend instance.
 func (f *Frontend) Flush() {}
@@ -214,3 +221,4 @@ func (f *Frontend) Flush() {}
 func (f *Frontend) TransferOut(_ context.Context) error {
 	return nil
 }
+// CheckReady 要求 BasicService 处于 Running 且 lifecycler 已通过就绪检查。

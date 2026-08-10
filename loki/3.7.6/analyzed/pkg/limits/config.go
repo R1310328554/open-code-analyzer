@@ -1,5 +1,7 @@
 package limits
 
+// limits 包配置：ingest-limits 服务的活跃窗口、速率桶、Kafka 分区与 ring 生命周期参数。
+
 import (
 	"errors"
 	"flag"
@@ -20,6 +22,7 @@ const (
 	DefaultConsumerGroup = "ingest-limits"
 )
 
+// Config 控制服务开关、流活跃度判定、速率桶大小及 metadata topic 分区布局。
 // Config represents the configuration for the ingest limits service.
 type Config struct {
 	// Enabled enables the ingest limits service.
@@ -30,11 +33,13 @@ type Config struct {
 	// are considered inactive and are not counted towards limits.
 	ActiveWindow time.Duration `yaml:"active_window"`
 
+// RateWindow 应与 Prometheus rate() 查询窗口一致，保证指标与限流对齐。
 	// RateWindow defines the time window for rate calculation.
 	// This should match the window used in Prometheus rate() queries for consistency,
 	// when using the `loki_ingest_limits_ingested_bytes_total` metric.
 	RateWindow time.Duration `yaml:"rate_window"`
 
+// BucketSize 越小速率越精细，但内存中需维护更多时间桶。
 	// BucketSize defines the size of the buckets used to calculate stream
 	// rates. Smaller buckets provide more precise rates but require more
 	// memory.
@@ -106,6 +111,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	)
 }
 
+// Validate 要求 rate_window 为 bucket_size 整数倍，并校验 topic 与 consumer group。
 func (cfg *Config) Validate() error {
 	if !cfg.Enabled {
 		// Do not validate configuration if disabled.
@@ -120,6 +126,7 @@ func (cfg *Config) Validate() error {
 	if cfg.BucketSize <= 0 {
 		return errors.New("bucket size must be greater than 0")
 	}
+// 速率窗口必须整除桶大小，否则桶边界无法均匀覆盖整个 rate 窗口。
 	if cfg.RateWindow%cfg.BucketSize != 0 {
 		return errors.New("rate window must be a multiple of bucket-size")
 	}
@@ -137,3 +144,4 @@ func (cfg *Config) Validate() error {
 	}
 	return nil
 }
+// NumPartitions 为 Kafka metadata topic 的固定分区数，非动态上限。

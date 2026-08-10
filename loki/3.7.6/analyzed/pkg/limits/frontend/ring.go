@@ -1,5 +1,8 @@
 package frontend
 
+// ringLimitsClient 通过 hash ring 将流路由到持有对应 Kafka 分区的 limits 实例，
+// 并支持多 zone 顺序回退查询。
+
 import (
 	"context"
 	"iter"
@@ -19,6 +22,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/limits/proto"
 )
 
+// RingKey/RingName 标识 frontend 在 memberlist ring 中的注册名。
 const (
 	RingKey  = "ingest-limits-frontend"
 	RingName = "ingest-limits-frontend"
@@ -34,6 +38,7 @@ var (
 )
 
 // ringLimitsClient uses a ring to find limits instances.
+// ringLimitsClient 维护 ring、client 池、分区数与 assignedPartitions 缓存。
 type ringLimitsClient struct {
 	logger                  log.Logger
 	ring                    ring.ReadRing
@@ -72,6 +77,7 @@ func newRingLimitsClient(
 	}
 }
 
+// ExceedsLimits 遍历 zone 直至所有流得到答复，未答流标记 ReasonFailed。
 // ExceedsLimits implements the [exceedsLimitsGatherer] interface.
 func (r *ringLimitsClient) ExceedsLimits(ctx context.Context, req *proto.ExceedsLimitsRequest) (*proto.ExceedsLimitsResponse, error) {
 	var resp proto.ExceedsLimitsResponse
@@ -96,6 +102,7 @@ func (r *ringLimitsClient) ExceedsLimits(ctx context.Context, req *proto.Exceeds
 	return &resp, nil
 }
 
+// UpdateRates 同样按 zone  exhaust，未答流 rate 置 0。
 // UpdateRates implements the [exceedsLimitsGatherer] interface.
 func (r *ringLimitsClient) UpdateRates(ctx context.Context, req *proto.UpdateRatesRequest) (*proto.UpdateRatesResponse, error) {
 	var resp proto.UpdateRatesResponse
@@ -230,6 +237,7 @@ type doRPCsFunc func(
 
 // exhaustAllZones queries all zones, one at a time, until either all streams
 // have been answered or all zones have been exhausted.
+// exhaustAllZones 逐 zone 发起 RPC，从 unanswered 切片中剔除已答 streamHash。
 func (r *ringLimitsClient) exhaustAllZones(ctx context.Context, tenant string, streams []*proto.StreamMetadata, doRPCs doRPCsFunc) ([]*proto.StreamMetadata, error) {
 	zonesIter, err := r.allZones(ctx)
 	if err != nil {
@@ -271,6 +279,7 @@ func (r *ringLimitsClient) exhaustAllZones(ctx context.Context, tenant string, s
 	return unanswered, nil
 }
 
+// allZones 返回按 zoneCmp 排序的 zone→partitionConsumers 迭代器。
 // allZones returns an iterator over all zones and the consumers for each
 // partition in each zone. If a zone has no active partition consumers, the
 // zone will still be returned but its partition consumers will be nil.
@@ -345,6 +354,7 @@ func (r *ringLimitsClient) getZoneAwarePartitionConsumers(ctx context.Context, i
 	return results, nil
 }
 
+// getPartitionConsumers 并发查询各实例 GetAssignedPartitions，取 assignedAt 最新者。
 // getPartitionConsumers returns the consumer for each partition.
 
 // In some cases, it might not be possible to know the consumer for a
@@ -413,10 +423,12 @@ func (r *ringLimitsClient) getPartitionConsumers(ctx context.Context, instances 
 	return partitionConsumers, nil
 }
 
+// instancesForStreams 按 streamHash%numPartitions 映射到消费该分区的实例地址。
 func (r *ringLimitsClient) instancesForStreams(streams []*proto.StreamMetadata, zone string, instances map[int32]string) map[string][]*proto.StreamMetadata {
 	// For each stream, figure out which instance consume its partition.
 	instancesForStreams := make(map[string][]*proto.StreamMetadata)
 	for _, stream := range streams {
+// 分区号由 streamHash 对 numPartitions 取模，与 Kafka metadata 分区布局一致。
 		partition := int32(stream.StreamHash % uint64(r.numPartitions))
 		addr, ok := instances[partition]
 		if !ok {
@@ -427,3 +439,4 @@ func (r *ringLimitsClient) instancesForStreams(streams []*proto.StreamMetadata, 
 	}
 	return instancesForStreams
 }
+// partitionsMissing 指标按 zone 统计找不到 consumer 的分区路由失败次数。

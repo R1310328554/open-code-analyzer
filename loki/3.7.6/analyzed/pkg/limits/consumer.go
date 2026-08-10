@@ -1,5 +1,8 @@
 package limits
 
+// limits consumer 从 Kafka metadata topic 拉取 StreamMetadataRecord，
+// 合并多 zone 流状态并驱动分区 ready/replay 状态机。
+
 import (
 	"context"
 	"errors"
@@ -17,11 +20,13 @@ import (
 	"github.com/grafana/loki/v3/pkg/limits/proto"
 )
 
+// kafkaConsumer 抽象 PollFetches，便于单测注入假 fetch 结果。
 // kafkaConsumer allows mocking of certain [kgo.Client] methods in tests.
 type kafkaConsumer interface {
 	PollFetches(context.Context) kgo.Fetches
 }
 
+// consumer 负责回放新分配分区、丢弃本 zone 自产记录并更新 usageStore。
 // consumer processes records from the metadata topic. It is responsible for
 // replaying newly assigned partitions and merging records from other zones.
 type consumer struct {
@@ -94,6 +99,7 @@ func newConsumer(
 	}
 }
 
+// Run 在无限退避循环中 poll，客户端关闭或 ctx 取消时退出。
 func (c *consumer) Run(ctx context.Context) {
 	b := backoff.New(ctx, backoff.Config{
 		MinBackoff: 100 * time.Millisecond,
@@ -125,6 +131,7 @@ func (c *consumer) pollFetches(ctx context.Context) error {
 	return nil
 }
 
+// processFetchTopicPartition 按分区处理 fetch：校验分配、更新 lag 与 ready 检查。
 func (c *consumer) processFetchTopicPartition(ctx context.Context) func(kgo.FetchTopicPartition) {
 	return func(p kgo.FetchTopicPartition) {
 		// When used with [kgo.EachPartition], this function is called once
@@ -140,6 +147,7 @@ func (c *consumer) processFetchTopicPartition(ctx context.Context) func(kgo.Fetc
 		// We need the state of the partition so we can discard any records
 		// that we produced (unless replaying) and mark a replaying partition
 		// as ready once it has finished replaying.
+// 未分配给本实例的分区记录直接丢弃，避免重复计数。
 		state, ok := c.partitionManager.GetState(p.Partition)
 		if !ok {
 			c.recordsDiscarded.Add(float64(len(p.Records)))
@@ -166,6 +174,7 @@ func (c *consumer) processFetchTopicPartition(ctx context.Context) func(kgo.Fetc
 	}
 }
 
+// processRecord 反序列化 metadata，过滤本 zone 记录后写入 usageStore。
 func (c *consumer) processRecord(_ context.Context, state partitionState, r *kgo.Record) error {
 	s := proto.StreamMetadataRecord{}
 	if err := s.Unmarshal(r.Value); err != nil {
@@ -186,6 +195,7 @@ func (c *consumer) processRecord(_ context.Context, state partitionState, r *kgo
 	return nil
 }
 
+// ready 状态下丢弃同 zone 记录，防止自写自读导致流被重复统计。
 func (c *consumer) shouldDiscardRecord(state partitionState, s *proto.StreamMetadataRecord) bool {
 	// Discard our own records so we don't count the same streams twice.
 	return state == partitionReady && c.zone == s.Zone
@@ -193,6 +203,7 @@ func (c *consumer) shouldDiscardRecord(state partitionState, s *proto.StreamMeta
 
 type partitionReadinessCheck func(partition int32, r *kgo.Record) (bool, error)
 
+// newOffsetReadinessCheck 在 replay 到达目标 offset 后将分区标记为 ready。
 // newOffsetReadinessCheck marks a partition as ready if the target offset
 // has been reached.
 func newOffsetReadinessCheck(m *partitionManager) partitionReadinessCheck {
@@ -200,3 +211,4 @@ func newOffsetReadinessCheck(m *partitionManager) partitionReadinessCheck {
 		return m.TargetOffsetReached(partition, r.Offset), nil
 	}
 }
+// recordsInvalid/recordsDiscarded 指标分别跟踪损坏记录与应忽略的记录数量。

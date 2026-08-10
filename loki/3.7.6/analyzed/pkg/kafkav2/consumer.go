@@ -1,5 +1,8 @@
 package kafkav2
 
+// kafkav2 封装 franz-go 消费者：抽象轮询循环、消费组与单分区两种模式，
+// 统一将 Record 写入下游 channel 并暴露 Prometheus 指标。
+
 import (
 	"context"
 	"errors"
@@ -15,6 +18,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
+// abstractConsumer 是共享轮询逻辑的基础结构，嵌入 GroupConsumer 与 SinglePartitionConsumer。
 // An abstractConsumer is a basic consumer that is embedded in most other
 // consumers.
 type abstractConsumer struct {
@@ -26,6 +30,7 @@ type abstractConsumer struct {
 	polls       prometheus.Counter
 }
 
+// run 持续 PollRecords，将拉取到的 Record 写入 channel；空轮询时指数退避。
 func (c *abstractConsumer) run(ctx context.Context) error {
 	defer close(c.records)
 	b := backoff.New(ctx, backoff.Config{
@@ -39,6 +44,7 @@ func (c *abstractConsumer) run(ctx context.Context) error {
 		// If the client is closed, or the context was canceled, exit the service.
 		// We use Err0 instead of [kgo.IsClientClosed] so we can also check if the
 		// context was canceled.
+// 客户端关闭或 context 取消时静默退出，避免停止服务时被判定为失败。
 		if err := fetches.Err0(); errors.Is(err, kgo.ErrClientClosed) || errors.Is(err, context.Canceled) {
 			// We don't return ctx.Err() here as it manifests as a service failure
 			// when stopping the service.
@@ -51,6 +57,7 @@ func (c *abstractConsumer) run(ctx context.Context) error {
 		for record := range fetches.RecordsAll() {
 			// We must check for cancelation to avoid a deadlock. This can happen
 			// if the receiver stopped without draining the chan.
+// 写入 channel 前检查 ctx，防止接收方已停止导致 goroutine 死锁。
 			select {
 			case <-ctx.Done():
 				// We don't return ctx.Err() here as it manifests as a service failure
@@ -75,6 +82,7 @@ func (c *abstractConsumer) run(ctx context.Context) error {
 	return nil
 }
 
+// GroupConsumer 配合 consumer group 使用，分区分配由 broker 协调。
 // A GroupConsumer consumes records from many partitions. It should be used
 // with consumer groups, and is incompatible with direct consumers. The consumed
 // partitions are determined by the broker.
@@ -82,6 +90,7 @@ type GroupConsumer struct {
 	abstractConsumer
 }
 
+// NewGroupConsumer 注册 topic 标签的 fetch/poll 计数器并订阅指定 topic。
 // NewGroupConsumer returns a new GroupConsumer. It expects a wrapped Prometheus
 // registerer with a prefix (for example, "loki_service_name_") to avoid metric
 // conflicts.
@@ -130,6 +139,7 @@ func (c *GroupConsumer) stopping(_ error) error {
 	return nil
 }
 
+// SinglePartitionConsumer 用于 direct consumer，从固定分区与初始 offset 消费。
 // A SinglePartitionConsumer consumes records from a single partition. It should
 // be used with direct consumers, and is incompatible with consumer groups.
 type SinglePartitionConsumer struct {
@@ -139,6 +149,7 @@ type SinglePartitionConsumer struct {
 	initialOffset int64
 }
 
+// NewSinglePartitionConsumer 支持 -2（从头）与 -1（从尾）特殊 offset。
 // NewSinglePartitionConsumer returns a new SinglePartitionConsumer. It
 // consumes records from the specified offset. It accepts the two special
 // offsets of -2 to consume from the start and -1 to consume from the end.
@@ -184,6 +195,7 @@ func NewSinglePartitionConsumer(
 // starting implements [services.StartingFn].
 func (c *SinglePartitionConsumer) starting(_ context.Context) error {
 	// Consume the topic and partition from the specified offset.
+// starting 阶段绑定 topic/partition 与初始 offset，服务启动前不可再改。
 	c.client.AddConsumePartitions(map[string]map[int32]kgo.Offset{
 		c.topic: {c.partition: kgo.NewOffset().At(c.initialOffset)},
 	})
@@ -200,11 +212,13 @@ func (c *SinglePartitionConsumer) stopping(_ error) error {
 	return nil
 }
 
+// GetInitialOffset 返回启动时将使用的分区起始 offset。
 // GetInitialOffset returns the initial offset for the consumer.
 func (c *SinglePartitionConsumer) GetInitialOffset() int64 {
 	return c.initialOffset
 }
 
+// SetInitialOffset 仅允许在服务 New 状态下修改初始 offset。
 // SetInitialOffset sets the initial offset for the consumer. It cannot
 // be called after the service has started.
 func (c *SinglePartitionConsumer) SetInitialOffset(offset int64) error {
@@ -214,3 +228,4 @@ func (c *SinglePartitionConsumer) SetInitialOffset(offset int64) error {
 	c.initialOffset = offset
 	return nil
 }
+// 两种消费者均基于 dskit BasicService 生命周期，停止时自动关闭 records channel。
