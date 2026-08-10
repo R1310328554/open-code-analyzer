@@ -1,3 +1,5 @@
+// variable-path-transform.ts — Lexical 变量节点：合并相邻文本中的嵌套路径。
+
 import { TextNode } from 'lexical';
 import {
   appendPromptVariablePath,
@@ -5,6 +7,7 @@ import {
 } from './utils';
 import { $createVariableNode, $isVariableNode } from './variable-node';
 
+/** 若前一兄弟为 VariableNode 且当前文本以路径后缀开头，则合并并更新节点。 */
 export function mergeLeadingVariablePathTextNode(textNode: TextNode): boolean {
   const previousSibling = textNode.getPreviousSibling();
 

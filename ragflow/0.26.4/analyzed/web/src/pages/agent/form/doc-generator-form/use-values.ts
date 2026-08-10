@@ -1,9 +1,13 @@
+// use-values.ts — DocGenerator 节点表单初始值：输出格式校验与字体下限。
+
 import { type Node } from '@xyflow/react';
 import { useMemo } from 'react';
 import { initialDocGeneratorValues } from '../../constant';
 
+/** 合并节点 form 与默认 DocGenerator 配置，规范化 output_format 与 font_size。 */
 export const useValues = (node?: Node) => {
   const values = useMemo(() => {
+    // 允许的文档输出格式白名单
     const supportedOutputFormats = ['pdf', 'docx', 'txt', 'markdown', 'html'];
     const nextValues = {
       ...initialDocGeneratorValues,

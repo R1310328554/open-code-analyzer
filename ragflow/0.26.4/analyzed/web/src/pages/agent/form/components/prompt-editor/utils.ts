@@ -1,5 +1,8 @@
+// utils.ts — Prompt 编辑器变量路径解析：拆分 node@var 与嵌套路径后缀。
+
 import type { ReactNode } from 'react';
 
+/** 变量下拉选项结构：label/value 及可选 parentLabel、icon、type。 */
 type PromptVariableOptionLike = {
   label: string;
   value: string;
@@ -8,6 +11,7 @@ type PromptVariableOptionLike = {
   type?: string;
 };
 
+/** 变量 value 拆分结果：根 node@var 与 .path 后缀。 */
 type PromptVariablePathParts = {
   rootValue: string;
   pathSuffix: string;
@@ -18,9 +22,11 @@ type PromptVariableLeadingPathMatch = {
   remainingText: string;
 };
 
+/** 匹配文本开头的嵌套路径后缀（如 .field[0].name）。 */
 const PromptVariableLeadingPathRegex =
   /^(?<pathSuffix>(?:\.(?:\d+|[A-Za-z_][A-Za-z0-9_]*))+)/;
 
+/** 将 nodeId@variable.path 拆分为根 value 与 pathSuffix。 */
 function splitPromptVariablePath(value: string): PromptVariablePathParts {
   const [nodeId, variable = ''] = value.split('@');
 
@@ -39,6 +45,7 @@ function splitPromptVariablePath(value: string): PromptVariablePathParts {
   };
 }
 
+/** 从文本开头提取变量嵌套路径后缀，返回剩余文本。 */
 export function extractLeadingPromptVariablePath(
   text: string,
 ): PromptVariableLeadingPathMatch | undefined {
@@ -55,6 +62,7 @@ export function extractLeadingPromptVariablePath(
   };
 }
 
+/** 将 pathSuffix 追加到选项的 value 与 label。 */
 export function appendPromptVariablePath(
   option: PromptVariableOptionLike,
   pathSuffix: string,
@@ -70,6 +78,7 @@ export function appendPromptVariablePath(
   };
 }
 
+/** 按完整 value 精确匹配，或基于根变量 + 路径后缀解析选项。 */
 export function resolvePromptVariableOption(
   value: string,
   options: PromptVariableOptionLike[],
