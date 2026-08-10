@@ -40,17 +40,28 @@ import org.keycloak.organization.OrganizationProvider;
 
 import static org.keycloak.models.cache.infinispan.idp.InfinispanIdentityProviderStorageProvider.cacheKeyOrgId;
 
+/**
+ * 基于 Infinispan 领域/用户缓存的 {@link OrganizationProvider} 实现。
+ * <p>
+ * 读操作优先命中 {@link RealmCacheSession} 与 {@link UserCacheSession}，写操作委托 JPA 提供者并在变更时注册失效键；
+ * 通过 {@link OrganizationAdapter} 将会话内已缓存组织包装为可写代理。
+ */
 public class InfinispanOrganizationProvider implements OrganizationProvider {
 
+    /** 领域内组织总数缓存键后缀。 */
     private static final String ORG_COUNT_KEY_SUFFIX = ".org.count";
+    /** 领域内是否存在组织缓存键后缀。 */
     private static final String ORG_EXISTS_KEY_SUFFIX = ".org.exists";
+    /** 单个组织成员数缓存键后缀。 */
     private static final String ORG_MEMBERS_COUNT_KEY_SUFFIX = ".members.count";
 
     private final KeycloakSession session;
     private final UserCacheSession userCache;
     private final InfinispanInvitationManager invitationManager;
+    /** 延迟加载的 JPA 组织提供者委托。 */
     private OrganizationProvider orgDelegate;
     private final RealmCacheSession realmCache;
+    /** 当前会话中已 materialize 的组织适配器，按组织 ID 索引。 */
     private final Map<String, OrganizationAdapter> managedOrganizations = new HashMap<>();
 
     public InfinispanOrganizationProvider(KeycloakSession session) {
@@ -78,9 +89,10 @@ public class InfinispanOrganizationProvider implements OrganizationProvider {
         return getById(getDelegate().create(id, name, alias).getId());
     }
 
+    /** 获取 JPA 组织提供者；首次访问时才初始化，避免过早打开实体管理器。 */
     OrganizationProvider getDelegate() {
         if (orgDelegate == null) {
-            // use lazy initialization to avoid touching the entity manager
+            // 延迟初始化，避免过早触发实体管理器
             orgDelegate = session.getProvider(OrganizationProvider.class, "jpa");
         }
         return orgDelegate;
@@ -154,13 +166,13 @@ public class InfinispanOrganizationProvider implements OrganizationProvider {
 
     @Override
     public Stream<OrganizationModel> getAllStream(String search, Boolean exact, Integer first, Integer max) {
-        // Return cache delegates to ensure cache invalidation during write operations
+        // 返回缓存代理，确保后续写操作能正确触发失效
         return getCacheDelegates(getDelegate().getAllStream(search, exact, first, max));
     }
 
     @Override
     public Stream<OrganizationModel> getAllStream(Map<String, String> attributes, Integer first, Integer max) {
-        // Return cache delegates to ensure cache invalidation during write operations
+        // 返回缓存代理，确保后续写操作能正确触发失效
         return getCacheDelegates(getDelegate().getAllStream(attributes, first, max));
     }
 
@@ -221,7 +233,7 @@ public class InfinispanOrganizationProvider implements OrganizationProvider {
         String cacheKey = cacheKeyOrgMemberCount(getRealm(), organization);
         CachedCount cached = realmCache.getCache().get(cacheKey, CachedCount.class);
 
-        // cached and not invalidated
+        // 命中缓存且键未被标记失效
         if (cached != null && !isRealmCacheKeyInvalid(cacheKey)) {
             return cached.getCount();
         }
@@ -308,7 +320,7 @@ public class InfinispanOrganizationProvider implements OrganizationProvider {
         CachedMembership cached = userCache.getCache().get(cacheKey, CachedMembership.class);
 
         if (cached == null || isUserCacheKeyInvalid(cacheKey)) {
-            // this will not cache the result as calling getMemberById() to have a full caching entry would lead to a recursion
+            // 不缓存此结果：若调用 getMemberById 建立完整条目会导致递归
             return getDelegate().isManagedMember(organization, user);
         }
 
@@ -323,29 +335,25 @@ public class InfinispanOrganizationProvider implements OrganizationProvider {
 
     @Override
     public Stream<GroupModel> getTopLevelGroups(OrganizationModel organization, Integer firstResult, Integer maxResults) {
-        // Don't cache top-level groups - delegate directly to DB
-        // This follows the same pattern as search queries to avoid unbounded cache growth
+        // 不缓存顶级组列表，直接查库，避免缓存无限增长
         return getDelegate().getTopLevelGroups(organization, firstResult, maxResults);
     }
 
     @Override
     public Stream<GroupModel> searchGroupsByName(OrganizationModel organization, String search, Boolean exact, Integer firstResult, Integer maxResults) {
-        // Don't cache search queries with pagination - delegate directly to DB
-        // This follows the same pattern as RealmCacheSession.searchForGroupByNameStream
+        // 分页名称搜索不缓存，与 RealmCacheSession.searchForGroupByNameStream 策略一致
         return getDelegate().searchGroupsByName(organization, search, exact, firstResult, maxResults);
     }
 
     @Override
     public Stream<GroupModel> searchGroupsByAttributes(OrganizationModel organization, Map<String, String> attributes, Integer firstResult, Integer maxResults) {
-        // Don't cache search queries with pagination - delegate directly to DB
-        // This follows the same pattern as RealmCacheSession.searchGroupsByAttributes
+        // 分页属性搜索不缓存，与 RealmCacheSession.searchGroupsByAttributes 策略一致
         return getDelegate().searchGroupsByAttributes(organization, attributes, firstResult, maxResults);
     }
 
     @Override
     public Stream<GroupModel> getOrganizationGroupsByMember(OrganizationModel organization, UserModel member, String search, Integer first, Integer max) {
-        // Don't cache paginated queries - delegate directly to DB
-        // This follows the same pattern as searchGroupsByName to avoid caching partial results
+        // 分页成员组查询不缓存，避免只缓存部分结果集
         return getDelegate().getOrganizationGroupsByMember(organization, member, search, first, max);
     }
 
@@ -418,7 +426,7 @@ public class InfinispanOrganizationProvider implements OrganizationProvider {
         String cacheKey = cacheKeyOrgCount(getRealm());
         CachedCount cached = realmCache.getCache().get(cacheKey, CachedCount.class);
 
-        // cached and not invalidated
+        // 命中缓存且键未被标记失效
         if (cached != null && !isRealmCacheKeyInvalid(cacheKey)) {
             return cached.getCount();
         }
@@ -443,6 +451,7 @@ public class InfinispanOrganizationProvider implements OrganizationProvider {
         }
     }
 
+    /** 注册与指定组织相关的全部领域缓存失效键（含域名索引）。 */
     void registerOrganizationInvalidation(OrganizationModel organization) {
         String id = organization.getId();
 
@@ -540,7 +549,7 @@ public class InfinispanOrganizationProvider implements OrganizationProvider {
         String cacheKey = cacheKeyOrgExists(getRealm());
         CachedExists cached = realmCache.getCache().get(cacheKey, CachedExists.class);
 
-        // cached and not invalidated
+        // 命中缓存且键未被标记失效
         if (cached != null && !isRealmCacheKeyInvalid(cacheKey)) {
             return cached.isExists();
         }

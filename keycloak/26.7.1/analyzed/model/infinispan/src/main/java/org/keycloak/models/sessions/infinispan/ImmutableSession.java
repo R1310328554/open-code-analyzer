@@ -50,17 +50,18 @@ import org.infinispan.client.hotrod.RemoteCache;
 import static org.keycloak.models.Constants.SESSION_NOTE_LIGHTWEIGHT_USER;
 
 /**
- * Helper class to map a list of user and client sessions, from Infinispan caches, into an immutable session.
+ * 将 Infinispan 缓存中的用户/客户端会话映射为不可变会话模型的工具类。
  * <p>
- * It copies the data to a new instance to prevent observing changes made by other threads to the underlying cached
- * instances.
+ * 深拷贝数据到新实例，避免其他线程对底层缓存实体的并发修改被调用方观察到。
  */
 public final class ImmutableSession {
 
+    /** 只读实例上的写操作统一入口，抛出 {@link UnsupportedOperationException}。 */
     public static void readOnly() {
         throw new UnsupportedOperationException("this instance is read-only");
     }
 
+    /** 从嵌入式（本地）用户会话实体列表构建不可变 {@link UserSessionModel} 流。 */
     public static Stream<UserSessionModel> copyOf(KeycloakSession session,
                                                   Collection<UserSessionEntity> entityList,
                                                   SessionExpirationPredicates expiration,
@@ -96,7 +97,7 @@ public final class ImmutableSession {
                     entity.getLoginUsername(),
                     entity.getIpAddress(),
                     entity.getAuthMethod(),
-                    new HashMap<>(), // to break cyclic dependency between user and client session
+                    new HashMap<>(), // 打破用户会话与客户端会话之间的循环引用
                     Map.copyOf(entity.getNotes()),
                     entity.getState(),
                     entity.getStarted(),
@@ -113,6 +114,7 @@ public final class ImmutableSession {
                 .map(UserSessionModel.class::cast);
     }
 
+    /** 从远程 Hot Rod 用户会话实体列表构建不可变 {@link UserSessionModel} 流。 */
     public static Stream<UserSessionModel> copyOf(KeycloakSession session,
                                                   Collection<RemoteUserSessionEntity> entityList,
                                                   SessionExpirationPredicates expiration,
@@ -148,7 +150,7 @@ public final class ImmutableSession {
                     entity.getLoginUsername(),
                     entity.getIpAddress(),
                     entity.getAuthMethod(),
-                    new HashMap<>(), // to break cyclic dependency between user and client session
+                    new HashMap<>(), // 打破用户会话与客户端会话之间的循环引用
                     Map.copyOf(entity.getNotes()),
                     entity.getState(),
                     entity.getStarted(),

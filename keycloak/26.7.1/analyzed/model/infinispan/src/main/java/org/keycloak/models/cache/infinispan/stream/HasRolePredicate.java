@@ -16,17 +16,22 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 缓存流过滤谓词：判断缓存条目是否与指定角色存在关联（角色、复合角色、组映射、客户端 scope 等）。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @ProtoTypeId(Marshalling.HAS_ROLE_PREDICATE)
 public class HasRolePredicate implements Predicate<Map.Entry<String, Revisioned>> {
+    /** 待匹配的角色 ID。 */
     private String role;
 
+    /** 创建可链式配置的谓词实例。 */
     public static HasRolePredicate create() {
         return new HasRolePredicate();
     }
 
+    /** 设置要查找的角色 ID。 */
     public HasRolePredicate role(String role) {
         this.role = role;
         return this;
@@ -41,6 +46,7 @@ public class HasRolePredicate implements Predicate<Map.Entry<String, Revisioned>
         this.role = role;
     }
 
+    /** 在多种缓存实体类型中检查是否引用给定角色。 */
     @Override
     public boolean test(Map.Entry<String, Revisioned> entry) {
         Object value = entry.getValue();

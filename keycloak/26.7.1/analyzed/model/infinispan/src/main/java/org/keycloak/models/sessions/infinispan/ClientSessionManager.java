@@ -23,36 +23,32 @@ import org.keycloak.models.sessions.infinispan.entities.AuthenticatedClientSessi
 import org.keycloak.models.sessions.infinispan.entities.EmbeddedClientSessionKey;
 
 /**
- * Manages transactional context for {@link AuthenticatedClientSessionModel} changes.
+ * {@link AuthenticatedClientSessionModel} 变更的事务性上下文管理器。
  * <p>
- * It collects all modifications (the changelog) within the current transaction and applies them to the database only
- * upon a successful commit.
+ * 在当前事务内收集所有修改（变更日志），仅在提交成功后才应用到持久化存储。
  */
 public interface ClientSessionManager {
 
     /**
-     * Adds a update task to the changelog for a specific client session.
+     * 为指定客户端会话向变更日志追加更新任务。
      * <p>
-     * When the transaction commits, this task will apply its changes to the persisted
-     * {@link AuthenticatedClientSessionEntity}, effectively updating the corresponding
-     * {@link AuthenticatedClientSessionModel}. Multiple {@code addChange} calls for the same session are accumulated
-     * (merged).
+     * 事务提交时，任务会合并并应用到持久化的 {@link AuthenticatedClientSessionEntity}，
+     * 从而更新对应的 {@link AuthenticatedClientSessionModel}。
      *
-     * @param key  The identifier for the target client session.
-     * @param task The operation containing the changes to apply to the persisted entity.
-     * @throws NullPointerException if {@code key} or {@code task} is {@code null}.
+     * @param key  目标客户端会话标识
+     * @param task 对持久化实体执行的变更操作
+     * @throws NullPointerException 若 {@code key} 或 {@code task} 为 {@code null}
      */
     void addChange(EmbeddedClientSessionKey key, PersistentSessionUpdateTask<AuthenticatedClientSessionEntity> task);
 
     /**
-     * Resets and replaces the state of the persisted {@link AuthenticatedClientSessionEntity} for the given session.
+     * 重置并替换指定会话的 {@link AuthenticatedClientSessionEntity} 状态。
      * <p>
-     * All previously added changes via {@code addChange} for this session are discarded, and the provided task is
-     * executed to set the new state of the client session entity.
+     * 丢弃此前通过 {@code addChange} 累积的变更，执行给定任务以设置完整新状态（如 {@code restartClientSession}）。
      *
-     * @param key  The identifier for the target client session.
-     * @param task The operation that must set the complete new state of the persisted entity.
-     * @throws NullPointerException if {@code key} or {@code task} is {@code null}.
+     * @param key  目标客户端会话标识
+     * @param task 必须设置实体完整新状态的操作
+     * @throws NullPointerException 若 {@code key} 或 {@code task} 为 {@code null}
      */
     void restartEntity(EmbeddedClientSessionKey key, PersistentSessionUpdateTask<AuthenticatedClientSessionEntity> task);
 

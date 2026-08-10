@@ -22,23 +22,25 @@ import org.infinispan.Cache;
 import org.infinispan.context.Flag;
 
 /**
+ * Infinispan 会话缓存操作的标志位装饰工具。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class CacheDecorators {
 
     /**
-     * Adds {@link Flag#CACHE_MODE_LOCAL} flag to the cache.
-     * @param cache
-     * @return Cache with the flag applied.
+     * 为缓存添加 {@link Flag#CACHE_MODE_LOCAL}，使操作仅在本地节点生效、不跨集群复制。
+     * @param cache 原始缓存
+     * @return 带本地模式标志的高级缓存
      */
     public static <K, V> AdvancedCache<K, V> localCache(Cache<K, V> cache) {
         return cache.getAdvancedCache().withFlags(Flag.CACHE_MODE_LOCAL);
     }
 
     /**
-     * Adds {@link Flag#IGNORE_RETURN_VALUES} flag to the cache.
-     * @param cache
-     * @return Cache with the flag applied.
+     * 为缓存添加 {@link Flag#IGNORE_RETURN_VALUES}，写入时忽略返回值以提升性能。
+     * @param cache 原始缓存
+     * @return 带忽略返回值标志的高级缓存
      */
     public static <K, V> AdvancedCache<K, V> ignoreReturnValues(Cache<K, V> cache) {
         return cache.getAdvancedCache().withFlags(Flag.IGNORE_RETURN_VALUES);

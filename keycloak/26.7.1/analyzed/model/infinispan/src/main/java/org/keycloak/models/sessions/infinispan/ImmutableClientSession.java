@@ -28,14 +28,16 @@ import org.keycloak.models.UserSessionModel;
 import static org.keycloak.models.sessions.infinispan.ImmutableSession.readOnly;
 
 /**
- * An immutable {@link AuthenticatedClientSessionModel} implementation.
+ * 不可变的 {@link AuthenticatedClientSessionModel} 实现（record）。
  * <p>
- * All setters throw a {@link UnsupportedOperationException}.
+ * 所有 setter 均调用 {@link ImmutableSession#readOnly()} 并抛出 {@link UnsupportedOperationException}。
  */
 record ImmutableClientSession(
+        /** 客户端会话复合 ID。 */
         String id,
         ClientModel client,
         ImmutableUserSessionModel userSessionModel,
+        /** 不可变 notes 快照。 */
         Map<String, String> notes,
         String redirectUri,
         String action,

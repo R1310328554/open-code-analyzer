@@ -34,6 +34,10 @@ import org.keycloak.models.sessions.infinispan.entities.AuthenticatedClientSessi
 import org.keycloak.models.sessions.infinispan.entities.EmbeddedClientSessionKey;
 
 /**
+ * {@link AuthenticatedClientSessionModel} 的 Infinispan 实现。
+ * <p>
+ * 读写字段经 {@link ClientSessionManager} 累积变更任务，在事务提交时批量写入缓存实体。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class AuthenticatedClientSessionAdapter implements AuthenticatedClientSessionModel {
@@ -43,7 +47,9 @@ public class AuthenticatedClientSessionAdapter implements AuthenticatedClientSes
     private final ClientModel client;
     private final ClientSessionManager clientSessionManager;
     private UserSessionModel userSession;
+    /** 是否为离线客户端会话。 */
     private final boolean offline;
+    /** 嵌入在用户会话中的客户端会话缓存键。 */
     private final EmbeddedClientSessionKey cacheKey;
 
     public AuthenticatedClientSessionAdapter(KeycloakSession kcSession,
@@ -61,23 +67,24 @@ public class AuthenticatedClientSessionAdapter implements AuthenticatedClientSes
         this.cacheKey = cacheKey;
     }
 
+    /** 将变更任务加入当前事务的客户端会话变更日志。 */
     private void update(ClientSessionUpdateTask task) {
         clientSessionManager.addChange(cacheKey, task);
     }
 
     /**
-     * Detaches the client session from its user session.
+     * 从用户会话解绑本客户端会话。
      * <p>
-     * <b>This method does not delete the client session from user session records, it only removes the client session.</b>
-     * The list of client sessions within user session is updated lazily for performance reasons.
+     * <b>不会从用户会话记录中删除客户端 UUID，仅解除关联；</b>
+     * 用户会话内的客户端列表为性能原因延迟更新，无效会话在
+     * {@link org.keycloak.models.sessions.infinispan.UserSessionAdapter#getAuthenticatedClientSessions()} 中视为不存在。
      */
     @Override
     public void detachFromUserSession() {
         if (this.userSession.isOffline()) {
             kcSession.getProvider(UserSessionPersisterProvider.class).removeClientSession(userSession.getId(), client.getId(), true);
         }
-        // Intentionally do not remove the clientUUID from the user session, invalid session is handled
-        // as nonexistent in org.keycloak.models.sessions.infinispan.UserSessionAdapter.getAuthenticatedClientSessions()
+        // 故意不从用户会话移除 clientUUID；无效会话在 UserSessionAdapter 中按不存在处理
         this.userSession = null;
 
         clientSessionManager.addChange(cacheKey, Tasks.removeSync(offline));
@@ -133,6 +140,7 @@ public class AuthenticatedClientSessionAdapter implements AuthenticatedClientSes
 
     @Override
     public void setTimestamp(int timestamp) {
+        // 仅允许单调递增的时间戳更新
         if (timestamp <= getTimestamp()) {
             return;
         }

@@ -29,8 +29,14 @@ import org.keycloak.organization.OrganizationProvider;
 import org.keycloak.organization.OrganizationProviderFactory;
 import org.keycloak.organization.utils.Organizations;
 
+/**
+ * Infinispan 组织缓存提供者的 SPI 工厂。
+ * <p>
+ * 在 {@link #postInit(KeycloakSessionFactory)} 中注册领域/用户/组事件监听，在 IdP、成员或组织组变更时驱动缓存失效。
+ */
 public class InfinispanOrganizationProviderFactory implements OrganizationProviderFactory {
 
+    /** SPI 提供者标识，与 {@link InfinispanOrganizationProvider} 配套使用。 */
     public static final String PROVIDER_ID = "infinispan";
 
     @Override
@@ -74,6 +80,7 @@ public class InfinispanOrganizationProviderFactory implements OrganizationProvid
         });
     }
 
+    /** 身份提供者变更时，若绑定组织则失效对应组织缓存。 */
     private void registerOrganizationInvalidation(KeycloakSession session, IdentityProviderModel idp) {
         if (idp.getOrganizationId() != null) {
             InfinispanOrganizationProvider orgProvider = (InfinispanOrganizationProvider) session.getProvider(OrganizationProvider.class, getId());
@@ -87,7 +94,7 @@ public class InfinispanOrganizationProviderFactory implements OrganizationProvid
     private void registerOrgGroupInvalidation(GroupModel.GroupEvent event) {
         GroupModel group = event.getGroup();
 
-        // Only handle organization groups
+        // 仅处理组织组，普通组变更不影响组织缓存
         if (!Organizations.isOrganizationGroup(group)) {
             return;
         }
@@ -102,7 +109,7 @@ public class InfinispanOrganizationProviderFactory implements OrganizationProvid
     private void registerOrgGroupMembershipInvalidation(GroupModel.GroupEvent event, UserModel member) {
         GroupModel group = event.getGroup();
 
-        // Only handle organization groups
+        // 仅处理组织组，普通组变更不影响组织缓存
         if (!Organizations.isOrganizationGroup(group)) {
             return;
         }
@@ -110,7 +117,7 @@ public class InfinispanOrganizationProviderFactory implements OrganizationProvid
         KeycloakSession session = event.getKeycloakSession();
         InfinispanOrganizationProvider orgProvider = (InfinispanOrganizationProvider) session.getProvider(OrganizationProvider.class, getId());
         if (orgProvider != null) {
-            // invalidate only org groups membership, not org membership
+            // 仅失效「成员所属组织组」索引，不失效组织成员关系本身
             orgProvider.registerOrgGroupsMembershipInvalidation(group.getOrganization(), member);
         }
     }

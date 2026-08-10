@@ -27,14 +27,20 @@ import org.keycloak.models.cache.infinispan.entities.Revisioned;
 import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
+/**
+ * 缓存流过滤谓词：匹配 {@link GroupNameQuery} 且 groupId 相等的条目。
+ */
 @ProtoTypeId(Marshalling.IN_GROUP_PREDICATE)
 public class InGroupPredicate implements Predicate<Map.Entry<String, Revisioned>> {
+    /** 目标组 ID。 */
     private String group;
 
+    /** 创建可链式配置的谓词实例。 */
     public static InGroupPredicate create() {
         return new InGroupPredicate();
     }
 
+    /** 限定要匹配的组 ID。 */
     public InGroupPredicate group(String id) {
         group = id;
         return this;
@@ -49,6 +55,7 @@ public class InGroupPredicate implements Predicate<Map.Entry<String, Revisioned>
         this.group = group;
     }
 
+    /** 判断缓存值是否为指定组的名称查询实体。 */
     @Override
     public boolean test(Map.Entry<String, Revisioned> entry) {
         return entry.getValue() instanceof GroupNameQuery groupNameQuery && group.equals(groupNameQuery.getGroupId());

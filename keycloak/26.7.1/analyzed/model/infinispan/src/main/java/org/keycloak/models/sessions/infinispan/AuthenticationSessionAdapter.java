@@ -38,7 +38,9 @@ import static org.keycloak.models.Constants.SESSION_NOTE_LIGHTWEIGHT_USER;
 import static org.keycloak.models.light.LightweightUserAdapter.isLightweightUser;
 
 /**
- * NOTE: Calling setter doesn't automatically enlist for update
+ * {@link AuthenticationSessionModel} 的 Infinispan 实现。
+ * <p>
+ * 注意：调用 setter 会更新底层实体并通知 {@link SessionEntityUpdater}，但不会自动 enlist 额外同步逻辑。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -46,7 +48,9 @@ public class AuthenticationSessionAdapter implements AuthenticationSessionModel 
 
     private final KeycloakSession session;
     private final RootAuthenticationSessionModel parent;
+    /** 封装认证会话实体及变更通知的更新器。 */
     private final  SessionEntityUpdater<AuthenticationSessionEntity> updater;
+    /** 浏览器标签页 ID，作为子会话唯一键。 */
     private final String tabId;
 
     public AuthenticationSessionAdapter(KeycloakSession session, RootAuthenticationSessionModel parent, SessionEntityUpdater<AuthenticationSessionEntity> updater, String tabId) {
@@ -56,6 +60,7 @@ public class AuthenticationSessionAdapter implements AuthenticationSessionModel 
         this.tabId = tabId;
     }
 
+    /** 通知更新器实体已被修改，以便后续持久化/同步。 */
     private void update() {
         updater.onEntityUpdated();
     }
@@ -300,7 +305,7 @@ public class AuthenticationSessionAdapter implements AuthenticationSessionModel 
             LightweightUserAdapter lua = LightweightUserAdapter.fromString(session, parent.getRealm(), getUserSessionNotes().get(SESSION_NOTE_LIGHTWEIGHT_USER));
             session.setAttribute("authSession.user." + parent.getId(), lua);
             lua.setUpdateHandler(lua1 -> {
-                if (lua == lua1) {  // Ensure there is no conflicting user model, only the latest lightweight user can be used
+                if (lua == lua1) {  // 避免并发用户模型冲突，仅最新轻量用户可写回
                     setUserSessionNote(SESSION_NOTE_LIGHTWEIGHT_USER, lua1.serialize());
                 }
             });
@@ -323,7 +328,7 @@ public class AuthenticationSessionAdapter implements AuthenticationSessionModel 
                 LightweightUserAdapter lua = (LightweightUserAdapter) user;
                 setUserSessionNote(SESSION_NOTE_LIGHTWEIGHT_USER, lua.serialize());
                 lua.setUpdateHandler(lua1 -> {
-                    if (lua == lua1) {  // Ensure there is no conflicting user model, only the latest lightweight user can be used
+                    if (lua == lua1) {  // 避免并发用户模型冲突，仅最新轻量用户可写回
                         setUserSessionNote(SESSION_NOTE_LIGHTWEIGHT_USER, lua1.serialize());
                     }
                 });
