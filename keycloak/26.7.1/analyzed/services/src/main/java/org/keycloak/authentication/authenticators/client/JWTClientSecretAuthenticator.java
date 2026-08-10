@@ -43,6 +43,8 @@ import org.keycloak.services.ServicesLogger;
 import static org.keycloak.models.TokenManager.DEFAULT_VALIDATOR;
 
 /**
+ * 基于客户端密钥（HMAC）签名 JWT 的客户端认证器（client_secret_jwt）。
+ * <p>服务端校验 {@code client_assertion} 参数，适配器侧由 {@link org.keycloak.adapters.authentication.JWTClientSecretCredentialsProvider} 生成断言。</p>
  * Client authentication based on JWT signed by client secret instead of private key .
  * See <a href="http://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">specs</a> for more details.
  * <p>
@@ -52,8 +54,10 @@ import static org.keycloak.models.TokenManager.DEFAULT_VALIDATOR;
  */
 public class JWTClientSecretAuthenticator extends AbstractClientAuthenticator {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "client-secret-jwt";
 
+    /** 校验以客户端密钥签名的 JWT 客户端断言。 */
     @Override
     public void authenticateClient(ClientAuthenticationFlowContext context) {
         context.attempted();
@@ -63,7 +67,7 @@ public class JWTClientSecretAuthenticator extends AbstractClientAuthenticator {
             JsonWebToken jwt = clientAssertionState.getToken();
 
             if (jwt != null) {
-                // Ignore for client assertions signed by third-parties
+                // 忽略由第三方签名的客户端断言
                 if (!Objects.equals(jwt.getIssuer(), jwt.getSubject())) {
                     return;
                 }
@@ -84,6 +88,7 @@ public class JWTClientSecretAuthenticator extends AbstractClientAuthenticator {
         }
     }
 
+    /** 使用客户端密钥校验 JWT 对称签名，支持轮换密钥重试。 */
     public boolean verifySignature(AbstractJWTClientValidator validator) {
         ClientAuthenticationFlowContext context = validator.getContext();
         ClientModel client = validator.getClient();
@@ -116,7 +121,7 @@ public class JWTClientSecretAuthenticator extends AbstractClientAuthenticator {
                 }
             }, JsonWebToken.class, false);
             signatureValid = jwt != null;
-            //try authenticate with client rotated secret
+            // 主密钥失败时尝试轮换密钥
             if (!signatureValid && wrapper.hasRotatedSecret() && !wrapper.isClientRotatedSecretExpired()) {
                 jwt = context.getSession().tokens().decodeClientJWT(validator.getClientAssertion(),
                         wrapper.toRotatedClientModel(context.getSession()), JsonWebToken.class);
@@ -143,9 +148,10 @@ public class JWTClientSecretAuthenticator extends AbstractClientAuthenticator {
         return Collections.emptyList();
     }
 
+    /** @return 适配器 secret-jwt 凭证配置 */
     @Override
     public Map<String, Object> getAdapterConfiguration(KeycloakSession session, ClientModel client) {
-        // e.g. client adapter's keycloak.json
+        // 适配器 keycloak.json 示例配置
         // "credentials": {
         //   "secret-jwt": {
         //     "secret": "234234-234234-234234",
@@ -165,6 +171,7 @@ public class JWTClientSecretAuthenticator extends AbstractClientAuthenticator {
         return config;
     }
 
+    /** @return OIDC 协议下支持的认证方法（client_secret_jwt） */
     @Override
     public Set<String> getProtocolAuthenticatorMethods(String loginProtocol) {
         if (loginProtocol.equals(OIDCLoginProtocol.LOGIN_PROTOCOL)) {
@@ -176,6 +183,7 @@ public class JWTClientSecretAuthenticator extends AbstractClientAuthenticator {
         }
     }
 
+    /** @return 本认证器依赖客户端密钥 */
     @Override
     public boolean supportsSecret() {
         return true;

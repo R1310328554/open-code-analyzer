@@ -33,16 +33,20 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.jboss.logging.Logger;
 
 /**
+ * 条件认证器：检查认证请求中是否包含指定的 client scope。
+ * <p>支持取反（negate）配置；默认或可选 scope 在请求中出现时条件为真。</p>
  * Conditional authenticator to check if specified client-scope is present in the authentication request
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ConditionalClientScopeAuthenticator implements ConditionalAuthenticator {
 
+    /** 单例实例。 */
     protected static final ConditionalClientScopeAuthenticator SINGLETON = new ConditionalClientScopeAuthenticator();
 
     private static final Logger logger = Logger.getLogger(ConditionalClientScopeAuthenticator.class);
 
+    /** 判断请求的 client scope 列表是否包含配置的 scope（可 negate）。 */
     @Override
     public boolean matchCondition(AuthenticationFlowContext context) {
         final AuthenticatorConfigModel configModel = context.getAuthenticatorConfig();
@@ -72,11 +76,13 @@ public class ConditionalClientScopeAuthenticator implements ConditionalAuthentic
         return negateOutput != clientScopePresent;
     }
 
+    /** 无操作。 */
     @Override
     public void action(AuthenticationFlowContext context) {
-        // no-op
+        // 无操作
     }
 
+    /** @return 不需要已认证用户 */
     @Override
     public boolean requiresUser() {
         return false;

@@ -31,6 +31,7 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
+ * <p>条件凭证认证器工厂：检查配置的凭证类型是否在认证过程中被使用（或未被使用），以控制子流程执行。</p>
  * <p>Conditional authenticator that checks if a list of configured credentials has been
  * used (or not used) by the user in the authentication process. This way the sub-flow
  * can be executed only when the user has used a specific credential type
@@ -41,12 +42,17 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
  */
 public class ConditionalCredentialAuthenticatorFactory implements ConditionalAuthenticatorFactory {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "conditional-credential";
 
+    /** 配置键：要检查的凭证类型列表。 */
     public static final String CONF_CREDENTIALS = "credentials";
+    /** 配置键：true 表示“已使用”，false 表示“未使用”。 */
     public static final String CONF_INCLUDED = "included";
+    /** 表示未使用任何凭证的特殊类型标识。 */
     public static final String NONE_CREDENTIAL = "none";
 
+    /** 启动时收集的可用凭证类型列表。 */
     private List<String> credentialList;
 
     @Override
@@ -54,6 +60,7 @@ public class ConditionalCredentialAuthenticatorFactory implements ConditionalAut
         // no-op
     }
 
+    /** 初始化可用凭证类型选项列表。 */
     @Override
     public void postInit(KeycloakSessionFactory sessionFactory) {
         credentialList = getCredentialList(sessionFactory);
@@ -69,6 +76,7 @@ public class ConditionalCredentialAuthenticatorFactory implements ConditionalAut
         return PROVIDER_ID;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "Condition - credential";
@@ -91,11 +99,13 @@ public class ConditionalCredentialAuthenticatorFactory implements ConditionalAut
         return false;
     }
 
+    /** @return 条件说明：按凭证类型是否被使用评估 */
     @Override
     public String getHelpText() {
         return "Condition to evaluate if a specific credential type has been used (or not used) by the user during the authentication process";
     }
 
+    /** @return 凭证列表与 included 布尔配置项 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return ProviderConfigurationBuilder.create()
@@ -129,8 +139,9 @@ public class ConditionalCredentialAuthenticatorFactory implements ConditionalAut
         return ConditionalCredentialAuthenticator.SINGLETON;
     }
 
+    /** 收集已安装凭证提供者类型及 Kerberos、证书、none 等固定项。 */
     private static List<String> getCredentialList(KeycloakSessionFactory sessionFactory) {
-        // the list of credentials in the installation plus the fixed ones (kerberos, cert and none)
+        // 安装中的凭证类型加上 Kerberos、客户端证书与 none
         try (KeycloakSession session = sessionFactory.create()) {
             return Stream.concat(
                     AuthenticatorUtil.getCredentialProviders(session).map(CredentialProvider::getType),

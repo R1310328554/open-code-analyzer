@@ -27,11 +27,18 @@ import org.keycloak.representations.JsonWebToken;
 import org.keycloak.services.resources.IdentityBrokerService;
 
 
+/**
+ * 联合 JWT 客户端认证器：校验由外部身份提供者签发并签名的客户端断言 JWT。
+ * <p>当 {@link Profile.Feature#CLIENT_AUTH_FEDERATED} 特性启用时可用；忽略 issuer 与 subject 相同的自签名断言。</p>
+ */
 public class FederatedJWTClientAuthenticator extends AbstractClientAuthenticator implements EnvironmentDependentProviderFactory {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "federated-jwt";
 
+    /** 客户端属性键：JWT 凭证签发者（身份提供者别名）。 */
     public static final String JWT_CREDENTIAL_ISSUER_KEY = "jwt.credential.issuer";
+    /** 客户端属性键：联合主体（外部 clientId）。 */
     public static final String JWT_CREDENTIAL_SUBJECT_KEY = "jwt.credential.sub";
 
     private static final List<ProviderConfigProperty> CLIENT_CONFIG =
@@ -51,13 +58,16 @@ public class FederatedJWTClientAuthenticator extends AbstractClientAuthenticator
                     .add()
                     .build();
 
+    /** 已注册的客户端断言查找策略列表。 */
     private final List<ClientAssertionIdentityProviderFactory.ClientAssertionStrategy> strategies = new LinkedList<>();
 
+    /** @return 提供者 ID */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 收集所有 {@link ClientAssertionIdentityProviderFactory} 的断言策略并注册默认策略。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         factory.getProviderFactoriesStream(IdentityProvider.class)
@@ -70,10 +80,11 @@ public class FederatedJWTClientAuthenticator extends AbstractClientAuthenticator
         strategies.add(new DefaultClientAssertionStrategy());
     }
 
+    /** 校验联合 JWT 客户端断言；成功则标记 context.success()。 */
     @Override
     public void authenticateClient(ClientAuthenticationFlowContext context) {
         try {
-            // Mark it as attempted for all items that return directly
+            // 对直接返回的分支先标记为已尝试
             context.attempted();
 
             ClientAssertionState clientAssertionState = context.getState(ClientAssertionState.class, ClientAssertionState.supplier());
@@ -83,7 +94,7 @@ public class FederatedJWTClientAuthenticator extends AbstractClientAuthenticator
 
             JsonWebToken jwt = clientAssertionState.getToken();
 
-            // Ignore for self-signed client assertions
+            // 忽略 issuer 与 subject 相同的自签名客户端断言
             if (jwt != null && Objects.equals(jwt.getIssuer(), jwt.getSubject())) {
                 return;
             }
@@ -115,10 +126,12 @@ public class FederatedJWTClientAuthenticator extends AbstractClientAuthenticator
         }
     }
 
+    /** 按断言类型查找首个支持的策略。 */
     private ClientAssertionIdentityProviderFactory.ClientAssertionStrategy findStrategy(String assertionType) {
         return strategies.stream().filter(c -> c.isSupportedAssertionType(assertionType)).findFirst().orElse(null);
     }
 
+    /** 获取指定身份提供者模型对应的 {@link ClientAssertionIdentityProvider}。 */
     private ClientAssertionIdentityProvider<?> getClientAssertionIdentityProvider(KeycloakSession session, IdentityProviderModel identityProviderModel) {
         if (identityProviderModel == null) {
             return null;
@@ -126,11 +139,13 @@ public class FederatedJWTClientAuthenticator extends AbstractClientAuthenticator
         return IdentityBrokerService.getIdentityProvider(session, identityProviderModel, ClientAssertionIdentityProvider.class);
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "Signed JWT - Federated";
     }
 
+    /** @return 认证器帮助说明文本 */
     @Override
     public String getHelpText() {
         return "Validates client based on signed JWT issued and signed by an external identity provider";
@@ -151,6 +166,7 @@ public class FederatedJWTClientAuthenticator extends AbstractClientAuthenticator
         return Collections.emptyList();
     }
 
+    /** @return 每客户端配置属性（身份提供者与联合主体） */
     @Override
     public List<ProviderConfigProperty> getConfigPropertiesPerClient() {
         return CLIENT_CONFIG;
@@ -166,6 +182,7 @@ public class FederatedJWTClientAuthenticator extends AbstractClientAuthenticator
         return Collections.emptySet();
     }
 
+    /** @return 是否启用 CLIENT_AUTH_FEDERATED 特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.CLIENT_AUTH_FEDERATED);

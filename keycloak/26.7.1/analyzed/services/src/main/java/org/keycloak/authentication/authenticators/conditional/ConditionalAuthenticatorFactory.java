@@ -21,20 +21,28 @@ import org.keycloak.authentication.Authenticator;
 import org.keycloak.authentication.AuthenticatorFactory;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 条件认证器工厂接口：注册条件类认证器，引用分类为 {@value #REFERENCE_CATEGORY}。
+ * <p>使用单例 {@link #getSingleton()} 而非每次 create 新实例。</p>
+ */
 public interface ConditionalAuthenticatorFactory extends AuthenticatorFactory {
 
+    /** 管理控制台引用分类标识。 */
     String REFERENCE_CATEGORY = "condition";
 
+    /** @return 单例条件认证器实例 */
     @Override
     default Authenticator create(KeycloakSession session) {
         return getSingleton();
     }
 
+    /** @return 引用分类 {@value #REFERENCE_CATEGORY} */
     @Override
     default String getReferenceCategory() {
         return REFERENCE_CATEGORY;
     }
 
+    /** @return 条件认证器单例 */
     ConditionalAuthenticator getSingleton();
 
 }

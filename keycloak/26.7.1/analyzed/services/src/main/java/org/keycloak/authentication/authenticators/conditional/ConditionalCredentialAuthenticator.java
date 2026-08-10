@@ -33,13 +33,17 @@ import org.keycloak.models.UserModel;
 import org.jboss.logging.Logger;
 
 /**
+ * 条件凭证认证器：检查用户在认证过程中是否使用了（或未使用）配置的凭证类型。
+ * <p>用于按密码、OTP 等凭证类型决定是否执行子流程。</p>
  * @author rmartinc
  */
 public class ConditionalCredentialAuthenticator implements ConditionalAuthenticator {
 
+    /** 单例实例。 */
     protected static final ConditionalCredentialAuthenticator SINGLETON = new ConditionalCredentialAuthenticator();
     private static final Logger logger = Logger.getLogger(ConditionalCredentialAuthenticator.class);
 
+    /** 根据 included 配置判断认证凭证是否与配置列表有交集。 */
     @Override
     public boolean matchCondition(AuthenticationFlowContext context) {
         final Map<String, String> config = context.getAuthenticatorConfig() != null
@@ -57,7 +61,7 @@ public class ConditionalCredentialAuthenticator implements ConditionalAuthentica
             logger.tracef("Checking if any authentication credential '%s' is %s in %s", authCredentials, included? "included" : "not included", credentials);
         }
 
-        // remove all credentials that are not used in the authentication
+        // 仅保留本次认证实际使用的凭证类型
         credentials.retainAll(authCredentials);
 
         return included
@@ -67,9 +71,10 @@ public class ConditionalCredentialAuthenticator implements ConditionalAuthentica
 
     @Override
     public void action(AuthenticationFlowContext context) {
-        // Not used
+        // 未使用
     }
 
+    /** @return 需要已关联用户 */
     @Override
     public boolean requiresUser() {
         return true;
@@ -82,6 +87,6 @@ public class ConditionalCredentialAuthenticator implements ConditionalAuthentica
 
     @Override
     public void close() {
-        // Does nothing
+        // 无操作
     }
 }

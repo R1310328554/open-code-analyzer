@@ -20,12 +20,23 @@ package org.keycloak.authentication.authenticators.client;
 
 import org.keycloak.authentication.ClientAuthenticationFlowContext;
 
+/**
+ * 客户端密钥 JWT 校验器：在 {@link JWTClientValidator} 基础上允许对称签名算法。
+ */
 public class JWTClientSecretValidator extends JWTClientValidator {
 
+    /**
+     * 构造客户端密钥 JWT 校验器。
+     *
+     * @param context 客户端认证流程上下文
+     * @param signatureValidator 签名校验回调
+     * @param clientAuthenticatorProviderId 认证器提供者 ID
+     */
     public JWTClientSecretValidator(ClientAuthenticationFlowContext context, SignatureValidator signatureValidator, String clientAuthenticatorProviderId) throws Exception {
         super(context, signatureValidator, clientAuthenticatorProviderId);
     }
 
+    /** @return 允许对称签名算法（HMAC） */
     @Override
     protected boolean isSymmetricAlgorithmAllowed() {
         return true;

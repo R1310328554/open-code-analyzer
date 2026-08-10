@@ -50,6 +50,8 @@ import org.keycloak.services.ServicesLogger;
 import static org.keycloak.models.TokenManager.DEFAULT_VALIDATOR;
 
 /**
+ * 基于客户端私钥签名 JWT 的客户端认证器（private_key_jwt）。
+ * <p>服务端校验 {@code client_assertion} 参数中的 JWT，适配器侧由 {@link org.keycloak.adapters.authentication.JWTClientCredentialsProvider} 生成断言。</p>
  * Client authentication based on JWT signed by client private key .
  * See <a href="https://tools.ietf.org/html/rfc7519">specs</a> for more details.
  *
@@ -60,11 +62,15 @@ import static org.keycloak.models.TokenManager.DEFAULT_VALIDATOR;
  */
 public class JWTClientAuthenticator extends AbstractClientAuthenticator {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "client-jwt";
+    /** 客户端 JWT 凭证属性前缀。 */
     public static final String ATTR_PREFIX = "jwt.credential";
+    /** 客户端证书属性键。 */
     public static final String CERTIFICATE_ATTR = "jwt.credential.certificate";
 
 
+    /** 校验自签名 JWT 客户端断言（issuer 等于 subject）。 */
     @Override
     public void authenticateClient(ClientAuthenticationFlowContext context) {
         context.attempted();
@@ -74,7 +80,7 @@ public class JWTClientAuthenticator extends AbstractClientAuthenticator {
             JsonWebToken jwt = clientAssertionState.getToken();
 
             if (jwt != null) {
-                // Ignore for client assertions signed by third-parties
+                // 忽略由第三方签名的客户端断言（issuer 不等于 subject）
                 if (!Objects.equals(jwt.getIssuer(), jwt.getSubject())) {
                     return;
                 }
@@ -96,11 +102,12 @@ public class JWTClientAuthenticator extends AbstractClientAuthenticator {
         }
     }
 
+    /** 使用客户端公钥校验 JWT 签名。 */
     public boolean verifySignature(AbstractJWTClientValidator validator) {
         ClientAuthenticationFlowContext context = validator.getContext();
         ClientModel client = validator.getClient();
 
-        // Get client key and validate signature
+        // 获取客户端公钥并校验签名
         PublicKey clientPublicKey = getSignatureValidationKey(client, context, validator.getJws());
         if (clientPublicKey == null) {
             // Error response already set to context
@@ -131,6 +138,7 @@ public class JWTClientAuthenticator extends AbstractClientAuthenticator {
         return true;
     }
 
+    /** 从客户端配置或 JWKS 加载用于签名校验的公钥。 */
     protected PublicKey getSignatureValidationKey(ClientModel client, ClientAuthenticationFlowContext context, JWSInput jws) {
         KeyWrapper keyWrapper = PublicKeyStorageManager.getClientPublicKeyWrapper(context.getSession(), client, jws);
 
@@ -176,10 +184,11 @@ public class JWTClientAuthenticator extends AbstractClientAuthenticator {
 
     @Override
     public List<ProviderConfigProperty> getConfigPropertiesPerClient() {
-        // This impl doesn't use generic screen in admin console, but has its own screen. So no need to return anything here
+        // 管理控制台使用专用界面，此处无需返回通用配置项
         return Collections.emptyList();
     }
 
+    /** @return 适配器 keycloak.json 所需的 JWT 凭证配置模板 */
     @Override
     public Map<String, Object> getAdapterConfiguration(KeycloakSession session, ClientModel client) {
         Map<String, Object> props = new HashMap<>();
@@ -204,6 +213,7 @@ public class JWTClientAuthenticator extends AbstractClientAuthenticator {
         return PROVIDER_ID;
     }
 
+    /** @return OIDC 协议下支持的认证方法（private_key_jwt） */
     @Override
     public Set<String> getProtocolAuthenticatorMethods(String loginProtocol) {
         if (loginProtocol.equals(OIDCLoginProtocol.LOGIN_PROTOCOL)) {

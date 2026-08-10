@@ -33,23 +33,33 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 条件 LoA（认证级别）认证器：当请求的 LoA 尚未满足时执行子流程，成功后在会话中更新已认证级别。
+ * <p>实现 {@link AuthenticationFlowCallback} 在父/顶层流程成功时维护 LoA 状态。</p>
+ */
 public class ConditionalLoaAuthenticator implements ConditionalAuthenticator, AuthenticationFlowCallback {
+    /** 配置键：条件要求的 LoA 级别。 */
     public static final String LEVEL = "loa-condition-level";
+    /** 配置键：已认证 LoA 的最大有效时长（秒）。 */
     public static final String MAX_AGE = "loa-max-age";
+    /** 默认 max-age：36000 秒（10 小时）。 */
     public static final int DEFAULT_MAX_AGE = 36000; // 10 hours
 
-    // Only for backwards compatibility with Keycloak 17
+    // 仅用于与 Keycloak 17 向后兼容
     @Deprecated
     public static final String STORE_IN_USER_SESSION = "loa-store-in-user-session";
 
     private static final Logger logger = Logger.getLogger(ConditionalLoaAuthenticator.class);
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public ConditionalLoaAuthenticator(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 评估当前/历史 LoA 是否满足配置级别；未满足时返回 true 以执行子流程。 */
     @Override
     public boolean matchCondition(AuthenticationFlowContext context) {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
@@ -82,6 +92,7 @@ public class ConditionalLoaAuthenticator implements ConditionalAuthenticator, Au
         }
     }
 
+    /** 父流程成功后更新会话中的已认证 LoA（受 max-age 控制）。 */
     @Override
     public void onParentFlowSuccess(AuthenticationFlowContext context) {
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
@@ -102,6 +113,7 @@ public class ConditionalLoaAuthenticator implements ConditionalAuthenticator, Au
         }
     }
 
+    /** 顶层流程成功时校验强制 LoA 是否满足，并将 LoA 映射写入用户会话 note。 */
     @Override
     public void onTopFlowSuccess(AuthenticationFlowModel topFlow) {
         AuthenticationSessionModel authSession = session.getContext().getAuthenticationSession();
@@ -118,10 +130,12 @@ public class ConditionalLoaAuthenticator implements ConditionalAuthenticator, Au
         authSession.setUserSessionNote(Constants.LOA_MAP, authSession.getAuthNote(Constants.LOA_MAP));
     }
 
+    /** 从认证器配置读取 LoA 级别。 */
     private Integer getConfiguredLoa(AuthenticationFlowContext context) {
        return LoAUtil.getLevelFromLoaConditionConfiguration(context.getAuthenticatorConfig());
     }
 
+    /** 从认证器配置读取 max-age。 */
     private int getMaxAge(AuthenticationFlowContext context) {
         return LoAUtil.getMaxAgeFromLoaConditionConfiguration(context.getAuthenticatorConfig());
     }
@@ -129,6 +143,7 @@ public class ConditionalLoaAuthenticator implements ConditionalAuthenticator, Au
     @Override
     public void action(AuthenticationFlowContext context) { }
 
+    /** @return 不需要已认证用户 */
     @Override
     public boolean requiresUser() {
         return false;

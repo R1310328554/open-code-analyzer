@@ -30,16 +30,25 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.services.x509.X509ClientCertificateLookup;
 import org.keycloak.utils.StringUtil;
 
+/**
+ * X.509 客户端证书认证器：通过双向 TLS 提供的客户端证书校验客户端身份。
+ * <p>匹配证书 Subject DN 与客户端配置，并可选校验 CA 证书链；支持 Open Banking Brasil 等自定义 OID 属性。</p>
+ */
 public class X509ClientAuthenticator extends AbstractClientAuthenticator {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "client-x509";
+    /** 客户端 X509 属性前缀。 */
     public static final String ATTR_PREFIX = "x509";
+    /** 客户端属性键：期望的证书 Subject DN。 */
     public static final String ATTR_SUBJECT_DN = ATTR_PREFIX + ".subjectdn";
+    /** 客户端属性键：签发 CA 的 Subject DN。 */
     public static final String ATTR_CA_SUBJECT_DN = ATTR_PREFIX + ".casubjectdn";
 
+    /** 客户端属性键：是否允许正则匹配 Subject DN（已弃用）。 */
     public static final String ATTR_ALLOW_REGEX_PATTERN_COMPARISON = ATTR_PREFIX + ".allow.regex.pattern.comparison";
 
-    // Custom OIDs defined in the OpenBanking Brasil - https://openbanking-brasil.github.io/specs-seguranca/open-banking-brasil-certificate-standards-1_ID1.html#name-client-certificate
+    // Open Banking Brasil 规范定义的自定义 OID（RFC1779/RFC2253 默认不识别） - https://openbanking-brasil.github.io/specs-seguranca/open-banking-brasil-certificate-standards-1_ID1.html#name-client-certificate
     // These are not recognized by default in RFC1779 or RFC2253 and hence not read in the java by default
     private static final Map<String, String> CUSTOM_OIDS = new HashMap<>();
     private static final Map<String, String> CUSTOM_OIDS_REVERSED = new HashMap<>();
@@ -50,17 +59,19 @@ public class X509ClientAuthenticator extends AbstractClientAuthenticator {
         CUSTOM_OIDS.put("1.3.6.1.4.1.311.60.2.1.3", "jurisdictionCountryName".toUpperCase());
         CUSTOM_OIDS.put("1.2.840.113549.1.9.1", "emailAddress".toUpperCase());
 
-        // Reverse map
+        // 反向映射：属性名 -> OID
         for (Map.Entry<String, String> entry : CUSTOM_OIDS.entrySet()) {
             CUSTOM_OIDS_REVERSED.put(entry.getValue(), entry.getKey());
         }
         CUSTOM_OIDS_REVERSED.put("E", "1.2.840.113549.1.9.1"); // Another synonym for "EMAILADDRESS"
     }
 
+    /** 使用自定义 OID 映射构造 {@link X500Principal}。 */
     public static X500Principal constructX500Principal(String subjectDN) {
         return new X500Principal(subjectDN, CUSTOM_OIDS_REVERSED);
     }
 
+    /** 从请求提取客户端证书，校验 Subject DN 与 CA 链后认证客户端。 */
     @Override
     public void authenticateClient(ClientAuthenticationFlowContext context) {
 
@@ -134,7 +145,7 @@ public class X509ClientAuthenticator extends AbstractClientAuthenticator {
             return;
         }
 
-        // Testing only 1st certificate in the chain to match with configured subject
+        // 仅校验证书链中第一张证书的 Subject DN
         X509Certificate certificate = certs[0];
         boolean matchedCertificate = checkSubjectDN(context, certificate, subjectDNRegexp, clientCfg.getAllowRegexPatternComparison());
 
@@ -155,15 +166,15 @@ public class X509ClientAuthenticator extends AbstractClientAuthenticator {
         // get the name of the CA to check
         String caSubjectDN = client.getAttribute(ATTR_CA_SUBJECT_DN);
         if (StringUtil.isBlank(caSubjectDN)) {
-            // TODO: enforce CA subject for keycloak 27.0
+            // TODO：Keycloak 27.0 将强制要求配置 CA Subject DN
             logger.warnf("[X509ClientCertificateAuthenticator:authenticate] option '%s' is null or empty, this configuration is deprecated, please configure it for better security for client '%s' in realm '%s'",
                     ATTR_CA_SUBJECT_DN, client.getClientId(), context.getRealm().getName());
-            // if the attribute is not present, return success for backwards compatibility
+            // 未配置 CA DN 时向后兼容直接成功
             context.success();
             return;
         }
 
-        // validate the certificate against the CA
+        // 校验证书链是否由受信 CA 签发
         X509Certificate ca = validateCertificateChain(context.getSession(), certs);
         if (ca == null) {
             logger.debugf("[X509ClientCertificateAuthenticator:authenticate] Cert '%s' is not trusted by keycloak.", certificate.getSubjectDN().getName());
@@ -171,7 +182,7 @@ public class X509ClientAuthenticator extends AbstractClientAuthenticator {
             return;
         }
 
-        // check the ca name matches one of the configured DNs
+        // 校验 CA Subject DN 是否与配置一致
         if (!checkSubjectDNExact(ca, caSubjectDN)) {
             if (logger.isDebugEnabled()) {
                 logger.debugf("[X509ClientCertificateAuthenticator:authenticate] Couldn't match CA certificate for expected Subject DNx %s with allow regex pattern '%s'.", caSubjectDN, clientCfg.getAllowRegexPatternComparison());
@@ -185,6 +196,7 @@ public class X509ClientAuthenticator extends AbstractClientAuthenticator {
         context.success();
     }
 
+    /** 按精确或正则方式匹配证书 Subject DN。 */
     private boolean checkSubjectDN(ClientAuthenticationFlowContext context, X509Certificate certificate, String subjectDN, boolean isRegExp){
         if (isRegExp) {
             return checkSubjectDNRegex(context, certificate, subjectDN);
@@ -204,14 +216,16 @@ public class X509ClientAuthenticator extends AbstractClientAuthenticator {
         return subjectDNPattern.matcher(subjectdn).matches();
     }
 
+    /** 按 RFC4514 格式精确比较 Subject DN（支持自定义 OID 展开）。 */
     private boolean checkSubjectDNExact(X509Certificate certificate, String subjectDN) {
-        // OIDC/OAuth2 does not use regex comparison as it expects exact DN given in the format according to RFC4514. See RFC8705 for the details.
+        // OIDC/OAuth2 要求 RFC4514 精确 DN 匹配，参见 RFC8705
         // We allow custom OIDs attributes to be "expanded" or not expanded in the given Subject DN
         X500Principal expectedDNPrincipal = constructX500Principal(subjectDN);
 
         return (expectedDNPrincipal.getName(X500Principal.RFC2253, CUSTOM_OIDS).equals(certificate.getSubjectX500Principal().getName(X500Principal.RFC2253, CUSTOM_OIDS)));
     }
 
+    /** 校验证书链信任与时戳，返回信任锚 CA 证书。 */
     private X509Certificate validateCertificateChain(KeycloakSession session, X509Certificate[] certs) {
         try {
             CertificateValidator validator = new CertificateValidator.CertificateValidatorBuilder()
@@ -255,6 +269,7 @@ public class X509ClientAuthenticator extends AbstractClientAuthenticator {
         return Collections.emptyMap();
     }
 
+    /** @return OIDC 协议下支持的认证方法（tls_client_auth） */
    @Override
     public Set<String> getProtocolAuthenticatorMethods(String loginProtocol) {
         if (loginProtocol.equals(OIDCLoginProtocol.LOGIN_PROTOCOL)) {

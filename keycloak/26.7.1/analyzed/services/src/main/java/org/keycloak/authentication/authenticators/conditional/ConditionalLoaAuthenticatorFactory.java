@@ -30,8 +30,13 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
+/**
+ * 条件 LoA 认证器工厂：注册 {@link ConditionalLoaAuthenticator}，需启用 {@link Profile.Feature#STEP_UP_AUTHENTICATION} 特性。
+ * <p>每次 create 返回新实例（非单例），因需持有 {@link KeycloakSession}。</p>
+ */
 public class ConditionalLoaAuthenticatorFactory implements ConditionalAuthenticatorFactory, AuthenticationFlowCallbackFactory, EnvironmentDependentProviderFactory {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "conditional-level-of-authentication";
     private static final AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = new AuthenticationExecutionModel.Requirement[]{
             AuthenticationExecutionModel.Requirement.REQUIRED,
@@ -54,6 +59,7 @@ public class ConditionalLoaAuthenticatorFactory implements ConditionalAuthentica
             .add()
             .build();
 
+    /** @return 绑定 session 的新 {@link ConditionalLoaAuthenticator} 实例 */
     @Override
     public Authenticator create(KeycloakSession session) {
         return new ConditionalLoaAuthenticator(session);
@@ -73,6 +79,7 @@ public class ConditionalLoaAuthenticatorFactory implements ConditionalAuthentica
         return PROVIDER_ID;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "Condition - Level of Authentication";
@@ -93,22 +100,26 @@ public class ConditionalLoaAuthenticatorFactory implements ConditionalAuthentica
         return false;
     }
 
+    /** @return 条件说明：请求 LoA 未满足时执行子流程并在成功后更新 LoA */
     @Override
     public String getHelpText() {
         return "Flow is executed only if the configured LOA or a higher one has been requested but not yet satisfied. After the flow is successfully finished, the LOA in the session will be updated to value prescribed by this condition.";
     }
 
+    /** @return LoA 级别与 max-age 配置项 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return CONFIG;
     }
 
+    /** @return 不使用单例，实例由 {@link #create} 创建 */
     @Override
     public ConditionalAuthenticator getSingleton() {
-        // NOP - instance created in create() method
+        // 无单例，由 create() 创建实例
         return null;
     }
 
+    /** @return 是否启用 STEP_UP_AUTHENTICATION 特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.STEP_UP_AUTHENTICATION);

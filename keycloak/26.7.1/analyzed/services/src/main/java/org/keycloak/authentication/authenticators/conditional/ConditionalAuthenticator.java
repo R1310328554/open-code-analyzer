@@ -23,13 +23,25 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
+/**
+ * 条件认证器接口：在认证流程中评估是否满足特定条件以决定是否执行子流程。
+ * <p>不调用 {@link #authenticate}，由流程引擎调用 {@link #matchCondition} 判定分支。</p>
+ */
 public interface ConditionalAuthenticator extends Authenticator {
+    /**
+     * 评估当前认证上下文是否满足配置条件。
+     *
+     * @param context 认证流程上下文
+     * @return 条件为真时执行子流程
+     */
     boolean matchCondition(AuthenticationFlowContext context);
 
+    /** 条件认证器不执行 authenticate，由 matchCondition 驱动分支。 */
     default void authenticate(AuthenticationFlowContext context) {
-        // authenticate is not called for ConditionalAuthenticators
+        // 条件认证器不会调用 authenticate
     }
 
+    /** @return 默认对所有用户返回 true */
     default boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }

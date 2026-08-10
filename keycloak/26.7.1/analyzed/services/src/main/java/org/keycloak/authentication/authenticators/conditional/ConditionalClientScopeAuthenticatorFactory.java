@@ -28,12 +28,16 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
+ * 条件 client scope 认证器工厂：注册 {@link ConditionalClientScopeAuthenticator}。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ConditionalClientScopeAuthenticatorFactory implements ConditionalAuthenticatorFactory {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "conditional-client-scope";
+    /** 配置键：要检查的 client scope 名称。 */
     public static final String CLIENT_SCOPE = "client_scope";
+    /** 配置键：是否对检查结果取反。 */
     public static final String CONF_NEGATE = "negate";
 
     @Override
@@ -56,6 +60,7 @@ public class ConditionalClientScopeAuthenticatorFactory implements ConditionalAu
         return PROVIDER_ID;
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "Condition - client scope";
@@ -76,11 +81,13 @@ public class ConditionalClientScopeAuthenticatorFactory implements ConditionalAu
         return false;
     }
 
+    /** @return 条件说明：检查 client scope 是否存在于认证请求中 */
     @Override
     public String getHelpText() {
         return "Condition to evaluate if a configured client scope is present as a client scope of the client requesting authentication";
     }
 
+    /** @return client scope 名称与 negate 配置项 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return ProviderConfigurationBuilder.create()
@@ -103,6 +110,7 @@ public class ConditionalClientScopeAuthenticatorFactory implements ConditionalAu
                 .build();
     }
 
+    /** @return {@link ConditionalClientScopeAuthenticator} 单例 */
     @Override
     public ConditionalAuthenticator getSingleton() {
         return ConditionalClientScopeAuthenticator.SINGLETON;
