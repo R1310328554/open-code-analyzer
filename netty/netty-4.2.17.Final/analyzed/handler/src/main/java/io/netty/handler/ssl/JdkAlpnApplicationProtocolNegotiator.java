@@ -23,14 +23,18 @@ import javax.net.ssl.SSLEngine;
 /**
  * The {@link JdkApplicationProtocolNegotiator} to use if you need ALPN and are using {@link SslProvider#JDK}.
  *
+ * <p>JDK 提供程序下的 ALPN 协商器：按运行时能力选用 Conscrypt、BouncyCastle 或 JdkAlpnSslEngine。</p>
+ *
  * @deprecated use {@link ApplicationProtocolConfig}.
  */
 @Deprecated
 public final class JdkAlpnApplicationProtocolNegotiator extends JdkBaseApplicationProtocolNegotiator {
+    /** 当前 JVM 是否具备任一 ALPN 实现路径。 */
     private static final boolean AVAILABLE = Conscrypt.isAvailable() ||
                                              JdkAlpnSslUtils.supportsAlpn() ||
             (BouncyCastleUtil.isBcTlsAvailable() && BouncyCastleAlpnSslUtils.isAlpnSupported());
 
+    /** 可用时用 AlpnWrapper 包装引擎，否则 FailureWrapper 在 wrap 时抛错。 */
     private static final SslEngineWrapperFactory ALPN_WRAPPER = AVAILABLE ? new AlpnWrapper() : new FailureWrapper();
 
     /**
@@ -115,6 +119,7 @@ public final class JdkAlpnApplicationProtocolNegotiator extends JdkBaseApplicati
         super(ALPN_WRAPPER, selectorFactory, listenerFactory, protocols);
     }
 
+    /** ALPN 不可用时包装失败，提示添加 Conscrypt 或升级 JDK。 */
     private static final class FailureWrapper extends AllocatorAwareSslEngineWrapperFactory {
         @Override
         public SSLEngine wrapSslEngine(SSLEngine engine, ByteBufAllocator alloc,
@@ -124,6 +129,7 @@ public final class JdkAlpnApplicationProtocolNegotiator extends JdkBaseApplicati
         }
     }
 
+    /** 按引擎类型选择 Conscrypt、BC 或 JDK ALPN 包装实现。 */
     private static final class AlpnWrapper extends AllocatorAwareSslEngineWrapperFactory {
         @Override
         public SSLEngine wrapSslEngine(SSLEngine engine, ByteBufAllocator alloc,
@@ -135,6 +141,7 @@ public final class JdkAlpnApplicationProtocolNegotiator extends JdkBaseApplicati
             if (BouncyCastleUtil.isBcJsseInUse(engine) && BouncyCastleAlpnSslUtils.isAlpnSupported()) {
                 return new BouncyCastleAlpnSslEngine(engine, applicationNegotiator, isServer);
             }
+            // Java 8u251+ 已 backport ALPN，故用方法存在性检测而非版本号
             // ALPN support was recently backported to Java8 as
             // https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8230977.
             // Because of this lets not do a Java version runtime check but just depend on if the required methods are
@@ -147,6 +154,7 @@ public final class JdkAlpnApplicationProtocolNegotiator extends JdkBaseApplicati
         }
     }
 
+    /** 供外部查询 JDK 路径 ALPN 是否可用。 */
     static boolean isAlpnSupported() {
         return AVAILABLE;
     }

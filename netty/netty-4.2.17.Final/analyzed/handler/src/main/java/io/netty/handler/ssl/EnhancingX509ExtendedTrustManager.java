@@ -36,17 +36,22 @@ import javax.security.auth.x500.X500Principal;
 /**
  * Wraps an existing {@link X509ExtendedTrustManager} and enhances the {@link CertificateException} that is thrown
  * because of hostname validation.
+ *
+ * <p>包装 {@link X509ExtendedTrustManager}，在主机名校验失败时附加 SNI、peerHost 与 SAN/CN 详情，便于排查。</p>
  */
 final class EnhancingX509ExtendedTrustManager extends X509ExtendedTrustManager {
 
-    // Constants for subject alt names of type DNS and IP. See X509Certificate#getSubjectAlternativeNames() javadocs.
+    // X509 SAN 类型常量：DNS(2)、URI(6)、IP(7)，见 getSubjectAlternativeNames()
     static final int ALTNAME_DNS = 2;
     static final int ALTNAME_URI = 6;
     static final int ALTNAME_IP = 7;
+    /** SAN 列表格式化分隔符。 */
     private static final String SEPARATOR = ", ";
 
+    /** 被装饰的扩展信任管理器。 */
     private final X509ExtendedTrustManager wrapped;
 
+    /** 包内构造：要求 wrapped 实际为 X509ExtendedTrustManager。 */
     EnhancingX509ExtendedTrustManager(X509TrustManager wrapped) {
         this.wrapped = (X509ExtendedTrustManager) wrapped;
     }
@@ -107,13 +112,13 @@ final class EnhancingX509ExtendedTrustManager extends X509ExtendedTrustManager {
 
     private static void throwEnhancedCertificateException(CertificateException e, X509Certificate[] chain,
                                                           SSLSession session) throws CertificateException {
-        // Matching the message is the best we can do sadly.
+        // 仅能根据 JDK HostnameChecker 固定英文消息前缀识别主机名失败
         String message = e.getMessage();
         if (message != null &&
                 (message.startsWith("No subject alternative") || message.startsWith("No name matching"))) {
             StringBuilder sb = new StringBuilder(128);
             sb.append(message);
-            // Some exception messages from sun.security.util.HostnameChecker may end with a dot that we don't need
+            // 去掉消息末尾多余句点
             if (message.charAt(message.length() - 1) == '.') {
                 sb.setLength(sb.length() - 1);
             }
@@ -134,12 +139,13 @@ final class EnhancingX509ExtendedTrustManager extends X509ExtendedTrustManager {
                             continue;
                         }
                         final int nameType = ((Integer) altNames.get(0)).intValue();
+                        // 格式化输出 DNS/IP/URI 类型 SAN
                         if (nameType == ALTNAME_DNS) {
                             sb.append("DNS");
                         } else if (nameType == ALTNAME_IP) {
                             sb.append("IP");
                         } else if (nameType == ALTNAME_URI) {
-                            // URI names are common in some environments with gRPC services that use SPIFFEs.
+                            // gRPC/SPIFFE 环境常见 URI SAN，虽不参与主机名匹配但有助于调试
                             // Though the hostname matcher won't be looking at them, having them there can help
                             // debugging cases where hostname verification was enabled when it shouldn't be.
                             sb.append("URI");
@@ -150,7 +156,7 @@ final class EnhancingX509ExtendedTrustManager extends X509ExtendedTrustManager {
                         hasNames = true;
                     }
                     if (hasNames) {
-                        // Strip of the last separator
+                        // 去掉 SAN 列表末尾分隔符
                         sb.setLength(sb.length() - SEPARATOR.length());
                     }
                 }
@@ -177,7 +183,7 @@ final class EnhancingX509ExtendedTrustManager extends X509ExtendedTrustManager {
 
     private static String getCommonName(X509Certificate cert) {
         try {
-            // 1. Get the X500Principal (better than getSubjectDN which is implementation dependent and deprecated)
+            // 解析 X500Principal 提取 CN，避免依赖已弃用 getSubjectDN
             X500Principal principal = cert.getSubjectX500Principal();
             // 2. Parse the DN using LdapName
             LdapName ldapName = new LdapName(principal.getName());

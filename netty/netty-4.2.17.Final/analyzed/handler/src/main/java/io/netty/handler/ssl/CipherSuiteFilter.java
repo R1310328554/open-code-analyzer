@@ -21,6 +21,8 @@ import java.util.Set;
 
 /**
  * Provides a means to filter the supplied cipher suite based upon the supported and default cipher suites.
+ *
+ * <p>根据当前 {@link SSLEngine} 支持的套件与 Netty 推荐默认套件，过滤用户配置的密码套件列表。</p>
  */
 public interface CipherSuiteFilter {
     /**
@@ -29,6 +31,8 @@ public interface CipherSuiteFilter {
      * @param defaultCiphers The default recommended ciphers for the current {@link SSLEngine} as determined by Netty
      * @param supportedCiphers The supported ciphers for the current {@link SSLEngine}
      * @return The filter list of ciphers. Must not return {@code null}.
+     *
+     * <p>按引擎能力与 Netty 策略筛选密码套件；{@code ciphers} 为 null 时实现类决定回退到默认或支持列表。</p>
      */
     String[] filterCipherSuites(Iterable<String> ciphers, List<String> defaultCiphers, Set<String> supportedCiphers);
 }

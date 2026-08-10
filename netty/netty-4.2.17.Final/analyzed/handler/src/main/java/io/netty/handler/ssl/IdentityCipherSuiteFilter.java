@@ -23,20 +23,27 @@ import java.util.Set;
 
 /**
  * This class will not do any filtering of ciphers suites.
+ *
+ * <p>恒等过滤器：不校验 supported 集合，仅处理 null 回退与 null 元素截断。</p>
  */
 public final class IdentityCipherSuiteFilter implements CipherSuiteFilter {
 
     /**
      * Defaults to default ciphers when provided ciphers are null
+     *
+     * <p>{@code ciphers} 为 null 时使用 Netty 默认推荐列表。</p>
      */
     public static final IdentityCipherSuiteFilter INSTANCE = new IdentityCipherSuiteFilter(true);
 
     /**
      * Defaults to supported ciphers when provided ciphers are null
+     *
+     * <p>{@code ciphers} 为 null 时使用引擎支持的全部套件。</p>
      */
     public static final IdentityCipherSuiteFilter INSTANCE_DEFAULTING_TO_SUPPORTED_CIPHERS =
             new IdentityCipherSuiteFilter(false);
 
+    /** true 时 null 回退 defaultCiphers，否则回退 supportedCiphers。 */
     private final boolean defaultToDefaultCiphers;
 
     private IdentityCipherSuiteFilter(boolean defaultToDefaultCiphers) {
@@ -44,6 +51,7 @@ public final class IdentityCipherSuiteFilter implements CipherSuiteFilter {
     }
 
     @Override
+    /** 按配置回退或原样复制迭代器中的套件名（遇 null 停止）。 */
     public String[] filterCipherSuites(Iterable<String> ciphers, List<String> defaultCiphers,
             Set<String> supportedCiphers) {
         if (ciphers == null) {

@@ -26,14 +26,20 @@ import io.netty.util.ResourceLeakTracker;
  * Default implementation of {@link OpenSslCredential}.
  *
  * <p>This class manages the lifecycle of a native BoringSSL {@code SSL_CREDENTIAL} object.
+ *
+ * <p>{@link OpenSslCredential} 的默认实现，以引用计数管理原生 BoringSSL {@code SSL_CREDENTIAL} 生命周期。</p>
  */
 final class DefaultOpenSslCredential extends AbstractReferenceCounted implements OpenSslCredentialPointer {
 
+    /** 泄漏检测器，便于排查未 release 的凭证对象。 */
     private static final ResourceLeakDetector<DefaultOpenSslCredential> leakDetector =
             ResourceLeakDetectorFactory.instance().newResourceLeakDetector(DefaultOpenSslCredential.class);
 
+    /** 跟踪本实例的泄漏记录器。 */
     private final ResourceLeakTracker<DefaultOpenSslCredential> leak;
+    /** 凭证类型（证书、私钥等）。 */
     private final CredentialType type;
+    /** 原生 SSL_CREDENTIAL 指针；release 后归零。 */
     private long credential;
 
     /**
@@ -41,6 +47,8 @@ final class DefaultOpenSslCredential extends AbstractReferenceCounted implements
      *
      * @param credential the native SSL_CREDENTIAL pointer
      * @param type the credential type
+     *
+     * <p>包内构造：绑定原生指针与类型并注册泄漏跟踪。</p>
      */
     DefaultOpenSslCredential(long credential, CredentialType type) {
         this.credential = credential;
@@ -49,6 +57,7 @@ final class DefaultOpenSslCredential extends AbstractReferenceCounted implements
     }
 
     @Override
+    /** 返回原生凭证地址；引用计数为 0 时抛异常。 */
     public long credentialAddress() {
         if (refCnt() <= 0) {
             throw new IllegalReferenceCountException();
@@ -57,11 +66,13 @@ final class DefaultOpenSslCredential extends AbstractReferenceCounted implements
     }
 
     @Override
+    /** 返回凭证类型枚举。 */
     public CredentialType type() {
         return type;
     }
 
     @Override
+    /** 引用计数归零时释放原生 SSL_CREDENTIAL 并关闭泄漏跟踪。 */
     protected void deallocate() {
         try {
             SSLCredential.free(credential);

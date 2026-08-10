@@ -23,15 +23,20 @@ import javax.net.ssl.SSLEngine;
 
 /**
  * Contains methods that can be used to detect if conscrypt is usable.
+ *
+ * <p>通过反射检测 Google Conscrypt 是否可用，避免在 JDK6+ 运行时加载 JDK8+ 专用类。</p>
  */
 final class Conscrypt {
+    // 独立工具类：延迟加载 Conscrypt，保持 JDK6+ 字节码兼容。
     // This class exists to avoid loading other conscrypt related classes using features only available in JDK8+,
     // because we need to maintain JDK6+ runtime compatibility.
+    /** 反射得到的 {@code Conscrypt.isConscrypt(SSLEngine)} 方法；不可用时为 null。 */
     private static final Method IS_CONSCRYPT_SSLENGINE;
 
     static {
         Method isConscryptSSLEngine = null;
 
+        // Java 15+ 上 Conscrypt 集成方式不同，Android 仍尝试加载
         // Only works on Java14 and earlier for now
         // See https://github.com/google/conscrypt/issues/838
         if (PlatformDependent.javaVersion() < 15 || PlatformDependent.isAndroid()) {
@@ -44,7 +49,7 @@ final class Conscrypt {
                         PlatformDependent.getClassLoader(ConscryptAlpnSslEngine.class));
                 isConscryptSSLEngine = conscryptClass.getMethod("isConscrypt", SSLEngine.class);
             } catch (Throwable ignore) {
-                // ignore
+                // Conscrypt 不在 classpath 或初始化失败时静默忽略
             }
         }
         IS_CONSCRYPT_SSLENGINE = isConscryptSSLEngine;
@@ -52,6 +57,8 @@ final class Conscrypt {
 
     /**
      * Indicates whether or not conscrypt is available on the current system.
+     *
+     * <p>classpath 中 Conscrypt 已成功加载且反射方法可用时返回 true。</p>
      */
     static boolean isAvailable() {
         return IS_CONSCRYPT_SSLENGINE != null;
@@ -59,6 +66,8 @@ final class Conscrypt {
 
     /**
      * Returns {@code true} if the passed in {@link SSLEngine} is handled by Conscrypt, {@code false} otherwise.
+     *
+     * <p>判断给定引擎是否由 Conscrypt 提供实现（用于 ALPN 等扩展路径选择）。</p>
      */
     static boolean isEngineSupported(SSLEngine engine) {
         try {

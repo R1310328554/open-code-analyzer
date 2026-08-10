@@ -19,20 +19,28 @@ package io.netty.handler.ssl;
 /**
  * Indicates the state of the {@link javax.net.ssl.SSLEngine} with respect to client authentication.
  * This configuration item really only applies when building the server-side {@link SslContext}.
+ *
+ * <p>服务端 {@link SslContext} 构建时指定是否要求客户端证书（双向 TLS）。</p>
  */
 public enum ClientAuth {
     /**
      * Indicates that the {@link javax.net.ssl.SSLEngine} will not request client authentication.
+     *
+     * <p>不要求客户端证书。</p>
      */
     NONE,
 
     /**
      * Indicates that the {@link javax.net.ssl.SSLEngine} will request client authentication.
+     *
+     * <p>请求客户端证书，但客户端可不提供。</p>
      */
     OPTIONAL,
 
     /**
      * Indicates that the {@link javax.net.ssl.SSLEngine} will *require* client authentication.
+     *
+     * <p>强制要求客户端证书，否则握手失败。</p>
      */
     REQUIRE
 }

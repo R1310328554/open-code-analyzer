@@ -33,11 +33,14 @@ import static java.util.Collections.singletonMap;
 /**
  * Converts a Java cipher suite string to an OpenSSL cipher suite string and vice versa.
  *
+ * <p>在 Java 命名（{@code TLS_xxx_WITH_yyy}）与 OpenSSL 命名（{@code DHE-RSA-AES128-SHA}）之间双向转换，供 {@link OpenSsl} 配置密码套件时使用；结果带并发缓存。</p>
+ *
  * @see <a href="https://en.wikipedia.org/wiki/Cipher_suite">Wikipedia page about cipher suite</a>
  */
 @UnstableApi
 public final class CipherSuiteConverter {
 
+    /** 记录 Java/OpenSSL 套件映射的调试日志。 */
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(CipherSuiteConverter.class);
 
     /**
@@ -52,6 +55,8 @@ public final class CipherSuiteConverter {
      *
      * 1) A is always TLS or SSL, and
      * 2) D is always a single word.
+     *
+     * <p>Java 套件正则：{@code TLS|SSL}_握手算法_WITH_批量加密_HMAC}。</p>
      */
     private static final Pattern JAVA_CIPHERSUITE_PATTERN =
             Pattern.compile("^(?:TLS|SSL)_((?:(?!_WITH_).)+)_WITH_(.*)_(.*)$");
@@ -67,6 +72,8 @@ public final class CipherSuiteConverter {
      *
      * 1) A has some deterministic pattern as shown below, and
      * 2) C is always a single word
+     *
+     * <p>OpenSSL 套件正则：可选握手段 + 批量加密 + HMAC，支持 EXP 导出级套件。</p>
      */
     private static final Pattern OPENSSL_CIPHERSUITE_PATTERN =
             // Be very careful not to break the indentation while editing.
@@ -82,6 +89,7 @@ public final class CipherSuiteConverter {
                     ")-)?" +  // END handshake algorithm
                     "(.*)-(.*)$");
 
+    /** Java AES CBC 命名片段匹配。 */
     private static final Pattern JAVA_AES_CBC_PATTERN = Pattern.compile("^(AES)_([0-9]+)_CBC$");
     private static final Pattern JAVA_AES_PATTERN = Pattern.compile("^(AES)_([0-9]+)_(.*)$");
     private static final Pattern OPENSSL_AES_CBC_PATTERN = Pattern.compile("^(AES)([0-9]+)$");
@@ -89,11 +97,14 @@ public final class CipherSuiteConverter {
 
     /**
      * Used to store nullable values in a CHM
+     *
+     * <p>ConcurrentHashMap 不能存 null，用哨兵对象表示“转换失败”。</p>
      */
     private static final class CachedValue {
 
         private static final CachedValue NULL = new CachedValue(null);
 
+        /** 非 null 包装为实例，null 返回单例 NULL 哨兵。 */
         static CachedValue of(String value) {
             return value != null ? new CachedValue(value) : NULL;
         }
@@ -107,6 +118,8 @@ public final class CipherSuiteConverter {
     /**
      * Java-to-OpenSSL cipher suite conversion map
      * Note that the Java cipher suite has the protocol prefix (TLS_, SSL_)
+     *
+     * <p>Java → OpenSSL 正向缓存（键含 TLS_/SSL_ 前缀）。</p>
      */
     private static final ConcurrentMap<String, CachedValue> j2o = new ConcurrentHashMap<>();
 
@@ -114,12 +127,16 @@ public final class CipherSuiteConverter {
      * OpenSSL-to-Java cipher suite conversion map.
      * Note that one OpenSSL cipher suite can be converted to more than one Java cipher suites because
      * a Java cipher suite has the protocol name prefix (TLS_, SSL_)
+     *
+     * <p>OpenSSL → Java 反向缓存；一对多因同一 OpenSSL 名可对应 TLS_ 与 SSL_ 前缀。</p>
      */
     private static final ConcurrentMap<String, Map<String, String>> o2j = new ConcurrentHashMap<>();
 
+    /** TLS 1.3 固定映射表（Java 名 → OpenSSL/BoringSSL 名）。 */
     private static final Map<String, String> j2oTls13;
     private static final Map<String, Map<String, String>> o2jTls13;
 
+    /** 静态初始化 TLS 1.3 双向硬编码映射（AEAD 套件命名与 1.2 不同）。 */
     static {
         Map<String, String> j2oTls13Map = new HashMap<String, String>();
         j2oTls13Map.put("TLS_AES_128_GCM_SHA256", "AEAD-AES128-GCM-SHA256");
@@ -139,6 +156,8 @@ public final class CipherSuiteConverter {
 
     /**
      * Clears the cache for testing purpose.
+     *
+     * <p>测试用：清空运行时转换缓存。</p>
      */
     static void clearCache() {
         j2o.clear();
@@ -169,6 +188,8 @@ public final class CipherSuiteConverter {
      * Converts the specified Java cipher suite to its corresponding OpenSSL cipher suite name.
      *
      * @return {@code null} if the conversion has failed
+     *
+     * <p>将 Java 套件名转为 OpenSSL 字符串；BoringSSL 对 TLS 1.3 使用 AEAD- 前缀名。</p>
      */
     public static String toOpenSsl(String javaCipherSuite, boolean boringSSL) {
         CachedValue converted = j2o.get(javaCipherSuite);
@@ -186,14 +207,14 @@ public final class CipherSuiteConverter {
 
         String openSslCipherSuite = toOpenSslUncached(javaCipherSuite, boringSSL);
 
-        // Cache the mapping.
+        // 写入 j2o 缓存，避免重复正则解析
         j2o.putIfAbsent(javaCipherSuite, CachedValue.of(openSslCipherSuite));
 
         if (openSslCipherSuite == null) {
             return null;
         }
 
-        // Cache the reverse mapping after stripping the protocol prefix (TLS_ or SSL_)
+        // 同步填充 o2j：OpenSSL 名 → 无协议前缀 / SSL_ / TLS_ 三种 Java 形式
         final String javaCipherSuiteSuffix = javaCipherSuite.substring(4);
         Map<String, String> p2j = new HashMap<String, String>(4);
         p2j.put("", javaCipherSuiteSuffix);
@@ -217,11 +238,13 @@ public final class CipherSuiteConverter {
             return null;
         }
 
+        // 解析握手算法、批量加密与 MAC 并拼接为 OpenSSL 格式
         String handshakeAlgo = toOpenSslHandshakeAlgo(m.group(1));
         String bulkCipher = toOpenSslBulkCipher(m.group(2));
         String hmacAlgo = toOpenSslHmacAlgo(m.group(3));
         if (handshakeAlgo.isEmpty()) {
             return bulkCipher + '-' + hmacAlgo;
+        // CHACHA20-POLY1305 为 AEAD，OpenSSL 名中省略独立 HMAC 段
         } else if (bulkCipher.contains("CHACHA20")) {
             return handshakeAlgo + '-' + bulkCipher;
         } else {
@@ -230,11 +253,13 @@ public final class CipherSuiteConverter {
     }
 
     private static String toOpenSslHandshakeAlgo(String handshakeAlgo) {
+        // 处理 _EXPORT 导出级套件前缀
         final boolean export = handshakeAlgo.endsWith("_EXPORT");
         if (export) {
             handshakeAlgo = handshakeAlgo.substring(0, handshakeAlgo.length() - 7);
         }
 
+        // 纯 RSA 密钥交换在 OpenSSL 中省略握手段
         if ("RSA".equals(handshakeAlgo)) {
             handshakeAlgo = "";
         } else if (handshakeAlgo.endsWith("_anon")) {
@@ -285,7 +310,7 @@ public final class CipherSuiteConverter {
     }
 
     private static String toOpenSslHmacAlgo(String hmacAlgo) {
-        // Java and OpenSSL use the same algorithm names for:
+        // SHA/SHA256/MD5 等 HMAC 名在两侧一致，直接返回
         //
         //   * SHA
         //   * SHA256
@@ -299,12 +324,14 @@ public final class CipherSuiteConverter {
      * @param openSslCipherSuite An OpenSSL cipher suite name.
      * @param protocol The cryptographic protocol (i.e. SSL, TLS, ...).
      * @return The translated cipher suite name according to java conventions (or null if translation was not possible).
+     *
+     * <p>OpenSSL 名 + 协议前缀（TLS/SSL/空）转为 Java 套件名。</p>
      */
     public static String toJava(String openSslCipherSuite, String protocol) {
         Map<String, String> p2j = o2j.get(openSslCipherSuite);
         if (p2j == null) {
             p2j = cacheFromOpenSsl(openSslCipherSuite);
-            // This may happen if this method is queried when OpenSSL doesn't yet have a cipher setup. It will return
+            // OpenSSL 尚未就绪时可能查不到映射，返回 (NONE) 等占位
             // "(NONE)" in this case.
             if (p2j == null) {
                 return null;
@@ -392,7 +419,7 @@ public final class CipherSuiteConverter {
         String hmacAlgo = toJavaHmacAlgo(m.group(3));
 
         String javaCipherSuite = handshakeAlgo + "_WITH_" + bulkCipher + '_' + hmacAlgo;
-        // For historical reasons the CHACHA20 ciphers do not follow OpenSSL's custom naming convention and omits the
+        // CHACHA20 历史命名不含 HMAC 段，Java 侧统一补 _SHA256
         // HMAC algorithm portion of the name. There is currently no way to derive this information because it is
         // omitted from the OpenSSL cipher name, but they currently all use SHA256 for HMAC [1].
         // [1] https://www.openssl.org/docs/man1.1.0/apps/ciphers.html
@@ -402,6 +429,7 @@ public final class CipherSuiteConverter {
     private static String toJavaHandshakeAlgo(String handshakeAlgo, boolean export) {
         if (handshakeAlgo.isEmpty()) {
             handshakeAlgo = "RSA";
+        // OpenSSL ADH/AECDH 对应 Java DH_anon / ECDH_anon
         } else if ("ADH".equals(handshakeAlgo)) {
             handshakeAlgo = "DH_anon";
         } else if ("AECDH".equals(handshakeAlgo)) {
@@ -475,6 +503,8 @@ public final class CipherSuiteConverter {
      * depending on if its a TLSv1.3 cipher or not. If this methods returns without throwing an exception its
      * guaranteed that at least one of the {@link StringBuilder}s contain some ciphers that can be used to configure
      * OpenSSL.
+     *
+     * <p>批量转换 Iterable 套件：TLS 1.3 写入 cipherTLSv13Builder，其余写入 cipherBuilder，冒号分隔且校验 {@link OpenSsl#isCipherSuiteAvailable}。</p>
      */
     static void convertToCipherStrings(Iterable<String> cipherSuites, StringBuilder cipherBuilder,
                                        StringBuilder cipherTLSv13Builder, boolean boringSSL) {
@@ -484,6 +514,7 @@ public final class CipherSuiteConverter {
             }
 
             String converted = toOpenSsl(c, boringSSL);
+            // 无法转换时保留原名，由 OpenSSL 侧解析
             if (converted == null) {
                 converted = c;
             }
@@ -501,9 +532,11 @@ public final class CipherSuiteConverter {
             }
         }
 
+        // 两个 builder 均为空说明无可用套件
         if (cipherBuilder.length() == 0 && cipherTLSv13Builder.length() == 0) {
             throw new IllegalArgumentException("empty cipher suites");
         }
+        // 去掉末尾多余的分隔冒号
         if (cipherBuilder.length() > 0) {
             cipherBuilder.setLength(cipherBuilder.length() - 1);
         }
@@ -512,5 +545,6 @@ public final class CipherSuiteConverter {
         }
     }
 
+    /** 工具类，禁止实例化。 */
     private CipherSuiteConverter() { }
 }

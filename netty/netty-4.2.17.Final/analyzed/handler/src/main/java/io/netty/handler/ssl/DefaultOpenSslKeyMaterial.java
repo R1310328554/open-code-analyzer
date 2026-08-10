@@ -24,15 +24,24 @@ import io.netty.util.ResourceLeakTracker;
 
 import java.security.cert.X509Certificate;
 
+/**
+ * {@link OpenSslKeyMaterial} 默认实现：持有原生证书链与私钥指针，引用计数管理释放。
+ */
 final class DefaultOpenSslKeyMaterial extends AbstractReferenceCounted implements OpenSslKeyMaterial {
 
+    /** 检测未正确 release 的密钥材料泄漏。 */
     private static final ResourceLeakDetector<DefaultOpenSslKeyMaterial> leakDetector =
             ResourceLeakDetectorFactory.instance().newResourceLeakDetector(DefaultOpenSslKeyMaterial.class);
+    /** 本实例的泄漏跟踪句柄。 */
     private final ResourceLeakTracker<DefaultOpenSslKeyMaterial> leak;
+    /** Java 侧证书链副本，供 {@link #certificateChain()} 返回克隆。 */
     private final X509Certificate[] x509CertificateChain;
+    /** OpenSSL 原生 X509 证书链指针。 */
     private long chain;
+    /** OpenSSL 原生 EVP_PKEY 私钥指针。 */
     private long privateKey;
 
+    /** 包内构造：绑定原生链/私钥与 Java 证书数组。 */
     DefaultOpenSslKeyMaterial(long chain, long privateKey, X509Certificate[] x509CertificateChain) {
         this.chain = chain;
         this.privateKey = privateKey;
@@ -41,11 +50,13 @@ final class DefaultOpenSslKeyMaterial extends AbstractReferenceCounted implement
     }
 
     @Override
+    /** 返回证书链的防御性克隆。 */
     public X509Certificate[] certificateChain() {
         return x509CertificateChain.clone();
     }
 
     @Override
+    /** 返回原生证书链地址；引用计数耗尽时抛异常。 */
     public long certificateChainAddress() {
         if (refCnt() <= 0) {
             throw new IllegalReferenceCountException();
@@ -54,6 +65,7 @@ final class DefaultOpenSslKeyMaterial extends AbstractReferenceCounted implement
     }
 
     @Override
+    /** 返回原生私钥地址。 */
     public long privateKeyAddress() {
         if (refCnt() <= 0) {
             throw new IllegalReferenceCountException();
@@ -62,6 +74,7 @@ final class DefaultOpenSslKeyMaterial extends AbstractReferenceCounted implement
     }
 
     @Override
+    /** 释放原生证书链与私钥并关闭泄漏跟踪。 */
     protected void deallocate() {
         SSL.freeX509Chain(chain);
         chain = 0;

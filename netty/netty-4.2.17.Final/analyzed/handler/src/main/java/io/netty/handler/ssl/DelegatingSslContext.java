@@ -25,11 +25,15 @@ import java.util.concurrent.Executor;
 
 /**
  * Adapter class which allows to wrap another {@link SslContext} and init {@link SSLEngine} instances.
+ *
+ * <p>包装已有 {@link SslContext}，在创建 {@link SSLEngine}/{@link SslHandler} 后注入自定义初始化逻辑。</p>
  */
 public abstract class DelegatingSslContext extends SslContext {
 
+    /** 被委托的底层 SslContext。 */
     private final SslContext ctx;
 
+    /** 子类构造：保存非 null 的底层上下文。 */
     protected DelegatingSslContext(SslContext ctx) {
         this.ctx = ObjectUtil.checkNotNull(ctx, "ctx");
     }
@@ -60,6 +64,7 @@ public abstract class DelegatingSslContext extends SslContext {
     }
 
     @Override
+    /** 创建引擎并调用 {@link #initEngine} 做子类扩展。 */
     public final SSLEngine newEngine(ByteBufAllocator alloc) {
         SSLEngine engine = ctx.newEngine(alloc);
         initEngine(engine);
@@ -67,6 +72,7 @@ public abstract class DelegatingSslContext extends SslContext {
     }
 
     @Override
+    /** 带对端主机/端口的引擎创建，同样经 initEngine 初始化。 */
     public final SSLEngine newEngine(ByteBufAllocator alloc, String peerHost, int peerPort) {
         SSLEngine engine = ctx.newEngine(alloc, peerHost, peerPort);
         initEngine(engine);
@@ -74,6 +80,7 @@ public abstract class DelegatingSslContext extends SslContext {
     }
 
     @Override
+    /** 创建 SslHandler 并调用 {@link #initHandler}。 */
     protected final SslHandler newHandler(ByteBufAllocator alloc, boolean startTls) {
         SslHandler handler = ctx.newHandler(alloc, startTls);
         initHandler(handler);
@@ -109,12 +116,16 @@ public abstract class DelegatingSslContext extends SslContext {
 
     /**
      * Init the {@link SSLEngine}.
+     *
+     * <p>子类实现：在引擎创建后设置 ALPN、密码套件等扩展属性。</p>
      */
     protected abstract void initEngine(SSLEngine engine);
 
     /**
      * Init the {@link SslHandler}. This will by default call {@link #initEngine(SSLEngine)}, sub-classes may override
      * this.
+     *
+     * <p>默认委托 {@link #initEngine}；子类可覆盖以同时配置 Handler 级属性。</p>
      */
     protected void initHandler(SslHandler handler) {
         initEngine(handler.engine());

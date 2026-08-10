@@ -40,16 +40,21 @@ import org.conscrypt.HandshakeListener;
 
 /**
  * A {@link JdkSslEngine} that uses the Conscrypt provider or SSL with ALPN.
+ *
+ * <p>基于 Conscrypt 的 {@link JdkSslEngine} 子类，集成 ALPN 协议协商与 Netty {@link ByteBufAllocator} 缓冲适配。</p>
  */
 abstract class ConscryptAlpnSslEngine extends JdkSslEngine {
+    /** 是否让 Conscrypt 通过 Netty 分配器申请直接缓冲（默认 true，权衡内存与 JNI 性能）。 */
     private static final boolean USE_BUFFER_ALLOCATOR = SystemPropertyUtil.getBoolean(
             "io.netty.handler.ssl.conscrypt.useBufferAllocator", true);
 
+    /** 工厂：创建客户端 ALPN 引擎。 */
     static ConscryptAlpnSslEngine newClientEngine(SSLEngine engine, ByteBufAllocator alloc,
             JdkApplicationProtocolNegotiator applicationNegotiator) {
         return new ClientEngine(engine, alloc, applicationNegotiator);
     }
 
+    /** 工厂：创建服务端 ALPN 引擎。 */
     static ConscryptAlpnSslEngine newServerEngine(SSLEngine engine, ByteBufAllocator alloc,
             JdkApplicationProtocolNegotiator applicationNegotiator) {
         return new ServerEngine(engine, alloc, applicationNegotiator);
@@ -58,7 +63,7 @@ abstract class ConscryptAlpnSslEngine extends JdkSslEngine {
     private ConscryptAlpnSslEngine(SSLEngine engine, ByteBufAllocator alloc, List<String> protocols) {
         super(engine);
 
-        // Configure the Conscrypt engine to use Netty's buffer allocator. This is a trade-off of memory vs
+        // 配置 Conscrypt 缓冲分配策略：Netty 分配器 vs 引擎内部分配直接缓冲
         // performance.
         //
         // If no allocator is provided, the engine will internally allocate a direct buffer of max packet size in
@@ -71,7 +76,7 @@ abstract class ConscryptAlpnSslEngine extends JdkSslEngine {
             Conscrypt.setBufferAllocator(engine, new BufferAllocatorAdapter(alloc));
         }
 
-        // Set the list of supported ALPN protocols on the engine.
+        // 在引擎上注册支持的 ALPN 协议列表
         Conscrypt.setApplicationProtocols(engine, protocols.toArray(EmptyArrays.EMPTY_STRINGS));
     }
 
@@ -84,7 +89,7 @@ abstract class ConscryptAlpnSslEngine extends JdkSslEngine {
      * @return the maximum size of the encrypted output buffer required for the wrap operation.
      */
     final int calculateOutNetBufSize(int plaintextBytes, int numBuffers) {
-        // Assuming a max of one frame per component in a composite buffer.
+        // 复合缓冲最坏情况每组件一条 TLS 记录，累加 seal 开销
         return calculateSpace(plaintextBytes, numBuffers, Integer.MAX_VALUE);
     }
 
@@ -105,17 +110,19 @@ abstract class ConscryptAlpnSslEngine extends JdkSslEngine {
          return (int) min(maxPacketLength, plaintextBytes + maxOverhead);
     }
 
+    /** 委托 Conscrypt 多缓冲 unwrap。 */
     final SSLEngineResult unwrap(ByteBuffer[] srcs, ByteBuffer[] dests) throws SSLException {
         return Conscrypt.unwrap(getWrappedEngine(), srcs, dests);
     }
 
+    /** 客户端：握手完成后通过 ProtocolSelectionListener 通知选定协议。 */
     private static final class ClientEngine extends ConscryptAlpnSslEngine {
         private final ProtocolSelectionListener protocolListener;
 
         ClientEngine(SSLEngine engine, ByteBufAllocator alloc,
                 JdkApplicationProtocolNegotiator applicationNegotiator) {
             super(engine, alloc, applicationNegotiator.protocols());
-            // Register for completion of the handshake.
+            // 注册握手完成回调以触发 ALPN 协议选择
             Conscrypt.setHandshakeListener(engine, new HandshakeListener() {
                 @Override
                 public void onHandshakeFinished() throws SSLException {
@@ -138,6 +145,7 @@ abstract class ConscryptAlpnSslEngine extends JdkSslEngine {
         }
     }
 
+    /** 服务端：握手完成后由 ProtocolSelector 从对端 ALPN 列表中选择协议。 */
     private static final class ServerEngine extends ConscryptAlpnSslEngine {
         private final ProtocolSelector protocolSelector;
 
@@ -170,6 +178,7 @@ abstract class ConscryptAlpnSslEngine extends JdkSslEngine {
         }
     }
 
+    /** 将 Conscrypt {@link BufferAllocator} 桥接到 Netty {@link ByteBufAllocator}。 */
     private static final class BufferAllocatorAdapter extends BufferAllocator {
         private final ByteBufAllocator alloc;
 
@@ -183,6 +192,7 @@ abstract class ConscryptAlpnSslEngine extends JdkSslEngine {
         }
     }
 
+    /** 包装 Netty {@link ByteBuf} 为 Conscrypt {@link AllocatedBuffer}，支持 retain/release。 */
     private static final class BufferAdapter extends AllocatedBuffer {
         private final ByteBuf nettyBuffer;
         private final ByteBuffer buffer;

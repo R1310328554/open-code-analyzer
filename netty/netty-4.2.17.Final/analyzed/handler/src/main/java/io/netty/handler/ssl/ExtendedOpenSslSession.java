@@ -33,10 +33,12 @@ import javax.security.cert.X509Certificate;
 /**
  * Delegates all operations to a wrapped {@link OpenSslInternalSession} except the methods defined by
  * {@link ExtendedSSLSession} itself.
+ *
+ * <p>实现 {@link ExtendedSSLSession}：除扩展 API 外均委托 {@link OpenSslInternalSession}，兼容 Java 9+ 对扩展会话的期望。</p>
  */
 abstract class ExtendedOpenSslSession extends ExtendedSSLSession implements OpenSslInternalSession {
 
-    // TODO: use OpenSSL API to actually fetch the real data but for now just do what Conscrypt does:
+    // TODO: 后续应用 OpenSSL API 获取真实签名算法；当前硬编码列表与 Conscrypt 一致
     // https://github.com/google/conscrypt/blob/1.2.0/common/
     // src/main/java/org/conscrypt/Java7ExtendedSSLSession.java#L32
     private static final String[] LOCAL_SUPPORTED_SIGNATURE_ALGORITHMS = {
@@ -45,6 +47,7 @@ abstract class ExtendedOpenSslSession extends ExtendedSSLSession implements Open
             "RSASSA-PSS",
     };
 
+    /** 底层 OpenSSL 内部会话实现。 */
     private final OpenSslInternalSession wrapped;
 
     ExtendedOpenSslSession(OpenSslInternalSession wrapped) {
@@ -55,8 +58,9 @@ abstract class ExtendedOpenSslSession extends ExtendedSSLSession implements Open
     public abstract List<SNIServerName> getRequestedServerNames();
 
     // Do not mark as override so we can compile on java8.
+    /** OCSP 装订响应列表；暂未实现，返回空列表以满足 Java 9 信任管理器。 */
     public List<byte[]> getStatusResponses() {
-        // Just return an empty list for now until we support it as otherwise we will fail in java9
+        // 空列表避免 java9 sun.security.ssl.X509TrustManagerImpl 校验失败
         // because of their sun.security.ssl.X509TrustManagerImpl class.
         return Collections.emptyList();
     }
@@ -139,7 +143,7 @@ abstract class ExtendedOpenSslSession extends ExtendedSSLSession implements Open
 
     @Override
     public final void putValue(String name, Object value) {
-        if (value instanceof SSLSessionBindingListener) {
+        // 绑定监听器需收到 ExtendedOpenSslSession 而非 wrapped 实例
             // Decorate the value if needed so we submit the correct SSLSession instance
             value = new SSLSessionBindingListenerDecorator((SSLSessionBindingListener) value);
         }
@@ -226,6 +230,7 @@ abstract class ExtendedOpenSslSession extends ExtendedSSLSession implements Open
         return wrapped.getApplicationBufferSize();
     }
 
+    /** 将会话绑定事件中的 session 替换为外层 ExtendedOpenSslSession。 */
     private final class SSLSessionBindingListenerDecorator implements SSLSessionBindingListener {
 
         final SSLSessionBindingListener delegate;

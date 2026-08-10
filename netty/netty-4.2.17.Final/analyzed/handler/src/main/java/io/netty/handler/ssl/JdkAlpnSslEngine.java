@@ -30,10 +30,14 @@ import static io.netty.handler.ssl.JdkApplicationProtocolNegotiator.ProtocolSele
 import static io.netty.handler.ssl.JdkApplicationProtocolNegotiator.ProtocolSelector;
 import static io.netty.handler.ssl.SslUtils.toSSLHandshakeException;
 
+/**
+ * JDK 8u251+ {@link SSLEngine} ALPN 包装：在 wrap/unwrap 完成握手后触发协议选择回调。
+ */
 class JdkAlpnSslEngine extends JdkSslEngine {
     private final ProtocolSelectionListener selectionListener;
     private final AlpnSelector alpnSelector;
 
+    /** 服务端 ALPN 选择器：JDK 握手期间回调 {@link ProtocolSelector#select}。 */
     final class AlpnSelector implements BiFunction<SSLEngine, List<String>, String> {
         private final ProtocolSelector selector;
         private boolean called;
@@ -51,7 +55,7 @@ class JdkAlpnSslEngine extends JdkSslEngine {
                 String selected = selector.select(strings);
                 return selected == null ? StringUtil.EMPTY_STRING : selected;
             } catch (Exception cause) {
-                // Returning null means we want to fail the handshake.
+                // 返回 null 表示拒绝握手（JDK BiFunction 约定）
                 //
                 // See https://download.java.net/java/jdk9/docs/api/javax/net/ssl/
                 // SSLEngine.html#setHandshakeApplicationProtocolSelector-java.util.function.BiFunction-
@@ -71,7 +75,7 @@ class JdkAlpnSslEngine extends JdkSslEngine {
             assert protocol != null;
 
             if (protocol.isEmpty()) {
-                // ALPN is not supported
+                // 对端未协商 ALPN（空协议串）
                 selector.unsupported();
             }
         }
@@ -113,15 +117,16 @@ class JdkAlpnSslEngine extends JdkSslEngine {
                });
     }
 
+    /** 握手 FINISHED 时通知客户端 listener 或服务端 selector 检查 ALPN 结果。 */
     private SSLEngineResult verifyProtocolSelection(SSLEngineResult result) throws SSLException {
         if (result.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.FINISHED) {
             if (alpnSelector == null) {
-                // This means we are using client-side and
+                // 客户端路径：握手完成后读取 getApplicationProtocol
                 try {
                     String protocol = getApplicationProtocol();
                     assert protocol != null;
                     if (protocol.isEmpty()) {
-                        // If empty the server did not announce ALPN:
+                        // 服务端未发送 ALPN 扩展
                         // See:
                         // https://hg.openjdk.java.net/jdk9/dev/jdk/file/65464a307408/src/java.base/
                         // share/classes/sun/security/ssl/ClientHandshaker.java#l741
@@ -172,7 +177,7 @@ class JdkAlpnSslEngine extends JdkSslEngine {
 
     @Override
     void setNegotiatedApplicationProtocol(String applicationProtocol) {
-        // Do nothing as this is handled internally by the Java8u251+ implementation of SSLEngine.
+        // Java 8u251+ 内部维护协商协议，此处无需额外存储
     }
 
     @Override
@@ -184,7 +189,7 @@ class JdkAlpnSslEngine extends JdkSslEngine {
         return null;
     }
 
-    // These methods will override the methods defined by Java 8u251 and later. As we may compile with an earlier
+    // 以下方法对应 Java 8u251+ SSLEngine ALPN API；编译目标较旧时不用 @Override
     // java8 version we don't use @Override annotations here.
     @SuppressWarnings("override")
     public String getApplicationProtocol() {
