@@ -1,5 +1,7 @@
 package logql
 
+// shardmapper 将 LogQL 表达式改写为按 TSDB 分片并行执行的下游子查询，并在前端合并。
+
 import (
 	"fmt"
 
@@ -19,6 +21,7 @@ const (
 	SupportApproxTopk     = "approx_topk"
 )
 
+// ShardMapper 组合 ShardingStrategy、指标与可选的 quantile/first/last/approx_topk 分片开关。
 type ShardMapper struct {
 	shards                   ShardingStrategy
 	metrics                  *MapperMetrics
@@ -28,6 +31,7 @@ type ShardMapper struct {
 	approxTopkSupport        bool
 }
 
+// NewShardMapper 根据 shard_aggregations 配置启用特定 range 聚合的分片合并策略。
 func NewShardMapper(strategy ShardingStrategy, metrics *MapperMetrics, shardAggregation []string) ShardMapper {
 	mapper := ShardMapper{
 		shards:                   strategy,
@@ -57,6 +61,7 @@ func NewShardMapperMetrics(registerer prometheus.Registerer) *MapperMetrics {
 	return newMapperMetrics(registerer, "shard")
 }
 
+// Parse 返回是否 noop、每分片字节估算与映射后的 AST；失败时递增 Failure 计数。
 func (m ShardMapper) Parse(parsed syntax.Expr) (noop bool, bytesPerShard uint64, expr syntax.Expr, err error) {
 	recorder := m.metrics.downstreamRecorder()
 
@@ -78,6 +83,7 @@ func (m ShardMapper) Parse(parsed syntax.Expr) (noop bool, bytesPerShard uint64,
 	return noop, bytesPerShard, mapped, err
 }
 
+// Map 克隆 AST 后按节点类型分派；topLevel 影响 Shardable 判断是否可在顶层分片。
 func (m ShardMapper) Map(expr syntax.Expr, r *downstreamRecorder, topLevel bool) (syntax.Expr, uint64, error) {
 	// immediately clone the passed expr to avoid mutating the original
 	expr, err := syntax.Clone(expr)
@@ -108,6 +114,7 @@ func (m ShardMapper) Map(expr syntax.Expr, r *downstreamRecorder, topLevel bool)
 	}
 }
 
+// mapBinOpExpr 要求两侧均可本地或包装为 DownstreamSampleExpr；bytesPerShard 取两侧最大值。
 func (m ShardMapper) mapBinOpExpr(e *syntax.BinOpExpr, r *downstreamRecorder, topLevel bool) (*syntax.BinOpExpr, uint64, error) {
 	// In a BinOp expression both sides need to be either executed locally or wrapped
 	// into a downstream expression to be executed on the querier, since the default
@@ -160,6 +167,7 @@ func (m ShardMapper) mapBinOpExpr(e *syntax.BinOpExpr, r *downstreamRecorder, to
 	return e, bytesPerShard, nil
 }
 
+// mapLogSelectorExpr 将日志选择器展开为 ConcatLogSelectorExpr 分片链。
 func (m ShardMapper) mapLogSelectorExpr(expr syntax.LogSelectorExpr, r *downstreamRecorder) (syntax.LogSelectorExpr, uint64, error) {
 	var head *ConcatLogSelectorExpr
 	shards, maxBytesPerShard, err := m.shards.Shards(expr)
@@ -237,6 +245,7 @@ func (m ShardMapper) wrappedShardedVectorAggr(expr *syntax.VectorAggregationExpr
 
 // technically, std{dev,var} are also parallelizable if there is no cross-shard merging
 // in descendent nodes in the AST. This optimization is currently avoided for simplicity.
+// mapVectorAggregationExpr 对 sum/min/max/count/avg/approx_topk 等应用分片+合并改写规则。
 func (m ShardMapper) mapVectorAggregationExpr(expr *syntax.VectorAggregationExpr, r *downstreamRecorder, topLevel bool) (syntax.SampleExpr, uint64, error) {
 	if expr.Shardable(topLevel) {
 		switch expr.Operation {
@@ -342,6 +351,7 @@ func (m ShardMapper) mapVectorAggregationExpr(expr *syntax.VectorAggregationExpr
 	}, bytesPerShard, nil
 }
 
+// mapApproxTopk 改写为 topk(eval_cms(各分片 count_min_sketch))，高基数场景在前端近似求 TopK。
 func (m ShardMapper) mapApproxTopk(expr *syntax.VectorAggregationExpr, forceNoShard bool) (*syntax.VectorAggregationExpr, uint64, error) {
 	// TODO(owen-d): integrate bounded sharding with approx_topk
 	// I'm not doing this now because it uses a separate code path and may not handle
@@ -420,6 +430,7 @@ func (m ShardMapper) mapLabelReplaceExpr(expr *syntax.LabelReplaceExpr, r *downs
 // This is because the same label sets may exist on multiple shards when label-reducing parsing is applied or when
 // grouping by some subset of the labels. In this case, the resulting vector may have multiple values for the same
 // series and we need to combine them appropriately given a particular operation.
+// rangeMergeMap 定义 range 分片合并时外层 vector 聚合应使用的 sum/min/max 算子。
 var rangeMergeMap = map[string]string{
 	// all these may be summed
 	syntax.OpRangeTypeCount:     syntax.OpTypeSum,
@@ -433,6 +444,7 @@ var rangeMergeMap = map[string]string{
 	syntax.OpRangeTypeMax: syntax.OpTypeMax,
 }
 
+// mapRangeAggregationExpr 处理 range 分片；标签冲突时需外层 vector 聚合合并同 labelset 多分片结果。
 func (m ShardMapper) mapRangeAggregationExpr(expr *syntax.RangeAggregationExpr, r *downstreamRecorder, topLevel bool) (syntax.SampleExpr, uint64, error) {
 	if !expr.Shardable(topLevel) {
 		return noOp(expr, m.shards.Resolver())
@@ -674,3 +686,4 @@ func isLiteralOrVector(e syntax.Expr) bool {
 func badASTMapping(got syntax.Expr) error {
 	return fmt.Errorf("bad AST mapping: expected SampleExpr, but got (%T)", got)
 }
+// ReducesLabels 为真时同序列可能跨分片，需在合并层再次 sum/min/max 而非简单 concat。

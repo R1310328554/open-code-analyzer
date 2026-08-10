@@ -1,5 +1,7 @@
 package logql
 
+// quantile_over_time_sketch 实现分位数草图向量/矩阵类型、合并、Proto 转换与逐步求值器。
+
 import (
 	"fmt"
 	"math"
@@ -20,6 +22,7 @@ const (
 	QuantileSketchMatrixType = "QuantileSketchMatrix"
 )
 
+// ProbabilisticQuantileVector/Matrix 承载 quantile_over_time 分片合并后的 DDSketch 样本。
 type (
 	ProbabilisticQuantileVector []ProbabilisticQuantileSample
 	ProbabilisticQuantileMatrix []ProbabilisticQuantileVector
@@ -29,6 +32,7 @@ var streamHashPool = sync.Pool{
 	New: func() interface{} { return make(map[uint64]int) },
 }
 
+// Merge 按标签 StableHash 合并同序列草图；使用 sync.Pool 复用 hash 映射表。
 func (q ProbabilisticQuantileVector) Merge(right ProbabilisticQuantileVector) (ProbabilisticQuantileVector, error) {
 	// labels hash to vector index map
 	groups := streamHashPool.Get().(map[uint64]int)
@@ -145,6 +149,7 @@ func ProbabilisticQuantileMatrixFromProto(proto *logproto.QuantileSketchMatrix) 
 	return out, nil
 }
 
+// QuantileSketchStepEvaluator 包装 RangeVectorIterator，每步产出 ProbabilisticQuantileVector。
 type QuantileSketchStepEvaluator struct {
 	iter RangeVectorIterator
 
@@ -181,6 +186,7 @@ func (e *QuantileSketchStepEvaluator) Explain(parent Node) {
 	parent.Child("QuantileSketch")
 }
 
+// newQuantileSketchIterator 构建 quantileSketchBatchRangeVectorIterator，窗口内样本聚合为 DDSketch。
 func newQuantileSketchIterator(
 	it iter.PeekingSampleIterator,
 	selRange, step, start, end, offset int64,
@@ -210,6 +216,7 @@ func newQuantileSketchIterator(
 	}
 }
 
+// ProbabilisticQuantileSample 单时间点的 QuantileSketch 与指标标签。
 type ProbabilisticQuantileSample struct {
 	T int64
 	F sketch.QuantileSketch
@@ -269,6 +276,7 @@ func (r *quantileSketchBatchRangeVectorIterator) At() (int64, StepResult) {
 	return ts, ProbabilisticQuantileVector(at)
 }
 
+// agg 将窗口内浮点样本写入 DDSketch，供 quantile_sketch_merge 跨分片合并。
 func (r *quantileSketchBatchRangeVectorIterator) agg(samples []promql.FPoint) sketch.QuantileSketch {
 	s := sketch.NewDDSketch()
 	for _, v := range samples {
@@ -279,6 +287,7 @@ func (r *quantileSketchBatchRangeVectorIterator) agg(samples []promql.FPoint) sk
 	return s
 }
 
+// JoinQuantileSketchVector 收集逐步结果；instant 查询返回单行矩阵。
 // JoinQuantileSketchVector joins the results from stepEvaluator into a ProbabilisticQuantileMatrix.
 func JoinQuantileSketchVector(next bool, r StepResult, stepEvaluator StepEvaluator, params Params) (promql_parser.Value, error) {
 	vec := r.QuantileSketchVec()
@@ -309,6 +318,7 @@ func JoinQuantileSketchVector(next bool, r StepResult, stepEvaluator StepEvaluat
 	return result, stepEvaluator.Error()
 }
 
+// QuantileSketchMatrixStepEvaluator 按 step 依次弹出预计算的 ProbabilisticQuantileVector。
 // QuantileSketchMatrixStepEvaluator steps through a matrix of quantile sketch
 // vectors, ie t-digest or DDSketch structures per time step.
 type QuantileSketchMatrixStepEvaluator struct {
@@ -357,6 +367,7 @@ func (*QuantileSketchMatrixStepEvaluator) Explain(parent Node) {
 	parent.Child("QuantileSketchMatrix")
 }
 
+// QuantileSketchVectorStepEvaluator 从草图向量提取指定分位数值，产出 promql.Vector。
 // QuantileSketchVectorStepEvaluator evaluates a quantile sketch into a
 // promql.Vector.
 type QuantileSketchVectorStepEvaluator struct {
@@ -398,3 +409,4 @@ func (e *QuantileSketchVectorStepEvaluator) Next() (bool, int64, StepResult) {
 func (*QuantileSketchVectorStepEvaluator) Close() error { return nil }
 
 func (*QuantileSketchVectorStepEvaluator) Error() error { return nil }
+// 含 ErrorLabel 且未 PreserveError 的样本会终止求值并返回 PipelineErr。

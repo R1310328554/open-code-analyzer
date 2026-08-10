@@ -1,7 +1,10 @@
 package logql
 
+// optimize 在 querier 侧对 SampleExpr 做安全 AST 改写：替换 approx_topk 并移除冗余 line_format。
+
 import "github.com/grafana/loki/v3/pkg/logql/syntax"
 
+// optimizeSampleExpr 克隆 AST 后优化；含分片/下游/分位数草图等节点时跳过以免破坏语义。
 // optimizeSampleExpr Attempt to optimize the SampleExpr to another that will run faster but will produce the same result.
 func optimizeSampleExpr(expr syntax.SampleExpr) (syntax.SampleExpr, error) {
 	var skip bool
@@ -25,6 +28,7 @@ func optimizeSampleExpr(expr syntax.SampleExpr) (syntax.SampleExpr, error) {
 	return expr, nil
 }
 
+// replaceApproxTopK 将 approx_topk 改为 topk(count_min_sketch(...))，因 querier 不支持近似 TopK。
 // replaceApproxTopKWithTopk replaces all ApproxTopKExpr with TopKExpr.
 // ApproxTopKExpr is not supported by the querier, so we replace it with the implementation if this function reaches the querier.
 func replaceApproxTopK(expr syntax.SampleExpr) {
@@ -50,6 +54,7 @@ func replaceApproxTopK(expr syntax.SampleExpr) {
 	})
 }
 
+// removeLineformat 删除 range 聚合内无用的 line_format；bytes 类聚合及后续仍依赖格式的 stage 会保留。
 // removeLineformat removes unnecessary line_format within a SampleExpr.
 func removeLineformat(expr syntax.SampleExpr) {
 	expr.Walk(func(e syntax.Expr) bool {
@@ -111,3 +116,4 @@ func removeLineformat(expr syntax.SampleExpr) {
 		return true
 	})
 }
+// pipeline 清空后会降级为 MatchersExpr，减少 querier 侧流水线执行开销。

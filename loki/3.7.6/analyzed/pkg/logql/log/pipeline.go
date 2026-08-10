@@ -1,5 +1,7 @@
 package log
 
+// pipeline 实现 LogQL 日志处理流水线：按 Stage 串联过滤/解析/格式化，并为每条日志流缓存 StreamPipeline 实例。
+
 import (
 	"context"
 
@@ -9,15 +11,18 @@ import (
 	"unsafe"
 )
 
+// NoopStage 为不修改日志行与标签的空 Stage，用于占位或 Reduce 后的默认阶段。
 // NoopStage is a stage that doesn't process a log line.
 var NoopStage Stage = &noopStage{}
 
+// Pipeline 按流标签创建 StreamPipeline，Reset 清空 per-stream 缓存以便复用 builder。
 // Pipeline can create pipelines for each log stream.
 type Pipeline interface {
 	ForStream(labels labels.Labels) StreamPipeline
 	Reset()
 }
 
+// StreamPipeline 处理单条日志行；返回的行缓冲可能在下次 Process 中复用，调用方需自行拷贝。
 // StreamPipeline transform and filter log lines and labels.
 // A StreamPipeline never mutate the received line.
 type StreamPipeline interface {
@@ -29,6 +34,7 @@ type StreamPipeline interface {
 	ReferencedStructuredMetadata() bool
 }
 
+// Stage 是流水线单步；不得原地修改 line，应返回原切片或新分配的行内容。
 // Stage is a single step of a Pipeline.
 // A Stage implementation should never mutate the line passed, but instead either
 // return the line unchanged or allocate a new line.
@@ -37,6 +43,7 @@ type Stage interface {
 	RequiredLabelNames() []string
 }
 
+// PipelineWrapper 在查询执行前按租户/查询包装 Pipeline，用于限流或审计等横切逻辑。
 // PipelineWrapper takes a pipeline, wraps it is some desired functionality and
 // returns a new pipeline
 type PipelineWrapper interface {
@@ -51,6 +58,7 @@ func NewNoopPipeline() Pipeline {
 	}
 }
 
+// noopPipeline 按标签哈希缓存 noopStreamPipeline，避免每条流重复创建 builder。
 type noopPipeline struct {
 	cache       map[uint64]*noopStreamPipeline
 	baseBuilder *BaseLabelsBuilder
@@ -137,6 +145,7 @@ func (fn StageFunc) RequiredLabelNames() []string {
 
 // pipeline is a combinations of multiple stages.
 // It can also be reduced into a single stage for convenience.
+// pipeline 将多个 Stage 组合为可分析流水线，并按流哈希缓存 streamPipeline。
 type pipeline struct {
 	AnalyzablePipeline
 	stages      []Stage
@@ -217,6 +226,7 @@ func (p *streamPipeline) ReferencedStructuredMetadata() bool {
 	return p.builder.referencedStructuredMetadata
 }
 
+// Process 依次执行各 Stage；任一 Stage 返回 false 则整条日志被过滤。
 func (p *streamPipeline) Process(ts int64, line []byte, structuredMetadata labels.Labels) ([]byte, LabelsResult, bool) {
 	var ok bool
 	p.builder.Reset()
@@ -241,6 +251,7 @@ func (p *streamPipeline) ProcessString(ts int64, line string, structuredMetadata
 
 func (p *streamPipeline) BaseLabels() LabelsResult { return p.builder.currentResult }
 
+// PipelineFilter 在指定时间窗内匹配时跳过日志条目，用于排除特定子流数据。
 // PipelineFilter contains a set of matchers and a pipeline that, when matched,
 // causes an entry from a log stream to be skipped. Matching entries must also
 // fall between 'start' and 'end', inclusive
@@ -304,6 +315,7 @@ type streamFilter struct {
 	pipeline StreamPipeline
 }
 
+// filteringStreamPipeline 先运行过滤子流水线，匹配成功则丢弃，否则交给主 pipeline。
 type filteringStreamPipeline struct {
 	filters  []streamFilter
 	pipeline StreamPipeline
@@ -348,6 +360,7 @@ func (sp *filteringStreamPipeline) ProcessString(ts int64, line string, structur
 }
 
 // ReduceStages reduces multiple stages into one.
+// ReduceStages 将多 Stage 合并为单个 StageFunc，聚合 RequiredLabelNames 供优化器使用。
 func ReduceStages(stages []Stage) Stage {
 	if len(stages) == 0 {
 		return NoopStage
@@ -371,6 +384,7 @@ func ReduceStages(stages []Stage) Stage {
 	}
 }
 
+// unsafeGetBytes 零拷贝将 string 转为 []byte，仅用于 Stage 只读访问行内容。
 func unsafeGetBytes(s string) []byte {
 	return unsafe.Slice(unsafe.StringData(s), len(s)) // #nosec G103 -- we know the string is not mutated -- nosemgrep: use-of-unsafe-block
 }
@@ -378,3 +392,4 @@ func unsafeGetBytes(s string) []byte {
 func unsafeGetString(buf []byte) string {
 	return *((*string)(unsafe.Pointer(&buf))) // #nosec G103 -- we know the string is not mutated -- nosemgrep: use-of-unsafe-block
 }
+// AnalyzablePipeline 暴露 Stages 与 LabelsBuilder，供引擎分析与 hint 推导。

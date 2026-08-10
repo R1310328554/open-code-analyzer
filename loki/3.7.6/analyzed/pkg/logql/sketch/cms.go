@@ -1,5 +1,7 @@
 package sketch
 
+// cms 实现 Count-Min Sketch 与 HyperLogLog：用于 approx_topk 等近似频次与基数估计。
+
 import (
 	"fmt"
 	"math"
@@ -13,6 +15,7 @@ type CountMinSketch struct {
 	HyperLogLog  *hyperloglog.Sketch // hyperloglog.New16(),
 }
 
+// NewCountMinSketch 按指定宽高分配计数器并初始化 HLL 草图。
 // NewCountMinSketch creates a new CMS for a given width and depth.
 func NewCountMinSketch(w, d uint32) (*CountMinSketch, error) {
 	return &CountMinSketch{
@@ -23,6 +26,7 @@ func NewCountMinSketch(w, d uint32) (*CountMinSketch, error) {
 	}, nil
 }
 
+// NewCountMinSketchFromErrorAndProbability 按 ε/δ 计算宽高，算法与 RedisBloom CMS 一致。
 // NewCountMinSketchFromErrorAndProbability creates a new CMS for a given epsilon and delta. The sketch width and depth
 // are calculated according to the RedisBloom implementation.
 // See https://github.com/RedisBloom/RedisBloom/blob/7bc047d1ea4113419b60eb6446ac3d4e61877a7b/src/cms.c#L38-L39
@@ -40,11 +44,13 @@ func make2dslice(col, row uint32) [][]float64 {
 	return ret
 }
 
+// getPos 用两行独立哈希派生每行桶位置，满足 CMS 对哈希函数的要求。
 func (s *CountMinSketch) getPos(h1, h2, row uint32) uint32 {
 	pos := (h1 + row*h2) % s.Width
 	return pos
 }
 
+// Add 更新 HLL 并对每行对应桶累加 count。
 // Add 'count' occurrences of the given input.
 func (s *CountMinSketch) Add(event []byte, count float64) {
 	s.HyperLogLog.Insert(event)
@@ -62,6 +68,7 @@ func (s *CountMinSketch) Increment(event []byte) {
 	s.Add(event, 1)
 }
 
+// ConservativeAdd 保守更新：仅当桶值低于新估计下界时才抬升，降低 overcount。
 // ConservativeAdd adds the count (conservatively) for the given input.
 // Conservative counting is described in https://dl.acm.org/doi/pdf/10.1145/633025.633056
 // and https://theory.stanford.edu/~matias/papers/sbf-sigmod-03.pdf. For more details you can read
@@ -98,6 +105,7 @@ func (s *CountMinSketch) ConservativeIncrement(event []byte) (float64, uint32, u
 	return s.ConservativeAdd(event, float64(1))
 }
 
+// Count 返回各深度行对应桶的最小值，作为事件频次的 CMS 估计。
 // Count returns the approximate min count for the given input.
 func (s *CountMinSketch) Count(event []byte) float64 {
 	minVal := float64(math.MaxUint64)
@@ -113,6 +121,7 @@ func (s *CountMinSketch) Count(event []byte) float64 {
 	return minVal
 }
 
+// Merge 逐桶相加并合并 HLL；宽高不一致时返回错误。
 // Merge the given sketch into this one.
 // The sketches must have the same dimensions.
 func (s *CountMinSketch) Merge(from *CountMinSketch) error {
@@ -132,7 +141,9 @@ func (s *CountMinSketch) Merge(from *CountMinSketch) error {
 	return nil
 }
 
+// Cardinality 返回 HyperLogLog 对 distinct 事件数的估计值。
 // Cardinality returns the estimated cardinality of the input to the CMS.
 func (s *CountMinSketch) Cardinality() uint64 {
 	return s.HyperLogLog.Estimate()
 }
+// ConservativeIncrement/Increment 为 count=1 的便捷封装，并返回哈希供外部索引。

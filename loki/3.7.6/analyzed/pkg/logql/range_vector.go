@@ -1,5 +1,7 @@
 package logql
 
+// range_vector 实现 LogQL range 聚合的滑动窗口迭代：批处理与流式两种聚合路径及各类 _over_time 函数。
+
 import (
 	"fmt"
 	"math"
@@ -16,11 +18,13 @@ import (
 	"github.com/grafana/loki/v3/pkg/logql/vector"
 )
 
+// BatchRangeVectorAggregator 接收窗口内 FPoint 列表并返回单个聚合浮点值。
 // BatchRangeVectorAggregator aggregates samples for a given range of samples.
 // It receives the current milliseconds timestamp and the list of point within
 // the range.
 type BatchRangeVectorAggregator func([]promql.FPoint) float64
 
+// RangeStreamingAgg 在 Next 循环内逐样本更新中间状态，At 时返回最终聚合值。
 // RangeStreamingAgg streaming aggregates sample for each sample
 type RangeStreamingAgg interface {
 	// agg func works inside the Next func of RangeVectorIterator, agg used to agg each sample.
@@ -30,6 +34,7 @@ type RangeStreamingAgg interface {
 	at() float64
 }
 
+// RangeVectorIterator 按 step 滑动 range 窗口；At 返回当前步的 SampleVector 或草图结果。
 // RangeVectorIterator iterates through a range of samples.
 // To fetch the current vector use `At` with a `BatchRangeVectorAggregator` or `RangeStreamingAgg`.
 type RangeVectorIterator interface {
@@ -39,6 +44,7 @@ type RangeVectorIterator interface {
 	Error() error
 }
 
+// newRangeVectorIterator 根据 range 与 step 是否重叠选择 batch 或 stream 迭代器实现。
 func newRangeVectorIterator(
 	it iter.PeekingSampleIterator,
 	expr *syntax.RangeAggregationExpr,
@@ -90,6 +96,7 @@ func newRangeVectorIterator(
 
 //batch
 
+// batchRangeVectorIterator 在 map 中保留各序列窗口样本，步进时 popBack 再 load 新样本。
 type batchRangeVectorIterator struct {
 	iter                                 iter.PeekingSampleIterator
 	selRange, step, end, current, offset int64
@@ -122,6 +129,7 @@ func (r *batchRangeVectorIterator) Error() error {
 }
 
 // popBack removes all entries out of the current window from the back.
+// popBack 移除窗口左边界之前的样本点，空序列回收到 seriesPool。
 func (r *batchRangeVectorIterator) popBack(newStart int64) {
 	// possible improvement: if there is no overlap we can just remove all.
 	for fp := range r.window {
@@ -220,6 +228,7 @@ func putSeries(s *promql.Series) {
 	seriesPool.Put(s)
 }
 
+// aggregator 将 range 操作符映射到 count/sum/rate/quantile 等批聚合闭包。
 func aggregator(r *syntax.RangeAggregationExpr) (BatchRangeVectorAggregator, error) {
 	switch r.Operation {
 	case syntax.OpRangeTypeRate:
@@ -278,6 +287,7 @@ func rateCounter(selRange time.Duration) func(samples []promql.FPoint) float64 {
 	}
 }
 
+// extrapolatedRate 处理 counter 重置与边界外推，与 Prometheus rate/increase 语义对齐。
 // extrapolatedRate function is taken from prometheus code promql/functions.go:59
 // extrapolatedRate is a utility function for rate/increase/delta.
 // It calculates the rate (allowing for counter resets if isCounter is true),
@@ -456,6 +466,7 @@ func quantileOverTime(q float64) func(samples []promql.FPoint) float64 {
 	}
 }
 
+// Quantile 对样本排序后按 rank 加权插值；空向量返回 NaN，q 越界返回 ±Inf。
 // Quantile calculates the given Quantile of a vector of samples.
 //
 // The Vector will be sorted.
@@ -505,6 +516,7 @@ func one(_ []promql.FPoint) float64 {
 }
 
 // streaming range agg
+// streamRangeVectorIterator 每步重建 RangeStreamingAgg 映射，适合无窗口重叠的单 pass 聚合。
 type streamRangeVectorIterator struct {
 	iter                                 iter.PeekingSampleIterator
 	selRange, step, end, current, offset int64
@@ -597,6 +609,7 @@ func (r *streamRangeVectorIterator) At() (int64, StepResult) {
 	return ts, SampleVector(r.at)
 }
 
+// streamingAggregator 为各 range 操作返回对应的流式聚合器实例。
 func streamingAggregator(r *syntax.RangeAggregationExpr) (RangeStreamingAgg, error) {
 	switch r.Operation {
 	case syntax.OpRangeTypeRate:
@@ -851,3 +864,4 @@ func (a *OneOverTime) agg(_ promql.FPoint) {
 func (a *OneOverTime) at() float64 {
 	return 1.0
 }
+// seriesPool 复用 promql.Series 切片；时间戳在 At 中由纳秒转换为毫秒输出。

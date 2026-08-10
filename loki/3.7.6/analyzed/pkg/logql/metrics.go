@@ -1,5 +1,7 @@
 package logql
 
+// metrics 记录 LogQL 查询的结构化日志与 Prometheus 指标：吞吐、延迟、缓存与索引统计。
+
 import (
 	"context"
 	"fmt"
@@ -28,6 +30,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/spanlogger"
 )
 
+// QueryType* 常量区分 metric/filter/labels/series 等查询类别，用于指标与日志标签。
 const (
 	QueryTypeMetric  = "metric"
 	QueryTypeFilter  = "filter"
@@ -51,11 +54,13 @@ const (
 	componentFrontend string          = "frontend"
 )
 
+// WithComponentContext 标记日志来源组件（如 frontend），避免合并 stats 后字段失真。
 // WithComponentContext adds a component identifier to the context
 func WithComponentContext(ctx context.Context, component string) context.Context {
 	return context.WithValue(ctx, componentKey, component)
 }
 
+// isFrontendContext 判断是否在 frontend 记录；querier 专有字段仅在后端上下文输出。
 // isFrontendContext checks if the context indicates this is being logged from the frontend
 func isFrontendContext(ctx context.Context) bool {
 	component, _ := ctx.Value(componentKey).(string)
@@ -106,6 +111,7 @@ var (
 	linePerSecondLogUsage    = analytics.NewStatistics("query_log_lines_per_second")
 )
 
+// RecordRangeAndInstantQueryMetrics 为 range/instant 查询写详细 info 日志并更新 histogram/counter。
 func RecordRangeAndInstantQueryMetrics(
 	ctx context.Context,
 	log log.Logger,
@@ -305,6 +311,7 @@ func RecordRangeAndInstantQueryMetrics(
 	recordUsageStats(queryType, stats)
 }
 
+// hasMatchEqualLabelFilterBeforeParser 检测 parser 前是否均为等值标签过滤，用于 Bloom 优化标记。
 func hasMatchEqualLabelFilterBeforeParser(p Params) bool {
 	filters := syntax.ExtractLabelFiltersBeforeParser(p.GetExpression())
 	if len(filters) == 0 {
@@ -318,6 +325,7 @@ func hasMatchEqualLabelFilterBeforeParser(p Params) bool {
 	return true
 }
 
+// RecordLabelQueryMetrics 记录 labels API 查询的延迟、缓存命中与返回条目数。
 func RecordLabelQueryMetrics(
 	ctx context.Context,
 	log log.Logger,
@@ -362,6 +370,7 @@ func RecordLabelQueryMetrics(
 	execLatency.WithLabelValues(status, queryType, "").Observe(stats.Summary.ExecTime)
 }
 
+// fixLogger 为 spanlogger 补充 caller=metrics.go，便于在日志系统中定位性能日志。
 // fixLogger forces the given logger to include a caller=metrics.go kv pair.
 // The given logger might be a spanlogger instance, in which case it only logs caller=spanlogger.go:<line>.
 // We use `caller=metrics.go` when querying our logs for performance issues, and some logs were missing.
@@ -378,6 +387,7 @@ func PrintMatches(matches []string) string {
 	return strings.Join(matches, ":")
 }
 
+// RecordSeriesQueryMetrics 记录 series 查询；可选输出 shard_num/shard_count 分片信息。
 func RecordSeriesQueryMetrics(ctx context.Context, log log.Logger, start, end time.Time, match []string, status string, shards []string, stats logql_stats.Result) {
 	var (
 		logger      = fixLogger(ctx, log)
@@ -427,6 +437,7 @@ func RecordSeriesQueryMetrics(ctx context.Context, log log.Logger, start, end ti
 	execLatency.WithLabelValues(status, queryType, "").Observe(stats.Summary.ExecTime)
 }
 
+// RecordStatsQueryMetrics 记录 index stats 类查询的执行时间与返回条目。
 func RecordStatsQueryMetrics(ctx context.Context, log log.Logger, start, end time.Time, query string, status string, stats logql_stats.Result) {
 	var (
 		logger      = fixLogger(ctx, log)
@@ -459,6 +470,7 @@ func RecordStatsQueryMetrics(ctx context.Context, log log.Logger, start, end tim
 	execLatency.WithLabelValues(status, queryType, "").Observe(stats.Summary.ExecTime)
 }
 
+// RecordShardsQueryMetrics 记录 shards 规划 API：目标每分片字节数与实际分片数及 Bloom 比例。
 func RecordShardsQueryMetrics(
 	ctx context.Context,
 	log log.Logger,
@@ -512,6 +524,7 @@ func RecordShardsQueryMetrics(
 	execLatency.WithLabelValues(status, queryType, "").Observe(stats.Summary.ExecTime)
 }
 
+// RecordVolumeQueryMetrics 记录 volume 查询；step 为 0 时 range_type 记为 instant。
 func RecordVolumeQueryMetrics(ctx context.Context, log log.Logger, start, end time.Time, query string, limit uint32, step time.Duration, status string, stats logql_stats.Result) {
 	var (
 		logger      = fixLogger(ctx, log)
@@ -588,6 +601,7 @@ func RecordDetectedFieldsQueryMetrics(ctx context.Context, log log.Logger, start
 	// execLatency.WithLabelValues(status, queryType, "").Observe(stats.Summary.ExecTime)
 }
 
+// recordUsageStats 按 metric/log 查询分别上报字节与行吞吐的分析统计。
 func recordUsageStats(queryType string, stats logql_stats.Result) {
 	if queryType == QueryTypeMetric {
 		bytePerSecondMetricUsage.Record(float64(stats.Summary.BytesProcessedPerSecond))
@@ -598,6 +612,7 @@ func recordUsageStats(queryType string, stats logql_stats.Result) {
 	}
 }
 
+// QueryType 根据 AST 根节点类型推断 metric/filter/limited 等查询类别字符串。
 func QueryType(expr syntax.Expr) (string, error) {
 	switch e := expr.(type) {
 	case syntax.SampleExpr:
@@ -626,6 +641,7 @@ func extractShard(shards []string) *astmapper.ShardAnnotation {
 	return &shard
 }
 
+// calculateResultSize 估算未序列化结果的 JSON 体积，供 frontend 日志中的 approx_result_size。
 // calculateResultSize calculates an approximate estimate of the result size in bytes
 // without serialization by summing up the actual data sizes plus estimated JSON overhead.
 // This is an approximation and may not match the exact serialized size. Used for frontend logging.
@@ -682,6 +698,7 @@ func calculateResultSize(result promql_parser.Value) int {
 	}
 }
 
+// estimateLabelsSize 累加标签名值长度与 JSON 分隔符开销，用于结果大小估算。
 // estimateLabelsSize estimates the JSON size of labels
 func estimateLabelsSize(lbs labels.Labels) int {
 	if lbs.Len() == 0 {
@@ -736,3 +753,4 @@ func RecordDetectedLabelsQueryMetrics(ctx context.Context, log log.Logger, start
 
 	execLatency.WithLabelValues(status, queryType, "").Observe(stats.Summary.ExecTime)
 }
+// slowQueryThresholdSecond 以上查询 latency 标签为 slow；sharded 标签反映是否多分片执行。

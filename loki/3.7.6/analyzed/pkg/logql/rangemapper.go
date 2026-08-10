@@ -1,5 +1,7 @@
 package logql
 
+// rangemapper 将长 range 的 SampleExpr 拆成多个带 offset 的下游子查询，由前端再合并结果。
+
 import (
 	"fmt"
 	"math"
@@ -34,6 +36,7 @@ var splittableRangeVectorOp = map[string]struct{}{
 	syntax.OpRangeTypeMin:       {},
 }
 
+// RangeMapper 按 splitByInterval 切分 range 聚合与可拆分向量聚合，生成 ConcatSampleExpr 链。
 // RangeMapper is used to rewrite LogQL sample expressions into multiple
 // downstream sample expressions with a smaller time range that can be executed
 // using the downstream engine.
@@ -75,6 +78,7 @@ func NewRangeMapperWithSplitAlign(interval time.Duration, splitAlign time.Time, 
 
 // NewRangeMapper creates a new RangeMapper instance with the given duration as
 // split interval. The interval must be greater than 0.
+// NewRangeMapper 要求 splitByInterval>0，并绑定指标与拆分统计对象。
 func NewRangeMapper(interval time.Duration, metrics *MapperMetrics, stats *MapperStats) (RangeMapper, error) {
 	if interval <= 0 {
 		return RangeMapper{}, fmt.Errorf("cannot create RangeMapper with splitByInterval <= 0; got %s", interval)
@@ -95,6 +99,7 @@ func NewRangeMapperMetrics(registerer prometheus.Registerer) *MapperMetrics {
 // be executed by the downstream engine.
 // It returns a boolean indicating whether a rewrite was possible, the
 // rewritten sample expression, and an error in case the rewrite failed.
+// Parse 入口：不可拆分则 noop；成功 Map 后更新 ParsedQueries 与 downstreamRecorder。
 func (m RangeMapper) Parse(expr syntax.Expr) (bool, syntax.Expr, error) {
 	origExpr, ok := expr.(syntax.SampleExpr)
 	if !ok {
@@ -132,6 +137,7 @@ func (m RangeMapper) Parse(expr syntax.Expr) (bool, syntax.Expr, error) {
 // It is called recursively on the expression tree.
 // The function takes an optional vector aggregation as second argument, that
 // is pushed down to the downstream expression.
+// Map 递归遍历 AST；vectorAggrPushdown 可将外层向量聚合下推到各子 range 查询。
 func (m RangeMapper) Map(expr syntax.SampleExpr, vectorAggrPushdown *syntax.VectorAggregationExpr, recorder *downstreamRecorder) (syntax.SampleExpr, error) {
 	// immediately clone the passed expr to avoid mutating the original
 	expr = syntax.MustClone(expr)
@@ -194,6 +200,7 @@ func (m RangeMapper) Map(expr syntax.SampleExpr, vectorAggrPushdown *syntax.Vect
 // Note that this function must not be called with a BinOpExpr as argument
 // as it returns only the range of the RHS.
 // Example: expression `count_over_time({app="foo"}[10m])` returns 10m
+// getRangeInterval 遍历 AST 取 RangeAggregationExpr 的 interval，不适用于 BinOp 整体。
 func getRangeInterval(expr syntax.SampleExpr) time.Duration {
 	var rangeInterval time.Duration
 	expr.Walk(func(e syntax.Expr) bool {
@@ -208,6 +215,7 @@ func getRangeInterval(expr syntax.SampleExpr) time.Duration {
 
 // hasLabelExtractionStage returns true if an expression contains a stage for label extraction,
 // such as `| json` or `| logfmt`, that would result in an exploding amount of series in downstream queries.
+// hasLabelExtractionStage 检测 json/logfmt 等可能爆炸序列数的解析 stage，限制盲目拆分。
 func hasLabelExtractionStage(expr syntax.SampleExpr) bool {
 	found := false
 	expr.Walk(func(e syntax.Expr) bool {
@@ -234,6 +242,7 @@ func hasLabelExtractionStage(expr syntax.SampleExpr) bool {
 // => (sum without (count_over_time({app="foo"}[1m]) ++ count_over_time({app="foo"}[1m]) offset 1m) / 120)
 // rate({app="foo"} | unwrap bar [2m])
 // => (sum without (sum_over_time({app="foo"}[1m]) ++ sum_over_time({app="foo"}[1m]) offset 1m) / 120)
+// sumOverFullRange 将 rate/bytes_rate 改写为子 count/sum_over_time 之和再除以全 range 秒数。
 func (m RangeMapper) sumOverFullRange(expr *syntax.RangeAggregationExpr, overrideDownstream *syntax.VectorAggregationExpr, operation string, rangeInterval time.Duration, recorder *downstreamRecorder) syntax.SampleExpr {
 	var downstreamExpr syntax.SampleExpr = &syntax.RangeAggregationExpr{
 		Left:      expr.Left,
@@ -366,6 +375,7 @@ func (m RangeMapper) mapConcatSampleExpr(expr syntax.SampleExpr, rangeInterval t
 // 2. sum(rate({foo="bar"}[1h] offset 34m))
 // 3. sum(rate({foo="bar"}[1h] offset 1h34m))
 // 4. sum(rate({foo="bar"}[26m] offset 2h34m))
+// rangeSplitAlign 按 splitAlignTs 对齐边界，首段与末段 interval 可能小于 splitByInterval。
 func (m RangeMapper) rangeSplitAlign(
 	expr syntax.SampleExpr, rangeInterval time.Duration, recorder *downstreamRecorder,
 ) syntax.SampleExpr {
@@ -490,6 +500,7 @@ func (m RangeMapper) mapVectorAggregationExpr(expr *syntax.VectorAggregationExpr
 // contains the initial query which will be the downstream expression with a split range interval.
 // Example: `sum by (a) (bytes_over_time)`
 // Is mapped to `sum by (a) (sum without downstream<sum by (a) (bytes_over_time)>++downstream<sum by (a) (bytes_over_time)>++...)`
+// mapRangeAggregationExpr 按操作类型选择 sum/max/min/rate 等合并策略；含 label 提取且无 grouping 时不拆。
 func (m RangeMapper) mapRangeAggregationExpr(expr *syntax.RangeAggregationExpr, vectorAggrPushdown *syntax.VectorAggregationExpr, recorder *downstreamRecorder) syntax.SampleExpr {
 	rangeInterval := getRangeInterval(expr)
 
@@ -563,6 +574,7 @@ func (m RangeMapper) mapRangeAggregationExpr(expr *syntax.RangeAggregationExpr, 
 // supported.
 // A binary expression is splittable, if both the left and the right-hand side
 // are splittable.
+// isSplittableByRange 判断向量/range/二元表达式是否支持按时间 range 拆分优化。
 func isSplittableByRange(expr syntax.SampleExpr) bool {
 	switch e := expr.(type) {
 	case *syntax.VectorAggregationExpr:
@@ -585,3 +597,4 @@ func isSplittableByRange(expr syntax.SampleExpr) bool {
 		return false
 	}
 }
+// splittableVectorOp 与 splittableRangeVectorOp 白名单限定可安全拆分的聚合算子。

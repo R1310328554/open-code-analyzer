@@ -1,5 +1,7 @@
 package log
 
+// util 提供标签键规范化与字符串去重等流水线内部小工具函数。
+
 import (
 	"bytes"
 	"strings"
@@ -19,6 +21,7 @@ func uniqueString(s []string) []string {
 	return us
 }
 
+// sanitizeLabelKey 修剪空白并将非法字符替换为下划线；前缀模式下数字开头会加前导 _。
 func sanitizeLabelKey(key string, isPrefix bool) string {
 	if len(key) == 0 {
 		return key
@@ -38,6 +41,7 @@ func sanitizeLabelKey(key string, isPrefix bool) string {
 	}, key)
 }
 
+// appendSanitized 将字节键规范化后追加到目标切片，供解析器就地构建标签名。
 // appendSanitize appends the sanitized key to the slice.
 func appendSanitized(to, key []byte) []byte {
 	key = bytes.TrimSpace(key)
@@ -61,3 +65,4 @@ func appendSanitized(to, key []byte) []byte {
 	}
 	return to
 }
+// 标签键规则与 Prometheus 标签命名一致，仅允许字母数字与下划线。
