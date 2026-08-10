@@ -22,38 +22,54 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.services.resources.admin.AdminAuth;
 
+/**
+ * 细粒度管理权限 V2 入口。
+ * <p>使用 {@link AdminPermissionsSchema} 与 admin-permissions 客户端，并返回 V2 版本的 users/groups/clients/roles/realm 权限评估器。</p>
+ */
 class MgmtPermissionsV2 extends MgmtPermissions {
 
+    /** V2 客户端权限评估器 */
     private ClientPermissionsV2 clientPermissions;
 
+    /** V2 组权限评估器 */
     private GroupPermissionsV2 groupPermissions;
 
+    /** V2 角色权限评估器 */
     private RolePermissionsV2 rolePermissions;
 
+    /** V2 用户权限评估器 */
     private UserPermissionsV2 userPermissions;
 
+    /** V2 领域权限评估器 */
     private RealmPermissionsV2 realmPermissions;
 
+    /** 构造 V2 权限管理器（无认证上下文）。 */
     public MgmtPermissionsV2(KeycloakSession session, RealmModel realm) {
         super(session, realm);
     }
 
+    /** 构造 V2 权限管理器（带 AdminAuth）。 */
     public MgmtPermissionsV2(KeycloakSession session, RealmModel realm, AdminAuth auth) {
         super(session, realm, auth);
     }
 
+    /** 构造 V2 权限管理器（仅 AdminAuth，领域由 token 解析）。 */
     public MgmtPermissionsV2(KeycloakSession session, AdminAuth auth) {
         super(session, auth);
     }
 
+    /** 构造 V2 权限管理器（指定管理员用户）。 */
     public MgmtPermissionsV2(KeycloakSession session, RealmModel adminsRealm, UserModel admin) {
         super(session, adminsRealm, admin);
     }
 
+    /** 构造 V2 权限管理器（指定目标领域与管理员）。 */
     public MgmtPermissionsV2(KeycloakSession session, RealmModel realm, RealmModel adminsRealm, UserModel admin) {
         super(session, realm, adminsRealm, admin);
     }
 
+    @Override
+    /** V2 使用领域的 admin-permissions 客户端。 */
     @Override
     public ClientModel getRealmPermissionsClient() {
         return realm.getAdminPermissionsClient();

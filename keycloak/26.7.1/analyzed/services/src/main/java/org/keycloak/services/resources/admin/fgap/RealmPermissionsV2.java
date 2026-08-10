@@ -20,15 +20,21 @@ import org.keycloak.authorization.fgap.AdminPermissionsSchema;
 import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.models.ClientModel;
 
+/**
+ * 领域权限评估 V2 实现。
+ * <p>对 admin-permissions 客户端的 ResourceServer 使用 manage/view-realm 判断；
+ * 其他客户端 ResourceServer 额外检查客户端级 FGAP 权限。</p>
+ */
 class RealmPermissionsV2 extends RealmPermissions {
 
+    /** 构造 V2 领域权限评估器。 */
     public RealmPermissionsV2(MgmtPermissions root) {
         super(root);
     }
 
     @Override
     public boolean canManageAuthorizationDefault(ResourceServer resourceServer) {
-        // if the ResourceServer belongs to the admin-permissions client, check manage-realm
+        // ResourceServer 属于 admin-permissions 客户端时，检查 manage-realm
         if (resourceServer != null && AdminPermissionsSchema.SCHEMA.isAdminPermissionClient(root.realm, resourceServer.getId())) {
             return super.canManageRealm();
         }
@@ -41,7 +47,7 @@ class RealmPermissionsV2 extends RealmPermissions {
 
     @Override
     public boolean canViewAuthorizationDefault(ResourceServer resourceServer) {
-        // if the ResourceServer belongs to the admin-permissions client, check manage-realm or view-realm
+        // ResourceServer 属于 admin-permissions 客户端时，检查 manage-realm 或 view-realm
         if (resourceServer != null && AdminPermissionsSchema.SCHEMA.isAdminPermissionClient(root.realm, resourceServer.getId())) {
             return super.canViewRealm();
         }
@@ -52,6 +58,7 @@ class RealmPermissionsV2 extends RealmPermissions {
         return root.clients().canView(getClient(resourceServer));
     }
 
+    /** 由 ResourceServer ID 解析所属客户端。 */
     private ClientModel getClient(ResourceServer resourceServer) {
         if (resourceServer == null) return null;
         return root.session.clients().getClientById(root.realm, resourceServer.getId());

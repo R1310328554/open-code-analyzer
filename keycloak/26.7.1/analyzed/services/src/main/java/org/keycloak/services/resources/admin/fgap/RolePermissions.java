@@ -47,19 +47,31 @@ import org.keycloak.representations.idm.authorization.Permission;
 import org.jboss.logging.Logger;
 
 /**
+ * 角色细粒度管理权限 V1 实现。
+ * <p>为每个角色创建授权资源与 map-role / map-role-client-scope / map-role-composite 权限，并在映射管理员角色时进行额外冲突检查。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 class RolePermissions implements RolePermissionEvaluator, RolePermissionManagement {
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(RolePermissions.class);
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
+    /** 当前领域 */
     protected final RealmModel realm;
+    /** 授权 Provider */
     protected final AuthorizationProvider authz;
+    /** 根权限管理器 */
     protected final MgmtPermissions root;
+    /** 授权资源存储 */
     protected final ResourceStore resourceStore;
+    /** 授权策略存储 */
     protected final PolicyStore policyStore;
+    /** 角色授权资源名称前缀 */
     private static final String RESOURCE_NAME_PREFIX = "role.resource.";
 
+    /** 构造角色权限管理器。 */
     public RolePermissions(KeycloakSession session, RealmModel realm, AuthorizationProvider authz, MgmtPermissions root) {
         this.session = session;
         this.realm = realm;
@@ -88,6 +100,7 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
        }
     }
 
+    /** 删除角色的全部 FGAP 资源与策略。 */
     private void disablePermissions(RoleModel role) {
         ResourceServer server = resourceServer(role);
         if (server == null) return;
@@ -151,15 +164,16 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
         return root.resourceServer(client);
     }
 
+    /** 映射管理员角色前检查：调用者须拥有同等或更高特权，防止权限提升。 */
     protected boolean checkAdminRoles(RoleModel role) {
         if (AdminRoles.ALL_ROLES.contains(role.getName())) {
             if (root.admin().hasRole(role)) return true;
 
             ClientModel adminClient = root.getRealmManagementClient();
-            // is this an admin role in 'realm-management' client of the realm we are managing?
+            // 是否为被管理领域 realm-management 客户端的管理员角色？
             if (adminClient.equals(role.getContainer())) {
-                // if this is realm admin role, then check to see if admin has similar permissions
-                // we do this so that the authz service is invoked
+                // 检查管理员是否拥有对应的领域/客户端管理权限
+                // 以便授权服务参与求值
                 if (role.getName().equals(AdminRoles.MANAGE_CLIENTS)
                         || role.getName().equals(AdminRoles.CREATE_CLIENT)
                         ) {
@@ -266,7 +280,7 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
                         return true;
                     }
                 } else if (role.getName().equals(AdminRoles.REALM_ADMIN)) {
-                    // check to see if we have masterRealm.admin role.  Otherwise abort
+                    // 须拥有 master admin 角色，否则拒绝
                     if (root.adminsRealm() == null || !root.adminsRealm().getName().equals(Config.getAdminRealm())) {
                         return adminConflictMessage(role);
                     }
@@ -283,17 +297,17 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
                 }
 
             } else {
-                // now we need to check to see if this is a master admin role
+                // 检查是否为 master 领域的管理员角色
                 if (role.getContainer() instanceof RealmModel) {
                     RealmModel realm = (RealmModel)role.getContainer();
-                    // If realm role is master admin role then abort
+                    // master 领域角色须拒绝非 master admin 映射
                     // if realm name is master realm, than we know this is a admin role in master realm.
                     if (realm.getName().equals(Config.getAdminRealm())) {
                         return adminConflictMessage(role);
                     }
                 } else {
                     ClientModel container = (ClientModel)role.getContainer();
-                    // abort if this is an role in master realm and role is an admin role of any realm
+                    // master 领域中 *-realm 客户端的管理员角色须拒绝
                     if (container.getRealm().getName().equals(Config.getAdminRealm())
                             && container.getClientId().endsWith("-realm")) {
                         return adminConflictMessage(role);
@@ -307,16 +321,16 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
 
     }
 
+    /** 记录权限冲突调试信息并返回 false。 */
     private boolean adminConflictMessage(RoleModel role) {
         logger.debugf("Trying to assign admin privileges of role: %s but admin doesn't have same privilege", role.getName());
         return false;
     }
 
-    /**
-     * Is admin allowed to map this role?
+        /** 管理员是否允许将指定角色映射给用户。
      *
-     * @param role
-     * @return
+     * @param role 待映射角色
+     * @return 是否允许
      */
     @Override
     public boolean canMapRole(RoleModel role) {
@@ -493,6 +507,7 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
         return false;
     }
 
+    /** 是否拥有领域/客户端默认管理权限（不含 realm admin 角色限制）。 */
     public boolean canManageDefault(RoleModel role) {
         if (role.getContainer() instanceof RealmModel) {
             return root.realm().canManageRealmDefault();
@@ -529,6 +544,7 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
 
     }
 
+    /** 返回角色所属客户端，领域角色则返回 realm-management 客户端。 */
     private ClientModel getRoleClient(RoleModel role) {
         ClientModel client = null;
         if (role.getContainer() instanceof ClientModel) {
@@ -582,6 +598,7 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
         return granted;
     }
 
+    /** 检查当前用户对资源是否拥有指定 scope。 */
     private boolean hasPermission(Resource resource, String scope) {
         ResourceServer server = root.realmResourceServer();
         Collection<Permission> permissions = root.evaluatePermission(new ResourcePermission(resource, resource.getScopes(), server), server);
@@ -596,19 +613,23 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
         return false;
     }
 
+    /** 查找 map-role scope。 */
     private Scope mapRoleScope(ResourceServer server) {
         return authz.getStoreFactory().getScopeStore().findByName(server, MAP_ROLE_SCOPE);
     }
 
+    /** 查找 map-role-client-scope scope。 */
     private Scope mapClientScope(ResourceServer server) {
         return authz.getStoreFactory().getScopeStore().findByName(server, MAP_ROLE_CLIENT_SCOPE_SCOPE);
     }
 
+    /** 查找 map-role-composite scope。 */
     private Scope mapCompositeScope(ResourceServer server) {
         return authz.getStoreFactory().getScopeStore().findByName(server, MAP_ROLE_COMPOSITE_SCOPE);
     }
 
 
+    /** 为角色创建授权资源与三个 map-* 权限策略。 */
     private void initialize(RoleModel role) {
         ResourceServer server = resourceServer(role);
         if (server == null) {
@@ -659,22 +680,27 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
         }
     }
 
+    /** 返回 map-role 权限策略名称。 */
     private String getMapRolePermissionName(RoleModel role) {
         return MAP_ROLE_SCOPE + ".permission." + role.getId();
     }
 
+    /** 返回 map-role-client-scope 权限策略名称。 */
     private String getMapClientScopePermissionName(RoleModel role) {
         return MAP_ROLE_CLIENT_SCOPE_SCOPE + ".permission." + role.getId();
     }
 
+    /** 返回 map-role-composite 权限策略名称。 */
     private String getMapCompositePermissionName(RoleModel role) {
         return MAP_ROLE_COMPOSITE_SCOPE + ".permission." + role.getId();
     }
 
+    /** 返回角色授权资源名称。 */
     private String getRoleResourceName(RoleModel role) {
         return "role.resource." + role.getId();
     }
 
+    /** 客户端角色返回其客户端 ResourceServer。 */
     private ResourceServer getResourceServer(RoleModel role) {
         ResourceServer resourceServer = null;
         if (role.isClientRole()) {
@@ -683,6 +709,7 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
         }
         return resourceServer;
     }
+    /** 是否为领域级 admin/create-realm 角色。 */
     private boolean isRealmAdminRole(RoleModel role) {
         return role.getContainer() instanceof RealmModel && List.of(AdminRoles.ADMIN, AdminRoles.CREATE_REALM).contains(role.getName());
     }

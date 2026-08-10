@@ -22,43 +22,56 @@ import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.models.AdminRoles;
 
 /**
+ * 单个领域内管理权限评估实现（V1 粗粒度角色模型）。
+ * <p>基于 realm-management 客户端的 admin 角色判断各领域资源的查看与管理权限。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 class RealmPermissions implements RealmPermissionEvaluator {
 
+    /** 根权限管理器 */
     protected final MgmtPermissions root;
 
+    /** 构造领域权限评估器。 */
     public RealmPermissions(MgmtPermissions root) {
         this.root = root;
     }
 
+    /** 默认：是否拥有 manage-realm 角色。 */
     public boolean canManageRealmDefault() {
         return root.hasOneAdminRole(AdminRoles.MANAGE_REALM);
 
     }
+    /** 默认：是否拥有 manage-realm 或 view-realm 角色。 */
     public boolean canViewRealmDefault() {
         return root.hasOneAdminRole(AdminRoles.MANAGE_REALM, AdminRoles.VIEW_REALM);
     }
 
+    /** 默认：是否拥有 manage-identity-providers 角色。 */
     public boolean canManageIdentityProvidersDefault() {
         return root.hasOneAdminRole(AdminRoles.MANAGE_IDENTITY_PROVIDERS);
 
     }
+    /** 默认：是否拥有 manage/view-identity-providers 角色。 */
     public boolean canViewIdentityProvidersDefault() {
         return root.hasOneAdminRole(AdminRoles.MANAGE_IDENTITY_PROVIDERS, AdminRoles.VIEW_IDENTITY_PROVIDERS);
     }
 
+    /** 默认：是否拥有 manage-authorization 或 manage-clients 角色。 */
     public boolean canManageAuthorizationDefault(ResourceServer resourceServer) {
         return root.hasOneAdminRole(AdminRoles.MANAGE_AUTHORIZATION, AdminRoles.MANAGE_CLIENTS);
 
     }
+    /** 默认：是否拥有 manage/view-authorization 角色。 */
     public boolean canViewAuthorizationDefault(ResourceServer resourceServer) {
         return root.hasOneAdminRole(AdminRoles.MANAGE_AUTHORIZATION, AdminRoles.VIEW_AUTHORIZATION);
     }
+    /** 默认：是否拥有 manage-events 角色。 */
     public boolean canManageEventsDefault() {
         return root.hasOneAdminRole(AdminRoles.MANAGE_EVENTS);
     }
+    /** 默认：是否拥有 manage/view-events 角色。 */
     public boolean canViewEventsDefault() {
         return root.hasOneAdminRole(AdminRoles.MANAGE_EVENTS, AdminRoles.VIEW_EVENTS);
     }

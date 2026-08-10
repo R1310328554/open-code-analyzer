@@ -25,59 +25,76 @@ import org.keycloak.services.resources.admin.AdminAuth;
 
 
 /**
+ * 领域级管理 REST 资源的粗粒度角色权限辅助类。
+ * <p>基于 {@link AdminAuth} 与 realm-management 客户端角色，按 {@link AdminAuth.Resource}
+ * 类型判断查看/管理权限，不满足时抛出 {@link ForbiddenException}。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 class RealmAuth {
 
+    /** 当前校验的管理资源类型 */
     private AdminAuth.Resource resource;
 
+    /** 管理员认证上下文 */
     private AdminAuth auth;
+    /** realm-management 客户端 */
     private ClientModel realmAdminApp;
 
+    /** 绑定认证上下文与 realm 管理客户端。 */
     public RealmAuth(AdminAuth auth, ClientModel realmAdminApp) {
         this.auth = auth;
         this.realmAdminApp = realmAdminApp;
     }
 
+    /** 设置待校验的资源类型并返回自身以支持链式调用。 */
     public RealmAuth init(AdminAuth.Resource resource) {
         this.resource = resource;
         return this;
     }
 
+    /** 返回底层 {@link AdminAuth}。 */
     public AdminAuth getAuth() {
         return auth;
     }
 
+    /** 要求调用者至少拥有任一 realm 管理角色，否则抛出 403。 */
     public void requireAny() {
         if (!hasAny()) {
             throw new ForbiddenException();
         }
     }
 
+    /** 是否拥有任一 realm 管理角色。 */
     public boolean hasAny() {
         return auth.hasOneOfAppRole(realmAdminApp, AdminRoles.ALL_REALM_ROLES);
     }
 
+    /** 是否拥有当前资源的查看或管理角色。 */
     public boolean hasView() {
         return auth.hasOneOfAppRole(realmAdminApp, getViewRole(resource), getManageRole(resource));
     }
 
+    /** 是否拥有当前资源的管理角色。 */
     public boolean hasManage() {
         return auth.hasOneOfAppRole(realmAdminApp, getManageRole(resource));
     }
 
+    /** 要求拥有查看权限，否则抛出 403。 */
     public void requireView() {
         if (!hasView()) {
             throw new ForbiddenException();
         }
     }
 
+    /** 要求拥有管理权限，否则抛出 403。 */
     public void requireManage() {
         if (!hasManage()) {
             throw new ForbiddenException();
         }
     }
 
+    /** 按资源类型返回对应的查看角色名。 */
     private String getViewRole(AdminAuth.Resource resource) {
         switch (resource) {
             case CLIENT:
@@ -97,6 +114,7 @@ class RealmAuth {
         }
     }
 
+    /** 按资源类型返回对应的管理角色名。 */
     private String getManageRole(AdminAuth.Resource resource) {
         switch (resource) {
             case CLIENT:

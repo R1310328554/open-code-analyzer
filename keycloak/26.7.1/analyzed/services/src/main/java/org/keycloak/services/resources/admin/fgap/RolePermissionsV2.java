@@ -36,10 +36,16 @@ import org.keycloak.services.resources.admin.fgap.ModelRecord.RoleModelRecord;
 
 import static org.keycloak.authorization.fgap.AdminPermissionsSchema.ROLES_RESOURCE_TYPE;
 
+/**
+ * 角色细粒度管理权限 V2 实现。
+ * <p>基于 {@link AdminPermissionsSchema} 与 {@link FineGrainedAdminPermissionEvaluator}，不再使用 V1  per-role 授权资源模型。</p>
+ */
 class RolePermissionsV2 extends RolePermissions {
 
+    /** FGAP V2 通用权限评估器 */
     private final FineGrainedAdminPermissionEvaluator eval;
 
+    /** 构造 V2 角色权限评估器。 */
     RolePermissionsV2(KeycloakSession session, RealmModel realm, AuthorizationProvider authz, MgmtPermissions root) {
         super(session, realm, authz, root);
         this.eval = new FineGrainedAdminPermissionEvaluator(session, root, resourceStore, policyStore);
@@ -49,15 +55,15 @@ class RolePermissionsV2 extends RolePermissions {
     public boolean canMapRole(RoleModel role) {
         if (isRealmAdminRole(role)) {
             if (realm.isAdminPermissionsEnabled()) {
-                // only server or realm admins can map roles if FGAP is enabled
+                // 启用 FGAP 时仅服务器或领域管理员可映射管理员角色
                 return root.isRealmAdmin();
             }
-            // otherwise, check if the user is granted with manage-users and is granted with the role being granted
+            // 否则需 manage-users 且自身已拥有待映射的管理员角色
             return root.hasOneAdminRole(AdminRoles.MANAGE_USERS) && checkAdminRoles(role);
         }
 
         if (root.hasOneAdminRole(AdminRoles.MANAGE_USERS)) {
-            // user has manage-users, so they can map any non-admin role
+            // 拥有 manage-users 可映射任意非管理员角色
             return true;
         }
 
@@ -77,12 +83,12 @@ class RolePermissionsV2 extends RolePermissions {
                 // only server or realm admins can map roles if FGAP is enabled
                 return root.isRealmAdmin();
             }
-            // otherwise, check if the user is granted with manage-realm or manage-client roles and is granted with the role being granted
+            // 否则需 manage-realm/manage-clients 且已通过 checkAdminRoles
             return canManageDefault(role) && checkAdminRoles(role);
         }
 
         if (canManageDefault(role)) {
-            // user has manage-realm or manage-client roles, so they can map any non-admin composite role
+            // 拥有领域/客户端管理默认权限时可映射非管理员复合角色
             return checkAdminRoles(role);
         }
 
@@ -180,6 +186,7 @@ class RolePermissionsV2 extends RolePermissions {
         throw new UnsupportedOperationException("Not supported in V2");
     }
 
+    /** 判断是否为 master/realm-management 等管理员角色。 */
     private boolean isRealmAdminRole(RoleModel role) {
         RoleContainerModel container = role.getContainer();
         boolean isMasterRealmRole = container.equals(root.getMasterRealm());

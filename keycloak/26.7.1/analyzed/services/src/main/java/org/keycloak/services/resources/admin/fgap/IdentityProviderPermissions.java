@@ -41,19 +41,25 @@ import org.jboss.logging.Logger;
 import static org.keycloak.services.resources.admin.fgap.AdminPermissionManagement.TOKEN_EXCHANGE;
 
 /**
- * Manages default policies for identity providers.
- *
+ * 身份提供者（IdP）细粒度管理权限实现。
+ * <p>为每个 IdP 创建 token-exchange 授权资源与权限策略，控制客户端是否可向该 IdP 发起令牌交换。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 class IdentityProviderPermissions implements  IdentityProviderPermissionManagement {
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(IdentityProviderPermissions.class);
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
+    /** 当前领域 */
     protected final RealmModel realm;
+    /** 授权 Provider */
     protected final AuthorizationProvider authz;
+    /** 根权限管理器 */
     protected final MgmtPermissions root;
 
+    /** 构造 IdP 权限管理器。 */
     public IdentityProviderPermissions(KeycloakSession session, RealmModel realm, AuthorizationProvider authz, MgmtPermissions root) {
         this.session = session;
         this.realm = realm;
@@ -61,14 +67,17 @@ class IdentityProviderPermissions implements  IdentityProviderPermissionManageme
         this.root = root;
     }
 
+    /** 返回 IdP 对应的授权资源名称。 */
     private String getResourceName(IdentityProviderModel idp) {
         return "idp.resource." + idp.getInternalId();
     }
 
+    /** 返回 token-exchange 权限策略名称。 */
     private String getExchangeToPermissionName(IdentityProviderModel idp) {
         return TOKEN_EXCHANGE + ".permission.idp." + idp.getInternalId();
     }
 
+    /** 为 IdP 初始化授权资源与 token-exchange 权限。 */
     private void initialize(IdentityProviderModel idp) {
         ResourceServer server = root.initializeRealmResourceServer();
         if (server == null) return;
@@ -90,6 +99,7 @@ class IdentityProviderPermissions implements  IdentityProviderPermissionManageme
         }
     }
 
+    /** 按名称删除授权策略。 */
     private void deletePolicy(String name, ResourceServer server) {
         Policy policy = authz.getStoreFactory().getPolicyStore().findByName(server, name);
         if (policy != null) {
@@ -98,6 +108,7 @@ class IdentityProviderPermissions implements  IdentityProviderPermissionManageme
 
     }
 
+    /** 删除 IdP 的全部细粒度权限资源与策略。 */
     private void deletePermissions(IdentityProviderModel idp) {
         ResourceServer server = root.initializeRealmResourceServer();
         if (server == null) return;
@@ -125,6 +136,7 @@ class IdentityProviderPermissions implements  IdentityProviderPermissionManageme
 
 
 
+    /** 查找 token-exchange scope。 */
     private Scope exchangeToScope(ResourceServer server) {
         return authz.getStoreFactory().getScopeStore().findByName(server, TOKEN_EXCHANGE);
     }
@@ -169,7 +181,7 @@ class IdentityProviderPermissions implements  IdentityProviderPermissionManageme
         }
 
         Set<Policy> associatedPolicies = policy.getAssociatedPolicies();
-        // if no policies attached to permission then just do default behavior
+        // 权限未关联任何策略时采用默认拒绝行为
         if (associatedPolicies == null || associatedPolicies.isEmpty()) {
             logger.debug("No policies set up for permission on target idp");
             return false;

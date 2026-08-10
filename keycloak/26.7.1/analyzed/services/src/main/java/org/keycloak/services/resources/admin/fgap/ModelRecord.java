@@ -23,8 +23,14 @@ import org.keycloak.models.OrganizationModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserModel;
 
+/**
+ * 细粒度管理权限（FGAP）中领域模型的密封记录接口。
+ * <p>将 {@link ClientModel}、{@link GroupModel}、{@link RoleModel}、{@link UserModel}、
+ * {@link OrganizationModel} 统一封装为带资源类型与 ID 的可判别记录，供权限评估器使用。</p>
+ */
 sealed interface ModelRecord {
 
+    /** 客户端模型记录，资源类型为 {@link AdminPermissionsSchema#CLIENTS_RESOURCE_TYPE}。 */
     record ClientModelRecord(ClientModel client) implements ModelRecord {
         @Override
         public String getResourceType() {
@@ -37,6 +43,7 @@ sealed interface ModelRecord {
         }
     }
 
+    /** 组模型记录，资源类型为 {@link AdminPermissionsSchema#GROUPS_RESOURCE_TYPE}。 */
     record GroupModelRecord(GroupModel group) implements ModelRecord {
         @Override
         public String getResourceType() {
@@ -49,6 +56,7 @@ sealed interface ModelRecord {
         }
     }
 
+    /** 角色模型记录，资源类型为 {@link AdminPermissionsSchema#ROLES_RESOURCE_TYPE}。 */
     record RoleModelRecord(RoleModel role) implements ModelRecord {
         @Override
         public String getResourceType() {
@@ -61,6 +69,7 @@ sealed interface ModelRecord {
         }
     }
 
+    /** 用户模型记录，资源类型为 {@link AdminPermissionsSchema#USERS_RESOURCE_TYPE}。 */
     record UserModelRecord(UserModel user) implements ModelRecord {
         @Override
         public String getResourceType() {
@@ -73,6 +82,7 @@ sealed interface ModelRecord {
         }
     }
 
+    /** 组织模型记录，资源类型为 {@link AdminPermissionsSchema#ORGANIZATIONS_RESOURCE_TYPE}。 */
     record OrganizationModelRecord(OrganizationModel organization) implements ModelRecord {
         @Override
         public String getResourceType() {
@@ -85,6 +95,8 @@ sealed interface ModelRecord {
         }
     }
 
+    /** 返回关联模型的内部 ID，模型为 {@code null} 时表示类型级权限。 */
     String getId();
+    /** 返回 FGAP 资源类型标识。 */
     String getResourceType();
 }

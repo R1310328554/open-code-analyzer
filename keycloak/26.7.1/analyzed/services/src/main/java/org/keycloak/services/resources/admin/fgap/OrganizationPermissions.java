@@ -27,11 +27,18 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.OrganizationModel;
 import org.keycloak.services.resources.admin.fgap.ModelRecord.OrganizationModelRecord;
 
+/**
+ * 组织细粒度管理权限实现（FGAP V2）。
+ * <p>优先检查粗粒度 admin 角色，否则委托 {@link FineGrainedAdminPermissionEvaluator} 评估。</p>
+ */
 class OrganizationPermissions implements OrganizationPermissionEvaluator {
 
+    /** FGAP V2 通用权限评估器 */
     private final FineGrainedAdminPermissionEvaluator eval;
+    /** 根权限管理器 */
     private final MgmtPermissions root;
 
+    /** 构造组织权限评估器。 */
     OrganizationPermissions(KeycloakSession session, AuthorizationProvider authz, MgmtPermissions root) {
         this.root = root;
         ResourceStore resourceStore = (authz == null) ? null : authz.getStoreFactory().getResourceStore();
