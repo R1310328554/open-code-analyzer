@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:12:51Z",
-  "files": [
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/DefaultFullBinaryMemcacheResponse.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/FullBinaryMemcacheRequest.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/FullBinaryMemcacheResponse.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttCodecUtil.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttConnAckMessage.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttConnAckVariableHeader.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttConnectMessage.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttConnectPayload.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttConnectReturnCode.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttConnectVariableHeader.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttConstant.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttDecoder.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttEncoder.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttFixedHeader.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttIdentifierRejectedException.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1028,
-  "done": 885
+  "done": 900
 }
