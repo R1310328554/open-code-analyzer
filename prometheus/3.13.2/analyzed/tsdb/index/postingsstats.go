@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// postings 基数统计辅助：maxHeap 维护 Top-N 高基数 label/value 计数。
+
 package index
 
 import (
@@ -18,6 +20,7 @@ import (
 	"slices"
 )
 
+// Stat 表示单个 label 或 value 的名称及其 series 计数。
 // Stat holds values for a single cardinality statistic.
 type Stat struct {
 	Name  string
@@ -37,6 +40,7 @@ func (m *maxHeap) init(length int) {
 	m.Items = make([]Stat, 0, length)
 }
 
+// push 若堆未满则追加，否则替换当前最小计数项。
 func (m *maxHeap) push(item Stat) {
 	if len(m.Items) < m.maxLength {
 		if item.Count < m.minValue {
@@ -61,6 +65,7 @@ func (m *maxHeap) push(item Stat) {
 	}
 }
 
+// get 按 Count 降序返回堆中全部 Stat。
 func (m *maxHeap) get() []Stat {
 	slices.SortFunc(m.Items, func(a, b Stat) int {
 		switch {

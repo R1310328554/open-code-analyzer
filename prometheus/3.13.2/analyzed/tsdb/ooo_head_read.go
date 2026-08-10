@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Head+OOO 联合读取：合并顺序 head 与乱序 mmap chunk 的 index/chunk/querier，并构造 OOOCompactionHead 供 compaction 写 block。
+
 package tsdb
 
 import (
@@ -33,6 +35,7 @@ import (
 
 var _ IndexReader = &HeadAndOOOIndexReader{}
 
+// HeadAndOOOIndexReader 在 headIndexReader 基础上合并 OOO postings 与 label 查询。
 type HeadAndOOOIndexReader struct {
 	*headIndexReader            // A reference to the headIndexReader so we can reuse as many interface implementation as possible.
 	inoMint                     int64
@@ -41,6 +44,7 @@ type HeadAndOOOIndexReader struct {
 
 var _ chunkenc.Iterable = &mergedOOOChunks{}
 
+// mergedOOOChunks 将重叠 OOO chunk 链成单一 Iterable 供迭代。
 // mergedOOOChunks holds the list of iterables for overlapping chunks.
 type mergedOOOChunks struct {
 	chunkIterables []chunkenc.Iterable
@@ -50,6 +54,7 @@ func (o mergedOOOChunks) Iterator(iterator chunkenc.Iterator) chunkenc.Iterator 
 	return storage.ChainSampleIteratorFromIterables(iterator, o.chunkIterables)
 }
 
+// NewHeadAndOOOIndexReader 创建覆盖 head 与 OOO mmap 范围的联合索引读取器。
 func NewHeadAndOOOIndexReader(head *Head, inoMint, mint, maxt int64, lastGarbageCollectedMmapRef chunks.ChunkDiskMapperRef) *HeadAndOOOIndexReader {
 	hr := &headIndexReader{
 		head: head,
@@ -211,6 +216,7 @@ func lessByMinTimeAndMinRef(a, b chunks.Meta) int {
 	}
 }
 
+// HeadAndOOOChunkReader 读取 head mem/mmap chunk 并叠加 OOO 磁盘 chunk。
 type HeadAndOOOChunkReader struct {
 	head          *Head
 	mint, maxt    int64
@@ -312,6 +318,7 @@ func (cr *HeadAndOOOChunkReader) collectOrGetHeadChunks(s *memSeries) []*memChun
 	return hc
 }
 
+// EnableChunkCache 为 range 查询启用 head chunk O(1) 缓存查找。
 // EnableChunkCache enables the head-chunk cache on the underlying headChunkReader.
 // This should only be called for range queries where the cache provides O(1) lookups
 // across multiple chunk accesses for the same series.
@@ -340,6 +347,7 @@ type OOOCompactionHead struct {
 	mint, maxt  int64 // Among all the compactable chunks.
 }
 
+// NewOOOCompactionHead 扫描 OOO 数据构建临时 compaction head（含 index/chunk reader）。
 // NewOOOCompactionHead does the following:
 // 1. M-maps all the in-memory ooo chunks.
 // 2. Compute the expected block ranges while iterating through all ooo series and store it.
@@ -447,6 +455,7 @@ func (ch *OOOCompactionHead) Meta() BlockMeta {
 	}
 }
 
+// CloneForTimeRange 克隆 compaction head 并限制查询时间窗。
 // CloneForTimeRange clones the OOOCompactionHead such that the IndexReader and ChunkReader
 // obtained from this only looks at the m-map chunks within the given time ranges while not looking
 // beyond the ch.lastMmapRef.
@@ -553,6 +562,7 @@ func (*OOOCompactionHeadIndexReader) Close() error {
 	return nil
 }
 
+// HeadAndOOOQuerier 合并 head 与 OOO 的 SeriesSet，对外呈现统一 Querier。
 // HeadAndOOOQuerier queries both the head and the out-of-order head.
 type HeadAndOOOQuerier struct {
 	mint, maxt int64
@@ -629,6 +639,7 @@ func (q *HeadAndOOOQuerier) Select(ctx context.Context, sortSeries bool, hints *
 	return selectSeriesSet(ctx, sortSeries, hints, matchers, q.index, q.chunkr, q.head.tombstones, q.mint, q.maxt)
 }
 
+// HeadAndOOOChunkQuerier 合并 head 与 OOO 的 ChunkSeriesSet。
 // HeadAndOOOChunkQuerier queries both the head and the out-of-order head.
 type HeadAndOOOChunkQuerier struct {
 	mint, maxt int64

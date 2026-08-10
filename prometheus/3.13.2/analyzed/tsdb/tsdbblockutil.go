@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 测试/工具 block 写入：CreateBlock 将 storage.Series 样本流式写入临时 BlockWriter 并 Flush 落盘。
+
 package tsdb
 
 import (
@@ -26,6 +28,7 @@ import (
 
 var ErrInvalidTimes = errors.New("max time is lesser than min time")
 
+// CreateBlock 迭代 series 追加样本，定期 Commit 控制内存并 Flush 返回 block 路径。
 // CreateBlock creates a chunkrange block from the samples passed to it, and writes it to disk.
 func CreateBlock(series []storage.Series, dir string, chunkRange int64, logger *slog.Logger) (string, error) {
 	if chunkRange == 0 {

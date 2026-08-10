@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 内存 postings 索引与集合运算：MemPostings 维护 label→series ref 倒排表，并提供 Intersect/Merge/Without 等 postings 代数操作。
+
 package index
 
 import (
@@ -37,6 +39,7 @@ const exponentialSliceGrowthFactor = 2
 
 var allPostingsKey = labels.Label{}
 
+// AllPostingsKey 返回存储“全部 series ID”的特殊空 label 键。
 // AllPostingsKey returns the label key that is used to store the postings list of all existing IDs.
 func AllPostingsKey() (name, value string) {
 	return allPostingsKey.Name, allPostingsKey.Value
@@ -53,6 +56,7 @@ var ensureOrderBatchPool = sync.Pool{
 	},
 }
 
+// MemPostings 为每个 label pair 维护 series ref 列表；EnsureOrder 前可无序写入。
 // MemPostings holds postings list for series ID per label pair. They may be written
 // to out of order.
 // EnsureOrder() must be called once before any reads are done. This allows for quick
@@ -80,6 +84,7 @@ type MemPostings struct {
 
 const defaultLabelNamesMapSize = 512
 
+// NewMemPostings 创建已排序、可立即读写的 MemPostings。
 // NewMemPostings returns a memPostings that's ready for reads and writes.
 func NewMemPostings() *MemPostings {
 	return &MemPostings{
@@ -193,6 +198,7 @@ type PostingsStats struct {
 	NumLabelPairs           int
 }
 
+// Stats 统计 label/value 基数并可用回调估算 series 占用空间。
 // Stats calculates the cardinality statistics from postings.
 // Caller can pass in a function which computes the space required for n series with a given label.
 func (p *MemPostings) Stats(label string, limit int, labelSizeFunc func(string, string, uint64) uint64) *PostingsStats {
@@ -244,6 +250,7 @@ func (p *MemPostings) All() Postings {
 	return p.Postings(context.Background(), allPostingsKey.Name, allPostingsKey.Value)
 }
 
+// EnsureOrder 并行排序全部 postings 列表，之后方可安全读取。
 // EnsureOrder ensures that all postings lists are sorted. After it returns all further
 // calls to add and addFor will insert new IDs in a sorted manner.
 // Parameter numberOfConcurrentProcesses is used to specify the maximal number of
@@ -542,6 +549,7 @@ func ExpandPostings(p Postings) (res []storage.SeriesRef, err error) {
 	return res, p.Err()
 }
 
+// Postings 接口在有序 SeriesRef 列表上提供 Seek/Next 迭代。
 // Postings provides iterative access over an ordered list of SeriesRef.
 type Postings interface {
 	// Next advances the iterator and returns true if another value was found.
@@ -571,6 +579,7 @@ func (e errPostings) Err() error                { return e.err }
 
 var emptyPostings = errPostings{}
 
+// EmptyPostings 返回空 postings 哨兵，Intersect/Without 会走快速路径。
 // EmptyPostings returns a postings list that's always empty.
 // NOTE: Returning EmptyPostings sentinel when Postings struct has no postings is recommended.
 // It triggers optimized flow in other functions like Intersect, Without etc.
@@ -590,6 +599,7 @@ func ErrPostings(err error) Postings {
 	return errPostings{err}
 }
 
+// Intersect 对多个有序 postings 做归并求交。
 // Intersect returns a new postings list over the intersection of the
 // input postings.
 func Intersect(its ...Postings) Postings {
@@ -675,6 +685,7 @@ func (it *intersectPostings) Err() error {
 	return nil
 }
 
+// Merge 用 loser tree 合并多个 postings 迭代器的并集。
 // Merge returns a new iterator over the union of the input iterators.
 func Merge[T Postings](_ context.Context, its ...T) Postings {
 	if len(its) == 0 {
@@ -742,6 +753,7 @@ func (it mergedPostings[T]) Err() error {
 	return nil
 }
 
+// Without 从 full 中剔除 drop 里的 ref，得到差集 postings。
 // Without returns a new postings list that contains all elements from the full list that
 // are not in the drop list.
 func Without(full, drop Postings) Postings {
@@ -833,6 +845,7 @@ type listPostings struct {
 	cur  storage.SeriesRef
 }
 
+// NewListPostings 由已排序的 ref 切片构造 listPostings（保留切片引用）。
 // NewListPostings creates a Postings from the supplied SeriesRefs, which must be in order.
 // The list slice passed in is retained.
 func NewListPostings(list []storage.SeriesRef) Postings {
@@ -932,6 +945,7 @@ func (*bigEndianPostings) Err() error {
 	return nil
 }
 
+// FindIntersectingPostings 检测 p 与 candidates 中哪些 postings 有交集。
 // FindIntersectingPostings checks the intersection of p and candidates[i] for each i in candidates,
 // if intersection is non empty, then i is added to the indexes returned.
 // Returned indexes are not sorted.

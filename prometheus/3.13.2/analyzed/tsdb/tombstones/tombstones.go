@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Block tombstone 持久化：记录 series ref 上的删除时间区间，支持文件读写、内存聚合与 CRC 校验。
+
 package tombstones
 
 import (
@@ -58,6 +60,7 @@ func newCRC32() hash.Hash32 {
 	return crc32.New(castagnoliTable)
 }
 
+// Reader 按 series ref 查询删除区间并统计 tombstone 总数。
 // Reader gives access to tombstone intervals by series reference.
 type Reader interface {
 	// Get returns deletion intervals for the series with the given reference.
@@ -73,6 +76,7 @@ type Reader interface {
 	Close() error
 }
 
+// WriteFile 将 tombstone 编码写入 block 目录（magic+payload+CRC32）。
 func WriteFile(logger *slog.Logger, dir string, tr Reader) (int64, error) {
 	path := filepath.Join(dir, TombstonesFilename)
 	tmp := path + ".tmp"
@@ -137,6 +141,7 @@ func WriteFile(logger *slog.Logger, dir string, tr Reader) (int64, error) {
 	return int64(size), fileutil.Replace(tmp, path)
 }
 
+// Encode 将 Reader 中全部 interval 编码为 v1 字节流（无 magic/CRC）。
 // Encode encodes the tombstones from the reader.
 // It does not attach any magic number or checksum.
 func Encode(tr Reader) ([]byte, error) {
@@ -153,6 +158,7 @@ func Encode(tr Reader) ([]byte, error) {
 	return buf.Get(), err
 }
 
+// Decode 从 Encode 输出解析为 MemTombstones。
 // Decode decodes the tombstones from the bytes
 // which was encoded using the Encode method.
 func Decode(b []byte) (Reader, error) {
@@ -179,6 +185,7 @@ func Decode(b []byte) (Reader, error) {
 	return stonesMap, nil
 }
 
+// Stone 表示单条 tombstone：series ref 与其删除 Interval 列表。
 // Stone holds the information on the posting and time-range
 // that is deleted.
 type Stone struct {
@@ -231,6 +238,7 @@ type MemTombstones struct {
 	mtx         sync.RWMutex
 }
 
+// NewMemTombstones 创建可增删 interval 的内存 tombstone 读器。
 // NewMemTombstones creates new in memory Tombstone Reader
 // that allows adding new intervals.
 func NewMemTombstones() *MemTombstones {

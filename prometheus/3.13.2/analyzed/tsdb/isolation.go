@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Head 读写隔离：为查询快照 appendID 水位线，保证读不到未完成写入或未提交样本。
+
 package tsdb
 
 import (
@@ -18,6 +20,7 @@ import (
 	"sync"
 )
 
+// isolationState 记录查询可见的 maxAppendID、未完成 append 集合与时间范围。
 // isolationState holds the isolation information.
 type isolationState struct {
 	// We will ignore all appends above the max, or that are incomplete.
@@ -51,6 +54,7 @@ type isolationAppender struct {
 	next     *isolationAppender
 }
 
+// isolation 维护进行中的 append 双链表与活跃读状态双向链表。
 // isolation is the global isolation state.
 type isolation struct {
 	// Mutex for accessing lastAppendID and appendsOpen.
@@ -91,6 +95,7 @@ func newIsolation(disabled bool) *isolation {
 	}
 }
 
+// lowWatermark 返回可安全丢弃 append 追踪的最小 appendID。
 // lowWatermark returns the appendID below which we no longer need to track
 // which appends were from which appendID.
 func (i *isolation) lowWatermark() uint64 {
@@ -133,6 +138,7 @@ func (i *isolation) lowestAppendTime() int64 {
 	return lowest
 }
 
+// State 为 [mint,maxt] 查询注册读状态；关闭后从 readsOpen 链表移除。
 // State returns an object used to control isolation
 // between a query and appends. Must be closed when complete.
 func (i *isolation) State(mint, maxt int64) *isolationState {
@@ -163,6 +169,7 @@ func (i *isolation) State(mint, maxt int64) *isolationState {
 	return isoState
 }
 
+// TraverseOpenReads 遍历所有未关闭的 isolationState（回调不可修改状态）。
 // TraverseOpenReads iterates through the open reads and runs the given
 // function on those states. The given function MUST NOT mutate the isolationState.
 // The iteration is stopped when the function returns false or once all reads have been iterated.
@@ -178,6 +185,7 @@ func (i *isolation) TraverseOpenReads(f func(s *isolationState) bool) {
 	}
 }
 
+// newAppendID 分配递增 appendID 并登记 isolationAppender，返回低水位。
 // newAppendID increments the transaction counter and returns a new transaction
 // ID. The first ID returned is 1.
 // Also returns the low watermark, to keep lock/unlock operations down.
@@ -238,6 +246,7 @@ func (i *isolation) closeAppend(appendID uint64) {
 }
 
 // The transactionID ring buffer.
+// txRing 环形缓冲保存 chunk 上关联的 transaction ID，支持批量清理。
 type txRing struct {
 	txIDs     []uint64
 	txIDFirst uint32 // Position of the first id in the ring.
@@ -297,6 +306,7 @@ func (txr *txRing) iterator() *txRingIterator {
 	}
 }
 
+// txRingIterator 无限循环遍历 txRing；调用方需自行终止。
 // txRingIterator lets you iterate over the ring. It doesn't terminate,
 // it DOESN'T terminate.
 type txRingIterator struct {

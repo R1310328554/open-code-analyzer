@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OOO chunk 读隔离：跟踪仍引用 mmap ref 的活跃读，防止 compaction/GC 过早删除 chunk。
+
 package tsdb
 
 import (
@@ -38,6 +40,7 @@ func newOOOIsolation() *oooIsolation {
 	}
 }
 
+// HasOpenReadsAtOrBefore 判断是否存在 minRef≤ref 的活跃 OOO 读。
 // HasOpenReadsAtOrBefore returns true if this oooIsolation is aware of any reads that use
 // chunks with reference at or before ref.
 func (i *oooIsolation) HasOpenReadsAtOrBefore(ref chunks.ChunkDiskMapperRef) bool {
@@ -55,6 +58,7 @@ func (i *oooIsolation) HasOpenReadsAtOrBefore(ref chunks.ChunkDiskMapperRef) boo
 	return false
 }
 
+// TrackReadAfter 登记使用 ref>minRef 的读；调用方必须在读结束后 Close。
 // TrackReadAfter records a read that uses chunks with reference after minRef.
 //
 // The caller must ensure that the returned oooIsolationState is eventually closed when

@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// WAL/chunk 快照记录编解码：定义 series/样本/tombstone/exemplar 等记录类型，Encoder/Decoder 负责二进制布局与 ST 存储变体。
+
+// Package record 定义 Head WAL 与内存快照使用的各类记录结构与编解码器。
 // Package record contains the various record types used for encoding various Head block data in the WAL and in-memory snapshot.
 package record
 
@@ -32,6 +35,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/tombstones"
 )
 
+// Type 标识 WAL 记录种类（Series/Samples/Tombstones 等）。
 // Type represents the data type of a record.
 type Type uint8
 
@@ -163,12 +167,14 @@ const (
 // ErrNotFound is returned if a looked up resource was not found. Duplicate ErrNotFound from head.go.
 var ErrNotFound = errors.New("not found")
 
+// RefSeries 将 series ref 与标签集绑定。
 // RefSeries is the series labels with the series ID.
 type RefSeries struct {
 	Ref    chunks.HeadSeriesRef
 	Labels labels.Labels
 }
 
+// RefSample 为 series ref 关联的 float 样本（t + 值）。
 // RefSample is a timestamp/st/value struct associated with a reference to a series.
 // TODO(beorn7): Perhaps make this "polymorphic", including histogram and float-histogram pointers? Then get rid of RefHistogramSample.
 type RefSample struct {
@@ -213,6 +219,7 @@ type RefMmapMarker struct {
 	MmapRef chunks.ChunkDiskMapperRef
 }
 
+// Decoder 从 WAL 字节流解码各类记录到可复用切片。
 // Decoder decodes series, sample, metadata and tombstone records.
 type Decoder struct {
 	builder labels.ScratchBuilder
@@ -225,6 +232,7 @@ func NewDecoder(_ *labels.SymbolTable, logger *slog.Logger) Decoder { // FIXME r
 	return Decoder{builder: b, logger: logger}
 }
 
+// Type 读取记录首字节判断记录类型，未知则返回 Unknown。
 // Type returns the type of the record.
 // Returns RecordUnknown if no valid record type is found.
 func (*Decoder) Type(rec []byte) Type {
@@ -872,6 +880,7 @@ func DecodeFloatHistogram(buf *encoding.Decbuf, fh *histogram.FloatHistogram) {
 	}
 }
 
+// Encoder 将内存结构编码为可写入 WAL 的字节记录。
 // Encoder encodes series, sample, and tombstones records.
 // The zero value is ready to use.
 type Encoder struct {
@@ -923,6 +932,7 @@ func EncodeLabels(buf *encoding.Encbuf, lbls labels.Labels) {
 	})
 }
 
+// Samples 编码 float 样本记录；EnableSTStorage 时写入 SamplesV2 布局。
 // Samples appends the encoded samples to b and returns the resulting slice.
 // Depending on EnableSTStorage, it writes either a Samples or SamplesV2
 // record.
@@ -1181,6 +1191,7 @@ func (*Encoder) customBucketsHistogramSamplesV1(histograms []RefHistogramSample,
 	return buf.Get()
 }
 
+// EncodeHistogram 编码指数或自定义 bucket 直方图到 Encbuf。
 // EncodeHistogram encodes a Histogram into a byte slice. Handles both
 // regular and custom bucket histograms.
 func EncodeHistogram(buf *encoding.Encbuf, h *histogram.Histogram) {
@@ -1332,6 +1343,7 @@ func (*Encoder) customBucketsFloatHistogramSamplesV1(histograms []RefFloatHistog
 	return buf.Get()
 }
 
+// EncodeFloatHistogram 编码 float 直方图样本字段。
 // EncodeFloatHistogram encodes the Float Histogram into a byte slice.
 func EncodeFloatHistogram(buf *encoding.Encbuf, h *histogram.FloatHistogram) {
 	buf.PutByte(byte(h.CounterResetHint))

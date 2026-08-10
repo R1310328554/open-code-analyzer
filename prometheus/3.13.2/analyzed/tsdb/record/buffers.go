@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// WAL 记录缓冲池：为各类 Ref* 切片提供 zeropool 复用，Put 时清零标签避免泄漏。
+
 package record
 
 import (
@@ -18,6 +20,7 @@ import (
 	"github.com/prometheus/prometheus/util/zeropool"
 )
 
+// BuffersPool 池化 RefSeries/Samples/Exemplar 等 WAL 解码临时切片。
 // BuffersPool offers pool of zero-ed record buffers.
 type BuffersPool struct {
 	series          zeropool.Pool[[]RefSeries]
@@ -28,6 +31,7 @@ type BuffersPool struct {
 	metadata        zeropool.Pool[[]RefMetadata]
 }
 
+// NewBuffersPool 创建空缓冲池，按需从 pool Get/Put。
 // NewBuffersPool returns a new BuffersPool object.
 func NewBuffersPool() *BuffersPool {
 	return &BuffersPool{}
@@ -41,6 +45,7 @@ func (p *BuffersPool) GetRefSeries(capacity int) []RefSeries {
 	return b
 }
 
+// PutRefSeries 清空 Labels 后将切片长度归零并归还池中。
 func (p *BuffersPool) PutRefSeries(b []RefSeries) {
 	for i := range b { // Zero out to avoid retaining label data.
 		b[i].Labels = labels.EmptyLabels()

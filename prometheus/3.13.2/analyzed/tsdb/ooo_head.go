@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 乱序内存 chunk：OOOChunk 以未压缩样本切片按时间升序暂存 OOO 样本，再编码为 memChunk 供 mmap/compaction 使用。
+
 package tsdb
 
 import (
@@ -20,6 +22,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 )
 
+// OOOChunk 保持样本时间升序；同 timestamp 重复插入会被拒绝。
 // OOOChunk maintains samples in time-ascending order.
 // Inserts for timestamps already seen, are dropped.
 // Samples are stored uncompressed to allow easy sorting.
@@ -32,6 +35,7 @@ func NewOOOChunk() *OOOChunk {
 	return &OOOChunk{samples: make([]sample, 0, 4)}
 }
 
+// Insert 按时间插入 float/直方图样本，优先尝试尾部 append 优化。
 // Insert inserts the sample such that order is maintained.
 // Returns false if insert was not possible due to the same timestamp already existing.
 func (o *OOOChunk) Insert(st, t int64, v float64, h *histogram.Histogram, fh *histogram.FloatHistogram) bool {
@@ -70,6 +74,7 @@ func (o *OOOChunk) NumSamples() int {
 	return len(o.samples)
 }
 
+// ToEncodedChunks 将 [mint,maxt] 内样本按编码类型切分为 memChunk 列表。
 // ToEncodedChunks returns chunks with the samples in the OOOChunk.
 //
 //nolint:revive

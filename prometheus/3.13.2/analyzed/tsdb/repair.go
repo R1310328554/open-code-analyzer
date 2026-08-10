@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 启动修复：repairBadIndexVersion 修正 Prometheus 2.1 误写 index 版本与 meta.json 不一致的问题。
+
 package tsdb
 
 import (
@@ -25,6 +27,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/fileutil"
 )
 
+// repairBadIndexVersion 将受影响 block 的 index 第 5 字节改为 2 并把 meta 版本降回 1。
 // repairBadIndexVersion repairs an issue in index and meta.json persistence introduced in
 // commit 129773b41a565fde5156301e37f9a87158030443.
 func repairBadIndexVersion(logger *slog.Logger, dir string) error {
@@ -123,6 +126,7 @@ func repairBadIndexVersion(logger *slog.Logger, dir string) error {
 	return nil
 }
 
+// readBogusMetaFile 读取 block meta.json，仅接受版本 1 或 2。
 func readBogusMetaFile(dir string) (*BlockMeta, error) {
 	b, err := os.ReadFile(filepath.Join(dir, metaFilename))
 	if err != nil {

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Head WAL/WBL 回放与 chunk 快照：启动时重放 WAL 恢复 series/样本/tombstone，支持并发分片回放、WBL 乱序路径与 chunk_snapshot 持久化加速重启。
+
 package tsdb
 
 import (
@@ -44,6 +46,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/wlog"
 )
 
+// histogramRecord 合并整型/浮点直方图 WAL 记录，简化回放分支。
 // histogramRecord combines both RefHistogramSample and RefFloatHistogramSample
 // to simplify the WAL replay.
 type histogramRecord struct {
@@ -54,6 +57,7 @@ type histogramRecord struct {
 	fh *histogram.FloatHistogram
 }
 
+// seriesRefSet 线程安全地合并 WAL 回放中引用了未知 series 的 ref 集合。
 type seriesRefSet struct {
 	refs map[chunks.HeadSeriesRef]struct{}
 	mtx  sync.Mutex
@@ -77,6 +81,7 @@ func counterAddNonZero(v *prometheus.CounterVec, value float64, lvs ...string) {
 	}
 }
 
+// loadWAL 并发解码 WAL 记录，按 series ID 分片回放样本/直方图/exemplar 并重建 head 状态。
 func (h *Head) loadWAL(r *wlog.Reader, syms *labels.SymbolTable, multiRef map[chunks.HeadSeriesRef]chunks.HeadSeriesRef, mmappedChunks, oooMmappedChunks map[chunks.HeadSeriesRef][]*mmappedChunk) (err error) {
 	// Track number of missing series records that were referenced by other records.
 	unknownSeriesRefs := &seriesRefSet{refs: make(map[chunks.HeadSeriesRef]struct{}), mtx: sync.Mutex{}}
@@ -590,6 +595,7 @@ func (h *Head) resetSeriesWithMMappedChunks(mSeries *memSeries, mmc, oooMmc []*m
 	return overlapped
 }
 
+// walSubsetProcessor 为 WAL 回放 worker 提供输入/输出 channel，复用样本缓冲区。
 type walSubsetProcessor struct {
 	input            chan walSubsetProcessorInputItem
 	output           chan []record.RefSample
@@ -638,6 +644,7 @@ func (wp *walSubsetProcessor) reuseHistogramBuf() []histogramRecord {
 	return nil
 }
 
+// appendChunkAndMmap 回放时追加样本并在切 chunk 后立即 mmap 已完成块以控制内存。
 // appendChunkAndMmap appends a sample to ms via appendFn and, if a new head
 // chunk was created, immediately mmaps the now-completed predecessors. Used
 // by WAL replay paths to keep memory bounded by mmapping eagerly rather than
@@ -661,6 +668,7 @@ func (h *Head) appendChunkAndMmap(ms *memSeries, appendFn func() bool) bool {
 	return chunkCreated
 }
 
+// processWALSamples 将分片样本写入 memSeries，丢弃早于 minValidTime 的记录。
 // processWALSamples adds the samples it receives to the head and passes
 // the buffer received to an output channel for reuse.
 // Samples before the minValidTime timestamp are discarded.
@@ -1075,6 +1083,7 @@ func (e errLoadWbl) Unwrap() error {
 	return e.err
 }
 
+// wblSubsetProcessor 处理乱序 WBL 回放，结构与 walSubsetProcessor 对称。
 type wblSubsetProcessor struct {
 	input            chan wblSubsetProcessorInputItem
 	output           chan []record.RefSample
@@ -1224,6 +1233,7 @@ const (
 	chunkSnapshotRecordTypeExemplars  uint8 = 3
 )
 
+// chunkSnapshotRecord 描述 chunk 快照 WAL 记录的类型与载荷。
 type chunkSnapshotRecord struct {
 	ref                     chunks.HeadSeriesRef
 	lset                    labels.Labels
@@ -1364,6 +1374,7 @@ func decodeTombstonesSnapshotRecord(b []byte) (tombstones.Reader, error) {
 
 const chunkSnapshotPrefix = "chunk_snapshot."
 
+// ChunkSnapshot 将 head 中全部 series/tombstone/exemplar 写入 chunk_snapshot.N.M 并清理旧快照。
 // ChunkSnapshot creates a snapshot of all the series and tombstones in the head.
 // It deletes the old chunk snapshots if the chunk snapshot creation is successful.
 //
@@ -1547,12 +1558,14 @@ func (h *Head) performChunkSnapshot() error {
 	return nil
 }
 
+// ChunkSnapshotStats 记录快照目录与写入的 series/tombstone 数量。
 // ChunkSnapshotStats returns stats about a created chunk snapshot.
 type ChunkSnapshotStats struct {
 	TotalSeries int
 	Dir         string
 }
 
+// LastChunkSnapshot 查找 chunk 目录下最新快照的目录名及 WAL 段号/偏移。
 // LastChunkSnapshot returns the directory name and index of the most recent chunk snapshot.
 // If dir does not contain any chunk snapshots, ErrNotFound is returned.
 func LastChunkSnapshot(dir string) (string, int, int, error) {
@@ -1599,6 +1612,7 @@ func LastChunkSnapshot(dir string) (string, int, int, error) {
 	return maxFileName, maxIdx, maxOffset, nil
 }
 
+// DeleteChunkSnapshots 删除索引不超过 maxIndex/maxOffset 的旧 chunk 快照目录。
 // DeleteChunkSnapshots deletes all chunk snapshots in a directory below a given index.
 func DeleteChunkSnapshots(dir string, maxIndex, maxOffset int) error {
 	files, err := os.ReadDir(dir)
@@ -1861,6 +1875,7 @@ Outer:
 // Name of the file used to store the state.
 const seriesStateFilename = "series_state.json"
 
+// SeriesLifecycleState 持久化 last_series_id、最后 WAL 段与是否正常关机标志。
 // SeriesLifecycleState describes the information we record in the series_state.json file.
 type SeriesLifecycleState struct {
 	LastSeriesID   uint64 `json:"last_series_id"`
@@ -1889,6 +1904,7 @@ func (h *Head) readSeriesStateFile() (SeriesLifecycleState, error) {
 	return state, nil
 }
 
+// writeSeriesState 原子写入 series_state.json，供下次启动判断 WAL 截断与回放范围。
 // Atomically writes the current series state to disk.
 func (h *Head) writeSeriesState(cleanShutdown bool) {
 	if h.wal == nil {

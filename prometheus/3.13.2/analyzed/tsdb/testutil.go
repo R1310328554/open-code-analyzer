@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TSDB 测试辅助：提供 float/直方图样本场景、series 相等断言与 OOO 指标校验。
+
 package tsdb
 
 import (
@@ -36,6 +38,7 @@ const (
 	gaugeFloatHistogram         = "gauge float histogram"
 )
 
+// testValue 描述测试用样本时间戳、值与 counter reset 提示。
 type testValue struct {
 	Ts                 int64
 	V                  int64
@@ -128,6 +131,7 @@ var sampleTypeScenarios = map[string]sampleTypeScenario{
 	},
 }
 
+// requireEqualSeries 比较期望与实际 series map，可选忽略直方图 counter reset。
 // requireEqualSeries checks that the actual series are equal to the expected ones. It ignores the counter reset hints for histograms.
 func requireEqualSeries(t *testing.T, expected, actual map[string][]chunks.Sample, ignoreCounterResets bool) {
 	for name, expectedItem := range expected {
@@ -145,6 +149,7 @@ func requireEqualSeries(t *testing.T, expected, actual map[string][]chunks.Sampl
 	}
 }
 
+// requireEqualOOOSamples 断言 head 乱序追加样本计数与期望一致。
 func requireEqualOOOSamples(t *testing.T, expectedSamples int, db *DB) {
 	require.Equal(t, float64(expectedSamples),
 		prom_testutil.ToFloat64(db.head.metrics.outOfOrderSamplesAppended.WithLabelValues(sampleMetricTypeFloat))+
@@ -160,6 +165,7 @@ const (
 	requireEqualSamplesInUseBucketCompare
 )
 
+// requireEqualSamples 逐样本比较 float/直方图，支持忽略 reset 与 in-use bucket 比较。
 func requireEqualSamples(t *testing.T, name string, expected, actual []chunks.Sample, options ...requireEqualSamplesOption) {
 	var (
 		ignoreCounterResets bool

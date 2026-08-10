@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Block 查询层：将 IndexReader/ChunkReader/tombstones 组装为 storage.Querier，实现 matcher→postings→SeriesSet 流水线并应用删除区间裁剪。
+
 package tsdb
 
 import (
@@ -35,6 +37,7 @@ import (
 // checkContextEveryNIterations is used in some tight loops to check if the context is done.
 const checkContextEveryNIterations = 100
 
+// blockBaseQuerier 持有 block 的 index/chunk/tombstone 读取器与查询时间范围。
 type blockBaseQuerier struct {
 	blockID    ulid.ULID
 	index      IndexReader
@@ -157,6 +160,7 @@ type blockQuerier struct {
 	*blockBaseQuerier
 }
 
+// NewBlockQuerier 打开 block 读路径并返回样本 Querier。
 // NewBlockQuerier returns a querier against the block reader and requested min and max time range.
 func NewBlockQuerier(b BlockReader, mint, maxt int64) (storage.Querier, error) {
 	q, err := newBlockBaseQuerier(b, mint, maxt)
@@ -218,6 +222,7 @@ type blockChunkQuerier struct {
 	*blockBaseQuerier
 }
 
+// NewBlockChunkQuerier 返回按 chunk 迭代的 ChunkQuerier。
 // NewBlockChunkQuerier returns a chunk querier against the block reader and requested min and max time range.
 func NewBlockChunkQuerier(b BlockReader, mint, maxt int64) (storage.ChunkQuerier, error) {
 	q, err := newBlockBaseQuerier(b, mint, maxt)
@@ -261,6 +266,7 @@ func selectChunkSeriesSet(ctx context.Context, sortSeries bool, hints *storage.S
 	return NewBlockChunkSeriesSet(blockID, index, chunks, tombstones, p, mint, maxt, disableTrimming)
 }
 
+// PostingsForMatchers 将多个 Matcher 组合为单一 postings（支持正则与反向匹配）。
 // PostingsForMatchers assembles a single postings iterator against the index reader
 // based on the given matchers. The resulting postings are not ordered by series.
 func PostingsForMatchers(ctx context.Context, ix IndexReader, ms ...*labels.Matcher) (index.Postings, error) {
@@ -553,6 +559,7 @@ type seriesData struct {
 func (s *seriesData) Labels() labels.Labels { return s.labels }
 
 // blockBaseSeriesSet allows to iterate over all series in the single block.
+// blockBaseSeriesSet 迭代 postings 对应 series，并按 tombstone 裁剪样本/chunk。
 // Iterated series are trimmed with given min and max time as well as tombstones.
 // See newBlockSeriesSet and NewBlockChunkSeriesSet to use it for either sample or chunk iterating.
 type blockBaseSeriesSet struct {
@@ -706,6 +713,7 @@ func (p *populateWithDelGenericSeriesIterator) reset(blockID ulid.ULID, cr Chunk
 	p.currMeta = chunks.Meta{}
 }
 
+// populateWithDelGenericSeriesIterator 可选复制 head chunk，并在删除区间上裁剪迭代器。
 // If copyHeadChunk is true, then the head chunk (i.e. the in-memory chunk of the TSDB)
 // is deep copied to avoid races between reads and copying chunk bytes.
 // However, if the deletion intervals overlaps with the head chunk, then the head chunk is
@@ -1156,6 +1164,7 @@ func (p *populateWithDelChunkSeriesIterator) populateChunksFromIterable() bool {
 func (p *populateWithDelChunkSeriesIterator) At() chunks.Meta { return p.currMetaWithChunk }
 
 // blockSeriesSet allows to iterate over sorted, populated series with applied tombstones.
+// blockSeriesSet 即使 chunk 全删仍返回空样本 Series，保持标签对齐。
 // Series with all deleted chunks are still present as Series with no samples.
 // Samples from chunks are also trimmed to requested min and max time.
 type blockSeriesSet struct {
@@ -1192,6 +1201,7 @@ type blockChunkSeriesSet struct {
 	blockBaseSeriesSet
 }
 
+// NewBlockChunkSeriesSet 构造带 tombstone 裁剪的 block chunk 系列集合。
 func NewBlockChunkSeriesSet(id ulid.ULID, i IndexReader, c ChunkReader, t tombstones.Reader, p index.Postings, mint, maxt int64, disableTrimming bool) storage.ChunkSeriesSet {
 	return &blockChunkSeriesSet{
 		blockBaseSeriesSet{
@@ -1216,6 +1226,7 @@ func (b *blockChunkSeriesSet) At() storage.ChunkSeries {
 	}
 }
 
+// NewMergedStringIter 归并两个有序 StringIter 并流式输出。
 // NewMergedStringIter returns string iterator that allows to merge symbols on demand and stream result.
 func NewMergedStringIter(a, b index.StringIter) index.StringIter {
 	return &mergedStringIter{a: a, b: b, aok: a.Next(), bok: b.Next()}
@@ -1267,6 +1278,7 @@ func (m mergedStringIter) Err() error {
 	return m.err
 }
 
+// DeletedIterator 包装 chunk 迭代器，跳过 tombstone 覆盖的时间戳。
 // DeletedIterator wraps chunk Iterator and makes sure any deleted metrics are not returned.
 type DeletedIterator struct {
 	// Iter is an Iterator to be wrapped.

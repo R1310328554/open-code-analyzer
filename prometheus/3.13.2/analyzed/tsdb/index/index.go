@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TSDB 倒排索引读写：Writer 按 symbols→series→postings 顺序落盘，Reader 提供 label/postings/series 查询与 postings 编解码扩展点。
+
 package index
 
 import (
@@ -94,10 +96,12 @@ func (s indexWriterStage) String() string {
 	return "<unknown>"
 }
 
+// ErrPostingsOffsetTableTooLarge 表示 postings 偏移表超过 4GB 上限。
 // ErrPostingsOffsetTableTooLarge is returned when the postings offset table length
 // would exceed 4 bytes (table would exceed the 4GB limit).
 var ErrPostingsOffsetTableTooLarge = errors.New("length size exceeds 4 bytes")
 
+// ErrIndexExceeds64GiB 表示 index 文件将超过 64GiB 硬限制。
 // ErrIndexExceeds64GiB is returned when the index file would exceed the 64GiB limit.
 var ErrIndexExceeds64GiB = errors.New("exceeding max size of 64GiB")
 
@@ -123,6 +127,7 @@ type PostingsEncoder func(*encoding.Encbuf, []uint32) error
 
 type PostingsDecoder func(encoding.Decbuf) (int, Postings, error)
 
+// Writer 实现标准 index 序列化：分阶段写入符号表、series 与 postings 偏移表。
 // Writer implements the IndexWriter interface for the standard
 // serialization format.
 type Writer struct {
@@ -167,6 +172,7 @@ type Writer struct {
 	postingsEncoder PostingsEncoder
 }
 
+// TOC 记录 index 各段（symbols/series/postings 等）在文件中的起始偏移。
 // TOC represents the index Table Of Contents that states where each section of the index starts.
 type TOC struct {
 	Symbols           uint64
@@ -202,6 +208,7 @@ func NewTOCFromByteSlice(bs ByteSlice) (*TOC, error) {
 	return toc, d.Err()
 }
 
+// NewWriterWithEncoder 创建可插拔 postings 编码器的 index 写入器。
 // NewWriterWithEncoder returns a new Writer to the given filename. It
 // serializes data in format version 2. It uses the given encoder to encode each
 // postings list.
@@ -430,6 +437,7 @@ func (w *Writer) writeMeta() error {
 	return w.write(w.buf1.Get())
 }
 
+// AddSeries 追加单条 series 及其 chunk 元数据，内部按标签排序后批量刷盘。
 // AddSeries adds the series one at a time along with its chunks.
 func (w *Writer) AddSeries(ref storage.SeriesRef, lset labels.Labels, chunks ...chunks.Meta) error {
 	if err := w.ensureStage(idxStageSeries); err != nil {
@@ -829,6 +837,7 @@ func (w *Writer) writePostingsToTmpFiles() error {
 	return nil
 }
 
+// EncodePostingsRaw 以无压缩 basic 格式编码 postings 偏移列表。
 // EncodePostingsRaw uses the "basic" postings list encoding format with no compression:
 // <BE uint32 len X><BE uint32 0><BE uint32 1>...<BE uint32 X-1>.
 func EncodePostingsRaw(e *encoding.Encbuf, offs []uint32) error {
@@ -947,6 +956,7 @@ type StringIter interface {
 	Err() error
 }
 
+// Reader 在 mmap/内存切片上解析 TOC，提供 postings/series/label 查询。
 type Reader struct {
 	b   ByteSlice
 	toc *TOC
@@ -995,12 +1005,14 @@ func (b realByteSlice) Sub(start, end int) ByteSlice {
 	return b[start:end]
 }
 
+// NewReader 在字节切片上解析 magic/TOC 并构造 Reader。
 // NewReader returns a new index reader on the given byte slice. It automatically
 // handles different format versions.
 func NewReader(b ByteSlice, decoder PostingsDecoder) (*Reader, error) {
 	return newReader(b, io.NopCloser(nil), decoder)
 }
 
+// NewFileReader 打开 index 文件并 mmap 后创建 Reader。
 // NewFileReader returns a new index reader against the given index file.
 func NewFileReader(path string, decoder PostingsDecoder) (*Reader, error) {
 	f, err := fileutil.OpenMmapFile(path)
@@ -1122,6 +1134,7 @@ func newReader(b ByteSlice, c io.Closer, postingsDecoder PostingsDecoder) (*Read
 	return r, nil
 }
 
+// Version 返回底层 index 文件格式版本号。
 // Version returns the file format version of the underlying index.
 func (r *Reader) Version() int {
 	return r.version
@@ -1336,6 +1349,7 @@ func (r *Reader) lookupSymbol(_ context.Context, o uint32) (string, error) {
 	return r.symbols.Lookup(o)
 }
 
+// Symbols 返回 index 内全部字符串符号的有序迭代器。
 // Symbols returns an iterator over the symbols that exist within the index.
 func (r *Reader) Symbols() StringIter {
 	return r.symbols.Iter()
@@ -1346,6 +1360,7 @@ func (r *Reader) SymbolTableSize() uint64 {
 	return uint64(r.symbols.Size())
 }
 
+// SortedLabelValues 返回指定 label 名的去重值列表（已排序）。
 // SortedLabelValues returns value tuples that exist for the given label name.
 // It is not safe to use the return value beyond the lifetime of the byte slice
 // passed into the Reader.
@@ -1457,6 +1472,7 @@ func (r *Reader) LabelNamesFor(ctx context.Context, postings Postings) ([]string
 	return names, nil
 }
 
+// Series 按 ref 读取标签与 chunk 元数据写入 builder/chks。
 // Series reads the series with the given ID and writes its labels and chunks into builder and chks.
 func (r *Reader) Series(id storage.SeriesRef, builder *labels.ScratchBuilder, chks *[]chunks.Meta) error {
 	offset := id
@@ -1673,12 +1689,14 @@ func (r *Reader) postingsForLabelMatchingV1(ctx context.Context, name string, ma
 	return Merge(ctx, its...)
 }
 
+// SortedPostings 按 series 标签顺序重排 postings 列表。
 // SortedPostings returns the given postings list reordered so that the backing series
 // are sorted.
 func (*Reader) SortedPostings(p Postings) Postings {
 	return p
 }
 
+// ShardedPostings 按 shardIndex/shardCount 对 postings 做分片过滤。
 // ShardedPostings returns a postings list filtered by the provided shardIndex out of shardCount.
 func (r *Reader) ShardedPostings(p Postings, shardIndex, shardCount uint64) Postings {
 	var (
@@ -1761,6 +1779,7 @@ type Decoder struct {
 	DecodePostings PostingsDecoder
 }
 
+// DecodePostingsRaw 解码 basic postings 列表并返回元素个数。
 // DecodePostingsRaw returns a postings list for d and its number of elements.
 func DecodePostingsRaw(d encoding.Decbuf) (int, Postings, error) {
 	n := d.Be32int()
