@@ -25,10 +25,14 @@ import org.keycloak.provider.ConfigurationValidationHelper;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
+ * RSA 密钥提供者工厂抽象基类：定义通用组件配置项与基础校验逻辑。
+ * <p>配置包括优先级、启用/活跃状态及 RSA 算法选择；子类扩展生成或导入密钥的具体行为。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public abstract class AbstractRsaKeyProviderFactory implements KeyProviderFactory {
 
+    /** 构建含 priority/enabled/active/algorithm 的 RSA 组件标准配置属性列表。 */
     public final static ProviderConfigurationBuilder configurationBuilder() {
         return ProviderConfigurationBuilder.create()
                 .property(Attributes.PRIORITY_PROPERTY)
@@ -38,6 +42,7 @@ public abstract class AbstractRsaKeyProviderFactory implements KeyProviderFactor
     }
 
     @Override
+    /** 校验 priority、enabled、active 等基础配置项类型。 */
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
         ConfigurationValidationHelper.check(model)
                 .checkLong(Attributes.PRIORITY_PROPERTY, false)

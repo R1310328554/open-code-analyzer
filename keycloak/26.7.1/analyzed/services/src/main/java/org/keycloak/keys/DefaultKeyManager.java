@@ -42,20 +42,28 @@ import org.keycloak.provider.ProviderFactory;
 import org.jboss.logging.Logger;
 
 /**
+ * {@link KeyManager} 默认实现：按 Realm 组件加载密钥提供者并解析活跃/指定 kid 的密钥。
+ * <p>找不到匹配密钥时尝试触发工厂回退密钥生成；提供者实例按 Realm 缓存并按 priority 降序排列。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class DefaultKeyManager implements KeyManager {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(DefaultKeyManager.class);
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 按 Realm ID 缓存已加载的 {@link KeyProvider} 列表。 */
     private final Map<String, List<KeyProvider>> providersMap = new HashMap<>();
 
+    /** @param session Keycloak 会话 */
     public DefaultKeyManager(KeycloakSession session) {
         this.session = session;
     }
 
     @Override
+    /** 查找活跃且匹配用途/算法的密钥；失败时尝试工厂回退生成。 */
     public KeyWrapper getActiveKey(RealmModel realm, KeyUse use, String algorithm) {
         KeyWrapper activeKey = getActiveKey(getProviders(realm), realm, use, algorithm);
         if (activeKey != null) {
@@ -85,6 +93,7 @@ public class DefaultKeyManager implements KeyManager {
         throw new RuntimeException("Failed to find key: realm=" + realm.getName() + " algorithm=" + algorithm + " use=" + use.name());
     }
 
+    /** 在已加载提供者列表中查找首个活跃匹配密钥。 */
     private KeyWrapper getActiveKey(List<KeyProvider> providers, RealmModel realm, KeyUse use, String algorithm) {
         Consumer<KeyWrapper> loggerConsumer = key -> {
             if (logger.isTraceEnabled()) {
@@ -106,6 +115,7 @@ public class DefaultKeyManager implements KeyManager {
     }
 
     @Override
+    /** 按 kid、用途与算法查找已启用密钥；kid 为 null 时返回 null。 */
     public KeyWrapper getKey(RealmModel realm, String kid, KeyUse use, String algorithm) {
         if (kid == null) {
             logger.warnv("kid is null, can't find public key: realm={0}", realm.getName());
@@ -138,6 +148,7 @@ public class DefaultKeyManager implements KeyManager {
     }
 
     @Override
+    /** @return 匹配用途与算法且已启用的全部密钥流 */
     public Stream<KeyWrapper> getKeysStream(RealmModel realm, KeyUse use, String algorithm) {
         return getProviders(realm).stream()
                 .flatMap(p -> p.getKeysStream()
@@ -145,11 +156,13 @@ public class DefaultKeyManager implements KeyManager {
     }
 
     @Override
+    /** @return Realm 下全部密钥流（不限用途/算法） */
     public Stream<KeyWrapper> getKeysStream(RealmModel realm) {
         return getProviders(realm).stream().flatMap(KeyProvider::getKeysStream);
     }
 
     @Override
+    /** @deprecated 使用 {@link #getActiveKey} 替代 */
     @Deprecated
     public ActiveRsaKey getActiveRsaKey(RealmModel realm) {
         KeyWrapper key = getActiveKey(realm, KeyUse.SIG, Algorithm.RS256);
@@ -157,6 +170,7 @@ public class DefaultKeyManager implements KeyManager {
     }
 
     @Override
+    /** @deprecated 使用 {@link #getActiveKey} 替代 */
     @Deprecated
     public ActiveHmacKey getActiveHmacKey(RealmModel realm) {
         KeyWrapper key = getActiveKey(realm, KeyUse.SIG, Algorithm.HS256);
@@ -164,6 +178,7 @@ public class DefaultKeyManager implements KeyManager {
     }
 
     @Override
+    /** @deprecated 使用 {@link #getActiveKey} 替代 */
     @Deprecated
     public ActiveAesKey getActiveAesKey(RealmModel realm) {
         KeyWrapper key = getActiveKey(realm, KeyUse.ENC, Algorithm.AES);
@@ -171,6 +186,7 @@ public class DefaultKeyManager implements KeyManager {
     }
 
     @Override
+    /** @deprecated 使用 {@link #getKey} 替代 */
     @Deprecated
     public PublicKey getRsaPublicKey(RealmModel realm, String kid) {
         KeyWrapper key = getKey(realm, kid, KeyUse.SIG, Algorithm.RS256);
@@ -178,6 +194,7 @@ public class DefaultKeyManager implements KeyManager {
     }
 
     @Override
+    /** @deprecated 使用 {@link #getKey} 替代 */
     @Deprecated
     public Certificate getRsaCertificate(RealmModel realm, String kid) {
         KeyWrapper key = getKey(realm, kid, KeyUse.SIG, Algorithm.RS256);
@@ -185,6 +202,7 @@ public class DefaultKeyManager implements KeyManager {
     }
 
     @Override
+    /** @deprecated 使用 {@link #getKey} 替代 */
     @Deprecated
     public SecretKey getHmacSecretKey(RealmModel realm, String kid) {
         KeyWrapper key = getKey(realm, kid, KeyUse.SIG, Algorithm.HS256);
@@ -192,6 +210,7 @@ public class DefaultKeyManager implements KeyManager {
     }
 
     @Override
+    /** @deprecated 使用 {@link #getKey} 替代 */
     @Deprecated
     public SecretKey getAesSecretKey(RealmModel realm, String kid) {
         KeyWrapper key = getKey(realm, kid, KeyUse.ENC, Algorithm.AES);
@@ -199,6 +218,7 @@ public class DefaultKeyManager implements KeyManager {
     }
 
     @Override
+    /** @deprecated 使用 {@link #getKeysStream} 替代 */
     @Deprecated
     public List<RsaKeyMetadata> getRsaKeys(RealmModel realm) {
         return getKeysStream(realm, KeyUse.SIG, Algorithm.RS256)
@@ -216,6 +236,7 @@ public class DefaultKeyManager implements KeyManager {
     }
 
     @Override
+    /** @return HS256 用途下全部 HMAC 密钥元数据列表 */
     public List<SecretKeyMetadata> getHmacKeys(RealmModel realm) {
         return getKeysStream(realm, KeyUse.SIG, Algorithm.HS256)
                 .map(key -> {
@@ -230,6 +251,7 @@ public class DefaultKeyManager implements KeyManager {
     }
 
     @Override
+    /** @return AES 加密用途下全部对称密钥元数据列表 */
     public List<SecretKeyMetadata> getAesKeys(RealmModel realm) {
         return getKeysStream(realm, KeyUse.ENC, Algorithm.AES)
                 .map(key -> {
@@ -243,10 +265,12 @@ public class DefaultKeyManager implements KeyManager {
                 .collect(Collectors.toList());
     }
 
+    /** 判断密钥用途与算法是否与查询条件一致。 */
     private boolean matches(KeyWrapper key, KeyUse use, String algorithm) {
         return use.equals(key.getUse()) && key.getAlgorithmOrDefault().equals(algorithm);
     }
 
+    /** 按 priority 降序加载并缓存 Realm 的全部 {@link KeyProvider} 实例。 */
     private List<KeyProvider> getProviders(RealmModel realm) {
         List<KeyProvider> providers = providersMap.get(realm.getId());
         if (providers == null) {
@@ -272,9 +296,11 @@ public class DefaultKeyManager implements KeyManager {
         return providers;
     }
 
+    /** 按组件 priority 降序、ID 升序排列密钥提供者。 */
     private static class ProviderComparator implements Comparator<ComponentModel> {
 
         @Override
+        /** 比较两个密钥组件的加载顺序。 */
         public int compare(ComponentModel o1, ComponentModel o2) {
             int i = Long.compare(o2.get("priority", 0l), o1.get("priority", 0l));
             return i != 0 ? i : o1.getId().compareTo(o2.getId());

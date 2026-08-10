@@ -32,18 +32,24 @@ import org.jboss.logging.Logger;
 import static org.keycloak.provider.ProviderConfigProperty.LIST_TYPE;
 
 /**
+ * 自动生成 AES 密钥的工厂（ID {@code aes-generated}）：配置密钥长度并支持 ENC/AES 回退。
+ * <p>支持 16/24/32 字节密钥长度，对应 AES-128/192/256。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class GeneratedAesKeyProviderFactory extends AbstractGeneratedSecretKeyProviderFactory<AbstractGeneratedSecretKeyProvider> {
 
     private static final Logger logger = Logger.getLogger(GeneratedAesKeyProviderFactory.class);
 
+    /** 工厂标识：{@code aes-generated}。 */
     public static final String ID = "aes-generated";
 
+    /** 管理控制台帮助文本。 */
     private static final String HELP_TEXT = "Generates AES secret key";
 
     private static final ProviderConfigProperty AES_KEY_SIZE_PROPERTY;
 
+    /** 默认 AES 密钥长度（32 字节 = AES-256）。 */
     private static final int DEFAULT_AES_KEY_SIZE = 32;
 
     static {
@@ -57,11 +63,13 @@ public class GeneratedAesKeyProviderFactory extends AbstractGeneratedSecretKeyPr
             .build();
 
     @Override
+    /** 创建 {@link GeneratedAesKeyProvider} 实例。 */
     public GeneratedAesKeyProvider create(KeycloakSession session, ComponentModel model) {
         return new GeneratedAesKeyProvider(model);
     }
 
     @Override
+    /** 无 AES 加密密钥时自动创建低优先级回退组件。 */
     public boolean createFallbackKeys(KeycloakSession session, KeyUse keyUse, String algorithm) {
         if (keyUse.equals(KeyUse.ENC) && algorithm.equals(Algorithm.AES)) {
             RealmModel realm = session.getContext().getRealm();
@@ -85,26 +93,31 @@ public class GeneratedAesKeyProviderFactory extends AbstractGeneratedSecretKeyPr
     }
 
     @Override
+    /** @return 工厂帮助说明 */
     public String getHelpText() {
         return HELP_TEXT;
     }
 
     @Override
+    /** @return AES 密钥组件配置属性列表 */
     public List<ProviderConfigProperty> getConfigProperties() {
         return CONFIG_PROPERTIES;
     }
 
     @Override
+    /** @return 工厂 ID {@code aes-generated} */
     public String getId() {
         return ID;
     }
 
     @Override
+    /** @return 工厂日志记录器 */
     protected Logger logger() {
         return logger;
     }
 
     @Override
+    /** @return 默认 AES secret 字节长度（32） */
     protected int getDefaultKeySize() {
         return DEFAULT_AES_KEY_SIZE;
     }

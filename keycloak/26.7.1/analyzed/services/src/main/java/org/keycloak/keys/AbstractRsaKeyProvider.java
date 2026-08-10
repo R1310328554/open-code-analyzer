@@ -37,18 +37,26 @@ import org.keycloak.jose.jwe.JWEConstants;
 import org.keycloak.models.RealmModel;
 
 /**
+ * RSA 密钥提供者抽象基类：从组件配置加载 PEM 私钥与证书并封装为 {@link KeyWrapper}。
+ * <p>算法按 keyUse 默认 RS256（签名）或 RSA-OAEP（加密）；密钥加载结果缓存在 model note 中避免重复解析。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public abstract class AbstractRsaKeyProvider implements KeyProvider {
 
+    /** 密钥启用/活跃状态。 */
     private final KeyStatus status;
 
+    /** 密钥组件配置模型。 */
     private final ComponentModel model;
 
+    /** 已加载的 RSA 密钥包装对象。 */
     protected final KeyWrapper key;
 
+    /** 密钥算法名称（如 RS256、RSA-OAEP）。 */
     private final String algorithm;
 
+    /** 从组件配置加载 RSA 密钥；结果缓存在 model note 中避免重复加载。 */
     public AbstractRsaKeyProvider(RealmModel realm, ComponentModel model) {
         this.model = model;
         this.status = KeyStatus.from(model.get(Attributes.ACTIVE_KEY, true), model.get(Attributes.ENABLED_KEY, true));
@@ -64,6 +72,7 @@ public abstract class AbstractRsaKeyProvider implements KeyProvider {
         }
     }
 
+    /** 解码 PEM 私钥与证书，构建 RSA {@link KeyWrapper}。 */
     public KeyWrapper loadKey(RealmModel realm, ComponentModel model) {
         String privateRsaKeyPem = model.getConfig().getFirst(Attributes.PRIVATE_KEY_KEY);
         String certificatePem = model.getConfig().getFirst(Attributes.CERTIFICATE_KEY);
@@ -83,14 +92,17 @@ public abstract class AbstractRsaKeyProvider implements KeyProvider {
     }
 
     @Override
+    /** @return 包含单个 RSA 密钥的流 */
     public Stream<KeyWrapper> getKeysStream() {
         return Stream.of(key);
     }
 
+    /** 由 RSA 密钥对与证书构建 {@link KeyWrapper}（无证书链）。 */
     protected KeyWrapper createKeyWrapper(KeyPair keyPair, X509Certificate certificate, KeyUse keyUse) {
         return createKeyWrapper(keyPair, certificate, Collections.emptyList(), keyUse);
     }
 
+    /** 由 RSA 密钥对、证书及可选证书链构建 {@link KeyWrapper}。 */
     protected KeyWrapper createKeyWrapper(KeyPair keyPair, X509Certificate certificate, List<X509Certificate> certificateChain,
         KeyUse keyUse) {
         KeyWrapper key = new KeyWrapper();
@@ -109,7 +121,7 @@ public abstract class AbstractRsaKeyProvider implements KeyProvider {
 
         if (!certificateChain.isEmpty()) {
             if (certificate != null && !certificate.equals(certificateChain.get(0))) {
-                // just in case the chain does not contain the end-user certificate
+                // 若证书链未包含终端实体证书，则将其插入链首
                 certificateChain.add(0, certificate);
             }
             key.setCertificateChain(certificateChain);

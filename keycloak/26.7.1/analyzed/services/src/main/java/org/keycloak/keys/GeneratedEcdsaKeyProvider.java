@@ -36,14 +36,20 @@ import org.keycloak.models.RealmModel;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 自动生成 ECDSA 密钥对的 {@link KeyProvider} 实现：用于 JWS 签名（ES256/ES384/ES512）。
+ * <p>从组件配置解码 Base64 EC 公私钥；可选生成自签名 X509 证书供 JWK x5c 声明使用。</p>
+ */
 public class GeneratedEcdsaKeyProvider extends AbstractEcKeyProvider {
     private static final Logger logger = Logger.getLogger(GeneratedEcdsaKeyProvider.class);
 
+    /** @param realm 当前 Realm @param model ECDSA 密钥组件配置 */
     public GeneratedEcdsaKeyProvider(RealmModel realm, ComponentModel model) {
         super(realm, model);
     }
 
     @Override
+    /** 解码 EC 密钥对并构建 SIG 用途的 {@link KeyWrapper}；失败返回 null。 */
     protected KeyWrapper loadKey(RealmModel realm, ComponentModel model) {
         String privateEcdsaKeyBase64Encoded = model.getConfig().getFirst(GeneratedEcdsaKeyProviderFactory.ECDSA_PRIVATE_KEY_KEY);
         String publicEcdsaKeyBase64Encoded = model.getConfig().getFirst(GeneratedEcdsaKeyProviderFactory.ECDSA_PUBLIC_KEY_KEY);

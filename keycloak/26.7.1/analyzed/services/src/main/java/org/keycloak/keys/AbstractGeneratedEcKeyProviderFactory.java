@@ -34,28 +34,42 @@ import org.keycloak.provider.ProviderConfigProperty;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 自动生成 EC 密钥的工厂抽象基类：校验/生成椭圆曲线密钥对并支持回退密钥创建。
+ * <p>子类指定曲线配置键、算法映射与支持的 {@link KeyUse}；配置变更或缺少密钥时自动重新生成 Base64 编码的 EC 公私钥。</p>
+ */
 public abstract class AbstractGeneratedEcKeyProviderFactory<T extends KeyProvider>
         extends AbstractEcKeyProviderFactory<T> {
 
+    /** 默认 NIST 椭圆曲线名（如 P-256）。 */
     abstract protected String getDefaultEcEllipticCurve();
 
+    /** 组件配置中椭圆曲线属性键。 */
     abstract protected String getEcEllipticCurveKey();
 
+    /** 按 JWS/JWE 算法解析对应 NIST 曲线名。 */
     abstract protected String getEcEllipticCurveKey(String algorithm);
 
+    /** 椭圆曲线配置项的 {@link ProviderConfigProperty} 描述。 */
     abstract protected ProviderConfigProperty getEcEllipticCurveProperty();
 
+    /** 组件配置中 EC 私钥属性键。 */
     abstract protected String getEcPrivateKeyKey();
 
+    /** 组件配置中 EC 公钥属性键。 */
     abstract protected String getEcPublicKeyKey();
 
+    /** 子类日志记录器。 */
     abstract protected Logger getLogger();
 
+    /** 判断算法是否由本子类 EC 工厂支持。 */
     abstract protected boolean isSupportedEcAlgorithm(String algorithm);
 
+    /** 判断密钥用途（签名/加密）是否适用于本子类。 */
     abstract protected boolean isValidKeyUse(KeyUse keyUse);
 
     @Override
+    /** 无匹配密钥时自动创建低优先级回退 EC 组件。 */
     public boolean createFallbackKeys(KeycloakSession session, KeyUse keyUse, String algorithm) {
         if (isValidKeyUse(keyUse) && isSupportedEcAlgorithm(algorithm)) {
             RealmModel realm = session.getContext().getRealm();
@@ -80,6 +94,7 @@ public abstract class AbstractGeneratedEcKeyProviderFactory<T extends KeyProvide
     }
 
     @Override
+    /** 校验曲线配置；缺少密钥或曲线变更时重新生成 EC 密钥对。 */
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
         super.validateConfiguration(session, realm, model);
 
@@ -100,6 +115,7 @@ public abstract class AbstractGeneratedEcKeyProviderFactory<T extends KeyProvide
         }
     }
 
+    /** 按 NIST 曲线名生成 EC 密钥对并写入组件配置。 */
     protected void generateKeys(ComponentModel model, String ecInNistRep) {
         KeyPair keyPair;
         try {
@@ -112,6 +128,7 @@ public abstract class AbstractGeneratedEcKeyProviderFactory<T extends KeyProvide
         }
     }
 
+    /** 从 Base64 编码公钥解析 NIST 曲线名（如 P-256）。 */
     protected String getCurveFromPublicKey(String publicEcKeyBase64Encoded) {
         try {
             KeyFactory kf = KeyFactory.getInstance("EC");

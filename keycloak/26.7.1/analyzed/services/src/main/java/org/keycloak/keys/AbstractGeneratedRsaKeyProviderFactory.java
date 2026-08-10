@@ -38,12 +38,19 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 自动生成 RSA 密钥对的工厂抽象基类：校验密钥长度、生成 PEM 私钥与自签名证书。
+ * <p>支持按 {@link KeyUse} 与 RSA 算法创建回退组件；密钥长度变更时自动重新生成密钥与 X509 证书。</p>
+ */
 public abstract class AbstractGeneratedRsaKeyProviderFactory extends AbstractRsaKeyProviderFactory {
 
+    /** 默认 RSA 模数位长（2048 位）。 */
     private int defaultKeySize = 2048;
 
+    /** 子类日志记录器。 */
     abstract protected Logger getLogger();
 
+    /** 构建含 priority/enabled/active 的 RSA 组件配置模板。 */
     public final static ProviderConfigurationBuilder rsaKeyConfigurationBuilder() {
         return ProviderConfigurationBuilder.create()
                 .property(Attributes.PRIORITY_PROPERTY)
@@ -51,6 +58,7 @@ public abstract class AbstractGeneratedRsaKeyProviderFactory extends AbstractRsa
                 .property(Attributes.ACTIVE_PROPERTY);
     }
 
+    /** 在标准 RSA 配置上追加密钥长度（keySize）属性。 */
     protected ProviderConfigurationBuilder generatedRsaKeyConfigurationBuilder() {
         ProviderConfigProperty prop = Attributes.KEY_SIZE_PROPERTY.get();
         prop.setDefaultValue(defaultKeySize);
@@ -58,11 +66,13 @@ public abstract class AbstractGeneratedRsaKeyProviderFactory extends AbstractRsa
     }
 
     @Override
+    /** 从 SPI 配置读取默认 RSA 密钥长度。 */
     public void init(Config.Scope config) {
         this.defaultKeySize = config.getInt(Attributes.KEY_SIZE_KEY, 2048);
     }
 
     @Override
+    /** 无匹配密钥时自动创建低优先级回退 RSA 组件。 */
     public boolean createFallbackKeys(KeycloakSession session, KeyUse keyUse, String algorithm) {
         if (isValidKeyUse(keyUse) && isSupportedRsaAlgorithm(algorithm)) {
             RealmModel realm = session.getContext().getRealm();
@@ -86,11 +96,14 @@ public abstract class AbstractGeneratedRsaKeyProviderFactory extends AbstractRsa
         }
     }
 
+    /** 判断密钥用途是否适用于本子类 RSA 工厂。 */
     abstract protected boolean isValidKeyUse(KeyUse keyUse);
 
+    /** 判断 RSA 签名/加密算法是否由本子类支持。 */
     abstract protected boolean isSupportedRsaAlgorithm(String algorithm);
 
     @Override
+    /** 校验 keySize；缺少密钥或长度变更时重新生成 RSA 密钥对与证书。 */
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
         super.validateConfiguration(session, realm, model);
 
@@ -113,6 +126,7 @@ public abstract class AbstractGeneratedRsaKeyProviderFactory extends AbstractRsa
         }
     }
 
+    /** 生成指定位长的 RSA 密钥对并写入 PEM 私钥。 */
     private void generateKeys(RealmModel realm, ComponentModel model, int size) {
         KeyPair keyPair;
         try {
@@ -129,6 +143,7 @@ public abstract class AbstractGeneratedRsaKeyProviderFactory extends AbstractRsa
         generateCertificate(realm, model, keyPair);
     }
 
+    /** 为 RSA 密钥对生成 V1 自签名 X509 证书并写入配置。 */
     private void generateCertificate(RealmModel realm, ComponentModel model, KeyPair keyPair) {
         try {
             Certificate certificate = CertificateUtils.generateV1SelfSignedCertificate(keyPair, realm.getName());

@@ -35,11 +35,15 @@ import org.keycloak.provider.ConfigurationValidationHelper;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
+ * 导入外部 RSA 私钥的工厂抽象基类：校验 PEM 私钥、可选证书匹配与有效期。
+ * <p>未提供证书时自动为导入密钥生成 V1 自签名 X509 证书；子类定义支持的 {@link KeyUse} 与 RSA 算法范围。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  * @author <a href="mailto:f.b.rissi@gmail.com">Filipe Bojikian Rissi</a>
  */
 public abstract class AbstractImportedRsaKeyProviderFactory extends AbstractRsaKeyProviderFactory {
 
+    /** 构建含 priority/enabled/active/privateKey/certificate 的导入 RSA 配置模板。 */
     public final static ProviderConfigurationBuilder rsaKeyConfigurationBuilder() {
         return ProviderConfigurationBuilder.create()
                 .property(Attributes.PRIORITY_PROPERTY)
@@ -50,6 +54,7 @@ public abstract class AbstractImportedRsaKeyProviderFactory extends AbstractRsaK
     }
 
     @Override
+    /** 解码并校验 PEM 私钥；验证证书与私钥匹配及有效期，必要时生成自签名证书。 */
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
         ConfigurationValidationHelper.check(model)
                 .checkLong(Attributes.PRIORITY_PROPERTY, false)
@@ -98,8 +103,10 @@ public abstract class AbstractImportedRsaKeyProviderFactory extends AbstractRsaK
         }
     }
 
+    /** 判断密钥用途是否适用于本子类导入 RSA 工厂。 */
     abstract protected boolean isValidKeyUse(KeyUse keyUse);
 
+    /** 判断 RSA 算法是否由本子类支持。 */
     abstract protected boolean isSupportedRsaAlgorithm(String algorithm);
 
 }

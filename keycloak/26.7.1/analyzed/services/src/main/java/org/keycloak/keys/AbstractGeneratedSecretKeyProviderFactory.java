@@ -29,11 +29,15 @@ import org.keycloak.provider.ConfigurationValidationHelper;
 import org.jboss.logging.Logger;
 
 /**
+ * 自动生成对称密钥的工厂抽象基类：校验 secretSize 并在配置缺失时生成随机密钥材料。
+ * <p>密钥以 Base64Url 写入组件配置，同时自动生成 kid；secret 长度变更时重新生成密钥。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public abstract class AbstractGeneratedSecretKeyProviderFactory<T extends KeyProvider> implements KeyProviderFactory<T> {
 
     @Override
+    /** 校验 secretSize；缺少 secret 或长度变更时重新生成对称密钥与 kid。 */
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel model) throws ComponentValidationException {
         ConfigurationValidationHelper validation = SecretKeyProviderUtils.validateConfiguration(model);
         validation.checkList(Attributes.SECRET_SIZE_PROPERTY, false);
@@ -54,6 +58,7 @@ public abstract class AbstractGeneratedSecretKeyProviderFactory<T extends KeyPro
         }
     }
 
+    /** 生成指定字节长度的随机 secret 并写入 Base64Url 编码与 kid。 */
     private void generateSecret(ComponentModel model, int size) {
         try {
             byte[] secret = SecretGenerator.getInstance().randomBytes(size);
@@ -66,7 +71,9 @@ public abstract class AbstractGeneratedSecretKeyProviderFactory<T extends KeyPro
         }
     }
 
+    /** 子类日志记录器。 */
     protected abstract Logger logger();
 
+    /** 默认 secret 字节长度。 */
     protected abstract int getDefaultKeySize();
 }

@@ -36,14 +36,20 @@ import org.keycloak.models.RealmModel;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 自动生成 ECDH 密钥对的 {@link KeyProvider} 实现：用于 JWE 内容加密密钥协商。
+ * <p>从组件配置解码 Base64 EC 公私钥；可选生成自签名 X509 证书供 JWK x5c 声明使用。</p>
+ */
 public class GeneratedEcdhKeyProvider extends AbstractEcKeyProvider {
     private static final Logger logger = Logger.getLogger(GeneratedEcdhKeyProvider.class);
 
+    /** @param realm 当前 Realm @param model ECDH 密钥组件配置 */
     public GeneratedEcdhKeyProvider(RealmModel realm, ComponentModel model) {
         super(realm, model);
     }
 
     @Override
+    /** 解码 EC 密钥对并构建 ENC 用途的 {@link KeyWrapper}；失败返回 null。 */
     protected KeyWrapper loadKey(RealmModel realm, ComponentModel model) {
         String privateEcdhKeyBase64Encoded = model.getConfig().getFirst(GeneratedEcdhKeyProviderFactory.ECDH_PRIVATE_KEY_KEY);
         String publicEcdhKeyBase64Encoded = model.getConfig().getFirst(GeneratedEcdhKeyProviderFactory.ECDH_PUBLIC_KEY_KEY);

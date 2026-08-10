@@ -23,10 +23,14 @@ import org.keycloak.crypto.KeyType;
 import org.keycloak.crypto.KeyUse;
 
 /**
+ * 自动生成 AES 对称加密密钥的 {@link KeyProvider} 实现。
+ * <p>用途为加密（{@link KeyUse#ENC}），类型 OCT，算法 {@link Algorithm#AES}；密钥材料由 {@link AbstractGeneratedSecretKeyProviderFactory} 在配置校验时生成。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class GeneratedAesKeyProvider extends AbstractGeneratedSecretKeyProvider implements KeyProvider {
 
+    /** @param model AES 密钥组件配置 */
     public GeneratedAesKeyProvider(ComponentModel model) {
         super(model, KeyUse.ENC, KeyType.OCT, Algorithm.AES);
     }
