@@ -27,22 +27,27 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
- * Parse the <conditions> in the saml assertion
+ * 解析 SAML 断言中的 {@code Conditions} 元素。
+ * <p>读取 NotBefore/NotOnOrAfter 时间窗口，并解析受众限制、一次性使用及代理限制等子条件。</p>
  *
  * @since Oct 14, 2010
  */
 public class SAMLConditionsParser extends AbstractStaxSamlAssertionParser<ConditionsType> {
 
+    /** 单例实例。 */
     private static final SAMLConditionsParser INSTANCE = new SAMLConditionsParser();
 
+    /** 私有构造，绑定 CONDITIONS 根元素。 */
     private SAMLConditionsParser() {
         super(SAMLAssertionQNames.CONDITIONS);
     }
 
+    /** @return 解析器单例 */
     public static SAMLConditionsParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建条件对象并填充有效期属性。 */
     @Override
     protected ConditionsType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         final ConditionsType conditions = new ConditionsType();
@@ -53,6 +58,7 @@ public class SAMLConditionsParser extends AbstractStaxSamlAssertionParser<Condit
         return conditions;
     }
 
+    /** 分发处理各类条件子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, ConditionsType target, SAMLAssertionQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

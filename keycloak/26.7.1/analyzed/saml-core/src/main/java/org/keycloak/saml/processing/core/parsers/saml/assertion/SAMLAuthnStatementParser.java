@@ -27,22 +27,27 @@ import org.keycloak.saml.common.util.StaxParserUtil;
 import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 
 /**
- * Parse the <conditions> in the saml assertion
+ * 解析 SAML 断言中的 {@code AuthnStatement} 元素。
+ * <p>读取认证时刻、会话索引及 SubjectLocality、AuthnContext 子元素。</p>
  *
  * @since Oct 14, 2010
  */
 public class SAMLAuthnStatementParser extends AbstractStaxSamlAssertionParser<AuthnStatementType> {
 
+    /** 单例实例。 */
     private static final SAMLAuthnStatementParser INSTANCE = new SAMLAuthnStatementParser();
 
+    /** 私有构造，绑定 AUTHN_STATEMENT 根元素。 */
     private SAMLAuthnStatementParser() {
         super(SAMLAssertionQNames.AUTHN_STATEMENT);
     }
 
+    /** @return 解析器单例 */
     public static SAMLAuthnStatementParser getInstance() {
         return INSTANCE;
     }
 
+    /** 从根元素属性创建认证声明并填充会话相关字段。 */
     @Override
     protected AuthnStatementType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         XMLGregorianCalendar authnInstant = XMLTimeUtil.parse(StaxParserUtil.getRequiredAttributeValue(element, SAMLAssertionQNames.ATTR_AUTHN_INSTANT));
@@ -53,6 +58,7 @@ public class SAMLAuthnStatementParser extends AbstractStaxSamlAssertionParser<Au
         return res;
     }
 
+    /** 解析 SubjectLocality 或 AuthnContext 子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, AuthnStatementType target, SAMLAssertionQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

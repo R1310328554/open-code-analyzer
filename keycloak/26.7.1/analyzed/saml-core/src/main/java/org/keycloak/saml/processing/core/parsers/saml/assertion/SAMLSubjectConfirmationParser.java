@@ -30,14 +30,21 @@ import org.keycloak.saml.processing.core.parsers.util.SAMLParserUtil;
 
 import org.w3c.dom.Element;
 
+/**
+ * 解析 SAML 断言中的 {@code SubjectConfirmation} 元素。
+ * <p>读取确认方法（Method），并解析 NameID、EncryptedID 或 SubjectConfirmationData 子元素。</p>
+ */
 public class SAMLSubjectConfirmationParser extends AbstractStaxSamlAssertionParser<SubjectConfirmationType> implements StaxParser {
 
+    /** 单例实例。 */
     public static final SAMLSubjectConfirmationParser INSTANCE = new SAMLSubjectConfirmationParser();
 
+    /** 构造并绑定 SUBJECT_CONFIRMATION 根元素。 */
     public SAMLSubjectConfirmationParser() {
         super(SAMLAssertionQNames.SUBJECT_CONFIRMATION);
     }
 
+    /** 创建主体确认对象并读取 Method 属性。 */
     @Override
     protected SubjectConfirmationType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         final SubjectConfirmationType res = new SubjectConfirmationType();
@@ -47,6 +54,7 @@ public class SAMLSubjectConfirmationParser extends AbstractStaxSamlAssertionPars
         return res;
     }
 
+    /** 分发处理 NameID、EncryptedID 或 SubjectConfirmationData 子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, SubjectConfirmationType target, SAMLAssertionQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

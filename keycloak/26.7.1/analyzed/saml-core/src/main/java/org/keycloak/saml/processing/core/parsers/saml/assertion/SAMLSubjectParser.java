@@ -30,27 +30,33 @@ import org.keycloak.saml.processing.core.parsers.util.SAMLParserUtil;
 import org.w3c.dom.Element;
 
 /**
- * Parse the saml subject
+ * 解析 SAML 断言中的 {@code Subject} 元素。
+ * <p>处理 NameID、EncryptedID 及 SubjectConfirmation 子元素，构建主体类型。</p>
  *
  * @since Oct 12, 2010
  */
 public class SAMLSubjectParser extends AbstractStaxSamlAssertionParser<SubjectType> implements StaxParser {
 
+    /** 单例实例。 */
     private static final SAMLSubjectParser INSTANCE = new SAMLSubjectParser();
 
+    /** 私有构造，绑定 SUBJECT 根元素。 */
     private SAMLSubjectParser() {
         super(SAMLAssertionQNames.SUBJECT);
     }
 
+    /** @return 解析器单例 */
     public static SAMLSubjectParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建空的主体对象。 */
     @Override
     protected SubjectType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         return new SubjectType();
     }
 
+    /** 解析 NameID、EncryptedID 或 SubjectConfirmation 子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, SubjectType target, SAMLAssertionQNames element, StartElement elementDetail) throws ParsingException {
         SubjectType.STSubType subType;

@@ -23,14 +23,26 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.parsers.StaxParser;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
+/**
+ * 解析 SAML 断言中的 {@code EncryptedAssertion} 元素。
+ * <p>将加密断言内容保留为 DOM 元素供后续解密处理。</p>
+ */
 public class SAMLEncryptedAssertionParser implements StaxParser {
 
+    /** 单例实例。 */
     private static final SAMLEncryptedAssertionParser INSTANCE = new SAMLEncryptedAssertionParser();
 
+    /** @return 解析器单例 */
     public static SAMLEncryptedAssertionParser getInstance() {
         return INSTANCE;
     }
 
+    /**
+     * 解析加密断言并封装 DOM 子树。
+     *
+     * @param xmlEventReader STAX 事件读取器
+     * @return 含加密 DOM 的 {@link EncryptedAssertionType}
+     */
     @Override
     public EncryptedAssertionType parse(XMLEventReader xmlEventReader) throws ParsingException {
         EncryptedAssertionType res = new EncryptedAssertionType();

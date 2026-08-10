@@ -19,23 +19,32 @@ import static org.keycloak.saml.processing.core.parsers.saml.metadata.SAMLMetada
 import static org.keycloak.saml.processing.core.parsers.saml.metadata.SAMLMetadataQNames.ATTR_LANG;
 import static org.keycloak.saml.processing.core.parsers.saml.metadata.SAMLMetadataQNames.ATTR_WIDTH;
 
+/**
+ * 解析 SAML 元数据 UI 扩展 {@code UIInfo} 元素。
+ * <p>读取 DisplayName、Description、Logo、URL 等本地化展示信息。</p>
+ */
 public class SAMLUIInfoParser extends AbstractStaxSamlMetadataParser<UIInfoType> {
 
+    /** 单例实例。 */
     private static final SAMLUIInfoParser INSTANCE = new SAMLUIInfoParser();
 
+    /** 私有构造，绑定 UIINFO 根元素。 */
     private SAMLUIInfoParser() {
         super(SAMLMetadataQNames.UIINFO);
     }
 
+    /** @return 解析器单例 */
     public static SAMLUIInfoParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建空的 UI 信息对象。 */
     @Override
     protected UIInfoType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         return new UIInfoType();
     }
 
+    /** 分发处理各类 UI 展示子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, UIInfoType target, SAMLMetadataQNames element,
                                      StartElement elementDetail) throws ParsingException {

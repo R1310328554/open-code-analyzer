@@ -27,14 +27,21 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 import org.keycloak.saml.processing.core.parsers.saml.xmldsig.KeyInfoParser;
 
+/**
+ * 解析 SAML 断言中的 {@code SubjectConfirmationData} 元素。
+ * <p>读取 InResponseTo、有效期、Recipient 等属性，并支持 KeyInfo 或 EncryptedKey 子元素。</p>
+ */
 public class SAMLSubjectConfirmationDataParser extends AbstractStaxSamlAssertionParser<SubjectConfirmationDataType> {
 
+    /** 单例实例。 */
     public static final SAMLSubjectConfirmationDataParser INSTANCE = new SAMLSubjectConfirmationDataParser();
 
+    /** 构造并绑定 SUBJECT_CONFIRMATION_DATA 根元素。 */
     public SAMLSubjectConfirmationDataParser() {
         super(SAMLAssertionQNames.SUBJECT_CONFIRMATION_DATA);
     }
 
+    /** 从起始元素属性创建主体确认数据对象。 */
     @Override
     protected SubjectConfirmationDataType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         final SubjectConfirmationDataType subjectConfirmationData = new SubjectConfirmationDataType();
@@ -48,6 +55,7 @@ public class SAMLSubjectConfirmationDataParser extends AbstractStaxSamlAssertion
         return subjectConfirmationData;
     }
 
+    /** 解析 KeyInfo 或 WS-Trust EncryptedKey 子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, SubjectConfirmationDataType target, SAMLAssertionQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

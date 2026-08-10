@@ -30,27 +30,33 @@ import org.keycloak.saml.common.util.StaxParserUtil;
 import org.w3c.dom.Element;
 
 /**
- * Parse the <conditions> in the saml assertion
+ * 解析 SAML 断言中的 {@code AuthnContext} 元素。
+ * <p>处理认证上下文声明、类引用、声明引用及认证机构 URI。</p>
  *
  * @since Oct 14, 2010
  */
 public class SAMLAuthnContextParser extends AbstractStaxSamlAssertionParser<AuthnContextType> {
 
+    /** 单例实例。 */
     private static final SAMLAuthnContextParser INSTANCE = new SAMLAuthnContextParser();
 
+    /** 私有构造，绑定 AUTHN_CONTEXT 根元素。 */
     private SAMLAuthnContextParser() {
         super(SAMLAssertionQNames.AUTHN_CONTEXT);
     }
 
+    /** @return 解析器单例 */
     public static SAMLAuthnContextParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建空的认证上下文对象。 */
     @Override
     protected AuthnContextType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         return new AuthnContextType();
     }
 
+    /** 分发处理认证上下文相关子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, AuthnContextType target, SAMLAssertionQNames element, StartElement elementDetail) throws ParsingException {
         String text;

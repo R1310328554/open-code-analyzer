@@ -45,22 +45,35 @@ import org.keycloak.saml.processing.core.parsers.util.SAMLParserUtil;
 import org.keycloak.saml.processing.core.saml.v2.util.XMLTimeUtil;
 
 /**
- *
+ * 解析 SAML 断言中的 {@code AttributeValue} 元素。
+ * <p>根据 xsi:nil、xsi:type 等属性将值解析为字符串、日期、NameID 或 XML 片段。</p>
  */
 public class SAMLAttributeValueParser implements StaxParser {
 
+    /** 日志实例。 */
     private static final PicketLinkLogger logger = PicketLinkLoggerFactory.getLogger();
 
+    /** 单例实例。 */
     private static final SAMLAttributeValueParser INSTANCE = new SAMLAttributeValueParser();
+    /** xsi:nil 属性 QName。 */
     private static final QName NIL = new QName(JBossSAMLURIConstants.XSI_NSURI.get(), "nil", JBossSAMLURIConstants.XSI_PREFIX.get());
+    /** xsi:type 属性 QName。 */
     private static final QName XSI_TYPE = new QName(JBossSAMLURIConstants.XSI_NSURI.get(), "type", JBossSAMLURIConstants.XSI_PREFIX.get());
 
+    /** 线程本地 XMLEventFactory，用于补全缺失命名空间。 */
     private static final ThreadLocal<XMLEventFactory> XML_EVENT_FACTORY = ThreadLocal.withInitial(XMLEventFactory::newInstance);
 
+    /** @return 解析器单例 */
     public static SAMLAttributeValueParser getInstance() {
         return INSTANCE;
     }
 
+    /**
+     * 解析单个 AttributeValue 元素。
+     *
+     * @param xmlEventReader STAX 事件读取器
+     * @return 解析后的属性值（可能为 null、字符串、日期或 DOM 片段）
+     */
     @Override
     public Object parse(XMLEventReader xmlEventReader) throws ParsingException {
         StartElement element = StaxParserUtil.getNextStartElement(xmlEventReader);
@@ -68,6 +81,7 @@ public class SAMLAttributeValueParser implements StaxParser {
 
         Attribute nil = element.getAttributeByName(NIL);
         if (nil != null) {
+            // 处理 xsi:nil 空值语义
             String nilValue = StaxParserUtil.getAttributeValue(nil);
             if (nilValue != null && (nilValue.equalsIgnoreCase("true") || nilValue.equals("1"))) {
                 String elementText = StaxParserUtil.getElementText(xmlEventReader);
@@ -86,7 +100,7 @@ public class SAMLAttributeValueParser implements StaxParser {
             if (StaxParserUtil.hasTextAhead(xmlEventReader)) {
                 return StaxParserUtil.getElementText(xmlEventReader);
             }
-            // Else we may have Child Element
+            // 无文本时可能包含子元素
             XMLEvent xmlEvent = StaxParserUtil.peek(xmlEventReader);
             if (xmlEvent instanceof StartElement) {
                 element = (StartElement) xmlEvent;
@@ -98,11 +112,11 @@ public class SAMLAttributeValueParser implements StaxParser {
                 return "";
             }
 
-            // when no type attribute assigned -> assume anyType
+            // 未指定 type 时按 anyType 处理
             return parseAsString(xmlEventReader);
         }
 
-        //      RK Added an additional type check for base64Binary type as calheers is passing this type
+        // 根据 xsi:type 分支解析（含 base64Binary 等扩展类型）
         String typeValue = StaxParserUtil.getAttributeValue(type);
         if (typeValue.contains(":string")) {
             return StaxParserUtil.getElementText(xmlEventReader);
@@ -119,6 +133,7 @@ public class SAMLAttributeValueParser implements StaxParser {
         return parseAsString(xmlEventReader);
     }
 
+    /** 将嵌套 XML 子树序列化为字符串，必要时补全命名空间声明。 */
     private static String parseAsString(XMLEventReader xmlEventReader) throws ParsingException {
         try {
             if (xmlEventReader.peek().isStartElement()) {
@@ -148,15 +163,20 @@ public class SAMLAttributeValueParser implements StaxParser {
         }
     }
 
+    /**
+     * 为当前起始元素补写栈中尚未声明的必要命名空间。
+     *
+     * @return 本次新声明的 prefix 到 URI 映射
+     */
     private static Map<String, String> addNamespaceWhenMissing(Deque<Map<String, String>> definedNamespaces, XMLEventWriter writer,
             StartElement startElement) throws XMLStreamException {
 
         final Map<String, String> necessaryNamespaces = new HashMap<>();
-        // Namespace in tag
+        // 标签自身命名空间
         if (startElement.getName().getPrefix() != null && !startElement.getName().getPrefix().isEmpty()) {
             necessaryNamespaces.put(startElement.getName().getPrefix(), startElement.getName().getNamespaceURI());
         }
-        // Namespaces in attributes
+        // 属性上的命名空间
         final Iterator<Attribute> attributes = startElement.getAttributes();
         while (attributes.hasNext()) {
             final Attribute attribute = attributes.next();
@@ -165,15 +185,15 @@ public class SAMLAttributeValueParser implements StaxParser {
             }
         }
 
-        // Already contained in stack
+        // 已在父级栈中声明的命名空间无需重复
         necessaryNamespaces.entrySet().removeIf(nn -> definedNamespaces.stream().anyMatch(dn -> dn.containsKey(nn.getKey())));
-        // Contained in current element
+        // 当前元素已内联声明的命名空间
         Iterator<Namespace> namespaces = startElement.getNamespaces();
         while (namespaces.hasNext() && !necessaryNamespaces.isEmpty()) {
             necessaryNamespaces.remove(namespaces.next().getPrefix());
         }
 
-        // Add all remaining necessaryNamespaces
+        // 写入剩余必要命名空间
         if (!necessaryNamespaces.isEmpty()) {
             XMLEventFactory xmlEventFactory = XML_EVENT_FACTORY.get();
             for (Map.Entry<String, String> entry : necessaryNamespaces.entrySet()) {
