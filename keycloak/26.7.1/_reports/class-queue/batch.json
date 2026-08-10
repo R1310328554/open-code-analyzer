@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T05:45:29Z",
-  "files": [
-    "common/src/main/java/org/keycloak/common/util/CertificateUtils.java",
-    "common/src/main/java/org/keycloak/common/util/CollectionUtil.java",
-    "common/src/main/java/org/keycloak/common/util/ConcurrentMultivaluedHashMap.java",
-    "common/src/main/java/org/keycloak/common/util/DelegatingSerializationFilter.java",
-    "common/src/main/java/org/keycloak/common/util/DerUtils.java",
-    "common/src/main/java/org/keycloak/common/util/DurationConverter.java",
-    "common/src/main/java/org/keycloak/common/util/Encode.java",
-    "common/src/main/java/org/keycloak/common/util/EnvUtil.java",
-    "common/src/main/java/org/keycloak/common/util/Environment.java",
-    "common/src/main/java/org/keycloak/common/util/FindFile.java",
-    "common/src/main/java/org/keycloak/common/util/HostUtils.java",
-    "common/src/main/java/org/keycloak/common/util/HtmlUtils.java",
-    "common/src/main/java/org/keycloak/common/util/HttpPostRedirect.java",
-    "common/src/main/java/org/keycloak/common/util/IoUtils.java",
-    "common/src/main/java/org/keycloak/common/util/KerberosJdkProvider.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 5788,
-  "done": 195
+  "done": 210
 }
