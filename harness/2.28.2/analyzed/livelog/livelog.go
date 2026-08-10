@@ -14,6 +14,7 @@
 
 // +build !oss
 
+// livelog 包提供构建步骤实时日志流（非 OSS 构建可选 Redis 后端）。
 package livelog
 
 import (
@@ -21,8 +22,7 @@ import (
 	"github.com/drone/drone/service/redisdb"
 )
 
-// New creates a new log streamer. If Redis client passed as parameter is not nil it uses
-// a Redis implementation, otherwise it uses an in-memory implementation.
+// New 创建日志流实例：Redis 客户端非空时使用 Redis 实现，否则使用内存实现。
 func New(rdb redisdb.RedisDB) core.LogStream {
 	if rdb != nil {
 		return newStreamRedis(rdb)

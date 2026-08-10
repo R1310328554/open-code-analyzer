@@ -20,6 +20,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
+// subscriber 表示单个日志流消费者，通过缓冲 channel 接收 core.Line。
 type subscriber struct {
 	sync.Mutex
 
@@ -28,6 +29,7 @@ type subscriber struct {
 	closed  bool
 }
 
+// publish 非阻塞地向订阅者发送一行日志；缓冲满时丢弃新消息以保护生产者。
 func (s *subscriber) publish(line *core.Line) {
 	select {
 	case <-s.closec:
@@ -40,6 +42,7 @@ func (s *subscriber) publish(line *core.Line) {
 	}
 }
 
+// close 关闭订阅者，仅执行一次 closec 信号。
 func (s *subscriber) close() {
 	s.Lock()
 	if !s.closed {

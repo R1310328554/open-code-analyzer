@@ -20,8 +20,7 @@ import (
 	"github.com/drone/drone/version"
 )
 
-// HandleVersion creates an http.HandlerFunc that returns the
-// version number and build details.
+// HandleVersion 返回 HTTP 处理器，以 JSON 输出 Drone 版本号、提交哈希与源码仓库地址。
 func HandleVersion(w http.ResponseWriter, r *http.Request) {
 	v := struct {
 		Source  string `json:"source,omitempty"`

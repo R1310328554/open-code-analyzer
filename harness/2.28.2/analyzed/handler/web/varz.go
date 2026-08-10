@@ -22,22 +22,26 @@ import (
 	"github.com/drone/go-scm/scm"
 )
 
+// varz 聚合 SCM 与许可证等内部运行状态，供 /varz 端点 JSON 输出。
 type varz struct {
 	SCM     *scmInfo     `json:"scm"`
 	License *licenseInfo `json:"license"`
 }
 
+// scmInfo 描述源码管理客户端的基础 URL 与 API 速率限制。
 type scmInfo struct {
 	URL  string    `json:"url"`
 	Rate *rateInfo `json:"rate"`
 }
 
+// rateInfo 表示 SCM API 的速率配额与重置时间。
 type rateInfo struct {
 	Limit     int   `json:"limit"`
 	Remaining int   `json:"remaining"`
 	Reset     int64 `json:"reset"`
 }
 
+// licenseInfo 序列化许可证类型、席位/仓库配额及过期时间。
 type licenseInfo struct {
 	Kind       string    `json:"kind"`
 	Seats      int64     `json:"seats"`
@@ -49,8 +53,7 @@ type licenseInfo struct {
 	Expires    time.Time `json:"expire_at,omitempty"`
 }
 
-// HandleVarz creates an http.HandlerFunc that exposes internal system
-// information.
+// HandleVarz 创建 HTTP 处理器，以 JSON 形式暴露 SCM 速率与许可证信息。
 func HandleVarz(client *scm.Client, license *core.License) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rate := client.Rate()

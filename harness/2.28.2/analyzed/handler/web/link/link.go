@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// link 包提供将用户重定向到远程 SCM 仓库中对应 Git 资源的 HTTP 处理器。
 package link
 
 import (
@@ -23,9 +24,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleCommit returns an http.HandlerFunc that redirects the
-// user to the git resource in the remote source control
-// management system.
+// HandleCommit 返回 HTTP 处理器，将用户重定向到远程源码管理中的指定提交页面。
 func HandleCommit(linker core.Linker) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
@@ -45,9 +44,7 @@ func HandleCommit(linker core.Linker) http.HandlerFunc {
 	}
 }
 
-// HandleTree returns an http.HandlerFunc that redirects the
-// user to the git resource in the remote source control
-// management system.
+// HandleTree 返回 HTTP 处理器，将用户重定向到远程源码管理中的目录树或文件路径。
 func HandleTree(linker core.Linker) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (

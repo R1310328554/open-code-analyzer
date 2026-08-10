@@ -21,12 +21,11 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// this is the amount of items that are stored in memory
-// in the buffer. This should result in approximately 10kb
-// of memory allocated per-stream and per-subscriber, not
-// including any logdata stored in these structures.
+// bufferSize 为每个流/订阅者在内存中保留的日志行数上限，
+// 约每流每订阅者占用 10KB 缓冲（不含日志正文）。
 const bufferSize = 5000
 
+// stream 表示单条构建步骤的内存日志流，维护历史缓冲与活跃订阅者集合。
 type stream struct {
 	sync.Mutex
 
@@ -34,21 +33,21 @@ type stream struct {
 	list map[*subscriber]struct{}
 }
 
+// newStream 构造空的内存日志流。
 func newStream() *stream {
 	return &stream{
 		list: map[*subscriber]struct{}{},
 	}
 }
 
+// write 追加一行日志并广播给所有订阅者；历史按 FIFO 截断至 bufferSize。
 func (s *stream) write(line *core.Line) error {
 	s.Lock()
 	s.hist = append(s.hist, line)
 	for l := range s.list {
 		l.publish(line)
 	}
-	// the history should not be unbounded. The history
-	// slice is capped and items are removed in a FIFO
-	// ordering when capacity is reached.
+	// 限制历史长度，超出容量时丢弃最旧条目。
 	if size := len(s.hist); size >= bufferSize {
 		s.hist = s.hist[size-bufferSize:]
 	}
@@ -56,6 +55,7 @@ func (s *stream) write(line *core.Line) error {
 	return nil
 }
 
+// subscribe 注册新订阅者，先回放历史再返回日志行与错误通道。
 func (s *stream) subscribe(ctx context.Context) (<-chan *core.Line, <-chan error) {
 	sub := &subscriber{
 		handler: make(chan *core.Line, bufferSize),
@@ -81,6 +81,7 @@ func (s *stream) subscribe(ctx context.Context) (<-chan *core.Line, <-chan error
 	return sub.handler, err
 }
 
+// close 关闭流并通知所有订阅者退出。
 func (s *stream) close() error {
 	s.Lock()
 	defer s.Unlock()

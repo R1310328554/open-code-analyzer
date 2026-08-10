@@ -14,6 +14,7 @@
 
 // +build oss
 
+// livelog 包在 OSS 构建中仅提供进程内内存日志流。
 package livelog
 
 import (
@@ -21,7 +22,7 @@ import (
 	"github.com/drone/drone/service/redisdb"
 )
 
-// New creates a new in-memory log streamer.
+// New 创建基于内存的日志流实例（OSS 版忽略 Redis 参数）。
 func New(r redisdb.RedisDB) core.LogStream {
 	return newStreamer()
 }

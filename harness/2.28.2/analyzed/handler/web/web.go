@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// web 包组装 Drone Web UI 与登录、钩子、静态资源等 HTTP 路由。
 package web
 
 import (
@@ -30,6 +31,7 @@ import (
 	"github.com/unrolled/secure"
 )
 
+// New 根据注入的核心服务与系统配置构造 Web Server 实例。
 func New(
 	admitter core.AdmissionService,
 	builds core.BuildStore,
@@ -70,7 +72,7 @@ func New(
 	}
 }
 
-// Server is a http.Handler which exposes drone functionality over HTTP.
+// Server 实现 http.Handler，通过 HTTP 暴露 Drone Web 界面与相关端点。
 type Server struct {
 	Admitter  core.AdmissionService
 	Builds    core.BuildStore
@@ -91,7 +93,7 @@ type Server struct {
 	Host      string
 }
 
-// Handler returns an http.Handler
+// Handler 注册 chi 路由：Webhook、SCM 链接跳转、登录/登出、静态资源与 SPA 回退。
 func (s Server) Handler() http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)

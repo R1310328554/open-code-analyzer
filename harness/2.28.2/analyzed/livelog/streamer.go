@@ -22,23 +22,24 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// error returned when a stream is not registered with
-// the streamer.
+// errStreamNotFound 表示请求的日志流未在 streamer 中注册。
 var errStreamNotFound = errors.New("stream: not found")
 
+// streamer 在进程内按步骤 ID 管理多条内存日志流。
 type streamer struct {
 	sync.Mutex
 
 	streams map[int64]*stream
 }
 
-// New returns a new in-memory log streamer.
+// newStreamer 返回新的进程内日志流管理器。
 func newStreamer() core.LogStream {
 	return &streamer{
 		streams: make(map[int64]*stream),
 	}
 }
 
+// Create 为指定构建步骤 ID 注册新的内存日志流。
 func (s *streamer) Create(ctx context.Context, id int64) error {
 	s.Lock()
 	s.streams[id] = newStream()
@@ -46,6 +47,7 @@ func (s *streamer) Create(ctx context.Context, id int64) error {
 	return nil
 }
 
+// Delete 移除并关闭指定 ID 的日志流。
 func (s *streamer) Delete(ctx context.Context, id int64) error {
 	s.Lock()
 	stream, ok := s.streams[id]
@@ -59,6 +61,7 @@ func (s *streamer) Delete(ctx context.Context, id int64) error {
 	return stream.close()
 }
 
+// Write 向已注册的日志流追加一行日志。
 func (s *streamer) Write(ctx context.Context, id int64, line *core.Line) error {
 	s.Lock()
 	stream, ok := s.streams[id]
@@ -69,6 +72,7 @@ func (s *streamer) Write(ctx context.Context, id int64, line *core.Line) error {
 	return stream.write(line)
 }
 
+// Tail 订阅指定步骤的实时日志；流不存在时返回 nil 通道。
 func (s *streamer) Tail(ctx context.Context, id int64) (<-chan *core.Line, <-chan error) {
 	s.Lock()
 	stream, ok := s.streams[id]
@@ -79,6 +83,7 @@ func (s *streamer) Tail(ctx context.Context, id int64) (<-chan *core.Line, <-cha
 	return stream.subscribe(ctx)
 }
 
+// Info 返回当前活跃流及各流的订阅者数量快照。
 func (s *streamer) Info(ctx context.Context) *core.LogStreamInfo {
 	s.Lock()
 	defer s.Unlock()

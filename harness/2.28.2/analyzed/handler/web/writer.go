@@ -22,7 +22,7 @@ import (
 	"strconv"
 )
 
-// indent the json-encoded API responses
+// indent 控制 JSON 响应是否缩进格式化，由环境变量 HTTP_JSON_INDENT 决定。
 var indent bool
 
 func init() {
@@ -32,61 +32,55 @@ func init() {
 }
 
 var (
-	// errInvalidToken is returned when the api request token is invalid.
+	// errInvalidToken 表示 API 请求令牌无效或缺失。
 	errInvalidToken = errors.New("Invalid or missing token")
 
-	// errUnauthorized is returned when the user is not authorized.
+	// errUnauthorized 表示用户未通过认证。
 	errUnauthorized = errors.New("Unauthorized")
 
-	// errForbidden is returned when user access is forbidden.
+	// errForbidden 表示用户无权访问资源。
 	errForbidden = errors.New("Forbidden")
 
-	// errNotFound is returned when a resource is not found.
+	// errNotFound 表示请求的资源不存在。
 	errNotFound = errors.New("Not Found")
 )
 
-// Error represents a json-encoded API error.
+// Error 为 JSON 编码的 API 错误响应体。
 type Error struct {
 	Message string `json:"message"`
 }
 
-// writeErrorCode writes the json-encoded error message to the response.
+// writeErrorCode 按指定 HTTP 状态码写入 JSON 错误消息。
 func writeErrorCode(w http.ResponseWriter, err error, status int) {
 	writeJSON(w, &Error{Message: err.Error()}, status)
 }
 
-// writeError writes the json-encoded error message to the response
-// with a 500 internal server error.
+// writeError 以 500 内部错误状态写入 JSON 错误消息。
 func writeError(w http.ResponseWriter, err error) {
 	writeErrorCode(w, err, 500)
 }
 
-// writeNotFound writes the json-encoded error message to the response
-// with a 404 not found status code.
+// writeNotFound 以 404 状态写入 JSON 错误消息。
 func writeNotFound(w http.ResponseWriter, err error) {
 	writeErrorCode(w, err, 404)
 }
 
-// writeUnauthorized writes the json-encoded error message to the response
-// with a 401 unauthorized status code.
+// writeUnauthorized 以 401 未授权状态写入 JSON 错误消息。
 func writeUnauthorized(w http.ResponseWriter, err error) {
 	writeErrorCode(w, err, 401)
 }
 
-// writeForbidden writes the json-encoded error message to the response
-// with a 403 forbidden status code.
+// writeForbidden 以 403 禁止访问状态写入 JSON 错误消息。
 func writeForbidden(w http.ResponseWriter, err error) {
 	writeErrorCode(w, err, 403)
 }
 
-// writeBadRequest writes the json-encoded error message to the response
-// with a 400 bad request status code.
+// writeBadRequest 以 400 错误请求状态写入 JSON 错误消息。
 func writeBadRequest(w http.ResponseWriter, err error) {
 	writeErrorCode(w, err, 400)
 }
 
-// writeJSON writes the json-encoded error message to the response
-// with a 400 bad request status code.
+// writeJSON 将任意值序列化为 JSON 并写入响应，Content-Type 为 application/json。
 func writeJSON(w http.ResponseWriter, v interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

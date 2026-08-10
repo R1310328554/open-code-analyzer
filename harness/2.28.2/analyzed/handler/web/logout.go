@@ -20,8 +20,7 @@ import (
 	"github.com/drone/drone-ui/dist"
 )
 
-// HandleLogout creates an http.HandlerFunc that handles
-// session termination.
+// HandleLogout 返回 HTTP 处理器，清除会话 Cookie 并返回前端首页。
 func HandleLogout() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Set-Cookie", "_session_=deleted; Path=/; Max-Age=0")

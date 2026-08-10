@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// web 包中的登录处理器负责 OAuth 认证、用户准入与会话创建。
 package web
 
 import (
@@ -30,15 +31,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// period at which the user account is synchronized
-// with the remote system. Default is weekly.
+// syncPeriod 定义与远程系统同步用户账户的周期，默认为每周一次。
 var syncPeriod = time.Hour * 24 * 7
 
-// period at which the sync should timeout
+// syncTimeout 定义单次同步操作的最大超时时间。
 var syncTimeout = time.Minute * 30
 
-// HandleLogin creates and http.HandlerFunc that handles user
-// authentication and session initialization.
+// HandleLogin 创建 HTTP 处理器，完成用户认证、账户创建/更新及会话初始化。
 func HandleLogin(
 	users core.UserStore,
 	userz core.UserService,
@@ -56,8 +55,7 @@ func HandleLogin(
 			return
 		}
 
-		// The authorization token is passed from the
-		// login middleware in the context.
+		// 授权令牌由登录中间件写入请求上下文。
 		tok := login.TokenFrom(ctx)
 
 		account, err := userz.Find(ctx, tok.Access, tok.Refresh)
@@ -149,29 +147,23 @@ func HandleLogin(
 			user.Expiry = tok.Expires.Unix()
 		}
 
-		// If the user account has never been synchronized we
-		// execute the synchronization logic.
+		// 若账户从未同步或已超过同步周期，则标记为待同步。
 		if time.Unix(user.Synced, 0).Add(syncPeriod).Before(time.Now()) {
 			user.Syncing = true
 		}
 
 		err = users.Update(ctx, user)
 		if err != nil {
-			// if the account update fails we should still
-			// proceed to create the user session. This is
-			// considered a non-fatal error.
+			// 账户更新失败仍继续创建会话，视为非致命错误。
 			logger.Errorf("cannot update user: %s", err)
 		}
 
-		// launch the synchronization process in a go-routine,
-		// since it is a long-running process and can take up
-		// to a few minutes.
+		// 在 goroutine 中启动同步，避免阻塞登录流程。
 		if user.Syncing {
 			go synchronize(ctx, syncer, user)
 		}
 
-		// If the user account has not completed registration,
-		// redirect to the registration form.
+		// 未完成注册（无邮箱）的用户重定向到注册页。
 		if len(user.Email) == 0 && user.Created > 1619841600 {
 			redirect = "/register"
 		}
@@ -183,6 +175,7 @@ func HandleLogin(
 	}
 }
 
+// synchronize 在后台执行用户与远程 SCM 的数据同步。
 func synchronize(ctx context.Context, syncer core.Syncer, user *core.User) {
 	log := logrus.WithField("login", user.Login)
 	log.Debugf("begin synchronization")
@@ -198,20 +191,22 @@ func synchronize(ctx context.Context, syncer core.Syncer, user *core.User) {
 	}
 }
 
+// writeLoginError 将登录错误重定向到错误展示页。
 func writeLoginError(w http.ResponseWriter, r *http.Request, err error) {
 	http.Redirect(w, r, "/login/error?message="+err.Error(), http.StatusSeeOther)
 }
 
+// writeLoginErrorStr 将字符串形式的登录错误写入错误页。
 func writeLoginErrorStr(w http.ResponseWriter, r *http.Request, s string) {
 	writeLoginError(w, r, errors.New(s))
 }
 
+// writeCookie 设置 Cookie 并附加 SameSite=lax 属性。
 func writeCookie(w http.ResponseWriter, cookie *http.Cookie) {
 	w.Header().Set("Set-Cookie", cookie.String()+"; SameSite=lax")
 }
 
-// HandleLoginForm creates and http.HandlerFunc that presents the
-// user with an Login form for password-based authentication.
+// HandleLoginForm 返回展示用户名/密码登录表单的 HTTP 处理器。
 func HandleLoginForm() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
@@ -219,7 +214,7 @@ func HandleLoginForm() http.HandlerFunc {
 	}
 }
 
-// html page displayed to collect credentials.
+// loginForm 为收集凭据的简单 HTML 登录表单。
 var loginForm = `
 <form method="POST" action="/login">
 <input type="text" name="username" />

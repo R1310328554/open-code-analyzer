@@ -29,6 +29,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+// newStreamRedis 构造基于 Redis Stream 的日志流实现。
 func newStreamRedis(r redisdb.RedisDB) core.LogStream {
 	return streamRedis{
 		rdb: r,
@@ -36,18 +37,19 @@ func newStreamRedis(r redisdb.RedisDB) core.LogStream {
 }
 
 const (
-	redisKeyExpiryTime = 5 * time.Hour          // How long each key exists in redis
-	redisPollTime      = 100 * time.Millisecond // should not be too large to avoid redis clients getting occupied for long
-	redisTailMaxTime   = 1 * time.Hour          // maximum duration a tail can last
+	redisKeyExpiryTime = 5 * time.Hour          // 每个 Redis 键的存活时间
+	redisPollTime      = 100 * time.Millisecond // XRead 阻塞间隔，避免长时间占用连接
+	redisTailMaxTime   = 1 * time.Hour          // Tail 轮询的最长持续时间
 	redisEntryKey      = "line"
 	redisStreamPrefix  = "drone-log-"
 )
 
+// streamRedis 使用 Redis Stream 在集群间共享构建步骤日志。
 type streamRedis struct {
 	rdb redisdb.RedisDB
 }
 
-// Create creates a redis stream and sets an expiry on it.
+// Create 创建 Redis 日志流并设置过期时间；若键已存在则先删除。
 func (r streamRedis) Create(ctx context.Context, id int64) error {
 	// Delete if a stream already exists with the same key
 	_ = r.Delete(ctx, id)
@@ -75,7 +77,7 @@ func (r streamRedis) Create(ctx context.Context, id int64) error {
 	return nil
 }
 
-// Delete deletes a stream
+// Delete 删除指定步骤 ID 对应的 Redis 日志流。
 func (r streamRedis) Delete(ctx context.Context, id int64) error {
 	client := r.rdb.Client()
 
@@ -93,7 +95,7 @@ func (r streamRedis) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-// Write writes information into the Redis stream
+// Write 将一行日志 JSON 写入 Redis Stream。
 func (r streamRedis) Write(ctx context.Context, id int64, line *core.Line) error {
 	client := r.rdb.Client()
 
@@ -118,7 +120,7 @@ func (r streamRedis) Write(ctx context.Context, id int64, line *core.Line) error
 	return nil
 }
 
-// Tail returns back all the lines in the stream.
+// Tail 持续从 Redis Stream 读取新日志行，直至上下文取消或超时。
 func (r streamRedis) Tail(ctx context.Context, id int64) (<-chan *core.Line, <-chan error) {
 	client := r.rdb.Client()
 
@@ -136,7 +138,7 @@ func (r streamRedis) Tail(ctx context.Context, id int64) (<-chan *core.Line, <-c
 		defer close(chLines)
 		timeout := time.After(redisTailMaxTime) // polling should not last for longer than tailMaxTime
 
-		// Keep reading from the stream and writing to the channel
+		// 从 "0" 起增量读取 Stream 条目并写入通道。
 		lastID := "0"
 
 		for {
@@ -181,7 +183,7 @@ func (r streamRedis) Tail(ctx context.Context, id int64) (<-chan *core.Line, <-c
 	return chLines, chErr
 }
 
-// Info returns info about log streams present in redis
+// Info 扫描 Redis 中所有日志流键并返回各步骤的条目数量。
 func (r streamRedis) Info(ctx context.Context) (info *core.LogStreamInfo) {
 	client := r.rdb.Client()
 
@@ -214,6 +216,7 @@ func (r streamRedis) Info(ctx context.Context) (info *core.LogStreamInfo) {
 	return
 }
 
+// _exists 校验 Redis 日志流键是否存在。
 func (r streamRedis) _exists(ctx context.Context, key string) error {
 	client := r.rdb.Client()
 

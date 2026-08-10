@@ -25,6 +25,8 @@ import (
 	"github.com/drone/drone/core"
 )
 
+// HandleIndex 返回 SPA 首页处理器，未登录用户访问根路径时重定向到欢迎页，
+// 并根据许可证状态注入前端提示脚本。
 func HandleIndex(host string, session core.Session, license core.LicenseService) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		user, _ := session.Get(r)
@@ -47,11 +49,15 @@ func HandleIndex(host string, session core.Session, license core.LicenseService)
 }
 
 var (
+	// head 为 index.html 中待替换的 <head> 起始标记。
 	head     = []byte(`<head>`)
+	// expired 注入 LICENSE_EXPIRED 标志的脚本片段。
 	expired  = []byte(`<head><script>window.LICENSE_EXPIRED=true</script>`)
+	// exceeded 注入 LICENSE_LIMIT_EXCEEDED 标志的脚本片段。
 	exceeded = []byte(`<head><script>window.LICENSE_LIMIT_EXCEEDED=true</script>`)
 )
 
+// setupCache 为静态资源处理器添加长期缓存与 ETag 响应头。
 func setupCache(h http.Handler) http.Handler {
 	data := []byte(time.Now().String())
 	etag := fmt.Sprintf("%x", md5.Sum(data))
@@ -168,5 +174,6 @@ func setupCache(h http.Handler) http.Handler {
 // {{end}}
 // `
 
+// landingPage 为预留的落地页 HTML 占位内容。
 var landingPage = `
 `

@@ -22,7 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Middleware provides logging middleware.
+// Middleware 为 HTTP 请求注入 request-id、记录访问日志并传递带日志器的上下文。
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := r.Header.Get("X-Request-ID")
@@ -46,6 +46,7 @@ func Middleware(next http.Handler) http.Handler {
 	})
 }
 
+// authType 根据 Authorization 头或 access_token 参数判断认证方式为 token 或 cookie。
 func authType(r *http.Request) string {
 	if r.Header.Get("Authorization") != "" || r.FormValue("access_token") != "" {
 		return "token"
