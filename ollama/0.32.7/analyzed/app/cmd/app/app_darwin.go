@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// app_darwin.go 提供 macOS 原生 UI、应用迁移、LaunchAgent 与窗口管理。
 package main
 
 // #cgo CFLAGS: -x objective-c
@@ -44,6 +45,7 @@ var (
 // TODO(jmorganca): pre-create the window and pass
 // it to the webview instead of using the internal one
 //
+// StartUI 由 Objective-C 调用，启动 WebView UI 并设置窗口样式。
 //export StartUI
 func StartUI(path *C.cchar_t) {
 	p := C.GoString(path)
@@ -52,6 +54,7 @@ func StartUI(path *C.cchar_t) {
 	C.setWindowDelegate(wv.webview.Window())
 }
 
+// ShowUI 显示已有 WebView 窗口，未运行则新建。
 //export ShowUI
 func ShowUI() {
 	// If webview is already running, just show the window
@@ -64,11 +67,13 @@ func ShowUI() {
 	}
 }
 
+// StopUI 终止 WebView。
 //export StopUI
 func StopUI() {
 	wv.Terminate()
 }
 
+// StartUpdate 执行应用内升级并启动新版本。
 //export StartUpdate
 func StartUpdate() {
 	if err := updater.DoUpgrade(true); err != nil {
@@ -81,6 +86,7 @@ func StartUpdate() {
 	// not reached if upgrade works, the new app will kill this process
 }
 
+//export darwinStartHiddenTasks 在隐藏模式下执行后台任务。
 //export darwinStartHiddenTasks
 func darwinStartHiddenTasks() {
 	startHiddenTasks()
@@ -103,6 +109,7 @@ func init() {
 	}
 }
 
+// maybeMoveAndRestart 提示用户将应用移入「应用程序」文件夹；已迁移则返回 AlreadyMoved。
 // maybeMoveAndRestart checks if we should relocate
 // and returns true if we did and should immediately exit
 func maybeMoveAndRestart() appMove {
@@ -127,11 +134,13 @@ func maybeMoveAndRestart() appMove {
 	return status
 }
 
+// handleExistingInstance 在 macOS 上终止其他 Ollama 实例。
 // handleExistingInstance handles existing instances on macOS
 func handleExistingInstance(_ bool) {
 	C.killOtherInstances()
 }
 
+// installSymlink 在 /usr/local/bin 创建指向捆绑 ollama CLI 的符号链接。
 func installSymlink() {
 	if !isApp {
 		return
@@ -163,6 +172,7 @@ func installSymlink() {
 	}
 }
 
+// UpdateAvailable 通知原生菜单有可用更新。
 func UpdateAvailable(ver string) error {
 	slog.Debug("update detected, adjusting menu")
 	// TODO (jmorganca): find a better check for development mode than checking the bundle path
@@ -172,6 +182,7 @@ func UpdateAvailable(ver string) error {
 	return nil
 }
 
+// osRun 注册 LaunchAgent 并进入 Cocoa 主事件循环。
 func osRun(_ func(), hasCompletedFirstRun, startHidden bool) {
 	registerLaunchAgent(hasCompletedFirstRun)
 
@@ -181,16 +192,19 @@ func osRun(_ func(), hasCompletedFirstRun, startHidden bool) {
 	C.run(C._Bool(hasCompletedFirstRun), C._Bool(startHidden))
 }
 
+// quit 请求退出 Cocoa 应用。
 func quit() {
 	C.quit()
 }
 
+// LaunchNewApp 启动新版本应用 bundle。
 func LaunchNewApp() {
 	appName := C.CString(updater.BundlePath)
 	defer C.free(unsafe.Pointer(appName))
 	C.launchApp(appName)
 }
 
+// registerLaunchAgent 注册登录项并清理过时的 Login Item。
 func registerLaunchAgent(hasCompletedFirstRun bool) {
 	// Remove any stale Login Item registrations
 	C.unregisterSelfFromLoginItem()
@@ -198,6 +212,7 @@ func registerLaunchAgent(hasCompletedFirstRun bool) {
 	C.registerSelfAsLoginItem(C._Bool(hasCompletedFirstRun))
 }
 
+// logStartup 记录应用路径、版本及沙盒信息。
 func logStartup() {
 	appPath := updater.BundlePath
 	if appPath == updater.SystemWidePath {
@@ -217,18 +232,22 @@ func logStartup() {
 	slog.Info("starting Ollama", "app", appPath, "version", version.Version, "OS", updater.UserAgentOS)
 }
 
+// hideWindow 隐藏原生窗口。
 func hideWindow(ptr unsafe.Pointer) {
 	C.hideWindow(C.uintptr_t(uintptr(ptr)))
 }
 
+// showWindow 显示并激活原生窗口。
 func showWindow(ptr unsafe.Pointer) {
 	C.showWindow(C.uintptr_t(uintptr(ptr)))
 }
 
+// styleWindow 应用 macOS 窗口样式。
 func styleWindow(ptr unsafe.Pointer) {
 	C.styleWindow(C.uintptr_t(uintptr(ptr)))
 }
 
+// runInBackground 以 hidden 参数启动子进程实现后台运行。
 func runInBackground() {
 	cmd := exec.Command(filepath.Join(updater.BundlePath, "Contents", "MacOS", "Ollama"), "hidden")
 	if cmd != nil {
@@ -243,19 +262,23 @@ func runInBackground() {
 	}
 }
 
+// drag 处理窗口拖动（由 WebView 绑定调用）。
 func drag(ptr unsafe.Pointer) {
 	C.drag(C.uintptr_t(uintptr(ptr)))
 }
 
+// doubleClick 处理标题栏双击。
 func doubleClick(ptr unsafe.Pointer) {
 	C.doubleClick(C.uintptr_t(uintptr(ptr)))
 }
 
+//export handleConnectURL 供原生层触发的 connect URL 处理入口。
 //export handleConnectURL
 func handleConnectURL() {
 	handleConnectURLScheme()
 }
 
+// checkAndHandleExistingInstance 非 Windows 平台无需单实例 URL 转发。
 // checkAndHandleExistingInstance is not needed on non-Windows platforms
 func checkAndHandleExistingInstance(_ string) bool {
 	return false

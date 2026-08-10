@@ -1,3 +1,4 @@
+// dlgs_windows.go 使用 Win32 API 实现消息框、文件与目录对话框。
 package dialog
 
 import (
@@ -10,8 +11,10 @@ import (
 	"github.com/TheTitanrain/w32"
 )
 
+// multiFileBufferSize 为多选文件对话框的 UTF-16 缓冲区大小。
 const multiFileBufferSize = w32.MAX_PATH * 10
 
+// WinDlgError 包装 CommDlgExtendedError 错误码。
 type WinDlgError int
 
 func (e WinDlgError) Error() string {
@@ -39,12 +42,14 @@ func (b *MsgBuilder) error() {
 	w32.MessageBox(w32.HWND(0), b.Msg, firstOf(b.Dlg.Title, "Error"), w32.MB_OK|w32.MB_ICONERROR)
 }
 
+// filedlg 封装 OPENFILENAME 结构与文件名缓冲区。
 type filedlg struct {
 	buf     []uint16
 	filters []uint16
 	opf     *w32.OPENFILENAME
 }
 
+// Filename 从缓冲区解析单选文件名。
 func (d filedlg) Filename() string {
 	i := 0
 	for i < len(d.buf) && d.buf[i] != 0 {
@@ -53,6 +58,7 @@ func (d filedlg) Filename() string {
 	return string(utf16.Decode(d.buf[:i]))
 }
 
+// parseMultipleFilenames 解析 Explorer 风格的多选结果。
 func (d filedlg) parseMultipleFilenames() []string {
 	var files []string
 	i := 0
@@ -153,6 +159,7 @@ func utf16slice(ptr *uint16) []uint16 { //nolint:unused
 	return slice
 }
 
+// openfile 根据 FileBuilder 配置填充 OPENFILENAME。
 func openfile(flags uint32, b *FileBuilder) (d filedlg) {
 	d.buf = make([]uint16, w32.MAX_PATH)
 	if b.StartFile != "" {
@@ -190,6 +197,7 @@ func openfile(flags uint32, b *FileBuilder) (d filedlg) {
 	return d
 }
 
+// dirdlg 封装 SHBrowseForFolder 参数。
 type dirdlg struct {
 	bi *w32.BROWSEINFO
 }
@@ -211,6 +219,7 @@ const (
 	bffm_VALIDATEFAILED  = bffm_VALIDATEFAILEDW
 )
 
+// callbackDefaultDir 在目录对话框初始化时选中默认路径。
 func callbackDefaultDir(hwnd w32.HWND, msg uint, lParam, lpData uintptr) int {
 	if msg == bffm_INITIALIZED {
 		_ = w32.SendMessage(hwnd, bffm_SETSELECTION, w32.TRUE, lpData)
@@ -218,6 +227,7 @@ func callbackDefaultDir(hwnd w32.HWND, msg uint, lParam, lpData uintptr) int {
 	return 0
 }
 
+// selectdir 根据 DirectoryBuilder 配置 BROWSEINFO。
 func selectdir(b *DirectoryBuilder) (d dirdlg) {
 	d.bi = &w32.BROWSEINFO{Flags: w32.BIF_RETURNONLYFSDIRS | w32.BIF_NEWDIALOGSTYLE}
 	if b.Dlg.Title != "" {

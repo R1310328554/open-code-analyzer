@@ -1,3 +1,4 @@
+// dlgs_darwin.go 将 dialog 构建器委托给 cocoa 原生实现。
 package dialog
 
 import (

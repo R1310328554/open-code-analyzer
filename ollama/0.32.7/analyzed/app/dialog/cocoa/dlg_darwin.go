@@ -1,3 +1,4 @@
+// cocoa 包通过 Objective-C/Cocoa 实现 macOS 原生对话框。
 package cocoa
 
 // #cgo darwin LDFLAGS: -framework Cocoa -framework UniformTypeIdentifiers
@@ -12,6 +13,7 @@ import (
 	"unsafe"
 )
 
+// AlertParams 封装 NSAlert 对话框参数。
 type AlertParams struct {
 	p C.AlertDlgParams
 }
@@ -39,18 +41,21 @@ func nsStr(s string) unsafe.Pointer {
 	return C.NSStr(unsafe.Pointer(&[]byte(s)[0]), C.int(len(s)))
 }
 
+// YesNoDlg 显示是/否对话框，选「是」返回 true。
 func YesNoDlg(msg, title string) bool {
 	a := mkAlertParams(msg, title, C.MSG_YESNO)
 	defer a.free()
 	return a.run() == C.DLG_OK
 }
 
+// InfoDlg 显示信息提示框。
 func InfoDlg(msg, title string) {
 	a := mkAlertParams(msg, title, C.MSG_INFO)
 	defer a.free()
 	a.run()
 }
 
+// ErrorDlg 显示错误提示框。
 func ErrorDlg(msg, title string) {
 	a := mkAlertParams(msg, title, C.MSG_ERROR)
 	defer a.free()
@@ -62,11 +67,13 @@ const (
 	MULTI_FILE_BUF_SIZE = 32768
 )
 
+// MultiFileDlg 打开允许多选的文件选择对话框。
 // MultiFileDlg opens a file dialog that allows multiple file selection
 func MultiFileDlg(title string, exts []string, relaxExt bool, startDir string, showHidden bool) ([]string, error) {
 	return fileDlgWithOptions(C.LOADDLG, title, exts, relaxExt, startDir, "", showHidden, true)
 }
 
+// FileDlg 打开单文件选择或保存对话框。
 // FileDlg opens a file dialog for single file selection (kept for compatibility)
 func FileDlg(save bool, title string, exts []string, relaxExt bool, startDir string, filename string, showHidden bool) (string, error) {
 	mode := C.LOADDLG
@@ -83,6 +90,7 @@ func FileDlg(save bool, title string, exts []string, relaxExt bool, startDir str
 	return files[0], nil
 }
 
+// DirDlg 打开目录选择对话框。
 func DirDlg(title string, startDir string, showHidden bool) (string, error) {
 	files, err := fileDlgWithOptions(C.DIRDLG, title, nil, false, startDir, "", showHidden, false)
 	if err != nil {
@@ -94,6 +102,7 @@ func DirDlg(title string, startDir string, showHidden bool) (string, error) {
 	return files[0], nil
 }
 
+// fileDlgWithOptions 统一处理单选/多选/目录对话框的 C 层调用与结果解析。
 // fileDlgWithOptions is the unified file dialog function that handles both single and multiple selection
 func fileDlgWithOptions(mode int, title string, exts []string, relaxExt bool, startDir, filename string, showHidden, allowMultiple bool) ([]string, error) {
 	// Use larger buffer for multiple files, smaller for single

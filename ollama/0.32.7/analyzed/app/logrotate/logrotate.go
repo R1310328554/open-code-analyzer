@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// package logrotate 提供日志文件轮转工具；后续可能并入 app 包。
 // package logrotate provides utilities for rotating logs
 // TODO (jmorgan): this most likely doesn't need it's own
 // package and can be moved to app where log files are created
@@ -12,8 +13,10 @@ import (
 	"strings"
 )
 
+// MaxLogFiles 为保留的历史日志文件数量上限。
 const MaxLogFiles = 5
 
+// Rotate 将现有日志依次重命名为 filename-1、filename-2…，超出 MaxLogFiles 的删除。
 func Rotate(filename string) {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return

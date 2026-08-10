@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// format 包提供桌面应用使用的字符串格式化工具。
 package format
 
 import (
@@ -7,6 +8,7 @@ import (
 	"unicode"
 )
 
+// KebabCase 将 camelCase/PascalCase 转为 kebab-case（如 camelCase -> camel-case）。
 // KebabCase converts a string from camelCase or PascalCase to kebab-case.
 // (e.g. "camelCase" -> "camel-case")
 func KebabCase(str string) string {

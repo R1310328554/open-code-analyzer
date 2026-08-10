@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// app_windows.go 提供 Windows 托盘、窗口焦点、登录快捷方式与单实例通信。
 package main
 
 import (
@@ -69,10 +70,12 @@ func init() {
 	}
 }
 
+// maybeMoveAndRestart Windows 安装路径固定，无需迁移。
 func maybeMoveAndRestart() appMove {
 	return 0
 }
 
+// handleExistingInstance 检测已有实例并聚焦或退出当前进程。
 // handleExistingInstance checks for existing instances and optionally focuses them
 func handleExistingInstance(startHidden bool) {
 	if wintray.CheckAndFocusExistingInstance(!startHidden) {
@@ -81,8 +84,10 @@ func handleExistingInstance(startHidden bool) {
 	}
 }
 
+// installSymlink Windows 无 CLI 符号链接安装逻辑。
 func installSymlink() {}
 
+// appCallbacks 实现 wintray.TrayCallbacks，桥接托盘与 WebView。
 type appCallbacks struct {
 	t        wintray.TrayCallbacks
 	shutdown func()
@@ -90,10 +95,12 @@ type appCallbacks struct {
 
 var app = &appCallbacks{}
 
+// UIRun 启动 WebView 并加载指定路径。
 func (ac *appCallbacks) UIRun(path string) {
 	wv.Run(path)
 }
 
+// UIShow 显示 WebView 窗口。
 func (*appCallbacks) UIShow() {
 	if wv.webview != nil {
 		showWindow(wv.webview.Window())
@@ -102,24 +109,29 @@ func (*appCallbacks) UIShow() {
 	}
 }
 
+// UITerminate 关闭 WebView。
 func (*appCallbacks) UITerminate() {
 	wv.Terminate()
 }
 
+// UIRunning 报告 WebView 是否仍在运行。
 func (*appCallbacks) UIRunning() bool {
 	return wv.IsRunning()
 }
 
+// Quit 退出托盘并终止 WebView。
 func (app *appCallbacks) Quit() {
 	app.t.Quit()
 	wv.Terminate()
 }
 
 // TODO - reconcile with above for consistency between mac/windows
+// quit 终止 WebView（Windows 简化版）。
 func quit() {
 	wv.Terminate()
 }
 
+// DoUpdate 关闭服务后执行就地升级。
 func (app *appCallbacks) DoUpdate() {
 	// Safeguard in case we have requests in flight that need to drain...
 	slog.Info("Waiting for server to shutdown")
@@ -131,11 +143,13 @@ func (app *appCallbacks) DoUpdate() {
 	}
 }
 
+// HandleURLScheme 处理来自其他实例转发的 ollama:// URL。
 // HandleURLScheme implements the URLSchemeHandler interface
 func (app *appCallbacks) HandleURLScheme(urlScheme string) {
 	handleURLSchemeRequest(urlScheme)
 }
 
+// handleURLSchemeRequest 解析 URL 并打开 connect 或主窗口。
 // handleURLSchemeRequest processes URL scheme requests from other instances
 func handleURLSchemeRequest(urlScheme string) {
 	isConnect, err := parseURLScheme(urlScheme)
@@ -153,6 +167,7 @@ func handleURLSchemeRequest(urlScheme string) {
 	}
 }
 
+// UpdateAvailable 通过系统托盘通知有可用更新。
 func UpdateAvailable(ver string) error {
 	if app.t == nil {
 		slog.Debug("tray not yet initialized, skipping update notification")
@@ -161,6 +176,7 @@ func UpdateAvailable(ver string) error {
 	return app.t.UpdateAvailable(ver)
 }
 
+// osRun 初始化托盘、处理隐藏启动逻辑并阻塞于托盘事件循环。
 func osRun(shutdown func(), hasCompletedFirstRun, startHidden bool) {
 	var err error
 	app.shutdown = shutdown
@@ -239,6 +255,7 @@ func osRun(shutdown func(), hasCompletedFirstRun, startHidden bool) {
 	app.t.TrayRun() // This will block the main thread
 }
 
+// createLoginShortcut 首次运行时复制安装程序提供的开机启动快捷方式。
 func createLoginShortcut() error {
 	// The installer lays down a shortcut for us so we can copy it without
 	// having to resort to calling COM APIs to establish the shortcut
@@ -275,9 +292,11 @@ func createLoginShortcut() error {
 	return nil
 }
 
+// LaunchNewApp Windows 升级由安装程序处理，此处为空实现。
 func LaunchNewApp() {
 }
 
+// logStartup 记录 Windows 应用路径与版本。
 func logStartup() {
 	slog.Info("starting Ollama", "app", appPath, "version", version.Version, "OS", updater.UserAgentOS)
 }
@@ -304,12 +323,14 @@ const (
 	TPM_RETURNCMD = 0x0100
 )
 
+// POINT 表示屏幕坐标点。
 // POINT structure for cursor position
 type POINT struct {
 	X int32
 	Y int32
 }
 
+// Rect 为 GetWindowRect 使用的矩形结构。
 // Rect structure for GetWindowRect
 type Rect struct {
 	Left   int32
@@ -318,6 +339,7 @@ type Rect struct {
 	Bottom int32
 }
 
+// centerWindow 将窗口居中到主屏幕。
 func centerWindow(ptr unsafe.Pointer) {
 	hwnd := uintptr(ptr)
 	if hwnd == 0 {
@@ -355,6 +377,7 @@ func centerWindow(ptr unsafe.Pointer) {
 	)
 }
 
+// showWindow 恢复、显示并将窗口置于前台。
 func showWindow(ptr unsafe.Pointer) {
 	hwnd := uintptr(ptr)
 	if hwnd != 0 {
@@ -397,6 +420,7 @@ func showWindow(ptr unsafe.Pointer) {
 	}
 }
 
+// HideWindow 隐藏应用主窗口。
 // HideWindow hides the application window
 func hideWindow(ptr unsafe.Pointer) {
 	hwnd := uintptr(ptr)
@@ -408,6 +432,7 @@ func hideWindow(ptr unsafe.Pointer) {
 	}
 }
 
+// runInBackground 以 hidden 参数启动新的应用进程。
 func runInBackground() {
 	exe, err := os.Executable()
 	if err != nil {
@@ -427,10 +452,13 @@ func runInBackground() {
 	}
 }
 
+// drag Windows 标题栏拖动由 WebView 处理，此处为空。
 func drag(ptr unsafe.Pointer) {}
 
+// doubleClick Windows 双击最大化暂未实现。
 func doubleClick(ptr unsafe.Pointer) {}
 
+// checkAndHandleExistingInstance 将 URL 发送给已运行实例并退出。
 // checkAndHandleExistingInstance checks if another instance is running and sends the URL to it
 func checkAndHandleExistingInstance(urlSchemeRequest string) bool {
 	if urlSchemeRequest == "" {

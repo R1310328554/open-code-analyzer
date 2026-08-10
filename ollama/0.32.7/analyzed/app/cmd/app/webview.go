@@ -24,7 +24,8 @@ import (
 	"github.com/ollama/ollama/app/webview"
 )
 
-type Webview struct {
+// Webview 封装桌面 UI 的 WebView 实例、端口、令牌与并发锁。
+type Webview struct {type Webview struct {
 	port    int
 	token   string
 	webview webview.WebView
@@ -33,6 +34,7 @@ type Webview struct {
 	Store *store.Store
 }
 
+// Run 初始化 WebView 并启动事件循环；须在主线程调用，返回原生窗口句柄。
 // Run initializes the webview and starts its event loop.
 // Note: this must be called from the primary app thread
 // This returns the OS native window handle to the caller
@@ -475,6 +477,7 @@ func (w *Webview) Run(path string) unsafe.Pointer {
 	return w.webview.Window()
 }
 
+// Terminate 销毁 WebView 并释放资源。
 func (w *Webview) Terminate() {
 	w.mutex.Lock()
 	if w.webview == nil {
@@ -489,6 +492,7 @@ func (w *Webview) Terminate() {
 	wv.Destroy()
 }
 
+// IsRunning 报告 WebView 是否已创建且未销毁。
 func (w *Webview) IsRunning() bool {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
@@ -501,6 +505,7 @@ var (
 	pinner    runtime.Pinner
 )
 
+//export menu_get_item_count 返回当前上下文菜单项数量。
 //export menu_get_item_count
 func menu_get_item_count() C.int {
 	menuMutex.RLock()
@@ -508,6 +513,7 @@ func menu_get_item_count() C.int {
 	return C.int(len(menuItems))
 }
 
+//export menu_get_items 返回菜单项 C 数组指针供原生层读取。
 //export menu_get_items
 func menu_get_items() unsafe.Pointer {
 	menuMutex.RLock()
@@ -522,6 +528,7 @@ func menu_get_items() unsafe.Pointer {
 	return unsafe.Pointer(&menuItems[0])
 }
 
+//export menu_handle_selection 将用户选中的菜单项回传给前端 JS。
 //export menu_handle_selection
 func menu_handle_selection(item *C.char) {
 	wv.webview.Eval(fmt.Sprintf("window.handleContextMenuResult('%s')", C.GoString(item)))

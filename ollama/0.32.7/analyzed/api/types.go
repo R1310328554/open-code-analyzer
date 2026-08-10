@@ -1,3 +1,4 @@
+// api 包定义 Ollama REST API 的请求/响应类型、模型选项与工具调用结构。
 package api
 
 import (
@@ -19,6 +20,7 @@ import (
 	"github.com/ollama/ollama/types/model"
 )
 
+// StatusError 表示带 HTTP 状态码与错误消息的 API 错误。
 // StatusError is an error with an HTTP status code and message.
 type StatusError struct {
 	StatusCode   int
@@ -40,6 +42,7 @@ func (e StatusError) Error() string {
 	}
 }
 
+// AuthorizationError 表示未授权（401）响应，可含登录 URL。
 type AuthorizationError struct {
 	StatusCode int
 	Status     string
@@ -53,9 +56,11 @@ func (e AuthorizationError) Error() string {
 	return "something went wrong, please see the ollama server logs for details"
 }
 
+// ImageData 表示图像文件的原始二进制数据。
 // ImageData represents the raw binary data of an image file.
 type ImageData []byte
 
+// GenerateRequest 为 [Client.Generate] 的请求体；Model 与 Prompt 必填，其余有合理默认值。
 // GenerateRequest describes a request sent by [Client.Generate]. While you
 // have to specify the Model and Prompt fields, all the other fields have
 // reasonable defaults for basic uses.
@@ -129,6 +134,7 @@ type GenerateRequest struct {
 	TopLogprobs int `json:"top_logprobs,omitempty"`
 }
 
+// ChatRequest 为 [Client.Chat] 的请求体。
 // ChatRequest describes a request sent by [Client.Chat].
 type ChatRequest struct {
 	// Model is the model name, as in [GenerateRequest].
@@ -179,6 +185,7 @@ type ChatRequest struct {
 	TopLogprobs int `json:"top_logprobs,omitempty"`
 }
 
+// Tools 为工具定义列表。
 type Tools []Tool
 
 func (t Tools) String() string {
@@ -191,6 +198,7 @@ func (t Tool) String() string {
 	return string(bts)
 }
 
+// Message 表示聊天序列中的单条消息，含角色、内容与可选图像。
 // Message is a single message in a chat sequence. The message contains the
 // role ("system", "user", or "assistant"), the content and an optional list
 // of images.
@@ -218,27 +226,32 @@ func (m *Message) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// ToolCall 表示模型发起的一次工具调用。
 type ToolCall struct {
 	ID       string           `json:"id,omitempty"`
 	Function ToolCallFunction `json:"function"`
 }
 
+// ToolCallFunction 描述工具调用的函数名与参数。
 type ToolCallFunction struct {
 	Index     int                       `json:"index"`
 	Name      string                    `json:"name"`
 	Arguments ToolCallFunctionArguments `json:"arguments"`
 }
 
+// ToolCallFunctionArguments 按插入顺序保存工具调用参数键值对。
 // ToolCallFunctionArguments holds tool call arguments in insertion order.
 type ToolCallFunctionArguments struct {
 	om *orderedmap.Map[string, any]
 }
 
+// NewToolCallFunctionArguments 创建空的参数容器。
 // NewToolCallFunctionArguments creates a new empty ToolCallFunctionArguments.
 func NewToolCallFunctionArguments() ToolCallFunctionArguments {
 	return ToolCallFunctionArguments{om: orderedmap.New[string, any]()}
 }
 
+// Get 按键获取参数值。
 // Get retrieves a value by key.
 func (t *ToolCallFunctionArguments) Get(key string) (any, bool) {
 	if t == nil || t.om == nil {
@@ -247,6 +260,7 @@ func (t *ToolCallFunctionArguments) Get(key string) (any, bool) {
 	return t.om.Get(key)
 }
 
+// Set 设置键值对并保持插入顺序。
 // Set sets a key-value pair, preserving insertion order.
 func (t *ToolCallFunctionArguments) Set(key string, value any) {
 	if t == nil {
@@ -258,6 +272,7 @@ func (t *ToolCallFunctionArguments) Set(key string, value any) {
 	t.om.Set(key, value)
 }
 
+// Len 返回参数个数。
 // Len returns the number of arguments.
 func (t *ToolCallFunctionArguments) Len() int {
 	if t == nil || t.om == nil {
@@ -266,6 +281,7 @@ func (t *ToolCallFunctionArguments) Len() int {
 	return t.om.Len()
 }
 
+// All 按插入顺序迭代全部键值对。
 // All returns an iterator over all key-value pairs in insertion order.
 func (t *ToolCallFunctionArguments) All() iter.Seq2[string, any] {
 	if t == nil || t.om == nil {
@@ -274,6 +290,7 @@ func (t *ToolCallFunctionArguments) All() iter.Seq2[string, any] {
 	return t.om.All()
 }
 
+// ToMap 转为普通 map（不保留顺序）。
 // ToMap returns a regular map (order not preserved).
 func (t *ToolCallFunctionArguments) ToMap() map[string]any {
 	if t == nil || t.om == nil {
@@ -302,15 +319,18 @@ func (t ToolCallFunctionArguments) MarshalJSON() ([]byte, error) {
 	return json.Marshal(t.om)
 }
 
+// Tool 描述模型可用的单个工具定义（JSON Schema）。
 type Tool struct {
 	Type     string       `json:"type"`
 	Items    any          `json:"items,omitempty"`
 	Function ToolFunction `json:"function"`
 }
 
+// PropertyType 可为单个类型字符串或类型字符串数组。
 // PropertyType can be either a string or an array of strings
 type PropertyType []string
 
+// UnmarshalJSON 实现 json.Unmarshaler，兼容字符串或数组形式。
 // UnmarshalJSON implements the json.Unmarshaler interface
 func (pt *PropertyType) UnmarshalJSON(data []byte) error {
 	// Try to unmarshal as a string first
@@ -329,6 +349,7 @@ func (pt *PropertyType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON 实现 json.Marshaler；单元素时序列化为字符串。
 // MarshalJSON implements the json.Marshaler interface
 func (pt PropertyType) MarshalJSON() ([]byte, error) {
 	if len(pt) == 1 {
@@ -339,6 +360,7 @@ func (pt PropertyType) MarshalJSON() ([]byte, error) {
 	return json.Marshal([]string(pt))
 }
 
+// String 返回 PropertyType 的字符串表示。
 // String returns a string representation of the PropertyType
 func (pt PropertyType) String() string {
 	if len(pt) == 0 {
@@ -350,16 +372,19 @@ func (pt PropertyType) String() string {
 	return fmt.Sprintf("%v", []string(pt))
 }
 
+// ToolPropertiesMap 按插入顺序保存工具属性定义。
 // ToolPropertiesMap holds tool properties in insertion order.
 type ToolPropertiesMap struct {
 	om *orderedmap.Map[string, ToolProperty]
 }
 
+// NewToolPropertiesMap 创建空的属性映射。
 // NewToolPropertiesMap creates a new empty ToolPropertiesMap.
 func NewToolPropertiesMap() *ToolPropertiesMap {
 	return &ToolPropertiesMap{om: orderedmap.New[string, ToolProperty]()}
 }
 
+// Get 按名称获取工具属性。
 // Get retrieves a property by name.
 func (t *ToolPropertiesMap) Get(key string) (ToolProperty, bool) {
 	if t == nil || t.om == nil {
@@ -368,6 +393,7 @@ func (t *ToolPropertiesMap) Get(key string) (ToolProperty, bool) {
 	return t.om.Get(key)
 }
 
+// Set 设置属性并保持插入顺序。
 // Set sets a property, preserving insertion order.
 func (t *ToolPropertiesMap) Set(key string, value ToolProperty) {
 	if t == nil {
@@ -379,6 +405,7 @@ func (t *ToolPropertiesMap) Set(key string, value ToolProperty) {
 	t.om.Set(key, value)
 }
 
+// Len 返回属性数量。
 // Len returns the number of properties.
 func (t *ToolPropertiesMap) Len() int {
 	if t == nil || t.om == nil {
@@ -415,6 +442,7 @@ func (t *ToolPropertiesMap) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, t.om)
 }
 
+// ToolProperty 描述 JSON Schema 风格的单个工具属性。
 type ToolProperty struct {
 	AnyOf       []ToolProperty     `json:"anyOf,omitempty"`
 	Type        PropertyType       `json:"type,omitempty"`
@@ -425,6 +453,7 @@ type ToolProperty struct {
 	Required    []string           `json:"required,omitempty"`
 }
 
+// ToTypeScriptType 将 ToolProperty 转为 TypeScript 类型字符串。
 // ToTypeScriptType converts a ToolProperty to a TypeScript type string
 func (tp ToolProperty) ToTypeScriptType() string {
 	if len(tp.AnyOf) > 0 {
@@ -450,6 +479,7 @@ func (tp ToolProperty) ToTypeScriptType() string {
 	return strings.Join(types, " | ")
 }
 
+// mapToTypeScriptType 将 JSON Schema 类型映射为 TypeScript 类型。
 // mapToTypeScriptType maps JSON Schema types to TypeScript types
 func mapToTypeScriptType(jsonType string) string {
 	switch jsonType {
@@ -470,6 +500,7 @@ func mapToTypeScriptType(jsonType string) string {
 	}
 }
 
+// ToolFunctionParameters 描述工具函数的 JSON Schema 参数对象。
 type ToolFunctionParameters struct {
 	Type       string             `json:"type"`
 	Defs       any                `json:"$defs,omitempty"`
@@ -483,6 +514,7 @@ func (t *ToolFunctionParameters) String() string {
 	return string(bts)
 }
 
+// ToolFunction 描述可调用工具的名称、说明与参数 schema。
 type ToolFunction struct {
 	Name        string                 `json:"name"`
 	Description string                 `json:"description,omitempty"`
@@ -494,6 +526,7 @@ func (t *ToolFunction) String() string {
 	return string(bts)
 }
 
+// TokenLogprob 表示单个候选 token 的对数概率信息。
 // TokenLogprob represents log probability information for a single token alternative.
 type TokenLogprob struct {
 	// Token is the text representation of the token.
@@ -506,6 +539,7 @@ type TokenLogprob struct {
 	Bytes []int `json:"bytes,omitempty"`
 }
 
+// Logprob 包含已生成 token 的对数概率及 top-k 候选。
 // Logprob contains log probability information for a generated token.
 type Logprob struct {
 	TokenLogprob
@@ -515,6 +549,7 @@ type Logprob struct {
 	TopLogprobs []TokenLogprob `json:"top_logprobs,omitempty"`
 }
 
+// ChatResponse 为 [Client.Chat] 的响应，字段与 GenerateResponse 类似。
 // ChatResponse is the response returned by [Client.Chat]. Its fields are
 // similar to [GenerateResponse].
 type ChatResponse struct {
@@ -548,12 +583,14 @@ type ChatResponse struct {
 	Metrics
 }
 
+// DebugInfo 保存模板渲染调试信息。
 // DebugInfo contains debug information for template rendering
 type DebugInfo struct {
 	RenderedTemplate string `json:"rendered_template"`
 	ImageCount       int    `json:"image_count,omitempty"`
 }
 
+// Metrics 汇总推理耗时、token 计数等运行指标。
 type Metrics struct {
 	TotalDuration      time.Duration `json:"total_duration,omitempty"`
 	LoadDuration       time.Duration `json:"load_duration,omitempty"`
@@ -563,6 +600,7 @@ type Metrics struct {
 	EvalDuration       time.Duration `json:"eval_duration,omitempty"`
 }
 
+// Options 为 [GenerateRequest] 可用的模型运行选项；新增字段需同步 API 文档。
 // Options specified in [GenerateRequest].  If you add a new option here, also
 // add it to the API docs.
 type Options struct {
@@ -584,6 +622,7 @@ type Options struct {
 	Stop             []string `json:"stop,omitempty"`
 }
 
+// Runner 为模型加载进内存时必须设置的运行器选项。
 // Runner options which must be set when the model is loaded into memory
 type Runner struct {
 	NumCtx          int   `json:"num_ctx,omitempty"`
@@ -595,6 +634,7 @@ type Runner struct {
 	DraftNumPredict int   `json:"draft_num_predict,omitempty"`
 }
 
+// EmbedRequest 为 [Client.Embed] 的请求体。
 // EmbedRequest is the request passed to [Client.Embed].
 type EmbedRequest struct {
 	// Model is the model name.
@@ -617,6 +657,7 @@ type EmbedRequest struct {
 	Options map[string]any `json:"options"`
 }
 
+// EmbedResponse 为 [Client.Embed] 的响应体。
 // EmbedResponse is the response from [Client.Embed].
 type EmbedResponse struct {
 	Model      string      `json:"model"`
@@ -627,6 +668,7 @@ type EmbedResponse struct {
 	PromptEvalCount int           `json:"prompt_eval_count,omitempty"`
 }
 
+// EmbeddingRequest 为 [Client.Embeddings] 的请求体。
 // EmbeddingRequest is the request passed to [Client.Embeddings].
 type EmbeddingRequest struct {
 	// Model is the model name.
@@ -643,11 +685,13 @@ type EmbeddingRequest struct {
 	Options map[string]any `json:"options"`
 }
 
+// EmbeddingResponse 为 [Client.Embeddings] 的响应体。
 // EmbeddingResponse is the response from [Client.Embeddings].
 type EmbeddingResponse struct {
 	Embedding []float64 `json:"embedding"`
 }
 
+// CreateRequest 为 [Client.Create] 创建模型的请求体。
 // CreateRequest is the request passed to [Client.Create].
 type CreateRequest struct {
 	// Model is the model name to create.
@@ -710,6 +754,7 @@ type CreateRequest struct {
 	Quantization string `json:"quantization,omitempty"`
 }
 
+// DeleteRequest 为 [Client.Delete] 的请求体。
 // DeleteRequest is the request passed to [Client.Delete].
 type DeleteRequest struct {
 	Model string `json:"model"`
@@ -718,6 +763,7 @@ type DeleteRequest struct {
 	Name string `json:"name"`
 }
 
+// ShowRequest 为 [Client.Show] 的请求体。
 // ShowRequest is the request passed to [Client.Show].
 type ShowRequest struct {
 	Model  string `json:"model"`
@@ -733,6 +779,7 @@ type ShowRequest struct {
 	Name string `json:"name"`
 }
 
+// ShowResponse 为 [Client.Show] 的响应体。
 // ShowResponse is the response returned from [Client.Show].
 type ShowResponse struct {
 	License       string             `json:"license,omitempty"`
@@ -754,12 +801,14 @@ type ShowResponse struct {
 	Requires      string             `json:"requires,omitempty"`
 }
 
+// CopyRequest 为 [Client.Copy] 复制模型的请求体。
 // CopyRequest is the request passed to [Client.Copy].
 type CopyRequest struct {
 	Source      string `json:"source"`
 	Destination string `json:"destination"`
 }
 
+// PullRequest 为 [Client.Pull] 拉取模型的请求体。
 // PullRequest is the request passed to [Client.Pull].
 type PullRequest struct {
 	Model    string `json:"model"`
@@ -772,6 +821,7 @@ type PullRequest struct {
 	Name string `json:"name"`
 }
 
+// ProgressResponse 为 Pull/Push/Create 等操作的进度回调载荷。
 // ProgressResponse is the response passed to progress functions like
 // [PullProgressFunc] and [PushProgressFunc].
 type ProgressResponse struct {
@@ -781,6 +831,7 @@ type ProgressResponse struct {
 	Completed int64  `json:"completed,omitempty"`
 }
 
+// PushRequest 为 [Client.Push] 上传模型的请求体。
 // PushRequest is the request passed to [Client.Push].
 type PushRequest struct {
 	Model    string `json:"model"`
@@ -793,16 +844,19 @@ type PushRequest struct {
 	Name string `json:"name"`
 }
 
+// ListResponse 为 [Client.List] 的响应体。
 // ListResponse is the response from [Client.List].
 type ListResponse struct {
 	Models []ListModelResponse `json:"models"`
 }
 
+// ModelRecommendationsResponse 为实验性模型推荐接口的响应。
 // ModelRecommendationsResponse is the response from [Client.ModelRecommendationsExperimental].
 type ModelRecommendationsResponse struct {
 	Recommendations []ModelRecommendation `json:"recommendations"`
 }
 
+// ModelRecommendation 表示一条模型推荐条目。
 // ModelRecommendation is a single recommendation entry in [ModelRecommendationsResponse].
 type ModelRecommendation struct {
 	Model           string `json:"model"`
@@ -813,11 +867,13 @@ type ModelRecommendation struct {
 	RequiredPlan    string `json:"required_plan,omitempty"`
 }
 
+// ProcessResponse 为 [Client.ListRunning] 的响应体。
 // ProcessResponse is the response from [Client.Process].
 type ProcessResponse struct {
 	Models []ProcessModelResponse `json:"models"`
 }
 
+// ListModelResponse 为 ListResponse 中的单个模型摘要。
 // ListModelResponse is a single model description in [ListResponse].
 type ListModelResponse struct {
 	Name         string             `json:"name"`
@@ -831,6 +887,7 @@ type ListModelResponse struct {
 	Capabilities []model.Capability `json:"capabilities,omitempty"`
 }
 
+// ProcessModelResponse 为 ProcessResponse 中的单个运行中模型。
 // ProcessModelResponse is a single model description in [ProcessResponse].
 type ProcessModelResponse struct {
 	Name          string       `json:"name"`
@@ -843,26 +900,31 @@ type ProcessModelResponse struct {
 	ContextLength int          `json:"context_length"`
 }
 
+// TokenResponse 包装单个 token 字符串。
 type TokenResponse struct {
 	Token string `json:"token"`
 }
 
+// CloudStatus 描述云端功能的禁用状态与来源。
 type CloudStatus struct {
 	Disabled bool   `json:"disabled"`
 	Source   string `json:"source"`
 }
 
+// StatusResponse 为 [Client.CloudStatusExperimental] 的响应。
 // StatusResponse is the response from [Client.CloudStatusExperimental].
 type StatusResponse struct {
 	Cloud CloudStatus `json:"cloud"`
 }
 
+// WebSearchRequest 为实验性网页搜索的请求体。
 // WebSearchRequest is the request for [Client.WebSearchExperimental].
 type WebSearchRequest struct {
 	Query      string `json:"query"`
 	MaxResults int    `json:"max_results,omitempty"`
 }
 
+// WebSearchResult 表示单条搜索结果。
 // WebSearchResult is a single result from [Client.WebSearchExperimental].
 type WebSearchResult struct {
 	Title   string `json:"title"`
@@ -870,16 +932,19 @@ type WebSearchResult struct {
 	Content string `json:"content"`
 }
 
+// WebSearchResponse 为网页搜索的响应体。
 // WebSearchResponse is the response from [Client.WebSearchExperimental].
 type WebSearchResponse struct {
 	Results []WebSearchResult `json:"results"`
 }
 
+// WebFetchRequest 为实验性网页抓取的请求体。
 // WebFetchRequest is the request for [Client.WebFetchExperimental].
 type WebFetchRequest struct {
 	URL string `json:"url"`
 }
 
+// WebFetchResponse 为网页抓取的响应体。
 // WebFetchResponse is the response from [Client.WebFetchExperimental].
 type WebFetchResponse struct {
 	Title   string   `json:"title"`
@@ -887,6 +952,7 @@ type WebFetchResponse struct {
 	Links   []string `json:"links,omitempty"`
 }
 
+// GenerateResponse 为 [GenerateResponseFunc] 接收的流式响应块。
 // GenerateResponse is the response passed into [GenerateResponseFunc].
 type GenerateResponse struct {
 	// Model is the model name that generated the response.
@@ -929,6 +995,7 @@ type GenerateResponse struct {
 	Logprobs []Logprob `json:"logprobs,omitempty"`
 }
 
+// ModelDetails 描述模型的格式、族系、参数量等元数据。
 // ModelDetails provides details about a model.
 type ModelDetails struct {
 	ParentModel       string   `json:"parent_model"`
@@ -941,6 +1008,7 @@ type ModelDetails struct {
 	EmbeddingLength   int      `json:"embedding_length,omitempty"`
 }
 
+// UserResponse 表示已登录用户的账户信息。
 // UserResponse provides information about a user.
 type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
@@ -953,6 +1021,7 @@ type UserResponse struct {
 	Plan      string    `json:"plan,omitempty"`
 }
 
+// Tensor 描述模型张量的名称、类型与形状。
 // Tensor describes the metadata for a given tensor.
 type Tensor struct {
 	Name  string   `json:"name"`
@@ -960,6 +1029,7 @@ type Tensor struct {
 	Shape []uint64 `json:"shape"`
 }
 
+// Summary 将推理指标格式化输出到 stderr。
 func (m *Metrics) Summary() {
 	if m.TotalDuration > 0 {
 		fmt.Fprintf(os.Stderr, "total duration:       %v\n", m.TotalDuration)
@@ -988,6 +1058,7 @@ func (m *Metrics) Summary() {
 	}
 }
 
+// FromMap 将 map 中的选项键值反射写入 Options 结构体。
 func (opts *Options) FromMap(m map[string]any) error {
 	valueOpts := reflect.ValueOf(opts).Elem() // names of the fields in the options struct
 	typeOpts := reflect.TypeOf(opts).Elem()   // types of the fields in the options struct
@@ -1091,6 +1162,7 @@ func (opts *Options) FromMap(m map[string]any) error {
 	return nil
 }
 
+// DefaultOptions 返回 [GenerateRequest] 使用的默认模型选项。
 // DefaultOptions is the default set of options for [GenerateRequest]; these
 // values are used unless the user specifies other values explicitly.
 func DefaultOptions() Options {
@@ -1122,12 +1194,14 @@ func DefaultOptions() Options {
 	}
 }
 
+// ThinkValue 表示可为布尔或字符串（high/medium/low/max）的思考模式值。
 // ThinkValue represents a value that can be a boolean or a string ("high", "medium", "low", "max")
 type ThinkValue struct {
 	// Value can be a bool or string
 	Value interface{}
 }
 
+// IsValid 判断 ThinkValue 是否合法；nil 视为合法（未设置）。
 // IsValid checks if the ThinkValue is valid
 func (t *ThinkValue) IsValid() bool {
 	if t == nil || t.Value == nil {
@@ -1144,6 +1218,7 @@ func (t *ThinkValue) IsValid() bool {
 	}
 }
 
+// IsBool 判断底层值是否为布尔类型。
 // IsBool returns true if the value is a boolean
 func (t *ThinkValue) IsBool() bool {
 	if t == nil || t.Value == nil {
@@ -1153,6 +1228,7 @@ func (t *ThinkValue) IsBool() bool {
 	return ok
 }
 
+// IsString 判断底层值是否为字符串类型。
 // IsString returns true if the value is a string
 func (t *ThinkValue) IsString() bool {
 	if t == nil || t.Value == nil {
@@ -1162,6 +1238,7 @@ func (t *ThinkValue) IsString() bool {
 	return ok
 }
 
+// Bool 返回是否启用思考模式；任意非空字符串等级均视为启用。
 // Bool returns the value as a bool (true if enabled in any way)
 func (t *ThinkValue) Bool() bool {
 	if t == nil || t.Value == nil {
@@ -1179,6 +1256,7 @@ func (t *ThinkValue) Bool() bool {
 	}
 }
 
+// String 将 ThinkValue 转为字符串；true 映射为 "medium"。
 // String returns the value as a string
 func (t *ThinkValue) String() string {
 	if t == nil || t.Value == nil {
@@ -1198,6 +1276,7 @@ func (t *ThinkValue) String() string {
 	}
 }
 
+// UnmarshalJSON 从 JSON 布尔或合法字符串解析 ThinkValue。
 // UnmarshalJSON implements json.Unmarshaler
 func (t *ThinkValue) UnmarshalJSON(data []byte) error {
 	// Try to unmarshal as bool first
@@ -1221,6 +1300,7 @@ func (t *ThinkValue) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("think must be a boolean or string (\"high\", \"medium\", \"low\", \"max\", true, or false)")
 }
 
+// MarshalJSON 将 ThinkValue 序列化为 JSON。
 // MarshalJSON implements json.Marshaler
 func (t *ThinkValue) MarshalJSON() ([]byte, error) {
 	if t == nil || t.Value == nil {
@@ -1229,6 +1309,7 @@ func (t *ThinkValue) MarshalJSON() ([]byte, error) {
 	return json.Marshal(t.Value)
 }
 
+// Duration 包装 time.Duration，支持 JSON 字符串或秒数形式。
 type Duration struct {
 	time.Duration
 }
@@ -1270,6 +1351,7 @@ func (d *Duration) UnmarshalJSON(b []byte) (err error) {
 	return nil
 }
 
+// FormatParams 将 CLI 传入的字符串参数 map 转为类型正确的 Options 字段 map。
 // FormatParams converts specified parameter options to their correct types
 func FormatParams(params map[string][]string) (map[string]any, error) {
 	opts := Options{}

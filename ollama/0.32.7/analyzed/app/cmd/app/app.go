@@ -1,5 +1,6 @@
 //go:build windows || darwin
 
+// main 包是 Ollama 桌面应用（Windows/macOS）的入口：启动内嵌服务器、UI WebView 与系统托盘。
 package main
 
 import (
@@ -45,8 +46,10 @@ var (
 	devMode     = false
 )
 
+// appMove 表示应用迁移/安装相关操作的返回状态。
 type appMove int
 
+// 应用迁移状态常量。
 const (
 	CannotMove appMove = iota
 	UserDeclinedMove
@@ -57,6 +60,7 @@ const (
 	MoveError
 )
 
+// main 解析命令行、初始化日志、启动 Ollama 与 UI 服务并进入平台事件循环。
 func main() {
 	startHidden := false
 	var urlSchemeRequest string
@@ -355,6 +359,7 @@ func main() {
 	<-done
 }
 
+// startHiddenTasks 在隐藏启动模式下执行待处理更新等后台任务。
 func startHiddenTasks() {
 	// If an upgrade is ready and we're in hidden mode, perform it at startup.
 	// If we're not in hidden mode, we want to start as fast as possible and not
@@ -389,6 +394,7 @@ func startHiddenTasks() {
 	}
 }
 
+// checkUserLoggedIn 查询本地 UI 服务 /api/me 判断用户是否已登录。
 func checkUserLoggedIn(uiServerPort int) bool {
 	if uiServerPort == 0 {
 		slog.Debug("UI server not ready yet, skipping auth check")
@@ -428,6 +434,7 @@ func checkUserLoggedIn(uiServerPort int) bool {
 	return true
 }
 
+// handleConnectURLScheme 构建连接 URL 并在浏览器中打开以完成 OAuth。
 // handleConnectURLScheme fetches the connect URL and opens it in the browser
 func handleConnectURLScheme() {
 	if checkUserLoggedIn(uiServerPort) {
@@ -446,6 +453,7 @@ func handleConnectURLScheme() {
 	openInBrowser(connectURL)
 }
 
+// openInBrowser 使用系统默认浏览器打开指定 URL。
 // openInBrowser opens the specified URL in the default browser
 func openInBrowser(url string) {
 	var cmd string
@@ -468,6 +476,7 @@ func openInBrowser(url string) {
 	}
 }
 
+// parseURLScheme 解析 ollama:// URL，支持打开应用与 connect 登录。
 // parseURLScheme parses an ollama:// URL and validates it
 // Supports: ollama:// (open app) and ollama://connect (OAuth)
 func parseURLScheme(urlSchemeRequest string) (isConnect bool, err error) {
@@ -489,6 +498,7 @@ func parseURLScheme(urlSchemeRequest string) (isConnect bool, err error) {
 	return false, fmt.Errorf("unsupported ollama:// URL path: %s", urlSchemeRequest)
 }
 
+// handleURLSchemeInCurrentInstance 在当前实例中处理 URL scheme 请求。
 // handleURLSchemeInCurrentInstance processes URL scheme requests in the current instance
 func handleURLSchemeInCurrentInstance(urlSchemeRequest string) {
 	isConnect, err := parseURLScheme(urlSchemeRequest)
