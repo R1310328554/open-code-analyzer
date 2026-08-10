@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T09:58:55Z",
   "files": [
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/AbstractStaxSamlProtocolParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLArtifactResolveParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLArtifactResponseParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLAttributeQueryParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLAuthNRequestParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLExtensionsParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLProtocolQNames.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLRequestAbstractParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLRequestedAuthnContextParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLResponseParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLSloRequestParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLSloResponseParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLStatusCodeParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLStatusParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/protocol/SAMLStatusResponseTypeParser.java",
     "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/xmldsig/AbstractStaxXmlDSigParser.java",
     "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/xmldsig/DsaKeyValueParser.java",
     "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/xmldsig/KeyInfoParser.java",
@@ -33,5 +18,5 @@
     "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v1/writers/SAML11ResponseWriter.java"
   ],
   "remaining_pending": 3208,
-  "done": 2760
+  "done": 2775
 }
