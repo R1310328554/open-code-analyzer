@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T06:58:03Z",
-  "files": [
-    "js/apps/admin-ui/src/i18n/i18n.ts",
-    "js/apps/admin-ui/src/i18next.d.ts",
-    "js/apps/admin-ui/src/identity-providers/OIDCConfigurationRepresentation.ts",
-    "js/apps/admin-ui/src/identity-providers/routes.ts",
-    "js/apps/admin-ui/src/index.ts",
-    "js/apps/admin-ui/src/organizations/routes.ts",
-    "js/apps/admin-ui/src/page/constants.ts",
-    "js/apps/admin-ui/src/permissions-configuration/routes.ts",
-    "js/apps/admin-ui/src/realm-roles/routes.ts",
-    "js/apps/admin-ui/src/realm-settings/routes.ts",
-    "js/apps/admin-ui/src/realm-settings/themes/PatternflyVars.ts",
-    "js/apps/admin-ui/src/realm-settings/themes/fileUtils.ts",
-    "js/apps/admin-ui/src/realm/routes.ts",
-    "js/apps/admin-ui/src/sessions/routes.ts",
-    "js/apps/admin-ui/src/user-federation/routes.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 5008,
-  "done": 975
+  "done": 990
 }
