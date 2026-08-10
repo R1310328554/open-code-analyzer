@@ -19,11 +19,22 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Assertions;
 
+/**
+ * 管理事件（{@link AdminEventRepresentation}）的流式断言工具。
+ * <p>
+ * 支持校验操作类型、资源路径、认证详情及 JSON 表示内容，推荐链式调用。
+ */
 public class AdminEventAssertion {
 
+    /** 被断言的管理事件。 */
     private final AdminEventRepresentation event;
+    /** 是否期望为成功事件（非 {@code *_ERROR}）。 */
     private final boolean expectSuccess;
 
+    /**
+     * @param event 管理事件
+     * @param expectSuccess 是否期望成功
+     */
     protected AdminEventAssertion(AdminEventRepresentation event, boolean expectSuccess) {
         Assertions.assertNotNull(event, "Event was null");
         Assertions.assertNotNull(event.getId(), "Event id was null");
@@ -32,10 +43,10 @@ public class AdminEventAssertion {
     }
 
     /**
-     * Assert an expected successfull event
+     * 断言事件为成功的管理操作（操作类型不以 {@code _ERROR} 结尾）。
      *
-     * @param event the event to assert
-     * @return
+     * @param event 待断言事件
+     * @return 断言器实例，可继续链式校验
      */
     public static AdminEventAssertion assertSuccess(AdminEventRepresentation event) {
         Assertions.assertFalse(event.getOperationType().endsWith("_ERROR"), "Expected successful event");
@@ -45,10 +56,10 @@ public class AdminEventAssertion {
     }
 
     /**
-     * Assert an expected error event
+     * 断言事件为失败的管理操作（操作类型以 {@code _ERROR} 结尾）。
      *
-     * @param event the event to assert
-     * @return
+     * @param event 待断言事件
+     * @return 断言器实例，可继续链式校验
      */
     public static AdminEventAssertion assertError(AdminEventRepresentation event) {
         Assertions.assertTrue(event.getOperationType().endsWith("_ERROR"), "Expected error event");
@@ -58,15 +69,14 @@ public class AdminEventAssertion {
     }
 
     /**
-     * Assert an expected successfull event, with the additional expected parameters. This method should be avoided,
-     * use method chaining instead.
+     * 一次性断言成功事件的多项字段；建议使用链式方法代替。
      *
-     * @param event
-     * @param operationType
-     * @param resourcePath
-     * @param representation
-     * @param resourceType
-     * @return
+     * @param event 待断言事件
+     * @param operationType 期望操作类型
+     * @param resourcePath 期望资源路径
+     * @param representation 期望 JSON 表示
+     * @param resourceType 期望资源类型
+     * @return 断言器实例
      */
     public static AdminEventAssertion assertEvent(AdminEventRepresentation event, OperationType operationType, String resourcePath, Object representation, ResourceType resourceType) {
         return assertSuccess(event)
@@ -77,14 +87,13 @@ public class AdminEventAssertion {
     }
 
     /**
-     * Assert an expected successfull event, with the additional expected parameters. This method should be avoided,
-     * use method chaining instead.
+     * 一次性断言成功事件（不含 representation）；建议使用链式方法代替。
      *
-     * @param event
-     * @param operationType
-     * @param resourcePath
-     * @param resourceType
-     * @return
+     * @param event 待断言事件
+     * @param operationType 期望操作类型
+     * @param resourcePath 期望资源路径
+     * @param resourceType 期望资源类型
+     * @return 断言器实例
      */
     public static AdminEventAssertion assertEvent(AdminEventRepresentation event, OperationType operationType, String resourcePath, ResourceType resourceType) {
         return assertSuccess(event)
@@ -94,9 +103,9 @@ public class AdminEventAssertion {
     }
 
     /**
-     * Assert the operation type of the event
-     * @param operationType the expected operation type
-     * @return
+     * 断言事件操作类型。
+     * @param operationType 期望的 {@link OperationType}
+     * @return 当前断言器
      */
     public AdminEventAssertion operationType(OperationType operationType) {
         Assertions.assertEquals(operationType.name(), getOperationType());
@@ -104,12 +113,12 @@ public class AdminEventAssertion {
     }
 
     /**
-     * Assert the authentication details for the event
+     * 断言事件的认证详情（realm、客户端、用户）。
      *
-     * @param expectedRealmId the expected authentication realmId
-     * @param expectedClientId the expected authentication clientId
-     * @param expectedUserId the expected authentication userId
-     * @return
+     * @param expectedRealmId 期望认证 realm ID
+     * @param expectedClientId 期望客户端 ID
+     * @param expectedUserId 期望用户 ID
+     * @return 当前断言器
      */
     public AdminEventAssertion auth(String expectedRealmId, String expectedClientId, String expectedUserId) {
         AuthDetailsRepresentation authDetails = event.getAuthDetails();
@@ -120,10 +129,10 @@ public class AdminEventAssertion {
     }
 
     /**
-     * Assert the type of resource for the event
+     * 断言事件资源类型。
      *
-     * @param expectedResourceType the expected resource type
-     * @return
+     * @param expectedResourceType 期望的 {@link ResourceType}
+     * @return 当前断言器
      */
     public AdminEventAssertion resourceType(ResourceType expectedResourceType) {
         Assertions.assertEquals(expectedResourceType.name(), event.getResourceType());
@@ -131,10 +140,10 @@ public class AdminEventAssertion {
     }
 
     /**
-     * Assert the resource path for the event
+     * 断言事件资源路径（多段以 {@code /} 拼接）。
      *
-     * @param expectedResourcePath the expected resource path
-     * @return
+     * @param expectedResourcePath 期望路径段
+     * @return 当前断言器
      */
     public AdminEventAssertion resourcePath(String... expectedResourcePath) {
         Assertions.assertEquals(String.join("/", expectedResourcePath), event.getResourcePath());
@@ -142,10 +151,10 @@ public class AdminEventAssertion {
     }
 
     /**
-     * Assert the representation attached to the event
+     * 断言事件附带的 JSON 表示内容与期望值一致。
      *
-     * @param expectedRep the expected representation
-     * @return
+     * @param expectedRep 期望表示对象（支持 List、Map 及 POJO 反射比较）
+     * @return 当前断言器
      */
     public AdminEventAssertion representation(Object expectedRep) {
         String actualRepresentation = event.getRepresentation();
@@ -154,7 +163,7 @@ public class AdminEventAssertion {
         } else {
             try {
                 if (expectedRep instanceof List) {
-                    // List of roles. All must be available in actual representation
+                    // 角色列表：实际表示中须包含全部期望角色
                     List<RoleRepresentation> expectedRoles = (List<RoleRepresentation>) expectedRep;
                     List<RoleRepresentation> actualRoles = JsonSerialization.readValue(new ByteArrayInputStream(actualRepresentation.getBytes()), new TypeReference<>() {});
 
@@ -181,7 +190,7 @@ public class AdminEventAssertion {
                 } else {
                     Object actualRep = JsonSerialization.readValue(actualRepresentation, expectedRep.getClass());
 
-                    // Reflection-based comparing for other types - compare the non-null fields of "expected" representation with the "actual" representation from the event
+                    // 其他类型：反射比较 expected 中非空 getter 与事件中的实际表示
                     for (Method method : Reflections.getAllDeclaredMethods(expectedRep.getClass())) {
                         if (method.getParameterCount() == 0 && (method.getName().startsWith("get") || method.getName().startsWith("is"))) {
                             Object expectedValue = Reflections.invokeMethod(method, expectedRep);
@@ -199,11 +208,13 @@ public class AdminEventAssertion {
         return this;
     }
 
+    /** 断言事件 ID 为合法 UUID。 */
     private AdminEventAssertion assertEventId() {
         MatcherAssert.assertThat(event.getId(), EventMatchers.isUUID());
         return this;
     }
 
+    /** 断言操作类型为已知 {@link OperationType} 枚举值。 */
     private AdminEventAssertion assertValidOperationType() {
         String actualOperationType = getOperationType();
         try {
@@ -214,6 +225,7 @@ public class AdminEventAssertion {
         return this;
     }
 
+    /** 返回用于校验的操作类型（错误事件会去掉 {@code _ERROR} 后缀）。 */
     private String getOperationType() {
         return expectSuccess ? event.getOperationType() : event.getOperationType().substring(0, "_ERROR".length());
     }
