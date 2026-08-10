@@ -12,10 +12,13 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// variable_assigner.go — 变量赋值 Canvas 节点：按序对 CanvasState 应用 11 种运算符。
+
 //
 
-// Package component — VariableAssigner (T3, plan §2.11.3 row 20).
+// Package component — VariableAssigner 组件（T3）：Canvas 变量批量赋值。
 //
+// VariableAssigner 按序应用 (variable, operator, parameter) 三元组写入共享状态。
 // VariableAssigner applies an ordered list of (variable, operator,
 // parameter) tuples to the shared *CanvasState. Each tuple's operator
 // reads the current variable value, computes a new one, and (unless the
@@ -103,6 +106,7 @@ func (p *variableAssignerParam) AsDict() map[string]any {
 	return out
 }
 
+// VariableAssignerComponent 将配置的三元组应用到 canvas state。
 // VariableAssignerComponent applies the configured (variable, operator,
 // parameter) tuples to the canvas state.
 type VariableAssignerComponent struct {
@@ -129,6 +133,7 @@ func NewVariableAssignerComponent(params map[string]any) (Component, error) {
 // Name returns the registered component name.
 func (v *VariableAssignerComponent) Name() string { return v.name }
 
+// Invoke 遍历 variables 列表求值并写回；ERROR 哨兵写入 outputs["errors"]。
 // Invoke walks the param.variables list, evaluates each tuple against
 // the canvas state, and writes the result back unless the operator
 // returned an "ERROR:..." sentinel. The list of refs that were
@@ -216,6 +221,7 @@ func (v *VariableAssignerComponent) Outputs() map[string]string {
 	}
 }
 
+// operate 执行运算符；失败返回 ERROR 哨兵，成功返回新值。
 // operate applies the operator. Returns ("", "ERROR:...") on failure;
 // the caller treats the empty string opErr as success and the new value
 // as the value to write back.
@@ -371,6 +377,7 @@ func operate(state *runtime.CanvasState, oldVal any, op string, param any) (any,
 	return nil, "ERROR:UNKNOWN_OPERATOR"
 }
 
+// writeVar 将 ref 路由到正确状态桶（cpn@/sys./env./item/index）。
 // writeVar routes a ref to the correct CanvasState bucket.
 //
 //   - "cpn_id@param..." → SetVar(cpnID, param...)
@@ -428,6 +435,7 @@ func stripVarBraces(s string) string {
 	return s
 }
 
+// resolveParamValue 解析 param：字符串先按 ref 查 state，否则原样返回。
 // resolveParamValue returns the value of param. Strings are looked up
 // in state first (treating them as refs); anything else is passed
 // through unchanged. The Python _canvas.get_variable_value does the
@@ -473,6 +481,7 @@ func goKind(v any) string {
 	return "unknown"
 }
 
+// isNumberish 判断是否为数值类型（bool 明确排除，对齐 Python numbers.Number）。
 // isNumberish returns true for numeric values (int, float, including
 // JSON-decoded numbers). Booleans are explicitly excluded — Python's
 // numbers.Number is a superclass of int/float/complex/Decimal but

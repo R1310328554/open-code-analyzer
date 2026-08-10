@@ -12,8 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// reset.go — DSL 级 reset 变换，对齐 Python Canvas.reset() 持久化状态清零语义。
+
 //
 
+// reset.go 在持久化 DSL 层模拟 Python Canvas.reset() 的 per-run 状态 wipe。
 // reset.go: DSL-level "reset" transform that mirrors the runtime
 // behaviour of agent/canvas.py:Canvas.reset() in the Python backend.
 //
@@ -44,6 +47,7 @@
 
 package dsl
 
+// ResetForCanvas 返回防御性拷贝：清空 history/retrieval/memory/path 并重置 globals。
 // ResetForCanvas returns a defensive copy of dsl with all per-run
 // state cleared, ready to be persisted back into user_canvas.dsl.
 //
@@ -139,6 +143,7 @@ func ResetForCanvas(dsl map[string]any) map[string]any {
 	return out
 }
 
+// zeroByType 按类型返回 sys.* 键的零值（string→""、list→[] 等）。
 // zeroByType returns the type-appropriate "empty" value for v,
 // matching the Python reset() branch for sys.* keys:
 //
@@ -179,6 +184,7 @@ func zeroByType(v any) any {
 	}
 }
 
+// zeroByVariableType 当 env.* 变量无 value 时按声明 type 归零。
 // zeroByVariableType mirrors the Python `else` branch that runs
 // when an env.* variable is declared but has no `value` field.
 // The Python source keys on the declared "type" string:
@@ -204,6 +210,7 @@ func zeroByVariableType(v map[string]any) any {
 	return ""
 }
 
+// deepCopyMap 递归深拷贝 map/slice，防止 reset 修改泄漏回调用方视图。
 // deepCopyMap returns a fresh map with the same keys, recursively
 // copying nested map / slice values. Primitives are shared by
 // reference (they are immutable in Go). This is a focused helper

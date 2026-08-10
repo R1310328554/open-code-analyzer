@@ -12,10 +12,13 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// switch.go — 多条件路由 Canvas 节点：按 AND/OR 条件组匹配，输出 _next 下游 cpn_id 列表。
+
 //
 
-// Package component — Switch component (T2).
+// Package component — Switch 组件（T2）：纯 Go 多条件路由。
 //
+// Switch 纯 Go 多条件路由器，遍历 AND/OR 条件组，首个匹配组决定下游。
 // Switch is a multi-condition router implemented in pure Go (no eino
 // Lambda dependency). It walks a list of AND/OR-combined condition
 // groups against the current *CanvasState, picks the first matching
@@ -44,6 +47,7 @@ import (
 
 const componentNameSwitch = "Switch"
 
+// SwitchComponent 无状态路由节点，params 与 inputs 合并后求值。
 // SwitchComponent implements the Switch routing node. It is stateless
 // across invocations: the inputs map carries everything it needs.
 type SwitchComponent struct {
@@ -51,6 +55,7 @@ type SwitchComponent struct {
 	params map[string]any
 }
 
+// NewSwitchComponent 从 DSL params 构造 Switch，浅拷贝参数 map。
 // NewSwitchComponent constructs a Switch component from the DSL params.
 // Invoke merges these static params with any dynamic input overrides.
 func NewSwitchComponent(params map[string]any) (Component, error) {
@@ -64,6 +69,7 @@ func NewSwitchComponent(params map[string]any) (Component, error) {
 // Name returns the registered component name.
 func (s *SwitchComponent) Name() string { return s.name }
 
+// Invoke 顺序求值 conditions，首个匹配组返回 _next 目标列表；无匹配则 default。
 // Invoke evaluates the conditions list in order, returns the first
 // matching group's downstream cpn_ids at outputs["_next"]. If no
 // group matches, outputs["_next"] = inputs["default"] (a
@@ -161,6 +167,7 @@ func (s *SwitchComponent) Outputs() map[string]string {
 	}
 }
 
+// evaluateGroup 对条件组按 and/or 求值；空 clauses 不匹配（对齐 Python PR #15644）。
 // evaluateGroup applies the group's op (and/or) to its clauses and
 // returns true if the group matches. It is the lock-free inner of
 // Switch.Invoke; caller must not hold state.mu.
@@ -263,6 +270,7 @@ func normalizeLegacySwitchOperator(op string) string {
 	}
 }
 
+// switchGroupTargets 从 to 字段提取全部下游 cpn_id（支持字符串或列表）。
 // switchGroupTargets returns all cpn_ids from the group's "to" field.
 // The "to" field can be a single string or a list of strings —
 // Python's Switch routes to ALL targets simultaneously, and the
@@ -330,6 +338,7 @@ func legacySwitchDefaultTarget(merged map[string]any) string {
 	return ""
 }
 
+// evaluateClause 求值单条子句：left 为 {{...}} 引用，op 支持 ==/contains/empty 等。
 // evaluateClause resolves a single clause. left is a {{...}} reference
 // (passed through runtime.ResolveTemplate); op is one of
 // "==", "!=", ">", "<", ">=", "<=", "contains", "not contains",
@@ -413,6 +422,7 @@ func evaluateClause(clause map[string]any, state *runtime.CanvasState) (bool, er
 	return false, fmt.Errorf("unknown operator %q", op)
 }
 
+// leftValue 解析 left 引用；无 {{}} 时原样返回字面量。
 // leftValue resolves a {{...}} reference against state. References
 // without braces are returned as a literal (matches ResolveTemplate's
 // pre-check behavior).
@@ -446,6 +456,7 @@ func equalValues(a, b any) bool {
 	return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
 }
 
+// equalFoldValues equalValues 的大小写不敏感变体，用于 ==/!= 运算符。
 // equalFoldValues is the case-insensitive variant of equalValues.
 // Used by the "==" / "!=" operators in evaluateClause so user-facing
 // labels like "Hello" and "hello" compare equal — matches Python's
@@ -487,6 +498,7 @@ func indexOf(s, sub string) int {
 	return -1
 }
 
+// numericize 尝试将 v 转为 float64；非数字字符串返回 ok=false。
 // numericize attempts to convert v to float64. Returns ok=false if v
 // is a string that doesn't parse as a number (e.g. an LLM response);
 // numeric operators will then error out with a clear message.
@@ -511,6 +523,7 @@ func numericize(v any) (float64, bool) {
 	}
 }
 
+// isEmptyValue 按 Canvas DSL 定义判断空值（nil/空串/空切片/空 map）。
 // isEmptyValue reports whether a value is "empty" by the canvas DSL
 // definition: nil, empty string, empty slice, empty map.
 func isEmptyValue(v any) bool {

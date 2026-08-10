@@ -12,8 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// helpers.go — 跨切面辅助：超时、进度回调、耗时统计，替代 Python ProcessBase 包装。
+
 //
 
+// 跨切面辅助函数，替代 Python ProcessBase 的三类关注点：超时/进度/耗时。
 // Cross-cutting helpers that replace Python's `rag/flow/base.py:ProcessBase`
 // wrapper (lines 33-63). Three call-site concerns are extracted into plain
 // higher-order functions:
@@ -45,6 +48,7 @@ import (
 	"time"
 )
 
+// ProgressCallback 进度回调：0 开始、1 成功、-1 失败。
 // ProgressCallback receives progress notifications from TrackProgress.
 // The numeric progress values follow the convention used by the Python
 // pipeline canvas callback:
@@ -58,6 +62,7 @@ import (
 // "no observer" and simply runs fn.
 type ProgressCallback func(progress int, message string)
 
+// TrackProgress 包装 fn 并在首尾各通知一次进度；nil cb 时直接执行 fn。
 // TrackProgress wraps fn with progress notifications. The callback is
 // invoked at most twice per call (once at start, once at end).
 //
@@ -82,6 +87,7 @@ func TrackProgress(compName string, cb ProgressCallback, fn func() error) error 
 	return nil
 }
 
+// WithTimeout 在派生 context 下运行 fn，超时或父取消时返回对应错误。
 // WithTimeout runs fn under a derived context that cancels either when
 // d elapses or when the parent ctx is cancelled (whichever happens
 // first). fn receives the child context so it can honor cancellation at
@@ -125,6 +131,7 @@ func WithTimeout(ctx context.Context, d time.Duration, fn func(ctx context.Conte
 	return nil
 }
 
+// TrackElapsed 记录 fn 墙钟耗时，输出 _created_time 与 _elapsed_time 合成键。
 // TrackElapsed records the wall-clock duration of fn and stamps the
 // output map with two synthetic keys mirroring Python `ProcessBase`
 // (base.py:42, 58):

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// metrics.go — Canvas 运行 Prometheus 指标：计数器与延迟直方图。
+
 //
 
 package runtime
@@ -23,6 +25,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// outcomeSuccess/Error/Cancelled 为 canvas-run 指标仅有的 outcome 标签值。
 // outcomeSuccess / outcomeError / outcomeCancelled are the only outcome
 // label values the canvas-run metric emits. Keeping the set closed lets
 // downstream alerts reason about the cardinality.
@@ -53,6 +56,7 @@ var (
 	registerOnce sync.Once
 )
 
+// init 用 sync.Once 向默认 Prometheus registry 注册指标，避免重复注册 panic。
 // init registers the package's metrics with the default Prometheus
 // registry. The sync.Once guard means tests that re-import this package
 // (or any future entry point that also imports it) won't trigger
@@ -64,6 +68,7 @@ func init() {
 	})
 }
 
+// ResetMetricsForTesting 测试专用：注销并重注册指标以获得干净计数。
 // ResetMetricsForTesting unregisters the package metrics from the default
 // Prometheus registry, clears any recorded samples, and re-registers them
 // so the next ObserveRun call sees a clean slate. Intended for unit tests
@@ -79,6 +84,7 @@ func ResetMetricsForTesting() {
 	})
 }
 
+// ObserveRun 为单次 canvas run 递增计数并观测延迟；空 runtime 默认 Default()。
 // ObserveRun emits a counter + histogram observation for one canvas run.
 // The runtime label is the string form of RuntimeMode; the outcome label
 // must be one of the Outcome* constants. Negative or zero durations are

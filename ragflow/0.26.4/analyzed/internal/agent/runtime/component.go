@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// component.go — runtime 包最小 Component 契约与 DefaultFactory 注入点。
+
 //
 
-// runtime — shared Component contract + factory injection point.
+// runtime — 共享 Component 接口与工厂注入点。
 //
 // The Component interface here is the minimal surface the canvas
 // builder needs to invoke a component body. The full Component
@@ -35,6 +37,7 @@ import (
 	"sync"
 )
 
+// Component canvas 构建器所需的最小接口（仅 Invoke）。
 // Component is the minimal interface the canvas builder needs at
 // sub-graph build time and at iteration time. The component package's
 // Component type has more methods (Name / Stream / Inputs / Outputs);
@@ -43,11 +46,13 @@ type Component interface {
 	Invoke(ctx context.Context, inputs map[string]any) (map[string]any, error)
 }
 
+// ComponentFactory 从 DSL 组件名与 params 构造 Component 实例。
 // ComponentFactory builds a Component from a DSL name + params map.
 // The canvas builder calls this per cpn at BuildWorkflow time and
 // stores the resulting Component in the per-node lambda closure.
 type ComponentFactory func(name string, params map[string]any) (Component, error)
 
+// ErrNotImplemented 尚未移植完成的组件返回此哨兵，canvas 不拦截直接传播。
 // ErrNotImplemented is the sentinel returned by components that have
 // not been fully ported to Go yet. The canvas builder does NOT
 // intercept this error: it propagates through the workflowx layer and
@@ -62,6 +67,7 @@ type ComponentFactory func(name string, params map[string]any) (Component, error
 // the message is for humans, the sentinel is for code.
 var ErrNotImplemented = fmt.Errorf("component: not yet implemented (placeholder)")
 
+// ParamError 包装参数校验失败，携带字段名便于用户定位。
 // ParamError wraps a parameter validation failure with the field name
 // for clearer error messages to the user.
 type ParamError struct {
@@ -78,6 +84,7 @@ var (
 	defaultFactory ComponentFactory
 )
 
+// SetDefaultFactory 安装生产 ComponentFactory；nil 可清空，测试可覆盖。
 // SetDefaultFactory installs the production ComponentFactory. The
 // component package calls this in its init() via
 // installDefaultRegistryFactory (see below). After Phase 0, the
@@ -117,6 +124,7 @@ func DefaultFactory() ComponentFactory {
 	return defaultFactory
 }
 
+// InstallDefaultRegistryFactory 安装通过 DefaultRegistry.Lookup 解析的生产工厂。
 // InstallDefaultRegistryFactory installs the production
 // ComponentFactory: a closure that resolves component names via
 // runtime.DefaultRegistry.Lookup at every invocation. The closure

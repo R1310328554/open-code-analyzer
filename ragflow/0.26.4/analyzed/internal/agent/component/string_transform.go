@@ -12,10 +12,13 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// string_transform.go — 字符串变换 Canvas 节点：split 按分隔符拆分，merge 用 {{name}} 占位符合并。
+
 //
 
-// Package component — StringTransform (T3, plan §2.11.3 row 18).
+// Package component — StringTransform 组件（T3）：字符串 split/merge 变换。
 //
+// StringTransform 两种模式：
 // StringTransform has two modes:
 //
 //	split — break a string on one or more literal delimiters
@@ -38,6 +41,7 @@ import (
 
 const componentNameStringTransform = "StringTransform"
 
+// stringTransformParam 静态 DSL 配置（method/script/split_ref/delimiters）。
 // stringTransformParam is the static configuration.
 type stringTransformParam struct {
 	Method     string   `json:"method"`     // "split" or "merge"
@@ -46,6 +50,7 @@ type stringTransformParam struct {
 	Delimiters []string `json:"delimiters"` // split mode: literal delimiters
 }
 
+// Update 从 conf 刷新参数，method 默认 split。
 // Update copies a fresh param map into the receiver.
 func (p *stringTransformParam) Update(conf map[string]any) error {
 	if conf == nil {
@@ -79,6 +84,7 @@ func (p *stringTransformParam) Update(conf map[string]any) error {
 	return nil
 }
 
+// Check 校验 method 与 delimiters 非空。
 // Check validates the param.
 func (p *stringTransformParam) Check() error {
 	switch p.Method {
@@ -110,6 +116,7 @@ func (p *stringTransformParam) AsDict() map[string]any {
 // the full cpn_id@param / sys.x / env.x grammar.
 var placeholderPattern = regexp.MustCompile(`\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}`)
 
+// StringTransformComponent 实现 split/merge 字符串变换。
 // StringTransformComponent implements the split/merge component.
 type StringTransformComponent struct {
 	name  string
@@ -135,6 +142,7 @@ func NewStringTransformComponent(params map[string]any) (Component, error) {
 // Name returns the registered component name.
 func (s *StringTransformComponent) Name() string { return s.name }
 
+// Invoke 执行 split 或 merge，输出 result。
 // Invoke runs the configured method (split or merge) and returns
 // outputs["result"] with the transformed payload.
 func (s *StringTransformComponent) Invoke(ctx context.Context, inputs map[string]any) (map[string]any, error) {
@@ -188,6 +196,7 @@ func (s *StringTransformComponent) Outputs() map[string]string {
 	}
 }
 
+// doSplit 执行 split：正则捕获分隔符，保留偶数索引 token。
 // doSplit runs the split method. Mirrors the Python _split helper
 // (string_transform.py:76-91): build a regex of the literal
 // delimiters, split with capture groups, keep the even-indexed
@@ -237,6 +246,7 @@ func (s *StringTransformComponent) doSplit(_ context.Context, state *runtime.Can
 	return map[string]any{"result": kept}, nil
 }
 
+// doMerge 执行 merge：先 ResolveTemplateAuto，再替换 {{name}} 占位符。
 // doMerge runs the merge method. Mirrors the Python _merge helper
 // (string_transform.py:93-112): collect {{name}} placeholders, resolve
 // each from inputs (preferred) or canvas state, substitute, and emit
@@ -271,6 +281,7 @@ func (s *StringTransformComponent) doMerge(_ context.Context, state *runtime.Can
 	return map[string]any{"result": script}
 }
 
+// extractPlaceholders 按首次出现顺序返回脚本中唯一占位符名。
 // extractPlaceholders returns the unique placeholder names appearing
 // in s, in first-occurrence order.
 func extractPlaceholders(s string) []string {

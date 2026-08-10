@@ -12,8 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// json_safe.go — 安全 JSON 序列化：递归清理 func/chan 等不可序列化值。
+
 //
 
+// json_safe.go 对齐 Python PR #14210，清理 state map 中不可 JSON 化的值。
 // json_safe.go — Safe JSON marshaling with fallback for non-serializable
 // values, mirroring the Python PR #14210 approach.
 //
@@ -35,6 +38,7 @@ import (
 	"ragflow/internal/common"
 )
 
+// SafeJSONMarshal 递归清理后 json.Marshal，适用于含闭包/chan 的 canvas state。
 // SafeJSONMarshal marshals v to JSON after recursively replacing
 // non-serializable Go values (func, chan) with nil. This mirrors the
 // Python PR #14210 _serialize_default / _canvas_json_default fallback
@@ -48,6 +52,7 @@ func SafeJSONMarshal(v any) ([]byte, error) {
 	return json.Marshal(cleaned)
 }
 
+// cleanForJSON 递归将 func/chan 等不可序列化值替换为 nil。
 // cleanForJSON recursively replaces non-JSON-serializable values with nil.
 func cleanForJSON(v any) any {
 	if v == nil {

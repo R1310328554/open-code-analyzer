@@ -12,8 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// universe_a_wrappers.go — Universe A Canvas 组件委托层，转发至 Universe B eino 工具实现。
+
 //
 
+// Universe A 委托包装器：Canvas 组件薄封装，实际逻辑在 eino tool InvokableRun。
 // Universe A delegation wrappers. Canvas-facing components that
 // delegate to their corresponding Universe B eino tool
 // implementations. The delegation pattern keeps the canvas
@@ -49,6 +52,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// tavilySearchComponent 委托 TavilyTool，底层发起真实 HTTP 搜索请求。
 // tavilySearchComponent delegates to internal/agent/tool/TavilyTool.
 // The underlying tool makes a real HTTP call; the wrapper is the
 // canvas-facing surface.
@@ -96,6 +100,7 @@ type bgptInvoker interface {
 	InvokableRun(ctx context.Context, argsJSON string, opts ...einotool.Option) (string, error)
 }
 
+// bgptComponent 委托 BGPTTool，将工具信封适配为 Canvas 输出契约。
 // bgptComponent delegates to internal/agent/tool/BGPTTool and adapts
 // the tool envelope to the BGPT canvas output contract.
 type bgptComponent struct {
@@ -250,6 +255,7 @@ func renderBGPTResults(results []any) string {
 	return strings.Join(blocks, "\n\n")
 }
 
+// retrievalParams 对齐 Python RetrievalParam：节点级默认检索参数。
 // retrievalParams mirrors the Python RetrievalParam shape: the
 // values the canvas node declares at build time, applied as
 // defaults to the per-invocation RetrievalRequest. The fields are
@@ -264,6 +270,7 @@ type retrievalParams struct {
 	EmptyResponse            string
 }
 
+// parseRetrievalParams 解析 v1 DSL Retrieval 节点 params，未知键忽略。
 // parseRetrievalParams reads the v1 DSL node params for Retrieval.
 // Unknown keys are ignored; nil/empty/missing-key inputs yield a
 // zero-value retrievalParams which the tool layer treats as
@@ -307,6 +314,7 @@ func parseRetrievalParams(params map[string]any) retrievalParams {
 	return out
 }
 
+// retrievalComponent 委托 RetrievalTool，节点 params 作为每次调用的默认值。
 // retrievalComponent delegates to internal/agent/tool/RetrievalTool.
 // The wrapper captures the v1 DSL node params (kb_ids, top_n,
 // top_k, similarity_threshold, keywords_similarity_weight,
@@ -375,6 +383,7 @@ func (c *retrievalComponent) Stream(_ context.Context, _ map[string]any) (<-chan
 	return nil, nil
 }
 
+// applyDefaults 将节点级 params 合并进调用 inputs，per-call 值优先；kb_ids→dataset_ids。
 // applyDefaults folds the node-level params into the per-call
 // input map. Per-call values always win; node-level values fill
 // the gaps. This mirrors Python's RetrievalParam semantics where
@@ -578,6 +587,7 @@ func resolveRetrievalDatasetID(ctx context.Context, kbName string) string {
 	return ""
 }
 
+// exesqlComponent 委托 ExeSQLTool，连接参数在构建时从 params 注入。
 // exesqlComponent delegates to internal/agent/tool/ExeSQLTool. The
 // connection params (db_type, host, port, database, username,
 // password) are passed via the canvas node's params map at build
@@ -604,6 +614,7 @@ func newExeSQLComponent(params map[string]any) (Component, error) {
 	return &exesqlComponent{inner: agenttool.NewExeSQLTool(conn)}, nil
 }
 
+// translateExeSQLParamsToToolShape 将 v1 ExeSQL params 适配为工具面（db_type/top_n→max_records）。
 // translateExeSQLParamsToToolShape adapts a v1 DSL ExeSQL params
 // map into the tool's expected param surface. Idempotent: callers
 // that already supply db_type / max_records / int-typed port pass
@@ -706,6 +717,7 @@ func (c *exesqlComponent) Stream(_ context.Context, _ map[string]any) (<-chan ma
 	return nil, nil
 }
 
+// codeExecComponent 委托 CodeExecTool，per-call inputs 可覆盖节点默认参数。
 // codeExecComponent delegates to internal/agent/tool/CodeExecTool.
 // The node-level params map carries the legacy v1 DSL surface
 // (`lang`, `script`, `arguments`, optional `timeout`). Per-call inputs
@@ -794,6 +806,7 @@ func (c *codeExecComponent) Stream(_ context.Context, _ map[string]any) (<-chan 
 	return nil, nil
 }
 
+// parseToolEnvelope 解码 eino tool InvokableRun 返回的 JSON 信封为 map。
 // parseToolEnvelope decodes the JSON envelope returned by eino tool
 // InvokableRun into a map[string]any. The result has whatever keys
 // the tool's result type carries (rows/columns/chunks/etc.).
@@ -952,6 +965,7 @@ func lookupCodeExecArgumentRef(ref string, merged map[string]any) (any, bool) {
 	return nil, false
 }
 
+// toIntParam 将节点 param 转为 int，兼容 JSON float64 与数字字符串。
 // toIntParam coerces a node-param int value to int. JSON-decoded
 // values come in as float64 when numeric, so we tolerate that
 // case explicitly. Strings that parse as int also work.
@@ -989,6 +1003,7 @@ func toFloatParam(v any) float64 {
 	return 0
 }
 
+// yahooFinanceComponent 委托 YahooFinanceTool，提供 Yahoo 财经数据 Canvas 面。
 // yahooFinanceComponent delegates to internal/agent/tool/YahooFinanceTool.
 type yahooFinanceComponent struct {
 	inner *agenttool.YahooFinanceTool

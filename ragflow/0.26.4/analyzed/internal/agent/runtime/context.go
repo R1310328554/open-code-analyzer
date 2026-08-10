@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// context.go — 通过 context 附加 CanvasState，供跨包组件与测试访问。
+
 //
 
-// runtime — context-attached canvas state for cross-package access.
+// runtime — 通过 context 挂载 canvas state 的跨包访问路径。
 //
 // The compile entry (canvas/compile.go) attaches *CanvasState to ctx
 // once per run via WithState. Component bodies retrieve it via
@@ -31,12 +33,14 @@ import (
 	"sync"
 )
 
+// stateCtxKey WithState/GetStateFromContext 使用的未导出 context 键。
 // stateCtxKey is the unexported context key used by WithState /
 // GetStateFromContext. Defined at package scope so its identity is
 // stable across calls (a fresh struct{}{} per call would key
 // distinctly and break ctx.Value lookups).
 type stateCtxKey struct{}
 
+// WithState 将 *CanvasState 挂到 ctx，compile.go 每 run 调用一次。
 // WithState attaches *CanvasState to ctx for retrieval by
 // GetStateFromContext. Production code (canvas/compile.go) calls this
 // once per run; cross-package tests call it directly to set up state
@@ -45,6 +49,7 @@ func WithState(ctx context.Context, s *CanvasState) context.Context {
 	return context.WithValue(ctx, stateCtxKey{}, s)
 }
 
+// GetStateFromContext 提取 WithState 挂载的状态；*CanvasState 时 mutex 返回 nil。
 // GetStateFromContext extracts a typed state attached via WithState.
 // Returns the state and a nil *sync.Mutex for *CanvasState (the
 // embedded RWMutex is what callers actually contend on through

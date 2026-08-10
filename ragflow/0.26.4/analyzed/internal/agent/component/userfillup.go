@@ -12,10 +12,13 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// userfillup.go — 用户表单填写 Canvas 节点：渲染 tips 模板并透传各表单字段。
+
 //
 
-// Package component — UserFillUp component (T3).
+// Package component — UserFillUp 组件（T3）：用户交互/表单填写节点。
 //
+// UserFillUp 渲染可选 tips 模板，文件类型输入输出 <file:key> 占位 stub。
 // UserFillUp is the user-interaction / form-filling node. It
 // renders an optional `tips` template (with `{{key}}` placeholders
 // resolved against the form's input map) and passes each form
@@ -54,6 +57,7 @@ const fileStubPrefix = "<file:"
 // canvas-state ref grammar (cpn_id@param / sys.x / env.x).
 var tipsPlaceholderPattern = regexp.MustCompile(`\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}`)
 
+// userFillUpParam 实例配置，对齐 Python UserFillUpParam。
 // userFillUpParam is the per-instance configuration for UserFillUp.
 //
 // Mirrors UserFillUpParam in fillup.py:24-33 (Python).
@@ -102,6 +106,7 @@ func (p *userFillUpParam) AsDict() map[string]any {
 	}
 }
 
+// UserFillUpComponent Canvas 表单填写节点。
 // UserFillUpComponent is the canvas form-filling node.
 type UserFillUpComponent struct {
 	name  string
@@ -118,6 +123,7 @@ func NewUserFillUpComponent(p userFillUpParam) *UserFillUpComponent {
 // Name returns the registered component name.
 func (u *UserFillUpComponent) Name() string { return u.name }
 
+// Invoke 在 enable_tips 时渲染 tips，并为每个表单字段生成输出。
 // Invoke renders the tips template (when enable_tips) and emits one
 // output per form field. Inputs are expected under the top-level
 // "inputs" key, mirroring the Python `kwargs.get("inputs", {})`
@@ -193,6 +199,7 @@ func formFields(inputs map[string]any) (map[string]any, bool) {
 	return m, true
 }
 
+// renderTips 将模板中 {{key}} 替换为对应字段值，文件字段输出 stub。
 // renderTips substitutes every {{key}} placeholder in template with
 // the corresponding field's value. File-type fields render as
 // "<file:key>" stubs. Plain string fields use their value
@@ -215,6 +222,7 @@ func renderTips(template string, fields map[string]any) string {
 	})
 }
 
+// resolveFieldValue 将单字段 payload 转为输出值（file/optional/value 规则）。
 // resolveFieldValue converts one form-field payload into the value
 // that should appear in the component's output map.
 //

@@ -12,9 +12,11 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// extract.go — 纯函数 DSL 地图遍历：提取 input_form/params/component_name 等。
+
 //
 
-// Package dsl contains pure-function helpers for working with the agent
+// Package dsl 提供 agent canvas DSL map 的纯函数辅助，无运行时依赖。
 // canvas DSL map structure (`map[string]any`). It is intentionally
 // runtime-free: no Canvas instantiation, no component factories, no
 // database access. The agent_component handlers use it to introspect
@@ -23,6 +25,7 @@ package dsl
 
 import "fmt"
 
+// ExtractComponentInputForm 返回 components[id].obj.input_form 表单 schema。
 // ExtractComponentInputForm returns the input-form schema dict stored at
 // `dsl["components"][componentID]["obj"]["input_form"]`.
 //
@@ -64,6 +67,7 @@ func ExtractComponentInputForm(dsl map[string]any, componentID string) (map[stri
 	return form, nil
 }
 
+// ExtractComponentParams 返回 components[id].obj.params，供 DebugComponent 构建 inputs。
 // ExtractComponentParams returns the params map stored at
 // `dsl["components"][componentID]["obj"]["params"]`. The debug handler
 // uses this to build the inputs map for the runtime Component.Invoke
@@ -89,6 +93,7 @@ func ExtractComponentParams(dsl map[string]any, componentID string) (map[string]
 	return params, nil
 }
 
+// ExtractComponentName 返回 obj.component_name（如 Begin/LLM），工厂按此名查找。
 // ExtractComponentName returns the component's class name (e.g.
 // "Begin", "LLM", "Retrieval") from `dsl["components"][componentID].
 // ["obj"]["component_name"]`. The runtime factory is keyed on this
@@ -109,6 +114,7 @@ func ExtractComponentName(dsl map[string]any, componentID string) (string, error
 	return name, nil
 }
 
+// navigateToComponent 统一遍历 dsl["components"][componentID]，供各提取器复用。
 // navigateToComponent walks dsl["components"][componentID] and
 // returns the inner dict. Centralised so the three extractors above
 // share a single traversal path. (Renamed from extractComponent to
@@ -132,6 +138,7 @@ func navigateToComponent(dsl map[string]any, componentID string) (map[string]any
 	return cm, nil
 }
 
+// FindBeginComponentID 查找 component_name=="Begin" 的 component_id。
 // FindBeginComponentID returns the component_id of the canvas component
 // whose obj.component_name == "Begin". Returns ErrComponentNotFound if
 // no such component exists. Mirrors python Canvas.begin_component_id
@@ -165,6 +172,7 @@ func FindBeginComponentID(dsl map[string]any) (string, error) {
 	return "", fmt.Errorf("%w: Begin component", ErrComponentNotFound)
 }
 
+// ExtractPrologue 对齐 Python get_prologue，读取 Begin 节点的 prologue 字符串。
 // ExtractPrologue mirrors python Canvas.get_prologue
 // (api/agent/canvas.py:190) — returns the "prologue" string stored at
 // dsl["components"][<begin_id>]["obj"]["prologue"]. Reuses the
@@ -184,6 +192,7 @@ func ExtractPrologue(dsl map[string]any) (string, error) {
 	return s, nil
 }
 
+// ExtractMode 对齐 Python get_mode，返回 Begin 节点的 mode（Agent/DataFlow）。
 // ExtractMode mirrors python Canvas.get_mode (api/agent/canvas.py:200).
 // Returns the canvas mode (e.g. "Agent" / "DataFlow") stored at
 // dsl["components"][<begin_id>]["obj"]["mode"].

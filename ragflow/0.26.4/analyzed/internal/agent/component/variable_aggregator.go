@@ -12,10 +12,13 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// variable_aggregator.go — 变量聚合 Canvas 节点：每组按顺序取首个 truthy 变量值。
+
 //
 
-// Package component — VariableAggregator (T3, plan §2.11.3 row 19).
+// Package component — VariableAggregator 组件（T3）：多组变量首真值聚合。
 //
+// 每组遍历变量选择器列表，取首个 truthy 值写入 outputs[group_name]。
 // For each "group" in its param, VariableAggregator walks a list of
 // variable selectors and picks the first one whose resolved value is
 // truthy. The picked value is exposed at outputs[<group_name>].
@@ -117,6 +120,7 @@ func (p *variableAggregatorParam) AsDict() map[string]any {
 	return out
 }
 
+// VariableAggregatorComponent 按组解析选择器，输出首个非空值。
 // VariableAggregatorComponent walks each group's selectors and emits
 // outputs[group_name] = first non-empty resolved value.
 type VariableAggregatorComponent struct {
@@ -144,6 +148,7 @@ func NewVariableAggregatorComponent(params map[string]any) (Component, error) {
 // Name returns the registered component name.
 func (v *VariableAggregatorComponent) Name() string { return v.name }
 
+// Invoke 遍历 groups，支持 inputs["variables"] 运行时覆盖静态配置。
 // Invoke iterates the configured groups and resolves each selector's
 // value against the canvas state. The first truthy value in a group
 // wins; outputs[group_name] is set to that value. Groups with no truthy
@@ -263,6 +268,7 @@ func (v *VariableAggregatorComponent) Outputs() map[string]string {
 	return out
 }
 
+// isTruthy 对齐 Python bool()：nil/空串/空容器/零值为 false。
 // isTruthy mirrors Python's bool() coercion: nil is false, empty
 // strings/slices/maps are false, zero numbers are false, false is
 // false, everything else is true.

@@ -12,9 +12,12 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// normalize.go — Canvas DSL 单形态归一化：修复 graph 句柄、补全缺失节点、Parallel 泄漏修复。
 
-// Package dsl — single-shape canvas normalizer.
+
+// Package dsl — Canvas DSL 单形态归一化入口。
 //
+// RAGFlow agent DSL 规范线格式包含 globals/graph/variables/components 等块。
 // The RAGFlow agent DSL has exactly one canonical wire shape:
 //
 //	{
@@ -36,6 +39,7 @@
 // Go port test suite has `graph` and `components` but a slightly
 // different internal layout convention).
 //
+// NormalizeForCanvas 是前端面向路径的解码边界入口（handler/service/reset 等）。
 // NormalizeForCanvas is the decoder-boundary entry point for every
 // front-end-facing Go path (handler.AgentHandler, service.AgentService
 // create/update/publish/reset, version reads). The function:
@@ -80,6 +84,7 @@ const (
 
 var legacyIterationAliasPattern = regexp.MustCompile(`IterationItem:[A-Za-z0-9_:-]+@(item|index)\b`)
 
+// NormalizeForCanvas 返回防御性拷贝：修复 handle id、缺失时从 components 派生 graph。
 // NormalizeForCanvas returns a defensive copy of dsl with a derived
 // `graph.nodes`/`graph.edges` block when missing.
 //
@@ -98,6 +103,7 @@ func NormalizeForCanvas(dsl map[string]any) map[string]any {
 	return normalize(dsl, false)
 }
 
+// NormalizeForRun 为运行时/编译路径准备 DSL，可折叠 LoopItem 并将 Iteration 重命名为 Parallel。
 // NormalizeForRun prepares a DSL for the runtime/compiler path. Unlike
 // NormalizeForCanvas, it is allowed to fold legacy LoopItem /
 // IterationItem children away and rename Iteration to Parallel because
@@ -157,6 +163,7 @@ func normalize(dsl map[string]any, foldLegacy bool) map[string]any {
 	return out
 }
 
+// rewriteLegacyIterationAliases 将遗留 IterationItem 引用改写为 item/index 别名。
 // rewriteLegacyIterationAliases rewrites runtime-only references to the
 // legacy IterationItem child's synthetic outputs back to the modern
 // item/index aliases that CanvasState exposes. This runs only on the
@@ -250,6 +257,7 @@ func repairParallelLeaksForCanvas(dsl map[string]any) {
 	}
 }
 
+// enforceHandleIds 将 graph 边的 sourceHandle/targetHandle 重写为 React Flow 的 start/end 约定。
 // enforceHandleIds rewrites graph.edges[*].sourceHandle / targetHandle
 // to the front-end's React Flow convention. Tool/agent handles (id !=
 // "end" on source / != "start" on target) are left alone because they
@@ -294,6 +302,7 @@ func graphHasNodes(dsl map[string]any) bool {
 	return len(nodes) > 0
 }
 
+// buildGraphFromComponents 将 components 块转换为 React-Flow 形 nodes/edges 及归一化 components。
 // buildGraphFromComponents converts the `components` block into
 // React-Flow-shaped nodes + edges and a normalised (flat) components
 // map keyed the same way the input was.
@@ -425,6 +434,7 @@ func toStringSlice(v any) []string {
 	return out
 }
 
+// deepCopyDSL 深拷贝 normalize 会修改的 graph/components 部分，保证不 mutate 输入。
 // deepCopyDSL returns a deep copy of the parts of `dsl` that
 // NormalizeForCanvas mutates: the top-level keys "graph" and
 // "components", and within `graph` the "nodes" and "edges" slices.
