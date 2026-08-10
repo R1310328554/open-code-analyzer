@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T18:12:35Z",
   "files": [
-    "internal/entity/models/cohere.go",
-    "internal/entity/models/cometapi.go",
-    "internal/entity/models/common.go",
-    "internal/entity/models/deepinfra.go",
-    "internal/entity/models/deepseek.go",
-    "internal/entity/models/dummy.go",
-    "internal/entity/models/factory.go",
-    "internal/entity/models/fishaudio.go",
-    "internal/entity/models/futurmix.go",
-    "internal/entity/models/gitee.go",
-    "internal/entity/models/google.go",
-    "internal/entity/models/gpustack.go",
-    "internal/entity/models/groq.go",
-    "internal/entity/models/huaweicloud.go",
-    "internal/entity/models/huggingface.go",
     "internal/entity/models/hunyuan.go",
     "internal/entity/models/jiekouai.go",
     "internal/entity/models/jina.go",
@@ -33,5 +18,5 @@
     "internal/entity/models/n1n.go"
   ],
   "remaining_pending": 1014,
-  "done": 720
+  "done": 735
 }
