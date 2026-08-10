@@ -2383,3 +2383,18 @@
 2026-08-10T09:27:48Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11SubjectConfirmationType.java wave81b saml-core-api SAML11 assertion batch2
 2026-08-10T09:27:48Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11SubjectLocalityType.java wave81b saml-core-api SAML11 assertion batch2
 2026-08-10T09:27:48Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11SubjectStatementType.java wave81b saml-core-api SAML11 assertion batch2
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonActionType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonAdviceType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonAssertionType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonConditionsType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonRequestAbstractType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonResponseType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonStatusDetailType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11ActionType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AdviceType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AssertionType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AttributeDesignatorType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AttributeStatementType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AttributeType.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AudienceRestrictionCondition.java wave81a saml-core-api common + SAML11 assertion batch1
+2026-08-10T09:28:07Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AuthenticationStatementType.java wave81a saml-core-api common + SAML11 assertion batch1

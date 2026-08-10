@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T09:26:21Z",
-  "files": [
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonActionType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonAdviceType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonAssertionType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonConditionsType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonRequestAbstractType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonResponseType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/common/CommonStatusDetailType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11ActionType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AdviceType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AssertionType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AttributeDesignatorType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AttributeStatementType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AttributeType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AudienceRestrictionCondition.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v1/assertion/SAML11AuthenticationStatementType.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3568,
-  "done": 2415
+  "done": 2430
 }
