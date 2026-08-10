@@ -33,6 +33,8 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
+ * JWK JSON 解析器：将 JWK 字符串或对象转为 {@link PublicKey}，并检测密钥类型是否受支持。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class JWKParser {
@@ -42,18 +44,27 @@ public class JWKParser {
     private JWKParser() {
     }
 
+    /** 创建空解析器。 */
     public static JWKParser create() {
         return new JWKParser();
     }
 
+    /** 以已有 JWK 构造解析器。 */
     public JWKParser(JWK jwk) {
         this.jwk = jwk;
     }
 
+    /** 以已有 JWK 创建解析器。 */
     public static JWKParser create(JWK jwk) {
         return new JWKParser(jwk);
     }
 
+    /**
+     * 解析 JWK JSON 字符串。
+     *
+     * @param jwk JWK JSON
+     * @return 当前解析器
+     */
     public JWKParser parse(String jwk) {
         try {
             this.jwk = JsonSerialization.mapper.readValue(jwk, JWK.class);
@@ -63,18 +74,25 @@ public class JWKParser {
         }
     }
 
+    /** 返回已解析的 JWK 对象。 */
     public JWK getJwk() {
         return jwk;
     }
 
+    /**
+     * 将当前 JWK 转为 {@link PublicKey}。
+     *
+     * @return 对应公钥
+     * @throws IllegalStateException 尚未设置 JWK 时
+     * @throws RuntimeException 不支持的 {@code kty} 或字段缺失
+     */
     public PublicKey toPublicKey() {
         if (jwk == null) {
             throw new IllegalStateException("Not possible to convert to the publicKey. The jwk is not set");
         }
         String keyType = jwk.getKeyType();
 
-        // subtypes may store properties differently while representing the same JWK, serializing it to nodes
-        // makes sure there is no difference when creating the keys
+        // 子类字段存储方式可能不同；序列化为 JsonNode 可统一访问路径
         JsonNode normalizedJwkNode = JsonSerialization.writeValueAsNode(jwk);
         if (KeyType.RSA.equals(keyType)) {
             return createRSAPublicKey(normalizedJwkNode);
@@ -89,15 +107,16 @@ public class JWKParser {
         }
     }
 
+    /** 从规范化 JsonNode 构建 EC 公钥。 */
     private static PublicKey createECPublicKey(JsonNode jwk) {
 
 
-        /* Try retrieving the necessary fields */
+        /* 读取 EC 必需字段 */
         String crv = jwk.path(ECPublicJWK.CRV).asText(null);
         String xStr = jwk.get(ECPublicJWK.X).asText(null);
         String yStr = jwk.get(ECPublicJWK.Y).asText(null);
 
-        /* Check if the retrieving of necessary fields success */
+        /* 校验字段是否齐全 */
         if (crv == null || xStr == null || yStr == null) {
             throw new RuntimeException("Fail to retrieve ECPublicJWK.CRV, ECPublicJWK.X or ECPublicJWK.Y field.");
         }
@@ -133,6 +152,7 @@ public class JWKParser {
         }
     }
 
+    /** 从 JsonNode 构建 RSA 公钥。 */
     private static PublicKey createRSAPublicKey(JsonNode jwk) {
         BigInteger modulus = new BigInteger(1, Base64Url.decode(jwk.path(RSAPublicJWK.MODULUS).asText(null)));
         BigInteger publicExponent = new BigInteger(1, Base64Url.decode(jwk.path(RSAPublicJWK.PUBLIC_EXPONENT).asText(null)));
@@ -145,12 +165,19 @@ public class JWKParser {
         }
     }
 
+    /** 从 JsonNode 构建 AKP 公钥。 */
     private static PublicKey createAPKPublicKey(JsonNode jwk) {
         String algorithm = jwk.path(JWK.ALGORITHM).asText();
         String publicKey = jwk.path(AKPPublicJWK.PUB).asText();
         return AKPUtils.fromEncodedPub(publicKey, algorithm);
     }
 
+    /**
+     * 判断给定 {@code kty} 是否可由本解析器转为 {@link PublicKey}。
+     *
+     * @param keyType JWK 密钥类型
+     * @return 支持时返回 {@code true}
+     */
     public boolean isKeyTypeSupported(String keyType) {
         return (RSAPublicJWK.RSA.equals(keyType) || ECPublicJWK.EC.equals(keyType)
                 || (JWKBuilder.EdEC_UTILS.isEdECSupported() && OKPPublicJWK.OKP.equals(keyType)))

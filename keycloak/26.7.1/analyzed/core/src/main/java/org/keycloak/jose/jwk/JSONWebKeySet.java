@@ -21,18 +21,23 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * JSON Web Key Set（JWKS）容器，对应 RFC 7517 中 {@code keys} 数组结构。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class JSONWebKeySet {
 
+    /** JWKS 中的 JWK 列表。 */
     @JsonProperty("keys")
     private JWK[] keys;
 
+    /** 返回 JWK 数组。 */
     public JWK[] getKeys() {
         return keys;
     }
 
+    /** 设置 JWK 数组。 */
     public void setKeys(JWK[] keys) {
         this.keys = keys;
     }

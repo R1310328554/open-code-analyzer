@@ -22,15 +22,31 @@ import java.security.PublicKey;
 import org.keycloak.crypto.KeyUse;
 
 /**
- * <p>Interface for the EdECUtils that will be implemented only for JDK 15+.</p>
+ * EdDSA（Ed25519/Ed448）JWK 工具接口，仅在 JDK 15+ 环境下由 {@link EdECUtilsImpl} 实现。
  *
  * @author rmartinc
  */
 interface EdECUtils {
 
+    /** 当前运行时是否支持 EdEC（EdDSA）算法。 */
     boolean isEdECSupported();
 
+    /**
+     * 将 OKP 公钥转换为 JWK。
+     *
+     * @param kid 密钥 ID，可为 {@code null}（将自动生成）
+     * @param algorithm 算法名
+     * @param key 公钥
+     * @param keyUse 密钥用途
+     * @return OKP 类型的 {@link JWK}
+     */
     JWK okp(String kid, String algorithm, Key key, KeyUse keyUse);
 
+    /**
+     * 从 OKP 类型 JWK 重建 {@link PublicKey}。
+     *
+     * @param jwk OKP JWK
+     * @return 对应的 EdEC 公钥
+     */
     PublicKey createOKPPublicKey(JWK jwk);
 }

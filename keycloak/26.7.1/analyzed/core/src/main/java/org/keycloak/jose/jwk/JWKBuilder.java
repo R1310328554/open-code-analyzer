@@ -35,26 +35,29 @@ import org.keycloak.crypto.KeyUse;
 import static org.keycloak.jose.jwk.JWKUtil.toIntegerBytes;
 
 /**
+ * 从 Java {@link PublicKey} 构建各类 JWK 的流式构建器（RSA、EC、OKP、AKP）。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class JWKBuilder {
 
-    // internal util class only loaded for jdk versions with EdEC support
+    // 内部工具类，仅在支持 EdEC 的 JDK 版本上加载 EdECUtilsImpl
     protected static final EdECUtils EdEC_UTILS;
 
     static {
         EdECUtils tmp;
         try {
-            // check if the impl class for EdEC can be loaded in the runtime
+            // 检测运行时能否加载 EdEC 实现类
             tmp = (EdECUtils) Class.forName("org.keycloak.jose.jwk.EdECUtilsImpl")
                     .getDeclaredConstructor().newInstance();
         } catch(Throwable e) {
-            // not supported implementation
+            // 回退到不支持 EdEC 的实现
             tmp = new EdECUtilsUnsupportedImpl();
         }
         EdEC_UTILS = tmp;
     }
 
+    /** 未指定用途时的默认公钥用途：签名。 */
     public static final KeyUse DEFAULT_PUBLIC_KEY_USE = KeyUse.SIG;
 
     protected String kid;
@@ -64,25 +67,50 @@ public class JWKBuilder {
     private JWKBuilder() {
     }
 
+    /** 创建新的构建器实例。 */
     public static JWKBuilder create() {
         return new JWKBuilder();
     }
 
+    /**
+     * 指定密钥 ID。
+     *
+     * @param kid 密钥 ID
+     * @return 当前构建器（链式调用）
+     */
     public JWKBuilder kid(String kid) {
         this.kid = kid;
         return this;
     }
 
+    /**
+     * 指定 JWK {@code alg} 字段。
+     *
+     * @param algorithm 算法名
+     * @return 当前构建器
+     */
     public JWKBuilder algorithm(String algorithm) {
         this.algorithm = algorithm;
         return this;
     }
 
+    /**
+     * 以 RS256 算法构建 RSA JWK。
+     *
+     * @param key RSA 公钥
+     * @return RSA JWK
+     */
     public JWK rs256(PublicKey key) {
         this.algorithm = Algorithm.RS256;
         return rsa(key);
     }
 
+    /**
+     * 构建 AKP（如 ML-DSA）公钥 JWK。
+     *
+     * @param key AKP 公钥
+     * @return AKP JWK
+     */
     public JWK akp(PublicKey key) {
         AKPPublicJWK k = new AKPPublicJWK();
 
@@ -96,18 +124,29 @@ public class JWKBuilder {
         return k;
     }
 
+    /** 以默认签名用途构建 RSA JWK。 */
     public JWK rsa(Key key) {
         return rsa(key, null, KeyUse.SIG);
     }
 
+    /** 附带单张 X.509 证书构建 RSA JWK。 */
     public JWK rsa(Key key, X509Certificate certificate) {
         return rsa(key, Collections.singletonList(certificate), KeyUse.SIG);
     }
 
+    /** 附带证书链构建 RSA JWK（用途未指定）。 */
     public JWK rsa(Key key, List<X509Certificate> certificates) {
         return rsa(key, certificates, null);
     }
 
+    /**
+     * 构建 RSA JWK，可选证书链与用途。
+     *
+     * @param key RSA 公钥
+     * @param certificates X.509 证书链，可为 {@code null}
+     * @param keyUse 密钥用途
+     * @return RSA JWK
+     */
     public JWK rsa(Key key, List<X509Certificate> certificates, KeyUse keyUse) {
         RSAPublicKey rsaKey = (RSAPublicKey) key;
 
@@ -132,6 +171,13 @@ public class JWKBuilder {
         return k;
     }
 
+    /**
+     * 构建 RSA JWK 并覆盖用途字段。
+     *
+     * @param key RSA 公钥
+     * @param keyUse 密钥用途
+     * @return RSA JWK
+     */
     public JWK rsa(Key key, KeyUse keyUse) {
         JWK k = rsa(key);
         String keyUseString = keyUse == null ? DEFAULT_PUBLIC_KEY_USE.getSpecName() : keyUse.getSpecName();
@@ -140,14 +186,24 @@ public class JWKBuilder {
         return k;
     }
 
+    /** 以默认签名用途构建 EC JWK。 */
     public JWK ec(Key key) {
         return ec(key, DEFAULT_PUBLIC_KEY_USE);
     }
 
+    /** 指定用途构建 EC JWK。 */
     public JWK ec(Key key, KeyUse keyUse) {
         return this.ec(key, null, keyUse);
     }
 
+    /**
+     * 构建 EC JWK，可选证书链与用途。
+     *
+     * @param key EC 公钥
+     * @param certificates X.509 证书链
+     * @param keyUse 密钥用途
+     * @return EC JWK
+     */
     public JWK ec(Key key, List<X509Certificate> certificates, KeyUse keyUse) {
         ECPublicKey ecKey = (ECPublicKey) key;
 
@@ -175,10 +231,18 @@ public class JWKBuilder {
         return k;
     }
 
+    /** 以默认签名用途构建 OKP（EdDSA）JWK。 */
     public JWK okp(Key key) {
         return okp(key, DEFAULT_PUBLIC_KEY_USE);
     }
 
+    /**
+     * 构建 OKP JWK，委托 {@link EdECUtils#okp}（JDK 版本决定具体实现）。
+     *
+     * @param key EdEC 公钥
+     * @param keyUse 密钥用途
+     * @return OKP JWK
+     */
     public JWK okp(Key key, KeyUse keyUse) {
         return EdEC_UTILS.okp(kid, algorithm, key, keyUse);
     }

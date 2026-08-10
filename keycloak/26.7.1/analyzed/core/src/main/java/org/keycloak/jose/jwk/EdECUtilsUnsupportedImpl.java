@@ -22,7 +22,7 @@ import java.security.PublicKey;
 import org.keycloak.crypto.KeyUse;
 
 /**
- * <p>Unsupported implementation for old jdk versions.</p>
+ * 旧版 JDK（无 EdEC API）下的 {@link EdECUtils} 占位实现，所有操作均抛出 {@link UnsupportedOperationException}。
  *
  * @author rmartinc
  */

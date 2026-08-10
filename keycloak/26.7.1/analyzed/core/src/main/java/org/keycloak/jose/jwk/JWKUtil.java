@@ -20,41 +20,41 @@ package org.keycloak.jose.jwk;
 import java.math.BigInteger;
 import java.util.Arrays;
 
+/**
+ * JWK 编码辅助工具：将 {@link BigInteger} 转为固定长度无符号字节数组（RFC 7518 对 EC 坐标等字段的要求）。
+ */
 public class JWKUtil {
 
     /**
-     * Converts {@code BigInteger} to 64-byte array removing the sign byte if
-     * necessary.
+     * 将 {@code BigInteger} 转为字节数组，必要时去掉符号字节。
      *
-     * @param bigInt {@code BigInteger} to be converted
-     * @return Byte array representation of the BigInteger parameter
+     * @param bigInt 待转换的大整数
+     * @return 无符号大端字节表示
      */
     public static byte[] toIntegerBytes(final BigInteger bigInt) {
         return toIntegerBytes(bigInt, bigInt.bitLength());
     }
 
     /**
-     * Converts {@code BigInteger} to 64-byte array but maintaining the length
-     * to bitlen as specified in rfc7518 for certain fields (X and Y parameter
-     * for EC keys).
+     * 将 {@code BigInteger} 转为指定比特长度的字节数组（RFC 7518 中 EC 密钥 X/Y 等字段）。
      *
-     * @param bigInt {@code BigInteger} to be converted
-     * @param bitlen The bit length size of the integer (for example 521 for EC P-521)
-     * @return Byte array representation of the BigInteger parameter with length (bitlen + 7) / 8
-     * @throws IllegalStateException if the big integer is longer than bitlen
+     * @param bigInt 待转换的大整数
+     * @param bitlen 目标比特长度（如 P-521 为 521）
+     * @return 长度为 {@code (bitlen + 7) / 8} 的字节数组
+     * @throws IllegalStateException 若大整数比特长度超过 {@code bitlen}
      */
     public static byte[] toIntegerBytes(final BigInteger bigInt, int bitlen) {
         assert bigInt.bitLength() <= bitlen : "Incorrect big integer with bit length " + bigInt.bitLength() + " for " + bitlen;
         final int bytelen = (bitlen + 7) / 8;
         final byte[] array = bigInt.toByteArray();
         if (array.length == bytelen) {
-            // expected number of bytes, return them
+            // 长度符合预期，直接返回
             return array;
         } else if (bytelen < array.length) {
-            // if array is greater is because the sign bit (it can be only 1 byte more), remove it
+            // 多出的 1 字节为符号位，截去
             return Arrays.copyOfRange(array, array.length - bytelen, array.length);
         } else {
-            // if array is smaller fill it with zeros
+            // 长度不足时在高位补零
             final byte[] resizedBytes = new byte[bytelen];
             System.arraycopy(array, 0, resizedBytes, bytelen - array.length, array.length);
             return resizedBytes;

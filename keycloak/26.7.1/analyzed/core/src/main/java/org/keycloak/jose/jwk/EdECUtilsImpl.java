@@ -35,7 +35,7 @@ import org.keycloak.crypto.KeyType;
 import org.keycloak.crypto.KeyUse;
 
 /**
- * <p>Class that uses Java 15+ EdEC classes and implements the EdECUtils interface.</p>
+ * 基于 JDK 15+ EdEC API 的 {@link EdECUtils} 实现，负责 OKP JWK 与 {@link EdECPublicKey} 互转。
  *
  * @author rmartinc
  */
@@ -73,7 +73,7 @@ class EdECUtilsImpl implements EdECUtils {
     public PublicKey createOKPPublicKey(JWK jwk) {
         String x = jwk.getOtherClaim(OKPPublicJWK.X, String.class);
         String crv = jwk.getOtherClaim(OKPPublicJWK.CRV, String.class);
-        // JWK representation "x" of a public key
+        // JWK 中公钥的 "x" 表示（RFC 8037）
         int bytesLength = 0;
         if (Algorithm.Ed25519.equals(crv)) {
             bytesLength = 32;
@@ -88,16 +88,16 @@ class EdECUtilsImpl implements EdECUtils {
             throw new RuntimeException("Invalid JWK representation of OKP type public key");
         }
 
-        // x-coordinate's parity check shown by MSB(bit) of MSB(byte) of decoded "x": 1 is odd, 0 is even
+        // x 坐标奇偶性由 decoded "x" 最高字节的最高位表示：1 为奇，0 为偶
         boolean isOddX = false;
         if ((decodedX[decodedX.length - 1] & -128) != 0) { // 0b10000000
             isOddX = true;
         }
 
-        // MSB(bit) of MSB(byte) showing x-coodinate's parity is set to 0
+        // 将表示 x 坐标奇偶性的最高位清零
         decodedX[decodedX.length - 1] &= 127; // 0b01111111
 
-        // both x and y-coordinate in twisted Edwards curve are always 0 or natural number
+        // 扭曲 Edwards 曲线上的 x、y 坐标均为非负整数
         BigInteger y = new BigInteger(1, reverseBytes(decodedX));
         NamedParameterSpec spec = new NamedParameterSpec(crv);
         EdECPoint ep = new EdECPoint(isOddX, y);
@@ -112,11 +112,12 @@ class EdECUtilsImpl implements EdECUtils {
         return publicKey;
     }
 
+    /** 将 {@link EdECPublicKey} 编码为 JWK 的 {@code x} 字段（RFC 8032/8037）。 */
     private static Optional<String> edPublicKeyInJwkRepresentation(EdECPublicKey eddsaPublicKey) {
         EdECPoint edEcPoint = eddsaPublicKey.getPoint();
         BigInteger yCoordinate = edEcPoint.getY();
 
-        // JWK representation "x" of a public key
+        // JWK 中公钥的 "x" 表示
         int bytesLength = 0;
         if (Algorithm.Ed25519.equals(eddsaPublicKey.getParams().getName())) {
             bytesLength = 32;
@@ -126,14 +127,14 @@ class EdECUtilsImpl implements EdECUtils {
             return Optional.ofNullable(null);
         }
 
-        // consider the case where yCoordinate.toByteArray() is less than bytesLength due to relatively small value of y-coordinate.
+        // y 坐标较小时 toByteArray() 可能短于 bytesLength，需左侧补零
         byte[] yCoordinateLittleEndianBytes = new byte[bytesLength];
 
-        // convert big endian representation of BigInteger to little endian representation of JWK representation (RFC 8032,8027)
+        // 将 BigInteger 大端字节序转为 JWK 要求的小端表示（RFC 8032/8037）
         byte[] yCoordinateLittleEndian = reverseBytes(yCoordinate.toByteArray());
         System.arraycopy(yCoordinateLittleEndian, 0, yCoordinateLittleEndianBytes, 0, yCoordinateLittleEndian.length);
 
-        // set a parity of x-coordinate to the most significant bit of the last octet (RFC 8032, 8037)
+        // 将 x 坐标奇偶性写入最后一字节最高位（RFC 8032/8037）
         if (edEcPoint.isXOdd()) {
             yCoordinateLittleEndianBytes[yCoordinateLittleEndianBytes.length - 1] |= -128; // 0b10000000
         }
@@ -141,6 +142,7 @@ class EdECUtilsImpl implements EdECUtils {
         return Optional.ofNullable(Base64Url.encode(yCoordinateLittleEndianBytes));
     }
 
+    /** 反转字节数组（大端与小端互转）。 */
     private static byte[] reverseBytes(byte[] array) {
         if (array == null || array.length == 0) {
             return null;

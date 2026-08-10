@@ -18,15 +18,22 @@
 package org.keycloak.jose.jws;
 
 /**
+ * JWS 算法族分类，供 {@link Algorithm} 枚举引用。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public enum AlgorithmType {
 
+    /** RSA 系算法。 */
     RSA,
+    /** HMAC 系算法。 */
     HMAC,
+    /** AES 系算法。 */
     AES,
+    /** ECDSA 系算法。 */
     ECDSA,
+    /** EdDSA 系算法。 */
     EDDSA
 
 }
