@@ -1,5 +1,7 @@
 package series
 
+// series_index_gateway_store 通过 GatewayClient RPC 实现 index.ReaderWriter，将 chunk ref/series/labels/stats/volume/shards 查询委托给 Index Gateway 集群。
+
 import (
 	"context"
 	"fmt"
@@ -17,6 +19,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb/sharding"
 )
 
+// GatewayClient 与 Index Gateway gRPC 能力对齐但解耦生成代码，便于流式与测试替身。
 // NB(owen-d): mostly modeled off of the proto-generated `logproto.IndexGatewayClient`,
 // but decoupled from explicit GRPC dependencies to work well with streaming grpc methods
 type GatewayClient interface {
@@ -30,6 +33,7 @@ type GatewayClient interface {
 	GetShards(ctx context.Context, in *logproto.ShardsRequest) (*logproto.ShardsResponse, error)
 }
 
+// IndexGatewayClientStore 是 querier 侧远程索引读写的 Store 适配器。
 // IndexGatewayClientStore implements pkg/storage/stores/index.ReaderWriter
 type IndexGatewayClientStore struct {
 	client GatewayClient
@@ -43,6 +47,7 @@ func NewIndexGatewayClientStore(client GatewayClient, logger log.Logger) *IndexG
 	}
 }
 
+// GetChunkRefs 将 matchers/plan 序列化后调用 GetChunkRef 并合并索引统计到 context。
 func (c *IndexGatewayClientStore) GetChunkRefs(ctx context.Context, _ string, from, through model.Time, predicate chunk.Predicate) ([]logproto.ChunkRef, error) {
 	response, err := c.client.GetChunkRef(ctx, &logproto.GetChunkRefRequest{
 		From:     from,
@@ -147,6 +152,7 @@ func (c *IndexGatewayClientStore) SetChunkFilterer(_ chunk.RequestChunkFilterer)
 	level.Warn(c.logger).Log("msg", "SetChunkFilterer called on index gateway client store, but it does not support it")
 }
 
+// IndexChunk 在 gateway 客户端 store 上不支持，写入应在 ingester 本地索引完成。
 func (c *IndexGatewayClientStore) IndexChunk(_ context.Context, _, _ model.Time, _ chunk.Chunk) error {
 	return fmt.Errorf("index writes not supported on index gateway client")
 }
@@ -161,3 +167,4 @@ func (c *IndexGatewayClientStore) HasForSeries(_, _ model.Time) (sharding.ForSer
 func (c *IndexGatewayClientStore) HasChunkSizingInfo(_, _ model.Time) bool {
 	return false
 }
+// HasForSeries 返回 false：ForSeries 能力由 Index Gateway 内部在 GetShards 路径实现。

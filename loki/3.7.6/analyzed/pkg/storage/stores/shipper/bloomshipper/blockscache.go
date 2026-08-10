@@ -1,5 +1,7 @@
 package bloomshipper
 
+// blockscache 实现 bloom block 本地目录 LRU+TTL 内存索引：Put/Get/Release 管理磁盘块生命周期、软/硬容量限制与后台驱逐任务。
+
 import (
 	"container/list"
 	"context"
@@ -32,6 +34,7 @@ const (
 	errTooBig        = "entry exceeds hard limit: %s"
 )
 
+// Cache 抽象 bloom block 目录缓存：支持引用计数 PutInc 与批量 PutMany。
 type Cache interface {
 	Put(ctx context.Context, key string, value BlockDirectory) error
 	PutInc(ctx context.Context, key string, value BlockDirectory) error
@@ -100,6 +103,7 @@ func (m *blocksCacheMetrics) Collect() {
 // compiler check to enforce implementation of the Cache interface
 var _ Cache = &BlocksCache{}
 
+// BlocksCache 用 LRU 链表与 map 跟踪 BlockDirectory，超 SoftLimit 触发异步驱逐。
 // BlocksCache is an in-memory cache that manages block directories on the filesystem.
 type BlocksCache struct {
 	cfg     config.BlocksCacheConfig
@@ -125,6 +129,7 @@ type Entry struct {
 	refCount *atomic.Int32
 }
 
+// NewFsBlocksCache 启动 TTL 清理、LRU 驱逐与 metrics 聚合三类后台 goroutine。
 // NewFsBlocksCache returns a new file-system mapping cache for bloom blocks,
 // where entries map block directories on disk.
 func NewFsBlocksCache(cfg config.BlocksCacheConfig, reg prometheus.Registerer, logger log.Logger) *BlocksCache {
@@ -202,6 +207,7 @@ func (c *BlocksCache) PutMany(ctx context.Context, keys []string, values []Block
 	return err.Err()
 }
 
+// put 拒绝重复键与超过 HardLimit 的单项，超软限广播 triggerEviction 信号。
 func (c *BlocksCache) put(key string, value BlockDirectory) (*Entry, error) {
 	// Blocks cache does not allow updating, so it rejects values with the same key
 	_, exists := c.entries[key]
@@ -347,6 +353,7 @@ func (c *BlocksCache) get(key string, opt *cacheGetOptions) *Entry {
 	return entry
 }
 
+// Release 递减 Entry 引用计数，refCount 为零的 LRU 尾部项可被 evictLeastRecentlyUsedItems 移除。
 // Release decrements the ref counter on the cached item with given key.
 func (c *BlocksCache) Release(ctx context.Context, key string) error {
 	if ctx.Err() != nil {
@@ -492,3 +499,4 @@ func (c *BlocksCache) len() (int, bool) {
 	defer c.lock.RUnlock()
 	return c.lru.Len(), c.lru.Len() == len(c.entries)
 }
+// evictExpiredItems 在 refCount 为零且创建时间超过 TTL 时删除磁盘目录并更新 usage 指标。

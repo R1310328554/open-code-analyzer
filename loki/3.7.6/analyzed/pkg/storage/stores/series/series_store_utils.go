@@ -1,5 +1,7 @@
 package series
 
+// series_store_utils 提供 chunk/chunkRef 时间过滤、按 fingerprint 去重、标签名提取、有序字符串交集/去重及 LogQL 集合正则解析辅助。
+
 import (
 	"strings"
 	"unicode/utf8"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// filterChunksByTime 剔除与查询时间窗无重叠的 chunk。
 func filterChunksByTime(from, through model.Time, chunks []chunk.Chunk) []chunk.Chunk {
 	filtered := make([]chunk.Chunk, 0, len(chunks))
 	for _, chunk := range chunks {
@@ -47,6 +50,7 @@ func labelNamesFromChunks(chunks []chunk.Chunk) []string {
 	return result.Strings()
 }
 
+// filterChunksByUniqueFingerprint 每个 fingerprint 仅保留首个 chunk，供 series 查询降采样。
 func filterChunksByUniqueFingerprint(chunks []chunk.Chunk) []chunk.Chunk {
 	filtered := make([]chunk.Chunk, 0, len(chunks))
 	uniqueFp := map[model.Fingerprint]struct{}{}
@@ -97,6 +101,7 @@ func uniqueStrings(cs []string) []string {
 	return result
 }
 
+// intersectStrings 对两路已排序 series ID 列表做归并交集。
 func intersectStrings(left, right []string) []string {
 	var (
 		i, j   = 0, 0
@@ -130,6 +135,7 @@ func init() {
 	}
 }
 
+// FindSetMatches 解析 =~"a|b|c" 形式集合正则，成功时可用等值匹配加速索引过滤。
 // FindSetMatches returns list of values that can be equality matched on.
 // copied from Prometheus querier.go, removed check for Prometheus wrapper.
 func FindSetMatches(pattern string) []string {
@@ -169,3 +175,4 @@ func FindSetMatches(pattern string) []string {
 	}
 	return matches
 }
+// filterChunkRefsByUniqueFingerprint 将 ChunkRef 转为最小 chunk.Chunk 壳以便 Fetcher 批量下载。

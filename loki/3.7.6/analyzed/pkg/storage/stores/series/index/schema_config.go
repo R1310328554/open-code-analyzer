@@ -1,5 +1,7 @@
 package index
 
+// schema_config 根据 PeriodConfig 构造 SeriesStoreSchema 实例，并提供按日分桶的 Bucket 计算。
+
 import (
 	"errors"
 	"fmt"
@@ -20,6 +22,7 @@ var (
 	errInvalidTablePeriod   = errors.New("the table period must be a multiple of 24h (1h for schema v1)")
 )
 
+// CreateSchema 校验表周期与 schema 版本，实例化 v9 或 v10–v13 条目策略。
 // CreateSchema returns the schema defined by the PeriodConfig
 func CreateSchema(cfg config.PeriodConfig) (SeriesStoreSchema, error) {
 	buckets, bucketsPeriod := dailyBuckets(cfg), 24*time.Hour
@@ -60,6 +63,7 @@ func CreateSchema(cfg config.PeriodConfig) (SeriesStoreSchema, error) {
 	return nil, errInvalidSchemaVersion
 }
 
+// Bucket 描述索引时间桶：相对 from/through、表名、hashKey 与 bucketSize（毫秒）。
 // Bucket describes a range of time with a tableName and hashKey
 type Bucket struct {
 	from       uint32
@@ -69,6 +73,7 @@ type Bucket struct {
 	bucketSize uint32 // helps with deletion of series ids in series store. Size in milliseconds.
 }
 
+// dailyBuckets 按 UTC 日界将查询区间拆成多个 Bucket，range 键存相对日偏移。
 func dailyBuckets(cfg config.PeriodConfig) schemaBucketsFunc {
 	return func(from, through model.Time, userID string) []Bucket {
 		var (
@@ -101,3 +106,4 @@ func dailyBuckets(cfg config.PeriodConfig) schemaBucketsFunc {
 		return result
 	}
 }
+// v10+ 要求 row_shards>0；IndexTables/ChunkTables 周期必须是 24h 桶周期的整数倍。

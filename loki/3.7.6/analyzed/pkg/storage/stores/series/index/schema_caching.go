@@ -1,5 +1,7 @@
 package index
 
+// schema_caching 装饰 SeriesStoreSchema，对早于 cacheOlderThan 的只读查询标记 Immutable 以启用结果缓存。
+
 import (
 	"time"
 
@@ -13,6 +15,7 @@ type schemaCaching struct {
 	cacheOlderThan time.Duration
 }
 
+// NewSchemaCaching 返回带不可变窗口判定的 schema 包装器。
 func NewSchemaCaching(schema SeriesStoreSchema, cacheOlderThan time.Duration) SeriesStoreSchema {
 	return &schemaCaching{
 		SeriesStoreSchema: schema,
@@ -61,6 +64,7 @@ func (s *schemaCaching) GetLabelNamesForSeries(from, through model.Time, userID 
 	return s.setImmutability(from, through, queries), nil
 }
 
+// setImmutability 当查询结束时间早于缓存边界时，将全部 Query.Immutable 置 true。
 func (s *schemaCaching) setImmutability(_, through model.Time, queries []Query) []Query {
 	cacheBefore := model.TimeFromUnix(mtime.Now().Add(-s.cacheOlderThan).Unix())
 
@@ -78,3 +82,4 @@ func (s *schemaCaching) setImmutability(_, through model.Time, queries []Query) 
 
 	return queries
 }
+// 与 query-frontend 时间切分配合时，历史区间查询大多可被索引缓存安全复用。

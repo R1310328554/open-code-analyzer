@@ -1,9 +1,12 @@
 package index
 
+// index_reader 提供离线/维护场景下的索引表扫描：Reader 按表读取 Entry 并分发给 EntryProcessor。
+
 import (
 	"context"
 )
 
+// EntryProcessor 按租户过滤并逐条处理 IndexEntry，Flush 在表扫描结束时调用。
 // EntryProcessor receives index entries from a table.
 type EntryProcessor interface {
 	ProcessIndexEntry(indexEntry Entry) error
@@ -15,6 +18,7 @@ type EntryProcessor interface {
 	Flush() error
 }
 
+// Reader 枚举索引表名并对单表执行 ReadIndexEntries 流式解析。
 // Reader parses index entries and passes them to the IndexEntryProcessor.
 type Reader interface {
 	IndexTableNames(ctx context.Context) ([]string, error)
@@ -31,3 +35,4 @@ type Reader interface {
 	// Index entries passed to the same processor arrive sorted by HashValue and RangeValue.
 	ReadIndexEntries(ctx context.Context, table string, processors []EntryProcessor) error
 }
+// 同一 HashValue+RangeValue 的多 Value 会连续送达同一 processor，便于检测值组结束边界。

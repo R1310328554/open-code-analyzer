@@ -1,5 +1,7 @@
 package index
 
+// schema_util 提供标签序列化、seriesID 哈希、range 键编解码及各 schema 版本 range 值解析工具。
+
 import (
 	"crypto/sha256"
 	"encoding/base64"
@@ -16,6 +18,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
+// labelsString 生成与 Prometheus Metric.String 兼容的标签串用于 seriesID 哈希输入。
 // Backwards-compatible with model.Metric.String()
 func labelsString(ls labels.Labels) string {
 	metricName := ls.Get(model.MetricNameLabel)
@@ -57,6 +60,7 @@ func sha256bytes(s string) []byte {
 	return encodeBase64Bytes(h[:])
 }
 
+// buildRangeValue 用 NUL 分隔多段字节并在末尾预留类型标记空间。
 // Build an index key, encoded as multiple parts separated by a 0 byte, with extra space at the end.
 func buildRangeValue(extra int, ss ...[]byte) []byte {
 	length := extra
@@ -70,6 +74,7 @@ func buildRangeValue(extra int, ss ...[]byte) []byte {
 	return output
 }
 
+// encodeRangeKey 在 range 键倒数第二字节写入 keyType 版本标记。
 // Encode a complete key including type marker (which goes at the end)
 func encodeRangeKey(keyType byte, ss ...[]byte) []byte {
 	output := buildRangeValue(2, ss...)
@@ -178,6 +183,7 @@ var componentsPool = sync.Pool{
 	},
 }
 
+// ParseChunkTimeRangeValue 按 range 键版本解析 chunkID/seriesID 与标签值，兼容 v1–v9 布局。
 // ParseChunkTimeRangeValue returns the chunkID (seriesID since v9) and labelValue for chunk time
 // range values.
 func ParseChunkTimeRangeValue(rangeValue []byte, value []byte) (
@@ -247,3 +253,4 @@ func ParseChunkTimeRangeValue(rangeValue []byte, value []byte) (
 	err = fmt.Errorf("unrecognised chunkTimeRangeKey version: %q", string(components[3]))
 	return
 }
+// encodeTime 将 uint32 毫秒偏移 hex 编码为可字典序排序且不含 NUL 的 range 分量。

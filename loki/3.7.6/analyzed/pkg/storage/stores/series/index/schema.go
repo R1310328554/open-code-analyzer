@@ -1,5 +1,7 @@
 package index
 
+// schema 实现 v9–v13 SeriesStoreSchema：按日分桶计算 hash/range 键，支持 metric→series→chunk 三层索引与分片行（v10+）及标签名缓存（v11+）。
+
 import (
 	"encoding/binary"
 	"encoding/hex"
@@ -42,6 +44,7 @@ var (
 
 type hasChunksForIntervalFunc func(userID, seriesID string, from, through model.Time) (bool, error)
 
+// SeriesStoreSchema 定义读写查询、chunk 写入与 series 删除所需的索引键计算接口。
 // Schema interfaces define methods to calculate the hash and range keys needed
 // to write or read chunks from the external index.
 
@@ -180,6 +183,7 @@ func (s seriesStoreSchema) GetChunksForSeries(from, through model.Time, userID s
 	return result, nil
 }
 
+// GetSeriesDeleteEntries 在 retention 删除 series 索引，首尾桶会校验是否仍有 chunk 引用。
 // GetSeriesDeleteEntries returns IndexEntry's for deleting SeriesIDs from SeriesStore.
 // Since SeriesIDs are created per bucket, it makes sure that we don't include series entries which are in use by verifying using hasChunksForIntervalFunc i.e
 // It checks first and last buckets covered by the time interval to see if a SeriesID still has chunks in the store,
@@ -288,6 +292,7 @@ type seriesStoreEntries interface {
 	GetLabelNamesForSeries(bucket Bucket, seriesID []byte) ([]Query, error)
 }
 
+// v9Entries 引入 labels→seriesID→chunkID 间接层，标签值写入 Value 列。
 // v9Entries adds a layer of indirection between labels -> series -> chunks.
 type v9Entries struct{}
 
@@ -387,6 +392,7 @@ func (v9Entries) FilterReadQueries(queries []Query, _ *astmapper.ShardAnnotation
 	return queries
 }
 
+// v10Entries 按 seriesID 哈希对 index 行分片，HashValue 前缀含两位 shard 编号。
 // v10Entries builds on v9 by sharding index rows to reduce their size.
 type v10Entries struct {
 	rowShards uint32
@@ -494,6 +500,7 @@ func (v10Entries) GetLabelNamesForSeries(_ Bucket, _ []byte) ([]Query, error) {
 	return nil, ErrNotSupported
 }
 
+// FilterReadQueries 在 v10+ 上仅保留 HashValue 前缀与 ShardAnnotation 匹配的查询。
 // FilterReadQueries will return only queries that match a certain shard
 func (v10Entries) FilterReadQueries(queries []Query, shard *astmapper.ShardAnnotation) (matches []Query) {
 	if shard == nil {
@@ -521,6 +528,7 @@ func (v10Entries) FilterReadQueries(queries []Query, shard *astmapper.ShardAnnot
 	return matches
 }
 
+// v11Entries 额外写入 seriesID→标签名 JSON，支持 GetLabelNamesForSeries 查询。
 // v11Entries builds on v10 but adds index entries for each series to store respective labels.
 type v11Entries struct {
 	v10Entries
@@ -595,3 +603,4 @@ type v12Entries struct {
 type v13Entries struct {
 	v12Entries
 }
+// GetCacheKeysAndLabelWriteEntries 为 memcache 去重生成 hex 编码键并与 label 写入条目一一对应。

@@ -1,5 +1,7 @@
 package bloomshipper
 
+// cache 提供 bloom block 目录加载、BlockDirectory 大小统计与 CloseableBlockQuerier 封装，衔接 bloomshipper 工作目录与 BlocksCache。
+
 import (
 	"context"
 	"io/fs"
@@ -18,6 +20,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/mempool"
 )
 
+// CloseableBlockQuerier 包装 v1.BlockQuerier，Close 时 Reset 并调用用户提供的 close 钩子。
 type CloseableBlockQuerier struct {
 	BlockRef
 	*v1.BlockQuerier
@@ -40,6 +43,7 @@ func (c *CloseableBlockQuerier) SeriesIter() (iter.PeekIterator[*v1.SeriesWithBl
 	return iter.NewPeekIter[*v1.SeriesWithBlooms](c.Iter()), nil
 }
 
+// LoadBlocksDirIntoCache 扫描工作目录下有效 block 目录并批量写入 BlocksCache。
 func LoadBlocksDirIntoCache(paths []string, c Cache, logger log.Logger) error {
 	var err util.MultiError
 	for _, path := range paths {
@@ -73,6 +77,7 @@ func removeRecursively(root, path string) error {
 	return nil
 }
 
+// loadBlockDirectories WalkDir 解析 block 键、校验 blooms/series 文件并清理空目录。
 func loadBlockDirectories(root string, logger log.Logger) (keys []string, values []BlockDirectory) {
 	resolver := NewPrefixedResolver(root, defaultKeyResolver{})
 	_ = filepath.WalkDir(root, func(path string, dirEntry fs.DirEntry, e error) error {
@@ -132,6 +137,7 @@ func NewBlockDirectory(ref BlockRef, path string) BlockDirectory {
 	return bd
 }
 
+// BlockDirectory 表示已解压到本地的 bloom block 目录，缓存 Path 与磁盘占用 size。
 // A BlockDirectory is a local file path that contains a bloom block.
 // It maintains a counter for currently active readers.
 type BlockDirectory struct {
@@ -163,6 +169,7 @@ func (b *BlockDirectory) resolveSize() error {
 	return nil
 }
 
+// BlockQuerier 基于目录 Block 构造可关闭查询器，供 bloom gateway 并发读取序列 bloom。
 // BlockQuerier returns a new block querier from the directory.
 // The passed function `close` is called when the returned querier is closed.
 func (b BlockDirectory) BlockQuerier(
@@ -177,3 +184,4 @@ func (b BlockDirectory) BlockQuerier(
 		close:        closeFunc,
 	}
 }
+// resolveSize 通过 blooms 与 series 文件 Lstat 累加得到 BlockDirectory 占用字节用于缓存限额。

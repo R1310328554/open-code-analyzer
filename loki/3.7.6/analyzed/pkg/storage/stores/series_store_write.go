@@ -1,5 +1,7 @@
 package stores
 
+// series_store_write 实现 ChunkWriter：PutOne 在副本 dedupe 场景下可选只写索引、跳过重复 chunk 体，并回写 chunk cache。
+
 import (
 	"context"
 
@@ -41,6 +43,7 @@ var (
 	})
 )
 
+// Writer 组合 schemaCfg、Fetcher 与 indexWriter，支持 DisableIndexDeduplication 强制写索引。
 type Writer struct {
 	schemaCfg                 config.SchemaConfig
 	DisableIndexDeduplication bool
@@ -58,6 +61,7 @@ func NewChunkWriter(fetcher *fetcher.Fetcher, schemaCfg config.SchemaConfig, ind
 	}
 }
 
+// Put 逐 chunk 调用 PutOne，任一块失败则中断整批写入。
 // Put implements Store
 func (c *Writer) Put(ctx context.Context, chunks []chunk.Chunk) error {
 	for _, chunk := range chunks {
@@ -68,6 +72,7 @@ func (c *Writer) Put(ctx context.Context, chunks []chunk.Chunk) error {
 	return nil
 }
 
+// PutOne 若 cache 命中且无跨周期 overlap 则跳过 chunk 体；按配置决定是否仍写索引。
 // PutOne implements Store
 func (c *Writer) PutOne(ctx context.Context, from, through model.Time, chk chunk.Chunk) error {
 	ctx, sp := tracer.Start(ctx, "SeriesStore.PutOne")
@@ -131,3 +136,4 @@ func (c *Writer) PutOne(ctx context.Context, from, through model.Time, chk chunk
 
 	return nil
 }
+// DedupedChunksTotal/DedupedBytesTotal 记录多副本重复写入被省略的 chunk 数量与压缩字节。

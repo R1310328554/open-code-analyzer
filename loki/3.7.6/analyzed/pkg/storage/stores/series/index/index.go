@@ -1,5 +1,7 @@
 package index
 
+// index 定义 series 外部索引（DynamoDB/Bigtable 等）的读写 Client、Query/Entry 模型及 QueryPages 分页回调抽象。
+
 import (
 	"context"
 )
@@ -7,17 +9,20 @@ import (
 // QueryPagesCallback from an IndexQuery.
 type QueryPagesCallback func(Query, ReadBatchResult) bool
 
+// ReadClient 通过 QueryPages 批量执行索引读查询。
 // Client for the read path.
 type ReadClient interface {
 	QueryPages(ctx context.Context, queries []Query, callback QueryPagesCallback) error
 }
 
+// WriteClient 提供 WriteBatch 批量写入与 NewWriteBatch 工厂。
 // Client for the write path.
 type WriteClient interface {
 	NewWriteBatch() WriteBatch
 	BatchWrite(context.Context, WriteBatch) error
 }
 
+// Client 聚合读写路径并暴露 Stop 用于关闭底层连接。
 // Client is a client for the storage of the index (e.g. DynamoDB or Bigtable).
 type Client interface {
 	ReadClient
@@ -43,6 +48,7 @@ type WriteBatch interface {
 	Delete(tableName, hashValue string, rangeValue []byte)
 }
 
+// Query 描述一次索引查找：表名、hash 键、range 前缀/起点及 ValueEqual 过滤。
 // Query describes a query for entries
 type Query struct {
 	TableName string
@@ -64,6 +70,7 @@ type Query struct {
 	Immutable bool
 }
 
+// Entry 表示一条索引行：TableName、HashValue、RangeValue 与可选 Value 载荷。
 // Entry describes an entry in the chunk index
 type Entry struct {
 	TableName string
@@ -76,6 +83,7 @@ type Entry struct {
 	Value []byte
 }
 
+// QueryKey 将 Query 各字段用分隔符拼成缓存键字符串。
 func QueryKey(q Query) string {
 	ret := q.TableName + sep + q.HashValue
 
@@ -93,3 +101,4 @@ func QueryKey(q Query) string {
 
 	return ret
 }
+// RangeValueStart 专用于 chunk ID 范围扫描，变更时需同步 caching_index_client 逻辑。

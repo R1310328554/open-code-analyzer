@@ -1,5 +1,7 @@
 package series
 
+// series_index_store 实现 legacy series store 的 IndexReaderWriter：按 schema 查 series/chunk、标签名值、并发交集与 chunk 抓取还原 series 列表。
+
 import (
 	"context"
 	"fmt"
@@ -68,6 +70,7 @@ var (
 	})
 )
 
+// IndexReaderWriter 直连 series_index.Client 与 Fetcher，是 boltdb-shipper 之前的索引读写核心。
 // IndexReaderWriter implements pkg/storage/stores/index.ReaderWriter
 type IndexReaderWriter struct {
 	schema           series_index.SeriesStoreSchema
@@ -91,6 +94,7 @@ func NewIndexReaderWriter(schemaCfg config.SchemaConfig, schema series_index.Ser
 	}
 }
 
+// IndexChunk 计算 label/chunk 索引条目，经 writeDedupeCache 跳过重复 label 写入后 BatchWrite。
 func (c *IndexReaderWriter) IndexChunk(ctx context.Context, from, through model.Time, chk chunk.Chunk) error {
 	writeReqs, keysToCache, err := c.calculateIndexEntries(ctx, from, through, chk)
 	if err != nil {
@@ -155,6 +159,7 @@ func (c *IndexReaderWriter) calculateIndexEntries(ctx context.Context, from, thr
 	return result, missing, nil
 }
 
+// GetChunkRefs 要求等值 metric 名 matcher，经 series 交集再查 chunk ID 并做时间过滤。
 func (c *IndexReaderWriter) GetChunkRefs(ctx context.Context, userID string, from, through model.Time, predicate chunk.Predicate) ([]logproto.ChunkRef, error) {
 	log := util_log.WithContext(ctx, util_log.Logger)
 	// Check there is a metric name matcher of type equal,
@@ -432,6 +437,7 @@ func (c *IndexReaderWriter) labelValuesForMetricNameWithMatchers(ctx context.Con
 	return result.Strings(), nil
 }
 
+// lookupSeriesByMetricNameMatchers 并行按 matcher 查 series ID 并求交集，处理分片与基数超限。
 func (c *IndexReaderWriter) lookupSeriesByMetricNameMatchers(ctx context.Context, from, through model.Time, userID, metricName string, matchers []*labels.Matcher) ([]string, error) {
 	// Check if one of the labels is a shard annotation, pass that information to lookupSeriesByMetricNameMatcher,
 	// and remove the label.
@@ -561,6 +567,7 @@ func (c *IndexReaderWriter) lookupIDsByMetricNameMatcher(ctx context.Context, fr
 	return ids, nil
 }
 
+// parseIndexEntries 解析索引行得到 series/chunk ID，对 set 正则 (=~a|b) 做快速路径。
 func parseIndexEntries(_ context.Context, entries []series_index.Entry, matcher *labels.Matcher) ([]string, error) {
 	// Nothing to do if there are no entries.
 	if len(entries) == 0 {
@@ -805,3 +812,4 @@ func (c *IndexReaderWriter) HasForSeries(_, _ model.Time) (sharding.ForSeries, b
 func (c *IndexReaderWriter) HasChunkSizingInfo(_, _ model.Time) bool {
 	return false
 }
+// Stats/Volume/GetShards 在 legacy store 上为空或单 shard 占位，TSDB 路径才有完整实现。

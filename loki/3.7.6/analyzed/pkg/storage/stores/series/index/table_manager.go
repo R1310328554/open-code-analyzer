@@ -1,5 +1,7 @@
 package index
 
+// table_manager 周期性对账 schema 期望的 Dynamo 索引/chunk 表：创建缺失表、更新吞吐、按 retention 删除过期表，并可选对对象存储执行 bucket retention。
+
 import (
 	"context"
 	"errors"
@@ -73,6 +75,7 @@ func newTableManagerMetrics(r prometheus.Registerer) *tableManagerMetrics {
 	return &m
 }
 
+// ExtraTables 允许 TableManager 除主索引/chunk 表外管理附加 Dynamo 表。
 // ExtraTables holds the list of tables that TableManager has to manage using a TableClient.
 // This is useful for managing tables other than Chunk and Index tables.
 type ExtraTables struct {
@@ -80,6 +83,7 @@ type ExtraTables struct {
 	Tables      []config.TableDesc
 }
 
+// TableManagerConfig 控制吞吐更新开关、retention 删除、轮询间隔与 grace period。
 // TableManagerConfig holds config for a TableManager
 type TableManagerConfig struct {
 	// Master 'off-switch' for table capacity updates, e.g. when troubleshooting
@@ -154,6 +158,7 @@ type BucketClient interface {
 	DeleteChunksBefore(ctx context.Context, ts time.Time) error
 }
 
+// TableManager 以后台服务运行 SyncTables，并暴露指标与 bucket retention 循环。
 // TableManager creates and manages the provisioned throughput on DynamoDB tables
 type TableManager struct {
 	services.Service
@@ -318,6 +323,7 @@ func (m *TableManager) bucketRetentionIteration(ctx context.Context) error {
 	return nil
 }
 
+// SyncTables 计算期望表集合，分区为创建/更新/删除并依次执行。
 // SyncTables will calculate the tables expected to exist, create those that do
 // not and update those that need it.  It is exposed for testing.
 func (m *TableManager) SyncTables(ctx context.Context) error {
@@ -350,6 +356,7 @@ func (m *TableManager) SyncTables(ctx context.Context) error {
 	return nil
 }
 
+// calculateExpectedTables 遍历 schema 周期生成当前应存在的索引与 chunk 表描述。
 func (m *TableManager) calculateExpectedTables() []config.TableDesc {
 	result := []config.TableDesc{}
 
@@ -577,3 +584,4 @@ func ExpectTables(ctx context.Context, client TableClient, expected []config.Tab
 
 	return nil
 }
+// RetentionDeletesEnabled 为 false 时仅记录超 retention 表名而不调用 DeleteTable。
