@@ -21,7 +21,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Service instance metadata for v2.
+ * V2 服务实例元数据模型。
+ *
+ * <p>存储实例权重、启用状态及扩展属性，与注册实例通过 metadataId 关联。</p>
  *
  * @author xiweng.yy
  */
@@ -29,16 +31,13 @@ public class InstanceMetadata implements Serializable {
     
     private static final long serialVersionUID = -8477858617353459226L;
     
-    /**
-     * instance weight.
-     */
+    /** 实例负载权重，默认 1.0。 */
     private double weight = 1.0D;
     
-    /**
-     * If instance is enabled to accept request.
-     */
+    /** 实例是否启用，禁用后不再接收流量。 */
     private boolean enabled = true;
     
+    /** 实例扩展键值属性。 */
     private Map<String, Object> extendData = new ConcurrentHashMap<>(1);
     
     public double getWeight() {

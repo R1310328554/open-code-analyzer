@@ -31,12 +31,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.zip.Checksum;
 
 /**
- * Nacos naming snapshot operation for metadata.
+ * 命名元数据快照操作抽象基类。
+ *
+ * <p>将元数据序列化后压缩为 ZIP 归档写入 Raft 快照，读取时校验 CRC64 后还原。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractMetadataSnapshotOperation extends AbstractSnapshotOperation {
     
+    /** ZIP 归档内元数据条目的文件名。 */
     private static final String METADATA_CHILD_NAME = "metadata";
     
     public AbstractMetadataSnapshotOperation(ReentrantReadWriteLock lock) {
@@ -74,23 +77,23 @@ public abstract class AbstractMetadataSnapshotOperation extends AbstractSnapshot
     }
     
     /**
-     * Get snapshot archive file name.
+     * 返回快照 ZIP 归档文件名。
      *
-     * @return snapshot archive
+     * @return 快照归档名
      */
     protected abstract String getSnapshotArchive();
     
     /**
-     * Dump snapshot as input stream.
+     * 将当前元数据导出为字节流。
      *
-     * @return snapshot
+     * @return 快照字节流
      */
     protected abstract InputStream dumpSnapshot();
     
     /**
-     * Load snapshot.
+     * 从解压后的快照字节加载元数据。
      *
-     * @param snapshotBytes snapshot bytes
+     * @param snapshotBytes 快照原始字节
      */
     protected abstract void loadSnapshot(byte[] snapshotBytes);
 }

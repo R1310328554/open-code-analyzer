@@ -36,19 +36,25 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Nacos naming metadata manager.
+ * 命名元数据内存管理器。
+ *
+ * <p>维护服务与实例元数据映射、过期元数据集合，监听元数据事件与客户端断连并协调快照加载。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class NamingMetadataManager extends SmartSubscriber {
     
+    /** 待异步清理的过期元数据集合。 */
     private final Set<ExpiredMetadataInfo> expiredMetadataInfos;
     
+    /** 服务 -> 服务元数据。 */
     private ConcurrentMap<Service, ServiceMetadata> serviceMetadataMap;
     
+    /** 服务 -> (实例 metadataId -> 实例元数据)。 */
     private ConcurrentMap<Service, ConcurrentMap<String, InstanceMetadata>> instanceMetadataMap;
     
+    /** 单服务实例元数据子 Map 的初始容量。 */
     private static final int INITIAL_CAPACITY = 1;
     
     public NamingMetadataManager() {
@@ -59,21 +65,21 @@ public class NamingMetadataManager extends SmartSubscriber {
     }
     
     /**
-     * Whether contain service metadata for {@link Service}.
+     * 判断是否已存在指定服务的元数据。
      *
-     * @param service service
-     * @return true if contain service metadata, otherwise false
+     * @param service 服务
+     * @return 存在返回 true
      */
     public boolean containServiceMetadata(Service service) {
         return serviceMetadataMap.containsKey(service);
     }
     
     /**
-     * Whether instance metadata for instance of {@link Service}.
+     * 判断是否已存在指定实例的元数据。
      *
-     * @param service    service
-     * @param metadataId instance metadata id
-     * @return true if contain instance metadata, otherwise false
+     * @param service    服务
+     * @param metadataId 实例元数据 ID
+     * @return 存在返回 true
      */
     public boolean containInstanceMetadata(Service service, String metadataId) {
         ConcurrentMap<String, InstanceMetadata> metadataMap = instanceMetadataMap.get(service);
@@ -81,25 +87,21 @@ public class NamingMetadataManager extends SmartSubscriber {
     }
     
     /**
-     * Get service metadata for {@link Service}, which is the original metadata object.
+     * 获取服务元数据（只读查询，不可修改返回对象）。
      *
-     * <p>This method should use only query, can't modify metadata.
-     *
-     * @param service service
-     * @return service metadata
+     * @param service 服务
+     * @return 服务元数据 Optional
      */
     public Optional<ServiceMetadata> getServiceMetadata(Service service) {
         return Optional.ofNullable(serviceMetadataMap.get(service));
     }
     
     /**
-     * Get instance metadata for instance of {@link Service}, which is the original metadata object.
+     * 获取实例元数据（只读查询，不可修改返回对象）。
      *
-     * <p>This method should use only query, can't modify metadata.
-     *
-     * @param service    service
-     * @param metadataId instance metadata id
-     * @return instance metadata
+     * @param service    服务
+     * @param metadataId 实例元数据 ID
+     * @return 实例元数据 Optional
      */
     public Optional<InstanceMetadata> getInstanceMetadata(Service service, String metadataId) {
         ConcurrentMap<String, InstanceMetadata> instanceMetadataMapForService =
@@ -111,10 +113,10 @@ public class NamingMetadataManager extends SmartSubscriber {
     }
     
     /**
-     * Update service metadata.
+     * 更新服务元数据并递增服务 revision。
      *
-     * @param service         service
-     * @param serviceMetadata new service metadata
+     * @param service         服务
+     * @param serviceMetadata 新的服务元数据
      */
     public void updateServiceMetadata(Service service, ServiceMetadata serviceMetadata) {
         service.incrementRevision();
@@ -122,11 +124,11 @@ public class NamingMetadataManager extends SmartSubscriber {
     }
     
     /**
-     * Update instance metadata.
+     * 更新指定实例的元数据。
      *
-     * @param service          service
-     * @param metadataId       instance metadata id
-     * @param instanceMetadata new instance metadata
+     * @param service          服务
+     * @param metadataId       实例元数据 ID
+     * @param instanceMetadata 新的实例元数据
      */
     public void updateInstanceMetadata(Service service, String metadataId,
         InstanceMetadata instanceMetadata) {
@@ -135,9 +137,9 @@ public class NamingMetadataManager extends SmartSubscriber {
     }
     
     /**
-     * Remove service metadata.
+     * 移除服务元数据及对应过期标记。
      *
-     * @param service service
+     * @param service 服务
      */
     public void removeServiceMetadata(Service service) {
         serviceMetadataMap.remove(service);
@@ -145,10 +147,10 @@ public class NamingMetadataManager extends SmartSubscriber {
     }
     
     /**
-     * Remove instance metadata.
+     * 移除实例元数据及对应过期标记。
      *
-     * @param service    service
-     * @param metadataId instance metadata id
+     * @param service    服务
+     * @param metadataId 实例元数据 ID
      */
     public void removeInstanceMetadata(Service service, String metadataId) {
         ConcurrentMap<String, InstanceMetadata> instanceMetadataMapForService =
@@ -164,9 +166,9 @@ public class NamingMetadataManager extends SmartSubscriber {
     }
     
     /**
-     * Get service metadata snapshot.
+     * 导出服务元数据快照副本。
      *
-     * @return service metadata snapshot
+     * @return 服务元数据映射
      */
     public Map<Service, ServiceMetadata> getServiceMetadataSnapshot() {
         ConcurrentMap<Service, ServiceMetadata> result =
@@ -176,9 +178,9 @@ public class NamingMetadataManager extends SmartSubscriber {
     }
     
     /**
-     * Get instance metadata snapshot.
+     * 导出实例元数据快照副本。
      *
-     * @return service metadata snapshot
+     * @return 实例元数据嵌套映射
      */
     public Map<Service, ConcurrentMap<String, InstanceMetadata>> getInstanceMetadataSnapshot() {
         ConcurrentMap<Service, ConcurrentMap<String, InstanceMetadata>> result =
@@ -189,11 +191,9 @@ public class NamingMetadataManager extends SmartSubscriber {
     }
     
     /**
-     * Load service metadata snapshot.
+     * 从快照加载服务元数据，并确保服务单例已注册。
      *
-     * <p>Service metadata need load back the service.
-     *
-     * @param snapshot snapshot
+     * @param snapshot 快照数据
      */
     public void loadServiceMetadataSnapshot(ConcurrentMap<Service, ServiceMetadata> snapshot) {
         for (Service each : snapshot.keySet()) {
@@ -207,9 +207,9 @@ public class NamingMetadataManager extends SmartSubscriber {
     }
     
     /**
-     * Load instance metadata snapshot.
+     * 从快照加载实例元数据并替换内存映射。
      *
-     * @param snapshot snapshot
+     * @param snapshot 快照数据
      */
     public void loadInstanceMetadataSnapshot(
         ConcurrentMap<Service, ConcurrentMap<String, InstanceMetadata>> snapshot) {
@@ -219,10 +219,12 @@ public class NamingMetadataManager extends SmartSubscriber {
         oldSnapshot.clear();
     }
     
+    /** 返回待清理过期元数据集合。 */
     public Set<ExpiredMetadataInfo> getExpiredMetadataInfos() {
         return expiredMetadataInfos;
     }
     
+    /** 订阅元数据变更与客户端断连事件。 */
     @Override
     public List<Class<? extends Event>> subscribeTypes() {
         List<Class<? extends Event>> result = new LinkedList<>();
@@ -232,6 +234,7 @@ public class NamingMetadataManager extends SmartSubscriber {
         return result;
     }
     
+    /** 处理元数据过期标记与客户端断连清理。 */
     @Override
     public void onEvent(Event event) {
         if (event instanceof MetadataEvent.InstanceMetadataEvent) {

@@ -27,7 +27,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Instance metadata snapshot operation.
+ * 实例元数据 Raft 快照操作。
+ *
+ * <p>将 {@link NamingMetadataManager} 中的实例元数据映射序列化到 {@code instance_metadata.zip} 归档。</p>
  *
  * @author xiweng.yy
  */
@@ -39,10 +41,13 @@ public class InstanceMetadataSnapshotOperation extends AbstractMetadataSnapshotO
     private static final String SNAPSHOT_LOAD =
         InstanceMetadataSnapshotOperation.class.getSimpleName() + ".LOAD";
     
+    /** 实例元数据快照 ZIP 文件名。 */
     private static final String SNAPSHOT_ARCHIVE = "instance_metadata.zip";
     
+    /** 元数据来源管理器。 */
     private final NamingMetadataManager metadataManager;
     
+    /** 快照序列化器。 */
     private final Serializer serializer;
     
     public InstanceMetadataSnapshotOperation(NamingMetadataManager metadataManager,

@@ -39,39 +39,46 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Client and service index manager.
+ * 客户端与服务双向索引管理器。
+ *
+ * <p>维护服务到注册客户端（发布者）与订阅客户端（订阅者）的映射，监听 {@link ClientOperationEvent} 并同步更新索引、发布 {@link ServiceEvent}。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class ClientServiceIndexesManager extends SmartSubscriber {
     
+    /** 服务 -> 注册该服务的客户端 ID 集合。 */
     private final ConcurrentMap<Service, Set<String>> publisherIndexes = new ConcurrentHashMap<>();
     
+    /** 服务 -> 订阅该服务的客户端 ID 集合。 */
     private final ConcurrentMap<Service, Set<String>> subscriberIndexes = new ConcurrentHashMap<>();
     
     public ClientServiceIndexesManager() {
         NotifyCenter.registerSubscriber(this, NamingEventPublisherFactory.getInstance());
     }
     
+    /** 获取向指定服务注册实例的所有客户端 ID。 */
     public Collection<String> getAllClientsRegisteredService(Service service) {
         Set<String> publishers = publisherIndexes.get(service);
         return publishers != null ? publishers : new ConcurrentHashSet<>();
     }
     
+    /** 获取订阅指定服务的所有客户端 ID。 */
     public Collection<String> getAllClientsSubscribeService(Service service) {
         Set<String> subscribers = subscriberIndexes.get(service);
         return subscribers != null ? subscribers : new ConcurrentHashSet<>();
     }
     
+    /** 返回当前存在订阅者的全部服务。 */
     public Collection<Service> getSubscribedService() {
         return subscriberIndexes.keySet();
     }
     
     /**
-     * Clear the service index without instances.
+     * 清除已无实例注册的服务发布索引。
      *
-     * @param service The service of the Nacos.
+     * @param service 待清理的 Nacos 服务
      */
     public void removePublisherIndexesByEmptyService(Service service) {
         Set<String> publishers = publisherIndexes.get(service);
@@ -80,6 +87,7 @@ public class ClientServiceIndexesManager extends SmartSubscriber {
         }
     }
     
+    /** 订阅客户端注册/注销/订阅/断连等操作事件。 */
     @Override
     public List<Class<? extends Event>> subscribeTypes() {
         List<Class<? extends Event>> result = new LinkedList<>();
@@ -91,6 +99,7 @@ public class ClientServiceIndexesManager extends SmartSubscriber {
         return result;
     }
     
+    /** 分发客户端操作或断连事件到对应处理器。 */
     @Override
     public void onEvent(Event event) {
         if (event instanceof ClientOperationEvent.ClientReleaseEvent) {
@@ -136,7 +145,7 @@ public class ClientServiceIndexesManager extends SmartSubscriber {
     private void addPublisherIndexes(Service service, String clientId) {
         String serviceChangedType = Constants.ServiceChangedType.INSTANCE_CHANGED;
         if (!publisherIndexes.containsKey(service)) {
-            // The only time the index needs to be updated is when the service is first created
+            // 服务首次出现注册客户端时，变更类型为 ADD_SERVICE
             serviceChangedType = Constants.ServiceChangedType.ADD_SERVICE;
         }
         NotifyCenter
@@ -158,7 +167,7 @@ public class ClientServiceIndexesManager extends SmartSubscriber {
     private void addSubscriberIndexes(Service service, String clientId) {
         Set<String> clientIds =
             subscriberIndexes.computeIfAbsent(service, key -> new ConcurrentHashSet<>());
-        // Fix #5404, Only first time add need notify event.
+        // 修复 #5404：仅首次添加订阅者时发布 ServiceSubscribedEvent
         if (clientIds.add(clientId)) {
             NotifyCenter.publishEvent(new ServiceEvent.ServiceSubscribedEvent(service, clientId));
         }

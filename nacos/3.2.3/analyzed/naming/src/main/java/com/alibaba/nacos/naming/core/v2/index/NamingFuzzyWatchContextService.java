@@ -47,7 +47,9 @@ import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_OVER_
 import static com.alibaba.nacos.common.utils.FuzzyGroupKeyPattern.getNamespaceFromPattern;
 
 /**
- * naming fuzzy watch context service.
+ * 命名模糊订阅（Fuzzy Watch）上下文服务。
+ *
+ * <p>维护模糊匹配模式与客户端、已匹配服务键之间的映射，并在服务增删时同步更新匹配索引。</p>
  *
  * @author shiyiyue
  */
@@ -55,14 +57,14 @@ import static com.alibaba.nacos.common.utils.FuzzyGroupKeyPattern.getNamespaceFr
 public class NamingFuzzyWatchContextService extends SmartSubscriber {
     
     /**
-     * watched client ids of a pattern,  {fuzzy watch pattern -> Set[watched clientID]}.
+     * 模糊模式 -> 监听该模式的客户端 ID 集合。
      */
     private final ConcurrentMap<String, Set<String>> watchedClientsMap = new ConcurrentHashMap<>();
     
     /**
-     * The pattern matched service keys for pattern.{fuzzy watch pattern -> Set[matched service keys]}. initialized a
-     * new entry pattern when a client register a new pattern. destroyed a new entry pattern by task when no clients
-     * watch pattern in max 30s delay.
+     * 模糊模式 -> 已匹配的服务键集合。
+     *
+     * <p>客户端注册新模式时初始化；定时任务在无客户端监听时延迟清理。</p>
      */
     private final ConcurrentMap<String, Set<String>> matchedServiceKeysMap =
         new ConcurrentHashMap<>();
@@ -77,9 +79,9 @@ public class NamingFuzzyWatchContextService extends SmartSubscriber {
     }
     
     /**
-     * trim  fuzzy watch context. <br/> 1.remove watchedClients if watched client is empty. 2.remove matchedServiceKeys
-     * if watchedClients is null. pattern matchedServiceKeys will be removed in second period to avoid frequently
-     * matchedServiceKeys init.
+     * 定时裁剪模糊订阅上下文。
+     *
+     * <p>1. 无监听客户端时移除 watchedClients；2. watchedClients 为空时移除 matchedServiceKeys，延迟删除以避免频繁重建匹配索引。</p>
      */
     void trimFuzzyWatchContext() {
         try {
@@ -135,10 +137,10 @@ public class NamingFuzzyWatchContextService extends SmartSubscriber {
     }
     
     /**
-     * get client that fuzzy watch this service.
+     * 获取模糊订阅了指定服务的客户端 ID 集合。
      *
-     * @param service service to check fuzzy watcher.
-     * @return client ids.
+     * @param service 待匹配的服务
+     * @return 匹配的客户端 ID 集合
      */
     public Set<String> getFuzzyWatchedClients(Service service) {
         Set<String> matchedClients = new HashSet<>();
@@ -155,11 +157,11 @@ public class NamingFuzzyWatchContextService extends SmartSubscriber {
     }
     
     /**
-     * sync changed service to fuzzy watch context.
+     * 将服务增删变更同步到模糊订阅匹配索引。
      *
-     * @param changedService changed service.
-     * @param changedType    change type.
-     * @return
+     * @param changedService 变更的服务
+     * @param changedType    变更类型（ADD_SERVICE / DELETE_SERVICE）
+     * @return 是否需要向模糊订阅客户端推送通知
      */
     public boolean syncServiceContext(Service changedService, String changedType) {
         
@@ -228,9 +230,9 @@ public class NamingFuzzyWatchContextService extends SmartSubscriber {
     }
     
     /**
-     * make matched group key when deleted configs on loa protection model.
+     * 在负载保护模式下，删除服务后补全仍匹配该模式的服务键。
      *
-     * @param groupKeyPattern group key pattern.
+     * @param groupKeyPattern 分组键模糊模式
      */
     public void makeupMatchedGroupKeys(String groupKeyPattern) {
         
@@ -263,25 +265,24 @@ public class NamingFuzzyWatchContextService extends SmartSubscriber {
     }
     
     /**
-     * sync fuzzy watch context.
+     * 注册客户端对指定模糊模式的订阅上下文。
      *
-     * @param groupKeyPattern group key pattern.
-     * @param clientId        client id.
-     * @return
+     * @param groupKeyPattern 含命名空间的完整模糊模式
+     * @param clientId        客户端 ID
      */
     public void syncFuzzyWatcherContext(String groupKeyPattern, String clientId)
         throws NacosException {
-        //init empty watchedClients first,when pattern is not over limit,then add clientId.
+        // 先占位 watchedClients，模式未超限时再添加 clientId
         watchedClientsMap.computeIfAbsent(groupKeyPattern, key -> new ConcurrentHashSet<>());
         initWatchMatchService(groupKeyPattern);
         watchedClientsMap.get(groupKeyPattern).add(clientId);
     }
     
     /**
-     * get matched exist group keys with the groupKeyPattern.
+     * 返回指定模式当前已匹配的服务键副本。
      *
-     * @param groupKeyPattern groupKeyPattern.
-     * @return
+     * @param groupKeyPattern 模糊模式
+     * @return 已匹配服务键集合
      */
     public Set<String> matchServiceKeys(String groupKeyPattern) {
         Set<String> stringSet = matchedServiceKeysMap.get(groupKeyPattern);
@@ -297,10 +298,10 @@ public class NamingFuzzyWatchContextService extends SmartSubscriber {
     }
     
     /**
-     * remove fuzzy watch context for a pattern and client id.
+     * 移除指定客户端对某模糊模式的订阅。
      *
-     * @param groupKeyPattern group key pattern.
-     * @param clientId        client id.
+     * @param groupKeyPattern 模糊模式
+     * @param clientId        客户端 ID
      */
     public void removeFuzzyWatchContext(String groupKeyPattern, String clientId) {
         Set<String> clients = watchedClientsMap.get(groupKeyPattern);
@@ -310,10 +311,10 @@ public class NamingFuzzyWatchContextService extends SmartSubscriber {
     }
     
     /**
-     * This method will build/update the fuzzy watch match index for given patterns.
+     * 初始化或更新指定模糊模式的匹配索引。
      *
-     * @param completedPattern the completed pattern of watch (with namespace id).
-     * @return a copy set of matched service keys in Nacos server
+     * @param completedPattern 含命名空间 ID 的完整模式
+     * @return 当前已匹配服务键的副本集合
      */
     public Set<String> initWatchMatchService(String completedPattern) throws NacosException {
         

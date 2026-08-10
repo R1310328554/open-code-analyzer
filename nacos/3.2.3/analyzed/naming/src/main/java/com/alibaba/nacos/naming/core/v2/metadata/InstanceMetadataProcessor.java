@@ -40,21 +40,28 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Instance metadata processor.
+ * 实例元数据 CP 一致性处理器。
+ *
+ * <p>注册到 Raft CP 协议，处理实例元数据的增删改写请求，并提供 {@link InstanceMetadataSnapshotOperation} 快照能力。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class InstanceMetadataProcessor extends RequestProcessor4CP {
     
+    /** 命名元数据内存管理器。 */
     private final NamingMetadataManager namingMetadataManager;
     
+    /** 元数据操作日志序列化器。 */
     private final Serializer serializer;
     
+    /** {@link MetadataOperation}{@code <InstanceMetadata>} 反序列化类型。 */
     private final Type processType;
     
+    /** 快照读写与 apply 操作共享的读写锁。 */
     private final ReentrantReadWriteLock lock;
     
+    /** apply 阶段持有的读锁，与快照写互斥。 */
     private final ReentrantReadWriteLock.ReadLock readLock;
     
     @SuppressWarnings("unchecked")
@@ -68,6 +75,7 @@ public class InstanceMetadataProcessor extends RequestProcessor4CP {
         protocolManager.getCpProtocol().addRequestProcessors(Collections.singletonList(this));
     }
     
+    /** 注册实例元数据快照操作。 */
     @Override
     public List<SnapshotOperation> loadSnapshotOperate() {
         return Collections
@@ -79,6 +87,7 @@ public class InstanceMetadataProcessor extends RequestProcessor4CP {
         return null;
     }
     
+    /** 应用实例元数据写请求（ADD/CHANGE/DELETE）。 */
     @Override
     public Response onApply(WriteRequest request) {
         readLock.lock();
@@ -122,6 +131,7 @@ public class InstanceMetadataProcessor extends RequestProcessor4CP {
         namingMetadataManager.removeInstanceMetadata(service, op.getTag());
     }
     
+    /** 返回 CP 处理器分组名 {@link Constants#INSTANCE_METADATA}。 */
     @Override
     public String group() {
         return Constants.INSTANCE_METADATA;

@@ -24,24 +24,25 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * event publisher factory for naming event.
+ * 命名事件发布器工厂（单例）。
  *
- * <p>
- * Some naming event is in order, so these event need publish by sync(with same thread and same queue).
- * </p>
+ * <p>部分命名事件需严格保序，因此按事件类型复用同一 {@link NamingEventPublisher} （同线程、同队列）进行同步分发。</p>
  *
  * @author xiweng.yy
  */
 public class NamingEventPublisherFactory implements EventPublisherFactory {
     
+    /** 全局单例实例。 */
     private static final NamingEventPublisherFactory INSTANCE = new NamingEventPublisherFactory();
     
+    /** 事件类型到发布器实例的缓存。 */
     private final Map<Class<? extends Event>, NamingEventPublisher> publisher;
     
     private NamingEventPublisherFactory() {
         publisher = new ConcurrentHashMap<>();
     }
     
+    /** 获取工厂单例。 */
     public static NamingEventPublisherFactory getInstance() {
         return INSTANCE;
     }
@@ -49,7 +50,7 @@ public class NamingEventPublisherFactory implements EventPublisherFactory {
     @Override
     public EventPublisher apply(final Class<? extends Event> eventType,
         final Integer maxQueueSize) {
-        // Like ClientEvent$ClientChangeEvent cache by ClientEvent
+        // 内部类事件（如 ClientEvent$ClientChangeEvent）按外部类缓存发布器
         Class<? extends Event> cachedEventType =
             eventType.isMemberClass() ? (Class<? extends Event>) eventType.getEnclosingClass()
                 : eventType;
@@ -60,6 +61,7 @@ public class NamingEventPublisherFactory implements EventPublisherFactory {
         });
     }
     
+    /** 汇总所有已创建发布器的运行状态。 */
     public String getAllPublisherStatues() {
         StringBuilder result = new StringBuilder("Naming event publisher statues:\n");
         for (NamingEventPublisher each : publisher.values()) {

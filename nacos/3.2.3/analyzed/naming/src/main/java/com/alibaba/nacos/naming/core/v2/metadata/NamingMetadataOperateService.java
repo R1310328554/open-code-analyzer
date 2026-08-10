@@ -31,15 +31,19 @@ import com.google.protobuf.ByteString;
 import org.springframework.stereotype.Component;
 
 /**
- * Nacos naming metadata operate service.
+ * 命名元数据 CP 写操作门面。
+ *
+ * <p>将服务/实例/集群元数据的增删改封装为 Raft {@link WriteRequest} 并提交至 CP 协议层。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class NamingMetadataOperateService {
     
+    /** CP 一致性协议，用于提交元数据写日志。 */
     private final CPProtocol cpProtocol;
     
+    /** 元数据操作序列化器。 */
     private final Serializer serializer;
     
     public NamingMetadataOperateService(ProtocolManager protocolManager) {
@@ -48,10 +52,10 @@ public class NamingMetadataOperateService {
     }
     
     /**
-     * Update service metadata.
+     * 通过 CP 协议更新服务元数据。
      *
-     * @param service         service of metadata
-     * @param serviceMetadata metadata
+     * @param service         目标服务
+     * @param serviceMetadata 新的服务元数据
      */
     public void updateServiceMetadata(Service service, ServiceMetadata serviceMetadata) {
         MetadataOperation<ServiceMetadata> operation = buildMetadataOperation(service);
@@ -64,9 +68,9 @@ public class NamingMetadataOperateService {
     }
     
     /**
-     * Delete service metadata.
+     * 通过 CP 协议删除服务元数据。
      *
-     * @param service service of metadata
+     * @param service 目标服务
      */
     public void deleteServiceMetadata(Service service) {
         MetadataOperation<ServiceMetadata> operation = buildMetadataOperation(service);
@@ -78,11 +82,11 @@ public class NamingMetadataOperateService {
     }
     
     /**
-     * Update instance metadata.
+     * 通过 CP 协议更新实例元数据。
      *
-     * @param service          service of metadata
-     * @param metadataId       instance metadataId Id
-     * @param instanceMetadata metadata
+     * @param service          目标服务
+     * @param metadataId       实例元数据 ID
+     * @param instanceMetadata 新的实例元数据
      */
     public void updateInstanceMetadata(Service service, String metadataId,
         InstanceMetadata instanceMetadata) {
@@ -97,10 +101,10 @@ public class NamingMetadataOperateService {
     }
     
     /**
-     * Delete instance metadata.
+     * 通过 CP 协议删除实例元数据。
      *
-     * @param service    service of metadata
-     * @param metadataId instance metadata Id
+     * @param service    目标服务
+     * @param metadataId 实例元数据 ID
      */
     public void deleteInstanceMetadata(Service service, String metadataId) {
         MetadataOperation<InstanceMetadata> operation = buildMetadataOperation(service);
@@ -113,11 +117,11 @@ public class NamingMetadataOperateService {
     }
     
     /**
-     * Add cluster metadata to service metadata.
+     * 向服务元数据追加集群元数据（ADD 操作）。
      *
-     * @param service         service
-     * @param clusterName     cluster name
-     * @param clusterMetadata cluster metadata
+     * @param service         目标服务
+     * @param clusterName     集群名
+     * @param clusterMetadata 集群元数据
      */
     public void addClusterMetadata(Service service, String clusterName,
         ClusterMetadata clusterMetadata) {

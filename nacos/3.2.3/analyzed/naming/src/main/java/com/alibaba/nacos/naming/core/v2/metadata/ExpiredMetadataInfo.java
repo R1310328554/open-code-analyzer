@@ -22,19 +22,21 @@ import java.util.Date;
 import java.util.Objects;
 
 /**
- * Expired metadata information.
- * <p>
- * When an original object like service or instance be remove, the metadata need to be removed.
- * </p>
+ * 待清理的过期元数据信息。
+ *
+ * <p>当服务或实例被移除后，关联元数据需异步清理；本对象记录待删除的服务与实例元数据标识。</p>
  *
  * @author xiweng.yy
  */
 public class ExpiredMetadataInfo {
     
+    /** 元数据所属服务。 */
     private final Service service;
     
+    /** 实例元数据 ID；服务级过期时为 null。 */
     private final String metadataId;
     
+    /** 记录创建时间戳，用于过期清理调度。 */
     private final long createTime;
     
     private ExpiredMetadataInfo(Service service, String metadataId) {
@@ -43,10 +45,12 @@ public class ExpiredMetadataInfo {
         this.createTime = System.currentTimeMillis();
     }
     
+    /** 构造服务级过期元数据标记。 */
     public static ExpiredMetadataInfo newExpiredServiceMetadata(Service service) {
         return new ExpiredMetadataInfo(service, null);
     }
     
+    /** 构造实例级过期元数据标记。 */
     public static ExpiredMetadataInfo newExpiredInstanceMetadata(Service service,
         String metadataId) {
         return new ExpiredMetadataInfo(service, metadataId);

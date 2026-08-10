@@ -24,7 +24,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Service cluster metadata for v2.
+ * V2 服务集群元数据模型。
+ *
+ * <p>描述集群级健康检查配置及扩展属性，随 {@link ServiceMetadata} 持久化。</p>
  *
  * @author xiweng.yy
  */
@@ -32,17 +34,19 @@ public class ClusterMetadata implements Serializable {
     
     private static final long serialVersionUID = -80030989533083615L;
     
+    /** 健康检查端口，默认 80。 */
     private int healthyCheckPort = 80;
     
+    /** 健康检查类型，默认 TCP。 */
     private String healthyCheckType = Tcp.TYPE;
     
+    /** 健康检查器实例，默认 TCP 检查器。 */
     private AbstractHealthChecker healthChecker = new Tcp();
     
-    /**
-     * Whether or not use instance port to do health check.
-     */
+    /** 是否使用实例端口进行健康检查。 */
     private boolean useInstancePortForCheck = true;
     
+    /** 集群扩展键值属性。 */
     private Map<String, String> extendData = new ConcurrentHashMap<>(1);
     
     public int getHealthyCheckPort() {

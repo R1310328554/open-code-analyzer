@@ -41,23 +41,31 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Service storage.
+ * 服务实例数据存储与缓存。
+ *
+ * <p>基于 {@link ClientServiceIndexesManager} 索引聚合各客户端注册的实例，合并 {@link NamingMetadataManager} 中的实例元数据后构建推送用的 {@link ServiceInfo}。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class ServiceStorage {
     
+    /** 客户端-服务索引管理器。 */
     private final ClientServiceIndexesManager serviceIndexesManager;
     
+    /** 客户端管理器，用于读取实例发布信息。 */
     private final ClientManager clientManager;
     
+    /** 命名开关域，提供默认推送缓存毫秒数等配置。 */
     private final SwitchDomain switchDomain;
     
+    /** 命名元数据管理器。 */
     private final NamingMetadataManager metadataManager;
     
+    /** 服务 -> 已聚合 ServiceInfo 的本地缓存。 */
     private final ConcurrentMap<Service, ServiceInfo> serviceDataIndexes;
     
+    /** 服务 -> 所属集群名集合的索引。 */
     private final ConcurrentMap<Service, Set<String>> serviceClusterIndex;
     
     public ServiceStorage(ClientServiceIndexesManager serviceIndexesManager,
@@ -71,15 +79,18 @@ public class ServiceStorage {
         this.serviceClusterIndex = new ConcurrentHashMap<>();
     }
     
+    /** 返回服务下所有实例涉及的集群名。 */
     public Set<String> getClusters(Service service) {
         return serviceClusterIndex.getOrDefault(service, new HashSet<>());
     }
     
+    /** 优先返回缓存数据，未命中时实时聚合。 */
     public ServiceInfo getData(Service service) {
         ServiceInfo data = serviceDataIndexes.get(service);
         return data != null ? data : getPushData(service);
     }
     
+    /** 从索引重建推送数据并写入缓存。 */
     public ServiceInfo getPushData(Service service) {
         ServiceInfo result = emptyServiceInfo(service);
         if (!ServiceManager.getInstance().containSingleton(service)) {
@@ -91,6 +102,7 @@ public class ServiceStorage {
         return result;
     }
     
+    /** 移除指定服务的缓存数据与集群索引。 */
     public void removeData(Service service) {
         serviceDataIndexes.remove(service);
         serviceClusterIndex.remove(service);
@@ -112,7 +124,7 @@ public class ServiceStorage {
             Optional<InstancePublishInfo> instancePublishInfo = getInstanceInfo(each, service);
             if (instancePublishInfo.isPresent()) {
                 InstancePublishInfo publishInfo = instancePublishInfo.get();
-                //If it is a BatchInstancePublishInfo type, it will be processed manually and added to the instance list
+                // BatchInstancePublishInfo 需展开为多条 Instance 后合并
                 if (publishInfo instanceof BatchInstancePublishInfo) {
                     BatchInstancePublishInfo batchInstancePublishInfo =
                         (BatchInstancePublishInfo) publishInfo;
@@ -126,16 +138,18 @@ public class ServiceStorage {
                 }
             }
         }
-        // cache clusters of this service
+        // 缓存该服务下所有集群名，供 getClusters 使用
         serviceClusterIndex.put(service, clusters);
         return new LinkedList<>(result);
     }
     
     /**
-     * Parse batch instance.
-     * @param service service
-     * @param batchInstancePublishInfo batchInstancePublishInfo
-     * @return batch instance list
+     * 将批量实例发布信息解析为 API Instance 列表。
+     *
+     * @param service 所属服务
+     * @param batchInstancePublishInfo 批量发布信息
+     * @param clusters 输出参数，收集集群名
+     * @return 解析后的实例列表
      */
     private List<Instance> parseBatchInstance(Service service,
         BatchInstancePublishInfo batchInstancePublishInfo, Set<String> clusters) {
