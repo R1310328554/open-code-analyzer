@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T14:36:33Z",
   "files": [
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/broker/provider/MultiValuedTestIdPMapper.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/components/amphibian/TestAmphibianProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/components/amphibian/TestAmphibianProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/components/amphibian/TestAmphibianProviderFactoryImpl.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/components/amphibian/TestAmphibianSpi.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/domainextension/CompanyRepresentation.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/domainextension/jpa/Company.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/domainextension/jpa/ExampleJpaEntityProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/domainextension/jpa/ExampleJpaEntityProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/domainextension/rest/CompanyResource.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/domainextension/rest/ExampleRealmResourceProvider.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/domainextension/rest/ExampleRealmResourceProviderFactory.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/domainextension/rest/ExampleRestResource.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/domainextension/spi/ExampleService.java",
-    "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/domainextension/spi/ExampleServiceProviderFactory.java",
     "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/domainextension/spi/ExampleSpi.java",
     "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/domainextension/spi/impl/ExampleServiceImpl.java",
     "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/domainextension/spi/impl/ExampleServiceProviderFactoryImpl.java",
@@ -33,5 +18,5 @@
     "testsuite/integration-arquillian/servers/auth-server/services/testsuite-providers/src/main/java/org/keycloak/testsuite/federation/FailingUserStorageProviderFactory.java"
   ],
   "remaining_pending": 118,
-  "done": 5850
+  "done": 5865
 }
