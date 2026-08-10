@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T18:23:05Z",
-  "files": [
-    "internal/handler/mindmap.go",
-    "internal/handler/models.go",
-    "internal/handler/oauth_login.go",
-    "internal/handler/openai_chat.go",
-    "internal/handler/plugin.go",
-    "internal/handler/providers.go",
-    "internal/handler/search.go",
-    "internal/handler/searchbot.go",
-    "internal/handler/skill_search.go",
-    "internal/handler/stats.go",
-    "internal/handler/streaming.go",
-    "internal/handler/system.go",
-    "internal/handler/tenant.go",
-    "internal/handler/user.go",
-    "internal/harness/core/agent_handoff.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 924,
-  "done": 825
+  "done": 840
 }
