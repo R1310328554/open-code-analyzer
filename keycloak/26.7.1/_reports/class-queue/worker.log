@@ -1603,3 +1603,18 @@
 2026-08-10T08:08:47Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/RemoveDuplicateOfflineSessions.java wave55b Liquibase 26.x migrations + lock helpers
 2026-08-10T08:08:47Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/lock/CustomInitializeDatabaseChangeLogLockTableStatement.java wave55b Liquibase 26.x migrations + lock helpers
 2026-08-10T08:08:47Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/lock/CustomInsertLockRecordGenerator.java wave55b Liquibase 26.x migrations + lock helpers
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/FederatedUserAttributeTextColumnMigration.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate13_0_0_MigrateDefaultRoles.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate14_0_0_MigrateSamlArtifactAttribute.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate19_0_0_DefaultPostLogoutRedirectUri.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate1_2_0_Beta1.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate1_2_0_CR1.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate1_4_0_Final.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate1_9_0_Final.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate21_0_2_TermsAndConditionsRequiredAction.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate22_0_0_RemoveRhssoThemes.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate22_0_5_UpdateAccountTheme.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate24_0_2_FederatedTermsAndConditionsRequiredAction.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate25_0_0_ConsentConstraints.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate25_0_0_MySQL_ConsentConstraints.java wave55a Liquibase JpaUpdate migrations
+2026-08-10T08:08:57Z DONE model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate26_0_0_IdentityProviderAttributesMigration.java wave55a Liquibase JpaUpdate migrations

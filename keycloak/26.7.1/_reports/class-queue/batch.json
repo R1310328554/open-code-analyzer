@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:07:03Z",
-  "files": [
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/FederatedUserAttributeTextColumnMigration.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate13_0_0_MigrateDefaultRoles.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate14_0_0_MigrateSamlArtifactAttribute.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate19_0_0_DefaultPostLogoutRedirectUri.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate1_2_0_Beta1.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate1_2_0_CR1.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate1_4_0_Final.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate1_9_0_Final.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate21_0_2_TermsAndConditionsRequiredAction.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate22_0_0_RemoveRhssoThemes.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate22_0_5_UpdateAccountTheme.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate24_0_2_FederatedTermsAndConditionsRequiredAction.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate25_0_0_ConsentConstraints.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate25_0_0_MySQL_ConsentConstraints.java",
-    "model/jpa/src/main/java/org/keycloak/connections/jpa/updater/liquibase/custom/JpaUpdate26_0_0_IdentityProviderAttributesMigration.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4348,
-  "done": 1635
+  "done": 1650
 }
