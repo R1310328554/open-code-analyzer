@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T18:57:58Z",
-  "files": [
-    "internal/parser/parser/pdf_parser_cgo.go",
-    "internal/parser/parser/pdf_parser_common.go",
-    "internal/parser/parser/pdf_parser_docling.go",
-    "internal/parser/parser/pdf_parser_mineru.go",
-    "internal/parser/parser/pdf_parser_nocgo.go",
-    "internal/parser/parser/pdf_parser_opendataloader.go",
-    "internal/parser/parser/pdf_parser_paddleocr.go",
-    "internal/parser/parser/pdf_parser_plaintext_cgo.go",
-    "internal/parser/parser/pdf_parser_plaintext_nocgo.go",
-    "internal/parser/parser/pdf_parser_remote_common.go",
-    "internal/parser/parser/pdf_parser_somark.go",
-    "internal/parser/parser/pdf_parser_tcadp.go",
-    "internal/parser/parser/pdf_postprocess.go",
-    "internal/parser/parser/ppt_parser.go",
-    "internal/parser/parser/pptx_parser.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 714,
-  "done": 1035
+  "done": 1050
 }
