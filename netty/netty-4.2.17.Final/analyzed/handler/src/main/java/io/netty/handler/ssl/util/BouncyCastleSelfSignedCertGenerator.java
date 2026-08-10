@@ -34,7 +34,8 @@ import java.util.Date;
 import static io.netty.handler.ssl.util.SelfSignedCertificate.newSelfSignedCertificate;
 
 /**
- * Generates a self-signed certificate using <a href="https://www.bouncycastle.org/">Bouncy Castle</a>.
+ * 使用 <a href="https://www.bouncycastle.org/">Bouncy Castle</a> 生成自签名 X.509 证书。
+ * <p>由 {@link SelfSignedCertificate} 在 BC 可用时调用；RSA 用 SHA256WithRSA，EC 用 SHA256withECDSA。</p>
  */
 final class BouncyCastleSelfSignedCertGenerator {
     static String[] generate(String fqdn, KeyPair keypair, SecureRandom random, Date notBefore, Date notAfter,
@@ -42,6 +43,7 @@ final class BouncyCastleSelfSignedCertGenerator {
         PrivateKey key = keypair.getPrivate();
 
         // Prepare the information required for generating an X.509 certificate.
+        // 构造 X.509v3 证书：自签 issuer/subject、随机序列号与有效期
         X500Name owner = new X500Name("CN=" + fqdn);
         X509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
                 owner, new BigInteger(64, random), notBefore, notAfter, owner, keypair.getPublic());

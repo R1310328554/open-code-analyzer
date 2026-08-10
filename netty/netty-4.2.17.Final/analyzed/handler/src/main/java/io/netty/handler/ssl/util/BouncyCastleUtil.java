@@ -27,6 +27,8 @@ import javax.net.ssl.SSLEngine;
 
 /**
  * Contains methods that can be used to detect if BouncyCastle is available.
+ * <p>延迟加载并探测 Bouncy Castle JCE、PKIX、JSSE 三类组件是否存在于类路径，
+ * 供自签证书生成与 BC JSSE 集成使用。</p>
  */
 public final class BouncyCastleUtil {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(BouncyCastleUtil.class);
@@ -43,6 +45,7 @@ public final class BouncyCastleUtil {
 
     /**
      * Indicate whether the BouncyCastle Java Crypto Extensions provider is available.
+     * <p>bcprov-jdk18on 或 bc-fips 是否可用。</p>
      */
     public static boolean isBcProvAvailable() {
         BcProv.ensureLoaded();
@@ -51,6 +54,7 @@ public final class BouncyCastleUtil {
 
     /**
      * Indicate whether the BouncyCastle Public-Key Infrastructure utilities are available.
+     * <p>bcpkix（含 {@code PEMParser}）是否可用。</p>
      */
     public static boolean isBcPkixAvailable() {
         BcPkix.ensureLoaded();
@@ -59,6 +63,7 @@ public final class BouncyCastleUtil {
 
     /**
      * Indicate whether the BouncyCastle Java Secure Socket Extensions provider is available.
+     * <p>bctls / BCJSSE 是否可用。</p>
      */
     public static boolean isBcTlsAvailable() {
         BcTls.ensureLoaded();
@@ -137,6 +142,7 @@ public final class BouncyCastleUtil {
 
     /**
      * Reset the loaded providers. Useful for testing, to redo the loading under different conditions.
+     * <p>重置加载状态，供测试在不同类路径条件下重新探测。</p>
      */
     static void reset() {
         BcProv.attemptedLoading = false;
@@ -156,6 +162,7 @@ public final class BouncyCastleUtil {
         static volatile boolean attemptedLoading;
 
         @SuppressWarnings("unchecked")
+        /** 特权上下文下加载 BC JCE Provider（Security 注册或反射实例化）。 */
         private static void ensureLoaded() {
             if (!attemptedLoading) {
                 AccessController.doPrivileged((PrivilegedAction<?>) () -> {
@@ -281,6 +288,7 @@ public final class BouncyCastleUtil {
         // or if the exception is something other than ClassNotFoundException.
         // The ClassNotFoundException is what we would expect to see if the
         // BC JAR files are just not on the classpath.
+        // 类路径缺 JAR 时 ClassNotFoundException 为预期，非 TRACE 级别不打印完整栈
         return logger.isTraceEnabled() || !(e instanceof ClassNotFoundException);
     }
 

@@ -25,16 +25,19 @@ import java.util.List;
 
 /**
  * A builder for creating {@link FingerprintTrustManagerFactory}.
+ * <p>指定摘要算法（如 SHA-256）并收集十六进制指纹，构建 pinning 用信任工厂。</p>
  */
 public final class FingerprintTrustManagerFactoryBuilder {
 
     /**
      * A hash algorithm for fingerprints.
+     * <p>指纹摘要算法名，传给 {@link java.security.MessageDigest#getInstance(String)}。</p>
      */
     private final String algorithm;
 
     /**
      * A list of fingerprints.
+     * <p>待信任的证书指纹列表（可含冒号分隔的十六进制）。</p>
      */
     private final List<String> fingerprints = new ArrayList<String>();
 

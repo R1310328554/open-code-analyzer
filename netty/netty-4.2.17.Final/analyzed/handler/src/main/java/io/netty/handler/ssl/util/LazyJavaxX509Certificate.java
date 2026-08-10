@@ -30,12 +30,18 @@ import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.Date;
 
+/**
+ * 延迟解析 DER 的 legacy {@link javax.security.cert.X509Certificate} 包装。
+ * <p>供仍依赖 javax.security.cert API 的路径使用；首次访问证书字段时才调用
+ * {@link javax.security.cert.X509Certificate#getInstance(byte[])}。</p>
+ */
 public final class LazyJavaxX509Certificate extends X509Certificate {
     private final byte[] bytes;
     private X509Certificate wrapped;
 
     /**
      * Creates a new instance which will lazy parse the given bytes. Be aware that the bytes will not be cloned.
+     * <p>构造时不解析；{@code bytes} 不会被复制。</p>
      */
     public LazyJavaxX509Certificate(byte[] bytes) {
         this.bytes = ObjectUtil.checkNotNull(bytes, "bytes");
@@ -104,6 +110,7 @@ public final class LazyJavaxX509Certificate extends X509Certificate {
     /**
      * Return the underyling {@code byte[]} without cloning it first. This {@code byte[]} <strong>must</strong> never
      * be mutated.
+     * <p>返回内部 DER 字节数组（不克隆）；<strong>禁止</strong>修改。</p>
      */
     byte[] getBytes() {
         return bytes;
@@ -137,6 +144,7 @@ public final class LazyJavaxX509Certificate extends X509Certificate {
         X509Certificate wrapped = this.wrapped;
         if (wrapped == null) {
             try {
+                // 双重检查锁外单线程首次解析即可（字段非 volatile，与 LazyX509Certificate 策略一致）
                 wrapped = this.wrapped = X509Certificate.getInstance(bytes);
             } catch (CertificateException e) {
                 throw new IllegalStateException(e);

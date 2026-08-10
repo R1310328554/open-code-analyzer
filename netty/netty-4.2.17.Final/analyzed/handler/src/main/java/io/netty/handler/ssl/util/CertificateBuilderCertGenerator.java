@@ -24,10 +24,15 @@ import java.util.Date;
 
 import static io.netty.handler.ssl.util.SelfSignedCertificate.newSelfSignedCertificate;
 
+/**
+ * 基于 Netty {@link CertificateBuilder}（pkitesting 模块）的自签证书生成器。
+ * <p>无外部 keytool/BC 依赖时的首选路径；支持 RSA/EC 多种密钥长度。</p>
+ */
 final class CertificateBuilderCertGenerator {
     private CertificateBuilderCertGenerator() {
     }
 
+    /** 类路径上能否实例化 {@link CertificateBuilder}。 */
     static boolean isAvailable() {
         try {
             new CertificateBuilder();

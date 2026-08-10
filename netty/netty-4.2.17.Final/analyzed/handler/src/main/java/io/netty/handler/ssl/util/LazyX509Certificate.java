@@ -40,6 +40,11 @@ import java.util.List;
 import java.util.Set;
 import javax.security.auth.x500.X500Principal;
 
+/**
+ * 延迟解析 DER 编码字节的 {@link java.security.cert.X509Certificate} 包装。
+ * <p>除 {@link #getEncoded()} 外多数方法在首次调用时才通过 {@link CertificateFactory} 解析；
+ * 使用 {@link Recycler} 复用工厂以降低分配。</p>
+ */
 public final class LazyX509Certificate extends X509Certificate {
     private static final Recycler<CertFactoryHandle> CERT_FACTORIES = new Recycler<CertFactoryHandle>() {
         @Override
@@ -75,6 +80,7 @@ public final class LazyX509Certificate extends X509Certificate {
 
     /**
      * Creates a new instance which will lazy parse the given bytes. Be aware that the bytes will not be cloned.
+     * <p>构造时不解析；{@code bytes} 不会被复制，调用方须保证不被修改。</p>
      */
     public LazyX509Certificate(byte[] bytes) {
         this.bytes = ObjectUtil.checkNotNull(bytes, "bytes");

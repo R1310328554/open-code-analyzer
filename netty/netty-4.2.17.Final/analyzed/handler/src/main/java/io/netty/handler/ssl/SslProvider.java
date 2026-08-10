@@ -22,21 +22,26 @@ import io.netty.util.internal.UnstableApi;
 import java.security.Provider;
 
 /**
- * An enumeration of SSL/TLS protocol providers.
+ * SSL/TLS 底层实现提供方枚举。
+ * <p>构建 {@link SslContext} 时选择 JDK 内置引擎或 OpenSSL（netty-tcnative）实现，
+ * 影响性能、密码套件可用性及 ALPN/TLS1.3 等特性探测结果。</p>
  */
 public enum SslProvider {
     /**
      * JDK's default implementation.
      */
+    /** 使用 JDK 默认 {@link javax.net.ssl.SSLEngine} 实现。 */
     JDK,
     /**
      * OpenSSL-based implementation.
      */
+    /** 基于 OpenSSL 的实现（含 finalizer 生命周期）。 */
     OPENSSL,
     /**
      * OpenSSL-based implementation which does not have finalizers and instead implements {@link ReferenceCounted}.
      */
     @UnstableApi
+    /** 引用计数版 OpenSSL 实现，无 finalizer，须显式 release。 */
     OPENSSL_REFCNT;
 
     /**
@@ -88,6 +93,7 @@ public enum SslProvider {
         switch (sslProvider) {
             case JDK:
                 // We currently don't support any SslContextOptions when using the JDK implementation
+                // JDK 路径暂不支持任何 SslContextOption
                 return false;
             case OPENSSL:
             case OPENSSL_REFCNT:

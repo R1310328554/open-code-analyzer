@@ -47,74 +47,90 @@ import javax.net.ssl.TrustManager;
 import static java.util.Arrays.asList;
 
 /**
- * Constants for SSL packets.
+ * SSL/TLS 记录层解析与 JDK 能力探测的内部工具类。
+ * <p>提供记录头常量、默认密码套件、加密包长度探测、握手失败处理及 SNI 主机名校验等。</p>
  */
 final class SslUtils {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(SslUtils.class);
 
-    // See https://tools.ietf.org/html/rfc8446#appendix-B.4
+    // See https://tools.ietf.org/html/rfc8446#appendix-B.4 — RFC 8446 附录 B.4 定义的 TLS 1.3 套件名
     static final Set<String> TLSV13_CIPHERS = Collections.unmodifiableSet(new LinkedHashSet<String>(
             asList("TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256",
                           "TLS_AES_128_GCM_SHA256", "TLS_AES_128_CCM_8_SHA256",
                           "TLS_AES_128_CCM_SHA256")));
 
+    /** DTLS 1.0 协议版本号（记录头）。 */
     static final short DTLS_1_0 = (short) 0xFEFF;
+    /** DTLS 1.2 协议版本号。 */
     static final short DTLS_1_2 = (short) 0xFEFD;
+    /** DTLS 1.3 协议版本号。 */
     static final short DTLS_1_3 = (short) 0xFEFC;
+    /** DTLS 记录头长度（字节）。 */
     static final short DTLS_RECORD_HEADER_LENGTH = 13;
 
     /**
      * GMSSL Protocol Version
+     * <p>国密 GMSSL 协议版本标识。</p>
      */
     static final int GMSSL_PROTOCOL_VERSION = 0x101;
 
+    /** 无效/空密码套件占位名。 */
     static final String INVALID_CIPHER = "SSL_NULL_WITH_NULL_NULL";
 
     /**
      * change cipher spec
+     * <p>ChangeCipherSpec 记录类型。</p>
      */
     static final int SSL_CONTENT_TYPE_CHANGE_CIPHER_SPEC = 20;
 
     /**
      * alert
+     * <p>Alert 告警记录类型。</p>
      */
     static final int SSL_CONTENT_TYPE_ALERT = 21;
 
     /**
      * handshake
+     * <p>Handshake 握手记录类型。</p>
      */
     static final int SSL_CONTENT_TYPE_HANDSHAKE = 22;
 
     /**
      * application data
+     * <p>Application Data 应用数据记录类型。</p>
      */
     static final int SSL_CONTENT_TYPE_APPLICATION_DATA = 23;
 
     /**
      * HeartBeat Extension
+     * <p>Heartbeat 扩展记录类型（RFC 6520）。</p>
      */
     static final int SSL_CONTENT_TYPE_EXTENSION_HEARTBEAT = 24;
 
     /**
      * the length of the ssl record header (in bytes)
+     * <p>TLS/SSL 记录头固定长度（字节）。</p>
      */
     static final int SSL_RECORD_HEADER_LENGTH = 5;
 
     /**
      * Not enough data in buffer to parse the record length
+     * <p>{@link #getEncryptedPacketLength} 返回值：缓冲区内数据不足以解析完整记录。</p>
      */
     static final int NOT_ENOUGH_DATA = -1;
 
     /**
      * data is not encrypted
+     * <p>{@link #getEncryptedPacketLength} 返回值：输入不像 TLS/SSL 加密数据。</p>
      */
     static final int NOT_ENCRYPTED = -2;
 
     static final String[] DEFAULT_CIPHER_SUITES;
     static final String[] DEFAULT_TLSV13_CIPHER_SUITES;
+    /** Netty 默认启用的 TLS 1.3 套件子集。 */
     static final String[] TLSV13_CIPHER_SUITES = { "TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384" };
 
-    // self-signed certificate for netty.io and the matching private-key
+    // self-signed certificate for netty.io and the matching private-key — ALPN/能力探测用自签证书与私钥 PEM
     static final String PROBING_CERT = "-----BEGIN CERTIFICATE-----\n" +
             "MIICrjCCAZagAwIBAgIIdSvQPv1QAZQwDQYJKoZIhvcNAQELBQAwFjEUMBIGA1UEAxMLZXhhbXBs\n" +
             "ZS5jb20wIBcNMTgwNDA2MjIwNjU5WhgPOTk5OTEyMzEyMzU5NTlaMBYxFDASBgNVBAMTC2V4YW1w\n" +
@@ -189,6 +205,7 @@ final class SslUtils {
 
     /**
      * Returns {@code true} if the JDK itself supports TLSv1.3, {@code false} otherwise.
+     * <p>探测指定 {@link Provider}（或默认 Provider）是否声明支持 {@link SslProtocols#TLS_v1_3}。</p>
      */
     static boolean isTLSv13SupportedByJDK(Provider provider) {
         if (provider == null) {
@@ -210,6 +227,7 @@ final class SslUtils {
 
     /**
      * Returns {@code true} if the JDK itself supports TLSv1.3 and enabled it by default, {@code false} otherwise.
+     * <p>检查 JDK 默认 SSL 参数是否包含 TLS 1.3。</p>
      */
     static boolean isTLSv13EnabledByJDK(Provider provider) {
         if (provider == null) {
@@ -273,6 +291,7 @@ final class SslUtils {
 
     /**
      * Add elements from {@code names} into {@code enabled} if they are in {@code supported}.
+     * <p>将 {@code names} 中且存在于 {@code supported} 的项追加到 {@code enabled}。</p>
      */
     static void addIfSupported(Set<String> supported, List<String> enabled, String... names) {
         for (String n: names) {
@@ -299,6 +318,7 @@ final class SslUtils {
 
     /**
      * Converts the given exception to a {@link SSLHandshakeException}, if it isn't already.
+     * <p>统一包装为 {@link SSLHandshakeException} 以便上层握手失败处理。</p>
      */
     static SSLHandshakeException toSSLHandshakeException(Throwable e) {
         if (e instanceof SSLHandshakeException) {
@@ -319,6 +339,8 @@ final class SslUtils {
      *                      {@link #SslUtils#NOT_ENOUGH_DATA} if not enough data is present in the
      *                      {@link ByteBuf}. This will return {@link SslUtils#NOT_ENCRYPTED} if
      *                      the given {@link ByteBuf} is not encrypted at all.
+     * <p>解析 {@link ByteBuf} 中自 {@code offset} 起的第一条 TLS/SSL/DTLS/GMSSL 记录总长度；
+     * 不移动 {@code readerIndex}。{@code probeSSLv2} 为 true 时在非 TLS 内容类型下仍尝试 SSLv2 头格式。</p>
      */
     static int getEncryptedPacketLength(ByteBuf buffer, int offset, boolean probeSSLv2) {
         assert offset >= buffer.readerIndex();
@@ -388,7 +410,7 @@ final class SslUtils {
         return packetLength;
     }
 
-    // Reads a big-endian unsigned short integer from the buffer
+    // Reads a big-endian unsigned short integer from the buffer — 按大端读取无符号 short（兼容 ByteBuf 字节序）
     @SuppressWarnings("deprecation")
     private static int unsignedShortBE(ByteBuf buffer, int offset) {
         int value = buffer.getUnsignedShort(offset);
@@ -508,6 +530,7 @@ final class SslUtils {
     static void handleHandshakeFailure(ChannelHandlerContext ctx, Throwable cause, boolean notify) {
         // We have may haven written some parts of data before an exception was thrown so ensure we always flush.
         // See https://github.com/netty/netty/issues/3900#issuecomment-172481830
+        // 异常前可能已写出部分数据，须 flush；可选触发 SslHandshakeCompletionEvent 后关闭连接
         ctx.flush();
         if (notify) {
             ctx.fireUserEventTriggered(new SslHandshakeCompletionEvent(cause));
@@ -517,6 +540,7 @@ final class SslUtils {
 
     /**
      * Fills the {@link ByteBuf} with zero bytes.
+     * <p>清零缓冲区内敏感数据（如临时密钥材料）。</p>
      */
     static void zeroout(ByteBuf buffer) {
         if (!buffer.isReadOnly()) {
@@ -526,6 +550,7 @@ final class SslUtils {
 
     /**
      * Fills the {@link ByteBuf} with zero bytes and releases it.
+     * <p>清零后 release，用于一次性敏感缓冲。</p>
      */
     static void zerooutAndRelease(ByteBuf buffer) {
         zeroout(buffer);
@@ -546,6 +571,7 @@ final class SslUtils {
 
     /**
      * Validate that the given hostname can be used in SNI extension.
+     * <p>按 RFC 6066：须为含点的 FQDN，非 IP、非路径形式。</p>
      */
     static boolean isValidHostNameForSNI(String hostname) {
         // See  https://datatracker.ietf.org/doc/html/rfc6066#section-3
@@ -560,6 +586,7 @@ final class SslUtils {
 
     /**
      * Returns {@code true} if the given cipher (in openssl format) is for TLSv1.3, {@code false} otherwise.
+     * <p>判断 OpenSSL 格式套件名是否属于 TLS 1.3（见 RFC 8446 附录 B.4）。</p>
      */
     static boolean isTLSv13Cipher(String cipher) {
         // See https://tools.ietf.org/html/rfc8446#appendix-B.4

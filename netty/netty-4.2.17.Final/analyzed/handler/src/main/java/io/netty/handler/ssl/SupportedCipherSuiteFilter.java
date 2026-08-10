@@ -24,9 +24,12 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * This class will filter all requested ciphers out that are not supported by the current {@link SSLEngine}.
+ * 按当前 {@link SSLEngine} 实际支持的集合过滤密码套件。
+ * <p>{@code ciphers == null} 时以 {@code defaultCiphers} 为候选；否则遍历用户列表，
+ * 仅保留 {@code supportedCiphers} 中的项，遇 {@code null} 终止。</p>
  */
 public final class SupportedCipherSuiteFilter implements CipherSuiteFilter {
+    /** 单例，{@link SslContextBuilder} 默认过滤器。 */
     public static final SupportedCipherSuiteFilter INSTANCE = new SupportedCipherSuiteFilter();
 
     private SupportedCipherSuiteFilter() { }

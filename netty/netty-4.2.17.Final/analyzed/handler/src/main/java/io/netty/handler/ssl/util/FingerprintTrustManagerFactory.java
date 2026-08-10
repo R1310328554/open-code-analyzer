@@ -50,6 +50,8 @@ import java.util.regex.Pattern;
  * It is worth mentioning that certain firewalls, proxies or other appliances found in corporate environments,
  * actually perform Man-in-the-middle attacks and thus present a different certificate fingerprint.
  * </p>
+ * <p>按 DER 编码证书摘要（指纹）建立信任的 {@link TrustManagerFactory}，即证书固定（pinning）。
+ * 仅校验链首证书指纹是否在白名单内，不验证完整 PKI 链；企业 MITM 代理可能使指纹与预期不符。</p>
  * <p>
  * The hash of an X.509 certificate is calculated from its DER encoded format.  You can get the fingerprint of
  * an X.509 certificate using the {@code openssl} command.  For example:
@@ -120,6 +122,7 @@ public final class FingerprintTrustManagerFactory extends SimpleTrustManagerFact
             }
 
             if (!found) {
+                // 指纹不在白名单则拒绝握手
                 throw new CertificateException(
                         type + " certificate with unknown fingerprint: " + cert.getSubjectDN());
             }
@@ -195,7 +198,7 @@ public final class FingerprintTrustManagerFactory extends SimpleTrustManagerFact
             throw new IllegalArgumentException("No fingerprints provided");
         }
 
-        // check early if the hash algorithm is available
+        // check early if the hash algorithm is available — 构造时校验算法与指纹长度
         final MessageDigest md;
         try {
             md = MessageDigest.getInstance(algorithm);

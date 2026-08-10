@@ -33,6 +33,7 @@ import java.security.cert.X509Certificate;
 
 /**
  * An insecure {@link TrustManagerFactory} that trusts all X.509 certificates without any verification.
+ * <p>接受任意 X.509 证书且跳过主机名校验的 {@link TrustManagerFactory}，<strong>仅用于测试</strong>。</p>
  * <p>
  * <strong>NOTE:</strong>
  * Never use this {@link TrustManagerFactory} in production.
@@ -43,11 +44,13 @@ public final class InsecureTrustManagerFactory extends SimpleTrustManagerFactory
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(InsecureTrustManagerFactory.class);
 
+    /** 单例工厂实例。 */
     public static final TrustManagerFactory INSTANCE = new InsecureTrustManagerFactory();
 
     // This needs to be X509ExtendedTrustManager so hostname verification is skipped as well.
     // Otherwise the JDK will internally wrap it with AbstractTrustManagerWrapper and add hostname verification
     // by itself.
+    // 须为 X509ExtendedTrustManager，否则 JDK 会包装并仍做主机名校验
     private static final TrustManager tm = new X509ExtendedTrustManager() {
         @Override
         public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) {

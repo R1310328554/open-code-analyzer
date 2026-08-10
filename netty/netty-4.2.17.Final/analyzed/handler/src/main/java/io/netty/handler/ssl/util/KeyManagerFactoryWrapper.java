@@ -22,6 +22,10 @@ import java.security.KeyStore;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.ManagerFactoryParameters;
 
+/**
+ * 将已有 {@link KeyManager} 包装为 {@link javax.net.ssl.KeyManagerFactory}。
+ * <p>{@code engineInit} 为空操作；用于 {@link SslContext} 构建时直接注入自定义 KeyManager。</p>
+ */
 public final class KeyManagerFactoryWrapper extends SimpleKeyManagerFactory {
     private final KeyManager km;
 

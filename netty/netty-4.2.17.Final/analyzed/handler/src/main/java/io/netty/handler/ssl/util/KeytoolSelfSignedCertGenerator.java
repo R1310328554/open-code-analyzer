@@ -38,6 +38,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Self-signed certificate generator based on the keytool CLI.
+ * <p>调用 {@code $JAVA_HOME/bin/keytool -genkeypair} 生成临时 keystore，
+ * 再导出证书与私钥路径；Java 11+ 使用 PKCS12。</p>
  */
 final class KeytoolSelfSignedCertGenerator {
     private static final DateTimeFormatter DATE_FORMAT =
@@ -61,18 +63,21 @@ final class KeytoolSelfSignedCertGenerator {
         }
         // Java < 11 does not support encryption for PKCS#12: JDK-8220734
         // For 11+, we prefer PKCS#12 for FIPS compliance
+        // Java 11 以下 PKCS#12 加密受限，故回退 JKS
         KEY_STORE_TYPE = PlatformDependent.javaVersion() >= 11 ? "PKCS12" : "JKS";
     }
 
     private KeytoolSelfSignedCertGenerator() {
     }
 
+    /** {@code java.home}/bin/keytool 存在则可用。 */
     static boolean isAvailable() {
         return KEYTOOL != null;
     }
 
     static void generate(SelfSignedCertificate.Builder builder) throws IOException, GeneralSecurityException {
         // Change all asterisk to 'x' for file name safety.
+        // 将 FQDN 中非法文件名字符替换为 x，用于临时目录名
         String dirFqdn = builder.fqdn.replaceAll("[^\\w.-]", "x");
 
         Path directory = Files.createTempDirectory("keytool_" + dirFqdn);

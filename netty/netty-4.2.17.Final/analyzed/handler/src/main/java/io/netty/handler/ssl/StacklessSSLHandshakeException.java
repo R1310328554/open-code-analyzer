@@ -20,7 +20,9 @@ import io.netty.util.internal.ThrowableUtil;
 import javax.net.ssl.SSLHandshakeException;
 
 /**
- * A {@link SSLHandshakeException} that does not fill in the stack trace.
+ * 不填充完整堆栈的 {@link SSLHandshakeException}。
+ * <p>高频握手失败路径上省略 {@link #fillInStackTrace()} 以降低分配与栈遍历开销；
+ * 仍可通过 {@link #newInstance} 记录抛出点的类与方法。</p>
  */
 final class StacklessSSLHandshakeException extends SSLHandshakeException {
 
@@ -34,6 +36,7 @@ final class StacklessSSLHandshakeException extends SSLHandshakeException {
     public Throwable fillInStackTrace() {
         // This is a performance optimization to not fill in the
         // stack trace as this is a stackless exception.
+        // 性能优化：无栈异常不采集完整堆栈
         return this;
     }
 
