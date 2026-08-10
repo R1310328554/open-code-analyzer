@@ -39,11 +39,16 @@ import org.infinispan.protostream.impl.AnnotatedDescriptorImpl;
 import org.infinispan.query.remote.client.ProtobufMetadataManagerConstants;
 import org.jboss.logging.Logger;
 
+/**
+ * Keycloak ProtoStream 索引模式工具类。
+ * <p>
+ * 负责将 GeneratedSchema 上传到 Infinispan 集群、检测索引注解变更并触发缓存重建索引。
+ */
 public class KeycloakIndexSchemaUtil {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
-    // Basic annotation data
+    // Basic 注解相关常量
     private static final String BASIC_ANNOTATION = "Basic";
     private static final String NAME_ATTRIBUTE = "name";
     private static final String SEARCHABLE_ATTRIBUTE = "searchable";
@@ -52,21 +57,19 @@ public class KeycloakIndexSchemaUtil {
     private static final String SORTABLE_ATTRIBUTE = "sortable";
     private static final String INDEX_NULL_AS_ATTRIBUTE = "indexNullAs";
 
-    // we only use Basic annotation, we may need to add others in the future.
+    // 当前仅使用 Basic 注解，后续可能扩展其他索引注解
     private static final List<String> INDEX_ANNOTATION = List.of(BASIC_ANNOTATION);
 
     /**
-     * Uploads the {@link GeneratedSchema} to the Infinispan cluster.
+     * 将 {@link GeneratedSchema} 上传到 Infinispan 集群。
      * <p>
-     * If indexing is enabled for one or more entities present in the {@link GeneratedSchema}, users may add a list of
-     * entities, and the caches where they live. This method will update the indexing schema and perform the reindexing
-     * for the new schema. Note that reindexing may be an expensive operation, depending on the amount of data.
+     * 若 schema 中包含已启用索引的实体，可传入实体及其所在缓存列表；
+     * 方法会更新索引 schema 并对受影响缓存执行重建索引（可能代价较高）。
      *
-     * @param remoteCacheManager The {@link RemoteCacheManager} connected to the Infinispan server.
-     * @param schema             The {@link GeneratedSchema} instance to upload.
-     * @param indexedEntities    The {@link List} of indexed entities and their caches. Duplicates are allowed if the
-     *                           same entity is stored in multiple caches.
-     * @throws NullPointerException if {@code remoteCacheManager} or {@code schema} is null.
+     * @param remoteCacheManager 已连接 Infinispan 服务器的 {@link RemoteCacheManager}
+     * @param schema             待上传的 {@link GeneratedSchema} 实例
+     * @param indexedEntities    索引实体及其缓存列表（同一实体可出现在多个缓存中）
+     * @throws NullPointerException 当 {@code remoteCacheManager} 或 {@code schema} 为 null 时
      */
     public static void uploadAndReindexCaches(RemoteCacheManager remoteCacheManager, GeneratedSchema schema, List<IndexedEntity> indexedEntities) {
         var key = schema.getProtoFileName();
@@ -96,6 +99,7 @@ public class KeycloakIndexSchemaUtil {
         checkForProtoSchemaErrors(protostreamMetadataCache);
     }
 
+    /** 检查 protobuf 元数据缓存中的 schema 解析错误并记录日志。 */
     private static void checkForProtoSchemaErrors(RemoteCache<String, String> protostreamMetadataCache) {
         var errors = protostreamMetadataCache.get(ProtobufMetadataManagerConstants.ERRORS_KEY_SUFFIX);
         if (errors == null) {
@@ -109,6 +113,7 @@ public class KeycloakIndexSchemaUtil {
         }
     }
 
+    /** 对索引 schema 发生变更的实体所在缓存执行 schema 更新与重建索引。 */
     private static void reindexCaches(RemoteCacheManager remoteCacheManager, String oldSchema, String newSchema, List<IndexedEntity> indexedEntities) {
         if (indexedEntities == null || indexedEntities.isEmpty()) {
             return;
@@ -125,12 +130,14 @@ public class KeycloakIndexSchemaUtil {
                 .forEach(cacheName -> updateSchemaAndReIndexCache(admin, cacheName));
     }
 
+    /** 判断指定实体在新旧 schema 间是否存在索引相关差异。 */
     private static boolean isEntityChanged(FileDescriptor oldSchema, FileDescriptor newSchema, String entity) {
         var v1 = KeycloakModelSchema.findEntity(oldSchema, entity);
         var v2 = KeycloakModelSchema.findEntity(newSchema, entity);
         return v1.isPresent() && v2.isPresent() && KeycloakIndexSchemaUtil.isIndexSchemaChanged(v1.get(), v2.get());
     }
 
+    /** 更新单个缓存的索引 schema 并触发重建索引。 */
     private static void updateSchemaAndReIndexCache(RemoteCacheManagerAdmin admin, String cacheName) {
         admin.updateIndexSchema(cacheName);
         try {
@@ -141,10 +148,10 @@ public class KeycloakIndexSchemaUtil {
     }
 
     /**
-     * Adds the annotations to the ProtoStream parser.
+     * 向 ProtoStream 解析器注册索引相关注解处理器配置。
      */
     public static void configureAnnotationProcessor(Configuration.Builder builder) {
-        //TODO remove in the future?
+        //TODO 未来可能移除？
         builder.annotationsConfig()
                 .annotation(BASIC_ANNOTATION, AnnotationElement.AnnotationTarget.FIELD)
                 .attribute(NAME_ATTRIBUTE)
@@ -168,8 +175,7 @@ public class KeycloakIndexSchemaUtil {
     }
 
     /**
-     * Compares two entities and returns {@code true} if any indexing related annotation were changed, added or
-     * removed.
+     * 比较两个实体描述符，若索引相关注解发生增删改则返回 {@code true}。
      */
     public static boolean isIndexSchemaChanged(Descriptor oldDescriptor, Descriptor newDescriptor) {
         var allFields = Stream.concat(
@@ -181,24 +187,24 @@ public class KeycloakIndexSchemaUtil {
             var newField = newDescriptor.findFieldByName(fieldName);
             if (isNewFieldAdded(oldField, newField)) {
                 if (isFieldIndexed(newField)) {
-                    // a new field is added and is indexed
+                    // 新增字段且已启用索引
                     return true;
                 }
                 continue;
             }
             if (isNewFieldRemoved(oldField, newField)) {
                 if (isFieldIndexed(oldField)) {
-                    // an old field is indexed and has been removed
+                    // 已索引字段被删除
                     return true;
                 }
                 continue;
             }
             if (isFieldIndexed(oldField) != isFieldIndexed(newField)) {
-                // some annotation added or removed
+                // 索引注解被添加或移除
                 return true;
             }
             if (!isFieldIndexed(oldField) && !isFieldIndexed(newField)) {
-                // nothing changes
+                // 双方均未索引，无变化
                 continue;
             }
             if (isAnnotationChanged(oldField, newField)) {
@@ -216,6 +222,7 @@ public class KeycloakIndexSchemaUtil {
         return oldField != null && newField == null;
     }
 
+    /** 判断字段是否配置了索引注解。 */
     private static boolean isFieldIndexed(FieldDescriptor descriptor) {
         var annotations = descriptor.getAnnotations();
         return INDEX_ANNOTATION.stream().anyMatch(annotations::containsKey);
@@ -231,18 +238,18 @@ public class KeycloakIndexSchemaUtil {
 
     private static boolean isAnnotatedDifferent(AnnotationElement.Annotation oldAnnot, AnnotationElement.Annotation newAnnot) {
         if (oldAnnot == null && newAnnot == null) {
-            // annotation not present in both field
+            // 两侧均无该注解
             return false;
         }
         if (oldAnnot != null && newAnnot == null) {
-            // annotation present *only* in old field
+            // 注解仅存在于旧字段
             return true;
         }
         if (oldAnnot == null) {
-            // annotation present *only* in new field
+            // 注解仅存在于新字段
             return true;
         }
-        // check if the attributes didn't change
+        // 比较注解属性值是否变化
         return !Objects.equals(getAnnotationValues(oldAnnot), getAnnotationValues(newAnnot));
 
     }
@@ -254,6 +261,7 @@ public class KeycloakIndexSchemaUtil {
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getValue().getValue()));
     }
 
+    /** 索引实体与其所在缓存名的配对记录。 */
     public record IndexedEntity(String entity, String cache) {
         public IndexedEntity {
             Objects.requireNonNull(entity);

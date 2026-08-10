@@ -42,27 +42,38 @@ import org.infinispan.Cache;
 import org.jboss.logging.Logger;
 
 /**
+ * 基于 Infinispan 的公钥存储 SPI 工厂。
+ * <p>
+ * 管理分布式公钥缓存、并发拉取去重，并在客户端/身份提供者变更时触发缓存失效。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class InfinispanPublicKeyStorageProviderFactory implements PublicKeyStorageProviderFactory {
 
     private static final Logger log = Logger.getLogger(InfinispanPublicKeyStorageProviderFactory.class);
 
+    /** SPI 提供者 ID，对应 {@code infinispan} 实现。 */
     public static final String PROVIDER_ID = "infinispan";
 
+    /** 公钥条目 Infinispan 缓存（延迟初始化）。 */
     private volatile Cache<String, PublicKeysEntry> keysCache;
 
+    /** 按缓存键跟踪进行中的公钥拉取任务，避免并发重复下载。 */
     private final Map<String, FutureTask<PublicKeysEntry>> tasksInProgress = new ConcurrentHashMap<>();
 
+    /** 两次公钥刷新请求之间的最小间隔（秒），用于缓解外部端点 DoS。 */
     private int minTimeBetweenRequests;
+    /** 通过“获取全部公钥”方式拉取时的最大缓存时长（秒）。 */
     private int maxCacheTime;
 
+    /** 创建公钥存储提供者实例。 */
     @Override
     public PublicKeyStorageProvider create(KeycloakSession session) {
         lazyInit(session);
         return new InfinispanPublicKeyStorageProvider(session, keysCache, tasksInProgress, minTimeBetweenRequests, maxCacheTime);
     }
 
+    /** 返回 minTimeBetweenRequests 与 maxCacheTime 的可配置元数据。 */
     @Override
     public List<ProviderConfigProperty> getConfigMetadata() {
         return ProviderConfigurationBuilder.create()
@@ -89,6 +100,7 @@ public class InfinispanPublicKeyStorageProviderFactory implements PublicKeyStora
                 .build();
     }
 
+    /** 双重检查锁定初始化 keys 缓存。 */
     private void lazyInit(KeycloakSession session) {
         if (keysCache == null) {
             synchronized (this) {
@@ -99,19 +111,19 @@ public class InfinispanPublicKeyStorageProviderFactory implements PublicKeyStora
         }
     }
 
+    /** 从配置读取请求间隔与最大缓存时间。 */
     @Override
     public void init(Config.Scope config) {
-        // minTimeBetweenRequests is used when getting a key via name or
-        // predicate to avoid doing calls very sooon when a key is missing
+        // 按名称或谓词查单个公钥时，缺失键场景下限制刷新频率
         minTimeBetweenRequests = config.getInt("minTimeBetweenRequests", 10);
 
-        // maxCacheTime is used to reload keys when retrieved via all getKeys
-        // a refresh is ensured for that method from time to time
-        maxCacheTime = config.getInt("maxCacheTime", 24*60*60); // 24 hours
+        // 通过 getKeys 拉取全部公钥时，定期强制刷新以检测缺失键
+        maxCacheTime = config.getInt("maxCacheTime", 24*60*60); // 24 小时
 
         log.debugf("minTimeBetweenRequests is %d maxCacheTime is %d", minTimeBetweenRequests, maxCacheTime);
     }
 
+    /** 注册客户端/身份提供者变更监听，自动失效相关公钥缓存条目。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         factory.register(new ProviderEventListener() {
@@ -133,6 +145,7 @@ public class InfinispanPublicKeyStorageProviderFactory implements PublicKeyStora
         });
     }
 
+    /** 根据模型变更事件解析需要失效的公钥缓存键。 */
     private SessionAndKeyHolder getCacheKeyToInvalidate(ProviderEvent event) {
         ArrayList<String> cacheKeys = new ArrayList<>();
         String cacheKey = null;
@@ -165,8 +178,11 @@ public class InfinispanPublicKeyStorageProviderFactory implements PublicKeyStora
         }
     }
 
+    /** 携带会话与待失效缓存键列表的辅助容器。 */
     private static class SessionAndKeyHolder {
+        /** 触发失效的 Keycloak 会话。 */
         private final KeycloakSession session;
+        /** 待失效的公钥缓存键集合。 */
         private final ArrayList<String> cacheKeys;
 
         public SessionAndKeyHolder(KeycloakSession session, ArrayList<String> cacheKeys) {

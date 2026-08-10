@@ -115,6 +115,12 @@ import org.infinispan.protostream.descriptors.FileDescriptor;
 import org.infinispan.protostream.impl.parser.ProtostreamProtoParser;
 import org.infinispan.protostream.types.java.CommonTypes;
 
+/**
+ * Keycloak 领域模型的 ProtoStream schema 定义。
+ * <p>
+ * 通过 {@link ProtoSchema} 聚合集群事件、会话实体、缓存谓词等可序列化类型，
+ * 供 Infinispan 分布式缓存与远程查询使用。
+ */
 @ProtoSchema(
         syntax = ProtoSyntax.PROTO3,
         schemaPackageName = Marshalling.PROTO_SCHEMA_PACKAGE,
@@ -246,10 +252,11 @@ import org.infinispan.protostream.types.java.CommonTypes;
 )
 public interface KeycloakModelSchema extends GeneratedSchema {
 
+    /** 单例 schema 实现，供运行时注册与解析。 */
     KeycloakModelSchema INSTANCE = new KeycloakModelSchemaImpl();
 
     /**
-     * Parses a Google Protocol Buffers schema file.
+     * 解析 Google Protocol Buffers schema 文本内容。
      */
     static FileDescriptor parseProtoSchema(String fileContent) {
         var files = FileDescriptorSource.fromString("a", fileContent);
@@ -260,7 +267,7 @@ public interface KeycloakModelSchema extends GeneratedSchema {
     }
 
     /**
-     * Finds an entity in a Google Protocol Buffers schema file
+     * 在 schema 文件中按全限定名查找消息实体描述符。
      */
     static Optional<Descriptor> findEntity(FileDescriptor fileDescriptor, String entity) {
         return fileDescriptor.getMessageTypes().stream()

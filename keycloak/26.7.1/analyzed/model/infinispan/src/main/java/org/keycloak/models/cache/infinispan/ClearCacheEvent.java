@@ -23,16 +23,22 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 集群级 Realm 缓存全量清除事件（单例）。
+ * <p>
+ * 通过 ClusterProvider 广播后，各节点 CacheManager.onClearEvent 清空本地缓存。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @ProtoTypeId(Marshalling.CLEAR_CACHE_EVENT)
 public final class ClearCacheEvent implements ClusterEvent {
 
+    /** 全局唯一实例。 */
     private static final ClearCacheEvent INSTANCE = new ClearCacheEvent();
 
     private ClearCacheEvent() {}
 
+    /** ProtoStream 工厂方法，始终返回单例实例。 */
     @ProtoFactory
     public static ClearCacheEvent getInstance() {
         return INSTANCE;

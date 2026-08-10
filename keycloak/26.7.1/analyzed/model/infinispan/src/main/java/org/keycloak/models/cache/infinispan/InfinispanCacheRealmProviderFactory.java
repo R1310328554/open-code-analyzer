@@ -33,23 +33,33 @@ import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.R
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.REALM_REVISIONS_CACHE_NAME;
 
 /**
+ * Infinispan 实现的 CacheRealmProviderFactory。
+ * <p>
+ * 延迟初始化 RealmCacheManager，注册集群失效与全量清除监听器，
+ * 为每个会话创建 RealmCacheSession。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class InfinispanCacheRealmProviderFactory implements CacheRealmProviderFactory {
 
     private static final Logger log = Logger.getLogger(InfinispanCacheRealmProviderFactory.class);
+    /** 集群广播：Realm 缓存全量清除事件主题。 */
     public static final String REALM_CLEAR_CACHE_EVENTS = "REALM_CLEAR_CACHE_EVENTS";
+    /** 集群广播：Realm 缓存失效事件主题。 */
     public static final String REALM_INVALIDATION_EVENTS = "REALM_INVALIDATION_EVENTS";
 
+    /** Realm 缓存管理器（延迟初始化）。 */
     protected volatile RealmCacheManager realmCache;
 
+    /** 创建 Realm 缓存会话提供者。 */
     @Override
     public CacheRealmProvider create(KeycloakSession session) {
         lazyInit(session);
         return new RealmCacheSession(realmCache, session);
     }
 
+    /** 双重检查锁定初始化 Realm 缓存并注册集群监听器。 */
     private void lazyInit(KeycloakSession session) {
         if (realmCache == null) {
             synchronized (this) {

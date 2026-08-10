@@ -25,33 +25,29 @@ import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.protostream.SerializationContextInitializer;
 
 /**
- * Ids of the protostream type.
+ * ProtoStream 类型 ID 常量表。
  * <p>
- * Read careful the following warning to ensure compatibility when updating schemas.
+ * 更新 schema 时请务必阅读下列兼容性警告。
  * <p>
- * WARNING! IDs lower or equal than 65535 are reserved for internal Inifinispan classes and cannot be used.
- * WARNING! ID defined in this class must be unique. If one type is removed, its ID must not be reused. You have been
- * warned! The ID identifies the message, and it is stored and used to save space.
- * WARNING! The field IDs cannot be reused as well for the same reason.
- * WARNING! Primitive types cannot be null in proto3 syntax (Integer, String). Take that in consideration.
+ * 警告：ID 小于等于 65535 保留给 Infinispan 内部类，不可使用。
+ * 警告：本类定义的 ID 必须全局唯一；类型删除后 ID 不可复用，ID 用于标识消息以节省空间。
+ * 警告：字段 ID 同样不可复用。
+ * 警告：proto3 语法下包装类型（Integer、String 等）不能为 null，设计时需注意。
  * <p>
- * Be Aware of the following default in Proto3 syntax!
- * For strings, the default value is the empty string.
- * For bytes, the default value is empty bytes.
- * For bools, the default value is false.
- * For numeric types, the default value is zero.
- * For enums, the default value is the first defined enum value, which must be 0.
- * For message fields, the field is not set. (null)
+ * Proto3 默认值：字符串为空串、字节为空、布尔为 false、数值为零、枚举为首项（须为 0）、消息字段未设置（null）。
  * <p>
- * Docs: <a href="https://protobuf.dev/programming-guides/proto3/">Language Guide (proto 3)</a>
+ * 文档：<a href="https://protobuf.dev/programming-guides/proto3/">Language Guide (proto 3)</a>
  */
 @SuppressWarnings("unused")
 public final class Marshalling {
 
+    /** Keycloak Proto schema 包名前缀。 */
     public static final String PROTO_SCHEMA_PACKAGE = "keycloak";
 
+    /** 已发现的 SerializationContextInitializer 列表（懒加载）。 */
     private static List<SerializationContextInitializer> SCHEMAS;
 
+    /** 返回所有已注册的 ProtoStream schema 初始化器。 */
     public static List<SerializationContextInitializer> getSchemas() {
         if (SCHEMAS == null) {
             setSchemas(ServiceFinder.load(SerializationContextInitializer.class).stream().toList());
@@ -59,6 +55,7 @@ public final class Marshalling {
         return SCHEMAS;
     }
 
+    /** 注入 schema 列表（测试或扩展时使用）。 */
     public static void setSchemas(List<SerializationContextInitializer> schemas) {
         SCHEMAS = List.copyOf(schemas);
     }
@@ -66,7 +63,7 @@ public final class Marshalling {
     private Marshalling() {
     }
 
-    // Model
+    // 模型层类型 ID
     /** see {@link org.keycloak.models.UserSessionModel.State} */
     public static final int USER_STATE_ENUM = 65536;
     /** see {@link org.keycloak.sessions.CommonClientSessionModel.ExecutionStatus} */
@@ -78,13 +75,13 @@ public final class Marshalling {
     /** see {@link org.keycloak.storage.UserStorageProviderClusterEvent} */
     public static final int USER_STORAGE_PROVIDER_CLUSTER_EVENT = 65540;
 
-    // clustering.infinispan package
+    // clustering.infinispan 包
     public static final int LOCK_ENTRY = 65541;
     public static final int LOCK_ENTRY_PREDICATE = 65542;
     public static final int WRAPPED_CLUSTER_EVENT = 65543;
     public static final int WRAPPED_CLUSTER_EVENT_SITE_FILTER = 65544;
 
-    // keys.infinispan package
+    // keys.infinispan 包 — 公钥失效事件
     public static final int PUBLIC_KEY_INVALIDATION_EVENT = 65545;
 
     //models.cache.infinispan.authorization.events package
@@ -193,14 +190,17 @@ public final class Marshalling {
     public static final int WORKFLOW_SCHEDULE_CLUSTER_EVENT = 65621;
     public static final int USER_VERIFIABLE_CREDENTIALS_UPDATED_EVENT = 65622;
 
+    /** 将已注册 schema 加入嵌入式 Infinispan 全局配置。 */
     public static void configure(GlobalConfigurationBuilder builder) {
         getSchemas().forEach(builder.serialization()::addContextInitializer);
     }
 
+    /** 将已注册 schema 加入 Hot Rod 客户端配置。 */
     public static void configure(ConfigurationBuilder builder) {
         getSchemas().forEach(builder::addContextInitializer);
     }
 
+    /** 返回给定 Java 类对应的 proto 实体全限定名。 */
     public static String protoEntity(Class<?> clazz) {
         return PROTO_SCHEMA_PACKAGE + "." + clazz.getSimpleName();
     }

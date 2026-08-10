@@ -37,18 +37,30 @@ import org.keycloak.models.utils.RoleUtils;
 import org.keycloak.organization.OrganizationProvider;
 
 /**
+ * 基于 Infinispan 缓存的 GroupModel 适配器。
+ * <p>
+ * 读操作使用 CachedGroup 快照；写操作 copy-on-write 并注册组失效。
+ * 支持角色映射、子组层次与组织关联的延迟解析。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class GroupAdapter implements GroupModel {
 
+    /** 只读缓存快照。 */
     protected final CachedGroup cached;
+    /** 所属 Realm 缓存会话。 */
     protected final RealmCacheSession cacheSession;
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession keycloakSession;
+    /** 缓存的 realm 模型引用。 */
     protected final RealmModel realm;
+    /** 延迟加载持久化 GroupModel 的供应器。 */
     private final Supplier<GroupModel> modelSupplier;
+    /** 写操作时的持久化委托。 */
     protected volatile GroupModel updated;
 
+    /** 包装已缓存组与 realm/会话上下文。 */
     public GroupAdapter(CachedGroup cached, RealmCacheSession cacheSession, KeycloakSession keycloakSession, RealmModel realm) {
         this.cached = cached;
         this.cacheSession = cacheSession;
@@ -57,6 +69,7 @@ public class GroupAdapter implements GroupModel {
         modelSupplier = new LazyModel<>(this::getGroupModel);
     }
 
+    /** 首次写操作时加载持久化委托并注册组失效。 */
     protected void getDelegateForUpdate() {
         if (updated == null) {
             cacheSession.registerGroupInvalidation(cached.getId());
@@ -65,11 +78,13 @@ public class GroupAdapter implements GroupModel {
         }
     }
 
+    /** 标记缓存条目已失效。 */
     protected volatile boolean invalidated;
     public void invalidate() {
         invalidated = true;
     }
 
+    /** 判断是否已进入写路径或需因失效而回源。 */
     protected boolean isUpdated() {
         if (updated != null) return true;
         if (!invalidated) return false;
@@ -328,6 +343,7 @@ public class GroupAdapter implements GroupModel {
         updated.removeChild(subGroup);
     }
 
+    /** 从持久化层按 ID 加载组。 */
     private GroupModel getGroupModel() {
         return cacheSession.getGroupDelegate().getGroupById(realm, cached.getId());
     }
@@ -347,13 +363,13 @@ public class GroupAdapter implements GroupModel {
     public OrganizationModel getOrganization() {
         if (isUpdated()) return updated.getOrganization();
 
-        // Use cached organization ID
+        // 使用缓存的组织 ID 解析 OrganizationModel
         String orgId = cached.getOrganizationId();
         if (orgId == null) {
             return null;
         }
 
-        // Fetch organization from cached OrganizationProvider
+        // 从 OrganizationProvider 获取组织（可能已缓存）
         OrganizationProvider orgProvider = keycloakSession.getProvider(OrganizationProvider.class);
         if (orgProvider == null) {
             return null;

@@ -31,18 +31,28 @@ import org.keycloak.models.cache.infinispan.entities.CachedClientScope;
 import org.keycloak.models.utils.RoleUtils;
 
 /**
+ * 基于 Infinispan 缓存的 ClientScopeModel 适配器。
+ * <p>
+ * 与 ClientAdapter 类似，读缓存、写时 copy-on-write 并触发 scope 失效。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ClientScopeAdapter implements ClientScopeModel {
+    /** 所属 Realm 缓存会话。 */
     protected RealmCacheSession cacheSession;
+    /** 缓存的 realm 模型引用。 */
     protected RealmModel cachedRealm;
 
+    /** 写操作时的持久化委托。 */
     protected ClientScopeModel updated;
+    /** 只读缓存快照。 */
     protected CachedClientScope cached;
 
+    /** 延迟加载持久化 ClientScopeModel 的供应器。 */
     private final Supplier<ClientScopeModel> modelSupplier;
 
+    /** 包装已缓存客户端 scope 与 realm 上下文。 */
     public ClientScopeAdapter(RealmModel cachedRealm, CachedClientScope cached, RealmCacheSession cacheSession) {
         this.cachedRealm = cachedRealm;
         this.cacheSession = cacheSession;
@@ -50,6 +60,7 @@ public class ClientScopeAdapter implements ClientScopeModel {
         this.modelSupplier = new LazyModel<>(this::getClientScope);
     }
 
+    /** 首次写操作时加载持久化委托并注册 scope 失效。 */
     private void getDelegateForUpdate() {
         if (updated == null) {
             cacheSession.registerClientScopeInvalidation(cached.getId(), cachedRealm.getId());
@@ -58,11 +69,13 @@ public class ClientScopeAdapter implements ClientScopeModel {
         }
     }
 
+    /** 标记缓存条目已失效。 */
     protected boolean invalidated;
     public void invalidate() {
         invalidated = true;
     }
 
+    /** 判断是否已进入写路径或需因失效而回源。 */
     protected boolean isUpdated() {
         if (updated != null) return true;
         if (!invalidated) return false;
@@ -228,6 +241,7 @@ public class ClientScopeAdapter implements ClientScopeModel {
         return copy;
     }
 
+    /** 从持久化层按 ID 加载客户端 scope。 */
     private ClientScopeModel getClientScope() {
         return cacheSession.getClientScopeDelegate().getClientScopeById(cachedRealm, cached.getId());
     }
