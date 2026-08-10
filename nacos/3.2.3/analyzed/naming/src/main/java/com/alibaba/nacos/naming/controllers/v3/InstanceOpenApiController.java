@@ -54,14 +54,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Nacos naming module client used HTTP Open API controller.
+ * 命名模块客户端 HTTP Open API 控制器。
  *
- * <p>
- * This open API is used for some program language which not support gRPC request and want to develop a application used
- * client to register/deregister self to Nacos, or get remote call service instance list from Nacos. So this client used
- * open API only provide specified feature APIs to register instance/deregister instance/get instance list for specified
- * service. Not support subscribe service instances with HTTP, please use gRPC request to subscribe service.
- * </p>
+ * <p>面向不支持 gRPC 的语言，提供实例注册/注销/心跳及实例列表查询；不支持 HTTP 订阅，订阅请使用 gRPC。</p>
  *
  * @author xiweng.yy
  */
@@ -71,8 +66,10 @@ import java.util.List;
 @ExtractorManager.Extractor(httpExtractor = NamingDefaultHttpParamExtractor.class)
 public class InstanceOpenApiController {
     
+    /** 实例操作入口（客户端 Open API 专用实现）。 */
     private final InstanceOperator instanceOperator;
     
+    /** 命名开关域，提供默认临时实例等配置。 */
     private final SwitchDomain switchDomain;
     
     public InstanceOpenApiController(InstanceOperator instanceOperator, SwitchDomain switchDomain) {
@@ -81,13 +78,12 @@ public class InstanceOpenApiController {
     }
     
     /**
-     * Register or heart beat instance to Nacos.
+     * 注册实例或发送心跳到 Nacos。
      *
-     * @param instanceForm instance form
-     * @param heartBeat    whether is heart beat request
-     * @return register or heart beat result. If is heartBeat request(heartBeat=true) and instance not found, return
-     * code `21003` to indicate caller should register again with heartBeat=false.
-     * @throws NacosException register or heart beat with exception.
+     * @param instanceForm 实例表单
+     * @param heartBeat 是否为心跳请求
+     * @return 注册或心跳结果；心跳时实例不存在返回错误码 21003，提示需先注册
+     * @throws NacosException 注册或心跳异常
      */
     @Since("3.0.0")
     @CanDistro
@@ -97,7 +93,7 @@ public class InstanceOpenApiController {
     public Result<String> register(InstanceForm instanceForm,
         @RequestParam(defaultValue = "false") boolean heartBeat)
         throws NacosException {
-        // check param
+        // 校验请求参数
         instanceForm.validate();
         if (heartBeat) {
             if (ResponseCode.OK != doHeartBeat(instanceForm)) {
@@ -110,11 +106,11 @@ public class InstanceOpenApiController {
     }
     
     /**
-     * Deregister instance from Nacos.
+     * 从 Nacos 注销实例。
      *
-     * @param instanceForm instance form
-     * @return deregister result, if instance not found, also return remove success.
-     * @throws NacosException deregister with exception.
+     * @param instanceForm 实例表单
+     * @return 注销结果；实例不存在时也返回成功
+     * @throws NacosException 注销异常
      */
     @Since("3.0.0")
     @CanDistro
@@ -122,7 +118,7 @@ public class InstanceOpenApiController {
     @TpsControl(pointName = "NamingInstanceDeregister", name = "HttpNamingInstanceDeregister")
     @Secured(action = ActionTypes.WRITE, apiType = ApiType.OPEN_API)
     public Result<String> deregister(InstanceForm instanceForm) throws NacosException {
-        // check param
+        // 校验请求参数
         instanceForm.validate();
         Instance instance =
             InstanceUtil.buildInstance(instanceForm, switchDomain.isDefaultInstanceEphemeral());
@@ -138,17 +134,13 @@ public class InstanceOpenApiController {
     }
     
     /**
-     * Get all instances for specified service.
+     * 获取指定服务的全部可用实例列表。
      *
-     * <p>
-     * This API will not return `enabled=false` instances, because of this api is used by custom client. instances with
-     * `enabled=false` means instance has been offline, so client should not found these service instances.
-     * </p>
+     * <p>不返回 {@code enabled=false} 的下线实例，供自定义客户端拉取。</p>
      *
-     * @param instanceForm instance form of subscriber. The ip and port is subscriber info. The service name, group name
-     *                     and cluster name is the target service info.
-     * @return all instances for specified service without `enabled=false`.
-     * @throws Exception any exception during get instances.
+     * @param instanceForm 订阅者表单（ip/port 为订阅方，其余为目标服务信息）
+     * @return 不含下线实例的实例列表
+     * @throws Exception 查询过程中的异常
      */
     @Since("3.0.0")
     @GetMapping("/list")
@@ -156,7 +148,7 @@ public class InstanceOpenApiController {
     @Secured(action = ActionTypes.READ, apiType = ApiType.OPEN_API)
     @ExtractorManager.Extractor(httpExtractor = NamingInstanceListHttpParamExtractor.class)
     public Result<List<Instance>> list(InstanceListForm instanceForm) throws Exception {
-        // check param
+        // 校验请求参数
         instanceForm.validate();
         String namespaceId = instanceForm.getNamespaceId();
         String groupName = instanceForm.getGroupName();
@@ -167,6 +159,7 @@ public class InstanceOpenApiController {
         return Result.success(serviceInfo.getHosts());
     }
     
+    /** 处理心跳请求，返回响应码。 */
     private int doHeartBeat(InstanceForm instanceForm) throws NacosException {
         BeatInfoInstanceBuilder builder = BeatInfoInstanceBuilder.newBuilder();
         return instanceOperator.handleBeat(instanceForm.getNamespaceId(),
@@ -175,6 +168,7 @@ public class InstanceOpenApiController {
             instanceForm.getClusterName(), null, builder);
     }
     
+    /** 校验权重并注册实例，发布注册追踪事件。 */
     private void doRegisterInstance(InstanceForm instanceForm) throws NacosException {
         NamingRequestUtil.checkWeight(instanceForm.getWeight());
         Instance instance =

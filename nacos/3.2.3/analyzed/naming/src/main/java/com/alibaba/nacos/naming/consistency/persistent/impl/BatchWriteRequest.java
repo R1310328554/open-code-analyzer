@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * batch write request.
+ * 持久化存储批量写操作的请求体。
+ *
+ * <p>携带多组键值对，由一致性层一次性提交到 Raft 日志。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -29,8 +31,10 @@ public class BatchWriteRequest implements Serializable {
     
     private static final long serialVersionUID = 5620748357962129879L;
     
+    /** 待写入的键列表。 */
     private List<byte[]> keys = new ArrayList<>(16);
     
+    /** 与键一一对应的值列表。 */
     private List<byte[]> values = new ArrayList<>(16);
     
     public List<byte[]> getKeys() {
@@ -49,6 +53,7 @@ public class BatchWriteRequest implements Serializable {
         this.values = values;
     }
     
+    /** 追加一对键值到请求列表末尾。 */
     public void append(byte[] key, byte[] value) {
         keys.add(key);
         values.add(value);

@@ -35,7 +35,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Cluster controller.
+ * 命名集群管理 v3 控制器。
+ *
+ * <p>提供集群元数据（健康检查、扩展数据等）的更新 API。</p>
  *
  * @author Nacos
  */
@@ -45,15 +47,14 @@ import org.springframework.web.bind.annotation.RestController;
 @ExtractorManager.Extractor(httpExtractor = NamingDefaultHttpParamExtractor.class)
 public class ClusterControllerV3 {
     
+    /** 集群元数据操作实现。 */
     private final ClusterOperatorV2Impl clusterOperatorV2;
     
     public ClusterControllerV3(ClusterOperatorV2Impl clusterOperatorV2) {
         this.clusterOperatorV2 = clusterOperatorV2;
     }
     
-    /**
-     * Update cluster.
-     */
+    /** 更新指定服务的集群元数据（健康检查器、端口等）。 */
     @Since("3.0.0")
     @PutMapping
     @Secured(action = ActionTypes.WRITE, apiType = ApiType.ADMIN_API)

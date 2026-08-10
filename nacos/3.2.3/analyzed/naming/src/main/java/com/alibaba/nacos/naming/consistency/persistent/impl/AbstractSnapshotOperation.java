@@ -28,16 +28,21 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 
 /**
- * Abstract snapshot operation.
+ * 持久化一致性快照操作的抽象基类。
+ *
+ * <p>封装 Raft 快照保存与加载时的写锁保护、异步执行与耗时统计，子类只需实现 {@link #writeSnapshot} 与 {@link #readSnapshot}。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractSnapshotOperation implements SnapshotOperation {
     
+    /** 快照校验和键名。 */
     protected static final String CHECK_SUM_KEY = "checksum";
     
+    /** 快照读写时使用的写锁，保证与内存数据变更互斥。 */
     private final ReentrantReadWriteLock.WriteLock writeLock;
     
+    /** 从读写锁中提取写锁供快照流程使用。 */
     public AbstractSnapshotOperation(ReentrantReadWriteLock lock) {
         this.writeLock = lock.writeLock();
     }
@@ -81,34 +86,34 @@ public abstract class AbstractSnapshotOperation implements SnapshotOperation {
     }
     
     /**
-     * Write snapshot.
+     * 将内存状态写入快照文件。
      *
-     * @param writer snapshot writer
-     * @return {@code true} if write snapshot successfully, otherwise {@code false}
-     * @throws Exception any exception during writing
+     * @param writer 快照写入器
+     * @return 写入成功返回 {@code true}，否则 {@code false}
+     * @throws Exception 写入过程中的任意异常
      */
     protected abstract boolean writeSnapshot(Writer writer) throws Exception;
     
     /**
-     * Read snapshot.
+     * 从快照文件恢复内存状态。
      *
-     * @param reader snapshot reader
-     * @return {@code true} if read snapshot successfully, otherwise {@code false}
-     * @throws Exception any exception during reading
+     * @param reader 快照读取器
+     * @return 加载成功返回 {@code true}，否则 {@code false}
+     * @throws Exception 读取过程中的任意异常
      */
     protected abstract boolean readSnapshot(Reader reader) throws Exception;
     
     /**
-     * Get snapshot save tag. It will be used to see time metric time context.
+     * 获取快照保存耗时统计标签。
      *
-     * @return snapshot save tag
+     * @return 快照保存标签
      */
     protected abstract String getSnapshotSaveTag();
     
     /**
-     * Get snapshot load tag. It will be used to see time metric time context.
+     * 获取快照加载耗时统计标签。
      *
-     * @return snapshot load tag
+     * @return 快照加载标签
      */
     protected abstract String getSnapshotLoadTag();
 }

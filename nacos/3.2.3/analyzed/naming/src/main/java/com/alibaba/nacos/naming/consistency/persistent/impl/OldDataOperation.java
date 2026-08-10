@@ -17,33 +17,31 @@
 package com.alibaba.nacos.naming.consistency.persistent.impl;
 
 /**
- * Adapter old version data operation {@link com.alibaba.nacos.naming.consistency.persistent.impl.BasePersistentServiceProcessor.Op}.
+ * 旧版持久化数据操作类型枚举。
+ *
+ * <p>适配 {@link com.alibaba.nacos.naming.consistency.persistent.impl.BasePersistentServiceProcessor.Op}，用于兼容历史 Raft 日志中的操作描述。</p>
  *
  * @author xiweng.yy
  */
 public enum OldDataOperation {
     
-    /**
-     * write ops.
-     */
+    /** 写入操作。 */
     Write("Write"),
     
-    /**
-     * read ops.
-     */
+    /** 读取操作。 */
     Read("Read"),
     
-    /**
-     * delete ops.
-     */
+    /** 删除操作。 */
     Delete("Delete");
     
+    /** 操作类型的可读描述字符串。 */
     private final String desc;
     
     OldDataOperation(String desc) {
         this.desc = desc;
     }
     
+    /** 返回操作描述。 */
     public String getDesc() {
         return desc;
     }

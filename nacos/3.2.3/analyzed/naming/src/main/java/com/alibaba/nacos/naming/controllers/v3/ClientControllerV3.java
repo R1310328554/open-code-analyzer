@@ -44,7 +44,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Client controller.
+ * 命名客户端管理 v3 控制器。
+ *
+ * <p>提供客户端列表、详情、发布/订阅关系及 Distro 负责节点查询等管理 API。</p>
  *
  * @author Nacos
  */
@@ -55,8 +57,10 @@ import java.util.List;
 @ExtractorManager.Extractor(httpExtractor = NamingDefaultHttpParamExtractor.class)
 public class ClientControllerV3 {
     
+    /** 客户端连接管理器，用于校验 clientId 是否存在。 */
     private final ClientManager clientManager;
     
+    /** 客户端查询业务服务实现。 */
     private final ClientService clientServiceV2Impl;
     
     public ClientControllerV3(ClientManager clientManager, ClientService clientServiceV2Impl) {
@@ -64,9 +68,7 @@ public class ClientControllerV3 {
         this.clientServiceV2Impl = clientServiceV2Impl;
     }
     
-    /**
-     * Query all clients.
-     */
+    /** 查询所有已连接客户端 ID 列表。 */
     @Since("3.0.0")
     @GetMapping("/list")
     @Secured(action = ActionTypes.READ, apiType = ApiType.ADMIN_API)
@@ -74,9 +76,7 @@ public class ClientControllerV3 {
         return Result.success(clientServiceV2Impl.getClientList());
     }
     
-    /**
-     * Query client by clientId.
-     */
+    /** 按 clientId 查询客户端摘要信息。 */
     @Since("3.0.0")
     @GetMapping()
     @Secured(action = ActionTypes.READ, apiType = ApiType.ADMIN_API)
@@ -86,9 +86,7 @@ public class ClientControllerV3 {
         return Result.success(clientServiceV2Impl.getClientDetail(clientId));
     }
     
-    /**
-     * Query the services registered by the specified client.
-     */
+    /** 查询指定客户端已注册（发布）的服务列表。 */
     @Since("3.0.0")
     @GetMapping("/publish/list")
     @Secured(action = ActionTypes.READ, apiType = ApiType.ADMIN_API)
@@ -99,9 +97,7 @@ public class ClientControllerV3 {
         return Result.success(clientServiceV2Impl.getPublishedServiceList(clientId));
     }
     
-    /**
-     * Query the services to which the specified client subscribes.
-     */
+    /** 查询指定客户端已订阅的服务列表。 */
     @Since("3.0.0")
     @GetMapping("/subscribe/list")
     @Secured(action = ActionTypes.READ, apiType = ApiType.ADMIN_API)
@@ -112,9 +108,7 @@ public class ClientControllerV3 {
         return Result.success(clientServiceV2Impl.getSubscribeServiceList(clientId));
     }
     
-    /**
-     * Query the clients that have registered the specified service.
-     */
+    /** 查询已注册指定服务的客户端（发布者）列表。 */
     @Since("3.0.0")
     @GetMapping("/service/publisher/list")
     @Secured(action = ActionTypes.READ, apiType = ApiType.ADMIN_API)
@@ -129,9 +123,7 @@ public class ClientControllerV3 {
                 clientServiceForm.getPort()));
     }
     
-    /**
-     * Query the clients that are subscribed to the specified service.
-     */
+    /** 查询已订阅指定服务的客户端列表。 */
     @Since("3.0.0")
     @GetMapping("/service/subscriber/list")
     @Secured(action = ActionTypes.READ, apiType = ApiType.ADMIN_API)
@@ -146,9 +138,7 @@ public class ClientControllerV3 {
                 clientServiceForm.getPort()));
     }
     
-    /**
-     * Query the responsible server for a given client based on its IP and port.
-     */
+    /** 根据客户端 IP 与端口查询 Distro 负责节点。 */
     @Since("3.0.0")
     @GetMapping("/distro")
     @Secured(resource = UtilsAndCommons.CLIENT_CONTROLLER_V3_ADMIN_PATH, action = ActionTypes.READ,
@@ -158,6 +148,7 @@ public class ClientControllerV3 {
         return Result.success(clientServiceV2Impl.getResponsibleServer4Client(ip, port));
     }
     
+    /** 校验 clientId 是否存在，不存在则抛出 404。 */
     private void checkClientId(String clientId) throws NacosApiException {
         if (!clientManager.contains(clientId)) {
             throw new NacosApiException(HttpStatus.NOT_FOUND.value(), ErrorCode.RESOURCE_NOT_FOUND,

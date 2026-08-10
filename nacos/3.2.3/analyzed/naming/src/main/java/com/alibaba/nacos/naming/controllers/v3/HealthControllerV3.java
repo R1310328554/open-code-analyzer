@@ -39,7 +39,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * Health controller.
+ * 命名健康检查管理 v3 控制器。
+ *
+ * <p>提供持久实例健康状态更新及可用健康检查器类型查询。</p>
  *
  * @author Nacos
  */
@@ -49,12 +51,11 @@ import java.util.Map;
 @ExtractorManager.Extractor(httpExtractor = NamingDefaultHttpParamExtractor.class)
 public class HealthControllerV3 {
     
+    /** 健康检查操作实现。 */
     @Autowired
     private HealthOperatorV2Impl healthOperatorV2;
     
-    /**
-     * Update health check for instance.
-     */
+    /** 更新持久实例的健康状态。 */
     @Since("3.0.0")
     @CanDistro
     @PutMapping(value = "/instance")
@@ -69,9 +70,7 @@ public class HealthControllerV3 {
         return Result.success("ok");
     }
     
-    /**
-     * Get all health checkers.
-     */
+    /** 获取所有已注册的健康检查器类型映射。 */
     @Since("3.0.0")
     @GetMapping("/checkers")
     @Secured(action = ActionTypes.WRITE, apiType = ApiType.ADMIN_API)

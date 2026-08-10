@@ -68,7 +68,9 @@ import java.util.Map;
 import static com.alibaba.nacos.naming.misc.UtilsAndCommons.DEFAULT_CLUSTER_NAME;
 
 /**
- * Instance controller.
+ * 命名实例管理 v3 控制器（管理 API）。
+ *
+ * <p>提供实例注册、注销、更新、批量元数据操作、部分更新及列表/详情查询；支持 TPS 限流与 Distro 路由。</p>
  *
  * @author Nacos
  */
@@ -78,10 +80,13 @@ import static com.alibaba.nacos.naming.misc.UtilsAndCommons.DEFAULT_CLUSTER_NAME
 @ExtractorManager.Extractor(httpExtractor = NamingDefaultHttpParamExtractor.class)
 public class InstanceControllerV3 {
     
+    /** 命名开关域，提供默认临时实例等运行时配置。 */
     private final SwitchDomain switchDomain;
     
+    /** 实例 CRUD 业务实现。 */
     private final InstanceOperatorClientImpl instanceService;
     
+    /** 服务目录查询，用于实例列表接口。 */
     private final CatalogService catalogService;
     
     public InstanceControllerV3(SwitchDomain switchDomain,
@@ -92,19 +97,17 @@ public class InstanceControllerV3 {
         this.catalogService = catalogService;
     }
     
-    /**
-     * Register new instance.
-     */
+    /** 注册新实例到指定服务。 */
     @Since("3.0.0")
     @CanDistro
     @PostMapping
     @TpsControl(pointName = "NamingInstanceRegister", name = "HttpNamingInstanceRegister")
     @Secured(action = ActionTypes.WRITE, apiType = ApiType.ADMIN_API)
     public Result<String> register(InstanceForm instanceForm) throws NacosException {
-        // check param
+        // 校验请求参数
         instanceForm.validate();
         NamingRequestUtil.checkWeight(instanceForm.getWeight());
-        // build instance
+        // 构建实例对象
         Instance instance =
             InstanceUtil.buildInstance(instanceForm, switchDomain.isDefaultInstanceEphemeral());
         String namespaceId = instanceForm.getNamespaceId();
@@ -119,18 +122,16 @@ public class InstanceControllerV3 {
         return Result.success("ok");
     }
     
-    /**
-     * Deregister instances.
-     */
+    /** 从指定服务注销实例。 */
     @Since("3.0.0")
     @CanDistro
     @DeleteMapping
     @TpsControl(pointName = "NamingInstanceDeregister", name = "HttpNamingInstanceDeregister")
     @Secured(action = ActionTypes.WRITE, apiType = ApiType.ADMIN_API)
     public Result<String> deregister(InstanceForm instanceForm) throws NacosException {
-        // check param
+        // 校验请求参数
         instanceForm.validate();
-        // build instance
+        // 构建实例对象
         Instance instance =
             InstanceUtil.buildInstance(instanceForm, switchDomain.isDefaultInstanceEphemeral());
         instanceService.removeInstance(instanceForm.getNamespaceId(), instanceForm.getGroupName(),
@@ -145,19 +146,17 @@ public class InstanceControllerV3 {
         return Result.success("ok");
     }
     
-    /**
-     * Update instance.
-     */
+    /** 全量更新实例属性。 */
     @Since("3.0.0")
     @CanDistro
     @PutMapping
     @TpsControl(pointName = "NamingInstanceUpdate", name = "HttpNamingInstanceUpdate")
     @Secured(action = ActionTypes.WRITE, apiType = ApiType.ADMIN_API)
     public Result<String> update(InstanceForm instanceForm) throws NacosException {
-        // check param
+        // 校验请求参数
         instanceForm.validate();
         NamingRequestUtil.checkWeight(instanceForm.getWeight());
-        // build instance
+        // 构建实例对象
         Instance instance =
             InstanceUtil.buildInstance(instanceForm, switchDomain.isDefaultInstanceEphemeral());
         instanceService.updateInstance(instanceForm.getNamespaceId(), instanceForm.getGroupName(),
@@ -172,9 +171,7 @@ public class InstanceControllerV3 {
         return Result.success("ok");
     }
     
-    /**
-     * Batch update instance's metadata. old key exist = update, old key not exist = add.
-     */
+    /** 批量更新实例元数据：已有键更新，不存在则新增。 */
     @Since("3.0.0")
     @CanDistro
     @PutMapping(value = "/metadata/batch")
@@ -200,9 +197,7 @@ public class InstanceControllerV3 {
         return Result.success(new InstanceMetadataBatchResult(ipList));
     }
     
-    /**
-     * Batch delete instance's metadata. old key exist = delete, old key not exist = not operate
-     */
+    /** 批量删除实例元数据：已有键删除，不存在则跳过。 */
     @Since("3.0.0")
     @CanDistro
     @DeleteMapping("/metadata/batch")
@@ -226,6 +221,7 @@ public class InstanceControllerV3 {
         return Result.success(new InstanceMetadataBatchResult(ipList));
     }
     
+    /** 构建批量元数据操作上下文，补全默认集群名。 */
     private InstanceOperationInfo buildOperationInfo(String serviceName, String consistencyType,
         List<Instance> instances) {
         if (!CollectionUtils.isEmpty(instances)) {
@@ -238,6 +234,7 @@ public class InstanceControllerV3 {
         return new InstanceOperationInfo(serviceName, consistencyType, instances);
     }
     
+    /** 解析批量操作中的实例 JSON 列表，失败时返回空列表。 */
     private List<Instance> parseBatchInstances(String instances) {
         try {
             return JacksonUtils.toObj(instances, new TypeReference<List<Instance>>() {
@@ -249,9 +246,7 @@ public class InstanceControllerV3 {
         return Collections.emptyList();
     }
     
-    /**
-     * Partial update instance.
-     */
+    /** 部分更新实例（仅修改提交的字段）。 */
     @Since("3.0.0")
     @CanDistro
     @PutMapping(value = "/partial")
@@ -279,9 +274,7 @@ public class InstanceControllerV3 {
         return Result.success("ok");
     }
     
-    /**
-     * Get all instance of input service.
-     */
+    /** 获取指定服务的全部实例列表，可选仅返回健康实例。 */
     @Since("3.0.0")
     @GetMapping("/list")
     @TpsControl(pointName = "NamingServiceSubscribe", name = "HttpNamingServiceSubscribe")
@@ -300,9 +293,7 @@ public class InstanceControllerV3 {
         return Result.success(instances);
     }
     
-    /**
-     * Get detail information of specified instance.
-     */
+    /** 获取指定实例的详细信息。 */
     @Since("3.0.0")
     @GetMapping
     @TpsControl(pointName = "NamingInstanceQuery", name = "HttpNamingInstanceQuery")
@@ -318,6 +309,7 @@ public class InstanceControllerV3 {
         return Result.success(instance);
     }
     
+    /** 拼接 group@@service 复合服务名。 */
     private String buildCompositeServiceName(InstanceMetadataBatchOperationForm form) {
         return NamingUtils.getGroupedName(form.getServiceName(), form.getGroupName());
     }

@@ -17,30 +17,29 @@
 package com.alibaba.nacos.naming.constants;
 
 /**
- * Push constants keys and values.
+ * 命名推送任务相关配置常量。
+ *
+ * <p>定义推送延迟、超时与重试间隔的配置键及默认值。</p>
  *
  * @author xiweng.yy
  */
 public class PushConstants {
     
-    /**
-     * Naming push task delay time, unit: milliseconds.
-     */
+    /** 推送任务延迟时间配置键，单位毫秒。 */
     public static final String PUSH_TASK_DELAY = "nacos.naming.push.pushTaskDelay";
     
+    /** 默认推送任务延迟：500 毫秒。 */
     public static final long DEFAULT_PUSH_TASK_DELAY = 500L;
     
-    /**
-     * Naming push task execute timeout, unit: milliseconds.
-     */
+    /** 推送任务执行超时配置键，单位毫秒。 */
     public static final String PUSH_TASK_TIMEOUT = "nacos.naming.push.pushTaskTimeout";
     
+    /** 默认推送任务超时：5000 毫秒。 */
     public static final long DEFAULT_PUSH_TASK_TIMEOUT = 5000L;
     
-    /**
-     * Naming push task retry delay, unit: milliseconds.
-     */
+    /** 推送任务重试延迟配置键，单位毫秒。 */
     public static final String PUSH_TASK_RETRY_DELAY = "nacos.naming.push.pushTaskRetryDelay";
     
+    /** 默认推送重试延迟：1000 毫秒。 */
     public static final long DEFAULT_PUSH_TASK_RETRY_DELAY = 1000L;
 }

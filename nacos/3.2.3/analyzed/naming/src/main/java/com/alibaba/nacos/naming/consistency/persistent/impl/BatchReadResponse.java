@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Batch read response.
+ * 持久化存储批量读操作的响应体。
+ *
+ * <p>以并行列表形式返回键与值，供 Raft 批量读协议反序列化。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -29,8 +31,10 @@ public class BatchReadResponse implements Serializable {
     
     private static final long serialVersionUID = 5639813122389207205L;
     
+    /** 批量读取的键列表。 */
     private List<byte[]> keys = new ArrayList<>(16);
     
+    /** 与键一一对应的值列表。 */
     private List<byte[]> values = new ArrayList<>(16);
     
     public List<byte[]> getKeys() {
@@ -49,6 +53,7 @@ public class BatchReadResponse implements Serializable {
         this.values = values;
     }
     
+    /** 追加一对键值到响应列表末尾。 */
     public void append(byte[] key, byte[] value) {
         keys.add(key);
         values.add(value);

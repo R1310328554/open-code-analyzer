@@ -29,8 +29,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Minimal v1 compatibility for GET /v1/ns/operator/metrics (onlyStatus=true only). Loaded only when api-legacy-adapter
- * is not on classpath; otherwise legacy adapter's OperatorController serves full metrics. For full metrics use v3 API.
+ * v1 运维指标接口的最小兼容控制器（仅返回 status）。
+ *
+ * <p>仅当 classpath 中不存在 api-legacy-adapter 时加载；否则由旧版 {@code OperatorController} 提供完整指标。完整指标请使用 v3 API。</p>
  *
  * @author xiweng.yy
  */
@@ -45,7 +46,9 @@ public class OperatorMetricsV1Controller {
     }
     
     /**
-     * Get metrics (only status). Kept for old clients; full metrics available at v3 API.
+     * 获取运维指标（仅返回 status 字段）。
+     *
+     * <p>供旧版客户端兼容；完整指标见 v3 管理 API。</p>
      */
     @Since("3.2.0")
     @GetMapping("/metrics")

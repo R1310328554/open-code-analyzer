@@ -17,18 +17,24 @@
 package com.alibaba.nacos.naming.constants;
 
 /**
- * constant for request.
+ * 命名 HTTP 请求参数字段常量。
+ *
+ * <p>定义健康检查、有效性及实例地址等通用请求键。</p>
  *
  * @author nacos
  */
 public class RequestConstant {
     
+    /** 实例健康状态请求键。 */
     public static final String HEALTHY_KEY = "healthy";
     
+    /** 实例有效性请求键。 */
     public static final String VALID_KEY = "valid";
     
+    /** 实例 IP 请求键。 */
     public static final String IP_KEY = "ip";
     
+    /** 实例端口请求键。 */
     public static final String PORT_KEY = "port";
     
 }
