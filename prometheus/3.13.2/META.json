@@ -1,0 +1,7 @@
+{
+  "project": "prometheus",
+  "version": "3.13.2",
+  "git_ref": "v3.13.2",
+  "repo_url": "https://github.com/prometheus/prometheus",
+  "source": "release"
+}
