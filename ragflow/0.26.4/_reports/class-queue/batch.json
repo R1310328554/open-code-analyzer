@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T19:22:55Z",
-  "files": [
-    "rag/graphrag/general/index.py",
-    "rag/graphrag/general/leiden.py",
-    "rag/graphrag/general/mind_map_prompt.py",
-    "rag/graphrag/general/smoke.py",
-    "rag/graphrag/light/__init__.py",
-    "rag/graphrag/light/graph_extractor.py",
-    "rag/graphrag/light/graph_prompt.py",
-    "rag/graphrag/light/smoke.py",
-    "rag/graphrag/ner/__init__.py",
-    "rag/graphrag/ner/dep_relation_extractor.py",
-    "rag/graphrag/ner/graph_extractor.py",
-    "rag/graphrag/ner/ner_extractor.py",
-    "rag/graphrag/ner/types.py",
-    "rag/graphrag/phase_markers.py",
-    "rag/graphrag/query_analyze_prompt.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 504,
-  "done": 1245
+  "done": 1260
 }
