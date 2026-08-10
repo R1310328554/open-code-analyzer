@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T11:18:35Z",
   "files": [
-    "server-spi/src/main/java/org/keycloak/provider/ProviderFactory.java",
-    "server-spi/src/main/java/org/keycloak/provider/Spi.java",
-    "server-spi/src/main/java/org/keycloak/rar/AuthorizationDetails.java",
-    "server-spi/src/main/java/org/keycloak/rar/AuthorizationRequestContext.java",
-    "server-spi/src/main/java/org/keycloak/rar/AuthorizationRequestSource.java",
-    "server-spi/src/main/java/org/keycloak/services/clientpolicy/ClientPolicyContext.java",
-    "server-spi/src/main/java/org/keycloak/services/clientpolicy/ClientPolicyEvent.java",
-    "server-spi/src/main/java/org/keycloak/services/clientpolicy/ClientPolicyException.java",
-    "server-spi/src/main/java/org/keycloak/services/clientpolicy/ClientPolicyManager.java",
-    "server-spi/src/main/java/org/keycloak/sessions/AuthenticationSessionCompoundId.java",
-    "server-spi/src/main/java/org/keycloak/sessions/AuthenticationSessionModel.java",
-    "server-spi/src/main/java/org/keycloak/sessions/AuthenticationSessionProvider.java",
-    "server-spi/src/main/java/org/keycloak/sessions/CommonClientSessionModel.java",
-    "server-spi/src/main/java/org/keycloak/sessions/RootAuthenticationSessionModel.java",
-    "server-spi/src/main/java/org/keycloak/storage/ReadOnlyException.java",
     "server-spi/src/main/java/org/keycloak/storage/StorageId.java",
     "server-spi/src/main/java/org/keycloak/storage/StorageUnavailableException.java",
     "server-spi/src/main/java/org/keycloak/storage/client/ClientLookupProvider.java",
@@ -33,5 +18,5 @@
     "server-spi/src/main/java/org/keycloak/theme/Theme.java"
   ],
   "remaining_pending": 2278,
-  "done": 3690
+  "done": 3705
 }
