@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T10:39:20Z",
   "files": [
-    "server-spi-private/src/main/java/org/keycloak/models/GroupSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/models/IdentityProviderStorageProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/models/IdentityProviderStorageSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/models/ImpersonationConstants.java",
-    "server-spi-private/src/main/java/org/keycloak/models/ImpersonationSessionNote.java",
-    "server-spi-private/src/main/java/org/keycloak/models/LDAPConstants.java",
-    "server-spi-private/src/main/java/org/keycloak/models/OAuth2DeviceCodeModel.java",
-    "server-spi-private/src/main/java/org/keycloak/models/OAuth2DeviceUserCodeModel.java",
-    "server-spi-private/src/main/java/org/keycloak/models/OAuth2DeviceUserCodeProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/models/OAuth2DeviceUserCodeProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/models/OAuth2DeviceUserCodeSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/models/OfflineUserSessionModel.java",
-    "server-spi-private/src/main/java/org/keycloak/models/RealmProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/models/RealmSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/models/RevokedTokenProviderFactory.java",
     "server-spi-private/src/main/java/org/keycloak/models/RevokedTokenSpi.java",
     "server-spi-private/src/main/java/org/keycloak/models/RoleProviderFactory.java",
     "server-spi-private/src/main/java/org/keycloak/models/RoleSpi.java",
@@ -33,5 +18,5 @@
     "server-spi-private/src/main/java/org/keycloak/models/WebAuthnPolicyTwoFactorDefaults.java"
   ],
   "remaining_pending": 2758,
-  "done": 3210
+  "done": 3225
 }
