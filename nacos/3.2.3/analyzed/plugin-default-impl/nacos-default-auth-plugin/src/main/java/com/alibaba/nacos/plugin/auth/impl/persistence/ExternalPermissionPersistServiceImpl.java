@@ -34,7 +34,9 @@ import java.util.List;
 import static com.alibaba.nacos.plugin.auth.impl.persistence.AuthRowMapperManager.PERMISSION_ROW_MAPPER;
 
 /**
- * Implemetation of ExternalPermissionPersistServiceImpl.
+ * 外部 MySQL 等数据源下的权限持久化实现。
+ *
+ * <p>通过 {@link JdbcTemplate} 访问远程数据库， 分页使用 {@link AuthExternalPaginationHelperImpl} 适配各数据库方言。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -48,6 +50,7 @@ public class ExternalPermissionPersistServiceImpl implements PermissionPersistSe
     
     private static final String PATTERN_STR = "*";
     
+    /** 从 {@link DynamicDataSource} 获取 JdbcTemplate 与数据源类型。 */
     @PostConstruct
     protected void init() {
         DataSourceService dataSource = DynamicDataSource.getInstance().getDataSource();
@@ -55,6 +58,7 @@ public class ExternalPermissionPersistServiceImpl implements PermissionPersistSe
         dataSourceType = dataSource.getDataSourceType();
     }
     
+    /** 按角色精确分页查询权限（外部数据源）。 */
     @Override
     public Page<PermissionInfo> getPermissions(String role, int pageNo, int pageSize) {
         AuthPaginationHelper<PermissionInfo> helper = createPaginationHelper();
@@ -89,13 +93,8 @@ public class ExternalPermissionPersistServiceImpl implements PermissionPersistSe
         }
     }
     
-    /**
-     * Execute add permission operation.
-     *
-     * @param role     role string value.
-     * @param resource resource string value.
-     * @param action   action string value.
-     */
+    /** 向外部数据库 permissions 表插入权限。 */
+
     @Override
     public void addPermission(String role, String resource, String action) {
         
@@ -109,13 +108,8 @@ public class ExternalPermissionPersistServiceImpl implements PermissionPersistSe
         }
     }
     
-    /**
-     * Execute delete permission operation.
-     *
-     * @param role     role string value.
-     * @param resource resource string value.
-     * @param action   action string value.
-     */
+    /** 从外部数据库删除指定权限记录。 */
+
     @Override
     public void deletePermission(String role, String resource, String action) {
         
@@ -128,6 +122,7 @@ public class ExternalPermissionPersistServiceImpl implements PermissionPersistSe
         }
     }
     
+    /** 按角色名模糊分页查询权限（外部数据源）。 */
     @Override
     public Page<PermissionInfo> findPermissionsLike4Page(String role, int pageNo, int pageSize) {
         AuthPaginationHelper<PermissionInfo> helper = createPaginationHelper();
@@ -161,6 +156,7 @@ public class ExternalPermissionPersistServiceImpl implements PermissionPersistSe
         }
     }
     
+    /** 将 * 转为 %、转义 _ 以适配 SQL LIKE。 */
     @Override
     public String generateLikeArgument(String s) {
         String underscore = "_";
@@ -176,6 +172,7 @@ public class ExternalPermissionPersistServiceImpl implements PermissionPersistSe
         }
     }
     
+    /** 创建外部数据源分页助手。 */
     @Override
     public <E> AuthPaginationHelper<E> createPaginationHelper() {
         return new AuthExternalPaginationHelperImpl<E>(jt, dataSourceType);

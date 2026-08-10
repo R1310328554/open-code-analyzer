@@ -35,7 +35,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Controller for handling HTTP requests related to permission operations.
+ * V3 权限管理 REST 控制器。
+ *
+ * <p>提供角色权限的增删查及重复校验，路径前缀为 {@link AuthConstants#PERMISSION_PATH}。</p>
  *
  * @author zhangyukun on:2024/8/16
  */
@@ -45,25 +47,23 @@ public class PermissionControllerV3 {
     
     private final NacosRoleService nacosRoleService;
     
+    /** 模糊搜索模式标识。 */
     private static final String SEARCH_TYPE_BLUR = "blur";
     
-    /**
-     * Constructs a new ConsolePermissionController with the provided PermissionProxy.
-     *
-     * @param nacosRoleService nacosRoleService instance
-     */
+    /** 注入 {@link NacosRoleService} 处理权限持久化与查询。 */
+
     @Autowired
     public PermissionControllerV3(NacosRoleService nacosRoleService) {
         this.nacosRoleService = nacosRoleService;
     }
     
     /**
-     * Add a permission to a role.
+     * 为角色新增一条资源权限。
      *
      * @param role     the role
      * @param resource the related resource
      * @param action   the related action
-     * @return ok if succeed
+     * @return 成功时返回 ok 消息
      */
     @Since("3.0.0")
     @PostMapping
@@ -76,12 +76,12 @@ public class PermissionControllerV3 {
     }
     
     /**
-     * Delete a permission from a role.
+     * 删除角色的指定资源权限。
      *
      * @param role     the role
      * @param resource the related resource
      * @param action   the related action
-     * @return ok if succeed
+     * @return 成功时返回 ok 消息
      */
     @Since("3.0.0")
     @DeleteMapping
@@ -94,13 +94,13 @@ public class PermissionControllerV3 {
     }
     
     /**
-     * Query permissions of a role.
+     * 分页查询角色权限列表。
      *
      * @param role     the role
      * @param pageNo   page index
      * @param pageSize page size
      * @param search   the type of search (accurate or blur)
-     * @return permission of a role
+     * @return 分页权限数据
      */
     @Since("3.0.0")
     @GetMapping("/list")
@@ -120,7 +120,7 @@ public class PermissionControllerV3 {
     }
     
     /**
-     * Judge whether a permission is duplicate.
+     * 判断角色下是否已存在相同资源与动作的权限。
      *
      * @param role     the role
      * @param resource the related resource

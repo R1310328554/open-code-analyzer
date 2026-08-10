@@ -17,36 +17,46 @@
 package com.alibaba.nacos.plugin.auth.impl.model;
 
 /**
- * Paginated query statements and query parameters encapsulate the results.
+ * 分页查询 SQL 与参数封装结果。
+ *
+ * <p>由分页助手生成带 OFFSET/LIMIT 的 fetch SQL 及合并后的绑定参数数组。</p>
  *
  * @author huangKeMing
  */
 public class OffsetFetchResult {
     
+    /** 分页数据查询 SQL。 */
     String fetchSql;
     
+    /** 与 fetchSql 对应的绑定参数数组。 */
     Object[] newArgs;
     
+    /** 无参构造。 */
     public OffsetFetchResult() {
     }
     
+    /** 指定 fetch SQL 与参数数组。 */
     public OffsetFetchResult(String fetchSql, Object[] newArgs) {
         this.fetchSql = fetchSql;
         this.newArgs = newArgs;
     }
     
+    /** 获取分页查询 SQL。 */
     public String getFetchSql() {
         return fetchSql;
     }
     
+    /** 设置分页查询 SQL。 */
     public void setFetchSql(String fetchSql) {
         this.fetchSql = fetchSql;
     }
     
+    /** 获取绑定参数数组。 */
     public Object[] getNewArgs() {
         return newArgs;
     }
     
+    /** 设置绑定参数数组。 */
     public void setNewArgs(Object[] newArgs) {
         this.newArgs = newArgs;
     }

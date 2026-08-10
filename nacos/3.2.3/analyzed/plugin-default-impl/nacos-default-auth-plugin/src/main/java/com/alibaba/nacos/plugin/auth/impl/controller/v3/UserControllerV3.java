@@ -58,7 +58,9 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Controller for handling HTTP requests related to user operations.
+ * V3 用户管理 REST 控制器。
+ *
+ * <p>提供用户 CRUD、管理员初始化、登录及模糊搜索，路径前缀为 {@link AuthConstants#USER_PATH}。</p>
  *
  * @author zhangyukun on:2024/8/16
  */
@@ -76,17 +78,11 @@ public class UserControllerV3 {
     
     private final TokenManagerDelegate jwtTokenManager;
     
+    /** 模糊搜索模式标识。 */
     private static final String SEARCH_TYPE_BLUR = "blur";
     
-    /**
-     * Constructs a new UserInnerHandler with the provided dependencies.
-     *
-     * @param userDetailsService     the service for user details operations
-     * @param roleService            the service for role operations
-     * @param authConfigs            the authentication configuration
-     * @param iAuthenticationManager the authentication manager interface
-     * @param jwtTokenManager        the JWT token manager
-     */
+    /** 注入用户服务、角色服务、鉴权配置、认证管理器与 JWT 令牌管理器。 */
+
     public UserControllerV3(NacosUserService userDetailsService, NacosRoleService roleService,
         AuthConfigs authConfigs,
         IAuthenticationManager iAuthenticationManager, TokenManagerDelegate jwtTokenManager) {
@@ -98,7 +94,7 @@ public class UserControllerV3 {
     }
     
     /**
-     * Create a new user.
+     * 创建新用户。
      *
      * @param username username
      * @param password password
@@ -119,9 +115,8 @@ public class UserControllerV3 {
         return Result.success("create user ok!");
     }
     
-    /**
-     * Create a admin user only not exist admin user can use.
-     */
+    /** 初始化全局管理员（仅当系统中尚不存在管理员时可用）。 */
+
     @Since("3.0.0")
     @PostMapping("/admin")
     public Result<User> createAdminUser(@RequestParam(required = false) String password) {
@@ -149,7 +144,7 @@ public class UserControllerV3 {
     }
     
     /**
-     * Delete an existed user.
+     * 删除用户；禁止删除全局管理员账号。
      *
      * @param username username of user
      * @return ok if deleted succeed, keep silent if user not exist
@@ -173,7 +168,7 @@ public class UserControllerV3 {
     }
     
     /**
-     * Update an user.
+     * 修改用户密码（需本人或全局管理员权限）。
      *
      * @param username    username of user
      * @param newPassword new password of user
@@ -215,12 +210,13 @@ public class UserControllerV3 {
         
     }
     
+    /** 校验当前请求是否有权修改指定用户密码。 */
     private boolean hasPermission(String username, HttpServletRequest request)
         throws HttpSessionRequiredException, AccessException {
         if (!NacosAuthConfigHolder.getInstance().isAnyAuthEnabled()) {
             return true;
         }
-        // Fixes #13959. If the user is server identity, should not check permission.
+        // 修复 #13959：Server 身份请求跳过权限校验
         if (isFromServerIdentity(request)) {
             return true;
         }
@@ -236,18 +232,18 @@ public class UserControllerV3 {
                 throw new HttpSessionRequiredException("session expired!");
             }
         }
-        //get user form jwt need check permission
+        // 从 JWT 解析用户后需刷新全局管理员标记
         iAuthenticationManager.hasGlobalAdminRole(user);
-        // admin
+        // 全局管理员可修改任意用户密码
         if (user.isGlobalAdmin()) {
             return true;
         }
-        // same user
+        // 普通用户仅可修改自己的密码
         return user.getUserName().equals(username);
     }
     
     /**
-     * Get paged users with the option for accurate or fuzzy search.
+     * 分页查询用户列表，支持精确或模糊搜索。
      *
      * @param pageNo   number index of page
      * @param pageSize size of page
@@ -273,7 +269,7 @@ public class UserControllerV3 {
     }
     
     /**
-     * Fuzzy matching username.
+     * 按用户名模糊匹配，返回匹配的用户名列表。
      *
      * @param username username
      * @return Matched username
@@ -288,9 +284,9 @@ public class UserControllerV3 {
     }
     
     /**
-     * Login to Nacos
+     * V3 登录接口：用户名密码换取 JWT。
      *
-     * <p>This methods uses username and password to require a new token.
+     * <p>仅支持 Nacos 内置或 LDAP 鉴权类型。</p>
      *
      * @param response http response
      * @param request  http request
@@ -321,6 +317,7 @@ public class UserControllerV3 {
             null);
     }
     
+    /** 判断请求是否携带合法的 Server 集群身份头。 */
     private boolean isFromServerIdentity(HttpServletRequest request) {
         String serverIdentityKey = authConfigs.getServerIdentityKey();
         String serverIdentityValue = request.getHeader(serverIdentityKey);

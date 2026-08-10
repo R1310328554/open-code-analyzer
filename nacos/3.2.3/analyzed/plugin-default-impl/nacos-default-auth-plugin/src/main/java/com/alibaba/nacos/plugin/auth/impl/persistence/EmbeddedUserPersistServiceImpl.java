@@ -28,7 +28,9 @@ import java.util.List;
 import static com.alibaba.nacos.plugin.auth.impl.persistence.AuthRowMapperManager.USER_ROW_MAPPER;
 
 /**
- * There is no self-augmented primary key.
+ * 内嵌 Derby 数据源下的用户持久化实现。
+ *
+ * <p>users 表以 username 为主键，存储 BCrypt 密码与 enabled 状态。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -36,20 +38,18 @@ public class EmbeddedUserPersistServiceImpl implements UserPersistService {
     
     private final DatabaseOperate databaseOperate;
     
+    /** 模糊搜索通配符。 */
     private static final String PATTERN_STR = "*";
     
     private static final String SQL_DERBY_ESCAPE_BACK_SLASH_FOR_LIKE = " ESCAPE '\\' ";
     
+    /** 注入内嵌 {@link DatabaseOperate}。 */
     public EmbeddedUserPersistServiceImpl(DatabaseOperate databaseOperate) {
         this.databaseOperate = databaseOperate;
     }
     
-    /**
-     * Execute create user operation.
-     *
-     * @param username username string value.
-     * @param password password string value.
-     */
+    /** 插入新用户（enabled=true）。 */
+
     @Override
     public void createUser(String username, String password) {
         String sql = "INSERT INTO users (username, password, enabled) VALUES (?, ?, ?)";
@@ -62,11 +62,8 @@ public class EmbeddedUserPersistServiceImpl implements UserPersistService {
         }
     }
     
-    /**
-     * Execute delete user operation.
-     *
-     * @param username username string value.
-     */
+    /** 按用户名删除用户记录。 */
+
     @Override
     public void deleteUser(String username) {
         String sql = "DELETE FROM users WHERE username=?";
@@ -78,12 +75,8 @@ public class EmbeddedUserPersistServiceImpl implements UserPersistService {
         }
     }
     
-    /**
-     * Execute update user password operation.
-     *
-     * @param username username string value.
-     * @param password password string value.
-     */
+    /** 更新用户 BCrypt 密码。 */
+
     @Override
     public void updateUserPassword(String username, String password) {
         try {
@@ -96,12 +89,14 @@ public class EmbeddedUserPersistServiceImpl implements UserPersistService {
         }
     }
     
+    /** 按用户名精确查询单个用户。 */
     @Override
     public User findUserByUsername(String username) {
         String sql = "SELECT username,password FROM users WHERE username=? ";
         return databaseOperate.queryOne(sql, new Object[] {username}, USER_ROW_MAPPER);
     }
     
+    /** 分页查询用户，可按用户名精确过滤。 */
     @Override
     public Page<User> getUsers(int pageNo, int pageSize, String username) {
         
@@ -128,6 +123,7 @@ public class EmbeddedUserPersistServiceImpl implements UserPersistService {
         return pageInfo;
     }
     
+    /** 按用户名模糊匹配返回用户名列表。 */
     @Override
     public List<String> findUserLikeUsername(String username) {
         String sql = "SELECT username FROM users WHERE username LIKE ? "
@@ -135,6 +131,7 @@ public class EmbeddedUserPersistServiceImpl implements UserPersistService {
         return databaseOperate.queryMany(sql, new String[] {"%" + username + "%"}, String.class);
     }
     
+    /** 按用户名模糊分页查询用户。 */
     @Override
     public Page<User> findUsersLike4Page(String username, int pageNo, int pageSize) {
         String sqlCountRows = "SELECT count(*) FROM users ";

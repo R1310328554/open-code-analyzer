@@ -23,32 +23,38 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * Auth plugin row mapper manager.
+ * 鉴权插件 JDBC {@link RowMapper} 注册与管理。
+ *
+ * <p>静态块将用户、角色、权限 RowMapper 注册到 {@link RowMapperManager} 供全局复用。</p>
  *
  * @author xiweng.yy
  */
 public class AuthRowMapperManager {
     
+    /** 用户表 ResultSet → {@link User} 映射器。 */
     public static final RowMapper<User> USER_ROW_MAPPER = new UserRowMapper();
     
+    /** 角色表 ResultSet → {@link RoleInfo} 映射器。 */
     public static final RoleInfoRowMapper ROLE_INFO_ROW_MAPPER = new RoleInfoRowMapper();
     
+    /** 权限表 ResultSet → {@link PermissionInfo} 映射器。 */
     public static final PermissionRowMapper PERMISSION_ROW_MAPPER = new PermissionRowMapper();
     
     static {
-        // USER_ROW_MAPPER
+        // 注册用户 RowMapper
         RowMapperManager.registerRowMapper(USER_ROW_MAPPER.getClass().getCanonicalName(),
             USER_ROW_MAPPER);
         
-        // ROLE_INFO_ROW_MAPPER
+        // 注册角色 RowMapper
         RowMapperManager.registerRowMapper(ROLE_INFO_ROW_MAPPER.getClass().getCanonicalName(),
             ROLE_INFO_ROW_MAPPER);
         
-        // PERMISSION_ROW_MAPPER
+        // 注册权限 RowMapper
         RowMapperManager.registerRowMapper(PERMISSION_ROW_MAPPER.getClass().getCanonicalName(),
             PERMISSION_ROW_MAPPER);
     }
     
+    /** 将 users 表行映射为 {@link User}。 */
     public static final class UserRowMapper implements RowMapper<User> {
         
         @Override
@@ -60,6 +66,7 @@ public class AuthRowMapperManager {
         }
     }
     
+    /** 将 roles 表行映射为 {@link RoleInfo}。 */
     public static final class RoleInfoRowMapper implements RowMapper<RoleInfo> {
         
         @Override
@@ -71,6 +78,7 @@ public class AuthRowMapperManager {
         }
     }
     
+    /** 将 permissions 表行映射为 {@link PermissionInfo}。 */
     public static final class PermissionRowMapper implements RowMapper<PermissionInfo> {
         
         @Override

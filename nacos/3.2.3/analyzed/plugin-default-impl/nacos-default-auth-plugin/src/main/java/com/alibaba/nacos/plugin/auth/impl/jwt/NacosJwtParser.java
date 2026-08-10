@@ -27,7 +27,9 @@ import java.security.Key;
 import java.util.concurrent.TimeUnit;
 
 /**
- * JwtParse.
+ * Nacos JWT 解析与签发器。
+ *
+ * <p>根据 Base64 密钥长度自动选择 HS256/HS384/HS512， 提供 {@link JwtBuilder} 流式构建 Token 及 {@link #parse} 校验。</p>
  *
  * @author Weizhan▪Yun
  * @date 2023/1/15 21:38
@@ -40,6 +42,7 @@ public class NacosJwtParser {
     
     private final Key key;
     
+    /** 从 Base64 编码密钥构造解析器，密钥位数不足 256 时抛异常。 */
     public NacosJwtParser(String base64edKey) {
         this.validKey(base64edKey);
         byte[] decode = Base64Decode.decode(base64edKey);
@@ -63,6 +66,7 @@ public class NacosJwtParser {
         this.key = new SecretKeySpec(decode, signatureAlgorithm.getJcaName());
     }
     
+    /** 校验密钥 Base64 编码格式并记录非标准编码警告。 */
     private void validKey(String base64edKey) {
         int length = base64edKey.toCharArray().length;
         if (length % 4 != 0) {
@@ -71,37 +75,45 @@ public class NacosJwtParser {
         }
     }
     
+    /** 使用当前算法对载荷签名生成完整 JWT 字符串。 */
     private String sign(NacosJwtPayload payload) {
         return signatureAlgorithm.sign(payload, key);
     }
     
+    /** 创建 JWT 构建器以设置用户名与过期时间。 */
     public JwtBuilder jwtBuilder() {
         return new JwtBuilder();
     }
     
+    /** 解析并校验 JWT，返回 {@link NacosUser}。 */
     public NacosUser parse(String token) throws AccessException {
         return NacosSignatureAlgorithm.verify(token, key);
     }
     
+    /** 读取 JWT 过期时间戳（秒）。 */
     public long getExpireTimeInSeconds(String token) throws AccessException {
         return NacosSignatureAlgorithm.getExpiredTimeInSeconds(token, key);
     }
     
+    /** 流式 JWT 构建器：设置 sub/exp 后调用 {@link #compact()} 签发。 */
     public class JwtBuilder {
         
         private final NacosJwtPayload nacosJwtPayload = new NacosJwtPayload();
         
+        /** 设置 JWT subject（用户名）。 */
         public JwtBuilder setUserName(String userName) {
             this.nacosJwtPayload.setSub(userName);
             return this;
         }
         
+        /** 设置 Token 有效时长（秒，自当前时间起算）。 */
         public JwtBuilder setExpiredTime(long validSeconds) {
             this.nacosJwtPayload
                 .setExp(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) + validSeconds);
             return this;
         }
         
+        /** 完成载荷设置并返回签名后的 JWT 字符串。 */
         public String compact() {
             return sign(nacosJwtPayload);
         }

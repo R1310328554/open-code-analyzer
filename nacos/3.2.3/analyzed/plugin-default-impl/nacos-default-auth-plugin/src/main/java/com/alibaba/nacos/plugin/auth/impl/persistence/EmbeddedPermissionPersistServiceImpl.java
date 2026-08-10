@@ -29,7 +29,9 @@ import java.util.List;
 import static com.alibaba.nacos.plugin.auth.impl.persistence.AuthRowMapperManager.PERMISSION_ROW_MAPPER;
 
 /**
- * There is no self-augmented primary key.
+ * 内嵌 Derby 数据源下的权限持久化实现。
+ *
+ * <p>permissions 表无自增主键，通过 role+resource+action 组合唯一标识权限记录。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -37,14 +39,18 @@ public class EmbeddedPermissionPersistServiceImpl implements PermissionPersistSe
     
     private final DatabaseOperate databaseOperate;
     
+    /** 模糊搜索通配符（映射为 SQL LIKE %）。 */
     private static final String PATTERN_STR = "*";
     
+    /** Derby LIKE 子句转义后缀。 */
     private static final String SQL_DERBY_ESCAPE_BACK_SLASH_FOR_LIKE = " ESCAPE '\\' ";
     
+    /** 注入内嵌 {@link DatabaseOperate}。 */
     public EmbeddedPermissionPersistServiceImpl(DatabaseOperate databaseOperate) {
         this.databaseOperate = databaseOperate;
     }
     
+    /** 按角色精确分页查询权限列表。 */
     @Override
     public Page<PermissionInfo> getPermissions(String role, int pageNo, int pageSize) {
         AuthPaginationHelper<PermissionInfo> helper = createPaginationHelper();
@@ -73,13 +79,8 @@ public class EmbeddedPermissionPersistServiceImpl implements PermissionPersistSe
         return pageInfo;
     }
     
-    /**
-     * Execute ddd user permission operation.
-     *
-     * @param role     role info string value.
-     * @param resource resource info string value.
-     * @param action   action info string value.
-     */
+    /** 向 permissions 表插入一条角色权限记录。 */
+
     @Override
     public void addPermission(String role, String resource, String action) {
         String sql = "INSERT INTO permissions (role, resource, action) VALUES (?, ?, ?)";
@@ -87,13 +88,8 @@ public class EmbeddedPermissionPersistServiceImpl implements PermissionPersistSe
         databaseOperate.blockUpdate();
     }
     
-    /**
-     * Execute delete user permission operation.
-     *
-     * @param role     role info string value.
-     * @param resource resource info string value.
-     * @param action   action info string value.
-     */
+    /** 按 role+resource+action 删除权限记录。 */
+
     @Override
     public void deletePermission(String role, String resource, String action) {
         String sql = "DELETE FROM permissions WHERE role=? AND resource=? AND action=?";
@@ -101,6 +97,7 @@ public class EmbeddedPermissionPersistServiceImpl implements PermissionPersistSe
         databaseOperate.blockUpdate();
     }
     
+    /** 按角色名模糊分页查询权限。 */
     @Override
     public Page<PermissionInfo> findPermissionsLike4Page(String role, int pageNo, int pageSize) {
         AuthPaginationHelper<PermissionInfo> helper = createPaginationHelper();
@@ -129,6 +126,7 @@ public class EmbeddedPermissionPersistServiceImpl implements PermissionPersistSe
         return pageInfo;
     }
     
+    /** 将 * 转为 %、转义 _ 以适配 SQL LIKE。 */
     @Override
     public String generateLikeArgument(String s) {
         String underscore = "_";
@@ -144,6 +142,7 @@ public class EmbeddedPermissionPersistServiceImpl implements PermissionPersistSe
         }
     }
     
+    /** 创建内嵌数据源分页助手。 */
     @Override
     public <E> AuthPaginationHelper<E> createPaginationHelper() {
         return new AuthEmbeddedPaginationHelperImpl<>(databaseOperate);

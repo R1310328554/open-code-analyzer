@@ -29,7 +29,9 @@ import java.util.List;
 import static com.alibaba.nacos.plugin.auth.impl.persistence.AuthRowMapperManager.ROLE_INFO_ROW_MAPPER;
 
 /**
- * There is no self-augmented primary key.
+ * 内嵌 Derby 数据源下的角色持久化实现。
+ *
+ * <p>roles 表记录用户与角色的多对多绑定，无自增主键。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -37,14 +39,17 @@ public class EmbeddedRolePersistServiceImpl implements RolePersistService {
     
     private final DatabaseOperate databaseOperate;
     
+    /** 模糊搜索通配符。 */
     private static final String PATTERN_STR = "*";
     
     private static final String SQL_DERBY_ESCAPE_BACK_SLASH_FOR_LIKE = " ESCAPE '\\' ";
     
+    /** 注入内嵌 {@link DatabaseOperate}。 */
     public EmbeddedRolePersistServiceImpl(DatabaseOperate databaseOperate) {
         this.databaseOperate = databaseOperate;
     }
     
+    /** 分页查询全部角色（去重 role 计数）。 */
     @Override
     public Page<RoleInfo> getRoles(int pageNo, int pageSize) {
         
@@ -67,6 +72,7 @@ public class EmbeddedRolePersistServiceImpl implements RolePersistService {
         
     }
     
+    /** 按用户名与角色名精确分页查询。 */
     @Override
     public Page<RoleInfo> getRolesByUserNameAndRoleName(String username, String role, int pageNo,
         int pageSize) {
@@ -94,12 +100,8 @@ public class EmbeddedRolePersistServiceImpl implements RolePersistService {
         
     }
     
-    /**
-     * Add user role.
-     *
-     * @param role     role string value.
-     * @param userName username string value.
-     */
+    /** 插入用户角色绑定记录。 */
+
     @Override
     public void addRole(String role, String userName) {
         
@@ -113,11 +115,8 @@ public class EmbeddedRolePersistServiceImpl implements RolePersistService {
         }
     }
     
-    /**
-     * Delete user role.
-     *
-     * @param role role string value.
-     */
+    /** 删除指定角色下全部用户绑定。 */
+
     @Override
     public void deleteRole(String role) {
         String sql = "DELETE FROM roles WHERE role=?";
@@ -129,12 +128,8 @@ public class EmbeddedRolePersistServiceImpl implements RolePersistService {
         }
     }
     
-    /**
-     * Execute delete role sql operation.
-     *
-     * @param role     role string value.
-     * @param username user string value.
-     */
+    /** 删除指定用户在某角色下的绑定。 */
+
     @Override
     public void deleteRole(String role, String username) {
         String sql = "DELETE FROM roles WHERE role=? AND username=?";
@@ -146,6 +141,7 @@ public class EmbeddedRolePersistServiceImpl implements RolePersistService {
         }
     }
     
+    /** 按角色名模糊查询匹配的角色名列表。 */
     @Override
     public List<String> findRolesLikeRoleName(String role) {
         String sql =
@@ -168,6 +164,7 @@ public class EmbeddedRolePersistServiceImpl implements RolePersistService {
         }
     }
     
+    /** 按用户名/角色名模糊分页查询。 */
     @Override
     public Page<RoleInfo> findRolesLike4Page(String username, String role, int pageNo,
         int pageSize) {

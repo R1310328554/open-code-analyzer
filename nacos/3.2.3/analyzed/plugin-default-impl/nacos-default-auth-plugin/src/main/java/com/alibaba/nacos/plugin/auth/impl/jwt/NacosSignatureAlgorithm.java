@@ -32,13 +32,16 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * SignAlgorithm.
+ * Nacos JWT HMAC 签名算法实现（HS256/HS384/HS512）。
+ *
+ * <p>负责 JWT 三段式结构的签名、验签与过期校验，不依赖第三方 JWT 库。</p>
  *
  * @author Weizhan▪Yun
  * @date 2023/1/15 16:42
  */
 public final class NacosSignatureAlgorithm {
     
+    /** JWT 各段分隔符。 */
     private static final String JWT_SEPERATOR = ".";
     
     private static final int HEADER_POSITION = 0;
@@ -62,14 +65,17 @@ public final class NacosSignatureAlgorithm {
     
     private static final Map<String, NacosSignatureAlgorithm> MAP = new HashMap<>(4);
     
+    /** HMAC-SHA256 签名算法实例。 */
     public static final NacosSignatureAlgorithm HS256 =
         new NacosSignatureAlgorithm("HS256", "HmacSHA256",
             HS256_JWT_HEADER);
     
+    /** HMAC-SHA384 签名算法实例。 */
     public static final NacosSignatureAlgorithm HS384 =
         new NacosSignatureAlgorithm("HS384", "HmacSHA384",
             HS384_JWT_HEADER);
     
+    /** HMAC-SHA512 签名算法实例。 */
     public static final NacosSignatureAlgorithm HS512 =
         new NacosSignatureAlgorithm("HS512", "HmacSHA512",
             HS512_JWT_HEADER);
@@ -87,7 +93,7 @@ public final class NacosSignatureAlgorithm {
     }
     
     /**
-     * verify jwt.
+     * 校验完整 JWT 字符串并解析为 {@link NacosUser}。
      *
      * @param jwt complete jwt string
      * @param key for signature
@@ -116,7 +122,7 @@ public final class NacosSignatureAlgorithm {
     }
     
     /**
-     * verify jwt.
+     * 校验 JWT 各段 HMAC 签名并检查 exp 是否过期。
      *
      * @param header    header of jwt
      * @param payload   payload of jwt
@@ -144,7 +150,7 @@ public final class NacosSignatureAlgorithm {
     }
     
     /**
-     * get jwt expire time in seconds.
+     * 从完整 JWT 读取过期时间戳（秒）。
      *
      * @param jwt complete jwt string
      * @param key for signature
@@ -179,6 +185,7 @@ public final class NacosSignatureAlgorithm {
      * @param key       for signature
      * @return expire time in seconds
      * @throws AccessException access exception
+      * <p>JWT HMAC 签名算法实现。</p>
      */
     public long getExpireTimeInSeconds(String header, String payload, String signature, Key key)
         throws AccessException {
@@ -199,6 +206,7 @@ public final class NacosSignatureAlgorithm {
         this.header = header;
     }
     
+    /** 对载荷签名，返回 header.payload.signature 格式 JWT。 */
     String sign(NacosJwtPayload nacosJwtPayload, Key key) {
         String jwtWithoutSign = header + JWT_SEPERATOR + URL_BASE64_ENCODER.encodeToString(
             nacosJwtPayload.toString().getBytes(StandardCharsets.UTF_8));
@@ -208,6 +216,7 @@ public final class NacosSignatureAlgorithm {
         return jwtWithoutSign + JWT_SEPERATOR + signature;
     }
     
+    /** 创建并初始化 HMAC Mac 实例。 */
     private Mac getMacInstance(Key key) {
         try {
             Mac instance = Mac.getInstance(jcaName);
@@ -220,14 +229,17 @@ public final class NacosSignatureAlgorithm {
         }
     }
     
+    /** 返回算法名称（如 HS256）。 */
     public String getAlgorithm() {
         return algorithm;
     }
     
+    /** 返回 JCA 算法名（如 HmacSHA256）。 */
     public String getJcaName() {
         return jcaName;
     }
     
+    /** 返回预编码的 JWT Header 段（Base64URL）。 */
     public String getHeader() {
         return header;
     }

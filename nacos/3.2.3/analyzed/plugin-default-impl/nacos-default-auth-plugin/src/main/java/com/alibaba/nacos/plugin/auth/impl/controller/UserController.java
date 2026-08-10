@@ -46,8 +46,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 
 /**
- * V1 auth user API - login only. Other v1 user/role/permission APIs have been moved to nacos-api-legacy-adapter and are
- * loaded when this plugin (new version) is present.
+ * V1 鉴权用户 API：仅保留登录接口。
+ *
+ * <p>其余 v1 用户/角色/权限接口已迁移至 nacos-api-legacy-adapter， 在新版默认鉴权插件存在时由适配层加载。</p>
  *
  * @author wfnuser
  * @author nkorange
@@ -62,9 +63,11 @@ public class UserController {
     
     private final IAuthenticationManager iAuthenticationManager;
     
+    /** 已废弃的 Spring Security 认证管理器（非 Nacos/LDAP 类型时使用）。 */
     @Deprecated
     private final AuthenticationManager authenticationManager;
     
+    /** 注入 JWT 令牌管理、鉴权配置与认证管理器。 */
     public UserController(TokenManagerDelegate jwtTokenManager, AuthConfigs authConfigs,
         IAuthenticationManager iAuthenticationManager,
         AuthenticationManager authenticationManager) {
@@ -75,13 +78,13 @@ public class UserController {
     }
     
     /**
-     * Login to Nacos (v1 API, kept for old clients).
+     * Nacos 登录（v1 API，兼容旧客户端）。
      *
      * @param username username of user
      * @param password password
      * @param response http response
      * @param request  http request
-     * @return new token of the user
+     * @return 用户 JWT 及 TTL、是否全局管理员等信息
      * @throws AccessException if user info is incorrect
      */
     @Since("2.3.0")
@@ -92,6 +95,7 @@ public class UserController {
         HttpServletResponse response,
         HttpServletRequest request) throws AccessException, IOException {
         
+        // Nacos 内置或 LDAP 鉴权：走 IAuthenticationManager 统一认证
         if (AuthSystemTypes.NACOS.name().equalsIgnoreCase(authConfigs.getNacosAuthSystemType())
             || AuthSystemTypes.LDAP.name().equalsIgnoreCase(authConfigs.getNacosAuthSystemType())) {
             
@@ -108,6 +112,7 @@ public class UserController {
             return result;
         }
         
+        // 其他鉴权类型：回退 Spring Security 用户名密码认证
         UsernamePasswordAuthenticationToken authenticationToken =
             new UsernamePasswordAuthenticationToken(username,
                 password);

@@ -36,7 +36,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Controller for handling HTTP requests related to role operations.
+ * V3 角色管理 REST 控制器。
+ *
+ * <p>负责用户角色绑定、删除及分页/模糊查询，路径前缀为 {@link AuthConstants#ROLE_PATH}。</p>
  *
  * @author zhangyukun on:2024/8/16
  */
@@ -46,16 +48,18 @@ public class RoleControllerV3 {
     
     private final NacosRoleService roleService;
     
+    /** 模糊搜索模式标识。 */
     private static final String SEARCH_TYPE_BLUR = "blur";
     
+    /** 注入 {@link NacosRoleService}。 */
     public RoleControllerV3(NacosRoleService roleService) {
         this.roleService = roleService;
     }
     
     /**
-     * Add a role to a user
+     * 为用户绑定角色。
      *
-     * <p>This method is used for 2 functions: 1. create a role and bind it to GLOBAL_ADMIN. 2. bind a role to an user.
+     * <p>兼作：创建角色并绑定 GLOBAL_ADMIN，或为普通用户分配角色。</p>
      *
      * @param role     role name
      * @param username username
@@ -71,7 +75,7 @@ public class RoleControllerV3 {
     }
     
     /**
-     * Delete a role. If no username is specified, all users under this role are deleted.
+     * 删除角色绑定；未指定 username 时删除该角色下全部绑定。
      *
      * @param role     role
      * @param username username
@@ -92,7 +96,7 @@ public class RoleControllerV3 {
     }
     
     /**
-     * Get roles list with the option for accurate or fuzzy search.
+     * 分页查询角色列表，支持精确或模糊搜索。
      *
      * @param pageNo   number index of page
      * @param pageSize page size
@@ -119,7 +123,7 @@ public class RoleControllerV3 {
     }
     
     /**
-     * Fuzzy matching role name .
+     * 按角色名模糊匹配，返回角色名列表。
      *
      * @param role role id
      * @return role list
