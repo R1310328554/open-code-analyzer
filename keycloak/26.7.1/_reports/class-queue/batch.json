@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:00:15Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/tracing/TracingAttributes.java",
-    "server-spi-private/src/main/java/org/keycloak/tracing/TracingProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/tracing/TracingProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/tracing/TracingProviderUtil.java",
-    "server-spi-private/src/main/java/org/keycloak/tracing/TracingSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/transaction/JtaTransactionManagerLookup.java",
-    "server-spi-private/src/main/java/org/keycloak/transaction/RequestContextHelper.java",
-    "server-spi-private/src/main/java/org/keycloak/transaction/TransactionManagerLookupSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/truststore/TruststoreProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/truststore/TruststoreProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/truststore/TruststoreSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/userprofile/AttributeChangeListener.java",
-    "server-spi-private/src/main/java/org/keycloak/userprofile/DefaultAttributes.java",
-    "server-spi-private/src/main/java/org/keycloak/userprofile/DefaultUserProfile.java",
-    "server-spi-private/src/main/java/org/keycloak/userprofile/UserProfile.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2488,
-  "done": 3495
+  "done": 3510
 }
