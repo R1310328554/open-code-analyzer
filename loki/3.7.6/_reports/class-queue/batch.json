@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:20:19Z",
-  "files": [
-    "pkg/storage/detected/labels.go",
-    "pkg/storage/errors/errors.go",
-    "pkg/storage/factory.go",
-    "pkg/storage/hack/main.go",
-    "pkg/storage/lazy_chunk.go",
-    "pkg/storage/store.go",
-    "pkg/storage/stores/composite_store.go",
-    "pkg/storage/stores/composite_store_entry.go",
-    "pkg/storage/stores/index/index.go",
-    "pkg/storage/stores/index/metrics.go",
-    "pkg/storage/stores/index/seriesvolume/volume.go",
-    "pkg/storage/stores/index/stats/stats.go",
-    "pkg/storage/stores/series/index/bytes.go",
-    "pkg/storage/stores/series/index/caching_index_client.go",
-    "pkg/storage/stores/series/index/caching_index_client.pb.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 262,
-  "done": 1275
+  "done": 1290
 }
