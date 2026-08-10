@@ -21,8 +21,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Filter returns a validation service that skips
-// pipelines that do not match the filter criteria.
+// Filter 返回按仓库 slug 白名单/黑名单过滤的校验服务，不匹配则跳过流水线。
 func Filter(include, exclude []string) core.ValidateService {
 	return &filter{
 		include: include,
@@ -30,11 +29,13 @@ func Filter(include, exclude []string) core.ValidateService {
 	}
 }
 
+// filter 根据 include/exclude 通配符决定是否对当前仓库执行校验。
 type filter struct {
 	include []string
 	exclude []string
 }
 
+// Validate 匹配 include 列表或排除 exclude 列表中的仓库，返回 ErrValidatorSkip 跳过。
 func (f *filter) Validate(ctx context.Context, in *core.ValidateArgs) error {
 	if len(f.include) > 0 {
 		for _, pattern := range f.include {
@@ -44,9 +45,7 @@ func (f *filter) Validate(ctx context.Context, in *core.ValidateArgs) error {
 			}
 		}
 
-		// if the include list is specified, and the
-		// repository does not match any patterns in
-		// the include list, it should be skipped.
+		// 指定了 include 列表但仓库未匹配任何模式，应跳过校验。
 		return core.ErrValidatorSkip
 	}
 
@@ -54,9 +53,7 @@ func (f *filter) Validate(ctx context.Context, in *core.ValidateArgs) error {
 		for _, pattern := range f.exclude {
 			ok, _ := filepath.Match(pattern, in.Repo.Slug)
 			if ok {
-				// if the exclude list is specified, and
-				// the repository matches a pattern in the
-				// exclude list, it should be skipped.
+				// 仓库命中 exclude 列表中的模式，应跳过校验。
 				return core.ErrValidatorSkip
 			}
 		}

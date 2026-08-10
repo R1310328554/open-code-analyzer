@@ -32,6 +32,7 @@ const (
 	redisPubSubCapacity = 100
 )
 
+// newHubRedis 创建基于 Redis 的跨进程发布-订阅中心。
 func newHubRedis(r redisdb.RedisDB) core.Pubsub {
 	h := &hubRedis{
 		rdb:         r,
@@ -43,13 +44,14 @@ func newHubRedis(r redisdb.RedisDB) core.Pubsub {
 	return h
 }
 
+// hubRedis 通过 Redis Pub/Sub 在多个 Drone 实例间分发事件。
 type hubRedis struct {
 	sync.Mutex
 	rdb         redisdb.RedisDB
 	subscribers map[chan<- *core.Message]struct{}
 }
 
-// Publish publishes a new message. All subscribers will get it.
+// Publish 将消息 JSON 序列化后发布到 Redis 频道，所有实例的订阅者均可收到。
 func (h *hubRedis) Publish(ctx context.Context, e *core.Message) (err error) {
 	client := h.rdb.Client()
 
@@ -66,7 +68,7 @@ func (h *hubRedis) Publish(ctx context.Context, e *core.Message) (err error) {
 	return
 }
 
-// Subscribe add a new subscriber. The subscriber gets event until its context is not finished.
+// Subscribe 注册新订阅者；上下文取消时自动退订并关闭通道。
 func (h *hubRedis) Subscribe(ctx context.Context) (<-chan *core.Message, <-chan error) {
 	chMessage := make(chan *core.Message, redisPubSubCapacity)
 	chErr := make(chan error)
@@ -89,7 +91,7 @@ func (h *hubRedis) Subscribe(ctx context.Context) (<-chan *core.Message, <-chan 
 	return chMessage, chErr
 }
 
-// Subscribers returns number of subscribers.
+// Subscribers 返回当前本地订阅者数量。
 func (h *hubRedis) Subscribers() (int, error) {
 	h.Lock()
 	n := len(h.subscribers)
@@ -98,15 +100,14 @@ func (h *hubRedis) Subscribers() (int, error) {
 	return n, nil
 }
 
-// ProcessMessage relays the message to all subscribers listening to drone events.
-// It is a part of redisdb.PubSubProcessor implementation and it's called internally by redisdb.Subscribe.
+// ProcessMessage 将 Redis 消息转发给所有本地订阅者，实现 redisdb.PubSubProcessor 接口。
 func (h *hubRedis) ProcessMessage(s string) {
 	message := &core.Message{}
 	err := json.Unmarshal([]byte(s), message)
 	if err != nil {
-		// Ignore invalid messages. This is a "should not happen" situation,
-		// because messages are encoded as json in Publish().
-		_, _ = fmt.Fprintf(os.Stderr, "pubsub/redis: failed to unmarshal a message. %s\n", err)
+		// 忽略无效消息；Publish 侧已保证 JSON 编码，此处不应发生。
+		_, _ = fmt.Fprintf(os.Stderr, "pubsub/redis: failed to unmarshal a message. %s
+", err)
 		return
 	}
 
@@ -114,11 +115,11 @@ func (h *hubRedis) ProcessMessage(s string) {
 	for ss := range h.subscribers {
 		select {
 		case ss <- message:
-		default: // messages are lost if a subscriber channel reaches its capacity
+		default: // 订阅者通道已满时丢弃消息，避免阻塞 Redis 消费
 		}
 	}
 	h.Unlock()
 }
 
-// ProcessError is a part of redisdb.PubSubProcessor implementation.
+// ProcessError 实现 redisdb.PubSubProcessor 接口，当前为空操作。
 func (h *hubRedis) ProcessError(error) {}

@@ -21,8 +21,7 @@ import (
 	"github.com/drone/drone/service/redisdb"
 )
 
-// New creates a new publish subscriber. If Redis client passed as parameter is not nil it uses
-// a Redis implementation, otherwise it uses an in-memory implementation.
+// New 创建发布-订阅实例；传入非 nil Redis 客户端时使用 Redis 实现，否则使用内存实现。
 func New(r redisdb.RedisDB) core.Pubsub {
 	if r != nil {
 		return newHubRedis(r)

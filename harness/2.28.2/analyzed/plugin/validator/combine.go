@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// validator 包提供流水线配置校验插件，支持链式组合多个校验来源。
 package validator
 
 import (
@@ -20,16 +21,17 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Combine combines the conversion services, provision support
-// for multiple conversion utilities.
+// Combine 组合多个 ValidateService，依次执行全部校验逻辑。
 func Combine(services ...core.ValidateService) core.ValidateService {
 	return &combined{services}
 }
 
+// combined 按顺序调用各校验服务，任一失败即中断并返回错误。
 type combined struct {
 	sources []core.ValidateService
 }
 
+// Validate 依次调用链中各校验器，首个错误即返回。
 func (c *combined) Validate(ctx context.Context, req *core.ValidateArgs) error {
 	for _, source := range c.sources {
 		if err := source.Validate(ctx, req); err != nil {

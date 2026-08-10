@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// webhook 包提供全局 Webhook 事件推送插件。
 package webhook
 
 import "github.com/drone/drone/core"
 
-// Config provides the webhook configuration.
+// Config 定义 Webhook 发送器的配置项。
 type Config struct {
 	Events   []string
 	Endpoint []string

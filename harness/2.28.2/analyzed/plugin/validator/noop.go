@@ -22,6 +22,8 @@ import (
 	"github.com/drone/drone/core"
 )
 
+// noop 空操作校验器，始终通过校验。
 type noop struct{}
 
+// Validate 空实现，不执行任何校验逻辑。
 func (noop) Validate(context.Context, *core.ValidateArgs) error { return nil }

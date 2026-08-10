@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// validator 包（非 OSS 构建）实现通过 HTTP 端点远程校验流水线配置。
 package validator
 
 import (
@@ -15,8 +16,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Remote returns a conversion service that converts the
-// configuration file using a remote http service.
+// Remote 返回调用远程 HTTP 服务校验配置文件的 ValidateService。
 func Remote(endpoint, signer string, skipVerify bool, timeout time.Duration) core.ValidateService {
 	return &remote{
 		endpoint:   endpoint,
@@ -26,6 +26,7 @@ func Remote(endpoint, signer string, skipVerify bool, timeout time.Duration) cor
 	}
 }
 
+// remote 通过 drone-go validator 插件客户端调用外部校验 API。
 type remote struct {
 	endpoint   string
 	secret     string
@@ -33,14 +34,12 @@ type remote struct {
 	timeout    time.Duration
 }
 
+// Validate 将仓库、构建与配置发送至远端校验，并映射 Block/Skip 错误码。
 func (g *remote) Validate(ctx context.Context, in *core.ValidateArgs) error {
 	if g.endpoint == "" {
 		return nil
 	}
-	// include a timeout to prevent an API call from
-	// hanging the build process indefinitely. The
-	// external service must return a response within
-	// the configured timeout (default 1m).
+	// 为 API 调用设置超时，防止外部服务无响应时阻塞构建流程。
 	ctx, cancel := context.WithTimeout(ctx, g.timeout)
 	defer cancel()
 
@@ -63,6 +62,7 @@ func (g *remote) Validate(ctx context.Context, in *core.ValidateArgs) error {
 	}
 }
 
+// toRepo 将 core.Repository 转换为 drone-go API 类型。
 func toRepo(from *core.Repository) drone.Repo {
 	return drone.Repo{
 		ID:         from.ID,
@@ -86,6 +86,7 @@ func toRepo(from *core.Repository) drone.Repo {
 	}
 }
 
+// toBuild 将 core.Build 转换为 drone-go API 类型。
 func toBuild(from *core.Build) drone.Build {
 	return drone.Build{
 		ID:           from.ID,

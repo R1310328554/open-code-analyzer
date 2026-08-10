@@ -22,13 +22,15 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// New returns a no-op Webhook sender.
+// New 在 OSS 构建中返回空操作 Webhook 发送器，不推送任何事件。
 func New(Config) core.WebhookSender {
 	return new(noop)
 }
 
+// noop OSS 构建下的 Webhook 桩实现。
 type noop struct{}
 
+// Send 空实现，不发送任何 Webhook 请求。
 func (noop) Send(context.Context, *core.WebhookData) error {
 	return nil
 }

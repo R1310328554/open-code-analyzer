@@ -12,7 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pubsub implements a thread safe publish subscriber,
-// allowing multiple publishers to distribute messages to
-// multiple subscribers.
+// Package pubsub 实现线程安全的发布-订阅模型，允许多个发布者向多个订阅者分发消息。
 package pubsub

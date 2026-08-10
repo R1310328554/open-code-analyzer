@@ -14,6 +14,7 @@
 
 // +build oss
 
+// secret 包（OSS 构建）提供外部密钥插件的空实现。
 package secret
 
 import (
@@ -22,13 +23,15 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// External returns a no-op registry secret provider.
+// External 在 OSS 构建中返回空操作 SecretService，不调用外部 HTTP 端点。
 func External(string, string, bool) core.SecretService {
 	return new(noop)
 }
 
+// noop OSS 构建下的外部密钥插件桩实现。
 type noop struct{}
 
+// Find 空实现，始终返回 nil 表示未找到密钥。
 func (noop) Find(context.Context, *core.SecretArgs) (*core.Secret, error) {
 	return nil, nil
 }

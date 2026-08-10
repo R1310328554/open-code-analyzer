@@ -21,19 +21,21 @@ import (
 	"github.com/drone/drone/core"
 )
 
+// hub 内存版发布-订阅中心，维护本地订阅者集合。
 type hub struct {
 	sync.Mutex
 
 	subs map[*subscriber]struct{}
 }
 
-// newHub creates a new publish subscriber.
+// newHub 创建新的内存发布-订阅实例。
 func newHub() core.Pubsub {
 	return &hub{
 		subs: map[*subscriber]struct{}{},
 	}
 }
 
+// Publish 向所有本地订阅者广播消息。
 func (h *hub) Publish(ctx context.Context, e *core.Message) error {
 	h.Lock()
 	for s := range h.subs {
@@ -43,6 +45,7 @@ func (h *hub) Publish(ctx context.Context, e *core.Message) error {
 	return nil
 }
 
+// Subscribe 注册新订阅者，返回消息通道与错误通道；上下文取消时自动退订。
 func (h *hub) Subscribe(ctx context.Context) (<-chan *core.Message, <-chan error) {
 	h.Lock()
 	s := &subscriber{
@@ -65,6 +68,7 @@ func (h *hub) Subscribe(ctx context.Context) (<-chan *core.Message, <-chan error
 	return s.handler, errc
 }
 
+// Subscribers 返回当前活跃订阅者数量。
 func (h *hub) Subscribers() (int, error) {
 	h.Lock()
 	c := len(h.subs)

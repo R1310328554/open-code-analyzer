@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// webhook 包（非 OSS 构建）实现带 HTTP 签名的全局 Webhook 事件推送。
 package webhook
 
 import (
@@ -21,18 +22,19 @@ import (
 	"github.com/99designs/httpsignatures-go"
 )
 
-// required http headers
+// headers 定义 HTTP 签名所需的请求头。
 var headers = []string{
 	"date",
 	"digest",
 }
 
+// signer 使用 HMAC-SHA256 算法对 Webhook 请求进行签名。
 var signer = httpsignatures.NewSigner(
 	httpsignatures.AlgorithmHmacSha256,
 	headers...,
 )
 
-// New returns a new Webhook sender.
+// New 根据配置创建 Webhook 发送器。
 func New(config Config) core.WebhookSender {
 	return &sender{
 		Events:    config.Events,
@@ -42,11 +44,13 @@ func New(config Config) core.WebhookSender {
 	}
 }
 
+// payload 包装 Webhook 数据与系统信息，用于 JSON 序列化。
 type payload struct {
 	*core.WebhookData
 	System *core.System `json:"system,omitempty"`
 }
 
+// sender 向配置的 HTTP 端点发送签名 Webhook 请求。
 type sender struct {
 	Client    *http.Client
 	Events    []string
@@ -55,8 +59,7 @@ type sender struct {
 	System    *core.System
 }
 
-// Send sends the JSON encoded webhook to the global
-// HTTP endpoints.
+// Send 将 JSON 编码的 Webhook 推送至所有配置的全局 HTTP 端点。
 func (s *sender) Send(ctx context.Context, in *core.WebhookData) error {
 	if len(s.Endpoints) == 0 {
 		return nil
@@ -78,6 +81,7 @@ func (s *sender) Send(ctx context.Context, in *core.WebhookData) error {
 	return nil
 }
 
+// send 向单个端点发送带 Digest 与 HTTP 签名的 POST 请求。
 func (s *sender) send(endpoint, secret, event string, data []byte) error {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
@@ -105,6 +109,7 @@ func (s *sender) send(endpoint, secret, event string, data []byte) error {
 	return err
 }
 
+// match 按 event 或 event:action 通配符判断当前事件是否应推送。
 func (s *sender) match(event, action string) bool {
 	if len(s.Events) == 0 {
 		return true
@@ -124,6 +129,7 @@ func (s *sender) match(event, action string) bool {
 	return false
 }
 
+// client 返回 HTTP 客户端，未配置时使用 http.DefaultClient。
 func (s *sender) client() *http.Client {
 	if s.Client == nil {
 		return http.DefaultClient
@@ -131,6 +137,7 @@ func (s *sender) client() *http.Client {
 	return s.Client
 }
 
+// digest 计算请求体的 SHA-256 摘要并 Base64 编码。
 func digest(data []byte) string {
 	h := sha256.New()
 	h.Write(data)

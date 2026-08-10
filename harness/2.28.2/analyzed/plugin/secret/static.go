@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// secret 包提供静态配置的流水线密钥查找实现。
 package secret
 
 import (
@@ -21,23 +22,23 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Static returns a new static Secret controller.
+// Static 返回基于预置 Secret 列表的静态密钥控制器。
 func Static(secrets []*core.Secret) core.SecretService {
 	return &staticController{secrets: secrets}
 }
 
+// staticController 在内存 Secret 列表中按名称匹配查找。
 type staticController struct {
 	secrets []*core.Secret
 }
 
+// Find 按名称（不区分大小写）查找密钥，并校验 Pull Request 访问限制。
 func (c *staticController) Find(ctx context.Context, in *core.SecretArgs) (*core.Secret, error) {
 	for _, secret := range c.secrets {
 		if !strings.EqualFold(secret.Name, in.Name) {
 			continue
 		}
-		// The secret can be restricted to non-pull request
-		// events. If the secret is restricted, return
-		// empty results.
+		// 密钥可限制为非 Pull Request 事件可用；PR 构建时跳过该密钥。
 		if secret.PullRequest == false &&
 			in.Build.Event == core.EventPullRequest {
 			continue

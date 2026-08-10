@@ -21,7 +21,7 @@ import (
 	"github.com/drone/drone/service/redisdb"
 )
 
-// New creates a new in-memory publish subscriber.
+// New 在 OSS 构建中创建内存版发布-订阅实例，忽略 Redis 参数。
 func New(r redisdb.RedisDB) core.Pubsub {
 	return newHub()
 }
