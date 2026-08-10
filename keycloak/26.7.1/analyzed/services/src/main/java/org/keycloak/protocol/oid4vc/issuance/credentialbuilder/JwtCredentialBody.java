@@ -24,22 +24,32 @@ import org.keycloak.jose.jws.JWSBuilder;
 import org.jboss.logging.Logger;
 
 /**
+ * JWT-VC 格式的未完成凭证体，封装待签名的 {@link JWSBuilder.EncodingBuilder}。
+ *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public class JwtCredentialBody implements CredentialBody {
 
     private static final Logger LOGGER = Logger.getLogger(JwtCredentialBody.class);
 
+    /** 待签名的 JWS 编码构建器。 */
     private final JWSBuilder.EncodingBuilder jwsEncodingBuilder;
 
+    /** @param jwsEncodingBuilder 已填充载荷的 JWS 构建器 */
     public JwtCredentialBody(JWSBuilder.EncodingBuilder jwsEncodingBuilder) {
         this.jwsEncodingBuilder = jwsEncodingBuilder;
     }
 
+    /** {@inheritDoc} JWT-VC 密钥绑定尚未实现，仅记录警告。 */
     public void addKeyBinding(JWK jwk) throws CredentialBuilderException {
         LOGGER.warnf("Key binding is not yet implemented for JWT credentials");
     }
 
+    /**
+     * 使用签发者签名上下文完成 JWS 签名。
+     * @param signatureSignerContext 签名上下文
+     * @return 紧凑序列化 JWT 字符串
+     */
     public String sign(SignatureSignerContext signatureSignerContext) {
         return jwsEncodingBuilder.sign(signatureSignerContext);
     }

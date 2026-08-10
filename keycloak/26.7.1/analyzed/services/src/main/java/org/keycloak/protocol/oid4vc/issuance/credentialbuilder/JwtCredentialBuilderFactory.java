@@ -27,27 +27,34 @@ import org.keycloak.protocol.oid4vc.issuance.OffsetTimeProvider;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * {@link JwtCredentialBuilder} 的组件工厂，注册 JWT-VC 格式构建器。
+ *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public class JwtCredentialBuilderFactory implements CredentialBuilderFactory {
 
+    /** 工厂配置属性列表（当前为空）。 */
     protected static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
 
+    /** {@inheritDoc} JWT-VC 格式。 */
     @Override
     public String getSupportedFormat() {
         return VCFormat.JWT_VC;
     }
 
+    /** {@inheritDoc} JWT-VC 格式构建器说明。 */
     @Override
     public String getHelpText() {
         return "Builds verifiable credentials on the JWT-VC format (https://identity.foundation/jwt-vc-presentation-profile).";
     }
 
+    /** {@inheritDoc} 返回空配置列表。 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
     }
 
+    /** {@inheritDoc} 创建带 {@link OffsetTimeProvider} 的 JWT 构建器。 */
     @Override
     public CredentialBuilder create(KeycloakSession session, ComponentModel model) {
         return new JwtCredentialBuilder(new OffsetTimeProvider(), session);

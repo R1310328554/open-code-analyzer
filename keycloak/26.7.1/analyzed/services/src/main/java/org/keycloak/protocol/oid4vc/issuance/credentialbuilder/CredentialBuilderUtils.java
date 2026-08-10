@@ -23,11 +23,20 @@ import java.util.UUID;
 
 import org.keycloak.protocol.oid4vc.model.VerifiableCredential;
 
+/**
+ * 凭证构建工具类：提供跨格式共用的辅助方法。
+ */
 public class CredentialBuilderUtils {
 
+    /** 自动生成凭证 ID 时使用的 URN 模板。 */
     private static final String ID_TEMPLATE = "urn:uuid:%s";
 
-    // retrieve the credential id from the given VC or generate one.
+    // 从给定 VC 读取凭证 ID，缺失则生成 urn:uuid 形式的新 ID。
+    /**
+     * 获取可验证凭证 ID；若未设置则生成随机 UUID URN。
+     * @param verifiableCredential 可验证凭证
+     * @return 凭证标识字符串
+     */
     public static String createCredentialId(VerifiableCredential verifiableCredential) {
         return Optional.ofNullable(verifiableCredential.getId())
                 .orElse(URI.create(String.format(ID_TEMPLATE, UUID.randomUUID())))

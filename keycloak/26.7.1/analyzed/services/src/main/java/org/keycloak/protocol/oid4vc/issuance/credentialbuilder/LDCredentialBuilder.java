@@ -26,21 +26,25 @@ import org.keycloak.protocol.oid4vc.model.VerifiableCredential;
 
 
 /**
- * Builds verifiable credentials for the LDP_VC format.
+ * LDP-VC（{@code ldp_vc}）格式可验证凭证构建器。
+ * <p>内部表示本身即 LDP 格式，主要设置 issuer 后包装为 {@link LDCredentialBody}。</p>
  * {@see https://www.w3.org/TR/vc-data-model/}
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public class LDCredentialBuilder implements CredentialBuilder {
 
+    /** 默认构造。 */
     public LDCredentialBuilder() {
     }
 
+    /** {@inheritDoc} 返回 {@link VCFormat#LDP_VC}。 */
     @Override
     public String getSupportedFormat() {
         return VCFormat.LDP_VC;
     }
 
+    /** {@inheritDoc} 设置含 {@code @context} 的 {@link CredentialDefinition}。 */
     @Override
     public void contributeToMetadata(SupportedCredentialConfiguration credentialConfig, CredentialScopeModel credentialScope) {
         CredentialDefinition credentialDefinition = CredentialDefinition.parse(credentialScope);
@@ -52,8 +56,7 @@ public class LDCredentialBuilder implements CredentialBuilder {
             VerifiableCredential verifiableCredential,
             CredentialBuildConfig credentialBuildConfig
     ) throws CredentialBuilderException {
-        // The default credential format is basically this format,
-        // so not much is to be done.
+        // 默认内部表示即 LDP 格式，仅需设置 issuer
         verifiableCredential.setIssuer(credentialBuildConfig.getCredentialIssuer());
         return new LDCredentialBody(verifiableCredential);
     }

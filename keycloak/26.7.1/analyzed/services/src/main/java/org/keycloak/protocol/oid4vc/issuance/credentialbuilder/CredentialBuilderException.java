@@ -18,16 +18,21 @@
 package org.keycloak.protocol.oid4vc.issuance.credentialbuilder;
 
 /**
- * Exception to be thrown if credentials building does fail
+ * 凭证构建失败时抛出的运行时异常。
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public class CredentialBuilderException extends RuntimeException {
 
+    /** @param message 错误消息 */
     public CredentialBuilderException(String message) {
         super(message);
     }
 
+    /**
+     * @param message 错误消息
+     * @param cause 根因异常
+     */
     public CredentialBuilderException(String message, Throwable cause) {
         super(message, cause);
     }

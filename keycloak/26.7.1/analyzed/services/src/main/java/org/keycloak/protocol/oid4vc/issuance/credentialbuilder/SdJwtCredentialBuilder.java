@@ -48,11 +48,17 @@ import static org.keycloak.OID4VCConstants.CLAIM_NAME_SUB;
 import static org.keycloak.OID4VCConstants.CLAIM_NAME_SUBJECT_ID;
 import static org.keycloak.OID4VCConstants.CLAIM_NAME_VCT;
 
+/**
+ * SD-JWT-VC（{@code dc+sd-jwt}）格式凭证构建器。
+ * <p>将 subject 声明映射为 JWT 载荷，按配置进行选择性披露、诱饵声明及 HAIP 兼容字段填充。</p>
+ */
 public class SdJwtCredentialBuilder implements CredentialBuilder {
 
+    /** 默认构造。 */
     public SdJwtCredentialBuilder() {
     }
 
+    /** {@inheritDoc} 返回 {@link VCFormat#SD_JWT_VC}。 */
     @Override
     public String getSupportedFormat() {
         return VCFormat.SD_JWT_VC;
@@ -68,32 +74,30 @@ public class SdJwtCredentialBuilder implements CredentialBuilder {
         Instant issuanceDate = verifiableCredential.getIssuanceDate();
         Instant expirationDate = verifiableCredential.getExpirationDate();
 
-        // Retrieve subject claims
+        // 读取 subject 声明
         CredentialSubject credentialSubject = verifiableCredential.getCredentialSubject();
         Map<String, Object> claims = new LinkedHashMap<>(credentialSubject.getClaims());
 
-        // Map subject id => sub
+        // 将 subject id 映射为 JWT sub 声明
         Optional.ofNullable(claims.remove(CLAIM_NAME_SUBJECT_ID)).ifPresent(it ->
                 claims.put(CLAIM_NAME_SUB, it)
         );
 
-        // Always add a jti (the credential id)
+        // 始终写入 jti（凭证 ID）
         claims.put(CLAIM_NAME_JTI, vcId != null ? vcId : UUID.randomUUID().toString());
 
         Optional.ofNullable(issuanceDate).ifPresent(it ->
                 claims.put(CLAIM_NAME_IAT, it.getEpochSecond())
         );
 
-        // Put all claims into the disclosure spec, except the one to be kept visible
+        // 除配置为可见的声明外，其余纳入选择性披露规范
         DisclosureSpec.Builder disclosureSpecBuilder = DisclosureSpec.builder();
         claims.entrySet()
                 .stream()
                 .filter(entry -> !credentialBuildConfig.getSdJwtVisibleClaims().contains(entry.getKey()))
                 .forEach(entry -> {
                     if (entry instanceof List<?> listValue) {
-                        // FIXME: Unreachable branch. The intent was probably to check `entry.getValue()`,
-                        //  but changing just that will expose the array field name and break many tests.
-                        //  Needs further discussion on the wanted behavior.
+                        // FIXME：不可达分支；原意可能是检查 entry.getValue()，直接修改会破坏多项测试，需进一步讨论期望行为
 
                         IntStream.range(0, listValue.size())
                                 .forEach(i -> disclosureSpecBuilder
@@ -104,22 +108,18 @@ public class SdJwtCredentialBuilder implements CredentialBuilder {
                     }
                 });
 
-        // Populate configured fields (necessarily visible)
+        // 填充必可见的配置字段（issuer、vct）
         claims.put(CLAIM_NAME_ISSUER, credentialBuildConfig.getCredentialIssuer());
         claims.put(CLAIM_NAME_VCT, credentialBuildConfig.getCredentialType());
 
-        // Set exp claim from verifiable credential expiration date
-        // expiry is optional, but should be set if available to comply with HAIP
-        // see: https://openid.github.io/OpenID4VC-HAIP/openid4vc-high-assurance-interoperability-profile-wg-draft.html#section-6.1
-        // Only set if not already set by a protocol mapper
+        // 从 VC 过期时间设置 exp（可选，但 HAIP 建议设置）；仅当协议映射器未预先设置时写入
         if (!claims.containsKey(CLAIM_NAME_EXP) && expirationDate != null) {
             claims.put(CLAIM_NAME_EXP, expirationDate.getEpochSecond());
         }
 
-        // jti, nbf, and iat are all optional. So need to be set by a protocol mapper if needed.
-        // see: https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-03.html#name-registered-jwt-claims
+        // jti、nbf、iat 均为可选，需时由协议映射器设置
 
-        // Add the configured number of decoys
+        // 添加配置的诱饵（decoy）声明数量
         if (credentialBuildConfig.getNumberOfDecoys() > 0) {
             IntStream.range(0, credentialBuildConfig.getNumberOfDecoys())
                     .forEach(i -> disclosureSpecBuilder.withDecoyClaim(SdJwtUtils.randomSalt()));
@@ -137,6 +137,7 @@ public class SdJwtCredentialBuilder implements CredentialBuilder {
         return new SdJwtCredentialBody(sdJwtBuilder, issuerSignedJWT);
     }
 
+    /** {@inheritDoc} 设置 SD-JWT 格式的 {@code vct} 元数据。 */
     @Override
     public void contributeToMetadata(SupportedCredentialConfiguration credentialConfig, CredentialScopeModel credentialScope) {
         String vct = Optional.ofNullable(credentialScope.getVct()).orElse(credentialScope.getName());

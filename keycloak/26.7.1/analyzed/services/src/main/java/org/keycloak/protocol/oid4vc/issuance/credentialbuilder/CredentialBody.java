@@ -20,14 +20,17 @@ package org.keycloak.protocol.oid4vc.issuance.credentialbuilder;
 import org.keycloak.jose.jwk.JWK;
 
 /**
- * Incomplete representations of format-specific credentials.
+ * 特定格式凭证的未完成表示，签名前可继续绑定密钥等操作。
+ * <p>由 {@link CredentialBuilder} 构建，后续由签发流程完成签名。</p>
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public interface CredentialBody {
 
     /**
-     * Bind the credential to a public key prior to signing.
+     * 在签名前将凭证绑定到持有者公钥（密钥绑定 / holder binding）。
+     * @param jwk 持有者 JWK 公钥
+     * @throws CredentialBuilderException 绑定失败时
      */
     void addKeyBinding(JWK jwk) throws CredentialBuilderException;
 }

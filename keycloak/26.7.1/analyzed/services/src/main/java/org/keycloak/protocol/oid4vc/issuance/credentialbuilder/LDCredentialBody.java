@@ -23,21 +23,27 @@ import org.keycloak.protocol.oid4vc.model.VerifiableCredential;
 import org.jboss.logging.Logger;
 
 /**
+ * LDP-VC 格式的未完成凭证体，直接持有 {@link VerifiableCredential} 对象。
+ *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public class LDCredentialBody implements CredentialBody {
 
     private static final Logger LOGGER = Logger.getLogger(LDCredentialBody.class);
+    /** 待签名的可验证凭证对象。 */
     private final VerifiableCredential verifiableCredential;
 
+    /** @param verifiableCredential 可验证凭证 */
     public LDCredentialBody(VerifiableCredential verifiableCredential) {
         this.verifiableCredential = verifiableCredential;
     }
 
+    /** {@inheritDoc} LDP-VC 密钥绑定尚未实现，仅记录警告。 */
     public void addKeyBinding(JWK jwk) throws CredentialBuilderException {
         LOGGER.warnf("Key binding is not yet implemented for LDP credentials");
     }
 
+    /** @return 内部可验证凭证对象 */
     public VerifiableCredential getVerifiableCredential() {
         return verifiableCredential;
     }

@@ -22,28 +22,34 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
- * Spi implementation of the creation of {@link CredentialBuilder}
+ * 注册 {@link CredentialBuilder} 提供者类型的 SPI 实现。
+ * <p>SPI 名称为 {@code credentialBuilder}，内部 SPI，不对扩展模块公开。</p>
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public class CredentialBuilderSpi implements Spi {
+    /** SPI 注册名称。 */
     private static final String NAME = "credentialBuilder";
 
+    /** {@inheritDoc} 内部 SPI。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** {@inheritDoc} 返回 {@code credentialBuilder}。 */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} 提供者接口为 {@link CredentialBuilder}。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return CredentialBuilder.class;
     }
 
+    /** {@inheritDoc} 工厂接口为 {@link CredentialBuilderFactory}。 */
     @Override
     public Class<? extends ProviderFactory<CredentialBuilder>> getProviderFactoryClass() {
         return CredentialBuilderFactory.class;

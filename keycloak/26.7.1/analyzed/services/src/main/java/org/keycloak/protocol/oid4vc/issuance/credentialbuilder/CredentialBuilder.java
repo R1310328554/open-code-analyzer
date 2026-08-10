@@ -23,28 +23,29 @@ import org.keycloak.protocol.oid4vc.model.SupportedCredentialConfiguration;
 import org.keycloak.protocol.oid4vc.model.VerifiableCredential;
 import org.keycloak.provider.Provider;
 
+/**
+ * 可验证凭证构建器：将内部 {@link VerifiableCredential} 表示转换为特定格式的未签名凭证体。
+ * <p>实现类通过 SPI 注册，支持 JWT-VC、LDP-VC、SD-JWT-VC 等格式。</p>
+ */
 public interface CredentialBuilder extends Provider {
 
+    /** {@inheritDoc} 默认无资源需释放。 */
     @Override
     default void close() {
     }
 
-    /**
-     * Returns the credential format supported by the builder.
-     */
+    /** @return 本构建器支持的凭证格式标识（如 {@code jwt_vc}） */
+
     String getSupportedFormat();
 
     /**
-     * Builds a verifiable credential of a specific format from the basis of
-     * an internal representation of the credential.
+     * 基于内部可验证凭证表示，构建特定格式的未完成凭证体。
+     * <p>返回体待外部签名流程完成签发。</p>
      *
-     * <p>
-     * The credential is built incompletely, intended that it would be signed externally.
-     * </p>
-     *
-     * @param verifiableCredential  an internal representation of the credential
-     * @param credentialBuildConfig additional configurations for building the credential
-     * @return the built verifiable credential of the specific format, ready to be signed
+     * @param verifiableCredential 内部凭证表示
+     * @param credentialBuildConfig 构建附加配置
+     * @return 待签名的格式特定凭证体
+     * @throws CredentialBuilderException 构建失败时
      */
     CredentialBody buildCredentialBody(
             VerifiableCredential verifiableCredential,
@@ -52,21 +53,12 @@ public interface CredentialBuilder extends Provider {
     ) throws CredentialBuilderException;
 
     /**
-     * Allows the credential builder to contribute format-specific metadata
-     * to the OID4VCI well-known credential issuer metadata.
+     * 向 OID4VCI well-known 凭证签发者元数据贡献格式特定字段。
+     * <p>例如 {@code dc+sd-jwt} 格式设置 {@code vct}， {@code jwt_vc_json} 设置 {@code credential_definition}。</p>
+     * <p>默认空实现以保持向后兼容。</p>
      *
-     * <p>
-     * Implementations should add only the metadata fields required by the
-     * supported credential format (for example {@code vct} for {@code dc+sd-jwt}
-     * or {@code credential_definition} for {@code jwt_vc_json}).
-     * </p>
-     *
-     * <p>
-     * The default implementation is a no-op to preserve backward compatibility.
-     * </p>
-     *
-     * @param credentialConfig the credential configuration to populate with format-specific metadata
-     * @param credentialScope  the credential scope model containing the source data
+     * @param credentialConfig 待填充的凭证配置
+     * @param credentialScope 凭证 Scope 模型（数据源）
      */
     default void contributeToMetadata(SupportedCredentialConfiguration credentialConfig, CredentialScopeModel credentialScope) {
     }

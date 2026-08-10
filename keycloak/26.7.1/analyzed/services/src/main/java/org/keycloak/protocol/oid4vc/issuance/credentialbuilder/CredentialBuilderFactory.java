@@ -23,7 +23,8 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.protocol.oid4vc.OID4VCEnvironmentProviderFactory;
 
 /**
- * Provider Factory to create {@link  CredentialBuilder}'s
+ * {@link CredentialBuilder} 的组件工厂，按凭证格式创建对应构建器实例。
+ * <p>工厂 ID 即 {@link #getSupportedFormat()} 返回值。</p>
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
@@ -31,24 +32,27 @@ public interface CredentialBuilderFactory extends
         ComponentFactory<CredentialBuilder, CredentialBuilder>,
         OID4VCEnvironmentProviderFactory {
 
-    /**
-     * Returns the credential format supported by the credential builder.
-     */
+    /** @return 工厂所支持的可验证凭证格式标识 */
+
     String getSupportedFormat();
 
+    /** {@inheritDoc} 以支持格式作为组件 ID。 */
     @Override
     default String getId() {
         return getSupportedFormat();
     }
 
+    /** {@inheritDoc} 默认无初始化逻辑。 */
     @Override
     default void init(Config.Scope config) {
     }
 
+    /** {@inheritDoc} 默认无后置初始化。 */
     @Override
     default void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** {@inheritDoc} 默认无资源需释放。 */
     @Override
     default void close() {
     }
