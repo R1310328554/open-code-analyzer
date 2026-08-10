@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+GraphRAG 抽取基类：并发 chunk 处理、实体/关系合并与 LLM 缓存/chat 封装。
+"""
+
+
 import asyncio
 import logging
 import os
@@ -49,6 +54,7 @@ MAX_CONCURRENT_PROCESS_AND_EXTRACT_CHUNK = int(os.environ.get("MAX_CONCURRENT_PR
 
 
 class Extractor:
+    # GraphRAG 抽取器基类：LLM 调用、节点/边合并与图节点合并逻辑
     _llm: CompletionLLM
 
     def __init__(
@@ -74,6 +80,7 @@ class Extractor:
         return len((response or "").strip()) <= 1
 
     async def _async_chat(self, system, history, gen_conf={}, task_id=""):
+        # 优先读 LLM 缓存，miss 时 message_fit_in 截断后 async_chat 并写回缓存
         hist = deepcopy(history)
         conf = deepcopy(gen_conf)
         response = await thread_pool_exec(get_llm_cache, self._llm.llm_name, system, hist, conf)
@@ -129,6 +136,7 @@ class Extractor:
         return dict(maybe_nodes), dict(maybe_edges)
 
     async def __call__(self, doc_id: str, chunks: list[str], callback: Callable | None = None, task_id: str = ""):
+        # 并发抽取各 chunk、合并同名实体/边并汇总 token 消耗
         self.callback = callback
         start_ts = asyncio.get_running_loop().time()
 
@@ -290,6 +298,7 @@ class Extractor:
         all_relationships_data.append(edge_data)
 
     async def _merge_graph_nodes(self, graph: nx.Graph, nodes: list[str], change: GraphChange, task_id=""):
+        # 将多个等价节点合并为首个节点，重定向边并汇总 description
         if task_id and has_canceled(task_id):
             raise TaskCanceledException(f"Task {task_id} was cancelled during merge graph nodes")
 
@@ -336,6 +345,7 @@ class Extractor:
         graph.nodes[nodes[0]].update(node0_attrs)
 
     async def _handle_entity_relation_summary(self, entity_or_relation_name: str, description: str, task_id="") -> str:
+        # 描述片段过多时用 SUMMARIZE_DESCRIPTIONS_PROMPT 压缩为单段摘要
         if task_id and has_canceled(task_id):
             raise TaskCanceledException(f"Task {task_id} was cancelled during summary handling")
 

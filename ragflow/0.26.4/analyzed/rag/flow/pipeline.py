@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+文档 ingestion 流水线：基于 Canvas DSL 异步调度 File→Parser→Chunker→Tokenizer 等组件。
+"""
+
+
 import asyncio
 import datetime
 import json
@@ -26,6 +31,7 @@ from rag.utils.redis_conn import REDIS_CONN
 
 
 class Pipeline(Graph):
+    # 继承 Canvas Graph，绑定 doc_id/kb_id 并写 Redis 进度日志
     def __init__(self, dsl: str | dict, tenant_id=None, doc_id=None, task_id=None, flow_id=None):
         if isinstance(dsl, dict):
             dsl = json.dumps(dsl, ensure_ascii=False)
@@ -41,6 +47,7 @@ class Pipeline(Graph):
                 self._doc_id = None
 
     def callback(self, component_name: str, progress: float | int | None = None, message: str = "") -> None:
+        # 组件进度回调：写 Redis trace、更新 TaskService 并检测取消
         from common.exceptions import TaskCanceledException
 
         log_key = f"{self._flow_id}-{self.task_id}-logs"
@@ -105,6 +112,7 @@ class Pipeline(Graph):
             raise TaskCanceledException(message)
 
     def fetch_logs(self):
+        # 从 Redis 读取当前任务的组件 trace 日志
         log_key = f"{self._flow_id}-{self.task_id}-logs"
         try:
             bin = REDIS_CONN.get(log_key)
@@ -115,6 +123,7 @@ class Pipeline(Graph):
         return []
 
     async def run(self, **kwargs):
+        # 按拓扑顺序异步 invoke 各组件，汇总最终输出或错误
         log_key = f"{self._flow_id}-{self.task_id}-logs"
         try:
             REDIS_CONN.set_obj(log_key, [], 60 * 10)

@@ -1,10 +1,12 @@
 # Copyright (c) 2024 Microsoft Corporation.
 # Licensed under the MIT License
 """
+社区报告 LLM 提示词：基于实体/关系 CSV 生成 JSON 结构化社区分析报告。
 Reference:
  - [GraphRAG](https://github.com/microsoft/graphrag/blob/main/graphrag/prompts/index/community_report.py)
 """
 
+# 要求 LLM 输出 title/summary/rating/findings 等 JSON 字段
 COMMUNITY_REPORT_PROMPT = """
 You are an AI assistant that helps a human analyst to perform general information discovery. Information discovery is the process of identifying and assessing relevant information associated with certain entities (e.g., organizations and individuals) within a network.
 

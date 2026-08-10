@@ -2,6 +2,7 @@
 # Licensed under the MIT License
 
 """
+单部图抽取器：LLM 多轮 gleaning 从文本块抽取实体与关系并构建 NetworkX 图。
 Reference:
  - [graphrag](https://github.com/microsoft/graphrag)
 """
@@ -25,6 +26,7 @@ DEFAULT_COMPLETION_DELIMITER = "<|COMPLETE|>"
 
 @dataclass
 class GraphExtractionResult:
+    """图抽取结果：NetworkX 图与 source_docs 映射。"""
     """Unipartite graph extraction result class definition."""
 
     output: nx.Graph
@@ -32,6 +34,7 @@ class GraphExtractionResult:
 
 
 class GraphExtractor(Extractor):
+    """基于 GRAPH_EXTRACTION_PROMPT 的逐 chunk 实体关系抽取。"""
     """Unipartite graph extractor class definition."""
 
     _join_descriptions: bool
@@ -92,6 +95,7 @@ class GraphExtractor(Extractor):
         }
 
     async def _process_single_content(self, chunk_key_dp: tuple[str, str], chunk_seq: int, num_chunks: int, out_results, task_id=""):
+        # 单 chunk：主抽取 + CONTINUE/LOOP gleaning 循环，解析 record 为元组
         token_count = 0
         chunk_key = chunk_key_dp[0]
         content = chunk_key_dp[1]

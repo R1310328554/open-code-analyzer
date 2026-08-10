@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+GraphRAG Redis 检查点：社区报告与实体消歧中间结果的持久化与重放。
+"""
+
+
 
 from __future__ import annotations
 
@@ -32,15 +37,18 @@ CHECKPOINT_TTL_SECONDS = 7 * 24 * 3600
 
 
 def stable_checkpoint_key(*parts: Any) -> str:
+    # 对 JSON 序列化参数做 SHA256，生成稳定检查点键
     payload = json.dumps(parts, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def community_checkpoint_key(level: str, community_id: str, nodes: list[str]) -> str:
+    # 社区报告检查点键（level + id + 排序节点列表）
     return stable_checkpoint_key("community", str(level), str(community_id), sorted(nodes))
 
 
 def resolution_checkpoint_key(entity_type: str, pairs: list[tuple[str, str]]) -> str:
+    # 实体消歧批次检查点键
     normalized_pairs = sorted([sorted([a, b]) for a, b in pairs])
     return stable_checkpoint_key("resolution", entity_type, normalized_pairs)
 
@@ -94,10 +102,12 @@ def _load_checkpoints_sync(tenant_id: str, kb_id: str, checkpoint_type: str, pag
 
 
 async def load_checkpoints(tenant_id: str, kb_id: str, checkpoint_type: str, *, page_size: int | None = None) -> dict[str, Any]:
+    # 分页 SSCAN 加载指定类型的全部检查点
     return await thread_pool_exec(_load_checkpoints_sync, tenant_id, kb_id, checkpoint_type, page_size)
 
 
 async def save_checkpoint(tenant_id: str, kb_id: str, checkpoint_type: str, checkpoint_key: str, payload: Any) -> bool:
+    # 写入检查点数据并维护索引集合，带 TTL
     index_key = _checkpoint_index_key(tenant_id, kb_id, checkpoint_type)
     data_key = _checkpoint_data_key(tenant_id, kb_id, checkpoint_type, checkpoint_key)
     try:
@@ -118,6 +128,7 @@ async def save_checkpoint(tenant_id: str, kb_id: str, checkpoint_type: str, chec
 
 
 async def cleanup_checkpoints(tenant_id: str, kb_id: str, checkpoint_type: str, *, page_size: int | None = None) -> bool:
+    # 删除某知识库下指定类型的全部检查点
     index_key = _checkpoint_index_key(tenant_id, kb_id, checkpoint_type)
     try:
         cleaned_count = 0

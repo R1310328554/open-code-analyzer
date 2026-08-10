@@ -1,3 +1,7 @@
+"""
+Tokenizer 上下游 Pydantic 模型：声明 output_format 与 payload 字段一致性约束。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -18,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class TokenizerFromUpstream(BaseModel):
+    # 上游传入的文件名、chunks 或多格式文本/JSON 载荷
     created_time: float | None = Field(default=None, alias="_created_time")
     elapsed_time: float | None = Field(default=None, alias="_elapsed_time")
 
@@ -37,6 +42,7 @@ class TokenizerFromUpstream(BaseModel):
 
     @model_validator(mode="after")
     def _check_payloads(self) -> "TokenizerFromUpstream":
+        # 校验 output_format 与对应 payload 字段是否匹配
         # Empty chunk arrays are valid upstream results for nearly empty files.
         if self.output_format == "chunks" and self.chunks is not None:
             return self

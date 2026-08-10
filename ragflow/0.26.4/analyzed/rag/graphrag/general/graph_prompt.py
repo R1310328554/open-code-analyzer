@@ -1,10 +1,12 @@
 # Copyright (c) 2024 Microsoft Corporation.
 # Licensed under the MIT License
 """
+GraphRAG 图抽取与描述摘要 LLM 提示词常量（含 Few-shot 与 gleaning 续写模板）。
 Reference:
  - [GraphRAG](https://github.com/microsoft/graphrag/blob/main/graphrag/prompts/index/extract_graph.py)
 """
 
+# 主抽取 prompt：entity/relationship 元组格式与 record/completion 分隔符
 GRAPH_EXTRACTION_PROMPT = """
 -Goal-
 Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
@@ -105,9 +107,12 @@ Text: {input_text}
 ######################
 Output:"""
 
+# 追加抽取轮：提示 LLM 补漏实体
 CONTINUE_PROMPT = "MANY entities were missed in the last extraction.  Add them below using the same format:\n"
+# 是否仍需继续抽取的 Y/N 判定 prompt
 LOOP_PROMPT = "It appears some entities may have still been missed. Answer Y if there are still entities that need to be added, or N if there are none. Please answer with a single letter Y or N.\n"
 
+# 合并多段 entity/relation 描述为单一摘要
 SUMMARIZE_DESCRIPTIONS_PROMPT = """
 You are a helpful assistant responsible for generating a comprehensive summary of the data provided below.
 Given one or two entities, and a list of descriptions, all related to the same entity or group of entities.

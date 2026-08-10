@@ -1,3 +1,7 @@
+"""
+Tokenizer 流水线组件子包：分词计数与可选向量嵌入。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #

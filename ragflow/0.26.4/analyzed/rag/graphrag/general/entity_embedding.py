@@ -1,6 +1,7 @@
 # Copyright (c) 2024 Microsoft Corporation.
 # Licensed under the MIT License
 """
+图节点 Node2Vec 嵌入：基于 graspologic 随机游走生成节点向量字典。
 Reference:
  - [graphrag](https://github.com/microsoft/graphrag)
 """
@@ -15,6 +16,7 @@ import graspologic as gc
 
 @dataclass
 class NodeEmbeddings:
+    """Node2Vec 输出：节点名列表与 embedding 矩阵。"""
     """Node embeddings class definition."""
 
     nodes: list[str]
@@ -22,6 +24,7 @@ class NodeEmbeddings:
 
 
 def embed_node2vec(
+    # 调用 graspologic node2vec_embed，返回 NodeEmbeddings
     graph: nx.Graph | nx.DiGraph,
     dimensions: int = 1536,
     num_walks: int = 10,
@@ -45,6 +48,7 @@ def embed_node2vec(
 
 
 def run(graph: nx.Graph, args: dict[str, Any]) -> dict:
+    # 可选 LCC 裁剪后执行 node2vec，返回 node→vector 映射
     """Run method definition."""
     if args.get("use_lcc", True):
         graph = stable_largest_connected_component(graph)

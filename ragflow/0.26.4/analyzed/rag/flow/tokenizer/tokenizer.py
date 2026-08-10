@@ -12,6 +12,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+"""
+Tokenizer 组件：对 chunks 做全文分词与/或批量 embedding，输出检索就绪字段。
+"""
+
 import logging
 import random
 import re
@@ -35,6 +40,7 @@ from common.misc_utils import thread_pool_exec
 
 
 class TokenizerParam(ProcessParamBase):
+    # 检索方式（full_text/embedding）、文件名权重与分词字段
     def __init__(self):
         super().__init__()
         self.search_method = ["full_text", "embedding"]
@@ -50,9 +56,11 @@ class TokenizerParam(ProcessParamBase):
 
 
 class Tokenizer(ProcessBase):
+    # 流水线 Tokenizer 节点：分词 + 可选向量写入 q_N_vec
     component_name = "Tokenizer"
 
     async def _embedding(self, name, chunks):
+        # 批量 encode 文本并融合文件名向量，写入 chunk 的 q_%d_vec
         # Tokenization may legitimately produce zero chunks; embedding should be a no-op.
         if not chunks:
             return [], 0
@@ -119,6 +127,7 @@ class Tokenizer(ProcessBase):
         return chunks, token_count
 
     async def _invoke(self, **kwargs):
+        # 校验上游载荷、按 output_format 分词/嵌入并 finalize_pdf_chunk
         try:
             chunks = kwargs.get("chunks")
             if chunks is not None:

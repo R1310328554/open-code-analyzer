@@ -3,6 +3,7 @@
 
 
 """
+社区报告抽取器：Leiden 聚类后对每个社区调用 LLM 生成结构化报告并写回图节点。
 Reference:
  - [graphrag](https://github.com/microsoft/graphrag)
 """
@@ -31,6 +32,7 @@ from common.token_utils import num_tokens_from_string
 
 @dataclass
 class CommunityReportsResult:
+    """社区报告抽取结果：文本列表与结构化 dict 列表。"""
     """Community reports result class definition."""
 
     output: list[str]
@@ -38,6 +40,7 @@ class CommunityReportsResult:
 
 
 class CommunityReportsExtractor(Extractor):
+    """对 Leiden 社区并发抽取报告，支持检查点重放。"""
     """Community reports extractor class definition."""
 
     _extraction_prompt: str
@@ -75,6 +78,7 @@ class CommunityReportsExtractor(Extractor):
         checkpoints = checkpoints or {}
 
         async def extract_community_report(level, community):
+            # 单社区：组装 entity/relation CSV prompt、解析 JSON 并 add_community_info2graph
             nonlocal res_str, res_dict, over, token_count
             if task_id:
                 if has_canceled(task_id):
@@ -190,6 +194,7 @@ class CommunityReportsExtractor(Extractor):
         )
 
     def _get_text_output(self, parsed_output: dict) -> str:
+        # 将结构化报告转为 Markdown 标题 + findings 段落
         title = parsed_output.get("title", "Report")
         summary = parsed_output.get("summary", "")
         findings = parsed_output.get("findings", [])

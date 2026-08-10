@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+实体消歧：LLM 判定同名候选实体是否合并，并更新 NetworkX 图结构与 PageRank。
+"""
+
+
 import asyncio
 import logging
 import itertools
@@ -41,6 +46,7 @@ DEFAULT_RESOLUTION_RESULT_DELIMITER = "&&"
 
 @dataclass
 class EntityResolutionResult:
+    """实体消歧结果：更新后的图与变更记录。"""
     """Entity resolution result class definition."""
 
     graph: nx.Graph
@@ -48,6 +54,7 @@ class EntityResolutionResult:
 
 
 class EntityResolution(Extractor):
+    """基于相似度预筛 + LLM 批量判定的实体合并器。"""
     """Entity resolution class definition."""
 
     _resolution_prompt: str
@@ -70,6 +77,7 @@ class EntityResolution(Extractor):
         self._input_text_key = "input_text"
 
     async def __call__(
+        # 按实体类型生成候选对、并发 LLM 消歧、合并连通分量并刷新 pagerank
         self,
         graph: nx.Graph,
         subgraph_nodes: set[str],
@@ -195,7 +203,8 @@ class EntityResolution(Extractor):
             change=change,
         )
 
-    async def _resolve_candidate(self, candidate_resolution_i: tuple[str, list[tuple[str, str]]], resolution_result: set[str], resolution_result_lock: asyncio.Lock, task_id: str = ""):
+    async def _resolve_candidate(self, candidate_resolution_i:
+        # 构造批量问答 prompt，解析 Yes/No 并写入 resolution_result tuple[str, list[tuple[str, str]]], resolution_result: set[str], resolution_result_lock: asyncio.Lock, task_id: str = ""):
         if task_id:
             if has_canceled(task_id):
                 logging.info(f"Task {task_id} cancelled during entity resolution candidate processing.")
@@ -272,6 +281,7 @@ class EntityResolution(Extractor):
         return any(any(c.isdigit() for c in pair) for pair in diff)
 
     def is_similarity(self, a, b):
+        # 英文用编辑距离，中文用字符集合 Jaccard，排除数字 2-gram 差异
         if self._has_digit_in_2gram_diff(a, b):
             return False
 

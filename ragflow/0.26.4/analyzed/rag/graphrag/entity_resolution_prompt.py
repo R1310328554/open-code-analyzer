@@ -13,7 +13,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+实体消歧 LLM 提示词模板：批量 Yes/No 判定同类型实体是否为同一实体。
+"""
 
+
+
+# 实体消歧 prompt：含 record/entity_index/resolution 分隔符占位符与 Few-shot 示例
 ENTITY_RESOLUTION_PROMPT = """
 -Goal-
 Please answer the following Question as required
