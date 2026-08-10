@@ -15,23 +15,8 @@
     "pkg/dataobj/index/indexer.go",
     "pkg/dataobj/index/indexobj/builder.go",
     "pkg/dataobj/index/indexobj/builder_metrics.go",
-    "pkg/dataobj/index/metrics.go",
-    "pkg/dataobj/index/stream_statistics.go",
-    "pkg/dataobj/internal/arrowconv/arrowconv.go",
-    "pkg/dataobj/internal/arrowconv/columnar.go",
-    "pkg/dataobj/internal/dataset/column.go",
-    "pkg/dataobj/internal/dataset/column_builder.go",
-    "pkg/dataobj/internal/dataset/column_reader.go",
-    "pkg/dataobj/internal/dataset/column_stats.go",
-    "pkg/dataobj/internal/dataset/dataset.go",
-    "pkg/dataobj/internal/dataset/page.go",
-    "pkg/dataobj/internal/dataset/page_builder.go",
-    "pkg/dataobj/internal/dataset/page_compress_writer.go",
-    "pkg/dataobj/internal/dataset/page_reader.go",
-    "pkg/dataobj/internal/dataset/predicate.go",
-    "pkg/dataobj/internal/dataset/read_stats.go",
-    "pkg/dataobj/internal/dataset/row_reader.go"
+    "pkg/dataobj/index/metrics.go"
   ],
   "remaining_pending": 1192,
-  "done": 330
+  "done": 345
 }
