@@ -25,6 +25,7 @@ import java.util.Set;
 
 /**
  * A SCTP/IP {@link ServerChannel} which accepts incoming SCTP/IP associations.
+ * <p>接受入站 SCTP 关联并产出 {@link SctpChannel}； 支持 multi-homing 的 bindAddress/unbindAddress。</p>
  *
  * <p>
  * Multi-homing address binding/unbinding can done through bindAddress/unbindAddress methods.
@@ -34,6 +35,7 @@ public interface SctpServerChannel extends ServerChannel {
 
     /**
      * Returns the {@link SctpServerChannelConfig} configuration of the channel.
+     * <p>返回监听通道配置（backlog、缓冲、INIT 流等）。</p>
      */
     @Override
     SctpServerChannelConfig config();
@@ -47,6 +49,7 @@ public interface SctpServerChannel extends ServerChannel {
      *
      * (To set a local address as primary, the application can request by calling local SCTP stack,
      * with SctpStandardSocketOption.SCTP_PRIMARY_ADDR option).
+     * <p>主本地地址（迭代器首个）；多宿主时应用需自行维护主地址。</p>
      */
     @Override
     InetSocketAddress localAddress();
@@ -54,12 +57,14 @@ public interface SctpServerChannel extends ServerChannel {
     /**
      * Return all local addresses of the SCTP server channel.
      * Please note that, it will return more than one address if this channel is using multi-homing
+     * <p>全部本地监听地址集合。</p>
      */
     Set<InetSocketAddress> allLocalAddresses();
 
     /**
      * Bind a address to the already bound channel to enable multi-homing.
      * The Channel must be bound and yet to be connected.
+     * <p>向已 bind 的监听通道追加本地 IP（multi-homing）。</p>
      */
     ChannelFuture bindAddress(InetAddress localAddress);
 
@@ -68,12 +73,14 @@ public interface SctpServerChannel extends ServerChannel {
      * The Channel must be bound and yet to be connected.
      *
      * Will notify the given {@link ChannelPromise} and return a {@link ChannelFuture}
+     * <p>异步 bindAddress，完成时通知 promise。</p>
      */
     ChannelFuture bindAddress(InetAddress localAddress, ChannelPromise promise);
 
     /**
      *  Unbind the address from channel's multi-homing address list.
      *  The address should be added already in multi-homing address list.
+     * <p>从 multi-homing 列表移除本地地址。</p>
      */
     ChannelFuture unbindAddress(InetAddress localAddress);
 
@@ -82,6 +89,7 @@ public interface SctpServerChannel extends ServerChannel {
      *  The address should be added already in multi-homing address list.
      *
      * Will notify the given {@link ChannelPromise} and return a {@link ChannelFuture}
+     * <p>异步 unbindAddress。</p>
      */
     ChannelFuture unbindAddress(InetAddress localAddress, ChannelPromise promise);
 }

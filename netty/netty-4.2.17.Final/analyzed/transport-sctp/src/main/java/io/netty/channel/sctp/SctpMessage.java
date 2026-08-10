@@ -22,12 +22,17 @@ import io.netty.util.internal.ObjectUtil;
 
 /**
  * Representation of SCTP Data Chunk
+ * <p>封装 SCTP 数据块：PPID、流 ID、无序标志与 {@link ByteBuf} 负载； 入站可附带 JDK {@link MessageInfo}。</p>
  */
 public final class SctpMessage extends DefaultByteBufHolder {
+    /** SCTP 流编号（0 .. maxOutboundStreams-1） */
     private final int streamIdentifier;
+    /** 载荷协议标识 PPID，区分上层协议 */
     private final int protocolIdentifier;
+    /** 是否以无序（U 标志）方式发送 */
     private final boolean unordered;
 
+    /** 入站消息的 JDK 元数据；出站为 {@code null} */
     private final MessageInfo msgInfo;
 
     /**
@@ -35,6 +40,7 @@ public final class SctpMessage extends DefaultByteBufHolder {
      * @param protocolIdentifier of payload
      * @param streamIdentifier that you want to send the payload
      * @param payloadBuffer channel buffer
+     * <p>构造有序出站消息（PPID + 流 ID + 负载）。</p>
      */
     public SctpMessage(int protocolIdentifier, int streamIdentifier, ByteBuf payloadBuffer) {
         this(protocolIdentifier, streamIdentifier, false, payloadBuffer);
@@ -46,6 +52,7 @@ public final class SctpMessage extends DefaultByteBufHolder {
      * @param streamIdentifier that you want to send the payload
      * @param unordered if {@literal true}, the SCTP Data Chunk will be sent with the U (unordered) flag set.
      * @param payloadBuffer channel buffer
+     * <p>可指定无序标志的出站构造。</p>
      */
     public SctpMessage(int protocolIdentifier, int streamIdentifier, boolean unordered, ByteBuf payloadBuffer) {
         super(payloadBuffer);
@@ -59,6 +66,7 @@ public final class SctpMessage extends DefaultByteBufHolder {
      * Essential data that is being carried within SCTP Data Chunk
      * @param msgInfo       the {@link MessageInfo}
      * @param payloadBuffer channel buffer
+     * <p>由 {@link MessageInfo} 填充流/PPID/无序标志的入站构造。</p>
      */
     public SctpMessage(MessageInfo msgInfo, ByteBuf payloadBuffer) {
         super(payloadBuffer);
@@ -70,6 +78,7 @@ public final class SctpMessage extends DefaultByteBufHolder {
 
     /**
      * Return the stream-identifier
+     * <p>返回 SCTP 流 ID。</p>
      */
     public int streamIdentifier() {
         return streamIdentifier;
@@ -77,6 +86,7 @@ public final class SctpMessage extends DefaultByteBufHolder {
 
     /**
      * Return the protocol-identifier
+     * <p>返回 PPID。</p>
      */
     public int protocolIdentifier() {
         return protocolIdentifier;
@@ -84,6 +94,7 @@ public final class SctpMessage extends DefaultByteBufHolder {
 
     /**
      * return the unordered flag
+     * <p>是否无序发送。</p>
      */
     public boolean isUnordered() {
         return unordered;
@@ -92,6 +103,7 @@ public final class SctpMessage extends DefaultByteBufHolder {
     /**
      * Return the {@link MessageInfo} for inbound messages or {@code null} for
      * outbound messages.
+     * <p>入站附带 JDK 元数据，出站为 {@code null}。</p>
      */
     public MessageInfo messageInfo() {
         return msgInfo;
@@ -99,12 +111,13 @@ public final class SctpMessage extends DefaultByteBufHolder {
 
     /**
      * Return {@code true} if this message is complete.
+     * <p>分片消息是否已收齐；出站恒为 {@code true}。</p>
      */
     public boolean isComplete() {
         if (msgInfo != null) {
             return msgInfo.isComplete();
         }  else {
-            //all outbound sctp messages are complete
+            // 出站 SCTP 消息视为完整单块
             return true;
         }
     }
@@ -140,7 +153,7 @@ public final class SctpMessage extends DefaultByteBufHolder {
     public int hashCode() {
         int result = streamIdentifier;
         result = 31 * result + protocolIdentifier;
-        // values 1231 and 1237 are referenced in the javadocs of Boolean#hashCode()
+        // 1231/1237 与 Boolean#hashCode() 文档约定一致
         result = 31 * result + (unordered ? 1231 : 1237);
         result = 31 * result + content().hashCode();
         return result;

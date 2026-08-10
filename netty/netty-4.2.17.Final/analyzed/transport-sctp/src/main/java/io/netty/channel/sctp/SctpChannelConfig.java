@@ -25,6 +25,7 @@ import io.netty.channel.WriteBufferWaterMark;
 
 /**
  * A {@link ChannelConfig} for a {@link SctpChannel}.
+ * <p>SCTP 客户端通道配置：在通用 {@link ChannelConfig} 之上暴露  {@code SCTP_NODELAY}、缓冲区与 INIT 最大流数等选项。</p>
  * <p/>
  * <h3>Available options</h3>
  * <p/>
@@ -52,7 +53,9 @@ public interface SctpChannelConfig extends ChannelConfig {
      * {@code SCTP_NODELAY}</a> option.  Please note that the default value of this option is {@code true} unlike the
      * operating system default ({@code false}). However, for some buggy platforms, such as Android, that shows erratic
      * behavior with Nagle's algorithm disabled, the default value remains to be {@code false}.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 是否禁用 SCTP Nagle 类延迟（Netty 默认倾向 {@code true}） */
     boolean isSctpNoDelay();
 
     /**
@@ -60,43 +63,57 @@ public interface SctpChannelConfig extends ChannelConfig {
      * {@code SCTP_NODELAY}</a> option.  Please note that the default value of this option is {@code true} unlike the
      * operating system default ({@code false}). However, for some buggy platforms, such as Android, that shows erratic
      * behavior with Nagle's algorithm disabled, the default value remains to be {@code false}.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 设置 {@code SCTP_NODELAY} */
     SctpChannelConfig setSctpNoDelay(boolean sctpNoDelay);
 
     /**
      * Gets the <a href="https://openjdk.java.net/projects/sctp/javadoc/com/sun/nio/sctp/SctpStandardSocketOption.html">
      *     {@code SO_SNDBUF}</a> option.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 读取 {@code SO_SNDBUF} */
     int getSendBufferSize();
 
     /**
      * Sets the <a href="https://openjdk.java.net/projects/sctp/javadoc/com/sun/nio/sctp/SctpStandardSocketOption.html">
      *     {@code SO_SNDBUF}</a> option.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 设置 {@code SO_SNDBUF} */
     SctpChannelConfig setSendBufferSize(int sendBufferSize);
 
     /**
      * Gets the <a href="https://openjdk.java.net/projects/sctp/javadoc/com/sun/nio/sctp/SctpStandardSocketOption.html">
      *     {@code SO_RCVBUF}</a> option.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 读取 {@code SO_RCVBUF} */
     int getReceiveBufferSize();
 
     /**
      * Gets the <a href="https://openjdk.java.net/projects/sctp/javadoc/com/sun/nio/sctp/SctpStandardSocketOption.html">
      *     {@code SO_RCVBUF}</a> option.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 设置 {@code SO_RCVBUF} */
     SctpChannelConfig setReceiveBufferSize(int receiveBufferSize);
 
     /**
      * Gets the <a href="https://openjdk.java.net/projects/sctp/javadoc/com/sun/nio/sctp/SctpStandardSocketOption.html">
      *     {@code SCTP_INIT_MAXSTREAMS}</a> option.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 读取 INIT 协商的最大入/出站流数 */
     InitMaxStreams getInitMaxStreams();
 
     /**
      * Gets the <a href="https://openjdk.java.net/projects/sctp/javadoc/com/sun/nio/sctp/SctpStandardSocketOption.html">
      *     {@code SCTP_INIT_MAXSTREAMS}</a> option.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 设置 {@code SCTP_INIT_MAXSTREAMS}（关联建立前） */
     SctpChannelConfig setInitMaxStreams(InitMaxStreams initMaxStreams);
 
     @Override

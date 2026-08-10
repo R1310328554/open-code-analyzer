@@ -55,6 +55,7 @@ import java.util.Set;
 /**
  * {@link io.netty.channel.sctp.SctpChannel} implementation which use blocking mode and allows to read / write
  * {@link SctpMessage}s to the underlying {@link SctpChannel}.
+ * <p>基于 OIO 的阻塞 SCTP 客户端：用独立 {@link Selector} 模拟阻塞读写； 已废弃，请改用 {@link io.netty.channel.sctp.nio.NioSctpChannel}。</p>
  *
  * Be aware that not all operations systems support SCTP. Please refer to the documentation of your operation system,
  * to understand what you need to do to use it. Also this feature is only supported on Java 7+.
@@ -71,17 +72,22 @@ public class OioSctpChannel extends AbstractOioMessageChannel
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private static final String EXPECTED_TYPE = " (expected: " + StringUtil.simpleClassName(SctpMessage.class) + ')';
 
+    /** 底层 JDK SCTP 通道 */
     private final SctpChannel ch;
     private final SctpChannelConfig config;
 
+    /** 读就绪选择器 */
     private final Selector readSelector;
+    /** 写就绪选择器 */
     private final Selector writeSelector;
+    /** 连接完成选择器 */
     private final Selector connectSelector;
 
     private final NotificationHandler<?> notificationHandler;
     private ByteBuffer inputCopy;
     private ByteBuffer outputCopy;
 
+    /** 打开 JDK SCTP 通道 */
     private static SctpChannel openChannel() {
         try {
             return SctpChannel.open();
@@ -92,6 +98,7 @@ public class OioSctpChannel extends AbstractOioMessageChannel
 
     /**
      * Create a new instance with an new {@link SctpChannel}.
+     * <p>内部 {@link SctpChannel#open()} 并注册三个 Selector。</p>
      */
     public OioSctpChannel() {
         this(openChannel());
@@ -99,6 +106,7 @@ public class OioSctpChannel extends AbstractOioMessageChannel
 
     /**
      * Create a new instance from the given {@link SctpChannel}.
+     * <p>创建新实例。</p>
      *
      * @param ch    the {@link SctpChannel} which is used by this instance
      */
@@ -108,6 +116,7 @@ public class OioSctpChannel extends AbstractOioMessageChannel
 
     /**
      * Create a new instance from the given {@link SctpChannel}.
+     * <p>创建新实例。</p>
      *
      * @param parent    the parent {@link Channel} which was used to create this instance. This can be null if the
      *                  {@link} has no parent as it was created by your self.
@@ -174,6 +183,7 @@ public class OioSctpChannel extends AbstractOioMessageChannel
     }
 
     @Override
+    /** 阻塞 select 后 receive，封装 {@link SctpMessage} */
     protected int doReadMessages(List<Object> msgs) throws Exception {
         if (!readSelector.isOpen()) {
             return 0;
@@ -187,11 +197,7 @@ public class OioSctpChannel extends AbstractOioMessageChannel
         if (!keysSelected) {
             return readMessages;
         }
-        // We must clear the selectedKeys because the Selector will never do it. If we do not clear it, the selectionKey
-        // will always be returned even if there is no data can be read which causes performance issue. And in some
-        // implementation of Selector, the select method may return 0 if the selectionKey which is ready for process has
-        // already been in the selectedKeys and cause the keysSelected above to be false even if we actually have
-        // something to read.
+        // 必须清空 selectedKeys：否则同一 key 重复就绪导致空转或 select 返回 0
         readSelector.selectedKeys().clear();
         final RecvByteBufAllocator.Handle allocHandle = unsafe().recvBufAllocHandle();
         ByteBuf buffer = allocHandle.allocate(config().getAllocator());
@@ -202,8 +208,7 @@ public class OioSctpChannel extends AbstractOioMessageChannel
             boolean useInputCopy = false;
             int javaVersion = PlatformDependent.javaVersion();
             if (javaVersion >= 22 && javaVersion < 25 && data.isDirect()) {
-                // On Java 22 through 24, we need to avoid using ByteBuffer instances that are
-                // backed by MemorySegments, because of https://bugs.openjdk.org/browse/JDK-8357268
+                // Java 22–24 direct ByteBuffer 拷贝规避 JDK-8357268
                 if (inputCopy == null || inputCopy.capacity() < data.remaining()) {
                     inputCopy = ByteBuffer.allocateDirect(data.remaining());
                 }
@@ -237,6 +242,7 @@ public class OioSctpChannel extends AbstractOioMessageChannel
     }
 
     @Override
+    /** 阻塞 select 可写后逐条 send */
     protected void doWrite(ChannelOutboundBuffer in) throws Exception {
         if (!writeSelector.isOpen()) {
             return;
@@ -252,7 +258,7 @@ public class OioSctpChannel extends AbstractOioMessageChannel
             int written = 0;
             for (;;) {
                 if (written == size) {
-                    // all written
+                    // 出站队列已全部写出
                     return;
                 }
                 writableKeysIt.next();
@@ -270,10 +276,7 @@ public class OioSctpChannel extends AbstractOioMessageChannel
                 int javaVersion = PlatformDependent.javaVersion();
                 if (javaVersion >= 22 && javaVersion < 25 && data.isDirect() ||
                         !data.isDirect() || data.nioBufferCount() != 1) {
-                    // Ensure that we only use a single, direct ByteBuffer when doing SCTP IO.
-                    // If the ByteBuf is composite, or is on-heap, we do a copy.
-                    // On Java 22 through 24, we additionally need to avoid using ByteBuffer instances that are
-                    // backed by MemorySegments, because of https://bugs.openjdk.org/browse/JDK-8357268
+                    // 写路径：单一 direct 缓冲；必要时拷贝（含 Java 22–24）
                     if (outputCopy == null || outputCopy.capacity() < dataLen) {
                         outputCopy = ByteBuffer.allocateDirect(dataLen);
                     }
@@ -430,6 +433,7 @@ public class OioSctpChannel extends AbstractOioMessageChannel
         ch.close();
     }
 
+    /** 关闭 Selector 并记录 warn 日志 */
     private static void closeSelector(String selectorName, Selector selector) {
         try {
             selector.close();
@@ -490,6 +494,7 @@ public class OioSctpChannel extends AbstractOioMessageChannel
         return promise;
     }
 
+    /** OIO 配置子类 */
     private final class OioSctpChannelConfig extends DefaultSctpChannelConfig {
         private OioSctpChannelConfig(OioSctpChannel channel, SctpChannel javaChannel) {
             super(channel, javaChannel);

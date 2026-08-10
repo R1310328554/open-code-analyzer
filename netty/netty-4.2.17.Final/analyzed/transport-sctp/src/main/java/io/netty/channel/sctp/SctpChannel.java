@@ -26,6 +26,7 @@ import java.util.Set;
 
 /**
  * A SCTP/IP  {@link Channel} interface for single SCTP association.
+ * <p>面向消息的已连接 SCTP 传输：支持多流（multi-streaming）与多宿主（multi-homing）； 一条关联对应一个 {@link io.netty.channel.sctp.SctpChannel} 实例。</p>
  *
  * <p>
  * The SctpChannel is a message-oriented, connected transport which supports multi-streaming and multi-homing.
@@ -37,6 +38,7 @@ public interface SctpChannel extends Channel {
 
     /**
      * Returns the underlying SCTP association.
+     * <p>返回底层 JDK {@link Association}，关联未建立时可能为 {@code null}。</p>
      */
     Association association();
 
@@ -49,6 +51,7 @@ public interface SctpChannel extends Channel {
      *
      * (To set a local address as primary, the application can request by calling local SCTP stack,
      * with SctpStandardSocketOption.SCTP_PRIMARY_ADDR option).
+     * <p>返回主本地地址（迭代器首个）；多宿主时需应用自行跟踪主地址， 可用 {@code SCTP_PRIMARY_ADDR} 设置。</p>
      */
     @Override
     InetSocketAddress localAddress();
@@ -56,11 +59,13 @@ public interface SctpChannel extends Channel {
     /**
      * Return all local addresses of the SCTP  channel.
      * Please note that, it will return more than one address if this channel is using multi-homing
+     * <p>返回全部本地传输地址；启用 multi-homing 时集合可含多个 {@link InetSocketAddress}。</p>
      */
     Set<InetSocketAddress> allLocalAddresses();
 
     /**
      * Returns the {@link SctpChannelConfig} configuration of the channel.
+     * <p>返回 SCTP 通道配置（NODELAY、缓冲、INIT 流等）。</p>
      */
     @Override
     SctpChannelConfig config();
@@ -74,6 +79,7 @@ public interface SctpChannel extends Channel {
      *
      * (The application can request it's remote peer to set a specific address as primary by
      * calling the local SCTP stack with SctpStandardSocketOption.SCTP_SET_PEER_PRIMARY_ADDR option)
+     * <p>返回对端主地址；可通过 {@code SCTP_SET_PEER_PRIMARY_ADDR} 请求对端切换主路径。</p>
      */
     @Override
     InetSocketAddress remoteAddress();
@@ -81,12 +87,14 @@ public interface SctpChannel extends Channel {
     /**
      * Return all remote addresses of the SCTP server channel.
      * Please note that, it will return more than one address if the remote is using multi-homing.
+     * <p>返回对端全部传输地址（对端 multi-homing 时不只一个）。</p>
      */
     Set<InetSocketAddress> allRemoteAddresses();
 
     /**
      * Bind a address to the already bound channel to enable multi-homing.
      * The Channel bust be bound and yet to be connected.
+     * <p>向已 bind 且尚未 connect 的通道追加本地地址以启用 multi-homing。</p>
      */
     ChannelFuture bindAddress(InetAddress localAddress);
 
@@ -95,12 +103,14 @@ public interface SctpChannel extends Channel {
      * The Channel bust be bound and yet to be connected.
      *
      * Will notify the given {@link ChannelPromise} and return a {@link ChannelFuture}
+     * <p>同上，异步完成时通知 {@link ChannelPromise}。</p>
      */
     ChannelFuture bindAddress(InetAddress localAddress, ChannelPromise promise);
 
     /**
      *  Unbind the address from channel's multi-homing address list.
      *  The address should be added already in multi-homing address list.
+     * <p>从 multi-homing 列表移除指定本地地址（须已 bindAddress 过）。</p>
      */
     ChannelFuture unbindAddress(InetAddress localAddress);
 
@@ -109,6 +119,7 @@ public interface SctpChannel extends Channel {
      *  The address should be added already in multi-homing address list.
      *
      * Will notify the given {@link ChannelPromise} and return a {@link ChannelFuture}
+     * <p>异步 unbind，完成时通知 promise。</p>
      */
     ChannelFuture unbindAddress(InetAddress localAddress, ChannelPromise promise);
 }

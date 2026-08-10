@@ -15,7 +15,12 @@
  */
 package com.sun.nio.sctp;
 
+/**
+ * SCTP 发送失败通知：某条出站消息未能送达时由协议栈上报。
+ * <p>通过 {@link NotificationHandler#handleNotification(SendFailedNotification, Object)}  处理；Netty 中 {@link io.netty.channel.sctp.SctpNotificationHandler} 将其转为 pipeline 用户事件。 非 SCTP 平台为编译占位 stub。</p>
+ */
 public abstract class SendFailedNotification implements Notification {
+    /** 类加载时校验 OS/JDK 是否支持 SCTP */
     static {
         UnsupportedOperatingSystemException.raise();
     }

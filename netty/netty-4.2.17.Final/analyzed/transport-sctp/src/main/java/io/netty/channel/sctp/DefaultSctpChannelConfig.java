@@ -37,26 +37,34 @@ import static io.netty.channel.sctp.SctpChannelOption.SCTP_NODELAY;
 
 /**
  * The default {@link SctpChannelConfig} implementation for SCTP.
+ * <p>SCTP 客户端通道默认配置：通过 JDK {@link com.sun.nio.sctp.SctpChannel}  读写 {@code SCTP_NODELAY}、缓冲区与 INIT 流数量； 在支持平台上默认启用 SCTP_NODELAY。</p>
  */
 public class DefaultSctpChannelConfig extends DefaultChannelConfig implements SctpChannelConfig {
 
+    /** 底层 JDK SCTP 通道，选项读写均委托给它 */
     private final SctpChannel javaChannel;
 
+    /**
+     * @param channel Netty {@link io.netty.channel.sctp.SctpChannel} 包装
+     * @param javaChannel JDK {@link SctpChannel}
+     * <p>若平台允许则尝试默认开启 SCTP_NODELAY。</p>
+     */
     public DefaultSctpChannelConfig(io.netty.channel.sctp.SctpChannel channel, SctpChannel javaChannel) {
         super(channel);
         this.javaChannel = ObjectUtil.checkNotNull(javaChannel, "javaChannel");
 
-        // Enable TCP_NODELAY by default if possible.
+        // 平台允许时默认开启 SCTP_NODELAY（注释沿用 Netty 历史命名）
         if (PlatformDependent.canEnableTcpNoDelayByDefault()) {
             try {
                 setSctpNoDelay(true);
             } catch (Exception e) {
-                // Ignore.
+                // 忽略：部分平台不支持该选项
             }
         }
     }
 
     @Override
+    /** 返回 SCTP 相关选项与父类选项的合并映射 */
     public Map<ChannelOption<?>, Object> getOptions() {
         return getOptions(
                 super.getOptions(),
@@ -65,6 +73,7 @@ public class DefaultSctpChannelConfig extends DefaultChannelConfig implements Sc
 
     @SuppressWarnings("unchecked")
     @Override
+    /** 按 {@link ChannelOption} 读取 SCTP/通用配置 */
     public <T> T getOption(ChannelOption<T> option) {
         if (option == SO_RCVBUF) {
             return (T) Integer.valueOf(getReceiveBufferSize());
@@ -82,6 +91,7 @@ public class DefaultSctpChannelConfig extends DefaultChannelConfig implements Sc
     }
 
     @Override
+    /** 设置选项；SCTP 专有项在此处理，其余委托父类 */
     public <T> boolean setOption(ChannelOption<T> option, T value) {
         validate(option, value);
 
@@ -101,6 +111,7 @@ public class DefaultSctpChannelConfig extends DefaultChannelConfig implements Sc
     }
 
     @Override
+    /** 读取 {@code SCTP_NODELAY}（禁用 Nagle 类延迟） */
     public boolean isSctpNoDelay() {
         try {
             return javaChannel.getOption(SctpStandardSocketOptions.SCTP_NODELAY);
@@ -110,6 +121,7 @@ public class DefaultSctpChannelConfig extends DefaultChannelConfig implements Sc
     }
 
     @Override
+    /** 设置 {@code SCTP_NODELAY} 并返回 {@code this} */
     public SctpChannelConfig setSctpNoDelay(boolean sctpNoDelay) {
         try {
             javaChannel.setOption(SctpStandardSocketOptions.SCTP_NODELAY, sctpNoDelay);
@@ -120,6 +132,7 @@ public class DefaultSctpChannelConfig extends DefaultChannelConfig implements Sc
     }
 
     @Override
+    /** 读取 {@code SO_SNDBUF} 发送缓冲区大小 */
     public int getSendBufferSize() {
         try {
             return javaChannel.getOption(SctpStandardSocketOptions.SO_SNDBUF);
@@ -129,6 +142,7 @@ public class DefaultSctpChannelConfig extends DefaultChannelConfig implements Sc
     }
 
     @Override
+    /** 设置 {@code SO_SNDBUF} */
     public SctpChannelConfig setSendBufferSize(int sendBufferSize) {
         try {
             javaChannel.setOption(SctpStandardSocketOptions.SO_SNDBUF, sendBufferSize);
@@ -139,6 +153,7 @@ public class DefaultSctpChannelConfig extends DefaultChannelConfig implements Sc
     }
 
     @Override
+    /** 读取 {@code SO_RCVBUF} 接收缓冲区大小 */
     public int getReceiveBufferSize() {
         try {
             return javaChannel.getOption(SctpStandardSocketOptions.SO_RCVBUF);
@@ -148,6 +163,7 @@ public class DefaultSctpChannelConfig extends DefaultChannelConfig implements Sc
     }
 
     @Override
+    /** 设置 {@code SO_RCVBUF} */
     public SctpChannelConfig setReceiveBufferSize(int receiveBufferSize) {
         try {
             javaChannel.setOption(SctpStandardSocketOptions.SO_RCVBUF, receiveBufferSize);
@@ -158,6 +174,7 @@ public class DefaultSctpChannelConfig extends DefaultChannelConfig implements Sc
     }
 
     @Override
+    /** 读取 INIT 阶段协商的最大入/出站流数 */
     public SctpStandardSocketOptions.InitMaxStreams getInitMaxStreams() {
         try {
             return javaChannel.getOption(SctpStandardSocketOptions.SCTP_INIT_MAXSTREAMS);
@@ -167,6 +184,7 @@ public class DefaultSctpChannelConfig extends DefaultChannelConfig implements Sc
     }
 
     @Override
+    /** 设置 {@code SCTP_INIT_MAXSTREAMS}（仅未建立关联前有效） */
     public SctpChannelConfig setInitMaxStreams(SctpStandardSocketOptions.InitMaxStreams initMaxStreams) {
         try {
             javaChannel.setOption(SctpStandardSocketOptions.SCTP_INIT_MAXSTREAMS, initMaxStreams);

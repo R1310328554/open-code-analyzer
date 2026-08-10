@@ -15,7 +15,12 @@
  */
 package com.sun.nio.sctp;
 
+/**
+ * SCTP 关联关闭通知：对端或本地发起 shutdown 时触发。
+ * <p>Netty {@link io.netty.channel.sctp.SctpNotificationHandler} 收到后会  {@code fireUserEventTriggered} 并关闭 {@link io.netty.channel.sctp.SctpChannel}。 stub 类在非 SCTP 平台不可用。</p>
+ */
 public abstract class ShutdownNotification implements Notification {
+    /** 非 SCTP 平台加载时立即失败 */
     static {
         UnsupportedOperatingSystemException.raise();
     }

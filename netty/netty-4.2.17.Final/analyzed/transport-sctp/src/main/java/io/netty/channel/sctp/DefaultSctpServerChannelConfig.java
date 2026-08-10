@@ -35,15 +35,20 @@ import java.util.Map;
 
 /**
  * The default {@link SctpServerChannelConfig} implementation for SCTP.
+ * <p>SCTP 服务端监听通道默认配置：backlog、缓冲区与 INIT 流数量， 选项通过 JDK {@link com.sun.nio.sctp.SctpServerChannel} 下发。</p>
  */
 public class DefaultSctpServerChannelConfig extends DefaultChannelConfig implements SctpServerChannelConfig {
 
+    /** 底层 JDK SCTP 服务端通道 */
     private final SctpServerChannel javaChannel;
+    /** accept 队列长度，默认 {@link NetUtil#SOMAXCONN} */
     private volatile int backlog = NetUtil.SOMAXCONN;
 
     /**
      * Creates a new instance.
+     * <p>绑定 Netty 服务端通道与 JDK {@link SctpServerChannel}。</p>
      */
+    /** @param channel Netty 包装 @param javaChannel JDK 监听通道 */
     public DefaultSctpServerChannelConfig(
             io.netty.channel.sctp.SctpServerChannel channel, SctpServerChannel javaChannel) {
         super(channel, new ServerChannelRecvByteBufAllocator());
@@ -51,6 +56,7 @@ public class DefaultSctpServerChannelConfig extends DefaultChannelConfig impleme
     }
 
     @Override
+    /** 合并 backlog、缓冲区与 SCTP_INIT_MAXSTREAMS 等选项 */
     public Map<ChannelOption<?>, Object> getOptions() {
         return getOptions(
                 super.getOptions(),
@@ -96,6 +102,7 @@ public class DefaultSctpServerChannelConfig extends DefaultChannelConfig impleme
     }
 
     @Override
+    /** 读取 {@code SO_SNDBUF} */
     public int getSendBufferSize() {
         try {
             return javaChannel.getOption(SctpStandardSocketOptions.SO_SNDBUF);
@@ -105,6 +112,7 @@ public class DefaultSctpServerChannelConfig extends DefaultChannelConfig impleme
     }
 
     @Override
+    /** 设置 {@code SO_SNDBUF} */
     public SctpServerChannelConfig setSendBufferSize(int sendBufferSize) {
         try {
             javaChannel.setOption(SctpStandardSocketOptions.SO_SNDBUF, sendBufferSize);
@@ -115,6 +123,7 @@ public class DefaultSctpServerChannelConfig extends DefaultChannelConfig impleme
     }
 
     @Override
+    /** 读取 {@code SO_RCVBUF} */
     public int getReceiveBufferSize() {
         try {
             return javaChannel.getOption(SctpStandardSocketOptions.SO_RCVBUF);
@@ -124,6 +133,7 @@ public class DefaultSctpServerChannelConfig extends DefaultChannelConfig impleme
     }
 
     @Override
+    /** 设置 {@code SO_RCVBUF} */
     public SctpServerChannelConfig setReceiveBufferSize(int receiveBufferSize) {
         try {
             javaChannel.setOption(SctpStandardSocketOptions.SO_RCVBUF, receiveBufferSize);
@@ -134,6 +144,7 @@ public class DefaultSctpServerChannelConfig extends DefaultChannelConfig impleme
     }
 
     @Override
+    /** 读取 INIT 最大流数配置 */
     public SctpStandardSocketOptions.InitMaxStreams getInitMaxStreams() {
         try {
             return javaChannel.getOption(SctpStandardSocketOptions.SCTP_INIT_MAXSTREAMS);
@@ -143,6 +154,7 @@ public class DefaultSctpServerChannelConfig extends DefaultChannelConfig impleme
     }
 
     @Override
+    /** 设置 {@code SCTP_INIT_MAXSTREAMS} */
     public SctpServerChannelConfig setInitMaxStreams(SctpStandardSocketOptions.InitMaxStreams initMaxStreams) {
         try {
             javaChannel.setOption(SctpStandardSocketOptions.SCTP_INIT_MAXSTREAMS, initMaxStreams);
@@ -153,11 +165,13 @@ public class DefaultSctpServerChannelConfig extends DefaultChannelConfig impleme
     }
 
     @Override
+    /** 返回 bind 时使用的 backlog */
     public int getBacklog() {
         return backlog;
     }
 
     @Override
+    /** 设置 accept 队列长度（须 ≥ 0） */
     public SctpServerChannelConfig setBacklog(int backlog) {
         checkPositiveOrZero(backlog, "backlog");
         this.backlog = backlog;

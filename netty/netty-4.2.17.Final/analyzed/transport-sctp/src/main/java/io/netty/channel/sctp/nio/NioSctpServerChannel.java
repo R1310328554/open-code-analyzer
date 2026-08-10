@@ -40,14 +40,17 @@ import java.util.Set;
 /**
  * {@link io.netty.channel.sctp.SctpServerChannel} implementation which use non-blocking mode to accept new
  * connections and create the {@link NioSctpChannel} for them.
+ * <p>非阻塞 SCTP 服务端：accept 产生 {@link NioSctpChannel}， bind 时使用 config backlog；需 OS 与 Java 7+ SCTP 支持。</p>
  *
  * Be aware that not all operations systems support SCTP. Please refer to the documentation of your operation system,
  * to understand what you need to do to use it. Also this feature is only supported on Java 7+.
  */
 public class NioSctpServerChannel extends AbstractNioMessageChannel
         implements io.netty.channel.sctp.SctpServerChannel {
+    /** 服务端通道元数据：非连接型，单次 read 最多 16 条消息 */
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
 
+    /** 打开 JDK {@link SctpServerChannel} */
     private static SctpServerChannel newSocket() {
         try {
             return SctpServerChannel.open();
@@ -61,6 +64,7 @@ public class NioSctpServerChannel extends AbstractNioMessageChannel
 
     /**
      * Create a new instance
+     * <p>打开监听套接字并初始化 {@link NioSctpServerChannelConfig}。</p>
      */
     public NioSctpServerChannel() {
         super(null, newSocket(), SelectionKey.OP_ACCEPT);
@@ -135,6 +139,7 @@ public class NioSctpServerChannel extends AbstractNioMessageChannel
     }
 
     @Override
+    /** accept 新关联并包装为 {@link NioSctpChannel} */
     protected int doReadMessages(List<Object> buf) throws Exception {
         SctpChannel ch = javaChannel().accept();
         if (ch == null) {
@@ -194,7 +199,7 @@ public class NioSctpServerChannel extends AbstractNioMessageChannel
         return promise;
     }
 
-    // Unnecessary stuff
+    // 服务端不支持 connect/write，以下方法仅占位
     @Override
     protected boolean doConnect(
             SocketAddress remoteAddress, SocketAddress localAddress) throws Exception {
@@ -226,6 +231,7 @@ public class NioSctpServerChannel extends AbstractNioMessageChannel
         throw new UnsupportedOperationException();
     }
 
+    /** NIO 服务端配置：autoRead 与 readPending 联动 */
     private final class NioSctpServerChannelConfig extends DefaultSctpServerChannelConfig {
         private NioSctpServerChannelConfig(NioSctpServerChannel channel, SctpServerChannel javaChannel) {
             super(channel, javaChannel);

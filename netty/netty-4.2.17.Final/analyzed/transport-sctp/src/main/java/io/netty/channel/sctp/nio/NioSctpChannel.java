@@ -55,21 +55,28 @@ import java.util.Set;
 /**
  * {@link io.netty.channel.sctp.SctpChannel} implementation which use non-blocking mode and allows to read /
  * write {@link SctpMessage}s to the underlying {@link SctpChannel}.
+ * <p>基于 NIO 的非阻塞 SCTP 客户端：{@link AbstractNioMessageChannel} 上读写  {@link SctpMessage}，JDK 22–24 上对 direct {@link ByteBuffer} 使用拷贝规避  JDK-8357268。</p>
  *
  * Be aware that not all operations systems support SCTP. Please refer to the documentation of your operation system,
  * to understand what you need to do to use it. Also this feature is only supported on Java 7+.
  */
 public class NioSctpChannel extends AbstractNioMessageChannel implements io.netty.channel.sctp.SctpChannel {
+    /** 非服务端通道，无固定远端（连接后才有） */
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(NioSctpChannel.class);
 
+    /** 通道配置（含 SCTP 选项） */
     private final SctpChannelConfig config;
 
+    /** receive 时分发 SCTP 通知的 JDK handler */
     private final NotificationHandler<?> notificationHandler;
+    /** Java 22–24 读路径 direct 缓冲拷贝 */
     private ByteBuffer inputCopy;
+    /** Java 22–24 写路径 direct 缓冲拷贝 */
     private ByteBuffer outputCopy;
 
+    /** 打开 JDK {@link SctpChannel}，失败抛 {@link ChannelException} */
     private static SctpChannel newSctpChannel() {
         try {
             return SctpChannel.open();
@@ -80,6 +87,7 @@ public class NioSctpChannel extends AbstractNioMessageChannel implements io.nett
 
     /**
      * Create a new instance
+     * <p>打开新 JDK SCTP 通道并进入非阻塞模式。</p>
      */
     public NioSctpChannel() {
         this(newSctpChannel());
@@ -87,6 +95,7 @@ public class NioSctpChannel extends AbstractNioMessageChannel implements io.nett
 
     /**
      * Create a new instance using {@link SctpChannel}
+     * <p>包装已有 JDK 通道（如 accept 产物）。</p>
      */
     public NioSctpChannel(SctpChannel sctpChannel) {
         this(null, sctpChannel);
@@ -94,6 +103,7 @@ public class NioSctpChannel extends AbstractNioMessageChannel implements io.nett
 
     /**
      * Create a new instance
+     * <p>创建新实例。</p>
      *
      * @param parent        the {@link Channel} which is the parent of this {@link NioSctpChannel}
      *                      or {@code null}.
@@ -262,6 +272,7 @@ public class NioSctpChannel extends AbstractNioMessageChannel implements io.nett
     }
 
     @Override
+    /** 从 JDK 通道 receive，封装为 {@link SctpMessage} 入队 */
     protected int doReadMessages(List<Object> buf) throws Exception {
         SctpChannel ch = javaChannel();
 
@@ -273,8 +284,7 @@ public class NioSctpChannel extends AbstractNioMessageChannel implements io.nett
             boolean useInputCopy = false;
             int javaVersion = PlatformDependent.javaVersion();
             if (javaVersion >= 22 && javaVersion < 25 && data.isDirect()) {
-                // On Java 22 through 24, we need to avoid using ByteBuffer instances that are
-                // backed by MemorySegments, because of https://bugs.openjdk.org/browse/JDK-8357268
+                // Java 22–24：避免 MemorySegment 支撑的 direct ByteBuffer（JDK-8357268）
                 if (inputCopy == null || inputCopy.capacity() < data.remaining()) {
                     inputCopy = ByteBuffer.allocateDirect(data.remaining());
                 }
@@ -309,6 +319,7 @@ public class NioSctpChannel extends AbstractNioMessageChannel implements io.nett
     }
 
     @Override
+    /** 将 {@link SctpMessage} 写入 JDK 通道 send */
     protected boolean doWriteMessage(Object msg, ChannelOutboundBuffer in) throws Exception {
         SctpMessage packet = (SctpMessage) msg;
         ByteBuf data = packet.content();
@@ -321,10 +332,7 @@ public class NioSctpChannel extends AbstractNioMessageChannel implements io.nett
         int javaVersion = PlatformDependent.javaVersion();
         if (javaVersion >= 22 && javaVersion < 25 && data.isDirect() ||
                 !data.isDirect() || data.nioBufferCount() != 1) {
-            // Ensure that we only use a single, direct ByteBuffer when doing SCTP IO.
-            // If the ByteBuf is composite, or is on-heap, we do a copy.
-            // On Java 22 through 24, we additionally need to avoid using ByteBuffer instances that are
-            // backed by MemorySegments, because of https://bugs.openjdk.org/browse/JDK-8357268
+            // SCTP IO 需单一 direct ByteBuffer；复合/on-heap 或 Java 22–24 时拷贝
             if (outputCopy == null || outputCopy.capacity() < dataLen) {
                 outputCopy = ByteBuffer.allocateDirect(dataLen);
             }
@@ -347,6 +355,7 @@ public class NioSctpChannel extends AbstractNioMessageChannel implements io.nett
     }
 
     @Override
+    /** 出站仅接受 {@link SctpMessage}，非 direct 单缓冲则拷贝 */
     protected final Object filterOutboundMessage(Object msg) throws Exception {
         if (msg instanceof SctpMessage) {
             SctpMessage m = (SctpMessage) msg;
@@ -414,6 +423,7 @@ public class NioSctpChannel extends AbstractNioMessageChannel implements io.nett
         return promise;
     }
 
+    /** NIO 专用配置：autoRead 清除时同步清除 readPending */
     private final class NioSctpChannelConfig extends DefaultSctpChannelConfig {
         private NioSctpChannelConfig(NioSctpChannel channel, SctpChannel javaChannel) {
             super(channel, javaChannel);

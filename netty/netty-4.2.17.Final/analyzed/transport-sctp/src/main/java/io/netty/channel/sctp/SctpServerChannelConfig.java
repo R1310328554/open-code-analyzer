@@ -25,6 +25,7 @@ import io.netty.channel.WriteBufferWaterMark;
 
 /**
  * A {@link ChannelConfig} for a {@link SctpServerChannelConfig}.
+ * <p>SCTP 服务端通道配置：backlog、缓冲区与 INIT 最大流数等。</p>
  * <p/>
  * <h3>Available options</h3>
  * <p/>
@@ -50,48 +51,64 @@ public interface SctpServerChannelConfig extends ChannelConfig {
 
     /**
      * Gets the backlog value to specify when the channel binds to a local address.
+     * <p>读取 bind 时的 backlog。</p>
      */
+    /** bind 时使用的 accept 队列长度 */
     int getBacklog();
 
     /**
      * Sets the backlog value to specify when the channel binds to a local address.
+     * <p>设置 bind 时的 backlog。</p>
      */
+    /** 设置 backlog */
     SctpServerChannelConfig setBacklog(int backlog);
 
     /**
      * Gets the <a href="https://openjdk.java.net/projects/sctp/javadoc/com/sun/nio/sctp/SctpStandardSocketOption.html">
      *     {@code SO_SNDBUF}</a> option.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 读取 {@code SO_SNDBUF} */
     int getSendBufferSize();
 
     /**
      * Sets the <a href="https://openjdk.java.net/projects/sctp/javadoc/com/sun/nio/sctp/SctpStandardSocketOption.html">
      *     {@code SO_SNDBUF}</a> option.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 设置 {@code SO_SNDBUF} */
     SctpServerChannelConfig setSendBufferSize(int sendBufferSize);
 
     /**
      * Gets the <a href="https://openjdk.java.net/projects/sctp/javadoc/com/sun/nio/sctp/SctpStandardSocketOption.html">
      *     {@code SO_RCVBUF}</a> option.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 读取 {@code SO_RCVBUF} */
     int getReceiveBufferSize();
 
     /**
      * Gets the <a href="https://openjdk.java.net/projects/sctp/javadoc/com/sun/nio/sctp/SctpStandardSocketOption.html">
      *     {@code SO_RCVBUF}</a> option.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 设置 {@code SO_RCVBUF} */
     SctpServerChannelConfig setReceiveBufferSize(int receiveBufferSize);
 
     /**
      * Gets the <a href="https://openjdk.java.net/projects/sctp/javadoc/com/sun/nio/sctp/SctpStandardSocketOption.html">
      *     {@code SCTP_INIT_MAXSTREAMS}</a> option.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 读取 INIT 最大流数 */
     InitMaxStreams getInitMaxStreams();
 
     /**
      * Gets the <a href="https://openjdk.java.net/projects/sctp/javadoc/com/sun/nio/sctp/SctpStandardSocketOption.html">
      *     {@code SCTP_INIT_MAXSTREAMS}</a> option.
+      * <p>Netty SCTP 传输 API；详见上方英文说明。</p>
      */
+    /** 设置 {@code SCTP_INIT_MAXSTREAMS} */
     SctpServerChannelConfig setInitMaxStreams(InitMaxStreams initMaxStreams);
 
     @Override
