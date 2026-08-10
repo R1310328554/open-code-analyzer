@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T17:22:56Z",
-  "files": [
-    "common/doc_store/infinity_conn_base.py",
-    "common/doc_store/infinity_conn_pool.py",
-    "common/doc_store/ob_conn_base.py",
-    "common/doc_store/ob_conn_pool.py",
-    "common/exceptions.py",
-    "common/file_utils.py",
-    "common/float_utils.py",
-    "common/http_client.py",
-    "common/llm_request_context.py",
-    "common/log_utils.py",
-    "common/mcp_tool_call_conn.py",
-    "common/metadata_es_filter.py",
-    "common/metadata_infinity_filter.py",
-    "common/metadata_utils.py",
-    "common/misc_utils.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1434,
-  "done": 315
+  "done": 330
 }
