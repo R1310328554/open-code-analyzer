@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 标签匹配器工具：从 Lezer 语法节点提取 Matcher，并序列化为 API match[] 选择器。
+
 import { SyntaxNode } from '@lezer/common';
 import {
   EqlRegex,
@@ -27,6 +29,7 @@ import {
 import { EditorState } from '@codemirror/state';
 import { Matcher } from '../types';
 
+// createMatcher 遍历 Quoted/UnquotedLabelMatcher 子节点，填充 name/type/value。
 function createMatcher(labelMatcher: SyntaxNode, state: EditorState): Matcher {
   const matcher = new Matcher(0, '', '');
   const cursor = labelMatcher.cursor();
@@ -86,6 +89,7 @@ function createMatcher(labelMatcher: SyntaxNode, state: EditorState): Matcher {
   return matcher;
 }
 
+// buildLabelMatchers 将 LabelMatchers 下的各 matcher 节点转为 Matcher 数组。
 export function buildLabelMatchers(labelMatchers: SyntaxNode[], state: EditorState): Matcher[] {
   const matchers: Matcher[] = [];
   labelMatchers.forEach((value) => {
@@ -94,6 +98,7 @@ export function buildLabelMatchers(labelMatchers: SyntaxNode[], state: EditorSta
   return matchers;
 }
 
+// labelMatchersToString 生成 {label="value"} 形式字符串，供 Prometheus series/labels API 使用。
 export function labelMatchersToString(metricName: string, matchers?: Matcher[], labelName?: string): string {
   if (!matchers || matchers.length === 0) {
     return metricName;

@@ -11,9 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 静态补全词条表：时长/匹配符/运算符/函数/聚合/片段等 CodeMirror Completion 定义。
+
 import { Completion, snippet } from '@codemirror/autocomplete';
 
 export const durationTerms = [{ label: 'y' }, { label: 'w' }, { label: 'd' }, { label: 'h' }, { label: 'm' }, { label: 's' }, { label: 'ms' }];
+// matchOpTerms 对应标签匹配器中的等于、不等与正则匹配运算符。
 export const matchOpTerms = [{ label: '=' }, { label: '!=' }, { label: '=~' }, { label: '!~' }];
 export const binOpTerms = [
   { label: '^' },
@@ -36,6 +39,7 @@ export const binOpTerms = [
   { label: 'unless' },
 ];
 
+// binOpModifierTerms 为向量匹配修饰符（on/ignoring/group_left/bool/fill 等）。
 export const binOpModifierTerms = [
   { label: 'on', info: 'Match only on specified labels', type: 'keyword' },
   { label: 'ignoring', info: 'Ignore specified labels for matching', type: 'keyword' },
@@ -47,11 +51,13 @@ export const binOpModifierTerms = [
   { label: 'fill_right', info: 'Fill in missing series on the right side', type: 'keyword' },
 ];
 
+// atModifierTerms 提供 @ start() / @ end() 步长不变表达式修饰符。
 export const atModifierTerms = [
   { label: 'start()', info: 'resolve to the start of the query', type: 'keyword' },
   { label: 'end()', info: 'resolve to the end of the query', type: 'keyword' },
 ];
 
+// functionIdentifierTerms 内置全部 PromQL 函数名及英文 info，供离线函数补全。
 export const functionIdentifierTerms = [
   {
     label: 'abs',
@@ -585,6 +591,7 @@ export const functionIdentifierTerms = [
   },
 ];
 
+// aggregateOpTerms 为 sum/avg/topk 等聚合算子补全项。
 export const aggregateOpTerms = [
   {
     label: 'avg',
@@ -672,6 +679,7 @@ export const aggregateOpTerms = [
   },
 ];
 
+// aggregateOpModifierTerms 提供 by/without 分组修饰符说明。
 export const aggregateOpModifierTerms = [
   {
     label: 'by',
@@ -685,6 +693,7 @@ export const aggregateOpModifierTerms = [
   },
 ];
 
+// numberTerms 补全 nan/inf 等特殊浮点常量。
 export const numberTerms = [
   { label: 'nan', info: 'Floating-point NaN value', type: 'constant' },
   { label: 'inf', info: 'Floating-point infinity', type: 'constant' },

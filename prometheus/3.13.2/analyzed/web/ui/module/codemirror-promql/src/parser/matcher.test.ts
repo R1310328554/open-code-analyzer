@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// labelMatchersToString 单元测试：验证指标名与 Matcher 列表序列化为 PromQL 选择器字符串。
+
 import { EqlRegex, EqlSingle, Neq, NeqRegex } from '@prometheus-io/lezer-promql';
 import { labelMatchersToString } from './matcher';
 import { Matcher } from '../types';

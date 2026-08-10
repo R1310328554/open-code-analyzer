@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// codemirror-promql 包公共入口：导出客户端、补全/ lint 策略与 PromQL 语言扩展。
+
 export { PrometheusClient } from './client';
 export { CompleteConfiguration, CompleteStrategy, newCompleteStrategy } from './complete';
 export { LintStrategy } from './lint';

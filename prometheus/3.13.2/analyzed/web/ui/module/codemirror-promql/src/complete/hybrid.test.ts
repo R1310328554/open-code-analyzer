@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// HybridComplete 单元测试：覆盖语法树上下文分析、补全区间计算与离线/在线补全结果。
+
 import { analyzeCompletion, computeStartCompletePosition, computeEndCompletePosition, ContextKind, durationWithUnitRegexp } from './hybrid';
 import { createEditorState, mockedMetricsTerms, mockPrometheusServer } from '../test/utils-test';
 import { Completion, CompletionContext } from '@codemirror/autocomplete';
@@ -31,6 +33,7 @@ import { syntaxTree } from '@codemirror/language';
 import { newCompleteStrategy } from './index';
 import nock from 'nock';
 
+// analyzeCompletion 用例验证光标处应推断出的 ContextKind 列表（指标/标签/运算符等）。
 describe('analyzeCompletion test', () => {
   const testCases = [
     {
@@ -680,6 +683,7 @@ describe('analyzeCompletion test', () => {
   });
 });
 
+// durationWithUnitRegexp 应识别完整 PromQL 时长（含复合单位）并拒绝无单位片段。
 describe('durationWithUnitRegexp test', () => {
   it('should match complete durations with units', () => {
     const testCases = [
@@ -716,6 +720,7 @@ describe('durationWithUnitRegexp test', () => {
   });
 });
 
+// computeStartCompletePosition 决定 CodeMirror 过滤补全项时使用的起始偏移。
 describe('computeStartCompletePosition test', () => {
   const testCases = [
     {
@@ -915,6 +920,7 @@ describe('computeStartCompletePosition test', () => {
   });
 });
 
+// computeEndCompletePosition 在光标位于 token 中部时将替换范围扩展到整词（issue #15839）。
 describe('computeEndCompletePosition test', () => {
   const testCases = [
     {
@@ -1066,6 +1072,7 @@ describe('computeEndCompletePosition test', () => {
   });
 });
 
+// 端到端补全测试：离线静态词条、在线 Prometheus mock 与 initialMetricList 缓存。
 describe('autocomplete promQL test', () => {
   beforeEach(() => {
     mockPrometheusServer();

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Prometheus HTTP 客户端模块入口：导出客户端类型、配置与可注入的 fetch 函数。
+
 export { PrometheusClient, PrometheusConfig, CacheConfig } from './prometheus';
 
 export type FetchFn = (input: RequestInfo, init?: RequestInit) => Promise<Response>;

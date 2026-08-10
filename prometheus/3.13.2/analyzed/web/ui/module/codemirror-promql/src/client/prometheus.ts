@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Prometheus HTTP 客户端：封装标签/序列/元数据 API，并提供 LRU 缓存装饰器。
+
 import { FetchFn } from './index';
 import { Matcher } from '../types';
 import { labelMatchersToString } from '../parser';
@@ -21,6 +23,7 @@ export interface MetricMetadata {
   help: string;
 }
 
+// PrometheusClient 定义自动补全所需的远程查询接口，各方法失败时由实现方降级为空结果。
 export interface PrometheusClient {
   labelNames(metricName?: string): Promise<string[]>;
 
@@ -40,6 +43,7 @@ export interface PrometheusClient {
   // flags returns flag values that prometheus was configured with.
   flags(): Promise<Record<string, string>>;
 
+// destroy 可选；HTTP 客户端通过 AbortController 中止在途请求并清空集合。
   // destroy is called to release all resources held by this client
   destroy?(): void;
 }
@@ -52,6 +56,7 @@ export interface CacheConfig {
   initialMetricList?: string[];
 }
 
+// PrometheusConfig 配置服务端 URL、回溯窗口、HTTP 方法、API 前缀与自定义请求头。
 export interface PrometheusConfig {
   url?: string;
   lookbackInterval?: number;
@@ -73,12 +78,14 @@ interface APIResponse<T> {
   infos?: string[];
 }
 
+// 400/422/503 时 Prometheus 仍返回 JSON 体，fetchAPI 需解析其中的 error 字段而非直接抛 HTTP 错误。
 // These are status codes where the Prometheus API still returns a valid JSON body,
 // with an error encoded within the JSON.
 const badRequest = 400;
 const unprocessableEntity = 422;
 const serviceUnavailable = 503;
 
+// HTTPPrometheusClient 通过 buildRequest 支持 GET/POST，并用 match[] 构造 PromQL 选择器。
 // HTTPPrometheusClient is the HTTP client that should be used to get some information from the different endpoint provided by prometheus.
 export class HTTPPrometheusClient implements PrometheusClient {
   private readonly lookbackInterval: undefined | number; //12 hours
@@ -273,6 +280,7 @@ export class HTTPPrometheusClient implements PrometheusClient {
   }
 }
 
+// Cache 用 LRU 缓存标签名/值、指标元数据与 flags，并按指标名维护标签关联图。
 class Cache {
   // completeAssociation is the association between a metric name, a label name and the possible label values
   private readonly completeAssociation: LRUCache<string, Map<string, Set<string>>>;
@@ -401,6 +409,7 @@ class Cache {
   }
 }
 
+// CachedPrometheusClient 在缓存命中时短路远程调用，series 结果会写入 completeAssociation。
 export class CachedPrometheusClient implements PrometheusClient {
   private readonly cache: Cache;
   private readonly client: PrometheusClient;

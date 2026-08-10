@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// HybridComplete：结合 Lezer 语法树静态词条与 Prometheus 远程 API 的 PromQL 自动补全。
+
 import { CompleteStrategy } from './index';
 import { SyntaxNode } from '@lezer/common';
 import { PrometheusClient } from '../client';
@@ -94,6 +96,7 @@ const autocompleteNodes: { [key: string]: Completion[] } = {
   number: numberTerms,
 };
 
+// ContextKind 区分需远程数据的动态补全与本地 promql.terms 静态补全类别。
 // ContextKind is the different possible value determinate by the autocompletion
 export enum ContextKind {
   // dynamic autocompletion (required a distant server)
@@ -114,6 +117,7 @@ export enum ContextKind {
   Number,
 }
 
+// Context 携带补全类别及可选的 metricName、labelName、matchers 等远程查询参数。
 export interface Context {
   kind: ContextKind;
   metricName?: string;
@@ -180,6 +184,7 @@ function isAfterClosedFunctionCallBody(state: EditorState, node: SyntaxNode, pos
   return node.type.id === FunctionCallBody && pos >= node.to && node.from < node.to && state.sliceDoc(node.to - 1, node.to) === ')';
 }
 
+// computeEndCompletePosition 在括号/引号/标签值等节点内计算替换区间的右边界。
 // computeEndCompletePosition calculates the end position for autocompletion replacement.
 // When the cursor is in the middle of a token, this ensures the entire token is replaced,
 // not just the portion before the cursor. This fixes issue #15839.
@@ -214,6 +219,7 @@ export function computeEndCompletePosition(state: EditorState, node: SyntaxNode,
   return node.to;
 }
 
+// durationWithUnitRegexp 由 promql.terms 中的单位列表构造，用于判断是否已输入完整时长。
 // Matches complete PromQL durations, including compound units (e.g., 5m, 1d2h, 1h30m, etc.).
 // Duration units are a fixed, safe set (no regex metacharacters), so no escaping is needed.
 export const durationWithUnitRegexp = new RegExp(`^(\\d+(${durationTerms.map((term) => term.label).join('|')}))+$`);
@@ -242,6 +248,7 @@ function computeStartCompleteLabelPositionInLabelMatcherOrInGroupingLabel(node: 
   return start;
 }
 
+// computeStartCompletePosition 处理空括号、逗号后新标签、offset/矩阵选择器等特殊起始位置。
 // computeStartCompletePosition calculates the start position of the autocompletion.
 // It is an important step because the start position will be used by CMN to find the string and then to use it to filter the CompletionResult.
 // A wrong `start` position will lead to have the completion not working.
@@ -289,6 +296,7 @@ function isAggregatorWithParam(functionCallBody: SyntaxNode): boolean {
   return false;
 }
 
+// analyzeCompletion 遍历 Lezer 节点类型，输出当前光标处应提供的 Context 列表。
 // analyzeCompletion is going to determinate what should be autocompleted.
 // The value of the autocompletion is then calculate by the function buildCompletion.
 // Note: this method is exported for testing purpose only. Do not use it directly.
@@ -620,6 +628,7 @@ export function analyzeCompletion(state: EditorState, node: SyntaxNode, pos: num
   return result;
 }
 
+// HybridComplete 无客户端时仅返回静态词条；有客户端时异步拉取指标/标签/值并合并元数据。
 // HybridComplete provides a full completion result with or without a remote prometheus.
 export class HybridComplete implements CompleteStrategy {
   private readonly prometheusClient: PrometheusClient | undefined;

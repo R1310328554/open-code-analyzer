@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL lint 模块入口：LintStrategy 接口与 promQLLinter 扩展工厂。
+
 import { EditorView } from '@codemirror/view';
 import { Diagnostic, linter } from '@codemirror/lint';
 import { HybridLint } from './hybrid';
@@ -18,12 +20,14 @@ import { Extension } from '@codemirror/state';
 
 type lintFunc = (view: EditorView) => readonly Diagnostic[] | Promise<readonly Diagnostic[]>;
 
+// LintStrategy 与 CompleteStrategy 对称，由 HybridLint 提供默认静态检查。
 // LintStrategy is the interface that defines the simple method that returns a DiagnosticResult.
 // Every different lint mode must implement this interface.
 export interface LintStrategy {
   promQL(this: LintStrategy): lintFunc;
 }
 
+// newLintStrategy 始终返回 HybridLint，后续可扩展为可配置策略。
 export function newLintStrategy(): LintStrategy {
   return new HybridLint();
 }

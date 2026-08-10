@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// complete/index 类型守卫测试：区分 PrometheusClient 实例与仅含 url 的远程配置对象。
+
 import { isPrometheusClient } from './index';
 import { HTTPPrometheusClient } from '../client/prometheus';
 

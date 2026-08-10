@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Prometheus 客户端 destroy 行为单元测试：验证重复调用安全性与在途请求中止。
+
 import { HTTPPrometheusClient, CachedPrometheusClient } from './prometheus';
 
 describe('HTTPPrometheusClient destroy', () => {
@@ -51,6 +53,7 @@ describe('HTTPPrometheusClient destroy', () => {
   });
 });
 
+// CachedPrometheusClient 销毁应委托底层客户端并兼容无 destroy 的最小实现。
 describe('CachedPrometheusClient destroy', () => {
   it('should be safe to call destroy multiple times', () => {
     const httpClient = new HTTPPrometheusClient({ url: 'http://localhost:8080' });

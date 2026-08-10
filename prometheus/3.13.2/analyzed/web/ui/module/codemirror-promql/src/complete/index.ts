@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 自动补全工厂：根据配置构造 HybridComplete 或注入自定义 CompleteStrategy。
+
 import { HybridComplete } from './hybrid';
 import { CachedPrometheusClient, HTTPPrometheusClient, PrometheusClient, PrometheusConfig } from '../client/prometheus';
 import { CompletionContext, CompletionResult } from '@codemirror/autocomplete';
 
+// CompleteStrategy 统一 promQL 补全入口，支持同步或异步返回 CompletionResult。
 // Complete is the interface that defines the simple method that returns a CompletionResult.
 // Every different completion mode must implement this interface.
 export interface CompleteStrategy {
@@ -23,6 +26,7 @@ export interface CompleteStrategy {
 }
 
 // CompleteConfiguration should be used to customize the autocompletion.
+// CompleteConfiguration 可传 remote URL、缓存选项、元数据上限或完全自定义策略。
 export interface CompleteConfiguration {
   remote?: PrometheusConfig | PrometheusClient;
   // maxMetricsMetadata is the maximum number of metrics in Prometheus for which metadata is fetched.
@@ -32,6 +36,7 @@ export interface CompleteConfiguration {
   completeStrategy?: CompleteStrategy;
 }
 
+// isPrometheusClient 判断 remote 字段是已构造客户端还是需包装 HTTPPrometheusClient 的配置。
 export function isPrometheusClient(remoteConfig: PrometheusConfig | PrometheusClient): remoteConfig is PrometheusClient {
   const client = remoteConfig as PrometheusClient;
   return (
@@ -43,6 +48,7 @@ export function isPrometheusClient(remoteConfig: PrometheusConfig | PrometheusCl
   );
 }
 
+// newCompleteStrategy 默认 CachedPrometheusClient+HybridComplete，无 remote 时纯离线补全。
 export function newCompleteStrategy(conf?: CompleteConfiguration): CompleteStrategy {
   if (conf?.completeStrategy) {
     return conf.completeStrategy;

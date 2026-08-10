@@ -11,11 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// HybridLint：基于 Parser 静态分析的 PromQL 编辑器 lint 实现。
+
 import { LintStrategy } from './index';
 import { EditorView } from '@codemirror/view';
 import { Diagnostic } from '@codemirror/lint';
 import { Parser } from '../parser';
 
+// HybridLint 在每次 lint 时新建 Parser，analyze 后返回 Diagnostic 数组。
 // HybridLint will provide a promQL linter with static analysis
 export class HybridLint implements LintStrategy {
   public promQL(this: HybridLint): (view: EditorView) => readonly Diagnostic[] {
