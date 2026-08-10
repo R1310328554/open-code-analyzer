@@ -25,25 +25,34 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 用户联邦身份链接被更新时的缓存失效事件。
+ * <p>
+ * 当用户与外部身份提供者的关联链接发生变更时发布，通知 {@link UserCacheManager}
+ * 失效该用户的联邦身份链接缓存。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.USER_FEDERATION_LINK_UPDATED_EVENT)
 public class UserFederationLinkUpdatedEvent extends InvalidationEvent implements UserCacheInvalidationEvent {
 
+    /** 构造联邦身份链接更新事件。 */
     private UserFederationLinkUpdatedEvent(String id) {
         super(id);
     }
 
+    /** 创建指定用户 ID 的联邦身份链接更新事件。 */
     @ProtoFactory
     public static UserFederationLinkUpdatedEvent create(String id) {
         return new UserFederationLinkUpdatedEvent(id);
     }
 
+    /** 返回便于调试的字符串表示。 */
     @Override
     public String toString() {
         return String.format("UserFederationLinkUpdatedEvent [ userId=%s ]", getId());
     }
 
+    /** 将联邦身份链接更新引发的失效键加入集合。 */
     @Override
     public void addInvalidations(UserCacheManager userCache, Set<String> invalidations) {
         userCache.federatedIdentityLinkUpdatedInvalidation(getId(), invalidations);

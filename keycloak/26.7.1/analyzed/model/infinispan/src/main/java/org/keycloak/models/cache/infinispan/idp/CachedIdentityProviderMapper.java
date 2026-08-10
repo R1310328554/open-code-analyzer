@@ -21,22 +21,32 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.cache.infinispan.entities.AbstractRevisioned;
 import org.keycloak.models.cache.infinispan.entities.InRealm;
 
+/**
+ * 身份提供者映射器（IdP Mapper）的 Infinispan 缓存实体。
+ * <p>
+ * 缓存 {@link IdentityProviderMapperModel}，支持按内部 ID 或 IdP 别名+名称组合查询。
+ */
 public class CachedIdentityProviderMapper extends AbstractRevisioned implements InRealm {
 
+    /** 所属领域 ID。 */
     private final String realm;
+    /** 缓存的身份提供者映射器模型。 */
     private final IdentityProviderMapperModel mapper;
 
+    /** 构造身份提供者映射器缓存条目。 */
     public CachedIdentityProviderMapper(long revision, RealmModel realm, String cacheKey, IdentityProviderMapperModel mapper) {
         super(revision, cacheKey);
         this.realm = realm.getId();
         this.mapper = mapper;
     }
 
+    /** 返回所属领域 ID。 */
     @Override
     public String getRealm() {
         return realm;
     }
 
+    /** 返回缓存的身份提供者映射器模型。 */
     public IdentityProviderMapperModel getIdentityProviderMapper() {
         return mapper;
     }

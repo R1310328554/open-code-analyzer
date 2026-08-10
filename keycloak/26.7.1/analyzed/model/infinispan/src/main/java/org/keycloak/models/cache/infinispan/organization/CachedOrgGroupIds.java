@@ -29,22 +29,25 @@ import org.keycloak.models.cache.infinispan.entities.AbstractRevisioned;
 import org.keycloak.models.cache.infinispan.entities.InRealm;
 
 /**
- * Cached entry that stores organization group IDs resulting from queries.
- * This is a lightweight cache entry that only stores group IDs, not the full group objects.
- * Full groups are retrieved from the realm's group cache when needed.
+ * 组织相关群组 ID 查询结果的轻量级缓存实体。
+ * <p>
+ * 仅缓存群组 ID 列表而非完整 {@link GroupModel} 对象；
+ * 需要完整群组信息时从领域群组缓存按需加载。
  */
 public class CachedOrgGroupIds extends AbstractRevisioned implements InRealm {
 
+    /** 所属领域 ID。 */
     private final String realmId;
+    /** 缓存的群组 ID 列表（不可变）。 */
     private final List<String> groupIds;
 
     /**
-     * Constructor for caching a stream of group models.
+     * 从群组模型流构造缓存条目（流会被消费并转换为 ID 集合）。
      *
-     * @param revision the cache revision number
-     * @param id the cache key
-     * @param realm the realm
-     * @param groups stream of groups to cache (will be consumed and converted to IDs)
+     * @param revision 缓存修订号
+     * @param id 缓存键
+     * @param realm 所属领域
+     * @param groups 待缓存的群组流
      */
     public CachedOrgGroupIds(Long revision, String id, RealmModel realm, Stream<GroupModel> groups) {
         super(revision, id);
@@ -54,14 +57,15 @@ public class CachedOrgGroupIds extends AbstractRevisioned implements InRealm {
     }
 
     /**
-     * Returns the cached group IDs.
+     * 返回缓存的群组 ID 集合。
      *
-     * @return immutable collection of group IDs
+     * @return 不可变的群组 ID 集合
      */
     public Collection<String> getGroupIds() {
         return groupIds;
     }
 
+    /** 返回所属领域 ID。 */
     @Override
     public String getRealm() {
         return realmId;
