@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T15:11:58Z",
   "files": [
-    "logger/logger.go",
-    "metric/builds.go",
-    "metric/handler.go",
-    "metric/handler_oss.go",
-    "metric/license.go",
-    "metric/metric.go",
-    "metric/metric_oss.go",
-    "metric/repos.go",
-    "metric/sink/config.go",
-    "metric/sink/datadog.go",
-    "metric/sink/tags.go",
-    "metric/stages.go",
-    "metric/users.go",
-    "mock/mock.go",
-    "mock/mock_gen.go",
     "mock/mockscm/mock.go",
     "mock/mockscm/mock_gen.go",
     "operator/manager/manager.go",
@@ -33,5 +18,5 @@
     "operator/manager/teardown.go"
   ],
   "remaining_pending": 178,
-  "done": 180
+  "done": 195
 }
