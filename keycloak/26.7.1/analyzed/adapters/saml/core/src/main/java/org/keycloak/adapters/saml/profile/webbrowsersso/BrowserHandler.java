@@ -25,14 +25,33 @@ import org.keycloak.adapters.spi.AuthOutcome;
 import org.keycloak.adapters.spi.HttpFacade;
 
 /**
+ * 浏览器 SSO 认证处理器，用于普通页面请求（无显式 SAML 端点参数）。
+ *
+ * <p>与 {@link SamlEndpoint} 不同，本类不从请求参数读取 SAML 载荷，而是依赖
+ * 会话缓存或发起新的 IdP 登录流程。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class BrowserHandler extends WebBrowserSsoAuthenticationHandler {
+
+    /**
+     * 创建浏览器 SSO 处理器。
+     *
+     * @param facade       HTTP 门面
+     * @param deployment   SAML 部署配置
+     * @param sessionStore 会话存储
+     */
     public BrowserHandler(HttpFacade facade, SamlDeployment deployment, SamlSessionStore sessionStore) {
         super(facade, deployment, sessionStore);
     }
 
+    /**
+     * 处理浏览器请求：无 SAML 参数时检查缓存会话或发起登录。
+     *
+     * @param onCreateSession 会话创建回调
+     * @return 认证结果
+     */
     @Override
     public AuthOutcome handle(OnSessionCreated onCreateSession) {
         return doHandle(new SamlInvocationContext(null, null, null), onCreateSession);

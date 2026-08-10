@@ -61,25 +61,41 @@ import org.wildfly.security.http.HttpServerResponse;
 import org.wildfly.security.http.Scope;
 
 /**
+ * WildFly Elytron HTTP 服务器请求与 Keycloak {@link HttpFacade} 的桥接实现。
+ *
+ * <p>将 Elytron 的 {@link HttpServerRequest}/{@link HttpServerResponse} 适配为
+ * SAML 适配器所需的请求/响应抽象，并管理认证状态切换与会话存储。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 class ElytronHttpFacade implements HttpFacade {
 
+    /** 是否启用 ELYWEB-163 URI 解码变通方案（Issue #10894）。 */
     private static final boolean elyweb163Workaround;
+    /** 本类日志记录器。 */
     private static final Logger log = Logger.getLogger(ElytronHttpFacade.class);
 
+    /** Elytron HTTP 服务器请求。 */
     private final HttpServerRequest request;
+    /** Elytron 认证回调处理器。 */
     private final CallbackHandler callbackHandler;
+    /** SAML 部署上下文（支持按请求解析）。 */
     private final SamlDeploymentContext deploymentContext;
+    /** SAML 会话存储。 */
     private final SamlSessionStore sessionStore;
+    /** 延迟执行的响应操作链。 */
     private Consumer<HttpServerResponse> responseConsumer;
+    /** 认证完成后的 Elytron 安全身份。 */
     private SecurityIdentity securityIdentity;
+    /** 是否已恢复挂起的原始请求。 */
     private boolean restored;
+    /** 当前 SAML 会话（认证完成前暂存）。 */
     private SamlSession samlSession;
+    /** 解析后的查询参数缓存。 */
     protected MultivaluedHashMap<String, String> queryParameters;
 
     static {
-        // Issue #10894: ELYWEB-163 workaround should be applied for previous versions of wildfly/EAP
+        // Issue #10894：旧版 wildfly/EAP 的 elytron-web 需启用 ELYWEB-163 变通
         boolean tmpElyweb163Workaround = false;
         String prop = System.getProperty("org.keycloak.adapters.elytronweb.ELYWEB-163.workaround");
         if (prop != null) {
@@ -90,7 +106,7 @@ class ElytronHttpFacade implements HttpFacade {
                 Class clazz = ElytronHttpFacade.class.getClassLoader().loadClass("org.wildfly.elytron.web.undertow.server.ElytronHttpExchange");
                 String version = clazz.getPackage().getImplementationVersion();
                 Integer[] array = parseVersion(version);
-                // bug is fixed in 1.9.2 and 1.10.1
+                // 缺陷在 1.9.2 与 1.10.1 中已修复
                 tmpElyweb163Workaround = array != null
                         && (versionIsLessThan(array, new Integer[]{1, 9, 2})
                         || (versionIsLessThan(array, new Integer[]{1, 10, 1}) && versionIsGreaterOrEqualThan(array, new Integer[]{1, 10, 0})));
@@ -102,6 +118,7 @@ class ElytronHttpFacade implements HttpFacade {
         elyweb163Workaround = tmpElyweb163Workaround;
     }
 
+    /** 解析 elytron-web 版本号字符串为整数数组。 */
     private static Integer[] parseVersion(String version) {
         if (version != null)  {
             String[] versionArray = version.split(Pattern.quote("."));
@@ -118,6 +135,7 @@ class ElytronHttpFacade implements HttpFacade {
         return null;
     }
 
+    /** 比较版本号：{@code array1} 是否严格小于 {@code array2}。 */
     private static boolean versionIsLessThan(Integer[] array1, Integer[] array2) {
         if (array1 == null || array2 == null || array1.length == 0 || array2.length == 0) {
             throw new IllegalArgumentException("Arrays cannot be null or empty");
@@ -129,14 +147,24 @@ class ElytronHttpFacade implements HttpFacade {
                 return false;
             }
         }
-        // all the numbers are equal til now, 1.1 < 1.1.1
+        // 前缀相等时较短版本号更小，如 1.1 < 1.1.1
         return array1.length < array2.length;
     }
 
+    /** 比较版本号：{@code array1} 是否大于等于 {@code array2}。 */
     private static boolean versionIsGreaterOrEqualThan(Integer[] array1, Integer[] array2) {
         return !versionIsLessThan(array1, array2);
     }
 
+    /**
+     * 构造 Elytron HTTP 门面。
+     *
+     * @param request          Elytron HTTP 请求
+     * @param idMapper         会话 ID 映射器
+     * @param idMapperUpdater  映射更新器
+     * @param deploymentContext SAML 部署上下文
+     * @param handler          Elytron 回调处理器
+     */
     public ElytronHttpFacade(HttpServerRequest request, SessionIdMapper idMapper, SessionIdMapperUpdater idMapperUpdater, SamlDeploymentContext deploymentContext, CallbackHandler handler) {
         this.request = request;
         this.deploymentContext = deploymentContext;
@@ -145,14 +173,17 @@ class ElytronHttpFacade implements HttpFacade {
         this.sessionStore = createTokenStore(idMapper, idMapperUpdater);
     }
 
+    /** 创建 Elytron SAML 会话存储。 */
     private SamlSessionStore createTokenStore(SessionIdMapper idMapper, SessionIdMapperUpdater idMapperUpdater) {
         return new ElytronSamlSessionStore(this, idMapper, idMapperUpdater, getDeployment());
     }
 
+    /** 暂存 SAML 会话，供后续 {@link #authenticationComplete()} 使用。 */
     void authenticationComplete(SamlSession samlSession) {
         this.samlSession = samlSession;
     }
 
+    /** 基于 SAML 主体完成 Elytron 认证并注册登出回调。 */
     void authenticationComplete() {
         this.securityIdentity = SecurityIdentityUtil.authorize(this.callbackHandler, samlSession.getPrincipal());
 
@@ -165,6 +196,7 @@ class ElytronHttpFacade implements HttpFacade {
         }
     }
 
+    /** 以匿名身份完成认证并转发至原始路径（用于登出场景）。 */
     void authenticationCompleteAnonymous() {
         try {
             AnonymousAuthorizationCallback anonymousAuthorizationCallback = new AnonymousAuthorizationCallback(null);
@@ -182,10 +214,12 @@ class ElytronHttpFacade implements HttpFacade {
         }
     }
 
+    /** 通知 Elytron 认证失败。 */
     void authenticationFailed() {
         this.request.authenticationFailed("Authentication Failed", response -> responseConsumer.accept(response));
     }
 
+    /** 无认证进行中：可选执行质询后结束认证流程。 */
     void noAuthenticationInProgress(AuthChallenge challenge) {
         if (challenge != null) {
             challenge.challenge(this);
@@ -193,22 +227,27 @@ class ElytronHttpFacade implements HttpFacade {
         this.request.noAuthenticationInProgress(response -> responseConsumer.accept(response));
     }
 
+    /** 通知 Elytron 认证仍在进行中（如等待 IdP 重定向）。 */
     void authenticationInProgress() {
         this.request.authenticationInProgress(response -> responseConsumer.accept(response));
     }
 
+    /** 获取指定 Elytron 作用域。 */
     HttpScope getScope(Scope scope) {
         return request.getScope(scope);
     }
 
+    /** 按 ID 获取指定类型的 Elytron 作用域。 */
     HttpScope getScope(Scope scope, String id) {
         return request.getScope(scope, id);
     }
 
+    /** 列出指定作用域下的所有 ID。 */
     Collection<String> getScopeIds(Scope scope) {
         return request.getScopeIds(scope);
     }
 
+    /** 按当前请求解析 SAML 部署配置。 */
     SamlDeployment getDeployment() {
         return deploymentContext.resolveDeployment(this);
     }
@@ -454,28 +493,34 @@ class ElytronHttpFacade implements HttpFacade {
         };
     }
 
+    /** Elytron 环境下不提供客户端证书链。 */
     @Override
     public X509Certificate[] getCertificateChain() {
         return new X509Certificate[0];
     }
 
+    /** 恢复挂起的原始 HTTP 请求。 */
     public boolean restoreRequest() {
         restored = this.request.resumeRequest();
         return restored;
     }
 
+    /** 挂起当前请求，等待 SAML 回调后恢复。 */
     public void suspendRequest() {
         responseConsumer = responseConsumer.andThen(httpServerResponse -> request.suspendRequest());
     }
 
+    /** @return 是否已通过 Elytron 认证 */
     public boolean isAuthorized() {
         return this.securityIdentity != null;
     }
 
+    /** @return 当前请求的完整 URI */
     public URI getURI() {
         return request.getRequestURI();
     }
 
+    /** @return SAML 会话存储 */
     public SamlSessionStore getSessionStore() {
         return sessionStore;
     }

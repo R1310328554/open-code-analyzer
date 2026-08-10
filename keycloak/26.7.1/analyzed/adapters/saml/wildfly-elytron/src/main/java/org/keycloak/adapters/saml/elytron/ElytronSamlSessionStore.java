@@ -35,19 +35,38 @@ import org.wildfly.security.http.HttpScope;
 import org.wildfly.security.http.Scope;
 
 /**
+ * Elytron HTTP 作用域下的 SAML 会话存储实现。
+ *
+ * <p>基于 WildFly Elytron 的 {@link HttpScope} 管理 {@link SamlSession}、
+ * 登录/登出状态及原始请求 URI，并同步 {@link SessionIdMapper} 映射。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ElytronSamlSessionStore implements SamlSessionStore, ElytronTokeStore {
+    /** 本类日志记录器。 */
     protected static Logger log = Logger.getLogger(SamlSessionStore.class);
+    /** 会话中保存登录前原始 URI 的附件键名。 */
     public static final String SAML_REDIRECT_URI = "SAML_REDIRECT_URI";
 
+    /** SSO SessionIndex 与容器 Session ID 的映射器。 */
     private final SessionIdMapper idMapper;
+    /** 映射器的集群同步更新器。 */
     private final SessionIdMapperUpdater idMapperUpdater;
+    /** SAML 部署配置。 */
     protected final SamlDeployment deployment;
+    /** Elytron HTTP 门面。 */
     private final ElytronHttpFacade exchange;
 
 
+    /**
+     * 构造 Elytron SAML 会话存储。
+     *
+     * @param exchange         HTTP 门面
+     * @param idMapper         会话 ID 映射器
+     * @param idMapperUpdater  映射更新器
+     * @param deployment       SAML 部署配置
+     */
     public ElytronSamlSessionStore(ElytronHttpFacade exchange, SessionIdMapper idMapper, SessionIdMapperUpdater idMapperUpdater, SamlDeployment deployment) {
         this.exchange = exchange;
         this.idMapper = idMapper;
@@ -55,28 +74,26 @@ public class ElytronSamlSessionStore implements SamlSessionStore, ElytronTokeSto
         this.deployment = deployment;
     }
 
+    /** 设置当前 SAML 流程动作（登录中/登出中/无）。 */
     @Override
     public void setCurrentAction(CurrentAction action) {
         if (action == CurrentAction.NONE && !exchange.getScope(Scope.SESSION).exists()) return;
         exchange.getScope(Scope.SESSION).setAttachment(CURRENT_ACTION, action);
-    }
-
+    /** @return 当前会话是否处于 SAML 登录流程中 */
     @Override
     public boolean isLoggingIn() {
         HttpScope session = exchange.getScope(Scope.SESSION);
         if (!session.exists()) return false;
         CurrentAction action = (CurrentAction) session.getAttachment(CURRENT_ACTION);
         return action == CurrentAction.LOGGING_IN;
-    }
-
+    /** @return 当前会话是否处于 SAML 登出流程中 */
     @Override
     public boolean isLoggingOut() {
         HttpScope session = exchange.getScope(Scope.SESSION);
         if (!session.exists()) return false;
         CurrentAction action = (CurrentAction) session.getAttachment(CURRENT_ACTION);
         return action == CurrentAction.LOGGING_OUT;
-    }
-
+    /** 注销当前会话中的 SAML 账户并清理映射。 */
     @Override
     public void logoutAccount() {
         HttpScope session = getSession(false);
@@ -91,8 +108,7 @@ public class ElytronSamlSessionStore implements SamlSessionStore, ElytronTokeSto
             }
             session.setAttachment(SAML_REDIRECT_URI, null);
         }
-    }
-
+    /** 按 SAML 主体名注销该用户的所有会话。 */
     @Override
     public void logoutByPrincipal(String principal) {
         Set<String> sessions = idMapper.getUserSessions(principal);
@@ -106,8 +122,7 @@ public class ElytronSamlSessionStore implements SamlSessionStore, ElytronTokeSto
             }
         }
 
-    }
-
+    /** 按 SSO SessionIndex 列表注销对应容器会话。 */
     @Override
     public void logoutBySsoId(List<String> ssoIds) {
         if (ssoIds == null) return;
@@ -124,6 +139,7 @@ public class ElytronSamlSessionStore implements SamlSessionStore, ElytronTokeSto
         logoutSessionIds(sessionIds);
     }
 
+    /** 批量使指定 Session ID 的 Elytron 会话失效。 */
     protected void logoutSessionIds(List<String> sessionIds) {
         sessionIds.forEach(id -> {
             HttpScope scope = exchange.getScope(Scope.SESSION, id);
@@ -134,8 +150,11 @@ public class ElytronSamlSessionStore implements SamlSessionStore, ElytronTokeSto
                 scope.invalidate();
             }
         });
-    }
-
+    /**
+     * 检查当前会话是否已登录且 SAML 断言仍有效。
+     *
+     * @return 已登录且断言有效时返回 {@code true}
+     */
     @Override
     public boolean isLoggedIn() {
         HttpScope session = getSession(false);
@@ -158,8 +177,7 @@ public class ElytronSamlSessionStore implements SamlSessionStore, ElytronTokeSto
         exchange.authenticationComplete(samlSession);
         restoreRequest();
         return true;
-    }
-
+    /** 将会话账户写入 Elytron Session 作用域并更新 SSO 映射。 */
     @Override
     public void saveAccount(SamlSession account) {
         HttpScope session = getSession(true);
@@ -169,6 +187,7 @@ public class ElytronSamlSessionStore implements SamlSessionStore, ElytronTokeSto
 
     }
 
+    /** 登录成功后按需轮换 Session ID 以防固定攻击。 */
     protected String changeSessionId(HttpScope session) {
         if (!deployment.turnOffChangeSessionIdOnLogin()) {
             if (!session.supportsChangeID() || !session.changeID()) {
@@ -176,14 +195,12 @@ public class ElytronSamlSessionStore implements SamlSessionStore, ElytronTokeSto
             }
         }
         return session.getID();
-    }
-
+    /** @return 当前会话中的 SAML 账户 */
     @Override
     public SamlSession getAccount() {
         HttpScope session = getSession(true);
         return (SamlSession)session.getAttachment(SamlSession.class.getName());
-    }
-
+    /** 返回登录前应重定向的 URI（会话附件或从 Referer 推断）。 */
     @Override
     public String getRedirectUri() {
         HttpScope session = exchange.getScope(Scope.SESSION);
@@ -202,8 +219,7 @@ public class ElytronSamlSessionStore implements SamlSessionStore, ElytronTokeSto
             return SamlUtil.getRedirectTo(exchange, contextPath, baseUri);
         }
         return redirect;
-    }
-
+    /** 挂起当前请求并将原始 URI 保存到会话，供登录后恢复。 */
     @Override
     public void saveRequest() {
         exchange.suspendRequest();
@@ -213,13 +229,13 @@ public class ElytronSamlSessionStore implements SamlSessionStore, ElytronTokeSto
             scope.create();
         }
         scope.setAttachment(SAML_REDIRECT_URI, exchange.getRequest().getURI());
-    }
-
+    /** 恢复挂起的原始请求。 */
     @Override
     public boolean restoreRequest() {
         return exchange.restoreRequest();
     }
 
+    /** 获取或创建 Elytron Session 作用域。 */
     protected HttpScope getSession(boolean create) {
         HttpScope scope = exchange.getScope(Scope.SESSION);
 
@@ -228,8 +244,7 @@ public class ElytronSamlSessionStore implements SamlSessionStore, ElytronTokeSto
         }
 
         return scope;
-    }
-
+    /** {@link ElytronTokeStore} 登出实现。 */
     @Override
     public void logout(boolean glo) {
         logoutAccount();

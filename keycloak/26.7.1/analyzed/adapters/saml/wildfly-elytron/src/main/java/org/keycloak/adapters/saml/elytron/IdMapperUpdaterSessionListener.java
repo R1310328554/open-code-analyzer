@@ -31,19 +31,31 @@ import org.keycloak.adapters.spi.SessionIdMapper;
 import org.jboss.logging.Logger;
 
 /**
+ * HTTP 会话生命周期监听器，维护 {@link SessionIdMapper} 与 SAML 会话的映射关系。
+ *
+ * <p>监听会话创建/销毁、Session ID 变更及 {@link SamlSession} 属性增删改，
+ * 确保集群环境下 SSO SessionIndex 与容器 Session ID 同步。</p>
  *
  * @author hmlnarik
  */
 public class IdMapperUpdaterSessionListener implements HttpSessionListener, HttpSessionAttributeListener, HttpSessionIdListener {
 
+    /** 本类日志记录器。 */
     private static final Logger LOG = Logger.getLogger(IdMapperUpdaterSessionListener.class);
 
+    /** 会话 ID 映射器。 */
     private final SessionIdMapper idMapper;
 
+    /**
+     * 构造监听器。
+     *
+     * @param idMapper 会话 ID 映射器
+     */
     public IdMapperUpdaterSessionListener(SessionIdMapper idMapper) {
         this.idMapper = idMapper;
     }
 
+    /** 会话创建时：若已有 {@link SamlSession} 属性则建立映射。 */
     @Override
     public void sessionCreated(HttpSessionEvent hse) {
         LOG.debugf("Session created");
@@ -52,6 +64,7 @@ public class IdMapperUpdaterSessionListener implements HttpSessionListener, Http
         map(session.getId(), value);
     }
 
+    /** 会话销毁时：移除 SessionIndex 与 Session ID 的映射。 */
     @Override
     public void sessionDestroyed(HttpSessionEvent hse) {
         LOG.debugf("Session destroyed");
@@ -59,6 +72,7 @@ public class IdMapperUpdaterSessionListener implements HttpSessionListener, Http
         unmap(session.getId(), session.getAttribute(SamlSession.class.getName()));
     }
 
+    /** Session ID 变更时：先解除旧 ID 映射，再为新 ID 建立映射。 */
     @Override
     public void sessionIdChanged(HttpSessionEvent hse, String oldSessionId) {
         LOG.debugf("Session changed ID from %s", oldSessionId);
@@ -68,6 +82,7 @@ public class IdMapperUpdaterSessionListener implements HttpSessionListener, Http
         map(session.getId(), value);
     }
 
+    /** {@link SamlSession} 属性新增时建立 SSO 映射。 */
     @Override
     public void attributeAdded(HttpSessionBindingEvent hsbe) {
         HttpSession session = hsbe.getSession();
@@ -77,6 +92,7 @@ public class IdMapperUpdaterSessionListener implements HttpSessionListener, Http
         }
     }
 
+    /** {@link SamlSession} 属性移除时解除 SSO 映射。 */
     @Override
     public void attributeRemoved(HttpSessionBindingEvent hsbe) {
         HttpSession session = hsbe.getSession();
@@ -86,6 +102,7 @@ public class IdMapperUpdaterSessionListener implements HttpSessionListener, Http
         }
     }
 
+    /** {@link SamlSession} 属性被替换时：先解除旧值映射，再映射新值。 */
     @Override
     public void attributeReplaced(HttpSessionBindingEvent hsbe) {
         HttpSession session = hsbe.getSession();
@@ -96,6 +113,7 @@ public class IdMapperUpdaterSessionListener implements HttpSessionListener, Http
         }
     }
 
+    /** 将 SSO SessionIndex 与容器 Session ID 写入映射器。 */
     private void map(String sessionId, Object value) {
         if (! (value instanceof SamlSession) || sessionId == null) {
             return;
@@ -105,6 +123,7 @@ public class IdMapperUpdaterSessionListener implements HttpSessionListener, Http
         idMapper.map(account.getSessionIndex(), account.getPrincipal().getSamlSubject(), sessionId);
     }
 
+    /** 从映射器中移除指定 Session ID 的 SSO 映射。 */
     private void unmap(String sessionId, Object value) {
         if (! (value instanceof SamlSession) || sessionId == null) {
             return;

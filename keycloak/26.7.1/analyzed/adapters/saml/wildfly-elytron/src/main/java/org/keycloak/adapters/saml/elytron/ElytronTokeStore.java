@@ -17,8 +17,19 @@
 package org.keycloak.adapters.saml.elytron;
 
 /**
+ * Elytron 令牌存储扩展接口，提供登出能力。
+ *
+ * <p>由 {@link ElytronSamlSessionStore} 实现，供 {@link ElytronHttpFacade} 在
+ * 认证完成回调中触发会话清理。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface ElytronTokeStore {
+
+    /**
+     * 执行登出并可选触发全局登出（GLO）。
+     *
+     * @param glo 是否发起全局单点登出
+     */
     void logout(boolean glo);
 }

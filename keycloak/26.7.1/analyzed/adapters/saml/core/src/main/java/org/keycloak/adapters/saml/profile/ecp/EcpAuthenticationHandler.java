@@ -46,17 +46,34 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 /**
+ * ECP（Enhanced Client or Proxy）配置文件下的 SAML 认证处理器。
+ *
+ * <p>支持 PAOS 绑定与 SOAP 封装，适用于非浏览器客户端（如 curl、Web 服务代理）
+ * 通过 SAML ECP Profile 完成认证。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class EcpAuthenticationHandler extends AbstractSamlAuthenticationHandler {
 
+    /** PAOS 请求头名称。 */
     public static final String PAOS_HEADER = "PAOS";
+    /** PAOS 内容类型。 */
     public static final String PAOS_CONTENT_TYPE = "application/vnd.paos+xml";
+    /** ECP 扩展命名空间前缀。 */
     private static final String NS_PREFIX_PROFILE_ECP = "ecp";
+    /** SAML 协议命名空间前缀。 */
     private static final String NS_PREFIX_SAML_PROTOCOL = "samlp";
+    /** SAML 断言命名空间前缀。 */
     private static final String NS_PREFIX_SAML_ASSERTION = "saml";
+    /** PAOS 绑定命名空间前缀。 */
     private static final String NS_PREFIX_PAOS_BINDING = "paos";
 
+    /**
+     * 判断当前 HTTP 请求是否应使用 ECP 处理器。
+     *
+     * @param httpFacade HTTP 门面
+     * @return 若 Accept/Content-Type 含 PAOS 类型则返回 {@code true}
+     */
     public static boolean canHandle(HttpFacade httpFacade) {
         HttpFacade.Request request = httpFacade.getRequest();
         String acceptHeader = request.getHeader("Accept");
@@ -66,20 +83,42 @@ public class EcpAuthenticationHandler extends AbstractSamlAuthenticationHandler 
                 || (contentTypeHeader != null && contentTypeHeader.contains(PAOS_CONTENT_TYPE));
     }
 
+    /**
+     * 工厂方法：创建 ECP 认证处理器。
+     *
+     * @param facade       HTTP 门面
+     * @param deployment   SAML 部署配置
+     * @param sessionStore 会话存储
+     * @return ECP 认证处理器实例
+     */
     public static SamlAuthenticationHandler create(HttpFacade facade, SamlDeployment deployment, SamlSessionStore sessionStore) {
         return new EcpAuthenticationHandler(facade, deployment, sessionStore);
     }
 
+    /** 私有构造器，通过 {@link #create} 实例化。 */
     private  EcpAuthenticationHandler(HttpFacade facade, SamlDeployment deployment, SamlSessionStore sessionStore) {
         super(facade, deployment, sessionStore);
     }
 
+    /**
+     * ECP 配置文件不支持 IdP 发起的 LogoutRequest。
+     *
+     * @param request    登出请求（未使用）
+     * @param relayState 关联状态（未使用）
+     * @return 始终抛出 {@link RuntimeException}
+     */
     @Override
     protected AuthOutcome logoutRequest(LogoutRequestType request, String relayState) {
         throw new RuntimeException("Not supported.");
     }
 
 
+    /**
+     * 处理 ECP 认证：PAOS 头存在时走标准流程；否则从 SOAP Body 解析 SAML 响应。
+     *
+     * @param onCreateSession 会话创建回调
+     * @return 认证结果
+     */
     @Override
     public AuthOutcome handle(OnSessionCreated onCreateSession) {
         String header = facade.getRequest().getHeader(PAOS_HEADER);
@@ -105,6 +144,12 @@ public class EcpAuthenticationHandler extends AbstractSamlAuthenticationHandler 
         }
     }
 
+    /**
+     * 创建 ECP 质询：通过 SOAP 消息封装 AuthnRequest 并附带 PAOS/ECP 头。
+     *
+     * @param saveChallenge 是否保存原始请求 URI 以便登录后重定向
+     * @return ECP 登录质询实现
+     */
     @Override
     protected AbstractInitiateLogin createChallenge(boolean saveChallenge) {
         return new AbstractInitiateLogin(deployment, sessionStore, saveChallenge) {
@@ -134,6 +179,7 @@ public class EcpAuthenticationHandler extends AbstractSamlAuthenticationHandler 
                 }
             }
 
+            /** 构造 ECP Request SOAP 头，指定 SP 与 IdP 信息。 */
             private void createEcpRequestHeader(SOAPEnvelope envelope) throws SOAPException {
                 SOAPHeader headers = envelope.getHeader();
                 SOAPHeaderElement ecpRequestHeader = headers.addHeaderElement(envelope.createQName(JBossSAMLConstants.REQUEST.get(), NS_PREFIX_PROFILE_ECP));
@@ -150,6 +196,7 @@ public class EcpAuthenticationHandler extends AbstractSamlAuthenticationHandler 
                         .addAttribute(envelope.createName("Loc"), deployment.getIDP().getSingleSignOnService().getRequestBindingUrl());
             }
 
+            /** 构造 PAOS Request SOAP 头，声明 ECP Profile 与响应消费 URL。 */
             private void createPaosRequestHeader(SOAPEnvelope envelope) throws SOAPException {
                 SOAPHeader headers = envelope.getHeader();
                 SOAPHeaderElement paosRequestHeader = headers.addHeaderElement(envelope.createQName(JBossSAMLConstants.REQUEST.get(), NS_PREFIX_PAOS_BINDING));
@@ -160,6 +207,7 @@ public class EcpAuthenticationHandler extends AbstractSamlAuthenticationHandler 
                 paosRequestHeader.addAttribute(envelope.createName("responseConsumerURL"), getResponseConsumerUrl());
             }
 
+            /** 返回断言消费服务 URL，用于 PAOS 头的 responseConsumerURL 属性。 */
             private String getResponseConsumerUrl() {
                 return (deployment.getIDP() == null
                   || deployment.getIDP().getSingleSignOnService() == null

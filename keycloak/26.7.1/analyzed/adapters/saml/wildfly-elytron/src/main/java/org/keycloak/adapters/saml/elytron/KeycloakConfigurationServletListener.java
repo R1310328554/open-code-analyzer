@@ -48,27 +48,43 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.jboss.logging.Logger;
 
 /**
- * <p>A {@link ServletContextListener} that parses the keycloak adapter configuration and set the same configuration
- * as a {@link ServletContext} attribute in order to provide to {@link KeycloakHttpServerAuthenticationMechanism} a way
- * to obtain the configuration when processing requests.
+ * Keycloak SAML 适配器配置监听器。
  *
- * <p>This listener should be automatically registered to a deployment using the subsystem.
+ * <p>作为 {@link ServletContextListener}，在 Web 应用启动时解析 Keycloak 适配器配置，
+ * 并将 {@link SamlDeploymentContext}、{@link SessionIdMapper} 等对象写入
+ * {@link ServletContext} 属性，供 {@link KeycloakHttpServerAuthenticationMechanism}
+ * 在处理请求时获取配置。</p>
+ *
+ * <p>通常由 WildFly 子系统自动注册到部署中。</p>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class KeycloakConfigurationServletListener implements ServletContextListener {
 
+    /** 本类日志记录器。 */
     protected static Logger log = Logger.getLogger(KeycloakConfigurationServletListener.class);
 
+    /** {@link SamlDeploymentContext} 在 ServletContext 中的属性名。 */
     public static final String ADAPTER_DEPLOYMENT_CONTEXT_ATTRIBUTE = SamlDeploymentContext.class.getName();
+    /** Elytron 专用的部署上下文属性名。 */
     public static final String ADAPTER_DEPLOYMENT_CONTEXT_ATTRIBUTE_ELYTRON = SamlDeploymentContext.class.getName() + ".elytron";
+    /** Elytron 专用的 SessionIdMapper 属性名。 */
     public static final String ADAPTER_SESSION_ID_MAPPER_ATTRIBUTE_ELYTRON = SessionIdMapper.class.getName() + ".elytron";
+    /** Elytron 专用的 SessionIdMapperUpdater 属性名。 */
     public static final String ADAPTER_SESSION_ID_MAPPER_UPDATER_ATTRIBUTE_ELYTRON = SessionIdMapperUpdater.class.getName() + ".elytron";
 
+    /** 内存中的会话 ID 映射器。 */
     private final SessionIdMapper idMapper = new InMemorySessionIdMapper();
+    /** 会话 ID 映射更新器，默认直接写入。 */
     private SessionIdMapperUpdater idMapperUpdater = SessionIdMapperUpdater.DIRECT;
+    /** 应用关闭时需要释放的资源。 */
     private Collection<AutoCloseable> toClose = new LinkedList<>();
 
+    /**
+     * Web 应用启动：解析 SAML 配置、注册会话监听器并写入 ServletContext 属性。
+     *
+     * @param sce Servlet 上下文事件
+     */
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         ServletContext servletContext = sce.getServletContext();
@@ -117,6 +133,7 @@ public class KeycloakConfigurationServletListener implements ServletContextListe
         servletContext.setAttribute(ADAPTER_SESSION_ID_MAPPER_UPDATER_ATTRIBUTE_ELYTRON, idMapperUpdater);
     }
 
+    /** Web 应用关闭：释放已注册的 AutoCloseable 资源。 */
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
         for (AutoCloseable c : toClose) {
@@ -128,6 +145,7 @@ public class KeycloakConfigurationServletListener implements ServletContextListe
         }
     }
 
+    /** 从 ServletContext 初始化参数或 WEB-INF 文件获取 SAML 配置输入流。 */
     private static InputStream getConfigInputStream(ServletContext context) {
         InputStream is = getXMLFromServletContext(context);
         if (is == null) {
@@ -146,6 +164,7 @@ public class KeycloakConfigurationServletListener implements ServletContextListe
         return is;
     }
 
+    /** 从 ServletContext init-param 读取内嵌 XML 配置。 */
     private static InputStream getXMLFromServletContext(ServletContext servletContext) {
         String json = servletContext.getInitParameter(AdapterConstants.AUTH_DATA_PARAM_NAME);
         if (json == null) {
@@ -154,10 +173,15 @@ public class KeycloakConfigurationServletListener implements ServletContextListe
         return new ByteArrayInputStream(json.getBytes());
     }
 
+    /**
+     * 注册会话 ID 映射更新器：本地 HTTP 会话监听器及可选的集群扩展类。
+     *
+     * @param servletContext Servlet 上下文
+     */
     public void addTokenStoreUpdaters(ServletContext servletContext) {
         SessionIdMapperUpdater updater = this.idMapperUpdater;
 
-        servletContext.addListener(new IdMapperUpdaterSessionListener(idMapper));    // This takes care of HTTP sessions manipulated locally
+        servletContext.addListener(new IdMapperUpdaterSessionListener(idMapper));    // 处理本地 HTTP 会话变更
 
         try {
             String idMapperSessionUpdaterClasses = servletContext.getInitParameter("keycloak.sessionIdMapperUpdater.classes");
@@ -170,7 +194,7 @@ public class KeycloakConfigurationServletListener implements ServletContextListe
             for (String clazz : idMapperSessionUpdaterClasses.split("\\s*,\\s*")) {
                 if (! clazz.isEmpty()) {
                     if (Objects.equals("org.keycloak.adapters.saml.wildfly.infinispan.InfinispanSessionCacheIdMapperUpdater", clazz)) {
-                        clazz = InfinispanSessionCacheIdMapperUpdater.class.getName();  // exchange wildfly/undertow for elytron one
+                        clazz = InfinispanSessionCacheIdMapperUpdater.class.getName();  // 将 wildfly/undertow 实现替换为 elytron 版本
                     }
                     updater = invokeAddTokenStoreUpdaterMethod(clazz, servletContext, updater);
                     if (updater instanceof AutoCloseable) {
@@ -183,6 +207,7 @@ public class KeycloakConfigurationServletListener implements ServletContextListe
         }
     }
 
+    /** 通过反射调用指定类的 {@code addTokenStoreUpdaters} 静态方法。 */
     private SessionIdMapperUpdater invokeAddTokenStoreUpdaterMethod(String idMapperSessionUpdaterClass, ServletContext servletContext,
       SessionIdMapperUpdater previousIdMapperUpdater) {
         try {
@@ -206,10 +231,12 @@ public class KeycloakConfigurationServletListener implements ServletContextListe
         }
     }
 
+    /** @return 当前会话 ID 映射更新器 */
     public SessionIdMapperUpdater getIdMapperUpdater() {
         return idMapperUpdater;
     }
 
+    /** 设置会话 ID 映射更新器（供子类或测试使用）。 */
     protected void setIdMapperUpdater(SessionIdMapperUpdater idMapperUpdater) {
         this.idMapperUpdater = idMapperUpdater;
     }

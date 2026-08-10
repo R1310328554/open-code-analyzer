@@ -42,39 +42,55 @@ import org.apache.http.client.HttpClient;
 import org.jboss.logging.Logger;
 
 /**
- * This class defines a {@link KeyLocator} that looks up public keys and certificates in IdP's
- * SAML descriptor (i.e. http://{host}/auth/realms/{realm}/protocol/saml/descriptor).
+ * 基于 IdP SAML 元数据描述符的公钥定位器（{@link KeyLocator}）。
  *
- * Based on {@code JWKPublicKeyLocator}.
+ * <p>从 IdP 的 SAML descriptor URL（如
+ * {@code http://{host}/auth/realms/{realm}/protocol/saml/descriptor}）
+ * 拉取并缓存签名证书，用于校验 SAML 请求/响应签名。</p>
+ *
+ * <p>实现思路参考 {@code JWKPublicKeyLocator}。</p>
  *
  * @author hmlnarik
  */
 public class SamlDescriptorPublicKeyLocator implements KeyLocator {
 
+    /** 本类日志记录器。 */
     private static final Logger LOG = Logger.getLogger(SamlDescriptorPublicKeyLocator.class);
 
     /**
-     * Time between two subsequent requests (in seconds).
+     * 两次描述符请求之间的最小间隔（秒）。
      */
     private final int minTimeBetweenDescriptorRequests;
 
     /**
-     * Time to live for cache entries (in seconds).
+     * 缓存条目的生存时间（秒）。
      */
     private final int cacheEntryTtl;
 
     /**
-     * Target descriptor URL.
+     * SAML 描述符 URL。
      */
     private final String descriptorUrl;
 
+    /** 按 KeyName 索引的公钥缓存。 */
     private final Map<String, Key> publicKeyCacheByName = new ConcurrentHashMap<>();
+    /** 按密钥哈希索引的公钥缓存。 */
     private final Map<KeyHash, Key> publicKeyCacheByKey = new ConcurrentHashMap<>();
 
+    /** 用于下载描述符的 HTTP 客户端。 */
     private final HttpClient client;
 
+    /** 上次请求描述符的时间戳（秒）。 */
     private volatile int lastRequestTime = 0;
 
+    /**
+     * 构造描述符公钥定位器。
+     *
+     * @param descriptorUrl                    SAML 描述符 URL
+     * @param minTimeBetweenDescriptorRequests 两次请求最小间隔（秒），≤0 时默认 20
+     * @param cacheEntryTtl                      缓存 TTL（秒）
+     * @param httpClient                         HTTP 客户端
+     */
     public SamlDescriptorPublicKeyLocator(String descriptorUrl, int minTimeBetweenDescriptorRequests, int cacheEntryTtl, HttpClient httpClient) {
         this.minTimeBetweenDescriptorRequests = minTimeBetweenDescriptorRequests <= 0
           ? 20
@@ -86,6 +102,12 @@ public class SamlDescriptorPublicKeyLocator implements KeyLocator {
         this.client = httpClient;
     }
 
+    /**
+     * 按密钥 ID（kid）查找公钥。
+     *
+     * @param kid 密钥标识
+     * @return 匹配的公钥；无效 kid 时返回 {@code null}
+     */
     @Override
     public Key getKey(String kid) throws KeyManagementException {
         if (kid == null) {
@@ -95,6 +117,12 @@ public class SamlDescriptorPublicKeyLocator implements KeyLocator {
         return getKey(kid, publicKeyCacheByName);
     }
 
+    /**
+     * 按已有密钥对象查找对应的缓存公钥。
+     *
+     * @param key 参考密钥
+     * @return 缓存中的公钥；{@code key} 为 {@code null} 时返回 {@code null}
+     */
     @Override
     public Key getKey(Key key) throws KeyManagementException {
         if (key == null) {
@@ -103,6 +131,7 @@ public class SamlDescriptorPublicKeyLocator implements KeyLocator {
         return getKey(new KeyHash(key), publicKeyCacheByKey);
     }
 
+    /** 通用缓存查找：必要时刷新描述符并返回密钥。 */
     private <T> Key getKey(T key, Map<T, Key> cache) throws KeyManagementException {
         LOG.tracef("Requested key: %s", key);
 
@@ -127,6 +156,7 @@ public class SamlDescriptorPublicKeyLocator implements KeyLocator {
         return res;
     }
 
+    /** 强制清空缓存并从描述符重新拉取证书。 */
     @Override
     public synchronized void refreshKeyCache() {
         LOG.info("Forcing key cache cleanup and refresh.");
@@ -135,9 +165,10 @@ public class SamlDescriptorPublicKeyLocator implements KeyLocator {
         refreshCertificateCacheAndGet(null, this.publicKeyCacheByKey, Time.currentTime());
     }
 
+    /** 从 SAML 描述符刷新证书缓存并返回指定键对应的公钥。 */
     private synchronized <T> Key refreshCertificateCacheAndGet(T key, Map<T, Key> cache, int currentTime) {
         if (this.descriptorUrl == null || currentTime <= this.lastRequestTime + this.minTimeBetweenDescriptorRequests) {
-            // no descriptor or updated time too short
+            // 无描述符 URL 或距上次请求间隔过短
             return key == null ? null : cache.get(key);
         }
 
@@ -159,7 +190,7 @@ public class SamlDescriptorPublicKeyLocator implements KeyLocator {
 
         LOG.debugf("Certificates retrieved from server, filling public key cache");
 
-        // Only clear cache after it is certain that the SAML descriptor has been read successfully
+        // 确认描述符读取成功后再清空旧缓存
         this.publicKeyCacheByName.clear();
         this.publicKeyCacheByKey.clear();
 
