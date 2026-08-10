@@ -1,3 +1,5 @@
+// utils.ts — Agent 画布核心工具：DSL 构建、节点复制、Categorize/Switch 与表单参数转换。
+
 import {
   DSL,
   DSLComponents,
@@ -45,6 +47,7 @@ import { TitleChunkerFormSchemaType } from './form/title-chunker-form';
 import { TokenChunkerFormSchemaType } from './form/token-chunker-form';
 import { BeginQuery, IPosition } from './interface';
 
+/** 收集 Agent 异常出口（AgentException handle）的目标节点 ID 列表。 */
 function buildAgentExceptionGoto(edges: Edge[], nodeId: string) {
   const exceptionEdges = edges.filter(
     (x) =>
@@ -54,6 +57,7 @@ function buildAgentExceptionGoto(edges: Edge[], nodeId: string) {
   return exceptionEdges.map((x) => x.target);
 }
 
+/** 构建组件 downstream/upstream ID 列表；Agent 下游排除 Tool 与子 Agent 顶连。 */
 const buildComponentDownstreamOrUpstream = (
   edges: Edge[],
   nodeId: string,
@@ -68,8 +72,10 @@ const buildComponentDownstreamOrUpstream = (
       let isNotExceptionGoto = true;
       if (isBuildDownstream && node?.data.label === Operator.Agent) {
         isNotExceptionGoto = y.sourceHandle !== NodeHandleId.AgentException;
+        // Agent 下游边不包含 Tool 算子
         // Exclude the tool operator downstream of the agent operator
         isNotUpstreamTool = !y.target.startsWith(Operator.Tool);
+        // Agent 下游边不包含经 AgentTop 接入的子 Agent
         // Exclude the agent operator downstream of the agent operator
         isNotUpstreamAgent = !(
           y.target.startsWith(Operator.Agent) &&
@@ -102,6 +108,7 @@ const removeUselessDataInTheOperator = curry(
 //   return values;
 // });
 
+/** 递归合并 Agent Bottom 子 Agent 为 tools 数组项（含 params 快照）。 */
 function buildAgentTools(edges: Edge[], nodes: Node[], nodeId: string) {
   const node = nodes.find((x) => x.id === nodeId);
   const params = { ...(node?.data.form ?? {}) };
@@ -138,6 +145,7 @@ function filterTargetsBySourceHandleId(edges: Edge[], handleId: string) {
   return edges.filter((x) => x.sourceHandle === handleId).map((x) => x.target);
 }
 
+/** 将 Categorize form.items 转为 category_description 并填充各分支 to 目标。 */
 function buildCategorize(edges: Edge[], nodes: Node[], nodeId: string) {
   const node = nodes.find((x) => x.id === nodeId);
   const params = { ...(node?.data.form ?? {}) } as ICategorizeForm;
@@ -169,8 +177,10 @@ const buildOperatorParams = (operatorName: string) =>
     // initializeOperatorParams(operatorName), // Final processing, for guarantee
   );
 
+/** 不参与 DSL components 构建的算子类型。 */
 const ExcludeOperators = [Operator.Note, Operator.Tool, Operator.Placeholder];
 
+/** 判断节点是否为经 AgentTop 接入的底部子 Agent。 */
 export function isBottomSubAgent(edges: Edge[], nodeId?: string) {
   const edge = edges.find(
     (x) => x.target === nodeId && x.targetHandle === NodeHandleId.AgentTop,
@@ -178,6 +188,7 @@ export function isBottomSubAgent(edges: Edge[], nodeId?: string) {
   return !!edge;
 }
 
+/** 节点是否存在 Tool 或 AgentBottom 下游连接。 */
 export function hasSubAgentOrTool(edges: Edge[], nodeId?: string) {
   const edge = edges.find(
     (x) =>
@@ -188,6 +199,7 @@ export function hasSubAgentOrTool(edges: Edge[], nodeId?: string) {
   return !!edge;
 }
 
+/** 节点是否存在 AgentBottom 子 Agent 连接。 */
 export function hasSubAgent(edges: Edge[], nodeId?: string) {
   const edge = edges.find(
     (x) => x.source === nodeId && x.sourceHandle === NodeHandleId.AgentBottom,
@@ -195,6 +207,7 @@ export function hasSubAgent(edges: Edge[], nodeId?: string) {
   return !!edge;
 }
 
+// react-hook-form 要求对象数组，此处转为后端需要的纯值数组
 // Because the array of react-hook-form must be object data,
 // it needs to be converted into a simple data type array required by the backend
 function transformObjectArrayToPureArray(
@@ -206,6 +219,7 @@ function transformObjectArrayToPureArray(
     : [];
 }
 
+/** 按文件类型过滤 Parser setups 并映射 suffix、VLM、TCADP 等字段。 */
 function transformParserParams(params: ParserFormSchemaType) {
   const setups = params.setups.reduce<
     Record<string, ParserFormSchemaType['setups'][0]>
@@ -234,6 +248,7 @@ function transformParserParams(params: ParserFormSchemaType) {
             remove_toc: cur.remove_toc,
             remove_header_footer: cur.remove_header_footer || false,
           };
+          // 仅在选择 TCADP Parser 时携带 table/markdown 图片参数
           // Only include TCADP parameters if TCADP Parser is selected
           if (cur.parse_method?.toLowerCase() === 'tcadp parser') {
             filteredSetup.table_result_type = cur.table_result_type;
@@ -330,6 +345,7 @@ function transformParserParams(params: ParserFormSchemaType) {
   return { ...params, setups };
 }
 
+/** Token 分块表单 → DSL：重叠率、分隔符与子块分隔符转换。 */
 function transformTokenChunkerParams(params: TokenChunkerFormSchemaType) {
   const { image_table_context_window, ...rest } = params;
   const imageTableContextWindow = Number(image_table_context_window || 0);
@@ -353,6 +369,7 @@ function transformTokenChunkerParams(params: TokenChunkerFormSchemaType) {
   };
 }
 
+/** 标题分块表单 → DSL：按 Group/Hierarchy 方法取 rules 与 levels。 */
 function transformTitleChunkerParams(params: TitleChunkerFormSchemaType) {
   const activeRules =
     (params.method === TitleChunkerMethod.Group
@@ -396,6 +413,7 @@ function transformDataOperationsParams(params: DataOperationsFormSchemaType) {
   };
 }
 
+/** 将 { key, value }[] 转为 Record<string, any>。 */
 export function transformArrayToObject(
   list?: Array<{ key: string; value: string }>,
 ) {
@@ -428,6 +446,7 @@ function transformRequestSchemaToJsonschema(
   return jsonSchema;
 }
 
+/** Webhook 模式下转换 schema 为 JSON Schema 并规范化 security 字段。 */
 function transformBeginParams(params: BeginFormSchemaType) {
   if (params.mode === AgentDialogueMode.Webhook) {
     const security = params.security;
@@ -476,7 +495,9 @@ function transformBeginParams(params: BeginFormSchemaType) {
   };
 }
 
+/** 由 React Flow 图构建 DSL components：upstream/downstream 与各算子 params。 */
 // construct a dsl based on the node information of the graph
+/** 遍历节点（排除 Note/Tool/Placeholder 与 bottom 子 Agent）生成 components 映射。 */
 export const buildDslComponentsByGraph = (
   nodes: RAGFlowNodeType[],
   edges: Edge[],
@@ -547,6 +568,7 @@ export const buildDslComponentsByGraph = (
   return components;
 };
 
+/** 合并 DSL 系统 globals 与用户定义 env.* 全局变量。 */
 export const buildDslGlobalVariables = (
   dsl: DSL,
   globalVariables?: Record<string, GlobalVariableType>,
@@ -573,11 +595,15 @@ export const buildDslGlobalVariables = (
   return { globals: globalVariablesResult, variables: globalVariables };
 };
 
+// TODO：SSE 错误判定逻辑与 useSendMessageBySSE 耦合，待梳理
 // TODO: This is caused by `useSendMessageBySSE`; it is recommended to sort out the logic.
+/** 判断 SSE 响应是否非 200 错误。 */
 export const receiveMessageError = (res: any) =>
   res && res?.response.status !== 200;
 
+// 递归将对象中的节点 ID 替换为可读名称
 // Replace the id in the object with text
+/** 深遍历对象，字符串值若匹配节点 ID 则替换为 getNameById 结果。 */
 export const replaceIdWithText = (
   obj: Record<string, unknown> | unknown[] | unknown,
   getNameById: (id?: string) => string | undefined,
@@ -600,11 +626,13 @@ export const replaceIdWithText = (
   return obj;
 };
 
+/** 比较两 edge 的 source/target/sourceHandle 是否一致。 */
 export const isEdgeEqual = (previous: Edge, current: Edge) =>
   previous.source === current.source &&
   previous.target === current.target &&
   previous.sourceHandle === current.sourceHandle;
 
+/** 为新增 Categorize 分类项分配未占用的锚点坐标槽位。 */
 export const buildNewPositionMap = (
   currentKeys: string[],
   previousPositionMap: Record<string, IPosition>,
@@ -665,6 +693,7 @@ const splitName = (name: string) => {
   return { type, index };
 };
 
+/** 按 name_N 规则生成不重复节点名（填补序号空洞）。 */
 export const generateNodeNamesWithIncreasingIndex = (
   name: string,
   nodes: RAGFlowNodeType[],
@@ -705,9 +734,11 @@ export const generateNodeNamesWithIncreasingIndex = (
   return `${name}_${index}`;
 };
 
+/** 复制节点 form；Categorize 复制时清空各分支 to 下游引用。 */
 export const duplicateNodeForm = (nodeData?: RAGFlowNodeType['data']) => {
   const form: Record<string, any> = { ...(nodeData?.form ?? {}) };
 
+  // Categorize 复制时需清空 category_description 内 to 字段
   // Delete the downstream node corresponding to the to field of the Categorize operator
   if (nodeData?.label === Operator.Categorize) {
     form.category_description = Object.keys(
@@ -727,19 +758,24 @@ export const duplicateNodeForm = (nodeData?: RAGFlowNodeType['data']) => {
   };
 };
 
+/** 侧边配置抽屉宽度：宽屏 40%，否则固定 470px。 */
 export const getDrawerWidth = () => {
   return window.innerWidth > 1278 ? '40%' : 470;
 };
 
+/** 算子是否支持单步调试（不在 NoDebugOperatorsList 中）。 */
 export const needsSingleStepDebugging = (label: string) => {
   return !NoDebugOperatorsList.some((x) => (label as Operator) === x);
 };
 
+/** 算子节点是否展示复制按钮。 */
 export function showCopyIcon(label: string) {
   return !NoCopyOperatorsList.some((x) => (label as Operator) === x);
 }
 
+/** 将画布绝对坐标转换为 Iteration 组内相对坐标与 parentId。 */
 // Get the coordinates of the node relative to the Iteration node
+/** 判断 position 是否落在某 Iteration 组范围内并返回相对位置。 */
 export function getRelativePositionToIterationNode(
   nodes: RAGFlowNodeType[],
   position?: XYPosition, // relative position
@@ -773,6 +809,7 @@ export function getRelativePositionToIterationNode(
   }
 }
 
+/** 生成复制节点的新 id、偏移 position 与 dragHandle。 */
 export const generateDuplicateNode = (
   position?: XYPosition,
   label?: string,
@@ -820,6 +857,7 @@ export function convertToObjectArray<T extends string | number | boolean>(
       }
       }
 */
+/** category_description 对象 → form items 数组（examples 转对象数组）。 */
 export const buildCategorizeListFromObject = (
   categorizeItem: ICategorizeItemResult,
 ) => {
@@ -852,6 +890,7 @@ export const buildCategorizeListFromObject = (
      ]
     }
 */
+/** form items 数组 → category_description 对象（examples 转字符串数组）。 */
 export const buildCategorizeObjectFromList = (list: Array<ICategorizeItem>) => {
   return list.reduce<ICategorizeItemResult>((pre, cur) => {
     if (cur?.name) {
@@ -864,6 +903,7 @@ export const buildCategorizeObjectFromList = (list: Array<ICategorizeItem>) => {
   }, {});
 };
 
+/** 读取 Agent 节点 form.tools 数组。 */
 export function getAgentNodeTools(agentNode?: RAGFlowNodeType) {
   const tools: IAgentForm['tools'] = get(agentNode, 'data.form.tools', []);
   return tools;
@@ -874,6 +914,7 @@ export function getAgentNodeMCP(agentNode?: RAGFlowNodeType) {
   return tools;
 }
 
+/** 设置指定边的 data.isHovered 用于 hover 样式。 */
 export function mapEdgeMouseEvent(
   edges: Edge[],
   edgeId: string,
@@ -894,6 +935,7 @@ export function mapEdgeMouseEvent(
   return nextEdges;
 }
 
+/** 用 values 数组更新 inputs 映射中同 key 项。 */
 export function buildBeginQueryWithObject(
   inputs: Record<string, BeginQuery>,
   values: BeginQuery[],
@@ -920,4 +962,5 @@ export function buildConversationVariableSelectOptions() {
   return buildSelectOptions(Object.values(TypesWithArray));
 }
 
+/** Begin/变量等表单的 InputMode 下拉选项。 */
 export const InputModeOptions = buildOptions(InputMode);

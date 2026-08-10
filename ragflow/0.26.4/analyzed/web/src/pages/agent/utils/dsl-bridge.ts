@@ -1,3 +1,6 @@
+// dsl-bridge.ts — Agent DSL 与 React Flow 图的双向转换（导入/导出/空模板）。
+
+// DSL 桥接层：Agent 画布与后端共用的 canonical wire 结构
 // DSL bridge — single wire shape for the agent canvas.
 //
 // The RAGFlow agent DSL has exactly one canonical wire shape, used
@@ -42,9 +45,11 @@ import { DataflowEmptyDsl } from '@/pages/agent/empty-dsl';
 
 import { buildDslComponentsByGraph, buildDslGlobalVariables } from '../utils';
 
+/** 历史 Iteration 节点 type，导入时规范为 iterationNode。 */
 const LEGACY_ITERATION_NODE_TYPE = 'group';
 const ITERATION_NODE_TYPE = 'iterationNode';
 
+/** 将 legacy group 类型 Iteration 节点映射为 iterationNode。 */
 const normalizeGraphNodes = (nodes: RAGFlowNodeType[]): RAGFlowNodeType[] =>
   nodes.map((node) => {
     if (
@@ -60,13 +65,16 @@ const normalizeGraphNodes = (nodes: RAGFlowNodeType[]): RAGFlowNodeType[] =>
     return node;
   });
 
+// ─── 对外 API ─────────────────────────────────────────────────────────
 // ─── Public API ─────────────────────────────────────────────────────────
 
+/** 新建画布空 DSL；isAgent 区分 Agent 与 Dataflow 种子模板。 */
 /** Initial empty DSL for a new canvas. `isAgent` picks agent vs dataflow seed. */
 export const initialEmptyDsl = (isAgent: boolean): DSL =>
   isAgent ? (EmptyDsl as unknown as DSL) : (DataflowEmptyDsl as unknown as DSL);
 
 /**
+ * 将用户上传的 JSON 解析结果转为可渲染 DSL；仅认 canonical graph.nodes。
  * Convert a parsed JSON object from a user-uploaded file into a
  * renderable DSL. Caller must have already parsed the file (we take
  * the object, not the string). `isAgent` is the form-level flag, not
@@ -88,6 +96,7 @@ export const importDsl = (
 ): DSL => {
   const seed = isAgent ? EmptyDsl : DataflowEmptyDsl;
 
+  // 仅以 raw.graph.nodes 为导入依据，其余形态回落空种子
   // Single precedence level: `raw.graph.nodes` is the canonical
   // wire shape. Every DSL the back-end returns has a populated
   // `graph` block, so anything else (a `_layout`-only payload from
@@ -129,6 +138,7 @@ export const importDsl = (
 };
 
 /**
+ * 服务端 DSL → React Flow { nodes, edges }；无 graph.nodes 时返回空画布。
  * Convert a server-returned DSL into the React-Flow `{nodes, edges}`
  * shape the store consumes. Reads `dsl.graph` only; absent
  * `graph.nodes` returns an empty canvas (see function body for
@@ -137,6 +147,7 @@ export const importDsl = (
 export const dslToGraph = (
   dsl: DSL,
 ): { nodes: RAGFlowNodeType[]; edges: Edge[] } => {
+  // 服务端 DSL 以 graph 为唯一真相源
   // Single source of truth: server always populates `graph`, so a
   // server-returned dsl that lacks `graph.nodes` is treated as
   // empty (the back-end should never produce such a payload;
@@ -156,6 +167,7 @@ export const dslToGraph = (
 };
 
 /**
+ * 由当前图状态合成 DSL（graph + components + globals/variables）。
  * Build a fresh DSL from the current React-Flow state. Emits
  * `graph` + `components` plus a spread of the previous DSL for any
  * untouched fields (`messages`, `path`, `retrieval`, etc.).
@@ -197,6 +209,7 @@ export const graphToDsl = (
 };
 
 /**
+ * 导出按钮用：graphToDsl 标准线型，调用方负责脱敏 api_key。
  * Build a downloadable JSON for the export button. Returns the
  * conventional wire shape (`graph` + `components` + `globals` +
  * `variables` + spread of any untouched fields). The caller is
@@ -218,6 +231,7 @@ export const exportDsl = (
 };
 
 /**
+ * 根据 graph.nodes 标签推断导入文件为 Agent 还是 Dataflow 画布。
  * Detect whether an imported JSON is a dataflow canvas. Looks at
  * both shapes (v1 components / v2 graph.nodes) for the dataflow
  * markers ("File" begin + "Parser"). Defaults to `true` (agent)
@@ -235,6 +249,7 @@ export const inferIsAgentFromImport = (raw: Record<string, any>): boolean => {
     }
     return true;
   }
+  // 无 graph 块时默认 Agent；空 payload 由 importDsl 空种子处理
   // No `graph` block — treat as agent. The strict-graph
   // import contract in `importDsl` already handles the
   // empty-payload case elsewhere.

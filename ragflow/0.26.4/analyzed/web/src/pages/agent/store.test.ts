@@ -1,7 +1,10 @@
+// store.test.ts — useGraphStore.deleteIterationNodeById 单元测试：迭代子树与 Agent 工具链删除。
+
 import { Edge } from '@xyflow/react';
 import { NodeHandleId, Operator } from './constant';
 import useGraphStore from './store';
 
+/** 构造最小 ragNode 测试节点。 */
 function baseNode(id: string, label: Operator) {
   return {
     id,
@@ -15,6 +18,7 @@ function baseNode(id: string, label: Operator) {
   };
 }
 
+/** 基于 baseNode 创建可覆盖属性的测试节点。 */
 const createNode = (
   id: string,
   label: Operator,
@@ -24,6 +28,7 @@ const createNode = (
   ...options,
 });
 
+/** 构造测试用边。 */
 const createEdge = (
   id: string,
   source: string,
@@ -36,6 +41,7 @@ const createEdge = (
   ...options,
 });
 
+/** 删除 Iteration 节点时应级联清理子节点、Agent 附件与关联边。 */
 describe('useGraphStore.deleteIterationNodeById', () => {
   beforeEach(() => {
     useGraphStore.setState({
@@ -48,6 +54,7 @@ describe('useGraphStore.deleteIterationNodeById', () => {
     });
   });
 
+  /** 删除迭代节点及其全部后代与入出边，并清空选中态。 */
   it('removes the iteration node, its descendants, and all incident edges', () => {
     const nodes = [
       createNode('begin', Operator.Begin),
@@ -88,6 +95,7 @@ describe('useGraphStore.deleteIterationNodeById', () => {
     expect(state.clickedNodeId).toBe('');
   });
 
+  /** 仅移除目标迭代子树，保留画布上无关分支。 */
   it('preserves unrelated graph branches', () => {
     const nodes = [
       createNode('iteration:0', Operator.Iteration, { type: 'group' }),
@@ -124,6 +132,7 @@ describe('useGraphStore.deleteIterationNodeById', () => {
     ]);
   });
 
+  /** 迭代子树内嵌的 Agent→Tool→Message 链应一并删除。 */
   it('removes agent tool chains nested inside an iteration subtree', () => {
     const nodes = [
       createNode('iteration:0', Operator.Iteration, { type: 'group' }),

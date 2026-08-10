@@ -1,5 +1,8 @@
+// options.ts — Agent 算子表单下拉选项：语言、国家、翻译、天气、数据库等常量列表。
+
 import { upperFirst } from 'lodash';
 
+/** 通用语言下拉（value/label），含中文、英文等主流语种。 */
 export const LanguageOptions = [
   {
     value: 'af',
@@ -287,6 +290,7 @@ export const LanguageOptions = [
   },
 ];
 
+/** Google 翻译 API 语言码列表，映射为 { label, value }。 */
 export const GoogleLanguageOptions = [
   {
     language_code: 'af',
@@ -914,6 +918,7 @@ export const GoogleLanguageOptions = [
   },
 ].map((x) => ({ label: x.language_name, value: x.language_code }));
 
+/** Google 搜索等地区/国家码选项。 */
 export const GoogleCountryOptions = [
   {
     country_code: 'af',
@@ -1877,6 +1882,7 @@ export const GoogleCountryOptions = [
   },
 ].map((x) => ({ label: x.country_name, value: x.country_code }));
 
+/** Bing 搜索支持的国家/地区简码。 */
 export const BingCountryOptions = [
   { label: 'Argentina AR', value: 'AR' },
   { label: 'Australia AU', value: 'AU' },
@@ -1916,6 +1922,7 @@ export const BingCountryOptions = [
   { label: 'United States US', value: 'US' },
 ];
 
+/** Bing 搜索语言选项。 */
 export const BingLanguageOptions = [
   { label: 'Arabic ar', value: 'ar' },
   { label: 'Basque eu', value: 'eu' },
@@ -1969,6 +1976,7 @@ export const BingLanguageOptions = [
   { label: 'Vietnamese vi', value: 'vi' },
 ];
 
+/** DeepL 源语言枚举。 */
 export const DeepLSourceLangOptions = [
   { label: 'Arabic [1]', value: 'AR' },
   { label: 'Bulgarian', value: 'BG' },
@@ -2001,6 +2009,7 @@ export const DeepLSourceLangOptions = [
   { label: 'Ukrainian', value: 'UK' },
   { label: 'Chinese', value: 'ZH' },
 ];
+/** DeepL 目标语言枚举（含英式/美式英语等变体）。 */
 export const DeepLTargetLangOptions = [
   { label: 'Arabic [1]', value: 'AR' },
   { label: 'Bulgarian', value: 'BG' },
@@ -2040,6 +2049,7 @@ export const DeepLTargetLangOptions = [
   { label: 'Chinese (simplified)', value: 'ZH' },
 ];
 
+/** 百度翻译领域专业术语选项。 */
 export const BaiduFanyiDomainOptions = [
   'it',
   'finance',
@@ -2054,6 +2064,7 @@ export const BaiduFanyiDomainOptions = [
   'contract',
 ];
 
+/** 百度翻译源语言码（含 auto 自动检测）。 */
 export const BaiduFanyiSourceLangOptions = [
   'auto',
   'zh',
@@ -2086,6 +2097,7 @@ export const BaiduFanyiSourceLangOptions = [
   'vie',
 ];
 
+/** 和风天气 API 语言参数。 */
 export const QWeatherLangOptions = [
   'zh',
   'zh-hant',
@@ -2120,10 +2132,13 @@ export const QWeatherLangOptions = [
   'nb',
 ];
 
+/** 和风天气查询类型：实况、生活指数、空气质量。 */
 export const QWeatherTypeOptions = ['weather', 'indices', 'airquality'];
 
+/** 和风天气账号类型：免费版 / 付费版。 */
 export const QWeatherUserTypeOptions = ['free', 'paid'];
 
+/** 和风天气预报时间跨度选项。 */
 export const QWeatherTimePeriodOptions = [
   'now',
   '3d',
@@ -2133,6 +2148,7 @@ export const QWeatherTimePeriodOptions = [
   '30d',
 ];
 
+/** ExecuteSQL 算子支持的数据库驱动类型。 */
 export const ExeSQLOptions = [
   'mysql',
   'postgres',
@@ -2146,6 +2162,7 @@ export const ExeSQLOptions = [
   value: x,
 }));
 
+/** 问财查询资产类别（股票、基金、期货等）。 */
 export const WenCaiQueryTypeOptions = [
   'stock',
   'zhishu',
@@ -2160,6 +2177,7 @@ export const WenCaiQueryTypeOptions = [
   'foreign_exchange',
 ];
 
+/** 金十数据接口类型：快讯、日历、行情、新闻。 */
 export const Jin10TypeOptions = ['flash', 'calendar', 'symbols', 'news'];
 export const Jin10FlashTypeOptions = new Array(5)
   .fill(1)
@@ -2177,4 +2195,5 @@ export const TuShareSrcOptions = [
   'fenghuang',
   'jinrongjie',
 ];
+/** 爬虫算子输出格式：Markdown、HTML 或纯文本。 */
 export const CrawlerResultOptions = ['markdown', 'html', 'content'];

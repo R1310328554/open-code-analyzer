@@ -1,3 +1,5 @@
+// store.ts — Agent 画布 Zustand 图状态：节点/边 CRUD、表单同步、Agent 工具与迭代删除。
+
 import type { IAgentForm } from '@/interfaces/database/agent';
 import { RAGFlowNodeType } from '@/interfaces/database/agent';
 import type {} from '@redux-devtools/extension';
@@ -41,6 +43,7 @@ import { deleteAllDownstreamAgentsAndTool } from './utils/delete-node';
 
 type IAgentTool = IAgentForm['tools'][number];
 
+/** BFS 收集 parentId 链上某节点的全部子节点 ID。 */
 const collectDescendantNodeIds = (
   nodes: RAGFlowNodeType[],
   rootId: string,
@@ -69,6 +72,7 @@ const collectDescendantNodeIds = (
   return descendantNodeIds;
 };
 
+/** 收集待删节点中 Agent 算子挂载的下游 Agent/Tool 节点 ID。 */
 const collectAgentAttachmentNodeIds = (
   nodes: RAGFlowNodeType[],
   edges: Edge[],
@@ -97,6 +101,7 @@ const collectAgentAttachmentNodeIds = (
   return attachedNodeIds;
 };
 
+/** 合并根节点、子树与 Agent 附件，得到迭代删除时的完整节点 ID 列表。 */
 export const collectDeletionNodeIds = (
   nodes: RAGFlowNodeType[],
   edges: Edge[],
@@ -118,6 +123,7 @@ export const collectDeletionNodeIds = (
   return deletedNodeIds;
 };
 
+/** 过滤掉任一端点落在 nodeIds 集合内的边。 */
 export const removeEdgesForNodeIds = (edges: Edge[], nodeIds: string[]) => {
   const nodeIdSet = new Set(nodeIds);
 
@@ -142,11 +148,14 @@ export type RFState = {
   edges: Edge[];
   selectedNodeIds: string[];
   selectedEdgeIds: string[];
-  clickedNodeId: string; // currently selected node
-  clickedToolId: string; // currently selected tool id
+  clickedNodeId: string; // 当前点击选中的画布节点 ID
+  // currently selected node
+  clickedToolId: string; // 当前选中的 Agent 工具 ID
+  // currently selected tool id
   onNodesChange: OnNodesChange<RAGFlowNodeType>;
   onEdgesChange: OnEdgesChange;
   onEdgeMouseEnter?: EdgeMouseHandler<Edge>;
+  /** 鼠标离开边时触发，用于取消 hover 高亮 */
   /** This event handler is called when mouse of a user leaves an edge */
   onEdgeMouseLeave?: EdgeMouseHandler<Edge>;
   onConnect: OnConnect;
@@ -197,13 +206,15 @@ export type RFState = {
   deleteEdgesBySourceAndSourceHandle: (
     source: string,
     sourceHandle: string,
-  ) => void; // Deleting a condition of a classification operator will delete the related edge
+  ) => void; // 删除 Switch 某分支条件时同步移除对应边
+  // Deleting a condition of a classification operator will delete the related edge
   findAgentToolNodeById: (id: string | null) => string | undefined;
   selectNodeIds: (nodeIds: string[]) => void;
   hasDownstreamNode: (nodeId: string) => boolean;
   hasUpstreamNode: (nodeId: string) => boolean;
 };
 
+// Zustand 图 store：组件通过 useGraphStore 订阅状态并调用下方 actions
 // this is our useStore hook that we can use in our components to get parts of the store and call actions
 const useGraphStore = create<RFState>()(
   devtools(
@@ -217,7 +228,8 @@ const useGraphStore = create<RFState>()(
       onNodesChange: (changes) => {
         set({
           nodes: applyNodeChanges(
-            changes, // The issue of errors when using templates was resolved by using cloneDeep.
+            changes, // cloneDeep 避免模板节点 width 等只读属性报错
+            // The issue of errors when using templates was resolved by using cloneDeep.
             cloneDeep(get().nodes) as RAGFlowNodeType[], //   Cannot assign to read only property 'width' of object '#<Object>'
           ),
         });
@@ -231,6 +243,7 @@ const useGraphStore = create<RFState>()(
         const { edges, setEdges } = get();
         const edgeId = edge.id;
 
+        // 更新边的 hover 态 data.isHovered
         // Updates edge
         setEdges(mapEdgeMouseEvent(edges, edgeId, true));
       },
@@ -263,6 +276,7 @@ const useGraphStore = create<RFState>()(
       },
       setEdgesByNodeId: (nodeId: string, currentDownstreamEdges: Edge[]) => {
         const { edges, setEdges } = get();
+        // 对比该节点旧/新下游边集，增量合并 setEdges
         // the previous downstream edge of this node
         const previousDownstreamEdges = edges.filter(
           (x) => x.source === nodeId,
@@ -374,6 +388,7 @@ const useGraphStore = create<RFState>()(
           ...generateDuplicateNode(node?.position, node?.data?.label),
         });
       },
+      /** 复制 Iteration 组节点及其全部子节点并重映射 parentId。 */
       duplicateIterationNode: (id: string, name: string) => {
         const { getNode, generateNodeName, nodes } = get();
         const node = getNode(id);
@@ -418,6 +433,7 @@ const useGraphStore = create<RFState>()(
         if (currentEdge) {
           const { source, sourceHandle, target } = currentEdge;
           const operatorType = getOperatorTypeFromId(source);
+          // 删边后回写 Switch 等算子 form 中 to 字段
           // After deleting the edge, set the corresponding field in the node's form field to undefined
           switch (operatorType) {
             // case Operator.Categorize:
@@ -458,6 +474,7 @@ const useGraphStore = create<RFState>()(
             .filter((edge) => edge.target !== id),
         });
       },
+      /** 删除 Agent 节点及其 Bottom/Tool 链上的下游 Agent 与 Tool。 */
       deleteAgentDownstreamNodesById: (id) => {
         const { edges, nodes } = get();
 
@@ -490,6 +507,7 @@ const useGraphStore = create<RFState>()(
           deleteNodeById(edge.target);
         }
       },
+      /** 删除 Iteration 节点：级联子树、Agent 附件、关联边并清理选中态。 */
       deleteIterationNodeById: (id: string) => {
         const {
           nodes,
@@ -557,6 +575,7 @@ const useGraphStore = create<RFState>()(
           set((state) => {
             for (const node of state.nodes) {
               if (node.id === nodeId) {
+                // cloneDeep 避免 react-hook-form 只读数组赋值报错
                 //cloneDeep Solving the issue of react-hook-form errors
                 node.data.form = cloneDeep(values); // TypeError: Cannot assign to read only property '0' of object '[object Array]'
                 break;
@@ -568,6 +587,7 @@ const useGraphStore = create<RFState>()(
       updateSwitchFormData: (source, sourceHandle, target, isConnecting) => {
         const { updateNodeForm, edges, getOperatorTypeFromId } = get();
         if (sourceHandle) {
+          // Switch 单 handle 可连多个下游，删/增边时重算 to 数组
           // A handle will connect to multiple downstream nodes
           const currentHandleTargets = edges
             .filter(
@@ -593,7 +613,8 @@ const useGraphStore = create<RFState>()(
             if (operatorIndex) {
               updateNodeForm(source, targets, [
                 'conditions',
-                Number(operatorIndex) - 1, // The index is the conditions form index
+                Number(operatorIndex) - 1, // handle 序号对应 conditions 数组下标
+                // The index is the conditions form index
                 'to',
               ]);
             }
@@ -656,6 +677,7 @@ const useGraphStore = create<RFState>()(
 
         let id: string;
 
+        // 循环生成 humanId 直至全局 tools 列表无冲突
         // Loop for avoiding id collisions
         do {
           id = `${prefix}:${humanId()}`;
@@ -682,6 +704,7 @@ const useGraphStore = create<RFState>()(
               )
             : get().getAllAgentTools();
 
+        // 兼容旧数据：工具 id 可能存于 id 或 component_name
         // For backward compatibility
         return tools.find((t) => (t.id || t.component_name) === id);
       },
