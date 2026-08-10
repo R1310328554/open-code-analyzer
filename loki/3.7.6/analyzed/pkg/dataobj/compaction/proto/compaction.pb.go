@@ -3,6 +3,9 @@
 
 package proto
 
+// dataobj 压缩流水线 protobuf 消息（protoc-gen-gogo 生成）。
+// 定义 Stream、CompactionManifest、CompactionJob 等 wire 类型。
+
 import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -25,6 +28,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Stream 标识索引中的单条 stream（ID 与索引路径）。
 // Stream identifies a single stream from an index.
 // It does not include Tenant ID to let us store group of streams for same Tenant without repeating the ID.
 type Stream struct {
@@ -78,6 +82,7 @@ func (m *Stream) GetIndex() string {
 	return ""
 }
 
+// TenantStream 绑定租户 ID 与 Stream，用于多租户 leftover 计划。
 // TenantStream identifies a single stream from an index belonging to a specific Tenant.
 type TenantStream struct {
 	Tenant string  `protobuf:"bytes,1,opt,name=Tenant,proto3" json:"tenant"`
@@ -130,6 +135,7 @@ func (m *TenantStream) GetStream() *Stream {
 	return nil
 }
 
+// TimeRange 表示压缩窗口的起止 Unix 纳秒时间戳。
 type TimeRange struct {
 	From    int64 `protobuf:"varint,1,opt,name=From,proto3" json:"from"`
 	Through int64 `protobuf:"varint,2,opt,name=Through,proto3" json:"through"`
@@ -181,6 +187,7 @@ func (m *TimeRange) GetThrough() int64 {
 	return 0
 }
 
+// SingleTenantObjectSource 汇总单租户待合并 stream 与预计输出对象数。
 // SingleTenantObjectSource holds all the required info to build one or more output objects for a single tenant.
 // To avoid repetition, common info like time-range and target size of objects are to be referenced from CompactionManifest and added separately where relevant.
 type SingleTenantObjectSource struct {
@@ -234,6 +241,7 @@ func (m *SingleTenantObjectSource) GetNumOutputObjects() int32 {
 	return 0
 }
 
+// MultiTenantObjectSource 汇总多租户 stream 列表用于 leftover 输出。
 // MultiTenantObjectSource holds all the required info to build one or more multi-tenant output objects.
 // To avoid repetition, common info like time-range and target size of objects are to be referenced from CompactionManifest and added separately where relevant.
 type MultiTenantObjectSource struct {
@@ -287,6 +295,7 @@ func (m *MultiTenantObjectSource) GetNumOutputObjects() int32 {
 	return 0
 }
 
+// CompactionManifest 标记规划完成并记录窗口、目标大小与源索引列表。
 // CompactionManifest represents the completion of compaction planning stage and summarizes the compaction plan.
 // It serves two purposes:
 // 1. Acts as a marker indicating all the relevant data has been scanned for building a compaction plan
@@ -404,6 +413,7 @@ func (m *SingleTenantObjectSourceWithTenantID) GetSource() *SingleTenantObjectSo
 	return nil
 }
 
+// CompactionJob 描述 Worker 执行的单次压缩任务载荷（单/多租户 oneof）。
 // CompactionJob defines a single compaction job to build one or more DataObjects using the data defined in Source.
 type CompactionJob struct {
 	// Source either defines a single-tenant source to build single-tenant object(s) or read multi-tenant source to build multi-tenant object(s).
@@ -554,6 +564,7 @@ func (m *CompactionJobResponse) GetPaths() []string {
 	return nil
 }
 
+// IndexingJob 定义索引构建任务：目标索引路径与待索引 stream 列表。
 type IndexingJob struct {
 	Paths []string `protobuf:"bytes,1,rep,name=Paths,proto3" json:"paths"`
 }
@@ -3789,3 +3800,4 @@ var (
 	ErrInvalidLengthCompaction = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowCompaction   = fmt.Errorf("proto: integer overflow")
 )
+// 本文件由 compaction.proto 自动生成，请勿手工编辑。

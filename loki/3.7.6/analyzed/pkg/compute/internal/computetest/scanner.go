@@ -1,5 +1,8 @@
 package computetest
 
+// compute 测试 DSL 词法扫描器：识别标识符、整数、字符串、
+// 关键字 select 及符号 token，并自动插入语句终止符。
+
 import (
 	"bufio"
 	"io"
@@ -20,6 +23,7 @@ type scanner struct {
 	insertTerm bool // flag to insert terminator token
 }
 
+// position 记录 token 在源文件中的行号与列号。
 type position struct{ Line, Col int }
 
 func newScanner(r io.Reader) *scanner {
@@ -36,6 +40,7 @@ func newScanner(r io.Reader) *scanner {
 	return s
 }
 
+// Scan 返回下一 token 的位置、类型与字面量，EOF 以 tokenEOF 表示。
 // Scan scans the next token and returns the token position, the token, and its
 // literal string if applicable. The source end is indicated by [tokenEOF].
 //
@@ -128,6 +133,7 @@ func (s *scanner) skipComment() {
 	}
 }
 
+// canTerminate 判断当前 token 后是否应插入隐式 TERMINATOR。
 // canTerminate returns true if the given token can end a statement
 func (s *scanner) canTerminate(tok token) bool {
 	switch tok {
@@ -138,6 +144,7 @@ func (s *scanner) canTerminate(tok token) bool {
 	}
 }
 
+// scanIdent 读取标识符或关键字 select。
 func (s *scanner) scanIdent(pos position) (position, token, string) {
 	lit := string(s.ch)
 	s.next()
@@ -163,6 +170,7 @@ func (s *scanner) scanNumber(pos position) (position, token, string) {
 	return pos, tokenInteger, lit
 }
 
+// scanString 解析双引号字符串并经由 strconv.Unquote 处理转义。
 func (s *scanner) scanString(pos position) (position, token, string) {
 	// Build the raw string including quotes for strconv.Unquote
 	// The opening quote has already been consumed
@@ -212,3 +220,4 @@ func isIdentStart(ch rune) bool {
 func isIdentContinue(ch rune) bool {
 	return isIdentStart(ch) || isDigit(ch)
 }
+// 扫描器为解析器提供带位置信息的词法单元序列。

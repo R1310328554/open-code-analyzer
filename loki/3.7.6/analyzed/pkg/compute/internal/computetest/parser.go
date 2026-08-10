@@ -1,5 +1,8 @@
 package computetest
 
+// compute 测试 DSL 的递归下降解析器：将文本用例解析为
+// 函数名、参数 Datum、可选 selection 向量与期望结果。
+
 import (
 	"fmt"
 	"strconv"
@@ -20,14 +23,17 @@ type parser struct {
 	lit string
 }
 
+// Parse 解析输入中全部测试用例并返回 Case 切片。
 // Parse parses all test cases.
 func (p *parser) Parse() ([]Case, error) { return p.parseCases() }
 
+// next 从扫描器取下一个 token 更新前瞻状态。
 // next advances to the next token.
 func (p *parser) next() {
 	p.pos, p.tok, p.lit = p.scanner.Scan()
 }
 
+// expect 断言当前 token 与期望一致，否则返回带行列号的错误。
 // expect consumes the next token and returns an error if it doesn't match expected.
 func (p *parser) expect(expected token) error {
 	if p.tok != expected {
@@ -37,6 +43,7 @@ func (p *parser) expect(expected token) error {
 	return nil
 }
 
+// parseCases 循环解析直到 EOF，收集所有 Case。
 // parseCases := Case*
 func (p *parser) parseCases() ([]Case, error) {
 	p.next() // Initialize lookahead
@@ -53,6 +60,7 @@ func (p *parser) parseCases() ([]Case, error) {
 	return cases, nil
 }
 
+// parseCase 解析单条用例：函数名、参数、可选 select、箭头与期望 Datum。
 // parseCase := Function Datum* Selection? "->" Datum TERMINATOR
 func (p *parser) parseCase() (Case, error) {
 	c := Case{Line: p.pos.Line}
@@ -100,6 +108,7 @@ func (p *parser) parseCase() (Case, error) {
 	return c, nil
 }
 
+// parseDatum 按 kind 标识符分派到 bool/int64/uint64/utf8/null 解析器。
 // parseDatum := BoolDatum | Int64Datum | Uint64Datum
 func (p *parser) parseDatum() (columnar.Datum, error) {
 	if p.tok != tokenIdent {
@@ -398,6 +407,7 @@ func (p *parser) parseUTF8Array() (columnar.Datum, error) {
 	return builder.Build(), nil
 }
 
+// parseSelection 解析 select: [bool...] 为 memory.Bitmap 选择向量。
 // parseSelection := "select" ":" parseBoolArray
 func (p *parser) parseSelection() (memory.Bitmap, error) {
 	if err := p.expect(tokenSelect); err != nil {
@@ -415,3 +425,4 @@ func (p *parser) parseSelection() (memory.Bitmap, error) {
 
 	return datum.Values(), nil
 }
+// 解析器负责将 DSL 文本转为 columnar.Datum 测试结构。

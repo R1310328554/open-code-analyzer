@@ -1,5 +1,7 @@
 package compute
 
+// 列式布尔逻辑运算：Not、And、Or，支持标量与数组及 selection 过滤。
+
 import (
 	"fmt"
 
@@ -9,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/memory"
 )
 
+// Not 对布尔 Datum 按位取反；null 输入结果仍为 null。
 // Not negates the input boolean datum. Not returns an error if the input kind
 // is not a boolean.
 //
@@ -31,6 +34,7 @@ func Not(alloc *memory.Allocator, input columnar.Datum, selection memory.Bitmap)
 	}
 }
 
+// notScalar 对标量布尔值取反并保留 null 标记。
 func notScalar(input *columnar.BoolScalar) *columnar.BoolScalar {
 	return &columnar.BoolScalar{
 		Value: !input.Value, // garbage data if null
@@ -62,6 +66,7 @@ func notArray(alloc *memory.Allocator, input *columnar.Bool) *columnar.Bool {
 	return columnar.NewBool(valuesBitmap, validity)
 }
 
+// And 计算两布尔 Datum 的逻辑与，任一侧为 null 则结果为 null。
 // And computes the logical AND of two input boolean datums. And returns an
 // error if the input kind of either datum is not a boolean. If both input
 // datums are arrays, they must be of the same length.
@@ -73,6 +78,7 @@ func And(alloc *memory.Allocator, left, right columnar.Datum, selection memory.B
 	return dispatchLogical(alloc, logicalAndKernel, left, right, selection)
 }
 
+// Or 计算两布尔 Datum 的逻辑或，任一侧为 null 则结果为 null。
 // Or computes the logical OR of two input boolean datums. Or returns an error
 // if the input kind of either datum is not a boolean. If both input datums are
 // arrays, they must be of the same length.
@@ -84,6 +90,7 @@ func Or(alloc *memory.Allocator, left, right columnar.Datum, selection memory.Bi
 	return dispatchLogical(alloc, logicalOrKernel, left, right, selection)
 }
 
+// dispatchLogical 按标量/数组组合分派到 SS/SA/AS/AA 内核路径。
 func dispatchLogical(alloc *memory.Allocator, kernel logicalKernel, left, right columnar.Datum, selection memory.Bitmap) (columnar.Datum, error) {
 	if got, want := left.Kind(), columnar.KindBool; got != want {
 		return nil, fmt.Errorf("invalid input kind %s, expected %s", got, want)
@@ -157,6 +164,7 @@ func logicalAS(alloc *memory.Allocator, kernel logicalKernel, left *columnar.Boo
 	return columnar.NewBool(values, validity)
 }
 
+// logicalAA 对两个等长布尔数组执行逐元素逻辑运算。
 func logicalAA(alloc *memory.Allocator, kernel logicalKernel, left, right *columnar.Bool) (*columnar.Bool, error) {
 	if left.Len() != right.Len() {
 		return nil, fmt.Errorf("array length mismatch: %d != %d", left.Len(), right.Len())
@@ -172,3 +180,4 @@ func logicalAA(alloc *memory.Allocator, kernel logicalKernel, left, right *colum
 
 	return columnar.NewBool(values, validity), nil
 }
+// 逻辑运算统一经 dispatchLogical 分派并应用 selection。

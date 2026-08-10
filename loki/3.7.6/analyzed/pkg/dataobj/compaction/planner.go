@@ -1,5 +1,7 @@
 package planner
 
+// dataobj 压缩规划器：扫描 ToC/索引、按租户收集 stream 并装箱输出计划。
+
 import (
 	"bytes"
 	"context"
@@ -46,6 +48,7 @@ const (
 
 // IndexStreamReader reads stream metadata from index objects.
 // This interface allows for mocking in tests.
+// IndexStreamReader 抽象从索引对象读取 stream 元数据的接口。
 type IndexStreamReader interface {
 	ReadStreams(ctx context.Context, indexPath, tenant string, windowStart, windowEnd time.Time) (*IndexStreamResult, error)
 }
@@ -66,11 +69,13 @@ func (r *BucketIndexStreamReader) ReadStreams(ctx context.Context, indexPath, te
 
 // Planner creates compaction plans by reading stream metadata from indexes
 // and grouping streams into output objects using bin-packing algorithms.
+// Planner 持有对象存储 bucket 与 IndexStreamReader 实现。
 type Planner struct {
 	bucket      objstore.Bucket
 	indexReader IndexStreamReader
 }
 
+// NewPlanner 构造 Planner，默认使用 BucketIndexStreamReader。
 // NewPlanner creates a new Planner with the given bucket.
 func NewPlanner(bucket objstore.Bucket) *Planner {
 	return &Planner{
@@ -86,6 +91,7 @@ type IndexInfo struct {
 }
 
 // CompactionPlan represents the complete plan for compacting data objects for a single tenant.
+// CompactionPlan 描述单租户压缩计划：输出对象与窗口外 leftover stream。
 type CompactionPlan struct {
 	// OutputObjects contains the planned output objects (one per bin).
 	OutputObjects []*compactionpb.SingleTenantObjectSource
@@ -99,6 +105,7 @@ type CompactionPlan struct {
 
 // StreamGroup represents a group of stream entries that belong to the same stream
 // (identified by labels hash) across multiple index objects.
+// StreamGroup 按 labels hash 聚合跨索引的同 stream 条目。
 type StreamGroup struct {
 	// Streams contains all the stream entries for this stream (from different indexes).
 	Streams []*compactionpb.Stream
@@ -166,6 +173,7 @@ type IndexStreamResult struct {
 	LeftoverAfterStreams  []LeftoverStreamInfo
 }
 
+// buildPlan 编排查找索引、就绪检查与按租户生成压缩计划。
 func (s *Planner) buildPlan(ctx context.Context) error {
 	now := time.Now()
 	windowStart := now.Truncate(compactionWindowDuration).Add(-compactionWindowDuration)
@@ -216,6 +224,7 @@ func (s *Planner) buildPlan(ctx context.Context) error {
 	return nil
 }
 
+// findIndexesToCompact 遍历 ToC 返回与压缩窗口重叠的唯一索引。
 // findIndexesToCompact scans ToC files and returns unique indexes that overlap with the compaction window.
 func (s *Planner) findIndexesToCompact(ctx context.Context, windowStart, windowEnd time.Time) ([]IndexInfo, error) {
 	tocs, err := s.listToCs(ctx)
@@ -348,6 +357,7 @@ func (s *Planner) buildPlanFromIndexes(ctx context.Context, indexes []IndexInfo,
 	return tenantPlans, leftoverPlan, nil
 }
 
+// buildTenantPlan 小租户跳过装箱，大租户对 StreamGroup 执行 BinPack。
 // buildTenantPlan creates a compaction plan for merging data objects for a single tenant.
 // It reads stream metadata from indexes and groups them by stream labels.
 //
@@ -523,6 +533,7 @@ func (s *Planner) collectStreams(ctx context.Context, tenant string, indexes []I
 	}, nil
 }
 
+// readStreamsFromIndexObject 从 streams section 读取元数据并按窗口裁剪大小。
 // readStreamsFromIndexObject reads stream metadata directly from an index object's streams section
 // for a specific tenant. This avoids reading the expensive pointers section since streams
 // already contain aggregated metadata (labels, time range, size, row count) for planning.
@@ -623,6 +634,7 @@ func readStreamsFromIndexObject(ctx context.Context, obj *dataobj.Object, indexP
 	return result, nil
 }
 
+// planLeftovers 对窗口前后 leftover 分别装箱为 MultiTenantObjectSource。
 // planLeftovers creates a plan for leftover data outside the compaction window.
 // Uses stream-based bin-packing separately for data before and after the window.
 func (s *Planner) planLeftovers(beforeStreams, afterStreams []*LeftoverStreamGroup) *LeftoverPlan {
@@ -716,3 +728,4 @@ func convertLeftoverBinsToMultiTenantObjectSource(bins []BinPackResult[*Leftover
 
 	return objects, totalSize
 }
+// 压缩窗口默认两小时，并行读取索引上限为八个。

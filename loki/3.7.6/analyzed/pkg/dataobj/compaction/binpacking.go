@@ -1,7 +1,10 @@
 package planner
 
+// dataobj 压缩装箱：最佳适应递减算法将 StreamGroup 分入目标大小 bin。
+
 import "sort"
 
+// Sizer 为泛型装箱提供 GetSize 接口。
 // Sizer is an interface for items that have a size.
 // Used by generic bin-packing algorithm.
 type Sizer interface {
@@ -9,11 +12,13 @@ type Sizer interface {
 }
 
 // BinPackResult represents a bin containing groups and their total size.
+// BinPackResult 表示单个 bin 及其所含 group 列表与累计大小。
 type BinPackResult[G Sizer] struct {
 	Groups []G
 	Size   int64
 }
 
+// BinPack 先降序排序再最佳适应装箱，最后合并填充不足的 bin。
 // BinPack performs best-fit decreasing bin packing with overflow and merging.
 //
 // Algorithm:
@@ -86,6 +91,7 @@ func BinPack[G Sizer](groups []G) []BinPackResult[G] {
 	return mergeUnderfilledBins(bins)
 }
 
+// findBestFitBin 在容量上限内选剩余空间最小的 bin，无则返回 -1。
 // findBestFitBin finds the bin with smallest remaining capacity that can fit the given size.
 // Returns -1 if no bin can fit the item within maxSize.
 func findBestFitBin[G Sizer](bins []BinPackResult[G], itemSize, maxSize int64) int {
@@ -130,6 +136,7 @@ func findBestFitBin[G Sizer](bins []BinPackResult[G], itemSize, maxSize int64) i
 	return bestIdx
 }
 
+// mergeUnderfilledBins 合并低于 minFillPercent 的 bin 以提高输出填充率。
 // mergeUnderfilledBins merges bins that are below the minimum fill threshold.
 // Objects below 70% of target size are merged with other objects. This allows
 // the builder to create better-filled actual objects.
@@ -222,3 +229,4 @@ func mergeUnderfilledBins[G Sizer](bins []BinPackResult[G]) []BinPackResult[G] {
 
 	return bins[:writeIdx]
 }
+// 装箱目标约六 GB 未压缩，允许至多两倍溢出后拆分。

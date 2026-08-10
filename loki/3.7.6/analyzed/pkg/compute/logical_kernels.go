@@ -1,5 +1,7 @@
 package compute
 
+// 布尔逻辑内核接口及 And/Or 的 SS/SA/AS/AA 位图实现。
+
 import (
 	"github.com/apache/arrow-go/v18/arrow/bitutil"
 
@@ -7,6 +9,7 @@ import (
 )
 
 type logicalKernel interface {
+// 	// DoSS 对两个标量布尔值执行逻辑运算。
 	// DoSS performs a logical operation on two scalar values.
 	DoSS(left, right bool) bool
 
@@ -16,6 +19,7 @@ type logicalKernel interface {
 	// DoAS performs a logical operation on a bitmap array and a scalar value.
 	DoAS(out *memory.Bitmap, left memory.Bitmap, right bool)
 
+// 	// DoAA 对两个等长位图调用 Arrow BitmapAnd/BitmapOr。
 	// DoAA performs a logical operation on two bitmap arrays.
 	DoAA(out *memory.Bitmap, left, right memory.Bitmap)
 }
@@ -25,6 +29,7 @@ var (
 	logicalOrKernel  logicalKernel = logicalOrKernelImpl{}
 )
 
+// logicalAndKernelImpl 实现按位与，含短路优化（false 侧全 false）。
 type logicalAndKernelImpl struct{}
 
 func (logicalAndKernelImpl) DoSS(left, right bool) bool { return left && right }
@@ -81,6 +86,7 @@ func (logicalAndKernelImpl) DoAA(out *memory.Bitmap, left memory.Bitmap, right m
 	)
 }
 
+// logicalOrKernelImpl 实现按位或，含短路优化（true 侧全 true）。
 type logicalOrKernelImpl struct{}
 
 func (logicalOrKernelImpl) DoSS(left, right bool) bool { return left || right }
@@ -136,3 +142,4 @@ func (logicalOrKernelImpl) DoAA(out *memory.Bitmap, left memory.Bitmap, right me
 		int64(left.Len()), /* num values */
 	)
 }
+// 内核层封装 Arrow bitutil 位图运算细节。

@@ -1,5 +1,7 @@
 package compute
 
+// 集合成员检测 IsMember：判断 Datum 各元素是否存在于 columnar.Set。
+
 import (
 	"fmt"
 
@@ -7,6 +9,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/memory"
 )
 
+// IsMember 支持 UTF-8 与 int64/uint64，selection 控制参与计算的行。
 // IsMember checks if each item in datum is a member of the values set.
 // The selection parameter controls which rows are evaluated:
 //   - If selection.Len(), all rows are evaluated
@@ -41,6 +44,7 @@ func isMemberUTF8(alloc *memory.Allocator, datum columnar.Datum, values *columna
 	}
 }
 
+// isMemberUTF8A 对 UTF-8 数组逐行查 Set 并输出布尔数组。
 func isMemberUTF8A(alloc *memory.Allocator, haystack *columnar.UTF8, set *columnar.Set, selection memory.Bitmap) (columnar.Datum, error) {
 	validity, err := computeValidityAA(alloc, haystack.Validity(), selection)
 	if err != nil {
@@ -80,6 +84,7 @@ func isMemberNumber[T columnar.Numeric](alloc *memory.Allocator, datum columnar.
 	}
 }
 
+// isMemberNumberA 对数值数组逐行查 Set 并输出布尔数组。
 func isMemberNumberA[T columnar.Numeric](alloc *memory.Allocator, haystack *columnar.Number[T], set *columnar.Set, selection memory.Bitmap) (columnar.Datum, error) {
 	validity, err := computeValidityAA(alloc, haystack.Validity(), selection)
 	if err != nil {
@@ -104,3 +109,4 @@ func isMemberNumberS[T columnar.Numeric](_ *memory.Allocator, datum *columnar.Nu
 	found := values.Has(datum.Value)
 	return &columnar.BoolScalar{Value: found}, nil
 }
+// 标量路径直接返回 BoolScalar，null 输入结果为 null。

@@ -1,5 +1,7 @@
 package dataobj
 
+// dataobj Builder：按 Section 累积日志数据并 Flush 为可读 Object。
+
 import (
 	"fmt"
 	"io"
@@ -7,6 +9,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/scratch"
 )
 
+// Builder 将各 SectionBuilder Flush 后的数据编码为 data object。
 // A Builder builds data objects from a set of incoming log data. Log data is
 // appended to a builder by calling [Builder.Append]. Buffered log data is
 // flushed manually by calling [Builder.Flush].
@@ -36,6 +39,7 @@ func NewBuilder(scratchStore scratch.Store) *Builder {
 	}
 }
 
+// Append 接收 SectionBuilder 输出并缓冲，成功后 Reset 可复用 builder。
 // Append flushes a [SectionBuilder], buffering its data and metadata into b.
 // Append does not enforce ordering; sections may be flushed to the dataobj in
 // any order.
@@ -55,6 +59,7 @@ func (b *Builder) Append(sec SectionBuilder) error {
 	return nil
 }
 
+// builderSectionWriter 实现 SectionWriter，将 section 写入 encoder。
 type builderSectionWriter struct {
 	typ SectionType
 	enc *encoder
@@ -71,6 +76,7 @@ func (b *Builder) Bytes() int {
 	return b.encoder.Bytes()
 }
 
+// Flush 编码全部 section 为 Object，调用方须 Close 释放底层资源。
 // Flush constructs a new Object from the accumulated sections. Allocated
 // resources for the Object must be released by calling Close on the returned
 // io.Closer. After closing, the returned Object must no longer be read.
@@ -96,7 +102,9 @@ func (b *Builder) Flush() (*Object, io.Closer, error) {
 	return obj, snapshot, nil
 }
 
+// Reset 清空 encoder 内部缓冲，Builder 回到初始空状态。
 // Reset discards pending data and resets the builder to an empty state.
 func (b *Builder) Reset() {
 	b.encoder.Reset()
 }
+// Builder 方法非并发安全，调用方需自行同步。

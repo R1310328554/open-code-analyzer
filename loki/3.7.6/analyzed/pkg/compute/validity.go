@@ -1,5 +1,7 @@
 package compute
 
+// validity 位图合成：合并两侧 null 状态为输出有效性位图。
+
 import (
 	"fmt"
 	"iter"
@@ -9,11 +11,13 @@ import (
 	"github.com/grafana/loki/v3/pkg/memory"
 )
 
+// computeValiditySS 两标量均非 null 时输出有效。
 // computeValiditySS determines an output validity based on two null checks.
 func computeValiditySS(leftNull, rightNull bool) bool {
 	return !leftNull && !rightNull
 }
 
+// computeValiditySA 标量 null 则全 null，否则复制数组 validity。
 // computeValiditySA determines an output validity bitmap from a null check and
 // a validity bitmap.
 func computeValiditySA(alloc *memory.Allocator, leftNull bool, right memory.Bitmap) memory.Bitmap {
@@ -72,6 +76,7 @@ func computeValidityAS(alloc *memory.Allocator, left memory.Bitmap, rightNull bo
 	}
 }
 
+// computeValidityAA 对两 validity 位图做逻辑与，长度不一致则报错。
 // computeValidityAA determines an output validity bitmap from two input
 // validity bitmaps. The result is a logical AND of the validity; a slot is only
 // valid if both inputs are valid.
@@ -127,6 +132,7 @@ func computeValidityAA(alloc *memory.Allocator, left, right memory.Bitmap) (memo
 	panic("unreachable")
 }
 
+// iterTrue 迭代位图中为 true 的下标；空位图时遍历 0..bitmapLen-1。
 // iterTrue returns an iterator that provides indices of the set bits in provided [bitmap].
 // If all bits are set (bitmap.Len() == 0) it fallbacks to a simple iterator over
 // all the elements.
@@ -141,3 +147,4 @@ func iterTrue(bitmap memory.Bitmap, bitmapLen int) iter.Seq[int] {
 
 	return bitmap.IterValues(true)
 }
+// 空 validity 位图表示该行全部有效无需逐位检查。

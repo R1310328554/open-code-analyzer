@@ -1,5 +1,7 @@
 package consumer
 
+// dataobj consumer 配置：Kafka 分区环、builder 与 uploader 参数。
+
 import (
 	"errors"
 	"flag"
@@ -13,6 +15,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// Config 嵌入 logsobj.BuilderConfig、ring 生命周期与上传器设置。
 type Config struct {
 	logsobj.BuilderConfig
 	LifecyclerConfig    ring.LifecyclerConfig   `yaml:"lifecycler,omitempty"`
@@ -25,6 +28,7 @@ type Config struct {
 	Topic string `yaml:"topic"`
 }
 
+// Validate 校验 builder、lifecycler、uploader 及必填 topic。
 func (cfg *Config) Validate() error {
 	if err := cfg.BuilderConfig.Validate(); err != nil {
 		return err
@@ -45,6 +49,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	cfg.RegisterFlagsWithPrefix("dataobj-consumer.", f)
 }
 
+// RegisterFlagsWithPrefix 以给定前缀注册 consumer 全部 flag。
 func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	cfg.BuilderConfig.RegisterFlagsWithPrefix(prefix, f)
 	cfg.LifecyclerConfig.RegisterFlagsWithPrefix(prefix, f, util_log.Logger)
@@ -68,3 +73,4 @@ func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 		"The maximum amount of time to accumulate data in a builder before flushing it. Defaults to 1 hour.",
 	)
 }
+// idle_flush_timeout 与 max_builder_age 控制对象刷盘时机。
