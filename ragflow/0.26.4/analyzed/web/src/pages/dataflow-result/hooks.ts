@@ -1,3 +1,5 @@
+// hooks.ts — Dataflow/Pipeline 结果页：日志详情、分块 CRUD、重跑与时间线。
+
 import { TimelineNode } from '@/components/originui/timeline';
 import message from '@/components/ui/message';
 import { useSetModalState, useShowDeleteConfirm } from '@/hooks/common-hooks';
@@ -21,6 +23,7 @@ import {
 } from './constant';
 import { IChunk, IDslComponent, IPipelineFileLogDetail } from './interface';
 
+/** 非 Agent 模式下按 knowledgeId + logId 拉取 Pipeline 文件处理详情。 */
 export const useFetchPipelineFileLogDetail = ({
   isAgent = false,
   isEdit = true,
@@ -58,6 +61,7 @@ export const useFetchPipelineFileLogDetail = ({
   return { data, loading };
 };
 
+/** 选中整条 IChunk 对象（与知识库页按 id 选中不同）。 */
 export const useHandleChunkCardClick = () => {
   const [selectedChunk, setSelectedChunk] = useState<IChunk>();
 
@@ -169,6 +173,7 @@ export const useUpdateChunk = () => {
   };
 };
 
+/** 修改 DSL 某组件后调用 pipelineRerun 局部重跑并提示成功。 */
 export const useRerunDataflow = ({
   data,
 }: {
@@ -187,6 +192,7 @@ export const useRerunDataflow = ({
         },
       };
 
+      // 组装 id、dsl、component_id 供重跑接口使用
       // this Data provided to the interface
       const params = {
         id: data.id,
@@ -212,6 +218,7 @@ export const useRerunDataflow = ({
   };
 };
 
+/** 从 DSL components 与 graph 递归构建时间轴节点序列。 */
 export const useTimelineDataFlow = (data: IPipelineFileLogDetail) => {
   const timelineNodes: TimelineNode[] = useMemo(() => {
     const nodes: Array<ITimelineNodeObj & { id: number | string }> = [];
@@ -276,6 +283,7 @@ export const useTimelineDataFlow = (data: IPipelineFileLogDetail) => {
   };
 };
 
+/** 解析当前 URL 中 Pipeline 结果页所需的全部查询参数。 */
 export const useGetPipelineResultSearchParams = () => {
   const [currentQueryParameters] = useSearchParams();
   const is_read_only = currentQueryParameters.get(
@@ -302,6 +310,7 @@ export const useGetPipelineResultSearchParams = () => {
   };
 };
 
+/** Agent 模式下从 message trace 取 END 节点最新 pipeline 输出。 */
 export function useFetchPipelineResult({
   agentId,
 }: Pick<ReturnType<typeof useGetPipelineResultSearchParams>, 'agentId'>) {
@@ -330,6 +339,7 @@ export function useFetchPipelineResult({
   return { pipelineResult };
 }
 
+/** 解析器节点时间线项上展示 parse_method / output_format 摘要。 */
 export const useSummaryInfo = (
   data: IPipelineFileLogDetail,
   currentTimeNode: TimelineNode,

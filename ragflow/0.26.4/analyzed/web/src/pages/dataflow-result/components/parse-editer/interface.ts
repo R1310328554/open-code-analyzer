@@ -1,8 +1,11 @@
+// interface.ts — 解析编辑器容器 Props：JSON 数组、单对象与格式保留编辑。
+
 import { CheckedState } from '@radix-ui/react-checkbox';
 import { ChunkTextMode } from '../../constant';
 import { ComponentParams, IChunk } from '../../interface';
 import { parserKeyMap } from './json-parser';
 
+/** 顶层格式保留编辑器：支持选中、删除、分块点击与只读模式。 */
 export interface FormatPreserveEditorProps {
   initialValue: {
     key: keyof typeof parserKeyMap | 'text' | 'html';
@@ -22,6 +25,7 @@ export interface FormatPreserveEditorProps {
   isReadonly: boolean;
 }
 
+/** JSON 数组型解析输出编辑容器（parserKeyMap 键约束）。 */
 export type IJsonContainerProps = {
   initialValue: {
     key: keyof typeof parserKeyMap;
@@ -49,6 +53,7 @@ export type IJsonContainerProps = {
   isReadonly: boolean;
 };
 
+/** 单字符串型解析输出编辑容器（如纯文本/HTML）。 */
 export type IObjContainerProps = {
   initialValue: {
     key: string;

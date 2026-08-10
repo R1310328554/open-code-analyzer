@@ -1,3 +1,5 @@
+// hooks.ts — 解析结果页分块交互：选中、高亮、文本模式、增删改。
+
 import { useSetModalState, useShowDeleteConfirm } from '@/hooks/common-hooks';
 import { useGetKnowledgeSearchParams } from '@/hooks/route-hook';
 import {
@@ -11,6 +13,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { IHighlight } from 'react-pdf-highlighter';
 import { ChunkTextMode } from './constant';
 
+/** 维护当前选中的 chunk_id，供右侧详情与高亮联动。 */
 export const useHandleChunkCardClick = () => {
   const [selectedChunkId, setSelectedChunkId] = useState<string>('');
 
@@ -21,6 +24,7 @@ export const useHandleChunkCardClick = () => {
   return { handleChunkCardClick, selectedChunkId };
 };
 
+/** 从 chunk 列表中按 chunk_id 查找完整 IChunk 对象。 */
 export const useGetSelectedChunk = (selectedChunkId: string) => {
   const data = useSelectChunkList();
   return (
@@ -28,6 +32,7 @@ export const useGetSelectedChunk = (selectedChunkId: string) => {
   );
 };
 
+/** 根据选中分块与 PDF 视口尺寸生成 react-pdf-highlighter 高亮区域。 */
 export const useGetChunkHighlights = (selectedChunkId: string) => {
   const [size, setSize] = useState({ width: 849, height: 1200 });
   const selectedChunk: IChunk = useGetSelectedChunk(selectedChunkId);
@@ -48,6 +53,7 @@ export const useGetChunkHighlights = (selectedChunkId: string) => {
   return { highlights, setWidthAndHeight };
 };
 
+// 切换分块正文为全文或省略两种展示模式
 // Switch chunk text to be fully displayed or ellipse
 export const useChangeChunkTextMode = () => {
   const [textMode, setTextMode] = useState<ChunkTextMode>(ChunkTextMode.Full);
@@ -59,6 +65,7 @@ export const useChangeChunkTextMode = () => {
   return { textMode, changeChunkTextMode };
 };
 
+/** 删除前弹出确认框，确认后调用 deleteChunk API。 */
 export const useDeleteChunkByIds = (): {
   removeChunk: (chunkIds: string[], documentId: string) => Promise<number>;
 } => {
@@ -84,6 +91,7 @@ export const useDeleteChunkByIds = (): {
   };
 };
 
+/** 创建/更新分块弹窗：chunkId 为空时为新建，否则为编辑。 */
 export const useUpdateChunk = () => {
   const [chunkId, setChunkId] = useState<string | undefined>('');
   const {

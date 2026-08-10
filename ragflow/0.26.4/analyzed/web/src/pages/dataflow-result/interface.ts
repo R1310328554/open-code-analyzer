@@ -1,5 +1,8 @@
+// interface.ts — Pipeline 日志、DSL 组件图与分块数据结构类型定义。
+
 import { PipelineResultSearchParams } from './constant';
 
+/** DSL 组件运行时参数：输入输出、重试、超时与调试字段。 */
 export interface ComponentParams {
   debug_inputs: Record<string, any>;
   delay_after_error: number;
@@ -26,6 +29,7 @@ interface ComponentObject {
   component_name: string;
   params: ComponentParams;
 }
+/** 单个 Pipeline 组件：上下游 ID、component_name 与 params。 */
 export interface IDslComponent {
   downstream: Array<string>;
   obj: ComponentObject;
@@ -91,6 +95,7 @@ interface GraphData {
   nodes: Node[];
 }
 
+/** 知识库 Pipeline 文件处理日志的完整后端响应结构。 */
 export interface IPipelineFileLogDetail {
   avatar: string;
   create_date: string;
@@ -125,7 +130,9 @@ export interface IPipelineFileLogDetail {
   update_time: number;
 }
 
+/** 检索分块实体：正文、位置、关键词与 tag_feas 等。 */
 export interface IChunk {
+  /** 是否启用该分块：0 禁用，1 启用 */
   available_int?: number; // Whether to enable, 0: not enabled, 1: enabled
   chunk_id?: string;
   content_with_weight?: string;
@@ -133,6 +140,7 @@ export interface IChunk {
   doc_name?: string;
   image_id?: string;
   important_kwd?: string[];
+  /** 关联问句关键词 */
   question_kwd?: string[]; // keywords
   tag_kwd?: string[];
   positions: number[][];
@@ -140,6 +148,7 @@ export interface IChunk {
   text: string;
 }
 
+/** 编程式跳转到 Dataflow 结果页时携带的路由参数。 */
 export interface NavigateToDataflowResultProps {
   id: string;
   [PipelineResultSearchParams.KnowledgeId]?: string;
