@@ -1,5 +1,7 @@
 package azure
 
+// config 定义 Azure Blob 后端连接参数：账户名/密钥、连接串、容器、托管身份、chunk 键分隔符及可注入的 HTTP Transport。
+
 import (
 	"flag"
 	"net/http"
@@ -7,6 +9,7 @@ import (
 	"github.com/grafana/dskit/flagext"
 )
 
+// Config 映射 yaml 字段，Secret 类型隐藏 account_key 与 connection_string。
 // Config holds the config options for an Azure backend
 type Config struct {
 	StorageAccountName      string         `yaml:"account_name"`
@@ -22,11 +25,13 @@ type Config struct {
 	Transport http.RoundTripper `yaml:"-"`
 }
 
+// RegisterFlags 委托 RegisterFlagsWithPrefix 注册 azure.* 命令行标志。
 // RegisterFlags registers the flags for Azure storage
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	cfg.RegisterFlagsWithPrefix("", f)
 }
 
+// RegisterFlagsWithPrefix 支持前缀，chunk_delimiter 默认将 chunk ID 中冒号替换为连字符。
 // RegisterFlagsWithPrefix registers the flags for Azure storage
 func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.StringVar(&cfg.StorageAccountName, prefix+"azure.account-name", "", "Azure storage account name")
@@ -38,3 +43,4 @@ func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.StringVar(&cfg.UserAssignedID, prefix+"azure.user-assigned-id", "", "User assigned managed identity. If empty, then System assigned identity is used.")
 	f.StringVar(&cfg.ChunkDelimiter, prefix+"azure.chunk-delimiter", "-", "Delimiter used to replace ':' in chunk IDs when storing chunks")
 }
+// 未设置 account_key 时使用 Azure 托管身份认证；connection_string 优先于 endpoint_suffix。

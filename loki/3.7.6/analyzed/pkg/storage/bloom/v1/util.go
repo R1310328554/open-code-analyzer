@@ -1,5 +1,7 @@
 package v1
 
+// util 提供 Bloom 包通用工具：Castagnoli CRC32 对象池、series 页字节池、NoopCloser、泛型 Set 及 PointerSlice 辅助函数。
+
 import (
 	"hash"
 	"hash/crc32"
@@ -26,6 +28,7 @@ var (
 	SeriesPagePool = mempool.NewBytePoolAllocator(1<<10, 128<<10, 2)
 )
 
+// ChecksumPool 封装 sync.Pool，Get 时 Reset 后返回可用 CRC32 计算器。
 type ChecksumPool struct {
 	sync.Pool
 }
@@ -52,6 +55,7 @@ func NewNoopCloser(w io.Writer) NoopCloser {
 	return NoopCloser{w}
 }
 
+// PointerSlice 将值切片转为指针切片，元素指向原切片槽位。
 func PointerSlice[T any](xs []T) []*T {
 	out := make([]*T, len(xs))
 	for i := range xs {
@@ -60,6 +64,7 @@ func PointerSlice[T any](xs []T) []*T {
 	return out
 }
 
+// Set 基于 map[V]struct{} 实现去重集合，Add 返回是否为新元素。
 type Set[V comparable] struct {
 	internal map[V]struct{}
 }
@@ -101,3 +106,4 @@ func (s Set[V]) Union(other Set[V]) {
 		s.Add(v)
 	}
 }
+// Union 将另一 Set 的全部元素并入当前集合，Items 返回无序元素列表。

@@ -1,5 +1,7 @@
 package v1
 
+// reader 定义 BlockReader 接口及内存/目录两种实现：分别暴露 index、blooms 的 ReadSeeker 与 tar 打包所需的 TarEntries 迭代。
+
 import (
 	"bytes"
 	"io"
@@ -20,6 +22,7 @@ type BlockReader interface {
 	Cleanup() error
 }
 
+// ByteReader 基于 bytes.Buffer，适合测试或内存中组装的块。
 // In memory reader
 type ByteReader struct {
 	index, blooms *bytes.Buffer
@@ -70,6 +73,7 @@ func (r *ByteReader) Cleanup() error {
 	return nil
 }
 
+// DirectoryBlockReader 从目录打开 SeriesFileName 与 BloomFileName 两个文件。
 // File reader
 type DirectoryBlockReader struct {
 	dir           string
@@ -121,6 +125,7 @@ func (r *DirectoryBlockReader) Blooms() (io.ReadSeeker, error) {
 	return r.blooms, nil
 }
 
+// TarEntries 将 index/blooms 文件 seek 到开头并 stat 大小，构造 tar 条目切片。
 func (r *DirectoryBlockReader) TarEntries() (iter.Iterator[TarEntry], error) {
 	var err error
 	if !r.initialized {
@@ -173,3 +178,4 @@ func (r *DirectoryBlockReader) Cleanup() error {
 	err.Add(os.RemoveAll(r.dir))
 	return err.Err()
 }
+// DirectoryBlockReader.Cleanup 删除 index、blooms 文件及整个目录，Init 懒打开文件句柄。

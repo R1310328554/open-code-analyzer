@@ -1,5 +1,7 @@
 package azure
 
+// key_rewrite_bucket 包装 objstore.Bucket，在所有对象键上将冒号替换为配置的 delimiter，因 Azure 键名不支持冒号字符。
+
 import (
 	"context"
 	"io"
@@ -8,6 +10,7 @@ import (
 	"github.com/thanos-io/objstore"
 )
 
+// keyRewriteBucket 嵌入 Bucket 接口，rewriteKey 对 Get/Upload/Delete 等路径统一改写。
 // keyRewriteBucket wraps a bucket and replaces ":" with a configured delimiter in all object keys.
 type keyRewriteBucket struct {
 	objstore.Bucket
@@ -41,3 +44,4 @@ func (b *keyRewriteBucket) Upload(ctx context.Context, name string, r io.Reader)
 func (b *keyRewriteBucket) Delete(ctx context.Context, name string) error {
 	return b.Bucket.Delete(ctx, b.rewriteKey(name))
 }
+// GetRange、Exists、Attributes 与 Upload 均在调用底层前改写对象名保持一致性。

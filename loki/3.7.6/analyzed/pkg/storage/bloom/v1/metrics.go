@@ -1,5 +1,7 @@
 package v1
 
+// metrics 定义 Bloom 块读写路径的 Prometheus 指标：写入侧统计 bloom 大小、chunk 索引与块刷新；读取侧统计页/字节读写与 recorder 命中。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -34,6 +36,7 @@ type Metrics struct {
 	recorderChunks *prometheus.CounterVec
 }
 
+// 常量定义 chunk 索引类型、碰撞类型、块刷新原因、页类型及 recorder 分类标签值。
 const (
 	chunkIndexedTypeIterated = "iterated"
 	chunkIndexedTypeCopied   = "copied"
@@ -60,6 +63,7 @@ const (
 	recorderFiltered  = "filtered"
 )
 
+// NewMetrics 用 promauto 注册 loki 命名空间下全部 bloom 相关指标并返回 Metrics 指针。
 func NewMetrics(r prometheus.Registerer) *Metrics {
 	return &Metrics{
 		bloomsTotal: promauto.With(r).NewCounter(prometheus.CounterOpts{
@@ -174,3 +178,4 @@ func NewMetrics(r prometheus.Registerer) *Metrics {
 		}, []string{"type"}),
 	}
 }
+// insertsTotal 按 collision 标签区分 false/cache/true 三种布隆插入碰撞情况。

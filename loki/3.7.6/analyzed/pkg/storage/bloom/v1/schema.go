@@ -1,5 +1,7 @@
 package v1
 
+// schema 定义 Bloom 块二进制格式的版本号、魔数与压缩编码：当前仅支持 V3，Encode/Decode 读写 magic+version+codec 三元组头。
+
 import (
 	"fmt"
 	"io"
@@ -36,6 +38,7 @@ var (
 	ErrUnsupportedSchemaVersion = errors.New("unsupported schema version")
 )
 
+// Schema 绑定 version 与 compression.Codec，Compatible 要求完全一致才兼容。
 type Schema struct {
 	version  Version
 	encoding compression.Codec
@@ -60,6 +63,7 @@ func (s Schema) Version() Version {
 	return s.version
 }
 
+// Len 返回 schema 头字节长度：4 字节魔数 + 1 版本 + 1 编码。
 // byte length
 func (s Schema) Len() int {
 	// magic number + version + encoding
@@ -81,6 +85,7 @@ func (s *Schema) Encode(enc *encoding.Encbuf) {
 	enc.PutByte(byte(s.encoding))
 }
 
+// DecodeFrom 从 ReadSeeker 读取固定长度头并校验魔数、版本 V3 及合法 codec。
 func (s *Schema) DecodeFrom(r io.ReadSeeker) error {
 	// TODO(owen-d): improve allocations
 	schemaBytes := make([]byte, s.Len())
@@ -110,3 +115,4 @@ func (s *Schema) Decode(dec *encoding.Decbuf) error {
 
 	return dec.Err()
 }
+// V2 支持单 series 跨多页 bloom；V3 增加 indexed structured metadata 字段模式。

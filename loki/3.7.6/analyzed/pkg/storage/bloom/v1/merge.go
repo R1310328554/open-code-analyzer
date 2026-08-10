@@ -1,9 +1,12 @@
 package v1
 
+// merge 用最小堆合并多个 BlockQuerier 迭代器，按 fingerprint 有序输出 SeriesWithBlooms，Pop 仅返回值故采用自定义堆。
+
 import (
 	iter "github.com/grafana/loki/v3/pkg/iter/v2"
 )
 
+// HeapIterator 泛型堆：维护 PeekIterator 数组，less 定义元素优先级。
 // HeapIterator is a heap implementation of BlockQuerier backed by multiple blocks
 // It is used to merge multiple blocks into a single ordered querier
 // NB(owen-d): it uses a custom heap implementation because Pop() only returns a single
@@ -17,6 +20,7 @@ type HeapIterator[T any] struct {
 	ok    bool
 }
 
+// NewHeapIterForSeriesWithBloom 按 Series.Fingerprint 升序合并多个 series 迭代器。
 func NewHeapIterForSeriesWithBloom(queriers ...iter.PeekIterator[*SeriesWithBlooms]) *HeapIterator[*SeriesWithBlooms] {
 	return NewHeapIterator(
 		func(a, b *SeriesWithBlooms) bool {
@@ -102,6 +106,7 @@ func (mbq *HeapIterator[T]) remove(idx int) {
 	mbq.fix(idx)
 }
 
+// fix 在索引 i 元素变化后 O(log n) 恢复堆序，等价于 Remove+Push 但更省。
 // fix re-establishes the heap ordering after the element at index i has changed its value.
 // Changing the value of the element at index i and then calling fix is equivalent to,
 // but less expensive than, calling Remove(h, i) followed by a Push of the new value.
@@ -145,6 +150,7 @@ func (mbq *HeapIterator[T]) down(i0 int) (moved bool) {
 	return i > i0
 }
 
+// init 自底向上 down 建堆，复杂度 O(n)。
 // establish heap invariants. O(n)
 func (mbq *HeapIterator[T]) init() {
 	n := mbq.Len()
@@ -152,3 +158,4 @@ func (mbq *HeapIterator[T]) init() {
 		_ = mbq.down(i)
 	}
 }
+// pop 取堆顶迭代器当前元素并推进，耗尽则从堆中 remove 并 fix 堆结构。

@@ -1,5 +1,7 @@
 package v1
 
+// versioned_builder 按 schema 版本提供类型安全的块构建器：V3Builder 协调 IndexBuilder 与 BloomBlockBuilder，BuildFrom 主要用于测试。
+
 import (
 	"github.com/pkg/errors"
 
@@ -20,6 +22,7 @@ Builders provide the following methods:
 - Close: closes the builder and returns the number of bytes written.
 */
 
+// NewBlockBuilder 便捷构造当前 schema（V3）的 BlockBuilder。
 // Convenience constructor targeting the most current version.
 func NewBlockBuilder(opts BlockOptions, writer BlockWriter) (*BlockBuilder, error) {
 	return NewBlockBuilderV3(opts, writer)
@@ -28,6 +31,7 @@ func NewBlockBuilder(opts BlockOptions, writer BlockWriter) (*BlockBuilder, erro
 // Convenience alias for the most current version.
 type BlockBuilder = V3Builder
 
+// V3Builder 持有 BlockWriter、IndexBuilder 与 BloomBlockBuilder，opts 含 Schema 与块大小上限。
 type V3Builder struct {
 	opts BlockOptions
 
@@ -63,6 +67,7 @@ func NewBlockBuilderV3(opts BlockOptions, writer BlockWriter) (*V3Builder, error
 	}, nil
 }
 
+// BuildFrom 遍历 series 写 bloom 与 index，块满或迭代结束则 Close 返回组合校验和。
 // BuildFrom is only used in tests as helper function to create blocks
 // It does not take indexed fields into account.
 func (b *V3Builder) BuildFrom(itr iter.Iterator[SeriesWithBlooms]) (uint32, error) {
@@ -113,6 +118,7 @@ func (b *V3Builder) AddBloom(bloom *Bloom) (BloomOffset, error) {
 	return b.blooms.Append(bloom)
 }
 
+// AddSeries 写入 index 后检查 full：writer 已写大小加未刷 index/bloom 是否超 BlockSize。
 // AddSeries adds a series to the block. It returns true after adding the series, the block is full.
 func (b *V3Builder) AddSeries(series Series, offsets []BloomOffset, fields Set[Field]) (bool, error) {
 	if err := b.index.Append(SeriesWithMeta{
@@ -157,3 +163,4 @@ func (b *V3Builder) full() (bool, error) {
 
 	return false, nil
 }
+// Close 依次关闭 bloom 与 index 文件，combineChecksums 用 XOR 合并两段校验和。

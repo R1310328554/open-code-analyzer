@@ -1,5 +1,7 @@
 package v1
 
+// index_querier 提供 Bloom 块索引的惰性 series 页迭代：按需解码 SeriesPageDecoder，Seek 用二分定位含目标 fingerprint 的页。
+
 import (
 	"sort"
 
@@ -17,6 +19,7 @@ type LazySeriesIter struct {
 	curPage      *SeriesPageDecoder
 }
 
+// NewLazySeriesIter 创建惰性迭代器，首次访问时才 LoadHeaders 并解码页。
 // Decodes series pages one at a time and iterates through them
 func NewLazySeriesIter(b *Block) *LazySeriesIter {
 	return &LazySeriesIter{
@@ -34,6 +37,7 @@ func (it *LazySeriesIter) ensureInit() {
 	}
 }
 
+// Seek 用 sort.Search 定位 pageHeaders 中 Bounds.Max >= fp 的首页，必要时切换 curPage。
 // Seek returns an iterator over the pages where the first fingerprint is >= fp
 func (it *LazySeriesIter) Seek(fp model.Fingerprint) error {
 	it.ensureInit()
@@ -131,6 +135,7 @@ func (it *LazySeriesIter) next() bool {
 	return false
 }
 
+// At 返回当前页迭代器指向的 SeriesWithMeta，调用前须 Next 返回 true。
 func (it *LazySeriesIter) At() *SeriesWithMeta {
 	return it.curPage.At()
 }
@@ -144,3 +149,4 @@ func (it *LazySeriesIter) Err() error {
 	}
 	return nil
 }
+// next 在页耗尽时递增 curPageIndex 并置 nil，错误经 Err 向上传递。

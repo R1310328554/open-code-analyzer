@@ -1,5 +1,7 @@
 package bucket
 
+// client 是 Loki 长期对象存储的统一入口：按 backend 字符串分发到 S3/GCS/Azure 等实现，再套前缀、SizedGetAndReplace 与追踪包装。
+
 import (
 	"bytes"
 	"context"
@@ -27,6 +29,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/constants"
 )
 
+// 常量定义各后端名称字符串及 storage_prefix 合法字符正则（仅字母数字与连字符）。
 const (
 	// S3 is the value for the S3 storage backend.
 	S3 = "s3"
@@ -91,6 +94,7 @@ func init() {
 }
 
 // Config holds configuration for accessing long-term storage.
+// Config 内联各云厂商子配置、StoragePrefix、ExtraBackends 与 Middlewares 扩展点。
 type Config struct {
 	// Backends
 	S3         s3.Config         `yaml:"s3"`
@@ -203,6 +207,7 @@ func (cfg *Config) configureTransport(backend string, rt http.RoundTripper) erro
 	return nil
 }
 
+// NewClient 创建底层 client，可选 PrefixedBucket、sizedGetAndReplace 与 OpenTracing 包装。
 // NewClient creates a new bucket client based on the configured backend
 func NewClient(ctx context.Context, backend string, cfg Config, name string, logger log.Logger) (objstore.InstrumentedBucket, error) {
 	var (
@@ -253,6 +258,7 @@ func NewClient(ctx context.Context, backend string, cfg Config, name string, log
 	return instrumentedClient, nil
 }
 
+// instrumentedRoundTripper 记录 HTTP 状态码与方法到 objstore_bucket_transport 指标。
 type instrumentedRoundTripper struct {
 	next http.RoundTripper
 }
@@ -279,6 +285,7 @@ func (i *instrumentedRoundTripper) RoundTrip(req *http.Request) (*http.Response,
 	return resp, nil
 }
 
+// sizedGetAndReplaceBucket 确保 GetAndReplace 回调返回已知长度 Reader，避免 S3 多段上传丢弃 If-Match 条件头破坏乐观并发。
 // sizedGetAndReplaceBucket wraps a Bucket and guarantees that the io.ReadCloser
 // returned by GetAndReplace callbacks always has a size known to
 // objstore.TryToGetSize. Without this, callers that return opaque ReadClosers
@@ -318,3 +325,4 @@ func (b *sizedGetAndReplaceBucket) GetAndReplace(ctx context.Context, name strin
 		return objstore.NopCloserWithSize(bytes.NewReader(data)), nil
 	})
 }
+// Validate 校验 storage_prefix 字符集与 S3 子配置；disableRetries/configureTransport 按后端注入。
