@@ -35,10 +35,14 @@ import org.keycloak.wellknown.WellKnownProviderFactory;
 import org.jboss.logging.Logger;
 
 /**
+ * OIDC Discovery（{@code .well-known/openid-configuration}）Provider 工厂。
+ * <p>支持配置文件覆盖元数据及是否包含 client scope 列表。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class OIDCWellKnownProviderFactory implements WellKnownProviderFactory {
 
+    /** Well-known Provider ID。 */
     public static final String PROVIDER_ID = "openid-configuration";
 
     private static final Logger logger = Logger.getLogger(OIDCWellKnownProviderFactory.class);
@@ -46,11 +50,14 @@ public class OIDCWellKnownProviderFactory implements WellKnownProviderFactory {
     private Map<String, Object> openidConfigOverride = null;
     private boolean includeClientScopes = true;
 
+    /** @param session Keycloak 会话
+     * @return OIDC well-known Provider */
     @Override
     public WellKnownProvider create(KeycloakSession session) {
         return new OIDCWellKnownProvider(session, openidConfigOverride, includeClientScopes);
     }
 
+    /** 加载 openid-configuration 覆盖文件与 include-client-scopes 开关。 */
     @Override
     public void init(Config.Scope config) {
         String openidConfigurationOverride = config.get("openid-configuration-override");
@@ -61,6 +68,7 @@ public class OIDCWellKnownProviderFactory implements WellKnownProviderFactory {
         }
     }
 
+    /** 从文件或 classpath 加载 JSON 覆盖配置。 */
     protected void initConfigOverrideFromFile(String openidConfigurationOverrideFile) {
         try {
             InputStream is = FindFile.findFile(openidConfigurationOverrideFile);
@@ -81,17 +89,20 @@ public class OIDCWellKnownProviderFactory implements WellKnownProviderFactory {
     public void close() {
     }
 
+    /** @return {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
-    // Custom implementation with alias "openid-configuration" should win over this default one
+    // 自定义 openid-configuration 实现应优先于默认工厂
+    /** @return 较低优先级，便于自定义覆盖 */
     @Override
     public int getPriority() {
         return 100;
     }
 
+    /** Provider 可配置项：覆盖文件路径、是否包含 client scopes。 */
     @Override
     public List<ProviderConfigProperty> getConfigMetadata() {
         return ProviderConfigurationBuilder.create()
@@ -109,6 +120,7 @@ public class OIDCWellKnownProviderFactory implements WellKnownProviderFactory {
                 .build();
     }
 
+    /** @return 文件加载的 openid-configuration 覆盖映射 */
     protected Map<String, Object> getOpenidConfigOverride() {
         return openidConfigOverride;
     }

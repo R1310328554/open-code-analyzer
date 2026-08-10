@@ -25,34 +25,39 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Some context info about the token
+ * 访问令牌的上下文信息：会话类型、令牌类型、授权类型与原始 token id。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class AccessTokenContext {
 
+    /** 用户会话类型（在线/离线/瞬态等）。 */
     private final SessionType sessionType;
+    /** 访问令牌类型（常规/轻量）。 */
     private final TokenType tokenType;
+    /** OAuth2 授权类型。 */
     private final String grantType;
+    /** 未编码的原始 token id。 */
     private final String rawTokenId;
 
+    /** 用户会话类型枚举，含查找策略与快捷编码。 */
     public enum SessionType {
-        // Regular online user session with valid client session
+        // 常规在线用户会话（有效客户端会话）
         ONLINE("on", false, true, false, false),
 
-        // Regular offline user session with valid client session
+        // 常规离线用户会话
         OFFLINE("of", false, false, true, false),
 
-        // Transient user session
+        // 瞬态用户会话
         TRANSIENT("tr", true, false, false, false),
 
-        // Regular online user session with transient client session (Client session may not need to exist)
+        // 在线用户会话 + 瞬态客户端会话
         ONLINE_TRANSIENT_CLIENT("nt", false, true, false, true),
 
-        // Regular offline user session with transient client session (Client session may not need to exist)
+        // 离线用户会话 + 瞬态客户端会话
         OFFLINE_TRANSIENT_CLIENT("ft", false, false, true, true),
 
-        // Unknown type. Perhaps token coming from older Keycloak version than 26.2.0. No need to support transientClientSession as this was added in 26.2 with standard token-exchange
+        // 未知类型（可能来自 26.2 之前版本）
         UNKNOWN("un", true, true, true, false);
 
         private final String shortcut;
@@ -90,9 +95,13 @@ public class AccessTokenContext {
         }
     }
 
+    /** 访问令牌类型枚举。 */
     public enum TokenType {
+        /** 常规访问令牌 */
         REGULAR("rt"),
+        /** 轻量访问令牌 */
         LIGHTWEIGHT("lt"),
+        /** 未知类型 */
         UNKNOWN("un");
 
         private final String shortcut;
@@ -106,6 +115,12 @@ public class AccessTokenContext {
         }
     }
 
+    /**
+     * @param sessionType 会话类型
+     * @param tokenType 令牌类型
+     * @param grantType 授权类型
+     * @param rawTokenId 原始 token id
+     */
     @JsonCreator
     public AccessTokenContext(@JsonProperty("sessionType") SessionType sessionType, @JsonProperty("tokenType") TokenType tokenType, @JsonProperty("grantType") String grantType, @JsonProperty("rawTokenId") String rawTokenId) {
         Objects.requireNonNull(sessionType, "Null sessionType not allowed");
@@ -118,18 +133,22 @@ public class AccessTokenContext {
         this.rawTokenId = rawTokenId;
     }
 
+    /** @return 会话类型 */
     public SessionType getSessionType() {
         return sessionType;
     }
 
+    /** @return 令牌类型 */
     public TokenType getTokenType() {
         return tokenType;
     }
 
+    /** @return 授权类型 */
     public String getGrantType() {
         return grantType;
     }
 
+    /** @return 原始 token id */
     public String getRawTokenId() {
         return rawTokenId;
     }

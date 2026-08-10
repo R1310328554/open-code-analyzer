@@ -5,100 +5,67 @@ import java.util.Map;
 import org.keycloak.Config;
 
 /**
+ * OIDC 协议 Provider 全局配置：请求参数长度限制、附加参数防 DoS 及自省/UserInfo 行为开关。
+ *
  * @author <a href="mailto:patrick.weiner@prime-sign.com">Patrick Weiner</a>
  */
 public class OIDCProviderConfig {
 
     private final Config.Scope config;
 
-    /**
-     * Maximum default length of the standard OIDC parameter sent to the OIDC authentication or token request.
-     */
+    /** OIDC 认证/令牌请求中标准参数默认最大长度。 */
     public static final int DEFAULT_REQ_PARAMS_DEFAULT_MAX_SIZE = 4000;
 
     private final int reqParamsDefaultMaxSize;
 
     /**
-     * Overriden values for maximum sizes of specified standard OIDC parameters. The value for the specified parameter can be still overriden
-     * by administrator in the configuration of the {@link OIDCLoginProtocolFactory}. In case that value is not overriden in the configuration or in this map,
-     * then the value specified by the {@link OIDCLoginProtocolFactory#CONFIG_OIDC_REQ_PARAMS_DEFAULT_MAX_SIZE} is used
+     * 特定标准 OIDC 参数的最大长度覆盖表。
+     * <p>仍可在 {@link OIDCLoginProtocolFactory} 中按参数名覆盖；未覆盖时使用默认上限。</p>
      */
     private Map<String, Integer> DEFAULT_MAX_PARAMS_SIZES = Map.of(
-            OIDCLoginProtocol.LOGIN_HINT_PARAM, 255 // Aligned with user-profile configuration for username and email
+            OIDCLoginProtocol.LOGIN_HINT_PARAM, 255 // 与用户名/邮箱 user-profile 长度对齐
     );
 
-    /**
-     * Maximum default length of the standard OIDC parameter sent to the OIDC token request in case the parameter is "token" parameter.
-     * As "token" parameter is considered a parameter containing long token (for example JWT or SAML assertion) with unbounded data (For example possibly big amount of roles inside JWT).
-     * Applies for example for parameters like "subject_token" sent in case of token exchange grant.
-     */
+    /** 令牌类参数（如 subject_token、JWT）在 token 请求中的默认最大长度。 */
     public static final int DEFAULT_REQ_TOKEN_PARAMS_DEFAULT_MAX_SIZE = 20000;
 
     private final int reqTokenParamsDefaultMaxSize;
 
-    /**
-     * Default value for {@link #additionalReqParamsMaxNumber} if case no configuration property is set.
-     */
+    /** {@link #additionalReqParamsMaxNumber} 未配置时的默认值。 */
     public static final int DEFAULT_ADDITIONAL_REQ_PARAMS_MAX_NUMBER = 5;
 
-    /**
-     * Max number of additional request parameters copied into client session note to prevent DoS attacks.
-     */
+    /** 复制到客户端会话 note 的附加请求参数最大个数（防 DoS）。 */
     private final int additionalReqParamsMaxNumber;
 
-    /**
-     * Default value for {@link #additionalReqParamsMaxSize} if case no configuration property is set.
-     */
+    /** {@link #additionalReqParamsMaxSize} 未配置时的默认值。 */
     public static final int DEFAULT_ADDITIONAL_REQ_PARAMS_MAX_SIZE = 2000;
 
-    /**
-     * Max size of additional request parameters value copied into client session note to prevent DoS attacks.
-     */
+    /** 单个附加请求参数值的最大长度（防 DoS）。 */
     private final int additionalReqParamsMaxSize;
 
-    /**
-     * Default value for {@link #additionalReqParamsFailFast} in case no configuration property is set.
-     */
+    /** {@link #additionalReqParamsFailFast} 未配置时的默认值。 */
     public static final boolean DEFAULT_ADDITIONAL_REQ_PARAMS_FAIL_FAST = false;
 
-    /**
-     * Whether the fail-fast strategy should be enforced. If <code>false</code> all additional request parameters
-     * that to not meet the configuration are silently ignored. If <code>true</code> an exception will be raised.
-     */
+    /** 附加参数 fail-fast：false 静默忽略不合规参数，true 抛出异常。 */
     private final boolean additionalReqParamsFailFast;
 
-    /**
-     * Default value for {@link #additionalReqTokenParamsFailFast} in case no configuration property is set.
-     */
+    /** {@link #additionalReqTokenParamsFailFast} 未配置时的默认值。 */
     public static final boolean DEFAULT_ADDITIONAL_REQ_TOKEN_PARAMS_FAIL_FAST = true;
 
-    /**
-     * Whether the fail-fast strategy should be enforced for "token" parameters. If <code>false</code> all additional request parameters
-     * that to not meet the configuration are silently ignored. If <code>true</code> an exception will be raised.
-     *
-     * As "token" parameter is considered a parameter containing long token (for example JWT or SAML assertion) with unbounded data (For example possibly big amount of roles inside JWT).
-     * Applies for example for parameters like "subject_token" sent in case of token exchange grant.
-     */
+    /** 令牌类附加参数的 fail-fast 策略（语义同 {@link #additionalReqParamsFailFast}）。 */
     private final boolean additionalReqTokenParamsFailFast;
 
-    /**
-     * Default value for {@link #additionalReqParamsMaxOverallSize} in case no configuration property is set.
-     */
+    /** {@link #additionalReqParamsMaxOverallSize} 未配置时的默认值。 */
     public static final int DEFAULT_ADDITIONAL_REQ_PARAMS_MAX_OVERALL_SIZE = Integer.MAX_VALUE;
 
-    /**
-     * Max size of all additional request parameters value copied into client session note to prevent DoS attacks.
-     */
+    /** 所有附加请求参数值的总长度上限（防 DoS）。 */
     private final int additionalReqParamsMaxOverallSize;
 
-    /**
-     * @deprecated to be removed in Keycloak 27
-     */
+    /** @deprecated Keycloak 27 将移除 */
     public static final boolean DEFAULT_ALLOW_MULTIPLE_AUDIENCES_FOR_JWT_CLIENT_AUTHENTICATION = false;
 
-    /**
-     * Whether to allow multiple audiences for JWT client authentication
-     * @deprecated To be removed in Keycloak 27
+    /** JWT 客户端认证是否允许多个 audience。
+     * @deprecated Keycloak 27 将移除
      */
     private final boolean allowMultipleAudiencesForJwtClientAuthentication;
 
@@ -110,6 +77,7 @@ public class OIDCProviderConfig {
 
     private final boolean allowUserinfoWithLightweightAccessToken;
 
+    /** 从 server 配置 scope 加载 OIDC Provider 参数。 */
     public OIDCProviderConfig(Config.Scope config) {
         this.config = config;
 
@@ -126,50 +94,58 @@ public class OIDCProviderConfig {
         this.allowUserinfoWithLightweightAccessToken = config.getBoolean(OIDCLoginProtocolFactory.CONFIG_ALLOW_USERINFO_WITH_LIGHTWEIGHT_ACCESS_TOKEN, DEFAULT_ALLOW_USERINFO_WITH_LIGHTWEIGHT_ACCESS_TOKEN);
     }
 
+    /** @return 附加参数最大个数 */
     public int getAdditionalReqParamsMaxNumber() {
         return additionalReqParamsMaxNumber;
     }
 
+    /** @return 单个附加参数值最大长度 */
     public int getAdditionalReqParamsMaxSize() {
         return additionalReqParamsMaxSize;
     }
 
+    /** @param isTokenParam 是否为令牌类参数
+     * @return 是否 fail-fast */
     public boolean isAdditionalReqParamsFailFast(boolean isTokenParam) {
         return isTokenParam ? additionalReqTokenParamsFailFast : additionalReqParamsFailFast;
     }
 
+    /** @return 附加参数总长度上限 */
     public int getAdditionalReqParamsMaxOverallSize() {
         return additionalReqParamsMaxOverallSize;
     }
 
+    /** @return 是否允许多 audience JWT 客户端认证 */
     public boolean isAllowMultipleAudiencesForJwtClientAuthentication() {
         return allowMultipleAudiencesForJwtClientAuthentication;
     }
 
+    /** @return 自省是否跳过 audience 校验 */
     public boolean isAllowTokenIntrospectionWithoutAudienceCheck() {
         return allowTokenIntrospectionWithoutAudienceCheck;
     }
 
+    /** @return 是否允许轻量访问令牌访问 UserInfo */
     public boolean isAllowUserinfoWithLightweightAccessToken() {
         return allowUserinfoWithLightweightAccessToken;
     }
 
     /**
-     * @param paramName Parameter name. Expected to be one of the known OIDC parameters
-     * @param isTokenParam If this parameter represents token (like for example JWT)
-     *
-     * @return maximum length for the specified OIDC parameter
+     * 返回指定 OIDC 参数允许的最大长度。
+     * @param paramName 参数名（已知 OIDC 参数）
+     * @param isTokenParam 是否为令牌类参数
+     * @return 最大长度
      */
     public int getMaxLengthForTheParameter(String paramName, boolean isTokenParam) {
-        // Configured value for the particular OIDC parameter
+        // 该参数在配置中的显式上限
         Integer paramMaxSize = config.getInt(OIDCLoginProtocolFactory.CONFIG_OIDC_REQ_PARAMS_MAX_SIZE_PREFIX + "--" + paramName);
 
-        // Stick to default. See if we have default value overriden
+        // 回退到 DEFAULT_MAX_PARAMS_SIZES
         if (paramMaxSize == null) {
             paramMaxSize = DEFAULT_MAX_PARAMS_SIZES.get(paramName);
         }
 
-        // Fallback to default for all standard OIDC parameters
+        // 再回退到全局默认（区分 token/普通参数）
         if (paramMaxSize == null) {
             paramMaxSize = isTokenParam ? reqTokenParamsDefaultMaxSize : reqParamsDefaultMaxSize;
         }

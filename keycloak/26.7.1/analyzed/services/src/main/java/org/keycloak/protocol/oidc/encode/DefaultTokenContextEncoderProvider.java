@@ -26,21 +26,27 @@ import org.keycloak.models.UserSessionModel;
 import org.keycloak.protocol.oidc.mappers.AbstractOIDCProtocolMapper;
 
 /**
+ * {@link TokenContextEncoderProvider} 默认实现：将会话/令牌/授权类型编码进 token id。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DefaultTokenContextEncoderProvider implements TokenContextEncoderProvider {
 
+    /** 未知授权类型的占位快捷码。 */
     public static final String UNKNOWN = "na";
 
     private final KeycloakSession session;
     private final DefaultTokenContextEncoderProviderFactory factory;
 
+    /** @param session Keycloak 会话
+     * @param factory 编码器工厂 */
     public DefaultTokenContextEncoderProvider(KeycloakSession session,
                                               DefaultTokenContextEncoderProviderFactory factory) {
         this.session = session;
         this.factory = factory;
     }
 
+    /** 根据客户端会话与离线标志推断会话/令牌类型并构建上下文。 */
     @Override
     public AccessTokenContext getTokenContextFromClientSessionContext(ClientSessionContext clientSessionContext, String rawTokenId, boolean isOffline) {
         AccessTokenContext.SessionType sessionType;
@@ -67,6 +73,7 @@ public class DefaultTokenContextEncoderProvider implements TokenContextEncoderPr
         return new AccessTokenContext(sessionType, tokenType, grantType, rawTokenId);
     }
 
+    /** 解析 {@code sessionType:tokenType:grantType:rawId} 格式的编码 token id。 */
     @Override
     public AccessTokenContext getTokenContextFromTokenId(String encodedTokenId) {
         int indexOf = encodedTokenId.indexOf(':');
@@ -80,7 +87,7 @@ public class DefaultTokenContextEncoderProvider implements TokenContextEncoderPr
                 throw new IllegalArgumentException("Incorrect token id: '" + encodedTokenId + "'. Expected length of 6.");
             }
 
-            // First 2 chars are "sessionType", next 2 chars "tokenType", last 2 chars "grantType"
+            // 前 2 字符 sessionType，接着 2 字符 tokenType，最后 2 字符 grantType
             String stShortcut = encodedContext.substring(0, 2);
             String ttShortcut = encodedContext.substring(2, 4);
             String gtShortcut = encodedContext.substring(4, 6);
@@ -102,6 +109,7 @@ public class DefaultTokenContextEncoderProvider implements TokenContextEncoderPr
         }
     }
 
+    /** 将上下文编码为 6 字符前缀 + 冒号 + 原始 id。 */
     @Override
     public String encodeTokenId(AccessTokenContext tokenContext) {
         if (tokenContext.getSessionType() == AccessTokenContext.SessionType.UNKNOWN) {

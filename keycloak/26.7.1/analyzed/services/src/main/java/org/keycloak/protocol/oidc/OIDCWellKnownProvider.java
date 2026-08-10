@@ -72,39 +72,52 @@ import org.keycloak.wellknown.WellKnownProvider;
 import static org.keycloak.protocol.oidc.OIDCLoginProtocol.ATTEST_JWT_CLIENT_AUTH;
 
 /**
+ * 生成 OIDC Authorization Server Metadata（OpenID Provider Configuration）。
+ * <p>聚合端点 URL、支持的算法、grant 类型、scope、PKCE、DPoP、CIBA、PAR 等能力声明。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class OIDCWellKnownProvider implements WellKnownProvider {
 
+    /** 默认支持的 response_type 列表。 */
     public static final List<String> DEFAULT_RESPONSE_TYPES_SUPPORTED = list(OAuth2Constants.CODE, OIDCResponseType.NONE, OIDCResponseType.ID_TOKEN, OIDCResponseType.TOKEN, "id_token token", "code id_token", "code token", "code id_token token");
 
+    /** 默认 subject_types_supported。 */
     public static final List<String> DEFAULT_SUBJECT_TYPES_SUPPORTED = list("public", "pairwise");
 
+    /** 默认 response_modes_supported。 */
     public static final List<String> DEFAULT_RESPONSE_MODES_SUPPORTED = list("query", "fragment", "form_post", "query.jwt", "fragment.jwt", "form_post.jwt", "jwt");
 
+    /** 默认客户端认证签名算法。 */
     public static final List<String> DEFAULT_CLIENT_AUTH_SIGNING_ALG_VALUES_SUPPORTED = list(Algorithm.RS256.toString());
 
-    // The exact list depends on protocolMappers
+    // 精确列表取决于 protocol mapper 配置
+    /** 默认可声明的 claims_supported。 */
     public static final List<String> DEFAULT_CLAIMS_SUPPORTED = list( "iss", IDToken.SUBJECT, IDToken.AUD, "exp", "iat", IDToken.AUTH_TIME, IDToken.NAME, IDToken.GIVEN_NAME, IDToken.FAMILY_NAME, IDToken.PREFERRED_USERNAME, IDToken.EMAIL, IDToken.ACR, IDToken.AZP, "nonce");
 
+    /** 默认 claim_types_supported。 */
     public static final List<String> DEFAULT_CLAIM_TYPES_SUPPORTED = list("normal");
 
-    // KEYCLOAK-7451 OAuth Authorization Server Metadata for Proof Key for Code Exchange
+    // PKCE code_challenge_methods_supported
     public static final List<String> DEFAULT_CODE_CHALLENGE_METHODS_SUPPORTED = list(OAuth2Constants.PKCE_METHOD_PLAIN, OAuth2Constants.PKCE_METHOD_S256);
 
-    // See: GH-10701, note that the supported prompt value "create" is only added if the realm supports registrations.
+    // prompt=create 仅在 Realm 允许注册时追加
     public static final List<String> DEFAULT_PROMPT_VALUES_SUPPORTED = list(OIDCLoginProtocol.PROMPT_VALUE_NONE /*, OIDCLoginProtocol.PROMPT_VALUE_CREATE*/, OIDCLoginProtocol.PROMPT_VALUE_LOGIN, OIDCLoginProtocol.PROMPT_VALUE_CONSENT);
 
     private final KeycloakSession session;
     private final Map<String, Object> openidConfigOverride;
     private final boolean includeClientScopes;
 
+    /** @param session Keycloak 会话
+     * @param openidConfigOverride 元数据覆盖
+     * @param includeClientScopes 是否在 scopes_supported 中包含 client scope */
     public OIDCWellKnownProvider(KeycloakSession session, Map<String, Object> openidConfigOverride, boolean includeClientScopes) {
         this.session = session;
         this.openidConfigOverride = openidConfigOverride;
         this.includeClientScopes = includeClientScopes;
     }
 
+    /** 构建完整的 {@link OIDCConfigurationRepresentation}，并应用文件覆盖。 */
     @Override
     public Object getConfig() {
         UriInfo frontendUriInfo = session.getContext().getUri(UrlType.FRONTEND);
@@ -130,8 +143,7 @@ public class OIDCWellKnownProvider implements WellKnownProvider {
         URI jwksUri = backendUriBuilder.clone().path(OIDCLoginProtocolService.class, "certs").build(realm.getName(),
                 OIDCLoginProtocol.LOGIN_PROTOCOL);
 
-        // NOTE: Don't hardcode HTTPS checks here. JWKS URI is exposed just in the development/testing environment. For the production environment, the OIDCWellKnownProvider
-        // is not exposed over "http" at all.
+        // 生产环境 well-known 不暴露 HTTP，此处不硬编码 HTTPS 校验
         //if (isHttps(jwksUri)) {
         config.setJwksUri(jwksUri.toString());
 
@@ -176,7 +188,7 @@ public class OIDCWellKnownProvider implements WellKnownProvider {
         config.setClaimTypesSupported(DEFAULT_CLAIM_TYPES_SUPPORTED);
         config.setClaimsParameterSupported(true);
 
-        // Include client scopes can be disabled in the environments with thousands of client scopes to avoid potentially expensive iteration over client scopes
+        // 大量 client scope 时可关闭以跳过昂贵迭代
         if (includeClientScopes) {
             List<String> scopeNames = realm.getClientScopesStream()
                     .filter(clientScope -> Objects.equals(OIDCLoginProtocol.LOGIN_PROTOCOL, clientScope.getProtocol()) && clientScope.isIncludeInOpenIDProviderMetadata())
@@ -192,11 +204,10 @@ public class OIDCWellKnownProvider implements WellKnownProvider {
         config.setRequestUriParameterSupported(true);
         config.setRequireRequestUriRegistration(true);
 
-        // KEYCLOAK-7451 OAuth Authorization Server Metadata for Proof Key for Code Exchange
+        // PKCE 元数据
         config.setCodeChallengeMethodsSupported(DEFAULT_CODE_CHALLENGE_METHODS_SUPPORTED);
 
-        // KEYCLOAK-6771 Certificate Bound Token
-        // https://tools.ietf.org/html/draft-ietf-oauth-mtls-08#section-6.2
+        // mTLS 证书绑定访问令牌
         config.setTlsClientCertificateBoundAccessTokens(true);
 
         if (Profile.isFeatureEnabled(Profile.Feature.DPOP)) {
@@ -206,8 +217,7 @@ public class OIDCWellKnownProvider implements WellKnownProvider {
         URI revocationEndpoint = frontendUriBuilder.clone().path(OIDCLoginProtocolService.class, "revoke")
                 .build(realm.getName(), OIDCLoginProtocol.LOGIN_PROTOCOL);
 
-        // NOTE: Don't hardcode HTTPS checks here. JWKS URI is exposed just in the development/testing environment. For the production environment, the OIDCWellKnownProvider
-        // is not exposed over "http" at all.
+        // 吊销端点同样不在此硬编码 HTTPS
         config.setRevocationEndpoint(revocationEndpoint.toString());
         config.setRevocationEndpointAuthMethodsSupported(clientAuthMethodsSupported);
         config.setRevocationEndpointAuthSigningAlgValuesSupported(supportedClientSigningAlgorithms);
@@ -232,7 +242,7 @@ public class OIDCWellKnownProvider implements WellKnownProvider {
             config.setAuthorizationDetailsTypesSupported(authorizationDetailsTypesSupported);
         }
 
-        // HAIP-1.0 does not want to see this property (don't set to false)
+        // CIMD 特性启用时声明 client_id_metadata_document_supported
         if (Profile.isFeatureEnabled(Profile.Feature.CIMD)) {
             config.setClientIdMetadataDocumentSupported(true);
             if (!clientAuthMethodsSupported.contains("none")) {
@@ -244,6 +254,7 @@ public class OIDCWellKnownProvider implements WellKnownProvider {
         return config;
     }
 
+    /** Realm 允许注册时追加 prompt=create。 */
     protected List<String> getPromptValuesSupported(RealmModel realm) {
         List<String> prompts = new ArrayList<>(DEFAULT_PROMPT_VALUES_SUPPORTED);
         if (realm.isRegistrationAllowed()) {
@@ -338,7 +349,7 @@ public class OIDCWellKnownProvider implements WellKnownProvider {
         return getSupportedAlgorithms(ContentEncryptionProvider.class, includeNone);
     }
 
-    // Use protected method to make it easier to override in custom provider if different URLs are requested to be used as mtls_endpoint_aliases
+    /** 构建 mTLS 端点别名（子类可覆盖 URL）。 */
     protected MTLSEndpointAliases getMtlsEndpointAliases(OIDCConfigurationRepresentation config) {
         MTLSEndpointAliases mtls_endpoints = new MTLSEndpointAliases();
         mtls_endpoints.setTokenEndpoint(config.getTokenEndpoint());
@@ -361,10 +372,11 @@ public class OIDCWellKnownProvider implements WellKnownProvider {
                 .toList();
     }
 
+    /** 将文件中的 openidConfigOverride 合并进配置。 */
     private OIDCConfigurationRepresentation checkConfigOverride(OIDCConfigurationRepresentation config) {
         if (openidConfigOverride != null) {
             Map<String, Object> asMap = JsonSerialization.mapper.convertValue(config, Map.class);
-            // Override configuration
+            // 覆盖默认元数据字段
             asMap.putAll(openidConfigOverride);
             return JsonSerialization.mapper.convertValue(asMap, OIDCConfigurationRepresentation.class);
         } else {

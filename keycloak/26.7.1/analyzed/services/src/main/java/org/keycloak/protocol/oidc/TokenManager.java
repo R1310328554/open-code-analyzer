@@ -150,7 +150,8 @@ import static org.keycloak.representations.IDToken.NONCE;
 import static org.keycloak.services.util.DPoPUtil.DPOP_JKT_TYPE;
 
 /**
- * Stateless object that creates tokens and manages oauth access codes
+ * OIDC 令牌管理器：创建/校验访问令牌、刷新令牌、ID 令牌及令牌响应构建。
+ * <p>负责 scope 解析、协议 mapper 变换、refresh 复用检测、logout token 校验等核心逻辑。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -158,11 +159,18 @@ import static org.keycloak.services.util.DPoPUtil.DPOP_JKT_TYPE;
 public class TokenManager {
     private static final Logger logger = Logger.getLogger(TokenManager.class);
 
+    /** refresh token 校验结果：用户、用户会话与客户端会话上下文。 */
     public static class TokenValidation {
+        /** 令牌所属用户。 */
         public final UserModel user;
+        /** 关联用户会话。 */
         public final UserSessionModel userSession;
+        /** 客户端会话上下文。 */
         public final ClientSessionContext clientSessionCtx;
 
+        /** @param user 用户
+         * @param userSession 用户会话
+         * @param clientSessionCtx 客户端会话上下文 */
         public TokenValidation(UserModel user, UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
             this.user = user;
             this.userSession = userSession;
@@ -170,6 +178,10 @@ public class TokenManager {
         }
     }
 
+    /**
+     * 校验 refresh token 并解析用户/会话/客户端上下文。
+     * @throws OAuthErrorException 会话无效、用户禁用、客户端不匹配等
+     */
     public TokenValidation validateToken(KeycloakSession session, UriInfo uriInfo, ClientConnection connection, RealmModel realm,
                                          RefreshToken oldToken, HttpHeaders headers, String oldTokenScope) throws OAuthErrorException {
         UserSessionModel userSession = null;
@@ -181,7 +193,7 @@ public class TokenManager {
             userSession = sessionManager.findOfflineUserSession(realm, oldToken.getSessionState());
             if (userSession != null) {
 
-                // Revoke timed out offline userSession
+                // 离线会话超时则吊销
                 if (!AuthenticationManager.isSessionValid(realm, userSession)) {
                     sessionManager.revokeOfflineUserSession(userSession);
                     throw new OAuthErrorException(OAuthErrorException.INVALID_GRANT, "Offline session not active", "Offline session not active");
@@ -191,7 +203,7 @@ public class TokenManager {
                 throw new OAuthErrorException(OAuthErrorException.INVALID_GRANT, "Offline user session not found", "Offline user session not found");
             }
         } else {
-            // Find userSession regularly for online tokens
+            // 在线 token 常规查找用户会话
             userSession = session.sessions().getUserSession(realm, oldToken.getSessionState());
             if (!AuthenticationManager.isSessionValid(realm, userSession)) {
                 AuthenticationManager.backchannelLogout(session, realm, userSession, uriInfo, connection, headers, true);
@@ -240,7 +252,7 @@ public class TokenManager {
             throw new OAuthErrorException(OAuthErrorException.INVALID_GRANT, "Offline session invalid because offline access not granted anymore");
         }
 
-        // Case when offline token is migrated from previous version
+        // 旧版离线 token 迁移
         if (oldTokenScope == null && userSession.isOffline()) {
             logger.debugf("Migrating offline token of user '%s' for client '%s' of realm '%s'", user.getUsername(), client.getClientId(), realm.getName());
             MigrationUtils.migrateOldOfflineToken(session, realm, client, user);
@@ -252,6 +264,7 @@ public class TokenManager {
         return new TokenValidation(user, userSession, clientSessionCtx);
     }
 
+    /** 校验用户存在、启用且 token iat 不早于用户 not-before。 */
     public static boolean isUserValid(KeycloakSession session, RealmModel realm, AccessToken token, UserModel user) {
         if (user == null) {
             logger.debugf("User does not exists");
@@ -264,6 +277,7 @@ public class TokenManager {
         return validateUserNotBefore(session, realm, token, user);
     }
 
+    /** 校验 token 签发时间不早于用户 not-before 策略。 */
     public static boolean validateUserNotBefore(KeycloakSession session, RealmModel realm, AccessToken token, UserModel user) {
         try {
             TokenVerifier.createWithoutSignature(token)
@@ -276,17 +290,15 @@ public class TokenManager {
         return true;
     }
 
-    /**
-     * Lookup user from the "stateless" token. Stateless token is the token without sessionState filled (token doesn't belong to any userSession)
-     */
+    /** 从无 sessionState 的无状态访问令牌解析用户（sub 或 preferred_username）。 */
     public static UserModel lookupUserFromStatelessToken(KeycloakSession session, RealmModel realm, AccessToken token) {
-        // Try to lookup user based on "sub" claim. It should work for most cases with some rare exceptions (EG. OIDC "pairwise" subjects)
+        // 优先按 sub 查找（pairwise subject 等场景可能失败）
         UserModel user = token.getSubject() == null ? null : session.users().getUserById(realm, token.getSubject());
         if (user != null) {
             return user;
         }
 
-        // Fallback to lookup user based on username (preferred_username claim)
+        // 回退到 preferred_username
         if (token.getPreferredUsername() != null) {
             return session.users().getUserByUsername(realm, token.getPreferredUsername());
         }
@@ -295,13 +307,14 @@ public class TokenManager {
     }
 
 
-    // Will throw OAuthErrorException if validation fails
+    /** 检测 refresh token 复用/陈旧 token（Realm revoke refresh token 场景）。
+     * @throws OAuthErrorException 复用超限或 stale token */
     public void validateTokenReuse(KeycloakSession session, RealmModel realm, AccessToken refreshToken, AuthenticatedClientSessionModel clientSession, boolean refreshFlag) throws OAuthErrorException {
         String key = getReuseIdKey(refreshToken);
         String refreshTokenId = clientSession.getRefreshToken(key);
         int lastRefresh = clientSession.getRefreshTokenLastRefresh(key);
 
-        //check if a more recent refresh token is already used on this tab, if yes the refresh token is invalid
+        // 同标签页已使用更新的 refresh token 则当前 token 无效
         if (refreshTokenId != null && !refreshToken.getId().equals(refreshTokenId) && refreshToken.getIat() < lastRefresh) {
             throw new OAuthErrorException(OAuthErrorException.INVALID_GRANT, "Stale token");
         }
@@ -322,6 +335,7 @@ public class TokenManager {
         }
     }
 
+    /** 解码并校验 refresh/offline token（issuer、过期、mTLS、DPoP/ABCA 绑定等）。 */
     public RefreshToken verifyRefreshToken(KeycloakSession session, RealmModel realm, ClientModel client, HttpRequest request, String encodedRefreshToken, boolean checkExpiration) throws OAuthErrorException {
         try {
             RefreshToken refreshToken = toRefreshToken(session, encodedRefreshToken);
@@ -347,14 +361,14 @@ public class TokenManager {
                 throw new OAuthErrorException(OAuthErrorException.INVALID_GRANT, "Invalid refresh token. Token client and authorized client don't match");
             }
 
-            // KEYCLOAK-6771 Certificate Bound Token
+            // mTLS HoK 令牌绑定校验
             if (OIDCAdvancedConfigWrapper.fromClientModel(client).isUseMtlsHokToken()) {
                 if (!MtlsHoKTokenUtil.verifyTokenBindingWithClientCertificate(refreshToken, request, session)) {
                     throw new OAuthErrorException(OAuthErrorException.UNAUTHORIZED_CLIENT, MtlsHoKTokenUtil.CERT_VERIFY_ERROR_DESC);
                 }
             }
 
-            // Verify RefreshToken Confirmation
+            // 校验 refresh token confirmation（DPoP/ABCA jkt）
             //
             AccessToken.Confirmation cnf = refreshToken.getConfirmation();
             if (cnf != null && cnf.getKeyThumbprint() != null) {
@@ -395,6 +409,7 @@ public class TokenManager {
         }
     }
 
+    /** 解码 refresh token 字符串。 */
     public RefreshToken toRefreshToken(KeycloakSession session, String encodedRefreshToken) throws JWSInputException, OAuthErrorException {
         RefreshToken refreshToken = session.tokens().decode(encodedRefreshToken, RefreshToken.class);
         if (refreshToken == null) {
@@ -403,6 +418,7 @@ public class TokenManager {
         return refreshToken;
     }
 
+    /** 校验 ID token（not-before、过期等，不验签）。 */
     public IDToken verifyIDToken(KeycloakSession session, RealmModel realm, String encodedIDToken) throws OAuthErrorException {
         IDToken idToken = session.tokens().decode(encodedIDToken, IDToken.class);
         try {
@@ -415,6 +431,7 @@ public class TokenManager {
         return idToken;
     }
 
+    /** 解码 ID token（签名由调用方验证）。 */
     public IDToken verifyIDTokenSignature(KeycloakSession session, String encodedIDToken) throws OAuthErrorException {
         IDToken idToken = session.tokens().decode(encodedIDToken, IDToken.class);
         if (idToken == null) {
@@ -423,6 +440,7 @@ public class TokenManager {
         return idToken;
     }
 
+    /** 创建并经过协议 mapper 变换的客户端访问令牌。 */
     public AccessToken createClientAccessToken(KeycloakSession session, RealmModel realm, ClientModel client, UserModel user, UserSessionModel userSession,
                                                ClientSessionContext clientSessionCtx, boolean isOffline) {
         AccessToken token = initToken(session, realm, client, user, userSession, clientSessionCtx, isOffline);
@@ -430,6 +448,7 @@ public class TokenManager {
         return token;
     }
 
+    /** 将认证会话附着到用户会话并构建 {@link ClientSessionContext}。 */
     public static ClientSessionContext attachAuthenticationSession(KeycloakSession session, UserSessionModel userSession, AuthenticationSessionModel authSession) {
         return attachAuthenticationSession(session, userSession, authSession, null, false);
     }
@@ -489,6 +508,7 @@ public class TokenManager {
     }
 
 
+    /** 从用户会话分离客户端会话。 */
     public static void detachClientSession(AuthenticatedClientSessionModel clientSession) {
         UserSessionModel userSession = clientSession.getUserSession();
         if (userSession == null) {
@@ -499,6 +519,7 @@ public class TokenManager {
     }
 
 
+    /** 计算用户在指定 client scope 下的有效角色集合。 */
     public static Set<RoleModel> getAccess(UserModel user, ClientModel client, Stream<ClientScopeModel> clientScopes) {
         Set<RoleModel> roleMappings = RoleUtils.getDeepUserRoleMappings(user);
 
@@ -536,13 +557,14 @@ public class TokenManager {
     }
 
 
-    /** Return client itself + all default client scopes of client + optional client scopes requested by scope parameter **/
+    /** 返回客户端自身 + 默认 scope + scope 参数请求的 optional scope。 **/
+    /** 解析 scope 参数得到请求的 client scope 流。 */
     public static Stream<ClientScopeModel> getRequestedClientScopes(KeycloakSession session, String scopeParam, ClientModel client, UserModel user) {
         if (client == null) {
             return Stream.of();
         }
 
-        // Add all default client scopes automatically and client itself
+        // 自动包含默认 client scope 与客户端自身
         Stream<ClientScopeModel> clientScopes = Stream.concat(
                 client.getClientScopes(true).values().stream(),
                 Stream.of(client)).distinct();
@@ -551,7 +573,7 @@ public class TokenManager {
             return clientScopes;
         }
 
-        // skip organization-related scopes that were explicitly requested using the parameterized scope format
+        // 跳过已以参数化形式请求的组织 scope，避免重复
         // we don't want parameterized and default client scopes duplicated
         clientScopes = clientScopes.filter(scope -> {
             return scope.equals(client)
@@ -609,15 +631,12 @@ public class TokenManager {
     }
 
     /**
-     * Check that all the ClientScopes that have been parsed into authorization_resources are actually in the requested scopes
-     * otherwise, the scope wasn't parsed correctly
-     * <p>
-     *
-     * @param session
-     * @param scopes
-     * @param authorizationRequestContext authorizationRequestContext. It is not null just if parameterized scopes feature is enabled
-     * @param client
-     * @return
+     * 校验 scope 字符串是否仅包含客户端允许的 scope（含参数化 scope 与组织 scope 规则）。
+     * @param session Keycloak 会话
+     * @param scopes scope 参数字符串
+     * @param authorizationRequestContext 参数化 scope 启用时的授权详情上下文
+     * @param client 客户端
+     * @return 是否合法
      */
     public static boolean isValidScope(KeycloakSession session, String scopes, AuthorizationRequestContext authorizationRequestContext, ClientModel client) {
         return isValidScope(session, scopes, authorizationRequestContext, client, null);
@@ -630,7 +649,7 @@ public class TokenManager {
 
         Collection<String> rawScopes = TokenManager.parseScopeParameter(scopes).collect(Collectors.toSet());
 
-        // validate organization scopes - allow multiple specific organization scopes, but reject mixed types
+        // 组织 scope：允许多个同类型，禁止混合 ANY/SPECIFIC/ALL
         if (Organizations.isEnabled(session)) {
             Set<OrganizationScope> orgScopeTypes = new HashSet<>();
             for (String scope : rawScopes) {
@@ -698,7 +717,7 @@ public class TokenManager {
             }
         }
 
-        // Track seen parameterized scope base names to enforce repeatability constraints.
+        // 跟踪参数化 scope 是否允许重复参数值
         boolean parameterizedScopesEnabled = Profile.isFeatureEnabled(Feature.PARAMETERIZED_SCOPES);
         Set<String> seenParameterized = new HashSet<>();
 
@@ -737,6 +756,7 @@ public class TokenManager {
         return true;
     }
 
+    /** 参数化 scope 是否允许多个不同参数值。 */
     public static boolean isRepeatableScope(KeycloakSession session, ClientScopeModel clientScope) {
         String attr = clientScope.getAttribute(ClientScopeModel.IS_REPEATABLE_SCOPE);
         if (attr != null) {
@@ -763,6 +783,7 @@ public class TokenManager {
         }
     }
 
+    /** 按空格拆分并去重 scope 参数。 */
     public static Stream<String> parseScopeParameter(String scopeParam) {
         return Arrays.stream(scopeParam.split(" ")).distinct();
     }
@@ -799,7 +820,8 @@ public class TokenManager {
         return true;
     }
 
-    // Check if user still has granted consents to all requested client scopes
+    /** 校验用户仍对已请求 scope 持有有效同意（含 always-consent scope）。 */
+    public static boolean verifyConsentStillAvailable(KeycloakSession session, UserModel user, ClientModel client, AuthenticatedClientSessionModel clientSession, String scopeParam) {
     public static boolean verifyConsentStillAvailable(KeycloakSession session, UserModel user, ClientModel client, AuthenticatedClientSessionModel clientSession, String scopeParam) {
         if (!Profile.isFeatureEnabled(Profile.Feature.PARAMETERIZED_SCOPES) && !client.isConsentRequired()) {
             return true;
@@ -821,6 +843,7 @@ public class TokenManager {
         }
     }
 
+    /** 应用 {@link OIDCAccessTokenMapper} 变换访问令牌。 */
     public AccessToken transformAccessToken(KeycloakSession session, AccessToken token,
                                             UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
         AccessToken accessToken = ProtocolMapperUtils.getSortedProtocolMappers(session, clientSessionCtx, mapper -> mapper.getValue() instanceof OIDCAccessTokenMapper)
@@ -839,6 +862,7 @@ public class TokenManager {
         return accessToken;
     }
 
+    /** 应用 token response mapper 变换令牌响应。 */
     public AccessTokenResponse transformAccessTokenResponse(KeycloakSession session, AccessTokenResponse accessTokenResponse,
             UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
 
@@ -851,6 +875,7 @@ public class TokenManager {
                 });
     }
 
+    /** 为 UserInfo 端点变换访问令牌 claims。 */
     public AccessToken transformUserInfoAccessToken(KeycloakSession session, AccessToken userInfo,
                                                     UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
         return transformUserInfoAccessToken(session, null, userInfo, userSession, clientSessionCtx);
@@ -868,6 +893,7 @@ public class TokenManager {
                 });
     }
 
+    /** 为令牌自省端点变换访问令牌 claims。 */
     public AccessToken transformIntrospectionAccessToken(KeycloakSession session, AccessToken bearer, AccessToken token,
                                                          UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
         validateSelectedOrganization(session, bearer, userSession == null ? null : userSession.getUser());
@@ -880,6 +906,7 @@ public class TokenManager {
                 });
     }
 
+    /** 将 AccessToken 标准 claim 转为 UserInfo JSON 映射。 */
     public Map<String, Object> generateUserInfoClaims(AccessToken userInfo, UserModel userModel) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("sub", userInfo.getSubject() == null? userModel.getId() : userInfo.getSubject());
@@ -1008,6 +1035,7 @@ public class TokenManager {
 
     }
 
+    /** 应用 {@link OIDCIDTokenMapper} 变换 ID 令牌。 */
     public IDToken transformIDToken(KeycloakSession session, IDToken token,
                                     UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
         return ProtocolMapperUtils.getSortedProtocolMappers(session, clientSessionCtx, mapper -> mapper.getValue() instanceof OIDCIDTokenMapper)
@@ -1105,11 +1133,13 @@ public class TokenManager {
     }
 
 
+    /** 创建令牌响应构建器。 */
     public AccessTokenResponseBuilder responseBuilder(RealmModel realm, ClientModel client, EventBuilder event, KeycloakSession session,
                                                       UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
         return new AccessTokenResponseBuilder(realm, client, event, session, userSession, clientSessionCtx, this);
     }
 
+    /** 流式构建 OAuth2/OIDC 令牌响应（access/refresh/id token、hash、offline 等）。 */
     public static class AccessTokenResponseBuilder {
         RealmModel realm;
         ClientModel client;
@@ -1135,6 +1165,7 @@ public class TokenManager {
 
         private AccessTokenResponse response;
 
+        /** 初始化构建器上下文。 */
         public AccessTokenResponseBuilder(RealmModel realm, ClientModel client, EventBuilder event, KeycloakSession session,
                                           UserSessionModel userSession, ClientSessionContext clientSessionCtx, TokenManager tokenManager) {
             this.realm = realm;
@@ -1194,6 +1225,7 @@ public class TokenManager {
             return this;
         }
 
+        /** 生成 access token 并写入构建器。 */
         public AccessTokenResponseBuilder generateAccessToken() {
             UserModel user = userSession.getUser();
             accessToken = tokenManager.createClientAccessToken(session, realm, client, user, userSession, clientSessionCtx, clientSessionCtx.isOfflineTokenRequested());
@@ -1201,6 +1233,7 @@ public class TokenManager {
             return this;
         }
 
+        /** 基于当前 access token 生成 refresh token。 */
         public AccessTokenResponseBuilder generateRefreshToken() {
             if (accessToken == null) {
                 throw new IllegalStateException("accessToken not set");
@@ -1269,6 +1302,7 @@ public class TokenManager {
             }
         }
 
+        /** 创建或更新离线用户/客户端会话（offline_access）。 */
         public void createOrUpdateOfflineSession() {
             UserSessionManager sessionManager = new UserSessionManager(session);
             if (!sessionManager.isOfflineTokenAllowed(clientSessionCtx)) {
@@ -1303,6 +1337,7 @@ public class TokenManager {
             return null;
         }
 
+        /** 生成 ID token（含协议 mapper）。 */
         public AccessTokenResponseBuilder generateIDToken() {
             return generateIDToken(false);
         }
@@ -1364,6 +1399,7 @@ public class TokenManager {
                     .forEach(processor -> processor.process(context));
         }
 
+        /** 编码各令牌、应用 mapper 与 post-processor，返回最终响应。 */
         public AccessTokenResponse build() {
             invokeTokenPostProcessors();
 
@@ -1430,7 +1466,7 @@ public class TokenManager {
 
             res = tokenManager.transformAccessTokenResponse(session, res, userSession, clientSessionCtx);
 
-            // OIDC Financial API Read Only Profile : scope MUST be returned in the response from Token Endpoint
+            // FAPI：令牌响应必须包含 scope
             String responseScope = clientSessionCtx.getScopeString();
             res.setScope(responseScope);
             event.detail(Details.SCOPE, responseScope);
@@ -1477,6 +1513,7 @@ public class TokenManager {
         return accessToken;
     }
 
+    /** 校验 JWT iat 不早于 Realm/客户端/用户 not-before。 */
     public static class NotBeforeCheck implements TokenVerifier.Predicate<JsonWebToken> {
 
         private final int notBefore;
@@ -1520,9 +1557,7 @@ public class TokenManager {
         }
     }
 
-    /**
-     * Check if access token was revoked with OAuth revocation endpoint
-     */
+    /** 校验访问令牌是否已被 OAuth 吊销端点吊销。 */
     public static class TokenRevocationCheck implements TokenVerifier.Predicate<JsonWebToken> {
 
         private final KeycloakSession session;
@@ -1537,6 +1572,7 @@ public class TokenManager {
         }
     }
 
+    /** 校验 IdP 发来的 OIDC Back-Channel Logout Token。 */
     public LogoutTokenValidationContext verifyLogoutToken(KeycloakSession session, String encodedLogoutToken) {
         Optional<LogoutToken> logoutTokenOptional = toLogoutToken(encodedLogoutToken);
         if (logoutTokenOptional.isEmpty()) {
@@ -1632,10 +1668,12 @@ public class TokenManager {
         return false;
     }
 
+    /** 返回 refresh token 复用跟踪用的 reuse_id 键。 */
     public String getReuseIdKey(AccessToken refreshToken) {
         return Optional.ofNullable(refreshToken.getOtherClaims().get(Constants.REUSE_ID)).map(String::valueOf).orElse("");
     }
 
+    /** 若 token 指定唯一 organization claim，校验用户成员资格并写入上下文。 */
     public void validateSelectedOrganization(KeycloakSession session, JsonWebToken token, UserModel user) {
         if (token == null || !Organizations.isEnabled(session)) {
             return;

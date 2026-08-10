@@ -73,22 +73,25 @@ import org.jboss.logging.Logger;
 import static org.keycloak.protocol.oidc.par.endpoints.ParEndpoint.PAR_DPOP_PROOF_JKT;
 
 /**
+ * OIDC 授权端点：解析授权请求、校验参数、创建认证会话并进入浏览器登录流。
+ * <p>支持授权码、隐式片段、注册、忘记凭据及 OAuth 2.0 设备授权子路径。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class AuthorizationEndpoint extends AuthorizationEndpointBase {
 
     private static final Logger logger = Logger.getLogger(AuthorizationEndpoint.class);
 
+    /** 认证类型 note：授权码流。 */
     public static final String CODE_AUTH_TYPE = "code";
 
     /**
-     * Prefix used to store additional HTTP GET params from original client request into {@link AuthenticationSessionModel} note to be available later in Authenticators, RequiredActions etc. Prefix is used to
-     * prevent collisions with internally used notes.
-     *
+     * 将客户端附加 GET 参数写入认证会话 note 的前缀，供 Authenticator/RequiredAction 读取。
      * @see AuthenticationSessionModel#getClientNote(String)
      */
     public static final String LOGIN_SESSION_NOTE_ADDITIONAL_REQ_PARAMS_PREFIX = "client_request_param_";
 
+    /** 授权端点内部动作：注册、授权码、忘记凭据。 */
     private enum Action {
         REGISTER, CODE, FORGOT_CREDENTIALS
     }
@@ -103,11 +106,14 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
     private AuthorizationEndpointRequest request;
     private String redirectUri;
 
+    /** @param session Keycloak 会话
+     * @param event 事件构建器（初始为 LOGIN） */
     public AuthorizationEndpoint(KeycloakSession session, EventBuilder event) {
         super(session, event);
         event.event(EventType.LOGIN);
     }
 
+    /** 处理 form_post 授权请求。 */
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     public Response buildPost() {
@@ -115,15 +121,14 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
         return process(httpRequest.getDecodedFormParameters());
     }
 
+    /** 处理 GET 查询串授权请求。 */
     @GET
     public Response buildGet() {
         logger.trace("Processing @GET request");
         return process(session.getContext().getUri().getQueryParameters());
     }
 
-    /**
-     * OAuth 2.0 Device Authorization endpoint
-     */
+    /** OAuth 2.0 设备授权端点子资源。 */
     @Path("device")
     public Object authorizeDevice() {
         if (!Profile.isFeatureEnabled(Profile.Feature.DEVICE_FLOW)) {
@@ -132,6 +137,7 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
         return new DeviceEndpoint(session, event);
     }
 
+    /** 授权请求主流程：校验、创建认证会话、分发注册/登录/忘记凭据。 */
     private Response process(final MultivaluedMap<String, String> params) {
         String clientId = AuthorizationEndpointRequestParserProcessor.getClientId(event, session, params);
 
@@ -197,7 +203,7 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
             return redirectErrorToClient(parsedResponseMode, ex.getError(), ex.getErrorDescription());
         }
 
-        // If DPoP Proof existed with PAR request, its public key needs to be matched with the one with Token Request afterward
+        // PAR 请求中的 DPoP jkt 需与后续令牌请求一致
         String dpopJkt = session.getAttribute(PAR_DPOP_PROOF_JKT, String.class);
         if (dpopJkt != null) {
             // if dpop_jkt is specified in an authorization request sent to Authorization Endpoint, it is overwritten by one in PAR request
@@ -219,10 +225,10 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
 
         updateAuthenticationSession();
 
-        // So back button doesn't work
+        // 禁止浏览器后退缓存
         CacheControlUtil.noBackButtonCacheControlHeader(session);
 
-        // Add support for Initiating User Registration via OpenID Connect 1.0 via prompt=create
+        // prompt=create 触发用户注册流
         // see: https://openid.net/specs/openid-connect-prompt-create-1_0.html#section-4.1
         String promptValue = Optional
                 .ofNullable(params.getFirst(OAuth2Constants.PROMPT))
@@ -247,12 +253,13 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
         throw new RuntimeException("Unknown action " + action);
     }
 
+    /** 配置为注册动作；可选解析组织邀请 token。 */
     public AuthorizationEndpoint register(String tokenString) {
         event.event(EventType.REGISTER);
         action = Action.REGISTER;
 
         if (Profile.isFeatureEnabled(Profile.Feature.ORGANIZATION) && tokenString != null) {
-            //this call should extract orgId from token and set the organization to the session context
+            // 从 action token 提取 orgId 并写入会话上下文
             Response errorResponse = new LoginActionsService(session, event).preHandleActionToken(tokenString);
             if (errorResponse != null) {
                 throw new ErrorPageException(errorResponse);
@@ -266,6 +273,7 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
         return this;
     }
 
+    /** 配置为忘记凭据/重置密码动作。 */
     public AuthorizationEndpoint forgotCredentials() {
         event.event(EventType.RESET_PASSWORD);
         action = Action.FORGOT_CREDENTIALS;
@@ -277,6 +285,7 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
         return this;
     }
 
+    /** 校验 client_id 存在、启用、非 bearer-only 且协议为 openid-connect。 */
     private void checkClient(String clientId) {
         if (clientId == null) {
             event.detail(Details.REASON, "Missing parameter: " + OIDCLoginProtocol.CLIENT_ID_PARAM);
@@ -317,6 +326,7 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
         session.getContext().setClient(client);
     }
 
+    /** 按 response_mode 将 OAuth 错误重定向回客户端。 */
     private Response redirectErrorToClient(OIDCResponseMode responseMode, String error, String errorDescription) {
         CacheControlUtil.noBackButtonCacheControlHeader(session);
 
@@ -339,6 +349,7 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
         return errorResponseBuilder.build();
     }
 
+    /** 将授权请求参数、ACR/LoA、附加参数写入认证会话 note。 */
     private void updateAuthenticationSession() {
         authenticationSession.setProtocol(OIDCLoginProtocol.LOGIN_PROTOCOL);
         authenticationSession.setRedirectUri(redirectUri);
@@ -393,7 +404,7 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
                 authenticationSession.setClientNote(LOGIN_SESSION_NOTE_ADDITIONAL_REQ_PARAMS_PREFIX + paramName, request.getAdditionalReqParams().get(paramName));
             }
 
-            // Store authorization_details from authorization/PAR request for later processing
+            // 保存 authorization_details 供后续 grant 处理
             String authorizationDetails = request.getAdditionalReqParams().get(OAuth2Constants.AUTHORIZATION_DETAILS);
             if (authorizationDetails != null) {
                 authenticationSession.setClientNote(OAuth2Constants.AUTHORIZATION_DETAILS, authorizationDetails);
@@ -401,6 +412,7 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
         }
     }
 
+    /** 进入浏览器认证流（授权码/PAR 等）。 */
     private Response buildAuthorizationCodeAuthorizationResponse(String requestUri) {
         this.event.event(EventType.LOGIN);
         authenticationSession.setAuthNote(Details.AUTH_TYPE, CODE_AUTH_TYPE);
@@ -410,7 +422,7 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
                 .map(AuthorizationEndpointRequestParserProcessor::getRequestUriType)
                 .orElse(null);
 
-        // Redirect if it is a PAR request because authentication may need a refresh (kerberos) and the single object is consumed now
+        // PAR 请求需重定向到认证流（单次 request_uri 已消费）
         boolean redirectToAuthFlow = requestUriType == RequestUriType.PAR;
 
         OIDCLoginProtocol loginProtocol = new OIDCLoginProtocol(session, realm, session.getContext().getUri(), headers, event);
@@ -419,6 +431,7 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
         return response;
     }
 
+    /** 启动 Realm 注册认证流。 */
     private Response buildRegister() {
         authManager.expireIdentityCookie(session);
 
@@ -432,6 +445,7 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
         return processor.authenticate();
     }
 
+    /** 启动重置凭据认证流。 */
     private Response buildForgotCredential() {
         authManager.expireIdentityCookie(session);
 
@@ -444,6 +458,7 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
         return processor.authenticate();
     }
 
+    /** 将标准 OIDC 授权参数逐项交给回调处理（写入 session note 等）。 */
     public static void performActionOnParameters(AuthorizationEndpointRequest request, BiConsumer<String, String> paramAction) {
         paramAction.accept(AdapterConstants.KC_IDP_HINT, request.getIdpHint());
 

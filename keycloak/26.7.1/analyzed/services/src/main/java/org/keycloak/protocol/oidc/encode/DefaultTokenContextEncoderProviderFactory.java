@@ -31,6 +31,8 @@ import org.keycloak.protocol.oidc.grants.OAuth2GrantType;
 import org.keycloak.protocol.oidc.grants.OAuth2GrantTypeFactory;
 
 /**
+ * 默认令牌上下文编码器工厂：维护会话/令牌/授权类型的快捷码映射。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class DefaultTokenContextEncoderProviderFactory implements TokenContextEncoderProviderFactory {
@@ -41,11 +43,14 @@ public class DefaultTokenContextEncoderProviderFactory implements TokenContextEn
     Map<String, String> grantsByShortcuts;
     Map<String, String> grantsToShortcuts;
 
+    /** @param session Keycloak 会话
+     * @return 编码器实例 */
     @Override
     public TokenContextEncoderProvider create(KeycloakSession session) {
         return new DefaultTokenContextEncoderProvider(session, this);
     }
 
+    /** 初始化会话类型与令牌类型快捷码索引。 */
     @Override
     public void init(Config.Scope config) {
         sessionTypesByShortcut = new HashMap<>();
@@ -61,6 +66,7 @@ public class DefaultTokenContextEncoderProviderFactory implements TokenContextEn
         tokenTypesByShortcut = Collections.unmodifiableMap(tokenTypesByShortcut);
     }
 
+    /** 收集所有 {@link OAuth2GrantType} 的授权类型快捷码并校验无重复。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         this.sessionFactory = factory;
@@ -78,7 +84,7 @@ public class DefaultTokenContextEncoderProviderFactory implements TokenContextEn
         grantsByShortcuts.put(DefaultTokenContextEncoderProvider.UNKNOWN, DefaultTokenContextEncoderProvider.UNKNOWN);
         grantsToShortcuts.put(DefaultTokenContextEncoderProvider.UNKNOWN, DefaultTokenContextEncoderProvider.UNKNOWN);
 
-        // Validation if there are not duplicated shortcuts (for example when introducing new grant impl...)
+        // 校验授权类型快捷码无重复
         if (grantsByShortcuts.size() != grantsToShortcuts.size()) {
             throw new IllegalStateException("Different lengths of maps. grantsByShortcuts.size=" + grantsByShortcuts.size() + ", grantsToShortcuts.size=" + grantsToShortcuts.size() +
                     ". Make sure that there is no OAuth2GrantType implementation with same ID or shortcut like other grants");
@@ -90,23 +96,29 @@ public class DefaultTokenContextEncoderProviderFactory implements TokenContextEn
 
     }
 
+    /** @return 工厂 ID {@code default} */
     @Override
     public String getId() {
         return "default";
     }
 
+    /** @param sessionTypeShortcut 2 字符会话类型码
+     * @return 会话类型或 null */
     protected AccessTokenContext.SessionType getSessionTypeByShortcut(String sessionTypeShortcut) {
         return sessionTypesByShortcut.get(sessionTypeShortcut);
     }
 
+    /** @param tokenTypeShortcut 2 字符令牌类型码
+     * @return 令牌类型或 null */
     protected AccessTokenContext.TokenType getTokenTypeByShortcut(String tokenTypeShortcut) {
         return tokenTypesByShortcut.get(tokenTypeShortcut);
     }
 
+    /** 按授权类型名查快捷码，必要时动态刷新映射。 */
     protected String getShortcutByGrantType(String grantType) {
         String grantShortcut = grantsToShortcuts.get(grantType);
         if (grantShortcut == null) {
-            // Refresh maps in case new grant type was deployed
+            // 新 grant 部署后刷新映射
             OAuth2GrantTypeFactory factory = (OAuth2GrantTypeFactory) sessionFactory.getProviderFactory(OAuth2GrantType.class, grantType);
             if (factory != null) {
                 String shortcut = factory.getShortcut();
@@ -118,6 +130,7 @@ public class DefaultTokenContextEncoderProviderFactory implements TokenContextEn
         return grantShortcut;
     }
 
+    /** 按快捷码反查授权类型名。 */
     protected String getGrantTypeByShortcut(String shortcut) {
         String grantType = grantsByShortcuts.get(shortcut);
         if (grantType == null) {

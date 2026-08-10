@@ -24,25 +24,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 访问令牌 ID 上下文编码 SPI：在 token id 中嵌入会话/令牌类型等元数据。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class TokenContextEncoderSpi implements Spi {
 
+    /** @return 内部 SPI，不对外暴露配置 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code tokenContextEncoder} */
     @Override
     public String getName() {
         return "tokenContextEncoder";
     }
 
+    /** @return Provider 接口类 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return TokenContextEncoderProvider.class;
     }
 
+    /** @return ProviderFactory 接口类 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return TokenContextEncoderProviderFactory.class;

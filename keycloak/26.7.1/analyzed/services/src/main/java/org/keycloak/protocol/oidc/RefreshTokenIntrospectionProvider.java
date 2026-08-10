@@ -30,26 +30,32 @@ import org.keycloak.util.TokenUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * 刷新令牌自省 Provider：校验 refresh/offline token 的用户会话、复用策略与受众。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class RefreshTokenIntrospectionProvider extends AccessTokenIntrospectionProvider<RefreshToken> {
 
     private static final Logger logger = Logger.getLogger(RefreshTokenIntrospectionProvider.class);
 
+    /** @param session Keycloak 会话 */
     public RefreshTokenIntrospectionProvider(KeycloakSession session) {
         super(session);
     }
 
+    /** @return {@link RefreshToken} 类型 */
     @Override
     protected Class<RefreshToken> getTokenClass() {
         return RefreshToken.class;
     }
 
+    /** 查找并校验与 refresh token 关联的有效用户会话。 */
     @Override
     protected UserSessionUtil.UserSessionValidationResult verifyUserSession() {
         return UserSessionUtil.findValidSessionForRefreshToken(session, realm, token, client, (invalidUserSession -> {}));
     }
 
+    /** 若 Realm 启用 refresh token 吊销，校验 token 复用是否仍合法。 */
     @Override
     protected boolean verifyTokenReuse() {
 
@@ -66,6 +72,7 @@ public class RefreshTokenIntrospectionProvider extends AccessTokenIntrospectionP
         return true;
     }
 
+    /** 调用 {@link TokenManager#validateTokenReuse} 校验复用。 */
     private boolean validateTokenReuse() {
         AuthenticatedClientSessionModel clientSession = userSession.getAuthenticatedClientSessionByClient(client.getId());
 
@@ -79,6 +86,7 @@ public class RefreshTokenIntrospectionProvider extends AccessTokenIntrospectionP
         }
     }
 
+    /** 校验 token 的 issuedFor 与当前认证客户端一致。 */
     @Override
     protected boolean verifyAudience() {
         ClientModel authenticatedClient = session.getContext().getClient();

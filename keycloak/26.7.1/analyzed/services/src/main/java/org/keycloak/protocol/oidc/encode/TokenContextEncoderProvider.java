@@ -23,16 +23,33 @@ import org.keycloak.models.ClientSessionContext;
 import org.keycloak.provider.Provider;
 
 /**
- * Provides ability to encode some context into access token ID, so this information can be later retrieved from the token without the need to use some proprietary/non-standard claims.
- * For example token context can contain info whether it is lightweight access token or regular token, whether it is coming from online session or offline session etc.
+ * 将令牌上下文编码进访问令牌 ID，后续可从 token id 解析而无需依赖非标准 claim。
+ * <p>例如可区分轻量/常规访问令牌、在线/离线会话等。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface TokenContextEncoderProvider extends Provider {
 
+    /**
+     * 从客户端会话上下文构建令牌上下文。
+     * @param clientSessionContext 客户端会话上下文
+     * @param rawTokenId 原始 token id
+     * @param isOffline 是否为离线令牌
+     * @return 访问令牌上下文
+     */
     AccessTokenContext getTokenContextFromClientSessionContext(ClientSessionContext clientSessionContext, String rawTokenId, boolean isOffline);
 
+    /**
+     * 从编码后的 token id 解析令牌上下文。
+     * @param encodedTokenId 含上下文前缀的 token id
+     * @return 访问令牌上下文
+     */
     AccessTokenContext getTokenContextFromTokenId(String encodedTokenId);
 
+    /**
+     * 将令牌上下文编码为 token id 前缀。
+     * @param tokenContext 访问令牌上下文
+     * @return 编码后的 token id
+     */
     String encodeTokenId(AccessTokenContext tokenContext);
 }

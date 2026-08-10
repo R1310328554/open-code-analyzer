@@ -22,6 +22,8 @@ package org.keycloak.protocol.oidc.encode;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link TokenContextEncoderProvider} 工厂接口。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface TokenContextEncoderProviderFactory extends ProviderFactory<TokenContextEncoderProvider> {

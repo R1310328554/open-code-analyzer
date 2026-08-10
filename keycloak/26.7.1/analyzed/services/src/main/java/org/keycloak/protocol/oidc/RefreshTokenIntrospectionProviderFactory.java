@@ -20,17 +20,23 @@ package org.keycloak.protocol.oidc;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * 刷新令牌自省 Provider 工厂，ID 为 {@code refresh_token}。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class RefreshTokenIntrospectionProviderFactory extends AccessTokenIntrospectionProviderFactory {
 
+    /** 刷新令牌自省 Provider ID。 */
     private static final String REFRESH_TOKEN_TYPE = "refresh_token";
 
+    /** @param session Keycloak 会话
+     * @return 刷新令牌自省 Provider */
     @Override
     public TokenIntrospectionProvider create(KeycloakSession session) {
         return new RefreshTokenIntrospectionProvider(session);
     }
 
+    /** @return {@link #REFRESH_TOKEN_TYPE} */
     @Override
     public String getId() {
         return REFRESH_TOKEN_TYPE;
