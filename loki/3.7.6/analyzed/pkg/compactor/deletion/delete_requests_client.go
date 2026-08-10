@@ -1,5 +1,8 @@
 package deletion
 
+// 删除请求远程客户端：包装 CompactorClient 并提供内存缓存，
+// 供 Querier 等组件查询时过滤已删除日志行。
+
 import (
 	"context"
 	"sync"
@@ -18,11 +21,13 @@ type CompactorClient interface {
 	Stop()
 }
 
+// DeleteRequestsClient 为查询侧使用的删除请求客户端抽象。
 type DeleteRequestsClient interface {
 	GetAllDeleteRequestsForUser(ctx context.Context, userID string, forQuerytimeFiltering bool, timeRange *TimeRange) ([]deletionproto.DeleteRequest, error)
 	Stop()
 }
 
+// deleteRequestsClient 在 forQuerytimeFiltering 模式下缓存各租户删除请求。
 type deleteRequestsClient struct {
 	compactorClient CompactorClient
 	mu              sync.RWMutex
@@ -44,6 +49,7 @@ func WithRequestClientCacheDuration(d time.Duration) DeleteRequestsStoreOption {
 	}
 }
 
+// NewDeleteRequestsClient 创建客户端并启动定时刷新缓存的后台协程。
 func NewDeleteRequestsClient(compactorClient CompactorClient, deleteClientMetrics *DeleteRequestClientMetrics, clientType string, opts ...DeleteRequestsStoreOption) (DeleteRequestsClient, error) {
 	client := &deleteRequestsClient{
 		compactorClient: compactorClient,
@@ -103,6 +109,7 @@ func (c *deleteRequestsClient) Stop() {
 	close(c.stopChan)
 }
 
+// updateLoop 按 cacheDuration 周期刷新已缓存租户的最新删除请求。
 func (c *deleteRequestsClient) updateLoop() {
 	t := time.NewTicker(c.cacheDuration)
 	defer t.Stop()
@@ -149,6 +156,7 @@ func (c *deleteRequestsClient) currentUserIDs() []string {
 	return userIDs
 }
 
+// NewNoOpDeleteRequestsClient 返回空实现，用于未启用删除功能的部署。
 func NewNoOpDeleteRequestsClient() DeleteRequestsClient {
 	return &noOpDeleteRequestsClient{}
 }

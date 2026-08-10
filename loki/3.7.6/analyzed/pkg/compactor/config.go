@@ -1,5 +1,8 @@
 package compactor
 
+// Compactor 配置结构：定义压缩间隔、保留策略、删除请求存储、
+// Ring 选举、水平扩展模式及删除任务队列相关参数。
+
 import (
 	"flag"
 	"fmt"
@@ -17,6 +20,7 @@ import (
 	lokiring "github.com/grafana/loki/v3/pkg/util/ring"
 )
 
+// Config 汇总 Compactor 全部 YAML/CLI 可配置字段。
 type Config struct {
 	WorkingDirectory                string                `yaml:"working_directory"`
 	CompactionInterval              time.Duration         `yaml:"compaction_interval"`
@@ -45,6 +49,7 @@ type Config struct {
 	DeletionMarkerObjectStorePrefix string                `yaml:"deletion_marker_object_store_prefix"`
 }
 
+// RegisterFlags 注册 compactor.* 前缀的全部 CLI 标志。
 // RegisterFlags registers flags.
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&cfg.WorkingDirectory, "compactor.working-directory", "/var/loki/compactor", "Directory where files can be downloaded for compaction.")
@@ -87,6 +92,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&cfg.DeletionMarkerObjectStorePrefix, "compactor.deletion-marker-object-store-prefix", "", "Object storage path prefix for storing deletion markers. The prefix must end with a forward slash(/). Leave empty to continue to store deletion markers on the local disk.")
 }
 
+// Validate 校验并行度、Ring 固定参数、保留启用时的删除存储配置等。
 // Validate verifies the config does not contain inappropriate values
 func (cfg *Config) Validate() error {
 	if cfg.HorizontalScalingMode != HorizontalScalingModeDisabled {
@@ -134,6 +140,7 @@ func (cfg *Config) Validate() error {
 	return cfg.WorkerConfig.Validate()
 }
 
+// JobsConfig 封装水平扩展模式下各类后台任务的配置块。
 type JobsConfig struct {
 	Deletion DeletionJobsConfig `yaml:"deletion"`
 }
@@ -150,6 +157,7 @@ func (c *JobsConfig) Validate() error {
 	return c.Deletion.Validate()
 }
 
+// DeletionJobsConfig 定义删除 manifest 存储前缀、并发度、超时与重试次数。
 type DeletionJobsConfig struct {
 	DeletionManifestStorePrefix string        `yaml:"deletion_manifest_store_prefix"`
 	ChunkProcessingConcurrency  int           `yaml:"chunk_processing_concurrency"`

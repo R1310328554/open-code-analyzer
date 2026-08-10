@@ -1,5 +1,8 @@
 package client
 
+// Compactor HTTP 客户端：通过 REST API 查询删除请求与缓存世代号，
+// 适用于无法使用 gRPC 的场景；JobQueue 不支持 HTTP 调用。
+
 import (
 	"context"
 	"encoding/json"
@@ -25,6 +28,7 @@ const (
 	cacheGenNumPath = "/loki/api/v1/cache/generation_numbers"
 )
 
+// HTTPConfig 配置 compactor.client 前缀的 TLS 与连接选项。
 type HTTPConfig struct {
 	TLSEnabled bool             `yaml:"tls_enabled"`
 	TLS        tls.ClientConfig `yaml:",inline"`
@@ -38,6 +42,7 @@ func (cfg *HTTPConfig) RegisterFlags(f *flag.FlagSet) {
 	cfg.TLS.RegisterFlagsWithPrefix(prefix, f)
 }
 
+// compactorHTTPClient 持有 HTTP 客户端及删除请求、缓存世代 URL。
 type compactorHTTPClient struct {
 	httpClient *http.Client
 
@@ -45,6 +50,7 @@ type compactorHTTPClient struct {
 	cacheGenURL       string
 }
 
+// NewHTTPClient 解析地址、配置连接池与可选 TLS 后返回 HTTP 客户端。
 // NewHTTPClient creates a client which talks to compactor over HTTP.
 // It uses provided TLS config which creating HTTP client.
 func NewHTTPClient(addr string, cfg HTTPConfig) (CompactorClient, error) {
@@ -86,6 +92,7 @@ func (c *compactorHTTPClient) Name() string {
 
 func (c *compactorHTTPClient) Stop() {}
 
+// GetAllDeleteRequestsForUser 向 /loki/api/v1/delete 发起 GET 并解析 JSON 响应。
 func (c *compactorHTTPClient) GetAllDeleteRequestsForUser(ctx context.Context, userID string, forQuerytimeFiltering bool, timeRange *deletion.TimeRange) ([]deletionproto.DeleteRequest, error) {
 	u := *c.deleteRequestsURL
 	q := u.Query()
@@ -134,6 +141,7 @@ func (c *compactorHTTPClient) GetAllDeleteRequestsForUser(ctx context.Context, u
 	return deleteRequests, nil
 }
 
+// GetCacheGenerationNumber 请求 /loki/api/v1/cache/generation_numbers 端点。
 func (c *compactorHTTPClient) GetCacheGenerationNumber(ctx context.Context, userID string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.cacheGenURL, nil)
 	if err != nil {
@@ -165,6 +173,7 @@ func (c *compactorHTTPClient) GetCacheGenerationNumber(ctx context.Context, user
 	return genNumber, err
 }
 
+// JobQueueClient HTTP 模式不支持，调用时 panic。
 func (c *compactorHTTPClient) JobQueueClient() grpc.JobQueueClient {
 	panic("compactor does not support interacting with job queue over HTTP")
 }

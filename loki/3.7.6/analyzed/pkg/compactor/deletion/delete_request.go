@@ -1,5 +1,8 @@
 package deletion
 
+// 删除请求运行时对象：包装 deletionproto.DeleteRequest，
+// 解析 LogQL 选择器并为保留/压缩阶段提供 chunk 与行级过滤函数。
+
 import (
 	"strings"
 	"time"
@@ -22,6 +25,7 @@ type timeInterval struct {
 	start, end time.Time
 }
 
+// deleteRequest 缓存 matchers、LogSelectorExpr 及预计算时间区间以加速过滤。
 type deleteRequest struct {
 	deletionproto.DeleteRequest
 	matchers        []*labels.Matcher      `json:"-"`
@@ -32,6 +36,7 @@ type deleteRequest struct {
 	DeletedLines            atomic.Int32           `json:"-"`
 }
 
+// newDeleteRequest 从 proto 构造运行时对象并预解析 LogQL 与时间边界。
 func newDeleteRequest(protoReq deletionproto.DeleteRequest, totalLinesDeletedMetric *prometheus.CounterVec) (*deleteRequest, error) {
 	d := deleteRequest{
 		DeleteRequest:           protoReq,
@@ -63,6 +68,7 @@ func (d *deleteRequest) SetQuery(logQL string) error {
 	return nil
 }
 
+// FilterFunction 返回行级过滤函数：匹配标签后按时间范围与行过滤器判定是否删除。
 // FilterFunction returns a filter function that returns true if the given line should be deleted based on the DeleteRequest
 func (d *deleteRequest) FilterFunction(lbls labels.Labels) (filter.Func, error) {
 	if !allMatch(d.matchers, lbls) {
@@ -112,6 +118,7 @@ func allMatch(matchers []*labels.Matcher, labels labels.Labels) bool {
 	return true
 }
 
+// IsDeleted 判断 chunk 时间范围与标签是否与删除请求重叠且匹配。
 // IsDeleted checks if the given chunk entry would have data requested for deletion.
 func (d *deleteRequest) IsDeleted(userID []byte, lbls labels.Labels, chunk retention.Chunk) bool {
 	if d.UserID != unsafeGetString(userID) {
@@ -148,6 +155,7 @@ func (d *deleteRequest) IsDeleted(userID []byte, lbls labels.Labels, chunk reten
 	return true
 }
 
+// GetChunkFilter 判断 chunk 是否受删除影响，必要时返回行级 filter.Func。
 // GetChunkFilter tells whether the chunk is covered by the DeleteRequest and
 // optionally returns a filter.Func if the chunk is supposed to be deleted partially or the delete request has line filters.
 func (d *deleteRequest) GetChunkFilter(userID []byte, lbls labels.Labels, chunk retention.Chunk) (bool, filter.Func) {
@@ -176,6 +184,7 @@ func (d *deleteRequest) GetChunkFilter(userID []byte, lbls labels.Labels, chunk 
 	return true, ff
 }
 
+// IsDuplicate 检测不同 requestID 但 LogQL 与时间范围相同的重复请求。
 func (d *deleteRequest) IsDuplicate(o *deleteRequest) (bool, error) {
 	// we would never have duplicates from same request
 	if d.RequestID == o.RequestID {

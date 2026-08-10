@@ -1,5 +1,8 @@
 package client
 
+// Compactor gRPC 客户端：通过 dskit grpcclient 连接 Compactor，
+// 拉取删除请求、缓存世代号，并暴露 JobQueue 客户端供水平扩展压缩。
+
 import (
 	"context"
 	"flag"
@@ -19,6 +22,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/compactor/deletion/deletionproto"
 )
 
+// GRPCConfig 封装 compactor.grpc-client 前缀的 gRPC 客户端配置。
 type GRPCConfig struct {
 	GRPCClientConfig grpcclient.Config `yaml:",inline"`
 }
@@ -28,6 +32,7 @@ func (cfg *GRPCConfig) RegisterFlags(f *flag.FlagSet) {
 	cfg.GRPCClientConfig.RegisterFlagsWithPrefix("compactor.grpc-client", f)
 }
 
+// compactorGRPCClient 持有连接及 Compactor/JobQueue 两个 gRPC 桩客户端。
 type compactorGRPCClient struct {
 	cfg GRPCConfig
 
@@ -37,6 +42,7 @@ type compactorGRPCClient struct {
 	jobQueueClient            compactor_grpc.JobQueueClient
 }
 
+// NewGRPCClient 建立 gRPC 连接，注入租户头并注册请求耗时直方图。
 // NewGRPCClient supports only methods which are used for internal communication of Loki like
 // loading delete requests, cache gen numbers for query time filtering and interacting with job queue for horizontal scaling of compactor.
 func NewGRPCClient(addr string, cfg GRPCConfig, r prometheus.Registerer) (CompactorClient, error) {
@@ -99,6 +105,7 @@ func (s *compactorGRPCClient) Stop() {
 	s.conn.Close()
 }
 
+// GetAllDeleteRequestsForUser 注入 OrgID 后调用 GetDeleteRequests RPC 并转换响应。
 func (s *compactorGRPCClient) GetAllDeleteRequestsForUser(ctx context.Context, userID string, forQuerytimeFiltering bool, timeRange *deletion.TimeRange) ([]deletionproto.DeleteRequest, error) {
 	ctx = user.InjectOrgID(ctx, userID)
 
@@ -131,6 +138,7 @@ func (s *compactorGRPCClient) GetAllDeleteRequestsForUser(ctx context.Context, u
 	return deleteRequests, nil
 }
 
+// GetCacheGenerationNumber 查询租户 results cache 世代号用于查询侧缓存失效。
 func (s *compactorGRPCClient) GetCacheGenerationNumber(ctx context.Context, userID string) (string, error) {
 	ctx = user.InjectOrgID(ctx, userID)
 	grpcResp, err := s.grpcClient.GetCacheGenNumbers(ctx, &compactor_grpc.GetCacheGenNumbersRequest{})

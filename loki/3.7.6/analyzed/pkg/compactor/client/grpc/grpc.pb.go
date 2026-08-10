@@ -3,6 +3,9 @@
 
 package grpc
 
+// Compactor 与 JobQueue 的 gRPC 服务桩代码（protoc-gen-gogo 生成）。
+// 定义删除请求查询、缓存世代号及水平扩展压缩任务队列双向流 RPC。
+
 import (
 	bytes "bytes"
 	context "context"
@@ -36,6 +39,7 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// JobType 标识 JobQueue 下发的任务类型，当前仅支持删除任务。
 // JobType represents the type of job
 type JobType int32
 
@@ -55,6 +59,7 @@ func (JobType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_24a5f361c0f660df, []int{0}
 }
 
+// GetDeleteRequestsRequest 支持查询时过滤标志及可选时间范围重叠过滤。
 type GetDeleteRequestsRequest struct {
 	ForQuerytimeFiltering bool `protobuf:"varint,1,opt,name=forQuerytimeFiltering,proto3" json:"forQuerytimeFiltering,omitempty"`
 	// Time range for overlap filtering. If present, only returns delete requests
@@ -116,6 +121,7 @@ func (m *GetDeleteRequestsRequest) GetEndTime() time.Time {
 	return time.Time{}
 }
 
+// GetDeleteRequestsResponse 返回匹配的 deletionproto.DeleteRequest 列表。
 type GetDeleteRequestsResponse struct {
 	DeleteRequests []*deletionproto.DeleteRequest `protobuf:"bytes,1,rep,name=deleteRequests,proto3" json:"deleteRequests,omitempty"`
 }
@@ -159,6 +165,7 @@ func (m *GetDeleteRequestsResponse) GetDeleteRequests() []*deletionproto.DeleteR
 	return nil
 }
 
+// GetCacheGenNumbersRequest 为空请求，租户由 gRPC 上下文 OrgID 注入。
 type GetCacheGenNumbersRequest struct {
 }
 
@@ -194,6 +201,7 @@ func (m *GetCacheGenNumbersRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetCacheGenNumbersRequest proto.InternalMessageInfo
 
+// GetCacheGenNumbersResponse 携带 results cache 世代号字符串。
 type GetCacheGenNumbersResponse struct {
 	ResultsCacheGen string `protobuf:"bytes,1,opt,name=resultsCacheGen,proto3" json:"resultsCacheGen,omitempty"`
 }
@@ -747,6 +755,7 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// CompactorClient 为 Compactor 服务客户端接口，含删除请求与缓存世代 RPC。
 // CompactorClient is the client API for Compactor service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -759,6 +768,7 @@ type compactorClient struct {
 	cc *grpc.ClientConn
 }
 
+// NewCompactorClient 基于已有 ClientConn 创建 Compactor gRPC 客户端。
 func NewCompactorClient(cc *grpc.ClientConn) CompactorClient {
 	return &compactorClient{cc}
 }
@@ -781,6 +791,7 @@ func (c *compactorClient) GetCacheGenNumbers(ctx context.Context, in *GetCacheGe
 	return out, nil
 }
 
+// CompactorServer 为 Compactor 服务端实现接口。
 // CompactorServer is the server API for Compactor service.
 type CompactorServer interface {
 	GetDeleteRequests(context.Context, *GetDeleteRequestsRequest) (*GetDeleteRequestsResponse, error)
@@ -798,6 +809,7 @@ func (*UnimplementedCompactorServer) GetCacheGenNumbers(ctx context.Context, req
 	return nil, status.Errorf(codes.Unimplemented, "method GetCacheGenNumbers not implemented")
 }
 
+// RegisterCompactorServer 将 Compactor 服务注册到 gRPC Server。
 func RegisterCompactorServer(s *grpc.Server, srv CompactorServer) {
 	s.RegisterService(&_Compactor_serviceDesc, srv)
 }
@@ -855,6 +867,7 @@ var _Compactor_serviceDesc = grpc.ServiceDesc{
 	Metadata: "pkg/compactor/client/grpc/grpc.proto",
 }
 
+// JobQueueClient 为 Worker 侧 JobQueue 客户端，通过 Loop 双向流收发任务。
 // JobQueueClient is the client API for JobQueue service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -870,6 +883,7 @@ type jobQueueClient struct {
 	cc *grpc.ClientConn
 }
 
+// NewJobQueueClient 创建 JobQueue 客户端用于水平扩展压缩 Worker。
 func NewJobQueueClient(cc *grpc.ClientConn) JobQueueClient {
 	return &jobQueueClient{cc}
 }
@@ -905,6 +919,7 @@ func (x *jobQueueLoopClient) Recv() (*Job, error) {
 	return m, nil
 }
 
+// JobQueueServer 为 Main Compactor 侧 JobQueue 服务实现接口。
 // JobQueueServer is the server API for JobQueue service.
 type JobQueueServer interface {
 	// After calling this method, both Worker and JobQueue enter a loop, in which worker waits for
@@ -922,6 +937,7 @@ func (*UnimplementedJobQueueServer) Loop(srv JobQueue_LoopServer) error {
 	return status.Errorf(codes.Unimplemented, "method Loop not implemented")
 }
 
+// RegisterJobQueueServer 将 JobQueue 服务注册到 gRPC Server。
 func RegisterJobQueueServer(s *grpc.Server, srv JobQueueServer) {
 	s.RegisterService(&_JobQueue_serviceDesc, srv)
 }

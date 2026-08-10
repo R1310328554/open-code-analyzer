@@ -1,5 +1,8 @@
 package compactor
 
+// Loki Compactor 核心服务：通过 Ring 选举 Leader，周期性压缩索引表，
+// 可选执行保留策略与删除请求处理，并支持水平扩展压缩模式。
+
 import (
 	"context"
 	"fmt"
@@ -34,6 +37,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// 通用压缩流程：按表名解析 schema、调用 IndexCompactor 压缩、可选保留与上传。
 // Here is how the generic compactor works:
 // 1. Find the index type from table name using schemaPeriodForTable.
 // 2. Find the registered IndexCompactor for the index type.
@@ -81,6 +85,7 @@ var (
 	errSchemaForTableNotFound = errors.New("schema for table not found")
 )
 
+// Compactor 聚合 Ring、表管理器、删除请求组件及 JobQueue 等子服务。
 type Compactor struct {
 	services.Service
 
@@ -115,6 +120,7 @@ type Compactor struct {
 	storeContainers map[config.DayTime]storeContainer
 }
 
+// storeContainer 按 schema 周期持有索引存储客户端、标记器与 Sweeper。
 type storeContainer struct {
 	tableMarker        retention.TableMarker
 	sweeper            *retention.Sweeper
@@ -127,6 +133,7 @@ type Limits interface {
 	DefaultLimits() *validation.Limits
 }
 
+// NewCompactor 初始化 Ring、子服务管理器并调用 init 完成组件装配。
 func NewCompactor(
 	cfg Config,
 	objectStoreClients map[config.DayTime]client.ObjectClient,
@@ -200,6 +207,7 @@ func NewCompactor(
 	return compactor, nil
 }
 
+// init 创建工作目录、保留/删除子系统、storeContainers 与 tablesManager。
 func (c *Compactor) init(
 	objectStoreClients map[config.DayTime]client.ObjectClient,
 	deleteStoreClient client.ObjectClient,
@@ -349,6 +357,7 @@ func (c *Compactor) init(
 	return nil
 }
 
+// initDeletes 初始化删除请求存储、HTTP/gRPC 处理器及 DeleteRequestsManager。
 func (c *Compactor) initDeletes(objectClient client.ObjectClient, indexUpdatePropagationMaxDelay time.Duration, r prometheus.Registerer, limits Limits) error {
 	deletionWorkDir := filepath.Join(c.cfg.WorkingDirectory, "deletion")
 	indexStorageClient := storage.NewIndexStorageClient(objectClient, c.cfg.DeleteRequestStoreKeyPrefix)
@@ -440,6 +449,7 @@ func (c *Compactor) starting(ctx context.Context) (err error) {
 	return nil
 }
 
+// loop 按 compaction_interval 周期性触发压缩，RunOnce 模式仅执行一次。
 func (c *Compactor) loop(ctx context.Context) error {
 	if c.cfg.RunOnce {
 		level.Info(util_log.Logger).Log("msg", "running single compaction")

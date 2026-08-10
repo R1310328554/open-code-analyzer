@@ -1,5 +1,8 @@
 package deletion
 
+// 删除请求 SQLite 底层存储：使用 zombiezen/go/sqlite 连接池，
+// 通过 backup API 快照后 gzip 上传至对象存储。
+
 import (
 	"context"
 	"fmt"
@@ -29,6 +32,7 @@ const (
 	deleteRequestsDBSQLiteFileNameGZ = deleteRequestsDBSQLiteFileName + ".gz"
 )
 
+// sqlQuery 封装 SQL 语句、ExecOptions 及更新后回调。
 type sqlQuery struct {
 	query                  string
 	execOpts               *sqlitex.ExecOptions
@@ -46,6 +50,7 @@ type sqliteDB struct {
 	wg   sync.WaitGroup
 }
 
+// newSQLiteDB 从对象存储下载或创建本地 SQLite 并启动上传协程。
 func newSQLiteDB(workingDirectory string, indexStorageClient storage.Client) (*sqliteDB, error) {
 	dbPath := filepath.Join(workingDirectory, fmt.Sprintf("%s.sqlite", DeleteRequestsTableName))
 	if err := util.EnsureDirectory(filepath.Dir(dbPath)); err != nil {
@@ -121,6 +126,7 @@ func (s *sqliteDB) loop() {
 	}
 }
 
+// Exec 从连接池取连接执行 SQL，多条更新语句自动包裹事务。
 func (s *sqliteDB) Exec(ctx context.Context, updatesData bool, queries ...sqlQuery) (err error) {
 	if len(queries) == 0 {
 		return nil
@@ -259,6 +265,7 @@ func (s *sqliteDB) uploadFile() error {
 	return nil
 }
 
+// cleanupSQLiteDB 清理本地及对象存储中的 SQLite 文件，用于 DB 类型回退。
 // cleanupSQLiteDB removes the SQLite DB from local disk as well as object storage
 func cleanupSQLiteDB(workingDirectory string, indexStorageClient storage.Client) error {
 	if err := filepath.WalkDir(workingDirectory, func(path string, d fs.DirEntry, err error) error {

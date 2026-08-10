@@ -1,5 +1,8 @@
 package deletion
 
+// DeleteRequestsStore 的 BoltDB 实现：以 index 键值编码存储删除请求、
+// 分片详情与 per-user 缓存世代号，支持大区间请求自动分片。
+
 import (
 	"context"
 	"encoding/binary"
@@ -40,6 +43,7 @@ const (
 
 var ErrDeleteRequestNotFound = errors.New("could not find matching delete requests")
 
+// deleteRequestsStoreBoltDB 通过 index.Client 读写 BoltDB 中的删除请求数据。
 // deleteRequestsStoreBoltDB provides all the methods required to manage lifecycle of delete request and things related to it.
 type deleteRequestsStoreBoltDB struct {
 	indexClient index.Client
@@ -61,6 +65,7 @@ func (ds *deleteRequestsStoreBoltDB) Stop() {
 	ds.indexClient.Stop()
 }
 
+// AddDeleteRequest 生成唯一 requestID 并按 shardByInterval 切分写入 BoltDB。
 // AddDeleteRequest creates entries for new delete requests. All passed delete requests will be associated to
 // each other by request id
 func (ds *deleteRequestsStoreBoltDB) AddDeleteRequest(ctx context.Context, userID, query string, startTime, endTime model.Time, shardByInterval time.Duration) (string, error) {
@@ -100,6 +105,7 @@ func (ds *deleteRequestsStoreBoltDB) addDeleteRequestWithID(ctx context.Context,
 	return ds.indexClient.BatchWrite(ctx, writeBatch)
 }
 
+// mergeShardedRequests 将多分片合并为单条请求并原子更新 BoltDB。
 func (ds *deleteRequestsStoreBoltDB) mergeShardedRequests(ctx context.Context, requestToAdd deletionproto.DeleteRequest, requestsToRemove []deletionproto.DeleteRequest) error {
 	writeBatch := ds.indexClient.NewWriteBatch()
 

@@ -1,5 +1,8 @@
 package deletion
 
+// DeleteRequestsStore 的 SQLite 实现：requests/shards/cache_gen 三表
+// 管理删除请求、分片进度与缓存世代号，查询时考虑索引传播延迟。
+
 import (
 	"context"
 	"fmt"
@@ -97,16 +100,19 @@ const (
 	sqlCountShards = `SELECT COUNT(*) FROM shards WHERE id=?;`
 )
 
+// userCacheGen 表示单租户的缓存世代号键值对，用于批量迁移。
 type userCacheGen struct {
 	userID, cacheGen string
 }
 
+// deleteRequestsStoreSQLite 通过 sqliteDB 连接池执行结构化 SQL 管理删除请求。
 // deleteRequestsStoreSQLite provides all the methods required to manage lifecycle of delete request and things related to it.
 type deleteRequestsStoreSQLite struct {
 	sqliteStore                    *sqliteDB
 	indexUpdatePropagationMaxDelay time.Duration
 }
 
+// newDeleteRequestsStoreSQLite 初始化 SQLite 表结构并返回存储实例。
 func newDeleteRequestsStoreSQLite(workingDirectory string, indexStorageClient storage.Client, indexUpdatePropagationMaxDelay time.Duration) (*deleteRequestsStoreSQLite, error) {
 	sqliteStore, err := newSQLiteDB(workingDirectory, indexStorageClient)
 	if err != nil {

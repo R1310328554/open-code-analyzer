@@ -1,5 +1,8 @@
 package deletion
 
+// 删除请求批次：Compaction 周期内按 batchSize 加载的待处理请求集合，
+// 按租户聚合并提供 chunk 过期判定与重复请求检测。
+
 import (
 	"time"
 
@@ -13,6 +16,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// deleteRequestBatch 按 userID 索引待处理请求并跟踪重复项。
 // deleteRequestBatch holds a batch of requests loaded for processing
 type deleteRequestBatch struct {
 	deleteRequestsToProcess map[string]*userDeleteRequests
@@ -21,6 +25,7 @@ type deleteRequestBatch struct {
 	metrics                 *deleteRequestsManagerMetrics
 }
 
+// newDeleteRequestBatch 创建空批次并关联指标收集器。
 func newDeleteRequestBatch(metrics *deleteRequestsManagerMetrics) *deleteRequestBatch {
 	return &deleteRequestBatch{
 		deleteRequestsToProcess: map[string]*userDeleteRequests{},
@@ -47,6 +52,7 @@ func (b *deleteRequestBatch) userIDs() []string {
 	return userIDs
 }
 
+// addDeleteRequest 将请求加入对应租户列表并扩展 requestsInterval。
 // addDeleteRequest add a requests to the batch
 func (b *deleteRequestBatch) addDeleteRequest(dr *deleteRequest) {
 	dr.TotalLinesDeletedMetric = b.metrics.deletedLinesTotal
@@ -96,6 +102,7 @@ func (b *deleteRequestBatch) checkDuplicate(deleteRequest deleteRequest) (bool, 
 	return false, nil
 }
 
+// expired 对 chunk 应用批次内所有匹配删除请求，合并行级过滤函数。
 func (b *deleteRequestBatch) expired(userID []byte, chk retention.Chunk, lbls labels.Labels, skipRequest func(*deleteRequest) bool) (bool, filter.Func) {
 	userIDStr := unsafeGetString(userID)
 	if b.deleteRequestsToProcess[userIDStr] == nil || !intervalsOverlap(b.deleteRequestsToProcess[userIDStr].requestsInterval, model.Interval{
@@ -146,6 +153,7 @@ func (b *deleteRequestBatch) expired(userID []byte, chk retention.Chunk, lbls la
 	}
 }
 
+// intervalMayHaveExpiredChunks 判断索引表是否可能含待删除 chunk（保守策略）。
 func (b *deleteRequestBatch) intervalMayHaveExpiredChunks(userID string) bool {
 	// We can't do the overlap check between the passed interval and delete requests interval from a user because
 	// if a request is issued just for today and there are chunks spanning today and yesterday then

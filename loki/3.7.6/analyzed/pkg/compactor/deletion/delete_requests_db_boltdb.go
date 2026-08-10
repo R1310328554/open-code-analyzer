@@ -1,5 +1,8 @@
 package deletion
 
+// 删除请求 BoltDB 底层存储：本地 bbolt 文件配合 index.Client 接口，
+// 定期 gzip 压缩后上传至对象存储实现持久化与多实例共享。
+
 import (
 	"context"
 	"errors"
@@ -21,6 +24,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// deleteRequestsTable 管理本地 BoltDB 文件及定时上传至 indexStorageClient。
 type deleteRequestsTable struct {
 	indexStorageClient storage.Client
 	dbPath             string
@@ -35,6 +39,7 @@ type deleteRequestsTable struct {
 
 const deleteRequestsDBBoltDBFileName = DeleteRequestsTableName + ".gz"
 
+// newDeleteRequestsTable 下载或创建本地 DB 并启动上传循环协程。
 func newDeleteRequestsTable(workingDirectory string, indexStorageClient storage.Client) (index.Client, error) {
 	dbPath := filepath.Join(workingDirectory, DeleteRequestsTableName)
 	boltdbIndexClient, err := local.NewBoltDBIndexClient(local.BoltDBConfig{Directory: filepath.Dir(dbPath)})
@@ -99,6 +104,7 @@ func (t *deleteRequestsTable) loop() {
 	}
 }
 
+// uploadFile 将 BoltDB 快照 gzip 压缩后写入对象存储 delete_requests.gz。
 func (t *deleteRequestsTable) uploadFile() error {
 	if t.uploadedAt.After(t.updatedAt) {
 		level.Debug(util_log.Logger).Log("msg", "skipping uploading delete requests db since there have been no updates to the table since last upload")
@@ -177,6 +183,7 @@ func (t *deleteRequestsTable) NewWriteBatch() index.WriteBatch {
 	return t.boltdbIndexClient.NewWriteBatch()
 }
 
+// BatchWrite 批量写入 BoltDB 并更新 updatedAt 触发后续上传。
 func (t *deleteRequestsTable) BatchWrite(ctx context.Context, batch index.WriteBatch) error {
 	boltWriteBatch, ok := batch.(*local.BoltWriteBatch)
 	if !ok {

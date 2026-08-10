@@ -1,5 +1,8 @@
 package deletion
 
+// DeleteRequestsStore 抽象与工厂：定义删除请求 CRUD、分片合并、
+// 缓存世代号及处理状态管理，支持 BoltDB/SQLite 双后端与 Tee 备份。
+
 import (
 	"context"
 	"fmt"
@@ -12,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/storage"
 )
 
+// DeleteRequestsStoreDBType 标识删除请求持久化后端类型（boltdb 或 sqlite）。
 type DeleteRequestsStoreDBType string
 
 const (
@@ -23,6 +27,7 @@ const (
 
 var SupportedDeleteRequestsStoreDBTypes = []DeleteRequestsStoreDBType{DeleteRequestsStoreDBTypeBoltDB, DeleteRequestsStoreDBTypeSQLite}
 
+// TimeRange 为可选时间范围过滤器，Start 与 End 须同时设置。
 // TimeRange represents an optional time range for filtering delete requests.
 // If provided, both Start and End must be set.
 type TimeRange struct {
@@ -46,6 +51,7 @@ type DeleteRequestsStore interface {
 	Stop()
 }
 
+// NewDeleteRequestsStore 按 DB 类型创建存储，SQLite 空库时从 BoltDB 迁移数据。
 func NewDeleteRequestsStore(
 	deleteRequestsStoreDBType DeleteRequestsStoreDBType,
 	workingDirectory string,
@@ -141,6 +147,7 @@ func createDeleteRequestsStore(
 	}
 }
 
+// deleteRequestsStoreTee 双写主备存储，读操作仅走 primaryStore。
 type deleteRequestsStoreTee struct {
 	primaryStore, backupStore DeleteRequestsStore
 }

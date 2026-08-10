@@ -1,5 +1,8 @@
 package deletion
 
+// DeleteRequestsManager 协调删除请求生命周期：加载批次、驱动保留压缩、
+// 跟踪 series 处理进度，并在水平扩展模式下构建 deletion manifest。
+
 import (
 	"context"
 	"fmt"
@@ -26,6 +29,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// DeleteRequestsKind 区分带/不带行过滤器或全部删除请求的加载策略。
 type DeleteRequestsKind string
 
 const (
@@ -45,6 +49,7 @@ var (
 	boltdbBucketName  = []byte("series_progress")
 )
 
+// userDeleteRequests 聚合单租户批次内所有 deleteRequest 及时间跨度。
 type userDeleteRequests struct {
 	requests []*deleteRequest
 	// requestsInterval holds the earliest start time and latest end time considering all the delete requests
@@ -62,6 +67,7 @@ type TablesManager interface {
 
 type TableIteratorFunc func(ctx context.Context, callback func(string, Table) error) (err error)
 
+// DeleteRequestsManager 连接 DeleteRequestsStore、tablesManager 与 JobBuilder。
 type DeleteRequestsManager struct {
 	workingDir                string
 	deleteRequestsStore       DeleteRequestsStore
@@ -85,6 +91,7 @@ type DeleteRequestsManager struct {
 	seriesProgress *bbolt.DB
 }
 
+// NewDeleteRequestsManager 构造管理器并清理旧版 JSON series progress 文件。
 func NewDeleteRequestsManager(
 	workingDir string,
 	store DeleteRequestsStore,
@@ -156,6 +163,7 @@ func (d *DeleteRequestsManager) Init(tablesManager TablesManager, registerer pro
 	return nil
 }
 
+// Start 启动指标更新与 deletion manifest 构建后台循环，阻塞至 ctx 取消。
 // Start starts the DeleteRequestsManager's background operations. It is a blocking call.
 // To stop the background operations, cancel the passed context.
 func (d *DeleteRequestsManager) Start(ctx context.Context) {
@@ -329,6 +337,7 @@ func (d *DeleteRequestsManager) updateMetrics() error {
 	return nil
 }
 
+// loadDeleteRequestsToProcess 按 kind 与 batchSize 加载待处理删除请求批次。
 func (d *DeleteRequestsManager) loadDeleteRequestsToProcess(kind DeleteRequestsKind) (*deleteRequestBatch, error) {
 	batch := newDeleteRequestBatch(d.metrics)
 
@@ -501,6 +510,7 @@ func (d *DeleteRequestsManager) isSeriesProcessed(seriesKey []byte) bool {
 	return seriesProcessed
 }
 
+// MarkPhaseStarted 在压缩阶段开始时加载当前批次到 currentBatch。
 func (d *DeleteRequestsManager) MarkPhaseStarted() {
 	status := statusSuccess
 	loadRequestsKind := DeleteRequestsAll
@@ -549,6 +559,7 @@ func (d *DeleteRequestsManager) markRequestAsProcessed(deleteRequest deletionpro
 	}
 }
 
+// MarkPhaseFinished 标记批次内请求已处理、合并分片并重置 series progress。
 func (d *DeleteRequestsManager) MarkPhaseFinished() {
 	if d.currentBatch.requestCount() == 0 {
 		return
@@ -583,6 +594,7 @@ func (d *DeleteRequestsManager) MarkPhaseFinished() {
 	d.currentBatch.reset()
 }
 
+// resetSeriesProgress 删除并重建 series progress BoltDB 以回收已删键空间。
 // resetSeriesProgress removes the existing boltdb file for series progress and creates a new one.
 // We remove and recreate the file because boltdb does not reclaim the space when data is deleted.
 func (d *DeleteRequestsManager) resetSeriesProgress() {
