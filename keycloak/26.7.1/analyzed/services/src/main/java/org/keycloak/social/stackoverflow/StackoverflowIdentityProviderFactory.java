@@ -26,34 +26,43 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
+ * Stack Overflow 社交身份提供者工厂。
+ * <p>注册 provider id {@code stackoverflow} 并创建 {@link StackoverflowIdentityProvider}。</p>
+ *
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class StackoverflowIdentityProviderFactory extends
         AbstractIdentityProviderFactory<StackoverflowIdentityProvider> implements
         SocialIdentityProviderFactory<StackoverflowIdentityProvider> {
 
+    /** Stack Overflow IdP 在 Keycloak 中的 provider id。 */
     public static final String PROVIDER_ID = "stackoverflow";
 
+    /** 管理控制台显示的 IdP 名称。 */
     @Override
     public String getName() {
         return "StackOverflow";
     }
 
+    /** 根据 realm 配置创建 Stack Overflow IdP 实例。 */
     @Override
     public StackoverflowIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new StackoverflowIdentityProvider(session, new StackOverflowIdentityProviderConfig(model));
     }
 
+    /** 创建空的 Stack Overflow IdP 配置对象。 */
     @Override
     public StackOverflowIdentityProviderConfig createConfig() {
         return new StackOverflowIdentityProviderConfig();
     }
 
+    /** 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 返回 Stack Exchange API key 等可配置属性。 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return ProviderConfigurationBuilder.create()

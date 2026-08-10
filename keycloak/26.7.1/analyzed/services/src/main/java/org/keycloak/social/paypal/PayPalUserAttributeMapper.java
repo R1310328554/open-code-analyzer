@@ -20,19 +20,23 @@ package org.keycloak.social.paypal;
 import org.keycloak.broker.oidc.mappers.AbstractJsonUserAttributeMapper;
 
 /**
- * User attribute mapper.
- * 
+ * PayPal 用户属性映射器。
+ * <p>将 PayPal UserInfo JSON 字段映射到 Keycloak 用户属性。</p>
+ *
  * @author Petter Lysne (petterlysne at hotmail dot com)
  */
 public class PayPalUserAttributeMapper extends AbstractJsonUserAttributeMapper {
 
+	/** 兼容的 IdP provider id 列表。 */
 	private static final String[] cp = new String[] { PayPalIdentityProviderFactory.PROVIDER_ID };
 
+	/** 返回仅支持 PayPal IdP 的 provider id 数组。 */
 	@Override
 	public String[] getCompatibleProviders() {
 		return cp;
 	}
 
+	/** 映射器唯一 id。 */
 	@Override
 	public String getId() {
 		return "paypal-user-attribute-mapper";

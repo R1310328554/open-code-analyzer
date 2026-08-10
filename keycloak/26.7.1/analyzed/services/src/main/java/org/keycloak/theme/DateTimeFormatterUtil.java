@@ -25,27 +25,31 @@ import java.util.Optional;
 import org.jboss.logging.Logger;
 
 /**
- * Util class for localized date and time representation
+ * 本地化日期时间格式化工具类。
+ * <p>将毫秒时间戳按 locale 与 {@link DateFormat} 转为可读字符串。</p>
  *
  * @author <a href="mailto:mabartos@redhat.com">Martin Bartos</a>
  */
 public class DateTimeFormatterUtil {
     private static final Logger log = Logger.getLogger(DateTimeFormatterUtil.class);
 
+    /** 使用英语 locale 格式化毫秒时间戳。 */
     public static String getDateTimeFromMillis(long millis) {
         return getDateTimeFromMillis(millis, Locale.ENGLISH);
     }
 
+    /** 按 locale 字符串格式化毫秒时间戳。 */
     public static String getDateTimeFromMillis(long millis, String locale) {
         return getDateTimeFromMillis(millis, getLocaleFromString(locale));
     }
 
+    /** 按 {@link Locale} 使用默认日期时间格式格式化。 */
     public static String getDateTimeFromMillis(long millis, Locale locale) {
         return getDateTimeFromMillis(millis, getDefaultDateFormat(locale));
     }
 
     /**
-     * Get string representation of localized date and time
+     * 将毫秒时间戳格式化为本地化日期时间字符串。
      *
      * @param millis    number of milliseconds passed since January 1, 1970, 00:00:00 GMT
      * @param dateFormat format of date and time. See {@link DateFormat}
@@ -56,12 +60,13 @@ public class DateTimeFormatterUtil {
         return dateFormat.format(new Date(millis));
     }
 
+    /** 解析 locale 字符串，无效时回退英语。 */
     public static Locale getLocaleFromString(String locale) {
         return getLocaleFromString(locale, Locale.ENGLISH);
     }
 
     /**
-     * Parse {@link Locale} from string
+     * 从字符串解析 {@link Locale}。
      *
      * @param locale       required locale
      * @param defaultValue default value if the locale parameter is invalid
@@ -78,10 +83,12 @@ public class DateTimeFormatterUtil {
         return defaultValue;
     }
 
+    /** 返回英语 locale 的默认日期时间格式（MEDIUM + SHORT）。 */
     public static DateFormat getDefaultDateFormat() {
         return getDefaultDateFormat(Locale.ENGLISH);
     }
 
+    /** 返回指定 locale 的默认日期时间格式实例。 */
     public static DateFormat getDefaultDateFormat(Locale locale) {
         return DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale);
     }

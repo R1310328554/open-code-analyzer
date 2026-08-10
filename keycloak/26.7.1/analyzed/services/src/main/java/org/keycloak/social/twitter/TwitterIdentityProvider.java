@@ -70,19 +70,25 @@ import twitter4j.Twitter;
 import twitter4j.v1.User;
 
 /**
+ * Twitter OAuth 1.0a 社交身份提供者。
+ * <p>使用 twitter4j 完成三步 OAuth 流程，支持令牌交换与可选持久化存储。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class TwitterIdentityProvider extends AbstractIdentityProvider<OAuth2IdentityProviderConfig> implements
         SocialIdentityProvider<OAuth2IdentityProviderConfig>, ExchangeTokenToIdentityProviderToken {
 
+    /** 令牌交换时声明的 issued token 类型。 */
     String TWITTER_TOKEN_TYPE="twitter";
 
     protected static final Logger logger = Logger.getLogger(TwitterIdentityProvider.class);
 
+    /** 认证会话中暂存 request token 的 auth note 键。 */
     private static final String TWITTER_TOKEN = "twitter_token";
 
     private final OAuthAuthorization oAuthAuthorization;
 
+    /** 构造 Twitter IdP，从 vault 或配置读取 client secret 并初始化 OAuth 客户端。 */
     public TwitterIdentityProvider(KeycloakSession session, OAuth2IdentityProviderConfig config) {
         super(session, config);
         try (VaultStringSecret vaultStringSecret = session.vault().getStringSecret(getConfig().getClientSecret())) {
@@ -92,11 +98,13 @@ public class TwitterIdentityProvider extends AbstractIdentityProvider<OAuth2Iden
         }
     }
 
+    /** 返回处理 Twitter OAuth 回调的 JAX-RS 端点。 */
     @Override
     public Object callback(RealmModel realm, AuthenticationCallback callback, EventBuilder event) {
         return new Endpoint(session, callback, event, this);
     }
 
+    /** 将 request token 序列化并 Base64 编码，供认证会话暂存。 */
     private static String base64EncodeRequestToken(RequestToken requestToken) throws IOException {
       try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
               ObjectOutputStream oos = new ObjectOutputStream(Base64.getEncoder().wrap(baos))) {
@@ -106,12 +114,14 @@ public class TwitterIdentityProvider extends AbstractIdentityProvider<OAuth2Iden
       }
     }
 
+    /** 从 Base64 字符串反序列化 request token。 */
     protected static RequestToken base64DecodeRequestToken(String serialized) throws IOException, ClassNotFoundException {
         try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(Base64.getMimeDecoder().decode(serialized)))) {
             return (RequestToken) in.readObject();
         }
     }
 
+    /** 获取 request token 并重定向用户至 Twitter 授权页。 */
     @Override
     public Response performLogin(AuthenticationRequest request) {
         try {
@@ -129,6 +139,7 @@ public class TwitterIdentityProvider extends AbstractIdentityProvider<OAuth2Iden
         }
     }
 
+    /** 按配置从持久化或会话中获取 Twitter access token 并返回交换响应。 */
     @Override
     public Response exchangeFromToken(UriInfo uriInfo, EventBuilder builder, ClientModel authorizedClient, UserSessionModel tokenUserSession, UserModel tokenSubject, MultivaluedMap<String, String> params) {
         String requestedType = params.getFirst(OAuth2Constants.REQUESTED_TOKEN_TYPE);
@@ -146,6 +157,7 @@ public class TwitterIdentityProvider extends AbstractIdentityProvider<OAuth2Iden
         }
     }
 
+    /** 从联邦身份持久化记录读取已存储的 Twitter token。 */
     protected Response exchangeStoredToken(UriInfo uriInfo, ClientModel authorizedClient, UserSessionModel tokenUserSession, UserModel tokenSubject) {
         FederatedIdentityModel model = session.users().getFederatedIdentity(authorizedClient.getRealm(), tokenSubject, getConfig().getAlias());
         if (model == null || model.getToken() == null) {
@@ -168,6 +180,7 @@ public class TwitterIdentityProvider extends AbstractIdentityProvider<OAuth2Iden
         return Response.ok(tokenResponse).type(MediaType.APPLICATION_JSON_TYPE).build();
     }
 
+    /** 从用户会话 note 读取联邦 access token（未启用 storeToken 时）。 */
     protected Response exchangeSessionToken(UriInfo uriInfo, ClientModel authorizedClient, UserSessionModel tokenUserSession, UserModel tokenSubject) {
         String accessToken = tokenUserSession.getNote(UserAuthenticationIdentityProvider.FEDERATED_ACCESS_TOKEN);
         if (accessToken == null) {
@@ -185,6 +198,7 @@ public class TwitterIdentityProvider extends AbstractIdentityProvider<OAuth2Iden
     }
 
 
+    /** Twitter OAuth 回调 JAX-RS 端点，处理授权响应并验证用户凭证。 */
     protected static class Endpoint {
         protected final RealmModel realm;
         protected final AuthenticationCallback callback;
@@ -207,6 +221,7 @@ public class TwitterIdentityProvider extends AbstractIdentityProvider<OAuth2Iden
             this.headers = session.getContext().getRequestHeaders();
         }
 
+        /** 处理 Twitter 回调：校验 state、交换 access token 并提取用户资料。 */
         @GET
         public Response authResponse(@QueryParam("state") String state,
                                      @QueryParam("denied") String denied,
@@ -283,6 +298,7 @@ public class TwitterIdentityProvider extends AbstractIdentityProvider<OAuth2Iden
 
     }
 
+    /** 返回已存储的 Twitter token JSON。 */
     @Override
     public Response retrieveToken(KeycloakSession session, FederatedIdentityModel identity) {
         return Response.ok(identity.getToken()).type(MediaType.APPLICATION_JSON).build();
@@ -290,10 +306,11 @@ public class TwitterIdentityProvider extends AbstractIdentityProvider<OAuth2Iden
 
     @Override
     public Response retrieveToken(KeycloakSession session, FederatedIdentityModel identity, UserSessionModel userSession, UserModel user) {
-        // not supported, this way we can remove this insecure management when V1 is removed
+        // 不支持按会话检索 token；V1 API 移除后可去掉此不安全路径
         return exchangeNotSupported();
     }
 
+    /** 登录完成后将会话中的联邦 access token 写入用户会话 note。 */
     @Override
     public void authenticationFinished(AuthenticationSessionModel authSession, BrokeredIdentityContext context) {
         authSession.setUserSessionNote(UserAuthenticationIdentityProvider.FEDERATED_ACCESS_TOKEN, (String) context.getContextData().get(UserAuthenticationIdentityProvider.FEDERATED_ACCESS_TOKEN));

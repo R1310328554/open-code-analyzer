@@ -29,18 +29,26 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.services.util.LocaleUtil;
 
 /**
+ * 基于 ClassLoader 的主题实现。
+ * <p>从 classpath 的 {@code theme/<name>/<type>/} 目录加载模板、资源与消息 bundle。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ClassLoaderTheme extends FileBasedTheme {
 
+    /** 主题名称。 */
     private String name;
 
+    /** 父主题名称（来自 theme.properties）。 */
     private String parentName;
 
+    /** 导入主题名称（来自 theme.properties）。 */
     private String importName;
 
+    /** 主题类型（login、account、email 等）。 */
     private Type type;
 
+    /** 加载主题资源的 ClassLoader。 */
     private ClassLoader classLoader;
 
     private String templateRoot;
@@ -51,10 +59,12 @@ public class ClassLoaderTheme extends FileBasedTheme {
 
     private Properties properties;
 
+    /** 构造并初始化 ClassLoader 主题。 */
     public ClassLoaderTheme(String name, Type type, ClassLoader classLoader) throws IOException {
         init(name, type, classLoader);
     }
 
+    /** 解析 theme.properties 并设置模板/资源/消息根路径。 */
     public void init(String name, Type type, ClassLoader classLoader) throws IOException {
         this.name = name;
         this.type = type;
@@ -100,11 +110,13 @@ public class ClassLoaderTheme extends FileBasedTheme {
         return type;
     }
 
+    /** 从 classpath 获取 FreeMarker 模板 URL。 */
     @Override
     public URL getTemplate(String name) {
         return classLoader.getResource(templateRoot + name);
     }
 
+    /** 从主题 resources 目录读取静态资源流。 */
     @Override
     public InputStream getResourceAsStream(String path) throws IOException {
         return ResourceLoader.getResourceAsStream(resourceRoot, path);
@@ -125,6 +137,7 @@ public class ClassLoaderTheme extends FileBasedTheme {
         }
     }
 
+    /** 合并 realm 本地化文本与主题消息 bundle。 */
     @Override
     public Properties getEnhancedMessages(RealmModel realm, Locale locale) throws IOException {
         if (locale == null){

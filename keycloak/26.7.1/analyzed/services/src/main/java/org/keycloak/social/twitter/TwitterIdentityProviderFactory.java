@@ -27,32 +27,41 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
 /**
+ * Twitter 社交身份提供者工厂。
+ * <p>注册 provider id {@code twitter}；仅在 {@link Feature#TWITTER_BROKER} 特性启用时可用。</p>
+ *
  * @author Pedro Igor
  */
 public class TwitterIdentityProviderFactory extends AbstractIdentityProviderFactory<TwitterIdentityProvider> implements SocialIdentityProviderFactory<TwitterIdentityProvider>, EnvironmentDependentProviderFactory {
 
+    /** Twitter IdP 在 Keycloak 中的 provider id。 */
     public static final String PROVIDER_ID = "twitter";
 
+    /** 管理控制台显示的 IdP 名称。 */
     @Override
     public String getName() {
         return "Twitter";
     }
 
+    /** 根据 realm 配置创建 Twitter IdP 实例。 */
     @Override
     public TwitterIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new TwitterIdentityProvider(session, new OAuth2IdentityProviderConfig(model));
     }
 
+    /** 创建空的 OAuth2 IdP 配置对象。 */
     @Override
     public OAuth2IdentityProviderConfig createConfig() {
         return new OAuth2IdentityProviderConfig();
     }
 
+    /** 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 检查 TWITTER_BROKER 特性是否已启用。 */
     @Override
     public boolean isSupported(Scope config) {
         return Profile.isFeatureEnabled(Feature.TWITTER_BROKER);

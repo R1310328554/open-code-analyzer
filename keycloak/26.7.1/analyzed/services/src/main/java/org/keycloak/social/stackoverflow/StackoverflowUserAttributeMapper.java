@@ -19,19 +19,23 @@ package org.keycloak.social.stackoverflow;
 import org.keycloak.broker.oidc.mappers.AbstractJsonUserAttributeMapper;
 
 /**
- * User attribute mapper.
- * 
+ * Stack Overflow 用户属性映射器。
+ * <p>将 Stack Exchange API 用户 JSON 字段映射到 Keycloak 用户属性。</p>
+ *
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class StackoverflowUserAttributeMapper extends AbstractJsonUserAttributeMapper {
 
+	/** 兼容的 IdP provider id 列表。 */
 	private static final String[] cp = new String[] { StackoverflowIdentityProviderFactory.PROVIDER_ID };
 
+	/** 返回仅支持 Stack Overflow IdP 的 provider id 数组。 */
 	@Override
 	public String[] getCompatibleProviders() {
 		return cp;
 	}
 
+	/** 映射器唯一 id。 */
 	@Override
 	public String getId() {
 		return "stackoverflow-user-attribute-mapper";

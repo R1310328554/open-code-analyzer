@@ -29,16 +29,25 @@ import org.keycloak.models.KeycloakSession;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
+ * PayPal OpenID Connect 社交身份提供者。
+ * <p>支持生产与沙箱环境，通过 UserInfo 端点获取用户资料并映射联邦身份。</p>
+ *
  * @author Petter Lysne (petterlysne at hotmail dot com)
  */
 public class PayPalIdentityProvider extends AbstractOAuth2IdentityProvider<PayPalIdentityProviderConfig> implements SocialIdentityProvider<PayPalIdentityProviderConfig>{
 
+  /** PayPal 生产环境 API 根 URL。 */
   public static final String BASE_URL = "https://api.paypal.com/v1";
+  /** PayPal 生产环境 OAuth2 授权端点。 */
   public static final String AUTH_URL = "https://www.paypal.com/signin/authorize";
+	/** OpenID Connect 令牌服务路径。 */
 	public static final String TOKEN_RESOURCE = "/identity/openidconnect/tokenservice";
+	/** UserInfo 端点路径（OpenID schema）。 */
 	public static final String PROFILE_RESOURCE = "/oauth2/token/userinfo?schema=openid";
+	/** 默认 OAuth scope：openid、profile、email。 */
 	public static final String DEFAULT_SCOPE = "openid profile email";
 
+	/** 构造 PayPal IdP，按沙箱配置切换授权/令牌/UserInfo URL。 */
 	public PayPalIdentityProvider(KeycloakSession session, PayPalIdentityProviderConfig config) {
 		super(session, config);
 		config.setAuthorizationUrl(config.targetSandbox() ? "https://www.sandbox.paypal.com/signin/authorize" : AUTH_URL);
@@ -46,16 +55,19 @@ public class PayPalIdentityProvider extends AbstractOAuth2IdentityProvider<PayPa
 		config.setUserInfoUrl((config.targetSandbox() ? "https://api.sandbox.paypal.com/v1" : BASE_URL) + PROFILE_RESOURCE);
 	}
 
+	/** 支持通过外部令牌交换进行身份联邦。 */
 	@Override
 	protected boolean supportsExternalExchange() {
 		return true;
 	}
 
+	/** 外部交换校验时使用的 UserInfo 端点。 */
 	@Override
 	protected String getProfileEndpointForValidation(EventBuilder event) {
 		return getConfig().getUserInfoUrl();
 	}
 
+	/** 从 PayPal UserInfo JSON 提取联邦身份并存储原始 profile 供映射器使用。 */
 	@Override
 	protected BrokeredIdentityContext extractIdentityFromProfile(EventBuilder event, JsonNode profile) {
 		BrokeredIdentityContext user = new BrokeredIdentityContext(getJsonProperty(profile, "user_id"), getConfig());
@@ -70,6 +82,7 @@ public class PayPalIdentityProvider extends AbstractOAuth2IdentityProvider<PayPa
 	}
 
 
+	/** 使用 access token 调用 PayPal UserInfo 获取联邦身份。 */
 	@Override
 	protected BrokeredIdentityContext doGetFederatedIdentity(String accessToken) {
 		try {
@@ -81,6 +94,7 @@ public class PayPalIdentityProvider extends AbstractOAuth2IdentityProvider<PayPa
 		}
 	}
 
+	/** 返回默认 OAuth scope。 */
 	@Override
 	protected String getDefaultScopes() {
 		return DEFAULT_SCOPE;

@@ -26,32 +26,41 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 /**
+ * PayPal 社交身份提供者工厂。
+ * <p>注册 provider id {@code paypal} 并创建 {@link PayPalIdentityProvider} 实例。</p>
+ *
  * @author Petter Lysne
  */
 public class PayPalIdentityProviderFactory extends AbstractIdentityProviderFactory<PayPalIdentityProvider> implements SocialIdentityProviderFactory<PayPalIdentityProvider> {
 
+    /** PayPal IdP 在 Keycloak 中的 provider id。 */
     public static final String PROVIDER_ID = "paypal";
 
+    /** 管理控制台显示的 IdP 名称。 */
     @Override
     public String getName() {
         return "PayPal";
     }
 
+    /** 根据 realm 配置创建 PayPal IdP 实例。 */
     @Override
     public PayPalIdentityProvider create(KeycloakSession session, IdentityProviderModel model) {
         return new PayPalIdentityProvider(session, new PayPalIdentityProviderConfig(model));
     }
 
+    /** 创建空的 PayPal IdP 配置对象。 */
     @Override
     public PayPalIdentityProviderConfig createConfig() {
         return new PayPalIdentityProviderConfig();
     }
 
+    /** 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 返回沙箱开关等可配置属性列表。 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return ProviderConfigurationBuilder.create()

@@ -20,23 +20,30 @@ import org.keycloak.broker.oidc.OAuth2IdentityProviderConfig;
 import org.keycloak.models.IdentityProviderModel;
 
 /**
+ * PayPal 身份提供者配置。
+ * <p>扩展 {@link org.keycloak.broker.oidc.OAuth2IdentityProviderConfig}，支持沙箱环境开关。</p>
+ *
  * @author Petter Lysne (petterlysne at hotmail dot com)
  */
 public class PayPalIdentityProviderConfig extends OAuth2IdentityProviderConfig {
 
+    /** 从 realm 中的 IdP 模型构造配置。 */
     public PayPalIdentityProviderConfig(IdentityProviderModel model) {
         super(model);
     }
 
+    /** 创建空配置（管理控制台新建 IdP 时使用）。 */
     public PayPalIdentityProviderConfig() {
         
     }
 
+    /** 是否指向 PayPal 沙箱环境。 */
     public boolean targetSandbox() {
         String sandbox = getConfig().get("sandbox");
         return sandbox == null ? false : Boolean.valueOf(sandbox);
     }
 
+    /** 设置是否使用沙箱环境。 */
     public void setSandbox(boolean sandbox) {
         getConfig().put("sandbox", String.valueOf(sandbox));
     }

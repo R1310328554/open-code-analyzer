@@ -37,19 +37,26 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.jboss.logging.Logger;
 
 /**
- * Stackoverflow social provider. See https://api.stackexchange.com/docs/authentication
- * 
+ * Stack Overflow 社交身份提供者。
+ * <p>基于 Stack Exchange OAuth2，通过 API 2.2/me 获取用户资料。
+ * 参见 https://api.stackexchange.com/docs/authentication</p>
+ *
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class StackoverflowIdentityProvider extends AbstractOAuth2IdentityProvider<StackOverflowIdentityProviderConfig> implements SocialIdentityProvider<StackOverflowIdentityProviderConfig> {
 
 	private static final Logger log = Logger.getLogger(StackoverflowIdentityProvider.class);
 
+	/** Stack Exchange OAuth 授权端点。 */
 	public static final String AUTH_URL = "https://stackexchange.com/oauth";
+	/** Stack Exchange OAuth 令牌端点。 */
 	public static final String TOKEN_URL = "https://stackexchange.com/oauth/access_token";
+	/** Stack Overflow 用户资料 API 端点（需附加 access_token 与 key）。 */
 	public static final String PROFILE_URL = "https://api.stackexchange.com/2.2/me?order=desc&sort=name&site=stackoverflow";
+	/** 默认 OAuth scope（Stack Exchange 无需额外 scope）。 */
 	public static final String DEFAULT_SCOPE = "";
 
+	/** 构造 Stack Overflow IdP 并注入授权/令牌/UserInfo URL。 */
 	public StackoverflowIdentityProvider(KeycloakSession session, StackOverflowIdentityProviderConfig config) {
 		super(session, config);
 		config.setAuthorizationUrl(AUTH_URL);
@@ -57,22 +64,26 @@ public class StackoverflowIdentityProvider extends AbstractOAuth2IdentityProvide
 		config.setUserInfoUrl(PROFILE_URL);
 	}
 
+	/** 支持通过外部令牌交换进行身份联邦。 */
 	@Override
 	protected boolean supportsExternalExchange() {
 		return true;
 	}
 
+	/** 外部交换校验时使用的用户资料端点。 */
 	@Override
 	protected String getProfileEndpointForValidation(EventBuilder event) {
 		return PROFILE_URL;
 	}
 
+	/** 构建带 access_token 与 API key 的 UserInfo 请求。 */
 	@Override
 	protected SimpleHttpRequest buildUserInfoRequest(String subjectToken, String userInfoUrl) {
 		String URL = PROFILE_URL + "&access_token=" + subjectToken + "&key=" + getConfig().getKey();
 		return SimpleHttp.create(session).doGet(URL);
 	}
 
+	/** 从 Stack Exchange API 响应（items[0]）提取联邦身份。 */
 	@Override
 	protected BrokeredIdentityContext extractIdentityFromProfile(EventBuilder event, JsonNode node) {
 		JsonNode profile = node.get("items").get(0);
@@ -82,7 +93,7 @@ public class StackoverflowIdentityProvider extends AbstractOAuth2IdentityProvide
 		String username = extractUsernameFromProfileURL(getJsonProperty(profile, "link"));
 		user.setUsername(username);
 		user.setName(unescapeHtml3(getJsonProperty(profile, "display_name")));
-		// email is not provided
+		// Stack Exchange API 不提供邮箱字段
 		// user.setEmail(getJsonProperty(profile, "email"));
 		user.setIdp(this);
 
@@ -91,6 +102,7 @@ public class StackoverflowIdentityProvider extends AbstractOAuth2IdentityProvide
 		return user;
 	}
 
+	/** 使用 access token 与 API key 调用 /me 端点获取联邦身份。 */
 	@Override
 	protected BrokeredIdentityContext doGetFederatedIdentity(String accessToken) {
 		log.debug("doGetFederatedIdentity()");
@@ -106,6 +118,7 @@ public class StackoverflowIdentityProvider extends AbstractOAuth2IdentityProvide
 		}
 	}
 
+	/** 从用户 profile 链接 URL 路径解析用户名（第三段路径）。 */
 	protected static String extractUsernameFromProfileURL(String profileURL) {
 		if (isNotBlank(profileURL)) {
 
@@ -139,11 +152,13 @@ public class StackoverflowIdentityProvider extends AbstractOAuth2IdentityProvide
 		return s != null && s.trim().length() > 0;
 	}
 
+	/** 返回默认 OAuth scope。 */
 	@Override
 	protected String getDefaultScopes() {
 		return DEFAULT_SCOPE;
 	}
 
+	/** 将 HTML 实体（&amp;、&lt; 等）解码为 Unicode 字符。 */
 	public static final String unescapeHtml3(final String input) {
 		if (input == null)
 			return null;
@@ -152,13 +167,13 @@ public class StackoverflowIdentityProvider extends AbstractOAuth2IdentityProvide
 		int i = 1;
 		int st = 0;
 		while (true) {
-			// look for '&'
+			// 扫描下一个 & 字符以定位 HTML 实体
 			while (i < len && input.charAt(i - 1) != '&')
 				i++;
 			if (i >= len)
 				break;
 
-			// found '&', look for ';'
+			// 找到 & 后查找分号以确定实体边界
 			int j = i;
 			while (j < len && j < i + MAX_ESCAPE + 1 && input.charAt(j) != ';')
 				j++;
@@ -167,9 +182,9 @@ public class StackoverflowIdentityProvider extends AbstractOAuth2IdentityProvide
 				continue;
 			}
 
-			// found escape
+			// 解析命名或数字 HTML 实体
 			if (input.charAt(i) == '#') {
-				// numeric escape
+				// 数字实体（# 或 #x 前缀）
 				int k = i + 1;
 				int radix = 10;
 
@@ -199,7 +214,7 @@ public class StackoverflowIdentityProvider extends AbstractOAuth2IdentityProvide
 					continue;
 				}
 			} else {
-				// named escape
+				// 命名实体（quot、amp 等）
 				CharSequence value = lookupMap.get(input.substring(i, j));
 				if (value == null) {
 					i++;
@@ -213,7 +228,7 @@ public class StackoverflowIdentityProvider extends AbstractOAuth2IdentityProvide
 				writer.append(value);
 			}
 
-			// skip escape
+			// 跳过已处理的实体，继续扫描
 			st = j + 1;
 			i = st;
 		}

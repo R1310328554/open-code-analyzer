@@ -27,24 +27,31 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * Classpath 主题提供者工厂。
+ * <p>从 {@link #KEYCLOAK_THEMES_JSON} 加载主题清单并注册 {@link ClassLoaderTheme}。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ClasspathThemeProviderFactory implements ThemeProviderFactory {
 
+    /** classpath 主题清单 JSON 资源路径。 */
     public static final String KEYCLOAK_THEMES_JSON = "META-INF/keycloak-themes.json";
     protected static Map<Theme.Type, Map<String, ClassLoaderTheme>> themes = new HashMap<>();
 
     private String id;
 
+    /** 仅设置工厂 id（延迟加载主题）。 */
     public ClasspathThemeProviderFactory(String id) {
         this.id = id;
     }
 
+    /** 设置 id 并从 ClassLoader 加载主题清单。 */
     public ClasspathThemeProviderFactory(String id, ClassLoader classLoader) {
         this.id = id;
         loadThemes(classLoader, classLoader.getResourceAsStream(KEYCLOAK_THEMES_JSON));
     }
 
+    /** keycloak-themes.json 中单个主题的 JSON 表示。 */
     public static class ThemeRepresentation {
         private String name;
         private String[] types;
@@ -66,6 +73,7 @@ public class ClasspathThemeProviderFactory implements ThemeProviderFactory {
         }
     }
 
+    /** keycloak-themes.json 根结构，包含主题数组。 */
     public static class ThemesRepresentation {
         private ThemeRepresentation[] themes;
 
@@ -78,6 +86,7 @@ public class ClasspathThemeProviderFactory implements ThemeProviderFactory {
         }
     }
 
+    /** 创建共享静态主题表的 ThemeProvider 实例。 */
     @Override
     public ThemeProvider create(KeycloakSession session) {
         return new ClasspathThemeProvider(themes);
@@ -100,6 +109,7 @@ public class ClasspathThemeProviderFactory implements ThemeProviderFactory {
         return id;
     }
 
+    /** 从输入流解析 JSON 并加载主题。 */
     protected void loadThemes(ClassLoader classLoader, InputStream themesInputStream) {
         try {
             loadThemes(classLoader, JsonSerialization.readValue(themesInputStream, ThemesRepresentation.class));
@@ -108,6 +118,7 @@ public class ClasspathThemeProviderFactory implements ThemeProviderFactory {
         }
     }
 
+    /** 遍历主题清单并为每种类型注册 ClassLoaderTheme。 */
     protected void loadThemes(ClassLoader classLoader, ThemesRepresentation themesRep) {
         try {
             for (ThemeRepresentation themeRep : themesRep.getThemes()) {
