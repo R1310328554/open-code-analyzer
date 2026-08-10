@@ -4,10 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Result of a synthetic SSF event emission attempt. The caller (a trusted
- * IAM management client) sees the exact dispatch outcome so it can
- * distinguish a successful push from a filter-dropped event for
- * debugging.
+ * 合成 SSF 事件 emit 尝试的结果。调用方（可信 IAM 管理客户端）可见精确派发结果，
+ * 便于区分成功推送与被过滤丢弃的事件。
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SsfEmitEventResponse {

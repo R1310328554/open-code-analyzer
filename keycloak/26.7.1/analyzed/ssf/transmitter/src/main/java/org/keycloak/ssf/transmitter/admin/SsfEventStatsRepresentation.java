@@ -5,26 +5,18 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Slim summary of SSF event state for a realm or a single receiver
- * client — counts and the oldest {@code createdAt} per status. Drives
- * the {@code GET /admin/realms/{realm}/ssf/events/stats} and
- * {@code GET /admin/realms/{realm}/ssf/clients/{clientId}/events/stats}
- * endpoints that operators use to answer "is the outbox draining or
- * accumulating?" without scraping Prometheus or hitting the database
- * directly.
+ * realm 或单个接收方客户端的 SSF 事件状态精简摘要——各状态的计数与最早 {@code createdAt}。
+ * 驱动 {@code GET /admin/realms/{realm}/ssf/events/stats} 与
+ * {@code GET /admin/realms/{realm}/ssf/clients/{clientId}/events/stats} 端点，
+ * 使操作员无需抓取 Prometheus 或直接查库即可判断发件箱是在消化还是积压。
  *
- * <p>Statuses with zero rows are omitted from the {@code statuses} map
- * — the SQL {@code GROUP BY} that drives the underlying query doesn't
- * synthesize zero-rows, and there's no point inflating the wire shape.
+ * <p>零行状态不会出现在 {@code statuses} 映射中——底层 SQL {@code GROUP BY} 不合成零行，
+ * 也无必要膨胀 wire 结构。</p>
  */
 public class SsfEventStatsRepresentation {
 
-    /**
-     * Per-status snapshot. Keys are the wire form of
-     * {@link org.keycloak.models.jpa.entities.OutboxEntryStatus} —
-     * {@code PENDING}, {@code DELIVERED}, {@code DEAD_LETTER},
-     * {@code HELD}.
-     */
+    /** 各状态的快照。键为 {@link org.keycloak.models.jpa.entities.OutboxEntryStatus} 的 wire 形式——
+     * {@code PENDING}、{@code DELIVERED}、{@code DEAD_LETTER}、{@code HELD}。 */
     private Map<String, StatusEntry> statuses = new LinkedHashMap<>();
 
     public Map<String, StatusEntry> getStatuses() {
@@ -39,11 +31,7 @@ public class SsfEventStatsRepresentation {
 
         private long count;
 
-        /**
-         * Earliest {@code createdAt} across rows in this status, or
-         * {@code null} if no rows exist (in which case the entry would
-         * normally be omitted from the parent map entirely).
-         */
+        /** 该状态下各行的最早 {@code createdAt}；无行时为 {@code null}（通常整个条目不会出现在父映射中）。 */
         private Instant oldestCreatedAt;
 
         public StatusEntry() {

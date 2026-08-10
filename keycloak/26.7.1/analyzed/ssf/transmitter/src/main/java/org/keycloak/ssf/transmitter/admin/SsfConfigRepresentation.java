@@ -5,13 +5,10 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * Representation of the SSF configuration exposed via the admin endpoint
- * {@code $KC_ADMIN_URL/admin/realms/{realm}/ssf/config}.
+ * 通过管理端点 {@code $KC_ADMIN_URL/admin/realms/{realm}/ssf/config} 暴露的 SSF 配置表示。
  *
- * <p>Currently this only carries the set of SSF event types supported by the
- * transmitter by default. Additional realm/transmitter-level SSF settings can
- * be added here as the SSF feature evolves without having to introduce
- * separate endpoints.
+ * <p>当前主要携带发送方默认支持的 SSF 事件类型集合。随着 SSF 功能演进，
+ * 可在此追加 realm/发送方级设置，而无需引入独立端点。</p>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SsfConfigRepresentation {
@@ -21,11 +18,9 @@ public class SsfConfigRepresentation {
     private Set<String> availableSupportedEvents;
 
     /**
-     * Subset of {@link #availableSupportedEvents} that the transmitter
-     * fires natively from Keycloak event listeners. Used by the admin
-     * UI as a "natively emitted" badge — events outside this set are
-     * still selectable but only fire when an external system uses the
-     * synthetic emit endpoint or a custom mapper is shipped.
+     * {@link #availableSupportedEvents} 中由 Keycloak 事件监听器原生触发的子集。
+     * 管理 UI 以此显示「natively emitted」徽章——集合外的事件仍可选，
+     * 但仅在外部系统调用合成 emit 端点或部署自定义 mapper 时才会触发。
      */
     private Set<String> nativelyEmittedEvents;
 

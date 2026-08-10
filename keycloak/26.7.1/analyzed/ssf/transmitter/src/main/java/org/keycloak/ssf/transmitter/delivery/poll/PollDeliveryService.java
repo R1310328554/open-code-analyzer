@@ -15,37 +15,28 @@ import org.keycloak.ssf.transmitter.outbox.SsfOutboxKinds;
 import org.jboss.logging.Logger;
 
 /**
- * Orchestrates one RFC 8936 polling request: ack first (so already-
- * processed rows don't appear in the next batch), then read the next
- * batch of {@code PENDING} POLL rows for the calling receiver.
+ * 编排一次 RFC 8936 轮询请求：先 ack（避免已处理行出现在下一批），再读取调用接收方的
+ * 下一批 {@code PENDING} POLL 行。
  *
- * <p>Stateless aside from the {@link KeycloakSession} hand-off — a fresh
- * service instance is built per request inside the JAX-RS resource.
+ * <p>除 {@link KeycloakSession} 传递外无状态——JAX-RS 资源内每次请求新建实例。</p>
  */
 public class PollDeliveryService {
 
     private static final Logger log = Logger.getLogger(PollDeliveryService.class);
 
-    /** RFC 8936 §2.1 default when the receiver omits {@code maxEvents}. */
+    /** 接收方省略 {@code maxEvents} 时 RFC 8936 §2.1 的默认值。 */
     public static final int DEFAULT_MAX_EVENTS = 100;
 
     /**
-     * Hard upper bound on a receiver-supplied {@code maxEvents}. Protects
-     * the transmitter from a request that asks for the entire backlog at
-     * once. Configurable later if the default proves too tight; for now
-     * 1000 is well above what real receivers send (typical batches are
-     * 50-100).
+     * 接收方 {@code maxEvents} 的硬上限，防止一次请求拉取整个积压。
+     * 默认过紧时可后续配置；1000 远高于典型接收方批量（50–100）。
      */
     public static final int MAX_EVENTS_CAP = 1000;
 
     /**
-     * Hard upper bound on the number of jtis a receiver may include in
-     * a single {@code ack} or {@code setErrs} batch. Same limit for both
-     * so the request stays bounded in memory and the per-(client, jti)
-     * IN-clause query stays under Oracle's hard 1000-element ceiling.
-     * The poll endpoint rejects oversized batches with
-     * {@code 400 invalid_request} — the receiver should split into
-     * multiple polls.
+     * 单次 {@code ack} 或 {@code setErrs} 批次中 jti 数量的硬上限。两者共用同一限制，
+     * 使请求内存有界，且 per-(client, jti) IN 查询不超过 Oracle 1000 元素上限。
+     * 超大批次 poll 端点返回 {@code 400 invalid_request}——接收方应拆成多次 poll。
      */
     public static final int MAX_BATCH_CAP = 1000;
 
@@ -62,10 +53,8 @@ public class PollDeliveryService {
     }
 
     /**
-     * Runs the ack + read pair and returns the response body to send
-     * back to the receiver. Caller is responsible for validating that
-     * {@code receiverClient} owns the stream identified in the URL —
-     * this service operates on a pre-authorized client.
+     * 执行 ack + 读取并返回响应体。调用方负责校验 {@code receiverClient} 拥有 URL 中的流——
+     * 本服务在已授权客户端上操作。
      */
     public PollResponse poll(ClientModel receiverClient, PollRequest request) {
 
@@ -134,14 +123,9 @@ public class PollDeliveryService {
     }
 
     /**
-     * Flattens the wire-shape {@code setErrs} object (per-jti error
-     * descriptor with {@code err} + {@code description} fields per
-     * RFC 8936 §2.1) into a per-jti error message string for storage
-     * in the outbox row's {@code last_error} column. Receivers that
-     * supply a partial descriptor (only {@code err}, only
-     * {@code description}, or neither) get a best-effort string —
-     * we never reject the request just because the descriptor is
-     * malformed.
+     * 将 wire 形态的 {@code setErrs}（RFC 8936 §2.1 每 jti 的 {@code err} + {@code description}）
+     * 扁平化为 per-jti 错误消息字符串，写入发件箱 {@code last_error} 列。
+     * 部分描述符（仅 err、仅 description 或皆无）尽力格式化——不因描述符畸形而拒绝请求。
      */
     protected Map<String, String> toErrorMessages(Map<String, Map<String, Object>> setErrs) {
         if (setErrs == null || setErrs.isEmpty()) {
@@ -171,9 +155,8 @@ public class PollDeliveryService {
     }
 
     /**
-     * Safe accessor for the current realm <em>name</em> — used as the
-     * {@code realm} metric label so dashboards show {@code realm="ssf-poc"}
-     * rather than the opaque realm UUID.
+     * 安全获取当前 realm <em>名称</em>——用作 {@code realm} 指标标签，
+     * 使仪表板显示 {@code realm="ssf-poc"} 而非 opaque realm UUID。
      */
     protected String currentRealmName() {
         try {

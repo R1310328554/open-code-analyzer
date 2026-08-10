@@ -4,17 +4,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Error response body for the RFC 8936 poll endpoint. The poll spec
- * mandates the {@code err} / {@code description} key pair (§2.4.4),
- * which differs from the OAuth-style {@code error} / {@code error_description}
- * envelope the rest of the SSF transmitter uses via
- * {@link org.keycloak.ssf.transmitter.support.SsfErrorRepresentation
- * SsfErrorRepresentation}. This DTO carries the poll-specific shape so
- * a strict RFC 8936 receiver doesn't have to translate.
+ * RFC 8936 poll 端点的错误响应体。poll 规范要求 {@code err} / {@code description} 键对（§2.4.4），
+ * 与 SSF 发送方其余部分通过 {@link org.keycloak.ssf.transmitter.support.SsfErrorRepresentation
+ * SsfErrorRepresentation} 使用的 OAuth 风格 {@code error} / {@code error_description} 不同。
+ * 本 DTO 承载 poll 专用形状，严格 RFC 8936 接收方无需转换。
  *
- * <p>The same key pair is already used inside the request body's
- * {@code setErrs} map ({@link PollRequest}), so this representation
- * keeps the request and response error envelopes symmetric.
+ * <p>请求体 {@code setErrs} 映射（{@link PollRequest}）已使用相同键对，本表示使请求与响应错误信封对称。</p>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PollErrorRepresentation {

@@ -8,7 +8,7 @@ import org.keycloak.ssf.transmitter.stream.StreamDeliveryConfig;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * Representation of the current SSF stream state for a single receiver client.
+ * 单个接收方客户端当前 SSF 流状态的管理端表示。
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SsfClientStreamRepresentation {
@@ -38,11 +38,9 @@ public class SsfClientStreamRepresentation {
     private Integer lastVerifiedAt;
 
     /**
-     * Origin / ownership marker — see
-     * {@link ManagedBy}. Set at creation time and immutable thereafter.
-     * Surfaced to the admin UI so the Stream tab can render the
-     * "managed by" badge and warn operators when an admin save is
-     * about to override a receiver-managed configuration.
+     * 来源/归属标记，参见 {@link ManagedBy}。创建时设定且此后不可变。
+     * 暴露给管理 UI，以便 Stream 选项卡显示「managed by」徽章，并在管理员保存
+     * 即将覆盖接收方托管配置时向操作员发出警告。
      */
     private ManagedBy managedBy;
 

@@ -7,19 +7,15 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * RFC 8936 §2.1 polling request body.
+ * RFC 8936 §2.1 轮询请求体。
  *
- * <p>All fields are optional; defaults applied by {@link PollDeliveryService} are
- * {@code maxEvents=100}, {@code returnImmediately=true}, {@code ack=[]},
- * {@code setErrs={}}.
+ * <p>所有字段可选；{@link PollDeliveryService} 应用的默认值为
+ * {@code maxEvents=100}、{@code returnImmediately=true}、{@code ack=[]}、{@code setErrs={}}。</p>
  *
- * <p>{@code returnImmediately} is parsed for forward compatibility but
- * always honoured as immediate in v1 — long polling is deferred. See
- * {@code keycloak-notes/ssf/design/ssf-poll-delivery.md} decision §5.
+ * <p>{@code returnImmediately} 为前向兼容而解析，v1 始终按立即返回处理——长轮询延后。
+ * 参见 {@code keycloak-notes/ssf/design/ssf-poll-delivery.md} 决策 §5。</p>
  *
- * <p>{@code setErrs} is the receiver's NACK channel: each entry maps the
- * jti of a SET the receiver received but couldn't process to an error
- * descriptor (RFC 8936 §2.1):
+ * <p>{@code setErrs} 为接收方 NACK 通道：每条将收到但无法处理的 SET 的 jti 映射到错误描述符（RFC 8936 §2.1）：
  * <pre>{@code
  * {
  *   "setErrs": {
@@ -27,9 +23,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *   }
  * }
  * }</pre>
- * Matching outbox rows transition to
- * {@link org.keycloak.models.jpa.entities.OutboxEntryStatus#DEAD_LETTER DEAD_LETTER}
- * with the receiver-supplied error message in {@code last_error}.
+ * 匹配的发件箱行转为
+ * {@link org.keycloak.models.jpa.entities.OutboxEntryStatus#DEAD_LETTER DEAD_LETTER}，
+ * {@code last_error} 写入接收方提供的错误消息。</p>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PollRequest {

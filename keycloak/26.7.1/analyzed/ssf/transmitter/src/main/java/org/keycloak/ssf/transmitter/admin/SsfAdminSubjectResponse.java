@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * 管理端主体订阅操作的结果响应，说明主体是否被纳入或忽略及对应实体信息。
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SsfAdminSubjectResponse {
@@ -18,10 +21,8 @@ public class SsfAdminSubjectResponse {
     private String entityId;
 
     /**
-     * Alias of the organization whose membership tipped the decision
-     * for the {@code notified_via_org} / {@code ignored_via_org}
-     * states; {@code null} for every other state. Lets the admin UI
-     * render the source membership when explaining the result.
+     * 在 {@code notified_via_org} / {@code ignored_via_org} 状态下，触发该决策的组织别名；
+     * 其他状态为 {@code null}。供管理 UI 在解释结果时展示来源成员关系。
      */
     @JsonProperty("source_org_alias")
     private String sourceOrgAlias;

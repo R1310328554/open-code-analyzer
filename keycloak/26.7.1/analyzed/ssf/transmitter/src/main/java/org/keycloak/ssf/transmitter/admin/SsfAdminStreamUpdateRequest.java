@@ -7,17 +7,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Body of {@code PATCH /admin/realms/{realm}/ssf/clients/{clientId}/stream}.
- * Carries the admin-editable subset of a stream configuration; any
- * subset of fields may be supplied. Fields that aren't present (or are
- * explicitly null) leave the corresponding stored value untouched.
+ * {@code PATCH /admin/realms/{realm}/ssf/clients/{clientId}/stream} 的请求体。
+ * 携带流配置中可由管理员编辑的子集；可只提交部分字段。未出现（或显式为 null）的字段
+ * 不会改动已存储的对应值。
  *
- * <p>Receiver-supplied fields like {@code aud}, {@code iss},
- * {@code delivery}, {@code default_subjects} and the per-receiver
- * client attributes ({@code ssf.streamAudience},
- * {@code ssf.userSubjectFormat}, …) are deliberately not part of this
- * request — those are configured on the receiver client itself, not on
- * the stream.
+ * <p>接收方提供的字段（如 {@code aud}、{@code iss}、{@code delivery}、
+ * {@code default_subjects} 以及各接收方客户端属性 {@code ssf.streamAudience}、
+ * {@code ssf.userSubjectFormat} 等）刻意不在此请求中——它们配置在接收方客户端本身，而非流上。
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -30,13 +26,9 @@ public class SsfAdminStreamUpdateRequest {
     private Set<String> eventsRequested;
 
     /**
-     * Honoured verbatim when supplied — admin-supplied
-     * {@code events_delivered} overrides the
-     * {@code events_requested ∩ events_supported} intersection that
-     * the receiver-facing endpoint computes. When omitted, the
-     * intersection is recomputed from whatever
-     * {@code events_requested} ends up being (either the new value if
-     * supplied, or the existing stored value).
+     * 若提供则原样采用——管理员指定的 {@code events_delivered} 会覆盖
+     * 面向接收方端点计算的 {@code events_requested ∩ events_supported} 交集。
+     * 省略时，根据最终的 {@code events_requested}（新值或已存值）重新计算交集。
      */
     @JsonProperty("events_delivered")
     private Set<String> eventsDelivered;

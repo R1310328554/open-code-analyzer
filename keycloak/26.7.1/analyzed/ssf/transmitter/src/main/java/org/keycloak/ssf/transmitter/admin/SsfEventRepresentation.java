@@ -6,11 +6,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Admin-facing snapshot of a single SSF outbox row, returned by the
- * admin lookup-by-jti endpoint. Covers any outbox status — PENDING,
- * HELD, DELIVERED, DEAD_LETTER — so the operator can answer "where is
- * this event in the delivery pipeline?" regardless of whether it's
- * still queued, was delivered, or terminally failed.
+ * 单条 SSF 发件箱行的管理端快照，由按 jti 查询的管理端点返回。
+ * 涵盖任意发件箱状态（PENDING、HELD、DELIVERED、DEAD_LETTER），
+ * 使操作员能回答「该事件在投递管道中的位置」，无论仍在排队、已投递或终态失败。
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SsfEventRepresentation {
@@ -46,25 +44,18 @@ public class SsfEventRepresentation {
     private String streamId;
 
     /**
-     * Decoded Security Event Token (JWS payload) — the full claim set
-     * the receiver processes, verbatim. Includes the transmitter-
-     * supplied header claims ({@code iss}, {@code iat}, {@code jti},
-     * {@code aud}, {@code txn}), the subject ({@code sub_id} for SSF
-     * 1.0, or nested under {@code events.<type>.subject} for legacy
-     * SSE CAEP), and the event body. Rendered as formatted JSON in
-     * the lookup result so an operator can inspect exactly what the
-     * receiver will see. Null when the encoded SET could not be
-     * decoded.
+     * 解码后的安全事件令牌（JWS 载荷）——接收方将处理的完整声明集，原样呈现。
+     * 含发送方提供的头声明（{@code iss}、{@code iat}、{@code jti}、{@code aud}、{@code txn}）、
+     * 主体（SSF 1.0 的 {@code sub_id}，或旧版 SSE CAEP 下嵌套于 {@code events.<type>.subject}）
+     * 及事件体。查询结果中以格式化 JSON 展示，供操作员检视接收方将见内容。
+     * 无法解码已编码 SET 时为 null。
      */
     @JsonProperty("decodedSet")
     private Map<String, Object> decodedSet;
 
     /**
-     * Resolved Keycloak user UUID for the user the SET is about.
-     * Null when the subject is org-only, resolves to no user, or the
-     * subject format isn't user-identifying. Gives the admin UI a
-     * click-through to the user detail page from the Pending Events
-     * lookup result without requiring another search.
+     * SET 所涉用户的 Keycloak UUID。主体仅为组织、无法解析到用户或非用户标识格式时为 null。
+     * 供管理 UI 从 Pending Events 查询结果直达用户详情页，无需再次搜索。
      */
     @JsonProperty("userId")
     private String userId;

@@ -12,8 +12,18 @@ import org.keycloak.ssf.transmitter.support.SsfUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * 将 SSF 1.0 格式的 {@link SsfSecurityEventToken} 转换为旧版 SSE CAEP 格式的
+ * {@link SseCaepSecurityEventToken}，供需要 legacy 事件形状的接收方使用。
+ */
 public class SseCaepEventConverter {
 
+    /**
+     * 从 SSE 风格事件 JSON 中提取嵌套的 {@code subject} 映射。
+     *
+     * @param events 事件 JSON 节点
+     * @return subject 映射，未找到时返回 null
+     */
     public static Map<String, Object> extractSseSubjectIdMap(JsonNode events) {
         if (events.isObject() && events.fieldNames().hasNext()) {
             String firstEventKey = events.fieldNames().next();
@@ -26,6 +36,12 @@ public class SseCaepEventConverter {
     }
 
 
+    /**
+     * 将 SSF 1.0 令牌转换为 SSE CAEP 令牌，含事件体字段映射与主体形状调整。
+     *
+     * @param ssfEventToken SSF 1.0 安全事件令牌
+     * @return 转换后的 SSE CAEP 令牌
+     */
     public static SseCaepSecurityEventToken convert(SsfSecurityEventToken ssfEventToken) {
 
         SseCaepSecurityEventToken sseCaepToken = new SseCaepSecurityEventToken();
@@ -57,15 +73,12 @@ public class SseCaepEventConverter {
     }
 
     /**
-     * Builds the SSE 1.0 {@code subject} object that replaces the SSF 1.0
-     * top-level {@code sub_id}.
+     * 构建 SSE 1.0 {@code subject} 对象，替代 SSF 1.0 顶层 {@code sub_id}。
      *
-     * <p>Per SSE 1.0 §3.2 a complex subject carries each facet ({@code user},
-     * {@code session}, {@code device}, {@code application}, {@code tenant},
-     * {@code org_unit}, {@code group}) as a sibling key under
-     * {@code subject}. A simple (non-complex) subject is wrapped as the
-     * {@code user} facet — that's the right call for events like
-     * {@code CaepCredentialChange} that only carry a user identity.
+     * <p>按 SSE 1.0 §3.2，复合主体将各分面（{@code user}、{@code session}、{@code device}、
+     * {@code application}、{@code tenant}、{@code org_unit}、{@code group}）作为
+     * {@code subject} 下的同级键。简单（非 complex）主体包装为 {@code user} 分面——
+     * 适用于仅携带用户身份的 {@code CaepCredentialChange} 等事件。</p>
      */
     protected static Map<String, Object> buildSseCaepSubject(SubjectId subjectId) {
         Map<String, Object> subjectMap = new HashMap<>();

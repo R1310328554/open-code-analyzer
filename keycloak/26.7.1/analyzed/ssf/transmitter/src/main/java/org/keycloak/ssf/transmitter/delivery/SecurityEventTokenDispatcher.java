@@ -26,16 +26,18 @@ import org.keycloak.ssf.transmitter.subject.SubjectSubscriptionFilter;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 安全事件令牌（SET）派发器：按流状态、事件类型与主体订阅过滤，将 SET 写入发件箱或直接推送。
+ * <p>支持 PUSH 与 POLL 两种投递方式，并处理暂停流的 HELD 暂存。</p>
+ */
 public class SecurityEventTokenDispatcher {
 
     private static final Logger log = Logger.getLogger(SecurityEventTokenDispatcher.class);
 
     /**
-     * Fallback filter used when no transmitter config is available
-     * (e.g. legacy / test subclasses constructing the dispatcher
-     * directly). Builds a filter with the §9.3 grace disabled — the
-     * factory path replaces this in {@link #createSubjectSubscriptionFilter()}
-     * with a config-aware instance.
+     * 无发送方配置时的回退过滤器（例如遗留/测试子类直接构造派发器）。
+     * 构建时禁用 §9.3 宽限期——工厂路径在 {@link #createSubjectSubscriptionFilter()} 中
+     * 替换为感知配置的实例。
      */
     protected static final SubjectSubscriptionFilter DEFAULT_SUBJECT_SUBSCRIPTION_FILTER = new SubjectSubscriptionFilter();
 
@@ -100,10 +102,10 @@ public class SecurityEventTokenDispatcher {
     }
 
     /**
-     * Gets the event type from a security event token.
+     * 从安全事件令牌获取事件类型。
      *
-     * @param eventToken The security event token
-     * @return The event type, or null if not found
+     * @param eventToken 安全事件令牌
+     * @return 事件类型，未找到时返回 null
      */
     protected String getEventType(SsfSecurityEventToken eventToken) {
         if (eventToken.getEvents() != null && !eventToken.getEvents().isEmpty()) {
@@ -157,11 +159,9 @@ public class SecurityEventTokenDispatcher {
     }
 
     /**
-     * Safe accessor for the current realm <em>name</em> — used as the
-     * {@code realm} metric label so operators see {@code realm="ssf-poc"}
-     * rather than the opaque realm UUID. During dispatch the session
-     * always carries a realm context, but we guard against a malformed
-     * call path poisoning the metrics labels with a null.
+     * 安全获取当前 realm <em>名称</em>——用作 {@code realm} 指标标签，
+     * 使操作员看到 {@code realm="ssf-poc"} 而非 opaque 的 realm UUID。
+     * 派发时会话通常带 realm 上下文，但仍防护异常调用路径污染指标标签。
      */
     protected String currentRealmName() {
         try {
@@ -172,11 +172,8 @@ public class SecurityEventTokenDispatcher {
     }
 
     /**
-     * Resolves the receiver-friendly event alias (e.g.
-     * {@code CaepCredentialChange}) for the full event type URI. Falls
-     * back to the URI when the event type isn't registered — keeps
-     * unknown / custom event types observable on the metrics side
-     * without losing the increment.
+     * 将完整事件类型 URI 解析为接收方友好的别名（如 {@code CaepCredentialChange}）。
+     * 未注册时回退为 URI——使未知/自定义事件类型在指标侧仍可观测且不丢失计数。
      */
     protected String resolveEventAlias(String eventType) {
         if (eventType == null) {
@@ -187,18 +184,13 @@ public class SecurityEventTokenDispatcher {
     }
 
     /**
-     * Resolves the value to write into the outbox row's
-     * {@code entry_type} column. Aliases are the lingua franca elsewhere
-     * in the SSF subsystem (admin UI, client attributes, metrics labels,
-     * stream-config {@code events_delivered} when admin-created), so
-     * storing the alias keeps the outbox column consistent with the
-     * sets it is filtered against — most notably
+     * 解析写入发件箱行 {@code entry_type} 列的值。别名是 SSF 子系统各处的通用形式
+     * （管理 UI、客户端属性、指标标签、管理员创建的流配置 {@code events_delivered}），
+     * 存储别名使发件箱列与过滤集合一致——尤其
      * {@link org.keycloak.ssf.transmitter.stream.StreamService#evictPendingEventsOutsideDeliveredSet
-     * evictPendingEventsOutsideDeliveredSet}.
+     * evictPendingEventsOutsideDeliveredSet}。
      *
-     * <p>Falls back to the URI for custom events that have no alias
-     * registered, and to {@code <unknown>} for malformed tokens (the
-     * column is NOT NULL, so we always have to write something).
+     * <p>无注册别名的自定义事件回退为 URI；畸形令牌回退为 {@code <unknown>}（列 NOT NULL，必须写入值）。</p>
      */
     protected String resolveEntryType(SsfSecurityEventToken eventToken) {
         String eventType = getEventType(eventToken);
@@ -209,52 +201,35 @@ public class SecurityEventTokenDispatcher {
     }
 
     /**
-     * Subject subscription filter. Returns {@code true} if the event
-     * should be delivered to the given stream based on the stream's
-     * {@code default_subjects} setting and the presence of
-     * {@code ssf.notify.<clientId>} attributes on the event's subject.
+     * 主体订阅过滤。根据流的 {@code default_subjects} 设置及事件主体上
+     * {@code ssf.notify.<clientId>} 属性是否存在，判断事件是否应投递到该流。
      *
-     * <p>Protected so subclasses can override the filtering logic — e.g.
-     * to add custom subject resolution or to unconditionally bypass the
-     * check for certain event types.
+     * <p>protected 以便子类覆盖过滤逻辑——例如自定义主体解析或对特定事件类型无条件跳过检查。</p>
      */
     protected boolean shouldDispatchForSubject(SsfSecurityEventToken eventToken, StreamConfig stream) {
         return subjectSubscriptionFilter.shouldDispatch(eventToken, stream, stream.getClientClientId(), session);
     }
 
     /**
-     * Pre-token subject gate callable before the mapper runs. Returns
-     * {@code true} if the user could receive *any* event on this
-     * stream under the current subscription state. Lets the event
-     * listener short-circuit streams whose subject is not subscribed
-     * before paying for {@code toSecurityEventToken}. The full token-based
-     * gate still runs inside {@link #dispatchEvent}, so any mismatch
-     * between {@code event.getUserId()} and the final token subject
-     * (complex subjects, impersonation) stays safe.
+     * mapper 运行前可调用的预令牌主体门控。若用户在当前订阅状态下可在该流接收<em>任意</em>事件则返回 {@code true}。
+     * 使事件监听器在调用 {@code toSecurityEventToken} 前短路未订阅主体的流。
+     * {@link #dispatchEvent} 内仍会执行完整基于令牌的门控，故 {@code event.getUserId()} 与最终令牌主体
+     * （复合主体、模拟登录）不一致时仍安全。
      */
     public boolean shouldDispatchForUser(UserModel user, StreamConfig stream) {
         return subjectSubscriptionFilter.shouldDispatchForUser(user, stream, stream.getClientClientId(), session);
     }
 
     /**
-     * Returns {@code true} if the event token's type is part of the
-     * stream's {@code events_requested} set — i.e. the receiver wants
-     * this event delivered. Fail-open when either side is missing
-     * (token without event-type info, or stream that hasn't narrowed
-     * its subscription).
+     * 若事件令牌类型属于流的 {@code events_requested} 集合（接收方希望投递该事件）则返回 {@code true}。
+     * 任一侧缺失时 fail-open（令牌无事件类型信息，或流未收窄订阅）。
      *
-     * <p>Canonicalizes each {@code events_requested} entry to its URI
-     * form before comparing with the SET token's URI, because the set
-     * may carry either form depending on who created the stream:
+     * <p>比较前将每条 {@code events_requested} 规范化为 URI，因集合可能含不同形式：
      * <ul>
-     *   <li>Admin-UI-created streams store aliases (the form the UI
-     *       speaks).</li>
-     *   <li>Receiver-created streams store URIs (per the SSF/CAEP
-     *       spec).</li>
+     *   <li>管理 UI 创建的流存别名（UI 使用的形式）。</li>
+     *   <li>接收方创建的流存 URI（符合 SSF/CAEP 规范）。</li>
      * </ul>
-     * Without this normalization, admin-UI-narrowed streams would
-     * never match incoming events and every dispatch would be
-     * suppressed.
+     * 无此规范化时，管理 UI 收窄的流将无法匹配入站事件，派发会被全部抑制。</p>
      */
     protected boolean isEventRequestedByStream(SsfSecurityEventToken eventToken, StreamConfig stream) {
         String eventTypeUri = getEventType(eventToken);
@@ -291,12 +266,10 @@ public class SecurityEventTokenDispatcher {
     }
 
     /**
-     * Holds an event for a paused stream by signing it and writing it to
-     * the outbox in
-     * {@link org.keycloak.models.jpa.entities.OutboxEntryStatus#HELD HELD}
-     * status. The drainer / POLL endpoint skip HELD rows; they're
-     * released to {@code PENDING} when the stream is resumed
-     * ({@link org.keycloak.events.outbox.OutboxStore#releaseHeldForOwner releaseHeldForOwner}).
+     * 为暂停流暂存事件：签名后写入发件箱
+     * {@link org.keycloak.models.jpa.entities.OutboxEntryStatus#HELD HELD} 状态。
+     * drainer / POLL 端点跳过 HELD 行；流恢复时释放为 {@code PENDING}
+     * （{@link org.keycloak.events.outbox.OutboxStore#releaseHeldForOwner releaseHeldForOwner}）。
      */
     protected void holdEvent(SsfSecurityEventToken eventToken, StreamConfig stream) {
         var delivery = stream.getDelivery();
@@ -336,35 +309,24 @@ public class SecurityEventTokenDispatcher {
     }
 
     /**
-     * Asynchronously delivers an event to the receiver by enqueuing the
-     * signed SET into the durable {@link OutboxStore push outbox}.
-     * The cluster-aware drainer picks the row up on its next tick and
-     * pushes it to the receiver's endpoint, retrying with exponential
-     * backoff and dead-lettering after the configured attempt budget is
-     * exhausted.
+     * 异步投递：将已签名 SET 入队至持久化 {@link OutboxStore push outbox}。
+     * 集群感知 drainer 在下一 tick 取行并推送到接收方端点，指数退避重试，
+     * 超出配置尝试次数后进入死信。
      *
-     * <p>Returns as soon as the row is enqueued — the receiver's
-     * acknowledgement is observed asynchronously by the drainer, not by
-     * this caller. Used by the event listener for user/admin SETs.
+     * <p>入队即返回——接收方确认由 drainer 异步观测，非本调用方。用于事件监听器处理用户/管理 SET。</p>
      *
-     * <p>For verification SETs the caller needs the receiver's actual
-     * accept/reject outcome inline, so use
-     * {@link #deliverEventSync(SsfSecurityEventToken, StreamConfig)}
-     * instead, which bypasses the outbox and pushes synchronously.
+     * <p>验证 SET 需内联获知接收方接受/拒绝结果，请改用
+     * {@link #deliverEventSync(SsfSecurityEventToken, StreamConfig)}，绕过发件箱同步推送。</p>
      */
     public void deliverEvent(SsfSecurityEventToken eventToken, StreamConfig stream) {
         deliverEventInternal(eventToken, stream, true);
     }
 
     /**
-     * Synchronously delivers an event to the receiver and returns the
-     * result. Runs on the caller's thread — used by the verification path
-     * so the admin "Verify" button and the receiver-initiated
-     * {@code POST /streams/verify} endpoint can report a real success or
-     * failure to the caller, not just "we scheduled it".
+     * 同步投递事件并返回结果。在调用方线程执行——用于验证路径，
+     * 使管理端「Verify」按钮与接收方发起的 {@code POST /streams/verify} 能报告真实成败，而非仅「已调度」。
      *
-     * @return {@code true} if the receiver accepted the push,
-     *         {@code false} on any delivery error.
+     * @return 接收方接受推送时为 {@code true}，任何投递错误时为 {@code false}
      */
     public boolean deliverEventSync(SsfSecurityEventToken eventToken, StreamConfig stream) {
         return deliverEventInternal(eventToken, stream, false);
@@ -448,15 +410,12 @@ public class SecurityEventTokenDispatcher {
     }
 
     /**
-     * Persists the already-signed SET to the push outbox. Once the row
-     * is committed the cluster-aware drainer will pick it up on its
-     * next tick and dispatch it with bounded retries — this method
-     * does not perform any HTTP call itself.
+     * 将已签名 SET 持久化到 push 发件箱。行提交后集群 drainer 在下一 tick 取行并有限重试派发——
+     * 本方法本身不发起 HTTP。
      *
-     * <p>The {@code clientId} on the stream is populated by
+     * <p>流上的 {@code clientId} 由
      * {@link org.keycloak.ssf.transmitter.stream.storage.client.ClientStreamStore#extractStreamConfig
-     * ClientStreamStore.extractStreamConfig}, so it is always set on
-     * stream configs the dispatcher receives.
+     * ClientStreamStore.extractStreamConfig} 填充，派发器收到的流配置上始终有值。</p>
      */
     protected void deliverEventAsync(StreamConfig stream,
                                      SsfSecurityEventToken eventToken,
@@ -473,10 +432,9 @@ public class SecurityEventTokenDispatcher {
     }
 
     /**
-     * Persists a signed SET to the outbox tagged for poll delivery. The
-     * receiver pulls it via the poll endpoint
-     * ({@code POST /ssf/transmitter/receivers/{clientId}/streams/{stream_id}/poll})
-     * and acks it; no drainer task touches POLL rows.
+     * 将已签名 SET 持久化到标记为 poll 投递的发件箱。接收方通过 poll 端点
+     * （{@code POST /ssf/transmitter/receivers/{clientId}/streams/{stream_id}/poll}）拉取并 ack；
+     * 无 drainer 任务处理 POLL 行。
      */
     protected void enqueueForPoll(StreamConfig stream,
                                   SsfSecurityEventToken eventToken,
@@ -512,23 +470,22 @@ public class SecurityEventTokenDispatcher {
     }
 
     /**
-     * Narrows a {@link SsfSecurityEventToken} into a more general {@link SecurityEventToken}.
+     * 将 {@link SsfSecurityEventToken} 收窄为更通用的 {@link SecurityEventToken}。
      *
-     * @param eventToken The security event token to be narrowed.
-     * @return The narrowed security event token.
+     * @param eventToken 待收窄的安全事件令牌
+     * @return 收窄后的安全事件令牌
      */
     protected SecurityEventToken narrowSsfEventToken(SsfSecurityEventToken eventToken) {
         return eventToken;
     }
 
     /**
-     * Converts an {@link SsfSecurityEventToken} into a narrower {@link SseCaepSecurityEventToken}.
-     * This method leverages the {@link SseCaepEventConverter} to transform the token according to
-     * the Shared Signals and Events (SSE) standard, which may be required for compatibility with
-     * legacy implementations.
+     * 将 {@link SsfSecurityEventToken} 转换为更窄的 {@link SseCaepSecurityEventToken}。
+     * 通过 {@link SseCaepEventConverter} 按共享信号与事件（SSE）标准变换令牌，
+     * 用于与旧版实现（如 Apple Business Manager）兼容。
      *
-     * @param eventToken The security event token to be converted. Must not be null.
-     * @return The converted {@link SseCaepSecurityEventToken} instance.
+     * @param eventToken 待转换的安全事件令牌，不可为 null
+     * @return 转换后的 {@link SseCaepSecurityEventToken} 实例
      */
     protected SseCaepSecurityEventToken narrowCaepSseEventToken(SsfSecurityEventToken eventToken) {
         return SseCaepEventConverter.convert(eventToken);
