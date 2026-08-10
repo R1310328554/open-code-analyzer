@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+配置工具：YAML 读写、全局 CONFIGS 加载与敏感字段脱敏展示。
+"""
+
 #
 
 import os
@@ -26,6 +30,7 @@ from ruamel.yaml import YAML
 
 
 def load_yaml_conf(conf_path):
+    # 读取 YAML 配置文件（相对路径基于项目根目录）
     if not os.path.isabs(conf_path):
         conf_path = os.path.join(get_project_base_directory(), conf_path)
     try:
@@ -37,6 +42,7 @@ def load_yaml_conf(conf_path):
 
 
 def rewrite_yaml_conf(conf_path, config):
+    # 将配置 dict 写回 YAML 文件
     if not os.path.isabs(conf_path):
         conf_path = os.path.join(get_project_base_directory(), conf_path)
     try:
@@ -53,6 +59,7 @@ def conf_realpath(conf_name):
 
 
 def read_config(conf_name=SERVICE_CONF):
+    # 合并 global 与 local 覆盖配置
     local_config = {}
     local_path = conf_realpath(f"local.{conf_name}")
 
@@ -72,10 +79,12 @@ def read_config(conf_name=SERVICE_CONF):
     return global_config
 
 
+# 进程启动时加载的全局配置快照
 CONFIGS = read_config()
 
 
 def show_configs():
+    # 日志输出当前配置，自动掩码 password/secret 等敏感键
     msg = f"Current configs, from {conf_realpath(SERVICE_CONF)}:"
     for k, v in CONFIGS.items():
         if isinstance(v, dict):
@@ -109,6 +118,7 @@ def show_configs():
 
 
 def get_base_config(key, default=None):
+    # 按 key 读取 CONFIGS，缺省可回退同名环境变量
     if key is None:
         return None
     if default is None:
@@ -117,6 +127,7 @@ def get_base_config(key, default=None):
 
 
 def decrypt_database_password(password):
+    # 可选：通过 encrypt_module 动态加载解密函数
     encrypt_password = get_base_config("encrypt_password", False)
     encrypt_module = get_base_config("encrypt_module", False)
     private_key = get_base_config("private_key", None)
@@ -142,6 +153,7 @@ def decrypt_database_config(database=None, passwd_key="password", name="database
 
 
 def update_config(key, value, conf_name=SERVICE_CONF):
+    # 文件锁保护下更新 YAML 中单个键
     conf_path = conf_realpath(conf_name=conf_name)
     if not os.path.isabs(conf_path):
         conf_path = os.path.join(get_project_base_directory(), conf_path)

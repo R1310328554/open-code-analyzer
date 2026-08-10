@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+连接与 HTTP 响应工具：同步/异步超时装饰器及 Quart/Flask JSON 响应构造。
+"""
+
 #
 
 import os
@@ -28,6 +32,7 @@ OnTimeoutCallback = Union[Callable[..., Any], Coroutine[Any, Any, Any]]
 
 
 def timeout(seconds: float | int | str = None, attempts: int = 2, *, exception: Optional[TimeoutException] = None, on_timeout: Optional[OnTimeoutCallback] = None):
+    # 同步函数用线程+Queue，协程用 wait_for；ENABLE_TIMEOUT_ASSERTION 控制是否真正限时
     if isinstance(seconds, str):
         seconds = float(seconds)
 
@@ -101,6 +106,7 @@ def timeout(seconds: float | int | str = None, attempts: int = 2, *, exception: 
 
 
 async def construct_response(code=RetCode.SUCCESS, message="success", data=None, auth=None):
+    # Quart JSON 响应，附带 CORS 与可选 Authorization 头
     result_dict = {"code": code, "message": message, "data": data}
     response_dict = {}
     for key, value in result_dict.items():
@@ -119,6 +125,7 @@ async def construct_response(code=RetCode.SUCCESS, message="success", data=None,
 
 
 def sync_construct_response(code=RetCode.SUCCESS, message="success", data=None, auth=None):
+    # Flask 同步版 construct_response
     import flask
 
     result_dict = {"code": code, "message": message, "data": data}

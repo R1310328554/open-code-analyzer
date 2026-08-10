@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+asyncio 辅助：按事件循环隔离的 Semaphore，供模块级并发限流使用。
+"""
+
 #
 
 import asyncio
@@ -19,16 +23,19 @@ import weakref
 
 
 class LoopLocalSemaphore:
+    """按运行中事件循环缓存 Semaphore，避免跨 loop 复用同步原语。"""
     """
     Asyncio synchronization primitives bind to the event loop that waits on them.
     Keep one semaphore per running loop for module-level concurrency limiters.
     """
 
     def __init__(self, value: int):
+        # value：Semaphore 初始许可数
         self._value = int(value)
         self._semaphores: "weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Semaphore]" = weakref.WeakKeyDictionary()
 
     def _get(self) -> asyncio.Semaphore:
+        # 获取当前 loop 对应的 Semaphore，清理已关闭 loop 的缓存
         loop = asyncio.get_running_loop()
         for cached_loop in list(self._semaphores):
             if cached_loop.is_closed():

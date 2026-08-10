@@ -1,4 +1,5 @@
-"""Blob storage connector"""
+"""通用 Blob 存储连接器：S3/R2/GCS/OCI 等兼容后端，ETag 哈希作变更指纹。
+Blob storage connector"""
 
 import logging
 import os
@@ -33,6 +34,7 @@ from common.data_source.models import (
 
 
 def _normalize_etag(raw_etag: Optional[str]) -> Optional[str]:
+    # 将 S3 ETag（含 multipart 后缀）统一 xxhash128 指纹
     """Return a 32-char hex fingerprint derived from an S3 ETag.
 
     S3 ETags are MD5 (32 hex chars) for single-part uploads and "<md5>-<n>"
@@ -46,6 +48,7 @@ def _normalize_etag(raw_etag: Optional[str]) -> Optional[str]:
 
 
 class BlobStorageConnector(LoadConnector, PollConnector, FingerprintConnector):
+    """S3 兼容对象存储索引：list_objects_v2 + 可选增量时间窗。"""
     """Blob storage connector"""
 
     def __init__(
@@ -181,6 +184,7 @@ class BlobStorageConnector(LoadConnector, PollConnector, FingerprintConnector):
             yield batch
 
     def list_keys(self) -> Iterator[KeyRecord]:
+        # 轻量列举：仅 ETag 指纹，缓存 metadata 供 get_value
         """Enumerate the full bucket keyspace with per-object fingerprints.
 
         Cheap path: relies on list_objects_v2 which returns ETag in the listing,
@@ -207,6 +211,7 @@ class BlobStorageConnector(LoadConnector, PollConnector, FingerprintConnector):
             )
 
     def get_value(self, key: str) -> Document:
+        # 依赖同一次 list_keys  pass 的 _listing_cache
         """Materialize the Document for a key previously yielded by list_keys().
 
         Must be called within the same list_keys() pass that produced the key,

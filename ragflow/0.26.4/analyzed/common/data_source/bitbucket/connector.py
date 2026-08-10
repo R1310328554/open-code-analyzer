@@ -1,3 +1,7 @@
+"""
+Bitbucket Cloud Pull Request 连接器：可恢复检查点跨仓库/分页索引 PR。
+"""
+
 from __future__ import annotations
 
 import copy
@@ -42,6 +46,7 @@ if TYPE_CHECKING:
 
 
 class BitbucketConnectorCheckpoint(ConnectorCheckpoint):
+    """检查点：repos_queue、current_repo_index、next_url 分页续传。"""
     """Checkpoint state for resumable Bitbucket PR indexing.
 
     Fields:
@@ -59,7 +64,9 @@ class BitbucketConnector(
     CheckpointedConnector[BitbucketConnectorCheckpoint],
     SlimConnectorWithPermSync,
 ):
-    """Connector for indexing Bitbucket Cloud pull requests.
+    """Bitbucket Cloud PR 索引连接器。
+
+    Connector for indexing Bitbucket Cloud pull requests.
 
     Args:
         workspace: Bitbucket workspace ID.
@@ -180,7 +187,9 @@ class BitbucketConnector(
         end: SecondsSinceUnixEpoch,
         checkpoint: BitbucketConnectorCheckpoint,
     ) -> CheckpointOutput[BitbucketConnectorCheckpoint]:
-        """Resumable PR ingestion across repos and pages within a time window.
+        """在 time window 内按检查点恢复 PR 拉取；单 PR 失败 yield ConnectorFailure。
+
+        Resumable PR ingestion across repos and pages within a time window.
 
         Yields Documents (or ConnectorFailure for per-PR mapping failures) and returns
         an updated checkpoint that records repo position and next page URL.

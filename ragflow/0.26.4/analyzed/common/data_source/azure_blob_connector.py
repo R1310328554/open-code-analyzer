@@ -1,4 +1,5 @@
-"""Azure Blob Storage data-source connector.
+"""Azure Blob Storage 数据源连接器：从用户容器增量同步 blob 至知识库（非 RAGFlow 自身存储后端）。
+Azure Blob Storage data-source connector.
 
 Ingests blobs from a user's Azure container into a RAGFlow knowledge
 base.  This is distinct from RAGFlow's own Azure storage *backend*
@@ -70,6 +71,7 @@ _AZURE_ENDPOINT_SUFFIX = "blob.core.windows.net"
 
 
 class AzureBlobCheckpoint(ConnectorCheckpoint):
+    """Azure Blob 检查点：单次 list 即完成，has_more 置 False。"""
     """Checkpoint marker for the Azure Blob connector.
 
     The connector keeps no cross-run state of its own: a single
@@ -81,6 +83,7 @@ class AzureBlobCheckpoint(ConnectorCheckpoint):
 
 
 class AzureBlobConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPermSync):
+    """支持连接串/账户密钥/SAS 三种鉴权，ETag 作 content_hash 指纹。"""
     """Azure Blob Storage data-source connector.
 
     Authenticates with one of three credential modes (connection string,
@@ -110,6 +113,7 @@ class AzureBlobConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPer
     # ------------------------------------------------------------------
 
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
+        # 按 auth_mode 或字段优先级选择鉴权方式
         from azure.storage.blob import BlobServiceClient, ContainerClient
 
         conn_str = credentials.get("connection_string")
@@ -271,6 +275,7 @@ class AzureBlobConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPer
         since_epoch: float | None = None,
         until_epoch: float | None = None,
     ):
+        # 列举 blob，按时间窗与扩展名过滤，下载正文并附带 ETag 指纹
         from common.data_source.models import Document
 
         if self._container_client is None:

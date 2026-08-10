@@ -1,4 +1,5 @@
-"""Google BigQuery data source connector for importing query/table rows into documents.
+"""Google BigQuery 数据源连接器：将表/自定义查询行映射为 Document，支持游标增量与费用上限。
+Google BigQuery data source connector for importing query/table rows into documents.
 
 This connector shares the user-facing row model of ``RDBMSConnector`` (MySQL/PostgreSQL):
 selected content columns become document text, selected metadata columns become metadata,
@@ -64,6 +65,7 @@ _CURSOR_PARAM_TYPE_MAP = {
 
 
 class BigQueryConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
+    """BigQuery 行级导入，语义对齐 RDBMSConnector。"""
     """Import rows from a BigQuery table or custom query into documents.
 
     The flow mirrors ``RDBMSConnector``:
@@ -142,6 +144,7 @@ class BigQueryConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync)
     # Credentials & client
     # ------------------------------------------------------------------ #
     def load_credentials(self, credentials: Dict[str, Any]) -> Dict[str, Any] | None:
+        # 解析 service_account_json（字符串或 dict）
         """Load BigQuery service-account credentials.
 
         Accepts ``service_account_json`` as either a dict or a JSON string.
@@ -368,6 +371,7 @@ class BigQueryConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync)
         return str(value)
 
     def _build_content(self, row_dict: Dict[str, Any]) -> str:
+        # 将 content_columns 格式化为【列名】: 值 段落
         content_parts = []
         for col in self.content_columns:
             if col not in row_dict or row_dict[col] is None:
@@ -571,6 +575,7 @@ class BigQueryConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync)
         return self._sync_config.get("sync_cursor_id")
 
     def persist_sync_state(self) -> None:
+        # 同步成功后写回 sync_cursor_value/id 至 ConnectorService
         if not self.timestamp_column or self._sync_connector_id is None or self._sync_config is None:
             return
 

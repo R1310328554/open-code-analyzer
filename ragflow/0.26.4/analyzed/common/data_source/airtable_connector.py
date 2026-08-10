@@ -1,3 +1,7 @@
+"""
+Airtable 连接器：扫描表记录中的附件字段，以原始 blob 形式入库。
+"""
+
 from datetime import datetime, timezone
 import logging
 from typing import Any, Generator
@@ -20,11 +24,13 @@ from common.data_source.utils import extract_size_bytes, get_file_ext
 
 
 class AirtableClientNotSetUpError(PermissionError):
+    """未调用 load_credentials 即访问客户端时抛出。"""
     def __init__(self) -> None:
         super().__init__("Airtable client is not set up. Did you forget to call load_credentials()?")
 
 
 class AirtableConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
+    """轻量 Airtable 附件连接器，不解析文件正文。"""
     """
     Lightweight Airtable connector.
 
@@ -45,6 +51,7 @@ class AirtableConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync)
         self.size_threshold = AIRTABLE_CONNECTOR_SIZE_THRESHOLD
 
     def _iter_attachment_entries(self) -> Generator[tuple[str, str, str, str, str | None, dict[str, Any]], None, None]:
+        # 遍历表中所有附件，yield (record_id, attachment_id, filename, doc_id, created_time, raw)
         if not self._airtable_client:
             raise ConnectorMissingCredentialError("Airtable credentials not loaded")
 
@@ -82,6 +89,7 @@ class AirtableConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync)
     # Credentials
     # -------------------------
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
+        # 使用 Personal Access Token 初始化 pyairtable Api
         self._airtable_client = AirtableApi(credentials["airtable_access_token"])
         return None
 

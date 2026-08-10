@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+加解密工具：AES/SM4 CBC 模板基类与 CryptoUtil 工厂，密文带 RAGF 魔数头。
+"""
+
 #
 
 import os
@@ -23,6 +27,7 @@ from cryptography.hazmat.primitives import hashes
 
 
 class BaseCrypto:
+    """对称加密模板：PBKDF2 归一化密钥、PKCS7 填充、Magic+IV+密文格式。"""
     """Base class for cryptographic algorithms"""
 
     # Magic header to identify encrypted data
@@ -145,6 +150,7 @@ class BaseCrypto:
 
 
 class AESCrypto(BaseCrypto):
+    """AES-CBC 实现基类。"""
     """Base class for AES cryptographic algorithm"""
 
     def __init__(self, key, iv=None, key_length=32):
@@ -178,6 +184,7 @@ class AESCrypto(BaseCrypto):
 
 
 class AES128CBC(AESCrypto):
+    """AES-128-CBC 算法封装。"""
     """AES-128-CBC cryptographic algorithm"""
 
     def __init__(self, key, iv=None):
@@ -192,6 +199,7 @@ class AES128CBC(AESCrypto):
 
 
 class AES256CBC(AESCrypto):
+    """AES-256-CBC 算法封装。"""
     """AES-256-CBC cryptographic algorithm"""
 
     def __init__(self, key, iv=None):
@@ -206,6 +214,7 @@ class AES256CBC(AESCrypto):
 
 
 class SM4CBC(BaseCrypto):
+    """国密 SM4-CBC 算法封装。"""
     """SM4-CBC cryptographic algorithm using cryptography library for better performance"""
 
     def __init__(self, key, iv=None):
@@ -238,6 +247,7 @@ class SM4CBC(BaseCrypto):
 
 
 class CryptoUtil:
+    """加密工厂：按算法名实例化 AES128/AES256/SM4。"""
     """Cryptographic utility class, using factory pattern to create cryptographic algorithm instances"""
 
     # Supported cryptographic algorithms mapping

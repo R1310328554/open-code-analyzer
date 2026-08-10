@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+全局常量与枚举：RetCode、任务/解析器/文件源类型、存储后端及环境变量键名索引。
+"""
+
 #
 
 import os
@@ -25,6 +29,7 @@ SANDBOX_ARTIFACT_EXPIRE_DAYS = int(os.environ.get("SANDBOX_ARTIFACT_EXPIRE_DAYS"
 
 
 class CustomEnum(Enum):
+    """枚举辅助：valid/values/names 类方法。"""
     @classmethod
     def valid(cls, value):
         try:
@@ -43,6 +48,7 @@ class CustomEnum(Enum):
 
 
 class RetCode(IntEnum, CustomEnum):
+    """API 统一返回码。"""
     SUCCESS = 0
     NOT_EFFECTIVE = 10
     EXCEPTION_ERROR = 100
@@ -78,6 +84,7 @@ class ActiveEnum(Enum):
 
 
 class LLMType(StrEnum):
+    """大模型能力类型（chat/embedding/rerank 等）。"""
     CHAT = "chat"
     EMBEDDING = "embedding"
     SPEECH2TEXT = "speech2text"
@@ -88,6 +95,7 @@ class LLMType(StrEnum):
 
 
 class TaskStatus(StrEnum):
+    """文档解析/索引任务状态。"""
     UNSTART = "0"
     RUNNING = "1"
     CANCEL = "2"
@@ -105,6 +113,7 @@ class ConnectorTaskType(StrEnum):
 
 
 class ParserType(StrEnum):
+    """分块解析器类型。"""
     PRESENTATION = "presentation"
     LAWS = "laws"
     MANUAL = "manual"
@@ -123,6 +132,7 @@ class ParserType(StrEnum):
 
 
 class FileSource(StrEnum):
+    """知识库文档来源标识（连接器/上传渠道）。"""
     LOCAL = ""
     KNOWLEDGEBASE = "knowledgebase"
     RSS = "rss"
@@ -193,6 +203,7 @@ VALID_MCP_SERVER_TYPES = {MCPServerType.SSE, MCPServerType.STREAMABLE_HTTP}
 
 
 class Storage(Enum):
+    """对象存储后端枚举。"""
     MINIO = 1
     AZURE_SPN = 2
     AZURE_SAS = 3
@@ -203,6 +214,7 @@ class Storage(Enum):
 
 
 class MemoryType(Enum):
+    """Agent 记忆类型位标志。"""
     RAW = 0b0001  # 1 << 0 = 1 (0b00000001)
     SEMANTIC = 0b0010  # 1 << 1 = 2 (0b00000010)
     EPISODIC = 0b0100  # 1 << 2 = 4 (0b00000100)
@@ -284,6 +296,7 @@ SVR_QUEUE_NAME = "te"
 SVR_CONSUMER_GROUP_NAME = "rag_flow_svr_task_broker"
 TAG_FLD = "tag_feas"
 
+# 解析层与任务层共用的“无限页数”哨兵值（任务层 ×1000 防碰撞）
 # Maximum page number used as "unlimited" sentinel value.
 # Parsing layer (chunk/Pdf.__call__) uses MAXIMUM_PAGE_NUMBER.
 # Task/DB layer (Task model) uses MAXIMUM_PAGE_NUMBER * 1000 to avoid collision with user-specified page ranges.

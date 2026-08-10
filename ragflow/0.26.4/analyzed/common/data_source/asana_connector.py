@@ -1,3 +1,7 @@
+"""
+Asana 连接器：拉取工作区任务附件并下载为 Document blob。
+"""
+
 from collections.abc import Iterator
 import time
 from datetime import datetime, timezone
@@ -13,6 +17,7 @@ from common.data_source.utils import extract_size_bytes, get_file_ext
 
 # https://github.com/Asana/python-asana/tree/master?tab=readme-ov-file#documentation-for-api-endpoints
 class AsanaTask:
+    """内存中的 Asana 任务快照（含评论拼接后的 text）。"""
     def __init__(
         self,
         id: str,
@@ -36,6 +41,7 @@ class AsanaTask:
 
 
 class AsanaAPI:
+    """Asana REST API 薄封装：项目/任务/附件/评论分页拉取。"""
     def __init__(self, api_token: str, workspace_gid: str, team_gid: str | None) -> None:
         self._user = None
         self.workspace_gid = workspace_gid
@@ -56,6 +62,7 @@ class AsanaAPI:
         self.task_count = 0
 
     def get_tasks(self, project_gids: list[str] | None, start_date: str) -> Iterator[AsanaTask]:
+        # 按 modified_since 过滤，None 表示工作区全部项目
         """Get all tasks from the projects with the given gids that were modified since the given date.
         If project_gids is None, get all tasks from all projects in the workspace."""
         projects_list = self._get_project_gids_to_process(project_gids)
@@ -313,6 +320,7 @@ class AsanaAPI:
 
 
 class AsanaConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
+    """Asana 任务附件索引连接器。"""
     def __init__(
         self,
         asana_workspace_id: str,
@@ -401,6 +409,7 @@ class AsanaConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
             yield docs_batch
 
     def _task_to_documents(self, task: AsanaTask) -> list[Document]:
+        # 下载任务下全部附件并构造 Document 列表
         docs: list[Document] = []
 
         attachments = self.asana_client.get_attachments(task.id)

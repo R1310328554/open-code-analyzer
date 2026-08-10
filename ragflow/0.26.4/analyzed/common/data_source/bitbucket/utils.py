@@ -1,3 +1,7 @@
+"""
+Bitbucket API 工具：带重试/限流的 GET、分页迭代与 PR→Document 映射。
+"""
+
 from __future__ import annotations
 
 import time
@@ -73,10 +77,12 @@ REPO_LIST_RESPONSE_FIELDS: str = ",".join(
 
 
 class BitbucketRetriableError(Exception):
+    """429/5xx 等可重试错误。"""
     """Raised for retriable Bitbucket conditions (429, 5xx)."""
 
 
 class BitbucketNonRetriableError(Exception):
+    """4xx（除 429）不可重试错误。"""
     """Raised for non-retriable Bitbucket client errors (4xx except 429)."""
 
 
@@ -89,6 +95,7 @@ class BitbucketNonRetriableError(Exception):
 )
 @rate_limit_builder(max_calls=60, period=60)
 def bitbucket_get(client: httpx.Client, url: str, params: dict[str, Any] | None = None) -> httpx.Response:
+    # 装饰器：最多 6 次指数退避，60 req/min 限流
     """Perform a GET against Bitbucket with retry and rate limiting.
 
     Retries on 429 and 5xx responses, and on transport errors. Honors
@@ -123,6 +130,7 @@ def bitbucket_get(client: httpx.Client, url: str, params: dict[str, Any] | None 
 
 
 def build_auth_client(email: str, api_token: str) -> httpx.Client:
+    # HTTP Basic（email + API token）
     """Create an authenticated httpx client for Bitbucket Cloud API."""
     return httpx.Client(auth=(email, api_token), http2=True)
 
@@ -134,7 +142,9 @@ def paginate(
     start_url: str | None = None,
     on_page: Callable[[str | None], None] | None = None,
 ) -> Iterator[dict[str, Any]]:
-    """Iterate over paginated Bitbucket API responses yielding individual values.
+    """跟随 Bitbucket next URL 逐页 yield values 项。
+
+    Iterate over paginated Bitbucket API responses yielding individual values.
 
     Args:
         client: Authenticated HTTP client.
@@ -175,6 +185,7 @@ def list_repositories(client: httpx.Client, workspace: str, project_key: str | N
 
 
 def map_pr_to_document(pr: dict[str, Any], workspace: str, repo_slug: str) -> Document:
+    # 将 PR JSON 转为 Markdown 正文 Document
     """Map a Bitbucket pull request JSON to Onyx Document."""
     pr_id = pr["id"]
     title = pr.get("title") or f"PR {pr_id}"

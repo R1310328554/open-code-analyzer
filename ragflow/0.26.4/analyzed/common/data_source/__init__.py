@@ -22,6 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+"""
+数据源连接器包：统一导出各 SaaS/存储/RDBMS 连接器及 Document 模型。
+"""
+
 from .blob_connector import BlobStorageConnector
 from .rss_connector import RSSConnector
 from .slack_connector import SlackConnector
