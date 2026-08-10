@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T16:03:58Z",
-  "files": [
-    "middleware/openai.go",
-    "ml/backend.go",
-    "ml/device.go",
-    "ml/path.go",
-    "model/parsers/cogito.go",
-    "model/parsers/cohere.go",
-    "model/parsers/deepseek3.go",
-    "model/parsers/functiongemma.go",
-    "model/parsers/gemma4.go",
-    "model/parsers/glimmer.go",
-    "model/parsers/glm46.go",
-    "model/parsers/glm47.go",
-    "model/parsers/glmocr.go",
-    "model/parsers/laguna.go",
-    "model/parsers/lfm2.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 193,
-  "done": 255
+  "done": 270
 }
