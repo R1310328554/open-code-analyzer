@@ -15,23 +15,8 @@
     "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/aggregated/AggregatePolicyProvider.java",
     "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/aggregated/AggregatePolicyProviderFactory.java",
     "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/client/ClientPolicyProvider.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/client/ClientPolicyProviderFactory.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/clientscope/ClientScopePolicyProvider.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/clientscope/ClientScopePolicyProviderFactory.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/group/GroupPolicyProvider.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/group/GroupPolicyProviderFactory.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/js/DeployedScriptPolicyFactory.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/js/JSPolicyProvider.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/js/JSPolicyProviderFactory.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/js/ScriptCache.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/AbstractPermissionProvider.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/ResourcePolicyProvider.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/ResourcePolicyProviderFactory.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/ScopePolicyProvider.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/ScopePolicyProviderFactory.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/UMAPolicyProvider.java",
-    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/UMAPolicyProviderFactory.java"
+    "authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/client/ClientPolicyProviderFactory.java"
   ],
   "remaining_pending": 5848,
-  "done": 120
+  "done": 135
 }

@@ -118,3 +118,18 @@
 2026-08-10T05:39:57Z DONE authz/client/src/main/java/org/keycloak/authorization/client/resource/PolicyResource.java wave4b adapter spi + authz client resources
 2026-08-10T05:39:57Z DONE authz/client/src/main/java/org/keycloak/authorization/client/resource/ProtectedResource.java wave4b adapter spi + authz client resources
 2026-08-10T05:39:57Z DONE authz/client/src/main/java/org/keycloak/authorization/client/resource/ProtectionResource.java wave4b adapter spi + authz client resources
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/clientscope/ClientScopePolicyProvider.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/clientscope/ClientScopePolicyProviderFactory.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/group/GroupPolicyProvider.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/group/GroupPolicyProviderFactory.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/js/DeployedScriptPolicyFactory.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/js/JSPolicyProvider.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/js/JSPolicyProviderFactory.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/js/ScriptCache.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/AbstractPermissionProvider.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/ResourcePolicyProvider.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/ResourcePolicyProviderFactory.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/ScopePolicyProvider.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/ScopePolicyProviderFactory.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/UMAPolicyProvider.java wave5b authz policy providers
+2026-08-10T05:42:15Z DONE authz/policy/common/src/main/java/org/keycloak/authorization/policy/provider/permission/UMAPolicyProviderFactory.java wave5b authz policy providers
