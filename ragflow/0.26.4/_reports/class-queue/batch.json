@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T17:30:54Z",
-  "files": [
-    "deepdoc/server/download_deps.py",
-    "deepdoc/server/endpoints/__init__.py",
-    "deepdoc/server/endpoints/dla_endpoint.py",
-    "deepdoc/server/endpoints/ocr_endpoint.py",
-    "deepdoc/server/endpoints/tsr_endpoint.py",
-    "deepdoc/vision/__init__.py",
-    "deepdoc/vision/layout_recognizer.py",
-    "deepdoc/vision/ocr.py",
-    "deepdoc/vision/operators.py",
-    "deepdoc/vision/postprocess.py",
-    "deepdoc/vision/recognizer.py",
-    "deepdoc/vision/seeit.py",
-    "deepdoc/vision/t_ocr.py",
-    "deepdoc/vision/t_recognizer.py",
-    "deepdoc/vision/table_structure_recognizer.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1374,
-  "done": 375
+  "done": 390
 }
