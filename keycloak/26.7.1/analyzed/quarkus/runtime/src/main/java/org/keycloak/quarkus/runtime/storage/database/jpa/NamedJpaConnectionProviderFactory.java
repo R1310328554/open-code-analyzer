@@ -21,10 +21,16 @@ import java.util.function.Supplier;
 
 import jakarta.persistence.EntityManagerFactory;
 
+/**
+ * 按持久化单元名称解析 {@link EntityManagerFactory} 的 JPA 连接工厂。
+ * <p>用于多数据源场景：{@link #unitName} 同时作为工厂 ID 与 CDI 持久化单元名。</p>
+ */
 public final class NamedJpaConnectionProviderFactory extends AbstractJpaConnectionProviderFactory {
 
+    /** 目标 JPA 持久化单元名称。 */
     private String unitName;
 
+    /** 按 {@link #unitName} 从 CDI 解析 {@link EntityManagerFactory}，未找到则抛出异常。 */
     @Override
     protected EntityManagerFactory getEntityManagerFactory() {
         return getEntityManagerFactory(unitName).orElseThrow(new Supplier<IllegalStateException>() {
@@ -35,14 +41,17 @@ public final class NamedJpaConnectionProviderFactory extends AbstractJpaConnecti
         });
     }
 
+    /** 返回配置的持久化单元名称。 */
     public String getUnitName() {
         return unitName;
     }
 
+    /** 设置持久化单元名称（同时影响 {@link #getId()}）。 */
     public void setUnitName(String unitName) {
         this.unitName = unitName;
     }
 
+    /** 工厂 ID 与持久化单元名一致。 */
     @Override
     public String getId() {
         return unitName;

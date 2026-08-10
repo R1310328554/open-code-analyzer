@@ -35,7 +35,7 @@ import org.keycloak.tracing.TracingProvider;
 import io.opentelemetry.instrumentation.apachehttpclient.v4_3.ApacheHttpClientTelemetry;
 
 /**
- * The traced {@link HttpClientFactory} for {@link HttpClientProvider HttpClientProvider's} used by Keycloak for outbound HTTP calls which are traced.
+ * OpenTelemetry 插桩的 {@link HttpClientFactory}：为 Keycloak 出站 HTTP 调用创建可追踪的 Apache HttpClient。
  */
 public class OTelHttpClientFactory extends DefaultHttpClientFactory implements EnvironmentDependentProviderFactory {
     public static final String PROVIDER_ID = "opentelemetry";
@@ -45,12 +45,14 @@ public class OTelHttpClientFactory extends DefaultHttpClientFactory implements E
         return PROVIDER_ID;
     }
 
+    /** 使用 OTel 插桩的 HttpClientBuilder 包装默认构建逻辑。 */
     @Override
     protected HttpClientBuilder newHttpClientBuilder(KeycloakSession session) {
         var provider = (OTelTracingProvider) session.getProvider(TracingProvider.class);
         return new HttpClientBuilder(ApacheHttpClientTelemetry.builder(provider.getOpenTelemetry()).build().newHttpClientBuilder());
     }
 
+    /** 复用 default 连接池配置，避免 OTel 工厂缺少 SPI 配置项。 */
     @Override
     public void init(Config.Scope config) {
         super.init(Config.scope("connectionsHttpClient", "default"));

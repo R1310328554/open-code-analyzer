@@ -38,11 +38,12 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jboss.logging.Logger;
 
 /**
- * Tracing provider leverages OpenTelemetry Tracing
+ * 基于 OpenTelemetry 的 {@link TracingProvider} 实现：管理 Span 生命周期与异常语义属性。
  */
 public class OTelTracingProvider implements TracingProvider {
     private static final Logger log = Logger.getLogger(OTelTracingProvider.class);
     private final OpenTelemetry openTelemetry;
+    /** 与 Span 栈对应的 Scope 栈，用于正确恢复 OTel Context。 */
     private final Deque<Scope> scopes;
 
     public OTelTracingProvider(OpenTelemetry openTelemetry) {
@@ -50,6 +51,7 @@ public class OTelTracingProvider implements TracingProvider {
         this.scopes = new ConcurrentLinkedDeque<>();
     }
 
+    /** 供同模块 HTTP 客户端工厂获取共享 OpenTelemetry 实例。 */
     OpenTelemetry getOpenTelemetry() {
         return openTelemetry;
     }
@@ -101,8 +103,8 @@ public class OTelTracingProvider implements TracingProvider {
     @Override
     public void error(Throwable exception) {
         var span = getCurrentSpan();
-        var exceptionAttributes = Attributes.builder() // based on OTel Semantic Conventions
-                .put(AttributeKey.booleanKey("exception.escaped"), true) // remove once semconv >= 1.32 is used
+        var exceptionAttributes = Attributes.builder() // 遵循 OTel 语义约定
+                .put(AttributeKey.booleanKey("exception.escaped"), true) // semconv >= 1.32 后可移除
                 .put(ExceptionAttributes.EXCEPTION_MESSAGE, exception.getMessage())
                 .put(ExceptionAttributes.EXCEPTION_TYPE, exception.getClass().getCanonicalName())
                 .put(ExceptionAttributes.EXCEPTION_STACKTRACE, ExceptionUtils.getStackTrace(exception))

@@ -22,8 +22,12 @@ import java.util.List;
 import org.keycloak.Config;
 import org.keycloak.theme.JarThemeProviderFactory;
 
+/**
+ * Quarkus JAR 主题工厂：构建期注入主题列表，运行时从 classpath 加载。
+ */
 public class QuarkusJarThemeProviderFactory extends JarThemeProviderFactory {
 
+    /** 由 Quarkus 扩展在启动前注入已解析的主题元数据。 */
     public void setThemes(List<ThemesRepresentation> themes) {
         for (ThemesRepresentation theme : themes) {
             loadThemes(Thread.currentThread().getContextClassLoader(), theme);
@@ -32,6 +36,6 @@ public class QuarkusJarThemeProviderFactory extends JarThemeProviderFactory {
 
     @Override
     public void init(Config.Scope config) {
-        // no-op
+        // Quarkus 构建期已完成主题注册，此处无需额外配置
     }
 }

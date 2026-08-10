@@ -19,14 +19,18 @@ package org.keycloak.quarkus.runtime.storage.database.liquibase.database;
 
 import liquibase.database.core.MSSQLDatabase;
 
+/**
+ * SQL Server {@link MSSQLDatabase} 子类：缓存 {@link #getEngineEdition()} 结果，避免重复查询。
+ */
 public class CustomMSSQLDatabase extends MSSQLDatabase {
 
+    /** 引擎版本缓存（Liquibase 单线程执行，无需同步）。 */
     private static String ENGINE_EDITION;
 
     @Override
     public String getEngineEdition() {
-        // no need to query engine edition every time
-        // it should be safe to update without any synchronization code as liquibase runs from a single thread
+        // 引擎版本在会话内不变，仅查询一次即可
+        // Liquibase 单线程运行，无并发更新风险
         if (ENGINE_EDITION == null) {
             return ENGINE_EDITION = super.getEngineEdition();
         }

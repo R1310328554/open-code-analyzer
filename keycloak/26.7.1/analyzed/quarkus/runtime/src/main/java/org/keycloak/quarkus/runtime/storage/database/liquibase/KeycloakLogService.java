@@ -21,12 +21,13 @@ import liquibase.logging.Logger;
 import liquibase.logging.core.AbstractLogService;
 
 /**
- * A {@link liquibase.logging.LogService} implementation that creates instances of {@link org.keycloak.connections.jpa.updater.liquibase.log.KeycloakLogger}.
+ * Liquibase {@link liquibase.logging.LogService} 实现，创建 {@link KeycloakLogger} 实例并桥接到 JBoss Logging。
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
 public class KeycloakLogService extends AbstractLogService {
 
+    /** 略高于默认优先级，使 Keycloak 日志服务覆盖 Liquibase 内置实现。 */
     @Override
     public int getPriority() {
         return PRIORITY_DEFAULT + 1;

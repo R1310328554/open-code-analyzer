@@ -24,6 +24,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * Quarkus 版 {@link JpaUpdaterProviderFactory}，创建 {@link QuarkusJpaUpdaterProvider}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class QuarkusJpaUpdaterProviderFactory implements JpaUpdaterProviderFactory {

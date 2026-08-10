@@ -62,20 +62,32 @@ import static org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction;
 import static org.keycloak.quarkus.runtime.storage.database.liquibase.QuarkusJpaUpdaterProvider.VERIFY_AND_RUN_MASTER_CHANGELOG;
 
 /**
+ * Quarkus 默认 JPA 连接工厂：启动时校验/迁移 schema、注册命名查询、检查数据库编码与索引，并暴露运维信息。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class QuarkusJpaConnectionProviderFactory extends AbstractJpaConnectionProviderFactory implements ServerInfoAwareProviderFactory {
 
+    /** 持久化单元属性前缀，用于注册 Hibernate 命名查询（{@code kc.query.<name>}）。 */
     public static final String QUERY_PROPERTY_PREFIX = "kc.query.";
+    /** 默认 CDI 持久化单元名。 */
     public static final String DEFAULT_PERSISTENCE_UNIT = "keycloak-default";
     private static final Logger logger = Logger.getLogger(QuarkusJpaConnectionProviderFactory.class);
+    /** 查询 MIGRATION_MODEL 最新版本记录的 SQL（{@code %s} 为 schema 前缀）。 */
     private static final String SQL_GET_LATEST_VERSION = "SELECT ID, VERSION FROM %sMIGRATION_MODEL ORDER BY UPDATE_TIME DESC";
     private static final String MIGRATION_TRANSACTION_TIMEOUT_KEY = "migrationTransactionTimeout";
 
+    /** 数据库 schema 迁移策略。 */
     enum MigrationStrategy {
-        UPDATE, VALIDATE, MANUAL
+        /** 自动执行 Liquibase 变更集。 */
+        UPDATE,
+        /** 仅校验 schema 是否与 changelog 一致。 */
+        VALIDATE,
+        /** 导出 SQL 脚本供人工执行，不自动迁移。 */
+        MANUAL
     }
 
+    /** 启动后填充的数据库连接与驱动运维信息。 */
     private Map<String, String> operationalInfo;
 
     @Override
@@ -83,6 +95,7 @@ public class QuarkusJpaConnectionProviderFactory extends AbstractJpaConnectionPr
         return "quarkus";
     }
 
+    /** 从持久化单元属性中读取 {@link #QUERY_PROPERTY_PREFIX} 前缀项并注册命名查询。 */
     private void addSpecificNamedQueries(KeycloakSession session) {
         EntityManager em = createEntityManager(entityManagerFactory, session, false);
 
@@ -99,6 +112,9 @@ public class QuarkusJpaConnectionProviderFactory extends AbstractJpaConnectionPr
         }
     }
 
+    /**
+     * 启动后初始化：异步提交监听、数据库健康检查、schema 迁移/校验、模型迁移与索引检查。
+     */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         super.postInit(factory);
@@ -131,7 +147,7 @@ public class QuarkusJpaConnectionProviderFactory extends AbstractJpaConnectionPr
                     }
                 }
             } catch (SQLException ignore) {
-                // migration model probably does not exist so we assume the database is empty
+                // 迁移表可能尚不存在，视为空库
             }
             createOperationalInfo(connection);
             addSpecificNamedQueries(session);
@@ -145,9 +161,9 @@ public class QuarkusJpaConnectionProviderFactory extends AbstractJpaConnectionPr
         } else {
             Version.RESOURCES_VERSION = id;
         }
-        // don't need to put this in a finally block as any exception thrown here will stop the server.
+        // 此处异常会终止启动，无需 finally 恢复超时
         try {
-            // 0 means to revert to the default timeout.
+            // 0 表示恢复默认事务超时
             KeycloakModelUtils.setTransactionLimit(factory, 0);
         } catch (Exception e) {
             logErrorSettingMigrationTransactionTimeout(e);
@@ -186,6 +202,7 @@ public class QuarkusJpaConnectionProviderFactory extends AbstractJpaConnectionPr
                 .build();
     }
 
+    /** 优先从 CDI 解析默认 {@link EntityManagerFactory}，否则按 {@link #DEFAULT_PERSISTENCE_UNIT} 查找。 */
     @Override
     protected EntityManagerFactory getEntityManagerFactory() {
         Instance<EntityManagerFactory> instance = Arc.container().select(EntityManagerFactory.class);
@@ -207,10 +224,11 @@ public class QuarkusJpaConnectionProviderFactory extends AbstractJpaConnectionPr
         return 100;
     }
 
+    /** 解析迁移策略配置，兼容旧键 {@code databaseSchema}。 */
     private MigrationStrategy getMigrationStrategy() {
         String migrationStrategy = config.get("migrationStrategy");
         if (migrationStrategy == null) {
-            // Support 'databaseSchema' for backwards compatibility
+            // 向后兼容 databaseSchema 配置项
             migrationStrategy = config.get("databaseSchema");
         }
 
@@ -226,8 +244,9 @@ public class QuarkusJpaConnectionProviderFactory extends AbstractJpaConnectionPr
         migrateModel(session);
     }
 
+    /** 在数据库锁保护下执行 Keycloak 模型迁移，防止多节点并发迁移。 */
     private void migrateModel(KeycloakSession session) {
-        // Using a lock to prevent concurrent migration in concurrently starting nodes
+        // 多节点同时启动时通过 DB 锁串行化迁移
         DBLockManager dbLockManager = new DBLockManager(session);
         DBLockProvider dbLock = dbLockManager.getDBLock();
         dbLock.waitForLock(DBLockProvider.Namespace.DATABASE);
@@ -262,6 +281,7 @@ public class QuarkusJpaConnectionProviderFactory extends AbstractJpaConnectionPr
         }
     }
 
+    /** 按迁移策略校验或更新 schema，并在 session 上标记是否需执行主 changelog。 */
     private boolean createOrUpdateSchema(String schema, String version, Connection connection, KeycloakSession session) {
         MigrationStrategy strategy = getMigrationStrategy();
         boolean initializeEmpty = config.getBoolean("initializeEmpty", true);
@@ -330,6 +350,7 @@ public class QuarkusJpaConnectionProviderFactory extends AbstractJpaConnectionPr
         }
     }
 
+    /** 检查 MySQL/MariaDB {@code wait_timeout} 是否大于连接池最大生命周期，避免连接被服务端提前关闭。 */
     private void checkMySQLWaitTimeout() {
         String db = Configuration.getConfigValue(DatabaseOptions.DB).getValue();
         Database.Vendor vendor = Database.getVendor(db).orElseThrow();
@@ -355,6 +376,7 @@ public class QuarkusJpaConnectionProviderFactory extends AbstractJpaConnectionPr
         }
     }
 
+    /** 检查 SQL Server 隔离级别是否为 READ COMMITTED SNAPSHOT，高负载下可降低死锁风险。 */
     private void checkMSSQLIsolationLevel() {
         String db = Configuration.getConfigValue(DatabaseOptions.DB).getValue();
         Database.Vendor vendor = Database.getVendor(db).orElseThrow();
@@ -424,9 +446,8 @@ public class QuarkusJpaConnectionProviderFactory extends AbstractJpaConnectionPr
     }
 
     /**
-     * Check if the database is running against a database with a valid UTF-8 character encoding.
-     * <p>
-     * Non-UTF-8-character encodings have been deprecated in 26.6.
+     * 校验数据库字符集是否为有效 UTF-8 编码。
+     * <p>自 26.6 起非 UTF-8 编码已弃用。</p>
      */
     private void checkEncoding(Database.Vendor vendor, Predicate<String> isValid, String recommendation, String query) {
         try (var connection = getConnection();
@@ -447,6 +468,7 @@ public class QuarkusJpaConnectionProviderFactory extends AbstractJpaConnectionPr
         logger.warnf("Invalid %s charset encoding '%s'. It is recommended to use %s", vendor, encoding, recommendedEncoding);
     }
 
+    /** 在后台守护线程中异步检查缺失的数据库索引。 */
     private void checkMissingIndexes(KeycloakSessionFactory factory) {
         var thread = new Thread(new DatabaseIndexChecker(this::getConnection, factory, getSchema()), "db-index-checker");
         thread.setDaemon(true);

@@ -30,8 +30,12 @@ import org.keycloak.tracing.TracingProviderFactory;
 
 import io.opentelemetry.api.OpenTelemetry;
 
+/**
+ * OpenTelemetry {@link TracingProviderFactory}：从 Quarkus CDI 获取 {@link OpenTelemetry} 单例。
+ */
 public class OTelTracingProviderFactory implements TracingProviderFactory {
     public static final String PROVIDER_ID = "opentelemetry";
+    /** 进程内共享的 OpenTelemetry 实例（由 Quarkus OTel 扩展提供）。 */
     private static OpenTelemetry OTEL_SINGLETON;
 
     @Override
@@ -56,7 +60,7 @@ public class OTelTracingProviderFactory implements TracingProviderFactory {
     @Override
     public void close() {
         if (OTEL_SINGLETON != null) {
-            // explicitly remove the OpenTelemetry bean
+            // 显式销毁 CDI 中的 OpenTelemetry bean，避免热部署/重启泄漏
             CDI.current().select(OpenTelemetry.class).destroy(OTEL_SINGLETON);
             OTEL_SINGLETON = null;
         }

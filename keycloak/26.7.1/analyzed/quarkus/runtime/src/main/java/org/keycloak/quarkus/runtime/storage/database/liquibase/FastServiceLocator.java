@@ -25,15 +25,21 @@ import java.util.Map;
 import liquibase.exception.ServiceNotFoundException;
 import liquibase.servicelocator.StandardServiceLocator;
 
+/**
+ * Liquibase 服务定位器加速实现：启动时预注册服务类名，避免运行时 SPI 扫描。
+ */
 public class FastServiceLocator extends StandardServiceLocator {
 
+    /** 接口全限定名 → 实现类全限定名列表。 */
     private Map<String, List<String>> services = new HashMap<>();
 
+    /** 略高于默认优先级，使 Quarkus 运行时优先选用本定位器。 */
     @Override
     public int getPriority() {
         return super.getPriority() + 1;
     }
 
+    /** 若已预注册则直接实例化，否则回退父类 SPI 发现。 */
     @Override
     @SuppressWarnings("unchecked")
     public <T> List<T> findInstances(Class<T> interfaceType) throws ServiceNotFoundException {
@@ -58,6 +64,7 @@ public class FastServiceLocator extends StandardServiceLocator {
     public FastServiceLocator() {
     }
 
+    /** 注入预解析的 Liquibase 服务映射（Quarkus 构建期生成）。 */
     public void initServices(final Map<String, List<String>> services) {
         this.services = services;
     }

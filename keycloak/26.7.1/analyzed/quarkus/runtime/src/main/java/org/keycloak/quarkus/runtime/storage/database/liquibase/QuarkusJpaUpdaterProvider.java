@@ -63,15 +63,21 @@ import liquibase.structure.core.Table;
 import liquibase.util.StreamUtil;
 import org.jboss.logging.Logger;
 
+/**
+ * Quarkus 环境下的 JPA/Liquibase 数据库更新器：执行主 changelog 与自定义 {@link JpaEntityProvider} 变更集。
+ */
 public class QuarkusJpaUpdaterProvider implements JpaUpdaterProvider {
 
     private static final Logger logger = Logger.getLogger(QuarkusJpaUpdaterProvider.class);
 
+    /** Keycloak 主 changelog  classpath 路径。 */
     public static final String CHANGELOG = "META-INF/jpa-changelog-master.xml";
     private static final String DEPLOYMENT_ID_COLUMN = "DEPLOYMENT_ID";
+    /** Session 属性：是否校验并执行主 changelog（由连接工厂在启动时设置）。 */
     public static final String VERIFY_AND_RUN_MASTER_CHANGELOG = "VERIFY_AND_RUN_MASTER_CHANGELOG";
 
     private final KeycloakSession session;
+    /** 已解析的未执行变更集缓存（按 changelog 文件路径）。 */
     private Map<String, List<ChangeSet>> changeSets = new HashMap<>();
 
     public QuarkusJpaUpdaterProvider(KeycloakSession session) {
@@ -91,7 +97,7 @@ public class QuarkusJpaUpdaterProvider implements JpaUpdaterProvider {
     private void update(Connection connection, File file, String defaultSchema) {
         logger.debug("Starting database update");
 
-        // Need ThreadLocal as liquibase doesn't seem to have API to inject custom objects into tasks
+        // Liquibase 无注入自定义对象的 API，通过 ThreadLocal 传递 KeycloakSession
         ThreadLocalSessionContext.setCurrentSession(session);
 
         Writer exportWriter = null;
@@ -101,12 +107,12 @@ public class QuarkusJpaUpdaterProvider implements JpaUpdaterProvider {
             }
 
             if (needVerifyMasterChangelog()) {
-                // Run update with keycloak master changelog first
+                // 先执行 Keycloak 主 changelog
                 KeycloakLiquibase liquibase = getLiquibaseForKeycloakUpdate(connection, defaultSchema);
                 updateChangeSet(liquibase, exportWriter);
             }
 
-            // Run update for each custom JpaEntityProvider
+            // 再依次处理各自定义 JpaEntityProvider 的 changelog
             Set<JpaEntityProvider> jpaProviders = session.getAllProviders(JpaEntityProvider.class);
             for (JpaEntityProvider jpaProvider : jpaProviders) {
                 String customChangelog = jpaProvider.getChangelogLocation();
@@ -143,7 +149,7 @@ public class QuarkusJpaUpdaterProvider implements JpaUpdaterProvider {
         if (changelogTable != null) {
             boolean hasDeploymentIdColumn = changelogTable.getColumn(DEPLOYMENT_ID_COLUMN) != null;
 
-            // create DEPLOYMENT_ID column if it doesn't exist
+            // 若 DATABASECHANGELOG 表缺少 DEPLOYMENT_ID 列则补建（兼容旧版 Liquibase 表结构）
             if (!hasDeploymentIdColumn) {
                 ChangeLogHistoryService changelogHistoryService = getChangeLogHistoryService().getChangeLogService(database);
                 changelogHistoryService.generateDeploymentId();
@@ -196,8 +202,8 @@ public class QuarkusJpaUpdaterProvider implements JpaUpdaterProvider {
             logger.debugv("Database is up to date for changelog {0}", changelog);
         }
 
-        // Needs to restart liquibase services to clear ChangeLogHistoryServiceFactory.getInstance().
-        // See https://issues.jboss.org/browse/KEYCLOAK-3769 for discussion relevant to why reset needs to be here
+        // 重置 Liquibase 单例服务，避免 ChangeLogHistoryServiceFactory 状态泄漏
+        // 参见 KEYCLOAK-3769 讨论
         resetLiquibaseServices(liquibase);
     }
 
@@ -213,12 +219,10 @@ public class QuarkusJpaUpdaterProvider implements JpaUpdaterProvider {
         loggingExecutor.comment("* Keycloak database creation script - apply this script to empty DB *");
         loggingExecutor.comment("*********************************************************************" + StreamUtil.getLineSeparator());
 
-        // DatabaseChangeLogTable is automatically added to the script by Liquibase
-        // DatabaseChangeLogLockTable is created before this code is executed and recreated if it does not exist automatically
-        // in org.keycloak.connections.jpa.updater.liquibase.lock.CustomLockService.init() called indirectly from
-        // KeycloakApplication constructor (search for waitForLock() call). Hence it is not included in the creation script.
+        // DATABASECHANGELOG 表由 Liquibase 自动写入脚本
+        // DATABASECHANGELOGLOCK 在 CustomLockService.init() 中已处理，不在此脚本中重复
 
-        // For MySQL, add primary key to DATABASECHANGELOG table (handled by MySQLCustomChangeLogHistoryService at runtime)
+        // MySQL 需为 DATABASECHANGELOG 表添加主键（运行时由 MySQLCustomChangeLogHistoryService 处理）
         ChangeLogHistoryService changeLogHistoryService = ChangeLogHistoryServiceFactory.getInstance().getChangeLogService(database);
         if (changeLogHistoryService instanceof MySQLCustomChangeLogHistoryService customChangeLogHistoryService) {
             loggingExecutor.comment("Add primary key to DATABASECHANGELOG table for MySQL");
@@ -235,7 +239,7 @@ public class QuarkusJpaUpdaterProvider implements JpaUpdaterProvider {
 
         try {
             if (needVerifyMasterChangelog()) {
-                // Validate with keycloak master changelog first
+                // 先校验主 changelog
                 KeycloakLiquibase liquibase = getLiquibaseForKeycloakUpdate(connection, defaultSchema);
 
                 Status status = validateChangeSet(liquibase, liquibase.getChangeLogFile());
@@ -244,7 +248,7 @@ public class QuarkusJpaUpdaterProvider implements JpaUpdaterProvider {
                 }
             }
 
-            // Validate each custom JpaEntityProvider
+            // 再校验各自定义 JpaEntityProvider 的 changelog
             Set<JpaEntityProvider> jpaProviders = session.getAllProviders(JpaEntityProvider.class);
             for (JpaEntityProvider jpaProvider : jpaProviders) {
                 String customChangelog = jpaProvider.getChangelogLocation();
@@ -282,8 +286,8 @@ public class QuarkusJpaUpdaterProvider implements JpaUpdaterProvider {
             result = Status.VALID;
         }
 
-        // Needs to restart liquibase services to clear ChangeLogHistoryServiceFactory.getInstance().
-        // See https://issues.jboss.org/browse/KEYCLOAK-3769 for discussion relevant to why reset needs to be here
+        // 重置 Liquibase 单例服务，避免 ChangeLogHistoryServiceFactory 状态泄漏
+        // 参见 KEYCLOAK-3769 讨论
         resetLiquibaseServices(liquibase);
 
         return result;
@@ -299,7 +303,7 @@ public class QuarkusJpaUpdaterProvider implements JpaUpdaterProvider {
     }
 
     private List<ChangeSet> getLiquibaseUnrunChangeSets(Liquibase liquibase) {
-        // we don't need to fetch change sets if they were previously obtained
+        // 若已缓存则复用，避免重复 listUnrunChangeSets
         return changeSets.computeIfAbsent(liquibase.getChangeLogFile(), s -> {
             try {
                 return liquibase.listUnrunChangeSets(null, new LabelExpression(), false);

@@ -31,6 +31,9 @@ import liquibase.parser.core.xml.XMLChangeLogSAXParser;
 import liquibase.ui.LoggerUIService;
 import org.jboss.logging.Logger;
 
+/**
+ * Quarkus Liquibase 连接提供方：自定义 Scope/UI 服务，并禁用 changelog XML 校验以加快启动。
+ */
 public class QuarkusLiquibaseConnectionProvider extends DefaultLiquibaseConnectionProvider {
 
     private static final Logger logger = Logger.getLogger(QuarkusLiquibaseConnectionProvider.class);
@@ -39,7 +42,7 @@ public class QuarkusLiquibaseConnectionProvider extends DefaultLiquibaseConnecti
     @Override
     protected void baseLiquibaseInitialization() {
 
-        // initialize Liquibase using a custom scope
+        // 使用自定义 Scope 初始化 Liquibase（Logger UI 服务）
         final Map<String, Object> scopeValues = new HashMap<>();
         scopeValues.put(Scope.Attr.ui.name(), new LoggerUIService());
         try {
@@ -48,7 +51,7 @@ public class QuarkusLiquibaseConnectionProvider extends DefaultLiquibaseConnecti
             throw new RuntimeException("Failed to initialize Liquibase: " + e.getMessage(), e);
         }
 
-        // disables XML validation
+        // 关闭 XML schema 校验，避免 Quarkus 原生镜像下 DTD 解析问题
         for (ChangeLogParser parser : ChangeLogParserFactory.getInstance().getParsers()) {
             if (parser instanceof XMLChangeLogSAXParser) {
                 Method getSaxParserFactory = null;

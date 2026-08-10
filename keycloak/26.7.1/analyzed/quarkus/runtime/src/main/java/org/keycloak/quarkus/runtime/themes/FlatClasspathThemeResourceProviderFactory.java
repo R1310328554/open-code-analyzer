@@ -25,10 +25,14 @@ import java.util.Properties;
 
 import org.keycloak.theme.ClasspathThemeResourceProviderFactory;
 
+/**
+ * 扁平 classpath 主题资源工厂：从 {@code theme-resources/messages/} 根路径加载国际化属性文件。
+ */
 public class FlatClasspathThemeResourceProviderFactory extends ClasspathThemeResourceProviderFactory {
 
     public static final String ID = "flat-classpath";
 
+    /** 合并 classpath 上所有匹配的 messages 属性文件（支持多 JAR 叠加）。 */
     @Override
     public Properties getMessages(String baseBundlename, Locale locale) throws IOException {
         Properties messages = new Properties();

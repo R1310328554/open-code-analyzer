@@ -23,7 +23,7 @@ import liquibase.logging.core.AbstractLogger;
 import org.jboss.logging.Logger;
 
 /**
- * A {@link liquibase.logging.Logger} implementation that delegates to a JBoss {@link Logger}.
+ * Liquibase {@link liquibase.logging.Logger} 适配器，将级别映射到 JBoss {@link Logger}。
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
@@ -48,7 +48,7 @@ public class KeycloakLogger extends AbstractLogger {
 
     @Override
     public void warning(String message) {
-        // Ignore this warning as cascaded drops doesn't work anyway with all DBs, which we need to support
+        // 级联 DROP 并非所有数据库都支持，降级为 debug 避免噪声
         if ("Database does not support drop with cascade".equals(message)) {
             this.delegate.debug(message);
         } else {

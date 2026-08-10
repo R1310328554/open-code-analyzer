@@ -11,6 +11,9 @@ import org.keycloak.theme.FolderThemeProvider;
 import org.keycloak.theme.ThemeProvider;
 import org.keycloak.theme.ThemeProviderFactory;
 
+/**
+ * Quarkus 文件夹主题提供方工厂：从配置目录或默认 {@link Environment#getDefaultThemeRootDir()} 加载主题。
+ */
 public class QuarkusFolderThemeProviderFactory implements ThemeProviderFactory {
 
     private static final String CONFIG_DIR_KEY = "dir";
@@ -44,13 +47,11 @@ public class QuarkusFolderThemeProviderFactory implements ThemeProviderFactory {
     }
 
     /**
-     * Determines if the theme root directory we get
-     * from {@link Config} exists.
-     * If not, uses the default theme directory as a fallback.
+     * 解析主题根目录：优先使用 {@link Config} 中的 {@code dir}，不存在则回退到 Quarkus 默认主题目录。
      *
-     * @param rootDirFromConfig string value from {@link Config}
-     * @return Directory to use as theme root directory in {@link File} format, either from config or from default. Null if none is available.
-     * @throws RuntimeException when filesystem path is not accessible
+     * @param rootDirFromConfig {@link Config} 中的目录字符串
+     * @return 存在的主题根目录；均不可用则返回 {@code null}
+     * @throws RuntimeException 路径不可访问时
      */
     private File getThemeRootDirWithFallback(String rootDirFromConfig) {
         return Optional.ofNullable(rootDirFromConfig).or(Environment::getDefaultThemeRootDir).map(File::new)
