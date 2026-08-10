@@ -27,82 +27,79 @@ var (
 )
 
 type (
-	// User represents a user of the system.
+	// User 表示系统用户账户。
 	User struct {
 		ID        int64  `json:"id"`
 		Login     string `json:"login"`
 		Email     string `json:"email"`
-		Machine   bool   `json:"machine"`
-		Admin     bool   `json:"admin"`
-		Active    bool   `json:"active"`
+		Machine   bool   `json:"machine"`    // 是否为机器账户
+		Admin     bool   `json:"admin"`      // 是否为系统管理员
+		Active    bool   `json:"active"`     // 账户是否已激活
 		Avatar    string `json:"avatar"`
-		Syncing   bool   `json:"syncing"`
-		Synced    int64  `json:"synced"`
+		Syncing   bool   `json:"syncing"`    // 是否正在同步仓库
+		Synced    int64  `json:"synced"`     // 上次同步完成时间戳
 		Created   int64  `json:"created"`
 		Updated   int64  `json:"updated"`
 		LastLogin int64  `json:"last_login"`
-		Token     string `json:"-"`
-		Refresh   string `json:"-"`
-		Expiry    int64  `json:"-"`
-		Hash      string `json:"-"`
+		Token     string `json:"-"` // API 访问令牌（不对外暴露）
+		Refresh   string `json:"-"` // OAuth 刷新令牌
+		Expiry    int64  `json:"-"` // 令牌过期时间
+		Hash      string `json:"-"` // 令牌哈希值
 	}
 
-	// UserParams defines user query parameters.
+	// UserParams 定义用户列表查询参数。
 	UserParams struct {
-		// Sort instructs the system to sort by Login if true,
-		// else sort by primary key.
+		// Sort 为 true 时按 Login 排序，否则按主键排序。
 		Sort bool
 
-		Page int64
-		Size int64
+		Page int64 // 页码
+		Size int64 // 每页条数
 	}
 
-	// UserStore defines operations for working with users.
+	// UserStore 定义用户账户的持久化与查询操作。
 	UserStore interface {
-		// Find returns a user from the datastore.
+		// Find 按主键从数据存储查找用户。
 		Find(context.Context, int64) (*User, error)
 
-		// FindLogin returns a user from the datastore by username.
+		// FindLogin 按用户名从数据存储查找用户。
 		FindLogin(context.Context, string) (*User, error)
 
-		// FindToken returns a user from the datastore by token.
+		// FindToken 按 API 令牌从数据存储查找用户。
 		FindToken(context.Context, string) (*User, error)
 
-		// List returns a list of users from the datastore.
+		// List 返回数据存储中的全部用户列表。
 		List(context.Context) ([]*User, error)
 
-		// ListRange returns a range of users from the datastore.
+		// ListRange 按分页参数返回用户列表。
 		ListRange(context.Context, UserParams) ([]*User, error)
 
-		// Create persists a new user to the datastore.
+		// Create 将新用户持久化到数据存储。
 		Create(context.Context, *User) error
 
-		// Update persists an updated user to the datastore.
+		// Update 将更新后的用户持久化到数据存储。
 		Update(context.Context, *User) error
 
-		// Delete deletes a user from the datastore.
+		// Delete 从数据存储删除用户。
 		Delete(context.Context, *User) error
 
-		// Count returns a count of human and machine users.
+		// Count 返回人类用户与机器用户的总数。
 		Count(context.Context) (int64, error)
 
-		// CountHuman returns a count of human users.
+		// CountHuman 返回人类用户数量。
 		CountHuman(context.Context) (int64, error)
 	}
 
-	// UserService provides access to user account
-	// resources in the remote system (e.g. GitHub).
+	// UserService 提供对远程系统（如 GitHub）用户账户资源的访问。
 	UserService interface {
-		// Find returns the authenticated user.
+		// Find 返回当前已认证用户的信息。
 		Find(ctx context.Context, access, refresh string) (*User, error)
 
-		// FindLogin returns a user by username.
+		// FindLogin 按用户名查找远程用户。
 		FindLogin(ctx context.Context, user *User, login string) (*User, error)
 	}
 )
 
-// Validate validates the user and returns an error if the
-// validation fails.
+// Validate 校验用户名字段长度与字符规则，失败时返回错误。
 func (u *User) Validate() error {
 	switch {
 	case !govalidator.IsByteLength(u.Login, 1, 50):

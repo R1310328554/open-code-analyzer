@@ -20,20 +20,15 @@ import (
 )
 
 var (
-	// ErrValidatorSkip is returned if the pipeline
-	// validation fails, but the pipeline should be skipped
-	// and silently ignored instead of erroring.
+	// ErrValidatorSkip 表示流水线校验失败，但应静默跳过而非报错。
 	ErrValidatorSkip = errors.New("validation failed: skip pipeline")
 
-	// ErrValidatorBlock is returned if the pipeline
-	// validation fails, but the pipeline should be blocked
-	// pending manual approval instead of erroring.
+	// ErrValidatorBlock 表示流水线校验失败，但应阻塞等待人工审批而非报错。
 	ErrValidatorBlock = errors.New("validation failed: block pipeline")
 )
 
 type (
-	// ValidateArgs represents a request to the pipeline
-	// validation service.
+	// ValidateArgs 表示一次流水线校验请求。
 	ValidateArgs struct {
 		User   *User       `json:"-"`
 		Repo   *Repository `json:"repo,omitempty"`
@@ -41,8 +36,7 @@ type (
 		Config *Config     `json:"config,omitempty"`
 	}
 
-	// ValidateService validates the yaml configuration
-	// and returns an error if the yaml is deemed invalid.
+	// ValidateService 校验 YAML 流水线配置，无效时返回错误。
 	ValidateService interface {
 		Validate(context.Context, *ValidateArgs) error
 	}

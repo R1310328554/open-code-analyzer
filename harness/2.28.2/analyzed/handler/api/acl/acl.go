@@ -23,9 +23,8 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// AuthorizeUser returns an http.Handler middleware that authorizes only
-// authenticated users to proceed to the next handler in the chain. Guest users
-// are rejected with a 401 unauthorized error.
+// AuthorizeUser 返回 HTTP 中间件，仅允许已认证用户继续处理请求链。
+// 访客用户将被拒绝并返回 401 未授权错误。
 func AuthorizeUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, ok := request.UserFrom(r.Context())
@@ -39,8 +38,7 @@ func AuthorizeUser(next http.Handler) http.Handler {
 	})
 }
 
-// AuthorizeAdmin returns an http.Handler middleware that authorizes only
-// system administrators to proceed to the next handler in the chain.
+// AuthorizeAdmin 返回 HTTP 中间件，仅允许系统管理员继续处理请求链。
 func AuthorizeAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, ok := request.UserFrom(r.Context())

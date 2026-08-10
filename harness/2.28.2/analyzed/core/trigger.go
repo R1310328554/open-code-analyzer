@@ -16,15 +16,14 @@ package core
 
 import "context"
 
-// Trigger types
+// 构建触发来源类型常量。
 const (
-	TriggerHook = "@hook"
-	TriggerCron = "@cron"
+	TriggerHook = "@hook" // Webhook 事件触发
+	TriggerCron = "@cron" // 定时任务触发
 )
 
-// Triggerer is responsible for triggering a Build from an
-// incoming drone. If a build is skipped a nil value is
-// returned.
+// Triggerer 负责根据入站 Hook 触发一次 CI/CD 构建。
+// 若构建被跳过则返回 nil。
 type Triggerer interface {
 	Trigger(context.Context, *Repository, *Hook) (*Build, error)
 }

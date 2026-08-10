@@ -27,30 +27,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CheckReadAccess returns an http.Handler middleware that authorizes only
-// authenticated users with read repository access to proceed to the next
-// handler in the chain.
+// CheckReadAccess 返回 HTTP 中间件，仅允许具备仓库读权限的已认证用户继续处理。
 func CheckReadAccess() func(http.Handler) http.Handler {
 	return CheckAccess(true, false, false)
 }
 
-// CheckWriteAccess returns an http.Handler middleware that authorizes only
-// authenticated users with write repository access to proceed to the next
-// handler in the chain.
+// CheckWriteAccess 返回 HTTP 中间件，仅允许具备仓库写权限的已认证用户继续处理。
 func CheckWriteAccess() func(http.Handler) http.Handler {
 	return CheckAccess(true, true, false)
 }
 
-// CheckAdminAccess returns an http.Handler middleware that authorizes only
-// authenticated users with admin repository access to proceed to the next
-// handler in the chain.
+// CheckAdminAccess 返回 HTTP 中间件，仅允许具备仓库管理员权限的已认证用户继续处理。
 func CheckAdminAccess() func(http.Handler) http.Handler {
 	return CheckAccess(true, true, true)
 }
 
-// CheckAccess returns an http.Handler middleware that authorizes only
-// authenticated users with the required read, write or admin access
-// permissions to the requested repository resource.
+// CheckAccess 返回 HTTP 中间件，按 read/write/admin 标志校验用户对目标仓库的访问权限。
 func CheckAccess(read, write, admin bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -81,9 +73,7 @@ func CheckAccess(read, write, admin bool) func(http.Handler) http.Handler {
 
 			repo, noRepo := request.RepoFrom(ctx)
 			if !noRepo {
-				// this should never happen. the repository
-				// should always be injected into the context
-				// by an upstream handler in the chain.
+				// 正常情况下仓库应已由上游中间件注入上下文。
 				log.Errorln("api: null repository in context")
 				render.NotFound(w, errors.ErrNotFound)
 				return
@@ -92,8 +82,8 @@ func CheckAccess(read, write, admin bool) func(http.Handler) http.Handler {
 			log = log.WithField("visibility", repo.Visibility)
 
 			switch {
-			case admin == true: // continue
-			case write == true: // continue
+			case admin == true: // 继续校验管理员权限
+			case write == true: // 继续校验写权限
 			case repo.Visibility == core.VisibilityPublic:
 				log.Debugln("api: read access granted")
 				next.ServeHTTP(w, r)

@@ -16,8 +16,8 @@ package core
 
 import "context"
 
-// Transferer handles transferring repository ownership from one
-// user to another user account.
+// Transferer 负责将仓库所有权从一个用户账户转移给另一个用户账户。
 type Transferer interface {
+	// Transfer 将指定用户名下仓库的所有权执行转移。
 	Transfer(ctx context.Context, user *User) error
 }

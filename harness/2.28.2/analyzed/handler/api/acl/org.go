@@ -26,9 +26,8 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// CheckMembership returns an http.Handler middleware that authorizes only
-// authenticated users with the required membership to an organization
-// to the requested repository resource.
+// CheckMembership 返回 HTTP 中间件，校验用户是否具备目标组织的成员资格。
+// admin 为 true 时还要求用户为该组织管理员。
 func CheckMembership(service core.OrganizationService, admin bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -44,13 +43,13 @@ func CheckMembership(service core.OrganizationService, admin bool) func(http.Han
 			}
 			log = log.WithField("user.admin", user.Admin)
 
-			// if the user is an administrator they are always
-			// granted access to the organization data.
+			// 系统管理员始终可访问组织数据。
 			if user.Admin {
 				next.ServeHTTP(w, r)
 				return
 			}
 
+			// 命名空间与登录名相同时视为个人命名空间，直接放行。
 			if user.Login == namespace {
 				next.ServeHTTP(w, r)
 				return

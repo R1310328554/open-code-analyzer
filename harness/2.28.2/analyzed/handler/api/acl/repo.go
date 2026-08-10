@@ -28,8 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// InjectRepository returns an http.Handler middleware that injects
-// the repository and repository permissions into the context.
+// InjectRepository 返回 HTTP 中间件，将仓库及其权限信息注入请求上下文。
 func InjectRepository(
 	repoz core.RepositoryService,
 	repos core.RepositoryStore,
@@ -50,9 +49,7 @@ func InjectRepository(
 				},
 			)
 
-			// the user is stored in the context and is
-			// provided by a an ancestor middleware in the
-			// chain.
+			// 用户由上游认证中间件注入上下文。
 			user, sessionExists := request.UserFrom(ctx)
 
 			repo, err := repos.FindName(ctx, owner, name)
@@ -66,30 +63,19 @@ func InjectRepository(
 				return
 			}
 
-			// the repository is stored in the request context
-			// and can be accessed by subsequent handlers in the
-			// request chain.
+			// 将仓库写入请求上下文，供后续处理器使用。
 			ctx = request.WithRepo(ctx, repo)
 
-			// if the user does not exist in the request context,
-			// this is a guest session, and there are no repository
-			// permissions to lookup.
+			// 访客会话无用户上下文，无需查询仓库权限。
 			if !sessionExists {
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
-			// else get the cached permissions from the database
-			// for the user and repository.
+			// 从数据库读取用户对该仓库的缓存权限。
 			perm, err := perms.Find(ctx, repo.UID, user.ID)
 			if err != nil {
-				// if the permissions are not found we forward
-				// the request to the next handler in the chain
-				// with no permissions in the context.
-				//
-				// It is the responsibility to downstream
-				// middleware and handlers to decide if the
-				// request should be rejected.
+				// 权限未找到时不注入权限，由下游中间件决定是否拒绝。
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
@@ -102,9 +88,7 @@ func InjectRepository(
 				},
 			)
 
-			// because the permissions are synced with the remote
-			// system (e.g. github) they may be stale. If the permissions
-			// are stale they are refreshed below.
+			// 权限与远程 SCM 同步，超过一小时则刷新。
 			if perm.Synced == 0 || time.Unix(perm.Synced, 0).Add(time.Hour).Before(time.Now()) {
 				log.Debugln("api: sync repository permissions")
 

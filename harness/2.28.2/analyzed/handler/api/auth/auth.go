@@ -22,8 +22,8 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// HandleAuthentication returns an http.HandlerFunc middleware that authenticates
-// the http.Request and errors if the account cannot be authenticated.
+// HandleAuthentication 返回 HTTP 中间件，从会话中认证用户并将用户信息注入上下文。
+// 无法认证时以访客身份继续处理，不中断请求链。
 func HandleAuthentication(session core.Session) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -31,9 +31,7 @@ func HandleAuthentication(session core.Session) func(http.Handler) http.Handler 
 			log := logger.FromContext(ctx)
 			user, err := session.Get(r)
 
-			// this block of code checks the error message and user
-			// returned from the session, including some edge cases,
-			// to prevent a session from being falsely created.
+			// 校验会话返回的用户与错误，防止错误创建会话。
 			if err != nil || user == nil || user.ID == 0 {
 				next.ServeHTTP(w, r)
 				log.Debugln("api: guest access")

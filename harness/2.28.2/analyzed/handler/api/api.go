@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// api 包提供 Drone REST API 路由与 HTTP 处理器装配。
 package api
 
 import (
@@ -52,6 +53,7 @@ import (
 	"github.com/go-chi/cors"
 )
 
+// corsOpts 定义 API 跨域资源共享（CORS）策略。
 var corsOpts = cors.Options{
 	AllowedOrigins:   []string{"*"},
 	AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
@@ -61,6 +63,7 @@ var corsOpts = cors.Options{
 	MaxAge:           300,
 }
 
+// New 注入全部依赖并构造 API Server 实例。
 func New(
 	builds core.BuildStore,
 	commits core.CommitService,
@@ -125,41 +128,41 @@ func New(
 	}
 }
 
-// Server is a http.Handler which exposes drone functionality over HTTP.
+// Server 实现 http.Handler，通过 HTTP 暴露 Drone 全部 REST API 功能。
 type Server struct {
-	Builds     core.BuildStore
-	Card       core.CardStore
-	Cron       core.CronStore
-	Commits    core.CommitService
-	Events     core.Pubsub
-	Globals    core.GlobalSecretStore
-	Hooks      core.HookService
-	Logs       core.LogStore
-	License    *core.License
-	Licenses   core.LicenseService
-	Orgs       core.OrganizationService
-	Perms      core.PermStore
-	Repos      core.RepositoryStore
-	Repoz      core.RepositoryService
-	Scheduler  core.Scheduler
-	Secrets    core.SecretStore
-	Stages     core.StageStore
-	Steps      core.StepStore
-	Status     core.StatusService
-	Session    core.Session
-	Stream     core.LogStream
-	Syncer     core.Syncer
-	System     *core.System
-	Template   core.TemplateStore
-	Transferer core.Transferer
-	Triggerer  core.Triggerer
-	Users      core.UserStore
-	Userz      core.UserService
-	Webhook    core.WebhookSender
-	Private    bool
+	Builds     core.BuildStore           // 构建数据存储
+	Card       core.CardStore            // 构建卡片存储
+	Cron       core.CronStore            // 定时任务存储
+	Commits    core.CommitService        // 提交信息服务
+	Events     core.Pubsub               // 事件发布订阅
+	Globals    core.GlobalSecretStore    // 全局密钥存储
+	Hooks      core.HookService          // Webhook 钩子服务
+	Logs       core.LogStore             // 构建日志存储
+	License    *core.License             // 许可证信息
+	Licenses   core.LicenseService       // 许可证校验服务
+	Orgs       core.OrganizationService  // 组织查询服务
+	Perms      core.PermStore            // 仓库权限存储
+	Repos      core.RepositoryStore      // 仓库数据存储
+	Repoz      core.RepositoryService    // 远程仓库服务
+	Scheduler  core.Scheduler            // 构建阶段调度器
+	Secrets    core.SecretStore          // 仓库密钥存储
+	Stages     core.StageStore           // 阶段数据存储
+	Steps      core.StepStore            // 步骤数据存储
+	Status     core.StatusService        // CI 状态回写服务
+	Session    core.Session              // 用户会话管理
+	Stream     core.LogStream            // 实时日志流
+	Syncer     core.Syncer               // 仓库同步器
+	System     *core.System              // 系统元信息
+	Template   core.TemplateStore        // 流水线模板存储
+	Transferer core.Transferer           // 仓库所有权转移
+	Triggerer  core.Triggerer            // 构建触发器
+	Users      core.UserStore            // 用户数据存储
+	Userz      core.UserService          // 远程用户服务
+	Webhook    core.WebhookSender        // 出站 Webhook 发送器
+	Private    bool                      // 是否启用私有模式
 }
 
-// Handler returns an http.Handler
+// Handler 组装 chi 路由器并注册全部 API 路由与中间件。
 func (s Server) Handler() http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
@@ -170,9 +173,9 @@ func (s Server) Handler() http.Handler {
 	cors := cors.New(corsOpts)
 	r.Use(cors.Handler)
 
+	// /repos 仓库管理 API
 	r.Route("/repos", func(r chi.Router) {
-		// temporary workaround to enable private mode
-		// for the drone server.
+		// 私有模式临时方案：启用 DRONE_SERVER_PRIVATE_MODE 时要求认证。
 		if os.Getenv("DRONE_SERVER_PRIVATE_MODE") == "true" {
 			r.Use(acl.AuthorizeUser)
 		}
@@ -202,6 +205,7 @@ func (s Server) Handler() http.Handler {
 				acl.CheckAdminAccess(),
 			).Post("/repair", repos.HandleRepair(s.Hooks, s.Repoz, s.Repos, s.Users, s.System.Link))
 
+			// 仓库构建相关路由
 			r.Route("/builds", func(r chi.Router) {
 				r.Get("/", builds.HandleList(s.Repos, s.Builds))
 				r.With(acl.CheckWriteAccess()).Post("/", builds.HandleCreate(s.Users, s.Repos, s.Commits, s.Triggerer))
@@ -256,6 +260,7 @@ func (s Server) Handler() http.Handler {
 				).Delete("/", builds.HandlePurge(s.Repos, s.Builds))
 			})
 
+			// 仓库密钥管理
 			r.Route("/secrets", func(r chi.Router) {
 				r.Use(acl.CheckWriteAccess())
 				r.Get("/", secrets.HandleList(s.Repos, s.Secrets))
@@ -265,17 +270,20 @@ func (s Server) Handler() http.Handler {
 				r.Delete("/{secret}", secrets.HandleDelete(s.Repos, s.Secrets))
 			})
 
+			// 流水线签名
 			r.Route("/sign", func(r chi.Router) {
 				r.Use(acl.CheckWriteAccess())
 				r.Post("/", sign.HandleSign(s.Repos))
 			})
 
+			// 密钥加密工具
 			r.Route("/encrypt", func(r chi.Router) {
 				r.Use(acl.CheckWriteAccess())
 				r.Post("/", encrypt.Handler(s.Repos))
 				r.Post("/secret", encrypt.Handler(s.Repos))
 			})
 
+			// 定时任务（Cron）
 			r.Route("/cron", func(r chi.Router) {
 				r.Use(acl.CheckWriteAccess())
 				r.Post("/", crons.HandleCreate(s.Repos, s.Cron))
@@ -286,6 +294,7 @@ func (s Server) Handler() http.Handler {
 				r.Delete("/{cron}", crons.HandleDelete(s.Repos, s.Cron))
 			})
 
+			// 协作者权限
 			r.Route("/collaborators", func(r chi.Router) {
 				r.Get("/", collabs.HandleList(s.Repos, s.Perms))
 				r.Get("/{member}", collabs.HandleFind(s.Users, s.Repos, s.Perms))
@@ -294,6 +303,7 @@ func (s Server) Handler() http.Handler {
 				).Delete("/{member}", collabs.HandleDelete(s.Users, s.Repos, s.Perms))
 			})
 
+			// 构建卡片（可视化输出）
 			r.Route("/cards", func(r chi.Router) {
 				r.Get("/{build}/{stage}/{step}", card.HandleFind(s.Builds, s.Card, s.Stages, s.Steps, s.Repos))
 				r.With(
@@ -306,6 +316,7 @@ func (s Server) Handler() http.Handler {
 		})
 	})
 
+	// 构建状态徽章与 CCMenu 集成
 	r.Route("/badges/{owner}/{name}", func(r chi.Router) {
 		r.Get("/status.svg", badge.Handler(s.Repos, s.Builds))
 		r.With(
@@ -314,6 +325,7 @@ func (s Server) Handler() http.Handler {
 		).Get("/cc.xml", ccmenu.Handler(s.Repos, s.Builds, s.System.Link))
 	})
 
+	// 构建队列管理（管理员）
 	r.Route("/queue", func(r chi.Router) {
 		r.Use(acl.AuthorizeAdmin)
 		r.Get("/", queue.HandleItems(s.Stages))
@@ -321,6 +333,7 @@ func (s Server) Handler() http.Handler {
 		r.Delete("/", queue.HandlePause(s.Scheduler))
 	})
 
+	// 当前登录用户 API
 	r.Route("/user", func(r chi.Router) {
 		r.Use(acl.AuthorizeUser)
 		r.Get("/", user.HandleFind())
@@ -333,11 +346,12 @@ func (s Server) Handler() http.Handler {
 		r.Get("/builds", user.HandleRecent(s.Repos))
 		r.Get("/builds/recent", user.HandleRecent(s.Repos))
 
-		// expose remote endpoints (e.g. to github)
+		// 暴露远程 SCM 端点（如 GitHub）
 		r.Get("/remote/repos", remote.HandleRepos(s.Repoz))
 		r.Get("/remote/repos/{owner}/{name}", remote.HandleRepo(s.Repoz))
 	})
 
+	// 用户管理（管理员）
 	r.Route("/users", func(r chi.Router) {
 		r.Use(acl.AuthorizeAdmin)
 		r.Get("/", users.HandleList(s.Users))
@@ -349,6 +363,7 @@ func (s Server) Handler() http.Handler {
 		r.Get("/{user}/repos", users.HandleRepoList(s.Users, s.Repos))
 	})
 
+	// 实时事件与日志流
 	r.Route("/stream", func(r chi.Router) {
 		r.Get("/", events.HandleGlobal(s.Repos, s.Events))
 
@@ -361,12 +376,14 @@ func (s Server) Handler() http.Handler {
 		})
 	})
 
+	// 全局构建查询（管理员）
 	r.Route("/builds", func(r chi.Router) {
 		r.Use(acl.AuthorizeAdmin)
 		r.Get("/incomplete", globalbuilds.HandleIncomplete(s.Repos))
 		r.Get("/incomplete/v2", globalbuilds.HandleRunningStatus(s.Repos))
 	})
 
+	// 组织级全局密钥
 	r.Route("/secrets", func(r chi.Router) {
 		r.With(acl.AuthorizeAdmin).Get("/", globalsecrets.HandleAll(s.Globals))
 		r.With(acl.CheckMembership(s.Orgs, false)).Get("/{namespace}", globalsecrets.HandleList(s.Globals))
@@ -377,6 +394,7 @@ func (s Server) Handler() http.Handler {
 		r.With(acl.CheckMembership(s.Orgs, true)).Delete("/{namespace}/{name}", globalsecrets.HandleDelete(s.Globals))
 	})
 
+	// 组织级流水线模板
 	r.Route("/templates", func(r chi.Router) {
 		r.With(acl.CheckMembership(s.Orgs, false)).Get("/", template.HandleListAll(s.Template))
 		r.With(acl.CheckMembership(s.Orgs, true)).Post("/{namespace}", template.HandleCreate(s.Template))
@@ -387,6 +405,7 @@ func (s Server) Handler() http.Handler {
 		r.With(acl.CheckMembership(s.Orgs, true)).Delete("/{namespace}/{name}", template.HandleDelete(s.Template))
 	})
 
+	// 系统统计（管理员）
 	r.Route("/system", func(r chi.Router) {
 		r.Use(acl.AuthorizeAdmin)
 		// r.Get("/license", system.HandleLicense())

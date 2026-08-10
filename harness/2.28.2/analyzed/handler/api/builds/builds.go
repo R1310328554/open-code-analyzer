@@ -14,8 +14,7 @@ import (
 	"github.com/drone/drone/logger"
 )
 
-// HandleIncomplete returns an http.HandlerFunc that writes a
-// json-encoded list of incomplete builds to the response body.
+// HandleIncomplete 返回 HTTP 处理器，将未完成构建列表以 JSON 写入响应体。
 func HandleIncomplete(repos core.RepositoryStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, err := repos.ListIncomplete(r.Context())
@@ -29,6 +28,7 @@ func HandleIncomplete(repos core.RepositoryStore) http.HandlerFunc {
 	}
 }
 
+// HandleRunningStatus 返回 HTTP 处理器，将正在运行的构建状态列表以 JSON 写入响应体。
 func HandleRunningStatus(repos core.RepositoryStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, err := repos.ListRunningStatus(r.Context())

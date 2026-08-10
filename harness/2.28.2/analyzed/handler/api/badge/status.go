@@ -25,8 +25,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// Handler returns an http.HandlerFunc that writes an svg status
-// badge to the response.
+// Handler 返回 HTTP 处理器，根据仓库最新构建状态输出 SVG 状态徽章。
 func Handler(
 	repos core.RepositoryStore,
 	builds core.BuildStore,
@@ -40,8 +39,7 @@ func Handler(
 			ref = "refs/heads/" + branch
 		}
 
-		// an SVG response is always served, even when error, so
-		// we can go ahead and set the content type appropriately.
+		// 即使出错也始终返回 SVG，预先设置响应头。
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate, value")
 		w.Header().Set("Expires", "Thu, 01 Jan 1970 00:00:00 GMT")

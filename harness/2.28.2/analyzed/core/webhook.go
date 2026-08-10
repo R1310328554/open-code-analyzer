@@ -18,42 +18,42 @@ import (
 	"context"
 )
 
-// Webhook event types.
+// Webhook 事件类型常量。
 const (
-	WebhookEventBuild = "build"
-	WebhookEventRepo  = "repo"
-	WebhookEventUser  = "user"
+	WebhookEventBuild = "build" // 构建事件
+	WebhookEventRepo  = "repo"  // 仓库事件
+	WebhookEventUser  = "user"  // 用户事件
 )
 
-// Webhook action types.
+// Webhook 动作类型常量。
 const (
-	WebhookActionCreated  = "created"
-	WebhookActionUpdated  = "updated"
-	WebhookActionDeleted  = "deleted"
-	WebhookActionEnabled  = "enabled"
-	WebhookActionDisabled = "disabled"
+	WebhookActionCreated  = "created"  // 创建
+	WebhookActionUpdated  = "updated"  // 更新
+	WebhookActionDeleted  = "deleted"  // 删除
+	WebhookActionEnabled  = "enabled"  // 启用
+	WebhookActionDisabled = "disabled" // 禁用
 )
 
 type (
-	// Webhook defines an integration endpoint.
+	// Webhook 定义出站 Webhook 集成端点配置。
 	Webhook struct {
-		Endpoint   string `json:"endpoint,omitempty"`
-		Signer     string `json:"-"`
-		SkipVerify bool   `json:"skip_verify,omitempty"`
+		Endpoint   string `json:"endpoint,omitempty"`    // 目标 URL
+		Signer     string `json:"-"`                     // 签名密钥
+		SkipVerify bool   `json:"skip_verify,omitempty"` // 是否跳过 TLS 验证
 	}
 
-	// WebhookData provides the webhook data.
+	// WebhookData 封装出站 Webhook 事件载荷。
 	WebhookData struct {
-		Event  string      `json:"event"`
-		Action string      `json:"action"`
-		User   *User       `json:"user,omitempty"`
-		Repo   *Repository `json:"repo,omitempty"`
-		Build  *Build      `json:"build,omitempty"`
+		Event  string      `json:"event"`            // 事件类型
+		Action string      `json:"action"`           // 动作类型
+		User   *User       `json:"user,omitempty"`   // 关联用户
+		Repo   *Repository `json:"repo,omitempty"`   // 关联仓库
+		Build  *Build      `json:"build,omitempty"`  // 关联构建
 	}
 
-	// WebhookSender sends the webhook payload.
+	// WebhookSender 将 Webhook 载荷发送至配置的端点。
 	WebhookSender interface {
-		// Send sends the webhook to the global endpoint.
+		// Send 向全局 Webhook 端点发送事件。
 		Send(context.Context, *WebhookData) error
 	}
 )
