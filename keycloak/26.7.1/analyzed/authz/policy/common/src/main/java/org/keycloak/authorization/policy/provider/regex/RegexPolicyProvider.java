@@ -40,21 +40,33 @@ import static org.keycloak.utils.JsonUtils.hasPath;
 import static org.keycloak.utils.JsonUtils.splitClaimPath;
 
 /**
+ * 正则表达式策略提供者：从身份或上下文属性中读取目标 claim 值，与策略配置的正则模式匹配则授予访问。
+ *
  * @author <a href="mailto:yoshiyuki.tabata.jy@hitachi.com">Yoshiyuki Tabata</a>
  */
 public class RegexPolicyProvider implements PolicyProvider {
 
     private static final Logger logger = Logger.getLogger(RegexPolicyProvider.class);
+    /** 将 {@link Policy} 转为 {@link RegexPolicyRepresentation} 的函数 */
     private final BiFunction<Policy, AuthorizationProvider, RegexPolicyRepresentation> representationFunction;
 
+    /**
+     * @param representationFunction 策略表示转换函数
+     */
     public RegexPolicyProvider(BiFunction<Policy, AuthorizationProvider, RegexPolicyRepresentation> representationFunction) {
         this.representationFunction = representationFunction;
     }
 
+    /** 正则策略无额外资源需释放。 */
     @Override
     public void close() {
     }
 
+    /**
+     * 解析目标 claim 值并用策略正则全匹配，成功则 {@code grant()}。
+     *
+     * @param evaluation 当前授权评估上下文
+     */
     @Override
     public void evaluate(Evaluation evaluation) {
         AuthorizationProvider authorizationProvider = evaluation.getAuthorizationProvider();
@@ -73,6 +85,9 @@ public class RegexPolicyProvider implements PolicyProvider {
         }
     }
 
+    /**
+     * 根据 {@code targetContextAttributes} 从上下文或身份属性中解析目标 claim 值。
+     */
     private String getClaimValue(Evaluation evaluation, RegexPolicyRepresentation policy) {
         Attributes attributes = policy.isTargetContextAttributes()
                 ? evaluation.getContext().getAttributes()
@@ -90,6 +105,7 @@ public class RegexPolicyProvider implements PolicyProvider {
         }
     }
 
+    /** 从属性中读取简单（非 JSON 路径）claim 的首个字符串值。 */
     private String resolveSimpleValue(Attributes attributes, String targetClaim) {
         Attributes.Entry value = attributes.getValue(targetClaim);
 
@@ -100,6 +116,7 @@ public class RegexPolicyProvider implements PolicyProvider {
         return value.asString(0);
     }
 
+    /** 解析 JSON 嵌套路径 claim（如 {@code user.address.city}）。 */
     private String resolveJsonValue(Attributes attributes, String targetClaim) throws IOException {
         List<String> paths = splitClaimPath(targetClaim);
 

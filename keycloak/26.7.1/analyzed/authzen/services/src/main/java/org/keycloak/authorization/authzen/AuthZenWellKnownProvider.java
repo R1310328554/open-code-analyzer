@@ -24,14 +24,23 @@ import org.keycloak.services.Urls;
 import org.keycloak.urls.UrlType;
 import org.keycloak.wellknown.WellKnownProvider;
 
+/**
+ * AuthZen Well-Known 配置提供者：发布策略决策点（PDP）及访问评估端点 URL。
+ */
 public class AuthZenWellKnownProvider implements WellKnownProvider {
 
     private final KeycloakSession session;
 
+    /**
+     * @param session 当前 Keycloak 会话
+     */
     public AuthZenWellKnownProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /**
+     * 返回 AuthZen 发现文档 JSON：PDP 基址、单次/批量评估端点。
+     */
     @Override
     public Object getConfig() {
         RealmModel realm = session.getContext().getRealm();
@@ -44,14 +53,17 @@ public class AuthZenWellKnownProvider implements WellKnownProvider {
         );
     }
 
+    /** 构造单次访问评估端点完整 URL。 */
     public static String accessEvaluationEndpoint(String realmUri) {
         return String.format("%s/%s/%s", realmUri, AuthZenRealmResourceProviderFactory.PROVIDER_ID, AuthZen.EVALUATION_PATH);
     }
 
+    /** 构造批量访问评估端点完整 URL。 */
     public static String accessEvaluationsEndpoint(String realmUri) {
         return String.format("%s/%s/%s", realmUri, AuthZenRealmResourceProviderFactory.PROVIDER_ID, AuthZen.EVALUATIONS_PATH);
     }
 
+    /** Well-Known 提供者无额外资源需释放。 */
     @Override
     public void close() {
     }

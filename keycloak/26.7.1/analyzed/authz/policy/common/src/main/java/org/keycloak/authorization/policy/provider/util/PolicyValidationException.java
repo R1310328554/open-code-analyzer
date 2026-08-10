@@ -19,10 +19,13 @@ package org.keycloak.authorization.policy.provider.util;
 import jakarta.ws.rs.BadRequestException;
 
 /**
- * Exception that is thrown when validation errors are found when creating/updating policies.
+ * 创建或更新策略时校验失败抛出的异常，映射为 HTTP 400 Bad Request。
  */
 public class PolicyValidationException extends BadRequestException {
 
+    /**
+     * @param message 校验失败描述信息
+     */
     public PolicyValidationException(String message) {
         super(message);
     }

@@ -38,18 +38,31 @@ import org.keycloak.representations.idm.authorization.UserPolicyRepresentation;
 import org.jboss.logging.Logger;
 
 /**
+ * 用户策略提供者：当请求身份 ID 包含在策略配置的用户列表中时授予访问。
+ * <p>
+ * 同时实现 {@link PartialEvaluationPolicyProvider}，支持细粒度权限的部分评估。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class UserPolicyProvider implements PolicyProvider, PartialEvaluationPolicyProvider {
 
     private static final Logger logger = Logger.getLogger(UserPolicyProvider.class);
 
+    /** 将 {@link Policy} 转为 {@link UserPolicyRepresentation} 的函数 */
     private final BiFunction<Policy, AuthorizationProvider, UserPolicyRepresentation> representationFunction;
 
+    /**
+     * @param representationFunction 策略表示转换函数
+     */
     public UserPolicyProvider(BiFunction<Policy, AuthorizationProvider, UserPolicyRepresentation> representationFunction) {
         this.representationFunction = representationFunction;
     }
 
+    /**
+     * 检查当前身份 ID 是否在策略 {@code users} 配置中，匹配则 {@code grant()}。
+     *
+     * @param evaluation 当前授权评估上下文
+     */
     @Override
     public void evaluate(Evaluation evaluation) {
         Policy policy = evaluation.getPolicy();
@@ -63,6 +76,9 @@ public class UserPolicyProvider implements PolicyProvider, PartialEvaluationPoli
         }
     }
 
+    /**
+     * 根据用户 ID 查找依赖该用户的权限策略（FGAP 部分评估）。
+     */
     @Override
     public Stream<Policy> getPermissions(KeycloakSession session, ResourceType resourceType, ResourceType groupResourceType, UserModel subject) {
         AuthorizationProvider provider = session.getProvider(AuthorizationProvider.class);
@@ -75,6 +91,7 @@ public class UserPolicyProvider implements PolicyProvider, PartialEvaluationPoli
         return policyStore.findDependentPolicies(resourceServer, resourceType.getType(), groupResourceType == null ? null : groupResourceType.getType(), UserPolicyProviderFactory.ID, "users", subject.getId());
     }
 
+    /** 对管理用户直接评估用户策略是否满足。 */
     @Override
     public boolean evaluate(KeycloakSession session, Policy policy, UserModel adminUser) {
         return policy.getConfig().getOrDefault("users", "").contains(adminUser.getId());
@@ -85,6 +102,7 @@ public class UserPolicyProvider implements PolicyProvider, PartialEvaluationPoli
         return UserPolicyProviderFactory.ID.equals(policy.getType());
     }
 
+    /** 用户策略无额外资源需释放。 */
     @Override
     public void close() {
 

@@ -26,15 +26,24 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
+/**
+ * OpenID AuthZen 授权 API 1.0 的请求/响应数据模型与路径常量。
+ * <p>
+ * 本类为工具类，封装评估端点路径及 JSON 序列化 record 类型。
+ */
 public final class AuthZen {
 
+    /** AuthZen 访问 API 根路径段。 */
     public static final String AUTHZEN_ACCESS_PATH = "access/v1";
+    /** 单次访问评估端点路径。 */
     public static final String EVALUATION_PATH = AUTHZEN_ACCESS_PATH + "/evaluation";
+    /** 批量访问评估端点路径。 */
     public static final String EVALUATIONS_PATH = AUTHZEN_ACCESS_PATH + "/evaluations";
 
     private AuthZen() {
     }
 
+    /** 主体类型：客户端或用户。 */
     public enum SubjectType {
         CLIENT("client"),
         USER("user");
@@ -61,21 +70,25 @@ public final class AuthZen {
         }
     }
 
+    /** 访问评估请求中的主体（subject）。 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Subject(
             @JsonProperty(required = true) SubjectType type,
             @JsonProperty(required = true) String id,
             Map<String, Object> properties) {}
 
+    /** 访问评估请求中的资源（resource）。 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Resource(
             @JsonProperty(required = true) String type,
             @JsonProperty(required = true) String id,
             Map<String, Object> properties) {}
 
+    /** 访问评估请求中的动作（action）。 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Action(String name) {}
 
+    /** 单次访问评估请求体。 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record EvaluationRequest(
             @JsonProperty(required = true) Subject subject,
@@ -83,12 +96,14 @@ public final class AuthZen {
             @JsonProperty(required = true) Action action,
             Map<String, Object> context) {}
 
+    /** 单次访问评估响应：决策布尔值及可选上下文。 */
     public record EvaluationResponse(boolean decision, Map<String, Object> context) {
         public EvaluationResponse(boolean decision) {
             this(decision, null);
         }
     }
 
+    /** 批量评估中的单项（可覆盖顶层默认值）。 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record EvaluationItem(
             Subject subject,
@@ -96,6 +111,7 @@ public final class AuthZen {
             Action action,
             Map<String, Object> context) {}
 
+    /** 批量评估语义：全部执行、首个拒绝即停、首个允许即停。 */
     public enum EvaluationsSemantic {
         @JsonProperty("execute_all")
         EXECUTE_ALL,
@@ -107,10 +123,12 @@ public final class AuthZen {
         PERMIT_ON_FIRST_PERMIT;
     }
 
+    /** 批量评估选项（蛇形命名序列化）。 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record Options(EvaluationsSemantic evaluationsSemantic) {}
 
+    /** 批量访问评估请求体。 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record EvaluationsRequest(
             Subject subject,
@@ -120,6 +138,7 @@ public final class AuthZen {
             Options options,
             List<EvaluationItem> evaluations) {}
 
+    /** 批量访问评估响应体。 */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record EvaluationsResponse(List<EvaluationResponse> evaluations) {}
 }

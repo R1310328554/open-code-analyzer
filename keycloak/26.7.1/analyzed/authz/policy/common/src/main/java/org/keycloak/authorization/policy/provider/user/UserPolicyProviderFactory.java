@@ -42,6 +42,8 @@ import org.keycloak.representations.idm.authorization.UserPolicyRepresentation;
 import org.keycloak.util.JsonSerialization;
 
 /**
+ * 用户（user）策略类型的 {@link PolicyProviderFactory}，管理允许用户列表及导入导出。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class UserPolicyProviderFactory implements PolicyProviderFactory<UserPolicyRepresentation> {
@@ -50,11 +52,13 @@ public class UserPolicyProviderFactory implements PolicyProviderFactory<UserPoli
 
     private UserPolicyProvider provider = new UserPolicyProvider(this::toRepresentation);
 
+    /** 管理控制台显示名称。 */
     @Override
     public String getName() {
         return "User";
     }
 
+    /** 策略分组：基于身份。 */
     @Override
     public String getGroup() {
         return "Identity Based";
@@ -70,6 +74,7 @@ public class UserPolicyProviderFactory implements PolicyProviderFactory<UserPoli
         return provider;
     }
 
+    /** 从策略配置 JSON 反序列化用户 ID 集合。 */
     @Override
     public UserPolicyRepresentation toRepresentation(Policy policy, AuthorizationProvider authorization) {
         UserPolicyRepresentation representation = new UserPolicyRepresentation();
@@ -115,6 +120,7 @@ public class UserPolicyProviderFactory implements PolicyProviderFactory<UserPoli
         }
     }
 
+    /** 导出时将用户 ID 转为用户名以便跨环境迁移。 */
     @Override
     public void onExport(Policy policy, PolicyRepresentation representation, AuthorizationProvider authorizationProvider) {
         UserPolicyRepresentation userRep = toRepresentation(policy, authorizationProvider);
@@ -137,6 +143,7 @@ public class UserPolicyProviderFactory implements PolicyProviderFactory<UserPoli
         representation.setConfig(config);
     }
 
+    /** 解析用户并序列化 ID 列表写入策略配置。 */
     private void updateUsers(Policy policy, AuthorizationProvider authorization, Set<String> users) {
         Set<String> updatedUsers = new HashSet<>();
 
@@ -160,6 +167,7 @@ public class UserPolicyProviderFactory implements PolicyProviderFactory<UserPoli
         }
     }
 
+    /** 按 ID 查找用户，未找到时回退按用户名查找。 */
     private static UserModel getUser(String userId, AuthorizationProvider authorization) {
         if (userId == null) {
             return null;
@@ -171,7 +179,7 @@ public class UserPolicyProviderFactory implements PolicyProviderFactory<UserPoli
         UserModel user = userProvider.getUserById(realm, userId);
 
         if (user == null) {
-            // fallback - userId is possibly a username
+            // 回退：userId 可能是用户名
             user = userProvider.getUserByUsername(realm, userId);
         }
 

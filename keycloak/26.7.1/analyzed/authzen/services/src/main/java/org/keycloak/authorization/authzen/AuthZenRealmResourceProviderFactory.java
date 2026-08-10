@@ -25,8 +25,12 @@ import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.services.resource.RealmResourceProviderFactory;
 
+/**
+ * AuthZen {@link RealmResourceProviderFactory}：在 {@link Feature#AUTHZEN} 特性启用时注册 realm 级 AuthZen 端点。
+ */
 public class AuthZenRealmResourceProviderFactory implements RealmResourceProviderFactory, EnvironmentDependentProviderFactory {
 
+    /** SPI 提供者 ID，对应 URL 路径段 {@code authzen}。 */
     public static final String PROVIDER_ID = "authzen";
 
     @Override
@@ -51,6 +55,7 @@ public class AuthZenRealmResourceProviderFactory implements RealmResourceProvide
         return PROVIDER_ID;
     }
 
+    /** 仅当 AUTHZEN 特性开关开启时加载本工厂。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Feature.AUTHZEN);

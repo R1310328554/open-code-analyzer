@@ -19,19 +19,27 @@ package org.keycloak.authorization.authzen;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.resource.RealmResourceProvider;
 
+/**
+ * AuthZen realm 级 REST 资源提供者：将 {@link AuthZenResource} 暴露为 JAX-RS 子资源。
+ */
 public class AuthZenRealmResourceProvider implements RealmResourceProvider {
 
     private final KeycloakSession session;
 
+    /**
+     * @param session 当前 Keycloak 会话
+     */
     public AuthZenRealmResourceProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 返回 AuthZen REST 资源实例。 */
     @Override
     public Object getResource() {
         return new AuthZenResource(session);
     }
 
+    /** AuthZen 提供者无额外资源需释放。 */
     @Override
     public void close() {
     }

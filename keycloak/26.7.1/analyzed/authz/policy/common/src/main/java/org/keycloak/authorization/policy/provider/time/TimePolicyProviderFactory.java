@@ -33,17 +33,21 @@ import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.TimePolicyRepresentation;
 
 /**
+ * 时间（time）策略类型的 {@link PolicyProviderFactory}，管理 nbf/noa 及各时间粒度区间配置。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class TimePolicyProviderFactory implements PolicyProviderFactory<TimePolicyRepresentation> {
 
     private TimePolicyProvider provider = new TimePolicyProvider();
 
+    /** 管理控制台显示名称。 */
     @Override
     public String getName() {
         return "Time";
     }
 
+    /** 策略分组：基于时间。 */
     @Override
     public String getGroup() {
         return "Time Based";
@@ -73,6 +77,7 @@ public class TimePolicyProviderFactory implements PolicyProviderFactory<TimePoli
     public void onRemove(Policy policy, AuthorizationProvider authorization) {
     }
 
+    /** 导入时直接复制原始配置映射。 */
     @Override
     public void onImport(Policy policy, PolicyRepresentation representation, AuthorizationProvider authorization) {
         policy.setConfig(representation.getConfig());
@@ -83,6 +88,7 @@ public class TimePolicyProviderFactory implements PolicyProviderFactory<TimePoli
         return TimePolicyRepresentation.class;
     }
 
+    /** 从策略配置映射为 {@link TimePolicyRepresentation}。 */
     @Override
     public TimePolicyRepresentation toRepresentation(Policy policy, AuthorizationProvider authorization) {
         TimePolicyRepresentation representation = new TimePolicyRepresentation();
@@ -129,6 +135,7 @@ public class TimePolicyProviderFactory implements PolicyProviderFactory<TimePoli
         return "time";
     }
 
+    /** 将表示对象字段写回策略配置，并在 nbf/noa 同时存在时校验格式与顺序。 */
     private void updatePolicy(Policy policy, TimePolicyRepresentation representation) {
         String nbf = representation.getNotBefore();
         String noa = representation.getNotOnOrAfter();
@@ -160,6 +167,7 @@ public class TimePolicyProviderFactory implements PolicyProviderFactory<TimePoli
         policy.setConfig(config);
     }
 
+    /** 校验 nbf/noa 日期格式，并确保 noa 不早于 nbf。 */
     private void validateFormat(String notBefore, String notOnOrAfter) {
         Date nbf, noa;
         try {

@@ -31,6 +31,8 @@ import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.RegexPolicyRepresentation;
 
 /**
+ * 正则（regex）策略类型的 {@link PolicyProviderFactory}，管理目标 claim、正则模式及上下文属性来源配置。
+ *
  * @author <a href="mailto:yoshiyuki.tabata.jy@hitachi.com">Yoshiyuki Tabata</a>
  */
 public class RegexPolicyProviderFactory implements PolicyProviderFactory<RegexPolicyRepresentation> {
@@ -54,16 +56,19 @@ public class RegexPolicyProviderFactory implements PolicyProviderFactory<RegexPo
     public void close() {
     }
 
+    /** 策略类型标识符。 */
     @Override
     public String getId() {
         return "regex";
     }
 
+    /** 管理控制台显示名称。 */
     @Override
     public String getName() {
         return "Regex";
     }
 
+    /** 策略分组：基于身份。 */
     @Override
     public String getGroup() {
         return "Identity Based";
@@ -74,6 +79,7 @@ public class RegexPolicyProviderFactory implements PolicyProviderFactory<RegexPo
         return provider;
     }
 
+    /** 从策略配置映射为 {@link RegexPolicyRepresentation}。 */
     @Override
     public RegexPolicyRepresentation toRepresentation(Policy policy, AuthorizationProvider authorization) {
         RegexPolicyRepresentation representation = new RegexPolicyRepresentation();
@@ -101,11 +107,13 @@ public class RegexPolicyProviderFactory implements PolicyProviderFactory<RegexPo
         updatePolicy(policy, representation);
     }
 
+    /** 导入时直接复制原始配置映射。 */
     @Override
     public void onImport(Policy policy, PolicyRepresentation representation, AuthorizationProvider authorization) {
         policy.setConfig(representation.getConfig());
     }
 
+    /** 将表示对象字段写回策略配置。 */
     private void updatePolicy(Policy policy, RegexPolicyRepresentation representation) {
         Map<String, String> config = new HashMap<>(policy.getConfig());
 

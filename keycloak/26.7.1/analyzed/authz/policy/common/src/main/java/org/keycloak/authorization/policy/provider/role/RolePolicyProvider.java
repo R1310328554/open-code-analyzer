@@ -48,18 +48,31 @@ import org.jboss.logging.Logger;
 import static org.keycloak.models.utils.RoleUtils.getDeepUserRoleMappings;
 
 /**
+ * 角色策略提供者：根据身份是否持有策略配置的角色（realm 或 client 角色）判定是否授予访问。
+ * <p>
+ * 同时实现 {@link PartialEvaluationPolicyProvider}，支持细粒度权限的部分评估。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class RolePolicyProvider implements PolicyProvider, PartialEvaluationPolicyProvider {
 
+    /** 将 {@link Policy} 转为 {@link RolePolicyRepresentation} 的函数 */
     private final BiFunction<Policy, AuthorizationProvider, RolePolicyRepresentation> representationFunction;
 
     private static final Logger logger = Logger.getLogger(RolePolicyProvider.class);
 
+    /**
+     * @param representationFunction 策略表示转换函数
+     */
     public RolePolicyProvider(BiFunction<Policy, AuthorizationProvider, RolePolicyRepresentation> representationFunction) {
         this.representationFunction = representationFunction;
     }
 
+    /**
+     * 遍历策略角色定义，满足必需角色且至少匹配一个则 {@code grant()}。
+     *
+     * @param evaluation 当前授权评估上下文
+     */
     @Override
     public void evaluate(Evaluation evaluation) {
         Policy policy = evaluation.getPolicy();
@@ -75,6 +88,9 @@ public class RolePolicyProvider implements PolicyProvider, PartialEvaluationPoli
         logger.debugf("policy %s evaluated with status %s on identity %s", policy.getName(), evaluation.getEffect(), identity.getId());
     }
 
+    /**
+     * 检查身份是否满足策略中所有角色定义（含必需角色与可选角色逻辑）。
+     */
     private boolean isGranted(RealmModel realm, AuthorizationProvider authorizationProvider, RolePolicyRepresentation policyRep, Identity identity) {
         Set<RolePolicyRepresentation.RoleDefinition> roleIds = policyRep.getRoles();
         boolean granted = false;
@@ -97,6 +113,9 @@ public class RolePolicyProvider implements PolicyProvider, PartialEvaluationPoli
         return granted;
     }
 
+    /**
+     * 判断身份是否持有指定角色；{@code fetchRoles} 为 true 时从数据库加载用户角色映射。
+     */
     private boolean hasRole(Identity identity, RoleModel role, RealmModel realm, AuthorizationProvider authorizationProvider, boolean fetchRoles) {
         if (fetchRoles) {
             UserModel subject = getSubject(identity, realm, authorizationProvider);
@@ -110,6 +129,7 @@ public class RolePolicyProvider implements PolicyProvider, PartialEvaluationPoli
         return identity.hasRealmRole(roleName);
     }
 
+    /** 解析评估主体用户：优先按身份 ID，否则回退到 JWT {@code sub} claim。 */
     private UserModel getSubject(Identity identity, RealmModel realm, AuthorizationProvider authorizationProvider) {
         KeycloakSession session = authorizationProvider.getKeycloakSession();
         UserProvider users = session.users();
@@ -128,11 +148,15 @@ public class RolePolicyProvider implements PolicyProvider, PartialEvaluationPoli
         return user;
     }
 
+    /** 角色策略无额外资源需释放。 */
     @Override
     public void close() {
 
     }
 
+    /**
+     * 根据用户深度角色映射查找依赖该角色的权限策略（FGAP 部分评估）。
+     */
     @Override
     public Stream<Policy> getPermissions(KeycloakSession session, ResourceType resourceType, ResourceType groupResourceType, UserModel subject) {
         AuthorizationProvider provider = session.getProvider(AuthorizationProvider.class);
@@ -147,6 +171,7 @@ public class RolePolicyProvider implements PolicyProvider, PartialEvaluationPoli
         return Stream.concat(policies, policyStore.findDependentPolicies(resourceServer, resourceType.getType(), groupResourceType == null ? null : groupResourceType.getType(), RolePolicyProviderFactory.ID, "roles", roleIds));
     }
 
+    /** 对管理用户直接评估角色策略是否满足。 */
     @Override
     public boolean evaluate(KeycloakSession session, Policy policy, UserModel adminUser) {
         RealmModel realm = session.getContext().getRealm();

@@ -46,6 +46,8 @@ import org.keycloak.util.JsonSerialization;
 import org.keycloak.utils.StringUtil;
 
 /**
+ * 角色（role）策略类型的 {@link PolicyProviderFactory}，管理 realm/client 角色绑定及导入导出。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class RolePolicyProviderFactory implements PolicyProviderFactory<RolePolicyRepresentation> {
@@ -53,11 +55,13 @@ public class RolePolicyProviderFactory implements PolicyProviderFactory<RolePoli
     public static final String ID = "role";
     private RolePolicyProvider provider = new RolePolicyProvider(this::toRepresentation);
 
+    /** 管理控制台显示名称。 */
     @Override
     public String getName() {
         return "Role";
     }
 
+    /** 策略分组：基于身份。 */
     @Override
     public String getGroup() {
         return "Identity Based";
@@ -73,6 +77,7 @@ public class RolePolicyProviderFactory implements PolicyProviderFactory<RolePoli
         return provider;
     }
 
+    /** 从策略配置 JSON 反序列化角色列表。 */
     @Override
     public RolePolicyRepresentation toRepresentation(Policy policy, AuthorizationProvider authorization) {
         RolePolicyRepresentation representation = new RolePolicyRepresentation();
@@ -114,6 +119,7 @@ public class RolePolicyProviderFactory implements PolicyProviderFactory<RolePoli
         }
     }
 
+    /** 导出时将角色 ID 转为可读名称（realm 角色名或 clientId/roleName）。 */
     @Override
     public void onExport(Policy policy, PolicyRepresentation representation, AuthorizationProvider authorizationProvider) {
         Map<String, String> config = new HashMap<>();
@@ -151,6 +157,7 @@ public class RolePolicyProviderFactory implements PolicyProviderFactory<RolePoli
         updateRoles(policy, authorization, representation.getRoles());
     }
 
+    /** 解析并校验角色定义，禁止重复角色，序列化后写入策略配置。 */
     private void updateRoles(Policy policy, AuthorizationProvider authorization, Set<RolePolicyRepresentation.RoleDefinition> roles) {
         Set<RolePolicyRepresentation.RoleDefinition> updatedRoles = new HashSet<>();
         Set<String> processedRoles = new HashSet<>();
@@ -197,6 +204,7 @@ public class RolePolicyProviderFactory implements PolicyProviderFactory<RolePoli
         return ID;
     }
 
+    /** 从 JSON 配置解析角色定义，过滤 realm 中不存在的角色。 */
     private Set<RoleDefinition> getRoles(String rawRoles, RealmModel realm) {
         if (rawRoles != null) {
             try {
@@ -212,8 +220,12 @@ public class RolePolicyProviderFactory implements PolicyProviderFactory<RolePoli
         return Collections.emptySet();
     }
 
+    /** UUID 格式正则，用于区分角色 ID 与角色名称。 */
     public static final Pattern UUID_PATTERN = Pattern.compile("[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}");
 
+    /**
+     * 按角色名、UUID 或 {@code clientId/roleName} 格式解析 {@link RoleModel}。
+     */
     private RoleModel getRole(RolePolicyRepresentation.RoleDefinition definition, RealmModel realm) {
         String roleName = definition.getId();
         String clientId = null;
@@ -227,8 +239,8 @@ public class RolePolicyProviderFactory implements PolicyProviderFactory<RolePoli
         RoleModel role;
 
         if (clientId == null) {
-            // if the role name looks like a UUID, it is likely that it is a role ID. Then do this look-up first to avoid hitting the database twice
-            // TODO: In a future version of the auth feature, make this more strict to avoid the double lookup and any ambiguity
+            // 若角色名形如 UUID，优先按 ID 查找以避免重复数据库访问
+            // TODO: 未来版本可更严格区分 ID 与名称以避免双重查找
             boolean looksLikeAUuid = UUID_PATTERN.matcher(roleName).matches();
             role = looksLikeAUuid ? realm.getRoleById(roleName) : realm.getRole(roleName);
 

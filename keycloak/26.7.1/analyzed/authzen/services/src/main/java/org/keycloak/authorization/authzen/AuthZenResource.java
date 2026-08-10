@@ -55,21 +55,38 @@ import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.authorization.Permission;
 import org.keycloak.util.JsonSerialization;
 
+/**
+ * AuthZen 访问评估 REST 资源：实现单次与批量评估端点，将 AuthZen 请求映射为 Keycloak 授权引擎评估。
+ */
 public class AuthZenResource {
 
+    /** 拒绝决策的常量响应，避免重复分配。 */
     private static final AuthZen.EvaluationResponse DECISION_FALSE = new AuthZen.EvaluationResponse(false);
+    /** UUID v4 格式正则，用于解析用户主体 ID。 */
     private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$");
 
+    /** 用户主体 ID 命名空间：按内部 ID 查找。 */
     private static final String NAMESPACE_ID = "id:";
+    /** 用户主体 ID 命名空间：按用户名查找。 */
     private static final String NAMESPACE_USERNAME = "username:";
+    /** 用户主体 ID 命名空间：按邮箱查找。 */
     private static final String NAMESPACE_EMAIL = "email:";
 
     private final KeycloakSession session;
 
+    /**
+     * @param session 当前 Keycloak 会话
+     */
     public AuthZenResource(KeycloakSession session) {
         this.session = session;
     }
 
+    /**
+     * 单次访问评估端点（AuthZen 1.0 Section 6.1）。
+     *
+     * @param request 评估请求体
+     * @return 包含 {@link AuthZen.EvaluationResponse} 的 HTTP 200 响应
+     */
     @POST
     @Path(AuthZen.EVALUATION_PATH)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -82,6 +99,14 @@ public class AuthZenResource {
         return Response.ok(evaluateSingle(request, token)).build();
     }
 
+    /**
+     * 批量访问评估端点（AuthZen 1.0 Section 7.1）。
+     * <p>
+     * 若 {@code evaluations} 为空则退化为单次评估；否则按语义选项逐项或提前终止。
+     *
+     * @param request 批量评估请求体
+     * @return 包含 {@link AuthZen.EvaluationsResponse} 或单次响应的 HTTP 200
+     */
     @POST
     @Path(AuthZen.EVALUATIONS_PATH)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -125,6 +150,7 @@ public class AuthZenResource {
         return Response.ok(new AuthZen.EvaluationsResponse(results)).build();
     }
 
+    /** 将批量请求顶层默认值合并到单项（单项非空字段优先）。 */
     private static AuthZen.EvaluationRequest mergeDefaults(AuthZen.EvaluationsRequest defaults, AuthZen.EvaluationItem item) {
         AuthZen.Subject subject = item.subject() != null ? item.subject() : defaults.subject();
         AuthZen.Resource resource = item.resource() != null ? item.resource() : defaults.resource();
@@ -133,6 +159,9 @@ public class AuthZenResource {
         return new AuthZen.EvaluationRequest(subject, resource, action, context);
     }
 
+    /**
+     * 执行单次 AuthZen 评估：解析主体、资源、作用域并调用 Keycloak 授权引擎。
+     */
     private AuthZen.EvaluationResponse evaluateSingle(AuthZen.EvaluationRequest request, AccessToken token) {
         if (request.subject() == null || request.resource() == null || request.action() == null) {
             return new AuthZen.EvaluationResponse(false);
@@ -205,6 +234,7 @@ public class AuthZenResource {
         return new AuthZen.EvaluationResponse(!granted.isEmpty());
     }
 
+    /** 按主体类型解析 {@link Identity}，并合并主体附加属性。 */
     private Identity resolveSubjectIdentity(RealmModel realm, AuthZen.EvaluationRequest request) {
         AuthZen.Subject subject = request.subject();
         Identity identity = switch (subject.type()) {
@@ -223,6 +253,9 @@ public class AuthZenResource {
         return identity;
     }
 
+    /**
+     * 解析用户主体 ID：支持 {@code id:}/{@code username:}/{@code email:} 命名空间、UUID 或纯用户名。
+     */
     private UserModel resolveUserId(RealmModel realm, String subjectId) {
         UserProvider users = session.users();
         if (subjectId.startsWith(NAMESPACE_ID)) {
@@ -244,6 +277,7 @@ public class AuthZenResource {
         }
     }
 
+    /** 从命名空间前缀字符串中提取实际值，空值则 400。 */
     private static String extractNamespaceValue(String subjectId, String namespace) {
         String value = subjectId.substring(namespace.length());
         if (value.isEmpty()) {
@@ -252,6 +286,7 @@ public class AuthZenResource {
         return value;
     }
 
+    /** 用主体 properties 包装委托 Identity，合并额外属性。 */
     private static Identity withSubjectProperties(Identity delegate, Map<String, Object> properties) {
         Map<String, Collection<String>> extra = new HashMap<>();
         convertValues(properties, extra);
@@ -286,6 +321,7 @@ public class AuthZenResource {
         };
     }
 
+    /** 将 Map 上下文值转为字符串集合属性（复杂类型 JSON 序列化）。 */
     private static void convertValues(Map<String, Object> source, Map<String, ? extends Collection<String>> result) {
         @SuppressWarnings("unchecked")
         Map<String, Collection<String>> target = (Map<String, Collection<String>>) result;
@@ -303,6 +339,7 @@ public class AuthZenResource {
         }
     }
 
+    /** 评估上下文字段转换入口。 */
     private static void convertContext(Map<String, Object> context, Map<String, List<String>> result) {
         convertValues(context, result);
     }

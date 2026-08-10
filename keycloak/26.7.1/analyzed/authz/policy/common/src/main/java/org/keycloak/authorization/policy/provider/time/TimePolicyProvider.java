@@ -30,16 +30,25 @@ import org.keycloak.authorization.policy.provider.PolicyProvider;
 import org.jboss.logging.Logger;
 
 /**
+ * 时间策略提供者：根据当前时间（或上下文注入的时间）与策略配置的时间窗口判定是否授予访问。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class TimePolicyProvider implements PolicyProvider {
 
     private static final Logger logger = Logger.getLogger(TimePolicyProvider.class);
 
+    /** 默认日期时间格式。 */
     static String DEFAULT_DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
+    /** 评估上下文中可覆盖当前时间的属性键。 */
     static String CONTEXT_TIME_ENTRY = "kc.time.date_time";
 
+    /**
+     * 校验 nbf/noa 边界及日/月/年/时/分字段，全部通过则 {@code grant()}，否则 {@code deny()}。
+     *
+     * @param evaluation 当前授权评估上下文
+     */
     @Override
     public void evaluate(Evaluation evaluation) {
         Policy policy = evaluation.getPolicy();
@@ -90,6 +99,9 @@ public class TimePolicyProvider implements PolicyProvider {
         }
     }
 
+    /**
+     * 检查指定日历字段是否在策略配置的精确值或区间内（Calendar.MONTH 需 +1 对齐人类月份）。
+     */
     private boolean isInvalid(Date actualDate, int timeConstant, String configName, Policy policy) {
         Calendar calendar = Calendar.getInstance();
 
@@ -117,6 +129,7 @@ public class TimePolicyProvider implements PolicyProvider {
         return false;
     }
 
+    /** 纯日期字符串（10 位）自动补全为当天 00:00:00。 */
     static String format(String notBefore) {
         String trimmed = notBefore.trim();
 
@@ -127,6 +140,7 @@ public class TimePolicyProvider implements PolicyProvider {
         return notBefore;
     }
 
+    /** 时间策略无额外资源需释放。 */
     @Override
     public void close() {
 
