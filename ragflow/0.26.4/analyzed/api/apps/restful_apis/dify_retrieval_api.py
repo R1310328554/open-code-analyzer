@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Dify 外部知识库兼容检索 API：GET/POST 双模式，返回 records 格式供 Dify 插件消费。
+"""
+
 #
 import logging
 
@@ -39,6 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _read_retrieval_request():
+    """统一解析 GET query 与 POST JSON 为内部检索请求结构。"""
     try:
         method = request.method
     except RuntimeError:
@@ -96,6 +101,7 @@ async def _read_retrieval_request():
 
 
 def _parse_retrieval_options(retrieval_setting):
+    """解析 top_k 与 score_threshold，非法类型时抛出 ValueError。"""
     if retrieval_setting is None:
         retrieval_setting = {}
     if not isinstance(retrieval_setting, dict):
@@ -113,7 +119,7 @@ def _parse_retrieval_options(retrieval_setting):
 @add_tenant_id_to_kwargs
 async def retrieval(tenant_id):
     """
-    Dify-compatible retrieval API
+    Dify 兼容检索 API（外部知识库插件对接）
     ---
     tags:
       - SDK
@@ -300,6 +306,7 @@ async def retrieval(tenant_id):
             c.pop("vector", None)
             meta = getattr(doc, "meta_fields", {})
             meta["doc_id"] = c["doc_id"]
+            # Dify 外部检索源要求 metadata 含 document_id 字段
             # Dify expects metadata.document_id for external retrieval sources.
             meta["document_id"] = c["doc_id"]
             records.append({"content": c["content_with_weight"], "score": c["similarity"], "title": c["docnm_kwd"], "metadata": meta})
@@ -314,5 +321,5 @@ async def retrieval(tenant_id):
 
 @manager.route("/dify/retrieval/health", methods=["GET"])  # noqa: F821
 async def retrieval_health_check():
-    """Health check endpoint for Dify external knowledge base connectivity verification."""
+    """Dify 外部知识库连通性健康检查。"""
     return get_json_result(data=True)

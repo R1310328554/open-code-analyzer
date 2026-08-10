@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+文档 REST API：上传/解析/元数据、预览下载、缩略图、ingest 与沙箱 artifact 访问。
+"""
+
 #
 from io import BytesIO
 from datetime import datetime
@@ -80,6 +84,7 @@ from rag.nlp import search
 
 
 def _compilation_template_group_id_changed(old_config, new_config) -> bool:
+    """判断 parser_config 中 compilation 模板组 ID 是否变更（需重解析）。"""
     from rag.svr.task_executor_refactor.chunk_post_processor import (
         _parser_config_compilation_template_group_ids,
     )
@@ -88,6 +93,7 @@ def _compilation_template_group_id_changed(old_config, new_config) -> bool:
 
 
 def _normalize_parser_config_compilation_template_group_ids(parser_config) -> bool:
+    """规范化 parser_config 内模板组 ID 列表格式。"""
     from rag.svr.task_executor_refactor.chunk_post_processor import (
         _parser_config_compilation_template_group_ids,
     )
@@ -104,6 +110,7 @@ def _normalize_parser_config_compilation_template_group_ids(parser_config) -> bo
     return True
 
 
+# ---------- 文档上传与信息查询 ----------
 @manager.route("/documents/upload", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -424,6 +431,7 @@ async def metadata_batch_update(dataset_id, tenant_id):
     return get_result(data={"updated": updated, "matched_docs": len(target_doc_ids)})
 
 
+# ---------- 数据集内文档上传（本地/Web/空文档） ----------
 @manager.route("/datasets/<dataset_id>/documents", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -520,6 +528,7 @@ async def upload_document(dataset_id, tenant_id):
 
 
 async def _upload_web_document(dataset_id, kb, tenant_id):
+    """从 URL 抓取网页并创建文档记录。"""
     form = await request.form
     name = (form.get("name") or "").strip()
     url = form.get("url")
@@ -630,6 +639,7 @@ async def _upload_empty_document(dataset_id, kb, tenant_id):
 
 
 async def _upload_local_documents(kb, tenant_id):
+    """处理 multipart 本地上传文件并入库。"""
     form = await request.form
     files = await request.files
     if "file" not in files:
@@ -1428,6 +1438,7 @@ async def update_metadata(tenant_id, dataset_id):
     return get_result(data={"updated": updated, "matched_docs": len(target_doc_ids)})
 
 
+# ---------- 同步 ingest 与批量状态更新 ----------
 @manager.route("/documents/ingest", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -1505,6 +1516,7 @@ def _run_sync(user_id: str, req):
     return None, None
 
 
+# ---------- 解析任务与元数据批量更新 ----------
 @manager.route("/datasets/<dataset_id>/documents/parse", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -1779,6 +1791,7 @@ def _content_type_for_document_image(object_name, data):
     return "application/octet-stream"
 
 
+# ---------- 文档图片、artifact 与预览下载 ----------
 @manager.route("/documents/images/<image_id>", methods=["GET"])  # noqa: F821
 @login_required(auth_types=[AUTH_JWT, AUTH_API, AUTH_BETA])
 async def get_document_image(image_id):
@@ -1849,6 +1862,7 @@ def _sandbox_artifact_dialog_ids_for_user(filename: str, user_id: str) -> list[s
 
 
 def _sandbox_artifact_accessible(filename: str, user_id: str) -> bool:
+    """校验用户是否有权访问沙箱执行产生的 artifact 文件。"""
     """True when a CodeExec sandbox artifact belongs to an agent session the user may access."""
     for dialog_id in _sandbox_artifact_dialog_ids_for_user(filename, user_id):
         if UserCanvasService.accessible(dialog_id, user_id):

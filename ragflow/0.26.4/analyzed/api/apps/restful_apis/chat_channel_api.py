@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+聊天渠道 Bot API：创建/管理 WhatsApp 等外部渠道连接器及其运行时快照。
+"""
+
 #
 import logging
 
@@ -26,7 +30,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _chat_channel_auth_error(channel_id: str, user_id: str):
-    """Return the chat channel authorization failure response and log the denial."""
+    """返回渠道授权失败 JSON 并记录审计日志。"""
     LOGGER.warning("chat channel access denied: channel_id=%s user_id=%s", channel_id, user_id)
     return get_json_result(data=False, message="No authorization.", code=RetCode.AUTHENTICATION_ERROR)
 
@@ -35,7 +39,7 @@ def _chat_channel_auth_error(channel_id: str, user_id: str):
 @login_required
 @validate_request("name", "channel")
 async def create_chat_channel():
-    """Create a chat channel bot owned by the current tenant."""
+    """创建当前租户拥有的聊天渠道 Bot（name/channel/config/chat_id）。"""
     req = await get_request_json()
     channel = {"id": get_uuid(), "tenant_id": current_user.id, "name": req["name"], "channel": req["channel"], "config": req.get("config") or {}, "chat_id": req.get("chat_id") or None}
     ChatChannelService.insert(**channel)
@@ -49,14 +53,14 @@ async def create_chat_channel():
 @manager.route("/chat-channels", methods=["GET"])  # noqa: F821
 @login_required
 def list_chat_channel():
-    """List chat channel bots owned by the current tenant."""
+    """列出当前租户下全部聊天渠道 Bot。"""
     return get_json_result(data=ChatChannelService.list(current_user.id))
 
 
 @manager.route("/chat-channels/<channel_id>", methods=["GET"])  # noqa: F821
 @login_required
 def get_chat_channel(channel_id):
-    """Return a chat channel bot's details when the current user can access it."""
+    """返回可访问渠道的详情。"""
     if not ChatChannelService.accessible(channel_id, current_user.id):
         return _chat_channel_auth_error(channel_id, current_user.id)
 
@@ -69,7 +73,7 @@ def get_chat_channel(channel_id):
 @manager.route("/chat-channels/<channel_id>", methods=["PATCH"])  # noqa: F821
 @login_required
 async def update_chat_channel(channel_id):
-    """Update an accessible chat channel bot's name/config/status."""
+    """更新渠道名称、配置或绑定的 chat 助手。"""
     if not ChatChannelService.accessible(channel_id, current_user.id):
         return _chat_channel_auth_error(channel_id, current_user.id)
 
@@ -81,7 +85,7 @@ async def update_chat_channel(channel_id):
     if isinstance(req, dict) and isinstance(req.get("data"), dict):
         req = req["data"]
 
-    # Validate the connected dialog (if provided) belongs to the channel's tenant.
+    # 若更新 chat_id，校验对应对话助手属于同一租户
     if req.get("chat_id"):
         e, dia = DialogService.get_by_id(req["chat_id"])
         if not e:
@@ -102,7 +106,7 @@ async def update_chat_channel(channel_id):
 @manager.route("/chat-channels/<channel_id>", methods=["DELETE"])  # noqa: F821
 @login_required
 def rm_chat_channel(channel_id):
-    """Delete an accessible chat channel bot."""
+    """删除可访问的聊天渠道 Bot。"""
     if not ChatChannelService.accessible(channel_id, current_user.id):
         return _chat_channel_auth_error(channel_id, current_user.id)
 
@@ -113,7 +117,7 @@ def rm_chat_channel(channel_id):
 @manager.route("/chat-channels/<channel_id>/runtime", methods=["GET"])  # noqa: F821
 @login_required
 def get_chat_channel_runtime(channel_id):
-    """Return live runtime metadata for a running chat channel."""
+    """返回运行中渠道的实时元数据（当前仅 WhatsApp 支持 QR/连接状态）。"""
     if not ChatChannelService.accessible(channel_id, current_user.id):
         return _chat_channel_auth_error(channel_id, current_user.id)
 

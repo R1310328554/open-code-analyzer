@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+编译模板组 CRUD：用户自定义多模板组合，含名称/描述/子模板校验。
+"""
+
 #
 
 from quart import Response, request
@@ -37,6 +41,7 @@ _GROUP_DESCRIPTION_MAX = 1024
 
 
 def _validate_group_payload(req: dict, require_all: bool = True) -> str:
+    """校验模板组 name/description/templates 字段长度与子项 schema。"""
     if require_all:
         for key in ("name", "templates"):
             if key not in req:
@@ -66,6 +71,7 @@ def _validate_group_payload(req: dict, require_all: bool = True) -> str:
     return ""
 
 
+# 分页列出当前租户保存的模板组
 @manager.route("/compilation_template_groups", methods=["GET"])  # noqa: F821
 @login_required
 def list_groups() -> Response:
@@ -98,6 +104,7 @@ def detail(group_id: str) -> Response:
         return server_error_response(exc)
 
 
+# 创建模板组（名称唯一，至少含一个子模板）
 @manager.route("/compilation_template_groups", methods=["POST"])  # noqa: F821
 @login_required
 @validate_request("name", "templates")

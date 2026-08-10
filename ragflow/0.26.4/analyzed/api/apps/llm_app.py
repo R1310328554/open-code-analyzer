@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+租户 LLM 配置 API：工厂列表、API Key 校验、模型增删启停与可用模型枚举。
+"""
+
 #
 import asyncio
 import logging
@@ -28,6 +32,7 @@ from api.db.db_models import TenantLLM
 
 
 def _resolve_my_llm_is_tools(o_dict: dict) -> bool:
+    """解析租户 LLM 记录是否支持 function calling / tools。"""
     decode_api_key_config = getattr(TenantLLMService, "_decode_api_key_config", None)
     if callable(decode_api_key_config):
         _, is_tools, _ = decode_api_key_config(o_dict.get("api_key", ""))
@@ -47,6 +52,7 @@ def _resolve_my_llm_is_tools(o_dict: dict) -> bool:
 @manager.route("/factories", methods=["GET"])  # noqa: F821
 @login_required
 def factories():
+    # 返回允许的 LLM 工厂及各自支持的 model_types
     try:
         fac = get_allowed_llm_factories()
         fac = [f.to_dict() for f in fac if f.name not in ["Youdao", "FastEmbed", "BAAI", "Builtin", "siliconflow_intl"]]
@@ -78,7 +84,7 @@ async def set_api_key():
     req = await get_request_json()
     from rag.llm import ChatModel, EmbeddingModel, RerankModel
 
-    # test if api key works
+    # 遍历源工厂模型，分别探测 embedding/chat/rerank 是否可用
     chat_passed, embd_passed, rerank_passed = False, False, False
     factory = req["llm_factory"]
     base_url = req.get("base_url", "")
@@ -176,6 +182,7 @@ async def set_api_key():
     return get_json_result(data=True)
 
 
+# 添加或更新单条租户 LLM 配置，按 model_type 做连通性校验
 @manager.route("/add_llm", methods=["POST"])  # noqa: F821
 @login_required
 @validate_request("llm_factory")
@@ -321,6 +328,7 @@ async def add_llm():
     model_type = llm["model_type"]
     model_api_key = llm["api_key"]
     model_base_url = llm.get("api_base", "")
+    # 按模型类型实例化对应 RAG LLM 类并做冒烟测试
     match model_type:
         case LLMType.EMBEDDING.value:
             assert factory in EmbeddingModel, f"Embedding model from {factory} is not supported yet."
@@ -473,6 +481,7 @@ async def delete_factory():
     return get_json_result(data=True)
 
 
+# 列出当前租户已配置的 LLM（可选 include_details 返回完整字段）
 @manager.route("/my_llms", methods=["GET"])  # noqa: F821
 @login_required
 def my_llms():
@@ -521,6 +530,7 @@ def my_llms():
         return server_error_response(e)
 
 
+# 按工厂分组返回租户可用模型列表（含 Builtin 与自部署后端）
 @manager.route("/list", methods=["GET"])  # noqa: F821
 @login_required
 async def list_app():

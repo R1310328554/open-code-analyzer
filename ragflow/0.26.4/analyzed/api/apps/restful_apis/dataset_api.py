@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+数据集（Knowledgebase）REST API：CRUD、标签、检索、Wiki/Skill 产物、索引与元数据。
+"""
+
 #
 import logging
 
@@ -34,6 +38,7 @@ from api.utils.validation_utils import (
 from api.apps.services import dataset_api_service
 
 
+# ---------- 跨数据集标签聚合与元数据 ----------
 @manager.route("/datasets/tags/aggregation", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -78,6 +83,7 @@ def get_flattened_metadata(tenant_id):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 数据集 CRUD ----------
 @manager.route("/datasets", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -481,6 +487,7 @@ async def rename_tag(tenant_id, dataset_id):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 数据集内检索 ----------
 @manager.route("/datasets/search", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -534,6 +541,7 @@ async def search(tenant_id, dataset_id):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 知识图谱与 Wiki/Skill 产物 ----------
 @manager.route("/datasets/<dataset_id>/graph", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -813,6 +821,7 @@ async def update_wiki_page(tenant_id, dataset_id, page_type, slug):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- GraphRAG/RAPTOR 索引与 Embedding ----------
 @manager.route("/datasets/<dataset_id>/index", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -913,6 +922,7 @@ async def check_embedding(tenant_id, dataset_id):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 摄取日志与自动元数据配置 ----------
 @manager.route("/datasets/<dataset_id>/ingestions", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs

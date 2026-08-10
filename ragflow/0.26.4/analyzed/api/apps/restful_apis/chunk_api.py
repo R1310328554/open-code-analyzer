@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+分块（Chunk）REST API：解析任务、检索测试、CRUD、文档结构图与批量开关。
+"""
+
 #
 import base64
 import binascii
@@ -70,6 +74,7 @@ DOC_STOP_PARSING_INVALID_STATE_ERROR_CODE = "DOC_STOP_PARSING_INVALID_STATE"
 
 
 def _decode_chunk_image_base64(image_base64):
+    """解码分块内嵌 base64 图片为二进制。"""
     if not isinstance(image_base64, str) or not image_base64.strip():
         return None, "`image_base64` must be a non-empty string"
     try:
@@ -95,6 +100,7 @@ def _store_chunk_image_or_error(dataset_id, chunk_id, image_binary):
 
 
 class Chunk(BaseModel):
+    """分块创建/更新请求的 Pydantic 校验模型。"""
     id: str = ""
     content: str = ""
     document_id: str = ""
@@ -151,6 +157,7 @@ def _get_query_id_list(args, name: str) -> list[str]:
 
 
 def _strip_chunk_runtime_fields(chunk):
+    """剔除向量等运行时字段，避免泄露到 API 响应。"""
     for name in [name for name in chunk.keys() if re.search(r"(_vec$|_sm_|_tks|_ltks)", name)]:
         del chunk[name]
     return chunk
@@ -180,6 +187,7 @@ def _enrich_chunks_with_document_metadata(chunks: list[dict], metadata_fields=No
     enrich_chunks_with_document_metadata(chunks, metadata_fields)
 
 
+# ---------- 数据集级分块解析任务 ----------
 @manager.route("/datasets/<dataset_id>/chunks", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -308,6 +316,7 @@ async def stop_parsing(tenant_id, dataset_id):
     return get_result()
 
 
+# ---------- 跨数据集检索测试 ----------
 @manager.route("/retrieval", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -438,6 +447,7 @@ async def retrieval_test(tenant_id):
         return server_error_response(e)
 
 
+# ---------- 单文档分块列表与详情 ----------
 @manager.route("/datasets/<dataset_id>/documents/<document_id>/chunks", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -553,6 +563,7 @@ async def get_chunk(tenant_id, dataset_id, document_id, chunk_id):
         return server_error_response(e)
 
 
+# ---------- 文档结构图（compilation 产物） ----------
 @manager.route("/datasets/<dataset_id>/documents/<document_id>/structure/graph", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -981,6 +992,7 @@ async def rm_chunk(tenant_id, dataset_id, document_id):
     return get_result(message=f"deleted {chunk_number} chunks")
 
 
+# ---------- 分块增删改与可用性批量切换 ----------
 @manager.route("/datasets/<dataset_id>/documents/<document_id>/chunks/<chunk_id>", methods=["PATCH"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs

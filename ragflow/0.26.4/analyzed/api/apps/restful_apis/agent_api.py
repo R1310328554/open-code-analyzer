@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Agent（画布/工作流）REST API：CRUD、会话、SSE 补全、Webhook 与附件预览下载。
+"""
+
 #
 
 import asyncio
@@ -71,12 +75,13 @@ from common.constants import RetCode
 from common.misc_utils import get_uuid, thread_pool_exec
 from peewee import MySQLDatabase, PostgresqlDatabase
 
+# 持有后台 Task 强引用，避免 fire-and-forget 协程被 GC 提前回收
 # Keeps strong references to fire-and-forget tasks so they are not GC'd before completion.
 _background_tasks: Set[asyncio.Task] = set()
 
 
 def _canvas_json_default(obj):
-    """Fallback serializer for canvas SSE events.
+    """画布 SSE 事件的 JSON 默认序列化：将 partial 等不可序列化对象转为 None。
 
     Agent components store functools.partial objects as deferred streaming
     handles (see llm.py, agent_with_tools.py, message.py). These leak into
@@ -90,6 +95,7 @@ def _canvas_json_default(obj):
 
 
 def _require_canvas_access_sync(func):
+    """同步路由装饰器：校验当前租户对 agent_id 画布的可访问权限。"""
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not UserCanvasService.accessible(kwargs.get("agent_id"), kwargs.get("tenant_id")):
@@ -100,6 +106,7 @@ def _require_canvas_access_sync(func):
 
 
 def _require_canvas_access_async(func):
+    """异步路由装饰器：在线程池中校验画布访问权限。"""
     @wraps(func)
     async def wrapper(*args, **kwargs):
         agent_id = kwargs.get("agent_id")
@@ -112,6 +119,7 @@ def _require_canvas_access_async(func):
 
 
 def _require_canvas_owner_sync(func):
+    """同步装饰器：仅画布 owner（创建者租户）可操作。"""
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not UserCanvasService.query(user_id=kwargs.get("tenant_id"), id=kwargs.get("agent_id")):
@@ -145,6 +153,7 @@ def _get_user_nickname(user_id: str) -> str:
 
 
 def _build_sse_response(body):
+    """构造 text/event-stream 响应并禁用代理缓冲。"""
     resp = Response(body, mimetype="text/event-stream")
     resp.headers.add_header("Cache-control", "no-cache")
     resp.headers.add_header("Connection", "keep-alive")
@@ -191,6 +200,7 @@ def _normalize_agent_reference_chunk(chunk):
 
 
 def _normalize_agent_session(conv):
+    # 将 API4Conversation 转为对外 agent session 结构，规范化 reference 引用块
     conv["message"] = conv.get("message", [])
     for info in conv["message"]:
         if "prompt" in info:
@@ -229,6 +239,7 @@ def _agent_session_list_result(data, total):
     return jsonify({"code": RetCode.SUCCESS, "message": "success", "data": data, "total": total})
 
 
+# 执行工作流会话：流式 SSE 推送组件事件，可选 commit runtime replica
 async def _run_workflow_session(
     tenant_id,
     agent_id,
@@ -427,6 +438,7 @@ async def _run_workflow_session(
     return get_result(data=final_ans)
 
 
+# ---------- Agent 会话 CRUD ----------
 @manager.route("/agents/<agent_id>/sessions", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -644,6 +656,7 @@ async def _iter_session_completion_events(tenant_id, agent_id, req, return_trace
             continue
 
 
+# ---------- Agent 模板、标签与列表 ----------
 @manager.route("/agents/templates", methods=["GET"])  # noqa: F821
 @login_required
 def list_agent_template():
@@ -1291,6 +1304,7 @@ async def test_db_connection():
 # in earlier releases — no client, SDK, or doc ever used it, and the
 # plural form below is the canonical route. The singular is intentionally
 # NOT registered; clients sending it receive 404.
+# ---------- Agent 对话补全（支持 OpenAI 兼容模式） ----------
 @manager.route("/agents/chat/completions", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -1676,6 +1690,7 @@ async def agent_chat_completion(tenant_id, agent_id=None):
     return get_result(data=final_ans)
 
 
+# ---------- Webhook 触发与日志 ----------
 @manager.route("/agents/<agent_id>/webhook", methods=["POST", "GET", "PUT", "PATCH", "DELETE", "HEAD"])  # noqa: F821
 async def webhook(agent_id: str):
     return await _webhook_impl(agent_id, is_test=False)
@@ -2502,6 +2517,7 @@ async def _stream_agent_attachment(tenant_id, attachment_id, *, inline: bool):
     return response
 
 
+# ---------- Agent 附件预览与下载 ----------
 @manager.route("/agents/attachments/<attachment_id>/preview", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs

@@ -33,7 +33,11 @@ logger = logging.getLogger(__name__)
 
 
 def _convert_files(file_ids, kb_ids, user_id):
-    """Synchronous worker: add new docs for the given file/kb pairs while preserving existing links.
+    """
+    同步 worker：为 file/kb 对创建 Document 与 File2Document 链接；
+    已存在的 kb 关联不会被覆盖（修复多选链接互相覆盖问题）。
+
+    Synchronous worker: add new docs for the given file/kb pairs while preserving existing links.
 
     Previously this function replaced all existing links with the new ones, which caused
     multi-select "link to knowledge base" to overwrite previous links. Now it only creates
@@ -45,6 +49,7 @@ def _convert_files(file_ids, kb_ids, user_id):
         if not e:
             continue
 
+        # 跳过已链接到该文件的知识库，仅增量创建新关联
         existing_links = {inform.document_id for inform in File2DocumentService.get_by_file_id(id)}
         existing_kb_ids = set()
         for doc_id in existing_links:
@@ -82,6 +87,7 @@ def _convert_files(file_ids, kb_ids, user_id):
             )
 
 
+# POST /files/link-to-datasets：校验权限后在后台线程执行链接
 @manager.route("/files/link-to-datasets", methods=["POST"])  # noqa: F821
 @login_required
 @validate_request("file_ids", "kb_ids")
@@ -121,7 +127,7 @@ async def convert():
                 return get_data_error_result(message="Can't find this dataset!")
             kb_map[kb_id] = kb
 
-        # Expand folders to their innermost file IDs
+        # 文件夹展开为最内层文件 ID 列表
         all_file_ids = []
         for file_id in file_ids:
             file = files_set[file_id]
@@ -163,7 +169,7 @@ async def convert():
                 )
                 return get_data_error_result(message="No authorization.")
 
-        # Run the blocking DB work in a thread so the event loop is not blocked.
+        # 阻塞式 DB 操作放入线程池，避免大文件夹链接导致 504
         # For large folders this prevents 504 Gateway Timeout by returning as
         # soon as the background task is scheduled.
         loop = asyncio.get_running_loop()

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+嵌入式 Bot SDK API：Chatbot/Agentbot/Searchbot 对外补全、检索与思维导图。
+"""
+
 #
 import copy
 import hashlib
@@ -54,12 +58,14 @@ logger = logging.getLogger(__name__)
 
 
 def _get_sdk_authorization_token():
+    """从 Authorization Bearer 头提取 SDK 令牌。"""
     auth_header = request.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
         return ""
     return auth_header[len("Bearer ") :].strip()
 
 
+# ---------- Chatbot（Dialog）嵌入式对话 ----------
 @manager.route("/chatbots/<dialog_id>/completions", methods=["POST"])  # noqa: F821
 @login_required(auth_types=AUTH_BETA)
 @add_tenant_id_to_kwargs
@@ -159,6 +165,7 @@ async def chatbots_inputs(dialog_id, tenant_id=None):
     )
 
 
+# ---------- Agentbot 嵌入式 Agent 补全 ----------
 @manager.route("/agentbots/<agent_id>/completions", methods=["POST"])  # noqa: F821
 @login_required(auth_types=AUTH_BETA)
 @add_tenant_id_to_kwargs
@@ -325,6 +332,7 @@ async def agent_bot_logs(shared_id, message_id):
         return server_error_response(exc)
 
 
+# ---------- Searchbot 检索问答与测试 ----------
 @manager.route("/searchbots/ask", methods=["POST"])  # noqa: F821
 @login_required(auth_types=AUTH_BETA)
 @add_tenant_id_to_kwargs
@@ -586,4 +594,5 @@ async def mindmap(tenant_id=None):
 
 
 def _resolve_reference_metadata(req, search_config=None):
+    """解析引用块元数据展示偏好（文档名、页码等）。"""
     return resolve_reference_metadata_preferences(req, search_config)

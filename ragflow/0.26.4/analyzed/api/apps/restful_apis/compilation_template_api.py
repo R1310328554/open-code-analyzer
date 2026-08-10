@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+编译模板 API：内置模板调色板与 Wiki 页面结构预设（YAML 文件系统加载）。
+"""
+
 #
 
 from quart import Response
@@ -28,7 +32,10 @@ _validate_template_payload = validate_template_payload
 @manager.route("/compilation_templates/builtins", methods=["GET"])  # noqa: F821
 @login_required
 def list_builtin_templates() -> Response:
-    """Built-in template palette — used as the per-child pre-fill in the
+    """
+    内置模板列表：供「添加模板组」面板预填子模板；若无 DB 记录则从文件 seed。
+
+    Built-in template palette — used as the per-child pre-fill in the
     "Add template group" panel. Groups themselves are always user-created;
     no builtin groups exist.
     """
@@ -57,7 +64,10 @@ def list_builtin_templates() -> Response:
 @manager.route("/compilation_templates/wiki_presets", methods=["GET"])  # noqa: F821
 @login_required
 def list_wiki_presets() -> Response:
-    """Wiki page-structure presets loaded from
+    """
+    Wiki 页面结构预设：从 wiki/*.yaml 加载 topic/instruction/page_example。
+
+    Wiki page-structure presets loaded from
     ``api/db/init_data/compilation_templates/wiki/*.yaml``.
 
     Each entry carries ``id`` (filename stem) + ``topic`` +

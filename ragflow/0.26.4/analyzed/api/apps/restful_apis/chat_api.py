@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Chat 助手 REST API：Dialog CRUD、会话管理、补全、TTS/转写与推荐问题。
+"""
+
 #
 
 import json
@@ -52,7 +56,7 @@ from rag.prompts.template import load_prompt
 
 
 def _sanitize_json_floats(obj):
-    """Replace NaN/Infinity floats with None so the result is RFC 8259 JSON.
+    """将 NaN/Infinity 浮点替换为 None，保证 JSON 符合 RFC 8259。
 
     `json.dumps` emits the literal tokens `NaN`/`Infinity` by default
     (allow_nan=True). Those tokens are valid Python JSON output but invalid
@@ -115,6 +119,7 @@ _PERSISTED_FIELDS = set(DialogService.model._meta.fields)
 
 
 def _build_chat_response(chat):
+    """将 Dialog ORM 对象序列化为 REST chat 响应结构。"""
     data = chat.to_dict() if hasattr(chat, "to_dict") else dict(chat)
     kb_ids, kb_names = _resolve_kb_names(data.get("kb_ids", []))
     data["dataset_ids"] = kb_ids
@@ -161,6 +166,7 @@ def _build_session_response(conv: dict) -> dict:
 
 
 async def _ensure_owned_chat(chat_id):
+    """校验 chat 存在且属于 current_user 租户。"""
     return await thread_pool_exec(DialogService.query, tenant_id=current_user.id, id=chat_id, status=StatusEnum.VALID.value)
 
 
@@ -265,6 +271,7 @@ def _normalize_completion_messages(req):
 
 
 async def _validate_llm_id(llm_id, tenant_id, llm_setting=None):
+    """校验 LLM ID 在租户下可用并返回 bundle 配置。"""
     if not llm_id:
         return None
 
@@ -355,6 +362,7 @@ def _apply_prompt_defaults(req):
         prompt_config["parameters"] = [{"key": "knowledge", "optional": False}]
 
 
+# ---------- Chat 助手 CRUD ----------
 @manager.route("/chats", methods=["POST"])  # noqa: F821
 @login_required
 async def create():
@@ -750,6 +758,7 @@ async def bulk_delete_chats():
     return get_json_result(data={"success_count": success_count})
 
 
+# ---------- 会话与消息管理 ----------
 @manager.route("/chats/<chat_id>/sessions", methods=["POST"])  # noqa: F821
 @login_required
 async def create_session(chat_id):
@@ -1003,6 +1012,7 @@ async def update_message_feedback(chat_id, session_id, msg_id):
         return server_error_response(ex)
 
 
+# ---------- 语音 TTS / 转写 ----------
 @manager.route("/chat/audio/speech", methods=["POST"])  # noqa: F821
 @login_required
 async def tts():
@@ -1149,6 +1159,7 @@ async def recommendation():
     return get_json_result(data=[re.sub(r"^[0-9]\. ", "", a) for a in ans.split("\n") if re.match(r"^[0-9]\. ", a)])
 
 
+# ---------- 统一对话补全入口（可带 chat_id 路径或 body） ----------
 @manager.route("/chat/completions", methods=["POST"])  # noqa: F821
 @login_required
 async def session_completion(chat_id_in_arg=""):

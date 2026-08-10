@@ -14,6 +14,8 @@
 #  limitations under the License.
 #
 """
+向后兼容层：为 RESTful API 迁移期间废弃的旧路由提供转发。
+
 Backward compatibility layer for deprecated API endpoints.
 
 This module adds support for old API routes that were deprecated during the
@@ -60,13 +62,14 @@ legacy_v1_manager = Blueprint("backward_compat_legacy_v1", __name__)
 
 
 def _index_result(success, result):
+    # 将 dataset 索引服务结果包装为 JSON 响应
     if success:
         return get_json_result(data=result)
     return get_data_error_result(message=result)
 
 
 # =============================================================================
-# System APIs
+# 系统 API
 # =============================================================================
 
 
@@ -84,7 +87,7 @@ async def deprecated_system_healthz():
 
 
 # =============================================================================
-# Chat Completion APIs
+# 对话补全 API（旧路径转发至 chat/openai/agent 新接口）
 # =============================================================================
 
 
@@ -144,7 +147,7 @@ async def deprecated_agents_openai_chat_completions(agent_id, tenant_id=None):
 
 
 # =============================================================================
-# Dataset Graph and Index APIs
+# 数据集知识图谱与索引 API（knowledge_graph/run_graphrag 等旧名）
 # =============================================================================
 
 
@@ -255,7 +258,7 @@ async def deprecated_trace_raptor(dataset_id, tenant_id=None):
 
 
 # =============================================================================
-# Chat Session APIs
+# 对话会话 API（PUT 旧语义转发为 PATCH）
 # =============================================================================
 
 
@@ -280,7 +283,7 @@ async def deprecated_update_session(chat_id, session_id):
 
 
 # =============================================================================
-# File APIs (Old /api/v1/file/* -> New /api/v1/files*)
+# 文件 API（/api/v1/file/* 旧路径统一转发至 /api/v1/files*）
 # =============================================================================
 
 
@@ -473,7 +476,7 @@ async def deprecated_file_rm(tenant_id=None):
 
 
 # =============================================================================
-# Related Questions API
+# 相关问题推荐 API
 # =============================================================================
 
 
@@ -492,7 +495,7 @@ async def deprecated_related_questions():
 
 
 # =============================================================================
-# Chunk Update API (PUT -> PATCH)
+# 分块更新 API（PUT 转发为 PATCH）
 # =============================================================================
 
 
@@ -516,7 +519,7 @@ async def deprecated_update_chunk(dataset_id, document_id, chunk_id):
 
 
 # =============================================================================
-# File Upload Info API
+# 文件上传信息 API
 # =============================================================================
 
 
@@ -555,7 +558,7 @@ async def deprecated_legacy_document_upload_info():
 
 
 # =============================================================================
-# Document APIs
+# 文档 API
 # =============================================================================
 
 
@@ -629,7 +632,7 @@ async def document_download_v1(attachment_id):
 
 
 # =============================================================================
-# Agent Chat API
+# Agent 对话 API
 # =============================================================================
 
 
@@ -652,7 +655,7 @@ async def deprecated_agent_completions(agent_id, tenant_id=None):
 
 def register_backward_compat_routes(app_instance):
     """
-    Register all backward compatibility routes with the app.
+    向 Quart 应用注册全部向后兼容 Blueprint（/api/v1 与 /v1 前缀）。
     """
     app_instance.register_blueprint(manager, url_prefix="/api/v1")
     app_instance.register_blueprint(legacy_v1_manager, url_prefix="/v1")

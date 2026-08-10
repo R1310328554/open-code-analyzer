@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+数据源连接器 API：CRUD、同步日志、重建任务及 Google/Box Web OAuth 弹窗流程。
+"""
+
 #
 import asyncio
 import json
@@ -41,11 +45,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _connector_auth_error(connector_id: str, user_id: str):
-    """Return the connector authorization failure response and log the denial."""
+    """返回连接器授权失败响应并记录 connector_id/user_id。"""
     LOGGER.warning("connector access denied: connector_id=%s user_id=%s", connector_id, user_id)
     return get_json_result(data=False, message="No authorization.", code=RetCode.AUTHENTICATION_ERROR)
 
 
+# ---------- 连接器 CRUD 与同步 ----------
 @manager.route("/connectors/<connector_id>", methods=["PATCH"])  # noqa: F821
 @login_required
 async def update_connector(connector_id):
@@ -282,6 +287,7 @@ WEB_FLOW_TTL_SECS = 15 * 60
 
 
 def _web_state_cache_key(flow_id: str, source_type: str | None = None) -> str:
+    """Redis 键：OAuth state 防 CSRF。"""
     """Return Redis key for web OAuth state.
 
     The default prefix keeps backward compatibility for Google Drive.
@@ -293,6 +299,7 @@ def _web_state_cache_key(flow_id: str, source_type: str | None = None) -> str:
 
 
 def _web_result_cache_key(flow_id: str, source_type: str | None = None) -> str:
+    """Redis 键：OAuth 完成后暂存 credentials 供前端轮询。"""
     """Return Redis key for web OAuth result.
 
     Mirrors _web_state_cache_key logic for result storage.
@@ -361,6 +368,7 @@ async def _render_web_oauth_popup(flow_id: str, success: bool, message: str, sou
     return response
 
 
+# ---------- Google / Gmail / Drive Web OAuth ----------
 @manager.route("/connectors/google/oauth/web/start", methods=["POST"])  # noqa: F821
 @login_required
 @validate_request("credentials")
@@ -573,6 +581,7 @@ async def poll_google_web_result():
     return get_json_result(data={"credentials": result.get("credentials")})
 
 
+# ---------- Box Web OAuth ----------
 @manager.route("/connectors/box/oauth/web/start", methods=["POST"])  # noqa: F821
 @login_required
 async def start_box_web_oauth():
