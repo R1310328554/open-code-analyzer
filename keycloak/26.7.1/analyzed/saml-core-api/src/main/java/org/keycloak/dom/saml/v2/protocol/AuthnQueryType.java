@@ -21,6 +21,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
 /**
  * <p>
  * Java class for AuthnQueryType complex type.
+ * SAML 2.0 认证查询：查询指定主体的认证断言及会话索引。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -40,15 +41,20 @@ import javax.xml.datatype.XMLGregorianCalendar;
  */
 public class AuthnQueryType extends SubjectQueryAbstractType {
 
+    /** 可选的期望认证上下文。 */
     protected RequestedAuthnContextType requestedAuthnContext;
 
+    /** 可选的会话索引。 */
     protected String sessionIndex;
 
+    /** 构造认证查询。 */
     public AuthnQueryType(String id, XMLGregorianCalendar instant) {
         super(id, instant);
     }
 
     /**
+     * 获取 requestedAuthnContext 属性的值。
+     *
      * Gets the value of the requestedAuthnContext property.
      *
      * @return possible object is {@link RequestedAuthnContextType }
@@ -58,6 +64,8 @@ public class AuthnQueryType extends SubjectQueryAbstractType {
     }
 
     /**
+     * 设置 requestedAuthnContext 属性的值。
+     *
      * Sets the value of the requestedAuthnContext property.
      *
      * @param value allowed object is {@link RequestedAuthnContextType }
@@ -67,6 +75,8 @@ public class AuthnQueryType extends SubjectQueryAbstractType {
     }
 
     /**
+     * 获取 sessionIndex 属性的值。
+     *
      * Gets the value of the sessionIndex property.
      *
      * @return possible object is {@link String }
@@ -76,6 +86,8 @@ public class AuthnQueryType extends SubjectQueryAbstractType {
     }
 
     /**
+     * 设置 sessionIndex 属性的值。
+     *
      * Sets the value of the sessionIndex property.
      *
      * @param value allowed object is {@link String }

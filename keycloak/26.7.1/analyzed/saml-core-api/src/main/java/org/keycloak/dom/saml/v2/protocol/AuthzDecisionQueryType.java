@@ -28,6 +28,7 @@ import org.keycloak.dom.saml.v2.assertion.EvidenceType;
 /**
  * <p>
  * Java class for AuthzDecisionQueryType complex type.
+ * SAML 2.0 授权决策查询：请求对指定资源与动作的访问决策。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -48,17 +49,23 @@ import org.keycloak.dom.saml.v2.assertion.EvidenceType;
  */
 public class AuthzDecisionQueryType extends SubjectQueryAbstractType {
 
+    /** 请求授权的动作列表。 */
     protected List<ActionType> action = new ArrayList<>();
 
+    /** 可选的决策证据。 */
     protected EvidenceType evidence;
 
+    /** 待授权的资源 URI（必填）。 */
     protected URI resource;
 
+    /** 构造授权决策查询。 */
     public AuthzDecisionQueryType(String id, XMLGregorianCalendar instant) {
         super(id, instant);
     }
 
     /**
+     * 添加动作。
+     *
      * Add an action
      *
      * @param act
@@ -68,6 +75,8 @@ public class AuthzDecisionQueryType extends SubjectQueryAbstractType {
     }
 
     /**
+     * 移除动作。
+     *
      * Remove an action
      *
      * @param act
@@ -77,6 +86,8 @@ public class AuthzDecisionQueryType extends SubjectQueryAbstractType {
     }
 
     /**
+     * 获取 action 属性的值。
+     *
      * Gets the value of the action property.
      */
     public List<ActionType> getAction() {
@@ -84,6 +95,8 @@ public class AuthzDecisionQueryType extends SubjectQueryAbstractType {
     }
 
     /**
+     * 获取 evidence 属性的值。
+     *
      * Gets the value of the evidence property.
      *
      * @return possible object is {@link EvidenceType }
@@ -93,6 +106,8 @@ public class AuthzDecisionQueryType extends SubjectQueryAbstractType {
     }
 
     /**
+     * 设置 evidence 属性的值。
+     *
      * Sets the value of the evidence property.
      *
      * @param value allowed object is {@link EvidenceType }
@@ -102,6 +117,8 @@ public class AuthzDecisionQueryType extends SubjectQueryAbstractType {
     }
 
     /**
+     * 获取 resource 属性的值。
+     *
      * Gets the value of the resource property.
      *
      * @return possible object is {@link String }
@@ -111,6 +128,8 @@ public class AuthzDecisionQueryType extends SubjectQueryAbstractType {
     }
 
     /**
+     * 设置 resource 属性的值。
+     *
      * Sets the value of the resource property.
      *
      * @param value allowed object is {@link String }

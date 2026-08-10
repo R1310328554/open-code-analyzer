@@ -20,6 +20,7 @@ package org.keycloak.dom.saml.v2.profiles.sso.ecp;
 /**
  * <p>
  * Java class for ResponseType complex type.
+ * ECP SSO 响应类型：SOAP 封装，指定断言消费服务 URL 及 SOAP 头属性。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -39,11 +40,16 @@ package org.keycloak.dom.saml.v2.profiles.sso.ecp;
  */
 public class ResponseType {
 
+    /** SOAP mustUnderstand 标志。 */
     protected Boolean mustUnderstand = Boolean.FALSE;
+    /** SOAP actor URI。 */
     protected String actor;
+    /** 断言消费服务 URL（必填）。 */
     protected String assertionConsumerServiceURL;
 
     /**
+     * 获取 mustUnderstand 属性的值。
+     *
      * Gets the value of the mustUnderstand property.
      *
      * @return possible object is {@link String }
@@ -53,6 +59,8 @@ public class ResponseType {
     }
 
     /**
+     * 设置 mustUnderstand 属性的值。
+     *
      * Sets the value of the mustUnderstand property.
      *
      * @param value allowed object is {@link String }
@@ -62,6 +70,8 @@ public class ResponseType {
     }
 
     /**
+     * 获取 actor 属性的值。
+     *
      * Gets the value of the actor property.
      *
      * @return possible object is {@link String }
@@ -71,6 +81,8 @@ public class ResponseType {
     }
 
     /**
+     * 设置 actor 属性的值。
+     *
      * Sets the value of the actor property.
      *
      * @param value allowed object is {@link String }
@@ -80,6 +92,8 @@ public class ResponseType {
     }
 
     /**
+     * 获取 assertionConsumerServiceURL 属性的值。
+     *
      * Gets the value of the assertionConsumerServiceURL property.
      *
      * @return possible object is {@link String }
@@ -89,6 +103,8 @@ public class ResponseType {
     }
 
     /**
+     * 设置 assertionConsumerServiceURL 属性的值。
+     *
      * Sets the value of the assertionConsumerServiceURL property.
      *
      * @param value allowed object is {@link String }
