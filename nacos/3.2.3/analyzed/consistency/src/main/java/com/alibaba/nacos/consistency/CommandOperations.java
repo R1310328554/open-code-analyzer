@@ -22,6 +22,7 @@ import com.alibaba.nacos.common.model.RestResultUtils;
 import java.util.Map;
 
 /**
+ * 一致性协议运维命令接口：供外部通过命令 Map 触发协议层运维操作。
  * Operation and maintenance command interface.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -29,6 +30,7 @@ import java.util.Map;
 public interface CommandOperations {
     
     /**
+     * 运维命令执行入口，默认返回成功空结果，子类可覆盖实现具体命令。
      * Operation and maintenance interface operation entry.
      *
      * @param commands commands

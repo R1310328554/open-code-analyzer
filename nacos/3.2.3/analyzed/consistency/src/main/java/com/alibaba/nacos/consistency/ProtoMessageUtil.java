@@ -24,6 +24,7 @@ import com.alibaba.nacos.consistency.exception.ConsistencyException;
 import com.google.protobuf.Message;
 
 /**
+ * Protobuf 消息解析与新旧实体兼容转换工具。
  * protobuf message utils.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
@@ -31,15 +32,19 @@ import com.google.protobuf.Message;
 public class ProtoMessageUtil {
     
     /**
+     * 请求类型字段 Tag，需与 ReadRequest/WriteRequest 的 field tag 区分。
      * should be different from field tags of ReadRequest or WriteQuest.
      */
     public static final int REQUEST_TYPE_FIELD_TAG = 7 << 3;
     
+    /** 读请求类型标识字节 */
     public static final int REQUEST_TYPE_READ = 1;
     
+    /** 写请求类型标识字节 */
     public static final int REQUEST_TYPE_WRITE = 2;
     
     /**
+     * 将字节数组反序列化为 Protobuf {@link Message}，兼容新旧 Read/Write 及已废弃的 GetRequest/Log。
      * Converts the byte array to a specific Protobuf object.
      * Internally, the protobuf new and old objects are compatible.
      *
@@ -60,6 +65,7 @@ public class ProtoMessageUtil {
         } catch (Throwable ignore) {
         }
         
+        // 旧版一致性实体，后续将废弃
         // old consistency entity, will be @Deprecated in future
         try {
             GetRequest request = GetRequest.parseFrom(bytes);
@@ -78,6 +84,7 @@ public class ProtoMessageUtil {
     }
     
     /**
+     * 将旧版 {@link Log} 转换为 {@link WriteRequest}。
      * convert Log to WriteRequest.
      *
      * @param log log
@@ -93,6 +100,7 @@ public class ProtoMessageUtil {
     }
     
     /**
+     * 将旧版 {@link GetRequest} 转换为 {@link ReadRequest}。
      * convert Log to ReadRequest.
      *
      * @param request request

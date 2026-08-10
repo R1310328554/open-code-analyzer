@@ -22,15 +22,23 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * URL 解析工具：从增量发布内容中提取 scheme + 主机 + 端口作为内容标识。
  * Url util.
  *
  * @author leiwen.zh
  */
 public class UrlAnalysisUtils {
     
+    /** 匹配 scheme://host:port?query 形式的 URL 正则 */
     private static final Pattern URL_PATTERN =
         Pattern.compile("^(\\w+://)?([\\w\\.]+:)(\\d*)?(\\??.*)");
     
+    /**
+     * 从增量发布内容解析 URL 标识（scheme + address + port），非法内容返回 null。
+     *
+     * @param content 增量发布单行内容
+     * @return URL 标识字符串，校验失败时返回 null
+     */
     public static String getContentIdentity(String content) {
         
         if (!verifyIncrementPubContent(content)) {
@@ -54,6 +62,9 @@ public class UrlAnalysisUtils {
         return buf.toString();
     }
     
+    /**
+     * 校验增量发布内容：非空、不含换行符、不含词分隔符 {@link Constants#WORD_SEPARATOR}。
+     */
     private static boolean verifyIncrementPubContent(String content) {
         
         if (content == null || content.length() == 0) {

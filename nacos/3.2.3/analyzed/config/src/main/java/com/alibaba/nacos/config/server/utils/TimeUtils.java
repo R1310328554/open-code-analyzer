@@ -22,18 +22,22 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 
 /**
+ * 配置服务端时间工具：提供当前时间的 {@link Timestamp} 与格式化字符串。
  * Time util.
  *
  * @author Nacos
  */
 public class TimeUtils {
     
+    /** 标准日期时间格式：yyyy-MM-dd HH:mm:ss */
     private static final String YYYYMMMDDHHMMSS = "yyyy-MM-dd HH:mm:ss";
     
+    /** 获取当前系统时间的 {@link Timestamp} 实例 */
     public static Timestamp getCurrentTime() {
         return new Timestamp(System.currentTimeMillis());
     }
     
+    /** 获取当前时间的格式化字符串（yyyy-MM-dd HH:mm:ss） */
     public static String getCurrentTimeStr() {
         Calendar c = Calendar.getInstance();
         c.setTimeInMillis(System.currentTimeMillis());

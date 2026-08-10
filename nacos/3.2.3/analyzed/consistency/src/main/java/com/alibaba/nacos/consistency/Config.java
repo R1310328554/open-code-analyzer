@@ -20,7 +20,12 @@ import java.io.Serializable;
 import java.util.Set;
 
 /**
- * Consistent protocol related configuration objects.
+ * 一致性协议配置对象：管理集群成员与键值配置项。
+ *
+ * <p>{@link RequestProcessor} 抽象了各业务的事务处理，使不同服务的日志处理互不阻塞；
+ * 各一致性协议实现会主动发现并绑定对应的 LogProcessor（如 LogProcessor4AP / LogProcessor4CP）。
+ *
+ * <p>Consistent protocol related configuration objects.
  *
  * <p>{@link RequestProcessor} : The consistency protocol provides services for all businesses, but each business only cares
  * about the transaction information belonging to that business, and the transaction processing between the various
@@ -33,6 +38,7 @@ import java.util.Set;
 public interface Config<L extends RequestProcessor> extends Serializable {
     
     /**
+     * 设置集群节点信息以完成初始化，格式如 [ip:port, ip:port, ...]。
      * Set the cluster node information to initialize，like [ip:port, ip:port, ip:port].
      *
      * @param self    local node address information, ip:port
@@ -41,6 +47,7 @@ public interface Config<L extends RequestProcessor> extends Serializable {
     void setMembers(String self, Set<String> members);
     
     /**
+     * 集群成员加入。
      * members join.
      *
      * @param members {@link Set}
@@ -48,6 +55,7 @@ public interface Config<L extends RequestProcessor> extends Serializable {
     void addMembers(Set<String> members);
     
     /**
+     * 集群成员离开。
      * members leave.
      *
      * @param members {@link Set}
@@ -55,6 +63,7 @@ public interface Config<L extends RequestProcessor> extends Serializable {
     void removeMembers(Set<String> members);
     
     /**
+     * 获取本节点地址（ip:port）。
      * get local node address info.
      *
      * @return address
@@ -62,6 +71,7 @@ public interface Config<L extends RequestProcessor> extends Serializable {
     String getSelfMember();
     
     /**
+     * 获取集群全部成员地址列表。
      * get the cluster node information.
      *
      * @return members info, like [ip:port, ip:port, ip:port]
@@ -69,6 +79,7 @@ public interface Config<L extends RequestProcessor> extends Serializable {
     Set<String> getMembers();
     
     /**
+     * 写入配置项。
      * Add configuration content.
      *
      * @param key   config key
@@ -77,6 +88,7 @@ public interface Config<L extends RequestProcessor> extends Serializable {
     void setVal(String key, String value);
     
     /**
+     * 按 key 读取配置项。
      * get configuration content by key.
      *
      * @param key config key
@@ -85,6 +97,7 @@ public interface Config<L extends RequestProcessor> extends Serializable {
     String getVal(String key);
     
     /**
+     * 按 key 读取配置项，不存在时返回默认值。
      * get configuration content by key, if not found, use default-val.
      *
      * @param key        config key

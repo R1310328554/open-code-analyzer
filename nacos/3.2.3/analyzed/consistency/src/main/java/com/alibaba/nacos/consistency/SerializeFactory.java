@@ -23,16 +23,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 一致性层序列化器工厂：内置 Hessian，并通过 SPI 加载其他 {@link Serializer} 实现。
  * Serialization factory.
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class SerializeFactory {
     
+    /** Hessian 序列化器在 Map 中的键（小写） */
     public static final String HESSIAN_INDEX = "Hessian".toLowerCase();
     
+    /** 序列化器名称（小写）→ 实例 */
     private static final Map<String, Serializer> SERIALIZER_MAP = new HashMap<>(4);
     
+    /** 默认序列化器类型键 */
     public static final String DEFAULT_SERIALIZER = HESSIAN_INDEX;
     
     static {
@@ -43,10 +47,17 @@ public class SerializeFactory {
         }
     }
     
+    /** 返回默认 Hessian 序列化器 */
     public static Serializer getDefault() {
         return SERIALIZER_MAP.get(DEFAULT_SERIALIZER);
     }
     
+    /**
+     * 按类型名（不区分大小写）获取序列化器。
+     *
+     * @param type 序列化器名称
+     * @return 对应 {@link Serializer}，未注册时返回 null
+     */
     public static Serializer getSerializer(String type) {
         return SERIALIZER_MAP.get(type.toLowerCase());
     }

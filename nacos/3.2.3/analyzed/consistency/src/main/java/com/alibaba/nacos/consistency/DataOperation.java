@@ -17,32 +17,39 @@
 package com.alibaba.nacos.consistency;
 
 /**
+ * 一致性数据操作类型：描述状态机对 Datum 的增删改查及快照、校验动作。
  * Apply action.
  *
  * @author nkorange
  */
 public enum DataOperation {
     /**
+     * 新增数据。
      * Data add.
      */
     ADD,
     /**
+     * 变更已有数据。
      * Data changed.
      */
     CHANGE,
     /**
+     * 删除数据。
      * Data deleted.
      */
     DELETE,
     /**
+     * 数据校验（对账）。
      * Data verify.
      */
     VERIFY,
     /**
+     * 快照操作。
      * Data Snapshot.
      */
     SNAPSHOT,
     /**
+     * 只读查询。
      * Data query.
      */
     QUERY;

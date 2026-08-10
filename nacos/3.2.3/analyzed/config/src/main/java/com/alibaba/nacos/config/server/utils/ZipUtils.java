@@ -31,6 +31,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 /**
+ * 配置导入导出 ZIP 压缩/解压工具：支持多文件打包及元数据条目单独识别。
  * ZipUtils for import and export.
  *
  * @author klw
@@ -40,10 +41,13 @@ public class ZipUtils {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ZipUtils.class);
     
+    /** ZIP 内单个条目：文件名 + UTF-8 文本内容 */
     public static class ZipItem {
         
+        /** 条目在 ZIP 中的路径/文件名 */
         private String itemName;
         
+        /** 条目文本内容（UTF-8） */
         private String itemData;
         
         public ZipItem(String itemName, String itemData) {
@@ -68,10 +72,13 @@ public class ZipUtils {
         }
     }
     
+    /** ZIP 解压结果：配置条目列表 + 元数据条目（若有） */
     public static class UnZipResult {
         
+        /** 除元数据外的配置 ZIP 条目列表 */
         private List<ZipItem> zipItemList;
         
+        /** 导出元数据条目（旧版或新版 metadata 文件名） */
         private ZipItem metaDataItem;
         
         public UnZipResult(List<ZipItem> zipItemList, ZipItem metaDataItem) {
@@ -97,7 +104,11 @@ public class ZipUtils {
     }
     
     /**
+     * 将多个 {@link ZipItem} 压缩为 ZIP 字节数组。
      * zip method.
+     *
+     * @param source 待压缩条目列表
+     * @return ZIP 字节数组，失败时返回 null
      */
     public static byte[] zip(List<ZipItem> source) {
         byte[] result = null;
@@ -118,7 +129,11 @@ public class ZipUtils {
     }
     
     /**
+     * 解压 ZIP 字节数组，单独识别 {@link Constants#CONFIG_EXPORT_METADATA} 与新版 metadata 条目。
      * unzip method.
+     *
+     * @param source ZIP 字节数组
+     * @return 解压结果（配置列表 + 元数据）
      */
     public static UnZipResult unzip(byte[] source) {
         List<ZipItem> itemList = new ArrayList<>();

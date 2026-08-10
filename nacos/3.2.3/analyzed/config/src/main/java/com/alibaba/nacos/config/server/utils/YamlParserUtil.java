@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
+ * 配置导入导出专用 YAML 解析工具：支持 {@link ConfigMetadata} 自定义标签及空值字段过滤。
  * YamlParserUtil.
  *
  * @author Nacos
@@ -47,6 +48,7 @@ import java.util.stream.Collectors;
 public class YamlParserUtil {
     
     /**
+     * 将 Java 对象序列化为 YAML 字符串。
      * Serialize a Java object into a YAML string.
      *
      * @param object Java object.
@@ -57,6 +59,7 @@ public class YamlParserUtil {
     }
     
     /**
+     * 解析 YAML 字符串为指定类型的 Java 对象（支持标准类型与 {@link YamlParserConstructor} 注册的构造器）。
      * Parse YAML String and produce the corresponding Java object (Standard Java classes and in YamlParserConstructor
      * specified Construct).
      *
@@ -69,22 +72,31 @@ public class YamlParserUtil {
         return new Yaml(new YamlParserConstructor(), new CustomRepresenter()).loadAs(content, type);
     }
     
+    /**
+     * 自定义 SafeConstructor：注册 {@link ConfigMetadata} 的 YAML 标签解析器。
+     */
     public static class YamlParserConstructor extends SafeConstructor {
         
+        /** ConfigMetadata 在 YAML 中的自定义 Tag */
         public static final Tag CONFIG_METADATA_TAG = new Tag(ConfigMetadata.class);
         
+        /** 注册 ConfigMetadata 构造器到 SnakeYAML */
         public YamlParserConstructor() {
             super(new LoaderOptions());
             yamlConstructors.put(CONFIG_METADATA_TAG, new ConstructYamlConfigMetadata());
         }
     }
     
+    /**
+     * 自定义 Representer：序列化时跳过值为 null 的属性，减少 YAML 冗余字段。
+     */
     public static class CustomRepresenter extends Representer {
         
         public CustomRepresenter() {
             super(new DumperOptions());
         }
         
+        /** null 属性不输出到 YAML 节点 */
         @Override
         protected NodeTuple representJavaBeanProperty(Object javaBean, Property property,
             Object propertyValue,
@@ -98,8 +110,12 @@ public class YamlParserUtil {
         }
     }
     
+    /**
+     * 将带 CONFIG_METADATA_TAG 的 MappingNode 反序列化为 {@link ConfigMetadata}。
+     */
     public static class ConstructYamlConfigMetadata extends AbstractConstruct {
         
+        /** 从 YAML 节点构建 ConfigMetadata 及其导出项列表 */
         @Override
         public Object construct(Node node) {
             if (!YamlParserConstructor.CONFIG_METADATA_TAG.getValue()
