@@ -1,7 +1,10 @@
 package columnar
 
+// kind 定义 columnar 支持的列类型枚举：null、bool、int64、uint64、utf8。
+
 import "strconv"
 
+// Kind 标识 Array/Scalar 的具体数据类型，零值为 KindNull。
 // A Kind represents the specific type of an Array. The zero Kind is a null
 // value.
 type Kind uint8
@@ -22,6 +25,7 @@ var kindNames = [...]string{
 	KindUTF8:   "utf8",
 }
 
+// String 返回 Kind 的短名称，未知值则格式化为 Kind(n)。
 // String returns the string representation of k.
 func (k Kind) String() string {
 	if int(k) < len(kindNames) {

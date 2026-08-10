@@ -1,5 +1,8 @@
 package columnar
 
+// datum_utf8 实现 UTF-8 字符串的 Scalar、Array 与 Builder：
+// 采用 offsets+data 经典列式布局，Slice 仅切偏移不切数据缓冲区。
+
 import (
 	"github.com/grafana/loki/v3/pkg/memory"
 )
@@ -22,6 +25,7 @@ func (s *UTF8Scalar) isDatum()  {}
 func (s *UTF8Scalar) isScalar() {}
 
 // UTF8 is an [Array] of UTF-8 encoded strings.
+// UTF8 数组用 offsets 索引 data 中的变长字符串片段。
 type UTF8 struct {
 	validity  memory.Bitmap // Empty when there's no nulls.
 	offsets   []int32
@@ -32,6 +36,7 @@ type UTF8 struct {
 
 var _ Array = (*UTF8)(nil)
 
+// NewUTF8 构造 UTF-8 数组，offsets 需单调递增且长度比元素数多一。
 // NewUTF8 creates a new UTF8 array from the given data, offsets, and
 // optional validity bitmap.
 //
@@ -162,6 +167,7 @@ func (arr *UTF8) isArray() {}
 
 // A UTF8Builder assists with constructing a [UTF8] array. A UTF8Builder must be
 // constructed by calling [NewUTF8Builder].
+// UTF8Builder 维护 lastOffset 累积字符串总长度，分别 Grow 元素与字节容量。
 type UTF8Builder struct {
 	alloc *memory.Allocator
 
@@ -202,6 +208,7 @@ func (b *UTF8Builder) needGrow(n int) bool {
 	return b.offsets.Len()+n > b.offsets.Cap()
 }
 
+// GrowData 单独扩展字符串数据区容量，与 Grow 预留元素数互补。
 // GrowData increases b's bytes capacity, if necessary, to guarantee space
 // for another n bytes of data. After GrowData(n), at least n bytes can be
 // appended to b (across all UTF8 values) without another allocation. If n is

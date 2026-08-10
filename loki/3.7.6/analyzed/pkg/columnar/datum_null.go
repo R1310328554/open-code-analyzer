@@ -1,5 +1,8 @@
 package columnar
 
+// datum_null 实现无类型 null 的 Scalar 与 Array：
+// 所有元素恒为空，有效性位图必须全为 false。
+
 import "github.com/grafana/loki/v3/pkg/memory"
 
 // NullScalar is a [Scalar] representing an untyped null value.
@@ -17,6 +20,7 @@ func (s *NullScalar) isDatum()  {}
 func (s *NullScalar) isScalar() {}
 
 // Null is an [Array] of null values.
+// Null 数组仅通过有效性位图记录元素个数，每个元素均为 null。
 type Null struct {
 	validity  memory.Bitmap
 	nullCount int
@@ -24,6 +28,7 @@ type Null struct {
 
 var _ Array = (*Null)(nil)
 
+// NewNull 要求有效性位图中不得出现 true 位，否则 panic。
 // NewNull creates a new Null array with the given validity bitmap. NewNull
 // panics if validity contains any bit set to true.
 func NewNull(validity memory.Bitmap) *Null {
@@ -73,6 +78,7 @@ func (arr *Null) isArray() {}
 
 // A NullBuilder assists with constructing a [Null] array. A NullBuilder must be
 // constructed by calling [NewNullBuilder].
+// NullBuilder 仅追加 null 元素，Build 后输出 Null 数组。
 type NullBuilder struct {
 	alloc    *memory.Allocator
 	validity memory.Bitmap

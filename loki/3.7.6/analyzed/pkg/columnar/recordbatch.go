@@ -1,5 +1,9 @@
 package columnar
 
+// recordbatch 实现 Arrow 风格的等长多列批次：
+// Schema 描述列结构，各列 Array 行数一致，支持按行范围切片。
+
+// RecordBatch 聚合 schema、行数与各列 Array，对应 Arrow RecordBatch 概念。
 // RecordBatch is a collection of equal-length arrays.
 // This corresponds to the RecordBatch concept in the Arrow specification.
 type RecordBatch struct {
@@ -8,6 +12,7 @@ type RecordBatch struct {
 	arrs   []Array
 }
 
+// NewRecordBatch 从 schema、行数与列数组切片构造批次。
 // NewRecordBatch returns a new RecordBatch created from the provided arrays.
 // nrows specifies the total number of rows in the batch.
 func NewRecordBatch(schema *Schema, nrows int64, arrs []Array) *RecordBatch {
@@ -42,6 +47,7 @@ func (rb *RecordBatch) Column(i int64) Array {
 // length of j-i and shares memory with rb.
 //
 // Slice panics if the following invariant is not met: 0 <= i <= j <= rb.NumRows()
+// Slice 对每列 Array 同步切片，共享底层内存并保留原 schema。
 func (rb *RecordBatch) Slice(i, j int) *RecordBatch {
 	if i < 0 || j < i || j > int(rb.NumRows()) {
 		panic(errorSliceBounds{i, j, int(rb.NumRows())})

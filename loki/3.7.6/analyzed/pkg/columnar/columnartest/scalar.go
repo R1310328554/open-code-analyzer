@@ -1,5 +1,8 @@
 package columnartest
 
+// columnartest 标量构造辅助：
+// 从 Go 值快速生成各 Kind 的 Scalar，简化测试数据准备。
+
 import (
 	"testing"
 
@@ -8,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/columnar"
 )
 
+// Scalar 按 Kind 将 value 转为对应 Scalar，nil 表示 null 标量。
 // Scalar returns a scalar value representing the given kind.
 //
 // value must either be nil (meaning a null scalar value) or a type which can
@@ -40,6 +44,7 @@ func Scalar(t testing.TB, kind columnar.Kind, value any) columnar.Scalar {
 	}
 }
 
+// scalarNull 要求 value 为 nil，返回无类型 NullScalar。
 func scalarNull(t testing.TB, value any) *columnar.NullScalar {
 	t.Helper()
 
@@ -58,6 +63,7 @@ func scalarBool(t testing.TB, value any) *columnar.BoolScalar {
 	return &columnar.BoolScalar{Value: value.(bool)}
 }
 
+// scalarNumber 构造数值标量，支持 int 自动转换为 T。
 func scalarNumber[T columnar.Numeric](t testing.TB, value any) *columnar.NumberScalar[T] {
 	t.Helper()
 
@@ -77,6 +83,7 @@ func scalarNumber[T columnar.Numeric](t testing.TB, value any) *columnar.NumberS
 	panic("unreachable")
 }
 
+// scalarUTF8 构造 UTF-8 标量，string 会转为 []byte 存储。
 func scalarUTF8(t testing.TB, value any) *columnar.UTF8Scalar {
 	t.Helper()
 

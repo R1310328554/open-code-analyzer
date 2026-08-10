@@ -1,3 +1,4 @@
+// columnar 包提供列式内存数组工具，类型与 Arrow 兼容，但基于 Loki 自研 memory.Allocator 管理内存而非 arrow-go 引用计数。
 // Package columnar provides utilities for working with columnar in-memory
 // arrays.
 //
@@ -12,6 +13,7 @@ package columnar
 import "github.com/grafana/loki/v3/pkg/memory"
 
 // A Datum is a piece of data which either represents an [Array] or a [Scalar].
+// Datum 表示单个数据单元，可以是 Array（数组）或 Scalar（标量）。
 type Datum interface {
 	isDatum() // Type marker method.
 
@@ -56,6 +58,7 @@ type Array interface {
 }
 
 // A Scalar is a single element of a specific data type.
+// Scalar 表示单个标量值，可携带空值标记。
 type Scalar interface {
 	Datum
 	isScalar() // Type marker method.
@@ -67,6 +70,7 @@ type Scalar interface {
 
 // A Builder assists with constructing arrays. Builder implementations typically
 // have more methods.
+// Builder 辅助逐元素构建 Array，BuildArray 后重置可复用。
 type Builder interface {
 	// AppendNull adds a new null element to the Builder.
 	AppendNull()

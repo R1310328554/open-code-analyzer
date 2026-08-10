@@ -1,5 +1,8 @@
 package columnar
 
+// datum_bool 实现布尔类型的 Scalar、Array 与 Builder：
+// 值与有效性均用位图存储，支持切片与增量构建。
+
 import (
 	"github.com/grafana/loki/v3/pkg/memory"
 )
@@ -20,6 +23,7 @@ func (s *BoolScalar) isDatum()  {}
 func (s *BoolScalar) isScalar() {}
 
 // Bool is an [Array] of bit-packed boolean values.
+// Bool 是位打包的布尔数组，含有效性位图与值位图。
 type Bool struct {
 	validity  memory.Bitmap // Empty when there's no nulls.
 	values    memory.Bitmap
@@ -28,6 +32,7 @@ type Bool struct {
 
 var _ Array = (*Bool)(nil)
 
+// NewBool 从值位图与可选有效性位图构造 Bool 数组并校验长度一致。
 // NewBool creates a new Bool array from the given values and optional validity
 // bitmap.
 //
@@ -123,6 +128,7 @@ func (arr *Bool) isArray() {}
 
 // A BoolBuilder assists with constructing a [Bool] array. A BoolBuilder must be
 // constructed by calling [NewBoolBuilder].
+// BoolBuilder 逐元素追加布尔值或空值，Build 后移交底层位图并重置。
 type BoolBuilder struct {
 	alloc *memory.Allocator
 
@@ -132,6 +138,7 @@ type BoolBuilder struct {
 
 var _ Builder = (*BoolBuilder)(nil)
 
+// NewBoolBuilder 绑定 Allocator 并初始化空的有效性与值位图。
 // NewBoolBuilder creates a new BoolBuilder for constructing a [Bool] array.
 func NewBoolBuilder(alloc *memory.Allocator) *BoolBuilder {
 	return &BoolBuilder{

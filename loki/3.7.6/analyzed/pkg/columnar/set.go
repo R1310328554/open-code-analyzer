@@ -1,7 +1,11 @@
 package columnar
 
+// set 提供按 Kind 去重的值集合，用于过滤或 membership 测试：
+// 须通过 NewUTF8Set/NewNumberSet 构造以保证类型一致。
+
 import "fmt"
 
+// Set 内部用 map[any]struct{} 存储唯一值，Kind 标记元素类型。
 // Set represents a unique set of values of a given kind.
 // A Set must be constructed using the New functions in order to ensure that the set is properly initialized and all values in the set are of the correct Kind.
 type Set struct {
@@ -9,6 +13,7 @@ type Set struct {
 	lookup map[any]struct{}
 }
 
+// NewUTF8Set 以字符串初始化 UTF-8 集合。
 // NewUTF8Set creates a new Set of Kind UTF8 initialized with the provided strings.
 func NewUTF8Set(values ...string) *Set {
 	set := &Set{kind: KindUTF8, lookup: make(map[any]struct{}, len(values))}
@@ -18,6 +23,7 @@ func NewUTF8Set(values ...string) *Set {
 	return set
 }
 
+// NewNumberSet 根据泛型 T 映射到 KindInt64 或 KindUint64。
 // NewNumberSet creates a new Set of a numeric Kind T initialized with the provided values.
 // The Numeric type T will map to the following Kinds:
 // - int64 -> KindInt64
@@ -48,6 +54,7 @@ func (s *Set) Kind() Kind {
 
 // Has returns true if the set contains the given value.
 // The value must be in the original form provided to the New functions e.g. a string rather than a []byte.
+// Has 检查值是否在集合中，须使用与 New 时相同的原始类型（如 string 而非 []byte）。
 func (s *Set) Has(value any) bool {
 	_, ok := s.lookup[value]
 	return ok

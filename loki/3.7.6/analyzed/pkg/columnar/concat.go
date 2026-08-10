@@ -1,11 +1,15 @@
 package columnar
 
+// concat 模块将多个同 Kind 的 Array 纵向拼接为单一数组，
+// 合并有效性位图并在 UTF-8 场景下归一化偏移量。
+
 import (
 	"fmt"
 
 	"github.com/grafana/loki/v3/pkg/memory"
 )
 
+// Concat 校验所有输入数组 Kind 一致后按类型分派到具体拼接实现。
 // Concat concatenates the input arrays into a single, combined array using the
 // provided allocator. Concat returns an error if not all arrays are of the same
 // kind.
@@ -37,6 +41,7 @@ func Concat(alloc *memory.Allocator, in []Array) (Array, error) {
 	}
 }
 
+// concatNull 拼接 null 数组，合并有效性位图（全为 false）。
 func concatNull(alloc *memory.Allocator, in []Array) (Array, error) {
 	totalLen := getTotalLen(in)
 	validity := memory.NewBitmap(alloc, totalLen)
@@ -52,6 +57,7 @@ func getTotalLen(in []Array) int {
 	return total
 }
 
+// concatBool 合并布尔值位图与有效性位图。
 func concatBool(alloc *memory.Allocator, in []Array) (Array, error) {
 	totalLen := getTotalLen(in)
 
@@ -76,6 +82,7 @@ func concatBool(alloc *memory.Allocator, in []Array) (Array, error) {
 // appendValidityBitmap appends the validity bitmap of srcArray into dst. If
 // srcArray lacks a validity bitmap (because it has no nulls), srcArray.Len()
 // true values are appended into dst.
+// appendValidityBitmap 追加源数组有效性位图；无位图时视为全部有效。
 func appendValidityBitmap(dst *memory.Bitmap, srcArray Array) {
 	srcValidity := srcArray.Validity()
 	if srcValidity.Len() == 0 {
@@ -86,6 +93,7 @@ func appendValidityBitmap(dst *memory.Bitmap, srcArray Array) {
 	dst.AppendBitmap(srcValidity)
 }
 
+// cleanValidity 若无空值则丢弃有效性位图以节省内存。
 func cleanValidity(validity *memory.Bitmap) {
 	if validity.ClearCount() == 0 {
 		// Drop the bitmap; it has no nulls.
@@ -114,6 +122,7 @@ func concatNumber[T Numeric](alloc *memory.Allocator, in []Array) (Array, error)
 	return NewNumber[T](values.Data(), validity), nil
 }
 
+// concatUTF8 拼接字符串数据并将偏移量重基准化为从零起始的连续布局。
 // concatUTF8 concatenates UTF8 arrays, normalizing offsets to be zero-based.
 func concatUTF8(alloc *memory.Allocator, in []Array) (Array, error) {
 	totalLen := getTotalLen(in)

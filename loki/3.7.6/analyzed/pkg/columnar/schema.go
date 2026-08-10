@@ -1,10 +1,14 @@
 package columnar
 
+// schema 提供 RecordBatch 列名描述的占位实现：
+// 维护列列表与名称到索引的映射，供 expr 包等后续扩展使用。
+
 import "fmt"
 
 // TODO(rfratto): This is a placeholder for a more fleshed out schema
 // implementation. It's added to unblock the implementation of pkg/expr.
 
+// Column 仅含列名字段，描述 RecordBatch 中的一列。
 // A Column describes a single column in a [RecordBatch].
 type Column struct {
 	Name string // Name of the column.
@@ -16,6 +20,7 @@ type Schema struct {
 	columnIndices map[string]int
 }
 
+// NewSchema 校验列名唯一性，重复名称时 panic。
 // NewSchema creates a new schema from a list of columns. Column names must be
 // unique. If column names are not unique, NewSchema panics.
 func NewSchema(columns []Column) *Schema {
@@ -41,6 +46,7 @@ func (s *Schema) Column(i int) Column { return s.columns[i] }
 
 // ColumnIndex returns the column with the given name, along with its index.
 // ColumnIndex returns the Column{}, -1 if the column doesn't exist.
+// ColumnIndex 按名称返回列定义与索引，未找到时返回 -1。
 func (s *Schema) ColumnIndex(name string) (Column, int) {
 	if idx, ok := s.columnIndices[name]; ok {
 		return s.columns[idx], idx

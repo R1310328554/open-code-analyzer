@@ -1,5 +1,8 @@
 package columnar
 
+// datum_number 实现 int64/uint64 数值类型的 Scalar、Array 与 Builder：
+// 通过泛型 Numeric 约束统一处理有符号与无符号 64 位整数。
+
 import (
 	"fmt"
 	"reflect"
@@ -12,6 +15,7 @@ import (
 type Numeric interface{ int64 | uint64 }
 
 // NumberScalar is a [Scalar] representing a [Numeric] value.
+// NumberScalar 表示单个数值标量，kind 字段缓存对应 Kind。
 type NumberScalar[T Numeric] struct {
 	Value T    // Value of the scalar.
 	Null  bool // True if the scalar is null.
@@ -49,6 +53,7 @@ func (s *NumberScalar[T]) isDatum()  {}
 func (s *NumberScalar[T]) isScalar() {}
 
 // Number is an [Array] of 64-bit unsigned [Numeric] values.
+// Number 是 64 位数值数组，values 切片与有效性位图并行存储。
 type Number[T Numeric] struct {
 	validity  memory.Bitmap // Empty when there's no nulls.
 	values    []T
@@ -58,6 +63,7 @@ type Number[T Numeric] struct {
 
 var _ Array = (*Number[int64])(nil)
 
+// NewNumber 从值切片与有效性位图构造数组，并通过反射确定 Kind。
 // NewNumber creates a new Number array from the given values and optional
 // validity bitmap.
 //
@@ -158,6 +164,7 @@ func (arr *Number[T]) isArray() {}
 
 // A NumberBuilder assists with constructing a [Number] array. A NumberBuilder
 // must be constructed by calling [NewNumberBuilder].
+// NumberBuilder 使用 memory.Buffer 累积数值，支持批量追加与 Grow。
 type NumberBuilder[T Numeric] struct {
 	alloc *memory.Allocator
 

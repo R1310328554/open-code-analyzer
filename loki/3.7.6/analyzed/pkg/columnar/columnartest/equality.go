@@ -1,5 +1,8 @@
 package columnartest
 
+// columnartest 相等性断言工具：
+// 在测试中比较 Datum、Scalar、Array 的类型、空值与逐元素值。
+
 import (
 	"testing"
 
@@ -8,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/columnar"
 )
 
+// RequireDatumsEqual 自动区分 Scalar 与 Array 并委托对应比较函数。
 // RequireDatumsEqual asserts that the provided datum matches the expected
 // datum, otherwise t fails.
 func RequireDatumsEqual(t testing.TB, expect, actual columnar.Datum) {
@@ -22,6 +26,7 @@ func RequireDatumsEqual(t testing.TB, expect, actual columnar.Datum) {
 	}
 }
 
+// RequireScalarsEqual 比较 Kind、空值标记，非空时比较完整标量值。
 // RequireScalarsEqual asserts that the provided scalar matches the expected
 // scalar, otherwise t fails.
 func RequireScalarsEqual(t testing.TB, expect, actual columnar.Scalar) {
@@ -39,6 +44,7 @@ func RequireScalarsEqual(t testing.TB, expect, actual columnar.Scalar) {
 	require.Equal(t, expect, actual)
 }
 
+// RequireArraysEqual 校验长度、空值数量与 Kind，再按类型逐元素比较。
 // RequireArraysEqual asserts that the provided array matches the expected
 // array, otherwise t fails.
 func RequireArraysEqual(t testing.TB, expect, actual columnar.Array) {
@@ -70,6 +76,7 @@ func requireNullArraysEqual(t testing.TB, left, right *columnar.Null) {
 
 // valueArray is a generic representation of an Array that supports a Get(int)
 // method to get a specific value at the given index.
+// valueArray 抽象带 Get 方法的数组，供泛型逐索引比较复用。
 type valueArray[T any] interface {
 	Len() int
 	IsNull(i int) bool

@@ -1,5 +1,8 @@
 package columnartest
 
+// columnartest 为 columnar 包提供测试辅助：
+// 从 Go 原生值快速构造各 Kind 的 Array，供单元测试断言使用。
+
 import (
 	"testing"
 
@@ -9,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/memory"
 )
 
+// Array 按指定 Kind 从可变参数 values 构造列式数组，nil 表示空元素。
 // Array returns an array value representing the given kind.
 //
 // Each value must either be nil (for a null value) or a Go type that can be
@@ -41,6 +45,7 @@ func Array(t testing.TB, kind columnar.Kind, alloc *memory.Allocator, values ...
 	}
 }
 
+// arrayNull 构建全 null 数组，要求每个 value 均为 nil。
 func arrayNull(t testing.TB, alloc *memory.Allocator, values ...any) *columnar.Null {
 	t.Helper()
 
@@ -55,6 +60,7 @@ func arrayNull(t testing.TB, alloc *memory.Allocator, values ...any) *columnar.N
 	return builder.Build()
 }
 
+// arrayBool 构建布尔数组，支持 nil 与 bool 值。
 func arrayBool(t testing.TB, alloc *memory.Allocator, values ...any) *columnar.Bool {
 	t.Helper()
 
@@ -74,6 +80,7 @@ func arrayBool(t testing.TB, alloc *memory.Allocator, values ...any) *columnar.B
 	return builder.Build()
 }
 
+// arrayNumber 构建 int64/uint64 数值数组，接受 int 或 T 类型值。
 func arrayNumber[T columnar.Numeric](t testing.TB, alloc *memory.Allocator, values ...any) *columnar.Number[T] {
 	t.Helper()
 
@@ -100,6 +107,7 @@ func arrayNumber[T columnar.Numeric](t testing.TB, alloc *memory.Allocator, valu
 	return builder.Build()
 }
 
+// arrayUTF8 构建 UTF-8 字符串数组，接受 string 或 []byte。
 func arrayUTF8(t testing.TB, alloc *memory.Allocator, values ...any) *columnar.UTF8 {
 	t.Helper()
 
