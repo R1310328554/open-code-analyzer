@@ -1,3 +1,4 @@
+// OpenAI 兼容中间件：将 Ollama API 响应转换为 OpenAI 格式。
 package middleware
 
 import (
@@ -17,25 +18,30 @@ import (
 	"github.com/ollama/ollama/openai"
 )
 
+// maxDecompressedBodySize 限制解压后请求体的最大字节数。
 // maxDecompressedBodySize limits the size of a decompressed request body
 const maxDecompressedBodySize = 20 << 20
 
+// BaseWriter 包装 gin ResponseWriter 并提供统一错误处理。
 type BaseWriter struct {
 	gin.ResponseWriter
 }
 
+// ChatWriter 将 api.ChatResponse 转为 OpenAI 聊天补全或 SSE 流。
 type ChatWriter struct {
 	stream         bool
 	streamOptions  *openai.StreamOptions
 	id             string
 	toolCallSent   bool
 	firstChunkSent bool
+	// createdAt 固定流式响应各 chunk 共用的 created 时间戳。
 	// createdAt pins the shared timestamp for every chunk in the stream,
 	// captured from the first response.
 	createdAt time.Time
 	BaseWriter
 }
 
+// CompleteWriter 将 api.GenerateResponse 转为 OpenAI 文本补全格式。
 type CompleteWriter struct {
 	stream        bool
 	streamOptions *openai.StreamOptions
@@ -43,21 +49,25 @@ type CompleteWriter struct {
 	BaseWriter
 }
 
+// ListWriter 将模型列表响应转为 OpenAI models 列表。
 type ListWriter struct {
 	BaseWriter
 }
 
+// RetrieveWriter 将 show 响应转为 OpenAI model 对象。
 type RetrieveWriter struct {
 	BaseWriter
 	model string
 }
 
+// EmbedWriter 将嵌入响应转为 OpenAI embeddings 格式。
 type EmbedWriter struct {
 	BaseWriter
 	model          string
 	encodingFormat string
 }
 
+// writeError 将 Ollama StatusError 编码为 OpenAI 错误 JSON。
 func (w *BaseWriter) writeError(data []byte) (int, error) {
 	var serr api.StatusError
 	if err := json.Unmarshal(data, &serr); err != nil {
@@ -74,6 +84,7 @@ func (w *BaseWriter) writeError(data []byte) (int, error) {
 	return len(data), nil
 }
 
+// writeResponse 解析 ChatResponse 并输出 SSE 或 JSON 聊天补全。
 func (w *ChatWriter) writeResponse(data []byte) (int, error) {
 	var chatResponse api.ChatResponse
 	err := json.Unmarshal(data, &chatResponse)
@@ -85,6 +96,7 @@ func (w *ChatWriter) writeResponse(data []byte) (int, error) {
 	if w.stream {
 		w.ResponseWriter.Header().Set("Content-Type", "text/event-stream")
 
+		// OpenAI 流式各 chunk 共用同一 created；从首块固定时间戳。
 		// OpenAI stamps one created value on every chunk in a stream; pin the
 		// timestamp from the first response (the server stamps each response).
 		if chatResponse.CreatedAt.IsZero() {
@@ -95,6 +107,7 @@ func (w *ChatWriter) writeResponse(data []byte) (int, error) {
 		}
 		chatResponse.CreatedAt = w.createdAt
 
+		// Done 且消息为空时为指标尾块，不输出空 content chunk。
 		// A Done response with an empty message is the metrics-only trailer.
 		// OpenAI goes straight from the last content chunk to the finish chunk,
 		// so don't emit an empty content chunk for it. If this is the stream's
@@ -321,6 +334,7 @@ func (w *EmbedWriter) Write(data []byte) (int, error) {
 	return w.writeResponse(data)
 }
 
+// ListMiddleware 拦截 /v1/models 列表响应并转为 OpenAI 格式。
 func ListMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		w := &ListWriter{
@@ -333,6 +347,7 @@ func ListMiddleware() gin.HandlerFunc {
 	}
 }
 
+// RetrieveMiddleware 拦截模型详情请求并转为 OpenAI model 对象。
 func RetrieveMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var b bytes.Buffer
@@ -354,6 +369,7 @@ func RetrieveMiddleware() gin.HandlerFunc {
 	}
 }
 
+// CompletionsMiddleware 将 OpenAI 补全请求转为 Ollama generate 并包装响应。
 func CompletionsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req openai.CompletionRequest
@@ -389,6 +405,7 @@ func CompletionsMiddleware() gin.HandlerFunc {
 	}
 }
 
+// EmbeddingsMiddleware 校验 encoding_format 并将 OpenAI 嵌入请求转发给 Ollama。
 func EmbeddingsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req openai.EmbedRequest
@@ -398,6 +415,7 @@ func EmbeddingsMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// 校验 encoding_format 仅允许 float 或 base64。
 		// Validate encoding_format parameter
 		if req.EncodingFormat != "" {
 			if !strings.EqualFold(req.EncodingFormat, "float") && !strings.EqualFold(req.EncodingFormat, "base64") {
@@ -440,6 +458,7 @@ func EmbeddingsMiddleware() gin.HandlerFunc {
 	}
 }
 
+// ChatMiddleware 将 OpenAI 聊天请求转为 Ollama chat 并包装流式/非流式响应。
 func ChatMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req openai.ChatCompletionRequest
@@ -482,6 +501,7 @@ func ChatMiddleware() gin.HandlerFunc {
 	}
 }
 
+// ResponsesWriter 将聊天响应转为 OpenAI Responses API SSE 或 JSON。
 type ResponsesWriter struct {
 	BaseWriter
 	converter  *openai.ResponsesStreamConverter
@@ -492,6 +512,7 @@ type ResponsesWriter struct {
 	request    openai.ResponsesRequest
 }
 
+// writeEvent 写入 SSE event/data 行并 flush。
 func (w *ResponsesWriter) writeEvent(eventType string, data any) error {
 	d, err := json.Marshal(data)
 	if err != nil {
@@ -541,6 +562,7 @@ func (w *ResponsesWriter) Write(data []byte) (int, error) {
 	return w.writeResponse(data)
 }
 
+// ResponsesMiddleware 处理 OpenAI Responses API（含 zstd 解压）。
 func ResponsesMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.GetHeader("Content-Encoding") == "zstd" {
@@ -566,6 +588,7 @@ func ResponsesMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// 读取客户端是否请求流式（默认 false）。
 		// Check if client requested streaming (defaults to false)
 		streamRequested := req.Stream != nil && *req.Stream
 
@@ -605,6 +628,7 @@ func ResponsesMiddleware() gin.HandlerFunc {
 	}
 }
 
+// TranscriptionWriter 累积流式聊天内容并输出转录结果。
 // TranscriptionWriter collects streamed chat responses and outputs a transcription response.
 type TranscriptionWriter struct {
 	BaseWriter
@@ -647,10 +671,12 @@ func (w *TranscriptionWriter) Write(data []byte) (int, error) {
 	return len(data), nil
 }
 
+// TranscriptionMiddleware 处理 /v1/audio/transcriptions 多部分音频转录。
 // TranscriptionMiddleware handles /v1/audio/transcriptions requests.
 // It accepts multipart/form-data with an audio file and converts it to a chat request.
 func TranscriptionMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 解析 multipart 表单（上限 25MB）。
 		// Parse multipart form (limit 25MB).
 		if err := c.Request.ParseMultipartForm(25 << 20); err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, openai.NewError(http.StatusBadRequest, "failed to parse multipart form: "+err.Error()))

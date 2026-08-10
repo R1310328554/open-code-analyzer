@@ -1,3 +1,4 @@
+// LFM2 解析器：可选 thinking 与 Python 风格工具调用。
 package parsers
 
 import (
@@ -11,10 +12,12 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// LFM2ParserState 表示 LFM2 流式解析阶段。
 type LFM2ParserState int
 
 const (
-	// LFM2LookingForThinking is the initial state when thinking is enabled.
+	// LFM2LookingForThinking 启用 thinking 时等待 <think> 或直答。
+// LFM2LookingForThinking is the initial state when thinking is enabled.
 	// LFM2 models emit an explicit <think> tag only when they reason; a direct
 	// answer has no tag at all. This state waits to see which one the output
 	// begins with before committing to thinking or content.
@@ -31,6 +34,7 @@ const (
 	lfm2ToolCallEndTag   = "<|tool_call_end|>"
 )
 
+// LFM2Parser 解析 LFM2 思考与 Kimi 风格工具标签。
 type LFM2Parser struct {
 	state                    LFM2ParserState
 	buffer                   strings.Builder
@@ -59,6 +63,7 @@ func (p *LFM2Parser) PreservedTokens() []string {
 	}
 }
 
+// setInitialState 根据能力与 think 偏好决定初始状态。
 func (p *LFM2Parser) setInitialState(lastMessage *api.Message, thinkValue *api.ThinkValue) {
 	prefill := lastMessage != nil && lastMessage.Role == "assistant"
 
@@ -81,6 +86,7 @@ func (p *LFM2Parser) setInitialState(lastMessage *api.Message, thinkValue *api.T
 	p.state = LFM2LookingForThinking
 }
 
+// Init 构建工具名集合并设置初始状态。
 func (p *LFM2Parser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.toolNames = make(map[string]struct{}, len(tools))
 	p.callIndex = 0
@@ -114,6 +120,7 @@ func (lfm2EventThinkingContent) isLFM2Event() {}
 func (lfm2EventContent) isLFM2Event()         {}
 func (lfm2EventToolCall) isLFM2Event()        {}
 
+// Add 流式解析；done 时尝试 bare Python 工具回退。
 func (p *LFM2Parser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 
@@ -191,6 +198,7 @@ func (p *LFM2Parser) parseEvents() []lfm2Event {
 	return all
 }
 
+// eat 状态机解析 thinking/content/tool_call 标签。
 func (p *LFM2Parser) eat() ([]lfm2Event, bool) {
 	var events []lfm2Event
 	bufStr := p.buffer.String()
@@ -359,6 +367,7 @@ func (p *LFM2Parser) eat() ([]lfm2Event, bool) {
 	return events, false
 }
 
+// parseToolCallsContent 解析一条或多条 Python 风格工具调用。
 // parseToolCallsContent parses one or more Python-style tool calls.
 // Example: [func1(arg='v'), func2(x=1)]
 func (p *LFM2Parser) parseToolCallsContent(content string) ([]api.ToolCall, error) {
@@ -372,6 +381,7 @@ func (p *LFM2Parser) parseToolCallsContent(content string) ([]api.ToolCall, erro
 	return p.parsePythonStyleToolCalls(content)
 }
 
+// parsePythonStyleToolCalls 解析 func(arg='v') 或 [f1(),f2()] 格式。
 // parsePythonStyleToolCalls parses one or more Python-style tool calls
 // Examples: [bash(command='ls'),bash(command='pwd')] or bash(command='ls')
 func (p *LFM2Parser) parsePythonStyleToolCalls(content string) ([]api.ToolCall, error) {
@@ -443,6 +453,7 @@ func (p *LFM2Parser) parsePythonStyleToolCalls(content string) ([]api.ToolCall, 
 	return toolCalls, nil
 }
 
+// findMatchingParen 查找与 openIdx 匹配的右括号（跳过引号内括号）。
 // findMatchingParen finds the index of the closing parenthesis matching the one at openIdx
 // Returns -1 if not found. Handles nested parentheses and quoted strings.
 func findMatchingParen(s string, openIdx int) int {
@@ -485,6 +496,7 @@ func (p *LFM2Parser) parseToolCallContent(content string) (api.ToolCall, error) 
 	return calls[0], nil
 }
 
+// parsePythonArgs 解析 Python 关键字参数 key='value'。
 // parsePythonArgs parses Python-style keyword arguments: key='value', key2="value2"
 func parsePythonArgs(argsStr string, args *api.ToolCallFunctionArguments) error {
 	i := 0
@@ -652,6 +664,7 @@ func parsePythonLiteral(token string) (any, error) {
 	return token, nil
 }
 
+// pythonLiteralToJSON 将 Python 字面量语法转为 JSON 字符串。
 func pythonLiteralToJSON(s string) (string, error) {
 	var out strings.Builder
 	out.Grow(len(s) + len(s)/8)

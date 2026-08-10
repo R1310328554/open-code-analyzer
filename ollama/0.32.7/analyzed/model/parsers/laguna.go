@@ -1,3 +1,4 @@
+// Laguna 解析器：primed thinking、XML/JSON 工具与 user 别名块。
 package parsers
 
 import (
@@ -23,6 +24,7 @@ const (
 	lagunaArgValueCloseTag = "</arg_value>"
 )
 
+// lagunaParserState 表示 Laguna 解析阶段。
 type lagunaParserState int
 
 const (
@@ -31,6 +33,7 @@ const (
 	lagunaParserStateTool
 )
 
+// LagunaParser 解析 Laguna 推理与工具输出。
 type LagunaParser struct {
 	state                 lagunaParserState
 	buffer                strings.Builder
@@ -65,6 +68,7 @@ func (p *LagunaParser) PreservedTokens() []string {
 	}
 }
 
+// Init 根据 prompt  priming 与 assistant 预填充设置初始状态。
 func (p *LagunaParser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.tools = tools
 	p.callIndex = 0
@@ -94,9 +98,11 @@ func (p *LagunaParser) Init(tools []api.Tool, lastMessage *api.Message, thinkVal
 	return tools
 }
 
+// LagunaV8Parser 适配 v8 渲染器（不延续最后一条 assistant）。
 // LagunaV8Parser matches the v8 renderer, which closes any assistant history
 // turn and emits a fresh assistant generation prompt instead of continuing the
 // final assistant message in place.
+// LagunaV8Parser 嵌入 LagunaParser 并覆盖 Init。
 type LagunaV8Parser struct {
 	LagunaParser
 }
@@ -105,6 +111,7 @@ func (p *LagunaV8Parser) Init(tools []api.Tool, _ *api.Message, thinkValue *api.
 	return p.LagunaParser.Init(tools, nil, thinkValue)
 }
 
+// Add 按 thinking/content/tool 状态循环消费缓冲。
 func (p *LagunaParser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 	var contentSB, thinkingSB strings.Builder
@@ -143,6 +150,7 @@ func (p *LagunaParser) Add(s string, done bool) (content string, thinking string
 	return contentSB.String(), thinkingSB.String(), calls, nil
 }
 
+// consumeThinking 收集 reasoning 直至关闭标签或 tool_call。
 func (p *LagunaParser) consumeThinking(done bool) (bool, string) {
 	acc := p.buffer.String()
 	if p.allowLeadingThinkOpen {
@@ -203,6 +211,7 @@ func (p *LagunaParser) consumeThinking(done bool) (bool, string) {
 	return false, ""
 }
 
+// consumeContent 收集正文并检测 tool/user/JSON 工具别名。
 func (p *LagunaParser) consumeContent(done bool) (bool, string, []api.ToolCall, error) {
 	if p.atContentStart {
 		// Drop the leading whitespace the model emits before content (its trained
@@ -389,6 +398,7 @@ func (p *LagunaParser) parseToolAlias(raw string) (api.ToolCall, bool) {
 	return call, true
 }
 
+// lagunaResolveToolName 解析工具名及 read_file 等别名。
 func lagunaResolveToolName(name string, tools []api.Tool) (string, bool) {
 	for i := range tools {
 		if tools[i].Function.Name == name {
@@ -457,6 +467,7 @@ func lagunaToolCallName(raw string) (string, bool) {
 	return name, name != ""
 }
 
+// consumeTool 读取 <tool_call>...</tool_call> 块并解析。
 func (p *LagunaParser) consumeTool(done bool) (bool, api.ToolCall, error) {
 	acc := p.buffer.String()
 	if idx := strings.Index(acc, lagunaToolCallCloseTag); idx != -1 {
@@ -489,6 +500,7 @@ func (p *LagunaParser) consumeTool(done bool) (bool, api.ToolCall, error) {
 
 var lagunaArgRE = regexp.MustCompile(`(?s)<arg_key>(.*?)</arg_key>\s*<arg_value>(.*?)</arg_value>`)
 
+// parseLagunaToolCall 支持 JSON 或 arg_key/arg_value XML 两种格式。
 func parseLagunaToolCall(raw string, tools []api.Tool) (api.ToolCall, error) {
 	raw = cleanLagunaToolCallRaw(raw)
 	if strings.HasPrefix(raw, "{") {

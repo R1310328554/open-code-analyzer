@@ -1,3 +1,4 @@
+// Glimmer 解析器：Harmony 风格头部与 ATEM XML 工具调用。
 package parsers
 
 import (
@@ -24,6 +25,7 @@ const (
 	glimmerATEMParamClose  = "</atem:parameter>"
 )
 
+// glimmerParserState 表示 Glimmer 消息解析阶段。
 type glimmerParserState int
 
 const (
@@ -33,6 +35,7 @@ const (
 	glimmerParserTool
 )
 
+// GlimmerParser 解析 Glimmer <|start|>assistant 消息格式。
 type GlimmerParser struct {
 	state        glimmerParserState
 	buffer       strings.Builder
@@ -41,6 +44,7 @@ type GlimmerParser struct {
 	callIndex    int
 	emitThinking bool
 
+	// contentStreamed 记录当前消息是否已流出正文（影响工具回退）。
 	// contentStreamed records whether any of the current message's body has
 	// already been emitted as content. The fumbled-recipient tool-call
 	// fallback only applies while nothing has streamed, so a message either
@@ -55,6 +59,7 @@ func (p *GlimmerParser) PreservedTokens() []string {
 	return []string{glimmerStartTag, glimmerMessageTag, glimmerEndMessageTag, glimmerEndTurnTag}
 }
 
+// Init 重置解析器并构建工具名映射。
 func (p *GlimmerParser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.state = glimmerParserHeader
 	p.buffer.Reset()
@@ -66,6 +71,7 @@ func (p *GlimmerParser) Init(tools []api.Tool, lastMessage *api.Message, thinkVa
 	return tools
 }
 
+// Add 流式解析 header/content/thinking/tool 消息体。
 func (p *GlimmerParser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 	var contentSB, thinkingSB strings.Builder
@@ -115,6 +121,7 @@ func (p *GlimmerParser) Add(s string, done bool) (content string, thinking strin
 	return contentSB.String(), thinkingSB.String(), calls, nil
 }
 
+// consumeHeader 解析 assistant 头部与 recipient 并切换状态。
 func (p *GlimmerParser) consumeHeader(done bool) (progress bool, fallback string) {
 	acc := p.buffer.String()
 	if strings.HasPrefix(acc, glimmerAssistantHeaderPrefix) {
@@ -142,6 +149,7 @@ func (p *GlimmerParser) consumeHeader(done bool) (progress bool, fallback string
 	return true, ""
 }
 
+// setStateForRecipient 按 recipient（self/工具/user）选择收集模式。
 func (p *GlimmerParser) setStateForRecipient() {
 	_, isTool := glimmerResolveToolName(p.tools, p.recipient)
 	switch {
@@ -154,6 +162,7 @@ func (p *GlimmerParser) setStateForRecipient() {
 	}
 }
 
+// consumeBody 读取消息正文直至 eom/eot 或隐式下一头部。
 func (p *GlimmerParser) consumeBody(done bool) (progress bool, body string, complete bool) {
 	acc := p.buffer.String()
 	hold := p.state == glimmerParserTool || p.holdContent(acc)
@@ -322,6 +331,7 @@ func glimmerBodyTerminator(s string) (int, int) {
 	return idx, markerLen
 }
 
+// holdContent 判断是否应暂缓流出可能误放的 ATEM 工具 XML。
 // holdContent reports whether the content accumulated so far may be a fumbled
 // tool call: a message that opens with the ATEM wrapper despite a non-tool
 // recipient (the model sometimes omits the recipient, addresses the namespace
@@ -337,6 +347,7 @@ func (p *GlimmerParser) holdContent(acc string) bool {
 	return strings.HasPrefix(glimmerATEMCallsOpen, trimmed) || strings.HasPrefix(trimmed, glimmerATEMCallsOpen)
 }
 
+// contentToolCallFallback 从正文位置的完整 ATEM 块恢复工具调用。
 // contentToolCallFallback recovers a tool call from a content-position message
 // whose complete body is solely a well-formed ATEM block invoking a declared
 // tool. The recipient header is authoritative when it names a tool; this
@@ -410,6 +421,7 @@ func (p *GlimmerParser) parseToolCall(body string) (api.ToolCall, error) {
 	return p.newToolCall(recipient, args), nil
 }
 
+// glimmerResolveToolName 将 recipient/invoke 名解析为已声明工具名。
 // glimmerResolveToolName resolves a recipient or ATEM invoke name to a declared
 // tool name. Exact matches win. The chat template derives a namespace from
 // the first dot-component of each declared tool name and advertises
@@ -447,6 +459,7 @@ func glimmerToolsByName(tools []api.Tool) map[string]api.Tool {
 	return byName
 }
 
+// parseGlimmerATEM 解析 ATEM function_calls/invoke/parameter XML 块。
 func parseGlimmerATEM(body string, tool api.Tool) (string, api.ToolCallFunctionArguments, error) {
 	body = strings.TrimSpace(body)
 	if !strings.HasPrefix(body, glimmerATEMCallsOpen) || !strings.HasSuffix(body, glimmerATEMCallsClose) {

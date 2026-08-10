@@ -1,3 +1,4 @@
+// ML 后端抽象：Backend/Context/Tensor 接口与 ggml 注册。
 package ml
 
 import (
@@ -13,6 +14,7 @@ import (
 	"github.com/ollama/ollama/fs"
 )
 
+// Backend 表示可加载模型并执行推理的 ML 后端。
 type Backend interface {
 	// Close frees all memory associated with this backend
 	Close()
@@ -31,6 +33,7 @@ type Backend interface {
 	BackendDevices() []DeviceInfo
 }
 
+// BackendCacheConfig 由需定制 KV cache 输出的后端实现。
 // BackendCacheConfig should be implemented by backends that need special output
 // from the cache to meet specific requirements. It is frequently implemented in
 // conjunction with ScaledDotProductAttention.
@@ -40,6 +43,7 @@ type BackendCacheConfig interface {
 
 // CacheConfig controls optimizations (mostly backend-specific) that may transform
 // the output the cache to work better with specific kernels.
+// CacheConfig 控制 cache 填充、V 置换与 mask dtype 等优化。
 type CacheConfig struct {
 	// CachePadding specifies the multiple for the number of tokens of cache history
 	// that will be returned from cache Get for k, v and mask. The capacity of the
@@ -57,6 +61,7 @@ type CacheConfig struct {
 }
 
 // BackendParams controls how the backend loads and executes models
+// BackendParams 控制后端加载与执行参数（内存、线程、GPU 层、FA）。
 type BackendParams struct {
 	// AllocMemory causes the backend to allocate memory for the model. If
 	// false, this is only being used for discovering the required amount of
@@ -75,6 +80,7 @@ type BackendParams struct {
 
 var backends = make(map[string]func(string, BackendParams) (Backend, error))
 
+// RegisterBackend 注册命名后端工厂（重复注册 panic）。
 func RegisterBackend(name string, f func(string, BackendParams) (Backend, error)) {
 	if _, ok := backends[name]; ok {
 		panic("backend: backend already registered")
@@ -83,6 +89,7 @@ func RegisterBackend(name string, f func(string, BackendParams) (Backend, error)
 	backends[name] = f
 }
 
+// NewBackend 创建 ggml 后端实例。
 func NewBackend(modelPath string, params BackendParams) (Backend, error) {
 	if backend, ok := backends["ggml"]; ok {
 		return backend(modelPath, params)
@@ -91,6 +98,7 @@ func NewBackend(modelPath string, params BackendParams) (Backend, error) {
 	return nil, fmt.Errorf("unsupported backend")
 }
 
+// Context 表示计算图上下文，用于创建张量并调度前向/计算。
 type Context interface {
 	Empty(dtype DType, shape ...int) Tensor
 	Zeros(dtype DType, shape ...int) Tensor
@@ -127,6 +135,7 @@ type Context interface {
 	Layer(int) Context
 }
 
+// Tensor 表示可参与算子链的张量视图。
 type Tensor interface {
 	Dim(n int) int
 	Stride(n int) int
@@ -245,6 +254,7 @@ type Tensor interface {
 	Interpolate(ctx Context, dims [4]int, samplingMode SamplingMode) Tensor
 }
 
+// ScaledDotProductAttention 提供融合缩放点积注意力算子。
 // ScaledDotProductAttention implements a fused attention
 // operation equivalent to following code on a tensor named
 // query:
@@ -267,6 +277,7 @@ type Tensor interface {
 // return kqv.Permute(ctx, 0, 2, 1, 3).Contiguous(ctx)
 //
 // cacheConfigApplied indicates whether the optimizations requested through CacheConfig have been performed
+// ScaledDotProductAttention 接口封装 SDPA 内核调用。
 type ScaledDotProductAttention interface {
 	ScaledDotProductAttention(ctx Context, key, value, mask, sinks Tensor, vmla Tensor, scale float64, cacheConfigApplied bool) Tensor
 }
@@ -278,6 +289,7 @@ type number interface {
 		~complex64 | ~complex128
 }
 
+// mul 计算可变数量标量的乘积。
 func mul[T number](s ...T) T {
 	p := T(1)
 	for _, v := range s {
@@ -287,8 +299,10 @@ func mul[T number](s ...T) T {
 	return p
 }
 
+// DumpOptions 配置张量调试输出的选项函数。
 type DumpOptions func(*dumpOptions)
 
+// DumpWithPrecision 设置浮点打印的小数位数。
 // DumpWithPrecision sets the number of decimal places to print. Applies to float32 and float64.
 func DumpWithPrecision(n int) DumpOptions {
 	return func(opts *dumpOptions) {
@@ -296,6 +310,7 @@ func DumpWithPrecision(n int) DumpOptions {
 	}
 }
 
+// DumpWithThreshold 设置全量打印的元素数阈值。
 // DumpWithThreshold sets the threshold for printing the entire tensor. If the number of elements
 // is less than or equal to this value, the entire tensor will be printed. Otherwise, only the
 // beginning and end of each dimension will be printed.
@@ -305,6 +320,7 @@ func DumpWithThreshold(n int) DumpOptions {
 	}
 }
 
+// DumpWithEdgeItems 设置各维首尾打印的元素个数。
 // DumpWithEdgeItems sets the number of elements to print at the beginning and end of each dimension.
 func DumpWithEdgeItems(n int) DumpOptions {
 	return func(opts *dumpOptions) {
@@ -316,6 +332,7 @@ type dumpOptions struct {
 	Precision, Threshold, EdgeItems int
 }
 
+// Dump 将张量格式化为可读字符串（支持大 tensor 截断）。
 func Dump(ctx Context, t Tensor, optsFuncs ...DumpOptions) string {
 	opts := dumpOptions{Precision: 4, Threshold: 1000, EdgeItems: 3}
 	for _, optsFunc := range optsFuncs {
@@ -346,6 +363,7 @@ func Dump(ctx Context, t Tensor, optsFuncs ...DumpOptions) string {
 	}
 }
 
+// dump 递归格式化多维张量，大维用省略号。
 func dump[S ~[]E, E number](ctx Context, t Tensor, items int, fn func(E) string) string {
 	if t.Bytes() == nil {
 		ctx.Forward(t).Compute(t)
@@ -399,6 +417,7 @@ func dump[S ~[]E, E number](ctx Context, t Tensor, items int, fn func(E) string)
 	return sb.String()
 }
 
+// DType 枚举张量元素数据类型。
 type DType int
 
 const (
@@ -411,6 +430,7 @@ const (
 	DTypeMXFP4
 )
 
+// SamplingMode 枚举插值采样模式。
 type SamplingMode int
 
 const (

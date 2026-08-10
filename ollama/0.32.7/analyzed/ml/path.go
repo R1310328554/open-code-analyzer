@@ -1,3 +1,4 @@
+// lib/ollama 路径解析：定位 bundled llama.cpp/MLX 运行时库。
 package ml
 
 import (
@@ -6,6 +7,7 @@ import (
 	"runtime"
 )
 
+// libOllamaPathSearch 描述 lib/ollama 搜索上下文。
 type libOllamaPathSearch struct {
 	executable string
 	workingDir string
@@ -13,6 +15,7 @@ type libOllamaPathSearch struct {
 	goarch     string
 }
 
+// LibOllamaPath 为 bundled llama.cpp/MLX 库根目录（含 cuda_v12 等子目录）。
 // LibOllamaPath is the root used to find bundled llama.cpp and MLX runtime
 // libraries. GPU-specific libraries live in backend subdirectories such as
 // cuda_v12, rocm_v7_2, vulkan, and mlx_cuda_v13.
@@ -38,6 +41,7 @@ var LibOllamaPath = func() string {
 	})
 }()
 
+// findLibOllamaPath 按候选路径顺序查找首个存在的 lib/ollama。
 func findLibOllamaPath(search libOllamaPathSearch) string {
 	candidates := libOllamaPathCandidates(search)
 	for _, path := range candidates {
@@ -52,6 +56,7 @@ func findLibOllamaPath(search libOllamaPathSearch) string {
 	return ""
 }
 
+// libOllamaPathCandidates 生成平台相关的 lib/ollama 候选路径。
 func libOllamaPathCandidates(search libOllamaPathSearch) []string {
 	goos := search.goos
 	if goos == "" {
@@ -79,6 +84,7 @@ func libOllamaPathCandidates(search libOllamaPathSearch) []string {
 		exeDir := filepath.Dir(search.executable)
 		switch goos {
 		case "darwin":
+			// 本地 dist 与标准安装将辅助库放在 lib/ollama 下。
 			// Local dist output and standard installs keep helpers under lib/ollama.
 			add(filepath.Join(exeDir, "lib", "ollama"))
 			add(filepath.Join(exeDir, "..", "lib", "ollama"))
@@ -103,6 +109,7 @@ func libOllamaPathCandidates(search libOllamaPathSearch) []string {
 	return candidates
 }
 
+// addLocalLibOllamaPaths 追加 build/dist 开发布局下的 lib/ollama 路径。
 func addLocalLibOllamaPaths(add func(string), base, goos, goarch string) {
 	if base == "" {
 		return
@@ -117,6 +124,7 @@ func addLocalLibOllamaPaths(add func(string), base, goos, goarch string) {
 	}
 }
 
+// libOllamaPathExists 判断路径存在且为目录。
 func libOllamaPathExists(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()

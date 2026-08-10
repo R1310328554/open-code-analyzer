@@ -1,3 +1,4 @@
+// DeepSeek3 解析器：思考、正文与 redacted 工具标签流式解析。
 package parsers
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// DeepSeek3ParserState 表示 DeepSeek3 解析状态。
 type DeepSeek3ParserState int
 
 const (
@@ -30,6 +32,7 @@ const (
 	deepseekToolOutputEndTag   = "<｜tool▁output▁end｜>"
 )
 
+// DeepSeek3Parser 解析 DeepSeek3 模型流式输出。
 type DeepSeek3Parser struct {
 	state              DeepSeek3ParserState
 	buffer             strings.Builder
@@ -41,6 +44,7 @@ func (p *DeepSeek3Parser) HasToolSupport() bool {
 	return true
 }
 
+// HasThinkingSupport 返回模型是否支持思考（可配置）。
 func (p *DeepSeek3Parser) HasThinkingSupport() bool {
 	return p.hasThinkingSupport
 }
@@ -58,6 +62,7 @@ func (p *DeepSeek3Parser) PreservedTokens() []string {
 	}
 }
 
+// setInitialState 结合能力与 think 偏好决定初始收集状态。
 func (p *DeepSeek3Parser) setInitialState(lastMessage *api.Message, tools []api.Tool, thinkValue *api.ThinkValue) {
 	prefill := lastMessage != nil && lastMessage.Role == "assistant"
 
@@ -103,6 +108,7 @@ func (deepseekEventThinkingContent) isDeepSeekEvent() {}
 func (deepseekEventContent) isDeepSeekEvent()         {}
 func (deepseekEventToolCall) isDeepSeekEvent()        {}
 
+// Add 流式解析 DeepSeek3 输出为 content/thinking/tools。
 func (p *DeepSeek3Parser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 	events := p.parseEvents()
@@ -144,6 +150,7 @@ func (p *DeepSeek3Parser) parseEvents() []deepseekEvent {
 	return all
 }
 
+// eat 按状态机解析缓冲，处理部分标签与空白保留。
 func (p *DeepSeek3Parser) eat() ([]deepseekEvent, bool) {
 	var events []deepseekEvent
 	bufStr := p.buffer.String()
@@ -288,6 +295,7 @@ func (p *DeepSeek3Parser) eat() ([]deepseekEvent, bool) {
 	return events, false
 }
 
+// parseToolCallContent 解析 tool_name<sep>{json args} 格式。
 func (p *DeepSeek3Parser) parseToolCallContent(content string) (api.ToolCall, error) {
 	// Expected format: tool_name<｜tool▁sep｜>{args}
 	parts := strings.SplitN(content, deepseekToolSepTag, 2)

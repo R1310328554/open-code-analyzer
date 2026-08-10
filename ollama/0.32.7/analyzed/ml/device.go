@@ -1,3 +1,4 @@
+// 设备与内存：GPU 层分配、DeviceInfo 与 flash-attention 策略。
 package ml
 
 import (
@@ -22,7 +23,9 @@ import (
 	"github.com/ollama/ollama/logutil"
 )
 
+// GPULayers 表示单块 GPU 上卸载的层索引集合。
 // GPULayers is a set of layers to be allocated on a single GPU
+// GPULayers 绑定 DeviceID 与层列表。
 type GPULayers struct {
 	DeviceID
 
@@ -30,6 +33,7 @@ type GPULayers struct {
 	Layers []int
 }
 
+// FirstLayer 返回该 GPU 上最小层号，空列表时返回 MaxInt。
 // FirstLayer returns the smallest layer index scheduled on this GPU, or MaxInt when empty.
 func (g GPULayers) FirstLayer() int {
 	if len(g.Layers) == 0 {
@@ -69,7 +73,9 @@ func (g GPULayers) String() string {
 	}
 }
 
+// GPULayersList 表示多块 GPU 的层分配列表。
 // GPULayersList is a set of layer allocations across multiple GPUs
+// GPULayersList 多块 GPU 层分配切片。
 type GPULayersList []GPULayers
 
 func (l GPULayersList) Len() int      { return len(l) }
@@ -91,6 +97,7 @@ func (l GPULayersList) String() string {
 	}
 }
 
+// Sum 返回所有 GPU 分配的层总数。
 // Sum is the total number of layers assigned across all GPUs
 func (l GPULayersList) Sum() int {
 	var sum int
@@ -104,6 +111,7 @@ func (l GPULayersList) Sum() int {
 
 var h maphash.Hash
 
+// Hash 生成层分配方案的唯一标识。
 // Hash is an identifier of this layer assignment
 func (l GPULayersList) Hash() uint64 {
 	h.Reset()
@@ -119,8 +127,10 @@ func (l GPULayersList) Hash() uint64 {
 	return h.Sum64()
 }
 
+// ErrNoMem 表示内存不足，携带尝试的分配明细。
 // ErrNoMem is returned when panicing due to insufficient memory. It includes
 // the attempted memory allocation.
+// ErrNoMem 包装 BackendMemory 分配失败信息。
 type ErrNoMem struct {
 	BackendMemory
 }
@@ -129,7 +139,9 @@ func (e ErrNoMem) Error() string {
 	return fmt.Sprintf("insufficient memory - required allocations: %+v", e.BackendMemory)
 }
 
+// DeviceID 在指定 Library 内唯一标识设备。
 // Minimal unique device identification
+// DeviceID 保存设备 ID 与后端库名。
 type DeviceID struct {
 	// ID is an identifier for the device for matching with system
 	// management libraries.  The ID is only unique for other devices
@@ -142,8 +154,10 @@ type DeviceID struct {
 	Library string `json:"backend,omitempty"`
 }
 
+// DeviceMemory 按设备分解权重、KV cache 与计算图内存。
 // DeviceMemory provides a breakdown of the memory needed
 // per device, such as a CPU or GPU.
+// DeviceMemory 单设备内存需求明细。
 type DeviceMemory struct {
 	DeviceID
 
@@ -171,6 +185,7 @@ func sumMemory(mem []uint64) uint64 {
 	return sum
 }
 
+// Size 返回该设备所需内存总和。
 // Size returns the total size of the memory required by this device
 func (m DeviceMemory) Size() uint64 {
 	return sumMemory(m.Weights) + sumMemory(m.Cache) + m.Graph
@@ -201,11 +216,13 @@ func (m DeviceMemory) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
+// BackendMemory 汇总 CPU/GPU 各设备加载模型所需内存。
 // BackendMemory provides the amount of memory required to load the model
 // per device based on the BackendParams. In some cases, not all required
 // allocations will be known at this point. However, the size of the most recent
 // allocation is guaranteed to be provided so that if it failed, the caller can
 // accommodate that to make forward progress.
+// BackendMemory 模型加载内存分配汇总。
 type BackendMemory struct {
 	// InputWeights are always located on the CPU and cannot be moved
 	InputWeights uint64
@@ -232,6 +249,7 @@ func (m BackendMemory) LogValue() slog.Value {
 	return slog.GroupValue(attrs...)
 }
 
+// Log 以结构化日志输出各组件内存占用摘要。
 // Log prints a high level summary of the memory
 func (m BackendMemory) Log(level slog.Level) {
 	var total uint64
@@ -274,6 +292,7 @@ func (m BackendMemory) Log(level slog.Level) {
 	}
 }
 
+// DeviceInfo 描述推理设备的属性与可用显存。
 type DeviceInfo struct {
 	DeviceID
 
@@ -330,6 +349,7 @@ type DeviceInfo struct {
 	RunnerEnvOverrides map[string]string `json:"-"`
 }
 
+// SystemInfo 描述系统内存与 swap 可用量。
 type SystemInfo struct {
 	// TotalMemory is the total amount of system memory
 	TotalMemory uint64 `json:"total_memory,omitempty"`
@@ -353,6 +373,7 @@ func (d DeviceInfo) Driver() string {
 	return strconv.Itoa(d.DriverMajor) + "." + strconv.Itoa(d.DriverMinor)
 }
 
+// MinimumMemory 返回设备应预留的 overhead 显存。
 // MinimumMemory reports the amount of memory that should be set aside
 // on the device for overhead (e.g. VRAM consumed by context structures independent
 // of model allocations)
@@ -363,8 +384,10 @@ func (d DeviceInfo) MinimumMemory() uint64 {
 	return 457 * format.MebiByte
 }
 
+// ByFreeMemory 按空闲显存排序（集显优先）。
 // Sort by Free Space.
 // iGPUs are reported first, thus Reverse() yields the largest discrete GPU first
+// ByFreeMemory 空闲显存排序器。
 type ByFreeMemory []DeviceInfo
 
 func (a ByFreeMemory) Len() int      { return len(a) }
@@ -378,7 +401,9 @@ func (a ByFreeMemory) Less(i, j int) bool {
 	return a[i].FreeMemory < a[j].FreeMemory
 }
 
+// ByPerformance 按集显/独显分组设备。
 // ByPerformance groups devices by similar speed
+// ByPerformance 将设备按 integrated 标志分组。
 func ByPerformance(l []DeviceInfo) [][]DeviceInfo {
 	resp := [][]DeviceInfo{}
 	scores := []bool{}
@@ -400,6 +425,7 @@ func ByPerformance(l []DeviceInfo) [][]DeviceInfo {
 	return resp
 }
 
+// ByLibrary 按后端库（CUDA/ROCm 等）分组设备。
 func ByLibrary(l []DeviceInfo) [][]DeviceInfo {
 	resp := [][]DeviceInfo{}
 	libs := []string{}
@@ -421,6 +447,7 @@ func ByLibrary(l []DeviceInfo) [][]DeviceInfo {
 	return resp
 }
 
+// LibraryPaths 合并 LibOllamaPath 与各 GPU 库搜索路径。
 func LibraryPaths(l []DeviceInfo) []string {
 	gpuLibs := []string{LibOllamaPath}
 	for _, gpu := range l {
@@ -440,6 +467,7 @@ func LibraryPaths(l []DeviceInfo) []string {
 	return gpuLibs
 }
 
+// DeviceComparison 表示两设备间的同一性判定结果。
 type DeviceComparison int
 
 const (
@@ -497,6 +525,7 @@ func likelyVulkanDuplicate(a, b DeviceInfo) bool {
 	return SimilarDeviceMemory(vulkan.TotalMemory, other.TotalMemory)
 }
 
+// SimilarDeviceDescription 判断两后端描述是否指向同一物理 GPU。
 // SimilarDeviceDescription reports whether two backend device descriptions are
 // close enough to identify the same physical GPU across different libraries.
 func SimilarDeviceDescription(a, b string) bool {
@@ -566,6 +595,7 @@ func (a DeviceInfo) IsBetter(b DeviceInfo) bool {
 	return cmp[0] == bLibSplit[1]
 }
 
+// FlashAttentionSupported 判断所选设备是否均支持 flash attention。
 // FlashAttentionSupported reports whether flash attention can be used across
 // all selected devices.
 func FlashAttentionSupported(l []DeviceInfo) bool {
@@ -599,6 +629,7 @@ func cudaFlashAttentionSupported(gpu DeviceInfo) bool {
 	return gpu.DriverMajor >= 7
 }
 
+// FlashAttentionType 对齐 llama flash-attn 枚举。
 type FlashAttentionType int32
 
 const (
@@ -625,9 +656,11 @@ func (f FlashAttentionType) String() string {
 	}
 }
 
+// GetDevicesEnv 为子进程生成可见设备环境变量与 per-device 覆盖。
 // Given the list of GPUs this instantiation is targeted for,
 // figure out the device environment variables and any recorded
 // per-device runner environment overrides.
+// GetDevicesEnv 组装 CUDA/ROCm/Vulkan 可见设备环境。
 func GetDevicesEnv(l []DeviceInfo) map[string]string {
 	if len(l) == 0 {
 		return nil
@@ -658,6 +691,7 @@ func allDevicesUseLibrary(l []DeviceInfo, library string) bool {
 	return true
 }
 
+// NeedsInitValidation 判断设备是否需深度初始化校验（ROCm/CUDA）。
 // NeedsInitValidation returns true if the device in question has the potential
 // to crash at inference time and requires deeper validation before we include
 // it in the supported devices list.
@@ -672,6 +706,7 @@ func (d DeviceInfo) AddInitValidation(env map[string]string) {
 	env["GGML_CUDA_INIT"] = "1" // force deep initialization to trigger crash on unsupported GPUs
 }
 
+// PreferredLibrary 判断本库是否优先于另一库（如 CUDA 优于 Vulkan）。
 // PreferredLibrary returns true if this library is preferred over the other input
 // library
 // Used to filter out Vulkan in favor of CUDA or ROCm
@@ -782,6 +817,7 @@ func numericVisibleDeviceList(value string) bool {
 	return found
 }
 
+// BaseRunner 表示本地 runner 子进程的基本生命周期接口。
 type BaseRunner interface {
 	// GetPort returns the localhost port number the runner is running on
 	GetPort() int
@@ -791,6 +827,7 @@ type BaseRunner interface {
 	HasExited() bool
 }
 
+// RunnerDiscovery 扩展 BaseRunner，可查询设备与空闲 VRAM。
 type RunnerDiscovery interface {
 	BaseRunner
 
@@ -800,6 +837,7 @@ type RunnerDiscovery interface {
 	GetDeviceInfos(ctx context.Context) []DeviceInfo
 }
 
+// FilteredRunnerDiscovery 返回 runner 实际使用的过滤后设备 ID。
 type FilteredRunnerDiscovery interface {
 	RunnerDiscovery
 
@@ -810,6 +848,7 @@ type FilteredRunnerDiscovery interface {
 	GetActiveDeviceIDs() []DeviceID
 }
 
+// GetDevicesFromRunner 轮询 runner /info 获取设备与空闲显存。
 func GetDevicesFromRunner(ctx context.Context, runner BaseRunner) ([]DeviceInfo, error) {
 	var moreDevices []DeviceInfo
 	port := runner.GetPort()

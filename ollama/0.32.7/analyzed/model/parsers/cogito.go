@@ -1,3 +1,4 @@
+// Cogito 解析器：思考块、工具调用与工具输出的流式标签解析。
 package parsers
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// CogitoParserState 表示 Cogito 流式解析状态机阶段。
 type CogitoParserState int
 
 const (
@@ -32,20 +34,24 @@ const (
 	cogitoToolOutputsEndTag   = "<｜tool▁outputs▁end｜>"
 )
 
+// CogitoParser 解析 Cogito 模型的 thinking/content/tool 标签输出。
 type CogitoParser struct {
 	state     CogitoParserState
 	buffer    strings.Builder
 	callIndex int
 }
 
+// HasToolSupport 返回 true（Cogito 支持工具）。
 func (p *CogitoParser) HasToolSupport() bool {
 	return true
 }
 
+// HasThinkingSupport 返回 true（Cogito 支持思考块）。
 func (p *CogitoParser) HasThinkingSupport() bool {
 	return true
 }
 
+// PreservedTokens 返回解析需保留的特殊 token 列表。
 func (p *CogitoParser) PreservedTokens() []string {
 	return []string{
 		cogitoThinkingCloseTag,
@@ -61,6 +67,7 @@ func (p *CogitoParser) PreservedTokens() []string {
 	}
 }
 
+// setInitialState 根据 think 偏好、预填充与工具决定初始状态。
 func (p *CogitoParser) setInitialState(lastMessage *api.Message, tools []api.Tool, thinkValue *api.ThinkValue) {
 	prefill := lastMessage != nil && lastMessage.Role == "assistant"
 
@@ -87,12 +94,14 @@ func (p *CogitoParser) setInitialState(lastMessage *api.Message, tools []api.Too
 	p.state = CogitoCollectingThinking
 }
 
+// Init 初始化解析器状态并返回工具列表。
 func (p *CogitoParser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.callIndex = 0
 	p.setInitialState(lastMessage, tools, thinkValue)
 	return tools
 }
 
+// cogitoEvent 标记 Cogito 解析事件类型。
 type cogitoEvent interface {
 	isCogitoEvent()
 }
@@ -113,6 +122,7 @@ func (cogitoEventThinkingContent) isCogitoEvent() {}
 func (cogitoEventContent) isCogitoEvent()         {}
 func (cogitoEventToolCall) isCogitoEvent()        {}
 
+// Add 追加流式片段并返回正文、思考与工具调用。
 func (p *CogitoParser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 	events := p.parseEvents()
@@ -139,6 +149,7 @@ func (p *CogitoParser) Add(s string, done bool) (content string, thinking string
 	return contentSb.String(), thinkingSb.String(), toolCalls, nil
 }
 
+// parseEvents 循环 eat 直至无更多可解析事件。
 func (p *CogitoParser) parseEvents() []cogitoEvent {
 	var all []cogitoEvent
 
@@ -154,6 +165,7 @@ func (p *CogitoParser) parseEvents() []cogitoEvent {
 	return all
 }
 
+// eat 按当前状态消费缓冲并可能触发状态转移。
 func (p *CogitoParser) eat() ([]cogitoEvent, bool) {
 	var events []cogitoEvent
 	bufStr := p.buffer.String()
@@ -306,6 +318,7 @@ func (p *CogitoParser) eat() ([]cogitoEvent, bool) {
 	return events, false
 }
 
+// parseToolCallContent 解析 function<sep>name\n```json\n{args} 格式工具调用。
 func (p *CogitoParser) parseToolCallContent(content string) (api.ToolCall, error) {
 	// Expected format: function<｜tool▁sep｜>tool_name\n```json\n{args}\n```
 	parts := strings.SplitN(content, cogitoToolSepTag, 2)

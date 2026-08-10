@@ -1,3 +1,4 @@
+// Gemma4 解析器：channel 思考、tool_call 与参数修复。
 package parsers
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// Gemma4ParserState 表示 Gemma4 流式解析阶段。
 type Gemma4ParserState int
 
 const (
@@ -32,6 +34,7 @@ const (
 
 var gemma4QuotedStringRe = regexp.MustCompile(`(?s)<\|"\|>(.*?)<\|"\|>`)
 
+// Gemma4Parser 解析 Gemma4 <|channel|> 与 tool_call 输出。
 type Gemma4Parser struct {
 	state                 Gemma4ParserState
 	buffer                strings.Builder
@@ -61,6 +64,7 @@ func (p *Gemma4Parser) PreservedTokens() []string {
 	}
 }
 
+// Init 根据 think 与预填充决定初始收集状态。
 func (p *Gemma4Parser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.tools = tools
 	p.callIndex = 0
@@ -112,6 +116,7 @@ func (gemma4EventThinkingContent) isGemma4Event() {}
 func (gemma4EventContent) isGemma4Event()         {}
 func (gemma4EventToolCall) isGemma4Event()        {}
 
+// Add 流式解析；thinking 禁用时丢弃 channel 内容。
 func (p *Gemma4Parser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 	events := p.parseEvents(done)
@@ -156,6 +161,7 @@ func (p *Gemma4Parser) parseEvents(done bool) []gemma4Event {
 	return all
 }
 
+// longestOverlap 计算缓冲后缀与多个标签前缀的最长重叠。
 // longestOverlap returns the longest overlap between the suffix of bufStr and
 // a prefix of any of the given tags.
 func longestOverlap(bufStr string, tags ...string) int {
@@ -168,6 +174,7 @@ func longestOverlap(bufStr string, tags ...string) int {
 	return maxOverlap
 }
 
+// eat 按状态解析标签、部分匹配与 tool_call 后噪声抑制。
 func (p *Gemma4Parser) eat(done bool) ([]gemma4Event, bool) {
 	var events []gemma4Event
 	bufStr := p.buffer.String()
@@ -388,6 +395,7 @@ func (p *Gemma4Parser) eat(done bool) ([]gemma4Event, bool) {
 	return events, false
 }
 
+// parseGemma4ToolCall 解析 call:NAME{key:value,...} 并转 JSON 参数。
 // parseGemma4ToolCall parses a tool call in Gemma 4 format:
 // call:NAME{key:value,key:value}
 func parseGemma4ToolCall(content string, tools []api.Tool) (api.ToolCall, error) {
@@ -426,6 +434,7 @@ func parseGemma4ToolCall(content string, tools []api.Tool) (api.ToolCall, error)
 	}, nil
 }
 
+// gemma4ArgsToJSON 将 Gemma4 自定义参数语法转为合法 JSON。
 // gemma4ArgsToJSON converts Gemma 4's custom argument format to valid JSON.
 func gemma4ArgsToJSON(s string) string {
 	var quotedStrings []string
@@ -497,6 +506,7 @@ func gemma4BareKeyEnd(s string, start int) int {
 	return i
 }
 
+// repairGemma4ToolCallArgs 严格解析失败后的最佳努力修复。
 // repairGemma4ToolCallArgs is a best-effort repair after strict parsing fails.
 // For example, if the model emits an unclosed gemma string as the last value,
 // we can repair it by closing it with the gemma string delimiter.

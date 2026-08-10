@@ -9,6 +9,8 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// Cohere 解析器：North/Command A 的思考、正文与 action 工具块。
+// CohereParser 解析 Cohere North/Command A 2026 流式输出。
 // CohereParser parses output from Cohere North / Command A 2026 models
 // (e.g. North-Mini-Code-1.0). The generation prompt ends with
 // <|START_THINKING|> (reasoning on) or <|START_THINKING|><|END_THINKING|>
@@ -16,12 +18,14 @@ import (
 // is enabled. After thinking, the model emits either
 // <|START_TEXT|>content<|END_TEXT|> or an <|START_ACTION|>[...]<|END_ACTION|>
 // tool call array, then <|END_OF_TURN_TOKEN|>.
+// CohereParser 状态机解析 thinking/text/action 标签。
 type CohereParser struct {
 	state     cohereParserState
 	buffer    strings.Builder
 	callIndex int
 }
 
+// cohereParserState 表示 Cohere 解析阶段。
 type cohereParserState int
 
 const (
@@ -63,6 +67,7 @@ func (p *CohereParser) PreservedTokens() []string {
 	}
 }
 
+// Init 根据 reasoning 默认与 assistant 预填充设置初始状态。
 func (p *CohereParser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.buffer.Reset()
 	p.callIndex = 0
@@ -83,6 +88,7 @@ func (p *CohereParser) Init(tools []api.Tool, lastMessage *api.Message, thinkVal
 	return tools
 }
 
+// Add 流式解析并累积 content/thinking/tool calls。
 func (p *CohereParser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 
@@ -105,6 +111,7 @@ func (p *CohereParser) Add(s string, done bool) (content string, thinking string
 	return contentSb.String(), thinkingSb.String(), calls, nil
 }
 
+// eat 消费当前状态可确定的内容；more 表示发生状态转移需重入。
 // eat consumes what it can from the buffer for the current state. It returns
 // more=true when a state transition happened and the remaining buffer should
 // be reprocessed.
@@ -211,11 +218,13 @@ func (p *CohereParser) eat(done bool) (content string, thinking string, calls []
 	return "", "", nil, false
 }
 
+// resetBuffer 重置内部缓冲为 s。
 func (p *CohereParser) resetBuffer(s string) {
 	p.buffer.Reset()
 	p.buffer.WriteString(s)
 }
 
+// maybePartialTag 判断 s 是否为待识别标签的真前缀。
 // maybePartialTag reports whether s is a proper prefix of one of the tags the
 // awaiting-block state recognizes — the only case worth waiting on for more
 // output before treating the buffer as content.
@@ -244,6 +253,7 @@ func (c cohereToolCall) toolCall() api.ToolCall {
 	}
 }
 
+// parseCohereActions 解析 action 块内 JSON 工具调用数组（含容错扫描）。
 // parseCohereActions parses the JSON array inside an action block:
 // [{"tool_call_id": "0", "tool_name": ..., "parameters": {...}}, ...]
 //
@@ -281,6 +291,7 @@ func parseCohereActions(payload string) []api.ToolCall {
 	return calls
 }
 
+// scanJSONObjects 扫描 s 中平衡的顶层 JSON 对象片段。
 // scanJSONObjects returns the balanced top-level {...} chunks of s, tracking
 // strings and escapes so braces inside values don't split objects.
 func scanJSONObjects(s string) []string {

@@ -1,3 +1,4 @@
+// FunctionGemma 解析器：<start_function_call>call:name{args} 工具格式。
 package parsers
 
 import (
@@ -8,6 +9,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// FunctionGemmaParserState 表示 FunctionGemma 解析阶段。
 type FunctionGemmaParserState int
 
 const (
@@ -20,7 +22,9 @@ const (
 	functionGemmaFunctionCallClose = "<end_function_call>"
 )
 
+// FunctionGemma 使用 <start_function_call>call:name{args}<end_function_call> 表示工具调用。
 // This format uses <start_function_call>call:name{args}<end_function_call> for tool calls.
+// FunctionGemmaParser 解析 FunctionGemma 工具与正文。
 type FunctionGemmaParser struct {
 	state     FunctionGemmaParserState
 	buffer    strings.Builder
@@ -38,6 +42,7 @@ func (p *FunctionGemmaParser) PreservedTokens() []string {
 	}
 }
 
+// Init 初始化解析器并保存工具列表。
 func (p *FunctionGemmaParser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.tools = tools
 	p.state = FunctionGemmaCollectingContent
@@ -60,6 +65,7 @@ type functionGemmaEventToolCall struct {
 func (FunctionGemmaEventContent) isFunctionGemmaEvent()  {}
 func (functionGemmaEventToolCall) isFunctionGemmaEvent() {}
 
+// Add 流式解析 FunctionGemma 输出。
 func (p *FunctionGemmaParser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 	events := p.parseEvents()
@@ -98,6 +104,7 @@ func (p *FunctionGemmaParser) parseEvents() []functionGemmaEvent {
 	return all
 }
 
+// emitWithPartialCheck 在可能的部分标签前提取可确定内容。
 // emitWithPartialCheck extracts unambiguous content before a potential partial tag
 func (p *FunctionGemmaParser) emitWithPartialCheck(bufStr, tag string) (unambiguous, ambiguous string) {
 	if overlapLen := overlap(bufStr, tag); overlapLen > 0 {
@@ -160,6 +167,7 @@ func (p *FunctionGemmaParser) eat() ([]functionGemmaEvent, bool) {
 // Matches call:function_name{args}
 var functionGemmaCallRegex = regexp.MustCompile(`call:([^{]+)\{(.*)\}`)
 
+// parseToolCall 用正则解析 call:name{args} 并构造 ToolCall。
 func (p *FunctionGemmaParser) parseToolCall(content string) (api.ToolCall, error) {
 	toolCall := api.ToolCall{}
 
@@ -178,6 +186,7 @@ func (p *FunctionGemmaParser) parseToolCall(content string) (api.ToolCall, error
 	return toolCall, nil
 }
 
+// parseArguments 解析 key:value 逗号分隔参数（支持嵌套）。
 // parseArguments parses the key:value,key:value format
 func (p *FunctionGemmaParser) parseArguments(argsStr string) api.ToolCallFunctionArguments {
 	args := api.NewToolCallFunctionArguments()
@@ -205,6 +214,7 @@ func (p *FunctionGemmaParser) parseArguments(argsStr string) api.ToolCallFunctio
 	return args
 }
 
+// splitArguments 按逗号分割参数，尊重嵌套与 <escape> 块。
 // splitArguments splits arguments by comma, respecting nested structures
 func (p *FunctionGemmaParser) splitArguments(argsStr string) []string {
 	var parts []string
@@ -255,6 +265,7 @@ func (p *FunctionGemmaParser) splitArguments(argsStr string) []string {
 	return parts
 }
 
+// parseValue 解析 FunctionGemma 单值（字符串/布尔/数字/数组/对象）。
 // parseValue parses a single value from the FunctionGemma format
 func (p *FunctionGemmaParser) parseValue(value string) any {
 	// Check for escaped string
@@ -316,6 +327,7 @@ func (p *FunctionGemmaParser) parseObject(content string) map[string]any {
 	return result
 }
 
+// parseNumber 尝试将字符串解析为整数或浮点数。
 // parseNumber tries to parse a string as a number
 func parseNumber(s string) (any, bool) {
 	// Try integer first

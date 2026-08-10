@@ -1,3 +1,4 @@
+// GLM-4.6 解析器：redacted_thinking 与 XML tool_call 修复。
 package parsers
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/ollama/ollama/logutil"
 )
 
+// glm46ParserState 表示 GLM-4.6 流式解析阶段。
 type glm46ParserState int
 
 const (
@@ -35,6 +37,7 @@ const (
 	glm46ArgValueCloseTag = "</arg_value>"
 )
 
+// GLM46Parser 解析 GLM-4.6 思考与 XML 工具调用。
 type GLM46Parser struct {
 	state     glm46ParserState
 	buffer    strings.Builder
@@ -42,10 +45,12 @@ type GLM46Parser struct {
 	callIndex int
 }
 
+// HasToolSupport 返回 true。
 func (p *GLM46Parser) HasToolSupport() bool {
 	return true
 }
 
+// HasThinkingSupport 返回 true。
 func (p *GLM46Parser) HasThinkingSupport() bool {
 	return true
 }
@@ -64,6 +69,7 @@ func (p *GLM46Parser) PreservedTokens() []string {
 }
 
 // func (p *GLM46Parser) Init(tools []api.Tool, lastMessage *api.Message) []api.Tool {
+// Init 保存工具列表并重置 callIndex。
 func (p *GLM46Parser) Init(tools []api.Tool, lastMessage *api.Message, thinkValue *api.ThinkValue) []api.Tool {
 	p.tools = tools
 	p.callIndex = 0
@@ -92,6 +98,7 @@ type glm46EventThinkingContent struct {
 
 func (glm46EventThinkingContent) isGLM46Event() {}
 
+// Add 流式解析；done 时 finalize 未闭合 tool_call。
 func (p *GLM46Parser) Add(s string, done bool) (content string, thinking string, calls []api.ToolCall, err error) {
 	p.buffer.WriteString(s)
 	events := p.parseEvents()
@@ -131,6 +138,7 @@ func (p *GLM46Parser) Add(s string, done bool) (content string, thinking string,
 	return contentSb.String(), thinkingSb.String(), toolCalls, nil
 }
 
+// finalizeToolCall 在流结束时严格校验并封装原始 tool XML。
 func (p *GLM46Parser) finalizeToolCall() (glm46EventRawToolCall, error) {
 	raw := p.buffer.String()
 	if overlapLen := overlap(raw, glm46ToolCloseTag); overlapLen > 0 {
@@ -151,6 +159,7 @@ func (p *GLM46Parser) finalizeToolCall() (glm46EventRawToolCall, error) {
 	return glm46EventRawToolCall{raw: raw}, nil
 }
 
+// validateFinalGLM46ToolCall 流结束时比常规解析更严格，避免误触发工具。
 // validateFinalGLM46ToolCall is intentionally stricter than normal GLM parsing.
 // At end-of-stream only the outer closing tag may be missing; repairing a
 // truncated argument could turn partial model output into a mutating tool call.
@@ -210,6 +219,7 @@ func (p *GLM46Parser) parseEvents() []glm46Event {
 	return all
 }
 
+// eatLeadingWhitespaceAndTransitionTo 跳过前导空白并转移状态。
 // eatLeadingWhitespaceAndTransitionTo consumes leading whitespace from the buffer
 // and transitions to the next state. Returns (nil, false) if only whitespace remains
 // in the buffer (needs more input), or (nil, true) if we successfully transitioned.
@@ -239,6 +249,7 @@ func glm46SplitAtTag(p *GLM46Parser, tag string, trimAfter bool) (string, string
 	return before, after
 }
 
+// eat 状态机解析 thinking/content/tool XML 块。
 func (p *GLM46Parser) eat() ([]glm46Event, bool) {
 	var events []glm46Event
 
@@ -381,6 +392,7 @@ func (p *GLM46Parser) eat() ([]glm46Event, bool) {
 	}
 }
 
+// GLMToolCallXML 表示 GLM-4.6 tool_call XML 结构。
 // GLMToolCallXML represents the structure of a GLM-4.6 tool call for XML parsing
 type GLMToolCallXML struct {
 	XMLName xml.Name `xml:"tool_call"`
@@ -389,6 +401,7 @@ type GLMToolCallXML struct {
 	Values  []string `xml:"arg_value"` // All arg_value elements in document order
 }
 
+// escapeGLM46Content 转义文本中的 XML 实体，保留 arg 标签。
 // escapeGLM46Content escapes XML entities in text content while preserving arg_key/arg_value tags
 func escapeGLM46Content(s string) string {
 	var result strings.Builder
@@ -441,6 +454,7 @@ const (
 	phaseCount                          // number of phases
 )
 
+// repairGLM46XML 修复 GLM 常缺失/错配的标签以重建合法 XML。
 // repairGLM46XML reconstructs well-formed XML from GLM model output that may
 // have missing or mismatched tags. The expected structure is:
 //
@@ -590,6 +604,7 @@ func repairGLM46XML(s string) string {
 	return result.String()
 }
 
+// parseGLM46ToolCall 解析 XML 工具调用并按 schema 做类型转换。
 func parseGLM46ToolCall(raw glm46EventRawToolCall, tools []api.Tool) (api.ToolCall, error) {
 	// Escape any unescaped entities in text content
 	// We need to escape text between tags, but not the tags themselves
