@@ -31,11 +31,15 @@ import org.eclipse.microprofile.health.Readiness;
 /**
  * Readiness health check that reports DOWN while the server bootstrap is in progress and UP once initialization completes.
  */
+ * 就绪（Readiness）探针：引导进行中报告 DOWN，初始化完成后报告 UP。
+
 @Readiness
 @ApplicationScoped
 public class BootstrapReadyHealthCheck implements AsyncHealthCheck {
 
+    /** 引导完成后的固定 UP 响应，避免重复构建。 */
     private static final HealthCheckResponse UP = builder().up().build();
+    /** 引导完成后缓存为 true，后续探针快速返回 UP。 */
     private boolean bootstrapCompleted;
 
     @Inject
@@ -43,7 +47,7 @@ public class BootstrapReadyHealthCheck implements AsyncHealthCheck {
 
     @Override
     public Uni<HealthCheckResponse> call() {
-        // JVM branch prediction may optimize this code and saves on reading a static volatile field
+        // JVM 分支预测可优化此路径，避免反复读取 volatile 状态
         if (bootstrapCompleted) {
             return ready();
         }

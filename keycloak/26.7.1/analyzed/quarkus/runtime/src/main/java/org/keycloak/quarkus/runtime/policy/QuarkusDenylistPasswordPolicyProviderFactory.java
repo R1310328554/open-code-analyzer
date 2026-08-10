@@ -27,10 +27,13 @@ import org.keycloak.quarkus.runtime.Environment;
  * default path for the list files is calculated using the quarkus environment
  * class, in order to obtain the correct <em>data</em> directory.
  *
+ * Quarkus 环境下 {@link DenylistPasswordPolicyProviderFactory} 的实现：通过 {@link Environment} 解析正确的 <em>data</em> 目录作为密码黑名单文件默认路径。
+
  * @author rmartinc
  */
 public class QuarkusDenylistPasswordPolicyProviderFactory extends DenylistPasswordPolicyProviderFactory {
 
+    /** 返回 Quarkus 数据目录下密码黑名单文件夹的默认路径。 */
     @Override
     public String getDefaultDenylistsBasePath() {
         return Environment.getDataDir().map(d -> d + File.separator + PASSWORD_BLACKLISTS_FOLDER).orElse(null);

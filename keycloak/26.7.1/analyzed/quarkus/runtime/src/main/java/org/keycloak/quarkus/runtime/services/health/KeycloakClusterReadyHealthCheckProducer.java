@@ -28,20 +28,27 @@ import org.keycloak.quarkus.runtime.integration.QuarkusKeycloakSessionFactory;
 import io.smallrye.health.api.AsyncHealthCheck;
 import org.eclipse.microprofile.health.Readiness;
 
+/**
+ * 集群就绪健康检查的 CDI 生产者：引导完成且 Infinispan 支持集群健康探测时才注册
+ * {@link KeycloakClusterReadyHealthCheck}；否则不暴露该 Readiness Bean。
+ */
 @ApplicationScoped
 public class KeycloakClusterReadyHealthCheckProducer {
 
+    /** 懒加载的单例健康检查实例。 */
     private AsyncHealthCheck instance;
+    /** 生产者是否已完成初始化（含不支持集群健康的情况）。 */
     private boolean ready;
     @Inject
     QuarkusKeycloakSessionFactory sessionFactory;
 
+    /** 引导完成后按需创建集群健康检查 Bean；引导中返回 null。 */
     @Produces
     @Readiness
     @Dependent
     public AsyncHealthCheck createHealthCheck() {
         if (ready) {
-            // JVM branch prediction may optimize this code and saves on reading a static volatile field
+            // JVM 分支预测可优化此路径，避免反复进入同步块
             return instance;
         }
         if (!sessionFactory.isBootstrapCompleted()) {

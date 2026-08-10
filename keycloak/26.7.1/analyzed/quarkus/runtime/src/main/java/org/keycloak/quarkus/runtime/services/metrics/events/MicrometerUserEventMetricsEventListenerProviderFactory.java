@@ -39,10 +39,14 @@ import io.micrometer.core.instrument.config.MeterFilterReply;
 import org.bouncycastle.util.Strings;
 import org.jboss.logging.Logger;
 
+/**
+ * {@link MicrometerUserEventMetricsEventListenerProvider} 工厂：注册 user 事件 Counter、解析 SPI 标签/事件过滤配置，并对 error/clientId 标签施加基数上限 {@link MeterFilter}。
+ */
 public class MicrometerUserEventMetricsEventListenerProviderFactory implements EventListenerProviderFactory, EnvironmentDependentProviderFactory {
 
     private static final Logger logger = Logger.getLogger(MicrometerUserEventMetricsEventListenerProviderFactory.class);
 
+    /** SPI 提供方 ID。 */
     private static final String ID = "micrometer-user-event-metrics";
     private static final String TAGS_OPTION = "tags";
     private static final String EVENTS_OPTION = "events";
@@ -50,7 +54,7 @@ public class MicrometerUserEventMetricsEventListenerProviderFactory implements E
     private static final String MAX_CLIENT_ID_TAGS_OPTION = "maxClientIdTags";
     private static final int DEFAULT_MAX_TAG_VALUES = 10000;
     private static final String DESCRIPTION_OF_EVENT_METER = "Keycloak user events";
-    // Micrometer naming convention that separates lowercase words with a . (dot) character.
+    // Micrometer 命名约定：小写单词以点号分隔
     private static final String KEYCLOAK_METER_NAME_PREFIX = "keycloak.";
     private static final String USER_EVENTS_METER_NAME = KEYCLOAK_METER_NAME_PREFIX + "user";
 
@@ -102,7 +106,7 @@ public class MicrometerUserEventMetricsEventListenerProviderFactory implements E
 
     @Override
     public void close() {
-        // nothing to do
+        // 工厂关闭无需清理
     }
 
     @Override
@@ -116,6 +120,7 @@ public class MicrometerUserEventMetricsEventListenerProviderFactory implements E
         return true;
     }
 
+    /** 为指定标签注册最大允许 distinct 值数量，超出后拒绝新标签组合并告警一次。 */
     private static void addTagCardinalityFilter(String tagKey, int maxTagValues) {
         AtomicBoolean logged = new AtomicBoolean(false);
         Metrics.globalRegistry.config().meterFilter(

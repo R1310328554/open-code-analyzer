@@ -28,15 +28,22 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 import static org.keycloak.quarkus.runtime.services.health.KeycloakReadyHealthCheck.DATE_FORMATTER;
 import static org.keycloak.quarkus.runtime.services.health.KeycloakReadyHealthCheck.FAILING_SINCE;
 
+/**
+ * 集群就绪异步健康检查：通过 {@link InfinispanConnectionProviderFactory#isClusterHealthy()}
+ * 判断 Infinispan 集群状态；不健康时在响应中附带 {@link KeycloakReadyHealthCheck#FAILING_SINCE} 时间戳。
+ */
 public class KeycloakClusterReadyHealthCheck implements AsyncHealthCheck {
 
+    /** 集群首次变为不健康的时间点。 */
     private final AtomicReference<Instant> failingSince = new AtomicReference<>();
     private final InfinispanConnectionProviderFactory factory;
 
+    /** @param factory Infinispan 连接工厂，用于查询集群健康状态 */
     public KeycloakClusterReadyHealthCheck(InfinispanConnectionProviderFactory factory) {
         this.factory = factory;
     }
 
+    /** 执行集群健康检查并返回 SmallRye Health 响应。 */
     @Override
     public Uni<HealthCheckResponse> call() {
         var builder = HealthCheckResponse.named("Keycloak cluster health check").up();

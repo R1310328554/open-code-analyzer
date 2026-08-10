@@ -71,20 +71,25 @@ import org.jboss.logging.Logger;
  * <p>The check is non-blocking and never prevents startup. If the metadata query itself fails (e.g. insufficient
  * permissions), the error is logged and silently ignored.
  */
+ * 启动时对比 Liquibase changelog 期望索引与数据库实际索引，发现缺失则 WARN 输出可手动执行的 CREATE INDEX 语句；非阻塞，元数据查询失败亦仅记录警告。
+
 public class DatabaseIndexChecker implements Runnable {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    /** 惰性获取 JDBC 连接（通常来自 JPA 工厂）。 */
     private final Supplier<Connection> connectionSupplier;
     private final KeycloakSessionFactory factory;
     private final String dbSchema;
 
+    /** @param connectionSupplier JDBC 连接供应器 @param factory Keycloak 会话工厂 @param dbSchema 数据库 schema */
     public DatabaseIndexChecker(Supplier<Connection> connectionSupplier, KeycloakSessionFactory factory, String dbSchema) {
         this.connectionSupplier = Objects.requireNonNull(connectionSupplier);
         this.factory = Objects.requireNonNull(factory);
         this.dbSchema = dbSchema;
     }
 
+    /** 执行索引检查并对每个缺失索引输出 WARN 日志。 */
     @Override
     public void run() {
         logger.info("Running database index checker");
@@ -94,10 +99,12 @@ public class DatabaseIndexChecker implements Runnable {
         }
     }
 
+    /** 返回缺失索引名称列表（供测试或管理 API 使用）。 */
     public List<String> getMissingIndexesName() {
         return getMissingIndexes().stream().map(IndexInfo::indexName).toList();
     }
 
+    /** 对比 Liquibase 期望索引与库中现有索引，返回缺失项。 */
     private List<IndexInfo> getMissingIndexes() {
         try (var connection = connectionSupplier.get(); var session = factory.create()) {
             var expectedIndexes = getExpectedIndexesFromLiquibase(connection, session);
@@ -121,6 +128,7 @@ public class DatabaseIndexChecker implements Runnable {
         return List.of();
     }
 
+    /** 遍历已执行 changeset 推导当前应存在的索引集合。 */
     private Map<String, IndexInfo> getExpectedIndexesFromLiquibase(Connection connection, KeycloakSession session) throws LiquibaseException {
         var liquibaseProvider = session.getProvider(LiquibaseConnectionProvider.class);
         var liquibase = liquibaseProvider.getLiquibase(connection, dbSchema);
@@ -168,6 +176,7 @@ public class DatabaseIndexChecker implements Runnable {
         return expectedIndexes;
     }
 
+    /** 通过 DatabaseMetaData#getIndexInfo 读取现有索引名（大写）。 */
     private Set<String> getExistingIndexesFromDatabase(DatabaseMetaData metaData, Collection<String> tables) throws SQLException {
         var existingIndexes = new HashSet<String>();
 
@@ -186,13 +195,13 @@ public class DatabaseIndexChecker implements Runnable {
 
     private static boolean isChangeSetForCurrentDatabase(ChangeSet changeSet, Database database, HashMap<String, IndexInfo> expectedIndexes, HashSet<ChangesetInfo> changes, HashSet<TableInfo> tables) {
         if (!DatabaseList.definitionMatches(changeSet.getDbmsSet(), database, true)) {
-            // returns true if `getDbmsSet()` returns empty or null - i.e. for all databases
+            // getDbmsSet 为空或 null 时表示适用于所有数据库
             logger.debugf("ChangeSet not valid for current database '%s'. %s", database.getShortName(), changeSet);
             return false;
         }
         var preconditions = changeSet.getPreconditions();
         if (preconditions == null) {
-            // no pre-conditions
+            // 无前置条件则直接适用
             return true;
         }
         for (var precondition : preconditions.getNestedPreconditions()) {
@@ -211,6 +220,8 @@ public class DatabaseIndexChecker implements Runnable {
      * It will not use any changelog or database information directly, as that has already been fully migrated.
      * All conditions that are not implemented here will default to "true".
      */
+ * 未在此实现的 Precondition 类型默认视为满足。
+
     private static void evaluate(Precondition p, Database database, HashMap<String, IndexInfo> expectedIndexes, HashSet<ChangesetInfo> changes, HashSet<TableInfo> tables)
             throws PreconditionFailedException, PreconditionErrorException {
         if (p instanceof DBMSPrecondition dbmsPrecondition) {
@@ -236,7 +247,7 @@ public class DatabaseIndexChecker implements Runnable {
                 try {
                     evaluate(precondition, database, expectedIndexes, changes, tables);
                 } catch (PreconditionFailedException e) {
-                    //that's what we want with a Not precondition
+                    // Not 前置条件期望子条件失败
                     threwException = true;
                 }
                 if (!threwException) {
@@ -271,19 +282,23 @@ public class DatabaseIndexChecker implements Runnable {
                 throw new PreconditionFailedException("Precondition failed", null, tableExistsPrecondition);
             }
         }
-        // All other conditions default to true
+        // 其余 Precondition 类型默认 true
     }
 
+    /** 按数据库标识符大小写规则规范化表名。 */
     private static String normalizeIdentifier(String name, boolean storesLower, boolean storesUpper) {
         if (storesLower) return name.toLowerCase();
         if (storesUpper) return name.toUpperCase();
         return name;
     }
 
+    /** 缺失索引描述：表名、索引名与 CREATE INDEX SQL。 */
     private record IndexInfo(String tableName, String indexName, String sql) {
     }
+    /** 已执行 Liquibase changeset 标识。 */
     private record ChangesetInfo(String id, String author, String filePath) {
     }
+    /** 变更日志推导出的表存在性状态。 */
     private record TableInfo(String tableName) {
     }
 

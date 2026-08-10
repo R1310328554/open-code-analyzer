@@ -34,10 +34,14 @@ import org.jboss.logging.Logger;
  * normalization of the path. In addition to that, the reverse proxy might not be aware of the additional path
  * of the double slashes that Keycloak performs.
  */
+ * 拒绝 RFC3986 需规范化路径或含双斜杠的请求，防止反向代理未规范化时发生路径穿越；同时拦截含分号的路径段（Keycloak 不使用 @MatrixParam）。
+
 public class RejectNonNormalizedPathFilter implements Handler<RoutingContext> {
     private static final Logger LOGGER = Logger.getLogger(RejectNonNormalizedPathFilter.class);
+    /** 用于序列化 OAuth2 错误响应的 JSON 映射器。 */
     private final ObjectMapper MAPPER = ObjectMapperResolver.createStreamSerializer();
 
+    /** 校验路径规范化与非法字符，不通过则返回 400 JSON 错误。 */
     @Override
     public void handle(RoutingContext routingContext) {
         if (!Objects.equals(routingContext.request().path(), routingContext.normalizedPath())) {
@@ -52,10 +56,8 @@ public class RejectNonNormalizedPathFilter implements Handler<RoutingContext> {
             }
             routingContext.response().setStatusCode(400).end(jsonString);
         } else if (routingContext.request().path().contains(";")) {
-            // RFC 6570 defines matrix parameters that are separated with a semicolon in each path segment.
-            // Keycloak does not use @MatrixParam, therefore any URL containing a semicolon is treated as invalid.
-            // Once Keycloak starts using them in any of its APIs, consider enabling them only for specific paths,
-            // as URL filtering would otherwise be quite hard for reverse proxies.
+            // RFC 6570 矩阵参数以分号分隔；Keycloak 未使用 @MatrixParam，故含分号的 URL 视为无效。
+            // 若未来 API 需要矩阵参数，应仅对特定路径放行，否则反向代理 URL 过滤将很困难。
             LOGGER.debugf("Invalid character ';' found in the request path", routingContext.request().path());
             OAuth2ErrorRepresentation error = new OAuth2ErrorRepresentation("invalidCharacter", "Request path contains invalid character ';'");
             routingContext.response().headers().add("Content-Type", "application/json; charset=UTF-8");

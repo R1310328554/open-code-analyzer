@@ -56,17 +56,23 @@ import org.keycloak.utils.SecureContextResolver;
 
 import io.quarkus.resteasy.reactive.server.EndpointDisabled;
 
+/**
+ * 主机名/代理调试 REST 资源（需 {@code kc.hostname-debug=true}）：渲染 realm 级 HTML 调试页并暴露 CORS/代理头测试端点。
+ */
 @Provider
 @Path("/realms")
 @EndpointDisabled(name = "kc.hostname-debug", stringValue = "false", disableIfMissing = true)
 public class DebugHostnameSettingsResource {
+    /** 调试页 URL 路径后缀。 */
     public static final String DEFAULT_PATH_SUFFIX = "hostname-debug";
+    /** CORS/代理头测试子路径。 */
     public static final String PATH_FOR_TEST_CORS_IN_HEADERS = "test";
 
 
     @Context
     private KeycloakSession keycloakSession;
 
+    /** 构造时收集的相关 Hostname/HTTP 配置快照。 */
     private final Map<String, String> allConfigPropertiesMap;
 
     public DebugHostnameSettingsResource() {
@@ -79,6 +85,7 @@ public class DebugHostnameSettingsResource {
 
     }
 
+    /** 渲染指定 realm 的主机名调试 HTML 页面。 */
     @GET
     @Path("/{realmName}/" + DEFAULT_PATH_SUFFIX)
     @Produces(MediaType.TEXT_HTML)
@@ -128,6 +135,7 @@ public class DebugHostnameSettingsResource {
         );
     }
 
+    /** 前端/后端 CORS 与代理配置冒烟测试，返回诊断文本。 */
     @GET
     @Path("/{realmName}/" + DEFAULT_PATH_SUFFIX + "/" + PATH_FOR_TEST_CORS_IN_HEADERS)
     @Produces(MediaType.TEXT_PLAIN)
@@ -145,7 +153,7 @@ public class DebugHostnameSettingsResource {
             boolean xfowarded = Stream.of(ConstantsDebugHostname.X_FORWARDED_PROXY_HEADERS)
                     .map(requestHeaders::getHeaderString).anyMatch(Objects::nonNull);
 
-            if (!originMatches) { // might fail CORS checks
+            if (!originMatches) { // 可能导致 CORS 校验失败
                 text = "Default origin check failing, request hostname does not match frontend hostname. Please check you proxy settings.";
                 if (!keycloakSession.getContext().getHttpRequest().isProxyTrusted()) {
                     text += " Note the proxy is not trusted.";
@@ -157,11 +165,8 @@ public class DebugHostnameSettingsResource {
 
             boolean https = requestUri.getScheme().equals("https");
             if (https) {
-                // if reencrypt, then proxy headers may need set
-                // if passthrough, then proxy headers should not be set
-
-                // TODO: not sure if there is great way to do this. Would likely need to check that a connection to the frontend uses the same
-                // cert as what is coming in on this request
+                // reencrypt 模式可能需要设置代理头；passthrough 则不应设置
+                // TODO：尚无完善检测方式，可能需要比对前端连接证书与入站请求证书
             } else if (!SecureContextResolver.isSecureContext(keycloakSession)) {
                 text += " Non-secure context detected - Keycloak will not function properly when accessed over http at a non-localhost host.";
             }
@@ -173,10 +178,12 @@ public class DebugHostnameSettingsResource {
         return builder.build();
     }
 
+    /** 若配置存在则将键值写入调试页配置映射。 */
     private void addOption(String key) {
         Configuration.getOptionalKcValue(key).ifPresent(value -> this.allConfigPropertiesMap.put(key, value));
     }
 
+    /** 收集当前请求中与主机名/代理相关的头。 */
     private Map<String, String> getHeaders() {
         Map<String, String> headers = new TreeMap<>();
         HttpHeaders requestHeaders = keycloakSession.getContext().getRequestHeaders();
@@ -186,6 +193,7 @@ public class DebugHostnameSettingsResource {
         return headers;
     }
 
+    /** 将非空请求头写入展示用映射。 */
     private void addProxyHeader(String header, Map<String, String> proxyHeaders, HttpHeaders requestHeaders) {
         String value = requestHeaders.getHeaderString(header);
         if (value != null && !value.isEmpty()) {
@@ -193,6 +201,7 @@ public class DebugHostnameSettingsResource {
         }
     }
 
+    /** 构造 CORS 测试 URL（含 frontEnd 查询参数）。 */
     private String getTest(RealmModel realmModel, URI baseUri, boolean frontEnd) {
         return Urls.realmBase(baseUri)
                    .path("/{realmName}/{debugHostnameSettingsPath}/{pathForTestCORSInHeaders}")

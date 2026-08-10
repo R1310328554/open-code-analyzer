@@ -36,14 +36,23 @@ import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Tag;
 import org.jboss.logging.Logger;
 
+/**
+ * 基于 Micrometer 的用户事件指标监听器：在事务提交后将 Keycloak {@link Event}
+ * 计数为 {@code keycloak.user} Counter，并按配置附加 realm/idp/client/error 等标签。
+ */
 public class MicrometerUserEventMetricsEventListenerProvider implements EventListenerProvider {
 
     private static final Logger logger = Logger.getLogger(MicrometerUserEventMetricsEventListenerProvider.class);
 
+    /** Micrometer 标签：realm 名称。 */
     static final String REALM_TAG = "realm";
+    /** Micrometer 标签：身份提供者。 */
     static final String IDP_TAG = "idp";
+    /** Micrometer 标签：客户端 ID。 */
     static final String CLIENT_ID_TAG = "client.id";
+    /** Micrometer 标签：错误码。 */
     static final String ERROR_TAG = "error";
+    /** Micrometer 标签：事件类型（小写、无 _ERROR 后缀）。 */
     private static final String EVENT_TAG = "event";
 
     private final boolean withIdp;
@@ -51,6 +60,7 @@ public class MicrometerUserEventMetricsEventListenerProvider implements EventLis
     private final boolean withClientId;
     private final HashSet<String> events;
 
+    /** 事务完成后批量计数用户事件。 */
     private final EventListenerTransaction tx =
             new EventListenerTransaction(null, this::countEvent);
     private final Meter.MeterProvider<Counter> meterProvider;
@@ -69,6 +79,7 @@ public class MicrometerUserEventMetricsEventListenerProvider implements EventLis
         tx.addEvent(event);
     }
 
+    /** 按配置标签集合递增 user 事件 Counter。 */
     private void countEvent(Event event) {
         logger.debugf("Received user event of type %s in realm %s",
                 event.getType().name(), event.getRealmName());
@@ -100,7 +111,7 @@ public class MicrometerUserEventMetricsEventListenerProvider implements EventLis
 
     @Override
     public void onEvent(AdminEvent event, boolean includeRepresentation) {
-        // do nothing for now
+        // 管理事件暂不采集指标
     }
 
     private String getIdentityProvider(Event event) {
@@ -113,7 +124,7 @@ public class MicrometerUserEventMetricsEventListenerProvider implements EventLis
 
 
     private String getClientId(Event event) {
-        // Don't use the clientId as a tag value of the event CLIENT_NOT_FOUND as it would lead to a metrics cardinality explosion
+        // CLIENT_NOT_FOUND 事件不使用真实 clientId 作为标签，避免指标基数爆炸
         return Errors.CLIENT_NOT_FOUND.equals(event.getError()) ? "unknown" : event.getClientId();
     }
 
@@ -129,9 +140,9 @@ public class MicrometerUserEventMetricsEventListenerProvider implements EventLis
         tags.add(Tag.of(tagName, value != null ? value : ""));
     }
 
+    /** 将 {@link EventType} 格式化为指标 event 标签值（小写、去 _ERROR）。 */
     public static String format(EventType type) {
-        // Remove the error suffix so that all events have the same tag.
-        // In dashboards, we can distinguish errors from non-errors by looking at the error tag.
+        // 去掉 _ERROR 后缀使同类事件共用 event 标签；仪表板通过 error 标签区分成败。
         String name = type.name();
         if (name.endsWith("_ERROR")) {
             name = name.substring(0, name.length() - "_ERROR".length());
@@ -141,6 +152,6 @@ public class MicrometerUserEventMetricsEventListenerProvider implements EventLis
 
     @Override
     public void close() {
-        // unused
+        // 无资源需释放
     }
 }

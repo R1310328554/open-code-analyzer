@@ -27,12 +27,15 @@ import org.jboss.logging.Logger;
  * to clients in production, as they can expose internal implementation details of
  * customized themes.
  *
+ * 生产环境禁止向客户端提供 JavaScript source map（.js.map），磁盘上保留供支持诊断，但避免暴露定制主题内部实现。
+
  * @see <a href="https://github.com/keycloak/keycloak/issues/47545">GitHub #47545</a>
  */
 public class RejectSourceMapFilter implements Handler<RoutingContext> {
 
     private static final Logger LOGGER = Logger.getLogger(RejectSourceMapFilter.class);
 
+    /** 对 .js.map 请求返回 404，其余请求调用 next()。 */
     @Override
     public void handle(RoutingContext routingContext) {
         String path = routingContext.normalizedPath();

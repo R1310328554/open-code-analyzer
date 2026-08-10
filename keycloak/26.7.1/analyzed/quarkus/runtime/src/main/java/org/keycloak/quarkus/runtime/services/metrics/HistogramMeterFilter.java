@@ -33,12 +33,17 @@ import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 /**
  * @author Alexander Schwartz
  */
+ * Micrometer {@link MeterFilter}：为 {@code http.server.requests} 指标配置百分位直方图与 SLO 桶（由 {@link HttpOptions} 控制）。
+
 @Singleton
 public class HistogramMeterFilter implements MeterFilter {
 
+    /** 是否启用 HTTP 请求百分位直方图。 */
     private boolean histogramsEnabled;
+    /** SLO 边界（纳秒），来自配置逗号分隔毫秒值。 */
     private double[] slos;
 
+    /** 从 Keycloak/Quarkus 配置读取直方图与 SLO 设置。 */
     public HistogramMeterFilter() {
         histogramsEnabled = Configuration.isTrue(HttpOptions.HTTP_METRICS_HISTOGRAMS_ENABLED);
         Optional<String> slosOption = Configuration.getOptionalKcValue(HttpOptions.HTTP_METRICS_SLOS.getKey());
@@ -50,6 +55,7 @@ public class HistogramMeterFilter implements MeterFilter {
         }
     }
 
+    /** 仅对 http.server.requests 合并直方图/SLO 分布统计配置。 */
     @Override
     public DistributionStatisticConfig configure(Meter.Id id, DistributionStatisticConfig config) {
         if (isHttpServerRequests(id)) {
@@ -63,6 +69,7 @@ public class HistogramMeterFilter implements MeterFilter {
         return config;
     }
 
+    /** 判断是否为 Micrometer HTTP 服务端请求计时器。 */
     private boolean isHttpServerRequests(Meter.Id id) {
         return "http.server.requests".equals(id.getName());
     }
