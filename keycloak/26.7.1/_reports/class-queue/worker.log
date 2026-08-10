@@ -1948,3 +1948,18 @@
 2026-08-10T08:43:27Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/dir/DirExportProvider.java wave66b clientscope/datastore + dir exportimport
 2026-08-10T08:43:27Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/dir/DirExportProviderFactory.java wave66b clientscope/datastore + dir exportimport
 2026-08-10T08:43:27Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/dir/DirImportProvider.java wave66b clientscope/datastore + dir exportimport
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/dir/DirImportProviderFactory.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/singlefile/SingleFileExportProvider.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/singlefile/SingleFileExportProviderFactory.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/singlefile/SingleFileImportProvider.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/singlefile/SingleFileImportProviderFactory.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/util/ExportImportSessionTask.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/util/ImportUtils.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/exportimport/util/MultipleStepsExportProvider.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearCrlCacheRealmAdminProvider.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearCrlCacheResource.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearKeysCacheRealmAdminProvider.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearKeysCacheResource.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearRealmCacheRealmAdminProvider.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearRealmCacheResource.java wave67a singlefile exportimport + clear-cache admin
+2026-08-10T08:46:18Z DONE model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearUserCacheRealmAdminProvider.java wave67a singlefile exportimport + clear-cache admin

@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T08:44:02Z",
   "files": [
-    "model/storage-services/src/main/java/org/keycloak/exportimport/dir/DirImportProviderFactory.java",
-    "model/storage-services/src/main/java/org/keycloak/exportimport/singlefile/SingleFileExportProvider.java",
-    "model/storage-services/src/main/java/org/keycloak/exportimport/singlefile/SingleFileExportProviderFactory.java",
-    "model/storage-services/src/main/java/org/keycloak/exportimport/singlefile/SingleFileImportProvider.java",
-    "model/storage-services/src/main/java/org/keycloak/exportimport/singlefile/SingleFileImportProviderFactory.java",
-    "model/storage-services/src/main/java/org/keycloak/exportimport/util/ExportImportSessionTask.java",
-    "model/storage-services/src/main/java/org/keycloak/exportimport/util/ImportUtils.java",
-    "model/storage-services/src/main/java/org/keycloak/exportimport/util/MultipleStepsExportProvider.java",
-    "model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearCrlCacheRealmAdminProvider.java",
-    "model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearCrlCacheResource.java",
-    "model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearKeysCacheRealmAdminProvider.java",
-    "model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearKeysCacheResource.java",
-    "model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearRealmCacheRealmAdminProvider.java",
-    "model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearRealmCacheResource.java",
-    "model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearUserCacheRealmAdminProvider.java",
     "model/storage-services/src/main/java/org/keycloak/services/resources/admin/ClearUserCacheResource.java",
     "model/storage-services/src/main/java/org/keycloak/services/resources/admin/UserStorageProviderRealmAdminProvider.java",
     "model/storage-services/src/main/java/org/keycloak/services/resources/admin/UserStorageProviderResource.java",
@@ -33,5 +18,5 @@
     "model/storage/src/main/java/org/keycloak/storage/UserStorageProviderModel.java"
   ],
   "remaining_pending": 3988,
-  "done": 1980
+  "done": 1995
 }
