@@ -21,16 +21,25 @@ import java.util.Objects;
 
 import org.infinispan.protostream.annotations.ProtoField;
 
+/**
+ * 客户端相关缓存失效事件的抽象基类。
+ * <p>
+ * 继承 {@link InvalidationEvent} 并实现 {@link RealmCacheInvalidationEvent}，
+ * 携带客户端 UUID 与所属领域 ID，供客户端增删改事件复用。
+ */
 abstract class BaseClientEvent extends InvalidationEvent implements RealmCacheInvalidationEvent {
 
+    /** 所属领域 ID。 */
     @ProtoField(2)
     final String realmId;
 
+    /** 以客户端 UUID 与领域 ID 构造基类事件。 */
     BaseClientEvent(String clientUuid, String realmId) {
         super(clientUuid);
         this.realmId = Objects.requireNonNull(realmId);
     }
 
+    /** 比较客户端 UUID 与领域 ID 是否一致。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -41,6 +50,7 @@ abstract class BaseClientEvent extends InvalidationEvent implements RealmCacheIn
         return realmId.equals(that.realmId);
     }
 
+    /** 返回基于客户端 UUID 与领域 ID 的哈希值。 */
     @Override
     public int hashCode() {
         int result = super.hashCode();
@@ -48,6 +58,7 @@ abstract class BaseClientEvent extends InvalidationEvent implements RealmCacheIn
         return result;
     }
 
+    /** 返回便于调试的字符串表示。 */
     @Override
     public String toString() {
         return String.format("%s [ realmId=%s, clientUuid=%s ]", getClass().getSimpleName(), realmId, getId());

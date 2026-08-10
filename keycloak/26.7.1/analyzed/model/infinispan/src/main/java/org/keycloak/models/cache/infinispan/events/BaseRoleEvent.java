@@ -21,16 +21,25 @@ import java.util.Objects;
 
 import org.infinispan.protostream.annotations.ProtoField;
 
+/**
+ * 角色相关缓存失效事件的抽象基类。
+ * <p>
+ * 继承 {@link InvalidationEvent} 并实现 {@link RealmCacheInvalidationEvent}，
+ * 携带角色 ID 与容器 ID（领域或客户端），供角色增删改事件复用。
+ */
 abstract class BaseRoleEvent extends InvalidationEvent implements RealmCacheInvalidationEvent {
 
+    /** 角色所属容器 ID（领域 ID 或客户端 UUID）。 */
     @ProtoField(2)
     final String containerId;
 
+    /** 以角色 ID 与容器 ID 构造基类事件。 */
     BaseRoleEvent(String roleId, String containerId) {
         super(roleId);
         this.containerId = Objects.requireNonNull(containerId);
     }
 
+    /** 比较角色 ID 与容器 ID 是否一致。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -41,6 +50,7 @@ abstract class BaseRoleEvent extends InvalidationEvent implements RealmCacheInva
         return containerId.equals(that.containerId);
     }
 
+    /** 返回基于角色 ID 与容器 ID 的哈希值。 */
     @Override
     public int hashCode() {
         int result = super.hashCode();
@@ -48,6 +58,7 @@ abstract class BaseRoleEvent extends InvalidationEvent implements RealmCacheInva
         return result;
     }
 
+    /** 返回便于调试的字符串表示。 */
     @Override
     public String toString() {
         return String.format("%s [ roleId=%s, containerId=%s ]", getClass().getSimpleName(), getId(), containerId);

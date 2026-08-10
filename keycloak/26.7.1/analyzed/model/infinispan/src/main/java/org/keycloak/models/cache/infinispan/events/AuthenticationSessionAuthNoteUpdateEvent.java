@@ -28,16 +28,24 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 认证会话 auth note 更新的集群广播事件。
+ * <p>
+ * 当某浏览器标签页的认证会话 auth note 发生变更时，通过 {@link ClusterEvent} 在集群节点间同步片段数据，
+ * 使各节点缓存的认证上下文保持一致。
  *
  * @author hmlnarik
  */
 @ProtoTypeId(Marshalling.AUTHENTICATION_SESSION_AUTH_NOTE_UPDATE_EVENT)
 public class AuthenticationSessionAuthNoteUpdateEvent implements ClusterEvent {
 
+    /** 认证会话 ID。 */
     private final String authSessionId;
+    /** 浏览器标签页 ID，区分同一会话的多标签上下文。 */
     private final String tabId;
+    /** auth note 键值片段（非线程安全，当前用法可接受）。 */
     private final Map<String, String> authNotesFragment;
 
+    /** 私有构造函数，通过 {@link #create} 工厂方法实例化。 */
     private AuthenticationSessionAuthNoteUpdateEvent(Map<String, String> authNotesFragment, String authSessionId, String tabId) {
         this.authNotesFragment = Objects.requireNonNull(authNotesFragment);
         this.authSessionId = Objects.requireNonNull(authSessionId);
@@ -45,30 +53,37 @@ public class AuthenticationSessionAuthNoteUpdateEvent implements ClusterEvent {
     }
 
     /**
-     * Creates an instance of the event.
+     * 创建 auth note 更新事件实例。
      *
-     * @return Event. Note that {@code authNotesFragment} property is not thread safe which is fine for now.
+     * @param authSessionId 认证会话 ID
+     * @param tabId 浏览器标签页 ID
+     * @param authNotesFragment auth note 键值片段
+     * @return 事件实例；注意 {@code authNotesFragment} 非线程安全，当前场景可接受
      */
     @ProtoFactory
     public static AuthenticationSessionAuthNoteUpdateEvent create(String authSessionId, String tabId, Map<String, String> authNotesFragment) {
         return new AuthenticationSessionAuthNoteUpdateEvent(authNotesFragment, authSessionId, tabId);
     }
 
+    /** 返回认证会话 ID。 */
     @ProtoField(1)
     public String getAuthSessionId() {
         return authSessionId;
     }
 
+    /** 返回浏览器标签页 ID。 */
     @ProtoField(2)
     public String getTabId() {
         return tabId;
     }
 
+    /** 返回 auth note 键值片段映射。 */
     @ProtoField(value = 3, mapImplementation = LinkedHashMap.class)
     public Map<String, String> getAuthNotesFragment() {
         return authNotesFragment;
     }
 
+    /** 基于会话 ID 与标签页 ID 判断相等性。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -82,11 +97,13 @@ public class AuthenticationSessionAuthNoteUpdateEvent implements ClusterEvent {
         return Objects.equals(authSessionId, that.authSessionId) && Objects.equals(tabId, that.tabId);
     }
 
+    /** 返回基于会话 ID 与标签页 ID 的哈希值。 */
     @Override
     public int hashCode() {
         return Objects.hash(authSessionId, tabId);
     }
 
+    /** 返回便于调试的字符串表示。 */
     @Override
     public String toString() {
         return String.format("AuthenticationSessionAuthNoteUpdateEvent [ authSessionId=%s, tabId=%s, authNotesFragment=%s ]",

@@ -25,18 +25,26 @@ import org.keycloak.models.cache.infinispan.RealmCacheManager;
 import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
+/**
+ * 客户端作用域删除时的领域缓存失效事件。
+ * <p>
+ * 继承 {@link BaseClientScopeEvent}，通知 {@link RealmCacheManager} 清除与已删除作用域相关的缓存条目。
+ */
 @ProtoTypeId(Marshalling.CLIENT_SCOPE_REMOVED_EVENT)
 public class ClientScopeRemovedEvent extends BaseClientScopeEvent {
 
+    /** Protobuf 反序列化工厂方法。 */
     @ProtoFactory
     ClientScopeRemovedEvent(String id, String realmId) {
         super(id, realmId);
     }
 
+    /** 创建客户端作用域删除失效事件。 */
     public static ClientScopeRemovedEvent create(String clientScopeId, String realmId) {
         return new ClientScopeRemovedEvent(clientScopeId, realmId);
     }
 
+    /** 将删除作用域引发的失效键加入集合。 */
     @Override
     public void addInvalidations(RealmCacheManager realmCache, Set<String> invalidations) {
         realmCache.clientScopeRemoval(realmId, invalidations);

@@ -21,16 +21,25 @@ import java.util.Objects;
 
 import org.infinispan.protostream.annotations.ProtoField;
 
+/**
+ * 领域相关缓存失效事件的抽象基类。
+ * <p>
+ * 继承 {@link InvalidationEvent} 并实现 {@link RealmCacheInvalidationEvent}，
+ * 携带领域 ID 与领域名称，供领域增删改事件复用。
+ */
 abstract class BaseRealmEvent extends InvalidationEvent implements RealmCacheInvalidationEvent {
 
+    /** 领域名称。 */
     @ProtoField(2)
     final String realmName;
 
+    /** 以领域 ID 与名称构造基类事件。 */
     BaseRealmEvent(String realmId, String realmName) {
         super(realmId);
         this.realmName = Objects.requireNonNull(realmName);
     }
 
+    /** 比较领域 ID 与名称是否一致。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -41,6 +50,7 @@ abstract class BaseRealmEvent extends InvalidationEvent implements RealmCacheInv
         return realmName.equals(that.realmName);
     }
 
+    /** 返回基于领域 ID 与名称的哈希值。 */
     @Override
     public int hashCode() {
         int result = super.hashCode();
@@ -48,6 +58,7 @@ abstract class BaseRealmEvent extends InvalidationEvent implements RealmCacheInv
         return result;
     }
 
+    /** 返回便于调试的字符串表示。 */
     @Override
     public String toString() {
         return String.format("%s [ realmId=%s, realmName=%s ]", getClass().getSimpleName(), getId(), realmName);

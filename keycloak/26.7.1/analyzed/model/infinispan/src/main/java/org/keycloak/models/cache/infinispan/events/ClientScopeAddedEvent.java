@@ -25,18 +25,26 @@ import org.keycloak.models.cache.infinispan.RealmCacheManager;
 import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
+/**
+ * 客户端作用域新增时的领域缓存失效事件。
+ * <p>
+ * 继承 {@link BaseClientScopeEvent}，通知 {@link RealmCacheManager} 刷新与新增作用域相关的缓存条目。
+ */
 @ProtoTypeId(Marshalling.CLIENT_SCOPE_ADDED_EVENT)
 public class ClientScopeAddedEvent extends BaseClientScopeEvent {
 
+    /** Protobuf 反序列化工厂方法。 */
     @ProtoFactory
     ClientScopeAddedEvent(String id, String realmId) {
         super(id, realmId);
     }
 
+    /** 创建客户端作用域新增失效事件。 */
     public static ClientScopeAddedEvent create(String clientScopeId, String realmId) {
         return new ClientScopeAddedEvent(clientScopeId, realmId);
     }
 
+    /** 将新增作用域引发的失效键加入集合。 */
     @Override
     public void addInvalidations(RealmCacheManager realmCache, Set<String> invalidations) {
         realmCache.clientScopeAdded(realmId, invalidations);

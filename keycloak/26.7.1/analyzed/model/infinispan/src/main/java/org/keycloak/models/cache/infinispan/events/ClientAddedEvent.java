@@ -26,20 +26,27 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 客户端新增时的领域缓存失效事件。
+ * <p>
+ * 继承 {@link BaseClientEvent}，通知 {@link RealmCacheManager} 刷新与新增客户端相关的缓存条目。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.CLIENT_ADDED_EVENT)
 public class ClientAddedEvent extends BaseClientEvent {
 
+    /** Protobuf 反序列化工厂方法。 */
     @ProtoFactory
     ClientAddedEvent(String id, String realmId) {
         super(id, realmId);
     }
 
+    /** 创建客户端新增失效事件。 */
     public static ClientAddedEvent create(String clientUuid, String realmId) {
         return new ClientAddedEvent(clientUuid, realmId);
     }
 
+    /** 将新增客户端引发的失效键加入集合。 */
     @Override
     public void addInvalidations(RealmCacheManager realmCache, Set<String> invalidations) {
         realmCache.clientAdded(realmId, invalidations);
