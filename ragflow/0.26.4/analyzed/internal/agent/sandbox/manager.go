@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// manager.go — 沙箱 Provider 管理器：优先读管理面板 system_settings，回退环境变量。
+
 //
 
 // manager.go is the Go port of `agent/sandbox/providers/manager.py`.
@@ -50,6 +52,7 @@ import (
 // ProviderManager is the Go equivalent of
 // `agent/sandbox/providers/manager.py::ProviderManager`. It is
 // goroutine-safe and lazily initialized.
+// ProviderManager 懒加载、并发安全的单 Provider 管理器。
 type ProviderManager struct {
 	mu       sync.RWMutex
 	provider SandboxProvider
@@ -67,6 +70,7 @@ var (
 // DefaultManager returns the process-wide provider manager, creating
 // it on first use. The manager is created lazily so importing this
 // package does not require any sandbox env vars to be set.
+// DefaultManager 返回进程级 ProviderManager 单例。
 func DefaultManager() *ProviderManager {
 	globalManagerOnce.Do(func() {
 		globalManager = &ProviderManager{}
@@ -115,6 +119,7 @@ func (m *ProviderManager) Reset() {
 //
 // The returned error is suitable for surfacing in boot logs; the
 // manager stays unconfigured when Initialize fails.
+// InitFromEnv 从 SANDBOX_PROVIDER_TYPE 解析并初始化 Provider。
 func (m *ProviderManager) InitFromEnv(ctx context.Context) error {
 	m.mu.Lock()
 	if m.loaded && m.provider != nil {
@@ -144,6 +149,7 @@ type SystemSetting = entity.SystemSettings
 // needs. Defining an interface (rather than depending on
 // *dao.SystemSettingsDAO directly) makes the manager unit-testable
 // without a real MySQL.
+// SettingsReader 为 LoadFromSettings 所需的最小 DAO 接口，便于单测注入。
 type SettingsReader interface {
 	GetByName(name string) ([]entity.SystemSettings, error)
 }
@@ -163,6 +169,7 @@ type SettingsReader interface {
 // settings-driven init produce semantically identical providers.
 // Subsequent calls are no-ops once a provider is loaded; use
 // Reset + ReloadFromSettings to pick up admin-panel changes.
+// LoadFromSettings 从 MySQL system_settings 加载 sandbox 配置。
 func (m *ProviderManager) LoadFromSettings(ctx context.Context) error {
 	return m.LoadFromSettingsWithReader(ctx, dao.NewSystemSettingsDAO())
 }
@@ -208,6 +215,7 @@ func (m *ProviderManager) LoadFromSettingsWithReader(ctx context.Context, r Sett
 // settings. Mirrors Python's `reload_provider()` in
 // `agent/sandbox/client.py` — call after the operator updates the
 // sandbox settings.
+// ReloadFromSettings 重置后重新读取管理面板配置。
 func (m *ProviderManager) ReloadFromSettings(ctx context.Context) error {
 	return m.ReloadFromSettingsWithReader(ctx, dao.NewSystemSettingsDAO())
 }
@@ -285,6 +293,7 @@ func resolveProviderType() ProviderType {
 // is a single switch case here. E2B returns ErrE2BProviderNotImplemented
 // from every operation, but we still construct the provider so the
 // manager can report the configured type to health checks.
+// buildProvider 按 ProviderType 从环境变量构造 Provider。
 func buildProvider(t ProviderType) (SandboxProvider, error) {
 	switch t {
 	case ProviderSelfManaged:
@@ -306,6 +315,7 @@ func buildProvider(t ProviderType) (SandboxProvider, error) {
 // buildProvider. The config map keys mirror the env-var names
 // without the per-provider prefix (e.g. SANDBOX_EXECUTOR_MANAGER_URL
 // on env == "EXECUTOR_MANAGER_URL" in the settings JSON).
+// buildProviderFromConfig 从 settings JSON 构造 Provider。
 func buildProviderFromConfig(t ProviderType, cfg map[string]any) (SandboxProvider, error) {
 	switch t {
 	case ProviderSelfManaged:

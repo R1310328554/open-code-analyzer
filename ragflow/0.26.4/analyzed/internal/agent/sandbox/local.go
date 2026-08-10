@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// local.go — 本地 os/exec Provider：在 Go 宿主机直接运行代码，无隔离边界。
+
 //
 
 // local.go is the Go port of `agent/sandbox/providers/local.py`.
@@ -90,6 +92,7 @@ const localDefaultNodeBin = "node"
 
 // LocalProvider is the Go port of
 // `agent/sandbox/providers/local.py::LocalProvider`.
+// LocalProvider 在 workDir 下以子进程运行 python3/node，适合开发环境。
 type LocalProvider struct {
 	pythonBin        string
 	nodeBin          string
@@ -161,6 +164,7 @@ func (p *LocalProvider) ProviderType() ProviderType { return ProviderLocal }
 // writable) and flips the initialized flag. Unlike the Python
 // version, we do not set rlimits here — the limits are applied
 // to the child per-execution via Cmd.SysProcAttr.
+// Initialize 创建并探针 work_dir 可写性。
 func (p *LocalProvider) Initialize(ctx context.Context) error {
 	if err := os.MkdirAll(p.workDir, 0o700); err != nil {
 		return fmt.Errorf("local: create work_dir %q: %w", p.workDir, err)
@@ -189,6 +193,7 @@ func (p *LocalProvider) SupportedLanguages() []string {
 // CreateInstance provisions a fresh instance dir under workDir.
 // The instance_id is a UUID; the instance dir is the operator-
 // visible handle.
+// CreateInstance 在 workDir 下创建 UUID 实例目录与 artifacts 子目录。
 func (p *LocalProvider) CreateInstance(ctx context.Context, template string) (*SandboxInstance, error) {
 	if !p.isInitialized() {
 		return nil, fmt.Errorf("local: provider not initialized")
@@ -227,6 +232,7 @@ func (p *LocalProvider) CreateInstance(ctx context.Context, template string) (*S
 // uses the same BuildPythonWrapper / BuildJavaScriptWrapper as
 // every other provider, so the `__RAGFLOW_RESULT__:` marker
 // extraction is identical.
+// ExecuteCode 写包装脚本、启动子进程、采集 stdout/artifacts。
 func (p *LocalProvider) ExecuteCode(
 	ctx context.Context,
 	inst *SandboxInstance,
@@ -405,6 +411,7 @@ func (p *LocalProvider) ExecuteCode(
 // DestroyInstance removes the instance dir. Idempotent on
 // missing dir (matches the Python provider's return True on
 // already-gone).
+// DestroyInstance 删除实例目录，对已消失目录幂等。
 func (p *LocalProvider) DestroyInstance(ctx context.Context, inst *SandboxInstance) error {
 	if !p.isInitialized() {
 		return fmt.Errorf("local: provider not initialized")
@@ -453,6 +460,7 @@ func (p *LocalProvider) isInitialized() bool {
 // Matches the Python _build_child_env contract: HOME / TMPDIR
 // point at the instance dir, PYTHONUNBUFFERED is on, and a
 // small set of thread-related vars pass through from the host.
+// buildLocalChildEnv 构建子进程环境：HOME/TMPDIR 指向实例目录。
 func buildLocalChildEnv(instanceDir string) []string {
 	env := []string{
 		"HOME=" + instanceDir,
@@ -486,6 +494,7 @@ func buildLocalChildEnv(instanceDir string) []string {
 // records. Enforces the same limits the Python provider does:
 // max count, max per-file size, allowlist of extensions, no
 // symlinks.
+// collectArtifacts 遍历 artifacts/ 并按白名单与大小限制收集文件。
 func (p *LocalProvider) collectArtifacts(instanceDir string) ([]map[string]any, error) {
 	root := filepath.Join(instanceDir, "artifacts")
 	info, err := os.Stat(root)
@@ -559,6 +568,7 @@ func (p *LocalProvider) collectArtifacts(instanceDir string) ([]map[string]any, 
 // killProcessGroup sends signal to the process group of pid.
 // Used by the timeout / cancellation paths in ExecuteCode to
 // hard-kill the child + any descendants. POSIX only.
+// killProcessGroup 向进程组发送信号，超时/取消时硬杀子进程。
 func killProcessGroup(pid int, sig syscall.Signal) error {
 	if pid <= 0 {
 		return errors.New("invalid pid")

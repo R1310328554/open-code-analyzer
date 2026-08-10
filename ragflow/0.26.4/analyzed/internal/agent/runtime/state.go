@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// state.go — 画布组件 per-run 共享状态 CanvasState，避免 canvas 与 component 包循环依赖。
+
 //
 
 // runtime — per-run shared state for canvas components.
@@ -53,6 +55,7 @@ import (
 //   - Globals     : cross-canvas-instance globals
 //   - CancelFlag  : set when cancel signal received; nodes may poll
 //   - RunID       : unique per-run identifier (used by RunTracker + CheckPointStore)
+// CanvasState 为 eino StatePre/PostHandler 的 per-run 状态袋，字段对齐 Python canvas.py。
 type CanvasState struct {
 	mu         sync.RWMutex
 	Outputs    map[string]map[string]any
@@ -70,6 +73,7 @@ type CanvasState struct {
 // NewCanvasState returns a zero-valued CanvasState with all maps allocated.
 // The atomic CancelFlag is allocated eagerly so nodes can safely poll it
 // even before any cancel signal has been wired.
+// NewCanvasState 分配各 map 与 CancelFlag。
 func NewCanvasState(runID, taskID string) *CanvasState {
 	return &CanvasState{
 		Outputs:    make(map[string]map[string]any),
@@ -102,6 +106,7 @@ func init() {
 // Defined so the field tags and omitempty semantics are pinned in one
 // place. The CancelFlag is round-tripped as a bool (atomic.Bool can't
 // be marshalled directly without a wrapper).
+// canvasStateJSON 为 MarshalJSON/UnmarshalJSON 的稳定 wire 形状。
 type canvasStateJSON struct {
 	Outputs    map[string]map[string]any `json:"outputs"`
 	Sys        map[string]any            `json:"sys,omitempty"`
@@ -203,6 +208,7 @@ func (s *CanvasState) UnmarshalJSON(b []byte) error {
 //
 // An unknown cpn_id returns (nil, nil) — mirrors Python's "treat as literal"
 // fallback (canvas.py:494-495).
+// GetVar 解析 cpn_id@param / sys.* / env.* / item / index 变量引用。
 func (s *CanvasState) GetVar(ref string) (any, error) {
 	if ref == "" {
 		return nil, fmt.Errorf("canvas: empty variable reference")
@@ -216,6 +222,7 @@ func (s *CanvasState) GetVar(ref string) (any, error) {
 // auto-created (mirrors Python's set_variable_param_value at
 // canvas.py:261-271). The lock is held for the entire walk to keep
 // "walk + assign" atomic under concurrent writers.
+// SetVar 写入 Outputs[cpnID][param]，支持点路径自动建嵌套 map。
 func (s *CanvasState) SetVar(cpnID, param string, v any) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -230,6 +237,7 @@ func (s *CanvasState) SetVar(cpnID, param string, v any) {
 // Empty / unresolvable refs map to nil (caller decides on nil-handling).
 // The first error is returned and short-circuits the rest, but partial
 // results are NOT used by callers — discard on err.
+// ReadVars 批量解析 {{...}} 引用，一次加锁完成。
 func (s *CanvasState) ReadVars(refs []string) (map[string]any, error) {
 	out := make(map[string]any, len(refs))
 	s.mu.RLock()
@@ -251,6 +259,7 @@ func (s *CanvasState) ReadVars(refs []string) (map[string]any, error) {
 //
 // The lock is held only for the duration of the copy; callers may pass
 // the returned map around freely.
+// Snapshot 浅拷贝各组件 outputs，供 StatePreHandler 暴露。
 func (s *CanvasState) Snapshot() map[string]map[string]any {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -290,6 +299,7 @@ func (s *CanvasState) SnapshotNamespaces() (sys map[string]any, env map[string]a
 // RecordOutput stores payload under Outputs[cpnID][bucket]. Used by the
 // StatePostHandler to persist a node's result so downstream nodes can
 // resolve {{cpnID@bucket.x}} references against it.
+// RecordOutput 将节点结果写入 Outputs，供下游 {{cpnID@bucket}} 引用。
 func (s *CanvasState) RecordOutput(cpnID, bucket string, payload any) {
 	if cpnID == "" {
 		return
@@ -314,6 +324,7 @@ func (s *CanvasState) RecordOutput(cpnID, bucket string, payload any) {
 // (a non-retrieval canvas, or no tool call has populated the field
 // yet). The returned slice is a fresh copy so callers can range
 // over it without holding the lock.
+// GetRetrievalChunks 返回 Retrieval["chunks"] 快照，供引用标注使用。
 func (s *CanvasState) GetRetrievalChunks() []map[string]any {
 	if s == nil {
 		return nil
@@ -419,6 +430,7 @@ func setVarLocked(outputs map[string]map[string]any, cpnID, param string, v any)
 //  5. else → return nil
 //
 // The empty path returns the root value as-is.
+// dotTraverse 按点路径遍历值，行为对齐 Python get_variable_param_value。
 func dotTraverse(root any, path string) any {
 	if path == "" {
 		return root

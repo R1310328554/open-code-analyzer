@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// template_jinja.go — gonja 并行解析 Jinja2 语法（{% %}、过滤器等）。
+
 //
 
 // template_jinja.go — gonja direct import.
@@ -48,6 +50,7 @@ import (
 // Pure `{{var}}` references (the common v1 case) return false —
 // the fast path handles them. The check is a single byte scan, not
 // a parse, so the cost is negligible.
+// ContainsJinjaSyntax 检测是否含 Jinja2 专有语法，纯 {{var}} 返回 false。
 func ContainsJinjaSyntax(s string) bool {
 	if strings.Contains(s, "{%") {
 		return true
@@ -83,6 +86,7 @@ func ContainsJinjaSyntax(s string) bool {
 // error); the Jinja2 path either parses cleanly or returns an
 // error with the original string untouched. Callers that want the
 // "always return a string" semantics can wrap the call themselves.
+// ResolveTemplateJinja 经 gonja 渲染，上下文由 CanvasState 扁平化构建。
 func ResolveTemplateJinja(s string, state *CanvasState) (string, error) {
 	if state == nil {
 		return "", fmt.Errorf("template: nil canvas state")
@@ -105,6 +109,7 @@ func ResolveTemplateJinja(s string, state *CanvasState) (string, error) {
 // passed through unchanged so gonja can walk nested structures
 // with its native dot syntax ({{ agent_0.user.name }} resolves
 // to the bucket's "user" sub-map's "name" key).
+// stateToGonjaContext 将各 cpn outputs 转为 gonja 顶层变量。
 func stateToGonjaContext(state *CanvasState) map[string]any {
 	ctx := make(map[string]any, len(state.Outputs))
 	for cpnID, bucket := range state.Snapshot() {
@@ -148,6 +153,7 @@ func flattenMap(m map[string]any) map[string]any {
 // Falls back to gonja only when the input has Jinja2 markers
 // ({% %}, {# #}, or | inside a {{...}}). Callers that always
 // want Jinja2 semantics can call ResolveTemplateJinja directly.
+// ResolveTemplateAuto 按语法自动选择 regex 快路径或 gonja 路径。
 func ResolveTemplateAuto(s string, state *CanvasState) (string, error) {
 	if !ContainsJinjaSyntax(s) {
 		return ResolveTemplate(s, state)

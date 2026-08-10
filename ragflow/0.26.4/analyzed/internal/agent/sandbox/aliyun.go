@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// aliyun.go — 阿里云 Code Interpreter 沙箱 Provider：SDK 管生命周期，execute 走 REST 回退。
+
 //
 
 // aliyun.go is the Go port of
@@ -73,6 +75,7 @@ const aliyunExecutePath = "/2025-09-10/code-interpreter/%s/execute"
 
 // AliyunCodeInterpreterProvider is the Go port of
 // `agent/sandbox/providers/aliyun_codeinterpreter.py::AliyunCodeInterpreterProvider`.
+// AliyunCodeInterpreterProvider 对接 agentrun SDK 与 execute REST。
 type AliyunCodeInterpreterProvider struct {
 	accessKeyID     string
 	accessKeySecret string
@@ -92,6 +95,7 @@ type AliyunCodeInterpreterProvider struct {
 // newAliyunProviderFromEnv reads AGENTRUN_* env vars and returns a
 // provider ready for Initialize. We do NOT call Initialize here —
 // the manager does it on first use so env changes are picked up.
+// newAliyunProviderFromEnv 从 AGENTRUN_* 环境变量构造 Provider。
 func newAliyunProviderFromEnv() *AliyunCodeInterpreterProvider {
 	return newAliyunProviderFromConfig(aliyunConfigFromEnv())
 }
@@ -142,6 +146,7 @@ func (p *AliyunCodeInterpreterProvider) ProviderType() ProviderType {
 // Initialize constructs the agentrun SDK client and probes the
 // service via ListCodeInterpreters. The Go SDK does all the auth
 // and credential work for us.
+// Initialize 构建 SDK 客户端并以 ListCodeInterpreters 探活。
 func (p *AliyunCodeInterpreterProvider) Initialize(ctx context.Context) error {
 	if p.accessKeyID == "" || p.accessKeySecret == "" {
 		return errors.New("aliyun: AGENTRUN_ACCESS_KEY_ID and AGENTRUN_ACCESS_KEY_SECRET are required")
@@ -197,6 +202,7 @@ func (p *AliyunCodeInterpreterProvider) SupportedLanguages() []string {
 
 // CreateInstance calls CreateCodeInterpreter via the SDK and returns
 // the CodeInterpreterId as the instance handle.
+// CreateInstance 调用 CreateCodeInterpreter，返回 CodeInterpreterId。
 func (p *AliyunCodeInterpreterProvider) CreateInstance(ctx context.Context, template string) (*SandboxInstance, error) {
 	if !p.initialized {
 		return nil, fmt.Errorf("aliyun: provider not initialized")
@@ -258,6 +264,7 @@ func (p *AliyunCodeInterpreterProvider) CreateInstance(ctx context.Context, temp
 // ExecuteCode hits the agentrun REST execute endpoint via raw HTTP
 // (SDK gap). The payload mirrors the Python SDK's
 // `SandboxContext.execute(code, language, timeout)` call shape.
+// ExecuteCode 经 REST execute 运行包装后的用户代码并解析 stdout。
 func (p *AliyunCodeInterpreterProvider) ExecuteCode(
 	ctx context.Context,
 	inst *SandboxInstance,
@@ -374,6 +381,7 @@ func (p *AliyunCodeInterpreterProvider) ExecuteCode(
 // access-key pair the SDK uses; the execute endpoint is the same
 // REST API the SDK's `sandbox.context.execute` would hit, just
 // without the SDK's higher-level helpers.
+// callExecute POST 到 agentrun execute 端点（SDK 缺口时的原始 HTTP）。
 func (p *AliyunCodeInterpreterProvider) callExecute(ctx context.Context, codeInterpreterID, code, language string, timeoutSec int) ([]byte, error) {
 	endpoint := p.executeHost
 	if endpoint == "" {
@@ -446,6 +454,7 @@ func (p *AliyunCodeInterpreterProvider) callExecute(ctx context.Context, codeInt
 }
 
 // DestroyInstance calls DeleteCodeInterpreter via the SDK.
+// DestroyInstance 调用 DeleteCodeInterpreter 释放实例。
 func (p *AliyunCodeInterpreterProvider) DestroyInstance(ctx context.Context, inst *SandboxInstance) error {
 	if !p.initialized {
 		return fmt.Errorf("aliyun: provider not initialized")

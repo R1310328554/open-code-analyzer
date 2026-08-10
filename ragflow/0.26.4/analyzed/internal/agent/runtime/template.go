@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// template.go — {{...}} 变量引用解析与模板替换，正则与 Python agent/component/base.py:368 保持一致。
+
 //
 
 // runtime — {{...}} variable reference parser shared by canvas and
@@ -46,12 +48,14 @@ import (
 //
 // Capture group 1 holds the bare ref without braces (e.g. "cpn_0@content",
 // "sys.query", "env.max_tokens", "item", "index").
+// VarRefPattern 匹配 RAGFlow 变量引用语法（cpn_id@param / sys / env / item / index）。
 var VarRefPattern = regexp.MustCompile(`\{+\s*([a-zA-Z:0-9_]+@[A-Za-z0-9_.-]+|sys\.[A-Za-z0-9_.]+|env\.[A-Za-z0-9_.]+|item|index)\s*\}+`)
 
 // ExtractRefs returns the unique ref strings (without the surrounding
 // braces) appearing in s, in first-occurrence order. Pure regex — does not
 // touch state. Use this when you need to know "which references does this
 // template contain?" without resolving.
+// ExtractRefs 提取模板中唯一 ref 列表（不含花括号），不访问状态。
 func ExtractRefs(s string) []string {
 	matches := VarRefPattern.FindAllStringSubmatch(s, -1)
 	if len(matches) == 0 {
@@ -81,6 +85,7 @@ func ExtractRefs(s string) []string {
 //
 // Supported forms match GetVar (cpn_id@param[.path], sys.x[.path], env.x[.path],
 // item, index).
+// ResolveTemplate 将 {{...}} 替换为状态值；未解析 ref 返回错误（Go 侧 loud-fail）。
 func ResolveTemplate(s string, state *CanvasState) (string, error) {
 	if !VarRefPattern.MatchString(s) {
 		return s, nil
@@ -122,6 +127,7 @@ func ResolveTemplate(s string, state *CanvasState) (string, error) {
 //
 // Mirrors the Python canvas.py:177-178 soft-fail ("unresolved ref
 // → empty string") for display rendering.
+// ResolveTemplateForDisplay 展示用变体：未解析 ref 渲染为空串。
 func ResolveTemplateForDisplay(s string, state *CanvasState) string {
 	if state == nil || !VarRefPattern.MatchString(s) {
 		return s

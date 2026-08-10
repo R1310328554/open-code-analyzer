@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// http.go — sandbox 包独立 HTTP 客户端：带指数退避的重试，与 tool/http_helper 语义对齐但避免循环依赖。
+
 //
 
 // http.go is the sandbox package's small HTTP client. It is
@@ -39,6 +41,7 @@ import (
 
 // HTTPClient is a minimal context-aware HTTP client for the sandbox
 // providers. It is safe for concurrent use.
+// HTTPClient 为 sandbox Provider 使用的上下文感知 HTTP 客户端。
 type HTTPClient struct {
 	client      *http.Client
 	timeout     time.Duration
@@ -48,6 +51,7 @@ type HTTPClient struct {
 }
 
 // HTTPConfig configures an HTTPClient.
+// HTTPConfig 配置超时、重试次数与退避参数。
 type HTTPConfig struct {
 	// Timeout is the per-request timeout. Default 30s.
 	Timeout time.Duration
@@ -78,6 +82,7 @@ func (c HTTPConfig) withDefaults() HTTPConfig {
 
 // NewHTTPClient returns an HTTPClient with the given config (or
 // defaults when zero-valued).
+// NewHTTPClient 返回带默认值的 HTTPClient。
 func NewHTTPClient(cfg HTTPConfig) *HTTPClient {
 	c := cfg.withDefaults()
 	return &HTTPClient{
@@ -101,6 +106,7 @@ func NewHTTPClient(cfg HTTPConfig) *HTTPClient {
 //
 // The context is honored on every attempt; cancellation aborts the
 // loop.
+// Do 发起请求：5xx 与网络错误重试，4xx 不重试，尊重 context 取消。
 func (h *HTTPClient) Do(
 	ctx context.Context,
 	method, url, body, contentType string,
@@ -166,6 +172,7 @@ func (h *HTTPClient) Do(
 
 // backoff returns an exponentially increasing duration with full jitter,
 // capped at max. attempt is 1-indexed; the first retry uses base.
+// backoff 计算带全抖动的指数退避时长。
 func backoff(base, max time.Duration, attempt int) time.Duration {
 	if attempt < 1 {
 		attempt = 1

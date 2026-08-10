@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// artifacts.go — 跨 Provider 统一的代码执行产物扩展名白名单。
+
 //
 
 // artifacts.go holds the cross-provider allowlist of artifact
@@ -35,6 +37,7 @@ package sandbox
 // allowedArtifactExts is the set of file extensions the Local
 // and SSH providers accept as code-execution artifacts. Anything
 // outside this set is rejected at collect time.
+// allowedArtifactExts 为 Local/SSH Provider 接受的产物扩展名集合。
 var allowedArtifactExts = map[string]struct{}{
 	".csv":  {},
 	".html": {},

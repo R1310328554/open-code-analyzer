@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// e2b.go — e2b 云沙箱 Provider：社区 Go SDK 实现完整生命周期与命令执行。
+
 //
 
 // e2b.go is the Go port of
@@ -69,6 +71,7 @@ const e2bDefaultSandboxTimeout = 5 * time.Minute
 // `agent/sandbox/providers/e2b.py::E2BProvider`. On the Python
 // side this class is a stub; on the Go side it is a real
 // implementation that talks to e2b cloud sandboxes.
+// E2BProvider 通过 e2b-go-sdk 管理云沙箱实例。
 type E2BProvider struct {
 	client         *e2bsdk.Client
 	template       string
@@ -124,6 +127,7 @@ func (p *E2BProvider) ProviderType() ProviderType { return ProviderE2B }
 // or E2B_ACCESS_TOKEN from the Config struct, which it also
 // resolves from the same env vars. We return an error if neither
 // is set so the manager does not register a broken provider.
+// Initialize 构建 e2b 客户端，要求 E2B_API_KEY 或 E2B_ACCESS_TOKEN。
 func (p *E2BProvider) Initialize(ctx context.Context) error {
 	apiKey := os.Getenv("E2B_API_KEY")
 	accessToken := os.Getenv("E2B_ACCESS_TOKEN")
@@ -158,6 +162,7 @@ func (p *E2BProvider) SupportedLanguages() []string {
 
 // CreateInstance provisions a fresh e2b sandbox. The sandbox's
 // InstanceID is the e2b sandbox id (a UUID-shaped string).
+// CreateInstance 创建新 e2b 沙箱，InstanceID 为 sandbox UUID。
 func (p *E2BProvider) CreateInstance(ctx context.Context, template string) (*SandboxInstance, error) {
 	if !p.isInitialized() {
 		return nil, fmt.Errorf("e2b: provider not initialized")
@@ -202,6 +207,7 @@ func (p *E2BProvider) CreateInstance(ctx context.Context, template string) (*San
 // `python3 -c <wrapped>` (Python) or `node -e <wrapped>` (JS).
 // The wrapped code carries the `__RAGFLOW_RESULT__:` marker so
 // the structured main() return value comes back as before.
+// ExecuteCode 经 python3 -c / node -e 运行包装代码并提取结构化结果。
 func (p *E2BProvider) ExecuteCode(
 	ctx context.Context,
 	inst *SandboxInstance,
@@ -280,6 +286,7 @@ func (p *E2BProvider) ExecuteCode(
 // scanned for the `__RAGFLOW_RESULT__:` marker so the model gets
 // the structured main() return value (matching SelfManaged and
 // Aliyun).
+// buildE2BExecutionResult 将 e2b CommandResult 映射为 ExecutionResult。
 func buildE2BExecutionResult(r *e2bsdk.CommandResult, lang string, start time.Time) *ExecutionResult {
 	stdout, structured := ExtractStructuredResult(r.Stdout)
 	exitCode := int(r.ExitCode)
@@ -301,6 +308,7 @@ func buildE2BExecutionResult(r *e2bsdk.CommandResult, lang string, start time.Ti
 // the sandbox. The e2b SDK's Kill is idempotent (returns false if
 // the sandbox is already gone), so we don't error on "already
 // gone" conditions.
+// DestroyInstance Kill 沙箱以按秒计费释放资源。
 func (p *E2BProvider) DestroyInstance(ctx context.Context, inst *SandboxInstance) error {
 	if !p.isInitialized() {
 		return fmt.Errorf("e2b: provider not initialized")

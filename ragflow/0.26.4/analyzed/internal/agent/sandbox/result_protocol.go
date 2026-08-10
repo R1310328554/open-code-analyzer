@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// result_protocol.go — __RAGFLOW_RESULT__: 标记协议：包装 main() 返回值供结构化提取。
+
 //
 
 // result_protocol.go is the Go port of `agent/sandbox/result_protocol.py`.
@@ -45,6 +47,7 @@ import (
 // resultMarkerPrefix is the wire-level marker the executor_manager
 // Python service scans stdout for. Keep in sync with Python
 // `agent/sandbox/result_protocol.py::RESULT_MARKER_PREFIX`.
+// resultMarkerPrefix 为 executor_manager 扫描 stdout 的 wire 级前缀。
 const resultMarkerPrefix = "__RAGFLOW_RESULT__:"
 
 // BuildPythonWrapper wraps a Python source so that:
@@ -61,6 +64,7 @@ const resultMarkerPrefix = "__RAGFLOW_RESULT__:"
 // fragility of embedding raw JSON directly (true/false/null vs
 // Python's True/False/None) and removes the unsafe-quoting sink
 // from CodeQL's view.
+// BuildPythonWrapper 包装 Python 源码，调用 main(**args) 并打印 marker 行。
 func BuildPythonWrapper(code, argsJSON string) string {
 	argsB64 := base64.StdEncoding.EncodeToString([]byte(argsJSON))
 	return code + `
@@ -91,6 +95,7 @@ if __name__ == "__main__":
 // syntax-significant characters) and decoded at runtime via
 // JSON.parse(Buffer.from(..., 'base64').toString('utf8')), so the
 // only Go-side dataflow into the JS source is the base64 string.
+// BuildJavaScriptWrapper 包装 JS 源码，await main(args) 并打印 marker 行。
 func BuildJavaScriptWrapper(code, argsJSON string) string {
 	argsB64 := base64.StdEncoding.EncodeToString([]byte(argsJSON))
 	// Note: this string is *embedded inside* a Go raw string, but the
@@ -138,6 +143,7 @@ const __ragflowArgs = JSON.parse(Buffer.from(__ragflowArgsB64, 'base64').toStrin
 //     empty. Python's `except Exception: cleaned_lines.append(line)`
 //     does the same.
 //   - the trailing newline is preserved if the input had one.
+// ExtractStructuredResult 从 stdout 提取 marker 后的 base64-JSON 结构化结果。
 func ExtractStructuredResult(stdout string) (string, map[string]any) {
 	if stdout == "" {
 		return "", map[string]any{}
@@ -179,6 +185,7 @@ func ExtractStructuredResult(stdout string) (string, map[string]any) {
 // argsToJSON is a small helper used by the providers to build the
 // args string the wrapper expects. Empty/nil maps serialize to "{}"
 // so the wrapper can always json.loads safely.
+// argsToJSON 将 args map 序列化为 wrapper 可用的 JSON 字符串。
 func argsToJSON(args map[string]any) (string, error) {
 	if args == nil {
 		return "{}", nil

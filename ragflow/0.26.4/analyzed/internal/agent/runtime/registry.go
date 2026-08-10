@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// registry.go — 按 Category 分类的组件注册表：ingestion pipeline 与 agent canvas 共享 DefaultRegistry 单一数据源。
+
 //
 
 // runtime — category-aware component registry.
@@ -39,6 +41,7 @@ import (
 
 // Category tags each registered component with its domain so the UI can
 // filter and the runtime can audit cross-domain wiring.
+// Category 标记组件所属域，供 UI 过滤与跨域审计。
 type Category string
 
 const (
@@ -61,6 +64,7 @@ const (
 // the legacy-adapter shim), but a component that wants to skip
 // the version stamp but still record inputs/outputs is also
 // allowed.
+// Metadata 为 API 暴露的静态组件描述符，注册时必须提供。
 type Metadata struct {
 	Version string            // contract version; required for ingestion, "legacy" for the legacy adapter
 	Inputs  map[string]string // input key → human-readable description
@@ -68,6 +72,7 @@ type Metadata struct {
 }
 
 // entry is one slot in the registry.
+// entry 为注册表中的一个槽位。
 type entry struct {
 	factory  ComponentFactory
 	category Category
@@ -77,6 +82,7 @@ type entry struct {
 // Registry is the process-wide collection of named ComponentFactories,
 // tagged with Category so callers can enumerate by domain. Each registration
 // also carries static Metadata (Inputs/Outputs) consumed by the API layer.
+// Registry 为进程级 ComponentFactory 集合，按 Category 分组。
 type Registry interface {
 	Register(name string, category Category, factory ComponentFactory, metadata Metadata) error
 	Lookup(name string) (ComponentFactory, Category, Metadata, bool)
@@ -97,6 +103,7 @@ type Registry interface {
 // build with "unknown component" errors when an existing init() registers
 // "ExampleComponent" but the canvas looks up "examplecomponent" (or vice
 // versa).
+// memoryRegistry 为并发安全的生产注册表实现；Lookup 大小写不敏感。
 type memoryRegistry struct {
 	mu      sync.RWMutex
 	entries map[string]entry
@@ -176,6 +183,7 @@ func (r *memoryRegistry) Names() []string {
 // NewMemoryRegistry constructs an empty in-memory Registry. Tests use
 // this to spin up isolated registries; production code uses
 // DefaultRegistry.
+// NewMemoryRegistry 构造空内存注册表，测试用。
 func NewMemoryRegistry() Registry {
 	return &memoryRegistry{entries: make(map[string]entry)}
 }
@@ -185,11 +193,13 @@ func NewMemoryRegistry() Registry {
 // build occurs before every package's init() has run, lookups see all
 // completed registrations because the registry is read at call time, not
 // at SetDefaultFactory time.
+// DefaultRegistry 为进程级单例，各组件 init 在此注册。
 var DefaultRegistry Registry = NewMemoryRegistry()
 
 // MustRegister wraps Register and panics on error. Init()-time callers
 // that want the legacy "panic on duplicate" behaviour can use this
 // instead of Register + manual error check.
+// MustRegister 包装 Register，出错时 panic，供 init 使用。
 func MustRegister(name string, category Category, factory ComponentFactory, metadata Metadata) {
 	if err := DefaultRegistry.Register(name, category, factory, metadata); err != nil {
 		panic(err)
@@ -201,6 +211,7 @@ func MustRegister(name string, category Category, factory ComponentFactory, meta
 // the call site without going through MustRegister. It returns the same
 // error as Register; callers that want panic-on-error should use
 // MustRegister instead.
+// RegisterWithMeta 便捷调用 DefaultRegistry.Register。
 func RegisterWithMeta(name string, category Category, factory ComponentFactory, metadata Metadata) error {
 	return DefaultRegistry.Register(name, category, factory, metadata)
 }

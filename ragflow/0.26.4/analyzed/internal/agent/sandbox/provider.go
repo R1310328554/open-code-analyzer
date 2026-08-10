@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// provider.go — sandbox 包核心类型与 SandboxProvider 契约，对齐 Python agent/sandbox/providers/base.py。
+
 //
 
 // Package sandbox implements RAGFlow's Go-side CodeExec sandbox subsystem.
@@ -39,6 +41,7 @@ import (
 // ProviderType is the canonical identifier for a sandbox backend. The
 // values match the Python-side `sandbox.provider_type` system setting
 // and the keys in `agent/sandbox/providers/__init__.py`.
+// ProviderType 为沙箱后端 canonical 标识，对应 sandbox.provider_type 设置。
 type ProviderType string
 
 const (
@@ -87,6 +90,7 @@ var ErrE2BProviderNotImplemented = errors.New(
 // ExecutionResult dataclass so downstream consumers (the CodeExec
 // tool, the Message component, rich-content rendering) can pattern
 // match unchanged across the two ports.
+// ExecutionResult 为各 Provider 统一的执行结果 wire 形状。
 type ExecutionResult struct {
 	// Stdout is the captured standard output from the sandbox.
 	Stdout string
@@ -104,6 +108,7 @@ type ExecutionResult struct {
 // SandboxInstance is the logical handle returned by CreateInstance.
 // Self-managed treats this as a UUID tracking label (executor_manager
 // pools internally); aliyun returns the agentrun CodeInterpreterId.
+// SandboxInstance 为 CreateInstance 返回的逻辑句柄。
 type SandboxInstance struct {
 	// InstanceID is the opaque provider-specific handle. Pass it back
 	// to ExecuteCode / DestroyInstance.
@@ -124,6 +129,7 @@ type SandboxInstance struct {
 // so the Go port's providers are semantically interchangeable with
 // the Python ones — same lifecycle, same argument shape, same result
 // shape.
+// SandboxProvider 定义 Initialize/Create/Execute/Destroy/HealthCheck 生命周期。
 type SandboxProvider interface {
 	// Initialize configures the provider. Returns an error if the
 	// provider is misconfigured or the upstream is unreachable. The
@@ -164,6 +170,7 @@ type SandboxProvider interface {
 // Returns "" for unsupported languages so the caller can reject them.
 // Matching the Python side's _normalize_language behavior
 // (lowercased before comparison), this is case-insensitive.
+// normalizeLanguage 将 python3/js/node 等别名规范为 python/nodejs。
 func normalizeLanguage(in string) string {
 	v := strings.ToLower(strings.TrimSpace(in))
 	switch v {
@@ -180,6 +187,7 @@ func normalizeLanguage(in string) string {
 // 600s matches the Python self_managed range (1..600). Callers
 // (CodeExec tool) pick a timeout based on user input; this is a
 // defense-in-depth clamp.
+// validateTimeout 将超时 clamp 到 [1, 600] 秒。
 func validateTimeout(t int) (int, error) {
 	if t < 1 {
 		return 0, fmt.Errorf("sandbox: timeout %d < 1s", t)

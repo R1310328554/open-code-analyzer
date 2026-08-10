@@ -1,3 +1,4 @@
+// manager_client.go — 将 ProviderManager 适配为 CodeExec 工具的 SandboxClient 接口。
 package sandbox
 
 import (
@@ -9,14 +10,17 @@ import (
 
 // ManagerClient adapts the active sandbox provider manager to the CodeExec
 // tool's SandboxClient interface.
+// ManagerClient 包装 ProviderManager，供 agent/tool CodeExec 调用。
 type ManagerClient struct {
 	manager *ProviderManager
 }
 
+// NewManagerClient 返回绑定 DefaultManager 的客户端。
 func NewManagerClient() *ManagerClient {
 	return &ManagerClient{manager: DefaultManager()}
 }
 
+// ExecuteCode 加载 Provider、创建实例、执行脚本并在 defer 中销毁实例。
 func (c *ManagerClient) ExecuteCode(ctx context.Context, req agenttool.SandboxRequest) (*agenttool.SandboxResponse, error) {
 	if c == nil || c.manager == nil {
 		return nil, fmt.Errorf("sandbox: provider manager unavailable")

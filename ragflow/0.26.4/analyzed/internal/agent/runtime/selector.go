@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// selector.go — 租户级画布运行时选择：Redis 读写 per-tenant 覆盖，默认 RuntimeGo。
+
 //
 
 // Package runtime implements per-tenant runtime selection for the
@@ -40,6 +42,7 @@ import (
 // RuntimeMode identifies which agent-canvas runtime implementation
 // serves a given tenant. Supports "go" and "python"; "auto" is
 // reserved for future adaptive policies.
+// RuntimeMode 标识租户使用的 agent-canvas 运行时实现。
 type RuntimeMode string
 
 const (
@@ -79,6 +82,7 @@ var (
 // The value is read once from the RAGFLOW_CANVAS_DEFAULT_RUNTIME env var;
 // subsequent calls return the cached result. Unknown env values fall back
 // to RuntimeGo (the new default) so a misconfig still lands on the Go path.
+// Default 返回进程级默认运行时，从 RAGFLOW_CANVAS_DEFAULT_RUNTIME 读取并缓存。
 func Default() RuntimeMode {
 	defaultOnce.Do(func() {
 		raw := os.Getenv(defaultEnvKey)
@@ -100,6 +104,7 @@ func ResetDefaultCache() {
 
 // Selector resolves the runtime mode for a tenant at request time. It is
 // safe for concurrent use.
+// Selector 在请求时解析租户的运行时模式，并发安全。
 type Selector struct {
 	redis  *redis.Client
 	logger *zap.Logger
@@ -107,6 +112,7 @@ type Selector struct {
 
 // NewSelector constructs a Selector backed by the supplied Redis client. A
 // nil logger is replaced with zap.NewNop() so callers in tests can omit it.
+// NewSelector 构造基于 Redis 的 Selector；logger 可为 nil。
 func NewSelector(rdb *redis.Client, logger *zap.Logger) *Selector {
 	if logger == nil {
 		logger = zap.NewNop()
@@ -127,6 +133,7 @@ func overrideKey(tenantID string) string {
 //     falling back to RuntimeGo).
 //
 // A nil Redis client short-circuits to the default and never errors.
+// Select 按 Redis 覆盖 → 进程默认 顺序解析租户运行时。
 func (s *Selector) Select(ctx context.Context, tenantID string) (RuntimeMode, error) {
 	if s == nil || s.redis == nil {
 		return Default(), nil
@@ -155,6 +162,7 @@ func (s *Selector) Select(ctx context.Context, tenantID string) (RuntimeMode, er
 // (it is permanent until explicitly changed) so the operator does not have
 // to remember to re-set it after a Redis flush of short-lived keys. Used
 // by the admin runtime endpoint and tests.
+// Set 为租户写入永久运行时覆盖（无 TTL）。
 func (s *Selector) Set(ctx context.Context, tenantID string, mode RuntimeMode) error {
 	if s == nil || s.redis == nil {
 		return fmt.Errorf("runtime selector: no redis client configured")

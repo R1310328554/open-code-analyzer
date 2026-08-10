@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// config.go — 管理面板 JSON 配置 map 的类型安全访问器，宽松 coercion 避免误配导致启动失败。
+
 //
 
 // config.go — type-safe accessors for the JSON config map that the
@@ -41,6 +43,7 @@ import (
 
 // configString returns the string value for key, or "" if missing or
 // not coercible. JSON-decoded numbers are converted via strconv.
+// configString 读取字符串配置，支持 JSON number/bool 强制转换。
 func configString(cfg map[string]any, key string) string {
 	v, ok := cfg[key]
 	if !ok || v == nil {
@@ -74,6 +77,7 @@ func configString(cfg map[string]any, key string) string {
 // configInt returns the int value for key, or fallback if missing
 // or not coercible. Accepts JSON numbers (float64) and integer
 // strings.
+// configInt 读取整型配置，缺失或不可转换时返回 fallback。
 func configInt(cfg map[string]any, key string, fallback int) int {
 	v, ok := cfg[key]
 	if !ok || v == nil {
@@ -101,6 +105,7 @@ func configInt(cfg map[string]any, key string, fallback int) int {
 // configDuration returns the time.Duration value for key, or fallback
 // if missing / unparseable. Accepts either a duration string ("30s",
 // "1m") or a JSON number interpreted as seconds.
+// configDuration 解析 duration 字符串或秒数。
 func configDuration(cfg map[string]any, key string, fallback time.Duration) time.Duration {
 	v, ok := cfg[key]
 	if !ok || v == nil {
