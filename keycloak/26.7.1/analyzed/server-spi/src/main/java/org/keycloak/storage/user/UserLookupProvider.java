@@ -22,6 +22,8 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 用户查找能力接口：支持按 ID、用户名、邮箱等基本查询，联邦登录必需。
+ * <p>所有方法仅在本 provider 所代表的存储范围内搜索，不应跨 provider 查找。</p>
  * This is an optional capability interface that is intended to be implemented by any
  * <code>UserStorageProvider</code> that supports basic user querying. You must
  * implement this interface if you want to be able to log in to keycloak using users from your storage.
@@ -36,6 +38,7 @@ import org.keycloak.models.UserModel;
 public interface UserLookupProvider {
 
     /**
+     * 按 ID 返回 realm 中的用户。
      * Returns a user with the given id belonging to the realm
      *
      * @param id id of the user
@@ -45,6 +48,7 @@ public interface UserLookupProvider {
     UserModel getUserById(RealmModel realm, String id);
 
     /**
+     * 按用户名精确查找 realm 中的用户。
      * Exact search for a user by its username.
      * Returns a user with the given username belonging to the realm
      *
@@ -57,11 +61,15 @@ public interface UserLookupProvider {
      */
     UserModel getUserByUsername(RealmModel realm, String username);
 
+    /** 按凭据查找用户（默认返回 {@code null}，子类可覆盖）。
+     * @param realm realm
+     * @param input 凭据输入 */
     default CredentialValidationOutput getUserByCredential(RealmModel realm, CredentialInput input) {
         return null;
     }
 
     /**
+     * 按邮箱返回 realm 中的用户。
      * Returns a user with the given email belonging to the realm
      *
      * @param email email address

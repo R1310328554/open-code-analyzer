@@ -20,6 +20,7 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 用户注册能力接口：支持通过联邦存储创建与删除用户。
  * This is an optional capability interface that is intended to be implemented by any
  * <code>UserStorageProvider</code> that supports addition of new users. You must
  * implement this interface if you want to use this storage for registering new users.
@@ -30,6 +31,7 @@ import org.keycloak.models.UserModel;
 public interface UserRegistrationProvider {
 
     /**
+     * 遍历所有实现本接口的存储 provider 尝试添加用户；返回 null 则尝试下一个，最终可落本地存储。
      * All storage providers that implement this interface will be looped through.
      * If this method returns null, then the next storage provider's addUser() method will be called.
      * If no storage providers handle the add, then the user will be created in local storage.
@@ -44,6 +46,7 @@ public interface UserRegistrationProvider {
     UserModel addUser(RealmModel realm, String username);
 
     /**
+     * 删除源自本 provider 的用户时调用（导入策略下本地链接用户亦会触发）。
      * Called if user originated from this provider.
      *
      *

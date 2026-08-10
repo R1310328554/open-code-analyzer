@@ -27,6 +27,8 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 用户计数能力接口：支持 {@code UserStorageProvider} 高效统计用户数量。
+ * <p>实现后可配合分页查询（{@code firstResult}）避免全量加载。</p>
  * This is an optional capability interface that is intended to be implemented by 
  * <code>UserStorageProvider</code> that supports count queries. 
  *
@@ -38,6 +40,7 @@ import org.keycloak.models.UserModel;
  */
 public interface UserCountMethodsProvider {
     /**
+     * 返回用户总数（不含服务账号）。
      * Returns the number of users, without consider any service account.
      *
      * @param realm the realm
@@ -48,6 +51,7 @@ public interface UserCountMethodsProvider {
     }
 
     /**
+     * 返回至少属于给定组集合之一的用户数量。
      * Returns the number of users that are in at least one of the groups
      * given.
      *
@@ -63,6 +67,7 @@ public interface UserCountMethodsProvider {
     }
 
     /**
+     * 返回与 {@link #searchForUserStream(RealmModel, String)} 搜索结果一致的用户数量。
      * Returns the number of users that would be returned by a call to {@link #searchForUserStream(RealmModel, String) searchForUserStream}
      *
      * @param realm  the realm
@@ -80,6 +85,7 @@ public interface UserCountMethodsProvider {
     }
 
     /**
+     * 返回同时匹配搜索条件且属于指定组的用户数量（已弃用）。
      * Returns the number of users that would be returned by a call to {@link #searchForUserStream(RealmModel, String) searchForUserStream}
      * and are members of at least one of the groups given by the {@code groupIds} set.
      *
@@ -98,6 +104,7 @@ public interface UserCountMethodsProvider {
     }
 
     /**
+     * 返回符合过滤参数的用户数量。
      * Returns the number of users that match the given filter parameters.
      *
      * @param realm  the realm
@@ -112,6 +119,7 @@ public interface UserCountMethodsProvider {
     }
 
     /**
+     * 返回同时符合过滤参数且属于指定组的用户数量。
      * Returns the number of users that match the given filter parameters and is in
      * at least one of the given groups.
      *
@@ -129,6 +137,7 @@ public interface UserCountMethodsProvider {
 
 
     /**
+     * 统计给定用户流中至少属于指定组之一的用户数量。
      * Returns the number of users from the given list of users that are in at
      * least one of the groups given in the groups set.
      *
@@ -141,6 +150,7 @@ public interface UserCountMethodsProvider {
     }
 
     /**
+     * 返回用户总数（可选是否含服务账号）。
      * Returns the number of users.
      *
      * @param realm                 the realm

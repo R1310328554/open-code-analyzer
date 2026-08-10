@@ -24,6 +24,7 @@ import org.keycloak.models.ClientScopeModel;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 客户端查找抽象：按内部 ID 与 clientId 精确/模糊查询客户端，登录流程必需。
  * Abstraction interface for lookoup of clients by id and clientId.  These methods required for participating in login flows.
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -32,6 +33,7 @@ import org.keycloak.models.RealmModel;
 public interface ClientLookupProvider {
 
     /**
+     * 按内部 ID 精确查找客户端。
      * Exact search for a client by its internal ID.
      * @param realm Realm to limit the search.
      * @param id Internal ID
@@ -40,6 +42,7 @@ public interface ClientLookupProvider {
     ClientModel getClientById(RealmModel realm, String id);
 
     /**
+     * 按公开 clientId（OIDC 的 client_id / SAML 的 entityID）精确查找客户端。
      * Exact search for a client by its public client identifier.
      * @param realm Realm to limit the search for clients.
      * @param clientId String that identifies the client to the external parties.
@@ -49,6 +52,7 @@ public interface ClientLookupProvider {
     ClientModel getClientByClientId(RealmModel realm, String clientId);
 
     /**
+     * 在公开 clientId 中不区分大小写地模糊搜索客户端。
      * Case-insensitive search for clients that contain the given string in their public client identifier.
      * @param realm Realm to limit the search for clients.
      * @param clientId Searched substring of the public client
@@ -59,8 +63,18 @@ public interface ClientLookupProvider {
      */
     Stream<ClientModel> searchClientsByClientIdStream(RealmModel realm, String clientId, Integer firstResult, Integer maxResults);
 
+    /** 按属性名值对搜索客户端。
+     * @param realm 限定 realm
+     * @param attributes 属性过滤条件
+     * @param firstResult 分页起始（负值或 null 忽略）
+     * @param maxResults 最大返回数（负值或 null 忽略） */
     Stream<ClientModel> searchClientsByAttributes(RealmModel realm, Map<String, String> attributes, Integer firstResult, Integer maxResults);
 
+    /** 按认证流绑定覆盖项搜索客户端。
+     * @param realm 限定 realm
+     * @param overrides 需匹配的流绑定覆盖
+     * @param firstResult 分页起始
+     * @param maxResults 最大返回数 */
     default Stream<ClientModel> searchClientsByAuthenticationFlowBindingOverrides(RealmModel realm, Map<String, String> overrides, Integer firstResult, Integer maxResults) {
 		Stream<ClientModel> clients = searchClientsByAttributes(realm, Map.of(), null, null)
 				.filter(client -> overrides.entrySet().stream().allMatch(override -> override.getValue().equals(client.getAuthenticationFlowBindingOverrides().get(override.getKey()))));
@@ -74,6 +88,7 @@ public interface ClientLookupProvider {
     }
 
     /**
+     * 返回客户端关联的全部默认范围（{@code defaultScope=true}）或可选范围（{@code false}）。
      * Return all default scopes (if {@code defaultScope} is {@code true}) or all optional scopes (if {@code defaultScope} is {@code false}) linked with the client
      *
      * @param realm Realm

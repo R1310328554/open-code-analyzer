@@ -19,9 +19,13 @@ package org.keycloak.storage.clientscope;
 import org.keycloak.models.ClientScopeModel;
 import org.keycloak.models.RealmModel;
 
+/**
+ * 客户端范围查找抽象：按内部 ID 精确查询 {@link org.keycloak.models.ClientScopeModel}。
+ */
 public interface ClientScopeLookupProvider {
 
     /**
+     * 按内部 ID 精确查找客户端范围。
      * Exact search for a client scope by its internal ID..
      * @param realm Realm.
      * @param id Internal ID of the role.

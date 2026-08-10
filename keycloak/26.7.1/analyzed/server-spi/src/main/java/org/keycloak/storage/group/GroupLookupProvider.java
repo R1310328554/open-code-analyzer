@@ -22,9 +22,13 @@ import java.util.stream.Stream;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.RealmModel;
 
+/**
+ * 组查找抽象：按 ID、名称、属性等条件查询 {@link org.keycloak.models.GroupModel}。
+ */
 public interface GroupLookupProvider {
 
     /**
+     * 按 ID 返回 realm 中的组。
      * Returns a group from the given realm with the corresponding id
      *
      * @param realm Realm.
@@ -34,6 +38,7 @@ public interface GroupLookupProvider {
     GroupModel getGroupById(RealmModel realm, String id);
 
     /**
+     * 按名称与父组返回 realm 中的组。
      * Returns a group from the given realm with the corresponding name and parent
      *
      * @param realm  Realm.
@@ -47,6 +52,7 @@ public interface GroupLookupProvider {
     }
 
     /**
+     * 在 realm 中按名称搜索组（可精确或模糊匹配）。
      * Returns groups with the given string in their name for the given realm.
      *
      * @param realm Realm.
@@ -62,6 +68,7 @@ public interface GroupLookupProvider {
     }
 
     /**
+     * 按属性名值对过滤 realm 中的组。
      * Returns the groups filtered by attribute names and attribute values for the given realm.
      *
      * @param realm Realm.
@@ -73,6 +80,7 @@ public interface GroupLookupProvider {
     Stream<GroupModel> searchGroupsByAttributes(RealmModel realm, Map<String, String> attributes, Integer firstResult, Integer maxResults);
 
     /**
+     * 在组层级任意深度按名称搜索组（支持精确/模糊）。
      * Returns groups with the given string in their name for the given realm.
      * Groups are searched at any level in the hierarchy (top-level and nested subgroups).
      *

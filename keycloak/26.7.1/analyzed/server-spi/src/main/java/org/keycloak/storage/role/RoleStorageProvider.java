@@ -19,6 +19,7 @@ package org.keycloak.storage.role;
 import org.keycloak.provider.Provider;
 
 /**
+ * 角色存储 Provider 基接口：为角色提供替代存储机制，并继承 {@link RoleLookupProvider} 查找能力。
  * Base interface for components that want to provide an alternative storage mechanism for roles
  */
 public interface RoleStorageProvider extends Provider, RoleLookupProvider {

@@ -20,6 +20,7 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 
 /**
+ * 用户批量更新能力接口：支持 {@code UserStorageProvider} 执行 realm 级批量操作。
  * This is an optional capability interface that is intended to be implemented by any
  * <code>UserStorageProvider</code> that supports bulk operations.
  *
@@ -29,6 +30,7 @@ import org.keycloak.models.RoleModel;
 public interface UserBulkUpdateProvider {
     
     /**
+     * 将指定角色授予 realm 内全部用户（角色须属于该 realm）。
      * Grants the given role to all users from particular realm. The role has to
      * belong to the realm. 
      * @param realm Realm

@@ -17,6 +17,7 @@
 package org.keycloak.storage.user;
 
 /**
+ * 用户查询组合接口：同时提供 {@link UserQueryMethodsProvider} 搜索与 {@link UserCountMethodsProvider} 计数能力。
  * This is an optional capability interface that is intended to be implemented by any
  * <code>UserStorageProvider</code> that supports complex user querying.
  * 

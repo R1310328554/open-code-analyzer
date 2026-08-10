@@ -28,6 +28,8 @@ import org.keycloak.models.UserModel;
 import org.keycloak.utils.StringUtil;
 
 /**
+ * 用户复杂查询能力接口：支持管理控制台与 REST API 的多条件用户搜索。
+ * <p>所有方法仅在本 provider 所代表的存储范围内搜索。</p>
  * This is an optional capability interface that is intended to be implemented by any
  * <code>UserStorageProvider</code> that supports complex user querying. You must
  * implement this interface if you want to view and manage users from the administration console.
@@ -41,6 +43,7 @@ import org.keycloak.utils.StringUtil;
 public interface UserQueryMethodsProvider {
 
     /**
+     * 按空格分隔的多关键字在用户名字段中模糊搜索（管理控制台搜索框使用）。
      * Searches for users whose username, email, first name or last name contain any of the strings in {@code search} separated by whitespace.
      * <p/>
      * If possible, implementations should treat the parameter values as partial match patterns (i.e. in RDMBS terms use LIKE).
@@ -58,6 +61,7 @@ public interface UserQueryMethodsProvider {
     }
 
     /**
+     * 带分页的模糊用户搜索（已弃用，请改用 {@link #searchForUserStream(RealmModel, Map, Integer, Integer)}）。
      * Searches for users whose username, email, first name or last name contain any of the strings in {@code search} separated by whitespace.
      * <p/>
      * If possible, implementations should treat the parameter values as partial match patterns (i.e. in RDMBS terms use LIKE).
@@ -77,6 +81,7 @@ public interface UserQueryMethodsProvider {
     }
 
     /**
+     * 按参数映射搜索用户（REST API 查询使用）。
      * Searches for user by parameter.
      * If possible, implementations should treat the parameter values as partial match patterns (i.e. in RDMBS terms use LIKE).
      * <p/>
@@ -111,6 +116,7 @@ public interface UserQueryMethodsProvider {
     }
 
     /**
+     * 带分页的参数化用户搜索。
      * Searches for user by parameter. If possible, implementations should treat the parameter values as partial match patterns
      * (i.e. in RDMBS terms use LIKE).
      * <p/>
@@ -145,6 +151,7 @@ public interface UserQueryMethodsProvider {
     Stream<UserModel> searchForUserStream(RealmModel realm, Map<String, String> params, Integer firstResult, Integer maxResults);
 
     /**
+     * 返回属于指定组的用户。
      * Obtains users that belong to a specific group.
      *
      * @param realm a reference to the realm.
@@ -156,6 +163,7 @@ public interface UserQueryMethodsProvider {
     }
 
     /**
+     * 分页返回属于指定组的用户。
      * Obtains users that belong to a specific group.
      *
      * @param realm       a reference to the realm.
@@ -167,6 +175,7 @@ public interface UserQueryMethodsProvider {
     Stream<UserModel> getGroupMembersStream(RealmModel realm, GroupModel group, Integer firstResult, Integer maxResults);
 
     /**
+     * 返回组内用户并按搜索条件过滤。
      * Obtains users that belong to a specific group, filtered according to the search parameters.
      *
      * @param realm     a reference to the realm.
@@ -206,6 +215,7 @@ public interface UserQueryMethodsProvider {
     }
 
     /**
+     * 返回拥有指定角色的用户。
      * Obtains users that have the specified role.
      *
      * @param realm a reference to the realm.
@@ -217,6 +227,7 @@ public interface UserQueryMethodsProvider {
     }
 
     /**
+     * 分页返回拥有指定角色的用户。
      * Searches for users that have the specified role.
      *
      * @param realm       a reference to the realm.
@@ -230,6 +241,7 @@ public interface UserQueryMethodsProvider {
     }
 
     /**
+     * 按自定义属性名值搜索用户。
      * Searches for users that have a specific attribute with a specific value.
      *
      * @param realm     a reference to the realm.
