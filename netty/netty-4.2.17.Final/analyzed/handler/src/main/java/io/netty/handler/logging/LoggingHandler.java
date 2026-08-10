@@ -36,22 +36,32 @@ import static io.netty.util.internal.StringUtil.NEWLINE;
 /**
  * A {@link ChannelHandler} that logs all events using a logging framework.
  * By default, all events are logged at <tt>DEBUG</tt> level and full hex dumps are recorded for ByteBufs.
+ *
+ * <p>可共享的双向 {@link ChannelHandler}：在 pipeline 入站/出站各阶段记录 Channel 生命周期与 I/O 事件。
+ * 默认 DEBUG 级别，{@link ByteBuf} 以十六进制转储输出；可通过 {@link LogLevel} 与 {@link ByteBufFormat} 调整。</p>
  */
 @Sharable
 @SuppressWarnings({ "StringConcatenationInsideStringBufferAppend", "StringBufferReplaceableByString" })
 public class LoggingHandler extends ChannelDuplexHandler {
 
+    /** 未指定级别时的默认日志级别。 */
     private static final LogLevel DEFAULT_LEVEL = LogLevel.DEBUG;
 
+    /** 底层 InternalLogger 实例。 */
     protected final InternalLogger logger;
+    /** 与 {@link LogLevel} 对应的内部级别，避免重复转换。 */
     protected final InternalLogLevel internalLevel;
 
+    /** 对外暴露的日志级别。 */
     private final LogLevel level;
+    /** ByteBuf 日志格式（简要或十六进制转储）。 */
     private final ByteBufFormat byteBufFormat;
 
     /**
      * Creates a new instance whose logger name is the fully qualified class
      * name of the instance with hex dump enabled.
+     *
+     * <p>使用本类全限定名作为 logger 名，默认 DEBUG + HEX_DUMP。</p>
      */
     public LoggingHandler() {
         this(DEFAULT_LEVEL);
@@ -61,6 +71,8 @@ public class LoggingHandler extends ChannelDuplexHandler {
      * name of the instance.
      *
      * @param format Format of ByteBuf dumping
+     *
+     * <p>指定 ByteBuf 格式，级别仍为 DEBUG。</p>
      */
     public LoggingHandler(ByteBufFormat format) {
         this(DEFAULT_LEVEL, format);
@@ -71,6 +83,8 @@ public class LoggingHandler extends ChannelDuplexHandler {
      * name of the instance.
      *
      * @param level the log level
+     *
+     * <p>指定日志级别，ByteBuf 默认 HEX_DUMP。</p>
      */
     public LoggingHandler(LogLevel level) {
         this(level, ByteBufFormat.HEX_DUMP);
@@ -95,6 +109,8 @@ public class LoggingHandler extends ChannelDuplexHandler {
      * enabled.
      *
      * @param clazz the class type to generate the logger for
+     *
+     * <p>以指定 Class 名创建 logger。</p>
      */
     public LoggingHandler(Class<?> clazz) {
         this(clazz, DEFAULT_LEVEL);
@@ -162,6 +178,8 @@ public class LoggingHandler extends ChannelDuplexHandler {
 
     /**
      * Returns the {@link LogLevel} that this handler uses to log
+     *
+     * <p>返回当前配置的日志级别。</p>
      */
     public LogLevel level() {
         return level;
@@ -169,11 +187,14 @@ public class LoggingHandler extends ChannelDuplexHandler {
 
     /**
      * Returns the {@link ByteBufFormat} that this handler uses to log
+     *
+     * <p>返回 ByteBuf 的日志格式。</p>
      */
     public ByteBufFormat byteBufFormat() {
         return byteBufFormat;
     }
 
+    /** 记录 REGISTERED 并向下传播。 */
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -182,6 +203,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.fireChannelRegistered();
     }
 
+    /** 记录 UNREGISTERED 并向下传播。 */
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -190,6 +212,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.fireChannelUnregistered();
     }
 
+    /** 记录 ACTIVE 并向下传播。 */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -198,6 +221,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.fireChannelActive();
     }
 
+    /** 记录 INACTIVE 并向下传播。 */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -206,6 +230,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.fireChannelInactive();
     }
 
+    /** 记录 EXCEPTION（含堆栈）并向下传播。 */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -214,6 +239,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.fireExceptionCaught(cause);
     }
 
+    /** 记录 USER_EVENT 并向下传播。 */
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -222,6 +248,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.fireUserEventTriggered(evt);
     }
 
+    /** 记录 BIND 并委托 ctx.bind。 */
     @Override
     public void bind(ChannelHandlerContext ctx, SocketAddress localAddress, ChannelPromise promise) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -230,6 +257,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.bind(localAddress, promise);
     }
 
+    /** 记录 CONNECT（远端与本地地址）并委托 ctx.connect。 */
     @Override
     public void connect(
             ChannelHandlerContext ctx,
@@ -240,6 +268,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.connect(remoteAddress, localAddress, promise);
     }
 
+    /** 记录 DISCONNECT 并委托 ctx.disconnect。 */
     @Override
     public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -248,6 +277,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.disconnect(promise);
     }
 
+    /** 记录 CLOSE 并委托 ctx.close。 */
     @Override
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -256,6 +286,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.close(promise);
     }
 
+    /** 记录 DEREGISTER 并委托 ctx.deregister。 */
     @Override
     public void deregister(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -264,6 +295,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.deregister(promise);
     }
 
+    /** 记录 READ COMPLETE 并向下传播。 */
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -272,6 +304,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.fireChannelReadComplete();
     }
 
+    /** 记录 READ（含 ByteBuf 格式化）并向下传播。 */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -280,6 +313,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.fireChannelRead(msg);
     }
 
+    /** 记录 WRITE 并委托 ctx.write。 */
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -288,6 +322,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.write(msg, promise);
     }
 
+    /** 记录 WRITABILITY CHANGED 并向下传播。 */
     @Override
     public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -296,6 +331,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
         ctx.fireChannelWritabilityChanged();
     }
 
+    /** 记录 FLUSH 并委托 ctx.flush。 */
     @Override
     public void flush(ChannelHandlerContext ctx) throws Exception {
         if (logger.isEnabled(internalLevel)) {
@@ -308,6 +344,8 @@ public class LoggingHandler extends ChannelDuplexHandler {
      * Formats an event and returns the formatted message.
      *
      * @param eventName the name of the event
+     *
+     * <p>无参数事件：{@code channel.toString() + 事件名}。</p>
      */
     protected String format(ChannelHandlerContext ctx, String eventName) {
         String chStr = ctx.channel().toString();
@@ -323,6 +361,8 @@ public class LoggingHandler extends ChannelDuplexHandler {
      *
      * @param eventName the name of the event
      * @param arg       the argument of the event
+     *
+     * <p>单参数事件：ByteBuf/ByteBufHolder 走专用格式化，其余走简单字符串。</p>
      */
     protected String format(ChannelHandlerContext ctx, String eventName, Object arg) {
         if (arg instanceof ByteBuf) {
@@ -341,6 +381,8 @@ public class LoggingHandler extends ChannelDuplexHandler {
      * @param eventName the name of the event
      * @param firstArg  the first argument of the event
      * @param secondArg the second argument of the event
+     *
+     * <p>双参数事件（如 CONNECT）；第二参数为 null 时退化为单参数格式。</p>
      */
     protected String format(ChannelHandlerContext ctx, String eventName, Object firstArg, Object secondArg) {
         if (secondArg == null) {
@@ -358,6 +400,8 @@ public class LoggingHandler extends ChannelDuplexHandler {
 
     /**
      * Generates the default log message of the specified event whose argument is a {@link ByteBuf}.
+     *
+     * <p>输出可读字节数；{@link ByteBufFormat#HEX_DUMP} 时追加 pretty hex dump。</p>
      */
     private String formatByteBuf(ChannelHandlerContext ctx, String eventName, ByteBuf msg) {
         String chStr = ctx.channel().toString();
@@ -386,6 +430,8 @@ public class LoggingHandler extends ChannelDuplexHandler {
 
     /**
      * Generates the default log message of the specified event whose argument is a {@link ByteBufHolder}.
+     *
+     * <p>在 ByteBuf 格式基础上附加 Holder 的 {@code toString()}。</p>
      */
     private String formatByteBufHolder(ChannelHandlerContext ctx, String eventName, ByteBufHolder msg) {
         String chStr = ctx.channel().toString();
@@ -417,6 +463,8 @@ public class LoggingHandler extends ChannelDuplexHandler {
 
     /**
      * Generates the default log message of the specified event whose argument is an arbitrary object.
+     *
+     * <p>通用单参数格式：channel + 事件名 + {@code String.valueOf(msg)}。</p>
      */
     private static String formatSimple(ChannelHandlerContext ctx, String eventName, Object msg) {
         String chStr = ctx.channel().toString();

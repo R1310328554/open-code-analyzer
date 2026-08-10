@@ -19,10 +19,14 @@ import java.net.InetSocketAddress;
 
 /**
  * Implement this interface to create new rules.
+ *
+ * <p>IP 过滤规则接口：定义远端地址是否匹配及匹配后的动作（接受或拒绝）。</p>
  */
 public interface IpFilterRule {
     /**
      * @return This method should return true if remoteAddress is valid according to your criteria. False otherwise.
+     *
+     * <p>远端地址是否符合本规则。</p>
      */
     boolean matches(InetSocketAddress remoteAddress);
 
@@ -31,6 +35,8 @@ public interface IpFilterRule {
      * {@link IpFilterRule#matches(InetSocketAddress)} for which {@link #matches(InetSocketAddress)}
      * returns true should the accepted. If you want to exclude all of those IP addresses then
      * {@link IpFilterRuleType#REJECT} should be returned.
+     *
+     * <p>匹配成功时的策略：{@link IpFilterRuleType#ACCEPT} 放行，{@link IpFilterRuleType#REJECT} 拒绝。</p>
      */
     IpFilterRuleType ruleType();
 }

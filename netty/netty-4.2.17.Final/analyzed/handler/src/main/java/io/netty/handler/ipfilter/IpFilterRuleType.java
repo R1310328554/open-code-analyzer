@@ -17,8 +17,12 @@ package io.netty.handler.ipfilter;
 
 /**
  * Used in {@link IpFilterRule} to decide if a matching IP Address should be allowed or denied to connect.
+ *
+ * <p>{@link IpFilterRule} 匹配成功后的动作：允许连接或拒绝连接。</p>
  */
 public enum IpFilterRuleType {
+    /** 匹配时接受连接。 */
     ACCEPT,
+    /** 匹配时拒绝连接。 */
     REJECT
 }

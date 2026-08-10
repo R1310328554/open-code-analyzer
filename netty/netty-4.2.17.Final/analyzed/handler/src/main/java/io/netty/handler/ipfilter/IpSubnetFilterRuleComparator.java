@@ -20,17 +20,22 @@ import java.util.Comparator;
 
 /**
  * This comparator is only used for searching.
+ *
+ * <p>供 {@link java.util.Arrays#binarySearch} 在子网规则数组中查找远端地址时使用。</p>
  */
 final class IpSubnetFilterRuleComparator implements Comparator<Object> {
 
+    /** 单例比较器实例。 */
     static final IpSubnetFilterRuleComparator INSTANCE = new IpSubnetFilterRuleComparator();
 
     private IpSubnetFilterRuleComparator() {
         // Prevent outside initialization
+        // 禁止外部实例化
     }
 
     @Override
     public int compare(Object o1, Object o2) {
+        // o1 为 IpSubnetFilterRule，o2 为待查找的 InetSocketAddress
         return ((IpSubnetFilterRule) o1).compareTo((InetSocketAddress) o2);
     }
 }

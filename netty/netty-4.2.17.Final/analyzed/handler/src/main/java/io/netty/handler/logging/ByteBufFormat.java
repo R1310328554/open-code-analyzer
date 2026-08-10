@@ -23,14 +23,20 @@ import io.netty.buffer.ByteBufUtil;
  * Used to control the format and verbosity of logging for {@link ByteBuf}s and {@link ByteBufHolder}s.
  *
  * @see LoggingHandler
+ *
+ * <p>控制 {@link LoggingHandler} 记录 {@link ByteBuf} / {@link ByteBufHolder} 时的格式与详细程度。</p>
  */
 public enum ByteBufFormat {
     /**
      * {@link ByteBuf}s will be logged in a simple format, with no hex dump included.
+     *
+     * <p>仅记录可读字节数等简要信息，不包含十六进制转储。</p>
      */
     SIMPLE,
     /**
      * {@link ByteBuf}s will be logged using {@link ByteBufUtil#appendPrettyHexDump(StringBuilder, ByteBuf)}.
+     *
+     * <p>附加 {@link ByteBufUtil#appendPrettyHexDump} 生成的可读十六进制转储。</p>
      */
     HEX_DUMP
 }

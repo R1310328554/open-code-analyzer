@@ -39,11 +39,16 @@ import java.util.List;
  *
  * <p> Consider using {@link IpSubnetFilter} for better performance while not as
  * general purpose as this filter. </p>
+ *
+ * <p>按 {@link IpFilterRule} 列表顺序匹配远端 IP 的通用过滤器；无规则时全部放行。
+ * 子网场景可优先使用性能更好的 {@link IpSubnetFilter}。</p>
  */
 @Sharable
 public class RuleBasedIpFilter extends AbstractRemoteAddressFilter<InetSocketAddress> {
 
+    /** 未匹配任何规则时是否接受连接。 */
     private final boolean acceptIfNotFound;
+    /** 按构造顺序保存的过滤规则列表。 */
     private final List<IpFilterRule> rules;
 
     /**
@@ -54,6 +59,8 @@ public class RuleBasedIpFilter extends AbstractRemoteAddressFilter<InetSocketAdd
      *
      * @param rules An array of {@link IpFilterRule} containing all rules.
      * @deprecated Use {@link RuleBasedIpFilter#RuleBasedIpFilter(boolean, IpFilterRule...)}
+     *
+     * <p>未匹配时默认接受；已废弃，请使用带 {@code acceptIfNotFound} 的构造器。</p>
      */
     @Deprecated
     public RuleBasedIpFilter(IpFilterRule... rules) {
@@ -67,6 +74,8 @@ public class RuleBasedIpFilter extends AbstractRemoteAddressFilter<InetSocketAdd
      * @param acceptIfNotFound If {@code true} then accept connection from IP Address if it
      *                         doesn't match any rule.
      * @param rules            An array of {@link IpFilterRule} containing all rules.
+     *
+     * <p>按规则数组构建过滤器，跳过 null 规则。</p>
      */
     public RuleBasedIpFilter(boolean acceptIfNotFound, IpFilterRule... rules) {
         ObjectUtil.checkNotNull(rules, "rules");
@@ -83,6 +92,7 @@ public class RuleBasedIpFilter extends AbstractRemoteAddressFilter<InetSocketAdd
 
     @Override
     protected boolean accept(ChannelHandlerContext ctx, InetSocketAddress remoteAddress) throws Exception {
+        // 顺序匹配第一条命中的规则
         for (IpFilterRule rule : rules) {
             if (rule.matches(remoteAddress)) {
                 return rule.ruleType() == IpFilterRuleType.ACCEPT;

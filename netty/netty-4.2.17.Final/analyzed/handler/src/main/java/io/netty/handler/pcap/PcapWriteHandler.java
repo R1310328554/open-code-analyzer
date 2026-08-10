@@ -67,75 +67,104 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
  *        set {@code captureZeroByte} to {@code false}. </li>
  *    </ul>
  * </p>
+ *
+ * <p>将 {@link SocketChannel}、{@link ServerChannel} 或 {@link DatagramPacket} 流量写入 PCAP {@link OutputStream}。
+ * TCP 会模拟握手/挥手/ACK/RST 以便 Wireshark 正确解析；UDP 直接封装 L4/L3/L2 帧。</p>
  */
 public final class PcapWriteHandler extends ChannelDuplexHandler implements Closeable {
 
     /**
      * Logger for logging events
+     *
+     * <p>内部调试日志器。</p>
      */
     private final InternalLogger logger = InternalLoggerFactory.getInstance(PcapWriteHandler.class);
 
     /**
      * {@link PcapWriter} Instance
+     *
+     * <p>实际写入 PCAP 记录的对象，延迟初始化。</p>
      */
     private PcapWriter pCapWriter;
 
     /**
      * {@link OutputStream} where we'll write Pcap data.
+     *
+     * <p>PCAP 数据输出目标。</p>
      */
     private final OutputStream outputStream;
 
     /**
      * {@code true} if we want to capture packets with zero bytes else {@code false}.
+     *
+     * <p>是否捕获零字节载荷（false 可避免 Wireshark TCP 双 ACK 误报）。</p>
      */
     private final boolean captureZeroByte;
 
     /**
      * {@code true} if we want to write Pcap Global Header on initialization of
      * {@link PcapWriter} else {@code false}.
+     *
+     * <p>初始化时是否写入 PCAP 全局头。</p>
      */
     private final boolean writePcapGlobalHeader;
 
     /**
      * {@code true} if we want to synchronize on the {@link OutputStream} while writing
      * else {@code false}.
+     *
+     * <p>多 handler 共享流时是否同步写入；为 true 时 close 不关闭底层流。</p>
      */
     private final boolean sharedOutputStream;
 
     /**
      * TCP Sender Segment Number.
      * It'll start with 1 and keep incrementing with number of bytes read/sent and wrap at the uint32 max.
+     *
+     * <p>本端发送方向 TCP 序号，按字节递增并在 uint32 范围回绕。</p>
      */
     private long sendSegmentNumber = 1;
 
     /**
      * TCP Receiver Segment Number.
      * It'll start with 1 and keep incrementing with number of bytes read/sent and wrap at the uint32 max
+     *
+     * <p>本端接收方向 TCP 确认序号。</p>
      */
     private long receiveSegmentNumber = 1;
 
     /**
      * Type of the channel this handler is registered on
+     *
+     * <p>推断或强制指定的通道类型（TCP/UDP）。</p>
      */
     private ChannelType channelType;
 
     /**
      * Address of the initiator of the connection
+     *
+     * <p>连接发起方地址（客户端或本地）。</p>
      */
     private InetSocketAddress initiatorAddr;
 
     /**
      * Address of the receiver of the connection
+     *
+     * <p>连接对端/服务端地址。</p>
      */
     private InetSocketAddress handlerAddr;
 
     /**
      * Set to {@code true} if this handler is registered on a server pipeline
+     *
+     * <p>是否注册在服务端 pipeline（影响源/目的地址方向）。</p>
      */
     private boolean isServerPipeline;
 
     /**
      * Current of this {@link PcapWriteHandler}
+     *
+     * <p>处理器状态：INIT → WRITING ↔ PAUSED → CLOSED。</p>
      */
     private final AtomicReference<State> state = new AtomicReference<State>(State.INIT);
 
@@ -199,8 +228,10 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
         PcapHeaders.writeGlobalHeader(outputStream);
     }
 
+    /** 首次 I/O 或 channelActive 时创建 {@link PcapWriter}、推断地址并在 TCP 上模拟三次握手。 */
     private void initializeIfNecessary(ChannelHandlerContext ctx) throws Exception {
         // If State is not 'INIT' then it means we're already initialized so then no need to initiaize again.
+        // 非 INIT 状态表示已初始化，直接返回
         if (state.get() != State.INIT) {
             return;
         }
@@ -209,6 +240,7 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
 
         if (channelType == null) {
             // infer channel type
+            // 根据 Channel 类型推断 TCP/UDP 及 initiator/handler 地址
             if (ctx.channel() instanceof SocketChannel) {
                 channelType = ChannelType.TCP;
 
@@ -244,6 +276,7 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
 
             try {
                 // Write SYN with Normal Source and Destination Address
+                // 模拟 SYN → SYN+ACK → ACK 三次握手写入 PCAP
                 TCPPacket.writePacket(tcpBuf, null, 0, 0,
                                       initiatorAddr.getPort(), handlerAddr.getPort(), TCPPacket.TCPFlag.SYN);
                 completeTCPWrite(initiatorAddr, handlerAddr, tcpBuf, ctx.alloc(), ctx);
@@ -274,6 +307,7 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
         super.channelActive(ctx);
     }
 
+    /** 入站读：初始化后按 TCP/UDP 捕获并写入 PCAP，再 fireChannelRead。 */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         // Initialize if needed
@@ -287,6 +321,7 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
         }
 
         // Only write if State is STARTED
+        // 仅在 WRITING 状态下写入 PCAP
         if (state.get() == State.WRITING) {
             if (channelType == ChannelType.TCP) {
                 handleTCP(ctx, msg, false);
@@ -299,6 +334,7 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
         super.channelRead(ctx, msg);
     }
 
+    /** 出站写：与 channelRead 对称，isWriteOperation 为 true。 */
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         // Initialize if needed
@@ -333,11 +369,14 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
      * @param msg              {@link Object} must be {@link ByteBuf} else it'll be discarded
      * @param isWriteOperation Set {@code true} if we have to process packet when packets are being sent out
      *                         else set {@code false}
+     *
+     * <p>处理 TCP {@link ByteBuf}：可选丢弃零字节、按 MTU 分片、构造带 ACK 的 TCP 段并写 PCAP。</p>
      */
     private void handleTCP(ChannelHandlerContext ctx, Object msg, boolean isWriteOperation) {
         if (msg instanceof ByteBuf) {
 
             // If bytes are 0 and `captureZeroByte` is false, we won't capture this.
+            // 零字节且未启用 captureZeroByte 时跳过
             int totalBytes = ((ByteBuf) msg).readableBytes();
             if (totalBytes == 0 && !captureZeroByte) {
                 logger.debug("Discarding Zero Byte TCP Packet. isWriteOperation {}", isWriteOperation);
@@ -351,6 +390,7 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
             }
 
             // If the payload exceeds the max size of that can fit in a single TCP IPv4 packet, fragment the payload
+            // 超过单包最大 TCP 载荷时分片逐段写入
             int maxTcpPayload = 65495;
 
             for (int i = 0; i < totalBytes; i += maxTcpPayload) {
@@ -362,6 +402,7 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
         }
     }
 
+    /** 为单个 TCP 段写入数据包及对向 ACK，并更新序号。 */
     private void handleTcpPacket(ChannelHandlerContext ctx, ByteBuf packet, boolean isWriteOperation,
                                  ByteBufAllocator byteBufAllocator) {
         ByteBuf tcpBuf = byteBufAllocator.buffer();
@@ -369,6 +410,7 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
 
         try {
             if (isWriteOperation) {
+                // 出站：根据是否服务端 pipeline 确定 src/dst
                 final InetSocketAddress srcAddr;
                 final InetSocketAddress dstAddr;
                 if (isServerPipeline) {
@@ -428,6 +470,8 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
      * @param tcpBuf           {@link ByteBuf} containing TCP L4 Data
      * @param byteBufAllocator {@link ByteBufAllocator} for allocating bytes for TCP/IP L3 and L2 data.
      * @param ctx              {@link ChannelHandlerContext} for {@code fireExceptionCaught}
+     *
+     * <p>组装 TCP → IP → 以太网帧并通过 {@link PcapWriter} 写入。</p>
      */
     private void completeTCPWrite(InetSocketAddress srcAddr, InetSocketAddress dstAddr, ByteBuf tcpBuf,
                                   ByteBufAllocator byteBufAllocator, ChannelHandlerContext ctx) {
@@ -438,12 +482,14 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
 
         try {
             if (srcAddr.getAddress() instanceof Inet4Address && dstAddr.getAddress() instanceof Inet4Address) {
+                // IPv4 路径
                 IPPacket.writeTCPv4(ipBuf, tcpBuf,
                                     NetUtil.ipv4AddressToInt((Inet4Address) srcAddr.getAddress()),
                                     NetUtil.ipv4AddressToInt((Inet4Address) dstAddr.getAddress()));
 
                 EthernetPacket.writeIPv4(ethernetBuf, ipBuf);
             } else if (srcAddr.getAddress() instanceof Inet6Address && dstAddr.getAddress() instanceof Inet6Address) {
+                // IPv6 路径
                 IPPacket.writeTCPv6(ipBuf, tcpBuf,
                                     srcAddr.getAddress().getAddress(),
                                     dstAddr.getAddress().getAddress());
@@ -467,6 +513,7 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
         }
     }
 
+    /** TCP 序号按 uint32 模加。 */
     private static long incrementUintSegmentNumber(long sequenceNumber, int value) {
         // If the sequence number would go above the max for uint32, wrap around
         return (sequenceNumber + value) % (0xFFFFFFFFL + 1);
@@ -478,6 +525,8 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
      * @param ctx {@link ChannelHandlerContext} for {@code localAddress} / {@code remoteAddress},
      *            {@link ByteBuf} allocation and {@code fireExceptionCaught}
      * @param msg {@link DatagramPacket} or {@link ByteBuf}
+     *
+     * <p>处理 {@link DatagramPacket} 或已连接 UDP 的 {@link ByteBuf}，封装 UDP/IP/以太网后写 PCAP。</p>
      */
     private void handleUDP(ChannelHandlerContext ctx, Object msg, boolean isWriteOperation) {
         ByteBuf udpBuf = ctx.alloc().buffer();
@@ -552,6 +601,8 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
      * @param udpBuf           {@link ByteBuf} containing UDP L4 Data
      * @param byteBufAllocator {@link ByteBufAllocator} for allocating bytes for UDP/IP L3 and L2 data.
      * @param ctx              {@link ChannelHandlerContext} for {@code fireExceptionCaught}
+     *
+     * <p>组装 UDP → IP → 以太网帧并写入 PCAP。</p>
      */
     private void completeUDPWrite(InetSocketAddress srcAddr, InetSocketAddress dstAddr, ByteBuf udpBuf,
                                   ByteBufAllocator byteBufAllocator, ChannelHandlerContext ctx) {
@@ -599,6 +650,8 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
      * @param ch     The channel to get the local address from
      * @param remote The remote address
      * @return The fixed local address
+     *
+     * <p>通配本地地址（0.0.0.0/::）时按远端地址族返回对应通配地址，便于 PCAP 地址一致。</p>
      */
     private static InetSocketAddress getLocalAddress(Channel ch, InetSocketAddress remote) {
         InetSocketAddress local = (InetSocketAddress) ch.localAddress();
@@ -613,10 +666,12 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
         return local;
     }
 
+    /** 移除 handler 时模拟 TCP FIN+ACK 挥手并关闭 PCAP 写入。 */
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
 
         // If `isTCP` is true and state is WRITING, then we'll simulate a `FIN` flow.
+        // TCP 连接在 WRITING 状态下模拟四次挥手
         if (channelType == ChannelType.TCP && state.get() == State.WRITING) {
             logger.debug("Starting Fake TCP FIN+ACK Flow to close connection");
 
@@ -657,6 +712,7 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
         super.handlerRemoved(ctx);
     }
 
+    /** 异常时向 PCAP 写入 TCP RST 并关闭写入器。 */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         // Only write RST if this is an initialized TCP stream
@@ -681,6 +737,8 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
 
     /**
      * Logger for TCP
+     *
+     * <p>DEBUG 下记录 TCP 数据或纯 ACK 写入详情。</p>
      */
     private void logTCP(boolean isWriteOperation, int bytes, long sendSegmentNumber, long receiveSegmentNumber,
                         InetSocketAddress srcAddr, InetSocketAddress dstAddr, boolean ackOnly) {
@@ -714,6 +772,8 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
     /**
      * Returns {@code true} if the {@link PcapWriteHandler} is currently
      * writing packets to the {@link OutputStream} else returns {@code false}.
+     *
+     * <p>是否处于正在写入 PCAP 的状态。</p>
      */
     public boolean isWriting() {
         return state.get() == State.WRITING;
@@ -725,6 +785,8 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
 
     /**
      * Pause the {@link PcapWriteHandler} from writing packets to the {@link OutputStream}.
+     *
+     * <p>暂停写入（WRITING → PAUSED）。</p>
      */
     public void pause() {
         if (!state.compareAndSet(State.WRITING, State.PAUSED)) {
@@ -734,6 +796,8 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
 
     /**
      * Resume the {@link PcapWriteHandler} to writing packets to the {@link OutputStream}.
+     *
+     * <p>恢复写入（PAUSED → WRITING）。</p>
      */
     public void resume() {
         if (!state.compareAndSet(State.PAUSED, State.WRITING)) {
@@ -780,6 +844,8 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
      * Only Pcap Writes are closed. </p>
      *
      * @throws IOException If {@link OutputStream#close()} throws an exception
+     *
+     * <p>关闭 {@link PcapWriter} 及（非共享时）底层 {@link OutputStream}；不将 handler 从 pipeline 移除。</p>
      */
     @Override
     public void close() throws IOException {
@@ -796,25 +862,36 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
         }
     }
 
+    /** 支持的 L4 协议类型。 */
     private enum ChannelType {
         TCP, UDP
     }
 
+    /** 创建 {@link Builder} 以配置并构建 handler。 */
     public static Builder builder() {
         return new Builder();
     }
 
     /**
      * Builder for {@link PcapWriteHandler}
+     *
+     * <p>流式配置 captureZeroByte、共享输出流、强制 TCP/UDP 元数据等。</p>
      */
     public static final class Builder {
+        /** 是否捕获零字节包。 */
         private boolean captureZeroByte;
+        /** 是否多 handler 共享同一 OutputStream。 */
         private boolean sharedOutputStream;
+        /** 是否在首次写入前输出 PCAP 全局头。 */
         private boolean writePcapGlobalHeader = true;
 
+        /** 强制或推断的通道类型。 */
         private ChannelType channelType;
+        /** 连接发起方地址。 */
         private InetSocketAddress initiatorAddr;
+        /** 对端/服务端地址。 */
         private InetSocketAddress handlerAddr;
+        /** 是否服务端 pipeline。 */
         private boolean isServerPipeline;
 
         private Builder() {
@@ -909,6 +986,7 @@ public final class PcapWriteHandler extends ChannelDuplexHandler implements Clos
         }
     }
 
+    /** 缓存 IPv4/IPv6 通配地址，供 getLocalAddress 使用。 */
     private static final class WildcardAddressHolder {
         static final InetAddress wildcard4; // 0.0.0.0
         static final InetAddress wildcard6; // ::

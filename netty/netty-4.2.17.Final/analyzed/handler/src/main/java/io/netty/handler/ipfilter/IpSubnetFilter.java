@@ -51,14 +51,21 @@ import java.util.List;
  *     </ol>
  * </p>
  *
+ * <p>基于 CIDR 子网规则的高性能 IP 过滤器：IPv4/IPv6 分表、排序后二分查找。
+ * 建议按网络地址递增添加规则并去除重叠子网；默认未命中时接受连接。</p>
  */
 @Sharable
 public class IpSubnetFilter extends AbstractRemoteAddressFilter<InetSocketAddress> {
 
+    /** 未匹配任何子网时是否接受连接。 */
     private final boolean acceptIfNotFound;
+    /** 已排序去重后的 IPv4 子网规则；无规则时为 null。 */
     private final IpSubnetFilterRule[] ipv4Rules;
+    /** 已排序去重后的 IPv6 子网规则；无规则时为 null。 */
     private final IpSubnetFilterRule[] ipv6Rules;
+    /** IPv4 规则是否全部为 ACCEPT 或全部为 REJECT；混合类型时为 null。 */
     private final IpFilterRuleType ipFilterRuleTypeIPv4;
+    /** IPv6 规则是否全部为 ACCEPT 或全部为 REJECT；混合类型时为 null。 */
     private final IpFilterRuleType ipFilterRuleTypeIPv6;
 
     /**
@@ -66,6 +73,8 @@ public class IpSubnetFilter extends AbstractRemoteAddressFilter<InetSocketAddres
      * <p> {@code acceptIfNotFound} is set to {@code true}. </p>
      *
      * @param rules {@link IpSubnetFilterRule} as an array
+     *
+     * <p>未命中时默认接受。</p>
      */
     public IpSubnetFilter(IpSubnetFilterRule... rules) {
         this(true, Arrays.asList(ObjectUtil.checkNotNull(rules, "rules")));
@@ -98,6 +107,8 @@ public class IpSubnetFilter extends AbstractRemoteAddressFilter<InetSocketAddres
      *
      * @param acceptIfNotFound {@code true} if we'll accept connection if not found in rule(s).
      * @param rules            {@link IpSubnetFilterRule} as a {@link List}
+     *
+     * <p>按 IP 版本分组、统计规则类型、排序并去除被父网段覆盖的子规则。</p>
      */
     public IpSubnetFilter(boolean acceptIfNotFound, List<IpSubnetFilterRule> rules) {
         ObjectUtil.checkNotNull(rules, "rules");
@@ -112,6 +123,7 @@ public class IpSubnetFilter extends AbstractRemoteAddressFilter<InetSocketAddres
         List<IpSubnetFilterRule> unsortedIPv6Rules = new ArrayList<IpSubnetFilterRule>();
 
         // Iterate over rules and check for `null` rule.
+        // 遍历规则并按 IPv4/IPv6 分组，同时统计 ACCEPT/REJECT 数量
         for (IpSubnetFilterRule ipSubnetFilterRule : rules) {
             ObjectUtil.checkNotNull(ipSubnetFilterRule, "rule");
 
@@ -144,6 +156,8 @@ public class IpSubnetFilter extends AbstractRemoteAddressFilter<InetSocketAddres
          * then all rules are of "ACCEPT" type.
          *
          * In this case, we'll set `ipFilterRuleTypeIPv4` to `IpFilterRuleType.ACCEPT`.
+         *
+         * 若规则类型单一，可用统一类型快速判定；混合 ACCEPT/REJECT 时置 null，逐条读取 ruleType。
          */
         if (numAcceptIPv4 == 0 && numRejectIPv4 > 0) {
             ipFilterRuleTypeIPv4 = IpFilterRuleType.REJECT;
@@ -196,6 +210,8 @@ public class IpSubnetFilter extends AbstractRemoteAddressFilter<InetSocketAddres
      *     <li> Remove over-lapping subnet </li>
      *     <li> Sort the list again </li>
      * </ol>
+     *
+     * <p>排序后剔除被更大子网完全覆盖的规则，返回数组供二分查找。</p>
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
     private static IpSubnetFilterRule[] sortAndFilter(List<IpSubnetFilterRule> rules) {
@@ -211,6 +227,7 @@ public class IpSubnetFilter extends AbstractRemoteAddressFilter<InetSocketAddres
         while (iterator.hasNext()) {
 
             // Grab a potential child rule.
+            // 若当前规则已被 parentRule 网段包含，则丢弃（重叠子网）
             IpSubnetFilterRule childRule = iterator.next();
 
             // If parentRule matches childRule, then there's no need to keep the child rule.

@@ -20,6 +20,9 @@ import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * PCAP 文件格式头工具：写入全局头与逐包记录头。
+ */
 final class PcapHeaders {
 
     /**
@@ -33,12 +36,15 @@ final class PcapHeaders {
      *      <li> snaplen </li>
      *      <li> network </li>
      * </ol>
+     *
+     * <p>预编码的 PCAP 全局头（魔数、版本 2.4、链路类型以太网等）。</p>
      */
     private static final byte[] GLOBAL_HEADER = {-95, -78, -61, -44, 0, 2, 0, 4, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, -1, -1, 0, 0, 0, 1};
 
     private PcapHeaders() {
         // Prevent outside initialization
+        // 工具类禁止实例化
     }
 
     /**
@@ -46,6 +52,8 @@ final class PcapHeaders {
      *
      * @param outputStream OutputStream where Pcap data will be written.
      * @throws IOException if there is an error writing to the {@code OutputStream}
+     *
+     * <p>将 PCAP 全局头写入输出流，新文件开头只需调用一次。</p>
      */
     static void writeGlobalHeader(OutputStream outputStream) throws IOException {
         outputStream.write(GLOBAL_HEADER);
@@ -59,6 +67,8 @@ final class PcapHeaders {
      * @param ts_usec  timestamp microseconds
      * @param incl_len number of octets of packet saved in file
      * @param orig_len actual length of packet
+     *
+     * <p>写入单条 PCAP 记录头：秒/微秒时间戳、捕获长度与原始长度。</p>
      */
     static void writePacketHeader(ByteBuf byteBuf, int ts_sec, int ts_usec, int incl_len, int orig_len) {
         byteBuf.writeInt(ts_sec);

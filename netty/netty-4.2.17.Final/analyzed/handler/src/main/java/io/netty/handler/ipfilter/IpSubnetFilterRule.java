@@ -29,10 +29,15 @@ import java.net.UnknownHostException;
 /**
  * Use this class to create rules for {@link RuleBasedIpFilter} that group IP addresses into subnets.
  * Supports both, IPv4 and IPv6.
+ *
+ * <p>将 IP 地址与 CIDR 前缀封装为 {@link IpFilterRule}，支持 IPv4/IPv6，
+ * 供 {@link IpSubnetFilter} 排序与二分查找使用。</p>
  */
 public final class IpSubnetFilterRule implements IpFilterRule, Comparable<IpSubnetFilterRule> {
 
+    /** 实际执行匹配的 IPv4 或 IPv6 子网规则。 */
     private final IpFilterRule filterRule;
+    /** 规则对应的 IP 字符串（用于比较与重叠检测）。 */
     private final String ipAddress;
 
     /**
@@ -40,6 +45,8 @@ public final class IpSubnetFilterRule implements IpFilterRule, Comparable<IpSubn
      *
      * @param ipAddressWithCidr IP Address with CIDR notation, e.g. (192.168.0.0/16) or (2001:db8::/32)
      * @param ruleType {@link IpFilterRuleType} to use
+     *
+     * <p>解析 {@code 地址/前缀} 形式字符串创建规则。</p>
      */
     public IpSubnetFilterRule(String ipAddressWithCidr, IpFilterRuleType ruleType) {
         try {
@@ -85,6 +92,7 @@ public final class IpSubnetFilterRule implements IpFilterRule, Comparable<IpSubn
         filterRule = selectFilterRule(ipAddress, cidrPrefix, ruleType);
     }
 
+    /** 按地址族选择 IPv4 或 IPv6 内部规则实现。 */
     private static IpFilterRule selectFilterRule(InetAddress ipAddress, int cidrPrefix, IpFilterRuleType ruleType) {
         ObjectUtil.checkNotNull(ipAddress, "ipAddress");
         ObjectUtil.checkNotNull(ruleType, "ruleType");
@@ -110,6 +118,8 @@ public final class IpSubnetFilterRule implements IpFilterRule, Comparable<IpSubn
 
     /**
      * Get IP Address of this rule
+     *
+     * <p>返回规则网段的 IP 字符串。</p>
      */
     String getIpAddress() {
         return ipAddress;
@@ -117,11 +127,14 @@ public final class IpSubnetFilterRule implements IpFilterRule, Comparable<IpSubn
 
     /**
      * {@link Ip4SubnetFilterRule} or {@link Ip6SubnetFilterRule}
+     *
+     * <p>返回内部 IPv4/IPv6 子网匹配实现。</p>
      */
     IpFilterRule getFilterRule() {
         return filterRule;
     }
 
+    /** 按网络地址排序，供 {@link IpSubnetFilter} 使用。 */
     @Override
     public int compareTo(IpSubnetFilterRule ipSubnetFilterRule) {
         if (filterRule instanceof Ip4SubnetFilterRule) {
@@ -139,6 +152,8 @@ public final class IpSubnetFilterRule implements IpFilterRule, Comparable<IpSubn
      *
      * @param inetSocketAddress {@link InetSocketAddress} to match
      * @return 0 if IP Address match else difference index.
+     *
+     * <p>将远端地址映射到子网网络地址后与规则网络地址比较，供二分查找使用。</p>
      */
     int compareTo(InetSocketAddress inetSocketAddress) {
         if (filterRule instanceof Ip4SubnetFilterRule) {
@@ -155,15 +170,21 @@ public final class IpSubnetFilterRule implements IpFilterRule, Comparable<IpSubn
 
     /**
      * Equivalent to {@link Integer#compare(int, int)}
+     *
+     * <p>三值比较，等价于 {@link Integer#compare}。</p>
      */
     private static int compareInt(int x, int y) {
         return (x < y) ? -1 : ((x == y) ? 0 : 1);
     }
 
+    /** IPv4 CIDR 子网匹配实现。 */
     static final class Ip4SubnetFilterRule implements IpFilterRule {
 
+        /** 子网网络地址（主机位清零）。 */
         private final int networkAddress;
+        /** 子网掩码。 */
         private final int subnetMask;
+        /** 匹配时的动作。 */
         private final IpFilterRuleType ruleType;
 
         private Ip4SubnetFilterRule(Inet4Address ipAddress, int cidrPrefix, IpFilterRuleType ruleType) {
@@ -192,6 +213,7 @@ public final class IpSubnetFilterRule implements IpFilterRule, Comparable<IpSubn
             return ruleType;
         }
 
+        /** 将 CIDR 前缀转换为 32 位子网掩码；前缀 0 需在 long 上移位避免 int 移位陷阱。 */
         private static int prefixToSubnetMask(int cidrPrefix) {
             /*
              * Perform the shift on a long and downcast it to int afterwards.
@@ -202,17 +224,23 @@ public final class IpSubnetFilterRule implements IpFilterRule, Comparable<IpSubn
              * uses the six least significant bits.
              *
              * Also see https://github.com/netty/netty/issues/2767
+             *
+             * 在 long 上左移再转 int，正确支持 /0；见 netty#2767。
              */
             return (int) (-1L << 32 - cidrPrefix);
         }
     }
 
+    /** IPv6 CIDR 子网匹配实现。 */
     static final class Ip6SubnetFilterRule implements IpFilterRule {
 
         private static final BigInteger MINUS_ONE = BigInteger.valueOf(-1);
 
+        /** 子网网络地址。 */
         private final BigInteger networkAddress;
+        /** 子网掩码。 */
         private final BigInteger subnetMask;
+        /** 匹配时的动作。 */
         private final IpFilterRuleType ruleType;
 
         private Ip6SubnetFilterRule(Inet6Address ipAddress, int cidrPrefix, IpFilterRuleType ruleType) {
@@ -241,6 +269,7 @@ public final class IpSubnetFilterRule implements IpFilterRule, Comparable<IpSubn
             return ruleType;
         }
 
+        /** 将 16 字节 IPv6 地址转为正数 BigInteger。 */
         private static BigInteger ipToInt(Inet6Address ipAddress) {
             byte[] octets = ipAddress.getAddress();
             assert octets.length == 16;
@@ -248,6 +277,7 @@ public final class IpSubnetFilterRule implements IpFilterRule, Comparable<IpSubn
             return new BigInteger(1, octets);
         }
 
+        /** CIDR 前缀转 128 位 IPv6 掩码。 */
         private static BigInteger prefixToSubnetMask(int cidrPrefix) {
             return MINUS_ONE.shiftLeft(128 - cidrPrefix);
         }
