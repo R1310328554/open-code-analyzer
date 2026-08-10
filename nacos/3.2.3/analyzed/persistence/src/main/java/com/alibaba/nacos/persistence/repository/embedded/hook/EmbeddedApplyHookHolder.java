@@ -20,7 +20,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Holder for Embedded apply hook.
+ * 嵌入式 Apply 钩子注册中心（单例）。
+ *
+ * <p>集中管理所有 {@link EmbeddedApplyHook} 实例，供存储层在日志 Apply 后统一遍历触发。</p>
  *
  * @author xiweng.yy
  */
@@ -34,14 +36,17 @@ public class EmbeddedApplyHookHolder {
         hooks = new HashSet<>();
     }
     
+    /** 获取全局单例持有者。 */
     public static EmbeddedApplyHookHolder getInstance() {
         return INSTANCE;
     }
     
+    /** 注册 Apply 完成钩子。 */
     public void register(EmbeddedApplyHook hook) {
         this.hooks.add(hook);
     }
     
+    /** 返回已注册的全部钩子集合。 */
     public Set<EmbeddedApplyHook> getAllHooks() {
         return this.hooks;
     }

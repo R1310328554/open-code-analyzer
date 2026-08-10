@@ -19,9 +19,9 @@ package com.alibaba.nacos.persistence.repository.embedded.hook;
 import com.alibaba.nacos.consistency.entity.WriteRequest;
 
 /**
- * Embedded storage apply hook.
+ * 嵌入式存储 Raft 日志 Apply 完成后的钩子基类。
  *
- * <p>Async Hook after embedded storage apply raft log.</p>
+ * <p>子类构造时自动注册到 {@link EmbeddedApplyHookHolder}，在共识层持久化 SQL 后可异步触发下游刷新或通知。</p>
  *
  * @author xiweng.yy
  */
@@ -32,7 +32,7 @@ public abstract class EmbeddedApplyHook {
     }
     
     /**
-     * Called after apply finished.
+     * Raft 日志 Apply 成功后的回调。
      *
      * @param log raft log
      */

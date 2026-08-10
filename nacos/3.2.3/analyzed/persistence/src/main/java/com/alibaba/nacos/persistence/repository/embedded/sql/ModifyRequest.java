@@ -20,7 +20,9 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * Represents a database UPDATE or INSERT or DELETE statement.
+ * 封装一条数据库写操作（INSERT/UPDATE/DELETE）。
+ *
+ * <p>携带执行序号、SQL 文本、占位符参数及“更新失败是否回滚”标志，供嵌入式存储批量事务提交使用。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -28,12 +30,16 @@ public class ModifyRequest implements Serializable {
     
     private static final long serialVersionUID = 4548851816596520564L;
     
+    /** 在同一批次中的执行顺序号。 */
     private int executeNo;
     
+    /** 待执行的 SQL 语句。 */
     private String sql;
     
+    /** 更新影响行数小于 1 时是否触发事务回滚。 */
     private boolean rollBackOnUpdateFail = Boolean.FALSE;
     
+    /** SQL 占位符参数数组。 */
     private Object[] args;
     
     public ModifyRequest() {

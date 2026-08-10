@@ -28,116 +28,56 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
 /**
- * Derby database operation.
+ * 嵌入式 Derby 数据库操作门面接口。
+ *
+ * <p>对外暴露查询、批量更新、数据导入及基于 {@link EmbeddedStorageContextHolder} 的 blockUpdate 能力，屏蔽单机/集群实现差异。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public interface DatabaseOperate {
     
-    /**
-     * Data query transaction.
-     *
-     * @param sql sqk text
-     * @param cls target type
-     * @param <R> return type
-     * @return query result
-     */
+    /** 无参数单条查询。 */
     <R> R queryOne(String sql, Class<R> cls);
     
-    /**
-     * Data query transaction.
-     *
-     * @param sql  sqk text
-     * @param args sql parameters
-     * @param cls  target type
-     * @param <R>  return type
-     * @return query result
-     */
+    /** 带参数单条查询。 */
     <R> R queryOne(String sql, Object[] args, Class<R> cls);
     
-    /**
-     * Data query transaction.
-     *
-     * @param sql    sqk text
-     * @param args   sql parameters
-     * @param mapper Database query result converter
-     * @param <R>    return type
-     * @return query result
-     */
+    /** 使用 RowMapper 的单条查询。 */
     <R> R queryOne(String sql, Object[] args, RowMapper<R> mapper);
     
-    /**
-     * Data query transaction.
-     *
-     * @param sql    sqk text
-     * @param args   sql parameters
-     * @param mapper Database query result converter
-     * @param <R>    return type
-     * @return query result
-     */
+    /** 使用 RowMapper 的多条查询。 */
     <R> List<R> queryMany(String sql, Object[] args, RowMapper<R> mapper);
     
-    /**
-     * Data query transaction.
-     *
-     * @param sql    sqk text
-     * @param args   sql parameters
-     * @param rClass target type
-     * @param <R>    return type
-     * @return query result
-     */
+    /** 按 Class 类型查询列表。 */
     <R> List<R> queryMany(String sql, Object[] args, Class<R> rClass);
     
-    /**
-     * Data query transaction.
-     *
-     * @param sql  sqk text
-     * @param args sql parameters
-     * @return query result
-     */
+    /** 查询多行 Map 结果。 */
     List<Map<String, Object>> queryMany(String sql, Object[] args);
     
-    /**
-     * data modify transaction.
-     *
-     * @param modifyRequests {@link List}
-     * @param consumer       {@link BiConsumer}
-     * @return is success
-     */
+    /** 批量修改数据，支持结果回调。 */
     Boolean update(List<ModifyRequest> modifyRequests, BiConsumer<Boolean, Throwable> consumer);
     
-    /**
-     * data modify transaction.
-     *
-     * @param modifyRequests {@link List}
-     * @return is success
-     */
+    /** 批量修改数据（无回调）。 */
     default Boolean update(List<ModifyRequest> modifyRequests) {
         return update(modifyRequests, null);
     }
     
     /**
-     * data importing, This method is suitable for importing data from external data sources into embedded data
-     * sources.
+     * 从外部 SQL 文件异步导入嵌入式 Derby。
      *
      * @param file {@link File}
      * @return {@link CompletableFuture}
      */
     CompletableFuture<RestResult<String>> dataImport(File file);
     
-    /**
-     * data modify transaction The SqlContext to be executed in the current thread will be executed and automatically
-     * cleared.
-     *
-     * @return is success
-     */
+    /** 提交并清空当前线程 {@link EmbeddedStorageContextHolder} 中的 SQL 上下文。 */
     default Boolean blockUpdate() {
         return blockUpdate(null);
     }
     
     /**
-     * data modify transaction The SqlContext to be executed in the current thread will be executed and automatically
-     * cleared.
+     * 提交当前线程 SQL 上下文，并在 finally 中清理 ThreadLocal。
+     *
      * @author klw(213539@qq.com)
      * 2020/8/24 18:16
      * @param consumer the consumer

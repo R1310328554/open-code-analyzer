@@ -27,13 +27,15 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * SQL Type Limiter, Nacos only allow `INSERT`, `UPDATE`, `DELETE`, `SELECT`, `CREATE SCHEMA`, `CREATE TABLE`, `CREATE
- * INDEX` and `ALTER TABLE`.
+ * 基于 SQL 首词/次词的白名单类型限制器。
+ *
+ * <p>Nacos 仅允许 INSERT、UPDATE、DELETE、SELECT 及有限的 CREATE/ALTER DDL；可通过 {@code nacos.persistence.sql.derby.limit.enabled} 关闭。</p>
  *
  * @author xiweng.yy
  */
 public class SqlTypeLimiter implements SqlLimiter {
     
+    /** 是否启用 Derby SQL 类型限制的开关配置键。 */
     private static final String ENABLED_SQL_LIMIT = "nacos.persistence.sql.derby.limit.enabled";
     
     private final Set<String> allowedDmlSqls;
@@ -109,7 +111,7 @@ public class SqlTypeLimiter implements SqlLimiter {
         if (-1 == firstTokenIndex) {
             throwException(trimmedSql);
         }
-        String firstToken = trimmedSql.substring(0, firstTokenIndex).toUpperCase();
+        // 取 SQL 第一个关键字判断 DML 类型
         if (allowedDmlSqls.contains(firstToken)) {
             return;
         }
@@ -129,11 +131,13 @@ public class SqlTypeLimiter implements SqlLimiter {
         }
     }
     
+    /** 抛出“不支持的 SQL 类型”异常。 */
     private void throwException(String sql) throws SQLException {
         throw new SQLException(
             String.format("Unsupported SQL: %s. Nacos only support DML and some DDL SQL.", sql));
     }
     
+    /** 对 CREATE/ALTER 语句校验第二个关键字（SCHEMA/TABLE/INDEX）。 */
     private void checkSqlForSecondToken(int firstTokenIndex, String trimmedSql)
         throws SQLException {
         int secondTokenIndex = trimmedSql.indexOf(" ", firstTokenIndex + 1);

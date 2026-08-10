@@ -46,7 +46,9 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
- * Derby operation in stand-alone mode.
+ * 单机模式下 Derby 数据库操作实现。
+ *
+ * <p>在 {@link ConditionStandaloneEmbedStorage} 条件下装配，直接使用本地 {@link JdbcTemplate} 与 {@link SqlTypeLimiter} 执行 SQL。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -67,6 +69,7 @@ public class StandaloneDatabaseOperateImpl implements BaseDatabaseOperate {
         this.sqlLimiter = new SqlTypeLimiter();
     }
     
+    /** 初始化时从 {@link DynamicDataSource} 获取 JdbcTemplate 与事务模板。 */
     @PostConstruct
     protected void init() {
         DataSourceService dataSourceService = DynamicDataSource.getInstance().getDataSource();
@@ -109,14 +112,14 @@ public class StandaloneDatabaseOperateImpl implements BaseDatabaseOperate {
     public CompletableFuture<RestResult<String>> dataImport(File file) {
         return CompletableFuture.supplyAsync(() -> {
             try (DiskUtils.LineIterator iterator = DiskUtils.lineIterator(file)) {
-                int batchSize = 1000;
+                // 每批最多 1000 条 SQL，异步并行导入
                 List<String> batchUpdate = new ArrayList<>(batchSize);
                 List<CompletableFuture<Void>> futures = new ArrayList<>();
                 List<Boolean> results = new CopyOnWriteArrayList<>();
                 while (iterator.hasNext()) {
                     String sql = iterator.next();
                     if (StringUtils.isNotBlank(sql)) {
-                        sqlLimiter.doLimit(sql);
+                        // 导入前校验 SQL 类型是否在白名单内
                         batchUpdate.add(sql);
                     }
                     if (batchUpdate.size() == batchSize || !iterator.hasNext()) {

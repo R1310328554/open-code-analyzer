@@ -26,7 +26,9 @@ import org.springframework.jdbc.core.RowMapper;
 import java.util.List;
 
 /**
- * External Storage Pagination utils.
+ * 外部关系型存储（MySQL 等）的分页查询辅助实现。
+ *
+ * <p>直接使用 {@link JdbcTemplate} 执行 COUNT 与分页查询，与嵌入式 {@link EmbeddedPaginationHelperImpl} 行为对齐。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -39,17 +41,7 @@ public class ExternalStoragePaginationHelperImpl<E> implements PaginationHelper<
         this.jdbcTemplate = jdbcTemplate;
     }
     
-    /**
-     * Take paging.
-     *
-     * @param sqlCountRows query total SQL
-     * @param sqlFetchRows query data sql
-     * @param args         query parameters
-     * @param pageNo       page number
-     * @param pageSize     page size
-     * @param rowMapper    {@link RowMapper}
-     * @return Paginated data {@code <E>}
-     */
+    /** 标准分页：统计总数后查询当前页数据。 */
     @Override
     public Page<E> fetchPage(final String sqlCountRows, final String sqlFetchRows,
         final Object[] args,
@@ -93,7 +85,7 @@ public class ExternalStoragePaginationHelperImpl<E> implements PaginationHelper<
         final int pageSize,
         final RowMapper rowMapper) {
         checkPageInfo(pageNo, pageSize);
-        // Create Page object
+        // 构造分页结果 Page 对象
         final Page<E> page = new Page<>();
         List<E> result = jdbcTemplate.query(sqlFetchRows, args, rowMapper);
         for (E item : result) {
@@ -121,7 +113,7 @@ public class ExternalStoragePaginationHelperImpl<E> implements PaginationHelper<
         final String sqlFetchRows,
         final Object[] fetchArgs, final int pageNo, final int pageSize, final RowMapper rowMapper) {
         checkPageInfo(pageNo, pageSize);
-        // Query the total number of current records
+        // 执行 COUNT 查询获取记录总数
         Integer rowCountInt = null;
         if (null != countAgrs) {
             rowCountInt = jdbcTemplate.queryForObject(sqlCountRows, countAgrs, Integer.class);
@@ -132,7 +124,7 @@ public class ExternalStoragePaginationHelperImpl<E> implements PaginationHelper<
             throw new IllegalArgumentException("fetchPageLimit error");
         }
         
-        // Compute pages count
+        // 计算可用总页数
         int pageCount = rowCountInt / pageSize;
         if (rowCountInt > pageSize * pageCount) {
             pageCount++;

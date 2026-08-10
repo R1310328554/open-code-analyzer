@@ -19,40 +19,30 @@ package com.alibaba.nacos.persistence.repository.embedded.sql;
 import org.springframework.jdbc.core.RowMapper;
 
 /**
- * Associated with the method correspondence of the {@link org.springframework.jdbc.core.JdbcTemplate}.
+ * 查询类型常量，对应 {@link org.springframework.jdbc.core.JdbcTemplate} 的不同查询方法。
+ *
+ * <p>供 {@link SelectRequest} 在 Raft 复制查询时选择正确的 JdbcTemplate 调用路径。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
 public class QueryType {
     
-    /**
-     * {@link org.springframework.jdbc.core.JdbcTemplate#queryForObject(String, RowMapper)}.
-     */
+    /** 带 RowMapper 与参数的单条查询。 */
     public static final byte QUERY_ONE_WITH_MAPPER_WITH_ARGS = 0;
     
-    /**
-     * {@link org.springframework.jdbc.core.JdbcTemplate#queryForObject(String, Class)}.
-     */
+    /** 无参数、按 Class 映射的单条查询。 */
     public static final byte QUERY_ONE_NO_MAPPER_NO_ARGS = 1;
     
-    /**
-     * {@link org.springframework.jdbc.core.JdbcTemplate#queryForObject(String, Object[], Class)}.
-     */
+    /** 带参数、按 Class 映射的单条查询。 */
     public static final byte QUERY_ONE_NO_MAPPER_WITH_ARGS = 2;
     
-    /**
-     * {@link org.springframework.jdbc.core.JdbcTemplate#query(String, Object[], RowMapper)}.
-     */
+    /** 带 RowMapper 的多条查询。 */
     public static final byte QUERY_MANY_WITH_MAPPER_WITH_ARGS = 3;
     
-    /**
-     * {@link org.springframework.jdbc.core.JdbcTemplate#queryForList(String, Object...)}.
-     */
+    /** 返回 List&lt;Map&gt; 的多条查询。 */
     public static final byte QUERY_MANY_WITH_LIST_WITH_ARGS = 4;
     
-    /**
-     * {@link org.springframework.jdbc.core.JdbcTemplate#queryForList(String, Object[], Class)}.
-     */
+    /** 按 Class 映射的多条列表查询。 */
     public static final byte QUERY_MANY_NO_MAPPER_WITH_ARGS = 5;
     
 }

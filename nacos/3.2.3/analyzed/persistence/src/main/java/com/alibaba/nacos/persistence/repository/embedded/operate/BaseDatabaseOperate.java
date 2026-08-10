@@ -38,7 +38,9 @@ import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
 /**
- * The Derby database basic operation.
+ * Derby 嵌入式数据库通用操作接口。
+ *
+ * <p>封装 {@link JdbcTemplate} 查询/更新、事务批量提交及数据导入等默认实现，供集群与单机 {@link DatabaseOperate} 实现类复用。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -47,7 +49,9 @@ public interface BaseDatabaseOperate extends DatabaseOperate {
     Logger LOGGER = LoggerFactory.getLogger(BaseDatabaseOperate.class);
     
     /**
-     * query one result by sql then convert result to target type.
+     * 无参数单条查询，结果映射为目标类型。
+     *
+     * <p>无匹配行时返回 null 而非抛异常。</p>
      *
      * @param jdbcTemplate {@link JdbcTemplate}
      * @param sql          sql
@@ -71,16 +75,7 @@ public interface BaseDatabaseOperate extends DatabaseOperate {
         }
     }
     
-    /**
-     * query one result by sql and args then convert result to target type.
-     *
-     * @param jdbcTemplate {@link JdbcTemplate}
-     * @param sql          sql
-     * @param args         args
-     * @param cls          target type
-     * @param <R>          target type
-     * @return R
-     */
+    /** 带占位符参数的单条查询。 */
     default <R> R queryOne(JdbcTemplate jdbcTemplate, String sql, Object[] args, Class<R> cls) {
         try {
             return jdbcTemplate.queryForObject(sql, args, cls);
@@ -97,16 +92,7 @@ public interface BaseDatabaseOperate extends DatabaseOperate {
         }
     }
     
-    /**
-     * query one result by sql and args then convert result to target type through {@link RowMapper}.
-     *
-     * @param jdbcTemplate {@link JdbcTemplate}
-     * @param sql          sql
-     * @param args         args
-     * @param mapper       {@link RowMapper}
-     * @param <R>          target type
-     * @return R
-     */
+    /** 使用 {@link RowMapper} 映射单条查询结果。 */
     default <R> R queryOne(JdbcTemplate jdbcTemplate, String sql, Object[] args,
         RowMapper<R> mapper) {
         try {
@@ -124,16 +110,7 @@ public interface BaseDatabaseOperate extends DatabaseOperate {
         }
     }
     
-    /**
-     * query many result by sql and args then convert result to target type through {@link RowMapper}.
-     *
-     * @param jdbcTemplate {@link JdbcTemplate}
-     * @param sql          sql
-     * @param args         args
-     * @param mapper       {@link RowMapper}
-     * @param <R>          target type
-     * @return result list
-     */
+    /** 使用 RowMapper 查询多条记录。 */
     default <R> List<R> queryMany(JdbcTemplate jdbcTemplate, String sql, Object[] args,
         RowMapper<R> mapper) {
         try {
@@ -149,16 +126,7 @@ public interface BaseDatabaseOperate extends DatabaseOperate {
         }
     }
     
-    /**
-     * query many result by sql and args then convert result to target type.
-     *
-     * @param jdbcTemplate {@link JdbcTemplate}
-     * @param sql          sql
-     * @param args         args
-     * @param rClass       target type class
-     * @param <R>          target type
-     * @return result list
-     */
+    /** 按目标 Class 查询列表（如 Integer、String）。 */
     default <R> List<R> queryMany(JdbcTemplate jdbcTemplate, String sql, Object[] args,
         Class<R> rClass) {
         try {
@@ -176,14 +144,7 @@ public interface BaseDatabaseOperate extends DatabaseOperate {
         }
     }
     
-    /**
-     * query many result by sql and args then convert result to List&lt;Map&lt;String, Object&gt;&gt;.
-     *
-     * @param jdbcTemplate {@link JdbcTemplate}
-     * @param sql          sql
-     * @param args         args
-     * @return List&lt;Map&lt;String, Object&gt;&gt;
-     */
+    /** 查询多行并返回列名到值的 Map 列表。 */
     default List<Map<String, Object>> queryMany(JdbcTemplate jdbcTemplate, String sql,
         Object[] args) {
         try {
@@ -200,7 +161,7 @@ public interface BaseDatabaseOperate extends DatabaseOperate {
     }
     
     /**
-     * execute update operation.
+     * 在事务中顺序执行多条 {@link ModifyRequest}。
      *
      * @param transactionTemplate {@link TransactionTemplate}
      * @param jdbcTemplate        {@link JdbcTemplate}
@@ -213,7 +174,9 @@ public interface BaseDatabaseOperate extends DatabaseOperate {
     }
     
     /**
-     * execute update operation, to fix #3617.
+     * 带成功/失败回调的事务更新（修复 #3617）。
+     *
+     * <p>单条 SQL 更新影响行数为 0 且标记回滚时，整笔事务回滚。</p>
      *
      * @param transactionTemplate {@link TransactionTemplate}
      * @param jdbcTemplate        {@link JdbcTemplate}
@@ -232,6 +195,7 @@ public interface BaseDatabaseOperate extends DatabaseOperate {
                         errSql[0] = pair.getSql();
                         args[0] = pair.getArgs();
                         boolean rollBackOnUpdateFail = pair.isRollBackOnUpdateFail();
+                        // 调试模式下打印当前执行的 SQL 与参数
                         LoggerUtils.printIfDebugEnabled(LOGGER, "current sql : {}", errSql[0]);
                         LoggerUtils.printIfDebugEnabled(LOGGER, "current args : {}", args[0]);
                         int row = jdbcTemplate.update(pair.getSql(), pair.getArgs());
@@ -274,7 +238,9 @@ public interface BaseDatabaseOperate extends DatabaseOperate {
     }
     
     /**
-     * Perform data import.
+     * 批量导入外部 SQL 到 Derby。
+     *
+     * <p>对 INSERT 语句做 Derby 方言修正后使用 batchUpdate 提交。</p>
      *
      * @param template {@link JdbcTemplate}
      * @param requests {@link List} ModifyRequest list

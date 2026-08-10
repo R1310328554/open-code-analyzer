@@ -25,7 +25,9 @@ import org.springframework.jdbc.core.RowMapper;
 import java.util.List;
 
 /**
- * Pagination Utils For Apache Derby.
+ * 嵌入式 Derby 存储的分页查询辅助实现。
+ *
+ * <p>通过 {@link DatabaseOperate} 执行 COUNT 与数据查询，封装 {@link PaginationHelper} 接口供配置/命名等模块复用。</p>
  *
  * @param <E> Generic class
  * @author boyan
@@ -40,7 +42,7 @@ public class EmbeddedPaginationHelperImpl<E> implements PaginationHelper<E> {
     }
     
     /**
-     * Take paging.
+     * 标准分页查询：先统计总数再拉取当前页数据。
      *
      * @param sqlCountRows Query total SQL
      * @param sqlFetchRows Query data sql
@@ -83,7 +85,7 @@ public class EmbeddedPaginationHelperImpl<E> implements PaginationHelper<E> {
         final int pageSize,
         final RowMapper rowMapper) {
         checkPageInfo(pageNo, pageSize);
-        // Create Page object
+        // 构造分页结果对象
         final Page<E> page = new Page<>();
         
         List<E> result = databaseOperate.queryMany(sqlFetchRows, args, rowMapper);
@@ -123,7 +125,7 @@ public class EmbeddedPaginationHelperImpl<E> implements PaginationHelper<E> {
         final String sqlFetchRows,
         final Object[] fetchArgs, final int pageNo, final int pageSize, final RowMapper rowMapper) {
         checkPageInfo(pageNo, pageSize);
-        // Query the total number of current records
+        // 查询符合条件的记录总数
         Integer rowCountInt = null;
         if (null != countAgrs) {
             rowCountInt = databaseOperate.queryOne(sqlCountRows, countAgrs, Integer.class);
@@ -134,7 +136,7 @@ public class EmbeddedPaginationHelperImpl<E> implements PaginationHelper<E> {
             throw new IllegalArgumentException("fetchPageLimit error");
         }
         
-        // Count pages
+        // 根据总数与 pageSize 计算总页数
         int pageCount = rowCountInt / pageSize;
         if (rowCountInt > pageSize * pageCount) {
             pageCount++;

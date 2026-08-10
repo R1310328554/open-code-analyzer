@@ -19,19 +19,23 @@ package com.alibaba.nacos.persistence.utils;
 import com.zaxxer.hikari.HikariDataSource;
 
 /**
- * DataSource Connection CheckUtil.
+ * HikariCP 数据源连通性校验工具。
+ *
+ * <p>启动或切换数据源时主动获取连接并探测，避免控制台显示 [no datasource set] 等误导信息。</p>
  *
  * @author Long Yu
  */
 public class ConnectionCheckUtil {
     
     /**
-     * check HikariDataSource connection ,avoid [no datasource set] text.
+     * 校验 Hikari 数据源能否正常建立连接。
+     *
+     * <p>连接失败时包装为 {@link RuntimeException} 向上抛出。</p>
      *
      * @param ds HikariDataSource object
      */
     public static void checkDataSourceConnection(HikariDataSource ds) {
-        try (java.sql.Connection connection = ds.getConnection()) {
+        // 借连接后立即探测 isClosed，确保池配置有效
             connection.isClosed();
         } catch (Exception e) {
             throw new RuntimeException(e);

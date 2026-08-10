@@ -20,7 +20,9 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * Represents a database SELECT statement.
+ * 封装一条 SELECT 查询请求。
+ *
+ * <p>包含 {@link QueryType}、SQL、参数及结果类型名，用于嵌入式存储在集群间复制只读查询。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  */
@@ -28,12 +30,16 @@ public class SelectRequest implements Serializable {
     
     private static final long serialVersionUID = 2212052574976898602L;
     
+    /** 查询类型，见 {@link QueryType} 常量。 */
     private byte queryType;
     
+    /** SELECT SQL 文本。 */
     private String sql;
     
+    /** 查询占位符参数。 */
     private Object[] args;
     
+    /** 结果映射类型的全限定类名。 */
     private String className;
     
     public byte getQueryType() {
@@ -75,6 +81,7 @@ public class SelectRequest implements Serializable {
             + ", className='" + className + '\'' + '}';
     }
     
+    /** 创建 {@link SelectRequestBuilder} 构建查询请求。 */
     public static SelectRequestBuilder builder() {
         return new SelectRequestBuilder();
     }
@@ -112,11 +119,7 @@ public class SelectRequest implements Serializable {
             return this;
         }
         
-        /**
-         * build select request.
-         *
-         * @return {@link SelectRequest}
-         */
+        /** 构建不可变的 {@link SelectRequest} 实例。 */
         public SelectRequest build() {
             SelectRequest request = new SelectRequest();
             request.setQueryType(queryType);

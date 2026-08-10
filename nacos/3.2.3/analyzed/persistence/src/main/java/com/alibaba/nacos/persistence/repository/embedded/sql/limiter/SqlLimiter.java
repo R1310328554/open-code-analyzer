@@ -23,57 +23,29 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * SQL limiter.
+ * SQL 类型白名单限制器接口。
+ *
+ * <p>在嵌入式 Derby 场景下拦截非法 DML/DDL，防止导入或共识复制执行危险语句。</p>
  *
  * @author xiweng.yy
  */
 public interface SqlLimiter {
     
-    /**
-     * Do SQL limit for modify request.
-     *
-     * @param modifyRequest modify request
-     * @throws SQLException when SQL match the limit rule.
-     */
+    /** 校验单条 {@link ModifyRequest} 的 SQL 类型。 */
     void doLimitForModifyRequest(ModifyRequest modifyRequest) throws SQLException;
     
-    /**
-     * Do SQL limit for modify request.
-     *
-     * @param modifyRequests modify request
-     * @throws SQLException when SQL match the limit rule.
-     */
+    /** 批量校验修改请求列表。 */
     void doLimitForModifyRequest(List<ModifyRequest> modifyRequests) throws SQLException;
     
-    /**
-     * Do SQL limit for select request.
-     *
-     * @param selectRequest select request
-     * @throws SQLException when SQL match the limit rule.
-     */
+    /** 校验单条 {@link SelectRequest}。 */
     void doLimitForSelectRequest(SelectRequest selectRequest) throws SQLException;
     
-    /**
-     * Do SQL limit for select request.
-     *
-     * @param selectRequests select request
-     * @throws SQLException when SQL match the limit rule.
-     */
+    /** 批量校验查询请求列表。 */
     void doLimitForSelectRequest(List<SelectRequest> selectRequests) throws SQLException;
     
-    /**
-     * Do SQL limit for sql.
-     *
-     * @param sql SQL
-     * @throws SQLException when SQL match the limit rule.
-     */
+    /** 校验原始 SQL 字符串。 */
     void doLimit(String sql) throws SQLException;
     
-    /**
-     * Do SQL limit for sql.
-     *
-     * @param sql SQL
-     * @throws SQLException when SQL match the limit rule.
-     */
+    /** 批量校验 SQL 字符串列表。 */
     void doLimit(List<String> sql) throws SQLException;
 }

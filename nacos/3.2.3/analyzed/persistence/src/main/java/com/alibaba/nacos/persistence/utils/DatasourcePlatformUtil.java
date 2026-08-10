@@ -21,14 +21,18 @@ import com.alibaba.nacos.persistence.constants.PersistenceConstant;
 import com.alibaba.nacos.sys.env.EnvUtil;
 
 /**
- * get datasource platform util.
+ * 读取持久化层数据源平台（derby/mysql 等）的工具类。
+ *
+ * <p>优先读取新配置项，兼容旧版 property 名称。</p>
  *
  * @author lixiaoshuang
  */
 public class DatasourcePlatformUtil {
     
     /**
-     * get datasource platform.
+     * 从环境变量/配置中获取数据源平台标识。
+     *
+     * <p>新键 {@link PersistenceConstant#DATASOURCE_PLATFORM_PROPERTY} 为空时回退到 {@link PersistenceConstant#DATASOURCE_PLATFORM_PROPERTY_OLD}。</p>
      *
      * @param defaultPlatform default platform.
      * @return
@@ -36,7 +40,7 @@ public class DatasourcePlatformUtil {
     public static String getDatasourcePlatform(String defaultPlatform) {
         String platform =
             EnvUtil.getProperty(PersistenceConstant.DATASOURCE_PLATFORM_PROPERTY, defaultPlatform);
-        if (StringUtils.isBlank(platform)) {
+        // 新配置项未设置时使用旧版 spring.datasource.platform
             platform = EnvUtil.getProperty(PersistenceConstant.DATASOURCE_PLATFORM_PROPERTY_OLD,
                 defaultPlatform);
         }
