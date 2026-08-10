@@ -44,82 +44,98 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 /**
- * Pojo to represent a VerifiableCredential for internal handling
+ * 内部处理用的可验证凭证（Verifiable Credential）POJO。
+ * <p>映射 W3C VC 数据模型的核心字段及扩展属性。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class VerifiableCredential {
 
+    /** W3C VC 1.1 @context 常量。 */
     public static final String VC_CONTEXT_V1 = "https://www.w3.org/ns/credentials/v1";
+    /** W3C VC 2.0 @context 常量。 */
     public static final String VC_CONTEXT_V2 = "https://www.w3.org/ns/credentials/v2";
 
-    /**
-     * @context: The value of the @context property MUST be an ordered set where the first item is a URL with the value
-     * https://www.w3.org/ns/credentials/v2. Subsequent items in the ordered set MUST be composed of any combination of
-     * URLs and/or objects, where each is processable as a JSON-LD Context.
-     */
+    /** JSON-LD @context 有序集合，首项通常为 W3C credentials 命名空间。 */
     @JsonProperty("@context")
     private List<String> context = new ArrayList<>(List.of(VC_CONTEXT_V1));
     private List<String> type = new ArrayList<>();
 
-    /**
-     * The value of the issuer property MUST be either a URL, or an object containing an id property whose value is a
-     * URL; in either case, the issuer selects this URL to identify itself in a globally unambiguous way. It is
-     * RECOMMENDED that the URL be one which, if dereferenced, results in a controller document, as defined in
-     * [VC-DATA-INTEGRITY] or [VC-JOSE-COSE], about the issuer that can be used to verify the information expressed in
-     * the credential.
-     */
+    /** 签发者：URI 字符串或含 id 字段的对象。 */
     @JsonDeserialize(using = IssuerDeserializer.class)
     private Object issuer;
+    /** 签发时间。 */
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Instant issuanceDate;
+    /** 凭证标识 URI。 */
     private URI id;
+    /** 过期时间。 */
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Instant expirationDate;
+    /** 凭证主体（subject）及声明。 */
     private CredentialSubject credentialSubject = new CredentialSubject();
+    /** 未显式建模的附加 JSON 属性。 */
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<>();
 
+    /** @return 附加属性映射 */
     @JsonAnyGetter
     public Map<String, Object> getAdditionalProperties() {
         return additionalProperties;
     }
 
+    /** @param additionalProperties 附加属性
+     * @return 当前实例 */
     public VerifiableCredential setAdditionalProperties(Map<String, Object> additionalProperties) {
         this.additionalProperties = additionalProperties;
         return this;
     }
 
+    /** @param name 属性名
+     * @param property 属性值
+     * @return 当前实例 */
     @JsonAnySetter
     public VerifiableCredential setAdditionalProperties(String name, Object property) {
         additionalProperties.put(name, property);
         return this;
     }
 
+    /** @return @context 列表 */
     public List<String> getContext() {
         return context;
     }
 
+    /** @param context @context 列表
+     * @return 当前实例 */
     public VerifiableCredential setContext(List<String> context) {
         this.context = context;
         return this;
     }
 
+    /** @return 凭证 type 列表 */
     public List<String> getType() {
         return type;
     }
 
+    /** @param type type 列表
+     * @return 当前实例 */
     public VerifiableCredential setType(List<String> type) {
         this.type = type;
         return this;
     }
 
+    /** @return 签发者（URI 或 Map） */
     public Object getIssuer() {
         return issuer;
     }
 
-    public VerifiableCredential setIssuer(Object issuer) {
+    /**
+     * 设置签发者并校验 id 为合法 URI。
+     *
+     * @param issuer URI 或含 id 的 Map
+     * @return 当前实例
+     */
         if (issuer instanceof Map<?, ?> issuerMap) {
 
             Optional.ofNullable(issuerMap).ifPresent(map -> {
@@ -127,7 +143,7 @@ public class VerifiableCredential {
                                              .orElseThrow(() -> new IllegalArgumentException(
                                                      "id is a required field for issuer"));
                 try {
-                    // id must be a URL: https://www.w3.org/TR/vc-data-model-2.0/#issuer
+                    // id 必须为 URL（W3C VC 数据模型）
                     new URI(id);
                 } catch (URISyntaxException e) {
                     throw new IllegalStateException("id must be a valid URI", e);
@@ -145,49 +161,67 @@ public class VerifiableCredential {
         return this;
     }
 
+    /** @param issuer 含 id 的签发者 Map
+     * @return 当前实例 */
     public VerifiableCredential setIssuerMap(Map<String, String> issuer) {
         this.issuer = issuer;
         return this;
     }
 
+    /** @return 签发时间 */
     public Instant getIssuanceDate() {
         return issuanceDate;
     }
 
+    /** @param issuanceDate 签发时间
+     * @return 当前实例 */
     public VerifiableCredential setIssuanceDate(Instant issuanceDate) {
         this.issuanceDate = issuanceDate;
         return this;
     }
 
+    /** @return 凭证 ID URI */
     public URI getId() {
         return id;
     }
 
+    /** @param id 凭证 ID
+     * @return 当前实例 */
     public VerifiableCredential setId(URI id) {
         this.id = id;
         return this;
     }
 
+    /** @return 过期时间 */
     public Instant getExpirationDate() {
         return expirationDate;
     }
 
+    /** @param expirationDate 过期时间
+     * @return 当前实例 */
     public VerifiableCredential setExpirationDate(Instant expirationDate) {
         this.expirationDate = expirationDate;
         return this;
     }
 
+    /** @return 凭证主体 */
     public CredentialSubject getCredentialSubject() {
         return credentialSubject;
     }
 
+    /** @param credentialSubject 凭证主体
+     * @return 当前实例 */
     public VerifiableCredential setCredentialSubject(CredentialSubject credentialSubject) {
         this.credentialSubject = credentialSubject;
         return this;
     }
 
+    /** 将 issuer JSON 反序列化为 URI 或 Map。 */
     public static class IssuerDeserializer extends JsonDeserializer<Object> {
 
+        /** @param p JSON 解析器
+         * @param ctxt 反序列化上下文
+         * @return URI 或 Map */
         @Override
         public Object deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
             JsonNode node = p.readValueAsTree();

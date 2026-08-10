@@ -25,56 +25,69 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Proofs object for Credential Request in OID4VCI (Section 8.2).
- * Contains arrays of different proof types (jwt, di_vp, attestation).
+ * OID4VCI 凭证请求（第 8.2 节）中的 proofs 对象。
+ * <p>按 proof 类型分组存放 jwt、di_vp、attestation 等证明数组。</p>
  *
  * @see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-16.html#name-credential-request">OID4VCI Credential Request</a>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Proofs {
 
+    /** JWT 类型 proof 值列表。 */
     @JsonProperty("jwt")
     private List<String> jwt;
 
+    /** 可验证展示（di_vp）类型 proof 列表。 */
     @JsonProperty("di_vp")
     private List<DiVpProof> diVp;
 
+    /** 密钥 attestation 类型 proof 值列表。 */
     @JsonProperty("attestation")
     private List<String> attestation;
 
+    /** @return JWT proof 列表 */
     public List<String> getJwt() {
         return jwt;
     }
 
+    /** @param jwt JWT proof 列表
+     * @return 当前实例 */
     public Proofs setJwt(List<String> jwt) {
         this.jwt = jwt;
         return this;
     }
 
+    /** @return di_vp proof 列表 */
     public List<DiVpProof> getDiVp() {
         return diVp;
     }
 
+    /** @param diVp di_vp proof 列表
+     * @return 当前实例 */
     public Proofs setDiVp(List<DiVpProof> diVp) {
         this.diVp = diVp;
         return this;
     }
 
+    /** @return attestation proof 列表 */
     public List<String> getAttestation() {
         return attestation;
     }
 
+    /** @param attestation attestation proof 列表
+     * @return 当前实例 */
     public Proofs setAttestation(List<String> attestation) {
         this.attestation = attestation;
         return this;
     }
 
     /**
-     * Create proofs based on the proof type.
-     * Sets the appropriate field (JWT or Attestation) depending on the proof type.
+     * 按 proof 类型创建 {@link Proofs} 实例。
+     * <p>根据类型写入 jwt 或 attestation 字段。</p>
      *
-     * @param proofType   the proof type (ProofType.JWT or ProofType.ATTESTATION)
-     * @param proofValues the proof values to set
+     * @param proofType   proof 类型（{@link ProofType#JWT} 或 {@link ProofType#ATTESTATION}）
+     * @param proofValues 要写入的 proof 值
+     * @return 填充后的 Proofs
      */
     public static Proofs create(String proofType, String... proofValues) {
         if (proofType == null) {
@@ -100,10 +113,9 @@ public class Proofs {
     }
 
     /**
-     * Determines the proof type based on which field is populated.
-     * Checks JWT first, then Attestation.
+     * 根据已填充字段推断 proof 类型（先查 JWT，再查 attestation）。
      *
-     * @return the proof type string (ProofType.JWT or ProofType.ATTESTATION), or null if no proof type is found
+     * @return proof 类型字符串，未找到时返回 null
      */
     @JsonIgnore
     public String getProofType() {
@@ -116,11 +128,9 @@ public class Proofs {
     }
 
     /**
-     * Returns all proof values as a list.
-     * Checks JWT proofs first, then Attestation proofs.
-     * Returns an empty list if no proofs are present.
+     * 返回所有 proof 值的扁平列表（优先 JWT，其次 attestation）。
      *
-     * @return a list containing all proof values, or an empty list if no proofs are present
+     * @return proof 值列表，无 proof 时为空列表
      */
     @JsonIgnore
     public List<String> getAllProofs() {
@@ -134,10 +144,10 @@ public class Proofs {
     }
 
     /**
-     * Returns a list of proof types that are present (non-null and non-empty).
-     * This can be used to iterate over proof types that need validation.
+     * 返回当前存在的 proof 类型列表（非空字段）。
+     * <p>可用于遍历需要校验的 proof 类型。</p>
      *
-     * @return a list of proof type strings (ProofType.JWT, ProofType.ATTESTATION, etc.) that are present
+     * @return 已填充的 proof 类型字符串列表
      */
     @JsonIgnore
     public List<String> getPresentProofTypes() {

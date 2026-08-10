@@ -9,10 +9,16 @@ import org.keycloak.protocol.oidc.token.TokenPostProcessorContext;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.RefreshToken;
 
+/**
+ * OID4VCI 令牌后处理器。
+ * <p>对 oid4vci refresh token 清除 sessionId，并将 access token audience 限制为凭证端点。</p>
+ */
 public class OID4VCITokenPostProcessor implements TokenPostProcessor {
 
+    /** Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public OID4VCITokenPostProcessor(KeycloakSession session) {
         this.session = session;
     }
@@ -27,18 +33,18 @@ public class OID4VCITokenPostProcessor implements TokenPostProcessor {
         }
 
         if (shouldUseTransientSession(accessToken)) {
-            // No reference to the sessionId should be within refresh-token or access-token.
+            // 临时会话下 refresh/access token 不应携带 sessionId
             refreshToken.setSessionId(null);
             accessToken.setSessionId(null);
         }
 
-        // Limit the audience to only the credential endpoint URL.
+        // 将 audience 限制为凭证端点 URL
         String credentialEndpoint = OID4VCIssuerWellKnownProvider.getCredentialsEndpoint(session.getContext());
         accessToken.audience(credentialEndpoint);
     }
 
 
-    // This might be possibly updated to always return true? As sessionId is not needed on refresh-token nor access-token even on the initial issuance (during authorization_code grant)
+    /** 判断是否使用临时会话（无 sessionId）。 */
     private boolean shouldUseTransientSession(AccessToken accessToken) {
         TokenContextEncoderProvider encoder = session.getProvider(TokenContextEncoderProvider.class);
         return (encoder.getTokenContextFromTokenId(accessToken.getId()).getSessionType() == AccessTokenContext.SessionType.TRANSIENT);

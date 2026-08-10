@@ -62,16 +62,27 @@ import org.jboss.resteasy.reactive.NoCache;
 
 import static org.keycloak.services.resources.admin.UserResource.verifySendEmailParams;
 
+/**
+ * 管理端用户可验证凭证 REST 资源。
+ * <p>提供授予/更新/撤销用户 VC、查询已签发凭证及邮件发送 credential offer 等 API。</p>
+ */
 public class UserVerifiableCredentialResource {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(UserVerifiableCredentialResource.class);
 
+    /** 管理权限评估器。 */
     private final AdminPermissionEvaluator auth;
+    /** 管理事件构建器。 */
     private final AdminEventBuilder adminEvent;
+    /** 目标用户。 */
     private final UserModel user;
+    /** Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 当前 realm。 */
     private final RealmModel realm;
 
+    /** 构造用户 VC 管理资源。 */
     public UserVerifiableCredentialResource(KeycloakSession session, RealmModel realm, UserModel user, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.realm = realm;
@@ -92,6 +103,7 @@ public class UserVerifiableCredentialResource {
             @APIResponse(responseCode = "403", description = "Forbidden"),
             @APIResponse(responseCode = "409", description = "Conflict", content = @Content(schema = @Schema(implementation = ErrorRepresentation.class)))
     })
+    /** 为用户创建可验证凭证授予记录。 */
     public UserVerifiableCredentialRepresentation createCredential(UserVerifiableCredentialRepresentation representation) {
         auth.users().requireManage(user);
         checkOid4VCIEnabled();
@@ -134,6 +146,7 @@ public class UserVerifiableCredentialResource {
             @APIResponse(responseCode = "400", description = "Bad request", content = @Content(schema = @Schema(implementation = ErrorRepresentation.class))),
             @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 列出用户已授予的可验证凭证。 */
     public List<UserVerifiableCredentialRepresentation> getCredentials() {
         auth.users().requireView(user);
         checkOid4VCIEnabled();
@@ -155,11 +168,12 @@ public class UserVerifiableCredentialResource {
             @APIResponse(responseCode = "403", description = "Forbidden"),
             @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 刷新用户属性快照并递增 revision。 */
     public UserVerifiableCredentialRepresentation updateCredential(@PathParam("credentialScopeName") String credentialScopeName) {
         auth.users().requireManage(user);
         checkOid4VCIEnabled();
 
-        // Resolve name to ID
+        // 将客户端范围名称解析为 ID
         ClientScopeModel clientScope = realm.getClientScopesStream()
                 .filter(s -> s.getName().equals(credentialScopeName))
                 .findFirst()
@@ -202,6 +216,7 @@ public class UserVerifiableCredentialResource {
             @APIResponse(responseCode = "403", description = "Forbidden"),
             @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 撤销用户指定类型的可验证凭证授予。 */
     public void revokeCredential(@PathParam("credentialScopeName") String credentialScopeName) {
         auth.users().requireManage(user);
         checkOid4VCIEnabled();
@@ -231,6 +246,7 @@ public class UserVerifiableCredentialResource {
             @APIResponse(responseCode = "200", description = "OK"),
             @APIResponse(responseCode = "403", description = "Forbidden")
     })
+    /** 列出用户已签发的可验证凭证实例。 */
     public List<IssuedVerifiableCredentialRepresentation> getIssuedCredentials() {
         auth.users().requireView(user);
         checkOid4VCIEnabled();
@@ -250,6 +266,7 @@ public class UserVerifiableCredentialResource {
             @APIResponse(responseCode = "403", description = "Forbidden"),
             @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 撤销指定 ID 的已签发凭证。 */
     public void revokeIssuedCredential(@PathParam("id") String credentialId) {
         auth.users().requireManage(user);
         checkOid4VCIEnabled();
@@ -278,6 +295,7 @@ public class UserVerifiableCredentialResource {
             @APIResponse(responseCode = "404", description = "Not Found"),
             @APIResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = ErrorRepresentation.class)))
     })
+    /** 通过邮件向用户发送 credential offer 链接。 */
     public Response sendCredentialOffer(@Parameter(description = "Client id. Optional parameter. If it is set, then once user clicks on 'Continue' button from credential offer page (which is displayed to him after he clicks on the link from the email), the Base URL of this client might be displayed, which means user is guided to be redirected to that specified client application") @QueryParam("client_id") String clientId,
                                     @Parameter(description = "Redirect uri. Optional parameter. If it is set, it needs to be valid redirect URI for the client specified by 'client ID' parameter. It allows to use different URL than client base URL on the screen, which is displayed to the user after continue from credential offer page.") @QueryParam("redirect_uri") String redirectUri,
                                     @Parameter(description = "Number of seconds after which the generated token expires. If not set, the default value is realm option 'Default Admin-Initiated Action Lifespan', which defaults to 12 hours.") @QueryParam("lifespan") Integer lifespan,
@@ -287,7 +305,7 @@ public class UserVerifiableCredentialResource {
 
         UserResource.SendEmailParams result = verifySendEmailParams(session, realm, user, redirectUri, clientId, lifespan);
 
-        // Additional configuration verifications
+        // 校验 credential offer 配置与客户端范围
         if (credentialOfferConfig == null) {
             throw ErrorResponse.error("Credential offer configuration missing", Response.Status.BAD_REQUEST);
         }
@@ -333,6 +351,7 @@ public class UserVerifiableCredentialResource {
         }
     }
 
+    /** 校验 OID4VC VCI 特性与 realm 级 VC 开关已启用。 */
     private void checkOid4VCIEnabled() {
         if (!Profile.isFeatureEnabled(Profile.Feature.OID4VC_VCI)) {
             throw ErrorResponse.error("Feature " + Profile.Feature.OID4VC_VCI.getKey() + " not enabled", Response.Status.BAD_REQUEST);
@@ -342,6 +361,7 @@ public class UserVerifiableCredentialResource {
         }
     }
 
+    /** 校验客户端范围存在且协议为 oid4vci。 */
     private CredentialScopeModel checkCredentialScope(String credentialScopeName) {
         ClientScopeModel clientScope = KeycloakModelUtils.getClientScopeByName(realm, credentialScopeName);
         if (clientScope == null) {

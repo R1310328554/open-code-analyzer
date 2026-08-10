@@ -24,35 +24,45 @@ import java.util.Set;
 import org.keycloak.protocol.oid4vc.issuance.mappers.OID4VCTargetRoleMapper;
 
 /**
- * Pojo representation of a role to be added by the {@link OID4VCTargetRoleMapper}
+ * {@link OID4VCTargetRoleMapper} 写入凭证的角色 POJO。
+ * <p>包含角色名集合与目标声明路径。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 public class Role {
 
+    /** 要映射的角色名集合。 */
     private Set<String> names;
+    /** 角色写入凭证中的目标路径/字段。 */
     private String target;
 
+    /** 默认构造器。 */
     public Role() {
     }
 
+    /** @param names 角色名集合
+     * @param target 目标路径 */
     public Role(Set<String> names, String target) {
         this.names = Collections.unmodifiableSet(names);
         this.target = target;
     }
 
+    /** @return 角色名集合 */
     public Set<String> getNames() {
         return names;
     }
 
+    /** @param names 角色名集合 */
     public void setNames(Set<String> names) {
         this.names = names;
     }
 
+    /** @return 目标路径 */
     public String getTarget() {
         return target;
     }
 
+    /** @param target 目标路径 */
     public void setTarget(String target) {
         this.target = target;
     }

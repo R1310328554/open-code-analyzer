@@ -17,11 +17,12 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
- * Validator to check that the DID attribute value is unique among users in the realm.
- * Expects List of Strings as input.
+ * 校验用户 DID 属性在 realm 内唯一。
+ * <p>输入为 {@code List<String>}，取首元素作为 DID 值。</p>
  */
 public class DuplicateDidValidator implements SimpleValidator {
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "up-duplicate-did";
 
     @Override
@@ -48,12 +49,12 @@ public class DuplicateDidValidator implements SimpleValidator {
         RealmModel realm = session.getContext().getRealm();
         UserModel user = UserProfileAttributeValidationContext.from(context).getAttributeContext().getUser();
 
-        // Skip validation if the DID value hasn't changed for an existing user
+        // 已有用户且 DID 未变更则跳过
         if (user != null && Objects.equals(user.getFirstAttribute(UserModel.DID), value)) {
             return context;
         }
 
-        // Search for existing users with the same DID attribute value
+        // 搜索 realm 内是否已有相同 DID 的其他用户
         session.users().searchForUserByUserAttributeStream(realm, UserModel.DID, value)
                 .filter(existing -> user == null || !Objects.equals(existing.getId(), user.getId()))
                 .findFirst()

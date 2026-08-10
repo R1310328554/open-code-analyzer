@@ -28,8 +28,8 @@ import org.keycloak.utils.StringUtil;
 import org.jboss.logging.Logger;
 
 /**
- * Utility class for handling claims path pointers.
- * A claims path pointer is a pointer into the Verifiable Credential, identifying one or more claims.
+ * claims path pointer 工具类。
+ * <p>claims path pointer 指向可验证凭证 JSON 中的一条或多条声明，用于授权详情过滤与校验。</p>
  *
  * @author <a href="mailto:Forkim.Akwichek@adorsys.com">Forkim Akwichek</a>
  */
@@ -38,10 +38,11 @@ public class ClaimsPathPointer {
     private static final Logger logger = Logger.getLogger(ClaimsPathPointer.class);
 
     /**
-     * Validates a claims path pointer.
+     * 校验 claims path pointer 格式是否合法。
+     * <p>路径分量仅允许非空字符串、非负整数或 null（数组全选）。</p>
      *
-     * @param path the claims path pointer to validate
-     * @return true if valid, false otherwise
+     * @param path claims path pointer
+     * @return 合法返回 true
      */
     public static boolean isValidPath(List<Object> path) {
         if (path == null || path.isEmpty()) {
@@ -50,12 +51,12 @@ public class ClaimsPathPointer {
 
         for (Object component : path) {
             if (component == null) {
-                // null is valid for array selection
+                // null 表示选择当前数组的全部元素
                 continue;
             }
 
             if (component instanceof String) {
-                // String is valid for object key selection, but should not be blank
+                // 字符串表示对象键，且不可为空白
                 if (StringUtil.isBlank((String) component)) {
                     return false;
                 }
@@ -65,14 +66,14 @@ public class ClaimsPathPointer {
             if (component instanceof Integer) {
                 Integer index = (Integer) component;
                 if (index < 0) {
-                    // Negative integers are not allowed
+                    // 不允许负整数索引
                     return false;
                 }
-                // Non-negative integers are valid for array index selection
+                // 非负整数表示数组下标
                 continue;
             }
 
-            // Any other type is invalid
+            // 其他类型均非法
             return false;
         }
 
@@ -80,17 +81,17 @@ public class ClaimsPathPointer {
     }
 
     /**
-     * Validates a list of claims descriptions for conflicts and contradictions.
+     * 校验 claims 描述列表是否存在冲突或矛盾。
      *
-     * @param claims the list of claims descriptions to validate
-     * @return true if valid, false if conflicts are found
+     * @param claims claims 描述列表
+     * @return 无冲突返回 true
      */
     public static boolean validateClaimsDescriptions(List<ClaimsDescription> claims) {
         if (claims == null || claims.isEmpty()) {
             return true;
         }
 
-        // Check for repeated or contradictory claim descriptions
+        // 两两比较是否存在重复或矛盾描述
         for (int i = 0; i < claims.size(); i++) {
             for (int j = i + 1; j < claims.size(); j++) {
                 ClaimsDescription claim1 = claims.get(i);
@@ -107,11 +108,11 @@ public class ClaimsPathPointer {
     }
 
     /**
-     * Checks if two claims descriptions are conflicting.
+     * 判断两条 claims 描述是否冲突。
      *
-     * @param claim1 first claims description
-     * @param claim2 second claims description
-     * @return true if conflicting, false otherwise
+     * @param claim1 第一条描述
+     * @param claim2 第二条描述
+     * @return 冲突返回 true
      */
     private static boolean isConflicting(ClaimsDescription claim1, ClaimsDescription claim2) {
         List<Object> path1 = claim1.getPath();
@@ -121,21 +122,21 @@ public class ClaimsPathPointer {
             return false;
         }
 
-        // Check if paths are identical (same claim addressed)
+        // 路径完全相同视为冲突
         if (path1.equals(path2)) {
             return true;
         }
 
-        // Check for array vs object conflicts
+        // 检查数组与对象寻址方式的冲突
         return hasArrayObjectConflict(path1, path2);
     }
 
     /**
-     * Checks if there's a conflict between array and object addressing for the same claim.
+     * 检测两条路径在数组/对象寻址上是否冲突。
      *
-     * @param path1 first path
-     * @param path2 second path
-     * @return true if there's an array/object conflict, false otherwise
+     * @param path1 第一条路径
+     * @param path2 第二条路径
+     * @return 存在冲突返回 true
      */
     private static boolean hasArrayObjectConflict(List<Object> path1, List<Object> path2) {
         int minLength = Math.min(path1.size(), path2.size());
@@ -144,7 +145,7 @@ public class ClaimsPathPointer {
             Object comp1 = path1.get(i);
             Object comp2 = path2.get(i);
 
-            // If components are different types and one is null (array selection) and the other is string (object selection)
+            // null（全选数组）与 string（对象键）混用视为冲突
             if (comp1 == null && comp2 instanceof String) {
                 return true;
             }
@@ -152,7 +153,7 @@ public class ClaimsPathPointer {
                 return true;
             }
 
-            // If components are different types and one is integer (specific array index) and the other is null (all array elements)
+            // 具体下标与 null（全选）混用视为冲突
             if (comp1 == null && comp2 instanceof Integer) {
                 return true;
             }
@@ -160,7 +161,7 @@ public class ClaimsPathPointer {
                 return true;
             }
 
-            // If components are equal, return true (as suggested by reviewer)
+            // 相同分量也视为冲突（审阅意见）
             if (Objects.equals(comp1, comp2)) {
                 return true;
             }
@@ -170,20 +171,20 @@ public class ClaimsPathPointer {
     }
 
     /**
-     * Filters a map of claims based on authorization details claims descriptions.
-     * Only claims that match the requested paths will be included in the result.
+     * 按授权详情中的 claims 描述过滤完整 claims 映射。
+     * <p>仅保留路径匹配的声明；必填项缺失时抛出异常。</p>
      *
-     * @param allClaims       the complete map of claims to filter
-     * @param requestedClaims the list of claims descriptions from authorization details
-     * @return filtered map containing only the requested claims
-     * @throws IllegalArgumentException if mandatory claims are missing
+     * @param allClaims       完整 claims
+     * @param requestedClaims 授权详情请求的 claims 描述
+     * @return 过滤后的 claims
+     * @throws IllegalArgumentException 必填 claim 缺失
      */
     public static Map<String, Object> filterClaimsByAuthorizationDetails(
             Map<String, Object> allClaims,
             List<ClaimsDescription> requestedClaims) {
 
         if (requestedClaims == null || requestedClaims.isEmpty()) {
-            return allClaims; // No filtering requested, return all claims
+            return allClaims; // 未请求过滤则返回全部
         }
 
         Map<String, Object> filteredClaims = new HashMap<>();
@@ -191,41 +192,41 @@ public class ClaimsPathPointer {
         for (ClaimsDescription claim : requestedClaims) {
             List<Object> path = claim.getPath();
             if (path == null || path.isEmpty()) {
-                continue; // Skip invalid paths
+                continue; // 跳过无效路径
             }
 
-            // Validate the claims path pointer format according to OID4VCI specification
+            // 按 OID4VCI 规范校验路径格式
             if (!isValidPath(path)) {
                 logger.warnf("Invalid claims path pointer: %s. Path must contain only strings, non-negative integers, and null values.", path);
                 continue; // Skip invalid paths
             }
 
             try {
-                // Get claim values
+                // 解析路径得到 claim 值
                 List<Object> claimValues = processClaimsPathPointer(allClaims, path);
 
                 if (!claimValues.isEmpty()) {
-                    // Add all selected claim values to filtered results
+                    // 将选中值写入结果
                     if (claimValues.size() == 1) {
-                        // Single value, use existing method
+                        // 单值直接写入
                         addClaimByPath(filteredClaims, path, claimValues.get(0));
                     } else {
-                        // Multiple values from array selection, use helper method
+                        // 多值（数组选择）使用辅助方法
                         addMultipleClaimsByPath(filteredClaims, path, claimValues);
                     }
                 } else if (Boolean.TRUE.equals(claim.getMandatory())) {
-                    // Mandatory claim is missing - this should fail
+                    // 必填 claim 缺失则失败
                     throw new IllegalArgumentException("Mandatory claim not found: " + path);
                 }
-                // Optional claims that don't exist are simply not included
+                // 可选 claim 不存在则忽略
             } catch (IllegalArgumentException e) {
                 if (Boolean.TRUE.equals(claim.getMandatory())) {
-                    // Log warning for mandatory claims before re-throwing
+                    // 必填项处理失败前记录警告
                     logger.warnf("Failed to process mandatory claim path %s: %s", path, e.getMessage());
-                    // Re-throw for mandatory claims
+                    // 必填项重新抛出
                     throw e;
                 }
-                // For optional claims, log debug and continue
+                // 可选项记录 debug 并继续
                 logger.debugf("Failed to process optional claim path %s: %s", path, e.getMessage());
             }
         }
@@ -235,12 +236,12 @@ public class ClaimsPathPointer {
 
 
     /**
-     * Processes a claims path pointer according to OID4VCI specification.
+     * 按 OID4VCI 规范从左到右处理 claims path pointer。
      *
-     * @param claims the claims map to search in
-     * @param path   the claims path pointer
-     * @return the set of selected JSON elements, or empty list if none found
-     * @throws IllegalArgumentException if processing fails according to spec rules
+     * @param claims 根 claims 映射
+     * @param path   claims path pointer
+     * @return 选中的 JSON 元素列表
+     * @throws IllegalArgumentException 处理违反规范时
      */
     public static List<Object> processClaimsPathPointer(Map<String, Object> claims, List<Object> path) {
         if (path == null || path.isEmpty()) {
@@ -250,11 +251,11 @@ public class ClaimsPathPointer {
             throw new IllegalArgumentException("Claims map cannot be null");
         }
 
-        // Start with root element
+        // 从根元素开始
         List<Object> currentSelection = new ArrayList<>();
         currentSelection.add(claims);
 
-        // Process each path component from left to right
+        // 逐分量处理路径
         for (Object component : path) {
             if (currentSelection.isEmpty()) {
                 throw new IllegalArgumentException("No elements currently selected, cannot process further");
@@ -264,7 +265,7 @@ public class ClaimsPathPointer {
 
             for (Object current : currentSelection) {
                 if (component instanceof String) {
-                    // String component: select element by key
+                    // 字符串：按键选取对象元素
                     if (current instanceof Map) {
                         Map<?, ?> map = (Map<?, ?>) current;
                         Object value = map.get(component);
@@ -273,7 +274,7 @@ public class ClaimsPathPointer {
                         }
                     }
                 } else if (component instanceof Integer) {
-                    // Integer component: select element by index
+                    // 整数：按下标选取数组元素
                     int index = (Integer) component;
                     if (index < 0) {
                         throw new IllegalArgumentException("Negative integer values are not allowed in claims path pointer");
@@ -285,7 +286,7 @@ public class ClaimsPathPointer {
                         }
                     }
                 } else if (component == null) {
-                    // Null component: select all elements of currently selected array(s)
+                    // null：选取当前数组的全部元素
                     if (current instanceof List) {
                         List<?> list = (List<?>) current;
                         nextSelection.addAll(list);
@@ -307,54 +308,52 @@ public class ClaimsPathPointer {
     }
 
     /**
-     * Adds multiple claim values to a claims map when array selection is involved.
-     * This method properly handles paths with null components that select multiple array elements.
+     * 数组选择场景下将多个 claim 值写入结果映射。
      *
-     * @param claims the claims map to add to
-     * @param path   the claims path pointer
-     * @param values the list of values to add
+     * @param claims 目标 claims
+     * @param path   claims path pointer
+     * @param values 待写入的值列表
      */
     private static void addMultipleClaimsByPath(Map<String, Object> claims, List<Object> path, List<Object> values) {
         if (values == null || values.isEmpty()) {
             return;
         }
 
-        // For simple paths, add the first value
+        // 单段路径直接写入首值
         if (path.size() == 1 && path.get(0) instanceof String) {
             claims.put((String) path.get(0), values.get(0));
             return;
         }
 
-        // For complex paths with array selection, we need to handle the structure properly
+        // 复杂路径需构建嵌套结构
         // This creates the appropriate nested structure to hold the selected values
         if (values.size() == 1) {
-            // Single value, use existing method
+            // 单值复用 addClaimByPath
             addClaimByPath(claims, path, values.get(0));
         } else {
-            // Multiple values - this indicates array selection
-            // We need to create an array structure to hold all values
+            // 多值表示数组全选
+            // 创建数组结构容纳全部值
             createArrayStructureForMultipleValues(claims, path, values);
         }
     }
 
     /**
-     * Creates an array structure to hold multiple values from array selection.
-     * This handles the case where a path with null components selects multiple array elements.
+     * 为数组选择结果创建数组嵌套结构。
      *
-     * @param claims the claims map to add to
-     * @param path   the claims path pointer
-     * @param values the list of values to add
+     * @param claims 目标 claims
+     * @param path   claims path pointer
+     * @param values 值列表
      */
     private static void createArrayStructureForMultipleValues(Map<String, Object> claims, List<Object> path, List<Object> values) {
         buildNestedStructure(claims, path, new ArrayList<Object>(values), true);
     }
 
     /**
-     * Adds a claim value to a claims map using a claims path pointer.
+     * 按路径将单个 claim 值写入映射。
      *
-     * @param claims the claims map to add to
-     * @param path   the claims path pointer
-     * @return the claim value, or null if not found
+     * @param claims 目标 claims
+     * @param path   claims path pointer
+     * @param value  要写入的值
      */
     private static void addClaimByPath(Map<String, Object> claims, List<Object> path, Object value) {
         if (path == null || path.isEmpty() || claims == null) {
@@ -362,33 +361,33 @@ public class ClaimsPathPointer {
         }
 
         if (path.size() == 1 && path.get(0) instanceof String) {
-            // Simple case: direct key assignment
+            // 单键直接赋值
             claims.put((String) path.get(0), value);
             return;
         }
 
-        // Complex case: nested path - build the structure
+        // 嵌套路径构建中间结构
         buildNestedClaimStructure(claims, path, value);
     }
 
     /**
-     * Builds nested claim structure for complex paths.
+     * 为复杂路径构建嵌套 claim 结构。
      *
-     * @param claims the claims map to build in
-     * @param path   the claims path pointer
-     * @param value  the value to add
+     * @param claims 目标 claims
+     * @param path   claims path pointer
+     * @param value  叶子值
      */
     private static void buildNestedClaimStructure(Map<String, Object> claims, List<Object> path, Object value) {
         buildNestedStructure(claims, path, value, false);
     }
 
     /**
-     * Generic method to build nested structure for both single values and multiple values.
+     * 通用嵌套结构构建（支持单值与多值数组选择）。
      *
-     * @param claims           the claims map to build in
-     * @param path             the claims path pointer
-     * @param value            the value to add (single value or list of values)
-     * @param isArraySelection true if this is for array selection (multiple values), false for single value
+     * @param claims           目标 claims
+     * @param path             claims path pointer
+     * @param value            单值或值列表
+     * @param isArraySelection 是否为数组全选场景
      */
     private static void buildNestedStructure(Map<String, Object> claims, List<Object> path, Object value, boolean isArraySelection) {
         if (path.size() < 2) {
@@ -398,26 +397,26 @@ public class ClaimsPathPointer {
         Object current = claims;
         String rootKey = (String) path.get(0);
 
-        // Ensure root key exists
+        // 确保根键存在
         if (!(current instanceof Map)) {
             return;
         }
 
         Map<String, Object> rootMap = (Map<String, Object>) current;
         if (!rootMap.containsKey(rootKey)) {
-            // Use ArrayList for array selection, HashMap for single values
+            // 数组选择用 ArrayList，单值用 HashMap
             rootMap.put(rootKey, isArraySelection ? new ArrayList<Object>() : new HashMap<String, Object>());
         }
 
         current = rootMap.get(rootKey);
 
-        // Navigate through the path, building structure as needed
+        // 沿路径导航并按需创建中间节点
         for (int i = 1; i < path.size() - 1; i++) {
             Object component = path.get(i);
 
             if (component instanceof String) {
                 if (!(current instanceof Map)) {
-                    return; // Can't navigate further
+                    return; // 无法继续导航
                 }
                 Map<String, Object> map = (Map<String, Object>) current;
                 if (!map.containsKey(component)) {
@@ -431,14 +430,14 @@ public class ClaimsPathPointer {
                 List<Object> list = (List<Object>) current;
                 int index = (Integer) component;
                 while (list.size() <= index) {
-                    // Use HashMap for single values, null for array selection
+                    // 单值占位 HashMap，数组选择占位 null
                     list.add(isArraySelection ? null : new HashMap<String, Object>());
                 }
                 current = list.get(index);
             }
         }
 
-        // Set the final value
+        // 写入最终叶子值
         Object finalComponent = path.get(path.size() - 1);
         if (finalComponent instanceof String) {
             if (current instanceof Map) {

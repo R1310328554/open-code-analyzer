@@ -51,10 +51,16 @@ import static org.keycloak.constants.OID4VCIConstants.OID4VC_PROTOCOL;
 import static org.keycloak.models.Constants.AUTHORIZATION_DETAILS_RESPONSE;
 import static org.keycloak.models.UserSessionModel.SessionPersistenceState.TRANSIENT;
 
+/**
+ * OID4VCI 专用刷新令牌提供者。
+ * <p>在授权码/刷新令牌 grant 下为凭证发行流程生成与校验 refresh token，并重建临时用户会话。</p>
+ */
 public class OID4VCIRefreshTokenProvider extends AbstractRefreshTokenProvider implements RefreshTokenProvider {
 
+    /** 日志记录器。 */
     private static final Logger logger = Logger.getLogger(OID4VCIRefreshTokenProvider.class);
 
+    /** @param session Keycloak 会话 */
     public OID4VCIRefreshTokenProvider(KeycloakSession session) {
         super(session);
     }
@@ -63,13 +69,13 @@ public class OID4VCIRefreshTokenProvider extends AbstractRefreshTokenProvider im
     public boolean supports(InitialRefreshTokenContext initialRefreshTokenCtx) {
         ClientSessionContext clientSessionCtx = initialRefreshTokenCtx.clientSessionCtx();
 
-        // Supported only for authorization_code grant type and refresh-token grant
+        // 仅支持 authorization_code 与 refresh_token grant
         String grantType = clientSessionCtx.getAttribute(Constants.GRANT_TYPE, String.class);
         if (!AUTHORIZATION_CODE.equals(grantType) && !REFRESH_TOKEN.equals(grantType)) {
             return false;
         }
 
-        // Check any 'oid4vci' client scope is present
+        // 要求客户端会话中存在 oid4vci 协议 scope
         return clientSessionCtx.getClientScopesStream()
                 .anyMatch(it -> OID4VC_PROTOCOL.equals(it.getProtocol()));
     }
@@ -97,7 +103,7 @@ public class OID4VCIRefreshTokenProvider extends AbstractRefreshTokenProvider im
             refreshToken.exp(getExpiration(clientSessionCtx, user));
         }
 
-        // Likely should not need to support this for OID4VCI refresh tokens
+        // OID4VCI refresh token 不支持请求 audience 客户端
         final ClientModel[] requestedAudienceClients = clientSessionCtx.getAttribute(Constants.REQUESTED_AUDIENCE_CLIENTS, ClientModel[].class);
         if (requestedAudienceClients != null) {
             throw new RefreshTokenException(INVALID_REQUEST, "Unsupported to request audience clients together with oid4vci");
@@ -132,7 +138,7 @@ public class OID4VCIRefreshTokenProvider extends AbstractRefreshTokenProvider im
             throw new OAuthErrorException(OAuthErrorException.INVALID_GRANT, "User disabled", "User disabled");
         }
 
-        // Create transient sessions
+        // 创建临时认证与用户会话以完成刷新
         RootAuthenticationSessionModel rootAuthSession = new AuthenticationSessionManager(session).createAuthenticationSession(realm, false);
         AuthenticationSessionModel authSession = rootAuthSession.createAuthenticationSession(client);
 
@@ -163,17 +169,21 @@ public class OID4VCIRefreshTokenProvider extends AbstractRefreshTokenProvider im
 
     @Override
     protected void afterRefreshTokenGenerated(RefreshTokenContext ctx, TokenManager.AccessTokenResponseBuilder responseBuilder) {
-        // Nothing needed for OID4VCI refresh tokens
+        // OID4VCI refresh token 生成后无需额外处理
     }
 
 
-    // Might eventually be overridden for scenarios where a user is not available in the Keycloak DB
+    /** 按 refresh token subject 查找用户；Keycloak 外用户场景可子类覆盖。 */
     protected UserModel getUser(RealmModel realm, RefreshToken oldToken) {
         String userId = oldToken.getSubject();
         return session.users().getUserById(realm, userId);
     }
 
-    protected IssuedVerifiableCredentialModel checkIssuedVerifiableCredential(KeycloakSession session, UserModel user, String issuedCredentialId, CredentialScopeModel expectedCredentialScope, ClientModel expectedClient) {
+    /**
+     * 校验已签发凭证是否存在且与期望 scope/客户端一致。
+     *
+     * @throws RefreshTokenException 校验失败时
+     */
         try {
             return OID4VCUtil.checkIssuedVerifiableCredential(session, user, issuedCredentialId, expectedCredentialScope, expectedClient);
         } catch (IllegalStateException ise) {
@@ -196,7 +206,7 @@ public class OID4VCIRefreshTokenProvider extends AbstractRefreshTokenProvider im
         }
 
         IssuedVerifiableCredentialModel issuedVerifiableCredentialModel = checkIssuedVerifiableCredential(session, user, oid4vcAuthzDetail.getIssuedCredentialId(), credentialScopeModel, clientSessionCtx.getClientSession().getClient());
-        return (issuedVerifiableCredentialModel.getExpiresAt() / 1000); // Expiry saved on credential is in milliseconds
+        return (issuedVerifiableCredentialModel.getExpiresAt() / 1000); // 凭证过期时间为毫秒，转为秒
     }
 
     private OID4VCAuthorizationDetail getOid4vcAuthzDetail(List<AuthorizationDetailsJSONRepresentation> authzDetails) {
@@ -204,7 +214,7 @@ public class OID4VCIRefreshTokenProvider extends AbstractRefreshTokenProvider im
                 .filter(authzDetail -> OPENID_CREDENTIAL.equals(authzDetail.getType()))
                 .map(authzDetail -> authzDetail.asSubtype(OID4VCAuthorizationDetail.class))
                 .toList();
-        // Aligned with other places in Keycloak codebase to support single VC
+        // 与代码库其他处一致：当前仅支持单个 OID4VCI authorization detail
         if (oid4vcAuthzDetails.size() != 1) {
             throw new RefreshTokenException(INVALID_REQUEST, "Supporting single OID4VCI authorization detail for now");
         }
