@@ -1,0 +1,7 @@
+{
+  "project": "nacos",
+  "version": "3.2.3",
+  "git_ref": "3.2.3",
+  "repo_url": "https://github.com/alibaba/nacos",
+  "source": "release"
+}

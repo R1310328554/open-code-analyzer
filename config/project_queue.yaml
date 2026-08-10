@@ -83,10 +83,12 @@ projects:
   version: arthas-all-4.3.2
 - id: netty
   url: https://github.com/netty/netty
-  status: in_progress
+  status: complete
   version: netty-4.2.17.Final
 - id: nacos
   url: https://github.com/alibaba/nacos
+  status: in_progress
+  version: "3.2.3"
 - id: keycloak
   url: https://github.com/keycloak/keycloak
 - id: gin

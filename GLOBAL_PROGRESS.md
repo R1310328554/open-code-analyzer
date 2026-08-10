@@ -19,7 +19,8 @@
 | disruptor | 4.0.0 | 171 | 0 ✅ |
 | gin | 1.12.0 | 56 | 0 ✅ |
 | arthas | arthas-all-4.3.2 | 795 | 0 ✅ |
-| netty | netty-4.2.17.Final | 0 | 1928 |
+| netty | netty-4.2.17.Final | 1928 | 0 ✅ |
+| nacos | 3.2.3 | 0 | 2507 |
 
-已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas。  
-进行中：netty（核心 `src/main/java` 队列已初始化，已排除 testsuite/example/microbench）。
+已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas / netty。  
+进行中：nacos（核心 `src/main/java` 队列已初始化，已排除 example）。
