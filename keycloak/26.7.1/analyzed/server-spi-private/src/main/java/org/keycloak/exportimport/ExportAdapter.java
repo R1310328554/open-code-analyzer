@@ -20,27 +20,27 @@ package org.keycloak.exportimport;
 import java.io.IOException;
 
 /**
- * This adapter allows the exporter to act independent of APIs used to serve the exported data to the caller.
+ * 导出适配器：解耦导出逻辑与向调用方交付数据的 API（HTTP 响应、文件流等）。
  *
  * @author Alexander Schwartz
  */
 public interface ExportAdapter {
     /**
-     * Set the mime type of the output.
+     * 设置导出内容的 MIME 类型。
      *
-     * @param mediaType Mime Type
+     * @param mediaType MIME 类型
      */
     void setType(String mediaType);
 
     /**
-     * Write to the output stream. Once writing is complete, close it.
+     * 将导出数据写入输出流；写入完成后由实现关闭流。
      *
-     * @param consumer A consumer to that accepts the output stream.
+     * @param consumer 接收 {@link java.io.OutputStream} 的消费者
      */
     void writeToOutputStream(ConsumerOfOutputStream consumer);
 
     /**
-     * Custom consumer that is allowed to throw an {@link IOException} as writing to an output stream might do this.
+     * 可抛出 {@link IOException} 的输出流消费者（写入流时常见）。
      */
     @FunctionalInterface
     interface ConsumerOfOutputStream {

@@ -22,6 +22,9 @@ import java.util.Map;
 import org.keycloak.util.EnumWithStableIndex;
 
 /**
+ * Keycloak 用户与客户端事件类型枚举，含稳定整数索引供存储与查询。
+ * <p>带 {@code _ERROR} 后缀的常量表示对应操作失败；{@link #isSaveByDefault()} 指示管理员未配置时是否默认持久化。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public enum EventType implements EnumWithStableIndex {
@@ -162,7 +165,7 @@ public enum EventType implements EnumWithStableIndex {
     DELETE_ACCOUNT(50, true),
     DELETE_ACCOUNT_ERROR(0x10000 + DELETE_ACCOUNT.getStableIndex(), true),
 
-    // PAR request.
+    // 推送授权请求（PAR）。
     PUSHED_AUTHORIZATION_REQUEST(51, false),
     PUSHED_AUTHORIZATION_REQUEST_ERROR(0x10000 + PUSHED_AUTHORIZATION_REQUEST.getStableIndex(), false),
 
@@ -220,12 +223,13 @@ public enum EventType implements EnumWithStableIndex {
     }
 
     /**
-     * Determines whether this event is stored when the admin has not set a specific set of event types to save.
+     * 管理员未指定保存事件类型集合时，本事件是否默认写入事件存储。
      */
     public boolean isSaveByDefault() {
         return saveByDefault;
     }
 
+    /** 按稳定整数索引解析事件类型；{@code id} 为 {@code null} 时返回 {@code null}。 */
     public static EventType valueOfInteger(Integer id) {
         return id == null ? null : BY_ID.get(id);
     }

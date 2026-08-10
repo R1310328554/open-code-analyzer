@@ -18,6 +18,8 @@
 package org.keycloak.events.admin;
 
 /**
+ * 管理事件查询中的认证过滤条件（realm、客户端、用户、IP）。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class AuthQuery {
@@ -55,9 +57,9 @@ public class AuthQuery {
     }
 
     /**
-     * Note: will not be an address when a proxy does not provide a valid one
+     * 注意：代理未传递有效地址时可能为空或非真实 IP。
      *
-     * @return the ip address
+     * @return IP 地址
      */
     public String getIpAddress() {
         return ipAddress;

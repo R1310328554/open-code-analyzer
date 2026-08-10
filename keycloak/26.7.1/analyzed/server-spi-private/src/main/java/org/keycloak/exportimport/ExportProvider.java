@@ -22,10 +22,13 @@ import java.io.IOException;
 import org.keycloak.provider.Provider;
 
 /**
+ * Realm 导出 SPI：将当前模型序列化为 JSON 等格式。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ExportProvider extends Provider {
 
+    /** 执行 realm 模型导出；I/O 失败时抛出 {@link IOException}。 */
     void exportModel() throws IOException;
 
 }

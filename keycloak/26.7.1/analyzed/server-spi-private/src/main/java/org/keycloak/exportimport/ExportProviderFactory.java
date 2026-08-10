@@ -20,6 +20,8 @@ package org.keycloak.exportimport;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link ExportProvider} 的 {@link ProviderFactory} 工厂接口。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ExportProviderFactory extends ProviderFactory<ExportProvider> {

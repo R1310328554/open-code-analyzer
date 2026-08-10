@@ -22,17 +22,20 @@ import java.util.concurrent.ExecutorService;
 import org.keycloak.provider.Provider;
 
 /**
+ * 线程池执行器 SPI：按任务类型返回 {@link ExecutorService}，供过期清理等后台任务使用。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ExecutorsProvider extends Provider {
 
+    /** 会话/令牌过期清理等定时任务使用的执行器类型键。 */
     String EXPIRATION_TASKS = "expiration-tasks";
 
     /**
-     * Impl will usually return different executors for different tasks.
+     * 按任务类型获取线程池；不同 {@code taskType} 通常映射不同执行器。
      *
-     * @param taskType
-     * @return
+     * @param taskType 任务类型标识（如 {@link #EXPIRATION_TASKS}）
+     * @return 对应 {@link ExecutorService}
      */
     ExecutorService getExecutor(String taskType);
 

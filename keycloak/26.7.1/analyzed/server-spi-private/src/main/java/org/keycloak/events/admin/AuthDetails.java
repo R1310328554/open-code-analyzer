@@ -18,6 +18,8 @@
 package org.keycloak.events.admin;
 
 /**
+ * 管理事件操作者的认证上下文：realm、客户端、用户与请求 IP。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class AuthDetails {
@@ -31,7 +33,9 @@ public class AuthDetails {
 
     private String ipAddress;
     
+    /** 无参构造，供序列化使用。 */
     public AuthDetails() {}
+    /** 拷贝构造，复制各认证字段。 */
     public AuthDetails(AuthDetails toCopy) {
         this.realmId = toCopy.getRealmId();
         this.realmName = toCopy.getRealmName();
@@ -40,6 +44,7 @@ public class AuthDetails {
         this.ipAddress = toCopy.getIpAddress();
     }
 
+    /** @return 操作者所在 realm 的 ID */
     public String getRealmId() {
         return realmId;
     }
@@ -48,6 +53,7 @@ public class AuthDetails {
         this.realmId = realmId;
     }
 
+    /** @return 操作者所在 realm 的名称 */
     public String getRealmName() {
         return realmName;
     }
@@ -56,6 +62,7 @@ public class AuthDetails {
         this.realmName = realmName;
     }
 
+    /** @return 已认证客户端 ID（服务账号场景） */
     public String getClientId() {
         return clientId;
     }
@@ -64,6 +71,7 @@ public class AuthDetails {
         this.clientId = clientId;
     }
 
+    /** @return 已认证用户 ID */
     public String getUserId() {
         return userId;
     }
@@ -72,6 +80,7 @@ public class AuthDetails {
         this.userId = userId;
     }
 
+    /** @return 发起管理请求的客户端 IP 地址 */
     public String getIpAddress() {
         return ipAddress;
     }

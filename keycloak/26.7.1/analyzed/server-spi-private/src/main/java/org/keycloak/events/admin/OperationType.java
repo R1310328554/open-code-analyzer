@@ -23,13 +23,19 @@ import java.util.Objects;
 import org.keycloak.util.EnumWithStableIndex;
 
 /**
+ * 管理 REST 操作类型，含稳定整数索引供事件存储序列化。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public enum OperationType implements EnumWithStableIndex {
 
+    /** 创建资源。 */
     CREATE(0),
+    /** 更新资源。 */
     UPDATE(1),
+    /** 删除资源。 */
     DELETE(2),
+    /** 非 CRUD 的管理动作（如触发 required action）。 */
     ACTION(3);
 
     private final int stableIndex;
@@ -45,6 +51,7 @@ public enum OperationType implements EnumWithStableIndex {
         return stableIndex;
     }
 
+    /** 按稳定整数索引解析操作类型；{@code id} 为 {@code null} 时返回 {@code null}。 */
     public static OperationType valueOfInteger(Integer id) {
         return id == null ? null : BY_ID.get(id);
     }

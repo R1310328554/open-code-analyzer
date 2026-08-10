@@ -22,27 +22,34 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 事件存储 SPI，注册 {@link EventStoreProvider} 用于持久化用户与客户端事件。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class EventStoreSpi implements Spi {
 
+    /** SPI 名称常量：{@code eventsStore}。 */
     public static final String NAME = "eventsStore";
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return {@link #NAME} */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** 事件存储提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return EventStoreProvider.class;
     }
 
+    /** 事件存储工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return EventStoreProviderFactory.class;

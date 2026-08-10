@@ -20,6 +20,8 @@ package org.keycloak.executors;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link ExecutorsProvider} 的 {@link ProviderFactory} 工厂接口。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ExecutorsProviderFactory extends ProviderFactory<ExecutorsProvider> {

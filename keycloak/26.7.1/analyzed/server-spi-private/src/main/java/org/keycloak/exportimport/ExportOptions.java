@@ -18,6 +18,8 @@
 package org.keycloak.exportimport;
 
 /**
+ * Realm 导出选项：控制是否包含用户、客户端、组/角色及服务账号子集。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class ExportOptions {
@@ -28,9 +30,19 @@ public class ExportOptions {
     private boolean onlyServiceAccountsIncluded = false;
     private boolean partial;
 
+    /** 默认导出全部用户、客户端与组/角色。 */
     public ExportOptions() {
     }
 
+    /**
+     * 指定各导出维度。
+     *
+     * @param users 是否包含用户
+     * @param clients 是否包含客户端
+     * @param groupsAndRoles 是否包含组与角色
+     * @param onlyServiceAccounts 是否仅导出服务账号用户
+     * @param partial 是否为部分导出
+     */
     public ExportOptions(boolean users, boolean clients, boolean groupsAndRoles, boolean onlyServiceAccounts, boolean partial) {
         usersIncluded = users;
         clientsIncluded = clients;
@@ -39,18 +51,22 @@ public class ExportOptions {
         this.partial = partial;
     }
 
+    /** @return 导出是否包含用户 */
     public boolean isUsersIncluded() {
         return usersIncluded;
     }
 
+    /** @return 导出是否包含客户端 */
     public boolean isClientsIncluded() {
         return clientsIncluded;
     }
 
+    /** @return 导出是否包含组与角色 */
     public boolean isGroupsAndRolesIncluded() {
         return groupsAndRolesIncluded;
     }
 
+    /** @return 是否仅导出服务账号用户 */
     public boolean isOnlyServiceAccountsIncluded() {
         return onlyServiceAccountsIncluded;
     }
@@ -71,6 +87,7 @@ public class ExportOptions {
         onlyServiceAccountsIncluded = value;
     }
 
+    /** @return 是否为部分导出（非完整 realm 快照） */
     public boolean isPartial() {
         return partial;
     }
