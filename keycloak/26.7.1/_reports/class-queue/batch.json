@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:21:37Z",
-  "files": [
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/IdentityProviderPermissions.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/MgmtPermissions.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/MgmtPermissionsV2.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/ModelRecord.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/OrganizationPermissionEvaluator.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/OrganizationPermissions.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/RealmAuth.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/RealmPermissionEvaluator.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/RealmPermissions.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/RealmPermissionsV2.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/RealmsPermissionEvaluator.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/RolePermissionEvaluator.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/RolePermissionManagement.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/RolePermissions.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/RolePermissionsV2.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 868,
-  "done": 5115
+  "done": 5130
 }
