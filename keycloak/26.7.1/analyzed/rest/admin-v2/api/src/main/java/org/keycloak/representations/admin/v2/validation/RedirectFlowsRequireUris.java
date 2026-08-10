@@ -9,6 +9,10 @@ import java.lang.annotation.Target;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
+/**
+ * 类级校验：启用 {@code STANDARD} 或 {@code IMPLICIT} 登录流时，
+ * 须至少配置一条重定向 URI。
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = {})
@@ -17,6 +21,6 @@ public @interface RedirectFlowsRequireUris {
     String message() default "STANDARD and IMPLICIT flows require at least one redirect URI";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
-    // TODO: add "redirectUris" once OASModelFilter supports class-level descriptions for inherited properties
+    // TODO: OASModelFilter 支持继承属性的类级描述后，将 affectedFieldNames 加入 "redirectUris"
     String[] affectedFieldNames() default {"loginFlows"};
 }

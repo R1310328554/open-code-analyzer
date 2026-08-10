@@ -9,6 +9,10 @@ import java.lang.annotation.Target;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
+/**
+ * 类级校验：启用 {@code SERVICE_ACCOUNT} 或 {@code TOKEN_EXCHANGE} 登录流时，
+ * 客户端必须为机密类型（须配置 {@code auth}）。
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = {})

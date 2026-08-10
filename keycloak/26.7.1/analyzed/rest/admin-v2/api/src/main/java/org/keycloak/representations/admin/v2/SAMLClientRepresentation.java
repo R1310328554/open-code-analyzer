@@ -29,18 +29,26 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
- * Representation of a SAML client.
+ * SAML 客户端的 Admin v2 表示。
+ * <p>
+ * 协议固定为 {@link #PROTOCOL}（{@code saml}），涵盖 NameID 格式、签名/断言选项、
+ * 绑定方式及 XML 签名算法等 SAML 特有配置。
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 @Schema(description = "SAML Client configuration")
 public class SAMLClientRepresentation extends BaseClientRepresentation {
+    /** SAML 协议鉴别值。 */
     public static final String PROTOCOL = "saml";
 
+    /** 默认将协议设为 {@link #PROTOCOL}。 */
     public SAMLClientRepresentation() {
         this.protocol = PROTOCOL;
     }
 
+    /** SAML NameID 格式枚举（JSON 为小写字符串）。 */
     public enum NameIdFormat {
+        /** 用户名作为 NameID。 */
         USERNAME, EMAIL, PERSISTENT, TRANSIENT;
 
         @JsonValue
@@ -54,6 +62,7 @@ public class SAMLClientRepresentation extends BaseClientRepresentation {
         }
     }
 
+    /** XML 数字签名算法枚举。 */
     public enum SignatureAlgorithm {
         RSA_SHA1, RSA_SHA256, RSA_SHA256_MGF1, RSA_SHA512, RSA_SHA512_MGF1, DSA_SHA1;
 
@@ -63,41 +72,53 @@ public class SAMLClientRepresentation extends BaseClientRepresentation {
         }
     }
 
+    /** 主体使用的 NameID 格式。 */
     @JsonPropertyDescription("Name ID format to use for the subject")
     private NameIdFormat nameIdFormat;
 
+    /** 是否强制使用指定的 NameID 格式（忽略客户端请求）。 */
     @JsonPropertyDescription("Force the specified Name ID format even if the client requests a different one")
     private Boolean forceNameIdFormat;
 
+    /** 是否在 SAML 响应中包含 AuthnStatement。 */
     @JsonPropertyDescription("Include AuthnStatement in the SAML response")
     private Boolean includeAuthnStatement;
 
+    /** 是否在服务端对 SAML 文档签名。 */
     @JsonPropertyDescription("Sign SAML documents on the server side")
     private Boolean signDocuments;
 
+    /** 是否对 SAML 断言签名。 */
     @JsonPropertyDescription("Sign SAML assertions")
     private Boolean signAssertions;
 
+    /** 是否要求客户端对 SAML 请求签名。 */
     @JsonPropertyDescription("Require client to sign SAML requests")
     private Boolean clientSignatureRequired;
 
+    /** 是否强制 SAML 响应使用 POST 绑定。 */
     @JsonPropertyDescription("Force POST binding for SAML responses")
     private Boolean forcePostBinding;
 
+    /** 是否使用前通道注销（浏览器重定向）。 */
     @JsonPropertyDescription("Use front-channel logout (browser redirect)")
     private Boolean frontChannelLogout;
 
+    /** 签名 SAML 文档时使用的签名算法。 */
     @JsonPropertyDescription("Signature algorithm for signing SAML documents")
     private SignatureAlgorithm signatureAlgorithm;
 
+    /** XML 签名的规范化方法 URI。 */
     @ValidCanonicalizationMethod
     @JsonPropertyDescription("Canonicalization method for XML signatures")
     private String signatureCanonicalizationMethod;
 
+    /** 用于签名的 X.509 证书（PEM 内容，不含头尾）。 */
     @Size(max = 65536)
     @JsonPropertyDescription("X.509 certificate for signing (PEM format, without headers)")
     private String signingCertificate;
 
+    /** 是否允许 ECP（Enhanced Client or Proxy）流。 */
     @JsonPropertyDescription("Allow ECP (Enhanced Client or Proxy) flow")
     private Boolean allowEcpFlow;
 

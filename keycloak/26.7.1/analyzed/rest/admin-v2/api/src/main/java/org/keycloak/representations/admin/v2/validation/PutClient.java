@@ -1,7 +1,7 @@
 package org.keycloak.representations.admin.v2.validation;
 
 /**
- * This validation group allows to enable {@link ClientSecretNotBlank} on PUT endpoints.
+ * Jakarta Validation 分组：在 PUT 端点上启用 {@link ClientSecretNotBlank} 等全量更新校验。
  */
 public interface PutClient {
 }

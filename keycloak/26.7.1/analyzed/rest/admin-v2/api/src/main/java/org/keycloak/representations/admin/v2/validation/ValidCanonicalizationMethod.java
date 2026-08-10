@@ -9,6 +9,10 @@ import java.lang.annotation.Target;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
+/**
+ * 字段级校验：SAML XML 签名规范化方法须为合法 URI
+ *（参见 {@code javax.xml.crypto.dsig.CanonicalizationMethod} 常量）。
+ */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = {})

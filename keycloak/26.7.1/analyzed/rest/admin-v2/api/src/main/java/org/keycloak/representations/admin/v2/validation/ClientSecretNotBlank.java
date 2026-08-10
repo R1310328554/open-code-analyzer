@@ -12,9 +12,8 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Validation constraint that requires the {@link OIDCClientRepresentation.Auth#getSecret()} is not blank
- * when {@link OIDCClientRepresentation.Auth#getMethod()} is the (JWT) client secret.
- *
+ * 校验约束：当 {@link OIDCClientRepresentation.Auth#getMethod()} 为（JWT）客户端密钥类型时，
+ * 要求 {@link OIDCClientRepresentation.Auth#getSecret()} 非空。
  */
 @Target(TYPE)
 @Retention(RUNTIME)

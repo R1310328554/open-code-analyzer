@@ -10,7 +10,7 @@ import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
 /**
- * Constraint annotation for validating that UUID was not modified by the user.
+ * 类级校验：UUID 由服务端管理，用户不得指定或修改。
  *
  * @author Vaclav Muzikar <vmuzikar@ibm.com>
  */
