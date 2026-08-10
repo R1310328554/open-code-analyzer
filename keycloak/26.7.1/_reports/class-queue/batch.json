@@ -15,23 +15,8 @@
     "services/src/main/java/org/keycloak/protocol/oidc/endpoints/request/AuthorizationEndpointRequest.java",
     "services/src/main/java/org/keycloak/protocol/oidc/endpoints/request/AuthorizationEndpointRequestParserProcessor.java",
     "services/src/main/java/org/keycloak/protocol/oidc/endpoints/request/AuthzEndpointQueryStringParser.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/endpoints/request/AuthzEndpointRequestObjectParser.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/endpoints/request/AuthzEndpointRequestParser.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/endpoints/request/RequestUriType.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/ext/OIDCExtProvider.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/ext/OIDCExtProviderFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/ext/OIDCExtSPI.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/AuthorizationCodeGrantType.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/AuthorizationCodeGrantTypeFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/ClientCredentialsGrantType.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/ClientCredentialsGrantTypeFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/DefaultJWTAuthorizationGrantValidator.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/IDJWTAuthorizationGrantValidator.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/JWTAuthorizationGrantType.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/JWTAuthorizationGrantTypeFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/JWTAuthorizationGrantValidator.java",
-    "services/src/main/java/org/keycloak/protocol/oidc/grants/OAuth2GrantTypeBase.java"
+    "services/src/main/java/org/keycloak/protocol/oidc/endpoints/request/AuthzEndpointRequestObjectParser.java"
   ],
   "remaining_pending": 1438,
-  "done": 4530
+  "done": 4545
 }
