@@ -17,34 +17,45 @@
 package org.keycloak.models.cache.infinispan.entities;
 
 /**
+ * 表示缓存中「不存在」条目的占位实体。
+ * <p>
+ * 实现 {@link Revisioned}，用于负缓存（negative cache）场景：
+ * 当某 ID 在持久层不存在时仍写入缓存，避免重复穿透查询。
  *
  * @author hmlnarik
  */
 public class NonExistentItem implements Revisioned {
 
+    /** 被标记为不存在的实体 ID。 */
     private final String id;
 
+    /** 占位条目的 revision 版本号。 */
     private long revision;
 
+    /** 以 ID 构造 revision 为 0 的不存在占位条目。 */
     public NonExistentItem(String id) {
         this.id = id;
     }
 
+    /** 以 ID 与指定 revision 构造不存在占位条目。 */
     public NonExistentItem(String id, long revision) {
         this.id = id;
         this.revision = revision;
     }
 
+    /** 返回被标记为不存在的实体 ID。 */
     @Override
     public String getId() {
         return this.id;
     }
 
+    /** 返回占位条目的 revision 版本号。 */
     @Override
     public long getRevision() {
         return this.revision;
     }
 
+    /** 更新占位条目的 revision 版本号。 */
     @Override
     public void setRevision(long revision) {
         this.revision = revision;
