@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T22:19:20Z",
   "files": [
-    "pkg/engine/internal/worker/error_pipeline.go",
-    "pkg/engine/internal/worker/job_manager.go",
-    "pkg/engine/internal/worker/metrics.go",
-    "pkg/engine/internal/worker/metrics_collector.go",
-    "pkg/engine/internal/worker/node_source.go",
-    "pkg/engine/internal/worker/scheduler_lookup.go",
-    "pkg/engine/internal/worker/stream_sink.go",
-    "pkg/engine/internal/worker/stream_source.go",
-    "pkg/engine/internal/worker/thread.go",
-    "pkg/engine/internal/worker/worker.go",
-    "pkg/engine/internal/workflow/admission_control.go",
-    "pkg/engine/internal/workflow/runner.go",
-    "pkg/engine/internal/workflow/stream_pipe.go",
-    "pkg/engine/internal/workflow/task.go",
-    "pkg/engine/internal/workflow/workflow.go",
     "pkg/engine/internal/workflow/workflow_planner.go",
     "pkg/engine/internal/workflow/workflow_print.go",
     "pkg/engine/metrics.go",
@@ -33,5 +18,5 @@
     "pkg/goldfish/storage.go"
   ],
   "remaining_pending": 892,
-  "done": 630
+  "done": 645
 }
