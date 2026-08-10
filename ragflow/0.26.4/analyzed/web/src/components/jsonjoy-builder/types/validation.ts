@@ -1,7 +1,10 @@
+// validation.ts — JSON Schema 按类型的 Zod 校验、错误树构建与 i18n 错误消息。
+
 import z from 'zod';
 import type { Translation } from '../i18n/translation-keys';
 import { baseSchema, type JSONSchema } from './json-schema';
 
+/** 校验 min/max（含 exclusive）区间是否一致且合法。 */
 function refineRangeConsistency(
   min: number | undefined,
   isMinExclusive: boolean,
@@ -20,6 +23,7 @@ function refineRangeConsistency(
   return true;
 }
 
+/** 构建 string 类型约束的 Zod schema（长度、pattern、format、enum）。 */
 const getJsonStringType = (t: Translation) =>
   z
     .object({
@@ -49,6 +53,7 @@ const getJsonStringType = (t: Translation) =>
       },
     );
 
+/** 构建 number 类型约束的 Zod schema（范围、exclusive、enum 范围校验）。 */
 const getJsonNumberType = (t: Translation) =>
   z
     .object({
@@ -119,6 +124,7 @@ const getJsonNumberType = (t: Translation) =>
       },
     );
 
+/** 构建 array 类型约束的 Zod schema（minItems/maxItems、contains）。 */
 const getJsonArrayType = (t: Translation) =>
   z
     .object({
@@ -163,6 +169,7 @@ const getJsonArrayType = (t: Translation) =>
       },
     );
 
+/** 构建 object 类型约束的 Zod schema（minProperties/maxProperties）。 */
 const getJsonObjectType = (t: Translation) =>
   z
     .object({
@@ -187,6 +194,7 @@ const getJsonObjectType = (t: Translation) =>
       },
     );
 
+/** 按 JSON Schema type 字符串返回对应 Zod 校验器，未知类型为 z.any()。 */
 export function getTypeValidation(type: string, t: Translation) {
   const jsonTypesValidation: Record<string, z.ZodTypeAny> = {
     string: getJsonStringType(t),
@@ -198,11 +206,13 @@ export function getTypeValidation(type: string, t: Translation) {
   return jsonTypesValidation[type] || z.any();
 }
 
+/** 单节点 schema 类型校验结果：success 与 Zod issues。 */
 export interface TypeValidationResult {
   success: boolean;
   errors?: z.core.$ZodIssue[];
 }
 
+/** 对 schema 片段按 type 执行 Zod safeParse 校验。 */
 export function validateSchemaByType(
   schema: unknown,
   type: string,
@@ -217,6 +227,7 @@ export function validateSchemaByType(
   }
 }
 
+/** 校验树节点：属性名、本节点校验、子节点及累计错误数。 */
 export interface ValidationTreeNode {
   name: string;
   validation: TypeValidationResult;
@@ -224,6 +235,7 @@ export interface ValidationTreeNode {
   cumulativeChildrenErrors: number; // Total errors in this node and all its descendants
 }
 
+/** 递归遍历 schema 树，为各节点构建 ValidationTreeNode 并汇总错误计数。 */
 export function buildValidationTree(
   schema: JSONSchema,
   t: Translation,

@@ -1,6 +1,9 @@
+// reference-utils.ts — Markdown 引用标记解析：连续引用分组与图片轮播判定。
+
 import { IReference } from '@/interfaces/database/chat';
 import { currentReg, normalizeCitationDigits, showImage } from '@/utils/chat';
 
+/** 文本中单个引用标记的 id、原文片段及起止偏移。 */
 export interface ReferenceMatch {
   id: string;
   fullMatch: string;
@@ -8,8 +11,10 @@ export interface ReferenceMatch {
   end: number;
 }
 
+/** 相邻引用标记分组，用于合并展示或轮播。 */
 export type ReferenceGroup = ReferenceMatch[];
 
+/** 全局扫描 text，按 currentReg 提取全部引用匹配项。 */
 export const findAllReferenceMatches = (text: string): ReferenceMatch[] => {
   const matches: ReferenceMatch[] = [];
   let match;
@@ -25,7 +30,7 @@ export const findAllReferenceMatches = (text: string): ReferenceMatch[] => {
 };
 
 /**
- * Helper to group consecutive references
+ * 将首尾相接的引用标记合并为 ReferenceGroup 二维数组。
  */
 export const groupConsecutiveReferences = (text: string): ReferenceGroup[] => {
   const matches = findAllReferenceMatches(text);
@@ -53,6 +58,7 @@ export const groupConsecutiveReferences = (text: string): ReferenceGroup[] => {
   return groups;
 };
 
+/** 组内至少两个引用且对应 chunk 均为可展示图片类型时启用轮播。 */
 export const shouldShowCarousel = (
   group: ReferenceGroup,
   reference: IReference,

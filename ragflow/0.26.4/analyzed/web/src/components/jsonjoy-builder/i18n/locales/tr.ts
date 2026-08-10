@@ -1,3 +1,5 @@
+// tr.ts — jsonjoy-builder 土耳其语（tr）界面文案字典；键为 Translation 类型，值为土耳其语用户可见字符串。
+
 import type { Translation } from '../translation-keys.ts';
 
 export const tr: Translation = {

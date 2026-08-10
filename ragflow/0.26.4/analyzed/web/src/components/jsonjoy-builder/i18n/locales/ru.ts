@@ -1,3 +1,5 @@
+// ru.ts — jsonjoy-builder 俄语（ru）界面文案字典；键为 Translation 类型，值为俄语用户可见字符串。
+
 import type { Translation } from '../translation-keys.ts';
 
 export const ru: Translation = {

@@ -1,3 +1,6 @@
+// translation-keys.ts — jsonjoy-builder 全部 UI 文案键的类型定义，含英文默认值说明。
+
+/** jsonjoy-builder 界面文案键集合；各字段对应 translation-keys 中的 i18n 键。 */
 export interface Translation {
   /**
    * The translation for the key `collapse`. English default is:

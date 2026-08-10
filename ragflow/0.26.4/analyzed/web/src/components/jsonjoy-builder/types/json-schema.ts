@@ -1,6 +1,8 @@
+// json-schema.ts — JSON Schema 核心类型：Zod 定义、递归 schema 与类型守卫工具。
+
 import { z } from 'zod';
 
-// Core definitions
+// JSON Schema 基础类型枚举
 const simpleTypes = [
   'string',
   'number',
@@ -11,8 +13,8 @@ const simpleTypes = [
   'null',
 ] as const;
 
-// Define base schema first - Zod is the source of truth
-/** @public */
+// baseSchema：Zod 为单一真相源，覆盖 draft 元数据与校验关键字
+/** JSON Schema 非递归基础字段的 Zod 定义。 @public */
 export const baseSchema = z.object({
   // Base schema properties
   $id: z.string().optional(),
@@ -65,8 +67,8 @@ export const baseSchema = z.object({
   enum: z.array(z.unknown()).optional(),
 });
 
-// Define recursive schema type
-/** @public */
+// JSONSchema：baseSchema 推断类型 + 递归组合子 schema
+/** 完整 JSON Schema 类型（boolean 或对象形态，含递归引用）。 @public */
 export type JSONSchema =
   | boolean
   | (z.infer<typeof baseSchema> & {
@@ -92,7 +94,8 @@ export type JSONSchema =
       else?: JSONSchema;
     });
 
-// Define Zod schema with recursive types
+// jsonSchemaType：lazy 递归 Zod，用于运行时校验完整 schema 树
+/** 可递归校验 JSONSchema 的 Zod 联合类型（对象 | boolean）。 */
 export const jsonSchemaType: z.ZodType<JSONSchema> = z.lazy(() =>
   z.union([
     baseSchema.extend({
@@ -121,9 +124,11 @@ export const jsonSchemaType: z.ZodType<JSONSchema> = z.lazy(() =>
   ]),
 );
 
-// Derive our types from the schema
+// 从 simpleTypes 派生的 schema 类型字面量联合
+/** JSON Schema 简单类型：string | number | integer | boolean | object | array | null。 */
 export type SchemaType = (typeof simpleTypes)[number];
 
+/** 可视化编辑器「新增字段」表单的输入结构。 */
 export interface NewField {
   name: string;
   type: SchemaType;
@@ -132,6 +137,7 @@ export interface NewField {
   validation?: ObjectJSONSchema;
 }
 
+/** Schema 编辑器 React 状态：当前 schema、字段树与增删改回调。 */
 export interface SchemaEditorState {
   schema: JSONSchema;
   fieldInfo: {
@@ -149,23 +155,29 @@ export interface SchemaEditorState {
   handleSchemaEdit: (schema: JSONSchema) => void;
 }
 
+/** 非 boolean 形态的 JSON Schema 对象类型别名。 */
 export type ObjectJSONSchema = Exclude<JSONSchema, boolean>;
 
+/** 类型守卫：判断 schema 是否为 boolean 简写形式。 */
 export function isBooleanSchema(schema: JSONSchema): schema is boolean {
   return typeof schema === 'boolean';
 }
 
+/** 类型守卫：schema 为对象形态（非 boolean）。 */
 export function isObjectSchema(schema: JSONSchema): schema is ObjectJSONSchema {
   return !isBooleanSchema(schema);
 }
 
+/** boolean schema 转为 { type: 'null' }，否则原样返回。 */
 export function asObjectSchema(schema: JSONSchema): ObjectJSONSchema {
   return isObjectSchema(schema) ? schema : { type: 'null' };
 }
+/** 安全读取 schema.description，boolean 时返回空串。 */
 export function getSchemaDescription(schema: JSONSchema): string {
   return isObjectSchema(schema) ? schema.description || '' : '';
 }
 
+/** 仅对对象 schema 执行 fn，boolean 时返回 defaultValue。 */
 export function withObjectSchema<T>(
   schema: JSONSchema,
   fn: (schema: ObjectJSONSchema) => T,

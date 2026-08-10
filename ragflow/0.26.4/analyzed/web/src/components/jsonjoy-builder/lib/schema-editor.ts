@@ -1,3 +1,5 @@
+// schema-editor.ts — JSON Schema 对象/数组编辑辅助：属性增删改、字段校验与结构遍历。
+
 import type {
   JSONSchema,
   NewField,
@@ -5,19 +7,21 @@ import type {
 } from '../types/json-schema';
 import { isBooleanSchema, isObjectSchema } from '../types/json-schema';
 
+/** 对象 schema 中的单个属性：名称、子 schema 与是否必填。 */
 export type Property = {
   name: string;
   schema: JSONSchema;
   required: boolean;
 };
 
+/** 深拷贝 JSON Schema（优先 structuredClone，回退 JSON 序列化）。 */
 export function copySchema<T extends JSONSchema>(schema: T): T {
   if (typeof structuredClone === 'function') return structuredClone(schema);
   return JSON.parse(JSON.stringify(schema));
 }
 
 /**
- * Updates a property in an object schema
+ * 在对象 schema 中更新指定属性的子 schema。
  */
 export function updateObjectProperty(
   schema: ObjectJSONSchema,
@@ -36,7 +40,7 @@ export function updateObjectProperty(
 }
 
 /**
- * Removes a property from an object schema
+ * 从对象 schema 中删除属性，并同步移除 required 列表中的同名项。
  */
 export function removeObjectProperty(
   schema: ObjectJSONSchema,
@@ -59,7 +63,7 @@ export function removeObjectProperty(
 }
 
 /**
- * Updates the 'required' status of a property
+ * 切换对象属性在 required 数组中的必填状态。
  */
 export function updatePropertyRequired(
   schema: ObjectJSONSchema,
@@ -89,7 +93,7 @@ export function updatePropertyRequired(
 }
 
 /**
- * Updates an array schema's items
+ * 更新数组 schema 的 items 子 schema。
  */
 export function updateArrayItems(
   schema: JSONSchema,
@@ -105,7 +109,7 @@ export function updateArrayItems(
 }
 
 /**
- * Creates a schema for a new field
+ * 根据 NewField 表单数据生成对应类型的 JSON Schema 片段。
  */
 export function createFieldSchema(field: NewField): JSONSchema {
   const { type, description, validation } = field;
@@ -120,7 +124,7 @@ export function createFieldSchema(field: NewField): JSONSchema {
 }
 
 /**
- * Validates a field name
+ * 校验字段名非空且符合 JavaScript 标识符命名规则。
  */
 export function validateFieldName(name: string): boolean {
   if (!name || name.trim() === '') {
@@ -133,7 +137,7 @@ export function validateFieldName(name: string): boolean {
 }
 
 /**
- * Gets properties from an object schema
+ * 将对象 schema 的 properties 转为 Property 数组（含 required 标记）。
  */
 export function getSchemaProperties(schema: JSONSchema): Property[] {
   if (!isObjectSchema(schema) || !schema.properties) return [];
@@ -148,7 +152,7 @@ export function getSchemaProperties(schema: JSONSchema): Property[] {
 }
 
 /**
- * Gets the items schema from an array schema
+ * 从数组 schema 提取 items 子 schema，非数组则返回 null。
  */
 export function getArrayItemsSchema(schema: JSONSchema): JSONSchema | null {
   if (isBooleanSchema(schema)) return null;
@@ -158,7 +162,7 @@ export function getArrayItemsSchema(schema: JSONSchema): JSONSchema | null {
 }
 
 /**
- * Checks if a schema has children
+ * 判断 schema 是否包含可展开子节点（对象属性或数组内嵌对象）。
  */
 export function hasChildren(schema: JSONSchema): boolean {
   if (!isObjectSchema(schema)) return false;

@@ -1,5 +1,7 @@
+// index.ts — jsonjoy-builder 公共 API 导出入口：编辑器、可视化、校验与 i18n。
+
 // https://github.com/lovasoa/jsonjoy-builder v0.1.0
-// exports for public API
+// 对外公开 API 导出
 
 import JsonSchemaEditor, {
   type JsonSchemaEditorProps,

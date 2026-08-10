@@ -1,3 +1,5 @@
+// schema-inference.ts — 从 JSON 样本推断 JSON Schema：类型合并、枚举检测与语义格式识别。
+
 import { asObjectSchema, type JSONSchema } from '../types/json-schema';
 
 /**
@@ -6,6 +8,7 @@ import { asObjectSchema, type JSONSchema } from '../types/json-schema';
  * If schemas are identical, returns the first schema.
  * If schemas are incompatible, returns a schema with oneOf.
  */
+/** 合并两个 schema：兼容类型归一，冲突时生成 oneOf。 */
 function mergeSchemas(schema1: JSONSchema, schema2: JSONSchema): JSONSchema {
   const s1 = asObjectSchema(schema1);
   const s2 = asObjectSchema(schema2);
@@ -45,6 +48,7 @@ function mergeSchemas(schema1: JSONSchema, schema2: JSONSchema): JSONSchema {
 
 // --- Helper Functions for Type Inference ---
 
+/** 递归推断 plain object 的 properties 与 required 键。 */
 function inferObjectSchema(obj: Record<string, unknown>): JSONSchema {
   const properties: Record<string, JSONSchema> = {};
   const required: string[] = [];
@@ -63,6 +67,7 @@ function inferObjectSchema(obj: Record<string, unknown>): JSONSchema {
   };
 }
 
+/** 在数组元素对象属性中检测低基数 string/number 值并推断 enum。 */
 function detectEnumsInArrayItems(
   mergedProperties: Record<string, JSONSchema>,
   originalArray: Record<string, unknown>[],
@@ -112,6 +117,7 @@ function detectEnumsInArrayItems(
   return updatedProperties;
 }
 
+/** 根据字段名启发式识别坐标数组、Unix 时间戳等语义格式。 */
 function detectSemanticFormatsInArrayItems(
   mergedProperties: Record<string, JSONSchema>,
   originalArray: Record<string, unknown>[],
@@ -195,6 +201,7 @@ function detectSemanticFormatsInArrayItems(
   return updatedProperties;
 }
 
+/** 合并数组内多个对象 schema，统计必填属性并应用枚举/语义检测。 */
 function processArrayOfObjects(
   itemSchemas: JSONSchema[],
   originalArray: Record<string, unknown>[],
@@ -240,6 +247,7 @@ function processArrayOfObjects(
   };
 }
 
+/** 推断数组 schema：同构元素合并 items，异构时使用 oneOf。 */
 function inferArraySchema(obj: unknown[]): JSONSchema {
   if (obj.length === 0) return { type: 'array', items: {} };
 
@@ -294,6 +302,7 @@ function inferArraySchema(obj: unknown[]): JSONSchema {
   };
 }
 
+/** 推断字符串 schema，按正则匹配 date/email/uuid 等 format。 */
 function inferStringSchema(str: string): JSONSchema {
   const formats: Record<string, RegExp> = {
     date: /^\d{4}-\d{2}-\d{2}$/,
@@ -313,6 +322,7 @@ function inferStringSchema(str: string): JSONSchema {
   return { type: 'string' };
 }
 
+/** 推断 number 或 integer 类型 schema。 */
 function inferNumberSchema(num: number): JSONSchema {
   return Number.isInteger(num) ? { type: 'integer' } : { type: 'number' };
 }
@@ -320,8 +330,7 @@ function inferNumberSchema(num: number): JSONSchema {
 // --- Main Inference Function ---
 
 /**
- * Infers a JSON Schema from a JSON object
- * Based on json-schema-generator approach
+ * 从任意 JSON 值递归推断 JSON Schema（json-schema-generator 思路）。
  */
 export function inferSchema(obj: unknown): JSONSchema {
   if (obj === null) return { type: 'null' };
@@ -346,7 +355,7 @@ export function inferSchema(obj: unknown): JSONSchema {
 }
 
 /**
- * Creates a full JSON Schema document from a JSON object
+ * 包装推断结果为完整 draft-07 文档；根为 primitive 时包一层 object.value。
  */
 export function createSchemaFromJson(jsonObject: unknown): JSONSchema {
   const inferredSchema = inferSchema(jsonObject);

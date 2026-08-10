@@ -1,13 +1,17 @@
+// utils.ts — jsonjoy-builder 通用工具：Tailwind 类名合并与 schema 类型展示标签。
+
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { Translation } from '../i18n/translation-keys.ts';
 import type { SchemaType } from '../types/json-schema';
 
+/** 合并 clsx 与 tailwind-merge，避免冲突的 Tailwind 类名。 */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Helper functions for backward compatibility
+// 向后兼容：schema 类型对应的 Tailwind 颜色类
+/** 按 JSON Schema 类型返回 Tailwind 文本/背景色类名。 */
 export const getTypeColor = (type: SchemaType): string => {
   switch (type) {
     case 'string':
@@ -26,7 +30,8 @@ export const getTypeColor = (type: SchemaType): string => {
   }
 };
 
-// Get type display label
+// 按当前语言包返回 schema 类型的可读标签
+/** 使用 Translation 文案将 SchemaType 映射为本地化显示名。 */
 export const getTypeLabel = (t: Translation, type: SchemaType): string => {
   switch (type) {
     case 'string':

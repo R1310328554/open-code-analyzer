@@ -1,8 +1,10 @@
+// json-validator.ts — 基于 Ajv 的 JSON 字符串校验，含路径到行列号的定位。
+
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import type { JSONSchema } from '../types/json-schema.js';
 
-// Initialize Ajv with all supported formats and meta-schemas
+// 初始化 Ajv：收集全部错误、关闭 strict 与 format 校验以兼容编辑器 schema
 const ajv = new Ajv({
   allErrors: true,
   strict: false,
@@ -11,6 +13,7 @@ const ajv = new Ajv({
 });
 addFormats(ajv);
 
+/** 单条校验错误：JSON Pointer 路径、消息及可选行列号。 */
 export interface ValidationError {
   path: string;
   message: string;
@@ -18,13 +21,14 @@ export interface ValidationError {
   column?: number;
 }
 
+/** validateJson 返回结构：是否合法及错误列表。 */
 export interface ValidationResult {
   valid: boolean;
   errors?: ValidationError[];
 }
 
 /**
- * Finds the line and column number for a specific path in a JSON string
+ * 在 JSON 源码中根据 instancePath 查找对应属性的行列位置。
  */
 export function findLineNumberForPath(
   jsonStr: string,
@@ -118,7 +122,7 @@ export function findLineNumberForPath(
 }
 
 /**
- * Extracts line and column information from a JSON syntax error message
+ * 从 JSON.parse 异常消息或 position 偏移解析行列号。
  */
 export function extractErrorPosition(
   error: Error,
@@ -149,7 +153,7 @@ export function extractErrorPosition(
 }
 
 /**
- * Validates a JSON string against a schema and returns validation results
+ * 解析 JSON 字符串并用 Ajv 对照 schema 校验，失败时附带路径与行列信息。
  */
 export function validateJson(
   jsonInput: string,
