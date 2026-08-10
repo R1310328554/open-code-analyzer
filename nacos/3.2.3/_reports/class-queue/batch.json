@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T03:51:35Z",
-  "files": [
-    "console/src/main/java/com/alibaba/nacos/console/handler/naming/ServiceHandler.java",
-    "console/src/main/java/com/alibaba/nacos/console/paramcheck/ConsoleDefaultHttpParamExtractor.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/HealthProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/ServerStateProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/ai/A2aProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/ai/AgentSpecProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/ai/AiResourceImportProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/ai/McpProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/ai/PipelineProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/ai/PromptProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/ai/SkillProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/config/ConfigProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/config/HistoryProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/core/ClusterProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/core/NamespaceProxy.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1097,
-  "done": 1425
+  "done": 1440
 }
