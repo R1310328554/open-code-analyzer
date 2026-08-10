@@ -208,3 +208,18 @@
 2026-08-10T05:47:46Z DONE common/src/main/java/org/keycloak/common/util/HttpPostRedirect.java wave7b common util helpers
 2026-08-10T05:47:46Z DONE common/src/main/java/org/keycloak/common/util/IoUtils.java wave7b common util helpers
 2026-08-10T05:47:46Z DONE common/src/main/java/org/keycloak/common/util/KerberosJdkProvider.java wave7b common util helpers
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/Resteasy.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/Retry.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/SecretGenerator.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/StackUtil.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/StreamUtil.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/StringPropertyReplacer.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/StringSerialization.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/SystemEnvProperties.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/Throwables.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/Time.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/TriConsumer.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/TriFunction.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/UriUtils.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/reflections/Reflections.java wave8b common util + reflections
+2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/reflections/SetAccessiblePrivilegedAction.java wave8b common util + reflections

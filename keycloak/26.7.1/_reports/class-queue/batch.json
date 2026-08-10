@@ -15,23 +15,8 @@
     "common/src/main/java/org/keycloak/common/util/PathHelper.java",
     "common/src/main/java/org/keycloak/common/util/PathMatcher.java",
     "common/src/main/java/org/keycloak/common/util/PemException.java",
-    "common/src/main/java/org/keycloak/common/util/PemUtils.java",
-    "common/src/main/java/org/keycloak/common/util/Resteasy.java",
-    "common/src/main/java/org/keycloak/common/util/Retry.java",
-    "common/src/main/java/org/keycloak/common/util/SecretGenerator.java",
-    "common/src/main/java/org/keycloak/common/util/StackUtil.java",
-    "common/src/main/java/org/keycloak/common/util/StreamUtil.java",
-    "common/src/main/java/org/keycloak/common/util/StringPropertyReplacer.java",
-    "common/src/main/java/org/keycloak/common/util/StringSerialization.java",
-    "common/src/main/java/org/keycloak/common/util/SystemEnvProperties.java",
-    "common/src/main/java/org/keycloak/common/util/Throwables.java",
-    "common/src/main/java/org/keycloak/common/util/Time.java",
-    "common/src/main/java/org/keycloak/common/util/TriConsumer.java",
-    "common/src/main/java/org/keycloak/common/util/TriFunction.java",
-    "common/src/main/java/org/keycloak/common/util/UriUtils.java",
-    "common/src/main/java/org/keycloak/common/util/reflections/Reflections.java",
-    "common/src/main/java/org/keycloak/common/util/reflections/SetAccessiblePrivilegedAction.java"
+    "common/src/main/java/org/keycloak/common/util/PemUtils.java"
   ],
   "remaining_pending": 5758,
-  "done": 210
+  "done": 225
 }
