@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:43:34Z",
-  "files": [
-    "pkg/logql/syntax/serialize.go",
-    "pkg/logql/syntax/syntax.y.go",
-    "pkg/logql/syntax/visit.go",
-    "pkg/logql/syntax/walk.go",
-    "pkg/logql/tree_printer.go",
-    "pkg/logql/vector.go",
-    "pkg/logql/vector/heap.go",
-    "pkg/logqlanalyzer/analyzer.go",
-    "pkg/logqlanalyzer/http.go",
-    "pkg/logqlmodel/error.go",
-    "pkg/logqlmodel/logqlmodel.go",
-    "pkg/logqlmodel/metadata/context.go",
-    "pkg/logqlmodel/stats/context.go",
-    "pkg/logqlmodel/stats/stats.pb.go",
-    "pkg/loki/common/common.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 622,
-  "done": 915
+  "done": 930
 }
