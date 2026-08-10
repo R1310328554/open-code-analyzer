@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:49:25Z",
-  "files": [
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/delivery/poll/PollResponse.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/delivery/push/PushDeliveryOutcome.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/delivery/push/PushDeliveryService.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/emit/EmitEventResult.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/emit/EmitEventStatus.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/emit/EmitSubjectResolution.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/emit/EventEmitterService.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/event/SecurityEventTokenEncoder.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/event/SecurityEventTokenMapper.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/event/SsfSignatureAlgorithms.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/event/SsfTransmitterEventListener.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/event/SsfTransmitterEventListenerFactory.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/event/SsfUserSubjectFormats.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/metadata/SseTransmitterMetadataWellKnownProvider.java",
-    "ssf/transmitter/src/main/java/org/keycloak/ssf/transmitter/metadata/SseTransmitterMetadataWellKnownProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 568,
-  "done": 5415
+  "done": 5430
 }
