@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:34:24Z",
-  "files": [
-    "services/src/main/java/org/keycloak/theme/DefaultThemeManager.java",
-    "services/src/main/java/org/keycloak/theme/DefaultThemeManagerFactory.java",
-    "services/src/main/java/org/keycloak/theme/DefaultThemeSelectorProvider.java",
-    "services/src/main/java/org/keycloak/theme/DefaultThemeSelectorProviderFactory.java",
-    "services/src/main/java/org/keycloak/theme/FileBasedTheme.java",
-    "services/src/main/java/org/keycloak/theme/FolderTheme.java",
-    "services/src/main/java/org/keycloak/theme/FolderThemeProvider.java",
-    "services/src/main/java/org/keycloak/theme/FolderThemeProviderFactory.java",
-    "services/src/main/java/org/keycloak/theme/FreeMarkerException.java",
-    "services/src/main/java/org/keycloak/theme/JarThemeProviderFactory.java",
-    "services/src/main/java/org/keycloak/theme/KeycloakSanitizerMethod.java",
-    "services/src/main/java/org/keycloak/theme/KeycloakSanitizerPolicy.java",
-    "services/src/main/java/org/keycloak/theme/PropertiesUtil.java",
-    "services/src/main/java/org/keycloak/theme/ResourceLoader.java",
-    "services/src/main/java/org/keycloak/theme/TemplatingUtil.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 748,
-  "done": 5235
+  "done": 5250
 }
