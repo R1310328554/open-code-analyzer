@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 告警通知子系统的 Prometheus 自监控指标：延迟、错误、发送/丢弃计数与队列状态。
+
 package notifier
 
 import (
@@ -20,11 +22,14 @@ import (
 )
 
 type alertMetrics struct {
+	// latencySummary 按 AM 统计发送延迟分位数。
 	latencySummary          *prometheus.SummaryVec
+	// latencyHistogram 提供原生直方图桶与 AM 维度标签。
 	latencyHistogram        *prometheus.HistogramVec
 	errors                  *prometheus.CounterVec
 	sent                    *prometheus.CounterVec
 	dropped                 *prometheus.CounterVec
+	// queueLength 反映各 AM sendLoop 当前排队告警数。
 	queueLength             *prometheus.GaugeVec
 	queueCapacity           prometheus.Gauge
 	alertmanagersDiscovered prometheus.GaugeFunc

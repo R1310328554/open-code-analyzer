@@ -13,8 +13,11 @@
 
 //go:build !remove_all_sd || enable_eureka_sd
 
+// Netflix Eureka 服务发现插件注册桩。enable_eureka_sd 时纳入 Eureka 注册表目标拉取。
+
 package plugins
 
 import (
+// blank import 注册 Eureka SD，解析 eureka_sd_configs 配置块。
 	_ "github.com/prometheus/prometheus/discovery/eureka" // Register eureka plugin.
 )

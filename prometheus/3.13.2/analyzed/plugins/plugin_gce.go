@@ -13,8 +13,11 @@
 
 //go:build !remove_all_sd || enable_gce_sd
 
+// Google Compute Engine 服务发现插件注册桩。enable_gce_sd 时编译 GCE 实例列表发现支持。
+
 package plugins
 
 import (
+// blank import 注册 GCE SD，供 gce_sd_configs 在运行时可用。
 	_ "github.com/prometheus/prometheus/discovery/gce" // Register gce plugin.
 )

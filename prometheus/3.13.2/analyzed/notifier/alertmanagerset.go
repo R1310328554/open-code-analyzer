@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// alertmanagerSet 管理共享 AlertmanagerConfig 下的一组端点：HTTP 客户端、发送循环生命周期与告警分发。
+
 package notifier
 
 import (
@@ -30,6 +32,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
+// 同一 alerting 配置块对应一个 set，内含多个 AM 实例与各 AM 的 sendLoop。
 // alertmanagerSet contains a set of Alertmanagers discovered via a group of service
 // discovery definitions that have a common configuration on how alerts should be sent.
 type alertmanagerSet struct {
@@ -42,6 +45,7 @@ type alertmanagerSet struct {
 	mtx        sync.RWMutex
 	ams        []alertmanager
 	droppedAms []alertmanager
+	// 按 Alertmanager URL 索引的发送循环映射。
 	sendLoops  map[string]*sendLoop
 
 	logger *slog.Logger
@@ -74,6 +78,7 @@ func newAlertmanagerSet(cfg *config.AlertmanagerConfig, opts *Options, logger *s
 	return s, nil
 }
 
+// sync 合并多 target group 端点、去重 URL，增删 sendLoop。
 // sync extracts a deduplicated set of Alertmanager endpoints from a list
 // of target groups definitions.
 func (s *alertmanagerSet) sync(tgs []*targetgroup.Group) {
@@ -97,6 +102,7 @@ func (s *alertmanagerSet) sync(tgs []*targetgroup.Group) {
 	s.droppedAms = []alertmanager{}
 	s.droppedAms = append(s.droppedAms, allDroppedAms...)
 
+// 按 URL 字符串去重，为新端点启动 goroutine sendLoop。
 	// Deduplicate Alertmanagers and add sendloops for new Alertmanagers.
 	seen := map[string]struct{}{}
 	for _, am := range allAms {
@@ -110,6 +116,7 @@ func (s *alertmanagerSet) sync(tgs []*targetgroup.Group) {
 	}
 	s.addSendLoops(s.ams)
 
+// 对比上一轮端点列表，停止已消失 AM 的 sendLoop。
 	// Populate a list of Alertmanagers to clean up,
 	// avoid cleaning up what we just added.
 	for _, am := range previousAms {
@@ -122,6 +129,7 @@ func (s *alertmanagerSet) sync(tgs []*targetgroup.Group) {
 	}
 }
 
+// configHash 对 AlertmanagerConfig YAML 做 MD5，供配置热更新复用 set。
 func (s *alertmanagerSet) configHash() (string, error) {
 	b, err := yaml.Marshal(s.cfg)
 	if err != nil {
@@ -147,6 +155,7 @@ func (s *alertmanagerSet) send(alerts ...*Alert) {
 	}
 }
 
+// addSendLoops 为尚未存在 loop 的 AM 创建并后台启动发送循环。
 // addSendLoops creates and starts a send loop for newly discovered alertmanager.
 // This function expects the caller to acquire needed locks.
 func (s *alertmanagerSet) addSendLoops(ams []alertmanager) {
@@ -163,6 +172,7 @@ func (s *alertmanagerSet) addSendLoops(ams []alertmanager) {
 	}
 }
 
+// cleanSendLoops 停止并移除指定 AM 的 sendLoop 条目。
 // cleanSendLoops stops and cleans the send loops for each removed alertmanager.
 // This function expects the caller to acquire needed locks.
 func (s *alertmanagerSet) cleanSendLoops(ams ...alertmanager) {
@@ -175,6 +185,7 @@ func (s *alertmanagerSet) cleanSendLoops(ams ...alertmanager) {
 	}
 }
 
+// startSendLoops 供测试在预置 loop 后手动启动 goroutine。
 // startSendLoops starts a send loop for newly discovered alertmanager.
 // This function expects the caller to acquire needed locks.
 // This is mainly needed for testing where the loops are added as part of the test setup.

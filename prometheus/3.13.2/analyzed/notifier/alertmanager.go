@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 从服务发现 target group 解析 Alertmanager HTTP 端点，含 relabel 过滤与被丢弃目标追踪。
+
 package notifier
 
 import (
@@ -26,6 +28,7 @@ import (
 	"github.com/prometheus/prometheus/model/relabel"
 )
 
+// alertmanager 接口抽象可解析出推送 URL 的端点对象。
 // Alertmanager holds Alertmanager endpoint information.
 type alertmanager interface {
 	url() *url.URL
@@ -43,6 +46,7 @@ func (a alertmanagerLabels) url() *url.URL {
 	}
 }
 
+// AlertmanagerFromGroup 遍历目标组，relabel 后返回有效与被丢弃端点。
 // AlertmanagerFromGroup extracts a list of alertmanagers from a target group
 // and an associated AlertmanagerConfig.
 func AlertmanagerFromGroup(tg *targetgroup.Group, cfg *config.AlertmanagerConfig) ([]alertmanager, []alertmanager, error) {
@@ -56,10 +60,12 @@ func AlertmanagerFromGroup(tg *targetgroup.Group, cfg *config.AlertmanagerConfig
 		for ln, lv := range tlset {
 			lb.Set(string(ln), string(lv))
 		}
+// 先用配置 scheme 初始化，后续 target 标签可覆盖。
 		// Set configured scheme as the initial scheme label for overwrite.
 		lb.Set(model.SchemeLabel, cfg.Scheme)
 		lb.Set(pathLabel, postPath(cfg.PathPrefix, cfg.APIVersion))
 
+// 合并 target 与 group 级标签，target 已有键优先。
 		// Combine target labels with target group labels.
 		for ln, lv := range tg.Labels {
 			if _, ok := tlset[ln]; !ok {
@@ -84,6 +90,7 @@ func AlertmanagerFromGroup(tg *targetgroup.Group, cfg *config.AlertmanagerConfig
 	return res, droppedAlertManagers, nil
 }
 
+// postPath 拼接 path prefix 与 /api/{version}/alerts 推送路径。
 func postPath(pre string, v config.AlertmanagerAPIVersion) string {
 	alertPushEndpoint := fmt.Sprintf("/api/%v/alerts", string(v))
 	return path.Join("/", pre, alertPushEndpoint)

@@ -13,8 +13,11 @@
 
 //go:build !remove_all_sd || enable_azure_sd
 
+// Azure 虚拟机等服务发现插件注册桩。由 enable_azure_sd 或默认 SD 构建标签控制是否链接。
+
 package plugins
 
 import (
+// blank import 链接 Azure SD 实现并在启动时注册 discovery 机制。
 	_ "github.com/prometheus/prometheus/discovery/azure" // Register azure plugin.
 )

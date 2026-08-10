@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// sendLoop 为单个 Alertmanager 维护有界告警队列与后台 goroutine，批量序列化并 POST 至 Alertmanager API。
+
 package notifier
 
 import (
@@ -45,6 +47,7 @@ type sendLoop struct {
 	logger *slog.Logger
 }
 
+// newSendLoop 预注册该 AM 的零值 Counter/Gauge 并分配队列缓冲。
 func newSendLoop(
 	alertmanagerURL string,
 	client *http.Client,
@@ -53,6 +56,7 @@ func newSendLoop(
 	logger *slog.Logger,
 	metrics *alertMetrics,
 ) *sendLoop {
+// 提前 WithLabelValues 以创建时间序列并暴露队列容量静态值。
 	// This will initialize the Counters for the AM to 0 and set the static queue capacity gauge.
 	metrics.dropped.WithLabelValues(alertmanagerURL)
 	metrics.errors.WithLabelValues(alertmanagerURL)
@@ -72,6 +76,7 @@ func newSendLoop(
 	}
 }
 
+// add 入队告警，超容量时丢弃最旧或整批溢出部分并计 dropped 指标。
 func (s *sendLoop) add(alerts ...*Alert) {
 	select {
 	case <-s.stopped:
@@ -83,6 +88,7 @@ func (s *sendLoop) add(alerts ...*Alert) {
 	defer s.mtx.Unlock()
 
 	var dropped int
+// 队列应远大于单批上限，避免正常批量发送触发误丢弃。
 	// Queue capacity should be significantly larger than a single alert
 	// batch could be.
 	if d := len(alerts) - s.opts.QueueCapacity; d > 0 {
@@ -91,6 +97,7 @@ func (s *sendLoop) add(alerts ...*Alert) {
 		alerts = alerts[d:]
 	}
 
+// 队列满时 FIFO 淘汰旧告警，优先保留较新通知。
 	// If the queue is full, remove the oldest alerts in favor
 	// of newer ones.
 	if d := (len(s.queue) + len(alerts)) - s.opts.QueueCapacity; d > 0 {
@@ -101,6 +108,7 @@ func (s *sendLoop) add(alerts ...*Alert) {
 
 	s.queue = append(s.queue, alerts...)
 
+// 非阻塞 signal hasWork，避免重复唤醒发送 goroutine。
 	// Notify sending goroutine that there are alerts to be processed.
 	// If we cannot send on the channel, it means the signal already exists
 	// and has not been consumed yet.
@@ -112,6 +120,7 @@ func (s *sendLoop) add(alerts ...*Alert) {
 	}
 }
 
+// notifyWork 向 hasWork 发送信号，stopped 时直接返回。
 func (s *sendLoop) notifyWork() {
 	select {
 	case <-s.stopped:
@@ -143,6 +152,7 @@ func (s *sendLoop) stop() {
 	})
 }
 
+// drainQueue 在 shutdown 时阻塞发送直至队列清空。
 func (s *sendLoop) drainQueue() {
 	for s.queueLen() > 0 {
 		s.sendOneBatch()
@@ -173,6 +183,7 @@ func (s *sendLoop) nextBatch() []*Alert {
 	return alerts
 }
 
+// sendOneBatch 取一批并调用 sendAll，失败时整批计 dropped。
 func (s *sendLoop) sendOneBatch() {
 	alerts := s.nextBatch()
 
@@ -181,6 +192,7 @@ func (s *sendLoop) sendOneBatch() {
 	}
 }
 
+// loop 在 hasWork/stopped 间 select，批处理后若队列非空再次 notifyWork。
 // loop continuously consumes the notifications queue and sends alerts to
 // the Alertmanager.
 func (s *sendLoop) loop() {
@@ -206,6 +218,7 @@ func (s *sendLoop) loop() {
 	}
 }
 
+// sendAll 按 API 版本 JSON 编码告警，超时 POST 并更新延迟/发送/错误指标。
 func (s *sendLoop) sendAll(alerts []*Alert) bool {
 	if len(alerts) == 0 {
 		return true
@@ -248,6 +261,7 @@ func (s *sendLoop) sendAll(alerts []*Alert) bool {
 	return true
 }
 
+// sendOne 构造 POST 请求，2xx 视为成功并排空响应体。
 func (s *sendLoop) sendOne(ctx context.Context, c *http.Client, url string, b []byte) error {
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(b))
 	if err != nil {
@@ -264,6 +278,7 @@ func (s *sendLoop) sendOne(ctx context.Context, c *http.Client, url string, b []
 		resp.Body.Close()
 	}()
 
+// Alertmanager 任意 2xx 状态码均表示接收成功。
 	// Any HTTP status 2xx is OK.
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("bad response status %s", resp.Status)

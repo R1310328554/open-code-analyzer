@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Alert 与 Alertmanager OpenAPI v2 模型之间的转换工具。
+
 package notifier
 
 import (
@@ -39,6 +41,7 @@ func alertsToOpenAPIAlerts(alerts []*Alert) models.PostableAlerts {
 	return openAPIAlerts
 }
 
+// labelsToOpenAPILabelSet 将内部 labels.Labels 转为 OpenAPI LabelSet map。
 func labelsToOpenAPILabelSet(modelLabelSet labels.Labels) models.LabelSet {
 	apiLabelSet := models.LabelSet{}
 	modelLabelSet.Range(func(label labels.Label) {

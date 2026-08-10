@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Manager 是 Prometheus 告警通知总控：维护多个 alertmanagerSet、消费 SD 更新并将规则告警分发至 Alertmanager。
+
 package notifier
 
 import (
@@ -33,12 +35,14 @@ import (
 )
 
 const (
+// DefaultMaxBatchSize 为单次 HTTP POST 告警条数上限（默认 256）。
 	// DefaultMaxBatchSize is the default maximum number of alerts to send in a single request to the alertmanager.
 	DefaultMaxBatchSize = 256
 
 	contentTypeJSON = "application/json"
 )
 
+// namespace/subsystem 常量供 notifications 指标命名。
 // String constants for instrumentation.
 const (
 	namespace         = "prometheus"
@@ -48,6 +52,7 @@ const (
 
 var userAgent = version.PrometheusUserAgent()
 
+// Manager 协调配置应用、目标同步与 Send 入队。
 // Manager is responsible for dispatching alert notifications to an
 // alert manager service.
 type Manager struct {
@@ -64,6 +69,7 @@ type Manager struct {
 	logger        *slog.Logger
 }
 
+// Options 定义队列容量、shutdown 排水、external labels 与 HTTP Do 注入等。
 // Options are the configurable parameters of a Handler.
 type Options struct {
 	QueueCapacity   int
@@ -76,6 +82,7 @@ type Options struct {
 	Registerer prometheus.Registerer
 
 	// MaxBatchSize determines the maximum number of alerts to send in a single request to the alertmanager.
+	// MaxBatchSize 限制 sendLoop 每批 POST 的告警数量。
 	MaxBatchSize int
 }
 
@@ -86,6 +93,7 @@ func do(ctx context.Context, client *http.Client, req *http.Request) (*http.Resp
 	return client.Do(req.WithContext(ctx))
 }
 
+// NewManager 补全默认 Do/MaxBatchSize/logger 并注册告警指标。
 // NewManager is the manager constructor.
 func NewManager(o *Options, nameValidationScheme model.ValidationScheme, logger *slog.Logger) *Manager {
 	if o.Do == nil {
@@ -122,6 +130,7 @@ func NewManager(o *Options, nameValidationScheme model.ValidationScheme, logger 
 	return n
 }
 
+// ApplyConfig 刷新 external/relabel 配置并按 hash 复用或重建 alertmanagerSet。
 // ApplyConfig updates the status state as the new config requires.
 func (n *Manager) ApplyConfig(conf *config.Config) error {
 	n.mtx.Lock()
@@ -138,6 +147,7 @@ func (n *Manager) ApplyConfig(conf *config.Config) error {
 	}
 
 	amSets := make(map[string]*alertmanagerSet)
+// 按配置哈希映射旧 set，避免 SD 未更新时丢弃已知端点与 sendLoop。
 	// configToAlertmanagers maps alertmanager sets for each unique AlertmanagerConfig,
 	// helping to avoid dropping known alertmanagers and re-use them without waiting for SD updates when applying the config.
 	configToAlertmanagers := make(map[string]*alertmanagerSet, len(n.alertmanagers))
@@ -163,6 +173,7 @@ func (n *Manager) ApplyConfig(conf *config.Config) error {
 		if oldAmSet, ok := configToAlertmanagers[hash]; ok {
 			ams.ams = oldAmSet.ams
 			ams.droppedAms = oldAmSet.droppedAms
+// 相同 hash 仅首个新 set 接管 sendLoops，防止多 set 共享可变 map。
 			// Only transfer sendLoops to the first new config with this hash.
 			// Subsequent configs with the same hash should not share the sendLoops
 			// map reference, as that would cause shared mutable state between
@@ -180,6 +191,7 @@ func (n *Manager) ApplyConfig(conf *config.Config) error {
 		amSets[k] = ams
 	}
 
+// 清理未被接管的旧 sendLoop（配置删除或 hash 变更）。
 	// Clean up sendLoops that weren't transferred to new config.
 	// This happens when: (1) key was removed, or (2) key exists but hash changed.
 	// After the transfer loop above, any oldAmSet with non-nil sendLoops
@@ -197,6 +209,7 @@ func (n *Manager) ApplyConfig(conf *config.Config) error {
 	return nil
 }
 
+// Run 阻塞于 target 更新循环，退出前清理全部 sendLoop。
 // Run dispatches notifications continuously, returning once Stop has been called and all
 // pending notifications have been drained from the queue (if draining is enabled).
 //
@@ -214,6 +227,7 @@ func (n *Manager) Run(tsets <-chan map[string][]*targetgroup.Group) {
 	}
 }
 
+// targetUpdateLoop 监听 SD 通道，stop 优先于继续处理更新。
 // targetUpdateLoop receives updates of target groups and triggers a reload.
 func (n *Manager) targetUpdateLoop(tsets <-chan map[string][]*targetgroup.Group) {
 	for {
@@ -235,6 +249,7 @@ func (n *Manager) targetUpdateLoop(tsets <-chan map[string][]*targetgroup.Group)
 	}
 }
 
+// reload 按 alerting 配置 id 将 target group 同步到对应 alertmanagerSet。
 func (n *Manager) reload(tgs map[string][]*targetgroup.Group) {
 	n.mtx.Lock()
 	defer n.mtx.Unlock()
@@ -249,6 +264,7 @@ func (n *Manager) reload(tgs map[string][]*targetgroup.Group) {
 	}
 }
 
+// Send 对告警做全局 relabel 后广播到全部 alertmanagerSet。
 // Send queues the given notification requests for processing.
 // Panics if called on a handler that is not running.
 func (n *Manager) Send(alerts ...*Alert) {
@@ -272,6 +288,7 @@ func (n *Manager) Send(alerts ...*Alert) {
 	}
 }
 
+// Alertmanagers 返回当前活跃 AM 端点 URL 列表（供 UI/API）。
 // Alertmanagers returns a slice of Alertmanager URLs.
 func (n *Manager) Alertmanagers() []*url.URL {
 	n.mtx.RLock()
@@ -291,6 +308,7 @@ func (n *Manager) Alertmanagers() []*url.URL {
 	return res
 }
 
+// DroppedAlertmanagers 返回 relabel 丢弃的 AM 端点 URL。
 // DroppedAlertmanagers returns a slice of Alertmanager URLs.
 func (n *Manager) DroppedAlertmanagers() []*url.URL {
 	n.mtx.RLock()
@@ -310,6 +328,7 @@ func (n *Manager) DroppedAlertmanagers() []*url.URL {
 	return res
 }
 
+// Stop 关闭 stopRequested，Run 侧循环随后退出；可多次调用。
 // Stop signals the notification manager to shut down and immediately returns.
 //
 // Run will return once the notification manager has successfully shut down.

@@ -13,8 +13,11 @@
 
 //go:build !remove_all_sd || enable_digitalocean_sd
 
+// DigitalOcean Droplet 服务发现插件注册桩。enable_digitalocean_sd 时编译 DO API 目标发现支持。
+
 package plugins
 
 import (
+// blank import 注册 DigitalOcean SD 驱动。
 	_ "github.com/prometheus/prometheus/discovery/digitalocean" // Register digitalocean plugin.
 )

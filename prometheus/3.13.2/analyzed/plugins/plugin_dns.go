@@ -13,8 +13,11 @@
 
 //go:build !remove_all_sd || enable_dns_sd
 
+// DNS SRV/A/AAAA 记录服务发现插件注册桩。enable_dns_sd 时链接基于 DNS 查询的目标发现。
+
 package plugins
 
 import (
+// blank import 注册 dns_sd_configs 所需的 DNS 发现器。
 	_ "github.com/prometheus/prometheus/discovery/dns" // Register dns plugin.
 )

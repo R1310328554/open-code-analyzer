@@ -13,8 +13,11 @@
 
 //go:build !remove_all_sd || enable_consul_sd
 
+// HashiCorp Consul 服务发现插件注册桩。enable_consul_sd 构建时纳入 Consul catalog 目标发现。
+
 package plugins
 
 import (
+// blank import 注册 Consul SD，供 scrape_configs 中 consul_sd_configs 使用。
 	_ "github.com/prometheus/prometheus/discovery/consul" // Register consul plugin.
 )
