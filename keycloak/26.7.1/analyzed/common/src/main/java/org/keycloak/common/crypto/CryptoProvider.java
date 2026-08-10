@@ -24,64 +24,61 @@ import javax.net.ssl.SSLSocketFactory;
 import org.keycloak.common.util.KeystoreUtil.KeystoreFormat;
 
 /**
- * Abstraction to handle differences between the APIs for non-fips and fips mode
+ * 非 FIPS 与 FIPS 模式下 JCA API 差异的抽象层。
+ *
+ * <p>各 {@link CryptoProvider} 实现负责返回与当前 BouncyCastle 变体兼容的算法工厂、
+ * 证书工具、PEM 解析器及 SSL 套接字工厂装饰器。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface CryptoProvider {
 
     /**
-     * @return BouncyCastle security provider. Can be either non-FIPS or FIPS based provider
+     * @return BouncyCastle 安全提供方实例（标准版或 FIPS 版）
      */
     Provider getBouncyCastleProvider();
 
     /**
-     * Order of this provider. This allows to specify which CryptoProvider will have preference in case that more of them are on the classpath.
-     *
-     * The higher number has preference over the lower number
+     * 提供方优先级；classpath 上存在多个实现时，数值越大越优先。
      */
     int order();
 
     /**
-     * Get some algorithm provider implementation. Returned implementation can be dependent according to if we have
-     * non-fips bouncycastle or fips bouncycastle on the classpath.
+     * 按算法名获取特定 SPI 实现（实现类随 FIPS/非 FIPS 环境变化）。
      *
-     * @param clazz Returned class.
-     * @param algorithm Type of the algorithm, which we want to return
-     * @return
+     * @param clazz 期望返回的类型
+     * @param algorithm JCA 算法名
+     * @return 算法提供方实例
      */
     <T> T getAlgorithmProvider(Class<T> clazz, String algorithm);
 
     /**
-     * Get CertificateUtils implementation. Returned implementation can be dependent according to if we have
-     * non-fips bouncycastle or fips bouncycastle on the classpath.
-     *
-     * @return
+     * @return 与当前环境匹配的 {@link CertificateUtilsProvider}
      */
     CertificateUtilsProvider getCertificateUtils();
 
 
     /**
-     * Get PEMUtils implementation. Returned implementation can be dependent according to if we have
-     * non-fips bouncycastle or fips bouncycastle on the classpath.
-     *
-     * @return
+     * @return 与当前环境匹配的 {@link PemUtilsProvider}
      */
     PemUtilsProvider getPemUtils();
 
+    /** 获取 OCSP 相关提供方（若支持）。 */
     <T> T getOCSPProver(Class<T> clazz);
 
 
+    /** @return 用户身份提取 SPI */
     public UserIdentityExtractorProvider getIdentityExtractorProvider();
 
+    /** @return ECDSA 签名格式转换 SPI */
     public ECDSACryptoProvider getEcdsaCryptoProvider();
 
 
     /**
-     * Create the param spec for the EC curve
+     * 创建指定椭圆曲线名的 {@link ECParameterSpec}。
      *
-     * @param curveName
-     * @return
+     * @param curveName 曲线标识（如 secp256r1）
+     * @return EC 参数规格
      */
     ECParameterSpec createECParams(String curveName);
 
@@ -98,7 +95,7 @@ public interface CryptoProvider {
     KeyStore getKeyStore(KeystoreFormat format) throws KeyStoreException, NoSuchProviderException;
 
     /**
-     * @return Keystore types/algorithms supported by this CryptoProvider
+     * @return 当前 CryptoProvider 实际支持的密钥库类型/算法
      */
     default Stream<KeystoreFormat> getSupportedKeyStoreTypes() {
         return Stream.of(KeystoreFormat.values())
@@ -121,17 +118,15 @@ public interface CryptoProvider {
     Signature getSignature(String sigAlgName) throws NoSuchAlgorithmException, NoSuchProviderException;
 
     /**
-     * Wrap given SSLSocketFactory and decorate it with some additional functionality.
+     * 包装 SSLSocketFactory，为信任库场景（Keycloak 作为 TLS 客户端）附加额外行为。
      *
-     * This method is used in the context of truststore (where Keycloak is SSL client)
-     *
-     * @param delegate The original factory to wrap. Usually default java SSLSocketFactory
-     * @return decorated factory
+     * @param delegate 原始工厂，通常为 JVM 默认实现
+     * @return 装饰后的工厂
      */
     SSLSocketFactory wrapFactoryForTruststore(SSLSocketFactory delegate);
 
     /**
-     * @return Allowed key sizes of RSA key modulus, which this cryptoProvider supports
+     * @return 本 CryptoProvider 支持的 RSA 模长（比特）列表
      */
     default String[] getSupportedRsaKeySizes() {
         return new String[] {"1024", "2048", "3072", "4096"};

@@ -18,7 +18,9 @@
 package org.keycloak.common;
 
 /**
- * Information about the client connection
+ * 客户端连接信息抽象。
+ *
+ * <p>描述 HTTP/TCP 层对端与本地端点的地址与端口，供审计、限流等场景使用。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -26,35 +28,34 @@ package org.keycloak.common;
 public interface ClientConnection {
 
     /**
-     * @return the IP address as a string if it is available, otherwise null
+     * @return 远端 IP 地址字符串；不可用时返回 {@code null}
      */
     default String getRemoteAddr() {
         return null;
     }
     /**
-     * @return the remote host, which will be an IP address or whatever is provided via proxy headers, if
-     * available, otherwise null
+     * @return 远端主机名或 IP；若经代理则取自代理头，不可用时返回 {@code null}
      */
     default String getRemoteHost() {
         return null;
     }
     
     /**
-     * @return the remote port if it is available, otherwise 0
+     * @return 远端端口；不可用时返回 {@code 0}
      */
     default int getRemotePort() {
         return 0;
     }
 
     /**
-     * @return the local IP address as a string if it is available, otherwise null
+     * @return 本地 IP 地址字符串；不可用时返回 {@code null}
      */
     default String getLocalAddr() {
         return null;
     }
     
     /**
-     * @return the local port if it is available, otherwise 0
+     * @return 本地端口；不可用时返回 {@code 0}
      */
     default int getLocalPort() {
         return 0;

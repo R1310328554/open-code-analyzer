@@ -22,13 +22,21 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /**
+ * Keycloak 构建版本信息。
+ *
+ * <p>启动时从 {@code /keycloak-version.properties} 加载版本号、构建时间与产品名称。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class Version {
+    /** 无法读取版本信息时的占位值。 */
     public static final String UNKNOWN = "UNKNOWN";
+    /** 发行版本号。 */
     public static String VERSION;
+    /** 静态资源缓存键后缀（snapshot 构建会附加时间戳）。 */
     public static String RESOURCES_VERSION;
+    /** 构建时间戳。 */
     public static String BUILD_TIME;
 
     private static String name;
@@ -53,7 +61,9 @@ public class Version {
         }
     }
 
+    /** 产品显示名称。 */
     public static final String NAME = name;
+    /** 登录页 HTML 品牌标记。 */
     public static final String NAME_HTML = "<div class=\"kc-logo-text\"><span>" + name + "</span></div>";
 
 }

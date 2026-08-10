@@ -41,21 +41,30 @@ import org.keycloak.common.util.KerberosJdkProvider;
 import org.jboss.logging.Logger;
 
 /**
+ * Keycloak 运行时特性（Feature）开关与 Profile 配置中心。
+ *
+ * <p>启动时根据 {@link ProfileConfigResolver} 解析 CLI/环境配置，决定各 {@link Feature} 是否启用，
+ * 并校验特性依赖关系与版本互斥规则。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class Profile {
 
+    /** 日志模板：已启用的某类特性列表。 */
     private static final String FEATURES_ENABLED = "{0} features enabled: {1}";
 
+    /** 按无版本键聚合、按优先级排序的特性版本缓存。 */
     private static volatile Map<String, TreeSet<Feature>> FEATURES;
     
+    /** 特性被启用的方式：显式版本键、无版本键或默认策略。 */
     public static enum Enablement {
         VERSIONED,
         UNVERSIONED,
         DEFAULT
     }
 
+    /** Keycloak 可开关的全部运行时特性枚举。 */
     public enum Feature {
         AUTHORIZATION("Authorization Service", Type.DEFAULT),
 
@@ -115,7 +124,7 @@ public class Profile {
 
         KUBERNETES_SERVICE_ACCOUNTS("Kubernetes service accounts trust relationship provider", Type.DEFAULT),
 
-        // Check if kerberos is available in underlying JVM and auto-detect if feature should be enabled or disabled by default based on that
+        // 检测底层 JVM 是否支持 Kerberos，并据此决定默认启用/禁用
         KERBEROS("Kerberos", Type.DEFAULT, 1, () -> KerberosJdkProvider.getProvider().isKerberosAvailable()),
 
         RECOVERY_CODES("Recovery codes", Type.DEFAULT),
@@ -251,24 +260,23 @@ public class Profile {
         }
 
         /**
-         * Get the key that uniquely identifies this feature
+         * 获取唯一标识此特性的键（含版本后缀的规范化形式）。
          * <p>
-         * {@link #getVersionedKey()} should instead be shown to users where possible.
+         * 面向用户展示时应优先使用 {@link #getVersionedKey()}。
          */
         public String getKey() {
             return key;
         }
 
         /**
-         * Return the key without any versioning.  All features of the same type
-         * will share this key.
+         * 返回不含版本后缀的特性键；同一特性的各版本共享此键。
          */
         public String getUnversionedKey() {
             return unversionedKey;
         }
 
         /**
-         * Return the key in the form key:v{version}
+         * 返回 {@code key:v{version}} 形式的带版本特性键。
          */
         public String getVersionedKey() {
             return getUnversionedKey() + ":v" + version;
@@ -302,38 +310,39 @@ public class Profile {
             return updatePolicy;
         }
 
+        /** 特性成熟度/默认启用策略类型（枚举声明顺序即优先级顺序）。 */
         public enum Type {
-            // in priority order
+            // 按优先级从高到低排列
 
             /**
-             * Fully supported and enabled by default.
+             * 正式支持且默认启用。
              */
             DEFAULT("Default"),
 
             /**
-             * Fully supported and disabled by default.
+             * 正式支持但默认禁用。
              */
             DISABLED_BY_DEFAULT("Disabled by default"),
 
             /**
-             * Fully supported and will be removed in a future major release.
+             * 正式支持，将在未来主版本中移除。
              */
             DEPRECATED("Deprecated"),
 
             /**
-             * Not supported for production yet and not enabled by default.
-             * Usually with documentation and feature complete. Soon to be graduated to supported.
+             * 尚未建议用于生产，默认禁用；通常文档与功能已较完整，接近转正。
              */
             PREVIEW("Preview"),
 
             /**
-             * Preview features, which are not automatically enabled even with enabled preview profile (Needs to be enabled explicitly).
-             * This is no longer used and not explained in the current docs.
+             * 预览特性，即使启用 preview profile 也不会自动打开（需显式启用）。
+             * 当前文档已不再说明此类型。
              *
              * @deprecated forRemoval, since 26.5
              */
             PREVIEW_DISABLED_BY_DEFAULT("Preview disabled by default"),
 
+            /** 实验性特性，API 与行为可能频繁变更。 */
             EXPERIMENTAL("Experimental");
 
             private final String label;
@@ -348,22 +357,28 @@ public class Profile {
         }
     }
 
+    /** 不允许被用户显式禁用的核心特性（无版本键）。 */
     private static final Set<String> ESSENTIAL_FEATURES = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList(Feature.HOSTNAME_V2.getUnversionedKey(), Feature.ROLLING_UPDATES_V2.getUnversionedKey())));
 
     private static final Logger logger = Logger.getLogger(Profile.class);
 
+    /** 当前 JVM 内生效的 Profile 单例。 */
     private static volatile Profile CURRENT;
 
     private final ProfileName profileName;
 
+    /** 各特性最终启用状态。 */
     private final Map<Feature, Boolean> features;
+    /** 各已启用特性的启用来源。 */
     private final Map<Feature, Enablement> enablements;
 
+    /** 使用默认解析器构建 Profile。 */
     public static Profile defaults() {
         return configure();
     }
 
+    /** 根据一组 {@link ProfileConfigResolver} 解析并构建 Profile。 */
     public static Profile configure(ProfileConfigResolver... resolvers) {
         ProfileName profile = Arrays.stream(resolvers).map(ProfileConfigResolver::getProfileName).filter(Objects::nonNull).findFirst().orElse(ProfileName.DEFAULT);
 
@@ -373,7 +388,7 @@ public class Profile {
 
         for (Map.Entry<String, TreeSet<Feature>> entry : getOrderedFeatures().entrySet()) {
 
-            // first check by unversioned key - if enabled, choose the highest priority feature
+            // 先按无版本键解析：若启用则选择优先级最高的版本
             String unversionedFeature = entry.getKey();
             ProfileConfigResolver.FeatureConfig unversionedConfig = getFeatureConfig(unversionedFeature, resolvers);
             Feature enabledFeature = null;
@@ -386,7 +401,7 @@ public class Profile {
                 throw new ProfileException(String.format("Feature %s cannot be disabled.", unversionedFeature));
             }
 
-            // now check each feature version to ensure consistency and select any features enabled by default
+            // 再逐版本校验配置一致性，并选取默认启用的版本
             boolean isExplicitlyEnabledFeature = false;
             for (Feature f : entry.getValue()) {
                 ProfileConfigResolver.FeatureConfig configuration = getFeatureConfig(f.getVersionedKey(), resolvers);
@@ -402,7 +417,7 @@ public class Profile {
                                 String.format("Multiple versions of the same feature %s, %s should not be enabled.",
                                         enabledFeature.getVersionedKey(), f.getVersionedKey()));
                     }
-                    // even if something else was enabled by default, explicitly enabling a lower priority feature takes precedence
+                    // 显式启用低优先级版本会覆盖默认选中的高优先级版本
                     if (!f.isAvailable()) {
                         throw new ProfileException(String.format("Feature %s cannot be enabled as it is not available.", f.getVersionedKey()));
                     }
@@ -454,23 +469,24 @@ public class Profile {
     }
 
     /**
-     * Compute a map of unversioned feature keys to ordered sets (highest first) of features.  The priority order for features is:
+     * 构建「无版本键 → 按优先级降序排列的特性版本集合」映射。
      * <p>
+     * 优先级规则：
      * <ul>
-     * <li>The highest default supported version
-     * <li>The highest non-default supported version
-     * <li>The highest deprecated version
-     * <li>The highest preview version
-     * <li>The highest experimental version
-     * <ul>
+     * <li>最高优先级的 DEFAULT 版本
+     * <li>最高优先级的非 DEFAULT 正式版本
+     * <li>最高 DEPRECATED 版本
+     * <li>最高 PREVIEW 版本
+     * <li>最高 EXPERIMENTAL 版本
+     * </ul>
      * <p>
-     * Note the {@link Type} enum is ordered based upon priority.
+     * {@link Type} 枚举的声明顺序即类型优先级。
      */
     private static Map<String, TreeSet<Feature>> getOrderedFeatures() {
         if (FEATURES == null) {
-            // "natural" ordering low to high between two features (type has precedence and then reversed version is used)
+            // 比较器：先按 Type 优先级，再按版本号降序
             Comparator<Feature> comparator = Comparator.comparing(Feature::getType).thenComparing(Comparator.comparingInt(Feature::getVersion).reversed());
-            // aggregate the features by unversioned key
+            // 按无版本键聚合各 Feature 版本
             HashMap<String, TreeSet<Feature>> features = new HashMap<>();
             Stream.of(Feature.values()).forEach(f -> features.compute(f.getUnversionedKey(), (k, v) -> {
                 if (v == null) {
@@ -493,9 +509,9 @@ public class Profile {
     }
 
     /**
-     * Get all of the feature versions for the given feature. They will be ordered by priority.
+     * 返回指定无版本键下的全部特性版本（按优先级排序）。
      * <p>
-     * If the feature does not exist an empty collection will be returned.
+     * 若键不存在则返回空集合。
      */
     public static Set<Feature> getFeatureVersions(String feature) {
         TreeSet<Feature> versions = getOrderedFeatures().get(feature);
@@ -520,18 +536,22 @@ public class Profile {
         this.enablements = Collections.unmodifiableMap(enablements);
     }
 
+    /** @return 当前生效的 Profile 实例 */
     public static Profile getInstance() {
         return CURRENT;
     }
 
+    /** 清除单例（主要用于测试）。 */
     public static void reset() {
         CURRENT = null;
     }
 
+    /** 判断指定特性版本是否已启用。 */
     public static boolean isFeatureEnabled(Feature feature) {
         return getInstance().features.get(feature);
     }
 
+    /** 判断同一无版本键下是否有任意版本处于启用状态。 */
     public static boolean isAnyVersionOfFeatureEnabled(Feature feature) {
         return isFeatureEnabled(feature) ||
                 getInstance().getEnabledFeatures()
@@ -556,7 +576,7 @@ public class Profile {
     }
 
     /**
-     * @return all features of type "preview" or "preview_disabled_by_default"
+     * @return 所有 PREVIEW 或 PREVIEW_DISABLED_BY_DEFAULT 类型的特性
      */
     public Set<Feature> getPreviewFeatures() {
         return Stream.concat(getFeatures(Feature.Type.PREVIEW).stream(), getFeatures(Feature.Type.PREVIEW_DISABLED_BY_DEFAULT).stream())
@@ -579,6 +599,7 @@ public class Profile {
         return features;
     }
 
+    /** 启动 Profile 名称：DEFAULT 仅启用正式特性；PREVIEW 额外默认启用预览特性。 */
     public enum ProfileName {
         DEFAULT,
         PREVIEW
@@ -597,6 +618,7 @@ public class Profile {
         }
     }
 
+    /** 将已启用的预览/实验/废弃特性写入日志（级别因类型而异）。 */
     public void logUnsupportedFeatures() {
         logUnsupportedFeatures(Feature.Type.PREVIEW, getPreviewFeatures(), Logger.Level.INFO);
         logUnsupportedFeatures(Feature.Type.EXPERIMENTAL, getExperimentalFeatures(), Logger.Level.WARN);
@@ -622,12 +644,13 @@ public class Profile {
         }
     }
 
+    /** 切换特性开关时对集群滚动升级的要求。 */
     public enum FeatureUpdatePolicy {
-        // Always allow a rolling update when the Feature is enabled/disabled
+        /** 启用/禁用时始终允许滚动升级。 */
         ROLLING,
-        // Allow rolling update, but not when going from V1 to V2 or V2 to V1
+        /** 允许滚动升级，但 V1↔V2 版本切换除外。 */
         ROLLING_NO_UPGRADE,
-        // Always require a cluster shutdown when the Feature is enabled/disabled
+        /** 启用/禁用时必须全集群停机。 */
         SHUTDOWN;
     }
 

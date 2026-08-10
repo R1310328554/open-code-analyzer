@@ -17,6 +17,11 @@ import org.keycloak.common.util.BouncyIntegration;
 import org.jboss.logging.Logger;
 
 /**
+ * 密码学提供方（{@link CryptoProvider}）的启动检测与全局访问入口。
+ *
+ * <p>通过 {@link ServiceLoader} 按 {@link CryptoProvider#order()} 选取优先级最高的实现，
+ * 并在 trace 级别输出 JVM 安全提供方与 SSL 相关系统属性，便于诊断 FIPS 配置问题。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class CryptoIntegration {
@@ -26,6 +31,7 @@ public class CryptoIntegration {
     private static final Object lock = new Object();
     private static volatile CryptoProvider cryptoProvider;
 
+    /** 使用给定类加载器探测并初始化全局 {@link CryptoProvider}（幂等）。 */
     public static void init(ClassLoader classLoader) {
         if (cryptoProvider == null) {
             synchronized (lock) {
@@ -43,10 +49,12 @@ public class CryptoIntegration {
         }
     }
 
+    /** @return 是否已完成 {@link #init} */
     public static boolean isInitialised() {
         return cryptoProvider != null;
     }
 
+    /** @return 当前全局 CryptoProvider；未初始化时抛出 {@link IllegalStateException} */
     public static CryptoProvider getProvider() {
         if (cryptoProvider == null) {
             throw new IllegalStateException("Illegal state. Please init first before obtaining provider");
@@ -55,7 +63,7 @@ public class CryptoIntegration {
     }
 
 
-    // Try to auto-detect provider
+    // 通过 ServiceLoader 自动探测 CryptoProvider 实现
     private static CryptoProvider detectProvider(ClassLoader classLoader) {
         List<CryptoProvider> foundProviders = StreamSupport.stream(ServiceLoader.load(CryptoProvider.class, classLoader).spliterator(), false)
                 .sorted(Comparator.comparingInt(CryptoProvider::order).reversed())
@@ -76,6 +84,7 @@ public class CryptoIntegration {
         }
     }
 
+    /** 格式化输出 JVM 已注册的全部 {@link java.security.Provider}。 */
     public static String dumpJavaSecurityProviders() {
         StringBuilder builder = new StringBuilder("Java security providers: [ \n");
         for (Provider p : Security.getProviders()) {
@@ -84,6 +93,7 @@ public class CryptoIntegration {
         return builder.append("]").toString();
     }
 
+    /** 格式化输出与密钥库/信任库相关的安全属性与系统属性。 */
     public static String dumpSecurityProperties() {
         StringBuilder builder = new StringBuilder("Security properties: [ \n")
                 .append(" Java security properties file: " + System.getProperty("java.security.properties") + "\n")
@@ -97,6 +107,7 @@ public class CryptoIntegration {
         return builder.append("]").toString();
     }
 
+    /** 测试或容器启动时显式注入 CryptoProvider（跳过 ServiceLoader 探测）。 */
     public static void setProvider(CryptoProvider provider) {
         logger.debugf("Using the crypto provider: %s", provider != null ? provider.getClass().getName() : "null");
         cryptoProvider = provider;

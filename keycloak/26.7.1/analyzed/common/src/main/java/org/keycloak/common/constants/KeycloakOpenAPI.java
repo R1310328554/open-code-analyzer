@@ -18,22 +18,29 @@
 package org.keycloak.common.constants;
 
 /**
- * Class of constants relating to the OpenAPI annotations in Keycloak and the Keycloak Admin REST API
+ * Keycloak OpenAPI 注解与 Admin REST API 文档相关常量。
+ *
+ * <p>集中定义 SmallRye OpenAPI 配置文件名与各 API 分组标签，供服务端与代码生成器引用。</p>
  */
 public class KeycloakOpenAPI {
 
     protected KeycloakOpenAPI() { }
+
+    /** OpenAPI 扩展配置文件常量。 */
     public static class Profiles {
 
+        /** Admin API 专用 SmallRye profile 名称。 */
         public static final String ADMIN = "x-smallrye-profile-admin";
 
         private Profiles() { }
     }
 
+    /** Admin REST API 相关 OpenAPI 标签。 */
     public static class Admin {
 
         private Admin() { }
 
+        /** 按资源域划分的 API 操作标签名。 */
         public static class Tags {
             public static final String ATTACK_DETECTION = "Attack Detection";
             public static final String AUTHENTICATION_MANAGEMENT = "Authentication Management";
@@ -64,11 +71,13 @@ public class KeycloakOpenAPI {
 
     }
 
+    /** Shared Signals Framework (SSF) API 相关 OpenAPI 标签。 */
     public static class Ssf {
 
         private Ssf() { }
 
         public static class Tags {
+            /** SSF Transmitter 端点分组标签。 */
             public static final String TRANSMITTER = "SSF Transmitter";
             private Tags() { }
         }

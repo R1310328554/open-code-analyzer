@@ -27,48 +27,56 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * The Class CertificateUtils provides utility functions for generation of V1 and V3 {@link java.security.cert.X509Certificate}
+ * X.509 证书生成与解析工具 SPI。
  *
+ * <p>提供 V1/V3 {@link java.security.cert.X509Certificate} 的签发、策略 OID 与 CRL 分发点读取等能力，
+ * 具体实现随 FIPS/非 FIPS {@link CryptoProvider} 切换。</p>
  */
 public interface CertificateUtilsProvider {
 
+    /** CRL Distribution Points X.509 扩展 OID（2.5.29.31）。 */
     public static final String CRL_DISTRIBUTION_POINTS_OID = "2.5.29.31";
 
     /**
-     * Generates version 3 {@link java.security.cert.X509Certificate}.
+     * 签发 X.509 v3 证书（由 CA 私钥签名）。
      *
-     * @param keyPair the key pair
-     * @param caPrivateKey the CA private key
-     * @param caCert the CA certificate
-     * @param subject the subject name
+     * @param keyPair 待证书主体的密钥对
+     * @param caPrivateKey CA 私钥
+     * @param caCert CA 证书
+     * @param subject 证书主体 DN
      * 
-     * @return the x509 certificate
+     * @return 签发的 X.509 证书
      * 
-     * @throws Exception the exception
+     * @throws Exception 签名或编码失败
      */
     public X509Certificate generateV3Certificate(KeyPair keyPair, PrivateKey caPrivateKey, X509Certificate caCert,
             String subject) throws Exception;
 
     /**
-     * Generate version 1 self signed {@link java.security.cert.X509Certificate}..
+     * 签发 X.509 v1 自签名证书。
      *
-     * @param caKeyPair the CA key pair
-     * @param subject the subject name
+     * @param caKeyPair 自签名密钥对
+     * @param subject 证书主体 DN
      * 
-     * @return the x509 certificate
+     * @return 自签名 X.509 证书
      * 
-     * @throws Exception the exception
+     * @throws Exception 签名或编码失败
      */
     public X509Certificate generateV1SelfSignedCertificate(KeyPair caKeyPair, String subject); 
 
+    /** 指定序列号签发 v1 自签名证书。 */
     public X509Certificate generateV1SelfSignedCertificate(KeyPair caKeyPair, String subject, BigInteger serialNumber);
 
+    /** 指定序列号与有效期签发 v1 自签名证书。 */
     public X509Certificate generateV1SelfSignedCertificate(KeyPair caKeyPair, String subject, BigInteger serialNumber, Date validityEndDate);
 
+    /** 读取证书策略（Certificate Policies）扩展中的 OID 列表。 */
     public List<String> getCertificatePolicyList(X509Certificate cert) throws GeneralSecurityException;
 
+    /** 读取 CRL Distribution Points 扩展中的 URI 列表。 */
     public List<String> getCRLDistributionPoints(X509Certificate cert) throws IOException;
 
+    /** 生成用于测试的服务器/客户端证书。 */
     public X509Certificate createServicesTestCertificate(String dn,
                                              Date startDate,
                                              Date expiryDate,

@@ -18,33 +18,44 @@
 package org.keycloak.common;
 
 /**
+ * 验证失败时抛出的受检异常。
+ *
+ * <p>可携带 {@link #errorType} 以便调用方区分错误类别。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class VerificationException extends Exception {
 
+    /** 错误类型标识（可选）。 */
     private String errorType;
 
+    /** 无参构造。 */
     public VerificationException() {
     }
 
+    /** 以消息构造。 */
     public VerificationException(String message) {
         super(message);
     }
 
+    /** 以消息与错误类型构造。 */
     public VerificationException(String message, String errorType) {
         super(message);
         this.errorType = errorType;
     }
 
+    /** 以消息与原因构造。 */
     public VerificationException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /** 以原因构造。 */
     public VerificationException(Throwable cause) {
         super(cause);
     }
 
+    /** @return 错误类型，可能为 {@code null} */
     public String getErrorType() {
         return errorType;
     }

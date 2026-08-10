@@ -18,10 +18,13 @@
 package org.keycloak.common.constants;
 
 /**
+ * 跨模块通用的字符串常量。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class GenericConstants {
 
+    /** 协议 URL 前缀，表示从 classpath 加载资源。 */
     public static final String PROTOCOL_CLASSPATH = "classpath:";
 
 }
