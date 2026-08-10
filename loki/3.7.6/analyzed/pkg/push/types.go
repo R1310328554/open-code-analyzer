@@ -1,5 +1,7 @@
 package push
 
+// types 定义 push 包自定义 Stream/Entry/LabelAdapter 类型：优化 protobuf 序列化性能并避免依赖 Prometheus labels 包。
+
 import (
 	"encoding/json"
 	"fmt"
@@ -10,6 +12,7 @@ import (
 	"unsafe"
 )
 
+// Stream 用字符串 labels 与 Entry 切片表示单条日志流，Hash 字段加速 fingerprint 计算。
 // Stream contains a unique labels set as a string and a set of entries for it.
 // We are not using the proto generated version but this custom one so that we
 // can improve serialization see benchmark.
@@ -19,6 +22,7 @@ type Stream struct {
 	Hash    uint64  `protobuf:"varint,3,opt,name=hash,proto3" json:"-"`
 }
 
+// Entry 含日志行、stdtime 时间戳及 structured metadata/parsed 标签。
 // Entry is a log entry with a timestamp.
 type Entry struct {
 	Timestamp          time.Time     `protobuf:"bytes,1,opt,name=timestamp,proto3,stdtime" json:"ts"`
@@ -52,6 +56,7 @@ func (m *Entry) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e)
 }
 
+// LabelAdapter 与 Prometheus labels.Label 布局一致，可 unsafe 转换避免 import 依赖。
 // LabelAdapter should be a copy of the Prometheus labels.Label type.
 // We cannot import Prometheus in this package because it would create many dependencies
 // in other projects importing this package. Instead, we copy the definition here, which should
@@ -60,6 +65,7 @@ type LabelAdapter struct {
 	Name, Value string
 }
 
+// LabelsAdapter 提供 JSON 编解码，与 Prometheus labels 行为保持同步。
 // LabelsAdapter is equivalent to the Prometheus labels.Labels type.
 type LabelsAdapter []LabelAdapter
 
@@ -688,6 +694,7 @@ func (m *LabelAdapter) Unmarshal(dAtA []byte) error {
 	return nil
 }
 
+// yoloString 零拷贝将 []byte 转为 string，Unmarshal 路径用于 labels 字段解析。
 func yoloString(buf []byte) string {
 	return *((*string)(unsafe.Pointer(&buf)))
 }
@@ -850,3 +857,4 @@ func (m *LabelAdapter) Compare(other LabelAdapter) int {
 	}
 	return strings.Compare(m.Value, other.Value)
 }
+// 自定义 Marshal/Unmarshal 替代 proto 生成代码，benchmark 显示推送热路径性能更优。

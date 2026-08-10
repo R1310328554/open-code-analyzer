@@ -1,5 +1,7 @@
 package pattern
 
+// metrics 定义 pattern ingester 与 ingester querier 的 Prometheus 指标：模式检测/驱逐、token 分布与查询剪枝统计。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -15,6 +17,7 @@ type ingesterMetrics struct {
 	metricSamples          *prometheus.CounterVec
 }
 
+// newIngesterMetrics 注册 pattern_ingester 子系统下全部 Counter/Histogram/Gauge 向量。
 func newIngesterMetrics(r prometheus.Registerer, metricsNamespace string) *ingesterMetrics {
 	return &ingesterMetrics{
 		flushQueueLength: promauto.With(r).NewGauge(prometheus.GaugeOpts{
@@ -64,6 +67,7 @@ func newIngesterMetrics(r prometheus.Registerer, metricsNamespace string) *inges
 	}
 }
 
+// ingesterQuerierMetrics 记录查询侧 Drain 剪枝保留与丢弃的模式数量。
 type ingesterQuerierMetrics struct {
 	patternsPrunedTotal   prometheus.Counter
 	patternsRetainedTotal prometheus.Counter
@@ -85,3 +89,4 @@ func newIngesterQuerierMetrics(r prometheus.Registerer, metricsNamespace string)
 		}),
 	}
 }
+// patterns_evicted_total 的 pruned label 区分 LRU 驱逐与查询时主动剪枝两种场景。

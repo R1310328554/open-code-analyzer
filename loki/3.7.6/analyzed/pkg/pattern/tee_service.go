@@ -1,5 +1,7 @@
 package pattern
 
+// TeeService 实现 distributor.Tee：将 push 请求复制到 pattern ingester，按 ring 归属批处理并通过 flush 队列异步发送。
+
 import (
 	"context"
 	"errors"
@@ -27,6 +29,7 @@ import (
 	ring_client "github.com/grafana/dskit/ring/client"
 )
 
+// TeeService 维护 per-tenant 缓冲、flush 队列与 ring 客户端，支持优雅停止 flush。
 type TeeService struct {
 	cfg        Config
 	limits     Limits
@@ -50,6 +53,7 @@ type TeeService struct {
 	buffers      map[string][]distributor.KeyedStream
 }
 
+// NewTeeService 注册 tee 相关 Prometheus 指标并初始化 flush 队列与 worker 计数。
 func NewTeeService(
 	cfg Config,
 	limits Limits,
@@ -102,6 +106,7 @@ func NewTeeService(
 	return t, nil
 }
 
+// Start 启动 batchSender worker 与定时 flush ticker，停止时等待队列 drain 或超时。
 func (ts *TeeService) Start(runCtx context.Context) error {
 	ts.wg.Add(1)
 
@@ -168,6 +173,7 @@ func (ts *TeeService) WaitUntilDone() {
 	ts.wg.Wait()
 }
 
+// flush 交换 buffers 后按 tenant×ingester 地址分组并入队 clientRequest。
 func (ts *TeeService) flush() {
 	ts.buffersMutex.Lock()
 	if len(ts.buffers) == 0 {
@@ -283,6 +289,7 @@ func (ts *TeeService) batchSender(ctx context.Context) {
 	}
 }
 
+// sendBatch 向归属 ingester Push，失败时在启用聚合时 fallback 到任意 healthy ingester。
 func (ts *TeeService) sendBatch(ctx context.Context, clientRequest clientRequest) {
 	ctx, cancel := context.WithTimeout(ctx, ts.cfg.ConnectionTimeout)
 	defer cancel()
@@ -418,6 +425,7 @@ func (ts *TeeService) sendBatch(ctx context.Context, clientRequest clientRequest
 	}
 }
 
+// Duplicate 过滤聚合指标/模式流避免循环，将 KeyedStream 追加到 per-tenant 缓冲。
 // Duplicate Implements distributor.Tee which is used to tee distributor requests to pattern ingesters.
 func (ts *TeeService) Duplicate(_ context.Context, tenant string, streams []distributor.KeyedStream, _ *distributor.PushTracker) {
 	if !ts.cfg.Enabled {
@@ -451,3 +459,4 @@ func (ts *TeeService) Duplicate(_ context.Context, tenant string, streams []dist
 func (ts *TeeService) Register(_ context.Context, _ string, _ []distributor.KeyedStream, _ *distributor.PushTracker) {
 	// we don't register pending streams to avoid blocking the distributor due to pattern ingesters.
 }
+// Register 为空实现：不向 PushTracker 注册 pending，避免 pattern ingester 拖慢 distributor。

@@ -1,5 +1,7 @@
 package pattern
 
+// streamsMap 双索引管理 pattern ingester 内全部 stream：按标签字符串与 fingerprint 映射，并提供一致性读写锁封装。
+
 import (
 	"sync"
 
@@ -23,16 +25,19 @@ func newStreamsMap() *streamsMap {
 	}
 }
 
+// Load 无锁按标签字符串查找 stream；需 stream 锁操作时应在 WithRLock 内调用。
 // Load is lock-free. If usage of the stream is consistency sensitive, must be called inside WithRLock at least
 func (m *streamsMap) Load(key string) (*stream, bool) {
 	return m.load(m.streams, key)
 }
 
+// LoadByFP 无锁按 fingerprint 查找 stream。
 // LoadByFP is lock-free. If usage of the stream is consistency sensitive, must be called inside WithRLock at least
 func (m *streamsMap) LoadByFP(fp model.Fingerprint) (*stream, bool) {
 	return m.load(m.streamsByFP, fp)
 }
 
+// Store 在写锁内同时更新 labels 索引与 fingerprint 索引并递增计数器。
 // Store must be called inside WithLock
 func (m *streamsMap) Store(key string, s *stream) {
 	m.store(key, s)
@@ -54,6 +59,7 @@ func (m *streamsMap) Delete(s *stream) bool {
 	return false
 }
 
+// LoadOrStoreNew 双重检查锁定创建新 stream，不可嵌套在 WithLock 内调用。
 // LoadOrStoreNew already has lock inside, do NOT call inside WithLock or WithRLock
 func (m *streamsMap) LoadOrStoreNew(key string, newStreamFn func() (*stream, error), postLoadFn func(*stream) error) (*stream, bool, error) {
 	return m.loadOrStoreNew(m.streams, key, newStreamFn, postLoadFn)
@@ -71,6 +77,7 @@ func (m *streamsMap) WithLock(fn func()) {
 	fn()
 }
 
+// WithRLock 用于需要持有 stream 引用期间锁定 stream.mtx 等一致性敏感读操作。
 // WithRLock is a helper function to execute consistency sensitive read operations.
 // Generally, if a stream loaded from streamsMap will have its chunkMtx locked, chunkMtx.Lock is supposed to be called
 // within this function.
@@ -113,6 +120,7 @@ func (m *streamsMap) store(key interface{}, s *stream) {
 
 // newStreamFn: Called if not loaded, with consistencyMtx locked. Must not be nil
 // postLoadFn: Called if loaded, with consistencyMtx read-locked at least. Can be nil
+// loadOrStoreNew 先读锁查找，未命中则写锁内二次检查并调用 newStreamFn 创建。
 func (m *streamsMap) loadOrStoreNew(mp *sync.Map, key interface{}, newStreamFn func() (*stream, error), postLoadFn func(*stream) error) (*stream, bool, error) {
 	var s *stream
 	var loaded bool
@@ -147,3 +155,4 @@ func (m *streamsMap) loadOrStoreNew(mp *sync.Map, key interface{}, newStreamFn f
 
 	return s, loaded, err
 }
+// streamsCounter 原子计数与 sync.Map 配合，Len 可 O(1) 返回当前活跃流数量。

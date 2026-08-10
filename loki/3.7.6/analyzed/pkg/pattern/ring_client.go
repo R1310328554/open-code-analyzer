@@ -1,5 +1,7 @@
 package pattern
 
+// ring_client 封装 pattern ingester 的 hash ring 与 gRPC 连接池：供 tee/querier 按地址获取 PatternClient。
+
 import (
 	"context"
 	"fmt"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/pattern/clientpool"
 )
 
+// RingClient 组合 Service 生命周期、ReadRing 查询与按地址取 PoolClient。
 type RingClient interface {
 	services.Service
 	Ring() ring.ReadRing
@@ -30,6 +33,7 @@ type ringClient struct {
 	pool               *ring_client.Pool
 }
 
+// NewRingClient 创建 pattern-ingester ring、clientpool 并注册 subservices。
 func NewRingClient(
 	cfg Config,
 	metricsNamespace string,
@@ -114,6 +118,8 @@ func (r *ringClient) AddListener(listener services.Listener) func() {
 	return r.ring.AddListener(listener)
 }
 
+// GetClientFor 从连接池返回指定 ingester 地址的 gRPC 客户端。
 func (r *ringClient) GetClientFor(addr string) (ring_client.PoolClient, error) {
 	return r.pool.GetClientFor(addr)
 }
+// running 阻塞监听 subservicesWatcher，任一子服务失败则 pattern ring client 退出。

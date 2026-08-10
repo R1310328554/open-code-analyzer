@@ -1,5 +1,7 @@
 package pattern
 
+// pattern_config 配置检测到的模式写回 Loki 的 HTTP 推送参数：地址、周期、TLS、BasicAuth 与 backoff 重试。
+
 import (
 	"flag"
 	"time"
@@ -8,6 +10,7 @@ import (
 	"github.com/prometheus/common/config"
 )
 
+// PersistenceConfig 控制模式持久化推送的目标 Loki、批量大小与客户端 TLS/认证。
 // PersistenceConfig contains the configuration for pushing detected patterns back to Loki
 type PersistenceConfig struct {
 	LokiAddr         string                  `yaml:"loki_address,omitempty" doc:"description=The address of the Loki instance to push patterns to."`
@@ -20,6 +23,7 @@ type PersistenceConfig struct {
 	BatchSize        int                     `yaml:"batch_size,omitempty" doc:"description=The maximum number of patterns to accumulate before pushing."`
 }
 
+// RegisterFlags 委托 RegisterFlagsWithPrefix 注册 loki-address/push-period 等 CLI 参数。
 // RegisterFlags registers pattern push related flags.
 func (cfg *PersistenceConfig) RegisterFlags(fs *flag.FlagSet) {
 	cfg.RegisterFlagsWithPrefix(fs, "")
@@ -61,6 +65,7 @@ func (cfg *PersistenceConfig) RegisterFlagsWithPrefix(fs *flag.FlagSet, prefix s
 	cfg.BasicAuth.RegisterFlagsWithPrefix(prefix+".", fs)
 }
 
+// BasicAuth 存储推送模式样本至 Loki 时使用的 HTTP 基本认证凭据。
 // BasicAuth contains basic HTTP authentication credentials.
 type BasicAuth struct {
 	Username string        `yaml:"username"           json:"username"`
@@ -81,6 +86,7 @@ func (cfg *BasicAuth) RegisterFlagsWithPrefix(prefix string, fs *flag.FlagSet) {
 	)
 }
 
+// secretValue 包装 config.Secret 以满足 flag.Value 接口，避免密码明文打印。
 type secretValue string
 
 func newSecretValue(val config.Secret, p *config.Secret) *secretValue {
@@ -96,3 +102,4 @@ func (s *secretValue) Set(val string) error {
 func (s *secretValue) Get() any { return string(*s) }
 
 func (s *secretValue) String() string { return string(*s) }
+// BatchSize 限制单次 push 前内存中累积的模式条目上限，PushPeriod 控制定时 flush 间隔。

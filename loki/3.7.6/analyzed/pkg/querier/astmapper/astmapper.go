@@ -1,10 +1,13 @@
 package astmapper
 
+// astmapper 提供 PromQL AST 映射框架：组合多个 Mapper、NodeMapper 适配器及递归 CloneNode 辅助函数。
+
 import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/promql/parser"
 )
 
+// ASTMapper 将 parser.Node 映射为新节点，供 query-frontend 分片与嵌入查询使用。
 // ASTMapper is the exported interface for mapping between multiple AST representations
 type ASTMapper interface {
 	Map(node parser.Node) (parser.Node, error)
@@ -18,6 +21,7 @@ func (fn MapperFunc) Map(node parser.Node) (parser.Node, error) {
 	return fn(node)
 }
 
+// MultiMapper 按注册顺序链式应用多个 Mapper，空列表时 Map 返回错误。
 // MultiMapper can compose multiple ASTMappers
 type MultiMapper struct {
 	mappers []ASTMapper
@@ -42,6 +46,7 @@ func (m *MultiMapper) Map(node parser.Node) (parser.Node, error) {
 
 }
 
+// Register 按优先级递减顺序追加 Mapper，建议各 Mapper 仅处理关心的节点类型。
 // Register adds ASTMappers into a multimapper.
 // Since registered functions are applied in the order they're registered, it's advised to register them
 // in decreasing priority and only operate on nodes that each function cares about, defaulting to CloneNode.
@@ -61,6 +66,7 @@ func CloneNode(node parser.Node) (parser.Node, error) {
 	return parser.NewParser(parser.Options{}).ParseExpr(node.String())
 }
 
+// NodeMapper 可短路递归（finished=true），便于仅改写特定 AST 节点类型。
 // NodeMapper either maps a single AST node or returns the unaltered node.
 // It also returns a bool to signal that no further recursion is necessary.
 // This is helpful because it allows mappers to only implement logic for node types they want to change.
@@ -78,6 +84,7 @@ func (f NodeMapperFunc) MapNode(node parser.Node) (parser.Node, bool, error) {
 }
 
 // NewASTNodeMapper creates an ASTMapper from a NodeMapper
+// NewASTNodeMapper 将 NodeMapper 包装为完整 ASTMapper，自动递归子表达式。
 func NewASTNodeMapper(mapper NodeMapper) ASTNodeMapper {
 	return ASTNodeMapper{mapper}
 }
@@ -88,6 +95,7 @@ type ASTNodeMapper struct {
 }
 
 // Map implements ASTMapper from a NodeMapper
+// Map 在 MapNode 未 finished 时按节点类型递归映射 AggregateExpr/BinaryExpr 等子树。
 func (nm ASTNodeMapper) Map(node parser.Node) (parser.Node, error) {
 	node, fin, err := nm.MapNode(node)
 
@@ -185,3 +193,4 @@ func (nm ASTNodeMapper) Map(node parser.Node) (parser.Node, error) {
 		panic(errors.Errorf("nodeMapper: unhandled node type %T", node))
 	}
 }
+// CloneNode 通过 ParseExpr(node.String()) 深拷贝 AST，供 Mapper 安全修改而不影响原树。

@@ -3,6 +3,8 @@
 
 package push
 
+// push.pb.go 由 push.proto 生成，定义 PushRequest/PushResponse 消息及 Pusher gRPC 服务的一元 Push RPC。
+
 import (
 	context "context"
 	fmt "fmt"
@@ -33,6 +35,7 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// PushRequest 携带 Stream 列表与 format 字段，标识 loki 或 otlp 摄入格式。
 type PushRequest struct {
 	Streams []Stream `protobuf:"bytes,1,rep,name=streams,proto3,customtype=Stream" json:"streams"`
 	// format in which streams are ingested - loki or otlp
@@ -78,6 +81,7 @@ func (m *PushRequest) GetFormat() string {
 	return ""
 }
 
+// PushResponse 为空 ACK，表示 push 请求已被服务端接受。
 type PushResponse struct {
 }
 
@@ -591,6 +595,7 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// PusherClient 调用 /logproto.Pusher/Push 将 snappy 压缩的日志批次发送至 ingester。
 // PusherClient is the client API for Pusher service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -615,6 +620,7 @@ func (c *pusherClient) Push(ctx context.Context, in *PushRequest, opts ...grpc.C
 	return out, nil
 }
 
+// PusherServer 由 ingester/distributor 实现，处理租户 push 并写入 WAL。
 // PusherServer is the server API for Pusher service.
 type PusherServer interface {
 	Push(context.Context, *PushRequest) (*PushResponse, error)
@@ -628,6 +634,7 @@ func (*UnimplementedPusherServer) Push(ctx context.Context, req *PushRequest) (*
 	return nil, status.Errorf(codes.Unimplemented, "method Push not implemented")
 }
 
+// RegisterPusherServer 注册标准 Pusher gRPC 服务到 Server。
 func RegisterPusherServer(s *grpc.Server, srv PusherServer) {
 	s.RegisterService(&_Pusher_serviceDesc, srv)
 }
@@ -1795,3 +1802,4 @@ var (
 	ErrInvalidLengthPush = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowPush   = fmt.Errorf("proto: integer overflow")
 )
+// PushRequest.Format 区分原生 Loki 与 OTLP 推送路径，影响后续解析与标签处理逻辑。

@@ -1,5 +1,7 @@
 package iter
 
+// query_client 将 Pattern gRPC Query 流适配为 Iterator：逐批 Recv 响应并委托 Merge 合并多 Series。
+
 import (
 	"io"
 
@@ -12,6 +14,7 @@ type queryClientIterator struct {
 	curr   Iterator
 }
 
+// NewQueryClientIterator 包装服务端流式 RPC，Next 时自动拉取下一批 QueryPatternsResponse。
 // NewQueryClientIterator returns an iterator over a QueryClient.
 func NewQueryClientIterator(client logproto.Pattern_QueryClient) Iterator {
 	return &queryClientIterator{
@@ -54,6 +57,7 @@ func (i *queryClientIterator) Close() error {
 	return i.client.CloseSend()
 }
 
+// NewQueryResponseIterator 将单批响应中各 Series 转为 Slice 迭代器再 Merge。
 func NewQueryResponseIterator(resp *logproto.QueryPatternsResponse) Iterator {
 	iters := make([]Iterator, len(resp.Series))
 	for i, s := range resp.Series {
@@ -66,3 +70,4 @@ func NewQueryResponseIterator(resp *logproto.QueryPatternsResponse) Iterator {
 	}
 	return NewMerge(iters...)
 }
+// Close 调用 CloseSend 半关闭 gRPC 流，通知服务端客户端不再接收。

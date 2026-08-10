@@ -1,5 +1,7 @@
 package push
 
+// timestamp 提供 protobuf Timestamp 与 time.Time 互转及校验：供 Entry 自定义 stdtime 序列化使用。
+
 import (
 	"errors"
 	"strconv"
@@ -17,6 +19,7 @@ const (
 	maxValidSeconds = 253402300800
 )
 
+// validateTimestamp 限制秒域 [0001-01-01, 10000-01-01) 且 Nanos 在 [0, 1e9)。
 // validateTimestamp determines whether a Timestamp is valid.
 // A valid timestamp represents a time in the range
 // [0001-01-01, 10000-01-01) and has a Nanos field
@@ -56,6 +59,7 @@ func formatTimestamp(ts *types.Timestamp) string {
 	return "&types.Timestamp{Seconds: " + seconds + ",\nNanos: " + nanos + ",\n}"
 }
 
+// SizeOfStdTime 计算 time.Time 编码为 protobuf Timestamp 的字节长度。
 func SizeOfStdTime(t time.Time) int {
 	ts, err := timestampProto(t)
 	if err != nil {
@@ -72,6 +76,7 @@ func StdTimeMarshalTo(t time.Time, data []byte) (int, error) {
 	return ts.MarshalTo(data)
 }
 
+// StdTimeUnmarshal 从 protobuf 字节解码并校验后写入 *time.Time。
 func StdTimeUnmarshal(t *time.Time, data []byte) error {
 	ts := &types.Timestamp{}
 	if err := ts.Unmarshal(data); err != nil {
@@ -97,6 +102,7 @@ func timestampFromProto(ts *types.Timestamp) (time.Time, error) {
 	return t, validateTimestamp(ts)
 }
 
+// timestampProto 将 Go time 转为 types.Timestamp 并执行 validateTimestamp。
 func timestampProto(t time.Time) (types.Timestamp, error) {
 	ts := types.Timestamp{
 		Seconds: t.Unix(),
@@ -104,3 +110,4 @@ func timestampProto(t time.Time) (types.Timestamp, error) {
 	}
 	return ts, validateTimestamp(&ts)
 }
+// formatTimestamp 避免 fmt.Sprintf 分配，用于校验失败时的错误消息格式化。

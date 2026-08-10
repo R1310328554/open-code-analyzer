@@ -1,5 +1,7 @@
 package iter
 
+// merge 使用 loser.Tree 按时间戳合并多个 Pattern 迭代器，相同 timestamp/pattern/level 的样本 Value 累加。
+
 import (
 	"math"
 
@@ -27,6 +29,7 @@ var maxSample = patternSample{
 	sample:  logproto.PatternSample{Timestamp: math.MaxInt64},
 }
 
+// NewMerge 构造按 Timestamp→Pattern 排序的多路归并迭代器，耗尽时关闭全部输入。
 func NewMerge(iters ...Iterator) Iterator {
 	tree := loser.New(iters, maxSample, func(s Iterator) patternSample {
 		return patternSample{
@@ -47,6 +50,7 @@ func NewMerge(iters ...Iterator) Iterator {
 	}
 }
 
+// Next 在相同时间戳与模式键上累加 Value，直到遇到不同键或树耗尽。
 func (m *mergeIterator) Next() bool {
 	if m.done {
 		return false
@@ -97,3 +101,4 @@ func (m *mergeIterator) Close() error {
 	m.tree.Close()
 	return nil
 }
+// maxSample 哨兵 Timestamp 为 MaxInt64，保证 loser 树空时比较逻辑正确终止。

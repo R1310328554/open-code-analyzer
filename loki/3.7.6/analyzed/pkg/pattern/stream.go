@@ -1,5 +1,7 @@
 package pattern
 
+// stream 表示单条日志流上的模式检测状态：按 log level 维护 Drain 实例，Push 训练、prune 持久化与 Iterator 查询。
+
 import (
 	"context"
 	"slices"
@@ -21,6 +23,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
+// stream 绑定 fingerprint/labels、各级 Drain、patternWriter 与速率/体积阈值。
 type stream struct {
 	fp                 model.Fingerprint
 	labels             labels.Labels
@@ -40,6 +43,7 @@ type stream struct {
 	volumeThreshold        float64
 }
 
+// newStream 为每个 log level 创建 Drain 并注入 per-tenant 持久化粒度与阈值。
 func newStream(
 	fp model.Fingerprint,
 	ls labels.Labels,
@@ -93,6 +97,7 @@ func newStream(
 	}, nil
 }
 
+// Push 按 structured metadata 中的 level 将日志行送入对应 Drain.Train。
 func (s *stream) Push(
 	_ context.Context,
 	entries []logproto.Entry,
@@ -123,6 +128,7 @@ func (s *stream) Push(
 	return nil
 }
 
+// Iterator 遍历全部 level 的 cluster，Merge 后供 Query RPC 返回模式时间序列。
 // TODO(twhitney): Allow a level to be specified for the iterator. Requires a change to the query API.
 func (s *stream) Iterator(_ context.Context, from, through, step model.Time) (iter.Iterator, error) {
 	// todo we should improve locking.
@@ -151,6 +157,7 @@ type clusterWithMeta struct {
 	prunedSamples []*logproto.PatternSample
 }
 
+// prune 裁剪过期样本、按 volumeThreshold 过滤 cluster 并 bucket 写回 Loki。
 func (s *stream) prune(olderThan time.Duration) bool {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
@@ -263,6 +270,7 @@ func (s *stream) writePattern(
 	}
 }
 
+// writePatternsBucketed 按 persistenceGranularity 分桶并应用 patternRateThreshold 过滤。
 func (s *stream) writePatternsBucketed(
 	prunedSamples []*logproto.PatternSample,
 	streamLbls labels.Labels,
@@ -400,3 +408,4 @@ func filterClustersByVolume(clusters []clusterWithMeta, threshold float64) []clu
 
 	return clusters[0:i]
 }
+// filterClustersByVolume 原地按 Volume 降序排序，保留累计体积达 threshold 的头部 cluster。

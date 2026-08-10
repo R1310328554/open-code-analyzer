@@ -3,6 +3,8 @@
 
 package push
 
+// push-rf1.pb.go 由 push-rf1.proto 生成，定义 RF1 复制因子下的 PusherRF1 gRPC 服务：一元 Push RPC 接收 PushRequest 并返回空 PushResponse。
+
 import (
 	context "context"
 	fmt "fmt"
@@ -58,6 +60,7 @@ const _ = grpc.SupportPackageIsVersion4
 // PusherRF1Client is the client API for PusherRF1 service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+// PusherRF1Client 供客户端调用 /logproto.PusherRF1/Push 推送日志流。
 type PusherRF1Client interface {
 	Push(ctx context.Context, in *PushRequest, opts ...grpc.CallOption) (*PushResponse, error)
 }
@@ -80,6 +83,7 @@ func (c *pusherRF1Client) Push(ctx context.Context, in *PushRequest, opts ...grp
 }
 
 // PusherRF1Server is the server API for PusherRF1 service.
+// PusherRF1Server 由 distributor/ingester RF1 路径实现日志接收。
 type PusherRF1Server interface {
 	Push(context.Context, *PushRequest) (*PushResponse, error)
 }
@@ -92,6 +96,7 @@ func (*UnimplementedPusherRF1Server) Push(ctx context.Context, req *PushRequest)
 	return nil, status.Errorf(codes.Unimplemented, "method Push not implemented")
 }
 
+// RegisterPusherRF1Server 将 PusherRF1 服务注册到 gRPC Server。
 func RegisterPusherRF1Server(s *grpc.Server, srv PusherRF1Server) {
 	s.RegisterService(&_PusherRF1_serviceDesc, srv)
 }
@@ -126,3 +131,4 @@ var _PusherRF1_serviceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "pkg/push/push-rf1.proto",
 }
+// RF1 Push 与标准 Pusher 共用 PushRequest/PushResponse 消息类型，仅服务名不同。
