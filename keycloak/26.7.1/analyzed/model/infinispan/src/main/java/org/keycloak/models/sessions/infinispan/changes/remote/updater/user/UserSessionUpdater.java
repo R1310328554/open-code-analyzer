@@ -21,7 +21,9 @@ import org.keycloak.models.sessions.infinispan.entities.RemoteUserSessionEntity;
 import org.keycloak.models.sessions.infinispan.util.SessionTimeouts;
 
 /**
- * The {@link Updater} implementation to keep track of modifications for {@link UserSessionModel}.
+ * 跟踪 {@link UserSessionModel} 变更的 {@link Updater} 实现。
+ * <p>
+ * 同时支持在线/离线用户会话，通过 {@link MapUpdater} 跟踪 notes 并在提交时重放。
  */
 public class UserSessionUpdater extends BaseUpdater<String, RemoteUserSessionEntity> implements UserSessionModel {
 
@@ -41,7 +43,7 @@ public class UserSessionUpdater extends BaseUpdater<String, RemoteUserSessionEnt
         this.offline = offline;
         if (cacheValue == null) {
             assert initialState == UpdaterState.DELETED;
-            // cannot undelete
+            // 已删除条目不可恢复
             changes = List.of();
             notesUpdater = null;
             return;
@@ -52,16 +54,14 @@ public class UserSessionUpdater extends BaseUpdater<String, RemoteUserSessionEnt
     }
 
     /**
-     * @return The {@link UpdaterFactory} implementation to create online sessions instances of
-     * {@link UserSessionModel}.
+     * @return 在线用户会话的 {@link UpdaterFactory}
      */
     public static UpdaterFactory<String, RemoteUserSessionEntity, UserSessionUpdater> onlineFactory() {
         return ONLINE;
     }
 
     /**
-     * @return The {@link UpdaterFactory} implementation to create offline sessions instances of
-     * {@link UserSessionModel}.
+     * @return 离线用户会话的 {@link UpdaterFactory}
      */
     public static UpdaterFactory<String, RemoteUserSessionEntity, UserSessionUpdater> offlineFactory() {
         return OFFLINE;
@@ -226,12 +226,12 @@ public class UserSessionUpdater extends BaseUpdater<String, RemoteUserSessionEnt
     }
 
     /**
-     * Initializes this class with references to other models classes.
+     * 注入持久化状态、realm、用户及客户端会话映射等上下文。
      *
-     * @param persistenceState The {@link SessionPersistenceState}.
-     * @param realm            The {@link RealmModel} to where this user session belongs.
-     * @param user             The {@link UserModel} associated to this user session.
-     * @param clientSessions   The {@link Map} associated to this use session.
+     * @param persistenceState 会话持久化状态
+     * @param realm            所属 {@link RealmModel}
+     * @param user             关联的 {@link UserModel}
+     * @param clientSessions   客户端会话只读映射
      */
     public synchronized void initialize(SessionPersistenceState persistenceState, RealmModel realm, UserModel user, AuthenticatedClientSessionMapping clientSessions) {
         this.realm = Objects.requireNonNull(realm);
@@ -241,17 +241,19 @@ public class UserSessionUpdater extends BaseUpdater<String, RemoteUserSessionEnt
     }
 
     /**
-     * @return {@code true} if it is already initialized.
+     * @return {@code true} 表示已注入 realm/user 等上下文
      */
     public synchronized boolean isInitialized() {
         return realm != null;
     }
 
+    /** 先应用到本地快照，再入队以便提交时重放。 */
     private void addAndApplyChange(Consumer<RemoteUserSessionEntity> change) {
         change.accept(getValue());
         changes.add(change);
     }
 
+    /** 确保 notes map 非 null。 */
     private static void initNotes(RemoteUserSessionEntity entity) {
         var notes = entity.getNotes();
         if (notes == null) {
@@ -259,6 +261,7 @@ public class UserSessionUpdater extends BaseUpdater<String, RemoteUserSessionEnt
         }
     }
 
+    /** 按 online/offline 区分创建、包装或删除 Updater 的内部工厂。 */
     private record Factory(
             boolean offline) implements UpdaterFactory<String, RemoteUserSessionEntity, UserSessionUpdater> {
 

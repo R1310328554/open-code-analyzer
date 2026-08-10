@@ -26,17 +26,18 @@ import java.util.stream.Collectors;
 import org.infinispan.client.hotrod.RemoteCache;
 
 /**
- * Base class implementing {@link QueryBasedConditionalRemover} and supports multiple remove conditions.
+ * 支持多条删除条件的 {@link QueryBasedConditionalRemover} 基类。
  * <p>
- * The remove condition can be added dynamically and, when the query is executed, they are joined together with an "or"
- * operator.
+ * 条件可动态追加；执行查询时用 {@code ||} 连接，匹配任一条件即删除。
  *
- * @param <K> The key's type stored in the {@link RemoteCache}.
- * @param <V> The value's type stored in the {@link RemoteCache}.
+ * @param <K> {@link RemoteCache} 键类型
+ * @param <V> {@link RemoteCache} 值类型
  */
 abstract class MultipleConditionQueryRemover<K, V> extends QueryBasedConditionalRemover<K, V> {
 
+    // 已登记的删除条件列表
     private final List<RemoveCondition<K, V>> removes;
+    // 生成唯一 Ickle 参数名的计数器
     private int parameterIndex;
 
     MultipleConditionQueryRemover() {
@@ -45,6 +46,7 @@ abstract class MultipleConditionQueryRemover<K, V> extends QueryBasedConditional
 
     @Override
     String getQueryConditions() {
+        // 各条件子句以 OR 连接
         return removes.stream()
                 .map(RemoveCondition::getConditionalClause)
                 .collect(Collectors.joining(" || "));
@@ -68,32 +70,33 @@ abstract class MultipleConditionQueryRemover<K, V> extends QueryBasedConditional
     }
 
     /**
-     * If the query has parameters, use this method to generate a new unique parameter.
+     * 为 Ickle 查询生成唯一参数名（如 p0、p1）。
      */
     String nextParameter() {
         return "p" + parameterIndex++;
     }
 
+    /** 追加一条删除条件。 */
     void add(RemoveCondition<K, V> condition) {
         removes.add(condition);
     }
 
     /**
-     * A single remove condition.
+     * 单条删除条件：提供 WHERE 子句、参数绑定及本地预判逻辑。
      */
     interface RemoveCondition<K, V> {
         /**
-         * @return The where clause with parameters.
+         * @return 带命名参数的 WHERE 子句片段
          */
         String getConditionalClause();
 
         /**
-         * Stores this condition parameters value
+         * 将本条件的参数写入查询参数 map
          */
         void addParameters(Map<String, Object> parameters);
 
         /**
-         * @return {@code true} if the entry wil be removed by the query.
+         * @return {@code true} 表示该键值对会被本次查询删除
          */
         boolean willRemove(K key, V value);
     }

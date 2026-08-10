@@ -25,10 +25,9 @@ import org.keycloak.models.sessions.infinispan.entities.RemoteUserSessionEntity;
 import org.keycloak.models.sessions.infinispan.query.UserSessionQueries;
 
 /**
- * A {@link ConditionalRemover} implementation to remove {@link RemoteUserSessionEntity} based on some filters over its
- * state.
+ * 按状态过滤删除 {@link RemoteUserSessionEntity} 的条件删除器。
  * <p>
- * This implementation uses Infinispan Ickle Queries to perform the removal operation. Indexing is not required.
+ * 通过 Infinispan Ickle 查询执行删除，无需索引。
  */
 public class UserSessionQueryConditionalRemover extends MultipleConditionQueryRemover<String, RemoteUserSessionEntity> {
 
@@ -41,14 +40,17 @@ public class UserSessionQueryConditionalRemover extends MultipleConditionQueryRe
         return UserSessionQueries.USER_SESSION;
     }
 
+    /** 按 realmId 删除该 realm 下全部用户会话。 */
     public void removeByRealmId(String realmId) {
         add(new RemoveByRealm(nextParameter(), realmId));
     }
 
+    /** 按 realmId + userId 删除指定用户的会话。 */
     public void removeByUserId(String realmId, String userId) {
         add(new RemoveUser(nextParameter(), userId, nextParameter(), realmId));
     }
 
+    /** 按 userId 与 realmId 联合匹配的删除条件。 */
     private record RemoveUser(String userParameter, String userId, String realmParameter,
                               String realmId) implements RemoveCondition<String, RemoteUserSessionEntity> {
 
@@ -69,6 +71,7 @@ public class UserSessionQueryConditionalRemover extends MultipleConditionQueryRe
         }
     }
 
+    /** 按 realmId 匹配的删除条件。 */
     private record RemoveByRealm(String parameter,
                                  String realmId) implements RemoveCondition<String, RemoteUserSessionEntity> {
 

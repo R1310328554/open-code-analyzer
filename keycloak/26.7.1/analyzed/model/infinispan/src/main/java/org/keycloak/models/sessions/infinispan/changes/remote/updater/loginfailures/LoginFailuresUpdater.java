@@ -32,12 +32,13 @@ import org.keycloak.models.sessions.infinispan.util.SessionTimeouts;
 import org.keycloak.utils.KeycloakSessionUtil;
 
 /**
- * Implementation of {@link Updater} and {@link UserLoginFailureModel}.
+ * {@link LoginFailureEntity} 的 {@link Updater}，同时实现 {@link UserLoginFailureModel}。
  * <p>
- * It keeps track of the changes made to the entity {@link LoginFailureEntity} and replays on commit.
+ * 跟踪登录失败实体的变更，提交时重放到 Infinispan 远程缓存。
  */
 public class LoginFailuresUpdater extends BaseUpdater<LoginFailureKey, LoginFailureEntity> implements UserLoginFailureModel {
 
+    // 待提交的重放变更列表
     private final List<Consumer<LoginFailureEntity>> changes;
 
     private LoginFailuresUpdater(LoginFailureKey key, LoginFailureEntity entity, long version, UpdaterState initialState) {
@@ -50,14 +51,17 @@ public class LoginFailuresUpdater extends BaseUpdater<LoginFailureKey, LoginFail
         changes = new ArrayList<>(4);
     }
 
+    /** 新建登录失败 Updater（本事务创建）。 */
     public static LoginFailuresUpdater create(LoginFailureKey key, LoginFailureEntity entity) {
         return new LoginFailuresUpdater(key, Objects.requireNonNull(entity), NO_VERSION, UpdaterState.CREATED);
     }
 
+    /** 包装从缓存读取的登录失败实体。 */
     public static LoginFailuresUpdater wrap(LoginFailureKey key, LoginFailureEntity value, long version) {
         return new LoginFailuresUpdater(key, Objects.requireNonNull(value), version, UpdaterState.READ);
     }
 
+    /** 创建表示删除操作的 Updater。 */
     public static LoginFailuresUpdater delete(LoginFailureKey key) {
         return new LoginFailuresUpdater(key, null, NO_VERSION, UpdaterState.DELETED);
     }
@@ -75,7 +79,7 @@ public class LoginFailuresUpdater extends BaseUpdater<LoginFailureKey, LoginFail
         assert !isDeleted();
         assert !isReadOnly();
         if (cachedEntity == null) {
-            //entity removed
+            // 缓存条目已被移除
             return null;
         }
         changes.forEach(c -> c.accept(cachedEntity));
@@ -170,11 +174,13 @@ public class LoginFailuresUpdater extends BaseUpdater<LoginFailureKey, LoginFail
         return changes.isEmpty();
     }
 
+    /** 记录变更并立即应用到本地实体快照。 */
     private void addAndApplyChange(Consumer<LoginFailureEntity> change) {
         changes.add(change);
         change.accept(getValue());
     }
 
+    // 预定义变更操作，避免重复 lambda 分配
     private static final Consumer<LoginFailureEntity> CLEAR = LoginFailureEntity::clearFailures;
     private static final Consumer<LoginFailureEntity> CLEAR_PRIMARY_AND_SECONDARY_AUTH_FAILURES = LoginFailureEntity::clearPrimaryAndSecondaryAuthFailures;
     private static final Consumer<LoginFailureEntity> INCREMENT_FAILURES = e -> e.setNumFailures(e.getNumFailures() + 1);

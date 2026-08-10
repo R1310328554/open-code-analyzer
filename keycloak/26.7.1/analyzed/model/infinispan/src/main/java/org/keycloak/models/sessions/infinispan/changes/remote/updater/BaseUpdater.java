@@ -19,21 +19,20 @@ package org.keycloak.models.sessions.infinispan.changes.remote.updater;
 import java.util.Objects;
 
 /**
- * Base functionality of an {@link Updater} implementation.
+ * {@link Updater} 实现的公共基类。
  * <p>
- * It stores the Infinispan cache key, value, version, and it states. However, it does not keep track of the changed
- * fields in the cache value, and it is the responsibility of the implementation to do that.
- * <p>
- * Implement the method {@link #isUnchanged()} to signal if the entity was modified or not.
+ * 持有 Infinispan 缓存键、值、版本及生命周期状态；具体子类自行跟踪字段变更，
+ * 并通过 {@link #isUnchanged()} 报告实体是否被修改。
  *
- * @param <K> The type of the Infinispan cache key.
- * @param <V> The type of the Infinispan cache value.
+ * @param <K> Infinispan 缓存键类型
+ * @param <V> Infinispan 缓存值类型
  */
 public abstract class BaseUpdater<K, V> implements Updater<K, V> {
 
     private final K cacheKey;
     private final V cacheValue;
     private final long versionRead;
+    // 构造时的初始状态，用于 resetState
     private final UpdaterState initialState;
     private UpdaterState state;
 
@@ -82,6 +81,7 @@ public abstract class BaseUpdater<K, V> implements Updater<K, V> {
 
     @Override
     public final void markDeleted() {
+        // 已创建/瞬态条目标记为 DELETED_TRANSIENT；已读条目标记为 DELETED
         state = switch (state) {
             case READ, DELETED -> UpdaterState.DELETED;
             case CREATED, DELETED_TRANSIENT, EXPIRED -> UpdaterState.DELETED_TRANSIENT;
@@ -123,36 +123,37 @@ public abstract class BaseUpdater<K, V> implements Updater<K, V> {
     }
 
     /**
-     * Resets the {@link UpdaterState} to its initial value.
+     * 将 {@link UpdaterState} 重置为构造时的初始值。
      */
     protected final void resetState() {
         state = initialState;
     }
 
     /**
-     * @return {@code true} if the entity was changed after being created/read.
+     * @return {@code true} 表示实体自创建/读取后未被修改
      */
     protected abstract boolean isUnchanged();
 
+    /** Updater 生命周期状态枚举。 */
     protected enum UpdaterState {
         /**
-         * The cache value is created.
+         * 当前 Keycloak 事务中新创建的缓存条目。
          */
         CREATED,
         /**
-         * The cache value is deleted, and it will be removed from the Infinispan cache. It cannot be recreated.
+         * 已删除，提交时从 Infinispan 移除，不可重建。
          */
         DELETED,
         /**
-         * The cache value was read from the Infinispan cache.
+         * 从 Infinispan 缓存读取的既有条目。
          */
         READ,
         /**
-         * The entity is transient (it won't be updated in the external infinispan cluster) and deleted.
+         * 瞬态且已删除：不会写入外部 Infinispan 集群。
          */
         DELETED_TRANSIENT,
         /**
-         * The entity is expired (max-idle or lifespan). No changes should be applied.
+         * 已过期（max-idle 或 lifespan），不应再应用变更。
          */
         EXPIRED,
 

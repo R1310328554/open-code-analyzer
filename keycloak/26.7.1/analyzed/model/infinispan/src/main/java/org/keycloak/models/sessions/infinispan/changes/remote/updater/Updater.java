@@ -22,85 +22,85 @@ import java.util.function.BiFunction;
 import org.keycloak.models.sessions.infinispan.remote.transaction.RemoteChangeLogTransaction;
 
 /**
- * An interface used by {@link RemoteChangeLogTransaction}.
+ * {@link RemoteChangeLogTransaction} 使用的实体变更跟踪接口。
  * <p>
- * It keeps track of the changes made in the entity and applies them to the entity stored in Infinispan cache.
+ * 记录 Keycloak 事务中对缓存实体的修改，并在提交时应用到 Infinispan 远程缓存。
  *
- * @param <K> The Infinispan key type.
- * @param <V> The Infinispan value type.
+ * @param <K> Infinispan 键类型
+ * @param <V> Infinispan 值类型
  */
 public interface Updater<K, V> extends BiFunction<K, V, V> {
 
+    /** 表示条目尚无版本号（如新创建）。 */
     int NO_VERSION = -1;
 
     /**
-     * @return The Infinispan cache key.
+     * @return Infinispan 缓存键
      */
     K getKey();
 
     /**
-     * @return The up-to-date entity used by the transaction.
+     * @return 事务中使用的最新实体快照
      */
     V getValue();
 
     /**
-     * @return The entity version when reading for the first time from Infinispan.
+     * @return 首次从 Infinispan 读取时的条目版本
      */
     long getVersionRead();
 
     /**
-     * @return {@code true} if the entity was removed during the Keycloak transaction and it should be removed from
-     * Infinispan.
+     * @return {@code true} 表示 Keycloak 事务中已删除，提交时应从 Infinispan 移除
      */
     boolean isDeleted();
 
     /**
-     * @return {@code true} if the entity was created during the Keycloak transaction. Allows some optimization like
-     * put-if-absent.
+     * @return {@code true} 表示 Keycloak 事务中新创建，可优化为 put-if-absent
      */
     boolean isCreated();
 
     /**
-     * @return {@code true} if the entity was not changed.
+     * @return {@code true} 表示实体未被修改
      */
     boolean isReadOnly();
 
     /**
-     * @return {@code true} if the entity is expired.
+     * @return {@code true} 表示实体已过期
      */
     boolean isExpired();
 
     /**
-     * @return {@code true} if the entity is not valid and cannot be viewed/accessed from the transaction.
+     * @return {@code true} 表示实体无效，事务中不可访问
      */
     default boolean isInvalid() {
         return isExpired() || isDeleted();
     }
 
     /**
-     * Marks the entity as deleted.
+     * 标记实体为已删除。
      */
     void markDeleted();
 
     /**
-     * Marks the entity as expired when loading from the Infinispan cache.
+     * 从 Infinispan 加载时标记实体已过期。
      */
     void markExpired();
 
     /**
-     * @return {@code true} if the entity is transient and shouldn't be stored in the Infinispan cache.
+     * @return {@code true} 表示瞬态实体，不应写入 Infinispan 缓存
      */
     default boolean isTransient() {
         return false;
     }
 
     /**
-     * Computes the expiration data for Infinispan cache.
+     * 计算 Infinispan 缓存条目的过期参数。
      *
-     * @return The {@link Expiration} data.
+     * @return {@link Expiration} 过期配置
      */
     Expiration computeExpiration();
 
+    /** @return {@code true} 表示已从缓存读取并持有版本号 */
     default boolean hasVersion() {
         return getVersionRead() != NO_VERSION;
     }

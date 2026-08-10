@@ -41,13 +41,16 @@ import org.keycloak.models.sessions.infinispan.util.SessionTimeouts;
 import org.infinispan.client.hotrod.RemoteCache;
 
 /**
- * An {@link Updater} implementation that keeps track of {@link AuthenticatedClientSessionModel} changes.
+ * 跟踪 {@link AuthenticatedClientSessionModel} 变更的 {@link Updater} 实现。
+ * <p>
+ * 同时实现在线/离线客户端会话模型，提交时将 notes 与字段变更重放到远程缓存实体。
  */
 public class AuthenticatedClientSessionUpdater extends BaseUpdater<ClientSessionKey, RemoteAuthenticatedClientSessionEntity> implements AuthenticatedClientSessionModel {
 
     private static final Factory ONLINE = new Factory(false);
     private static final Factory OFFLINE = new Factory(true);
 
+    // notes 字段的可重放 map 包装器
     private final MapUpdater<String, String> notesUpdater;
     private final List<Consumer<RemoteAuthenticatedClientSessionEntity>> changes;
     private final boolean offline;
@@ -70,16 +73,14 @@ public class AuthenticatedClientSessionUpdater extends BaseUpdater<ClientSession
     }
 
     /**
-     * @return The {@link UpdaterFactory} implementation to create online session instances of
-     * {@link AuthenticatedClientSessionUpdater}.
+     * @return 在线客户端会话的 {@link UpdaterFactory}
      */
     public static UpdaterFactory<ClientSessionKey, RemoteAuthenticatedClientSessionEntity, AuthenticatedClientSessionUpdater> onlineFactory() {
         return ONLINE;
     }
 
     /**
-     * @return The {@link UpdaterFactory} implementation to create offline session instances of
-     * {@link AuthenticatedClientSessionUpdater}.
+     * @return 离线客户端会话的 {@link UpdaterFactory}
      */
     public static UpdaterFactory<ClientSessionKey, RemoteAuthenticatedClientSessionEntity, AuthenticatedClientSessionUpdater> offlineFactory() {
         return OFFLINE;
@@ -91,9 +92,8 @@ public class AuthenticatedClientSessionUpdater extends BaseUpdater<ClientSession
         notesUpdater.applyChanges(entity.getNotes());
         changes.forEach(change -> change.accept(entity));
         if (isCreated()) {
-            // The ID generation is not random
-            // During RefreshTokenTest, the entry is expired in KC but not in the external Infinispan.
-            // If it happens in production, we need to merge the timestamp and started times.
+            // ID 生成非随机；RefreshTokenTest 中可能出现 KC 已过期但外部 Infinispan 未过期的情况
+            // 生产环境若发生类似情况，需合并 timestamp 与 started 取较大值
             entity.setTimestamp(Math.max(entity.getTimestamp(), getTimestamp()));
             entity.setStarted(Math.max(entity.getStarted(), getStarted()));
         }
@@ -227,12 +227,11 @@ public class AuthenticatedClientSessionUpdater extends BaseUpdater<ClientSession
     }
 
     /**
-     * Initializes this class with references to other models classes.
+     * 注入用户会话、客户端及变更日志事务等上下文引用。
      *
-     * @param userSession       The {@link UserSessionModel} associated with this client session.
-     * @param client            The {@link ClientModel} associated with this client session.
-     * @param clientTransaction The {@link ClientSessionChangeLogTransaction} to perform the changes in this class into the
-     *                          {@link RemoteCache}.
+     * @param userSession       关联的 {@link UserSessionModel}
+     * @param client            关联的 {@link ClientModel}
+     * @param clientTransaction 用于将变更写入 {@link RemoteCache} 的 {@link ClientSessionChangeLogTransaction}
      */
     public synchronized void initialize(UserSessionModel userSession, ClientModel client, ClientSessionChangeLogTransaction clientTransaction) {
         this.userSession = Objects.requireNonNull(userSession);
@@ -241,15 +240,13 @@ public class AuthenticatedClientSessionUpdater extends BaseUpdater<ClientSession
     }
 
     /**
-     * @return {@code true} if it is already initialized.
+     * @return {@code true} 表示已注入 userSession/client 等上下文
      */
     public synchronized boolean isInitialized() {
         return userSession != null;
     }
 
-    /**
-     * Keeps track of a model changes and applies it to the entity.
-     */
+    /** 记录变更并立即应用到本地实体快照。 */
     private void addAndApplyChange(Consumer<RemoteAuthenticatedClientSessionEntity> change) {
         changes.add(change);
         change.accept(getValue());
@@ -261,6 +258,7 @@ public class AuthenticatedClientSessionUpdater extends BaseUpdater<ClientSession
         }
     }
 
+    /** 确保 notes map 非 null，便于 MapUpdater 跟踪变更。 */
     private static void initNotes(RemoteAuthenticatedClientSessionEntity entity) {
         var notes = entity.getNotes();
         if (notes == null) {
@@ -268,6 +266,7 @@ public class AuthenticatedClientSessionUpdater extends BaseUpdater<ClientSession
         }
     }
 
+    /** 按 online/offline 区分创建、包装或删除 Updater 的内部工厂。 */
     private record Factory(
             boolean offline) implements UpdaterFactory<ClientSessionKey, RemoteAuthenticatedClientSessionEntity, AuthenticatedClientSessionUpdater> {
 

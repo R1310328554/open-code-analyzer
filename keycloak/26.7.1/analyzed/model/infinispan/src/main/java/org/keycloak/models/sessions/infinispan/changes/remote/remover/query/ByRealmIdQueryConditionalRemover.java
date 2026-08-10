@@ -30,18 +30,21 @@ import org.keycloak.models.sessions.infinispan.entities.SessionEntity;
 import org.infinispan.client.hotrod.RemoteCache;
 
 /**
- * A {@link ConditionalRemover} implementation to delete {@link SessionEntity} based on the {@code realmId} value.
+ * 按 {@code realmId} 删除 {@link SessionEntity} 的条件删除器。
  * <p>
- * This implementation uses Infinispan Ickle Queries to delete all entries belonging to the realm.
+ * 通过 Infinispan Ickle 查询批量删除指定 realm 下的全部会话条目。
  *
- * @param <K> The key's type stored in the {@link RemoteCache}.
- * @param <V> The value's type stored in the {@link RemoteCache}.
+ * @param <K> {@link RemoteCache} 键类型
+ * @param <V> {@link RemoteCache} 值类型，须为 {@link SessionEntity}
  */
 public class ByRealmIdQueryConditionalRemover<K, V extends SessionEntity> extends QueryBasedConditionalRemover<K, V> {
 
+    // Ickle WHERE 子句模板：realmId 属于给定参数列表
     private static final String CONDITION_FMT = "realmId IN (%s)";
 
+    // ProtoStream 实体名
     private final String entity;
+    // 待删除的 realmId 列表
     private final List<String> realms;
 
     public ByRealmIdQueryConditionalRemover(String entity) {
@@ -53,6 +56,7 @@ public class ByRealmIdQueryConditionalRemover<K, V extends SessionEntity> extend
         return "p" + index;
     }
 
+    /** 登记一个待删除的 realmId。 */
     public void removeByRealmId(String realmId) {
         realms.add(realmId);
     }
@@ -89,6 +93,7 @@ public class ByRealmIdQueryConditionalRemover<K, V extends SessionEntity> extend
 
     @Override
     public boolean willRemove(K key, V value) {
+        // 本地预判：值非空且 realmId 在待删列表中
         return value != null && realms.contains(value.getRealmId());
     }
 }

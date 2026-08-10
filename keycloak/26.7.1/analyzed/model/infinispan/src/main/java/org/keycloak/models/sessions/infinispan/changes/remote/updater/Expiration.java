@@ -19,13 +19,14 @@ package org.keycloak.models.sessions.infinispan.changes.remote.updater;
 import org.keycloak.models.sessions.infinispan.util.SessionTimeouts;
 
 /**
- * Expiration data for Infinispan storage, in milliseconds.
+ * Infinispan 存储的过期配置，单位为毫秒。
  *
- * @param maxIdle  The entity max-idle. The entity will be removed if not accessed during this time.
- * @param lifespan The entity lifespan. The entity will be removed after this time.
+ * @param maxIdle  最大空闲时间；超过未访问则移除
+ * @param lifespan 绝对存活时间；到期后移除
  */
 public record Expiration(long maxIdle, long lifespan) {
 
+    /** 判断条目是否已标记为过期（使用 {@link SessionTimeouts#ENTRY_EXPIRED_FLAG}）。 */
     public boolean isExpired() {
         return maxIdle == SessionTimeouts.ENTRY_EXPIRED_FLAG || lifespan == SessionTimeouts.ENTRY_EXPIRED_FLAG;
     }

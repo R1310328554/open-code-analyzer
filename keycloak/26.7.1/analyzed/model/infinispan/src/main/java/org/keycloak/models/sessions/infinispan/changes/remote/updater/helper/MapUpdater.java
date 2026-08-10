@@ -26,16 +26,17 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 /**
- * An {@link Map} implementation that keeps track of any modification performed in the {@link Map}.
+ * 跟踪 {@link Map} 修改的可重放包装器。
  * <p>
- * The modifications can be replayed in another {@link Map} instance.
+ * 记录每次 put/remove/clear 操作，提交时可重放到另一 {@link Map} 实例。
  *
- * @param <K> The key type.
- * @param <V> The value type.
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public class MapUpdater<K, V> extends AbstractMap<K, V> {
 
     private final Map<K, V> map;
+    // 待重放的变更操作队列
     private final List<Consumer<Map<K, V>>> changes;
 
     public MapUpdater(Map<K, V> map) {
@@ -82,16 +83,16 @@ public class MapUpdater<K, V> extends AbstractMap<K, V> {
     }
 
     /**
-     * Apply the changes tracked into the {@code other} map.
+     * 将已记录的变更重放到 {@code other} map。
      *
-     * @param other The {@link Map} to modify.
+     * @param other 目标 {@link Map}
      */
     public void applyChanges(Map<K, V> other) {
         changes.forEach(consumer -> consumer.accept(other));
     }
 
     /**
-     * @return {@code true} if this {@link Map} was not modified.
+     * @return {@code true} 表示本 map 未被修改
      */
     public boolean isUnchanged() {
         return changes.isEmpty();

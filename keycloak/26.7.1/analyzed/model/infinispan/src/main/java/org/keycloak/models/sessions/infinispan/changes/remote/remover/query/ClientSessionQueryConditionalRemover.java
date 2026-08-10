@@ -26,10 +26,9 @@ import org.keycloak.models.sessions.infinispan.entities.RemoteAuthenticatedClien
 import org.keycloak.models.sessions.infinispan.query.ClientSessionQueries;
 
 /**
- * A {@link ConditionalRemover} implementation to remove {@link RemoteAuthenticatedClientSessionEntity} based on some
- * filters over its state.
+ * 按状态过滤删除 {@link RemoteAuthenticatedClientSessionEntity} 的条件删除器。
  * <p>
- * This implementation uses Infinispan Ickle Queries to perform the removal operation. Indexing is not required.
+ * 通过 Infinispan Ickle 查询执行删除，无需索引。
  */
 public class ClientSessionQueryConditionalRemover extends MultipleConditionQueryRemover<ClientSessionKey, RemoteAuthenticatedClientSessionEntity> {
 
@@ -42,18 +41,22 @@ public class ClientSessionQueryConditionalRemover extends MultipleConditionQuery
         return ClientSessionQueries.CLIENT_SESSION;
     }
 
+    /** 按用户会话 ID 删除关联的客户端会话。 */
     public void removeByUserSessionId(String userSessionId) {
         add(new RemoveByUserSession(nextParameter(), userSessionId));
     }
 
+    /** 按 realmId 删除该 realm 下全部客户端会话。 */
     public void removeByRealmId(String realmId) {
         add(new RemoveByRealm(nextParameter(), realmId));
     }
 
+    /** 按 realmId + userId 删除指定用户的客户端会话。 */
     public void removeByUserId(String realmId, String userId) {
         add(new RemoveByUser(nextParameter(), realmId, nextParameter(), userId));
     }
 
+    /** 按 userSessionId 匹配的删除条件。 */
     private record RemoveByUserSession(String userSessionParameter,
                                        String userSessionId) implements RemoveCondition<ClientSessionKey, RemoteAuthenticatedClientSessionEntity> {
 
@@ -73,6 +76,7 @@ public class ClientSessionQueryConditionalRemover extends MultipleConditionQuery
         }
     }
 
+    /** 按 realmId 匹配的删除条件。 */
     private record RemoveByRealm(String realmParameter,
                                  String realmId) implements RemoveCondition<ClientSessionKey, RemoteAuthenticatedClientSessionEntity> {
 
@@ -92,6 +96,7 @@ public class ClientSessionQueryConditionalRemover extends MultipleConditionQuery
         }
     }
 
+    /** 按 userId 与 realmId 联合匹配的删除条件。 */
     private record RemoveByUser(String realmParameter, String realmId, String userParameter,
                                 String userId) implements RemoveCondition<ClientSessionKey, RemoteAuthenticatedClientSessionEntity> {
 

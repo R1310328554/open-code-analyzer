@@ -26,19 +26,19 @@ import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.UserSessionProvider;
 
 /**
- * It gives a read-only view of the {@link AuthenticatedClientSessionModel} belonging to a
- * {@link org.keycloak.models.UserSessionModel} though the {@link Map} interface where the key is the Client ID.
+ * 通过 {@link Map} 接口只读暴露 {@link UserSessionModel} 下的 {@link AuthenticatedClientSessionModel}，
+ * 键为 Client ID。
  * <p>
- * Any direct modification via the {@link Map} interface will throw an {@link UnsupportedOperationException}. To add a
- * new mapping, use a method like {@link UserSessionProvider#createClientSession(RealmModel, ClientModel, UserSessionModel)} or
- * equivalent. To remove a mapping, use {@link AuthenticatedClientSessionModel#detachFromUserSession()}.
+ * 直接通过 {@link Map} 修改会抛出 {@link UnsupportedOperationException}。新增映射请使用
+ * {@link UserSessionProvider#createClientSession(RealmModel, ClientModel, UserSessionModel)} 等 API；
+ * 移除映射请调用 {@link AuthenticatedClientSessionModel#detachFromUserSession()}。
  */
 public interface AuthenticatedClientSessionMapping extends Map<String, AuthenticatedClientSessionModel> {
 
     /**
-     * Notifies the associated {@link UserSessionModel} has been restarted.
+     * 通知关联的 {@link UserSessionModel} 已重启。
      * <p>
-     * All the {@link AuthenticatedClientSessionModel} must be detached.
+     * 所有 {@link AuthenticatedClientSessionModel} 须从用户会话中分离。
      */
     void onUserSessionRestart();
 

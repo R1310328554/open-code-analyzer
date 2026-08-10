@@ -40,11 +40,19 @@ import org.keycloak.models.sessions.infinispan.util.SessionTimeouts;
 import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.sessions.RootAuthenticationSessionModel;
 
+/**
+ * 根认证会话的 {@link Updater}，同时实现 {@link RootAuthenticationSessionModel}。
+ * <p>
+ * 跟踪 {@link RootAuthenticationSessionEntity} 及其子 {@link AuthenticationSessionEntity} 的变更，
+ * 提交时重放到远程 Infinispan 缓存。
+ */
 public class RootAuthenticationSessionUpdater extends BaseUpdater<String, RootAuthenticationSessionEntity> implements RootAuthenticationSessionModel {
 
+    // 按时间戳选取最旧子会话以便淘汰
     private final static Comparator<Map.Entry<String, AuthenticationSessionEntity>> TIMESTAMP_COMPARATOR =
             Comparator.comparingInt(e -> e.getValue().getTimestamp());
 
+    // 待提交的重放变更列表
     private final List<Consumer<RootAuthenticationSessionEntity>> changes;
 
     private RealmModel realm;
@@ -69,7 +77,7 @@ public class RootAuthenticationSessionUpdater extends BaseUpdater<String, RootAu
     }
 
     /**
-     * @return {@code true} if it is already initialized.
+     * @return {@code true} 表示已注入 session/realm 等上下文
      */
     public synchronized boolean isInitialized() {
         return session != null;
@@ -81,14 +89,17 @@ public class RootAuthenticationSessionUpdater extends BaseUpdater<String, RootAu
         return changes.isEmpty();
     }
 
+    /** 新建根认证会话 Updater（本事务创建，无版本号）。 */
     public static RootAuthenticationSessionUpdater create(String key, RootAuthenticationSessionEntity entity) {
         return new RootAuthenticationSessionUpdater(key, Objects.requireNonNull(entity), NO_VERSION, UpdaterState.CREATED);
     }
 
+    /** 包装从缓存读取的根认证会话。 */
     public static RootAuthenticationSessionUpdater wrap(String key, RootAuthenticationSessionEntity value, long version) {
         return new RootAuthenticationSessionUpdater(key, Objects.requireNonNull(value), version, UpdaterState.READ);
     }
 
+    /** 创建表示删除操作的 Updater（未读取即删除）。 */
     public static RootAuthenticationSessionUpdater delete(String key) {
         return new RootAuthenticationSessionUpdater(key, null, NO_VERSION, UpdaterState.DELETED);
     }
@@ -105,10 +116,11 @@ public class RootAuthenticationSessionUpdater extends BaseUpdater<String, RootAu
         assert !isDeleted();
         assert !isReadOnly();
         if (cachedEntity == null) {
-            //entity removed
+            // 缓存条目已被其他节点移除
             return null;
         }
         changes.forEach(c -> c.accept(cachedEntity));
+        // 无子会话时返回 null，触发缓存条目删除
         return cachedEntity.getAuthenticationSessions().isEmpty() ? null : cachedEntity;
     }
 
@@ -171,6 +183,7 @@ public class RootAuthenticationSessionUpdater extends BaseUpdater<String, RootAu
 
         addAndApplyChange(entity -> {
             Map<String, AuthenticationSessionEntity> authenticationSessions = entity.getAuthenticationSessions();
+            // 超过上限时淘汰时间戳最早的子会话
             if (authenticationSessions.size() >= authSessionsLimit && !authenticationSessions.containsKey(newTabId)) {
                 authenticationSessions.entrySet().stream()
                         .min(TIMESTAMP_COMPARATOR)
@@ -180,7 +193,7 @@ public class RootAuthenticationSessionUpdater extends BaseUpdater<String, RootAu
             authSessionEntity.setTimestamp(timestamp);
             authenticationSessions.put(newTabId, authSessionEntity);
 
-            // Update our timestamp when adding new authenticationSession
+            // 新增子会话时同步更新根会话时间戳
             entity.setTimestamp(timestamp);
         });
 
@@ -193,6 +206,7 @@ public class RootAuthenticationSessionUpdater extends BaseUpdater<String, RootAu
     public void removeAuthenticationSessionByTabId(String tabId) {
         if (getValue().getAuthenticationSessions().remove(tabId) != null) {
             if (getValue().getAuthenticationSessions().isEmpty()) {
+                // 最后一个子会话移除后标记根会话删除
                 markDeleted();
             } else {
                 int currentTime = Time.currentTime();
@@ -212,11 +226,13 @@ public class RootAuthenticationSessionUpdater extends BaseUpdater<String, RootAu
         });
     }
 
+    /** 记录变更并立即应用到本地实体快照。 */
     private void addAndApplyChange(Consumer<RootAuthenticationSessionEntity> change) {
         changes.add(change);
         change.accept(getValue());
     }
 
+    /** 子认证会话的变更代理，将修改回写到根实体 map。 */
     private record AuthenticationSessionUpdater(RootAuthenticationSessionUpdater updater, String tabId, AuthenticationSessionEntity authenticationSession) implements SessionEntityUpdater<AuthenticationSessionEntity> {
 
         @Override

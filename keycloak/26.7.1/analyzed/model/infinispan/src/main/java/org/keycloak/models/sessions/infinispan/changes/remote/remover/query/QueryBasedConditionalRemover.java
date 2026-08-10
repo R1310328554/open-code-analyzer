@@ -29,23 +29,23 @@ import org.infinispan.commons.util.concurrent.AggregateCompletionStage;
 import org.jboss.logging.Logger;
 
 /**
- * An implementation of {@link ConditionalRemover} that uses the delete statement to remove entries from a
- * {@link RemoteCache}.
+ * 基于 Ickle DELETE 语句的 {@link ConditionalRemover} 抽象基类。
  * <p>
- * This class is generic and requires the concrete implementation to provide the entity, the condition clause and the
- * parameters.
+ * 子类提供 ProtoStream 实体名、WHERE 条件及绑定参数，本类负责组装并异步执行删除。
  *
- * @param <K> The key's type stored in the {@link RemoteCache}.
- * @param <V> The value's type stored in the {@link RemoteCache}.
+ * @param <K> {@link RemoteCache} 键类型
+ * @param <V> {@link RemoteCache} 值类型
  */
 abstract class QueryBasedConditionalRemover<K, V> implements ConditionalRemover<K, V> {
 
     private final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    // Ickle 删除语句模板
     private static final String QUERY_FMT = "DELETE FROM %s WHERE %s";
 
     @Override
     public void executeRemovals(RemoteCache<K, V> cache, AggregateCompletionStage<Void> stage) {
+        // 无条件时跳过，避免发送空 DELETE
         if (isEmpty()) {
             return;
         }
@@ -58,6 +58,7 @@ abstract class QueryBasedConditionalRemover<K, V> implements ConditionalRemover<
         if (isTrace) {
             logger.tracef("About to execute delete statement in cache '%s': %s", cache.getName(), deleteStatement);
         }
+        // 构建远程查询并异步执行 DELETE
         RemoteQuery<?> query = (RemoteQuery<?>) cache.query(deleteStatement)
                 .setParameters(getQueryParameters());
         var stage = query.executeStatementAsync();
@@ -68,24 +69,22 @@ abstract class QueryBasedConditionalRemover<K, V> implements ConditionalRemover<
     }
 
     /**
-     * @return The Infinispan ProtoStream entity.
+     * @return Infinispan ProtoStream 实体名
      */
     abstract String getEntity();
 
     /**
-     * @return The remove condition clause to test.
+     * @return DELETE 语句的 WHERE 条件子句
      */
     abstract String getQueryConditions();
 
     /**
-     * @return The {@link Map} with the parameter name and its value. If the condition does not have any parameter, it
-     * should return an empty map.
+     * @return 条件参数名到值的映射；无条件时返回空 map
      */
     abstract Map<String, Object> getQueryParameters();
 
     /**
-     * @return {@code true} if the concrete implement won't remove anything. This is an optimization to avoid creating
-     * and sending the delete statement.
+     * @return {@code true} 表示本删除器无任何待删条件，可跳过 DELETE 语句
      */
     abstract boolean isEmpty();
 }
