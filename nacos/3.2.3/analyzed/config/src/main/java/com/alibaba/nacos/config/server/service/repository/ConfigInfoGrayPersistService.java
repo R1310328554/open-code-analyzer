@@ -27,6 +27,7 @@ import java.sql.Timestamp;
 import java.util.List;
 
 /**
+ * 灰度配置持久化服务接口：访问数据库 {@code config_info_gray} 表，提供灰度配置的增删改查与 dump 分页查询。
  * Database service, providing access to config_info_gray in the database.
  *
  * @author rong
@@ -38,10 +39,11 @@ public interface ConfigInfoGrayPersistService {
      *
      * @param <E> Generic object
      * @return {@link PaginationHelper}
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     <E> PaginationHelper<E> createPaginationHelper();
     
-    //------------------------------------------insert---------------------------------------------//
+    //------------------------------------------insert 插入---------------------------------------------//
     
     /**
      * get gray config info state.
@@ -51,6 +53,7 @@ public interface ConfigInfoGrayPersistService {
      * @param tenant   tenant.
      * @param grayName gray name.
      * @return config info state.
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     ConfigInfoStateWrapper findConfigInfo4GrayState(final String dataId, final String group,
         final String tenant,
@@ -65,6 +68,7 @@ public interface ConfigInfoGrayPersistService {
      * @param srcIp             remote ip
      * @param srcUser           user
      * @return config operation result.
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult addConfigInfo4Gray(ConfigInfo configInfo, String grayName, String grayRule,
         String srcIp, String srcUser);
@@ -79,6 +83,7 @@ public interface ConfigInfoGrayPersistService {
      * @param grayRule     the rule of the gray configuration
      * @param srcIp        the IP address of the source
      * @param srcUser      the user who performs the addition
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     void addConfigInfoGrayAtomic(final long configGrayId, final ConfigInfo configInfo,
         final String grayName, final String grayRule,
@@ -93,6 +98,7 @@ public interface ConfigInfoGrayPersistService {
      * @param srcIp             remote ip
      * @param srcUser           user
      * @return config operation result.
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult insertOrUpdateGray(final ConfigInfo configInfo, final String grayName,
         final String grayRule,
@@ -107,11 +113,12 @@ public interface ConfigInfoGrayPersistService {
      * @param srcIp      remote ip.
      * @param srcUser    user.
      * @return config operation result.
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult insertOrUpdateGrayCas(final ConfigInfo configInfo, final String grayName,
         final String grayRule,
         final String srcIp, final String srcUser);
-    //------------------------------------------delete---------------------------------------------//
+    //------------------------------------------delete 删除---------------------------------------------//
     
     /**
      * Delete configuration; database atomic operation, minimum SQL action, no business encapsulation.
@@ -122,11 +129,12 @@ public interface ConfigInfoGrayPersistService {
      * @param grayName gray name
      * @param srcIp    remote ip
      * @param srcUser  user
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     void removeConfigInfoGray(final String dataId, final String group, final String tenant,
         final String grayName,
         final String srcIp, final String srcUser);
-    //------------------------------------------update---------------------------------------------//
+    //------------------------------------------update 更新---------------------------------------------//
     
     /**
      * Update gray configuration information.
@@ -137,6 +145,7 @@ public interface ConfigInfoGrayPersistService {
      * @param srcIp      remote ip
      * @param srcUser    user
      * @return config operation result.
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult updateConfigInfo4Gray(ConfigInfo configInfo, String grayName,
         String grayRule,
@@ -151,11 +160,12 @@ public interface ConfigInfoGrayPersistService {
      * @param srcIp      remote ip
      * @param srcUser    user
      * @return success or not.
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult updateConfigInfo4GrayCas(ConfigInfo configInfo, String grayName,
         String grayRule,
         String srcIp, String srcUser);
-    //------------------------------------------select---------------------------------------------//
+    //------------------------------------------select 查询---------------------------------------------//
     
     /**
      * Query gray configuration information based on dataId and group.
@@ -165,6 +175,7 @@ public interface ConfigInfoGrayPersistService {
      * @param tenant   tenant
      * @param grayName gray name
      * @return ConfigInfoGrayWrapper gray model instance.
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     ConfigInfoGrayWrapper findConfigInfo4Gray(final String dataId, final String group,
         final String tenant,
@@ -174,6 +185,7 @@ public interface ConfigInfoGrayPersistService {
      * Returns the number of gray configuration items.
      *
      * @return number of configuration items.
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     int configInfoGrayCount();
     
@@ -183,6 +195,7 @@ public interface ConfigInfoGrayPersistService {
      * @param pageNo   page numbser
      * @param pageSize page sizxe
      * @return {@link Page} with {@link ConfigInfoGrayWrapper} generation
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     Page<ConfigInfoGrayWrapper> findAllConfigInfoGrayForDumpAll(final int pageNo,
         final int pageSize);
@@ -194,6 +207,7 @@ public interface ConfigInfoGrayPersistService {
      * @param lastMaxId lastMaxId
      * @param pageSize  pageSize
      * @return {@link Page} with {@link ConfigInfoGrayWrapper} generation
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     List<ConfigInfoGrayWrapper> findChangeConfig(final Timestamp startTime, long lastMaxId,
         final int pageSize);
@@ -205,6 +219,7 @@ public interface ConfigInfoGrayPersistService {
      * @param group  group.
      * @param tenant tenant.
      * @return
+      * <p>灰度配置持久化接口方法；详见上方说明。</p>
      */
     List<String> findConfigInfoGrays(final String dataId, final String group, final String tenant);
 }

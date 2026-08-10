@@ -33,13 +33,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 正式配置持久化服务接口：访问数据库 {@code config_info} 主表，提供配置的 CRUD、批量导入、分页查询与变更追踪。
  * Database service, providing access to config_info in the database.
  *
  * @author lixiaoshuang
  */
 public interface ConfigInfoPersistService {
     
+    /** 模糊查询通配符 */
     String PATTERN_STR = "*";
+    /** 空参数数组常量 */
     Object[] EMPTY_ARRAY = new Object[] {};
     
     /**
@@ -47,6 +50,7 @@ public interface ConfigInfoPersistService {
      *
      * @param <E> Generic object
      * @return {@link PaginationHelper}
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     <E> PaginationHelper<E> createPaginationHelper();
     
@@ -55,10 +59,11 @@ public interface ConfigInfoPersistService {
      *
      * @param s origin string
      * @return fuzzy search Sql
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     String generateLikeArgument(String s);
     
-    //------------------------------------------insert---------------------------------------------//
+    //------------------------------------------insert 插入---------------------------------------------//
     
     /**
      * Add common configuration information and publish data change events.
@@ -68,6 +73,7 @@ public interface ConfigInfoPersistService {
      * @param configInfo        config info
      * @param configAdvanceInfo advance info
      * @return config operation result.
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult addConfigInfo(final String srcIp, final String srcUser,
         final ConfigInfo configInfo,
@@ -83,6 +89,7 @@ public interface ConfigInfoPersistService {
      * @param description the description
      * @return the config operate result
      * @throws NacosException the nacos exception
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult updateConfigInfoMetadata(final String dataId, final String group,
         final String tenant,
@@ -96,6 +103,7 @@ public interface ConfigInfoPersistService {
      * @param configInfo        config info
      * @param configAdvanceInfo advance info
      * @return config operation result.
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult insertOrUpdate(String srcIp, String srcUser, ConfigInfo configInfo,
         Map<String, Object> configAdvanceInfo);
@@ -108,6 +116,7 @@ public interface ConfigInfoPersistService {
      * @param configInfo        config info
      * @param configAdvanceInfo advance info
      * @return success or not.
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult insertOrUpdateCas(String srcIp, String srcUser, ConfigInfo configInfo,
         Map<String, Object> configAdvanceInfo);
@@ -121,6 +130,7 @@ public interface ConfigInfoPersistService {
      * @param configInfo        info
      * @param configAdvanceInfo advance info
      * @return execute sql result
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     long addConfigInfoAtomic(final long id, final String srcIp, final String srcUser,
         final ConfigInfo configInfo,
@@ -134,6 +144,7 @@ public interface ConfigInfoPersistService {
      * @param dataId   data id
      * @param group    group
      * @param tenant   tenant
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     void addConfigTagRelationAtomic(long configId, String tagName, String dataId, String group,
         String tenant);
@@ -146,6 +157,7 @@ public interface ConfigInfoPersistService {
      * @param dataId     dataId
      * @param group      group
      * @param tenant     tenant
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     void addConfigTagsRelation(long configId, String configTags, String dataId, String group,
         String tenant);
@@ -162,12 +174,13 @@ public interface ConfigInfoPersistService {
      * @param policy            {@link SameConfigPolicy}
      * @return map containing the number of affected rows
      * @throws NacosException nacos exception
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     Map<String, Object> batchInsertOrUpdate(List<ConfigAllInfo> configInfoList, String srcUser,
         String srcIp,
         Map<String, Object> configAdvanceInfo, SameConfigPolicy policy) throws NacosException;
     
-    //------------------------------------------delete---------------------------------------------//
+    //------------------------------------------delete 删除---------------------------------------------//
     
     /**
      * Delete configuration information, physical deletion.
@@ -177,6 +190,7 @@ public interface ConfigInfoPersistService {
      * @param tenant  tenant
      * @param srcIp   remote ip
      * @param srcUser user
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     void removeConfigInfo(final String dataId, final String group, final String tenant,
         final String srcIp,
@@ -190,6 +204,7 @@ public interface ConfigInfoPersistService {
      * @param srcUser user
      * @return {@link ConfigAllInfo} list
      * @author klw
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     @Deprecated
     List<ConfigAllInfo> removeConfigInfoByIds(final List<Long> ids, final String srcIp,
@@ -199,6 +214,7 @@ public interface ConfigInfoPersistService {
      * Delete tag.
      *
      * @param id id
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     void removeTagByIdAtomic(long id);
     
@@ -210,6 +226,7 @@ public interface ConfigInfoPersistService {
      * @param tenant  tenant
      * @param srcIp   ip
      * @param srcUser user
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     void removeConfigInfoAtomic(final String dataId, final String group, final String tenant,
         final String srcIp,
@@ -219,10 +236,11 @@ public interface ConfigInfoPersistService {
      * Remove configuration; database atomic operation, minimum SQL action, no business encapsulation.
      *
      * @param ids ids
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     void removeConfigInfoByIdsAtomic(final String ids);
     
-    //------------------------------------------update---------------------------------------------//
+    //------------------------------------------update 更新---------------------------------------------//
     
     /**
      * Update common configuration information.
@@ -232,6 +250,7 @@ public interface ConfigInfoPersistService {
      * @param srcUser           user
      * @param configAdvanceInfo advance info
      * @return config operation result.
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult updateConfigInfo(final ConfigInfo configInfo, final String srcIp,
         final String srcUser,
@@ -245,6 +264,7 @@ public interface ConfigInfoPersistService {
      * @param srcUser           user
      * @param configAdvanceInfo advance info
      * @return config operation result.
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult updateConfigInfoCas(final ConfigInfo configInfo, final String srcIp,
         final String srcUser,
@@ -257,17 +277,19 @@ public interface ConfigInfoPersistService {
      * @param srcIp             remote ip
      * @param srcUser           user
      * @param configAdvanceInfo advance info
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     void updateConfigInfoAtomic(final ConfigInfo configInfo, final String srcIp,
         final String srcUser,
         Map<String, Object> configAdvanceInfo);
     
-    //------------------------------------------select---------------------------------------------//
+    //------------------------------------------select 查询---------------------------------------------//
     
     /**
      * Get the maxId.
      *
      * @return config max id
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     long findConfigMaxId();
     
@@ -276,6 +298,7 @@ public interface ConfigInfoPersistService {
      *
      * @param id id
      * @return {@link ConfigInfo}
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     ConfigInfo findConfigInfo(long id);
     
@@ -286,6 +309,7 @@ public interface ConfigInfoPersistService {
      * @param group  group
      * @param tenant tenant
      * @return config info
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     ConfigInfoWrapper findConfigInfo(final String dataId, final String group, final String tenant);
     
@@ -299,6 +323,7 @@ public interface ConfigInfoPersistService {
      * @param tenant            tenant
      * @param configAdvanceInfo advance info
      * @return {@link Page} with {@link ConfigInfo} generation
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     Page<ConfigInfo> findConfigInfo4Page(final int pageNo, final int pageSize, final String dataId,
         final String group,
@@ -308,6 +333,7 @@ public interface ConfigInfoPersistService {
      * Returns the number of configuration items.
      *
      * @return number of configuration items.
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     int configInfoCount();
     
@@ -316,6 +342,7 @@ public interface ConfigInfoPersistService {
      *
      * @param tenant tenant
      * @return number of configuration items.
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     int configInfoCount(String tenant);
     
@@ -325,6 +352,7 @@ public interface ConfigInfoPersistService {
      * @param page     page number
      * @param pageSize page size
      * @return tenant id list
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     List<String> getTenantIdList(int page, int pageSize);
     
@@ -334,6 +362,7 @@ public interface ConfigInfoPersistService {
      * @param page     page number
      * @param pageSize page size
      * @return group id list
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     List<String> getGroupIdList(int page, int pageSize);
     
@@ -344,6 +373,7 @@ public interface ConfigInfoPersistService {
      * @param pageSize    page size
      * @param needContent need content or not.
      * @return {@link Page} with {@link ConfigInfoWrapper} generation
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     Page<ConfigInfoWrapper> findAllConfigInfoFragment(final long lastMaxId, final int pageSize,
         boolean needContent);
@@ -358,6 +388,7 @@ public interface ConfigInfoPersistService {
      * @param tenant            tenant
      * @param configAdvanceInfo advance info
      * @return {@link Page} with {@link ConfigInfo} generation
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     Page<ConfigInfo> findConfigInfoLike4Page(final int pageNo, final int pageSize,
         final String dataId,
@@ -370,6 +401,7 @@ public interface ConfigInfoPersistService {
      * @param lastMaxId lastMaxId
      * @param pageSize  pageSize
      * @return {@link ConfigInfoWrapper} list
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     List<ConfigInfoStateWrapper> findChangeConfig(final Timestamp startTime, long lastMaxId,
         final int pageSize);
@@ -381,6 +413,7 @@ public interface ConfigInfoPersistService {
      * @param group  group
      * @param tenant tenant
      * @return tag list
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     List<String> selectTagByConfig(String dataId, String group, String tenant);
     
@@ -391,6 +424,7 @@ public interface ConfigInfoPersistService {
      * @return {@link com.alibaba.nacos.config.server.model.ConfigInfo} list
      * @author klw
      * @date 2019/7/5 16:37
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     List<ConfigInfo> findConfigInfosByIds(final String ids);
     
@@ -401,6 +435,7 @@ public interface ConfigInfoPersistService {
      * @param group  group
      * @param tenant tenant
      * @return advance info
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     ConfigAdvanceInfo findConfigAdvanceInfo(final String dataId, final String group,
         final String tenant);
@@ -412,6 +447,7 @@ public interface ConfigInfoPersistService {
      * @param group  group
      * @param tenant tenant
      * @return advance info
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     ConfigAllInfo findConfigAllInfo(final String dataId, final String group, final String tenant);
     
@@ -422,6 +458,7 @@ public interface ConfigInfoPersistService {
      * @param group  group.
      * @param tenant tenant.
      * @return config info state.
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     ConfigInfoStateWrapper findConfigInfoState(final String dataId, final String group,
         final String tenant);
@@ -435,6 +472,7 @@ public interface ConfigInfoPersistService {
      * @param appName appName
      * @param ids     ids
      * @return Collection of ConfigInfo objects
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     List<ConfigAllInfo> findAllConfigInfo4Export(final String dataId, final String group,
         final String tenant,
@@ -445,6 +483,7 @@ public interface ConfigInfoPersistService {
      *
      * @param tenantId tenantId
      * @return {@link ConfigInfoBase}
+      * <p>正式配置持久化接口方法；详见上方说明。</p>
      */
     List<ConfigInfoWrapper> queryConfigInfoByNamespace(final String tenantId);
     

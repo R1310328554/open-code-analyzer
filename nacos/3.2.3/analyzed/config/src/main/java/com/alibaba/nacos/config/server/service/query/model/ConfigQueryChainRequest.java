@@ -20,20 +20,26 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * 配置查询责任链请求模型：封装 dataId、group、tenant、tag 及客户端 appLabels。
  * ConfigQueryChainRequest.
  *
  * @author Nacos
  */
 public class ConfigQueryChainRequest {
     
+    /** 配置 dataId */
     private String dataId;
     
+    /** 配置 group */
     private String group;
     
+    /** 命名空间/tenant */
     private String tenant;
     
+    /** 特殊 Tag（Beta/Tag 灰度场景） */
     private String tag;
     
+    /** 客户端应用标签，用于灰度规则匹配 */
     private Map<String, String> appLabels;
     
     public String getDataId() {
@@ -77,6 +83,7 @@ public class ConfigQueryChainRequest {
     }
     
     /**
+     * 便捷构建仅含 dataId/group/tenant 的查询请求。
      * buildConfigQueryChainRequest.
      *
      * @param dataId    dataId

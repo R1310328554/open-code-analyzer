@@ -28,6 +28,7 @@ import com.alibaba.nacos.persistence.repository.PaginationHelper;
 import java.util.List;
 
 /**
+ * Tag 配置持久化服务接口：访问数据库 {@code config_info_tag} 表（2.5.0 起已废弃，由灰度模型替代，仅保留兼容）。
  * Database service, providing access to config_info_tag in the database.
  * Deprecated since 2.5.0，only support on compatibility,replaced with ConfigInfoGray model, will be  soon removed on further version.
  * @author lixiaoshuang
@@ -40,10 +41,11 @@ public interface ConfigInfoTagPersistService {
      *
      * @param <E> Generic object
      * @return {@link PaginationHelper}
+      * <p>Tag 配置持久化接口方法；详见上方说明。</p>
      */
     <E> PaginationHelper<E> createPaginationHelper();
     
-    //------------------------------------------insert---------------------------------------------//
+    //------------------------------------------insert 插入---------------------------------------------//
     
     /**
      * get config info state.
@@ -53,6 +55,7 @@ public interface ConfigInfoTagPersistService {
      * @param tenant tenant.
      * @param tag    tag.
      * @return config info state.
+      * <p>Tag 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigInfoStateWrapper findConfigInfo4TagState(final String dataId, final String group,
         final String tenant,
@@ -66,6 +69,7 @@ public interface ConfigInfoTagPersistService {
      * @param srcIp      remote ip
      * @param srcUser    user
      * @return config operation result.
+      * <p>Tag 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult addConfigInfo4Tag(ConfigInfo configInfo, String tag, String srcIp,
         String srcUser);
@@ -78,6 +82,7 @@ public interface ConfigInfoTagPersistService {
      * @param srcIp      remote ip
      * @param srcUser    user
      * @return config operation result.
+      * <p>Tag 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult insertOrUpdateTag(final ConfigInfo configInfo, final String tag,
         final String srcIp,
@@ -91,11 +96,12 @@ public interface ConfigInfoTagPersistService {
      * @param srcIp      remote ip.
      * @param srcUser    user.
      * @return config operation result.
+      * <p>Tag 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult insertOrUpdateTagCas(final ConfigInfo configInfo, final String tag,
         final String srcIp,
         final String srcUser);
-    //------------------------------------------delete---------------------------------------------//
+    //------------------------------------------delete 删除---------------------------------------------//
     
     /**
      * Delete configuration; database atomic operation, minimum SQL action, no business encapsulation.
@@ -106,11 +112,12 @@ public interface ConfigInfoTagPersistService {
      * @param tag     tag
      * @param srcIp   remote ip
      * @param srcUser user
+      * <p>Tag 配置持久化接口方法；详见上方说明。</p>
      */
     void removeConfigInfoTag(final String dataId, final String group, final String tenant,
         final String tag,
         final String srcIp, final String srcUser);
-    //------------------------------------------update---------------------------------------------//
+    //------------------------------------------update 更新---------------------------------------------//
     
     /**
      * Update tag configuration information.
@@ -120,6 +127,7 @@ public interface ConfigInfoTagPersistService {
      * @param srcIp      remote ip
      * @param srcUser    user
      * @return config operation result.
+      * <p>Tag 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult updateConfigInfo4Tag(ConfigInfo configInfo, String tag, String srcIp,
         String srcUser);
@@ -132,10 +140,11 @@ public interface ConfigInfoTagPersistService {
      * @param srcIp      remote ip
      * @param srcUser    user
      * @return success or not.
+      * <p>Tag 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult updateConfigInfo4TagCas(ConfigInfo configInfo, String tag, String srcIp,
         String srcUser);
-    //------------------------------------------select---------------------------------------------//
+    //------------------------------------------select 查询---------------------------------------------//
     
     /**
      * Query tag configuration information based on dataId and group.
@@ -145,6 +154,7 @@ public interface ConfigInfoTagPersistService {
      * @param tenant tenant
      * @param tag    tag
      * @return {@link ConfigInfo4Tag}
+      * <p>Tag 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigInfoTagWrapper findConfigInfo4Tag(final String dataId, final String group,
         final String tenant,
@@ -154,6 +164,7 @@ public interface ConfigInfoTagPersistService {
      * Returns the number of beta configuration items.
      *
      * @return number of configuration items..
+      * <p>Tag 配置持久化接口方法；详见上方说明。</p>
      */
     int configInfoTagCount();
     
@@ -163,6 +174,7 @@ public interface ConfigInfoTagPersistService {
      * @param pageNo   page numbser
      * @param pageSize page sizxe
      * @return {@link Page} with {@link ConfigInfoWrapper} generation
+      * <p>Tag 配置持久化接口方法；详见上方说明。</p>
      */
     Page<ConfigInfoTagWrapper> findAllConfigInfoTagForDumpAll(final int pageNo, final int pageSize);
     
@@ -173,6 +185,7 @@ public interface ConfigInfoTagPersistService {
      * @param group  group.
      * @param tenant tenant.
      * @return
+      * <p>Tag 配置持久化接口方法；详见上方说明。</p>
      */
     List<String> findConfigInfoTags(final String dataId, final String group, final String tenant);
 }

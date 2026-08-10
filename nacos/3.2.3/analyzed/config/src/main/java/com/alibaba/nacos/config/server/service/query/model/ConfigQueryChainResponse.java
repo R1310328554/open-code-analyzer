@@ -22,6 +22,7 @@ import com.alibaba.nacos.config.server.service.query.enums.ResponseCode;
 import java.util.Objects;
 
 /**
+ * 配置查询责任链响应模型：包含配置内容、MD5、Content-Type、灰度匹配结果及 {@link ConfigQueryStatus} 状态。
  * ConfigQueryChainResponse.
  *
  * @author Nacos
@@ -48,28 +49,34 @@ public class ConfigQueryChainResponse {
     
     private ConfigQueryStatus status;
     
+    /** 配置查询结果状态枚举 */
     public enum ConfigQueryStatus {
         /**
+         * 命中正式配置。
          * Indicates that the configuration was found and is formal.
          */
         CONFIG_FOUND_FORMAL,
         
         /**
+         * 命中灰度配置。
          * Indicates that the configuration was found and is gray.
          */
         CONFIG_FOUND_GRAY,
         
         /**
+         * 特殊 Tag 配置未找到。
          * Indicates that the configuration special tag was not found.
          */
         SPECIAL_TAG_CONFIG_NOT_FOUND,
         
         /**
+         * 配置不存在。
          * Indicates that the configuration was not found.
          */
         CONFIG_NOT_FOUND,
         
         /**
+         * 配置查询冲突（如读锁竞争）。
          * Indicates a conflict in the configuration query.
          */
         CONFIG_QUERY_CONFLICT,
@@ -156,6 +163,7 @@ public class ConfigQueryChainResponse {
     }
     
     /**
+     * 构建带错误码与消息的失败响应。
      * Build fail response.
      *
      * @param errorCode errorCode.
@@ -168,6 +176,7 @@ public class ConfigQueryChainResponse {
         return response;
     }
     
+    /** 设置失败响应的错误码与消息（使用 {@link ResponseCode#FAIL}） */
     public void setErrorInfo(int errorCode, String errorMsg) {
         this.resultCode = ResponseCode.FAIL.getCode();
         this.message = errorMsg;

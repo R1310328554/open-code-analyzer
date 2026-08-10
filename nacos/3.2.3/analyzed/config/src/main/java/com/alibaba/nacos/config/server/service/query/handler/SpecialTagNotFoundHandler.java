@@ -23,6 +23,7 @@ import com.alibaba.nacos.config.server.service.query.model.ConfigQueryChainRespo
 import java.io.IOException;
 
 /**
+ * 特殊 Tag 未找到处理器：当请求携带 tag 参数时直接返回 {@link com.alibaba.nacos.config.server.service.query.model.ConfigQueryChainResponse.ConfigQueryStatus#SPECIAL_TAG_CONFIG_NOT_FOUND}。
  * SpecialTagNotFound Handler.
  * This class represents special tag not found handler in the configuration query processing chain.
  *
@@ -39,6 +40,7 @@ public class SpecialTagNotFoundHandler extends AbstractConfigQueryHandler {
     
     @Override
     public ConfigQueryChainResponse handle(ConfigQueryChainRequest request) throws IOException {
+        // 请求含 tag 时不再走正式配置，直接标记特殊 Tag 未找到
         if (StringUtils.isNotBlank(request.getTag())) {
             ConfigQueryChainResponse response = new ConfigQueryChainResponse();
             response

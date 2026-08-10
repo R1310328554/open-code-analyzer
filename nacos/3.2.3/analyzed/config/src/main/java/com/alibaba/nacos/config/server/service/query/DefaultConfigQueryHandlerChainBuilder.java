@@ -23,12 +23,14 @@ import com.alibaba.nacos.config.server.service.query.handler.GrayRuleMatchHandle
 import com.alibaba.nacos.config.server.service.query.handler.SpecialTagNotFoundHandler;
 
 /**
+ * 默认配置查询责任链构建器：按固定顺序组装入口、内容类型、灰度匹配、特殊 Tag 与正式配置处理器。
  * DefaultConfigQueryHandlerChainBuilder.
  *
  * @author Nacos
  */
 public class DefaultConfigQueryHandlerChainBuilder implements ConfigQueryHandlerChainBuilder {
     
+    /** 构建 Nacos 默认查询链：Entry → ContentType → Gray → SpecialTag → Formal */
     @Override
     public ConfigQueryHandlerChain build() {
         ConfigQueryHandlerChain chain = new ConfigQueryHandlerChain();
@@ -40,6 +42,7 @@ public class DefaultConfigQueryHandlerChainBuilder implements ConfigQueryHandler
         return chain;
     }
     
+    /** 返回构建器标识 {@code nacos} */
     @Override
     public String getName() {
         return "nacos";

@@ -17,6 +17,7 @@
 package com.alibaba.nacos.config.server.service.query.enums;
 
 /**
+ * 配置查询链 HTTP 风格响应码枚举，供 {@link com.alibaba.nacos.config.server.service.query.model.ConfigQueryChainResponse} 封装错误信息。
  * ResponseCode.
  *
  * @author Nacos
@@ -24,17 +25,21 @@ package com.alibaba.nacos.config.server.service.query.enums;
 public enum ResponseCode {
     
     /**
+     * 请求成功（200）。
      * Request success.
      */
     SUCCESS(200, "Response ok"),
     
     /**
+     * 请求失败（500）。
      * Request failed.
      */
     FAIL(500, "Response fail");
     
+    /** HTTP 状态码数值 */
     int code;
     
+    /** 响应描述文案 */
     String desc;
     
     ResponseCode(int code, String desc) {
@@ -46,6 +51,7 @@ public enum ResponseCode {
      * Getter method for property <tt>code</tt>.
      *
      * @return property value of code
+      * <p>配置查询响应码枚举；详见类级说明。</p>
      */
     public int getCode() {
         return code;
@@ -55,6 +61,7 @@ public enum ResponseCode {
      * Getter method for property <tt>desc</tt>.
      *
      * @return property value of desc
+      * <p>配置查询响应码枚举；详见类级说明。</p>
      */
     public String getDesc() {
         return desc;

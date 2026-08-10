@@ -23,6 +23,7 @@ import com.alibaba.nacos.config.server.service.query.model.ConfigQueryChainRespo
 import java.io.IOException;
 
 /**
+ * 配置内容类型处理器：在下游返回有效配置后，根据扩展名或已有 contentType 解析 {@link com.alibaba.nacos.config.server.enums.FileTypeEnum} 并设置 HTTP Content-Type 头。
  * The type Config content type handler.
  * @author Sunrisea
  */
@@ -37,7 +38,9 @@ public class ConfigContentTypeHandler extends AbstractConfigQueryHandler {
     
     @Override
     public ConfigQueryChainResponse handle(ConfigQueryChainRequest request) throws IOException {
+        // 先委托后续处理器获取配置内容
         ConfigQueryChainResponse response = getNextHandler().handle(request);
+        // 未找到或特殊 Tag 未命中时直接透传
         if (response.getStatus() == ConfigQueryChainResponse.ConfigQueryStatus.CONFIG_NOT_FOUND
             || response
                 .getStatus() == ConfigQueryChainResponse.ConfigQueryStatus.SPECIAL_TAG_CONFIG_NOT_FOUND) {

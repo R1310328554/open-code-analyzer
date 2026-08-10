@@ -17,6 +17,7 @@
 package com.alibaba.nacos.config.server.service.query.handler;
 
 /**
+ * 配置查询处理器抽象基类：实现 {@link ConfigQueryHandler} 并维护责任链中的 nextHandler 指针。
  * AbstractConfigQueryHandler. This abstract class provides a base implementation for configuration query handlers. It
  * implements the {@link ConfigQueryHandler} interface and handles the chaining of handlers.
  *
@@ -24,6 +25,7 @@ package com.alibaba.nacos.config.server.service.query.handler;
  */
 public abstract class AbstractConfigQueryHandler implements ConfigQueryHandler {
     
+    /** 责任链中下一个处理器 */
     public ConfigQueryHandler nextHandler;
     
     @Override

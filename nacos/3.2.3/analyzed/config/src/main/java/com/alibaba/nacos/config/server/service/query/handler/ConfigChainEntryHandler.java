@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 /**
+ * 配置查询责任链入口处理器：规范化 tenant、加读锁加载 {@link CacheItem}，并将请求传递给后续处理器。
  * ConfigChainEntryHandler.
  * The entry point handler for the responsibility chain, responsible for initializing the chain and handling configuration query requests.
  *
@@ -39,6 +40,7 @@ public class ConfigChainEntryHandler extends AbstractConfigQueryHandler {
     
     private static final String CHAIN_ENTRY_HANDLER = "chainEntryHandler";
     
+    /** 当前线程持有的缓存项，供链内后续 Handler 读取 */
     private static final ThreadLocal<CacheItem> CACHE_ITEM_THREAD_LOCAL = new ThreadLocal<>();
     
     @Override
@@ -49,18 +51,21 @@ public class ConfigChainEntryHandler extends AbstractConfigQueryHandler {
     @Override
     public ConfigQueryChainResponse handle(ConfigQueryChainRequest request) throws IOException {
         
+        // 规范化 namespace/tenant 参数
         request.setTenant(NamespaceUtil.processNamespaceParameter(request.getTenant()));
         String groupKey =
             GroupKey2.getKey(request.getDataId(), request.getGroup(), request.getTenant());
         int lockResult = ConfigCacheService.tryConfigReadLock(groupKey);
         CacheItem cacheItem = ConfigCacheService.getContentCache(groupKey);
         
+        // 读锁成功且缓存存在：设置 ThreadLocal 并委托下一处理器
         if (lockResult > 0 && cacheItem != null) {
             try {
                 CACHE_ITEM_THREAD_LOCAL.set(cacheItem);
                 if (nextHandler != null) {
                     return nextHandler.handle(request);
-                } else {
+                // 读锁冲突：返回 CONFIG_QUERY_CONFLICT
+        } else {
                     LOGGER.warn("chainEntryHandler's next handler is null");
                     return new ConfigQueryChainResponse();
                 }
@@ -68,6 +73,7 @@ public class ConfigChainEntryHandler extends AbstractConfigQueryHandler {
                 CACHE_ITEM_THREAD_LOCAL.remove();
                 ConfigCacheService.releaseReadLock(groupKey);
             }
+        // 未命中缓存或锁竞争失败：返回 CONFIG_NOT_FOUND
         } else if (lockResult == 0 || cacheItem == null) {
             ConfigQueryChainResponse response = new ConfigQueryChainResponse();
             response.setStatus(ConfigQueryChainResponse.ConfigQueryStatus.CONFIG_NOT_FOUND);
@@ -79,6 +85,7 @@ public class ConfigChainEntryHandler extends AbstractConfigQueryHandler {
         }
     }
     
+    /** 供链内 Handler 获取入口阶段缓存的 {@link CacheItem} */
     public static CacheItem getThreadLocalCacheItem() {
         return CACHE_ITEM_THREAD_LOCAL.get();
     }

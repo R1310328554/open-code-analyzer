@@ -22,6 +22,7 @@ import com.alibaba.nacos.config.server.service.query.model.ConfigQueryChainRespo
 import java.io.IOException;
 
 /**
+ * 配置查询责任链处理器接口：定义名称、处理逻辑及链式传递方法。
  * Configuration Query Handler Interface.
  * This interface defines the standard methods for handling configuration query requests.
  *
@@ -30,12 +31,14 @@ import java.io.IOException;
 public interface ConfigQueryHandler {
     
     /**
+     * 获取处理器唯一名称，用于日志与链路追踪。
      * Gets the name of the handler.
      * @return The name of the handler.
      */
     String getName();
     
     /**
+     * 处理配置查询请求；无法处理时应委托 {@link #getNextHandler()} 或返回对应状态。
      * Handles the configuration query request.
      * If the current handler cannot process the request, it should throw an IOException.
      * @param request The configuration query request.
@@ -45,12 +48,14 @@ public interface ConfigQueryHandler {
     ConfigQueryChainResponse handle(ConfigQueryChainRequest request) throws IOException;
     
     /**
+     * 设置责任链中的下一个处理器。
      * Sets the next handler in the chain.
      * @param nextHandler The next handler to which the request can be passed if the current handler cannot process it.
      */
     void setNextHandler(ConfigQueryHandler nextHandler);
     
     /**
+     * 获取责任链中的下一个处理器。
      * Gets the next handler in the chain.
      * @return The next handler.
      */

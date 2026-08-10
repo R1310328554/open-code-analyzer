@@ -25,6 +25,7 @@ import com.alibaba.nacos.config.server.service.query.model.ConfigQueryChainRespo
 import java.io.IOException;
 
 /**
+ * 正式配置查询处理器（责任链末端）：从磁盘读取正式配置内容，填充 MD5、加密密钥与最后修改时间。
  * Formal Handler. This class represents a formal handler in the configuration query processing chain. If the request
  * has not been processed by previous handlers, it will be handled by this handler.
  *
@@ -47,9 +48,11 @@ public class FormalHandler extends AbstractConfigQueryHandler {
         String group = request.getGroup();
         String tenant = request.getTenant();
         
+        // 从入口 Handler 的 ThreadLocal 获取缓存元数据
         CacheItem cacheItem = ConfigChainEntryHandler.getThreadLocalCacheItem();
         String md5 = cacheItem.getConfigCache().getMd5();
         String content = ConfigDiskServiceFactory.getInstance().getContent(dataId, group, tenant);
+        // 磁盘内容为空视为配置不存在
         if (StringUtils.isBlank(content)) {
             response.setStatus(ConfigQueryChainResponse.ConfigQueryStatus.CONFIG_NOT_FOUND);
             return response;

@@ -25,6 +25,7 @@ import com.alibaba.nacos.config.server.service.query.model.ConfigQueryChainRespo
 import java.io.IOException;
 
 /**
+ * 灰度规则匹配处理器：遍历 {@link CacheItem} 中排序后的灰度规则，按客户端 appLabels 匹配并返回灰度配置内容。
  * GrayRuleMatchHandler. This class represents a gray rule handler in the configuration query processing chain. It
  * checks if the request matches any gray rules and processes the request accordingly.
  *
@@ -41,7 +42,7 @@ public class GrayRuleMatchHandler extends AbstractConfigQueryHandler {
     
     @Override
     public ConfigQueryChainResponse handle(ConfigQueryChainRequest request) throws IOException {
-        // Check if the request matches any gray rules
+        // 遍历缓存中的灰度规则，按 appLabels 匹配首个命中项
         CacheItem cacheItem = ConfigChainEntryHandler.getThreadLocalCacheItem();
         ConfigCacheGray matchedGray = null;
         if (cacheItem.getSortConfigGrays() != null && !cacheItem.getSortConfigGrays().isEmpty()) {
@@ -53,6 +54,7 @@ public class GrayRuleMatchHandler extends AbstractConfigQueryHandler {
             }
         }
         
+        // 命中灰度：从磁盘读取灰度内容并返回 CONFIG_FOUND_GRAY
         if (matchedGray != null) {
             ConfigQueryChainResponse response = new ConfigQueryChainResponse();
             
@@ -72,6 +74,7 @@ public class GrayRuleMatchHandler extends AbstractConfigQueryHandler {
             response.setStatus(ConfigQueryChainResponse.ConfigQueryStatus.CONFIG_FOUND_GRAY);
             
             return response;
+        // 未命中灰度：继续传递给下一处理器
         } else {
             return nextHandler.handle(request);
         }

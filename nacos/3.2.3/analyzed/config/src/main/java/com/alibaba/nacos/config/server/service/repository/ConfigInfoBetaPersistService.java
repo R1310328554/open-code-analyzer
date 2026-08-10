@@ -26,6 +26,7 @@ import com.alibaba.nacos.api.model.Page;
 import com.alibaba.nacos.persistence.repository.PaginationHelper;
 
 /**
+ * Beta 配置持久化服务接口：访问数据库 {@code config_info_beta} 表（2.5.0 起已废弃，由 {@link ConfigInfoGrayPersistService} 替代，仅保留兼容）。
  * Database service, providing access to config_info_beta in the database.
  * Deprecated since 2.5.0，only support on compatibility,replaced with ConfigInfoGray model, will be  soon removed on further version.
  * @author lixiaoshuang
@@ -38,10 +39,11 @@ public interface ConfigInfoBetaPersistService {
      *
      * @param <E> Generic object
      * @return {@link PaginationHelper}
+      * <p>Beta 配置持久化接口方法；详见上方说明。</p>
      */
     <E> PaginationHelper<E> createPaginationHelper();
     
-    //------------------------------------------insert---------------------------------------------//
+    //------------------------------------------insert 插入---------------------------------------------//
     
     /**
      * get config info beta.
@@ -50,6 +52,7 @@ public interface ConfigInfoBetaPersistService {
      * @param group  group.
      * @param tenant tenant.
      * @return config info state.
+      * <p>Beta 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigInfoStateWrapper findConfigInfo4BetaState(final String dataId, final String group,
         final String tenant);
@@ -62,6 +65,7 @@ public interface ConfigInfoBetaPersistService {
      * @param srcIp      remote ip
      * @param srcUser    user
      * @return config operation result.
+      * <p>Beta 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult addConfigInfo4Beta(ConfigInfo configInfo, String betaIps, String srcIp,
         String srcUser);
@@ -74,6 +78,7 @@ public interface ConfigInfoBetaPersistService {
      * @param srcIp      remote ip
      * @param srcUser    user
      * @return config operation result.
+      * <p>Beta 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult insertOrUpdateBeta(final ConfigInfo configInfo, final String betaIps,
         final String srcIp,
@@ -87,12 +92,13 @@ public interface ConfigInfoBetaPersistService {
      * @param srcIp      remote ip
      * @param srcUser    user
      * @return success or not.
+      * <p>Beta 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult insertOrUpdateBetaCas(final ConfigInfo configInfo, final String betaIps,
         final String srcIp,
         final String srcUser);
     
-    //------------------------------------------delete---------------------------------------------//
+    //------------------------------------------delete 删除---------------------------------------------//
     
     /**
      * Delete configuration information, physical deletion.
@@ -100,10 +106,11 @@ public interface ConfigInfoBetaPersistService {
      * @param dataId data id
      * @param group  group
      * @param tenant tenant
+      * <p>Beta 配置持久化接口方法；详见上方说明。</p>
      */
     void removeConfigInfo4Beta(final String dataId, final String group, final String tenant);
     
-    //------------------------------------------update---------------------------------------------//
+    //------------------------------------------update 更新---------------------------------------------//
     
     /**
      * Update beta configuration information.
@@ -113,6 +120,7 @@ public interface ConfigInfoBetaPersistService {
      * @param srcIp      remote ip
      * @param srcUser    user
      * @return config operation result.
+      * <p>Beta 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult updateConfigInfo4Beta(ConfigInfo configInfo, String betaIps, String srcIp,
         String srcUser);
@@ -125,11 +133,12 @@ public interface ConfigInfoBetaPersistService {
      * @param srcIp      remote ip
      * @param srcUser    user
      * @return success or not.
+      * <p>Beta 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigOperateResult updateConfigInfo4BetaCas(ConfigInfo configInfo, String betaIps,
         String srcIp, String srcUser);
     
-    //------------------------------------------select---------------------------------------------//
+    //------------------------------------------select 查询---------------------------------------------//
     
     /**
      * Query beta configuration information based on dataId and group.
@@ -138,6 +147,7 @@ public interface ConfigInfoBetaPersistService {
      * @param group  group
      * @param tenant tenant
      * @return {@link ConfigInfo4Beta}
+      * <p>Beta 配置持久化接口方法；详见上方说明。</p>
      */
     ConfigInfoBetaWrapper findConfigInfo4Beta(final String dataId, final String group,
         final String tenant);
@@ -146,6 +156,7 @@ public interface ConfigInfoBetaPersistService {
      * Returns the number of beta configuration items.
      *
      * @return number of configuration items..
+      * <p>Beta 配置持久化接口方法；详见上方说明。</p>
      */
     int configInfoBetaCount();
     
@@ -155,6 +166,7 @@ public interface ConfigInfoBetaPersistService {
      * @param pageNo   page number
      * @param pageSize page size
      * @return {@link Page} with {@link ConfigInfoWrapper} generation
+      * <p>Beta 配置持久化接口方法；详见上方说明。</p>
      */
     Page<ConfigInfoBetaWrapper> findAllConfigInfoBetaForDumpAll(final int pageNo,
         final int pageSize);
