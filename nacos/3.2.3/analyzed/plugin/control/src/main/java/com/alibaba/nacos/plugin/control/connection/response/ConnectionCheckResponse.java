@@ -17,18 +17,24 @@
 package com.alibaba.nacos.plugin.control.connection.response;
 
 /**
- * connection check response.
+ * 连接准入检查响应，封装是否允许建连、结果码及提示信息。
+ *
+ * <p>结果码取值见 {@link ConnectionCheckCode}。</p>
  *
  * @author shiyiyue
  */
 public class ConnectionCheckResponse {
     
+    /** 是否允许建立连接。 */
     private boolean success;
     
+    /** 通用说明或错误信息。 */
     private String message;
     
+    /** 检查结果码，对应 {@link ConnectionCheckCode} 常量。 */
     private int code;
     
+    /** 触发限流时的详细提示（如当前连接数与上限）。 */
     private String limitMessage;
     
     public boolean isSuccess() {

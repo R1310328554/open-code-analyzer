@@ -17,7 +17,9 @@
 package com.alibaba.nacos.plugin.control.rule.storage;
 
 /**
- * rule storage.
+ * 管控规则持久化 SPI，定义连接限流与 TPS 规则的读写契约。
+ *
+ * <p>实现包括 {@link LocalDiskRuleStorage} 与 {@link ExternalRuleStorage} 等。</p>
  *
  * @author shiyiyue
  * @date 2022-10-26 11:43:00
@@ -25,41 +27,41 @@ package com.alibaba.nacos.plugin.control.rule.storage;
 public interface RuleStorage {
     
     /**
-     * get storage name.
+     * 获取存储实现名称，用于日志与 SPI 识别。
      *
-     * @return
+     * @return 存储名称
      */
     String getName();
     
     /**
-     * save connection rule to storage.
+     * 将连接限流规则持久化到存储。
      *
-     * @param ruleContent rule content.
-     * @throws Exception exception.
+     * @param ruleContent 规则内容（通常为 JSON 字符串）
+     * @throws Exception 写入失败时抛出
      */
     void saveConnectionRule(String ruleContent) throws Exception;
     
     /**
-     * get connection rule.
+     * 读取当前生效的连接限流规则文本。
      *
-     * @return
+     * @return 规则内容，不存在时可为 null
      */
     String getConnectionRule();
     
     /**
-     * save tps rule.
+     * 将指定 TPS 限流点的规则持久化到存储。
      *
-     * @param pointName   point name.
-     * @param ruleContent rule content.
-     * @throws Exception exception.
+     * @param pointName   TPS 限流点名称
+     * @param ruleContent 规则内容；null 表示删除该点规则
+     * @throws Exception 写入失败时抛出
      */
     void saveTpsRule(String pointName, String ruleContent) throws Exception;
     
     /**
-     * get tps rule.
+     * 读取指定 TPS 限流点的规则文本。
      *
-     * @param pointName point name.
-     * @return
+     * @param pointName TPS 限流点名称
+     * @return 规则内容，不存在时可为 null
      */
     String getTpsRule(String pointName);
     

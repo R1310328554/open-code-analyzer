@@ -21,7 +21,9 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import com.alibaba.nacos.plugin.control.connection.rule.ConnectionControlRule;
 
 /**
- * Nacos default connection control rule parser with json.
+ * Nacos 默认连接管控规则解析器，使用 JSON 反序列化为 {@link ConnectionControlRule}。
+ *
+ * <p>规则内容为空时返回带默认值的空规则对象（countLimit=-1）。</p>
  *
  * @author xiweng.yy
  */

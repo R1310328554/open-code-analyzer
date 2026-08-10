@@ -26,7 +26,10 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * local disk storage.
+ * 基于 Nacos 本地目录的管控规则持久化实现。
+ *
+ * <p>连接规则写入 {@code data/connection/limitRule}，各 TPS 限流点规则写入
+ * {@code data/tps/<pointName>} 文件。</p>
  *
  * @author shiyiyue
  */
@@ -38,8 +41,10 @@ public class LocalDiskRuleStorage implements RuleStorage {
     
     private static final Logger LOGGER = Loggers.CONTROL;
     
+    /** 规则文件根目录，默认为 Nacos Home。 */
     private String localRuleBaseDir = defaultBaseDir();
     
+    /** 确保 TPS 规则目录存在并返回路径。 */
     private File checkTpsBaseDir() {
         File baseDir = new File(localRuleBaseDir, "data" + File.separator + "tps" + File.separator);
         if (!baseDir.exists()) {
@@ -48,14 +53,21 @@ public class LocalDiskRuleStorage implements RuleStorage {
         return baseDir;
     }
     
+    /**
+     * 设置规则文件根目录（主要用于测试或自定义部署路径）。
+     *
+     * @param localRruleBaseDir 本地规则根路径
+     */
     public void setLocalRuleBaseDir(String localRruleBaseDir) {
         this.localRuleBaseDir = localRruleBaseDir;
     }
     
+    /** 默认使用环境变量解析出的 Nacos Home 作为根目录。 */
     private static String defaultBaseDir() {
         return EnvUtils.getNacosHome();
     }
     
+    /** 返回连接限流规则文件 {@code data/connection/limitRule}。 */
     private File getConnectionRuleFile() {
         File baseDir =
             new File(localRuleBaseDir, "data" + File.separator + "connection" + File.separator);
@@ -96,6 +108,7 @@ public class LocalDiskRuleStorage implements RuleStorage {
         if (!tpsFile.exists()) {
             tpsFile.createNewFile();
         }
+        // null 表示删除该限流点本地规则文件
         if (ruleContent == null) {
             DiskUtils.deleteQuietly(tpsFile);
         } else {

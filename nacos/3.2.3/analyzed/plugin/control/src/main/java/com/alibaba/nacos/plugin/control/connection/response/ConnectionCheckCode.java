@@ -17,29 +17,31 @@
 package com.alibaba.nacos.plugin.control.connection.response;
 
 /**
- * connection check code.
+ * 连接准入检查结果码常量，供 {@link ConnectionCheckResponse} 使用。
+ *
+ * <p>数值区分放行、跳过检查与因总量超限拒绝等场景。</p>
  *
  * @author shiyiyue
  */
 public class ConnectionCheckCode {
     
     /**
-     * check pass.
+     * 按总连接数校验通过，允许建连。
      */
     public static final int PASS_BY_TOTAL = 200;
     
     /**
-     * skip.
+     * 跳过连接数检查（如未启用限流或规则为空）。
      */
     public static final int CHECK_SKIP = 100;
     
     /**
-     * deny by total over limit.
+     * 因总连接数超过上限而拒绝建连。
      */
     public static final int DENY_BY_TOTAL_OVER = 300;
     
     /**
-     * pass by monitor type.
+     * 客户端 IP 处于监控白名单，仅记录指标不限流放行。
      */
     public static final int PASS_BY_MONITOR = 205;
 }

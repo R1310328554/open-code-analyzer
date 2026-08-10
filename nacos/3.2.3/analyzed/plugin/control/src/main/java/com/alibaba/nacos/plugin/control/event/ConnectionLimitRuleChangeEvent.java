@@ -19,13 +19,23 @@ package com.alibaba.nacos.plugin.control.event;
 import com.alibaba.nacos.common.notify.Event;
 
 /**
- *  connection limit rule change event.
- *  @author zunfei.lzf
+ * 连接数限流规则变更事件，通知管控插件重新加载并应用连接规则。
+ *
+ * <p>{@link com.alibaba.nacos.plugin.control.rule.ControlRuleChangeActivator}
+ * 订阅此事件，按 {@code external} 标志决定从外部存储或本地磁盘读取规则。</p>
+ *
+ * @author zunfei.lzf
  */
 public class ConnectionLimitRuleChangeEvent extends Event {
     
+    /** 是否从外部规则存储拉取最新内容。 */
     private boolean external;
     
+    /**
+     * 构造连接限流规则变更事件。
+     *
+     * @param external 是否使用外部存储作为规则来源
+     */
     public ConnectionLimitRuleChangeEvent(boolean external) {
         this.external = external;
     }

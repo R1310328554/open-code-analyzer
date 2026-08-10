@@ -32,7 +32,10 @@ import com.alibaba.nacos.plugin.control.tps.rule.TpsControlRule;
 import org.slf4j.Logger;
 
 /**
- * control rule activator.
+ * 管控规则变更激活器，在构造时注册 TPS 与连接限流规则变更订阅者。
+ *
+ * <p>收到 {@link TpsControlRuleChangeEvent} 或 {@link ConnectionLimitRuleChangeEvent} 后，
+ * 从 {@link RuleStorageProxy} 读取规则文本、解析并热应用到对应管理器。</p>
  *
  * @author shiyiyue
  */
@@ -40,16 +43,22 @@ public class ControlRuleChangeActivator {
     
     private static final Logger LOGGER = Loggers.CONTROL;
     
+    /** TPS 规则变更订阅者。 */
     TpsRuleChangeSubscriber tpsRuleChangeSubscriber = new TpsRuleChangeSubscriber();
     
+    /** 连接限流规则变更订阅者。 */
     ConnectionRuleChangeSubscriber connectionRuleChangeSubscriber =
         new ConnectionRuleChangeSubscriber();
     
+    /** 向 {@link NotifyCenter} 注册两类规则变更订阅。 */
     public ControlRuleChangeActivator() {
         NotifyCenter.registerSubscriber(tpsRuleChangeSubscriber);
         NotifyCenter.registerSubscriber(connectionRuleChangeSubscriber);
     }
     
+    /**
+     * TPS 管控规则变更订阅者：同步外部规则到本地并重新解析应用。
+     */
     static class TpsRuleChangeSubscriber extends Subscriber<TpsControlRuleChangeEvent> {
         
         @Override
@@ -65,6 +74,7 @@ public class ControlRuleChangeActivator {
                 RuleStorageProxy ruleStorageProxy =
                     ControlManagerCenter.getInstance().getRuleStorageProxy();
                 
+                // 外部来源时先拉取并落盘，保证本地与远端一致
                 if (event.isExternal()) {
                     if (ruleStorageProxy.getExternalStorage() != null) {
                         String persistTpsRule =
@@ -100,6 +110,9 @@ public class ControlRuleChangeActivator {
         }
     }
     
+    /**
+     * 连接限流规则变更订阅者：同步外部规则到本地并重新解析应用。
+     */
     static class ConnectionRuleChangeSubscriber extends Subscriber<ConnectionLimitRuleChangeEvent> {
         
         @Override
@@ -112,6 +125,7 @@ public class ControlRuleChangeActivator {
                 RuleStorageProxy ruleStorageProxy =
                     ControlManagerCenter.getInstance().getRuleStorageProxy();
                 
+                // 外部来源时先拉取连接规则并写入本地磁盘
                 if (event.isExternal()) {
                     if (ruleStorageProxy.getExternalStorage() != null) {
                         String connectionRule =

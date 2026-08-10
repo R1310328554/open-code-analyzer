@@ -19,20 +19,34 @@ package com.alibaba.nacos.plugin.control.connection.request;
 import java.util.Map;
 
 /**
- * connection check request.
+ * 连接准入检查请求，携带客户端 IP、应用名、来源及可选标签。
+ *
+ * <p>由 {@link com.alibaba.nacos.plugin.control.connection.ConnectionControlManager}
+ * 在客户端建连前校验总连接数是否超限。</p>
  *
  * @author shiyiyue
  */
 public class ConnectionCheckRequest {
     
+    /** 客户端 IP 地址。 */
     String clientIp;
     
+    /** 客户端应用名。 */
     String appName;
     
+    /** 连接来源标识（如协议或入口类型）。 */
     String source;
     
+    /** 附加标签，用于监控或路由维度扩展。 */
     Map<String, String> labels;
     
+    /**
+     * 构造连接检查请求。
+     *
+     * @param clientIp 客户端 IP
+     * @param appName  应用名
+     * @param source   连接来源
+     */
     public ConnectionCheckRequest(String clientIp, String appName, String source) {
         this.appName = appName;
         this.clientIp = clientIp;

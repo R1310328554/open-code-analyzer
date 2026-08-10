@@ -21,7 +21,9 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import com.alibaba.nacos.plugin.control.tps.rule.TpsControlRule;
 
 /**
- * Nacos default tps control rule parser with json.
+ * Nacos 默认 TPS 管控规则解析器，使用 JSON 反序列化为 {@link TpsControlRule}。
+ *
+ * <p>规则内容为空时返回默认空规则，由 TPS 管理器按无限制或默认策略处理。</p>
  *
  * @author xiweng.yy
  */

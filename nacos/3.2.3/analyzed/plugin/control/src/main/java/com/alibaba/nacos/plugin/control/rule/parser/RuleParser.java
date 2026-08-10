@@ -17,17 +17,18 @@
 package com.alibaba.nacos.plugin.control.rule.parser;
 
 /**
- * parse rule content from raw string.
+ * 管控规则通用解析器接口，将原始字符串解析为强类型规则对象。
  *
+ * @param <R> 解析后的规则类型
  * @author shiyiyue
  */
 public interface RuleParser<R> {
     
     /**
-     * Parse control rule.
+     * 解析管控规则文本。
      *
-     * @param ruleContent rule raw string
-     * @return target rule
+     * @param ruleContent 规则原始字符串（通常为 JSON）
+     * @return 解析后的规则对象
      */
     R parseRule(String ruleContent);
 }

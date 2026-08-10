@@ -17,7 +17,9 @@
 package com.alibaba.nacos.plugin.control.rule.storage;
 
 /**
- * external rule storage.
+ * 外部规则存储标记接口，扩展 {@link RuleStorage} 以对接远端或集群配置中心。
+ *
+ * <p>由 SPI 构建并在 {@link RuleStorageProxy} 中与本地磁盘存储协同使用。</p>
  *
  * @author shiyiyue
  */

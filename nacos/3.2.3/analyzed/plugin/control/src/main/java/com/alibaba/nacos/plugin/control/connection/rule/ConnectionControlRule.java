@@ -20,14 +20,19 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * connection control rule.
+ * 连接数管控规则模型，定义全局连接上限与监控 IP 白名单。
+ *
+ * <p>由 {@link com.alibaba.nacos.plugin.control.rule.parser.ConnectionControlRuleParser}
+ * 从持久化 JSON 解析，并由连接管控管理器热更新生效。</p>
  *
  * @author shiyiyue
  */
 public class ConnectionControlRule {
     
+    /** 仅监控不限流的 IP 集合。 */
     private Set<String> monitorIpList = new HashSet<>();
     
+    /** 允许的最大连接总数，-1 表示不限制。 */
     private int countLimit = -1;
     
     public int getCountLimit() {

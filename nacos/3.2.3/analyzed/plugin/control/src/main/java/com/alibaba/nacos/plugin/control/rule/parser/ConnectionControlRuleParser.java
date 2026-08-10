@@ -19,7 +19,9 @@ package com.alibaba.nacos.plugin.control.rule.parser;
 import com.alibaba.nacos.plugin.control.connection.rule.ConnectionControlRule;
 
 /**
- * Connection control rule parser.
+ * 连接数管控规则解析器 SPI 接口，将持久化文本转为 {@link ConnectionControlRule}。
+ *
+ * <p>默认实现为 {@link NacosConnectionControlRuleParser}（JSON 格式）。</p>
  *
  * @author xiweng.yy
  */
