@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T09:24:18Z",
-  "files": [
-    "rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ConfidentialFlowsRequireAuthValidator.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ProtocolUnmodifiedValidator.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/RedirectFlowsRequireUrisValidator.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ServiceAccountRolesRequireFlowValidator.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/UuidProvider.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/UuidUnmodifiedValidator.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ValidAuthMethodValidator.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ValidCanonicalizationMethodValidator.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ValidRedirectUrisValidator.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ValidWebOriginValidator.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/rest/admin/api/DefaultAdminApi.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/rest/admin/api/DefaultAdminRootV2.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/rest/admin/api/client/DefaultClientApi.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/rest/admin/api/client/DefaultClientsApi.java",
-    "rest/admin-v2/services/src/main/java/org/keycloak/services/PatchType.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3598,
-  "done": 2385
+  "done": 2400
 }

@@ -2353,3 +2353,18 @@
 2026-08-10T09:25:41Z DONE rest/admin-v2/services/src/main/java/org/keycloak/validation/jakarta/HibernateValidatorProvider.java wave80b admin-v2 services/client/query/validation
 2026-08-10T09:25:41Z DONE rest/admin-v2/services/src/main/java/org/keycloak/validation/jakarta/JakartaValidatorProvider.java wave80b admin-v2 services/client/query/validation
 2026-08-10T09:25:41Z DONE rest/admin-v2/services/src/main/java/org/keycloak/validation/jakarta/ValidationContext.java wave80b admin-v2 services/client/query/validation
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ConfidentialFlowsRequireAuthValidator.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ProtocolUnmodifiedValidator.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/RedirectFlowsRequireUrisValidator.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ServiceAccountRolesRequireFlowValidator.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/UuidProvider.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/UuidUnmodifiedValidator.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ValidAuthMethodValidator.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ValidCanonicalizationMethodValidator.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ValidRedirectUrisValidator.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/representations/admin/v2/validators/ValidWebOriginValidator.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/rest/admin/api/DefaultAdminApi.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/rest/admin/api/DefaultAdminRootV2.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/rest/admin/api/client/DefaultClientApi.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/rest/admin/api/client/DefaultClientsApi.java wave80a admin-v2 validators + default admin api
+2026-08-10T09:25:49Z DONE rest/admin-v2/services/src/main/java/org/keycloak/services/PatchType.java wave80a admin-v2 validators + default admin api
