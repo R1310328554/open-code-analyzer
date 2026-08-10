@@ -59,6 +59,7 @@ import static org.keycloak.authentication.authenticators.x509.AbstractX509Client
 import static org.keycloak.authentication.authenticators.x509.AbstractX509ClientCertificateAuthenticator.USER_MAPPER_SELECTION;
 
 /**
+ * X509 认证器配置模型：封装 {@link AuthenticatorConfigModel} 并提供类型安全的 getter/setter（CRL/OCSP、身份映射、证书校验选项等）。
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @since 10/26/2016
@@ -68,6 +69,7 @@ public class X509AuthenticatorConfigModel extends AuthenticatorConfigModel {
 
     private static final long serialVersionUID = 1L;
 
+    /** 用户身份映射方式枚举。 */
     public enum IdentityMapperType {
         USER_ATTRIBUTE(USER_ATTRIBUTE_MAPPER),
         USERNAME_EMAIL(USERNAME_EMAIL_MAPPER);
@@ -89,6 +91,7 @@ public class X509AuthenticatorConfigModel extends AuthenticatorConfigModel {
         }
     }
 
+    /** 证书字段身份提取来源枚举。 */
     public enum MappingSourceType {
         SERIALNUMBER(MAPPING_SOURCE_CERT_SERIALNUMBER),
         ISSUERDN(MAPPING_SOURCE_CERT_ISSUERDN),
@@ -118,6 +121,7 @@ public class X509AuthenticatorConfigModel extends AuthenticatorConfigModel {
         }
     }
 
+    /** 证书策略校验模式：全部匹配或任一匹配。 */
     public enum CertificatePolicyModeType {
         ALL(CERTIFICATE_POLICY_MODE_ALL),
         ANY(CERTIFICATE_POLICY_MODE_ANY);
@@ -139,6 +143,7 @@ public class X509AuthenticatorConfigModel extends AuthenticatorConfigModel {
         }
     }
 
+    /** 从 {@link AuthenticatorConfigModel} 复制配置。 */
     public X509AuthenticatorConfigModel(AuthenticatorConfigModel model) {
         this.setAlias(model.getAlias());
         this.setId(model.getId());
@@ -148,6 +153,7 @@ public class X509AuthenticatorConfigModel extends AuthenticatorConfigModel {
 
     }
 
+    /** @return 是否启用 CRL 检查 */
     public boolean getCRLEnabled() {
         return Boolean.parseBoolean(getConfig().get(ENABLE_CRL));
     }
@@ -157,6 +163,7 @@ public class X509AuthenticatorConfigModel extends AuthenticatorConfigModel {
         return this;
     }
 
+    /** @return 是否启用 OCSP 检查 */
     public boolean getOCSPEnabled() {
         return Boolean.parseBoolean(getConfig().get(ENABLE_OCSP));
     }
@@ -166,6 +173,7 @@ public class X509AuthenticatorConfigModel extends AuthenticatorConfigModel {
         return this;
     }
 
+    /** @return OCSP 端点不可用时是否允许认证继续 */
     public boolean getOCSPFailOpen() {
         return Boolean.parseBoolean(getConfig().getOrDefault(OCSP_FAIL_OPEN, Boolean.toString(false)));
     }
@@ -232,6 +240,7 @@ public class X509AuthenticatorConfigModel extends AuthenticatorConfigModel {
         return this;
     }
 
+    /** @return 用户身份提取来源类型 */
     public MappingSourceType getMappingSourceType() {
         return MappingSourceType.parse(getConfig().getOrDefault(MAPPING_SOURCE_SELECTION, MAPPING_SOURCE_CERT_SUBJECTDN));
     }
@@ -241,6 +250,7 @@ public class X509AuthenticatorConfigModel extends AuthenticatorConfigModel {
         return this;
     }
 
+    /** @return 用户身份映射类型 */
     public IdentityMapperType getUserIdentityMapperType() {
         return IdentityMapperType.parse(getConfig().getOrDefault(USER_MAPPER_SELECTION, USERNAME_EMAIL_MAPPER));
     }
@@ -250,6 +260,7 @@ public class X509AuthenticatorConfigModel extends AuthenticatorConfigModel {
         return this;
     }
 
+    /** @return 提取用户身份的正则表达式 */
     public String getRegularExpression() {
         return getConfig().getOrDefault(REGULAR_EXPRESSION,DEFAULT_MATCH_ALL_EXPRESSION);
     }
@@ -342,6 +353,7 @@ public class X509AuthenticatorConfigModel extends AuthenticatorConfigModel {
         return this;
     }
 
+    /** @return 是否使用规范 DN 表示 */
     public boolean isCanonicalDnEnabled() {
         return Boolean.parseBoolean(getConfig().get(CANONICAL_DN));
     }
@@ -351,6 +363,7 @@ public class X509AuthenticatorConfigModel extends AuthenticatorConfigModel {
         return this;
     }
 
+    /** @return 是否校验证书有效期（notBefore/notAfter） */
     public boolean isCertValidationEnabled() {
         return Boolean.parseBoolean(getConfig().get(TIMESTAMP_VALIDATION));
     }
@@ -369,6 +382,7 @@ public class X509AuthenticatorConfigModel extends AuthenticatorConfigModel {
         return this;
     }
 
+    /** @return 是否根据信任库重新验证客户端证书 */
     public boolean getRevalidateCertificateEnabled() {
         return Boolean.parseBoolean(getConfig().get(REVALIDATE_CERTIFICATE));
     }

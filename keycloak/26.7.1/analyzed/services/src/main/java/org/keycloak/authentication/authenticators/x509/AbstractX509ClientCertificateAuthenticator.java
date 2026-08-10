@@ -48,6 +48,8 @@ import org.jboss.logging.Logger;
 
 
 /**
+ * X509 客户端证书认证器抽象基类：提取证书链、构建校验器与用户身份映射，并提供审计数据记录。
+ * <p>子类实现具体 browser 或 direct grant 认证流程。</p>
  * @author <a href="mailto:pnalyvayko@agi.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @date 7/31/2016
@@ -55,10 +57,14 @@ import org.jboss.logging.Logger;
 
 public abstract class AbstractX509ClientCertificateAuthenticator implements Authenticator {
 
+    /** 默认用户属性名（自定义属性映射）。 */
     public static final String DEFAULT_ATTRIBUTE_NAME = "usercertificate";
 
+    /** 配置键：提取用户身份的正则表达式。 */
     public static final String REGULAR_EXPRESSION = "x509-cert-auth.regular-expression";
+    /** 配置键：是否启用 CRL 吊销检查。 */
     public static final String ENABLE_CRL = "x509-cert-auth.crl-checking-enabled";
+    /** 配置键：是否启用 OCSP 吊销检查。 */
     public static final String ENABLE_OCSP = "x509-cert-auth.ocsp-checking-enabled";
     public static final String OCSP_FAIL_OPEN = "x509-cert-auth.ocsp-fail-open";
     public static final String ENABLE_CRLDP = "x509-cert-auth.crldp-checking-enabled";
@@ -69,6 +75,7 @@ public abstract class AbstractX509ClientCertificateAuthenticator implements Auth
     public static final String CRL_ABORT_IF_NON_UPDATED = "x509-cert-auth-crl-abort-if-non-updated";
     public static final String OCSPRESPONDER_URI = "x509-cert-auth.ocsp-responder-uri";
     public static final String OCSPRESPONDER_CERTIFICATE = "x509-cert-auth.ocsp-responder-certificate";
+    /** 配置键：用户身份提取来源（SubjectDN、序列号等）。 */
     public static final String MAPPING_SOURCE_SELECTION = "x509-cert-auth.mapping-source-selection";
     public static final String MAPPING_SOURCE_CERT_SUBJECTDN = "Match SubjectDN using regular expression";
     public static final String MAPPING_SOURCE_CERT_SUBJECTDN_EMAIL = "Subject's e-mail";
@@ -80,6 +87,7 @@ public abstract class AbstractX509ClientCertificateAuthenticator implements Auth
     public static final String MAPPING_SOURCE_CERT_SHA256_THUMBPRINT = "SHA-256 Thumbprint";
     public static final String MAPPING_SOURCE_CERT_SERIALNUMBER_ISSUERDN = "Certificate Serial Number and IssuerDN";
     public static final String MAPPING_SOURCE_CERT_CERTIFICATE_PEM = "Full Certificate in PEM format";
+    /** 配置键：用户身份到 UserModel 的映射方式。 */
     public static final String USER_MAPPER_SELECTION = "x509-cert-auth.mapper-selection";
     public static final String USER_ATTRIBUTE_MAPPER = "Custom Attribute Mapper";
     public static final String USERNAME_EMAIL_MAPPER = "Username or Email";
@@ -96,12 +104,14 @@ public abstract class AbstractX509ClientCertificateAuthenticator implements Auth
 
     private final static Logger logger = Logger.getLogger(AbstractX509ClientCertificateAuthenticator.class);;
 
+    /** 创建信息提示页面响应。 */
     protected Response createInfoResponse(AuthenticationFlowContext context, String infoMessage, Object ... parameters) {
         LoginFormsProvider form = context.form();
         return form.setInfo(infoMessage, parameters).createInfoPage();
     }
 
-    protected static class CertificateValidatorConfigBuilder {
+        /** 从 {@link X509AuthenticatorConfigModel} 构建 {@link CertificateValidator} 参数。 */
+        protected static class CertificateValidatorConfigBuilder {
 
         static CertificateValidator.CertificateValidatorBuilder fromConfig(KeycloakSession session, X509AuthenticatorConfigModel config) throws Exception {
 
@@ -131,12 +141,13 @@ public abstract class AbstractX509ClientCertificateAuthenticator implements Auth
         }
     }
 
-    // The method is purely for purposes of facilitating the unit testing
+    // 仅供单元测试注入校验参数
     public CertificateValidator.CertificateValidatorBuilder certificateValidationParameters(KeycloakSession session, X509AuthenticatorConfigModel config) throws Exception {
         return CertificateValidatorConfigBuilder.fromConfig(session, config);
     }
 
-    protected static class UserIdentityExtractorBuilder {
+        /** 按配置构建 {@link UserIdentityExtractor}。 */
+        protected static class UserIdentityExtractorBuilder {
 
         private static final Function<X509Certificate[],Principal> subject = certs -> {
             return certs[0].getSubjectX500Principal();
@@ -218,7 +229,8 @@ public abstract class AbstractX509ClientCertificateAuthenticator implements Auth
         }
     }
 
-    protected static class UserIdentityToModelMapperBuilder {
+        /** 按配置构建 {@link UserIdentityToModelMapper}。 */
+        protected static class UserIdentityToModelMapperBuilder {
 
         static UserIdentityToModelMapper fromConfig(X509AuthenticatorConfigModel config) {
 
@@ -245,9 +257,10 @@ public abstract class AbstractX509ClientCertificateAuthenticator implements Auth
 
     }
 
+    /** 通过 {@link X509ClientCertificateLookup} 从请求获取客户端证书链。 */
     protected X509Certificate[] getCertificateChain(AuthenticationFlowContext context) {
         try {
-            // Get a x509 client certificate
+            // 从请求获取 X509 客户端证书
             X509ClientCertificateLookup provider = context.getSession().getProvider(X509ClientCertificateLookup.class);
             if (provider == null) {
                 logger.errorv("\"{0}\" Spi is not available, did you forget to update the configuration?",
@@ -272,8 +285,9 @@ public abstract class AbstractX509ClientCertificateAuthenticator implements Auth
     }
 
 
-    // Saving some notes for audit to authSession as the event may not be necessarily triggered in this HTTP request where the certificate was parsed
+    // 将证书审计数据写入 authSession（确认页可能在后续请求触发事件）
     // For example if there is confirmation page enabled, it will be in the additional request
+    /** 保存证书序列号、Subject DN、Issuer DN 到认证会话 note。 */
     protected void saveX509CertificateAuditDataToAuthSession(AuthenticationFlowContext context,
                                                              X509Certificate cert) {
         context.getAuthenticationSession().setAuthNote(Details.X509_CERTIFICATE_SERIAL_NUMBER, cert.getSerialNumber().toString());
@@ -281,6 +295,7 @@ public abstract class AbstractX509ClientCertificateAuthenticator implements Auth
         context.getAuthenticationSession().setAuthNote(Details.X509_CERTIFICATE_ISSUER_DISTINGUISHED_NAME, cert.getIssuerDN().toString());
     }
 
+    /** 将 authSession 中的 X509 审计字段写入当前事件。 */
     protected void recordX509CertificateAuditDataViaContextEvent(AuthenticationFlowContext context) {
         recordX509DetailFromAuthSessionToEvent(context, Details.X509_CERTIFICATE_SERIAL_NUMBER);
         recordX509DetailFromAuthSessionToEvent(context, Details.X509_CERTIFICATE_SUBJECT_DISTINGUISHED_NAME);
@@ -301,6 +316,7 @@ public abstract class AbstractX509ClientCertificateAuthenticator implements Auth
     public UserIdentityToModelMapper getUserIdentityToModelMapper(X509AuthenticatorConfigModel config) {
         return UserIdentityToModelMapperBuilder.fromConfig(config);
     }
+    /** @return 不需要已认证用户 */
     @Override
     public boolean requiresUser() {
         return false;

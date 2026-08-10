@@ -32,6 +32,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 
 /**
+ * 用户身份到 {@link UserModel} 的映射器：将证书提取的身份字符串匹配到 realm 中的用户（用户名/邮箱或自定义属性）。
  * @author <a href="mailto:pnalyvayko@agi.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @date 7/30/2016
@@ -39,9 +40,16 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 
 public abstract class UserIdentityToModelMapper {
 
+    /**
+     * 根据提取的用户身份查找 {@link UserModel}。
+     * @param context 认证流程上下文
+     * @param userIdentity 从证书提取的身份
+     * @return 匹配的用户，未找到时返回 null
+     */
     public abstract UserModel find(AuthenticationFlowContext context, Object userIdentity) throws Exception;
 
-    static class UsernameOrEmailMapper extends UserIdentityToModelMapper {
+        /** 按用户名或邮箱查找用户。 */
+        static class UsernameOrEmailMapper extends UserIdentityToModelMapper {
 
         @Override
         public UserModel find(AuthenticationFlowContext context, Object userIdentity) throws Exception {
@@ -49,7 +57,8 @@ public abstract class UserIdentityToModelMapper {
         }
     }
 
-    static class UserIdentityToCustomAttributeMapper extends UserIdentityToModelMapper {
+        /** 按一个或多个自定义用户属性查找用户。 */
+        static class UserIdentityToCustomAttributeMapper extends UserIdentityToModelMapper {
         private List<String> _customAttributes;
         UserIdentityToCustomAttributeMapper(String customAttributes) {
             _customAttributes = Arrays.asList(Constants.CFG_DELIMITER_PATTERN.split(customAttributes));
@@ -78,10 +87,12 @@ public abstract class UserIdentityToModelMapper {
         }
     }
 
+    /** @return 用户名或邮箱映射器实例 */
     public static UserIdentityToModelMapper getUsernameOrEmailMapper() {
         return new UsernameOrEmailMapper();
     }
 
+    /** @return 指定属性名的自定义属性映射器 */
     public static UserIdentityToModelMapper getUserIdentityToCustomAttributeMapper(String attributeName) {
         return new UserIdentityToCustomAttributeMapper(attributeName);
     }

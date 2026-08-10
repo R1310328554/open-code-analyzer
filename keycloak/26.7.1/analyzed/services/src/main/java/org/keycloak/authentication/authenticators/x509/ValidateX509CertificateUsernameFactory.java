@@ -23,6 +23,7 @@ import org.keycloak.models.AuthenticationExecutionModel;
 import org.keycloak.models.KeycloakSession;
 
 /**
+ * {@link ValidateX509CertificateUsername} 工厂：注册 Direct Grant 流程中的 X509 证书用户名验证认证器。
  * @author <a href="mailto:pnalyvayko@agi.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @date 7/31/2016
@@ -30,14 +31,18 @@ import org.keycloak.models.KeycloakSession;
 
 public class ValidateX509CertificateUsernameFactory extends AbstractX509ClientCertificateAuthenticatorFactory {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "direct-grant-auth-x509-username";
+    /** 单例认证器实例。 */
     public static final ValidateX509CertificateUsername SINGLETON = new ValidateX509CertificateUsername();
 
+    /** @return 通过 mutual SSL 证书验证用户名/密码的说明 */
     @Override
     public String getHelpText() {
         return "Validates username and password from X509 client certificate received as a part of mutual SSL handshake.";
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "X509/Validate Username";
@@ -51,6 +56,7 @@ public class ValidateX509CertificateUsernameFactory extends AbstractX509ClientCe
         return REQUIREMENT_CHOICES;
     }
 
+    /** @return {@link #SINGLETON} 单例 */
     @Override
     public Authenticator create(KeycloakSession session) {
         return SINGLETON;

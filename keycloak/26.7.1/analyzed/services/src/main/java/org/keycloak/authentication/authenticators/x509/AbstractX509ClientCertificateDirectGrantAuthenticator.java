@@ -28,6 +28,7 @@ import org.keycloak.OAuth2Constants;
 import org.keycloak.authentication.AuthenticationFlowContext;
 
 /**
+ * X509 客户端证书 Direct Grant 认证器抽象基类：在 OAuth2 令牌端点通过双向 TLS 提供的证书进行用户认证。
  * @author <a href="mailto:pnalyvayko@agi.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @date 7/31/2016
@@ -35,6 +36,7 @@ import org.keycloak.authentication.AuthenticationFlowContext;
 
 public abstract class AbstractX509ClientCertificateDirectGrantAuthenticator extends AbstractX509ClientCertificateAuthenticator {
 
+    /** 构建 OAuth2 格式的 JSON 错误响应。 */
     public Response errorResponse(int status, String error, String errorDescription) {
         Map<String, String> e = new HashMap<>();
         e.put(OAuth2Constants.ERROR, error);
@@ -44,6 +46,7 @@ public abstract class AbstractX509ClientCertificateDirectGrantAuthenticator exte
         return Response.status(status).entity(e).type(MediaType.APPLICATION_JSON_TYPE).build();
     }
 
+    /** Direct Grant 流程无表单 action。 */
     @Override
     public void action(AuthenticationFlowContext context) {
 

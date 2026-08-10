@@ -72,6 +72,7 @@ import static org.keycloak.provider.ProviderConfigProperty.STRING_TYPE;
 import static org.keycloak.provider.ProviderConfigProperty.TEXT_TYPE;
 
 /**
+ * X509 客户端证书认证器工厂抽象基类：定义身份提取、用户映射、CRL/OCSP 吊销检查及证书扩展校验等通用配置项。
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @date 7/31/2016
@@ -79,6 +80,7 @@ import static org.keycloak.provider.ProviderConfigProperty.TEXT_TYPE;
 
 public abstract class AbstractX509ClientCertificateAuthenticatorFactory implements AuthenticatorFactory {
 
+    /** 可选的用户身份提取来源列表。 */
     private static final String[] mappingSources = {
             MAPPING_SOURCE_CERT_SUBJECTDN,
             MAPPING_SOURCE_CERT_SUBJECTDN_EMAIL,
@@ -102,6 +104,7 @@ public abstract class AbstractX509ClientCertificateAuthenticatorFactory implemen
             CERTIFICATE_POLICY_MODE_ANY
     };
 
+    /** 静态初始化的 X509 认证器配置属性列表。 */
     protected static final List<ProviderConfigProperty> configProperties;
     static {
         List<String> mappingSourceTypes = new LinkedList<>();
@@ -284,6 +287,7 @@ public abstract class AbstractX509ClientCertificateAuthenticatorFactory implemen
                 certificatePolicyMode);
     }
 
+    /** @return X509 认证器完整配置项列表 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
@@ -294,11 +298,13 @@ public abstract class AbstractX509ClientCertificateAuthenticatorFactory implemen
         return null;
     }
 
+    /** @return 支持管理控制台配置 */
     @Override
     public boolean isConfigurable() {
         return true;
     }
 
+    /** @return 不允许用户自助配置 */
     @Override
     public boolean isUserSetupAllowed() {
         return false;

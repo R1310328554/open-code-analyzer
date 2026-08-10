@@ -11,13 +11,23 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * 用户会话数量限制认证器工厂：注册 {@link UserSessionLimitsAuthenticator}，配置 realm/client 并发会话上限及超限行为。
+ */
 public class UserSessionLimitsAuthenticatorFactory implements AuthenticatorFactory {
+    /** 配置键：用户在 realm 内的最大并发会话数。 */
     public static final String USER_REALM_LIMIT = "userRealmLimit";
+    /** 配置键：用户在单个客户端上的最大并发会话数。 */
     public static final String USER_CLIENT_LIMIT = "userClientLimit";
+    /** 配置键：超限时的行为策略。 */
     public static final String BEHAVIOR = "behavior";
+    /** 超限行为：拒绝创建新会话。 */
     public static final String DENY_NEW_SESSION = "Deny new session";
+    /** 超限行为：终止最旧的会话。 */
     public static final String TERMINATE_OLDEST_SESSION = "Terminate oldest session";
+    /** 提供者标识符。 */
     public static final String USER_SESSION_LIMITS = "user-session-limits";
+    /** 配置键：自定义超限错误消息。 */
     public static final String ERROR_MESSAGE = "errorMessage";
 
     private static AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
@@ -25,6 +35,7 @@ public class UserSessionLimitsAuthenticatorFactory implements AuthenticatorFacto
             AuthenticationExecutionModel.Requirement.DISABLED
     };
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "User session count limiter";
@@ -50,11 +61,13 @@ public class UserSessionLimitsAuthenticatorFactory implements AuthenticatorFacto
         return false;
     }
 
+    /** @return realm/client 并发会话限制说明 */
     @Override
     public String getHelpText() {
         return "Configures how many concurrent sessions a single user is allowed to create for this realm and/or client";
     }
 
+    /** @return realm/client 限制、行为与错误消息配置项 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         ProviderConfigProperty userRealmLimit = new ProviderConfigProperty();
@@ -87,6 +100,7 @@ public class UserSessionLimitsAuthenticatorFactory implements AuthenticatorFacto
         return Arrays.asList(userRealmLimit, userClientLimit, behaviourProperty, customErrorMessage);
     }
 
+    /** @return 绑定 session 的 {@link UserSessionLimitsAuthenticator} 实例 */
     @Override
     public Authenticator create(KeycloakSession keycloakSession) {
         return new UserSessionLimitsAuthenticator(keycloakSession);

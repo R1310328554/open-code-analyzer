@@ -81,6 +81,8 @@ import org.jboss.logging.Logger;
 import static org.keycloak.authentication.authenticators.x509.AbstractX509ClientCertificateAuthenticator.CERTIFICATE_POLICY_MODE_ANY;
 
 /**
+ * X509 证书校验器：执行信任链、有效期、Key Usage、Extended Key Usage、Certificate Policy 及 CRL/OCSP 吊销状态等校验。
+ * <p>使用 Builder 模式链式配置并执行各项验证步骤。</p>
  * @author <a href="mailto:pnalyvayko@agi.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @date 7/30/2016
@@ -92,6 +94,7 @@ public class CertificateValidator {
 
     private PKIXCertPathBuilderResult certPathBuilderResult;
 
+    /** X509 Key Usage 扩展各位的定义与解析。 */
     enum KeyUsageBits {
         DIGITAL_SIGNATURE(0, "digitalSignature"),
         NON_REPUDIATION(1, "nonRepudiation"),
@@ -140,11 +143,13 @@ public class CertificateValidator {
         }
     }
 
+    /** @return PKIX 证书路径构建结果 */
     public PKIXCertPathBuilderResult getCertPathBuilderResult() {
         return this.certPathBuilderResult;
     }
 
-    public static class LdapContext {
+        /** LDAP 上下文工厂配置（用于 CRL LDAP 加载）。 */
+        public static class LdapContext {
         private final String ldapFactoryClassName;
 
         public LdapContext() {
@@ -160,18 +165,19 @@ public class CertificateValidator {
         }
     }
 
-    public abstract static class OCSPChecker {
+        /** OCSP 吊销状态检查抽象基类。 */
+        public abstract static class OCSPChecker {
         /**
-         * Requests certificate revocation status using OCSP. The OCSP responder URI
-         * is obtained from the certificate's AIA extension.
-         * @param cert the certificate to be checked
-         * @param issuerCertificate The issuer certificate
-         * @return revocation status
+         * 通过 OCSP 查询证书吊销状态；未指定 URI 时从证书 AIA 扩展获取。
+         * @param cert 待检查证书
+         * @param issuerCertificate 签发者证书
+         * @return 吊销状态
          */
         public abstract OCSPProvider.OCSPRevocationStatus check(X509Certificate cert, X509Certificate issuerCertificate) throws CertPathValidatorException;
     }
 
-    public abstract static class CRLLoaderImpl {
+        /** CRL 加载器抽象基类。 */
+        public abstract static class CRLLoaderImpl {
         /**
          * Returns a collection of {@link X509CRL}
          * @return
@@ -180,7 +186,8 @@ public class CertificateValidator {
         public abstract Collection<X509CRL> getX509CRLs() throws GeneralSecurityException;
     }
 
-    public static class BouncyCastleOCSPChecker extends OCSPChecker {
+        /** 基于 BouncyCastle/CryptoIntegration 的 OCSP 检查实现。 */
+        public static class BouncyCastleOCSPChecker extends OCSPChecker {
 
         private final KeycloakSession session;
         private final String responderUri;
@@ -197,7 +204,7 @@ public class CertificateValidator {
 
             OCSPProvider.OCSPRevocationStatus ocspRevocationStatus = null;
             if (responderUri == null || responderUri.trim().length() == 0) {
-                // Obtains revocation status of a certificate using OCSP and assuming
+                // 使用 OCSP 查询吊销状态（默认从证书 AIA 获取 responder URI）
                 // most common defaults. If responderUri is not specified,
                 // then OCS responder URI is retrieved from the
                 // certificate's AIA extension.
@@ -230,7 +237,8 @@ public class CertificateValidator {
         }
     }
 
-    public static class CRLLoaderProxy extends CRLLoaderImpl {
+        /** 包装单个 {@link X509CRL} 的 CRL 加载器。 */
+        public static class CRLLoaderProxy extends CRLLoaderImpl {
         private final X509CRL _crl;
         public CRLLoaderProxy(X509CRL crl) {
             _crl = crl;
@@ -241,8 +249,9 @@ public class CertificateValidator {
         }
     }
 
-    // Delegate to list of other CRLLoaders
-    public static class CRLListLoader extends CRLLoaderImpl {
+    // 委托给多个 CRL 加载器
+        /** 聚合多个 {@link CRLFileLoader} 的 CRL 列表加载器。 */
+        public static class CRLListLoader extends CRLLoaderImpl {
 
         private final List<CRLLoaderImpl> delegates;
 
@@ -264,7 +273,8 @@ public class CertificateValidator {
         }
     }
 
-    public static class CRLFileLoader extends CRLLoaderImpl {
+        /** 从 HTTP/LDAP/本地文件加载 CRL 的实现。 */
+        public static class CRLFileLoader extends CRLLoaderImpl {
 
         private final KeycloakSession session;
         private final String cRLPath;
@@ -313,21 +323,21 @@ public class CertificateValidator {
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
             X509CRL crl = null;
             if (cRLPath.startsWith("http") || cRLPath.startsWith("https")) {
-                // load CRL using remote URI
+                // 通过 HTTP(S) URI 加载 CRL
                 try {
                     crl = loadFromURI(cf, new URI(cRLPath));
                 } catch (URISyntaxException e) {
                     logger.error(e.getMessage());
                 }
             } else if (cRLPath.startsWith("ldap")) {
-                // load CRL from LDAP
+                // 从 LDAP 加载 CRL
                 try {
                     crl = loadCRLFromLDAP(cf, new URI(cRLPath));
                 } catch (URISyntaxException e) {
                     logger.error(e.getMessage());
                 }
             } else {
-                // load CRL from file
+                // 从本地配置文件目录加载 CRL
                 crl = loadCRLFromFile(cf, cRLPath);
             }
             return crl;
@@ -429,6 +439,7 @@ public class CertificateValidator {
     boolean _timestampValidationEnabled;
     boolean _trustValidationEnabled;
 
+    /** 默认构造，供 Builder 使用。 */
     public CertificateValidator() {
 
     }
@@ -465,6 +476,7 @@ public class CertificateValidator {
             throw new IllegalArgumentException("ocspChecker");
     }
 
+    /** 校验证书 Key Usage 扩展是否包含期望的位。 */
     private static void validateKeyUsage(X509Certificate[] certs, int expected) throws GeneralSecurityException {
         boolean[] keyUsageBits = certs[0].getKeyUsage();
         if (keyUsageBits == null) {

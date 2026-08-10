@@ -49,6 +49,7 @@ import org.jboss.logging.Logger;
 import static org.keycloak.models.Constants.NO_LOA;
 
 /**
+ * LoA（认证级别）工具类：解析 realm 认证流程中的 LoA 条件配置，并构建凭证类型到 LoA 级别的映射。
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LoAUtil {
@@ -56,8 +57,8 @@ public class LoAUtil {
     private static final Logger logger = Logger.getLogger(LoAUtil.class);
 
     /**
-     * @param clientSession
-     * @return current level from client session
+     * @param clientSession 客户端会话
+     * @return 客户端会话 note 中的当前 LoA
      */
     public static int getCurrentLevelOfAuthentication(AuthenticatedClientSessionModel clientSession) {
         String clientSessionLoaNote = clientSession.getNote(Constants.LEVEL_OF_AUTHENTICATION);
@@ -66,34 +67,34 @@ public class LoAUtil {
 
 
     /**
-     * @param realm
-     * @return All LoA numbers configured in the conditions in the realm browser flow
+     * @param realm 领域模型
+     * @return browser 流程中配置的所有 LoA 级别
      */
     public static Stream<Integer> getLoAConfiguredInRealmBrowserFlow(RealmModel realm) {
         Map<Integer, Integer> loaMaxAges = getLoaMaxAgesConfiguredInRealmBrowserFlow(realm);
         if (loaMaxAges.isEmpty()) {
-            // Default values used when step-up conditions not used in the browser authentication flow.
+            // 未配置阶梯认证条件时使用默认值（SSO 为 0，普通认证为 1）
             // This is used for backwards compatibility and in case when step-up is not configured in the authentication flow (returning 1 in case of "normal" authentication, 0 for SSO authentication)
             return Stream.of(Constants.MINIMUM_LOA, 1);
         } else {
-            // Add 0 as a level used for SSO cookie
+            // 追加 0 作为 SSO cookie 对应的 LoA
             return Stream.concat(Stream.of(Constants.MINIMUM_LOA), loaMaxAges.keySet().stream());
         }
     }
 
 
     /**
-     * @param realm
-     * @return All LoA numbers configured in the conditions in the realm browser flow. Key is level, Value is maxAge for particular level
+     * @param realm 领域模型
+     * @return browser 流程中 LoA 级别到 maxAge 的映射
      */
     public static Map<Integer, Integer> getLoaMaxAgesConfiguredInRealmBrowserFlow(RealmModel realm) {
       return getLoaMaxAgesConfiguredInRealmFlow(realm, realm.getBrowserFlow().getId());
     }
 
     /**
-     * @param realm
-     * @param flowId
-     * @return All LoA numbers configured in the conditions in the realm flow @{param flowId}. Key is level, Vaue is maxAge for particular level
+     * @param realm 领域模型
+     * @param flowId 认证流程 ID
+     * @return 指定流程中 LoA 级别到 maxAge 的映射
      */
     public static Map<Integer, Integer> getLoaMaxAgesConfiguredInRealmFlow(RealmModel realm, String flowId) {
         List<AuthenticationExecutionModel> loaConditions = AuthenticatorUtil.getExecutionsByType(realm, flowId, ConditionalLoaAuthenticatorFactory.PROVIDER_ID);
@@ -112,6 +113,7 @@ public class LoAUtil {
     }
 
 
+    /** 从 LoA 条件配置读取级别数值。 */
     public static Integer getLevelFromLoaConditionConfiguration(AuthenticatorConfigModel loaConditionConfig) {
         String levelAsStr = loaConditionConfig.getConfig().get(ConditionalLoaAuthenticator.LEVEL);
         try {
@@ -124,11 +126,12 @@ public class LoAUtil {
     }
 
 
+    /** 从 LoA 条件配置读取 maxAge，兼容 Keycloak 17 旧选项。 */
     public static int getMaxAgeFromLoaConditionConfiguration(AuthenticatorConfigModel loaConditionConfig) {
         try {
             return Integer.parseInt(loaConditionConfig.getConfig().get(ConditionalLoaAuthenticator.MAX_AGE));
         } catch (NullPointerException | NumberFormatException e) {
-            // Backwards compatibility with Keycloak 17
+            // 与 Keycloak 17 向后兼容
             String storeLoaInUserSession = loaConditionConfig.getConfig().get(ConditionalLoaAuthenticator.STORE_IN_USER_SESSION);
             if (storeLoaInUserSession != null) {
                 int maxAge = Boolean.parseBoolean(storeLoaInUserSession) ? ConditionalLoaAuthenticator.DEFAULT_MAX_AGE : 0;
@@ -143,9 +146,9 @@ public class LoAUtil {
     }
 
     /**
-     * Return map where:
-     *  - keys are credential types corresponding to authenticators available in given authentication flow
-     *  - values are LoA levels of those credentials in the given flow (If not step-up authentication is used, values will be always Constants.NO_LOA)
+     * 返回凭证类型到 LoA 级别的映射：
+     *  - 键为认证流程中可用认证器对应的凭证类型
+     *  - 值为该凭证在流程中的 LoA（未启用阶梯认证时为 {@link Constants#NO_LOA}）
      *
      *  For instance if we have password as level1 and OTP or WebAuthn as available level2 authenticators it can return map like:
      *   { "password" -> 1,
@@ -158,8 +161,9 @@ public class LoAUtil {
      * @param topFlow
      * @return map as described above. Never returns null, but can return empty map.
      */
+    /** 计算并缓存指定认证流程的凭证类型到 LoA 映射。 */
     public static Map<String, Integer> getCredentialTypesToLoAMap(KeycloakSession session, RealmModel realm, AuthenticationFlowModel topFlow) {
-        // Attempt to cache mapping, so it is not needed to compute it multiple times at every authentication
+        // 缓存映射以避免每次认证重复计算
         String cacheKey = "flow:" + topFlow.getId();
         if (realm instanceof CachedRealmModel) {
             ConcurrentHashMap cachedWith = ((CachedRealmModel) realm).getCachedWith();
@@ -185,6 +189,7 @@ public class LoAUtil {
         return result;
     }
 
+    /** 递归遍历认证流程，填充凭证类型到 LoA 的映射。 */
     private static void fillCredentialsToLoAMap(KeycloakSession session, RealmModel realm, AuthenticationFlowModel authFlow, Set<String> availableCredentialTypes, AtomicReference<Integer> currentLevel, Map<String, Integer> result) {
         realm.getAuthenticationExecutionsStream(authFlow.getId()).forEachOrdered(execution -> {
             if (execution.isAuthenticatorFlow()) {
@@ -192,7 +197,7 @@ public class LoAUtil {
 
                 int levelWhenExecuted = currentLevel.get();
                 fillCredentialsToLoAMap(session, realm, subFlow, availableCredentialTypes, currentLevel, result);
-                currentLevel.set(levelWhenExecuted); // Subflow is finished. We should "reset" current level and set it to the same value before we started to process the subflow
+                currentLevel.set(levelWhenExecuted); // 子流程结束后恢复进入子流程前的 LoA 级别
             } else {
                 if (ConditionalLoaAuthenticatorFactory.PROVIDER_ID.equals(execution.getAuthenticator())) {
                     AuthenticatorConfigModel loaConditionConfig = realm.getAuthenticatorConfigById(execution.getAuthenticatorConfig());
@@ -203,7 +208,7 @@ public class LoAUtil {
                 } else {
                     AuthenticatorFactory factory = (AuthenticatorFactory) session.getKeycloakSessionFactory().getProviderFactory(Authenticator.class, execution.getAuthenticator());
                     if (factory == null) return;
-                    // reference-category points to the credentialType
+                    // reference-category 对应凭证类型
                     if (factory.getReferenceCategory() != null && availableCredentialTypes.contains(factory.getReferenceCategory())) {
                         result.put(factory.getReferenceCategory(), currentLevel.get());
                     }

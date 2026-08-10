@@ -44,6 +44,8 @@ import org.jboss.logging.Logger;
 import static org.keycloak.models.Constants.NO_LOA;
 
 /**
+ * 认证会话中与阶梯认证（Step-up Authentication）相关的 LoA 数据读写存储。
+ * <p>管理请求的认证级别、已认证级别及其有效期映射。</p>
  * CRUD data in the authentication session, which are related to step-up authentication
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
@@ -52,20 +54,25 @@ public class AcrStore {
 
     private static final Logger logger = Logger.getLogger(AcrStore.class);
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 当前认证会话。 */
     private final AuthenticationSessionModel authSession;
 
+    /** @param session Keycloak 会话 @param authSession 认证会话 */
     public AcrStore(KeycloakSession session, AuthenticationSessionModel authSession) {
         this.session = session;
         this.authSession = authSession;
     }
 
 
+    /** @return 客户端是否强制要求重新认证 LoA */
     public boolean isLevelOfAuthenticationForced() {
         return Boolean.parseBoolean(authSession.getClientNote(Constants.FORCE_LEVEL_OF_AUTHENTICATION));
     }
 
 
+    /** 取客户端与 kc_action 请求 LoA 中的较高值。 */
     public int getRequestedLevelOfAuthentication(AuthenticationFlowModel executionModel) {
         String requiredLoa = authSession.getClientNote(Constants.REQUESTED_LEVEL_OF_AUTHENTICATION);
         int requestedLoaByClient = requiredLoa == null ? NO_LOA : Integer.parseInt(requiredLoa);
@@ -74,7 +81,7 @@ public class AcrStore {
         return Math.max(requestedLoaByClient, requestedLoaByKcAction);
     }
 
-    //
+    /** 从 kc_action 凭证操作推断请求的 LoA 级别。 */
     private int getRequestedLevelOfAuthenticationByKcAction(AuthenticationFlowModel topLevelFlow) {
         RealmModel realm = authSession.getRealm();
         UserModel user = authSession.getAuthenticatedUser();
@@ -88,7 +95,7 @@ public class AcrStore {
 
                     Integer credentialTypeLevel = credentialTypesToLoa.get(credentialType);
                     if (credentialTypeLevel != null) {
-                        // We check if user has any credentials of given type available. For instance if user doesn't yet have any 2nd-factor configured, we don't request level2 from him
+                        // 若用户尚未配置对应凭证类型，则不要求更高 LoA（如无 OTP 时不强制 level2）
                         MultivaluedHashMap<Integer, String> loaToCredentialTypes = reverse(credentialTypesToLoa);
                         return getHighestLevelAvailableForUser(user, loaToCredentialTypes, credentialTypeLevel);
                     }
@@ -119,17 +126,19 @@ public class AcrStore {
             logger.tracef("User %s has credential of level %d available", user.getUsername(), levelToTry);
             return levelToTry;
         } else {
-            // Fallback to lower level
+            // 回退到更低 LoA 级别
             return getHighestLevelAvailableForUser(user, loaToCredentialTypes, levelToTry - 1);
         }
     }
 
+    /** @return 当前认证是否已满足请求的 LoA */
     public boolean isLevelOfAuthenticationSatisfiedFromCurrentAuthentication(AuthenticationFlowModel topFlow) {
         return getRequestedLevelOfAuthentication(topFlow)
                 <= getAuthenticatedLevelCurrentAuthentication();
     }
 
 
+    /** @return 客户端会话 note 中记录的当前 LoA */
     public static int getCurrentLevelOfAuthentication(AuthenticatedClientSessionModel clientSession) {
         String clientSessionLoaNote = clientSession.getNote(Constants.LEVEL_OF_AUTHENTICATION);
         return clientSessionLoaNote == null ? NO_LOA : Integer.parseInt(clientSessionLoaNote);
@@ -137,12 +146,12 @@ public class AcrStore {
 
 
     /**
-     * @param level level of authentication
-     * @param maxAge maxAge for which this level is considered valid
-     * @return True if the particular level was already authenticated before in this userSession and is still valid
+     * @param level 认证级别
+     * @param maxAge 该级别视为有效的最大时长（秒）
+     * @return 该级别在先前认证中已完成且仍在 maxAge 有效期内
      */
     public boolean isLevelAuthenticatedInPreviousAuth(int level, int maxAge) {
-        // In case of re-authentication requested from client (EG. by "prompt=login" or "max_age=0", the LoA from previous authentications are not
+        // 客户端强制重新认证（如 prompt=login、max_age=0）时不复用先前 LoA
         // considered. User needs to re-authenticate all requested levels again.
         if (AuthenticatorUtil.isForcedReauthentication(authSession)) return false;
 
@@ -158,9 +167,8 @@ public class AcrStore {
 
 
     /**
-     * return level, which was either:
-     * - directly authenticated in current authentication
-     * - or was already verified that can be re-used from previous authentication
+     * 返回当前认证中已达成或可复用的 LoA 级别。
+     *
      *
      * @return see above
      */
@@ -171,7 +179,7 @@ public class AcrStore {
 
 
     /**
-     * Save authenticated level to authenticationSession (for current authentication) and loa map (for future authentications)
+     * 将已认证 LoA 写入当前认证会话及 LoA 映射（供后续认证复用）
      *
      * @param level level to save
      */
@@ -181,7 +189,7 @@ public class AcrStore {
     }
 
     /**
-     * Set level to the current authentication session
+     * 将 LoA 写入当前认证会话 auth note
      *
      * @param level, which was authenticated by user
      */
@@ -190,7 +198,7 @@ public class AcrStore {
     }
 
     /**
-     * Set level to the current authentication session if an auth flow loa is present and is higher then the current loa
+     * 若认证流程 LoA 高于当前值，则更新当前认证会话 LoA
      */
     public void setAuthFlowLevelAuthenticatedToCurrentRequest() {
         if (authSession.getAuthNote(Constants.AUTHENTICATION_FLOW_LEVEL_OF_AUTHENTICATION) != null) {
@@ -217,14 +225,14 @@ public class AcrStore {
     }
 
     /**
-     * @return highest authenticated level from previous authentication, which is still valid (not yet expired)
+     * @return 先前认证中仍在有效期内的最高 LoA
      */
     public int getHighestAuthenticatedLevelFromPreviousAuthentication(String flowId) {
-        // No map found. User was not yet authenticated in this session
+        // 无 LoA 映射：用户在本会话中尚未完成认证
         Map<Integer, Integer> levels = getCurrentAuthenticatedLevelsMap();
         if (levels == null || levels.isEmpty()) return NO_LOA;
 
-        // Map was already saved, so it is SSO authentication at minimum. Using "0" level as the minimum level in this case
+        // 已有映射表示至少 SSO 认证，最低 LoA 为 0
         int maxLevel = Constants.MINIMUM_LOA;
         int currentTime = Time.currentTime();
 
@@ -251,7 +259,7 @@ public class AcrStore {
         return maxLevel;
     }
 
-    // Key is level number. Value is level authTime
+    // 键为 LoA 级别，值为该级别认证时间戳
     private Map<Integer, Integer> getCurrentAuthenticatedLevelsMap() {
         String loaMap = authSession.getAuthNote(Constants.LOA_MAP);
         if (loaMap == null) {

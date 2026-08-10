@@ -36,6 +36,7 @@ import org.jboss.logging.Logger;
 import static org.keycloak.authentication.authenticators.util.AuthenticatorUtils.getDisabledByBruteForceEventError;
 
 /**
+ * X509 证书用户名验证认证器（Direct Grant）：在 mutual SSL 握手后校验客户端证书、提取用户身份并匹配 realm 用户。
  * @author <a href="mailto:pnalyvayko@agi.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @date 7/31/2016
@@ -45,6 +46,7 @@ public class ValidateX509CertificateUsername extends AbstractX509ClientCertifica
 
     private final static Logger logger = Logger.getLogger(ValidateX509CertificateUsername.class);
 
+    /** 校验证书链、提取身份、查找用户并完成 Direct Grant 认证。 */
     @Override
     public void authenticate(AuthenticationFlowContext context) {
 
@@ -71,7 +73,7 @@ public class ValidateX509CertificateUsername extends AbstractX509ClientCertifica
             context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
             return;
         }
-        // Validate X509 client certificate
+        // 校验 X509 客户端证书（信任、时效、用途、策略、吊销）
         try {
             CertificateValidator.CertificateValidatorBuilder builder = certificateValidationParameters(context.getSession(), config);
             CertificateValidator validator = builder.build(certs);
@@ -83,7 +85,7 @@ public class ValidateX509CertificateUsername extends AbstractX509ClientCertifica
                     .checkRevocationStatus();
         } catch(Exception e) {
             logger.error(e.getMessage(), e);
-            // TODO use specific locale to load error messages
+            // TODO：使用特定 locale 加载错误消息
             Response challengeResponse = errorResponse(Response.Status.UNAUTHORIZED.getStatusCode(), "invalid_request", e.getMessage());
             context.failure(AuthenticationFlowError.INVALID_USER, challengeResponse);
             return;
@@ -146,8 +148,9 @@ public class ValidateX509CertificateUsername extends AbstractX509ClientCertifica
         context.success();
     }
 
+    /** 无操作。 */
     @Override
     public void action(AuthenticationFlowContext context) {
-        // Intentionally does nothing
+        // 故意不执行任何操作
     }
 }

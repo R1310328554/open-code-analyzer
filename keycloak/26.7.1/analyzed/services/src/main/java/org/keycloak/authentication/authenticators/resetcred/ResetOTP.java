@@ -41,18 +41,23 @@ import org.keycloak.services.messages.Messages;
 import static java.util.Arrays.asList;
 
 /**
+ * 重置 OTP 认证器：在凭据重置流程中移除现有 OTP 配置并触发“配置 OTP”必需操作。
+ * <p>支持不移除、移除单个或移除全部 OTP 凭证的可配置策略。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ResetOTP extends AbstractSetRequiredActionAuthenticator implements CredentialValidator<OTPCredentialProvider> {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "reset-otp";
 
+    /** 配置键：OTP 重置时的移除策略。 */
     private static final String ACTION_ON_OTP_RESET_FLAG = "action_on_otp_reset_flag";
     private static final String REMOVE_NONE = "Remove none";
     private static final String REMOVE_ONE = "Remove one";
     private static final String REMOVE_ALL = "Remove all";
 
+    /** 按配置移除 OTP 凭证并添加 CONFIGURE_TOTP 必需操作。 */
     @Override
     public void authenticate(AuthenticationFlowContext context) {
         AuthenticatorConfigModel authenticatorConfigModel = context.getAuthenticatorConfig();
@@ -72,6 +77,7 @@ public class ResetOTP extends AbstractSetRequiredActionAuthenticator implements 
                 otpCredentialModelList.forEach(otpCredentialModel -> context.getUser().credentialManager()
                         .removeStoredCredentialById(otpCredentialModel.getId()));
             }
+            // 移除单个：展示 OTP 选择表单
             else if (REMOVE_ONE.equals(selectedOption) && !otpCredentialModelList.isEmpty()) {
                 Response challengeResponse = context.form()
                         .setAttribute("configuredOtpCredentials", otpCredentialModelList)
@@ -82,18 +88,19 @@ public class ResetOTP extends AbstractSetRequiredActionAuthenticator implements 
             }
         }
 
-        // To ensure backwards compatability, the required action has to be set even if no configuration is available.
+        // 向后兼容：即使无配置也须设置 CONFIGURE_TOTP 必需操作
         context.getAuthenticationSession().addRequiredAction(UserModel.RequiredAction.CONFIGURE_TOTP);
         context.success();
     }
 
+    /** 处理用户选择的 OTP 凭证移除请求。 */
     @Override
     public void action(AuthenticationFlowContext context) {
         MultivaluedMap<String, String> inputData = context.getHttpRequest().getDecodedFormParameters();
 
         String credentialId = inputData.getFirst("selectedCredentialId");
 
-        // This case should never occur. If you there are no OTP credentials available the form will never be displayed in the first place.
+        // 正常情况下不应发生：无 OTP 时不展示表单，单选默认选中第一项
         // If the form is displayed the first OTP credential is selected by default, and it's not possible to unselect radio buttons.
         if (credentialId == null || credentialId.isEmpty()) {
             List<CredentialModel> otpCredentialModelList = context.getUser().credentialManager()
@@ -115,10 +122,12 @@ public class ResetOTP extends AbstractSetRequiredActionAuthenticator implements 
         context.success();
     }
 
+    /** @return 支持管理控制台配置 */
     @Override public boolean isConfigurable() {
         return true;
     }
 
+    /** @return OTP 重置移除策略配置项 */
     @Override public List<ProviderConfigProperty> getConfigProperties() {
         ProviderConfigurationBuilder builder = ProviderConfigurationBuilder.create();
 
@@ -135,6 +144,7 @@ public class ResetOTP extends AbstractSetRequiredActionAuthenticator implements 
         return builder.build();
     }
 
+    /** @return OTP 凭证提供者 */
     @Override
     public OTPCredentialProvider getCredentialProvider(KeycloakSession session) {
         return (OTPCredentialProvider)session.getProvider(CredentialProvider.class, "keycloak-otp");
@@ -145,11 +155,13 @@ public class ResetOTP extends AbstractSetRequiredActionAuthenticator implements 
         return getCredentialProvider(session).isConfiguredFor(realm, user);
     }
 
+    /** @return 管理控制台显示名称 */
     @Override
     public String getDisplayType() {
         return "Reset OTP";
     }
 
+    /** @return 移除 OTP 并设置配置 OTP 必需操作的说明 */
     @Override
     public String getHelpText() {
         return "Removes existing OTP configurations (if chosen) and sets the 'Configure OTP' required action.";
