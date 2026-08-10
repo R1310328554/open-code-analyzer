@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-// Config provides the Docker machine configuration.
+// Config 表示 docker-machine 的配置结构（驱动、TLS 与主机选项）。
 type Config struct {
 	Name   string
 	Driver struct {
@@ -38,23 +38,20 @@ type Config struct {
 	}
 }
 
-// helper function reads and unmarshalls the docker-machine
-// configuration from a reader.
+// parseReader 从 io.Reader 读取并解析 docker-machine JSON 配置。
 func parseReader(r io.Reader) (*Config, error) {
 	out := new(Config)
 	err := json.NewDecoder(r).Decode(out)
 	return out, err
 }
 
-// heper function parses the docker-machine configuration
-// from a json string.
+// parseString 从 JSON 字符串解析 docker-machine 配置。
 func parseString(s string) (*Config, error) {
 	r := strings.NewReader(s)
 	return parseReader(r)
 }
 
-// heper function parses the docker-machine configuration
-// from a json file.
+// parseFile 从本地 JSON 文件路径读取并解析 docker-machine 配置。
 func parseFile(path string) (*Config, error) {
 	d, err := ioutil.ReadFile(path)
 	if err != nil {

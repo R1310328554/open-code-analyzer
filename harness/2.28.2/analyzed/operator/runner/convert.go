@@ -22,6 +22,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
+// convertVolumes 将 "host:container" 格式的卷挂载字符串列表转为映射表。
 func convertVolumes(from []string) map[string]string {
 	to := map[string]string{}
 	for _, s := range from {
@@ -36,6 +37,7 @@ func convertVolumes(from []string) map[string]string {
 	return to
 }
 
+// convertSecrets 将 core.Secret 切片转为名称到明文的映射。
 func convertSecrets(from []*core.Secret) map[string]string {
 	to := map[string]string{}
 	for _, secret := range from {
@@ -44,6 +46,7 @@ func convertSecrets(from []*core.Secret) map[string]string {
 	return to
 }
 
+// convertRegistry 将 Drone 镜像仓库凭据转换为 runtime 引擎所需的 DockerAuth 列表。
 func convertRegistry(from []*core.Registry) []*engine.DockerAuth {
 	var to []*engine.DockerAuth
 	for _, registry := range from {
@@ -56,6 +59,7 @@ func convertRegistry(from []*core.Registry) []*engine.DockerAuth {
 	return to
 }
 
+// convertLines 批量将 runtime 日志行转换为 core.Line 结构。
 func convertLines(from []*runtime.Line) []*core.Line {
 	var to []*core.Line
 	for _, v := range from {
@@ -68,6 +72,7 @@ func convertLines(from []*runtime.Line) []*core.Line {
 	return to
 }
 
+// convertLine 将单条 runtime 日志行转换为 core.Line。
 func convertLine(from *runtime.Line) *core.Line {
 	return &core.Line{
 		Number:    from.Number,

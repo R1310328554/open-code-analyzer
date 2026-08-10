@@ -43,7 +43,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Limits defines runtime container limits.
+// Limits 定义运行中容器的资源上限（内存、CPU、共享内存等）。
 type Limits struct {
 	MemSwapLimit int64
 	MemLimit     int64
@@ -53,8 +53,7 @@ type Limits struct {
 	CPUSet       string
 }
 
-// Runner is responsible for retrieving and executing builds, and
-// reporting back their status to the central server.
+// Runner 负责从服务器拉取并执行构建阶段，并将状态回传至 Drone 中心服务。
 type Runner struct {
 	sync.Mutex
 
@@ -80,6 +79,7 @@ type Runner struct {
 	Variant  string
 }
 
+// handleError 在流水线执行失败时将阶段与步骤标记为错误/跳过，并触发 AfterAll 收尾。
 func (r *Runner) handleError(ctx context.Context, stage *core.Stage, err error) error {
 	switch stage.Status {
 	case core.StatusPending,
@@ -114,6 +114,7 @@ func (r *Runner) handleError(ctx context.Context, stage *core.Stage, err error) 
 // removes some code. this is for testing purposes only.
 //
 
+// Run 拉取阶段详情、编译 YAML 流水线、注册运行时钩子并在本地引擎上执行全部步骤。
 func (r *Runner) Run(ctx context.Context, id int64) error {
 	logger := logrus.WithFields(
 		logrus.Fields{
@@ -524,8 +525,7 @@ func (r *Runner) Run(ctx context.Context, id int64) error {
 	return r.Manager.AfterAll(ctx, m.Stage)
 }
 
-// Start starts N build runner processes. Each process polls
-// the server for pending builds to execute.
+// Start 启动 N 个并发 goroutine，各自轮询服务器待执行的构建任务。
 func (r *Runner) Start(ctx context.Context, n int) error {
 	var g errgroup.Group
 	for i := 0; i < n; i++ {
@@ -536,6 +536,7 @@ func (r *Runner) Start(ctx context.Context, n int) error {
 	return g.Wait()
 }
 
+// start 在循环中调用 poll，直至上下文取消；单次 poll 错误不会终止运行器。
 func (r *Runner) start(ctx context.Context) error {
 	for {
 		select {
@@ -551,6 +552,7 @@ func (r *Runner) start(ctx context.Context) error {
 	}
 }
 
+// poll 向 BuildManager 请求队列项、Accept 锁定阶段、监听取消信号并执行 Run。
 func (r *Runner) poll(ctx context.Context) error {
 	logger := logrus.WithFields(
 		logrus.Fields{

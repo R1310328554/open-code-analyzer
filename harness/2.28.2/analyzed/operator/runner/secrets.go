@@ -16,6 +16,7 @@ package runner
 
 import "github.com/drone/drone/core"
 
+// toSecretMap 将 Secret 列表转为名称到值的 map，供编译器或运行时查找。
 func toSecretMap(secrets []*core.Secret) map[string]string {
 	set := map[string]string{}
 	for _, secret := range secrets {

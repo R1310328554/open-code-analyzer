@@ -14,12 +14,10 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// ErrMembership is returned when attempting to create a new
-// user account for a user that is not a member of an approved
-// organization.
+// ErrMembership 表示新用户不属于任何已批准组织时拒绝注册。
 var ErrMembership = errors.New("User must be a member of an approved organization")
 
-// Membership limits user access by organization membership.
+// Membership 返回按组织成员资格白名单限制新用户注册的准入控制器。
 func Membership(service core.OrganizationService, accounts []string) core.AdmissionService {
 	lookup := map[string]struct{}{}
 	for _, account := range accounts {
@@ -30,11 +28,13 @@ func Membership(service core.OrganizationService, accounts []string) core.Admiss
 	return &membership{service: service, account: lookup}
 }
 
+// membership 实现基于组织成员关系的准入策略。
 type membership struct {
 	service core.OrganizationService
 	account map[string]struct{}
 }
 
+// Admit 对新用户校验其登录名或所属组织是否在白名单内；已存在用户直接放行。
 func (s *membership) Admit(ctx context.Context, user *core.User) error {
 	// this admission policy is only enforced for
 	// new users. Existing users are always admitted.

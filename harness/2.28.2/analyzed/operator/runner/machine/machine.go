@@ -12,12 +12,10 @@ import (
 	"path/filepath"
 )
 
-// ErrNoMachines is returned when no valid or matching
-// docker machines are found in the docker-machine home
-// directory.
+// ErrNoMachines 表示在 docker-machine 主目录下未找到有效或匹配的运行器。
 var ErrNoMachines = errors.New("No Docker Machines found")
 
-// Load loads the docker-machine runners.
+// Load 扫描 docker-machine home 目录，加载全部或匹配 glob 模式的机器配置。
 func Load(home, match string) ([]*Config, error) {
 	path := filepath.Join(home, "machines")
 	entries, err := ioutil.ReadDir(path)

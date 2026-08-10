@@ -18,7 +18,7 @@ package admission
 
 import "github.com/drone/drone/core"
 
-// Membership is a no-op admission controller
+// Membership OSS 版为无操作准入控制器，不做组织成员校验。
 func Membership(core.OrganizationService, []string) core.AdmissionService {
 	return new(noop)
 }

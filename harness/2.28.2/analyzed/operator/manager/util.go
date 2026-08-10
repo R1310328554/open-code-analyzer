@@ -18,6 +18,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
+// isBuildComplete 判断构建下所有阶段是否均已结束（无 pending/running/waiting 等未完成状态）。
 func isBuildComplete(stages []*core.Stage) bool {
 	for _, stage := range stages {
 		switch stage.Status {
@@ -32,6 +33,7 @@ func isBuildComplete(stages []*core.Stage) bool {
 	return true
 }
 
+// isLastStage 判断给定阶段是否为同构建中最后更新的阶段（按 Updated 与 Number 排序）。
 func isLastStage(stage *core.Stage, stages []*core.Stage) bool {
 	for _, sibling := range stages {
 		if stage.Number == sibling.Number {
@@ -47,6 +49,7 @@ func isLastStage(stage *core.Stage, stages []*core.Stage) bool {
 	return true
 }
 
+// isDep 判断阶段 a 是否为阶段 b 的直接依赖项。
 func isDep(a *core.Stage, b *core.Stage) bool {
 	for _, name := range b.DependsOn {
 		if name == a.Name {
@@ -56,6 +59,7 @@ func isDep(a *core.Stage, b *core.Stage) bool {
 	return false
 }
 
+// areDepsComplete 检查阶段的所有 DependsOn 依赖是否均已完成。
 func areDepsComplete(stage *core.Stage, stages []*core.Stage) bool {
 	deps := map[string]struct{}{}
 	for _, dep := range stage.DependsOn {
@@ -72,8 +76,7 @@ func areDepsComplete(stage *core.Stage, stages []*core.Stage) bool {
 	return true
 }
 
-// helper function returns true if the current stage is the last
-// dependency in the tree.
+// isLastDep 判断 curr 是否为 next 依赖树中最后完成的那一项。
 func isLastDep(curr, next *core.Stage, stages []*core.Stage) bool {
 	deps := map[string]struct{}{}
 	for _, dep := range next.DependsOn {
@@ -93,7 +96,7 @@ func isLastDep(curr, next *core.Stage, stages []*core.Stage) bool {
 	return true
 }
 
-// helper function returns true if all dependencies are complete.
+// depsComplete 检查阶段声明的所有依赖名称是否均能在 siblings 中找到。
 func depsComplete(stage *core.Stage, siblings []*core.Stage) bool {
 	for _, dep := range stage.DependsOn {
 		found := false

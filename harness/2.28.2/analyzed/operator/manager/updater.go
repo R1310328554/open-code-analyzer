@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// updater 在步骤状态变更后同步数据库、发布事件并触发 Webhook。
 type updater struct {
 	Builds  core.BuildStore
 	Events  core.Pubsub
@@ -32,6 +33,7 @@ type updater struct {
 	Webhook core.WebhookSender
 }
 
+// do 持久化步骤更新，组装完整仓库/构建上下文后发布 Pubsub 事件并发送全局 Webhook。
 func (u *updater) do(ctx context.Context, step *core.Step) error {
 	logger := logrus.WithFields(
 		logrus.Fields{

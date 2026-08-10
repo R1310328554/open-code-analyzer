@@ -15,7 +15,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// External returns a new external Admission controller.
+// External 创建通过 HTTP 调用外部插件的准入控制器。
 func External(endpoint, secret string, skipVerify bool) core.AdmissionService {
 	return &external{
 		endpoint:   endpoint,
@@ -24,12 +24,14 @@ func External(endpoint, secret string, skipVerify bool) core.AdmissionService {
 	}
 }
 
+// external 将登录/注册事件转发至配置的 Drone 准入插件端点。
 type external struct {
 	endpoint   string
 	secret     string
 	skipVerify bool
 }
 
+// Admit 向外部服务发送登录或注册事件，并根据响应更新 user.Admin 等字段。
 func (c *external) Admit(ctx context.Context, user *core.User) error {
 	if c.endpoint == "" {
 		return nil
@@ -57,6 +59,7 @@ func (c *external) Admit(ctx context.Context, user *core.User) error {
 	return err
 }
 
+// toUser 将 core.User 转换为 drone-go 插件 API 使用的 User 结构。
 func toUser(from *core.User) drone.User {
 	return drone.User{
 		ID:        from.ID,

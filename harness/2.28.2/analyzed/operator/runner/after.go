@@ -12,4 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// runner 包实现 Drone 构建运行器：拉取队列任务、编译 YAML 流水线并在本地引擎上执行。
 package runner

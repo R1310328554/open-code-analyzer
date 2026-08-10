@@ -20,15 +20,17 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Combine combines admission services.
+// Combine 将多个 AdmissionService 组合为链式校验：任一拒绝则整体失败。
 func Combine(service ...core.AdmissionService) core.AdmissionService {
 	return &combined{services: service}
 }
 
+// combined 按顺序调用各子准入服务。
 type combined struct {
 	services []core.AdmissionService
 }
 
+// Admit 依次调用各子服务的 Admit，首个错误即返回。
 func (s *combined) Admit(ctx context.Context, user *core.User) error {
 	for _, service := range s.services {
 		if err := service.Admit(ctx, user); err != nil {

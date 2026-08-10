@@ -22,6 +22,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
+// systemEnviron 生成 Drone 系统级 CI 环境变量（协议、主机、版本等）。
 func systemEnviron(system *core.System) map[string]string {
 	return map[string]string{
 		"CI":                    "true",
@@ -33,6 +34,7 @@ func systemEnviron(system *core.System) map[string]string {
 	}
 }
 
+// agentEnviron 生成运行器/代理机器相关的环境变量。
 func agentEnviron(runner *Runner) map[string]string {
 	return map[string]string{
 		"DRONE_MACHINE":         runner.Machine,
@@ -42,6 +44,7 @@ func agentEnviron(runner *Runner) map[string]string {
 	}
 }
 
+// repoEnviron 生成仓库元数据相关的 CI 环境变量（含 0.8 兼容别名）。
 func repoEnviron(repo *core.Repository) map[string]string {
 	return map[string]string{
 		"DRONE_REPO":            repo.Slug,
@@ -70,6 +73,7 @@ func repoEnviron(repo *core.Repository) map[string]string {
 	}
 }
 
+// stageEnviron 生成当前流水线阶段的环境变量。
 func stageEnviron(stage *core.Stage) map[string]string {
 	return map[string]string{
 		"DRONE_STAGE_KIND":       "pipeline",
@@ -83,6 +87,7 @@ func stageEnviron(stage *core.Stage) map[string]string {
 	}
 }
 
+// buildEnviron 生成构建/commit/分支相关环境变量，并按 ref 补充 tag 或 PR 编号。
 func buildEnviron(build *core.Build) map[string]string {
 	env := map[string]string{
 		"DRONE_BRANCH":               build.Target,
@@ -139,6 +144,7 @@ func buildEnviron(build *core.Build) map[string]string {
 	return env
 }
 
+// linkEnviron 生成指向 Drone UI 中该次构建的链接环境变量。
 func linkEnviron(repo *core.Repository, build *core.Build, system *core.System) map[string]string {
 	return map[string]string{
 		"DRONE_BUILD_LINK": fmt.Sprintf(
@@ -151,12 +157,10 @@ func linkEnviron(repo *core.Repository, build *core.Build, system *core.System) 
 	}
 }
 
-// regular expression to extract the pull request number
-// from the git ref (e.g. refs/pulls/{d}/head)
+// re 从 git ref（如 refs/pulls/{d}/head）中提取 Pull Request 编号的正则。
 var re = regexp.MustCompile("\\d+")
 
-// helper function combines one or more maps of environment
-// variables into a single map.
+// combineEnviron 将多组环境变量映射合并为单一 map（后者覆盖同名键）。
 func combineEnviron(env ...map[string]string) map[string]string {
 	c := map[string]string{}
 	for _, e := range env {

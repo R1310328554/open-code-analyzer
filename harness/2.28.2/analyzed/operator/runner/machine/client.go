@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// machine 包提供 docker-machine 配置加载与 Docker 客户端创建（非 OSS 构建）。
 package machine
 
 // import (
