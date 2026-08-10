@@ -26,27 +26,38 @@ import com.alibaba.nacos.plugin.auth.api.RequestResource;
 
 import java.util.Properties;
 
+/**
+ * AI 维护 HTTP 上下文：持有 {@link ClientHttpProxy} 并提供命名空间、鉴权资源与请求构建。
+ *
+ * <p>由 {@link NacosAiMaintainerServiceImpl} 及各子服务实现共享。</p>
+ */
 final class AiMaintainerHttpContext {
     
+    /** 维护客户端 HTTP 代理（服务端列表、鉴权、同步请求）。 */
     private final ClientHttpProxy clientHttpProxy;
     
+    /** 根据属性创建 HTTP 代理并初始化序列化。 */
     AiMaintainerHttpContext(Properties properties) throws NacosException {
         this(new ClientHttpProxy(properties));
     }
     
+    /** 注入已有 HTTP 代理（测试或组合场景）。 */
     AiMaintainerHttpContext(ClientHttpProxy clientHttpProxy) {
         this.clientHttpProxy = clientHttpProxy;
         ParamUtil.initSerialization();
     }
     
+    /** 返回底层 HTTP 代理。 */
     ClientHttpProxy getClientHttpProxy() {
         return clientHttpProxy;
     }
     
+    /** 空命名空间时回退为 {@link Constants#DEFAULT_NAMESPACE_ID}。 */
     String resolveNamespace(String namespaceId) {
         return StringUtils.isBlank(namespaceId) ? Constants.DEFAULT_NAMESPACE_ID : namespaceId;
     }
     
+    /** 构建 AI 类型 {@link RequestResource}（默认 group、可空资源名）。 */
     RequestResource buildRequestResource(String namespaceId, String resourceName) {
         RequestResource.Builder builder = RequestResource.aiBuilder();
         builder.setNamespace(namespaceId);
@@ -55,6 +66,7 @@ final class AiMaintainerHttpContext {
         return builder.build();
     }
     
+    /** 创建绑定鉴权资源的 HTTP 请求构建器。 */
     HttpRequest.Builder buildHttpRequestBuilder(RequestResource resource) {
         return new HttpRequest.Builder().setResource(resource);
     }

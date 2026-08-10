@@ -31,27 +31,35 @@ import com.alibaba.nacos.api.model.Page;
 import java.util.List;
 
 /**
- * Nacos AI module maintainer service.
+ * Nacos AI 维护服务聚合接口：组合 MCP、A2A、AgentSpec、Skill、Prompt 与 Pipeline 子服务。
+ *
+ * <p>默认方法将顶层 MCP/A2A API 委托给 {@link #mcp()} 与 {@link #a2a()} 子接口。</p>
  *
  * @author xiweng.yy
  */
 public interface AiMaintainerService extends McpMaintainerService, A2aMaintainerService {
     
+    /** 返回 Skill 维护子服务。 */
     @Since("3.2.0")
     SkillMaintainerService skill();
     
+    /** 返回 AgentSpec 维护子服务。 */
     @Since("3.2.0")
     AgentSpecMaintainerService agentSpec();
     
+    /** 返回 MCP 维护子服务。 */
     @Since("3.2.0")
     McpMaintainerService mcp();
     
+    /** 返回 A2A 维护子服务。 */
     @Since("3.2.0")
     A2aMaintainerService a2a();
     
+    /** 返回 Prompt 维护子服务。 */
     @Since("3.2.0")
     PromptMaintainerService prompt();
     
+    /** 返回 Pipeline 维护子服务。 */
     @Since("3.2.0")
     PipelineMaintainerService pipeline();
     

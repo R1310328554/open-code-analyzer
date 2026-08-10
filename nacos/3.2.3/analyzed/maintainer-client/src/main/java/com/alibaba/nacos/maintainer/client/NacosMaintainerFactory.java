@@ -23,17 +23,21 @@ import com.alibaba.nacos.maintainer.client.config.ConfigMaintainerService;
 import java.util.Properties;
 
 /**
- * Nacos maintainer service.
+ * Nacos 维护客户端工厂：提供配置维护服务的便捷创建入口。
+ *
+ * <p>内部委托 {@link ConfigMaintainerFactory} 完成实例化。</p>
  *
  * @author Nacos
  */
 public class NacosMaintainerFactory {
     
+    /** 根据服务端地址列表创建配置维护服务。 */
     public static ConfigMaintainerService createConfigMaintainerService(String serverList)
         throws NacosException {
         return ConfigMaintainerFactory.createConfigMaintainerService(serverList);
     }
     
+    /** 根据客户端 {@link Properties} 创建配置维护服务。 */
     public static ConfigMaintainerService createConfigMaintainerService(Properties properties)
         throws NacosException {
         return ConfigMaintainerFactory.createConfigMaintainerService(properties);

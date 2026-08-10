@@ -21,24 +21,29 @@ import com.alibaba.nacos.api.exception.NacosException;
 import java.util.Properties;
 
 /**
- * Nacos AI module maintainer service implementation.
+ * {@link AiMaintainerService} 默认实现：组合各 AI 子维护服务并共享 {@link AiMaintainerHttpContext}。
  *
  * @author xiweng.yy
  */
 public class NacosAiMaintainerServiceImpl implements AiMaintainerService {
     
+    /** Skill 维护子服务委托。 */
     private final SkillMaintainerService skillMaintainerService;
     
+    /** AgentSpec 维护子服务委托。 */
     private final AgentSpecMaintainerService agentSpecMaintainerService;
     
+    /** MCP 维护子服务委托。 */
     private final McpMaintainerService mcpMaintainerService;
     
+    /** A2A 维护子服务委托。 */
     private final A2aMaintainerService a2aMaintainerService;
     
     private final PromptMaintainerService promptMaintainerService;
     
     private final PipelineMaintainerService pipelineMaintainerService;
     
+    /** 初始化 HTTP 上下文并构造全部 AI 子维护服务。 */
     public NacosAiMaintainerServiceImpl(Properties properties) throws NacosException {
         AiMaintainerHttpContext context = new AiMaintainerHttpContext(properties);
         SkillMaintainerService skillDelegate = new SkillMaintainerServiceImpl(context);

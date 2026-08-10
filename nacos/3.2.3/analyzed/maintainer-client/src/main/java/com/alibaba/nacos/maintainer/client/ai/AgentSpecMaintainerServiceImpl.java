@@ -37,24 +37,26 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * AgentSpec maintainer service implementation via HTTP.
+ * {@link AgentSpecMaintainerService} HTTP 实现：调用 AgentSpec Admin 控制器接口。
  *
- * <p>Mirrors the Skill implementation pattern in {@link NacosAiMaintainerServiceImpl},
- * calling {@code AgentSpecAdminController} endpoints through {@link ClientHttpProxy}.
+ * <p>实现模式与 {@link NacosAiMaintainerServiceImpl} 中 Skill 子服务一致，经 {@link ClientHttpProxy} 同步访问服务端。</p>
  *
  * @author nacos
  */
 public class AgentSpecMaintainerServiceImpl extends AbstractAiDelegateMaintainerService
     implements AgentSpecMaintainerService {
     
+    /** 根据客户端属性构造 AgentSpec 维护服务。 */
     public AgentSpecMaintainerServiceImpl(Properties properties) throws NacosException {
         this(new AiMaintainerHttpContext(properties));
     }
     
+    /** 使用共享 HTTP 上下文构造（供 {@link NacosAiMaintainerServiceImpl} 组合）。 */
     AgentSpecMaintainerServiceImpl(AiMaintainerHttpContext context) {
         super(context);
     }
     
+    /** 先读管理元数据再拉取对应版本完整 AgentSpec。 */
     @Override
     public AgentSpec getAgentSpecDetail(String namespaceId, String agentSpecName)
         throws NacosException {
@@ -457,6 +459,7 @@ public class AgentSpecMaintainerServiceImpl extends AbstractAiDelegateMaintainer
         return ErrorCode.SUCCESS.getCode().equals(result.getCode());
     }
     
+    /** 从元数据解析应展示的版本：editing → reviewing → latest → 首个版本。 */
     private String resolveAgentSpecVersion(AgentSpecMeta meta) {
         if (meta == null) {
             return null;

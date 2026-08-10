@@ -21,10 +21,9 @@ import com.alibaba.nacos.api.model.v2.Result;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Admin API client for pipeline execution queries ({@code /v3/admin/ai/pipelines/...}).
+ * AI 流水线执行 Admin API 客户端（{@code /v3/admin/ai/pipelines/...}）。
  *
- * <p>Methods return the server {@link Result} wrapper so callers can inspect {@code code} / {@code message}
- * without relying on thrown exceptions for business failures.</p>
+ * <p>方法返回服务端 {@link Result} 包装，便于调用方检查 {@code code}/{@code message}，业务失败不一定抛异常。</p>
  *
  * @author nacos
  * @since 3.2.1
@@ -32,7 +31,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 public interface PipelineAdminClient {
     
     /**
-     * GET {@code /v3/admin/ai/pipelines/detail?pipelineId=}.
+     * GET {@code /v3/admin/ai/pipelines/detail?pipelineId=} 查询流水线详情。
      *
      * @param pipelineId pipeline execution id
      * @return parsed {@link Result}; may carry non-success {@code code} when HTTP status is 200
@@ -41,7 +40,7 @@ public interface PipelineAdminClient {
     Result<JsonNode> getPipelineDetail(String pipelineId) throws NacosException;
     
     /**
-     * GET {@code /v3/admin/ai/pipelines/list} with pagination query parameters.
+     * GET {@code /v3/admin/ai/pipelines/list} 分页列出流水线执行记录。
      *
      * @param resourceType resource type (required)
      * @param resourceName resource name (optional)

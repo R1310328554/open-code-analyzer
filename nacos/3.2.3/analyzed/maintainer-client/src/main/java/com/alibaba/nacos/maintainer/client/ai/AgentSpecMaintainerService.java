@@ -26,14 +26,16 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.model.Page;
 
 /**
- * Nacos AI module AgentSpec relative maintainer service.
+ * AgentSpec 维护服务接口：覆盖 Agent 规格的上传、草稿、发布与治理元数据管理。
+ *
+ * <p>支持 zip 导入、版本流水线（submit/publish/forcePublish/redraft）及上下线、标签、可见性等运维操作。</p>
  *
  * @author nacos
  */
 public interface AgentSpecMaintainerService {
     
     /**
-     * Get agentspec detail.
+     * 获取 AgentSpec 详情（默认解析 editing/reviewing/latest 版本）。
      *
      * @param namespaceId    namespace ID
      * @param agentSpecName  agentspec name
@@ -44,7 +46,7 @@ public interface AgentSpecMaintainerService {
     AgentSpec getAgentSpecDetail(String namespaceId, String agentSpecName) throws NacosException;
     
     /**
-     * Get agentspec detail with default namespace.
+     * 在默认命名空间获取 AgentSpec 详情。
      *
      * @param agentSpecName agentspec name
      * @return agentspec detail
@@ -56,7 +58,7 @@ public interface AgentSpecMaintainerService {
     }
     
     /**
-     * Get agentspec admin detail.
+     * 获取 AgentSpec 管理元数据（版本列表、标签等）。
      *
      * @param namespaceId namespace ID
      * @param agentSpecName agentspec name
@@ -68,7 +70,7 @@ public interface AgentSpecMaintainerService {
         throws NacosException;
     
     /**
-     * Get specific agentspec version detail.
+     * 获取指定版本的 AgentSpec 完整内容。
      *
      * @param namespaceId namespace ID
      * @param agentSpecName agentspec name
@@ -87,6 +89,7 @@ public interface AgentSpecMaintainerService {
      * @param version agentspec version
      * @return agentspec version detail
      * @throws NacosException if fail to get agentspec version detail
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.0")
     default AgentSpec getAgentSpecVersionDetail(String agentSpecName, String version)
@@ -103,6 +106,7 @@ public interface AgentSpecMaintainerService {
      * @param version agentspec version
      * @return agentspec with resource list containing only name and type
      * @throws NacosException if fail to get agentspec version meta
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.1")
     AgentSpec getAgentSpecVersionMeta(String namespaceId, String agentSpecName, String version)
@@ -115,6 +119,7 @@ public interface AgentSpecMaintainerService {
      * @param version agentspec version
      * @return agentspec with resource list containing only name and type
      * @throws NacosException if fail to get agentspec version meta
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.1")
     default AgentSpec getAgentSpecVersionMeta(String agentSpecName, String version)
@@ -123,7 +128,7 @@ public interface AgentSpecMaintainerService {
     }
     
     /**
-     * Delete agentspec.
+     * 删除指定命名空间下的 AgentSpec。
      *
      * @param namespaceId    namespace ID
      * @param agentSpecName  agentspec name
@@ -139,6 +144,7 @@ public interface AgentSpecMaintainerService {
      * @param agentSpecName agentspec name
      * @return true if delete success
      * @throws NacosException if fail to delete agentspec
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.0")
     default boolean deleteAgentSpec(String agentSpecName) throws NacosException {
@@ -146,7 +152,7 @@ public interface AgentSpecMaintainerService {
     }
     
     /**
-     * List agentspecs with pagination.
+     * 分页列出 AgentSpec 基础信息。
      *
      * @param namespaceId    namespace ID
      * @param agentSpecName  agentspec name pattern for filtering
@@ -169,6 +175,7 @@ public interface AgentSpecMaintainerService {
      * @param pageSize      page size
      * @return paged agentspec list
      * @throws NacosException if fail to list agentspecs
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.0")
     default Page<AgentSpecBasicInfo> listAgentSpecs(String agentSpecName, int pageNo, int pageSize)
@@ -187,6 +194,7 @@ public interface AgentSpecMaintainerService {
      * @param pageSize page size
      * @return paged admin list
      * @throws NacosException if fail to list agentspec admin items
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.0")
     Page<AgentSpecSummary> listAgentSpecAdminItems(String namespaceId, String agentSpecName,
@@ -209,6 +217,7 @@ public interface AgentSpecMaintainerService {
      * @param pageSize      page size
      * @return paged admin list
      * @throws NacosException if fail to list agentspec admin items
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.1")
     default Page<AgentSpecSummary> listAgentSpecAdminItems(String namespaceId, String agentSpecName,
@@ -219,7 +228,7 @@ public interface AgentSpecMaintainerService {
     }
     
     /**
-     * Upload agentspec from zip file.
+     * 从 zip 字节流上传 AgentSpec。
      *
      * @param namespaceId namespace ID
      * @param zipBytes    zip file bytes
@@ -240,6 +249,7 @@ public interface AgentSpecMaintainerService {
      * @param overwrite whether to overwrite the current editable draft when the agentspec already exists
      * @return agentspec name
      * @throws NacosException if fail to upload agentspec
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.0")
     String uploadAgentSpecFromZip(String namespaceId, byte[] zipBytes, boolean overwrite)
@@ -251,6 +261,7 @@ public interface AgentSpecMaintainerService {
      * @param zipBytes zip file bytes
      * @return agentspec name
      * @throws NacosException if fail to upload agentspec
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.0")
     default String uploadAgentSpecFromZip(byte[] zipBytes) throws NacosException {
@@ -258,7 +269,7 @@ public interface AgentSpecMaintainerService {
     }
     
     /**
-     * Create draft version for an agentspec.
+     * 为 AgentSpec 创建草稿版本。
      *
      * @param namespaceId     namespace ID
      * @param agentSpecName   agentspec name
@@ -281,6 +292,7 @@ public interface AgentSpecMaintainerService {
      * @param targetVersion   target version (optional, auto-increment if blank)
      * @return created draft version
      * @throws NacosException if fail to create draft
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.1")
     String createDraft(String namespaceId, String agentSpecName, String basedOnVersion,
@@ -288,7 +300,7 @@ public interface AgentSpecMaintainerService {
         throws NacosException;
     
     /**
-     * Update current draft content.
+     * 更新当前草稿内容。
      *
      * @param namespaceId    namespace ID
      * @param agentSpecCard  agentspec card JSON string
@@ -307,12 +319,13 @@ public interface AgentSpecMaintainerService {
      * @param agentSpecName  agentspec name
      * @return true if delete success
      * @throws NacosException if fail to delete draft
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.0")
     boolean deleteDraft(String namespaceId, String agentSpecName) throws NacosException;
     
     /**
-     * Submit a version for pipeline review.
+     * 提交版本进入流水线审核。
      *
      * @param namespaceId    namespace ID
      * @param agentSpecName  agentspec name
@@ -324,7 +337,7 @@ public interface AgentSpecMaintainerService {
     String submit(String namespaceId, String agentSpecName, String version) throws NacosException;
     
     /**
-     * Publish an approved reviewing version.
+     * 发布已通过审核的版本。
      *
      * @param namespaceId        namespace ID
      * @param agentSpecName      agentspec name
@@ -339,7 +352,7 @@ public interface AgentSpecMaintainerService {
         throws NacosException;
     
     /**
-     * Force-publish an agentspec version, bypassing pipeline validation.
+     * 强制发布版本（跳过流水线校验）。
      *
      * @param namespaceId       namespace ID
      * @param agentSpecName     agentspec name
@@ -354,7 +367,7 @@ public interface AgentSpecMaintainerService {
         throws NacosException;
     
     /**
-     * Re-edit a reviewed agent spec version, transitioning it back to draft status.
+     * 将已审核版本退回草稿重新编辑。
      *
      * @param namespaceId   namespace ID
      * @param agentSpecName agent spec name
@@ -373,6 +386,7 @@ public interface AgentSpecMaintainerService {
      * @param labels         JSON string
      * @return true if update success
      * @throws NacosException if fail to update labels
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.0")
     boolean updateLabels(String namespaceId, String agentSpecName, String labels)
@@ -386,13 +400,14 @@ public interface AgentSpecMaintainerService {
      * @param bizTags biz tags JSON string
      * @return true if update success
      * @throws NacosException if fail to update biz tags
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.0")
     boolean updateBizTags(String namespaceId, String agentSpecName, String bizTags)
         throws NacosException;
     
     /**
-     * Online/offline operation.
+     * AgentSpec 或指定版本上下线操作。
      *
      * @param namespaceId    namespace ID
      * @param agentSpecName  agentspec name
@@ -415,6 +430,7 @@ public interface AgentSpecMaintainerService {
      * @param scope scope value, e.g. PUBLIC/PRIVATE
      * @return true if update success
      * @throws NacosException if fail to update scope
+      * <p>AgentSpec 治理 API；详见接口说明。</p>
      */
     @Since("3.2.0")
     boolean updateScope(String namespaceId, String agentSpecName, String scope)

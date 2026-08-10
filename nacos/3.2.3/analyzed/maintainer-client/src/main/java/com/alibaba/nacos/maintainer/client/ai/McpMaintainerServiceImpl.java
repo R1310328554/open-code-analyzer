@@ -35,6 +35,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * {@link McpMaintainerService} HTTP 实现：访问 MCP Admin API 完成 CRUD 与分页查询。
+ */
 final class McpMaintainerServiceImpl extends AbstractAiDelegateMaintainerService
     implements McpMaintainerService {
     
@@ -42,10 +45,12 @@ final class McpMaintainerServiceImpl extends AbstractAiDelegateMaintainerService
     
     private static final String SEARCH_ACCURATE = "accurate";
     
+    /** 使用共享 HTTP 上下文构造 MCP 维护服务。 */
     McpMaintainerServiceImpl(AiMaintainerHttpContext context) {
         super(context);
     }
     
+    /** 精确模式分页列出 MCP Server。 */
     @Override
     public Page<McpServerBasicInfo> listMcpServer(String namespaceId, String mcpName, int pageNo,
         int pageSize)
@@ -53,6 +58,7 @@ final class McpMaintainerServiceImpl extends AbstractAiDelegateMaintainerService
         return queryServerPage(namespaceId, mcpName, pageNo, pageSize, SEARCH_ACCURATE);
     }
     
+    /** 模糊模式分页搜索 MCP Server。 */
     @Override
     public Page<McpServerBasicInfo> searchMcpServer(String namespaceId, String mcpName, int pageNo,
         int pageSize)
@@ -139,6 +145,7 @@ final class McpMaintainerServiceImpl extends AbstractAiDelegateMaintainerService
         return ErrorCode.SUCCESS.getCode().equals(result.getCode());
     }
     
+    /** 调用 MCP list 接口分页查询。 */
     private Page<McpServerBasicInfo> queryServerPage(String namespaceId, String mcpName, int pageNo,
         int pageSize,
         String search) throws NacosException {
@@ -161,6 +168,7 @@ final class McpMaintainerServiceImpl extends AbstractAiDelegateMaintainerService
         return result.getData();
     }
     
+    /** 将 server/tool/endpoint 规格序列化为 Admin API 表单参数。 */
     private Map<String, String> buildFullParameters(McpServerBasicInfo serverSpec,
         McpToolSpecification toolSpec,
         McpEndpointSpec endpointSpec) {
@@ -176,6 +184,7 @@ final class McpMaintainerServiceImpl extends AbstractAiDelegateMaintainerService
         return params;
     }
     
+    /** MCP 默认命名空间与通用默认命名空间可能不同，空值时使用 MCP 默认值。 */
     private String resolveMcpNamespace(String namespaceId) {
         if (com.alibaba.nacos.common.utils.StringUtils.isBlank(namespaceId)) {
             return AiConstants.Mcp.MCP_DEFAULT_NAMESPACE;

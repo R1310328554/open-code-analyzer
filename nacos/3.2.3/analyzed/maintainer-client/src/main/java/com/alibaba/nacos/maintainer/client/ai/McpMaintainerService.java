@@ -33,14 +33,16 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Nacos AI module MCP relative maintainer service.
+ * MCP 维护服务接口：管理 Nacos 中 MCP Server 的注册、查询、更新与删除。
+ *
+ * <p>区分本地（stdio）与远程 MCP，提供多层默认方法简化命名空间与分页参数。</p>
  *
  * @author xiweng.yy
  */
 public interface McpMaintainerService {
     
     /**
-     * List first 100 Mcp Servers in Nacos.
+     * 列出 Nacos 中前 100 个 MCP Server。
      *
      * @return Fist 100 mcp server list.
      * @throws NacosException if fail to list mcp server
@@ -51,7 +53,7 @@ public interface McpMaintainerService {
     }
     
     /**
-     * List Mcp Servers in Nacos with page.
+     * 分页列出 MCP Server。
      *
      * @param pageNo   the page number of mcp Servers
      * @param pageSize the size of each page
@@ -71,6 +73,7 @@ public interface McpMaintainerService {
      * @param pageSize the size of each page
      * @return paged mcp Server list
      * @throws NacosException if fail to list mcp server
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Page<McpServerBasicInfo> listMcpServer(String mcpName, int pageNo, int pageSize)
@@ -87,13 +90,14 @@ public interface McpMaintainerService {
      * @param pageSize the size of each page
      * @return paged mcp Server list
      * @throws NacosException if fail to list mcp server
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.1")
     Page<McpServerBasicInfo> listMcpServer(String namespaceId, String mcpName, int pageNo,
         int pageSize) throws NacosException;
     
     /**
-     * Blur search first 100 Mcp Servers in Nacos with mcp name pattern.
+     * 按名称模糊搜索 MCP Server（默认前 100 条）。
      *
      * @param mcpName mcpName pattern, if empty string or null, will list all Mcp Servers.
      * @return First 100 mcp server list matched input mcpName pattern.
@@ -112,6 +116,7 @@ public interface McpMaintainerService {
      * @param pageSize the size of each page
      * @return paged mcp Server list matched input mcpName pattern.
      * @throws NacosException if fail to search mcp server
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default Page<McpServerBasicInfo> searchMcpServer(String mcpName, int pageNo, int pageSize)
@@ -128,13 +133,14 @@ public interface McpMaintainerService {
      * @param pageSize the size of each page
      * @return paged mcp Server list matched input mcpName pattern.
      * @throws NacosException if fail to search mcp server
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.1")
     Page<McpServerBasicInfo> searchMcpServer(String namespaceId, String mcpName, int pageNo,
         int pageSize) throws NacosException;
     
     /**
-     * Get mcp server detail information from Nacos.
+     * 从 Nacos 获取 MCP Server 详情。
      *
      * @param mcpName the mcp server name
      * @return detail information for this mcp server
@@ -152,6 +158,7 @@ public interface McpMaintainerService {
      * @param version the mcp server version
      * @return detail information for this mcp server
      * @throws NacosException if fail to get mcp server
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.1")
     default McpServerDetailInfo getMcpServerDetail(String mcpName, String version)
@@ -160,7 +167,7 @@ public interface McpMaintainerService {
     }
     
     /**
-     * Gets mcp server detail.
+     * 按命名空间与版本获取 MCP Server 详情。
      *
      * @param namespaceId the namespace id
      * @param mcpName     the mcp name
@@ -183,6 +190,7 @@ public interface McpMaintainerService {
      * @param version the mcp server version
      * @return detail information for this mcp server
      * @throws NacosException if fail to get mcp server
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.2")
     McpServerDetailInfo getMcpServerDetail(String namespaceId, String mcpName, String mcpId,
@@ -190,7 +198,7 @@ public interface McpMaintainerService {
         throws NacosException;
     
     /**
-     * Create new local mcp server to Nacos.
+     * 在 Nacos 创建本地（stdio）MCP Server。
      *
      * @param mcpName mcp server name of the new mcp server
      * @param version version of the new mcp server
@@ -210,6 +218,7 @@ public interface McpMaintainerService {
      * @param description description of the new mcp server
      * @return mcp server id of the new mcp server
      * @throws NacosException if fail to create mcp server.
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createLocalMcpServer(String mcpName, String version, String description)
@@ -226,6 +235,7 @@ public interface McpMaintainerService {
      * @param toolSpec    mcp server tools specification, see {@link McpToolSpecification}, nullable.
      * @return mcp server id of the new mcp server
      * @throws NacosException if fail to create mcp server.
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createLocalMcpServer(String mcpName, String version, String description,
@@ -243,6 +253,7 @@ public interface McpMaintainerService {
      * @param toolSpec          mcp server tools specification, see {@link McpToolSpecification}, nullable.
      * @return mcp server id of the new mcp server
      * @throws NacosException if fail to create mcp server.
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createLocalMcpServer(String mcpName, String version, String description,
@@ -268,6 +279,7 @@ public interface McpMaintainerService {
      * @param toolSpec   mcp server tools specification, see {@link McpToolSpecification}, nullable.
      * @return mcp server id of the new mcp server
      * @throws NacosException if fail to create mcp server.
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createLocalMcpServer(String mcpName, McpServerBasicInfo serverSpec,
@@ -286,7 +298,7 @@ public interface McpMaintainerService {
     }
     
     /**
-     * Create new remote mcp server to Nacos.
+     * 在 Nacos 创建远程 MCP Server。
      *
      * @param mcpName      mcp server name of the new mcp server
      * @param version      version of the new mcp server
@@ -312,6 +324,7 @@ public interface McpMaintainerService {
      * @param endpointSpec        mcp server endpoint specification, see {@link McpEndpointSpec}, can't be null.
      * @return mcp server id of the new mcp server
      * @throws NacosException if fail to create mcp server.
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createRemoteMcpServer(String mcpName, String version, String protocol,
@@ -332,6 +345,7 @@ public interface McpMaintainerService {
      * @param endpointSpec        mcp server endpoint specification, see {@link McpEndpointSpec}, can't be null.
      * @return mcp server id of the new mcp server
      * @throws NacosException if fail to create mcp server.
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createRemoteMcpServer(String mcpName, String version, String description,
@@ -354,6 +368,7 @@ public interface McpMaintainerService {
      * @param toolSpec            mcp server tools specification, see {@link McpToolSpecification}, nullable.
      * @return mcp server id of the new mcp server
      * @throws NacosException if fail to create mcp server.
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createRemoteMcpServer(String mcpName, String version, String description,
@@ -381,6 +396,7 @@ public interface McpMaintainerService {
      * @param endpointSpec mcp server endpoint specification, see {@link McpEndpointSpec}, can't be null.
      * @return mcp server id of the new mcp server
      * @throws NacosException if fail to create mcp server.
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createRemoteMcpServer(String mcpName, McpServerBasicInfo serverSpec,
@@ -399,6 +415,7 @@ public interface McpMaintainerService {
      * @param endpointSpec mcp server endpoint specification, see {@link McpEndpointSpec}, nullable.
      * @return mcp server id of the new mcp server
      * @throws NacosException if fail to create mcp server.
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.0")
     default String createRemoteMcpServer(String mcpName, McpServerBasicInfo serverSpec,
@@ -420,7 +437,7 @@ public interface McpMaintainerService {
     }
     
     /**
-     * Create new mcp server to Nacos.
+     * 在 Nacos 创建 MCP Server（本地或远程由 serverSpec 决定）。
      *
      * @param mcpName      mcp server name of the new mcp server
      * @param serverSpec   mcp server specification, see {@link McpServerBasicInfo}
@@ -449,6 +466,7 @@ public interface McpMaintainerService {
      *                     {@link AiConstants.Mcp#MCP_PROTOCOL_STDIO}.
      * @return mcp server id of the new mcp server
      * @throws NacosException if fail to create mcp server.
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.1")
     String createMcpServer(String namespaceId, String mcpName, McpServerBasicInfo serverSpec,
@@ -456,7 +474,7 @@ public interface McpMaintainerService {
         McpEndpointSpec endpointSpec) throws NacosException;
     
     /**
-     * Update existed mcp server to Nacos Default namespace.
+     * 更新默认命名空间下已存在的 MCP Server（全量覆盖）。
      * <p>
      * Please Query Full information by {@link #getMcpServerDetail(String)} and input Full information to this method.
      * This method will full cover update the old information.
@@ -492,6 +510,7 @@ public interface McpMaintainerService {
      *                     {@link AiConstants.Mcp#MCP_PROTOCOL_STDIO}.
      * @return {@code true} if create success, {@code false} otherwise
      * @throws NacosException if fail to create mcp server.
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.1")
     default boolean updateMcpServer(String mcpName, boolean isLatest, McpServerBasicInfo serverSpec,
@@ -502,7 +521,7 @@ public interface McpMaintainerService {
     }
     
     /**
-     * Update existed mcp server to Nacos.
+     * 更新指定命名空间下已存在的 MCP Server。
      * <p>
      * Please Query Full information by {@link #getMcpServerDetail(String)} and input Full information to this method.
      * This method will full cover update the old information.
@@ -543,6 +562,7 @@ public interface McpMaintainerService {
      * @param overrideExisting  if replace all the instances when update the mcp server
      * @return {@code true} if create success, {@code false} otherwise
      * @throws NacosException if fail to create mcp server.
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.1.1")
     boolean updateMcpServer(String namespaceId, String mcpName, boolean isLatest,
@@ -550,7 +570,7 @@ public interface McpMaintainerService {
         McpEndpointSpec endpointSpec, boolean overrideExisting) throws NacosException;
     
     /**
-     * Delete existed mcp server from Nacos.
+     * 从 Nacos 删除 MCP Server。
      *
      * @param mcpName mcp server name of the new mcp server
      * @return {@code true} if delete success, {@code false} otherwise
@@ -570,6 +590,7 @@ public interface McpMaintainerService {
      * @param version mcp version of the new mcp server
      * @return {@code true} if delete success, {@code false} otherwise
      * @throws NacosException if fail to delete mcp server.
+      * <p>MCP Server 维护 API；详见接口说明。</p>
      */
     @Since("3.0.2")
     boolean deleteMcpServer(String namespaceId, String mcpName, String mcpId, String version)

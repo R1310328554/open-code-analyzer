@@ -50,7 +50,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * lock operation and CPHandler.
+ * 分布式锁操作服务实现：同时承担 CP 一致性协议 {@link RequestProcessor4CP} 与 {@link LockOperationService} 职责。
+ *
+ * <p>通过 Raft 写请求处理加锁/解锁，对外暴露 {@link #lock} 与 {@link #unLock}；加载快照时委托 {@link NacosLockSnapshotOperation}。</p>
  *
  * @author 985492783@qq.com
  * @date 2023/8/22 20:17
@@ -60,20 +62,28 @@ public class LockOperationServiceImpl extends RequestProcessor4CP implements Loc
     
     private static final Logger LOGGER = LoggerFactory.getLogger(LockOperationServiceImpl.class);
     
+    /** 锁请求/响应序列化器。 */
     private final Serializer serializer = SerializeFactory.getDefault();
     
+    /** 保护内存锁状态与快照加载的读写锁。 */
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     
+    /** 写请求处理时使用的读锁（与快照写锁互斥）。 */
     private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
     
+    /** Nacos CP 一致性协议（Raft）。 */
     private final CPProtocol protocol;
     
+    /** 内存互斥锁管理器。 */
     private final LockManager lockManager;
     
+    /** 未指定过期时间时的默认租约毫秒数。 */
     private final long defaultExpireTime;
     
+    /** 允许的最大租约毫秒数上限。 */
     private final long maxExpireTime;
     
+    /** 注册 CP 处理器并读取锁过期相关配置。 */
     public LockOperationServiceImpl(LockManager lockManager) {
         this.lockManager = lockManager;
         this.protocol = ApplicationUtils.getBean(ProtocolManager.class).getCpProtocol();
@@ -85,6 +95,7 @@ public class LockOperationServiceImpl extends RequestProcessor4CP implements Loc
             PropertiesConstant.MAX_AUTO_EXPIRE_TIME);
     }
     
+    /** Raft 状态机应用写请求：反序列化后执行 ACQUIRE 或 RELEASE。 */
     @Override
     public Response onApply(WriteRequest request) {
         final Lock lock = readLock;
@@ -115,6 +126,7 @@ public class LockOperationServiceImpl extends RequestProcessor4CP implements Loc
         }
     }
     
+    /** 在本地 {@link LockManager} 上释放互斥锁，必要时清理空锁实例。 */
     private Boolean releaseLock(MutexLockRequest request) {
         LockInfo lockInfo = request.getLockInfo();
         AtomicLockService mutexLock = lockManager.getMutexLock(lockInfo.getKey());
@@ -125,12 +137,14 @@ public class LockOperationServiceImpl extends RequestProcessor4CP implements Loc
         return unLock;
     }
     
+    /** 在本地 {@link LockManager} 上尝试获取互斥锁。 */
     private Boolean acquireLock(MutexLockRequest request) {
         LockInfo lockInfo = request.getLockInfo();
         AtomicLockService mutexLock = lockManager.getMutexLock(lockInfo.getKey());
         return mutexLock.tryLock(lockInfo);
     }
     
+    /** 客户端加锁入口：构造 {@link LockInfo} 并通过 CP 协议提交 ACQUIRE 写请求。 */
     @Override
     public Boolean lock(LockInstance lockInstance) {
         final MutexLockRequest request = new MutexLockRequest();
@@ -166,12 +180,14 @@ public class LockOperationServiceImpl extends RequestProcessor4CP implements Loc
         }
     }
     
+    /** 返回锁模块快照操作，快照期间持有写锁。 */
     @Override
     public List<SnapshotOperation> loadSnapshotOperate() {
         return Collections
             .singletonList(new NacosLockSnapshotOperation(lockManager, lock.writeLock()));
     }
     
+    /** 客户端解锁入口：通过 CP 协议提交 RELEASE 写请求。 */
     @Override
     public Boolean unLock(LockInstance lockInstance) {
         MutexLockRequest request = new MutexLockRequest();
@@ -199,15 +215,18 @@ public class LockOperationServiceImpl extends RequestProcessor4CP implements Loc
         }
     }
     
+    /** 当前时间戳（毫秒），供租约计算使用。 */
     public long getNowTimestamp() {
         return System.currentTimeMillis();
     }
     
+    /** CP 读请求暂不支持，返回 {@code null}。 */
     @Override
     public Response onRequest(ReadRequest request) {
         return null;
     }
     
+    /** 返回锁服务 CP 分组名。 */
     @Override
     public String group() {
         return Constants.LOCK_ACQUIRE_SERVICE_GROUP_V2;

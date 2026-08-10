@@ -21,14 +21,14 @@ import com.alibaba.nacos.api.exception.NacosException;
 import java.util.Properties;
 
 /**
- * Nacos AI maintainer service.
+ * Nacos AI 维护服务工厂：创建聚合 MCP/A2A/AgentSpec 等能力的 {@link AiMaintainerService}。
  *
  * @author Nacos
  */
 public class AiMaintainerFactory {
     
     /**
-     * create AI maintainer service.
+     * 创建 AI 维护服务实例。
      *
      * @param properties properties
      * @return naming maintainer service
