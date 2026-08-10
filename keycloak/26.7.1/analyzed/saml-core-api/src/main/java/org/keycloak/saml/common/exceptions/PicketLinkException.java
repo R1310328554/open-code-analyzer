@@ -17,27 +17,41 @@
 package org.keycloak.saml.common.exceptions;
 
 /**
- * <p>Any exception that is raised by the security module extends from this runtime exception class, making it easy for
- * other modules and extensions to catch all security-related exceptions in a single catch block, if need be.
- * </p>
+ * <p>安全模块抛出的任何异常均继承自此运行时异常类，便于其他模块与扩展在需要时用单个 catch 块捕获全部安全相关异常。</p>
  *
- * <p>This class is used as the root instead of {@link SecurityException} to avoid confusion and potential conflicts. Eg.: many other
- * frameworks and products (eg.: JEE containers) relies on the {@link SecurityException} to perform some special handling.</p>
+ * <p>此类作为根异常而非 {@link SecurityException}，以避免与 JEE 容器等框架对 {@link SecurityException} 的特殊处理产生混淆或冲突。</p>
  */
 public class PicketLinkException extends RuntimeException {
 
+    /** 构造无消息的 PicketLink 异常。 */
     public PicketLinkException() {
         super();
     }
 
+    /**
+     * 构造带消息及根因的异常。
+     *
+     * @param message 错误描述
+     * @param cause 根因
+     */
     public PicketLinkException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * 构造带消息的异常。
+     *
+     * @param message 错误描述
+     */
     public PicketLinkException(String message) {
         super(message);
     }
 
+    /**
+     * 构造以给定异常为根因的异常。
+     *
+     * @param cause 根因
+     */
     public PicketLinkException(Throwable cause) {
         super(cause);
     }

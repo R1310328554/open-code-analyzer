@@ -19,25 +19,42 @@ package org.keycloak.saml.common.exceptions;
 import java.security.GeneralSecurityException;
 
 /**
- * Exception to indicate a server processing error
+ * 表示服务端处理过程中发生错误的异常。
  *
  * @author Anil.Saldhana@redhat.com
  * @since May 22, 2009
  */
 public class ProcessingException extends GeneralSecurityException {
 
+    /** 构造无消息的处理异常。 */
     public ProcessingException() {
         super();
     }
 
+    /**
+     * 构造带消息及根因的处理异常。
+     *
+     * @param message 错误描述
+     * @param cause 根因
+     */
     public ProcessingException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * 构造带消息的处理异常。
+     *
+     * @param message 错误描述
+     */
     public ProcessingException(String message) {
         super(message);
     }
 
+    /**
+     * 构造以给定异常为根因的处理异常。
+     *
+     * @param cause 根因
+     */
     public ProcessingException(Throwable cause) {
         super(cause);
     }

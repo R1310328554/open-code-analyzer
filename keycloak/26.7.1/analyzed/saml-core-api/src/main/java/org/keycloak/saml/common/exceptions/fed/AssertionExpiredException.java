@@ -19,33 +19,57 @@ package org.keycloak.saml.common.exceptions.fed;
 import java.security.GeneralSecurityException;
 
 /**
- * Security Exception indicating expiration of SAML2 assertion
+ * 表示 SAML2 断言已过期的安全异常。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Dec 12, 2008
  */
 public class AssertionExpiredException extends GeneralSecurityException {
 
+    /** 过期断言的 ID。 */
     protected String id;
 
+    /** 构造无消息的断言过期异常。 */
     public AssertionExpiredException() {
     }
 
+    /**
+     * 构造带消息及根因的断言过期异常。
+     *
+     * @param message 错误描述
+     * @param cause 根因
+     */
     public AssertionExpiredException(String message, Throwable cause) {
     }
 
+    /**
+     * 构造带消息的断言过期异常。
+     *
+     * @param msg 错误描述
+     */
     public AssertionExpiredException(String msg) {
         super(msg);
     }
 
+    /**
+     * 构造以给定异常为根因的断言过期异常。
+     *
+     * @param cause 根因
+     */
     public AssertionExpiredException(Throwable cause) {
         super(cause);
     }
 
+    /** 返回过期断言的 ID。 */
     public String getId() {
         return id;
     }
 
+    /**
+     * 设置过期断言的 ID。
+     *
+     * @param id 断言 ID
+     */
     public void setId(String id) {
         this.id = id;
     }

@@ -20,7 +20,7 @@ import java.security.GeneralSecurityException;
 
 /**
  * <p>
- * Exception used to convey that an error has happened when handling a WS-Trust request message.
+ * 处理 WS-Trust 请求消息时发生错误时抛出的异常。
  * </p>
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
@@ -29,10 +29,10 @@ public class WSTrustException extends GeneralSecurityException {
 
     /**
      * <p>
-     * Creates an instance of {@code WSTrustException} using the specified error message.
+     * 使用指定错误消息创建 {@code WSTrustException} 实例。
      * </p>
      *
-     * @param message the error message.
+     * @param message 错误消息
      */
     public WSTrustException(String message) {
         super(message);
@@ -40,11 +40,11 @@ public class WSTrustException extends GeneralSecurityException {
 
     /**
      * <p>
-     * Creates an instance of {@code WSTrustException} using the specified error message and cause.
+     * 使用指定错误消息及根因创建 {@code WSTrustException} 实例。
      * </p>
      *
-     * @param message the error message.
-     * @param cause a {@code Throwable} representing the cause of the error.
+     * @param message 错误消息
+     * @param cause 表示错误根因的 {@code Throwable}
      */
     public WSTrustException(String message, Throwable cause) {
         super(message, cause);
@@ -52,10 +52,10 @@ public class WSTrustException extends GeneralSecurityException {
 
     /**
      * <p>
-     * Creates an instance of {@code WSTrustException} using the specified {@link Throwable}.
+     * 使用指定 {@link Throwable} 创建 {@code WSTrustException} 实例。
      * </p>
      *
-     * @param message the error message.
+     * @param message 错误消息
      */
     public WSTrustException(Throwable t) {
         super(t);

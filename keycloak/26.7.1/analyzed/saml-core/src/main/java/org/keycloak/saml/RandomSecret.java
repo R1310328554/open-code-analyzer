@@ -20,18 +20,20 @@ package org.keycloak.saml;
 import java.security.SecureRandom;
 
 /**
+ * 生成密码学安全随机字节序列的工具类。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class RandomSecret {
     /**
      * <p>
-     * Creates a random {@code byte[]} secret of the specified size.
+     * 创建指定长度的随机 {@code byte[]} 密钥材料。
      * </p>
      *
-     * @param size the size of the secret to be created, in bytes.
+     * @param size 密钥字节长度
      *
-     * @return a {@code byte[]} containing the generated secret.
+     * @return 包含生成密钥字节的 {@code byte[]}
      */
     public static byte[] createRandomSecret(final int size) {
         SecureRandom random = new SecureRandom();

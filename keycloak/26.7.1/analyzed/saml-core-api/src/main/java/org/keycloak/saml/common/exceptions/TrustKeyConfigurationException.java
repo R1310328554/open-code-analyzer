@@ -17,25 +17,42 @@
 package org.keycloak.saml.common.exceptions;
 
 /**
- * ConfigurationException in the TrustKeyManager
+ * TrustKeyManager 中的配置异常。
  *
  * @author Anil.Saldhana@redhat.com
  * @since May 22, 2009
  */
 public class TrustKeyConfigurationException extends ConfigurationException {
 
+    /** 构造无消息的信任密钥配置异常。 */
     public TrustKeyConfigurationException() {
         super();
     }
 
+    /**
+     * 构造带消息及根因的信任密钥配置异常。
+     *
+     * @param message 错误描述
+     * @param cause 根因
+     */
     public TrustKeyConfigurationException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * 构造带消息的信任密钥配置异常。
+     *
+     * @param message 错误描述
+     */
     public TrustKeyConfigurationException(String message) {
         super(message);
     }
 
+    /**
+     * 构造以给定异常为根因的信任密钥配置异常。
+     *
+     * @param cause 根因
+     */
     public TrustKeyConfigurationException(Throwable cause) {
         super(cause);
     }

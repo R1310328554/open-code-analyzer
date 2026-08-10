@@ -19,24 +19,41 @@ package org.keycloak.saml.common.exceptions.fed;
 import java.security.GeneralSecurityException;
 
 /**
- * Indicates the failure of signature validation
+ * 表示 SAML/XML 数字签名验证失败的异常。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jul 28, 2011
  */
 public class SignatureValidationException extends GeneralSecurityException {
 
+    /** 构造无消息的签名验证异常。 */
     public SignatureValidationException() {
     }
 
+    /**
+     * 构造带消息及根因的签名验证异常。
+     *
+     * @param message 错误描述
+     * @param cause 根因
+     */
     public SignatureValidationException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * 构造带消息的签名验证异常。
+     *
+     * @param msg 错误描述
+     */
     public SignatureValidationException(String msg) {
         super(msg);
     }
 
+    /**
+     * 构造以给定异常为根因的签名验证异常。
+     *
+     * @param cause 根因
+     */
     public SignatureValidationException(Throwable cause) {
         super(cause);
     }

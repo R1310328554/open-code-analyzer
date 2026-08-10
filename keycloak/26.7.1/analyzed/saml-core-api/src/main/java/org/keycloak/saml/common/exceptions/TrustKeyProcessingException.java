@@ -17,25 +17,42 @@
 package org.keycloak.saml.common.exceptions;
 
 /**
- * Processing Exception in the trust key manager
+ * 信任密钥管理器（TrustKeyManager）中的处理异常。
  *
  * @author Anil.Saldhana@redhat.com
  * @since May 22, 2009
  */
 public class TrustKeyProcessingException extends ProcessingException {
 
+    /** 构造无消息的信任密钥处理异常。 */
     public TrustKeyProcessingException() {
         super();
     }
 
+    /**
+     * 构造带消息及根因的信任密钥处理异常。
+     *
+     * @param message 错误描述
+     * @param cause 根因
+     */
     public TrustKeyProcessingException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * 构造带消息的信任密钥处理异常。
+     *
+     * @param message 错误描述
+     */
     public TrustKeyProcessingException(String message) {
         super(message);
     }
 
+    /**
+     * 构造以给定异常为根因的信任密钥处理异常。
+     *
+     * @param cause 根因
+     */
     public TrustKeyProcessingException(Throwable cause) {
         super(cause);
     }

@@ -24,15 +24,14 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * {@link KeyLocator} that represents a list of multiple {@link KeyLocator}s. Key is searched
- * from the first to the last {@link KeyLocator} in the order given by the list. If there are
- * multiple {@link KeyLocator}s providing key with the same key ID, the first matching key is
- * returned.
+ * 表示多个 {@link KeyLocator} 组合链的 {@link KeyLocator}。按列表顺序从第一个到最后一个
+ * {@link KeyLocator} 查找密钥；若多个 {@link KeyLocator} 提供相同 key ID 的密钥，则返回首个匹配项。
  *
  * @author hmlnarik
  */
 public class CompositeKeyLocator implements KeyLocator, Iterable<Key> {
 
+    /** 已注册的密钥定位器列表。 */
     private final List<KeyLocator> keyLocators = new LinkedList<>();
 
     @Override
@@ -67,21 +66,25 @@ public class CompositeKeyLocator implements KeyLocator, Iterable<Key> {
     }
 
     /**
-     * Registers a given {@link KeyLocator} as the first {@link KeyLocator}.
+     * 将给定 {@link KeyLocator} 注册为链中的第一个定位器。
+     *
+     * @param keyLocator 要插入链首的密钥定位器
      */
     public void addFirst(KeyLocator keyLocator) {
         this.keyLocators.add(0, keyLocator);
     }
 
     /**
-     * Registers a given {@link KeyLocator} as the last {@link KeyLocator}.
+     * 将给定 {@link KeyLocator} 注册为链中的最后一个定位器。
+     *
+     * @param keyLocator 要追加到链尾的密钥定位器
      */
     public void add(KeyLocator keyLocator) {
         this.keyLocators.add(keyLocator);
     }
 
     /**
-     * Clears the list of registered {@link KeyLocator}s
+     * 清空已注册的 {@link KeyLocator} 列表。
      */
     public void clear() {
         this.keyLocators.clear();
@@ -122,6 +125,7 @@ public class CompositeKeyLocator implements KeyLocator, Iterable<Key> {
         return Collections.unmodifiableCollection(res);
     }
 
+    /** 将多个 {@link Iterable}{@code <Key>} 串联为单一密钥迭代器的辅助类。 */
     private static class JointKeyIterator implements Iterable<Key> {
 
         // based on http://stackoverflow.com/a/34126154/6930869

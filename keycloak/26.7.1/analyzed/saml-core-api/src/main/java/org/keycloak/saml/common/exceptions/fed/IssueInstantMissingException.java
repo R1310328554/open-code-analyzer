@@ -19,25 +19,42 @@ package org.keycloak.saml.common.exceptions.fed;
 import java.security.GeneralSecurityException;
 
 /**
- * Exception indicating that the IssueInstant is missing
+ * 表示 SAML 消息缺少 IssueInstant 时间戳的异常。
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jun 3, 2009
  */
 public class IssueInstantMissingException extends GeneralSecurityException {
 
+    /** 构造无消息的 IssueInstant 缺失异常。 */
     public IssueInstantMissingException() {
         super();
     }
 
+    /**
+     * 构造带消息及根因的 IssueInstant 缺失异常。
+     *
+     * @param message 错误描述
+     * @param cause 根因
+     */
     public IssueInstantMissingException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * 构造带消息的 IssueInstant 缺失异常。
+     *
+     * @param msg 错误描述
+     */
     public IssueInstantMissingException(String msg) {
         super(msg);
     }
 
+    /**
+     * 构造以给定异常为根因的 IssueInstant 缺失异常。
+     *
+     * @param cause 根因
+     */
     public IssueInstantMissingException(Throwable cause) {
         super(cause);
     }

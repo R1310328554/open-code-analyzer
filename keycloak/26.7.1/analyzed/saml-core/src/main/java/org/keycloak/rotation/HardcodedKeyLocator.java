@@ -26,22 +26,33 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Key locator for a bunch of keys. It can be initialized with or without
- * key names.
+ * 针对一组固定密钥的密钥定位器，可按密钥名称初始化，也可仅按密钥对象初始化。
  *
  * @author <a href="mailto:hmlnarik@redhat.com">Hynek Mlnařík</a>
  */
 public class HardcodedKeyLocator implements KeyLocator, Iterable<Key> {
 
+    /** 按名称索引的密钥映射。 */
     private final Map<String, ? extends Key> byName;
+    /** 按密钥内容哈希索引的密钥映射。 */
     private final Map<KeyHash, ? extends Key> byKey;
 
+    /**
+     * 使用单个密钥构造定位器。
+     *
+     * @param key 不可为 null 的密钥
+     */
     public HardcodedKeyLocator(Key key) {
         Objects.requireNonNull(key, "Key must not be null");
         this.byName = Collections.emptyMap();
         this.byKey = Collections.singletonMap(new KeyHash(key), key);
     }
 
+    /**
+     * 使用密钥集合构造定位器（无名称映射）。
+     *
+     * @param keys 不可为 null 的密钥集合
+     */
     public HardcodedKeyLocator(Collection<? extends Key> keys) {
         Objects.requireNonNull(keys, "Keys must not be null");
         this.byName = Collections.emptyMap();
@@ -49,6 +60,11 @@ public class HardcodedKeyLocator implements KeyLocator, Iterable<Key> {
                 Collectors.toMap(k -> new KeyHash(k), k -> k, (k1, k2) -> k1)));
     }
 
+    /**
+     * 使用名称到密钥的映射构造定位器。
+     *
+     * @param keys 不可为 null 的名称-密钥映射
+     */
     public HardcodedKeyLocator(Map<String, ? extends Key> keys) {
         Objects.requireNonNull(keys, "Keys must not be null");
         this.byName = Collections.unmodifiableMap(keys);
@@ -80,7 +96,7 @@ public class HardcodedKeyLocator implements KeyLocator, Iterable<Key> {
 
     @Override
     public void refreshKeyCache() {
-        // do nothing
+        // 硬编码密钥无需刷新缓存
     }
 
     @Override

@@ -31,30 +31,31 @@ import javax.xml.crypto.dsig.keyinfo.KeyValue;
 import javax.xml.crypto.dsig.keyinfo.X509Data;
 
 /**
- * This interface defines a method for obtaining a security key by ID.
+ * 定义按 ID 获取安全密钥的方法。
  * <p>
- * If the {@code KeyLocator} implementor wants to make all its keys available for iteration,
- * it should implement {@link Iterable}&lt;{@code T extends }{@link Key}&gt; interface.
- * The base {@code KeyLocator} does not extend this interface to enable {@code KeyLocators}
- * that do not support listing their keys.
+ * 若 {@code KeyLocator} 实现希望使其全部密钥可被迭代访问，应同时实现
+ * {@link Iterable}&lt;{@code T extends }{@link Key}&gt; 接口。
+ * 基类 {@code KeyLocator} 不直接扩展 {@link Iterable}，以支持无法枚举密钥的定位器实现。
  *
  * @author <a href="mailto:hmlnarik@redhat.com">Hynek Mlnařík</a>
  */
 public interface KeyLocator extends Iterable<Key> {
 
     /**
-     * Returns a key with a particular ID.
-     * @param kid Key ID
-     * @return key, which should be used for verify signature on given "input"
-     * @throws KeyManagementException
+     * 返回指定 ID 的密钥。
+     *
+     * @param kid 密钥 ID
+     * @return 用于验证给定输入签名的密钥
+     * @throws KeyManagementException 密钥管理失败时抛出
      */
     Key getKey(String kid) throws KeyManagementException;
 
     /**
-     * Method that checks if the key passed is inside the locator.
-     * @param key The key to search
-     * @return The same key or null if it's not in the locator
-     * @throws KeyManagementException
+     * 检查给定密钥是否存在于定位器中。
+     *
+     * @param key 待查找的密钥
+     * @return 若存在则返回同一密钥，否则返回 null
+     * @throws KeyManagementException 密钥管理失败时抛出
      */
     default Key getKey(Key key) throws KeyManagementException {
         if (key == null) {
@@ -69,12 +70,12 @@ public interface KeyLocator extends Iterable<Key> {
     }
 
     /**
-     * Returns the key in the locator that is represented by the KeyInfo
-     * dsig structure. The default implementation just iterates and returns
-     * the first KeyName, X509Data or PublicKey that is in the locator.
-     * @param info The KeyInfo to search
-     * @return The key found or null
-     * @throws KeyManagementException
+     * 返回定位器中由 KeyInfo 数字签名结构所表示的密钥。
+     * 默认实现遍历 KeyInfo 内容，返回首个匹配的 KeyName、X509Data 或 PublicKey。
+     *
+     * @param info 待解析的 KeyInfo
+     * @return 找到的密钥，未找到则返回 null
+     * @throws KeyManagementException 密钥管理失败时抛出
      */
     default Key getKey(KeyInfo info) throws KeyManagementException {
         if (info == null) {
@@ -91,8 +92,7 @@ public interface KeyLocator extends Iterable<Key> {
                         if (key != null) {
                             return key;
                         }
-                        // only the first X509Certificate is the signer
-                        // the rest are just part of the chain
+                        // 仅第一张 X509 证书为签名者，其余为证书链组成部分
                         break;
                     }
                 }
@@ -111,18 +111,22 @@ public interface KeyLocator extends Iterable<Key> {
     }
 
     /**
-     * If this key locator caches keys in any way, forces this cache cleanup
-     * and refreshing the keys.
+     * 若此定位器以任何方式缓存密钥，则强制清空缓存并重新加载密钥。
      */
     void refreshKeyCache();
 
     /**
-     * Helper class that facilitates the hash of a Key to be located easier.
+     * 辅助类，便于按 {@link Key} 内容哈希进行定位与比较。
      */
     public static class KeyHash {
         private final Key key;
         private final int keyHash;
 
+        /**
+         * 为给定密钥创建哈希包装。
+         *
+         * @param key 待哈希的密钥
+         */
         public KeyHash(Key key) {
             this.key = key;
             this.keyHash = Arrays.hashCode(key.getEncoded());
