@@ -17,19 +17,30 @@
 package org.keycloak.protocol.oid4vc.model;
 
 /**
+ * 凭证配置标识符值对象。
+ * <p>封装 OID4VCI 元数据中 {@code credential_configurations_supported} 的键名，避免与普通字符串混用。</p>
+ *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public class CredentialConfigId {
+    /** 配置 ID 字符串值。 */
     private final String value;
 
+    /**
+     * 从字符串创建值对象；{@code null} 输入返回 {@code null}。
+     * @param value 配置 ID 字符串
+     * @return 值对象或 {@code null}
+     */
     public static CredentialConfigId from(String value) {
         return value == null ? null : new CredentialConfigId(value);
     }
 
+    /** @param value 配置 ID 字符串 */
     public CredentialConfigId(String value) {
         this.value = value;
     }
 
+    /** @return 配置 ID 字符串值 */
     public String getValue() {
         return value;
     }

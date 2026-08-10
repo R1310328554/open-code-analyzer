@@ -21,14 +21,17 @@ package org.keycloak.protocol.oid4vc.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * Container for the grants to be used in a Credential Offer
- * <p>
- * {@see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-offer}
+ * 凭证发放（Credential Offer）中 {@code grants} 条目的公共接口。
+ * <p>具体实现包括 {@link AuthorizationCodeGrant} 与 {@link PreAuthorizedCodeGrant}，规范见 {@see https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-credential-offer}。</p>
  *
  * @author <a href="mailto:tdiesler@ibm.com">Thomas Diesler</a>
  */
 public interface CredentialOfferGrant {
 
+    /**
+     * 返回授权类型键名（如 {@code authorization_code}、{@code urn:ietf:params:oauth:grant-type:pre-authorized_code}）。
+     * @return 授权类型标识
+     */
     @JsonIgnore
     String getGrantType();
 }

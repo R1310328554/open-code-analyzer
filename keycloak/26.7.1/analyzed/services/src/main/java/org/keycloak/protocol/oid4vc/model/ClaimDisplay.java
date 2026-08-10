@@ -25,30 +25,38 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 /**
+ * 声明（claim）的多语言展示描述。
+ * <p>包含本地化名称与 locale，用于凭证元数据中向钱包展示人类可读标签。</p>
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ClaimDisplay {
+    /** 本地化展示名称（JSON 字段 {@code name}）。 */
     @JsonProperty("name")
     private String name;
 
+    /** BCP 47 语言区域标识（JSON 字段 {@code locale}）。 */
     @JsonProperty("locale")
     private String locale;
 
+    /** @return 本地化展示名称 */
     public String getName() {
         return name;
     }
 
+    /** @param name 本地化展示名称 */
     public ClaimDisplay setName(String name) {
         this.name = name;
         return this;
     }
 
+    /** @return 语言区域标识 */
     public String getLocale() {
         return locale;
     }
 
+    /** @param locale 语言区域标识 */
     public ClaimDisplay setLocale(String locale) {
         this.locale = locale;
         return this;

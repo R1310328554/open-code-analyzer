@@ -20,26 +20,25 @@ package org.keycloak.protocol.oid4vc.issuance.signing.vcdm;
 import org.keycloak.protocol.oid4vc.model.VerifiableCredential;
 
 /**
- * Interface for all implementations of LD-Signature Suites
- * <p>
- * {@see https://w3c-ccg.github.io/ld-cryptosuite-registry/}
+ * Linked Data 密码学签名套件（LD-Signature Suite）实现接口。
+ * <p>各实现按 {@see https://w3c-ccg.github.io/ld-cryptosuite-registry/} 定义算法，为 {@link VerifiableCredential} 生成符合 VCDM 的 Linked Data 证明签名。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 public interface LinkedDataCryptographicSuite {
 
     /**
-     * Return the signature for the given credential as defined by the suite.
+     * 按本套件规则为给定可验证凭证生成签名。
      *
-     * @param verifiableCredential the credential to create a signature for
-     * @return the signature
+     * @param verifiableCredential 待签名的可验证凭证
+     * @return 签名字节数组
      */
     byte[] getSignature(VerifiableCredential verifiableCredential);
 
     /**
-     * The proof type defined by the suite.
+     * 本套件定义的 proof 类型标识。
      *
-     * @return the type
+     * @return proof 类型字符串
      */
     String getProofType();
 

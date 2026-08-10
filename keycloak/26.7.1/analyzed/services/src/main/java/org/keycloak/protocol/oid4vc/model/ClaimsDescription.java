@@ -22,50 +22,60 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Represents a claims description object as used in authorization details.
- * A claims description object defines the requirements for the claims that the Wallet
- * requests to be included in the Credential.
- * 
+ * 授权详情（authorization details）中使用的声明描述对象。
+ * <p>定义钱包请求纳入凭证的声明路径及是否必填，用于 OID4VCI 授权流程中的 claims 约束。</p>
+ *
  * @author <a href="mailto:Forkim.Akwichek@adorsys.com">Forkim Akwichek</a>
  */
 public class ClaimsDescription {
 
+    /** JSON 字段名：声明路径 {@code path}。 */
     public static final String PATH = "path";
+    /** JSON 字段名：是否必填 {@code mandatory}。 */
     public static final String MANDATORY = "mandatory";
 
+    /** 声明路径（可为字符串或索引混合路径）。 */
     @JsonProperty(PATH)
     private List<Object> path;
 
+    /** 钱包是否必须请求该声明。 */
     @JsonProperty(MANDATORY)
     private Boolean mandatory;
 
+    /** 无参构造，供 Jackson 反序列化使用。 */
     public ClaimsDescription() {
     }
 
+    /**
+     * @param path 声明路径
+     * @param mandatory 是否必填
+     */
     public ClaimsDescription(List<Object> path, Boolean mandatory) {
         this.path = path;
         this.mandatory = mandatory;
     }
 
+    /** @return 声明路径 */
     public List<Object> getPath() {
         return path;
     }
 
+    /** @param path 声明路径 */
     public void setPath(List<Object> path) {
         this.path = path;
     }
 
+    /** @return 是否必填（原始布尔值，可能为 {@code null}） */
     public Boolean getMandatory() {
         return mandatory;
     }
 
+    /** @param mandatory 是否必填 */
     public void setMandatory(Boolean mandatory) {
         this.mandatory = mandatory;
     }
 
-    /**
-     * Returns the mandatory flag, defaulting to false if not set.
-     */
+    /** @return 是否必填，未设置时默认为 {@code false} */
     public boolean isMandatory() {
         return mandatory != null ? mandatory : false;
     }

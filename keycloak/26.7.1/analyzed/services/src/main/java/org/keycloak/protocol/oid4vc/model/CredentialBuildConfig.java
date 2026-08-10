@@ -29,12 +29,14 @@ import org.keycloak.protocol.oid4vc.issuance.OID4VCIssuerWellKnownProvider;
 import org.keycloak.utils.StringUtil;
 
 /**
- * Define credential-specific configurations for its builder.
+ * 凭证构建器专用的配置对象。
+ * <p>聚合签发方、格式类型、SD-JWT 可见声明、诱饵数量及签名密钥/算法等参数，由 {@link CredentialScopeModel} 与 {@link SupportedCredentialConfiguration} 解析生成。</p>
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public class CredentialBuildConfig {
 
+    /** 多值字符串配置项的分隔符。 */
     public static final String MULTIVALUED_STRING_SEPARATOR = ",";
 
     private static final String TOKEN_JWS_TYPE_KEY = "token_jws_type";
@@ -47,47 +49,50 @@ public class CredentialBuildConfig {
     private static final String SIGNING_ALGORITHM_KEY = "signing_algorithm";
     private static final String LDP_PROOF_TYPE_KEY = "ldp_proof_type";
 
+    /** 凭证签发方标识（issuer）。 */
     private String credentialIssuer;
 
+    /** 支持的凭证配置 ID。 */
     private String credentialConfigId;
 
-    //-- Proper building configuration fields --//
+    //-- 凭证构建相关配置字段 --//
 
-    // The vct field to be used for the SD-JWT.
+    /** SD-JWT 使用的凭证类型（vct）字段值。 */
     private String credentialType;
 
-    // The type of the token to be created.
-    // Will be used as `typ` claim in the JWT-Header.
+    /** 待创建 JWT 的 typ 声明值（写入 JWT Header）。 */
     private String tokenJwsType;
 
-    // The hash algorithm to be used for the SD-JWTs.
+    /** SD-JWT 选择性披露使用的哈希算法。 */
     private String hashAlgorithm;
 
-    // List of claims to stay disclosed in the SD-JWT.
+    /** SD-JWT 中保持明文披露的声明路径列表。 */
     private List<String> sdJwtVisibleClaims;
 
-    // The number of decoys to be added to the SD-JWT.
+    /** 加入 SD-JWT 的诱饵（decoy）数量。 */
     private Integer numberOfDecoys;
 
-    //-- Signing configuration fields --//
+    //-- 签名相关配置字段 --//
 
-    // The id of the key to be used for signing credentials.
-    // The key needs to be provided as a realm key.
+    /** 凭证签名使用的领域密钥 kid（须为 realm 密钥）。 */
     private String signingKeyId;
 
-    // An alternative kid to take precedence.
-    // Depending on the did-schema, the above signingKeyId
-    // might not be enough and can be overwritten here.
+    /** 优先使用的替代 kid（如 DID 方案需覆盖默认 signingKeyId）。 */
     private String overrideKeyId;
 
-    // The type of the algorithm to be used for signing.
-    // Needs to fit the provided signing key.
+    /** 签名算法标识，须与所选签名密钥匹配。 */
     private String signingAlgorithm;
 
-    // The type of LD-Proofs to be created.
-    // Needs to fit the provided signing key.
+    /** 待创建的 Linked Data Proof 类型，须与签名密钥匹配。 */
     private String ldpProofType;
 
+    /**
+     * 从凭证配置与范围模型解析构建配置。
+     * @param keycloakSession Keycloak 会话
+     * @param credentialConfiguration 支持的凭证配置
+     * @param credentialModel 凭证范围模型
+     * @return 填充完毕的构建配置
+     */
     public static CredentialBuildConfig parse(KeycloakSession keycloakSession,
                                               SupportedCredentialConfiguration credentialConfiguration,
                                               CredentialScopeModel credentialModel) {
