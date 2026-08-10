@@ -2548,3 +2548,18 @@
 2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigInfoBetaMapper.java wave84a [0:15] datasource constants/dialect + mappers
 2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigInfoGrayMapper.java wave84a [0:15] datasource constants/dialect + mappers
 2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigInfoMapper.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:33Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigInfoTagMapper.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigMigrateMapper.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigTagsRelationMapper.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/GroupCapacityMapper.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/HistoryConfigInfoMapper.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/Mapper.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/TenantCapacityMapper.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/TenantInfoMapper.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ext/WhereBuilder.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/model/MapperContext.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/model/MapperResult.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/proxy/MapperProxy.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/EncryptionPluginManager.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/EncryptionPluginProvider.java wave84b [15:30] datasource mappers + encryption plugin
+2026-08-10T05:21:33Z DONE plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/handler/EncryptionHandler.java wave84b [15:30] datasource mappers + encryption plugin

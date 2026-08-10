@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T05:19:40Z",
-  "files": [
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigInfoTagMapper.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigMigrateMapper.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigTagsRelationMapper.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/GroupCapacityMapper.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/HistoryConfigInfoMapper.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/Mapper.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/TenantCapacityMapper.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/TenantInfoMapper.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ext/WhereBuilder.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/model/MapperContext.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/model/MapperResult.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/proxy/MapperProxy.java",
-    "plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/EncryptionPluginManager.java",
-    "plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/EncryptionPluginProvider.java",
-    "plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/handler/EncryptionHandler.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 17,
-  "done": 2505
+  "done": 2520
 }
