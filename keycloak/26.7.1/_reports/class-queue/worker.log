@@ -1693,3 +1693,18 @@
 2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/OrganizationEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
 2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/OrganizationInvitationEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
 2026-08-10T08:18:35Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/OutboxEntryEntity.java wave58b JPA entities roles/creds/groups/IdP/org/outbox
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/RoleAdapter.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/UserAdapter.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/converter/MapStringConverter.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/AuthenticationExecutionEntity.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/AuthenticationFlowEntity.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/AuthenticatorConfigEntity.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientAttributeEntity.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientEntity.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientInitialAccessEntity.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientScopeAttributeEntity.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientScopeClientMappingEntity.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientScopeEntity.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientScopeRoleMappingEntity.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/ComponentConfigEntity.java wave58a Role/User adapters + auth/client/component entities
+2026-08-10T08:18:59Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/entities/ComponentEntity.java wave58a Role/User adapters + auth/client/component entities

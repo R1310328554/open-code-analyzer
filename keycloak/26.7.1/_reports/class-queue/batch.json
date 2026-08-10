@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:16:51Z",
-  "files": [
-    "model/jpa/src/main/java/org/keycloak/models/jpa/RoleAdapter.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/UserAdapter.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/converter/MapStringConverter.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/AuthenticationExecutionEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/AuthenticationFlowEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/AuthenticatorConfigEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientAttributeEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientInitialAccessEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientScopeAttributeEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientScopeClientMappingEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientScopeEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/ClientScopeRoleMappingEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/ComponentConfigEntity.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/entities/ComponentEntity.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4258,
-  "done": 1725
+  "done": 1740
 }
