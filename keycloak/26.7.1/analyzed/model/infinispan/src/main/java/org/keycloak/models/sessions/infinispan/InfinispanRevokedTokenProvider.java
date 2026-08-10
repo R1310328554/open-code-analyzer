@@ -22,19 +22,28 @@ import java.util.Objects;
 import org.keycloak.models.RevokedTokenProvider;
 import org.keycloak.models.SingleUseObjectProvider;
 
+/**
+ * 基于 Infinispan 单次使用对象缓存的已撤销令牌 Provider。
+ * <p>
+ * 将令牌 ID 加上 {@link SingleUseObjectProvider#REVOKED_KEY} 后缀后委托给
+ * {@link SingleUseObjectProvider} 存储与查询。
+ */
 public final class InfinispanRevokedTokenProvider implements RevokedTokenProvider {
 
+    /** 底层单次使用对象 Provider 委托。 */
     private final SingleUseObjectProvider delegate;
 
     public InfinispanRevokedTokenProvider(SingleUseObjectProvider delegate) {
         this.delegate = Objects.requireNonNull(delegate);
     }
 
+    /** 记录已撤销令牌，仅在键不存在时写入。 */
     @Override
     public boolean put(String id, long lifespanSeconds) {
         return delegate.putIfAbsent(id + SingleUseObjectProvider.REVOKED_KEY, lifespanSeconds);
     }
 
+    /** 检查令牌是否仍在撤销列表中。 */
     @Override
     public boolean contains(String id) {
         return delegate.contains(id + SingleUseObjectProvider.REVOKED_KEY);
@@ -42,6 +51,6 @@ public final class InfinispanRevokedTokenProvider implements RevokedTokenProvide
 
     @Override
     public void close() {
-        //no-op
+        // 无资源需释放
     }
 }

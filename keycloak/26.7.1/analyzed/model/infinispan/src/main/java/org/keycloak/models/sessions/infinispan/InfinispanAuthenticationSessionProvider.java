@@ -49,13 +49,21 @@ import org.infinispan.persistence.manager.PersistenceManager;
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.AUTHENTICATION_SESSIONS_CACHE_NAME;
 
 /**
+ * 基于 Infinispan 的认证会话 {@link AuthenticationSessionProvider} 实现。
+ * <p>
+ * 通过变更日志事务管理根认证会话实体，并在集群间广播领域删除与认证备注更新事件。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class InfinispanAuthenticationSessionProvider implements AuthenticationSessionProvider {
 
+    /** 当前 Keycloak 会话上下文。 */
     private final KeycloakSession session;
+    /** 每个根认证会话允许的最大并发认证会话数。 */
     private final int authSessionsLimit;
+    /** 根认证会话的 Infinispan 变更日志事务。 */
     protected final InfinispanChangelogBasedTransaction<String, RootAuthenticationSessionEntity> sessionTx;
+    /** 用于向集群其他节点发送会话相关事件的异步发送器。 */
     protected final SessionEventsSenderTransaction clusterEventsSenderTx;
 
     public InfinispanAuthenticationSessionProvider(KeycloakSession session,
@@ -68,12 +76,14 @@ public class InfinispanAuthenticationSessionProvider implements AuthenticationSe
     }
 
 
+    /** 在指定领域中创建根认证会话（自动生成 ID）。 */
     @Override
     public RootAuthenticationSessionModel createRootAuthenticationSession(RealmModel realm) {
         return createRootAuthenticationSession(realm, sessionTx.generateKey());
     }
 
 
+    /** 在指定领域中以给定 ID 创建根认证会话。 */
     @Override
     public RootAuthenticationSessionModel createRootAuthenticationSession(RealmModel realm, String id) {
         RootAuthenticationSessionEntity entity = new RootAuthenticationSessionEntity(id);
@@ -96,9 +106,10 @@ public class InfinispanAuthenticationSessionProvider implements AuthenticationSe
         return entityWrapper==null ? null : entityWrapper.getEntity();
     }
 
+    /** 领域删除时广播事件，由各节点清理本地认证会话缓存。 */
     @Override
     public void onRealmRemoved(RealmModel realm) {
-        // Send message to all DCs. The remoteCache will notify client listeners on all DCs for remove authentication sessions
+        // 向所有数据中心发送消息，远程缓存会在各节点触发认证会话删除监听
         clusterEventsSenderTx.addEvent(
                 RealmRemovedSessionEvent.createEvent(RealmRemovedSessionEvent.class, InfinispanAuthenticationSessionProviderFactory.REALM_REMOVED_AUTHSESSION_EVENT, session, realm.getId())
         );
@@ -118,6 +129,7 @@ public class InfinispanAuthenticationSessionProvider implements AuthenticationSe
         }
     }
 
+    /** 将认证备注片段同步到非本地数据中心上的认证会话。 */
     @Override
     public void updateNonlocalSessionAuthNotes(AuthenticationSessionCompoundId compoundId, Map<String, String> authNotesFragment) {
         if (compoundId == null) {
@@ -134,6 +146,7 @@ public class InfinispanAuthenticationSessionProvider implements AuthenticationSe
     }
 
 
+    /** 按 ID 获取根认证会话，领域不匹配时返回 null。 */
     @Override
     public RootAuthenticationSessionModel getRootAuthenticationSession(RealmModel realm, String authenticationSessionId) {
         RootAuthenticationSessionEntity entity = getRootAuthenticationSessionEntity(authenticationSessionId);
@@ -144,6 +157,7 @@ public class InfinispanAuthenticationSessionProvider implements AuthenticationSe
     }
 
 
+    /** 删除根认证会话，会话不属于当前领域时抛出 {@link ModelException}。 */
     @Override
     public void removeRootAuthenticationSession(RealmModel realm, RootAuthenticationSessionModel authenticationSession) {
         if (!Objects.equals(realm.getId(), authenticationSession.getRealm().getId())) {
@@ -166,6 +180,7 @@ public class InfinispanAuthenticationSessionProvider implements AuthenticationSe
         return sessionTx;
     }
 
+    /** 模型版本迁移：26.1.0 时清空认证会话持久化存储。 */
     @Override
     public void migrate(String modelVersion) {
         if ("26.1.0".equals(modelVersion)) {

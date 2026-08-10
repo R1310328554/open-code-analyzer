@@ -100,18 +100,27 @@ import static org.keycloak.models.sessions.infinispan.changes.ClientSessionPersi
 import static org.keycloak.utils.StreamsUtil.paginatedStream;
 
 /**
+ * 持久化多站点模式下的用户会话 Provider。
+ * <p>
+ * 会话变更经 JPA 持久化并与 Infinispan 缓存协同；离线会话创建时若在线会话已不存在则保持 transient。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class PersistentUserSessionProvider implements UserSessionProvider, SessionRefreshStore, ClientSessionManager {
 
     private static final Logger log = Logger.getLogger(PersistentUserSessionProvider.class);
 
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
 
+    /** 用户会话持久化变更事务。 */
     protected final UserSessionPersistentChangelogBasedTransaction sessionTx;
+    /** 客户端会话持久化变更事务。 */
     protected final ClientSessionPersistentChangelogBasedTransaction clientSessionTx;
 
+    /** 集群会话事件发送事务。 */
     protected final SessionEventsSenderTransaction clusterEventsSenderTx;
+    /** 用户会话 JPA 持久化 Provider。 */
     protected final UserSessionPersisterProvider userSessionPersister;
 
     public PersistentUserSessionProvider(KeycloakSession session,
@@ -168,14 +177,14 @@ public class PersistentUserSessionProvider implements UserSessionProvider, Sessi
                 userSession, this, cacheKey, false);
 
         if (offline) {
-            // If this is an offline session, and the referred online session doesn't exist anymore, don't register the client session in the transaction.
-            // Instead keep it transient and it will be added to the offline session only afterward. This is expected by SessionTimeoutsTest.testOfflineUserClientIdleTimeoutSmallerThanSessionOneRefresh.
+            // 离线会话对应的在线会话已不存在时，客户端会话暂不注册到事务（保持 transient）
+            // 后续再挂到离线会话；SessionTimeoutsTest 依赖此行为
             if (sessionTx.get(realm, userSession.getId(), userSession, false) == null) {
                 return adapter;
             }
         }
 
-        // For now, the clientSession is considered transient in case that userSession was transient
+        // 用户会话为 transient 时客户端会话同样 transient
         UserSessionModel.SessionPersistenceState persistenceState = userSession.getPersistenceState() != null ?
                 userSession.getPersistenceState() : UserSessionModel.SessionPersistenceState.PERSISTENT;
 

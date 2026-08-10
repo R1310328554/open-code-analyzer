@@ -50,6 +50,10 @@ import org.jboss.logging.Logger;
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.LOGIN_FAILURE_CACHE_NAME;
 
 /**
+ * Infinispan 用户登录失败 Provider 工厂。
+ * <p>
+ * 初始化登录失败缓存、注册集群与领域/用户删除事件监听器。
+ *
  * @author <a href="mailto:mkanis@redhat.com">Martin Kanis</a>
  */
 public class InfinispanUserLoginFailureProviderFactory implements UserLoginFailureProviderFactory<InfinispanUserLoginFailureProvider>, EnvironmentDependentProviderFactory, ProviderEventListener {

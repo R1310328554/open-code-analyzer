@@ -37,14 +37,21 @@ import org.keycloak.sessions.RootAuthenticationSessionModel;
 import org.jboss.logging.Logger;
 
 /**
+ * 根认证会话实体与 {@link RootAuthenticationSessionModel} 之间的适配器。
+ * <p>
+ * 封装对 {@link RootAuthenticationSessionEntity} 的读写，通过变更任务提交更新，
+ * 并在达到 {@link #authSessionsLimit} 时淘汰最旧的子认证会话。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class RootAuthenticationSessionAdapter implements RootAuthenticationSessionModel {
 
     private static final Logger log = Logger.getLogger(RootAuthenticationSessionAdapter.class);
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
     private final RealmModel realm;
+    /** 每个根会话允许的最大认证会话数。 */
     private final int authSessionsLimit;
     private final InfinispanAuthenticationSessionProvider provider;
 
@@ -139,14 +146,14 @@ public class RootAuthenticationSessionAdapter implements RootAuthenticationSessi
                     if (tabId != null) {
                         log.debugf("Reached limit (%s) of active authentication sessions per a root authentication session. Removing oldest authentication session with TabId %s.", authSessionsLimit, tabId);
 
-                        // remove the oldest authentication session
+                        // 移除时间戳最旧的认证会话以腾出配额
                         authenticationSessions.remove(tabId);
                     }
                 }
                 authSessionEntity.setTimestamp(timestamp);
                 authenticationSessions.put(tabId, authSessionEntity);
 
-                // Update our timestamp when adding new authenticationSession
+                // 新增子会话时同步更新根会话时间戳
                 entity.setTimestamp(timestamp);
             }
         };

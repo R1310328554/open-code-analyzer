@@ -31,6 +31,11 @@ import org.keycloak.provider.Provider;
 
 import static org.keycloak.storage.datastore.DefaultDatastoreProviderFactory.setupClearExpiredRevokedTokensScheduledTask;
 
+/**
+ * Infinispan 已撤销令牌 Provider 工厂。
+ * <p>
+ * 包装 {@link SingleUseObjectProvider} 并在 postInit 中注册过期撤销令牌清理定时任务。
+ */
 public class InfinispanRevokedTokenProviderFactory implements RevokedTokenProviderFactory<InfinispanRevokedTokenProvider>, EnvironmentDependentProviderFactory {
 
     @Override
@@ -46,7 +51,7 @@ public class InfinispanRevokedTokenProviderFactory implements RevokedTokenProvid
 
     @Override
     public void postInit(KeycloakSessionFactory factory) {
-        // old expiration
+        // 注册清理过期撤销令牌的定时任务（兼容旧版持久化逻辑）
         setupClearExpiredRevokedTokensScheduledTask(factory);
     }
 

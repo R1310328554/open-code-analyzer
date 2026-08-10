@@ -89,21 +89,31 @@ import static org.keycloak.models.Constants.SESSION_NOTE_LIGHTWEIGHT_USER;
 import static org.keycloak.utils.StreamsUtil.paginatedStream;
 
 /**
+ * 基于 Infinispan 的用户会话与客户端会话 Provider（非持久化多站点模式）。
+ * <p>
+ * 管理在线/离线用户会话及嵌入式客户端会话，支持集群事件、离线会话从持久层恢复、
+ * 以及 {@link PersisterLastSessionRefreshStore} 批量刷新 lastSessionRefresh。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class InfinispanUserSessionProvider implements UserSessionProvider, SessionRefreshStore, ClientSessionManager {
 
     private static final Logger log = Logger.getLogger(InfinispanUserSessionProvider.class);
 
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
 
+    /** 在线用户会话变更事务。 */
     protected final UserSessionInfinispanChangelogBasedTransaction<String, UserSessionEntity> sessionTx;
+    /** 离线用户会话变更事务。 */
     protected final UserSessionInfinispanChangelogBasedTransaction<String, UserSessionEntity> offlineSessionTx;
     protected final UserSessionInfinispanChangelogBasedTransaction<EmbeddedClientSessionKey, AuthenticatedClientSessionEntity> clientSessionTx;
     protected final UserSessionInfinispanChangelogBasedTransaction<EmbeddedClientSessionKey, AuthenticatedClientSessionEntity> offlineClientSessionTx;
 
+    /** 集群会话事件发送事务。 */
     protected final SessionEventsSenderTransaction clusterEventsSenderTx;
 
+    /** 定期批量持久化 lastSessionRefresh 的存储。 */
     protected final PersisterLastSessionRefreshStore persisterLastSessionRefreshStore;
 
     protected final SessionFunction<UserSessionEntity> offlineSessionCacheEntryLifespanAdjuster;
@@ -167,7 +177,7 @@ public class InfinispanUserSessionProvider implements UserSessionProvider, Sessi
 
         AuthenticatedClientSessionAdapter adapter = new AuthenticatedClientSessionAdapter(session, entity, client, userSession, this, key, false);
 
-        // For now, the clientSession is considered transient in case that userSession was transient
+        // 用户会话为 transient 时，客户端会话也视为 transient
         UserSessionModel.SessionPersistenceState persistenceState = userSession.getPersistenceState() != null ?
                 userSession.getPersistenceState() : UserSessionModel.SessionPersistenceState.PERSISTENT;
 
@@ -204,18 +214,18 @@ public class InfinispanUserSessionProvider implements UserSessionProvider, Sessi
 
     @Override
     public void migrate(String modelVersion) {
-        // Changed encoding from JBoss Marshalling to ProtoStream.
-        // Unable to read the cached data.
+        // 26.0.0：序列化从 JBoss Marshalling 迁移至 ProtoStream，需清空缓存
+        // 旧格式缓存数据不可读
         if ("26.0.0".equals(modelVersion)) {
             log.debug("Clear caches to migrate to Infinispan Protostream");
             CompletionStages.join(session.getProvider(InfinispanConnectionProvider.class).migrateToProtoStream());
         } else if ("26.4.0".equals(modelVersion)) {
             log.debug("Clear caches as client session entries are now outdated and are not migrated");
-            // This is a best-effort approach: Even if due to a rolling update some entries are left there, the checking of sessions and tokens does not depend on them.
-            // Refreshing of tokens will still work even if the user session does not contain the list of client sessions.
-            // This still keeps the user session cache to keep users logged in on a best effort basis.
-            // Only the offline user sessions cache is cleared, but not the regular user sessions cache is cleared.
-            // All client session caches regular and offline client sessions are cleared as usual.
+            // 26.4.0：尽力清除过时客户端会话条目；滚动升级残留条目不影响令牌校验
+            // 即使用户会话未列出客户端会话，令牌刷新仍可工作
+            // 保留在线用户会话缓存以尽量维持登录状态
+            // 仅清空离线用户会话与客户端会话相关缓存
+            // 在线与离线客户端会话缓存均清空
             var stage = CompletionStages.aggregateCompletionStage();
             var provider = session.getProvider(InfinispanConnectionProvider.class);
             Stream.of(OFFLINE_USER_SESSION_CACHE_NAME, CLIENT_SESSION_CACHE_NAME, OFFLINE_CLIENT_SESSION_CACHE_NAME)
@@ -238,15 +248,14 @@ public class InfinispanUserSessionProvider implements UserSessionProvider, Sessi
             return null;
         }
 
-        // Try to recover from potentially lost offline-sessions by attempting to fetch and re-import
-        // the offline session information from the PersistenceProvider.
+        // 尝试从 PersistenceProvider 恢复可能丢失的离线会话
         UserSessionEntity userSessionEntityFromPersistenceProvider = getUserSessionEntityFromPersistenceProvider(realm, id);
         if (userSessionEntityFromPersistenceProvider != null) {
-            // we successfully recovered the offline session!
+            // 成功从持久层恢复离线会话
             return wrap(realm, userSessionEntityFromPersistenceProvider, true);
         }
 
-        // no luck, the session is really not there anymore
+        // 持久层亦无记录，会话已不存在
         return null;
     }
 
@@ -272,7 +281,7 @@ public class InfinispanUserSessionProvider implements UserSessionProvider, Sessi
     private UserSessionEntity getUserSessionEntityFromCacheOrImportIfNecessary(RealmModel realm, UserSessionModel persistentUserSession) {
         UserSessionEntity userSessionEntity = getUserSessionEntity(realm, persistentUserSession.getId(), true);
         if (userSessionEntity != null) {
-            // user session present in cache, return existing session
+            // 缓存中已有会话，直接返回
             return userSessionEntity;
         }
 
@@ -299,12 +308,12 @@ public class InfinispanUserSessionProvider implements UserSessionProvider, Sessi
                         lifespan, maxIdle);
 
         if (existing != null) {
-            // skip import the client sessions, they should have been imported too.
+            // 其他事务已导入，跳过客户端会话
             log.debugf("The user-session already imported by another transaction for sessionId=%s offline=true", sessionId);
             return existing;
         }
 
-        // we need to import the client sessions too.
+        // 同时导入关联的客户端会话
         log.debugf("Attempting to import the client-sessions for user-session with sessionId=%s offline=true", sessionId);
 
         var clientSessionsById = computeClientSessionsToImport(persistentUserSession, userSessionEntityToImport);
@@ -325,13 +334,13 @@ public class InfinispanUserSessionProvider implements UserSessionProvider, Sessi
             AuthenticatedClientSessionEntity clientSessionToImport = createAuthenticatedClientSessionInstance(clientSession,
                     realmId, clientUUID);
 
-            // Update timestamp to the same value as userSession.
-            // LastSessionRefresh of userSession from DB will have the correct value.
+            // 客户端会话时间戳与用户会话 lastSessionRefresh 对齐
+            // 数据库中的 lastSessionRefresh 为权威值
             clientSessionToImport.setTimestamp(lastSessionRefresh);
 
             clientSessionsById.put(new EmbeddedClientSessionKey(userSessionId, clientUUID), new SessionEntityWrapper<>(clientSessionToImport));
 
-            // Update userSession entity with the clientSession
+            // 在用户会话实体中登记客户端会话 ID
             clientSessions.add(clientUUID);
         }
         return clientSessionsById;
@@ -845,7 +854,7 @@ public class InfinispanUserSessionProvider implements UserSessionProvider, Sessi
 
                         clientSessionsById.put(new EmbeddedClientSessionKey(userSessionId, clientUUID), new SessionEntityWrapper<>(clientSessionToImport));
 
-                        // Update userSession entity with the clientSession
+                        // 在用户会话实体中登记客户端会话 ID
                         clientSessions.add(clientUUID);
                     }
 

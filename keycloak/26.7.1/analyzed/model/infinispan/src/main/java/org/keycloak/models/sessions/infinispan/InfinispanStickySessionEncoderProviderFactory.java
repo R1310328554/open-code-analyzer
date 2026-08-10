@@ -42,6 +42,10 @@ import org.jgroups.util.NameCache;
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.AUTHENTICATION_SESSIONS_CACHE_NAME;
 
 /**
+ * 基于 Infinispan 分布信息的粘性会话编码 Provider 工厂。
+ * <p>
+ * 在集群模式下将会话 ID 与缓存主副本节点路由名绑定，写入 Cookie 以实现会话亲和。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class InfinispanStickySessionEncoderProviderFactory implements StickySessionEncoderProviderFactory, EnvironmentDependentProviderFactory, StickySessionEncoderProvider {
@@ -62,7 +66,7 @@ public class InfinispanStickySessionEncoderProviderFactory implements StickySess
         setShouldAttachRoute(config.getBoolean("shouldAttachRoute", true));
     }
 
-    // Used for testing
+    // 供测试覆盖 shouldAttachRoute 行为
     @Override
     public void setShouldAttachRoute(boolean shouldAttachRoute) {
         this.shouldAttachRoute = shouldAttachRoute;
@@ -133,7 +137,7 @@ public class InfinispanStickySessionEncoderProviderFactory implements StickySess
 
     @Override
     public String sessionIdRoute(String sessionId) {
-        // return null if running in the local mode (start-dev)
+        // 本地模式（start-dev）不附加路由
         return clustered && shouldAttachRoute ? ownerOf(sessionId) : null;
     }
 
@@ -143,9 +147,9 @@ public class InfinispanStickySessionEncoderProviderFactory implements StickySess
                 .getCacheTopology()
                 .getDistribution(Objects.requireNonNull(sessionId))
                 .primary();
-        // Return null if the logical name is not available yet.
-        // The following request may be redirected to the wrong instance, but that's ok.
-        // In a healthy/stable cluster, the name cache is correctly populated.
+        // 逻辑节点名尚未就绪时返回 null
+        // 下一请求可能路由到错误实例，但在稳定集群中可接受
+        // 健康集群中 JGroups NameCache 会正确填充
         return primaryOwner == null ? null : NameCache.get(Address.toExtendedUUID(primaryOwner));
     }
 }

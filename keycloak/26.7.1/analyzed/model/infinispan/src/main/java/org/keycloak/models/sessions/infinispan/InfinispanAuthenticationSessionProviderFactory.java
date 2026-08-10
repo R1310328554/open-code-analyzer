@@ -58,6 +58,10 @@ import org.jboss.logging.Logger;
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.AUTHENTICATION_SESSIONS_CACHE_NAME;
 
 /**
+ * Infinispan 认证会话 Provider 工厂。
+ * <p>
+ * 初始化认证会话缓存、注册集群监听器，并创建 {@link InfinispanAuthenticationSessionProvider} 实例。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class InfinispanAuthenticationSessionProviderFactory implements AuthenticationSessionProviderFactory<InfinispanAuthenticationSessionProvider>, EnvironmentDependentProviderFactory, ProviderEventListener {
@@ -68,10 +72,12 @@ public class InfinispanAuthenticationSessionProviderFactory implements Authentic
 
     private int authSessionsLimit;
 
+    /** 配置项：每个根认证会话的最大认证会话数。 */
     public static final String AUTH_SESSIONS_LIMIT = "authSessionsLimit";
 
     public static final int DEFAULT_AUTH_SESSIONS_LIMIT = 300;
 
+    /** 集群事件通道：跨节点同步认证备注更新。 */
     public static final String AUTHENTICATION_SESSION_EVENTS = "AUTHENTICATION_SESSION_EVENTS";
 
     public static final String REALM_REMOVED_AUTHSESSION_EVENT = "REALM_REMOVED_EVENT_AUTHSESSIONS";
@@ -83,7 +89,7 @@ public class InfinispanAuthenticationSessionProviderFactory implements Authentic
 
     public static int getAuthSessionsLimit(Config.Scope config) {
         var limit = config.getInt(AUTH_SESSIONS_LIMIT, DEFAULT_AUTH_SESSIONS_LIMIT);
-        // use default if provided value is not a positive number
+        // 配置值非正数时回退到默认值
         return limit <= 0 ? DEFAULT_AUTH_SESSIONS_LIMIT : limit;
     }
 
@@ -148,8 +154,8 @@ public class InfinispanAuthenticationSessionProviderFactory implements Authentic
 
         var distribution = cacheHolder.cache().getAdvancedCache().getDistributionManager();
         if (distribution != null && !distribution.getCacheTopology().getDistribution(event.getAuthSessionId()).isPrimary()) {
-            // Distribution is null for non-clustered caches (local-cache, used by start-dev mode).
-            // If not the primary owner of the key, skip event handling.
+            // 非集群缓存（如 start-dev 本地模式）无分布管理器
+            // 非主副本节点跳过事件处理，避免重复写入
             return;
         }
 

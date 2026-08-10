@@ -30,17 +30,22 @@ import org.keycloak.models.sessions.infinispan.entities.SingleUseObjectValueEnti
 import org.infinispan.commons.api.BasicCache;
 
 /**
- * TODO: Check if Boolean can be used as single-use cache argument instead of SingleUseObjectValueEntity. With respect to other single-use cache use cases like "Revoke Refresh Token" .
- * Also with respect to the usage of streams iterating over "actionTokens" cache (check there are no ClassCastExceptions when casting values directly to SingleUseObjectValueEntity)
- *
+ * 基于 Infinispan action token 缓存的单次使用对象 Provider。
+ * <p>
+ * 通过 {@link InfinispanKeycloakTransaction} 延迟写入，支持撤销令牌持久化到
+ * {@link RevokedTokenPersisterProvider}。撤销令牌键不可读、不可删、不可替换。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class InfinispanSingleUseObjectProvider implements SingleUseObjectProvider {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** action token 单次使用对象缓存。 */
     private final BasicCache<String, SingleUseObjectValueEntity> singleUseObjectCache;
+    /** 是否将撤销令牌同步持久化到数据库。 */
     private final boolean persistRevokedTokens;
+    /** 缓存写入事务。 */
     private final InfinispanKeycloakTransaction tx;
 
     public InfinispanSingleUseObjectProvider(KeycloakSession session, BasicCache<String, SingleUseObjectValueEntity> singleUseObjectCache, boolean persistRevokedTokens, InfinispanKeycloakTransaction tx) {
@@ -84,9 +89,9 @@ public class InfinispanSingleUseObjectProvider implements SingleUseObjectProvide
            throw new ModelException("Revoked tokens can't be removed");
         }
 
-        // Using a get-before-remove allows us to return the value even in cases when a state transfer happens in Infinispan
+        // 先 get 再 remove，以便在 Infinispan 状态转移期间仍能返回被删值
         // where it might not return the value in all cases.
-        // This workaround can be removed once https://github.com/infinispan/infinispan/issues/16703 is implemented.
+        // 待 Infinispan #16703 修复后可移除此变通方案
         var data = singleUseObjectCache.get(key);
         if (data == null) {
             return null;

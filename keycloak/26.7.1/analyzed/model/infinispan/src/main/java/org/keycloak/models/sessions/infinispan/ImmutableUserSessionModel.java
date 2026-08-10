@@ -29,9 +29,9 @@ import org.keycloak.models.UserSessionModel;
 import static org.keycloak.models.sessions.infinispan.ImmutableSession.readOnly;
 
 /**
- * An immutable {@link UserSessionModel} implementation.
+ * 不可变的 {@link UserSessionModel} 实现。
  * <p>
- * All setters throw a {@link UnsupportedOperationException}.
+ * 所有 setter 均抛出 {@link UnsupportedOperationException}，用于只读场景下安全暴露用户会话快照。
  */
 record ImmutableUserSessionModel(
         String id,

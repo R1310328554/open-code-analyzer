@@ -44,6 +44,9 @@ import org.jboss.logging.Logger;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 /**
+ * 基于 Infinispan 的用户登录失败（暴力破解防护）Provider。
+ * <p>
+ * 管理 {@link LoginFailureEntity} 缓存条目，支持集群广播批量清除与领域设置变更时更新 TTL。
  *
  * @author <a href="mailto:mkanis@redhat.com">Martin Kanis</a>
  */
@@ -112,15 +115,15 @@ public class InfinispanUserLoginFailureProvider implements UserLoginFailureProvi
 
         Cache<LoginFailureKey, SessionEntityWrapper<LoginFailureEntity>> localCache = CacheDecorators.localCache(loginFailuresTx.getCache());
 
-        // Go through local cache data only
-        // entries from other nodes will be removed by each instance receiving the event
+        // 仅遍历本地缓存条目
+        // 其他节点上的条目由各自收到集群事件后清理
         localCache
                 .entrySet()
                 .stream()
                 .filter(SessionWrapperPredicate.create(realmId))
                 .map(Mappers.loginFailureId())
                 .forEach(loginFailureKey -> {
-                    // Remove loginFailure from remoteCache too. Use removeAsync for better perf
+                    // 异步从远程缓存删除以提升性能
                     Future<?> future = removeKeyFromCache(localCache, loginFailureKey);
                     futures.addTask(future);
                 });

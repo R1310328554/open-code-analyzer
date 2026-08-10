@@ -49,10 +49,15 @@ import org.infinispan.commons.api.BasicCache;
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.ACTION_TOKEN_CACHE;
 
 /**
+ * Infinispan 单次使用对象 Provider 工厂。
+ * <p>
+ * 管理 action token 缓存，可选从 {@link RevokedTokenPersisterProvider} 预加载已撤销令牌。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class InfinispanSingleUseObjectProviderFactory implements SingleUseObjectProviderFactory<InfinispanSingleUseObjectProvider>, EnvironmentDependentProviderFactory, ServerInfoAwareProviderFactory {
 
+    /** 配置项：是否在重启后持久化撤销令牌。 */
     public static final String CONFIG_PERSIST_REVOKED_TOKENS = "persistRevokedTokens";
     public static final boolean DEFAULT_PERSIST_REVOKED_TOKENS = true;
     public static final String LOADED = "loaded" + SingleUseObjectProvider.REVOKED_KEY;
@@ -84,7 +89,7 @@ public class InfinispanSingleUseObjectProviderFactory implements SingleUseObject
                 if (!initialized) {
                     RevokedTokenPersisterProvider provider = session.getProvider(RevokedTokenPersisterProvider.class);
                     if (singleUseObjectCache.get(LOADED) == null) {
-                        // in a cluster, multiple Keycloak instances might load the same data in parallel, but that wouldn't matter
+                        // 集群中多实例并行加载相同数据可接受，重复写入无害
                         provider.getAllRevokedTokens().forEach(revokedToken -> {
                             long lifespanSeconds = revokedToken.expiry() - Time.currentTime();
                             if (lifespanSeconds > 0) {
@@ -102,8 +107,7 @@ public class InfinispanSingleUseObjectProviderFactory implements SingleUseObject
 
     @Override
     public void postInit(KeycloakSessionFactory factory) {
-        // It is necessary to put the cache initialization here, otherwise the cache would be initialized lazily, that
-        // means also listeners will start only after first cache initialization - that would be too late
+        // 须在此 eagerly 初始化缓存，否则监听器要等到首次访问才注册，为时已晚
         if (singleUseObjectCache == null) {
             try (var session = factory.create()) {
                 InfinispanConnectionProvider connections = session.getProvider(InfinispanConnectionProvider.class);
@@ -116,7 +120,7 @@ public class InfinispanSingleUseObjectProviderFactory implements SingleUseObject
                 if (event instanceof PostMigrationEvent pme) {
                     KeycloakSessionFactory sessionFactory = pme.getFactory();
                     try (KeycloakSession session = sessionFactory.create()) {
-                        // load sessions during startup, not on first request to avoid congestion
+                        // 启动时预加载撤销令牌，避免首请求拥塞
                         initialize(session);
                     }
                 }

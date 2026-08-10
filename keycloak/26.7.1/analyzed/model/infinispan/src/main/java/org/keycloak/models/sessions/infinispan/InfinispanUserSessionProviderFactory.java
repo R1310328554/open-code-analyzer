@@ -74,6 +74,12 @@ import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.O
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.OFFLINE_USER_SESSION_CACHE_NAME;
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.USER_SESSION_CACHE_NAME;
 
+/**
+ * Infinispan 用户会话 Provider 工厂。
+ * <p>
+ * 根据是否启用持久化多站点会话，创建 {@link InfinispanUserSessionProvider} 或
+ * {@link PersistentUserSessionProvider}，并管理缓存、过期任务与集群监听器。
+ */
 public class InfinispanUserSessionProviderFactory implements UserSessionProviderFactory<UserSessionProvider>, ServerInfoAwareProviderFactory, EnvironmentDependentProviderFactory {
 
     private static final Logger log = Logger.getLogger(InfinispanUserSessionProviderFactory.class);
@@ -132,15 +138,15 @@ public class InfinispanUserSessionProviderFactory implements UserSessionProvider
     public void init(Config.Scope config) {
         offlineSessionCacheEntryLifespanOverride = config.getInt(CONFIG_OFFLINE_SESSION_CACHE_ENTRY_LIFESPAN_OVERRIDE, -1);
         if (offlineSessionCacheEntryLifespanOverride != -1) {
-            // to be removed in KC 27
+            // 该配置项将在 KC 27 移除
             log.warn("The option spi-user-sessions--infinispan--offline-session-cache-entry-lifespan-override is deprecated and will be removed in a future release");
         }
         offlineClientSessionCacheEntryLifespanOverride = config.getInt(CONFIG_OFFLINE_CLIENT_SESSION_CACHE_ENTRY_LIFESPAN_OVERRIDE, -1);
         if (offlineClientSessionCacheEntryLifespanOverride != -1) {
-            // to be removed in KC 27
+            // 该配置项将在 KC 27 移除
             log.warn("The option spi-user-sessions--infinispan--offline-client-session-cache-entry-lifespan-override is deprecated and will be removed in a future release");
         }
-        // Do not use caches for sessions if explicitly disabled or if embedded caches are not used
+        // 显式禁用或无嵌入式缓存时不使用会话缓存
         useCaches = config.getBoolean(CONFIG_USE_CACHES, !Profile.isFeatureEnabled(Profile.Feature.STATELESS)) && InfinispanUtils.isEmbeddedInfinispan();
         expirationPeriodSeconds = getExpirationPeriodSeconds(config);
     }
@@ -200,29 +206,25 @@ public class InfinispanUserSessionProviderFactory implements UserSessionProvider
                 var blockingManager = session.getProvider(InfinispanConnectionProvider.class).getBlockingManager();
                 expirationListener = new EmbeddedUserSessionExpirationListener(session.getKeycloakSessionFactory(), blockingManager);
             }
-            // Only add the event listener to session caches
-            // The expired events for offline sessions will be triggered by JpaUserSessionPersisterProvider
+            // 仅为在线用户会话缓存注册过期监听器
+            // 离线会话过期由 JpaUserSessionPersisterProvider 触发
             sessionCacheHolder.cache().addListener(expirationListener);
         }
-        // we need the expiration task running because of offline sessions
+        // 离线会话仍需后台过期清理任务
         try (var session = factory.create()) {
             expirationTask = ExpirationTaskFactory.create(session, expirationPeriodSeconds);
         }
         expirationTask.start();
         if (factory.getProviderFactory(AuthenticationSessionProvider.class) instanceof JpaAuthenticationSessionProviderFactory) {
-            // Based on our internal knowledge on the JpaAuthenticationSessionProviderFactory, we can now assume that
-            // all actions on the authentication sessions are done with pessimistic locking in place. With this knowledge,
-            // we can later INSERT user session and client sessions and can be sure that there are no concurrent transactions
-            // running to do the same due pessimistic lock created earlier.
-            // TODO: In a future version, we might have a method in AuthenticationSessionProvider to query about that
-            // behavior to avoid reflection and internal knowledge.
+            // 若认证会话使用 JPA 悲观锁，则用户/客户端会话 INSERT 可安全并发
+            // TODO：未来可通过 AuthenticationSessionProvider API 查询锁策略
             pessimisticLockingAuthenticationSession = true;
         }
     }
 
     public void initializePersisterLastSessionRefreshStore(final KeycloakSessionFactory sessionFactory) {
         KeycloakModelUtils.runJobInTransaction(sessionFactory, session -> {
-            // Initialize persister for periodically doing bulk DB updates of lastSessionRefresh timestamps of refreshed sessions
+            // 初始化定期批量更新 lastSessionRefresh 的持久化组件
             persisterLastSessionRefreshStore = new PersisterLastSessionRefreshStoreFactory().createAndInit(session, true);
         });
     }
@@ -268,16 +270,16 @@ public class InfinispanUserSessionProviderFactory implements UserSessionProvider
         long configuredOfflineSessionLifespan = SessionTimeouts.getOfflineSessionLifespanMs(realm, client, entity);
 
         if (offlineSessionCacheEntryLifespanOverride == -1) {
-            // override not configured -> take the value from realm settings
+            // 未配置覆盖值时使用领域设置
             return configuredOfflineSessionLifespan;
         }
 
         if (configuredOfflineSessionLifespan == -1) {
-            // "Offline Session Max Limited" is "off"
+            // 领域未限制离线会话最大时长
             return TimeUnit.SECONDS.toMillis(offlineSessionCacheEntryLifespanOverride);
         }
 
-        // both values are configured, Offline Session Max could be smaller than the override, so we use the minimum of both
+        // 两者均配置时取较小值作为缓存条目寿命
         return Math.min(TimeUnit.SECONDS.toMillis(offlineSessionCacheEntryLifespanOverride), configuredOfflineSessionLifespan);
     }
 
@@ -286,16 +288,16 @@ public class InfinispanUserSessionProviderFactory implements UserSessionProvider
         long configuredOfflineClientSessionLifespan = SessionTimeouts.getOfflineClientSessionLifespanMs(realm, client, entity);
 
         if (offlineClientSessionCacheEntryLifespanOverride == -1) {
-            // override not configured -> take the value from realm settings
+            // 未配置覆盖值时使用领域设置
             return configuredOfflineClientSessionLifespan;
         }
 
         if (configuredOfflineClientSessionLifespan == -1) {
-            // "Offline Session Max Limited" is "off"
+            // 领域未限制离线会话最大时长
             return TimeUnit.SECONDS.toMillis(offlineClientSessionCacheEntryLifespanOverride);
         }
 
-        // both values are configured, Offline Session Max could be smaller than the override, so we use the minimum of both
+        // 两者均配置时取较小值作为缓存条目寿命
         return Math.min(TimeUnit.SECONDS.toMillis(offlineClientSessionCacheEntryLifespanOverride), configuredOfflineClientSessionLifespan);
     }
 

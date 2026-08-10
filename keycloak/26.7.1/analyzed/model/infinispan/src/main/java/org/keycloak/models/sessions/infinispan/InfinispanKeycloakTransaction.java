@@ -31,6 +31,10 @@ import org.infinispan.context.Flag;
 import org.jboss.logging.Logger;
 
 /**
+ * Keycloak 与 Infinispan 缓存交互的非阻塞事务实现。
+ * <p>
+ * 在 Keycloak 事务提交前批量执行 put/replace/remove，支持同键操作合并与墓碑标记。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class InfinispanKeycloakTransaction implements NonBlockingTransaction {
@@ -38,7 +42,7 @@ public class InfinispanKeycloakTransaction implements NonBlockingTransaction {
     private final static Logger log = Logger.getLogger(InfinispanKeycloakTransaction.class);
 
     /**
-     * Tombstone to mark an entry as already removed for the current session.
+     * 墓碑标记：表示当前事务内该键已被删除，后续读操作视为不存在。
      */
     private static final CacheTask TOMBSTONE = new CacheTask() {
         @Override
@@ -106,7 +110,7 @@ public class InfinispanKeycloakTransaction implements NonBlockingTransaction {
                 ((CacheTaskWithValue<V>) current).setValue(value);
                 ((CacheTaskWithValue<V>) current).updateLifespan(lifespan, lifespanUnit);
             } else if (current != TOMBSTONE && current.getOperation() != Operation.REMOVE) {
-                // A previous delete operation will take precedence over any new replace
+                // 先前的删除操作优先于后续的 replace，避免复活已删条目
                 throw new IllegalStateException("Can't replace entry: task " + current + " in progress for session");
             }
         } else {
@@ -160,7 +164,7 @@ public class InfinispanKeycloakTransaction implements NonBlockingTransaction {
         });
     }
 
-    // This is for possibility to lookup for session by id, which was created in this transaction
+    // 支持在本事务内查找刚创建、尚未提交到缓存的会话条目
     public <K, V> V get(BasicCache<K, V> cache, K key) {
         Object taskKey = getTaskKey(cache, key);
         CacheTask current = tasks.get(taskKey);
@@ -170,7 +174,7 @@ public class InfinispanKeycloakTransaction implements NonBlockingTransaction {
             }
         }
 
-        // Should we have per-transaction cache for lookups?
+        // TODO：是否应为事务内读操作维护独立查找缓存？
         return cache.get(key);
     }
 
@@ -213,7 +217,7 @@ public class InfinispanKeycloakTransaction implements NonBlockingTransaction {
         }
     }
 
-    // Ignore return values. Should have better performance within cluster
+    // 忽略返回值以提升集群内写入性能
     private static <K, V> BasicCache<K, V> decorateCache(BasicCache<K, V> cache) {
         return cache instanceof Cache<K, V> c ?
                 c.getAdvancedCache().withFlags(Flag.IGNORE_RETURN_VALUES, Flag.SKIP_REMOTE_LOOKUP) :
