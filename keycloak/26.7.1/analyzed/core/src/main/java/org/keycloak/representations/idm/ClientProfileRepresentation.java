@@ -21,40 +21,50 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Client Profile's external representation class
+ * Client Profile 的外部 REST 表示，聚合一组 Client Policy 执行器。
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientProfileRepresentation {
 
+    /** Profile 名称。 */
     protected String name;
+    /** Profile 描述。 */
     protected String description;
+    /** 该 Profile 包含的执行器列表。 */
     protected List<ClientPolicyExecutorRepresentation> executors;
 
+    /** @return Profile 名称 */
     public String getName() {
         return name;
     }
 
+    /** @param name Profile 名称 */
     public void setName(String name) {
         this.name = name;
     }
 
+    /** @return Profile 描述 */
     public String getDescription() {
         return description;
     }
 
+    /** @param description Profile 描述 */
     public void setDescription(String description) {
         this.description = description;
     }
 
+    /** @return 执行器列表 */
     public List<ClientPolicyExecutorRepresentation> getExecutors() {
         return executors;
     }
 
+    /** @param executors 执行器列表 */
     public void setExecutors(List<ClientPolicyExecutorRepresentation> executors) {
         this.executors = executors;
     }
 
+    /** 基于名称、描述与执行器列表比较相等性。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -63,6 +73,7 @@ public class ClientProfileRepresentation {
         return Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(executors, that.executors);
     }
 
+    /** 基于核心字段计算哈希。 */
     @Override
     public int hashCode() {
         return Objects.hash(name, description, executors);

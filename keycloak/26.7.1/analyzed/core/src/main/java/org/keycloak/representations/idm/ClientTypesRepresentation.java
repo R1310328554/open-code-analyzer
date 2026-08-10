@@ -23,36 +23,48 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 客户端类型集合的 REST 表示，区分 realm 级与全局内置类型。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientTypesRepresentation {
 
+    /** realm 级客户端类型列表。 */
     @JsonProperty("client-types")
     private List<ClientTypeRepresentation> realmClientTypes;
 
+    /** Keycloak 全局内置客户端类型列表。 */
     @JsonProperty("global-client-types")
     private List<ClientTypeRepresentation> globalClientTypes;
 
+    /** 无参构造器。 */
     public ClientTypesRepresentation() {
     }
 
+    /** @param realmClientTypes realm 级类型列表
+     *  @param globalClientTypes 全局类型列表
+     */
     public ClientTypesRepresentation(List<ClientTypeRepresentation> realmClientTypes, List<ClientTypeRepresentation> globalClientTypes) {
         this.realmClientTypes = realmClientTypes;
         this.globalClientTypes = globalClientTypes;
     }
 
+    /** @return realm 级客户端类型 */
     public List<ClientTypeRepresentation> getRealmClientTypes() {
         return realmClientTypes;
     }
 
+    /** @param realmClientTypes realm 级客户端类型 */
     public void setRealmClientTypes(List<ClientTypeRepresentation> realmClientTypes) {
         this.realmClientTypes = realmClientTypes;
     }
 
+    /** @return 全局内置客户端类型 */
     public List<ClientTypeRepresentation> getGlobalClientTypes() {
         return globalClientTypes;
     }
 
+    /** @param globalClientTypes 全局内置客户端类型 */
     public void setGlobalClientTypes(List<ClientTypeRepresentation> globalClientTypes) {
         this.globalClientTypes = globalClientTypes;
     }

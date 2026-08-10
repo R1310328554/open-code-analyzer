@@ -26,39 +26,46 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Client Profiles' (the set of all Client Profile) external representation class
+ * Client Profile 集合的外部 REST 表示，包含 realm 级 Profile 与全局内置 Profile。
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class ClientProfilesRepresentation {
 
+    /** realm 级 Client Profile 列表。 */
     private List<ClientProfileRepresentation> profiles = new ArrayList<>();
 
-    // Global profiles, which are builtin in Keycloak.
+    /** Keycloak 内置的全局 Client Profile 列表。 */
     @JsonProperty("globalProfiles")
     private List<ClientProfileRepresentation> globalProfiles;
 
+    /** @return realm 级 Profile 列表 */
     public List<ClientProfileRepresentation> getProfiles() {
         return profiles;
     }
 
+    /** @param profiles realm 级 Profile 列表 */
     public void setProfiles(List<ClientProfileRepresentation> profiles) {
         this.profiles = profiles;
     }
 
+    /** @return 全局内置 Profile 列表 */
     public List<ClientProfileRepresentation> getGlobalProfiles() {
         return globalProfiles;
     }
 
+    /** @param globalProfiles 全局内置 Profile 列表 */
     public void setGlobalProfiles(List<ClientProfileRepresentation> globalProfiles) {
         this.globalProfiles = globalProfiles;
     }
 
+    /** 基于 JSON 树结构计算哈希值，忽略字段顺序差异。 */
     @Override
     public int hashCode() {
         return JsonSerialization.mapper.convertValue(this, JsonNode.class).hashCode();
     }
 
+    /** 基于 JSON 树结构比较相等性。 */
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof ClientProfilesRepresentation)) return false;

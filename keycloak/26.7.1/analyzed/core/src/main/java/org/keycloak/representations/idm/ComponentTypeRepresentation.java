@@ -22,60 +22,75 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 组件 SPI 类型的 Admin REST 表示，描述可配置属性与扩展元数据。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ComponentTypeRepresentation {
+    /** 组件类型 ID（提供方标识）。 */
     protected String id;
+    /** 组件类型帮助说明文本。 */
     protected String helpText;
+    /** 组件级配置属性定义。 */
     protected List<ConfigPropertyRepresentation> properties;
+    /** 客户端相关配置属性定义。 */
     protected List<ConfigPropertyRepresentation> clientProperties;
 
+    /** 来自注解或接口的扩展元数据（如 ImportSynchronization 能力）。 */
     protected Map<String, Object> metadata = new HashMap<>();
 
 
+    /** @return 组件类型 ID */
     public String getId() {
         return id;
     }
 
+    /** @param id 组件类型 ID */
     public void setId(String id) {
         this.id = id;
     }
 
+    /** @return 帮助文本 */
     public String getHelpText() {
         return helpText;
     }
 
+    /** @param helpText 帮助文本 */
     public void setHelpText(String helpText) {
         this.helpText = helpText;
     }
 
+    /** @return 组件配置属性列表 */
     public List<ConfigPropertyRepresentation> getProperties() {
         return properties;
     }
 
+    /** @param properties 组件配置属性列表 */
     public void setProperties(List<ConfigPropertyRepresentation> properties) {
         this.properties = properties;
     }
 
+    /** @return 客户端配置属性列表 */
     public List<ConfigPropertyRepresentation> getClientProperties() {
         return clientProperties;
     }
 
+    /** @param clientProperties 客户端配置属性列表 */
     public void setClientProperties(List<ConfigPropertyRepresentation> clientProperties) {
         this.clientProperties = clientProperties;
     }
 
     /**
-     * Extra information about the component
-     * that might come from annotations or interfaces that the component implements.
-     * For example, if UserStorageProviderFactory implements ImportSynchronization
+     * 组件的扩展元数据，可能来自实现接口或注解。
+     * 例如 UserStorageProviderFactory 实现 ImportSynchronization 时的同步能力信息。
      *
-     * @return
+     * @return 元数据键值映射
      */
     public Map<String, Object> getMetadata() {
         return metadata;
     }
 
+    /** @param metadata 扩展元数据 */
     public void setMetadata(Map<String, Object> metadata) {
         this.metadata = metadata;
     }

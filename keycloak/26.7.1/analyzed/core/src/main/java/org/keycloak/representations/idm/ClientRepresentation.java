@@ -23,62 +23,108 @@ import java.util.Map;
 import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
 
 /**
+ * OAuth/OIDC 客户端的 Admin REST API 表示，涵盖客户端标识、流配置、Scope 与授权设置等。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ClientRepresentation {
+    /** 客户端内部 UUID。 */
     protected String id;
+    /** 客户端标识符（client_id）。 */
     protected String clientId;
+    /** 客户端显示名称。 */
     protected String name;
+    /** 客户端描述。 */
     protected String description;
+    /** 客户端类型（如 OpenID Connect）。 */
     protected String type;
+    /** 应用根 URL。 */
     protected String rootUrl;
+    /** 管理回调 URL。 */
     protected String adminUrl;
+    /** 默认基础 URL。 */
     protected String baseUrl;
+    /** 是否需要代理认证。 */
     protected Boolean surrogateAuthRequired;
+    /** 客户端是否启用。 */
     protected Boolean enabled;
+    /** 是否始终在控制台显示。 */
     protected Boolean alwaysDisplayInConsole;
+    /** 客户端认证器类型。 */
     protected String clientAuthenticatorType;
+    /** 客户端密钥。 */
     protected String secret;
+    /** 动态注册访问令牌。 */
     protected String registrationAccessToken;
+    /** 已弃用：默认角色列表。 */
     @Deprecated
     protected String[] defaultRoles;
+    /** 合法重定向 URI 列表。 */
     protected List<String> redirectUris;
+    /** 允许的 Web 来源（CORS）。 */
     protected List<String> webOrigins;
+    /** 令牌生效起始时间（not-before）。 */
     protected Integer notBefore;
+    /** 是否为仅 Bearer 客户端。 */
     protected Boolean bearerOnly;
+    /** 是否需要用户同意。 */
     protected Boolean consentRequired;
+    /** 是否启用标准授权码流。 */
     protected Boolean standardFlowEnabled;
+    /** 是否启用隐式流。 */
     protected Boolean implicitFlowEnabled;
+    /** 是否启用资源所有者密码凭据流。 */
     protected Boolean directAccessGrantsEnabled;
+    /** 是否启用服务账户。 */
     protected Boolean serviceAccountsEnabled;
+    /** 是否启用授权服务（UMA）。 */
     protected Boolean authorizationServicesEnabled;
+    /** 已弃用：是否仅允许直接授权。 */
     @Deprecated
     protected Boolean directGrantsOnly;
+    /** 是否为公开客户端（无密钥）。 */
     protected Boolean publicClient;
+    /** 是否启用前端通道登出。 */
     protected Boolean frontchannelLogout;
+    /** 协议标识（如 openid-connect）。 */
     protected String protocol;
+    /** 客户端自定义属性。 */
     protected Map<String, String> attributes;
+    /** 认证流绑定覆盖配置。 */
     protected Map<String, String> authenticationFlowBindingOverrides;
+    /** 是否允许完整 Scope。 */
     protected Boolean fullScopeAllowed;
+    /** 节点重新注册超时（秒）。 */
     protected Integer nodeReRegistrationTimeout;
+    /** 已注册适配器节点及其最后注册时间。 */
     protected Map<String, Integer> registeredNodes;
+    /** 协议映射器列表。 */
     protected List<ProtocolMapperRepresentation> protocolMappers;
 
+    /** 已弃用：关联的客户端模板 ID。 */
     @Deprecated
     protected String clientTemplate;
+    /** 已弃用：是否继承模板配置。 */
     @Deprecated
     private Boolean useTemplateConfig;
+    /** 已弃用：是否继承模板 Scope。 */
     @Deprecated
     private Boolean useTemplateScope;
+    /** 已弃用：是否继承模板映射器。 */
     @Deprecated
     private Boolean useTemplateMappers;
 
+    /** 默认客户端 Scope 名称列表。 */
     protected List<String> defaultClientScopes;
+    /** 可选客户端 Scope 名称列表。 */
     protected List<String> optionalClientScopes;
 
+    /** UMA 资源服务器授权设置。 */
     private ResourceServerRepresentation authorizationSettings;
+    /** 当前用户对客户端的管理权限映射。 */
     private Map<String, Boolean> access;
+    /** 加载该客户端的 {@code ClientStorageProvider} ID；本地存储时为 {@code null}。 */
     protected String origin;
 
 
@@ -276,6 +322,7 @@ public class ClientRepresentation {
         this.serviceAccountsEnabled = serviceAccountsEnabled;
     }
 
+    /** 若已配置 authorizationSettings 则视为启用授权服务。 */
     public Boolean getAuthorizationServicesEnabled() {
         if (authorizationSettings != null) {
             return true;
@@ -422,9 +469,9 @@ public class ClientRepresentation {
 
 
     /**
-     * Returns id of ClientStorageProvider that loaded this user
+     * 返回加载该客户端的 ClientStorageProvider ID。
      *
-     * @return NULL if user stored locally
+     * @return 本地存储时返回 {@code null}
      */
     public String getOrigin() {
         return origin;

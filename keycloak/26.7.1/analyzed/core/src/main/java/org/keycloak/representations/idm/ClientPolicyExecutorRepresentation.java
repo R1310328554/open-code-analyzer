@@ -26,35 +26,44 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
+ * Client Profile 中单条执行器的 REST 表示，包含执行器提供方 ID 与 JSON 配置。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientPolicyExecutorRepresentation {
 
+    /** 执行器 SPI 提供方标识（JSON 字段 {@code executor}）。 */
     @JsonProperty("executor")
     private String executorProviderId;
 
+    /** 执行器提供方的配置参数（JSON 对象）。 */
     @JsonProperty("configuration")
     @Schema(type=SchemaType.OBJECT,
             description = "Configuration settings as a JSON object",
             additionalProperties = Schema.True.class)
     private JsonNode configuration;
 
+    /** @return 执行器提供方 ID */
     public String getExecutorProviderId() {
         return executorProviderId;
     }
 
+    /** @param providerId 执行器提供方 ID */
     public void setExecutorProviderId(String providerId) {
         this.executorProviderId = providerId;
     }
 
+    /** @return 执行器配置 JSON */
     public JsonNode getConfiguration() {
         return configuration;
     }
 
+    /** @param configuration 执行器配置 JSON */
     public void setConfiguration(JsonNode configuration) {
         this.configuration = configuration;
     }
 
+    /** 基于提供方 ID 与配置比较相等性。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -63,6 +72,7 @@ public class ClientPolicyExecutorRepresentation {
         return Objects.equals(executorProviderId, that.executorProviderId) && Objects.equals(configuration, that.configuration);
     }
 
+    /** 基于提供方 ID 与配置计算哈希。 */
     @Override
     public int hashCode() {
         return Objects.hash(executorProviderId, configuration);

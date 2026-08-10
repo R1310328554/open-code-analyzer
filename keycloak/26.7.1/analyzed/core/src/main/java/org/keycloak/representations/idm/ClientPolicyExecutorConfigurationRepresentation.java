@@ -25,24 +25,30 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 
 /**
- * Just adds some type-safety to the ClientPolicyExecutorConfiguration
+ * 为 Client Policy 执行器配置提供类型安全的 REST 表示，支持动态 JSON 属性。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientPolicyExecutorConfigurationRepresentation {
 
+    /** 执行器提供方特定的扩展配置项。 */
     private Map<String, Object> configAsMap = new HashMap<>();
 
+    /** @return 扩展配置映射 */
     @JsonAnyGetter
     public Map<String, Object> getConfigAsMap() {
         return configAsMap;
     }
 
+    /** @param name 配置键
+     *  @param value 配置值
+     */
     @JsonAnySetter
     public void setConfigAsMap(String name, Object value) {
         this.configAsMap.put(name, value);
     }
 
+    /** 校验配置是否有效（默认始终通过）。 */
     public boolean validateConfig(){
         return  true;
     }

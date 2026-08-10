@@ -21,30 +21,47 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 已弃用的客户端模板 REST 表示，请改用 {@link ClientScopeRepresentation}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
-@Deprecated // Use ClientScopeRepresentation instead
+@Deprecated // 请改用 ClientScopeRepresentation
 public class ClientTemplateRepresentation {
     /**
-     * Use this value in ClientRepresentation.setClientTemplate when you want to clear this value
+     * 在 {@link ClientRepresentation#setClientTemplate} 中使用此值以清除模板关联。
      */
     public static final String NONE = "NONE";
+    /** 模板内部 UUID。 */
     protected String id;
+    /** 模板名称。 */
     protected String name;
+    /** 模板描述。 */
     protected String description;
+    /** 关联协议。 */
     protected String protocol;
+    /** 是否允许完整 Scope。 */
     protected Boolean fullScopeAllowed;
+    /** 是否为仅 Bearer 客户端。 */
     protected Boolean bearerOnly;
+    /** 是否需要用户同意。 */
     protected Boolean consentRequired;
+    /** 是否启用标准授权码流。 */
     protected Boolean standardFlowEnabled;
+    /** 是否启用隐式流。 */
     protected Boolean implicitFlowEnabled;
+    /** 是否启用资源所有者密码凭据流。 */
     protected Boolean directAccessGrantsEnabled;
+    /** 是否启用服务账户。 */
     protected Boolean serviceAccountsEnabled;
+    /** 是否为公开客户端。 */
     protected Boolean publicClient;
+    /** 是否启用前端通道登出。 */
     protected Boolean frontchannelLogout;
+    /** 模板自定义属性。 */
     protected Map<String, String> attributes;
 
+    /** 协议映射器列表。 */
     protected List<ProtocolMapperRepresentation> protocolMappers;
 
     public String getId() {
