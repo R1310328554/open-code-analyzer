@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T08:35:20Z",
   "files": [
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo26_6_1.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo26_6_2.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo26_7_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo2_0_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo2_1_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo2_2_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo2_3_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo2_5_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo3_0_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo3_1_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo3_2_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo3_4_0.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo3_4_1.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo3_4_2.java",
-    "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo4_0_0.java",
     "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo4_2_0.java",
     "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo4_6_0.java",
     "model/storage-private/src/main/java/org/keycloak/migration/migrators/MigrateTo6_0_0.java",
@@ -33,5 +18,5 @@
     "model/storage-private/src/main/java/org/keycloak/models/cache/CacheRealmProvider.java"
   ],
   "remaining_pending": 4078,
-  "done": 1890
+  "done": 1905
 }
