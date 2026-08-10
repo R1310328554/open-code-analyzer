@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T14:28:45Z",
-  "files": [
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/BrowserTabUtils.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/BrowserType.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/ChromeHeadlessWebDriverSupplier.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/ChromeWebDriverSupplier.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/CookieUtils.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/DriverOptions.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/DriverUtils.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/FirefoxHeadlessWebDriverSupplier.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/FirefoxWebDriverSupplier.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/HtmlUnitWebDriverSupplier.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/ManagedWebDriver.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/NavigateUtils.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/PageUtils.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/WaitUtils.java",
-    "testsuite/integration-arquillian/servers/app-server/app-server-spi/src/main/java/org/keycloak/testsuite/arquillian/container/AppServerContainerProvider.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 208,
-  "done": 5775
+  "done": 5790
 }
