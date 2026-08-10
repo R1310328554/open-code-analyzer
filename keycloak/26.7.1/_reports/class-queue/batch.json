@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T05:48:07Z",
-  "files": [
-    "common/src/main/java/org/keycloak/common/util/KerberosSerializationUtils.java",
-    "common/src/main/java/org/keycloak/common/util/KeyUtils.java",
-    "common/src/main/java/org/keycloak/common/util/KeycloakUriBuilder.java",
-    "common/src/main/java/org/keycloak/common/util/KeystoreUtil.java",
-    "common/src/main/java/org/keycloak/common/util/MimeTypeUtil.java",
-    "common/src/main/java/org/keycloak/common/util/MultiSiteUtils.java",
-    "common/src/main/java/org/keycloak/common/util/MultivaluedHashMap.java",
-    "common/src/main/java/org/keycloak/common/util/MultivaluedMap.java",
-    "common/src/main/java/org/keycloak/common/util/NetworkUtils.java",
-    "common/src/main/java/org/keycloak/common/util/ObjectUtil.java",
-    "common/src/main/java/org/keycloak/common/util/PaddingUtils.java",
-    "common/src/main/java/org/keycloak/common/util/PathHelper.java",
-    "common/src/main/java/org/keycloak/common/util/PathMatcher.java",
-    "common/src/main/java/org/keycloak/common/util/PemException.java",
-    "common/src/main/java/org/keycloak/common/util/PemUtils.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 5758,
-  "done": 225
+  "done": 240
 }

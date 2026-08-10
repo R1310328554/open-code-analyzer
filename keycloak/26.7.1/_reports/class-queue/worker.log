@@ -223,3 +223,18 @@
 2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/UriUtils.java wave8b common util + reflections
 2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/reflections/Reflections.java wave8b common util + reflections
 2026-08-10T05:50:03Z DONE common/src/main/java/org/keycloak/common/util/reflections/SetAccessiblePrivilegedAction.java wave8b common util + reflections
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/KerberosSerializationUtils.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/KeyUtils.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/KeycloakUriBuilder.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/KeystoreUtil.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/MimeTypeUtil.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/MultiSiteUtils.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/MultivaluedHashMap.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/MultivaluedMap.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/NetworkUtils.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/ObjectUtil.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/PaddingUtils.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/PathHelper.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/PathMatcher.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/PemException.java wave8a common util continued
+2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/PemUtils.java wave8a common util continued
