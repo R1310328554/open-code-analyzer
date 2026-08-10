@@ -1,5 +1,7 @@
 package workflow
 
+// workflow_print 将 Workflow 的 Task DAG 格式化为可读树形文本，标注各物理节点的 @source/@sink Stream ULID 及任务时间范围。
+
 import (
 	"fmt"
 	"io"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/util/tree"
 )
 
+// Sprint 将 Fprint 输出写入 strings.Builder 并返回完整字符串。
 // Sprint returns a string representation of the workflow.
 func Sprint(wf *Workflow) string {
 	var sb strings.Builder
@@ -18,6 +21,7 @@ func Sprint(wf *Workflow) string {
 	return sb.String()
 }
 
+// Fprint 对每个根 Task 前序遍历，打印 Task 框线、MaxTimeRange 及 Fragment 计划树。
 // Fprint prints a string representation of the workflow to the given writer.
 func Fprint(w io.Writer, wf *Workflow) error {
 	visited := make(map[*Task]struct{}, wf.graph.Len())
@@ -79,6 +83,7 @@ func Fprint(w io.Writer, wf *Workflow) error {
 	return nil
 }
 
+// findTreeNode 递归搜索 planTree 及其 Comment 子树，匹配 physical.Node 上下文。
 // findTreeNode finds the first node in the tree that satisfies the given
 // predicate. findTreeNode returns nil if no node is found.
 func findTreeNode(root *tree.Node, f func(node *tree.Node) bool) *tree.Node {
@@ -100,3 +105,4 @@ func findTreeNode(root *tree.Node, f func(node *tree.Node) bool) *tree.Node {
 
 	return nil
 }
+// 调试输出使用 tree.Printer 渲染物理计划，Sources/Sinks 以 @source/@sink 注释附加。

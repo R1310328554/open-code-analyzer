@@ -1,5 +1,7 @@
 package framedstdcopy
 
+// framedstdcopy 改造 Docker stdcopy：按帧 demux stdout/stderr 到 channel，保留帧载荷原始字节（含时间戳等内层头）；另提供 TTY 无头帧边界启发式拆分。
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -18,6 +20,7 @@ const (
 	maxFrameLen        = 16384 + 31 // In practice (undocumented) frame payload can be timestamp + 16k
 )
 
+// FramedStdCopy 读至 src EOF 返回 nil；非 nil error 表示真实 IO/协议错误。
 // FramedStdCopy is a modified version of stdcopy.StdCopy.
 // FramedStdCopy will demultiplex `src` in the same manner as StdCopy, but instead of
 // using io.Writer for outputs, channels are used, since each frame payload may contain
@@ -120,6 +123,7 @@ func FramedStdCopy(dstout, dsterr chan []byte, src io.Reader) (written int64, er
 	}
 }
 
+// NoHeaderFramedStdCopy 用于 TTY 容器输出：靠换行与 maxFrameLen 启发式切分帧边界。
 // Specialized version of FramedStdCopy for when frames have no headers.
 // This will happen for output from a container that has TTY set.
 // In theory this makes it impossible to find the frame boundaries, which also does not matter if timestamps were not requested,
@@ -171,3 +175,4 @@ func NoHeaderFramedStdCopy(dstout chan []byte, src io.Reader) (written int64, er
 		}
 	}
 }
+// Systemerr 流帧载荷作为 daemon 错误字符串返回，不写入 dstout/dsterr。

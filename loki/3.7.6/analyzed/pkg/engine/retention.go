@@ -1,5 +1,7 @@
 package engine
 
+// retention 在存储层原生保留策略就绪前，于查询入口校验租户保留期：全局保留可截断起始时间或返回空结果；流级保留与边界重叠则返回 501。
+
 import (
 	"context"
 	"net/http"
@@ -15,12 +17,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// RetentionLimits 抽象租户全局 retention_period 与 per-stream 保留规则。
 // RetentionLimits provides access to tenant retention settings.
 type RetentionLimits interface {
 	RetentionPeriod(userID string) time.Duration
 	StreamRetention(userID string) []validation.StreamRetention
 }
 
+// retentionChecker 使用 quartz 时钟按 UTC 日粒度计算保留边界并决策查询处理方式。
 // retentionChecker checks the incoming query against tenant's retention settings
 // and decides how to handle it. This is a temporary solution until storage
 // supports retention directly.
@@ -63,6 +67,7 @@ type retentionChecker struct {
 	clock  quartz.Clock
 }
 
+// newRetentionChecker 注入 limits、logger 与默认真实时钟。
 // newRetentionChecker creates a retention checker to validate queries against retention limits.
 func newRetentionChecker(limits RetentionLimits, logger log.Logger) *retentionChecker {
 	return &retentionChecker{
@@ -72,6 +77,7 @@ func newRetentionChecker(limits RetentionLimits, logger log.Logger) *retentionCh
 	}
 }
 
+// RetentionCheckResult 可能携带调整后的 Params、EmptyResponse 标志或不可执行 Error。
 // RetentionCheckResult represents the result of a retention check.
 type RetentionCheckResult struct {
 	// If the query start was snapped to the retention boundary, this will
@@ -87,6 +93,7 @@ type RetentionCheckResult struct {
 	Error error
 }
 
+// Validate 无 limits 时原样返回；有 stream retention 时走 handleStreamRetention 分支。
 // Validate determines how a query should be executed based on retention limits.
 // It returns a result containing potentially adjusted params, or an error/empty indicator.
 func (r *retentionChecker) Validate(ctx context.Context, params logql.Params) RetentionCheckResult {
@@ -125,6 +132,7 @@ func (r *retentionChecker) Validate(ctx context.Context, params logql.Params) Re
 	return r.handleGlobalRetention(params, tenantID, queryStart, queryEnd, globalRetention, globalBoundary)
 }
 
+// handleGlobalRetention：查询全在保留内则不变；全过期则 EmptyResponse；重叠则将起始 snap 到边界。
 // handleGlobalRetention handles the case where only global retention is configured.
 func (r *retentionChecker) handleGlobalRetention(params logql.Params, tenantID string, queryStart, queryEnd time.Time, globalRetention time.Duration, globalBoundary time.Time) RetentionCheckResult {
 	if globalRetention <= 0 {
@@ -160,6 +168,7 @@ func (r *retentionChecker) handleGlobalRetention(params logql.Params, tenantID s
 	}
 }
 
+// handleStreamRetention 取最严格流保留期；任一边界晚于 queryStart 则返回 NotImplemented。
 // handleStreamRetention handles the case where stream retention is also configured.
 func (r *retentionChecker) handleStreamRetention(params logql.Params, tenantID string, queryStart time.Time, globalRetention time.Duration, globalBoundary time.Time, streamRetention []validation.StreamRetention, today time.Time) RetentionCheckResult {
 	// Find the smallest stream retention period (most restrictive).
@@ -208,6 +217,7 @@ func (r *retentionChecker) handleStreamRetention(params logql.Params, tenantID s
 }
 
 // adjustedParams wraps logql.Params with an adjusted start time.
+// adjustedParams 包装 logql.Params 并重写 Start() 返回截断后的查询起始时间。
 type adjustedParams struct {
 	logql.Params
 	adjustedStart time.Time
@@ -216,3 +226,4 @@ type adjustedParams struct {
 func (a *adjustedParams) Start() time.Time {
 	return a.adjustedStart
 }
+// V2 引擎暂不支持流级保留与全局边界重叠的复杂查询场景。

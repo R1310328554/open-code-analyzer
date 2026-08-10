@@ -1,5 +1,7 @@
 package workflow
 
+// workflow_planner 将物理查询计划分区为 Task DAG：识别流水线断点与 Parallelize 节点，为跨任务边创建 Stream 并可选包裹 Batching。
+
 import (
 	"errors"
 	"fmt"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/util/dag"
 )
 
+// planner 持有租户 ID、批大小、物理计划图及 stream→写入 Task 的反向索引。
 // planner is responsible for constructing the Task graph held by a [Workflow].
 type planner struct {
 	tenantID  string
@@ -21,6 +24,7 @@ type planner struct {
 	streamWriters map[*Stream]*Task // Lookup of stream to which task writes to it
 }
 
+// planWorkflow 要求计划有唯一根节点；若根为 Batching 则提取 batchSize 并下钻子节点。
 // planWorkflow partitions a physical plan into a graph of tasks.
 //
 // planWorkflow returns an error if the provided physical plan does not
@@ -57,6 +61,7 @@ func planWorkflow(tenantID string, plan *physical.Plan) (dag.Graph[*Task], error
 	return planner.graph, nil
 }
 
+// Process 从根物理节点递归构建 Task 子图并写入 planner.graph。
 // Process builds a set of tasks from a root physical plan node. Built tasks are
 // added to p.graph.
 func (p *planner) Process(root physical.Node) error {
@@ -64,6 +69,7 @@ func (p *planner) Process(root physical.Node) error {
 	return err
 }
 
+// processNode 用栈遍历子树：遇 pipeline breaker 或 Parallelize 则拆分为独立 Task 并通过 Stream 连接。
 // processNode builds a set of tasks from the given node. splitOnBreaker
 // indicates whether pipeline breaker nodes should be split off into their own
 // task.
@@ -213,6 +219,7 @@ func (p *planner) processNode(node physical.Node, splitOnBreaker bool) (*Task, e
 	return task, nil
 }
 
+// addSink 在 Task 片段根节点的 Sinks 登记输出 Stream，并记录 streamWriters 映射。
 // addSink adds the sink stream to the root node of the provided task. addSink
 // returns an error if t has more than one root node.
 func (p *planner) addSink(t *Task, sink *Stream) error {
@@ -230,6 +237,7 @@ func (p *planner) addSink(t *Task, sink *Stream) error {
 	return nil
 }
 
+// removeSink 从 Sinks 切片删除 Stream 并清除 streamWriters 条目；无写入者时为 no-op。
 // removeSink removes the sink stream from the root node of the provided task.
 // removeSink is a no-op if sink doesn't have a writer.
 func (p *planner) removeSink(sink *Stream) error {
@@ -248,6 +256,7 @@ func (p *planner) removeSink(sink *Stream) error {
 	return nil
 }
 
+// isPipelineBreaker 判定 TopK、RangeAggregation、VectorAggregation 等需独立 Task 的算子。
 // isPipelineBreaker returns true if the node is a pipeline breaker.
 func isPipelineBreaker(node physical.Node) bool {
 	// TODO(rfratto): Should this information be exposed by the node itself? A
@@ -262,6 +271,7 @@ func isPipelineBreaker(node physical.Node) bool {
 	return false
 }
 
+// processParallelizeNode 克隆模板 Task、按 ShardableNode 分片并替换目标叶子，最后删除模板 Task。
 // processParallelizeNode builds a set of tasks for a Parallelize node.
 func (p *planner) processParallelizeNode(node *physical.Parallelize) ([]*Task, error) {
 	// Parallelize nodes are used as a marker task for splitting a branch of the
@@ -401,6 +411,7 @@ func (p *planner) processParallelizeNode(node *physical.Parallelize) ([]*Task, e
 	return partitions, nil
 }
 
+// findShardableNode 前序遍历找唯一可分片叶子；多个可分片叶子或无可分片时分别报错或返回 nil。
 // findShardableNode finds the first node in the graph that can be split into
 // smaller shards. Only leaf nodes are examined.
 //
@@ -431,6 +442,7 @@ func findShardableNode(graph *dag.Graph[physical.Node], root physical.Node) (phy
 }
 
 // stack is a slice with Push and Pop operations.
+// stack 为泛型切片栈，供 processNode 深度优先遍历物理计划子图。
 type stack[E any] []E
 
 func (s stack[E]) Len() int { return len(s) }
@@ -446,3 +458,4 @@ func (s *stack[E]) Pop() E {
 	*s = (*s)[:last]
 	return e
 }
+// Parallelize 分片时 templateTask 必须无父边且无 Sinks，否则视为规划器不变量违反。

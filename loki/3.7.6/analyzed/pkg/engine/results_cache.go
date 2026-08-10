@@ -1,5 +1,7 @@
 package engine
 
+// results_cache 为 Thor 引擎提供分层结果缓存中间件：按查询类型路由到指标区间、即时指标或日志空结果缓存，键生成基于时间桶对齐。
+
 import (
 	"context"
 	"fmt"
@@ -19,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/validation"
 )
 
+// MetricCacheKeyGenerator 按 EngineResultsCacheTimeBucketInterval 分桶，使相近起始时间的查询共享缓存。
 // MetricCacheKeyGenerator generates cache keys for the Thor (V2) query engine.
 // It buckets keys by EngineResultsCacheTimeBucketInterval to allow cache sharing
 // across queries that start within the same bucket.
@@ -26,6 +29,7 @@ type MetricCacheKeyGenerator struct {
 	limits Limits
 }
 
+// GenerateCacheKey 键格式含 userID、query、step、当前桶索引与 splitMs，避免步长或配置变更碰撞。
 // GenerateCacheKey generates a cache key based on the userID, query, step, and time bucket.
 func (s MetricCacheKeyGenerator) GenerateCacheKey(_ context.Context, userID string, r resultscache.Request) string {
 	splitMs := s.limits.EngineResultsCacheTimeBucketInterval(userID).Milliseconds() // Guaranteed to be >= 1m
@@ -35,6 +39,7 @@ func (s MetricCacheKeyGenerator) GenerateCacheKey(_ context.Context, userID stri
 	return fmt.Sprintf("%s:%s:%d:%d:%d", userID, r.GetQuery(), r.GetStep(), currentInterval, splitMs)
 }
 
+// NewMetricCacheMiddleware 仅缓存 SampleExpr 区间查询；日志查询透传至下游中间件链。
 // NewMetricCacheMiddleware creates a metric results cache middleware for the Thor engine.
 // It only caches metric (SampleExpr) queries; log queries pass through untouched.
 func NewMetricCacheMiddleware(
@@ -65,6 +70,7 @@ func NewMetricCacheMiddleware(
 	)
 }
 
+// InstantMetricCacheKeyGenerator 省略 step（即时查询恒为 0），前缀 instant-metric 区分键空间。
 // InstantMetricCacheKeyGenerator generates cache keys for instant metric queries
 // in the Thor (V2) query engine. It omits the step from the key because instant
 // queries always have step=0.
@@ -81,6 +87,7 @@ func (s InstantMetricCacheKeyGenerator) GenerateCacheKey(_ context.Context, user
 	return fmt.Sprintf("instant-metric:%s:%s:%d:%d", userID, r.GetQuery(), currentInterval, splitMs)
 }
 
+// NewInstantMetricCacheMiddleware 包装 queryrangebase.NewResultsCacheMiddleware 处理 step=0 指标查询。
 // NewInstantMetricCacheMiddleware creates an instant metric results cache middleware
 // for the Thor engine. It caches instant metric (SampleExpr) queries.
 func NewInstantMetricCacheMiddleware(
@@ -111,16 +118,19 @@ func NewInstantMetricCacheMiddleware(
 	)
 }
 
+// shouldCacheRequest 尊重请求 CachingOptions.Disabled，允许客户端显式跳过缓存。
 // shouldCacheRequest returns true when caching is not disabled for the request.
 func shouldCacheRequest(_ context.Context, r queryrangebase.Request) bool {
 	return !r.GetCachingOptions().Disabled
 }
 
+// NewResultsCacheMetrics 创建引擎结果缓存中间件共用的 Prometheus 指标容器。
 // NewResultsCacheMetrics creates metrics for the engine results cache middleware.
 func NewResultsCacheMetrics(reg prometheus.Registerer) *queryrangebase.ResultsCacheMetrics {
 	return queryrangebase.NewResultsCacheMetrics(reg)
 }
 
+// logCacheLimits 仅暴露 MaxCacheFreshness 与 EngineResultsCacheTimeBucketInterval，缩小依赖面。
 // logCacheLimits is the subset of Limits actually used by the engine log result cache.
 // It is intentionally smaller than engine.Limits to make the dependency explicit.
 type logCacheLimits interface {
@@ -128,6 +138,7 @@ type logCacheLimits interface {
 	EngineResultsCacheTimeBucketInterval(string) time.Duration
 }
 
+// NewLogResultCacheMetrics 注册 loki_engine_log_result_cache_hit/miss_total 计数器。
 // NewLogResultCacheMetrics creates metrics for the engine log result cache using
 // engine-specific Prometheus metric names.
 func NewLogResultCacheMetrics(registerer prometheus.Registerer) *queryrange.LogResultCacheMetrics {
@@ -143,6 +154,7 @@ func NewLogResultCacheMetrics(registerer prometheus.Registerer) *queryrange.LogR
 	}
 }
 
+// LogCacheKeyGenerator 用 EngineResultsCacheTimeBucketInterval 替代 QuerySplitDuration 生成日志缓存键。
 // LogCacheKeyGenerator implements queryrange.LogCacheKeyGenerator using
 // EngineResultsCacheTimeBucketInterval instead of QuerySplitDuration.
 type LogCacheKeyGenerator struct {
@@ -162,6 +174,7 @@ func (g *LogCacheKeyGenerator) GenerateCacheKey(_ context.Context, tenantIDs []s
 	return fmt.Sprintf("log:%s:%s:%d:%d", tenant.JoinTenantIDs(tenantIDs), req.GetQuery(), currentInterval, splitMs)
 }
 
+// NewLogResultCache 仅缓存空日志区间结果；非空日志与指标查询由上层中间件处理。
 // NewLogResultCache creates a log result cache middleware for the Thor engine.
 // It only caches empty results for log range queries; metric queries pass through to
 // the metric cache middleware sitting above this one in the chain.
@@ -183,6 +196,7 @@ func NewLogResultCache(
 
 // cacheMiddleware is a single middleware that routes requests to the
 // metric, instant-metric, or log cache based on query type.
+// cacheMiddleware 聚合三类缓存中间件，由 cacheHandler 按表达式类型分发请求。
 type cacheMiddleware struct {
 	metrics       queryrangebase.Middleware
 	instantMetric queryrangebase.Middleware
@@ -205,6 +219,7 @@ type cacheHandler struct {
 	next                 queryrangebase.Handler
 }
 
+// Do 解析 LogQL：指标且 step=0 走即时缓存，其他指标走区间缓存，其余走日志缓存。
 func (h *cacheHandler) Do(ctx context.Context, req queryrangebase.Request) (queryrangebase.Response, error) {
 	expr, err := syntax.ParseExpr(req.GetQuery())
 	if err != nil {
@@ -219,6 +234,7 @@ func (h *cacheHandler) Do(ctx context.Context, req queryrangebase.Request) (quer
 	return h.logHandler.Do(ctx, req)
 }
 
+// NewCacheMiddleware 构建统一入口，共享 ResultsCacheMetrics 避免 Prometheus 重复注册。
 // NewCacheMiddleware returns a single middleware that routes requests to one of
 // three separate cache backends: metric range queries, instant metric queries,
 // and log (non-metric) range queries.
@@ -251,3 +267,4 @@ func NewCacheMiddleware(
 		logs:          logsMiddleware,
 	}, nil
 }
+// onlyUseEntireExtent=false 允许部分命中：缺失区间补查后合并响应。

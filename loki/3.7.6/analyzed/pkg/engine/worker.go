@@ -1,5 +1,7 @@
 package engine
 
+// Worker 封装 internal/worker：从 Scheduler 拉取任务、读对象存储与 Metastore 执行物理计划，经 wire 协议将结果发往其他 Worker 或调度器。
+
 import (
 	"flag"
 	"net"
@@ -20,6 +22,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/worker"
 )
 
+// WorkerConfig 含 worker 线程数、DNS SRV 调度器发现地址与轮询间隔（实验性）。
 // WorkerConfig represents the configuration for the [Worker].
 type WorkerConfig struct {
 	WorkerThreads int `yaml:"worker_threads" category:"experimental"`
@@ -28,12 +31,14 @@ type WorkerConfig struct {
 	SchedulerLookupInterval time.Duration `yaml:"scheduler_lookup_interval" category:"experimental"`
 }
 
+// RegisterFlagsWithPrefix 注册命令行/配置标志；WorkerThreads 为 0 时运行时使用 GOMAXPROCS。
 func (cfg *WorkerConfig) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.IntVar(&cfg.WorkerThreads, prefix+"worker-threads", 0, "Experimental: Number of worker threads to spawn. Each worker thread runs one task at a time. 0 means to use GOMAXPROCS value.")
 	f.StringVar(&cfg.SchedulerLookupAddress, prefix+"scheduler-lookup-address", "", "Experimental: Address holding DNS SRV records of schedulers to connect to.")
 	f.DurationVar(&cfg.SchedulerLookupInterval, prefix+"scheduler-lookup-interval", 10*time.Second, "Experimental: Interval at which to lookup new schedulers by DNS SRV records.")
 }
 
+// WorkerParams 聚合存储 Bucket、Metastore、本地/远程 Scheduler 及 StreamFilterer 等依赖。
 // WorkerParams holds parameters for constructing a new [Worker].
 type WorkerParams struct {
 	Logger    log.Logger          // Logger for optional log messages.
@@ -62,6 +67,7 @@ type WorkerParams struct {
 	StreamFilterer executor.RequestStreamFilterer
 }
 
+// Worker 公开 API 为 inner worker 的轻量包装，暴露 Service 与 HTTP 服务注册。
 // Worker requests tasks from a [Scheduler] and executes them. Task results are
 // sent to other [Worker] instances or back to the [Scheduler].
 type Worker struct {
@@ -72,6 +78,7 @@ type Worker struct {
 	handler  http.Handler
 }
 
+// NewWorker 校验调度器发现间隔、构建 Local 或 HTTP2 Dialer/Listener 并传入 executor 批大小等。
 // NewWorker creates a new Worker instance. Use [Worker.Service] to manage the
 // lifecycle of the Worker.
 func NewWorker(params WorkerParams) (*Worker, error) {
@@ -154,6 +161,7 @@ func NewWorker(params WorkerParams) (*Worker, error) {
 	}, nil
 }
 
+// RegisterWorkerServer 注册 worker 侧 frame POST 处理器；纯本地模式 handler 为 nil。
 // RegisterWorkerServer registers the [wire.Listener] of the inner worker as
 // http.Handler on the provided router.
 //
@@ -165,17 +173,21 @@ func (w *Worker) RegisterWorkerServer(router *mux.Router) {
 	router.Path(w.endpoint).Methods("POST").Handler(w.handler)
 }
 
+// Service 委托 inner.Service 管理 worker 线程池与调度器连接生命周期。
 // Service returns the service used to manage the lifecycle of the Worker.
 func (w *Worker) Service() services.Service {
 	return w.inner.Service()
 }
 
+// RegisterMetrics 注册 worker 执行与 wire 传输相关 Prometheus 指标。
 // RegisterMetrics registers metrics about w to report to reg.
 func (w *Worker) RegisterMetrics(reg prometheus.Registerer) error {
 	return w.inner.RegisterMetrics(reg)
 }
 
+// UnregisterMetrics 反向注销 worker 指标。
 // UnregisterMetrics unregisters metrics about w from reg.
 func (w *Worker) UnregisterMetrics(reg prometheus.Registerer) {
 	w.inner.UnregisterMetrics(reg)
 }
+// 必须提供 AdvertiseAddr 或 LocalScheduler 之一，否则 NewWorker 报错。

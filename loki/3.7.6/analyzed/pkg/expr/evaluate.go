@@ -1,5 +1,7 @@
 package expr
 
+// evaluate 在 columnar RecordBatch 上求值 Expression 树，支持选择向量以短路 AND/OR；结果类型由表达式种类决定。
+
 import (
 	"fmt"
 
@@ -8,6 +10,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/memory"
 )
 
+// Evaluate 对外隐藏 selection：列表达式忽略选择向量，仅 BinOp 短路路径可能非全选。
 // Evaluate processes expr against the provided batch, producing a datum as a
 // result using alloc.
 //
@@ -29,6 +32,7 @@ func Evaluate(alloc *memory.Allocator, expr Expression, batch *columnar.RecordBa
 	return evaluateWithSelection(alloc, expr, batch, allSelected)
 }
 
+// evaluateWithSelection 校验 selection 长度与行数一致，按表达式类型分派求值。
 func evaluateWithSelection(alloc *memory.Allocator, expr Expression, batch *columnar.RecordBatch, selection memory.Bitmap) (columnar.Datum, error) {
 	nrows := 0
 	if batch != nil {
@@ -70,6 +74,7 @@ func evaluateWithSelection(alloc *memory.Allocator, expr Expression, batch *colu
 	}
 }
 
+// evaluateUnary 目前仅支持 UnaryOpNOT，委托 compute.Not。
 func evaluateUnary(alloc *memory.Allocator, expr *Unary, batch *columnar.RecordBatch, selection memory.Bitmap) (columnar.Datum, error) {
 	switch expr.Op {
 	case UnaryOpNOT:
@@ -83,6 +88,7 @@ func evaluateUnary(alloc *memory.Allocator, expr *Unary, batch *columnar.RecordB
 	}
 }
 
+// evaluateBinary 先处理 MatchRegex/In 特殊算子，其余左右子树求值后映射到 compute 原语。
 func evaluateBinary(alloc *memory.Allocator, expr *Binary, batch *columnar.RecordBatch, selection memory.Bitmap) (columnar.Datum, error) {
 	// Check for special operators that need different handling of their arguments.
 	switch expr.Op {
@@ -128,6 +134,7 @@ func evaluateBinary(alloc *memory.Allocator, expr *Binary, batch *columnar.Recor
 	}
 }
 
+// evaluateSpecialBinary 右操作数为 Regexp 或 ValueSet，不能作为普通 Expression 递归求值。
 // evaluateSpecialBinary evaluates binary expressions for which one of the
 // arguments does not evaluate into an expression of its own.
 func evaluateSpecialBinary(alloc *memory.Allocator, expr *Binary, batch *columnar.RecordBatch, selection memory.Bitmap) (columnar.Datum, error) {
@@ -160,3 +167,4 @@ func evaluateSpecialBinary(alloc *memory.Allocator, expr *Binary, batch *columna
 
 	return nil, fmt.Errorf("unexpected binary operator %s", expr.Op)
 }
+// 缺失列名时返回全 null 列而非错误，便于谓词下推容错。
