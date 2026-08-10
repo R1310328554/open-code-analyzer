@@ -1,3 +1,5 @@
+// llm_id.go — 画布 llm_id 复合命名约定解析（model@provider / model@instance@provider）。
+
 package component
 
 import "strings"
@@ -7,6 +9,7 @@ import "strings"
 //   - "model@provider"          -> ("model", "provider", true)
 //   - "model@instance@provider" -> ("model", "provider", true)
 //   - bare "model"              -> ("model", "", false)
+// splitCompositeLLMID 从 llm_id 提取裸模型名与 provider driver。
 func splitCompositeLLMID(s string) (modelName, driver string, hasDriver bool) {
 	parts := strings.Split(strings.TrimSpace(s), "@")
 	switch len(parts) {

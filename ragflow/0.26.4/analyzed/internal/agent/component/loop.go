@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// loop.go — Loop 组件（T3）：条件循环子图的父节点占位，实际迭代由 canvas.buildLoopExpansion + workflowx.AddLoopNode 驱动。
+
 //
 
 // Package component — Loop component (T3, plan §2.11.3 row 11).
@@ -54,6 +56,7 @@ const componentNameLoop = "Loop"
 // driver lives in workflowx.AddLoopNode, not in this type. The
 // component exists for registry / factory / introspection only —
 // Invoke is a no-op that returns an empty map.
+// LoopComponent 为画布级循环父节点；运行时 Invoke 为 no-op 标记。
 type LoopComponent struct {
 	param loopParam
 }
@@ -63,6 +66,7 @@ type LoopComponent struct {
 // meaningful; the parent.get_start() walk that the Python version
 // performs (loop.py:46-51) is an engine concern handled by
 // canvas.buildLoopExpansion at BuildWorkflow time.
+// loopParam 描述 Loop DSL 形状：loop_variables 与 loop_termination_condition。
 type loopParam struct {
 	// LoopVariables is the list of variable initializers. Each entry is
 	// a map with keys {variable, input_mode, value, type}. The slice
@@ -130,6 +134,7 @@ func (p *loopParam) AsDict() map[string]any {
 }
 
 // NewLoopComponent builds a LoopComponent from the supplied param struct.
+// NewLoopComponent 从 loopParam 构造 Loop 组件实例。
 func NewLoopComponent(p loopParam) *LoopComponent {
 	return &LoopComponent{param: p}
 }
@@ -171,6 +176,7 @@ func (c *LoopComponent) Outputs() map[string]string {
 // The returned map is empty. State writes from this method would be
 // silently dropped by the eino graph, because LoopComponent is not
 // registered as an eino node when the macro expansion fires.
+// Invoke 为 no-op：真实循环在子图 init lambda 与 LoopCondition 中执行。
 func (c *LoopComponent) Invoke(_ context.Context, _ map[string]any) (map[string]any, error) {
 	return map[string]any{}, nil
 }

@@ -8,6 +8,8 @@
 // tests can inject a stub without touching the network. The default
 // ChatInvoker is built around models.NewEinoChatModel so production paths
 // flow through the eino bridge (plan §2.11.6 D1).
+// llm.go — LLM 组件（T1）：单次 chat 调用，读取 system/user prompt 经 ChatInvoker 分发至模型。
+
 package component
 
 import (
@@ -33,11 +35,13 @@ import (
 )
 
 // LLMComponent is a one-shot chat call.
+// LLMComponent 封装一次 LLM chat 调用的参数与执行逻辑。
 type LLMComponent struct {
 	param LLMParam
 }
 
 // LLMParam captures the (resolved) DSL parameters for an LLM node.
+// LLMParam 保存 LLM 节点的 DSL 参数（模型、prompt、采样、引用、重试等）。
 type LLMParam struct {
 	ModelID                  string
 	SystemPrompt             string
@@ -132,6 +136,7 @@ type LLMOutput struct {
 // ChatInvoker is the abstraction the LLM component uses to talk to a
 // chat model. The default implementation lives in this file; tests can
 // override the package-level defaultChatInvoker to inject a stub.
+// ChatInvoker 抽象 chat 模型调用，测试可注入 stub 绕过网络。
 type ChatInvoker interface {
 	Invoke(ctx context.Context, req ChatInvokeRequest) (*ChatInvokeResponse, error)
 }
@@ -139,6 +144,7 @@ type ChatInvoker interface {
 // ChatInvokeRequest is the minimal surface the LLM component needs to
 // dispatch a chat call. Driver / APIKey / ModelName are kept here so the
 // invoker can wire the right provider without the component caring.
+// ChatInvokeRequest 为 LLM 组件向 invoker 发起调用的最小请求面。
 type ChatInvokeRequest struct {
 	Driver           string
 	ModelName        string
@@ -200,6 +206,7 @@ func GetDefaultChatInvokerForTest() ChatInvoker {
 
 // einoChatInvoker is the production ChatInvoker — it constructs a fresh
 // models.EinoChatModel per call from the request and dispatches.
+// einoChatInvoker 生产环境 ChatInvoker，经 models.EinoChatModel 分发。
 type einoChatInvoker struct{}
 
 // Invoke satisfies ChatInvoker.
@@ -354,6 +361,7 @@ func NewLLMComponent(p LLMParam) *LLMComponent {
 func (c *LLMComponent) Name() string { return "LLM" }
 
 // Invoke runs the LLM and returns the output map.
+// Invoke 合并 inputs 与 param、构建消息、调用 ChatInvoker 并填充 outputs。
 func (c *LLMComponent) Invoke(ctx context.Context, inputs map[string]any) (map[string]any, error) {
 	p := mergeLLMParam(c.param, inputs)
 	if p.ModelID == "" {
@@ -702,6 +710,7 @@ func (c *LLMComponent) Outputs() map[string]string {
 
 // buildMessages assembles a system + user message sequence. Order:
 // system first (if set), then user.
+// buildMessages 将 system/user 文本组装为 eino schema.Message 切片。
 func buildMessages(system, user string) []schema.Message {
 	out := make([]schema.Message, 0, 2)
 	if system != "" {
@@ -760,6 +769,7 @@ func buildStructuredRetryMessages(system, user string, images []string, cite boo
 	return msgs
 }
 
+// injectCitationPrompt 启用 cite 时将引用指令追加到 system prompt。
 func injectCitationPrompt(system string) string {
 	prompt := prompts.CitationPrompt()
 	if system == "" {
@@ -1063,6 +1073,7 @@ func validateFittedMessages(msgFit []schema.Message) string {
 // validates that the result ends with a non-empty user turn. Returns the
 // fitted messages and an error string (empty on success).
 // Mirrors Python's LLM.fit_messages in PR #16413.
+// fitMessages 按 maxLength 裁剪消息以适配上下文窗口。
 func fitMessages(systemPrompt string, msgs []schema.Message, maxLength int) ([]schema.Message, string) {
 	// Convert schema.Message → []map[string]interface{} for fitting.
 	all := make([]map[string]interface{}, 0, 1+len(msgs))

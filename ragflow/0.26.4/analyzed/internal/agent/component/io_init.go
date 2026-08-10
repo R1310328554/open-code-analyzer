@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// io_init.go — 通过 blank import 触发 io 子包 init，确保 DocsGenerator 等 T5 重 I/O 组件注册进父包 registry。
+
 //
 
 // Package component — io subpackage wiring.
@@ -30,4 +32,5 @@ package component
 
 // Blank import — runs init() in the io subpackage which calls
 // component.Register("DocsGenerator", …).
+// blank import 运行 io 子包 init，执行 Register("DocsGenerator", …)。
 import _ "ragflow/internal/agent/component/io"

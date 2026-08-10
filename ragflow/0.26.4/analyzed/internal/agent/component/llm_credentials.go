@@ -1,3 +1,5 @@
+// llm_credentials.go — 租户级 LLM API 凭证解析：画布 DSL 未携带 api_key/base_url 时从 tenant_llm 或 tenant_model_instance 回填。
+
 package component
 
 import (
@@ -17,6 +19,7 @@ import (
 // driver/model pair when the canvas DSL omitted them. It first checks the old
 // tenant_llm table, then falls back to tenant_model_provider +
 // tenant_model_instance when the composite llm_id carries an instance name.
+// resolveTenantLLMConfig 从画布 state 取 tenant_id 并解析缺失的 API 凭证。
 func resolveTenantLLMConfig(ctx context.Context, driver, modelID, apiKey, baseURL, originalModelID string) (string, string) {
 	if apiKey != "" || driver == "" || modelID == "" {
 		return apiKey, baseURL
@@ -46,6 +49,7 @@ func resolveTenantLLMConfig(ctx context.Context, driver, modelID, apiKey, baseUR
 
 // resolveTenantLLMCredentials looks up the old tenant_llm table for the given
 // tenant / factory / model. Returns true when credentials were found.
+// resolveTenantLLMCredentials 查旧 tenant_llm 表获取 api_key/base_url。
 func resolveTenantLLMCredentials(tid, driver, modelID, baseURL string) (string, string, bool) {
 	common.Debug("llm credentials: tenant_llm lookup", zap.String("tid", tid), zap.String("factory", driver), zap.String("model", modelID))
 	row, err := dao.NewTenantLLMDAO().GetByTenantFactoryAndModelName(tid, driver, modelID)
@@ -74,6 +78,7 @@ func resolveTenantLLMCredentials(tid, driver, modelID, baseURL string) (string, 
 // resolveTenantModelInstanceCredentials attempts to resolve llm credentials
 // through tenant_model_provider + tenant_model_instance using the original
 // composite llm_id (which still carries the instance name).
+// resolveTenantModelInstanceCredentials 经 tenant_model_provider + instance 解析凭证。
 func resolveTenantModelInstanceCredentials(tid, compositeLLMID, baseURL string) (string, string, bool) {
 	modelName, instanceName, providerName := parseLLMIDParts(compositeLLMID)
 	if instanceName == "" {
@@ -159,6 +164,7 @@ func findSoleActiveProviderInstance(providerID string) *entity.TenantModelInstan
 //	"model@provider"          -> ("model", "default", "provider")
 //	"model@instance@provider" -> ("model", "instance", "provider")
 //	4+ parts                  -> ("parts[0]", "parts[1]", "parts[2]")
+// parseLLMIDParts 将复合 llm_id 拆为 model、instance、provider 三段。
 func parseLLMIDParts(s string) (modelName, instanceName, providerName string) {
 	parts := strings.Split(strings.TrimSpace(s), "@")
 	switch len(parts) {

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// memory_save.go — Message 组件记忆持久化契约面：MemorySaver 接口与默认 stub（ErrMemoryServiceMissing）。
+
 //
 
 // Memory persistence scaffold. The Python Message component,
@@ -40,6 +42,7 @@ import (
 // ErrMemoryServiceMissing is the deferred-state sentinel for
 // memory persistence. The Message component wraps persistence
 // calls in errors.Is checks so callers can detect the gap.
+// ErrMemoryServiceMissing 记忆服务未接入时的延迟状态哨兵错误。
 var ErrMemoryServiceMissing = errors.New(
 	"component: memory persistence not yet wired in Go — " +
 		"defer to Python Canvas or implement MemorySaver",
@@ -55,6 +58,7 @@ var ErrMemoryServiceMissing = errors.New(
 //	  "user_input":  ...,
 //	  "agent_response": ...,
 //	}
+// MemorySaveRequest 对齐 Python message.py:_save_to_memory 的 wire 形状。
 type MemorySaveRequest struct {
 	MemoryIDs     []string // the canvas-declared memory_ids
 	UserID        string
@@ -66,6 +70,7 @@ type MemorySaveRequest struct {
 
 // MemorySaver is the abstract interface for memory persistence.
 // The default implementation returns ErrMemoryServiceMissing.
+// MemorySaver 抽象记忆持久化；默认实现返回 ErrMemoryServiceMissing。
 type MemorySaver interface {
 	Save(ctx context.Context, req MemorySaveRequest) error
 }
@@ -78,6 +83,7 @@ var (
 // SetMemorySaver installs a custom saver. Passing nil reverts to
 // the default stub. Production code calls this at boot once
 // internal/service/memory_message_service lands.
+// SetMemorySaver 安装自定义 saver；nil 恢复默认 stub。
 func SetMemorySaver(s MemorySaver) {
 	memSaverMu.Lock()
 	defer memSaverMu.Unlock()

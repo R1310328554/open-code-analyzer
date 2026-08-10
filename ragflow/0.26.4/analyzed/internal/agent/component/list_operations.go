@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// list_operations.go — ListOperations 组件（T3）：对画布状态中的列表执行 nth/head/tail/filter/sort/drop_duplicates 六种变换。
+
 //
 
 // Package component — ListOperations (T3, plan §2.11.3 row 17).
@@ -52,6 +54,7 @@ const componentNameListOperations = "ListOperations"
 //
 // Mirrors agent/component/list_operations.py:_raise_strict_range_error
 // (raises ValueError, caught by the canvas framework).
+// listOpPanic 为 strict 模式下越界操作抛出的可恢复 panic 哨兵。
 type listOpPanic struct{ msg string }
 
 func (p *listOpPanic) Error() string { return p.msg }
@@ -82,6 +85,7 @@ func coerceBool(v any) bool {
 }
 
 // listOperationsParam is the static configuration.
+// listOperationsParam 保存 ListOperations 的静态 DSL 配置。
 type listOperationsParam struct {
 	Query      string         `json:"query"`
 	Operations string         `json:"operations"`
@@ -235,6 +239,7 @@ func toInt(v any) int {
 }
 
 // ListOperationsComponent implements the 6 list transforms.
+// ListOperationsComponent 对 query 指向的列表执行指定变换并返回 result/first/last。
 type ListOperationsComponent struct {
 	name  string
 	param listOperationsParam
@@ -242,6 +247,7 @@ type ListOperationsComponent struct {
 
 // NewListOperationsComponent constructs a ListOperations from the
 // DSL param map.
+// NewListOperationsComponent 从 DSL 参数构造 ListOperations 组件。
 func NewListOperationsComponent(params map[string]any) (Component, error) {
 	p := &listOperationsParam{}
 	if err := p.Update(params); err != nil {
@@ -269,6 +275,7 @@ func (l *ListOperationsComponent) Name() string { return l.name }
 // errors) into a returned error. Any other panic is re-raised so a
 // real bug in the operator code is not masked as a "ListOperations:
 // ..." error.
+// Invoke 解析 query 列表、执行 operations 并输出 result/first/last；strict 越界转为 typed error。
 func (l *ListOperationsComponent) Invoke(ctx context.Context, _ map[string]any) (result map[string]any, err error) {
 	defer func() {
 		r := recover()
@@ -367,6 +374,7 @@ func (l *ListOperationsComponent) Outputs() map[string]string {
 
 // opNth: 1-indexed for positive n, -N (from end) for negative n.
 // n=0 → empty (or error in strict mode).
+// opNth 按 1 索引或 -N 从尾部选取单个元素。
 func (l *ListOperationsComponent) opNth(items []any) []any {
 	n := l.param.N
 	if n == 0 {
@@ -431,6 +439,7 @@ func (l *ListOperationsComponent) opTail(items []any) []any {
 }
 
 // opFilter: keep items whose _norm(v) matches the filter rule.
+// opFilter 按 filter 规则保留 _norm(v) 匹配项。
 func (l *ListOperationsComponent) opFilter(items []any) []any {
 	op, _ := l.param.Filter["operator"].(string)
 	val, _ := l.param.Filter["value"].(string)
@@ -452,6 +461,7 @@ func (l *ListOperationsComponent) opFilter(items []any) []any {
 // subsequent fields). When SortBy is empty, the comparator falls back
 // to the full hashableKey — equivalent to the lexicographically first
 // field, matching the pre-sort_by behaviour.
+// opSort 对列表稳定排序；desc 时反转。
 func (l *ListOperationsComponent) opSort(items []any) []any {
 	if len(items) == 0 {
 		return []any{}

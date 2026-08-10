@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// runtime_wire.go — 在 package init 时将生产 ComponentFactory 安装到 runtime 包。
+
 //
 
 // runtime_wire.go — installs the production ComponentFactory into the
@@ -38,6 +40,7 @@ import (
 	"ragflow/internal/agent/runtime"
 )
 
+// init 调用 runtime.InstallDefaultRegistryFactory，触发组件注册与工厂接线。
 func init() {
 	runtime.InstallDefaultRegistryFactory()
 }

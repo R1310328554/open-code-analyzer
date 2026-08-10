@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// stagehand_runtime.go — StagehandInvoker 生产运行时：多租户 stagehand.Client 缓存（TTL + LRU）与 RunTask/RunExtract 调度。
+
 //
 
 // Package component — StagehandInvoker runtime (T3 sub-package).
@@ -81,6 +83,7 @@ import (
 // runtime owns the stagehand-server process and the session
 // lifecycle; the caller is responsible for resolving these from
 // the tenant model config and the canvas state.
+// RunTaskRequest 为 StagehandInvoker.RunTask 的 per-call 模型配置与任务指令。
 type RunTaskRequest struct {
 	// TenantID is the RAGFlow tenant identifier (used for logging /
 	// error context; not currently passed to stagehand).
@@ -127,6 +130,7 @@ type RunTaskRequest struct {
 
 // StagehandInvoker is the abstraction BrowserComponent depends on.
 // Tests substitute a fake; production uses `DefaultRuntime`.
+// StagehandInvoker 为 BrowserComponent 依赖的 web 自动化抽象；测试可替换 fake。
 type StagehandInvoker interface {
 	RunTask(ctx context.Context, req RunTaskRequest) (message string, err error)
 	RunExtract(ctx context.Context, req RunExtractRequest) (rawJSON string, err error)
@@ -231,6 +235,7 @@ func (e *stagehandClientEntry) Close() {
 // a sync.Map cache of stagehand.Client instances keyed by
 // `(apiKey, baseURL, modelName)`. See the package doc for the
 // multi-tenant model rationale.
+// stagehandRuntime 维护 stagehand.Client 实例缓存与后台 sweeper。
 type stagehandRuntime struct {
 	cache     sync.Map // map[string]*stagehandClientEntry
 	ttl       time.Duration
@@ -350,6 +355,7 @@ func (r *stagehandRuntime) enforceLRUCap() {
 // Multi-tenant isolation: a request with key K hits only the
 // cached client for K (or builds one). Other tenants' clients are
 // unaffected.
+// RunTask 获取/创建缓存 client 并执行 Sessions.Execute 多步 web 自动化。
 func (r *stagehandRuntime) RunTask(ctx context.Context, req RunTaskRequest) (string, error) {
 	if req.Instruction == "" {
 		return "", errors.New("stagehand runtime: Instruction is required")
@@ -500,6 +506,7 @@ type RunExtractRequest struct {
 // RunExtract reuses the same `stagehandRuntime` cache as RunTask
 // (per `(apiKey, baseURL, modelName)` key), so cold-start cost is
 // amortized across Task and Extract calls for the same tenant.
+// RunExtract 执行结构化页面数据提取并返回 JSON 字符串。
 func (r *stagehandRuntime) RunExtract(ctx context.Context, req RunExtractRequest) (string, error) {
 	if req.Instruction == "" {
 		return "", errors.New("stagehand runtime: RunExtract: Instruction is required")
@@ -610,6 +617,7 @@ func (r *stagehandRuntime) Close() error {
 // + caching a new one on miss. Concurrent calls for the same key
 // deduplicate via sync.Map.LoadOrStore (the loser closes its
 // orphan subprocess).
+// clientFor 按 (apiKey, baseURL, modelName) 查缓存或新建 stagehand.Client。
 func (r *stagehandRuntime) clientFor(req RunTaskRequest) (stagehand.Client, error) {
 	if req.APIKey == "" {
 		return stagehand.Client{}, errors.New("stagehand runtime: APIKey is required")

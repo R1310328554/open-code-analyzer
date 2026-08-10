@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// render.go — Message 组件输出格式渲染器：html / markdown / plain 三种格式及 downloads 附件块生成。
+
 //
 
 // Output-format renderer. The Message component exposes a
@@ -48,6 +50,7 @@ import (
 // OutputFormat is the value type of the `output_format` field on
 // the Message component. The string constants match the Python
 // DSL field values.
+// OutputFormat 为 Message output_format 字段的值类型。
 type OutputFormat string
 
 const (
@@ -63,6 +66,7 @@ const (
 // DownloadInfo is the normalized shape of an extracted download
 // entry. Mirrors agent/component/message.py:_is_download_info
 // (the {doc_id, filename, mime_type} tuple).
+// DownloadInfo 对齐 Python message.py:_is_download_info 的下载描述符形状。
 type DownloadInfo struct {
 	DocID    string `json:"doc_id"`
 	Filename string `json:"filename"`
@@ -75,6 +79,7 @@ type DownloadInfo struct {
 // message body; Downloads is the list of extracted attachment
 // descriptors. The renderer is pure — the caller decides where
 // the rendered string goes.
+// RenderRequest 为纯函数渲染器输入：格式、正文与 downloads 列表。
 type RenderRequest struct {
 	Format    OutputFormat
 	Text      string
@@ -84,6 +89,7 @@ type RenderRequest struct {
 // Render applies the format to the request. Unknown formats
 // fall back to plain text so downstream nodes always see a
 // non-empty string.
+// Render 按格式渲染正文与 downloads；未知格式回退 plain。
 func Render(req RenderRequest) string {
 	format := req.Format
 	if format == OutputFormatEmpty {
@@ -201,6 +207,7 @@ func IsDownloadInfo(value any) bool {
 // version does the same walk recursively on message-value trees;
 // we keep the same recursive shape so the Go port's semantics
 // match. Returns an empty slice when nothing is found.
+// ExtractDownloads 递归遍历输入值树提取 {doc_id, filename, mime_type} 描述符。
 func ExtractDownloads(value any) []DownloadInfo {
 	switch v := value.(type) {
 	case nil:

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// message.go — Message 组件（T3）：画布终端输出节点，解析 Jinja2 模板并支持 html/markdown/plain 渲染、TTS 与记忆保存。
+
 //
 
 // Package component — Message component (T3).
@@ -50,6 +52,7 @@ const componentNameMessage = "Message"
 //
 // Per-instance format / TTS / memory config lets the build-time
 // DSL declarations take effect without input-map plumbing.
+// MessageComponent 解析模板、渲染输出格式并可触发 TTS / 记忆持久化。
 type MessageComponent struct {
 	name         string
 	text         string
@@ -76,6 +79,7 @@ type MessageComponent struct {
 // otherwise the node emits an empty content (it is the canvas
 // terminal, so a runtime error would be louder than a missing
 // template).
+// NewMessageComponent 从 DSL params 构造 Message 组件（text/content、output_format 等）。
 func NewMessageComponent(params map[string]any) (Component, error) {
 	tpl := extractMessageText(params)
 	format := OutputFormatPlain
@@ -166,6 +170,7 @@ func (m *MessageComponent) Name() string { return m.name }
 // inputs["text"] takes precedence over the per-instance text so the
 // same node can be reused with different templates at run time when
 // the orchestrator wants to override the DSL-declared value.
+// Invoke 解析模板、提取 downloads、渲染格式、可选 TTS 与 memory_save。
 func (m *MessageComponent) Invoke(ctx context.Context, inputs map[string]any) (map[string]any, error) {
 	state, _, err := runtime.GetStateFromContext[*runtime.CanvasState](ctx)
 	if err != nil {
@@ -353,6 +358,7 @@ func stringFromStateSys(state *runtime.CanvasState, key string) string {
 // without pulling in a tokenizer. A future tokenizer-aware
 // splitter (gonja + langdetect, or a small Go
 // sentence-segmentation lib) can improve break quality.
+// Stream 按句子分块推送 SSE 流式输出。
 func (m *MessageComponent) Stream(ctx context.Context, inputs map[string]any) (<-chan map[string]any, error) {
 	ch := make(chan map[string]any, 16)
 	go func() {

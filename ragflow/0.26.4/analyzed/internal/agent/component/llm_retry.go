@@ -19,6 +19,8 @@
 // Python's LLMBundle max_retries=5 / base_delay=2.0 closely enough
 // for the Go port (we use 3/2s to keep tests snappy; per-call
 // overrides flow through LLMComponent.Invoke).
+// llm_retry.go — ChatInvoker 重试装饰器：指数退避，对齐 Python LLMBundle 语义。
+
 package component
 
 import (
@@ -31,6 +33,7 @@ import (
 // retries. The zero-value fields disable the loop (a maxRetries of
 // 0 means "no retries, single attempt") which matches LLMParam
 // semantics: 0 → call exactly once.
+// retryInvoker 为内层 ChatInvoker 包装指数退避重试循环。
 type retryInvoker struct {
 	inner        ChatInvoker
 	maxRetries   int
@@ -70,6 +73,7 @@ const retryInvokerDefaultRetries = 3
 // newRetryInvoker wraps inner in a retry loop with the given
 // parameters. maxRetries <= 0 yields a single attempt; initialDelay
 // <= 0 results in no delay between retries.
+// newRetryInvoker 构造重试装饰器；maxRetries<=0 表示仅单次尝试。
 func newRetryInvoker(inner ChatInvoker, maxRetries int, initialDelay time.Duration) *retryInvoker {
 	if maxRetries < 0 {
 		maxRetries = 0
@@ -95,6 +99,7 @@ func newRetryInvoker(inner ChatInvoker, maxRetries int, initialDelay time.Durati
 // retryInvoker wrapping another retryInvoker — production only
 // installs one layer so a single-level walk is sufficient, but
 // the loop handles pathological cases for safety).
+// unwrapChatInvoker 剥除 retryInvoker 层，避免重试次数乘法叠加。
 func unwrapChatInvoker(inv ChatInvoker) ChatInvoker {
 	for {
 		if r, ok := inv.(*retryInvoker); ok && r != nil {
@@ -113,6 +118,7 @@ func unwrapChatInvoker(inv ChatInvoker) ChatInvoker {
 // sleeping initialDelay * 2^attempt between failures. The sleep
 // honours ctx cancellation: a cancelled context aborts the backoff
 // and returns ctx.Err() immediately.
+// Invoke 最多调用 maxRetries+1 次，失败间按 2^attempt 退避并尊重 ctx 取消。
 func (r *retryInvoker) Invoke(ctx context.Context, req ChatInvokeRequest) (*ChatInvokeResponse, error) {
 	if r.inner == nil {
 		return nil, fmt.Errorf("component: retryInvoker: nil inner")

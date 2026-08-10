@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// parallel.go — Parallel 组件（T3）：数组迭代子图父节点，实际 fan-out 由 canvas.buildParallelExpansion + workflowx.AddParallelNode 驱动。
+
 //
 
 // Package component — Parallel component (T3, plan §2.11.3 row 9).
@@ -58,6 +60,7 @@ const componentNameParallel = "Parallel"
 // parallel driver lives in workflowx.AddParallelNode, not in this type.
 // The component exists for registry / factory / introspection only —
 // Invoke is a no-op that returns an empty map.
+// ParallelComponent 为画布级并行父节点；运行时 Invoke 为 no-op 标记。
 type ParallelComponent struct {
 	param ParallelParam
 }
@@ -66,6 +69,7 @@ type ParallelComponent struct {
 // node. Only `items_ref` and `max_concurrency` are meaningful for the
 // runtime path; the canvas layer (buildParallelExpansion) resolves the
 // array and passes it as input to workflowx.AddParallelNode.
+// ParallelParam 描述 Parallel DSL：items_ref 与 max_concurrency。
 type ParallelParam struct {
 	// ItemsRef is a variable reference (e.g. "sys.arr", "parallel_0@result")
 	// pointing to the list to iterate over.
@@ -111,6 +115,7 @@ func (p *ParallelParam) AsDict() map[string]any {
 
 // NewParallelComponent builds a ParallelComponent from the supplied
 // param struct.
+// NewParallelComponent 从 ParallelParam 构造 Parallel 组件实例。
 func NewParallelComponent(p ParallelParam) *ParallelComponent {
 	return &ParallelComponent{param: p}
 }
@@ -148,6 +153,7 @@ func (c *ParallelComponent) Outputs() map[string]string {
 // The returned map is empty. State writes from this method would be
 // silently dropped by the eino graph, because ParallelComponent is not
 // registered as an eino node when the macro expansion fires.
+// Invoke 为 no-op：真实并行迭代在 AddParallelNode 子工作流中执行。
 func (c *ParallelComponent) Invoke(_ context.Context, _ map[string]any) (map[string]any, error) {
 	return map[string]any{}, nil
 }

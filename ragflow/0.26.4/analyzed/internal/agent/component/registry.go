@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// registry.go — 组件注册表薄适配层：legacy Register/New 签名转发至 runtime.DefaultRegistry。
+
 //
 
 // Package component — registry adapter (legacy + new wiring co-exist).
@@ -42,6 +44,7 @@ import (
 
 // Factory constructs a Component from a params map (loaded from the DSL).
 // Returning an error here aborts the run with a clear message.
+// Factory 从 DSL params map 构造 Component；失败则中止运行。
 type Factory func(params map[string]any) (Component, error)
 
 // Register enrolls a component factory under name (case-insensitive).
@@ -65,6 +68,7 @@ type Factory func(params map[string]any) (Component, error)
 // runtime.DefaultRegistry.Register directly with an explicit
 // Category (see component/pipeline_chunker.go for the canonical
 // example).
+// Register 在 init 中注册组件工厂；重复注册 panic（init 时 fail-fast）。
 func Register(name string, f Factory) {
 	if err := runtime.DefaultRegistry.Register(name, runtime.CategoryAgent,
 		func(_ string, params map[string]any) (runtime.Component, error) {
@@ -87,6 +91,7 @@ func Register(name string, f Factory) {
 // interface, so the type assertion below is guaranteed to succeed at
 // runtime. It surfaces as an explicit error rather than a panic so a
 // misbehaving factory is reported cleanly.
+// New 按名称构造 Component；未知名称或工厂拒绝 params 时返回 error。
 func New(name string, params map[string]any) (Component, error) {
 	factory, _, _, ok := runtime.DefaultRegistry.Lookup(name)
 	if !ok {
@@ -110,6 +115,7 @@ func New(name string, params map[string]any) (Component, error) {
 // names. Used for diagnostics and the API 500 path "list available
 // components". Restricted to CategoryAgent — ingestion and shared
 // components live under their own categories.
+// RegisteredNames 返回 CategoryAgent 下已注册组件名排序列表。
 func RegisteredNames() []string {
 	return runtime.DefaultRegistry.NamesByCategory(runtime.CategoryAgent)
 }

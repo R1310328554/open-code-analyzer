@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// citation.go — LLM 引用标注 prompt 模板，与 Python rag/prompts/citation_prompt.md 保持同步。
+
 //
 
 // Package prompts holds LLM prompt templates used by the agent
@@ -34,6 +36,7 @@ import (
 // Format: [ID:N] inline citation; max 4 per sentence; placed at
 // sentence end before punctuation; forbidden format "[ID:0, ID:5, ...]"
 // — must be space-separated as "[ID:0][ID:5]".
+// citationPromptText 引用指令全文模板（[ID:N] 格式、每句最多 4 处引用等规则）。
 const citationPromptText = `Based on the provided document or chat history, add citations to the input text using the format specified later.
 
 # Citation Requirements:
@@ -90,6 +93,7 @@ REMEMBER:
 // Future: a post-stream grounding enhancement can additionally
 // render a <context>...</context> block of retrieval chunks into
 // the system message before this prompt.
+// CitationPrompt 返回引用指令文本；LLMParam.Cite=true 时追加到 system prompt。
 func CitationPrompt() string {
 	return citationPromptText
 }
@@ -125,6 +129,7 @@ Your task is to enhance user trust by generating correct, appropriate citations 
 // example + sources placeholders filled in. Returns the rendered
 // prompt plus the list of chunk IDs that were injected (used by the
 // caller to verify the LLM only cited within the supplied set).
+// CitationPlusPrompt 渲染流后引用 grounding prompt，填充 example 与 sources 占位符。
 func CitationPlusPrompt(sources []CitationSource) (rendered string, ids []string) {
 	var srcBuf strings.Builder
 	ids = make([]string, 0, len(sources))
@@ -145,6 +150,7 @@ func CitationPlusPrompt(sources []CitationSource) (rendered string, ids []string
 // render the sources block. The full Chunk type (with document_id,
 // score, etc.) lives in the RetrievalService; this stub lets the
 // post-stream code compile against a future-compatible shape.
+// CitationSource 渲染 sources 块所需的最小 chunk 形状。
 type CitationSource struct {
 	ID      string
 	Content string
