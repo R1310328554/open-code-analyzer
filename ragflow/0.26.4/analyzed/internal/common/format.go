@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// format.go — 通用格式化与校验工具：复合模型名解析、UUID 校验、Base64 编解码、字节/数字/时间格式化。
+
 //
 
 package common
@@ -28,6 +30,7 @@ import (
 
 // PtrString formats a pointer value as a string for debug/log output.
 // Returns "<nil>" for nil pointers.
+// PtrString 将指针格式化为字符串，nil 时返回 "<nil>"。
 func PtrString[T any](p *T) string {
 	if p == nil {
 		return "<nil>"
@@ -36,6 +39,7 @@ func PtrString[T any](p *T) string {
 }
 
 // composite model name format: model_name@instance_name@provider_name
+// IsCompositeModelName 判断是否为 model@instance@provider 三段式复合名。
 func IsCompositeModelName(modelName string) bool {
 	parts := strings.Split(modelName, "@")
 	if len(parts) != 3 {
@@ -44,6 +48,7 @@ func IsCompositeModelName(modelName string) bool {
 	return !slices.Contains(parts, "")
 }
 
+// IsUUID 校验 32 位小写字母数字 UUID（无连字符）。
 func IsUUID(uuid string) bool {
 	// only lower case letters and numbers, length is 32
 	if len(uuid) != 32 {
@@ -59,6 +64,7 @@ func IsUUID(uuid string) bool {
 // ExtractCompositeName splits a composite model name into three parts.
 // Returns (modelName, instanceName, providerName, true) on success,
 // or ("", "", "", false) if the name is not a valid composite name.
+// ExtractCompositeName 拆分复合模型名为三段，格式非法时返回 error。
 func ExtractCompositeName(modelName string) (string, string, string, error) {
 	parts := strings.Split(modelName, "@")
 	if len(parts) != 3 {
@@ -70,10 +76,12 @@ func ExtractCompositeName(modelName string) (string, string, string, error) {
 	return parts[0], parts[1], parts[2], nil
 }
 
+// EncodeToBase64 对字符串做标准 Base64 编码。
 func EncodeToBase64(email string) string {
 	return base64.StdEncoding.EncodeToString([]byte(email))
 }
 
+// DecodeFromBase64 解码 Base64 字符串。
 func DecodeFromBase64(encoded string) (string, error) {
 	decoded, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
@@ -82,6 +90,7 @@ func DecodeFromBase64(encoded string) (string, error) {
 	return string(decoded), nil
 }
 
+// FormatBytes 将字节数格式化为 B/KB/MB/GB/TB 可读字符串。
 func FormatBytes(bytes int64) string {
 	const (
 		KB = 1024
@@ -103,6 +112,7 @@ func FormatBytes(bytes int64) string {
 	}
 }
 
+// FormatNumber 为整数添加千位逗号分隔符。
 func FormatNumber(n int64) string {
 	s := fmt.Sprintf("%d", n)
 	parts := []string{}
@@ -116,6 +126,7 @@ func FormatNumber(n int64) string {
 	return strings.Join(parts, ",")
 }
 
+// ParseBytesString 解析 "1.5gb" 等带单位字节字符串为 int64。
 func ParseBytesString(s string) int64 {
 	s = strings.TrimSpace(strings.ToLower(s))
 	if s == "" || s == "-" || s == "0" {
@@ -148,6 +159,7 @@ func ParseBytesString(s string) int64 {
 	return int64(val * float64(multiplier))
 }
 
+// FormatTime 将毫秒时间戳格式化为 "2006-01-02 15:04:05"，nil 返回 N/A。
 func FormatTime(t *int64) string {
 	if t == nil {
 		return "N/A"
@@ -155,6 +167,7 @@ func FormatTime(t *int64) string {
 	return time.UnixMilli(*t).Format("2006-01-02 15:04:05")
 }
 
+// IsValidString 判断 interface{} 是否为非空字符串。
 func IsValidString(v interface{}) bool {
 	str, ok := v.(string)
 	return ok && str != ""

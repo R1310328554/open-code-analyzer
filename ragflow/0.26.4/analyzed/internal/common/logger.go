@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// logger.go — 全局 Zap 日志初始化：支持 stdout + lumberjack 轮转文件、运行时调级及 Gin 访问日志中间件。
+
 //
 
 package common
@@ -31,9 +33,13 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+// Logger/Sugar 为全局日志实例；atomicLevel 支持运行时改级。
 var (
+	// Logger 结构化日志（带 CallerSkip）。
 	Logger      *zap.Logger
+	// Sugar 键值对风格日志。
 	Sugar       *zap.SugaredLogger
+	// atomicLevel 原子级别，供 SetLevel/GetLevel 使用。
 	atomicLevel zap.AtomicLevel
 )
 
@@ -47,11 +53,17 @@ var (
 // Init. Compress is left as the caller-provided value; the project default is
 // applied by callers (see resolveCompress) so that "not set" can be distinguished
 // from "explicitly false" via the *bool LogConfig.Compress field.
+// FileOutput 描述轮转日志文件路径与 lumberjack 参数。
 type FileOutput struct {
+	// Path 非空时在 ./logs/<Path> 写入文件。
 	Path       string
+	// MaxSize 单文件最大 MB，0 默认 100。
 	MaxSize    int
+	// MaxBackups 保留备份数，0 默认 10。
 	MaxBackups int
+	// MaxAge 日志保留天数，0 默认 30。
 	MaxAge     int
+	// Compress 是否 gzip 压缩旧日志。
 	Compress   bool
 }
 
@@ -61,6 +73,7 @@ const (
 	defaultMaxAgeDays = 30
 )
 
+// parseZapLevel 解析 debug/info/warn/error/fatal/panic 字符串。
 func parseZapLevel(level string) (zapcore.Level, error) {
 	switch strings.ToLower(strings.TrimSpace(level)) {
 	case "debug":
@@ -80,6 +93,7 @@ func parseZapLevel(level string) (zapcore.Level, error) {
 	}
 }
 
+// logLevelName 将 zap 级别转为大写名称，Warn 显示为 WARNING。
 func logLevelName(level zapcore.Level) string {
 	if level == zapcore.WarnLevel {
 		return "WARNING"
@@ -96,6 +110,7 @@ func logLevelName(level zapcore.Level) string {
 //
 // Numeric fields (MaxSize, MaxBackups, MaxAge) are defaulted to 100/10/30
 // when zero. Compress is taken as supplied.
+// Init 初始化全局 Logger：stdout 必写，Path 非空时追加轮转文件。
 func Init(level string, file FileOutput) error {
 	zapLevel, err := parseZapLevel(level)
 	if err != nil {
@@ -163,6 +178,7 @@ func Init(level string, file FileOutput) error {
 }
 
 // Sync flushes any buffered log entries.
+// Sync 刷新缓冲日志条目。
 func Sync() {
 	if Logger != nil {
 		_ = Logger.Sync()
@@ -170,6 +186,7 @@ func Sync() {
 }
 
 // Fatal logs a fatal message using zap with caller info, then calls os.Exit(1).
+// Fatal 记录致命日志并 os.Exit(1)，未初始化时 panic。
 func Fatal(msg string, fields ...zap.Field) {
 	if Logger == nil {
 		panic("logger not initialized")
@@ -182,6 +199,7 @@ func Fatal(msg string, fields ...zap.Field) {
 }
 
 // Info logs an info message.
+// Info 记录 info 级别日志。
 func Info(msg string, fields ...zap.Field) {
 	if Logger == nil {
 		return
@@ -191,6 +209,7 @@ func Info(msg string, fields ...zap.Field) {
 
 // Error logs an error message. err may be nil; if non-nil it is appended as
 // a zap.Error field. Additional fields follow.
+// Error 记录 error 级别日志，err 非 nil 时附加 zap.Error 字段。
 func Error(msg string, err error, fields ...zap.Field) {
 	if Logger == nil {
 		return
@@ -202,6 +221,7 @@ func Error(msg string, err error, fields ...zap.Field) {
 }
 
 // Debug logs a debug message.
+// Debug 记录 debug 级别日志。
 func Debug(msg string, fields ...zap.Field) {
 	if Logger == nil {
 		return
@@ -210,6 +230,7 @@ func Debug(msg string, fields ...zap.Field) {
 }
 
 // Warn logs a warning message.
+// Warn 记录 warn 级别日志。
 func Warn(msg string, fields ...zap.Field) {
 	if Logger == nil {
 		return
@@ -218,16 +239,19 @@ func Warn(msg string, fields ...zap.Field) {
 }
 
 // IsDebugEnabled returns true if debug logging is enabled.
+// IsDebugEnabled 判断当前是否启用 debug 级别。
 func IsDebugEnabled() bool {
 	return atomicLevel.Enabled(zapcore.DebugLevel)
 }
 
 // GetLevel returns the current log level.
+// GetLevel 返回当前日志级别字符串。
 func GetLevel() string {
 	return atomicLevel.String()
 }
 
 // SetLevel sets the log level at runtime.
+// SetLevel 运行时动态调整日志级别。
 func SetLevel(level string) error {
 	zapLevel, err := parseZapLevel(level)
 	if err != nil {
@@ -246,6 +270,7 @@ func SetLevel(level string) error {
 // struct uses *bool and this helper resolves the defaulting at the cmd/
 // boundary. The *bool does not live in this file because FileOutput itself
 // takes a plain bool (the caller has already resolved the default by then).
+// ResolveCompress nil 时默认 true（开启压缩），否则用配置值。
 func ResolveCompress(c *bool) bool {
 	if c == nil {
 		return true
@@ -271,6 +296,7 @@ func ResolveCompress(c *bool) bool {
 // URLs, etc.) and there is no way to redact them generically. The
 // presence and length of a query string are recorded instead so
 // operators can still see that one was sent.
+// GinLogger 返回 Gin 中间件：5xx→Error、4xx→Warn、其余→Info，不记录 query 明文。
 func GinLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()

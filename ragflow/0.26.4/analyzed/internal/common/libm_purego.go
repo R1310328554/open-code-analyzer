@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// libm_purego.go — 非 CGO 构建回退：使用 Go math 包实现 PyLog10/PySqrt，允许 CGO_ENABLED=0 交叉编译，数值可能与 Python 差 1 ULP。
+
 //
 
 //go:build !cgo
@@ -31,6 +33,7 @@ import "math"
 // can't link -lm). Results may differ from Python's math.log10 by up
 // to 1 ULP on some inputs; this is acceptable for non-strict-parity
 // builds.
+// PyLog10 使用 Go math.Log10，非严格位级对齐场景可接受。
 func PyLog10(x float64) float64 {
 	return math.Log10(x)
 }
@@ -40,6 +43,7 @@ func PyLog10(x float64) float64 {
 // Provided as a counterpart to PyLog10 for the !cgo build. Go's
 // math.Sqrt is a correctly-rounded implementation; PySqrt exists for
 // API symmetry with the cgo build.
+// PySqrt 使用 Go math.Sqrt，与 cgo 版 API 对称。
 func PySqrt(x float64) float64 {
 	return math.Sqrt(x)
 }

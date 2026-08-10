@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// metadata_utils.go — 文档元数据过滤引擎：解析 API 条件、支持 and/or 逻辑及多种比较运算符。
+
 //
 
 package common
@@ -22,27 +24,37 @@ import (
 )
 
 // MetaCondition represents a single parsed filter condition.
+// MetaCondition 单条元数据过滤条件。
 type MetaCondition struct {
+	// Operator 比较运算符（=、≠、>、contains、in 等）。
 	Operator string      // "=", "≠", ">", "<", "≥", "≤", "contains", "not contains", "in", "not in", "start with", "end with", "empty", "not empty"
+	// Key 元数据字段名。
 	Key      string      // metadata field name
+	// Value 比较右值，类型随运算符变化。
 	Value    interface{} // comparison value
 }
 
 // MetaValueDocs maps a metadata field value to the document IDs that have that value.
 // Example: {"Zhang San": ["doc1", "doc2"], "Li Si": ["doc3"]}
+// MetaValueDocs 字段值到文档 ID 列表的映射。
 type MetaValueDocs map[string][]string
 
 // MetaData maps a metadata field name to its value→documents mapping.
 // Example: {"author": {"Zhang San": ["doc1"]}, "year": {"2024": ["doc1", "doc2"]}}
+// MetaData 全量元数据索引：字段名→值→文档集合。
 type MetaData map[string]MetaValueDocs
 
 // MetaFilterInput groups filter conditions with their logic operator.
+// MetaFilterInput 过滤条件组及其 and/or 逻辑。
 type MetaFilterInput struct {
+	// Conditions 条件列表。
 	Conditions []MetaCondition
+	// Logic 多条件组合逻辑，默认 and。
 	Logic      string // "and" | "or"
 }
 
 // operatorMapping translates Python-style operators to internal symbols.
+// operatorMapping 将 Python/API 别名映射为内部运算符符号。
 var operatorMapping = map[string]string{
 	"is":     "=",
 	"not is": "≠",
@@ -54,6 +66,7 @@ var operatorMapping = map[string]string{
 
 // ParseAndConvert converts raw API conditions into MetaFilterInput.
 // Equivalent to Python: meta_filter(metas, convert_conditions(cond), cond.get("logic"))
+// ParseAndConvert 将 API 原始 conditions 转为 MetaFilterInput。
 func ParseAndConvert(metadataCondition map[string]interface{}) *MetaFilterInput {
 	if metadataCondition == nil {
 		return nil
@@ -106,6 +119,7 @@ func ParseAndConvert(metadataCondition map[string]interface{}) *MetaFilterInput 
 
 // convertOperator translates operator aliases to their canonical form.
 
+// convertOperator 翻译运算符别名。
 func convertOperator(op string) string {
 	if mapped, exists := operatorMapping[op]; exists {
 		return mapped
@@ -114,10 +128,12 @@ func convertOperator(op string) string {
 }
 
 // NormalizeOperator is the exported equivalent of convertOperator.
+// NormalizeOperator 导出的运算符规范化入口。
 func NormalizeOperator(op string) string { return convertOperator(op) }
 
 // MetaFilter applies filter conditions against metadata and returns matching doc IDs.
 // Python equivalent: common/metadata_utils.py::meta_filter()
+// MetaFilter 对元数据索引应用过滤，返回匹配的文档 ID 列表。
 func MetaFilter(metas MetaData, input *MetaFilterInput) []string {
 	if input == nil || len(input.Conditions) == 0 {
 		return nil
@@ -180,6 +196,7 @@ func MetaFilter(metas MetaData, input *MetaFilterInput) []string {
 // filterOut returns matching doc IDs for a single (value → matchedDocs) map and operator.
 // For "in" and "not in", it delegates to filterSet for O(n+m) hash-map-based filtering;
 // all other operators use matchValue for per-element predicate evaluation.
+// filterOut 对单个字段的值→文档映射执行运算符匹配。
 func filterOut(v2docs MetaValueDocs, operator string, value interface{}) []string {
 	if operator == "in" || operator == "not in" {
 		return filterSet(v2docs, operator, value)
@@ -208,6 +225,7 @@ func filterOut(v2docs MetaValueDocs, operator string, value interface{}) []strin
 // filterSet returns nil — no metadata values match "in", and for "not in" it
 // defensively returns nil as well (rather than returning all entries, which could
 // silently bypass a misconfigured filter).
+// filterSet 用哈希表 O(n+m) 处理 in/not in 运算符。
 func filterSet(v2docs MetaValueDocs, operator string, value interface{}) []string {
 	list, ok := value.([]interface{})
 	if !ok {
@@ -244,6 +262,7 @@ func filterSet(v2docs MetaValueDocs, operator string, value interface{}) []strin
 }
 
 // matchValue checks if a single metadata value matches the operator+value.
+// matchValue 判断单个元数据值是否满足运算符与右值。
 func matchValue(input string, operator string, value interface{}) bool {
 	switch operator {
 	case "empty":
@@ -275,6 +294,7 @@ func matchValue(input string, operator string, value interface{}) bool {
 }
 
 // compareValues handles numeric/date/string comparison.
+// compareValues 按日期/数值/字符串分支执行比较。
 func compareValues(a, b, operator string) bool {
 	// If filter value (b) is a date, only compare if data (a) is also a date.
 	// Non-date values should not be compared against date filters (matching Python behavior).
@@ -296,6 +316,7 @@ func compareValues(a, b, operator string) bool {
 	return compareString(strings.ToLower(a), strings.ToLower(b), operator)
 }
 
+// compareFloat 浮点数比较。
 func compareFloat(a, b float64, operator string) bool {
 	switch operator {
 	case "=":
@@ -314,6 +335,7 @@ func compareFloat(a, b float64, operator string) bool {
 	return false
 }
 
+// compareString 字符串字典序比较。
 func compareString(a, b string, operator string) bool {
 	switch operator {
 	case "=":
@@ -333,6 +355,7 @@ func compareString(a, b string, operator string) bool {
 }
 
 // isDate checks if a string is in YYYY-MM-DD format.
+// isDate 判断字符串是否为 YYYY-MM-DD 日期格式。
 func isDate(s string) bool {
 	if len(s) != 10 {
 		return false
@@ -352,6 +375,7 @@ func isDate(s string) bool {
 }
 
 // toString converts a value to string for comparison.
+// toString 将过滤右值转为可比较字符串。
 func toString(v interface{}) string {
 	if v == nil {
 		return ""

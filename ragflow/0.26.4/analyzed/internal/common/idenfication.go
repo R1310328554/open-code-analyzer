@@ -12,10 +12,13 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// idenfication.go — 字符串列表去重工具（文件名保留历史拼写 idenfication）。
+
 //
 
 package common
 
+// Deduplicate 按首次出现顺序去除重复字符串，nil 输入返回 nil。
 func Deduplicate(names []string) []string {
 	if names == nil {
 		return nil

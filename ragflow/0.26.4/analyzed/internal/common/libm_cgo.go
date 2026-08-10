@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// libm_cgo.go — CGO 构建：通过 glibc libm 调用 log10/sqrt，与 Python math 模块保持位级一致以通过评分对照测试。
+
 //
 
 //go:build cgo
@@ -31,6 +33,7 @@ import "C"
 // 0xbff0000000000000 in glibc), which breaks bit-exact parity tests
 // against Python scoring code. PyLog10 routes through cgo so the
 // result matches Python's math.log10 exactly.
+// PyLog10 调用 C 库 log10，避免 Go 纯实现与 glibc 的 1 ULP 差异。
 func PyLog10(x float64) float64 {
 	return float64(C.log10(C.double(x)))
 }
@@ -42,6 +45,7 @@ func PyLog10(x float64) float64 {
 // against the rare inputs where Go's implementation diverges from
 // glibc's. The cgo overhead is negligible on the scoring paths that
 // use it.
+// PySqrt 调用 C 库 sqrt，与 PyLog10 对称，保证评分路径数值一致。
 func PySqrt(x float64) float64 {
 	return float64(C.sqrt(C.double(x)))
 }

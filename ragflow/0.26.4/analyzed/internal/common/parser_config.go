@@ -1,6 +1,9 @@
+// parser_config.go — 数据集 parser_config 合并：基础默认值 → 分块方法预设 → 调用方覆盖，深拷贝避免污染共享默认。
+
 package common
 
 // deepCopyMap duplicates a JSON-like map so later merges do not mutate shared defaults.
+// deepCopyMap 深拷贝 JSON 风格 map，防止后续 merge 污染共享默认。
 func deepCopyMap(source map[string]interface{}) map[string]interface{} {
 	if source == nil {
 		return nil
@@ -14,6 +17,7 @@ func deepCopyMap(source map[string]interface{}) map[string]interface{} {
 }
 
 // deepCopyValue recursively copies nested maps and slices inside parser_config values.
+// deepCopyValue 递归拷贝嵌套 map 与 slice。
 func deepCopyValue(value interface{}) interface{} {
 	switch typedValue := value.(type) {
 	case map[string]interface{}:
@@ -30,6 +34,7 @@ func deepCopyValue(value interface{}) interface{} {
 }
 
 // DeepMergeMaps applies override onto base while preserving nested defaults such as raptor/graphrag.
+// DeepMergeMaps 递归合并 override 到 base，嵌套 map 继续深合并。
 func DeepMergeMaps(base, override map[string]interface{}) map[string]interface{} {
 	merged := deepCopyMap(base)
 	if merged == nil {
@@ -53,12 +58,15 @@ func DeepMergeMaps(base, override map[string]interface{}) map[string]interface{}
 
 // GetParserConfig builds the final parser_config stored on a dataset:
 // base defaults -> chunk-method defaults -> caller overrides.
+// GetParserConfig 按 chunk 方法组装最终 parser_config（naive/qa/paper 等）。
 func GetParserConfig(chunkMethod string, parserConfig map[string]interface{}) map[string]interface{} {
+	// baseDefaults 所有方法共享的表格/图片上下文大小默认值。
 	baseDefaults := map[string]interface{}{
 		"table_context_size": 0,
 		"image_context_size": 0,
 	}
 
+	// defaultConfigs 各 chunk 方法的预设配置（含 raptor/graphrag 开关）。
 	defaultConfigs := map[string]map[string]interface{}{
 		"naive": {
 			"layout_recognize": "DeepDOC",

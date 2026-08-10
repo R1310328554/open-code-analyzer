@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// reference_metadata.go — 引用块元数据偏好解析：合并请求与配置中的 include/fields，兼容旧版 API 键名。
+
 //
 
 package common
@@ -20,6 +22,7 @@ package common
 // optional config. Request values take precedence over config values.
 // Supports legacy request keys: include_metadata / metadata_fields.
 // Python equivalent: api/utils/reference_metadata_utils.py::resolve_reference_metadata_preferences()
+// ResolveReferenceMetadata 解析是否包含元数据及字段列表，请求优先于配置。
 func ResolveReferenceMetadata(requestPayload, configPayload map[string]interface{}) (bool, []string) {
 	resolved := make(map[string]interface{})
 

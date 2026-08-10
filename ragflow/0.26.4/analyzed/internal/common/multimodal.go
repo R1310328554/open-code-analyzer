@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// multimodal.go — 多模态消息转换：将用户消息中的文本与图片片段渲染为 OpenAI/Anthropic/Gemini 各厂商 wire 格式。
+
 //
 
 package common
@@ -27,24 +29,31 @@ import (
 // fragment, decoupled from any provider's wire format. Drivers consume
 // the result of RenderContentPartsForFactory to produce their per-
 // provider JSON.
+// ContentPart 内部多模态片段，与具体厂商 wire 格式解耦。
 type ContentPart struct {
 	// Type is one of: "text", "image_url", "image", "inline_data".
+	// Type 片段类型：text、image_url、image、inline_data。
 	Type string
 	// Text is set when Type == "text".
+	// Text Type 为 text 时的文本内容。
 	Text string
 	// ImageURL is set when Type == "image_url" (OpenAI shape).
+	// ImageURL OpenAI 形态的 image_url 引用。
 	ImageURL *ImageURL
 	// Source is set when Type == "image" (Anthropic) or
 	// Type == "inline_data" (Gemini).
+	// Source Anthropic/Gemini 的 base64 或 URL 源。
 	Source *ContentSource
 }
 
 // ImageURL is the OpenAI-shaped image reference.
+// ImageURL OpenAI image_url 对象。
 type ImageURL struct {
 	URL string `json:"url"`
 }
 
 // ContentSource is the Anthropic / Gemini source payload.
+// ContentSource Anthropic/Gemini 图片源载荷。
 type ContentSource struct {
 	Type      string `json:"type"`           // "base64" or "url"
 	MediaType string `json:"media_type"`     // e.g. "image/png"
@@ -53,10 +62,12 @@ type ContentSource struct {
 }
 
 // dataURIRE detects a "data:<mediatype>;base64,<data>" string.
+// dataURIRE 匹配 data:<mediatype>;base64,<data> 格式。
 var dataURIRE = regexp.MustCompile(`^data:([^;,]+)(?:;base64)?,(.*)$`)
 
 // parseDataURIOrB64 accepts a string and classifies it as a data URI,
 // a plain https URL, or a raw base64 payload
+// parseDataURIOrB64 识别 data URI、https URL 或裸 base64。
 func parseDataURIOrB64(s string) (ContentSource, error) {
 	if s == "" {
 		return ContentSource{}, fmt.Errorf("empty image source")
@@ -90,6 +101,7 @@ func parseDataURIOrB64(s string) (ContentSource, error) {
 
 // normalizeTextFromContent extracts a single text string from a content
 // value that may be a string, []map[string]interface{}, or []interface{}.
+// normalizeTextFromContent 从多形态 content 中提取合并文本。
 func normalizeTextFromContent(content interface{}) string {
 	switch v := content.(type) {
 	case string:
@@ -145,6 +157,7 @@ func normalizeTextFromContent(content interface{}) string {
 
 // extractImageURLs pulls image_url values out of a content value. Used
 // by ConvertLastUserMsgToMultimodal to assemble the ContentPart slice.
+// extractImageURLs 从 content 数组中提取 image_url 值。
 func extractImageURLs(content interface{}) []string {
 	var urls []string
 	process := func(p map[string]interface{}) {
@@ -193,6 +206,7 @@ func extractImageURLs(content interface{}) []string {
 // If the message has no image parts and `imageAttachments` is empty,
 // the text is returned as a string for compatibility with providers
 // that don't accept content arrays.
+// ConvertLastUserMsgToMultimodal 将最后一条用户消息转为厂商特定多模态格式。
 func ConvertLastUserMsgToMultimodal(msg map[string]interface{}, imageAttachments []string, factory string) (map[string]interface{}, error) {
 	if msg == nil {
 		return nil, fmt.Errorf("nil message")
@@ -261,6 +275,7 @@ func ConvertLastUserMsgToMultimodal(msg map[string]interface{}, imageAttachments
 	return out, nil
 }
 
+// pickImageType gemini 返回 inline_data，其余返回 image。
 func pickImageType(factory string) string {
 	if factory == "gemini" {
 		return "inline_data"
@@ -277,6 +292,7 @@ func pickImageType(factory string) string {
 //
 // The return value is suitable for direct assignment to a Message's
 // `Content` field (`interface{}`).
+// RenderContentPartsForFactory 将 ContentPart 切片渲染为各厂商 JSON wire 格式。
 func RenderContentPartsForFactory(parts []ContentPart, factory string) (interface{}, error) {
 	factory = strings.ToLower(factory)
 	switch factory {

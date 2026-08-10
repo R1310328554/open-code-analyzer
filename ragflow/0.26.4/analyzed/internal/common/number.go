@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// number.go — Python 兼容数值工具：PyFloat64 JSON 序列化、递归浮点转换及 numpy 风格 pairwise 求和。
+
 //
 
 package common
@@ -22,12 +24,14 @@ import "strconv"
 // Python uses the "shortest unique representation" algorithm (dtoa) for float64,
 // which is equivalent to Go's strconv.FormatFloat with 'g' and precision -1.
 // This ensures deterministic and Python-compatible float serialization.
+// PyFloat64 以 Python json.dumps 最短唯一表示法序列化 float64。
 type PyFloat64 float64
 
 // MarshalJSON implements the json.Marshaler interface for PyFloat64.
 // Uses strconv.FormatFloat with 'g' format and -1 precision to produce
 // the shortest decimal representation that uniquely identifies the float64,
 // matching Python's json.dumps behavior.
+// MarshalJSON 使用 strconv 'g' -1 精度，与 Python dtoa 对齐。
 func (f PyFloat64) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.FormatFloat(float64(f), 'g', -1, 64)), nil
 }
@@ -37,6 +41,7 @@ func (f PyFloat64) MarshalJSON() ([]byte, error) {
 // Python-compatible JSON serialization. Typed float slices ([]float64,
 // []float32, and their nested variants) are also handled so common vector
 // payload shapes don't fall through to Go's default float formatting.
+// ConvertFloatsToPyFormat 递归将嵌套结构中的 float 转为 PyFloat64。
 func ConvertFloatsToPyFormat(v interface{}) interface{} {
 	switch val := v.(type) {
 	case float64:
@@ -105,6 +110,7 @@ func ConvertFloatsToPyFormat(v interface{}) interface{} {
 // xs is modified in place. Pass a copy if the caller still needs the input.
 //
 // Empty input returns 0; single-element input returns xs[0].
+// PairwiseSum numpy 风格级联求和，n<16 用朴素累加以匹配 Python 结果。
 func PairwiseSum(xs []float64) float64 {
 	n := len(xs)
 	if n == 0 {
@@ -140,6 +146,7 @@ func PairwiseSum(xs []float64) float64 {
 	return xs[0]
 }
 
+// GetInt 从 interface{} 安全提取 int（支持 float64 截断）。
 func GetInt(value interface{}) (int, bool) {
 	switch v := value.(type) {
 	case int:

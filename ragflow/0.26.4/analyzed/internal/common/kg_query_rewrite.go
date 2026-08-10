@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// kg_query_rewrite.go — 知识图谱查询改写：构建 LLM 提示词并解析 answer_type_keywords 与 entities_from_query。
+
 //
 
 package common
@@ -22,13 +24,17 @@ import (
 )
 
 // QueryRewriteResult holds the parsed result of a query rewrite.
+// QueryRewriteResult 保存查询改写 LLM 输出的结构化关键词。
 type QueryRewriteResult struct {
+	// TypeKeywords 答案类型关键词（最多 3 个，按置信度排序）。
 	TypeKeywords []string `json:"answer_type_keywords"`
+	// Entities 从用户查询中提取的实体/细节词。
 	Entities     []string `json:"entities_from_query"`
 }
 
 // queryRewritePromptTmpl is the system prompt template for query rewriting.
 // Matches Python: rag/graphrag/query_analyze_prompt.py::PROMPTS["minirag_query2kwd"]
+// queryRewritePromptTmpl 与 Python minirag_query2kwd 提示模板对齐。
 const queryRewritePromptTmpl = `---Role---
 
 You are a helpful assistant tasked with identifying both answer-type and low-level keywords in the user's query.
@@ -116,6 +122,7 @@ Output:
 `
 
 // BuildQueryRewritePrompt builds the system prompt for query rewrite.
+// BuildQueryRewritePrompt 将用户问题与类型池 JSON 填入提示模板。
 func BuildQueryRewritePrompt(question string, ty2entsJSON string) string {
 	r := strings.NewReplacer(
 		"{query}", question,
@@ -126,6 +133,7 @@ func BuildQueryRewritePrompt(question string, ty2entsJSON string) string {
 
 // ParseQueryRewriteResponse parses the LLM response and returns structured keywords.
 // Handles JSON parsing with fallback logic matching Python's json_repair behavior.
+// ParseQueryRewriteResponse 解析 LLM 响应，支持 markdown 代码块与 JSON 片段提取。
 func ParseQueryRewriteResponse(response string) (*QueryRewriteResult, error) {
 	// Try direct JSON parsing first
 	result, err := tryParseJSON(response)
@@ -163,6 +171,7 @@ func ParseQueryRewriteResponse(response string) (*QueryRewriteResult, error) {
 }
 
 // tryParseJSON attempts to parse a JSON string into QueryRewriteResult.
+// tryParseJSON 尝试将字符串直接反序列化为 QueryRewriteResult。
 func tryParseJSON(data string) (*QueryRewriteResult, error) {
 	var result QueryRewriteResult
 	if err := json.Unmarshal([]byte(data), &result); err != nil {

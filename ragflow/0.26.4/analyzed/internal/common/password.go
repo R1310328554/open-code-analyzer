@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// password.go — 密码哈希与 RSA 解密：兼容 Werkzeug scrypt/pbkdf2 格式及前端 RSA 加密登录密码。
+
 //
 
 package common
@@ -36,6 +38,7 @@ import (
 
 // CheckWerkzeugPassword verifies a password against a werkzeug password hash
 // Supports both pbkdf2 and scrypt formats
+// CheckWerkzeugPassword 校验密码是否匹配 Werkzeug 哈希（scrypt 或 pbkdf2）。
 func CheckWerkzeugPassword(password, hashStr string) bool {
 	if strings.HasPrefix(hashStr, "scrypt:") {
 		return checkScryptPassword(password, hashStr)
@@ -49,6 +52,7 @@ func CheckWerkzeugPassword(password, hashStr string) bool {
 // checkScryptPassword verifies password using scrypt format
 // Format: scrypt:n:r:p$base64(salt)$hex(hash)
 // IMPORTANT: werkzeug uses the base64-encoded salt string as UTF-8 bytes, NOT the decoded bytes
+// checkScryptPassword 验证 scrypt:n:r:p$base64(salt)$hex(hash) 格式。
 func checkScryptPassword(password, hashStr string) bool {
 	parts := strings.Split(hashStr, "$")
 	if len(parts) != 3 {
@@ -96,6 +100,7 @@ func checkScryptPassword(password, hashStr string) bool {
 
 // checkPBKDF2Password verifies password using PBKDF2 format
 // Format: pbkdf2:sha256:iterations$base64(salt)$base64(hash)
+// checkPBKDF2Password 验证 pbkdf2:sha256:iterations$salt$hash 格式。
 func checkPBKDF2Password(password, hashStr string) bool {
 	parts := strings.Split(hashStr, "$")
 	if len(parts) != 3 {
@@ -130,6 +135,7 @@ func checkPBKDF2Password(password, hashStr string) bool {
 }
 
 // constantTimeCompare performs constant time comparison
+// constantTimeCompare 常量时间字节比较，防时序侧信道。
 func constantTimeCompare(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false
@@ -142,12 +148,14 @@ func constantTimeCompare(a, b []byte) bool {
 }
 
 // IsWerkzeugHash checks if a hash is in werkzeug format
+// IsWerkzeugHash 判断哈希串是否为 Werkzeug scrypt/pbkdf2 前缀。
 func IsWerkzeugHash(hashStr string) bool {
 	return strings.HasPrefix(hashStr, "scrypt:") || strings.HasPrefix(hashStr, "pbkdf2:")
 }
 
 // GenerateWerkzeugPasswordHash generates a werkzeug-compatible password hash using scrypt
 // This matches Python werkzeug's default behavior
+// GenerateWerkzeugPasswordHash 生成 Werkzeug 默认 scrypt 哈希。
 func GenerateWerkzeugPasswordHash(password string) (string, error) {
 	// Generate random bytes (12 bytes will produce 16-char base64 string)
 	randomBytes := make([]byte, 12)
@@ -172,6 +180,7 @@ func GenerateWerkzeugPasswordHash(password string) (string, error) {
 // DecryptPassword decrypts the password using RSA private key
 // The password is expected to be base64 encoded RSA encrypted data
 // If decryption fails, the original password is returned (assumed to be plain text)
+// DecryptPassword RSA 解密 Base64 密文，失败时假定已是明文。
 func DecryptPassword(encryptedPassword string) (string, error) {
 	// Try to decode base64
 	ciphertext, err := base64.StdEncoding.DecodeString(encryptedPassword)
@@ -197,6 +206,7 @@ func DecryptPassword(encryptedPassword string) (string, error) {
 }
 
 // LoadPrivateKey loads and decrypts the RSA private key from conf/private.pem
+// LoadPrivateKey 从 conf/private.pem 加载 RSA 私钥（支持加密 PEM）。
 func LoadPrivateKey() (*rsa.PrivateKey, error) {
 	// Read private key file
 	keyData, err := os.ReadFile("conf/private.pem")
