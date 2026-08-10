@@ -20,16 +20,16 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 /**
- * memory monitor.
+ * 锁模块内存/指标定时清理服务。
+ *
+ * <p>每日零点重置 {@link LockMetricsMonitor} 中 gRPC 加解锁计数器，防止长期累积。</p>
  *
  * @author goumang.zh@alibaba-inc.com
  */
 @Service
 public class LockMemoryMonitor {
     
-    /**
-     * auto clean metrics per-day.
-     */
+    /** 每日零点自动清零 gRPC 锁操作计数指标。 */
     @Scheduled(cron = "0 0 0 * * ?")
     public void clear() {
         LockMetricsMonitor.getGrpcLockTotal().set(0);

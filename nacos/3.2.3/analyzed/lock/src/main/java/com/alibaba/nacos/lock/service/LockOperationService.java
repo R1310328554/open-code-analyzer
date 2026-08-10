@@ -19,7 +19,10 @@ package com.alibaba.nacos.lock.service;
 import com.alibaba.nacos.api.lock.model.LockInstance;
 
 /**
- * lock operator service.
+ * 锁操作业务服务接口。
+ *
+ * <p>封装 {@link com.alibaba.nacos.api.lock.model.LockInstance} 到内部 {@link com.alibaba.nacos.lock.model.LockInfo}
+ * 的转换，并驱动 Raft 一致性加锁/解锁流程。</p>
  *
  * @author 985492783@qq.com
  * @date 2023/6/28 2:38
@@ -27,18 +30,18 @@ import com.alibaba.nacos.api.lock.model.LockInstance;
 public interface LockOperationService {
     
     /**
-     * get lock operator.
+     * 尝试获取分布式锁。
      *
-     * @param lockInstance lockInstance
-     * @return boolean
+     * @param lockInstance 客户端锁实例
+     * @return 加锁成功返回 {@code true}
      */
     Boolean lock(LockInstance lockInstance);
     
     /**
-     * unLock.
+     * 释放分布式锁。
      *
-     * @param lockInstance lockInstance
-     * @return Boolean
+     * @param lockInstance 客户端锁实例
+     * @return 释放成功返回 {@code true}
      */
     Boolean unLock(LockInstance lockInstance);
     

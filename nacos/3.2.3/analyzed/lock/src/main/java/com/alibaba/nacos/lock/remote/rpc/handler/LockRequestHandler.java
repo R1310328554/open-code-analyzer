@@ -31,7 +31,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * lock grpc handler.
+ * 分布式锁 gRPC 远程请求处理器。
+ *
+ * <p>接收 {@link com.alibaba.nacos.api.lock.remote.request.LockOperationRequest}，
+ * 按 {@link LockOperationEnum} 分发至 {@link LockOperationService} 执行加锁或解锁。</p>
  *
  * @author 985492783@qq.com
  * @description LockRequestHandler
@@ -46,13 +49,16 @@ public class LockRequestHandler
     
     private final LockOperationService lockOperationService;
     
+    /**
+     * 注入锁操作服务。
+     *
+     * @param lockOperationService 锁业务服务
+     */
     public LockRequestHandler(LockOperationService lockOperationService) {
         this.lockOperationService = lockOperationService;
     }
     
-    /**
-     * TODO Support auth.
-     */
+    /** 处理加锁/解锁 gRPC 请求（TODO：鉴权待支持）。 */
     @Override
     public LockOperationResponse handle(LockOperationRequest request, RequestMeta meta)
         throws NacosException {

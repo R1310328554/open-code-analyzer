@@ -20,7 +20,10 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * lock key type and key name.
+ * 锁键复合标识：锁类型 + 资源键名。
+ *
+ * <p>作为 {@link com.alibaba.nacos.lock.LockManager} 中锁映射的主键，
+ * 实现 {@link #equals} 与 {@link #hashCode} 以支持哈希表存储。</p>
  *
  * @author 985492783@qq.com
  * @date 2023/9/7 21:31
@@ -29,31 +32,44 @@ public class LockKey implements Serializable {
     
     private static final long serialVersionUID = -3460548121526875524L;
     
+    /**
+     * 构造锁键。
+     *
+     * @param lockType 锁实现类型（SPI 标识）
+     * @param key      资源键名
+     */
     public LockKey(String lockType, String key) {
         this.lockType = lockType;
         this.key = key;
     }
     
+    /** 锁实现类型标识。 */
     private String lockType;
     
+    /** 锁资源键名。 */
     private String key;
     
+    /** 获取锁类型。 */
     public String getLockType() {
         return lockType;
     }
     
+    /** 设置锁类型。 */
     public void setLockType(String lockType) {
         this.lockType = lockType;
     }
     
+    /** 获取资源键。 */
     public String getKey() {
         return key;
     }
     
+    /** 设置资源键。 */
     public void setKey(String key) {
         this.key = key;
     }
     
+    /** 按 lockType 与 key 字段比较相等性。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -66,6 +82,7 @@ public class LockKey implements Serializable {
         return Objects.equals(lockType, lockKey.lockType) && Objects.equals(key, lockKey.key);
     }
     
+    /** 基于 lockType 与 key 计算哈希码。 */
     @Override
     public int hashCode() {
         return Objects.hash(lockType, key);

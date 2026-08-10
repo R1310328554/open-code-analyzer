@@ -21,18 +21,22 @@ import com.alibaba.nacos.lock.core.reentrant.AbstractAtomicLock;
 import com.alibaba.nacos.lock.core.reentrant.mutex.MutexAtomicLock;
 
 /**
- * lock factory.
+ * 默认锁工厂实现：创建 {@link MutexAtomicLock} 互斥锁。
+ *
+ * <p>锁类型为 {@link com.alibaba.nacos.api.lock.common.LockConstants#NACOS_LOCK_TYPE}。</p>
  *
  * @author 985492783@qq.com
  * @date 2023/8/22 21:16
  */
 public class SimpleLockFactory implements LockFactory {
     
+    /** 返回 Nacos 默认锁类型标识。 */
     @Override
     public String getLockType() {
         return LockConstants.NACOS_LOCK_TYPE;
     }
     
+    /** 创建 {@link MutexAtomicLock} 实例。 */
     @Override
     public AbstractAtomicLock createLock(String key) {
         return new MutexAtomicLock(key);

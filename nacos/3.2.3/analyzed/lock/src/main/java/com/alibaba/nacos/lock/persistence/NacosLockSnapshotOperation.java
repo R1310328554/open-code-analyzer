@@ -45,17 +45,23 @@ import java.util.function.BiConsumer;
 import java.util.zip.Checksum;
 
 /**
- * nacosLock snapshot handler.
+ * Nacos 分布式锁 Raft 快照持久化操作。
+ *
+ * <p>将 {@link LockManager#showLocks()} 全量锁映射序列化压缩为 ZIP 存档，
+ * 并在节点恢复时反序列化合并回内存。</p>
  *
  * @author 985492783@qq.com
  * @date 2023/9/7 20:42
  */
 public class NacosLockSnapshotOperation implements SnapshotOperation {
     
+    /** 快照元数据中 CRC 校验和键名。 */
     protected static final String CHECK_SUM_KEY = "checksum";
     
+    /** 写锁，快照读写期间互斥。 */
     private final ReentrantReadWriteLock.WriteLock writeLock;
     
+    /** 锁管理器，提供锁映射数据源。 */
     private final LockManager lockManager;
     
     private static final Logger LOGGER = LoggerFactory.getLogger(NacosLockSnapshotOperation.class);
@@ -68,14 +74,22 @@ public class NacosLockSnapshotOperation implements SnapshotOperation {
     
     private final Serializer serializer = SerializeFactory.getDefault();
     
+    /** 快照 ZIP 文件名。 */
     private static final String SNAPSHOT_ARCHIVE = "nacos_lock.zip";
     
+    /**
+     * 构造快照操作，注入锁管理器与写锁。
+     *
+     * @param lockManager 锁管理器
+     * @param writeLock   快照读写互斥写锁
+     */
     public NacosLockSnapshotOperation(LockManager lockManager,
         ReentrantReadWriteLock.WriteLock writeLock) {
         this.lockManager = lockManager;
         this.writeLock = writeLock;
     }
     
+    /** Raft 回调：异步压缩并写入锁快照 ZIP。 */
     @Override
     public void onSnapshotSave(Writer writer, BiConsumer<Boolean, Throwable> callFinally) {
         RaftExecutor.doSnapshot(() -> {
@@ -96,6 +110,7 @@ public class NacosLockSnapshotOperation implements SnapshotOperation {
         });
     }
     
+    /** 序列化锁映射并压缩为带 CRC 校验的 ZIP 文件。 */
     private boolean writeSnapshot(Writer writer) throws IOException {
         final String writePath = writer.getPath();
         final String outputFile = Paths.get(writePath, SNAPSHOT_ARCHIVE).toString();
@@ -108,11 +123,13 @@ public class NacosLockSnapshotOperation implements SnapshotOperation {
         return writer.addFile(SNAPSHOT_ARCHIVE, meta);
     }
     
+    /** 导出当前锁映射并序列化为字节流。 */
     private InputStream dumpSnapshot() {
         ConcurrentHashMap<LockKey, AtomicLockService> lockMap = lockManager.showLocks();
         return new ByteArrayInputStream(serializer.serialize(lockMap));
     }
     
+    /** Raft 回调：解压并加载锁快照到内存。 */
     @Override
     public boolean onSnapshotLoad(Reader reader) {
         TimerContext.start(getSnapshotLoadTag());
@@ -131,6 +148,7 @@ public class NacosLockSnapshotOperation implements SnapshotOperation {
         }
     }
     
+    /** 校验 CRC 后反序列化快照字节并合并锁映射。 */
     private boolean readSnapshot(Reader reader) throws Exception {
         final String readerPath = reader.getPath();
         Loggers.RAFT.info("snapshot start to load from : {}", readerPath);
@@ -152,14 +170,16 @@ public class NacosLockSnapshotOperation implements SnapshotOperation {
         ConcurrentHashMap<LockKey, AtomicLockService> newData =
             serializer.deserialize(snapshotBytes);
         ConcurrentHashMap<LockKey, AtomicLockService> lockMap = lockManager.showLocks();
-        //loadSnapshot
+        // 将快照数据合并到当前锁映射
         lockMap.putAll(newData);
     }
     
+    /** 快照保存耗时统计标签。 */
     protected String getSnapshotSaveTag() {
         return LOCK_SNAPSHOT_SAVE;
     }
     
+    /** 快照加载耗时统计标签。 */
     protected String getSnapshotLoadTag() {
         return LOCK_SNAPSHOT_LOAD;
     }

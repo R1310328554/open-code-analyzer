@@ -17,18 +17,24 @@
 package com.alibaba.nacos.lock.constant;
 
 /**
- * properties constant.
+ * 分布式锁配置属性键与默认值常量。
+ *
+ * <p>对应 {@code application.properties} 中锁过期相关配置项。</p>
  *
  * @author 985492783@qq.com
  * @date 2023/8/25 0:50
  */
 public class PropertiesConstant {
     
+    /** 默认自动过期时间配置键（毫秒）。 */
     public static final String DEFAULT_AUTO_EXPIRE = "nacos.lock.default_expire_time";
     
+    /** 最大允许自动过期时间配置键（毫秒）。 */
     public static final String MAX_AUTO_EXPIRE = "nacos.lock.max_expire_time";
     
+    /** 默认锁过期时长：30 秒。 */
     public static final Long DEFAULT_AUTO_EXPIRE_TIME = 30_000L;
     
+    /** 最大锁过期时长：30 分钟。 */
     public static final Long MAX_AUTO_EXPIRE_TIME = 1800_000L;
 }

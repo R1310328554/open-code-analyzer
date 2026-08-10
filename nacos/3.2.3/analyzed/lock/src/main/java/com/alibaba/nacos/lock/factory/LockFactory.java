@@ -19,7 +19,9 @@ package com.alibaba.nacos.lock.factory;
 import com.alibaba.nacos.lock.core.reentrant.AbstractAtomicLock;
 
 /**
- * lock factory.
+ * 锁工厂 SPI 接口：按类型创建 {@link AbstractAtomicLock} 实例。
+ *
+ * <p>通过 Java SPI 扩展不同锁实现（互斥、可重入等）。</p>
  *
  * @author 985492783@qq.com
  * @date 2023/8/22 20:57
@@ -27,15 +29,17 @@ import com.alibaba.nacos.lock.core.reentrant.AbstractAtomicLock;
 public interface LockFactory {
     
     /**
-     * spi lock factory type.
-     * @return type
+     * 返回 SPI 锁工厂类型标识。
+     *
+     * @return 锁类型字符串
      */
     String getLockType();
     
     /**
-     * create spi lock entity.
-     * @param key key
-     * @return AbstractAtomicLock
+     * 创建指定键的原子锁实例。
+     *
+     * @param key 锁资源键
+     * @return {@link AbstractAtomicLock} 实例
      */
     AbstractAtomicLock createLock(String key);
 }

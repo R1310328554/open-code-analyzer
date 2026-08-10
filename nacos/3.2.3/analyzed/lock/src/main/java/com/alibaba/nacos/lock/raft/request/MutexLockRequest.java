@@ -21,7 +21,9 @@ import com.alibaba.nacos.lock.model.LockInfo;
 import java.io.Serializable;
 
 /**
- * mutex lock request.
+ * Raft 互斥锁操作请求体。
+ *
+ * <p>封装 {@link LockInfo}，在 Raft 提案中传递加锁/解锁参数。</p>
  *
  * @author 985492783@qq.com
  * @date 2023/8/24 18:40
@@ -30,12 +32,15 @@ public class MutexLockRequest implements Serializable {
     
     private static final long serialVersionUID = -925543547156890549L;
     
+    /** 锁操作信息。 */
     private LockInfo lockInfo;
     
+    /** 获取锁操作信息。 */
     public LockInfo getLockInfo() {
         return lockInfo;
     }
     
+    /** 设置锁操作信息。 */
     public void setLockInfo(LockInfo lockInfo) {
         this.lockInfo = lockInfo;
     }

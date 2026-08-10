@@ -19,7 +19,9 @@ package com.alibaba.nacos.lock.core.reentrant;
 import java.io.Serializable;
 
 /**
- * abstract atomic lock.
+ * 原子锁抽象基类，持有锁资源键并实现 {@link AtomicLockService}。
+ *
+ * <p>具体互斥/可重入语义由子类（如 {@link com.alibaba.nacos.lock.core.reentrant.mutex.MutexAtomicLock}）实现。</p>
  *
  * @author 985492783@qq.com
  * @description AtomicLock
@@ -29,12 +31,19 @@ public abstract class AbstractAtomicLock implements AtomicLockService, Serializa
     
     private static final long serialVersionUID = -3460985546856855524L;
     
+    /** 锁资源键，全局唯一标识。 */
     private final String key;
     
+    /**
+     * 以指定键构造原子锁。
+     *
+     * @param key 锁资源键
+     */
     public AbstractAtomicLock(String key) {
         this.key = key;
     }
     
+    /** 返回锁资源键。 */
     @Override
     public String getKey() {
         return key;

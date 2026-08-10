@@ -19,7 +19,10 @@ package com.alibaba.nacos.lock.core.reentrant;
 import com.alibaba.nacos.lock.model.LockInfo;
 
 /**
- * Atomic Lock Service.
+ * 原子锁服务接口：定义加锁、解锁、过期与回收语义。
+ *
+ * <p>由 {@link com.alibaba.nacos.lock.core.reentrant.mutex.MutexAtomicLock} 等实现，
+ * 供 {@link com.alibaba.nacos.lock.LockManager} 统一管理。</p>
  *
  * @author 985492783@qq.com
  * @description AtomicLockService
@@ -28,36 +31,39 @@ import com.alibaba.nacos.lock.model.LockInfo;
 public interface AtomicLockService {
     
     /**
-     * try lock with expireTime.
+     * 尝试获取锁，并设置过期时间。
      *
-     * @param lockInfo request Lock
-     * @return boolean
+     * @param lockInfo 锁请求信息（含过期时间戳）
+     * @return 加锁成功返回 {@code true}
      */
     Boolean tryLock(LockInfo lockInfo);
     
     /**
-     * release lock.
+     * 释放锁。
      *
-     * @param lockInfo instance
-     * @return boolean
+     * @param lockInfo 锁实例信息
+     * @return 释放成功返回 {@code true}
      */
     Boolean unLock(LockInfo lockInfo);
     
     /**
-     * return is auto expire.
-     * @return Boolean
+     * 判断锁是否已自动过期。
+     *
+     * @return 已过期返回 {@code true}
      */
     Boolean autoExpire();
     
     /**
-     * get key.
-     * @return key
+     * 获取锁资源键。
+     *
+     * @return 锁键字符串
      */
     String getKey();
     
     /**
-     * judge lock is clear to gc.
-     * @return boolean
+     * 判断锁是否可被垃圾回收（空闲或已过期）。
+     *
+     * @return 可清理返回 {@code true}
      */
     Boolean isClear();
 }
