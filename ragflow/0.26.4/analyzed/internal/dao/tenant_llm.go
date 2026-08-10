@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// tenant_llm.go — 租户 LLM 配置数据访问层：管理租户绑定的模型厂商、API Key、复合模型名解析及 MyLLMs 列表。
+
 //
 
 package dao
@@ -21,15 +23,15 @@ import (
 	"ragflow/internal/entity"
 )
 
-// TenantLLMDAO tenant LLM data access object
+// TenantLLMDAO 租户 LLM 配置表的数据访问对象。
 type TenantLLMDAO struct{}
 
-// NewTenantLLMDAO create tenant LLM DAO
+// NewTenantLLMDAO 创建租户 LLM DAO 实例。
 func NewTenantLLMDAO() *TenantLLMDAO {
 	return &TenantLLMDAO{}
 }
 
-// GetByID get tenant LLM by primary key ID
+// GetByID 按自增主键查询租户 LLM 记录。
 func (dao *TenantLLMDAO) GetByID(id int64) (*entity.TenantLLM, error) {
 	var tenantLLM entity.TenantLLM
 	err := DB.Where("id = ?", id).First(&tenantLLM).Error
@@ -39,7 +41,7 @@ func (dao *TenantLLMDAO) GetByID(id int64) (*entity.TenantLLM, error) {
 	return &tenantLLM, nil
 }
 
-// GetByTenantAndModelName get tenant LLM by tenant ID and model name
+// GetByTenantAndModelName 按租户、厂商名与模型名精确查询。
 func (dao *TenantLLMDAO) GetByTenantAndModelName(tenantID, providerName string, modelName string) (*entity.TenantLLM, error) {
 	var tenantLLM entity.TenantLLM
 	err := DB.Where("tenant_id = ? AND llm_factory = ? AND llm_name = ?", tenantID, providerName, modelName).First(&tenantLLM).Error
@@ -49,7 +51,7 @@ func (dao *TenantLLMDAO) GetByTenantAndModelName(tenantID, providerName string, 
 	return &tenantLLM, nil
 }
 
-// GetByTenantNameAndType get tenant LLM by tenant ID, model name, and model type
+// GetByTenantNameAndType 按租户、模型名与 model_type 查询。
 func (dao *TenantLLMDAO) GetByTenantNameAndType(tenantID, modelName string, modelType entity.ModelType) (*entity.TenantLLM, error) {
 	var tenantLLM entity.TenantLLM
 	err := DB.Where("tenant_id = ? AND llm_name = ? AND model_type = ?", tenantID, modelName, modelType).First(&tenantLLM).Error
@@ -59,7 +61,7 @@ func (dao *TenantLLMDAO) GetByTenantNameAndType(tenantID, modelName string, mode
 	return &tenantLLM, nil
 }
 
-// GetByTenantAndType get tenant LLM by tenant ID and model type
+// GetByTenantAndType 按租户与 model_type 查询单条记录。
 func (dao *TenantLLMDAO) GetByTenantAndType(tenantID string, modelType entity.ModelType) (*entity.TenantLLM, error) {
 	var tenantLLM entity.TenantLLM
 	err := DB.Where("tenant_id = ? AND model_type = ?", tenantID, modelType).First(&tenantLLM).Error
@@ -69,7 +71,7 @@ func (dao *TenantLLMDAO) GetByTenantAndType(tenantID string, modelType entity.Mo
 	return &tenantLLM, nil
 }
 
-// GetByTenantAndFactory get tenant LLM by tenant ID, model type and factory
+// GetByTenantAndFactory 按租户、model_type 与 llm_factory 查询。
 func (dao *TenantLLMDAO) GetByTenantAndFactory(tenantID string, modelType entity.ModelType, factory string) (*entity.TenantLLM, error) {
 	var tenantLLM entity.TenantLLM
 	err := DB.Where("tenant_id = ? AND model_type = ? AND llm_factory = ?", tenantID, modelType, factory).First(&tenantLLM).Error
@@ -79,7 +81,7 @@ func (dao *TenantLLMDAO) GetByTenantAndFactory(tenantID string, modelType entity
 	return &tenantLLM, nil
 }
 
-// ListByTenant list all tenant LLMs for a tenant
+// ListByTenant 列出租户下全部 LLM 配置。
 func (dao *TenantLLMDAO) ListByTenant(tenantID string) ([]entity.TenantLLM, error) {
 	var tenantLLMs []entity.TenantLLM
 	err := DB.Where("tenant_id = ?", tenantID).Find(&tenantLLMs).Error
@@ -89,7 +91,7 @@ func (dao *TenantLLMDAO) ListByTenant(tenantID string) ([]entity.TenantLLM, erro
 	return tenantLLMs, nil
 }
 
-// GetByTenantFactoryAndModelName get tenant LLM by tenant ID, factory and model name
+// GetByTenantFactoryAndModelName 按租户、厂商与模型名三元组查询。
 func (dao *TenantLLMDAO) GetByTenantFactoryAndModelName(tenantID, factory, modelName string) (*entity.TenantLLM, error) {
 	var tenantLLM entity.TenantLLM
 	err := DB.Where("tenant_id = ? AND llm_factory = ? AND llm_name = ?", tenantID, factory, modelName).First(&tenantLLM).Error
@@ -99,22 +101,22 @@ func (dao *TenantLLMDAO) GetByTenantFactoryAndModelName(tenantID, factory, model
 	return &tenantLLM, nil
 }
 
-// Create create a new tenant LLM record
+// Create 插入新租户 LLM 记录。
 func (dao *TenantLLMDAO) Create(tenantLLM *entity.TenantLLM) error {
 	return DB.Create(tenantLLM).Error
 }
 
-// Update update an existing tenant LLM record
+// Update 全量保存租户 LLM 实体。
 func (dao *TenantLLMDAO) Update(tenantLLM *entity.TenantLLM) error {
 	return DB.Save(tenantLLM).Error
 }
 
-// Delete delete a tenant LLM record by tenant ID, factory and model name
+// Delete 按租户、厂商与模型名硬删除记录。
 func (dao *TenantLLMDAO) Delete(tenantID, factory, modelName string) error {
 	return DB.Where("tenant_id = ? AND llm_factory = ? AND llm_name = ?", tenantID, factory, modelName).Delete(&entity.TenantLLM{}).Error
 }
 
-// GetMyLLMs get tenant LLMs with factory details
+// GetMyLLMs 联表 llm_factories 返回已配置 API Key 的模型列表（含 logo、tags）。
 func (dao *TenantLLMDAO) GetMyLLMs(tenantID string) ([]entity.MyLLM, error) {
 	var myLLMs []entity.MyLLM
 
@@ -129,7 +131,7 @@ func (dao *TenantLLMDAO) GetMyLLMs(tenantID string) ([]entity.MyLLM, error) {
 	return myLLMs, nil
 }
 
-// ListValidByTenant lists valid tenant LLMs for a tenant
+// ListValidByTenant 列出 api_key 非空且 status 有效的租户 LLM。
 func (dao *TenantLLMDAO) ListValidByTenant(tenantID string) ([]*entity.TenantLLM, error) {
 	var tenantLLMs []*entity.TenantLLM
 	err := DB.Where("tenant_id = ? AND api_key IS NOT NULL AND api_key != ? AND status = ?", tenantID, "", "1").Find(&tenantLLMs).Error
@@ -139,7 +141,7 @@ func (dao *TenantLLMDAO) ListValidByTenant(tenantID string) ([]*entity.TenantLLM
 	return tenantLLMs, nil
 }
 
-// ListAllByTenant lists all tenant LLMs for a tenant
+// ListAllByTenant 列出租户下全部 LLM 记录。
 func (dao *TenantLLMDAO) ListAllByTenant(tenantID string) ([]*entity.TenantLLM, error) {
 	var tenantLLMs []*entity.TenantLLM
 	err := DB.Where("tenant_id = ?", tenantID).Find(&tenantLLMs).Error
@@ -149,7 +151,7 @@ func (dao *TenantLLMDAO) ListAllByTenant(tenantID string) ([]*entity.TenantLLM, 
 	return tenantLLMs, nil
 }
 
-// InsertMany inserts multiple tenant LLM records
+// InsertMany 批量插入租户 LLM，空切片直接返回。
 func (dao *TenantLLMDAO) InsertMany(tenantLLMs []*entity.TenantLLM) error {
 	if len(tenantLLMs) == 0 {
 		return nil
@@ -157,32 +159,15 @@ func (dao *TenantLLMDAO) InsertMany(tenantLLMs []*entity.TenantLLM) error {
 	return DB.Create(&tenantLLMs).Error
 }
 
-// DeleteByTenantID deletes all tenant LLM records by tenant ID (hard delete)
+// DeleteByTenantID 按租户 ID 硬删除全部 LLM 配置。
 func (dao *TenantLLMDAO) DeleteByTenantID(tenantID string) (int64, error) {
 	result := DB.Unscoped().Where("tenant_id = ?", tenantID).Delete(&entity.TenantLLM{})
 	return result.RowsAffected, result.Error
 }
 
-// splitModelNameAndFactory splits model name and factory from combined format
-// This matches Python's split_model_name_and_factory logic
-//
-// Parameters:
-//   - modelName: The model name which can be in format "ModelName" or "ModelName@Factory"
-//
-// Returns:
-//   - string: The model name without factory prefix
-//   - string: The factory name (empty string if not specified)
-//
-// Example:
-//
-//	modelName, factory := splitModelNameAndFactory("gpt-4")
-//	// Returns: "gpt-4", ""
-//
-//	modelName, factory := splitModelNameAndFactory("gpt-4@OpenAI")
-//	// Returns: "gpt-4", "OpenAI"
+// splitModelNameAndFactory 从 "模型名@厂商" 复合串解析模型名与厂商，对齐 Python split_model_name_and_factory。若 @ 后缀不在 llm_factories 表中则整串视为模型名。
 func splitModelNameAndFactory(modelName string) (string, string) {
-	// Split by "@" separator
-	// Handle cases like "model@factory" or "model@sub@factory"
+	// 从右向左找最后一个 @，支持 model@sub@factory 形式
 	lastAtIndex := -1
 	for i := len(modelName) - 1; i >= 0; i-- {
 		if modelName[i] == '@' {
@@ -191,21 +176,20 @@ func splitModelNameAndFactory(modelName string) (string, string) {
 		}
 	}
 
-	// No "@" found, return original name
+	// 无 @ 分隔符则原样返回模型名，厂商为空
 	if lastAtIndex == -1 {
 		return modelName, ""
 	}
 
-	// Split into model name and potential factory
+	// 拆分为模型名部分与潜在厂商后缀
 	modelNamePart := modelName[:lastAtIndex]
 	factory := modelName[lastAtIndex+1:]
 
-	// Validate if factory exists in llm_factories table
-	// This matches Python's logic of checking against model providers
+	// 校验 @ 后缀是否为 llm_factories 中已注册厂商
 	var factoryCount int64
 	DB.Model(&entity.LLMFactories{}).Where("name = ?", factory).Count(&factoryCount)
 
-	// If factory doesn't exist in database, treat the whole string as model name
+	// 厂商不在库中则将整串当作模型名，厂商返回空
 	if factoryCount == 0 {
 		return modelName, ""
 	}
@@ -213,46 +197,27 @@ func splitModelNameAndFactory(modelName string) (string, string) {
 	return modelNamePart, factory
 }
 
-// GetByTenantIDAndLLMName gets tenant LLM by tenant ID and LLM name
-// This is used to resolve tenant_llm_id from llm_id
-// It supports both simple model names and factory-prefixed names (e.g., "gpt-4@OpenAI")
-//
-// Parameters:
-//   - tenantID: The tenant identifier
-//   - llmName: The LLM model name (can include factory prefix like "OpenAI@gpt-4")
-//
-// Returns:
-//   - *model.TenantLLM: The tenant LLM record
-//   - error: Error if not found
-//
-// Example:
-//
-//	// Simple model name
-//	tenantLLM, err := dao.GetByTenantIDAndLLMName("tenant123", "gpt-4")
-//
-//	// Model name with factory prefix
-//	tenantLLM, err := dao.GetByTenantIDAndLLMName("tenant123", "gpt-4@OpenAI")
+// GetByTenantIDAndLLMName 由 llm_id 解析 tenant_llm 记录，支持纯模型名或 model@factory 格式；LocalAI/HuggingFace/OpenAI-API-Compatible 另有 ___厂商 后缀特殊匹配。
 func (dao *TenantLLMDAO) GetByTenantIDAndLLMName(tenantID string, llmName string) (*entity.TenantLLM, error) {
 	var tenantLLM entity.TenantLLM
 
-	// Split model name and factory from the combined format
+	// 解析复合模型名
 	modelName, factory := splitModelNameAndFactory(llmName)
 
-	// First attempt: try to find with model name only
+	// 先仅用模型名查询
 	err := DB.Where("tenant_id = ? AND llm_name = ?", tenantID, modelName).First(&tenantLLM).Error
 	if err == nil {
 		return &tenantLLM, nil
 	}
 
-	// Second attempt: if factory is specified, try with both model name and factory
+	// 若指定厂商则用模型名+厂商联合查询
 	if factory != "" {
 		err = DB.Where("tenant_id = ? AND llm_name = ? AND llm_factory = ?", tenantID, modelName, factory).First(&tenantLLM).Error
 		if err == nil {
 			return &tenantLLM, nil
 		}
 
-		// Special handling for LocalAI and HuggingFace (matching Python logic)
-		// These factories append "___FactoryName" to the model name
+		// LocalAI/HuggingFace 等厂商在库内模型名带 ___厂商 后缀的特殊匹配
 		if factory == "LocalAI" || factory == "HuggingFace" || factory == "OpenAI-API-Compatible" {
 			specialModelName := modelName + "___" + factory
 			err = DB.Where("tenant_id = ? AND llm_name = ?", tenantID, specialModelName).First(&tenantLLM).Error
@@ -262,25 +227,11 @@ func (dao *TenantLLMDAO) GetByTenantIDAndLLMName(tenantID string, llmName string
 		}
 	}
 
-	// Return the last error (record not found)
+	// 全部尝试失败则返回未找到错误
 	return nil, err
 }
 
-// GetByTenantIDLLMNameAndFactory gets tenant LLM by tenant ID, LLM name and factory
-// This is used when model name includes factory suffix (e.g., "model@factory")
-//
-// Parameters:
-//   - tenantID: The tenant identifier
-//   - llmName: The LLM model name
-//   - factory: The LLM factory name
-//
-// Returns:
-//   - *model.TenantLLM: The tenant LLM record
-//   - error: Error if not found
-//
-// Example:
-//
-//	tenantLLM, err := dao.GetByTenantIDLLMNameAndFactory("tenant123", "gpt-4", "OpenAI")
+// GetByTenantIDLLMNameAndFactory 按租户、模型名与厂商三元组精确查询。
 func (dao *TenantLLMDAO) GetByTenantIDLLMNameAndFactory(tenantID, llmName, factory string) (*entity.TenantLLM, error) {
 	var tenantLLM entity.TenantLLM
 	err := DB.Where("tenant_id = ? AND llm_name = ? AND llm_factory = ?", tenantID, llmName, factory).First(&tenantLLM).Error
@@ -290,7 +241,7 @@ func (dao *TenantLLMDAO) GetByTenantIDLLMNameAndFactory(tenantID, llmName, facto
 	return &tenantLLM, nil
 }
 
-// LookupTenantLLMByID looks up a TenantLLM record by ID and returns the record plus composite model name.
+// LookupTenantLLMByID 按 ID 查找记录并返回 model@factory 复合名。
 func LookupTenantLLMByID(tenantLLMDao *TenantLLMDAO, id int64) (*entity.TenantLLM, string, error) {
 	tenantLLM, err := tenantLLMDao.GetByID(id)
 	if err != nil {
@@ -303,12 +254,12 @@ func LookupTenantLLMByID(tenantLLMDao *TenantLLMDAO, id int64) (*entity.TenantLL
 	return tenantLLM, compositeName, nil
 }
 
-// LookupTenantLLMByName looks up a TenantLLM record by tenant name and model type.
+// LookupTenantLLMByName 按租户、模型名与类型查找，名称含 @ 时走厂商分支。
 func LookupTenantLLMByName(tenantLLMDao *TenantLLMDAO, tenantID, name string, modelType entity.ModelType) (*entity.TenantLLM, string, error) {
-	// Parse factory from name if present (e.g., "model@Factory")
+	// 若名称含 @ 则解析厂商并委托 LookupTenantLLMByFactory
 	modelName, factory := splitModelNameAndFactory(name)
 
-	// If factory is found, use factory-based lookup
+	// 解析出有效厂商则按厂商路径查询
 	if factory != "" {
 		return LookupTenantLLMByFactory(tenantLLMDao, tenantID, factory, modelName, modelType)
 	}
@@ -324,7 +275,7 @@ func LookupTenantLLMByName(tenantLLMDao *TenantLLMDAO, tenantID, name string, mo
 	return tenantLLM, compositeName, nil
 }
 
-// LookupTenantLLMByFactory looks up a TenantLLM record by tenant, factory, and model name.
+// LookupTenantLLMByFactory 按租户、厂商与模型名查找并返回复合名。
 func LookupTenantLLMByFactory(tenantLLMDao *TenantLLMDAO, tenantID, factory, name string, modelType entity.ModelType) (*entity.TenantLLM, string, error) {
 	tenantLLM, err := tenantLLMDao.GetByTenantFactoryAndModelName(tenantID, factory, name)
 	if err != nil {

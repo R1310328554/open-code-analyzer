@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// tenant_model_group.go — 租户模型分组数据访问层：按主键查询 tenant_model_group 记录（当前为最小读接口）。
+
 //
 
 package dao
@@ -20,15 +22,15 @@ import (
 	"ragflow/internal/entity"
 )
 
-// TenantModelGroupDAO tenant model group data access object
+// TenantModelGroupDAO 租户模型分组表的数据访问对象。
 type TenantModelGroupDAO struct{}
 
-// NewTenantModelGroupDAO create tenant model group DAO
+// NewTenantModelGroupDAO 创建租户模型分组 DAO 实例。
 func NewTenantModelGroupDAO() *TenantModelGroupDAO {
 	return &TenantModelGroupDAO{}
 }
 
-// GetByID get tenant model group by primary key (id)
+// GetByID 按主键查询模型分组。
 func (dao *TenantModelGroupDAO) GetByID(id string) (*entity.TenantModelGroup, error) {
 	var group entity.TenantModelGroup
 	err := DB.Where("id = ?", id).First(&group).Error

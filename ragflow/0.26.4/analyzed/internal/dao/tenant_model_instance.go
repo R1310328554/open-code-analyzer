@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// tenant_model_instance.go — 租户模型实例数据访问层：管理 provider 下的 API 实例（含去重创建、按 Key 查询及批量枚举）。
+
 //
 
 package dao
@@ -24,16 +26,17 @@ import (
 	"gorm.io/gorm"
 )
 
-// TenantModelInstanceDAO tenant model instance data access object
+// TenantModelInstanceDAO 租户模型实例表的数据访问对象。
 type TenantModelInstanceDAO struct{}
 
-// NewTenantModelInstanceDAO create tenant model instance DAO
+// NewTenantModelInstanceDAO 创建模型实例 DAO 实例。
 func NewTenantModelInstanceDAO() *TenantModelInstanceDAO {
 	return &TenantModelInstanceDAO{}
 }
 
+// Create 在事务中创建实例，同一 provider 下 instance_name 不可重复。
 func (dao *TenantModelInstanceDAO) Create(instance *entity.TenantModelInstance) error {
-	// begin tx and check if the same provider instance exists
+	// 开启事务并检查同 provider 下是否已有同名实例
 	tx := DB.Begin()
 	defer tx.Rollback()
 	var existingInstance entity.TenantModelInstance
@@ -52,6 +55,7 @@ func (dao *TenantModelInstanceDAO) Create(instance *entity.TenantModelInstance) 
 	return nil
 }
 
+// GetAllInstancesByProviderID 列出指定 provider 下的全部实例。
 func (dao *TenantModelInstanceDAO) GetAllInstancesByProviderID(providerID string) ([]*entity.TenantModelInstance, error) {
 	var instances []*entity.TenantModelInstance
 	err := DB.Where("provider_id = ?", providerID).Find(&instances).Error
@@ -61,11 +65,7 @@ func (dao *TenantModelInstanceDAO) GetAllInstancesByProviderID(providerID string
 	return instances, nil
 }
 
-// GetByProviderIDs returns all TenantModelInstance rows whose provider_id
-// is in providerIDs. Mirrors Python's
-// TenantModelInstanceService.get_by_provider_ids used by
-// models_api_service.list_tenant_added_models. An empty input slice
-// returns an empty (non-nil) slice with no error.
+// GetByProviderIDs 批量按 provider_id 列表查询实例；空输入返回空切片，对齐 Python get_by_provider_ids。
 func (dao *TenantModelInstanceDAO) GetByProviderIDs(providerIDs []string) ([]*entity.TenantModelInstance, error) {
 	instances := make([]*entity.TenantModelInstance, 0)
 	if len(providerIDs) == 0 {
@@ -78,6 +78,7 @@ func (dao *TenantModelInstanceDAO) GetByProviderIDs(providerIDs []string) ([]*en
 	return instances, nil
 }
 
+// GetInstanceByApiKey 按 api_key 与 provider_id 查询实例。
 func (dao *TenantModelInstanceDAO) GetInstanceByApiKey(apiKey, providerID string) (*entity.TenantModelInstance, error) {
 	var instance entity.TenantModelInstance
 	err := DB.Where("api_key = ? && provider_id = ?", apiKey, providerID).First(&instance).Error
@@ -87,6 +88,7 @@ func (dao *TenantModelInstanceDAO) GetInstanceByApiKey(apiKey, providerID string
 	return &instance, nil
 }
 
+// GetByProviderIDAndInstanceName 按 provider 与 instance_name 精确查询。
 func (dao *TenantModelInstanceDAO) GetByProviderIDAndInstanceName(providerID, instanceName string) (*entity.TenantModelInstance, error) {
 	var instance entity.TenantModelInstance
 	err := DB.Where("provider_id = ? AND instance_name = ?", providerID, instanceName).First(&instance).Error
@@ -96,7 +98,7 @@ func (dao *TenantModelInstanceDAO) GetByProviderIDAndInstanceName(providerID, in
 	return &instance, nil
 }
 
-// GetByID get tenant model instance by primary key (id)
+// GetByID 按主键查询模型实例。
 func (dao *TenantModelInstanceDAO) GetByID(id string) (*entity.TenantModelInstance, error) {
 	var instance entity.TenantModelInstance
 	err := DB.Where("id = ?", id).First(&instance).Error
@@ -106,6 +108,7 @@ func (dao *TenantModelInstanceDAO) GetByID(id string) (*entity.TenantModelInstan
 	return &instance, nil
 }
 
+// DeleteByProviderIDAndInstanceName 按 provider 与 instance_name 硬删除。
 func (dao *TenantModelInstanceDAO) DeleteByProviderIDAndInstanceName(providerID, instanceName string) (int64, error) {
 	result := DB.Unscoped().Where("provider_id = ? and instance_name = ?", providerID, instanceName).Delete(&entity.TenantModelInstance{})
 	return result.RowsAffected, result.Error

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// system_settings.go — 系统设置数据访问层：读写全局键值配置，支持按名称/前缀/来源查询及事务内 upsert。
+
 //
 
 package dao
@@ -23,16 +25,15 @@ import (
 	"gorm.io/gorm"
 )
 
-// SystemSettingsDAO system settings data access object
+// SystemSettingsDAO 系统设置表的数据访问对象。
 type SystemSettingsDAO struct{}
 
-// NewSystemSettingsDAO create system settings DAO instance
+// NewSystemSettingsDAO 创建系统设置 DAO 实例。
 func NewSystemSettingsDAO() *SystemSettingsDAO {
 	return &SystemSettingsDAO{}
 }
 
-// GetAll get all system settings
-// Returns all system settings records from database
+// GetAll 按 name 升序返回全部系统设置记录。
 func (d *SystemSettingsDAO) GetAll() ([]entity.SystemSettings, error) {
 	var settings []entity.SystemSettings
 	err := DB.Order("name ASC").Find(&settings).Error
@@ -42,8 +43,7 @@ func (d *SystemSettingsDAO) GetAll() ([]entity.SystemSettings, error) {
 	return settings, nil
 }
 
-// GetByName get system settings by name
-// Returns settings records that match the given name
+// GetByName 按配置名精确查询（可能返回多条同名记录）。
 func (d *SystemSettingsDAO) GetByName(name string) ([]entity.SystemSettings, error) {
 	var settings []entity.SystemSettings
 	err := DB.Where("name = ?", name).Order("name ASC").Find(&settings).Error
@@ -53,8 +53,7 @@ func (d *SystemSettingsDAO) GetByName(name string) ([]entity.SystemSettings, err
 	return settings, nil
 }
 
-// GetByNamePrefix get system settings by name prefix
-// Returns settings records whose names start with the given prefix.
+// GetByNamePrefix 按名称前缀 LIKE 查询配置项。
 func (d *SystemSettingsDAO) GetByNamePrefix(namePrefix string) ([]entity.SystemSettings, error) {
 	var settings []entity.SystemSettings
 	err := DB.Where("name LIKE ?", namePrefix+"%").Order("name ASC").Find(&settings).Error
@@ -64,8 +63,7 @@ func (d *SystemSettingsDAO) GetByNamePrefix(namePrefix string) ([]entity.SystemS
 	return settings, nil
 }
 
-// UpdateByName update system settings by name
-// Updates the setting with the given name using the provided data
+// UpdateByName 按名称更新 value、source、data_type 字段。
 func (d *SystemSettingsDAO) UpdateByName(name string, setting *entity.SystemSettings) error {
 	return DB.Model(&entity.SystemSettings{}).
 		Where("name = ?", name).
@@ -76,14 +74,12 @@ func (d *SystemSettingsDAO) UpdateByName(name string, setting *entity.SystemSett
 		}).Error
 }
 
-// Create create a new system setting
-// Inserts a new system setting record into database
+// Create 插入新系统设置记录。
 func (d *SystemSettingsDAO) Create(setting *entity.SystemSettings) error {
 	return DB.Create(setting).Error
 }
 
-// SaveOrCreate update existing setting or create new one
-// If setting exists, updates it; otherwise creates a new record
+// SaveOrCreate 存在唯一同名记录则更新，否则新建；同名多于一条则报错。
 func (d *SystemSettingsDAO) SaveOrCreate(name string, value string, source string, dataType string) error {
 	settings, err := d.GetByName(name)
 	if err != nil {
@@ -109,19 +105,19 @@ func (d *SystemSettingsDAO) SaveOrCreate(name string, value string, source strin
 	return d.Create(newSetting)
 }
 
-// Count get total count of system settings
+// Count 返回系统设置总条数。
 func (d *SystemSettingsDAO) Count() (int64, error) {
 	var count int64
 	err := DB.Model(&entity.SystemSettings{}).Count(&count).Error
 	return count, err
 }
 
-// DeleteByName delete system setting by name
+// DeleteByName 按名称硬删除配置。
 func (d *SystemSettingsDAO) DeleteByName(name string) error {
 	return DB.Where("name = ?", name).Delete(&entity.SystemSettings{}).Error
 }
 
-// Exists check if setting exists by name
+// Exists 判断指定名称的配置是否存在。
 func (d *SystemSettingsDAO) Exists(name string) (bool, error) {
 	var count int64
 	err := DB.Model(&entity.SystemSettings{}).Where("name = ?", name).Count(&count).Error
@@ -131,7 +127,7 @@ func (d *SystemSettingsDAO) Exists(name string) (bool, error) {
 	return count > 0, nil
 }
 
-// GetBySource get system settings by source
+// GetBySource 按配置来源字段筛选。
 func (d *SystemSettingsDAO) GetBySource(source string) ([]entity.SystemSettings, error) {
 	var settings []entity.SystemSettings
 	err := DB.Where("source = ?", source).Find(&settings).Error
@@ -141,7 +137,7 @@ func (d *SystemSettingsDAO) GetBySource(source string) ([]entity.SystemSettings,
 	return settings, nil
 }
 
-// GetByDataType get system settings by data type
+// GetByDataType 按数据类型字段筛选。
 func (d *SystemSettingsDAO) GetByDataType(dataType string) ([]entity.SystemSettings, error) {
 	var settings []entity.SystemSettings
 	err := DB.Where("data_type = ?", dataType).Find(&settings).Error
@@ -151,17 +147,17 @@ func (d *SystemSettingsDAO) GetByDataType(dataType string) ([]entity.SystemSetti
 	return settings, nil
 }
 
-// Transaction execute operations in a transaction
+// Transaction 在数据库事务中执行回调。
 func (d *SystemSettingsDAO) Transaction(fn func(tx *gorm.DB) error) error {
 	return DB.Transaction(fn)
 }
 
-// CreateWithTx create setting within transaction
+// CreateWithTx 在事务内插入配置。
 func (d *SystemSettingsDAO) CreateWithTx(tx *gorm.DB, setting *entity.SystemSettings) error {
 	return tx.Create(setting).Error
 }
 
-// UpdateByNameWithTx update setting within transaction
+// UpdateByNameWithTx 在事务内按名称更新配置。
 func (d *SystemSettingsDAO) UpdateByNameWithTx(tx *gorm.DB, name string, setting *entity.SystemSettings) error {
 	return tx.Model(&entity.SystemSettings{}).
 		Where("name = ?", name).

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// tenant.go — 租户（Tenant）数据访问层：查询用户关联租户、所有者租户详情及租户 CRUD。
+
 //
 
 package dao
@@ -20,15 +22,15 @@ import (
 	"ragflow/internal/entity"
 )
 
-// TenantDAO tenant data access object
+// TenantDAO 租户表的数据访问对象。
 type TenantDAO struct{}
 
-// NewTenantDAO create tenant DAO
+// NewTenantDAO 创建租户 DAO 实例。
 func NewTenantDAO() *TenantDAO {
 	return &TenantDAO{}
 }
 
-// GetJoinedTenantsByUserID get joined tenants by user ID
+// GetJoinedTenantsByUserID 查询用户以 normal 角色加入的有效租户及默认模型 ID。
 func (dao *TenantDAO) GetJoinedTenantsByUserID(userID string) ([]*TenantWithRole, error) {
 	var results []*TenantWithRole
 
@@ -41,18 +43,25 @@ func (dao *TenantDAO) GetJoinedTenantsByUserID(userID string) ([]*TenantWithRole
 	return results, err
 }
 
-// TenantWithRole tenant with role information
+// TenantWithRole 用户加入租户时的联表视图（含角色与默认模型配置）。
 type TenantWithRole struct {
+	// TenantID 租户 ID
 	TenantID  string `gorm:"column:tenant_id" json:"tenant_id"`
+	// Name 租户名称
 	Name      string `gorm:"column:name" json:"name"`
+	// LLMID 默认大语言模型 ID
 	LLMID     string `gorm:"column:llm_id" json:"llm_id"`
+	// EmbDID 默认嵌入模型 ID
 	EmbDID    string `gorm:"column:embd_id" json:"embd_id"`
+	// ASRID 默认语音识别模型 ID
 	ASRID     string `gorm:"column:asr_id" json:"asr_id"`
+	// Img2TxtID 默认图生文模型 ID
 	Img2TxtID string `gorm:"column:img2txt_id" json:"img2txt_id"`
+	// Role 用户在租户中的角色
 	Role      string `gorm:"column:role" json:"role"`
 }
 
-// TenantInfo tenant information with role (for owner tenant)
+// TenantInfo 所有者租户的完整模型配置视图（含 rerank、TTS、OCR、parser_ids 等）。
 type TenantInfo struct {
 	TenantID  string  `gorm:"column:tenant_id" json:"tenant_id"`
 	Name      *string `gorm:"column:name" json:"name,omitempty"`
@@ -67,7 +76,7 @@ type TenantInfo struct {
 	Role      string  `gorm:"column:role" json:"role"`
 }
 
-// GetInfoByUserID get tenant information for the owner tenant of a user
+// GetInfoByUserID 查询用户作为 owner 的有效租户及完整模型配置。
 func (dao *TenantDAO) GetInfoByUserID(userID string) ([]*TenantInfo, error) {
 	var results []*TenantInfo
 
@@ -80,7 +89,7 @@ func (dao *TenantDAO) GetInfoByUserID(userID string) ([]*TenantInfo, error) {
 	return results, err
 }
 
-// GetByID gets tenant by ID
+// GetByID 按 ID 查询有效租户。
 func (dao *TenantDAO) GetByID(id string) (*entity.Tenant, error) {
 	var tenant entity.Tenant
 	err := DB.Where("id = ? AND status = ?", id, "1").First(&tenant).Error
@@ -90,22 +99,22 @@ func (dao *TenantDAO) GetByID(id string) (*entity.Tenant, error) {
 	return &tenant, nil
 }
 
-// Create creates a new tenant
+// Create 插入新租户记录。
 func (dao *TenantDAO) Create(tenant *entity.Tenant) error {
 	return DB.Create(tenant).Error
 }
 
-// Delete deletes a tenant by ID (soft delete)
+// Delete 软删除租户（status 置 0）。
 func (dao *TenantDAO) Delete(id string) error {
 	return DB.Model(&entity.Tenant{}).Where("id = ?", id).Update("status", "0").Error
 }
 
-// Update updates a tenant by ID
+// Update 按 ID 部分更新租户字段。
 func (dao *TenantDAO) Update(id string, updates map[string]interface{}) error {
 	return DB.Model(&entity.Tenant{}).Where("id = ?", id).Updates(updates).Error
 }
 
-// HardDelete hard deletes a tenant by ID
+// HardDelete 按 ID 物理删除租户。
 func (dao *TenantDAO) HardDelete(id string) error {
 	return DB.Unscoped().Where("id = ?", id).Delete(&entity.Tenant{}).Error
 }

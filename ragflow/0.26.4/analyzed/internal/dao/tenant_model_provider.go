@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// tenant_model_provider.go — 租户模型厂商数据访问层：管理租户已接入的 model provider 及 /api/v1/models 列表入口查询。
+
 //
 
 package dao
@@ -20,19 +22,20 @@ import (
 	"ragflow/internal/entity"
 )
 
-// TenantModelProviderDAO tenant model provider data access object
+// TenantModelProviderDAO 租户模型厂商表的数据访问对象。
 type TenantModelProviderDAO struct{}
 
-// NewTenantModelProviderDAO create tenant model provider DAO
+// NewTenantModelProviderDAO 创建模型厂商 DAO 实例。
 func NewTenantModelProviderDAO() *TenantModelProviderDAO {
 	return &TenantModelProviderDAO{}
 }
 
+// Create 插入租户与 model provider 的关联记录。
 func (dao *TenantModelProviderDAO) Create(provider *entity.TenantModelProvider) error {
 	return DB.Create(provider).Error
 }
 
-// GetByID get tenant model provider by primary key (id)
+// GetByID 按主键查询 provider 记录。
 func (dao *TenantModelProviderDAO) GetByID(id string) (*entity.TenantModelProvider, error) {
 	var provider entity.TenantModelProvider
 	err := DB.Where("id = ?", id).First(&provider).Error
@@ -42,7 +45,7 @@ func (dao *TenantModelProviderDAO) GetByID(id string) (*entity.TenantModelProvid
 	return &provider, nil
 }
 
-// GetByTenantIDAndProviderName get the providers by tenant ID and provider name
+// GetByTenantIDAndProviderName 按租户 ID 与 provider_name 精确查询。
 func (dao *TenantModelProviderDAO) GetByTenantIDAndProviderName(tenantID, providerName string) (*entity.TenantModelProvider, error) {
 	var provider entity.TenantModelProvider
 	err := DB.Where("tenant_id = ? AND provider_name = ?", tenantID, providerName).First(&provider).Error
@@ -52,19 +55,19 @@ func (dao *TenantModelProviderDAO) GetByTenantIDAndProviderName(tenantID, provid
 	return &provider, nil
 }
 
-// DeleteByTenantID deletes all model providers by tenant ID (hard delete)
+// DeleteByTenantID 按租户 ID 硬删除全部 provider 关联。
 func (dao *TenantModelProviderDAO) DeleteByTenantID(tenantID string) (int64, error) {
 	result := DB.Unscoped().Where("tenant_id = ?", tenantID).Delete(&entity.TenantModelProvider{})
 	return result.RowsAffected, result.Error
 }
 
-// DeleteByTenantID deletes all providers by tenant ID (hard delete)
+// DeleteByTenantIDAndProviderName 按租户与 provider_name 硬删除单条关联。
 func (dao *TenantModelProviderDAO) DeleteByTenantIDAndProviderName(tenantID, providerName string) (int64, error) {
 	result := DB.Unscoped().Where("tenant_id = ? AND provider_name = ?", tenantID, providerName).Delete(&entity.TenantModelProvider{})
 	return result.RowsAffected, result.Error
 }
 
-// ListByID list tenant model providers by ID
+// ListByID 返回指定租户已接入的全部 provider_name 列表。
 func (dao *TenantModelProviderDAO) ListByID(id string) ([]string, error) {
 	var providerNames []string
 	err := DB.Model(&entity.TenantModelProvider{}).
@@ -73,12 +76,7 @@ func (dao *TenantModelProviderDAO) ListByID(id string) ([]string, error) {
 	return providerNames, err
 }
 
-// GetByTenantID returns all TenantModelProvider rows for a tenant.
-// Mirrors Python's TenantModelProviderService.get_by_tenant_id and is the
-// entry point for /api/v1/models ("list all added models"). The Go port
-// uses this to enumerate which providers a tenant has linked before
-// fanning out to TenantModelInstanceDAO / TenantModelDAO for the joined
-// result.
+// GetByTenantID 返回租户下全部 provider 行，为 /api/v1/models 列表入口，对齐 Python get_by_tenant_id；后续再联查 instance 与 model 表组装完整响应。
 func (dao *TenantModelProviderDAO) GetByTenantID(tenantID string) ([]*entity.TenantModelProvider, error) {
 	var providers []*entity.TenantModelProvider
 	err := DB.Where("tenant_id = ?", tenantID).Find(&providers).Error

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// skill_search_config.go — 技能搜索配置数据访问层：管理租户/空间维度的向量检索参数、字段权重及默认配置懒创建。
+
 //
 
 package dao
@@ -22,11 +24,13 @@ import (
 	"strings"
 )
 
-// SkillSearchConfigDAO data access object for skill search config
+// SkillSearchConfigDAO 技能搜索配置表的数据访问对象。
 type SkillSearchConfigDAO struct{}
 
+// defaultSkillSpaceID 未指定 space_id 时的默认空间标识
 const defaultSkillSpaceID = "default"
 
+// normalizeSpaceID 去除首尾空白，空字符串回退为 defaultSkillSpaceID。
 func normalizeSpaceID(spaceID string) string {
 	spaceID = strings.TrimSpace(spaceID)
 	if spaceID == "" {
@@ -35,17 +39,17 @@ func normalizeSpaceID(spaceID string) string {
 	return spaceID
 }
 
-// NewSkillSearchConfigDAO creates a new SkillSearchConfigDAO
+// NewSkillSearchConfigDAO 创建技能搜索配置 DAO 实例。
 func NewSkillSearchConfigDAO() *SkillSearchConfigDAO {
 	return &SkillSearchConfigDAO{}
 }
 
-// Create creates a new skill search config
+// Create 插入新技能搜索配置。
 func (dao *SkillSearchConfigDAO) Create(config *entity.SkillSearchConfig) error {
 	return DB.Create(config).Error
 }
 
-// GetByID retrieves a skill search config by ID
+// GetByID 按主键查询有效（status=1）配置。
 func (dao *SkillSearchConfigDAO) GetByID(id string) (*entity.SkillSearchConfig, error) {
 	var config entity.SkillSearchConfig
 	err := DB.Where("id = ? AND status = ?", id, "1").First(&config).Error
@@ -55,7 +59,7 @@ func (dao *SkillSearchConfigDAO) GetByID(id string) (*entity.SkillSearchConfig, 
 	return &config, nil
 }
 
-// GetByTenantID retrieves a skill search config by tenant ID
+// GetByTenantID 按租户 ID 与空间 ID 查询单条有效配置。
 func (dao *SkillSearchConfigDAO) GetByTenantID(tenantID, spaceID string) (*entity.SkillSearchConfig, error) {
 	var config entity.SkillSearchConfig
 	err := DB.Where("tenant_id = ? AND space_id = ? AND status = ?", tenantID, normalizeSpaceID(spaceID), "1").First(&config).Error
@@ -65,16 +69,15 @@ func (dao *SkillSearchConfigDAO) GetByTenantID(tenantID, spaceID string) (*entit
 	return &config, nil
 }
 
-// GetLatestByTenantID retrieves the latest skill search config by tenant ID (ordered by update_time desc)
-// Prioritizes configs with non-empty embd_id to return user-saved configs over auto-created ones
+// GetLatestByTenantID 按 update_time 降序取最新配置；优先返回 embd_id 非空的用户保存配置，而非自动创建的占位记录。
 func (dao *SkillSearchConfigDAO) GetLatestByTenantID(tenantID, spaceID string) (*entity.SkillSearchConfig, error) {
 	var config entity.SkillSearchConfig
-	// First try to get the latest config with non-empty embd_id (user-saved config)
+	// 优先查找 embd_id 非空的用户保存配置
 	err := DB.Where("tenant_id = ? AND space_id = ? AND status = ? AND embd_id != ?", tenantID, normalizeSpaceID(spaceID), "1", "").Order("update_time desc").First(&config).Error
 	if err == nil {
 		return &config, nil
 	}
-	// If no user-saved config found, get any config
+	// 若无用户配置则回退为任意最新有效配置
 	err = DB.Where("tenant_id = ? AND space_id = ? AND status = ?", tenantID, normalizeSpaceID(spaceID), "1").Order("update_time desc").First(&config).Error
 	if err != nil {
 		return nil, err
@@ -82,7 +85,7 @@ func (dao *SkillSearchConfigDAO) GetLatestByTenantID(tenantID, spaceID string) (
 	return &config, nil
 }
 
-// GetByTenantAndEmbdID retrieves a skill search config by tenant ID and embedding ID
+// GetByTenantAndEmbdID 按租户、空间与 embedding 模型 ID 精确查询。
 func (dao *SkillSearchConfigDAO) GetByTenantAndEmbdID(tenantID, spaceID, embdID string) (*entity.SkillSearchConfig, error) {
 	var config entity.SkillSearchConfig
 	err := DB.Where("tenant_id = ? AND space_id = ? AND embd_id = ? AND status = ?", tenantID, normalizeSpaceID(spaceID), embdID, "1").First(&config).Error
@@ -92,7 +95,7 @@ func (dao *SkillSearchConfigDAO) GetByTenantAndEmbdID(tenantID, spaceID, embdID 
 	return &config, nil
 }
 
-// GetOrCreate retrieves existing config or creates default one
+// GetOrCreate 存在则返回，否则按租户+空间+embd_id 创建默认配置。
 func (dao *SkillSearchConfigDAO) GetOrCreate(tenantID, spaceID, embdID string) (*entity.SkillSearchConfig, error) {
 	spaceID = normalizeSpaceID(spaceID)
 	config, err := dao.GetByTenantAndEmbdID(tenantID, spaceID, embdID)
@@ -100,11 +103,11 @@ func (dao *SkillSearchConfigDAO) GetOrCreate(tenantID, spaceID, embdID string) (
 		return config, nil
 	}
 
-	// Create default config
+	// 组装默认 field_config 与相似度参数后入库
 	return dao.CreateWithTenantSpace(tenantID, spaceID, embdID)
 }
 
-// CreateWithTenantSpace creates a new config for tenant+space
+// CreateWithTenantSpace 为租户+空间创建带默认字段权重与阈值的配置。
 func (dao *SkillSearchConfigDAO) CreateWithTenantSpace(tenantID, spaceID, embdID string) (*entity.SkillSearchConfig, error) {
 	spaceID = normalizeSpaceID(spaceID)
 	defaultFieldConfig := entity.DefaultFieldConfig()
@@ -145,7 +148,7 @@ func (dao *SkillSearchConfigDAO) CreateWithTenantSpace(tenantID, spaceID, embdID
 	return defaultConfig, nil
 }
 
-// DeleteAllByTenantSpace deletes all configs for a tenant+space (for cleanup before creating new one)
+// DeleteAllByTenantSpace 软删除租户+空间下全部配置（新建前清理用）。
 func (dao *SkillSearchConfigDAO) DeleteAllByTenantSpace(tenantID, spaceID string) error {
 	spaceID = normalizeSpaceID(spaceID)
 	return DB.Model(&entity.SkillSearchConfig{}).
@@ -153,7 +156,7 @@ func (dao *SkillSearchConfigDAO) DeleteAllByTenantSpace(tenantID, spaceID string
 		Update("status", "0").Error
 }
 
-// DeleteAllByTenantSpaceExceptID deletes all active configs for a tenant+space except the specified ID
+// DeleteAllByTenantSpaceExceptID 软删除除指定 ID 外该租户+空间下的全部有效配置。
 func (dao *SkillSearchConfigDAO) DeleteAllByTenantSpaceExceptID(tenantID, spaceID, exceptID string) error {
 	spaceID = normalizeSpaceID(spaceID)
 	return DB.Model(&entity.SkillSearchConfig{}).
@@ -161,24 +164,24 @@ func (dao *SkillSearchConfigDAO) DeleteAllByTenantSpaceExceptID(tenantID, spaceI
 		Update("status", "0").Error
 }
 
-// Update updates a skill search config with the given updates map
+// Update 按 ID 部分更新有效配置。
 func (dao *SkillSearchConfigDAO) Update(id string, updates map[string]interface{}) error {
 	return DB.Model(&entity.SkillSearchConfig{}).Where("id = ? AND status = ?", id, "1").Updates(updates).Error
 }
 
-// UpdateByTenantID updates config by tenant ID
+// UpdateByTenantID 按租户+空间更新有效配置。
 func (dao *SkillSearchConfigDAO) UpdateByTenantID(tenantID, spaceID string, updates map[string]interface{}) error {
 	result := DB.Model(&entity.SkillSearchConfig{}).Where("tenant_id = ? AND space_id = ? AND status = ?", tenantID, normalizeSpaceID(spaceID), "1").Updates(updates)
 	return result.Error
 }
 
-// UpdateByTenantAndEmbdID updates config by tenant ID and embedding ID
+// UpdateByTenantAndEmbdID 按租户、空间与 embd_id 部分更新。
 func (dao *SkillSearchConfigDAO) UpdateByTenantAndEmbdID(tenantID, spaceID, embdID string, updates map[string]interface{}) error {
 	result := DB.Model(&entity.SkillSearchConfig{}).Where("tenant_id = ? AND space_id = ? AND embd_id = ? AND status = ?", tenantID, normalizeSpaceID(spaceID), embdID, "1").Updates(updates)
 	return result.Error
 }
 
-// Delete deletes a skill search config by ID (soft delete)
+// Delete 按 ID 软删除配置（status 置 0）。
 func (dao *SkillSearchConfigDAO) Delete(id string) error {
 	return DB.Model(&entity.SkillSearchConfig{}).Where("id = ?", id).Update("status", "0").Error
 }
