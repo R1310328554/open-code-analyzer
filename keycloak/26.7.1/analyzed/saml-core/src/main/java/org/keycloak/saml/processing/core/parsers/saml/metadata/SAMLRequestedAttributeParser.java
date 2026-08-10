@@ -26,22 +26,27 @@ import org.keycloak.saml.processing.core.parsers.saml.assertion.SAMLAssertionQNa
 import org.keycloak.saml.processing.core.parsers.saml.assertion.SAMLAttributeValueParser;
 
 /**
- * Parse the <conditions> in the saml assertion
+ * 解析 SAML 元数据 {@code RequestedAttribute} 元素。
+ * <p>读取属性名称、友好名、是否必需等属性，并解析 AttributeValue 子元素。</p>
  *
  * @since Oct 14, 2010
  */
 public class SAMLRequestedAttributeParser extends AbstractStaxSamlMetadataParser<RequestedAttributeType> {
 
+    /** 单例实例。 */
     private static final SAMLRequestedAttributeParser INSTANCE = new SAMLRequestedAttributeParser();
 
+    /** 私有构造，绑定 REQUESTED_ATTRIBUTE 根元素。 */
     private SAMLRequestedAttributeParser() {
         super(SAMLMetadataQNames.REQUESTED_ATTRIBUTE);
     }
 
+    /** @return 解析器单例 */
     public static SAMLRequestedAttributeParser getInstance() {
         return INSTANCE;
     }
 
+    /** 从起始元素属性创建请求属性对象。 */
     @Override
     protected RequestedAttributeType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         RequestedAttributeType attributeType = new RequestedAttributeType(StaxParserUtil.getRequiredAttributeValue(element, SAMLAssertionQNames.ATTR_NAME));
@@ -58,6 +63,7 @@ public class SAMLRequestedAttributeParser extends AbstractStaxSamlMetadataParser
         return attributeType;
     }
 
+    /** 解析 AttributeValue 子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, RequestedAttributeType target, SAMLMetadataQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

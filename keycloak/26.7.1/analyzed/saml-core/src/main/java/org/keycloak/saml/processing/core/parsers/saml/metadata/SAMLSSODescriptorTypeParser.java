@@ -8,14 +8,20 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import org.keycloak.saml.common.util.StaxParserUtil;
 
 /**
+ * 解析 SAML 元数据 SSO 描述符类型元素的抽象基类。
+ * <p>处理 Artifact 解析、单点登出、NameID 管理等服务端点及 NameID 格式子元素。</p>
+ *
+ * @param <T> SSO 描述符 Java 类型
  * @author mhajas
  */
 public abstract class SAMLSSODescriptorTypeParser<T extends SSODescriptorType> extends SAMLRoleDecriptorTypeParser<T> {
 
+    /** 构造并指定期望的 SSO 描述符根元素。 */
     public SAMLSSODescriptorTypeParser(SAMLMetadataQNames expectedStartElement) {
         super(expectedStartElement);
     }
 
+    /** 分发处理 SSO 相关服务端点及 NameID 格式子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, T target, SAMLMetadataQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

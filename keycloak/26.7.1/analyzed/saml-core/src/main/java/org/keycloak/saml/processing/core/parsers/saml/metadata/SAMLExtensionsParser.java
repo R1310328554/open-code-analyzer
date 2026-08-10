@@ -26,27 +26,33 @@ import org.keycloak.saml.processing.core.parsers.saml.mdattr.SAMLEntityAttribute
 import org.keycloak.saml.processing.core.parsers.saml.mdui.SAMLUIInfoParser;
 
 /**
- * Parses &lt;samlp:Extensions&gt; SAML2 element into series of DOM nodes.
+ * 解析 SAML 元数据 {@code Extensions} 元素。
+ * <p>将扩展内容解析为 DOM 节点序列，支持 UIInfo、EntityAttributes 等已知扩展。</p>
  *
  * @author hmlnarik
  */
 public class SAMLExtensionsParser extends AbstractStaxSamlMetadataParser<ExtensionsType> {
 
+    /** 单例实例。 */
     private static final SAMLExtensionsParser INSTANCE = new SAMLExtensionsParser();
 
+    /** 私有构造，绑定 EXTENSIONS 根元素。 */
     private SAMLExtensionsParser() {
         super(SAMLMetadataQNames.EXTENSIONS);
     }
 
+    /** @return 解析器单例 */
     public static SAMLExtensionsParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建空的扩展容器对象。 */
     @Override
     protected ExtensionsType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         return new ExtensionsType();
     }
 
+    /** 分发处理 UIInfo、EntityAttributes 或未知扩展子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, ExtensionsType target, SAMLMetadataQNames element,
         StartElement elementDetail) throws ParsingException {
