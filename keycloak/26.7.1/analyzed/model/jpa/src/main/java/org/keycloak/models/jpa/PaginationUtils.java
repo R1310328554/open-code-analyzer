@@ -19,15 +19,20 @@ package org.keycloak.models.jpa;
 
 import jakarta.persistence.TypedQuery;
 
+/**
+ * JPA 查询分页工具：统一处理 first/max 参数及 Hibernate 分页边界问题。
+ */
 public class PaginationUtils {
 
+    /** 未指定 max 时的默认上限，规避 HHH-14295 分页缺陷。 */
     public static final int DEFAULT_MAX_RESULTS = Integer.MAX_VALUE >> 1;
 
+    /** 对 TypedQuery 应用 offset/limit；first 有效且 max 缺失时使用 {@link #DEFAULT_MAX_RESULTS}。 */
     public static <T> TypedQuery<T> paginateQuery(TypedQuery<T> query, Integer first, Integer max) {
         if (first != null && first >= 0) {
             query = query.setFirstResult(first);
 
-            // Workaround for https://hibernate.atlassian.net/browse/HHH-14295
+            // Hibernate 在 setFirstResult 后必须 setMaxResults，否则可能抛出异常
             if (max == null || max < 0) {
                 max = DEFAULT_MAX_RESULTS;
             }

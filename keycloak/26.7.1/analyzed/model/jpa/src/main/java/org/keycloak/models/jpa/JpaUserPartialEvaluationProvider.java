@@ -46,6 +46,9 @@ import static org.keycloak.authorization.fgap.AdminPermissionsSchema.GROUPS_RESO
 import static org.keycloak.authorization.fgap.AdminPermissionsSchema.USERS_RESOURCE_TYPE;
 
 /**
+ * 用户查询的部分评估（FGAP）JPA 扩展：按允许/拒绝的组资源生成 Criteria 子查询过滤条件。
+ * 兼容 FGAP v1（session 属性）与 v2（PartialEvaluationContext）。
+ *
  * A {@link PartialEvaluationStorageProvider} that provides support for partial evaluation when querying {@link UserModel}.
  */
 public interface JpaUserPartialEvaluationProvider extends PartialEvaluationStorageProvider {
@@ -58,7 +61,7 @@ public interface JpaUserPartialEvaluationProvider extends PartialEvaluationStora
         KeycloakSession session = getSession();
 
         if (Profile.isFeatureEnabled(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ)) {
-            // support for FGAP v1, remove once v1 is removed
+            // FGAP v1：从 session 属性读取用户可见组集合
             Set<String> userGroups = (Set<String>) session.getAttribute(UserModel.GROUPS);
 
 
@@ -108,7 +111,7 @@ public interface JpaUserPartialEvaluationProvider extends PartialEvaluationStora
         Set<String> deniedGroups = context.getDeniedGroups();
 
         if (deniedGroups.contains(GROUPS_RESOURCE_TYPE)) {
-            // no access granted to group resources
+            // 拒绝访问组资源类型时的否定过滤逻辑
             Predicate notMembers = cb.not(cb.exists(createUserMembershipSubquery(context)));
 
             // access denied for the group resource type

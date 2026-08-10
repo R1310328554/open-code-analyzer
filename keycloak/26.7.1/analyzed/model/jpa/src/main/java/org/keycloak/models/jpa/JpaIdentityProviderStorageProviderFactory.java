@@ -22,7 +22,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
- * A JPA based implementation of {@link IdentityProviderStorageProviderFactory}.
+ * JPA 身份联邦存储 Provider 工厂，注册 ID 为 {@value #ID}。
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
@@ -30,6 +30,7 @@ public class JpaIdentityProviderStorageProviderFactory implements IdentityProvid
 
     public static final String ID = "jpa";
 
+    /** 为当前会话创建 JPA 身份提供者存储实例。 */
     @Override
     public JpaIdentityProviderStorageProvider create(KeycloakSession session) {
         return new JpaIdentityProviderStorageProvider(session);
@@ -47,6 +48,7 @@ public class JpaIdentityProviderStorageProviderFactory implements IdentityProvid
     public void close() {
     }
 
+    /** 获取 Id。 */
     @Override
     public String getId() {
         return ID;

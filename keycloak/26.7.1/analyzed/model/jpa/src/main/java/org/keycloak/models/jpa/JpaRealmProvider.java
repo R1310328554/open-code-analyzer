@@ -90,14 +90,21 @@ import static org.keycloak.utils.StreamsUtil.closing;
 
 
 /**
+ * JPA 核心 Realm Provider：同时实现 Realm、Client、ClientScope、Group、Role 与部署状态接口。
+ * 是 JPA 模型层的中枢，负责 realm 生命周期、角色/组/客户端 scope 及本地化文本等持久化操作。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientScopeProvider, GroupProvider, RoleProvider, DeploymentStateProvider {
     protected static final Logger logger = Logger.getLogger(JpaRealmProvider.class);
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** JPA EntityManager。 */
     protected EntityManager em;
+    /** 客户端属性搜索白名单。 */
     private Set<String> clientSearchableAttributes;
+    /** 组属性搜索白名单。 */
     private Set<String> groupSearchableAttributes;
 
     public JpaRealmProvider(KeycloakSession session, EntityManager em, Set<String> clientSearchableAttributes, Set<String> groupSearchableAttributes) {
@@ -107,6 +114,9 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         this.groupSearchableAttributes = groupSearchableAttributes;
     }
 
+    // ========== Realm 生命周期 ==========
+
+    /** 获取 MigrationModel。 */
     @Override
     public MigrationModel getMigrationModel() {
         return new MigrationModelAdapter(em);
@@ -117,6 +127,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return createRealm(KeycloakModelUtils.generateId(), name);
     }
 
+    /** 创建 Realm。 */
     @Override
     public RealmModel createRealm(String id, String name) {
         RealmEntity realm = new RealmEntity();
@@ -126,6 +137,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         em.flush();
         final RealmModel adapter = new RealmAdapter(session, em, realm);
         session.getKeycloakSessionFactory().publish(new RealmModel.RealmCreationEvent() {
+            /** 获取 CreatedRealm。 */
             @Override
             public RealmModel getCreatedRealm() {
                 return adapter;
@@ -138,6 +150,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return adapter;
     }
 
+    /** 获取 Realm。 */
     @Override
     public RealmModel getRealm(String id) {
         RealmEntity realm = em.find(RealmEntity.class, id);
@@ -146,6 +159,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return adapter;
     }
 
+    /** 获取 RealmsWithProviderTypeStream。 */
     @Override
     public Stream<RealmModel> getRealmsWithProviderTypeStream(Class<?> providerType) {
         TypedQuery<String> query = em.createNamedQuery("getRealmIdsWithProviderType", String.class);
@@ -153,6 +167,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return getRealms(query);
     }
 
+    /** 获取 RealmsStream。 */
     @Override
     public Stream<RealmModel> getRealmsStream() {
         TypedQuery<String> query = em.createNamedQuery("getAllRealmIds", String.class);
@@ -173,6 +188,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return closing(query.getResultStream().map(session.realms()::getRealm).filter(Objects::nonNull));
     }
 
+    /** 获取 RealmByName。 */
     @Override
     public RealmModel getRealmByName(String name) {
         TypedQuery<String> query = em.createNamedQuery("getRealmIdByName", String.class);
@@ -185,6 +201,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return session.realms().getRealm(id);
     }
 
+    /** 移除 Realm。 */
     @Override
     public boolean removeRealm(String id) {
         RealmEntity realm = em.find(RealmEntity.class, id, LockModeType.PESSIMISTIC_WRITE);
@@ -205,7 +222,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         session.clientScopes().removeClientScopes(adapter);
         session.roles().removeRoles(adapter);
 
-        // Remove groups before organizations to avoid FK constraint violations
+        // 先删组再删组织，避免外键约束冲突
         session.groups().preRemove(adapter);
 
         em.createNamedQuery("deleteOrganizationDomainsByRealm")
@@ -225,6 +242,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         em.clear();
 
         session.getKeycloakSessionFactory().publish(new RealmModel.RealmRemovedEvent() {
+            /** 获取 Realm。 */
             @Override
             public RealmModel getRealm() {
                 return adapter;
@@ -239,15 +257,19 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return true;
     }
 
+    /** 关闭 Provider，JPA 实现无需释放资源。 */
     @Override
     public void close() {
     }
+
+    // ========== 角色管理 ==========
 
     @Override
     public RoleModel addRealmRole(RealmModel realm, String name) {
        return addRealmRole(realm, KeycloakModelUtils.generateId(), name);
 
     }
+    /** 添加 RealmRole。 */
     @Override
     public RoleModel addRealmRole(RealmModel realm, String id, String name) {
         if (getRealmRole(realm, name) != null) {
@@ -264,6 +286,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
 
     }
 
+    /** 获取 RealmRole。 */
     @Override
     public RoleModel getRealmRole(RealmModel realm, String name) {
         TypedQuery<String> query = em.createNamedQuery("getRealmRoleIdByName", String.class);
@@ -274,6 +297,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return session.roles().getRoleById(realm, roles.get(0));
     }
 
+    /** 添加 ClientRole。 */
     @Override
     public RoleModel addClientRole(ClientModel client, String name) {
         return addClientRole(client, KeycloakModelUtils.generateId(), name);
@@ -295,6 +319,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return adapter;
     }
 
+    /** 获取 RealmRolesStream。 */
     @Override
     public Stream<RoleModel> getRealmRolesStream(RealmModel realm) {
         TypedQuery<String> query = em.createNamedQuery("getRealmRoleIds", String.class);
@@ -304,6 +329,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return closing(roles.map(realm::getRoleById).filter(Objects::nonNull));
     }
 
+    /** 获取 ClientRole。 */
     @Override
     public RoleModel getClientRole(ClientModel client, String name) {
         TypedQuery<String> query = em.createNamedQuery("getClientRoleIdByName", String.class);
@@ -314,6 +340,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return session.roles().getRoleById(client.getRealm(), roles.get(0));
     }
 
+    /** 获取 AllRedirectUrisOfEnabledClients。 */
     @Override
     public Map<ClientModel, Set<String>> getAllRedirectUrisOfEnabledClients(RealmModel realm) {
         TypedQuery<Map> query = em.createNamedQuery("getAllRedirectUrisOfEnabledClients", Map.class);
@@ -329,6 +356,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
 
     }
 
+    /** 获取 RealmRolesStream。 */
     @Override
     public Stream<RoleModel> getRealmRolesStream(RealmModel realm, Integer first, Integer max) {
         TypedQuery<RoleEntity> query = em.createNamedQuery("getRealmRoles", RoleEntity.class);
@@ -337,6 +365,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return getRolesStream(query, realm, first, max);
     }
 
+    /** 获取 RolesStream。 */
     @Override
     public Stream<RoleModel> getRolesStream(RealmModel realm, Stream<String> ids, String search, Integer first, Integer max) {
         if (ids == null) return Stream.empty();
@@ -357,6 +386,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                 .map(g -> session.roles().getRoleById(realm, g)).filter(Objects::nonNull);
     }
 
+    /** 搜索 ForClientRolesStream。 */
     @Override
     public Stream<RoleModel> searchForClientRolesStream(RealmModel realm, Stream<String> ids, String search, Integer first, Integer max) {
         return searchForClientRolesStream(realm, ids, search, first, max, false);
@@ -404,6 +434,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
     }
 
 
+    /** 获取 ClientRolesStream。 */
     @Override
     public Stream<RoleModel> getClientRolesStream(ClientModel client, Integer first, Integer max) {
         TypedQuery<RoleEntity> query = em.createNamedQuery("getClientRoles", RoleEntity.class);
@@ -418,6 +449,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return closing(results.map(role -> new RoleAdapter(session, realm, em, role)));
     }
 
+    /** 搜索 ForClientRolesStream。 */
     @Override
     public Stream<RoleModel> searchForClientRolesStream(ClientModel client, String search, Integer first, Integer max) {
         TypedQuery<RoleEntity> query = em.createNamedQuery("searchForClientRoles", RoleEntity.class);
@@ -425,6 +457,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return searchForRoles(query, client.getRealm(), search, first, max);
     }
 
+    /** 搜索 ForRolesStream。 */
     @Override
     public Stream<RoleModel> searchForRolesStream(RealmModel realm, String search, Integer first, Integer max) {
         TypedQuery<RoleEntity> query = em.createNamedQuery("searchForRealmRoles", RoleEntity.class);
@@ -440,6 +473,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return closing(results.map(role -> new RoleAdapter(session, realm, em, role)));
     }
 
+    /** 移除 Role。 */
     @Override
     public boolean removeRole(RoleModel role) {
         RealmModel realm;
@@ -472,6 +506,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
 
     public RoleRemovedEvent roleRemovedEvent(RoleModel role) {
         return new RoleContainerModel.RoleRemovedEvent() {
+            /** 获取 Role。 */
             @Override
             public RoleModel getRole() {
                 return role;
@@ -484,6 +519,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         };
     }
 
+    /** 移除 Roles。 */
     @Override
     public void removeRoles(RealmModel realm) {
         // No need to go through cache. Roles were already invalidated
@@ -496,6 +532,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         client.getRolesStream().forEach(this::removeRole);
     }
 
+    /** 获取 RoleById。 */
     @Override
     public RoleModel getRoleById(RealmModel realm, String id) {
         RoleEntity entity = em.find(RoleEntity.class, id);
@@ -505,6 +542,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return adapter;
     }
 
+    /** 获取 CompositeRolesStream。 */
     @Override
     public Stream<RoleModel> getCompositeRolesStream(RealmModel realm, Set<String> parentRoleIds) {
         if (parentRoleIds == null || parentRoleIds.isEmpty()) {
@@ -521,6 +559,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                 .filter(Objects::nonNull);
     }
 
+    /** 获取 GroupById。 */
     @Override
     public GroupModel getGroupById(RealmModel realm, String id) {
         GroupEntity groupEntity = em.find(GroupEntity.class, id);
@@ -530,6 +569,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return adapter;
     }
 
+    /** 获取 GroupByName。 */
     @Override
     public GroupModel getGroupByName(RealmModel realm, GroupModel parent, String name) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
@@ -557,6 +597,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return session.groups().getGroupById(realm, groups.get(0));
     }
 
+    /** moveGroup 操作。 */
     @Override
     public void moveGroup(RealmModel realm, GroupModel group, GroupModel toParent) {
         if (toParent != null && group.getId().equals(toParent.getId())) {
@@ -584,6 +625,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         fireGroupUpdatedEvent(group);
     }
 
+    /** 获取 GroupsStream。 */
     @Override
     public Stream<GroupModel> getGroupsStream(RealmModel realm) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
@@ -606,6 +648,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                 .filter(Objects::nonNull);
     }
 
+    /** 获取 GroupsStream。 */
     @Override
     public Stream<GroupModel> getGroupsStream(RealmModel realm, Stream<String> ids, String search, Integer first, Integer max) {
         if (search == null || search.isEmpty()) return getGroupsStream(realm, ids, first, max);
@@ -637,6 +680,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                 .filter(Objects::nonNull);
     }
 
+    /** 获取 GroupsStream。 */
     @Override
     public Stream<GroupModel> getGroupsStream(RealmModel realm, Stream<String> ids, Integer first, Integer max) {
         if (first == null && max == null) {
@@ -669,6 +713,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                 .filter(Objects::nonNull);
     }
 
+    /** 获取 GroupsStream。 */
     @Override
     public Stream<GroupModel> getGroupsStream(RealmModel realm, Stream<String> ids) {
         return ids.map(id -> session.groups().getGroupById(realm, id)).filter(Objects::nonNull).sorted(GroupModel.COMPARE_BY_NAME);
@@ -700,6 +745,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return em.createQuery(queryBuilder).getSingleResult();
     }
 
+    /** 获取 GroupsCount。 */
     @Override
     public Long getGroupsCount(RealmModel realm, Boolean onlyTopGroups) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
@@ -724,6 +770,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return em.createQuery(queryBuilder).getSingleResult();
     }
 
+    /** 获取 ClientsCount。 */
     @Override
     public long getClientsCount(RealmModel realm) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
@@ -743,6 +790,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return em.createQuery(queryBuilder).getSingleResult();
     }
 
+    /** 获取 GroupsCountByNameContaining。 */
     @Override
     public Long getGroupsCountByNameContaining(RealmModel realm, String search) {
         return searchForGroupByNameStream(realm, search, false, null, null).count();
@@ -760,6 +808,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                 .sorted(GroupModel.COMPARE_BY_NAME));
     }
 
+    /** 获取 TopLevelGroupsStream。 */
     @Override
     public Stream<GroupModel> getTopLevelGroupsStream(RealmModel realm, String search, Boolean exact, Integer firstResult, Integer maxResults) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
@@ -792,6 +841,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         );
     }
 
+    /** 移除 Group。 */
     @Override
     public boolean removeGroup(RealmModel realm, GroupModel group) {
         if (group == null) {
@@ -799,6 +849,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         }
 
         GroupModel.GroupRemovedEvent event = new GroupModel.GroupRemovedEvent() {
+            /** 获取 Realm。 */
             @Override
             public RealmModel getRealm() {
                 return realm;
@@ -809,6 +860,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                 return group;
             }
 
+            /** 获取 KeycloakSession。 */
             @Override
             public KeycloakSession getKeycloakSession() {
                 return session;
@@ -834,6 +886,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
 
     }
 
+    /** 创建 Group。 */
     @Override
     public GroupModel createGroup(RealmModel realm, String id, Type type, String name, GroupModel toParent) {
         if (id == null) {
@@ -861,6 +914,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return group;
     }
 
+    /** 添加 TopLevelGroup。 */
     @Override
     public void addTopLevelGroup(RealmModel realm, GroupModel subGroup) {
         subGroup.setParent(null);
@@ -877,6 +931,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         em.createNativeQuery("delete from " + clientScopeMapping + " where ROLE_ID = :role").setParameter("role", role.getId()).executeUpdate();
     }
 
+    /** preRemove 操作。 */
     @Override
     public void preRemove(RealmModel realm) {
         em.createNamedQuery("deleteGroupRoleMappingsByRealm")
@@ -887,6 +942,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                 .setParameter("realm", realm.getId()).executeUpdate();
     }
 
+    /** 添加 Client。 */
     @Override
     public ClientModel addClient(RealmModel realm, String clientId) {
         return addClient(realm, KeycloakModelUtils.generateId(), clientId);
@@ -919,6 +975,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         resource = toClientModel(realm, entity);
 
         session.getKeycloakSessionFactory().publish(new ClientModel.ClientCreationEvent() {
+            /** 获取 CreatedClient。 */
             @Override
             public ClientModel getCreatedClient() {
                 return resource;
@@ -932,6 +989,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return resource;
     }
 
+    /** 获取 ClientsStream。 */
     @Override
     public Stream<ClientModel> getClientsStream(RealmModel realm) {
         return getClientsStream(realm, null, null);
@@ -959,6 +1017,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return paginateQuery(em.createQuery(queryBuilder), firstResult, maxResults).getResultStream();
     }
 
+    /** 获取 AlwaysDisplayInConsoleClientsStream。 */
     @Override
     public Stream<ClientModel> getAlwaysDisplayInConsoleClientsStream(RealmModel realm) {
         TypedQuery<String> query = em.createNamedQuery("getAlwaysDisplayInConsoleClients", String.class);
@@ -968,6 +1027,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return closing(clientStream.map(c -> session.clients().getClientById(realm, c)).filter(Objects::nonNull));
     }
 
+    /** 获取 ClientById。 */
     @Override
     public ClientModel getClientById(RealmModel realm, String id) {
         logger.tracef("getClientById(%s, %s)%s", realm, id, getShortStackTrace());
@@ -989,6 +1049,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         }
     }
 
+    /** 获取 ClientByClientId。 */
     @Override
     public ClientModel getClientByClientId(RealmModel realm, String clientId) {
         logger.tracef("getClientByClientId(%s, %s)%s", realm, clientId, getShortStackTrace());
@@ -1002,6 +1063,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return session.clients().getClientById(realm, id);
     }
 
+    /** 搜索 ClientsByClientIdStream。 */
     @Override
     public Stream<ClientModel> searchClientsByClientIdStream(RealmModel realm, String clientId, Integer firstResult, Integer maxResults) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
@@ -1022,6 +1084,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return closing(results.map(id -> new ClientModelLazyDelegate.WithId(session, realm, id)));
     }
 
+    /** 搜索 ClientsByAttributes。 */
     @Override
     public Stream<ClientModel> searchClientsByAttributes(RealmModel realm, Map<String, String> attributes, Integer firstResult, Integer maxResults) {
         Map<String, String> filteredAttributes = attributes;
@@ -1084,6 +1147,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                 .map(id -> session.clients().getClientById(realm, id)).filter(Objects::nonNull);
     }
 
+    /** 搜索 ClientsByAuthenticationFlowBindingOverrides。 */
     @Override
     public Stream<ClientModel> searchClientsByAuthenticationFlowBindingOverrides(RealmModel realm, Map<String, String> overrides, Integer firstResult, Integer maxResults) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
@@ -1129,6 +1193,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                 .map(id -> session.clients().getClientById(realm, id)).filter(Objects::nonNull);
     }
 
+    /** 移除 Clients。 */
     @Override
     public void removeClients(RealmModel realm) {
         closing(getClientIdsStream(realm, -1, -1)).forEach((id) -> removeClient(realm, id));
@@ -1148,6 +1213,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         ClientEntity clientEntity = em.find(ClientEntity.class, id, LockModeType.PESSIMISTIC_WRITE);
 
         session.getKeycloakSessionFactory().publish(new ClientModel.ClientRemovedEvent() {
+            /** 获取 Client。 */
             @Override
             public ClientModel getClient() {
                 return client;
@@ -1174,6 +1240,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return true;
     }
 
+    /** 获取 ClientScopeById。 */
     @Override
     public ClientScopeModel getClientScopeById(RealmModel realm, String id) {
         ClientScopeEntity clientScope = em.find(ClientScopeEntity.class, id);
@@ -1184,6 +1251,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return adapter;
     }
 
+    /** 获取 ClientScopesStream。 */
     @Override
     public Stream<ClientScopeModel> getClientScopesStream(RealmModel realm) {
         TypedQuery<String> query = em.createNamedQuery("getClientScopeIds", String.class);
@@ -1193,6 +1261,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return closing(scopes.map(realm::getClientScopeById).filter(Objects::nonNull));
     }
 
+    /** 添加 ClientScope。 */
     @Override
     public ClientScopeModel addClientScope(RealmModel realm, String id, String name) {
         if (id == null) {
@@ -1208,6 +1277,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         ClientScopeModel clientScope = new ClientScopeAdapter(realm, em, session, entity);
         session.getKeycloakSessionFactory().publish(new ClientScopeModel.ClientScopeCreatedEvent() {
 
+            /** 获取 KeycloakSession。 */
             @Override
             public KeycloakSession getKeycloakSession() {
                 return session;
@@ -1223,6 +1293,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return clientScope;
     }
 
+    /** 移除 ClientScope。 */
     @Override
     public boolean removeClientScope(RealmModel realm, String id) {
         if (id == null) return false;
@@ -1239,6 +1310,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
 
         session.getKeycloakSessionFactory().publish(new ClientScopeModel.ClientScopeRemovedEvent() {
 
+            /** 获取 KeycloakSession。 */
             @Override
             public KeycloakSession getKeycloakSession() {
                 return session;
@@ -1254,6 +1326,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return true;
     }
 
+    /** 移除 ClientScopes。 */
     @Override
     public void removeClientScopes(RealmModel realm) {
         // No need to go through cache. Client scopes were already invalidated
@@ -1292,6 +1365,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
      * @param useOr     If the search-params should be combined with or-expressions or and-expressions
      * @return a stream of clientScopes matching the given criteria
      */
+    /** 获取 ClientScopesByAttributes。 */
     @Override
     public Stream<ClientScopeModel> getClientScopesByAttributes(RealmModel realm, Map<String, String> searchMap,
                                                                 boolean useOr) {
@@ -1336,6 +1410,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                     .getResultStream().map(scope -> new ClientScopeAdapter(realm, em, session, scope));
     }
 
+    /** 添加 ClientScopes。 */
     @Override
     public void addClientScopes(RealmModel realm, ClientModel client, Set<ClientScopeModel> clientScopes, boolean defaultScope) {
         List<String> acceptedClientProtocols = KeycloakModelUtils.getAcceptedClientScopeProtocols(client);
@@ -1366,6 +1441,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         }
     }
 
+    /** 移除 ClientScope。 */
     @Override
     public void removeClientScope(RealmModel realm, ClientModel client, ClientScopeModel clientScope) {
         em.createNamedQuery("deleteClientScopeClientMapping")
@@ -1375,6 +1451,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         em.flush();
     }
 
+    /** 添加 ClientScopeToAllClients。 */
     @Override
     public void addClientScopeToAllClients(RealmModel realm, ClientScopeModel clientScope, boolean defaultClientScope) {
         if (realm.equals(clientScope.getRealm())) {
@@ -1387,6 +1464,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         }
     }
 
+    /** 获取 ClientScopes。 */
     @Override
     public Map<String, ClientScopeModel> getClientScopes(RealmModel realm, ClientModel client, boolean defaultScope) {
         List<String> acceptedClientProtocols = KeycloakModelUtils.getAcceptedClientScopeProtocols(client);
@@ -1401,6 +1479,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                 .filter(clientScope -> acceptedClientProtocols.contains(clientScope.getProtocol()))
                 .collect(Collectors.toMap(ClientScopeModel::getName, Function.identity()));
     }
+    /** 搜索 ForGroupByNameStream。 */
     @Override
     public Stream<GroupModel> searchForGroupByNameStream(RealmModel realm, String search, Boolean exact, Integer first, Integer max) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
@@ -1432,6 +1511,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                 .distinct());
     }
 
+    /** 搜索 GroupsByAttributes。 */
     @Override
     public Stream<GroupModel> searchGroupsByAttributes(RealmModel realm, Map<String, String> attributes, Integer firstResult, Integer maxResults) {
         Map<String, String> filteredAttributes = groupSearchableAttributes == null || groupSearchableAttributes.isEmpty()
@@ -1472,6 +1552,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
                 .map(g -> new GroupAdapter(session, realm, em, g));
     }
 
+    /** 移除 ExpiredClientInitialAccess。 */
     @Override
     public void removeExpiredClientInitialAccess() {
         int currentTime = Time.currentTime();
@@ -1488,6 +1569,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return em.find(RealmLocalizationTextsEntity.class, key);
     }
 
+    /** 更新 LocalizationText。 */
     @Override
     public boolean updateLocalizationText(RealmModel realm, String locale, String key, String text) {
         RealmLocalizationTextsEntity entity = getRealmLocalizationTextsEntity(locale, realm.getId());
@@ -1501,6 +1583,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         }
     }
 
+    /** saveLocalizationText 操作。 */
     @Override
     public void saveLocalizationText(RealmModel realm, String locale, String key, String text) {
         RealmLocalizationTextsEntity entity = getRealmLocalizationTextsEntity(locale, realm.getId());
@@ -1514,6 +1597,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         em.persist(entity);
     }
 
+    /** saveLocalizationTexts 操作。 */
     @Override
     public void saveLocalizationTexts(RealmModel realm, String locale, Map<String, String> localizationTexts) {
         RealmLocalizationTextsEntity entity = new RealmLocalizationTextsEntity();
@@ -1523,6 +1607,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         em.merge(entity);
     }
 
+    /** 删除 LocalizationTextsByLocale。 */
     @Override
     public boolean deleteLocalizationTextsByLocale(RealmModel realm, String locale) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
@@ -1537,6 +1622,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return linesUpdated == 1?true:false;
     }
 
+    /** 获取 LocalizationTextsById。 */
     @Override
     public String getLocalizationTextsById(RealmModel realm, String locale, String key) {
         RealmLocalizationTextsEntity entity = getRealmLocalizationTextsEntity(locale, realm.getId());
@@ -1546,6 +1632,7 @@ public class JpaRealmProvider implements RealmProvider, ClientProvider, ClientSc
         return null;
     }
 
+    /** 删除 LocalizationText。 */
     @Override
     public boolean deleteLocalizationText(RealmModel realm, String locale, String key) {
         RealmLocalizationTextsEntity entity = getRealmLocalizationTextsEntity(locale, realm.getId());

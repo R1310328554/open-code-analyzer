@@ -30,6 +30,8 @@ import static org.keycloak.models.jpa.JpaRealmProviderFactory.PROVIDER_ID;
 import static org.keycloak.models.jpa.JpaRealmProviderFactory.PROVIDER_PRIORITY;
 
 /**
+ * JPA 用户凭据存储工厂：为会话创建 {@link JpaUserCredentialStore}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -44,11 +46,13 @@ public class JpaUserCredentialStoreFactory implements ProviderFactory<UserCreden
 
     }
 
+    /** 获取 Id。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 绑定当前 EntityManager 创建凭据存储 Provider。 */
     @Override
     public UserCredentialStore create(KeycloakSession session) {
         EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();

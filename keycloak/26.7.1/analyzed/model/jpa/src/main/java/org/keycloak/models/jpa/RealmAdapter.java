@@ -98,21 +98,32 @@ import static java.util.Objects.nonNull;
 import static org.keycloak.utils.StreamsUtil.closing;
 
 /**
+ * Realm 领域模型 JPA 适配器：将 {@link RealmEntity} 映射为 {@link RealmModel} API。
+ * 封装 realm 配置、认证流、组件、OTP/WebAuthn 策略、本地化及客户端/组/角色等关联访问。
+ * 写操作直接修改 JPA 实体并在 flush 时持久化。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEntity> {
     protected static final Logger logger = Logger.getLogger(RealmAdapter.class);
+    /** 底层 Realm JPA 实体。 */
     protected RealmEntity realm;
+    /** JPA EntityManager。 */
     protected EntityManager em;
+    /** 当前 Keycloak 会话。 */
     protected KeycloakSession session;
+
+    // ========== 基本属性 ==========
 
     @Override
     public Long getClientsCount() {
         return session.clients().getClientsCount(this);
     }
 
+    /** 延迟解析的密码策略缓存。 */
     private PasswordPolicy passwordPolicy;
+    /** 延迟解析的 OTP 策略缓存。 */
     private OTPPolicy otpPolicy;
 
     public RealmAdapter(KeycloakSession session, EntityManager em, RealmEntity realm) {
@@ -121,6 +132,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         this.realm = realm;
     }
 
+    /** 返回底层 {@link RealmEntity}，供 JPA Provider 直接访问。 */
     @Override
     public RealmEntity getEntity() {
         return realm;
@@ -136,6 +148,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.getName();
     }
 
+    /** 设置 Name。 */
     @Override
     public void setName(String name) {
         realm.setName(name);
@@ -152,6 +165,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         realm.setDisplayName(displayName);
     }
 
+    /** 获取 DisplayNameHtml。 */
     @Override
     public String getDisplayNameHtml() {
         return getAttribute(RealmAttributes.DISPLAY_NAME_HTML);
@@ -167,6 +181,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.isEnabled();
     }
 
+    /** 设置 Enabled。 */
     @Override
     public void setEnabled(boolean enabled) {
         realm.setEnabled(enabled);
@@ -184,6 +199,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 判断 UserManagedAccessAllowed 是否为真。 */
     @Override
     public boolean isUserManagedAccessAllowed() {
         return realm.isAllowUserManagedAccess();
@@ -200,6 +216,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.isRegistrationAllowed();
     }
 
+    /** 设置 RegistrationAllowed。 */
     @Override
     public void setRegistrationAllowed(boolean registrationAllowed) {
         realm.setRegistrationAllowed(registrationAllowed);
@@ -218,6 +235,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 判断 RememberMe 是否为真。 */
     @Override
     public boolean isRememberMe() {
         return realm.isRememberMe();
@@ -245,6 +263,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         realm.getAttributes().add(attr);
     }
 
+    /** 移除 Attribute。 */
     @Override
     public void removeAttribute(String name) {
         Iterator<RealmAttributeEntity> it = realm.getAttributes().iterator();
@@ -267,6 +286,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return null;
     }
 
+    /** 获取 Attributes。 */
     @Override
     public Map<String, String> getAttributes() {
         // should always return a copy
@@ -282,6 +302,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return getAttribute("defaultSignatureAlgorithm");
     }
 
+    /** 设置 DefaultSignatureAlgorithm。 */
     @Override
     public void setDefaultSignatureAlgorithm(String defaultSignatureAlgorithm) {
         setAttribute("defaultSignatureAlgorithm", defaultSignatureAlgorithm);
@@ -297,6 +318,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         setAttribute("bruteForceProtected", value);
     }
 
+    /** 判断 PermanentLockout 是否为真。 */
     @Override
     public boolean isPermanentLockout() {
         return getAttribute("permanentLockout", false);
@@ -326,6 +348,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         setAttribute("bruteForceStrategy", val.toString());
     }
 
+    /** 设置 MaxTemporaryLockouts。 */
     @Override
     public void setMaxTemporaryLockouts(final int val) {
         setAttribute("maxTemporaryLockouts", val);
@@ -341,6 +364,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         setAttribute("maxFailureWaitSeconds", val);
     }
 
+    /** 获取 WaitIncrementSeconds。 */
     @Override
     public int getWaitIncrementSeconds() {
         return getAttribute("waitIncrementSeconds", 0);
@@ -356,6 +380,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return getAttribute("quickLoginCheckMilliSeconds", 0L);
     }
 
+    /** 设置 QuickLoginCheckMilliSeconds。 */
     @Override
     public void setQuickLoginCheckMilliSeconds(long val) {
         setAttribute("quickLoginCheckMilliSeconds", val);
@@ -371,6 +396,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         setAttribute("minimumQuickLoginWaitSeconds", val);
     }
 
+    /** 获取 MaxDeltaTimeSeconds。 */
     @Override
     public int getMaxDeltaTimeSeconds() {
         return getAttribute("maxDeltaTimeSeconds", 0);
@@ -386,6 +412,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return getAttribute("failureFactor", 0);
     }
 
+    /** 设置 FailureFactor。 */
     @Override
     public void setFailureFactor(int failureFactor) {
         setAttribute("failureFactor", failureFactor);
@@ -401,6 +428,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         setAttribute("maxSecondaryAuthFailures", maxSecondaryAuthFailures);
     }
 
+    /** 判断 VerifyEmail 是否为真。 */
     @Override
     public boolean isVerifyEmail() {
         return realm.isVerifyEmail();
@@ -417,6 +445,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.isLoginWithEmailAllowed();
     }
 
+    /** 设置 LoginWithEmailAllowed。 */
     @Override
     public void setLoginWithEmailAllowed(boolean loginWithEmailAllowed) {
         realm.setLoginWithEmailAllowed(loginWithEmailAllowed);
@@ -429,6 +458,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.isDuplicateEmailsAllowed();
     }
 
+    /** 设置 DuplicateEmailsAllowed。 */
     @Override
     public void setDuplicateEmailsAllowed(boolean duplicateEmailsAllowed) {
         realm.setDuplicateEmailsAllowed(duplicateEmailsAllowed);
@@ -444,6 +474,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.isResetPasswordAllowed();
     }
 
+    /** 设置 ResetPasswordAllowed。 */
     @Override
     public void setResetPasswordAllowed(boolean resetPasswordAllowed) {
         realm.setResetPasswordAllowed(resetPasswordAllowed);
@@ -461,6 +492,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 获取 NotBefore。 */
     @Override
     public int getNotBefore() {
         return realm.getNotBefore();
@@ -476,6 +508,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.isRevokeRefreshToken();
     }
 
+    /** 设置 RevokeRefreshToken。 */
     @Override
     public void setRevokeRefreshToken(boolean revokeRefreshToken) {
         realm.setRevokeRefreshToken(revokeRefreshToken);
@@ -491,6 +524,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         realm.setRefreshTokenMaxReuse(revokeRefreshTokenReuseCount);
     }
 
+    /** 获取 AccessTokenLifespan。 */
     @Override
     public int getAccessTokenLifespan() {
         return realm.getAccessTokenLifespan();
@@ -507,6 +541,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.getAccessTokenLifespanForImplicitFlow();
     }
 
+    /** 设置 AccessTokenLifespanForImplicitFlow。 */
     @Override
     public void setAccessTokenLifespanForImplicitFlow(int seconds) {
         realm.setAccessTokenLifespanForImplicitFlow(seconds);
@@ -522,6 +557,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         realm.setSsoSessionIdleTimeout(seconds);
     }
 
+    /** 获取 SsoSessionMaxLifespan。 */
     @Override
     public int getSsoSessionMaxLifespan() {
         return realm.getSsoSessionMaxLifespan();
@@ -537,6 +573,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.getSsoSessionIdleTimeoutRememberMe();
     }
 
+    /** 设置 SsoSessionIdleTimeoutRememberMe。 */
     @Override
     public void setSsoSessionIdleTimeoutRememberMe(int seconds){
         realm.setSsoSessionIdleTimeoutRememberMe(seconds);
@@ -552,6 +589,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         realm.setSsoSessionMaxLifespanRememberMe(seconds);
     }
 
+    /** 获取 OfflineSessionIdleTimeout。 */
     @Override
     public int getOfflineSessionIdleTimeout() {
         return realm.getOfflineSessionIdleTimeout();
@@ -568,6 +606,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
     	return getAttribute(RealmAttributes.OFFLINE_SESSION_MAX_LIFESPAN_ENABLED, false);
     }
 
+    /** 设置 OfflineSessionMaxLifespanEnabled。 */
     @Override
     public void setOfflineSessionMaxLifespanEnabled(boolean offlineSessionMaxLifespanEnabled) {
     	setAttribute(RealmAttributes.OFFLINE_SESSION_MAX_LIFESPAN_ENABLED, offlineSessionMaxLifespanEnabled);
@@ -583,6 +622,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         setAttribute(RealmAttributes.OFFLINE_SESSION_MAX_LIFESPAN, seconds);
     }
 
+    /** 获取 ClientSessionIdleTimeout。 */
     @Override
     public int getClientSessionIdleTimeout() {
         return getAttribute(RealmAttributes.CLIENT_SESSION_IDLE_TIMEOUT, 0);
@@ -598,6 +638,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return getAttribute(RealmAttributes.CLIENT_SESSION_MAX_LIFESPAN, 0);
     }
 
+    /** 设置 ClientSessionMaxLifespan。 */
     @Override
     public void setClientSessionMaxLifespan(int seconds) {
         setAttribute(RealmAttributes.CLIENT_SESSION_MAX_LIFESPAN, seconds);
@@ -613,6 +654,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         setAttribute(RealmAttributes.CLIENT_OFFLINE_SESSION_IDLE_TIMEOUT, seconds);
     }
 
+    /** 获取 ClientOfflineSessionMaxLifespan。 */
     @Override
     public int getClientOfflineSessionMaxLifespan() {
         return getAttribute(RealmAttributes.CLIENT_OFFLINE_SESSION_MAX_LIFESPAN, 0);
@@ -628,6 +670,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.getAccessCodeLifespan();
     }
 
+    /** 设置 AccessCodeLifespan。 */
     @Override
     public void setAccessCodeLifespan(int accessCodeLifespan) {
         realm.setAccessCodeLifespan(accessCodeLifespan);
@@ -645,6 +688,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 获取 OAuth2DeviceConfig。 */
     @Override
     public OAuth2DeviceConfig getOAuth2DeviceConfig() {
         return new OAuth2DeviceConfig(this);
@@ -660,6 +704,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return ParConfig.fromModel(this);
     }
 
+    /** 获取 UserActionTokenLifespans。 */
     @Override
     public Map<String, Integer> getUserActionTokenLifespans() {
 
@@ -680,6 +725,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.getAccessCodeLifespanLogin();
     }
 
+    /** 设置 AccessCodeLifespanLogin。 */
     @Override
     public void setAccessCodeLifespanLogin(int accessCodeLifespanLogin) {
         realm.setAccessCodeLifespanLogin(accessCodeLifespanLogin);
@@ -696,6 +742,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         setAttribute(RealmAttributes.ACTION_TOKEN_GENERATED_BY_ADMIN_LIFESPAN, actionTokenGeneratedByAdminLifespan);
     }
 
+    /** 获取 ActionTokenGeneratedByUserLifespan。 */
     @Override
     public int getActionTokenGeneratedByUserLifespan() {
         return getAttribute(RealmAttributes.ACTION_TOKEN_GENERATED_BY_USER_LIFESPAN, getAccessCodeLifespanUserAction());
@@ -714,6 +761,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return getAttribute(RealmAttributes.ACTION_TOKEN_GENERATED_BY_USER_LIFESPAN + "." + actionTokenId, getAccessCodeLifespanUserAction());
     }
 
+    /** 设置 ActionTokenGeneratedByUserLifespan。 */
     @Override
     public void setActionTokenGeneratedByUserLifespan(String actionTokenId, Integer actionTokenGeneratedByUserLifespan) {
         if (actionTokenGeneratedByUserLifespan != null)
@@ -747,6 +795,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 更新 RequiredCredentials。 */
     @Override
     public void updateRequiredCredentials(Set<String> creds) {
         Collection<RequiredCredentialEntity> relationships = realm.getRequiredCredentials();
@@ -779,6 +828,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.getRequiredCredentials().stream().map(this::toRequiredCredentialModel);
     }
 
+    /** 获取 DefaultGroupsStream。 */
     @Override
     public Stream<GroupModel> getDefaultGroupsStream() {
         return realm.getDefaultGroupIds().stream().map(this::getGroupById);
@@ -803,6 +853,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         }
     }
 
+    /** 获取 ClientsStream。 */
     @Override
     public Stream<ClientModel> getClientsStream() {
         return session.clients().getClientsStream(this);
@@ -818,6 +869,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.clients().getAlwaysDisplayInConsoleClientsStream(this);
     }
 
+    /** 添加 Client。 */
     @Override
     public ClientModel addClient(String name) {
         return session.clients().addClient(this, name);
@@ -836,6 +888,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.clients().removeClient(this, id);
     }
 
+    /** 获取 ClientById。 */
     @Override
     public ClientModel getClientById(String id) {
         return session.clients().getClientById(this, id);
@@ -851,6 +904,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.clients().searchClientsByClientIdStream(this, clientId, firstResult, maxResults);
     }
 
+    /** 搜索 ClientByAttributes。 */
     @Override
     public Stream<ClientModel> searchClientByAttributes(Map<String, String> attributes, Integer firstResult, Integer maxResults) {
         return session.clients().searchClientsByAttributes(this, attributes, firstResult, maxResults);
@@ -876,6 +930,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return Collections.unmodifiableMap(headers);
     }
 
+    /** 设置 BrowserSecurityHeaders。 */
     @Override
     public void setBrowserSecurityHeaders(Map<String, String> headers) {
         for (Map.Entry<String, String> entry : headers.entrySet()) {
@@ -890,6 +945,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return Collections.unmodifiableMap(config);
     }
 
+    /** 设置 SmtpConfig。 */
     @Override
     public void setSmtpConfig(Map<String, String> smtpConfig) {
         realm.setSmtpConfig(smtpConfig);
@@ -907,6 +963,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.roles().addRealmRole(this, name);
     }
 
+    /** 添加 Role。 */
     @Override
     public RoleModel addRole(String id, String name) {
         return session.roles().addRealmRole(this, id, name);
@@ -922,6 +979,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.roles().getRealmRolesStream(this);
     }
 
+    /** 获取 RolesStream。 */
     @Override
     public Stream<RoleModel> getRolesStream(Integer first, Integer max) {
         return session.roles().getRealmRolesStream(this, first, max);
@@ -937,6 +995,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.roles().getRoleById(this, id);
     }
 
+    /** 获取 PasswordPolicy。 */
     @Override
     public PasswordPolicy getPasswordPolicy() {
         if (passwordPolicy == null) {
@@ -952,6 +1011,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 获取 OTPPolicy。 */
     @Override
     public OTPPolicy getOTPPolicy() {
         if (otpPolicy == null) {
@@ -982,6 +1042,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
 
     // WebAuthn
 
+    /** 获取 WebAuthnPolicy。 */
     @Override
     public WebAuthnPolicy getWebAuthnPolicy() {
         return getWebAuthnPolicy("", WebAuthnPolicyTwoFactorDefaults.get());
@@ -998,6 +1059,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return getWebAuthnPolicy(Constants.WEBAUTHN_PASSWORDLESS_PREFIX, WebAuthnPolicyPasswordlessDefaults.get());
     }
 
+    /** 设置 WebAuthnPolicyPasswordless。 */
     @Override
     public void setWebAuthnPolicyPasswordless(WebAuthnPolicy policy) {
         // We will use some prefix for attributes related to passwordless WebAuthn policy
@@ -1171,6 +1233,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return that.getId().equals(getId());
     }
 
+    /** 判断是否拥有 hCode。 */
     @Override
     public int hashCode() {
         return getId().hashCode();
@@ -1187,6 +1250,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 获取 AccountTheme。 */
     @Override
     public String getAccountTheme() {
         return realm.getAccountTheme();
@@ -1203,6 +1267,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.getAdminTheme();
     }
 
+    /** 设置 AdminTheme。 */
     @Override
     public void setAdminTheme(String name) {
         realm.setAdminTheme(name);
@@ -1220,6 +1285,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 判断 EventsEnabled 是否为真。 */
     @Override
     public boolean isEventsEnabled() {
         return realm.isEventsEnabled();
@@ -1236,6 +1302,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.getEventsExpiration();
     }
 
+    /** 设置 EventsExpiration。 */
     @Override
     public void setEventsExpiration(long expiration) {
         realm.setEventsExpiration(expiration);
@@ -1253,6 +1320,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 获取 EnabledEventTypesStream。 */
     @Override
     public Stream<String> getEnabledEventTypesStream() {
         return realm.getEnabledEventTypes().stream();
@@ -1269,6 +1337,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.isAdminEventsEnabled();
     }
 
+    /** 设置 AdminEventsEnabled。 */
     @Override
     public void setAdminEventsEnabled(boolean enabled) {
         realm.setAdminEventsEnabled(enabled);
@@ -1286,6 +1355,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 判断 OrganizationsEnabled 是否为真。 */
     @Override
     public boolean isOrganizationsEnabled() {
         return getAttribute(RealmAttributes.ORGANIZATIONS_ENABLED, Boolean.FALSE);
@@ -1301,6 +1371,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return getAttribute(RealmAttributes.ADMIN_PERMISSIONS_ENABLED, Boolean.FALSE);
     }
 
+    /** 设置 AdminPermissionsEnabled。 */
     @Override
     public void setAdminPermissionsEnabled(boolean adminPermissionsEnabled) {
         boolean isAdminPermissionsAlreadyEnabled = getAdminPermissionsClient() != null;
@@ -1315,6 +1386,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
                     return RealmAdapter.this;
                 }
 
+                /** 获取 AttributeName。 */
                 @Override
                 public String getAttributeName() {
                     return RealmAttributes.ADMIN_PERMISSIONS_ENABLED;
@@ -1333,6 +1405,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         }
     }
 
+    /** 判断 VerifiableCredentialsEnabled 是否为真。 */
     @Override
     public boolean isVerifiableCredentialsEnabled() {
         return getAttribute(RealmAttributes.VERIFIABLE_CREDENTIALS_ENABLED, Boolean.FALSE);
@@ -1348,6 +1421,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         setAttribute(RealmAttributes.SCIM_API_ENABLED, enabled);
     }
 
+    /** 判断 ScimApiEnabled 是否为真。 */
     @Override
     public boolean isScimApiEnabled() {
         return getAttribute(RealmAttributes.SCIM_API_ENABLED, Boolean.FALSE);
@@ -1372,6 +1446,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 设置 DefaultRole。 */
     @Override
     public void setDefaultRole(RoleModel role) {
         realm.setDefaultRoleId(role.getId());
@@ -1390,6 +1465,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         setAttribute(RealmAttributes.ADMIN_PERMISSIONS_CLIENT_ID, client.getId());
     }
 
+    /** 获取 AdminPermissionsClient。 */
     @Override
     public ClientModel getAdminPermissionsClient() {
         if (getAttribute(RealmAttributes.ADMIN_PERMISSIONS_CLIENT_ID) == null) {
@@ -1403,6 +1479,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.identityProviders().getAllStream(IdentityProviderQuery.userAuthentication());
     }
 
+    /** 获取 IdentityProviderByAlias。 */
     @Override
     public IdentityProviderModel getIdentityProviderByAlias(String alias) {
         return session.identityProviders().getByAlias(alias);
@@ -1418,6 +1495,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         session.identityProviders().remove(alias);
     }
 
+    /** 更新 IdentityProvider。 */
     @Override
     public void updateIdentityProvider(IdentityProviderModel identityProvider) {
         session.identityProviders().update(identityProvider);
@@ -1433,6 +1511,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return realm.isInternationalizationEnabled();
     }
 
+    /** 设置 InternationalizationEnabled。 */
     @Override
     public void setInternationalizationEnabled(boolean enabled) {
         realm.setInternationalizationEnabled(enabled);
@@ -1450,6 +1529,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 获取 DefaultLocale。 */
     @Override
     public String getDefaultLocale() {
         return realm.getDefaultLocale();
@@ -1466,6 +1546,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.identityProviders().getMappersStream();
     }
 
+    /** 获取 IdentityProviderMappersByAliasStream。 */
     @Override
     public Stream<IdentityProviderMapperModel> getIdentityProviderMappersByAliasStream(String brokerAlias) {
         return session.identityProviders().getMappersByAliasStream(brokerAlias);
@@ -1481,6 +1562,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         session.identityProviders().removeMapper(mapping);
     }
 
+    /** 更新 IdentityProviderMapper。 */
     @Override
     public void updateIdentityProviderMapper(IdentityProviderMapperModel mapping) {
         session.identityProviders().updateMapper(mapping);
@@ -1496,6 +1578,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.identityProviders().getMapperByName(alias, name);
     }
 
+    /** 获取 BrowserFlow。 */
     @Override
     public AuthenticationFlowModel getBrowserFlow() {
         String flowId = realm.getBrowserFlow();
@@ -1509,6 +1592,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
 
     }
 
+    /** 获取 RegistrationFlow。 */
     @Override
     public AuthenticationFlowModel getRegistrationFlow() {
         String flowId = realm.getRegistrationFlow();
@@ -1522,6 +1606,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
 
     }
 
+    /** 获取 DirectGrantFlow。 */
     @Override
     public AuthenticationFlowModel getDirectGrantFlow() {
         String flowId = realm.getDirectGrantFlow();
@@ -1535,6 +1620,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
 
     }
 
+    /** 获取 ResetCredentialsFlow。 */
     @Override
     public AuthenticationFlowModel getResetCredentialsFlow() {
         String flowId = realm.getResetCredentialsFlow();
@@ -1547,6 +1633,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         realm.setResetCredentialsFlow(flow.getId());
     }
 
+    /** 获取 ClientAuthenticationFlow。 */
     @Override
     public AuthenticationFlowModel getClientAuthenticationFlow() {
         String flowId = realm.getClientAuthenticationFlow();
@@ -1559,6 +1646,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         realm.setClientAuthenticationFlow(flow.getId());
     }
 
+    /** 获取 DockerAuthenticationFlow。 */
     @Override
     public AuthenticationFlowModel getDockerAuthenticationFlow() {
         String flowId = realm.getDockerAuthenticationFlow();
@@ -1571,6 +1659,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         realm.setDockerAuthenticationFlow(flow.getId());
     }
 
+    /** 获取 FirstBrokerLoginFlow。 */
     @Override
     public AuthenticationFlowModel getFirstBrokerLoginFlow() {
         String flowId = getAttribute(RealmAttributes.FIRST_BROKER_LOGIN_FLOW_ID);
@@ -1583,6 +1672,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         setAttribute(RealmAttributes.FIRST_BROKER_LOGIN_FLOW_ID, flow.getId());
     }
 
+    /** 获取 AuthenticationFlowsStream。 */
     @Override
     public Stream<AuthenticationFlowModel> getAuthenticationFlowsStream() {
         return realm.getAuthenticationFlows().stream().map(this::entityToModel);
@@ -1616,6 +1706,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return model;
     }
 
+    /** 获取 AuthenticationFlowById。 */
     @Override
     public AuthenticationFlowModel getAuthenticationFlowById(String id) {
         AuthenticationFlowEntity entity = getAuthenticationFlowEntity(id, false);
@@ -1634,6 +1725,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 更新 AuthenticationFlow。 */
     @Override
     public void updateAuthenticationFlow(AuthenticationFlowModel model) {
         AuthenticationFlowEntity entity = getAuthenticationFlowEntity(model.getId(), false);
@@ -1672,6 +1764,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return model;
     }
 
+    /** 获取 AuthenticationExecutionsStream。 */
     @Override
     public Stream<AuthenticationExecutionModel> getAuthenticationExecutionsStream(String flowId) {
         AuthenticationFlowEntity flow = em.getReference(AuthenticationFlowEntity.class, flowId);
@@ -1702,6 +1795,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return entityToModel(entity);
     }
 
+    /** 获取 AuthenticationExecutionByFlowId。 */
     @Override
     public AuthenticationExecutionModel getAuthenticationExecutionByFlowId(String flowId) {
         TypedQuery<AuthenticationExecutionEntity> query = em.createNamedQuery("authenticationFlowExecution", AuthenticationExecutionEntity.class)
@@ -1737,6 +1831,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
 
     }
 
+    /** 更新 AuthenticatorExecution。 */
     @Override
     public void updateAuthenticatorExecution(AuthenticationExecutionModel model) {
         AuthenticationExecutionEntity entity = getAuthenticationExecution(model.getId(), false);
@@ -1772,6 +1867,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return entity;
     }
 
+    /** 添加 AuthenticatorConfig。 */
     @Override
     public AuthenticatorConfigModel addAuthenticatorConfig(AuthenticatorConfigModel model) {
         AuthenticatorConfigEntity auth = new AuthenticatorConfigEntity();
@@ -1795,6 +1891,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
 
     }
 
+    /** 获取 AuthenticatorConfigById。 */
     @Override
     public AuthenticatorConfigModel getAuthenticatorConfigById(String id) {
         AuthenticatorConfigEntity entity = getAuthenticatorConfigEntity(id, false);
@@ -1838,6 +1935,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return entity;
     }
 
+    /** 获取 AuthenticatorConfigsStream。 */
     @Override
     public Stream<AuthenticatorConfigModel> getAuthenticatorConfigsStream() {
         return realm.getAuthenticatorConfigs().stream().map(this::entityToModel);
@@ -1857,6 +1955,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
                 .orElse(null);
     }
 
+    /** 获取 RequiredActionConfigByAlias。 */
     @Override
     public RequiredActionConfigModel getRequiredActionConfigByAlias(String alias) {
         return getRequiredActionConfigsStream() //
@@ -1885,6 +1984,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
                 });
     }
 
+    /** 更新 RequiredActionConfig。 */
     @Override
     public void updateRequiredActionConfig(RequiredActionConfigModel model) {
 
@@ -1942,6 +2042,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return model;
     }
 
+    /** 移除 RequiredActionProvider。 */
     @Override
     public void removeRequiredActionProvider(RequiredActionProviderModel model) {
         RequiredActionProviderEntity entity = getRequiredProviderEntity(model.getId(), true);
@@ -1975,6 +2076,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return model;
     }
 
+    /** 更新 RequiredActionProvider。 */
     @Override
     public void updateRequiredActionProvider(RequiredActionProviderModel model) {
         RequiredActionProviderEntity entity = getRequiredProviderEntity(model.getId(), false);
@@ -2013,6 +2115,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return entity;
     }
 
+    /** 获取 RequiredActionProviderByAlias。 */
     @Override
     public RequiredActionProviderModel getRequiredActionProviderByAlias(String alias) {
         return getRequiredActionProvidersStream()
@@ -2026,6 +2129,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.groups().createGroup(this, id, name, toParent);
     }
 
+    /** moveGroup 操作。 */
     @Override
     public void moveGroup(GroupModel group, GroupModel toParent) {
         session.groups().moveGroup(this, group, toParent);
@@ -2041,6 +2145,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.groups().getGroupsStream(this);
     }
 
+    /** 获取 GroupsCount。 */
     @Override
     public Long getGroupsCount(Boolean onlyTopGroups) {
         return session.groups().getGroupsCount(this, onlyTopGroups);
@@ -2056,6 +2161,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.groups().getTopLevelGroupsStream(this);
     }
 
+    /** 获取 TopLevelGroupsStream。 */
     @Override
     public Stream<GroupModel> getTopLevelGroupsStream(Integer first, Integer max) {
         return session.groups().getTopLevelGroupsStream(this, first, max);
@@ -2071,6 +2177,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.clientScopes().getClientScopesStream(this);
     }
 
+    /** 添加 ClientScope。 */
     @Override
     public ClientScopeModel addClientScope(String name) {
         return session.clientScopes().addClientScope(this, name);
@@ -2086,6 +2193,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return session.clientScopes().removeClientScope(this, id);
     }
 
+    /** 获取 ClientScopeById。 */
     @Override
     public ClientScopeModel getClientScopeById(String id) {
         return session.clientScopes().getClientScopeById(this, id);
@@ -2111,6 +2219,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 获取 DefaultClientScopesStream。 */
     @Override
     public Stream<ClientScopeModel> getDefaultClientScopesStream(boolean defaultScope) {
         TypedQuery<String> query = em.createNamedQuery("defaultClientScopeRealmMappingIdsByRealm", String.class);
@@ -2133,6 +2242,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
      */
     public static final String COMPONENT_PROVIDER_EXISTS_DISABLED = "component.provider.exists.disabled";
 
+    /** importComponentModel 操作。 */
     @Override
     public ComponentModel importComponentModel(ComponentModel model) {
         ComponentFactory componentFactory = null;
@@ -2209,6 +2319,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
 
     }
 
+    /** 移除 Component。 */
     @Override
     public void removeComponent(ComponentModel component) {
         ComponentEntity c = getComponentEntity(component.getId());
@@ -2234,6 +2345,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         getEntity().getComponents().removeIf(sameParent);
     }
 
+    /** 获取 ComponentsStream。 */
     @Override
     public Stream<ComponentModel> getComponentsStream(String parentId, final String providerType) {
         if (parentId == null) parentId = getId();
@@ -2278,6 +2390,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return model;
     }
 
+    /** 获取 ComponentsStream。 */
     @Override
     public Stream<ComponentModel> getComponentsStream() {
         return realm.getComponents().stream().map(this::entityToModel);
@@ -2317,6 +2430,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         }
     }
 
+    /** 移除 RealmLocalizationTexts。 */
     @Override
     public boolean removeRealmLocalizationTexts(String locale) {
         if (locale == null) return false;
@@ -2337,6 +2451,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return localizationTexts;
     }
 
+    /** 获取 RealmLocalizationTextsByLocale。 */
     @Override
     public Map<String, String> getRealmLocalizationTextsByLocale(String locale) {
         if (realm.getRealmLocalizationTexts().containsKey(locale)) {
@@ -2365,6 +2480,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return entityToModel(entity);
     }
 
+    /** 获取 ClientInitialAccessModel。 */
     @Override
     public ClientInitialAccessModel getClientInitialAccessModel(String id) {
         ClientInitialAccessEntity entity = em.find(ClientInitialAccessEntity.class, id, LockModeType.PESSIMISTIC_WRITE);
@@ -2382,6 +2498,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         em.flush();
     }
 
+    /** 获取 ClientInitialAccesses。 */
     @Override
     public Stream<ClientInitialAccessModel> getClientInitialAccesses() {
         RealmEntity realmEntity = em.find(RealmEntity.class, realm.getId());
@@ -2408,6 +2525,7 @@ public class RealmAdapter implements StorageProviderRealmModel, JpaModel<RealmEn
         return model;
     }
 
+    /** toString 操作。 */
     @Override
     public String toString() {
         return String.format("%s@%08x", getId(), hashCode());

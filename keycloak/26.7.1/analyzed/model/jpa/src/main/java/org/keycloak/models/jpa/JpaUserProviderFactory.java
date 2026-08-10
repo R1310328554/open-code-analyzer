@@ -30,6 +30,8 @@ import static org.keycloak.models.jpa.JpaRealmProviderFactory.PROVIDER_ID;
 import static org.keycloak.models.jpa.JpaRealmProviderFactory.PROVIDER_PRIORITY;
 
 /**
+ * JPA 用户 Provider 工厂：创建 {@link JpaUserProvider} 处理本地用户持久化。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -44,11 +46,13 @@ public class JpaUserProviderFactory implements UserProviderFactory {
 
     }
 
+    /** 获取 Id。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 为当前会话创建 JPA 用户 Provider。 */
     @Override
     public UserProvider create(KeycloakSession session) {
         EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();

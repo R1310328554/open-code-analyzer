@@ -41,17 +41,22 @@ import org.jboss.logging.Logger;
 import static org.keycloak.utils.StreamsUtil.closing;
 
 /**
+ * JPA 用户凭据存储：管理密码、OTP 等 Credential 的持久化、排序与旧版 salt 迁移。
+ * 凭据以 priority 链表顺序存储，支持 moveCredentialTo 重排。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class JpaUserCredentialStore implements UserCredentialStore {
 
-    // Typical priority difference between 2 credentials
+    /** 相邻凭据 priority 间隔，便于插入时留空位。 */
     public static final int PRIORITY_DIFFERENCE = 10;
 
     protected static final Logger logger = Logger.getLogger(JpaUserCredentialStore.class);
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** JPA EntityManager。 */
     protected final EntityManager em;
 
     public JpaUserCredentialStore(KeycloakSession session, EntityManager em) {
@@ -64,7 +69,7 @@ public class JpaUserCredentialStore implements UserCredentialStore {
         CredentialEntity entity = em.find(CredentialEntity.class, cred.getId());
         if (!checkCredentialEntity(entity, user)) return;
         if (!Objects.equals(cred.getUserLabel(), entity.getUserLabel())) {
-            // For legacy entries in the credentials, there might be a duplicate for historical reasons.
+            // 历史数据可能存在重复 userLabel，更新时重新校验唯一性
             // Ignore them when the credential is updated, which might happen when credentials are verified.
             validateDuplicateCredential(realm, user, cred.getType(), cred.getUserLabel(), cred.getId());
         }
@@ -81,6 +86,7 @@ public class JpaUserCredentialStore implements UserCredentialStore {
         return toModel(entity);
     }
 
+    /** 移除 StoredCredential。 */
     @Override
     public boolean removeStoredCredential(RealmModel realm, UserModel user, String id) {
         CredentialEntity entity = removeCredentialEntity(realm, user, id);
@@ -102,7 +108,7 @@ public class JpaUserCredentialStore implements UserCredentialStore {
         model.setCreatedDate(entity.getCreatedDate());
         model.setUserLabel(entity.getUserLabel());
 
-        // Backwards compatibility - users from previous version still have "salt" in the DB filled.
+        // 向后兼容：旧版 salt 列在读取时迁移到 secretData JSON
         // We migrate it to new secretData format on-the-fly
         if (entity.getSalt() != null) {
             String newSecretData = entity.getSecretData().replace("__SALT__", Base64.getEncoder().encodeToString(entity.getSalt()));
@@ -132,6 +138,7 @@ public class JpaUserCredentialStore implements UserCredentialStore {
         return getStoredCredentialsStream(realm, user).filter(credential -> Objects.equals(type, credential.getType()));
     }
 
+    /** 获取 StoredCredentialByNameAndType。 */
     @Override
     public CredentialModel getStoredCredentialByNameAndType(RealmModel realm, UserModel user, String name, String type) {
         return getStoredCredentialsStream(realm, user).filter(credential ->
@@ -171,7 +178,7 @@ public class JpaUserCredentialStore implements UserCredentialStore {
         UserEntity userRef = em.getReference(UserEntity.class, user.getId());
         entity.setUser(userRef);
 
-        //add in linkedlist to last position
+        // 新凭据追加到链表末尾，priority 递增
         List<CredentialEntity> credentials = getStoredCredentialEntities(realm, user).collect(Collectors.toList());
         int priority = credentials.isEmpty() ? PRIORITY_DIFFERENCE : credentials.get(credentials.size() - 1).getPriority() + PRIORITY_DIFFERENCE;
         entity.setPriority(priority);
@@ -197,14 +204,14 @@ public class JpaUserCredentialStore implements UserCredentialStore {
         return entity;
     }
 
-    ////Operations to handle the linked list of credentials
+    // ---- 凭据 priority 链表重排操作 ----
     @Override
     public boolean moveCredentialTo(RealmModel realm, UserModel user, String id, String newPreviousCredentialId) {
 
-        // 1 - Create new list and move everything to it.
+        // 1. 加载全部凭据到内存列表
         List<CredentialEntity> newList = this.getStoredCredentialEntities(realm, user).collect(Collectors.toList());
 
-        // 2 - Find indexes of our and newPrevious credential
+        // 2. 定位目标凭据与 newPrevious 索引
         int ourCredentialIndex = -1;
         int newPreviousCredentialIndex = -1;
         CredentialEntity ourCredential = null;
@@ -229,15 +236,15 @@ public class JpaUserCredentialStore implements UserCredentialStore {
             return false;
         }
 
-        // 3 - Compute index where we move our credential
+        // 3. 计算插入位置
         int toMoveIndex = newPreviousCredentialId==null ? 0 : newPreviousCredentialIndex + 1;
 
-        // 4 - Insert our credential to new position, remove it from the old position
+        // 4. 插入新位置并移除旧位置
         newList.add(toMoveIndex, ourCredential);
         int indexToRemove = toMoveIndex < ourCredentialIndex ? ourCredentialIndex + 1 : ourCredentialIndex;
         newList.remove(indexToRemove);
 
-        // 5 - newList contains credentials in requested order now. Iterate through whole list and change priorities accordingly.
+        // 5. 按新顺序重写全部 priority
         int expectedPriority = 0;
         for (CredentialEntity credential : newList) {
             expectedPriority += PRIORITY_DIFFERENCE;

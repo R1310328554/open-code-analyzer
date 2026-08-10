@@ -29,6 +29,9 @@ import org.keycloak.models.RoleProviderFactory;
 import static org.keycloak.models.jpa.JpaRealmProviderFactory.PROVIDER_ID;
 import static org.keycloak.models.jpa.JpaRealmProviderFactory.PROVIDER_PRIORITY;
 
+/**
+ * JPA 角色 Provider 工厂：委托 {@link JpaRealmProvider} 实现角色 CRUD。
+ */
 public class JpaRoleProviderFactory implements RoleProviderFactory {
 
     @Override
@@ -44,6 +47,7 @@ public class JpaRoleProviderFactory implements RoleProviderFactory {
         return PROVIDER_ID;
     }
 
+    /** 创建共享 JPA Realm Provider 实例处理角色操作。 */
     @Override
     public RoleProvider create(KeycloakSession session) {
         EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
@@ -54,6 +58,7 @@ public class JpaRoleProviderFactory implements RoleProviderFactory {
     public void close() {
     }
 
+    /** order 操作。 */
     @Override
     public int order() {
         return PROVIDER_PRIORITY;

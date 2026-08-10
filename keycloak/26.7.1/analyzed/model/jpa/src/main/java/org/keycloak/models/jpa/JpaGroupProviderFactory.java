@@ -37,11 +37,17 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import static org.keycloak.models.jpa.JpaRealmProviderFactory.PROVIDER_ID;
 import static org.keycloak.models.jpa.JpaRealmProviderFactory.PROVIDER_PRIORITY;
 
+/**
+ * JPA 组 Provider 工厂：读取组搜索配置并创建 {@link JpaRealmProvider} 实例处理组操作。
+ */
 public class JpaGroupProviderFactory implements GroupProviderFactory {
 
+    /** 允许在组属性搜索中使用的属性名集合。 */
     private Set<String> groupSearchableAttributes = null;
+    /** 组路径中是否将斜杠转义为 ~。 */
     private boolean escapeSlashesInGroupPath;
 
+    /** 从配置或系统属性加载组可搜索属性与路径转义开关。 */
     @Override
     public void init(Config.Scope config) {
         escapeSlashesInGroupPath = config.getBoolean("escapeSlashesInGroupPath", GroupProvider.DEFAULT_ESCAPE_SLASHES);
@@ -68,6 +74,7 @@ public class JpaGroupProviderFactory implements GroupProviderFactory {
         return PROVIDER_ID;
     }
 
+    /** 复用 {@link JpaRealmProvider} 作为组 Provider 实现。 */
     @Override
     public GroupProvider create(KeycloakSession session) {
         EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
@@ -78,6 +85,7 @@ public class JpaGroupProviderFactory implements GroupProviderFactory {
     public void close() {
     }
 
+    /** order 操作。 */
     @Override
     public int order() {
         return PROVIDER_PRIORITY;

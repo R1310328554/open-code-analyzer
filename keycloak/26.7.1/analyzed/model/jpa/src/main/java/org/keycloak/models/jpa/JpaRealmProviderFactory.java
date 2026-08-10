@@ -34,6 +34,8 @@ import org.keycloak.provider.ProviderEvent;
 import org.keycloak.provider.ProviderEventListener;
 
 /**
+ * JPA Realm Provider 工厂：创建 {@link JpaRealmProvider} 并监听角色删除事件以级联清理。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -41,13 +43,16 @@ public class JpaRealmProviderFactory implements RealmProviderFactory, ProviderEv
 
     private Runnable onClose;
 
+    /** JPA Provider 标识符。 */
     public static final String PROVIDER_ID = "jpa";
+    /** Provider 加载优先级。 */
     public static final int PROVIDER_PRIORITY = 1;
 
     @Override
     public void init(Config.Scope config) {
     }
 
+    /** 注册为 Provider 事件监听器，在工厂关闭时注销。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         factory.register(this);
@@ -72,6 +77,7 @@ public class JpaRealmProviderFactory implements RealmProviderFactory, ProviderEv
         }
     }
 
+    /** 角色删除时通知 {@link JpaRealmProvider#preRemove} 清理关联数据。 */
     @Override
     public void onEvent(ProviderEvent event) {
         if (event instanceof RoleContainerModel.RoleRemovedEvent) {
@@ -90,6 +96,7 @@ public class JpaRealmProviderFactory implements RealmProviderFactory, ProviderEv
         }
     }
 
+    /** order 操作。 */
     @Override
     public int order() {
         return PROVIDER_PRIORITY;

@@ -74,6 +74,9 @@ import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
 import static org.keycloak.utils.StreamsUtil.closing;
 
 /**
+ * JPA 身份联邦存储 Provider：管理 IdP 及其 Mapper 的 CRUD、条件查询与领域事件发布。
+ * 支持 Oracle CLOB 配置字段的特殊比较逻辑。
+ *
  * A JPA based implementation of {@link IdentityProviderStorageProvider}.
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
@@ -82,7 +85,9 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
 
     protected static final Logger logger = Logger.getLogger(IdentityProviderStorageProvider.class);
 
+    /** 当前会话的 JPA EntityManager。 */
     private final EntityManager em;
+    /** Keycloak 会话上下文，用于发布 IdP 变更事件。 */
     private final KeycloakSession session;
 
     public JpaIdentityProviderStorageProvider(KeycloakSession session) {
@@ -115,7 +120,7 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
         entity.setLinkOnly(identityProvider.isLinkOnly());
         entity.setHideOnLogin(identityProvider.isHideOnLogin());
         em.persist(entity);
-        // flush so that constraint violations are flagged and converted into model exception now rather than at the end of the tx.
+        // 立即 flush 以便约束违例在事务内尽早转为 ModelException
         em.flush();
 
         identityProvider.setInternalId(entity.getInternalId());
@@ -124,7 +129,7 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
 
     @Override
     public void update(IdentityProviderModel identityProvider) {
-        // find idp by id and update it.
+        // 按内部 ID 查找 IdP 实体并更新字段
         IdentityProviderEntity entity = this.getEntityById(identityProvider.getInternalId(), true);
         entity.setAlias(identityProvider.getAlias());
         entity.setDisplayName(identityProvider.getDisplayName());
@@ -147,6 +152,7 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
         RealmModel realm = this.getRealm();
         session.getKeycloakSessionFactory().publish(new RealmModel.IdentityProviderUpdatedEvent() {
 
+            /** 获取 Realm。 */
             @Override
             public RealmModel getRealm() {
                 return realm;
@@ -166,11 +172,11 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
 
     @Override
     public boolean remove(String alias) {
-        // find provider by alias in the DB and remove it.
+        // 按 alias 查找并删除 IdP；删除前先 toModel 避免 LazyInitializationException
         IdentityProviderEntity entity = this.getEntityByAlias(alias);
 
         if (entity != null) {
-            //call toModel(entity) now as after em.remove(entity) and the flush it might throw LazyInitializationException
+            // 删除前 materialize 配置，否则 flush 后访问 config 可能 LazyInitializationException
             //when accessing the config of the entity (entity.getConfig()) withing the toModel(entity)
             IdentityProviderModel model = toModel(entity);
 
@@ -184,6 +190,7 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
             RealmModel realm = this.getRealm();
             session.getKeycloakSessionFactory().publish(new RealmModel.IdentityProviderRemovedEvent() {
 
+                /** 获取 Realm。 */
                 @Override
                 public RealmModel getRealm() {
                     return realm;
@@ -213,6 +220,7 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
         this.em.createQuery(delete).executeUpdate();
     }
 
+    /** 获取 ById。 */
     @Override
     public IdentityProviderModel getById(String internalId) {
         return toModel(getEntityById(internalId, false));
@@ -359,6 +367,7 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
         return closing(paginateQuery(typedQuery, first, max).getResultStream());
     }
 
+    /** count 操作。 */
     @Override
     public long count() {
         CriteriaBuilder builder = em.getCriteriaBuilder();
@@ -391,6 +400,7 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
         return model;
     }
 
+    /** 更新 Mapper。 */
     @Override
     public void updateMapper(IdentityProviderMapperModel model) {
         IdentityProviderMapperEntity entity = getMapperEntityById(model.getId(), true);
@@ -419,6 +429,7 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
         em.createQuery(delete).executeUpdate();
     }
 
+    /** 获取 MapperById。 */
     @Override
     public IdentityProviderMapperModel getMapperById(String id) {
         return toModel(getMapperEntityById(id, false));
@@ -523,7 +534,7 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
             return null;
         }
 
-        // check realm to ensure this entity is fetched in the context of the correct realm.
+        // 校验实体属于当前 realm，防止跨域访问
         if (!this.getRealm().getId().equals(entity.getRealmId())) {
             throw new ModelException("Identity Provider with internal id [" + entity.getInternalId() + "] does not belong to realm [" + getRealm().getName() + "]");
         }
@@ -548,7 +559,7 @@ public class JpaIdentityProviderStorageProvider implements IdentityProviderStora
 
     private Predicate getAliasSearchPredicate(String search, CriteriaBuilder builder, Root<IdentityProviderEntity> idp) {
         if (search.startsWith("\"") && search.endsWith("\"")) {
-            // exact search - alias must be an exact match
+            // 双引号包裹时为精确匹配 alias 或 displayName
             search = search.substring(1, search.length() - 1);
             return builder.or(builder.equal(idp.get(ALIAS), search),builder.equal(idp.get(DISPLAY_NAME), search));
         } else {

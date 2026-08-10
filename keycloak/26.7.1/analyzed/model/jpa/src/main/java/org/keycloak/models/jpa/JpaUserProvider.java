@@ -96,6 +96,9 @@ import static org.keycloak.utils.StreamsUtil.closing;
 
 
 /**
+ * JPA 用户 Provider：本地用户的 CRUD、联邦身份、OAuth 同意、可验证凭据及 FGAP 部分评估。
+ * 同时实现 {@link UserCredentialStore}，内部委托 {@link JpaUserCredentialStore}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -109,8 +112,11 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
     private static final String LAST_NAME = "lastName";
     private static final char ESCAPE_BACKSLASH = '\\';
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** JPA EntityManager。 */
     protected final EntityManager em;
+    /** 凭据存储委托。 */
     private final JpaUserCredentialStore credentialStore;
 
     public JpaUserProvider(KeycloakSession session, EntityManager em) {
@@ -118,6 +124,8 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         this.em = em;
         credentialStore = new JpaUserCredentialStore(session, em);
     }
+
+    // ========== 用户 CRUD ==========
 
     @Override
     public UserModel addUser(RealmModel realm, String id, String username, boolean addDefaultRoles, boolean addDefaultRequiredActions) {
@@ -141,7 +149,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         if (addDefaultRoles) {
             userModel.grantRole(realm.getDefaultRole());
 
-            // No need to check if user has group as it's new user
+            // 新用户无需检查组冲突，直接加入默认组
             realm.getDefaultGroupsStream().forEach(userModel::joinGroupImpl);
         }
 
@@ -156,6 +164,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return userModel;
     }
 
+    /** 添加 User。 */
     @Override
     public UserModel addUser(RealmModel realm, String username) {
         return addUser(realm, KeycloakModelUtils.generateId(), username.toLowerCase(), true, true);
@@ -181,6 +190,8 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         em.flush();
     }
 
+    // ========== 联邦身份 ==========
+
     @Override
     public void addFederatedIdentity(RealmModel realm, UserModel user, FederatedIdentityModel identity) {
         FederatedIdentityEntity entity = new FederatedIdentityEntity();
@@ -195,6 +206,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         em.flush();
     }
 
+    /** 更新 FederatedIdentity。 */
     @Override
     public void updateFederatedIdentity(RealmModel realm, UserModel federatedUser, FederatedIdentityModel federatedIdentityModel) {
         FederatedIdentityEntity federatedIdentity = findFederatedIdentity(federatedUser, federatedIdentityModel.getIdentityProvider(), LockModeType.PESSIMISTIC_WRITE);
@@ -221,12 +233,15 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         }
     }
 
+    /** preRemove 操作。 */
     @Override
     public void preRemove(RealmModel realm, IdentityProviderModel provider) {
         em.createNamedQuery("deleteFederatedIdentityByProvider")
                 .setParameter("realmId", realm.getId())
                 .setParameter("providerAlias", provider.getAlias()).executeUpdate();
     }
+
+    // ========== OAuth 用户同意 ==========
 
     @Override
     public void addConsent(RealmModel realm, String userId, UserConsentModel consent) {
@@ -253,6 +268,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         updateGrantedConsentEntity(consentEntity, consent);
     }
 
+    /** 获取 ConsentByClient。 */
     @Override
     public UserConsentModel getConsentByClient(RealmModel realm, String userId, String clientId) {
         UserConsentEntity entity = getGrantedConsentEntity(userId, clientId, LockModeType.NONE);
@@ -278,6 +294,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         updateGrantedConsentEntity(consentEntity, consent);
     }
 
+    /** revokeConsentForClient 操作。 */
     @Override
     public boolean revokeConsentForClient(RealmModel realm, String userId, String clientId) {
         UserConsentEntity consentEntity = getGrantedConsentEntity(userId, clientId, LockModeType.PESSIMISTIC_WRITE);
@@ -436,6 +453,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return toVerifiableCredentialModel(vcEntity);
     }
 
+    /** 移除 VerifiableCredential。 */
     @Override
     public boolean removeVerifiableCredential(String userId, String clientScopeId) {
         UserVerifiableCredentialEntity found = getVerifiableCredentialsEntitiesByUser(userId)
@@ -463,6 +481,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
                 .sorted(Comparator.comparing(UserVerifiableCredentialModel::getClientScopeId));
     }
 
+    /** 获取 VerifiableCredentialById。 */
     @Override
     public UserVerifiableCredentialModel getVerifiableCredentialById(String id) {
         UserVerifiableCredentialEntity entity = em.find(UserVerifiableCredentialEntity.class, id);
@@ -541,6 +560,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return model;
     }
 
+    /** 设置 NotBeforeForUser。 */
     @Override
     public void setNotBeforeForUser(RealmModel realm, UserModel user, int notBefore) {
         UserEntity entity = em.getReference(UserEntity.class, user.getId());
@@ -559,6 +579,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return entity.getNotBefore();
     }
 
+    /** grantToAllUsers 操作。 */
     @Override
     public void grantToAllUsers(RealmModel realm, RoleModel role) {
         if (realm.equals(role.isClientRole() ? ((ClientModel)role.getContainer()).getRealm() : role.getContainer())) {
@@ -595,6 +616,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
                 .setParameter("realmId", realm.getId()).executeUpdate();
     }
 
+    /** 移除 ImportedUsers。 */
     @Override
     public void removeImportedUsers(RealmModel realm, String storageProviderId) {
         em.createNamedQuery("deleteUserRoleMappingsByRealmAndLink")
@@ -643,6 +665,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
                 .executeUpdate();
     }
 
+    /** preRemove 操作。 */
     @Override
     public void preRemove(RealmModel realm, RoleModel role) {
         em.createNamedQuery("deleteUserRoleMappingsByRole").setParameter("roleId", role.getId()).executeUpdate();
@@ -679,6 +702,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         // No-op
     }
 
+    /** preRemove 操作。 */
     @Override
     public void preRemove(ClientScopeModel clientScope) {
         em.createNamedQuery("deleteUserConsentClientScopesByClientScope")
@@ -697,6 +721,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return getGroupMembersStream(realm, group, -1, -1);
     }
 
+    /** 获取 RoleMembersStream。 */
     @Override
     public Stream<UserModel> getRoleMembersStream(RealmModel realm, RoleModel role) {
         return getRoleMembersStream(realm, role, -1, -1);
@@ -715,6 +740,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return new UserAdapter(session, realm, em, userEntity);
     }
 
+    /** 获取 UserByUsername。 */
     @Override
     public UserModel getUserByUsername(RealmModel realm, String username) {
         TypedQuery<UserEntity> query = em.createNamedQuery("getRealmUserByUsername", UserEntity.class);
@@ -739,6 +765,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return new UserAdapter(session, realm, em, results.get(0));
     }
 
+     /** 关闭 Provider，JPA 实现无需释放资源。 */
      @Override
     public void close() {
     }
@@ -778,6 +805,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         }
     }
 
+    /** 获取 UsersCount。 */
     @Override
     public int getUsersCount(RealmModel realm, boolean includeServiceAccount) {
         CriteriaBuilder cb = em.getCriteriaBuilder();
@@ -811,6 +839,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return count.intValue();
     }
 
+    /** 获取 UsersCount。 */
     @Override
     public int getUsersCount(RealmModel realm, String search) {
         CriteriaBuilder builder = em.getCriteriaBuilder();
@@ -847,6 +876,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return em.createQuery(countQuery(queryBuilder, builder, userJoin, predicates)).getSingleResult().intValue();
     }
 
+    /** 获取 UsersCount。 */
     @Override
     public int getUsersCount(RealmModel realm, Map<String, String> params) {
         CriteriaBuilder qb = em.getCriteriaBuilder();
@@ -910,6 +940,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return closing(paginateQuery(em.createQuery(queryBuilder), firstResult, maxResults).getResultStream().map(user -> new UserAdapter(session, realm, em, user)));
     }
 
+    /** 获取 GroupMembersStream。 */
     @Override
     public Stream<UserModel> getGroupMembersStream(RealmModel realm, GroupModel group, String search, Boolean exact, Integer first, Integer max) {
         if (StringUtil.isBlank(search)) {
@@ -978,6 +1009,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
                 .filter(Objects::nonNull);
     }
 
+    /** 搜索 ForUserStream。 */
     @Override
     public Stream<UserModel> searchForUserStream(RealmModel realm, String search, Integer firstResult, Integer maxResults) {
         Map<String, String> attributes = new HashMap<>(2);
@@ -1043,6 +1075,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
     }
 
 
+    /** 获取 FederatedIdentitiesStream。 */
     @Override
     public Stream<FederatedIdentityModel> getFederatedIdentitiesStream(RealmModel realm, UserModel user) {
         TypedQuery<FederatedIdentityEntity> query = em.createNamedQuery("findFederatedIdentityByUser", FederatedIdentityEntity.class);
@@ -1059,6 +1092,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return (entity != null) ? new FederatedIdentityModel(entity.getIdentityProvider(), entity.getUserId(), entity.getUserName(), entity.getToken()) : null;
     }
 
+    /** preRemove 操作。 */
     @Override
     public void preRemove(RealmModel realm, ComponentModel component) {
         if (component.getProviderType().equals(UserStorageProvider.class.getName())) {
@@ -1084,6 +1118,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         credentialStore.updateCredential(realm, user, cred);
     }
 
+    /** 创建 Credential。 */
     @Override
     public CredentialModel createCredential(RealmModel realm, UserModel user, CredentialModel cred) {
         CredentialEntity entity = credentialStore.createCredentialEntity(realm, user, cred);
@@ -1105,6 +1140,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return entity != null;
     }
 
+    /** 获取 StoredCredentialById。 */
     @Override
     public CredentialModel getStoredCredentialById(RealmModel realm, UserModel user, String id) {
         return credentialStore.getStoredCredentialById(realm, user, id);
@@ -1119,6 +1155,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return credentialStore.getStoredCredentialsStream(realm, user);
     }
 
+    /** 获取 StoredCredentialsByTypeStream。 */
     @Override
     public Stream<CredentialModel> getStoredCredentialsByTypeStream(RealmModel realm, UserModel user, String type) {
         UserEntity userEntity = userInEntityManagerContext(user.getId());
@@ -1137,6 +1174,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return credentialStore.getStoredCredentialByNameAndType(realm, user, name, type);
     }
 
+    /** moveCredentialTo 操作。 */
     @Override
     public boolean moveCredentialTo(RealmModel realm, UserModel user, String id, String newPreviousCredentialId) {
         return credentialStore.moveCredentialTo(realm, user, id, newPreviousCredentialId);
@@ -1180,6 +1218,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return toIssuedVcModel(issuedVerifiableCredentialEntity);
     }
 
+    /** 获取 IssuedVerifiableCredentialsStreamByUser。 */
     @Override
     public Stream<IssuedVerifiableCredentialModel> getIssuedVerifiableCredentialsStreamByUser(String userId) {
         TypedQuery<IssuedVerifiableCredentialEntity> query = em.createNamedQuery("issuedVcsByUser", IssuedVerifiableCredentialEntity.class);
@@ -1352,6 +1391,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore, JpaUs
         return predicates;
     }
 
+    /** 获取 Session。 */
     @Override
     public KeycloakSession getSession() {
         return session;

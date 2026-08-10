@@ -28,11 +28,15 @@ import org.keycloak.migration.MigrationModel;
 import org.keycloak.models.jpa.entities.MigrationModelEntity;
 
 /**
+ * 数据库迁移版本适配器：读写 {@link MigrationModelEntity} 记录 Keycloak  schema 版本。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class MigrationModelAdapter implements MigrationModel {
+    /** JPA 实体管理器。 */
     protected EntityManager em;
+    /** 当前安装最新的迁移记录。 */
     protected MigrationModelEntity latest;
 
     private static final int RESOURCE_TAG_LENGTH = 5;
@@ -54,6 +58,7 @@ public class MigrationModelAdapter implements MigrationModel {
         return latest != null ? latest.getId() : null;
     }
 
+    /** 加载数据库中最新一条迁移记录。 */
     private void init() {
         TypedQuery<MigrationModelEntity> q = em.createNamedQuery("getLatest", MigrationModelEntity.class);
         q.setMaxResults(1);
@@ -69,7 +74,7 @@ public class MigrationModelAdapter implements MigrationModel {
     public void setStoredVersion(String version) {
         String resourceTag = createResourceTag();
 
-        // Make sure resource-tag is unique within current installation
+        // 确保 resource-tag 在当前安装内唯一，避免主键冲突
         while (em.find(MigrationModelEntity.class, resourceTag) != null) {
             resourceTag = createResourceTag();
         }
