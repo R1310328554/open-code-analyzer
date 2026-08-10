@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T05:01:25Z",
   "files": [
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/users/User.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/utils/Base64Decode.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/utils/PasswordEncoderUtil.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/utils/PasswordGeneratorUtil.java",
-    "plugin-default-impl/nacos-default-auth-plugin/src/main/java/com/alibaba/nacos/plugin/auth/impl/utils/RemoteServerUtil.java",
-    "plugin-default-impl/nacos-default-control-plugin/src/main/java/com/alibaba/nacos/plugin/control/impl/NacosConnectionControlManager.java",
-    "plugin-default-impl/nacos-default-control-plugin/src/main/java/com/alibaba/nacos/plugin/control/impl/NacosControlManagerBuilder.java",
-    "plugin-default-impl/nacos-default-control-plugin/src/main/java/com/alibaba/nacos/plugin/control/impl/NacosTpsControlManager.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-base/src/main/java/com/alibaba/nacos/plugin/datasource/impl/base/BaseConfigInfoBetaMapper.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-base/src/main/java/com/alibaba/nacos/plugin/datasource/impl/base/BaseConfigInfoMapper.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-base/src/main/java/com/alibaba/nacos/plugin/datasource/impl/base/BaseConfigInfoTagMapper.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-base/src/main/java/com/alibaba/nacos/plugin/datasource/impl/base/BaseConfigTagsRelationMapper.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-base/src/main/java/com/alibaba/nacos/plugin/datasource/impl/base/BaseGroupCapacityMapper.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-base/src/main/java/com/alibaba/nacos/plugin/datasource/impl/base/BaseTenantCapacityMapper.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-base/src/main/java/com/alibaba/nacos/plugin/datasource/impl/base/BaseTenantInfoMapper.java",
     "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-base/src/main/java/com/alibaba/nacos/plugin/datasource/impl/dialect/AbstractDatabaseDialect.java",
     "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-base/src/main/java/com/alibaba/nacos/plugin/datasource/impl/enums/TrustedPostgresqFunctionEnum.java",
     "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/AbstractMapperByDerby.java",
@@ -33,5 +18,5 @@
     "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/TenantInfoMapperByDerby.java"
   ],
   "remaining_pending": 227,
-  "done": 2280
+  "done": 2295
 }
