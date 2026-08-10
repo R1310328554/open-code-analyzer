@@ -24,7 +24,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Metadata describing proof types supported by the Credential Issuer.
+ * 凭证颁发者支持的某一 proof 类型的元数据。
+ * <p>包含签名算法与可选的密钥证明要求。</p>
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
@@ -34,29 +35,33 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProofTypeMetadata {
 
-    // Algorithms supported for this proof type
+    /** 该 proof 类型支持的签名算法。 */
     @JsonProperty("proof_signing_alg_values_supported")
     private List<String> proofSigningAlgValuesSupported;
 
-    // Requirements on key attestations for this proof type
-    // If the Credential Issuer does not require a key attestation,
-    // this parameter MUST NOT be present in the metadata.
+    /**
+     * 该 proof 类型的密钥证明要求；颁发者不要求时此字段不得出现。
+     */
     @JsonProperty("key_attestations_required")
     private KeyAttestationsRequired keyAttestationsRequired;
 
+    /** @return 支持的签名算法 */
     public List<String> getProofSigningAlgValuesSupported() {
         return proofSigningAlgValuesSupported;
     }
 
+    /** @param proofSigningAlgValuesSupported 签名算法 @return 当前实例 */
     public ProofTypeMetadata setProofSigningAlgValuesSupported(List<String> proofSigningAlgValuesSupported) {
         this.proofSigningAlgValuesSupported = proofSigningAlgValuesSupported;
         return this;
     }
 
+    /** @return 密钥证明要求，可能为 {@code null} */
     public KeyAttestationsRequired getKeyAttestationsRequired() {
         return keyAttestationsRequired;
     }
 
+    /** @param keyAttestationsRequired 密钥证明要求 @return 当前实例 */
     public ProofTypeMetadata setKeyAttestationsRequired(KeyAttestationsRequired keyAttestationsRequired) {
         this.keyAttestationsRequired = keyAttestationsRequired;
         return this;

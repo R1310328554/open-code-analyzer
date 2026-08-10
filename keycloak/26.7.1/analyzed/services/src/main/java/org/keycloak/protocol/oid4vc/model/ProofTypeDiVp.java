@@ -19,7 +19,8 @@ package org.keycloak.protocol.oid4vc.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * See: https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-di_vp-proof-type
+ * {@code di_vp} proof 类型的元数据占位类。
+ * <p>规范见 https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-di_vp-proof-type；当前无额外字段，保留类型扩展点。</p>
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */

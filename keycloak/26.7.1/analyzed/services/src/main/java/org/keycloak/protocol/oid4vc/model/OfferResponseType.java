@@ -22,26 +22,38 @@ import java.util.Optional;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 /**
- * Type of credential offer uri to be returned.
+ * 凭证发放 URI 的返回形式。
+ * <p>控制客户端收到 QR 码、纯 URI 或二者组合。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 public enum OfferResponseType {
 
+    /** 仅返回 QR 码内容。 */
     QR("qr"),
+    /** 仅返回 URI 字符串。 */
     URI("uri"),
+    /** 同时返回 URI 与 QR 码。 */
     URI_QR("uri_qr");
 
+    /** 配置/序列化使用的字符串值。 */
     private final String value;
 
     OfferResponseType(String value) {
         this.value = value;
     }
 
+    /** @return 枚举对应的字符串值 */
     public String getValue() {
         return value;
     }
 
+    /**
+     * 从字符串解析枚举值。
+     * @param value 配置字符串
+     * @return 对应枚举常量
+     * @throws IllegalArgumentException 不支持的取值
+     */
     @JsonCreator
     public static OfferResponseType fromString(String value) {
         return Optional.ofNullable(value)

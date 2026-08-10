@@ -19,14 +19,18 @@ package org.keycloak.protocol.oid4vc.model;
 
 
 /**
- * Enum to provide potential proof types for holder-binding
+ * 持有者绑定（holder-binding）proof 类型常量。
+ * <p>与凭证颁发者元数据及 {@link ProofValidator} 实现中的类型键一致。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 public final class ProofType {
 
+    /** JWT 密钥持有证明类型键 {@code jwt}。 */
     public static final String JWT = "jwt";
+    /** Data Integrity VP 证明类型键 {@code di_vp}。 */
     public static final String DI_PROOF = "di_vp";
+    /** 密钥证明（attestation）类型键 {@code attestation}。 */
     public static final String ATTESTATION = "attestation";
 
 }

@@ -24,21 +24,24 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * OID4VCI 客户端 nonce（c_nonce）JWT 载荷。
+ * <p>继承 {@link org.keycloak.representations.JsonWebToken}，通过 {@code salt} 为可预测的 c_nonce 值提供密码学随机盐。</p>
+ *
  * @author Pascal Knüppel
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class JwtCNonce extends JsonWebToken {
 
-    /**
-     * cryptographically strong random string that serves as salt for the otherwise predictable c_nonce values
-     */
+    /** 密码学强度随机字符串，作为 c_nonce 的盐值，避免 nonce 可预测。 */
     @JsonProperty("salt")
     private String salt;
 
+    /** @return 盐值字符串 */
     public String getSalt() {
         return salt;
     }
 
+    /** @param salt 盐值 @return 当前实例（链式调用） */
     public JwtCNonce salt(String salt) {
         this.salt = salt;
         return this;

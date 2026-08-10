@@ -28,84 +28,95 @@ import static org.keycloak.OID4VCConstants.CREDENTIAL_CONFIGURATION_ID;
 import static org.keycloak.OID4VCConstants.CREDENTIAL_IDENTIFIERS;
 
 /**
- * Represents an authorization_details object in the Token Request as per OID4VCI.
+ * OID4VCI 令牌请求中的 {@code authorization_details} 对象。
+ * <p>扩展 OAuth 2.0 授权详情，携带凭证配置 ID、声明约束及发放流程关联标识。</p>
  *
  * @author <a href="mailto:Forkim.Akwichek@adorsys.com">Forkim Akwichek</a>
  */
 public class OID4VCAuthorizationDetail extends AuthorizationDetailsJSONRepresentation implements Cloneable {
 
+    /** JSON 字段名：声明描述列表 {@code claims}。 */
     public static final String CLAIMS = "claims";
+    /** JSON 字段名：凭证发放 ID {@code credentials_offer_id}。 */
     public static final String CREDENTIALS_OFFER_ID = "credentials_offer_id";
 
-    /**
-     * Access token (and refresh token) claim with reference to the issued-credential ID. Can be used to link issued-credential
-     * with token to be able to check at credential-request (or refresh-token request) if particular issued-credential still exists
-     */
+    /** 访问/刷新令牌中引用的已签发凭证 ID，用于凭证请求时校验凭证是否仍存在。 */
     public static final String ISSUED_CREDENTIAL_ID = "issued_credential_id";
 
+    /** 凭证配置标识符。 */
     @JsonProperty(CREDENTIAL_CONFIGURATION_ID)
     private String credentialConfigurationId;
 
     /**
-     * The 'credential_identifiers' property is populated by the Issuer in the AccessToken Response
-     * <p/>
-     * Identifying Credentials Being Issued Throughout the Issuance Flow
-     * https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-3.3.4
-     * <p/>
-     * The property should not be used in Authorization or AccessToken requests.
+     * 颁发者在访问令牌响应中填充的凭证标识符列表。
+     * <p>用于在整个发放流程中标识待签发凭证；不应出现在授权或访问令牌请求中。</p>
      */
     @JsonProperty(CREDENTIAL_IDENTIFIERS)
     private List<String> credentialIdentifiers;
 
+    /** 钱包请求的声明描述列表。 */
     @JsonProperty(CLAIMS)
     private List<ClaimsDescription> claims;
 
+    /** 关联的凭证发放 ID。 */
     @JsonProperty(CREDENTIALS_OFFER_ID)
     private String credentialsOfferId;
 
+    /** 已签发凭证的内部 ID。 */
     @JsonProperty(ISSUED_CREDENTIAL_ID)
     private String issuedCredentialId;
 
+    /** @return 凭证配置 ID */
     public String getCredentialConfigurationId() {
         return credentialConfigurationId;
     }
 
+    /** @param credentialConfigurationId 凭证配置 ID */
     public void setCredentialConfigurationId(String credentialConfigurationId) {
         this.credentialConfigurationId = credentialConfigurationId;
     }
 
+    /** @return 凭证标识符列表 */
     public List<String> getCredentialIdentifiers() {
         return credentialIdentifiers;
     }
 
+    /** @param credentialIdentifiers 凭证标识符列表 */
     public void setCredentialIdentifiers(List<String> credentialIdentifiers) {
         this.credentialIdentifiers = credentialIdentifiers;
     }
 
+    /** @return 凭证发放 ID */
     public String getCredentialsOfferId() {
         return credentialsOfferId;
     }
 
+    /** @param credentialsOfferId 凭证发放 ID */
     public void setCredentialsOfferId(String credentialsOfferId) {
         this.credentialsOfferId = credentialsOfferId;
     }
 
+    /** @return 已签发凭证 ID */
     public String getIssuedCredentialId() {
         return issuedCredentialId;
     }
 
+    /** @param issuedCredentialId 已签发凭证 ID */
     public void setIssuedCredentialId(String issuedCredentialId) {
         this.issuedCredentialId = issuedCredentialId;
     }
 
+    /** @return 声明描述列表 */
     public List<ClaimsDescription> getClaims() {
         return claims;
     }
 
+    /** @param claims 声明描述列表 */
     public void setClaims(List<ClaimsDescription> claims) {
         this.claims = claims;
     }
 
+    /** @return 通过 JSON 序列化实现的深拷贝 */
     @Override
     public OID4VCAuthorizationDetail clone() {
         String encoded = JsonSerialization.valueAsString(this);

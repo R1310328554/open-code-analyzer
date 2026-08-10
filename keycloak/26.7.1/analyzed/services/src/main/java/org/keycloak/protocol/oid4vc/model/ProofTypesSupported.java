@@ -32,7 +32,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import org.jboss.logging.Logger;
 
 /**
- * See: https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-proof-types
+ * 凭证颁发者支持的 proof 类型集合（动态 JSON 映射）。
+ * <p>键为 proof 类型（如 {@code jwt}），值为 {@link SupportedProofTypeData}；规范见 https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-proof-types。</p>
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
@@ -41,8 +42,16 @@ public class ProofTypesSupported {
 
     private static final Logger LOGGER = Logger.getLogger(ProofTypesSupported.class);
 
+    /** proof 类型键到元数据的映射。 */
     protected Map<String, SupportedProofTypeData> supportedProofTypes = new HashMap<>();
 
+    /**
+     * 根据已注册的 {@link ProofValidator} 提供者构建支持的 proof 类型映射。
+     * @param keycloakSession Keycloak 会话
+     * @param keyAttestationsRequired 全局密钥证明要求
+     * @param globalSupportedSigningAlgorithms 全局支持的签名算法
+     * @return 聚合后的 proof 类型支持信息
+     */
     public static ProofTypesSupported parse(KeycloakSession keycloakSession,
                                             KeyAttestationsRequired keyAttestationsRequired,
                                             List<String> globalSupportedSigningAlgorithms) {
@@ -57,8 +66,9 @@ public class ProofTypesSupported {
     }
 
     /**
-     * Returns a new {@link ProofTypesSupported} instance that only contains the given proof types.
-     * Types that are not present in this instance are ignored.
+     * 按给定类型列表过滤，仅保留本实例中已存在的 proof 类型。
+     * @param types 要保留的 proof 类型键列表
+     * @return 过滤后的新实例
      */
     public ProofTypesSupported filterByTypes(List<String> types) {
         ProofTypesSupported filtered = new ProofTypesSupported();
@@ -77,6 +87,11 @@ public class ProofTypesSupported {
         return filtered;
     }
 
+    /**
+     * 从 JSON 字符串反序列化。
+     * @param jsonString JSON 文本
+     * @return 解析后的实例
+     */
     public static ProofTypesSupported fromJsonString(String jsonString) {
         try {
             return JsonSerialization.readValue(jsonString, ProofTypesSupported.class);
@@ -85,17 +100,25 @@ public class ProofTypesSupported {
         }
     }
 
+    /** @return proof 类型到元数据的映射（JSON 任意属性） */
     @JsonAnyGetter
     public Map<String, SupportedProofTypeData> getSupportedProofTypes() {
         return supportedProofTypes;
     }
 
+    /**
+     * 反序列化时设置单个 proof 类型条目。
+     * @param name proof 类型键
+     * @param value 元数据
+     * @return 当前实例
+     */
     @JsonAnySetter
     public ProofTypesSupported setSupportedProofTypes(String name, SupportedProofTypeData value) {
         supportedProofTypes.put(name, value);
         return this;
     }
 
+    /** @return JSON 字符串表示 */
     public String toJsonString() {
         try {
             return JsonSerialization.writeValueAsString(this);

@@ -21,10 +21,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Deprecated: Represents a single JWT-based proof (historical 'proof' structure).
- * Prefer using {@link Proofs} with the appropriate array field (e.g., jwt).
- * This class is kept for backward compatibility only.
- * Supports 'jwt' proof type as per OID4VCI Draft 15.
+ * 已弃用：历史 {@code proof} 结构中的单条 JWT 证明。
+ * <p>请改用 {@link Proofs} 及对应数组字段（如 {@code jwt}）。本类仅保留向后兼容，支持 OID4VCI Draft 15 的 {@code jwt} proof 类型。</p>
  *
  * @see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-15.html#name-credential-request">OID4VCI Credential Request</a>
  */
@@ -32,33 +30,44 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @Deprecated
 public class JwtProof {
 
+    /** JWT 格式的密钥持有证明字符串。 */
     @JsonProperty("jwt")
     private String jwt;
 
+    /** proof 类型标识（如 {@code jwt}）。 */
     @JsonProperty("proof_type")
     private String proofType;
 
+    /** 无参构造，供 Jackson 反序列化使用。 */
     public JwtProof() {
     }
 
+    /**
+     * @param jwt JWT 证明字符串
+     * @param proofType proof 类型
+     */
     public JwtProof(String jwt, String proofType) {
         this.jwt = jwt;
         this.proofType = proofType;
     }
 
+    /** @return JWT 证明字符串 */
     public String getJwt() {
         return jwt;
     }
 
+    /** @param jwt JWT 证明 @return 当前实例 */
     public JwtProof setJwt(String jwt) {
         this.jwt = jwt;
         return this;
     }
 
+    /** @return proof 类型标识 */
     public String getProofType() {
         return proofType;
     }
 
+    /** @param proofType proof 类型 @return 当前实例 */
     public JwtProof setProofType(String proofType) {
         this.proofType = proofType;
         return this;

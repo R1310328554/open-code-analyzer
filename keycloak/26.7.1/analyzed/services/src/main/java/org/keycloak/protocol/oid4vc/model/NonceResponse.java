@@ -22,31 +22,24 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * NonceResponse as defined in
- * https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-nonce-response
+ * OID4VCI nonce 端点响应体。
+ * <p>规范见 https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#name-nonce-response</p>
  *
  * @author Pascal Knüppel
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NonceResponse {
 
-    /**
-     * String containing a nonce to be used when creating a proof of possession of the key proof. This value MUST be
-     * unpredictable.
-     */
+    /** 用于构造密钥持有证明的 c_nonce，必须不可预测。 */
     @JsonProperty("c_nonce")
     private String nonce;
 
-    /**
-     * @see #nonce
-     */
+    /** @return c_nonce 字符串 @see #nonce */
     public String getNonce() {
         return nonce;
     }
 
-    /**
-     * @see #nonce
-     */
+    /** @param nonce c_nonce @see #nonce */
     public void setNonce(String nonce) {
         this.nonce = nonce;
     }

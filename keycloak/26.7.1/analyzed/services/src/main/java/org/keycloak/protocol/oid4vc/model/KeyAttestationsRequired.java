@@ -26,7 +26,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Key attestation requirements on key storage and user authentication's attack resistance.
+ * 凭证颁发者元数据中声明的密钥证明要求。
+ * <p>约束密钥存储安全级别与用户认证的抗攻击能力。</p>
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  * @see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-15.html#name-credential-issuer-metadata-p">
@@ -35,19 +36,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class KeyAttestationsRequired {
 
+    /** 要求的密钥存储级别列表。 */
     @JsonProperty("key_storage")
     private List<String> keyStorage;
 
+    /** 要求的用户认证抗攻击级别列表。 */
     @JsonProperty("user_authentication")
     private List<String> userAuthentication;
 
-    /**
-     * Default constructor for Jackson deserialization
-     */
+    /** 无参构造，供 Jackson 反序列化使用。 */
     public KeyAttestationsRequired() {
-        // Default constructor for Jackson deserialization
+        // Jackson 反序列化占位
     }
 
+    /**
+     * 从凭证范围模型解析密钥证明要求；未启用时返回 {@code null}。
+     * @param credentialScope 凭证范围模型
+     * @return 密钥证明要求或 {@code null}
+     */
     public static KeyAttestationsRequired parse(CredentialScopeModel credentialScope) {
         KeyAttestationsRequired keyAttestationsRequired = null;
         if (credentialScope.isKeyAttestationRequired()) {
@@ -58,19 +64,23 @@ public class KeyAttestationsRequired {
         return keyAttestationsRequired;
     }
 
+    /** @return 要求的密钥存储级别 */
     public List<String> getKeyStorage() {
         return keyStorage;
     }
 
+    /** @param keyStorage 密钥存储级别 @return 当前实例 */
     public KeyAttestationsRequired setKeyStorage(List<String> keyStorage) {
         this.keyStorage = keyStorage;
         return this;
     }
 
+    /** @return 要求的用户认证级别 */
     public List<String> getUserAuthentication() {
         return userAuthentication;
     }
 
+    /** @param userAuthentication 用户认证级别 @return 当前实例 */
     public KeyAttestationsRequired setUserAuthentication(List<String> userAuthentication) {
         this.userAuthentication = userAuthentication;
         return this;

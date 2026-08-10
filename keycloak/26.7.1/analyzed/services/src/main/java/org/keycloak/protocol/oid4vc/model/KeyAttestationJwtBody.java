@@ -26,7 +26,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Represents the JWT payload for a key attestation as per OID4VCI specification.
+ * OID4VCI 密钥证明（key attestation）JWT 载荷。
+ * <p>描述被证明密钥、存储与用户认证要求、nonce 及状态等信息。</p>
  *
  * @see <a href="https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-15.html#name-key-attestations">OID4VCI Specification</a>
  *
@@ -35,95 +36,119 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class KeyAttestationJwtBody {
 
+    /** 签发时间（Unix 秒）。 */
     @JsonProperty("iat")
     private Long iat;
 
+    /** 过期时间（Unix 秒）。 */
     @JsonProperty("exp")
     private Long exp;
 
+    /** 被证明的公钥列表（JWK 格式）。 */
     @JsonProperty("attested_keys")
     private List<JWK> attestedKeys;
 
+    /** 密钥存储安全级别声明。 */
     @JsonProperty("key_storage")
     private List<String> keyStorage;
 
+    /** 用户认证抗攻击能力声明。 */
     @JsonProperty("user_authentication")
     private List<String> userAuthentication;
 
+    /** 认证/合规标识（如 FIDO 认证级别）。 */
     @JsonProperty("certification")
     private String certification;
 
+    /** 与凭证请求绑定的 nonce。 */
     @JsonProperty("nonce")
     private String nonce;
 
+    /** 密钥或证明的扩展状态信息。 */
     @JsonProperty("status")
     private Map<String, Object> status;
 
+    /** @return 签发时间 */
     public Long getIat() {
         return iat;
     }
 
+    /** @param iat 签发时间 */
     public void setIat(Long iat) {
         this.iat = iat;
     }
 
+    /** @return 过期时间 */
     public Long getExp() {
         return exp;
     }
 
+    /** @param exp 过期时间 */
     public void setExp(Long exp) {
         this.exp = exp;
     }
 
+    /** @return 被证明公钥列表 */
     public List<JWK> getAttestedKeys() {
         return attestedKeys;
     }
 
+    /** @param attestedKeys 被证明公钥 @return 当前实例 */
     public KeyAttestationJwtBody setAttestedKeys(List<JWK> attestedKeys) {
         this.attestedKeys = attestedKeys;
         return this;
     }
 
+    /** @return 密钥存储声明 */
     public List<String> getKeyStorage() {
         return keyStorage;
     }
 
+    /** @param keyStorage 密钥存储声明 @return 当前实例 */
     public KeyAttestationJwtBody setKeyStorage(List<String> keyStorage) {
         this.keyStorage = keyStorage;
         return this;
     }
 
+    /** @return 用户认证声明 */
     public List<String> getUserAuthentication() {
         return userAuthentication;
     }
 
+    /** @param userAuthentication 用户认证声明 @return 当前实例 */
     public KeyAttestationJwtBody setUserAuthentication(List<String> userAuthentication) {
         this.userAuthentication = userAuthentication;
         return this;
     }
 
+    /** @return 认证标识 */
     public String getCertification() {
         return certification;
     }
 
+    /** @param certification 认证标识 @return 当前实例 */
     public KeyAttestationJwtBody setCertification(String certification) {
         this.certification = certification;
         return this;
     }
 
+    /** @return 绑定 nonce */
     public String getNonce() {
         return nonce;
     }
 
+    /** @param nonce 绑定 nonce @return 当前实例 */
     public KeyAttestationJwtBody setNonce(String nonce) {
         this.nonce = nonce;
         return this;
     }
 
+    /** @return 扩展状态映射 */
     public Map<String, Object> getStatus() {
         return status;
     }
 
+    /** @param status 扩展状态 */
     public void setStatus(Map<String, Object> status) {
         this.status = status;
     }
