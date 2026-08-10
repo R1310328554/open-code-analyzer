@@ -14,6 +14,7 @@
 #  limitations under the License.
 #
 """
+数据库模式同步：对比 api/db/db_models.py 与 MySQL，用 peewee-migrate 生成/执行迁移。
 Database Schema Sync Script
 
 This script synchronizes database models defined in api/db/db_models.py
@@ -46,6 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 def validate_version(version: str) -> bool:
+    # 校验版本号格式 vxx.xx.xx
     """Validate version format: vxx.xx.xx where xx are digits"""
     pattern = r"^v\d+\.\d+\.\d+$"
     return bool(re.match(pattern, version))
@@ -57,6 +59,7 @@ def version_to_dirname(version: str) -> str:
 
 
 def load_db_models():
+    # 动态加载 db_models.py 中所有 Peewee Model 子类
     """Load database models from api/db/db_models.py"""
     models_path = os.path.join(PROJECT_BASE, "api", "db", "db_models.py")
 
@@ -83,6 +86,7 @@ def load_db_models():
 
 
 def create_database_connection(host: str, port: int, user: str, password: str, database: str):
+    # 创建 MySQLDatabase 连接实例
     """Create MySQL database connection from command line arguments"""
     db = MySQLDatabase(database, host=host, port=port, user=user, password=password, charset="utf8mb4")
     return db
@@ -121,6 +125,7 @@ PEEWEE_TO_MYSQL_TYPE = {
 
 
 def get_table_columns(db, table_name: str) -> dict:
+    # 从 information_schema 读取表列定义
     """Get column information from database table
 
     Returns:
@@ -218,6 +223,7 @@ def normalize_field_type(field: Field) -> str:
 
 
 def compare_fields(model_fields: dict, db_columns: dict) -> dict:
+    # 对比模型字段与库表列，返回 added/changed/removed
     """Compare model fields with database columns
 
     Returns:
@@ -523,6 +529,7 @@ def generate_modify_field_sql(table_name: str, field: Field, field_name: str) ->
 
 
 def generate_migration_content(new_tables: list, field_changes: dict, migrate_dir: str, migration_name: str, drop_fields: bool = False) -> str:
+    # 生成 peewee-migrate 迁移 Python 文件内容
     """Generate migration file content"""
     lines = [
         '"""Peewee migrations."""',
@@ -638,6 +645,7 @@ def generate_migration_content(new_tables: list, field_changes: dict, migrate_di
 
 
 def create_migration(router: Router, models: list, db, name: str = "auto", drop_fields: bool = False):
+    # 自动检测新表/新字段/类型变更并写入 tools/migrate/{version}/
     """Create a new migration by auto-detecting model changes
 
     Detects:
@@ -729,6 +737,7 @@ def create_migration(router: Router, models: list, db, name: str = "auto", drop_
 
 
 def run_migrations(router: Router):
+    # 执行 Router 中所有待处理迁移
     """Run all pending migrations"""
     try:
         diff = router.diff
@@ -744,6 +753,7 @@ def run_migrations(router: Router):
 
 
 def list_migrations(router: Router):
+    # 列出已应用与 pending 迁移文件
     """List all migrations"""
     todo = router.todo
     if not todo:
@@ -758,6 +768,7 @@ def list_migrations(router: Router):
 
 
 def diff_schema(models: list, db):
+    # 打印模型与数据库之间的表/字段差异摘要
     """Show schema differences between models and database"""
     logger.info("Checking schema differences...")
 
@@ -832,6 +843,7 @@ def diff_schema(models: list, db):
 
 
 def main():
+    # CLI：--list/--create/--migrate/--diff 及 MySQL 连接参数
     parser = argparse.ArgumentParser(
         description="Database Schema Synchronization Tool using peewee-migrate",
         formatter_class=argparse.RawDescriptionHelpFormatter,

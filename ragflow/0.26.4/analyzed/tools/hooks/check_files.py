@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Git 暂存区文件质量检查：JSON/YAML、EOF、空白、合并冲突、符号链接等 pre-commit 钩子。"""
 from __future__ import annotations
 
 import ast
@@ -24,6 +25,7 @@ def _read_bytes(path: Path) -> bytes:
 
 
 def _staged_paths() -> list[Path]:
+    # 读取 git diff --cached 中的待检路径
     proc = subprocess.run(
         ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR"],
         check=True,
@@ -42,6 +44,7 @@ def _report(errors: list[str]) -> int:
 
 
 def check_json(paths: list[Path], fix: bool = False) -> int:
+    # 校验暂存 .json 文件语法
     errors: list[str] = []
     for path in paths:
         if path.suffix != ".json" or not path.is_file():
@@ -54,6 +57,7 @@ def check_json(paths: list[Path], fix: bool = False) -> int:
 
 
 def check_yaml(paths: list[Path], fix: bool = False) -> int:
+    # 校验暂存 .yaml/.yml 文件语法
     errors: list[str] = []
     for path in paths:
         if path.suffix not in {".yaml", ".yml"} or not path.is_file():
@@ -66,6 +70,7 @@ def check_yaml(paths: list[Path], fix: bool = False) -> int:
 
 
 def check_eof(paths: list[Path], fix: bool = False) -> int:
+    # 确保文件以换行符结尾，--fix 可自动补全
     errors: list[str] = []
     for path in paths:
         if not path.is_file():
@@ -85,6 +90,7 @@ _TRAILING_WS_RE = re.compile(r"[ \t]+(?=\r?\n|$)")
 
 
 def check_trailing_whitespace(paths: list[Path], fix: bool = False) -> int:
+    # 检测行尾空格/制表符，--fix 可自动删除
     errors: list[str] = []
     for path in paths:
         if not path.is_file():
@@ -111,6 +117,7 @@ def check_trailing_whitespace(paths: list[Path], fix: bool = False) -> int:
 
 
 def check_mixed_line_endings(paths: list[Path], fix: bool = False) -> int:
+    # 检测 CRLF 与 LF 混用，--fix 统一为 LF
     errors: list[str] = []
     for path in paths:
         if not path.is_file():
@@ -128,6 +135,7 @@ def check_mixed_line_endings(paths: list[Path], fix: bool = False) -> int:
 
 
 def check_merge_conflicts(paths: list[Path], fix: bool = False) -> int:
+    # 检测 <<<<<<< / ======= / >>>>>>> 合并冲突标记
     errors: list[str] = []
     for path in paths:
         if not path.is_file():
@@ -139,6 +147,7 @@ def check_merge_conflicts(paths: list[Path], fix: bool = False) -> int:
 
 
 def check_symlinks(paths: list[Path], fix: bool = False) -> int:
+    # 检测指向不存在目标的断链符号链接
     errors: list[str] = []
     for path in paths:
         if path.is_symlink() and not path.exists():
@@ -147,6 +156,7 @@ def check_symlinks(paths: list[Path], fix: bool = False) -> int:
 
 
 def check_case_conflicts(_: list[Path], fix: bool = False) -> int:
+    # 全仓库扫描仅大小写不同的重复路径
     proc = subprocess.run(
         ["git", "ls-files"],
         check=True,
@@ -165,6 +175,7 @@ def check_case_conflicts(_: list[Path], fix: bool = False) -> int:
 
 
 def check_comment_ascii(paths: list[Path], fix: bool = False) -> int:
+    # 确保 Python 注释与 docstring 仅含 ASCII
     """Ensure Python comments and docstrings contain only ASCII characters.
 
     Ported from the legacy check_comment_ascii.py. The fix flag is accepted
@@ -210,7 +221,7 @@ def check_comment_ascii(paths: list[Path], fix: bool = False) -> int:
     return _report(errors)
 
 
-CHECKS = {
+CHECKS = {  # 子命令名 → 检查函数映射
     "json": check_json,
     "yaml": check_yaml,
     "eof": check_eof,
@@ -224,6 +235,7 @@ CHECKS = {
 
 
 def main() -> int:
+    # 解析 <check-name> [--fix]，对暂存文件执行对应检查
     args = sys.argv[1:]
     valid = set(CHECKS)
     if not args or args[0] not in valid or len(args) > 2 or (len(args) == 2 and args[1] != "--fix"):

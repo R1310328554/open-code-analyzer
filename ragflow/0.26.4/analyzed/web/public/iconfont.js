@@ -1,3 +1,4 @@
+// RAGFlow 前端 iconfont SVG 雪碧图脚本：运行时注入 symbol 供 Icon 组件引用。
 /* eslint-disable */
 ((window._iconfont_svg_string_4909832 =
   '<svg>' +

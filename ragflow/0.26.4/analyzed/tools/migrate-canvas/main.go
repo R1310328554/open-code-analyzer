@@ -8,6 +8,8 @@
 //      http://www.apache.org/licenses/LICENSE-2.0
 //
 
+// migrate-canvas — 对 Canvas DSL JSON 应用 NormalizeForCanvas 并支持 golden 漂移检测。
+
 // migrate-canvas applies Go's dsl.NormalizeForCanvas to one or more
 // JSON files and emits the normalized form. It is the "Go-side" of
 // the parity corpus described in the agent-go-port-design doc §7.
@@ -59,6 +61,7 @@ import (
 )
 
 func main() {
+	// 解析 -golden/-write-golden/-walk，批量或单文件规范化 DSL
 	goldenFlag := flag.String("golden", "", "path to golden file for CI drift check (mutually exclusive with -write-golden)")
 	writeGolden := flag.Bool("write-golden", false, "write the normalized output to <input>.golden (update pattern)")
 	walkDir := flag.String("walk", "", "if set, treat positional args as a directory; every *.json file is normalised")
@@ -93,6 +96,7 @@ func main() {
 }
 
 func runOne(path, goldenPath string, writeGolden bool) error {
+	// 读取 JSON → NormalizeForCanvas → 输出/golden 对比/写 golden
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("read: %w", err)
@@ -142,6 +146,7 @@ func runOne(path, goldenPath string, writeGolden bool) error {
 }
 
 func runWalk(dir, goldenDir string, writeGolden bool) {
+	// 遍历目录下 *.json 并逐文件调用 runOne
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "migrate-canvas: walk: %v\n", err)
@@ -174,6 +179,7 @@ func runWalk(dir, goldenDir string, writeGolden bool) {
 }
 
 func marshalPretty(v any) ([]byte, error) {
+	// 缩进 JSON 编码，不转义 HTML
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetIndent("", "  ")

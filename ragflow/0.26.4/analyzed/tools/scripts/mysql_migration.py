@@ -14,6 +14,7 @@
 #  limitations under the License.
 #
 """
+MySQL 数据迁移 CLI：分阶段迁移 tenant_llm→provider/instance/model，支持 dry-run 与版本标记。
 MySQL Data Migration Script
 
 This script provides a flexible MySQL data migration tool that supports:
@@ -57,6 +58,7 @@ MIGRATION_DB_VERSION_MARKER = "mysql_migration.database.version"
 
 
 class MigrationConfig:
+    # MySQL 连接配置，支持 YAML 或命令行参数
     """Configuration for MySQL connection"""
 
     def __init__(self, host: str = "localhost", port: int = 3306, user: str = "root", password: str = "", database: str = "rag_flow"):
@@ -93,6 +95,7 @@ class MigrationConfig:
 
 
 class MigrationStats:
+    # 记录各阶段耗时、行数与涉及表名
     """Track migration statistics"""
 
     def __init__(self):
@@ -129,6 +132,7 @@ class MigrationStats:
 
 
 class MigrationDatabase:
+    # 迁移用 DB 封装：建表、SQL 执行、system_settings 版本标记
     """Database wrapper for migrations"""
 
     def __init__(self, config: MigrationConfig):
@@ -270,6 +274,7 @@ class TenantModelProvider(BaseModel):
 
 
 class MigrationStage:
+    # 迁移阶段基类：check() 判断是否需要执行，execute() 写入数据
     """Base class for migration stages"""
 
     name = "base_stage"
@@ -303,6 +308,7 @@ class MigrationStage:
 
 
 class TenantModelProviderStage(MigrationStage):
+    # 阶段 1：tenant_llm.llm_factory → tenant_model_provider
     """Migrate tenant_llm to tenant_model_provider"""
 
     name = "tenant_model_provider"
@@ -437,6 +443,7 @@ class TenantModelProviderStage(MigrationStage):
 
 
 class TenantModelInstanceStage(MigrationStage):
+    # 阶段 2：tenant_llm API 密钥 → tenant_model_instance
     """Migrate tenant_llm to tenant_model_instance"""
 
     name = "tenant_model_instance"
@@ -691,6 +698,7 @@ class TenantModelInstanceStage(MigrationStage):
 
 
 class TenantModelStage(MigrationStage):
+    # 阶段 3：tenant_llm → tenant_model（依赖前两阶段表）
     """Migrate tenant_llm to tenant_model"""
 
     name = "tenant_model"
@@ -990,6 +998,7 @@ class TenantModelStage(MigrationStage):
 
 
 class ModelIdConfigStage(MigrationStage):
+    # 阶段 4：规范化各表 JSON 配置中的 legacy model ID
     """Normalize stored model IDs from model@provider to model@default@provider."""
 
     name = "model_id_config"
@@ -1228,7 +1237,7 @@ class ModelIdConfigStage(MigrationStage):
 
 
 # Registry of available migration stages
-MIGRATION_STAGES = {
+MIGRATION_STAGES = {  # 可用阶段名 → Stage 类
     "tenant_model_provider": TenantModelProviderStage,
     "tenant_model_instance": TenantModelInstanceStage,
     "tenant_model": TenantModelStage,
@@ -1246,6 +1255,8 @@ def list_available_stages():
 
 
 def run_migration(
+    # 按序执行指定 stages，支持 dry_run/create_table_only/版本跳过
+
     config: MigrationConfig,
     stages: list,
     dry_run: bool = True,
@@ -1333,6 +1344,7 @@ def run_migration(
 
 
 def check_database_version(config: MigrationConfig, target_version: str) -> int:
+    # 比较 system_settings 中迁移版本，返回 0=无需迁移
     db = MigrationDatabase(config)
     try:
         db.connect()
@@ -1362,6 +1374,7 @@ def check_database_version(config: MigrationConfig, target_version: str) -> int:
 
 
 def mark_database_version(config: MigrationConfig, version: str) -> None:
+    # 写入 MIGRATION_DB_VERSION_MARKER 到 system_settings
     db = MigrationDatabase(config)
     try:
         db.connect()
@@ -1372,6 +1385,7 @@ def mark_database_version(config: MigrationConfig, version: str) -> None:
 
 
 def main():
+    # CLI：--stages/--execute/--list-stages/--check-database-version 等
     parser = argparse.ArgumentParser(
         description="MySQL Data Migration Tool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
