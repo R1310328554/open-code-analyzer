@@ -1,5 +1,8 @@
 package main
 
+// stream 命令：持续生成合成日志流并输出到 stdout，
+// 支持 JSON/raw 格式、应用过滤、密集流量区间及 OTEL 资源与 trace 属性。
+
 import (
 	"encoding/json"
 	"flag"
@@ -19,6 +22,7 @@ type logEntry struct {
 	Trace     *traceContext     `json:"trace,omitempty"`    // OTEL trace context
 }
 
+// traceContext 携带 OpenTelemetry trace_id 与 span_id。
 type traceContext struct {
 	TraceID string `json:"trace_id"`
 	SpanID  string `json:"span_id"`
@@ -180,6 +184,7 @@ OpenTelemetry Attributes:
 	}
 }
 
+// parseLabels 将 Prometheus 风格 {key="val",...} 标签串解析为 map。
 // parseLabels converts a Prometheus-style label string into a map
 func parseLabels(labels string) map[string]string {
 	// Remove the enclosing braces
@@ -203,6 +208,7 @@ func parseLabels(labels string) map[string]string {
 	return result
 }
 
+// splitLabels 在引号内正确处理逗号，拆分多个 key=value 对。
 // splitLabels splits Prometheus-style labels into individual key=value pairs
 func splitLabels(labels string) []string {
 	var result []string
@@ -230,3 +236,4 @@ func splitLabels(labels string) []string {
 	}
 	return result
 }
+// 无限循环按 time spread 推进时间窗口，可配合 --apps 过滤特定服务日志。

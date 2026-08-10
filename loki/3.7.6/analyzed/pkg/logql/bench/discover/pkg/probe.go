@@ -1,5 +1,8 @@
 package discover
 
+// probe 编排内容探测：先并行 classified_fields 分类，再按 broad selector
+// 逐关键词 query_range，基于 job 标签将 API 流匹配回已知 selector。
+
 import (
 	"context"
 	"fmt"
@@ -17,6 +20,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logql/bench/discover/pkg/tsdb"
 )
 
+// RunContentProbes 串行执行分类与关键词两阶段，单流错误吸收为 warning 不中断。
 // RunContentProbes runs per-stream detected_fields (classification) and keyword
 // probes using TSDB-derived selectors and entry counts.
 //
@@ -52,6 +56,7 @@ func RunContentProbes(
 	}, nil
 }
 
+// runClassifyPhase 对每个 selector 并发调用 detected_fields 并构建倒排索引。
 // runClassifyPhase fans out detected_fields API calls for each selector using
 // the same errgroup+mutex+callWithRetry pattern as RunClassification.
 func runClassifyPhase(
@@ -165,6 +170,7 @@ func runClassifyPhase(
 	return out
 }
 
+// runKeywordPhaseBroad 每关键词一条 broad 查询（K 次而非 N×K），客户端按 job 匹配流。
 // runKeywordPhaseBroad implements the broad keyword probing strategy.
 // Instead of issuing one query per stream×keyword (N×K), it issues one query
 // per keyword using the broad selector (K queries total), then matches returned
@@ -268,6 +274,7 @@ func runKeywordPhaseBroad(
 	return out
 }
 
+// keywordQuery 构造 LogQL 行过滤查询，如 {sel} |= "error"。
 // keywordQuery constructs the line filter query for a given selector and
 // keyword. The keyword is quoted with %q to produce a valid LogQL string
 // filter, e.g. {service_name="loki"} |= "error".
@@ -275,6 +282,7 @@ func keywordQuery(selector, keyword string) string {
 	return fmt.Sprintf(`%s |= %q`, selector, keyword)
 }
 
+// parseSelectorToMap 将 {key="val", ...} 规范 selector 解析为 map。
 // parseSelectorToMap parses a canonical selector string like
 // {foo="bar", baz="qux"} into a map[string]string.
 func parseSelectorToMap(selector string) map[string]string {
@@ -300,3 +308,4 @@ func parseSelectorToMap(selector string) map[string]string {
 	}
 	return m
 }
+// API 与 TSDB 标签集不一致，故以 job 标签关联同一部署下的所有已知 selector。

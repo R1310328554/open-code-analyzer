@@ -1,5 +1,7 @@
 package main
 
+// Prometheus remote_write 客户端：protobuf 序列化、snappy 压缩后 POST 推送时序。
+
 import (
 	"bytes"
 	"fmt"
@@ -12,6 +14,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 )
 
+// pushMetrics 向 remote_write 端点发送时序，单次请求 30 秒超时，不重试。
 // pushMetrics sends time series to a Prometheus remote_write endpoint.
 // Single attempt with a 30-second timeout; no retries.
 func pushMetrics(url, username, password string, series []prompb.TimeSeries) error {
@@ -22,6 +25,7 @@ func pushMetrics(url, username, password string, series []prompb.TimeSeries) err
 		return fmt.Errorf("marshal write request: %w", err)
 	}
 
+// 使用 snappy 压缩 protobuf 载荷，符合 Prometheus remote_write 协议。
 	compressed := snappy.Encode(nil, data)
 
 	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(compressed))
@@ -51,3 +55,4 @@ func pushMetrics(url, username, password string, series []prompb.TimeSeries) err
 
 	return nil
 }
+// 非 2xx 响应时读取 body 并返回错误，便于排查推送失败原因。

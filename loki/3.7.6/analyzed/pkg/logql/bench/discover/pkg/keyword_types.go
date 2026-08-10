@@ -1,5 +1,7 @@
 package discover
 
+// 关键词探测类型：KeywordAPI 接口与 KeywordResult 倒排索引（关键词→selector 列表）。
+
 import (
 	"time"
 
@@ -7,6 +9,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// KeywordAPI 抽象 query_range 调用，用于行过滤探测关键词是否出现在流中。
 // KeywordAPI is the subset of the Loki client interface required by
 // RunKeywordProbing. Abstracting to this minimal interface makes unit testing
 // simpler.
@@ -25,6 +28,7 @@ type KeywordAPI interface {
 	) (*loghttp.QueryResponse, error)
 }
 
+// KeywordResult.ByKeyword 映射每个可过滤关键词到包含该词的 selector 有序列表。
 // KeywordResult holds the output of a completed RunKeywordProbing invocation.
 type KeywordResult struct {
 	// ByKeyword maps each keyword to the sorted list of selectors whose log
@@ -41,3 +45,4 @@ type KeywordResult struct {
 	// TotalSkipped is the number of pairs skipped due to API error.
 	TotalSkipped int
 }
+// TotalProbed/TotalSkipped 分别统计成功与因 API 错误跳过的探测次数。

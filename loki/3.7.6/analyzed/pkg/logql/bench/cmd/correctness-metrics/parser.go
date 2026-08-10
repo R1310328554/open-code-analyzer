@@ -1,5 +1,8 @@
 package main
 
+// JUnit XML 解析：从 TestRemoteStorageEquality 用例名提取结构化标签，
+// 映射 pass/fail/error/skip 状态，并优先使用 testsuite time 属性作为总耗时。
+
 import (
 	"encoding/xml"
 	"fmt"
@@ -11,6 +14,7 @@ import (
 
 const testPrefix = "TestRemoteStorageEquality/"
 
+// testLabels 保存从 JUnit 用例名解析出的 suite、query_file、kind、direction。
 // testLabels holds the labels extracted from a JUnit test case name.
 type testLabels struct {
 	Suite     string
@@ -19,6 +23,7 @@ type testLabels struct {
 	Direction string
 }
 
+// parseTestName 解析 TestRemoteStorageEquality/{suite}/{file}:{line}/kind=.../direction=... 格式。
 // parseTestName extracts structured labels from a JUnit test case name.
 // Expected format: TestRemoteStorageEquality/{suite}/{file}.yaml:{line}/kind={kind}/direction={direction}
 func parseTestName(name string) (*testLabels, error) {
@@ -71,6 +76,7 @@ const (
 	statusUnknown testStatus = "unknown"
 )
 
+// parsedTest 表示单条测试结果；Labels 为 nil 表示用例名无法解析。
 // parsedTest holds a single test result with optional parsed labels.
 type parsedTest struct {
 	Name        string
@@ -90,6 +96,7 @@ type xmlSuiteTime struct {
 	Time string `xml:"time,attr"`
 }
 
+// extractSuiteDurationSec 直接解析 XML 中 testsuite 的 time 属性求和，
 // extractSuiteDurationSec parses the XML data and sums the time attributes from all <testsuite> elements.
 // We parse the raw XML directly instead of using go-junit's Totals.Duration because the library
 // recalculates duration by summing individual test case durations (via Aggregate()), which
@@ -118,6 +125,7 @@ func extractSuiteDurationSec(data []byte) float64 {
 	return total
 }
 
+// parseJUnitXML 调用 go-junit 解析并汇总；总耗时为零时回退为各用例 duration 之和。
 // parseJUnitXML parses JUnit XML bytes into structured test results.
 func parseJUnitXML(data []byte) (*parsedResults, error) {
 	suites, err := junit.Ingest(data)
@@ -168,3 +176,4 @@ func parseJUnitXML(data []byte) (*parsedResults, error) {
 
 	return &results, nil
 }
+// 并行执行时墙钟时间小于各用例 duration 之和，故以 XML time 属性为准。

@@ -1,5 +1,8 @@
 package main
 
+// generate 命令：在指定目录生成指定字节大小的 Loki 基准测试数据集，
+// 同时写入 chunk store 与 dataobj store。
+
 import (
 	"context"
 	"flag"
@@ -18,6 +21,7 @@ func main() {
 	)
 	flag.Parse()
 
+// 若指定 --clear，生成前先删除输出目录以保证干净环境。
 	// Clean the output directory if requested
 	if *clearFolder {
 		if err := os.RemoveAll(*dir); err != nil {
@@ -26,6 +30,7 @@ func main() {
 		}
 	}
 
+// 创建 ChunkStore 与 DataObjStore，分别承载 chunk 与 data object 布局。
 	// Create stores
 	chunkStore, err := bench.NewChunkStore(*dir, *tenantID)
 	if err != nil {
@@ -48,3 +53,4 @@ func main() {
 		os.Exit(1)
 	}
 }
+// 默认生成约 2GiB 数据，租户 ID 可通过 --tenant 指定。

@@ -1,5 +1,8 @@
 package main
 
+// correctness-metrics 命令行工具：解析 gotestsum 输出的 JUnit XML，
+// 将 LogQL 远程存储一致性测试结果转换为 Prometheus 指标并 remote_write 推送。
+
 import (
 	"flag"
 	"fmt"
@@ -89,6 +92,7 @@ func run() int {
 	return 0
 }
 
+// redactURL 去除 URL 中的用户凭证，避免日志泄露认证信息。
 // redactURL strips any userinfo from a URL to prevent credential leakage in logs.
 func redactURL(rawURL string) string {
 	u, err := url.Parse(rawURL)
@@ -99,9 +103,11 @@ func redactURL(rawURL string) string {
 	return u.String()
 }
 
+// envOrDefault 优先读取环境变量，未设置时返回默认值。
 func envOrDefault(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
 	}
 	return fallback
 }
+// 支持 instant/range 两种查询模式，按 suite 聚合通过率与耗时指标。

@@ -1,5 +1,7 @@
 package discover
 
+// 分类阶段类型定义：ClassifyAPI 接口与 ClassifyResult 倒排索引结构。
+
 import (
 	"time"
 
@@ -7,6 +9,7 @@ import (
 	bench "github.com/grafana/loki/v3/pkg/logql/bench"
 )
 
+// ClassifyAPI 抽象 detected_fields 调用，便于单元测试注入 mock。
 // ClassifyAPI is the subset of the Loki client interface required by
 // RunClassification. Abstracting makes testing simpler.
 type ClassifyAPI interface {
@@ -17,6 +20,7 @@ type ClassifyAPI interface {
 	) (*loghttp.DetectedFieldsResponse, error)
 }
 
+// ClassifyResult 各 By* 映射将属性值关联到拥有该属性的 canonical selector 列表。
 // ClassifyResult holds the output of a completed RunClassification invocation.
 // Each inverted index maps a property to the list of canonical stream selectors
 // that have that property.
@@ -53,3 +57,4 @@ type ClassifyResult struct {
 	// TotalSkipped is the number of streams skipped due to API errors.
 	TotalSkipped int
 }
+// TotalSkipped 统计 API 错误导致跳过的流数；Warnings 记录非致命问题。

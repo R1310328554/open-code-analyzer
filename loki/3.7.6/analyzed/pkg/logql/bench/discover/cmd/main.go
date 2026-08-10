@@ -1,5 +1,8 @@
 package main
 
+// discover CLI：从 TSDB 索引发现流结构，执行内容探测（分类与关键词），
+// 组装 dataset_metadata.json 并可选校验 LogQL 查询套件能否解析。
+
 import (
 	"context"
 	"flag"
@@ -19,6 +22,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb"
 )
 
+// storageOpts 封装存储模式管线所需的 Loki 地址、认证、并发与输出等 CLI 参数。
 // storageOpts bundles the CLI flags needed by the storage-mode pipeline
 // beyond the core StorageConfig. These are passed through from run() to
 // runStorageMode so the function can build content-probe clients and invoke
@@ -48,6 +52,7 @@ func main() {
 	os.Exit(run(os.Args[1:]))
 }
 
+// classifyClientAdapter 将 DefaultClient 适配为 ClassifyAPI，填充 detected_fields 默认参数。
 // classifyClientAdapter adapts logcli.DefaultClient to bench.ClassifyAPI.
 // DefaultClient.GetDetectedFields has a more complex signature (fieldName,
 // lineLimit, step, quiet) than the simplified ClassifyAPI interface, so this
@@ -82,6 +87,7 @@ func envOr(key, fallback string) string {
 	return fallback
 }
 
+// run 使用独立 FlagSet 解析参数并调用 runAgainstStorage，便于测试多次调用。
 // run parses the provided arguments and invokes runStorageMode. It returns an
 // exit code: 0 on success, 1 on fatal startup/config failure.
 //
@@ -180,6 +186,7 @@ func run(args []string) int {
 	})
 }
 
+// runAgainstStorage 执行完整管线：下载 TSDB 索引、结构发现、内容探测、组装与校验。
 func runAgainstStorage(storageCfg discovertsdb.StorageConfig, from, to time.Time, tablePrefix string, opts storageOpts) int {
 	idxClient, err := newIndexStorageClient(storageCfg)
 	if err != nil {
@@ -406,6 +413,7 @@ func runAgainstStorage(storageCfg discovertsdb.StorageConfig, from, to time.Time
 	return 0
 }
 
+// validateStorageConfig 校验 storage-type 等必填存储配置。
 // validateStorageConfig validates that the required storage configuration is
 // present.
 func validateStorageConfig(storageCfg discovertsdb.StorageConfig) error {
@@ -415,6 +423,7 @@ func validateStorageConfig(storageCfg discovertsdb.StorageConfig) error {
 	return storageCfg.NormalizeAndValidate()
 }
 
+// printValidationReport 输出查询解析通过/失败统计及未引用 bounded set 成员。
 // printValidationReport writes the three-section validation report to w.
 func printValidationReport(w io.Writer, r *discover.ValidationResult) {
 	fmt.Fprintln(w, "\n=== Validation Report ===")
@@ -459,3 +468,4 @@ func printValidationReport(w io.Writer, r *discover.ValidationResult) {
 		}
 	}
 }
+// 无索引文件时提前返回；部分分类/探测失败仅记警告，不导致非零退出码。

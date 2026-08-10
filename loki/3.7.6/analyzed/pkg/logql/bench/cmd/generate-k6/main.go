@@ -1,5 +1,8 @@
 package main
 
+// generate-k6 工具：加载数据集元数据与 LogQL 查询套件，
+// 解析变量后生成 k6 压测用的 range/instant JSON 用例文件。
+
 import (
 	"encoding/json"
 	"flag"
@@ -91,6 +94,7 @@ func run() int {
 	return 0
 }
 
+// generateCases 遍历查询定义，ExpandQuery 后转为 K6TestCase；失败项收集到 errors。
 func generateCases(
 	registry *bench.QueryRegistry,
 	defs []bench.QueryDefinition,
@@ -125,6 +129,7 @@ func generateCases(
 	return cases, errors
 }
 
+// writeJSON 以缩进 JSON 格式写入输出文件。
 func writeJSON(path string, data interface{}) error {
 	f, err := os.Create(path)
 	if err != nil {
@@ -136,3 +141,4 @@ func writeJSON(path string, data interface{}) error {
 	enc.SetIndent("", "  ")
 	return enc.Encode(data)
 }
+// instant 仅包含 metric 类查询；任一解析失败则非零退出并提示重新 discover。

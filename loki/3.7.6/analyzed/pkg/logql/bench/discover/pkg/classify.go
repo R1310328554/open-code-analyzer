@@ -1,5 +1,8 @@
 package discover
 
+// classify 实现流级日志格式与字段分类：调用 detected_fields API，
+// 按规则判定 JSON/logfmt/非结构化、可 unwrap 字段、结构化元数据与标签键。
+
 import (
 	"context"
 	"net/http"
@@ -15,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/httpreq"
 )
 
+// CategorizeLabelsTripperware 注入 categorize-labels 编码头，区分结构化元数据与索引标签。
 // CategorizeLabelsTripperware injects the categorize-labels response encoding
 // header required for the detected_fields API to differentiate structured
 // metadata fields from indexed stream label fields. Without this header, the
@@ -82,6 +86,7 @@ func newBoundedSets() boundedSets {
 	}
 }
 
+// isNumericType 判断字段类型是否可用于 LogQL | unwrap 数值聚合。
 // isNumericType returns true when the detected field type is numeric and can
 // therefore be used with | unwrap in LogQL metric queries.
 func isNumericType(t logproto.DetectedFieldType) bool {
@@ -93,6 +98,7 @@ func isNumericType(t logproto.DetectedFieldType) bool {
 	return false
 }
 
+// classifyStream 对单条 selector 的 detected fields 应用六条分类规则并投票决定格式。
 // classifyStream performs per-stream field classification given a canonical
 // selector, the detected fields returned by the Loki API, and the set of label
 // keys that are indexed stream labels for this selector.
@@ -190,6 +196,7 @@ func classifyStream(
 	return result
 }
 
+// callWithRetry 指数退避最多重试两次，用于 Loki API 瞬时失败。
 // callWithRetry calls fn up to 2 times (initial attempt + 1 retry) using
 // exponential backoff. Returns the last error if all attempts fail.
 func callWithRetry(ctx context.Context, fn func() error) error {
@@ -208,3 +215,4 @@ func callWithRetry(ctx context.Context, fn func() error) error {
 	}
 	return lastErr
 }
+// 跳过 _extracted 后缀字段；parser 票数最高者决定 json/logfmt/unstructured。

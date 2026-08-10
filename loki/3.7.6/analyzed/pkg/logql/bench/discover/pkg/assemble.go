@@ -1,5 +1,8 @@
 package discover
 
+// assemble 模块：将 TSDB 结构发现、分类、关键词与范围元数据四路结果
+// 合并为统一的 DatasetMetadata，纯函数不修改输入。
+
 import (
 	"time"
 
@@ -7,6 +10,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logql/bench/discover/pkg/tsdb"
 )
 
+// AssembleMetadata 拷贝各阶段倒排索引与时间范围，生成完整数据集元数据。
 // AssembleMetadata builds a DatasetMetadata from the four pipeline result types
 // produced by the discover pipeline stages. The function is pure — it does not mutate
 // any of its inputs.
@@ -44,6 +48,7 @@ func AssembleMetadata(
 	}
 }
 
+// assembleStatistics 统计总流数及按格式、服务名分组的流数量。
 // assembleStatistics computes summary statistics from the discover and classify results.
 func assembleStatistics(discover *tsdb.StructuralResult, classify *ClassifyResult) bench.DatasetStatistics {
 	streamsByFormat := make(map[bench.LogFormat]int)
@@ -63,3 +68,4 @@ func assembleStatistics(discover *tsdb.StructuralResult, classify *ClassifyResul
 		StreamsByService: streamsByService,
 	}
 }
+// MetadataBySelector 直接来自 RangeResult，缺失条目的流由校验层容错处理。
