@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+文档解析任务服务：Task 队列、分片计数（Redis）、PDF/Excel 分任务与进度更新。
+"""
+
 #
 import logging
 import os
@@ -54,6 +58,7 @@ def _doc_chunking_done_key(task_id: str) -> str:
 
 
 def seed_doc_chunking_counter(doc_id: str, pending_count: int) -> bool:
+    # 初始化文档分片待完成计数（Redis），并清除 abort 标记
     if not doc_id or pending_count <= 0:
         return False
     try:
@@ -102,6 +107,7 @@ def is_doc_chunking_aborted(doc_id: str) -> bool:
 
 
 def credit_doc_chunking_task(doc_id: str, task_id: str) -> int | None:
+    # 某分片任务完成时递减 pending；重复 credit 返回正数表示非末片
     """Credit one completed standard chunking task.
 
     Returns the post-decrement pending count when this task was credited for
@@ -144,7 +150,9 @@ def trim_header_by_lines(text: str, max_length) -> str:
 
 
 class TaskService(CommonService):
-    """Service class for managing document processing tasks.
+    """文档解析任务服务。
+
+    Service class for managing document processing tasks.
 
     This class extends CommonService to provide specialized functionality for document
     processing task management, including task creation, progress tracking, and chunk
@@ -163,6 +171,7 @@ class TaskService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_task(cls, task_id, doc_ids=[]):
+        # 拉取任务详情并联结 Document/KB/Tenant，含重试与进度字段
         """Retrieve detailed task information by task ID.
 
         This method fetches comprehensive task details including associated document,

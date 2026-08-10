@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+文件服务：租户文件管理器 CRUD、知识库虚拟目录、上传解析与 SSRF 安全的 URL 抓取。
+"""
+
 #
 import asyncio
 import base64
@@ -45,12 +49,13 @@ from common import settings
 
 
 class FileService(CommonService):
-    # Service class for managing file operations and storage
+    # 租户文件树、存储与知识库文档同步
     model = File
 
     @classmethod
     @DB.connection_context()
     def get_by_pf_id(cls, tenant_id, pf_id, page_number, items_per_page, orderby, desc, keywords):
+        # 按父文件夹分页列出子项，文件夹附带子目录与关联 KB 信息
         # Get files by parent folder ID with pagination and filtering
         # Args:
         #     tenant_id: ID of the tenant
@@ -236,6 +241,7 @@ class FileService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_root_folder(cls, tenant_id):
+        # 获取或创建租户根目录（parent_id 指向自身）
         # Get or create root folder for tenant
         # Args:
         #     tenant_id: Tenant ID
@@ -261,6 +267,7 @@ class FileService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_kb_folder(cls, tenant_id):
+        # 获取或创建 .knowledgebase 虚拟文件夹
         # Get dataset folder for tenant
         # Args:
         #     tenant_id: Tenant ID
@@ -358,6 +365,7 @@ class FileService(CommonService):
     @classmethod
     @DB.connection_context()
     def init_knowledgebase_docs(cls, root_id, tenant_id):
+        # 初始化 KB 虚拟目录并同步已有文档到文件树
         # Initialize dataset documents.
         # Deduplicates duplicate entries that may have been created
         # by concurrent race conditions (TOCTOU).
@@ -512,6 +520,7 @@ class FileService(CommonService):
     @classmethod
     @DB.connection_context()
     def upload_document(self, kb, file_objs, user_id, src="local", parent_path: str | None = None, parser_config_override: dict | None = None):
+        # 上传文件到知识库：写入对象存储、Document 与 File2Document 关联
         root_folder = self.get_root_folder(user_id)
         pf_id = root_folder["id"]
         self.init_knowledgebase_docs(pf_id, user_id)
@@ -635,6 +644,7 @@ class FileService(CommonService):
 
     @staticmethod
     def parse(filename, blob, img_base64=True, tenant_id=None, layout_recognize=None):
+        # 按文件类型选择解析器并返回拼接后的文本块
         from rag.app import audio, email, naive, picture, presentation
         from api.apps import current_user
 
@@ -675,6 +685,7 @@ class FileService(CommonService):
     @classmethod
     @DB.connection_context()
     def delete_docs(cls, doc_ids, tenant_id):
+        # 批量删除文档及其 Task、File2Document 与存储对象
         root_folder = FileService.get_root_folder(tenant_id)
         pf_id = root_folder["id"]
         FileService.init_knowledgebase_docs(pf_id, tenant_id)
@@ -721,6 +732,7 @@ class FileService(CommonService):
 
     @staticmethod
     def _validate_url_for_crawl(url: str) -> tuple[str, str]:
+        # SSRF 校验：仅允许 http/https，返回 (hostname, resolved_ip) 供 DNS  pinning
         """Raise ValueError if the URL is not safe to crawl (SSRF guard).
 
         Delegates to :func:`common.ssrf_guard.assert_url_is_safe`, which
@@ -740,6 +752,7 @@ class FileService(CommonService):
 
     @staticmethod
     def upload_info(user_id, file, url: str | None = None):
+        # 上传本地文件或通过 crawl4ai 抓取 URL（含重定向链 SSRF 检查）
         def structured(filename, filetype, blob, content_type):
             nonlocal user_id
             if filetype == FileType.PDF.value:

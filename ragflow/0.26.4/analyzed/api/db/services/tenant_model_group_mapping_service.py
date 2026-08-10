@@ -12,17 +12,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+租户模型组映射服务：group/provider/instance/model 四维复合主键查询。
+"""
+
 #
 from api.db.db_models import DB, TenantModelGroupMapping
 from api.db.services.common_service import CommonService
 
 
 class TenantModelGroupMappingService(CommonService):
+    # 模型组到具体 provider 实例与 model 的映射行
     model = TenantModelGroupMapping
 
     @classmethod
     @DB.connection_context()
     def get_by_composite_id(cls, group_id, provider_id, instance_id, model_id):
+        # 按四维复合键查询单条映射
         return cls.model.get_or_none(
             cls.model.group_id == group_id,
             cls.model.provider_id == provider_id,

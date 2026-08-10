@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+流水线操作日志服务：记录文档/KB 级解析与 GraphRAG 等任务进度，并按上限裁剪历史。
+"""
+
 #
 import json
 import logging
@@ -33,6 +37,7 @@ from common.time_utils import current_timestamp, datetime_format
 
 
 class PipelineOperationLogService(CommonService):
+    # PipelineOperationLog 表的创建、查询与容量控制
     model = PipelineOperationLog
 
     @classmethod
@@ -95,6 +100,7 @@ class PipelineOperationLogService(CommonService):
     @classmethod
     @DB.connection_context()
     def create(cls, document_id, pipeline_id, task_type, task_id=None, referred_document_id=None, dsl: str = "{}"):
+        # 写入一条操作日志；KB 级扇出任务从 Task 同步进度并更新 KB 完成时间
         if document_id != GRAPH_RAPTOR_FAKE_DOC_ID:
             referred_document_id = document_id
 
@@ -226,6 +232,7 @@ class PipelineOperationLogService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_file_logs_by_kb_id(cls, kb_id, page_number, items_per_page, orderby, desc, keywords, operation_status, types, suffix, create_date_from=None, create_date_to=None):
+        # 分页查询 KB 下单文档级流水线日志（排除 GRAPH_RAPTOR 占位 doc_id）
         fields = cls.get_file_logs_fields()
         if keywords:
             logs = cls.model.select(*fields).where((cls.model.kb_id == kb_id), (fn.LOWER(cls.model.document_name).contains(keywords.lower())))
@@ -265,6 +272,7 @@ class PipelineOperationLogService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_dataset_logs_by_kb_id(cls, kb_id, page_number, items_per_page, orderby, desc, operation_status, create_date_from=None, create_date_to=None, keywords=None):
+        # 分页查询 KB 级（GraphRAG/RAPTOR 等）数据集任务日志
         fields = cls.get_dataset_logs_fields()
         if keywords:
             logs = cls.model.select(*fields).where((cls.model.kb_id == kb_id), (cls.model.document_id == GRAPH_RAPTOR_FAKE_DOC_ID), (fn.LOWER(cls.model.document_name).contains(keywords.lower())))

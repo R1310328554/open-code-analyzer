@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+MCP 服务器服务：租户 MCP 配置的列表、按名查询与批量删除。
+"""
+
 #
 from peewee import fn
 
@@ -20,7 +24,9 @@ from api.db.services.common_service import CommonService
 
 
 class MCPServerService(CommonService):
-    """Service class for managing MCP server related database operations.
+    """MCP 服务器数据库服务。
+
+    Service class for managing MCP server related database operations.
 
     This class extends CommonService to provide specialized functionality for MCP server management,
     including MCP server creation, updates, and deletions.
@@ -34,6 +40,7 @@ class MCPServerService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_servers(cls, tenant_id: str, id_list: list[str] | None, page_number, items_per_page, orderby, desc, keywords):
+        # 分页列出租户 MCP 服务器（列表展示字段）
         """Retrieve all MCP servers associated with a tenant.
 
         This method fetches all MCP servers for a given tenant, ordered by creation time.

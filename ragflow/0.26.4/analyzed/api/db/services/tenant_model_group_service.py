@@ -12,10 +12,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+租户模型组服务：TenantModelGroup 表的 CommonService 封装。
+"""
+
 #
 from api.db.db_models import TenantModelGroup
 from api.db.services.common_service import CommonService
 
 
 class TenantModelGroupService(CommonService):
+    # 租户侧模型分组定义
     model = TenantModelGroup

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+租户模型实例服务：同一 provider 下多实例（api_key）创建与按 provider 批量查询/删除。
+"""
+
 #
 from common.misc_utils import get_uuid
 from api.db.db_models import DB, TenantModelInstance
@@ -20,17 +24,20 @@ from api.db.services import duplicate_name
 
 
 class TenantModelInstanceService(CommonService):
+    # Provider 下的命名模型实例（含 api_key）
     model = TenantModelInstance
 
     @classmethod
     @DB.connection_context()
     def create_instance(cls, provider_id: str, instance_name: str, api_key: str, extra: str):
+        # 在 provider 内去重 instance_name 后插入实例
         unique_instance_name = duplicate_name(cls.query, name_field="instance_name", provider_id=provider_id, instance_name=instance_name)
         return cls.insert(id=get_uuid(), provider_id=provider_id, instance_name=unique_instance_name, api_key=api_key, extra=extra)
 
     @classmethod
     @DB.connection_context()
     def get_all_by_provider_id(cls, provider_id):
+        # 列出某 provider 的全部实例
         return list(cls.model.select().where(cls.model.provider_id == provider_id))
 
     @classmethod

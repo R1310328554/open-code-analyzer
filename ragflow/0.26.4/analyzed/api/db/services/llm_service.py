@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+LLM 服务与 LLMBundle：封装租户模型实例，统一 embedding/chat/流式调用与 Langfuse 观测。
+"""
+
 #
 import asyncio
 import inspect
@@ -31,14 +35,17 @@ from common.token_utils import num_tokens_from_string, record_run_token_usage, l
 
 
 class LLMService(CommonService):
+    # 全局 LLM 模型目录表的 CommonService 封装
     model = LLM
 
 
 class LLMBundle(LLM4Tenant):
+    # 租户侧 LLM 调用入口：继承 LLM4Tenant 并增强 Langfuse 与 token 统计
     def __init__(self, tenant_id: str, model_config: dict, lang="Chinese", **kwargs):
         super().__init__(tenant_id, model_config, lang, **kwargs)
 
     def _start_langfuse_observation(self, **kwargs):
+        # 启动 Langfuse generation，合并 session_id/user_id 关联属性
         # Correlating attributes (session_id/user_id) let Langfuse group all of a
         # turn's generations. They may come from this bundle (chat/dialog path) or,
         # for agent runs whose bundles are created without them, from the per-run
@@ -102,6 +109,7 @@ class LLMBundle(LLM4Tenant):
         self.mdl.bind_tools(toolcall_session, tools)
 
     def encode(self, texts: list):
+        # 批量 embedding：空文本占位、超长截断并上报 token
         if self.langfuse:
             generation = self._start_langfuse_observation(trace_context=self.trace_context, as_type="generation", name="encode", model=self.model_config["llm_name"], input={"texts": texts})
 
@@ -412,6 +420,7 @@ class LLMBundle(LLM4Tenant):
         return queue
 
     async def async_chat(self, system: str, history: list, gen_conf: dict = {}, **kwargs):
+        # 异步非流式对话，剥离 reasoning/tool_call 并记录用量
         if self.is_tools and getattr(self.mdl, "is_tools", False) and hasattr(self.mdl, "async_chat_with_tools"):
             base_fn = self.mdl.async_chat_with_tools
         elif hasattr(self.mdl, "async_chat"):
@@ -453,6 +462,7 @@ class LLMBundle(LLM4Tenant):
         return txt
 
     async def async_chat_streamly(self, system: str, history: list, gen_conf: dict = {}, **kwargs):
+        # 异步流式对话，累积全文 yield；末包 int 为 total_tokens
         total_tokens = 0
         ans = ""
         _bundle_is_tools = self.is_tools

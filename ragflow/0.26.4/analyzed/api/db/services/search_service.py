@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+搜索应用服务：租户 Search 配置的保存、详情、列表与删除权限校验。
+"""
+
 #
 from datetime import datetime
 
@@ -24,6 +28,7 @@ from common.time_utils import current_timestamp, datetime_format
 
 
 class SearchService(CommonService):
+    # Search 模型 CRUD 与多租户可见性
     model = Search
 
     @classmethod
@@ -41,6 +46,7 @@ class SearchService(CommonService):
     @classmethod
     @DB.connection_context()
     def accessible4deletion(cls, search_id, user_id) -> bool:
+        # 仅创建者可删除有效状态的 Search
         search = (
             cls.model.select(cls.model.id)
             .where(
@@ -80,6 +86,7 @@ class SearchService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_by_tenant_ids(cls, joined_tenant_ids, user_id, page_number, items_per_page, orderby, desc, keywords):
+        # 列出用户可访问租户下的 Search，支持关键词与分页
         fields = [
             cls.model.id,
             cls.model.avatar,

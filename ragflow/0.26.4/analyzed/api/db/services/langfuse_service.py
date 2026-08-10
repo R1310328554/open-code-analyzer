@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Langfuse 集成服务：租户级 Langfuse 密钥的 CRUD 与按租户查询。
+"""
+
 #
 
 from datetime import datetime
@@ -24,6 +28,8 @@ from common.time_utils import current_timestamp, datetime_format
 
 
 class TenantLangfuseService(CommonService):
+    """租户 Langfuse 配置服务；修改操作建议包在 DB.atomic() 内。
+
     """
     All methods that modify the status should be enclosed within a DB.atomic() context to ensure atomicity
     and maintain data integrity in case of errors during execution.
@@ -34,6 +40,7 @@ class TenantLangfuseService(CommonService):
     @classmethod
     @DB.connection_context()
     def filter_by_tenant(cls, tenant_id):
+        # 按租户读取 host/secret_key/public_key（模型实例）
         fields = [cls.model.tenant_id, cls.model.host, cls.model.secret_key, cls.model.public_key]
         try:
             keys = cls.model.select(*fields).where(cls.model.tenant_id == tenant_id).first()
@@ -58,6 +65,7 @@ class TenantLangfuseService(CommonService):
 
     @classmethod
     def update_by_tenant(cls, tenant_id, langfuse_keys):
+        # 按 tenant_id 更新 Langfuse 配置并刷新时间戳
         langfuse_keys["update_time"] = current_timestamp()
         langfuse_keys["update_date"] = datetime_format(datetime.now())
         return cls.model.update(**langfuse_keys).where(cls.model.tenant_id == tenant_id).execute()

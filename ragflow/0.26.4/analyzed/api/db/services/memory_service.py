@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+记忆库服务：Memory 实体的创建、筛选列表、更新与租户级去重命名。
+"""
+
 #
 from typing import List
 
@@ -26,7 +30,7 @@ from memory.utils.prompt_util import PromptAssembler
 
 
 class MemoryService(CommonService):
-    # Service class for manage memory operations
+    # 记忆库 CRUD 与按权限/类型过滤
     model = Memory
 
     @classmethod
@@ -74,6 +78,7 @@ class MemoryService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_by_filter(cls, filter_dict: dict, keywords: str, page: int = 1, page_size: int = 50):
+        # 多条件分页查询记忆库，支持 tenant/accessible_user/memory_type 等过滤
         fields = [
             cls.model.id,
             cls.model.name,
@@ -110,6 +115,7 @@ class MemoryService(CommonService):
     @classmethod
     @DB.connection_context()
     def create_memory(cls, tenant_id: str, name: str, memory_type: List[str], embd_id: str, llm_id: str):
+        # 创建记忆库：租户内去重名、组装默认 system_prompt
         # Deduplicate name within tenant
         memory_name = duplicate_name(cls.query, name=name, tenant_id=tenant_id)
         if len(memory_name) > MEMORY_NAME_LIMIT:
@@ -143,6 +149,7 @@ class MemoryService(CommonService):
     @classmethod
     @DB.connection_context()
     def update_memory(cls, tenant_id: str, memory_id: str, update_dict: dict):
+        # 更新记忆库字段，重命名时再次 duplicate_name
         if not update_dict:
             return 0
         if "temperature" in update_dict and isinstance(update_dict["temperature"], str):

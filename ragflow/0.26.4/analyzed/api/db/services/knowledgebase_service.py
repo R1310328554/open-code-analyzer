@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+知识库（数据集）服务：可见性过滤、解析状态校验、创建更新与文档计数维护。
+"""
+
 #
 from datetime import datetime
 
@@ -30,7 +34,9 @@ from api.utils.api_utils import get_parser_config, get_data_error_result
 
 
 class KnowledgebaseService(CommonService):
-    """Service class for managing dataset operations.
+    """知识库（数据集）业务服务。
+
+    Service class for managing dataset operations.
 
     This class extends CommonService to provide specialized functionality for dataset
     management, including document parsing status tracking, access control, and configuration
@@ -51,6 +57,7 @@ class KnowledgebaseService(CommonService):
 
     @classmethod
     def _visibility_and_status_filter(cls, joined_tenant_ids, user_id):
+        # 构造 Peewee 条件：团队可见或本人租户，且 status 为 VALID
         """
         Build a Peewee filter expression representing knowledgebase visibility
         for a given user, combined with a valid-status constraint.
@@ -98,6 +105,7 @@ class KnowledgebaseService(CommonService):
     @classmethod
     @DB.connection_context()
     def is_parsed_done(cls, kb_id):
+        # 检查 KB 内所有文档是否已完成解析（聊天前门禁）
         # Check if all documents in the dataset have completed parsing
         #
         # Args:
@@ -145,6 +153,7 @@ class KnowledgebaseService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_by_tenant_ids(cls, joined_tenant_ids, user_id, page_number, items_per_page, orderby, desc, keywords, parser_id=None):
+        # 按租户可见性分页列出知识库，附带创建者昵称
         # Get knowledge bases by tenant IDs with pagination and filtering
         # Args:
         #     joined_tenant_ids: List of tenant IDs
@@ -255,6 +264,7 @@ class KnowledgebaseService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_detail(cls, kb_id):
+        # 返回 KB 详情，含流水线 Canvas 与各类 GraphRAG/RAPTOR 任务完成时间
         # Get detailed information about a dataset
         # Args:
         #     kb_id: Knowledge base ID
@@ -378,6 +388,7 @@ class KnowledgebaseService(CommonService):
     @classmethod
     @DB.connection_context()
     def create_with_name(cls, *, name: str, tenant_id: str, parser_id: str | None = None, **kwargs):
+        # 按名称创建 KB，复用 kb_app 默认逻辑（去重名、校验租户、合并 parser_config）
         """Create a dataset (knowledgebase) by name with kb_app defaults.
 
         This encapsulates the creation logic used in kb_app.create so other callers
@@ -469,6 +480,7 @@ class KnowledgebaseService(CommonService):
     @classmethod
     @DB.connection_context()
     def accessible(cls, kb_id, user_id):
+        # 判断用户是否可访问该 KB（本人或团队权限且已加入租户）
         # Check if a dataset is accessible by a user
         # Args:
         #     kb_id: Knowledge base ID
@@ -559,6 +571,7 @@ class KnowledgebaseService(CommonService):
     @classmethod
     @DB.connection_context()
     def decrease_document_num_in_delete(cls, kb_id, doc_num_info: dict):
+        # 删除文档后原子递减 doc_num/chunk_num/token_num
         kb_row = cls.model.get_by_id(kb_id)
         if not kb_row:
             raise RuntimeError(f"kb_id {kb_id} does not exist")

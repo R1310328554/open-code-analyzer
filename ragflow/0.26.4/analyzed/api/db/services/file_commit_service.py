@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+文件提交服务：管理工作区文件夹与 Artifact 页面的版本历史、树快照与内容寻址存储。
+"""
+
 #
 
 import datetime
@@ -32,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------
-# Artifact-commit extension
+# Artifact 页面提交扩展：Artifact 保存写入 FileCommit + FileCommitItem
 # ---------------------------------------------------------------------
 # Artifact-page saves used to land in the retired ``ArtifactCommit`` table.
 # They now flow through :class:`FileCommitService.record_page_edit`, which
@@ -53,12 +57,14 @@ logger = logging.getLogger(__name__)
 # Content storage for ``content_after`` is switched by a module-level
 # constant so ops can move blobs between MinIO and the doc-store index
 # without touching the schema.
+# Artifact 正文存储后端：minio 或 es
 ARTIFACT_CONTENT_STORAGE = "minio"  # one of {"minio", "es"}
 _ARTIFACT_COMMIT_BUCKET_PREFIX = ".artifact_commits"
 _ARTIFACT_ES_KWD = "artifact_commit_content"
 
 
 def _artifact_file_id(kb_id: str, slug: str) -> str:
+    # 由 kb_id+slug 生成稳定的 32 字符虚拟 file_id（非真实 File 行）
     """Deterministic 32-char id for the artifact-page 'file' identity.
 
     Not a real File row — just an index key that groups all commits for
@@ -68,6 +74,7 @@ def _artifact_file_id(kb_id: str, slug: str) -> str:
 
 
 def _unified_diff(before: str, after: str, slug: str) -> str:
+    # 生成两段 Markdown 的统一 diff，内容相同则返回空串
     """Return a unified diff between two markdown strings, or '' if equal."""
     if (before or "") == (after or ""):
         return ""
@@ -83,6 +90,7 @@ def _unified_diff(before: str, after: str, slug: str) -> str:
 
 
 def _store_content_after(kb_id: str, content: str) -> tuple[str, str]:
+    # 按 ARTIFACT_CONTENT_STORAGE 持久化保存后正文，返回 (storage_kind, location)
     """Persist ``content`` per :data:`ARTIFACT_CONTENT_STORAGE`. Returns
     ``(storage_kind, location)`` for the row's persistence columns.
 
@@ -140,6 +148,7 @@ def _store_content_after(kb_id: str, content: str) -> tuple[str, str]:
 
 
 def _read_content_after(kb_id: str, storage_kind: str, location: str) -> str:
+    # 从 MinIO 或 doc-store 读取已存的 content_after
     """Fetch the previously-stored artifact ``content_after`` blob.
 
     Returns ``""`` when the location is empty (workspace commits) or the
@@ -211,10 +220,12 @@ def _collect_all_files_under(folder_id):
 
 
 class FileCommitService(CommonService):
+    # 工作区文件夹提交链与 Artifact 页面编辑历史
     model = FileCommit
 
     @classmethod
     def create_commit(cls, folder_id, author_id, message, file_changes):
+        # 为工作区文件夹创建一次提交：更新 tree_state 并写入变更项
         """Create a new commit for a workspace folder.
 
         Args:
@@ -698,10 +709,11 @@ class FileCommitService(CommonService):
         return None
 
     # ------------------------------------------------------------------
-    # Artifact-page commit surface
+    # Artifact 页面提交 API
     # ------------------------------------------------------------------
 
     @classmethod
+    # 将一次 Artifact 页面编辑持久化为 FileCommit（无真实 File 行、不参与 tree_state）
     def record_page_edit(
         cls,
         *,
@@ -803,6 +815,7 @@ class FileCommitService(CommonService):
 
     @classmethod
     @DB.connection_context()
+    # 分页列出某 Artifact 页面的提交历史（不含 diff/content_after）
     def list_page_commits(
         cls,
         tenant_id: str,
@@ -855,6 +868,7 @@ class FileCommitService(CommonService):
 
     @classmethod
     @DB.connection_context()
+    # 返回单条 Artifact 提交详情，含 diff 与解析后的 content_after
     def get_page_commit_detail(
         cls,
         tenant_id: str,
@@ -944,6 +958,7 @@ def _lookup_folder_name(folder_id):
 
 
 def _build_hierarchical_tree(tree_state, root_folder_id):
+    # 将扁平 tree_state 映射递归组装为文件夹/文件树
     """Build a recursive tree from a flat tree_state map.
 
     Returns {id, name, type: "folder", children: [{file|folder nodes}]}

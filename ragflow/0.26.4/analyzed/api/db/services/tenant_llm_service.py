@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+租户 LLM 服务：TenantLLM 密钥解析、模型实例化、用量统计与环境变量 OCR 模型引导。
+"""
+
 #
 import os
 import json
@@ -27,14 +31,17 @@ from api.db.services.user_service import TenantService
 
 
 class LLMFactoriesService(CommonService):
+    # LLM 厂商目录表
     model = LLMFactories
 
 
 class TenantLLMService(CommonService):
+    # 租户已授权模型与 API 密钥管理
     model = TenantLLM
 
     @staticmethod
     def _decode_api_key_config(raw_api_key: str) -> tuple[str, bool | None, str | None]:
+        # 解析 api_key JSON：提取明文 key、is_tools 与原始 payload
         if not raw_api_key:
             return raw_api_key, None, None
 
@@ -127,6 +134,7 @@ class TenantLLMService(CommonService):
     @classmethod
     @DB.connection_context()
     def get_model_config(cls, tenant_id, llm_type, llm_name=None):
+        # 按租户默认或指定模型名解析完整 model_config（含 api_key 与 is_tools）
         from api.db.services.llm_service import LLMService
 
         e, tenant = TenantService.get_by_id(tenant_id)
@@ -180,6 +188,7 @@ class TenantLLMService(CommonService):
     @classmethod
     @DB.connection_context()
     def model_instance(cls, model_config: dict, lang="Chinese", **kwargs):
+        # 根据 model_type 从 rag.llm 工厂实例化 Embedding/Chat/CV 等模型
         if not model_config:
             raise LookupError("Model config is required")
         from rag.llm import ChatModel, CvModel, EmbeddingModel, OcrModel, RerankModel, Seq2txtModel, TTSModel
@@ -305,6 +314,7 @@ class TenantLLMService(CommonService):
     @classmethod
     @DB.connection_context()
     def ensure_mineru_from_env(cls, tenant_id: str) -> str | None:
+        # 若环境变量已配置 MinerU，则为租户创建或复用 OCR 模型记录
         """
         Ensure a MinerU OCR model exists for the tenant if env variables are present.
         Return the existing or newly created llm_name, or None if env not set.
@@ -504,6 +514,7 @@ class TenantLLMService(CommonService):
 
 
 class LLM4Tenant:
+    # 租户模型运行时：实例化 mdl、Langfuse trace 与资源释放（禁止 flush/shutdown 共享客户端）
     def __init__(self, tenant_id: str, model_config: dict, lang="Chinese", **kwargs):
         self.trace_context = kwargs.pop("trace_context", None) or {}
         self.langfuse_session_id = kwargs.pop("langfuse_session_id", None)
