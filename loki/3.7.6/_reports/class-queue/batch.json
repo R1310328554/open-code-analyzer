@@ -15,23 +15,8 @@
     "pkg/distributor/rate_batcher.go",
     "pkg/distributor/ratestore.go",
     "pkg/distributor/ratestore_metrics.go",
-    "pkg/distributor/segment.go",
-    "pkg/distributor/shard_tracker.go",
-    "pkg/distributor/shardstreams/config.go",
-    "pkg/distributor/tee.go",
-    "pkg/distributor/validator.go",
-    "pkg/distributor/writefailures/cfg.go",
-    "pkg/distributor/writefailures/manager.go",
-    "pkg/distributor/writefailures/metrics.go",
-    "pkg/distributor/writefailures/strategy.go",
-    "pkg/engine/assertions.go",
-    "pkg/engine/basic_engine.go",
-    "pkg/engine/compat.go",
-    "pkg/engine/config.go",
-    "pkg/engine/engine.go",
-    "pkg/engine/handler.go",
-    "pkg/engine/internal/arrowagg/arrays.go"
+    "pkg/distributor/segment.go"
   ],
   "remaining_pending": 1072,
-  "done": 450
+  "done": 465
 }
