@@ -13,3 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+RAGFlow Python SDK 领域模块包：Agent、Chat、Dataset、Document、Chunk、Memory、Session 等 API 封装。
+"""
+

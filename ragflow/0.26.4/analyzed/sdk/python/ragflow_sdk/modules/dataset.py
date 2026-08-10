@@ -13,6 +13,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+DataSet 知识库模块：文档上传/列表/解析、自动元数据配置等。
+"""
+
+
+"""
+        通过 SDK 获取知识库的自动元数据配置。
+DataSet 知识库模块：文档上传/列表/解析、自动元数据配置等。
+"""
+
+
 from typing import Any
 
 from .base import Base
@@ -174,7 +185,7 @@ class DataSet(Base):
 
     def update_auto_metadata(self, **config: Any) -> dict[str, Any]:
         """
-        Update auto-metadata configuration for a dataset via SDK.
+        通过 SDK 更新知识库的自动元数据配置。
         """
         res = self.put(f"/datasets/{self.id}/metadata/config", config)
         res = res.json()

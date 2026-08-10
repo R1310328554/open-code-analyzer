@@ -13,14 +13,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+SDK 基类：从 API 响应字典递归构建对象，并代理 RAGFlow 客户端 HTTP 方法。
+"""
+
+
 
 
 class Base:
+    # 所有 SDK 资源对象的公共基类
     def __init__(self, rag, res_dict):
         self.rag = rag
         self._update_from_dict(rag, res_dict)
 
     def _update_from_dict(self, rag, res_dict):
+        # 递归将 dict 转为嵌套 Base 或原始字段
         for k, v in res_dict.items():
             if isinstance(v, dict):
                 self.__dict__[k] = Base(rag, v)
@@ -28,6 +35,7 @@ class Base:
                 self.__dict__[k] = v
 
     def to_json(self):
+        # 序列化为可 JSON 化的 dict（排除 rag 与私有属性）
         pr = {}
         for name in dir(self):
             value = getattr(self, name)
@@ -39,14 +47,17 @@ class Base:
         return pr
 
     def post(self, path, json=None, stream=False, files=None):
+        # 代理 RAGFlow.post
         res = self.rag.post(path, json, stream=stream, files=files)
         return res
 
     def get(self, path, params=None):
+        # 代理 RAGFlow.get
         res = self.rag.get(path, params)
         return res
 
     def rm(self, path, json):
+        # 代理 RAGFlow.delete
         res = self.rag.delete(path, json)
         return res
 

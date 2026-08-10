@@ -13,9 +13,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+ChatGPT-on-WeChat RAGFlow 插件包：beartype 运行时校验并导出 RAGFlowChat。
+"""
+
+
 
 from beartype.claw import beartype_this_package
 
+# 对本包启用 beartype 运行时类型检查
 beartype_this_package()
 
 from .ragflow_chat import RAGFlowChat

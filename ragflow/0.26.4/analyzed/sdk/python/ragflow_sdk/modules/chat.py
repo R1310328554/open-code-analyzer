@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Chat 助手模块：RAG 对话配置（数据集、LLM、检索参数）与会话管理。
+"""
+
+
 
 
 from .base import Base
@@ -20,6 +25,7 @@ from .session import Session
 
 
 class Chat(Base):
+    # 对话助手：绑定 dataset_ids、llm_id、prompt_config 等
     def __init__(self, rag, res_dict):
         self.id = ""
         self.name = "assistant"
@@ -36,6 +42,7 @@ class Chat(Base):
         super().__init__(rag, res_dict)
 
     def update(self, update_message: dict):
+        # PATCH /chats/{id} 更新助手配置
         if not isinstance(update_message, dict):
             raise Exception("ValueError('`update_message` must be a dict')")
         res = self.patch(f"/chats/{self.id}", update_message)
@@ -44,6 +51,7 @@ class Chat(Base):
             raise Exception(res["message"])
 
     def create_session(self, name: str = "New session") -> Session:
+        # 创建命名对话会话
         res = self.post(f"/chats/{self.id}/sessions", {"name": name})
         res = res.json()
         if res.get("code") == 0:
@@ -51,6 +59,7 @@ class Chat(Base):
         raise Exception(res.get("message"))
 
     def list_sessions(self, page: int = 1, page_size: int = 30, orderby: str = "create_time", desc: bool = True, id: str = None, name: str = None, user_id: str = None) -> list[Session]:
+        # 分页列出会话，可按 id/name/user_id 过滤
         res = self.get(f"/chats/{self.id}/sessions", {"page": page, "page_size": page_size, "orderby": orderby, "desc": desc, "id": id, "name": name, "user_id": user_id})
         res = res.json()
         if res.get("code") == 0:
@@ -61,6 +70,7 @@ class Chat(Base):
         raise Exception(res["message"])
 
     def delete_sessions(self, ids: list[str] | None = None, delete_all: bool = False):
+        # 删除指定或全部会话
         res = self.rm(f"/chats/{self.id}/sessions", {"ids": ids, "delete_all": delete_all})
         res = res.json()
         if res.get("code") != 0:

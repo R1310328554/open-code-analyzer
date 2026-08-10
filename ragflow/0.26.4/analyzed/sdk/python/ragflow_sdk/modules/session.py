@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Session 会话模块：Chat/Agent 统一 ask 接口，支持 SSE 流式与引用 chunk。
+"""
+
+
 
 import json
 import logging
@@ -23,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class Session(Base):
+    # 对话或智能体会话：根据 chat_id/agent_id 区分类型
     def __init__(self, rag, res_dict):
         self.id = None
         self.name = "New session"
@@ -46,7 +52,7 @@ class Session(Base):
         **kwargs,
     ):
         """
-        Ask a question to the session.
+        向会话提问（Chat 或 Agent 补全）。
 
         Parameters
         ----------
@@ -54,7 +60,7 @@ class Session(Base):
             The user's question. May be empty when the agent is driven solely by
             Begin component inputs.
         stream : bool
-            If ``True``, yields ``Message`` objects as they arrive (SSE streaming).
+            为 True 时通过 SSE 逐条 yield Message。
             If ``False``, yields a single ``Message`` with the final answer.
         inputs : dict, optional
             Values for variables declared on the agent's **Begin** component. Each
@@ -67,7 +73,7 @@ class Session(Base):
                     inputs={"key1": {"type": "line", "value": "hello"}},
                 )
 
-            Only meaningful for agent sessions; ignored for chat sessions.
+            仅 Agent 会话有效；Chat 会话忽略。
         release : bool, optional
             If ``True``, run against the latest published agent version instead of
             the editable draft. Only meaningful for agent sessions.
@@ -96,6 +102,7 @@ class Session(Base):
                 return_trace,
             )
 
+        # 按会话类型路由到 Agent 或 Chat 补全端点
         if self.__session_type == "agent":
             res = self._ask_agent(question, stream, **kwargs)
         elif self.__session_type == "chat":
@@ -104,6 +111,7 @@ class Session(Base):
             raise Exception(f"Unknown session type: {self.__session_type}")
 
         if stream:
+            # SSE：解析 data: 行，过滤 event，yield Message
             for line in res.iter_lines(decode_unicode=True):
                 if not line:
                     continue  # Skip empty lines
@@ -138,6 +146,7 @@ class Session(Base):
             yield self._structure_answer(json_data["data"])
 
     def _structure_answer(self, json_data):
+        # 统一封装 assistant Message，附带 reference chunks
         answer = ""
         if self.__session_type == "agent":
             answer = json_data["data"]["content"]
@@ -152,12 +161,14 @@ class Session(Base):
         return message
 
     def _ask_chat(self, question: str, stream: bool, **kwargs):
+        # POST /chats/{chat_id}/completions
         json_data = {"question": question, "stream": stream, "session_id": self.id}
         json_data.update(kwargs)
         res = self.post(f"/chats/{self.chat_id}/completions", json_data, stream=stream)
         return res
 
     def _ask_agent(self, question: str, stream: bool, **kwargs):
+        # POST /agents/chat/completions
         json_data = {
             "agent_id": self.agent_id,
             "query": question,
@@ -177,6 +188,7 @@ class Session(Base):
 
 
 class Message(Base):
+    # ask 返回的单条助手消息：content、reference、role
     def __init__(self, rag, res_dict):
         self.content = "Hi! I am your assistant, can I help you?"
         self.reference = None

@@ -13,6 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""
+RAGFlow Python SDK 主客户端：Bearer 认证 REST 封装，涵盖 Dataset/Chat/Agent/Memory/检索。
+"""
+
 from typing import Optional, Any
 
 import requests
@@ -25,9 +29,11 @@ from .modules.memory import Memory
 
 
 class RAGFlow:
+    # SDK 入口：api_key + base_url，统一 HTTP 动词
     def __init__(self, api_key, base_url, version="v1"):
         """
         api_url: http://<host_address>/api/v1
+        初始化 Bearer 认证与 API 根路径。
         """
         self.user_key = api_key
         self.api_url = f"{base_url}/api/{version}"
@@ -54,6 +60,8 @@ class RAGFlow:
         return res
 
     def create_dataset(
+        # POST /datasets 创建知识库
+
         self,
         name: str,
         avatar: Optional[str] = None,
@@ -84,18 +92,21 @@ class RAGFlow:
         raise Exception(res["message"])
 
     def delete_datasets(self, ids: list[str] | None = None, delete_all: bool = False):
+        # 批量或全部删除知识库
         res = self.delete("/datasets", {"ids": ids, "delete_all": delete_all})
         res = res.json()
         if res.get("code") != 0:
             raise Exception(res["message"])
 
     def get_dataset(self, name: str):
+        # 按名称查找首个匹配知识库
         _list = self.list_datasets(name=name)
         if len(_list) > 0:
             return _list[0]
         raise Exception("Dataset %s not found" % name)
 
     def list_datasets(self, page: int = 1, page_size: int = 30, orderby: str = "create_time", desc: bool = True, id: str | None = None, name: str | None = None) -> list[DataSet]:
+        # 分页列出知识库
         res = self.get(
             "/datasets",
             {
@@ -116,6 +127,8 @@ class RAGFlow:
         raise Exception(res["message"])
 
     def create_chat(
+        # POST /chats 创建 RAG 对话助手
+
         self,
         name: str,
         icon: str = "",
@@ -185,6 +198,8 @@ class RAGFlow:
         raise Exception(res["message"])
 
     def retrieve(
+        # POST /retrieval 跨知识库向量+关键词混合检索
+
         self,
         dataset_ids,
         document_ids=None,
@@ -219,7 +234,7 @@ class RAGFlow:
             "use_kg": use_kg,
             "toc_enhance": toc_enhance,
         }
-        # Send a POST request to the backend service (using requests library as an example, actual implementation may vary)
+        # 构造检索 JSON 并 POST /retrieval
         res = self.post("/retrieval", json=data_json)
         res = res.json()
         if res.get("code") == 0:
@@ -231,6 +246,7 @@ class RAGFlow:
         raise Exception(res.get("message"))
 
     def list_agents(self, page: int = 1, page_size: int = 30, orderby: str = "update_time", desc: bool = True) -> list[Agent]:
+        # GET /agents 列出 Canvas 智能体
         res = self.get(
             "/agents",
             {
@@ -258,6 +274,8 @@ class RAGFlow:
         raise Exception(res["message"])
 
     def create_agent(
+        # POST /agents 创建智能体（title + dsl）
+
         self,
         title: str,
         dsl: dict,
@@ -279,6 +297,8 @@ class RAGFlow:
             raise Exception(res["message"])
 
     def update_agent(
+        # PUT 更新智能体 title/description/dsl
+
         self,
         agent_id: str,
         title: str | None = None,
@@ -307,6 +327,7 @@ class RAGFlow:
             raise Exception(res["message"])
 
     def delete_agent(self, agent_id: str) -> None:
+        # DELETE 删除智能体
         res = self.delete(f"/agents/{agent_id}", {})
         res = res.json()
 
@@ -314,6 +335,7 @@ class RAGFlow:
             raise Exception(res["message"])
 
     def create_memory(self, name: str, memory_type: list[str], embd_id: str, llm_id: str):
+        # POST 创建长期记忆库
         payload = {"name": name, "memory_type": memory_type, "embd_id": embd_id, "llm_id": llm_id}
         res = self.post("/memories", payload)
         res = res.json()
@@ -322,6 +344,7 @@ class RAGFlow:
         return Memory(self, res["data"])
 
     def list_memory(self, page: int = 1, page_size: int = 50, tenant_id: str | list[str] = None, memory_type: str | list[str] = None, storage_type: str = None, keywords: str = None) -> dict:
+        # GET 分页列出记忆库
         res = self.get(
             "/memories",
             {
@@ -348,7 +371,8 @@ class RAGFlow:
             raise Exception(res["message"])
 
     def add_message(self, memory_id: list[str], agent_id: str, session_id: str, user_input: str, agent_response: str, user_id: str = "") -> str:
-        """Append messages to memories; ``user_id`` is forwarded only for API-key auth (external subject)."""
+        # POST 写入对话到记忆；API Key 模式可传 user_id
+        """向记忆库追加消息；user_id 仅在 API Key 认证时作为外部主体标识。"""
         payload = {"memory_id": memory_id, "agent_id": agent_id, "session_id": session_id, "user_input": user_input, "agent_response": agent_response, "user_id": user_id}
         res = self.post("/messages", payload)
         res = res.json()
@@ -357,6 +381,8 @@ class RAGFlow:
         return res["message"]
 
     def search_message(
+        # GET /messages/search 语义搜索记忆
+
         self,
         query: str,
         memory_id: list[str],
@@ -384,6 +410,7 @@ class RAGFlow:
         return res["data"]
 
     def get_recent_messages(self, memory_id: list[str], agent_id: str = None, session_id: str = None, limit: int = 10) -> list[dict]:
+        # GET 最近 N 条记忆消息
         params = {"memory_id": memory_id, "agent_id": agent_id, "session_id": session_id, "limit": limit}
         res = self.get("/messages", params)
         res = res.json()

@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+ChatGPT-on-WeChat 插件：通过 RAGFlow HTTP API 实现微信/企微对话。
+"""
+
+
 
 import logging
 import requests
@@ -22,19 +27,22 @@ from plugins import Plugin, register  # Import Plugin and register
 from plugins.event import Event, EventContext, EventAction  # Import event-related classes
 
 
+# 注册插件：拦截文本消息并调用 RAGFlow
 @register(name="RAGFlowChat", desc="Use RAGFlow API to chat", version="1.0", author="Your Name")
 class RAGFlowChat(Plugin):
+    # 维护 user→conversation_id 映射，处理 ON_HANDLE_CONTEXT
     def __init__(self):
         super().__init__()
-        # Load plugin configuration
+        # 加载 api_key、host_address 等配置
         self.cfg = self.load_config()
         # Bind event handling function
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
-        # Store conversation_id for each user
+        # 按 session_id 缓存 RAGFlow conversation_id
         self.conversations = {}
         logging.info("[RAGFlowChat] Plugin initialized")
 
     def on_handle_context(self, e_context: EventContext):
+        # 仅处理 TEXT：调用 API 并 BREAK_PASS 跳过默认逻辑
         context = e_context["context"]
         if context.type != ContextType.TEXT:
             return  # Only process text messages
@@ -55,6 +63,7 @@ class RAGFlowChat(Plugin):
             e_context.action = EventAction.CONTINUE
 
     def get_ragflow_reply(self, user_input, session_id):
+        # 两步：new_conversation → completion 非流式问答
         # Get API_KEY and host address from the configuration
         api_key = self.cfg.get("api_key")
         host_address = self.cfg.get("host_address")
@@ -66,7 +75,7 @@ class RAGFlowChat(Plugin):
 
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
 
-        # Step 1: Get or create conversation_id
+        # 步骤 1：GET new_conversation 获取或创建会话
         conversation_id = self.conversations.get(user_id)
         if not conversation_id:
             # Create a new conversation
@@ -90,7 +99,7 @@ class RAGFlowChat(Plugin):
                 logging.exception("[RAGFlowChat] Exception when creating conversation")
                 return f"Sorry, an internal error occurred: {str(e)}"
 
-        # Step 2: Send the message and get a reply
+        # 步骤 2：POST completion 发送用户消息并取 answer
         url_completion = f"http://{host_address}/v1/api/completion"
         payload_completion = {"conversation_id": conversation_id, "messages": [{"role": "user", "content": user_input}], "quote": False, "stream": False}
 

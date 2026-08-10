@@ -13,11 +13,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Memory 长期记忆模块：记忆库配置、消息列表、遗忘与状态更新。
+"""
+
+
 
 from .base import Base
 
 
 class Memory(Base):
+    # 长期记忆库：类型、embedding/LLM、遗忘策略与容量
     def __init__(self, rag, res_dict):
         self.id = ""
         self.name = ""
@@ -41,6 +47,7 @@ class Memory(Base):
         super().__init__(rag, res_dict)
 
     def update(self, update_dict: dict):
+        # PUT 更新记忆库配置
         res = self.put(f"/memories/{self.id}", update_dict)
         res = res.json()
         if res.get("code") != 0:
@@ -49,6 +56,7 @@ class Memory(Base):
         return self
 
     def get_config(self):
+        # GET /memories/{id}/config 拉取完整配置
         res = self.get(f"/memories/{self.id}/config")
         res = res.json()
         if res.get("code") != 0:
@@ -57,6 +65,7 @@ class Memory(Base):
         return self
 
     def list_memory_messages(self, agent_id: str | list[str] = None, keywords: str = None, page: int = 1, page_size: int = 50):
+        # 分页列出记忆消息，可按 agent/关键词过滤
         params = {"agent_id": agent_id, "keywords": keywords, "page": page, "page_size": page_size}
         res = self.get(f"/memories/{self.id}", params)
         res = res.json()
@@ -65,6 +74,7 @@ class Memory(Base):
         return res["data"]
 
     def forget_message(self, message_id: int):
+        # DELETE 遗忘单条记忆消息
         res = self.rm(f"/messages/{self.id}:{message_id}", {})
         res = res.json()
         if res.get("code") != 0:
@@ -72,6 +82,7 @@ class Memory(Base):
         return True
 
     def update_message_status(self, message_id: int, status: bool):
+        # PUT 启用/禁用某条记忆
         update_message = {"status": status}
         res = self.put(f"/messages/{self.id}:{message_id}", update_message)
         res = res.json()
@@ -80,6 +91,7 @@ class Memory(Base):
         return True
 
     def get_message_content(self, message_id: int) -> dict:
+        # GET 单条记忆的完整内容
         res = self.get(f"/messages/{self.id}:{message_id}/content")
         res = res.json()
         if res.get("code") != 0:

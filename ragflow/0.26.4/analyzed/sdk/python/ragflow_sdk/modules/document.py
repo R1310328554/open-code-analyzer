@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Document 文档模块：单文档元数据、下载、分块 CRUD 与解析进度。
+"""
+
+
 
 import json
 
@@ -21,6 +26,7 @@ from .chunk import Chunk
 
 
 class Document(Base):
+    # 知识库内单个文档：分块方法、进度、token/chunk 计数
     class ParserConfig(Base):
         def __init__(self, rag, res_dict):
             super().__init__(rag, res_dict)
@@ -51,6 +57,7 @@ class Document(Base):
         super().__init__(rag, res_dict)
 
     def update(self, update_message: dict):
+        # PATCH 更新文档；meta_fields 须为 dict
         if "meta_fields" in update_message:
             if not isinstance(update_message["meta_fields"], dict):
                 raise Exception("meta_fields must be a dictionary")
@@ -63,6 +70,7 @@ class Document(Base):
         return self
 
     def download(self):
+        # GET 下载原文二进制；JSON 错误时抛异常
         res = self.get(f"/datasets/{self.dataset_id}/documents/{self.id}")
         error_keys = set(["code", "message"])
         try:
@@ -76,6 +84,7 @@ class Document(Base):
             return res.content
 
     def list_chunks(self, page=1, page_size=30, keywords="", id=""):
+        # 分页列出文档下分块
         data = {"keywords": keywords, "page": page, "page_size": page_size, "id": id}
         res = self.get(f"/datasets/{self.dataset_id}/documents/{self.id}/chunks", data)
         res = res.json()
@@ -88,6 +97,7 @@ class Document(Base):
         raise Exception(res.get("message"))
 
     def add_chunk(self, content: str, important_keywords: list[str] = [], questions: list[str] = [], image_base64: str | None = None, *, tag_kwd: list[str] = []):
+        # POST 手动添加分块（可选 base64 图片）
         body = {"content": content, "important_keywords": important_keywords, "tag_kwd": tag_kwd, "questions": questions}
         if image_base64 is not None:
             body["image_base64"] = image_base64
@@ -98,6 +108,7 @@ class Document(Base):
         raise Exception(res.get("message"))
 
     def delete_chunks(self, ids: list[str] | None = None, delete_all: bool = False):
+        # DELETE 批量或全部删除分块
         res = self.rm(f"/datasets/{self.dataset_id}/documents/{self.id}/chunks", {"chunk_ids": ids, "delete_all": delete_all})
         res = res.json()
         if res.get("code") != 0:
