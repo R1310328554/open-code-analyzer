@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T21:15:46Z",
   "files": [
-    "clients/pkg/logentry/stages/match.go",
-    "clients/pkg/logentry/stages/metrics.go",
-    "clients/pkg/logentry/stages/multiline.go",
-    "clients/pkg/logentry/stages/output.go",
-    "clients/pkg/logentry/stages/pack.go",
-    "clients/pkg/logentry/stages/pipeline.go",
-    "clients/pkg/logentry/stages/regex.go",
-    "clients/pkg/logentry/stages/replace.go",
-    "clients/pkg/logentry/stages/sampling.go",
-    "clients/pkg/logentry/stages/stage.go",
-    "clients/pkg/logentry/stages/static_labels.go",
-    "clients/pkg/logentry/stages/structuredmetadata.go",
-    "clients/pkg/logentry/stages/template.go",
-    "clients/pkg/logentry/stages/tenant.go",
-    "clients/pkg/logentry/stages/timestamp.go",
     "clients/pkg/logentry/stages/util.go",
     "clients/pkg/promtail/api/types.go",
     "clients/pkg/promtail/client/batch.go",
@@ -33,5 +18,5 @@
     "clients/pkg/promtail/positions/write_positions_unix.go"
   ],
   "remaining_pending": 1492,
-  "done": 30
+  "done": 45
 }
