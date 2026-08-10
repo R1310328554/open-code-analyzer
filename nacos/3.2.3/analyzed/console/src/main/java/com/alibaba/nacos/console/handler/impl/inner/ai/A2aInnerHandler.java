@@ -37,6 +37,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
+ * A2A（Agent-to-Agent）Inner Handler：委托 {@link A2aServerOperationService} 完成 Agent 注册与 Card 管理。
  * A2a inner handler.
  *
  * @author KiteSoar
@@ -46,12 +47,15 @@ import java.util.List;
 @EnabledAiHandler
 public class A2aInnerHandler implements A2aHandler {
     
+    /** A2A 服务端操作服务 */
     private final A2aServerOperationService a2aServerOperationService;
     
+    /** 注入 A2A 服务端操作服务 */
     public A2aInnerHandler(A2aServerOperationService a2aServerOperationService) {
         this.a2aServerOperationService = a2aServerOperationService;
     }
     
+    /** 注册 Agent 及其 Agent Card。 */
     @Override
     public void registerAgent(AgentCard agentCard, AgentCardForm agentCardForm)
         throws NacosException {
@@ -59,6 +63,7 @@ public class A2aInnerHandler implements A2aHandler {
             agentCardForm.getRegistrationType());
     }
     
+    /** 查询 Agent Card 详情及版本列表。 */
     @Override
     public AgentCardDetailInfo getAgentCardWithVersions(AgentForm form) throws NacosException {
         return a2aServerOperationService.getAgentCard(form.getNamespaceId(), form.getAgentName(),
@@ -66,12 +71,14 @@ public class A2aInnerHandler implements A2aHandler {
             form.getRegistrationType());
     }
     
+    /** 删除指定 Agent。 */
     @Override
     public void deleteAgent(AgentForm form) throws NacosException {
         a2aServerOperationService.deleteAgent(form.getNamespaceId(), form.getAgentName(),
             form.getVersion());
     }
     
+    /** 更新 Agent Card 内容与元数据。 */
     @Override
     public void updateAgentCard(AgentCard agentCard, AgentCardUpdateForm form)
         throws NacosException {
@@ -80,6 +87,7 @@ public class A2aInnerHandler implements A2aHandler {
             form.getSetAsLatest());
     }
     
+    /** 分页列举 Agent 及其 Card 版本摘要。 */
     @Override
     public Page<AgentCardVersionInfo> listAgents(AgentListForm agentListForm, PageForm pageForm)
         throws NacosException {
@@ -88,6 +96,7 @@ public class A2aInnerHandler implements A2aHandler {
             agentListForm.getSearch(), pageForm.getPageNo(), pageForm.getPageSize());
     }
     
+    /** 列举指定 Agent 的全部版本详情。 */
     @Override
     public List<AgentVersionDetail> listAgentVersions(String namespaceId, String name)
         throws NacosException {

@@ -23,6 +23,7 @@ import com.alibaba.nacos.core.cluster.health.ReadinessResult;
 import org.springframework.stereotype.Service;
 
 /**
+ * 健康检查 Inner Handler：委托 {@link ModuleHealthCheckerHolder} 执行就绪探针检测。
  * Implementation of HealthHandler that performs health check operations.
  *
  * @author zhangyukun
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Service;
 @EnabledInnerHandler
 public class HealthInnerHandler implements HealthHandler {
     
+    /** 执行集群模块就绪检查，成功返回 ok，失败返回错误信息。 */
     @Override
     public Result<String> checkReadiness() {
         ReadinessResult result = ModuleHealthCheckerHolder.getInstance().checkReadiness();

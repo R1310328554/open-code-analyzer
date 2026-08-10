@@ -23,6 +23,8 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
+ * 功能模块启用条件：根据 {@link EnvUtil#getFunctionMode()} 判定 naming/config/ai 等模块 Handler 是否加载。
+ * 未启用时使用 NoOp 实现替代，避免依赖模块缺失导致启动失败。
  * The condition of target function or module is enabled.
  * When target module such as `naming`, `config` or `ai` is disabled or dependency module is disabled
  * The target handler should not be loaded and should use noop handler replaced.
@@ -31,29 +33,32 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
  */
 public class ConditionFunctionEnabled implements Condition {
     
+    /** 待判定的目标功能模式标识（如 config、naming、ai） */
     private final String targetFunctionMode;
     
+    /** 构造指定功能模式的启用条件 */
     public ConditionFunctionEnabled(String targetFunctionMode) {
         this.targetFunctionMode = targetFunctionMode;
     }
     
+    /** 判定目标功能模块是否在当前部署模式下启用。 */
     @Override
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         String functionMode = EnvUtil.getFunctionMode();
-        // empty function mode setting means all function is enabled
+        // 未配置 function mode 时默认全部功能启用
         if (StringUtils.isEmpty(functionMode)) {
             return true;
         }
-        // configured function mode not empty and equals target function mode, means target function is enabled
+        // 配置的 function mode 与目标一致时表示该功能已启用
         if (functionMode.equalsIgnoreCase(targetFunctionMode)) {
             return true;
         }
-        // microservice mode enables both config and naming
+        // 微服务模式同时启用 config 与 naming
         if (EnvUtil.FUNCTION_MODE_MICROSERVICE.equalsIgnoreCase(functionMode)) {
             return EnvUtil.FUNCTION_MODE_CONFIG.equalsIgnoreCase(targetFunctionMode)
                 || EnvUtil.FUNCTION_MODE_NAMING.equalsIgnoreCase(targetFunctionMode);
         }
-        // ai mode depends on both config and naming
+        // AI 模式依赖 config 与 naming 均已启用
         if (EnvUtil.FUNCTION_MODE_AI.equalsIgnoreCase(functionMode)) {
             return EnvUtil.FUNCTION_MODE_CONFIG.equalsIgnoreCase(targetFunctionMode)
                 || EnvUtil.FUNCTION_MODE_NAMING.equalsIgnoreCase(targetFunctionMode);
@@ -61,6 +66,7 @@ public class ConditionFunctionEnabled implements Condition {
         return false;
     }
     
+    /** naming 模块启用条件（{@link EnvUtil#FUNCTION_MODE_NAMING}）。 */
     public static class ConditionNamingEnabled extends ConditionFunctionEnabled {
         
         public ConditionNamingEnabled() {
@@ -68,6 +74,7 @@ public class ConditionFunctionEnabled implements Condition {
         }
     }
     
+    /** config 模块启用条件（{@link EnvUtil#FUNCTION_MODE_CONFIG}）。 */
     public static class ConditionConfigEnabled extends ConditionFunctionEnabled {
         
         public ConditionConfigEnabled() {
@@ -75,6 +82,7 @@ public class ConditionFunctionEnabled implements Condition {
         }
     }
     
+    /** AI 模块启用条件（{@link EnvUtil#FUNCTION_MODE_AI}）。 */
     public static class ConditionAiEnabled extends ConditionFunctionEnabled {
         
         public ConditionAiEnabled() {

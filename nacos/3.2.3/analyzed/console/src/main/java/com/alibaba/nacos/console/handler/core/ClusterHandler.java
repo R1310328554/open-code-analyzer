@@ -23,6 +23,7 @@ import com.alibaba.nacos.api.model.response.NacosMember;
 import java.util.Collection;
 
 /**
+ * 集群管理控制台处理器接口：列举集群成员节点并支持 IP 关键字过滤。
  * Interface for handling cluster-related operations.
  *
  * @author zhangyukun
@@ -30,11 +31,12 @@ import java.util.Collection;
 public interface ClusterHandler {
     
     /**
+     * 获取集群成员列表，可按 IP 关键字过滤。
      * Retrieve a list of cluster members with an optional search keyword.
      *
-     * @param ipKeyWord the search keyword for filtering members
-     * @return a collection of matching members
-     * @throws NacosException if an error occurs during the operation
+     * @param ipKeyWord 成员 IP 搜索关键字
+     * @return 匹配的集群成员集合
+     * @throws NacosException 操作失败时抛出
      */
     Collection<? extends NacosMember> getNodeList(String ipKeyWord) throws NacosException;
 }

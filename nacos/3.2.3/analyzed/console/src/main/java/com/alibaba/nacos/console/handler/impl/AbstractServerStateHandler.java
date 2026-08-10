@@ -27,16 +27,20 @@ import static com.alibaba.nacos.common.utils.StringUtils.TOP_PATH;
 import static com.alibaba.nacos.common.utils.StringUtils.WINDOWS_FOLDER_SEPARATOR;
 
 /**
+ * 服务器状态处理器抽象基类：从本地 conf 目录读取公告与控制台 UI 引导配置。
  * Abstract Server state handler.
  *
  * @author xiweng.yy
  */
 public abstract class AbstractServerStateHandler implements ServerStateHandler {
     
+    /** 公告配置文件名前缀（按语言后缀扩展） */
     private static final String ANNOUNCEMENT_FILE = "announcement.conf";
     
+    /** 控制台 UI 引导配置文件名 */
     private static final String GUIDE_FILE = "console-guide.conf";
     
+    /** 按语言读取公告 conf 文件内容，文件不存在时返回 null。 */
     @Override
     public String getAnnouncement(String language) {
         String file = ANNOUNCEMENT_FILE.substring(0, ANNOUNCEMENT_FILE.length() - 5) + "_"
@@ -53,6 +57,7 @@ public abstract class AbstractServerStateHandler implements ServerStateHandler {
         return announcement;
     }
     
+    /** 读取控制台 UI 引导 conf 文件内容，文件不存在时返回 null。 */
     @Override
     public String getConsoleUiGuide() {
         File guideFile = new File(EnvUtil.getConfPath(), GUIDE_FILE);

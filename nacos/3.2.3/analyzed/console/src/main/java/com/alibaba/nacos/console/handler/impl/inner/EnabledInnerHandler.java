@@ -26,6 +26,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * 启用 Inner Handler 实现：合并部署（merged）或未指定部署类型时，控制台 API 由进程内 Handler 处理而非远程 RPC。
  * Using Inner handler to handle console API request.
  *
  * @author xiweng.yy

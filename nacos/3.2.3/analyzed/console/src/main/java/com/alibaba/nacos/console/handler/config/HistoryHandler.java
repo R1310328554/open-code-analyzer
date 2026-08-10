@@ -26,6 +26,7 @@ import com.alibaba.nacos.api.model.Page;
 import java.util.List;
 
 /**
+ * 配置变更历史控制台处理器接口：按 nid 查询详情、分页列举及上一版本对比。
  * Interface for handling configuration history related operations.
  *
  * @author zhangyukun
@@ -33,6 +34,7 @@ import java.util.List;
 public interface HistoryHandler {
     
     /**
+      * 查询指定 nid 的配置变更历史详情。
      * Query the detailed configuration history information.
      *
      * @param dataId      the ID of the data
@@ -47,12 +49,13 @@ public interface HistoryHandler {
         throws NacosException;
     
     /**
+      * 分页查询配置变更历史列表。
      * Query the list of configuration history.
      *
      * @param dataId      the ID of the data
      * @param group       the group ID
      * @param namespaceId the namespace ID
-     * @param pageNo      the page number
+     * @param pageNo      页码
      * @param pageSize    the number of items per page
      * @return the paginated list of configuration history
      * @throws NacosException if any error occurs during the operation
@@ -62,6 +65,7 @@ public interface HistoryHandler {
         Integer pageSize) throws NacosException;
     
     /**
+      * 查询上一版本配置历史详情。
      * Query the previous configuration history information.
      *
      * @param dataId      the ID of the data
@@ -76,6 +80,7 @@ public interface HistoryHandler {
         throws NacosException;
     
     /**
+      * 按命名空间列举全部配置摘要。
      * Query the list of configurations by namespace.
      *
      * @param namespaceId the namespace ID

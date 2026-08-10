@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 
 /**
+ * 服务器状态 Inner Handler：聚合 {@link NacosServerStateService} 返回运行时状态键值。
  * Implementation of ServerStateHandler that performs server state operations.
  *
  * @author zhangyukun
@@ -31,12 +32,15 @@ import java.util.Map;
 @EnabledInnerHandler
 public class ServerStateInnerHandler extends AbstractServerStateHandler {
     
+    /** 服务器状态查询服务 */
     private final NacosServerStateService stateService;
     
+    /** 注入服务器状态服务 */
     public ServerStateInnerHandler(NacosServerStateService stateService) {
         this.stateService = stateService;
     }
     
+    /** 获取当前节点服务器状态信息映射。 */
     public Map<String, String> getServerState() {
         return stateService.getServerState();
     }

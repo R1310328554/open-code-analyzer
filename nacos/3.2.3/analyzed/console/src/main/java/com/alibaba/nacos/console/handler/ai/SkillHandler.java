@@ -37,6 +37,7 @@ import com.alibaba.nacos.api.model.Page;
 import com.alibaba.nacos.core.model.form.PageForm;
 
 /**
+ * Skill 控制台处理器接口：元数据查询、ZIP 上传、草稿/提审/发布及标签与可见范围管理。
  * Skill handler.
  *
  * @author nacos
@@ -44,46 +45,51 @@ import com.alibaba.nacos.core.model.form.PageForm;
 public interface SkillHandler {
     
     /**
+      * 查询 Skill 元数据。
      * Get skill.
      *
-     * @param form skill form
+     * @param form Skill 查询表单
      * @return skill
      * @throws NacosException nacos exception
      */
     SkillMeta getSkill(SkillForm form) throws NacosException;
     
     /**
+      * 查询 Skill 指定版本完整内容。
      * Get skill version detail. Returns full skill content for a specific version.
      *
-     * @param form skill form (with version)
+     * @param form Skill 查询表单 (with version)
      * @return full skill content
      * @throws NacosException nacos exception
      */
     Skill getSkillVersion(SkillForm form) throws NacosException;
     
     /**
+      * 下载 Skill 版本（独立入口以便统计下载事件）。
      * Download skill version. Provides a separate entry point from {@link #getSkillVersion} so that download events can
      * be tracked independently.
      *
-     * @param form skill form (with version)
+     * @param form Skill 查询表单 (with version)
      * @return full skill content
      * @throws NacosException nacos exception
      */
     Skill downloadSkillVersion(SkillForm form) throws NacosException;
     
     /**
+      * 删除 Skill。
      * Delete skill.
      *
-     * @param form skill form
+     * @param form Skill 查询表单
      * @throws NacosException nacos exception
      */
     void deleteSkill(SkillForm form) throws NacosException;
     
     /**
+      * 分页列举 Skill 摘要。
      * List skills.
      *
-     * @param skillListForm skill list form
-     * @param pageForm      page form
+     * @param skillListForm Skill 列表查询表单
+     * @param pageForm      分页参数
      * @return skill list
      * @throws NacosException nacos exception
      */
@@ -92,20 +98,22 @@ public interface SkillHandler {
         PageForm pageForm) throws NacosException;
     
     /**
+      * 从 ZIP 文件上传 Skill。
      * Upload skill from zip file.
      *
-     * @param request upload request
+     * @param request 上传请求
      * @return skill name
      * @throws NacosException if upload failed
      */
     String uploadSkillFromZip(SkillUploadRequest request) throws NacosException;
     
     /**
+      * 从含多个 Skill 子目录的 ZIP 批量上传。
      * Batch upload multiple skills from a single zip file containing multiple skill subdirectories.
      *
-     * @param namespaceId namespace ID
-     * @param zipBytes    zip file bytes
-     * @param overwrite   whether to overwrite existing drafts
+     * @param namespaceId 命名空间 ID
+     * @param zipBytes    ZIP 文件字节内容
+     * @param overwrite   是否覆盖已有草稿
      * @return batch upload result with succeeded and failed lists
      * @throws NacosException if zip parsing fails entirely
      */
@@ -114,93 +122,104 @@ public interface SkillHandler {
         throws NacosException;
     
     /**
+      * 基于最新版或指定版本创建草稿。
      * Create draft version based on latest or a specified version.
      *
-     * @param form draft create form
+     * @param form 草稿创建表单
      * @return created draft version
      * @throws NacosException if operation failed
      */
     String createDraft(SkillDraftCreateForm form) throws NacosException;
     
     /**
+      * 更新当前草稿内容。
      * Update current draft content.
      *
-     * @param form update form
+     * @param form 更新表单
      * @throws NacosException if operation failed
      */
     void updateDraft(SkillUpdateForm form) throws NacosException;
     
     /**
+      * 删除当前草稿版本。
      * Delete current draft version.
      *
-     * @param form skill form
+     * @param form Skill 查询表单
      * @throws NacosException if operation failed
      */
     void deleteDraft(SkillForm form) throws NacosException;
     
     /**
+      * 提交版本至流水线审核。
      * Submit a version for pipeline review.
      *
-     * @param form submit form
+     * @param form 提交表单
      * @return submit result (e.g. pipeline id)
      * @throws NacosException if operation failed
      */
     String submit(SkillSubmitForm form) throws NacosException;
     
     /**
+      * 发布已通过审核的版本。
      * Publish an approved reviewing version.
      *
-     * @param form publish form
+     * @param form 发布表单
      * @throws NacosException if operation failed
      */
     void publish(SkillPublishForm form) throws NacosException;
     
     /**
+      * 强制发布 Skill 版本，跳过流水线校验（限管理员）。
      * Force-publish a skill version, bypassing pipeline validation. Accepts draft, reviewing, and reviewed versions.
      * Should only be called by admin users.
      *
-     * @param form publish form
+     * @param form 发布表单
      * @throws NacosException nacos exception
      */
     void forcePublish(SkillPublishForm form) throws NacosException;
     
     /**
+      * 将已审核版本退回草稿状态重新编辑。
      * Re-edit a reviewed version, transitioning it back to draft status.
      *
-     * @param form publish form (contains namespace, skill name, version)
+     * @param form 发布表单 (contains namespace, skill name, version)
      * @throws NacosException if operation failed
      */
     void redraft(SkillPublishForm form) throws NacosException;
     
     /**
+      * 更新运行时路由标签（不改变版本状态）。
      * Update runtime route labels without changing version status.
      *
-     * @param form labels update form
+     * @param form 标签更新表单
      * @throws NacosException if operation failed
      */
     void updateLabels(SkillLabelsUpdateForm form) throws NacosException;
     
     /**
+      * 更新 Skill 业务标签（不改变版本状态）。
      * Update skill biz tags without changing version status.
      *
-     * @param form biz tags update form
+     * @param form 业务标签更新表单
      * @throws NacosException if operation failed
      */
     void updateBizTags(SkillBizTagsUpdateForm form) throws NacosException;
     
     /**
+      * 切换上线/下线状态。
      * Change online/offline status.
      *
-     * @param form   online form
-     * @param online true for online, false for offline
+     * @param form   上下线操作表单
+     * @param online true 上线，false 下线
      * @throws NacosException if operation failed
      */
     void changeOnlineStatus(SkillOnlineForm form, boolean online) throws NacosException;
     
     /**
+      * 更新 Skill 可见性范围（PUBLIC/PRIVATE）。
      * Update skill visibility scope (PUBLIC/PRIVATE).
      *
-     * @param form scope update form
+     * @param form 可见范围更新表单
      * @throws NacosException if operation failed
      */
     void updateScope(SkillScopeForm form) throws NacosException;
