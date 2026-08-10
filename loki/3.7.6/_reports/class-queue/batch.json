@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:25:12Z",
-  "files": [
-    "pkg/ingester/stream.go",
-    "pkg/ingester/stream_rate_calculator.go",
-    "pkg/ingester/streams_map.go",
-    "pkg/ingester/tailer.go",
-    "pkg/ingester/wal.go",
-    "pkg/ingester/wal/encoding.go",
-    "pkg/ingester/wal/recordpool.go",
-    "pkg/ingester/wal_unix.go",
-    "pkg/ingester/wal_windows.go",
-    "pkg/iter/cache.go",
-    "pkg/iter/categorized_labels_iterator.go",
-    "pkg/iter/entry_iterator.go",
-    "pkg/iter/iterator.go",
-    "pkg/iter/sample_iterator.go",
-    "pkg/iter/v2/dedupe.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 832,
-  "done": 705
+  "done": 720
 }
