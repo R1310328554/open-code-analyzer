@@ -20,6 +20,8 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 
 /**
+ * 配置变更历史详情：对比变更前后的 MD5、内容、加密密钥与扩展信息，
+ * 供控制台展示 diff 及回滚决策。
  * ConfigHistoryInfoPair.
  *
  * @author dirtybit
@@ -28,6 +30,7 @@ public class ConfigHistoryInfoDetail implements Serializable {
     
     private static final long serialVersionUID = -7827521105376245603L;
     
+    /** 历史记录主键 ID */
     private long id;
     
     private long lastId = -1;
@@ -39,6 +42,7 @@ public class ConfigHistoryInfoDetail implements Serializable {
     private String tenant;
     
     /**
+     * 操作类型：插入、更新或删除。
      * Operation type, include inserting, updating and deleting.
      */
     private String opType;
@@ -53,20 +57,25 @@ public class ConfigHistoryInfoDetail implements Serializable {
     
     private String srcUser;
     
+    /** 变更前配置内容 MD5 */
     private String originalMd5;
     
+    /** 变更前配置内容正文 */
     private String originalContent;
     
     private String originalEncryptedDataKey;
     
     private String originalExtInfo;
     
+    /** 变更后配置内容 MD5 */
     private String updatedMd5;
     
+    /** 变更后配置内容正文 */
     private String updatedContent;
     
     private String updatedEncryptedDataKey;
     
+    /** 变更后的扩展信息 JSON */
     private String updateExtInfo;
     
     private Timestamp createdTime;

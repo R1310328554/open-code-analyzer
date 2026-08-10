@@ -17,6 +17,8 @@
 package com.alibaba.nacos.config.server.model;
 
 /**
+ * 配置缓存 MD5 后处理器 SPI：在写入 {@link ConfigCache} 前对内容做额外处理
+ * （如自定义摘要算法），由 {@link ConfigCachePostProcessorDelegate} 按类型加载。
  * The interface Config cache md5 post processor.
  *
  * @author Sunrisea
@@ -24,6 +26,7 @@ package com.alibaba.nacos.config.server.model;
 public interface ConfigCachePostProcessor {
     
     /**
+     * 返回后处理器名称，与 {@code nacos.config.cache.type} 匹配。
      * Gets post processor name.
      *
      * @return the post processor name
@@ -31,6 +34,7 @@ public interface ConfigCachePostProcessor {
     public String getName();
     
     /**
+     * 对配置内容执行后处理并更新 {@link ConfigCache}（如重算 MD5）。
      * Post process.
      *
      * @param configCache the config cache

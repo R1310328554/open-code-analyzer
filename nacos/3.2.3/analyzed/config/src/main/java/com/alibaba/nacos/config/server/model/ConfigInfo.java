@@ -17,6 +17,8 @@
 package com.alibaba.nacos.config.server.model;
 
 /**
+ * 配置主实体：在 {@link ConfigInfoBase} 基础上扩展 tenant、appName、类型、
+ * 描述、标签与修改时间，是 Config 模块最核心的持久化与 API 模型。
  * ConfigInfo.
  *
  * @author boyan
@@ -26,16 +28,22 @@ public class ConfigInfo extends ConfigInfoBase {
     
     static final long serialVersionUID = 3115358782431229202L;
     
+    /** 命名空间 ID（tenant） */
     private String tenant;
     
+    /** 关联应用名，用于归属与检索 */
     private String appName;
     
+    /** 配置内容类型（text/json/yaml 等） */
     private String type;
     
+    /** 配置描述 */
     private String desc;
     
+    /** 配置标签，逗号分隔 */
     private String configTags;
     
+    /** 最后修改时间（毫秒时间戳） */
     private Long gmtModified;
     
     public ConfigInfo() {
@@ -50,6 +58,7 @@ public class ConfigInfo extends ConfigInfoBase {
         this.appName = appName;
     }
     
+    /** 以 dataId、group、tenant、appName 与 content 构造完整配置实体 */
     public ConfigInfo(String dataId, String group, String tenant, String appName, String content) {
         super(dataId, group, content);
         this.tenant = tenant;

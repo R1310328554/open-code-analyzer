@@ -22,19 +22,25 @@ import com.alibaba.nacos.core.utils.StringPool;
 import java.io.Serializable;
 
 /**
+ * 内存配置缓存条目：保存 MD5 摘要、加密数据密钥与最后修改时间戳，
+ * 供 {@link com.alibaba.nacos.config.server.service.ConfigCacheService} 快速比对客户端版本。
  * config cache .
  *
  * @author shiyiyue1102
  */
 public class ConfigCache implements Serializable {
     
+    /** 配置内容 MD5 摘要，{@link Constants#NULL} 表示尚未加载 */
     volatile String md5 = Constants.NULL;
     
+    /** 加密配置的数据密钥标识 */
     volatile String encryptedDataKey;
     
+    /** 配置最后修改时间戳（毫秒），-1 表示未设置 */
     volatile long lastModifiedTs;
     
     /**
+     * 清空缓存条目，重置 MD5、加密密钥与修改时间。
      * clear cache.
      */
     public void clear() {
@@ -46,6 +52,7 @@ public class ConfigCache implements Serializable {
     public ConfigCache() {
     }
     
+    /** 以 MD5 与修改时间构造缓存条目，MD5 经 {@link com.alibaba.nacos.core.utils.StringPool} 驻留 */
     public ConfigCache(String md5, long lastModifiedTs) {
         this.md5 = StringPool.get(md5);
         this.lastModifiedTs = lastModifiedTs;

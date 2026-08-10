@@ -17,6 +17,8 @@
 package com.alibaba.nacos.config.server.model;
 
 /**
+ * 配置缓存工厂 SPI 接口：按实现名称创建 {@link ConfigCache} 与 {@link ConfigCacheGray} 实例，
+ * 由 {@link ConfigCacheFactoryDelegate} 根据 {@code nacos.config.cache.type} 选择具体实现。
  * The interface Config cache factory.
  *
  * @author Sunrisea
@@ -24,6 +26,7 @@ package com.alibaba.nacos.config.server.model;
 public interface ConfigCacheFactory {
     
     /**
+     * 创建标准配置缓存实例。
      * Create config cache config cache.
      *
      * @return the config cache
@@ -31,6 +34,7 @@ public interface ConfigCacheFactory {
     public ConfigCache createConfigCache();
     
     /**
+     * 创建灰度配置缓存实例。
      * Create config cache gray config cache gray.
      *
      * @return the config cache gray
@@ -38,6 +42,7 @@ public interface ConfigCacheFactory {
     public ConfigCacheGray createConfigCacheGray();
     
     /**
+     * 返回工厂实现名称，用于与配置项 {@code nacos.config.cache.type} 匹配。
      * Gets config cache factroy name.
      *
      * @return the config cache factory name

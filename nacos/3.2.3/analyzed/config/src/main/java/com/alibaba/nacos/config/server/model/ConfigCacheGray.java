@@ -23,17 +23,22 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
+ * 灰度配置缓存：在 {@link ConfigCache} 基础上附加灰度名称与 {@link com.alibaba.nacos.config.server.model.gray.GrayRule}，
+ * 支持按客户端标签匹配灰度规则并参与推送路由。
  * extensible config cache.
  *
  * @author rong
  */
 public class ConfigCacheGray extends ConfigCache implements Serializable {
     
+    /** 灰度配置名称，唯一标识一条灰度发布 */
     private String grayName;
     
+    /** 解析后的灰度匹配规则对象 */
     private GrayRule grayRule;
     
     /**
+     * 清空灰度缓存，委托父类重置 MD5 等基础字段。
      * clear cache.
      */
     @Override
@@ -61,6 +66,7 @@ public class ConfigCacheGray extends ConfigCache implements Serializable {
     }
     
     /**
+     * 获取数据库中存储的原始灰度规则表达式。
      * get raw gray rule from db.
      *
      * @return raw gray rule from db.
@@ -71,6 +77,7 @@ public class ConfigCacheGray extends ConfigCache implements Serializable {
     }
     
     /**
+     * 从数据库原始规则字符串重新解析并设置灰度规则，无效时抛出异常。
      * reset gray rule.
      *
      * @param grayRule raw gray rule from db.
@@ -86,6 +93,7 @@ public class ConfigCacheGray extends ConfigCache implements Serializable {
     }
     
     /**
+     * 判断客户端连接标签是否匹配当前灰度规则。
      * judge whether match gray rule.
      *
      * @param tags conn tags.
@@ -101,6 +109,7 @@ public class ConfigCacheGray extends ConfigCache implements Serializable {
     }
     
     /**
+     * 判断灰度规则是否已加载且合法。
      * if gray rule is valid.
      *
      * @return true if valid, false otherwise.

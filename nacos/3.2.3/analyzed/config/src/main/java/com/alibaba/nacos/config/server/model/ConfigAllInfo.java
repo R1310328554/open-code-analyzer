@@ -17,6 +17,8 @@
 package com.alibaba.nacos.config.server.model;
 
 /**
+ * 配置完整信息视图：继承 {@link ConfigInfo} 并附加创建/修改时间、操作者、
+ * 用途、生效说明与 Schema 等扩展字段，供控制台详情页一次性返回。
  * ConfigAllInfo.
  *
  * @author Nacos
@@ -25,18 +27,25 @@ public class ConfigAllInfo extends ConfigInfo {
     
     private static final long serialVersionUID = 296578467953931353L;
     
+    /** 配置创建时间戳（毫秒） */
     private long createTime;
     
+    /** 配置最近修改时间戳（毫秒） */
     private long modifyTime;
     
+    /** 创建或修改操作的用户名 */
     private String createUser;
     
+    /** 创建或修改操作的来源 IP */
     private String createIp;
     
+    /** 配置用途说明 */
     private String use;
     
+    /** 配置生效范围说明 */
     private String effect;
     
+    /** 配置内容 Schema 定义 */
     private String schema;
     
     public ConfigAllInfo() {

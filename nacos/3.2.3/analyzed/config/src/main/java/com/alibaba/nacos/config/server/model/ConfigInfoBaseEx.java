@@ -17,6 +17,8 @@
 package com.alibaba.nacos.config.server.model;
 
 /**
+ * 带状态码的配置基础扩展：在 {@link ConfigInfoBase} 上附加单条批量操作的结果
+ * status 与 message，字段集合固定以兼容旧版批量 API。
  * ConfigInfoBaseEx.
  * And can't add field, to compatible with old interface(If adding a field, then it will occur compatibility problems).
  *
@@ -27,12 +29,14 @@ public class ConfigInfoBaseEx extends ConfigInfoBase {
     private static final long serialVersionUID = 5802322506486922169L;
     
     /**
+     * 单条批量操作结果状态码，详见 {@link com.alibaba.nacos.config.server.constant.Constants}。
      * Single message status code, when querying for batch.
      * And details of message status code, you can see Constants.java.
      */
     private int status;
     
     /**
+     * 单条批量操作的说明信息（成功或失败原因）。
      * Single message information, when querying for batch.
      */
     private String message;
@@ -45,6 +49,7 @@ public class ConfigInfoBaseEx extends ConfigInfoBase {
         super(dataId, group, content);
     }
     
+    /** 构造带状态码与消息的扩展配置实体 */
     public ConfigInfoBaseEx(String dataId, String group, String content, int status,
         String message) {
         super(dataId, group, content);

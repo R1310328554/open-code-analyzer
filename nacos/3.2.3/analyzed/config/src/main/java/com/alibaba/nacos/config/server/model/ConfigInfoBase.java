@@ -26,6 +26,8 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
+ * 配置基础实体：包含 id、dataId、group、content、md5 与加密密钥，
+ * 字段集合固定以兼容旧版 Open API，不可随意增删字段。
  * ConfigInfoBase.
  * And can't add field, to compatible with old interface(If adding a field, then it will occur compatibility problems).
  *
@@ -36,22 +38,29 @@ public class ConfigInfoBase implements Serializable, Comparable<ConfigInfoBase> 
     static final long serialVersionUID = 265316491795790798L;
     
     @JsonSerialize(using = ToStringSerializer.class)
+    /** 数据库主键 ID */
     private long id;
     
+    /** 配置 dataId，业务唯一标识之一 */
     private String dataId;
     
+    /** 配置 group，默认 {@link com.alibaba.nacos.config.server.constant.Constants#DEFAULT_GROUP} */
     private String group;
     
+    /** 配置内容正文 */
     private String content;
     
+    /** 配置内容 MD5 摘要，用于客户端变更检测 */
     private String md5;
     
+    /** 加密配置的数据密钥标识 */
     private String encryptedDataKey;
     
     public ConfigInfoBase() {
         
     }
     
+    /** 构造基础配置并自动按 {@link Constants#PERSIST_ENCODE} 计算 MD5 */
     public ConfigInfoBase(String dataId, String group, String content) {
         this.dataId = dataId;
         this.group = group;
@@ -101,6 +110,7 @@ public class ConfigInfoBase implements Serializable, Comparable<ConfigInfoBase> 
         this.md5 = md5;
     }
     
+    /** 将配置内容写入 {@link PrintWriter}，供导出或流式响应 */
     public void dump(PrintWriter writer) {
         writer.write(this.content);
     }
@@ -113,6 +123,7 @@ public class ConfigInfoBase implements Serializable, Comparable<ConfigInfoBase> 
         this.encryptedDataKey = encryptedDataKey;
     }
     
+    /** 按 dataId、group、content 字典序比较，用于排序与去重 */
     @Override
     public int compareTo(ConfigInfoBase o) {
         if (o == null) {

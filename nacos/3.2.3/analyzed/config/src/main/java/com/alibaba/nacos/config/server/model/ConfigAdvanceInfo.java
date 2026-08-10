@@ -20,6 +20,8 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
+ * 配置扩展元信息：记录创建/修改时间、操作者、用途、生效范围、类型、Schema 及标签等，
+ * 供控制台展示与审计，与 {@link ConfigInfo} 主表字段互补。
  * Config advance info.
  *
  * @author Nacos
@@ -28,24 +30,34 @@ public class ConfigAdvanceInfo implements Serializable {
     
     static final long serialVersionUID = 3148031484920416869L;
     
+    /** 配置首次创建时间戳（毫秒） */
     private long createTime;
     
+    /** 配置最近一次修改时间戳（毫秒） */
     private long modifyTime;
     
+    /** 创建或最后修改操作的用户名 */
     private String createUser;
     
+    /** 创建或最后修改操作的来源 IP */
     private String createIp;
     
+    /** 配置描述说明 */
     private String desc;
     
+    /** 配置用途说明（业务场景） */
     private String use;
     
+    /** 配置生效范围或影响说明 */
     private String effect;
     
+    /** 配置内容类型（如 text、json、yaml） */
     private String type;
     
+    /** 配置内容对应的 Schema 定义 */
     private String schema;
     
+    /** 配置标签，逗号分隔，用于检索与分类 */
     private String configTags;
     
     public long getCreateTime() {

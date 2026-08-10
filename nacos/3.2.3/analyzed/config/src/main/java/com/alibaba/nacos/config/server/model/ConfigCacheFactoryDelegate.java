@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 
 /**
+ * 配置缓存工厂委托单例：通过 {@link com.alibaba.nacos.common.spi.NacosServiceLoader} 加载
+ * {@link ConfigCacheFactory} 实现，按 {@code nacos.config.cache.type} 选择或回退默认工厂。
  * The type Config cache factory delegate.
  *
  * @author Sunrisea
@@ -35,8 +37,10 @@ public class ConfigCacheFactoryDelegate {
     
     private static final ConfigCacheFactoryDelegate INSTANCE = new ConfigCacheFactoryDelegate();
     
+    /** 当前选中的缓存工厂类型，默认 {@code nacos} */
     private String configCacheFactoryType = EnvUtil.getProperty("nacos.config.cache.type", "nacos");
     
+    /** 已匹配或默认的缓存工厂实例 */
     private ConfigCacheFactory configCacheFactory = null;
     
     private ConfigCacheFactoryDelegate() {
@@ -68,6 +72,7 @@ public class ConfigCacheFactoryDelegate {
     }
     
     /**
+     * 获取工厂委托单例。
      * Gets instance.
      *
      * @return the instance
@@ -77,6 +82,7 @@ public class ConfigCacheFactoryDelegate {
     }
     
     /**
+     * 委托当前工厂创建标准 {@link ConfigCache}。
      * Create config cache config cache.
      *
      * @return the config cache
@@ -86,6 +92,7 @@ public class ConfigCacheFactoryDelegate {
     }
     
     /**
+     * 创建并初始化带 MD5 与修改时间的 {@link ConfigCache}。
      * Create config cache config cache.
      *
      * @param md5            the md 5
@@ -100,6 +107,7 @@ public class ConfigCacheFactoryDelegate {
     }
     
     /**
+     * 委托当前工厂创建 {@link ConfigCacheGray}。
      * Create config cache gray config cache gray.
      *
      * @return the config cache gray
@@ -109,6 +117,7 @@ public class ConfigCacheFactoryDelegate {
     }
     
     /**
+     * 创建并设置灰度名称的 {@link ConfigCacheGray}。
      * Create config cache gray config cache gray.
      *
      * @param grayName the gray name

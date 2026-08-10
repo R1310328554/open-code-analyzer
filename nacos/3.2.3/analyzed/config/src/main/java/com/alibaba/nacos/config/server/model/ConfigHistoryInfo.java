@@ -24,6 +24,8 @@ import java.sql.Timestamp;
 import java.util.Objects;
 
 /**
+ * 配置变更历史记录：保存 dataId/group/tenant、操作类型、发布类型、灰度名称、
+ * 内容快照及操作者 IP/用户等，供历史查询与审计回溯。
  * ConfigHistoryInfo.
  *
  * @author Nacos
@@ -33,14 +35,19 @@ public class ConfigHistoryInfo implements Serializable {
     private static final long serialVersionUID = -7827521105376245603L;
     
     @JsonSerialize(using = ToStringSerializer.class)
+    /** 历史记录主键 ID */
     private long id;
     
+    /** 上一条历史记录 ID，-1 表示无前置版本 */
     private long lastId = -1;
     
+    /** 配置 dataId */
     private String dataId;
     
+    /** 配置 group */
     private String group;
     
+    /** 命名空间 tenant（namespace） */
     private String tenant;
     
     private String appName;
@@ -54,12 +61,15 @@ public class ConfigHistoryInfo implements Serializable {
     private String srcUser;
     
     /**
+     * 操作类型：插入、更新或删除。
      * Operation type, include inserting, updating and deleting.
      */
     private String opType;
     
+    /** 发布类型（正式/灰度/Beta 等） */
     private String publishType;
     
+    /** 关联的灰度配置名称，非灰度发布时为 null */
     private String grayName;
     
     private String extInfo;
@@ -68,6 +78,7 @@ public class ConfigHistoryInfo implements Serializable {
     
     private Timestamp lastModifiedTime;
     
+    /** 加密配置的数据密钥标识 */
     private String encryptedDataKey;
     
     public long getId() {

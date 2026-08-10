@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 
 /**
+ * 配置缓存 MD5 后处理器委托单例：SPI 加载 {@link ConfigCachePostProcessor} 实现，
+ * 按 {@code nacos.config.cache.type} 选择匹配项或回退 {@link NacosConfigCachePostProcessor}。
  * The type Config cache md5 post processor delegate.
  *
  * @author Sunrisea
@@ -37,9 +39,11 @@ public class ConfigCachePostProcessorDelegate {
     private static ConfigCachePostProcessorDelegate instance =
         new ConfigCachePostProcessorDelegate();
     
+    /** 当前选中的后处理器类型，默认 {@code nacos} */
     private String configCacheMd5PostProcessorType =
         EnvUtil.getProperty("nacos.config.cache.type", "nacos");
     
+    /** 已匹配或默认的后处理器实例 */
     private ConfigCachePostProcessor configCachePostProcessor;
     
     private ConfigCachePostProcessorDelegate() {
@@ -71,10 +75,12 @@ public class ConfigCachePostProcessorDelegate {
         }
     }
     
+    /** 获取后处理器委托单例 */
     public static ConfigCachePostProcessorDelegate getInstance() {
         return instance;
     }
     
+    /** 委托当前后处理器更新 {@link ConfigCache} 的 MD5 等字段 */
     public void postProcess(ConfigCache configCache, String content) {
         configCachePostProcessor.postProcess(configCache, content);
     }
