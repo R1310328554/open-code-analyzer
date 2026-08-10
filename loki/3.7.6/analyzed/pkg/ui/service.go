@@ -1,5 +1,7 @@
 package ui
 
+// service 实现 Loki UI 后台服务：维护 ring 成员、HTTP 客户端、静态资源路由，并在启用时初始化 goldfish 存储与结果 bucket。
+
 import (
 	"context"
 	"crypto/tls"
@@ -26,6 +28,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/bucket"
 )
 
+// Service 嵌入 dskit BasicService，持有 router、ring、goldfish 依赖与可注入时钟。
 type Service struct {
 	services.Service
 	ring          *ring.Ring
@@ -46,6 +49,7 @@ type Service struct {
 	now func() time.Time
 }
 
+// NewService 构造 HTTP/2 客户端、可选 goldfish 指标，并注册全部 UI 路由。
 func NewService(cfg Config, router *mux.Router, ring *ring.Ring, localAddr string, logger log.Logger, reg prometheus.Registerer) (*Service, error) {
 	httpClient := &http.Client{
 		Transport: &http2.Transport{
@@ -106,6 +110,7 @@ func (s *Service) stop(_ error) error {
 	return nil
 }
 
+// findNodeAddressByName 遍历 ring 健康实例，按 ID 不区分大小写匹配地址。
 // findNodeAddressByName returns the HTTP address of the UI instance with the given ID.
 // It queries the UI ring to find the instance address.
 func (s *Service) findNodeAddressByName(instanceID string) (string, error) {
@@ -144,6 +149,7 @@ func deadlineDuration(ctx context.Context) (d time.Duration, ok bool) {
 	return 0, false
 }
 
+// initGoldfishDB 按 CloudSQL/RDS 配置创建 MySQL 存储，失败时降级为 noop。
 // initGoldfishDB initializes the database connection for goldfish features
 func (s *Service) initGoldfishDB() error {
 	if !s.cfg.Goldfish.Enable {
@@ -202,3 +208,4 @@ func (s *Service) initGoldfishDB() error {
 
 	return nil
 }
+// calcTimeout 将拨号超时限制在 30s 内且不超过 context deadline 剩余时间。

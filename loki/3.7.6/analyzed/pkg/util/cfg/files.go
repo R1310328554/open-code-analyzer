@@ -1,5 +1,7 @@
 package cfg
 
+// files 提供 JSON/YAML 配置 Source 与 ConfigFileLoader：支持 envsubst 环境变量展开及 strict/non-strict yaml 解析模式。
+
 import (
 	"encoding/json"
 	"flag"
@@ -13,6 +15,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// JSON 读取指定路径 JSON 并 Unmarshal 到 Cloneable，路径 nil 时跳过。
 // JSON returns a Source that opens the supplied `.json` file and loads it.
 func JSON(f *string) Source {
 	return func(dst Cloneable) error {
@@ -37,6 +40,7 @@ func dJSON(y []byte) Source {
 	}
 }
 
+// YAML 可选 expandEnvVars 与 strict 模式，错误信息包装为文件路径前缀。
 // YAML returns a Source that opens the supplied `.yaml` file and loads it.
 // When expandEnvVars is true, variables in the supplied '.yaml\ file are expanded
 // using https://pkg.go.dev/github.com/drone/envsubst?tab=overview
@@ -77,6 +81,7 @@ func dYAML(y []byte) Source {
 	}
 }
 
+// ConfigFileLoader 先解析 config.file 等 flag 定位文件，支持逗号分隔多配置文件。
 func ConfigFileLoader(args []string, name string, strict bool) Source {
 	return func(dst Cloneable) error {
 		freshFlags := flag.NewFlagSet("config-file-loader", flag.ContinueOnError)
@@ -122,3 +127,4 @@ func ConfigFileLoader(args []string, name string, strict bool) Source {
 		return fmt.Errorf("%s does not exist, set %s for custom config path", f.Value.String(), name)
 	}
 }
+// config.expand-env=false 时 envsubst 失败会提示启用 -config.expand-env=true。

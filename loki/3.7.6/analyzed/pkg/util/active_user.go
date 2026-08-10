@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// active_user 跟踪租户最近活跃时间戳，支持批量 purge 长时间无活动的用户，并由 TimerService 周期性触发清理回调。
+
 import (
 	"context"
 	"sync"
@@ -9,6 +11,7 @@ import (
 	"go.uber.org/atomic"
 )
 
+// ActiveUsers 以 userID 映射 atomic 时间戳，Update 与 Purge 须使用相同时间单位。
 // ActiveUsers keeps track of latest user's activity timestamp,
 // and allows purging users that are no longer active.
 type ActiveUsers struct {
@@ -51,6 +54,7 @@ func (m *ActiveUsers) UpdateUserTimestamp(userID string, ts int64) {
 	m.mu.Unlock()
 }
 
+// PurgeInactiveUsers 两阶段删除：先 RLock 扫描，再 Lock 逐条确认后移除并返回列表。
 // PurgeInactiveUsers removes users that were last active before given deadline, and returns removed users.
 func (m *ActiveUsers) PurgeInactiveUsers(deadline int64) []string {
 	// Find inactive users with read-lock.
@@ -94,6 +98,7 @@ func (m *ActiveUsers) PurgeInactiveUsers(deadline int64) []string {
 }
 
 // ActiveUsersCleanupService tracks active users, and periodically purges inactive ones while running.
+// ActiveUsersCleanupService 包装 ActiveUsers 与 cleanupFunc，按间隔 purge 非活跃用户。
 type ActiveUsersCleanupService struct {
 	services.Service
 
@@ -102,6 +107,7 @@ type ActiveUsersCleanupService struct {
 	inactiveTimeout time.Duration
 }
 
+// NewActiveUsersCleanupWithDefaultValues 默认每 3 分钟清理、15 分钟无活动即视为 inactive。
 func NewActiveUsersCleanupWithDefaultValues(cleanupFn func(string)) *ActiveUsersCleanupService {
 	return NewActiveUsersCleanupService(3*time.Minute, 15*time.Minute, cleanupFn)
 }
@@ -138,3 +144,4 @@ func (s *ActiveUsersCleanupService) ActiveUsers() []string {
 	}
 	return users
 }
+// UpdateUserTimestamp 在锁外预分配 atomic，避免持锁期间分配引发争用。

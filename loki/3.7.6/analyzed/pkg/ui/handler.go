@@ -1,3 +1,4 @@
+// ui 包注册 Loki Web UI 与集群管理 REST 路由，含 goldfish 查询与节点代理。
 // Package ui provides HTTP handlers for the Loki UI and cluster management interface.
 package ui
 
@@ -23,6 +24,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/goldfish"
 )
 
+// 路由常量定义 UI 前缀、集群代理、goldfish 与分析标签等 API 路径片段。
 const (
 	proxyScheme       = "http"
 	prefixPath        = "/ui"
@@ -45,6 +47,7 @@ func goldfishResultPath(cell string) string {
 	return prefixPath + "/api/v1/goldfish/results/{correlationId}/" + cell
 }
 
+// contextKey 类型用于在请求上下文中传递前端注入的分布式追踪标识。
 // Context keys for trace information
 type contextKey string
 
@@ -54,6 +57,7 @@ const (
 	parentSpanIDKey contextKey = "parent-span-id"
 )
 
+// withTraceContext 从请求头提取 trace/span 并写入 context，同时回写响应头。
 // withTraceContext is middleware that extracts trace headers from the request,
 // adds them to the request context, and propagates them to the response
 func (s *Service) withTraceContext(next http.Handler) http.Handler {
@@ -78,6 +82,7 @@ func (s *Service) withTraceContext(next http.Handler) http.Handler {
 	})
 }
 
+// RegisterHandler 挂载 analytics、集群、goldfish 与标签分析等 HTTP 处理器。
 // RegisterHandler registers all UI API routes with the provided router.
 func (s *Service) RegisterHandler() {
 	s.router.Path(analyticsPath).Handler(analytics.Handler())
@@ -99,6 +104,7 @@ func (s *Service) RegisterHandler() {
 	})
 }
 
+// clusterProxyHandler 经 ring 解析节点地址，将 /proxy/{nodename} 请求转发至目标实例。
 // clusterProxyHandler returns a handler that proxies requests to the target node.
 func (s *Service) clusterProxyHandler() http.Handler {
 	proxy := &httputil.ReverseProxy{
@@ -219,6 +225,7 @@ func (s *Service) notFoundHandler() http.Handler {
 	})
 }
 
+// analyzeLabelsHandler 将租户路径参数转为 X-Scope-OrgID 并代理到本地 series API。
 // analyzeLabelsHandler returns a handler that proxies series requests to the local node's series endpoint with correct tenant.
 func (s *Service) analyzeLabelsHandler() http.Handler {
 	proxy := &httputil.ReverseProxy{
@@ -295,6 +302,7 @@ func (s *Service) writeJSONErrorWithTrace(w http.ResponseWriter, code int, messa
 	}
 }
 
+// parseTimeQueryParam 解析 RFC3339 时间查询参数，缺省返回零值 time.Time。
 // parseTimeQueryParam parses a time query parameter from an HTTP request.
 // Returns zero time.Time if the parameter is not provided.
 // Returns an error if the parameter is provided but cannot be parsed.
@@ -592,6 +600,7 @@ func (s *Service) goldfishResultHandler(cell string) http.Handler {
 	})
 }
 
+// parseObjectKeyFromURI 从 gcs/s3 URI 提取对象键，供 bucket 客户端下载查询结果。
 // parseObjectKeyFromURI extracts the object key from a URI like "gcs://bucket/path" or "s3://bucket/path"
 func parseObjectKeyFromURI(uri string) (string, error) {
 	parsed, err := url.Parse(uri)
@@ -612,3 +621,4 @@ func parseObjectKeyFromURI(uri string) (string, error) {
 
 	return key, nil
 }
+// goldfishResultHandler 从对象存储拉取持久化查询结果并在需要时 gzip 解压后返回。

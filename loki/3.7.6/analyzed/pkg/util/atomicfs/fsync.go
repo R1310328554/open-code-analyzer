@@ -10,6 +10,7 @@ import (
 	"github.com/grafana/dskit/multierror"
 )
 
+// Create 在同目录创建 .tmp 临时文件，Close 时 fsync 后 rename 到目标路径。
 // Create creates a new file at a temporary path that will be renamed to the
 // supplied path on close from a temporary file in the same directory, ensuring
 // all data and the containing directory have been fsynced to disk.
@@ -31,6 +32,7 @@ func Create(path string) (*File, error) {
 	}, nil
 }
 
+// tempPath 生成 final.tmp 路径，逻辑须与清理临时文件的单元测试保持一致。
 // tempPath returns a path for the temporary version of a file. This function exists
 // to ensure the logic here stays in sync with unit tests that check for this file being
 // cleaned up.
@@ -38,6 +40,7 @@ func tempPath(final string) string {
 	return final + ".tmp"
 }
 
+// File 包装 os.File，Close 失败时删除临时文件，成功则 fsync 父目录确保目录项落盘。
 // File is a wrapper around an os.File instance that uses a temporary file for writes
 // that is renamed to its final path when Close is called. The Close method will also
 // ensure that all data from the file has been fsynced as well as the containing
@@ -86,6 +89,7 @@ func (a *File) Close() error {
 	return merr.Err()
 }
 
+// CreateFile 通过 Create 写入 reader 内容并 Close，保证数据与目录项均已持久化。
 // CreateFile safely writes the contents of data to filePath, ensuring that all data
 // has been fsynced as well as the containing directory of the file.
 func CreateFile(filePath string, data io.Reader) error {
@@ -99,3 +103,4 @@ func CreateFile(filePath string, data io.Reader) error {
 	merr.Add(f.Close())
 	return merr.Err()
 }
+// rename 仅能在同一文件系统内原子完成，故临时文件必须与最终路径同目录。

@@ -1,5 +1,7 @@
 package cfg
 
+// flag 封装命令行 flag 注册与分类 help 输出：Defaults 调用 RegisterFlags，Flags 解析用户显式传入的参数值。
+
 import (
 	"flag"
 	"fmt"
@@ -13,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Defaults 要求 dst 实现 flagext.Registerer，RegisterFlags 同时写入默认值。
 // Defaults registers flags to the flagSet using dst as the flagext.Registerer
 func Defaults(fs *flag.FlagSet) Source {
 	return func(dst Cloneable) error {
@@ -27,6 +30,7 @@ func Defaults(fs *flag.FlagSet) Source {
 	}
 }
 
+// Flags 绑定 categorizedUsage 并按 args 解析，仅覆盖用户提供的 flag 值。
 // Flags parses the flag from the command line, setting only user-supplied
 // values on the flagext.Registerer passed to Defaults()
 func Flags(args []string, fs *flag.FlagSet) Source {
@@ -42,6 +46,7 @@ func dFlags(fs *flag.FlagSet, args []string) Source {
 	}
 }
 
+// categorizedUsage 按 flag 名首段（点号前）分组打印 help，提升可读性。
 func categorizedUsage(fs *flag.FlagSet) func() {
 	categories := make(map[string][]string)
 	return func() {
@@ -102,3 +107,4 @@ func categorizedUsage(fs *flag.FlagSet) func() {
 		}
 	}
 }
+// dFlags 将 Parse 错误直接返回，由上层决定是否在 ErrHelp 时打印用法并退出。

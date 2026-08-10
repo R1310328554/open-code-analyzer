@@ -1,5 +1,7 @@
 package ui
 
+// goldfish UI 层将存储层 QuerySample 转为 API 友好的 SampledQuery：时间字段格式化为 RFC3339，可空列用指针，并生成 Grafana Explore 跳转链接。
+
 import (
 	"context"
 	"database/sql"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/goldfish"
 )
 
+// SampledQuery 是 goldfish 采样查询的前端/API 视图，字段与数据库列一一对应。
 // SampledQuery represents a sampled query from the database for API responses.
 // This is the UI/API representation of goldfish.QuerySample with several important differences:
 //
@@ -111,6 +114,7 @@ type SampledQuery struct {
 }
 
 // ComparisonOutcome represents a comparison result from the database
+// ComparisonOutcome 记录双 cell 查询比对结果及差异详情与性能指标。
 type ComparisonOutcome struct {
 	CorrelationID      string    `json:"correlationId" db:"correlation_id"`
 	ComparisonStatus   string    `json:"comparisonStatus" db:"comparison_status"`
@@ -121,6 +125,7 @@ type ComparisonOutcome struct {
 }
 
 // GoldfishAPIResponse represents the paginated API response
+// GoldfishAPIResponse 封装分页采样查询列表及 hasMore 分页元数据。
 type GoldfishAPIResponse struct {
 	Queries  []SampledQuery `json:"queries"`
 	HasMore  bool           `json:"hasMore"`
@@ -128,6 +133,7 @@ type GoldfishAPIResponse struct {
 	PageSize int            `json:"pageSize"`
 }
 
+// GetSampledQueries 按页码与 QueryFilter 拉取采样查询，默认使用 Background 上下文。
 // GetSampledQueries retrieves sampled queries from the database with pagination and outcome filtering
 func (s *Service) GetSampledQueries(page, pageSize int, filter goldfish.QueryFilter) (*GoldfishAPIResponse, error) {
 	return s.GetSampledQueriesWithContext(context.Background(), page, pageSize, filter)
@@ -297,6 +303,7 @@ func (s *Service) GetSampledQueriesWithContext(ctx context.Context, page, pageSi
 	}, nil
 }
 
+// GetStatistics 在启用 goldfish 后按 StatsFilter 聚合统计并记录查询耗时指标。
 // GetStatistics retrieves aggregated statistics from the database
 func (s *Service) GetStatistics(ctx context.Context, filter goldfish.StatsFilter) (*goldfish.Statistics, error) {
 	// Extract trace ID for logging
@@ -358,6 +365,7 @@ func strPtr(s string) *string {
 	return &s
 }
 
+// validateGoldfishEnabled 校验功能开关与 storage 是否已注入，否则返回专用错误。
 // validateGoldfishEnabled checks if goldfish is enabled and configured
 func (s *Service) validateGoldfishEnabled() error {
 	if !s.cfg.Goldfish.Enable {
@@ -399,6 +407,7 @@ var ErrGoldfishDisabled = sql.ErrNoRows
 // ErrGoldfishNotConfigured is returned when goldfish database is not configured
 var ErrGoldfishNotConfigured = sql.ErrConnDone
 
+// GenerateTraceExploreURL 构造 Tempo TraceQL Explore 深链，可选 span 精确定位。
 // GenerateTraceExploreURL generates a Grafana Explore URL for a given trace ID
 func (s *Service) GenerateTraceExploreURL(traceID, spanID string, sampledAt time.Time) string {
 	// Return empty string if configuration is incomplete
@@ -453,6 +462,7 @@ func (s *Service) GenerateTraceExploreURL(traceID, spanID string, sampledAt time
 	return fmt.Sprintf("%s/explore?schemaVersion=1&panes=%s", s.cfg.Goldfish.GrafanaURL, encodedState)
 }
 
+// GenerateLogsExploreURL 按 namespace 与 trace ID 生成 Loki LogQL Explore 链接。
 // GenerateLogsExploreURL generates a Grafana Explore URL for logs related to a trace ID
 func (s *Service) GenerateLogsExploreURL(traceID, namespace string, sampledAt time.Time) string {
 	// Return empty string if configuration is incomplete
@@ -496,3 +506,4 @@ func (s *Service) GenerateLogsExploreURL(traceID, namespace string, sampledAt ti
 	// Build the final URL with schemaVersion
 	return fmt.Sprintf("%s/explore?schemaVersion=1&panes=%s", s.cfg.Goldfish.GrafanaURL, encodedState)
 }
+// validateAndDefaultTimeRange 要求 From/To 同时指定或同时省略，默认最近一小时。

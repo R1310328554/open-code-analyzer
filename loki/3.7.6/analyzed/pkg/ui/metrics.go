@@ -1,5 +1,7 @@
 package ui
 
+// metrics 为 UI goldfish 子系统注册 Prometheus 指标：API 请求计数、DB 查询延迟/行数及连接池状态。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -16,6 +18,7 @@ type GoldfishMetrics struct {
 	dbConnectionError *prometheus.CounterVec
 }
 
+// NewGoldfishMetrics 在 loki_ui_goldfish 命名空间下注册全部 goldfish 监控项。
 // NewGoldfishMetrics creates and registers goldfish metrics
 func NewGoldfishMetrics(reg prometheus.Registerer) *GoldfishMetrics {
 	return &GoldfishMetrics{
@@ -88,11 +91,13 @@ func NewGoldfishMetrics(reg prometheus.Registerer) *GoldfishMetrics {
 	}
 }
 
+// RecordQueryDuration 按 query_type 与 status 标签观测数据库查询耗时秒数。
 // RecordQueryDuration records the duration of a database query
 func (m *GoldfishMetrics) RecordQueryDuration(queryType, status string, duration float64) {
 	m.queryDuration.WithLabelValues(queryType, status).Observe(duration)
 }
 
+// IncrementRequests 递增 goldfish HTTP API 请求总数，status 区分成功与失败。
 // IncrementRequests increments the request counter
 func (m *GoldfishMetrics) IncrementRequests(status string) {
 	m.requests.WithLabelValues(status).Inc()
@@ -108,6 +113,7 @@ func (m *GoldfishMetrics) IncrementErrors(errorType string) {
 	m.errors.WithLabelValues(errorType).Inc()
 }
 
+// SetDBConnections 上报 active/idle 等状态的当前数据库连接数。
 // SetDBConnections sets the current connection count
 func (m *GoldfishMetrics) SetDBConnections(state string, count float64) {
 	m.dbConnections.WithLabelValues(state).Set(count)
@@ -122,3 +128,4 @@ func (m *GoldfishMetrics) RecordDBConnectionWait(pool string, duration float64) 
 func (m *GoldfishMetrics) IncrementDBConnectionErrors(errorType string) {
 	m.dbConnectionError.WithLabelValues(errorType).Inc()
 }
+// db_connection_wait_seconds 桶从 1ms 指数增长到约 1s，用于诊断连接池等待。

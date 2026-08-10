@@ -1,7 +1,11 @@
 package constants
 
+// constants 集中定义 Loki v1 HTTP API 路径常量，含 LogQL 查询、元数据、索引统计、ruler 与 ingest 等端点。
+
+// PathLoki* 常量供 router 注册与客户端构造 URL，避免硬编码字符串分散。
 // Loki API v1 HTTP path constants.
 const (
+// query 与 query_range 为即时与范围 LogQL 查询入口路径。
 	// Query and query_range
 	PathLokiQueryRange = "/loki/api/v1/query_range"
 	PathLokiQuery      = "/loki/api/v1/query"
@@ -20,6 +24,7 @@ const (
 	PathLokiDetectedLabels          = "/loki/api/v1/detected_labels"
 	PathLokiDetectedFields          = "/loki/api/v1/detected_fields"
 	PathLokiDetectedFieldNameValues = "/loki/api/v1/detected_field/{name}/values"
+// PathLokiTail 用于 WebSocket 实时 tail 流式日志。
 	// Tail (live tailing)
 	PathLokiTail = "/loki/api/v1/tail"
 	// Ruler
@@ -33,6 +38,7 @@ const (
 	PathLokiPush = "/loki/api/v1/push"
 )
 
+// PathProm* 为旧版 Prom 兼容 API，部分部署仍通过 /api/prom 访问。
 // Prometheus-compatible (legacy) API path constants.
 const (
 	PathPromQuery           = "/api/prom/query"
@@ -49,8 +55,10 @@ const (
 	PathPromRulesNamespaceGroup = "/api/prom/rules/{namespace}/{groupName}"
 )
 
+// PathPrometheusRules/Alerts 供 ruler 暴露 Prometheus 风格 rules/alerts 端点。
 // Prometheus API paths (used by ruler).
 const (
 	PathPrometheusRules  = "/prometheus/api/v1/rules"
 	PathPrometheusAlerts = "/prometheus/api/v1/alerts"
 )
+// PathLokiPush 为 log push 写入路径，与 distributor ingester 接收端对齐。

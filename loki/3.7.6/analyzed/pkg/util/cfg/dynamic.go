@@ -1,15 +1,19 @@
 package cfg
 
+// dynamic 扩展 cfg 以支持 ApplyDynamicConfig：在解析 common 段与命令行后再注入动态默认值，并二次加载配置文件覆盖 map 类字段。
+
 import (
 	"flag"
 )
 
+// DynamicCloneable 在 Cloneable 基础上提供 ApplyDynamicConfig 动态填充 Source。
 // DynamicCloneable must be implemented by config structs that can be dynamically unmarshalled
 type DynamicCloneable interface {
 	Cloneable
 	ApplyDynamicConfig() Source
 }
 
+// DynamicUnmarshal 按 defaults→文件→flags→动态逻辑→非 strict 二次文件→flags 顺序合并。
 // DynamicUnmarshal handles populating a config based on the following precedence:
 // 1. Defaults provided by the `RegisterFlags` interface
 // 2. Sections populated by dynamic logic. Configs passed to this function must implement ApplyDynamicConfig()
@@ -40,3 +44,4 @@ func DynamicUnmarshal(dst DynamicCloneable, args []string, fs *flag.FlagSet) err
 		Flags(args, fs),
 	)
 }
+// Clients 等 map 字段二次 strict 反序列化会触发 already set 错误，故第二次用非 strict。

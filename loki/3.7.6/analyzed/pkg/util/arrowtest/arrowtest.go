@@ -1,3 +1,4 @@
+// arrowtest 提供测试用 Arrow Record 构造与往返转换：从 map 行推断 schema 并比对结果。
 // Package arrowtest provides utilities for testing Arrow records.
 package arrowtest
 
@@ -13,6 +14,7 @@ import (
 	"github.com/apache/arrow-go/v18/arrow/scalar"
 )
 
+// Rows 与 Row 类型别名分别表示多行测试数据与列名到 Go 值的单行映射。
 type (
 	// Rows is a slice of [Row].
 	Rows []Row
@@ -21,6 +23,7 @@ type (
 	Row map[string]any
 )
 
+// Schema 从首行推断字段类型并校验后续行列一致，列名按字母序排序。
 // Schema inferrs a [arrow.Schema] from each row in Rows. Columns in rows
 // are sorted alphabetically.
 //
@@ -97,6 +100,7 @@ func determineDatatype(value any) arrow.DataType {
 	}
 }
 
+// Record 按 schema 逐列 Append 行值，nil 写入 null，time.Time 转为 timestamp scalar。
 // Record converts rows into an [arrow.RecordBatch] with the provided schema. A
 // schema can be inferred from rows by using [Rows.Schema].
 //
@@ -139,6 +143,7 @@ func (rows Rows) Record(alloc memory.Allocator, schema *arrow.Schema) arrow.Reco
 	return builder.NewRecordBatch()
 }
 
+// RecordRows 将 RecordBatch 每行还原为 Row map，timestamp 列特殊转为 time.Time。
 // RecordRows converts an [arrow.RecordBatch] into [Rows] for comparison in tests.
 // RecordRows requires all columns in the record to have a unique name.
 //
@@ -178,6 +183,7 @@ func getArrayValue(arr arrow.Array, index int) any {
 	}
 }
 
+// TableRows 先 mergeTable 合并分块再调用 RecordRows，要求列名全局唯一。
 // TableRows concatenates all chunks of the [arrow.Table] into a single
 // [arrow.RecordBactch], and then returns it as [Rows]. TableRows requires all
 // columns in the table to have a unique name.
@@ -208,3 +214,4 @@ func mergeTable(alloc memory.Allocator, table arrow.Table) (arrow.RecordBatch, e
 
 	return array.NewRecordBatch(table.Schema(), recordColumns, table.NumRows()), nil
 }
+// determineDatatype 对 time.Time 使用纳秒精度 TimestampType，其余走 scalar 推断。
