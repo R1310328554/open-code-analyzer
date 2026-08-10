@@ -29,8 +29,12 @@ import org.keycloak.testframework.server.KeycloakServer;
 import org.keycloak.testframework.server.KeycloakUrlsSupplier;
 import org.keycloak.testframework.server.RemoteKeycloakServerSupplier;
 
+/**
+ * 核心测试框架扩展，注册服务器、数据库、Realm/用户、HTTP、证书等默认 Supplier。
+ */
 public class CoreTestFrameworkExtension implements TestFrameworkExtension {
 
+    /** 返回核心集成测试所需的全部 Supplier。 */
     @Override
     public List<Supplier<?, ?>> suppliers() {
         return List.of(
@@ -57,6 +61,7 @@ public class CoreTestFrameworkExtension implements TestFrameworkExtension {
         );
     }
 
+    /** 为常用值类型提供简短别名（如 server、database）。 */
     @Override
     public Map<Class<?>, String> valueTypeAliases() {
         return Map.of(
@@ -67,6 +72,7 @@ public class CoreTestFrameworkExtension implements TestFrameworkExtension {
         );
     }
 
+    /** {@link CryptoHelper} 在所有测试中始终启用。 */
     @Override
     public List<Class<?>> alwaysEnabledValueTypes() {
         return List.of(CryptoHelper.class);

@@ -1,12 +1,12 @@
 package org.keycloak.testframework;
 
 /**
- * FatalTestClassException is thrown when a test class contains invalid configuration, or there is a non-recoverable
- * problem when setting up managed resources for a test, for example the server can not be started. When a
- * FatalTestClassException is thrown subsequent test methods in a test class will be skipped.
+ * 测试类配置无效或托管资源不可恢复地初始化失败时抛出（例如服务器无法启动）。
+ * 抛出后同一测试类内后续测试方法将被跳过。
  */
 public class FatalTestClassException extends RuntimeException {
 
+    /** @param message 描述致命错误的说明 */
     public FatalTestClassException(String message) {
         super(message);
     }

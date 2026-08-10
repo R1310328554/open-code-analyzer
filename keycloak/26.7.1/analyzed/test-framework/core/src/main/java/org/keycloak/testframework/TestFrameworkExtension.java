@@ -7,30 +7,28 @@ import java.util.Map;
 import org.keycloak.testframework.injection.Supplier;
 
 /**
- * Test framework extensions allows adding additional suppliers to the test framework
+ * 测试框架扩展 SPI，用于向框架注册额外的 {@link Supplier} 与值类型别名。
  */
 public interface TestFrameworkExtension {
 
     /**
-     * List of suppliers provided by the extension
-     * @return supplier list
+     * 扩展提供的 Supplier 列表。
+     * @return supplier 列表
      */
     List<Supplier<?, ?>> suppliers();
 
     /**
-     * List of value types that are always created when running tests. Extensions usually does not need to implement
-     * this method
-     * @return the list of value types that are always requested for tests
+     * 运行测试时始终创建的值类型；扩展通常无需覆写。
+     * @return 始终请求的值类型列表
      */
     default List<Class<?>> alwaysEnabledValueTypes() {
         return Collections.emptyList();
     }
 
     /**
-     * List of aliases for value types. By default, {@code getSimpleName} is used as the name for a value type, implementing
-     * this method allows setting custom aliases for the value type. For example the core extension has the alias
-     * {@code server} for the value type {@code KeycloakServer}
-     * @return map where key is the value type and value is the alias
+     * 值类型别名映射。默认使用 {@code getSimpleName}；可实现本方法自定义，
+     * 例如核心扩展将 {@code KeycloakServer} 别名为 {@code server}。
+     * @return 键为值类型、值为别名的映射
      */
     default Map<Class<?>, String> valueTypeAliases() {
         return Collections.emptyMap();

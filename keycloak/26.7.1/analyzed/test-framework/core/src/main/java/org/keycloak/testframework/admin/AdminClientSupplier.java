@@ -19,8 +19,12 @@ import org.keycloak.testframework.injection.Supplier;
 import org.keycloak.testframework.realm.ManagedRealm;
 import org.keycloak.testframework.realm.ManagedUser;
 
+/**
+ * 注入已配置的 {@link Keycloak} Admin 客户端，支持 BOOTSTRAP（master 管理员）与 MANAGED_REALM 模式。
+ */
 public class AdminClientSupplier implements Supplier<Keycloak, InjectAdminClient> {
 
+    /** MANAGED_REALM 模式下额外依赖 ManagedRealm。 */
     @Override
     public List<Dependency> getDependencies(RequestedInstance<Keycloak, InjectAdminClient> instanceContext) {
         DependenciesBuilder builder = DependenciesBuilder.create(AdminClientFactory.class);
@@ -30,6 +34,7 @@ public class AdminClientSupplier implements Supplier<Keycloak, InjectAdminClient
         return builder.build();
     }
 
+    /** 按 {@link InjectAdminClient.Mode} 组装 grant、realm、client 与可选用户凭据。 */
     @Override
     public Keycloak getValue(InstanceContext<Keycloak, InjectAdminClient> instanceContext) {
         InjectAdminClient annotation = instanceContext.getAnnotation();
@@ -72,16 +77,19 @@ public class AdminClientSupplier implements Supplier<Keycloak, InjectAdminClient
         return adminBuilder.build();
     }
 
+    /** Admin 客户端默认 GLOBAL 生命周期。 */
     @Override
     public LifeCycle getDefaultLifecycle() {
         return LifeCycle.GLOBAL;
     }
 
+    /** 客户端实例始终兼容复用。 */
     @Override
     public boolean compatible(InstanceContext<Keycloak, InjectAdminClient> a, RequestedInstance<Keycloak, InjectAdminClient> b) {
         return true;
     }
 
+    /** 关闭注入的 Keycloak 客户端。 */
     @Override
     public void close(InstanceContext<Keycloak, InjectAdminClient> instanceContext) {
         instanceContext.getValue().close();
