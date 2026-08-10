@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// amd64/Windows 构建：maxMapSize 设为 256TB，供 MapViewOfFile 切片类型上界使用。
+
 //go:build windows
 
 package fileutil

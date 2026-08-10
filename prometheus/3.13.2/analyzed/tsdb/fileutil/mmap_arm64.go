@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// arm64/Windows 构建：maxMapSize 与 amd64 相同为 256TB 地址空间上界。
+
 //go:build windows
 
 package fileutil

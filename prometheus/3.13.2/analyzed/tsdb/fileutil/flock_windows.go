@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Windows 平台文件锁：CreateFile 以共享模式 0 独占打开，CloseHandle 释放。
+
 package fileutil
 
 import "syscall"

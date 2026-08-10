@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 内存映射文件封装：MmapFile 组合 *os.File 与映射字节切片，Close 时 munmap 并关闭文件。
+
 package fileutil
 
 import (
@@ -53,6 +55,7 @@ func OpenMmapFileWithSize(path string, size int) (mf *MmapFile, retErr error) {
 	return &MmapFile{f: f, b: b}, nil
 }
 
+// Close 先 munmap 再关闭文件，优先返回 munmap 错误。
 func (f *MmapFile) Close() error {
 	err0 := munmap(f.b)
 	err1 := f.f.Close()

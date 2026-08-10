@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// js/wasm 构建桩：文件锁不受支持，Flock/newLock 均返回 unsupported 错误。
+
 //go:build js
 
 package fileutil

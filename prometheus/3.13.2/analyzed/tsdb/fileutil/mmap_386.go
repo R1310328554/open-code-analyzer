@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 386/Windows 构建：mmap 单次映射上限 maxMapSize 为 2GB（0x7FFFFFFF）。
+
 //go:build windows
 
 package fileutil

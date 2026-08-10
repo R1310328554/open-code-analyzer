@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Unix 类平台（Linux/BSD/macOS 等）文件锁：syscall.Flock 非阻塞独占锁 LOCK_EX|LOCK_NB。
+
 //go:build darwin || dragonfly || freebsd || linux || netbsd || openbsd
 
 package fileutil
@@ -31,6 +33,7 @@ func (l *unixLock) Release() error {
 	return l.f.Close()
 }
 
+// set 对 fd 调用 Flock：加锁 LOCK_EX|LOCK_NB，解锁 LOCK_UN。
 func (l *unixLock) set(lock bool) error {
 	how := syscall.LOCK_UN
 	if lock {

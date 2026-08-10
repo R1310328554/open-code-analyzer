@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// AIX 平台文件锁：通过 fcntl F_SETLK 对 unixLock 文件描述符设置 F_WRLCK/F_UNLCK。
+
 //go:build aix
 
 package fileutil
@@ -31,6 +33,7 @@ func (l *unixLock) Release() error {
 	return l.f.Close()
 }
 
+// set 构造 Flock_t 并调用 FcntlFlock 加写锁或解锁。
 func (l *unixLock) set(lock bool) error {
 	flock := syscall.Flock_t{
 		Type:   syscall.F_UNLCK,
@@ -44,6 +47,7 @@ func (l *unixLock) set(lock bool) error {
 	return syscall.FcntlFlock(l.f.Fd(), syscall.F_SETLK, &flock)
 }
 
+// newLock 以 O_RDWR|O_CREATE 打开锁文件并立即加写锁。
 func newLock(fileName string) (Releaser, error) {
 	f, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0o666)
 	if err != nil {

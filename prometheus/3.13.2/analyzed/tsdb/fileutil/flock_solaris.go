@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Solaris 平台文件锁：与 AIX 相同使用 fcntl FcntlFlock 设置写锁。
+
 //go:build solaris
 
 package fileutil
@@ -31,6 +33,7 @@ func (l *unixLock) Release() error {
 	return l.f.Close()
 }
 
+// set 通过 F_SETLK 对整文件范围加 F_WRLCK 或 F_UNLCK。
 func (l *unixLock) set(lock bool) error {
 	flock := syscall.Flock_t{
 		Type:   syscall.F_UNLCK,
@@ -44,6 +47,7 @@ func (l *unixLock) set(lock bool) error {
 	return syscall.FcntlFlock(l.f.Fd(), syscall.F_SETLK, &flock)
 }
 
+// newLock 创建/打开锁文件并尝试非阻塞写锁。
 func newLock(fileName string) (Releaser, error) {
 	f, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0o666)
 	if err != nil {

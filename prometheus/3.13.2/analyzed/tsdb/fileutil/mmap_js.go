@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// js/wasm 构建桩：mmap/munmap 不受支持，OpenMmapFile 将失败。
+
 //go:build js
 
 package fileutil

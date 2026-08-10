@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// fileutil 文件系统工具：目录递归复制、安全重命名与替换，源自 etcd/pkg/fileutil 以避免额外依赖。
+
+// Package fileutil 为 TSDB 提供目录复制、重命名等文件操作辅助函数。
 // Package fileutil provides utility methods used when dealing with the filesystem in tsdb.
 // It is largely copied from github.com/coreos/etcd/pkg/fileutil to avoid the
 // dependency chain it brings with it.
@@ -23,6 +26,7 @@ import (
 	"strings"
 )
 
+// CopyDirs 递归复制源目录下所有子目录、文件及空文件夹，src/dest 须为绝对路径。
 // CopyDirs copies all directories, subdirectories and files recursively including the empty folders.
 // Source and destination must be full paths.
 func CopyDirs(src, dest string) error {
@@ -58,6 +62,7 @@ func CopyDirs(src, dest string) error {
 	return nil
 }
 
+// copyFile 读取源文件全文并写入目标路径（简单内存复制，非硬链接）。
 func copyFile(src, dest string) error {
 	data, err := os.ReadFile(src)
 	if err != nil {
@@ -71,6 +76,7 @@ func copyFile(src, dest string) error {
 	return nil
 }
 
+// readDirs 递归遍历 src，返回相对路径列表（含空目录占位项）。
 // readDirs reads the source directory recursively and
 // returns relative paths to all files and empty directories.
 func readDirs(src string) ([]string, error) {
@@ -89,6 +95,7 @@ func readDirs(src string) ([]string, error) {
 	return files, nil
 }
 
+// Rename 调用 os.Rename 后 fsync 父目录，确保重命名落盘可见。
 // Rename safely renames a file.
 func Rename(from, to string) error {
 	if err := os.Rename(from, to); err != nil {
@@ -108,6 +115,7 @@ func Rename(from, to string) error {
 	return pdir.Close()
 }
 
+// Replace 若目标是目录则先 RemoveAll，再 Rename；非原子但整体替换语义。
 // Replace moves a file or directory to a new location and deletes any previous data.
 // It is not atomic.
 func Replace(from, to string) error {

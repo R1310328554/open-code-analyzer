@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Unix 类平台 mmap 实现：golang.org/x/sys/unix.Mmap 只读 MAP_SHARED 映射文件。
+
 //go:build !windows && !plan9 && !js
 
 package fileutil
@@ -25,6 +27,7 @@ func mmap(f *os.File, length int) ([]byte, error) {
 	return unix.Mmap(int(f.Fd()), 0, length, unix.PROT_READ, unix.MAP_SHARED)
 }
 
+// munmap 调用 unix.Munmap 释放映射区域。
 func munmap(b []byte) (err error) {
 	return unix.Munmap(b)
 }

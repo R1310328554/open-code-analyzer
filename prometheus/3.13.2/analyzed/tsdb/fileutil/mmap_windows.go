@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Windows mmap：CreateFileMapping + MapViewOfFile 只读映射，UnmapViewOfFile 释放。
+
 package fileutil
 
 import (
@@ -39,6 +41,7 @@ func mmap(f *os.File, size int) ([]byte, error) {
 	return (*[maxMapSize]byte)(unsafe.Pointer(addr))[:size], nil
 }
 
+// munmap 对切片首地址调用 UnmapViewOfFile。
 func munmap(b []byte) error {
 	if err := syscall.UnmapViewOfFile((uintptr)(unsafe.Pointer(&b[0]))); err != nil {
 		return os.NewSyscallError("UnmapViewOfFile", err)

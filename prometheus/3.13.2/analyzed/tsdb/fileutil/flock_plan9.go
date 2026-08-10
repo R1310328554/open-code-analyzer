@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Plan 9 平台文件锁：以 os.ModeExclusive 独占打开文件，关闭即释放。
+
 package fileutil
 
 import "os"
