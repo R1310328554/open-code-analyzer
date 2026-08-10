@@ -22,7 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
- * Well-known skills index response for the skills CLI.
+ * Skills CLI well-known 索引响应，列出命名空间下可导出的 Skill 集合。
+ *
+ * <p>v0.2.0 起包含 {@code $schema} 字段指向 JSON Schema。</p>
  *
  * @author nacos
  */

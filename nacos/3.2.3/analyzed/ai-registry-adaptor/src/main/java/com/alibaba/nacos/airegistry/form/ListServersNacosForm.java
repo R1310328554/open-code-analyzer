@@ -17,7 +17,9 @@
 package com.alibaba.nacos.airegistry.form;
 
 /**
- * Nacos list servers form extending official form with namespaceId.
+ * Nacos 扩展版 MCP 服务器列表表单，在官方表单基础上增加 namespaceId。
+ *
+ * <p>继承 {@link ListServersOfficialForm}，供 Nacos 内部 API 按命名空间过滤服务器。</p>
  *
  * @author xinluo
  */

@@ -22,9 +22,10 @@ import com.alibaba.nacos.api.model.NacosForm;
 import org.springframework.http.HttpStatus;
 
 /**
- * Official list servers form matching MCP Registry OpenAPI spec.
- * cursor: 分页游标, 为空表示第一页；实现上使用 offset 的字符串表示。
- * limit: 返回数量，默认 30，最大 100。
+ * 符合 MCP Registry OpenAPI 规范的官方服务器列表查询表单。
+ *
+ * <p>cursor：分页游标，为空表示第一页（内部以 offset 字符串表示）；
+ * limit：返回数量，默认 30，最大 100。</p>
  *
  * @author xinluo
  */
@@ -114,7 +115,7 @@ public class ListServersOfficialForm implements NacosForm {
             throw new NacosApiException(HttpStatus.BAD_REQUEST.value(),
                 ErrorCode.PARAMETER_VALIDATE_ERROR, "limit must <= " + MAX_LIMIT);
         }
-        // validate cursor numeric if present
+        // 若 cursor 非空则校验其为合法数字
         resolveOffset();
     }
 }

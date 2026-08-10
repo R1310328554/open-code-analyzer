@@ -17,7 +17,7 @@
 package com.alibaba.nacos.airegistry.model.skills;
 
 /**
- * Search result item for the skills CLI.
+ * Skills CLI 搜索结果条目，描述单个可安装 Skill 的摘要信息。
  *
  * @author nacos
  */

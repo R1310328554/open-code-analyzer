@@ -24,7 +24,10 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import org.springframework.http.HttpStatus;
 
 /**
- * List mcp server form.
+ * MCP 服务器列表查询表单，封装分页、命名空间与搜索模式等参数。
+ *
+ * <p>实现 {@link NacosForm}，在 {@link #validate()} 中校验 offset、limit 与 searchMode。</p>
+ *
  * @author xinluo
  */
 public class ListServerForm implements NacosForm {
@@ -80,7 +83,10 @@ public class ListServerForm implements NacosForm {
     }
     
     /**
-     * check form parameters while valid.
+     * 校验表单参数合法性。
+     *
+     * <p>offset 须非负；limit 不得超过 {@link Constants#MAX_LIST_SIZE}；
+     * searchMode 若指定则须为模糊或精确匹配常量之一。</p>
      *
      * @throws NacosApiException when form parameters is invalid.
      */

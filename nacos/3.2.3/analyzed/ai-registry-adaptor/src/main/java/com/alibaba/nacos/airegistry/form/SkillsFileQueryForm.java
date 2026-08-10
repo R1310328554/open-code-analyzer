@@ -22,7 +22,9 @@ import com.alibaba.nacos.api.model.v2.ErrorCode;
 import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
- * Query form for skills CLI compatible file fetch endpoint.
+ * Skills CLI 兼容的文件拉取端点查询表单。
+ *
+ * <p>必填 namespaceId、skillName 与 filePath；filePath 禁止绝对路径与 {@code ..} 穿越。</p>
  *
  * @author nacos
  */

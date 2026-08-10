@@ -17,9 +17,9 @@
 package com.alibaba.nacos.api;
 
 /**
- * Support for reading the value of the specified variable from the -D parameter.
+ * 通过 JVM {@code -D} 系统属性读取 Nacos 配置项的键名常量。
  *
- * <p>Properties that are preferred to which in {@link PropertyKeyConst}
+ * <p>优先级高于 {@link PropertyKeyConst} 中同名 Properties 键。</p>
  *
  * @author pbting
  */
@@ -28,27 +28,16 @@ public interface SystemPropertyKeyConst {
     String NAMING_SERVER_PORT = "nacos.naming.exposed.port";
     
     /**
-     * In the cloud (Alibaba Cloud or other cloud vendors) environment, whether to enable namespace resolution in the
-     * cloud environment.
-     * <p>
-     * The default is on.
-     * </p>
+     * 云环境（阿里云或其他云厂商）下是否启用命名空间解析，默认开启。
      */
     String IS_USE_CLOUD_NAMESPACE_PARSING = "nacos.use.cloud.namespace.parsing";
     
-    /**
-     * In the cloud environment, if the process level requires a globally uniform namespace, it can be specified with
-     * the -D parameter.
-     */
+    /** 云环境下可通过 {@code -D} 指定进程级全局统一命名空间。 */
     String ANS_NAMESPACE = "ans.namespace";
     
-    /**
-     * It is also supported by the -D parameter.
-     */
+    /** 是否启用 endpoint 解析规则，亦可通过 {@code -D} 指定。 */
     String IS_USE_ENDPOINT_PARSING_RULE = "nacos.use.endpoint.parsing.rule";
     
-    /**
-     * Since 2.3.3, For some situation like java agent using nacos-client which can't use env ram info.
-     */
+    /** 自 2.3.3 起，供 Java Agent 等无法读取环境 RAM 信息的场景使用。 */
     String IS_USE_RAM_INFO_PARSING = "nacos.use.ram.info.parsing";
 }

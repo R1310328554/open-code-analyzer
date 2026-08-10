@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api;
 
 /**
- * Property Key Const.
+ * Nacos 客户端 Properties 配置键常量定义。
+ *
+ * <p>涵盖 endpoint、命名空间、认证、配置/命名客户端线程与重试等参数键名。</p>
  *
  * @author Nacos
  */
@@ -58,15 +60,13 @@ public class PropertyKeyConst {
     
     public static final String CONTEXT_PATH = "contextPath";
     
-    /**
-     * Please use {@link #ENDPOINT_CLUSTER_NAME} replaced.
-     */
+    /** 已废弃，请改用 {@link #ENDPOINT_CLUSTER_NAME}。 */
     @Deprecated
     public static final String CLUSTER_NAME = "clusterName";
     
     /**
-     * Default is {@code "false"}, if true, and without {@link #ENDPOINT_CLUSTER_NAME}, use {@link #CLUSTER_NAME} to set
-     * endpoint cluster name.
+     * 默认 {@code false}；为 true 且未设置 {@link #ENDPOINT_CLUSTER_NAME} 时，
+     * 使用 {@link #CLUSTER_NAME} 作为 endpoint 集群名（已废弃）。
      */
     @Deprecated
     public static final String IS_ADAPT_CLUSTER_NAME_USAGE = "isAdaptClusterNameUsage";
@@ -113,14 +113,10 @@ public class PropertyKeyConst {
     
     public static final String LOG_ALL_PROPERTIES = "logAllProperties";
     
-    /**
-     * Since 2.3.3, For some situation like java agent using nacos-client which can't use env ram info.
-     */
+    /** 自 2.3.3 起，供 Java Agent 等无法读取环境 RAM 信息的场景使用。 */
     public static final String IS_USE_RAM_INFO_PARSING = "isUseRamInfoParsing";
     
-    /**
-     * Get the key value of some variable value from the system property.
-     */
+    /** 从系统环境变量读取的配置键名集合。 */
     public static class SystemEnv {
         
         public static final String ALIBABA_ALIWARE_ENDPOINT_PORT = "ALIBABA_ALIWARE_ENDPOINT_PORT";
@@ -133,9 +129,7 @@ public class PropertyKeyConst {
         public static final String ALIBABA_ALIWARE_ENDPOINT_URL = "ALIBABA_ALIWARE_ENDPOINT_URL";
     }
     
-    /**
-     * Client Metric Switch.
-     */
+    /** 客户端指标采集开关。 */
     public static final String ENABLE_CLIENT_METRICS = "enableClientMetrics";
     
 }

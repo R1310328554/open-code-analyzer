@@ -19,7 +19,9 @@ package com.alibaba.nacos.airegistry.model.skills;
 import java.util.List;
 
 /**
- * Search response for the skills CLI.
+ * Skills CLI 搜索响应体，包含匹配的 Skill 条目列表。
+ *
+ * <p>对应搜索 API 返回的 JSON 结构。</p>
  *
  * @author nacos
  */

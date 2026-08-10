@@ -21,7 +21,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 
 /**
- * Well-known skill entry for the skills CLI.
+ * Skills CLI well-known 协议中的单个 Skill 条目。
+ *
+ * <p>可表示 skill-md 单文件或 archive 压缩包，含 URL、摘要与版本等元数据。</p>
  *
  * @author nacos
  */

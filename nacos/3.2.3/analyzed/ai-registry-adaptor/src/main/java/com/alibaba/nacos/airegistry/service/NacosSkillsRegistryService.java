@@ -52,7 +52,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Service for exposing Nacos skills through the well-known protocol expected by the skills CLI.
+ * 通过 Skills CLI 期望的 well-known 协议暴露 Nacos Skill 资源的服务。
+ *
+ * <p>支持索引发现、搜索、单文件读取与 ZIP 归档下载；仅导出公开且在线的 Skill。</p>
  *
  * @author nacos
  */
@@ -99,7 +101,7 @@ public class NacosSkillsRegistryService {
     }
     
     /**
-     * Build the well-known skill index for a namespace.
+     * 构建指定命名空间的 v0.2.0 well-known Skill 索引。
      *
      * @param namespaceId namespace to query
      * @return well-known index response
@@ -110,7 +112,7 @@ public class NacosSkillsRegistryService {
     }
     
     /**
-     * Build the legacy well-known skill index for a namespace.
+     * 构建指定命名空间的旧版 v0.1.0 well-known Skill 索引。
      *
      * @param namespaceId namespace to query
      * @return legacy well-known index response
@@ -138,7 +140,7 @@ public class NacosSkillsRegistryService {
     }
     
     /**
-     * Search exportable skills for the CLI search endpoint.
+     * 为 CLI 搜索端点检索可导出的 Skill，按下载量降序排列。
      *
      * @param namespaceId namespace to query
      * @param query search keyword

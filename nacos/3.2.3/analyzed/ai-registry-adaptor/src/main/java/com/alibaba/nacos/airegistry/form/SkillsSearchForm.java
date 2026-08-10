@@ -22,7 +22,9 @@ import com.alibaba.nacos.api.model.v2.ErrorCode;
 import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
- * Query form for skills CLI compatible search endpoint.
+ * Skills CLI 兼容的搜索端点查询表单。
+ *
+ * <p>namespaceId 必填；limit 默认 10 且上限为 10；q 为可选关键词。</p>
  *
  * @author nacos
  */

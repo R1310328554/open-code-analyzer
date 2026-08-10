@@ -52,7 +52,10 @@ import java.util.stream.Collectors;
 import static com.alibaba.nacos.ai.constant.Constants.MCP_LIST_SEARCH_BLUR;
 
 /**
- * a service for mcp registry api implementation.
+ * MCP Registry API 的 Nacos 实现服务。
+ *
+ * <p>在 {@code nacos.ai.mcp.registry.enabled=true} 时启用，
+ * 将内部 MCP 服务器数据转换为 Registry OpenAPI 模型。</p>
  *
  * @author xinluo
  */
@@ -78,8 +81,9 @@ public class NacosMcpRegistryService {
     }
     
     /**
-     * List mcp server from mcpServerOperationService and convert the result to
-     * {@link McpRegistryServerList}.
+     * 分页列出 MCP 服务器并转换为 {@link McpRegistryServerList}。
+     *
+     * <p>namespaceId 为空时遍历全部命名空间；结果逐条 enrich 为 {@link ServerResponse}。</p>
      *
      * @param listServerForm listServerParams
      * @return {@link McpRegistryServerList}
@@ -96,7 +100,7 @@ public class NacosMcpRegistryService {
         List<McpServerBasicInfo> servers =
             listMcpServerByNamespaceList(namespaceIdList, serverName, offset, limit);
         
-        // Build detail list by fetching per-item detail via getServer for consistency
+        // 逐条调用 getServer 拉取详情，保证列表与单条查询结果一致
         List<ServerResponse> finalServers = servers.stream().map((item) -> {
             try {
                 return getServer(item.getName(), item.getNamespaceId(), null);
@@ -170,8 +174,10 @@ public class NacosMcpRegistryService {
     }
     
     /**
-     * Get mcp server detail for the specified name and version.
-     * if namespaceId is null, search in all namespaces and return the first mcp server found.
+     * 按名称与版本获取 MCP 服务器详情。
+     *
+     * <p>namespaceId 为空时跨命名空间搜索，返回首个匹配项；未找到时返回 null。</p>
+     *
      * @param name mcp server name
      * @param namespaceId namespace id
      * @param version mcp server version
@@ -194,7 +200,8 @@ public class NacosMcpRegistryService {
     }
     
     /**
-     * Get all versions of the specified MCP server.
+     * 获取指定 MCP 服务器的全部版本列表。
+     *
      * @param namespaceId the namespaceId of mcp server, if not specified, search in all namespaces.
      * @param serverName the server name of mcp server.
      * @return all versions of the found MCP server as {@link McpRegistryServerList}
@@ -229,7 +236,7 @@ public class NacosMcpRegistryService {
     }
     
     /**
-     * Get tools info about the given version of the mcp server.
+     * 获取指定版本 MCP 服务器的工具（Tools）规格信息。
      *
      * @param serverId mcp server id.
      * @param version  the version of the mcp server.
@@ -248,7 +255,7 @@ public class NacosMcpRegistryService {
     }
     
     /**
-     * Prefer frontend endpoints, fallback to backend.
+     * 优先选用前端端点，若无则回退至后端端点。
      */
     private List<McpEndpointInfo> pickEndpoints(List<McpEndpointInfo> frontend,
         List<McpEndpointInfo> backend) {
@@ -259,7 +266,7 @@ public class NacosMcpRegistryService {
     }
     
     /**
-     * Map endpoints to remotes with default headers.
+     * 将端点列表映射为 Registry Remote 结构，保留默认请求头。
      */
     private List<Remote> toRemotes(List<McpEndpointInfo> endpoints, String type) {
         if (CollectionUtils.isEmpty(endpoints)) {
@@ -276,8 +283,7 @@ public class NacosMcpRegistryService {
     }
     
     /**
-     * Build URL for endpoint, omitting default ports.
-     * Default ports: 80 for http, 443 for https
+     * 构建端点 URL，省略 HTTP/HTTPS 默认端口（80/443）。
      */
     private String buildUrl(McpEndpointInfo endpoint) {
         String protocol = endpoint.getProtocol();
@@ -309,7 +315,7 @@ public class NacosMcpRegistryService {
     }
     
     /**
-     * Build registry detail from detailInfo and enrich including endpoints -> remotes.
+     * 由内部详情构建 Registry {@link ServerResponse}，含端点至 remotes 的转换。
      */
     private ServerResponse buildServerResponse(McpServerDetailInfo mcpServerDetail) {
         if (mcpServerDetail == null) {

@@ -23,7 +23,9 @@ import com.alibaba.nacos.api.remote.ability.ClientRemoteAbility;
 import java.io.Serializable;
 
 /**
- * abilities of nacos client.
+ * Nacos 客户端能力描述（远程、配置、命名各子模块能力聚合）。
+ *
+ * <p>已废弃，保留用于旧版 RPC 握手兼容。</p>
  *
  * @author liuzunfei
  * @version $Id: ClientAbilities.java, v 0.1 2021年01月24日 00:09 AM liuzunfei Exp $
