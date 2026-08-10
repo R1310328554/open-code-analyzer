@@ -1,5 +1,7 @@
 package v1
 
+// block 封装 Bloom 索引块：BlockIndex 管 series 页，BloomBlock 管 bloom 页，BlockQuerier 提供按 series 懒加载 bloom 的查询迭代能力。
+
 import (
 	"fmt"
 
@@ -39,6 +41,7 @@ func (b *Block) Reader() BlockReader {
 	return b.reader
 }
 
+// LoadHeaders 解码 index 与 blooms 头并校验 Schema 兼容性后合并 XOR 校验和。
 func (b *Block) LoadHeaders() error {
 	// TODO(owen-d): better control over when to decode
 	if !b.initialized {
@@ -104,6 +107,7 @@ func (b *Block) Schema() (Schema, error) {
 	return b.metadata.Options.Schema, nil
 }
 
+// BlockQuerier 组合 LazySeriesIter 与 LazyBloomIter，按 offset 加载各 series 的 bloom。
 type BlockQuerier struct {
 	*LazySeriesIter
 	blooms *LazyBloomIter
@@ -111,6 +115,7 @@ type BlockQuerier struct {
 	block *Block // ref to underlying block
 }
 
+// NewBlockQuerier 的 alloc 决定是否将 bloom 页字节归还 mempool（查询路径可归还）。
 // NewBlockQuerier returns a new BlockQuerier for the given block.
 // WARNING: You can pass an implementation of Allocator that is responsible for
 // whether the underlying byte slice of the bloom page will be returned to the
@@ -152,6 +157,7 @@ type BlockQuerierIter struct {
 	*BlockQuerier
 }
 
+// BlockQuerierIter.At 返回 SeriesWithBlooms，自动用 offsetsIter 遍历该 series 的 bloom 页。
 // Iter returns a new BlockQuerierIter, which changes the iteration type to SeriesWithBlooms,
 // automatically loading the blooms for each series rather than requiring the caller to
 // turn the offset to a `Bloom` via `LoadOffset`
@@ -215,3 +221,4 @@ func (it *offsetsIter) Err() error {
 func (it *offsetsIter) Remaining() int {
 	return len(it.offsets) - it.cur
 }
+// combineChecksums 用 XOR 合并 index 与 bloom 校验和，便于独立重算各段。

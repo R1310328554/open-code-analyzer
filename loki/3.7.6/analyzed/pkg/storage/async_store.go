@@ -1,5 +1,7 @@
 package storage
 
+// AsyncStore 包装底层 chunk Store，并行查询 ingester 与持久化存储，合并 chunk ID 并去重，仅用于 querier 等非 ingester 角色。
+
 import (
 	"context"
 	"fmt"
@@ -29,6 +31,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// IngesterQuerier 抽象向 ingester 查询 chunk ID、Stats 与 Volume 的接口。
 type IngesterQuerier interface {
 	GetChunkIDs(ctx context.Context, from, through model.Time, matchers ...*labels.Matcher) ([]string, error)
 	Stats(ctx context.Context, userID string, from, through model.Time, matchers ...*labels.Matcher) (*stats.Stats, error)
@@ -41,10 +44,12 @@ type AsyncStoreCfg struct {
 	QueryIngestersWithin time.Duration
 }
 
+// 在 boltdb-shipper 等异步索引场景下，近期数据可能仍在 ingester 而未落盘。
 // AsyncStore does querying to both ingesters and chunk store and combines the results after deduping them.
 // This should be used when using an async store like boltdb-shipper.
 // AsyncStore is meant to be used only in queriers or any other service other than ingesters.
 // It should never be used in ingesters otherwise it would start spiraling around doing queries over and over again to other ingesters.
+// AsyncStore 嵌入 stores.Store，按 queryIngestersWithin 决定是否查 ingester。
 type AsyncStore struct {
 	stores.Store
 	scfg                 config.SchemaConfig
@@ -67,6 +72,7 @@ func (a *AsyncStore) shouldQueryIngesters(through, now model.Time) bool {
 	return a.queryIngestersWithin == 0 || through.After(now.Add(-a.queryIngestersWithin))
 }
 
+// GetChunks 用 errgroup 并行拉取 store chunks 与 ingester chunk IDs 后 merge。
 func (a *AsyncStore) GetChunks(ctx context.Context,
 	userID string,
 	from,
@@ -333,6 +339,7 @@ func (a *AsyncStore) GetShards(
 	return mergeShardsFromIngestersAndStore(logger, shardResp, statsResp, targetBytesPerShard), nil
 }
 
+// mergeShardsFromIngestersAndStore 在 ingester 字节占比≥25% 时重算分片数。
 func mergeShardsFromIngestersAndStore(
 	logger log.Logger,
 	storeResp *logproto.ShardsResponse,
@@ -377,3 +384,4 @@ func mergeShardsFromIngestersAndStore(
 		ChunkGroups: nil,
 	}
 }
+// filterDuplicateChunks 用 store 已有 external key 过滤 ingester 重复 chunk ID。

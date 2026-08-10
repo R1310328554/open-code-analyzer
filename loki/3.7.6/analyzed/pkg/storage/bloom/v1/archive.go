@@ -1,5 +1,7 @@
 package v1
 
+// archive 提供 Bloom 块 tar 打包/解包及可选压缩，UnTar 含路径遍历防护与解压炸弹大小上限（20GB）。
+
 import (
 	"archive/tar"
 	"io"
@@ -22,6 +24,7 @@ type TarEntry struct {
 	Body io.ReadSeeker
 }
 
+// TarCompress 从 BlockReader 迭代 TarEntries 写入压缩 tar 流。
 func TarCompress(enc compression.Codec, dst io.Writer, reader BlockReader) error {
 	comprPool := compression.GetWriterPool(enc)
 	comprWriter := comprPool.GetWriter(dst)
@@ -73,6 +76,7 @@ func UnTarCompress(enc compression.Codec, dst string, r io.Reader) error {
 	return UnTar(dst, comprReader)
 }
 
+// UnTar 要求绝对目标路径，校验 Rel 不含 .. 并 LimitReader 按 header.Size 读。
 func UnTar(dst string, r io.Reader) error {
 	// Add safety checks for destination
 	dst = filepath.Clean(dst)
@@ -149,6 +153,7 @@ func UnTar(dst string, r io.Reader) error {
 	return nil
 }
 
+// isWithinDir 用 filepath.Rel 判断解压目标是否仍在 dst 目录树内。
 // Helper function to check for path traversal
 func isWithinDir(target, dir string) bool {
 	targetPath := filepath.Clean(target)
@@ -161,3 +166,4 @@ func isWithinDir(target, dir string) bool {
 
 	return !strings.HasPrefix(relative, ".."+string(filepath.Separator))
 }
+// Tar 与 UnTarCompress 配合 compression pool 复用读写器降低分配开销。

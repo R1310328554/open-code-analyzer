@@ -1,5 +1,7 @@
 package server
 
+// server 包扩展 dskit/weaveworks 内部 HTTP 服务配置，用于 Loki 组件间健康检查、调试端点等与管理端口分离的监听。
+
 import (
 	"flag"
 	"time"
@@ -13,6 +15,7 @@ type Config struct {
 	Enable          bool `yaml:"enable"`
 }
 
+// RegisterFlags 注册 internal-server.* 前缀的监听地址、TLS 与超时参数。
 // RegisterFlags add internal server flags to flagset
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&cfg.HTTPListenAddress, "internal-server.http-listen-address", "localhost", "HTTP internal server listen address.")
@@ -31,3 +34,4 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.DurationVar(&cfg.HTTPServerIdleTimeout, "internal-server.http-idle-timeout", 120*time.Second, "Idle timeout for HTTP server")
 	f.BoolVar(&cfg.Enable, "internal-server.enable", false, "Disable the internal http server.")
 }
+// 默认监听 localhost:3101，enable 为 false 时不暴露内部 HTTP 端口。

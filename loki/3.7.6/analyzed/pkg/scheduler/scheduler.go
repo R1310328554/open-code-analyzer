@@ -1,5 +1,7 @@
 package scheduler
 
+// scheduler 包实现 Loki 查询调度器：接收 query-frontend 入队请求，经 RequestQueue 分发给 querier worker，支持 ring 选主与租户 shuffle sharding。
+
 import (
 	"context"
 	"flag"
@@ -51,6 +53,7 @@ const (
 var errSchedulerIsNotRunning = errors.New("scheduler is not running")
 
 // Scheduler is responsible for queueing and dispatching queries to Queriers.
+// Scheduler 维护前端/querier 长连接、待处理请求映射与 ring 运行状态。
 type Scheduler struct {
 	services.Service
 
@@ -104,6 +107,7 @@ type connectedFrontend struct {
 	cancel context.CancelFunc
 }
 
+// Config 含每租户最大排队数、层级队列深度、querier 遗忘延迟及 scheduler ring 配置。
 type Config struct {
 	MaxOutstandingPerTenant int               `yaml:"max_outstanding_requests_per_tenant"`
 	MaxQueueHierarchyLevels int               `yaml:"max_queue_hierarchy_levels"`
@@ -141,6 +145,7 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
+// NewScheduler 初始化 RequestQueue、Prometheus 指标与 subservices 生命周期管理。
 // NewScheduler creates a new Scheduler.
 func NewScheduler(cfg Config, schedulerLimits Limits, log log.Logger, ringManager *lokiring.RingManager, registerer prometheus.Registerer, metricsNamespace string) (*Scheduler, error) {
 	if cfg.UseSchedulerRing {
@@ -237,6 +242,7 @@ type schedulerRequest struct {
 	parentSpanContext trace.SpanContext
 }
 
+// FrontendLoop 处理 INIT/ENQUEUE/CANCEL 消息，Stopping 时向 frontend 发送 SHUTTING_DOWN。
 // FrontendLoop handles connection from frontend.
 func (s *Scheduler) FrontendLoop(frontend schedulerpb.SchedulerForFrontend_FrontendLoopServer) error {
 	frontendAddress, frontendCtx, err := s.frontendConnected(frontend)
@@ -420,6 +426,7 @@ func (s *Scheduler) cancelRequestAndRemoveFromPending(frontendAddr string, query
 	delete(s.pendingRequests, key)
 }
 
+// QuerierLoop 循环 Dequeue，附加排队耗时头后 forwardRequestToQuerier 下发查询。
 // QuerierLoop is started by querier to receive queries from scheduler.
 func (s *Scheduler) QuerierLoop(querier schedulerpb.SchedulerForQuerier_QuerierLoopServer) error {
 	resp, err := querier.Recv()
@@ -680,6 +687,7 @@ func (s *Scheduler) setRunState(isInSet bool) {
 	}
 }
 
+// stopping 停止 subservices 并拒绝新请求，排空队列中 pending 项。
 // Close the Scheduler.
 func (s *Scheduler) stopping(_ error) error {
 	// This will also stop the requests queue, which stop accepting new requests and errors out any pending requests.
@@ -702,6 +710,7 @@ func (s *Scheduler) getConnectedFrontendClientsMetric() float64 {
 	return float64(count)
 }
 
+// SafeReadRing 在未启用 scheduler ring 或 RingManager 为空时返回 nil。
 // SafeReadRing does a nil check on the Scheduler before attempting to return it's ring
 // this is necessary as many callers of this function will only have a valid Scheduler
 // reference if the QueryScheduler target has been specified, which is not guaranteed
@@ -712,3 +721,4 @@ func SafeReadRing(cfg Config, rm *lokiring.RingManager) ring.ReadRing {
 
 	return rm.Ring
 }
+// setRunState 根据 ReplicationSet 成员身份切换 shouldRun 并通知已连接 frontend。

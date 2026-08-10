@@ -3,6 +3,8 @@
 
 package schedulerpb
 
+// 本文件由 protoc-gen-gogo 根据 scheduler.proto 生成，描述 Frontend↔Scheduler↔Querier 双向流消息与状态枚举。
+
 import (
 	context "context"
 	fmt "fmt"
@@ -32,6 +34,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// FrontendToSchedulerType 枚举 frontend 发往 scheduler 的消息类型：INIT/ENQUEUE/CANCEL。
 type FrontendToSchedulerType int32
 
 const (
@@ -56,6 +59,7 @@ func (FrontendToSchedulerType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_c3657184e8d38989, []int{0}
 }
 
+// SchedulerToFrontendStatus 表示 scheduler 对 frontend 请求的响应状态码。
 type SchedulerToFrontendStatus int32
 
 const (
@@ -83,6 +87,7 @@ func (SchedulerToFrontendStatus) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_c3657184e8d38989, []int{1}
 }
 
+// QuerierToScheduler 携带 QuerierID，供调度器统计已连接的不同 querier 数量。
 // Querier reports its own clientID when it connects, so that scheduler knows how many *different* queriers are connected.
 // To signal that querier is ready to accept another request, querier sends empty message.
 type QuerierToScheduler struct {
@@ -2848,3 +2853,4 @@ var (
 	ErrInvalidLengthScheduler = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowScheduler   = fmt.Errorf("proto: integer overflow")
 )
+// SchedulerToQuerier 将租户、QueryID 与 HTTP/Query 请求体转发给 querier worker。

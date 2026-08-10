@@ -1,5 +1,7 @@
 package scratch
 
+// Filesystem 实现 Store 接口，将 scratch 数据持久化到磁盘，写入失败时自动回退到内存 Memory 存储。
+
 import (
 	"fmt"
 	"io"
@@ -19,6 +21,7 @@ const filesystemExt = ".lokiscratch"
 // filesystem.
 //
 // Filesystem supports a memory fallback mechanism if writing data fails.
+// Filesystem 维护 handle→文件名映射，与 fallback 共享 nextHandle 避免重复。
 type Filesystem struct {
 	logger   log.Logger
 	path     string // Path on disk to store data.
@@ -31,6 +34,7 @@ type Filesystem struct {
 
 var _ Store = (*Filesystem)(nil)
 
+// NewFilesystem 校验路径存在、转绝对路径并清理遗留 .lokiscratch 文件。
 // NewFilesystem returns a new Filesystem store. Stored data is persisted to
 // disk with a random filename and an extension ".lokiscratch".
 //
@@ -109,6 +113,7 @@ func cleanScratchDirectory(logger log.Logger, scratchPath string) error {
 	})
 }
 
+// Put 优先 tryPut 写盘，失败则记录警告并委托 fallback.Put。
 // Put stores the contents of p into scratch space.
 //
 // Put will be written with a random filename and the extension ".lokiscratch".
@@ -154,6 +159,7 @@ func (fs *Filesystem) getNextHandle() Handle {
 	return handle
 }
 
+// Read 先查本地 files 映射，未命中则尝试 fallback 内存区。
 // Read returns a reader for the file identifier by h. Read returns
 // [HandleNotFoundError] if h doesn't exist either on disk or in-memory.
 //
@@ -192,3 +198,4 @@ func (fs *Filesystem) Remove(h Handle) error {
 	delete(fs.files, h)
 	return nil
 }
+// cleanScratchDirectory 仅删除顶层 .lokiscratch 文件，不递归子目录。

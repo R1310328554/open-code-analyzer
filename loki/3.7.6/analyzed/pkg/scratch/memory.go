@@ -1,5 +1,7 @@
 package scratch
 
+// Memory 是 Store 的纯内存实现，用 map[Handle]*bytes.Buffer 保存数据，适用于未配置 scratch 目录或 Filesystem 回退场景。
+
 import (
 	"bytes"
 	"io"
@@ -15,6 +17,7 @@ type Memory struct {
 
 var _ Store = (*Memory)(nil)
 
+// NewMemory 从 handle=1 开始分配，0 为 InvalidHandle。
 // NewMemory returns a new Memory store.
 func NewMemory() *Memory {
 	// Handles start at 1.
@@ -30,6 +33,7 @@ func newMemoryWithNextHandle(nextHandle *uint64) *Memory {
 	}
 }
 
+// Put 复制字节到 Buffer 并返回新分配的 Handle。
 // Put stores the contents of p into memory.
 func (m *Memory) Put(p []byte) Handle {
 	buf := bytes.NewBuffer(make([]byte, 0, len(p)))
@@ -93,3 +97,4 @@ type nopReadSeekCloser struct {
 }
 
 func (n nopReadSeekCloser) Close() error { return nil }
+// nopReadSeekCloser 包装 bytes.Reader 提供无操作的 Close 以满足 ReadSeekCloser。

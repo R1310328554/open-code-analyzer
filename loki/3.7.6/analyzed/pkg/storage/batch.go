@@ -1,5 +1,7 @@
 package storage
 
+// batch 实现按 batchSize 分批拉取 LazyChunk 的迭代器，处理 chunk 时间重叠、前向/反向查询边界与按 series 过滤匹配器。
+
 import (
 	"context"
 	"sort"
@@ -27,6 +29,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// ChunkMetrics 统计 chunk ref、series、下载量及每批 chunk 数量的 Prometheus 指标。
 type ChunkMetrics struct {
 	refs         *prometheus.CounterVec
 	refsBypassed prometheus.Counter
@@ -83,10 +86,12 @@ func NewChunkMetrics(r prometheus.Registerer, maxBatchSize int) *ChunkMetrics {
 	}
 }
 
+// 跨批重叠 chunk 保留在 lastOverlapping，下一批边界裁剪至非重叠区间。
 // batchChunkIterator iterates through chunks by batch of `batchSize`.
 // Since chunks can overlap across batches for each iteration the iterator will keep all overlapping
 // chunks with the next chunk from the next batch and added it to the next iteration. In this case the boundaries of the batch
 // is reduced to non-overlapping chunks boundaries.
+// batchChunkIterator 在 goroutine 中 loop 生产 chunkBatch，通过 channel 传递。
 type batchChunkIterator struct {
 	schemas         config.SchemaConfig
 	chunks          lazyChunks
@@ -313,6 +318,7 @@ type chunkBatch struct {
 	nextChunk     *LazyChunk
 }
 
+// logBatchIterator 在 batch 之上叠加 LogQL pipeline，逐批构建 EntryIterator。
 type logBatchIterator struct {
 	*batchChunkIterator
 	curr iter.EntryIterator
@@ -459,6 +465,7 @@ func (it *logBatchIterator) buildMergeIterator(chks [][]*LazyChunk, from, throug
 	return iter.NewMergeEntryIterator(it.ctx, result, it.direction), nil
 }
 
+// sampleBatchIterator 固定 FORWARD 方向，用 SampleExtractor 生成样本迭代器。
 type sampleBatchIterator struct {
 	*batchChunkIterator
 	curr iter.SampleIterator
@@ -852,3 +859,4 @@ outer:
 
 	return css
 }
+// partitionOverlappingChunks 将同 series 内时间重叠的 chunk 分到不同非重叠组。

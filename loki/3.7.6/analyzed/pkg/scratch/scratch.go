@@ -1,4 +1,4 @@
-// Package scratch provides an abstraction for scratch space.
+// Package scratch 提供临时 scratch 空间抽象，供查询中间结果等短期数据存储。
 package scratch
 
 import (
@@ -22,6 +22,7 @@ func (e HandleNotFoundError) Error() string {
 // deleted.
 //
 // The zero value for handle is invalid.
+// Handle 是 scratch 条目的唯一标识，创建后不可变，仅可读取或删除。
 type Handle uint64
 
 // InvalidHandle is the zero value for Handle.
@@ -31,6 +32,7 @@ const InvalidHandle = Handle(0)
 // starts fresh every time it is created.
 //
 // Store implementations must be safe for concurrent access.
+// Store 定义 Put/Read/Remove 三方法，实现必须支持并发访问且进程重启后为空。
 type Store interface {
 	// Ideally Store would support some kind of streaming
 	//
@@ -65,6 +67,7 @@ type Store interface {
 	Remove(h Handle) error
 }
 
+// Open 在 path 为空时返回 Memory，否则创建 Filesystem 并校验目录存在。
 // Open returns the default [Store] implementation based on whether path is set.
 //
 // If path is empty, Open returns a [Memory] store. If path is non-empty, Open
@@ -82,3 +85,4 @@ func Open(logger log.Logger, path string) (Store, error) {
 
 	return NewFilesystem(logger, path)
 }
+// HandleNotFoundError 在 Read/Remove 未知 handle 时返回，Error 含 handle 编号。

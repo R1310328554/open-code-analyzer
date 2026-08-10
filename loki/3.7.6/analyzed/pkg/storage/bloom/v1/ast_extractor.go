@@ -1,5 +1,7 @@
 package v1
 
+// ast_extractor 从 LogQL AST 解析器之前的标签过滤器提取可测试的 LabelMatcher，供 Bloom 过滤器预筛 series，不支持的表达式映射为始终通过的 UnsupportedLabelMatcher。
+
 import (
 	regexsyn "github.com/grafana/regexp/syntax"
 
@@ -17,10 +19,12 @@ import (
 //
 // For example, the regex `[0-9]` expands to 10 matchers (0, 1, .. 9), while
 // `[0-9][0-9][0-9]` expands to 1000 matchers (000, 001, .., 999).
+// maxRegexMatchers 限制正则展开基数，防止 [0-9]{3} 等模式产生过高 cardinality。
 const maxRegexMatchers = 200
 
 // LabelMatcher represents bloom tests for key-value pairs, mapped from
 // LabelFilterExprs from the AST.
+// LabelMatcher 为 Bloom 测试用的标签匹配抽象，含 KV/Key/OR/AND 等组合形式。
 type LabelMatcher interface{ isLabelMatcher() }
 
 // UnsupportedLabelMatcher represents a label matcher which could not be
@@ -43,6 +47,7 @@ type OrLabelMatcher struct{ Left, Right LabelMatcher }
 // if both of the Left and Right label matcher bloom tests pass.
 type AndLabelMatcher struct{ Left, Right LabelMatcher }
 
+// ExtractTestableLabelMatchers 仅取第一个 parse stage 之前的 LabelFilterExpr。
 // ExtractTestableLabelMatchers extracts label matchers from the label filters
 // in an expression. The resulting label matchers can then be used for testing
 // against bloom filters. Only label matchers before the first parse stage are
@@ -112,6 +117,7 @@ func buildLabelMatcher(filter log.LabelFilterer) LabelMatcher {
 	}
 }
 
+// buildSimplifiedRegexMatcher 将简化后的 regex AST 展开为 OR 链的 KeyValueMatcher。
 // buildSimplifiedRegexMatcher builds a simplified label matcher from a regex.
 // reg may be mutated.
 func buildSimplifiedRegexMatcher(key string, reg *regexsyn.Regexp) LabelMatcher {
@@ -278,3 +284,4 @@ func (KeyValueMatcher) isLabelMatcher()         {}
 func (KeyMatcher) isLabelMatcher()              {}
 func (OrLabelMatcher) isLabelMatcher()          {}
 func (AndLabelMatcher) isLabelMatcher()         {}
+// expandSubexpr 递归展开 OpCharClass/OpConcat，超限或无法展开则返回 Unsupported。

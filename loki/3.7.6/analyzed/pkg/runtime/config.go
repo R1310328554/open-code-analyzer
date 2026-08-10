@@ -1,5 +1,7 @@
 package runtime
 
+// runtime 包提供 Loki 运行时操作级调试与日志开关，支持按租户覆盖，用于 push 路径、流创建、重复行检测等可观测性场景。
+
 import (
 	"flag"
 
@@ -20,6 +22,7 @@ type Config struct {
 	LimitedLogPushErrors bool `yaml:"limited_log_push_errors"`
 }
 
+// RegisterFlags 将 operation-config.* 系列 flag 注册到 FlagSet。
 // RegisterFlags adds the flags required to config this to the given FlagSet
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.BoolVar(&cfg.LogStreamCreation, "operation-config.log-stream-creation", false, "Log every new stream created by a push request (very verbose, recommend to enable via runtime config only).")
@@ -39,6 +42,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 // find a nicer way I'm afraid.
 var defaultConfig *Config
 
+// SetDefaultLimitsForYAMLUnmarshalling 设置 YAML 反序列化时的全局默认值，避免覆盖命令行指定值。
 // SetDefaultLimitsForYAMLUnmarshalling sets global default limits, used when loading
 // Limits from YAML files. This is used to ensure per-tenant limits are defaulted to
 // those values.
@@ -47,12 +51,14 @@ func SetDefaultLimitsForYAMLUnmarshalling(defaults Config) {
 }
 
 // TenantConfigProvider serves a tenant or default config.
+// TenantConfigProvider 按 userID 返回租户级 Config 或 nil。
 type TenantConfigProvider interface {
 	TenantConfig(userID string) *Config
 }
 
 // TenantConfigs periodically fetch a set of per-user configs, and provides convenience
 // functions for fetching the correct value.
+// TenantConfigs 封装 TenantConfigProvider，提供各布尔开关的按租户访问器。
 type TenantConfigs struct {
 	TenantConfigProvider
 }
@@ -129,3 +135,4 @@ func (o *TenantConfigs) LogDuplicateStreamInfo(userID string) bool {
 func (o *TenantConfigs) LimitedLogPushErrors(userID string) bool {
 	return o.getOverridesForUser(userID).LimitedLogPushErrors
 }
+// getOverridesForUser 优先返回租户覆盖，否则回退 defaultConfig 全局默认。

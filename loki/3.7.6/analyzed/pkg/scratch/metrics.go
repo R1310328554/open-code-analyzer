@@ -1,5 +1,7 @@
 package scratch
 
+// metrics 为 scratch Store 提供 Prometheus 观测：当前 handle 数、占用字节数及 Put/Read/Remove 操作耗时直方图。
+
 import (
 	"errors"
 	"io"
@@ -60,6 +62,7 @@ func (m *Metrics) Unregister(reg prometheus.Registerer) {
 	reg.Unregister(m.requestsSeconds)
 }
 
+// observedStore 在 Put/Remove 时同步更新 handleSizes 以维护 bytes 指标。
 type observedStore struct {
 	metrics *Metrics
 	inner   Store
@@ -69,6 +72,7 @@ type observedStore struct {
 
 var _ Store = (*observedStore)(nil)
 
+// ObserveStore 用 observedStore 装饰器包装 Store，metrics 为 nil 时直接返回原 Store。
 // ObserveStore wraps a store and accumulates statistics into the provided
 // Metrics. If metrics is nil, ObserveStore performs no wrapping.
 func ObserveStore(metrics *Metrics, store Store) Store {
@@ -126,3 +130,4 @@ func (os *observedStore) Remove(h Handle) error {
 
 	return err
 }
+// errorToResult 将非 nil 错误映射为 histogram 标签 error，否则为 success。
