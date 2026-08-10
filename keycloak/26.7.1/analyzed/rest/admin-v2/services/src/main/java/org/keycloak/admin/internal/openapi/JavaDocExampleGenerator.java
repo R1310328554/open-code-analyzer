@@ -38,8 +38,14 @@ import org.jboss.jandex.Type;
 
 import static java.util.stream.Collectors.joining;
 
+/**
+ * 从 OpenAPI 规范与 Jandex 索引生成 Admin API v2 文档 JSON（{@code admin-v2-doc.json}）及可编译的 Java 调用示例。
+ * <p>
+ * 扫描 {@link org.keycloak.admin.api.AdminApi} 子资源接口，为每个 operationId 生成客户端调用片段，并汇总 schema、可查询字段等元数据。
+ */
 final class JavaDocExampleGenerator {
 
+    /** Maven 插件注入的编译 classes 目录系统属性名。 */
     private static final String CLASSES_DIR_PROPERTY = "keycloak.classes.dir";
     private static final String EXAMPLES_CHECK_OUTPUT_DIR =
             "generated-test-sources/openapi/org/keycloak/admin/internal/openapi";
@@ -57,12 +63,14 @@ final class JavaDocExampleGenerator {
             .setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
     private static final Pattern VERSIONED_TAG_PATTERN = Pattern.compile("(.+) \\(v\\d+\\)");
 
+    /** 文档分类：对应一个 Admin API 子接口及其端点列表。 */
     record DocCategory(String interfaceName, List<DocEndpoint> endpoints) {
         DocCategory(String interfaceName) {
             this(interfaceName, new ArrayList<>());
         }
     }
 
+    /** 单个 REST 端点的文档条目（含 Java 示例）。 */
     record DocEndpoint(String operationId, String httpMethod, String path,
             String summary, String description,
             RequestBodyInfo requestBody,
@@ -78,6 +86,7 @@ final class JavaDocExampleGenerator {
             Map<String, String> discriminatorMapping) {}
     record JavaExample(String interfaceName, String example) {}
 
+    /** 完整文档模型：分类、schema 与可查询字段。 */
     record DocModel(Map<String, DocCategory> categories, Map<String, DocSchema> schemas,
                     Map<String, List<QueryableField>> queryableFields) {}
     record QueryableField(String name, String type, String description) {}
@@ -91,6 +100,7 @@ final class JavaDocExampleGenerator {
         this.indexView = indexView;
     }
 
+    /** 读取 OpenAPI 路径，生成文档 JSON 与编译检查类。 */
     void generate(OpenAPI openAPI) {
         if (openAPI.getPaths() == null || openAPI.getPaths().getPathItems().isEmpty()) {
             throw new IllegalStateException("OpenAPI spec has no paths — cannot generate documentation examples");
@@ -244,7 +254,7 @@ final class JavaDocExampleGenerator {
             }
         }
 
-        // Build reverse mapping: schema name → (discriminator property, value)
+        // 构建反向映射：schema 名 →（鉴别器属性, 固定值）
         // e.g. OIDCClientRepresentation → ("protocol", "openid-connect")
         Map<String, Map.Entry<String, String>> discriminatorValues = new LinkedHashMap<>();
         for (String name : referenced) {
@@ -318,7 +328,7 @@ final class JavaDocExampleGenerator {
             return;
         }
         Schema schema = allSchemas.get(name);
-        // Add parent first so it appears before children
+        // 先加入父 schema，保证文档中父类型排在子类型之前
         if (schema.getAllOf() != null) {
             for (Schema part : schema.getAllOf()) {
                 if (part.getRef() != null) {
@@ -601,6 +611,7 @@ final class JavaDocExampleGenerator {
         return mediaTypes.values().iterator().next().getSchema();
     }
 
+    /** 遍历 AdminApi 子资源，收集各 operationId 的 Java 调用示例。 */
     private Map<String, JavaExample> collectJavaExamples(StringBuilder checkBody) {
         Map<String, JavaExample> examples = new LinkedHashMap<>();
         ClassInfo adminApi = indexView.getClassByName(ADMIN_API);
@@ -608,7 +619,7 @@ final class JavaDocExampleGenerator {
             throw new IllegalStateException(ADMIN_API + " not found in Jandex index");
         }
 
-        // AdminApi sub-resource locators mirror the wrapper methods on Keycloak admin client.
+        // AdminApi 子资源定位方法与 Keycloak Admin Client 包装方法一一对应
         // E.g. AdminApi.clientsV2() → Keycloak.clients(realm).v2() both return ClientsApi.
         // Variable name is derived from interface: ClientsApi → clientsApi
         // so the doc template can show: ClientsApi clientsApi = adminClient.clients(realm).v2();
@@ -695,7 +706,7 @@ final class JavaDocExampleGenerator {
         return prefix + "." + methodName + "(" + args + ")";
     }
 
-    // TODO: replace tag parsing when https://github.com/keycloak/keycloak/issues/47881 is implemented
+    // TODO: issue #47881 落地后替换 tag 解析逻辑
     private static String extractResourceName(Operation operation, String operationId) {
         if (operation.getTags() == null) {
             throw new IllegalStateException("Operation " + operationId + " has no tags");

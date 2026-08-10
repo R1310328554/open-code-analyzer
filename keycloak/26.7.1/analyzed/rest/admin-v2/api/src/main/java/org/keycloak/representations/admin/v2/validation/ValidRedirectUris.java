@@ -10,17 +10,17 @@ import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
 /**
- * Constraint annotation for validating redirect URIs according to Keycloak's redirect URI rules.
+ * 按 Keycloak 重定向 URI 规则校验的类级约束注解。
  * <p>
- * Validation rules:
+ * 校验规则：
  * <ul>
- *   <li>Wildcards (*) are only allowed at the end of the path</li>
- *   <li>Wildcards must be preceded by a slash (/)</li>
- *   <li>Wildcards cannot be followed by query parameters or fragments</li>
- *   <li>Only one wildcard is allowed</li>
- *   <li>Without a root URL, redirect URIs must be absolute (include scheme)</li>
- *   <li>With a root URL set, relative paths are allowed</li>
- *   <li>Special values: "*" (full wildcard), "+" and "-" (for post-logout) are always valid</li>
+ *   <li>通配符 (*) 仅允许出现在路径末尾</li>
+ *   <li>通配符前必须有斜杠 (/)</li>
+ *   <li>通配符后不能跟查询参数或片段</li>
+ *   <li>仅允许一个通配符</li>
+ *   <li>未设置根 URL 时，重定向 URI 必须为绝对地址（含 scheme）</li>
+ *   <li>已设置根 URL 时，允许相对路径</li>
+ *   <li>特殊值 "*"（全匹配）、"+" 与 "-"（登出后）始终有效</li>
  * </ul>
  */
 @Target({ElementType.TYPE})

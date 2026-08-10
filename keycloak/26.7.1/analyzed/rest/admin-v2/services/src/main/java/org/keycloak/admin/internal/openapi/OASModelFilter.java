@@ -35,6 +35,9 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.utils.StringUtil.isNullOrEmpty;
 
+/**
+ * SmallRye OpenAPI 后处理过滤器：排序路径、补充 Jackson 多态鉴别器、注入校验描述、Bearer 安全方案及 Admin API v2 Java 示例扩展。
+ */
 public class OASModelFilter implements OASFilter {
 
     private static final String SORT_PARAMETER_NAME = "sort";
@@ -49,6 +52,7 @@ public class OASModelFilter implements OASFilter {
     private final Map<String, ClassInfo> simpleNameToClassInfoMap = new HashMap<>();
     private final ValidationAnnotationScanner validationScanner;
 
+    /** OpenAPI 组件 schema 的 {@code $ref} 前缀。 */
     public static final String REF_PREFIX = "#/components/schemas/";
 
     public OASModelFilter(IndexView indexView) {
@@ -62,8 +66,9 @@ public class OASModelFilter implements OASFilter {
     }
 
     @Override
+    /** {@inheritDoc} 对生成的 OpenAPI 模型执行排序、schema 增强与文档扩展。 */
     public void filterOpenAPI(OpenAPI openAPI) {
-        // Sort Paths
+        // 按 HTTP 方法顺序重排各 PathItem 下的操作
         Map<String, PathItem> newPaths = openAPI.getPaths().getPathItems().entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
@@ -101,8 +106,7 @@ public class OASModelFilter implements OASFilter {
     }
 
     /**
-     * Removes a schema from components and cleans up allOf/oneOf/anyOf references to it
-     * from all remaining schemas.
+     * 从 components 移除指定 schema，并清理其余 schema 中 allOf/oneOf/anyOf 对它的引用。
      */
     private void removeSchemaAndRefs(OpenAPI openAPI, String schemaName) {
         if (hasNoSchemas(openAPI)) {
@@ -138,9 +142,7 @@ public class OASModelFilter implements OASFilter {
     }
 
     /**
-     * Adds discriminator and oneOf references to parent schemas that have Jackson @JsonTypeInfo
-     * and @JsonSubTypes annotations. This enables OpenAPI generators to create proper class
-     * hierarchies with inheritance.
+     * 为带 Jackson {@code @JsonTypeInfo} 与 {@code @JsonSubTypes} 的父 schema 添加鉴别器，使 OpenAPI 生成器能正确表达继承层次。
      */
     private void addDiscriminatorsToParentSchemas(OpenAPI openAPI, Map<String, Set<Schema>> discriminatorPropertiesToBeAdded) {
         if (hasNoSchemas(openAPI)) {
@@ -232,9 +234,7 @@ public class OASModelFilter implements OASFilter {
     }
 
     /**
-     * Adds a Bearer token security scheme and applies it globally to all operations.
-     * This documents the 401 (Unauthorized) and 403 (Forbidden) responses at the API level
-     * rather than repeating them on every endpoint.
+     * 添加 Bearer 令牌安全方案并全局应用于所有操作，在 API 级别统一说明 401/403 响应。
      */
     private void addSecurityScheme(OpenAPI openAPI) {
         String schemeName = "bearer-auth";
@@ -344,8 +344,7 @@ public class OASModelFilter implements OASFilter {
     }
 
     /**
-     * Removes validation clauses previously appended by this filter so repeated OpenAPI filter passes
-     * do not stack duplicate {@code Validation:} text.
+     * 剥离本过滤器先前追加的校验描述，避免多次过滤时重复堆叠 {@code Validation:} 文本。
      */
     private static String stripValidationSuffix(String description) {
         if (isNullOrEmpty(description)) {
@@ -377,7 +376,7 @@ public class OASModelFilter implements OASFilter {
     }
 
     /**
-     * Collapses {@code X. Validation: X} when {@code X} is repeated verbatim (duplicate filter passes).
+     * 当 {@code X. Validation: X} 中 X 完全重复时折叠为单份（应对重复过滤）。
      */
     private static String collapseMirroredValidationClause(String description) {
         if (isNullOrEmpty(description)) {

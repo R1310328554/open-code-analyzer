@@ -13,8 +13,14 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.representations.admin.v2.BaseClientRepresentation;
 
+/**
+ * 客户端表示与 {@link ClientModel} 之间字段映射的抽象基类。
+ * <p>
+ * 通过 {@link MappedField} 注册双向 getter/setter，支持按 {@code includeFields} 投影部分字段。
+ */
 public abstract class BaseClientModelMapper<T extends BaseClientRepresentation> implements ClientModelMapper {
     
+    /** 单个字段在表示与模型间的双向映射描述。 */
     public static class MappedField<T> {
         
         Function<T, Object> repGetter;
@@ -22,12 +28,14 @@ public abstract class BaseClientModelMapper<T extends BaseClientRepresentation> 
         Function<ClientModel, Object> modelGetter;
         BiConsumer<ClientModel, Object> modelSetter;
         
+        /** 从持久化模型复制字段值到表示对象。 */
         void fromModel(ClientModel model, T rep) {
             if (repSetter != null && modelGetter != null) {
                 repSetter.accept(rep, modelGetter.apply(model));
             }
         }
         
+        /** 从表示对象写回持久化模型（仅当 setter 存在时）。 */
         void toModel(T rep, ClientModel model) {
             if (hasGetter() && modelSetter != null) {
                 // TODO: exception handling to make things clearer when things fail
@@ -49,6 +57,7 @@ public abstract class BaseClientModelMapper<T extends BaseClientRepresentation> 
  
     final Map<String, MappedField<BaseClientRepresentation>> fields = new LinkedHashMap<String, MappedField<BaseClientRepresentation>>();
 
+    /** 返回已注册映射字段名集合（不可变）。 */
     public Set<String> getFieldNames() {
         return Collections.unmodifiableSet(fields.keySet());
     }
@@ -78,6 +87,7 @@ public abstract class BaseClientModelMapper<T extends BaseClientRepresentation> 
     }
     
     @Override
+    /** 将 {@link ClientModel} 转为表示；{@code includeFields} 非空时仅填充指定字段。 */
     public BaseClientRepresentation fromModel(ClientModel model, Set<String> includeFields) {
         // We don't want reps to depend on any unnecessary fields deps, hence no generated builder.
 
@@ -99,6 +109,7 @@ public abstract class BaseClientModelMapper<T extends BaseClientRepresentation> 
     }
 
     @SuppressWarnings("unchecked")
+    /** 将未包含在投影中的可写字段置为 null。 */
     public void applyProjection(BaseClientRepresentation rep, Set<String> includeFields) {
         if (includeFields == null || includeFields.isEmpty()) return;
         fields.entrySet().stream()

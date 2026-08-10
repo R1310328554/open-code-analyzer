@@ -14,6 +14,7 @@ import org.keycloak.utils.KeycloakSessionUtil;
 
 /**
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
+ * OIDC 客户端表示与 {@link ClientModel} 之间的字段映射实现。
  */
 public class OIDCClientModelMapper extends BaseClientModelMapper<OIDCClientRepresentation> {
     @Override
@@ -28,6 +29,7 @@ public class OIDCClientModelMapper extends BaseClientModelMapper<OIDCClientRepre
         addMapping("serviceAccountRoles", OIDCClientRepresentation::getServiceAccountRoles, OIDCClientRepresentation::setServiceAccountRoles, model -> getServiceAccountRoles(model), null);
     }
 
+    /** 从模型构建 OIDC 认证配置（机密客户端含 method/secret）。 */
     private OIDCClientRepresentation.Auth getAuth(ClientModel model) {
         OIDCClientRepresentation.Auth auth = null;
         if (!model.isPublicClient()) {
@@ -49,6 +51,7 @@ public class OIDCClientModelMapper extends BaseClientModelMapper<OIDCClientRepre
         }
     }
 
+    /** 根据模型启用的 grant/flow 标志组装 loginFlows 集合。 */
     private Set<OIDCClientRepresentation.Flow> createLoginFlows(ClientModel model) {
         Set<OIDCClientRepresentation.Flow> flows = new HashSet<>();
         if (model.isStandardFlowEnabled()) {

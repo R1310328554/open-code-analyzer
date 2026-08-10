@@ -10,8 +10,7 @@ import org.keycloak.representations.admin.v2.validation.ClientSecretNotBlank;
 import org.keycloak.utils.StringUtil;
 
 /**
- * Validates that requires the {@link OIDCClientRepresentation.Auth#getSecret()} is not blank
- * when {@link OIDCClientRepresentation.Auth#getMethod()} is the (JWT) client secret.
+ * 当 {@link OIDCClientRepresentation.Auth#getMethod()} 为客户端密钥认证方式时，校验 {@link OIDCClientRepresentation.Auth#getSecret()} 非空。
  */
 public class ClientSecretNotBlankValidator implements ConstraintValidator<ClientSecretNotBlank, OIDCClientRepresentation.Auth> {
 
@@ -29,6 +28,7 @@ public class ClientSecretNotBlankValidator implements ConstraintValidator<Client
         return true;
     }
 
+    /** 判断认证方法是否为需要 client secret 的类型。 */
     public static boolean isClientSecret(String method) {
         return ClientIdAndSecretAuthenticator.PROVIDER_ID.equals(method)
                 || JWTClientSecretAuthenticator.PROVIDER_ID.equals(method);

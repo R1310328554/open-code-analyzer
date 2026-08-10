@@ -27,22 +27,27 @@ import org.keycloak.services.resources.admin.AdminAuth;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 
 /**
- * Builder for Admin API v2 events.
+ * Admin API v2 管理事件构建器。
  * <p>
- * Extends the v1 AdminEventBuilder with v2-specific behavior:
- * - Events are marked with an "apiVersion" detail set to "v2" to distinguish them from v1 events.
- * - Representation is serialized without stripping secrets (v2 representations handle this differently).
+ * 在 v1 {@link AdminEventBuilder} 基础上：
+ * <ul>
+ *   <li>通过 {@code apiVersion=v2} 详情标记，与 v1 事件区分</li>
+ *   <li>序列化表示时使用 {@link StripSecretsUtilsV2} 脱敏（v2 表示层处理方式不同）</li>
+ * </ul>
  */
 public class AdminEventV2Builder extends AdminEventBuilder {
+    /** 事件详情中 API 版本键名。 */
     public static final String API_VERSION_DETAIL_KEY = "apiVersion";
+    /** v2 API 版本标识值。 */
     public static final String API_VERSION_V2 = "v2";
 
     public AdminEventV2Builder(RealmModel realm, AdminAuth auth, KeycloakSession session, ClientConnection clientConnection) {
         super(realm, auth, session, clientConnection);
-        // Mark this as a v2 API event
+        // 标记为 v2 API 事件
         detail(API_VERSION_DETAIL_KEY, API_VERSION_V2);
     }
 
+    /** 从请求 URI 提取相对 realm 的管理资源路径。 */
     @Override
     protected String getResourcePath(UriInfo uriInfo) {
         String path = uriInfo.getPath();
@@ -50,6 +55,7 @@ public class AdminEventV2Builder extends AdminEventBuilder {
         return path.substring(path.indexOf(realmRelative) + realmRelative.length());
     }
 
+    /** 使用 v2 脱敏工具处理表示对象中的密钥字段。 */
     @Override
     protected void stripSecretsFromRepresentation(Object value) {
         StripSecretsUtilsV2.stripSecrets(session, value);

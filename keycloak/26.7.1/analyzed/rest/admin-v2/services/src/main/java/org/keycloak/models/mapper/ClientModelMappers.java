@@ -7,6 +7,9 @@ import org.keycloak.representations.admin.v2.BaseClientRepresentation;
 import org.keycloak.representations.admin.v2.OIDCClientRepresentation;
 import org.keycloak.representations.admin.v2.SAMLClientRepresentation;
 
+/**
+ * 按协议（OIDC/SAML）选择 {@link BaseClientModelMapper} 的注册表，提供字段解析与投影辅助方法。
+ */
 public class ClientModelMappers {
 
     private final Map<String, BaseClientModelMapper<?>> mappers;
@@ -17,10 +20,12 @@ public class ClientModelMappers {
                 SAMLClientRepresentation.PROTOCOL, new SAMLClientModelMapper());
     }
 
+    /** 任一协议映射器是否注册了该字段名。 */
     public boolean isKnownField(String name) {
         return mappers.values().stream().anyMatch(f -> f.fields.containsKey(name));
     }
 
+    /** 按表示的 protocol 解析指定字段的当前值。 */
     public Object resolveFieldValue(String name, BaseClientRepresentation rep) {
         String protocol = rep.getProtocol();
         var mapper = protocol != null ? mappers.get(protocol) : null;
@@ -41,6 +46,7 @@ public class ClientModelMappers {
         }
     }
 
+    /** 按协议名获取对应映射器。 */
     public Optional<BaseClientModelMapper<?>> getMapper(String protocol) {
         return Optional.ofNullable(mappers.get(protocol));
     }

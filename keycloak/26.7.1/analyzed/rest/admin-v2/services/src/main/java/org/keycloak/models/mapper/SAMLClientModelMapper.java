@@ -24,11 +24,13 @@ import org.keycloak.models.ClientModel;
 import org.keycloak.representations.admin.v2.SAMLClientRepresentation;
 
 /**
- * Mapper for SAML clients between model and representation.
+ * SAML 客户端在 {@link ClientModel} 与 {@link SAMLClientRepresentation} 之间的映射器。
+ * <p>
+ * 多数 SAML 配置存于客户端 attribute，通过布尔/字符串映射辅助方法读写。
  */
 public class SAMLClientModelMapper extends BaseClientModelMapper<SAMLClientRepresentation> {
 
-    // SAML attribute keys
+    // SAML 客户端 attribute 键名常量
     private static final String SAML_NAME_ID_FORMAT = "saml_name_id_format";
     private static final String SAML_FORCE_NAME_ID_FORMAT = "saml_force_name_id_format";
     private static final String SAML_AUTHN_STATEMENT = "saml.authnstatement";
@@ -55,7 +57,7 @@ public class SAMLClientModelMapper extends BaseClientModelMapper<SAMLClientRepre
     }
     
     public SAMLClientModelMapper() {
-        // Name ID settings
+        // Name ID 相关设置
         addMapping("nameIdFormat",
                 rep -> rep.getNameIdFormat() != null ? rep.getNameIdFormat().toJson() : null,
                 (rep, value) -> rep.setNameIdFormat(SAMLClientRepresentation.NameIdFormat.fromJson(value)),
@@ -63,7 +65,7 @@ public class SAMLClientModelMapper extends BaseClientModelMapper<SAMLClientRepre
                 (model, value) -> setAttributeIfNotNull(model, SAML_NAME_ID_FORMAT, value));
         addBooleanAttributeMapping("forceNameIdFormat", SAML_FORCE_NAME_ID_FORMAT, SAMLClientRepresentation::getForceNameIdFormat, SAMLClientRepresentation::setForceNameIdFormat);
         
-        // Signature settings
+        // 签名相关设置
         addBooleanAttributeMapping("includeAuthnStatement", SAML_AUTHN_STATEMENT, SAMLClientRepresentation::getIncludeAuthnStatement, SAMLClientRepresentation::setIncludeAuthnStatement);
         addBooleanAttributeMapping("signDocuments", SAML_SERVER_SIGNATURE, SAMLClientRepresentation::getSignDocuments, SAMLClientRepresentation::setSignDocuments);
         addBooleanAttributeMapping("signAssertions", SAML_ASSERTION_SIGNATURE, SAMLClientRepresentation::getSignAssertions, SAMLClientRepresentation::setSignAssertions);
@@ -76,12 +78,12 @@ public class SAMLClientModelMapper extends BaseClientModelMapper<SAMLClientRepre
         addAttributeMapping("signatureCanonicalizationMethod", SAML_SIGNATURE_CANONICALIZATION, SAMLClientRepresentation::getSignatureCanonicalizationMethod, SAMLClientRepresentation::setSignatureCanonicalizationMethod);
         addAttributeMapping("signingCertificate", SAML_SIGNING_CERTIFICATE, SAMLClientRepresentation::getSigningCertificate, SAMLClientRepresentation::setSigningCertificate);
 
-        // Binding and logout settings
+        // 绑定与登出设置
         addBooleanAttributeMapping("forcePostBinding", SAML_FORCE_POST_BINDING, SAMLClientRepresentation::getForcePostBinding, SAMLClientRepresentation::setForcePostBinding);
         // TODO: mapping from 3 value to 2 value boolean can be confusing from a patching perspective
         addMapping("frontChannelLogout", SAMLClientRepresentation::getFrontChannelLogout, SAMLClientRepresentation::setFrontChannelLogout, ClientModel::isFrontchannelLogout, (model, logout) -> model.setFrontchannelLogout(Boolean.TRUE.equals(logout)));
 
-        // ECP flow
+        // ECP 流设置
         addBooleanAttributeMapping("allowEcpFlow", SAML_ALLOW_ECP_FLOW, SAMLClientRepresentation::getAllowEcpFlow, SAMLClientRepresentation::setAllowEcpFlow);
     }
 

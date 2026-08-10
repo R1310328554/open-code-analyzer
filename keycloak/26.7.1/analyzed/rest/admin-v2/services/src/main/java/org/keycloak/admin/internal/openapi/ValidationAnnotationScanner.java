@@ -31,10 +31,13 @@ import org.jboss.logging.Logger;
 
 /**
  * Builds human-readable validation descriptions for OpenAPI schemas based on validation annotations.
+ * 基于 Bean Validation 注解为 OpenAPI schema 属性构建人类可读的校验说明。
  * <p>
  * SmallRye OpenAPI's built-in {@code BeanValidationScanner} handles machine-readable schema properties
+ * SmallRye 内置 {@code BeanValidationScanner} 负责机器可读的 schema 属性（如 minLength、pattern）；
  * (like {@code minLength}, {@code pattern}, {@code minimum}) for standard Jakarta Validation annotations.
  * This scanner complements it by:
+ * 本扫描器在此基础上补充：
  * <ul>
  *   <li>Building human-readable validation descriptions for field documentation</li>
  *   <li>Handling Hibernate Validator's {@code @URL} annotation (not supported by SmallRye)</li>
@@ -48,7 +51,7 @@ public class ValidationAnnotationScanner {
 
     private static final Logger log = Logger.getLogger(ValidationAnnotationScanner.class);
 
-    // Meta-annotation that marks constraint annotations
+    // 标记约束注解的元注解
     private static final DotName CONSTRAINT = DotName.createSimple(Constraint.class);
 
     // Hibernate Validator's @URL annotation (for schema property handling - not supported by SmallRye)
@@ -60,7 +63,7 @@ public class ValidationAnnotationScanner {
     // Validation group package prefix for detecting unknown groups
     private static final String VALIDATION_PACKAGE = "org.keycloak.representations.admin.v2.validation";
 
-    // Validation groups mapped to their human-readable context
+    // 校验分组到可读上下文的映射（如 on create/on update）
     // When adding a new validation group, add it here to provide a description for the OpenAPI docs.
     private static final Map<DotName, String> VALIDATION_GROUPS = Map.of(
             DotName.createSimple(CreateClient.class), "on create",
@@ -110,9 +113,7 @@ public class ValidationAnnotationScanner {
     }
 
     /**
-     * True for built-in Jakarta Bean Validation and Hibernate Validator constraint annotations.
-     * The OpenAPI Maven plugin typically indexes only application packages, so these types are
-     * often absent from {@link IndexView} even though they appear on representation fields.
+     * 判断是否为 Jakarta/Hibernate 内置约束注解；OpenAPI 插件通常只索引应用包，这些类型可能不在 {@link IndexView} 中。
      */
     private static boolean isStandardBeanValidationOrHibernateConstraint(DotName name) {
         String s = name.toString();
@@ -177,9 +178,7 @@ public class ValidationAnnotationScanner {
     }
 
     /**
-     * Applies schema properties for constraints that SmallRye's {@code BeanValidationScanner}
-     * misses or applies incompletely: Hibernate Validator's {@code @URL}, and Jakarta
-     * {@code @Pattern}/{@code @NotBlank} on collection element types.
+     * 为 SmallRye 遗漏的约束补充 schema 属性：{@code @URL}、集合元素上的 {@code @Pattern}/{@code @NotBlank} 等。
      *
      * @param classInfo the class containing the field
      * @param fieldName the name of the field
@@ -202,8 +201,7 @@ public class ValidationAnnotationScanner {
     }
 
     /**
-     * Builds a human-readable validation description for a field by scanning its validation annotations.
-     * Includes validation group context (when the constraint applies: create, update, patch).
+     * 扫描字段校验注解，生成可读校验描述（含 create/update/patch 分组上下文）。
      *
      * @param classInfo the class containing the field
      * @param fieldName the name of the field
@@ -306,11 +304,9 @@ public class ValidationAnnotationScanner {
     }
 
     /**
-     * Builds validation descriptions from class-level validation annotations.
-     * Returns a map of field name to validation description for fields affected by class-level constraints.
+     * 从类级约束注解构建受影响字段的校验描述映射。
      * <p>
-     * Note: Class-level constraints often affect multiple fields or cross-field validation.
-     * The mapping to specific fields is derived from the constraint's documented behavior.
+     * 类级约束常涉及多字段或跨字段校验，字段映射由约束的 {@code affectedFieldNames} 等定义。
      *
      * @param classInfo the class to scan
      * @return map of field name to validation description
