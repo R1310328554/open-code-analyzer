@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T07:55:42Z",
-  "files": [
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteUserLoginFailureProviderFactory.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteUserSessionProvider.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/RemoteUserSessionProviderFactory.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/transaction/AuthenticationSessionChangeLogTransaction.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/transaction/ClientSessionChangeLogTransaction.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/transaction/LoginFailureChangeLogTransaction.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/transaction/RemoteChangeLogTransaction.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/transaction/RemoteInfinispanKeycloakTransaction.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/transaction/SingleUseObjectTransaction.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/transaction/UserSessionChangeLogTransaction.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/remote/transaction/UserSessionTransaction.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/AuthClientSessionSetMapper.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/BaseRealmPredicate.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/ClientSessionFilterByUser.java",
-    "model/infinispan/src/main/java/org/keycloak/models/sessions/infinispan/stream/CollectionToStreamMapper.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4468,
-  "done": 1515
+  "done": 1530
 }
