@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:22:24Z",
-  "files": [
-    "pkg/storage/stores/shipper/bloomshipper/client.go",
-    "pkg/storage/stores/shipper/bloomshipper/config/config.go",
-    "pkg/storage/stores/shipper/bloomshipper/fetcher.go",
-    "pkg/storage/stores/shipper/bloomshipper/interval.go",
-    "pkg/storage/stores/shipper/bloomshipper/metrics.go",
-    "pkg/storage/stores/shipper/bloomshipper/resolver.go",
-    "pkg/storage/stores/shipper/bloomshipper/shipper.go",
-    "pkg/storage/stores/shipper/bloomshipper/store.go",
-    "pkg/storage/stores/shipper/indexshipper/boltdb/compactor/compacted_index.go",
-    "pkg/storage/stores/shipper/indexshipper/boltdb/compactor/index.go",
-    "pkg/storage/stores/shipper/indexshipper/boltdb/compactor/index_compactor.go",
-    "pkg/storage/stores/shipper/indexshipper/boltdb/compactor/iterator.go",
-    "pkg/storage/stores/shipper/indexshipper/boltdb/compactor/pool.go",
-    "pkg/storage/stores/shipper/indexshipper/boltdb/compactor/series.go",
-    "pkg/storage/stores/shipper/indexshipper/boltdb/compactor/table_compactor.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 232,
-  "done": 1305
+  "done": 1320
 }
