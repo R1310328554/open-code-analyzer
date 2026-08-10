@@ -10,10 +10,9 @@ import org.keycloak.representations.admin.v2.BaseClientRepresentation;
 import org.keycloak.representations.admin.v2.validation.ValidRedirectUris;
 
 /**
- * Validates redirect URIs according to Keycloak's redirect URI rules.
+ * {@link org.keycloak.representations.admin.v2.validation.ValidRedirectUris} 约束校验器：按 Keycloak 重定向 URI 规则校验客户端 redirectUris。
  * <p>
- * The validation is context-aware: when a root URL is set on the client,
- * relative paths are allowed. Without a root URL, only absolute URIs are valid.
+ * 上下文感知：已设置根 URL 时允许相对路径；未设置时仅接受绝对 URI。
  */
 public class ValidRedirectUrisValidator implements ConstraintValidator<ValidRedirectUris, BaseClientRepresentation> {
 
@@ -44,7 +43,7 @@ public class ValidRedirectUrisValidator implements ConstraintValidator<ValidRedi
     }
 
     /**
-     * Validates a single redirect URI.
+     * 校验单条重定向 URI。
      *
      * @param uri the redirect URI to validate
      * @param hasRootUrl whether the client has a root URL configured
@@ -57,19 +56,19 @@ public class ValidRedirectUrisValidator implements ConstraintValidator<ValidRedi
 
         String trimmedUri = uri.trim();
 
-        // Special cases that are always valid
+        // 特殊值始终有效
         if ("*".equals(trimmedUri) || "+".equals(trimmedUri) || "-".equals(trimmedUri)) {
             return null;
         }
 
         boolean hasScheme = SCHEME_PATTERN.matcher(trimmedUri).find();
 
-        // Without root URL, only absolute URIs are allowed
+        // 未设置根 URL 时仅允许绝对 URI
         if (!hasRootUrl && !hasScheme) {
             return "Redirect URI must be an absolute URI (include scheme like https://) when Root URL is not set";
         }
 
-        // Validate wildcard rules
+        // 校验通配符规则
         if (trimmedUri.contains("*")) {
             return validateWildcard(trimmedUri);
         }
@@ -78,29 +77,29 @@ public class ValidRedirectUrisValidator implements ConstraintValidator<ValidRedi
     }
 
     private static String validateWildcard(String uri) {
-        // Wildcard must be at the very end
+        // 通配符须位于 URI 末尾
         if (!uri.endsWith("*")) {
             return "Wildcard (*) must be at the end of the URI";
         }
 
-        // Only one wildcard allowed
+        // 仅允许一个通配符
         long wildcardCount = uri.chars().filter(ch -> ch == '*').count();
         if (wildcardCount > 1) {
             return "Only one wildcard (*) is allowed at the end of the URI";
         }
 
-        // Wildcard must be preceded by "/" (valid patterns: "/*", "/path/*")
+        // 通配符前须有 "/"（如 "/*"、"/path/*"）
         int wildcardIndex = uri.lastIndexOf('*');
         if (wildcardIndex > 0 && uri.charAt(wildcardIndex - 1) != '/') {
             return "Wildcard (*) must be preceded by a slash (/)";
         }
 
-        // No query parameters with wildcard
+        // 含通配符时不允许查询参数
         if (uri.contains("?")) {
             return "Wildcard URIs cannot contain query parameters";
         }
 
-        // No fragment with wildcard
+        // 含通配符时不允许片段（#）
         if (uri.contains("#")) {
             return "Wildcard URIs cannot contain fragments";
         }
@@ -109,7 +108,7 @@ public class ValidRedirectUrisValidator implements ConstraintValidator<ValidRedi
     }
 
     /**
-     * Checks if a redirect URI is valid.
+     * 判断单条重定向 URI 是否有效。
      *
      * @param uri the redirect URI to check
      * @param hasRootUrl whether the client has a root URL configured

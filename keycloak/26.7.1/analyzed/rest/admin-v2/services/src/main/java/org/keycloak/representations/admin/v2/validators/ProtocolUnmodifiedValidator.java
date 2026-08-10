@@ -10,6 +10,9 @@ import org.keycloak.representations.admin.v2.BaseClientRepresentation;
 import org.keycloak.representations.admin.v2.validation.ProtocolUnmodified;
 import org.keycloak.validation.jakarta.ValidationContext;
 
+/**
+ * {@link org.keycloak.representations.admin.v2.validation.ProtocolUnmodified} 约束校验器：更新客户端时 protocol 须与持久化值一致，禁止修改。
+ */
 public class ProtocolUnmodifiedValidator implements ConstraintValidator<ProtocolUnmodified, BaseClientRepresentation> {
 
     @Override

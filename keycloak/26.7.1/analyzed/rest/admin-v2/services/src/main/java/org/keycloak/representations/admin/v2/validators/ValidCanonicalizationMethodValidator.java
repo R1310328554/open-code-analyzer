@@ -8,6 +8,9 @@ import jakarta.validation.ConstraintValidatorContext;
 
 import org.keycloak.representations.admin.v2.validation.ValidCanonicalizationMethod;
 
+/**
+ * {@link org.keycloak.representations.admin.v2.validation.ValidCanonicalizationMethod} 约束校验器：SAML 签名规范化算法须为 XML-DSig 支持的 {@link javax.xml.crypto.dsig.CanonicalizationMethod} 常量。
+ */
 public class ValidCanonicalizationMethodValidator implements ConstraintValidator<ValidCanonicalizationMethod, String> {
 
     private static final Set<String> VALID = Set.of(

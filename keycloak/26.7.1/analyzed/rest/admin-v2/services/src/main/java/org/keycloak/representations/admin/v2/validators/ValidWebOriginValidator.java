@@ -7,6 +7,9 @@ import jakarta.validation.ConstraintValidatorContext;
 
 import org.keycloak.representations.admin.v2.validation.ValidWebOrigin;
 
+/**
+ * {@link org.keycloak.representations.admin.v2.validation.ValidWebOrigin} 约束校验器：Web Origin 须为 {@code scheme://host[:port]} 或 IPv6 形式，或为 {@code +}/{@code *} 特殊值。
+ */
 public class ValidWebOriginValidator implements ConstraintValidator<ValidWebOrigin, String> {
 
     private static final Pattern HOSTNAME_ORIGIN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9+.-]*://[a-zA-Z0-9.-]+(:[0-9]+)?$");

@@ -27,6 +27,9 @@ import org.keycloak.services.client.DefaultClientService;
 import org.keycloak.services.client.query.ClientQueryException;
 import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 
+/**
+ * {@link org.keycloak.admin.api.client.ClientsApi} 默认实现：客户端列表、创建与按 clientId 路由到 {@link DefaultClientApi}。
+ */
 public class DefaultClientsApi implements ClientsApi {
 
     private final KeycloakSession session;
@@ -34,6 +37,7 @@ public class DefaultClientsApi implements ClientsApi {
     private final RealmModel realm;
     private final ClientService clientService;
 
+    /** 绑定会话、realm 与权限评估器。 */
     public DefaultClientsApi(@Nonnull KeycloakSession session,
                              @Nonnull RealmModel realm,
                              @Nonnull AdminPermissionEvaluator permissions) {
@@ -43,6 +47,7 @@ public class DefaultClientsApi implements ClientsApi {
         this.clientService = new DefaultClientService(session, realm, permissions);
     }
 
+    /** {@inheritDoc} 分页/投影/排序查询客户端列表。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Override
@@ -56,6 +61,7 @@ public class DefaultClientsApi implements ClientsApi {
         }
     }
 
+    /** {@inheritDoc} 创建新客户端并返回 201。 */
     @POST
     @Override
     public Response createClient(@Valid BaseClientRepresentation client) {
@@ -65,10 +71,7 @@ public class DefaultClientsApi implements ClientsApi {
     }
 
     /**
-     * When the path {@code clientId} does not resolve, return 403 if the caller
-     * cannot list clients
-     * (anti client-ID phishing), matching {@code ClientsResource#getClient} for
-     * Admin API v1.
+     * 路径 {@code clientId} 不存在时，若调用方无权列出客户端则返回 403（防 clientId 钓鱼），与 Admin API v1 {@code ClientsResource#getClient} 一致。
      */
     private void enforceAntiPhishingIfClientMissing(String clientId) {
         if (realm.getClientByClientId(clientId) == null && !permissions.clients().canList()) {
@@ -76,6 +79,7 @@ public class DefaultClientsApi implements ClientsApi {
         }
     }
 
+    /** {@inheritDoc} 路由到单客户端子资源。 */
     @Path("{id}")
     @Override
     public ClientApi client(@PathParam("id") String clientId) {

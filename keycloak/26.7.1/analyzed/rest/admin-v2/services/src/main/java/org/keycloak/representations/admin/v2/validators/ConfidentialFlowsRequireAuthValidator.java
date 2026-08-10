@@ -9,6 +9,9 @@ import org.keycloak.representations.admin.v2.OIDCClientRepresentation;
 import org.keycloak.representations.admin.v2.OIDCClientRepresentation.Flow;
 import org.keycloak.representations.admin.v2.validation.ConfidentialFlowsRequireAuth;
 
+/**
+ * {@link org.keycloak.representations.admin.v2.validation.ConfidentialFlowsRequireAuth} 约束校验器：启用 {@code SERVICE_ACCOUNT} 或 {@code TOKEN_EXCHANGE} 登录流时，必须配置 {@link org.keycloak.representations.admin.v2.OIDCClientRepresentation.Auth}（机密客户端）。
+ */
 public class ConfidentialFlowsRequireAuthValidator implements ConstraintValidator<ConfidentialFlowsRequireAuth, OIDCClientRepresentation> {
 
     private static final Set<Flow> CONFIDENTIAL_FLOWS = Set.of(Flow.SERVICE_ACCOUNT, Flow.TOKEN_EXCHANGE);
