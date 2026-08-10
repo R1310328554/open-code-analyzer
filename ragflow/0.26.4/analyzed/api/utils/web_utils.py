@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Web 辅助：HTML→PDF、邮件 OTP、URL 校验与安全 JSON 解析。
+"""
+
 #
 
 import base64
@@ -33,6 +37,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
 
+# OTP 验证码长度
 OTP_LENGTH = 4
 OTP_TTL_SECONDS = 5 * 60  # valid for 5 minutes
 ATTEMPT_LIMIT = 5  # maximum attempts
@@ -54,6 +59,7 @@ from api.utils.file_response import (  # noqa: F401
 
 
 def apply_safe_file_response_headers(response, content_type: str | None, ext: str | None = None):
+    # 简化版安全文件响应头（无 filename）
     if content_type:
         response.headers.set("Content-Type", content_type)
     force_attachment = should_force_attachment(ext, content_type)
@@ -63,6 +69,7 @@ def apply_safe_file_response_headers(response, content_type: str | None, ext: st
     return response
 
 
+# Headless Chrome 将 URL/HTML 渲染为 PDF 字节
 def html2pdf(
     source: str,
     timeout: int = 2,
@@ -124,6 +131,7 @@ def __get_pdf_from_html(path: str, timeout: int, install_driver: bool, print_opt
 
 
 def is_valid_url(url: str) -> bool:
+    # 正则 + SSRF assert_url_is_safe 双重校验
     if not re.match(r"(https?)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]", url):
         return False
     from common.ssrf_guard import assert_url_is_safe
@@ -153,6 +161,7 @@ def get_float(req: dict, key: str, default: float | int = 10.0) -> float:
 
 
 async def send_email_html(to_email: str, subject: str, template_key: str, **context):
+    # 渲染模板并通过 aiosmtplib 发送 HTML 邮件
     body = await render_template_string(EMAIL_TEMPLATES.get(template_key), **context)
     msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = Header(subject, "utf-8")
@@ -186,6 +195,7 @@ async def send_invite_email(to_email, invite_url, tenant_id, inviter):
 
 
 def otp_keys(email: str):
+    # 返回 OTP 相关的 Redis key 元组
     email = (email or "").strip().lower()
     return (
         f"otp:{email}",
@@ -196,6 +206,7 @@ def otp_keys(email: str):
 
 
 def hash_code(code: str, salt: bytes) -> str:
+    # HMAC-SHA256 哈希 OTP
     import hashlib
     import hmac
 

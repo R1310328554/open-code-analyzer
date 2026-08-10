@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+启动校验：Python 版本检查与 NLTK 数据后台下载。
+"""
+
 #
 
 import logging
@@ -19,6 +23,7 @@ import sys
 
 
 def python_version_validation():
+    # 要求 Python ≥ 3.10，不满足则 exit(1)
     # Check python version
     required_python_version = (3, 10)
     if sys.version_info < required_python_version:
@@ -33,6 +38,7 @@ python_version_validation()
 
 # Download nltk data
 def download_nltk_data():
+    # 静默下载 wordnet 与 punkt_tab
     import nltk
 
     nltk.download("wordnet", halt_on_error=False, quiet=True)

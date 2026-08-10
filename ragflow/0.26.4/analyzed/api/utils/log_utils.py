@@ -12,4 +12,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+日志工具占位模块：保留 api.utils.log_utils 命名空间供后续扩展。
+"""
+
 #

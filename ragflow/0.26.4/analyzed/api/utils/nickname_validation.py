@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+用户昵称校验：长度、字符集与前端 NICKNAME_PATTERN 保持一致。
+"""
+
 #
 import logging
 import re
@@ -19,6 +23,7 @@ import re
 from api.constants import NICKNAME_MAX_LENGTH
 from common.constants import RetCode
 
+# 与前端 NICKNAME_PATTERN 一致：字母数字、空格及 . _ ' -
 # Match frontend NICKNAME_PATTERN: letters, numbers, space, and . _ ' -
 _NICKNAME_PATTERN = re.compile(r"^[\w ._'-]+$", re.UNICODE)
 
@@ -29,6 +34,7 @@ def _reject_nickname(message: str) -> tuple[str, int]:
 
 
 def validate_nickname(nickname: str | None) -> tuple[str | None, int | None]:
+    # 校验昵称；失败返回 (message, RetCode)，成功 (None, None)
     """
     Validate a user nickname/display name.
 

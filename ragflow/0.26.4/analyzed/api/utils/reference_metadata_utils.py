@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+检索引用元数据：合并请求/配置偏好并为 chunk 附加 document_metadata。
+"""
+
 #
 
 import logging
@@ -19,6 +23,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# 解析 include/fields；请求覆盖配置，兼容 legacy 键
 def resolve_reference_metadata_preferences(
     request_payload: dict | None = None,
     config_payload: dict | None = None,
@@ -61,6 +66,7 @@ def resolve_reference_metadata_preferences(
     return include_metadata, {f for f in fields if isinstance(f, str)}
 
 
+# 原地为 chunk 列表附加 document_metadata（懒加载 DocMetadataService）
 def enrich_chunks_with_document_metadata(
     chunks: list[dict],
     metadata_fields: set[str] | None = None,

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+文件工具：扩展名类型推断、缩略图、PDF 修复与用户路径消毒。
+"""
+
 #
 
 
@@ -33,6 +37,7 @@ from PIL import Image
 from api.constants import FILE_NAME_LEN_LIMIT, IMG_BASE64_PREFIX
 from api.db import FileType
 
+# 资源上限：拒绝超大 blob，防止 DoS/OOM
 # Robustness and resource limits: reject oversized inputs to avoid DoS and OOM.
 MAX_BLOB_SIZE_THUMBNAIL = 50 * 1024 * 1024  # 50 MiB for thumbnail generation
 MAX_BLOB_SIZE_PDF = 100 * 1024 * 1024  # 100 MiB for PDF repair / read
@@ -44,6 +49,7 @@ if LOCK_KEY_pdfplumber not in sys.modules:
 
 
 def _normalize_filename_for_type(filename):
+    # 提取 basename 供类型检测，超长或非法则失败
     """Extract a safe basename for type detection. Returns (normalized_str, True) or ("", False)."""
     if filename is None:
         return "", False
@@ -56,6 +62,7 @@ def _normalize_filename_for_type(filename):
 
 
 def filename_type(filename):
+    # 按扩展名返回 FileType 枚举值
     """Return file type from extension. Handles None, empty, path-only, and oversized names."""
     normalized, ok = _normalize_filename_for_type(filename)
     if not ok:
@@ -81,6 +88,7 @@ def filename_type(filename):
 
 
 def thumbnail_img(filename, blob):
+    # 为 PDF/图片生成 PNG 缩略图字节，失败返回 None
     """
     Generate thumbnail image bytes for PDF, image, or PPT. MySQL LongText max length is 65535.
 
@@ -146,6 +154,7 @@ def thumbnail_img(filename, blob):
 
 
 def thumbnail(filename, blob):
+    # 返回 base64 前缀 + 缩略图，无图则空串
     img = thumbnail_img(filename, blob)
     if img is not None:
         return IMG_BASE64_PREFIX + base64.b64encode(img).decode("utf-8")
@@ -154,6 +163,7 @@ def thumbnail(filename, blob):
 
 
 def repair_pdf_with_ghostscript(input_bytes):
+    # 调用 Ghostscript 尝试修复损坏 PDF
     """Attempt to repair corrupt PDF bytes via Ghostscript. Returns original bytes on failure or timeout."""
     if input_bytes is None or len(input_bytes) == 0:
         return input_bytes if input_bytes is not None else b""
@@ -196,6 +206,7 @@ def repair_pdf_with_ghostscript(input_bytes):
 
 
 def read_potential_broken_pdf(blob):
+    # 可读则原样返回，否则尝试 Ghostscript 修复
     """
     Return PDF bytes, optionally repaired via Ghostscript if initially unreadable.
 
@@ -236,6 +247,7 @@ def read_potential_broken_pdf(blob):
 
 
 def sanitize_path(raw_path: str | None) -> str:
+    # 规范化用户路径：去 ..、限制字符集
     """Normalize and sanitize a user-provided path segment.
 
     - Converts backslashes to forward slashes

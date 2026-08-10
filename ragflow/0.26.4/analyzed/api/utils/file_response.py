@@ -1,10 +1,15 @@
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
+"""
+文件 HTTP 响应工具：Content-Type/Content-Disposition 解析与安全预览/下载头设置。
+"""
+
 #
 
 import re
 from urllib.parse import urlencode
 
+# 扩展名 → MIME 类型映射
 CONTENT_TYPE_MAP = {
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "doc": "application/msword",
@@ -48,6 +53,7 @@ CONTENT_TYPE_MAP = {
     "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 }
 
+# 强制 attachment 的扩展名（防 XSS/嗅探）
 FORCE_ATTACHMENT_EXTENSIONS = {
     "htm",
     "html",
@@ -70,6 +76,7 @@ FORCE_ATTACHMENT_CONTENT_TYPES = {
 
 
 def should_force_attachment(ext: str | None, content_type: str | None = None) -> bool:
+    # 按扩展名或 MIME 判断是否必须 attachment 下载
     normalized_ext = (ext or "").lower().strip(".")
     if normalized_ext in FORCE_ATTACHMENT_EXTENSIONS:
         return True
@@ -78,6 +85,7 @@ def should_force_attachment(ext: str | None, content_type: str | None = None) ->
 
 
 def sanitize_content_disposition_filename(filename: str | None) -> str | None:
+    # 清洗文件名，仅保留安全字符
     if not filename:
         return None
     base = re.sub(r"[^\w.\-]", "_", str(filename).split("/")[-1].split("\\")[-1])
@@ -85,6 +93,7 @@ def sanitize_content_disposition_filename(filename: str | None) -> str | None:
 
 
 def resolve_attachment_content_type(ext: str | None = None, mime_type: str | None = None) -> tuple[str | None, str | None]:
+    # 由 mime 或扩展名解析 (content_type, ext)
     if mime_type:
         normalized_type = mime_type.lower().split(";")[0].strip()
         for known_ext, known_type in CONTENT_TYPE_MAP.items():
@@ -97,6 +106,7 @@ def resolve_attachment_content_type(ext: str | None = None, mime_type: str | Non
     return None, None
 
 
+# 设置 inline 预览响应头；HTML/SVG 等强制 attachment
 def apply_preview_file_response_headers(
     response,
     content_type: str | None,
@@ -117,6 +127,7 @@ def apply_preview_file_response_headers(
     return response
 
 
+# 设置 attachment 下载响应头
 def apply_download_file_response_headers(
     response,
     content_type: str | None,
@@ -138,6 +149,7 @@ def apply_download_file_response_headers(
 
 
 def agent_attachment_preview_path(attachment_id: str, *, ext: str | None = None, mime_type: str | None = None) -> str:
+    # 构造 Agent 附件预览 API 路径（可选 ext/mime 查询参数）
     query: dict[str, str] = {}
     if ext:
         query["ext"] = ext

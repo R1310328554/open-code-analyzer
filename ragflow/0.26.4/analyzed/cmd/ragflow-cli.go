@@ -14,6 +14,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// ragflow-cli：RAGFlow 命令行客户端入口，解析参数并运行交互或单条命令。
+
 //
 
 package main
@@ -28,6 +30,7 @@ import (
 	"ragflow/internal/cli"
 )
 
+// main 初始化日志、CLI 客户端，并监听 SIGINT/SIGTERM 优雅退出。
 func main() {
 
 	arguments, err := cli.ParseArgs(os.Args[1:])
@@ -41,7 +44,7 @@ func main() {
 	}
 
 	//arguments.Print()
-	logLevel := "warn" // Default to warn (quiet mode)
+	logLevel := "warn" // 默认 warn 安静模式
 	if arguments.Verbose {
 		logLevel = "info"
 	}

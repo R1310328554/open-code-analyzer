@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+分块图片存储：同 key 存在时纵向拼接 JPEG 后写回对象存储。
+"""
+
 #
 
 from io import BytesIO
@@ -22,6 +26,7 @@ from common import settings
 
 
 def store_chunk_image(bucket, name, image_binary):
+    # 对象已存在则上下拼接，否则直接 put
     if settings.STORAGE_IMPL.obj_exist(bucket, name):
         old_binary = settings.STORAGE_IMPL.get(bucket, name)
         old_img = Image.open(BytesIO(old_binary))

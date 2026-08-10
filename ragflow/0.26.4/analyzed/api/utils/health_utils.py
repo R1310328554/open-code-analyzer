@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+健康检查工具：探测 DB/Redis/文档引擎/存储及 MinIO、任务执行器存活状态。
+"""
+
 #
 from datetime import datetime
 import json
@@ -28,10 +32,12 @@ from common import settings
 
 
 def _ok_nok(ok: bool) -> str:
+    # 布尔结果转为 ok/nok 字符串
     return "ok" if ok else "nok"
 
 
 def check_db() -> tuple[bool, dict]:
+    # 执行 SELECT 1 探测关系型数据库
     st = timer()
     try:
         # lightweight probe; works for MySQL/Postgres
@@ -42,6 +48,7 @@ def check_db() -> tuple[bool, dict]:
 
 
 def check_redis() -> tuple[bool, dict]:
+    # 调用 REDIS_CONN.health()
     st = timer()
     try:
         ok = bool(REDIS_CONN.health())
@@ -51,6 +58,7 @@ def check_redis() -> tuple[bool, dict]:
 
 
 def check_doc_engine() -> tuple[bool, dict]:
+    # 调用 docStoreConn.health()
     st = timer()
     try:
         meta = settings.docStoreConn.health()
@@ -61,6 +69,7 @@ def check_doc_engine() -> tuple[bool, dict]:
 
 
 def check_storage() -> tuple[bool, dict]:
+    # 调用 STORAGE_IMPL.health()
     st = timer()
     try:
         settings.STORAGE_IMPL.health()
@@ -293,6 +302,7 @@ def check_task_executor_alive():
 
 
 def run_health_checks() -> tuple[dict, bool]:
+    # 聚合 db/redis/doc_engine/storage 四项检查
     result: dict[str, str | dict] = {}
 
     db_ok, db_meta = check_db()

@@ -12,12 +12,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+记忆体 API 辅助：ORM 对象转响应 dict 与 memory_type 位掩码换算。
+"""
+
 #
 from typing import List
 from common.constants import MemoryType
 
 
 def format_ret_data_from_memory(memory):
+    # 将 Memory 模型格式化为 API 响应字段
     return {
         "id": memory.id,
         "name": memory.name,
@@ -43,10 +48,12 @@ def format_ret_data_from_memory(memory):
 
 
 def get_memory_type_human(memory_type: int) -> List[str]:
+    # 位掩码 → 可读类型名列表
     return [mem_type.name.lower() for mem_type in MemoryType if memory_type & mem_type.value]
 
 
 def calculate_memory_type(memory_type_name_list: List[str]) -> int:
+    # 类型名列表 → 位掩码整数
     memory_type = 0
     type_value_map = {mem_type.name.lower(): mem_type.value for mem_type in MemoryType}
     for mem_type in memory_type_name_list:

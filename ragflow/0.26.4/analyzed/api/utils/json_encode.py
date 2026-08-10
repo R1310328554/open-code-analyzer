@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+JSON 编解码：CustomJSONEncoder 支持 datetime/Enum/BaseType 等扩展类型。
+"""
+
 #
 
 import datetime
@@ -21,6 +25,7 @@ from api.utils.common import string_to_bytes, bytes_to_string
 
 
 class BaseType:
+    # 可序列化基类：to_dict / to_dict_with_type
     def to_dict(self):
         return dict([(k.lstrip("_"), v) for k, v in self.__dict__.items()])
 
@@ -49,6 +54,7 @@ class BaseType:
 
 
 class CustomJSONEncoder(json.JSONEncoder):
+    # 扩展 json.JSONEncoder 处理项目内常见类型
     def __init__(self, **kwargs):
         self._with_type = kwargs.pop("with_type", False)
         super().__init__(**kwargs)
@@ -76,6 +82,7 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 
 def json_dumps(src, byte=False, indent=None, with_type=False):
+    # dumps 封装，可选返回 bytes
     dest = json.dumps(src, indent=indent, cls=CustomJSONEncoder, with_type=with_type)
     if byte:
         dest = string_to_bytes(dest)
@@ -83,6 +90,7 @@ def json_dumps(src, byte=False, indent=None, with_type=False):
 
 
 def json_loads(src, object_hook=None, object_pairs_hook=None):
+    # loads 封装，自动 bytes→str
     if isinstance(src, bytes):
         src = bytes_to_string(src)
     return json.loads(src, object_hook=object_hook, object_pairs_hook=object_pairs_hook)

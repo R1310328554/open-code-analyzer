@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+API 请求校验：Pydantic 模型、JSON/Query 解析与数据集/文档/文件请求 schema。
+"""
+
 #
 import logging
 import math
@@ -33,6 +37,7 @@ from api.utils.pagination_utils import validate_rest_api_page_size
 from common.constants import RetCode
 
 
+# 四阶段校验：Content-Type → JSON 语法 → 结构 → Pydantic
 async def validate_and_parse_json_request(
     request: Request, validator: type[BaseModel], *, extras: dict[str, Any] | None = None, exclude_unset: bool = False
 ) -> tuple[dict[str, Any] | None, str | None]:
@@ -113,6 +118,7 @@ async def validate_and_parse_json_request(
 
 
 def validate_and_parse_request_args(request: Request, validator: type[BaseModel], *, extras: dict[str, Any] | None = None) -> tuple[dict[str, Any] | None, str | None]:
+    # 校验并解析 query 参数，支持 ext JSON 字符串
     """
     Validates and parses request arguments against a Pydantic model.
 
@@ -188,6 +194,7 @@ def validate_and_parse_request_args(request: Request, validator: type[BaseModel]
 
 
 def format_validation_error_message(e: ValidationError) -> str:
+    # 将 Pydantic 错误格式化为可读多行字符串
     """
     Formats validation errors into a standardized string format.
 
@@ -229,6 +236,7 @@ def format_validation_error_message(e: ValidationError) -> str:
 
 
 def normalize_str(v: Any) -> Any:
+    # 字符串 strip + lower，非字符串原样返回
     """
     Normalizes string values to a standard format while preserving non-string inputs.
 
@@ -278,6 +286,7 @@ def normalize_str(v: Any) -> Any:
 
 
 def validate_uuid1_hex(v: Any) -> str:
+    # 校验 UUID 格式并返回 32 位 hex（不限 v1）
     """
     Validates and converts input to a UUID hexadecimal string.
 
@@ -333,13 +342,14 @@ def validate_uuid1_hex(v: Any) -> str:
 
 
 class Base(BaseModel):
+    # 严格基类：禁止未知字段 extra=forbid
     """Strict base model that rejects unknown request fields."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
 
 
 class RaptorConfig(Base):
-    """Dataset parser configuration for RAPTOR summary generation."""
+    """RAPTOR 摘要生成解析配置。"""
 
     use_raptor: Annotated[bool, Field(default=False)]
     prompt: Annotated[
@@ -361,7 +371,7 @@ class RaptorConfig(Base):
 
 
 class GraphragConfig(Base):
-    """Dataset parser configuration for GraphRAG generation."""
+    """GraphRAG 图谱生成解析配置。"""
 
     use_graphrag: Annotated[bool, Field(default=False)]
     entity_types: Annotated[list[str], Field(default_factory=lambda: ["organization", "person", "geo", "event", "category"])]
@@ -407,7 +417,7 @@ TableColumnRole = Literal["indexing", "metadata", "both"]
 
 
 class ParserConfig(Base):
-    """Complete parser configuration accepted by dataset APIs."""
+    """数据集 API 接受的完整解析器配置。"""
 
     auto_keywords: Annotated[int, Field(default=0, ge=0, le=32)]
     auto_questions: Annotated[int, Field(default=0, ge=0, le=10)]
@@ -526,7 +536,7 @@ class UpdateDocumentReq(Base):
 
 
 class CreateDatasetReq(Base):
-    """Request model for creating a dataset."""
+    """创建数据集请求模型。"""
 
     name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=DATASET_NAME_LIMIT), Field(...)]
     avatar: Annotated[str | None, Field(default=None, max_length=65535)]
@@ -797,7 +807,7 @@ class CreateDatasetReq(Base):
 
 
 class UpdateDatasetReq(CreateDatasetReq):
-    """Request model for updating a dataset."""
+    """更新数据集请求模型。"""
 
     dataset_id: Annotated[str, Field(...)]
     name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=DATASET_NAME_LIMIT), Field(default="")]
@@ -1052,6 +1062,7 @@ class ListFileReq(BaseModel):
 
 
 def validate_immutable_fields(update_doc_req: UpdateDocumentReq, doc):
+    # 禁止用户直接修改 chunk_count/token_count/progress
     """
     Validate that immutable fields have not been changed.
 
@@ -1082,6 +1093,7 @@ def validate_immutable_fields(update_doc_req: UpdateDocumentReq, doc):
 
 
 def validate_document_name(req_doc_name: str, doc, docs_from_name):
+    # 校验文档重命名：长度、扩展名不变、同库不重名
     """
     Validate document name update.
 
@@ -1114,6 +1126,7 @@ def validate_document_name(req_doc_name: str, doc, docs_from_name):
 
 
 def validate_chunk_method(doc, chunk_method=None):
+    # 校验分块方法；视觉/PPT 类文档暂不支持变更
     """
     Validate chunk method update.
 

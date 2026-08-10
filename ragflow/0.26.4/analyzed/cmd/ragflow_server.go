@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// ragflow_server：RAGFlow 多模式服务入口（api/admin/ingestor/syncer）。
+
 //
 
 package main
@@ -57,6 +59,7 @@ import (
 	"ragflow/internal/utility"
 )
 
+// serverArgs 命令行解析结果：运行模式、端口、配置路径等。
 type serverArgs struct {
 	mode          *string // admin | api | ingestor | syncer
 	helpFlag      bool
@@ -71,6 +74,7 @@ type serverArgs struct {
 	name          *string // server name
 }
 
+// parseArgs 扫描 os.Args 填充 serverArgs。
 func parseArgs() (*serverArgs, error) {
 	args := &serverArgs{}
 
@@ -150,6 +154,7 @@ func parseArgs() (*serverArgs, error) {
 	return args, nil
 }
 
+// printHelp 按模式输出用法说明。
 func printHelp(args *serverArgs) {
 	switch {
 	case args.mode == nil:
@@ -209,6 +214,7 @@ func printHelp(args *serverArgs) {
 	}
 }
 
+// main 初始化配置、DB/Redis/引擎，按模式启动对应服务。
 func main() {
 	arguments, err := parseArgs()
 	if err != nil {
@@ -399,6 +405,7 @@ func main() {
 	}
 }
 
+// runAdmin 启动管理端 HTTP 服务。
 func runAdmin(args *serverArgs) error {
 	adminService := admin.NewService()
 	adminHandler := admin.NewHandler(adminService)
@@ -471,6 +478,7 @@ func runAdmin(args *serverArgs) error {
 	return nil
 }
 
+// runIngestor 启动文档摄取 worker 并向 admin 上报心跳。
 func runIngestor(args *serverArgs) error {
 
 	ingestor := ingestion.NewIngestor(*args.name, 2, []string{"pdf", "docx", "txt"})
@@ -546,6 +554,7 @@ func runIngestor(args *serverArgs) error {
 	return nil
 }
 
+// runSyncer 启动文件同步服务并向 admin 上报心跳。
 func runSyncer(args *serverArgs) error {
 	config := server.GetConfig()
 	fileSyncer := syncer.NewSyncer(config.FileSyncer.MaxConcurrentSyncs, time.Duration(config.FileSyncer.SyncInterval)*time.Second)
@@ -621,6 +630,7 @@ func runSyncer(args *serverArgs) error {
 	return nil
 }
 
+// runAPI 初始化分词器与 NLP，启动对外 API HTTP 服务。
 func runAPI(args *serverArgs) error {
 	// Initialize admin status (default: unavailable=1)
 	local.InitAdminStatus(1, "admin server not connected")
@@ -652,6 +662,7 @@ func runAPI(args *serverArgs) error {
 	return nil
 }
 
+// startServer 装配 handler/router 并监听 HTTP。
 func startServer(config *server.Config) {
 
 	// Set Gin mode
@@ -944,6 +955,7 @@ type agentRunOptions struct {
 // (Redis down at boot, constructor panic, nil-Redis fallback) we
 // log and return a zero-value struct — the agent service falls back
 // to the in-memory path transparently.
+// buildAgentRunOptions 安装 Redis 版 Agent checkpoint/run tracker（可选）。
 func buildAgentRunOptions() agentRunOptions {
 	var out agentRunOptions
 	if !redis.IsEnabled() || redis.Get() == nil {
@@ -983,6 +995,7 @@ func buildAgentRunOptions() agentRunOptions {
 // ModelName from req.Engine). When the model provider is
 // unconfigured (nil dispatcher) the helper returns nil, which
 // reverts the audio package to its default stub.
+// configureTTSSynthesizer 将 TTS 请求路由到租户模型驱动。
 func configureTTSSynthesizer(modelProviderService *service.ModelProviderService) {
 	if modelProviderService == nil {
 		common.Info("agent: model provider service not initialised; TTS in no-op echo mode")
