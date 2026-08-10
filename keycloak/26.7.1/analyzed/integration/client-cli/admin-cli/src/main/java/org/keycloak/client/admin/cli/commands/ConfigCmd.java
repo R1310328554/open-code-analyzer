@@ -26,6 +26,10 @@ import static org.keycloak.client.admin.cli.KcAdmMain.V2_FLAG;
 
 
 /**
+ * {@code config} 命令组入口，聚合 credentials、truststore 等配置子命令。
+ * <p>
+ * v2 模式下还包含 openapi、editor 等额外子命令。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 
@@ -35,8 +39,10 @@ import static org.keycloak.client.admin.cli.KcAdmMain.V2_FLAG;
 } )
 public class ConfigCmd extends AbstractAuthOptionsCmd {
 
+    /** 子命令名称常量。 */
     public static final String NAME = "config";
 
+    /** 是否为 v2 模式（影响帮助文本中的子命令列表）。 */
     private final boolean v2;
 
     public ConfigCmd() {
@@ -62,6 +68,7 @@ public class ConfigCmd extends AbstractAuthOptionsCmd {
         return usage(v2);
     }
 
+    /** 生成 config 命令的使用说明文本。 */
     public static String usage() {
         return usage(false);
     }

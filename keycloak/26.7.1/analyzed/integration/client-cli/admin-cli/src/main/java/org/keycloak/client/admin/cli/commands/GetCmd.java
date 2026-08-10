@@ -26,6 +26,11 @@ import static org.keycloak.client.admin.cli.KcAdmMain.CMD;
 import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 
 /**
+ * {@code get} 子命令：从 Admin REST API 检索现有资源。
+ * <p>
+ * 默认将 JSON 响应 pretty-print 到 stdout，支持字段过滤、
+ * CSV 格式输出及分页参数（{@code --offset}/{@code --limit}）。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "get", description = "[ARGUMENTS]")

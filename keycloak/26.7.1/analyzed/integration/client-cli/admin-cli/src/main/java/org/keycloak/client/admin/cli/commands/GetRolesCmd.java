@@ -35,6 +35,11 @@ import static org.keycloak.client.cli.util.HttpUtil.composeResourceUrl;
 import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 
 /**
+ * {@code get-roles} 子命令：列出领域/客户端角色及其在用户、组、复合角色上的映射。
+ * <p>
+ * 支持 {@code --available}（可分配角色）、{@code --effective}（含传递复合角色）
+ * 及 {@code --all}（同时返回所有客户端角色）等过滤模式。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "get-roles", description = "[ARGUMENTS]")
@@ -84,8 +89,7 @@ public class GetRolesCmd extends GetCmd {
 
     @Override
     protected void processOptions() {
-        // hack args so that GetCmd option check doesn't fail
-        // set a placeholder
+        // 占位 uri，避免父类 GetCmd 的选项校验失败
         if (uri == null) {
             uri = "uri";
         }
@@ -133,6 +137,7 @@ public class GetRolesCmd extends GetCmd {
         super.processOptions();
     }
 
+    /** 根据目标类型（用户/组/复合角色/客户端）构造角色查询 URI 并委托父类执行 GET。 */
     @Override
     protected void process() {
         ConfigData config = loadConfig();
@@ -159,7 +164,7 @@ public class GetRolesCmd extends GetCmd {
                 uid = UserOperations.getIdFromUsername(adminRoot, realm, auth, uusername);
             }
             if (isClientSpecified()) {
-                // list client roles for a user
+                // 列出用户的客户端角色映射
                 if (cid == null) {
                     cid = ClientOperations.getIdFromClientId(adminRoot, realm, auth, cclientid);
                 }
@@ -171,7 +176,7 @@ public class GetRolesCmd extends GetCmd {
                     super.uri = composeResourceUrl(adminRoot, realm, "users/" + uid + "/role-mappings/clients/" + cid);
                 }
             } else {
-                // list realm roles for a user
+                // 列出用户的领域角色映射
                 if (available) {
                     super.uri = composeResourceUrl(adminRoot, realm, "users/" + uid + "/role-mappings/realm/available");
                 } else if (effective) {
@@ -187,7 +192,7 @@ public class GetRolesCmd extends GetCmd {
                 gid = GroupOperations.getIdFromPath(adminRoot, realm, auth, gpath);
             }
             if (isClientSpecified()) {
-                // list client roles for a group
+                // 列出组的客户端角色映射
                 if (cid == null) {
                     cid = ClientOperations.getIdFromClientId(adminRoot, realm, auth, cclientid);
                 }
@@ -199,7 +204,7 @@ public class GetRolesCmd extends GetCmd {
                     super.uri = composeResourceUrl(adminRoot, realm, "groups/" + gid + "/role-mappings/clients/" + cid);
                 }
             } else {
-                // list realm roles for a group
+                // 列出组的领域角色映射
                 if (available) {
                     super.uri = composeResourceUrl(adminRoot, realm, "groups/" + gid + "/role-mappings/realm/available");
                 } else if (effective) {
@@ -240,24 +245,24 @@ public class GetRolesCmd extends GetCmd {
             }
 
             if (isRoleSpecified()) {
-                // get specific client role
+                // 获取指定客户端角色
                 if (rolename == null) {
                     rolename = RoleOperations.getClientRoleNameFromId(adminRoot, realm, auth, cid, roleid);
                 }
                 super.uri = composeResourceUrl(adminRoot, realm, "clients/" + cid + "/roles/" + rolename);
             } else {
-                // list defined client roles
+                // 列出客户端已定义的全部角色
                 super.uri = composeResourceUrl(adminRoot, realm, "clients/" + cid + "/roles");
             }
         } else {
             if (isRoleSpecified()) {
-                // get specific realm role
+                // 获取指定领域角色
                 if (rolename == null) {
                     rolename = RoleOperations.getClientRoleNameFromId(adminRoot, realm, auth, cid, roleid);
                 }
                 super.uri = composeResourceUrl(adminRoot, realm, "roles/" + rolename);
             } else {
-                // list defined realm roles
+                // 列出领域已定义的全部角色
                 super.uri = composeResourceUrl(adminRoot, realm, "roles");
             }
         }

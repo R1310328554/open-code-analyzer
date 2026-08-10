@@ -32,17 +32,23 @@ import static org.keycloak.client.cli.util.IoUtil.printOut;
 
 
 /**
+ * {@code config credentials} 子命令：配置并持久化 Admin CLI 认证凭据。
+ * <p>
+ * 支持 {@code --status} 查询当前登录状态及令牌剩余有效期。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = ConfigCredentialsCmd.NAME, description = "--server SERVER_URL --realm REALM [ARGUMENTS]")
 public class ConfigCredentialsCmd extends BaseConfigCredentialsCmd {
 
+    /** 子命令名称。 */
     static final String NAME = "credentials";
 
     public ConfigCredentialsCmd() {
         super(KcAdmMain.COMMAND_STATE);
     }
 
+    /** 是否仅查询当前凭据/会话状态。 */
     @CommandLine.Option(names = "--status", description = "Validity of the connection with server")
     boolean status;
 
@@ -51,6 +57,7 @@ public class ConfigCredentialsCmd extends BaseConfigCredentialsCmd {
         return super.nothingToDo() && !status;
     }
 
+    /** 执行凭据配置或输出登录状态。 */
     @Override
     public void process() {
         if (status) {
@@ -66,6 +73,7 @@ public class ConfigCredentialsCmd extends BaseConfigCredentialsCmd {
         }
     }
 
+    /** 供测试访问密码字段。 */
     String getPassword() {
         return this.password;
     }

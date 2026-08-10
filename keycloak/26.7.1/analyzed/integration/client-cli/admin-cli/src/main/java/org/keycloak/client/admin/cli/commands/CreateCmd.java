@@ -27,6 +27,11 @@ import static org.keycloak.client.cli.util.OsUtil.OS_ARCH;
 import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 
 /**
+ * {@code create} 子命令：通过 Admin REST API 在服务器上创建新资源。
+ * <p>
+ * 支持从文件/stdin 读取 JSON 模板、内联 body、{@code --set} 属性覆盖，
+ * 以及创建后输出完整资源或仅输出 ID。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "create", description = "Command to create new resources")

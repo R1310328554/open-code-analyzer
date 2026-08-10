@@ -29,16 +29,25 @@ import org.keycloak.client.cli.common.Globals;
 import org.keycloak.client.cli.util.OsUtil;
 
 /**
+ * Keycloak 管理 CLI（{@code kcadm.sh}/{@code kcadm.bat}）的入口类。
+ * <p>
+ * 根据是否携带 {@link #V2_FLAG} 分发到 v1 或 v2 命令树，并处理 shell 补全
+ * 与叶子命令帮助显示逻辑。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class KcAdmMain {
 
+    /** 默认配置文件绝对路径（用户主目录下）。 */
     public static final String DEFAULT_CONFIG_FILE_PATH = System.getProperty("user.home") + "/.keycloak/kcadm.config";
 
+    /** 帮助文本中展示的默认配置文件路径占位符。 */
     public static final String DEFAULT_CONFIG_FILE_STRING = OsUtil.OS_ARCH.isWindows() ? "%HOMEDRIVE%%HOMEPATH%\\.keycloak\\kcadm.config" : "~/.keycloak/kcadm.config";
 
+    /** 当前平台的 CLI 可执行文件名。 */
     public static final String CMD = OsUtil.OS_ARCH.isWindows() ? "kcadm.bat" : "kcadm.sh";
 
+    /** 供子命令共享的全局命令状态（配置路径、令牌作用域等）。 */
     public static final CommandState COMMAND_STATE = new CommandState() {
 
         @Override
@@ -58,10 +67,13 @@ public class KcAdmMain {
 
     };
 
+    /** 启用 v2 命令模式的命令行标志。 */
     public static final String V2_FLAG = "--v2";
 
+    /** picocli 内部补全触发标志。 */
     private static final String COMPLETE_FLAG = "__complete";
 
+    /** CLI 主入口：路由到 v1/v2 命令树或执行补全。 */
     public static void main(String[] args) {
         if (!containsArg(args, V2_FLAG)) {
             Globals.main(args, new KcAdmCmd(), CMD, DEFAULT_CONFIG_FILE_STRING);
@@ -80,21 +92,16 @@ public class KcAdmMain {
     }
 
     /**
-     * This assures that the root command or the config command shows help if user (by mistake?)
-     * does not use the {@code --help} option on the leaf command, e.g.
-     * <code>
-     * kcadm.sh --v2 --help client
-     * kcadm.sh --v2 config --help editor
-     * </code>
-     * They require special treatment as they extend the {@link BaseGlobalOptionsCmd} unlike v2 commands generated
-     * from the OpenAPI specification.
-     * Additionally, this also improves default behavior: whenever the help is requested, we show it for the leaf command.
-     * Reasoning here is that if users write commands like:
+     * 将 {@code --help}/{@code -h} 标志移至参数末尾，使帮助显示针对叶子命令。
+     * <p>
+     * 例如用户输入 {@code kcadm.sh --v2 --help client list} 时，
+     * 应展示 {@code list} 子命令的帮助而非根命令帮助。
+     * 根命令与 {@code config} 等继承 {@link BaseGlobalOptionsCmd} 的命令需此特殊处理，
+     * 与 OpenAPI 生成的 v2 子命令行为保持一致。
      * <pre>{@code
      * kcadm.sh --v2 --help client list
      * kcadm.sh --v2 client --help list
      * }</pre>
-     * they probably want to see the {@code list} command help, or they would stop typing after the {@code --help}.
      */
     public static void showHelpForLeafCommand(String[] v2Args) {
         if (v2Args.length > 1) {

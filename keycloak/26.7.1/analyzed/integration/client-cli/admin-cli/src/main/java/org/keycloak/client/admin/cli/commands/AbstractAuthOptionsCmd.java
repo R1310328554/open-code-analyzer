@@ -19,10 +19,13 @@ package org.keycloak.client.admin.cli.commands;
 import picocli.CommandLine.Option;
 
 /**
+ * 管理 REST 认证选项的抽象基类，扩展目标领域支持并增加 Admin REST 根 URL 配置。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public abstract class AbstractAuthOptionsCmd extends AbstractTargetAuthOptionsCmd {
 
+    /** Admin REST API 根 URL（非默认时使用，如 {@code http://localhost:8080/admin}）。 */
     @Option(names = {"-a", "--admin-root"}, description = "URL of Admin REST endpoint root if not default - e.g. http://localhost:8080/admin")
     String adminRestRoot;
 

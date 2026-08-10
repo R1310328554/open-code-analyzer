@@ -40,6 +40,11 @@ import static org.keycloak.client.cli.util.ConfigUtil.loadConfig;
 import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 
 /**
+ * {@code add-roles} 子命令：为用户、组或复合角色分配领域/客户端角色。
+ * <p>
+ * 支持通过用户名/ID、组名/路径/ID 或复合角色名/ID 定位目标，
+ * 并可指定客户端以分配客户端角色而非领域角色。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "add-roles", description = "[ARGUMENTS]")
@@ -78,6 +83,7 @@ public class AddRolesCmd extends AbstractAuthOptionsCmd {
     @Option(names = "--roleid", description = "Role's 'id' attribute")
     List<String> roleIds = new ArrayList<>();
 
+    /** 执行角色分配：校验选项互斥性后调用相应 Operations 类完成 REST 调用。 */
     @Override
     protected void process() {
         if (uid != null && uusername != null) {
@@ -142,7 +148,7 @@ public class AddRolesCmd extends AbstractAuthOptionsCmd {
                 uid = UserOperations.getIdFromUsername(adminRoot, realm, auth, uusername);
             }
             if (isClientSpecified()) {
-                // list client roles for a user
+                // 列出并为用户分配客户端角色
                 if (cid == null) {
                     cid = ClientOperations.getIdFromClientId(adminRoot, realm, auth, cclientid);
                 }
@@ -150,7 +156,7 @@ public class AddRolesCmd extends AbstractAuthOptionsCmd {
                 List<ObjectNode> roles = RoleOperations.getClientRoles(adminRoot, realm, cid, auth);
                 Set<ObjectNode> rolesToAdd = getRoleRepresentations(roleNames, roleIds, new LocalSearch(roles));
 
-                // now add all the roles
+                // 批量添加所选角色
                 UserOperations.addClientRoles(adminRoot, realm, auth, uid, cid, new ArrayList<>(rolesToAdd));
 
             } else {
@@ -158,7 +164,7 @@ public class AddRolesCmd extends AbstractAuthOptionsCmd {
                 Set<ObjectNode> rolesToAdd = getRoleRepresentations(roleNames, roleIds,
                         new LocalSearch(RoleOperations.getRealmRolesAsNodes(adminRoot, realm, auth)));
 
-                // now add all the roles
+                // 批量添加所选角色
                 UserOperations.addRealmRoles(adminRoot, realm, auth, uid, new ArrayList<>(rolesToAdd));
             }
 
@@ -169,7 +175,7 @@ public class AddRolesCmd extends AbstractAuthOptionsCmd {
                 gid = GroupOperations.getIdFromPath(adminRoot, realm, auth, gpath);
             }
             if (isClientSpecified()) {
-                // list client roles for a group
+                // 列出并为组分配客户端角色
                 if (cid == null) {
                     cid = ClientOperations.getIdFromClientId(adminRoot, realm, auth, cclientid);
                 }
@@ -177,7 +183,7 @@ public class AddRolesCmd extends AbstractAuthOptionsCmd {
                 List<ObjectNode> roles = RoleOperations.getClientRoles(adminRoot, realm, cid, auth);
                 Set<ObjectNode> rolesToAdd = getRoleRepresentations(roleNames, roleIds, new LocalSearch(roles));
 
-                // now add all the roles
+                // 批量添加所选角色
                 GroupOperations.addClientRoles(adminRoot, realm, auth, gid, cid, new ArrayList<>(rolesToAdd));
 
             } else {
@@ -185,7 +191,7 @@ public class AddRolesCmd extends AbstractAuthOptionsCmd {
                 Set<ObjectNode> rolesToAdd = getRoleRepresentations(roleNames, roleIds,
                         new LocalSearch(RoleOperations.getRealmRolesAsNodes(adminRoot, realm, auth)));
 
-                // now add all the roles
+                // 批量添加所选角色
                 GroupOperations.addRealmRoles(adminRoot, realm, auth, gid, new ArrayList<>(rolesToAdd));
             }
 
@@ -194,7 +200,7 @@ public class AddRolesCmd extends AbstractAuthOptionsCmd {
                 rid = RoleOperations.getIdFromRoleName(adminRoot, realm, auth, rname);
             }
             if (isClientSpecified()) {
-                // list client roles for a composite role
+                // 列出并为复合角色分配客户端角色
                 if (cid == null) {
                     cid = ClientOperations.getIdFromClientId(adminRoot, realm, auth, cclientid);
                 }
@@ -202,14 +208,14 @@ public class AddRolesCmd extends AbstractAuthOptionsCmd {
                 List<ObjectNode> roles = RoleOperations.getClientRoles(adminRoot, realm, cid, auth);
                 Set<ObjectNode> rolesToAdd = getRoleRepresentations(roleNames, roleIds, new LocalSearch(roles));
 
-                // now add all the roles
+                // 批量添加所选角色
                 RoleOperations.addClientRoles(adminRoot, realm, auth, rid, new ArrayList<>(rolesToAdd));
 
             } else {
                 Set<ObjectNode> rolesToAdd = getRoleRepresentations(roleNames, roleIds,
                         new LocalSearch(RoleOperations.getRealmRolesAsNodes(adminRoot, realm, auth)));
 
-                // now add all the roles
+                // 批量添加所选角色
                 RoleOperations.addRealmRoles(adminRoot, realm, auth, rid, new ArrayList<>(rolesToAdd));
             }
 
@@ -218,10 +224,11 @@ public class AddRolesCmd extends AbstractAuthOptionsCmd {
         }
     }
 
+    /** 按名称或 ID 从可用角色列表中查找待添加的角色表示对象。 */
     private Set<ObjectNode> getRoleRepresentations(List<String> roleNames, List<String> roleIds, LocalSearch roleSearch) {
         Set<ObjectNode> rolesToAdd = new HashSet<>();
 
-        // now we process roles
+        // 按名称解析角色
         for (String name : roleNames) {
             ObjectNode r = roleSearch.exactMatchOne(name, "name");
             if (r == null) {

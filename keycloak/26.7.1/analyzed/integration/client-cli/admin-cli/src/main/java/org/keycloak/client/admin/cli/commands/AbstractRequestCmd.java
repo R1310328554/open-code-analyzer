@@ -67,44 +67,63 @@ import static org.keycloak.client.cli.util.OutputUtil.printAsCsv;
 import static org.keycloak.client.cli.util.ParseUtil.parseKeyVal;
 
 /**
+ * HTTP 请求类命令的抽象基类（get/create/update/delete 共用）。
+ * <p>
+ * 负责解析 CLI 选项、构造请求 URL 与请求体、执行认证、
+ * 合并远程资源（PUT 时）、应用属性操作并格式化输出响应。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public abstract class AbstractRequestCmd extends AbstractAuthOptionsCmd {
 
+    /** {@code --file} 指定的输入文件路径。 */
     String file;
 
+    /** {@code --body} 指定的内联 JSON 内容。 */
     String body;
 
+    /** {@code --fields} 字段过滤模式。 */
     String fields;
 
+    /** 是否打印响应头。 */
     boolean printHeaders;
 
+    /** 创建后仅输出新资源 ID。 */
     boolean returnId;
 
+    /** 是否将响应体输出到 stdout。 */
     boolean outputResult;
 
+    /** 是否压缩 JSON 输出（不 pretty-print）。 */
     boolean compressed;
 
+    /** CSV 输出时是否不加引号。 */
     boolean unquoted;
 
+    /** PUT 时是否先 GET 远程资源再合并本地修改。 */
     boolean mergeMode;
 
+    /** 禁用自动合并模式。 */
     boolean noMerge;
 
+    /** 分页偏移量（对应 {@code first} 查询参数）。 */
     Integer offset;
 
+    /** 分页上限（对应 {@code max} 查询参数）。 */
     Integer limit;
 
+    /** 输出格式：json 或 csv。 */
     String format = "json";
 
     OutputFormat outputFormat;
 
+    /** HTTP 动词：get/post/put/delete。 */
     String httpVerb;
 
     @Option(names = {"-h", "--header"}, description = "Set request header NAME to VALUE")
     List<String> rawHeaders = new LinkedList<>();
 
-    // to maintain relative positions of set and delete operations
+    /** 封装 {@code --set}/{@code --delete} 操作以保持相对顺序。 */
     static class AttributeOperations {
         @Option(names = {"-s", "--set"}, required = true) String set;
         @Option(names = {"-d", "--delete"}, required = true) String delete;
@@ -123,6 +142,7 @@ public abstract class AbstractRequestCmd extends AbstractAuthOptionsCmd {
     Headers headers = new Headers();
     Map<String, String> filter = new HashMap<>();
 
+    /** 解析并校验 CLI 选项，构建属性操作、请求头与查询参数。 */
     @Override
     protected void processOptions() {
         super.processOptions();
@@ -179,9 +199,10 @@ public abstract class AbstractRequestCmd extends AbstractAuthOptionsCmd {
                 && rawAttributeOperations.isEmpty() && rawFilters.isEmpty() && rawHeaders.isEmpty();
     }
 
+    /** 执行 HTTP 请求：组装请求体、认证、合并远程资源、发送请求并输出结果。 */
     @Override
     protected void process() {
-        // see if Content-Type header is explicitly set to non-json value
+        // 检查 Content-Type 是否显式设为非 JSON
         Header ctype = headers.get("content-type");
 
         InputStream content = null;
@@ -260,7 +281,7 @@ public abstract class AbstractRequestCmd extends AbstractAuthOptionsCmd {
             CmdStdinContext<JsonNode> ctxremote = new CmdStdinContext<>();
             ctxremote.setResult(result);
 
-            // merge local representation over remote one
+            // 将本地表示合并到远程资源之上
             if (ctx.getResult() != null) {
                 ReflectionUtil.merge(ctx.getResult(), (ObjectNode) ctxremote.getResult());
             }
@@ -290,7 +311,7 @@ public abstract class AbstractRequestCmd extends AbstractAuthOptionsCmd {
             returnFields = new ReturnFields(fields);
         }
 
-        // make sure content type is set
+        // 确保 Content-Type 已设置
         if (content != null) {
             headers.addIfMissing("Content-Type", "application/json");
         }
@@ -313,7 +334,7 @@ public abstract class AbstractRequestCmd extends AbstractAuthOptionsCmd {
             throw new RuntimeException("HTTP request error: " + e.getMessage(), e);
         }
 
-        // output response
+        // 输出响应
         if (printHeaders) {
             printOut(response.getStatus());
             for (Header header : response.getHeaders()) {
@@ -345,7 +366,7 @@ public abstract class AbstractRequestCmd extends AbstractAuthOptionsCmd {
 
         if (outputResult) {
             if (isCreateOrUpdate() && (response.getStatusCode() == 204 || id != null) && isGetByID(uri)) {
-                // get object for id
+                // 创建成功后按 ID 重新 GET 完整资源
                 headers = new Headers();
                 if (auth != null) {
                     headers.add("Authorization", auth);
@@ -371,7 +392,7 @@ public abstract class AbstractRequestCmd extends AbstractAuthOptionsCmd {
                         rootNode = applyFieldFilter(MAPPER, rootNode, returnFields);
                     }
                     if (outputFormat == OutputFormat.JSON) {
-                        // now pretty print it to output
+                        // 格式化输出 JSON 响应
                         MAPPER.writeValue(abos, rootNode);
                     } else {
                         printAsCsv(rootNode, returnFields, unquoted);
@@ -384,8 +405,7 @@ public abstract class AbstractRequestCmd extends AbstractAuthOptionsCmd {
                     printErr("Cannot create CSV nor filter returned fields because the response is " + (compressed ? "compressed":"not json"));
                     return;
                 }
-                // in theory the user could explicitly request json, but this could be a non-json response
-                // since there's no option for raw and we don't differentiate the default, there's no error about this
+                // 非 JSON 或压缩响应时直接流式复制
                 copyStream(response.getBody(), abos);
             }
         }
@@ -396,14 +416,17 @@ public abstract class AbstractRequestCmd extends AbstractAuthOptionsCmd {
         }
     }
 
+    /** 当前请求是否为 PUT 更新操作。 */
     private boolean isUpdate() {
         return "put".equals(httpVerb);
     }
 
+    /** 当前请求是否为 POST 创建或 PUT 更新操作。 */
     private boolean isCreateOrUpdate() {
         return "post".equals(httpVerb) || "put".equals(httpVerb);
     }
 
+    /** 判断 URI 是否为按 ID 获取单个资源的请求。 */
     private boolean isGetByID(String url) {
         return !"clients-initial-access".equals(url);
     }

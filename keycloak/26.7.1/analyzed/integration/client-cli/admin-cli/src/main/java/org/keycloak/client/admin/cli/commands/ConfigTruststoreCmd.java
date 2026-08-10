@@ -22,6 +22,8 @@ import org.keycloak.client.cli.common.BaseConfigTruststoreCmd;
 import picocli.CommandLine.Command;
 
 /**
+ * {@code config truststore} 子命令：配置 CLI 访问 Keycloak 时使用的 TLS 信任库。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "truststore", description = "PATH [ARGUMENTS]")

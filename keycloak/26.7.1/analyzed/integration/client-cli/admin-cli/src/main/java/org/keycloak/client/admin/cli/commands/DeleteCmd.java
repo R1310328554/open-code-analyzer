@@ -26,6 +26,10 @@ import static org.keycloak.client.cli.util.OsUtil.PROMPT;
 
 
 /**
+ * {@code delete} 子命令：通过 Admin REST API 删除服务器上的资源。
+ * <p>
+ * 继承 {@link CreateCmd} 的请求体与输出选项，HTTP 动词为 DELETE。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 @Command(name = "delete", description = "CLIENT [GLOBAL_OPTIONS]")
