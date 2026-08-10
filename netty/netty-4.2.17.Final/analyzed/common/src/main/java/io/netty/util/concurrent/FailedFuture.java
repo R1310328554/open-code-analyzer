@@ -22,9 +22,13 @@ import io.netty.util.internal.PlatformDependent;
  * The {@link CompleteFuture} which is failed already.  It is
  * recommended to use {@link EventExecutor#newFailedFuture(Throwable)}
  * instead of calling the constructor of this future.
+ *
+ * <p>创建即处于失败状态的 {@link CompleteFuture}；{@link #isSuccess()} 恒为 {@code false}，
+ * {@link #sync()} 会直接抛出失败原因。推荐通过 {@link EventExecutor#newFailedFuture(Throwable)} 创建。</p>
  */
 public final class FailedFuture<V> extends CompleteFuture<V> {
 
+    /** 失败原因，不可变。 */
     private final Throwable cause;
 
     /**
@@ -32,6 +36,8 @@ public final class FailedFuture<V> extends CompleteFuture<V> {
      *
      * @param executor the {@link EventExecutor} associated with this future
      * @param cause   the cause of failure
+     *
+     * <p>构造已失败的 Future，关联指定 {@link EventExecutor} 与失败原因。</p>
      */
     public FailedFuture(EventExecutor executor, Throwable cause) {
         super(executor);
@@ -48,18 +54,21 @@ public final class FailedFuture<V> extends CompleteFuture<V> {
         return false;
     }
 
+    /** 同步等待并重新抛出失败原因（不阻塞，因已完成）。 */
     @Override
     public Future<V> sync() {
         PlatformDependent.throwException(cause);
         return this;
     }
 
+    /** 不可中断版 sync，同样直接抛出失败原因。 */
     @Override
     public Future<V> syncUninterruptibly() {
         PlatformDependent.throwException(cause);
         return this;
     }
 
+    /** 失败 Future 无成功结果，返回 {@code null}。 */
     @Override
     public V getNow() {
         return null;

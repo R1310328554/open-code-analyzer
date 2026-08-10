@@ -17,6 +17,12 @@ package io.netty.util.concurrent;
 
 import io.netty.util.internal.ObjectUtil;
 
+/**
+ * 包装普通 {@link Runnable}，在线程任务结束时自动调用 {@link FastThreadLocal#removeAll()}。
+ *
+ * <p>由 {@link DefaultThreadFactory} 和 {@link FastThreadLocalThread} 构造器注入，
+ * 防止 FastThreadLocal 在线程池复用时泄漏。</p>
+ */
 final class FastThreadLocalRunnable implements Runnable {
     private final Runnable runnable;
 
@@ -24,6 +30,7 @@ final class FastThreadLocalRunnable implements Runnable {
         this.runnable = ObjectUtil.checkNotNull(runnable, "runnable");
     }
 
+    /** 执行任务，finally 中清理当前线程所有 FastThreadLocal。 */
     @Override
     public void run() {
         try {
@@ -33,6 +40,7 @@ final class FastThreadLocalRunnable implements Runnable {
         }
     }
 
+    /** 若尚未包装则创建 {@link FastThreadLocalRunnable}，避免重复包装。 */
     static Runnable wrap(Runnable runnable) {
         return runnable instanceof FastThreadLocalRunnable ? runnable : new FastThreadLocalRunnable(runnable);
     }

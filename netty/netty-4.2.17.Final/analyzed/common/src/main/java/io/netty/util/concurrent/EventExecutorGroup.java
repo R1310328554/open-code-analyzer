@@ -26,12 +26,16 @@ import java.util.concurrent.TimeUnit;
  * via its {@link #next()} method. Besides this, it is also responsible for handling their
  * life-cycle and allows shutting them down in a global fashion.
  *
+ * <p>EventExecutor 组：通过 {@link #next()} 分配 executor，统一管理生命周期与优雅关闭，
+ * 并扩展 {@link ScheduledExecutorService} 以支持 Netty 风格的 {@link Future} 返回值。</p>
  */
 public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<EventExecutor> {
 
     /**
      * Returns {@code true} if and only if all {@link EventExecutor}s managed by this {@link EventExecutorGroup}
      * are being {@linkplain #shutdownGracefully() shut down gracefully} or was {@linkplain #isShutdown() shut down}.
+     *
+     * <p>是否正在或已经完成优雅关闭流程。</p>
      */
     boolean isShuttingDown();
 
@@ -39,6 +43,8 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
      * Shortcut method for {@link #shutdownGracefully(long, long, TimeUnit)} with sensible default values.
      *
      * @return the {@link #terminationFuture()}
+     *
+     * <p>使用默认 quietPeriod/timeout 的优雅关闭快捷方法。</p>
      */
     Future<?> shutdownGracefully();
 
@@ -55,12 +61,17 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
      * @param unit        the unit of {@code quietPeriod} and {@code timeout}
      *
      * @return the {@link #terminationFuture()}
+     *
+     * <p>优雅关闭：quietPeriod 内无新任务提交才开始关闭；quiet 期间若有新任务则重新计时；
+     * timeout 为最长等待时间。返回 {@link #terminationFuture()} 以便等待完全终止。</p>
      */
     Future<?> shutdownGracefully(long quietPeriod, long timeout, TimeUnit unit);
 
     /**
      * Returns the {@link Future} which is notified when all {@link EventExecutor}s managed by this
      * {@link EventExecutorGroup} have been terminated.
+     *
+     * <p>所有子 executor 终止完成后会通知的 Future。</p>
      */
     Future<?> terminationFuture();
 
@@ -80,6 +91,8 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
 
     /**
      * Returns one of the {@link EventExecutor}s managed by this {@link EventExecutorGroup}.
+     *
+     * <p>按组内策略返回下一个 {@link EventExecutor}（如轮询）。</p>
      */
     EventExecutor next();
 
@@ -103,6 +116,9 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
      * be surprised by scheduled tasks running "early").
      *
      * @return The ticker for this scheduler
+     *
+     * <p>本组使用的时钟源；默认同 {@link Ticker#systemTicker()}。测试时可替换为 {@link MockTicker}，
+     * 调度逻辑应与此 ticker 保持一致。</p>
      */
     default Ticker ticker() {
         return Ticker.systemTicker();

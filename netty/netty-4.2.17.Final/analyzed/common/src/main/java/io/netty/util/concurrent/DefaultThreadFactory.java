@@ -25,12 +25,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A {@link ThreadFactory} implementation with a simple naming rule.
+ *
+ * <p>Netty 默认线程工厂：生成 {@link FastThreadLocalThread}，线程名格式为
+ * {@code poolName-poolId-threadId}，并统一设置 daemon 与 priority。
+ * {@link DefaultThreadFactory} 是 {@link FastThreadLocal} 快路径生效的前提。</p>
  */
 public class DefaultThreadFactory implements ThreadFactory {
 
+    /** 全局线程池序号，用于区分不同工厂实例。 */
     private static final AtomicInteger poolId = new AtomicInteger();
 
+    /** 本工厂内线程递增序号。 */
     private final AtomicInteger nextId = new AtomicInteger();
+    /** 线程名前缀（含 poolId）。 */
     private final String prefix;
     private final boolean daemon;
     private final int priority;
@@ -64,6 +71,9 @@ public class DefaultThreadFactory implements ThreadFactory {
         this(toPoolName(poolType), daemon, priority);
     }
 
+    /**
+     * 从类型推导线程池名称：单字符转小写，CamelCase 首字母小写化等。
+     */
     public static String toPoolName(Class<?> poolType) {
         ObjectUtil.checkNotNull(poolType, "poolType");
 
@@ -100,6 +110,9 @@ public class DefaultThreadFactory implements ThreadFactory {
         this(poolName, daemon, priority, null);
     }
 
+    /**
+     * 创建新线程：Runnable 经 {@link FastThreadLocalRunnable#wrap} 包装以在线程结束时清理 FastThreadLocal。
+     */
     @Override
     public Thread newThread(Runnable r) {
         Thread t = newThread(FastThreadLocalRunnable.wrap(r), prefix + nextId.incrementAndGet());
@@ -113,10 +126,12 @@ public class DefaultThreadFactory implements ThreadFactory {
             }
         } catch (Exception ignored) {
             // Doesn't matter even if failed to set.
+            // 设置 daemon/priority 失败可忽略
         }
         return t;
     }
 
+    /** 实际创建 {@link FastThreadLocalThread}，子类可覆盖以定制线程类型。 */
     protected Thread newThread(Runnable r, String name) {
         return new FastThreadLocalThread(threadGroup, r, name);
     }

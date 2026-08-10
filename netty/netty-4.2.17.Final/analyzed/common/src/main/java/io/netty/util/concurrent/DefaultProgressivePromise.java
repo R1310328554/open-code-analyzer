@@ -18,6 +18,12 @@ package io.netty.util.concurrent;
 
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
+/**
+ * {@link DefaultPromise} 的渐进式扩展，支持在完成前多次报告进度。
+ *
+ * <p>通过 {@link #setProgress}/{@link #tryProgress} 通知已注册的
+ * {@link GenericProgressiveFutureListener}；{@code total < 0} 表示总量未知。</p>
+ */
 public class DefaultProgressivePromise<V> extends DefaultPromise<V> implements ProgressivePromise<V> {
 
     /**
@@ -27,17 +33,26 @@ public class DefaultProgressivePromise<V> extends DefaultPromise<V> implements P
      *
      * @param executor
      *        the {@link EventExecutor} which is used to notify the promise when it progresses or it is complete
+     *
+     * <p>推荐使用 {@link EventExecutor#newProgressivePromise()} 创建实例。</p>
      */
     public DefaultProgressivePromise(EventExecutor executor) {
         super(executor);
     }
 
+    /** 仅供子类使用。 */
     protected DefaultProgressivePromise() { /* only for subclasses */ }
 
+    /**
+     * 设置进度并通知渐进式监听器；已完成时抛出 {@link IllegalStateException}。
+     *
+     * @param progress 当前进度
+     * @param total 总进度；{@code < 0} 表示未知
+     */
     @Override
     public ProgressivePromise<V> setProgress(long progress, long total) {
         if (total < 0) {
-            // total unknown
+            // total unknown — 总量未知，归一化为 -1
             total = -1; // normalize
             checkPositiveOrZero(progress, "progress");
         } else if (progress < 0 || progress > total) {
@@ -53,6 +68,9 @@ public class DefaultProgressivePromise<V> extends DefaultPromise<V> implements P
         return this;
     }
 
+    /**
+     * 尝试设置进度；参数非法或已完成时返回 {@code false} 而不抛异常。
+     */
     @Override
     public boolean tryProgress(long progress, long total) {
         if (total < 0) {

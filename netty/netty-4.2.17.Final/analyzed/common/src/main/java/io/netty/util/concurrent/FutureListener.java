@@ -24,5 +24,13 @@ package io.netty.util.concurrent;
  *     public void operationComplete(Future f) { .. }
  * });
  * </pre>
+ *
+ * <p>{@link GenericFutureListener} 的便捷子类型，隐藏泛型参数，便于匿名实现：
+ * 回调参数类型固定为 {@link Future} 而非 {@code Future&lt;V&gt;}。</p>
+ *
+ * <p>典型用法：{@code future.addListener(new FutureListener&lt;T&gt;() { ... })}，
+ * 无需在 {@link GenericFutureListener#operationComplete} 签名中声明 {@code Future&lt;V&gt;} 泛型。</p>
+ *
+ * @param <V> Future 结果类型，与 {@link Future}&lt;V&gt; 一致
  */
 public interface FutureListener<V> extends GenericFutureListener<Future<V>> { }

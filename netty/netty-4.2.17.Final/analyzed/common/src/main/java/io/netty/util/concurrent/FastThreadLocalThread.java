@@ -24,6 +24,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A special {@link Thread} that provides fast access to {@link FastThreadLocal} variables.
+ *
+ * <p>专用于 {@link FastThreadLocal} 快路径的线程类型：内嵌 {@link InternalThreadLocalMap} 引用，
+ * 避免普通 {@link ThreadLocal} 的哈希查找。{@link DefaultThreadFactory} 默认创建此类线程。</p>
  */
 public class FastThreadLocalThread extends Thread {
 
@@ -31,13 +34,17 @@ public class FastThreadLocalThread extends Thread {
 
     /**
      * Set of thread IDs that are treated like {@link FastThreadLocalThread}.
+     *
+     * <p>无法继承本类但需 FastThreadLocal 支持的线程 ID 集合（如虚拟线程 fallback）。</p>
      */
     private static final AtomicReference<FallbackThreadSet> fallbackThreads =
             new AtomicReference<>(FallbackThreadSet.EMPTY);
 
+    // 若 Runnable 经 FastThreadLocalRunnable 包装，run 结束时会清理 FastThreadLocal
     // This will be set to true if we have a chance to wrap the Runnable.
     private final boolean cleanupFastThreadLocals;
 
+    /** 线程绑定的 InternalThreadLocalMap，快路径直接索引访问。 */
     private InternalThreadLocalMap threadLocalMap;
 
     public FastThreadLocalThread() {
@@ -82,6 +89,8 @@ public class FastThreadLocalThread extends Thread {
     /**
      * Returns the internal data structure that keeps the thread-local variables bound to this thread.
      * Note that this method is for internal use only, and thus is subject to change at any time.
+     *
+     * <p>返回线程绑定的 {@link InternalThreadLocalMap}；仅内部使用，跨线程访问会告警。</p>
      */
     public final InternalThreadLocalMap threadLocalMap() {
         if (this != Thread.currentThread() && logger.isWarnEnabled()) {
@@ -94,6 +103,8 @@ public class FastThreadLocalThread extends Thread {
     /**
      * Sets the internal data structure that keeps the thread-local variables bound to this thread.
      * Note that this method is for internal use only, and thus is subject to change at any time.
+     *
+     * <p>设置线程的 {@link InternalThreadLocalMap}；仅内部使用。</p>
      */
     public final void setThreadLocalMap(InternalThreadLocalMap threadLocalMap) {
         if (this != Thread.currentThread() && logger.isWarnEnabled()) {
@@ -107,6 +118,8 @@ public class FastThreadLocalThread extends Thread {
      * Returns {@code true} if {@link FastThreadLocal#removeAll()} will be called once {@link #run()} completes.
      *
      * @deprecated Use {@link FastThreadLocalThread#currentThreadWillCleanupFastThreadLocals()} instead
+     *
+     * <p>实例方法：本线程 run 完成后是否会自动清理 FastThreadLocal。</p>
      */
     @Deprecated
     public boolean willCleanupFastThreadLocals() {
@@ -126,6 +139,8 @@ public class FastThreadLocalThread extends Thread {
 
     /**
      * Returns {@code true} if {@link FastThreadLocal#removeAll()} will be called once {@link Thread#run()} completes.
+     *
+     * <p>当前线程 run 结束是否会清理 FastThreadLocal（含 fallback 虚拟线程路径）。</p>
      */
     public static boolean currentThreadWillCleanupFastThreadLocals() {
         // intentionally doesn't accept a thread parameter to work with ScopedValue in the future
@@ -138,12 +153,15 @@ public class FastThreadLocalThread extends Thread {
 
     /**
      * Returns {@code true} if this thread supports {@link FastThreadLocal}.
+     *
+     * <p>当前线程是否支持 FastThreadLocal 快路径（真实 FastThreadLocalThread 或 fallback 注册线程）。</p>
      */
     public static boolean currentThreadHasFastThreadLocal() {
         // intentionally doesn't accept a thread parameter to work with ScopedValue in the future
         return currentThread() instanceof FastThreadLocalThread || isFastThreadLocalVirtualThread();
     }
 
+    /** 当前线程是否在 fallback 集合中（通过 {@link #runWithFastThreadLocal} 注册）。 */
     private static boolean isFastThreadLocalVirtualThread() {
         return fallbackThreads.get().contains(currentThread().getId());
     }
@@ -159,6 +177,9 @@ public class FastThreadLocalThread extends Thread {
      * the future this may be replaced with scoped values, if semantics can be preserved and performance is good.
      *
      * @param runnable The task to run
+     *
+     * <p>在无法继承本类的长生命周期线程（如虚拟线程）上启用 FastThreadLocal 支持；
+     * 执行完毕自动 {@link FastThreadLocal#removeAll()}，并临时注册线程 ID 到 fallback 集合。</p>
      */
     public static void runWithFastThreadLocal(Runnable runnable) {
         Thread current = currentThread();
@@ -190,6 +211,8 @@ public class FastThreadLocalThread extends Thread {
      * running event-loops.
      *
      * @return {@code false}, unless overriden by a subclass.
+     *
+     * <p>是否允许阻塞调用；EventLoop 线程默认 {@code false}，子类可覆盖。</p>
      */
     public boolean permitBlockingCalls() {
         return false;
@@ -197,6 +220,8 @@ public class FastThreadLocalThread extends Thread {
 
     /**
      * Immutable, thread-safe helper class that wraps {@link LongLongHashMap}
+     *
+     * <p>不可变位图集合：用 {@link LongLongHashMap} 按线程 ID 存储占用位，CAS 更新 fallback 集合。</p>
      */
     private static final class FallbackThreadSet {
         static final FallbackThreadSet EMPTY = new FallbackThreadSet();
@@ -212,6 +237,7 @@ public class FastThreadLocalThread extends Thread {
             this.map = map;
         }
 
+        /** 线程 ID 是否在位图中。 */
         public boolean contains(long threadId) {
             long key = threadId >>> 6;
             long bit = 1L << (threadId & 63);
@@ -220,6 +246,7 @@ public class FastThreadLocalThread extends Thread {
             return (bitmap & bit) != 0;
         }
 
+        /** 返回加入 threadId 后的新不可变集合。 */
         public FallbackThreadSet add(long threadId) {
             long key = threadId >>> 6;
             long bit = 1L << (threadId & 63);
@@ -232,6 +259,7 @@ public class FastThreadLocalThread extends Thread {
             return new FallbackThreadSet(newMap);
         }
 
+        /** 返回移除 threadId 后的新不可变集合。 */
         public FallbackThreadSet remove(long threadId) {
             long key = threadId >>> 6;
             long bit = 1L << (threadId & 63);
