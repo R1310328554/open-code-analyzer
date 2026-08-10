@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:01:34Z",
-  "files": [
-    "handler/api/queue/resume.go",
-    "handler/api/render/render.go",
-    "handler/api/repos/all.go",
-    "handler/api/repos/builds/branches/create.go",
-    "handler/api/repos/builds/branches/delete.go",
-    "handler/api/repos/builds/branches/list.go",
-    "handler/api/repos/builds/cancel.go",
-    "handler/api/repos/builds/create.go",
-    "handler/api/repos/builds/deploys/create.go",
-    "handler/api/repos/builds/deploys/delete.go",
-    "handler/api/repos/builds/deploys/list.go",
-    "handler/api/repos/builds/find.go",
-    "handler/api/repos/builds/latest.go",
-    "handler/api/repos/builds/list.go",
-    "handler/api/repos/builds/logs/delete.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 298,
-  "done": 75
+  "done": 90
 }
