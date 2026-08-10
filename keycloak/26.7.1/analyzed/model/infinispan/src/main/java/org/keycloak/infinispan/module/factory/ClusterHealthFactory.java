@@ -24,9 +24,13 @@ import org.infinispan.factories.AbstractComponentFactory;
 import org.infinispan.factories.AutoInstantiableFactory;
 import org.infinispan.factories.annotations.DefaultFactoryFor;
 
+/**
+ * {@link ClusterHealth} 的 Infinispan 组件工厂，默认提供基于 JDBC_PING 的实现。
+ */
 @DefaultFactoryFor(classes = ClusterHealth.class)
 public class ClusterHealthFactory extends AbstractComponentFactory implements AutoInstantiableFactory {
 
+    /** {@inheritDoc} 创建 {@link JdbcPingClusterHealthImpl} 实例。 */
     @Override
     public Object construct(String componentName) {
         return new JdbcPingClusterHealthImpl();

@@ -18,34 +18,33 @@
 package org.keycloak.infinispan.health;
 
 /**
- * Infinispan cluster health checks, to detect network partitions.
+ * Infinispan 集群健康检查接口，用于检测网络分区并决定是否继续处理请求。
  */
 public interface ClusterHealth {
 
     /**
-     * It checks the cluster health returning {@code true} if this node can continue processing requests.
+     * 判断本节点是否可继续处理请求。
      * <p>
-     * If the network and cluster are stable, this method must return {@code true}.
+     * 网络与集群稳定时必须返回 {@code true}。
      * <p>
-     * If a network partition is detected, the return value depends on whether this node belongs to the winning
-     * partition. It must return {@code true} if it belongs to the winning partition or {@code false} if it does not.
-     * Deciding the winning partition is at the implementation discretion.
+     * 若检测到网络分区，返回值取决于本节点是否属于“胜出”分区：属于则返回 {@code true}，否则返回 {@code false}。
+     * 如何判定胜出分区由具体实现决定。
      *
-     * @return {@code true} if the cluster is healthy and this node can continue processing requests, {@code false}
-     * otherwise.
+     * @return 集群健康且本节点可继续处理请求时为 {@code true}，否则为 {@code false}
      */
     boolean isHealthy();
 
     /**
-     * Triggers a cluster health check.
+     * 触发一次集群健康检查。
      * <p>
-     * This method should only trigger the health check logic without blocking or waiting for its outcome.
+     * 该方法应仅启动检查逻辑，不得阻塞或等待检查结果。
      */
     void triggerClusterHealthCheck();
 
     /**
-     * Determine if the cluster health check is supported.
-     * @return false if the current transport setup doesn't provide enough information.
+     * 判断当前传输层配置是否支持集群健康检查。
+     *
+     * @return 当前传输设置无法提供足够信息时为 {@code false}
      */
     boolean isSupported();
 

@@ -36,14 +36,13 @@ import org.infinispan.util.concurrent.BlockingManager;
 import org.jboss.logging.Logger;
 
 /**
- * A {@link ClusterHealth} implementation that makes use of {@link KEYCLOAK_JDBC_PING2}.
+ * 基于 {@link KEYCLOAK_JDBC_PING2} 的 {@link ClusterHealth} 实现。
  * <p>
- * Since each node is registered in the database, it is possible to detect if a partition is happening.
+ * 各节点在数据库中注册后，可通过 JDBC_PING 协议检测是否发生网络分区。
  * <p>
- * The method {@link KEYCLOAK_JDBC_PING2#healthStatus()} contains the algorithm description. If it returns
- * {@link HealthStatus#ERROR}, the healthy state does not change and relies on the Quarkus/Agroal readiness health
- * check. But, if {@link HealthStatus#NO_COORDINATOR} is returned, the state will be changed to unhealthy. The should be
- * a temporary situation as at least one coordinator must be present in the database table.
+ * {@link KEYCLOAK_JDBC_PING2#healthStatus()} 包含完整算法说明：若返回 {@link HealthStatus#ERROR}，
+ * 健康状态不变，依赖 Quarkus/Agroal 就绪探针；若返回 {@link HealthStatus#NO_COORDINATOR}，
+ * 则将状态置为不健康——通常为临时情况，数据库表中至少应有一名协调者。
  *
  * @see KEYCLOAK_JDBC_PING2#healthStatus()
  */
@@ -52,13 +51,22 @@ public class JdbcPingClusterHealthImpl implements ClusterHealth {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    /** 防止并发健康检查重叠执行的互斥锁。 */
     private final ReentrantLock lock = new ReentrantLock();
+    /** 当前节点是否认为集群健康的 volatile 标志。 */
     private volatile boolean healthy = true;
+    /** 异步触发健康检查的执行器封装；为 null 表示当前环境不支持。 */
     private volatile HealthRunner runner;
 
+    /**
+     * 从 Infinispan 注入传输层与阻塞管理器，探测 JDBC_PING 协议是否可用。
+     *
+     * @param transport       Infinispan 集群传输；本地模式时为 null
+     * @param blockingManager   用于创建 cluster-health 专用执行器
+     */
     @Inject
     public void inject(Transport transport, BlockingManager blockingManager) {
-        // hacking to avoid creating fields :)
+        // 通过注入方法持有依赖，避免额外字段
         if (transport == null) {
             logger.debug("Cluster health check disabled. Local mode");
             return;
@@ -77,14 +85,16 @@ public class JdbcPingClusterHealthImpl implements ClusterHealth {
         init(ping, blockingManager.asExecutor("cluster-health"));
     }
 
+    /** 初始化异步健康检查运行器（供测试或手动注入使用）。 */
     public void init(KEYCLOAK_JDBC_PING2 discovery, Executor executor) {
         runner = new HealthRunner(discovery, executor, this::checkHealth);
     }
 
+    /** 根据 JDBC_PING 健康状态更新 {@link #healthy} 标志。 */
     private void checkHealth(KEYCLOAK_JDBC_PING2 ping) {
         assert ping != null;
         if (!lock.tryLock()) {
-            // check in progress
+            // 已有检查进行中，跳过本次
             return;
         }
         try {
@@ -110,11 +120,13 @@ public class JdbcPingClusterHealthImpl implements ClusterHealth {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isHealthy() {
         return healthy;
     }
 
+    /** {@inheritDoc} 在专用执行器上异步提交健康检查。 */
     @Override
     public void triggerClusterHealthCheck() {
         if (runner != null) {
@@ -122,11 +134,13 @@ public class JdbcPingClusterHealthImpl implements ClusterHealth {
         }
     }
 
+    /** {@inheritDoc} 仅当 JDBC_PING 协议栈可用时返回 true。 */
     @Override
     public boolean isSupported() {
         return runner != null;
     }
 
+    /** 将健康检查任务提交到 Infinispan 阻塞执行器的轻量封装。 */
     private record HealthRunner(KEYCLOAK_JDBC_PING2 discovery, Executor executor, Consumer<KEYCLOAK_JDBC_PING2> check) {
 
         HealthRunner {
@@ -135,6 +149,7 @@ public class JdbcPingClusterHealthImpl implements ClusterHealth {
             Objects.requireNonNull(check);
         }
 
+        /** 异步触发一次健康检查。 */
         void trigger() {
             executor.execute(() -> check.accept(discovery));
         }
