@@ -28,6 +28,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 
 /**
+ * 刷新令牌 JWT，继承 {@link AccessToken} 并保留原始受众与刷新令牌提供者引用。
+ * <p>
+ * 类型固定为 refresh；离线令牌可能仅含 {@code session_state} 而无 {@code sid}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -42,7 +46,7 @@ public class RefreshToken extends AccessToken {
     @JsonDeserialize(using = StringOrArrayDeserializer.class)
     protected String[] originalAudience;
 
-    // Reference to refresh-token provider
+    /** 签发该刷新令牌的提供者标识。 */
     @JsonProperty(PROVIDER)
     private String provider;
 
@@ -51,11 +55,11 @@ public class RefreshToken extends AccessToken {
     }
 
     /**
-     * Deep copies issuer, subject, issuedFor, sessionState from AccessToken.
+     * 从访问令牌深拷贝 iss、sub、azp、会话等字段以构造刷新令牌。
      *
-     * @param token
-     * @param confirmation optional confirmation parameter that might be processed during authentication but should not
-     *                     always be included in the response
+     * @param token 源访问令牌
+     * @param confirmation 可选 cnf；认证流程可能使用但不一定写入响应
+     * @param provider 刷新令牌提供者 ID
      */
     public RefreshToken(AccessToken token, Confirmation confirmation, String provider) {
         this();
@@ -80,7 +84,7 @@ public class RefreshToken extends AccessToken {
     @Override
     public String getSessionId() {
         String sessionId = super.getSessionId();
-        // Fallback as offline tokens created in Keycloak 14 or earlier have only the "session_state" claim, but not "sid"
+        // Keycloak 14 及更早离线令牌可能只有 session_state 而无 sid
         return sessionId != null ? sessionId : (String) getOtherClaims().get(IDToken.SESSION_STATE);
     }
 

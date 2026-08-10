@@ -30,22 +30,22 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * The JSON representation of a Rich Authorization Request's "authorization_details" object.
- * The "authorization_details" parameter is array of objects and this class represents single entry of that array. It is used as a base
- * for "authorization_details" for both requests and responses.
+ * 富授权请求（RAR）中 {@code authorization_details} 数组单条对象的 JSON 表示（RFC 9396）。
+ * <p>
+ * 请求与响应共用此基类；{@link #getType()} 区分授权细节类型，扩展数据存入 {@link #getCustomData()}。
  *
  * @author <a href="mailto:dgozalob@redhat.com">Daniel Gozalo</a>
  * @see <a href="https://datatracker.ietf.org/doc/html/rfc9396#section-2">Request parameter "authorization_details"</a>
  */
 public class AuthorizationDetailsJSONRepresentation implements Serializable {
 
-    // The internal Keycloak's type for static scopes as a RAR request object
+    /** Keycloak 内部：静态 OAuth2 作用域的 RAR 类型 URI。 */
     public static final String STATIC_SCOPE_RAR_TYPE = "https://keycloak.org/auth-type/static-oauth2-scope";
 
-    // The internal Keycloak's type for parameterized scopes as a RAR request object
+    /** Keycloak 内部：参数化 OAuth2 作用域的 RAR 类型 URI。 */
     public static final String PARAMETERIZED_SCOPE_RAR_TYPE = "https://keycloak.org/auth-type/parameterized-oauth2-scope";
 
-    /** @deprecated Use {@link #PARAMETERIZED_SCOPE_RAR_TYPE} instead. Kept for backward compatibility with existing data. */
+    /** @deprecated 请改用 {@link #PARAMETERIZED_SCOPE_RAR_TYPE}；为兼容历史数据保留。 */
     @Deprecated
     public static final String DYNAMIC_SCOPE_RAR_TYPE = "https://keycloak.org/auth-type/dynamic-oauth2-scope";
 
@@ -136,9 +136,10 @@ public class AuthorizationDetailsJSONRepresentation implements Serializable {
     }
 
     /**
-     * @param clazz Subtype of {@link AuthorizationDetailsJSONRepresentation}, which will be returned by calling this method
-     * @return this authorizationDetails content cast to the class specified by clazz parameter as long as parser corresponding to the type returned by {@link #getType}
-     * is able to parse this authorizationDetails and convert it to that subtype
+     * 按 {@link #getType()} 选择解析器，将当前对象转换为指定子类型。
+     *
+     * @param clazz 目标子类型
+     * @return 解析成功后的子类型实例
      */
     public <T extends AuthorizationDetailsJSONRepresentation> T asSubtype(Class<T> clazz) {
         return AuthorizationDetailsParser.parseToSubtype(this, clazz);

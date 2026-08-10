@@ -24,9 +24,10 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Claims parameter as described in the OIDC specification https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter
+ * OIDC {@code claims} 请求参数的 JSON 表示，指定 ID Token 与 UserInfo 中需返回的声明。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
+ * @see <a href="https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter">Claims Parameter</a>
  */
 public class ClaimsRepresentation {
 
@@ -52,13 +53,14 @@ public class ClaimsRepresentation {
         this.userinfoClaims = userinfoClaims;
     }
 
-    // Helper methods
+    // 辅助判断方法
 
     /**
+     * 判断声明是否出现在 claims 参数中（含“空声明”或带值的声明）。
      *
-     * @param claimName
-     * @param ctx Whether we ask for claim to be presented in idToken or userInfo
-     * @return true if claim is presented in the claims parameter either as "null" claim (See OIDC specification for definition of null claim) or claim with some value
+     * @param claimName 声明名
+     * @param ctx 目标上下文：ID Token 或 UserInfo
+     * @return 存在时返回 {@code true}
      */
     public boolean isPresent(String claimName, ClaimContext ctx) {
         if (ctx == ClaimContext.ID_TOKEN) {
@@ -71,10 +73,11 @@ public class ClaimsRepresentation {
     }
 
     /**
+     * 判断声明是否以 OIDC“空声明”（值为 null）形式出现。
      *
-     * @param claimName
-     * @param ctx Whether we ask for claim to be presented in idToken or userInfo
-     * @return true if claim is presented in the claims parameter as "null" claim (See OIDC specification for definition of null claim)
+     * @param claimName 声明名
+     * @param ctx 目标上下文
+     * @return 为空声明时返回 {@code true}
      */
     public boolean isPresentAsNullClaim(String claimName, ClaimContext ctx) {
         if (!isPresent(claimName, ctx)) return false;
@@ -89,11 +92,12 @@ public class ClaimsRepresentation {
     }
 
     /**
+     * 获取指定上下文中某声明的 {@link ClaimValue}。
      *
-     * @param claimName
-     * @param ctx Whether we ask for claim to be presented in idToken or userInfo
-     * @param claimType claimType class
-     * @return Claim value
+     * @param claimName 声明名
+     * @param ctx 目标上下文
+     * @param claimType 声明值类型（用于泛型推断）
+     * @return 声明值包装，不存在时返回 {@code null}
      */
     public <CLAIM_TYPE> ClaimValue<CLAIM_TYPE> getClaimValue(String claimName, ClaimContext ctx, Class<CLAIM_TYPE> claimType) {
         if (!isPresent(claimName, ctx)) return null;
@@ -107,12 +111,18 @@ public class ClaimsRepresentation {
         }
     }
 
+    /** 声明应出现在 ID Token 还是 UserInfo 响应中。 */
     public enum ClaimContext {
-        ID_TOKEN, USERINFO
+        /** ID Token 声明块。 */
+        ID_TOKEN,
+        /** UserInfo 声明块。 */
+        USERINFO
     }
 
     /**
-     * @param <CLAIM_TYPE> Specifies the type of the claim
+     * 单个声明的请求方式：是否 essential、单值或多值。
+     *
+     * @param <CLAIM_TYPE> 声明值类型
      */
     public static class ClaimValue<CLAIM_TYPE> {
 

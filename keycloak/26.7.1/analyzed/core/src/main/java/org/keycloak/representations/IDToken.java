@@ -26,6 +26,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * OpenID Connect ID Token 的 JWT 载荷，承载身份认证与用户配置声明。
+ * <p>
+ * 继承 {@link JsonWebToken} 的标准 JWT 字段，并扩展 profile、acr、会话绑定哈希等 OIDC 声明。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -65,8 +69,7 @@ public class IDToken extends JsonWebToken {
     // RFC 8693 - OAuth 2.0 Token Exchange
     public static final String MAY_ACT = "may_act";
 
-    // NOTE!!!  WE used to use @JsonUnwrapped on a UserClaimSet object.  This screws up otherClaims and the won't work
-    // anymore.  So don't have any @JsonUnwrapped!
+    // 注意：曾对 UserClaimSet 使用 @JsonUnwrapped，会破坏 otherClaims；请勿再使用 @JsonUnwrapped
     @JsonProperty(NONCE)
     protected String nonce;
 
@@ -171,7 +174,7 @@ public class IDToken extends JsonWebToken {
     }
 
     /**
-     * @deprecated Use {@link #getSessionId()} instead.
+     * @deprecated 请改用 {@link #getSessionId()}。
      */
     @Deprecated
     @JsonIgnore

@@ -26,11 +26,16 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * OpenID Connect 提供者配置（发现文档 /.well-known/openid-configuration）的 JSON 表示。
+ * <p>
+ * 映射 OAuth 2.0 / OIDC 授权服务器元数据字段，供客户端自动发现端点 URL、支持的算法与能力。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 
 public class OIDCConfigurationRepresentation {
 
+    /** 发行者标识符（Realm URL）。 */
     @JsonProperty("issuer")
     private String issuer;
 
@@ -157,11 +162,11 @@ public class OIDCConfigurationRepresentation {
     @JsonProperty("require_request_uri_registration")
     private Boolean requireRequestUriRegistration;
 
-    // KEYCLOAK-7451 OAuth Authorization Server Metadata for Proof Key for Code Exchange
+    // KEYCLOAK-7451：PKCE code_challenge 方法元数据
     @JsonProperty("code_challenge_methods_supported")
     private List<String> codeChallengeMethodsSupported;
 
-    // KEYCLOAK-6771 Certificate Bound Token
+    // KEYCLOAK-6771：证书绑定访问令牌（mTLS）
     // https://tools.ietf.org/html/draft-ietf-oauth-mtls-08#section-6.2
     @JsonProperty("tls_client_certificate_bound_access_tokens")
     private Boolean tlsClientCertificateBoundAccessTokens;
@@ -214,6 +219,7 @@ public class OIDCConfigurationRepresentation {
     @JsonProperty("client_id_metadata_document_supported")
     private Boolean clientIdMetadataDocumentSupported;
 
+    /** 未在模型中显式声明的扩展元数据字段。 */
     protected Map<String, Object> otherClaims = new HashMap<String, Object>();
 
     public String getIssuer() {
@@ -505,7 +511,7 @@ public class OIDCConfigurationRepresentation {
         this.requireRequestUriRegistration = requireRequestUriRegistration;
     }
 
-    // KEYCLOAK-7451 OAuth Authorization Server Metadata for Proof Key for Code Exchange
+    // KEYCLOAK-7451：PKCE 支持的 code_challenge 方法
     public List<String> getCodeChallengeMethodsSupported() {
         return codeChallengeMethodsSupported;
     }
@@ -514,7 +520,7 @@ public class OIDCConfigurationRepresentation {
         this.codeChallengeMethodsSupported = codeChallengeMethodsSupported;
     }
 
-    // KEYCLOAK-6771 Certificate Bound Token
+    // KEYCLOAK-6771：是否支持证书绑定的访问令牌
     // https://tools.ietf.org/html/draft-ietf-oauth-mtls-08#section-6.2
     public Boolean getTlsClientCertificateBoundAccessTokens() {
         return tlsClientCertificateBoundAccessTokens;
@@ -620,11 +626,16 @@ public class OIDCConfigurationRepresentation {
         this.mtlsEndpointAliases = mtlsEndpointAliases;
     }
 
+    /** 获取扩展声明映射。 */
     @JsonAnyGetter
     public Map<String, Object> getOtherClaims() {
         return otherClaims;
     }
 
+    /** 反序列化未知元数据字段。
+     * @param name 字段名
+     * @param value 字段值
+     */
     @JsonAnySetter
     public void setOtherClaims(String name, Object value) {
         otherClaims.put(name, value);

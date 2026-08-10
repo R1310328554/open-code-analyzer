@@ -28,7 +28,9 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * OAuth 2.0 Access Token Response json
+ * OAuth 2.0 令牌端点成功或错误响应的 JSON 表示。
+ * <p>
+ * 包含 access_token、refresh_token、id_token、scope 及可选的 authorization_details 等字段。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -60,7 +62,7 @@ public class AccessTokenResponse {
 
     protected Map<String, Object> otherClaims = new HashMap<>();
 
-    // OIDC Financial API Read Only Profile : scope MUST be returned in the response from Token Endpoint
+    // OIDC 金融 API 只读配置：令牌端点响应必须返回 scope
     @JsonProperty("scope")
     protected String scope;
 
@@ -156,11 +158,16 @@ public class AccessTokenResponse {
         this.sessionState = sessionState;
     }
 
+    /** 其他扩展响应字段。 */
     @JsonAnyGetter
     public Map<String, Object> getOtherClaims() {
         return otherClaims;
     }
 
+    /** 捕获令牌响应中的未知 JSON 属性。
+     * @param name 属性名
+     * @param value 属性值
+     */
     @JsonAnySetter
     public void setOtherClaims(String name, Object value) {
         otherClaims.put(name, value);

@@ -8,11 +8,18 @@ import org.keycloak.util.TokenUtil;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * OpenID Connect 后台/前台登出通知用的 Logout Token（JWT）。
+ * <p>
+ * 含 {@code sid} 会话标识与 {@code events} 登出事件声明。
+ */
 public class LogoutToken extends JsonWebToken {
 
+    /** 登出目标会话 ID。 */
     @JsonProperty("sid")
     protected String sid;
 
+    /** OIDC 登出事件对象（如 {@code http://schemas.openid.net/event/backchannel-logout}）。 */
     @JsonProperty("events")
     protected Map<String, Object> events = new HashMap<>();
 

@@ -25,45 +25,34 @@ import static org.keycloak.OAuth2Constants.EXPIRES_IN;
 import static org.keycloak.OAuth2Constants.INTERVAL;
 
 /**
- * Representation for <a href="https://tools.ietf.org/html/draft-ietf-oauth-device-flow-15#section-3.3">Device Authorization Response</a>.
+ * OAuth 2.0 设备授权流程中设备授权端点的 JSON 响应（RFC 8628 §3.2）。
  *
  * @author <a href="mailto:h2-wada@nri.co.jp">Hiroyuki Wada</a>
+ * @see <a href="https://tools.ietf.org/html/rfc8628#section-3.2">Device Authorization Response</a>
  */
 public class OAuth2DeviceAuthorizationResponse {
 
-    /**
-     * REQUIRED
-     */
+    /** 设备码（必填）。 */
     @JsonProperty("device_code")
     protected String deviceCode;
 
-    /**
-     * REQUIRED
-     */
+    /** 用户码（必填，供用户在授权设备上输入）。 */
     @JsonProperty(OAuth2Constants.USER_CODE)
     protected String userCode;
 
-    /**
-     * REQUIRED
-     */
+    /** 用户验证 URI（必填）。 */
     @JsonProperty("verification_uri")
     protected String verificationUri;
 
-    /**
-     * OPTIONAL
-     */
+    /** 含预填用户码的完整验证 URI（可选）。 */
     @JsonProperty("verification_uri_complete")
     protected String verificationUriComplete;
 
-    /**
-     * REQUIRED
-     */
+    /** 设备码与用户码有效期（秒，必填）。 */
     @JsonProperty(EXPIRES_IN)
     protected long expiresIn;
 
-    /**
-     * OPTIONAL
-     */
+    /** 轮询令牌端点的建议间隔（秒，可选）。 */
     @JsonProperty(INTERVAL)
     protected long interval;
 

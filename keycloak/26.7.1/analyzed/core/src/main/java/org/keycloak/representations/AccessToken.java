@@ -34,16 +34,21 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * OAuth 2.0 / OIDC 访问令牌（Access Token）的 JWT 载荷表示，继承 {@link IDToken} 的标准声明。
+ * <p>
+ * 额外包含 realm/资源角色、授权决策、证书绑定（cnf）及 RAR {@code authorization_details} 等声明。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class AccessToken extends IDToken {
 
-    // Access token claims
+    /** 访问令牌 realm 级角色声明键。 */
     public static final String REALM_ACCESS = "realm_access";
     public static final String RESOURCE_ACCESS = "resource_access";
     public static final String ROLES = "roles";
 
+    /** Realm 或客户端资源下的角色与调用方校验标志。 */
     public static class Access implements Serializable {
         @JsonProperty(ROLES)
         protected Set<String> roles;
@@ -94,6 +99,7 @@ public class AccessToken extends IDToken {
         }
     }
 
+    /** UMA / 授权服务返回的权限集合。 */
     public static class Authorization implements Serializable {
 
         @JsonProperty("permissions")
@@ -108,8 +114,9 @@ public class AccessToken extends IDToken {
         }
     }
 
-    // KEYCLOAK-6771 Certificate Bound Token
+    // KEYCLOAK-6771：证书或密钥指纹确认（cnf 声明）
     // https://tools.ietf.org/html/draft-ietf-oauth-mtls-08#section-3.1
+    /** JWT {@code cnf} 确认对象，绑定客户端证书或 DPoP 公钥。 */
     public static class Confirmation {
 
         @JsonProperty("x5t#S256")
@@ -183,9 +190,9 @@ public class AccessToken extends IDToken {
 
 
     /**
-     * Does the realm require verifying the caller?
+     * Realm 级是否要求校验调用方身份。
      *
-     * @return
+     * @return 需要校验时返回 {@code true}
      */
     @JsonIgnore
     public boolean isVerifyCaller() {
@@ -195,10 +202,10 @@ public class AccessToken extends IDToken {
     }
 
     /**
-     * Does the resource override the requirement of verifying the caller?
+     * 指定资源客户端是否覆盖 Realm 的调用方校验要求。
      *
-     * @param resource
-     * @return
+     * @param resource 资源/客户端标识
+     * @return 该资源要求校验调用方时返回 {@code true}
      */
     @JsonIgnore
     public boolean isVerifyCaller(String resource) {
@@ -212,6 +219,10 @@ public class AccessToken extends IDToken {
         return resourceAccess == null ? null : resourceAccess.get(resource);
     }
 
+    /** 获取或创建指定客户端资源的 {@link Access} 块。
+     * @param service 客户端 ID
+     * @return 资源访问块
+     */
     public Access addAccess(String service) {
         if (resourceAccess == null) {
             resourceAccess = new HashMap<>();

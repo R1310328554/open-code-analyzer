@@ -17,12 +17,13 @@
 package org.keycloak.representations;
 
 /**
- * Configuration of KeyStore.
+ * Realm 或组件使用的 KeyStore（密钥库）配置参数。
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public class KeyStoreConfig {
 
+    /** 是否使用 Realm 级证书。 */
     protected Boolean realmCertificate;
     protected String storePassword;
     protected String keyPassword;

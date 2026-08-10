@@ -40,6 +40,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
+ * JWT 载荷的通用基类，实现 {@link Token} 并提供 jti、exp、iss、aud、sub 等标准声明的链式访问。
+ * <p>
+ * 被 ID Token、Access Token、Logout Token 等具体令牌类型继承。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -87,6 +91,7 @@ public class JsonWebToken implements Serializable, Token {
         return this;
     }
 
+    /** 当前时间是否已超过 {@code exp}。 */
     @JsonIgnore
     public boolean isExpired() {
         return exp != null && exp != 0 && Time.currentTime() > exp;
@@ -101,24 +106,15 @@ public class JsonWebToken implements Serializable, Token {
         return this;
     }
 
+    /** 是否已到达 {@code nbf}（允许 clock skew 秒数）。 */
     @JsonIgnore
     public boolean isNotBefore(long allowedTimeSkew) {
         return nbf == null || Time.currentTime() + allowedTimeSkew >= nbf;
     }
 
     /**
-     * Tests that the token is not expired and is not-before.
-     * This assumes a default clock-skew for the "is not before" of 10 seconds which is in line FAPI 2.0.
-     * See <a href="https://openid.net/specs/fapi-security-profile-2_0-final.html#section-5.3.2.1-6">FAPI 2.0 Security Profile</a>:
-     * <blockquote>
-     * Clock skew is a cause of many interoperability issues. Even a few hundred milliseconds of clock skew can cause JWTs to be rejected
-     * for being "issued in the future". The DPoP specification [RFC9449] suggests that JWTs are accepted in the reasonably near future
-     * (on the order of seconds or minutes). This document goes further by requiring authorization servers to accept JWTs that have
-     * timestamps up to 10 seconds in the future. 10 seconds was chosen as a value that does not affect security while greatly increasing
-     * interoperability. Implementers are free to accept JWTs with a timestamp of up to 60 seconds in the future. Some ecosystems
-     * have found that the value of 30 seconds is needed to fully eliminate clock skew issues. To prevent implementations switching
-     * off iat and nbf checks completely this document imposes a maximum timestamp in the future of 60 seconds.
-     * </blockquote>
+     * 令牌是否既未过期也满足 {@code nbf}（默认允许 10 秒时钟偏差，符合 FAPI 2.0）。
+     * 详见 <a href="https://openid.net/specs/fapi-security-profile-2_0-final.html#section-5.3.2.1-6">FAPI 2.0 Security Profile</a> 对时钟偏差的说明。
      */
     @JsonIgnore
     public boolean isActive() {
@@ -131,8 +127,10 @@ public class JsonWebToken implements Serializable, Token {
     }
 
     /**
-     * @param sessionStarted Time in seconds
-     * @return true if the particular token was issued before the given session start time. Which means that token cannot be issued by the particular session
+     * 令牌是否在指定会话开始之前签发（因而不可能属于该会话）。
+     *
+     * @param sessionStarted 会话开始时间（秒）
+     * @return 签发早于会话开始时返回 {@code true}
      */
     @JsonIgnore
     public boolean isIssuedBeforeSessionStart(long sessionStarted) {
@@ -143,9 +141,8 @@ public class JsonWebToken implements Serializable, Token {
         return iat;
     }
 
-    /**
-     * Set issuedAt to the current time
-     */
+    /** 将 {@code iat} 设为当前时间。 */
+    
     @JsonIgnore
     public JsonWebToken issuedNow() {
         iat = (long) Time.currentTime();
@@ -153,8 +150,7 @@ public class JsonWebToken implements Serializable, Token {
     }
 
     /**
-     * Set issuedAt to the current time and expireAt = issuedAt + ttl
-     * Also set notBefore to issuedAt
+     * 将 {@code iat}、{@code nbf} 设为当前时间，{@code exp} 设为 iat + ttl。
      */
     @JsonIgnore
     public JsonWebToken issuedNowWithTTL(int ttl) {
@@ -253,11 +249,8 @@ public class JsonWebToken implements Serializable, Token {
         return this;
     }
 
-    /**
-     * OAuth client the token was issued for.
-     *
-     * @return
-     */
+    /** 签发目标 OAuth 客户端（{@code azp} 声明）。 */
+    
     public String getIssuedFor() {
         return issuedFor;
     }
@@ -267,11 +260,8 @@ public class JsonWebToken implements Serializable, Token {
         return this;
     }
 
-    /**
-     * This is a map of any other claims and data that might be in the IDToken.  Could be custom claims set up by the auth server
-     *
-     * @return
-     */
+    /** 授权服务器配置的自定义或其它未建模 JWT 声明。 */
+    
     @JsonAnyGetter
     public Map<String, Object> getOtherClaims() {
         return otherClaims;

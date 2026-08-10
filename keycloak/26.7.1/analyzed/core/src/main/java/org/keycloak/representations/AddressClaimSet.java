@@ -25,10 +25,13 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
-* @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
-* @version $Revision: 1 $
-*/
+ * OIDC 标准 {@code address} 声明的结构化表示（OpenID Connect Core 1.0）。
+ *
+ * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
+ * @version $Revision: 1 $
+ */
 public class AddressClaimSet {
+    /** 完整格式化地址字符串。 */
     public static final String FORMATTED = "formatted";
     public static final String STREET_ADDRESS = "street_address";
     public static final String LOCALITY = "locality";
@@ -54,6 +57,7 @@ public class AddressClaimSet {
     @JsonProperty(COUNTRY)
     protected String country;
 
+    /** 地址对象中的扩展字段。 */
     protected Map<String, Object> otherClaims = new HashMap<>();
 
     public String getFormattedAddress() {

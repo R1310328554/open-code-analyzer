@@ -31,11 +31,15 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
+ * OIDC UserInfo 端点响应的 JSON 表示，承载已认证用户的标准与自定义声明。
+ * <p>
+ * 签名 UserInfo 响应应包含 {@code iss} 与 {@code aud}。
+ *
  * @author pedroigor
  */
 public class UserInfo {
 
-    // Should be in signed UserInfo response
+    /** 发行者（签名 UserInfo 响应中应出现）。 */
     @JsonProperty("iss")
     protected String issuer;
     @JsonProperty("aud")
@@ -325,11 +329,8 @@ public class UserInfo {
         this.claimsLocales = claimsLocales;
     }
 
-    /**
-     * This is a map of any other claims and data that might be in the UserInfo.  Could be custom claims set up by the auth server
-     *
-     * @return
-     */
+    /** 授权服务器配置的自定义或其它 UserInfo 声明。 */
+    
     @JsonAnyGetter
     public Map<String, Object> getOtherClaims() {
         return otherClaims;
