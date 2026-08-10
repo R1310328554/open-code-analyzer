@@ -15,23 +15,8 @@
     "pkg/logql/bench/cmd/bench/main.go",
     "pkg/logql/bench/cmd/bench/views/list.go",
     "pkg/logql/bench/cmd/bench/views/run.go",
-    "pkg/logql/bench/cmd/bench/views/types.go",
-    "pkg/logql/bench/cmd/correctness-metrics/main.go",
-    "pkg/logql/bench/cmd/correctness-metrics/metrics.go",
-    "pkg/logql/bench/cmd/correctness-metrics/parser.go",
-    "pkg/logql/bench/cmd/correctness-metrics/push.go",
-    "pkg/logql/bench/cmd/generate-k6/main.go",
-    "pkg/logql/bench/cmd/generate/main.go",
-    "pkg/logql/bench/cmd/stream/main.go",
-    "pkg/logql/bench/discover/cmd/main.go",
-    "pkg/logql/bench/discover/pkg/assemble.go",
-    "pkg/logql/bench/discover/pkg/classify.go",
-    "pkg/logql/bench/discover/pkg/classify_types.go",
-    "pkg/logql/bench/discover/pkg/discover_types.go",
-    "pkg/logql/bench/discover/pkg/keyword_types.go",
-    "pkg/logql/bench/discover/pkg/probe.go",
-    "pkg/logql/bench/discover/pkg/probe_types.go"
+    "pkg/logql/bench/cmd/bench/views/types.go"
   ],
   "remaining_pending": 742,
-  "done": 780
+  "done": 795
 }
