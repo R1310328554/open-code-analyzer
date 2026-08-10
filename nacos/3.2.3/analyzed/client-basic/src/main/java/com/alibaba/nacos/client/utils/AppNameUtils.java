@@ -24,17 +24,22 @@ import java.io.File;
 
 /**
  * appName util.
+ * <p>推断 Nacos 客户端应用名：优先 {@code project.name}，其次从 JBoss/Jetty/Tomcat 安装路径解析 {@code /home/admin/<app>/} 段，均失败时返回 {@code unknown}。</p>
  *
  * @author Nacos
  */
 public class AppNameUtils {
     
+    /** JBoss 安装目录 JVM 属性键 */
     private static final String PARAM_MARKING_JBOSS = "jboss.server.home.dir";
     
+    /** Jetty 安装目录属性键 */
     private static final String PARAM_MARKING_JETTY = "jetty.home";
     
+    /** Tomcat 基目录属性键 */
     private static final String PARAM_MARKING_TOMCAT = "catalina.base";
     
+    /** 阿里云 ECS 常见应用部署根路径前缀 */
     private static final String LINUX_ADMIN_HOME = "/home/admin/";
     
     private static final String SERVER_JBOSS = "jboss";
@@ -47,6 +52,7 @@ public class AppNameUtils {
     
     private static final String DEFAULT_APP_NAME = "unknown";
     
+    /** 按 project.name → 容器路径 → unknown 顺序解析应用名。 */
     public static String getAppName() {
         String appName;
         
@@ -63,10 +69,12 @@ public class AppNameUtils {
         return DEFAULT_APP_NAME;
     }
     
+    /** 从 {@link Constants.SysEnv#PROJECT_NAME} 读取应用名。 */
     private static String getAppNameByProjectName() {
         return NacosClientProperties.PROTOTYPE.getProperty(Constants.SysEnv.PROJECT_NAME);
     }
     
+    /** 根据检测到的容器类型解析 {@code /home/admin/<app>/} 中的应用名段。 */
     private static String getAppNameByServerHome() {
         String serverHome = null;
         if (SERVER_JBOSS.equals(getServerType())) {
@@ -84,6 +92,7 @@ public class AppNameUtils {
         return null;
     }
     
+    /** 通过容器特征属性判断当前运行环境（JBoss/Jetty/Tomcat/unknown）。 */
     private static String getServerType() {
         String serverType;
         if (NacosClientProperties.PROTOTYPE.getProperty(PARAM_MARKING_JBOSS) != null) {

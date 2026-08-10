@@ -31,13 +31,16 @@ import java.util.regex.Pattern;
 
 /**
  * Nacos client basic parameters utils.
+ * <p>客户端基础参数工具：静态加载 appKey、contextPath、serverPort 等全局缺省值，并提供 namespace/endpoint 解析、初始化参数日志脱敏等能力。</p>
  *
  * @author xiweng.yy
  */
 public class ClientBasicParamUtil {
     
+    /** 参数加载与诊断日志 */
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientBasicParamUtil.class);
     
+    /** 匹配 {@code ${...}} 占位符的 endpoint 模板正则 */
     private static final Pattern PATTERN = Pattern.compile("\\$\\{[^}]+\\}");
     
     private static final int DESENSITISE_PARAMETER_MIN_LENGTH = 2;
@@ -67,7 +70,7 @@ public class ClientBasicParamUtil {
     private static String defaultNodesPath = "serverlist";
     
     static {
-        // Client identity information
+        // 从全局属性原型加载客户端身份与缺省连接参数
         appKey = NacosClientProperties.PROTOTYPE.getProperty(NACOS_CLIENT_APP_KEY, BLANK_STR);
         
         defaultContextPath =
@@ -81,14 +84,17 @@ public class ClientBasicParamUtil {
         clientVersion = VersionUtils.version;
     }
     
+    /** 返回客户端 appKey（可为空串）。 */
     public static String getAppKey() {
         return appKey;
     }
     
+    /** 运行时覆盖 appKey。 */
     public static void setAppKey(String appKey) {
         ClientBasicParamUtil.appKey = appKey;
     }
     
+    /** 返回 Nacos Server HTTP contextPath 缺省值。 */
     public static String getDefaultContextPath() {
         return defaultContextPath;
     }
@@ -97,6 +103,7 @@ public class ClientBasicParamUtil {
         ClientBasicParamUtil.defaultContextPath = defaultContextPath;
     }
     
+    /** 返回客户端版本字符串（构建时注入）。 */
     public static String getClientVersion() {
         return clientVersion;
     }
@@ -105,10 +112,12 @@ public class ClientBasicParamUtil {
         ClientBasicParamUtil.clientVersion = clientVersion;
     }
     
+    /** 返回缺省 Nacos Server 端口（通常 8848）。 */
     public static String getDefaultServerPort() {
         return serverPort;
     }
     
+    /** 返回集群节点列表相对路径（默认 serverlist）。 */
     public static String getDefaultNodesPath() {
         return defaultNodesPath;
     }
@@ -118,10 +127,10 @@ public class ClientBasicParamUtil {
     }
     
     /**
-     * Parse namespace from properties and environment.
+     * 解析 namespace：可启用阿里云 ACM 租户解析，否则读 {@link PropertyKeyConst#NAMESPACE}，空白时回退 {@link Constants#DEFAULT_NAMESPACE_ID}。
      *
-     * @param properties properties
-     * @return namespace
+     * @param properties 客户端属性
+     * @return 规范化后的 namespace ID
      */
     public static String parseNamespace(NacosClientProperties properties) {
         String namespaceTmp = null;
@@ -132,6 +141,7 @@ public class ClientBasicParamUtil {
                     SystemPropertyKeyConst.IS_USE_CLOUD_NAMESPACE_PARSING,
                     String.valueOf(Constants.DEFAULT_USE_CLOUD_NAMESPACE_PARSING)));
         
+        // 启用云 namespace 解析时优先 ACM/ALIWARE 环境变量
         if (Boolean.parseBoolean(isUseCloudNamespaceParsing)) {
             namespaceTmp = TenantUtil.getUserTenantForAcm();
             
@@ -150,13 +160,13 @@ public class ClientBasicParamUtil {
     }
     
     /**
-     * Parse end point rule.
+     * 解析 endpoint URL：支持 {@code ${key:default}} 占位符，并回退 {@link PropertyKeyConst.SystemEnv#ALIBABA_ALIWARE_ENDPOINT_URL}。
      *
-     * @param endpointUrl endpoint url
-     * @return end point rule
+     * @param endpointUrl 配置中的 endpoint 模板或字面 URL
+     * @return 解析后的 endpoint，无有效值时返回空串
      */
     public static String parsingEndpointRule(String endpointUrl) {
-        // If entered in the configuration file, the priority in ENV will be given priority.
+        // 非占位符模板时直接尝试 ALIBABA_ALIWARE_ENDPOINT_URL 环境变量
         if (endpointUrl == null || !PATTERN.matcher(endpointUrl).find()) {
             // skip retrieve from system property and retrieve directly from system env
             String endpointUrlSource = NacosClientProperties.PROTOTYPE.getProperty(
@@ -193,6 +203,7 @@ public class ClientBasicParamUtil {
         return StringUtils.isNotBlank(endpointUrl) ? endpointUrl : "";
     }
     
+    /** 生成客户端初始化参数摘要日志（全量或关键项，敏感项脱敏）。 */
     public static String getInputParameters(Properties properties) {
         boolean logAllParameters =
             ConvertUtils.toBoolean(properties.getProperty(PropertyKeyConst.LOG_ALL_PROPERTIES),
@@ -237,10 +248,10 @@ public class ClientBasicParamUtil {
     }
     
     /**
-     * Do desensitise for parameters with `*` to replace inner content.
+     * 对敏感参数做星号脱敏：保留首尾若干字符，中间替换为 {@code *}。
      *
-     * @param parameterValue parameter value which need be desensitised.
-     * @return desensitised parameter value.
+     * @param parameterValue 原始参数值
+     * @return 脱敏后的字符串
      */
     public static String desensitiseParameter(String parameterValue) {
         if (parameterValue.length() <= DESENSITISE_PARAMETER_MIN_LENGTH) {
@@ -260,6 +271,7 @@ public class ClientBasicParamUtil {
         return result.toString();
     }
     
+    /** 将 server 地址列表转为日志/缓存用的连字符后缀（去协议、冒号转下划线）。 */
     public static String getNameSuffixByServerIps(String... serverIps) {
         StringBuilder sb = new StringBuilder();
         String split = "";

@@ -18,23 +18,16 @@ package com.alibaba.nacos.client.env;
 
 /**
  * properties source type enum.
+ * <p>客户端配置属性来源枚举，用于 {@link NacosClientProperties#getPropertyFrom(SourceType, String)} 定向读取及 {@link SearchableProperties} 检索顺序配置。</p>
  * @author onewe
  */
 public enum SourceType {
-    /**
-     * get value from properties.
-     */
+    /** 内存 {@link Properties} 或派生链中的显式设置（优先级通常最高） */
     PROPERTIES,
-    /**
-     * get value from jvm args.
-     */
+    /** JVM 启动参数 {@code -Dkey=value}（{@link System#getProperties()}） */
     JVM,
-    /**
-     * get value from system environment.
-     */
+    /** 操作系统环境变量（{@link System#getenv()}） */
     ENV,
-    /**
-     * get value from unknown environment, will be search in all properties by orders.
-     */
+    /** 未指定来源时按全局检索顺序依次查找全部属性源 */
     UNKNOWN
 }

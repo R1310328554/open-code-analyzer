@@ -21,16 +21,24 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Properties;
 
+/**
+ * 内存 {@link Properties} 属性源，支持链式父级以实现配置继承与覆盖。
+ * <p>类型为 {@link SourceType#PROPERTIES}，通常位于检索顺序首位；子实例通过 {@link #PropertiesPropertySource(PropertiesPropertySource)} 指向父级。</p>
+ */
 class PropertiesPropertySource extends AbstractPropertySource {
     
+    /** 本层持有的可变属性表 */
     private final Properties properties = new Properties();
     
+    /** 父级属性源；{@code null} 表示根节点 */
     private final PropertiesPropertySource parent;
     
+    /** 创建无父级的根属性源。 */
     PropertiesPropertySource() {
         this.parent = null;
     }
     
+    /** 创建指向指定父级的派生属性源。 */
     PropertiesPropertySource(PropertiesPropertySource parent) {
         this.parent = parent;
     }
@@ -45,6 +53,7 @@ class PropertiesPropertySource extends AbstractPropertySource {
         return getProperty(this, key);
     }
     
+    /** 自当前节点向父级递归查找 key，先命中本层再向上。 */
     private String getProperty(PropertiesPropertySource propertiesPropertySource, String key) {
         final String value = propertiesPropertySource.properties.getProperty(key);
         if (value != null) {
@@ -62,6 +71,7 @@ class PropertiesPropertySource extends AbstractPropertySource {
         return containsKey(this, key);
     }
     
+    /** 递归判断 key 是否存在于当前链路的任一节点。 */
     boolean containsKey(PropertiesPropertySource propertiesPropertySource, String key) {
         final boolean exist = propertiesPropertySource.properties.containsKey(key);
         if (exist) {
@@ -90,6 +100,7 @@ class PropertiesPropertySource extends AbstractPropertySource {
         return ret;
     }
     
+    /** 自底向上收集链路上各层 {@link Properties}，供 {@link #asProperties()} 按父先子后合并。 */
     List<Properties> lookForProperties(PropertiesPropertySource propertiesPropertySource,
         List<Properties> propertiesList) {
         propertiesList.add(propertiesPropertySource.properties);
@@ -100,10 +111,12 @@ class PropertiesPropertySource extends AbstractPropertySource {
         return lookForProperties(parent, propertiesList);
     }
     
+    /** 线程安全地在本层写入单个键值（不修改父级）。 */
     synchronized void setProperty(String key, String value) {
         properties.setProperty(key, value);
     }
     
+    /** 线程安全地批量合并属性到本层。 */
     synchronized void addProperties(Properties source) {
         properties.putAll(source);
     }

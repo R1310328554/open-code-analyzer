@@ -22,10 +22,12 @@ import java.util.MissingFormatArgumentException;
 
 /**
  * default converters.
+ * <p>组合式类型转换入口：注册 Boolean/Integer/Long 转换器，供 {@link SearchableProperties} 在检索到字符串后做类型化解析。</p>
  * @author onewe
  */
 public class CompositeConverter {
     
+    /** 目标类型 → 转换器注册表 */
     private final Map<Class<?>, AbstractPropertyConverter<?>> converterRegistry = new HashMap<>();
     
     public CompositeConverter() {
@@ -35,11 +37,11 @@ public class CompositeConverter {
     }
     
     /**
-     * convert property to target type.
-     * @param property the property gets from environments
-     * @param targetClass target class object
-     * @param <T> target type
-     * @return the object of target type
+     * 将环境字符串转换为指定类型。
+     * @param property 原始字符串
+     * @param targetClass 目标 Class（Boolean/Integer/Long）
+     * @param <T> 目标类型
+     * @return 转换后的对象
      */
     public <T> T convert(String property, Class<T> targetClass) {
         final AbstractPropertyConverter<?> converter = converterRegistry.get(targetClass);

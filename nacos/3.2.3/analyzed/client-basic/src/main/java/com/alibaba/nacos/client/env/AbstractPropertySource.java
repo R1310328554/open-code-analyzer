@@ -18,31 +18,35 @@ package com.alibaba.nacos.client.env;
 
 import java.util.Properties;
 
+/**
+ * 属性源抽象基类，统一 JVM 参数、系统环境变量与内存 {@link Properties} 的读取接口。
+ * <p>各具体实现通过 {@link #getType()} 标识来源，供 {@link SearchableProperties} 按优先级检索。</p>
+ */
 abstract class AbstractPropertySource {
     
     /**
-     * get property's type.
-     * @return name
+     * 返回本属性源的类型标识。
+     * @return 对应的 {@link SourceType}
      */
     abstract SourceType getType();
     
     /**
-     * get property, if the value can not be got by the special key, the null will be returned.
-     * @param key special key
-     * @return value or null
+     * 按 key 读取字符串属性；不存在时返回 {@code null}。
+     * @param key 属性键
+     * @return 属性值，未命中时为 {@code null}
      */
     abstract String getProperty(String key);
     
     /**
-     * Tests if the specified object is a key in this propertySource.
-     * @param key key – possible key
-     * @return true if and only if the specified object is a key in this propertySource, false otherwise.
+     * 判断指定 key 是否存在于本属性源。
+     * @param key 待检测的键
+     * @return 存在返回 {@code true}，否则 {@code false}
      */
     abstract boolean containsKey(String key);
     
     /**
-     * to properties.
-     * @return properties
+     * 将本属性源快照导出为 {@link Properties}。
+     * @return 属性快照
      */
     abstract Properties asProperties();
     

@@ -18,10 +18,16 @@ package com.alibaba.nacos.client.env;
 
 import java.util.Properties;
 
+/**
+ * 基于 {@link System#getProperties()} 的 JVM 启动参数属性源（{@code -Dkey=value}）。
+ * <p>类型为 {@link SourceType#JVM}，优先级通常低于显式设置的 {@link PropertiesPropertySource}。</p>
+ */
 class JvmArgsPropertySource extends AbstractPropertySource {
     
+    /** JVM 系统属性快照引用（与 {@link System#getProperties()} 共享同一实例） */
     private final Properties properties;
     
+    /** 构造时绑定当前 JVM 系统属性表。 */
     JvmArgsPropertySource() {
         this.properties = System.getProperties();
     }
@@ -41,6 +47,7 @@ class JvmArgsPropertySource extends AbstractPropertySource {
         return properties.containsKey(key);
     }
     
+    /** {@inheritDoc} 返回系统属性的 defensive copy，避免外部修改影响全局表。 */
     @Override
     Properties asProperties() {
         Properties properties = new Properties();

@@ -18,6 +18,9 @@ package com.alibaba.nacos.client.env.convert;
 
 import com.alibaba.nacos.common.utils.StringUtils;
 
+/**
+ * 整型属性转换器：空串返回 {@code null}，解析失败抛出 {@link IllegalArgumentException}。
+ */
 class IntegerConverter extends AbstractPropertyConverter<Integer> {
     
     @Override

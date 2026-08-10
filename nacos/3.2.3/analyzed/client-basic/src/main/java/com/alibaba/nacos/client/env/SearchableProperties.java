@@ -32,21 +32,27 @@ import java.util.stream.Collectors;
 
 /**
  * Searchable NacosClientProperties. the SearchableProperties that it can be specified search order by nacos.env.first
+ * <p>可检索的 {@link NacosClientProperties} 默认实现：按 {@code nacos.env.first} 配置决定 {@link SourceType#PROPERTIES}/{@link SourceType#JVM}/{@link SourceType#ENV} 的查找顺序，并通过 {@link CompositeConverter} 完成类型化读取。</p>
  *
  * @author onewe
  */
 class SearchableProperties implements NacosClientProperties {
     
+    /** 日志记录器，启动时输出属性检索顺序 */
     private static final Logger LOGGER = LoggerFactory.getLogger(SearchableProperties.class);
     
+    /** 全局 JVM 参数属性源单例 */
     private static final JvmArgsPropertySource JVM_ARGS_PROPERTY_SOURCE =
         new JvmArgsPropertySource();
     
+    /** 全局系统环境变量属性源单例 */
     private static final SystemEnvPropertySource SYSTEM_ENV_PROPERTY_SOURCE =
         new SystemEnvPropertySource();
     
+    /** 属性检索顺序（可通过 {@code nacos.env.first} 将某一来源置顶） */
     private static final List<SourceType> SEARCH_ORDER;
     
+    /** 字符串到 Boolean/Integer/Long 的类型转换器 */
     private static final CompositeConverter CONVERTER = new CompositeConverter();
     
     static {
@@ -61,6 +67,7 @@ class SearchableProperties implements NacosClientProperties {
         LOGGER.debug(orderInfo.toString());
     }
     
+    /** 解析 {@code nacos.env.first}，必要时调整默认顺序 PROPERTIES→JVM→ENV。 */
     private static List<SourceType> init() {
         List<SourceType> initOrder =
             Arrays.asList(SourceType.PROPERTIES, SourceType.JVM, SourceType.ENV);
@@ -85,16 +92,21 @@ class SearchableProperties implements NacosClientProperties {
         return initOrder;
     }
     
+    /** {@link NacosClientProperties#PROTOTYPE} 指向的单例 */
     static final SearchableProperties INSTANCE = new SearchableProperties();
     
+    /** 按 {@link #SEARCH_ORDER} 排列的可检索属性源列表 */
     private final List<AbstractPropertySource> propertySources;
     
+    /** 本实例持有的内存属性源（可派生子链） */
     private final PropertiesPropertySource propertiesPropertySource;
     
+    /** 单例构造：使用独立根 {@link PropertiesPropertySource}。 */
     private SearchableProperties() {
         this(new PropertiesPropertySource());
     }
     
+    /** 派生构造：绑定指定内存属性源并组装检索列表。 */
     private SearchableProperties(PropertiesPropertySource propertiesPropertySource) {
         this.propertiesPropertySource = propertiesPropertySource;
         this.propertySources = build(propertiesPropertySource, JVM_ARGS_PROPERTY_SOURCE,
@@ -208,6 +220,7 @@ class SearchableProperties implements NacosClientProperties {
         return false;
     }
     
+    /** 按检索顺序查找 key，命中后按需转换为目标类型。 */
     private <T> Optional<T> search(String key, Class<T> targetType) {
         for (AbstractPropertySource propertySource : propertySources) {
             final String value = propertySource.getProperty(key);
@@ -221,6 +234,7 @@ class SearchableProperties implements NacosClientProperties {
         return Optional.empty();
     }
     
+    /** 依据 {@link #SEARCH_ORDER} 将属性源映射为有序列表。 */
     private List<AbstractPropertySource> build(AbstractPropertySource... propertySources) {
         final Map<SourceType, AbstractPropertySource> sourceMap = Arrays.stream(propertySources)
             .collect(Collectors.toMap(AbstractPropertySource::getType,

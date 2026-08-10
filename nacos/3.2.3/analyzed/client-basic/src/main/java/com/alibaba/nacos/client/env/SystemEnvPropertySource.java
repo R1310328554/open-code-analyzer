@@ -19,8 +19,13 @@ package com.alibaba.nacos.client.env;
 import java.util.Map;
 import java.util.Properties;
 
+/**
+ * 操作系统环境变量属性源（{@link SourceType#ENV}）。
+ * <p>读取 {@link System#getenv()}，并对 key 做 Spring 风格的点/横线转下划线兼容匹配。</p>
+ */
 class SystemEnvPropertySource extends AbstractPropertySource {
     
+    /** 进程环境变量快照引用 */
     private final Map<String, String> env = System.getenv();
     
     @Override
@@ -50,28 +55,29 @@ class SystemEnvPropertySource extends AbstractPropertySource {
      * 3.1
      * Author:
      * Chris Beams, Juergen Hoeller
+      * <p>系统环境变量属性源；详见类级说明。</p>
      */
     private String checkPropertyName(String name) {
-        // Check name as-is
+        // 原样匹配环境变量名
         if (containsKey(name)) {
             return name;
         }
-        // Check name with just dots replaced
+        // 将点替换为下划线后再匹配（如 nacos.server.addr → NACOS_SERVER_ADDR）
         String noDotName = name.replace('.', '_');
         if (!name.equals(noDotName) && containsKey(noDotName)) {
             return noDotName;
         }
-        // Check name with just hyphens replaced
+        // 将连字符替换为下划线后再匹配
         String noHyphenName = name.replace('-', '_');
         if (!name.equals(noHyphenName) && containsKey(noHyphenName)) {
             return noHyphenName;
         }
-        // Check name with dots and hyphens replaced
+        // 同时替换点与连字符
         String noDotNoHyphenName = noDotName.replace('-', '_');
         if (!noDotName.equals(noDotNoHyphenName) && containsKey(noDotNoHyphenName)) {
             return noDotNoHyphenName;
         }
-        // Give up
+        // 全部变体均未命中
         return null;
     }
     

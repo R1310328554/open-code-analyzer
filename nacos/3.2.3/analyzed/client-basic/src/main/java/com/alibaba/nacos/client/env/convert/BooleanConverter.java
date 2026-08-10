@@ -21,10 +21,16 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * 布尔型属性转换器：识别 true/on/yes/1 与 false/off/no/0（大小写不敏感）。
+ * <p>无法识别的值抛出 {@link IllegalArgumentException}。</p>
+ */
 class BooleanConverter extends AbstractPropertyConverter<Boolean> {
     
+    /** 视为 {@code true} 的字符串集合 */
     private static final Set<String> TRUE_VALUES = new HashSet<>(8);
     
+    /** 视为 {@code false} 的字符串集合 */
     private static final Set<String> FALSE_VALUES = new HashSet<>(8);
     
     static {

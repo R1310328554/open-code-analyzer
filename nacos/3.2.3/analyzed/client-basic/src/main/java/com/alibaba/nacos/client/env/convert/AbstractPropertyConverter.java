@@ -16,12 +16,16 @@
 
 package com.alibaba.nacos.client.env.convert;
 
+/**
+ * 环境变量字符串到目标类型的转换器抽象基类。
+ * <p>由 {@link CompositeConverter} 按目标 Class 分派具体实现。</p>
+ */
 abstract class AbstractPropertyConverter<T> {
     
     /**
-     * convert property to target object.
-     * @param property the property gets from environments
-     * @return target object
+     * 将原始字符串属性转换为目标类型。
+     * @param property 自环境读取的字符串值
+     * @return 转换结果；空串通常映射为 {@code null}
      */
     abstract T convert(String property);
     
