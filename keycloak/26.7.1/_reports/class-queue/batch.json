@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T07:58:54Z",
-  "files": [
-    "model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/Util.java",
-    "model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/embedded/CacheConfigurator.java",
-    "model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/embedded/ClientSessionKeyGrouper.java",
-    "model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/embedded/DefaultCacheEmbeddedConfigProviderFactory.java",
-    "model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/embedded/JGroupsConfigurator.java",
-    "model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/remote/DefaultCacheRemoteConfigProviderFactory.java",
-    "model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/remote/DisabledCacheRemoteConfigProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/authentication/jpa/AuthenticateSessionAdapter.java",
-    "model/jpa/src/main/java/org/keycloak/authentication/jpa/AuthenticationSessionEntity.java",
-    "model/jpa/src/main/java/org/keycloak/authentication/jpa/AuthenticationSessionExpirationAction.java",
-    "model/jpa/src/main/java/org/keycloak/authentication/jpa/AuthenticationSessionKey.java",
-    "model/jpa/src/main/java/org/keycloak/authentication/jpa/AuthenticationSessionSerialization.java",
-    "model/jpa/src/main/java/org/keycloak/authentication/jpa/JpaAuthenticationSessionProvider.java",
-    "model/jpa/src/main/java/org/keycloak/authentication/jpa/JpaAuthenticationSessionProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/authentication/jpa/RootAuthenticationSessionAdapter.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4438,
-  "done": 1545
+  "done": 1560
 }

@@ -1513,3 +1513,18 @@
 2026-08-10T08:00:17Z DONE model/infinispan/src/main/java/org/keycloak/spi/infinispan/JGroupsCertificateProvider.java wave52a session util + cache/JGroups config SPIs
 2026-08-10T08:00:17Z DONE model/infinispan/src/main/java/org/keycloak/spi/infinispan/JGroupsCertificateProviderFactory.java wave52a session util + cache/JGroups config SPIs
 2026-08-10T08:00:17Z DONE model/infinispan/src/main/java/org/keycloak/spi/infinispan/JGroupsCertificateProviderSpi.java wave52a session util + cache/JGroups config SPIs
+2026-08-10T08:01:13Z DONE model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/Util.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/embedded/CacheConfigurator.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/embedded/ClientSessionKeyGrouper.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/embedded/DefaultCacheEmbeddedConfigProviderFactory.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/embedded/JGroupsConfigurator.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/remote/DefaultCacheRemoteConfigProviderFactory.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/infinispan/src/main/java/org/keycloak/spi/infinispan/impl/remote/DisabledCacheRemoteConfigProviderFactory.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/jpa/src/main/java/org/keycloak/authentication/jpa/AuthenticateSessionAdapter.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/jpa/src/main/java/org/keycloak/authentication/jpa/AuthenticationSessionEntity.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/jpa/src/main/java/org/keycloak/authentication/jpa/AuthenticationSessionExpirationAction.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/jpa/src/main/java/org/keycloak/authentication/jpa/AuthenticationSessionKey.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/jpa/src/main/java/org/keycloak/authentication/jpa/AuthenticationSessionSerialization.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/jpa/src/main/java/org/keycloak/authentication/jpa/JpaAuthenticationSessionProvider.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/jpa/src/main/java/org/keycloak/authentication/jpa/JpaAuthenticationSessionProviderFactory.java wave52b cache config impl + JPA auth session
+2026-08-10T08:01:13Z DONE model/jpa/src/main/java/org/keycloak/authentication/jpa/RootAuthenticationSessionAdapter.java wave52b cache config impl + JPA auth session
