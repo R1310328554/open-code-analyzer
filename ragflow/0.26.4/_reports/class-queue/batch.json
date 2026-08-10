@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T17:33:25Z",
-  "files": [
-    "internal/admin/enterprise_handler.go",
-    "internal/admin/enterprise_service.go",
-    "internal/admin/handler.go",
-    "internal/admin/router.go",
-    "internal/admin/service.go",
-    "internal/admin/state.go",
-    "internal/agent/audio/model_provider_synthesizer.go",
-    "internal/agent/audio/tts.go",
-    "internal/agent/audio/tts_dispatch.go",
-    "internal/agent/canvas/cancel.go",
-    "internal/agent/canvas/canvas.go",
-    "internal/agent/canvas/checkpoint_store.go",
-    "internal/agent/canvas/compile.go",
-    "internal/agent/canvas/decode.go",
-    "internal/agent/canvas/interrupt_resume.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1344,
-  "done": 405
+  "done": 420
 }
