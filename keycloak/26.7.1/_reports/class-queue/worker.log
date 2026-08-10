@@ -88,3 +88,18 @@
 2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/SecureDeploymentAddHandler.java wave3b saml wildfly subsystem definitions
 2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/SecureDeploymentDefinition.java wave3b saml wildfly subsystem definitions
 2026-08-10T05:37:33Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/ServiceProviderAddHandler.java wave3b saml wildfly subsystem definitions
+2026-08-10T05:39:38Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/ServiceProviderDefinition.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/SingleLogoutDefinition.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/SingleSignOnDefinition.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/logging/KeycloakLogger.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/logging/KeycloakMessages.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/AdapterSessionStore.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/AuthChallenge.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/AuthOutcome.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/AuthenticationError.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/HttpFacade.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/InMemorySessionIdMapper.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/KeycloakAccount.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/LogoutError.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/SessionIdMapper.java wave4a saml wildfly subsystem + adapter spi
+2026-08-10T05:39:38Z DONE adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/SessionIdMapperUpdater.java wave4a saml wildfly subsystem + adapter spi

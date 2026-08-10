@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T05:37:45Z",
   "files": [
-    "adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/ServiceProviderDefinition.java",
-    "adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/SingleLogoutDefinition.java",
-    "adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/SingleSignOnDefinition.java",
-    "adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/logging/KeycloakLogger.java",
-    "adapters/saml/wildfly/wildfly-subsystem/src/main/java/org/keycloak/subsystem/adapter/saml/extension/logging/KeycloakMessages.java",
-    "adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/AdapterSessionStore.java",
-    "adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/AuthChallenge.java",
-    "adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/AuthOutcome.java",
-    "adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/AuthenticationError.java",
-    "adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/HttpFacade.java",
-    "adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/InMemorySessionIdMapper.java",
-    "adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/KeycloakAccount.java",
-    "adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/LogoutError.java",
-    "adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/SessionIdMapper.java",
-    "adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/SessionIdMapperUpdater.java",
     "adapters/spi/adapter-spi/src/main/java/org/keycloak/adapters/spi/UserSessionManagement.java",
     "adapters/spi/jboss-adapter-core/src/main/java/org/keycloak/adapters/jboss/KeycloakLoginModule.java",
     "authz/client/src/main/java/org/keycloak/authorization/client/AuthorizationDeniedException.java",
@@ -33,5 +18,5 @@
     "authz/client/src/main/java/org/keycloak/authorization/client/resource/ProtectionResource.java"
   ],
   "remaining_pending": 5878,
-  "done": 90
+  "done": 105
 }
