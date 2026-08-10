@@ -15,23 +15,8 @@
     "pkg/dataobj/sections/indexpointers/iter.go",
     "pkg/dataobj/sections/indexpointers/metrics.go",
     "pkg/dataobj/sections/indexpointers/predicate.go",
-    "pkg/dataobj/sections/indexpointers/reader.go",
-    "pkg/dataobj/sections/indexpointers/row_predicate.go",
-    "pkg/dataobj/sections/indexpointers/row_reader.go",
-    "pkg/dataobj/sections/indexpointers/stats.go",
-    "pkg/dataobj/sections/internal/columnar/columnar.go",
-    "pkg/dataobj/sections/internal/columnar/dataset.go",
-    "pkg/dataobj/sections/internal/columnar/decoder.go",
-    "pkg/dataobj/sections/internal/columnar/encoder.go",
-    "pkg/dataobj/sections/internal/columnar/metrics.go",
-    "pkg/dataobj/sections/internal/columnar/reader_adapter.go",
-    "pkg/dataobj/sections/logs/builder.go",
-    "pkg/dataobj/sections/logs/iter.go",
-    "pkg/dataobj/sections/logs/logs.go",
-    "pkg/dataobj/sections/logs/metrics.go",
-    "pkg/dataobj/sections/logs/predicate.go",
-    "pkg/dataobj/sections/logs/reader.go"
+    "pkg/dataobj/sections/indexpointers/reader.go"
   ],
   "remaining_pending": 1132,
-  "done": 390
+  "done": 405
 }
