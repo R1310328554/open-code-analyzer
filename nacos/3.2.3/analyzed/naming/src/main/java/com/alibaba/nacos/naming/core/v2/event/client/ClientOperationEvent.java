@@ -23,7 +23,7 @@ import com.alibaba.nacos.naming.core.v2.pojo.Service;
 import java.util.Set;
 
 /**
- * Operation client event.
+ * 客户端操作事件基类，描述注册、订阅、模糊监听等命名行为。
  *
  * @author xiweng.yy
  */
@@ -31,8 +31,10 @@ public class ClientOperationEvent extends Event {
     
     private static final long serialVersionUID = -4582413232902517619L;
     
+    /** 触发操作的客户端 ID。 */
     private final String clientId;
     
+    /** 操作涉及的服务（模糊监听事件可为 null）。 */
     private final Service service;
     
     public ClientOperationEvent(String clientId, Service service) {
@@ -48,8 +50,10 @@ public class ClientOperationEvent extends Event {
         return service;
     }
     
+    /** 客户端向服务注册实例事件。 */
     /**
      * Client register service event.
+      * <p>Nacos 命名 V2 客户端工厂、管理器与事件模型；详见上方类/接口说明。</p>
      */
     public static class ClientRegisterServiceEvent extends ClientOperationEvent {
         
@@ -60,8 +64,10 @@ public class ClientOperationEvent extends Event {
         }
     }
     
+    /** 客户端从服务注销实例事件。 */
     /**
      * Client deregister service event.
+      * <p>Nacos 命名 V2 客户端工厂、管理器与事件模型；详见上方类/接口说明。</p>
      */
     public static class ClientDeregisterServiceEvent extends ClientOperationEvent {
         
@@ -72,8 +78,10 @@ public class ClientOperationEvent extends Event {
         }
     }
     
+    /** 客户端订阅服务变更事件。 */
     /**
      * Client subscribe service event.
+      * <p>Nacos 命名 V2 客户端工厂、管理器与事件模型；详见上方类/接口说明。</p>
      */
     public static class ClientSubscribeServiceEvent extends ClientOperationEvent {
         
@@ -84,8 +92,10 @@ public class ClientOperationEvent extends Event {
         }
     }
     
+    /** 客户端取消订阅服务事件。 */
     /**
      * Client unsubscribe service event.
+      * <p>Nacos 命名 V2 客户端工厂、管理器与事件模型；详见上方类/接口说明。</p>
      */
     public static class ClientUnsubscribeServiceEvent extends ClientOperationEvent {
         
@@ -96,25 +106,33 @@ public class ClientOperationEvent extends Event {
         }
     }
     
+    /** 客户端模糊监听（按 group 模式）事件。 */
     /**
      * Client fuzzy watch service event.
+      * <p>Nacos 命名 V2 客户端工厂、管理器与事件模型；详见上方类/接口说明。</p>
      */
     public static class ClientFuzzyWatchEvent extends ClientOperationEvent {
         
         private static final long serialVersionUID = -4518919987813223119L;
         
+        /** 客户端监听的 group 键模式。 */
         /**
          * client watched pattern.
+          * <p>Nacos 命名 V2 客户端工厂、管理器与事件模型；详见上方类/接口说明。</p>
          */
         private final String groupKeyPattern;
         
+        /** 客户端侧已收到的 group 键集合。 */
         /**
          * client side received group keys.
+          * <p>Nacos 命名 V2 客户端工厂、管理器与事件模型；详见上方类/接口说明。</p>
          */
         private Set<String> clientReceivedServiceKeys;
         
+        /** 是否处于模糊监听初始化阶段。 */
         /**
          * is fuzzy watch initializing.
+          * <p>Nacos 命名 V2 客户端工厂、管理器与事件模型；详见上方类/接口说明。</p>
          */
         private boolean isInitializing;
         
@@ -140,6 +158,7 @@ public class ClientOperationEvent extends Event {
         }
     }
     
+    /** 客户端释放事件：断开连接后通知索引与推送模块清理。 */
     public static class ClientReleaseEvent extends ClientOperationEvent {
         
         private static final long serialVersionUID = -281486927726245701L;

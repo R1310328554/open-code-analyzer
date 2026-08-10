@@ -25,14 +25,18 @@ import java.util.Collection;
 import java.util.HashMap;
 
 /**
- * Client factory holder.
+ * 客户端工厂持有者，通过 SPI 加载并缓存各类 {@link ClientFactory}。
+ *
+ * <p>按连接类型查找对应工厂，未匹配时回退到默认工厂。</p>
  *
  * @author xiweng.yy
  */
 public class ClientFactoryHolder {
     
+    /** 单例实例。 */
     private static final ClientFactoryHolder INSTANCE = new ClientFactoryHolder();
     
+    /** 连接类型 → 工厂实现映射表。 */
     private final HashMap<String, ClientFactory> clientFactories;
     
     private ClientFactoryHolder() {
@@ -53,7 +57,7 @@ public class ClientFactoryHolder {
     }
     
     /**
-     * Find target type {@link ClientFactory}.
+     * 按类型查找 {@link ClientFactory}；未找到或类型为空时返回默认工厂。
      *
      * @param type target type
      * @return target type {@link ClientFactory}, if not fount, return 'default' client factory.

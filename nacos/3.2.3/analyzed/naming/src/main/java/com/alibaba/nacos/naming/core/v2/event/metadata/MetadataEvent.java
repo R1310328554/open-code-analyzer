@@ -20,7 +20,7 @@ import com.alibaba.nacos.common.notify.Event;
 import com.alibaba.nacos.naming.core.v2.pojo.Service;
 
 /**
- * Metadata event.
+ * 元数据生命周期事件基类，标记服务或实例元数据是否应被清理。
  *
  * @author xiweng.yy
  */
@@ -28,10 +28,14 @@ public class MetadataEvent extends Event {
     
     private static final long serialVersionUID = -5842659852664110805L;
     
+    /** 元数据所属服务。 */
     private final Service service;
     
     /**
-     * Mark this metadata whether is expired.
+     * 元数据是否已过期待删除。
+     *
+     * <p>{@code true} 表示原服务/实例已移除，元数据应被清理；
+     * {@code false} 表示对象仍注册，应停止删除流程。</p>
      *
      * <p>If value is {@code true}, means that the original object (service or instance) has been removed, so the
      * metadata has been expired, need be delete.
@@ -54,6 +58,7 @@ public class MetadataEvent extends Event {
         return expired;
     }
     
+    /** 服务级元数据过期/恢复事件。 */
     public static class ServiceMetadataEvent extends MetadataEvent {
         
         private static final long serialVersionUID = -2888112042649967804L;
@@ -63,10 +68,12 @@ public class MetadataEvent extends Event {
         }
     }
     
+    /** 实例级元数据过期/恢复事件。 */
     public static class InstanceMetadataEvent extends MetadataEvent {
         
         private static final long serialVersionUID = 5781016126117637520L;
         
+        /** 实例元数据唯一标识。 */
         private final String metadataId;
         
         public InstanceMetadataEvent(Service service, String metadataId, boolean expired) {

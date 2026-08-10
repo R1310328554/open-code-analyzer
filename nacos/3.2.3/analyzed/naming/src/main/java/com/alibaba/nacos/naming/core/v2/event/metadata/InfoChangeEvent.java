@@ -21,7 +21,11 @@ import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.alibaba.nacos.common.notify.Event;
 import com.alibaba.nacos.naming.core.v2.pojo.Service;
 
-/**.
+/**
+ * 服务/实例信息变更事件基类。
+ *
+ * <p>用于触发元数据索引与推送链路更新。</p>
+ *
  * @author RocketEngine26
  * @date 2022/9/14 下午6:12
  */
@@ -29,6 +33,7 @@ public class InfoChangeEvent extends Event {
     
     private static final long serialVersionUID = 2222222222222L;
     
+    /** 变更涉及的服务对象。 */
     private final Service service;
     
     public InfoChangeEvent(Service service) {
@@ -39,6 +44,7 @@ public class InfoChangeEvent extends Event {
         return service;
     }
     
+    /** 服务级信息变更事件，构造时刷新服务更新时间。 */
     public static class ServiceInfoChangeEvent extends InfoChangeEvent {
         
         private static final long serialVersionUID = 3333333333333L;
@@ -49,10 +55,12 @@ public class InfoChangeEvent extends Event {
         }
     }
     
+    /** 实例级信息变更事件，携带具体 {@link Instance} 快照。 */
     public static class InstanceInfoChangeEvent extends InfoChangeEvent {
         
         private static final long serialVersionUID = 4444444444444L;
         
+        /** 发生变更的实例对象。 */
         private final Instance instance;
         
         public InstanceInfoChangeEvent(Service service, Instance instance) {

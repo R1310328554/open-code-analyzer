@@ -41,7 +41,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The manager of {@code ConnectionBasedClient}.
+ * {@link ConnectionBasedClient} 管理器，监听远程连接事件并维护客户端映射。
+ *
+ * <p>实现 {@link ClientConnectionEventListener}，处理命名模块 TCP 连接的建立与断开。</p>
  *
  * @author xiweng.yy
  */
@@ -49,6 +51,7 @@ import java.util.concurrent.TimeUnit;
 public class ConnectionBasedClientManager extends ClientConnectionEventListener
     implements ClientManager {
     
+    /** connectionId → 客户端实例并发映射。 */
     private final ConcurrentMap<String, ConnectionBasedClient> clients = new ConcurrentHashMap<>();
     
     public ConnectionBasedClientManager() {
@@ -56,6 +59,7 @@ public class ConnectionBasedClientManager extends ClientConnectionEventListener
             Constants.DEFAULT_HEART_BEAT_INTERVAL, TimeUnit.MILLISECONDS);
     }
     
+    /** 远程连接建立回调：仅处理命名模块连接并创建客户端。 */
     @Override
     public void clientConnected(Connection connect) {
         if (!RemoteConstants.LABEL_MODULE_NAMING
@@ -92,6 +96,7 @@ public class ConnectionBasedClientManager extends ClientConnectionEventListener
         return clientConnected(clientFactory.newSyncedClient(clientId, attributes));
     }
     
+    /** 远程连接断开回调：触发客户端清理与事件发布。 */
     @Override
     public void clientDisConnected(Connection connect) {
         if (!RemoteConstants.LABEL_MODULE_NAMING
@@ -142,6 +147,7 @@ public class ConnectionBasedClientManager extends ClientConnectionEventListener
     public boolean verifyClient(DistroClientVerifyInfo verifyData) {
         ConnectionBasedClient client = clients.get(verifyData.getClientId());
         if (null != client) {
+            // 旧版本远程节点校验时 revision 恒为 0，视为兼容通过
             // remote node of old version will always verify with zero revision
             if (0 == verifyData.getRevision() || client.getRevision() == verifyData.getRevision()) {
                 client.setLastRenewTime();
@@ -155,6 +161,7 @@ public class ConnectionBasedClientManager extends ClientConnectionEventListener
         return false;
     }
     
+    /** 定时扫描并清理已过期的非本机 Distro 同步客户端。 */
     private static class ExpiredClientCleaner implements Runnable {
         
         private final ConnectionBasedClientManager clientManager;

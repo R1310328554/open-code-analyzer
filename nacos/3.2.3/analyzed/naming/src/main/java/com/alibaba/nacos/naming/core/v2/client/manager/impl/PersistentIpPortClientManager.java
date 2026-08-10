@@ -38,7 +38,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * The manager of {@code IpPortBasedClient} and persistence.
+ * 持久 {@link IpPortBasedClient} 管理器，实例由 Raft 协议保证一致性。
+ *
+ * <p>任意节点均可处理请求；不支持 Distro 同步客户端。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  * @author xiweng.yy
@@ -48,6 +50,7 @@ public class PersistentIpPortClientManager implements ClientManager {
     
     private final ClientFactory<IpPortBasedClient> clientFactory;
     
+    /** clientId → 持久 IP:Port 客户端映射。 */
     private ConcurrentMap<String, IpPortBasedClient> clients = new ConcurrentHashMap<>();
     
     public PersistentIpPortClientManager() {
@@ -103,6 +106,7 @@ public class PersistentIpPortClientManager implements ClientManager {
     
     @Override
     public Collection<String> allClientId() {
+        // 应用内 clientId 唯一，使用 Set 替代 List 提升合并性能
         // client id is unique in the application
         // use set to replace array list
         // it will improve the performance
@@ -112,7 +116,7 @@ public class PersistentIpPortClientManager implements ClientManager {
     }
     
     /**
-     * Because the persistence instance relies on the Raft algorithm, any node can process the request.
+     * 持久实例依赖 Raft，任意节点均可作为负责节点。
      *
      * @param client client
      * @return true
@@ -132,7 +136,7 @@ public class PersistentIpPortClientManager implements ClientManager {
     }
     
     /**
-     * Load persistent clients from snapshot.
+     * 从快照加载持久客户端并替换当前映射。
      *
      * @param clients clients snapshot
      */
@@ -142,19 +146,23 @@ public class PersistentIpPortClientManager implements ClientManager {
         oldClients.clear();
     }
     
+    /** 直接写入客户端（Raft 同步或快照恢复时使用）。 */
     /**
      * add client directly.
      *
      * @param client client
+      * <p>Nacos 命名 V2 客户端工厂、管理器与事件模型；详见上方类/接口说明。</p>
      */
     public void addSyncClient(IpPortBasedClient client) {
         clients.put(client.getClientId(), client);
     }
     
+    /** 移除客户端并释放其持有的实例与订阅资源。 */
     /**
      * remove client.
      *
      * @param clientId client id
+      * <p>Nacos 命名 V2 客户端工厂、管理器与事件模型；详见上方类/接口说明。</p>
      */
     public void removeAndRelease(String clientId) {
         IpPortBasedClient client = clients.remove(clientId);

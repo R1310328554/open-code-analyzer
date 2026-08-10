@@ -44,7 +44,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The manager of {@code IpPortBasedClient} and ephemeral.
+ * 临时 {@link IpPortBasedClient} 管理器，结合 Distro 分片判定负责节点。
+ *
+ * <p>客户端连接时初始化心跳检测，过期策略考虑发布/订阅空闲时间。</p>
  *
  * @author xiweng.yy
  */
@@ -52,8 +54,10 @@ import java.util.concurrent.TimeUnit;
 @Component("ephemeralIpPortClientManager")
 public class EphemeralIpPortClientManager implements ClientManager {
     
+    /** clientId → 临时 IP:Port 客户端映射。 */
     private final ConcurrentMap<String, IpPortBasedClient> clients = new ConcurrentHashMap<>();
     
+    /** Distro 分片映射，用于判定客户端负责节点。 */
     private final DistroMapper distroMapper;
     
     private final ClientFactory<IpPortBasedClient> clientFactory;
@@ -131,6 +135,7 @@ public class EphemeralIpPortClientManager implements ClientManager {
         String clientId = verifyData.getClientId();
         IpPortBasedClient client = clients.get(clientId);
         if (null != client) {
+            // 旧版本远程节点校验 revision 为 0 时仍视为通过
             // remote node of old version will always verify with zero revision
             if (0 == verifyData.getRevision() || client.getRevision() == verifyData.getRevision()) {
                 NamingExecuteTaskDispatcher.getInstance()
@@ -168,6 +173,7 @@ public class EphemeralIpPortClientManager implements ClientManager {
             }
         }
         
+        /** 综合发布/订阅空闲与全局过期时间判断客户端是否应清理。 */
         private boolean isExpireClient(long currentTime, IpPortBasedClient client) {
             long noUpdatedTime = currentTime - client.getLastUpdatedTime();
             return client.isEphemeral() && (isExpirePublishedClient(noUpdatedTime, client)

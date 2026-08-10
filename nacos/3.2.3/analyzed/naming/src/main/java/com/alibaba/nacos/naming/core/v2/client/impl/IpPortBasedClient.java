@@ -29,21 +29,24 @@ import com.alibaba.nacos.naming.monitor.MetricsMonitor;
 import java.util.Collection;
 
 /**
- * Nacos naming client based ip and port.
+ * 基于 IP 与端口的 Nacos 命名客户端。
  *
- * <p>The client is bind to the ip and port users registered. It's a abstract content to simulate the tcp session
- * client.
+ * <p>以注册地址抽象模拟 TCP 会话客户端，适用于 HTTP/Open API 注册场景。</p>
  *
  * @author xiweng.yy
  */
 public class IpPortBasedClient extends AbstractClient {
     
+    /** 客户端 ID 中地址与 ephemeral 标志的分隔符。 */
     public static final String ID_DELIMITER = "#";
     
+    /** 格式为 {@code address#ephemeral} 的客户端标识。 */
     private final String clientId;
     
+    /** 是否为临时实例客户端。 */
     private final boolean ephemeral;
     
+    /** Distro 分片负责节点标识（clientId 中 # 前的地址部分）。 */
     private final String responsibleId;
     
     private ClientBeatCheckTaskV2 beatCheckTask;
@@ -66,6 +69,7 @@ public class IpPortBasedClient extends AbstractClient {
         return clientId.substring(0, index);
     }
     
+    /** 根据地址与 ephemeral 标志构造标准 clientId。 */
     public static String getClientId(String address, boolean ephemeral) {
         return address + ID_DELIMITER + ephemeral;
     }
@@ -129,8 +133,10 @@ public class IpPortBasedClient extends AbstractClient {
         return result;
     }
     
+    /** 初始化客户端：临时实例调度心跳检测，持久实例调度 V2 健康检查。 */
     /**
      * Init client.
+      * <p>Nacos 命名 V2 客户端工厂、管理器与事件模型；详见上方类/接口说明。</p>
      */
     public void init() {
         if (ephemeral) {
@@ -142,8 +148,10 @@ public class IpPortBasedClient extends AbstractClient {
         }
     }
     
+    /** 静默写入实例到服务映射，不发布变更事件（用于快照恢复等场景）。 */
     /**
      * Purely put instance into service without publish events.
+      * <p>Nacos 命名 V2 客户端工厂、管理器与事件模型；详见上方类/接口说明。</p>
      */
     public void putServiceInstance(Service service, InstancePublishInfo instance) {
         if (null == publishers.put(service, parseToHealthCheckInstance(instance))) {

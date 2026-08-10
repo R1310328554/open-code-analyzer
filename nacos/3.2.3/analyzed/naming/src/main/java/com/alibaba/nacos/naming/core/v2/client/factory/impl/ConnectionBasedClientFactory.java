@@ -24,7 +24,9 @@ import com.alibaba.nacos.naming.core.v2.client.impl.ConnectionBasedClient;
 import static com.alibaba.nacos.naming.constants.ClientConstants.REVISION;
 
 /**
- * Client factory for {@link ConnectionBasedClient}.
+ * 基于 TCP 连接的 {@link ConnectionBasedClient} 工厂。
+ *
+ * <p>区分本机直连客户端与从其他节点同步的客户端。</p>
  *
  * @author xiweng.yy
  */
@@ -35,6 +37,7 @@ public class ConnectionBasedClientFactory implements ClientFactory<ConnectionBas
         return ClientConstants.DEFAULT_FACTORY;
     }
     
+    /** 创建本机直连的 {@link ConnectionBasedClient}（{@code isNative=true}）。 */
     @Override
     public ConnectionBasedClient newClient(String clientId, ClientAttributes attributes) {
         long revision = attributes.getClientAttribute(REVISION, 0);
@@ -44,6 +47,7 @@ public class ConnectionBasedClientFactory implements ClientFactory<ConnectionBas
         return connectionBasedClient;
     }
     
+    /** 创建从 Distro 同步的 {@link ConnectionBasedClient}（{@code isNative=false}）。 */
     @Override
     public ConnectionBasedClient newSyncedClient(String clientId, ClientAttributes attributes) {
         long revision = attributes.getClientAttribute(REVISION, 0);

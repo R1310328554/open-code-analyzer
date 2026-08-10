@@ -24,7 +24,9 @@ import com.alibaba.nacos.naming.core.v2.client.impl.IpPortBasedClient;
 import static com.alibaba.nacos.naming.constants.ClientConstants.REVISION;
 
 /**
- * Client factory for ephemeral {@link IpPortBasedClient}.
+ * 临时（ephemeral）{@link IpPortBasedClient} 工厂。
+ *
+ * <p>客户端 ID 以 IP:Port#true 形式标识，依赖心跳续期。</p>
  *
  * @author xiweng.yy
  */
@@ -35,6 +37,7 @@ public class EphemeralIpPortClientFactory implements ClientFactory<IpPortBasedCl
         return ClientConstants.EPHEMERAL_IP_PORT;
     }
     
+    /** 创建本机负责的临时 IP:Port 客户端。 */
     @Override
     public IpPortBasedClient newClient(String clientId, ClientAttributes attributes) {
         long revision = attributes.getClientAttribute(REVISION, 0);
@@ -43,6 +46,7 @@ public class EphemeralIpPortClientFactory implements ClientFactory<IpPortBasedCl
         return ipPortBasedClient;
     }
     
+    /** 创建从 Distro 同步的临时 IP:Port 客户端。 */
     @Override
     public IpPortBasedClient newSyncedClient(String clientId, ClientAttributes attributes) {
         long revision = attributes.getClientAttribute(REVISION, 0);

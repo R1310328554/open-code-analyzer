@@ -23,14 +23,16 @@ import com.alibaba.nacos.naming.core.v2.client.ClientAttributes;
 import java.util.Collection;
 
 /**
- * The manager of {@code Client} Nacos naming client.
+ * Nacos 命名 {@link Client} 生命周期管理接口。
+ *
+ * <p>负责连接建立、Distro 同步、断开清理与负责节点判定。</p>
  *
  * @author xiweng.yy
  */
 public interface ClientManager {
     
     /**
-     * New client connected.
+     * 新客户端连接：按属性创建并注册客户端。
      *
      * @param clientId new client id
      * @param attributes client attributes, which can help create client
@@ -39,7 +41,7 @@ public interface ClientManager {
     boolean clientConnected(String clientId, ClientAttributes attributes);
     
     /**
-     * New client connected.
+     * 注册已构造的客户端实例。
      *
      * @param client new client
      * @return true if add successfully, otherwise false
@@ -47,7 +49,7 @@ public interface ClientManager {
     boolean clientConnected(Client client);
     
     /**
-     * New sync client connected.
+     * 注册从 Distro 同步的客户端。
      *
      * @param clientId   synced client id
      * @param attributes client sync attributes, which can help create sync client
@@ -56,7 +58,7 @@ public interface ClientManager {
     boolean syncClientConnected(String clientId, ClientAttributes attributes);
     
     /**
-     * Client disconnected.
+     * 客户端断开：移除并释放资源、发布断开事件。
      *
      * @param clientId client id
      * @return true if remove successfully, otherwise false
@@ -64,7 +66,7 @@ public interface ClientManager {
     boolean clientDisconnected(String clientId);
     
     /**
-     * Get client by id.
+     * 按 ID 查询客户端。
      *
      * @param clientId client id
      * @return client
@@ -72,7 +74,7 @@ public interface ClientManager {
     Client getClient(String clientId);
     
     /**
-     * Whether the client id exists.
+     * 判断客户端 ID 是否已注册。
      *
      * @param clientId client id
      * @return client
@@ -80,14 +82,14 @@ public interface ClientManager {
     boolean contains(final String clientId);
     
     /**
-     * All client id.
+     * 返回当前管理的全部客户端 ID。
      *
      * @return collection of client id
      */
     Collection<String> allClientId();
     
     /**
-     * Whether the client is responsible by current server.
+     * 判断当前节点是否为该客户端的负责节点。
      *
      * @param client client
      * @return true if responsible, otherwise false
@@ -95,7 +97,7 @@ public interface ClientManager {
     boolean isResponsibleClient(Client client);
     
     /**
-     * verify client.
+     * Distro 校验客户端版本与续期状态。
      *
      * @param verifyData verify data from remote responsible server
      * @return true if client is valid, otherwise is false.

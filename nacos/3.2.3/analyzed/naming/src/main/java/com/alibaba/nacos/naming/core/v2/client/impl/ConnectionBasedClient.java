@@ -20,24 +20,26 @@ import com.alibaba.nacos.naming.core.v2.client.AbstractClient;
 import com.alibaba.nacos.naming.misc.ClientConfig;
 
 /**
- * Nacos naming client based on tcp session.
+ * 基于 TCP 会话的 Nacos 命名客户端。
  *
- * <p>The client is bind to the tcp session. When the tcp session disconnect, the client should be clean.
+ * <p>客户端与远程连接绑定；连接断开时应清理实例与订阅。</p>
  *
  * @author xiweng.yy
  */
 public class ConnectionBasedClient extends AbstractClient {
     
+    /** 远程连接 ID，即客户端唯一标识。 */
     private final String connectionId;
     
     /**
-     * {@code true} means this client is directly connect to current server. {@code false} means this client is synced
-     * from other server.
+     * {@code true} 表示本机直连客户端；{@code false} 表示从其他节点 Distro 同步的客户端。
      */
     private final boolean isNative;
     
+    /** 仅对非本机客户端有意义：上次从源节点 Distro 校验成功的时间戳。 */
     /**
      * Only has meaning when {@code isNative} is false, which means that the last time verify from source server.
+      * <p>Nacos 命名 V2 客户端工厂、管理器与事件模型；详见上方类/接口说明。</p>
      */
     private volatile long lastRenewTime;
     
@@ -58,6 +60,7 @@ public class ConnectionBasedClient extends AbstractClient {
         return true;
     }
     
+    /** 是否为本机直连客户端。 */
     public boolean isNative() {
         return isNative;
     }
@@ -66,6 +69,7 @@ public class ConnectionBasedClient extends AbstractClient {
         return lastRenewTime;
     }
     
+    /** 更新 Distro 校验续期时间戳。 */
     public void setLastRenewTime() {
         this.lastRenewTime = System.currentTimeMillis();
     }

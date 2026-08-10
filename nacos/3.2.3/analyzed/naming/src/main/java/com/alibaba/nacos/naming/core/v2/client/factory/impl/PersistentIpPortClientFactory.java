@@ -22,7 +22,9 @@ import com.alibaba.nacos.naming.core.v2.client.factory.ClientFactory;
 import com.alibaba.nacos.naming.core.v2.client.impl.IpPortBasedClient;
 
 /**
- * Client factory for persistent {@link IpPortBasedClient}.
+ * 持久（persistent）{@link IpPortBasedClient} 工厂。
+ *
+ * <p>实例由 Raft 持久化，客户端 ID 以 IP:Port#false 后缀标识。</p>
  *
  * @author xiweng.yy
  */
@@ -33,6 +35,7 @@ public class PersistentIpPortClientFactory implements ClientFactory<IpPortBasedC
         return ClientConstants.PERSISTENT_IP_PORT;
     }
     
+    /** 创建持久 IP:Port 客户端并绑定属性。 */
     @Override
     public IpPortBasedClient newClient(String clientId, ClientAttributes attributes) {
         IpPortBasedClient ipPortBasedClient = new IpPortBasedClient(clientId, false);
@@ -40,6 +43,7 @@ public class PersistentIpPortClientFactory implements ClientFactory<IpPortBasedC
         return ipPortBasedClient;
     }
     
+    /** 持久客户端不支持 Distro 同步，行为与 {@link #newClient} 相同。 */
     @Override
     public IpPortBasedClient newSyncedClient(String clientId, ClientAttributes attributes) {
         IpPortBasedClient ipPortBasedClient = new IpPortBasedClient(clientId, false);

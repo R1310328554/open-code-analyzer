@@ -31,7 +31,9 @@ import java.util.Collection;
 import java.util.HashSet;
 
 /**
- * Client manager delegate.
+ * 客户端管理器委托，按 clientId 路由到具体 {@link ClientManager} 实现。
+ *
+ * <p>连接型、临时 IP:Port 与持久 IP:Port 三类客户端分别由独立 Manager 管理。</p>
  *
  * @author xiweng.yy
  */
@@ -39,10 +41,13 @@ import java.util.HashSet;
 @Component("clientManager")
 public class ClientManagerDelegate implements ClientManager {
     
+    /** TCP 连接型客户端管理器。 */
     private final ConnectionBasedClientManager connectionBasedClientManager;
     
+    /** 临时 IP:Port 客户端管理器。 */
     private final EphemeralIpPortClientManager ephemeralIpPortClientManager;
     
+    /** 持久 IP:Port 客户端管理器。 */
     private final PersistentIpPortClientManager persistentIpPortClientManager;
     
     public ClientManagerDelegate(ConnectionBasedClientManager connectionBasedClientManager,
@@ -104,6 +109,7 @@ public class ClientManagerDelegate implements ClientManager {
         return getClientManagerById(verifyData.getClientId()).verifyClient(verifyData);
     }
     
+    /** 根据 clientId 格式选择对应 Manager（无 # 为连接型，#false 为持久）。 */
     private ClientManager getClientManagerById(String clientId) {
         if (isConnectionBasedClient(clientId)) {
             return connectionBasedClientManager;
@@ -112,6 +118,7 @@ public class ClientManagerDelegate implements ClientManager {
             : ephemeralIpPortClientManager;
     }
     
+    /** 判断是否为 TCP 连接型 clientId（不含 {@link IpPortBasedClient#ID_DELIMITER}）。 */
     private boolean isConnectionBasedClient(String clientId) {
         return !clientId.contains(IpPortBasedClient.ID_DELIMITER);
     }
