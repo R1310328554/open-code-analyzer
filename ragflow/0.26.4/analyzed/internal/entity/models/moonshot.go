@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// moonshot.go — Moonshot（月之暗面/Kimi）ModelDriver：OpenAI 兼容 Chat/Embed，余额 API 与 reasoning 内容解析。
 //
 
 package models
@@ -26,12 +28,12 @@ import (
 	"strings"
 )
 
-// MoonshotModel implements ModelDriver for Moonshot
+// MoonshotModel Moonshot/Kimi ModelDriver
 type MoonshotModel struct {
 	baseModel BaseModel
 }
 
-// NewMoonshotModel creates a new Moonshot model instance
+// NewMoonshotModel 创建 Moonshot 驱动实例
 func NewMoonshotModel(baseURL map[string]string, urlSuffix URLSuffix) *MoonshotModel {
 	return &MoonshotModel{
 		baseModel: BaseModel{
@@ -42,10 +44,12 @@ func NewMoonshotModel(baseURL map[string]string, urlSuffix URLSuffix) *MoonshotM
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Moonshot 驱动实例
 func (m *MoonshotModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewMoonshotModel(baseURL, m.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "moonshot"，供工厂层路由
 func (m *MoonshotModel) Name() string {
 	return "moonshot"
 }
@@ -57,6 +61,7 @@ func validateMoonshotModelName(modelName string) (string, error) {
 	return strings.TrimSpace(modelName), nil
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (m *MoonshotModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -197,7 +202,8 @@ func (m *MoonshotModel) ChatWithMessages(modelName string, messages []Message, a
 	return chatResponse, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams response via sender function (best performance, no channel)
+// ChatStreamlyWithSender 流式对话，经 sender 推送 delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (m *MoonshotModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -353,11 +359,13 @@ func (m *MoonshotModel) ChatStreamlyWithSender(modelName string, messages []Mess
 	return nil
 }
 
-// Embed embeds a list of texts into embeddings
+// Embed 批量文本向量化
+// Embed 将文本列表编码为向量嵌入
 func (m *MoonshotModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (m *MoonshotModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -411,6 +419,7 @@ func (m *MoonshotModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, e
 	return models, nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (m *MoonshotModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -469,6 +478,7 @@ func (m *MoonshotModel) Balance(apiConfig *APIConfig) (map[string]interface{}, e
 	return response, nil
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (m *MoonshotModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := m.ListModels(apiConfig)
 	if err != nil {
@@ -477,43 +487,54 @@ func (m *MoonshotModel) CheckConnection(apiConfig *APIConfig) error {
 	return nil
 }
 
-// Rerank calculates similarity scores between query and documents
+// Rerank Moonshot 暂不支持 rerank
+// Rerank 对候选文档按 query 相关性重排序
 func (m *MoonshotModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, Rerank not implemented", m.Name())
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio Moonshot 暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (m *MoonshotModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (m *MoonshotModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", m.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech Moonshot 暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (m *MoonshotModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (m *MoonshotModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", m.Name())
 }
 
-// OCRFile OCR file
+// OCRFile Moonshot 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (m *MoonshotModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
-// ParseFile parse file
+// ParseFile Moonshot 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (m *MoonshotModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (m *MoonshotModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (m *MoonshotModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
+
+// Moonshot 驱动实现 Chat/Embed/Balance/ListModels/CheckConnection；Balance 返回可用余额 map 供 UI 渲染；Rerank/ASR/TTS/OCR/ParseFile 返回不支持。

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// lmstudio.go — LM Studio 本地推理 ModelDriver：OpenAI 兼容 Chat/Embed，AllowEmptyAPIKey 支持无密钥本地端点。
 //
 
 package models
@@ -27,12 +29,12 @@ import (
 	"strings"
 )
 
-// LmStudioModel implements ModelDriver for lm-studio
+// LmStudioModel LM Studio 本地 OpenAI 兼容 ModelDriver
 type LmStudioModel struct {
 	baseModel BaseModel
 }
 
-// NewLmStudioModel
+// NewLmStudioModel 创建 LM Studio 驱动（允许空 API Key）
 func NewLmStudioModel(baseURL map[string]string, urlSuffix URLSuffix) *LmStudioModel {
 	return &LmStudioModel{
 		baseModel: BaseModel{
@@ -44,15 +46,18 @@ func NewLmStudioModel(baseURL map[string]string, urlSuffix URLSuffix) *LmStudioM
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 LmStudio 驱动实例
 func (l *LmStudioModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewLmStudioModel(baseURL, l.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "lmstudio"，供工厂层路由
 func (l *LmStudioModel) Name() string {
 	return "lmstudio"
 }
 
-// ChatWithMessages sends multiple messages with roles and returns response
+// ChatWithMessages 非流式 chat/completions
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (l *LmStudioModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := l.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -203,7 +208,8 @@ func (l *LmStudioModel) ChatWithMessages(modelName string, messages []Message, a
 	return chatResponse, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams response via sender function (best performance, no channel)
+// ChatStreamlyWithSender 流式 chat/completions，经 sender 推送 delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (l *LmStudioModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := l.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -351,6 +357,7 @@ func (l *LmStudioModel) ChatStreamlyWithSender(modelName string, messages []Mess
 	return nil
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (l *LmStudioModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := l.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -435,39 +442,47 @@ func (l *LmStudioModel) Embed(modelName *string, texts []string, apiConfig *APIC
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (l *LmStudioModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio LM Studio 暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (l *LmStudioModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (l *LmStudioModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", l.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech LM Studio 暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (l *LmStudioModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (l *LmStudioModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", l.Name())
 }
 
-// OCRFile OCR file
+// OCRFile LM Studio 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (l *LmStudioModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
-// ParseFile parse file
+// ParseFile LM Studio 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (l *LmStudioModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
-// ListModels list supported models
+// ListModels 列出 LM Studio 本地加载的模型
+// ListModels 列出当前 API Key 可见的模型目录
 func (l *LmStudioModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := l.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -535,20 +550,26 @@ func (l *LmStudioModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, e
 	return ParseListModel(modelList), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (l *LmStudioModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
-// CheckConnection verifies that the configured LM Studio base URL is reachable
+// CheckConnection 验证 LM Studio 本地端点可达
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (l *LmStudioModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := l.ListModels(apiConfig)
 	return err
 }
 
+// ListTasks 列出异步任务状态
 func (l *LmStudioModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (l *LmStudioModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
+
+// LM Studio 驱动实现 Chat/Embed/ListModels/CheckConnection；AllowEmptyAPIKey=true 适配本地无鉴权端点；Rerank/ASR/TTS/OCR/ParseFile 返回不支持。

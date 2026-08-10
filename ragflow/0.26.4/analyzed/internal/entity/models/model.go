@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// model.go — 模型目录与 ProviderManager：conf/models/*.json 厂商配置加载、all_models.json 别名索引及模型特性查询 API。
 //
 
 package models
@@ -26,14 +28,14 @@ import (
 	"strings"
 )
 
-// ReasoningSimple represents simple reasoning capability
+// ReasoningSimple 简单推理能力（enabled/default 开关）
 type ReasoningSimple struct {
 	Type    string `json:"type"`
 	Enabled bool   `json:"enabled"`
 	Default bool   `json:"default"`
 }
 
-// ReasoningBudget represents budget-based reasoning capability
+// ReasoningBudget 预算型推理（default_tokens/token_range）
 type ReasoningBudget struct {
 	Type          string `json:"type"`
 	Enabled       bool   `json:"enabled"`
@@ -44,7 +46,7 @@ type ReasoningBudget struct {
 	} `json:"token_range"`
 }
 
-// ReasoningEffort represents effort-based reasoning capability
+// ReasoningEffort 力度型推理（default/options 枚举）
 type ReasoningEffort struct {
 	Type    string   `json:"type"`
 	Enabled bool     `json:"enabled"`
@@ -52,7 +54,7 @@ type ReasoningEffort struct {
 	Options []string `json:"options"`
 }
 
-// Reasoning represents the reasoning capability (can be one of three types)
+// Reasoning 推理能力联合体（simple/budget/effort 三选一）
 type Reasoning struct {
 	Simple  *ReasoningSimple `json:"-"`
 	Budget  *ReasoningBudget `json:"-"`
@@ -60,19 +62,19 @@ type Reasoning struct {
 	RawType string           `json:"type"`
 }
 
-// Reasoning represents the reasoning capability (can be one of three types)
+// ClearReasoningContent 是否清除推理内容及其支持的模型列表
 type ClearReasoningContent struct {
 	DefaultValue    bool     `json:"default_value"`
 	SupportedModels []string `json:"supported_models"`
 }
 
-// Reasoning represents the reasoning capability (can be one of three types)
+// Thinking 思维链开关默认值与支持模型列表
 type Thinking struct {
 	DefaultValue    bool     `json:"default_value"`
 	SupportedModels []string `json:"supported_models"`
 }
 
-// UnmarshalJSON custom unmarshal for Reasoning
+// UnmarshalJSON Reasoning 自定义反序列化，按 type 分支解析
 func (r *Reasoning) UnmarshalJSON(data []byte) error {
 	var temp map[string]interface{}
 	if err := json.Unmarshal(data, &temp); err != nil {
@@ -115,7 +117,7 @@ func (r *Reasoning) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON custom marshal for Reasoning
+// MarshalJSON Reasoning 自定义序列化，按 RawType 输出对应结构
 func (r *Reasoning) MarshalJSON() ([]byte, error) {
 	switch r.RawType {
 	case "simple":
@@ -134,14 +136,14 @@ func (r *Reasoning) MarshalJSON() ([]byte, error) {
 	return nil, fmt.Errorf("invalid reasoning state")
 }
 
-// Multimodal represents multimodal capability
+// Multimodal 多模态能力（输入/输出模态列表）
 type Multimodal struct {
 	Enabled          bool     `json:"enabled"`
 	InputModalities  []string `json:"input_modalities,omitempty"`
 	OutputModalities []string `json:"output_modalities,omitempty"`
 }
 
-// Features represents all features of a model
+// Features 模型特性集合（multimodal/reasoning/thinking 等）
 type Features struct {
 	Multimodal    *Multimodal            `json:"multimodal,omitempty"`
 	Reasoning     *Reasoning             `json:"reasoning,omitempty"`
@@ -149,16 +151,18 @@ type Features struct {
 	ClearThinking *ClearReasoningContent `json:"clear_thinking,omitempty"`
 }
 
+// ModelThinking 模型级 thinking 开关与 clear_reasoning 配置
 type ModelThinking struct {
 	DefaultValue  bool `json:"default_value"`
 	ClearThinking bool `json:"clear_thinking"`
 }
 
+// ModelTools 模型工具调用支持标记
 type ModelTools struct {
 	Support bool `json:"support"`
 }
 
-// Model represents a single LLM model
+// Model 单个 LLM 模型元数据（名称、类型、token 上限、别名、维度）
 type Model struct {
 	Name         string         `json:"name"`
 	MaxTokens    *int           `json:"max_tokens"`
@@ -172,7 +176,7 @@ type Model struct {
 	ModelTypeMap map[string]bool
 }
 
-// Provider represents an LLM provider
+// Provider LLM 厂商配置（URL、URLSuffix、模型列表、ModelDriver）
 type Provider struct {
 	Name        string            `json:"name"`
 	Rank        int               `json:"rank"`
@@ -184,20 +188,21 @@ type Provider struct {
 	ModelDriver ModelDriver
 }
 
-// ProviderManager manages provider and model operations
+// ProviderManager 厂商/模型目录管理器（全局单例）
 type ProviderManager struct {
 	Providers        []Provider     `json:"model_providers"`
 	AllModels        []Model        `json:"all_models"`
 	Alias2ModelIndex map[string]int `json:"alias2_model_index_map"`
 }
 
-// ModelResponse represents the standard response structure
+// ModelResponse 标准 API 响应结构（code/data/message）
 type ModelResponse struct {
 	Code    int                      `json:"code"`
 	Data    []map[string]interface{} `json:"data"`
 	Message string                   `json:"message"`
 }
 
+// decodeProviderConfig 解析厂商 JSON 并严格校验 url_suffix
 func decodeProviderConfig(data []byte) (Provider, error) {
 	var provider Provider
 	if err := json.Unmarshal(data, &provider); err != nil {
@@ -225,11 +230,12 @@ func decodeProviderConfig(data []byte) (Provider, error) {
 
 var providerManager *ProviderManager
 
+// GetProviderManager 返回全局 ProviderManager 单例
 func GetProviderManager() *ProviderManager {
 	return providerManager
 }
 
-// InitProviderManager creates a new ProviderManager by reading all JSON files from a directory
+// InitProviderManager 从目录加载 conf/models/*.json 并初始化全局 ProviderManager
 func InitProviderManager(dirPath string) error {
 	providers := []Provider{}
 
@@ -349,7 +355,7 @@ func InitProviderManager(dirPath string) error {
 	return nil
 }
 
-// 1. List all providers
+// ListProviders 列出全部厂商（含 model_types、url_suffix，按 rank 排序）
 func (pm *ProviderManager) ListProviders() ([]map[string]interface{}, error) {
 
 	var providers []map[string]interface{}
@@ -394,6 +400,7 @@ func (pm *ProviderManager) ListProviders() ([]map[string]interface{}, error) {
 	return providers, nil
 }
 
+// ListAllModels 列出 conf/all_models.json 中的全局模型目录
 func (pm *ProviderManager) ListAllModels() ([]map[string]interface{}, error) {
 
 	var modelList []map[string]interface{}
@@ -435,6 +442,7 @@ func (pm *ProviderManager) ListAllModels() ([]map[string]interface{}, error) {
 	return modelList, nil
 }
 
+// GetModelByNameOrAlias 按名称或别名查找全局模型
 func (pm *ProviderManager) GetModelByNameOrAlias(modelName string) *Model {
 	lowerModelName := strings.ToLower(modelName)
 	// Check if it is alias
@@ -445,7 +453,7 @@ func (pm *ProviderManager) GetModelByNameOrAlias(modelName string) *Model {
 	return nil
 }
 
-// 2. Show specific provider information (including base_url)
+// GetProviderByName 按名称查询厂商详情（含 base_url）
 func (pm *ProviderManager) GetProviderByName(providerName string) (map[string]interface{}, error) {
 
 	provider := pm.FindProvider(providerName)
@@ -462,7 +470,7 @@ func (pm *ProviderManager) GetProviderByName(providerName string) (map[string]in
 	return providerInfo, nil
 }
 
-// 3. List models under a specific provider
+// ListModels 列出指定厂商下的模型列表
 func (pm *ProviderManager) ListModels(providerName string) ([]map[string]interface{}, error) {
 	provider := pm.FindProvider(providerName)
 	if provider == nil {
@@ -553,7 +561,7 @@ func (pm *ProviderManager) GetModelUrl(providerName, modelName, modelType string
 	}
 }
 
-// 4. Search specific model information with filtering by max_tokens or type
+// SearchByName 按模型名搜索并支持 max_tokens/type 过滤
 func (pm *ProviderManager) SearchModelInfo(providerName, modelName string, filterBy string, filterValue interface{}) ModelResponse {
 	resp := ModelResponse{
 		Code:    0,
@@ -620,7 +628,7 @@ func (pm *ProviderManager) SearchModelInfo(providerName, modelName string, filte
 	return resp
 }
 
-// 5. Display models with specific features
+// SearchByFeature 按特性类型筛选模型
 func (pm *ProviderManager) SearchByFeature(featureType string) ModelResponse {
 	resp := ModelResponse{
 		Code:    0,
@@ -651,7 +659,7 @@ func (pm *ProviderManager) SearchByFeature(featureType string) ModelResponse {
 	return resp
 }
 
-// 6. Display models with specific type
+// SearchByType 按 model_type 筛选模型
 func (pm *ProviderManager) SearchByType(modelType string) ModelResponse {
 	resp := ModelResponse{
 		Code:    0,
@@ -682,6 +690,7 @@ func (pm *ProviderManager) SearchByType(modelType string) ModelResponse {
 	return resp
 }
 
+// GetFeatures 提取模型特性标签列表（如 thinking）
 func GetFeatures(model *Model) []string {
 	var features []string
 	if model.Thinking != nil {
@@ -690,6 +699,7 @@ func GetFeatures(model *Model) []string {
 	return features
 }
 
+// ConvertToFeaturesMap 将 Model 特性转为 API 响应 map
 func ConvertToFeaturesMap(model *Model) map[string]interface{} {
 	featuresMap := make(map[string]interface{})
 	if model.Thinking != nil {
@@ -702,7 +712,7 @@ func ConvertToFeaturesMap(model *Model) map[string]interface{} {
 	return featuresMap
 }
 
-// Helper: Get features map for response
+// getFeaturesMap 将 Features 转为 API 响应 map
 func getFeaturesMap(features Features) map[string]interface{} {
 	featuresMap := make(map[string]interface{})
 
@@ -748,7 +758,7 @@ func getFeaturesMap(features Features) map[string]interface{} {
 	return featuresMap
 }
 
-// Helper: Check if model has a specific feature
+// modelHasFeature 判断模型是否具备指定特性
 func modelHasFeature(features Features, featureType string) bool {
 	switch strings.ToLower(featureType) {
 	case "multimodal":
@@ -766,9 +776,7 @@ func modelHasFeature(features Features, featureType string) bool {
 	}
 }
 
-// findRepoRoot walks up from CWD until it finds the repo root (marked by
-// conf/all_models.json).  This makes tests work regardless of the Go test
-// binary's CWD (which is set to the package directory by go test).
+// findRepoRoot 向上遍历 CWD 直至找到含 conf/all_models.json 的仓库根（供 go test 定位配置）
 func findRepoRoot() string {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -783,7 +791,7 @@ func findRepoRoot() string {
 	return "."
 }
 
-// Helper: Find provider by name
+// FindProvider 按名称查找厂商（大小写不敏感）
 func (pm *ProviderManager) FindProvider(name string) *Provider {
 	for i := range pm.Providers {
 		if strings.EqualFold(pm.Providers[i].Name, name) {
@@ -793,7 +801,7 @@ func (pm *ProviderManager) FindProvider(name string) *Provider {
 	return nil
 }
 
-// Helper: Find model by name
+// findModel 在厂商模型列表中按名称查找
 func (pm *ProviderManager) findModel(provider *Provider, modelName string) *Model {
 	for i := range provider.Models {
 		if strings.EqualFold(provider.Models[i].Name, modelName) {
@@ -803,7 +811,7 @@ func (pm *ProviderManager) findModel(provider *Provider, modelName string) *Mode
 	return nil
 }
 
-// Helper: Check if model types contains target
+// containsModelType 判断 model_types 是否包含目标类型
 func containsModelType(types []string, target string) bool {
 	for _, t := range types {
 		if strings.EqualFold(t, target) {
@@ -812,3 +820,5 @@ func containsModelType(types []string, target string) bool {
 	}
 	return false
 }
+
+// ProviderManager 启动时加载 conf/models/*.json 与 conf/all_models.json；Alias2ModelIndex 支持别名反查；InitProviderManager 为各 Provider 实例化 ModelDriver。ListProviders 保证 model_types 非 nil 切片，避免前端 .some() 崩溃。

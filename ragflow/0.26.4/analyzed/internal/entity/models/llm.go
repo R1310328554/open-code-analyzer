@@ -14,18 +14,14 @@
 //  limitations under the License.
 //
 
-// Package models — EinoChatModel thin wrapper (Phase 2 P0, plan §2.11.6 D1).
+// Package models — EinoChatModel 薄包装（Phase 2 P0，计划 §2.11.6 D1）。
 //
-// Bridges the existing RAGFlow provider-specific *ChatModel (OpenAI, Anthropic,
-// Gemini, …) to eino's model.BaseChatModel / model.ToolCallingChatModel
-// interface so the ReAct agent (internal/agent/component/agent.go) can
-// consume it directly. The wrapper does NOT reimplement provider logic — it
-// translates eino's []schema.Message + model.Option into the existing
-// ChatModel + APIConfig + ChatConfig call shape, and converts the
-// *ChatResponse back into a *schema.Message.
+// 将现有 RAGFlow 各厂商 *ChatModel 桥接到 eino 的 BaseChatModel/ToolCallingChatModel，供 ReAct Agent 直接使用；仅做消息/配置转换，不重复实现厂商逻辑。
 //
 // Why a separate file: the plan forbids editing existing files in this
-// package (types.go, dummy.go, openai.go, …). Adding llm.go keeps the bridge
+// // llm.go — EinoChatModel 桥接层（Phase 2 P0）：将 RAGFlow *ChatModel 适配为 eino model.BaseChatModel/ToolCallingChatModel，供 ReAct Agent 直接消费，不重复实现厂商逻辑。
+
+package (types.go, dummy.go, openai.go, …). Adding llm.go keeps the bridge
 // self-contained and easy to remove if/when providers get first-class eino
 // adapters.
 package models
@@ -39,24 +35,14 @@ import (
 	"github.com/cloudwego/eino/schema"
 )
 
-// EinoChatModel adapts a RAGFlow *ChatModel to eino's chat model interfaces.
-// It is safe for concurrent use: all per-request state lives in the
-// receiver's fields which are only mutated through WithTools (which returns
-// a new instance, never mutating in place — see eino's
-// components/model/interface.go:84-99 for the rationale).
+// EinoChatModel 将 RAGFlow *ChatModel 适配为 eino 聊天模型接口；并发安全：WithTools 返回新实例而非原地修改 receiver。
 type EinoChatModel struct {
 	inner   *ChatModel
 	chatCfg *ChatConfig
 	tools   []*schema.ToolInfo
 }
 
-// NewEinoChatModel wraps an existing RAGFlow *ChatModel so it can be passed
-// to eino constructs (ReAct agent, Workflow, etc.). The chatConfig argument
-// carries temperature / max_tokens / etc. — pass nil for provider defaults.
-//
-// Driver is taken from cm.ModelDriver, model name from cm.ModelName, and
-// API key / region from cm.APIConfig. These are fixed for the lifetime of
-// the wrapper; per-request variations belong in WithTools / a new instance.
+// NewEinoChatModel 包装现有 *ChatModel 供 eino ReAct/Workflow 使用；chatConfig 携带 temperature/max_tokens 等，nil 则用厂商默认；Driver/ModelName/APIConfig 在包装器生命周期内固定。
 func NewEinoChatModel(cm *ChatModel, chatConfig *ChatConfig) *EinoChatModel {
 	return &EinoChatModel{
 		inner:   cm,
@@ -64,7 +50,7 @@ func NewEinoChatModel(cm *ChatModel, chatConfig *ChatConfig) *EinoChatModel {
 	}
 }
 
-// name returns the underlying model name (best-effort; nil-safe).
+// name 返回底层模型名（尽力而为，nil 安全）
 func (m *EinoChatModel) name() string {
 	if m == nil || m.inner == nil || m.inner.ModelName == nil {
 		return ""
@@ -72,10 +58,7 @@ func (m *EinoChatModel) name() string {
 	return *m.inner.ModelName
 }
 
-// toInternalMessages converts eino's []schema.Message into the existing
-// RAGFlow []Message type. System / user / assistant roles are preserved;
-// tool-role messages are mapped to "tool" (the existing model layer already
-// speaks that string — see types.go:9).
+// toInternalMessages 将 eino []schema.Message 转为 RAGFlow []Message；保留 system/user/assistant 角色，tool 映射为 "tool"。
 func toInternalMessages(msgs []*schema.Message) []Message {
 	if len(msgs) == 0 {
 		return nil
@@ -94,9 +77,7 @@ func toInternalMessages(msgs []*schema.Message) []Message {
 	return out
 }
 
-// fromInternalResponse converts a *ChatResponse to *schema.Message. The
-// existing ChatResponse only carries answer text (+ optional reasoning), so
-// the resulting Message has Role=Assistant and Content=answer.
+// fromInternalResponse 将 *ChatResponse 转为 *schema.Message（Role=Assistant，Content=answer）
 func fromInternalResponse(resp *ChatResponse) *schema.Message {
 	if resp == nil {
 		return &schema.Message{Role: schema.Assistant, Content: ""}
@@ -108,8 +89,7 @@ func fromInternalResponse(resp *ChatResponse) *schema.Message {
 	return &schema.Message{Role: schema.Assistant, Content: content}
 }
 
-// Generate blocks until the model returns a complete response. Mirrors
-// eino's model.BaseChatModel.Generate.
+// Generate 阻塞直至模型返回完整回复，对应 eino BaseChatModel.Generate
 func (m *EinoChatModel) Generate(ctx context.Context, msgs []*schema.Message, opts ...model.Option) (*schema.Message, error) {
 	if m == nil || m.inner == nil || m.inner.ModelDriver == nil {
 		return nil, fmt.Errorf("models: EinoChatModel: nil inner ModelDriver")
@@ -144,9 +124,7 @@ func (m *EinoChatModel) Generate(ctx context.Context, msgs []*schema.Message, op
 	return fromInternalResponse(resp), nil
 }
 
-// Stream returns a schema.StreamReader that yields message chunks
-// incrementally. Uses the existing ChatStreamlyWithSender pathway; the
-// sender callback pushes the streamed delta into the StreamReader.
+// Stream 返回增量推送 message chunk 的 StreamReader，复用 ChatStreamlyWithSender 路径
 func (m *EinoChatModel) Stream(ctx context.Context, msgs []*schema.Message, opts ...model.Option) (*schema.StreamReader[*schema.Message], error) {
 	if m == nil || m.inner == nil || m.inner.ModelDriver == nil {
 		return nil, fmt.Errorf("models: EinoChatModel: nil inner ModelDriver")
@@ -183,16 +161,7 @@ func (m *EinoChatModel) Stream(ctx context.Context, msgs []*schema.Message, opts
 	return sr, nil
 }
 
-// WithTools returns a NEW EinoChatModel instance with the given tools
-// attached. The receiver is never mutated — this satisfies eino's
-// ToolCallingChatModel contract and is safe under concurrent use.
-//
-// P0 caveat: the existing RAGFlow provider drivers do not natively consume
-// eino's *schema.ToolInfo; the tools are stored on the wrapper for
-// future use (Phase 2.5 will plumb them into the driver call). For now
-// returning them in the streamed / generated content is a no-op on the
-// wire — agents that depend on tool calling will surface this gap during
-// Phase 3 ReAct integration.
+// WithTools 返回绑定 tools 的新 EinoChatModel 实例（receiver 不变）；P0 限制：tools 暂存于 wrapper，Phase 2.5 才接入驱动调用，当前 wire 层为 no-op。
 func (m *EinoChatModel) WithTools(tools []*schema.ToolInfo) (model.ToolCallingChatModel, error) {
 	if m == nil {
 		return nil, fmt.Errorf("models: EinoChatModel.WithTools: nil receiver")
@@ -202,8 +171,7 @@ func (m *EinoChatModel) WithTools(tools []*schema.ToolInfo) (model.ToolCallingCh
 	return &cp, nil
 }
 
-// Tools returns the tools currently bound to the wrapper (used by
-// introspection; not part of any eino interface).
+// Tools 返回当前绑定的 tools（自省用，非 eino 接口）
 func (m *EinoChatModel) Tools() []*schema.ToolInfo {
 	if m == nil {
 		return nil
@@ -211,9 +179,7 @@ func (m *EinoChatModel) Tools() []*schema.ToolInfo {
 	return append([]*schema.ToolInfo(nil), m.tools...)
 }
 
-// Inner exposes the wrapped *ChatModel for callers that need direct
-// access (e.g. to read token usage from the response after a custom
-// Generate call). Not part of any eino interface.
+// Inner 暴露底层 *ChatModel，供自定义 Generate 后读取 token 用量等
 func (m *EinoChatModel) Inner() *ChatModel {
 	if m == nil {
 		return nil
@@ -221,7 +187,9 @@ func (m *EinoChatModel) Inner() *ChatModel {
 	return m.inner
 }
 
-// Name returns the wrapped model name (used by tools / debugging).
+// Name 返回包装模型名（工具/调试用）
 func (m *EinoChatModel) Name() string {
 	return m.name()
 }
+
+// EinoChatModel 桥接层：Generate 走 ChatWithMessages，Stream 走 ChatStreamlyWithSender；WithTools 满足 ToolCallingChatModel 契约但不 mutate receiver。Phase 3 ReAct 集成前 tool calling 在 wire 层仍为 no-op。

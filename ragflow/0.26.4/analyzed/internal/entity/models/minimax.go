@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// minimax.go — MiniMax 海螺 ModelDriver：Chat/Embed/TTS（hex 音频），Group ID 鉴权与 reasoning 内容解析。
 //
 
 package models
@@ -27,12 +29,12 @@ import (
 	"strings"
 )
 
-// MinimaxModel implements ModelDriver for Minimax
+// MinimaxModel MiniMax 海螺 ModelDriver
 type MinimaxModel struct {
 	baseModel BaseModel
 }
 
-// NewMinimaxModel creates a new Minimax model instance
+// NewMinimaxModel 创建 MiniMax 驱动实例
 func NewMinimaxModel(baseURL map[string]string, urlSuffix URLSuffix) *MinimaxModel {
 	return &MinimaxModel{
 		baseModel: BaseModel{
@@ -43,10 +45,12 @@ func NewMinimaxModel(baseURL map[string]string, urlSuffix URLSuffix) *MinimaxMod
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Minimax 驱动实例
 func (m *MinimaxModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewMinimaxModel(baseURL, m.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "minimax"，供工厂层路由
 func (m *MinimaxModel) Name() string {
 	return "minimax"
 }
@@ -58,7 +62,8 @@ func validateMinimaxModelName(modelName string) (string, error) {
 	return strings.TrimSpace(modelName), nil
 }
 
-// ChatWithMessages sends multiple messages with roles and returns response
+// ChatWithMessages 非流式多轮对话，解析 bot_setting 与 reasoning
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (m *MinimaxModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -202,7 +207,8 @@ func (m *MinimaxModel) ChatWithMessages(modelName string, messages []Message, ap
 	return chatResponse, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams response via sender function (best performance, no channel)
+// ChatStreamlyWithSender 流式对话，经 sender 推送 delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (m *MinimaxModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -356,11 +362,13 @@ func (m *MinimaxModel) ChatStreamlyWithSender(modelName string, messages []Messa
 	return sender(&endOfStream, nil)
 }
 
-// Embed embeds a list of texts into embeddings
+// Embed 批量文本向量化
+// Embed 将文本列表编码为向量嵌入
 func (m *MinimaxModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (m *MinimaxModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -414,30 +422,36 @@ func (m *MinimaxModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, er
 	return models, nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (m *MinimaxModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (m *MinimaxModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := m.ListModels(apiConfig)
 	return err
 }
 
-// Rerank calculates similarity scores between query and documents
+// Rerank MiniMax 暂不支持 rerank
+// Rerank 对候选文档按 query 相关性重排序
 func (m *MinimaxModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, Rerank not implemented", m.Name())
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio MiniMax 暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (m *MinimaxModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (m *MinimaxModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", m.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech 文字转语音，返回 hex 编码音频
+// AudioSpeech 文字转语音（TTS）
 func (m *MinimaxModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -528,6 +542,7 @@ func (m *MinimaxModel) AudioSpeech(modelName *string, audioContent *string, apiC
 	}, nil
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (m *MinimaxModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -622,20 +637,26 @@ func (m *MinimaxModel) AudioSpeechWithSender(modelName *string, audioContent *st
 	return nil
 }
 
-// OCRFile OCR file
+// OCRFile MiniMax 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (m *MinimaxModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
-// ParseFile parse file
+// ParseFile MiniMax 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (m *MinimaxModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (m *MinimaxModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (m *MinimaxModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
+
+// MiniMax 驱动实现 Chat/Embed/TTS/ListModels/CheckConnection；API Key 需配合 Group ID；TTS 返回 hex 编码音频字节。Rerank/ASR/OCR/ParseFile 返回不支持。

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// jina.go — Jina AI ModelDriver：专注 Embed/Rerank 与轻量 Chat，OpenAI 兼容端点。
 //
 
 package models
@@ -27,10 +29,12 @@ import (
 	"time"
 )
 
+// JinaModel Jina AI 平台 ModelDriver
 type JinaModel struct {
 	baseModel BaseModel
 }
 
+// NewJinaModel 创建 Jina 驱动实例
 func NewJinaModel(baseURL map[string]string, urlSuffix URLSuffix) *JinaModel {
 	// Embed/Rerank/ListModels issue requests without a per-call context
 	// deadline, so keep an explicit 90s client-level timeout to bound them.
@@ -46,14 +50,17 @@ func NewJinaModel(baseURL map[string]string, urlSuffix URLSuffix) *JinaModel {
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Jina 驱动实例
 func (j *JinaModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewJinaModel(baseURL, j.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "jina"，供工厂层路由
 func (j *JinaModel) Name() string {
 	return "jina"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (j *JinaModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := j.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -164,11 +171,13 @@ func (j *JinaModel) ChatWithMessages(modelName string, messages []Message, apiCo
 	}, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (j *JinaModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	//TODO implement me: https://api.jina.ai/docs#/Search%20Foundation%20Models/chat_completions_v1_chat_completions_post
 	return fmt.Errorf("jina does not implement ChatStreamlyWithSender(not available for now)")
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (j *JinaModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := j.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -243,6 +252,7 @@ func (j *JinaModel) Embed(modelName *string, texts []string, apiConfig *APIConfi
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (j *JinaModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := j.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -321,6 +331,7 @@ func (j *JinaModel) Rerank(modelName *string, query string, documents []string, 
 	return &rerankResponse, nil
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (j *JinaModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 
 	resolvedBaseURL, err := j.baseModel.GetBaseURL(apiConfig)
@@ -370,47 +381,59 @@ func (j *JinaModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error
 	return ParseListModel(ModelList{Models: models}), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (j *JinaModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (j *JinaModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := j.ListModels(apiConfig)
 	return err
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio Jina 暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (j *JinaModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", j.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (j *JinaModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", j.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech Jina 暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (j *JinaModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", j.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (j *JinaModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", j.Name())
 }
 
-// OCRFile OCR file
+// OCRFile Jina 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (j *JinaModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", j.Name())
 }
 
-// ParseFile parse file
+// ParseFile Jina 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (j *JinaModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", j.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (j *JinaModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", j.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (j *JinaModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", j.Name())
 }
+
+// Jina 驱动主要实现 Embed/Rerank/Chat/ListModels；Embed 走 jina-embeddings API；Rerank 走 jina-reranker。ASR/TTS/OCR/ParseFile 返回不支持。

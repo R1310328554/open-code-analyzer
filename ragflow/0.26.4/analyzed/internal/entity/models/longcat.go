@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// longcat.go — 美团 LongCat ModelDriver：OpenAI 兼容 Chat，reasoning_content 推理链，不支持 Embed/Rerank。
 //
 
 package models
@@ -26,12 +28,12 @@ import (
 	"strings"
 )
 
-// LongCatModel implements ModelDriver for LongCat (Meituan).
+// LongCatModel 美团 LongCat ModelDriver
 type LongCatModel struct {
 	baseModel BaseModel
 }
 
-// NewLongCatModel creates a new LongCat model instance.
+// NewLongCatModel 创建 LongCat 驱动实例
 func NewLongCatModel(baseURL map[string]string, urlSuffix URLSuffix) *LongCatModel {
 	return &LongCatModel{
 		baseModel: BaseModel{
@@ -42,15 +44,18 @@ func NewLongCatModel(baseURL map[string]string, urlSuffix URLSuffix) *LongCatMod
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 LongCat 驱动实例
 func (l *LongCatModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewLongCatModel(baseURL, l.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "longcat"，供工厂层路由
 func (l *LongCatModel) Name() string {
 	return "longcat"
 }
 
-// ChatWithMessages sends multiple messages with roles and returns the response.
+// ChatWithMessages 非流式 chat/completions，解析 reasoning_content
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (l *LongCatModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := l.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -165,7 +170,8 @@ func (l *LongCatModel) ChatWithMessages(modelName string, messages []Message, ap
 	}, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams the response via the
+// ChatStreamlyWithSender 流式 chat/completions，推送 reasoning_content delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (l *LongCatModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := l.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -308,6 +314,7 @@ type longCatListModelsResponse struct {
 
 const longCatMaxListModelsResponseBytes = 1 << 20
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (l *LongCatModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := l.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -361,56 +368,70 @@ func (l *LongCatModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, er
 	return ParseListModel(ModelList{Models: result.Data}), nil
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (l *LongCatModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := l.ListModels(apiConfig)
 	return err
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (l *LongCatModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
-// Rerank is not exposed by the LongCat API.
+// Rerank LongCat API 未暴露 rerank 端点
+// Rerank 对候选文档按 query 相关性重排序
 func (l *LongCatModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
-// Balance is not exposed by the LongCat API.
+// Balance LongCat API 未暴露余额查询
+// Balance 查询账户余额（若上游支持）
 func (l *LongCatModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
-// TranscribeAudio (ASR) is not exposed by the LongCat API.
+// TranscribeAudio LongCat 暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (l *LongCatModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (l *LongCatModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", l.Name())
 }
 
-// AudioSpeech (TTS) is not exposed by the LongCat API.
+// AudioSpeech LongCat 暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (l *LongCatModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (l *LongCatModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", l.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (l *LongCatModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
-// ParseFile parse file
+// ParseFile LongCat 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (l *LongCatModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (l *LongCatModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (l *LongCatModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
+
+// LongCat 驱动主要实现 Chat/ListModels/CheckConnection；reasoning_content 由 ChatModel 层包装为 <think>。Embed/Rerank/Balance/ASR/TTS/OCR/ParseFile 返回不支持。

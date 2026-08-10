@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// mistral.go — Mistral AI ModelDriver：官方 Chat/Embed API，SSE 流式对话与模型目录查询。
 //
 
 package models
@@ -28,13 +30,13 @@ import (
 	"time"
 )
 
-// MistralModel implements ModelDriver for Mistral AI.
+// MistralModel Mistral AI 官方 ModelDriver
 
 type MistralModel struct {
 	baseModel BaseModel
 }
 
-// NewMistralModel creates a new Mistral model instance.
+// NewMistralModel 创建 Mistral 驱动实例
 func NewMistralModel(baseURL map[string]string, urlSuffix URLSuffix) *MistralModel {
 	return &MistralModel{
 		baseModel: BaseModel{
@@ -45,15 +47,18 @@ func NewMistralModel(baseURL map[string]string, urlSuffix URLSuffix) *MistralMod
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Mistral 驱动实例
 func (m *MistralModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewMistralModel(baseURL, m.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "mistral"，供工厂层路由
 func (m *MistralModel) Name() string {
 	return "mistral"
 }
 
-// ChatWithMessages sends multiple messages with roles and returns the response.
+// ChatWithMessages 非流式 chat/completions
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (m *MistralModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -206,7 +211,8 @@ func extractMistralContent(raw interface{}) (string, string, error) {
 	}
 }
 
-// ChatStreamlyWithSender sends messages and streams the response
+// ChatStreamlyWithSender 流式 chat/completions
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (m *MistralModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -341,7 +347,8 @@ type mistralEmbeddingResponse struct {
 	Object string                 `json:"object"`
 }
 
-// Embed turns a list of texts into embedding vectors
+// Embed 批量文本向量化
+// Embed 将文本列表编码为向量嵌入
 func (m *MistralModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -430,7 +437,8 @@ func (m *MistralModel) Embed(modelName *string, texts []string, apiConfig *APICo
 	return embeddings, nil
 }
 
-// ListModels returns the list of model ids visible to the API key.
+// ListModels 列出 API Key 可见的模型 ID
+// ListModels 列出当前 API Key 可见的模型目录
 func (m *MistralModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -480,12 +488,14 @@ func (m *MistralModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, er
 	return ParseListModel(modelList), nil
 }
 
-// Balance is not exposed by the Mistral API, so this returns "no such method".
+// Balance Mistral API 未暴露余额查询
+// Balance 查询账户余额（若上游支持）
 func (m *MistralModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
-// CheckConnection runs a lightweight ListModels call to verify the API key.
+// CheckConnection 通过 ListModels 轻量探活验证 API Key
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (m *MistralModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := m.ListModels(apiConfig)
 	if err != nil {
@@ -494,30 +504,35 @@ func (m *MistralModel) CheckConnection(apiConfig *APIConfig) error {
 	return nil
 }
 
-// Rerank calculates similarity scores between query and documents
+// Rerank Mistral 暂不支持 rerank
+// Rerank 对候选文档按 query 相关性重排序
 func (m *MistralModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio Mistral 暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (m *MistralModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (m *MistralModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", m.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech Mistral 暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (m *MistralModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (m *MistralModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", m.Name())
 }
 
-// OCRFile OCR file
+// OCRFile Mistral 暂不支持 OCR
 func (m *MistralModel) OCRFile(modelName *string, content []byte, urls *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -605,14 +620,19 @@ func (m *MistralModel) OCRFile(modelName *string, content []byte, urls *string, 
 	}, nil
 }
 
+// ParseFile 解析文档为结构化文本
 func (m *MistralModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (m *MistralModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (m *MistralModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
+
+// Mistral 驱动实现 Chat/Embed/ListModels/CheckConnection；Bearer 鉴权；SSE 流以 [DONE] 终止。Rerank/Balance/ASR/TTS/OCR/ParseFile 返回不支持。

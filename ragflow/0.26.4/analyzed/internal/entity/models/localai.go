@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// localai.go — LocalAI 自托管推理 ModelDriver：OpenAI 兼容 Chat/Embed/Rerank/ASR/TTS，SSE 流 idle 超时与 reasoning 字段解析。
 //
 
 package models
@@ -28,15 +30,15 @@ import (
 	"time"
 )
 
-// localAIStreamIdleTimeout bounds how long ChatStreamlyWithSender
+// localAIStreamIdleTimeout 限制 ChatStreamlyWithSender 流式 idle 超时（秒）
 var localAIStreamIdleTimeout = 60 * time.Second
 
-// LocalAIModel implements ModelDriver for LocalAI
+// LocalAIModel LocalAI 自托管 ModelDriver
 type LocalAIModel struct {
 	baseModel BaseModel
 }
 
-// NewLocalAIModel creates a new LocalAI model instance
+// NewLocalAIModel 创建 LocalAI 驱动（AllowEmptyAPIKey）
 func NewLocalAIModel(baseURL map[string]string, urlSuffix URLSuffix) *LocalAIModel {
 	return &LocalAIModel{
 		baseModel: BaseModel{
@@ -48,16 +50,19 @@ func NewLocalAIModel(baseURL map[string]string, urlSuffix URLSuffix) *LocalAIMod
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 LocalAI 驱动实例
 func (l *LocalAIModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewLocalAIModel(baseURL, l.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "localai"，供工厂层路由
 func (l *LocalAIModel) Name() string {
 	return "localai"
 }
 
 var localAIReasoningFields = []string{"reasoning_content", "reasoning", "thinking"}
 
+// extractLocalAIReasoning 按优先级从 message 提取思维链字段
 func extractLocalAIReasoning(m map[string]interface{}) string {
 	for _, k := range localAIReasoningFields {
 		if v, ok := m[k].(string); ok && v != "" {
@@ -79,7 +84,8 @@ func addLocalAIReasoningRequestParams(reqBody map[string]interface{}, cfg *ChatC
 	}
 }
 
-// ChatWithMessages sends multiple messages with roles and returns the response.
+// ChatWithMessages 非流式 chat/completions，解析 reasoning 字段为 ReasonContent
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (l *LocalAIModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := l.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -191,9 +197,8 @@ func (l *LocalAIModel) ChatWithMessages(modelName string, messages []Message, ap
 	}, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams the response via the
-// sender function. The LocalAI SSE stream uses the same shape as OpenAI:
-// "data:" lines carrying JSON events, with a final "[DONE]" line.
+// ChatStreamlyWithSender 流式 SSE（OpenAI 形态 data:/[DONE]），经 sender 推送 delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (l *LocalAIModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := l.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -369,6 +374,7 @@ type localAIEmbeddingResponse struct {
 	Object string                 `json:"object"`
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (l *LocalAIModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := l.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -471,6 +477,7 @@ type localAIRerankResponse struct {
 	} `json:"results"`
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (l *LocalAIModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := l.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -552,6 +559,7 @@ func (l *LocalAIModel) Rerank(modelName *string, query string, documents []strin
 	return rerankResponse, nil
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (l *LocalAIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := l.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -603,10 +611,12 @@ func (l *LocalAIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, er
 	return ParseListModel(modelList), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (l *LocalAIModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (l *LocalAIModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := l.ListModels(apiConfig)
 	if err != nil {
@@ -615,36 +625,45 @@ func (l *LocalAIModel) CheckConnection(apiConfig *APIConfig) error {
 	return nil
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (l *LocalAIModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (l *LocalAIModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", l.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech 文字转语音（TTS）
 func (l *LocalAIModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (l *LocalAIModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", l.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (l *LocalAIModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
-// ParseFile parse file
+// ParseFile LocalAI 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (l *LocalAIModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (l *LocalAIModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (l *LocalAIModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", l.Name())
 }
+
+// LocalAI 驱动覆盖 Chat/Embed/Rerank/ASR/TTS/ListModels；extractLocalAIReasoning 兼容 reasoning_content/reasoning/thinking 等字段；OCR/ParseFile 返回不支持。

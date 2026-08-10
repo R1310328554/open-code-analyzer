@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// modelscope.go — 魔搭 ModelScope ModelDriver：OpenAI 兼容 Chat，reasoning_content/thinking 推理链解析，流 idle 超时。
 //
 
 package models
@@ -28,10 +30,10 @@ import (
 	"time"
 )
 
-// modelscopeStreamIdleTimeout bounds how long a stream can go without
+// modelscopeStreamIdleTimeout 限制流式 SSE idle 超时（秒）
 var modelscopeStreamIdleTimeout = 60 * time.Second
 
-// ModelScopeModel implements ModelDriver for ModelScope chat models.
+// ModelScopeModel 魔搭 ModelScope 对话 ModelDriver
 type ModelScopeModel struct {
 	baseModel BaseModel
 }
@@ -53,7 +55,7 @@ type modelscopeModelListResponse struct {
 	Data []DSModel `json:"data"`
 }
 
-// NewModelScopeModel creates a new ModelScope model instance.
+// NewModelScopeModel 创建 ModelScope 驱动实例
 func NewModelScopeModel(baseURL map[string]string, urlSuffix URLSuffix) *ModelScopeModel {
 	return &ModelScopeModel{
 		baseModel: BaseModel{
@@ -65,10 +67,12 @@ func NewModelScopeModel(baseURL map[string]string, urlSuffix URLSuffix) *ModelSc
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 ModelScope 驱动实例
 func (m *ModelScopeModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewModelScopeModel(baseURL, m.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "modelscope"，供工厂层路由
 func (m *ModelScopeModel) Name() string {
 	return "modelscope"
 }
@@ -139,7 +143,8 @@ func buildModelScopeChatBody(modelName string, messages []Message, stream bool, 
 	return reqBody
 }
 
-// ChatWithMessages sends multiple messages with roles and returns the response.
+// ChatWithMessages 非流式 chat/completions，解析 reasoning 字段
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (m *ModelScopeModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -209,7 +214,8 @@ func (m *ModelScopeModel) ChatWithMessages(modelName string, messages []Message,
 	}, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams response via sender.
+// ChatStreamlyWithSender 流式 chat/completions，经 sender 推送 delta
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (m *ModelScopeModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -330,18 +336,22 @@ func (m *ModelScopeModel) ChatStreamlyWithSender(modelName string, messages []Me
 	return sender(&endOfStream, nil)
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (m *ModelScopeModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (m *ModelScopeModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (m *ModelScopeModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (m *ModelScopeModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", m.Name())
 }
@@ -350,20 +360,24 @@ func (m *ModelScopeModel) AudioSpeech(modelName *string, audioContent *string, a
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (m *ModelScopeModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", m.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (m *ModelScopeModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (m *ModelScopeModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
-// ListModels returns the model IDs exposed by ModelScope's OpenAI-compatible
+// ListModels 列出 ModelScope OpenAI 兼容端点可见的模型 ID
 // /v1/models endpoint.
+// ListModels 列出当前 API Key 可见的模型目录
 func (m *ModelScopeModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -411,19 +425,25 @@ func (m *ModelScopeModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse,
 	return ParseListModel(ModelList{Models: result.Data}), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (m *ModelScopeModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (m *ModelScopeModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := m.ListModels(apiConfig)
 	return err
 }
 
+// ListTasks 列出异步任务状态
 func (m *ModelScopeModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (m *ModelScopeModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", m.Name())
 }
+
+// ModelScope 驱动主要实现 Chat/ListModels/CheckConnection；流式解析 reasoning_content/reasoning/thinking 多字段；Embed/Rerank/ASR/TTS/OCR/ParseFile 返回不支持。

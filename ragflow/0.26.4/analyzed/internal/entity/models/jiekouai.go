@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// jiekouai.go — 接口 AI 聚合网关 ModelDriver：OpenAI 兼容 Chat/Embed/Rerank，120s 客户端超时防挂起。
 //
 
 package models
@@ -26,10 +28,12 @@ import (
 	"time"
 )
 
+// JieKouAIModel 接口 AI 聚合平台 ModelDriver
 type JieKouAIModel struct {
 	baseModel BaseModel
 }
 
+// NewJieKouAIModel 创建接口 AI 驱动（HTTP 客户端 120s 超时）
 func NewJieKouAIModel(baseURL map[string]string, urlSuffix URLSuffix) *JieKouAIModel {
 	// JieKouAI's methods issue requests without a per-call context deadline, so
 	// keep an explicit 120s client-level timeout to bound them. Built on the
@@ -45,14 +49,17 @@ func NewJieKouAIModel(baseURL map[string]string, urlSuffix URLSuffix) *JieKouAIM
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 JieKouAI 驱动实例
 func (j *JieKouAIModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewJieKouAIModel(baseURL, j.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "jiekouai"，供工厂层路由
 func (j *JieKouAIModel) Name() string {
 	return "jiekouai"
 }
 
+// validateJieKouAIModelName 校验模型名非空并 trim
 func validateJieKouAIModelName(modelName *string) (string, error) {
 	if modelName == nil || strings.TrimSpace(*modelName) == "" {
 		return "", fmt.Errorf("model name is required")
@@ -60,6 +67,7 @@ func validateJieKouAIModelName(modelName *string) (string, error) {
 	return strings.TrimSpace(*modelName), nil
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (j *JieKouAIModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := j.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -195,6 +203,7 @@ func (j *JieKouAIModel) ChatWithMessages(modelName string, messages []Message, a
 	return chatResponse, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (j *JieKouAIModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := j.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -331,6 +340,7 @@ func (j *JieKouAIModel) ChatStreamlyWithSender(modelName string, messages []Mess
 	return nil
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (j *JieKouAIModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := j.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -410,6 +420,7 @@ func (j *JieKouAIModel) Embed(modelName *string, texts []string, apiConfig *APIC
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (j *JieKouAIModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := j.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -493,30 +504,37 @@ func (j *JieKouAIModel) Rerank(modelName *string, query string, documents []stri
 	return &rerankResponse, nil
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (j *JieKouAIModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", j.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (j *JieKouAIModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", j.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (j *JieKouAIModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", j.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (j *JieKouAIModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", j.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (j *JieKouAIModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", j.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (j *JieKouAIModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", j.Name())
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (j *JieKouAIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := j.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -573,19 +591,25 @@ func (j *JieKouAIModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, e
 	return ParseListModel(ModelList{Models: result.Data}), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (j *JieKouAIModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", j.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (j *JieKouAIModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := j.ListModels(apiConfig)
 	return err
 }
 
+// ListTasks 列出异步任务状态
 func (j *JieKouAIModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s no such method", j.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (j *JieKouAIModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s no such method", j.Name())
 }
+
+// 接口 AI 线协议与 OpenAI 兼容；NewJieKouAIModel 设置 120s 客户端超时；支持 Chat/Embed/Rerank/ListModels/CheckConnection。ASR/TTS/OCR/ParseFile 返回不支持。

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// n1n.go — n1n.ai 聚合网关 ModelDriver：OpenAI 兼容 Chat/Embed/Rerank/ASR/TTS，Cohere 形态 rerank 与异步任务 API。
 //
 
 package models
@@ -26,12 +28,12 @@ import (
 	"strings"
 )
 
-// N1NModel implements ModelDriver for n1n.ai
+// N1NModel n1n.ai 聚合网关 ModelDriver
 type N1NModel struct {
 	baseModel BaseModel
 }
 
-// NewN1NModel creates a new n1n.ai model instance.
+// NewN1NModel 创建 n1n.ai 驱动实例
 func NewN1NModel(baseURL map[string]string, urlSuffix URLSuffix) *N1NModel {
 	return &N1NModel{
 		baseModel: BaseModel{
@@ -42,10 +44,12 @@ func NewN1NModel(baseURL map[string]string, urlSuffix URLSuffix) *N1NModel {
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 N1N 驱动实例
 func (n *N1NModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewN1NModel(baseURL, n.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "n1n"，供工厂层路由
 func (n *N1NModel) Name() string {
 	return "n1n"
 }
@@ -156,8 +160,8 @@ type n1nChatResponse struct {
 	Choices []n1nChatChoice `json:"choices"`
 }
 
-// ChatWithMessages sends a single, non-streaming chat completion
-// against n1n.ai's /v1/chat/completions endpoint.
+// ChatWithMessages 非流式 POST /v1/chat/completions
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (n *N1NModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := n.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -222,7 +226,8 @@ func (n *N1NModel) ChatWithMessages(modelName string, messages []Message, apiCon
 	return chatResp, nil
 }
 
-// ChatStreamlyWithSender sends a streaming chat completion.
+// ChatStreamlyWithSender 流式 chat/completions
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (n *N1NModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := n.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -320,7 +325,8 @@ type n1nEmbeddingRequest struct {
 	Dimensions int      `json:"dimensions,omitempty"`
 }
 
-// Embed turns a list of texts into embedding vectors
+// Embed 批量文本向量化
+// Embed 将文本列表编码为向量嵌入
 func (n *N1NModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := n.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -413,8 +419,8 @@ type n1nRerankRequest struct {
 	TopN      int      `json:"top_n,omitempty"`
 }
 
-// Rerank scores a query against a list of documents using
-// n1n.ai's /v1/rerank endpoint (Cohere-shaped response).
+// Rerank 调用 /v1/rerank（Cohere 形态响应）对文档打分
+// Rerank 对候选文档按 query 相关性重排序
 func (n *N1NModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := n.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -495,7 +501,8 @@ type n1nModelCatalogResponse struct {
 	Data []DSModel `json:"data"`
 }
 
-// ListModels returns the live n1n.ai model catalog
+// ListModels 返回 n1n.ai 实时模型目录
+// ListModels 列出当前 API Key 可见的模型目录
 func (n *N1NModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := n.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -537,49 +544,61 @@ func (n *N1NModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error)
 	return ParseListModel(ModelList{Models: parsed.Data}), nil
 }
 
-// CheckConnection verifies the API key
+// CheckConnection 验证 API Key 与端点可用
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (n *N1NModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := n.ListModels(apiConfig)
 	return err
 }
 
+// Balance 查询账户余额（若上游支持）
 func (n *N1NModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
-// TranscribeAudio: n1n.ai exposes /v1/audio/transcriptions
+// TranscribeAudio 调用 /v1/audio/transcriptions 语音识别
+// TranscribeAudio 语音转文字（ASR）
 func (n *N1NModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (n *N1NModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", n.Name())
 }
 
-// AudioSpeech: n1n.ai exposes /v1/audio/speech
+// AudioSpeech 调用 /v1/audio/speech 文字转语音
+// AudioSpeech 文字转语音（TTS）
 func (n *N1NModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (n *N1NModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", n.Name())
 }
 
-// OCRFile is not exposed by the n1n.ai API.
+// OCRFile n1n.ai 未暴露 OCR API
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (n *N1NModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
-// ParseFile is not exposed by the n1n.ai API.
+// ParseFile n1n.ai 未暴露文档解析 API
+// ParseFile 解析文档为结构化文本
 func (n *N1NModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
-// ListTasks: n1n.ai has /v1/contents/generations/tasks
+// ListTasks 列出 /v1/contents/generations/tasks 异步任务
+// ListTasks 列出异步任务状态
 func (n *N1NModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (n *N1NModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", n.Name())
 }
+
+// n1n.ai 驱动覆盖 Chat/Embed/Rerank/ASR/TTS/ListModels/ListTasks/ShowTask；Rerank 响应为 Cohere 形态；Balance 查询账户余额。OCR/ParseFile 返回不支持。

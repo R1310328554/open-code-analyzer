@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// mineru_local.go — MinerU 本地部署 ModelDriver：multipart 上传 PDF 字节流异步解析，ShowTask 查询本地任务状态。
 //
 
 package models
@@ -26,10 +28,12 @@ import (
 	"net/http"
 )
 
+// MinerULocalModel MinerU 本地部署 ModelDriver
 type MinerULocalModel struct {
 	baseModel BaseModel
 }
 
+// NewMinerLocalUModel 创建 MinerU 本地驱动
 func NewMinerLocalUModel(baseURL map[string]string, urlSuffix URLSuffix) *MinerULocalModel {
 	return &MinerULocalModel{
 		baseModel: BaseModel{
@@ -41,62 +45,77 @@ func NewMinerLocalUModel(baseURL map[string]string, urlSuffix URLSuffix) *MinerU
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 MinerULocal 驱动实例
 func (m *MinerULocalModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewMinerLocalUModel(baseURL, m.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "minerulocal"，供工厂层路由
 func (m *MinerULocalModel) Name() string {
 	return "mineru"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (m *MinerULocalModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	return nil, fmt.Errorf("%s no such method", m.Name())
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (m *MinerULocalModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s no such method", m.Name())
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (m *MinerULocalModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	return nil, fmt.Errorf("%s no such method", m.Name())
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (m *MinerULocalModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s no such method", m.Name())
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (m *MinerULocalModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s no such method", m.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (m *MinerULocalModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s no such method", m.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (m *MinerULocalModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s no such method", m.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (m *MinerULocalModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s no such method", m.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (m *MinerULocalModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s no such method", m.Name())
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (m *MinerULocalModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	return nil, fmt.Errorf("%s no such method", m.Name())
 }
 
+// Balance 查询账户余额（若上游支持）
 func (m *MinerULocalModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s no such method", m.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (m *MinerULocalModel) CheckConnection(apiConfig *APIConfig) error {
 	return fmt.Errorf("%s no such method", m.Name())
 }
 
+// ParseFile multipart 上传 PDF 字节流，backend 默认 pipeline，返回 task_id
 func (m *MinerULocalModel) ParseFile(modelName *string, content []byte, documentURL *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -186,10 +205,13 @@ func (m *MinerULocalModel) ParseFile(modelName *string, content []byte, document
 	}, nil
 }
 
+// ListTasks 列出异步任务状态
 func (m *MinerULocalModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s no such method", m.Name())
 }
 
+// ShowTask 查询本地 MinerU 解析任务进度与结果 URL
+// ShowTask 按 taskID 查询单个异步任务详情
 func (m *MinerULocalModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	if err := m.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -274,3 +296,5 @@ func (m *MinerULocalModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskR
 		},
 	}, nil
 }
+
+// MinerU 本地驱动实现 ParseFile/ShowTask；ParseFile 要求非空 content 字节流；AllowEmptyAPIKey 可选 Bearer。Chat/Embed/Rerank/ASR/TTS/OCR/ListTasks/CheckConnection 返回不支持。
