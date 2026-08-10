@@ -21,13 +21,17 @@ import java.util.stream.Stream;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 联邦用户必需操作（Required Actions）存储接口。
+ *
+ * <p>管理外部用户在下次登录时必须完成的操作（如更新密码、配置 OTP 等）。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface UserRequiredActionsFederatedStorage {
 
     /**
-     * Obtains the names of required actions associated with the federated user identified by {@code userId}.
+     * 获取 {@code userId} 标识的联邦用户关联的全部必需操作名称。
      *
      * @param realm a reference to the realm.
      * @param userId the user identifier.
@@ -35,7 +39,10 @@ public interface UserRequiredActionsFederatedStorage {
      */
     Stream<String> getRequiredActionsStream(RealmModel realm, String userId);
 
+    /** 为联邦用户添加必需操作。 */
     void addRequiredAction(RealmModel realm, String userId, String action);
+
+    /** 移除联邦用户的指定必需操作。 */
     void removeRequiredAction(RealmModel realm, String userId, String action);
 
     /**

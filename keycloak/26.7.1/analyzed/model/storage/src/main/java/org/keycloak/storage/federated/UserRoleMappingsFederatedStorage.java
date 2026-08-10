@@ -22,15 +22,20 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 
 /**
+ * 联邦用户角色映射存储接口，管理外部用户与 Keycloak 角色之间的映射关系。
+ *
+ * <p>当外部用户存储无法直接维护角色归属时，通过联邦存储持久化角色映射。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface UserRoleMappingsFederatedStorage {
 
+    /** 为联邦用户授予指定角色。 */
     void grantRole(RealmModel realm, String userId, RoleModel role);
 
     /**
-     * Obtains the roles associated with the federated user identified by {@code userId}.
+     * 获取 {@code userId} 标识的联邦用户关联的全部角色。
      *
      * @param realm a reference to the realm.
      * @param userId the user identifier.
@@ -38,10 +43,11 @@ public interface UserRoleMappingsFederatedStorage {
      */
     Stream<RoleModel> getRoleMappingsStream(RealmModel realm, String userId);
 
+    /** 删除联邦用户与指定角色之间的映射。 */
     void deleteRoleMapping(RealmModel realm, String userId, RoleModel role);
 
    /**
-    * Obtains the federated users that are members of the given {@code role} in the specified {@code realm}.
+    * 获取指定 {@code realm} 中拥有 {@code role} 的全部联邦用户 ID。
     *
     * @param realm a reference to the realm.
     * @param role a reference to the role whose federated members are being searched.

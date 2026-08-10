@@ -31,27 +31,30 @@ import org.jboss.logging.Logger;
 import static org.keycloak.common.util.StackUtil.getShortStackTrace;
 
 /**
- * Utility class for general helper methods used across the keycloak-services.
+ * keycloak-services 模块通用工具类，提供带超时监控的函数包装能力。
  */
 public class ServicesUtils {
 
     private static final Logger logger = Logger.getLogger(ServicesUtils.class);
 
+    /**
+     * 包装返回 {@link Stream} 的函数，在超时时向主线程发送中断信号。
+     *
+     * @param session Keycloak 会话，用于获取线程池
+     * @param timeout 超时阈值（毫秒）
+     * @param func 待执行的原始函数
+     */
     public static <T, R> Function<? super T,? extends Stream<? extends R>> timeBound(KeycloakSession session,
                                                                                      long timeout,
                                                                                      Function<T, ? extends Stream<R>> func) {
         ExecutorService executor = session.getProvider(ExecutorsProvider.class).getExecutor("storage-provider-threads");
         return p -> {
-            // We are running another thread here, which serves as a time checking thread. When timeout is hit, the time
-            // checking thread will send interrupted flag to main thread, which can cause interruption of func execution.
-            // To support interruption func implementation should react to interrupt flag.
-            // If func doesn't check the interrupted flag, the execution won't be interrupted and can take more time
-            // than the threshold given by timeout variable
+            // 在独立线程中运行超时监控：达到 timeout 后向主线程发送中断标志，以尝试中断 func 执行。
+            // func 实现需响应中断标志；若不检查，执行可能超出 timeout 阈值。
             Future<?> timeCheckingThread = executor.submit(timeWarningRunnable(timeout, Thread.currentThread()));
             try {
-                // We cannot run func in different than main thread, because main thread have, for example, EntityManager
-                // transaction context. If we run any operation on EntityManager in a different thread, it will fail
-                // with a transaction doesn't exist error
+                // 不能在非主线程运行 func：主线程持有 EntityManager 事务上下文，
+                // 在其他线程操作 EntityManager 会抛出“事务不存在”错误。
                 return func.apply(p);
             } finally {
                 timeCheckingThread.cancel(true);
@@ -63,21 +66,24 @@ public class ServicesUtils {
         };
     }
 
+    /**
+     * 包装返回单个值的函数，在超时时向主线程发送中断信号。
+     *
+     * @param session Keycloak 会话，用于获取线程池
+     * @param timeout 超时阈值（毫秒）
+     * @param func 待执行的原始函数
+     */
     public static <T, R> Function<? super T, R> timeBoundOne(KeycloakSession session,
                                                                                      long timeout,
                                                                                      Function<T, R> func) {
         ExecutorService executor = session.getProvider(ExecutorsProvider.class).getExecutor("storage-provider-threads");
         return p -> {
-            // We are running another thread here, which serves as a time checking thread. When timeout is hit, the time
-            // checking thread will send interrupted flag to main thread, which can cause interruption of func execution.
-            // To support interruption func implementation should react to interrupt flag.
-            // If func doesn't check the interrupted flag, the execution won't be interrupted and can take more time
-            // than the threshold given by timeout variable
+            // 在独立线程中运行超时监控：达到 timeout 后向主线程发送中断标志，以尝试中断 func 执行。
+            // func 实现需响应中断标志；若不检查，执行可能超出 timeout 阈值。
             Future<?> warningThreadFuture = executor.submit(timeWarningRunnable(timeout, Thread.currentThread()));
             try {
-                // We cannot run func in different than main thread, because main thread have, for example, EntityManager
-                // transaction context. If we run any operation on EntityManager in a different thread, it will fail
-                // with a transaction doesn't exist error
+                // 不能在非主线程运行 func：主线程持有 EntityManager 事务上下文，
+                // 在其他线程操作 EntityManager 会抛出“事务不存在”错误。
                 return func.apply(p);
             } finally {
                 warningThreadFuture.cancel(true);
@@ -89,21 +95,24 @@ public class ServicesUtils {
         };
     }
 
+    /**
+     * 包装 {@link Consumer}，在超时时向主线程发送中断信号。
+     *
+     * @param session Keycloak 会话，用于获取线程池
+     * @param timeout 超时阈值（毫秒）
+     * @param func 待执行的原始 Consumer
+     */
     public static <T> Consumer<? super T> consumeWithTimeBound(KeycloakSession session,
                                                              long timeout,
                                                              Consumer<T> func) {
         ExecutorService executor = session.getProvider(ExecutorsProvider.class).getExecutor("storage-provider-threads");
         return p -> {
-            // We are running another thread here, which serves as a time checking thread. When timeout is hit, the time
-            // checking thread will send interrupted flag to main thread, which can cause interruption of func execution.
-            // To support interruption func implementation should react to interrupt flag.
-            // If func doesn't check the interrupted flag, the execution won't be interrupted and can take more time
-            // than the threshold given by timeout variable
+            // 在独立线程中运行超时监控：达到 timeout 后向主线程发送中断标志，以尝试中断 func 执行。
+            // func 实现需响应中断标志；若不检查，执行可能超出 timeout 阈值。
             Future<?> warningThreadFuture = executor.submit(timeWarningRunnable(timeout, Thread.currentThread()));
             try {
-                // We cannot run func in different than main thread, because main thread have, for example, EntityManager
-                // transaction context. If we run any operation on EntityManager in a different thread, it will fail
-                // with a transaction doesn't exist error
+                // 不能在非主线程运行 func：主线程持有 EntityManager 事务上下文，
+                // 在其他线程操作 EntityManager 会抛出“事务不存在”错误。
                 func.accept(p);
             } finally {
                 warningThreadFuture.cancel(true);
@@ -115,6 +124,7 @@ public class ServicesUtils {
         };
     }
 
+    /** 创建超时监控 Runnable：sleep 指定时长后中断主线程。 */
     private static Runnable timeWarningRunnable(long timeout, Thread mainThread) {
         return new Runnable() {
             @Override
@@ -122,7 +132,7 @@ public class ServicesUtils {
                 try {
                     Thread.sleep(timeout);
                 } catch (InterruptedException exception) {
-                    return; // Do not interrupt if warning thread was interrupted (== main thread finished execution in time)
+                    return; // 监控线程被中断时不继续（说明主线程已按时完成）
                 }
 
                 mainThread.interrupt();

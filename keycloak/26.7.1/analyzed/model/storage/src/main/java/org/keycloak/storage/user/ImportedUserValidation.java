@@ -20,19 +20,22 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
- * This is an optional capability interface that is intended to be implemented by any
- * {@link org.keycloak.storage.UserStorageProvider UserStorageProvider} that supports validating users. You must
- * implement this interface if your storage imports users into the Keycloak local storage and you want to sync these
- * users with your storage. The idea is, that whenever keycloak queries users imported from your storage, the method
- * {@link #validate(RealmModel, UserModel) validate()} is called and if it returns null, the user is removed from
- * local storage and reloaded from your storage by corresponding method.
+ * 已导入用户校验能力接口（可选）。
+ *
+ * <p>由支持用户校验的 {@link org.keycloak.storage.UserStorageProvider UserStorageProvider} 实现。
+ * 若存储将用户导入 Keycloak 本地库并需与外部源保持同步，必须实现此接口。
+ * 当 Keycloak 查询已导入用户时会调用 {@link #validate(RealmModel, UserModel) validate()}；
+ * 若返回 {@code null}，该用户将从本地存储移除并重新从外部存储加载。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ImportedUserValidation {
+
     /**
-     * If this method returns null, then the user in local storage will be removed
+     * 校验已导入用户是否仍在外部存储中有效。
+     *
+     * <p>返回 {@code null} 时，本地存储中的对应用户将被移除。
      *
      * @param realm
      * @param user

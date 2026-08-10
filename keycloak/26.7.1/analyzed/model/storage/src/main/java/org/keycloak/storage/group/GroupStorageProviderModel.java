@@ -20,26 +20,31 @@ import org.keycloak.component.ComponentModel;
 import org.keycloak.storage.CacheableStorageProviderModel;
 
 /**
- * Stored configuration of a Group Storage provider instance.
+ * 组存储 Provider 实例的持久化配置模型。
  */
 public class GroupStorageProviderModel extends CacheableStorageProviderModel {
 
+    /** 默认构造，Provider 类型设为 {@link GroupStorageProvider}。 */
     public GroupStorageProviderModel() {
         setProviderType(GroupStorageProvider.class.getName());
     }
 
+    /** 从已有 ComponentModel 复制构造。 */
     public GroupStorageProviderModel(ComponentModel copy) {
         super(copy);
     }
 
+    /** 是否启用（懒解析缓存）。 */
     private transient Boolean enabled;
 
+    /** 设置组存储 Provider 是否启用。 */
     @Override
     public void setEnabled(boolean flag) {
         enabled = flag;
         getConfig().putSingle(ENABLED, Boolean.toString(flag));
     }
 
+    /** 组存储 Provider 是否启用；未配置时默认为 true。 */
     @Override
     public boolean isEnabled() {
         if (enabled == null) {

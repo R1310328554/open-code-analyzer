@@ -22,13 +22,17 @@ import org.keycloak.models.GroupModel;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 联邦用户组成员关系存储接口，管理外部用户与 Keycloak 组之间的成员关系。
+ *
+ * <p>当用户来自外部存储且组归属无法由该存储直接维护时，通过联邦存储持久化组成员信息。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface UserGroupMembershipFederatedStorage {
 
     /**
-     * Obtains the groups associated with the federated user.
+     * 获取联邦用户所属的全部组。
      *
      * @param realm a reference to the realm.
      * @param userId the user identifier.
@@ -36,11 +40,14 @@ public interface UserGroupMembershipFederatedStorage {
      */
     Stream<GroupModel> getGroupsStream(RealmModel realm, String userId);
 
+    /** 将联邦用户加入指定组。 */
     void joinGroup(RealmModel realm, String userId, GroupModel group);
+
+    /** 将联邦用户移出指定组。 */
     void leaveGroup(RealmModel realm, String userId, GroupModel group);
 
     /**
-     * Obtains the federated users that are members of the given {@code group} in the specified {@code realm}.
+     * 获取指定 {@code realm} 中属于 {@code group} 的联邦用户 ID。
      *
      * @param realm a reference to the realm.
      * @param group a reference to the group whose federated members are being searched.

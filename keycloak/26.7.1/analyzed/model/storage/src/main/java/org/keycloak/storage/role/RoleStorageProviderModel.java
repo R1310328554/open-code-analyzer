@@ -21,26 +21,31 @@ import org.keycloak.component.ComponentModel;
 import org.keycloak.storage.CacheableStorageProviderModel;
 
 /**
- * Stored configuration of a Role Storage provider instance.
+ * 角色存储 Provider 实例的持久化配置模型。
  */
 public class RoleStorageProviderModel extends CacheableStorageProviderModel {
 
+    /** 默认构造，Provider 类型设为 {@link RoleStorageProvider}。 */
     public RoleStorageProviderModel() {
         setProviderType(RoleStorageProvider.class.getName());
     }
 
+    /** 从已有 ComponentModel 复制构造。 */
     public RoleStorageProviderModel(ComponentModel copy) {
         super(copy);
     }
 
+    /** 是否启用（懒解析缓存）。 */
     private transient Boolean enabled;
 
+    /** 设置角色存储 Provider 是否启用。 */
     @Override
     public void setEnabled(boolean flag) {
         enabled = flag;
         getConfig().putSingle(ENABLED, Boolean.toString(flag));
     }
 
+    /** 角色存储 Provider 是否启用；未配置时默认为 true。 */
     @Override
     public boolean isEnabled() {
         if (enabled == null) {

@@ -18,5 +18,10 @@ package org.keycloak.storage.group;
 
 import org.keycloak.provider.Provider;
 
+/**
+ * 组存储 Provider 接口，扩展 {@link GroupLookupProvider} 以支持外部组存储实现。
+ *
+ * <p>实现此接口的 Provider 可从 LDAP 等外部源读取组数据，与本地 {@link org.keycloak.models.GroupProvider} 协同工作。
+ */
 public interface GroupStorageProvider extends Provider, GroupLookupProvider {
 }

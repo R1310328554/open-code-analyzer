@@ -23,17 +23,29 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.provider.Provider;
 
 /**
+ * 联邦用户凭据存储接口，管理外部用户存储无法直接承载的凭据数据（密码、OTP 等）。
+ *
+ * <p>实现通常由 JPA 联邦存储 Provider 提供，供 {@link UserFederatedStorageProvider} 聚合使用。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface UserFederatedUserCredentialStore extends Provider {
+
+    /** 更新指定联邦用户的凭据。 */
     void updateCredential(RealmModel realm, String userId, CredentialModel cred);
+
+    /** 为指定联邦用户创建新凭据。 */
     CredentialModel createCredential(RealmModel realm, String userId, CredentialModel cred);
+
+    /** 按 ID 删除联邦用户的已存储凭据。 */
     boolean removeStoredCredential(RealmModel realm, String userId, String id);
+
+    /** 按 ID 获取联邦用户的已存储凭据。 */
     CredentialModel getStoredCredentialById(RealmModel realm, String userId, String id);
 
     /**
-     * Obtains the credentials associated with the federated user identified by {@code userId}.
+     * 获取 {@code userId} 标识的联邦用户关联的全部凭据。
      *
      * @param realm a reference to the realm.
      * @param userId the user identifier.
@@ -42,7 +54,7 @@ public interface UserFederatedUserCredentialStore extends Provider {
     Stream<CredentialModel> getStoredCredentialsStream(RealmModel realm, String userId);
 
     /**
-     * Obtains the credentials of type {@code type} that are associated with the federated user identified by {@code userId}.
+     * 获取 {@code userId} 标识的联邦用户中指定 {@code type} 类型的凭据。
      *
      * @param realm a reference to the realm.
      * @param userId the user identifier.
@@ -51,6 +63,7 @@ public interface UserFederatedUserCredentialStore extends Provider {
      */
     Stream<CredentialModel> getStoredCredentialsByTypeStream(RealmModel realm, String userId, String type);
 
+    /** 按名称与类型获取联邦用户的已存储凭据。 */
     CredentialModel getStoredCredentialByNameAndType(RealmModel realm, String userId, String name, String type);
 
     /**

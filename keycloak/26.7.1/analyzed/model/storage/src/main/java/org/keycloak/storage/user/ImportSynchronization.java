@@ -22,16 +22,19 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.storage.UserStorageProviderModel;
 
 /**
- * This is an optional capability interface intended to be implemented by any
- * {@link org.keycloak.storage.UserStorageProviderFactory UserStorageProviderFactory} that supports
- * syncing users to keycloak local storage.
- * You must implement this interface if you want to be able to use sync functionality within the Admin console.
+ * 用户导入同步能力接口（可选）。
+ *
+ * <p>由支持将外部用户同步到 Keycloak 本地存储的 {@link org.keycloak.storage.UserStorageProviderFactory UserStorageProviderFactory} 实现。
+ * 若要在管理控制台中使用同步功能，必须实现此接口。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ImportSynchronization {
+
+    /** 执行全量用户同步。 */
     SynchronizationResult sync(KeycloakSessionFactory sessionFactory, String realmId, UserStorageProviderModel model);
 
+    /** 自 {@code lastSync} 以来执行增量用户同步。 */
     SynchronizationResult syncSince(Date lastSync, KeycloakSessionFactory sessionFactory, String realmId, UserStorageProviderModel model);
 }
