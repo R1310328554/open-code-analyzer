@@ -1,5 +1,8 @@
 package metrics
 
+// aggregator.go — MetricsAggregator：多 trace 指标聚合与滑动时间窗口。
+
+
 import (
 	"math"
 	"sort"
@@ -7,30 +10,30 @@ import (
 	"time"
 )
 
-// MetricsAggregator aggregates metrics across multiple execution traces.
+// MetricsAggregator 跨多次 Agent 执行 trace 聚合指标。
 type MetricsAggregator struct {
 	mu      sync.Mutex
 	metrics []*AgentMetrics
 }
 
-// NewMetricsAggregator creates a new MetricsAggregator.
+// NewMetricsAggregator 创建空聚合器。
 func NewMetricsAggregator() *MetricsAggregator {
 	return &MetricsAggregator{}
 }
 
-// Add adds a metrics snapshot to the aggregator.
+// Add 追加一条 AgentMetrics 快照。
 func (a *MetricsAggregator) Add(m *AgentMetrics) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.metrics = append(a.metrics, m)
 }
 
-// AggregatedMetrics contains summary statistics across multiple traces.
+// AggregatedMetrics 多 trace 汇总统计（均值与分位数）。
 type AggregatedMetrics struct {
 	TotalTraces   int
 	TotalDuration time.Duration
 
-	// Tool metrics (averages).
+	// 工具调用指标（均值）
 	AvgToolCalls       float64
 	AvgToolSuccessRate float64
 	AvgToolRetryRate   float64
@@ -38,23 +41,23 @@ type AggregatedMetrics struct {
 	P95ToolLatencyMs   float64
 	P99ToolLatencyMs   float64
 
-	// Checkpoint metrics.
+	// 检查点指标
 	AvgCheckpointSaves          float64
 	AvgCheckpointRestores       float64
 	AvgCheckpointRestoreSuccess float64
 
-	// Execution metrics.
+	// 执行步数/节点/中断指标
 	AvgSteps           float64
 	AvgNodesExecuted   float64
 	AvgRecoveredErrors float64
 	AvgInterrupts      float64
 
-	// Cost metrics.
+	// 成本与 fork replay 通过率
 	AvgCostPerTask        float64
 	AvgForkReplayPassRate float64
 }
 
-// Aggregate computes summary statistics across all collected metrics.
+// Aggregate 计算均值并汇总工具延迟计算 P50/P95/P99。
 func (a *MetricsAggregator) Aggregate() *AggregatedMetrics {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -116,14 +119,14 @@ func (a *MetricsAggregator) Aggregate() *AggregatedMetrics {
 	return result
 }
 
-// Reset clears all collected metrics.
+// Reset 清空已收集快照。
 func (a *MetricsAggregator) Reset() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.metrics = nil
 }
 
-// MetricsWindow tracks metrics over a sliding time window.
+// MetricsWindow 滑动时间窗口内的指标跟踪。
 type MetricsWindow struct {
 	mu      sync.Mutex
 	window  time.Duration
@@ -135,12 +138,12 @@ type windowEntry struct {
 	metrics   *AgentMetrics
 }
 
-// NewMetricsWindow creates a metrics window with the given duration.
+// NewMetricsWindow 创建指定窗口时长的 MetricsWindow。
 func NewMetricsWindow(window time.Duration) *MetricsWindow {
 	return &MetricsWindow{window: window}
 }
 
-// Add adds metrics at the current time.
+// Add 以当前时间戳追加指标。
 func (w *MetricsWindow) Add(m *AgentMetrics) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -151,7 +154,7 @@ func (w *MetricsWindow) Add(m *AgentMetrics) {
 	w.prune()
 }
 
-// Aggregate returns aggregated metrics for the current window.
+// Aggregate 修剪过期条目后聚合窗口内指标。
 func (w *MetricsWindow) Aggregate() *AggregatedMetrics {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -164,7 +167,7 @@ func (w *MetricsWindow) Aggregate() *AggregatedMetrics {
 	return agg.Aggregate()
 }
 
-// prune removes entries outside the window.
+// prune 删除窗口外的 windowEntry。
 func (w *MetricsWindow) prune() {
 	cutoff := time.Now().Add(-w.window)
 	keep := make([]windowEntry, 0, len(w.entries))
@@ -176,7 +179,7 @@ func (w *MetricsWindow) prune() {
 	w.entries = keep
 }
 
-// percentile computes the p-th percentile from a sorted slice.
+// percentile 从已排序切片计算 p 分位数。
 func percentile(sorted []float64, p int) float64 {
 	if len(sorted) == 0 {
 		return 0
@@ -190,3 +193,5 @@ func percentile(sorted []float64, p int) float64 {
 	}
 	return sorted[idx]
 }
+
+// 工具延迟从 AgentMetrics.ToolLatencyMs 扁平化后统一计算分位数。

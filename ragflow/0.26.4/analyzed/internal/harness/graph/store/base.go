@@ -1,60 +1,63 @@
 package store
 
+// base.go — Store 抽象接口：命名空间 KV、搜索、Batch 与 TTL/索引扩展。
+
+
 import (
 	"context"
 	"time"
 )
 
-// BaseStore is the abstract interface for storing and retrieving data.
-// It supports namespaced storage with get/put/search/index operations.
+// BaseStore 存储抽象接口，支持命名空间隔离的 get/put/search。
+// 提供 Batch、GetItem/PutItem、SearchItems 与 ListNamespaces 等高级操作。
 type BaseStore interface {
-	// Get retrieves a value from the store by namespace and key.
+	// Get 按命名空间与 key 读取值。
 	// Returns the value if found, nil if not found.
 	Get(ctx context.Context, namespace []string, key string) (map[string]interface{}, error)
 
-	// Put stores a value in the store under the given namespace and key.
+	// Put 写入 map 值。
 	Put(ctx context.Context, namespace []string, key string, value map[string]interface{}) error
 
-	// Delete removes a value from the store by namespace and key.
+	// Delete 删除指定 key。
 	Delete(ctx context.Context, namespace []string, key string) error
 
-	// Search searches for values in the given namespace that match the query.
+	// Search 在命名空间内按 query 搜索（实现相关）。
 	// The query format is implementation-specific.
 	Search(ctx context.Context, namespace []string, query string, limit int) ([]map[string]interface{}, error)
 
-	// List lists all keys in the given namespace.
+	// List 列出命名空间内 key。
 	List(ctx context.Context, namespace []string, limit int) ([]string, error)
 
-	// Batch executes multiple operations atomically.
+	// Batch 原子执行多条 Op。
 	Batch(ctx context.Context, ops []Op) ([]Result, error)
 
-	// GetItem retrieves a value with metadata (created_at, updated_at).
+	// GetItem 返回值及创建/更新时间元数据。
 	GetItem(ctx context.Context, namespace []string, key string, refreshTTL *bool) (*Item, error)
 
-	// PutItem stores a value with TTL and indexing options.
+	// PutItem 带 TTL 与索引选项写入。
 	PutItem(ctx context.Context, namespace []string, key string, value map[string]interface{},
 		index interface{}, ttl *time.Duration) error
 
-	// SearchItems searches for items with advanced filtering and natural language query.
+	// SearchItems 高级过滤与自然语言查询搜索。
 	SearchItems(ctx context.Context, namespace []string, query *string, filter map[string]interface{},
 		limit, offset int, refreshTTL *bool) ([]*SearchItem, error)
 
-	// ListNamespaces lists all namespaces matching given conditions.
+	// ListNamespaces 按 MatchCondition 列出命名空间。
 	ListNamespaces(ctx context.Context, conditions []MatchCondition, maxDepth *int,
 		limit, offset int) ([][]string, error)
 }
 
-// Op represents a storage operation.
+// Op 存储操作标记接口。
 type Op interface{}
 
-// GetOp represents a get operation.
+// GetOp 批量读操作。
 type GetOp struct {
 	Namespace  []string
 	Key        string
 	RefreshTTL bool
 }
 
-// PutOp represents a put operation.
+// PutOp 批量写操作。
 type PutOp struct {
 	Namespace []string
 	Key       string
@@ -63,7 +66,7 @@ type PutOp struct {
 	TTL       *time.Duration
 }
 
-// SearchOp represents a search operation.
+// SearchOp 批量搜索操作。
 type SearchOp struct {
 	NamespacePrefix []string
 	Filter          map[string]interface{}
@@ -73,7 +76,7 @@ type SearchOp struct {
 	RefreshTTL      bool
 }
 
-// ListNamespacesOp represents a list namespaces operation.
+// ListNamespacesOp 批量列命名空间操作。
 type ListNamespacesOp struct {
 	MatchConditions []MatchCondition
 	MaxDepth        *int
@@ -81,13 +84,13 @@ type ListNamespacesOp struct {
 	Offset          int
 }
 
-// Result represents the result of an operation.
+// Result 单条 Batch 操作结果。
 type Result struct {
 	Value interface{}
 	Error error
 }
 
-// Item represents a stored item with metadata.
+// Item 含 TTL 与时间的存储项。
 type Item struct {
 	Value     map[string]interface{}
 	Key       string
@@ -97,40 +100,40 @@ type Item struct {
 	ExpiresAt *time.Time
 }
 
-// SearchItem represents a search result with score.
+// SearchItem 带相似度分数的搜索结果。
 type SearchItem struct {
 	*Item
 	Score *float64
 }
 
-// MatchCondition defines a condition for matching namespaces.
+// MatchCondition 命名空间前缀/后缀匹配条件。
 type MatchCondition struct {
 	MatchType string // "prefix" or "suffix"
 	Path      []string
 }
 
-// TTLConfig configures TTL behavior.
+// TTLConfig TTL 刷新与清扫配置。
 type TTLConfig struct {
 	RefreshOnRead bool
 	DefaultTTL    *time.Duration
 	SweepInterval *time.Duration
 }
 
-// IndexConfig configures semantic search indexing.
+// IndexConfig 向量维度与嵌入字段配置。
 type IndexConfig struct {
 	Dims   int
 	Embed  interface{} // embedding function
 	Fields []string
 }
 
-// PutOperation represents a single put operation (deprecated, use PutOp).
+// PutOperation 已弃用，请使用 PutOp。
 type PutOperation struct {
 	Namespace []string
 	Key       string
 	Value     map[string]interface{}
 }
 
-// SearchOptions provides options for search operations (deprecated).
+// SearchOptions 已弃用搜索选项。
 type SearchOptions struct {
 	Limit    int
 	Offset   int
@@ -138,3 +141,5 @@ type SearchOptions struct {
 	SortBy   string
 	SortDesc bool
 }
+
+// Store 供 Agent 长期记忆与跨会话状态；与 checkpointer 互补而非替代。

@@ -1,4 +1,6 @@
-// Package runnable provides dependency injection and tracing support for Runnable components.
+// inject.go — Runnable 依赖注入：InjectionContext、参数反射与追踪包装。
+
+// Package runnable 为 Runnable 提供依赖注入与追踪支持。
 package runnable
 
 import (
@@ -10,35 +12,35 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// InjectionContext holds the context for dependency injection.
+// InjectionContext 依赖注入上下文（Config、Previous、Runtime、Callbacks）。
 type InjectionContext struct {
-	// Config is the RunnableConfig for the current execution.
+	// Config 当前执行的 RunnableConfig。
 	Config *types.RunnableConfig
 
-	// Previous is the result from the previous execution (for checkpointer support).
+	// Previous 上次执行结果，供 checkpointer 场景注入。
 	Previous interface{}
 
-	// Runtime holds runtime-specific values like store, writer, etc.
+	// Runtime 运行时键值（store、writer 等）。
 	Runtime map[string]interface{}
 
-	// TracingEnabled determines if tracing is enabled.
+	// TracingEnabled 是否启用追踪。
 	TracingEnabled bool
 
-	// Callbacks holds execution callbacks.
+	// Callbacks 执行生命周期回调列表。
 	Callbacks []Callback
 }
 
-// Callback represents an execution callback.
+// Callback 执行回调接口（Start/End/Error）。
 type Callback interface {
-	// OnStart is called when execution starts.
+	// OnStart 执行开始时调用。
 	OnStart(ctx context.Context, name string, input interface{})
-	// OnEnd is called when execution ends.
+	// OnEnd 执行结束时调用。
 	OnEnd(ctx context.Context, name string, output interface{}, err error)
-	// OnError is called when an error occurs.
+	// OnError 发生错误时调用。
 	OnError(ctx context.Context, name string, err error)
 }
 
-// CallbackFunc is a functional implementation of Callback.
+// CallbackFunc 函数式 Callback 实现。
 type CallbackFunc struct {
 	OnStartFunc func(ctx context.Context, name string, input interface{})
 	OnEndFunc   func(ctx context.Context, name string, output interface{}, err error)
@@ -66,15 +68,15 @@ func (c *CallbackFunc) OnError(ctx context.Context, name string, err error) {
 	}
 }
 
-// Injectable is the interface for objects that support dependency injection.
+// Injectable 支持注入上下文读写的接口。
 type Injectable interface {
-	// SetInjectionContext sets the injection context.
+	// SetInjectionContext 设置注入上下文。
 	SetInjectionContext(ctx *InjectionContext)
-	// GetInjectionContext returns the current injection context.
+	// GetInjectionContext 返回当前注入上下文。
 	GetInjectionContext() *InjectionContext
 }
 
-// InjectableRunnable is a Runnable that supports dependency injection.
+// InjectableRunnable 带 ParamInjector 的可注入 Runnable。
 type InjectableRunnable struct {
 	name          string
 	fn            interface{}
@@ -83,7 +85,7 @@ type InjectableRunnable struct {
 	schema        *RunnableSchema
 }
 
-// NewInjectableRunnable creates a new runnable with dependency injection support.
+// NewInjectableRunnable 创建可注入 Runnable。
 func NewInjectableRunnable(name string, fn interface{}) *InjectableRunnable {
 	return &InjectableRunnable{
 		name:          name,
@@ -105,7 +107,7 @@ func (r *InjectableRunnable) GetInjectionContext() *InjectionContext {
 	return r.injectionCtx
 }
 
-// WithConfigInjector adds a config injector.
+// WithConfigInjector 注册 config 参数注入器。
 func (r *InjectableRunnable) WithConfigInjector() *InjectableRunnable {
 	r.paramInjector.AddInjector("config", func(ctx *InjectionContext) interface{} {
 		return ctx.Config
@@ -113,7 +115,7 @@ func (r *InjectableRunnable) WithConfigInjector() *InjectableRunnable {
 	return r
 }
 
-// WithPreviousInjector adds a previous result injector.
+// WithPreviousInjector 注册 previous 结果注入器。
 func (r *InjectableRunnable) WithPreviousInjector() *InjectableRunnable {
 	r.paramInjector.AddInjector("previous", func(ctx *InjectionContext) interface{} {
 		return ctx.Previous
@@ -121,7 +123,7 @@ func (r *InjectableRunnable) WithPreviousInjector() *InjectableRunnable {
 	return r
 }
 
-// WithRuntimeInjector adds a runtime value injector.
+// WithRuntimeInjector 从 Runtime map 按 key 注入。
 func (r *InjectableRunnable) WithRuntimeInjector(key string) *InjectableRunnable {
 	r.paramInjector.AddInjector(key, func(ctx *InjectionContext) interface{} {
 		if ctx.Runtime != nil {
@@ -132,7 +134,7 @@ func (r *InjectableRunnable) WithRuntimeInjector(key string) *InjectableRunnable
 	return r
 }
 
-// WithCallback adds a callback.
+// WithCallback 追加执行回调。
 func (r *InjectableRunnable) WithCallback(cb Callback) *InjectableRunnable {
 	if r.injectionCtx == nil {
 		r.injectionCtx = &InjectionContext{}
@@ -141,7 +143,7 @@ func (r *InjectableRunnable) WithCallback(cb Callback) *InjectableRunnable {
 	return r
 }
 
-// Invoke executes the runnable with dependency injection.
+// Invoke 构建反射参数、执行函数并分发回调。
 func (r *InjectableRunnable) Invoke(ctx context.Context, input interface{}) (interface{}, error) {
 	// Notify callbacks
 	if r.injectionCtx != nil {
@@ -178,7 +180,7 @@ func (r *InjectableRunnable) Invoke(ctx context.Context, input interface{}) (int
 	return output, err
 }
 
-// buildArguments builds the function arguments including injected dependencies.
+// buildArguments 反射解析函数签名并填充注入参数。
 func (r *InjectableRunnable) buildArguments(ctx context.Context, input interface{}) ([]reflect.Value, error) {
 	fnValue := reflect.ValueOf(r.fn)
 	fnType := fnValue.Type()
@@ -426,3 +428,5 @@ func InjectDependencies(r *InjectableRunnable, config *types.RunnableConfig, pre
 	r.SetInjectionContext(ctx)
 	return r
 }
+
+// ParamInjector 按参数名匹配注入器；首参通常为 context.Context。

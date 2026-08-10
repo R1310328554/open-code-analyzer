@@ -1,5 +1,8 @@
 package types
 
+// stream.go — 流式协议：ChannelStream、DuplexStream 与 Filter/Map 装饰。
+
+
 import (
 	"context"
 	"io"
@@ -7,7 +10,7 @@ import (
 	"time"
 )
 
-// StreamChunk represents a single chunk of data from a stream.
+// StreamChunk 流式输出单块数据。
 type StreamChunk struct {
 	Mode      StreamMode
 	Data      interface{}
@@ -18,37 +21,37 @@ type StreamChunk struct {
 	Index     int
 }
 
-// StreamProtocol defines the interface for streaming output from graph execution.
+// StreamProtocol 图执行流式输出接口（Emit/Iterator/Close）。
 type StreamProtocol interface {
-	// Emit emits a chunk to the stream.
+	// Emit 向流发送 chunk。
 	Emit(ctx context.Context, chunk *StreamChunk) error
 
-	// Iterator returns an iterator over the stream chunks.
+	// Iterator 返回可阻塞读取的 StreamIterator。
 	Iterator(ctx context.Context) StreamIterator
 
-	// Close closes the stream.
+	// Close 关闭流并释放资源。
 	Close() error
 
-	// IsClosed returns true if the stream is closed.
+	// IsClosed 流是否已关闭。
 	IsClosed() bool
 
-	// Mode returns the stream mode.
+	// Mode 返回 StreamMode。
 	Mode() StreamMode
 }
 
-// StreamIterator allows iterating over stream chunks.
+// StreamIterator 流块迭代器（Next/HasMore/Close）。
 type StreamIterator interface {
-	// Next returns the next chunk, blocking until available or context is done.
+	// Next 阻塞读取下一块，ctx 取消或 EOF 返回错误。
 	Next(ctx context.Context) (*StreamChunk, error)
 
-	// HasMore returns true if there are more chunks available.
+	// HasMore 是否还有未读 chunk。
 	HasMore() bool
 
 	// Close closes the iterator.
 	Close() error
 }
 
-// ChannelStream implements StreamProtocol using Go channels.
+// ChannelStream 基于 chan *StreamChunk 的 StreamProtocol 实现。
 type ChannelStream struct {
 	mode   StreamMode
 	ch     chan *StreamChunk
@@ -57,7 +60,7 @@ type ChannelStream struct {
 	mu     sync.RWMutex
 }
 
-// NewChannelStream creates a new channel-based stream.
+// NewChannelStream 创建带缓冲的通道流。
 func NewChannelStream(mode StreamMode, bufferSize int) *ChannelStream {
 	return &ChannelStream{
 		mode:   mode,
@@ -164,7 +167,7 @@ func (it *channelIterator) Close() error {
 	return nil
 }
 
-// DuplexStream combines multiple streams into one, multiplexing their chunks.
+// DuplexStream 多路复用多个 StreamProtocol 到单一输出流。
 type DuplexStream struct {
 	streams []StreamProtocol
 	output  *ChannelStream
@@ -173,7 +176,7 @@ type DuplexStream struct {
 	cancel  context.CancelFunc
 }
 
-// NewDuplexStream creates a new duplex stream that combines multiple streams.
+// NewDuplexStream 为每个源流启动 multiplex goroutine。
 func NewDuplexStream(ctx context.Context, streams ...StreamProtocol) *DuplexStream {
 	childCtx, cancel := context.WithCancel(ctx)
 	ds := &DuplexStream{
@@ -192,7 +195,7 @@ func NewDuplexStream(ctx context.Context, streams ...StreamProtocol) *DuplexStre
 	return ds
 }
 
-// multiplex forwards chunks from a source stream to the output.
+// multiplex 转发 chunk 并在 Metadata 标记 source 索引。
 func (ds *DuplexStream) multiplex(index int, stream StreamProtocol) {
 	defer ds.wg.Done()
 
@@ -251,13 +254,13 @@ func (ds *DuplexStream) Output() StreamProtocol {
 	return ds.output
 }
 
-// FilterStream filters chunks based on a predicate function.
+// FilterStream 谓词过滤装饰流。
 type FilterStream struct {
 	source StreamProtocol
 	filter func(*StreamChunk) bool
 }
 
-// NewFilterStream creates a new filter stream.
+// NewFilterStream 创建过滤流。
 func NewFilterStream(source StreamProtocol, filter func(*StreamChunk) bool) *FilterStream {
 	return &FilterStream{
 		source: source,
@@ -342,13 +345,13 @@ func (fi *filterIterator) Close() error {
 	return fi.source.Close()
 }
 
-// MapStream transforms chunks using a mapping function.
+// MapStream 映射变换装饰流。
 type MapStream struct {
 	source StreamProtocol
 	mapper func(*StreamChunk) *StreamChunk
 }
 
-// NewMapStream creates a new map stream.
+// NewMapStream 创建映射流。
 func NewMapStream(source StreamProtocol, mapper func(*StreamChunk) *StreamChunk) *MapStream {
 	return &MapStream{
 		source: source,
@@ -417,7 +420,7 @@ func (mi *mapIterator) Close() error {
 	return mi.source.Close()
 }
 
-// StreamError represents a stream-related error.
+// StreamError 流相关错误（含可选 Code）。
 type StreamError struct {
 	Message string
 	Code    string
@@ -429,3 +432,5 @@ func (e *StreamError) Error() string {
 	}
 	return e.Message
 }
+
+// Emit 自动填充 Mode 与 Timestamp；关闭后 Emit 返回 StreamError。

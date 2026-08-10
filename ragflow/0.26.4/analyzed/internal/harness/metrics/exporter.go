@@ -1,22 +1,25 @@
 package metrics
 
+// exporter.go — Exporter：轻量 Prometheus 文本/CSV 格式指标导出。
+
+
 import (
 	"fmt"
 	"strings"
 )
 
-// Exporter formats agent metrics for output. This is a lightweight
-// alternative to a full Prometheus client, avoiding the dependency.
+// Exporter 格式化 Agent 指标输出，轻量替代完整 Prometheus client。
+// 避免引入 prometheus/client_golang 依赖。
 type Exporter struct {
 	namespace string
 }
 
-// NewExporter creates a new metrics exporter.
+// NewExporter 创建带 namespace 前缀的导出器。
 func NewExporter(namespace string) *Exporter {
 	return &Exporter{namespace: namespace}
 }
 
-// ExportText formats metrics as Prometheus-style text output.
+// ExportText 输出 Prometheus exposition 风格文本（HELP/TYPE/样本行）。
 func (e *Exporter) ExportText(m *AgentMetrics) string {
 	snap := m.Snapshot()
 	var b strings.Builder
@@ -64,7 +67,7 @@ func (e *Exporter) ExportText(m *AgentMetrics) string {
 	return b.String()
 }
 
-// ExportCSV formats metrics as a single CSV row.
+// ExportCSV 输出单行 CSV（trace_id 与核心计数/比率字段）。
 func (e *Exporter) ExportCSV(m *AgentMetrics) string {
 	snap := m.Snapshot()
 	return fmt.Sprintf("%s,%d,%d,%d,%.4f,%.4f,%d,%d,%.4f,%d,%d,%d,%.6f",
@@ -76,3 +79,5 @@ func (e *Exporter) ExportCSV(m *AgentMetrics) string {
 		snap.Steps, snap.NodesExecuted, snap.InterruptCount,
 		snap.CostPerTask)
 }
+
+// 指标名形如 {namespace}_tool_calls_total；Snapshot 保证并发安全读取。

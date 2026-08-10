@@ -1,5 +1,8 @@
 package store
 
+// memory.go — InMemoryStore：线程安全内存实现，含 TTL 清扫与向量语义搜索。
+
+
 import (
 	"context"
 	"math"
@@ -10,8 +13,8 @@ import (
 	"time"
 )
 
-// InMemoryStore is an in-memory implementation of BaseStore.
-// It is not thread-safe by default, use NewInMemoryStore() for a thread-safe version.
+// InMemoryStore BaseStore 的内存实现，默认线程安全。
+// 须通过 NewInMemoryStore 获取带 RWMutex 与后台 TTL 清扫的版本。
 type InMemoryStore struct {
 	mu            sync.RWMutex
 	data          map[string]map[string]map[string]interface{}
@@ -23,8 +26,8 @@ type InMemoryStore struct {
 	stopCleanup   chan struct{}
 }
 
-// NewInMemoryStore creates a new thread-safe in-memory store.
-// It starts a background goroutine for TTL cleanup every minute.
+// NewInMemoryStore 启动每分钟过期 key 清扫协程。
+// 后台 goroutine 定期删除 ttl map 中过期条目。
 func NewInMemoryStore() *InMemoryStore {
 	store := &InMemoryStore{
 		data:         make(map[string]map[string]map[string]interface{}),
@@ -39,7 +42,7 @@ func NewInMemoryStore() *InMemoryStore {
 	return store
 }
 
-// Get retrieves a value from the store.
+// Get 读值并检查 TTL，过期返回 nil。
 func (s *InMemoryStore) Get(ctx context.Context, namespace []string, key string) (map[string]interface{}, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -63,7 +66,7 @@ func (s *InMemoryStore) Get(ctx context.Context, namespace []string, key string)
 	return nil, nil
 }
 
-// Put stores a value in the store.
+// Put 深拷贝写入命名空间。
 func (s *InMemoryStore) Put(ctx context.Context, namespace []string, key string, value map[string]interface{}) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -82,7 +85,7 @@ func (s *InMemoryStore) Put(ctx context.Context, namespace []string, key string,
 	return nil
 }
 
-// Delete removes a value from the store.
+// Delete 删除 key 及对应 TTL。
 func (s *InMemoryStore) Delete(ctx context.Context, namespace []string, key string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -101,7 +104,7 @@ func (s *InMemoryStore) Delete(ctx context.Context, namespace []string, key stri
 	return nil
 }
 
-// Search searches for values in the store.
+// Search 简单 query 匹配搜索。
 func (s *InMemoryStore) Search(ctx context.Context, namespace []string, query string, limit int) ([]map[string]interface{}, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -135,7 +138,7 @@ func (s *InMemoryStore) Search(ctx context.Context, namespace []string, query st
 	return results, nil
 }
 
-// List lists all keys in the namespace.
+// List 列出未过期 key。
 func (s *InMemoryStore) List(ctx context.Context, namespace []string, limit int) ([]string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -164,7 +167,7 @@ func (s *InMemoryStore) List(ctx context.Context, namespace []string, limit int)
 	return keys, nil
 }
 
-// Batch executes multiple operations atomically.
+// Batch 持锁顺序执行 Get/Put/Search 等 Op。
 func (s *InMemoryStore) Batch(ctx context.Context, ops []Op) ([]Result, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -866,3 +869,5 @@ func (s *InMemoryStore) searchByEmbedding(nsKey string, queryEmbedding []float64
 	}
 	return nil
 }
+
+// SearchItems 支持向量余弦相似度；PutItem 可选写入 embedding 索引。

@@ -1,28 +1,31 @@
 package runnable
 
+// runnable.go — Runnable 泛型接口：Invoke/Batch/Stream 与序列/并行组合。
+
+
 import (
 	"context"
 	"fmt"
 	"reflect"
 )
 
-// Runnable is the base interface for all runnable components.
-// A Runnable represents a unit of computation that can be invoked.
+// Runnable 可运行组件基接口，定义同步/批量/流式执行。
+// Runnable 表示可被 Invoke 调用的计算单元。
 type Runnable[Input, Output any] interface {
-	// Invoke executes the runnable synchronously.
+	// Invoke 同步执行并返回输出。
 	Invoke(ctx context.Context, input Input) (Output, error)
 
-	// Batch executes the runnable on multiple inputs.
+	// Batch 批量执行，默认顺序 Invoke。
 	Batch(ctx context.Context, inputs []Input) ([]Output, []error)
 
-	// Stream returns a stream of outputs.
+	// Stream 返回输出通道，默认单值。
 	Stream(ctx context.Context, input Input) <-chan Output
 
-	// GetSchema returns the input/output schema.
+	// GetSchema 返回输入/输出类型 schema。
 	GetSchema() *RunnableSchema
 }
 
-// RunnableSchema describes the schema of a runnable.
+// RunnableSchema 描述 Runnable 的 IO 类型与元信息。
 type RunnableSchema struct {
 	InputType   string
 	OutputType  string
@@ -30,7 +33,7 @@ type RunnableSchema struct {
 	Description string
 }
 
-// RunnableFunc wraps a function as a Runnable.
+// RunnableFunc 将函数包装为 Runnable。
 type RunnableFunc[Input, Output any] struct {
 	fn       func(context.Context, Input) (Output, error)
 	schema   *RunnableSchema
@@ -38,7 +41,7 @@ type RunnableFunc[Input, Output any] struct {
 	streamFn func(context.Context, Input) <-chan Output
 }
 
-// NewRunnableFunc creates a new Runnable from a function.
+// NewRunnableFunc 从函数构造 RunnableFunc。
 func NewRunnableFunc[Input, Output any](
 	fn func(context.Context, Input) (Output, error),
 	opts ...RunnableOption[Input, Output],
@@ -78,7 +81,7 @@ func (r *RunnableFunc[Input, Output]) Batch(ctx context.Context, inputs []Input)
 	return outputs, errs
 }
 
-// Stream returns a stream of outputs.
+// Stream 序列末端 Runnable 的 Stream。
 func (r *RunnableFunc[Input, Output]) Stream(ctx context.Context, input Input) <-chan Output {
 	if r.streamFn != nil {
 		return r.streamFn(ctx, input)
@@ -101,24 +104,24 @@ func (r *RunnableFunc[Input, Output]) GetSchema() *RunnableSchema {
 	return r.schema
 }
 
-// RunnableOption configures a Runnable.
+// RunnableOption Runnable 配置选项。
 type RunnableOption[Input, Output any] func(*RunnableFunc[Input, Output])
 
-// WithName sets the name of the runnable.
+// WithName 设置 schema 名称。
 func WithName[Input, Output any](name string) RunnableOption[Input, Output] {
 	return func(r *RunnableFunc[Input, Output]) {
 		r.schema.Name = name
 	}
 }
 
-// WithDescription sets the description of the runnable.
+// WithDescription 设置描述。
 func WithDescription[Input, Output any](desc string) RunnableOption[Input, Output] {
 	return func(r *RunnableFunc[Input, Output]) {
 		r.schema.Description = desc
 	}
 }
 
-// WithBatchFn sets the batch function.
+// WithBatchFn 自定义批量实现。
 func WithBatchFn[Input, Output any](
 	fn func(context.Context, []Input) ([]Output, []error),
 ) RunnableOption[Input, Output] {
@@ -127,7 +130,7 @@ func WithBatchFn[Input, Output any](
 	}
 }
 
-// WithStreamFn sets the stream function.
+// WithStreamFn 自定义流式实现。
 func WithStreamFn[Input, Output any](
 	fn func(context.Context, Input) <-chan Output,
 ) RunnableOption[Input, Output] {
@@ -136,14 +139,14 @@ func WithStreamFn[Input, Output any](
 	}
 }
 
-// RunnableSeq chains multiple runnables together in sequence.
-// The output of one runnable is the input to the next.
+// RunnableSeq 顺序链式组合多个 Runnable。
+// 前一 Runnable 输出作为下一 Runnable 输入。
 type RunnableSeq struct {
 	runnables []Runnable[any, any]
 	schema    *RunnableSchema
 }
 
-// NewRunnableSeq creates a new sequence of runnables.
+// NewRunnableSeq 校验类型兼容后创建序列。
 func NewRunnableSeq(runnables ...Runnable[any, any]) (*RunnableSeq, error) {
 	if len(runnables) == 0 {
 		return nil, &RunnableError{Message: "at least one runnable is required"}
@@ -170,7 +173,7 @@ func NewRunnableSeq(runnables ...Runnable[any, any]) (*RunnableSeq, error) {
 	}, nil
 }
 
-// Invoke executes all runnables in sequence.
+// Invoke 依次 Invoke 链中每个 Runnable。
 func (s *RunnableSeq) Invoke(ctx context.Context, input interface{}) (interface{}, error) {
 	var current interface{} = input
 	var err error
@@ -185,7 +188,7 @@ func (s *RunnableSeq) Invoke(ctx context.Context, input interface{}) (interface{
 	return current, nil
 }
 
-// Batch executes the sequence on multiple inputs.
+// Batch 对每条输入顺序执行链。
 func (s *RunnableSeq) Batch(ctx context.Context, inputs []interface{}) ([]interface{}, []error) {
 	outputs := make([]interface{}, len(inputs))
 	errs := make([]error, len(inputs))
@@ -567,3 +570,5 @@ func MapValue(
 		return fn(v), nil
 	}
 }
+
+// RunnableParallel 并行 fan-out；RunnableMap 映射输入类型后委托 inner。

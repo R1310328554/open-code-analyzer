@@ -1,32 +1,35 @@
 package types
 
+// config.go — RunnableConfig：可配置项、递归限制、耐久模式与合并补丁。
+
+
 import "ragflow/internal/harness/graph/constants"
 
-// RunnableConfig represents configuration for a runnable execution.
+// RunnableConfig 图/Runnable 单次执行的配置载体。
 type RunnableConfig struct {
-	// Configurable values that can be used by nodes and checkpointers
+	// Configurable 节点与 checkpointer 共享的可配置 map
 	Configurable map[string]interface{}
 
-	// RecursionLimit is the maximum number of steps before raising GraphRecursionError
+	// RecursionLimit 超步上限，触达则 GraphRecursionError
 	RecursionLimit int
 
-	// Tags for the execution
+	// Tags 执行标签（追踪/过滤）
 	Tags []string
 
-	// Metadata for the execution
+	// Metadata 执行元数据
 	Metadata map[string]interface{}
 
-	// RunID is a unique identifier for this run
+	// RunID 本次 run 唯一 ID
 	RunID string
 
-	// ThreadID is the thread identifier for checkpointing
+	// ThreadID 检查点线程 ID
 	ThreadID string
 
-	// Durability controls when checkpoint writes are persisted
+	// Durability 检查点持久化时机（sync/async/exit）
 	Durability Durability
 }
 
-// NewRunnableConfig creates a new RunnableConfig with defaults.
+// NewRunnableConfig 默认值含 DefaultRecursionLimit 与 DurabilitySync。
 func NewRunnableConfig() *RunnableConfig {
 	return &RunnableConfig{
 		Configurable:   make(map[string]interface{}),
@@ -37,7 +40,7 @@ func NewRunnableConfig() *RunnableConfig {
 	}
 }
 
-// Get gets a value from the configurable map.
+// Get 读取 Configurable 键。
 func (c *RunnableConfig) Get(key string) (interface{}, bool) {
 	if c.Configurable == nil {
 		return nil, false
@@ -46,7 +49,7 @@ func (c *RunnableConfig) Get(key string) (interface{}, bool) {
 	return val, ok
 }
 
-// Set sets a value in the configurable map.
+// Set 写入 Configurable 键。
 func (c *RunnableConfig) Set(key string, value interface{}) {
 	if c.Configurable == nil {
 		c.Configurable = make(map[string]interface{})
@@ -54,7 +57,7 @@ func (c *RunnableConfig) Set(key string, value interface{}) {
 	c.Configurable[key] = value
 }
 
-// Merge merges another config into this one.
+// Merge 合并另一配置的各字段。
 func (c *RunnableConfig) Merge(other *RunnableConfig) *RunnableConfig {
 	if other == nil {
 		return c
@@ -96,50 +99,50 @@ func (c *RunnableConfig) Merge(other *RunnableConfig) *RunnableConfig {
 	return c
 }
 
-// WithConfigurable returns a new config with the given configurable values.
+// WithConfigurable 替换 Configurable map。
 func (c *RunnableConfig) WithConfigurable(configurable map[string]interface{}) *RunnableConfig {
 	c.Configurable = configurable
 	return c
 }
 
-// WithRecursionLimit returns a new config with the given recursion limit.
+// WithRecursionLimit 设置递归/超步限制。
 func (c *RunnableConfig) WithRecursionLimit(limit int) *RunnableConfig {
 	c.RecursionLimit = limit
 	return c
 }
 
-// WithTags returns a new config with the given tags.
+// WithTags 设置标签。
 func (c *RunnableConfig) WithTags(tags ...string) *RunnableConfig {
 	c.Tags = tags
 	return c
 }
 
-// WithMetadata returns a new config with the given metadata.
+// WithMetadata 设置元数据。
 func (c *RunnableConfig) WithMetadata(metadata map[string]interface{}) *RunnableConfig {
 	c.Metadata = metadata
 	return c
 }
 
-// WithRunID returns a new config with the given run ID.
+// WithRunID 设置 RunID。
 func (c *RunnableConfig) WithRunID(runID string) *RunnableConfig {
 	c.RunID = runID
 	return c
 }
 
-// WithThreadID returns a new config with the given thread ID.
+// WithThreadID 设置 ThreadID。
 func (c *RunnableConfig) WithThreadID(threadID string) *RunnableConfig {
 	c.ThreadID = threadID
 	return c
 }
 
-// WithDurability returns a new config with the given durability mode.
+// WithDurability 设置耐久模式。
 func (c *RunnableConfig) WithDurability(durability Durability) *RunnableConfig {
 	c.Durability = durability
 	return c
 }
 
-// GetOrEmpty returns the string value for a configurable key, or "" if not present.
-// This is a convenience for checkpoint config map construction.
+// GetOrEmpty 安全取 string 配置，缺失返回空串。
+// 便于构造 checkpointer 使用的 flat config map。
 func (c *RunnableConfig) GetOrEmpty(key string) string {
 	if c.Configurable == nil {
 		return ""
@@ -152,10 +155,10 @@ func (c *RunnableConfig) GetOrEmpty(key string) string {
 	return s
 }
 
-// ConfigPatcher is a function that patches a config.
+// ConfigPatcher 配置补丁函数类型。
 type ConfigPatcher func(*RunnableConfig) *RunnableConfig
 
-// PatchConfig applies a series of patchers to a config.
+// PatchConfig 顺序应用多个 ConfigPatcher。
 func PatchConfig(config *RunnableConfig, patchers ...ConfigPatcher) *RunnableConfig {
 	if config == nil {
 		config = NewRunnableConfig()
@@ -170,7 +173,7 @@ func PatchConfig(config *RunnableConfig, patchers ...ConfigPatcher) *RunnableCon
 	return config
 }
 
-// EnsureConfig ensures a config is not nil.
+// EnsureConfig nil 时返回 NewRunnableConfig。
 func EnsureConfig(config *RunnableConfig) *RunnableConfig {
 	if config == nil {
 		return NewRunnableConfig()
@@ -178,7 +181,7 @@ func EnsureConfig(config *RunnableConfig) *RunnableConfig {
 	return config
 }
 
-// MergeConfigs merges multiple configs into one.
+// MergeConfigs 将多个配置合并为一个。
 func MergeConfigs(configs ...*RunnableConfig) *RunnableConfig {
 	result := NewRunnableConfig()
 
@@ -188,3 +191,5 @@ func MergeConfigs(configs ...*RunnableConfig) *RunnableConfig {
 
 	return result
 }
+
+// Configurable 中保留键见 constants 包（thread_id、checkpoint_ns 等）。

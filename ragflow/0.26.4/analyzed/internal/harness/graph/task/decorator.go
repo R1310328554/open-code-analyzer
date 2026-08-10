@@ -1,4 +1,6 @@
-// Package task provides function decorators for Agent Harness tasks.
+// decorator.go — TaskDecorator：节点函数重试、缓存、超时与图级装饰器。
+
+// Package task 提供 Agent Harness 任务函数装饰器。
 package task
 
 import (
@@ -16,7 +18,7 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// TaskDecorator wraps a function with retry, cache, and other policies.
+// TaskDecorator 为 NodeFunc 包装重试、缓存与元数据策略。
 type TaskDecorator struct {
 	name        string
 	retryPolicy *types.RetryPolicy
@@ -30,38 +32,38 @@ type tCacheEntry struct {
 	expiresAt time.Time
 }
 
-// DecoratorOption configures a TaskDecorator.
+// DecoratorOption 装饰器配置选项。
 type DecoratorOption func(*TaskDecorator)
 
-// WithName sets the task name.
+// WithName 设置任务名。
 func WithName(name string) DecoratorOption {
 	return func(d *TaskDecorator) {
 		d.name = name
 	}
 }
 
-// WithRetryPolicy sets the retry policy.
+// WithRetryPolicy 设置重试策略。
 func WithRetryPolicy(policy *types.RetryPolicy) DecoratorOption {
 	return func(d *TaskDecorator) {
 		d.retryPolicy = policy
 	}
 }
 
-// WithCachePolicy sets the cache policy.
+// WithCachePolicy 设置结果缓存策略。
 func WithCachePolicy(policy *types.CachePolicy) DecoratorOption {
 	return func(d *TaskDecorator) {
 		d.cachePolicy = policy
 	}
 }
 
-// WithMetadata sets task metadata.
+// WithMetadata 附加任务元数据。
 func WithMetadata(metadata map[string]interface{}) DecoratorOption {
 	return func(d *TaskDecorator) {
 		d.metadata = metadata
 	}
 }
 
-// NewDecorator creates a new task decorator.
+// NewDecorator 创建装饰器，默认随机 UUID 名。
 func NewDecorator(opts ...DecoratorOption) *TaskDecorator {
 	d := &TaskDecorator{
 		name:     uuid.New().String(),
@@ -73,7 +75,7 @@ func NewDecorator(opts ...DecoratorOption) *TaskDecorator {
 	return d
 }
 
-// Wrap wraps a function with the decorator's policies.
+// Wrap 返回带缓存检查、重试与 TaskContext 的 NodeFunc。
 func (d *TaskDecorator) Wrap(fn types.NodeFunc) types.NodeFunc {
 	return func(ctx context.Context, input interface{}) (interface{}, error) {
 		// Create task context
@@ -113,7 +115,7 @@ func (d *TaskDecorator) Wrap(fn types.NodeFunc) types.NodeFunc {
 	}
 }
 
-// getCached retrieves a cached value if present and not expired.
+// getCached 按输入 SHA256 键查找未过期缓存。
 func (d *TaskDecorator) getCached(input interface{}) (interface{}, bool) {
 	key := cacheKey(input)
 	if v, ok := d.cache.Load(key); ok {
@@ -127,7 +129,7 @@ func (d *TaskDecorator) getCached(input interface{}) (interface{}, bool) {
 	return nil, false
 }
 
-// setCached stores a value in the cache.
+// setCached 写入 sync.Map 缓存并设置 expiresAt。
 func (d *TaskDecorator) setCached(input interface{}, value interface{}) {
 	key := cacheKey(input)
 	var expiresAt time.Time
@@ -137,13 +139,13 @@ func (d *TaskDecorator) setCached(input interface{}, value interface{}) {
 	d.cache.Store(key, tCacheEntry{value: value, expiresAt: expiresAt})
 }
 
-// cacheKey generates a deterministic cache key from an input value.
+// cacheKey 对 fmt.Sprintf("%v", input) 做 SHA256。
 func cacheKey(input interface{}) string {
 	h := sha256.Sum256([]byte(fmt.Sprintf("%v", input)))
 	return fmt.Sprintf("%x", h[:])
 }
 
-// executeWithRetry executes the function with retry logic.
+// executeWithRetry 指数退避重试，尊重 RetryOn 与 ctx 取消。
 func (d *TaskDecorator) executeWithRetry(ctx context.Context, taskCtx *TaskContext, fn types.NodeFunc) (interface{}, error) {
 	policy := d.retryPolicy
 	var lastErr error
@@ -186,7 +188,7 @@ func (d *TaskDecorator) executeWithRetry(ctx context.Context, taskCtx *TaskConte
 	return nil, fmt.Errorf("task %s failed after %d attempts: %w", d.name, policy.MaxAttempts, lastErr)
 }
 
-// TaskContext holds context information about a task execution.
+// TaskContext 单次任务执行的 ID、输入输出与时间戳。
 type TaskContext struct {
 	Name     string
 	ID       string
@@ -687,3 +689,5 @@ func (e *Entrypoint) InvokeWithDependencies(
 
 	return result, nil
 }
+
+// Retryable/Cacheable/Timeout 等便捷装饰器基于 TaskDecorator 组合策略。

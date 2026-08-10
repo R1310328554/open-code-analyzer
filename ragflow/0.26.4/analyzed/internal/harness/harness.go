@@ -1,16 +1,16 @@
-// Package harness is the main package for Agent Harness Go.
+// Package harness 是 Agent Harness Go 的主入口包。
 //
-// Agent Harness is a framework for building stateful, multi-agent
-// applications with LLMs. It provides a graph-based execution model
-// that supports:
+// Agent Harness 用于构建有状态多智能体 LLM 应用，
+// 提供基于图的执行模型，支持：
+// 核心能力概览：
 //
-//   - Stateful computation with channels and reducers
-//   - Multi-agent workflows with subgraphs
-//   - Human-in-the-loop with interrupts
-//   - Persistence with checkpoints
-//   - Streaming and debugging
+//   - 通道与 reducer 的有状态计算
+//   - 子图多智能体工作流
+//   - interrupt 人机协同
+//   - checkpointer 持久化
+//   - 流式输出与调试
 //
-// Basic Usage:
+// 基本用法示例：
 //
 //	import (
 //	    "context"
@@ -67,12 +67,12 @@ import (
 	"ragflow/internal/harness/prebuilt"
 )
 
-// Re-export main types for convenience.
+// 便捷重导出主要类型。
 type (
-	// StateGraph is a graph whose nodes communicate by reading and writing to a shared state.
+	// StateGraph 节点通过共享状态通道通信的状态图。
 	StateGraph = types.StateGraph
 
-	// CompiledGraph is a compiled, executable graph.
+	// CompiledGraph 已编译可执行图。
 	CompiledGraph = types.CompiledGraph
 
 	// Node represents a node in the graph.
@@ -84,13 +84,13 @@ type (
 	// Send represents a dynamic node invocation.
 	Send = types.Send
 
-	// Checkpointer is the interface for checkpoint savers.
+	// Checkpointer 检查点保存器接口。
 	Checkpointer = checkpoint.BaseCheckpointer
 
-	// MemorySaver is an in-memory checkpoint saver.
+	// MemorySaver 内存检查点保存器。
 	MemorySaver = checkpoint.MemorySaver
 
-	// NATSSaver is a NATS JetStream-based checkpoint saver.
+	// NATSSaver 基于 NATS JetStream 的检查点保存器。
 	NATSSaver = checkpoint.NATSSaver
 	// NATSConfig holds configuration for the NATS checkpoint saver.
 	NATSConfig = checkpoint.NATSConfig
@@ -461,3 +461,5 @@ func NewSend(node string, arg interface{}) *Send {
 // Pregel engine wiring (init + runner) moved to
 // internal/harness/graph/pregel/init_pregel.go so that any
 // package importing pregel automatically activates it.
+
+// blank import pregel 触发 init 注册 PregelRunFunc，使 compiledGraph 可委托 Pregel 引擎。

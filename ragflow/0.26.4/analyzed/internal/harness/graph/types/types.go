@@ -1,4 +1,6 @@
-// Package types provides core types for LangGraph Go.
+// types.go — 核心类型：StreamMode、RetryPolicy、Command、Send 与图接口。
+
+// Package types 定义 LangGraph Go 核心类型与图构建接口。
 package types
 
 import (
@@ -8,56 +10,56 @@ import (
 	"time"
 )
 
-// NodeTriggerMode controls when a graph node is triggered for execution.
+// NodeTriggerMode 控制节点触发条件（any/all 前驱）。
 type NodeTriggerMode string
 
 const (
-	// NodeTriggerAnyPredecessor is the default Pregel/BSP mode: a node is triggered
-	// when any of its incoming edges' source nodes complete. Supports cycles/loops.
+	// NodeTriggerAnyPredecessor 默认 BSP：任一前驱完成即触发，支持环。
+	// 适用于循环/超步图。
 	NodeTriggerAnyPredecessor NodeTriggerMode = "any"
 
-	// NodeTriggerAllPredecessor is DAG mode: a node is triggered only when ALL of
-	// its incoming edges' source nodes have completed. Does not support cycles.
-	// This is the correct mode for fan-in/convergence patterns.
+	// NodeTriggerAllPredecessor DAG 模式：全部前驱完成才触发，不支持环。
+	// 适用于 fan-in 汇聚节点。
+	// fan-in 场景应使用 all 模式。
 	NodeTriggerAllPredecessor NodeTriggerMode = "all"
 )
 
-// StreamMode defines how the stream method should emit outputs.
+// StreamMode 定义 Stream 输出粒度与内容。
 type StreamMode string
 
 const (
-	// StreamModeValues emits all values in the state after each step, including interrupts.
+	// StreamModeValues 每步输出完整状态（含中断）。
 	StreamModeValues StreamMode = "values"
-	// StreamModeUpdates emits only the node or task names and updates returned by the nodes or tasks after each step.
+	// StreamModeUpdates 仅输出节点/任务增量更新。
 	StreamModeUpdates StreamMode = "updates"
-	// StreamModeCustom emits custom data using StreamWriter from inside nodes or tasks.
+	// StreamModeCustom 节点内 StreamWriter 自定义数据。
 	StreamModeCustom StreamMode = "custom"
-	// StreamModeMessages emits LLM messages token-by-token together with metadata for any LLM invocations inside nodes or tasks.
+	// StreamModeMessages LLM token 级流式与元数据。
 	StreamModeMessages StreamMode = "messages"
-	// StreamModeCheckpoints emits an event when a checkpoint is created.
+	// StreamModeCheckpoints 检查点创建事件。
 	StreamModeCheckpoints StreamMode = "checkpoints"
-	// StreamModeTasks emits events when tasks start and finish, including their results and errors.
+	// StreamModeTasks 任务起止与结果/错误事件。
 	StreamModeTasks StreamMode = "tasks"
-	// StreamModeDebug emits checkpoints and tasks events for debugging purposes.
+	// StreamModeDebug 调试组合（checkpoints + tasks）。
 	StreamModeDebug StreamMode = "debug"
 )
 
-// Durability mode for the graph execution.
+// Durability 检查点写入耐久模式。
 type Durability string
 
 const (
-	// DurabilitySync persists changes synchronously before the next step starts.
+	// DurabilitySync 下一步前同步持久化。
 	DurabilitySync Durability = "sync"
-	// DurabilityAsync persists changes asynchronously while the next step executes.
+	// DurabilityAsync 下一步执行时异步持久化。
 	DurabilityAsync Durability = "async"
-	// DurabilityExit persists changes only when the graph exits.
+	// DurabilityExit 仅在图退出时持久化。
 	DurabilityExit Durability = "exit"
 )
 
-// All is a special value to indicate that graph should interrupt on all nodes.
+// All 特殊值 "*"，表示所有节点均可中断。
 const All = "*"
 
-// RetryPolicy configures retrying nodes.
+// RetryPolicy 节点/模型调用重试策略。
 type RetryPolicy struct {
 	// InitialInterval is the amount of time that must elapse before the first retry occurs.
 	InitialInterval time.Duration
@@ -73,7 +75,7 @@ type RetryPolicy struct {
 	RetryOn func(error) bool
 }
 
-// DefaultRetryPolicy returns a default retry policy.
+// DefaultRetryPolicy 默认 3 次、指数退避与 jitter。
 func DefaultRetryPolicy() RetryPolicy {
 	return RetryPolicy{
 		InitialInterval: 500 * time.Millisecond,
@@ -85,7 +87,7 @@ func DefaultRetryPolicy() RetryPolicy {
 	}
 }
 
-// CalculateBackoff computes the exponential backoff duration for the given attempt number
+// CalculateBackoff 计算第 attempt 次退避时长（共享 Pregel 与 agent 重试）。
 // (1-indexed). It applies the BackoffFactor, caps at MaxInterval, and optionally adds jitter.
 // This is the shared backoff calculation used by both Pregel graph-node retries and
 // agent-level model-call retries.
@@ -124,7 +126,7 @@ func DefaultRetryOn(err error) bool {
 	return true
 }
 
-// CachePolicy configures caching nodes.
+// CachePolicy 节点结果缓存策略。
 type CachePolicy struct {
 	// KeyFunc generates a cache key from the node's input.
 	KeyFunc func(context.Context, interface{}) string
@@ -138,7 +140,7 @@ func DefaultCacheKey(ctx context.Context, input interface{}) string {
 	return fmt.Sprintf("%v", input)
 }
 
-// Interrupt represents information about an interrupt that occurred in a node.
+// Interrupt 节点中断信息（value + id）。
 type Interrupt struct {
 	// Value is the value associated with the interrupt.
 	Value interface{}
@@ -154,14 +156,14 @@ func NewInterrupt(value interface{}, id string) *Interrupt {
 	}
 }
 
-// StateUpdate represents an update to the graph state.
+// StateUpdate 手动状态更新描述。
 type StateUpdate struct {
 	Values map[string]interface{}
 	AsNode string
 	TaskID string
 }
 
-// PregelTask represents a Pregel task.
+// PregelTask Pregel 任务快照。
 type PregelTask struct {
 	ID         string
 	Name       string
@@ -172,7 +174,7 @@ type PregelTask struct {
 	Result     interface{}
 }
 
-// CacheKey is the cache key for a task.
+// CacheKey 任务缓存键（NS + Key + TTL）。
 type CacheKey struct {
 	// Namespace for the cache entry.
 	NS []string
@@ -182,7 +184,7 @@ type CacheKey struct {
 	TTL *time.Duration
 }
 
-// PregelExecutableTask represents an executable task in Pregel.
+// PregelExecutableTask 可执行 Pregel 任务（含 Writers/Subgraphs）。
 type PregelExecutableTask struct {
 	Name        string
 	Input       interface{}
@@ -453,3 +455,5 @@ var PregelRunFunc func(ctx context.Context, cg CompiledGraph, input interface{},
 func SetPregelRunFunc(fn func(ctx context.Context, cg CompiledGraph, input interface{}, config *RunnableConfig, streamMode StreamMode) (interface{}, error)) {
 	PregelRunFunc = fn
 }
+
+// StateGraph/CompiledGraph 接口定义图构建与 Invoke/Stream 契约。

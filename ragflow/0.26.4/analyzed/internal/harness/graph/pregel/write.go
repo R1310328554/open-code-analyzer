@@ -1,5 +1,8 @@
 package pregel
 
+// write.go — 通道批量写入：ChannelWrite、变换器、校验器与 WriteContext。
+
+
 import (
 	"context"
 	"fmt"
@@ -10,8 +13,8 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// ChannelWrite represents a write operation to channels.
-// It encapsulates the logic for writing state updates to multiple channels.
+// ChannelWrite 封装多通道写入，支持变换与校验链。
+// 节点/引擎通过它批量提交状态更新到 Registry。
 type ChannelWrite struct {
 	registry    *channels.Registry
 	entries     []*ChannelWriteEntry
@@ -20,7 +23,7 @@ type ChannelWrite struct {
 	mu          sync.RWMutex
 }
 
-// ChannelWriteEntry represents a single write operation.
+// ChannelWriteEntry 单条写入（通道、值、覆盖标志）。
 type ChannelWriteEntry struct {
 	Channel   string
 	Value     any
@@ -29,17 +32,17 @@ type ChannelWriteEntry struct {
 	Metadata  map[string]any
 }
 
-// WriteTransformer transforms write values before applying them.
+// WriteTransformer 写入前变换接口。
 type WriteTransformer interface {
 	Transform(entry *ChannelWriteEntry) (*ChannelWriteEntry, error)
 }
 
-// WriteValidator validates write operations.
+// WriteValidator 写入前校验接口。
 type WriteValidator interface {
 	Validate(entry *ChannelWriteEntry) error
 }
 
-// NewChannelWrite creates a new channel write operation.
+// NewChannelWrite 创建写入器，默认恒等变换与空校验。
 func NewChannelWrite(registry *channels.Registry, opts ...ChannelWriteOption) *ChannelWrite {
 	cw := &ChannelWrite{
 		registry:    registry,
@@ -55,38 +58,38 @@ func NewChannelWrite(registry *channels.Registry, opts ...ChannelWriteOption) *C
 	return cw
 }
 
-// ChannelWriteOption configures a ChannelWrite.
+// ChannelWriteOption 配置函数选项。
 type ChannelWriteOption func(*ChannelWrite)
 
-// WithWriteTransformer sets the write transformer.
+// WithWriteTransformer 设置写入变换器。
 func WithWriteTransformer(transformer WriteTransformer) ChannelWriteOption {
 	return func(cw *ChannelWrite) {
 		cw.transformer = transformer
 	}
 }
 
-// WithValidator sets the write validator.
+// WithValidator 设置写入校验器。
 func WithValidator(validator WriteValidator) ChannelWriteOption {
 	return func(cw *ChannelWrite) {
 		cw.validator = validator
 	}
 }
 
-// AddEntry adds a write entry.
+// AddEntry 追加待写条目。
 func (cw *ChannelWrite) AddEntry(entry *ChannelWriteEntry) {
 	cw.mu.Lock()
 	defer cw.mu.Unlock()
 	cw.entries = append(cw.entries, entry)
 }
 
-// AddEntries adds multiple write entries.
+// AddEntries 批量追加条目。
 func (cw *ChannelWrite) AddEntries(entries ...*ChannelWriteEntry) {
 	cw.mu.Lock()
 	defer cw.mu.Unlock()
 	cw.entries = append(cw.entries, entries...)
 }
 
-// WriteTo adds a simple write to a channel.
+// WriteTo 追加普通 reducer 写入。
 func (cw *ChannelWrite) WriteTo(channel string, value any) {
 	cw.AddEntry(&ChannelWriteEntry{
 		Channel:   channel,
@@ -95,7 +98,7 @@ func (cw *ChannelWrite) WriteTo(channel string, value any) {
 	})
 }
 
-// Overwrite overwrites a channel with a value.
+// Overwrite 追加覆盖写入（绕过 reducer）。
 func (cw *ChannelWrite) Overwrite(channel string, value any) {
 	cw.AddEntry(&ChannelWriteEntry{
 		Channel:   channel,
@@ -104,7 +107,7 @@ func (cw *ChannelWrite) Overwrite(channel string, value any) {
 	})
 }
 
-// WriteNode writes from a specific node.
+// WriteNode 带来源节点名的写入。
 func (cw *ChannelWrite) WriteNode(node string, channel string, value any) {
 	cw.AddEntry(&ChannelWriteEntry{
 		Channel:   channel,
@@ -114,7 +117,7 @@ func (cw *ChannelWrite) WriteNode(node string, channel string, value any) {
 	})
 }
 
-// Write executes all write operations.
+// Write 校验→变换→Update 全部条目并清空队列。
 func (cw *ChannelWrite) Write(ctx context.Context) (map[string]bool, error) {
 	cw.mu.Lock()
 	defer cw.mu.Unlock()
@@ -165,21 +168,21 @@ func (cw *ChannelWrite) Write(ctx context.Context) (map[string]bool, error) {
 	return updated, nil
 }
 
-// Clear clears all pending write entries.
+// Clear 清空待写队列。
 func (cw *ChannelWrite) Clear() {
 	cw.mu.Lock()
 	defer cw.mu.Unlock()
 	cw.entries = make([]*ChannelWriteEntry, 0)
 }
 
-// EntryCount returns the number of pending entries.
+// EntryCount 返回待写条目数。
 func (cw *ChannelWrite) EntryCount() int {
 	cw.mu.RLock()
 	defer cw.mu.RUnlock()
 	return len(cw.entries)
 }
 
-// GetEntries returns a copy of all entries.
+// GetEntries 返回条目副本。
 func (cw *ChannelWrite) GetEntries() []*ChannelWriteEntry {
 	cw.mu.RLock()
 	defer cw.mu.RUnlock()
@@ -189,21 +192,21 @@ func (cw *ChannelWrite) GetEntries() []*ChannelWriteEntry {
 	return entries
 }
 
-// ==================== Write Transformers ====================
+// ==================== 写入变换器 ====================
 
-// IdentityWriteTransformer doesn't transform.
+// IdentityWriteTransformer 恒等变换。
 type IdentityWriteTransformer struct{}
 
 func (t *IdentityWriteTransformer) Transform(entry *ChannelWriteEntry) (*ChannelWriteEntry, error) {
 	return entry, nil
 }
 
-// MappingWriteTransformer maps channel names.
+// MappingWriteTransformer 通道名映射。
 type MappingWriteTransformer struct {
 	mappings map[string]string
 }
 
-// NewMappingWriteTransformer creates a transformer that maps channel names.
+// NewMappingWriteTransformer 按 map 重命名目标通道。
 func NewMappingWriteTransformer(mappings map[string]string) *MappingWriteTransformer {
 	return &MappingWriteTransformer{mappings: mappings}
 }
@@ -217,12 +220,12 @@ func (t *MappingWriteTransformer) Transform(entry *ChannelWriteEntry) (*ChannelW
 	return entry, nil
 }
 
-// PrefixWriteTransformer adds a prefix to channel names.
+// PrefixWriteTransformer 为通道名加前缀。
 type PrefixWriteTransformer struct {
 	prefix string
 }
 
-// NewPrefixWriteTransformer creates a transformer that adds a prefix.
+// NewPrefixWriteTransformer 创建前缀变换器。
 func NewPrefixWriteTransformer(prefix string) *PrefixWriteTransformer {
 	return &PrefixWriteTransformer{prefix: prefix}
 }
@@ -233,12 +236,12 @@ func (t *PrefixWriteTransformer) Transform(entry *ChannelWriteEntry) (*ChannelWr
 	return &transformed, nil
 }
 
-// MetadataWriteTransformer adds metadata to entries.
+// MetadataWriteTransformer 合并元数据到条目。
 type MetadataWriteTransformer struct {
 	metadata map[string]any
 }
 
-// NewMetadataWriteTransformer creates a transformer that adds metadata.
+// NewMetadataWriteTransformer 创建元数据注入变换器。
 func NewMetadataWriteTransformer(metadata map[string]any) *MetadataWriteTransformer {
 	return &MetadataWriteTransformer{metadata: metadata}
 }
@@ -254,12 +257,12 @@ func (t *MetadataWriteTransformer) Transform(entry *ChannelWriteEntry) (*Channel
 	return &transformed, nil
 }
 
-// NodeWriteTransformer adds node information to entries.
+// NodeWriteTransformer 补全空 Node 字段。
 type NodeWriteTransformer struct {
 	node string
 }
 
-// NewNodeWriteTransformer creates a transformer that adds node info.
+// NewNodeWriteTransformer 创建节点信息变换器。
 func NewNodeWriteTransformer(node string) *NodeWriteTransformer {
 	return &NodeWriteTransformer{node: node}
 }
@@ -273,12 +276,12 @@ func (t *NodeWriteTransformer) Transform(entry *ChannelWriteEntry) (*ChannelWrit
 	return entry, nil
 }
 
-// FilterWriteTransformer filters entries based on a predicate.
+// FilterWriteTransformer 谓词过滤，不匹配则 WriteSkipError。
 type FilterWriteTransformer struct {
 	predicate func(*ChannelWriteEntry) bool
 }
 
-// NewFilterWriteTransformer creates a transformer that filters entries.
+// NewFilterWriteTransformer 创建过滤变换器。
 func NewFilterWriteTransformer(predicate func(*ChannelWriteEntry) bool) *FilterWriteTransformer {
 	return &FilterWriteTransformer{predicate: predicate}
 }
@@ -290,21 +293,21 @@ func (t *FilterWriteTransformer) Transform(entry *ChannelWriteEntry) (*ChannelWr
 	return entry, nil
 }
 
-// ==================== Write Validators ====================
+// ==================== 写入校验器 ====================
 
-// NoOpValidator doesn't validate.
+// NoOpValidator 空校验。
 type NoOpValidator struct{}
 
 func (v *NoOpValidator) Validate(entry *ChannelWriteEntry) error {
 	return nil
 }
 
-// TypeWriteValidator validates value types.
+// TypeWriteValidator 按通道期望类型校验。
 type TypeWriteValidator struct {
 	types map[string]any
 }
 
-// NewTypeWriteValidator creates a validator for value types.
+// NewTypeWriteValidator 创建类型校验器。
 func NewTypeWriteValidator(types map[string]any) *TypeWriteValidator {
 	return &TypeWriteValidator{types: types}
 }
@@ -321,12 +324,12 @@ func (v *TypeWriteValidator) Validate(entry *ChannelWriteEntry) error {
 	return nil
 }
 
-// NonNullWriteValidator ensures values are not nil.
+// NonNullWriteValidator 拒绝 nil（白名单通道除外）。
 type NonNullWriteValidator struct {
 	whitelist []string
 }
 
-// NewNonNullWriteValidator creates a validator that rejects nil values.
+// NewNonNullWriteValidator 创建非空校验器。
 func NewNonNullWriteValidator(whitelist ...string) *NonNullWriteValidator {
 	return &NonNullWriteValidator{whitelist: whitelist}
 }
@@ -345,13 +348,13 @@ func (v *NonNullWriteValidator) Validate(entry *ChannelWriteEntry) error {
 	return nil
 }
 
-// LengthWriteValidator validates slice/string lengths.
+// LengthWriteValidator 校验 slice/string/map 长度上下界。
 type LengthWriteValidator struct {
 	minLengths map[string]int
 	maxLengths map[string]int
 }
 
-// NewLengthWriteValidator creates a validator for lengths.
+// NewLengthWriteValidator 创建长度校验器。
 func NewLengthWriteValidator(minLengths, maxLengths map[string]int) *LengthWriteValidator {
 	return &LengthWriteValidator{
 		minLengths: minLengths,
@@ -390,26 +393,26 @@ func (v *LengthWriteValidator) Validate(entry *ChannelWriteEntry) error {
 	return nil
 }
 
-// ==================== Write Batches ====================
+// ==================== 写入批次 ====================
 
-// WriteBatch represents a batch of write operations.
+// WriteBatch 命名批次，便于分组 flush。
 type WriteBatch struct {
 	entries []*ChannelWriteEntry
 }
 
-// NewWriteBatch creates a new write batch.
+// NewWriteBatch 创建空批次。
 func NewWriteBatch() *WriteBatch {
 	return &WriteBatch{
 		entries: make([]*ChannelWriteEntry, 0),
 	}
 }
 
-// Add adds an entry to the batch.
+// Add 向批次追加条目。
 func (b *WriteBatch) Add(entry *ChannelWriteEntry) {
 	b.entries = append(b.entries, entry)
 }
 
-// WriteTo adds a simple write to the batch.
+// WriteTo 批次内普通写入。
 func (b *WriteBatch) WriteTo(channel string, value any) {
 	b.Add(&ChannelWriteEntry{
 		Channel:   channel,
@@ -418,7 +421,7 @@ func (b *WriteBatch) WriteTo(channel string, value any) {
 	})
 }
 
-// Overwrite adds an overwrite to the batch.
+// Overwrite 批次内覆盖写入。
 func (b *WriteBatch) Overwrite(channel string, value any) {
 	b.Add(&ChannelWriteEntry{
 		Channel:   channel,
@@ -427,24 +430,24 @@ func (b *WriteBatch) Overwrite(channel string, value any) {
 	})
 }
 
-// Entries returns all entries in the batch.
+// Entries 返回批次全部条目。
 func (b *WriteBatch) Entries() []*ChannelWriteEntry {
 	return b.entries
 }
 
-// Size returns the number of entries in the batch.
+// Size 返回批次大小。
 func (b *WriteBatch) Size() int {
 	return len(b.entries)
 }
 
-// Clear clears all entries.
+// Clear 清空批次。
 func (b *WriteBatch) Clear() {
 	b.entries = make([]*ChannelWriteEntry, 0)
 }
 
-// ==================== Write Context ====================
+// ==================== 写入上下文 ====================
 
-// WriteContext represents the context of a write operation.
+// WriteContext 节点级写入上下文，管理多命名批次。
 type WriteContext struct {
 	Node    string
 	Step    int
@@ -452,7 +455,7 @@ type WriteContext struct {
 	Batches map[string]*WriteBatch
 }
 
-// NewWriteContext creates a new write context.
+// NewWriteContext 绑定节点名、步号与主 Writer。
 func NewWriteContext(node string, step int, writer *ChannelWrite) *WriteContext {
 	return &WriteContext{
 		Node:    node,
@@ -462,19 +465,19 @@ func NewWriteContext(node string, step int, writer *ChannelWrite) *WriteContext 
 	}
 }
 
-// CreateBatch creates a new named batch.
+// CreateBatch 创建并注册命名批次。
 func (wc *WriteContext) CreateBatch(name string) *WriteBatch {
 	batch := NewWriteBatch()
 	wc.Batches[name] = batch
 	return batch
 }
 
-// GetBatch gets an existing batch.
+// GetBatch 获取已有批次。
 func (wc *WriteContext) GetBatch(name string) *WriteBatch {
 	return wc.Batches[name]
 }
 
-// Flush writes all batches to the main writer.
+// Flush 合并所有批次并执行 Write。
 func (wc *WriteContext) Flush(ctx context.Context) (map[string]bool, error) {
 	for _, batch := range wc.Batches {
 		wc.Writer.AddEntries(batch.Entries()...)
@@ -482,9 +485,9 @@ func (wc *WriteContext) Flush(ctx context.Context) (map[string]bool, error) {
 	return wc.Writer.Write(ctx)
 }
 
-// ==================== Errors ====================
+// ==================== 错误类型 ====================
 
-// WriteValidationError represents a validation error.
+// WriteValidationError 校验失败错误。
 type WriteValidationError struct {
 	Channel string
 	Message string
@@ -494,7 +497,7 @@ func (e *WriteValidationError) Error() string {
 	return fmt.Sprintf("write validation error for channel %s: %s", e.Channel, e.Message)
 }
 
-// WriteSkipError indicates an entry should be skipped.
+// WriteSkipError 表示条目被过滤跳过。
 type WriteSkipError struct {
 	Channel string
 }
@@ -503,8 +506,10 @@ func (e *WriteSkipError) Error() string {
 	return fmt.Sprintf("write skipped for channel %s", e.Channel)
 }
 
-// IsWriteSkipError checks if an error is a skip error.
+// IsWriteSkipError 判断是否为 WriteSkipError。
 func IsWriteSkipError(err error) bool {
 	_, ok := err.(*WriteSkipError)
 	return ok
 }
+
+// Overwrite 写入包装为 types.Overwrite，由通道 Update 识别并绕过 reducer。

@@ -1,7 +1,9 @@
-// Package pregel provides tracing/callback wrappers around the Pregel Engine.
+// traced_engine.go — TracedEngine：OpenTelemetry 追踪与生命周期回调包装层。
+
+// Package pregel 为 Pregel Engine 提供追踪/回调包装，不修改 Engine 本体。
 //
-// TracedEngine wraps Engine.Run with OpenTelemetry spans and lifecycle callbacks
-// without modifying the Engine struct itself.
+// TracedEngine 在 Run 外包裹 OTel span 与 RunStart/RunEnd 回调
+// 回调管理独立于 Engine 结构体字段。
 package pregel
 
 import (
@@ -17,10 +19,10 @@ import (
 	"ragflow/internal/harness/graph/types"
 )
 
-// tracedEngineTracerName is the OTel tracer name for the traced engine wrapper.
+// tracedEngineTracerName OTel tracer 注册名。
 const tracedEngineTracerName = "ragflow/internal/harness/graph/pregel/traced"
 
-// TracedEngineOption configures tracing behavior.
+// TracedEngineOption 追踪行为配置函数。
 type TracedEngineOption func(*tracedEngineConfig)
 
 type tracedEngineConfig struct {
@@ -40,23 +42,23 @@ func defaultTracingConfig() *tracedEngineConfig {
 	}
 }
 
-// WithTracedEngineDisabled disables tracing for a particular engine instance.
+// WithTracedEngineDisabled 禁用 OTel span 创建。
 func WithTracedEngineDisabled() TracedEngineOption {
 	return func(c *tracedEngineConfig) { c.enabled = false }
 }
 
-// WithTracedEngineRecordArgs enables/disables argument size recording.
+// WithTracedEngineRecordArgs 控制是否记录参数体量。
 func WithTracedEngineRecordArgs(enabled bool) TracedEngineOption {
 	return func(c *tracedEngineConfig) { c.recordArguments = enabled }
 }
 
-// WithTracedEngineRecordResults enables/disables result size recording.
+// WithTracedEngineRecordResults 控制是否记录结果体量。
 func WithTracedEngineRecordResults(enabled bool) TracedEngineOption {
 	return func(c *tracedEngineConfig) { c.recordResults = enabled }
 }
 
-// TracedEngine wraps an Engine with OpenTelemetry tracing and callbacks.
-// Callbacks are managed separately (not on the Engine struct).
+// TracedEngine 包装 inner Engine，持有 tracer 与 CallbackManager。
+// 回调通过 TracedEngine 单独管理，不写入 Engine。
 type TracedEngine struct {
 	inner     *Engine
 	cfg       *tracedEngineConfig
@@ -64,9 +66,9 @@ type TracedEngine struct {
 	callbacks *CallbackManager
 }
 
-// NewTracedEngine creates a new traced engine wrapper.
-// When tracing is disabled, Run/RunSync still dispatch callbacks
-// (if configured via WithEngineCallbacks) but do not create OTel spans.
+// NewTracedEngine 创建追踪包装；禁用时仍可按配置分发回调。
+// 追踪关闭时 Run/RunSync 仍可触发 WithEngineCallbacks 配置的回调
+// 但不会创建 OTel span。
 func NewTracedEngine(inner *Engine, opts ...TracedEngineOption) *TracedEngine {
 	cfg := defaultTracingConfig()
 	for _, opt := range opts {
@@ -85,19 +87,19 @@ func NewTracedEngine(inner *Engine, opts ...TracedEngineOption) *TracedEngine {
 	return te
 }
 
-// WithEngineCallbacks sets the callback manager for the traced engine.
+// WithEngineCallbacks 设置 CallbackManager。
 func WithEngineCallbacks(cb *CallbackManager) TracedEngineOption {
 	return func(c *tracedEngineConfig) {
 		c.callbacks = cb
 	}
 }
 
-// SetCallbacks sets the callback manager on an already-created TracedEngine.
+// SetCallbacks 运行时替换回调管理器。
 func (te *TracedEngine) SetCallbacks(cb *CallbackManager) {
 	te.callbacks = cb
 }
 
-// Run executes the graph with tracing and callbacks.
+// Run 带根 span、事件子 span 与回调执行图。
 func (te *TracedEngine) Run(ctx context.Context, input any, mode types.StreamMode) (<-chan any, <-chan error) {
 	if !te.cfg.enabled && te.callbacks == nil {
 		return te.inner.Run(ctx, input, mode)
@@ -162,7 +164,7 @@ func (te *TracedEngine) Run(ctx context.Context, input any, mode types.StreamMod
 	return tracedOutputCh, wrapErrChWithCallback(errCh, te, graphName, threadID, graphSpan)
 }
 
-// RunSync executes the graph synchronously with tracing.
+// RunSync 同步模式，抽取 Final 事件中的 state。
 func (te *TracedEngine) RunSync(ctx context.Context, input any) (any, error) {
 	outputCh, errCh := te.Run(ctx, input, types.StreamModeValues)
 	// Drain outputCh.
@@ -180,9 +182,9 @@ func (te *TracedEngine) RunSync(ctx context.Context, input any) (any, error) {
 	return finalState, err
 }
 
-// ---- helpers ----
+// ---- 辅助函数 ----
 
-// extractThreadID gets the thread ID from the engine config.
+// extractThreadID 从 RunnableConfig.Configurable 提取 thread_id。
 func extractThreadID(cfg *types.RunnableConfig) string {
 	if cfg == nil || cfg.Configurable == nil {
 		return ""
@@ -193,7 +195,7 @@ func extractThreadID(cfg *types.RunnableConfig) string {
 	return ""
 }
 
-// traceEvent decorates a stream event with sub-spans.
+// traceEvent 为 checkpoint/interrupt/error/task 事件创建子 span。
 func (te *TracedEngine) traceEvent(ctx context.Context, event any, rootSpan trace.Span) {
 	if te.tracer == nil || rootSpan == nil {
 		return
@@ -242,7 +244,7 @@ func (te *TracedEngine) traceEvent(ctx context.Context, event any, rootSpan trac
 	}
 }
 
-// wrapErrChWithCallback wraps the error channel with callback dispatch.
+// wrapErrChWithCallback 在错误通道上触发 RunEnd 并结束根 span。
 func wrapErrChWithCallback(errCh <-chan error, te *TracedEngine, graphName, threadID string, graphSpan trace.Span) <-chan error {
 	if te.callbacks == nil && (te.tracer == nil || graphSpan == nil) {
 		return errCh
@@ -271,3 +273,5 @@ func wrapErrChWithCallback(errCh <-chan error, te *TracedEngine, graphName, thre
 	}()
 	return wrapped
 }
+
+// 流式输出经 tracedOutputCh 转发，每个 StreamEvent 可附加独立子 span。

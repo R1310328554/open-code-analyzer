@@ -1,12 +1,15 @@
 package types
 
+// scratchpad.go — PregelScratchpad：任务级临时存储，不写入检查点。
+
+
 import (
 	"sync"
 	"time"
 )
 
-// PregelScratchpad provides temporary data storage for Pregel execution.
-// It stores data that is needed across nodes but not persisted to checkpoints.
+// PregelScratchpad Pregel 执行期任务级 scratchpad，不持久化到 checkpoint。
+// 存放跨节点但无需 checkpoint 的计数器、标志与临时 map。
 type PregelScratchpad struct {
 	mu               sync.RWMutex
 	data             map[string]interface{}
@@ -22,7 +25,7 @@ type PregelScratchpad struct {
 	subgraphCounter  int64 // subgraph invocation count
 }
 
-// NewPregelScratchpad creates a new scratchpad.
+// NewPregelScratchpad 初始化空 scratchpad。
 func NewPregelScratchpad() *PregelScratchpad {
 	now := time.Now()
 	return &PregelScratchpad{
@@ -40,7 +43,7 @@ func NewPregelScratchpad() *PregelScratchpad {
 	}
 }
 
-// Get retrieves a value from the scratchpad.
+// Get 读 data map 并更新 lastAccess。
 func (p *PregelScratchpad) Get(key string) (interface{}, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -50,7 +53,7 @@ func (p *PregelScratchpad) Get(key string) (interface{}, bool) {
 	return value, ok
 }
 
-// Set stores a value in the scratchpad.
+// Set 写入 data map。
 func (p *PregelScratchpad) Set(key string, value interface{}) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -59,7 +62,7 @@ func (p *PregelScratchpad) Set(key string, value interface{}) {
 	p.lastAccess = time.Now()
 }
 
-// Delete removes a value from the scratchpad.
+// Delete 删除 key。
 func (p *PregelScratchpad) Delete(key string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -68,7 +71,7 @@ func (p *PregelScratchpad) Delete(key string) {
 	p.lastAccess = time.Now()
 }
 
-// Has checks if a key exists in the scratchpad.
+// Has 判断 key 是否存在。
 func (p *PregelScratchpad) Has(key string) bool {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -77,7 +80,7 @@ func (p *PregelScratchpad) Has(key string) bool {
 	return ok
 }
 
-// GetAll returns all data from the scratchpad.
+// GetAll 返回 data 浅拷贝。
 func (p *PregelScratchpad) GetAll() map[string]interface{} {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -89,7 +92,7 @@ func (p *PregelScratchpad) GetAll() map[string]interface{} {
 	return copied
 }
 
-// Clear clears all data from the scratchpad.
+// Clear 清空 data 与 counters。
 func (p *PregelScratchpad) Clear() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -99,9 +102,9 @@ func (p *PregelScratchpad) Clear() {
 	p.lastAccess = time.Now()
 }
 
-// Counter operations
+// 计数器操作 — 步号、中断、子图调用等统计
 
-// IncrementCounter increments a counter and returns the new value.
+// IncrementCounter 递增命名计数器。
 func (p *PregelScratchpad) IncrementCounter(key string) int64 {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -111,7 +114,7 @@ func (p *PregelScratchpad) IncrementCounter(key string) int64 {
 	return p.counters[key]
 }
 
-// DecrementCounter decrements a counter and returns the new value.
+// DecrementCounter 递减命名计数器。
 func (p *PregelScratchpad) DecrementCounter(key string) int64 {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -121,7 +124,7 @@ func (p *PregelScratchpad) DecrementCounter(key string) int64 {
 	return p.counters[key]
 }
 
-// GetCounter returns the current value of a counter.
+// GetCounter 读取计数器当前值。
 func (p *PregelScratchpad) GetCounter(key string) int64 {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -129,7 +132,7 @@ func (p *PregelScratchpad) GetCounter(key string) int64 {
 	return p.counters[key]
 }
 
-// SetCounter sets a counter to a specific value.
+// SetCounter 设置计数器绝对值。
 func (p *PregelScratchpad) SetCounter(key string, value int64) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -138,7 +141,7 @@ func (p *PregelScratchpad) SetCounter(key string, value int64) {
 	p.lastAccess = time.Now()
 }
 
-// ResetCounter resets a counter to zero.
+// ResetCounter 删除计数器键。
 func (p *PregelScratchpad) ResetCounter(key string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -829,3 +832,5 @@ func init() {
 	// Ensure scratchpad reset on init.
 	_ = defaultTimeoutConfig
 }
+
+// stop/resume 标志供引擎控制中断恢复；subgraphCounter 统计子图嵌套深度。
