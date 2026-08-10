@@ -21,18 +21,20 @@ import com.alibaba.nacos.plugin.auth.api.IdentityContext;
 import com.alibaba.nacos.plugin.auth.api.Resource;
 
 /**
- * Interface for identity verification.
+ * 身份校验提供者接口。
+ *
+ * <p>负责验证请求中的身份上下文是否有效，由具体 OIDC 实现（如 {@code OidcIdentityProvider}）完成校验逻辑。</p>
  *
  * @author WangzJi
  */
 public interface IdentityProvider {
     
     /**
-     * Validate the identity context.
+     * 校验身份上下文是否有效。
      *
-     * @param identityContext identity context of request
-     * @param resource        resource of request
-     * @return {@link AuthResult}
+     * @param identityContext 请求的身份上下文
+     * @param resource        请求访问的资源
+     * @return {@link AuthResult} 身份校验结果
      */
     AuthResult validateIdentity(IdentityContext identityContext, Resource resource);
 }

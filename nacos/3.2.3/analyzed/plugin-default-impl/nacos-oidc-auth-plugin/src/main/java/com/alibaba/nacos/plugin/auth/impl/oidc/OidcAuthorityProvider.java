@@ -27,7 +27,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 
 /**
- * OIDC implementation of AuthorityProvider.
+ * {@link AuthorityProvider} 的 OIDC 实现。
+ *
+ * <p>从身份上下文中提取已认证的 OIDC 用户，依次检查全局管理员身份与细粒度权限，
+ * 并将决策结果封装为 {@link AuthResult} 返回。</p>
  *
  * @author WangzJi
  */
@@ -43,7 +46,7 @@ public class OidcAuthorityProvider implements AuthorityProvider {
         try {
             initializeIfNeeded();
             
-            // Get user from context
+            // 从身份上下文中获取已认证的 OIDC 用户
             OidcUser user = authManager.getUserFromContext(identityContext);
             if (user == null) {
                 LOGGER.warn("No OIDC user found in context for authorization");
@@ -51,13 +54,13 @@ public class OidcAuthorityProvider implements AuthorityProvider {
                     "User not authenticated");
             }
             
-            // Check if user is global admin
+            // 全局管理员直接放行
             if (authManager.isGlobalAdmin(user)) {
                 LOGGER.debug("User {} is global admin, authorization granted", user.getUsername());
                 return AuthResult.successResult(user);
             }
             
-            // Check permission
+            // 调用 IdP 授权端点校验细粒度权限
             if (authManager.hasPermission(user, permission)) {
                 LOGGER.debug("User {} authorized for {}:{}", user.getUsername(),
                     permission.getResource().getName(), permission.getAction());

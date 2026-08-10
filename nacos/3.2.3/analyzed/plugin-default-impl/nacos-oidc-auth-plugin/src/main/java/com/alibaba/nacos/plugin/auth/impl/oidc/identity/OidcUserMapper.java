@@ -25,7 +25,10 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- * Maps OIDC token claims to Nacos user representation.
+ * OIDC 令牌声明到 Nacos 用户对象的映射器。
+ *
+ * <p>从已校验的 JWT {@link JWTClaimsSet} 中提取用户名、角色、管理员标识等信息，
+ * 构建 {@link OidcUser} 供认证与授权流程使用。</p>
  *
  * @author WangzJi
  */
@@ -45,9 +48,9 @@ public class OidcUserMapper {
     }
     
     /**
-     * Get singleton instance.
+     * 获取单例实例。
      *
-     * @return OidcUserMapper instance
+     * @return OidcUserMapper 实例
      */
     public static OidcUserMapper getInstance() {
         if (instance == null) {
@@ -61,10 +64,10 @@ public class OidcUserMapper {
     }
     
     /**
-     * Map JWT claims to OidcUser.
+     * 将 JWT 声明映射为 {@link OidcUser}。
      *
-     * @param claims JWT claims from validated token
-     * @return OidcUser instance
+     * @param claims 已校验令牌的 JWT 声明集
+     * @return 填充完成的 OidcUser 实例
      */
     public OidcUser mapToUser(JWTClaimsSet claims) {
         String username = tokenValidator.extractUsername(claims);
@@ -77,7 +80,7 @@ public class OidcUserMapper {
         user.setRoles(roles);
         user.setGlobalAdmin(isAdmin);
         
-        // Extract additional claims if present
+        // 提取 email、name、issuer 等附加声明
         user.setEmail((String) claims.getClaim("email"));
         user.setName((String) claims.getClaim("name"));
         user.setIssuer(claims.getIssuer());
@@ -89,7 +92,9 @@ public class OidcUserMapper {
     }
     
     /**
-     * OIDC user representation.
+     * OIDC 用户在 Nacos 中的表示。
+     *
+     * <p>包含用户名、subject、角色列表、全局管理员标识及当前访问令牌。</p>
      */
     @SuppressWarnings("PMD")
     public static class OidcUser {

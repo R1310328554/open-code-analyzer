@@ -17,44 +17,47 @@
 package com.alibaba.nacos.plugin.auth.impl.oidc.authorization;
 
 /**
- * Authorization request model for IdP authorization endpoint.
+ * 发往 IdP 授权端点的请求模型。
+ *
+ * <p>包含用户令牌、资源 URI 组件（类型/命名空间/分组/名称）及操作类型，
+ * 可序列化为 JSON 请求体。</p>
  *
  * @author WangzJi
  */
 public class AuthorizationRequest {
     
     /**
-     * User's access token.
+     * 用户访问令牌。
      */
     private String token;
     
     /**
-     * Resource identifier (e.g., "nacos:config:dev:app.yaml").
+     * 资源标识符（如 {@code nacos:config:dev:app.yaml}）。
      */
     private String resource;
     
     /**
-     * Action to perform (e.g., "read", "write").
+     * 操作类型（如 read、write）。
      */
     private String action;
     
     /**
-     * Resource type (e.g., "config", "naming").
+     * 资源类型（如 config、naming）。
      */
     private String resourceType;
     
     /**
-     * Namespace ID.
+     * 命名空间 ID。
      */
     private String namespace;
     
     /**
-     * Group name.
+     * 分组名称。
      */
     private String group;
     
     /**
-     * Resource name (e.g., dataId for config).
+     * 资源名称（配置场景下通常为 dataId）。
      */
     private String resourceName;
     
@@ -68,9 +71,11 @@ public class AuthorizationRequest {
     }
     
     /**
-     * Build resource URI from components.
+     * 根据各组件拼接资源 URI。
      *
-     * @return resource URI in format "nacos:{type}:{namespace}:{name}"
+     * <p>格式：{@code nacos:{type}:{namespace}:{group}:{name}}；若已设置 resource 字段则直接返回。</p>
+     *
+     * @return 资源 URI 字符串
      */
     public String buildResourceUri() {
         if (resource != null) {
@@ -93,9 +98,9 @@ public class AuthorizationRequest {
     }
     
     /**
-     * Convert to JSON string for HTTP request body.
+     * 序列化为 JSON 字符串，作为 HTTP 请求体发送给 IdP。
      *
-     * @return JSON string
+     * @return JSON 字符串
      */
     public String toJson() {
         StringBuilder json = new StringBuilder("{");
@@ -129,7 +134,7 @@ public class AuthorizationRequest {
             .replace("\t", "\\t");
     }
     
-    // Getters and Setters
+    // Getter 与 Setter
     
     public String getToken() {
         return token;
@@ -188,7 +193,7 @@ public class AuthorizationRequest {
     }
     
     /**
-     * Builder for AuthorizationRequest.
+     * {@link AuthorizationRequest} 的流式构建器。
      */
     public static class Builder {
         

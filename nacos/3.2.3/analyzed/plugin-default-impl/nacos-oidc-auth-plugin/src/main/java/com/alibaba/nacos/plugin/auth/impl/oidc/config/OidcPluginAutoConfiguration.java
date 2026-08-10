@@ -23,8 +23,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 /**
- * Spring auto-configuration for OIDC authentication plugin.
- * Registers the OidcLoginController and security configuration when OIDC auth is enabled.
+ * OIDC 认证插件 Spring 自动配置。
+ *
+ * <p>当 {@code nacos.core.auth.system.type=oidc} 时注册登录控制器与安全配置。</p>
  *
  * @author WangzJi
  */
@@ -35,9 +36,9 @@ import org.springframework.context.annotation.Import;
 public class OidcPluginAutoConfiguration {
     
     /**
-     * Register OidcLoginController bean.
+     * 注册 {@link OidcLoginController} Bean。
      *
-     * @return OidcLoginController
+     * @return OidcLoginController 实例
      */
     @Bean
     public OidcLoginController oidcLoginController() {

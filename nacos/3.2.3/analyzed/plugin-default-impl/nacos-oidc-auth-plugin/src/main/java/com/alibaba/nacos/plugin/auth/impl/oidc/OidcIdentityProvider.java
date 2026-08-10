@@ -29,7 +29,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 
 /**
- * OIDC implementation of IdentityProvider.
+ * {@link IdentityProvider} 的 OIDC 实现。
+ *
+ * <p>从请求身份上下文中提取 JWT 令牌并完成校验，将认证后的 {@link OidcUser}
+ * 写回上下文供后续权限校验使用。</p>
  *
  * @author WangzJi
  */
@@ -45,13 +48,13 @@ public class OidcIdentityProvider implements IdentityProvider {
         try {
             initializeIfNeeded();
             
-            // Authenticate user from token
+            // 从令牌中认证用户身份
             OidcUser user = authManager.authenticate(identityContext);
             
-            // Store user in context for later use
+            // 将用户对象写入上下文，供后续授权阶段复用
             authManager.setUserInContext(identityContext, user);
             
-            // Also set identity ID for logging/auditing
+            // 同步写入身份 ID，便于日志与审计追踪
             identityContext.setParameter(
                 Constants.Identity.IDENTITY_ID,
                 user.getUsername());

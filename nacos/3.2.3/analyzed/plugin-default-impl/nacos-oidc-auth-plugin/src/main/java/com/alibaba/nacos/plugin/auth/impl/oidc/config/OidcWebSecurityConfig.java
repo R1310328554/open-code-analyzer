@@ -28,8 +28,9 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Spring Security configuration for OIDC authentication plugin.
- * Configures security filter chain to permit OIDC endpoints and all other paths.
+ * OIDC 认证插件的 Spring Security 配置。
+ *
+ * <p>在 Spring Security 层放行所有路径，实际鉴权由 Nacos 自有过滤器完成。</p>
  *
  * @author WangzJi
  */
@@ -40,12 +41,13 @@ import org.springframework.security.web.SecurityFilterChain;
 public class OidcWebSecurityConfig {
     
     /**
-     * Configure security filter chain for OIDC mode.
-     * All paths are permitted at Spring Security level because Nacos has its own auth filter.
+     * 配置 OIDC 模式下的安全过滤器链。
      *
-     * @param http HttpSecurity
-     * @return SecurityFilterChain
-     * @throws Exception if configuration fails
+     * <p>所有路径在 Spring Security 层均 permitAll，鉴权逻辑由 Nacos 认证插件接管。</p>
+     *
+     * @param http HttpSecurity 构建器
+     * @return SecurityFilterChain 实例
+     * @throws Exception 配置失败时抛出
      */
     @Bean
     @Order(1)

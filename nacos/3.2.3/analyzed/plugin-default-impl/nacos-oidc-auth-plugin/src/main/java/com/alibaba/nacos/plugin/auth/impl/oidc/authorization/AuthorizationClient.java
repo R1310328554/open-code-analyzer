@@ -31,8 +31,9 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 
 /**
- * Client for calling IdP authorization endpoint.
- * Nacos delegates ALL authorization decisions to the external IdP.
+ * 外部 IdP 授权端点 HTTP 客户端。
+ *
+ * <p>所有授权决策均委托 IdP 完成，Nacos 仅转发请求并解析响应。</p>
  *
  * @author WangzJi
  */
@@ -54,9 +55,9 @@ public class AuthorizationClient {
     }
     
     /**
-     * Get singleton instance.
+     * 获取单例实例。
      *
-     * @return AuthorizationClient instance
+     * @return AuthorizationClient 实例
      */
     public static AuthorizationClient getInstance() {
         if (instance == null) {
@@ -70,11 +71,12 @@ public class AuthorizationClient {
     }
     
     /**
-     * Check if user is authorized to perform action on resource.
-     * Calls the IdP authorization endpoint - Nacos does NOT make the decision.
+     * 向 IdP 授权端点发起权限校验请求。
      *
-     * @param request authorization request
-     * @return authorization response from IdP
+     * <p>未配置授权端点时默认放行全部访问（并输出警告日志）。</p>
+     *
+     * @param request 授权请求体
+     * @return IdP 返回的 {@link AuthorizationResponse}
      */
     public AuthorizationResponse authorize(AuthorizationRequest request) {
         String authzEndpoint = config.getAuthorizationEvaluateEndpoint();
@@ -128,12 +130,12 @@ public class AuthorizationClient {
     }
     
     /**
-     * Check authorization with token, resource and action.
+     * 便捷方法：携带令牌、资源与操作发起授权校验。
      *
-     * @param token    user's access token
-     * @param resource resource identifier
-     * @param action   action to perform
-     * @return true if authorized
+     * @param token    用户访问令牌
+     * @param resource 资源标识
+     * @param action   操作类型
+     * @return IdP 允许时返回 true
      */
     public boolean isAuthorized(String token, String resource, String action) {
         AuthorizationRequest request = AuthorizationRequest.builder()

@@ -52,7 +52,10 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Handles OIDC Authorization Code flow for user login.
+ * OIDC 授权码（Authorization Code）流程处理器。
+ *
+ * <p>负责构建 IdP 授权跳转 URL、用授权码换取令牌、校验 ID Token 中的 nonce，
+ * 以及构建 RP 发起的登出 URL。state 采用 HMAC 自包含签名，无需服务端会话存储，集群友好。</p>
  *
  * @author WangzJi
  */
@@ -71,12 +74,12 @@ public class AuthorizationCodeHandler {
     private final SecureRandom secureRandom;
     
     /**
-     * State expiration time in milliseconds (10 minutes).
+     * state 参数过期时间（毫秒），默认 10 分钟。
      */
     private static final long STATE_EXPIRATION_MS = 10 * 60 * 1000L;
     
     /**
-     * HMAC algorithm for state signing.
+     * state 签名使用的 HMAC 算法（HmacSHA256）。
      */
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     
@@ -88,9 +91,9 @@ public class AuthorizationCodeHandler {
     }
     
     /**
-     * Get singleton instance.
+     * 获取单例实例。
      *
-     * @return AuthorizationCodeHandler instance
+     * @return AuthorizationCodeHandler 实例
      */
     public static AuthorizationCodeHandler getInstance() {
         if (instance == null) {
@@ -104,11 +107,11 @@ public class AuthorizationCodeHandler {
     }
     
     /**
-     * Build the authorization URL for redirecting user to IdP.
+     * 构建 IdP 授权跳转 URL，供浏览器重定向至身份提供商登录页。
      *
-     * @param redirectUri callback URI after authentication
-     * @return authorization URL
-     * @throws AccessException if configuration is invalid
+     * @param redirectUri 认证完成后的回调 URI
+     * @return 完整的授权 URL
+     * @throws AccessException 配置无效或构建失败时抛出
      */
     public String buildAuthorizationUrl(String redirectUri) throws AccessException {
         try {
@@ -117,15 +120,14 @@ public class AuthorizationCodeHandler {
                 throw new AccessException("Authorization endpoint not configured");
             }
             
-            // Generate nonce for security
+            // 生成 nonce 防重放，并计算 state 过期时间
             String nonce = generateSecureToken();
             long expirationTime = System.currentTimeMillis() + STATE_EXPIRATION_MS;
             
-            // Build self-contained signed state: base64(nonce.expTime.signature)
-            // This eliminates the need for server-side state storage (cluster-friendly)
+            // 构建自包含签名 state：base64(nonce.expTime.signature)，无需服务端缓存
             String state = buildSignedState(nonce, expirationTime);
             
-            // Build OIDC authentication request
+            // 组装 OIDC 认证请求（授权码模式 + scope + nonce）
             AuthenticationRequest authRequest = new AuthenticationRequest.Builder(
                 new ResponseType("code"),
                 new Scope(config.getScope().split(" ")),
@@ -149,31 +151,31 @@ public class AuthorizationCodeHandler {
     }
     
     /**
-     * Exchange authorization code for tokens and authenticate user.
+     * 用授权码换取令牌并完成用户认证。
      *
-     * @param code        authorization code from IdP
-     * @param state       state parameter for CSRF verification
-     * @param redirectUri the redirect URI used in the authorization request
-     * @return authenticated OidcUser
-     * @throws AccessException if authentication fails
+     * @param code        IdP 回调返回的授权码
+     * @param state       CSRF 防护用的 state 参数
+     * @param redirectUri 与登录请求一致的回调 URI
+     * @return 认证成功的 OidcUser
+     * @throws AccessException 认证失败时抛出
      */
     public OidcUser exchangeCodeForUser(String code, String state, String redirectUri)
         throws AccessException {
         try {
-            // Verify and decode state (self-contained, no cache lookup needed)
+            // 校验并解码自包含 state（无需查缓存）
             StateData stateData = verifyAndDecodeState(state);
             if (stateData == null) {
                 throw new AccessException("Invalid or expired state parameter");
             }
             
-            // Exchange code for tokens
+            // 向 IdP 令牌端点换取 OIDC 令牌
             OIDCTokens tokens = exchangeCodeForTokens(code, redirectUri);
             
-            // Validate ID token
+            // 校验 ID Token 签名与声明
             String idTokenString = tokens.getIDTokenString();
             JWTClaimsSet claims = tokenValidator.validate(idTokenString);
             
-            // Verify nonce matches (protects against token replay attacks)
+            // 校验 nonce 一致性，防止令牌重放攻击
             String tokenNonce = (String) claims.getClaim("nonce");
             
             if (tokenNonce == null) {
@@ -195,7 +197,7 @@ public class AuthorizationCodeHandler {
                 throw new AccessException(message);
             }
             
-            // Map claims to user
+            // 将 JWT 声明映射为 Nacos 用户对象
             OidcUser user = userMapper.mapToUser(claims);
             user.setToken(tokens.getAccessToken().getValue());
             
@@ -211,12 +213,12 @@ public class AuthorizationCodeHandler {
     }
     
     /**
-     * Exchange authorization code for OIDC tokens.
+     * 向 IdP 令牌端点发送授权码换取 OIDC 令牌。
      *
-     * @param code        authorization code
-     * @param redirectUri redirect URI
-     * @return OIDC tokens
-     * @throws Exception if exchange fails
+     * @param code        授权码
+     * @param redirectUri 回调 URI
+     * @return OIDC 令牌集合
+     * @throws Exception 交换失败时抛出
      */
     private OIDCTokens exchangeCodeForTokens(String code, String redirectUri) throws Exception {
         String tokenEndpoint = config.getTokenEndpoint();
@@ -224,16 +226,16 @@ public class AuthorizationCodeHandler {
             throw new AccessException("Token endpoint not configured");
         }
         
-        // Build token request
+        // 构建授权码 grant 请求
         AuthorizationCode authCode = new AuthorizationCode(code);
         AuthorizationGrant grant = new AuthorizationCodeGrant(authCode, URI.create(redirectUri));
         
-        // Client authentication
+        // 客户端密钥认证（Client Secret Basic）
         ClientAuthentication clientAuth = new ClientSecretBasic(
             new ClientID(config.getClientId()),
             new Secret(config.getClientSecret()));
         
-        // Send token request
+        // 发送令牌请求并解析 OIDC 响应
         TokenRequest tokenRequest = new TokenRequest(
             URI.create(tokenEndpoint),
             clientAuth,
@@ -253,9 +255,9 @@ public class AuthorizationCodeHandler {
     }
     
     /**
-     * Generate a secure random token for state/nonce.
+     * 生成安全的随机 token（用于 state/nonce）。
      *
-     * @return base64-encoded random token
+     * @return Base64 URL 编码的随机字符串
      */
     private String generateSecureToken() {
         byte[] bytes = new byte[32];
@@ -264,13 +266,13 @@ public class AuthorizationCodeHandler {
     }
     
     /**
-     * Build a signed self-contained state parameter.
-     * Format: base64(nonce.expirationTime.signature)
-     * This eliminates the need for server-side state storage (cluster-friendly).
+     * 构建自包含的 HMAC 签名 state 参数。
      *
-     * @param nonce          the nonce value
-     * @param expirationTime the expiration timestamp
-     * @return signed state string
+     * <p>格式：base64(nonce.expirationTime.signature)，无需服务端存储，集群友好。</p>
+     *
+     * @param nonce          nonce 值
+     * @param expirationTime 过期时间戳（毫秒）
+     * @return 签名后的 state 字符串
      */
     private String buildSignedState(String nonce, long expirationTime) {
         String payload = nonce + "." + expirationTime;
@@ -281,10 +283,10 @@ public class AuthorizationCodeHandler {
     }
     
     /**
-     * Verify and decode a signed state parameter.
+     * 校验并解码签名 state 参数。
      *
-     * @param state the state parameter from callback
-     * @return StateData if valid, null otherwise
+     * @param state 回调请求中的 state 参数
+     * @return 校验通过返回 StateData，否则返回 null
      */
     private StateData verifyAndDecodeState(String state) {
         try {
@@ -300,14 +302,14 @@ public class AuthorizationCodeHandler {
             long expTime = Long.parseLong(parts[1]);
             String signature = parts[2];
             
-            // Verify signature
+            // 校验 HMAC 签名
             String payload = nonce + "." + expTime;
             if (!hmacVerify(payload, signature)) {
                 LOGGER.warn("State signature verification failed");
                 return null;
             }
             
-            // Verify expiration time
+            // 校验是否已过期
             if (System.currentTimeMillis() > expTime) {
                 LOGGER.warn("State has expired");
                 return null;
@@ -327,10 +329,10 @@ public class AuthorizationCodeHandler {
     }
     
     /**
-     * Sign a payload using HMAC-SHA256.
+     * 使用 HMAC-SHA256 对 payload 签名。
      *
-     * @param payload the payload to sign
-     * @return base64-encoded signature
+     * @param payload 待签名的载荷
+     * @return Base64 URL 编码的签名
      */
     private String hmacSign(String payload) {
         try {
@@ -346,11 +348,11 @@ public class AuthorizationCodeHandler {
     }
     
     /**
-     * Verify HMAC signature.
+     * 校验 HMAC 签名是否与 payload 匹配。
      *
-     * @param payload   the original payload
-     * @param signature the signature to verify
-     * @return true if signature is valid
+     * @param payload   原始载荷
+     * @param signature 待校验的签名
+     * @return 签名有效返回 true
      */
     private boolean hmacVerify(String payload, String signature) {
         String expectedSignature = hmacSign(payload);
@@ -358,10 +360,9 @@ public class AuthorizationCodeHandler {
     }
     
     /**
-     * Get the signing key for HMAC operations.
-     * Uses client secret as the signing key.
+     * 获取 HMAC 签名密钥（使用 client secret）。
      *
-     * @return signing key
+     * @return 签名密钥字符串
      */
     private String getSigningKey() {
         String clientSecret = config.getClientSecret();
@@ -372,11 +373,11 @@ public class AuthorizationCodeHandler {
     }
     
     /**
-     * Build logout URL for RP-initiated logout.
+     * 构建 RP 发起的登出 URL（依赖 IdP 的 end_session_endpoint）。
      *
-     * @param idToken     ID token for logout hint
-     * @param redirectUri post-logout redirect URI
-     * @return logout URL or null if not supported
+     * @param idToken     ID Token，作为 id_token_hint
+     * @param redirectUri 登出后的重定向 URI
+     * @return 登出 URL；IdP 不支持时返回 null
      */
     public String buildLogoutUrl(String idToken, String redirectUri) {
         String endSessionEndpoint = config.getEndSessionEndpoint();
@@ -405,7 +406,7 @@ public class AuthorizationCodeHandler {
     }
     
     /**
-     * State data for CSRF protection.
+     * CSRF 防护用的 state 解析结果（nonce + 过期时间）。
      */
     private static class StateData {
         

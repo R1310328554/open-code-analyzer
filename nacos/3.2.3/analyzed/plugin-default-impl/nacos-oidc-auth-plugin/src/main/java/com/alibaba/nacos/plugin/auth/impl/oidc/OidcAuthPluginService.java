@@ -31,9 +31,10 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * OIDC authentication plugin service implementation.
+ * OIDC 认证插件服务实现。
  *
- * <p>This plugin delegates authentication and authorization to specific providers.
+ * <p>作为 Nacos 认证插件 SPI 的入口，将身份校验与权限校验分别委托给
+ * {@link IdentityProvider} 与 {@link AuthorityProvider} 的具体实现。</p>
  *
  * @author WangzJi
  */
@@ -43,7 +44,7 @@ public class OidcAuthPluginService implements AuthPluginService {
     private static final Logger LOGGER = LoggerFactory.getLogger(OidcAuthPluginService.class);
     
     /**
-     * Identity names that this plugin looks for in requests.
+     * 本插件在请求中识别的身份凭证名称列表（Authorization 头与 accessToken 参数）。
      */
     private static final List<String> IDENTITY_NAMES = Arrays.asList(
         OidcProtocolConstants.AUTHORIZATION_HEADER,
@@ -59,7 +60,7 @@ public class OidcAuthPluginService implements AuthPluginService {
     
     @Override
     public boolean enableAuth(ActionTypes action, String type) {
-        // Enable authentication for all actions and types
+        // 对所有操作类型与资源类型均启用 OIDC 认证
         return true;
     }
     
@@ -82,19 +83,18 @@ public class OidcAuthPluginService implements AuthPluginService {
     
     @Override
     public boolean isLoginEnabled() {
-        // Login is enabled - will be handled by OIDC login controller
+        // 启用登录能力，具体流程由 OidcLoginController 处理
         return true;
     }
     
     @Override
     public boolean isAdminRequest() {
-        // Return false to indicate that we don't need to initialize a local admin user
-        // The Identity Provider handles all user management
+        // 无需初始化本地管理员账户，用户管理完全由外部 IdP 负责
         return false;
     }
     
     /**
-     * Initialize components lazily.
+     * 延迟初始化身份与权限提供者（双重检查锁，线程安全）。
      */
     private void initializeIfNeeded() {
         if (identityProvider == null || authorityProvider == null) {

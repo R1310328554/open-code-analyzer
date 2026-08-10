@@ -43,8 +43,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * OIDC login controller.
- * Handles the OIDC Authorization Code flow for user authentication.
+ * OIDC 登录 REST 控制器。
+ *
+ * <p>处理授权码流程的登录发起、IdP 回调、登出及前端配置查询，
+ * 通过短期 Cookie 向控制台传递令牌（集群友好，无服务端会话）。</p>
  *
  * @author WangzJi
  */
@@ -56,8 +58,9 @@ public class OidcLoginController {
     private static final Logger LOGGER = LoggerFactory.getLogger(OidcLoginController.class);
     
     /**
-     * Cookie expiration time in seconds (60 seconds).
-     * Short-lived: frontend reads and syncs to localStorage, then clears cookies.
+     * Cookie 有效期（秒），默认 60 秒。
+     *
+     * <p>短期有效：前端读取后同步至 localStorage 并立即清除 Cookie。</p>
      */
     private static final int COOKIE_EXPIRATION_SECONDS = 60;
     
@@ -66,11 +69,11 @@ public class OidcLoginController {
     private volatile OidcAuthConfig config;
     
     /**
-     * Initiate OIDC login - redirects user to IdP.
+     * 发起 OIDC 登录，重定向用户至 IdP 授权页。
      *
-     * @param request  HTTP request
-     * @param response HTTP response
-     * @throws IOException if redirect fails
+     * @param request  HTTP 请求
+     * @param response HTTP 响应
+     * @throws IOException 重定向失败时抛出
      */
     @Since("3.2.0")
     @GetMapping("/login")
@@ -78,10 +81,10 @@ public class OidcLoginController {
         try {
             initializeIfNeeded();
             
-            // Build callback URL
+            // 构建 OIDC 回调 URL
             String callbackUrl = buildCallbackUrl(request);
             
-            // Get authorization URL
+            // 获取 IdP 授权跳转 URL
             String authUrl = authHandler.buildAuthorizationUrl(callbackUrl);
             
             LOGGER.info("Redirecting to IdP for authentication");
@@ -95,15 +98,15 @@ public class OidcLoginController {
     }
     
     /**
-     * OIDC callback - handles the authorization code response from IdP.
+     * OIDC 回调端点，处理 IdP 返回的授权码。
      *
-     * @param code     authorization code
-     * @param state    state parameter for CSRF verification
-     * @param error    error code if authentication failed
-     * @param errorDescription error description
-     * @param request  HTTP request
-     * @param response HTTP response
-     * @return authentication result with access token
+     * @param code             授权码
+     * @param state            CSRF 防护 state 参数
+     * @param error            IdP 返回的错误码
+     * @param errorDescription 错误描述
+     * @param request          HTTP 请求
+     * @param response         HTTP 响应
+     * @return 认证结果（成功时通过 Cookie + 重定向传递令牌）
      */
     @Since("3.2.0")
     @GetMapping("/callback")
@@ -118,7 +121,7 @@ public class OidcLoginController {
         try {
             initializeIfNeeded();
             
-            // Check for error response from IdP
+            // 检查 IdP 是否返回错误
             if (StringUtils.isNotBlank(error)) {
                 LOGGER.warn("OIDC authentication error: {} - {}", error, errorDescription);
                 String errorMsg = errorDescription != null ? errorDescription : error;
@@ -128,7 +131,7 @@ public class OidcLoginController {
                 return null;
             }
             
-            // Validate required parameters
+            // 校验必需参数（code 与 state）
             if (StringUtils.isBlank(code)) {
                 String errorRedirectUrl = buildBaseUrl(request) + "/#/login?error="
                     + URLEncoder.encode("Missing authorization code", StandardCharsets.UTF_8);
@@ -142,28 +145,28 @@ public class OidcLoginController {
                 return null;
             }
             
-            // Build callback URL (must match the one used in login)
+            // 回调 URL 须与登录请求时一致
             String callbackUrl = buildCallbackUrl(request);
             
-            // Exchange code for tokens and get user
+            // 用授权码换取令牌并完成用户认证
             OidcUser user = authHandler.exchangeCodeForUser(code, state, callbackUrl);
             
             LOGGER.info("OIDC authentication successful for user: {}", user.getUsername());
             
-            // Set cookies for token delivery (cluster-friendly, no server-side storage)
-            // Frontend will read cookies and sync to localStorage, then clear them
+            // 通过短期 Cookie 传递令牌（集群友好，无服务端会话存储）
+            // 前端读取 Cookie 后同步至 localStorage 并清除
             String contextPath = request.getContextPath();
             String cookiePath = StringUtils.isBlank(contextPath) ? "/" : contextPath + "/";
             
-            // Set accessToken cookie (frontend readable for sync to localStorage)
+            // accessToken Cookie（允许前端读取以便同步 localStorage）
             Cookie accessTokenCookie = new Cookie("accessToken", user.getToken());
-            accessTokenCookie.setHttpOnly(false); // Allow frontend to read
+            accessTokenCookie.setHttpOnly(false); // 允许前端 JavaScript 读取
             accessTokenCookie.setSecure(isHttps(request));
             accessTokenCookie.setPath(cookiePath);
             accessTokenCookie.setMaxAge(COOKIE_EXPIRATION_SECONDS);
             response.addCookie(accessTokenCookie);
             
-            // Set username cookie (URL encoded)
+            // username Cookie（URL 编码）
             Cookie usernameCookie = new Cookie("username",
                 URLEncoder.encode(user.getUsername(), StandardCharsets.UTF_8));
             usernameCookie.setHttpOnly(false);
@@ -172,7 +175,7 @@ public class OidcLoginController {
             usernameCookie.setMaxAge(COOKIE_EXPIRATION_SECONDS);
             response.addCookie(usernameCookie);
             
-            // Redirect to home page (no parameters in URL)
+            // 重定向至控制台首页（URL 中不携带令牌参数）
             String successRedirectUrl = buildBaseUrl(request) + "/#/";
             response.sendRedirect(successRedirectUrl);
             return null;
@@ -194,14 +197,14 @@ public class OidcLoginController {
     }
     
     /**
-     * Logout - clears session and optionally redirects to IdP logout.
+     * 用户登出，可选重定向至 IdP 完成 RP 发起登出。
      *
-     * @param idToken  optional ID token for logout hint
-     * @param redirect whether to redirect to IdP for RP-initiated logout
-     * @param request  HTTP request
-     * @param response HTTP response
-     * @return logout result
-     * @throws IOException if redirect fails
+     * @param idToken  可选 ID Token（作为 id_token_hint）
+     * @param redirect 是否重定向至 IdP 登出页
+     * @param request  HTTP 请求
+     * @param response HTTP 响应
+     * @return 登出结果
+     * @throws IOException 重定向失败时抛出
      */
     @Since("3.2.0")
     @RequestMapping(value = "/logout", method = {RequestMethod.GET, RequestMethod.POST})
@@ -214,7 +217,7 @@ public class OidcLoginController {
         try {
             initializeIfNeeded();
             
-            // If redirect requested and IdP supports RP-initiated logout
+            // 若请求重定向且 IdP 支持 RP 发起登出
             if (redirect) {
                 String postLogoutUri = buildBaseUrl(request);
                 String logoutUrl = authHandler.buildLogoutUrl(idToken, postLogoutUri);
@@ -236,10 +239,11 @@ public class OidcLoginController {
     }
     
     /**
-     * Get OIDC configuration info (for frontend).
-     * Console uses this to detect OIDC mode and hide user/role/permission management.
+     * 返回 OIDC 配置信息（供控制台前端使用）。
      *
-     * @return OIDC configuration
+     * <p>控制台据此识别 OIDC 模式并隐藏本地用户/角色/权限管理入口。</p>
+     *
+     * @return OIDC 配置摘要
      */
     @Since("3.2.0")
     @GetMapping("/config")
@@ -251,7 +255,7 @@ public class OidcLoginController {
             configInfo.put("enabled", config.isValid());
             configInfo.put("authType", "oidc");
             configInfo.put("loginUrl", "/v1/auth/oidc/login");
-            // When OIDC is enabled, user/role/permission management is handled by IdP
+            // OIDC 模式下用户/角色/权限管理由 IdP 负责
             configInfo.put("userManagementEnabled", false);
             configInfo.put("roleManagementEnabled", false);
             configInfo.put("permissionManagementEnabled", false);
@@ -266,10 +270,10 @@ public class OidcLoginController {
     }
     
     /**
-     * Build the callback URL from the current request.
+     * 根据当前请求构建 OIDC 回调 URL。
      *
-     * @param request HTTP request
-     * @return callback URL
+     * @param request HTTP 请求
+     * @return 完整回调 URL
      */
     private String buildCallbackUrl(HttpServletRequest request) {
         String baseUrl = buildBaseUrl(request);
@@ -277,10 +281,10 @@ public class OidcLoginController {
     }
     
     /**
-     * Build base URL from request.
+     * 从请求中提取基础 URL（scheme + host + port + contextPath）。
      *
-     * @param request HTTP request
-     * @return base URL
+     * @param request HTTP 请求
+     * @return 基础 URL 字符串
      */
     private String buildBaseUrl(HttpServletRequest request) {
         String scheme = request.getScheme();
@@ -291,7 +295,7 @@ public class OidcLoginController {
         StringBuilder url = new StringBuilder();
         url.append(scheme).append("://").append(serverName);
         
-        // Include port if non-standard
+        // 非标准端口时追加端口号
         boolean isNonStandardHttpPort = OidcConstants.HTTP_PROTOCOL.equals(scheme)
             && serverPort != OidcConstants.DEFAULT_HTTP_PORT;
         boolean isNonStandardHttpsPort = OidcConstants.HTTPS_PROTOCOL.equals(scheme)
@@ -305,7 +309,7 @@ public class OidcLoginController {
     }
     
     /**
-     * Initialize components lazily.
+     * 延迟初始化配置与授权码处理器。
      */
     private void initializeIfNeeded() {
         if (config == null) {
@@ -319,10 +323,10 @@ public class OidcLoginController {
     }
     
     /**
-     * Check if the request is using HTTPS.
+     * 判断当前请求是否使用 HTTPS。
      *
-     * @param request HTTP request
-     * @return true if HTTPS
+     * @param request HTTP 请求
+     * @return HTTPS 时返回 true
      */
     private boolean isHttps(HttpServletRequest request) {
         return OidcConstants.HTTPS_PROTOCOL.equals(request.getScheme());

@@ -32,7 +32,10 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 
 /**
- * OIDC authentication plugin configuration.
+ * OIDC 认证插件配置（单例）。
+ *
+ * <p>从环境变量加载 issuer、client 凭证、令牌校验方式等参数，
+ * 并可通过 OIDC Discovery 自动发现授权/令牌/JWKS 等端点。</p>
  *
  * @author WangzJi
  */
@@ -64,24 +67,24 @@ public class OidcAuthConfig {
     private boolean autoCreateUser;
     
     /**
-     * Whether to enforce strict nonce validation (default true).
+     * 是否启用严格的 nonce 校验（默认 true）。
      */
     private boolean strictNonceValidation;
     
     /**
-     * Whether to enforce strict audience validation (default true).
+     * 是否启用严格的 audience 校验（默认 true）。
      */
     private boolean strictAudienceValidation;
     
     /**
-     * External authorization endpoint (IdP handles all authorization).
+     * 外部授权评估端点（权限决策由 IdP 完成）。
      */
     private String authorizationEvaluateEndpoint;
     
     private long authorizationTimeoutMs;
     
     /**
-     * Discovered JWKS URI from OIDC well-known configuration.
+     * 通过 OIDC Discovery 自动发现的 JWKS URI。
      */
     private String jwksUri;
     
@@ -98,9 +101,9 @@ public class OidcAuthConfig {
     }
     
     /**
-     * Get singleton instance.
+     * 获取单例实例。
      *
-     * @return OidcAuthConfig instance
+     * @return OidcAuthConfig 实例
      */
     public static OidcAuthConfig getInstance() {
         if (instance == null) {
@@ -114,7 +117,7 @@ public class OidcAuthConfig {
     }
     
     /**
-     * Reload configuration from environment.
+     * 从环境变量重新加载配置。
      */
     public void reload() {
         loadConfig();
@@ -139,13 +142,13 @@ public class OidcAuthConfig {
         this.autoCreateUser = Boolean.parseBoolean(
             getProperty(OidcConstants.CONFIG_AUTO_CREATE_USER, "true"));
         
-        // Security validation settings
+        // 安全校验相关配置
         this.strictNonceValidation = Boolean.parseBoolean(
             getProperty(OidcConstants.CONFIG_STRICT_NONCE_VALIDATION, "true"));
         this.strictAudienceValidation = Boolean.parseBoolean(
             getProperty(OidcConstants.CONFIG_STRICT_AUDIENCE_VALIDATION, "true"));
         
-        // External authorization endpoint (IdP handles all authorization)
+        // 外部授权端点（权限决策委托 IdP）
         this.authorizationEvaluateEndpoint =
             getProperty(OidcConstants.CONFIG_AUTHORIZATION_ENDPOINT, "");
         this.authorizationTimeoutMs = Long.parseLong(
@@ -155,7 +158,7 @@ public class OidcAuthConfig {
         LOGGER.info("OIDC auth config loaded: issuerUri={}, clientId={}, tokenValidationMethod={}",
             issuerUri, clientId, tokenValidationMethod);
         
-        // Perform OIDC Discovery
+        // 若配置了 issuer，自动执行 OIDC Discovery 发现端点
         if (StringUtils.isNotBlank(issuerUri)) {
             try {
                 doOidcDiscovery(issuerUri);
@@ -225,33 +228,33 @@ public class OidcAuthConfig {
     }
     
     /**
-     * Check if the configuration is valid.
+     * 判断当前配置是否有效（issuer 与 clientId 均非空）。
      *
-     * @return true if configuration is valid
+     * @return 配置有效返回 true
      */
     public boolean isValid() {
         return StringUtils.isNotBlank(issuerUri) && StringUtils.isNotBlank(clientId);
     }
     
     /**
-     * Check if JWT validation method is used.
+     * 是否使用 JWT 本地校验方式。
      *
-     * @return true if JWT validation
+     * @return token-validation-method 为 jwt 时返回 true
      */
     public boolean isJwtValidation() {
         return "jwt".equalsIgnoreCase(tokenValidationMethod);
     }
     
     /**
-     * Check if token introspection method is used.
+     * 是否使用令牌 introspection 校验方式。
      *
-     * @return true if introspection validation
+     * @return token-validation-method 为 introspection 时返回 true
      */
     public boolean isIntrospectionValidation() {
         return "introspection".equalsIgnoreCase(tokenValidationMethod);
     }
     
-    // ==================== Getters and Setters ====================
+    // ==================== Getter 与 Setter ====================
     
     public String getIssuerUri() {
         return issuerUri;

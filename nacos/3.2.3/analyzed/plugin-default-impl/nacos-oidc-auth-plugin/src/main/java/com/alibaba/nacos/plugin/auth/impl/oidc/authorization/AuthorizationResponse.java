@@ -19,24 +19,26 @@ package com.alibaba.nacos.plugin.auth.impl.oidc.authorization;
 import com.alibaba.nacos.plugin.auth.impl.oidc.constant.OidcConstants;
 
 /**
- * Authorization response model from IdP authorization endpoint.
+ * IdP 授权端点返回的响应模型。
+ *
+ * <p>支持多种常见 JSON 格式（allowed/result/decision 字段），由 {@link #fromJson} 统一解析。</p>
  *
  * @author WangzJi
  */
 public class AuthorizationResponse {
     
     /**
-     * Whether access is allowed.
+     * 是否允许访问。
      */
     private boolean allowed;
     
     /**
-     * Reason for denial (if not allowed).
+     * 拒绝原因（allowed 为 false 时有效）。
      */
     private String reason;
     
     /**
-     * Error code (if any).
+     * 错误码（若 IdP 返回）。
      */
     private String errorCode;
     
@@ -53,34 +55,37 @@ public class AuthorizationResponse {
     }
     
     /**
-     * Create a successful (allowed) response.
+     * 创建允许访问的响应。
      *
-     * @return allowed response
+     * @return allowed=true 的响应实例
      */
     public static AuthorizationResponse allowed() {
         return new AuthorizationResponse(true);
     }
     
     /**
-     * Create a denied response with reason.
+     * 创建拒绝访问的响应。
      *
-     * @param reason denial reason
-     * @return denied response
+     * @param reason 拒绝原因
+     * @return allowed=false 的响应实例
      */
     public static AuthorizationResponse denied(String reason) {
         return new AuthorizationResponse(false, reason);
     }
     
     /**
-     * Parse JSON response from IdP.
-     * Supports common formats:
-     * - {"allowed": true}
-     * - {"allowed": false, "reason": "..."}
-     * - {"result": "PERMIT"} / {"result": "DENY"}
-     * - {"decision": "Permit"} / {"decision": "Deny"}
+     * 解析 IdP 返回的 JSON 响应。
      *
-     * @param json JSON string
-     * @return AuthorizationResponse
+     * <p>兼容格式示例：</p>
+     * <ul>
+     *   <li>{@code {"allowed": true}}</li>
+     *   <li>{@code {"allowed": false, "reason": "..."}}</li>
+     *   <li>{@code {"result": "PERMIT"}} / {@code {"result": "DENY"}}（Keycloak）</li>
+     *   <li>{@code {"decision": "Permit"}} / {@code {"decision": "Deny"}}</li>
+     * </ul>
+     *
+     * @param json IdP 响应 JSON 字符串
+     * @return 解析后的 AuthorizationResponse
      */
     public static AuthorizationResponse fromJson(String json) {
         if (json == null || json.trim().isEmpty()) {
@@ -89,21 +94,21 @@ public class AuthorizationResponse {
         
         AuthorizationResponse response = new AuthorizationResponse();
         
-        // Check for "allowed" field
+        // 解析 allowed 字段
         if (json.contains(OidcConstants.JSON_FIELD_ALLOWED)) {
             response.allowed = json.contains("\"allowed\":true")
                 || json.contains("\"allowed\": true");
         } else if (json.contains(OidcConstants.JSON_FIELD_RESULT)) {
-            // Keycloak format
+            // Keycloak 风格的 result 字段
             response.allowed = json.toLowerCase().contains("\"result\":\"permit\"")
                 || json.toLowerCase().contains("\"result\": \"permit\"");
         } else if (json.contains(OidcConstants.JSON_FIELD_DECISION)) {
-            // Alternative format
+            // 备选 decision 字段格式
             response.allowed = json.toLowerCase().contains("\"decision\":\"permit\"")
                 || json.toLowerCase().contains("\"decision\": \"permit\"");
         }
         
-        // Extract reason if present
+        // 提取拒绝原因（兼容 reason/message/error_description）
         response.reason = extractJsonValue(json, "reason");
         if (response.reason == null) {
             response.reason = extractJsonValue(json, "message");
@@ -112,7 +117,7 @@ public class AuthorizationResponse {
             response.reason = extractJsonValue(json, "error_description");
         }
         
-        // Extract error code if present
+        // 提取错误码（兼容 error/errorCode）
         response.errorCode = extractJsonValue(json, "error");
         if (response.errorCode == null) {
             response.errorCode = extractJsonValue(json, "errorCode");
@@ -122,11 +127,11 @@ public class AuthorizationResponse {
     }
     
     /**
-     * Simple JSON value extraction.
+     * 简易 JSON 字符串值提取（按 key 查找引号包裹的值）。
      *
-     * @param json JSON string
-     * @param key  key to extract
-     * @return value or null
+     * @param json JSON 字符串
+     * @param key  待提取的字段名
+     * @return 字段值；未找到时返回 null
      */
     private static String extractJsonValue(String json, String key) {
         String searchKey = "\"" + key + "\"";
@@ -153,7 +158,7 @@ public class AuthorizationResponse {
         return json.substring(valueStart + 1, valueEnd);
     }
     
-    // Getters and Setters
+    // Getter 与 Setter
     
     public boolean isAllowed() {
         return allowed;

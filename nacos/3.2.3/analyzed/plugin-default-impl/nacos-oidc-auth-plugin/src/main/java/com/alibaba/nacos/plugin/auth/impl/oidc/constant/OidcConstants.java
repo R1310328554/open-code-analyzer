@@ -17,10 +17,10 @@
 package com.alibaba.nacos.plugin.auth.impl.oidc.constant;
 
 /**
- * Server-specific OIDC authentication plugin constants.
+ * OIDC 认证插件服务端常量。
  *
- * <p>Protocol-level constants (Discovery fields, OAuth2 parameters, HTTP headers, etc.)
- * are defined in {@link com.alibaba.nacos.plugin.auth.constant.OidcProtocolConstants}.
+ * <p>协议层常量（Discovery 字段、OAuth2 参数、HTTP 头等）定义在
+ * {@link com.alibaba.nacos.plugin.auth.constant.OidcProtocolConstants}。</p>
  *
  * @author WangzJi
  */
@@ -31,182 +31,182 @@ public final class OidcConstants {
     }
     
     /**
-     * OIDC user key in identity context.
+     * 身份上下文中存储 OIDC 用户的键名。
      */
     public static final String OAUTH2_USER_KEY = "oidc_user";
     
-    // ==================== Configuration Keys ====================
+    // ==================== 配置项键名 ====================
     
     /**
-     * Configuration prefix for OIDC plugin.
+     * OIDC 插件配置前缀。
      */
     public static final String CONFIG_PREFIX = "nacos.core.auth.plugin.oidc.";
     
     /**
-     * OIDC issuer URI (for auto-discovery).
+     * OIDC Issuer URI（用于自动 Discovery）。
      */
     public static final String CONFIG_ISSUER_URI = CONFIG_PREFIX + "issuer-uri";
     
     /**
-     * OIDC client ID.
+     * OIDC 客户端 ID。
      */
     public static final String CONFIG_CLIENT_ID = CONFIG_PREFIX + "client-id";
     
     /**
-     * OIDC client secret.
+     * OIDC 客户端密钥。
      */
     public static final String CONFIG_CLIENT_SECRET = CONFIG_PREFIX + "client-secret";
     
     /**
-     * OIDC scopes.
+     * OIDC 授权范围（scope）。
      */
     public static final String CONFIG_SCOPE = CONFIG_PREFIX + "scope";
     
     /**
-     * Token validation method: jwt or introspection.
+     * 令牌校验方式：jwt 或 introspection。
      */
     public static final String CONFIG_TOKEN_VALIDATION_METHOD =
         CONFIG_PREFIX + "token-validation-method";
     
     /**
-     * JWKS cache TTL in seconds.
+     * JWKS 缓存 TTL（秒）。
      */
     public static final String CONFIG_JWKS_CACHE_TTL = CONFIG_PREFIX + "jwks-cache-ttl-seconds";
     
     /**
-     * Username claim in ID token.
+     * ID Token 中用作用户名的 claim 名称。
      */
     public static final String CONFIG_USERNAME_CLAIM = CONFIG_PREFIX + "username-claim";
     
     /**
-     * Roles claim in ID token.
+     * ID Token 中用作角色的 claim 名称。
      */
     public static final String CONFIG_ROLES_CLAIM = CONFIG_PREFIX + "roles-claim";
     
     /**
-     * Admin role name in OIDC claims.
+     * 全局管理员角色名称（在 OIDC claim 中匹配）。
      */
     public static final String CONFIG_ADMIN_ROLE = CONFIG_PREFIX + "admin-role";
     
     /**
-     * Auto create user on first login.
+     * 首次登录时是否自动创建用户。
      */
     public static final String CONFIG_AUTO_CREATE_USER = CONFIG_PREFIX + "auto-create-user";
     
     /**
-     * External authorization endpoint (IdP handles all authorization).
+     * 外部授权评估端点（权限决策由 IdP 完成）。
      */
     public static final String CONFIG_AUTHORIZATION_ENDPOINT =
         CONFIG_PREFIX + "authorization-endpoint";
     
     /**
-     * Authorization request timeout in milliseconds.
+     * 授权请求超时时间（毫秒）。
      */
     public static final String CONFIG_AUTHORIZATION_TIMEOUT_MS =
         CONFIG_PREFIX + "authorization-timeout-ms";
     
     /**
-     * Whether to enforce strict nonce validation.
+     * 是否启用严格 nonce 校验。
      */
     public static final String CONFIG_STRICT_NONCE_VALIDATION =
         CONFIG_PREFIX + "strict-nonce-validation";
     
     /**
-     * Whether to enforce strict audience validation.
+     * 是否启用严格 audience 校验。
      */
     public static final String CONFIG_STRICT_AUDIENCE_VALIDATION =
         CONFIG_PREFIX + "strict-audience-validation";
     
-    // ==================== Default Values ====================
+    // ==================== 默认值 ====================
     
     /**
-     * Default token validation method.
+     * 默认令牌校验方式（jwt）。
      */
     public static final String DEFAULT_TOKEN_VALIDATION_METHOD = "jwt";
     
     /**
-     * Default JWKS cache TTL: 1 hour.
+     * 默认 JWKS 缓存 TTL：1 小时。
      */
     public static final long DEFAULT_JWKS_CACHE_TTL_SECONDS = 3600L;
     
     /**
-     * Default username claim.
+     * 默认用户名 claim（preferred_username）。
      */
     public static final String DEFAULT_USERNAME_CLAIM = "preferred_username";
     
     /**
-     * Default roles claim.
+     * 默认角色 claim（roles）。
      */
     public static final String DEFAULT_ROLES_CLAIM = "roles";
     
     /**
-     * Default admin role.
+     * 默认全局管理员角色名（nacos-admin）。
      */
     public static final String DEFAULT_ADMIN_ROLE = "nacos-admin";
     
     /**
-     * Default scope.
+     * 默认 OIDC scope（openid profile email）。
      */
     public static final String DEFAULT_SCOPE = "openid profile email";
     
     /**
-     * Default authorization timeout in milliseconds: 5 seconds.
+     * 默认授权请求超时：5 秒。
      */
     public static final long DEFAULT_AUTHORIZATION_TIMEOUT_MS = 5000L;
     
-    // ==================== HTTP Status Codes (server-specific) ====================
+    // ==================== HTTP 状态码（服务端专用） ====================
     
     /**
-     * HTTP 401 Unauthorized status code.
+     * HTTP 401 未授权状态码。
      */
     public static final int HTTP_STATUS_UNAUTHORIZED = 401;
     
     /**
-     * HTTP 403 Forbidden status code.
+     * HTTP 403 禁止访问状态码。
      */
     public static final int HTTP_STATUS_FORBIDDEN = 403;
     
-    // ==================== HTTP Constants (server-specific) ====================
+    // ==================== HTTP 常量（服务端专用） ====================
     
     /**
-     * HTTP protocol prefix.
+     * HTTP 协议前缀。
      */
     public static final String HTTP_PROTOCOL = "http";
     
     /**
-     * HTTPS protocol prefix.
+     * HTTPS 协议前缀。
      */
     public static final String HTTPS_PROTOCOL = "https";
     
     /**
-     * Default HTTP port.
+     * 默认 HTTP 端口（80）。
      */
     public static final int DEFAULT_HTTP_PORT = 80;
     
     /**
-     * Default HTTPS port.
+     * 默认 HTTPS 端口（443）。
      */
     public static final int DEFAULT_HTTPS_PORT = 443;
     
     /**
-     * Question mark for URL query string.
+     * URL 查询字符串分隔符（?）。
      */
     public static final String QUERY_STRING_SEPARATOR = "?";
     
-    // ==================== JSON Field Names ====================
+    // ==================== JSON 字段名 ====================
     
     /**
-     * JSON field name for allowed.
+     * JSON 字段名：allowed（是否允许）。
      */
     public static final String JSON_FIELD_ALLOWED = "\"allowed\"";
     
     /**
-     * JSON field name for result.
+     * JSON 字段名：result（Keycloak 授权结果）。
      */
     public static final String JSON_FIELD_RESULT = "\"result\"";
     
     /**
-     * JSON field name for decision.
+     * JSON 字段名：decision（授权决策）。
      */
     public static final String JSON_FIELD_DECISION = "\"decision\"";
 }
