@@ -553,3 +553,18 @@
 2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/consumer/JwtVcMetadataTrustedSdJwtIssuer.java wave19a sdjwt claims + consumer
 2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/consumer/PresentationRequirements.java wave19a sdjwt claims + consumer
 2026-08-10T06:20:05Z DONE core/src/main/java/org/keycloak/sdjwt/consumer/SdJwtPresentationConsumer.java wave19a sdjwt claims + consumer
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/sdjwt/consumer/SimplePresentationDefinition.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/sdjwt/consumer/StaticTrustedSdJwtIssuer.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/sdjwt/consumer/TrustedSdJwtIssuer.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/sdjwt/vp/KeyBindingJWT.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/sdjwt/vp/KeyBindingJwtVerificationOpts.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/sdjwt/vp/SdJwtVP.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/util/AuthorizationDetailsParser.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/util/Base58.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/util/BasicAuthHelper.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/util/Booleans.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/util/DIDUtils.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/util/DPoPGenerator.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/util/EnumWithStableIndex.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/util/JWKSUtils.java wave19b sdjwt vp + util classes
+2026-08-10T06:20:56Z DONE core/src/main/java/org/keycloak/util/JsonSerialization.java wave19b sdjwt vp + util classes
