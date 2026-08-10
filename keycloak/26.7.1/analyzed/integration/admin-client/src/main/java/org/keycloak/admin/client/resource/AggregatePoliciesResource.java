@@ -29,18 +29,25 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.representations.idm.authorization.AggregatePolicyRepresentation;
 
 /**
+ * 聚合策略（Aggregate Policy）集合的管理 REST 资源。
+ * <p>
+ * 提供创建、按 ID/名称查询聚合策略的端点。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface AggregatePoliciesResource {
 
+    /** 创建新的聚合策略。 */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     Response create(AggregatePolicyRepresentation representation);
 
+    /** 按 ID 获取单个聚合策略资源。 */
     @Path("{id}")
     AggregatePolicyResource findById(@PathParam("id") String id);
 
+    /** 按名称搜索聚合策略。 */
     @Path("/search")
     @GET
     @Produces(MediaType.APPLICATION_JSON)

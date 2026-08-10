@@ -31,31 +31,41 @@ import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 
 /**
+ * 单个聚合策略的管理 REST 资源。
+ * <p>
+ * 支持读取、更新、删除策略，并查询关联策略、依赖策略及受保护资源。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface AggregatePolicyResource {
 
+    /** 获取当前聚合策略的 JSON 表示。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     AggregatePolicyRepresentation toRepresentation();
 
+    /** 更新聚合策略配置。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     void update(AggregatePolicyRepresentation representation);
 
+    /** 删除当前聚合策略。 */
     @DELETE
     void remove();
 
+    /** 列出本策略直接关联的子策略。 */
     @Path("/associatedPolicies")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> associatedPolicies();
 
+    /** 列出依赖本策略的其他策略。 */
     @Path("/dependentPolicies")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     List<PolicyRepresentation> dependentPolicies();
 
+    /** 列出本策略所保护的可授权资源。 */
     @Path("/resources")
     @GET
     @Produces("application/json")

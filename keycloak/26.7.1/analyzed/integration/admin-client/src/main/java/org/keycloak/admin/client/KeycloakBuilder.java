@@ -22,10 +22,10 @@ import jakarta.ws.rs.client.Client;
 import static org.keycloak.OAuth2Constants.PASSWORD;
 
 /**
- * Provides a {@link Keycloak} client builder with the ability to customize the underlying
- * {@link jakarta.ws.rs.client.Client RESTEasy client} used to communicate with the Keycloak server.
+ * {@link Keycloak} 管理客户端的流式构建器，支持自定义底层
+ * {@link jakarta.ws.rs.client.Client RestEasy 客户端}。
  * <p>
- * <p>Example usage with a connection pool size of 20:</p>
+ * <p>连接池大小为 20 的示例：</p>
  * <pre>
  *   Keycloak keycloak = KeycloakBuilder.builder()
  *     .serverUrl("https://sso.example.com/auth")
@@ -40,7 +40,7 @@ import static org.keycloak.OAuth2Constants.PASSWORD;
  *                 .register(org.keycloak.admin.client.JacksonProvider.class, 100))
  *     .build();
  * </pre>
- * <p>Example usage with grant_type=client_credentials</p>
+ * <p>使用 grant_type=client_credentials 的示例：</p>
  * <pre>
  *   Keycloak keycloak = KeycloakBuilder.builder()
  *     .serverUrl("https://sso.example.com/auth")
@@ -67,68 +67,79 @@ public class KeycloakBuilder {
     private String scope;
     private boolean useDPoP = false;
 
+    /** 设置 Keycloak 服务器 URL。 */
     public KeycloakBuilder serverUrl(String serverUrl) {
         this.serverUrl = serverUrl;
         return this;
     }
 
+    /** 设置目标领域名称。 */
     public KeycloakBuilder realm(String realm) {
         this.realm = realm;
         return this;
     }
 
+    /** 设置 OAuth 授权类型（须为 PASSWORD 或 CLIENT_CREDENTIALS）。 */
     public KeycloakBuilder grantType(String grantType) {
         Config.checkGrantType(grantType);
         this.grantType = grantType;
         return this;
     }
 
+    /** 设置管理员用户名（密码授权时使用）。 */
     public KeycloakBuilder username(String username) {
         this.username = username;
         return this;
     }
 
+    /** 设置管理员密码（密码授权时使用）。 */
     public KeycloakBuilder password(String password) {
         this.password = password;
         return this;
     }
 
+    /** 设置 OAuth 客户端 ID。 */
     public KeycloakBuilder clientId(String clientId) {
         this.clientId = clientId;
         return this;
     }
 
+    /** 设置 OAuth scope 参数。 */
     public KeycloakBuilder scope(String scope) {
         this.scope = scope;
         return this;
     }
 
+    /** 设置 OAuth 客户端密钥。 */
     public KeycloakBuilder clientSecret(String clientSecret) {
         this.clientSecret = clientSecret;
         return this;
     }
 
     /**
-     * Custom instance of resteasy client. Please see <a href="https://www.keycloak.org/securing-apps/admin-client#_admin_client_compatibility">the documentation</a> for additional details regarding the compatibility
+     * 指定自定义 RestEasy 客户端实例，详见
+     * <a href="https://www.keycloak.org/securing-apps/admin-client#_admin_client_compatibility">兼容性文档</a>。
      *
-     * @param resteasyClient Custom RestEasy client
-     * @return admin client builder
+     * @param resteasyClient 自定义 RestEasy 客户端
+     * @return 当前构建器实例
      */
     public KeycloakBuilder resteasyClient(Client resteasyClient) {
         this.resteasyClient = resteasyClient;
         return this;
     }
 
+    /** 设置预置 Bearer 访问令牌，跳过自动登录。 */
     public KeycloakBuilder authorization(String auth) {
         this.authorization = auth;
         return this;
     }
 
     /**
-     * @param useDPoP If true, then admin-client will add DPoP proofs to the token-requests and to the admin REST API requests. DPoP feature must be
-     *                enabled on Keycloak server side to work properly. It is false by default. Parameter is supposed to be used with Keycloak server 26.4.0 or later as
-     *                earlier versions did not support DPoP requests for admin REST API
-     * @return admin client builder
+     * 是否启用 DPoP 证明：为 {@code true} 时，令牌请求与管理 REST API 请求均附加 DPoP 头。
+     * 服务端须启用 DPoP 功能；默认 {@code false}，适用于 Keycloak 26.4.0 及更高版本。
+     *
+     * @param useDPoP 是否启用 DPoP
+     * @return 当前构建器实例
      */
     public KeycloakBuilder useDPoP(boolean useDPoP) {
         this.useDPoP = useDPoP;
@@ -136,7 +147,10 @@ public class KeycloakBuilder {
     }
 
     /**
-     * Builds a new Keycloak client from this builder.
+     * 根据当前配置构建 {@link Keycloak} 实例。
+     *
+     * @return 配置完成的管理客户端
+     * @throws IllegalStateException 缺少必填参数时抛出
      */
     public Keycloak build() {
         if (serverUrl == null) {
@@ -171,9 +185,7 @@ public class KeycloakBuilder {
     private KeycloakBuilder() {
     }
 
-    /**
-     * Returns a new Keycloak builder.
-     */
+    /** @return 新的 {@link KeycloakBuilder} 实例 */
     public static KeycloakBuilder builder() {
         return new KeycloakBuilder();
     }

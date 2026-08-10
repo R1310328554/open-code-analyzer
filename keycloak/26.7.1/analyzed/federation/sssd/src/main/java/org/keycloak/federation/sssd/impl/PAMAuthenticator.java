@@ -23,27 +23,34 @@ import org.jvnet.libpam.PAMException;
 import org.jvnet.libpam.UnixUser;
 
 /**
- * PAMAuthenticator for Unix users
+ * 面向 Unix 用户的 PAM 认证器，通过 libpam 完成本地系统用户身份验证。
  *
  * @author <a href="mailto:bruno@abstractj.org">Bruno Oliveira</a>
  * @version $Revision: 1 $
  */
 public class PAMAuthenticator {
 
+    /** Keycloak 在 PAM 配置中注册的服务名。 */
     private static final String PAM_SERVICE = "keycloak";
     private static final Logger logger = Logger.getLogger(PAMAuthenticator.class);
     private final String username;
     private final String[] factors;
 
+    /**
+     * 构造 PAM 认证器。
+     *
+     * @param username 待认证的用户名
+     * @param factors 认证因子（如密码），按 PAM 提示顺序传入
+     */
     public PAMAuthenticator(String username, String... factors) {
         this.username = username;
         this.factors = factors;
     }
 
     /**
-     * Returns true if user was successfully authenticated against PAM
+     * 对指定用户执行 PAM 认证。
      *
-     * @return UnixUser object if user was successfully authenticated
+     * @return 认证成功时返回 {@link UnixUser} 对象；失败时返回 {@code null}
      */
     public UnixUser authenticate() {
         PAM pam = null;

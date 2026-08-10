@@ -22,32 +22,50 @@ import java.util.List;
 
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
-import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.HttpHeaders;
 
 import org.keycloak.admin.client.token.TokenManager;
 
 /**
+ * Bearer 令牌认证请求/响应过滤器。
+ * <p>
+ * 出站请求附加 {@code Authorization: Bearer ...} 头；收到 401 响应时，
+ * 若使用 {@link TokenManager}，则使对应令牌失效以便下次请求刷新。
+ *
  * @author rodrigo.sasaki@icarros.com.br
  */
 public class BearerAuthFilter implements ClientRequestFilter, ClientResponseFilter {
 
+    /** Bearer 认证头前缀。 */
     public static final String AUTH_HEADER_PREFIX = "Bearer ";
     private final String tokenString;
     protected final TokenManager tokenManager;
 
+    /**
+     * 使用固定令牌字符串构造过滤器（不自动刷新）。
+     *
+     * @param tokenString 访问令牌
+     */
     public BearerAuthFilter(String tokenString) {
         this.tokenString = tokenString;
         this.tokenManager = null;
     }
 
+    /**
+     * 使用 {@link TokenManager} 构造过滤器，支持自动获取与刷新令牌。
+     *
+     * @param tokenManager 令牌管理器
+     */
     public BearerAuthFilter(TokenManager tokenManager) {
         this.tokenManager = tokenManager;
         this.tokenString = null;
     }
 
 
+    /**
+     * 为出站请求添加 Bearer 认证头。
+     */
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
         String authHeader = (tokenManager != null ? tokenManager.getAccessTokenString() : tokenString);
@@ -57,6 +75,9 @@ public class BearerAuthFilter implements ClientRequestFilter, ClientResponseFilt
         requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, authHeader);
     }
 
+    /**
+     * 收到 401 响应时，使请求中使用的令牌在 {@link TokenManager} 中失效。
+     */
     @Override
     public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
         if (responseContext.getStatus() == 401 && tokenManager != null) {
@@ -77,6 +98,7 @@ public class BearerAuthFilter implements ClientRequestFilter, ClientResponseFilt
         }
     }
 
+    /** @return 认证头前缀，子类可覆盖以支持 DPoP 等变体 */
     protected String getAuthHeaderPrefix() {
         return AUTH_HEADER_PREFIX;
     }

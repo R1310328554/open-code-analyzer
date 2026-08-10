@@ -25,19 +25,18 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 /**
- * A Utility class that parses the Response object into the underlying ID attribute
+ * 解析 JAX-RS 创建响应的工具类，从 {@code Location} 头提取新资源的 ID。
  *
  * @author John D. Ament
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public class CreatedResponseUtil {
     /**
-     * Reads the Response object, confirms that it returns a 201 created and parses the ID from the location
-     * It always assumes the ID is the last segment of the URI
+     * 读取响应并确认状态为 201 Created，然后从 Location URI 的最后一段解析资源 ID。
      *
-     * @param response The JAX-RS Response received
-     * @return The String ID portion of the URI
-     * @throws WebApplicationException if the response is not a 201 Created
+     * @param response 收到的 JAX-RS 响应
+     * @return Location URI 路径末尾的 ID 字符串；无 Location 时返回 {@code null}
+     * @throws WebApplicationException 若响应状态不是 201 Created
      */
     public static String getCreatedId(Response response) throws WebApplicationException {
         URI location = response.getLocation();
@@ -49,7 +48,7 @@ public class CreatedResponseUtil {
                                   "expected status: Created (201).";
             try {
                 if (matches(MediaType.APPLICATION_JSON_TYPE, MediaType.valueOf(contentType))) {
-                    // try to add actual server error message to the exception message
+                    // 尝试将服务端错误信息附加到异常消息中
                     @SuppressWarnings("raw")
                     Map responseBody = response.readEntity(Map.class);
                     if (responseBody != null) {
@@ -62,7 +61,7 @@ public class CreatedResponseUtil {
                     }
                 }
             } catch(Exception ignored){
-                // ignore if we couldn't parse the response
+                // 解析响应体失败时忽略
             }
 
             throw new WebApplicationException(errorMessage, response);
@@ -74,6 +73,7 @@ public class CreatedResponseUtil {
         return path.substring(path.lastIndexOf('/') + 1);
     }
 
+    /** 比较两个 MediaType 的类型与子类型是否一致（忽略大小写）。 */
     private static boolean matches(MediaType a, MediaType b) {
         if (a == null) {
             return b == null;

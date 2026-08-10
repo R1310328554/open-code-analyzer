@@ -26,6 +26,8 @@ import jakarta.ws.rs.core.HttpHeaders;
 
 
 /**
+ * HTTP Basic 认证请求过滤器，为出站请求附加 {@code Authorization: Basic ...} 头。
+ *
  * @author rodrigo.sasaki@icarros.com.br
  */
 public class BasicAuthFilter implements ClientRequestFilter {
@@ -33,11 +35,20 @@ public class BasicAuthFilter implements ClientRequestFilter {
     private final String username;
     private final String password;
 
+    /**
+     * 构造 Basic 认证过滤器。
+     *
+     * @param username 用户名
+     * @param password 密码
+     */
     public BasicAuthFilter(String username, String password) {
         this.username = username;
         this.password = password;
     }
 
+    /**
+     * 将 Base64 编码的用户名/密码对写入 {@link HttpHeaders#AUTHORIZATION} 请求头。
+     */
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
         String pair = username + ":" + password;

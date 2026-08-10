@@ -36,10 +36,12 @@ import org.keycloak.admin.client.token.TokenManager;
 import static org.keycloak.OAuth2Constants.PASSWORD;
 
 /**
- * Provides a Keycloak client. By default, this implementation uses a the default RestEasy client builder settings.
- * To customize the underling client, use a {@link KeycloakBuilder} to create a Keycloak client.
- *
- * To read Responses, you can use {@link CreatedResponseUtil} for objects created
+ * Keycloak 管理 REST API 客户端入口。
+ * <p>
+ * 默认使用 RestEasy 客户端构建器的默认设置；如需自定义底层 HTTP 客户端，
+ * 请通过 {@link KeycloakBuilder} 创建实例。
+ * <p>
+ * 解析创建类响应时，可使用 {@link CreatedResponseUtil} 提取新资源 ID。
  *
  * @author rodrigo.sasaki@icarros.com.br
  * @see KeycloakBuilder
@@ -48,6 +50,7 @@ public class Keycloak implements AutoCloseable {
 
     private static volatile ResteasyClientProvider CLIENT_PROVIDER = resolveResteasyClientProvider();
 
+    /** 通过 SPI 解析 {@link ResteasyClientProvider} 实现，若无则回退到经典实现。 */
     private static ResteasyClientProvider resolveResteasyClientProvider() {
         Iterator<ResteasyClientProvider> providers = ServiceLoader.load(ResteasyClientProvider.class).iterator();
 
@@ -64,6 +67,7 @@ public class Keycloak implements AutoCloseable {
         return createDefaultResteasyClientProvider();
     }
 
+    /** 加载默认的经典 RestEasy 客户端提供程序。 */
     private static ResteasyClientProvider createDefaultResteasyClientProvider() {
         try {
             return (ResteasyClientProvider) Keycloak.class.getClassLoader().loadClass("org.keycloak.admin.client.spi.ResteasyClientClassicProvider").getDeclaredConstructor().newInstance();
@@ -72,10 +76,12 @@ public class Keycloak implements AutoCloseable {
         }
     }
 
+    /** 设置全局 RestEasy 客户端提供程序（通常用于测试或自定义实现）。 */
     public static void setClientProvider(ResteasyClientProvider provider) {
         CLIENT_PROVIDER = provider;
     }
 
+    /** @return 当前使用的 RestEasy 客户端提供程序 */
     public static ResteasyClientProvider getClientProvider() {
         return CLIENT_PROVIDER;
     }
@@ -102,6 +108,7 @@ public class Keycloak implements AutoCloseable {
         return CLIENT_PROVIDER.newRestEasyClient(customJacksonProvider, sslContext, disableTrustManager);
     }
 
+    /** 根据配置创建 Bearer 或 DPoP 认证过滤器。 */
     private ClientRequestFilter newAuthFilter() {
         if (config.isUseDPoP()) {
             if (authToken != null) throw new IllegalArgumentException("Not supported to require DPoP when token is provisioned");
@@ -111,106 +118,109 @@ public class Keycloak implements AutoCloseable {
     }
 
     /**
+     * 创建用于调用 Keycloak 管理 REST API 的 Java 客户端实例。
      *
-     * Creates the java admin client instance to be used to call admin REST API against Keycloak server.
-     *
-     * @param serverUrl Keycloak server URL
-     * @param realm realm name
-     * @param username username of the admin user to be used.
-     * @param password password of the admin user
-     * @param clientId client ID
-     * @param clientSecret client secret. Could be left null in case that clientId parameter points to the public client, which does not require client authentication
-     * @param sslContext ssl context. Could be left null in case that default SSL context should be used.
-     * @param customJacksonProvider custom Jackson provider. Could be left null in case that Jackson provider will be automatically provided by the admin client. Please see <a href="https://www.keycloak.org/securing-apps/admin-client#_admin_client_compatibility">the documentation</a> for additional details regarding the compatibility
-     * @param disableTrustManager If to disable trust manager for SSL checks. It is false by default. The value true should be used just for the development purposes, but should not be used in production
-     * @param authToken access token to be used to call admin REST API. This can be left null if you want admin client to login the user (based on the parameters username, password, clientId and clientSecret) and manage it's own login session. But in case you already have existing session, you can inject the existing access token with the use of this parameter. In that case, it is recommended to leave the properties username, password, clientId or clientSecret empty
-     * @param scope Custom "scope" parameter to be used. Could be left null in case of default scope should be used. That is sufficient for most of the cases.
-     * @return Java admin client instance
+     * @param serverUrl Keycloak 服务器 URL
+     * @param realm 领域名称
+     * @param username 管理员用户名
+     * @param password 管理员密码
+     * @param clientId 客户端 ID
+     * @param clientSecret 客户端密钥；公共客户端可传 {@code null}
+     * @param sslContext SSL 上下文；{@code null} 时使用默认上下文
+     * @param customJacksonProvider 自定义 Jackson 提供程序；{@code null} 时由客户端自动提供，详见
+     *        <a href="https://www.keycloak.org/securing-apps/admin-client#_admin_client_compatibility">兼容性文档</a>
+     * @param disableTrustManager 是否禁用 SSL 信任管理器；默认 {@code false}，仅开发环境使用
+     * @param authToken 预置访问令牌；{@code null} 时由客户端自行登录管理会话
+     * @param scope 自定义 OAuth scope；{@code null} 时使用默认值
+     * @return 配置完成的 {@link Keycloak} 实例
      */
     public static Keycloak getInstance(String serverUrl, String realm, String username, String password, String clientId, String clientSecret, SSLContext sslContext, Object customJacksonProvider, boolean disableTrustManager, String authToken, String scope) {
         return new Keycloak(serverUrl, realm, username, password, clientId, clientSecret, PASSWORD, newRestEasyClient(customJacksonProvider, sslContext, disableTrustManager), authToken, scope, false);
     }
 
     /**
-     * See {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} for the details about the parameters and their default values
+     * 参见 {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} 了解参数及默认值。
      */
     public static Keycloak getInstance(String serverUrl, String realm, String username, String password, String clientId, String clientSecret, SSLContext sslContext, Object customJacksonProvider, boolean disableTrustManager, String authToken) {
         return new Keycloak(serverUrl, realm, username, password, clientId, clientSecret, PASSWORD, newRestEasyClient(customJacksonProvider, sslContext, disableTrustManager), authToken, null, false);
     }
 
     /**
-     * See {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} for the details about the parameters and their default values
+     * 参见 {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} 了解参数及默认值。
      */
     public static Keycloak getInstance(String serverUrl, String realm, String username, String password, String clientId, String clientSecret) {
         return getInstance(serverUrl, realm, username, password, clientId, clientSecret, null, null, false, null);
     }
 
     /**
-     * See {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} for the details about the parameters and their default values
+     * 参见 {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} 了解参数及默认值。
      */
     public static Keycloak getInstance(String serverUrl, String realm, String username, String password, String clientId, String clientSecret, SSLContext sslContext) {
         return getInstance(serverUrl, realm, username, password, clientId, clientSecret, sslContext, null, false, null);
     }
 
     /**
-     * See {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} for the details about the parameters and their default values
+     * 参见 {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} 了解参数及默认值。
      */
     public static Keycloak getInstance(String serverUrl, String realm, String username, String password, String clientId, String clientSecret, SSLContext sslContext, Object customJacksonProvider) {
         return getInstance(serverUrl, realm, username, password, clientId, clientSecret, sslContext, customJacksonProvider, false, null);
     }
 
     /**
-     * See {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} for the details about the parameters and their default values
+     * 参见 {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} 了解参数及默认值。
      */
     public static Keycloak getInstance(String serverUrl, String realm, String username, String password, String clientId) {
         return getInstance(serverUrl, realm, username, password, clientId, null, null, null, false, null);
     }
 
     /**
-     * See {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} for the details about the parameters and their default values
+     * 参见 {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} 了解参数及默认值。
      */
     public static Keycloak getInstance(String serverUrl, String realm, String username, String password, String clientId, SSLContext sslContext) {
         return getInstance(serverUrl, realm, username, password, clientId, null, sslContext, null, false, null);
     }
 
     /**
-     * See {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} for the details about the parameters and their default values
+     * 参见 {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} 了解参数及默认值。
      */
     public static Keycloak getInstance(String serverUrl, String realm, String clientId, String authToken) {
         return getInstance(serverUrl, realm, null, null, clientId, null, null, null, false, authToken);
     }
 
     /**
-     * See {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} for the details about the parameters and their default values
+     * 参见 {@link #getInstance(String, String, String, String, String, String, SSLContext, Object, boolean, String, String)} 了解参数及默认值。
      */
     public static Keycloak getInstance(String serverUrl, String realm, String clientId, String authToken, SSLContext sllSslContext) {
         return getInstance(serverUrl, realm, null, null, clientId, null, sllSslContext, null, false, authToken);
     }
 
+    /** @return 所有领域的管理资源代理 */
     public RealmsResource realms() {
         return CLIENT_PROVIDER.targetProxy(target, RealmsResource.class);
     }
 
+    /** @return 指定领域的管理资源代理 */
     public RealmResource realm(String realmName) {
         return realms().realm(realmName);
     }
 
+    /** @return 服务器信息资源代理 */
     public ServerInfoResource serverInfo() {
         return CLIENT_PROVIDER.targetProxy(target, ServerInfoResource.class);
     }
 
+    /** @return 令牌管理器，用于获取、刷新与注销访问令牌 */
     public TokenManager tokenManager() {
         return tokenManager;
     }
 
     /**
-     * Create a secure proxy based on an absolute URI.
-     * All set up with appropriate token
+     * 基于绝对 URI 创建带认证头的安全代理。
      *
-     * @param proxyClass
-     * @param absoluteURI
-     * @param <T>
-     * @return
+     * @param proxyClass 代理接口类型
+     * @param absoluteURI 目标资源的绝对 URI
+     * @param <T> 代理类型
+     * @return 已注册认证过滤器的 JAX-RS 代理
      */
     public <T> T proxy(Class<T> proxyClass, URI absoluteURI) {
         WebTarget register = client.target(absoluteURI).register(newAuthFilter());
@@ -218,14 +228,18 @@ public class Keycloak implements AutoCloseable {
     }
     
     /**
-     * Create a secure proxy with endpoints targeting the server
+     * 创建指向 Keycloak 服务器根地址的安全代理。
+     *
+     * @param proxyClass 代理接口类型
+     * @param <T> 代理类型
+     * @return 已注册认证过滤器的 JAX-RS 代理
      */
     public <T> T proxy(Class<T> proxyClass) {
         return CLIENT_PROVIDER.targetProxy(target, proxyClass);
     }
     
     /**
-     * Closes the underlying client. After calling this method, this <code>Keycloak</code> instance cannot be reused.
+     * 关闭底层 HTTP 客户端。调用后此实例不可复用。
      */
     @Override
     public void close() {
@@ -234,16 +248,13 @@ public class Keycloak implements AutoCloseable {
             try {
                 tokenManager.logout();
             } catch (RuntimeException e) {
-                // do our best closing the session but logout can fail because multiple reasons:
-                // shared jakarta client closed, realm removed or disabled, client removed or disabled,...
+                // 尽力关闭会话；注销可能因共享客户端已关闭、领域/客户端被禁用等原因失败
             }
         }
         client.close();
     }
 
-    /**
-     * @return true if the underlying client is closed.
-     */
+    /** @return 底层客户端是否已关闭 */
     public boolean isClosed() {
         return closed;
     }

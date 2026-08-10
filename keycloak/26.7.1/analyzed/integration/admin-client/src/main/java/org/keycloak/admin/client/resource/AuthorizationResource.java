@@ -27,38 +27,50 @@ import jakarta.ws.rs.core.MediaType;
 import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
 
 /**
+ * 客户端授权服务（Authorization Services）的管理 REST 资源。
+ * <p>
+ * 提供资源服务器配置的读写、导入/导出，以及资源、范围、策略、权限子资源的导航入口。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface AuthorizationResource {
 
+    /** 更新资源服务器授权配置。 */
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     void update(ResourceServerRepresentation server);
 
+    /** 获取当前资源服务器的授权设置。 */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     ResourceServerRepresentation getSettings();
 
+    /** 导入资源服务器授权配置。 */
     @Path("/import")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     void importSettings(ResourceServerRepresentation server);
 
+    /** 导出资源服务器授权配置。 */
     @Path("/settings")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     ResourceServerRepresentation exportSettings();
 
+    /** @return 可授权资源子资源 */
     @Path("/resource")
     ResourcesResource resources();
 
+    /** @return 授权范围子资源 */
     @Path("/scope")
     ResourceScopesResource scopes();
 
+    /** @return 授权策略子资源 */
     @Path("/policy")
     PoliciesResource policies();
 
+    /** @return 权限子资源 */
     @Path("/permission")
     PermissionsResource permissions();
 }

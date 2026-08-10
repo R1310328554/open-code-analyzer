@@ -27,19 +27,26 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 /**
+ * 攻击检测（暴力破解防护）管理 REST 资源。
+ * <p>
+ * 提供查询用户暴力破解状态及清除锁定记录的端点。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface AttackDetectionResource {
 
+    /** 查询指定用户的暴力破解锁定状态。 */
     @GET
     @Path("brute-force/users/{userId}")
     @Produces(MediaType.APPLICATION_JSON)
     Map<String, Object> bruteForceUserStatus(@PathParam("userId") String userId);
 
+    /** 清除指定用户的暴力破解锁定记录。 */
     @Path("brute-force/users/{userId}")
     @DELETE
     void clearBruteForceForUser(@PathParam("userId") String userId);
 
+    /** 清除领域内所有用户的暴力破解锁定记录。 */
     @Path("brute-force/users")
     @DELETE
     void clearAllBruteForce();
