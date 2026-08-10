@@ -15,23 +15,8 @@
     "plugin/admission/account.go",
     "plugin/admission/account_oss.go",
     "plugin/admission/combine.go",
-    "plugin/admission/external.go",
-    "plugin/admission/external_oss.go",
-    "plugin/admission/nobot.go",
-    "plugin/admission/nobot_oss.go",
-    "plugin/admission/noop.go",
-    "plugin/admission/open.go",
-    "plugin/config/combine.go",
-    "plugin/config/global.go",
-    "plugin/config/global_oss.go",
-    "plugin/config/jsonnet.go",
-    "plugin/config/jsonnet_oss.go",
-    "plugin/config/memoize.go",
-    "plugin/config/memoize_oss.go",
-    "plugin/config/repo.go",
-    "plugin/converter/combine.go",
-    "plugin/converter/jsonnet.go"
+    "plugin/admission/external.go"
   ],
   "remaining_pending": 148,
-  "done": 210
+  "done": 225
 }
