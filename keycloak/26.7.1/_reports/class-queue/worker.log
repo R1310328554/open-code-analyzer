@@ -2503,3 +2503,18 @@
 2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AuthnContextClassRefType.java wave85a saml2 ac.classes end + assertion batch1
 2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AuthnContextDeclRefType.java wave85a saml2 ac.classes end + assertion batch1
 2026-08-10T09:36:56Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AuthnContextDeclType.java wave85a saml2 ac.classes end + assertion batch1
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AuthnContextType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AuthnStatementType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/AuthzDecisionStatementType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/BaseIDAbstractType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/ConditionAbstractType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/ConditionsType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/DecisionType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/EncryptedAssertionType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/EncryptedElementType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/EvidenceType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/KeyInfoConfirmationDataType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/NameIDType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/OneTimeUseType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/ProxyRestrictionType.java wave85b saml2 assertion authn/conditions/evidence
+2026-08-10T09:37:11Z DONE saml-core-api/src/main/java/org/keycloak/dom/saml/v2/assertion/StatementAbstractType.java wave85b saml2 assertion authn/conditions/evidence
