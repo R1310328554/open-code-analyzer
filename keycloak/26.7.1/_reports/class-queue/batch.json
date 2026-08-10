@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T08:47:14Z",
   "files": [
-    "model/storage/src/main/java/org/keycloak/storage/UserStorageProviderSpi.java",
-    "model/storage/src/main/java/org/keycloak/storage/UserStorageUtil.java",
-    "model/storage/src/main/java/org/keycloak/storage/adapter/AbstractUserAdapter.java",
-    "model/storage/src/main/java/org/keycloak/storage/adapter/AbstractUserAdapterFederatedStorage.java",
-    "model/storage/src/main/java/org/keycloak/storage/client/ClientStorageProvider.java",
-    "model/storage/src/main/java/org/keycloak/storage/client/ClientStorageProviderModel.java",
-    "model/storage/src/main/java/org/keycloak/storage/configuration/ServerConfigStorageProvider.java",
-    "model/storage/src/main/java/org/keycloak/storage/configuration/ServerConfigStorageProviderFactory.java",
-    "model/storage/src/main/java/org/keycloak/storage/configuration/ServerConfigurationStorageProviderSpi.java",
-    "model/storage/src/main/java/org/keycloak/storage/federated/UserAttributeFederatedStorage.java",
-    "model/storage/src/main/java/org/keycloak/storage/federated/UserBrokerLinkFederatedStorage.java",
-    "model/storage/src/main/java/org/keycloak/storage/federated/UserConsentFederatedStorage.java",
-    "model/storage/src/main/java/org/keycloak/storage/federated/UserFederatedStorageProvider.java",
-    "model/storage/src/main/java/org/keycloak/storage/federated/UserFederatedStorageProviderFactory.java",
-    "model/storage/src/main/java/org/keycloak/storage/federated/UserFederatedStorageProviderSpi.java",
     "model/storage/src/main/java/org/keycloak/storage/federated/UserFederatedUserCredentialStore.java",
     "model/storage/src/main/java/org/keycloak/storage/federated/UserGroupMembershipFederatedStorage.java",
     "model/storage/src/main/java/org/keycloak/storage/federated/UserNotBeforeFederatedStorage.java",
@@ -33,5 +18,5 @@
     "operator/src/main/java/org/keycloak/operator/ContextUtils.java"
   ],
   "remaining_pending": 3958,
-  "done": 2010
+  "done": 2025
 }
