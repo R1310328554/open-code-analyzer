@@ -24,6 +24,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for EndpointType complex type.
+ * SAML 2.0 端点类型：描述 Binding、Location 及可选 ResponseLocation。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -53,12 +55,15 @@ public class EndpointType extends TypeWithOtherAttributes {
 
     protected URI responseLocation;
 
+    /** 以 Binding 与 Location 构造端点。 */
     public EndpointType(URI binding, URI location) {
         this.binding = binding;
         this.location = location;
     }
 
     /**
+     * 添加扩展元素对象。
+     *
      * Add an object
      *
      * @param obj
@@ -68,6 +73,8 @@ public class EndpointType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 移除扩展元素对象。
+     *
      * remove an object
      *
      * @param obj
@@ -76,7 +83,8 @@ public class EndpointType extends TypeWithOtherAttributes {
         this.any.remove(obj);
     }
 
-    /**
+    /** 获取只读扩展元素列表。
+     *
      * Gets the value of the any property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link org.w3c.dom.Element } {@link Object }
@@ -86,6 +94,8 @@ public class EndpointType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 Binding 绑定 URI 属性的值。
+     *
      * Gets the value of the binding property.
      *
      * @return possible object is {@link URI }
@@ -95,6 +105,8 @@ public class EndpointType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 Location 端点 URI 属性的值。
+     *
      * Gets the value of the location property.
      *
      * @return possible object is {@link URI }
@@ -104,6 +116,8 @@ public class EndpointType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 ResponseLocation 响应 URI 属性的值。
+     *
      * Gets the value of the responseLocation property.
      *
      * @return possible object is {@link URI }
@@ -113,6 +127,8 @@ public class EndpointType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 ResponseLocation 响应 URI 属性的值。
+     *
      * Sets the value of the responseLocation property.
      *
      * @param value allowed object is {@link URI }

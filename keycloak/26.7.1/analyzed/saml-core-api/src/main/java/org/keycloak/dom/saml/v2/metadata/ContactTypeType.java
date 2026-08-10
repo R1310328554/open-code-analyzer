@@ -19,6 +19,8 @@ package org.keycloak.dom.saml.v2.metadata;
 /**
  * <p>
  * Java class for ContactTypeType.
+ * SAML 2.0 联系人角色类型：technical、support、administrative 等枚举值。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -44,10 +46,12 @@ public enum ContactTypeType {
         value = v;
     }
 
+    /** 返回枚举对应的 XML 字符串值。 */
     public String value() {
         return value;
     }
 
+    /** 从 XML 字符串解析为 {@link ContactTypeType} 枚举常量。 */
     public static ContactTypeType fromValue(String v) {
         for (ContactTypeType c : ContactTypeType.values()) {
             if (c.value.equals(v)) {

@@ -23,6 +23,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for OrganizationType complex type.
+ * SAML 2.0 组织信息：多语言组织名称、显示名与 URL。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -54,6 +56,8 @@ public class OrganizationType extends TypeWithOtherAttributes {
     protected List<LocalizedURIType> organizationURL = new ArrayList<>();
 
     /**
+     * 添加本地化组织名称。
+     *
      * Add an organization name
      *
      * @param name
@@ -63,6 +67,8 @@ public class OrganizationType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 添加本地化组织显示名。
+     *
      * Add organization display name
      *
      * @param name
@@ -72,6 +78,8 @@ public class OrganizationType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 添加本地化组织 URL。
+     *
      * Add organization url
      *
      * @param uri
@@ -81,6 +89,8 @@ public class OrganizationType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 移除本地化组织名称。
+     *
      * remove an organization name
      *
      * @param name
@@ -90,6 +100,8 @@ public class OrganizationType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 移除本地化组织显示名。
+     *
      * remove organization display name
      *
      * @param name
@@ -99,6 +111,8 @@ public class OrganizationType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 移除本地化组织 URL。
+     *
      * remove organization url
      *
      * @param uri
@@ -108,6 +122,8 @@ public class OrganizationType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 扩展 属性的值。
+     *
      * Gets the value of the extensions property.
      *
      * @return possible object is {@link ExtensionsType }
@@ -117,6 +133,8 @@ public class OrganizationType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 扩展 属性的值。
+     *
      * Sets the value of the extensions property.
      *
      * @param value allowed object is {@link ExtensionsType }
@@ -125,7 +143,8 @@ public class OrganizationType extends TypeWithOtherAttributes {
         this.extensions = value;
     }
 
-    /**
+    /** 获取只读本地化组织名称列表。
+     *
      * Gets the value of the organizationName property.
      *
      * <p>
@@ -135,7 +154,8 @@ public class OrganizationType extends TypeWithOtherAttributes {
         return Collections.unmodifiableList(this.organizationName);
     }
 
-    /**
+    /** 获取只读本地化组织显示名列表。
+     *
      * Gets the value of the organizationDisplayName property.
      *
      * <p>
@@ -146,6 +166,8 @@ public class OrganizationType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取只读本地化组织 URL 列表。
+     *
      * Gets the value of the organizationURL property.
      */
     public List<LocalizedURIType> getOrganizationURL() {

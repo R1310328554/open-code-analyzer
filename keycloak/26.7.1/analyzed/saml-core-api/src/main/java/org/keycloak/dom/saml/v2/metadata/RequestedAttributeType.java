@@ -21,6 +21,8 @@ import org.keycloak.dom.saml.v2.assertion.AttributeType;
 /**
  * <p>
  * Java class for RequestedAttributeType complex type.
+ * SAML 2.0 请求属性：SP 向 IdP 声明所需属性及是否必填。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -37,6 +39,7 @@ import org.keycloak.dom.saml.v2.assertion.AttributeType;
  */
 public class RequestedAttributeType extends AttributeType {
 
+    /** 以属性名构造请求属性。 */
     public RequestedAttributeType(String name) {
         super(name);
     }
@@ -44,6 +47,8 @@ public class RequestedAttributeType extends AttributeType {
     protected Boolean isRequired = Boolean.FALSE;
 
     /**
+     * 获取 是否必填 属性的值。
+     *
      * Gets the value of the isRequired property.
      *
      * @return possible object is {@link Boolean }
@@ -53,6 +58,8 @@ public class RequestedAttributeType extends AttributeType {
     }
 
     /**
+     * 设置 是否必填 属性的值。
+     *
      * Sets the value of the isRequired property.
      *
      * @param value allowed object is {@link Boolean }

@@ -19,6 +19,8 @@ package org.keycloak.dom.saml.v2.metadata;
 /**
  * <p>
  * Java class for KeyTypes.
+ * SAML 2.0 密钥用途类型：encryption（加密）或 signing（签名）。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -41,10 +43,12 @@ public enum KeyTypes {
         value = v;
     }
 
+    /** 返回枚举对应的 XML 字符串值。 */
     public String value() {
         return value;
     }
 
+    /** 从 XML 字符串解析为 {@link KeyTypes} 枚举常量。 */
     public static KeyTypes fromValue(String v) {
         for (KeyTypes c : KeyTypes.values()) {
             if (c.value.equals(v)) {

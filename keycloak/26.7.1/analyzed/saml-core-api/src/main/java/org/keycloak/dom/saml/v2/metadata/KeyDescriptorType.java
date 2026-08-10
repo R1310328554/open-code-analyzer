@@ -27,6 +27,8 @@ import org.w3c.dom.Element;
 /**
  * <p>
  * Java class for KeyDescriptorType complex type.
+ * SAML 2.0 密钥描述符：声明签名或加密用途的 KeyInfo 及加密方法。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -55,6 +57,8 @@ public class KeyDescriptorType {
     protected KeyTypes use;
 
     /**
+     * 获取 KeyInfo 密钥信息 属性的值。
+     *
      * Gets the value of the keyInfo property.
      *
      * @return possible object is {@link org.keycloak.dom.xmlsec.w3.xmldsig.KeyInfoType }
@@ -64,6 +68,8 @@ public class KeyDescriptorType {
     }
 
     /**
+     * 设置 KeyInfo 密钥信息 属性的值。
+     *
      * Sets the value of the keyInfo property.
      *
      * @param value allowed object is {@link org.keycloak.dom.xmlsec.w3.xmldsig.KeyInfoType }
@@ -73,6 +79,8 @@ public class KeyDescriptorType {
     }
 
     /**
+     * 添加加密方法。
+     *
      * Add encryption method type
      *
      * @param e
@@ -82,6 +90,8 @@ public class KeyDescriptorType {
     }
 
     /**
+     * 移除加密方法。
+     *
      * Remove encryption method type
      *
      * @param e
@@ -90,7 +100,8 @@ public class KeyDescriptorType {
         this.encryptionMethod.remove(e);
     }
 
-    /**
+    /** 获取只读加密方法列表。
+     *
      * Gets the value of the encryptionMethod property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link EncryptionMethodType }
@@ -100,6 +111,8 @@ public class KeyDescriptorType {
     }
 
     /**
+     * 获取 密钥用途 属性的值。
+     *
      * Gets the value of the use property.
      *
      * @return possible object is {@link KeyTypes }
@@ -109,6 +122,8 @@ public class KeyDescriptorType {
     }
 
     /**
+     * 设置 密钥用途 属性的值。
+     *
      * Sets the value of the use property.
      *
      * @param value allowed object is {@link KeyTypes }

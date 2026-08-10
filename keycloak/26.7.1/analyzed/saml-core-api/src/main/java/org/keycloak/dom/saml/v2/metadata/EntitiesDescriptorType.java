@@ -27,6 +27,8 @@ import org.w3c.dom.Element;
 /**
  * <p>
  * Java class for EntitiesDescriptorType complex type.
+ * SAML 2.0 实体集合描述符：聚合多个 EntityDescriptor 或嵌套 EntitiesDescriptor。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -69,6 +71,8 @@ public class EntitiesDescriptorType {
     protected String name;
 
     /**
+     * 获取 XML 数字签名 属性的值。
+     *
      * Gets the value of the signature property.
      *
      * @return possible object is {@link Element }
@@ -78,6 +82,8 @@ public class EntitiesDescriptorType {
     }
 
     /**
+     * 设置 XML 数字签名 属性的值。
+     *
      * Sets the value of the signature property.
      *
      * @param value allowed object is {@link Element }
@@ -87,6 +93,8 @@ public class EntitiesDescriptorType {
     }
 
     /**
+     * 获取 扩展 属性的值。
+     *
      * Gets the value of the extensions property.
      *
      * @return possible object is {@link ExtensionsType }
@@ -96,6 +104,8 @@ public class EntitiesDescriptorType {
     }
 
     /**
+     * 设置 扩展 属性的值。
+     *
      * Sets the value of the extensions property.
      *
      * @param value allowed object is {@link ExtensionsType }
@@ -105,6 +115,8 @@ public class EntitiesDescriptorType {
     }
 
     /**
+     * 添加实体描述符。
+     *
      * Add an entity descriptor
      *
      * @param obj
@@ -114,6 +126,8 @@ public class EntitiesDescriptorType {
     }
 
     /**
+     * 移除实体描述符。
+     *
      * Remove an entity descriptor
      *
      * @param obj
@@ -122,7 +136,8 @@ public class EntitiesDescriptorType {
         this.entityDescriptor.remove(obj);
     }
 
-    /**
+    /** 获取只读实体描述符或嵌套集合列表。
+     *
      * Gets the value of the entityDescriptorOrEntitiesDescriptor property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link EntitiesDescriptorType } {@link
@@ -133,6 +148,8 @@ public class EntitiesDescriptorType {
     }
 
     /**
+     * 获取 有效期截止时间 属性的值。
+     *
      * Gets the value of the validUntil property.
      *
      * @return possible object is {@link XMLGregorianCalendar }
@@ -142,6 +159,8 @@ public class EntitiesDescriptorType {
     }
 
     /**
+     * 设置 有效期截止时间 属性的值。
+     *
      * Sets the value of the validUntil property.
      *
      * @param value allowed object is {@link XMLGregorianCalendar }
@@ -151,6 +170,8 @@ public class EntitiesDescriptorType {
     }
 
     /**
+     * 获取 缓存时长 属性的值。
+     *
      * Gets the value of the cacheDuration property.
      *
      * @return possible object is {@link Duration }
@@ -160,6 +181,8 @@ public class EntitiesDescriptorType {
     }
 
     /**
+     * 设置 缓存时长 属性的值。
+     *
      * Sets the value of the cacheDuration property.
      *
      * @param value allowed object is {@link Duration }
@@ -169,6 +192,8 @@ public class EntitiesDescriptorType {
     }
 
     /**
+     * 获取 文档 ID 属性的值。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -178,6 +203,8 @@ public class EntitiesDescriptorType {
     }
 
     /**
+     * 设置 文档 ID 属性的值。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }
@@ -187,6 +214,8 @@ public class EntitiesDescriptorType {
     }
 
     /**
+     * 获取 集合名称 属性的值。
+     *
      * Gets the value of the name property.
      *
      * @return possible object is {@link String }
@@ -196,6 +225,8 @@ public class EntitiesDescriptorType {
     }
 
     /**
+     * 设置 集合名称 属性的值。
+     *
      * Sets the value of the name property.
      *
      * @param value allowed object is {@link String }

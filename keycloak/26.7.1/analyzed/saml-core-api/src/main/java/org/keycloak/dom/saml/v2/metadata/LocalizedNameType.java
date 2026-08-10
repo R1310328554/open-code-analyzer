@@ -19,6 +19,8 @@ package org.keycloak.dom.saml.v2.metadata;
 /**
  * <p>
  * Java class for localizedNameType complex type.
+ * SAML 2.0 本地化名称：带 xml:lang 属性的字符串值。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -39,11 +41,14 @@ public class LocalizedNameType {
 
     protected String lang;
 
+    /** 以语言标签构造本地化名称。 */
     public LocalizedNameType(String lang) {
         this.lang = lang;
     }
 
     /**
+     * 获取 本地化字符串值 属性的值。
+     *
      * Gets the value of the value property.
      *
      * @return possible object is {@link String }
@@ -53,6 +58,8 @@ public class LocalizedNameType {
     }
 
     /**
+     * 设置 本地化字符串值 属性的值。
+     *
      * Sets the value of the value property.
      *
      * @param value allowed object is {@link String }
@@ -62,6 +69,8 @@ public class LocalizedNameType {
     }
 
     /**
+     * 获取 xml:lang 语言标签 属性的值。
+     *
      * Gets the value of the lang property.
      *
      * @return possible object is {@link String }

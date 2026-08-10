@@ -25,6 +25,8 @@ import org.keycloak.dom.saml.v2.assertion.AttributeType;
 /**
  * <p>
  * Java class for IDPSSODescriptorType complex type.
+ * SAML 2.0 IdP SSO 描述符：单点登录、NameID 映射及断言 ID 请求服务端点。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -63,11 +65,14 @@ public class IDPSSODescriptorType extends SSODescriptorType {
 
     protected Boolean wantAuthnRequestsSigned = false;
 
+    /** 以协议支持列表构造 IdP SSO 描述符。 */
     public IDPSSODescriptorType(List<String> protocolSupport) {
         super(protocolSupport);
     }
 
     /**
+     * 添加单点登录服务端点。
+     *
      * Add a SSO service
      *
      * @param endpt
@@ -77,6 +82,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
+     * 添加 NameID 映射服务端点。
+     *
      * Add name id mapping service
      *
      * @param endpt
@@ -86,6 +93,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
+     * 添加断言 ID 请求服务端点。
+     *
      * Add assertion id request service
      *
      * @param endpt
@@ -95,6 +104,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
+     * 添加属性配置文件 URI。
+     *
      * Add attribute profile
      *
      * @param str
@@ -104,6 +115,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
+     * 添加 IdP 支持的属性。
+     *
      * Add attribute
      *
      * @param att
@@ -113,6 +126,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
+     * 移除单点登录服务端点。
+     *
      * Remove a SSO service
      *
      * @param endpt
@@ -122,6 +137,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
+     * 移除 NameID 映射服务端点。
+     *
      * remove name id mapping service
      *
      * @param endpt
@@ -131,6 +148,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
+     * 移除断言 ID 请求服务端点。
+     *
      * remove assertion id request service
      *
      * @param endpt
@@ -139,7 +158,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
         this.assertionIDRequestService.remove(endpt);
     }
 
-    /**
+    /** 移除属性配置文件 URI。
+     *
      * Add attribute profile
      *
      * @param str
@@ -148,7 +168,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
         this.attributeProfile.remove(str);
     }
 
-    /**
+    /** 移除 IdP 支持的属性。
+     *
      * Add attribute
      *
      * @param att
@@ -157,7 +178,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
         this.attribute.remove(att);
     }
 
-    /**
+    /** 获取只读单点登录服务端点列表。
+     *
      * Gets the value of the singleSignOnService property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link EndpointType }
@@ -166,7 +188,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
         return Collections.unmodifiableList(this.singleSignOnService);
     }
 
-    /**
+    /** 获取只读 NameID 映射服务端点列表。
+     *
      * Gets the value of the nameIDMappingService property.
      *
      * <p>
@@ -176,7 +199,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
         return Collections.unmodifiableList(this.nameIDMappingService);
     }
 
-    /**
+    /** 获取只读断言 ID 请求服务端点列表。
+     *
      * Gets the value of the assertionIDRequestService property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link EndpointType }
@@ -185,7 +209,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
         return Collections.unmodifiableList(this.assertionIDRequestService);
     }
 
-    /**
+    /** 获取只读属性配置文件 URI 列表。
+     *
      * Gets the value of the attributeProfile property.
      *
      * <p>
@@ -202,7 +227,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
         return Collections.unmodifiableList(this.attributeProfile);
     }
 
-    /**
+    /** 获取只读 IdP 属性列表。
+     *
      * Gets the value of the attribute property.
      *
      * <p>
@@ -213,6 +239,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
+     * 获取 是否要求 AuthnRequest 签名 属性的值。
+     *
      * Gets the value of the wantAuthnRequestsSigned property.
      *
      * @return possible object is {@link Boolean }
@@ -222,6 +250,8 @@ public class IDPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
+     * 设置 是否要求 AuthnRequest 签名 属性的值。
+     *
      * Sets the value of the wantAuthnRequestsSigned property.
      *
      * @param value allowed object is {@link Boolean }

@@ -28,6 +28,8 @@ import org.w3c.dom.Element;
 /**
  * <p>
  * Java class for ExtensionsType complex type.
+ * SAML 2.0 扩展容器：承载任意命名空间的扩展元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -49,6 +51,8 @@ public class ExtensionsType {
     protected List<Object> any = new ArrayList<>();
 
     /**
+     * 已废弃，请使用 getAny。
+     *
      * Function is obsoleted with getAny
      * @return
      */
@@ -58,6 +62,8 @@ public class ExtensionsType {
     }
 
     /**
+     * 已废弃，请使用 addExtension。
+     *
      * Function is obsoleted with addExtension
      * @return
      */
@@ -68,6 +74,8 @@ public class ExtensionsType {
     }
 
     /**
+     * 添加扩展元素。
+     *
      * Add an extension
      *
      * @param extension
@@ -77,6 +85,8 @@ public class ExtensionsType {
     }
 
     /**
+     * 移除扩展元素。
+     *
      * Remove an extension
      *
      * @param extension
@@ -86,12 +96,15 @@ public class ExtensionsType {
     }
 
     /**
+     * 获取只读扩展元素列表。
+     *
      * Gets the value of the any property.
      */
     public List<Object> getAny() {
         return Collections.unmodifiableList(this.any);
     }
 
+    /** 从扩展列表中筛选 DOM Element 元素。 */
     public List<Element> getDomElements() {
         List<Element> output = new ArrayList<Element>();
 
@@ -104,6 +117,7 @@ public class ExtensionsType {
         return Collections.unmodifiableList(output);
     }
 
+    /** 查找并返回 EntityAttributes 扩展（若存在）。 */
     public EntityAttributes getEntityAttributes() {
         for (Object o : this.any) {
             if (o instanceof EntityAttributes) {
@@ -113,6 +127,7 @@ public class ExtensionsType {
         return null;
     }
 
+    /** 查找并返回 UIInfo 扩展（若存在）。 */
     public UIInfoType getUIInfo() {
         for (Object o : this.any) {
             if (o instanceof UIInfoType) {

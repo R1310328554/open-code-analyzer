@@ -21,6 +21,8 @@ import java.net.URI;
 /**
  * <p>
  * Java class for localizedURIType complex type.
+ * SAML 2.0 本地化 URI：带 xml:lang 属性的 URI 值。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -41,11 +43,14 @@ public class LocalizedURIType {
 
     protected String lang;
 
+    /** 以语言标签构造本地化 URI。 */
     public LocalizedURIType(String lang) {
         this.lang = lang;
     }
 
     /**
+     * 获取 本地化 URI 值 属性的值。
+     *
      * Gets the value of the value property.
      *
      * @return possible object is {@link String }
@@ -55,6 +60,8 @@ public class LocalizedURIType {
     }
 
     /**
+     * 设置 本地化 URI 值 属性的值。
+     *
      * Sets the value of the value property.
      *
      * @param value allowed object is {@link String }
@@ -64,6 +71,8 @@ public class LocalizedURIType {
     }
 
     /**
+     * 获取 xml:lang 语言标签 属性的值。
+     *
      * Gets the value of the lang property.
      *
      * @return possible object is {@link String }

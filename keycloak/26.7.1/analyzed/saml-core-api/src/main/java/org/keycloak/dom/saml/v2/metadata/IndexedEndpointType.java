@@ -21,6 +21,8 @@ import java.net.URI;
 /**
  * <p>
  * Java class for IndexedEndpointType complex type.
+ * SAML 2.0 带索引端点：在 EndpointType 基础上增加 index 与 isDefault 属性。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -42,11 +44,14 @@ public class IndexedEndpointType extends EndpointType {
 
     protected Boolean isDefault;
 
+    /** 以 Binding 与 Location 构造带索引端点。 */
     public IndexedEndpointType(URI binding, URI location) {
         super(binding, location);
     }
 
     /**
+     * 获取端点索引号。
+     *
      * Gets the value of the index property.
      */
     public int getIndex() {
@@ -54,6 +59,8 @@ public class IndexedEndpointType extends EndpointType {
     }
 
     /**
+     * 设置端点索引号。
+     *
      * Sets the value of the index property.
      */
     public void setIndex(int value) {
@@ -61,6 +68,8 @@ public class IndexedEndpointType extends EndpointType {
     }
 
     /**
+     * 获取 默认端点标志 属性的值。
+     *
      * Gets the value of the isDefault property.
      *
      * @return possible object is {@link Boolean }
@@ -70,6 +79,8 @@ public class IndexedEndpointType extends EndpointType {
     }
 
     /**
+     * 设置 默认端点标志 属性的值。
+     *
      * Sets the value of the isDefault property.
      *
      * @param value allowed object is {@link Boolean }

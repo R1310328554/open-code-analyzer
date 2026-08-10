@@ -27,6 +27,8 @@ import org.w3c.dom.Element;
 /**
  * <p>
  * Java class for EntityDescriptorType complex type.
+ * SAML 2.0 实体描述符：描述单个 SAML 实体的角色、组织与联系人元数据。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -65,6 +67,7 @@ import org.w3c.dom.Element;
  */
 public class EntityDescriptorType extends TypeWithOtherAttributes {
 
+    /** 实体描述符选择组：角色描述符列表或隶属描述符。 */
     public static class EDTChoiceType {
 
         private List<EDTDescriptorChoiceType> descriptors = new ArrayList<>();
@@ -94,6 +97,7 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
         }
     }
 
+    /** 角色描述符互斥选择：IdP/SP/Authn/Attribute/PDP 等描述符之一。 */
     public static class EDTDescriptorChoiceType {
 
         private RoleDescriptorType roleDescriptor;
@@ -176,11 +180,14 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
 
     protected String id;
 
+    /** 以 entityID 构造实体描述符。 */
     public EntityDescriptorType(String entityID) {
         this.entityID = entityID;
     }
 
     /**
+     * 获取 XML 数字签名 属性的值。
+     *
      * Gets the value of the signature property.
      *
      * @return possible object is {@link Element }
@@ -190,6 +197,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 XML 数字签名 属性的值。
+     *
      * Sets the value of the signature property.
      *
      * @param value allowed object is {@link Element }
@@ -199,6 +208,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 扩展 属性的值。
+     *
      * Gets the value of the extensions property.
      *
      * @return possible object is {@link ExtensionsType }
@@ -208,6 +219,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 扩展 属性的值。
+     *
      * Sets the value of the extensions property.
      *
      * @param value allowed object is {@link ExtensionsType }
@@ -217,6 +230,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取只读选择组列表。
+     *
      * Get a read only list of choice types
      *
      * @return
@@ -226,6 +241,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 添加选择组。
+     *
      * Add a choice type
      *
      * @param choiceType
@@ -235,6 +252,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 移除选择组。
+     *
      * Remove a choice type
      *
      * @param choiceType
@@ -244,6 +263,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 组织信息 属性的值。
+     *
      * Gets the value of the organization property.
      *
      * @return possible object is {@link OrganizationType }
@@ -253,6 +274,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 组织信息 属性的值。
+     *
      * Sets the value of the organization property.
      *
      * @param value allowed object is {@link OrganizationType }
@@ -262,6 +285,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 添加 {@link ContactType} 联系人。
+     *
      * Add a {@link ContactType} contact person
      *
      * @param ct
@@ -270,11 +295,14 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
         contactPerson.add(ct);
     }
 
+    /** 移除 {@link ContactType} 联系人。 */
     public void removeContactPerson(ContactType ct) {
         contactPerson.remove(ct);
     }
 
     /**
+     * 获取 联系人 属性的值。
+     *
      * Gets the value of the contactPerson property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link ContactType }
@@ -284,6 +312,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 添加 {@link AdditionalMetadataLocationType} 附加元数据位置。
+     *
      * Add a {@link AdditionalMetadataLocationType}
      *
      * @param amld
@@ -293,6 +323,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 移除 {@link AdditionalMetadataLocationType} 附加元数据位置。
+     *
      * Remove a {@link AdditionalMetadataLocationType}
      *
      * @param amld
@@ -302,6 +334,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 附加元数据位置 属性的值。
+     *
      * Gets the value of the additionalMetadataLocation property.
      *
      * <p>
@@ -326,6 +360,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 实体 ID 属性的值。
+     *
      * Gets the value of the entityID property.
      *
      * @return possible object is {@link String }
@@ -335,6 +371,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 有效期截止时间 属性的值。
+     *
      * Gets the value of the validUntil property.
      *
      * @return possible object is {@link XMLGregorianCalendar }
@@ -344,6 +382,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 有效期截止时间 属性的值。
+     *
      * Sets the value of the validUntil property.
      *
      * @param value allowed object is {@link XMLGregorianCalendar }
@@ -353,6 +393,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 缓存时长 属性的值。
+     *
      * Gets the value of the cacheDuration property.
      *
      * @return possible object is {@link Duration }
@@ -362,6 +404,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 缓存时长 属性的值。
+     *
      * Sets the value of the cacheDuration property.
      *
      * @param value allowed object is {@link Duration }
@@ -371,6 +415,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 文档 ID 属性的值。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -380,6 +426,8 @@ public class EntityDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 文档 ID 属性的值。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }

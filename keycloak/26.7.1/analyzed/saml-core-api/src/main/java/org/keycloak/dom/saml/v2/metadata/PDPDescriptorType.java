@@ -23,6 +23,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for PDPDescriptorType complex type.
+ * SAML 2.0 PDP 描述符：策略决策点授权与断言 ID 请求服务端点。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -50,11 +52,14 @@ public class PDPDescriptorType extends RoleDescriptorType {
 
     protected List<String> nameIDFormat = new ArrayList<>();
 
+    /** 以协议支持列表构造 PDP 描述符。 */
     public PDPDescriptorType(List<String> protocolSupport) {
         super(protocolSupport);
     }
 
     /**
+     * 添加授权决策服务端点。
+     *
      * Add authorization service
      *
      * @param endpt
@@ -64,6 +69,8 @@ public class PDPDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 添加断言 ID 请求服务端点。
+     *
      * Add assertion id request service
      *
      * @param endpt
@@ -73,6 +80,8 @@ public class PDPDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 添加 NameID 格式 URI。
+     *
      * Add Name ID Format
      *
      * @param str
@@ -82,6 +91,8 @@ public class PDPDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 移除授权决策服务端点。
+     *
      * remove authorization service
      *
      * @param endpt
@@ -91,6 +102,8 @@ public class PDPDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 移除断言 ID 请求服务端点。
+     *
      * remove assertion id request service
      *
      * @param endpt
@@ -100,6 +113,8 @@ public class PDPDescriptorType extends RoleDescriptorType {
     }
 
     /**
+     * 移除 NameID 格式 URI。
+     *
      * remove Name ID Format
      *
      * @param str
@@ -108,7 +123,8 @@ public class PDPDescriptorType extends RoleDescriptorType {
         this.nameIDFormat.remove(str);
     }
 
-    /**
+    /** 获取只读授权决策服务端点列表。
+     *
      * Gets the value of the authzService property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link EndpointType }
@@ -117,7 +133,8 @@ public class PDPDescriptorType extends RoleDescriptorType {
         return Collections.unmodifiableList(this.authzService);
     }
 
-    /**
+    /** 获取只读断言 ID 请求服务端点列表。
+     *
      * Gets the value of the assertionIDRequestService property.
      *
      * <p>
@@ -127,7 +144,8 @@ public class PDPDescriptorType extends RoleDescriptorType {
         return Collections.unmodifiableList(this.assertionIDRequestService);
     }
 
-    /**
+    /** 获取只读 NameID 格式 URI 列表。
+     *
      * Gets the value of the nameIDFormat property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link String }

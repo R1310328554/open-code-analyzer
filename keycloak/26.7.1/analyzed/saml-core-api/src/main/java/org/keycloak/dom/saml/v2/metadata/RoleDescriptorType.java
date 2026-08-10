@@ -27,6 +27,8 @@ import org.w3c.dom.Element;
 /**
  * <p>
  * Java class for RoleDescriptorType complex type.
+ * SAML 2.0 角色描述符抽象基类：密钥、组织、联系人及协议支持等公共元数据。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -75,11 +77,14 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
 
     protected String errorURL;
 
+    /** 以协议支持列表构造角色描述符。 */
     public RoleDescriptorType(List<String> protocolSupport) {
         protocolSupportEnumeration.addAll(protocolSupport);
     }
 
     /**
+     * 添加密钥描述符。
+     *
      * Add key descriptor
      *
      * @param keyD
@@ -89,6 +94,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 添加联系人。
+     *
      * Add contact
      *
      * @param contact
@@ -98,6 +105,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 移除密钥描述符。
+     *
      * remove key descriptor
      *
      * @param keyD
@@ -107,6 +116,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 移除联系人。
+     *
      * remove contact
      *
      * @param contact
@@ -116,6 +127,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 XML 数字签名 属性的值。
+     *
      * Gets the value of the signature property.
      *
      * @return possible object is {@link org.keycloak.dom.xmlsec.w3.xmldsig.SignatureType }
@@ -125,6 +138,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 XML 数字签名 属性的值。
+     *
      * Sets the value of the signature property.
      *
      * @param value allowed object is {@link org.keycloak.dom.xmlsec.w3.xmldsig.SignatureType }
@@ -134,6 +149,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 扩展 属性的值。
+     *
      * Gets the value of the extensions property.
      *
      * @return possible object is {@link ExtensionsType }
@@ -143,6 +160,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 扩展 属性的值。
+     *
      * Sets the value of the extensions property.
      *
      * @param value allowed object is {@link ExtensionsType }
@@ -151,7 +170,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
         this.extensions = value;
     }
 
-    /**
+    /** 获取只读密钥描述符列表。
+     *
      * Gets the value of the keyDescriptor property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link KeyDescriptorType }
@@ -161,6 +181,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 组织信息 属性的值。
+     *
      * Gets the value of the organization property.
      *
      * @return possible object is {@link OrganizationType }
@@ -170,6 +192,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 组织信息 属性的值。
+     *
      * Sets the value of the organization property.
      *
      * @param value allowed object is {@link OrganizationType }
@@ -178,7 +202,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
         this.organization = value;
     }
 
-    /**
+    /** 获取只读联系人列表。
+     *
      * Gets the value of the contactPerson property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link ContactType }
@@ -188,6 +213,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 文档 ID 属性的值。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -197,6 +224,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 文档 ID 属性的值。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }
@@ -206,6 +235,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 有效期截止时间 属性的值。
+     *
      * Gets the value of the validUntil property.
      *
      * @return possible object is {@link XMLGregorianCalendar }
@@ -215,6 +246,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 有效期截止时间 属性的值。
+     *
      * Sets the value of the validUntil property.
      *
      * @param value allowed object is {@link XMLGregorianCalendar }
@@ -224,6 +257,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 缓存时长 属性的值。
+     *
      * Gets the value of the cacheDuration property.
      *
      * @return possible object is {@link Duration }
@@ -233,6 +268,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 缓存时长 属性的值。
+     *
      * Sets the value of the cacheDuration property.
      *
      * @param value allowed object is {@link Duration }
@@ -241,7 +278,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
         this.cacheDuration = value;
     }
 
-    /**
+    /** 获取只读协议支持 URI 列表。
+     *
      * Gets the value of the protocolSupportEnumeration property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link String }
@@ -251,6 +289,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 获取 错误页面 URL 属性的值。
+     *
      * Gets the value of the errorURL property.
      *
      * @return possible object is {@link String }
@@ -260,6 +300,8 @@ public abstract class RoleDescriptorType extends TypeWithOtherAttributes {
     }
 
     /**
+     * 设置 错误页面 URL 属性的值。
+     *
      * Sets the value of the errorURL property.
      *
      * @param value allowed object is {@link String }
