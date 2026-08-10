@@ -1,3 +1,5 @@
+// use-list-models-picker.ts — 「列出模型」选择器：拉取目录、多选与编辑模型元数据。
+
 import { DynamicFormRef } from '@/components/dynamic-form';
 import { useListProviderModels } from '@/hooks/use-llm-request';
 import { IModelInfo, IProviderModelItem } from '@/interfaces/request/llm';
@@ -11,9 +13,7 @@ import {
 } from 'react';
 import type { ProviderConfig } from '../types';
 
-// Derive is_tools from a model descriptor's `features` array. A model is
-// considered tool-capable if it advertises either `tool_call` or
-// `function_call`. Returns `undefined` when the model has no features info.
+// 从模型 features 推断是否支持工具调用（is_tools）；无 features 时返回 undefined。
 const getIsToolsFromFeatures = (
   features: IProviderModelItem['features'],
 ): boolean | undefined => {
@@ -21,9 +21,7 @@ const getIsToolsFromFeatures = (
   return features.includes('is_tools');
 };
 
-// Map a fetched list-model item to the request-side IModelInfo shape.
-// Per-model extras (such as is_tools) live under the `extra` object so the
-// addProviderInstance API receives them in the shape the backend expects.
+// 将接口返回的模型项映射为 IModelInfo；is_tools 等写入 extra 供后端消费。
 const toIModelInfo = (item: IProviderModelItem): IModelInfo => {
   const is_tools = getIsToolsFromFeatures(item.features);
   return {
@@ -34,9 +32,7 @@ const toIModelInfo = (item: IProviderModelItem): IModelInfo => {
   };
 };
 
-// Compare the model_type sets from an initial IModelInfo entry and a
-// freshly fetched list item. Tolerates string-vs-array differences so a
-// legacy single-value `model_type` still matches the list's array shape.
+// 比较初始 model_info 与拉取列表项的 model_type 集合（兼容 string / array）。
 const modelTypesMatch = (
   initial: string | string[] | undefined,
   fetched: string[] | undefined,
@@ -60,16 +56,13 @@ interface UseListModelsPickerParams {
 }
 
 /**
- * Owns all state for the "List Models" picker:
- * - fetched model catalog (`models`) and loading flag
- * - currently checked items (`selectedModelItems`)
- * - derived `modelInfoList` payload used at verify/submit time
- * - `allSelected` flag and the all/none/individual toggle handlers
- * - the API fetch (with edit-mode pre-check seeding) and modal-reset effect
+ * 「列出模型」选择器的全部状态与副作用：
+ * - 模型目录 models、加载态、已选 selectedModelItems
+ * - 派生 modelInfoList（verify/submit 使用）
+ * - 全选/取消与单项切换（含 Radix Checkbox 双触发重入保护）
+ * - 展开时拉取列表；编辑模式下按 initial model_info 预勾选
  *
- * The picker lives entirely in component state — no form fields are touched.
- * A reentrancy ref guards against Radix Checkbox's double-click dispatch
- * (CheckboxBubbleInput re-fires onClick inside a form).
+ * 选择器不写入动态表单字段，关闭弹窗时重置。
  */
 export const useListModelsPicker = ({
   visible,
@@ -294,7 +287,7 @@ export const useListModelsPicker = ({
     [],
   );
 
-  // --- Model editing ---
+  // --- 单条模型元数据编辑（名称/类型等）---
   const [editingModel, setEditingModel] = useState<IProviderModelItem | null>(
     null,
   );

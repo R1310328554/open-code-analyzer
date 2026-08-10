@@ -1,3 +1,5 @@
+// use-provider-modal-actions.ts — 提供商弹窗的「验证连接」与「提交保存」处理逻辑。
+
 import { DynamicFormRef } from '@/components/dynamic-form';
 import message from '@/components/ui/message';
 import { useTranslate } from '@/hooks/common-hooks';
@@ -19,11 +21,7 @@ type ActionParams = {
   initialValues?: Record<string, any>;
   modelInfoList: IModelInfo[];
   formRef: RefObject<DynamicFormRef>;
-  /**
-   * URL → regionKey map for each inputSelect field (built in
-   * `useProviderFields`). Used to derive the `region` submit field
-   * from the user's currently selected base URL.
-   */
+  /** inputSelect 字段的 URL → regionKey 映射，用于从当前 base URL 推导 region。 */
   baseUrlRegionMaps?: Record<string, Map<string, string>>;
   onOk: ProviderModalProps['onOk'];
   onVerify: ProviderModalProps['onVerify'];
@@ -31,11 +29,8 @@ type ActionParams = {
 };
 
 /**
- * Look up the `region` key (e.g. 'default', 'intl', 'cn') for the
- * currently selected base URL of any inputSelect field. Returns
- * `undefined` when no inputSelect field has a value, or when that
- * value does not match any option's URL — in those cases the caller
- * should leave `region` unset.
+ * 根据当前选中的 base URL 在 baseUrlRegionMaps 中查找 region 键
+ *（如 default / intl / cn）；无匹配则返回 undefined，提交时不写 region。
  */
 const resolveRegionFromValues = (
   values: Record<string, any> | undefined,
@@ -54,21 +49,13 @@ const resolveRegionFromValues = (
 };
 
 /**
- * Build the two outbound handlers for the Provider modal:
+ * 构造提供商弹窗的两个出站处理器：
  *
- * - `handleVerify` reads current form values, runs them through the
- *   provider's `verifyTransform`, and forwards the result to `onVerify`.
- *   Returns a `VerifyResult` (the VerifyButton consumes the shape).
+ * - handleVerify：读表单 → verifyTransform → onVerify，返回 VerifyResult。
+ * - handleSubmit：viewMode 仅通过 onViewModeOk 更新模型；普通模式经
+ *   submitTransform 后调用 onOk，并补全 llm_factory。
  *
- * - `handleSubmit` has two paths:
- *   1. viewMode → invoke `onViewModeOk` with either the picker's selected
- *      models (LIST_MODEL_PROVIDERS) or the editable form values
- *      (non-LIST_MODEL_PROVIDERS). The instance itself is not re-saved.
- *   2. normal mode → run values through `submitTransform` (when present)
- *      and forward to `onOk`.
- *
- * Both paths inject a `region` field derived from the currently selected
- * base URL whenever the field is an inputSelect (see `baseUrlRegionMaps`).
+ * 两路径均会从 inputSelect 的 base URL 注入 region 字段。
  */
 export const useProviderModalActions = ({
   config,
@@ -121,10 +108,7 @@ export const useProviderModalActions = ({
     async (values?: FieldValues) => {
       if (!values) return;
 
-      // viewMode: only add/update models. The instance itself is not
-      // re-saved because all instance-level fields are disabled. The
-      // parent receives the selected models (or the model-related form
-      // values for non-list-model providers) via `onViewModeOk`.
+      // viewMode：仅增改模型，实例级字段已禁用，由 onViewModeOk 回传选中模型或表单值
       if (viewMode) {
         if (!onViewModeOk) {
           // No viewMode handler provided — nothing to save, just close
@@ -165,11 +149,7 @@ export const useProviderModalActions = ({
       if (region !== undefined) {
         transformed.region = region;
       }
-      // Always include `llm_factory` in the submitted payload. Some
-      // providers' submitTransforms (e.g. GenericApiKeyConfig) omit it,
-      // but the parent uses it to build the request URL
-      // (`/api/v1/providers/${llm_factory}/instances`); without it the
-      // URL becomes `/providers/undefined/instances`.
+      // 确保 payload 含 llm_factory，否则父组件请求 URL 会变成 /providers/undefined/instances
       if (!transformed.llm_factory) {
         transformed.llm_factory = llmFactory;
       }

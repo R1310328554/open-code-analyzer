@@ -1,11 +1,12 @@
+// local-llm-configs.ts — 本地/兼容类 LLM 工厂（Ollama、vLLM 等）的 ProviderConfig 定义。
+
 import { FormFieldType } from '@/components/dynamic-form';
 import { LLMFactory } from '@/constants/llm';
 import type { FieldConfig, ProviderConfig } from '../types';
 import { buildModelInfoFromValues, capitalize } from './utils';
 
 /**
- * Factory configuration for local/compatible factories
- * Used for scenarios after OllamaModal merge
+ * 本地或 OpenAI 兼容类工厂的配置表（OllamaModal 合并后统一由此维护）。
  */
 export const LocalLlmConfigs: Record<string, ProviderConfig> = {
   [LLMFactory.Ollama]: buildLocalConfig(
@@ -154,9 +155,8 @@ export const LocalLlmConfigs: Record<string, ProviderConfig> = {
   // ),
 };
 
-/**
- * Build the default configuration for local factories
- */
+/** 为本地工厂生成标准字段集（实例名、模型类型/名、base_url、api_key 等）。 */
+
 function buildLocalConfig(
   llmFactory: string,
   title: string,
@@ -224,6 +224,7 @@ function buildLocalConfig(
     },
   ];
 
+  // OpenRouter 等需要 provider_order 字段
   if (addProviderOrder) {
     fields.push({
       name: 'provider_order',
@@ -242,6 +243,7 @@ function buildLocalConfig(
     shouldRender: 'modelTypeIncludesChat',
   });
 
+  // 用 customFields 覆盖同名字段并追加额外字段
   const customFieldMap = new Map((customFields ?? []).map((f) => [f.name, f]));
   const mergedFields = fields
     .map((f) => customFieldMap.get(f.name) ?? f)

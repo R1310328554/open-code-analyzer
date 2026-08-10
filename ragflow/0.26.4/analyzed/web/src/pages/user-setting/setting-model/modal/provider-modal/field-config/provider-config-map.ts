@@ -1,15 +1,15 @@
+// provider-config-map.ts — 云厂商/专用 OCR·TTS 等工厂的 ProviderConfig 映射表。
+
 import { FormFieldType } from '@/components/dynamic-form';
 import { LLMFactory } from '@/constants/llm';
 import type { ProviderConfig } from '../types';
 import { buildModelInfoFromValues } from './utils';
 
 /**
- * Factory configuration mapping table
- * key: LLMFactory value
- * value: ProviderConfig
+ * 专用工厂配置映射：key 为 LLMFactory 值，value 为完整 ProviderConfig。
  */
 export const ProviderConfigMap: Record<string, ProviderConfig> = {
-  // ============ Azure OpenAI ============
+  // ============ Azure OpenAI（Azure 部署端点 + api_version）============
   [LLMFactory.AzureOpenAI]: {
     llmFactory: LLMFactory.AzureOpenAI,
     title: 'Azure OpenAI',
@@ -102,7 +102,7 @@ export const ProviderConfigMap: Record<string, ProviderConfig> = {
     }),
   },
 
-  // ============ VolcEngine ============
+  // ============ 火山引擎（Endpoint ID + Ark API Key）============
   [LLMFactory.VolcEngine]: {
     llmFactory: LLMFactory.VolcEngine,
     title: 'VolcEngine',
@@ -180,7 +180,7 @@ export const ProviderConfigMap: Record<string, ProviderConfig> = {
     }),
   },
 
-  // ============ Google Cloud ============
+  // ============ Google Cloud（服务账号 JSON + 项目/区域）============
   [LLMFactory.GoogleCloud]: {
     llmFactory: LLMFactory.GoogleCloud,
     title: 'Google Cloud',
@@ -268,7 +268,7 @@ export const ProviderConfigMap: Record<string, ProviderConfig> = {
     }),
   },
 
-  // ============ Tencent Cloud ============
+  // ============ 腾讯云（语音识别模型与 SID/SK）============
   [LLMFactory.TencentCloud]: {
     llmFactory: LLMFactory.TencentCloud,
     title: 'Tencent Cloud',
@@ -359,7 +359,7 @@ export const ProviderConfigMap: Record<string, ProviderConfig> = {
     }),
   },
 
-  // ============ XunFei Spark ============
+  // ============ 讯飞星火（Chat/TTS 不同凭证字段）============
   [LLMFactory.XunFeiSpark]: {
     llmFactory: LLMFactory.XunFeiSpark,
     title: 'XunFei Spark',
@@ -460,7 +460,7 @@ export const ProviderConfigMap: Record<string, ProviderConfig> = {
     }),
   },
 
-  // ============ Baidu YiYan ============
+  // ============ 百度文心（AK/SK + 多模型类型）============
   [LLMFactory.BaiduYiYan]: {
     llmFactory: LLMFactory.BaiduYiYan,
     title: 'Baidu YiYan',
@@ -540,7 +540,7 @@ export const ProviderConfigMap: Record<string, ProviderConfig> = {
     }),
   },
 
-  // ============ Fish Audio ============
+  // ============ Fish Audio TTS（AK + RefID）============
   [LLMFactory.FishAudio]: {
     llmFactory: LLMFactory.FishAudio,
     title: 'Fish Audio',
@@ -616,7 +616,7 @@ export const ProviderConfigMap: Record<string, ProviderConfig> = {
     }),
   },
 
-  // ============ OpenDataLoader ============
+  // ============ OpenDataLoader OCR 解析服务 ============
   [LLMFactory.OpenDataLoader]: {
     llmFactory: LLMFactory.OpenDataLoader,
     title: 'OpenDataLoader',
@@ -700,7 +700,7 @@ export const ProviderConfigMap: Record<string, ProviderConfig> = {
     },
   },
 
-  // ============ PaddleOCR ============
+  // ============ PaddleOCR 多算法 OCR ============
   [LLMFactory.PaddleOCR]: {
     llmFactory: LLMFactory.PaddleOCR,
     title: 'PaddleOCR',
@@ -793,7 +793,7 @@ export const ProviderConfigMap: Record<string, ProviderConfig> = {
     },
   },
 
-  // ============ MinerU ============
+  // ============ MinerU 文档解析（多 backend 与可选 server_url）============
   [LLMFactory.MinerU]: {
     llmFactory: LLMFactory.MinerU,
     title: 'MinerU',

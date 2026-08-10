@@ -1,8 +1,11 @@
+// payload-utils.ts — 将扁平提供商表单 payload 拆分为实例级与模型级请求体。
+
 import {
   IAddInstanceModelRequestBody,
   IAddProviderInstanceRequestBody,
 } from '@/interfaces/request/llm';
 
+/** 模型级保留字段（直接映射到 model payload）。 */
 const MODEL_RESERVED_KEYS = new Set([
   'llm_name',
   'model_name',
@@ -10,6 +13,7 @@ const MODEL_RESERVED_KEYS = new Set([
   'max_tokens',
 ]);
 
+/** 实例级保留字段（不参与 api_key 对象合并）。 */
 const INSTANCE_RESERVED_KEYS = new Set([
   'instance_name',
   'llm_factory',
@@ -21,6 +25,7 @@ const INSTANCE_RESERVED_KEYS = new Set([
   'model_info',
 ]);
 
+/** 写入 model extra 的可选扩展键（is_tools、vision、Somark 等）。 */
 export const MODEL_EXTRA_KEYS = new Set([
   'is_tools',
   'vision',
@@ -44,6 +49,7 @@ export const MODEL_FIELD_NAMES = new Set<string>([
   ...MODEL_EXTRA_KEYS,
 ]);
 
+/** 判断字段名是否属于模型相关字段集合。 */
 export const isModelField = (fieldName: string) =>
   MODEL_FIELD_NAMES.has(fieldName);
 
@@ -60,6 +66,7 @@ export type SplitResult = {
   modelPayload: IAddInstanceModelRequestBody;
 };
 
+/** 收集非保留键并合并 api_key（对象或字符串）为实例 api_key 字段。 */
 const collectApiKeyExtras = (payload: FlatPayload) => {
   const extras: Record<string, any> = {};
   let apiKeyValue: any = undefined;
@@ -86,6 +93,7 @@ const collectApiKeyExtras = (payload: FlatPayload) => {
   return extras;
 };
 
+/** 从 payload 提取 MODEL_EXTRA_KEYS 中非空值作为 model extra。 */
 const collectModelExtras = (payload: FlatPayload) => {
   const extras: Record<string, any> = {};
   for (const key of MODEL_EXTRA_KEYS) {
@@ -96,6 +104,10 @@ const collectModelExtras = (payload: FlatPayload) => {
   return extras;
 };
 
+/**
+ * 将 ProviderModal 提交的扁平对象拆成 instancePayload 与 modelPayload，
+ * 供 addProviderInstance / addInstanceModel 分别调用。
+ */
 export const splitProviderPayload = (payload: FlatPayload): SplitResult => {
   const {
     instance_name,

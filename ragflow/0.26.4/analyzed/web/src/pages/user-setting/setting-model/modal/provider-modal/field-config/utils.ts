@@ -1,15 +1,13 @@
+// field-config/utils.ts — 提供商表单：字符串工具与 model_info 组装。
+
 import { IModelInfo } from '@/interfaces/request/llm';
 
-/**
- * Capitalize the first letter of a string
- */
+/** 将字符串首字母大写（用于 model_type 选项展示）。 */
 export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/**
- * When model_type contains chat and vision=true, automatically add image2text
- */
+/** 当 model_type 含 chat 且 vision 开启时，自动追加 image2text 能力。 */
 export function applyChatToImage2Text(
   modelType: string[] | string | undefined,
   vision?: boolean,
@@ -26,16 +24,13 @@ export function applyChatToImage2Text(
 }
 
 /**
- * Build the IModelInfo[] payload for verify/submit from the form values.
+ * 从表单值组装 verify/submit 所需的 IModelInfo[]。
  *
- * Resolution order:
- * 1. If `values.model_info` is a non-empty array (the picker-merged case,
- *    populated by the call site before invoking the transform), use it as-is.
- * 2. Otherwise, assemble a single-entry array from the individual form
- *    fields (`model_name`, `model_type`, `max_tokens`, plus `is_tools` /
- *    `vision` placed under `extra.is_tools` when present).
- * 3. If `model_name` is missing, return an empty array — the caller can
- *    decide whether to short-circuit (most providers require a model name).
+ * 优先级：
+ * 1. `values.model_info` 非空数组（列表选择器已合并）则原样返回；
+ * 2. 否则由 model_name / model_type / max_tokens 等单字段拼一条记录，
+ *    is_tools / vision 写入 extra.is_tools；
+ * 3. 无 model_name 时返回空数组，由调用方决定是否短路。
  */
 export const buildModelInfoFromValues = (
   values: Record<string, any>,

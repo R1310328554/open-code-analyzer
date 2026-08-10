@@ -1,10 +1,11 @@
+// generic-api-key-config.ts — 未在 ProviderConfigMap 中注册的工厂的通用 ApiKey 表单配置。
+
 import { FormFieldType } from '@/components/dynamic-form';
 import { LLMFactory } from '@/constants/llm';
 import type { ProviderConfig } from '../types';
 
-/**
- * Generic ApiKey configuration (used for factories not in ProviderConfigMap)
- */
+/** 通用 ApiKey 配置（ProviderConfigMap 未覆盖的工厂回退使用）。 */
+/** 默认 ApiKey 弹窗字段：实例名、密钥、可选 base_url 与 group_id。 */
 export const GenericApiKeyConfig: ProviderConfig = {
   llmFactory: '__generic__',
   title: 'API Key',
@@ -70,9 +71,7 @@ export const GenericApiKeyConfig: ProviderConfig = {
   }),
 };
 
-/**
- * List of factories supporting base_url (used for the generic ApiKey modal)
- */
+/** 支持 base_url 字段的工厂列表（通用 ApiKey 弹窗按工厂显示 base_url）。 */
 export const FACTORIES_WITH_BASE_URL = [
   LLMFactory.OpenAI,
   LLMFactory.AzureOpenAI,

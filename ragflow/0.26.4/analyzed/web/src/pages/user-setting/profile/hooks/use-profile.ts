@@ -1,3 +1,5 @@
+// use-profile.ts — 用户资料页：昵称、时区、密码与头像编辑状态管理。
+
 // src/hooks/useProfile.ts
 import { DEFAULT_TIMEZONE } from '@/constants/setting';
 import {
@@ -8,6 +10,7 @@ import { TimezoneList } from '@/pages/user-setting/constants';
 import { rsaPsw } from '@/utils';
 import { useCallback, useEffect, useState } from 'react';
 
+/** 个人资料表单数据结构（含可选密码字段）。 */
 interface ProfileData {
   userName: string;
   timeZone: string;
@@ -18,6 +21,7 @@ interface ProfileData {
   confirmPasswd?: string;
 }
 
+/** 资料编辑弹窗类型枚举。 */
 export const EditType = {
   editName: 'editName',
   editTimeZone: 'editTimeZone',
@@ -32,14 +36,18 @@ export const modalTitle = {
   [EditType.editPassword]: 'Edit Password',
 } as const;
 
+/** 将后端或前端的时区字符串统一映射为 TimezoneList 展示名。 */
 const normalizeTimezone = (tz: string | undefined): string => {
   if (!tz) return '';
-  // Support both backend format "UTC+8\tAsia/Shanghai" and frontend format "GMT+08:00 Asia/Shanghai"
+  // 兼容后端 "UTC+8\tAsia/Shanghai" 与前端 "GMT+08:00 Asia/Shanghai" 两种格式
   const parts = tz.split(/\t|\s+/);
   const ianaName = parts.length > 1 ? parts[parts.length - 1] : tz;
   return TimezoneList.find((item) => item.id === ianaName)?.name ?? '';
 };
 
+/**
+ * 用户资料页核心 Hook：拉取用户信息、管理编辑态并提交保存。
+ */
 export const useProfile = () => {
   const { data: userInfo } = useFetchUserInfo();
   const [profile, setProfile] = useState<ProfileData>({
@@ -76,6 +84,7 @@ export const useProfile = () => {
       setEditForm({});
     }
   }, [saveSettingData]);
+  /** 按 editType 组装 payload 并调用 saveSetting（密码经 RSA 加密）。 */
   const onSubmit = (newProfile: ProfileData) => {
     const payload: Partial<{
       nickname: string;
@@ -135,6 +144,7 @@ export const useProfile = () => {
     onSubmit(newProfile);
   };
 
+  /** 头像上传成功后同步本地 profile 并立即保存。 */
   const handleAvatarUpload = (avatar: string) => {
     setProfile((prev) => ({ ...prev, avatar }));
     saveSetting({ avatar });

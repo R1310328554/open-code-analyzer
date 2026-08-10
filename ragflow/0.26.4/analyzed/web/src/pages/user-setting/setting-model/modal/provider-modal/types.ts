@@ -1,20 +1,16 @@
+// types.ts — 提供商弹窗：字段配置、ProviderConfig 与组件 Props 类型定义。
+
 import { FormFieldType } from '@/components/dynamic-form';
 import type { IModelInfo } from '@/interfaces/request/llm';
 import type { ReactNode } from 'react';
 
 /**
- * Form field types.
- * - `FormFieldType.*` values map 1:1 to DynamicForm's field types.
- * - `'inputSelect'` is a project-specific token: a text input combined with a
- *   dropdown of suggested values. The ProviderModal resolves it into
- *   `FormFieldType.Custom` with a custom `render` function.
+ * 表单字段类型：FormFieldType.* 与 DynamicForm 一一对应；
+ * inputSelect 为项目扩展（输入框 + 下拉建议），由 ProviderModal 渲染为 Custom 字段。
  */
 export type FieldType = FormFieldType | 'inputSelect';
 
-/**
- * String tokens for shouldRender
- * The component resolves these into actual functions based on runtime context (instanceNameSet, etc.)
- */
+/** shouldRender 字符串令牌，运行时按实例是否已存在等上下文解析为谓词函数。 */
 export type ShouldRenderToken =
   | 'hideWhenInstanceExists'
   | 'modelTypeIncludesChat'
@@ -24,10 +20,8 @@ export type ShouldRenderToken =
   | 'showGroupId';
 
 /**
- * Option label can be a string or ReactNode (used for rich-text labels in InputSelect).
- * `regionKey` is the original key from the provider's `url` object (e.g. 'default',
- * 'intl', 'cn'). It is preserved on the option so that the modal can map the
- * currently selected URL back to its key for the `region` submit field.
+ * 下拉选项：label 可为 ReactNode；regionKey 保留 url 对象原始键，
+ * 便于将用户选中的 URL 反查为提交时的 region 字段。
  */
 export type SelectOption = {
   label: string | ReactNode;
@@ -35,25 +29,18 @@ export type SelectOption = {
   regionKey?: string;
 };
 
-/**
- * Resolver for a text value that may differ by factory (provider).
- * Use when a shared FieldConfig entry needs different i18n keys per provider
- * (e.g. the generic `base_url` field renders different tooltip / placeholder
- * for Minimax, TongYiQianWen, SILICONFLOW, etc.).
- */
+/** 按工厂返回不同 i18n 键的文本解析器（如通用 base_url 在各厂商 tooltip 不同）。 */
 export type FactoryTextResolver = (llmFactory: string) => string;
 
-/**
- * Field config: defines the presentation and behavior of a form field
- */
+/** 单字段配置：名称、类型、校验与条件渲染。 */
 export interface FieldConfig {
-  /** Field name (supports nested paths, e.g. 'model_info.model_type') */
+  /** 字段名（支持嵌套路径，如 model_info.model_type） */
   name: string;
-  /** Label i18n key */
+  /** 标签 i18n 键 */
   label: string;
-  /** Field type */
+  /** 字段类型 */
   type: FieldType;
-  /** Whether the field is required */
+  /** 是否必填 */
   required?: boolean;
   /**
    * Placeholder i18n key. May be a static key, or a function that takes the
@@ -87,9 +74,7 @@ export interface FieldConfig {
   shouldRender?: ((values: Record<string, any>) => boolean) | ShouldRenderToken;
 }
 
-/**
- * Provider config: defines the full behavior of a LLM provider modal
- */
+/** 单个 LLM 提供商弹窗的完整配置（字段列表 + verify/submit 转换）。 */
 export interface ProviderConfig {
   /** Corresponding LLMFactory value (also used as the field-config key) */
   llmFactory: string;
@@ -133,18 +118,8 @@ export interface ProviderConfig {
 }
 
 /**
- * Payload for the viewMode save callback. The modal calls `onViewModeOk`
- * (when provided) instead of `onOk` whenever `viewMode` is true.
- *
- * - `instanceName` is the pre-existing instance's name (taken from
- *   `initialValues.instance_name`).
- * - `llmFactory` is the current provider/factory.
- * - For LIST_MODEL_PROVIDERS, `modelInfos` carries the full list of
- *   currently checked models in the picker (one IModelInfo per checked
- *   item) and `formValues` is undefined.
- * - For non-LIST_MODEL_PROVIDERS, the picker is hidden so `modelInfos`
- *   is empty and `formValues` carries the editable model-related form
- *   values (model_name, model_type, max_tokens, is_tools).
+ * viewMode 保存回调载荷：viewMode 为 true 时走 onViewModeOk 而非 onOk。
+ * LIST_MODEL 工厂传 modelInfos；否则 modelInfos 为空并由 formValues 携带可编辑字段。
  */
 export interface IViewModeOkPayload {
   instanceName: string;
@@ -153,9 +128,7 @@ export interface IViewModeOkPayload {
   formValues?: Record<string, any>;
 }
 
-/**
- * ProviderModal component props
- */
+/** ProviderModal 组件 Props。 */
 export interface ProviderModalProps {
   visible: boolean;
   hideModal: () => void;

@@ -1,17 +1,14 @@
+// constants.ts — 提供商弹窗：启用「列出模型」选择器的工厂集合。
+
 import { LLMFactory } from '@/constants/llm';
 
 /**
- * Provider factories that opt into the "List Models" picker UI.
+ * 启用「列出模型」选择器 UI 的 LLM 工厂集合。
  *
- * For these factories, the modal hides the traditional model_name,
- * model_type, max_tokens, and is_tools form fields and instead shows a
- * "List Models" button that fetches available models from the provider's
- * `/providers/<factory>/models` endpoint. The user can multi-select models
- * from the response; each selected model is converted to an `IModelInfo`
- * entry and submitted as `model_info`.
- *
- * For all other factories the picker is hidden and the form renders the
- * 4 model_* fields directly.
+ * 这些工厂在弹窗中隐藏 model_name / model_type / max_tokens / is_tools
+ * 等传统字段，改为展示「列出模型」按钮，从 `/providers/<factory>/models`
+ * 拉取可用模型并支持多选；选中项转为 `IModelInfo` 后以 `model_info` 提交。
+ * 未列入的工厂仍直接渲染上述四个模型相关字段。
  */
 export const LIST_MODEL_PROVIDERS = new Set<string>([
   LLMFactory.Ollama,
@@ -36,12 +33,10 @@ export const LIST_MODEL_PROVIDERS = new Set<string>([
 ]);
 
 /**
- * The set of form-field names that are owned by the list-models picker
- * (not registered in the dynamic form when the picker is active).
+ * 由「列出模型」选择器接管的表单字段名（启用选择器时不注册到动态表单）。
  *
- * Doubles as the whitelist of fields that remain editable in viewMode —
- * in viewMode every other field is disabled so only model-related edits
- * are possible.
+ * 同时作为 viewMode 下仍可编辑字段的白名单——viewMode 中其余字段禁用，
+ * 仅允许修改模型相关项。
  */
 export const LIST_MODEL_FIELD_NAMES = new Set<string>([
   'model_name',

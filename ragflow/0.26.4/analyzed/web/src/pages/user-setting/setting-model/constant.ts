@@ -1,3 +1,6 @@
+// constant.ts — 模型设置页常量：AWS Bedrock 可用区域列表。
+
+/** AWS Bedrock 支持的区域代码列表，供 Bedrock 提供商配置下拉使用。 */
 export const BedrockRegionList = [
   'us-east-2',
   'us-east-1',
