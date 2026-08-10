@@ -1,5 +1,6 @@
 # Licensed under the MIT License
 """
+GraphRAG 查询分析 LLM 提示词：MiniRAG/LightRAG 关键词与答案类型抽取。
 Reference:
  - [LightRag](https://github.com/HKUDS/LightRAG)
  - [MiniRAG](https://github.com/HKUDS/MiniRAG)
@@ -7,6 +8,7 @@ Reference:
 
 PROMPTS = {}
 
+# MiniRAG：从查询抽取 answer_type 与 entities_from_query
 PROMPTS["minirag_query2kwd"] = """---Role---
 
 You are a helpful assistant tasked with identifying both answer-type and low-level keywords in the user's query.
@@ -155,6 +157,7 @@ Output:
 
 """
 
+# LightRAG 风格：high/low level 关键词 JSON 抽取
 PROMPTS["keywords_extraction"] = """---Role---
 
 You are a helpful assistant tasked with identifying both high-level and low-level keywords in the user's query.

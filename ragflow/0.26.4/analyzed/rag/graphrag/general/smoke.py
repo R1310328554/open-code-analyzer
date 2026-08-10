@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+GraphRAG general 模式本地冒烟脚本：单文档建图、消歧与社区报告端到端验证。
+"""
+
+
 
 import argparse
 import asyncio
@@ -37,6 +42,7 @@ def callback(prog=None, msg="Processing..."):
 
 
 async def main():
+    # CLI：加载文档 chunk，调用 update_graph / with_resolution / with_community
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-t",

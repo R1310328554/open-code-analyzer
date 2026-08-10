@@ -14,6 +14,7 @@
 #  limitations under the License.
 #
 """
+NERExtractor：spaCy 单次 forward 完成分词/POS/依存/NER 与 typed relation 抽取。
 NERExtractor — semantica-style full pipeline extraction.
 
 Pipeline: tokenize → tag(POS) → parse(dep) → NER → typed relations
@@ -58,6 +59,7 @@ _MED_CONF = {"PRODUCT", "EVENT", "WORK_OF_ART", "LAW", "LANGUAGE", "NORP", "MONE
 
 
 class NERExtractor:
+    """语义抽取流水线：NER + 依存关系，支持 7 种语言。"""
     """
     Full semantic extraction pipeline (NER + tagger + parser + relations).
 
@@ -87,11 +89,14 @@ class NERExtractor:
         self._nlp: Optional[Language] = None
 
     # ------------------------------------------------------------------
-    # Model lifecycle
+    # 模型生命周期（进程级缓存）
     # ------------------------------------------------------------------
 
     def _ensure_model(self):
-        """Lazy-load shared spaCy model. Keeps ALL pipes needed for
+        """
+        懒加载共享 spaCy 模型，保留 tagger/parser/ner 等全部 pipe。
+
+        Lazy-load shared spaCy model. Keeps ALL pipes needed for
         dependency parsing (tagger, parser, ner, lemmatizer, attribute_ruler)."""
         if self.model_name in self._nlp_cache:
             self._nlp = self._nlp_cache[self.model_name]
@@ -105,7 +110,7 @@ class NERExtractor:
             raise
 
     # ------------------------------------------------------------------
-    # Main extraction
+    # 主抽取入口
     # ------------------------------------------------------------------
 
     def extract(
@@ -114,9 +119,9 @@ class NERExtractor:
         extract_relations: bool = True,
         include_tokens: bool = True,
     ) -> ExtractionResult:
-        """Run full pipeline on text."""
+        """对文本执行完整抽取：实体、token、typed relations。"""
 
-        # 1. Single forward pass through spaCy
+        # 1. spaCy 单次 forward pass
         self._ensure_model()
         doc = self._nlp(text)
 
@@ -159,7 +164,7 @@ class NERExtractor:
         include_tokens: bool = False,
         batch_size: int = 32,
     ) -> List[ExtractionResult]:
-        """Batch extraction using spaCy's nlp.pipe() for efficiency."""
+        """批量抽取：使用 nlp.pipe() 提升吞吐。"""
         self._ensure_model()
         results = []
         for doc in self._nlp.pipe(texts, batch_size=batch_size):
@@ -183,7 +188,7 @@ class NERExtractor:
         return results
 
     # ------------------------------------------------------------------
-    # Helpers
+    # 辅助方法
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -195,7 +200,7 @@ class NERExtractor:
         return 0.50
 
     def _extract_entities(self, doc) -> List[Entity]:
-        """Extract NER entities from spaCy doc, enriched with POS."""
+        """从 spaCy doc 提取 NER 实体并附加置信度过滤。"""
         entities = []
         seen = set()
         for ent in doc.ents:
@@ -222,7 +227,7 @@ class NERExtractor:
 
     @staticmethod
     def _build_tokens(doc) -> List[Dict[str, Any]]:
-        """Build token list with POS tags and dependency info."""
+        """构建含 POS/dep/head 的 token 列表。"""
         return [
             {
                 "text": t.text,
@@ -238,8 +243,8 @@ class NERExtractor:
 
     @staticmethod
     def clear_cache():
-        """Clear the NLP model cache (e.g., for testing)."""
+        """清空 NLP 模型缓存（测试用）。"""
         NERExtractor._nlp_cache.clear()
 
 
-# Patch ExtractionResult to support metadata
+# 为 ExtractionResult 补充 metadata 字段支持

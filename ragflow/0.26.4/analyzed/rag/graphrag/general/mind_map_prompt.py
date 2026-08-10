@@ -13,7 +13,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+思维导图抽取 LLM 提示词：将输入文本结构化为至少 4 层 Markdown 思维导图。
+"""
 
+
+
+# 要求 LLM 生成标题、分层小节与底层摘要，输出语言与输入一致
 MIND_MAP_EXTRACTION_PROMPT = """
 - Role: You're a talent text processor to summarize a piece of text into a mind map.
 

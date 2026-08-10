@@ -2,6 +2,7 @@
 # Licensed under the MIT License
 
 """
+LightRAG 图抽取器：基于 tuple/record 分隔符的多轮 gleaning 实体关系抽取。
 Reference:
  - [graphrag](https://github.com/microsoft/graphrag)
 """
@@ -22,6 +23,7 @@ from common.token_utils import num_tokens_from_string
 
 @dataclass
 class GraphExtractionResult:
+    """LightRAG 抽取结果：NetworkX 图与 source_docs。"""
     """Unipartite graph extraction result class definition."""
 
     output: nx.Graph
@@ -29,6 +31,7 @@ class GraphExtractionResult:
 
 
 class GraphExtractor(Extractor):
+    """LightRAG 实体关系抽取：主 prompt + continue/if_loop gleaning 循环。"""
     _max_gleanings: int
 
     def __init__(
@@ -52,7 +55,7 @@ class GraphExtractor(Extractor):
             entity_types=",".join(self._entity_types),
             language=self._language,
         )
-        # add example's format
+        # 将 few-shot 示例格式化为与当前分隔符/实体类型一致
         examples = examples.format(**example_context_base)
 
         self._entity_extract_prompt = PROMPTS["entity_extraction"]
@@ -72,6 +75,7 @@ class GraphExtractor(Extractor):
         self._left_token_count = max(llm_invoker.max_length * 0.6, self._left_token_count)
 
     async def _process_single_content(self, chunk_key_dp: tuple[str, str], chunk_seq: int, num_chunks: int, out_results, task_id=""):
+        # 单 chunk：主抽取 + continue/if_loop gleaning，解析 record 为元组
         token_count = 0
         chunk_key = chunk_key_dp[0]
         content = chunk_key_dp[1]

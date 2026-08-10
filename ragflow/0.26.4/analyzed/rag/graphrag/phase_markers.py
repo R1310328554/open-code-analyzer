@@ -13,7 +13,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-"""GraphRAG phase-completion markers.
+"""GraphRAG 阶段完成标记（Redis）：消歧/社区阶段完成后可跳过，合并新内容时失效。
+GraphRAG phase-completion markers.
 
 Markers let a re-run of GraphRAG skip phases that already completed in a
 prior (possibly cancelled or crashed) task on the same KB.
@@ -37,12 +38,12 @@ import logging
 from rag.utils.redis_conn import REDIS_CONN
 
 
-PHASE_RESOLUTION = "resolution_done"
-PHASE_COMMUNITY = "community_done"
+PHASE_RESOLUTION = "resolution_done"  # 实体消歧阶段完成标记
+PHASE_COMMUNITY = "community_done"  # 社区报告阶段完成标记
 
 ALL_PHASES = (PHASE_RESOLUTION, PHASE_COMMUNITY)
 
-# 7 days is well above any expected single GraphRAG run on typical hardware
+# 7 天 TTL：覆盖典型单次运行，遗漏失效时也能自清理
 # and keeps stale markers self-pruning if invalidation paths are missed.
 _DEFAULT_TTL_SECONDS = 7 * 24 * 3600
 
@@ -52,7 +53,7 @@ def _phase_key(kb_id: str, phase: str) -> str:
 
 
 def has_phase_marker(kb_id: str, phase: str) -> bool:
-    """Return True iff the marker for (kb_id, phase) exists."""
+    """检查 KB 某阶段是否已有完成标记。"""
     if not kb_id or not phase:
         return False
     try:
@@ -64,7 +65,7 @@ def has_phase_marker(kb_id: str, phase: str) -> bool:
 
 
 def set_phase_marker(kb_id: str, phase: str, ttl: int = _DEFAULT_TTL_SECONDS) -> bool:
-    """Persist a marker indicating the named phase has completed for kb_id."""
+    """写入阶段完成标记（KB 级，带 TTL）。"""
     if not kb_id or not phase:
         return False
     try:
@@ -75,7 +76,7 @@ def set_phase_marker(kb_id: str, phase: str, ttl: int = _DEFAULT_TTL_SECONDS) ->
 
 
 def clear_phase_markers(kb_id: str, phases: tuple[str, ...] = ALL_PHASES) -> None:
-    """Drop the named phase markers for kb_id (no-op on miss)."""
+    """清除指定 KB 的阶段标记（图变更或解绑时调用）。"""
     if not kb_id:
         return
     for phase in phases:

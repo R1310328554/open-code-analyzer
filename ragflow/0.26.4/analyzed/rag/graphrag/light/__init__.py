@@ -13,3 +13,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+graphrag.light 子包：LightRAG 风格轻量 LLM 图抽取与提示词。
+"""
+
+

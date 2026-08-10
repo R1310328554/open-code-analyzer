@@ -14,6 +14,7 @@
 #  limitations under the License.
 #
 """
+spaCy 图抽取器：MGranRAG 多 pass 关键词 + LinearRAG 共现语义桥接（无 LLM 抽取）。
 spaCy-based entity and relationship extractor for GraphRAG.
 
 Combines techniques from **LinearRAG** and **MGranRAG**:
@@ -41,14 +42,17 @@ from rag.graphrag.general.extractor import Extractor
 from rag.llm.chat_model import Base as CompletionLLM
 
 # ---------------------------------------------------------------------------
-# spaCy model loading (lazy, module-level singleton)
+# spaCy 模型懒加载（模块级单例）
 # ---------------------------------------------------------------------------
 _nlp = None
 _nlp_model_name = ""
 
 
 def _load_spacy_model(model_name: str = "en_core_web_sm"):
-    """Load (or return cached) spaCy language model.
+    """
+    加载或返回缓存的 spaCy 语言模型（缺失时自动 download）。
+
+    Load (or return cached) spaCy language model.
 
     Automatically downloads the model if it is not yet installed.
     """
@@ -74,7 +78,7 @@ def _load_spacy_model(model_name: str = "en_core_web_sm"):
 
 
 # ---------------------------------------------------------------------------
-# spaCy ↔ application entity-type mapping
+# spaCy NER 标签 → 应用层 entity_types 映射
 # ---------------------------------------------------------------------------
 # spaCy's built-in entity labels → the application-level types used by
 # ``DEFAULT_ENTITY_TYPES``.  Labels not listed here fall through to
@@ -103,7 +107,7 @@ _SKIP_SPACY_LABELS = {"ORDINAL", "CARDINAL"}
 
 
 # ---------------------------------------------------------------------------
-# MGranRAG-style multi-pass keyword extraction
+# MGranRAG 风格三 pass 关键词堆叠抽取
 # ---------------------------------------------------------------------------
 
 
@@ -112,12 +116,15 @@ def _has_uppercase(text: str) -> bool:
 
 
 def _replace_word(word: str) -> str:
-    """Normalise spaces around hyphens and apostrophes (from MGranRAG)."""
+    """规范化连字符/所有格周围空格（MGranRAG）。"""
     return word.replace(" - ", "-").replace(" -", "-").replace("- ", "-").replace(" 's", "'s").replace(" 'S", "'S")
 
 
 def extract_keywords(spacy_doc) -> set[str]:
-    """MGranRAG-style 3-pass stacking keyword extraction.
+    """
+    MGranRAG 三 pass 堆叠：连字符合并 → 大写词合并 → 连续名词合并。
+
+    MGranRAG-style 3-pass stacking keyword extraction.
 
     Phase 1 — Hyphen / apostrophe merging:
         Tokens connected by ``-`` or ``'s`` are merged into a single
@@ -295,6 +302,7 @@ def extract_keywords(spacy_doc) -> set[str]:
 
 
 def get_ner(spacy_doc) -> dict[str, str]:
+    # 从 spaCy doc 提取 NER 实体字典
     """Return ``{entity_text: spaCy_label}`` for all NER entities."""
     entities_dict: dict[str, str] = {}
     for ent in spacy_doc.ents:
@@ -309,6 +317,7 @@ def get_ner(spacy_doc) -> dict[str, str]:
 
 
 def ner_all_keywords(spacy_doc) -> set[str]:
+    # 合并 MGranRAG 关键词与 spaCy NER 并去重
     """Combine rule-based keyword extraction with spaCy NER (MGranRAG).
 
     Returns the union of:
@@ -326,6 +335,7 @@ def ner_all_keywords(spacy_doc) -> set[str]:
 
 
 class GraphExtractor(Extractor):
+    """spaCy 实体+共现关系抽取（LLM 仅用于下游描述合并）。"""
     """Extract entities and relationships using spaCy (no LLM calls).
 
     Entity extraction
@@ -389,10 +399,11 @@ class GraphExtractor(Extractor):
         self._nlp = _load_spacy_model(spacy_model)
 
     # ------------------------------------------------------------------
-    # Public interface – called by ``Extractor.__call__``
+    # 公开接口：由 Extractor.__call__ 并发调用各 chunk
     # ------------------------------------------------------------------
 
     async def _process_single_content(
+        # 单 chunk：spaCy 解析 → 实体/共现边 → 可选 TF 权重
         self,
         chunk_key_dp: tuple[str, str],
         chunk_seq: int,

@@ -13,6 +13,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+GraphRAG 索引编排：子图生成、合并、实体消歧、社区报告与 KB 级批处理入口。
+
+支持 general/light/ner 三种抽取器，含 Redis 锁、重试、检查点与阶段标记恢复。
+"""
+
+
 import asyncio
 import json
 import logging
@@ -60,7 +67,7 @@ from common import settings
 from common.doc_store.doc_store_base import OrderByExpr
 
 
-DEFAULT_GRAPHRAG_BATCH_CHUNK_TOKEN_SIZE = 4096
+DEFAULT_GRAPHRAG_BATCH_CHUNK_TOKEN_SIZE = 4096  # LLM 抽取时每批 chunk 的目标 token 上限
 MIN_GRAPHRAG_BATCH_CHUNK_TOKEN_SIZE = 512
 MAX_GRAPHRAG_BATCH_CHUNK_TOKEN_SIZE = 8196
 DEFAULT_GRAPHRAG_RETRY_ATTEMPTS = 2
@@ -75,6 +82,7 @@ DEFAULT_GRAPHRAG_LOCK_ACQUIRE_TIMEOUT_SECONDS = 600
 
 
 def _bounded_int_config(config: dict, key: str, default: int, minimum: int, maximum: int) -> int:
+    # 读取并裁剪 graphrag 配置中的整型参数，非法值回退 default
     value = config.get(key, default)
     if value is None:
         return default
@@ -90,6 +98,7 @@ def _bounded_int_config(config: dict, key: str, default: int, minimum: int, maxi
 
 
 def _bounded_float_config(config: dict, key: str, default: float, minimum: float, maximum: float) -> float:
+    # 读取并裁剪 graphrag 配置中的浮点参数
     value = config.get(key, default)
     if value is None:
         return default
@@ -116,11 +125,15 @@ def _lock_acquire_timeout_config(config: dict) -> int:
 
 
 def _select_extractor_type(graphrag_config: dict):
+    # 返回 method 字段：general / light / ner
     return graphrag_config.get("method", "light")
 
 
 def _select_extractor(graphrag_config: dict):
-    """Return the extractor class matching ``graphrag_config["method"]``.
+    """
+    按 graphrag_config["method"] 选择抽取器类：general / light / ner。
+
+    Return the extractor class matching ``graphrag_config["method"]``.
 
     Supported values:
     - ``"general"``  – Microsoft GraphRAG LLM-based extractor (default in
@@ -139,6 +152,7 @@ def _select_extractor(graphrag_config: dict):
 
 
 def _has_cancel_and_exit(task_id: str, message: str, callback=None) -> None:
+    # 检测任务取消并抛出 TaskCanceledException
     if not task_id or not has_canceled(task_id):
         return
     if callback:
@@ -147,6 +161,7 @@ def _has_cancel_and_exit(task_id: str, message: str, callback=None) -> None:
 
 
 async def _run_with_retry(
+    # 带超时、指数退避与取消检测的协程重试包装
     label: str,
     coro_factory,
     *,
@@ -188,6 +203,7 @@ async def _run_with_retry(
 
 
 async def _acquire_lock(lock: RedisDistributedLock, label: str, timeout_seconds: int, callback, task_id: str):
+    # 轮询获取 Redis 分布式锁，支持取消与超时
     if timeout_seconds <= 0:
         timeout_seconds = DEFAULT_GRAPHRAG_LOCK_ACQUIRE_TIMEOUT_SECONDS
     deadline = asyncio.get_running_loop().time() + timeout_seconds
@@ -207,7 +223,10 @@ async def _acquire_lock(lock: RedisDistributedLock, label: str, timeout_seconds:
 
 
 async def load_subgraph_from_store(tenant_id: str, kb_id: str, doc_id: str):
-    """Load a previously saved subgraph from the doc store.
+    """
+    从 doc store 按 source_id 加载已持久化的子图检查点。
+
+    Load a previously saved subgraph from the doc store.
 
     Filters directly by source_id (== doc_id) and knowledge_graph_kwd in the
     query so the doc store index does the heavy lifting.  Expects at most one
@@ -254,6 +273,7 @@ async def load_subgraph_from_store(tenant_id: str, kb_id: str, doc_id: str):
 
 
 async def run_graphrag_for_kb(
+    # KB 级 GraphRAG 主编排：并行建子图 → 合并 → 消歧 → 社区报告
     row: dict,
     doc_ids: list[str],
     language: str,
@@ -321,6 +341,7 @@ async def run_graphrag_for_kb(
         callback(msg=f"[GraphRAG] dataset:{kb_id} has {len(doc_ids)} documents to process.")
 
     def load_doc_chunks(doc_id: str) -> list[str]:
+        # 按 token 上限合并 chunk；NER 模式直接返回原文不分批
         from common.token_utils import num_tokens_from_string
 
         chunks = []
@@ -357,6 +378,7 @@ async def run_graphrag_for_kb(
     failed_docs: list[tuple[str, str]] = []  # (doc_id, error)
 
     async def build_one(doc_id: str):
+        # 单文档：检查点子图命中则跳过，否则 LLM/spaCy 抽取并缓存
         nonlocal total_chunks
 
         _has_cancel_and_exit(task_id, f"Task {task_id} cancelled, stopping execution.", callback)
@@ -674,7 +696,10 @@ _SUBJECT_PATTERN = _re.compile(
 
 
 def _relationship_looks_valid(rel: dict) -> bool:
-    """Returns False if this relationship should be dropped: either the
+    """
+    关系质量过滤：丢弃 LLM 明确否定或无主语匹配的关系边。
+
+    Returns False if this relationship should be dropped: either the
     extraction model explicitly judged there to be no relationship, or the
     description text's subject doesn't plausibly match either endpoint
     (a sign the fact was misattributed to the wrong entity during batch
@@ -729,6 +754,7 @@ def _relationship_looks_valid(rel: dict) -> bool:
 
 
 async def generate_subgraph(
+    # 对单文档 chunk 调用抽取器，构建 NetworkX 子图并写入 doc store
     extractor: Extractor,
     tenant_id: str,
     kb_id: str,
@@ -819,6 +845,7 @@ async def generate_subgraph(
 
 @timeout(60 * 3)
 async def merge_subgraph(
+    # 将子图合并进 KB 全局图，重算 PageRank 并持久化
     tenant_id: str,
     kb_id: str,
     doc_id: str,
@@ -849,6 +876,7 @@ async def merge_subgraph(
 
 @timeout(60 * 30, 1)
 async def resolve_entities(
+    # 实体消歧：加载检查点、调用 EntityResolution 并写回图
     graph,
     subgraph_nodes: set[str],
     tenant_id: str,
@@ -895,6 +923,7 @@ async def resolve_entities(
 
 @timeout(60 * 30, 1)
 async def extract_community(
+    # Leiden 社区报告抽取、索引 community_report chunk 并清理陈旧行
     graph,
     tenant_id: str,
     kb_id: str,
@@ -940,7 +969,7 @@ async def extract_community(
             "report": rep,
             "evidences": "\n".join([f.get("explanation", "") for f in stru["findings"]]),
         }
-        # Deterministic id derived from (kb_id, community title) so reruns of
+        # 社区 chunk id 由 kb_id+标题确定性生成，重跑可幂等替换
         # extract_community produce stable ids.  Combined with insert-then-
         # prune below, this means a crash mid-insert leaves the prior set of
         # community reports intact -- never the partial-delete state the old
@@ -968,7 +997,7 @@ async def extract_community(
 
     new_ids: set[str] = {c["id"] for c in chunks}
 
-    # Snapshot existing community_report ids BEFORE inserting so we can
+    # 先插入新报告再按 id 差集删除陈旧 community_report，避免半删状态
     # delete exactly the stale set afterwards.  If the search fails we fall
     # back to the prior delete-everything-then-insert behaviour rather than
     # leaving an inconsistent mix.

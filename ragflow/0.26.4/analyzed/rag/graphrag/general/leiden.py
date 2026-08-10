@@ -1,6 +1,7 @@
 # Copyright (c) 2024 Microsoft Corporation.
 # Licensed under the MIT License
 """
+Leiden 层次社区检测：图稳定化、最大连通分量与社区权重归一化。
 Reference:
  - [graphrag](https://github.com/microsoft/graphrag)
 """
@@ -15,7 +16,10 @@ from networkx import is_empty
 
 
 def _stabilize_graph(graph: nx.Graph) -> nx.Graph:
-    """Ensure an undirected graph with the same relationships will always be read the same way."""
+    """
+    稳定化无向图：节点/边排序保证相同拓扑多次读取顺序一致。
+
+    Ensure an undirected graph with the same relationships will always be read the same way."""
     fixed_graph = nx.DiGraph() if graph.is_directed() else nx.Graph()
 
     sorted_nodes = graph.nodes(data=True)
@@ -56,13 +60,13 @@ def _stabilize_graph(graph: nx.Graph) -> nx.Graph:
 
 
 def normalize_node_names(graph: nx.Graph | nx.DiGraph) -> nx.Graph | nx.DiGraph:
-    """Normalize node names."""
+    """HTML 反转义并大写规范化节点名。"""
     node_mapping = {node: html.unescape(node.upper().strip()) for node in graph.nodes()}  # type: ignore
     return nx.relabel_nodes(graph, node_mapping)
 
 
 def stable_largest_connected_component(graph: nx.Graph) -> nx.Graph:
-    """Return the largest connected component of the graph, with nodes and edges sorted in a stable way."""
+    """取最大连通分量并做节点名规范化与边稳定排序。"""
     graph = graph.copy()
     graph = cast(nx.Graph, largest_connected_component(graph))
     graph = normalize_node_names(graph)
@@ -75,7 +79,7 @@ def _compute_leiden_communities(
     use_lcc: bool,
     seed=0xDEADBEEF,
 ) -> dict[int, dict[str, int]]:
-    """Return Leiden root communities."""
+    """调用 hierarchical_leiden 返回各层级节点→社区 id 映射。"""
     results: dict[int, dict[str, int]] = {}
     if is_empty(graph):
         return results
@@ -91,7 +95,7 @@ def _compute_leiden_communities(
 
 
 def run(graph: nx.Graph, args: dict[str, Any]) -> dict[int, dict[str, dict]]:
-    """Run method definition."""
+    """按 max_cluster_size/use_lcc 运行 Leiden，汇总各层社区节点与归一化权重。"""
     max_cluster_size = args.get("max_cluster_size", 12)
     use_lcc = args.get("use_lcc", True)
     if args.get("verbose", False):
@@ -138,6 +142,7 @@ def run(graph: nx.Graph, args: dict[str, Any]) -> dict[int, dict[str, dict]]:
 
 
 def add_community_info2graph(graph: nx.Graph, nodes: list[str], community_title):
+    # 将社区标题写入成员节点的 communities 属性（去重）
     for n in nodes:
         if "communities" not in graph.nodes[n]:
             graph.nodes[n]["communities"] = []

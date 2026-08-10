@@ -1,11 +1,13 @@
 # Licensed under the MIT License
 """
+LightRAG 图抽取/RAG/关键词 LLM 提示词常量（含 Few-shot 与 gleaning 续写模板）。
 Reference:
  - [LightRAG](https://github.com/HKUDS/LightRAG/blob/main/lightrag/prompt.py)
 """
 
 from typing import Any
 
+# LightRAG 提示词字典：分隔符默认值、抽取模板与 RAG 回复模板
 PROMPTS: dict[str, Any] = {}
 
 PROMPTS["DEFAULT_LANGUAGE"] = "English"
@@ -17,6 +19,7 @@ PROMPTS["DEFAULT_ENTITY_TYPES"] = ["organization", "person", "geo", "event", "ca
 
 PROMPTS["DEFAULT_USER_PROMPT"] = "n/a"
 
+# 主抽取 prompt：entity/relationship/content_keywords 元组格式
 PROMPTS["entity_extraction"] = """---Goal---
 Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
 Use {language} as output language.
@@ -137,6 +140,7 @@ Output:
 #############################""",
 ]
 
+# 合并多段 entity 描述为单一摘要
 PROMPTS["summarize_entity_descriptions"] = """You are a helpful assistant responsible for generating a comprehensive summary of the data provided below.
 Given one or two entities, and a list of descriptions, all related to the same entity or group of entities.
 Please concatenate all of these into a single, comprehensive description. Make sure to include information collected from all the descriptions.
@@ -152,6 +156,7 @@ Description List: {description_list}
 Output:
 """
 
+# 追加抽取轮：提示 LLM 补漏实体
 PROMPTS["entity_continue_extraction"] = """
 MANY entities and relationships were missed in the last extraction. Please find only the missing entities and relationships from previous text.
 
@@ -184,6 +189,7 @@ Format the content-level key words as ("content_keywords"{tuple_delimiter}<high_
 Add new entities and relations below using the same format, and do not include entities and relations that have been previously extracted. :\n
 """.strip()
 
+# 是否仍需继续抽取的 yes/no 判定 prompt
 PROMPTS["entity_if_loop_extraction"] = """
 ---Goal---'
 
@@ -196,6 +202,7 @@ Answer ONLY by `YES` OR `NO` if there are still entities that need to be added.
 
 PROMPTS["fail_response"] = "Sorry, I'm not able to provide an answer to that question.[no-context]"
 
+# 基于图检索结果的 RAG 回复模板
 PROMPTS["rag_response"] = """---Role---
 
 You are a helpful assistant responding to user query about Knowledge Graph and Document Chunks provided in JSON format below.
@@ -236,6 +243,7 @@ Generate a concise response based on Knowledge Base and follow Response Rules, c
 
 Response:"""
 
+# 查询关键词抽取：high/low level JSON 输出
 PROMPTS["keywords_extraction"] = """---Role---
 You are an expert keyword extractor, specializing in analyzing user queries for a Retrieval-Augmented Generation (RAG) system. Your purpose is to identify both high-level and low-level keywords in the user's query that will be used for effective document retrieval.
 

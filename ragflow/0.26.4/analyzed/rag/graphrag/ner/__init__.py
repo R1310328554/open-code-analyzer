@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+graphrag.ner 子包：spaCy NER + 依存句法关系抽取（无需 LLM 建图）。
+"""
+
+
 from .ner_extractor import NERExtractor
 from .dep_relation_extractor import DepRelationExtractor
 from .types import Entity, ExtractionResult, Relation

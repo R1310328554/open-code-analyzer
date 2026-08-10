@@ -14,6 +14,7 @@
 #  limitations under the License.
 #
 """
+依存句法关系抽取器：多语言 dep 规则、多跳推理、共现与否定过滤（semantica 对齐）。
 Dependency-based relation extractor — full semantica alignment.
 
 Extracts typed relations using spaCy dependency parse with:
@@ -27,7 +28,7 @@ from typing import Dict, List, Optional
 
 from .types import Entity, Relation
 
-# Language-specific dependency label mappings
+# 各语言依存角色 → spaCy dep 标签映射（含中/日 agent 标记）
 # Keys: pass_subj, subj, agent, dobj, prep_obj — each maps to a dep label
 # or a tuple (dep, child_dep) for compound patterns.
 # None = no standard mapping (language uses different structure)
@@ -49,7 +50,7 @@ _LANG_DEP_RULES: Dict[str, Dict[str, object]] = {
     },
 }
 
-# Multi-hop inference rules: if A rel1 B and B rel2 C then A rel3 C
+# 多跳推理规则：A→B→C 传递生成新关系类型
 _MULTI_HOP: Dict[str, Dict[str, str]] = {
     "ceo_of": {"is_subsidiary_of": "works_for", "located_in": "works_for"},
     "works_for": {"is_subsidiary_of": "works_for"},
@@ -181,6 +182,7 @@ _COPULA_TITLE_MAP: Dict[str, List[str]] = {
 
 
 class DepRelationExtractor:
+    """基于依存句法的 typed relation 抽取（semantica 对齐）。"""
     """Extract typed relations using dependency parse — semantica-aligned."""
 
     def __init__(self, language: str = "en", confidence_threshold: float = 0.3, max_distance: int = 100):
@@ -189,6 +191,7 @@ class DepRelationExtractor:
         self.max_distance = max_distance
 
     def extract(self, text: str, entities: List[Entity], doc=None, **options) -> List[Relation]:
+        # dep 抽取 + 共现 + 多跳推理 + 去重，按置信度阈值过滤
         semantica_rels = []
         if doc is not None:
             semantica_rels = self._extract_with_dep(text, doc, entities)
@@ -198,12 +201,12 @@ class DepRelationExtractor:
         return [r for r in semantica_rels if r.confidence >= self.confidence_threshold]
 
     # ------------------------------------------------------------------
-    # Multi-hop inference (属性传递)
+    # 多跳推理（属性传递）
     # ------------------------------------------------------------------
 
     @staticmethod
     def _infer_multi_hop(relations: List[Relation]) -> List[Relation]:
-        """Infer transitive relations: A→B→C ⇒ A→C."""
+        """多跳传递：A→B 且 B→C 时推断 A→C 关系。"""
         by_subj: Dict[str, List[Relation]] = {}
         for r in relations:
             if r.predicate == "related_to":
@@ -232,19 +235,19 @@ class DepRelationExtractor:
         return relations + inferred
 
     # ------------------------------------------------------------------
-    # Dependency extraction
+    # 依存句法关系抽取
     # ------------------------------------------------------------------
 
     # ------------------------------------------------------------------
-    # Language-aware role mapping
+    # 语言感知的语义角色映射
     # ------------------------------------------------------------------
 
     def _roles(self) -> Dict[str, str]:
-        """Get role → dep label mapping for current language."""
+        """返回当前语言的语义角色→dep 标签映射。"""
         return _LANG_DEP_RULES.get(self.language, _LANG_DEP_RULES["en"])
 
     def _get_by_role(self, root, role: str, entity_map) -> list:
-        """Get entities for a semantic role (language-aware). Returns [(Entity, prep?)]"""
+        """按语义角色（主语/宾语/agent 等）从依存树匹配实体。"""
         rule = self._roles().get(role)
         if rule is None:
             return []
