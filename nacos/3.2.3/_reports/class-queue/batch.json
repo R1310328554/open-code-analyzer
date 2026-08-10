@@ -15,23 +15,8 @@
     "core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/tls/DefaultTlsContextBuilder.java",
     "core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/tls/OptionalTlsProtocolNegotiator.java",
     "core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/tls/SdkDefaultTlsProtocolNegotiatorBuilder.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/tls/RpcServerSslContextRefresher.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/tls/RpcServerSslContextRefresherHolder.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/tls/RpcServerTlsConfig.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/tls/RpcServerTlsConfigFactory.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/tls/SslContextChangeAware.java",
-    "core/src/main/java/com/alibaba/nacos/core/service/NacosClusterOperationService.java",
-    "core/src/main/java/com/alibaba/nacos/core/service/NacosServerLoaderService.java",
-    "core/src/main/java/com/alibaba/nacos/core/service/NacosServerStateService.java",
-    "core/src/main/java/com/alibaba/nacos/core/service/NamespaceOperationService.java",
-    "core/src/main/java/com/alibaba/nacos/core/trace/NacosCombinedTraceSubscriber.java",
-    "core/src/main/java/com/alibaba/nacos/core/utils/ClassUtils.java",
-    "core/src/main/java/com/alibaba/nacos/core/utils/Commons.java",
-    "core/src/main/java/com/alibaba/nacos/core/utils/GenericType.java",
-    "core/src/main/java/com/alibaba/nacos/core/utils/GlobalExecutor.java",
-    "core/src/main/java/com/alibaba/nacos/core/utils/Loggers.java",
-    "core/src/main/java/com/alibaba/nacos/core/utils/OverrideParameterRequestWrapper.java"
+    "core/src/main/java/com/alibaba/nacos/core/remote/tls/RpcServerSslContextRefresher.java"
   ],
   "remaining_pending": 797,
-  "done": 1710
+  "done": 1725
 }
