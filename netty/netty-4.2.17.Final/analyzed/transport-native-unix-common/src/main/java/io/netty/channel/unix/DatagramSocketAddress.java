@@ -25,12 +25,15 @@ import java.net.UnknownHostException;
  * to create more objects then needed.
  * <p>
  * <strong>Internal usage only!</strong>
+ * <p>JNI recvFrom 专用地址类型：携带本次接收字节数与可选本地地址，减少对象分配。</p>
  */
 public final class DatagramSocketAddress extends InetSocketAddress {
     private static final long serialVersionUID = 3094819287843178401L;
 
+    /** 本次 datagram 接收的字节数 */
     // holds the amount of received bytes
     private final int receivedAmount;
+    /** 关联的本地地址（connected UDP 等场景） */
     private final DatagramSocketAddress localAddress;
 
     DatagramSocketAddress(byte[] addr, int scopeId, int port, int receivedAmount, DatagramSocketAddress local)
@@ -40,10 +43,12 @@ public final class DatagramSocketAddress extends InetSocketAddress {
         localAddress = local;
     }
 
+    /** 返回本地 {@link DatagramSocketAddress}（可能为 null） */
     public DatagramSocketAddress localAddress() {
         return localAddress;
     }
 
+    /** 返回本次 recv 读到的字节数 */
     public int receivedAmount() {
         return receivedAmount;
     }

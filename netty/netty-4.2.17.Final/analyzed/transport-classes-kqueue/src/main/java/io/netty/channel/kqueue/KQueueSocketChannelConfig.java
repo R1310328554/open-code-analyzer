@@ -38,8 +38,14 @@ import static io.netty.channel.ChannelOption.TCP_NODELAY;
 import static io.netty.channel.kqueue.KQueueChannelOption.SO_SNDLOWAT;
 import static io.netty.channel.kqueue.KQueueChannelOption.TCP_NOPUSH;
 
+/**
+ * {@link KQueueSocketChannel} 配置：TCP/UDP 套接字选项与 BSD 扩展。
+ * <p>含 SO_SNDLOWAT、TCP_NOPUSH、TCP FastOpen Connect 与半关闭等。</p>
+ */
 public final class KQueueSocketChannelConfig extends KQueueChannelConfig implements SocketChannelConfig {
+    /** 是否允许 shutdownInput/Output 独立半关闭 */
     private volatile boolean allowHalfClosure;
+    /** 客户端 TCP FastOpen（connectx）是否启用 */
     private volatile boolean tcpFastopen;
 
     KQueueSocketChannelConfig(KQueueSocketChannel channel) {
@@ -303,6 +309,7 @@ public final class KQueueSocketChannelConfig extends KQueueChannelConfig impleme
 
     /**
      * Enables client TCP fast open, if available.
+     * <p>启用客户端 TCP FastOpen（macOS connectx）。</p>
      */
     public KQueueSocketChannelConfig setTcpFastOpenConnect(boolean fastOpenConnect) {
         tcpFastopen = fastOpenConnect;
@@ -311,6 +318,7 @@ public final class KQueueSocketChannelConfig extends KQueueChannelConfig impleme
 
     /**
      * Returns {@code true} if TCP fast open is enabled, {@code false} otherwise.
+     * <p>是否已启用客户端 TCP FastOpen。</p>
      */
     public boolean isTcpFastOpenConnect() {
         return tcpFastopen;
@@ -404,7 +412,7 @@ public final class KQueueSocketChannelConfig extends KQueueChannelConfig impleme
     }
 
     private void calculateMaxBytesPerGatheringWrite() {
-        // Multiply by 2 to give some extra space in case the OS can process write data faster than we can provide.
+        // SO_SNDBUF×2 作为 writev 聚集写上限，留余量应对 OS 消费更快
         int newSendBufferSize = getSendBufferSize() << 1;
         if (newSendBufferSize > 0) {
             setMaxBytesPerGatheringWrite(newSendBufferSize);

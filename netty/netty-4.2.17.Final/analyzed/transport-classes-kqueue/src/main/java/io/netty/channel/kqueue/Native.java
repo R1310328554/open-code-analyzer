@@ -52,13 +52,13 @@ import static io.netty.channel.unix.Errors.newIOException;
 /**
  * Native helper methods
  * <p><strong>Internal usage only!</strong>
+ * <p>KQueue JNI 封装：kqueue fd、kevent wait、EV_* 常量与 TCP FastOpen 探测。</p>
  */
 final class Native {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Native.class);
 
     static {
-        // Preload all classes that will be used in the OnLoad(...) function of JNI to eliminate the possiblity of a
-        // class-loader deadlock. This is a workaround for https://github.com/netty/netty/issues/11209.
+        // 预加载 JNI_OnLoad 用到的类，避免类加载器死锁（issue #11209）
 
         // This needs to match all the classes that are loaded via NETTY_JNI_UTIL_LOAD_CLASS or looked up via
         // NETTY_JNI_UTIL_FIND_CLASS.
@@ -68,11 +68,10 @@ final class Native {
         );
 
         try {
-            // First, try calling a side-effect free JNI method to see if the library was already
-            // loaded by the application.
+            // 先调用无副作用 JNI 方法检测库是否已被应用加载
             sizeofKEvent();
         } catch (UnsatisfiedLinkError ignore) {
-            // The library was not previously loaded, load it now.
+            // 未加载则按架构名加载 netty_transport_native_kqueue
             loadNativeLibrary();
         }
         Unix.registerInternal(new Runnable() {
@@ -99,7 +98,7 @@ final class Native {
 
     static final int NOTE_RDHUP = NOTE_READCLOSED | NOTE_CONNRESET | NOTE_DISCONNECTED;
 
-    // Commonly used combinations of EV defines
+    // 常用 EV_ADD|EV_ENABLE 与 EV_DELETE|EV_DISABLE 组合
     static final short EV_ADD_ENABLE = (short) (EV_ADD | EV_ENABLE);
     static final short EV_DELETE_DISABLE = (short) (EV_DELETE | EV_DISABLE);
 
@@ -108,7 +107,7 @@ final class Native {
     static final short EVFILT_USER = evfiltUser();
     static final short EVFILT_SOCK = evfiltSock();
 
-    // Flags for connectx(2)
+    // connectx TCP FastOpen 标志组合
     private static final int CONNECT_RESUME_ON_READ_WRITE = connectResumeOnReadWrite();
     private static final int CONNECT_DATA_IDEMPOTENT = connectDataIdempotent();
     static final int CONNECT_TCP_FASTOPEN = CONNECT_RESUME_ON_READ_WRITE | CONNECT_DATA_IDEMPOTENT;
@@ -124,6 +123,7 @@ final class Native {
     static final KQueueIoOps WRITE_DISABLED_OPS =
             KQueueIoOps.newOps(Native.EVFILT_WRITE, Native.EV_DELETE_DISABLE, 0);
 
+    /** 创建 kqueue 并包装为 {@link FileDescriptor} */
     static FileDescriptor newKQueue() {
         return new FileDescriptor(kqueueCreate());
     }
@@ -144,7 +144,7 @@ final class Native {
     static native int keventTriggerUserEvent(int kqueueFd, int ident);
     static native int keventAddUserEvent(int kqueueFd, int ident);
 
-    // kevent related
+    // kevent 结构体 sizeof/offsetof，供 KQueueEventArray 布局
     static native int sizeofKEvent();
     static native int offsetofKEventIdent();
     static native int offsetofKEventFlags();
@@ -178,6 +178,7 @@ final class Native {
         try {
             return fastOpenClient() == 1;
         } catch (Exception e) {
+            // sysctl 探测失败时假定不支持客户端 TCP FastOpen
             logger.debug("Failed to probe fastOpenClient sysctl, assuming client-side TCP FastOpen cannot be used.", e);
         }
         return false;

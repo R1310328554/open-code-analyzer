@@ -28,13 +28,15 @@ import java.util.Map;
 import static io.netty.channel.kqueue.KQueueChannelOption.SO_ACCEPTFILTER;
 import static io.netty.channel.unix.UnixChannelOption.SO_REUSEPORT;
 
+/**
+ * {@link KQueueServerSocketChannel} 配置：SO_REUSEPORT 与 SO_ACCEPTFILTER。
+ * <p>默认启用 SO_REUSEADDR（与 java.nio 行为一致）。</p>
+ */
 public class KQueueServerSocketChannelConfig extends KQueueServerChannelConfig {
     KQueueServerSocketChannelConfig(KQueueServerSocketChannel channel) {
         super(channel);
 
-        // Use SO_REUSEADDR by default as java.nio does the same.
-        //
-        // See https://github.com/netty/netty/issues/2605
+        // 默认 SO_REUSEADDR，与 NIO 及 issue #2605 一致
         setReuseAddress(true);
     }
 
@@ -70,6 +72,7 @@ public class KQueueServerSocketChannelConfig extends KQueueServerChannelConfig {
         return true;
     }
 
+    /** 设置 SO_REUSEPORT，允许多进程/线程同端口 accept */
     public KQueueServerSocketChannelConfig setReusePort(boolean reusePort) {
         try {
             ((KQueueServerSocketChannel) channel).socket.setReusePort(reusePort);
@@ -87,6 +90,7 @@ public class KQueueServerSocketChannelConfig extends KQueueServerChannelConfig {
         }
     }
 
+    /** 设置 macOS/FreeBSD SO_ACCEPTFILTER（如 httpready） */
     public KQueueServerSocketChannelConfig setAcceptFilter(AcceptFilter acceptFilter) {
         try {
             ((KQueueServerSocketChannel) channel).socket.setAcceptFilter(acceptFilter);

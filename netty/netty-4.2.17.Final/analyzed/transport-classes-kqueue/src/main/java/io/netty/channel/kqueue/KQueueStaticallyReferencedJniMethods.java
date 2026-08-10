@@ -25,10 +25,12 @@ package io.netty.channel.kqueue;
  * <li>java.lang.UnsatisfiedLinkError is thrown because native method has not yet been registered.</li>
  * </ol>
  * Static members which call JNI methods must not be declared in this class!
+ * <p>打破 JNI_OnLoad 与 FindClass 的循环依赖： 本类仅声明 native 方法，不在静态字段中调用 JNI。</p>
  */
 final class KQueueStaticallyReferencedJniMethods {
     private KQueueStaticallyReferencedJniMethods() { }
 
+    /** EV_ADD 常量（JNI 从 native 读取） */
     static native short evAdd();
     static native short evEnable();
     static native short evDisable();
@@ -37,7 +39,7 @@ final class KQueueStaticallyReferencedJniMethods {
     static native short evEOF();
     static native short evError();
 
-    // data/hint fflags for EVFILT_SOCK, shared with userspace.
+    // EVFILT_SOCK 的 NOTE_* fflags，与内核/userspace 共享
     static native short noteReadClosed();
     static native short noteConnReset();
     static native short noteDisconnected();
@@ -47,11 +49,11 @@ final class KQueueStaticallyReferencedJniMethods {
     static native short evfiltUser();
     static native short evfiltSock();
 
-    // Flags for connectx(2)
+    // connectx(2) 连接标志
     static native int connectResumeOnReadWrite();
     static native int connectDataIdempotent();
 
-    // Sysctl values.
+    // sysctl 探测 TCP FastOpen 客户端/服务端支持
     static native int fastOpenClient();
     static native int fastOpenServer();
 }

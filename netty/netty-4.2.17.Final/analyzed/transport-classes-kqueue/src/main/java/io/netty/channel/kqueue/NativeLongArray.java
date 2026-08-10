@@ -24,11 +24,17 @@ import java.nio.ByteBuffer;
 import static io.netty.channel.unix.Limits.SIZEOF_JLONG;
 import static io.netty.util.internal.ObjectUtil.checkPositive;
 
+/**
+ * 堆外 native-order {@code long[]}，供 JNI 批量传递 64 位值。
+ * <p>容量不足时按策略扩容；支持 Unsafe 与 ByteBuffer 两种写入路径。</p>
+ */
 final class NativeLongArray {
     private CleanableDirectBuffer memoryCleanable;
     private ByteBuffer memory;
     private long memoryAddress;
+    /** 当前可容纳的 long 个数 */
     private int capacity;
+    /** 已写入元素个数 */
     private int size;
 
     NativeLongArray(int capacity) {
@@ -68,11 +74,13 @@ final class NativeLongArray {
         return size;
     }
 
+    /** 释放堆外内存；之后不可再访问 */
     void free() {
         memoryCleanable.clean();
         memoryAddress = 0;
     }
 
+    /** 堆外数组起始地址，供 JNI 读取 */
     long memoryAddress() {
         return memoryAddress;
     }
@@ -87,12 +95,11 @@ final class NativeLongArray {
 
     private void reallocIfNeeded() {
         if (size == capacity) {
-            // Double the capacity while it is "sufficiently small", and otherwise increase by 50%.
+            // 较小时容量翻倍，较大时增量 50%
             int newLength = capacity <= 65536 ? capacity << 1 : capacity + (capacity >> 1);
             int newCapacity = calculateBufferCapacity(newLength);
             CleanableDirectBuffer buffer = Buffer.allocateDirectBufferWithNativeOrder(newCapacity);
-            // Copy over the old content of the memory and reset the position as we always act on the buffer as if
-            // the position was never increased.
+            // 拷贝旧内容；始终按 position=0 使用缓冲
             memory.position(0).limit(size);
             buffer.buffer().put(memory);
             buffer.buffer().position(0);

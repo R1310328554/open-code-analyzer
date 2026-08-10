@@ -22,6 +22,10 @@ import io.netty.util.internal.UnstableApi;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+/**
+ * Unix 原生传输堆外缓冲工具：分配、地址与字节序。
+ * <p>为 epoll/kqueue/io_uring 等 JNI 层提供 direct buffer 与指针大小查询。</p>
+ */
 @UnstableApi
 public final class Buffer {
 
@@ -30,6 +34,7 @@ public final class Buffer {
     /**
      * Free the direct {@link ByteBuffer}.
      * @deprecated Use {@link #allocateDirectBufferWithNativeOrder(int)} instead.
+     * <p>释放 direct ByteBuffer（已废弃，请用 CleanableDirectBuffer）。</p>
      */
     @Deprecated
     public static void free(ByteBuffer buffer) {
@@ -39,6 +44,7 @@ public final class Buffer {
     /**
      * Returns a new {@link ByteBuffer} which has the same {@link ByteOrder} as the native order of the machine.
      * @deprecated Use {@link #allocateDirectBufferWithNativeOrder(int)} instead.
+     * <p>分配与机器 native 字节序一致的 direct 缓冲（已废弃）。</p>
      */
     @Deprecated
     public static ByteBuffer allocateDirectWithNativeOrder(int capacity) {
@@ -49,6 +55,7 @@ public final class Buffer {
     /**
      * Returns a new {@link CleanableDirectBuffer} which has the same {@link ByteOrder} as the native order of the
      * machine.
+     * <p>分配 native 字节序的 {@link CleanableDirectBuffer}，供 JNI 与自动清理。</p>
      */
     public static CleanableDirectBuffer allocateDirectBufferWithNativeOrder(int capacity) {
         CleanableDirectBuffer cleanableDirectBuffer = PlatformDependent.allocateDirect(capacity);
@@ -59,6 +66,7 @@ public final class Buffer {
 
     /**
      * Returns the memory address of the given direct {@link ByteBuffer}.
+     * <p>返回 direct ByteBuffer 的堆外起始地址。</p>
      */
     public static long memoryAddress(ByteBuffer buffer) {
         assert buffer.isDirect();
@@ -70,6 +78,7 @@ public final class Buffer {
 
     /**
      * Returns the size of a pointer.
+     * <p>返回指针大小（4 或 8 字节）；无 Unsafe 时走 JNI。</p>
      */
     public static int addressSize() {
         if (PlatformDependent.hasUnsafe()) {
@@ -78,7 +87,7 @@ public final class Buffer {
         return addressSize0();
     }
 
-    // If Unsafe can not be used we will need to do JNI calls.
+    // 无 Unsafe 时 addressSize/memoryAddress 走 JNI
     private static native int addressSize0();
     private static native long memoryAddress0(ByteBuffer buffer);
 

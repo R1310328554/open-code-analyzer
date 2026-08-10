@@ -24,17 +24,23 @@ import java.net.SocketAddress;
 import static io.netty.channel.kqueue.BsdSocket.newSocketStream;
 import static io.netty.channel.unix.NativeInetAddress.address;
 
+/**
+ * 基于 KQueue 的 TCP {@link ServerSocketChannel}（IPv4/IPv6）。
+ * <p>bind 时设置 backlog；可选启用 TCP FastOpen； accept 创建 {@link KQueueSocketChannel}。</p>
+ */
 public final class KQueueServerSocketChannel extends AbstractKQueueServerChannel implements ServerSocketChannel {
+    /** 本通道专用配置（SO_REUSEPORT、accept 过滤器等） */
     private final KQueueServerSocketChannelConfig config;
 
+    /** 创建未绑定的 TCP 服务端通道 */
     public KQueueServerSocketChannel() {
         super(newSocketStream(), false);
         config = new KQueueServerSocketChannelConfig(this);
     }
 
+    /** 由已有监听 fd 包装（通常来自 accept 或外部传入） */
     public KQueueServerSocketChannel(int fd) {
-        // Must call this constructor to ensure this object's local address is configured correctly.
-        // The local address can only be obtained from a Socket object.
+        // 须通过 BsdSocket 构造以正确解析本地地址
         this(new BsdSocket(fd));
     }
 
@@ -52,7 +58,7 @@ public final class KQueueServerSocketChannel extends AbstractKQueueServerChannel
     protected void doBind(SocketAddress localAddress) throws Exception {
         super.doBind(localAddress);
         socket.listen(config.getBacklog());
-        if (config.isTcpFastOpen()) {
+        // bind 完成后若配置启用则打开服务端 TCP FastOpen
             socket.setTcpFastOpen(true);
         }
         active = true;
@@ -75,6 +81,6 @@ public final class KQueueServerSocketChannel extends AbstractKQueueServerChannel
 
     @Override
     protected Channel newChildChannel(int fd, byte[] address, int offset, int len) throws Exception {
-        return new KQueueSocketChannel(this, new BsdSocket(fd), address(address, offset, len));
+        // accept 到的子 fd 包装为 KQueueSocketChannel 并解析远端地址
     }
 }

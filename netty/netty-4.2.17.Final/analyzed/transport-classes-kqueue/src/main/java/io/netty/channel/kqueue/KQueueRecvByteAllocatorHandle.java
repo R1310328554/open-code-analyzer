@@ -26,6 +26,10 @@ import io.netty.util.UncheckedBooleanSupplier;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
+/**
+ * KQueue 接收字节缓冲分配器扩展句柄。
+ * <p>强制直缓冲、配合 EV_CLEAR 与 autoRead 控制是否继续读； 支持 EOF 与 pending 字节数语义。</p>
+ */
 final class KQueueRecvByteAllocatorHandle extends DelegatingHandle implements ExtendedHandle {
     private final PreferredDirectByteBufAllocator preferredDirectByteBufAllocator =
             new PreferredDirectByteBufAllocator();
@@ -36,7 +40,9 @@ final class KQueueRecvByteAllocatorHandle extends DelegatingHandle implements Ex
             return maybeMoreDataToRead();
         }
     };
+    /** 是否已读到流结束（EV_EOF） */
     private boolean readEOF;
+    /** kqueue data 字段报告的可读字节数（pending） */
     private long numberBytesPending;
 
     KQueueRecvByteAllocatorHandle(ExtendedHandle handle) {
@@ -45,7 +51,7 @@ final class KQueueRecvByteAllocatorHandle extends DelegatingHandle implements Ex
 
     @Override
     public ByteBuf allocate(ByteBufAllocator alloc) {
-        // We need to ensure we always allocate a direct ByteBuf as we can only use a direct buffer to read via JNI.
+        // JNI 读路径仅支持 direct ByteBuf，故包装 PreferredDirectByteBufAllocator
         preferredDirectByteBufAllocator.updateAllocator(alloc);
         return delegate().allocate(preferredDirectByteBufAllocator);
     }
@@ -57,7 +63,7 @@ final class KQueueRecvByteAllocatorHandle extends DelegatingHandle implements Ex
 
     @Override
     public boolean continueReading() {
-        // We must override the supplier which determines if there maybe more data to read.
+        // 覆盖 maybeMoreData 判定以适配 kqueue EV_CLEAR 语义
         return continueReading(defaultMaybeMoreDataSupplier);
     }
 
@@ -81,6 +87,7 @@ final class KQueueRecvByteAllocatorHandle extends DelegatingHandle implements Ex
          * continue to avoid a {@link StackOverflowError} between channelReadComplete and reading from the
          * channel. It is expected that the {@link #KQueueSocketChannel} implementations will track if all data was not
          * read, and will force a EVFILT_READ ready event.
+         * <p>EV_CLEAR 要求读尽 data 字节；autoRead 关闭时可提前停止； EOF 由 {@link #isReadEOF()} 外部处理。</p>
          *
          * It is assumed EOF is handled externally by checking {@link #isReadEOF()}.
          */

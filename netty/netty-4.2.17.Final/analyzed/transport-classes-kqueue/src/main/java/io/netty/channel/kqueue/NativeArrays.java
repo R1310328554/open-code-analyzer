@@ -17,13 +17,18 @@ package io.netty.channel.kqueue;
 
 import io.netty.channel.unix.IovArray;
 
+/**
+ * KQueue IoRegistration 附带的原生 I/O 辅助数组（懒初始化）。
+ * <p>当前提供可复用的 {@link IovArray} 供 writev 聚集写。</p>
+ */
 final class NativeArrays {
 
-    // These are initialized on first use
+    // 首次 write 时懒初始化
     private IovArray iovArray;
 
     /**
      * Return a cleared {@link IovArray} that can be used for writes.
+     * <p>返回已 clear 的 IovArray，供本次 writev 使用。</p>
      */
     IovArray cleanIovArray() {
         if (iovArray == null) {
@@ -35,7 +40,7 @@ final class NativeArrays {
     }
 
     void free() {
-        // release native memory
+        // IoHandler destroy 时释放 IovArray 堆外内存
         if (iovArray != null) {
             iovArray.release();
             iovArray = null;

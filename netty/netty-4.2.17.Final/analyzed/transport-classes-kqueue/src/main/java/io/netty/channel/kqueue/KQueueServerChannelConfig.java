@@ -34,8 +34,14 @@ import static io.netty.channel.ChannelOption.SO_REUSEADDR;
 import static io.netty.channel.ChannelOption.TCP_FASTOPEN;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
+/**
+ * KQueue 服务端通道通用配置：backlog、SO_RCVBUF、TCP FastOpen 等。
+ * <p>供 {@link KQueueServerSocketChannel} 与 {@link KQueueServerDomainSocketChannel} 共用。</p>
+ */
 public class KQueueServerChannelConfig extends KQueueChannelConfig implements ServerSocketChannelConfig {
+    /** listen  backlog 队列长度 */
     private volatile int backlog = NetUtil.SOMAXCONN;
+    /** 是否在 listen 后启用服务端 TCP FastOpen */
     private volatile boolean enableTcpFastOpen;
 
     KQueueServerChannelConfig(AbstractKQueueChannel channel) {
@@ -136,6 +142,7 @@ public class KQueueServerChannelConfig extends KQueueChannelConfig implements Se
 
     /**
      * Returns {@code true} if TCP FastOpen is enabled.
+     * <p>是否已配置启用 TCP FastOpen（RFC 7413 被动打开）。</p>
      *
      * @see <a href="https://tools.ietf.org/html/rfc7413#appendix-A.2">RFC 7413 Passive Open</a>
      */
@@ -146,6 +153,7 @@ public class KQueueServerChannelConfig extends KQueueChannelConfig implements Se
     /**
      * Enables TCP FastOpen on the server channel. If the underlying os doesn't support TCP_FASTOPEN setting this has no
      * effect. This has to be set before doing listen on the socket otherwise this takes no effect.
+     * <p>启用服务端 TCP FastOpen；须在 listen 之前设置；OS 不支持时无效果。</p>
      *
      * @param enableTcpFastOpen {@code true} if TCP FastOpen should be enabled for incoming connections.
      *

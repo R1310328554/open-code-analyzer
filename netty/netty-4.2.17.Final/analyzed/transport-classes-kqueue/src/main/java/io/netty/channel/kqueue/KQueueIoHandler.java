@@ -48,24 +48,30 @@ import static java.lang.Math.min;
 
 /**
  * {@link IoHandler} which uses kqueue under the covers. Only works on BSD!
+ * <p>BSD/macOS 原生 kqueue 实现的 {@link IoHandler}：管理 changelist/eventlist、 IoRegistration 与 {@code kevent(2)} 事件循环。</p>
  */
 public final class KQueueIoHandler implements IoHandler {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(KQueueIoHandler.class);
     private static final AtomicIntegerFieldUpdater<KQueueIoHandler> WAKEN_UP_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(KQueueIoHandler.class, "wakenUp");
+    /** 内部唤醒用的 kevent ident，保留不可被通道占用 */
     private static final int KQUEUE_WAKE_UP_IDENT = 0;
-    // `kqueue()` may return EINVAL when a large number such as Integer.MAX_VALUE is specified as timeout.
-    // 24 hours would be a large enough value.
+    // kqueue 超时过大可能返回 EINVAL；上限取约 24 小时
     // https://man.freebsd.org/cgi/man.cgi?query=kevent&apropos=0&sektion=0&manpath=FreeBSD+6.1-RELEASE&format=html#end
+    /** kevent 等待最大秒数（24 小时减 1 秒） */
     private static final int KQUEUE_MAX_TIMEOUT_SECONDS = 86399; // 24 hours - 1 second
 
     {
         KQueue.ensureAvailability();
     }
 
+    /** 事件数组是否允许在 wait 填满时自动扩容 */
     private final boolean allowGrowing;
+    /** kqueue 文件描述符 */
     private final FileDescriptor kqueueFd;
+    /** 提交给 kevent 的 changelist */
     private final KQueueEventArray changeList;
+    /** kevent 返回的 eventlist */
     private final KQueueEventArray eventList;
     private final SelectStrategy selectStrategy;
     private final NativeArrays nativeArrays;
@@ -77,10 +83,12 @@ public final class KQueueIoHandler implements IoHandler {
     };
     private final ThreadAwareExecutor executor;
     private final Queue<DefaultKqueueIoRegistration> cancelledRegistrations = new ArrayDeque<>();
+    /** udata（registration id）到 IoRegistration 的映射 */
     private final LongObjectMap<DefaultKqueueIoRegistration> registrations = new LongObjectHashMap<>(4096);
     private int numChannels;
     private long nextId;
 
+    /** 是否已被其他线程唤醒（CAS 协调 wakeup 与 select） */
     private volatile int wakenUp;
 
     private long generateNextId() {
@@ -104,6 +112,7 @@ public final class KQueueIoHandler implements IoHandler {
 
     /**
      * Returns a new {@link IoHandlerFactory} that creates {@link KQueueIoHandler} instances.
+     * <p>返回创建 {@link KQueueIoHandler} 的工厂；默认 maxEvents=0 表示可增长数组。</p>
      */
     public static IoHandlerFactory newFactory() {
         return newFactory(0, DefaultSelectStrategyFactory.INSTANCE);
@@ -111,6 +120,7 @@ public final class KQueueIoHandler implements IoHandler {
 
     /**
      * Returns a new {@link IoHandlerFactory} that creates {@link KQueueIoHandler} instances.
+     * <p>返回创建 KQueueIoHandler 的工厂。</p>
      */
     public static IoHandlerFactory newFactory(final int maxEvents,
                                               final SelectStrategyFactory selectStrategyFactory) {
@@ -160,15 +170,11 @@ public final class KQueueIoHandler implements IoHandler {
 
     private void wakeup0() {
         Native.keventTriggerUserEvent(kqueueFd.intValue(), KQUEUE_WAKE_UP_IDENT);
-        // Note that the result may return an error (e.g. errno = EBADF after the event loop has been shutdown).
-        // So it is not very practical to assert the return value is always >= 0.
+        // 关闭后可能 EBADF；不强制断言返回值 >= 0
     }
 
     private int kqueueWait(IoHandlerContext context, boolean oldWakeup) throws IOException {
-        // If a task was submitted when wakenUp value was 1, the task didn't get a chance to produce wakeup event.
-        // So we need to check task queue again before calling kqueueWait. If we don't, the task might be pended
-        // until kqueueWait was timed out. It might be pended until idle timeout if IdleStateHandler existed
-        // in pipeline.
+        // wakenUp=1 时提交的任务可能未触发 user event；阻塞前需再检查任务队列
         if (oldWakeup && !context.canBlock()) {
             return kqueueWaitNow();
         }
@@ -196,8 +202,7 @@ public final class KQueueIoHandler implements IoHandler {
             final short flags = eventList.flags(i);
             final int ident = eventList.ident(i);
             if (filter == Native.EVFILT_USER || (flags & Native.EV_ERROR) != 0) {
-                // EV_ERROR is returned if the FD is closed synchronously (which removes from kqueue) and then
-                // we later attempt to delete the filters from kqueue.
+                // FD 已关闭并从 kqueue 移除后删除过滤器会返回 EV_ERROR
                 assert filter != Native.EVFILT_USER ||
                         (filter == Native.EVFILT_USER && ident == KQUEUE_WAKE_UP_IDENT);
                 continue;
@@ -207,9 +212,7 @@ public final class KQueueIoHandler implements IoHandler {
             long id = eventList.udata(i);
             DefaultKqueueIoRegistration registration = registrations.get(id);
             if (registration == null) {
-                // This may happen if the channel has already been closed, and it will be removed from kqueue anyways.
-                // We also handle EV_ERROR above to skip this even early if it is a result of a referencing a closed and
-                // thus removed from kqueue FD.
+                // 通道已关闭时 registration 可能为 null；EV_ERROR 路径已提前跳过
                 logger.warn("events[{}]=[{}, {}, {}] had no registration!", i, ident, id, filter);
                 continue;
             }
@@ -231,7 +234,7 @@ public final class KQueueIoHandler implements IoHandler {
                     return 0;
 
                 case SelectStrategy.BUSY_WAIT:
-                    // fall-through to SELECT since the busy-wait is not supported with kqueue
+                    // kqueue 不支持 busy-wait，回落到 SELECT
 
                 case SelectStrategy.SELECT:
                     strategy = kqueueWait(context, WAKEN_UP_UPDATER.getAndSet(this, 0) == 1);
@@ -285,7 +288,7 @@ public final class KQueueIoHandler implements IoHandler {
             }
 
             if (allowGrowing && strategy == eventList.capacity()) {
-                //increase the size of the array as we needed the whole space for the events
+                // eventlist 已满，按需扩容
                 eventList.realloc(false);
             }
         } catch (Error e) {
@@ -298,7 +301,7 @@ public final class KQueueIoHandler implements IoHandler {
         return handled;
     }
 
-    // Process all previous cannceld registrations and remove them from the registration map.
+    // 处理已取消的 registration，从映射中移除
     private void processCancelledRegistrations() {
         for (;;) {
             DefaultKqueueIoRegistration cancelledRegistration = cancelledRegistrations.poll();
@@ -337,8 +340,7 @@ public final class KQueueIoHandler implements IoHandler {
     private static void handleLoopException(Throwable t) {
         logger.warn("Unexpected exception in the selector loop.", t);
 
-        // Prevent possible consecutive immediate failures that lead to
-        // excessive CPU consumption.
+        // 避免 selector 循环连续失败导致 CPU 空转
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
@@ -354,8 +356,7 @@ public final class KQueueIoHandler implements IoHandler {
             // ignore on close
         }
 
-        // Using the intermediate collection to prevent ConcurrentModificationException.
-        // In the `close()` method, the channel is deleted from `channels` map.
+        // 拷贝数组避免 close 时修改 registrations 导致 CME
         DefaultKqueueIoRegistration[] copy = registrations.values().toArray(new DefaultKqueueIoRegistration[0]);
 
         for (DefaultKqueueIoRegistration reg: copy) {
@@ -374,7 +375,7 @@ public final class KQueueIoHandler implements IoHandler {
                 logger.warn("Failed to close the kqueue fd.", e);
             }
         } finally {
-            // Cleanup all native memory!
+            // 释放 kqueue fd 与堆外 kevent/Iov 内存
             nativeArrays.free();
             changeList.free();
             eventList.free();
@@ -392,7 +393,7 @@ public final class KQueueIoHandler implements IoHandler {
                 executor, kqueueHandle);
         DefaultKqueueIoRegistration old = registrations.put(registration.id, registration);
         if (old != null) {
-            // This should never happen but just in case.
+            // 理论上不应发生 id 冲突
             registrations.put(old.id, old);
             throw new IllegalStateException();
         }
@@ -422,6 +423,7 @@ public final class KQueueIoHandler implements IoHandler {
         return KQueueIoHandle.class.isAssignableFrom(handleType);
     }
 
+    /** 单条 {@link KQueueIoHandle} 在 kqueue 上的注册与 changelist 提交 */
     private final class DefaultKqueueIoRegistration implements IoRegistration {
         private boolean cancellationPending;
         private final AtomicBoolean canceled = new AtomicBoolean();
@@ -467,7 +469,7 @@ public final class KQueueIoHandler implements IoHandler {
 
         void handle(int ident, short filter, short flags, int fflags, long data, long udata) {
             if (cancellationPending) {
-                // This registration was already cancelled but not removed from the map yet, just ignore.
+                // 已取消但尚未从 map 移除，忽略后续 kevent
                 return;
             }
             event.update(ident, filter, flags, fflags, data, udata);
@@ -501,9 +503,7 @@ public final class KQueueIoHandler implements IoHandler {
         }
 
         private void cancel0() {
-            // Let's add the registration to our cancelledRegistrations queue so we will process it
-            // after we processed all events. This is needed as otherwise we might end up removing it
-            // from the registration map while we still have some unprocessed events.
+            // 延迟到本轮事件处理后再从 map 移除，避免未处理事件丢失
             cancellationPending = true;
             cancelledRegistrations.offer(this);
         }

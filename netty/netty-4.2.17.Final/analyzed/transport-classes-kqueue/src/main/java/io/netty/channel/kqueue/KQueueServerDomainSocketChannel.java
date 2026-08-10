@@ -26,12 +26,17 @@ import java.net.SocketAddress;
 
 import static io.netty.channel.kqueue.BsdSocket.newSocketDomain;
 
+/**
+ * 基于 KQueue 的 Unix 域监听 {@link ServerDomainSocketChannel}。
+ * <p>bind 后 listen；accept 子通道为 {@link KQueueDomainSocketChannel}； 关闭时尝试删除域套接字路径文件。</p>
+ */
 public final class KQueueServerDomainSocketChannel extends AbstractKQueueServerChannel
                                                   implements ServerDomainSocketChannel {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(
             KQueueServerDomainSocketChannel.class);
 
     private final KQueueServerChannelConfig config = new KQueueServerChannelConfig(this);
+    /** 绑定后的本地 Unix 域地址 */
     private volatile DomainSocketAddress local;
 
     public KQueueServerDomainSocketChannel() {
@@ -71,7 +76,7 @@ public final class KQueueServerDomainSocketChannel extends AbstractKQueueServerC
         } finally {
             DomainSocketAddress local = this.local;
             if (local != null) {
-                // Delete the socket file if possible.
+                // 关闭后尽量删除文件系统上的 domain socket 文件
                 File socketFile = new File(local.path());
                 boolean success = socketFile.delete();
                 if (!success && logger.isDebugEnabled()) {

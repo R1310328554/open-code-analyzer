@@ -27,6 +27,10 @@ import io.netty.channel.unix.IovArray;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+/**
+ * 基于 KQueue 的 TCP 客户端 {@link SocketChannel}。
+ * <p>支持 {@link SocketProtocolFamily}、客户端 TCP FastOpen（connectx） 与标准流式读写。</p>
+ */
 public final class KQueueSocketChannel extends AbstractKQueueStreamChannel implements SocketChannel {
     private final KQueueSocketChannelConfig config;
 
@@ -37,6 +41,7 @@ public final class KQueueSocketChannel extends AbstractKQueueStreamChannel imple
 
     /**
      * @deprecated use {@link KQueueDatagramChannel(SocketProtocolFamily)}
+     * <p>已废弃，请使用 {@link SocketProtocolFamily} 构造重载。</p>
      */
     @Deprecated
     public KQueueSocketChannel(InternetProtocolFamily protocol) {
@@ -87,7 +92,7 @@ public final class KQueueSocketChannel extends AbstractKQueueStreamChannel imple
             Object curr;
             if ((curr = outbound.current()) instanceof ByteBuf) {
                 ByteBuf initialData = (ByteBuf) curr;
-                // Don't bother with TCP FastOpen if we don't have any initial data to send anyway.
+                // 无首包数据时不走 TCP FastOpen connectx
                 if (initialData.isReadable()) {
                     IovArray iov = new IovArray(config.getAllocator().directBuffer());
                     try {
@@ -96,8 +101,7 @@ public final class KQueueSocketChannel extends AbstractKQueueStreamChannel imple
                                 (InetSocketAddress) localAddress, (InetSocketAddress) remoteAddress, iov, true);
                         writeFilter(true);
                         outbound.removeBytes(Math.abs(bytesSent));
-                        // The `connectx` method returns a negative number if connection is in-progress.
-                        // So we should return `true` to indicate that connection was established, if it's positive.
+                        // connectx 负值表示进行中；正值表示已建立连接
                         return bytesSent > 0;
                     } finally {
                         iov.release();

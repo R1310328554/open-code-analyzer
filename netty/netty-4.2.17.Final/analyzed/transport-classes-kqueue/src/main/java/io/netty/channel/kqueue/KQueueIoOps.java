@@ -20,15 +20,21 @@ import io.netty.channel.IoOps;
 /**
  * Implementation of {@link IoOps} for
  * that is used by {@link KQueueIoHandler} and so for kqueue based transports.
+ * <p>封装一条 kevent changelist 项：filter、flags、fflags 与 data。</p>
  */
 public final class KQueueIoOps implements IoOps {
+    /** kevent 过滤器（如 EVFILT_READ/WRITE） */
     private final short filter;
+    /** EV_ADD/EV_ENABLE/EV_DELETE 等通用 flags */
     private final short flags;
+    /** 过滤器相关 fflags（如 NOTE_EOF） */
     private final int fflags;
+    /** 过滤器相关 data 字段 */
     private final long data;
 
     /**
      * Creates a new {@link KQueueIoOps}.
+     * <p>构造 kqueue I/O 操作描述，data 默认为 0。</p>
      *
      * @param filter    the filter for this event.
      * @param flags     the general flags.
@@ -48,6 +54,7 @@ public final class KQueueIoOps implements IoOps {
 
     /**
      * Returns the filter for this event.
+     * <p>返回 kevent 过滤器类型。</p>
      *
      * @return filter.
      */
@@ -57,6 +64,7 @@ public final class KQueueIoOps implements IoOps {
 
     /**
      * Returns the general flags.
+     * <p>返回 kevent 通用 flags。</p>
      *
      * @return flags.
      */
@@ -66,6 +74,7 @@ public final class KQueueIoOps implements IoOps {
 
     /**
      * Returns filter-specific flags.
+     * <p>返回过滤器相关 fflags。</p>
      *
      * @return fflags.
      */
@@ -75,6 +84,7 @@ public final class KQueueIoOps implements IoOps {
 
     /**
      * Returns filter-specific data.
+     * <p>返回过滤器相关 data 字段。</p>
      *
      * @return data.
      */
