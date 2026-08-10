@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T05:01:25Z",
-  "files": [
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-base/src/main/java/com/alibaba/nacos/plugin/datasource/impl/dialect/AbstractDatabaseDialect.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-base/src/main/java/com/alibaba/nacos/plugin/datasource/impl/enums/TrustedPostgresqFunctionEnum.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/AbstractMapperByDerby.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/AiResourceMapperByDerby.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/AiResourceVersionMapperByDerby.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/ConfigInfoBetaMapperByDerby.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/ConfigInfoGrayMapperByDerby.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/ConfigInfoMapperByDerby.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/ConfigInfoTagMapperByDerby.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/ConfigInfoTagsRelationMapperByDerby.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/ConfigMigrateMapperByDerby.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/GroupCapacityMapperByDerby.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/HistoryConfigInfoMapperByDerby.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/TenantCapacityMapperByDerby.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/derby/TenantInfoMapperByDerby.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 227,
-  "done": 2295
+  "done": 2310
 }
