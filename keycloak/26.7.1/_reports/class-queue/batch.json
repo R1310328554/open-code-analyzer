@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:32:04Z",
-  "files": [
-    "services/src/main/java/org/keycloak/social/instagram/InstagramIdentityProvider.java",
-    "services/src/main/java/org/keycloak/social/instagram/InstagramIdentityProviderFactory.java",
-    "services/src/main/java/org/keycloak/social/instagram/InstagramUserAttributeMapper.java",
-    "services/src/main/java/org/keycloak/social/linkedin/LinkedInOIDCIdentityProvider.java",
-    "services/src/main/java/org/keycloak/social/linkedin/LinkedInOIDCIdentityProviderFactory.java",
-    "services/src/main/java/org/keycloak/social/linkedin/LinkedInPublicKeyLoader.java",
-    "services/src/main/java/org/keycloak/social/linkedin/LinkedInUserAttributeMapper.java",
-    "services/src/main/java/org/keycloak/social/microsoft/MicrosoftIdentityProvider.java",
-    "services/src/main/java/org/keycloak/social/microsoft/MicrosoftIdentityProviderConfig.java",
-    "services/src/main/java/org/keycloak/social/microsoft/MicrosoftIdentityProviderFactory.java",
-    "services/src/main/java/org/keycloak/social/microsoft/MicrosoftUserAttributeMapper.java",
-    "services/src/main/java/org/keycloak/social/openshift/OpenshiftV4AttributeMapper.java",
-    "services/src/main/java/org/keycloak/social/openshift/OpenshiftV4IdentityProvider.java",
-    "services/src/main/java/org/keycloak/social/openshift/OpenshiftV4IdentityProviderConfig.java",
-    "services/src/main/java/org/keycloak/social/openshift/OpenshiftV4IdentityProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 778,
-  "done": 5205
+  "done": 5220
 }
