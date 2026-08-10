@@ -26,6 +26,7 @@ import java.net.StandardSocketOptions;
 
 /**
  * A {@link ChannelConfig} for a {@link ServerSocketChannel}.
+ * <p>{@link ServerSocketChannel} 的配置，含 backlog、地址复用、接收缓冲区等 listen 相关选项。</p>
  *
  * <h3>Available options</h3>
  *
@@ -50,38 +51,45 @@ public interface ServerSocketChannelConfig extends ChannelConfig {
     /**
      * Gets the backlog value to specify when the channel binds to a local
      * address.
+     * <p>获取 bind 时使用的连接 backlog 队列长度。</p>
      */
     int getBacklog();
 
     /**
      * Sets the backlog value to specify when the channel binds to a local
      * address.
+     * <p>设置 bind 时的 backlog。</p>
      */
     ServerSocketChannelConfig setBacklog(int backlog);
 
     /**
      * Gets the {@link StandardSocketOptions#SO_REUSEADDR} option.
+     * <p>是否启用 {@link StandardSocketOptions#SO_REUSEADDR}。</p>
      */
     boolean isReuseAddress();
 
     /**
      * Sets the {@link StandardSocketOptions#SO_REUSEADDR} option.
+     * <p>设置地址复用选项。</p>
      */
     ServerSocketChannelConfig setReuseAddress(boolean reuseAddress);
 
     /**
      * Gets the {@link StandardSocketOptions#SO_RCVBUF} option.
+     * <p>获取接收缓冲区大小。</p>
      */
     int getReceiveBufferSize();
 
     /**
      * Gets the {@link StandardSocketOptions#SO_SNDBUF} option.
+     * <p>设置接收缓冲区大小。</p>
      */
     ServerSocketChannelConfig setReceiveBufferSize(int receiveBufferSize);
 
     /**
      * Sets the performance preferences as specified in
      * {@link ServerSocket#setPerformancePreferences(int, int, int)}.
+     * <p>设置连接时间、延迟与带宽偏好（委托 {@link ServerSocket#setPerformancePreferences}）。</p>
      */
     ServerSocketChannelConfig setPerformancePreferences(int connectionTime, int latency, int bandwidth);
 

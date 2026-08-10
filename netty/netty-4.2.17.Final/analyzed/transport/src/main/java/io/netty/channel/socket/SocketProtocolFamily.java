@@ -20,18 +20,22 @@ import java.net.StandardProtocolFamily;
 
 /**
  * {@link ProtocolFamily} implementation that is used by the different transport implementations.
+ * <p>各传输实现使用的 {@link ProtocolFamily}，涵盖 INET、INET6 与 UNIX 域套接字。</p>
  */
 public enum SocketProtocolFamily implements ProtocolFamily {
     /**
      * IPv4
+     * <p>IPv4 协议族。</p>
      */
     INET,
     /**
      * IPv6
+     * <p>IPv6 协议族。</p>
      */
     INET6,
     /**
      * Unix Domain Socket
+     * <p>Unix 域套接字协议族。</p>
      */
     UNIX;
 
@@ -41,6 +45,7 @@ public enum SocketProtocolFamily implements ProtocolFamily {
      *
      * @return the JDK {@link ProtocolFamily}.
      * @throws UnsupportedOperationException if it can't be converted.
+     * <p>转换为 JDK 原生 {@link ProtocolFamily}；无法转换时抛出 {@link UnsupportedOperationException}。</p>
      */
     public ProtocolFamily toJdkFamily() {
         switch (this) {
@@ -64,6 +69,7 @@ public enum SocketProtocolFamily implements ProtocolFamily {
      * @param family    the JDK {@link ProtocolFamily} to convert.
      * @return          the {@link SocketProtocolFamily}.
      * @throws          UnsupportedOperationException if it can't be converted.
+     * <p>将 JDK {@link ProtocolFamily} 转为 {@link SocketProtocolFamily}；不支持则抛出异常。</p>
      */
     public static SocketProtocolFamily of(ProtocolFamily family) {
         if (family instanceof StandardProtocolFamily) {

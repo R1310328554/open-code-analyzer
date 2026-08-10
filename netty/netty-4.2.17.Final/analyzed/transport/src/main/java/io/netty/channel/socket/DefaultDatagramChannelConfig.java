@@ -40,22 +40,27 @@ import static io.netty.channel.ChannelOption.*;
 
 /**
  * The default {@link DatagramChannelConfig} implementation.
+ * <p>{@link DatagramChannelConfig} 的默认实现，将选项映射到底层 JDK {@link DatagramSocket}/{@link MulticastSocket}。</p>
  */
 public class DefaultDatagramChannelConfig extends DefaultChannelConfig implements DatagramChannelConfig {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(DefaultDatagramChannelConfig.class);
 
+    /** 底层 JDK datagram/multicast socket */
     private final DatagramSocket javaSocket;
+    /** 是否在 register 时即视为 active（可通过选项配置） */
     private volatile boolean activeOnOpen;
 
     /**
      * Creates a new instance.
+     * <p>为指定 {@link DatagramChannel} 与 JDK socket 创建配置。</p>
      */
     public DefaultDatagramChannelConfig(DatagramChannel channel, DatagramSocket javaSocket) {
         super(channel, new FixedRecvByteBufAllocator(2048));
         this.javaSocket = ObjectUtil.checkNotNull(javaSocket, "javaSocket");
     }
 
+    /** 供子类访问底层 JDK socket */
     protected final DatagramSocket javaSocket() {
         return javaSocket;
     }
@@ -137,6 +142,7 @@ public class DefaultDatagramChannelConfig extends DefaultChannelConfig implement
         return true;
     }
 
+    /** 设置是否在 channel 注册后立即 active；仅允许在 register 之前修改 */
     private void setActiveOnOpen(boolean activeOnOpen) {
         if (channel.isRegistered()) {
             throw new IllegalStateException("Can only changed before channel was registered");
@@ -162,6 +168,7 @@ public class DefaultDatagramChannelConfig extends DefaultChannelConfig implement
                 !PlatformDependent.isWindows() && !PlatformDependent.maybeSuperUser()) {
                 // Warn a user about the fact that a non-root user can't receive a
                 // broadcast packet on *nix if the socket is bound on non-wildcard address.
+                // 非 root 且绑定非通配地址时，*nix 上可能无法接收广播，仍按请求设置 SO_BROADCAST
                 logger.warn(
                         "A non-root user can't receive a broadcast packet if the socket " +
                         "is not bound to a wildcard address; setting the SO_BROADCAST flag " +

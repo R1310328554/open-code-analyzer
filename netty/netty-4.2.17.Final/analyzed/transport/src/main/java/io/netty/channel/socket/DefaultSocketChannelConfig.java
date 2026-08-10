@@ -33,26 +33,32 @@ import static io.netty.channel.ChannelOption.*;
 
 /**
  * The default {@link SocketChannelConfig} implementation.
+ * <p>{@link SocketChannelConfig} 默认实现，在支持时默认启用 TCP_NODELAY。</p>
  */
 public class DefaultSocketChannelConfig extends DefaultChannelConfig
                                         implements SocketChannelConfig {
 
+    /** 底层 JDK {@link Socket} */
     protected final Socket javaSocket;
+    /** 是否允许半关闭（远端关输出时不自动 close） */
     private volatile boolean allowHalfClosure;
 
     /**
      * Creates a new instance.
+     * <p>创建配置；若平台允许则默认开启 TCP_NODELAY。</p>
      */
     public DefaultSocketChannelConfig(SocketChannel channel, Socket javaSocket) {
         super(channel);
         this.javaSocket = ObjectUtil.checkNotNull(javaSocket, "javaSocket");
 
         // Enable TCP_NODELAY by default if possible.
+        // 在平台支持时默认启用 TCP_NODELAY，降低小包延迟
         if (PlatformDependent.canEnableTcpNoDelayByDefault()) {
             try {
                 setTcpNoDelay(true);
             } catch (Exception e) {
                 // Ignore.
+                // 设置失败时忽略，保留系统默认
             }
         }
     }
@@ -234,6 +240,7 @@ public class DefaultSocketChannelConfig extends DefaultChannelConfig
     }
 
     @Override
+    /** {@inheritDoc} 将 SO_LINGER 秒数映射到 JDK socket；负值表示禁用 linger */
     public SocketChannelConfig setSoLinger(int soLinger) {
         try {
             if (soLinger < 0) {

@@ -23,15 +23,20 @@ import java.net.InetAddress;
 
 /**
  * Internet Protocol (IP) families used by the {@link DatagramChannel}
+ * <p>{@link DatagramChannel} 使用的 IP 协议族（IPv4 / IPv6）。</p>
  *
  * @deprecated use {@link SocketProtocolFamily}.
  */
 @Deprecated
 public enum InternetProtocolFamily {
+    /** IPv4 协议族 */
     IPv4(Inet4Address.class, 1),
+    /** IPv6 协议族 */
     IPv6(Inet6Address.class, 2);
 
+    /** 该协议族对应的 {@link InetAddress} 实现类型 */
     private final Class<? extends InetAddress> addressType;
+    /** IANA 地址族编号 */
     private final int addressNumber;
 
     InternetProtocolFamily(Class<? extends InetAddress> addressType, int addressNumber) {
@@ -41,6 +46,7 @@ public enum InternetProtocolFamily {
 
     /**
      * Returns the address type of this protocol family.
+     * <p>返回此协议族对应的地址类型。</p>
      */
     public Class<? extends InetAddress> addressType() {
         return addressType;
@@ -50,6 +56,7 @@ public enum InternetProtocolFamily {
      * Returns the
      * <a href="https://www.iana.org/assignments/address-family-numbers/address-family-numbers.xhtml">address number</a>
      * of the family.
+     * <p>返回 IANA 定义的地址族编号。</p>
      */
     public int addressNumber() {
         return addressNumber;
@@ -57,6 +64,7 @@ public enum InternetProtocolFamily {
 
     /**
      * Returns the {@link InetAddress} that represent the {@code LOCALHOST} for the family.
+     * <p>返回该协议族下的本地回环（LOCALHOST）地址。</p>
      */
     public InetAddress localhost() {
         switch (this) {
@@ -71,6 +79,7 @@ public enum InternetProtocolFamily {
 
     /**
      * Returns the {@link InternetProtocolFamily} for the given {@link InetAddress}.
+     * <p>根据 {@link InetAddress} 实例推断对应的 {@link InternetProtocolFamily}。</p>
      */
     public static InternetProtocolFamily of(InetAddress address) {
         if (address instanceof Inet4Address) {
@@ -82,6 +91,7 @@ public enum InternetProtocolFamily {
         throw new IllegalArgumentException("address " + address + " not supported");
     }
 
+    /** 转换为 {@link SocketProtocolFamily} 枚举 */
     public SocketProtocolFamily toSocketProtocolFamily() {
         switch (this) {
             case IPv4:

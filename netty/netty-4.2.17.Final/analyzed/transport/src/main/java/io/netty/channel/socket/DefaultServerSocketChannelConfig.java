@@ -37,15 +37,19 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
  * The default {@link ServerSocketChannelConfig} implementation.
+ * <p>{@link ServerSocketChannelConfig} 默认实现，封装 {@link ServerSocket} 的 backlog 与 socket 选项。</p>
  */
 public class DefaultServerSocketChannelConfig extends DefaultChannelConfig
                                               implements ServerSocketChannelConfig {
 
+    /** 底层 JDK {@link ServerSocket} */
     protected final ServerSocket javaSocket;
+    /** 待应用的 backlog，bind 时使用 */
     private volatile int backlog = NetUtil.SOMAXCONN;
 
     /**
      * Creates a new instance.
+     * <p>为指定 {@link ServerSocketChannel} 创建配置。</p>
      */
     public DefaultServerSocketChannelConfig(ServerSocketChannel channel, ServerSocket javaSocket) {
         super(channel, new ServerChannelRecvByteBufAllocator());

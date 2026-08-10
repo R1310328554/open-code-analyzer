@@ -26,6 +26,7 @@ import io.netty.channel.WriteBufferWaterMark;
 
 /**
  * A {@link ChannelConfig} for a {@link DuplexChannel}.
+ * <p>{@link DuplexChannel} 的配置，主要扩展半关闭（{@link ChannelOption#ALLOW_HALF_CLOSURE}）等行为。</p>
  *
  * <h3>Available options</h3>
  *
@@ -44,6 +45,7 @@ public interface DuplexChannelConfig extends ChannelConfig {
      * Returns {@code true} if and only if the channel should not close itself when its remote
      * peer shuts down output to make the connection half-closed.  If {@code false}, the connection
      * is closed automatically when the remote peer shuts down output.
+     * <p>远端 shutdown 输出后，若允许半关闭则本 channel 不自动关闭，而是触发 {@link ChannelInputShutdownEvent} 等事件。</p>
      */
     boolean isAllowHalfClosure();
 
@@ -54,6 +56,7 @@ public interface DuplexChannelConfig extends ChannelConfig {
      * {@link ChannelInboundHandler#userEventTriggered(ChannelHandlerContext, Object)}
      * is invoked with a {@link ChannelInputShutdownEvent} object. If {@code false}, the connection
      * is closed automatically.
+     * <p>设置是否允许半关闭：{@code true} 时远端关输出后仍保持连接并派发用户事件。</p>
      */
     DuplexChannelConfig setAllowHalfClosure(boolean allowHalfClosure);
 

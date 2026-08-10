@@ -28,6 +28,7 @@ import java.net.StandardSocketOptions;
 
 /**
  * A {@link ChannelConfig} for a {@link DatagramChannel}.
+ * <p>{@link DatagramChannel} 的 {@link ChannelConfig}，扩展组播、广播等 UDP 专用 socket 选项。</p>
  *
  * <h3>Available options</h3>
  *
@@ -64,51 +65,61 @@ public interface DatagramChannelConfig extends ChannelConfig {
 
     /**
      * Gets the {@link StandardSocketOptions#SO_SNDBUF} option.
+     * <p>获取发送缓冲区大小（{@link StandardSocketOptions#SO_SNDBUF}）。</p>
      */
     int getSendBufferSize();
 
     /**
      * Sets the {@link StandardSocketOptions#SO_SNDBUF} option.
+     * <p>设置发送缓冲区大小。</p>
      */
     DatagramChannelConfig setSendBufferSize(int sendBufferSize);
 
     /**
      * Gets the {@link StandardSocketOptions#SO_RCVBUF} option.
+     * <p>获取接收缓冲区大小（{@link StandardSocketOptions#SO_RCVBUF}）。</p>
      */
     int getReceiveBufferSize();
 
     /**
      * Sets the {@link StandardSocketOptions#SO_RCVBUF} option.
+     * <p>设置接收缓冲区大小。</p>
      */
     DatagramChannelConfig setReceiveBufferSize(int receiveBufferSize);
 
     /**
      * Gets the {@link StandardSocketOptions#IP_TOS} option.
+     * <p>获取 IP 服务类型 / 流量类别（{@link StandardSocketOptions#IP_TOS}）。</p>
      */
     int getTrafficClass();
 
     /**
      * Sets the {@link StandardSocketOptions#IP_TOS} option.
+     * <p>设置 IP 服务类型 / 流量类别。</p>
      */
     DatagramChannelConfig setTrafficClass(int trafficClass);
 
     /**
      * Gets the {@link StandardSocketOptions#SO_REUSEADDR} option.
+     * <p>是否启用地址复用（{@link StandardSocketOptions#SO_REUSEADDR}）。</p>
      */
     boolean isReuseAddress();
 
     /**
      * Gets the {@link StandardSocketOptions#SO_REUSEADDR} option.
+     * <p>设置是否允许地址复用。</p>
      */
     DatagramChannelConfig setReuseAddress(boolean reuseAddress);
 
     /**
      * Gets the {@link StandardSocketOptions#SO_BROADCAST} option.
+     * <p>是否允许发送广播 datagram。</p>
      */
     boolean isBroadcast();
 
     /**
      * Sets the {@link StandardSocketOptions#SO_BROADCAST} option.
+     * <p>设置是否允许广播。</p>
      */
     DatagramChannelConfig setBroadcast(boolean broadcast);
 
@@ -116,6 +127,7 @@ public interface DatagramChannelConfig extends ChannelConfig {
      * Gets the {@link StandardSocketOptions#IP_MULTICAST_LOOP} option.
      *
      * @return {@code true} if and only if the loopback mode has been disabled
+     * <p>组播回环是否已禁用；{@code true} 表示已禁用本地回环接收。</p>
      */
     boolean isLoopbackModeDisabled();
 
@@ -124,36 +136,43 @@ public interface DatagramChannelConfig extends ChannelConfig {
      *
      * @param loopbackModeDisabled
      *        {@code true} if and only if the loopback mode has been disabled
+     * <p>设置组播回环模式；{@code true} 禁用回环。</p>
      */
     DatagramChannelConfig setLoopbackModeDisabled(boolean loopbackModeDisabled);
 
     /**
      * Gets the {@link StandardSocketOptions#IP_MULTICAST_TTL} option.
+     * <p>获取组播 TTL（跳数限制）。</p>
      */
     int getTimeToLive();
 
     /**
      * Sets the {@link StandardSocketOptions#IP_MULTICAST_TTL} option.
+     * <p>设置组播 TTL。</p>
      */
     DatagramChannelConfig setTimeToLive(int ttl);
 
     /**
      * Gets the address of the network interface used for multicast packets.
+     * <p>获取发送组播包时使用的网络接口地址。</p>
      */
     InetAddress getInterface();
 
     /**
      * Sets the address of the network interface used for multicast packets.
+     * <p>设置组播出口接口地址。</p>
      */
     DatagramChannelConfig setInterface(InetAddress interfaceAddress);
 
     /**
      * Gets the {@link StandardSocketOptions#IP_MULTICAST_IF} option.
+     * <p>获取组播网络接口（{@link StandardSocketOptions#IP_MULTICAST_IF}）。</p>
      */
     NetworkInterface getNetworkInterface();
 
     /**
      * Sets the {@link StandardSocketOptions#IP_MULTICAST_IF} option.
+     * <p>设置组播绑定的网络接口。</p>
      */
     DatagramChannelConfig setNetworkInterface(NetworkInterface networkInterface);
 

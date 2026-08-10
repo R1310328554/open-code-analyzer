@@ -27,6 +27,7 @@ import java.net.StandardSocketOptions;
 
 /**
  * A {@link ChannelConfig} for a {@link SocketChannel}.
+ * <p>{@link SocketChannel} 的配置，在 {@link DuplexChannelConfig} 基础上提供 TCP 常用 socket 选项。</p>
  *
  * <h3>Available options</h3>
  *
@@ -62,6 +63,7 @@ public interface SocketChannelConfig extends DuplexChannelConfig {
      * is {@code true} unlike the operating system default ({@code false}). However, for some buggy platforms, such as
      * Android, that shows erratic behavior with Nagle's algorithm disabled, the default value remains to be
      * {@code false}.
+     * <p>是否禁用 Nagle 算法（TCP_NODELAY）；Netty 默认多为 {@code true}，部分平台仍为 {@code false}。</p>
      */
     boolean isTcpNoDelay();
 
@@ -70,72 +72,86 @@ public interface SocketChannelConfig extends DuplexChannelConfig {
      * is {@code true} unlike the operating system default ({@code false}). However, for some buggy platforms, such as
      * Android, that shows erratic behavior with Nagle's algorithm disabled, the default value remains to be
      * {@code false}.
+     * <p>设置 TCP_NODELAY。</p>
      */
     SocketChannelConfig setTcpNoDelay(boolean tcpNoDelay);
 
     /**
      * Gets the {@link StandardSocketOptions#SO_LINGER} option.
+     * <p>获取 SO_LINGER 秒数（{@code -1} 表示禁用）。</p>
      */
     int getSoLinger();
 
     /**
      * Sets the {@link StandardSocketOptions#SO_LINGER} option.
+     * <p>设置 SO_LINGER。</p>
      */
     SocketChannelConfig setSoLinger(int soLinger);
 
     /**
      * Gets the {@link StandardSocketOptions#SO_SNDBUF} option.
+     * <p>获取发送缓冲区大小。</p>
      */
     int getSendBufferSize();
 
     /**
      * Sets the {@link StandardSocketOptions#SO_SNDBUF} option.
+     * <p>设置发送缓冲区大小。</p>
      */
     SocketChannelConfig setSendBufferSize(int sendBufferSize);
 
     /**
      * Gets the {@link StandardSocketOptions#SO_RCVBUF} option.
+     * <p>获取接收缓冲区大小。</p>
      */
     int getReceiveBufferSize();
 
     /**
      * Sets the {@link StandardSocketOptions#SO_RCVBUF} option.
+     * <p>设置接收缓冲区大小。</p>
      */
     SocketChannelConfig setReceiveBufferSize(int receiveBufferSize);
 
     /**
      * Gets the {@link StandardSocketOptions#SO_KEEPALIVE} option.
+     * <p>是否启用 TCP keepalive。</p>
      */
     boolean isKeepAlive();
 
     /**
      * Sets the {@link StandardSocketOptions#SO_KEEPALIVE} option.
+     * <p>设置 keepalive。</p>
      */
     SocketChannelConfig setKeepAlive(boolean keepAlive);
 
     /**
      * Gets the {@link StandardSocketOptions#IP_TOS} option.
+     * <p>获取 IP 流量类别。</p>
      */
     int getTrafficClass();
 
     /**
      * Sets the {@link StandardSocketOptions#IP_TOS} option.
+     * <p>设置 IP 流量类别。</p>
      */
     SocketChannelConfig setTrafficClass(int trafficClass);
 
     /**
      * Gets the {@link StandardSocketOptions#SO_REUSEADDR} option.
+     * <p>是否启用地址复用。</p>
      */
     boolean isReuseAddress();
 
     /**
      * Sets the {@link StandardSocketOptions#SO_REUSEADDR} option.
+     * <p>设置地址复用。</p>
      */
     SocketChannelConfig setReuseAddress(boolean reuseAddress);
 
     /**
      * Sets the performance preferences as specified in
      * {@link Socket#setPerformancePreferences(int, int, int)}.
+     * <p>设置 socket 性能偏好。</p>
      */
     SocketChannelConfig setPerformancePreferences(int connectionTime, int latency, int bandwidth);
 

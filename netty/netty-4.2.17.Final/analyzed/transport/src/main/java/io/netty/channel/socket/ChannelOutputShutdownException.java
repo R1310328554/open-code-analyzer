@@ -20,14 +20,27 @@ import java.io.IOException;
 
 /**
  * Used to fail pending writes when a channel's output has been shutdown.
+ * <p>当 channel 的输出端已关闭时，用于使尚未完成的写操作失败。</p>
  */
 public final class ChannelOutputShutdownException extends IOException {
+    /** 序列化版本号 */
     private static final long serialVersionUID = 6712549938359321378L;
 
+    /**
+     * 使用指定消息构造异常。
+     *
+     * @param msg 异常描述信息
+     */
     public ChannelOutputShutdownException(String msg) {
         super(msg);
     }
 
+    /**
+     * 使用指定消息与原因构造异常。
+     *
+     * @param msg 异常描述信息
+     * @param cause 导致此异常的根本原因
+     */
     public ChannelOutputShutdownException(String msg, Throwable cause) {
         super(msg, cause);
     }

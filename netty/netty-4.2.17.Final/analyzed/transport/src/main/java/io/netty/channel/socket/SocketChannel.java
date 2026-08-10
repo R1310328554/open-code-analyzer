@@ -21,15 +21,20 @@ import java.net.InetSocketAddress;
 
 /**
  * A TCP/IP socket {@link Channel}.
+ * <p>基于 TCP/IP 的双向 socket {@link Channel}，支持半关闭等全双工特性。</p>
  */
 public interface SocketChannel extends DuplexChannel {
+    /** 返回接受此连接的父 {@link ServerSocketChannel} */
     @Override
     ServerSocketChannel parent();
 
+    /** 返回此 socket channel 的配置 */
     @Override
     SocketChannelConfig config();
+    /** 返回本地 socket 地址 */
     @Override
     InetSocketAddress localAddress();
+    /** 返回远端 peer 的 socket 地址 */
     @Override
     InetSocketAddress remoteAddress();
 }

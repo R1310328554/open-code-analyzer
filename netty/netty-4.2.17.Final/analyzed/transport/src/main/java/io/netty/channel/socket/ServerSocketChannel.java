@@ -21,12 +21,16 @@ import java.net.InetSocketAddress;
 
 /**
  * A TCP/IP {@link ServerChannel} which accepts incoming TCP/IP connections.
+ * <p>接受入站 TCP/IP 连接的 TCP/IP {@link ServerChannel}。</p>
  */
 public interface ServerSocketChannel extends ServerChannel {
+    /** 返回此服务端 socket channel 的配置 */
     @Override
     ServerSocketChannelConfig config();
+    /** 返回本地绑定地址 */
     @Override
     InetSocketAddress localAddress();
+    /** 返回远端地址（服务端 channel 通常为 {@code null}） */
     @Override
     InetSocketAddress remoteAddress();
 }
