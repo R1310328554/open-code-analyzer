@@ -1,5 +1,8 @@
 package retention
 
+// 保留子系统 Prometheus 指标：Sweeper chunk 删除耗时与标记文件状态，
+// Marker 表处理计数、标记创建量及处理耗时直方图。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -15,6 +18,7 @@ const (
 	tableActionNone     = "none"
 )
 
+// sweeperMetrics 跟踪 Sweeper 删除 chunk 耗时与标记文件队列状态。
 type sweeperMetrics struct {
 	deleteChunkDurationSeconds *prometheus.HistogramVec
 	markerFileCurrentTime      prometheus.Gauge
@@ -22,6 +26,7 @@ type sweeperMetrics struct {
 	markerFilesDeletedTotal    prometheus.Counter
 }
 
+// newSweeperMetrics 注册 retention_sweeper_* 命名空间指标。
 func newSweeperMetrics(r prometheus.Registerer) *sweeperMetrics {
 	return &sweeperMetrics{
 		deleteChunkDurationSeconds: promauto.With(r).NewHistogramVec(prometheus.HistogramOpts{
@@ -48,6 +53,7 @@ func newSweeperMetrics(r prometheus.Registerer) *sweeperMetrics {
 	}
 }
 
+// markerMetrics 统计各表保留标记处理结果与耗时。
 type markerMetrics struct {
 	tableProcessedTotal           *prometheus.CounterVec
 	tableMarksCreatedTotal        *prometheus.CounterVec

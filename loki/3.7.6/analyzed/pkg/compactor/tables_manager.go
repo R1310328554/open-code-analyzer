@@ -1,5 +1,8 @@
 package compactor
 
+// Compactor 表管理器：周期性列举并并行压缩索引表，独立调度保留与
+// Sweeper，协调表锁并支持删除请求的存储更新迭代。
+
 import (
 	"context"
 	"fmt"
@@ -16,12 +19,14 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// TablesManager 定义单表压缩、存储更新迭代及表遍历回调接口。
 type TablesManager interface {
 	CompactTable(ctx context.Context, tableName string, applyRetention bool) error
 	ApplyStorageUpdates(ctx context.Context, iterator deletion.StorageUpdatesIterator) error
 	IterateTables(ctx context.Context, callback func(string, deletion.Table) error) (err error)
 }
 
+// tablesManager 聚合配置、storeContainers、schema 与 tableLocker。
 type tablesManager struct {
 	cfg               Config
 	expirationChecker retention.ExpirationChecker
@@ -34,6 +39,7 @@ type tablesManager struct {
 	wg          sync.WaitGroup
 }
 
+// newTablesManager 构造表管理器并初始化 per-table 锁。
 func newTablesManager(
 	cfg Config,
 	storeContainers map[config.DayTime]storeContainer,
@@ -56,6 +62,7 @@ func newTablesManager(
 	return t
 }
 
+// start 延迟一个 compaction_interval 后启动压缩、保留与 Sweeper 循环。
 func (c *tablesManager) start(ctx context.Context) {
 	wg := sync.WaitGroup{}
 
@@ -150,6 +157,7 @@ func (c *tablesManager) start(ctx context.Context) {
 	wg.Wait()
 }
 
+// listTableNames 跨 storeContainer 去重列举表名并应用 Skip/Limit 配置。
 func (c *tablesManager) listTableNames(ctx context.Context) ([]string, error) {
 	var (
 		tables []string
@@ -219,6 +227,7 @@ func (c *tablesManager) initTable(ctx context.Context, tableName string) (*table
 	return table, nil
 }
 
+// runCompaction 并行 worker 消费表名 channel 执行 CompactTable。
 func (c *tablesManager) runCompaction(ctx context.Context, applyRetention bool) (err error) {
 	status := statusSuccess
 	start := time.Now()
@@ -322,6 +331,7 @@ func (c *tablesManager) runCompaction(ctx context.Context, applyRetention bool) 
 	return ctx.Err()
 }
 
+// CompactTable 加表锁后执行 compact、可选 applyRetention 与 done 上传。
 func (c *tablesManager) CompactTable(ctx context.Context, tableName string, applyRetention bool) error {
 	schemaCfg, ok := SchemaPeriodForTable(c.schemaConfig, tableName)
 	if !ok {
@@ -409,6 +419,7 @@ func (c *tablesManager) CompactTable(ctx context.Context, tableName string, appl
 	return nil
 }
 
+// ApplyStorageUpdates 按迭代器逐表加锁、压缩并应用删除 chunk 索引更新。
 func (c *tablesManager) ApplyStorageUpdates(ctx context.Context, iterator deletion.StorageUpdatesIterator) error {
 	var table *table
 
@@ -479,6 +490,7 @@ func (c *tablesManager) ApplyStorageUpdates(ctx context.Context, iterator deleti
 	return nil
 }
 
+// IterateTables 遍历所有表，压缩后对每张表执行 callback 并 done 上传。
 func (c *tablesManager) IterateTables(ctx context.Context, callback func(string, deletion.Table) error) (err error) {
 	tables, err := c.listTableNames(ctx)
 	if err != nil {

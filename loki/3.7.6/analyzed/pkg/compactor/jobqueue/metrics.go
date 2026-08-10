@@ -1,5 +1,8 @@
 package jobqueue
 
+// JobQueue Prometheus 指标：统计 Main Compactor 侧任务入队、出队、
+// 重试与丢弃，以及 Worker 侧处理结果与连接状态。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -16,6 +19,7 @@ type queueMetrics struct {
 	jobsProcessingDuration prometheus.Histogram
 }
 
+// newQueueMetrics 注册 compactor_jobs_* 系列指标并返回 queueMetrics 实例。
 func newQueueMetrics(r prometheus.Registerer) *queueMetrics {
 	m := queueMetrics{}
 
@@ -48,6 +52,7 @@ func newQueueMetrics(r prometheus.Registerer) *queueMetrics {
 	return &m
 }
 
+// registerJobsLeftTrackerMetric 为各 JobType 注册剩余任务数 GaugeFunc。
 func registerJobsLeftTrackerMetric(jobType string, jobsLeftFunc func() float64, r prometheus.Registerer) {
 	promauto.With(r).NewGaugeFunc(prometheus.GaugeOpts{
 		Namespace: constants.Loki,
@@ -59,6 +64,7 @@ func registerJobsLeftTrackerMetric(jobType string, jobsLeftFunc func() float64, 
 	}, jobsLeftFunc)
 }
 
+// workerMetrics 跟踪 Worker 处理成功/失败计数及与 Compactor 连接状态。
 type workerMetrics struct {
 	jobsProcessed              *prometheus.CounterVec
 	workerConnectedToCompactor prometheus.GaugeFunc

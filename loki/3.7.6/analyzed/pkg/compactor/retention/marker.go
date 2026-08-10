@@ -1,5 +1,8 @@
 package retention
 
+// 保留标记文件读写与 Sweeper 处理：将待删 chunk ID 写入 BoltDB 标记文件
+// 上传对象存储，Sweeper 异步消费标记并删除底层 chunk 数据。
+
 import (
 	"bytes"
 	"context"
@@ -27,6 +30,7 @@ var (
 	maxMarkPerFile   = int64(100000)
 )
 
+// MarkerStorageWriter 定义向标记文件写入 chunk ID 的接口。
 type MarkerStorageWriter interface {
 	Put(chunkID []byte) error
 	Count() int64
@@ -47,6 +51,7 @@ type markerStorageWriter struct {
 	buf []byte
 }
 
+// NewMarkerWriter 创建临时 BoltDB 标记文件用于记录待删除 chunk。
 func NewMarkerWriter(markerStorageClient client.ObjectClient) (MarkerStorageWriter, error) {
 	msw := &markerStorageWriter{
 		markerStorageClient: markerStorageClient,
@@ -144,6 +149,7 @@ func (m *markerStorageWriter) Close() error {
 	return m.closeFile()
 }
 
+// MarkerProcessor 定义标记文件消费循环：逐 chunk 调用 deleteFunc 后清理。
 type MarkerProcessor interface {
 	// Start starts parsing marks and calling deleteFunc for each.
 	// If deleteFunc returns no error the mark is deleted from the storage.
@@ -153,6 +159,7 @@ type MarkerProcessor interface {
 	Stop()
 }
 
+// markerProcessor 定期列举对象存储中的标记文件并并行处理删除。
 type markerProcessor struct {
 	markerStorageClient client.ObjectClient
 	maxParallelism      int
@@ -346,6 +353,7 @@ func (r *markerProcessor) deleteMarksFile(name string) error {
 	return r.markerStorageClient.DeleteObject(r.ctx, name)
 }
 
+// availableFiles 按时间戳排序返回足够陈旧、可安全处理的标记文件名。
 // availableFiles returns markers file names in chronological order, skipping files that are not old enough.
 func (r *markerProcessor) availableFiles() ([]string, []time.Time, error) {
 	var found []string

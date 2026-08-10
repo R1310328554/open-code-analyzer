@@ -1,5 +1,8 @@
 package compactor
 
+// 单张索引表压缩与保留编排：列举 indexSet、调用 IndexCompactor 压缩、
+// 应用保留策略、上传结果并支持删除请求引起的存储更新。
+
 import (
 	"context"
 	"fmt"
@@ -33,6 +36,7 @@ type tableExpirationChecker interface {
 	IntervalMayHaveExpiredChunks(interval model.Interval, userID string) bool
 }
 
+// IndexCompactor 按 schema 创建 TableCompactor 并打开已压缩索引文件。
 type IndexCompactor interface {
 	// NewTableCompactor returns a new TableCompactor for compacting a table.
 	// commonIndexSet refers to common index files or in other words multi-tenant index.
@@ -63,6 +67,7 @@ type IndexCompactor interface {
 	)
 }
 
+// TableCompactor 定义单表压缩操作，完成后更新各 IndexSet 的 CompactedIndex。
 type TableCompactor interface {
 	// CompactTable compacts the table.
 	// After compaction is done successfully, it should set the new/updated CompactedIndex for relevant IndexSets.
@@ -80,6 +85,7 @@ type Chunk interface {
 
 type MakeEmptyUserIndexSetFunc func(userID string) (IndexSet, error)
 
+// table 聚合公共/租户 indexSet、TableMarker 与 ExpirationChecker。
 type table struct {
 	name               string
 	workingDirectory   string
@@ -99,6 +105,7 @@ type table struct {
 	ctx context.Context
 }
 
+// newTable 初始化表工作目录及公共/租户 IndexSet 基础客户端。
 func newTable(ctx context.Context, workingDirectory string, indexStorageClient storage.Client,
 	indexCompactor IndexCompactor, periodConfig config.PeriodConfig,
 	tableMarker retention.TableMarker, expirationChecker tableExpirationChecker,
@@ -128,6 +135,7 @@ func newTable(ctx context.Context, workingDirectory string, indexStorageClient s
 	return &table, nil
 }
 
+// compact 列举存储文件、构建 indexSet 并委托 TableCompactor 执行压缩。
 func (t *table) compact() error {
 	t.indexStorageClient.RefreshIndexTableCache(t.ctx, t.name)
 	indexFiles, usersWithPerUserIndex, err := t.indexStorageClient.ListFiles(t.ctx, t.name, false)
@@ -178,6 +186,7 @@ func (t *table) compact() error {
 	return tableCompactor.CompactTable()
 }
 
+// done 并行上传租户索引后最后上传公共索引，避免数据丢失。
 // done takes care of uploading the index to the object storage and removing any source index files that were compacted away.
 // No index updates must be done after calling this method.
 func (t *table) done() error {
@@ -210,6 +219,7 @@ func (t *table) done() error {
 	return nil
 }
 
+// applyRetention 对可能含过期 chunk 的 indexSet 调用 runRetention。
 // applyRetention applies retention on the index sets
 func (t *table) applyRetention() error {
 	tableInterval := retention.ExtractIntervalFromTableName(t.name)
@@ -264,6 +274,7 @@ func (t *table) openCompactedIndexForUpdates(idxSet *indexSet) error {
 	return nil
 }
 
+// applyStorageUpdates 将删除请求产生的 chunk 重建结果写回索引并标记源 chunk 删除。
 // applyStorageUpdates applies storage updates for a single stream of a user
 func (t *table) applyStorageUpdates(userID, labelsStr string, rebuiltChunks map[string]deletion.Chunk, chunksToDeIndex []string) error {
 	labels, err := syntax.ParseLabels(labelsStr)
@@ -347,6 +358,7 @@ func (t *table) applyStorageUpdates(userID, labelsStr string, rebuiltChunks map[
 	return t.tableMarker.MarkChunksForDeletion(t.name, chunksToDelete)
 }
 
+// cleanup 关闭各 indexSet 并删除本地工作目录。
 // cleanup takes care of cleaning up any local data on disk
 func (t *table) cleanup() {
 	for _, is := range t.indexSets {
@@ -375,6 +387,7 @@ func (t *table) GetUserIndex(userID string) (retention.SeriesIterator, error) {
 	return is.compactedIndex, nil
 }
 
+// tableHasUncompactedIndex 判断公共索引是否仍有多个未压缩文件。
 // tableHasUncompactedIndex returns true if we have more than "1" common index files.
 // We are checking for more than "1" because earlier boltdb-shipper index type did not have per tenant index so there would be only common index files.
 // In case of per tenant index, it is okay to consider it compacted since having just 1 uncompacted index file for a while should be fine.

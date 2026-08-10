@@ -1,5 +1,8 @@
 package jobqueue
 
+// 水平扩展压缩 JobQueue 服务端：Builder 生产任务、Loop 双向流分发给 Worker，
+// 跟踪在途任务并支持超时与失败重试。
+
 import (
 	"context"
 	"errors"
@@ -20,6 +23,7 @@ var (
 	ErrJobTypeAlreadyRegistered = errors.New("job type already registered")
 )
 
+// Builder 定义任务生产者：BuildJobs 阻塞写入队列，OnJobResponse 处理执行结果。
 // Builder defines the interface for building jobs that will be added to the queue
 type Builder interface {
 	// BuildJobs builds new jobs and sends them to the provided channel
@@ -37,6 +41,7 @@ type Builder interface {
 	JobsLeft() int
 }
 
+// Queue 实现 gRPC JobQueue 服务，协调 Builder 与 Worker 间的 lock-step 通信。
 // Queue implements the job queue service
 type Queue struct {
 	queue                     chan *grpc.Job
@@ -51,6 +56,7 @@ type Queue struct {
 	processingJobsMtx sync.RWMutex
 }
 
+// processingJob 记录已下发任务的出队时间、剩余重试次数与失败标记。
 type processingJob struct {
 	job               *grpc.Job
 	dequeued          time.Time
@@ -64,6 +70,7 @@ type builder struct {
 	maxRetries int
 }
 
+// NewQueue 创建 JobQueue 并启动超时/失败任务重试后台协程。
 // NewQueue creates a new job queue
 func NewQueue(r prometheus.Registerer) *Queue {
 	return newQueue(time.Minute, r)
@@ -87,6 +94,7 @@ func newQueue(checkTimedOutJobsInterval time.Duration, r prometheus.Registerer) 
 	return q
 }
 
+// RegisterBuilder 绑定 JobType 与 Builder，并注册 JobsLeft 追踪指标。
 // RegisterBuilder registers a builder for a specific job type
 func (q *Queue) RegisterBuilder(jobType grpc.JobType, b Builder, jobTimeout time.Duration, maxRetries int, r prometheus.Registerer) error {
 	if _, exists := q.builders[jobType]; exists {
@@ -104,6 +112,7 @@ func (q *Queue) RegisterBuilder(jobType grpc.JobType, b Builder, jobTimeout time
 	return nil
 }
 
+// Start 并发启动所有 Builder，ctx 取消后关闭 stop 并等待重试协程退出。
 // Start starts all registered builders
 func (q *Queue) Start(ctx context.Context) {
 	buildersWg := sync.WaitGroup{}
@@ -139,6 +148,7 @@ func (q *Queue) startBuilder(ctx context.Context, builder Builder) {
 	}
 }
 
+// retryFailedJobs 定时扫描 processingJobs，对超时或失败任务重新入队。
 // retryFailedJobs retries the jobs which are failed. It includes jobs which have hit a timeout.
 func (q *Queue) retryFailedJobs() {
 	defer q.wg.Done()
@@ -202,6 +212,7 @@ func (q *Queue) retryFailedJobs() {
 	}
 }
 
+// Loop 实现 gRPC 双向流：Send 任务后 Recv 等待 Worker 返回 JobResult。
 func (q *Queue) Loop(s grpc.JobQueue_LoopServer) error {
 	for {
 		var job *grpc.Job
@@ -253,6 +264,7 @@ func (q *Queue) Loop(s grpc.JobQueue_LoopServer) error {
 	}
 }
 
+// reportJobResult 校验结果、更新指标并调用 Builder.OnJobResponse。
 func (q *Queue) reportJobResult(result *grpc.JobResult) error {
 	if result == nil {
 		return status.Error(codes.InvalidArgument, "result cannot be nil")

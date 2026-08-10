@@ -1,5 +1,8 @@
 package compactor
 
+// Compactor 测试辅助：构造模拟索引文件布局、实现 stub IndexCompactor
+// 与 CompactedIndex，并校验压缩后存储目录内容是否符合预期。
+
 import (
 	"bufio"
 	"context"
@@ -31,6 +34,7 @@ const (
 	sharedIndexPrefix      = "si"
 )
 
+// IndexFileConfig 控制测试索引文件是否 gzip 压缩。
 type IndexFileConfig struct {
 	CompressFile bool
 }
@@ -58,6 +62,7 @@ func compressFile(t *testing.T, filepath string) {
 	require.NoError(t, os.Remove(filepath))
 }
 
+// IndexesConfig 描述公共索引未压缩/已压缩文件数量。
 type IndexesConfig struct {
 	NumUnCompactedFiles, NumCompactedFiles int
 }
@@ -66,6 +71,7 @@ func (c IndexesConfig) String() string {
 	return fmt.Sprintf("Common Indexes - UCIFs: %d, CIFs: %d", c.NumUnCompactedFiles, c.NumCompactedFiles)
 }
 
+// PerUserIndexesConfig 扩展 IndexesConfig 并指定租户数量。
 type PerUserIndexesConfig struct {
 	IndexesConfig
 	NumUsers int
@@ -75,6 +81,7 @@ func (c PerUserIndexesConfig) String() string {
 	return fmt.Sprintf("Per User Indexes - UCIFs: %d, CIFs: %d, Users: %d", c.NumUnCompactedFiles, c.NumCompactedFiles, c.NumUsers)
 }
 
+// SetupTable 在 path 下写入模拟公共与 per-user 索引文件供压缩测试使用。
 func SetupTable(t *testing.T, path string, commonDBsConfig IndexesConfig, perUserDBsConfig PerUserIndexesConfig) {
 	require.NoError(t, util.EnsureDirectory(path))
 	commonIndexes, perUserIndexes := buildFilesContent(commonDBsConfig, perUserDBsConfig)
@@ -147,6 +154,7 @@ func BuildUserID(id int) string {
 	return fmt.Sprintf("user-%d", id)
 }
 
+// compactedIndex 为测试用的 stub CompactedIndex，将源文件名写入文件。
 type compactedIndex struct {
 	indexFile *os.File
 }
@@ -208,6 +216,7 @@ func (c compactedIndex) Reader() (io.ReadSeeker, error) {
 	return c.indexFile, nil
 }
 
+// testIndexCompactor 实现 IndexCompactor 接口供 compactor 单元测试使用。
 type testIndexCompactor struct{}
 
 func newTestIndexCompactor() testIndexCompactor {
@@ -355,6 +364,7 @@ func (i testIndexCompactor) OpenCompactedIndexFile(_ context.Context, path, _, _
 	return openCompactedIndex(path)
 }
 
+// verifyCompactedIndexTable 断言压缩后存储目录中公共/租户索引内容正确。
 func verifyCompactedIndexTable(t *testing.T, commonDBsConfig IndexesConfig, perUserDBsConfig PerUserIndexesConfig, tablePathInStorage string) {
 	commonIndexes, perUserIndexes := buildFilesContent(commonDBsConfig, perUserDBsConfig)
 	dirEntries, err := os.ReadDir(tablePathInStorage)

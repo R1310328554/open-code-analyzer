@@ -1,5 +1,8 @@
 package compactor
 
+// Compactor 核心 Prometheus 指标：表压缩与保留操作耗时、成功时间戳、
+// 运行状态及因保留锁跳过压缩的连续次数。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -21,6 +24,7 @@ type metrics struct {
 	skippedCompactingLockedTables          *prometheus.GaugeVec
 }
 
+// newMetrics 注册 compact_tables_* 与 apply_retention_* 系列指标。
 func newMetrics(r prometheus.Registerer) *metrics {
 	m := metrics{
 		compactTablesOperationTotal: promauto.With(r).NewCounterVec(prometheus.CounterOpts{

@@ -1,5 +1,8 @@
 package retention
 
+// 保留压缩 series 跟踪 map：记录各 userSeries 是否仍有存活 chunk，
+// 以便 markForDelete 结束后清理已无 chunk 的 series 索引条目。
+
 import (
 	"github.com/prometheus/prometheus/model/labels"
 )
@@ -31,6 +34,7 @@ func (us userSeries) UserID() []byte {
 	return us.key[us.seriesIDLen:]
 }
 
+// userSeriesInfo 扩展 userSeries，携带标签及是否已全部删除标志。
 type userSeriesInfo struct {
 	userSeries
 	isDeleted bool
@@ -56,6 +60,7 @@ func (u userSeriesMap) Add(seriesID, userID []byte, lbls labels.Labels) {
 	}
 }
 
+// MarkSeriesNotDeleted 当 series 仍有未过期 chunk 时取消其删除标记。
 // MarkSeriesNotDeleted is used to mark series not deleted when it still has some chunks left in the store
 func (u userSeriesMap) MarkSeriesNotDeleted(seriesID, userID []byte) {
 	us := newUserSeries(seriesID, userID)

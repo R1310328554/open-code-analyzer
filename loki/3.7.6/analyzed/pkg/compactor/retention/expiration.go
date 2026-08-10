@@ -1,5 +1,8 @@
 package retention
 
+// 保留策略过期判定：按租户全局与流级规则计算 chunk/series 是否过期，
+// 支持索引条目提前丢弃及保留阶段生命周期回调。
+
 import (
 	"fmt"
 	"time"
@@ -14,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// IntervalFilter 封装待删除时间区间及行级 filter.Func 过滤函数。
 // IntervalFilter contains the interval to delete
 // and the function that filters lines. These will be
 // applied to a chunk.
@@ -22,6 +26,7 @@ type IntervalFilter struct {
 	Filter   filter.Func
 }
 
+// ExpirationChecker 定义保留压缩各阶段对 chunk/series 的过期判定接口。
 type ExpirationChecker interface {
 	Expired(userID []byte, chk Chunk, lbls labels.Labels, seriesID []byte, tableName string, now model.Time) (bool, filter.Func)
 	IntervalMayHaveExpiredChunks(interval model.Interval, userID string) bool
@@ -34,6 +39,7 @@ type ExpirationChecker interface {
 	MarkSeriesAsProcessed(userID, seriesID []byte, lbls labels.Labels, tableName string) error
 }
 
+// expirationChecker 基于 TenantsRetention 与 latestRetentionStartTime 判定过期。
 type expirationChecker struct {
 	tenantsRetention         *TenantsRetention
 	latestRetentionStartTime latestRetentionStartTime
@@ -53,6 +59,7 @@ func NewExpirationChecker(limits Limits) ExpirationChecker {
 	}
 }
 
+// Expired 比较 chunk 结束时间与租户保留期，返回是否过期及行级过滤器。
 // Expired tells if a ref chunk is expired based on retention rules.
 func (e *expirationChecker) Expired(userID []byte, chk Chunk, lbls labels.Labels, _ []byte, _ string, now model.Time) (bool, filter.Func) {
 	userIDStr := unsafeGetString(userID)
@@ -64,6 +71,7 @@ func (e *expirationChecker) Expired(userID []byte, chk Chunk, lbls labels.Labels
 	return now.Sub(chk.Through) > period, nil
 }
 
+// DropFromIndex 判断表结束时间超出保留期时能否仅删索引不删 chunk。
 // DropFromIndex tells if it is okay to drop the chunk entry from index table.
 // We check if tableEndTime is out of retention period, calculated using the labels from the chunk.
 // If the tableEndTime is out of retention then we can drop the chunk entry without removing the chunk from the store.
@@ -118,6 +126,7 @@ func (e *expirationChecker) IntervalMayHaveExpiredChunks(interval model.Interval
 	return interval.Start.Before(latestRetentionStartTime)
 }
 
+// NeverExpiringExpirationChecker 返回永不过期的空实现，用于禁用保留。
 // NeverExpiringExpirationChecker returns an expiration checker that never expires anything
 func NeverExpiringExpirationChecker(_ Limits) ExpirationChecker {
 	return &neverExpiringExpirationChecker{}
@@ -163,6 +172,7 @@ func (tr *TenantsRetention) RetentionPeriodFor(userID string, lbs labels.Labels)
 	return NewTenantRetentionSnapshot(tr.limits, userID).RetentionPeriodFor(lbs)
 }
 
+// TenantRetentionSnapshot 为租户保留规则不可变快照，避免压缩过程中配置变更。
 // TenantRetentionSnapshot is a snapshot of retention rules for a tenant.
 // The underlying retention rules may change on the original limits object passed to
 // NewTenantRetentionSnapshot, but the snapshot is immutable.
@@ -229,6 +239,7 @@ type latestRetentionStartTime struct {
 	byUser map[string]model.Time
 }
 
+// findLatestRetentionStartTime 计算全局/默认/各租户最早保留起点以加速区间跳过。
 // findLatestRetentionStartTime returns the latest retention start time overall, just default config and by each user.
 func findLatestRetentionStartTime(now model.Time, limits Limits) latestRetentionStartTime {
 	// find the smallest retention period from default limits

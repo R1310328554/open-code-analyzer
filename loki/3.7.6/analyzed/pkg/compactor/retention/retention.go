@@ -1,5 +1,8 @@
 package retention
 
+// 保留压缩核心逻辑：遍历索引 series/chunk 判定过期、写入删除标记、
+// 重写部分删除 chunk，并由 Sweeper 异步清理对象存储中的 chunk 数据。
+
 import (
 	"bytes"
 	"context"
@@ -28,6 +31,7 @@ import (
 
 var chunkBucket = []byte("chunks")
 
+// Chunk 表示索引中一条 chunk 引用及其时间范围。
 type Chunk struct {
 	ChunkID string
 	From    model.Time
@@ -106,6 +110,7 @@ type chunkIndexer interface {
 	IndexChunk(chunkRef logproto.ChunkRef, lbls labels.Labels, sizeInKB uint32, logEntriesCount uint32) (chunkIndexed bool, err error)
 }
 
+// IndexProcessor 组合 series 迭代、chunk 索引写入与索引清理能力。
 type IndexProcessor interface {
 	SeriesIterator
 	chunkIndexer
@@ -116,6 +121,7 @@ type IndexProcessor interface {
 var errNoChunksFound = errors.New("no chunks found in table, please check if there are really no chunks and manually drop the table or " +
 	"see if there is a bug causing us to drop whole index table")
 
+// TableMarker 定义对单张索引表扫描过期 chunk 并写入删除标记的接口。
 type TableMarker interface {
 	// FindAndMarkChunksForDeletion marks chunks to delete for a given table and returns if it's empty or modified.
 	FindAndMarkChunksForDeletion(ctx context.Context, tableName, userID string, indexProcessor IndexProcessor, logger log.Logger) (bool, bool, error)
@@ -124,6 +130,7 @@ type TableMarker interface {
 	MarkChunksForDeletion(tableName string, chunks []string) error
 }
 
+// Marker 实现 TableMarker：驱动 markForDelete 并上传标记文件。
 type Marker struct {
 	markerStorageClient client.ObjectClient
 	expiration          ExpirationChecker
@@ -142,6 +149,7 @@ func NewMarker(markerStorageClient client.ObjectClient, expiration ExpirationChe
 	}, nil
 }
 
+// FindAndMarkChunksForDeletion 扫描表内过期 chunk 并写入对象存储标记文件。
 // FindAndMarkChunksForDeletion finds expired chunks using the ExpirationChecker from the given table and marks them for deletion.
 func (t *Marker) FindAndMarkChunksForDeletion(ctx context.Context, tableName, userID string, indexProcessor IndexProcessor, logger log.Logger) (bool, bool, error) {
 	start := time.Now()
@@ -215,6 +223,7 @@ func (t *Marker) MarkChunksForDeletion(tableName string, chunks []string) error 
 	return nil
 }
 
+// markForDelete 逐 series 判定过期、重写或标记删除并清理空 series。
 func markForDelete(
 	ctx context.Context,
 	timeout time.Duration,
@@ -383,6 +392,7 @@ type ChunkClient interface {
 	IsChunkNotFoundErr(err error) bool
 }
 
+// Sweeper 消费标记文件并调用 ChunkClient 删除底层 chunk 对象。
 type Sweeper struct {
 	markerProcessor MarkerProcessor
 	chunkClient     ChunkClient
@@ -474,6 +484,7 @@ func newChunkRewriter(chunkClient client.Client, tableName string, chunkIndexer 
 	}
 }
 
+// rewriteChunk 按 filterFunc 过滤日志行，必要时重建 chunk 并重新索引上传。
 // rewriteChunk rewrites a chunk after filtering out logs using filterFunc.
 // It first builds a newChunk using filterFunc.
 // If the newChunk is same as the original chunk then there is nothing to do here, wroteChunks and linesDeleted both would be false.
@@ -560,6 +571,7 @@ func (c *chunkRewriter) rewriteChunk(ctx context.Context, userID []byte, ce Chun
 	return wroteChunks, linesDeleted, nil
 }
 
+// CopyMarkers 将旧版保留目录中的标记文件迁移至 period 专属对象存储。
 // CopyMarkers checks for markers in the src dir and copies them to the dst.
 // dstName must be a human-readable name for what dst is.
 func CopyMarkers(src string, dst client.ObjectClient, dstName string) error {

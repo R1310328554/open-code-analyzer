@@ -1,5 +1,8 @@
 package jobqueue
 
+// 水平扩展压缩 Worker 端：通过 JobQueue Loop 双向流接收任务，
+// 按 JobType 路由到 JobRunner 执行并回传 JobResult。
+
 import (
 	"context"
 	"flag"
@@ -29,6 +32,7 @@ const (
 	statusFailure = "failure"
 )
 
+// CompactorClient 抽象获取 JobQueue gRPC 客户端的 Compactor 连接。
 type CompactorClient interface {
 	JobQueueClient() grpc.JobQueueClient
 }
@@ -57,6 +61,7 @@ func (c *WorkerConfig) Validate() error {
 	return nil
 }
 
+// WorkerManager 管理多个 worker 协程及 JobType 到 JobRunner 的映射。
 type WorkerManager struct {
 	cfg        WorkerConfig
 	grpcClient CompactorClient
@@ -99,6 +104,7 @@ func (w *WorkerManager) RegisterJobRunner(jobType grpc.JobType, jobRunner JobRun
 	return nil
 }
 
+// Start 启动 NumWorkers 个子 Worker，各自独立维护 gRPC Loop 连接。
 func (w *WorkerManager) Start(ctx context.Context) error {
 	if len(w.jobRunners) == 0 {
 		return errors.New("no job runners registered")
@@ -121,6 +127,7 @@ func (w *WorkerManager) Start(ctx context.Context) error {
 	return nil
 }
 
+// worker 持有 gRPC 客户端、JobRunner 映射及连接状态 atomic.Bool。
 type worker struct {
 	grpcClient CompactorClient
 	jobRunners map[grpc.JobType]JobRunner
@@ -162,6 +169,7 @@ func (w *worker) Start(ctx context.Context) {
 	}
 }
 
+// process 在 lock-step 模式下 Recv 任务、异步 Run 并通过 Send 回传结果。
 // process pull jobs from the established stream, processes them and sends back the job result to the stream.
 func (w *worker) process(c grpc.JobQueue_LoopClient) error {
 	// Build a child context so we can cancel the job when the stream is closed.

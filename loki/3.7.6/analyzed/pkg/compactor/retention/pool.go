@@ -1,5 +1,8 @@
 package retention
 
+// 保留标记处理对象池：复用 keyPair 缓冲以减少 markerProcessor
+// 遍历 BoltDB 键值对时的内存分配开销。
+
 import (
 	"bytes"
 	"sync"
@@ -16,6 +19,7 @@ var (
 	}
 )
 
+// keyPair 持有标记文件 cursor 键值对的 bytes.Buffer 复用缓冲。
 type keyPair struct {
 	key   *bytes.Buffer
 	value *bytes.Buffer
@@ -34,6 +38,7 @@ func getKeyPairBuffer(key, value []byte) (*keyPair, error) {
 	return keyBuf, nil
 }
 
+// putKeyBuffer 重置缓冲后将 keyPair 归还对象池。
 func putKeyBuffer(pair *keyPair) {
 	pair.key.Reset()
 	pair.value.Reset()
