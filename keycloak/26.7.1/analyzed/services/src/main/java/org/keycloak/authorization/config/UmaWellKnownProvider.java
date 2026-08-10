@@ -21,21 +21,25 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.wellknown.WellKnownProvider;
 
 /**
+ * UMA Well-Known 提供者：暴露 {@link UmaConfiguration} 发现文档。
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class UmaWellKnownProvider implements WellKnownProvider {
 
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public UmaWellKnownProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** @return UMA 2.0 配置 JSON 对象 */
     @Override
     public Object getConfig() {
         return UmaConfiguration.create(session);
     }
 
+    /** 无资源需释放。 */
     @Override
     public void close() {
 

@@ -83,6 +83,8 @@ import static org.keycloak.models.utils.ModelToRepresentation.toRepresentation;
 import static org.keycloak.models.utils.RepresentationToModel.toModel;
 
 /**
+ * 授权资源集管理 REST 服务：提供资源的 CRUD、搜索及关联 scope/策略查询。
+ * <p>面向管理 API，校验 {@link AdminPermissionsSchema} 与 realm 授权权限。</p>
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
@@ -94,6 +96,7 @@ public class ResourceSetService {
     private final KeycloakSession session;
     private final ResourceServer resourceServer;
 
+    /** @param session Keycloak 会话 @param resourceServer 资源服务器 @param authorization 授权提供者 */
     public ResourceSetService(KeycloakSession session, ResourceServer resourceServer, AuthorizationProvider authorization, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.resourceServer = resourceServer;
@@ -113,6 +116,7 @@ public class ResourceSetService {
         ),
         @APIResponse(responseCode = "400", description = "Bad Request")
     })
+    /** 创建资源（POST），返回 201 及 {@link ResourceRepresentation}。 */
     public Response createPost(ResourceRepresentation resource) {
         if (resource == null) {
             return Response.status(Status.BAD_REQUEST).build();
@@ -125,8 +129,9 @@ public class ResourceSetService {
         return Response.status(Status.CREATED).entity(newResource).build();
     }
 
+    /** 校验 owner/名称唯一性后持久化资源并返回表示。 */
     public ResourceRepresentation create(ResourceRepresentation resource) {
-        // direct creation of resources it's not expected for admin permission
+        // 管理权限客户端不允许直接创建资源
         AdminPermissionsSchema.SCHEMA.throwExceptionIfAdminPermissionClient(session, resourceServer.getId());
 
         requireManage();
@@ -163,6 +168,7 @@ public class ResourceSetService {
         @APIResponse(responseCode = "204", description = "No Content"),
         @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 按 ID 更新资源表示。 */
     public Response update(@PathParam("resource-id") String id, ResourceRepresentation resource) {
         AdminPermissionsSchema.SCHEMA.throwExceptionIfAdminPermissionClient(session, resourceServer.getId());
         requireManage();
@@ -176,6 +182,7 @@ public class ResourceSetService {
         return Response.noContent().build();
     }
 
+    /** @return 属于当前 resourceServer 的资源，不存在则 404 */
     private Resource getResource(String id) {
         ResourceStore resourceStore = authorization.getStoreFactory().getResourceStore();
         Resource model = resourceStore.findById(resourceServer, id);
@@ -193,11 +200,12 @@ public class ResourceSetService {
         @APIResponse(responseCode = "204", description = "No Content"),
         @APIResponse(responseCode = "404", description = "Not Found")
     })
+    /** 删除资源并记录管理事件。 */
     public Response delete(@PathParam("resource-id") String id) {
         AdminPermissionsSchema.SCHEMA.throwExceptionIfAdminPermissionClient(session, resourceServer.getId());
         requireManage();
         Resource resource = getResource(id);
-        //to be able to access all lazy loaded fields it's needed to create representation before it's deleted
+        // 删除前构建表示以访问懒加载字段
         ResourceRepresentation resourceRep = toRepresentation(resource, resourceServer, authorization);
         StoreFactory storeFactory = authorization.getStoreFactory();
 
@@ -219,6 +227,7 @@ public class ResourceSetService {
         ),
         @APIResponse(responseCode = "404", description = "Not found")
     })
+    /** 按 ID 查询单个资源。 */
     public Response findById(@PathParam("resource-id") String id) {
         return findById(id, resource -> toRepresentation(resource, resourceServer, authorization, true));
     }
@@ -239,6 +248,7 @@ public class ResourceSetService {
         ),
         @APIResponse(responseCode = "404", description = "Not found")
     })
+    /** 返回资源关联 scope，含资源类型继承 scope。 */
     public Response getScopes(@PathParam("resource-id") String id) {
         requireView();
         StoreFactory storeFactory = authorization.getStoreFactory();
@@ -289,6 +299,7 @@ public class ResourceSetService {
         ),
         @APIResponse(responseCode = "404", description = "Not found")
     })
+    /** 汇总引用该资源/类型/scope 的非 UMA 策略。 */
     public Response getPermissions(@PathParam("resource-id") String id) {
         requireView();
         StoreFactory storeFactory = authorization.getStoreFactory();
@@ -306,7 +317,7 @@ public class ResourceSetService {
 
         if (model.getType() != null) {
             if (!model.getOwner().equals(resourceServer.getClientId())) {
-                // only add policies if the resource is a resource type instance
+                // 仅当资源为类型实例时合并类型级策略
                 policies.addAll(policyStore.findByResourceType(resourceServer, model.getType()));
 
                 Map<Resource.FilterOption, String[]> resourceFilter = new EnumMap<>(Resource.FilterOption.class);
@@ -347,6 +358,7 @@ public class ResourceSetService {
     @GET
     @NoCache
     @Produces(MediaType.APPLICATION_JSON)
+    /** 返回资源自定义属性映射。 */
     public Response getAttributes(@PathParam("resource-id") String id) {
         requireView();
         StoreFactory storeFactory = authorization.getStoreFactory();
@@ -371,6 +383,7 @@ public class ResourceSetService {
         @APIResponse(responseCode = "400", description = "Bad Request"),
         @APIResponse(responseCode = "204", description = "No Content")
     })
+    /** 按精确名称搜索单个资源。 */
     public Response find(@QueryParam("name") String name) {
         this.auth.realm().requireViewAuthorization(resourceServer);
         StoreFactory storeFactory = authorization.getStoreFactory();
@@ -395,6 +408,7 @@ public class ResourceSetService {
         responseCode = "200",
         content = @Content(schema = @Schema(implementation = ResourceRepresentation.class, type = SchemaType.ARRAY))
     )
+    /** 多条件分页查询资源列表（支持 URI 模板匹配）。 */
     public Response find(@QueryParam("_id") String id,
                          @QueryParam("name") String name,
                          @QueryParam("uri") String uri,
@@ -521,12 +535,14 @@ public class ResourceSetService {
                 .build();
     }
 
+    /** 校验 realm 授权查看权限。 */
     private void requireView() {
         if (this.auth != null) {
             this.auth.realm().requireViewAuthorization(resourceServer);
         }
     }
 
+    /** 校验 realm 授权管理权限。 */
     private void requireManage() {
         if (this.auth != null) {
             this.auth.realm().requireManageAuthorization(resourceServer);
@@ -537,6 +553,7 @@ public class ResourceSetService {
         audit(resource, null, operation);
     }
 
+    /** 记录资源管理审计事件。 */
     public void audit(ResourceRepresentation resource, String id, OperationType operation) {
         if (id != null) {
             adminEvent.operation(operation).resourcePath(session.getContext().getUri(), id).representation(resource).success();
@@ -545,6 +562,7 @@ public class ResourceSetService {
         }
     }
 
+    /** 校验资源 URI 模板语法。 */
     private static void validateUris(ResourceRepresentation resource) {
         Set<String> uris = resource.getUris();
 

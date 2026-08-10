@@ -24,12 +24,15 @@ import org.keycloak.wellknown.WellKnownProvider;
 import org.keycloak.wellknown.WellKnownProviderFactory;
 
 /**
+ * {@link UmaWellKnownProvider} 工厂，provider id 为 uma2-configuration。
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class UmaWellKnownProviderFactory implements WellKnownProviderFactory {
 
+    /** Well-Known 提供者标识符。 */
     public static final String PROVIDER_ID = "uma2-configuration";
 
+    /** @return {@link UmaWellKnownProvider} 实例 */
     @Override
     public WellKnownProvider create(KeycloakSession session) {
         return new UmaWellKnownProvider(session);
@@ -50,6 +53,7 @@ public class UmaWellKnownProviderFactory implements WellKnownProviderFactory {
 
     }
 
+    /** @return provider id uma2-configuration */
     @Override
     public String getId() {
         return PROVIDER_ID;

@@ -68,6 +68,8 @@ import static org.keycloak.models.utils.ModelToRepresentation.toRepresentation;
 import static org.keycloak.models.utils.RepresentationToModel.toModel;
 
 /**
+ * 授权 Scope 管理 REST 服务：scope 的 CRUD 及关联资源/策略查询。
+ * <p>删除前校验无资源引用，并清理仅引用该 scope 的策略。</p>
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
@@ -79,6 +81,7 @@ public class ScopeService {
     private final KeycloakSession session;
     private final ResourceServer resourceServer;
 
+    /** @param session Keycloak 会话 @param resourceServer 资源服务器 */
     public ScopeService(KeycloakSession session, ResourceServer resourceServer, AuthorizationProvider authorization, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.resourceServer = resourceServer;
@@ -91,6 +94,7 @@ public class ScopeService {
     @NoCache
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    /** 创建 scope 并返回 201。 */
     public Response create(ScopeRepresentation scope) {
         AdminPermissionsSchema.SCHEMA.throwExceptionIfAdminPermissionClient(session, resourceServer.getId());
         this.auth.realm().requireManageAuthorization(resourceServer);
@@ -107,6 +111,7 @@ public class ScopeService {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    /** 按 ID 更新 scope。 */
     public Response update(@PathParam("scope-id") String id, ScopeRepresentation scope) {
         AdminPermissionsSchema.SCHEMA.throwExceptionIfAdminPermissionClient(session, resourceServer.getId());
         this.auth.realm().requireManageAuthorization(resourceServer);
@@ -127,6 +132,7 @@ public class ScopeService {
 
     @Path("{scope-id}")
     @DELETE
+    /** 删除 scope；仍被资源引用时拒绝。 */
     public Response delete(@PathParam("scope-id") String id) {
         AdminPermissionsSchema.SCHEMA.throwExceptionIfAdminPermissionClient(session, resourceServer.getId());
         this.auth.realm().requireManageAuthorization(resourceServer);
@@ -153,7 +159,7 @@ public class ScopeService {
             }
         }
 
-        //to be able to access all lazy loaded fields it's needed to create representation before it's deleted
+        // 删除前构建表示以访问懒加载字段
         ScopeRepresentation scopeRep = toRepresentation(scope);
 
         storeFactory.getScopeStore().delete(id);
@@ -174,6 +180,7 @@ public class ScopeService {
         ),
         @APIResponse(responseCode = "404", description = "Not found")
     })
+    /** 按 ID 查询 scope。 */
     public Response findById(@PathParam("scope-id") String id) {
         this.auth.realm().requireViewAuthorization(resourceServer);
         Scope model = this.authorization.getStoreFactory().getScopeStore().findById(resourceServer, id);
@@ -196,6 +203,7 @@ public class ScopeService {
         ),
         @APIResponse(responseCode = "404", description = "Not found")
     })
+    /** 列出引用该 scope 的资源。 */
     public Response getResources(@PathParam("scope-id") String id) {
         this.auth.realm().requireViewAuthorization(resourceServer);
         StoreFactory storeFactory = this.authorization.getStoreFactory();
@@ -226,6 +234,7 @@ public class ScopeService {
         ),
         @APIResponse(responseCode = "404", description = "Not found")
     })
+    /** 列出引用该 scope 的策略。 */
     public Response getPermissions(@PathParam("scope-id") String id) {
         this.auth.realm().requireViewAuthorization(resourceServer);
         StoreFactory storeFactory = this.authorization.getStoreFactory();
@@ -260,6 +269,7 @@ public class ScopeService {
         @APIResponse(responseCode = "204", description = "No Content"),
         @APIResponse(responseCode = "400", description = "Bad Request")
     })
+    /** 按名称搜索单个 scope。 */
     public Response find(@QueryParam("name") String name) {
         this.auth.realm().requireViewAuthorization(resourceServer);
         StoreFactory storeFactory = authorization.getStoreFactory();
@@ -280,6 +290,7 @@ public class ScopeService {
     @GET
     @NoCache
     @Produces(MediaType.APPLICATION_JSON)
+    /** 多条件分页列出 scope。 */
     public Stream<ScopeRepresentation> findAll(@QueryParam("scopeId") String id,
                             @QueryParam("name") String name,
                             @QueryParam("first") Integer firstResult,
@@ -304,6 +315,7 @@ public class ScopeService {
         audit(resource, null, operation);
     }
 
+    /** 记录 scope 管理审计事件。 */
     private void audit(ScopeRepresentation resource, String id, OperationType operation) {
         if (id != null) {
             adminEvent.operation(operation).resourcePath(session.getContext().getUri(), id).representation(resource).success();

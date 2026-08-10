@@ -101,11 +101,15 @@ import org.keycloak.util.JsonSerialization;
 import org.jboss.logging.Logger;
 
 /**
+ * UMA/授权令牌服务：处理 entitlement 请求、评估权限并签发 RPT。
+ * <p>支持 permission ticket、claim token（JWT/ID Token）及多种 response_mode。</p>
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class AuthorizationTokenService {
 
+    /** claim_token 格式：OpenID ID Token。 */
     public static final String CLAIM_TOKEN_FORMAT_ID_TOKEN = "http://openid.net/specs/openid-connect-core-1_0.html#IDToken";
+    /** claim_token 格式：JWT access token。 */
     public static final String CLAIM_TOKEN_FORMAT_JWT = "urn:ietf:params:oauth:token-type:jwt";
 
     private static final Logger logger = Logger.getLogger(AuthorizationTokenService.class);
@@ -189,13 +193,14 @@ public class AuthorizationTokenService {
 
     private static final AuthorizationTokenService INSTANCE = new AuthorizationTokenService();
 
+    /** @return 单例服务实例 */
     public static AuthorizationTokenService instance() {
         return INSTANCE;
     }
 
     private static void fireErrorEvent(EventBuilder event, String error, Exception cause) {
         if (cause instanceof CorsErrorResponseException) {
-            // cast the exception to populate the event with a more descriptive reason
+            // 转换异常以填充更详细的事件原因
             CorsErrorResponseException originalCause = (CorsErrorResponseException) cause;
             event.detail(Details.REASON, originalCause.getErrorDescription() == null ? "<unknown>" : originalCause.getErrorDescription())
                     .error(error);
@@ -207,10 +212,11 @@ public class AuthorizationTokenService {
         logger.debug(event.getEvent().getType(), cause);
     }
 
+    /** 授权入口：解析 ticket、评估权限并按 response_mode 返回 RPT/permissions/decision。 */
     public Response authorize(KeycloakAuthorizationRequest request) {
         EventBuilder event = request.getEvent();
 
-        // it is not secure to allow public clients to push arbitrary claims because message can be tampered
+        // 公共客户端推送任意 claims 不安全（消息可被篡改）
         if (isPublicClientRequestingEntitlementWithClaims(request)) {
             CorsErrorResponseException forbiddenClientException = new CorsErrorResponseException(request.getCors(), OAuthErrorException.INVALID_GRANT, "Public clients are not allowed to send claims", Status.FORBIDDEN);
             fireErrorEvent(event, Errors.INVALID_REQUEST, forbiddenClientException);
@@ -287,6 +293,7 @@ public class AuthorizationTokenService {
         }
     }
 
+    /** 构建带 CORS 头的成功 JSON 响应。 */
     private Response createSuccessfulResponse(Object response, KeycloakAuthorizationRequest request) {
         return Cors.builder()
                 .checkAllowedOrigins(request.getKeycloakSession(), request.getKeycloakSession().getContext().getClient())
@@ -295,10 +302,12 @@ public class AuthorizationTokenService {
                 .add(Response.status(Status.OK).type(MediaType.APPLICATION_JSON_TYPE).entity(response));
     }
 
+    /** @return 公共客户端是否在 entitlement 请求中携带 claim_token */
     private boolean isPublicClientRequestingEntitlementWithClaims(KeycloakAuthorizationRequest request) {
         return request.getClaimToken() != null && request.getKeycloakSession().getContext().getClient().isPublicClient() && request.getTicket() == null;
     }
 
+    /** 按 ticket 中指定权限评估并返回已授予权限。 */
     private Collection<Permission> evaluatePermissions(KeycloakAuthorizationRequest request, PermissionTicketToken ticket, ResourceServer resourceServer, EvaluationContext evaluationContext, KeycloakIdentity identity) {
         AuthorizationProvider authorization = request.getAuthorization();
         return authorization.evaluators()
@@ -306,6 +315,7 @@ public class AuthorizationTokenService {
                 .evaluate(resourceServer, request);
     }
 
+    /** 评估用户托管权限（UMA permission ticket 流程）。 */
     private Collection<Permission> evaluateUserManagedPermissions(KeycloakAuthorizationRequest request, PermissionTicketToken ticket, ResourceServer resourceServer, EvaluationContext evaluationContext) {
         AuthorizationProvider authorization = request.getAuthorization();
         return authorization.evaluators()
@@ -313,6 +323,7 @@ public class AuthorizationTokenService {
                 .evaluate(new PermissionTicketAwareDecisionResultCollector(request, ticket, evaluationContext.getIdentity(), resourceServer, authorization)).results();
     }
 
+    /** 评估资源服务器下全部可授予权限（entitlement 扩展）。 */
     private Collection<Permission> evaluateAllPermissions(KeycloakAuthorizationRequest request, ResourceServer resourceServer, EvaluationContext evaluationContext) {
         AuthorizationProvider authorization = request.getAuthorization();
         return authorization.evaluators()
@@ -320,6 +331,7 @@ public class AuthorizationTokenService {
                 .evaluate(resourceServer, request);
     }
 
+    /** 组装含 authorization claim 的 RPT 及可选 refresh token。 */
     private AuthorizationResponse createAuthorizationResponse(KeycloakIdentity identity, Collection<Permission> entitlements, KeycloakAuthorizationRequest request, ClientModel targetClient) {
         KeycloakSession keycloakSession = request.getKeycloakSession();
         AccessToken accessToken = identity.getAccessToken();
@@ -327,7 +339,7 @@ public class AuthorizationTokenService {
         UserSessionProvider sessions = keycloakSession.sessions();
         UserSessionModel userSessionModel;
         if (accessToken.getSessionState() == null) {
-            // Create temporary (request-scoped) transient session
+            // 无 sessionState 时创建临时 transient 用户会话
             UserModel user = TokenManager.lookupUserFromStatelessToken(keycloakSession, realm, accessToken);
             userSessionModel = new UserSessionManager(keycloakSession).createUserSession(KeycloakModelUtils.generateId(), realm, user, user.getUsername(), request.getClientConnection().getRemoteHost(),
                     ServiceAccountConstants.CLIENT_AUTH, false, null, null, UserSessionModel.SessionPersistenceState.TRANSIENT);
@@ -380,7 +392,7 @@ public class AuthorizationTokenService {
         rpt.setAuthorization(authorization);
 
         if (accessToken.getSessionState() == null) {
-            // Skip generating refresh token for accessToken without sessionState claim. This is "stateless" accessToken not pointing to any real persistent userSession
+            // 无 sessionState 的无状态 token 不签发 refresh token
             rpt.setSessionId(null);
         } else {
             if (OIDCAdvancedConfigWrapper.fromClientModel(client).isUseRefreshToken()) {
@@ -399,6 +411,7 @@ public class AuthorizationTokenService {
         return new AuthorizationResponse(responseBuilder.build(), isUpgraded(request, authorization));
     }
 
+    /** @return 新 RPT 权限是否为旧 RPT 的超集（升级） */
     private boolean isUpgraded(AuthorizationRequest request, Authorization authorization) {
         AccessToken previousRpt = request.getRpt();
 
@@ -423,13 +436,14 @@ public class AuthorizationTokenService {
         return true;
     }
 
+    /** 从 UMA ticket 或客户端 permissions 参数解析 {@link PermissionTicketToken}。 */
     private PermissionTicketToken getPermissionTicket(KeycloakAuthorizationRequest request) {
-        // if there is a ticket is because it is a UMA flow and the ticket was sent by the client after obtaining it from the target resource server
+        // 有 ticket 表示 UMA 流程，客户端已从资源服务器获取票据
         if (request.getTicket() != null) {
             return verifyPermissionTicket(request);
         }
 
-        // if there is no ticket, we use the permissions the client is asking for.
+        // 无 ticket 时使用客户端请求的 permissions（Keycloak UMA 扩展）
         // This is a Keycloak extension to UMA flow where clients are capable of obtaining a RPT without a ticket
         PermissionTicketToken permissions = request.getPermissions();
 
@@ -439,6 +453,7 @@ public class AuthorizationTokenService {
         return permissions;
     }
 
+    /** 按 issuedFor 解析并校验资源服务器客户端。 */
     private ResourceServer getResourceServer(PermissionTicketToken ticket, KeycloakAuthorizationRequest request) {
         AuthorizationProvider authorization = request.getAuthorization();
         StoreFactory storeFactory = authorization.getStoreFactory();
@@ -470,6 +485,7 @@ public class AuthorizationTokenService {
         return resourceServer;
     }
 
+    /** 按 claim_token_format 构建 {@link EvaluationContext}。 */
     private EvaluationContext createEvaluationContext(KeycloakAuthorizationRequest request) {
         String claimTokenFormat = request.getClaimTokenFormat();
 
@@ -488,6 +504,7 @@ public class AuthorizationTokenService {
         return evaluationContextProvider.apply(request, request.getAuthorization());
     }
 
+    /** 将 ticket 权限解析为待评估 {@link ResourcePermission} 集合。 */
     private Collection<ResourcePermission> createPermissions(PermissionTicketToken ticket, KeycloakAuthorizationRequest request, ResourceServer resourceServer, AuthorizationProvider authorization, EvaluationContext context) {
         KeycloakIdentity identity = (KeycloakIdentity) context.getIdentity();
         StoreFactory storeFactory = authorization.getStoreFactory();
@@ -520,6 +537,7 @@ public class AuthorizationTokenService {
         return permissionsToEvaluate.values();
     }
 
+    /** 将现有 RPT 中已授予权限合并进待评估集合。 */
     private void resolvePreviousGrantedPermissions(KeycloakAuthorizationRequest request, ResourceServer resourceServer,
                                                    Map<String, ResourcePermission> permissionsToEvaluate, ResourceStore resourceStore, ScopeStore scopeStore,
                                                    AtomicInteger limit) {
@@ -576,6 +594,7 @@ public class AuthorizationTokenService {
         }
     }
 
+    /** 仅指定 scope 时解析关联资源或 scope 级权限。 */
     private void resolveScopePermissions(KeycloakAuthorizationRequest request,
             ResourceServer resourceServer, AuthorizationProvider authorization,
             Map<String, ResourcePermission> permissionsToEvaluate, ResourceStore resourceStore, AtomicInteger limit,
@@ -614,6 +633,7 @@ public class AuthorizationTokenService {
         }
     }
 
+    /** 按资源 ID/类型/名称/owner 等前缀解析资源权限。 */
     private void resolveResourcePermission(KeycloakAuthorizationRequest request,
             ResourceServer resourceServer, KeycloakIdentity identity, AuthorizationProvider authorization,
             StoreFactory storeFactory, Map<String, ResourcePermission> permissionsToEvaluate, ResourceStore resourceStore,
@@ -629,22 +649,22 @@ public class AuthorizationTokenService {
         if (resource != null) {
             addPermission(request, resourceServer, authorization, permissionsToEvaluate, limit, requestedScopesModel, resource);
         } else if (resourceId.startsWith("resource-type:")) {
-            // only resource types, no resource instances. resource types are owned by the resource server
+            // 仅资源类型实例，类型由资源服务器持有
             String resourceType = resourceId.substring("resource-type:".length());
             resourceStore.findByType(resourceServer, resourceType, resourceServer.getClientId(),
                     resource1 -> addPermission(request, resourceServer, authorization, permissionsToEvaluate, limit, requestedScopesModel, resource1));
         } else if (resourceId.startsWith("resource-type-any:")) {
-            // any resource with a given type
+            // 任意给定类型的资源
             String resourceType = resourceId.substring("resource-type-any:".length());
             resourceStore.findByType(resourceServer, resourceType, null,
                     resource12 -> addPermission(request, resourceServer, authorization, permissionsToEvaluate, limit, requestedScopesModel, resource12));
         } else if (resourceId.startsWith("resource-type-instance:")) {
-            // only resource instances with a given type
+            // 仅给定类型的资源实例
             String resourceType = resourceId.substring("resource-type-instance:".length());
             resourceStore.findByTypeInstance(resourceServer, resourceType,
                     resource13 -> addPermission(request, resourceServer, authorization, permissionsToEvaluate, limit, requestedScopesModel, resource13));
         } else if (resourceId.startsWith("resource-type-owner:")) {
-            // only resources where the current identity is the owner
+            // 仅当前身份为 owner 的资源
             String resourceType = resourceId.substring("resource-type-owner:".length());
             resourceStore.findByType(resourceServer, resourceType, identity.getId(),
                     resource14 -> addPermission(request, resourceServer, authorization, permissionsToEvaluate, limit, requestedScopesModel, resource14));
@@ -677,7 +697,7 @@ public class AuthorizationTokenService {
                         if (permissionScopes != null) {
                             permissionScopes.retainAll(scopes);
                         }
-                        // the permission is explicitly granted by the owner, mark this permission as granted so that we don't run the evaluation engine on it
+                        // 所有者显式授予，标记为已授予以跳过策略引擎
                         resourcePermission.setGranted(true);
                     }
                 }
@@ -698,6 +718,7 @@ public class AuthorizationTokenService {
         }
     }
 
+    /** 解析并校验请求 scope 名称。 */
     private Set<Scope> resolveRequestedScopes(KeycloakAuthorizationRequest request,
             ResourceServer resourceServer, ScopeStore scopeStore, Permission permission) {
         String clientAdditionalScopes = request.getScope();
@@ -722,6 +743,7 @@ public class AuthorizationTokenService {
         return requestedScopesModel;
     }
 
+    /** 向待评估映射添加资源权限（受 limit 约束）。 */
     private ResourcePermission addPermission(KeycloakAuthorizationRequest request, ResourceServer resourceServer,
             AuthorizationProvider authorization, Map<String, ResourcePermission> permissionsToEvaluate, AtomicInteger limit,
             Set<Scope> requestedScopesModel, Resource resource) {
@@ -731,7 +753,7 @@ public class AuthorizationTokenService {
             permission = new ResourcePermission(resource,
                     Permissions.resolveScopes(resource, resourceServer, requestedScopesModel, authorization), resourceServer,
                     request.getClaims());
-            //if scopes were requested, check if the permission to evaluate resolves to any of the requested scopes.
+            // 若请求了 scope，校验解析结果非空
             // if it is not the case, then the requested scope is invalid and we don't need to evaluate
             if (!requestedScopesModel.isEmpty() && permission.getScopes().isEmpty()) {
                 return null;
@@ -745,6 +767,7 @@ public class AuthorizationTokenService {
         return permission;
     }
 
+    /** 解码并校验 UMA permission ticket。 */
     private PermissionTicketToken verifyPermissionTicket(KeycloakAuthorizationRequest request) {
         String ticketString = request.getTicket();
 
@@ -764,10 +787,11 @@ public class AuthorizationTokenService {
         return ticket;
     }
 
+    /** @return 是否至少授予一项请求权限且 RPT 升级校验通过 */
     private boolean isGranted(PermissionTicketToken ticket, AuthorizationRequest request, Collection<Permission> permissions) {
         List<Permission> requestedPermissions = ticket.getPermissions();
 
-        // denies in case a rpt was provided along with the authorization request but any requested permission was not granted
+        // 携带 RPT 时若任一请求权限未授予则拒绝
         if (request.getRpt() != null && !requestedPermissions.isEmpty() && requestedPermissions.stream().anyMatch(permission -> !permissions.contains(permission))) {
             return false;
         }
@@ -775,6 +799,7 @@ public class AuthorizationTokenService {
         return !permissions.isEmpty();
     }
 
+    /** Keycloak 扩展的 {@link AuthorizationRequest}，绑定会话、CORS 与事件上下文。 */
     public static class KeycloakAuthorizationRequest extends AuthorizationRequest {
 
         private final AuthorizationProvider authorization;
@@ -825,6 +850,7 @@ public class AuthorizationTokenService {
             return clientConnection;
         }
 
+        /** 按 id 或 uri 格式批量添加权限到请求。 */
         public void addPermissions(List<String> permissionList, String permissionResourceFormat, boolean matchingUri, Integer maxResults) {
             if (permissionResourceFormat == null) {
                 permissionResourceFormat = "id";
@@ -841,6 +867,7 @@ public class AuthorizationTokenService {
 
         }
 
+        /** 解析 rsid#scope1,scope2 格式权限。 */
         private void addPermissionsById(List<String> permissionList) {
             for (String permission : permissionList) {
                 String[] parts = permission.split("#");
@@ -855,6 +882,7 @@ public class AuthorizationTokenService {
             }
         }
 
+        /** 按 URI（可选模板匹配）解析资源并添加权限。 */
         private void addPermissionsByUri(List<String> permissionList, boolean matchingUri, Integer maxResults) {
             StoreFactory storeFactory = authorization.getStoreFactory();
 
@@ -863,7 +891,7 @@ public class AuthorizationTokenService {
                 String uri = parts[0];
 
                 if (parts.length == 1) {
-                    // only resource uri is specified
+                    // 仅指定资源 URI
                     if (uri.isEmpty()) {
                         CorsErrorResponseException invalidResourceException = new CorsErrorResponseException(getCors(),
                             OAuthErrorException.INVALID_REQUEST, "You must provide the uri", Status.BAD_REQUEST);
@@ -882,11 +910,11 @@ public class AuthorizationTokenService {
 
                     resources.stream().forEach(resource -> addPermission(resource.getId()));
                 } else {
-                    // resource uri and scopes are specified, or only scopes are specified
+                    // 指定 URI 与 scope，或仅 scope
                     String[] scopes = parts[1].split(",");
 
                     if (uri.isEmpty()) {
-                        // only scopes are specified
+                        // 仅指定 scope
                         addPermission("", scopes);
                         return;
                     }
@@ -905,6 +933,7 @@ public class AuthorizationTokenService {
             }
         }
 
+        /** 按 URI 精确或 PathMatcher 模板匹配查找资源。 */
         private List<Resource> getResourceListByUri(String uri, StoreFactory storeFactory, boolean matchingUri, Integer maxResults) {
             Map<Resource.FilterOption, String[]> search = new EnumMap<>(Resource.FilterOption.class);
             search.put(Resource.FilterOption.URI, new String[] { uri });

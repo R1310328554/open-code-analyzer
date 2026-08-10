@@ -56,6 +56,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import static org.keycloak.models.utils.KeycloakModelUtils.removeTransientAdminRoles;
 
 /**
+ * Keycloak 授权身份：从 bearer access/ID token 解析用户或资源服务器身份。
+ * <p>将 token claims 与 realm/client 角色映射为策略评估属性。</p>
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class KeycloakIdentity implements Identity {
@@ -67,14 +69,17 @@ public class KeycloakIdentity implements Identity {
     private final boolean resourceServer;
     private final String id;
 
+    /** 从当前 HTTP 请求解析 bearer token 构建身份。 */
     public KeycloakIdentity(KeycloakSession keycloakSession) {
         this(Tokens.getAccessToken(keycloakSession), keycloakSession);
     }
 
+    /** 从 ID Token 构建身份（可合成 access token）。 */
     public KeycloakIdentity(KeycloakSession keycloakSession, IDToken token) {
         this(token, keycloakSession, keycloakSession.getContext().getRealm());
     }
 
+    /** 指定 realm 从 ID Token 构建身份。 */
     public KeycloakIdentity(IDToken token, KeycloakSession keycloakSession, RealmModel realm) {
         if (token == null) {
             throw new ErrorResponseException("invalid_bearer_token", "Could not obtain bearer access_token from request.", Status.FORBIDDEN);
@@ -106,7 +111,7 @@ public class KeycloakIdentity implements Identity {
                         values.add(valueIterator.next().asText());
                     }
                 } else {
-                    // If the claim is key value pair then just take it as is to attributes.
+                    // 简单键值 claim 直接写入属性
                     if(!fieldValue.isObject()) {
                         String value = fieldValue.asText();
 
@@ -115,7 +120,7 @@ public class KeycloakIdentity implements Identity {
                         }
                         values.add(value);
                     }
-                    // otherwise, the claim is a JSON object, turn it into json String, so it'll be able to evaluate it later
+                    // JSON 对象 claim 序列化为字符串供正则策略评估
                     // in the regex policy evaluator
                     else
                     {
@@ -178,10 +183,12 @@ public class KeycloakIdentity implements Identity {
         this.attributes = Attributes.from(attributes);
     }
 
+    /** 从 Access Token 构建身份。 */
     public KeycloakIdentity(AccessToken accessToken, KeycloakSession keycloakSession) {
         this(accessToken, keycloakSession, keycloakSession.getContext().getRealm());
     }
 
+    /** 指定 realm 从 Access Token 构建身份。 */
     public KeycloakIdentity(AccessToken accessToken, KeycloakSession keycloakSession, RealmModel realm) {
         if (accessToken == null) {
             throw new ErrorResponseException("invalid_bearer_token", "Could not obtain bearer access_token from request.", Status.FORBIDDEN);
@@ -265,24 +272,29 @@ public class KeycloakIdentity implements Identity {
         this.attributes = Attributes.from(attributes);
     }
 
+    /** @return 用户 ID 或资源服务器客户端 ID */
     @Override
     public String getId() {
         return this.id;
     }
 
+    /** @return token claims 与角色属性 */
     @Override
     public Attributes getAttributes() {
         return this.attributes;
     }
 
+    /** @return 关联的 access token */
     public AccessToken getAccessToken() {
         return this.accessToken;
     }
 
+    /** @return 身份是否为已注册资源服务器的 service account */
     public boolean isResourceServer() {
         return this.resourceServer;
     }
 
+    /** 从 issuedFor 或 audience 解析目标客户端。 */
     private ClientModel getTargetClient() {
         if (this.accessToken.getIssuedFor() != null) {
             return realm.getClientByClientId(accessToken.getIssuedFor());
@@ -296,12 +308,13 @@ public class KeycloakIdentity implements Identity {
         return null;
     }
 
+    /** 从 sessionState 或无状态 token 解析用户。 */
     private UserModel getUserFromToken() {
         if (accessToken.getSessionState() == null) {
             return TokenManager.lookupUserFromStatelessToken(keycloakSession, realm, accessToken);
         }
 
-        // Avoid further loookup if verified userSession already set in the context
+        // 上下文已有已验证用户会话时跳过后续查找
         UserSessionModel userSession = keycloakSession.getContext().getUserSession();
         if (userSession != null && accessToken.getSessionState().equals(userSession.getId())) {
             return userSession.getUser();
@@ -319,6 +332,7 @@ public class KeycloakIdentity implements Identity {
         return userSession.getUser();
     }
 
+    /** 将 realm/client 角色写入 kc.realm.roles 与 kc.client.*.roles 属性。 */
     private void addRolesAsAttributes(AccessToken accessToken, RealmModel realm, UserModel user, Map<String, Collection<String>> attributes) {
         Access realmAccess = accessToken.getRealmAccess();
 

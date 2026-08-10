@@ -40,6 +40,8 @@ import org.keycloak.services.ErrorResponseException;
 import org.keycloak.services.Urls;
 
 /**
+ * UMA 权限请求抽象服务：校验资源/scope 并编码 {@link PermissionTicketToken}。
+ * <p>供 {@link PermissionService} 等 protection API 子类复用。</p>
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class AbstractPermissionService {
@@ -48,12 +50,14 @@ public class AbstractPermissionService {
     private final KeycloakIdentity identity;
     private final ResourceServer resourceServer;
 
+    /** @param identity 请求方身份 @param resourceServer 目标资源服务器 */
     public AbstractPermissionService(KeycloakIdentity identity, ResourceServer resourceServer, AuthorizationProvider authorization) {
         this.identity = identity;
         this.resourceServer = resourceServer;
         this.authorization = authorization;
     }
 
+    /** 创建 permission ticket 并返回 201 及编码票据。 */
     public Response create(List<PermissionRequest> request) {
         if (request == null || request.isEmpty()) {
             throw new ErrorResponseException("invalid_permission_request", "Invalid permission request.", Response.Status.BAD_REQUEST);
@@ -62,6 +66,7 @@ public class AbstractPermissionService {
         return Response.status(Response.Status.CREATED).entity(new PermissionResponse(createPermissionTicket(request))).build();
     }
 
+    /** 校验并解析请求中的资源 ID/名称与 scope。 */
     private List<Permission> verifyRequestedResource(List<PermissionRequest> request) {
         ResourceStore resourceStore = authorization.getStoreFactory().getResourceStore();
         List<Permission> requestedResources = new ArrayList<>();
@@ -112,6 +117,7 @@ public class AbstractPermissionService {
         return requestedResources;
     }
 
+    /** 校验 scope 属于资源或其类型基资源。 */
     private Set<String> verifyRequestedScopes(PermissionRequest request, Resource resource) {
         Set<String> requestScopes = request.getScopes();
 
@@ -145,6 +151,7 @@ public class AbstractPermissionService {
         }).collect(Collectors.toSet());
     }
 
+    /** 组装 claims 并编码 {@link PermissionTicketToken}。 */
     private String createPermissionTicket(List<PermissionRequest> request) {
         List<Permission> permissions = verifyRequestedResource(request);
 

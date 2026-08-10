@@ -28,6 +28,8 @@ import org.keycloak.models.UserModel;
 import org.keycloak.representations.AccessToken;
 
 /**
+ * 基于 {@link ClientModel} 的授权身份：代表客户端或其服务账户。
+ * <p>角色校验通过关联的 service account 用户执行。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -37,10 +39,12 @@ public class ClientModelIdentity implements Identity {
     protected final UserModel serviceAccount;
     protected final AccessToken token;
 
+    /** @param session Keycloak 会话 @param client 客户端模型 */
     public ClientModelIdentity(KeycloakSession session, ClientModel client) {
         this(session, client, null);
     }
 
+    /** @param token 可选 access token，用于 scope 属性 */
     public ClientModelIdentity(KeycloakSession session, ClientModel client, AccessToken token) {
         this.realm = session.getContext().getRealm();
         this.client = client;
@@ -48,11 +52,13 @@ public class ClientModelIdentity implements Identity {
         this.token = token;
     }
 
+    /** @return 客户端内部 ID */
     @Override
     public String getId() {
         return client.getId();
     }
 
+    /** 合并 service account 用户属性与 token scope。 */
     @Override
     public Attributes getAttributes() {
         MultivaluedHashMap map = new MultivaluedHashMap<String, String>();
@@ -63,6 +69,7 @@ public class ClientModelIdentity implements Identity {
         return Attributes.from(map);
     }
 
+    /** @return service account 是否拥有 realm 角色 */
     @Override
     public boolean hasRealmRole(String roleName) {
         if (serviceAccount == null) return false;
@@ -71,6 +78,7 @@ public class ClientModelIdentity implements Identity {
         return serviceAccount.hasRole(role);
     }
 
+    /** @return service account 是否拥有指定客户端角色 */
     @Override
     public boolean hasClientRole(String clientId, String roleName) {
         if (serviceAccount == null) return false;
@@ -80,6 +88,7 @@ public class ClientModelIdentity implements Identity {
         return serviceAccount.hasRole(role);
     }
 
+    /** @return service account 是否拥有任一指定客户端角色 */
     @Override
     public boolean hasOneClientRole(String clientId, String... roleNames) {
         if (serviceAccount == null) return false;

@@ -24,9 +24,11 @@ import org.keycloak.protocol.oidc.TokenIntrospectionProvider;
 import org.keycloak.protocol.oidc.TokenIntrospectionProviderFactory;
 
 /**
+ * {@link RPTIntrospectionProvider} 工厂，provider id 为 requesting_party_token。
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class RPTIntrospectionProviderFactory implements TokenIntrospectionProviderFactory {
+    /** @return RPT 自省提供者实例 */
     @Override
     public TokenIntrospectionProvider create(KeycloakSession session) {
         return new RPTIntrospectionProvider(session);
@@ -47,6 +49,7 @@ public class RPTIntrospectionProviderFactory implements TokenIntrospectionProvid
 
     }
 
+    /** @return provider id requesting_party_token */
     @Override
     public String getId() {
         return "requesting_party_token";

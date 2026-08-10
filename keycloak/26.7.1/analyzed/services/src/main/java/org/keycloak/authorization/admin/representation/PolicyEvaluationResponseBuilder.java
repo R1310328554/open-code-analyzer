@@ -54,10 +54,13 @@ import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 
 /**
+ * 策略评估响应构建器：汇总评估结果、生成 RPT 预览并按资源分组。
+ * <p>管理权限客户端走 {@link FGAPPolicyEvaluationResponseBuilder} 分支。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PolicyEvaluationResponseBuilder {
+    /** 构建完整策略评估响应，含 RPT 与按资源分组的结果。 */
     public static PolicyEvaluationResponse build(EvaluationDecisionCollector decision, ResourceServer resourceServer, AuthorizationProvider authorization, KeycloakIdentity identity, PolicyEvaluationRequest request) {
         if (AdminPermissionsSchema.SCHEMA.isAdminPermissionClient(authorization.getRealm(), resourceServer.getId())) {
             return FGAPPolicyEvaluationResponseBuilder.build(decision, resourceServer, authorization, request);
@@ -178,6 +181,7 @@ public class PolicyEvaluationResponseBuilder {
         return response;
     }
 
+    /** 转换单条策略结果；UMA 策略附加权限票据/用户托管描述。 */
     private static PolicyEvaluationResponse.PolicyResultRepresentation toRepresentation(Result.PolicyResult result, AuthorizationProvider authorization) {
         PolicyEvaluationResponse.PolicyResultRepresentation policyResultRep = new PolicyEvaluationResponse.PolicyResultRepresentation();
 
@@ -245,6 +249,7 @@ public class PolicyEvaluationResponseBuilder {
         return policyResultRep;
     }
 
+    /** @return 用户邮箱，缺省回退用户名 */
     private static String getUserEmailOrUserName(UserModel user) {
         return (user.getEmail() != null ? user.getEmail() : user.getUsername());
     }

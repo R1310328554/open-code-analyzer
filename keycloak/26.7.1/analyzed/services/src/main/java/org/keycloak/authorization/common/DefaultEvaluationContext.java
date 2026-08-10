@@ -34,6 +34,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.representations.AccessToken;
 
 /**
+ * 默认策略评估上下文：聚合身份、请求 claims 与运行时环境属性。
+ * <p>提供 kc.time、网络、User-Agent、realm 名等标准属性键。</p>
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class DefaultEvaluationContext implements EvaluationContext {
@@ -43,21 +45,25 @@ public class DefaultEvaluationContext implements EvaluationContext {
     private final Map<String, List<String>> claims;
     private Attributes attributes;
 
+    /** @param identity 评估主体 @param keycloakSession 会话 */
     public DefaultEvaluationContext(Identity identity, KeycloakSession keycloakSession) {
         this(identity, null, keycloakSession);
     }
 
+    /** @param claims 额外请求 claims（多值） */
     public DefaultEvaluationContext(Identity identity, Map<String, List<String>> claims, KeycloakSession keycloakSession) {
         this.identity = identity;
         this.claims = claims;
         this.keycloakSession = keycloakSession;
     }
 
+    /** @return 评估主体身份 */
     @Override
     public Identity getIdentity() {
         return identity;
     }
 
+    /** 构建标准评估属性（时间、IP、UA、realm、claims、client id）。 */
     protected Map<String, Collection<String>> getBaseAttributes() {
         Map<String, Collection<String>> attributes = new HashMap<>();
 
@@ -90,6 +96,7 @@ public class DefaultEvaluationContext implements EvaluationContext {
         return attributes;
     }
 
+    /** @return 懒加载缓存的评估属性 */
     @Override
     public Attributes getAttributes() {
         if (attributes == null) {

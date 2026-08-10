@@ -40,19 +40,21 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.jboss.logging.Logger;
 
 /**
- * Introspects token accordingly with UMA Bearer Token Profile.
- *
+ * RPT（Requesting Party Token）自省提供者：按 UMA Bearer Token Profile 自省令牌。
+ * <p>返回 active 状态、标准 claims 及 permissions（含 UMA 别名 claim）。</p>
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class RPTIntrospectionProvider extends AccessTokenIntrospectionProvider<AccessToken> {
 
     protected static final Logger LOGGER = Logger.getLogger(RPTIntrospectionProvider.class);
 
+    /** @param session Keycloak 会话 */
     public RPTIntrospectionProvider(KeycloakSession session) {
         super(session);
     }
 
     @Override
+    /** 自省 RPT：校验通过后输出 permissions 与 UMA 兼容字段。 */
     public Response introspect(String tokenStr, EventBuilder eventBuilder) {
         this.eventBuilder = eventBuilder;
         LOGGER.debug("Introspecting requesting party token");
@@ -106,22 +108,26 @@ public class RPTIntrospectionProvider extends AccessTokenIntrospectionProvider<A
 
     }
 
-    //todo: we need to avoid creating this class when processing responses. The only reason for that is that
+    // UMA 规范使用 resource_id/resource_scopes，内部为 rsid/scopes；为向后兼容同时输出两套 claim
     // UMA defines "resource_id" and "resource_scopes" claims but we use "rsid" and "scopes".
     // To avoid breaking backward compatibility we are just responding with all these claims.
+    /** UMA 权限表示：同时暴露 rsid/scopes 与 resource_id/resource_scopes。 */
     public static class UmaPermissionRepresentation extends Permission {
 
+        /** 从内部 {@link Permission} 复制字段。 */
         public UmaPermissionRepresentation(Permission permission) {
             setResourceId(permission.getResourceId());
             setResourceName(permission.getResourceName());
             setScopes(permission.getScopes());
         }
 
+        /** UMA claim：resource_id。 */
         @JsonProperty("resource_id")
         public String getUmaResourceId() {
             return getResourceId();
         }
 
+        /** UMA claim：resource_scopes。 */
         @JsonProperty("resource_scopes")
         public Set<String> getUmaResourceScopes() {
             return getScopes();

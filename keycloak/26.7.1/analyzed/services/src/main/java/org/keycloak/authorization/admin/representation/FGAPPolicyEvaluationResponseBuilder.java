@@ -43,11 +43,14 @@ import org.keycloak.representations.idm.authorization.ResourceRepresentation;
 import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 
 /**
+ * FGAP（细粒度管理权限）策略评估响应构建器。
+ * <p>将 {@link EvaluationDecisionCollector} 结果转为 {@link PolicyEvaluationResponse}，含允许/拒绝 scope 与策略详情。</p>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 class FGAPPolicyEvaluationResponseBuilder {
 
+    /** 构建 FGAP 策略评估响应（单结果聚合）。 */
     static PolicyEvaluationResponse build(EvaluationDecisionCollector decision, ResourceServer resourceServer, AuthorizationProvider authorization, PolicyEvaluationRequest request) {
         PolicyEvaluationResponse response = new PolicyEvaluationResponse();
         Collection<Result> results = decision.getResults();
@@ -127,6 +130,7 @@ class FGAPPolicyEvaluationResponseBuilder {
         return response;
     }
 
+    /** 将策略评估子结果转为 {@link PolicyResultRepresentation}（含关联策略树）。 */
     private static PolicyResultRepresentation toRepresentation(Result.PolicyResult result) {
         PolicyResultRepresentation policyResultRep = new PolicyResultRepresentation();
 

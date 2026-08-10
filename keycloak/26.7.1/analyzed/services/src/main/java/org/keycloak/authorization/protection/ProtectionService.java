@@ -39,6 +39,8 @@ import org.keycloak.services.resources.admin.AdminAuth;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 
 /**
+ * UMA Protection API 根服务：挂载 resource_set、permission、ticket、uma-policy 子路径。
+ * <p>校验 bearer 身份与 uma_protection scope（资源服务器自身除外）。</p>
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ProtectionService {
@@ -48,6 +50,7 @@ public class ProtectionService {
 
     protected final ClientConnection clientConnection;
 
+    /** @param authorization 授权提供者 */
     public ProtectionService(AuthorizationProvider authorization) {
         this.session = authorization.getKeycloakSession();
         this.authorization = authorization;
@@ -55,6 +58,7 @@ public class ProtectionService {
     }
 
     @Path("/resource_set")
+    /** /resource_set：资源注册与管理（需 uma_protection）。 */
     public Object resource() {
         KeycloakIdentity identity = createIdentity(true);
         ResourceServer resourceServer = getResourceServer(identity);
@@ -62,6 +66,7 @@ public class ProtectionService {
         return new ResourceService(authorization, resourceServer, identity, resourceManager);
     }
 
+    /** 为 protection 操作构建管理审计事件。 */
     private AdminEventBuilder createAdminEventBuilder(KeycloakIdentity identity, ResourceServer resourceServer) {
         RealmModel realm = authorization.getRealm();
         ClientModel client = realm.getClientById(resourceServer.getClientId());
@@ -72,6 +77,7 @@ public class ProtectionService {
     }
 
     @Path("/permission")
+    /** /permission：创建 permission ticket。 */
     public Object permission() {
         KeycloakIdentity identity = createIdentity(false);
 
@@ -79,6 +85,7 @@ public class ProtectionService {
     }
     
     @Path("/permission/ticket")
+    /** /permission/ticket：权限票据管理（需 uma_protection）。 */
     public Object ticket() {
         KeycloakIdentity identity = createIdentity(true);
 
@@ -86,12 +93,14 @@ public class ProtectionService {
     }
     
     @Path("/uma-policy")
+    /** /uma-policy：用户托管 UMA 策略管理。 */
     public Object policy() {
         KeycloakIdentity identity = createIdentity(false);
 
         return new UserManagedPermissionService(identity, getResourceServer(identity), this.authorization, createAdminEventBuilder(identity, getResourceServer(identity)));
     }
 
+    /** 解析 bearer 身份并按需校验 uma_protection 客户端角色。 */
     private KeycloakIdentity createIdentity(boolean checkProtectionScope) {
         KeycloakIdentity identity = new KeycloakIdentity(this.authorization.getKeycloakSession());
         ResourceServer resourceServer = getResourceServer(identity);
@@ -101,7 +110,7 @@ public class ProtectionService {
 
         if (checkProtectionScope) {
             if (identity.isResourceServer()) {
-                // if the identity is the resource server itself, then we don't need to check for uma_protection scope
+                // 身份为资源服务器自身时无需 uma_protection scope
                 return identity;
             }
 
@@ -113,6 +122,7 @@ public class ProtectionService {
         return identity;
     }
 
+    /** 从 token issuedFor 解析已注册的资源服务器。 */
     private ResourceServer getResourceServer(KeycloakIdentity identity) {
         String clientId = identity.getAccessToken().getIssuedFor();
         RealmModel realm = authorization.getKeycloakSession().getContext().getRealm();

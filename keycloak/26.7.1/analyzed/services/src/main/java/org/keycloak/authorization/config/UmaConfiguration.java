@@ -32,10 +32,13 @@ import org.keycloak.wellknown.WellKnownProvider;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * UMA 2.0 配置表示：在 OIDC 发现文档基础上扩展 protection API 端点。
+ * <p>含 permission、resource_registration、policy 等 UMA 专用 URL。</p>
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class UmaConfiguration extends OIDCConfigurationRepresentation {
 
+    /** 基于 OIDC well-known 与后端 URI 构建 UMA 配置。 */
     public static final UmaConfiguration create(KeycloakSession session) {
         WellKnownProvider oidcProvider = session.getProvider(WellKnownProvider.class, OIDCWellKnownProviderFactory.PROVIDER_ID);
         OIDCConfigurationRepresentation oidcConfig = OIDCConfigurationRepresentation.class.cast(oidcProvider.getConfig());
@@ -65,35 +68,44 @@ public class UmaConfiguration extends OIDCConfigurationRepresentation {
         return configuration;
     }
 
+    /** UMA 资源注册端点 URL。 */
     @JsonProperty("resource_registration_endpoint")
     private String resourceRegistrationEndpoint;
 
+    /** UMA 权限请求端点 URL。 */
     @JsonProperty("permission_endpoint")
     private String permissionEndpoint;
     
+    /** UMA 用户托管策略端点 URL。 */
     @JsonProperty("policy_endpoint")
     private String policyEndpoint;
 
+    /** @return 资源注册端点 */
     public String getResourceRegistrationEndpoint() {
         return this.resourceRegistrationEndpoint;
     }
 
+    /** 设置资源注册端点。 */
     void setResourceRegistrationEndpoint(String resourceRegistrationEndpoint) {
         this.resourceRegistrationEndpoint = resourceRegistrationEndpoint;
     }
 
+    /** @return 权限端点 */
     public String getPermissionEndpoint() {
         return this.permissionEndpoint;
     }
 
+    /** 设置权限端点。 */
     void setPermissionEndpoint(String permissionEndpoint) {
         this.permissionEndpoint = permissionEndpoint;
     }
     
+    /** @return 策略端点 */
     public String getPolicyEndpoint() {
         return this.policyEndpoint;
     }
 
+    /** 设置策略端点。 */
     void setPolicyEndpoint(String policyEndpoint) {
         this.policyEndpoint = policyEndpoint;
     }
