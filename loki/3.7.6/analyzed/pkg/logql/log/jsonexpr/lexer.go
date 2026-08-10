@@ -1,5 +1,7 @@
 package jsonexpr
 
+// lexer 为 JSON 路径表达式提供手工词法分析：识别 DOT、方括号、字段名、引号字符串与数组下标。
+
 import (
 	"bufio"
 	"fmt"
@@ -38,6 +40,7 @@ func (sc *Scanner) Lex(lval *JSONExprSymType) int {
 	return sc.lex(lval)
 }
 
+// lex 跳过空白后按首字符分派：数字读 INDEX，引号读 STRING，字母读 FIELD。
 func (sc *Scanner) lex(lval *JSONExprSymType) int {
 	for {
 		r := sc.read()
@@ -129,6 +132,7 @@ func (sc *Scanner) scanStr() string {
 	return string(str)
 }
 
+// scanInt 解析非负整数数组下标，拒绝浮点与小数点形式的非法索引。
 func (sc *Scanner) scanInt() (int, error) {
 	var number []rune
 
@@ -170,3 +174,4 @@ func isWhitespace(ch rune) bool { return ch == ' ' || ch == '\t' || ch == '\n' }
 func isDigit(r rune) bool {
 	return r >= '0' && r <= '9'
 }
+// scanStr 读取双引号内字段片段；isEndOfInput 在 EOF 或空字节处终止当前 token 扫描。

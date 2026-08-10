@@ -1,5 +1,7 @@
 package log
 
+// ip 实现 LogQL ip() 过滤器：在日志行或标签值中扫描 IPv4/IPv6 并与单 IP、CIDR 或 IP 范围匹配。
+
 import (
 	"errors"
 	"fmt"
@@ -29,6 +31,7 @@ type IPLineFilter struct {
 	ty LineMatchType
 }
 
+// NewIPLineFilter 构造行级 IP 过滤器，仅支持等于与不等于两种 LineMatchType。
 // NewIPLineFilter is used to construct ip filter as a `LineFilter`
 func NewIPLineFilter(pattern string, ty LineMatchType) (*IPLineFilter, error) {
 	// check if `ty` supported in ip matcher.
@@ -90,6 +93,7 @@ type IPLabelFilter struct {
 	Pattern string
 }
 
+// NewIPLabelFilter 构造标签级 IP 过滤器，无效 pattern 延迟到 PatternError 返回客户端 400。
 // NewIPLabelFilter is used to construct ip filter as label filter for the given `label`.
 func NewIPLabelFilter(pattern, label string, ty LabelFilterType) *IPLabelFilter {
 	ip, err := newIPFilter(pattern)
@@ -161,6 +165,7 @@ func (f *IPLabelFilter) String() string {
 // 1. SINGLE-IP - "192.168.0.1"
 // 2. IP RANGE  - "192.168.0.1-192.168.0.23"
 // 3. CIDR      - "192.168.0.0/16"
+// ipFilter 持有解析后的 netip.Addr、Prefix 或 netipx.IPRange 匹配器。
 type ipFilter struct {
 	pattern string
 	matcher IPMatcher
@@ -178,6 +183,7 @@ func newIPFilter(pattern string) (*ipFilter, error) {
 	return filter, nil
 }
 
+// filter 逐字节扫描行内容，用 IPv4/IPv6 前缀提示加速定位再 ParseAddr 与 matcher 比对。
 // filter does the heavy lifting finding ip `pattern` in the givin `line`.
 // This is the function if you want to understand how the core logic how ip filter works!
 func (f *ipFilter) filter(line []byte) bool {
@@ -237,6 +243,7 @@ func containsIP(matcher IPMatcher, ip netip.Addr) bool {
 	return false
 }
 
+// getMatcher 依次尝试 ParseAddr、ParsePrefix、ParseIPRange 解析 pattern 字符串。
 func getMatcher(pattern string) (IPMatcher, error) {
 	var (
 		matcher IPMatcher
@@ -296,3 +303,4 @@ func bytesSpan(s, accept []byte) int {
 
 	return len(s)
 }
+// bytesSpan 类似 C strspn，统计 s 开头连续属于 accept 字符集的字节数以界定 IP  token 边界。

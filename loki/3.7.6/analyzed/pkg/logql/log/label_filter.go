@@ -1,5 +1,7 @@
 package log
 
+// label_filter 实现 LogQL 标签谓词 Stage：字符串、数值、字节量、时长与 IP 等类型的比较与 and/or 组合。
+
 import (
 	"fmt"
 	"strconv"
@@ -21,6 +23,7 @@ var (
 	_ LabelFilterer = &StringLabelFilter{}
 )
 
+// LabelFilterType 对应标签过滤器中的 ==、!=、>、>=、<、<= 比较运算符。
 // LabelFilterType is an enum for label filtering types.
 type LabelFilterType int
 
@@ -53,6 +56,7 @@ func (f LabelFilterType) String() string {
 	}
 }
 
+// LabelFilterer 嵌入 Stage 接口，Process 返回 (line, ok) 表示当前行是否通过标签条件。
 // LabelFilterer can filter extracted labels.
 //
 //sumtype:decl
@@ -70,6 +74,7 @@ type BinaryLabelFilter struct {
 	And   bool
 }
 
+// NewAndLabelFilter 构造二元 and 过滤器，Short-circuit 在 or 分支上提前返回。
 // NewAndLabelFilter creates a new LabelFilterer from a and binary operation of two LabelFilterer.
 func NewAndLabelFilter(left LabelFilterer, right LabelFilterer) *BinaryLabelFilter {
 	return &BinaryLabelFilter{
@@ -141,6 +146,7 @@ func (f NoopLabelFilter) String() string {
 	return ""
 }
 
+// ReduceAndLabelFilter 将过滤器切片折叠为二叉 and 树，空切片返回 NoopLabelFilter。
 // ReduceAndLabelFilter Reduces multiple label filterer into one using binary and operation.
 func ReduceAndLabelFilter(filters []LabelFilterer) LabelFilterer {
 	if len(filters) == 0 {
@@ -162,6 +168,7 @@ type BytesLabelFilter struct {
 	Type  LabelFilterType
 }
 
+// NewBytesLabelFilter 用 humanize.ParseBytes 解析标签值后与 uint64 阈值比较。
 // NewBytesLabelFilter creates a new label filterer which parses bytes string representation (1KB) from the value of the named label
 // and compares it with the given b value.
 func NewBytesLabelFilter(t LabelFilterType, name string, b uint64) *BytesLabelFilter {
@@ -230,6 +237,7 @@ type DurationLabelFilter struct {
 	Type  LabelFilterType
 }
 
+// NewDurationLabelFilter 解析 Go duration 字符串并与配置时长做有序比较。
 // NewDurationLabelFilter creates a new label filterer which parses duration string representation (5s)
 // from the value of the named label and compares it with the given d value.
 func NewDurationLabelFilter(t LabelFilterType, name string, d time.Duration) *DurationLabelFilter {
@@ -293,6 +301,7 @@ type NumericLabelFilter struct {
 	err   error
 }
 
+// NewNumericLabelFilter 将标签值 ParseFloat 后与浮点阈值比较，解析失败写入 errLabelFilter。
 // NewNumericLabelFilter creates a new label filterer which parses float64 string representation (5.2)
 // from the value of the named label and compares it with the given f value.
 func NewNumericLabelFilter(t LabelFilterType, name string, v float64) *NumericLabelFilter {
@@ -354,6 +363,7 @@ type StringLabelFilter struct {
 	*labels.Matcher
 }
 
+// NewStringLabelFilter 可过滤 __error__ 标签；正则模式可降级为 LineFilterLabelFilter 优化路径。
 // NewStringLabelFilter creates a new label filterer which compares string label.
 // This is the only LabelFilterer that can filter out the __error__ label.
 // Unlike other LabelFilterer which apply conversion, if the label name doesn't exist it is compared with an empty value.
@@ -415,6 +425,7 @@ func (s *LineFilterLabelFilter) RequiredLabelNames() []string {
 	return []string{s.Name}
 }
 
+// labelValue 读取普通标签或 __error__ 专用值，供字符串与行过滤器求值。
 func labelValue(name string, lbs *LabelsBuilder) string {
 	if name == logqlmodel.ErrorLabel {
 		return lbs.GetErr()
@@ -422,3 +433,4 @@ func labelValue(name string, lbs *LabelsBuilder) string {
 	v, _ := lbs.Get(name)
 	return v
 }
+// BinaryLabelFilter.Process 对 and/or 分别要求两侧均真或任一侧为真，并合并 RequiredLabelNames。

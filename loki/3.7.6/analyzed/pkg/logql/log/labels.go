@@ -1,5 +1,7 @@
 package log
 
+// labels 提供流水线标签构建器：区分流标签、结构化元数据与解析标签三类，支持分组、缓存哈希与模板 Map 复用。
+
 import (
 	"fmt"
 	"sync"
@@ -13,6 +15,7 @@ const MaxInternedStrings = 1024
 
 var EmptyLabelsResult = NewLabelsResult(labels.EmptyLabels().String(), labels.StableHash(labels.EmptyLabels()), labels.EmptyLabels(), labels.EmptyLabels(), labels.EmptyLabels())
 
+// LabelsResult 缓存标签字符串、稳定哈希及按类别拆分的 labels.Labels 视图。
 // LabelsResult is a computed labels result that contains the labels set with associated string and hash.
 // The is mainly used for caching and returning labels computations out of pipelines and stages.
 type LabelsResult interface {
@@ -109,6 +112,7 @@ func categoriesContain(categories []LabelCategory, category LabelCategory) bool 
 	return false
 }
 
+// BaseLabelsBuilder 在多条 LabelsBuilder 间共享 resultCache 与 parserKeyHints 状态。
 // BaseLabelsBuilder is a label builder used by pipeline and stages.
 // Only one base builder is used and it contains cache for each LabelsBuilders.
 type BaseLabelsBuilder struct {
@@ -131,6 +135,7 @@ type BaseLabelsBuilder struct {
 	*hasher
 }
 
+// LabelsBuilder 基于流标签 base 叠加增删改，currentResult 指向未变更时的缓存结果。
 // LabelsBuilder is the same as labels.Builder but tailored for this package.
 type LabelsBuilder struct {
 	base          labels.Labels
@@ -341,6 +346,7 @@ func (b *LabelsBuilder) deleteWithCategory(category LabelCategory, n string) {
 // Set the name/value pair as a label.
 // The value `v` may not be set if a category with higher preference already contains `n`.
 // Category preference goes as Parsed > Structured Metadata > Stream.
+// Set 按 Parsed > StructuredMetadata > Stream 优先级写入，高优先级类别覆盖低优先级同名键。
 func (b *LabelsBuilder) Set(category LabelCategory, n, v string) *LabelsBuilder {
 	// Parsed takes precedence over Structured Metadata and Stream labels.
 	// If category is Parsed, we delete `n` from the structured metadata and stream labels.
@@ -588,6 +594,7 @@ func (b *LabelsBuilder) Map() (map[string]string, bool) {
 
 // LabelsResult returns the LabelsResult from the builder.
 // No grouping is applied and the cache is used when possible.
+// LabelsResult 在无增删且无错误时直接返回 currentResult，否则合并后按 hash 写入缓存。
 func (b *LabelsBuilder) LabelsResult() LabelsResult {
 	// unchanged path.
 	if !b.hasDel() && !b.hasAdd() && !b.HasErr() {
@@ -661,6 +668,7 @@ func (b *BaseLabelsBuilder) toUncategorizedResult(buf []labels.Label) LabelsResu
 
 // GroupedLabels returns the LabelsResult from the builder.
 // Groups are applied and the cache is used when possible.
+// GroupedLabels 应用 by/without 分组；noLabels 为真时返回 EmptyLabelsResult。
 func (b *LabelsBuilder) GroupedLabels() LabelsResult {
 	if b.HasErr() {
 		// We need to return now before applying grouping otherwise the error might get lost.
@@ -790,6 +798,7 @@ type internedStringSet map[string]struct {
 	ok bool
 }
 
+// internedStringSet 对解析出的字节切片做字符串驻留，减少重复分配相同标签值。
 func (i internedStringSet) Get(data []byte, createNew func() (string, bool)) (string, bool) {
 	s, ok := i[string(data)]
 	if ok {
@@ -805,3 +814,4 @@ func (i internedStringSet) Get(data []byte, createNew func() (string, bool)) (st
 	}{s: newStr, ok: ok}
 	return newStr, ok
 }
+// IntoMap/Map 为 line_format 提供标签 map；HasInCategory 与 GetJSONPath 支持 JSON 提取路径追踪。

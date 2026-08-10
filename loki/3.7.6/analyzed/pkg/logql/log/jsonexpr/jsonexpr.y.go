@@ -3,6 +3,8 @@
 //line pkg/logql/log/jsonexpr/jsonexpr.y:4
 package jsonexpr
 
+// jsonexpr 由 goyacc 生成的 JSON 路径表达式解析表与驱动代码，将形如 foo.bar[0]."key" 的路径编译为 []interface{} 访问序列。
+
 import __yyfmt__ "fmt"
 
 //line pkg/logql/log/jsonexpr/jsonexpr.y:4
@@ -12,6 +14,7 @@ func setScannerData(lex interface{}, data []interface{}) {
 }
 
 //line pkg/logql/log/jsonexpr/jsonexpr.y:12
+// JSONExprSymType 为 yacc 栈上符号的联合体，承载字段名、字符串、整数索引与列表片段。
 type JSONExprSymType struct {
 	yys   int
 	empty struct{}
@@ -118,6 +121,7 @@ var (
 	JSONExprErrorVerbose = false
 )
 
+// JSONExprLexer 抽象词法分析器，由 jsonexpr.Scanner 实现 Lex 与 Error 回调。
 type JSONExprLexer interface {
 	Lex(lval *JSONExprSymType) int
 	Error(s string)
@@ -138,6 +142,7 @@ func (p *JSONExprParserImpl) Lookahead() int {
 	return p.char
 }
 
+// JSONExprNewParser 创建 LALR 解析器实例，Parse 驱动从 Lex 读取 token 并完成归约。
 func JSONExprNewParser() JSONExprParser {
 	return &JSONExprParserImpl{}
 }
@@ -515,3 +520,4 @@ JSONExprdefault:
 	}
 	goto JSONExprstack /* stack new state and value */
 }
+// 生成文件勿手改语法规则；修改 jsonexpr.y 后需重新 goyacc 生成本文件。

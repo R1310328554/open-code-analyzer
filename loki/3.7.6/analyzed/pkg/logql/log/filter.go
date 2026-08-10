@@ -1,5 +1,7 @@
 package log
 
+// filter 实现 LogQL 行过滤器：字面量、正则、模式匹配及 and/or/not 组合，并可将正则简化为更快的 contains/equal 过滤器。
+
 import (
 	"bytes"
 	"fmt"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// LineMatchType 对应 LogQL 管道中的 |=、!=、|~、!~、|>、!> 等行匹配运算符。
 // LineMatchType is an enum for line matching types.
 type LineMatchType int
 
@@ -47,6 +50,7 @@ func (t LineMatchType) String() string {
 	}
 }
 
+// Checker 供 Matcher 反向验证：给定测试行或正则，判断过滤器是否与之兼容。
 // Checker is an interface that matches against the input line or regexp.
 type Checker interface {
 	Test(line []byte, caseInsensitive bool, equal bool) bool
@@ -61,6 +65,7 @@ type Matcher interface {
 	Matches(test Checker) bool
 }
 
+// Filterer 对原始日志字节切片求值，返回是否保留该行；可转为 Stage 嵌入流水线。
 // Filterer is a interface to filter log lines.
 type Filterer interface {
 	Filter(line []byte) bool
@@ -108,6 +113,7 @@ func (trueFilter) ToStage() Stage       { return NoopStage }
 // Matches implements Matcher
 func (trueFilter) Matches(_ Checker) bool { return true }
 
+// TrueFilter 恒真过滤器，and/or 优化时作为恒等元跳过多余分支。
 // TrueFilter is a filter that returns and matches all log lines whatever their content.
 var TrueFilter = trueFilter{}
 
@@ -175,6 +181,7 @@ func (n notFilter) Matches(test Checker) bool {
 	return !n.MatcherFilterer.Matches(test)
 }
 
+// NewNotFilter 对基础过滤器取反；若基础为 or 则按德摩根律展开为 and(not(a), not(b))。
 // NewNotFilter creates a new filter which matches only if the base filter doesn't match.
 // If the base filter is a `or` it will recursively simplify with `and` operations.
 func NewNotFilter(base MatcherFilterer) MatcherFilterer {
@@ -190,6 +197,7 @@ type andFilter struct {
 	right MatcherFilterer
 }
 
+// NewAndFilter 短路合并：任一侧为 nil 或 TrueFilter 时直接返回另一侧。
 // NewAndFilter creates a new filter which matches only if left and right matches.
 func NewAndFilter(left MatcherFilterer, right MatcherFilterer) MatcherFilterer {
 	// Make sure we take care of panics in case a nil or noop filter is passed.
@@ -227,6 +235,7 @@ type andFilters struct {
 	filters []Filterer
 }
 
+// NewAndFilters 合并多个 Filterer，将相邻 contains 合并为 containsAll 并将正则推至末尾。
 // NewAndFilters creates a new filter which matches only if all filters match
 func NewAndFilters(filters []Filterer) Filterer {
 	var containsFilterAcc *containsAllFilter
@@ -445,6 +454,7 @@ func contains(line, substr []byte, caseInsensitive bool) bool {
 
 // containsLower verifies if substr is a substring of line, with case insensitive comparison.
 // substr MUST be in lowercase before calling this function.
+// containsLower 在 substr 已小写前提下对 line 做大小写不敏感子串搜索，含 Unicode 慢路径。
 func containsLower(line, substr []byte) bool {
 	if len(substr) == 0 {
 		return true
@@ -604,6 +614,7 @@ func (f containsAllFilter) Matches(test Checker) bool {
 	return true
 }
 
+// NewFilter 根据 LineMatchType 构造行过滤器，是 LogQL 解析器的主要入口。
 // NewFilter creates a new line filter from a match string and type.
 func NewFilter(match string, mt LineMatchType) (Filterer, error) {
 	switch mt {
@@ -640,6 +651,7 @@ func NewLabelFilter(match string, mt labels.MatchType) (Filterer, error) {
 	}
 }
 
+// parseRegexpFilter 尝试用 RegexSimplifier 将正则降级为字面量过滤器以提升吞吐。
 // parseRegexpFilter parses a regexp and attempt to simplify it with only literal filters.
 // If not possible it will returns the original regexp filter.
 func parseRegexpFilter(re string, match bool, isLabel bool) (MatcherFilterer, error) {
@@ -691,6 +703,7 @@ func NewRegexSimplifier(
 	}
 }
 
+// Simplify 递归处理 alternate/concat/literal/star 等 AST 节点，失败时回退原始正则。
 // Simplify a regexp expression by replacing it, when possible, with a succession of literal filters.
 // For example `(foo|bar)` will be replaced by  `containsFilter(foo) or containsFilter(bar)`
 func (s *RegexSimplifier) Simplify(reg *syntax.Regexp, isLabel bool) (MatcherFilterer, bool) {
@@ -883,3 +896,4 @@ func (f *patternFilter) ToStage() Stage {
 		},
 	}
 }
+// patternFilter 封装 pattern 包的行模式语法，与正则过滤器共享 Filterer/Matcher 接口。

@@ -1,5 +1,7 @@
 package log
 
+// consolidated_variant_extractor 将公共流水线与多个变体采样提取器合并，为每条日志行附加 variant 标签区分来源分支。
+
 import (
 	"strconv"
 
@@ -15,6 +17,7 @@ func NewConsolidatedMultiVariantExtractor(commonPipeline Pipeline, variants []Sa
 	}
 }
 
+// consolidatedMultiVariantExtractor 持有公共 Pipeline 与各变体 SampleExtractor 列表。
 type consolidatedMultiVariantExtractor struct {
 	commonPipeline Pipeline
 	variants       []SampleExtractor
@@ -37,6 +40,7 @@ func (c *consolidatedMultiVariantStreamExtractor) BaseLabels() LabelsResult {
 	return c.commonPipeline.BaseLabels()
 }
 
+// Process 先经公共流水线过滤/解析，再逐变体提取样本并打上 variant 索引标签。
 func (c *consolidatedMultiVariantStreamExtractor) Process(ts int64, line []byte, structuredMetadata labels.Labels) ([]ExtractedSample, bool) {
 	// Process the line through the common pipeline
 	processedLine, commonLabels, ok := c.commonPipeline.Process(ts, line, structuredMetadata)
@@ -73,6 +77,7 @@ func (c *consolidatedMultiVariantStreamExtractor) Process(ts int64, line []byte,
 	return allSamples, anyExtracted
 }
 
+// appendVariantLabel 在流标签上追加 __variant__ 标签，值为变体在列表中的索引。
 func appendVariantLabel(lbls LabelsResult, variantIndex int) LabelsResult {
 	newLblsBuilder := labels.NewScratchBuilder(lbls.Stream().Len() + 1)
 
@@ -102,3 +107,4 @@ func (c *consolidatedMultiVariantStreamExtractor) ReferencedStructuredMetadata()
 
 	return c.referencedStructuredMetadata
 }
+// ReferencedStructuredMetadata 聚合公共与各变体提取器是否引用结构化元数据的标志。

@@ -1,5 +1,7 @@
 package logql
 
+// limits 定义 LogQL 查询引擎向租户配置查询上限的接口，含序列数、时间范围与超时等。
+
 import (
 	"context"
 	"math"
@@ -15,6 +17,7 @@ var NoLimits = &fakeLimits{
 	maxScanTaskParallelism:  0,
 }
 
+// Limits 接口按 userID 查询各类配额与调试开关，供引擎在执行前校验查询。
 // Limits allow the engine to fetch limits for a given users.
 type Limits interface {
 	MaxQuerySeries(context.Context, string) int
@@ -29,6 +32,7 @@ type Limits interface {
 	DebugEngineStreams(string) bool
 }
 
+// fakeLimits 是 Limits 的内存实现，字段直接映射接口返回值，无外部依赖。
 type fakeLimits struct {
 	maxSeries               int
 	timeout                 time.Duration
@@ -43,6 +47,7 @@ type fakeLimits struct {
 	debugEngineStreams     bool
 }
 
+// MaxQuerySeries 返回单条查询允许返回的最大序列数上限。
 func (f fakeLimits) MaxQuerySeries(_ context.Context, _ string) int {
 	return f.maxSeries
 }
@@ -63,6 +68,7 @@ func (f fakeLimits) RequiredLabels(_ context.Context, _ string) []string {
 	return f.requiredLabels
 }
 
+// EnableMultiVariantQueries 控制是否启用多变体查询扩展能力。
 func (f fakeLimits) EnableMultiVariantQueries(_ string) bool {
 	return f.multiVariantQueryEnable
 }
@@ -78,3 +84,4 @@ func (f fakeLimits) DebugEngineTasks(_ string) bool {
 func (f fakeLimits) DebugEngineStreams(_ string) bool {
 	return f.debugEngineStreams
 }
+// v2 引擎相关字段 MaxScanTaskParallelism 与 DebugEngineTasks/Streams 用于扫描并行度与调试输出。

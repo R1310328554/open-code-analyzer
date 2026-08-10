@@ -1,5 +1,7 @@
 package log
 
+// drop_labels 实现 LogQL drop 标签 Stage：按名称或 Matcher 从 LabelsBuilder 移除指定标签。
+
 import (
 	"github.com/prometheus/prometheus/model/labels"
 
@@ -18,6 +20,7 @@ func NewNamedLabelMatcher(m *labels.Matcher, n string) NamedLabelMatcher {
 	}
 }
 
+// DropLabels 流水线 Stage，遍历配置的匹配项并从当前标签集删除命中项。
 type DropLabels struct {
 	labels []NamedLabelMatcher
 }
@@ -40,6 +43,7 @@ func (dl *DropLabels) Process(_ int64, line []byte, lbls *LabelsBuilder) ([]byte
 
 func (dl *DropLabels) RequiredLabelNames() []string { return []string{} }
 
+// isErrorLabel 判断是否为 LogQL 内部错误标签 __error__。
 func isErrorLabel(name string) bool {
 	return name == logqlmodel.ErrorLabel
 }
@@ -62,6 +66,7 @@ func dropLabelNames(name string, lbls *LabelsBuilder) {
 	}
 }
 
+// dropLabelMatches 当标签值满足 Matcher 时删除该标签或重置错误状态。
 func dropLabelMatches(matcher *labels.Matcher, lbls *LabelsBuilder) {
 	var value string
 	name := matcher.Name
@@ -84,3 +89,4 @@ func dropLabelMatches(matcher *labels.Matcher, lbls *LabelsBuilder) {
 		lbls.Del(name)
 	}
 }
+// 错误与错误详情标签通过 ResetError/ResetErrorDetails 专用路径处理，避免残留解析失败信息。

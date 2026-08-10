@@ -1,5 +1,7 @@
 package log
 
+// fmt 提供 line_format 与 label_format Stage：基于 text/template 与 sprig 函数格式化日志行与标签值。
+
 import (
 	"bytes"
 	"fmt"
@@ -16,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logqlmodel"
 )
 
+// functionLineName 与 functionTimestampName 为模板内访问当前行与时间戳的内置变量名。
 const (
 	functionLineName      = "__line__"
 	functionTimestampName = "__timestamp__"
@@ -119,6 +122,7 @@ var (
 	}
 )
 
+// addLineAndTimestampFunctions 将 __line__ 与 __timestamp__ 闭包注入模板函数表。
 func addLineAndTimestampFunctions(currLine func() string, currTimestamp func() int64) map[string]interface{} {
 	functions := make(map[string]interface{}, len(functionMap)+2)
 	for k, v := range functionMap {
@@ -197,6 +201,7 @@ type LineFormatter struct {
 	simpleKey   string
 }
 
+// NewFormatter 解析 line_format 模板；若仅为 {{.key}} 则启用 simpleKey 零拷贝快路径。
 // NewFormatter creates a new log line formatter from a given text template.
 func NewFormatter(tmpl string) (*LineFormatter, error) {
 	lf := &LineFormatter{
@@ -230,6 +235,7 @@ func NewFormatter(tmpl string) (*LineFormatter, error) {
 	return lf, nil
 }
 
+// Process 执行模板渲染；失败时设置 errTemplateFormat 与错误详情并保留原行。
 func (lf *LineFormatter) Process(ts int64, line []byte, lbs *LabelsBuilder) ([]byte, bool) {
 	if lf.simpleKey != "" {
 		if val, ok := lbs.Get(lf.simpleKey); ok {
@@ -315,6 +321,7 @@ func listNodeFieldsFromPipe(p *parse.PipeNode) []string {
 	return res
 }
 
+// LabelFmt 描述单条标签格式化：Rename 为真时移动标签名，否则按模板生成新值。
 // LabelFmt is a configuration struct for formatting a label.
 type LabelFmt struct {
 	Name  string
@@ -354,6 +361,7 @@ type LabelsFormatter struct {
 	currentTs   int64
 }
 
+// NewLabelsFormatter 批量应用多个 LabelFmt，同一 Stage 内禁止重复目标标签名。
 // NewLabelsFormatter creates a new formatter that can format multiple labels at once.
 // Either by renaming or using text template.
 // It is not allowed to reformat the same label twice within the same formatter.
@@ -483,6 +491,7 @@ func alignRight(count int, src string) string {
 	return string(runes[l-count:])
 }
 
+// Decolorizer 使用正则剥离 ANSI 转义序列，便于下游解析与展示纯文本日志。
 type Decolorizer struct{}
 
 // RegExp to select ANSI characters courtesy of https://github.com/acarl005/stripansi
@@ -529,3 +538,4 @@ func substring(start, end int, s string) string {
 	}
 	return string(runes[start:end])
 }
+// init 将 sprig 常用函数合并进 functionMap；RequiredLabelNames 递归收集模板引用的标签字段。
