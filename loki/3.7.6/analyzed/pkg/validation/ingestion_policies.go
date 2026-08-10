@@ -1,5 +1,7 @@
 package validation
 
+// validation 包 ingestion_policies 实现按 stream 标签匹配写入策略：支持 X-Loki-Ingestion-Policy 头覆盖、HTTP/gRPC/Kafka 全链路透传。
+
 import (
 	"context"
 	"fmt"
@@ -23,6 +25,7 @@ const (
 	lowerIngestionPolicyHeaderName = "x-loki-ingestion-policy"
 )
 
+// PriorityStream 将 LogQL selector 解析为 Matchers，数值越大优先级越高。
 type PriorityStream struct {
 	Priority int               `yaml:"priority" json:"priority" doc:"description=The bigger the value, the higher the priority."`
 	Selector string            `yaml:"selector" json:"selector" doc:"description=Stream selector expression."`
@@ -59,6 +62,7 @@ func (p *PolicyStreamMapping) Validate() error {
 	return nil
 }
 
+// PolicyFor 返回最高优先级全部匹配策略名，同优先级多策略按字母序排序。
 // PolicyFor returns all the policies that matches the given labels with the highest priority.
 // Note that this method will return multiple policies if two different policies match the same labels
 // with the same priority.
@@ -111,6 +115,7 @@ func (p *PolicyStreamMapping) PolicyFor(ctx context.Context, lbs labels.Labels) 
 	return policies
 }
 
+// ApplyDefaultPolicyStreamMappings 合并默认映射，已有 selector 不重复追加。
 // ApplyDefaultPolicyStreamMappings applies default policy stream mappings to the current mapping.
 // The defaults are merged with the existing mappings, with existing mappings taking precedence.
 func (p *PolicyStreamMapping) ApplyDefaultPolicyStreamMappings(defaults PolicyStreamMapping) error {
@@ -194,6 +199,7 @@ type ingestionPolicyMiddleware struct {
 	logger log.Logger
 }
 
+// NewIngestionPolicyMiddleware 从 HTTP 头注入 context，空策略时透传不修改请求。
 // NewIngestionPolicyMiddleware creates a middleware that extracts the ingestion policy
 // from the HTTP header and injects it into the context of the request.
 func NewIngestionPolicyMiddleware(logger log.Logger) middleware.Interface {
@@ -233,6 +239,7 @@ func injectIntoGRPCRequest(ctx context.Context) (context.Context, error) {
 	return newCtx, nil
 }
 
+// ClientIngestionPolicyInterceptor 将策略写入 outgoing metadata 供 ingester 侧还原。
 // ClientIngestionPolicyInterceptor is a gRPC unary client interceptor that propagates the ingestion policy
 func ClientIngestionPolicyInterceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	ctx, err := injectIntoGRPCRequest(ctx)
@@ -311,6 +318,7 @@ func (ss serverStream) Context() context.Context {
 	return ss.ctx
 }
 
+// Kafka 拦截器为每条 record 追加 x-loki-ingestion-policy 头，消费端可还原 context。
 // IngestionPoliciesKafkaProducerInterceptor extracts the ingestion policy from context and adds it as a record header to all records
 func IngestionPoliciesKafkaProducerInterceptor(ctx context.Context, records []*kgo.Record) error {
 	// Check once if policy exists to avoid looping if not needed
@@ -339,3 +347,4 @@ func IngestionPoliciesKafkaHeadersToContext(ctx context.Context, headers []kgo.R
 	}
 	return ctx
 }
+// GlobalPolicy 常量 * 表示全局默认策略键，与 per-tenant PolicyStreamMapping 配置配合使用。

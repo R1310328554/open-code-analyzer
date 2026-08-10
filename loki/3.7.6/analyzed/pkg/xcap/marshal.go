@@ -1,11 +1,14 @@
 package xcap
 
+// xcap 包 marshal 实现 Capture/Region 到 internal proto 的转换：序列化前幂等 End 全部 Region 以防并发写入。
+
 import (
 	"fmt"
 
 	"github.com/grafana/loki/v3/pkg/xcap/internal/proto"
 )
 
+// toProtoCapture 构建 statistics 索引并递归 toProtoRegion，nil Capture 返回 nil。
 // toProtoCapture converts a Capture to its protobuf representation.
 //
 // Marshalling is intended to happen after the capture lifecycle is
@@ -55,6 +58,7 @@ func toProtoCapture(c *Capture) (*proto.Capture, error) {
 	}, nil
 }
 
+// toProtoRegion 将 observations map 转为 proto 切片，缺失 statistic 索引则报错。
 // toProtoRegion converts a Region to its protobuf representation.
 func toProtoRegion(region *Region, statsIndex map[StatisticKey]uint32) (*proto.Region, error) {
 	protoObservations := make([]*proto.Observation, 0, len(region.observations))
@@ -84,6 +88,7 @@ func toProtoRegion(region *Region, statsIndex map[StatisticKey]uint32) (*proto.R
 	}, nil
 }
 
+// marshalObservationValue 用 oneof 包装 int64/float64/bool，不支持类型返回 fmt 错误。
 // marshalObservationValue converts an observation value to proto ObservationValue.
 func marshalObservationValue(value any) (*proto.ObservationValue, error) {
 	switch v := value.(type) {
@@ -139,3 +144,4 @@ func marshalAggregationType(agg AggregationType) proto.AggregationType {
 		return proto.AGGREGATION_TYPE_INVALID
 	}
 }
+// marshalDataType/marshalAggregationType 将 Go 枚举映射为 proto 常量，未知值落 INVALID。

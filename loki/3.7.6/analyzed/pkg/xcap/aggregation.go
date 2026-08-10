@@ -1,5 +1,7 @@
 package xcap
 
+// xcap 包 aggregation 在 Region 内按 Statistic 聚合多次 Observation：支持 sum/min/max/first/last 及 bool 型 max 语义。
+
 // AggregatedObservation holds an aggregated value for a statistic within a region.
 type AggregatedObservation struct {
 	Statistic Statistic
@@ -7,6 +9,7 @@ type AggregatedObservation struct {
 	Count     int // number of observations aggregated
 }
 
+// Record 根据 statistic 的 AggregationType 更新 Value 并递增 Count。
 // Record aggregates a new observation into this aggregated observation.
 // It updates the value according to the statistic's aggregation type.
 func (a *AggregatedObservation) Record(obs Observation) {
@@ -14,6 +17,7 @@ func (a *AggregatedObservation) Record(obs Observation) {
 	a.Count++
 }
 
+// Merge 将另一聚合结果按同类型规则并入，nil 输入直接忽略。
 // Merge aggregates another AggregatedObservation into this one.
 func (a *AggregatedObservation) Merge(other *AggregatedObservation) {
 	if other == nil {
@@ -92,3 +96,4 @@ func (a *AggregatedObservation) Bool() bool {
 
 	return a.Value.(bool)
 }
+// Int64/Float64/Bool 提供类型安全读取，DataType 不匹配时返回零值或 false。

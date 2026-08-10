@@ -1,5 +1,7 @@
 package validation
 
+// validation 包 OverridesExporter 通过反射导出租户限额覆盖：loki_overrides 按 tenant/limit_name 暴露，defaults 指标展示全局默认值。
+
 import (
 	"reflect"
 	"time"
@@ -15,12 +17,14 @@ type ExportedLimits interface {
 	DefaultLimits() *Limits
 }
 
+// OverridesExporter 实现 prometheus.Collector，Collect 时遍历 Limits 结构体字段。
 type OverridesExporter struct {
 	overrides    ExportedLimits
 	tenantDesc   *prometheus.Desc
 	defaultsDesc *prometheus.Desc
 }
 
+// NewOverridesExporter 注册 tenant 与 defaults 两套 Desc，标签分别为 limit_name/user。
 // TODO(jordanrushing): break out overrides from defaults?
 func NewOverridesExporter(overrides ExportedLimits) *OverridesExporter {
 	return &OverridesExporter{
@@ -95,3 +99,4 @@ func (oe *OverridesExporter) Collect(ch chan<- prometheus.Metric) {
 	}
 
 }
+// 仅上报与默认值不同的 tenant 字段，避免 Prometheus 中冗余相同 gauge 序列。

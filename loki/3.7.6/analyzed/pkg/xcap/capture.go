@@ -53,6 +53,8 @@
 //	//   2. The observation is also available via SummaryLogValues(capture).
 package xcap
 
+// xcap 包 Capture 管理一次查询生命周期内的 Region 树与统计观测：可独立用于日志摘要，或与 OTel Span 联动写入 span 属性。
+
 import (
 	"context"
 	"fmt"
@@ -65,6 +67,7 @@ import (
 )
 
 // Capture captures statistical information about the lifetime of a query.
+// Capture 线程安全维护 regions 列表，End 后禁止再创建子 Region。
 type Capture struct {
 	mu sync.RWMutex
 
@@ -78,6 +81,7 @@ type Capture struct {
 	ended bool
 }
 
+// NewCapture 将 Capture 注入 context，下游通过 CaptureFromContext 获取。
 // NewCapture creates a new Capture and attaches it to the provided [context.Context]
 func NewCapture(ctx context.Context, attributes []attribute.KeyValue) (context.Context, *Capture) {
 	capture := &Capture{
@@ -89,6 +93,7 @@ func NewCapture(ctx context.Context, attributes []attribute.KeyValue) (context.C
 	return ctx, capture
 }
 
+// End 幂等标记 ended，AddRegion 在结束后忽略新 Region 注册。
 // End marks the end of the capture. After End is called, no new
 // Regions can be created from this Capture.
 func (c *Capture) End() {
@@ -123,6 +128,7 @@ func (c *Capture) Regions() []*Region {
 	return c.regions
 }
 
+// LinkParent 为无 parent 的根 Region 设置 parentID，便于构建调用树。
 // LinkParent assigns the provided region as the parent
 // to all root regions of the capture.
 func (c *Capture) LinkParent(parent *Region) {
@@ -159,6 +165,7 @@ func (c *Capture) getAllStatistics() map[StatisticKey]Statistic {
 	return stats
 }
 
+// MarshalBinary 序列化为 protobuf 字节，供跨进程或持久化传递 xcap 快照。
 // MarshalBinary implements encoding.BinaryMarshaler for Capture.
 // It serializes the Capture to its protobuf representation and returns
 // the binary data.
@@ -203,3 +210,4 @@ func (c *Capture) UnmarshalBinary(data []byte) error {
 
 	return nil
 }
+// UnmarshalBinary 从 proto 反序列化并填充 Capture，空 data 视为无操作成功。

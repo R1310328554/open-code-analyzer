@@ -3,6 +3,8 @@
 
 package proto
 
+// xcap internal proto 为 Capture/Region/Observation 的 gogo 生成消息定义：供 MarshalBinary 与跨组件传输，勿手改生成逻辑仅可增补中文注释。
+
 import (
 	bytes "bytes"
 	encoding_binary "encoding/binary"
@@ -32,6 +34,7 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// DataType 枚举统计值类型：int64、float64、bool 或无效占位。
 // DataType specifies the data type of a statistic's values.
 type DataType int32
 
@@ -60,6 +63,7 @@ func (DataType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_cfc78bf5da060d84, []int{0}
 }
 
+// AggregationType 定义同统计量多次观测的合并方式，与 xcap.AggregationType 对应。
 // AggregationType specifies how to combine multiple observations of the
 // same statistic.
 type AggregationType int32
@@ -95,6 +99,7 @@ func (AggregationType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_cfc78bf5da060d84, []int{1}
 }
 
+// Capture proto 含 Regions 列表与 Statistics 索引表，Observation 通过 statistic_id 引用。
 // Capture is protobuf representation of a Capture.
 type Capture struct {
 	// A list of Regions recorded in the Capture.
@@ -152,6 +157,7 @@ func (m *Capture) GetStatistics() []*Statistic {
 }
 
 // Region is protobuf representation of a Region.
+// Region 消息含名称、8 字节 id/parent_id 及该区域聚合后的 Observation 列表。
 type Region struct {
 	// Name is the name of the region.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -553,6 +559,7 @@ func (*AttributeValue) XXX_OneofWrappers() []interface{} {
 }
 
 // Statistic represents a statistic definition.
+// Statistic 描述指标名、DataType 与 AggregationType，在 Capture 内去重索引。
 type Statistic struct {
 	// Name is the name of the statistic.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -616,6 +623,7 @@ func (m *Statistic) GetAggregationType() AggregationType {
 }
 
 // Observation represents an aggregated observation value for a statistic.
+// Observation 绑定 statistic_id、ObservationValue 与聚合计数 count。
 type Observation struct {
 	// StatisticId is the index into the statistics list in Capture.
 	StatisticId uint32 `protobuf:"varint,1,opt,name=statistic_id,json=statisticId,proto3" json:"statistic_id,omitempty"`
@@ -4011,3 +4019,4 @@ var (
 	ErrInvalidLengthXcap = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowXcap   = fmt.Errorf("proto: integer overflow")
 )
+// 文件由 protoc-gen-gogo 生成，字段编号与 xcap.proto 保持同步，重新生成会覆盖代码。

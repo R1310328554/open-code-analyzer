@@ -1,5 +1,7 @@
 package validation
 
+// validation 包 Limits 聚合 Loki 全局限额与 per-tenant 覆盖：涵盖 distributor/ingester/querier/ruler 各组件的速率、查询与保留策略。
+
 import (
 	"context"
 	"encoding/json"
@@ -34,13 +36,15 @@ import (
 )
 
 const (
-	// LocalRateLimitStrat represents a ingestion rate limiting strategy that enforces the limit
+	// LocalIngestionRateStrategy 在单 distributor 本地限流，副本数 N 时有效限额约为 N 倍。
+// LocalRateLimitStrat represents a ingestion rate limiting strategy that enforces the limit
 	// on a per distributor basis.
 	//
 	// The actual effective rate limit will be N times higher, where N is the number of distributor replicas.
 	LocalIngestionRateStrategy = "local"
 
-	// GlobalRateLimitStrat represents a ingestion rate limiting strategy that enforces the rate
+	// GlobalIngestionRateStrategy 按 distributor 环副本数均分全局 ingestion_rate_mb。
+// GlobalRateLimitStrat represents a ingestion rate limiting strategy that enforces the rate
 	// limiting globally, configuring a per-distributor local rate limiter as "ingestion_rate / N",
 	// where N is the number of distributor replicas (it's automatically adjusted if the
 	// number of replicas change).
@@ -85,6 +89,7 @@ var (
 	}
 )
 
+// Limits 字段 yaml/json 双标签，model.Duration 支持 1h30m 等人类可读时长格式。
 // Limits describe all the limits for users; can be used to describe global default
 // limits via flags, or per-user limits via yaml config.
 // NOTE: we use custom `model.Duration` instead of standard `time.Duration` because,
@@ -683,12 +688,14 @@ type TenantLimits interface {
 
 // Overrides periodically fetch a set of per-user overrides, and provides convenience
 // functions for fetching the correct value.
+// Overrides 包装默认 Limits 与 TenantLimits，对外提供按 userID 解析的有效限额。
 type Overrides struct {
 	defaultLimits *Limits
 	tenantLimits  TenantLimits
 }
 
 // NewOverrides makes a new Overrides.
+// NewOverrides 构造多租户限额门面，各组件通过 Overrides 方法读取生效配置。
 func NewOverrides(defaults Limits, tenantLimits TenantLimits) (*Overrides, error) {
 	return &Overrides{
 		tenantLimits:  tenantLimits,
@@ -1467,3 +1474,4 @@ func (sm *OverwriteMarshalingStringMap) UnmarshalYAML(unmarshal func(interface{}
 func (o *Overrides) SimulatedPushLatency(userID string) time.Duration {
 	return o.getOverridesForUser(userID).SimulatedPushLatency
 }
+// Validate 在加载时校验 ingestion 策略、保留规则与 policy stream mapping 等交叉约束。

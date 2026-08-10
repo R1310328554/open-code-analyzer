@@ -1,5 +1,7 @@
 package validation
 
+// validation 包 validate 定义写入丢弃 reason 常量、用户可见错误模板与 Prometheus 指标：distributor 与 ingester 共用同一套 reason 标签便于统一观测。
+
 import (
 	"fmt"
 
@@ -24,7 +26,8 @@ const (
 
 	MissingLabelsErrorMsg = "error at least one label pair is required per stream"
 	InvalidLabelsErrorMsg = "error parsing labels '%s' with error: %s"
-	// RateLimited is one of the values for the reason to discard samples.
+	// RateLimited 表示租户级 ingestion 字节速率超限，DiscardedSamples 按 reason 计数。
+// RateLimited is one of the values for the reason to discard samples.
 	// Declared here to avoid duplication in ingester and distributor.
 	RateLimited         = "rate_limited"
 	RateLimitedErrorMsg = "ingestion rate limit exceeded for user %s (limit: %d bytes/sec) while attempting to ingest '%d' lines totaling '%d' bytes, reduce log volume or contact your Loki administrator to see if the limit can be increased"
@@ -35,7 +38,8 @@ const (
 	// because the limit of active streams has been reached.
 	StreamLimit         = "stream_limit"
 	StreamLimitErrorMsg = "maximum active stream limit exceeded when trying to create stream %s, reduce the number of active streams (reduce labels or reduce label values), or contact your Loki administrator to see if the limit can be increased, user: '%s'"
-	// StreamRateLimit is a reason for discarding lines when the streams own rate limit is hit
+	// StreamRateLimit 为单 stream 令牌桶触顶，与租户总限额 RateLimited 区分统计。
+// StreamRateLimit is a reason for discarding lines when the streams own rate limit is hit
 	// rather than the overall ingestion rate limit.
 	StreamRateLimit = "per_stream_rate_limit"
 	// OutOfOrder is a reason for discarding lines when Loki doesn't accept out
@@ -81,6 +85,7 @@ const (
 	MissingEnforcedLabelsErrorMsg        = "missing required labels '%s' for user '%s' for stream '%s' (policy: '%s')"
 )
 
+// ErrStreamRateLimit 携带限额、stream 标签与本次字节数，Error 字符串供日志与 API 返回。
 type ErrStreamRateLimit struct {
 	RateLimit flagext.ByteSize
 	Labels    string
@@ -94,6 +99,7 @@ func (e *ErrStreamRateLimit) Error() string {
 		e.Bytes.String())
 }
 
+// MutatedSamples/MutatedBytes 记录截断等变更行数与字节，truncated 标签区分是否截断。
 // MutatedSamples is a metric of the total number of lines mutated, by reason.
 var MutatedSamples = promauto.NewCounterVec(
 	prometheus.CounterOpts{
@@ -114,6 +120,7 @@ var MutatedBytes = promauto.NewCounterVec(
 	[]string{ReasonLabel, "truncated"},
 )
 
+// DiscardedBytes/DiscardedSamples 含 tenant、retention_hours、policy、format 多维标签。
 // DiscardedBytes is a metric of the total discarded bytes, by reason.
 var DiscardedBytes = promauto.NewCounterVec(
 	prometheus.CounterOpts{
@@ -140,3 +147,4 @@ var LineLengthHist = promauto.NewHistogram(prometheus.HistogramOpts{
 	Help:      "The total number of bytes per line.",
 	Buckets:   prometheus.ExponentialBuckets(1, 8, 8), // 1B -> 16MB
 })
+// LineLengthHist 指数桶覆盖 1B 至 16MB 行宽分布，辅助 max_line_size 调优。
