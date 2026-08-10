@@ -24,6 +24,8 @@ import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.model.Scope;
 
 /**
+ * 范围存储 SPI，负责 {@link Scope} 的持久化与查询。
+ *
  * A {@link ScopeStore} is responsible to manage the persistence of {@link Scope} instances.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -31,6 +33,8 @@ import org.keycloak.authorization.model.Scope;
 public interface ScopeStore {
 
     /**
+     * 创建范围实例（可能需后续持久化）。
+     *
      * Creates a new {@link Scope} instance. The new instance is not necessarily persisted though, which may require
      * a call to the {#save} method to actually make it persistent.
      *
@@ -54,6 +58,8 @@ public interface ScopeStore {
     Scope create(ResourceServer resourceServer, String id, String name);
 
     /**
+     * 从持久层删除指定范围。
+     *
      * Deletes a scope from the underlying persistence mechanism.
      *
      * @param id the id of the scope to delete
@@ -61,6 +67,8 @@ public interface ScopeStore {
     void delete(String id);
 
     /**
+     * 按 ID 查询范围。
+     *
      * Returns a {@link Scope} with the given <code>id</code>
      *
      * @param resourceServer the resource server id. Ignored if {@code null}.
@@ -70,6 +78,8 @@ public interface ScopeStore {
     Scope findById(ResourceServer resourceServer, String id);
 
     /**
+     * 按名称查询范围。
+     *
      * Returns a {@link Scope} with the given <code>name</code>
      *
      * @param resourceServer the resource server. Cannot be {@code null}.
@@ -80,6 +90,8 @@ public interface ScopeStore {
     Scope findByName(ResourceServer resourceServer, String name);
 
     /**
+     * 查询资源服务器下的全部范围。
+     *
      * Returns a list of {@link Scope} associated with the {@link ResourceServer}.
      *
      * @param resourceServer the resource server. Cannot be {@code null}.
@@ -89,6 +101,8 @@ public interface ScopeStore {
     List<Scope> findByResourceServer(ResourceServer resourceServer);
 
     /**
+     * 按属性过滤并分页查询范围。
+     *
      * Returns a list of {@link Scope} associated with a {@link ResourceServer} with the given <code>resourceServerId</code>.
      *
      * @param resourceServer the resource server. Cannot be {@code null}.

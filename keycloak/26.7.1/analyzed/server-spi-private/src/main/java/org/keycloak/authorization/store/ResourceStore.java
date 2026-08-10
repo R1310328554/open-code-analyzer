@@ -28,6 +28,8 @@ import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.model.Scope;
 
 /**
+ * 资源存储 SPI，负责 {@link Resource} 的创建、查询与删除。
+ *
  * A {@link ResourceStore} is responsible to manage the persistence of {@link Resource} instances.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -35,6 +37,8 @@ import org.keycloak.authorization.model.Scope;
 public interface ResourceStore {
 
     /**
+     * 创建由当前持久化实现支持的资源实例。
+     *
      * <p>Creates a {@link Resource} instance backed by this persistent storage implementation.
      *
      * @param resourceServer the resource server to where the given resource belongs to. Cannot be {@code null}.
@@ -58,6 +62,8 @@ public interface ResourceStore {
     Resource create(ResourceServer resourceServer, String id, String name, String owner);
 
     /**
+     * 从持久层删除指定资源。
+     *
      * Removes a {@link Resource} instance, with the given {@code id} from the persistent storage.
      *
      * @param id the identifier of an existing resource instance
@@ -65,6 +71,8 @@ public interface ResourceStore {
     void delete(String id);
 
     /**
+     * 按 ID 查询资源。
+     *
      * Returns a {@link Resource} instance based on its identifier.
      *
      * @param resourceServer the resource server. Ignored if {@code null}
@@ -74,6 +82,8 @@ public interface ResourceStore {
     Resource findById(ResourceServer resourceServer, String id);
 
     /**
+     * 查询指定所有者拥有的全部资源。
+     *
      * Finds all {@link Resource} instances with the given {@code ownerId}.
      *
      * @param resourceServer resource server. Ignored if {@code null}
@@ -89,6 +99,8 @@ public interface ResourceStore {
     }
 
     /**
+     * 与 {@link #findByOwner(ResourceServer, String)} 等价，结果通过消费者回调。
+     *
      * Effectively the same method as {@link #findByOwner(ResourceServer, String)}, however in the end
      * the {@code consumer} is fed with the result.
      *
@@ -96,6 +108,8 @@ public interface ResourceStore {
     void findByOwner(ResourceServer resourceServer, String ownerId, Consumer<Resource> consumer);
 
     /**
+     * 查询资源服务器下的全部资源。
+     *
      * Finds all {@link Resource} instances associated with a given resource server.
      *
      * @param resourceServer the identifier of the resource server. Searches for resources without a resourceServer if {@code null}.
@@ -116,6 +130,8 @@ public interface ResourceStore {
     List<Resource> find(ResourceServer resourceServer, Map<Resource.FilterOption, String[]> attributes, Integer firstResult, Integer maxResults);
 
     /**
+     * 查询与指定范围关联的资源。
+     *
      * Finds all {@link Resource} associated with a given scope.
      *
      *
@@ -133,6 +149,8 @@ public interface ResourceStore {
     void findByScopes(ResourceServer resourceServer, Set<Scope> scopes, Consumer<Resource> consumer);
 
     /**
+     * 按名称查询（所有者为资源服务器自身）。
+     *
      * Find a {@link Resource} by its name where the owner is the resource server itself.
      *
      * @param resourceServer the resource server. Searches for resources without a resourceServer if {@code null}.
@@ -144,6 +162,8 @@ public interface ResourceStore {
     }
 
     /**
+     * 按名称与所有者 ID 查询资源。
+     *
      * Find a {@link Resource} by its name where the owner is the given <code>ownerId</code>.
      *
      * @param resourceServer the identifier of the resource server. Searches for resources without a resourceServer if {@code null}.
@@ -154,6 +174,8 @@ public interface ResourceStore {
     Resource findByName(ResourceServer resourceServer, String name, String ownerId);
 
     /**
+     * 按类型查询资源。
+     *
      * Finds all {@link Resource} associated with the {@link ResourceServer} with the given type.
      *
      *
@@ -170,6 +192,8 @@ public interface ResourceStore {
     }
 
     /**
+     * 按类型流式查询资源。
+     *
      * Finds all {@link Resource} from {@link ResourceServer} with the given type.
      *
      * @param resourceServer the resource server id. Searches for resources without a resourceServer if {@code null}.
@@ -180,6 +204,8 @@ public interface ResourceStore {
     void findByType(ResourceServer resourceServer, String type, Consumer<Resource> consumer);
 
     /**
+     * 按类型与所有者流式查询资源。
+     *
      * Finds all {@link Resource} with the given type.
      *
      * @param resourceServer the resource server id. Searches for resources without a resourceServer if {@code null}.
@@ -191,6 +217,8 @@ public interface ResourceStore {
     void findByType(ResourceServer resourceServer, String type, String owner, Consumer<Resource> consumer);
 
     /**
+     * 查询指定类型且客户端非所有者的资源实例。
+     *
      * Finds all {@link Resource} by type where client represented by the {@code resourceServer} is not the owner
      *
      * @param resourceServer the resourceServer. Searches for resources without a resourceServer if {@code null}.

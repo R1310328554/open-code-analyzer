@@ -39,15 +39,20 @@ import org.keycloak.provider.ProviderEvent;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * 授权存储工厂 SPI，扩展 {@link ProviderFactory}。
+ * <p>在 {@link #postInit} 阶段注册领域模型删除事件的授权数据同步监听器。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface AuthorizationStoreFactory extends ProviderFactory<StoreFactory> {
 
+    /** 工厂初始化完成后注册授权数据同步监听器。 */
     @Override
     default void postInit(KeycloakSessionFactory factory) {
         registerSynchronizationListeners(factory);
     }
 
+    /** 将客户端、领域、用户、组、角色与组织删除事件映射到对应 {@link Synchronizer}。 */
     default void registerSynchronizationListeners(KeycloakSessionFactory factory) {
         Map<Class<? extends ProviderEvent>, Synchronizer> synchronizers = new HashMap<>();
 

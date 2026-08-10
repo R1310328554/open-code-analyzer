@@ -35,10 +35,13 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.representations.idm.authorization.ClientPolicyRepresentation;
 
 /**
+ * 客户端删除事件同步器：清理授权数据中的客户端资源与客户端策略引用。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ClientApplicationSynchronizer implements Synchronizer<ClientRemovedEvent> {
 
+    /** 客户端移除时同步清理 FGAP 资源对象与客户端策略配置。 */
     @Override
     public void synchronize(ClientRemovedEvent event, KeycloakSessionFactory factory) {
         ProviderFactory<AuthorizationProvider> providerFactory = factory.getProviderFactory(AuthorizationProvider.class);
@@ -49,6 +52,7 @@ public class ClientApplicationSynchronizer implements Synchronizer<ClientRemoved
         removeFromClientPolicies(event, authorizationProvider);
     }
 
+    /** 删除资源服务器记录并从 client 类型策略中移除该客户端 ID。 */
     private void removeFromClientPolicies(ClientRemovedEvent event, AuthorizationProvider authorizationProvider) {
         StoreFactory storeFactory = authorizationProvider.getStoreFactory();
         ResourceServerStore store = storeFactory.getResourceServerStore();

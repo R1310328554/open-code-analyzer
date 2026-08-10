@@ -21,6 +21,8 @@ import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.models.ClientModel;
 
 /**
+ * 资源服务器存储 SPI，管理 {@link ResourceServer} 的持久化。
+ *
  * A {@link ResourceServerStore} is responsible to manage the persistence of {@link ResourceServer} instances.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -28,6 +30,8 @@ import org.keycloak.models.ClientModel;
 public interface ResourceServerStore {
 
     /**
+     * 创建由当前持久化实现支持的资源服务器实例。
+     *
      * <p>Creates a {@link ResourceServer} instance backed by this persistent storage implementation.
      *
      * @param client the client acting as a resource server. Cannot be {@code null}.
@@ -37,6 +41,8 @@ public interface ResourceServerStore {
     ResourceServer create(ClientModel client);
 
     /**
+     * 从持久层删除指定客户端对应的资源服务器。
+     *
      * Removes a {@link ResourceServer} instance, with the given client from the persistent storage.
      *
      * @param client the client acting as a resource server. Cannot be {@code null}.
@@ -44,6 +50,8 @@ public interface ResourceServerStore {
     void delete(ClientModel client);
 
     /**
+     * 按 ID 查询资源服务器。
+     *
      * Returns a {@link ResourceServer} instance based on its identifier.
      *
      * @param id the identifier of an existing resource server instance
@@ -52,6 +60,8 @@ public interface ResourceServerStore {
     ResourceServer findById(String id);
 
     /**
+     * 按客户端查询资源服务器。
+     *
      * Returns a {@link ResourceServer} instance based on a client.
      *
      * @param client the client acting as a resource server. Cannot be {@code null}.

@@ -25,10 +25,13 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel.RealmRemovedEvent;
 import org.keycloak.provider.ProviderFactory;
 
-/*
+/**
+ * 领域删除事件同步器：删除该领域下所有客户端对应的资源服务器。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class RealmSynchronizer implements Synchronizer<RealmRemovedEvent> {
+    /** 领域移除时遍历其客户端并删除关联资源服务器。 */
     @Override
     public void synchronize(RealmRemovedEvent event, KeycloakSessionFactory factory) {
         ProviderFactory<AuthorizationProvider> providerFactory = factory.getProviderFactory(AuthorizationProvider.class);

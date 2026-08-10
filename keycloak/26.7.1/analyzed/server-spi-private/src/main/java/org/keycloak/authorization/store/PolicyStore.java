@@ -30,6 +30,8 @@ import org.keycloak.authorization.model.Scope;
 import org.keycloak.representations.idm.authorization.AbstractPolicyRepresentation;
 
 /**
+ * 策略存储 SPI，负责 {@link Policy} 的创建、查询与删除。
+ *
  * A {@link PolicyStore} is responsible to manage the persistence of {@link Policy} instances.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -37,6 +39,8 @@ import org.keycloak.representations.idm.authorization.AbstractPolicyRepresentati
 public interface PolicyStore {
 
     /**
+     * 创建策略实例（可能需后续持久化）。
+     *
      * Creates a new {@link Policy} instance. The new instance is not necessarily persisted though, which may require
      * a call to the {#save} method to actually make it persistent.
      *
@@ -47,6 +51,8 @@ public interface PolicyStore {
     Policy create(ResourceServer resourceServer, AbstractPolicyRepresentation representation);
 
     /**
+     * 从持久层删除指定策略。
+     *
      * Deletes a policy from the underlying persistence mechanism.
      *
      * @param id the id of the policy to delete
@@ -54,6 +60,8 @@ public interface PolicyStore {
     void delete(String id);
 
     /**
+     * 按 ID 查询策略。
+     *
      * Returns a {@link Policy} with the given <code>id</code>
      *
      * @param resourceServer the resource server. Ignored if {@code null}.
@@ -63,6 +71,8 @@ public interface PolicyStore {
     Policy findById(ResourceServer resourceServer, String id);
 
     /**
+     * 按名称查询策略。
+     *
      * Returns a {@link Policy} with the given <code>name</code>
      *
      * @param resourceServer the resource server. Cannot be {@code null}
@@ -72,6 +82,8 @@ public interface PolicyStore {
     Policy findByName(ResourceServer resourceServer, String name);
 
     /**
+     * 查询资源服务器下的全部策略。
+     *
      * Returns a list of {@link Policy} associated with the {@link ResourceServer}
      *
      * @param resourceServer the resource server. Cannot be {@code null}.
@@ -80,6 +92,8 @@ public interface PolicyStore {
     List<Policy> findByResourceServer(ResourceServer resourceServer);
 
     /**
+     * 按属性过滤并分页查询策略。
+     *
      * Returns a list of {@link Policy} associated with a {@link ResourceServer} with the given <code>resourceServerId</code>.
      *
      * @param resourceServer the identifier of a resource server. Ignored if {@code null}.
@@ -92,6 +106,8 @@ public interface PolicyStore {
     List<Policy> find(ResourceServer resourceServer, Map<Policy.FilterOption, String[]> attributes, Integer firstResult, Integer maxResults);
 
     /**
+     * 查询与指定资源关联的策略。
+     *
      * Returns a list of {@link Policy} associated with a {@link org.keycloak.authorization.model.Resource}
      *
      * @param resourceServer the resource server. Cannot be {@code null}.
@@ -107,6 +123,8 @@ public interface PolicyStore {
     }
 
     /**
+     * 流式查询与资源关联的策略并传递给消费者。
+     *
      * Searches for all policies associated with the {@link org.keycloak.authorization.model.Resource} and passes the result to the {@code consumer}
      *
      * @param resourceServer the resourceServer. Cannot be {@code null}.
@@ -116,6 +134,8 @@ public interface PolicyStore {
     void findByResource(ResourceServer resourceServer, Resource resource, Consumer<Policy> consumer);
 
     /**
+     * 按资源类型查询关联策略。
+     *
      * Returns a list of {@link Policy} associated with a {@link org.keycloak.authorization.model.ResourceServer} with the given <code>type</code>.
      *
      * @param resourceServer the resource server id. Cannot be {@code null}.
@@ -131,6 +151,8 @@ public interface PolicyStore {
     }
 
     /**
+     * 按资源类型流式查询策略。
+     *
      * Searches for policies associated with a {@link org.keycloak.authorization.model.ResourceServer} and passes the result to the consumer
      *
      * @param resourceServer the resourceServer. Cannot be {@code null}.
@@ -140,6 +162,8 @@ public interface PolicyStore {
     void findByResourceType(ResourceServer resourceServer, String type, Consumer<Policy> policyConsumer);
 
     /**
+     * 按范围列表查询关联策略。
+     *
      * Returns a list of {@link Policy} associated with a {@link org.keycloak.authorization.model.Scope} within the given <code>scope</code>.
      *
      * @param resourceServer the resource server. Cannot be {@code null}.
@@ -149,6 +173,8 @@ public interface PolicyStore {
     List<Policy> findByScopes(ResourceServer resourceServer, List<Scope> scopes);
 
     /**
+     * 按资源与范围查询关联策略。
+     *
      * Returns a list of {@link Policy} associated with a {@link org.keycloak.authorization.model.Scope} with the given <code>resource</code> and <code>scopes</code>.
      *
      * @param resourceServer the resource server. Cannot be {@code null}.
@@ -165,6 +191,8 @@ public interface PolicyStore {
     }
 
     /**
+     * 与 {@link #findByScopes(ResourceServer, Resource, List)} 等价，结果通过消费者回调。
+     *
      * Effectively the same method as {@link #findByScopes(ResourceServer, Resource, List)}, however in the end
      * the {@code consumer} is fed with the result.
      *
@@ -172,6 +200,8 @@ public interface PolicyStore {
     void findByScopes(ResourceServer resourceServer, Resource resource, List<Scope> scopes, Consumer<Policy> consumer);
 
     /**
+     * 按策略类型查询。
+     *
      * Returns a list of {@link Policy} with the given <code>type</code>.
      *
      * @param resourceServer the resource server id. Cannot be {@code null}.
@@ -181,6 +211,8 @@ public interface PolicyStore {
     List<Policy> findByType(ResourceServer resourceServer, String type);
 
     /**
+     * 查询依赖指定策略的其他策略。
+     *
      * Returns a list of {@link Policy} that depends on another policy with the given <code>id</code>.
      *
      * @param resourceServer the resource server. Cannot be {@code null}.
@@ -189,7 +221,9 @@ public interface PolicyStore {
      */
     List<Policy> findDependentPolicies(ResourceServer resourceServer, String id);
 
+    /** 按资源类型、组类型、关联策略类型及配置键值流式查询依赖策略。 */
     Stream<Policy> findDependentPolicies(ResourceServer resourceServer, String resourceType, String groupResourceType, String associatedPolicyType, String configKey, String configValue);
 
+    /** 按配置键与多值列表流式查询依赖策略。 */
     Stream<Policy> findDependentPolicies(ResourceServer resourceServer, String resourceType, String groupResourceType, String associatedPolicyType, String configKey, List<String> configValues);
 }

@@ -33,10 +33,13 @@ import org.keycloak.models.UserModel.UserRemovedEvent;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * 用户删除事件同步器：清理 FGAP 资源、用户权限票据与用户拥有的资源/策略。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class UserSynchronizer implements Synchronizer<UserRemovedEvent> {
 
+    /** 用户移除时清理 FGAP 对象、权限票据与用户资源。 */
     @Override
     public void synchronize(UserRemovedEvent event, KeycloakSessionFactory factory) {
         ProviderFactory<AuthorizationProvider> providerFactory = factory.getProviderFactory(AuthorizationProvider.class);
@@ -48,6 +51,7 @@ public class UserSynchronizer implements Synchronizer<UserRemovedEvent> {
         removeUserResources(event, authorizationProvider);
     }
 
+    /** 删除用户拥有的资源，并更新或删除仅引用该资源的策略。 */
     private void removeUserResources(UserRemovedEvent event, AuthorizationProvider authorizationProvider) {
         StoreFactory storeFactory = authorizationProvider.getStoreFactory();
         PolicyStore policyStore = storeFactory.getPolicyStore();
@@ -67,6 +71,7 @@ public class UserSynchronizer implements Synchronizer<UserRemovedEvent> {
         });
     }
 
+    /** 删除用户作为所有者或请求者的全部权限票据。 */
     private void removeFromUserPermissionTickets(UserRemovedEvent event, AuthorizationProvider authorizationProvider) {
         StoreFactory storeFactory = authorizationProvider.getStoreFactory();
         PermissionTicketStore ticketStore = storeFactory.getPermissionTicketStore();

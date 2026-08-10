@@ -26,6 +26,8 @@ import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.model.Scope;
 
 /**
+ * 权限票据存储 SPI，负责 {@link org.keycloak.authorization.model.PermissionTicket} 的持久化与查询。
+ *
  * A {@link PermissionTicketStore} is responsible to manage the persistence of {@link org.keycloak.authorization.model.PermissionTicket} instances.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -33,6 +35,8 @@ import org.keycloak.authorization.model.Scope;
 public interface PermissionTicketStore {
 
     /**
+     * 按属性过滤统计权限票据数量。
+     *
      * Returns count of {@link PermissionTicket}, filtered by the given attributes.
      *
      *
@@ -44,6 +48,8 @@ public interface PermissionTicketStore {
     long count(ResourceServer resourceServer, Map<PermissionTicket.FilterOption, String> attributes);
 
     /**
+     * 创建新的权限票据实例。
+     *
      * Creates a new {@link PermissionTicket} instance.
      *
      * @param resourceServer the resource server to which this permission ticket belongs. Cannot be {@code null}.
@@ -55,6 +61,8 @@ public interface PermissionTicketStore {
     PermissionTicket create(ResourceServer resourceServer, Resource resource, Scope scope, String requester);
 
     /**
+     * 从持久层删除指定权限票据。
+     *
      * Deletes a permission from the underlying persistence mechanism.
      *
      * @param id the id of the policy to delete
@@ -62,6 +70,8 @@ public interface PermissionTicketStore {
     void delete(String id);
 
     /**
+     * 按 ID 查询权限票据。
+     *
      * Returns a {@link PermissionTicket} with the given <code>id</code>
      *
      * @param resourceServer the resource server. Ignored if {@code null}.
@@ -71,6 +81,8 @@ public interface PermissionTicketStore {
     PermissionTicket findById(ResourceServer resourceServer, String id);
 
     /**
+     * 查询与指定资源关联的权限票据列表。
+     *
      * Returns a list of {@link PermissionTicket} associated with the {@link org.keycloak.authorization.model.Resource resource}.
      *
      * @param resourceServer the resource server. Cannot be {@code null}.
@@ -80,6 +92,8 @@ public interface PermissionTicketStore {
     List<PermissionTicket> findByResource(ResourceServer resourceServer, Resource resource);
 
     /**
+     * 查询与指定范围关联的权限票据列表。
+     *
      * Returns a list of {@link PermissionTicket} associated with the {@link org.keycloak.authorization.model.Scope scope}.
      *
      *
@@ -90,6 +104,8 @@ public interface PermissionTicketStore {
     List<PermissionTicket> findByScope(ResourceServer resourceServer, Scope scope);
 
     /**
+     * 按属性过滤并分页查询权限票据。
+     *
      * Returns a list of {@link PermissionTicket}, filtered by the given attributes.
      *
      * @param resourceServer a resource server that resulting tickets should belong to. Ignored if {@code null}.
@@ -102,6 +118,8 @@ public interface PermissionTicketStore {
     List<PermissionTicket> find(ResourceServer resourceServer, Map<PermissionTicket.FilterOption, String> attributes, Integer firstResult, Integer maxResults);
 
     /**
+     * 查询授予指定用户的权限票据。
+     *
      * Returns a list of {@link PermissionTicket} granted to the given {@code userId}.
      *
      * @param resourceServer the resource server. Cannot be {@code null}
@@ -111,6 +129,8 @@ public interface PermissionTicketStore {
     List<PermissionTicket> findGranted(ResourceServer resourceServer, String userId);
 
     /**
+     * 按资源名与用户 ID 查询已授予的权限票据。
+     *
      * Returns a list of {@link PermissionTicket} with name equal to {@code resourceName} granted to the given {@code userId}.
      *
      * @param resourceServer the resource server. Cannot be {@code null}.
@@ -123,6 +143,8 @@ public interface PermissionTicketStore {
     List<PermissionTicket> findGranted(ResourceServer resourceServer, String resourceName, String userId);
 
     /**
+     * 查询授予请求者的资源列表。
+     *
      * Returns a list of {@link Resource} granted to the given {@code requester}
      *
      * @param requester   the requester
@@ -134,6 +156,8 @@ public interface PermissionTicketStore {
     List<Resource> findGrantedResources(String requester, String name, Integer firstResult, Integer maxResults);
 
     /**
+     * 查询所有者授予其他用户的资源列表。
+     *
      * Returns a list of {@link Resource} granted by the owner to other users
      *
      * @param owner       the owner

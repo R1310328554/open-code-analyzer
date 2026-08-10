@@ -21,6 +21,9 @@ package org.keycloak.authorization.store;
 import org.keycloak.provider.Provider;
 
 /**
+ * 授权领域模型各类存储的工厂接口，聚合资源、策略、范围等 Store。
+ * <p>实现通常绑定关系型/NoSQL 等具体持久化机制。</p>
+ *
  * <p>A factory for the different types of storages that manage the persistence of the domain model types.
  *
  * <p>Implementations of this interface are usually related with the creation of those storage types accordingly with a
@@ -31,6 +34,8 @@ import org.keycloak.provider.Provider;
 public interface StoreFactory extends Provider {
 
     /**
+     * 返回资源存储。
+     *
      * Returns a {@link ResourceStore}.
      *
      * @return the resource store
@@ -38,6 +43,8 @@ public interface StoreFactory extends Provider {
     ResourceStore getResourceStore();
 
     /**
+     * 返回资源服务器存储。
+     *
      * Returns a {@link ResourceServerStore}.
      *
      * @return the resource server store
@@ -45,6 +52,8 @@ public interface StoreFactory extends Provider {
     ResourceServerStore getResourceServerStore();
 
     /**
+     * 返回范围存储。
+     *
      * Returns a {@link ScopeStore}.
      *
      * @return the scope store
@@ -52,6 +61,8 @@ public interface StoreFactory extends Provider {
     ScopeStore getScopeStore();
 
     /**
+     * 返回策略存储。
+     *
      * Returns a {@link PolicyStore}.
      *
      * @return the policy store
@@ -59,6 +70,8 @@ public interface StoreFactory extends Provider {
     PolicyStore getPolicyStore();
 
     /**
+     * 返回权限票据存储。
+     *
      * Returns a {@link PermissionTicketStore}.
      *
      * @return the permission ticket store
@@ -66,6 +79,8 @@ public interface StoreFactory extends Provider {
     PermissionTicketStore getPermissionTicketStore();
 
     /**
+     * 设置工厂返回实例是否只读；只读模式下修改状态将抛出异常。
+     *
      * Sets whether or not changes to instances returned from this factory are supported. Once marked as read-only, any attempt to
      * change state will throw an {@link IllegalStateException}.
      *
@@ -74,6 +89,8 @@ public interface StoreFactory extends Provider {
     void setReadOnly(boolean readOnly);
 
     /**
+     * 指示存储实例是否处于只读模式。
+     *
      * Indicates if instances returned from storage are read-only.
      *
      * @return if true, instances only support reads.
