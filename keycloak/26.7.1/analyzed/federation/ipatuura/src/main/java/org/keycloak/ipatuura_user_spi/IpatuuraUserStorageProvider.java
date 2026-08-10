@@ -54,6 +54,8 @@ import org.apache.http.HttpStatus;
 import org.jboss.logging.Logger;
 
 /**
+ * Ipatuura SCIM 用户联邦存储提供器：用户查找、密码/Kerberos 认证与 SCIM 同步。
+ *
  * @author <a href="mailto:jstephen@redhat.com">Justin Stephenson</a>
  * @version $Revision: 1 $
  */
@@ -66,6 +68,7 @@ public class IpatuuraUserStorageProvider implements UserStorageProvider, UserLoo
     protected final Set<String> supportedCredentialTypes = new HashSet<>();
     protected IpatuuraUserStorageProviderFactory factory;
 
+    /** 构造提供器并注册支持的密码凭证类型。 */
     public IpatuuraUserStorageProvider(KeycloakSession session, ComponentModel model, Ipatuura ipatuura,
                                        IpatuuraUserStorageProviderFactory factory) {
         this.session = session;
@@ -88,11 +91,10 @@ public class IpatuuraUserStorageProvider implements UserStorageProvider, UserLoo
         return getUserByUsername(realm, username);
     }
 
+    /** {@inheritDoc} 查找或从 SCIM 导入用户（剥离 @realm 后缀）。 */
     @Override
     public UserModel getUserByUsername(RealmModel realm, String username) {
-        /*
-         * Remove @realm, this is needed as GSSAPI auth users reach here as user@realm
-         */
+        /* GSSAPI 用户可能以 user@realm 形式传入，需剥离 realm 后缀 */
         int idx = username.indexOf("@");
         if (idx != -1) {
             username = username.substring(0, idx);
@@ -107,6 +109,7 @@ public class IpatuuraUserStorageProvider implements UserStorageProvider, UserLoo
         }
     }
 
+    /** 从 SCIM 拉取用户属性并在 Keycloak 本地存储创建/关联。 */
     protected UserModel createUserInKeycloak(RealmModel realm, String username) {
         SCIMUser scimuser = ipatuura.getUserByUsername(username);
         if (scimuser.getTotalResults() == 0) {
@@ -153,17 +156,16 @@ public class IpatuuraUserStorageProvider implements UserStorageProvider, UserLoo
         return getSupportedCredentialTypes().contains(credentialType);
     }
 
+    /** {@inheritDoc} 本地未配置密码时委托 SCIM 校验。 */
     @Override
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput input) {
         if (!supportsCredentialType(input.getType()) || !(input instanceof UserCredentialModel))
             return false;
 
-        /*
-         * The password can either be validated locally in keycloak (tried first) or in the SCIM server
-         */
+        /* 密码可在 Keycloak 本地或 SCIM 服务端校验（本地优先） */
         if (((UserCredentialManager) user.credentialManager()).isConfiguredLocally(input.getType())) {
             logger.debugv("Local password validation for {0}", user.getUsername());
-            /* return false in order to fallback to the next validator */
+            /* 返回 false 以回退到下一验证器 */
             return false;
         } else {
             logger.debugv("Delegated password validation for {0}", user.getUsername());
@@ -172,6 +174,7 @@ public class IpatuuraUserStorageProvider implements UserStorageProvider, UserLoo
         }
     }
 
+    /** {@inheritDoc} 同步 SCIM 中的姓名/邮箱到本地用户。 */
     @Override
     public UserModel validate(RealmModel realm, UserModel local) {
         Ipatuura ipatuura = this.ipatuura;
@@ -194,6 +197,7 @@ public class IpatuuraUserStorageProvider implements UserStorageProvider, UserLoo
         return new IpatuuraUserModelDelegate(this.ipatuura, local, model);
     }
 
+    /** {@inheritDoc} 在 SCIM 创建用户后导入 Keycloak。 */
     @Override
     public UserModel addUser(RealmModel realm, String username) {
         Ipatuura ipatuura = this.ipatuura;
@@ -217,6 +221,7 @@ public class IpatuuraUserStorageProvider implements UserStorageProvider, UserLoo
         return createUserInKeycloak(realm, username);
     }
 
+    /** {@inheritDoc} 从 SCIM 删除对应用户。 */
     @Override
     public boolean removeUser(RealmModel realm, UserModel user) {
         logger.debugv("Removing user: {0}", user.getUsername());
@@ -234,6 +239,7 @@ public class IpatuuraUserStorageProvider implements UserStorageProvider, UserLoo
         return status;
     }
 
+    /** 按用户名在 SCIM 搜索并导入尚未存在的用户。 */
     private Stream<UserModel> performSearch(RealmModel realm, String search) {
         List<UserModel> users = new LinkedList<>();
         Ipatuura ipatuura = this.ipatuura;
@@ -286,7 +292,7 @@ public class IpatuuraUserStorageProvider implements UserStorageProvider, UserLoo
     public Stream<UserModel> searchForUserStream(RealmModel realm, Map<String, String> params, Integer firstResult,
             Integer maxResults) {
         String search = params.get(UserModel.SEARCH);
-        /* only supports searching by username */
+        /* 当前仅支持按用户名搜索 */
         if (search == null)
             return Stream.empty();
         return performSearch(realm, search);
@@ -297,6 +303,7 @@ public class IpatuuraUserStorageProvider implements UserStorageProvider, UserLoo
         return UserCredentialModel.KERBEROS.equals(type);
     }
 
+    /** {@inheritDoc} 处理 Kerberos SPNEGO 凭证并查找/导入用户。 */
     @Override
     public CredentialValidationOutput authenticate(RealmModel realm, CredentialInput input) {
         Map<String, String> state = new HashMap<>();
@@ -307,7 +314,7 @@ public class IpatuuraUserStorageProvider implements UserStorageProvider, UserLoo
         if (token != null) {
             username = ipatuura.gssAuth(token);
 
-            /* Remove realm */
+            /* 剥离 Kerberos 主体中的 @realm */
             int idx = username.indexOf("@");
             if (idx != -1) {
                 username = username.substring(0, idx);

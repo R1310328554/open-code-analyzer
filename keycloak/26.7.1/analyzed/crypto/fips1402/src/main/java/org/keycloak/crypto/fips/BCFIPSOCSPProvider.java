@@ -83,22 +83,26 @@ import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 
 
 /**
+ * 基于 BouncyCastle FIPS 的 OCSP 证书吊销状态查询实现。
+ * <p>
+ * 向 OCSP 响应者发送请求、校验响应签名与 nonce，并解析吊销状态。
+ *
  * @author <a href="mailto:brat000012001@gmail.com">Peter Nalyvayko</a>
  * @version $Revision: 1 $
  * @since 10/29/2016
  */
-
 public class BCFIPSOCSPProvider extends OCSPProvider {
 
     private final static Logger logger = Logger.getLogger(BCFIPSOCSPProvider.class.getName());
 
+    /** 向 OCSP 响应者 URI 发送请求并解析 {@link OCSPResp}。 */
     protected OCSPResp getResponse(KeycloakSession session, OCSPReq ocspReq, URI responderUri) throws IOException {
         byte[] data = getEncodedOCSPResponse(session, ocspReq.getEncoded(), responderUri);
         return new OCSPResp(data);
     }
 
     /**
-     * Requests certificate revocation status using OCSP.
+     * 通过 OCSP 查询目标证书的吊销状态。
      * @param cert the certificate to be checked
      * @param issuerCertificate the issuer certificate
      * @param responderURIs the OCSP responder URIs
@@ -122,7 +126,7 @@ public class BCFIPSOCSPProvider extends OCSPProvider {
             URI responderURI = responderURIs.get(0);
 
             try {
-                // Create a nonce extension to protect against replay attacks
+                // 创建 nonce 扩展以防重放攻击
                 DEROctetString requestNonce = new DEROctetString(new DEROctetString(JWEUtils.generateSecret(16)));
                 Extension nonceExtension = new Extension(OCSPObjectIdentifiers.id_pkix_ocsp_nonce, false, requestNonce);
                 Extensions extensions = new Extensions(nonceExtension);
@@ -169,6 +173,7 @@ public class BCFIPSOCSPProvider extends OCSPProvider {
         }
     }
 
+    /** 校验 Basic OCSP 响应并转换为吊销状态。 */
     private OCSPRevocationStatus processBasicOCSPResponse(X509Certificate issuerCertificate, X509Certificate responderCertificate, Date date, JcaCertificateID certificateID, DEROctetString requestNonce, BasicOCSPResp basicOcspResponse)
             throws OCSPException, NoSuchProviderException, NoSuchAlgorithmException, CertificateNotYetValidException, CertificateExpiredException, CertPathValidatorException {
         SingleResp expectedResponse = null;
@@ -187,6 +192,7 @@ public class BCFIPSOCSPProvider extends OCSPProvider {
         }
     }
 
+    /** 比较两个 {@link CertificateID} 是否指向同一证书。 */
     private boolean compareCertIDs(JcaCertificateID idLeft, CertificateID idRight) {
         if (idLeft == idRight)
             return true;
@@ -198,6 +204,7 @@ public class BCFIPSOCSPProvider extends OCSPProvider {
                 idLeft.getSerialNumber().equals(idRight.getSerialNumber());
     }
 
+    /** 验证 OCSP 响应签名、响应者授权与 nonce 一致性。 */
     private void verifyResponse(BasicOCSPResp basicOcspResponse, X509Certificate issuerCertificate, X509Certificate responderCertificate, DEROctetString requestNonce, Date date) throws NoSuchProviderException, NoSuchAlgorithmException, CertificateNotYetValidException, CertificateExpiredException, CertPathValidatorException {
 
         List<X509CertificateHolder> certs = new ArrayList<>(Arrays.asList(basicOcspResponse.getCerts()));
@@ -359,6 +366,7 @@ public class BCFIPSOCSPProvider extends OCSPProvider {
         }
     }
 
+    /** 使用响应者证书公钥验证 OCSP 响应签名。 */
     private boolean verifySignature(BasicOCSPResp basicOcspResponse, X509Certificate cert) {
         try {
             ContentVerifierProvider contentVerifier = new JcaContentVerifierProviderBuilder()
@@ -372,6 +380,7 @@ public class BCFIPSOCSPProvider extends OCSPProvider {
         return false;
     }
 
+    /** 将单个 {@link SingleResp} 映射为 {@link OCSPRevocationStatus}。 */
     private OCSPRevocationStatus singleResponseToRevocationStatus(final SingleResp singleResponse) throws CertPathValidatorException {
         final CertificateStatus certStatus = singleResponse.getCertStatus();
 
@@ -416,8 +425,7 @@ public class BCFIPSOCSPProvider extends OCSPProvider {
 
 
     /**
-     * Extracts OCSP responder URI from X509 AIA v3 extension, if available. There can be
-     * multiple responder URIs encoded in the certificate.
+     * 从 X509 证书 AIA v3 扩展提取 OCSP 响应者 URI（可含多个）。
      * @param cert
      * @return a list of available responder URIs.
      * @throws CertificateEncodingException

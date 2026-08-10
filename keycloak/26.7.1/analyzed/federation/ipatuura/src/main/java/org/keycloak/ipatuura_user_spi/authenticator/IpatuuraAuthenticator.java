@@ -25,6 +25,8 @@ import org.keycloak.models.KeycloakSession;
 import org.jboss.logging.Logger;
 
 /**
+ * 从 HTTP Authorization 头提取 Kerberos SPNEGO token，供 Ipatuura GSS 桥接认证。
+ *
  * @author <a href="mailto:jstephen@redhat.com.com">Justin Stephenson</a>
  * @version $Revision: 1 $
  */
@@ -32,6 +34,7 @@ public class IpatuuraAuthenticator {
 
     private static final Logger logger = Logger.getLogger(IpatuuraAuthenticator.class);
 
+    /** 解析 {@code Negotiate} 方案下的 Base64 SPNEGO token；无效时返回 null。 */
     public String getToken(KeycloakSession session) {
         HttpHeaders headers = session.getContext().getHttpRequest().getHttpHeaders();
 
@@ -43,7 +46,7 @@ public class IpatuuraAuthenticator {
         }
         String[] tokens = authHeader.split(" ");
 
-        if (tokens.length == 0) { // assume not supported
+        if (tokens.length == 0) { // 无有效 token
             logger.debug("Invalid length of tokens: " + tokens.length);
             return null;
         }

@@ -71,7 +71,7 @@ import org.jboss.logging.Logger;
 
 
 /**
- * Integration based on FIPS 140-2
+ * 基于 FIPS 140-2 的 {@link CryptoProvider} 集成，注册 BCFIPS/BCJSSE 并提供 JWE、证书与 SSL 能力。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -79,14 +79,15 @@ public class FIPS1402Provider implements CryptoProvider {
 
     private static final Logger log = Logger.getLogger(FIPS1402Provider.class);
     private static final String FIPS_FILE = "/proc/sys/crypto/fips_enabled";
-    // The fips provider is different in 21 and 25
+    // Java 21 与 25 的 PKCS11 FIPS 提供器名称模式不同
     private static final String PKCS11_FIPS_NAME = "SunPKCS11(-NSS)?-FIPS";
 
     private final BouncyCastleFipsProvider bcFipsProvider;
     private final Map<String, Object> providers = new ConcurrentHashMap<>();
 
+    /** 初始化 BCFIPS 提供器、JWE 算法映射与 BCJSSE。
     public FIPS1402Provider() {
-        // Case when BCFIPS provider already registered in Java security file
+        // BCFIPS 已在 java.security 中预注册时复用现有实例
         BouncyCastleFipsProvider existingBcFipsProvider = (BouncyCastleFipsProvider) Security.getProvider(CryptoConstants.BCFIPS_PROVIDER_ID);
         this.bcFipsProvider = existingBcFipsProvider == null ? new BouncyCastleFipsProvider() : existingBcFipsProvider;
 
@@ -104,7 +105,7 @@ public class FIPS1402Provider implements CryptoProvider {
             checkSecureRandom(() -> Security.insertProviderAt(this.bcFipsProvider, 1));
             Provider bcJsseProvider = new BouncyCastleJsseProvider("fips:BCFIPS");
             Security.insertProviderAt(bcJsseProvider, 2);
-            // force the key and trust manager factories if default values not present in BCJSSE
+            // BCJSSE 缺少默认算法时强制设置 KeyManager/TrustManager 工厂
             modifyKeyTrustManagerSecurityProperties(bcJsseProvider);
             log.infof("FIPS1402Provider created: KC(%s%s, FIPS-JVM: %s)", bcFipsProvider,
                     CryptoServicesRegistrar.isInApprovedOnlyMode() ? " Approved Mode" : "",
@@ -116,16 +117,19 @@ public class FIPS1402Provider implements CryptoProvider {
     }
 
 
+    /** {@inheritDoc} 返回 BouncyCastle FIPS {@link Provider}。
     @Override
     public Provider getBouncyCastleProvider() {
         return bcFipsProvider;
     }
 
+    /** {@inheritDoc} FIPS 提供器优先级为 200。
     @Override
     public int order() {
         return 200;
     }
 
+    /** {@inheritDoc} 按 JWE 算法名返回 FIPS 算法提供器。
     @Override
     public <T> T getAlgorithmProvider(Class<T> clazz, String algorithm) {
         Object o = providers.get(algorithm);
@@ -135,17 +139,19 @@ public class FIPS1402Provider implements CryptoProvider {
         return clazz.cast(o);
     }
 
+    /** {@inheritDoc} 返回 BCFIPS 证书工具实现。
     @Override
     public CertificateUtilsProvider getCertificateUtils() {
         return new BCFIPSCertificateUtilsProvider();
     }
 
+    /** {@inheritDoc} 返回 BCFIPS PEM 工具实现。
     @Override
     public PemUtilsProvider getPemUtils() {
         return new BCFIPSPemUtilsProvider();
     }
 
-    /* Create EC Params using BC FipS APIs.
+    /** 使用 BCFIPS API 由曲线名构造 {@link ECParameterSpec}。
      *
      * @see org.keycloak.common.crypto.CryptoProvider#createECParams(java.lang.String)
      */
@@ -175,17 +181,20 @@ public class FIPS1402Provider implements CryptoProvider {
         return new ECParameterSpec( c,point, params.getN(), params.getH().intValue());
     }
 
+    /** {@inheritDoc} 返回 BCFIPS 用户身份提取器。
     @Override
     public UserIdentityExtractorProvider getIdentityExtractorProvider() {
         return new BCFIPSUserIdentityExtractorProvider();
     }
 
+    /** {@inheritDoc} 返回 BCFIPS ECDSA 辅助实现。
     @Override
     public ECDSACryptoProvider getEcdsaCryptoProvider() {
         return new BCFIPSECDSACryptoProvider();
     }
 
 
+    /** {@inheritDoc} 返回 BCFIPS OCSP 提供器。
     @Override
     public <T> T getOCSPProver(Class<T> clazz) {
         return clazz.cast(new BCFIPSOCSPProvider());
@@ -245,15 +254,16 @@ public class FIPS1402Provider implements CryptoProvider {
 
     }
 
+    /** {@inheritDoc} 包装 SSLSocketFactory 以在连接时配置 SNI。
     @Override
     public SSLSocketFactory wrapFactoryForTruststore(SSLSocketFactory delegate) {
-        // See https://downloads.bouncycastle.org/fips-java/BC-FJA-(D)TLSUserGuide-1.0.9.pdf - Section 3.5.2 (Endpoint identification)
+        // 参见 BC-FJA TLS 指南 3.5.2：为未连接 socket 延迟配置 SNI 主机名
         return new CustomSSLSocketFactory(delegate) {
 
             @Override
             public Socket createSocket() throws IOException {
-                // Creating unconnected socket (Used for example by com.sun.jndi.ldap.Connection.createSocket - when connectionTimeout > 0)
-                // Configuration of SNI hostname needs to be postponed as we don't yet know the hostname
+                // 未连接 socket（如 LDAP connectionTimeout>0 时 JNDI 创建）需在 connect 时设置 SNI
+                // 连接前未知主机名，SNI 配置推迟到 connect
                 Socket socket = delegate.createSocket();
 
                 if (socket instanceof SSLSocket) {
@@ -334,7 +344,7 @@ public class FIPS1402Provider implements CryptoProvider {
         };
     }
 
-    // BCFIPS require "SecureRandom.getInstanceStrong" to be available. But it may not be available on RHEL 8 on OpenJDK 17 due the https://bugzilla.redhat.com/show_bug.cgi?id=2155060
+    // BCFIPS 需要 SecureRandom.getInstanceStrong；RHEL8/OpenJDK17 可能不可用（见 RH BZ 2155060）
     private void checkSecureRandom(Runnable insertBcFipsProvider) {
         try {
             SecureRandom sr = SecureRandom.getInstanceStrong();
@@ -342,8 +352,8 @@ public class FIPS1402Provider implements CryptoProvider {
             insertBcFipsProvider.run();
         } catch (NoSuchAlgorithmException nsae) {
 
-            // Fallback to regular SecureRandom
-            // We could delete this once https://issues.redhat.com/browse/RHEL-3478 is fixed
+            // 回退到普通 SecureRandom 并改写 strongAlgorithms 属性
+            // RHEL-3478 修复后可移除此回退逻辑
             SecureRandom secRandom = new SecureRandom();
             String origStrongAlgs = Security.getProperty("securerandom.strongAlgorithms");
             String usedAlg = secRandom.getAlgorithm() + ":" + secRandom.getProvider().getName();
@@ -352,7 +362,7 @@ public class FIPS1402Provider implements CryptoProvider {
             Security.setProperty("securerandom.strongAlgorithms", usedAlg);
 
             try {
-                // Need to insert BCFIPS provider to security providers with "strong algorithm" available
+                // 在 strong 算法可用后插入 BCFIPS 提供器
                 insertBcFipsProvider.run();
                 SecureRandom.getInstance("DEFAULT", "BCFIPS");
                 log.debugf("Initialized BCFIPS secured random");
@@ -363,12 +373,7 @@ public class FIPS1402Provider implements CryptoProvider {
     }
 
     /**
-     * BCJSSE manages X.509, X509 and PKIX for KeyManagerFactory and
-     * TrustManagerFactory (names or aliases) while JSSE manages SunX509,
-     * NewSunX509 and PKIX for KeyManagerFactory and SunX509, PKIX, SunPKIX,
-     * X509 and X.509 for the TrustManagerFactory. As BCJSSE is used when
-     * fips enabled, the default implementations are changed to the ones
-     * provided by BC if selected ones are not present in the BCJSSE.
+     * FIPS 模式下将 ssl.KeyManagerFactory/TrustManagerFactory 默认算法切换为 BCJSSE 支持的名称。
      *
      * @param bcJsseProvider The BCJSSE provider
      */
@@ -400,9 +405,10 @@ public class FIPS1402Provider implements CryptoProvider {
                 + " does not provide KeyManagerFactory or TrustManagerFactory algorithms for TLS");
     }
 
+    /** 检测宿主 JVM/内核是否处于系统级 FIPS 模式（enabled/disabled/unknown）。
     public static String isSystemFipsEnabled() {
-        // java 25 does not have any class and checks directly the file
-        // check kernel file is 1 and the first security provider is the FIPS one
+        // Java 25 无专用 API，直接读取内核 fips_enabled 与首位安全提供器
+        // 内核 fips_enabled=1 且首个提供器匹配 PKCS11 FIPS 时视为 enabled
         try (InputStream is = Files.newInputStream(Paths.get(FIPS_FILE))) {
             final String name =  Security.getProviders()[0].getName();
             return is.read() == '1' && Pattern.matches(PKCS11_FIPS_NAME, name) ? "enabled" : "disabled";

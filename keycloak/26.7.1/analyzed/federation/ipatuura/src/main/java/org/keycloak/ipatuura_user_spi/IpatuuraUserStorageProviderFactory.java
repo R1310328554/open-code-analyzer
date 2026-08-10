@@ -36,6 +36,8 @@ import org.keycloak.storage.UserStorageProviderFactory;
 import org.jboss.logging.Logger;
 
 /**
+ * Ipatuura 用户联邦工厂：注册 SCIM URL/登录凭据配置并创建 {@link IpatuuraUserStorageProvider}。
+ *
  * @author <a href="mailto:jstephen@redhat.com">Justin Stephenson</a>
  * @version $Revision: 1 $
  */
@@ -52,15 +54,15 @@ public class IpatuuraUserStorageProviderFactory implements UserStorageProviderFa
         PROVIDERS.add("ldap");
 
         configMetadata = ProviderConfigurationBuilder.create()
-                /* SCIMv2 server url */
+                /* SCIMv2 服务端 URL */
                 .property().name("scimurl").type(ProviderConfigProperty.STRING_TYPE).label("Ipatuura Server URL")
                 .helpText("Backend ipatuura server URL in the format: server.example.com:8080")
                 .add()
-                /* Login username, used to auth to make HTTP requests */
+                /* 用于 HTTP 请求认证的管理员用户名 */
                 .property().name("loginusername").type(ProviderConfigProperty.STRING_TYPE).label("Login username")
                 .helpText("Username to authenticate through the server")
                 .add()
-                /* Login password, used to auth to make HTTP requests */
+                /* 用于 HTTP 请求认证的管理员密码 */
                 .property().name("loginpassword").type(ProviderConfigProperty.PASSWORD).label("Login password")
                 .helpText("password to authenticate through the server")
                 .secret(true).add().build();
@@ -71,6 +73,7 @@ public class IpatuuraUserStorageProviderFactory implements UserStorageProviderFa
         return configMetadata;
     }
 
+    /** {@inheritDoc} 探测 SCIM 后端连通性。 */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config)
             throws ComponentValidationException {
@@ -91,16 +94,19 @@ public class IpatuuraUserStorageProviderFactory implements UserStorageProviderFa
         return PROVIDER_NAME;
     }
 
+    /** {@inheritDoc} 创建 Ipatuura 联邦提供器实例。 */
     @Override
     public IpatuuraUserStorageProvider create(KeycloakSession session, ComponentModel model) {
         Ipatuura ipatuura = new Ipatuura(session, model);
         return new IpatuuraUserStorageProvider(session, model, ipatuura, this);
     }
 
+    /** 创建 Kerberos SPNEGO token 解析器。 */
     protected IpatuuraAuthenticator createSCIMAuthenticator() {
         return new IpatuuraAuthenticator();
     }
 
+    /** {@inheritDoc} 需启用 {@link Profile.Feature#IPA_TUURA_FEDERATION}。 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.IPA_TUURA_FEDERATION);

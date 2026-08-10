@@ -31,11 +31,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({ "schemas", "filter" })
+/**
+ * SCIM SearchRequest 消息体，用于 Users/.search 端点按 filter 查询。
+ */
 @Generated("jsonschema2pojo")
 public class SCIMSearchRequest {
 
     @JsonProperty("schemas")
     private List<String> schemas = null;
+    /** SCIM 过滤表达式（如 userName eq "alice"）。 */
     @JsonProperty("filter")
     private String filter;
     @JsonIgnore

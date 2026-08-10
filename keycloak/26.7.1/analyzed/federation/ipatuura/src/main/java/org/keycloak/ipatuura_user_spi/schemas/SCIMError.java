@@ -31,11 +31,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({ "schemas", "detail", "status" })
+/**
+ * SCIM 错误响应 JSON 模型（schemas、detail、status）。
+ */
 @Generated("jsonschema2pojo")
 public class SCIMError {
 
     @JsonProperty("schemas")
     private List<String> schemas = null;
+    /** 错误详情描述。 */
     @JsonProperty("detail")
     private String detail;
     @JsonProperty("status")
