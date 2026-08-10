@@ -25,8 +25,12 @@ import io.javaoperatorsdk.operator.processing.event.source.SecondaryToPrimaryMap
 @KubernetesDependent(
         informer = @Informer(labelSelector = Constants.DEFAULT_LABELS_AS_STRING)
 )
+/**
+ * 初始管理员 Secret 依赖资源：在 Operator 未指定自定义管理员 Secret 时自动创建临时凭据。
+ */
 public class KeycloakAdminSecretDependentResource extends KubernetesDependentResource<Secret, Keycloak> implements Creator<Secret, Keycloak>, GarbageCollected<Keycloak> {
 
+    /** 启用条件：仅当未配置自定义管理员 Secret 时创建。 */
     public static class EnabledCondition implements Condition<Secret, Keycloak> {
         @Override
         public boolean isMet(DependentResource<Secret, Keycloak> dependentResource, Keycloak primary,
@@ -40,6 +44,7 @@ public class KeycloakAdminSecretDependentResource extends KubernetesDependentRes
     }
 
     @Override
+    /** 构建包含临时管理员用户名与随机密码的 Secret。 */
     protected Secret desired(Keycloak primary, Context<Keycloak> context) {
         return new SecretBuilder()
                 .withNewMetadata()
@@ -53,10 +58,12 @@ public class KeycloakAdminSecretDependentResource extends KubernetesDependentRes
                 .build();
     }
 
+    /** 返回初始管理员 Secret 的资源名称。 */
     public static String getName(Keycloak keycloak) {
         return KubernetesResourceUtil.sanitizeName(keycloak.getMetadata().getName() + "-initial-admin");
     }
 
+    /** 判断用户是否指定了与 Operator 默认名称不同的自定义管理员 Secret。 */
     public static boolean hasCustomAdminSecret(Keycloak keycloak) {
         return Optional.ofNullable(keycloak.getSpec().getBootstrapAdminSpec()).map(BootstrapAdminSpec::getUser)
                 .map(BootstrapAdminSpec.User::getSecret).filter(s -> !s.equals(KeycloakAdminSecretDependentResource.getName(keycloak))).isPresent();

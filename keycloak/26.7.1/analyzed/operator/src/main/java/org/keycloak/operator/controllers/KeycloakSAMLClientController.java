@@ -24,6 +24,9 @@ import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 
 @ControllerConfiguration
+/**
+ * SAML 客户端控制器：将 {@link KeycloakSAMLClient} CR 同步至 Keycloak Admin API v2。
+ */
 public class KeycloakSAMLClientController extends KeycloakClientBaseController<KeycloakSAMLClient, SAMLClientRepresentation, KeycloakSAMLClientRepresentation> {
 
     @Override
@@ -32,9 +35,10 @@ public class KeycloakSAMLClientController extends KeycloakClientBaseController<K
     }
 
     @Override
+    /** SAML 客户端无需额外预处理，也不触发轮询。 */
     boolean prepareRepresentation(KeycloakSAMLClientRepresentation crRepresentation,
             SAMLClientRepresentation targetRepresentation, Context<?> context) {
-        // Nothing to do, and no polling
+        // 无需额外处理，也不轮询
         return false;
     }
 

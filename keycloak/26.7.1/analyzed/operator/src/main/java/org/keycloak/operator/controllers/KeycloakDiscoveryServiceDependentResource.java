@@ -31,12 +31,16 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 @KubernetesDependent(
         informer = @Informer(labelSelector = Constants.DEFAULT_LABELS_AS_STRING)
 )
+/**
+ * JGroups 发现 Headless Service 依赖资源：为集群内 Pod 提供 DNS 服务发现。
+ */
 public class KeycloakDiscoveryServiceDependentResource extends VersionTolerantCRUDKubernetesDependentResource<Service, Keycloak> {
 
     public KeycloakDiscoveryServiceDependentResource() {
         super(Service.class);
     }
 
+    /** 构建 Headless Service 规格（ClusterIP=None，允许未就绪地址发布）。 */
     private ServiceSpec getServiceSpec(Keycloak keycloak) {
       return new ServiceSpecBuilder()
               .addNewPort()
@@ -51,6 +55,7 @@ public class KeycloakDiscoveryServiceDependentResource extends VersionTolerantCR
     }
 
     @Override
+    /** 生成与 Keycloak 实例标签匹配的 Headless 发现 Service。 */
     protected Service desired(Keycloak primary, Context<Keycloak> context) {
         Service service = new ServiceBuilder()
                 .withNewMetadata()
@@ -63,6 +68,7 @@ public class KeycloakDiscoveryServiceDependentResource extends VersionTolerantCR
         return service;
     }
 
+    /** 返回发现 Service 名称（Keycloak 名称 + 后缀）。 */
     public static String getName(Keycloak keycloak) {
         return keycloak.getMetadata().getName() + Constants.KEYCLOAK_DISCOVERY_SERVICE_SUFFIX;
     }

@@ -40,27 +40,33 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.utils.Serialization;
 
 /**
+ * Operator 通用工具类：集群检测、时间戳、标签、资源配额与哈希计算。
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public final class Utils {
+    /** 内存资源键名。 */
     private static final String MEMORY = "memory";
 
+    /** 检测 Kubernetes 客户端是否运行在 OpenShift 集群上。 */
     public static boolean isOpenShift(KubernetesClient client) {
         return client.supports("operator.openshift.io/v1", "OpenShiftAPIServer");
     }
 
     /**
-     * Returns the current timestamp in ISO 8601 format, for example "2019-07-23T09:08:12.356Z".
+     * 返回当前 UTC 时间的 ISO 8601 格式字符串，例如 "2019-07-23T09:08:12.356Z"。
      * @return the current timestamp in ISO 8601 format, for example "2019-07-23T09:08:12.356Z".
      */
     public static String iso8601Now() {
         return ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT);
     }
 
+    /** 将字符串编码为 Base64。 */
     public static String asBase64(String toEncode) {
         return Base64.getEncoder().encodeToString(toEncode.getBytes(StandardCharsets.UTF_8));
     }
 
+    /** 将标签 Map 转换为 Kubernetes 标签选择器字符串。 */
     public static String toSelectorString(Map<String, String> labels) {
         if (labels == null || labels.isEmpty()) {
             return null;
@@ -69,6 +75,7 @@ public final class Utils {
                 .collect(Collectors.joining(","));
     }
 
+    /** 合并默认标签与实例名称标签。 */
     public static Map<String, String> allInstanceLabels(HasMetadata primary) {
         var labels = new LinkedHashMap<>(Constants.DEFAULT_LABELS);
         labels.put(Constants.INSTANCE_LABEL, primary.getMetadata().getName());
@@ -76,9 +83,9 @@ public final class Utils {
     }
 
     /**
-     * Set resources requests/limits for Keycloak container
+     * 为 Keycloak 容器设置资源请求与限制。
      * </p>
-     * If not specified in the Keycloak CR, set default values from operator config
+     * 若 CR 中未指定内存请求/限制，则使用 Operator 配置中的默认值。
      */
     public static void addResources(ResourceRequirements resource, Config config, Container kcContainer) {
         final ResourceRequirementsBuilder resourcesBuilder = new ResourceRequirementsBuilder(resource);
@@ -96,6 +103,7 @@ public final class Utils {
         kcContainer.setResources(resourcesBuilder.build());
     }
 
+    /** 对对象列表序列化后计算 SHA-256 哈希（十六进制）。 */
     public static <T> String hash(List<T> current) {
         var messageDigest = getMessageDigest();
 
@@ -108,6 +116,7 @@ public final class Utils {
         return new BigInteger(1, messageDigest.digest()).toString(16);
     }
 
+    /** 对字符串计算 SHA-256 哈希（十六进制）。 */
     public static String hash(String value) {
         var messageDigest = getMessageDigest();
         messageDigest.update(utf8Bytes(value));
@@ -115,7 +124,7 @@ public final class Utils {
     }
 
     private static MessageDigest getMessageDigest() {
-        // Uses a fips compliant hash
+        // 使用符合 FIPS 要求的 SHA-256 哈希算法
         try {
             return MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {

@@ -50,6 +50,9 @@ import static org.keycloak.operator.Constants.KEYCLOAK_SERVICE_PROTOCOL;
 @KubernetesDependent(
         informer = @Informer(labelSelector = Constants.DEFAULT_LABELS_AS_STRING)
 )
+/**
+ * NetworkPolicy 依赖资源：根据 CR 配置限制 Keycloak Pod 的入站流量。
+ */
 public class KeycloakNetworkPolicyDependentResource extends VersionTolerantCRUDKubernetesDependentResource<NetworkPolicy, Keycloak> {
 
     private static final Logger LOG = Logger.getLogger(KeycloakNetworkPolicyDependentResource.class.getName());
@@ -58,6 +61,7 @@ public class KeycloakNetworkPolicyDependentResource extends VersionTolerantCRUDK
         super(NetworkPolicy.class);
     }
 
+    /** 启用条件：CR 中启用了 NetworkPolicy 时才协调。 */
     public static class EnabledCondition implements Condition<NetworkPolicy, Keycloak> {
         @Override
         public boolean isMet(DependentResource<NetworkPolicy, Keycloak> dependentResource, Keycloak primary,
@@ -67,6 +71,7 @@ public class KeycloakNetworkPolicyDependentResource extends VersionTolerantCRUDK
     }
 
     @Override
+    /** 构建包含应用端口、JGroups 与管理端口的 NetworkPolicy。 */
     public NetworkPolicy desired(Keycloak primary, Context<Keycloak> context) {
         var builder = new NetworkPolicyBuilder();
         addMetadata(builder, primary);
@@ -81,7 +86,7 @@ public class KeycloakNetworkPolicyDependentResource extends VersionTolerantCRUDK
             addJGroupsPorts(specBuilder, primary);
         }
 
-        // see org.keycloak.quarkus.runtime.configuration.mappers.ManagementPropertyMappers.isManagementEnabled()
+        // 参见 org.keycloak.quarkus.runtime.configuration.mappers.ManagementPropertyMappers.isManagementEnabled()
         if (CRDUtils.isManagementEndpointEnabled(primary)) {
             addManagementPorts(specBuilder, primary);
         }
@@ -91,12 +96,14 @@ public class KeycloakNetworkPolicyDependentResource extends VersionTolerantCRUDK
         return np;
     }
 
+    /** 设置 Pod 选择器，匹配 Keycloak 实例标签。 */
     private static void addPodSelector(NetworkPolicyFluent<NetworkPolicyBuilder>.SpecNested<NetworkPolicyBuilder> builder, Keycloak keycloak) {
         builder.withNewPodSelector()
                 .withMatchLabels(Utils.allInstanceLabels(keycloak))
                 .endPodSelector();
     }
 
+    /** 根据 TLS/HTTP 配置添加入站规则。 */
     private static void addApplicationPorts(NetworkPolicyFluent<NetworkPolicyBuilder>.SpecNested<NetworkPolicyBuilder> builder, Keycloak keycloak) {
         var tlsEnabled = CRDUtils.isTlsConfigured(keycloak);
         var httpEnabled = Optional.ofNullable(keycloak.getSpec())
@@ -112,6 +119,7 @@ public class KeycloakNetworkPolicyDependentResource extends VersionTolerantCRUDK
         }
     }
 
+    /** 添加管理端口的入站规则。 */
     private static void addManagementPorts(NetworkPolicyFluent<NetworkPolicyBuilder>.SpecNested<NetworkPolicyBuilder> builder, Keycloak keycloak) {
         addIngress(builder, HttpManagementSpec.managementPort(keycloak), NetworkPolicySpec.managementRules(keycloak));
     }
@@ -132,6 +140,7 @@ public class KeycloakNetworkPolicyDependentResource extends VersionTolerantCRUDK
         ingress.endIngress();
     }
 
+    /** 为 JGroups 集群通信开放数据与故障检测端口（仅限同实例 Pod）。 */
     private static void addJGroupsPorts(NetworkPolicyFluent<NetworkPolicyBuilder>.SpecNested<NetworkPolicyBuilder> builder, Keycloak keycloak) {
         var ingressBuilder = builder.addNewIngress();
         ingressBuilder.addNewPort()

@@ -14,8 +14,12 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 @KubernetesDependent(
         informer = @Informer(labelSelector = Constants.DEFAULT_LABELS_AS_STRING)
 )
+/**
+ * Realm 导入 Secret 依赖资源：将 Realm JSON 序列化后存入 Secret 供导入 Job 挂载。
+ */
 public class KeycloakRealmImportSecretDependentResource extends VersionTolerantCRUDKubernetesDependentResource<Secret, KeycloakRealmImport> {
 
+    /** 依赖资源名称，供 Workflow 引用。 */
     public static final String DEPENDENT_NAME = "realm-import-secret";
 
     public KeycloakRealmImportSecretDependentResource() {
@@ -23,6 +27,7 @@ public class KeycloakRealmImportSecretDependentResource extends VersionTolerantC
     }
 
     @Override
+    /** 将 Realm 定义序列化为 JSON 并写入 Secret 的 data 字段。 */
     protected Secret desired(KeycloakRealmImport primary, Context<KeycloakRealmImport> context) {
         var fileName = primary.getRealmName() + "-realm.json";
         var content = context.getClient().getKubernetesSerialization().asJson(primary.getSpec().getRealm());
@@ -31,13 +36,14 @@ public class KeycloakRealmImportSecretDependentResource extends VersionTolerantC
                 .withNewMetadata()
                 .withName(getSecretName(primary))
                 .withNamespace(primary.getMetadata().getNamespace())
-                // this is labeling the instance as the realm import, not the keycloak
+                // 标签标识 Realm 导入实例，而非 Keycloak 部署本身
                 .addToLabels(Utils.allInstanceLabels(primary))
                 .endMetadata()
                 .addToData(fileName, Utils.asBase64(content))
                 .build();
     }
 
+    /** 根据 Keycloak CR 名称与 Realm 名称生成 Secret 名称。 */
     public static String getSecretName(KeycloakRealmImport realmCR) {
         return KubernetesResourceUtil.sanitizeName(realmCR.getSpec().getKeycloakCRName() + "-" + realmCR.getRealmName() + "-realm");
     }

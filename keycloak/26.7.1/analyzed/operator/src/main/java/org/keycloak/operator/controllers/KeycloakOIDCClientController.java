@@ -31,6 +31,9 @@ import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 
 @ControllerConfiguration
+/**
+ * OIDC 客户端控制器：将 {@link KeycloakOIDCClient} CR 同步至 Keycloak，并内联 Secret 中的认证凭据。
+ */
 public class KeycloakOIDCClientController extends KeycloakClientBaseController<KeycloakOIDCClient, OIDCClientRepresentation, KeycloakOIDCClientRepresentation> {
 
     @Override
@@ -39,11 +42,14 @@ public class KeycloakOIDCClientController extends KeycloakClientBaseController<K
     }
 
     @Override
+    /**
+     * 将 CR 中的 secretRef 解析为实际密钥值并写入目标表示；若 Secret 尚未就绪则触发轮询。
+     */
     boolean prepareRepresentation(
             KeycloakOIDCClientRepresentation crRepresentation, OIDCClientRepresentation targetRepresentation,
             Context<?> context) {
         boolean poll = false;
-        // create the payload via inlining of the secret
+        // 通过内联 Secret 内容构建认证载荷
         Auth auth = crRepresentation.getAuth();
         if (auth != null) {
             SecretKeySelector secretSelector = context.getClient().getKubernetesSerialization().convertValue(auth.getAdditionalFields().get("secretRef"), SecretKeySelector.class);

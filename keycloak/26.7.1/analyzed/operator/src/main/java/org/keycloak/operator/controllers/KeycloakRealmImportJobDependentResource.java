@@ -56,6 +56,9 @@ import static org.keycloak.operator.Utils.addResources;
 import static org.keycloak.operator.controllers.KeycloakDistConfigurator.getKeycloakOptionEnvVarName;
 
 @KubernetesDependent
+/**
+ * Realm 导入 Job 依赖资源：基于 Keycloak Pod 模板创建一次性导入任务。
+ */
 public class KeycloakRealmImportJobDependentResource extends KubernetesDependentResource<Job, KeycloakRealmImport> implements Creator<Job, KeycloakRealmImport>, GarbageCollected<KeycloakRealmImport> {
 
     KeycloakRealmImportJobDependentResource() {
@@ -63,6 +66,7 @@ public class KeycloakRealmImportJobDependentResource extends KubernetesDependent
     }
 
     @Override
+    /** 克隆 Keycloak Pod 模板并配置 import 命令、Secret 挂载与占位符环境变量。 */
     public Job desired(KeycloakRealmImport primary, Context<KeycloakRealmImport> context) {
         Config config = ContextUtils.getOperatorConfig(context);
         StatefulSet existingDeployment = ContextUtils.getCurrentStatefulSet(context).orElseThrow();
@@ -81,7 +85,7 @@ public class KeycloakRealmImportJobDependentResource extends KubernetesDependent
 
         var labels = keycloakPodTemplate.getMetadata().getLabels();
 
-        // The Job should not be selected with app=keycloak
+        // Job 标签 app 应为 keycloak-realm-import，避免被 Keycloak Service 选中
         labels.put("app", "keycloak-realm-import");
 
         var kc = ContextUtils.getKeycloak(context);
@@ -99,7 +103,7 @@ public class KeycloakRealmImportJobDependentResource extends KubernetesDependent
         var toRemove = Set.of(cacheEnvVarName, healthEnvVarName, cacheStackEnvVarName);
         envvars.removeIf(e -> toRemove.contains(e.getName()));
 
-        // The Job should not connect to the cache
+        // 导入 Job 不连接分布式缓存
         envvars.add(new EnvVarBuilder().withName(cacheEnvVarName).withValue("local").build());
 
         if (replacePlaceholders) {
@@ -131,7 +135,7 @@ public class KeycloakRealmImportJobDependentResource extends KubernetesDependent
                 .withNewMetadata()
                 .withName(primary.getMetadata().getName())
                 .withNamespace(primary.getMetadata().getNamespace())
-                // this is labeling the instance as the realm import, not the keycloak
+                // 标签标识 Realm 导入实例，而非 Keycloak 部署
                 .addToLabels(labels)
                 .addToLabels(Utils.allInstanceLabels(primary))
                 .endMetadata()
@@ -167,7 +171,7 @@ public class KeycloakRealmImportJobDependentResource extends KubernetesDependent
 
         keycloakContainer.getVolumeMounts().add(volumeMount);
 
-        // Disable probes since we are not really starting the server
+        // 导入任务不启动完整服务器，禁用所有探针
         keycloakContainer.setReadinessProbe(null);
         keycloakContainer.setLivenessProbe(null);
         keycloakContainer.setStartupProbe(null);
@@ -175,6 +179,7 @@ public class KeycloakRealmImportJobDependentResource extends KubernetesDependent
         addResources(keycloakRealmImport.getSpec().getResourceRequirements(), config, keycloakContainer);
     }
 
+    /** 应用 Realm 导入或 Keycloak CR 中的调度策略到 Job Pod。 */
     static void handleJobScheduling(Keycloak keycloak, Optional<SchedulingSpec> schedulingSpec, PodSpec spec) {
         if (schedulingSpec.isPresent() || keycloak.getSpec().getSchedulingSpec() == null) {
             spec.setPriorityClassName(schedulingSpec.map(SchedulingSpec::getPriorityClassName).orElse(null));
@@ -182,7 +187,7 @@ public class KeycloakRealmImportJobDependentResource extends KubernetesDependent
             spec.setTolerations(schedulingSpec.map(SchedulingSpec::getTolerations).orElse(null));
             spec.setTopologySpreadConstraints(schedulingSpec.map(SchedulingSpec::getTopologySpreadConstraints).orElse(null));
         }
-        // else use the parent values
+        // 否则沿用父 Keycloak CR 的调度配置
     }
     
     @Override

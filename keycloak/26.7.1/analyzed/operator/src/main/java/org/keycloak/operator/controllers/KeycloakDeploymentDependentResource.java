@@ -81,30 +81,41 @@ import static org.keycloak.operator.crds.v2beta1.deployment.spec.TelemetrySpec.c
 @KubernetesDependent(
         informer = @Informer(labelSelector = Constants.DEFAULT_LABELS_AS_STRING)
 )
+/**
+ * Keycloak StatefulSet 依赖资源：构建 Pod 模板、环境变量、TLS 与更新策略。
+ */
 public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKubernetesDependentResource<StatefulSet, Keycloak> {
 
+    /** HTTP 管理端点协议配置键。 */
     public static final String HTTP_MANAGEMENT_SCHEME = "http-management-scheme";
 
+    /** Pod IP 环境变量名，供 JGroups 绑定地址使用。 */
     public static final String POD_IP = "POD_IP";
+    /** 嵌入式缓存机器名 SPI 选项环境变量。 */
     public static final String HOST_IP_SPI_OPTION = "KC_SPI_CACHE_EMBEDDED_DEFAULT_MACHINE_NAME";
 
+    /** 从 Operator 进程复制的代理相关环境变量名。 */
     private static final List<String> COPY_ENV = Arrays.asList("HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY");
 
+    /** 缓存配置文件 ConfigMap 卷名。 */
     public static final String CACHE_CONFIG_FILE_MOUNT_NAME = "cache-config-file-configmap";
 
+    /** 信任库路径环境变量。 */
     public static final String KC_TRUSTSTORE_PATHS = "KC_TRUSTSTORE_PATHS";
+    /** Kubernetes CA 自动发现开关环境变量。 */
     public static final String KC_TRUSTSTORE_KUBERNETES_ENABLED = "KC_TRUSTSTORE_KUBERNETES_ENABLED";
 
-    // Telemetry
+    // 遥测相关环境变量
     public static final String KC_TELEMETRY_SERVICE_NAME = "KC_TELEMETRY_SERVICE_NAME";
     public static final String KC_TELEMETRY_RESOURCE_ATTRIBUTES = "KC_TELEMETRY_RESOURCE_ATTRIBUTES";
     public static final String KC_TRACING_RESOURCE_ATTRIBUTES = "KC_TRACING_RESOURCE_ATTRIBUTES";
 
+    /** 优化启动参数。 */
     public static final String OPTIMIZED_ARG = "--optimized";
 
-    // Do not create the deployment before the initial admin secret is created to prevent the deployment from restarting.
-    // Not using native dependsOn as the initial admin secret may not be created by the operator and might be provided by the user,
-    // in which case we want to create the deployment immediately.
+    // 在初始管理员 Secret 创建后再创建 Deployment，避免 Pod 重启。
+    // 不使用原生 dependsOn，因管理员 Secret 可能由用户提供而非 Operator 创建。
+    /** 协调前置条件：自定义或 Operator 创建的初始管理员 Secret 已存在。 */
     public static class ReconcilePrecondition implements Condition<StatefulSet, Keycloak> {
         @Override
         public boolean isMet(DependentResource<StatefulSet, Keycloak> dependentResource, Keycloak primary, Context<Keycloak> context) {
@@ -118,6 +129,7 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
         super(StatefulSet.class);
     }
 
+    /** 计算初始期望 StatefulSet（含 TLS、信任库与环境变量），供控制器缓存。 */
     public StatefulSet initialDesired(Keycloak primary, Context<Keycloak> context) {
         Config operatorConfig = ContextUtils.getOperatorConfig(context);
         WatchedResources watchedResources = ContextUtils.getWatchedResources(context);
@@ -138,7 +150,7 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
         watchedResources.annotateDeployment(allSecrets, Secret.class, baseDeployment, context);
         watchedResources.annotateDeployment(allConfigMaps, ConfigMap.class, baseDeployment, context);
 
-        // default to the new revision - will be overriden to the old one if needed
+        // 默认使用新版本号——必要时会被旧版本覆盖
         UpdateSpec.getRevision(primary).ifPresent(rev -> addUpdateRevisionAnnotation(rev, baseDeployment));
         addUpdateHashAnnotation(KeycloakUpdateJobDependentResource.keycloakHash(primary), baseDeployment);
 
@@ -146,7 +158,7 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
 
         String serviceName = KeycloakDiscoveryServiceDependentResource.getName(primary);
         if (existingDeployment != null) {
-            // copy the existing annotations to keep the status consistent
+            // 复制现有注解以保持状态一致
             CRDUtils.findUpdateReason(existingDeployment).ifPresent(r -> baseDeployment.getMetadata().getAnnotations()
                     .put(Constants.KEYCLOAK_UPDATE_REASON_ANNOTATION, r));
             CRDUtils.fetchIsRecreateUpdate(existingDeployment).ifPresent(b -> baseDeployment.getMetadata()
@@ -159,6 +171,7 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
     }
 
     @Override
+    /** 根据更新类型（滚动/重建）返回最终期望 StatefulSet。 */
     public StatefulSet desired(Keycloak primary, Context<Keycloak> context) {
         StatefulSet baseDeployment = ContextUtils.getDesiredStatefulSet(context);
         var existingDeployment = ContextUtils.getCurrentStatefulSet(context).orElse(null);
@@ -169,7 +182,7 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
             return baseDeployment;
         }
 
-        // version 22 changed the match labels, account for older versions
+        // v22 变更了 matchLabels，需处理旧版 StatefulSet
         if (!existingDeployment.isMarkedForDeletion() && !hasExpectedMatchLabels(existingDeployment, primary)) {
             context.getClient().resource(existingDeployment).lockResourceVersion().delete();
             Log.info("Existing Deployment found with old label selector, it will be recreated");
@@ -210,7 +223,7 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
 
     private void addTruststores(Keycloak keycloakCR, StatefulSet deployment, Container kcContainer, WatchedResources.Watched allSecrets, WatchedResources.Watched allConfigMaps) {
         for (Truststore truststore : keycloakCR.getSpec().getTruststores().values()) {
-            // for now we'll assume only secrets, later we can support configmaps
+            // 目前仅支持 Secret 作为信任库源，后续可支持 ConfigMap
             TruststoreSource source = truststore.getSecret();
             if (source != null) {
                 String secretName = source.getName();
@@ -292,8 +305,8 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
             labels.putAll(operatorConfig.keycloak().podLabels());
         }
 
-        /* Create a builder for the statefulset, note that the pod template spec is used as the basis
-         * over that some values are forced, others will let the template override, others merge
+        /* 创建 StatefulSet 构建器；以 podTemplate 为基础，
+         * 部分字段强制覆盖，部分允许模板覆盖，部分合并。
          */
 
         StatefulSetBuilder baseDeploymentBuilder = new StatefulSetBuilder()
@@ -334,7 +347,7 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
         specBuilder.withAutomountServiceAccountToken(automount);
         handleScheduling(keycloakCR, schedulingLabels, specBuilder);
 
-        // there isn't currently an editOrNewFirstContainer, so we need to do this manually
+        // 尚无 editOrNewFirstContainer，需手动处理首个容器
         var containerBuilder = specBuilder.buildContainers().isEmpty() ? specBuilder.addNewContainer() : specBuilder.editFirstContainer();
 
         containerBuilder.withName("keycloak");
@@ -353,12 +366,12 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
                         && (customImage.isPresent() || operatorConfig.keycloak().startOptimized())) {
             containerBuilder.addToArgs(OPTIMIZED_ARG);
         }
-        // Set bind address as this is required for JGroups to form a cluster in IPv6 environments
+        // IPv6 环境下 JGroups 集群组建需要绑定地址
         containerBuilder.addToArgs(0, "-Djgroups.bind.address=$(%s)".formatted(POD_IP));
 
         ManagementEndpoint endpoint = managementEndpoint(keycloakCR, context, true);
 
-        // probes
+        // 就绪/存活/启动探针
         var readinessOptionalSpec = Optional.ofNullable(keycloakCR.getSpec().getReadinessProbeSpec());
         var livenessOptionalSpec = Optional.ofNullable(keycloakCR.getSpec().getLivenessProbeSpec());
         var startupOptionalSpec = Optional.ofNullable(keycloakCR.getSpec().getStartupProbeSpec());
@@ -397,7 +410,7 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
                 .endStartupProbe();
         }
 
-        // add in ports - there's no merging being done here
+        // 添加容器端口——此处不做合并
         return containerBuilder
             .addNewPort()
                 .withName(Constants.KEYCLOAK_HTTPS_PORT_NAME)
@@ -464,11 +477,11 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
 
         var env = keycloakCR.getSpec().getEnv().stream().map(this::toEnvVar);
 
-        // accumulate the env vars in priority order - unsupported, first class, additional, env
+        // 按优先级累积环境变量：unsupported → 一等公民 → 附加项 → CR env
         LinkedHashMap<String, EnvVar> varMap = Stream.concat(Stream.concat(unsupportedEnv.stream(), firstClasssEnvVars.stream()), Stream.concat(additionalEnvVars.stream(), env))
                 .collect(Collectors.toMap(EnvVar::getName, Function.identity(), (e1, e2) -> e1, LinkedHashMap::new));
 
-        // Turn Kubernetes CA autodiscovery off
+        // 关闭 Kubernetes CA 自动发现
         if (Boolean.FALSE.equals(keycloakCR.getSpec().getAutomountServiceAccountToken())) {
             varMap.putIfAbsent(KC_TRUSTSTORE_KUBERNETES_ENABLED, new EnvVarBuilder().withName(KC_TRUSTSTORE_KUBERNETES_ENABLED).withValue("false").build());
         }
@@ -478,7 +491,7 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
         var envVars = new ArrayList<>(varMap.values());
         baseDeployment.getSpec().getTemplate().getSpec().getContainers().get(0).setEnv(envVars);
 
-        // watch the secrets used by secret key - we don't currently expect configmaps or watch the initial-admin
+        // 监听 secretKeyRef 引用的 Secret——目前不监听 ConfigMap 或 initial-admin
         TreeSet<String> serverConfigSecretsNames = envVars.stream().map(EnvVar::getValueFrom).filter(Objects::nonNull)
                 .map(EnvVarSource::getSecretKeyRef).filter(Objects::nonNull).peek(s -> allSecrets.add(s.getName(), s.getOptional())).map(SecretKeySelector::getName).collect(Collectors.toCollection(TreeSet::new));
 
@@ -492,7 +505,7 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
                         .build()
         );
 
-        // Possible OTel k8s attributes convention can be found here: https://opentelemetry.io/docs/specs/semconv/attributes-registry/k8s/#kubernetes-attributes
+        // OTel K8s 属性约定参见 https://opentelemetry.io/docs/specs/semconv/attributes-registry/k8s/#kubernetes-attributes
         var telemetryAttributes = Map.of("k8s.namespace.name", keycloakCR.getMetadata().getNamespace());
 
         if (varMap.containsKey(KC_TELEMETRY_RESOURCE_ATTRIBUTES)) {
@@ -509,7 +522,7 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
     }
 
     /**
-     * Append default resource attributes to the specified resource attributes
+     * 将默认资源属性追加到指定的 OTel 资源属性环境变量。
      */
     private static void appendExistingResourceAttributes(String resourceAttributesEnvVar, Map<String, String> existingResourceAttributes, Map<String, EnvVar> varMap) {
         var existingAttributes = convertResourceAttributesToMap(resourceAttributesEnvVar, varMap);
@@ -537,11 +550,11 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
     }
 
     private List<EnvVar> getDefaultAndAdditionalEnvVars(Keycloak keycloakCR) {
-        // default config values
+        // 默认配置值
         List<ValueOrSecret> serverConfigsList = new ArrayList<>(Constants.DEFAULT_DIST_CONFIG_LIST);
         Set<String> defaultKeys = serverConfigsList.stream().map(ValueOrSecret::getName).collect(Collectors.toSet());
 
-        // merge with the CR; the values in CR take precedence
+        // 与 CR 合并，CR 中的值优先
         if (keycloakCR.getSpec().getAdditionalOptions() != null) {
             Set<String> inCr = keycloakCR.getSpec().getAdditionalOptions().stream().map(ValueOrSecret::getName).collect(Collectors.toSet());
             serverConfigsList.removeIf(v -> inCr.contains(v.getName()));
@@ -580,19 +593,20 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
         envVars.add(new EnvVarBuilder().withName(POD_IP).withNewValueFrom().withNewFieldRef()
                 .withFieldPath("status.podIP").withApiVersion("v1").endFieldRef().endValueFrom().build());
 
-        // Both status.hostIP or spec.nodeName would be fine here.
-        // In theory, status.hostIP is a smaller value and, as this value is tagged in all JGroups messages, it should have a lower overhead.
-        // Using spec.nodeName to avoid exposing the IP addresses in the logs.
+        // status.hostIP 与 spec.nodeName 均可；理论上 hostIP 更小，JGroups 消息标签开销更低。
+        // 使用 spec.nodeName 以避免在日志中暴露 IP 地址。
         envVars.add(new EnvVarBuilder().withName(HOST_IP_SPI_OPTION).withNewValueFrom().withNewFieldRef()
                 .withFieldPath("spec.nodeName").withApiVersion("v1").endFieldRef().endValueFrom().build());
 
         return envVars;
     }
 
+    /** 返回 StatefulSet 资源名称（与 Keycloak CR 同名）。 */
     public static String getName(Keycloak keycloak) {
         return keycloak.getMetadata().getName();
     }
 
+    /** 从 additionalOptions 或 Secret 读取指定配置项值。 */
     static Optional<String> readConfigurationValue(String key, Keycloak keycloakCR, KubernetesClient client) {
         return Optional.ofNullable(keycloakCR.getSpec()).map(KeycloakSpec::getAdditionalOptions)
                 .flatMap(l -> l.stream().filter(sc -> sc.getName().equals(key)).findFirst().map(serverConfigValue -> {
@@ -614,8 +628,9 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
         }));
     }
 
+    /** 滚动更新：Kubernetes 默认就地滚动，直接返回期望 StatefulSet。 */
     private static StatefulSet handleRollingUpdate(StatefulSet desired) {
-        // return the desired stateful set since Kubernetes does a rolling in-place update by default.
+        // Kubernetes 默认执行就地滚动更新
         Log.debug("Performing a rolling update");
         desired.getMetadata().getAnnotations().put(Constants.KEYCLOAK_RECREATE_UPDATE_ANNOTATION, Boolean.FALSE.toString());
         return desired;
@@ -627,11 +642,11 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
         if (Optional.ofNullable(actual.getStatus().getReplicas()).orElse(0) == 0) {
             Log.debug("Performing a recreate update - scaling up the stateful set");
 
-            // desired state correct as is
+            // 期望状态已正确，无需修改
         } else {
             Log.debug("Performing a recreate update - scaling down the stateful set");
 
-            // keep the old revision, image, and hash, then mark as migrating, and scale down
+            // 保留旧版本号、镜像与哈希，标记迁移中并缩容至 0
             addOrRemoveAnnotation(CRDUtils.getRevision(actual).orElse(null), Constants.KEYCLOAK_UPDATE_REVISION_ANNOTATION, desired);
             addOrRemoveAnnotation(CRDUtils.getUpdateHash(actual).orElse(null), Constants.KEYCLOAK_UPDATE_HASH_ANNOTATION, desired);
             desired.getMetadata().getAnnotations().put(Constants.KEYCLOAK_MIGRATING_ANNOTATION, Boolean.TRUE.toString());
@@ -654,8 +669,10 @@ public class KeycloakDeploymentDependentResource extends VersionTolerantCRUDKube
         toUpdate.getMetadata().getAnnotations().compute(annotation, (k, v) -> value);
     }
 
+    /** 管理/健康检查端点描述（相对路径、协议、端口）。 */
     record ManagementEndpoint(String relativePath, String protocol, int port, String portName) {}
 
+    /** 根据 TLS 与管理端配置解析健康/管理探针端点。 */
     static ManagementEndpoint managementEndpoint(Keycloak keycloakCR, Context<Keycloak> context, boolean health) {
         boolean tls = isTlsConfigured(keycloakCR);
         String protocol = tls ? "HTTPS" : "HTTP";

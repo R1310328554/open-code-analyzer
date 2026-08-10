@@ -78,10 +78,14 @@ import io.quarkus.logging.Log;
               activationCondition = KeycloakServiceMonitorDependentResource.ActivationCondition.class
         ),
     })
-// to allow for reactions to annotation changes
+// 允许对注解变更做出反应
 @ControllerConfiguration(generationAwareEventProcessing = false)
+/**
+ * Keycloak 主控制器：协调 StatefulSet、Service、Ingress 等依赖资源并维护 CR 状态。
+ */
 public class KeycloakController implements Reconciler<Keycloak> {
 
+    /** OpenShift 默认 Ingress 类名。 */
     public static final String OPENSHIFT_DEFAULT = "openshift-default";
 
     @Inject
@@ -107,21 +111,21 @@ public class KeycloakController implements Reconciler<Keycloak> {
     }
 
     @Override
+    /** 协调 Keycloak CR：应用默认值、触发工作流并更新状态。 */
     public UpdateControl<Keycloak> reconcile(Keycloak kc, Context<Keycloak> context) {
         if (Boolean.valueOf(kc.getMetadata().getAnnotations().get(Constants.KEYCLOAK_PAUSE_ANNOTATION))) {
-            return UpdateControl.noUpdate(); // do nothing while paused
+            return UpdateControl.noUpdate(); // 暂停期间不做任何操作
         }
         String kcName = kc.getMetadata().getName();
         String namespace = kc.getMetadata().getNamespace();
 
         Log.debugf("--- Reconciling Keycloak: %s in namespace: %s", kcName, namespace);
 
-        // TODO - these modifications to the resource may belong in a webhook because dependents run first
-        // only the statefulset is deferred until after
+        // TODO - 这些 Spec 修改可能更适合放在 webhook 中，因为依赖资源先运行
+        // 仅 StatefulSet 被推迟到之后
         boolean modifiedSpec = false;
         if (kc.getSpec().getInstances() == null) {
-            // explicitly set defaults - and let another reconciliation happen
-            // this avoids ensuring unintentional modifications have not been made to the cr
+            // 显式设置默认值并触发新一轮协调，避免 CR 出现非预期修改
             kc.getSpec().setInstances(1);
             modifiedSpec = true;
         }
@@ -137,7 +141,7 @@ public class KeycloakController implements Reconciler<Keycloak> {
         }
 
         if (modifiedSpec) {
-            // just patch spec using SSA, nothing more
+            // 仅通过 SSA 补丁 Spec，不做其他操作
             Keycloak patchedKc = new KeycloakBuilder()
                     .withNewMetadata()
                         .withName(kc.getMetadata().getName())
@@ -162,7 +166,7 @@ public class KeycloakController implements Reconciler<Keycloak> {
             return updateLogicControl.get();
         }
 
-        // after the spec has possibly been updated, reconcile the StatefulSet
+        // Spec 可能已更新，协调 StatefulSet 及其他依赖资源
         context.managedWorkflowAndDependentResourceContext().reconcileManagedWorkflow();
 
         var statusAggregator = new KeycloakStatusAggregator(kc.getStatus(), kc.getMetadata().getGeneration());
@@ -205,11 +209,13 @@ public class KeycloakController implements Reconciler<Keycloak> {
         return ErrorStatusUpdateControl.patchStatus(kc);
     }
 
+    /** 根据 OpenShift Ingress 配置生成默认主机名。 */
     public static Optional<String> generateOpenshiftHostname(Keycloak keycloak, Context<Keycloak> context) {
         return getAppsDomain(context).map(s -> KubernetesResourceUtil.sanitizeName(String.format("%s-%s",
                 KeycloakIngressDependentResource.getName(keycloak), keycloak.getMetadata().getNamespace())) + "." + s);
     }
 
+    /** 从 OpenShift Cluster Ingress 配置获取应用域名。 */
     public static Optional<String> getAppsDomain(Context<Keycloak> context) {
         return Optional
                 .ofNullable(context.getClient().resources(io.fabric8.openshift.api.model.config.v1.Ingress.class)
@@ -217,6 +223,7 @@ public class KeycloakController implements Reconciler<Keycloak> {
                 .map(i -> Optional.ofNullable(i.getSpec().getAppsDomain()).orElse(i.getSpec().getDomain()));
     }
 
+    /** 聚合部署就绪性、滚动更新与配置校验结果到 CR 状态。 */
     public void updateStatus(Keycloak keycloakCR, StatefulSet existingDeployment, KeycloakStatusAggregator status, Context<Keycloak> context) {
         status.apply(b -> b.withSelector(Utils.toSelectorString(Utils.allInstanceLabels(keycloakCR))));
         validatePodTemplate(keycloakCR, status, context);
@@ -255,11 +262,13 @@ public class KeycloakController implements Reconciler<Keycloak> {
                 .ifPresent(status::addWarningMessage);
     }
 
+    /** 判断 Operator 是否以多命名空间模式运行。 */
     static boolean isMultiNamespace(Context<?> context) {
         var config = context.getControllerConfiguration().getInformerConfig();
         return config.watchAllNamespaces() || config.getNamespaces().size() > 1;
     }
 
+    /** 判断 StatefulSet 是否处于滚动更新中。 */
     public static boolean isRolling(StatefulSet existingDeployment) {
         return existingDeployment.getStatus() != null
                 && existingDeployment.getStatus().getCurrentRevision() != null
@@ -267,6 +276,7 @@ public class KeycloakController implements Reconciler<Keycloak> {
                 && !existingDeployment.getStatus().getCurrentRevision().equals(existingDeployment.getStatus().getUpdateRevision());
     }
 
+    /** 校验用户自定义 podTemplate 中不可修改的字段并写入警告。 */
     public void validatePodTemplate(Keycloak keycloakCR, KeycloakStatusAggregator status, Context<Keycloak> context) {
         var spec = KeycloakDeploymentDependentResource.getPodTemplateSpec(keycloakCR);
         if (spec.isEmpty()) {
@@ -324,7 +334,7 @@ public class KeycloakController implements Reconciler<Keycloak> {
                                 if (Optional.ofNullable(cs.getState()).map(ContainerState::getWaiting)
                                         .map(ContainerStateWaiting::getReason).map(String::toLowerCase)
                                         .filter(s -> s.contains("err") || s.equals("crashloopbackoff")).isPresent()) {
-                                    // since we've failed, try to get the previous first, then the current
+                                    // 失败后优先获取上一次容器日志，否则取当前日志
                                     String log = null;
                                     try {
                                         log = context.getClient().raw(String.format("/api/v1/namespaces/%s/pods/%s/log?previous=true&tailLines=200", p.getMetadata().getNamespace(), p.getMetadata().getName()));

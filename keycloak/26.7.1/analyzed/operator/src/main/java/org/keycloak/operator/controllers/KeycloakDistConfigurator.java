@@ -59,21 +59,23 @@ import io.quarkus.logging.Log;
 import static io.smallrye.config.common.utils.StringUtil.replaceNonAlphanumericByUnderscores;
 
 /**
- * Configuration for the Keycloak Statefulset
+ * Keycloak 发行版配置器：将 CR 各 Spec 段映射为一等公民环境变量并执行校验。
  */
 @ApplicationScoped
 public class KeycloakDistConfigurator {
 
+    /** Keycloak 环境变量前缀。 */
     public static final String KC_PREFIX = "KC_";
     /**
-     * Specify first-class citizens fields which should not be added as general server configuration property
+     * 一等公民配置字段映射表，这些字段不应作为通用 server 配置重复声明。
      */
     @SuppressWarnings("rawtypes")
     private final Map<String, org.keycloak.operator.controllers.KeycloakDistConfigurator.OptionMapper.Mapper> firstClassConfigOptions = new LinkedHashMap<>();
+    /** 自定义校验器列表。 */
     private final List<BiConsumer<Keycloak, KeycloakStatusAggregator>> validators = new ArrayList<>();
 
     public KeycloakDistConfigurator() {
-        // register the configuration mappers for the various parts of the keycloak cr
+        // 注册 Keycloak CR 各 Spec 段的配置映射器
         configureHostname();
         configureFeatures();
         configureTelemetry();
@@ -88,7 +90,7 @@ public class KeycloakDistConfigurator {
     }
 
     /**
-     * Validate all deployment configuration properties and update status of the Keycloak deployment
+     * 校验所有部署配置项并更新 Keycloak CR 状态。
      *
      * @param status Keycloak Status builder
      */
@@ -97,7 +99,7 @@ public class KeycloakDistConfigurator {
         executeCustomValidations(keycloakCR, status);
     }
 
-    /* ---------- Configuration of first-class citizen fields ---------- */
+    /* ---------- 一等公民字段配置 ---------- */
 
     void configureBootstrapAdmin() {
         optionMapper(Function.identity())
@@ -201,7 +203,7 @@ public class KeycloakDistConfigurator {
                 .mapOption("http-management-port", HttpManagementSpec::getPort);
     }
 
-    /* ---------- END of configuration of first-class citizen fields ---------- */
+    /* ---------- 一等公民字段配置结束 ---------- */
 
     private static void validateResourceAttributes(Map<String, String> resourceAttributes, KeycloakStatusAggregator status) {
         Predicate<String> isInvalidResourceAttribute = (keyOrVal) -> (keyOrVal.contains("=") || keyOrVal.contains(","));
@@ -238,7 +240,7 @@ public class KeycloakDistConfigurator {
     }
 
     /**
-     * Assume the specified first-class citizens are not included in the general server configuration
+     * 确保 additionalOptions 中未重复声明一等公民字段。
      *
      * @param status                    Status of the deployment
      */
@@ -257,8 +259,9 @@ public class KeycloakDistConfigurator {
         }
     }
 
+    /** 将 Keycloak 配置项名转换为 KC_ 前缀环境变量名。 */
     public static String getKeycloakOptionEnvVarName(String kcConfigName) {
-        // TODO make this use impl from Quarkus dist (Configuration.toEnvVarFormat)
+        // TODO 改用 Quarkus dist 中的 Configuration.toEnvVarFormat 实现
         return KC_PREFIX + replaceNonAlphanumericByUnderscores(kcConfigName).toUpperCase();
     }
 
@@ -337,6 +340,7 @@ public class KeycloakDistConfigurator {
         }
     }
 
+    /** 根据 CR 生成一等公民环境变量列表。 */
     @SuppressWarnings("unchecked")
     public List<EnvVar> configureDistOptions(Keycloak keycloakCR) {
         List<EnvVar> result = new ArrayList<>();

@@ -43,10 +43,14 @@ import static org.keycloak.operator.crds.v2beta1.CRDUtils.isTlsConfigured;
 @KubernetesDependent(
         informer = @Informer(labelSelector = Constants.DEFAULT_LABELS_AS_STRING)
 )
+/**
+ * Ingress 依赖资源：为 Keycloak 创建外部访问入口，支持 TLS 透传与 OpenShift Route。
+ */
 public class KeycloakIngressDependentResource extends VersionTolerantCRUDKubernetesDependentResource<Ingress, Keycloak> {
 
     private static final Logger LOG = Logger.getLogger(KeycloakIngressDependentResource.class.getName());
 
+    /** 启用条件：CR 中启用了 Ingress 时才创建。 */
     public static class EnabledCondition implements Condition<Ingress, Keycloak> {
         @Override
         public boolean isMet(DependentResource<Ingress, Keycloak> dependentResource, Keycloak primary,
@@ -61,6 +65,7 @@ public class KeycloakIngressDependentResource extends VersionTolerantCRUDKuberne
         super(Ingress.class);
     }
 
+    /** 判断 Keycloak CR 是否启用了 Ingress（默认启用）。 */
     public static boolean isIngressEnabled(Keycloak keycloak) {
         return Optional.ofNullable(keycloak.getSpec().getIngressSpec()).map(IngressSpec::isIngressEnabled).orElse(true);
     }
@@ -71,8 +76,7 @@ public class KeycloakIngressDependentResource extends VersionTolerantCRUDKuberne
             return super.update(actual, desired, primary, context);
         } catch (KubernetesClientException e) {
             if (e.getCode() == 422) {
-                // This attempts to recover from errors like "Failure executing: PATCH" / "Invalid value: cannot set both port name & port number."
-                // when the server side apply fails.
+                // 服务端 Apply 失败时（如端口名与端口号冲突）回退为客户端 Apply
             	try {
                     LOG.info("Failed to update Ingress with server-side apply, retrying with client-side", e);
                     USE_SSA.set(false);
@@ -94,6 +98,7 @@ public class KeycloakIngressDependentResource extends VersionTolerantCRUDKuberne
     }
 
     @Override
+    /** 构建指向 Keycloak Service 的 Ingress，含 TLS 与主机名规则。 */
     public Ingress desired(Keycloak keycloak, Context<Keycloak> context) {
         var annotations = new HashMap<String, String>();
         boolean tlsConfigured = isTlsConfigured(keycloak);
@@ -172,6 +177,7 @@ public class KeycloakIngressDependentResource extends VersionTolerantCRUDKuberne
         return ingress;
     }
 
+    /** 返回 Ingress 资源名称。 */
     public static String getName(Keycloak keycloak) {
         return keycloak.getMetadata().getName() + Constants.KEYCLOAK_INGRESS_SUFFIX;
     }

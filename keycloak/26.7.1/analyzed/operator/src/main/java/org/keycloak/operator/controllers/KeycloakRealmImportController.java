@@ -46,12 +46,16 @@ dependents = {
     @Dependent(type = KeycloakRealmImportJobDependentResource.class, dependsOn = KeycloakRealmImportSecretDependentResource.DEPENDENT_NAME),
     @Dependent(type = KeycloakRealmImportSecretDependentResource.class, name = KeycloakRealmImportSecretDependentResource.DEPENDENT_NAME)
 })
+/**
+ * Realm 导入控制器：协调 Secret 与 Job，将 Realm JSON 导入运行中的 Keycloak 实例。
+ */
 public class KeycloakRealmImportController implements Reconciler<KeycloakRealmImport> {
 
     @Inject
     Config config;
 
     @Override
+    /** 协调 Realm 导入工作流并更新 CR 状态。 */
     public UpdateControl<KeycloakRealmImport> reconcile(KeycloakRealmImport realm, Context<KeycloakRealmImport> context) {
         String realmName = realm.getMetadata().getName();
         String realmNamespace = realm.getMetadata().getNamespace();
@@ -108,6 +112,7 @@ public class KeycloakRealmImportController implements Reconciler<KeycloakRealmIm
         return ErrorStatusUpdateControl.patchStatus(realm);
     }
 
+    /** 根据 Job 与 StatefulSet 状态更新 Realm 导入 CR 的状态消息。 */
     public void updateStatus(KeycloakRealmImportStatusBuilder status, KeycloakRealmImport realmCR, Job existingJob, StatefulSet existingDeployment, KubernetesClient client) {
         if (existingDeployment == null) {
             status.addErrorMessage("No existing Deployment found, waiting for it to be created");
@@ -132,7 +137,7 @@ public class KeycloakRealmImportController implements Reconciler<KeycloakRealmIm
             status.addStartedMessage("Import Job started");
         } else if (oldStatus.getSucceeded() != null && oldStatus.getSucceeded() > 0) {
             if (!lastReportedStatus.isDone()) {
-                // no need to restart Keycloak as we're only importing new realms and are not overwriting existing realms
+                // 仅导入新 Realm 且不覆盖已有 Realm，无需重启 Keycloak
                 Log.info("Job finished");
             }
             status.addDone();
@@ -145,6 +150,7 @@ public class KeycloakRealmImportController implements Reconciler<KeycloakRealmIm
         }
     }
 
+    /** 返回 StatefulSet 的就绪副本数，无状态时视为 0。 */
     static Integer getReadyReplicas(StatefulSet existingDeployment) {
         return Optional.ofNullable(existingDeployment.getStatus()).map(StatefulSetStatus::getReadyReplicas).orElse(0);
     }

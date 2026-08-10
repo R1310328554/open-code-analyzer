@@ -88,18 +88,20 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import static org.keycloak.operator.crds.v2beta1.CRDUtils.isTlsConfigured;
 
 /**
- * Base class for Client controllers.
+ * 客户端控制器基类：通过 Admin API v2 创建/更新/删除 Keycloak 客户端。
  *
- * @param <R> custom resource type
- * @param <T> base server type for the Client
- * @param <S> spec refined type for the Client
+ * @param <R> 自定义资源类型
+ * @param <T> 客户端服务端表示类型
+ * @param <S> CR Spec 中的客户端表示类型
  */
 public abstract class KeycloakClientBaseController<R extends CustomResource<? extends KeycloakClientSpec<S>, KeycloakClientStatus>, T extends BaseClientRepresentation, S extends BaseClientRepresentation>
         implements Reconciler<R>, Cleaner<R> {
 
+    /** client-admin-api:v2 功能开关名称。 */
     public static final String CLIENT_ADMIN_API_V2 = "client-admin-api:v2";
     private static final String HTTPS = "https";
 
+    /** 客户端 CR 状态聚合器：维护条件与哈希。 */
     static class KeycloakClientStatusAggregator {
         Long generation;
         KeycloakClientStatus existingStatus;
@@ -119,7 +121,7 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
             condition.setStatus(status);
             condition.setMessage(message);
             condition.setObservedGeneration(generation);
-            newConditions.put(type, condition); // No aggregation yet
+            newConditions.put(type, condition); // 当前尚未做条件合并
         }
 
         void setUuid(String uuid) {
@@ -150,12 +152,12 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
     Config config;
 
     @Override
+    /** 协调客户端 CR：校验功能开关、调用 Admin API 并更新状态。 */
     public UpdateControl<R> reconcile(R resource, Context<R> context) throws Exception {
         String kcName = resource.getSpec().getKeycloakCRName();
 
-        // TODO: this should be obtained from an informer instead
-        // they can't be shared directly across controllers, so we'd have to inject the
-        // KeycloakController and access via a reference to a saved context
+        // TODO: 应通过 Informer 获取，而非每次查询
+        // 控制器间无法直接共享 Informer，需注入 KeycloakController 并访问其保存的 context
         Keycloak keycloak = context.getClient().resources(Keycloak.class)
                 .inNamespace(resource.getMetadata().getNamespace()).withName(kcName).require();
 
@@ -168,11 +170,11 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
         }
 
         S client = resource.getSpec().getClient();
-        // first convert to the target representation - the spec representation is specialized
+        // 先转换为服务端目标表示——Spec 表示是特化类型
         var map = context.getClient().getKubernetesSerialization().convertValue(client, Map.class);
         map.put(BaseClientRepresentation.DISCRIMINATOR_FIELD, client.getProtocol());
         T rep = context.getClient().getKubernetesSerialization().convertValue(map, getTargetRepresentation());
-        // then let the controller subclass apply specific handling
+        // 再由子类执行特定预处理
         boolean poll = prepareRepresentation(client, rep, context);
         rep.setClientId(resource.getMetadata().getName());
 
@@ -187,9 +189,8 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
                 BaseClientRepresentation resultingRep = response.readEntity(BaseClientRepresentation.class);
                 statusAggregator.setUuid(resultingRep.getUuid());
             } else {
-                // if not ok response, throw exception to allow the retry loop
-                // TODO however not all errors (something not validating) should get retried every 10 seconds
-                // that should instead get captured in the status
+                // 非成功响应则抛异常进入重试循环
+                // TODO：并非所有错误都应每 10 秒重试，校验失败应写入状态
                 String message = response.hasEntity() ? response.readEntity(String.class) : "";
                 throw new RuntimeException("Client update operation not sucessful with status code " + response.getStatus() + " : " + message);
             }
@@ -214,6 +215,7 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
         return updateControl;
     }
 
+    /** 检查关联 Keycloak StatefulSet 是否有就绪副本。 */
     private boolean isServerReady(Context<R> context, R resource) {
         StatefulSet existingDeployment = context.getClient().resources(StatefulSet.class)
                 .inNamespace(resource.getMetadata().getNamespace()).withName(resource.getSpec().getKeycloakCRName())
@@ -222,10 +224,9 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
         return existingDeployment != null && KeycloakRealmImportController.getReadyReplicas(existingDeployment) > 0;
     }
 
-    // TODO: this doesn't mesh well with the current feature concept
-    // we specifically need v2 enabled, so we can't simply check for client-admin-api
-    // - the behavior is also version dependent later verions of keycloak presumably will have client-admin-api:v2
-    //   enabled by default, so we'd need to check specifically for that feature being disabled, or remove this check altogether
+    // TODO: 与当前 feature 概念不够契合
+    // 需要 v2 显式启用，不能仅检查 client-admin-api
+    // 后续 Keycloak 版本可能默认启用 client-admin-api:v2，需检查是否被禁用或移除此校验
     private boolean hasFeatureEnabled(Keycloak keycloak) {
         return Optional.ofNullable(keycloak.getSpec().getFeatureSpec()).map(FeatureSpec::getEnabledFeatures)
                 .filter(ef -> ef.contains(CLIENT_ADMIN_API_V2)).isPresent();
@@ -236,8 +237,8 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
     abstract Class<T> getTargetRepresentation();
 
     /**
-     * Uses a finalizer to ensure clients are not orphaned unless a user goes out of
-     * their way to do so
+     * 使用 finalizer 确保客户端不会在 CR 删除时被孤立，
+     * 除非用户主动绕过清理流程。
      */
     @Override
     public DeleteControl cleanup(R resource, Context<R> context) throws Exception {
@@ -251,8 +252,7 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
         }
 
         if (!hasFeatureEnabled(keycloak)) {
-            // TODO: this behavior is not very straight-forward. For now just log an error
-            // in the server and move on
+            // TODO: 此行为不够直观，目前仅记录错误后继续
             Log.error("Cannot delete Client $s/%s because the server does not have %s enabled.".formatted(
                     resource.getMetadata().getNamespace(), resource.getMetadata().getName(), CLIENT_ADMIN_API_V2));
             return DeleteControl.defaultDelete();
@@ -283,6 +283,7 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
         return ErrorStatusUpdateControl.patchStatus(resource).rescheduleAfter(Constants.RETRY_DURATION);
     }
 
+    /** Admin API v2 根路径代理接口。 */
     @Path("admin/api")
     public interface AdminRootV2 {
 
@@ -291,13 +292,14 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
 
     }
 
-    //TODO: for local testing only - consider removing
+    //TODO: 仅供本地测试——考虑移除
     private String addressOverride;
 
     public void setAddressOverride(String addressOverride) {
         this.addressOverride = addressOverride;
     }
 
+    /** 在服务器就绪后调用 Admin API 执行指定操作。 */
     private <V> V invoke(R resource, Context<R> context, Keycloak keycloak,
             Function<ClientApi, V> action) {
         if (!isServerReady(context, resource)) {
@@ -313,7 +315,7 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
     }
 
     private WebTarget getWebTarget(org.keycloak.admin.client.Keycloak kcAdmin) {
-        // TODO: change the api
+        // TODO: 应改进 API 设计，避免反射访问 target 字段
         try {
             Field field = kcAdmin.getClass().getDeclaredField("target");
             field.setAccessible(true);
@@ -323,6 +325,7 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
         }
     }
 
+    /** 构建用于调用 Keycloak Admin API 的客户端，支持 HTTPS/mTLS。 */
     public static org.keycloak.admin.client.Keycloak getAdminClient(KubernetesClient client, Keycloak keycloak, String addressOverride) {
         Secret adminSecret = client.resources(Secret.class)
                 .inNamespace(keycloak.getMetadata().getNamespace())
@@ -332,15 +335,15 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
 
         Client restEasyClient = null;
 
-        // create a custom client if using https/mtls
+        // 使用 HTTPS/mTLS 时需创建自定义 REST 客户端
         if (adminUrl.startsWith(HTTPS)) {
             restEasyClient = createRestEasyClient(client, keycloak, restEasyClient);
         }
 
         return KeycloakBuilder.builder()
                 .serverUrl(adminUrl)
-                .realm("master") // TODO: could be configured differently
-                // TODO: validate these fields
+                .realm("master") // TODO: 可配置为其他 realm
+                // TODO: 校验这些字段
                 .clientId(new String(Base64.getDecoder().decode(adminSecret.getData().get(Constants.CLIENT_ID_KEY)),
                         StandardCharsets.UTF_8))
                 .clientSecret(new String(Base64.getDecoder().decode(adminSecret.getData().get(Constants.CLIENT_SECRET_KEY)),
@@ -351,7 +354,7 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
     }
 
     private static Client createRestEasyClient(KubernetesClient client, Keycloak keycloak, Client restEasyClient) {
-        // add server cert trust
+        // 添加服务端证书信任
         String tlsSecretName = keycloak.getSpec().getHttpSpec().getTlsSecret();
         Secret tlsSecret = client.resources(Secret.class)
                 .inNamespace(keycloak.getMetadata().getNamespace()).withName(tlsSecretName).require();
@@ -372,11 +375,10 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
 
             ClientBuilder clientBuilder = ClientBuilderWrapper.create(sslContext, false);
 
-            // because we trust only the server cert, disable hostname verification
-            // - only if the tlsSecret is compromised and traffic to the service hostname can be hijacked,
-            // would this be a problem
+            // 仅信任服务端证书，因此禁用主机名验证
+            // 仅当 tlsSecret 泄露且 Service 主机名流量可被劫持时才有风险
             //
-            // TODO: could warn if a ca cert is set as the server certificate
+            // TODO: 若 CA 证书被用作服务端证书时可发出警告
             clientBuilder.hostnameVerifier(NoopHostnameVerifier.INSTANCE);
 
             restEasyClient = clientBuilder.build();
@@ -404,8 +406,8 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
         byte[] keyBytes = Base64.getDecoder().decode(clientTlsSecret.getData().get("tls.key"));
 
         KeyStore store = null;
-        // TODO: key type algorithm type could be specifiable in the CR, inferred in a better way (not sure where the quarkus logic is for this), or
-        // in some cases specified in the files - BEGIN RSA PRIVATE KEY
+        // TODO: 密钥类型算法可在 CR 中指定、更好推断（Quarkus 逻辑位置不明），
+        // 或从文件内容推断——如 BEGIN RSA PRIVATE KEY
         try {
             store = CertUtils.createKeyStore(new ByteArrayInputStream(certBytes), new ByteArrayInputStream(keyBytes), "RSA", null, null, null);
         } catch (Exception e) {
@@ -425,8 +427,8 @@ public abstract class KeycloakClientBaseController<R extends CustomResource<? ex
         int port = https?HttpSpec.serviceHttpsPort(keycloak):HttpSpec.serviceHttpPort(keycloak);
 
         if (address == null) {
-            // uses the service host - TODO: assumes the operator and the keycloak instance are in the same cluster
-            // this may not eventually hold if we are flexible about where the kube client can target
+            // 使用 Service 主机名——TODO: 假设 Operator 与 Keycloak 在同一集群
+            // 若 kube client 可指向其他集群，此假设可能不成立
             address = String.format("%s.%s.svc:%s", KeycloakServiceDependentResource.getServiceName(keycloak),
                     keycloak.getMetadata().getNamespace(), port);
         }
