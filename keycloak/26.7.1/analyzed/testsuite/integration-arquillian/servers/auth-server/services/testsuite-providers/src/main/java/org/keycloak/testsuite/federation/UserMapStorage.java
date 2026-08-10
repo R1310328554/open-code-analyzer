@@ -55,6 +55,9 @@ import static org.keycloak.storage.UserStorageProviderModel.IMPORT_ENABLED;
 import static org.keycloak.utils.StreamsUtil.paginatedStream;
 
 /**
+ * 基于内存映射的用户存储提供者，用于 Arquillian 测试用户查找、注册、凭据与组成员关系。
+ * 支持导入模式与多种 {@link EditMode} 编辑策略。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -62,20 +65,37 @@ public class UserMapStorage implements UserLookupProvider, UserStorageProvider, 
         CredentialInputValidator, UserGroupMembershipFederatedStorage.Streams, UserQueryProvider, ImportedUserValidation {
 
     private static final Logger log = Logger.getLogger(UserMapStorage.class);
-    
+
+    /** 用户名到密码的内存映射。 */
     protected final Map<String, String> userPasswords;
+    /** 用户到组 ID 集合的并发映射。 */
     protected final ConcurrentMap<String, Set<String>> userGroups;
+    /** 用户存储组件模型。 */
     protected ComponentModel model;
+    /** 当前 Keycloak 会话。 */
     protected KeycloakSession session;
+    /** LDAP 编辑模式（只读/未同步等）。 */
     protected EditMode editMode;
+    /** 是否启用导入到本地存储（延迟解析）。 */
     private transient Boolean importEnabled;
 
+    /** 实例分配计数（测试诊断）。 */
     public static final AtomicInteger allocations = new AtomicInteger(0);
+    /** 实例关闭计数（测试诊断）。 */
     public static final AtomicInteger closings = new AtomicInteger(0);
+    /** 领域预删除回调计数。 */
     public static final AtomicInteger realmRemovals = new AtomicInteger(0);
+    /** 组预删除回调计数。 */
     public static final AtomicInteger groupRemovals = new AtomicInteger(0);
+    /** 角色预删除回调计数。 */
     public static final AtomicInteger roleRemovals = new AtomicInteger(0);
 
+    /**
+     * @param session Keycloak 会话
+     * @param model 组件模型
+     * @param userPasswords 共享用户名-密码映射
+     * @param userGroups 共享用户-组映射
+     */
     public UserMapStorage(KeycloakSession session, ComponentModel model, Map<String, String> userPasswords, ConcurrentMap<String, Set<String>> userGroups) {
         this.session = session;
         this.model = model;
@@ -110,6 +130,7 @@ public class UserMapStorage implements UserLookupProvider, UserStorageProvider, 
         return userPasswords.keySet();
     }
 
+    /** 按导入或联邦模式创建用户模型。 @param realm 领域 @param username 用户名 */
     private UserModel createUser(RealmModel realm, String username) {
         UserModel user;
         if (isImportEnabled()) {
@@ -189,14 +210,14 @@ public class UserMapStorage implements UserLookupProvider, UserStorageProvider, 
 
     @Override
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput input) {
-        // Test "instanceof PasswordUserCredentialModel" on purpose. We want to test that the backwards compatibility
+        // 故意测试 PasswordUserCredentialModel 的 instanceof 以验证向后兼容
         if (!(input instanceof PasswordUserCredentialModel)) {
             return false;
         }
         if (input.getType().equals(PasswordCredentialModel.TYPE)) {
             String pw = userPasswords.get(translateUserName(user.getUsername()));
 
-            // Using "getValue" on purpose here, to test that backwards compatibility works as expected
+            // 故意使用 getValue 以验证向后兼容行为
             return pw != null && pw.equals(((UserCredentialModel) input).getValue());
         } else {
             return false;
@@ -399,6 +420,7 @@ public class UserMapStorage implements UserLookupProvider, UserStorageProvider, 
         return userExists ? local : null;
     }
 
+    /** 用户名统一转小写作为映射键。 */
     private static String translateUserName(String userName) {
         return userName == null ? null : userName.toLowerCase();
     }

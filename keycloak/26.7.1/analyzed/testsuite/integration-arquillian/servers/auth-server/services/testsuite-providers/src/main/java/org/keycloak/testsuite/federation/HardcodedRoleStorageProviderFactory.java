@@ -25,18 +25,26 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.keycloak.storage.role.RoleStorageProviderFactory;
 import org.keycloak.storage.role.RoleStorageProviderModel;
 
+/**
+ * 硬编码角色存储提供者工厂，注册 {@code hardcoded-role} 测试组件。
+ */
 public class HardcodedRoleStorageProviderFactory implements RoleStorageProviderFactory<HardcodedRoleStorageProvider> {
     @Override
     public HardcodedRoleStorageProvider create(KeycloakSession session, ComponentModel model) {
         return new HardcodedRoleStorageProvider(new RoleStorageProviderModel(model));
     }
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "hardcoded-role";
+    /** 配置项：硬编码角色名。 */
     public static final String ROLE_NAME = "role_name";
+    /** 配置项：搜索是否延迟 5 秒。 */
     public static final String DELAYED_SEARCH = "delayed_search";
 
+    /** 静态配置属性列表。 */
     protected static final List<ProviderConfigProperty> CONFIG_PROPERTIES;
 
+    // 初始化角色存储测试组件配置
     static {
         CONFIG_PROPERTIES = ProviderConfigurationBuilder.create()
                 .property().name(ROLE_NAME)

@@ -30,17 +30,27 @@ import org.keycloak.storage.clientscope.ClientScopeLookupProvider;
 import org.keycloak.storage.clientscope.ClientScopeStorageProvider;
 import org.keycloak.storage.clientscope.ClientScopeStorageProviderModel;
 
-
+/**
+ * 硬编码客户端范围存储提供者，用于测试套件中仅暴露单一联邦客户端范围的查找。
+ * 实现 {@link ClientScopeStorageProvider} 与 {@link ClientScopeLookupProvider}。
+ */
 public class HardcodedClientScopeStorageProvider implements ClientScopeStorageProvider, ClientScopeLookupProvider {
 
+    /** 关联的客户端范围存储组件模型。 */
     private final ClientScopeStorageProviderModel component;
+    /** 配置中指定的硬编码客户端范围名称。 */
     private final String clientScopeName;
 
+    /**
+     * @param session Keycloak 会话
+     * @param component 客户端范围存储组件模型
+     */
     public HardcodedClientScopeStorageProvider(KeycloakSession session, ClientScopeStorageProviderModel component) {
         this.component = component;
         this.clientScopeName = component.getConfig().getFirst(HardcodedClientScopeStorageProviderFactory.SCOPE_NAME);
     }
 
+    /** {@inheritDoc} 按存储 ID 查找硬编码客户端范围。 */
     @Override
     public ClientScopeModel getClientScopeById(RealmModel realm, String id) {
         StorageId storageId = new StorageId(id);
@@ -49,19 +59,23 @@ public class HardcodedClientScopeStorageProvider implements ClientScopeStoragePr
         return null;
     }
 
+    /** {@inheritDoc} 无资源需释放。 */
     @Override
     public void close() {
     }
 
+    /** 只读硬编码 {@link ClientScopeModel} 适配器。 */
     public class HardcodedClientScopeAdapter implements ClientScopeModel {
 
         private final RealmModel realm;
         private StorageId storageId;
 
+        /** @param realm 所属领域 */
         public HardcodedClientScopeAdapter(RealmModel realm) {
             this.realm = realm;
         }
 
+        /** {@inheritDoc} 基于组件 ID 与范围名生成存储 ID。 */
         @Override
         public String getId() {
             if (storageId == null) {
@@ -70,6 +84,7 @@ public class HardcodedClientScopeStorageProvider implements ClientScopeStoragePr
             return storageId.getId();
         }
 
+        /** {@inheritDoc} 返回配置的硬编码范围名。 */
         @Override
         public String getName() {
             return clientScopeName;
@@ -85,6 +100,7 @@ public class HardcodedClientScopeStorageProvider implements ClientScopeStoragePr
             throw new UnsupportedOperationException("Not supported.");
         }
 
+        /** {@inheritDoc} 返回联邦客户端范围描述。 */
         @Override
         public String getDescription() {
             return "Federated client scope";

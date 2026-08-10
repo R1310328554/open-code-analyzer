@@ -26,6 +26,8 @@ import org.keycloak.storage.client.ClientStorageProviderFactory;
 import org.keycloak.storage.client.ClientStorageProviderModel;
 
 /**
+ * 硬编码客户端存储提供者工厂，注册 {@code hardcoded-client} 测试组件。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -36,8 +38,10 @@ public class HardcodedClientStorageProviderFactory implements ClientStorageProvi
     }
 
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "hardcoded-client";
 
+    /** {@inheritDoc} */
     @Override
     public String getId() {
         return PROVIDER_ID;
@@ -45,12 +49,17 @@ public class HardcodedClientStorageProviderFactory implements ClientStorageProvi
 
     protected static final List<ProviderConfigProperty> CONFIG_PROPERTIES;
 
+    /** 配置项：硬编码客户端 ID。 */
     public static final String CLIENT_ID = "client_id";
 
+    /** 配置项：重定向 URI。 */
     public static final String REDIRECT_URI = "redirect_uri";
+    /** 配置项：是否要求同意。 */
     public static final String CONSENT = "consent";
+    /** 配置项：搜索是否延迟 5 秒。 */
     public static final String DELAYED_SEARCH = "delayed_search";
 
+    // 初始化客户端存储测试组件配置
     static {
         CONFIG_PROPERTIES = ProviderConfigurationBuilder.create()
                 .property().name(CLIENT_ID)

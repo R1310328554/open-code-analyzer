@@ -25,18 +25,26 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.keycloak.storage.group.GroupStorageProviderFactory;
 import org.keycloak.storage.group.GroupStorageProviderModel;
 
+/**
+ * 硬编码组存储提供者工厂，注册 {@code hardcoded-group} 测试组件。
+ */
 public class HardcodedGroupStorageProviderFactory implements GroupStorageProviderFactory<HardcodedGroupStorageProvider> {
     @Override
     public HardcodedGroupStorageProvider create(KeycloakSession session, ComponentModel model) {
         return new HardcodedGroupStorageProvider(new GroupStorageProviderModel(model));
     }
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "hardcoded-group";
+    /** 配置项：硬编码组名（键名保留历史拼写 gorup_name）。 */
     public static final String GROUP_NAME = "gorup_name";
+    /** 配置项：搜索是否延迟 5 秒。 */
     public static final String DELAYED_SEARCH = "delayed_search";
 
+    /** 静态配置属性列表。 */
     protected static final List<ProviderConfigProperty> CONFIG_PROPERTIES;
 
+    // 初始化组存储测试组件配置
     static {
         CONFIG_PROPERTIES = ProviderConfigurationBuilder.create()
                 .property().name(GROUP_NAME)

@@ -25,24 +25,29 @@ import org.keycloak.storage.user.SynchronizationResult;
 import org.keycloak.testsuite.federation.DummyUserFederationProviderFactory;
 
 /**
- * <p>Test UserStorageProviderFactory in which sync methods are always ignored.</p>
+ * 测试用 {@link org.keycloak.storage.UserStorageProviderFactory}，同步方法始终返回 ignored。
+ * 继承 {@link DummyUserFederationProviderFactory} 并覆盖同步行为。
  *
  * @author rmartinc
  */
 public class IgnoredDummyUserFederationProviderFactory extends DummyUserFederationProviderFactory {
 
+    /** 提供者标识符。 */
     public static final String IGNORED_PROVIDER_ID = "ignored-dummy";
 
+    /** {@inheritDoc} */
     @Override
     public String getId() {
         return IGNORED_PROVIDER_ID;
     }
 
+    /** {@inheritDoc} 全量同步始终忽略。 */
     @Override
     public SynchronizationResult sync(KeycloakSessionFactory sessionFactory, String realmId, UserStorageProviderModel model) {
         return SynchronizationResult.ignored();
     }
 
+    /** {@inheritDoc} 增量同步始终忽略。 */
     @Override
     public SynchronizationResult syncSince(Date lastSync, KeycloakSessionFactory sessionFactory, String realmId, UserStorageProviderModel model) {
         return SynchronizationResult.ignored();

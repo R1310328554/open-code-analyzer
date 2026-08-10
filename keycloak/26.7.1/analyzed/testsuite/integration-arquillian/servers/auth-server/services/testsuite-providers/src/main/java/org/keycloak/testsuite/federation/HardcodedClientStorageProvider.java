@@ -42,16 +42,27 @@ import org.keycloak.storage.client.ClientStorageProviderModel;
 import org.jboss.logging.Logger;
 
 /**
+ * 硬编码客户端存储提供者，用于集成测试中单客户端查找、搜索与只读适配。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class HardcodedClientStorageProvider implements ClientStorageProvider, ClientLookupProvider {
+    /** 当前 Keycloak 会话。 */
     protected KeycloakSession session;
+    /** 客户端存储组件模型。 */
     protected ClientStorageProviderModel component;
+    /** 硬编码客户端 ID。 */
     protected String clientId;
+    /** 硬编码重定向 URI。 */
     protected String redirectUri;
+    /** 是否要求用户同意。 */
     protected boolean consent;
 
+    /**
+     * @param session Keycloak 会话
+     * @param component 客户端存储组件模型
+     */
     public HardcodedClientStorageProvider(KeycloakSession session, ClientStorageProviderModel component) {
         this.session = session;
         this.component = component;
@@ -60,6 +71,7 @@ public class HardcodedClientStorageProvider implements ClientStorageProvider, Cl
         this.consent = "true".equals(component.getConfig().getFirst(HardcodedClientStorageProviderFactory.CONSENT));
     }
 
+    /** {@inheritDoc} 按内部 ID 查找硬编码客户端。 */
     @Override
     public ClientModel getClientById(RealmModel realm, String id) {
         StorageId storageId = new StorageId(id);
@@ -68,6 +80,7 @@ public class HardcodedClientStorageProvider implements ClientStorageProvider, Cl
         return null;
     }
 
+    /** {@inheritDoc} 按 clientId 查找硬编码客户端。 */
     @Override
     public ClientModel getClientByClientId(RealmModel realm, String clientId) {
         if (this.clientId.equals(clientId)) return new ClientAdapter(realm);
@@ -79,6 +92,7 @@ public class HardcodedClientStorageProvider implements ClientStorageProvider, Cl
 
     }
 
+    /** {@inheritDoc} 按 clientId 模糊搜索；可配置 5 秒延迟以测试异步路径。 */
     @Override
     public Stream<ClientModel> searchClientsByClientIdStream(RealmModel realm, String clientId, Integer firstResult, Integer maxResults) {
         if (Boolean.parseBoolean(component.getConfig().getFirst(HardcodedClientStorageProviderFactory.DELAYED_SEARCH))) try {
@@ -103,6 +117,7 @@ public class HardcodedClientStorageProvider implements ClientStorageProvider, Cl
         return Stream.empty();
     }
 
+    /** {@inheritDoc} 返回默认或可选 OIDC 客户端范围映射。 */
     @Override
     public Map<String, ClientScopeModel> getClientScopes(RealmModel realm, ClientModel client, boolean defaultScope) {
         if (defaultScope) {
@@ -120,8 +135,10 @@ public class HardcodedClientStorageProvider implements ClientStorageProvider, Cl
             }
     }
 
+    /** 只读硬编码 {@link ClientModel} 适配器。 */
     public class ClientAdapter extends AbstractReadOnlyClientStorageAdapter {
 
+        /** @param realm 所属领域 */
         public ClientAdapter(RealmModel realm) {
             super(HardcodedClientStorageProvider.this.session, realm, HardcodedClientStorageProvider.this.component);
         }
@@ -193,6 +210,7 @@ public class HardcodedClientStorageProvider implements ClientStorageProvider, Cl
             return null;
         }
 
+        /** {@inheritDoc} 测试用：仅接受固定密码 {@code password}。 */
         @Override
         public boolean validateSecret(String secret) {
             return "password".equals(secret);

@@ -49,26 +49,45 @@ import org.keycloak.storage.user.UserQueryProvider;
 import static org.keycloak.utils.StreamsUtil.paginatedStream;
 
 /**
+ * 基于属性文件的用户存储提供者，从 Properties 加载用户名-密码对供集成测试使用。
+ * 可选启用联邦存储模式并记录搜索调用以供断言。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class UserPropertyFileStorage implements UserLookupProvider, UserStorageProvider, UserQueryProvider, CredentialInputValidator {
 
+    /** 记录搜索方法名的常量。 */
     public static final String SEARCH_METHOD = "searchForUserStream(RealmMode, Map, Integer, Integer)";
+    /** 记录计数搜索方法名的常量。 */
     public static final String COUNT_SEARCH_METHOD = "getUsersCount(RealmModel, Map)";
 
+    /** 从属性文件加载的用户名-密码映射。 */
     protected Properties userPasswords;
+    /** 用户存储组件模型。 */
     protected ComponentModel model;
+    /** 当前 Keycloak 会话。 */
     protected KeycloakSession session;
+    /** 是否使用联邦存储适配器。 */
     protected boolean federatedStorageEnabled;
 
+    /** 按组件 ID 记录的存储调用（测试断言用）。 */
     public static Map<String, List<UserPropertyFileStorageCall>> storageCalls = new HashMap<>();
 
+    /** 单次存储方法调用记录。 */
     public static class UserPropertyFileStorageCall implements Serializable {
+        /** 被调用的方法名。 */
         private final String method;
+        /** 分页起始索引。 */
         private final Integer first;
+        /** 分页最大条数。 */
         private final Integer max;
 
+        /**
+         * @param method 方法名
+         * @param first 起始索引
+         * @param max 最大条数
+         */
         public UserPropertyFileStorageCall(String method, Integer first, Integer max) {
             this.method = method;
             this.first = first;
@@ -88,6 +107,11 @@ public class UserPropertyFileStorage implements UserLookupProvider, UserStorageP
         }
     }
 
+    /**
+     * @param session Keycloak 会话
+     * @param model 组件模型
+     * @param userPasswords 属性文件中的用户凭据
+     */
     public UserPropertyFileStorage(KeycloakSession session, ComponentModel model, Properties userPasswords) {
         this.session = session;
         this.model = model;
@@ -126,6 +150,7 @@ public class UserPropertyFileStorage implements UserLookupProvider, UserStorageP
         return createUser(realm, username);
     }
 
+    /** 按配置创建本地或联邦存储用户适配器。 @param realm 领域 @param username 用户名 */
     private UserModel createUser(RealmModel realm, String username) {
         if (federatedStorageEnabled) {
             return new AbstractUserAdapterFederatedStorage.Streams(session, realm,  model) {
@@ -264,6 +289,7 @@ public class UserPropertyFileStorage implements UserLookupProvider, UserStorageP
 
     }
 
+    /** 按谓词过滤并分页返回用户流。 */
     private Stream<UserModel> searchForUser(RealmModel realm, String search, Integer firstResult, Integer maxResults, Predicate<String> matcher) {
         if (maxResults != null && maxResults == 0) return Stream.empty();
         return paginatedStream(userPasswords.keySet().stream(), firstResult, maxResults)

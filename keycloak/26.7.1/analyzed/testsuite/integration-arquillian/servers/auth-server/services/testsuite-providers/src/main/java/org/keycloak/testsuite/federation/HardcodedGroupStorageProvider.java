@@ -32,11 +32,16 @@ import org.keycloak.storage.group.GroupStorageProviderModel;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 硬编码组存储提供者，用于测试套件中仅暴露单一联邦组的查找与搜索。
+ */
 public class HardcodedGroupStorageProvider implements GroupStorageProvider {
+    /** 组存储组件模型。 */
     private final GroupStorageProviderModel component;
+    /** 配置中指定的硬编码组名。 */
     private final String groupName;
 
-
+    /** @param component 组存储组件模型 */
     public HardcodedGroupStorageProvider(GroupStorageProviderModel component) {
         this.component = component;
         this.groupName = component.getConfig().getFirst(HardcodedGroupStorageProviderFactory.GROUP_NAME);
@@ -46,6 +51,7 @@ public class HardcodedGroupStorageProvider implements GroupStorageProvider {
     public void close() {
     }
 
+    /** {@inheritDoc} 按存储 ID 查找硬编码组。 */
     @Override
     public GroupModel getGroupById(RealmModel realm, String id) {
         StorageId storageId = new StorageId(id);
@@ -60,6 +66,7 @@ public class HardcodedGroupStorageProvider implements GroupStorageProvider {
         return null;
     }
 
+    /** {@inheritDoc} 按名称搜索组，支持精确/模糊匹配及可选延迟。 */
     @Override
     public Stream<GroupModel> searchForGroupByNameStream(RealmModel realm, String search, Boolean exact, Integer firstResult, Integer maxResults) {
         if (Boolean.parseBoolean(component.getConfig().getFirst(HardcodedGroupStorageProviderFactory.DELAYED_SEARCH))) try {
@@ -94,11 +101,15 @@ public class HardcodedGroupStorageProvider implements GroupStorageProvider {
     }
 
 
+    /** 只读硬编码 {@link GroupModel} 适配器。 */
     public class HardcodedGroupAdapter implements GroupModel {
 
+        /** 所属领域。 */
         private final RealmModel realm;
+        /** 延迟计算的存储 ID。 */
         private StorageId storageId;
 
+        /** @param realm 所属领域 */
         public HardcodedGroupAdapter(RealmModel realm) {
             this.realm = realm;
         }

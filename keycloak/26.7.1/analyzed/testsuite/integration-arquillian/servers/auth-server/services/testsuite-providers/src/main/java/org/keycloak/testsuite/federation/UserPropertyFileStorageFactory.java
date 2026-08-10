@@ -39,19 +39,27 @@ import org.keycloak.storage.user.ImportSynchronization;
 import org.keycloak.storage.user.SynchronizationResult;
 
 /**
+ * 属性文件用户存储工厂，从配置的 Properties 文件加载用户并支持导入同步接口。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class UserPropertyFileStorageFactory implements UserStorageProviderFactory<UserPropertyFileStorage>, ImportSynchronization {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "user-password-props-arq";
+    /** 配置项：属性文件路径。 */
     public static final String PROPERTY_FILE = "propertyFile";
 
+    /** 校验失败：未配置属性文件。 */
     public static final String VALIDATION_PROP_FILE_NOT_CONFIGURED = "user property file is not configured";
+    /** 校验失败：属性文件不存在。 */
     public static final String VALIDATION_PROP_FILE_DOESNT_EXIST = "user property file does not exist";
 
+    /** 静态配置属性列表。 */
     protected static final List<ProviderConfigProperty> CONFIG_PROPERTIES;
 
+    // 初始化属性文件路径与联邦存储开关配置
     static {
         CONFIG_PROPERTIES = ProviderConfigurationBuilder.create()
                 .property().name(PROPERTY_FILE)
@@ -69,6 +77,7 @@ public class UserPropertyFileStorageFactory implements UserStorageProviderFactor
                 .build();
     }
 
+    /** {@inheritDoc} 校验属性文件路径存在且可访问。 */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
         String fp = config.getConfig().getFirst(PROPERTY_FILE);
@@ -123,6 +132,7 @@ public class UserPropertyFileStorageFactory implements UserStorageProviderFactor
 
     }
 
+    /** {@inheritDoc} 同步始终忽略（测试桩）。 */
     @Override
     public SynchronizationResult sync(KeycloakSessionFactory sessionFactory, String realmId, UserStorageProviderModel model) {
         return SynchronizationResult.ignored();

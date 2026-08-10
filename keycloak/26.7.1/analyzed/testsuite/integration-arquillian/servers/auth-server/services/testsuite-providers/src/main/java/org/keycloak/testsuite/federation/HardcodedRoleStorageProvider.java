@@ -31,11 +31,16 @@ import org.keycloak.storage.role.RoleStorageProviderModel;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 硬编码角色存储提供者，用于测试套件中仅暴露单一联邦领域角色的查找与搜索。
+ */
 public class HardcodedRoleStorageProvider implements RoleStorageProvider {
+    /** 角色存储组件模型。 */
     private final RoleStorageProviderModel component;
+    /** 配置中指定的硬编码角色名。 */
     private final String roleName;
 
-
+    /** @param component 角色存储组件模型 */
     public HardcodedRoleStorageProvider(RoleStorageProviderModel component) {
         this.component = component;
         this.roleName = component.getConfig().getFirst(HardcodedRoleStorageProviderFactory.ROLE_NAME);
@@ -45,6 +50,7 @@ public class HardcodedRoleStorageProvider implements RoleStorageProvider {
     public void close() {
     }
 
+    /** {@inheritDoc} 按名称查找硬编码领域角色。 */
     @Override
     public RoleModel getRealmRole(RealmModel realm, String name) {
         if (this.roleName.equals(name)) return new HardcodedRoleAdapter(realm);
@@ -59,6 +65,7 @@ public class HardcodedRoleStorageProvider implements RoleStorageProvider {
         return null;
     }
 
+    /** {@inheritDoc} 按名称模糊搜索角色，可配置 5 秒延迟。 */
     @Override
     public Stream<RoleModel> searchForRolesStream(RealmModel realm, String search, Integer first, Integer max) {
         if (Boolean.parseBoolean(component.getConfig().getFirst(HardcodedRoleStorageProviderFactory.DELAYED_SEARCH))) try {
@@ -93,11 +100,15 @@ public class HardcodedRoleStorageProvider implements RoleStorageProvider {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
+    /** 只读硬编码 {@link RoleModel} 适配器。 */
     public class HardcodedRoleAdapter implements RoleModel {
 
+        /** 所属领域。 */
         private final RealmModel realm;
+        /** 延迟计算的存储 ID。 */
         private StorageId storageId;
 
+        /** @param realm 所属领域 */
         public HardcodedRoleAdapter(RealmModel realm) {
             this.realm = realm;
         }

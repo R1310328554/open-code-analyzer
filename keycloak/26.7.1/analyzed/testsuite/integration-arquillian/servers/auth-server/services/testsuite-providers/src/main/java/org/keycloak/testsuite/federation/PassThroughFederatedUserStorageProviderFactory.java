@@ -21,13 +21,17 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.storage.UserStorageProviderFactory;
 
 /**
+ * 透传联邦用户存储提供者工厂，注册 {@code pass-through-federated} 测试组件。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PassThroughFederatedUserStorageProviderFactory implements UserStorageProviderFactory<PassThroughFederatedUserStorageProvider> {
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "pass-through-federated";
 
+    /** {@inheritDoc} 创建透传联邦用户存储提供者。 */
     @Override
     public PassThroughFederatedUserStorageProvider create(KeycloakSession session, ComponentModel model) {
         return new PassThroughFederatedUserStorageProvider(session, model);

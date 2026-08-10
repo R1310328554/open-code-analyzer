@@ -31,14 +31,18 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.storage.UserStorageProviderFactory;
 
 /**
+ * {@link UserMapStorage} 工厂，在测试间共享内存用户与组映射。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class UserMapStorageFactory implements UserStorageProviderFactory<UserMapStorage> {
 
 
+    /** 提供者标识符。 */
     public static final String PROVIDER_ID = "user-password-map-arq";
 
+    /** 静态配置属性列表。 */
     protected static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
 
     static {
@@ -48,9 +52,12 @@ public class UserMapStorageFactory implements UserStorageProviderFactory<UserMap
         configProperties.add(attr);
     }
 
+    /** 跨实例共享的用户名-密码映射。 */
     private final Map<String, String> userPasswords = new ConcurrentHashMap<>();
+    /** 跨实例共享的用户-组映射。 */
     private final ConcurrentMap<String, Set<String>> userGroups = new ConcurrentHashMap<>();
 
+    /** {@inheritDoc} */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return configProperties;
@@ -81,6 +88,7 @@ public class UserMapStorageFactory implements UserStorageProviderFactory<UserMap
 
     }
 
+    /** 清空共享用户与组映射（测试重置用）。 */
     public void clear() {
         userPasswords.clear();
         userGroups.clear();

@@ -40,7 +40,7 @@ import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 import org.keycloak.storage.user.UserLookupProvider;
 
 /**
- * Provides one user where everything is stored in user federated storage
+ * 透传联邦用户存储提供者：提供单一用户 {@code passthrough}，全部属性与凭据存于用户联邦存储。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -52,12 +52,21 @@ public class PassThroughFederatedUserStorageProvider implements
         CredentialInputUpdater
 {
 
+    /** 支持的凭据类型集合（仅密码）。 */
     public static final Set<String> CREDENTIAL_TYPES = Collections.singleton(PasswordCredentialModel.TYPE);
+    /** 透传测试用户名。 */
     public static final String PASSTHROUGH_USERNAME = "passthrough";
+    /** 初始明文密码。 */
     public static final String INITIAL_PASSWORD = "secret";
+    /** 当前 Keycloak 会话。 */
     private KeycloakSession session;
+    /** 用户存储组件模型。 */
     private ComponentModel component;
 
+    /**
+     * @param session Keycloak 会话
+     * @param component 组件模型
+     */
     public PassThroughFederatedUserStorageProvider(KeycloakSession session, ComponentModel component) {
         this.session = session;
         this.component = component;
@@ -78,6 +87,7 @@ public class PassThroughFederatedUserStorageProvider implements
         return true;
     }
 
+    /** {@inheritDoc} 校验初始密码或联邦存储中的明文密码凭据。 */
     @Override
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput input) {
         if (input.getType().equals(PasswordCredentialModel.TYPE)) {
@@ -93,7 +103,7 @@ public class PassThroughFederatedUserStorageProvider implements
 
     @Override
     public boolean updateCredential(RealmModel realm, UserModel user, CredentialInput input) {
-        // testing federated credential attributes
+        // 测试联邦凭据属性：在联邦存储中创建或更新明文密码
         if (input.getType().equals(PasswordCredentialModel.TYPE)) {
             Optional<CredentialModel> existing = UserStorageUtil.userFederatedStorage(session)
                     .getStoredCredentialsByTypeStream(realm, user.getId(), "CLEAR_TEXT_PASSWORD")
@@ -155,6 +165,7 @@ public class PassThroughFederatedUserStorageProvider implements
         return result.isPresent() ? getUserModel(realm) : null;
     }
 
+    /** 构建透传用户的联邦存储适配器。 @param realm 所属领域 */
     private UserModel getUserModel(final RealmModel realm) {
         return new AbstractUserAdapterFederatedStorage.Streams(session, realm, component) {
             @Override
