@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:51:22Z",
-  "files": [
-    "services/src/main/java/org/keycloak/crypto/ServerMacSignatureSignerContext.java",
-    "services/src/main/java/org/keycloak/crypto/ServerMacSignatureVerifierContext.java",
-    "services/src/main/java/org/keycloak/deployment/DefaultDeployedConfigurationsProvider.java",
-    "services/src/main/java/org/keycloak/deployment/DefaultDeployedConfigurationsProviderFactory.java",
-    "services/src/main/java/org/keycloak/device/DeviceRepresentationProviderFactoryImpl.java",
-    "services/src/main/java/org/keycloak/device/DeviceRepresentationProviderImpl.java",
-    "services/src/main/java/org/keycloak/email/DefaultEmailAuthenticator.java",
-    "services/src/main/java/org/keycloak/email/DefaultEmailSenderProvider.java",
-    "services/src/main/java/org/keycloak/email/DefaultEmailSenderProviderFactory.java",
-    "services/src/main/java/org/keycloak/email/EmailAuthenticator.java",
-    "services/src/main/java/org/keycloak/email/PasswordAuthEmailAuthenticator.java",
-    "services/src/main/java/org/keycloak/email/TokenAuthEmailAuthenticator.java",
-    "services/src/main/java/org/keycloak/email/freemarker/FreeMarkerEmailTemplateProvider.java",
-    "services/src/main/java/org/keycloak/email/freemarker/FreeMarkerEmailTemplateProviderFactory.java",
-    "services/src/main/java/org/keycloak/email/freemarker/beans/AdminEventBean.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1858,
-  "done": 4125
+  "done": 4140
 }
