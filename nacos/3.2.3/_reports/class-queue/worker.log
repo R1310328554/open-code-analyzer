@@ -1663,3 +1663,18 @@
 2026-08-10T04:08:41Z DONE core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/InstanceRequestParamExtractor.java wave55b [15:30] core paramcheck extractors
 2026-08-10T04:08:41Z DONE core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/McpServerRequestParamExtractor.java wave55b [15:30] core paramcheck extractors
 2026-08-10T04:08:41Z DONE core/src/main/java/com/alibaba/nacos/core/paramcheck/impl/PersistentInstanceRequestParamExtractor.java wave55b [15:30] core paramcheck extractors
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/monitor/topn/StringTopNCounter.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/monitor/topn/TopNConfig.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/filter/NamespaceValidation.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/filter/NamespaceValidationConfig.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/filter/NamespaceValidationRequestFilter.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/injector/AbstractNamespaceDetailInjector.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/injector/NamespaceDetailInjectorHolder.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/model/NamespaceTypeEnum.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/model/TenantInfo.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/model/form/CreateNamespaceForm.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/model/form/NamespaceForm.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/repository/EmbeddedNamespacePersistServiceImpl.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/repository/ExternalNamespacePersistServiceImpl.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/repository/NamespacePersistService.java wave55a [0:15] core topn + namespace filter/injector/model/repo
+2026-08-10T04:09:02Z DONE core/src/main/java/com/alibaba/nacos/core/namespace/repository/NamespaceRowMapperInjector.java wave55a [0:15] core topn + namespace filter/injector/model/repo

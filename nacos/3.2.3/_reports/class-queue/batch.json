@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T04:07:34Z",
-  "files": [
-    "core/src/main/java/com/alibaba/nacos/core/monitor/topn/StringTopNCounter.java",
-    "core/src/main/java/com/alibaba/nacos/core/monitor/topn/TopNConfig.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/filter/NamespaceValidation.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/filter/NamespaceValidationConfig.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/filter/NamespaceValidationRequestFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/injector/AbstractNamespaceDetailInjector.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/injector/NamespaceDetailInjectorHolder.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/model/NamespaceTypeEnum.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/model/TenantInfo.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/model/form/CreateNamespaceForm.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/model/form/NamespaceForm.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/repository/EmbeddedNamespacePersistServiceImpl.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/repository/ExternalNamespacePersistServiceImpl.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/repository/NamespacePersistService.java",
-    "core/src/main/java/com/alibaba/nacos/core/namespace/repository/NamespaceRowMapperInjector.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 887,
-  "done": 1635
+  "done": 1650
 }
