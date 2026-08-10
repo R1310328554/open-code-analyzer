@@ -20,6 +20,7 @@ import io.netty.channel.ChannelOption;
 
 /**
  * Options for the UDT transport
+ * <p>UDT 传输专用 {@link ChannelOption}：映射 barchart {@link OptionUDT} 的 协议层与系统层收发缓冲大小，供 {@link UdtChannelConfig} 读写。</p>
  *
  * @deprecated The UDT transport is no longer maintained and will be removed.
  */
@@ -28,24 +29,28 @@ public final class UdtChannelOption<T> extends ChannelOption<T> {
 
     /**
      * See {@link OptionUDT#Protocol_Receive_Buffer_Size}.
+     * <p>UDT 协议层接收缓冲选项。</p>
      */
     public static final ChannelOption<Integer> PROTOCOL_RECEIVE_BUFFER_SIZE =
             valueOf(UdtChannelOption.class, "PROTOCOL_RECEIVE_BUFFER_SIZE");
 
     /**
      * See {@link OptionUDT#Protocol_Send_Buffer_Size}.
+     * <p>UDT 协议层发送缓冲选项。</p>
      */
     public static final ChannelOption<Integer> PROTOCOL_SEND_BUFFER_SIZE =
             valueOf(UdtChannelOption.class, "PROTOCOL_SEND_BUFFER_SIZE");
 
     /**
      * See {@link OptionUDT#System_Receive_Buffer_Size}.
+     * <p>UDT 系统层（底层 UDP）接收缓冲选项。</p>
      */
     public static final ChannelOption<Integer> SYSTEM_RECEIVE_BUFFER_SIZE =
             valueOf(UdtChannelOption.class, "SYSTEM_RECEIVE_BUFFER_SIZE");
 
     /**
      * See {@link OptionUDT#System_Send_Buffer_Size}.
+     * <p>UDT 系统层（底层 UDP）发送缓冲选项。</p>
      */
     public static final ChannelOption<Integer> SYSTEM_SEND_BUFFER_SIZE =
             valueOf(UdtChannelOption.class, "SYSTEM_SEND_BUFFER_SIZE");

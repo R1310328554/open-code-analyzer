@@ -27,6 +27,7 @@ import io.netty.channel.WriteBufferWaterMark;
 
 /**
  * A {@link ChannelConfig} for a {@link UdtChannel}.
+ * <p>UDT 通道配置：除通用 {@link ChannelConfig} 外，暴露 UDT 协议层与系统层 收发缓冲及标准套接字选项。DATAGRAM 模式下收发缓冲亦表示单消息最大尺寸。</p>
  * <p>
  * <h3>Available options</h3>
  * In addition to the options provided by {@link ChannelConfig},
@@ -78,41 +79,49 @@ public interface UdtChannelConfig extends ChannelConfig {
 
     /**
      * Gets {@link OptionUDT#Protocol_Receive_Buffer_Size}
+     * <p>读取 UDT 协议层接收缓冲大小。</p>
      */
     int getProtocolReceiveBufferSize();
 
     /**
      * Gets {@link OptionUDT#Protocol_Send_Buffer_Size}
+     * <p>读取 UDT 协议层发送缓冲大小。</p>
      */
     int getProtocolSendBufferSize();
 
     /**
      * Gets the {@link ChannelOption#SO_RCVBUF} option.
+     * <p>Netty 侧接收缓冲/最大消息尺寸。</p>
      */
     int getReceiveBufferSize();
 
     /**
      * Gets the {@link ChannelOption#SO_SNDBUF} option.
+     * <p>Netty 侧发送缓冲/最大消息尺寸。</p>
      */
     int getSendBufferSize();
 
     /**
      * Gets the {@link ChannelOption#SO_LINGER} option.
+     * <p>关闭 linger 秒数（0 表示禁用）。</p>
      */
     int getSoLinger();
 
     /**
      * Gets {@link OptionUDT#System_Receive_Buffer_Size}
+     * <p>UDT 系统层（UDP）接收缓冲大小。</p>
      */
     int getSystemReceiveBufferSize();
 
     /**
      * Gets {@link OptionUDT#System_Send_Buffer_Size}
+     * <p>UDT 系统层（UDP）发送缓冲大小。</p>
      */
     int getSystemSendBufferSize();
 
     /**
      * Gets the {@link ChannelOption#SO_REUSEADDR} option.
+     * <p>是否允许地址重用（TIME_WAIT 端口复用等）。</p>
      */
     boolean isReuseAddress();
 
@@ -152,41 +161,49 @@ public interface UdtChannelConfig extends ChannelConfig {
 
     /**
      * Sets {@link OptionUDT#Protocol_Receive_Buffer_Size}
+     * <p>设置 UDT 协议层接收缓冲。</p>
      */
     UdtChannelConfig setProtocolReceiveBufferSize(int size);
 
     /**
      * Sets {@link OptionUDT#Protocol_Send_Buffer_Size}
+     * <p>设置 UDT 协议层发送缓冲。</p>
      */
     UdtChannelConfig setProtocolSendBufferSize(int size);
 
     /**
      * Sets the {@link ChannelOption#SO_RCVBUF} option.
+     * <p>设置 SO_RCVBUF 接收缓冲选项。</p>
      */
     UdtChannelConfig setReceiveBufferSize(int receiveBufferSize);
 
     /**
      * Sets the {@link ChannelOption#SO_REUSEADDR} option.
+     * <p>设置 SO_REUSEADDR 地址重用选项。</p>
      */
     UdtChannelConfig setReuseAddress(boolean reuseAddress);
 
     /**
      * Sets the {@link ChannelOption#SO_SNDBUF} option.
+     * <p>设置 SO_SNDBUF 发送缓冲选项。</p>
      */
     UdtChannelConfig setSendBufferSize(int sendBufferSize);
 
     /**
      * Sets the {@link ChannelOption#SO_LINGER} option.
+     * <p>设置 SO_LINGER 关闭等待选项。</p>
      */
     UdtChannelConfig setSoLinger(int soLinger);
 
     /**
      * Sets {@link OptionUDT#System_Receive_Buffer_Size}
+     * <p>设置 UDT 系统层接收缓冲。</p>
      */
     UdtChannelConfig setSystemReceiveBufferSize(int size);
 
     /**
      * Sets {@link OptionUDT#System_Send_Buffer_Size}
+     * <p>设置 UDT 系统层发送缓冲。</p>
      */
     UdtChannelConfig setSystemSendBufferSize(int size);
 }

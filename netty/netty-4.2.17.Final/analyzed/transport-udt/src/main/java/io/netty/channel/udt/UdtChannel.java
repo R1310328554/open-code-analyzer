@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
  * UDT {@link Channel}.
  * <p>
  * Supported UDT {@link UdtChannel} are available via {@link NioUdtProvider}.
+ * <p>基于 UDP 的 UDT 可靠传输通道接口；具体实现（字节流/消息、Connector/Acceptor） 由 {@link NioUdtProvider} 工厂提供。本地与远端地址均为 {@link InetSocketAddress}。</p>
  *
  * @deprecated The UDT transport is no longer maintained and will be removed.
  */
@@ -32,6 +33,7 @@ public interface UdtChannel extends Channel {
 
     /**
      * Returns the {@link UdtChannelConfig} of the channel.
+     * <p>返回 UDT 专用通道配置（含协议/系统缓冲等选项）。</p>
      */
     @Override
     UdtChannelConfig config();

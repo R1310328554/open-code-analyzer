@@ -27,6 +27,7 @@ import io.netty.channel.WriteBufferWaterMark;
 
 /**
  * A {@link ChannelConfig} for a {@link UdtServerChannel}.
+ * <p>UDT Acceptor 配置：在 {@link UdtChannelConfig} 基础上增加 {@link ChannelOption#SO_BACKLOG} 以控制 listen 队列长度； 其余 UDT 协议/系统缓冲选项与客户端通道一致。</p>
  * <p>
  * Note that {@link TypeUDT#DATAGRAM} message oriented channels treat
  * {@code "receiveBufferSize"} and {@code "sendBufferSize"} as maximum message
@@ -41,15 +42,18 @@ public interface UdtServerChannelConfig extends UdtChannelConfig {
     /**
      * Gets {@link KindUDT#ACCEPTOR} channel backlog via
      * {@link ChannelOption#SO_BACKLOG}.
+     * <p>读取 Acceptor 的 pending accept 队列长度。</p>
      */
     int getBacklog();
 
     /**
      * Sets {@link KindUDT#ACCEPTOR} channel backlog via
      * {@link ChannelOption#SO_BACKLOG}.
+     * <p>设置 bind 时使用的 backlog。</p>
      */
     UdtServerChannelConfig setBacklog(int backlog);
 
+    /** 设置连接超时（毫秒） */
     @Override
     UdtServerChannelConfig setConnectTimeoutMillis(int connectTimeoutMillis);
 

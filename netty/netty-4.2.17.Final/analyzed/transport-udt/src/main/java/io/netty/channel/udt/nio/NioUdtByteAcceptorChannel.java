@@ -21,17 +21,20 @@ import io.netty.channel.udt.UdtChannel;
 
 /**
  * Byte Channel Acceptor for UDT Streams.
+ * <p>UDT 字节流（{@link TypeUDT#STREAM}）Acceptor：接受连接后创建 {@link NioUdtByteConnectorChannel} 作为已连接的字节流通道。</p>
  *
  * @deprecated The UDT transport is no longer maintained and will be removed.
  */
 @Deprecated
 public class NioUdtByteAcceptorChannel extends NioUdtAcceptorChannel {
 
+    /** 创建 STREAM 类型的 UDT 字节 Acceptor */
     public NioUdtByteAcceptorChannel() {
         super(TypeUDT.STREAM);
     }
 
     @Override
+    /** 将 accept 得到的套接字包装为 {@link NioUdtByteConnectorChannel} */
     protected UdtChannel newConnectorChannel(SocketChannelUDT channelUDT) {
         return new NioUdtByteConnectorChannel(this, channelUDT);
     }

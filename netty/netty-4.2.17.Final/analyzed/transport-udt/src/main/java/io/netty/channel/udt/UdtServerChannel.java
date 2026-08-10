@@ -22,10 +22,12 @@ import io.netty.channel.udt.nio.NioUdtProvider;
  * UDT {@link ServerChannel}.
  * <p>
  * Supported UDT {@link UdtServerChannel} are available via {@link NioUdtProvider}.
+ * <p>UDT 服务端监听通道标记接口，同时继承 {@link ServerChannel} 与 {@link UdtChannel}。 字节流/消息 Acceptor 实现见 {@link NioUdtProvider}； 典型子类包括 {@code NioUdtByteAcceptorChannel} 与消息模式 Acceptor。</p>
  *
  * @deprecated The UDT transport is no longer maintained and will be removed.
  */
 @Deprecated
+/** 组合 {@link ServerChannel} 与 {@link UdtChannel} 能力的 UDT 监听端接口 */
 public interface UdtServerChannel extends ServerChannel, UdtChannel {
 
 }

@@ -22,6 +22,7 @@ import io.netty.channel.udt.nio.NioUdtProvider;
 
 /**
  * The message container that is used for {@link TypeUDT#DATAGRAM} messages.
+ * <p>UDT DATAGRAM 模式的消息载体，继承 {@link DefaultByteBufHolder} 持有 {@link ByteBuf} 负载。用于 {@link NioUdtProvider} 的消息 Connector/Rendezvous 通道。</p>
  * @see NioUdtProvider#MESSAGE_CONNECTOR
  * @see NioUdtProvider#MESSAGE_RENDEZVOUS
  *
@@ -30,11 +31,13 @@ import io.netty.channel.udt.nio.NioUdtProvider;
 @Deprecated
 public final class UdtMessage extends DefaultByteBufHolder {
 
+    /** 包装 DATAGRAM 消息字节内容 */
     public UdtMessage(final ByteBuf data) {
         super(data);
     }
 
     @Override
+    /** 深拷贝消息及其 {@link ByteBuf} */
     public UdtMessage copy() {
         return (UdtMessage) super.copy();
     }
@@ -50,6 +53,7 @@ public final class UdtMessage extends DefaultByteBufHolder {
     }
 
     @Override
+    /** 替换负载并返回新 {@link UdtMessage} 实例 */
     public UdtMessage replace(ByteBuf content) {
         return new UdtMessage(content);
     }

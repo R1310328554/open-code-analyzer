@@ -39,6 +39,7 @@ import static io.netty.channel.udt.UdtChannelOption.SYSTEM_SEND_BUFFER_SIZE;
 
 /**
  * The default {@link UdtChannelConfig} implementation.
+ * <p>UDT 通道默认配置：映射 Netty {@link ChannelOption} 与 barchart UDT 的 {@link OptionUDT} 协议/系统缓冲、SO_REUSEADDR、SO_LINGER 等。 构造时可选择是否立即 {@link #apply} 到底层 {@link ChannelUDT}。</p>
  *
  * @deprecated The UDT transport is no longer maintained and will be removed.
  */
@@ -62,6 +63,9 @@ public class DefaultUdtChannelConfig extends DefaultChannelConfig implements
 
     private volatile boolean reuseAddress = true;
 
+    /**
+     * @param apply 为 {@code true} 时在构造后立即将当前选项写入 UDT 套接字
+     */
     public DefaultUdtChannelConfig(final UdtChannel channel,
             final ChannelUDT channelUDT, final boolean apply)
             throws IOException {
@@ -71,6 +75,7 @@ public class DefaultUdtChannelConfig extends DefaultChannelConfig implements
         }
     }
 
+    /** 将 reuseAddress、sendBuffer、linger 及 UDT 协议/系统缓冲选项同步到底层套接字 */
     protected void apply(final ChannelUDT channelUDT) throws IOException {
         final SocketUDT socketUDT = channelUDT.socketUDT();
         socketUDT.setReuseAddress(isReuseAddress());
@@ -91,6 +96,7 @@ public class DefaultUdtChannelConfig extends DefaultChannelConfig implements
     }
 
     @Override
+    /** UDT 协议层接收缓冲大小（默认 10 MiB） */
     public int getProtocolReceiveBufferSize() {
         return protocolReceiveBufferSize;
     }
@@ -134,11 +140,13 @@ public class DefaultUdtChannelConfig extends DefaultChannelConfig implements
     }
 
     @Override
+    /** Netty 分配器侧接收缓冲（对应 {@link ChannelOption#SO_RCVBUF}，默认 128 KiB） */
     public int getReceiveBufferSize() {
         return allocatorReceiveBufferSize;
     }
 
     @Override
+    /** Netty 分配器侧发送缓冲（对应 {@link ChannelOption#SO_SNDBUF}） */
     public int getSendBufferSize() {
         return allocatorSendBufferSize;
     }
@@ -154,6 +162,7 @@ public class DefaultUdtChannelConfig extends DefaultChannelConfig implements
     }
 
     @Override
+    /** 设置 UDT 协议层接收缓冲并返回 {@code this} 以支持链式调用 */
     public UdtChannelConfig setProtocolReceiveBufferSize(final int protocolReceiveBufferSize) {
         this.protocolReceiveBufferSize = protocolReceiveBufferSize;
         return this;

@@ -29,6 +29,7 @@ import static io.netty.channel.ChannelOption.SO_BACKLOG;
 
 /**
  * The default {@link UdtServerChannelConfig} implementation.
+ * <p>UDT 服务端（Acceptor）默认配置：在 {@link DefaultUdtChannelConfig} 基础上 增加 {@link ChannelOption#SO_BACKLOG}（默认 64）。</p>
  *
  * @deprecated The UDT transport is no longer maintained and will be removed.
  */
@@ -47,11 +48,13 @@ public class DefaultUdtServerChannelConfig extends DefaultUdtChannelConfig
     }
 
     @Override
+    /** Acceptor 侧暂无额外 UDT 选项需 apply */
     protected void apply(final ChannelUDT channelUDT) throws IOException {
         // nothing to apply for now.
     }
 
     @Override
+    /** 返回 accept 队列 backlog（默认 64） */
     public int getBacklog() {
         return backlog;
     }
@@ -71,6 +74,7 @@ public class DefaultUdtServerChannelConfig extends DefaultUdtChannelConfig
     }
 
     @Override
+    /** 设置 {@link ChannelOption#SO_BACKLOG} 并在 bind 时使用 */
     public UdtServerChannelConfig setBacklog(final int backlog) {
         this.backlog = backlog;
         return this;

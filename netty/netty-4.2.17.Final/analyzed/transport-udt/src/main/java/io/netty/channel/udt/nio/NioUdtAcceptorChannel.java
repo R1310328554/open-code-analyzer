@@ -38,6 +38,7 @@ import static java.nio.channels.SelectionKey.*;
 
 /**
  * Common base for Netty Byte/Message UDT Stream/Datagram acceptors.
+ * <p>UDT Acceptor 抽象基类：基于 {@link ServerSocketChannelUDT} 与 {@link AbstractNioMessageChannel}，在 {@code OP_ACCEPT} 就绪时 accept 并 由子类 {@link #newConnectorChannel} 创建对应 Connector 通道。</p>
  *
  * @deprecated The UDT transport is no longer maintained and will be removed.
  */
@@ -51,6 +52,7 @@ public abstract class NioUdtAcceptorChannel extends AbstractNioMessageChannel im
 
     private final UdtServerChannelConfig config;
 
+    /** 包装已有 UDT 服务端 NIO 通道并初始化 {@link DefaultUdtServerChannelConfig} */
     protected NioUdtAcceptorChannel(final ServerSocketChannelUDT channelUDT) {
         super(null, channelUDT, OP_ACCEPT);
         try {
@@ -68,6 +70,7 @@ public abstract class NioUdtAcceptorChannel extends AbstractNioMessageChannel im
         }
     }
 
+    /** 按 {@link TypeUDT}（STREAM/DATAGRAM）创建新的 Acceptor 通道 */
     protected NioUdtAcceptorChannel(final TypeUDT type) {
         this(NioUdtProvider.newAcceptorChannelUDT(type));
     }
@@ -78,6 +81,7 @@ public abstract class NioUdtAcceptorChannel extends AbstractNioMessageChannel im
     }
 
     @Override
+    /** 绑定本地地址并使用 config 中的 backlog */
     protected void doBind(final SocketAddress localAddress) throws Exception {
         javaChannel().socket().bind(localAddress, config.getBacklog());
     }
@@ -149,6 +153,7 @@ public abstract class NioUdtAcceptorChannel extends AbstractNioMessageChannel im
     }
 
     @Override
+    /** accept 入站 {@link SocketChannelUDT} 并由子类包装为 {@link UdtChannel} */
     protected int doReadMessages(List<Object> buf) throws Exception {
         final SocketChannelUDT channelUDT = (SocketChannelUDT) SocketUtils.accept(javaChannel());
         if (channelUDT == null) {
@@ -159,5 +164,6 @@ public abstract class NioUdtAcceptorChannel extends AbstractNioMessageChannel im
         }
     }
 
+    /** 子类实现：为已 accept 的 UDT 套接字创建字节流或消息 Connector 通道 */
     protected abstract UdtChannel newConnectorChannel(SocketChannelUDT channelUDT);
 }

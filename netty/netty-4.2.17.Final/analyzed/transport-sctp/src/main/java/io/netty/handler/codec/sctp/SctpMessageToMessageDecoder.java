@@ -20,13 +20,19 @@ import io.netty.channel.sctp.SctpMessage;
 import io.netty.handler.codec.CodecException;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
+/**
+ * SCTP 消息到应用消息的抽象解码基类。
+ * <p>仅接受 {@code isComplete()==true} 的 {@link SctpMessage}； 不完整消息抛出 {@link CodecException} 并提示在 pipeline 中前置 {@link SctpMessageCompletionHandler}。</p>
+ */
 public abstract class SctpMessageToMessageDecoder extends MessageToMessageDecoder<SctpMessage> {
 
+    /** 声明入站类型为 {@link SctpMessage} */
     public SctpMessageToMessageDecoder() {
         super(SctpMessage.class);
     }
 
     @Override
+    /** 过滤非 SctpMessage；拒绝未完整组装的 SCTP 分片 */
     public boolean acceptInboundMessage(Object msg) throws Exception {
         if (msg instanceof SctpMessage) {
             SctpMessage sctpMsg = (SctpMessage) msg;

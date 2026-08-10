@@ -27,6 +27,7 @@ import java.util.List;
 /**
  * A ChannelHandler which receives {@link SctpMessage}s which belong to a application protocol form a specific
  * SCTP Stream  and decode it as {@link ByteBuf}.
+ * <p>入站 SCTP 字节流解码器：仅接受指定 {@code protocolIdentifier} 与 {@code streamIdentifier} 的 完整 {@link SctpMessage}，将其 {@link ByteBuf} 负载转发到下游。分片消息需先经 {@link SctpMessageCompletionHandler} 组装。</p>
  */
 public class SctpInboundByteStreamHandler extends MessageToMessageDecoder<SctpMessage> {
     private final int protocolIdentifier;
@@ -35,6 +36,7 @@ public class SctpInboundByteStreamHandler extends MessageToMessageDecoder<SctpMe
     /**
      * @param streamIdentifier   accepted stream number, this should be >=0 or <= max stream number of the association.
      * @param protocolIdentifier supported application protocol.
+     * <p>绑定要监听的 SCTP 流号与应用层协议标识（PPID）。</p>
      */
     public SctpInboundByteStreamHandler(int protocolIdentifier, int streamIdentifier) {
         super(SctpMessage.class);
@@ -50,11 +52,13 @@ public class SctpInboundByteStreamHandler extends MessageToMessageDecoder<SctpMe
         return false;
     }
 
+    /** 仅当协议 ID 与流 ID 均匹配时接受该 {@link SctpMessage} */
     protected boolean acceptInboundMessage(SctpMessage msg) {
         return msg.protocolIdentifier() == protocolIdentifier && msg.streamIdentifier() == streamIdentifier;
     }
 
     @Override
+    /** 校验消息完整后 retain 其 content 并写入 out */
     protected void decode(ChannelHandlerContext ctx, SctpMessage msg, List<Object> out) throws Exception {
         if (!msg.isComplete()) {
             throw new CodecException(String.format("Received SctpMessage is not complete, please add %s in the " +

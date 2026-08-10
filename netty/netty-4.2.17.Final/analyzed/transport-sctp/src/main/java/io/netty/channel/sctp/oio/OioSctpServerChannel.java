@@ -44,6 +44,7 @@ import java.util.Set;
 /**
  * {@link io.netty.channel.sctp.SctpServerChannel} implementation which use blocking mode to accept new
  * connections and create the {@link OioSctpChannel} for them.
+ * <p>OIO 阻塞式 SCTP 服务端：内部用 {@link Selector} 监听 {@code OP_ACCEPT}， 接受关联后为每条连接创建 {@link OioSctpChannel}。并非所有操作系统支持 SCTP， 且需 Java 7+。已弃用，请改用 {@link io.netty.channel.sctp.nio.NioSctpServerChannel}。</p>
  *
  * Be aware that not all operations systems support SCTP. Please refer to the documentation of your operation system,
  * to understand what you need to do to use it. Also this feature is only supported on Java 7+.
@@ -59,6 +60,7 @@ public class OioSctpServerChannel extends AbstractOioMessageChannel
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 1);
 
+    /** 打开 JDK {@link SctpServerChannel}，失败时包装为 {@link ChannelException} */
     private static SctpServerChannel newServerSocket() {
         try {
             return SctpServerChannel.open();
@@ -73,6 +75,7 @@ public class OioSctpServerChannel extends AbstractOioMessageChannel
 
     /**
      * Create a new instance with an new {@link SctpServerChannel}
+     * <p>使用新打开的 JDK SCTP 服务端通道构造。</p>
      */
     public OioSctpServerChannel() {
         this(newServerSocket());
@@ -80,6 +83,7 @@ public class OioSctpServerChannel extends AbstractOioMessageChannel
 
     /**
      * Create a new instance from the given {@link SctpServerChannel}
+     * <p>包装已有 JDK 通道：设为非阻塞、注册 accept 选择键并初始化 {@link SctpServerChannelConfig}。</p>
      *
      * @param sch    the {@link SctpServerChannel} which is used by this instance
      */
@@ -179,6 +183,7 @@ public class OioSctpServerChannel extends AbstractOioMessageChannel
     }
 
     @Override
+    /** 在 {@link #SO_TIMEOUT} 内 select，接受入站 SCTP 关联并包装为 {@link OioSctpChannel} */
     protected int doReadMessages(List<Object> buf) throws Exception {
         if (!isActive()) {
             return -1;
@@ -220,6 +225,7 @@ public class OioSctpServerChannel extends AbstractOioMessageChannel
     }
 
     @Override
+    /** 向已有关联追加本地 IP 地址（异步委托 eventLoop） */
     public ChannelFuture bindAddress(InetAddress localAddress) {
         return bindAddress(localAddress, newPromise());
     }
@@ -245,6 +251,7 @@ public class OioSctpServerChannel extends AbstractOioMessageChannel
     }
 
     @Override
+    /** 从关联移除本地 IP 地址（异步委托 eventLoop） */
     public ChannelFuture unbindAddress(InetAddress localAddress) {
         return unbindAddress(localAddress, newPromise());
     }
@@ -295,6 +302,7 @@ public class OioSctpServerChannel extends AbstractOioMessageChannel
         throw new UnsupportedOperationException();
     }
 
+    /** OIO 服务端配置：autoRead 关闭时同步清除 readPending */
     private final class OioSctpServerChannelConfig extends DefaultSctpServerChannelConfig {
         private OioSctpServerChannelConfig(OioSctpServerChannel channel, SctpServerChannel javaChannel) {
             super(channel, javaChannel);

@@ -26,6 +26,7 @@ import java.util.List;
  * A ChannelHandler which transform {@link ByteBuf} to {@link SctpMessage}  and send it through a specific stream
  * with given protocol identifier.
  * Unordered delivery of all messages may be requested by passing unordered = true to the constructor.
+ * <p>出站 SCTP 字节流编码器：将 {@link ByteBuf} 包装为指定流号与 PPID 的 {@link SctpMessage}。 构造时 {@code unordered=true} 可设置 SCTP 无序交付标志（U 位）。</p>
  */
 public class SctpOutboundByteStreamHandler extends MessageToMessageEncoder<ByteBuf> {
     private final int streamIdentifier;
@@ -35,6 +36,7 @@ public class SctpOutboundByteStreamHandler extends MessageToMessageEncoder<ByteB
     /**
      * @param streamIdentifier      stream number, this should be >=0 or <= max stream number of the association.
      * @param protocolIdentifier    supported application protocol id.
+     * <p>有序发送：使用关联内有效流号与应用协议标识。</p>
      */
     public SctpOutboundByteStreamHandler(int streamIdentifier, int protocolIdentifier) {
         this(streamIdentifier, protocolIdentifier, false);
@@ -44,6 +46,7 @@ public class SctpOutboundByteStreamHandler extends MessageToMessageEncoder<ByteB
      * @param streamIdentifier      stream number, this should be >=0 or <= max stream number of the association.
      * @param protocolIdentifier    supported application protocol id.
      * @param unordered             if {@literal true}, SCTP Data Chunks will be sent with the U (unordered) flag set.
+     * <p>可显式指定是否无序交付 SCTP 数据块。</p>
      */
     public SctpOutboundByteStreamHandler(int streamIdentifier, int protocolIdentifier, boolean unordered) {
         super(ByteBuf.class);
@@ -53,6 +56,7 @@ public class SctpOutboundByteStreamHandler extends MessageToMessageEncoder<ByteB
     }
 
     @Override
+    /** retain 负载并构造 {@link SctpMessage} 写入 out */
     protected void encode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
         out.add(new SctpMessage(protocolIdentifier, streamIdentifier, unordered, msg.retain()));
     }
