@@ -748,3 +748,18 @@
 2026-08-10T00:02:51Z DONE codec-http2/src/main/java/io/netty/handler/codec/http2/Http2StreamFrame.java wave25b mark-repair after 25a race
 2026-08-10T00:02:51Z DONE codec-http2/src/main/java/io/netty/handler/codec/http2/Http2StreamFrameToHttpObjectCodec.java wave25b mark-repair after 25a race
 2026-08-10T00:02:51Z DONE codec-http2/src/main/java/io/netty/handler/codec/http2/Http2StreamVisitor.java wave25b mark-repair after 25a race
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3CancelPushFrame.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3DataFrame.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3GoAwayFrame.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3Headers.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3HeadersFrame.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3MaxPushIdFrame.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3PushPromiseFrame.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3SettingsFrame.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3UnknownFrame.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/Http3.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/Http3CancelPushFrame.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/Http3ClientConnectionHandler.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/Http3CodecUtils.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/Http3ConnectionHandler.java wave26b agent-understood
+2026-08-10T00:05:17Z DONE codec-http3/src/main/java/io/netty/handler/codec/http3/Http3ControlStreamFrame.java wave26b agent-understood

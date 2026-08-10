@@ -15,23 +15,8 @@
     "codec-http2/src/main/java/io/netty/handler/codec/http2/StreamByteDistributor.java",
     "codec-http2/src/main/java/io/netty/handler/codec/http2/UniformStreamByteDistributor.java",
     "codec-http2/src/main/java/io/netty/handler/codec/http2/WeightedFairQueueByteDistributor.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/CharSequenceMap.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3CancelPushFrame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3DataFrame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3GoAwayFrame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3Headers.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3HeadersFrame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3MaxPushIdFrame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3PushPromiseFrame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3SettingsFrame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/DefaultHttp3UnknownFrame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3CancelPushFrame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3ClientConnectionHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3CodecUtils.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3ConnectionHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3ControlStreamFrame.java"
+    "codec-http3/src/main/java/io/netty/handler/codec/http3/CharSequenceMap.java"
   ],
   "remaining_pending": 1148,
-  "done": 750
+  "done": 765
 }
