@@ -1,3 +1,4 @@
+// 思考标签流式解析器：开闭标签状态机与部分匹配缓冲。
 package thinking
 
 import (
@@ -5,10 +6,11 @@ import (
 	"unicode"
 )
 
+// thinkingState 表示解析开/闭思考标签的有限状态。
 type thinkingState int
 
 const (
-	// We're looking for the opening tag, but we haven't seen any non-whitespace
+	// 等待开标签，尚未见到非空白内容。
 	// characters yet
 	thinkingState_LookingForOpening thinkingState = iota
 	// We've seen the opening tag, but we haven't seen any non-whitespace
@@ -44,6 +46,7 @@ func (s thinkingState) String() string {
 	}
 }
 
+// Parser 缓冲原始输出并按 OpeningTag/ClosingTag 拆分思考与正文。
 type Parser struct {
 	state      thinkingState
 	OpeningTag string
@@ -51,6 +54,7 @@ type Parser struct {
 	acc        strings.Builder
 }
 
+// AddContent 返回可立即下发的思考片段与正文片段；内部按需缓冲歧义前缀。
 // AddContent returns the thinking content and the non-thinking content that
 // should be immediately sent to the user. It will internally buffer if it needs
 // to see more raw content to disambiguate
@@ -73,6 +77,7 @@ func (s *Parser) AddContent(content string) (string, string) {
 	return thinkingSb.String(), remainingSb.String()
 }
 
+// eat 消费 acc 缓冲；第三返回值 true 表示同一 AddContent 内应继续状态转移。
 // the additional bool return is true iff we should continue eating
 func eat(s *Parser) (string, string, bool) {
 	switch s.state {
@@ -161,6 +166,7 @@ func eat(s *Parser) (string, string, bool) {
 	}
 }
 
+// overlap 计算 s 后缀与 delim 前缀的最长重叠，用于流式闭标签检测。
 // longest overlap between suffix of s and prefix of delim
 func overlap(s, delim string) int {
 	max := min(len(delim), len(s))

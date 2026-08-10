@@ -1,3 +1,4 @@
+// 聊天 prompt 组装：上下文截断、图像标签与 renderer/模板渲染。
 package server
 
 import (
@@ -15,8 +16,10 @@ import (
 	"github.com/ollama/ollama/template"
 )
 
+// tokenizeFunc 用于估算 prompt token 数以驱动截断。
 type tokenizeFunc func(context.Context, string) ([]int, error)
 
+// chatPrompt 根据消息列表生成下一轮 prompt 与媒体；truncate 时保留 system 与最新消息。
 // chatPrompt accepts a list of messages and returns the prompt and media that should be used for the next chat turn.
 // chatPrompt truncates any messages that exceed the context window of the model, making sure to always include 1) the
 // latest message and 2) system messages
@@ -91,6 +94,7 @@ func chatPrompt(ctx context.Context, m *Model, tokenize tokenizeFunc, opts *api.
 	return p, media, nil
 }
 
+// imageTaggedMessages 为图像插入 [img-N] 标记并构建 llm.MediaData 列表。
 func imageTaggedMessages(m *Model, msgs []api.Message, start int, clearImages bool) ([]api.Message, []llm.MediaData, error) {
 	renderMsgs := slices.Clone(msgs)
 	var media []llm.MediaData
@@ -132,6 +136,7 @@ func imageTaggedMessages(m *Model, msgs []api.Message, start int, clearImages bo
 	return renderMsgs, media, nil
 }
 
+// renderPrompt 优先使用 Config.Renderer，否则执行 Go template。
 func renderPrompt(m *Model, msgs []api.Message, tools []api.Tool, think *api.ThinkValue) (string, error) {
 	if m.Config.Renderer != "" {
 		rendererName := resolveRendererName(m)

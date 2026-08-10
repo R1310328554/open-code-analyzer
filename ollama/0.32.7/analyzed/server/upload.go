@@ -1,3 +1,4 @@
+// Registry blob 分片上传：并行 PATCH、重定向与进度回调。
 package server
 
 import (
@@ -25,8 +26,10 @@ import (
 	"github.com/ollama/ollama/types/model"
 )
 
+// blobUploadManager 按 digest 去重并发 push 的同一 blob 上传。
 var blobUploadManager sync.Map
 
+// blobUpload 跟踪单层 blob 的分片、进度与取消。
 type blobUpload struct {
 	manifest.Layer
 
@@ -46,12 +49,14 @@ type blobUpload struct {
 	references atomic.Int32
 }
 
+// 上传分片数量与单分片大小上下限。
 const (
 	numUploadParts          = 16
 	minUploadPartSize int64 = 100 * format.MegaByte
 	maxUploadPartSize int64 = 1000 * format.MegaByte
 )
 
+// Prepare 发起 POST 上传会话、处理 cross-repo mount 并切分分片。
 func (b *blobUpload) Prepare(ctx context.Context, requestURL *url.URL, opts *registryOptions) error {
 	p, err := manifest.BlobsPath(b.Digest)
 	if err != nil {
@@ -124,6 +129,7 @@ func (b *blobUpload) Prepare(ctx context.Context, requestURL *url.URL, opts *reg
 	return nil
 }
 
+// Run 并行或串行上传各分片，最后 PUT commit；失败写入 b.err。
 // Run uploads blob parts to the upstream. If the upstream supports redirection, parts will be uploaded
 // in parallel as defined by Prepare. Otherwise, parts will be uploaded serially. Run sets b.err on error.
 func (b *blobUpload) Run(ctx context.Context, opts *registryOptions) {
@@ -215,6 +221,7 @@ func (b *blobUpload) Run(ctx context.Context, opts *registryOptions) {
 	b.done = true
 }
 
+// uploadPart 上传单个 byte-range，处理 307 重定向与鉴权重试。
 func (b *blobUpload) uploadPart(ctx context.Context, method string, requestURL *url.URL, part *blobUploadPart, opts *registryOptions) error {
 	headers := make(http.Header)
 	headers.Set("Content-Type", "application/octet-stream")
@@ -316,6 +323,7 @@ func (b *blobUpload) release() {
 	}
 }
 
+// Wait 轮询上传进度直至完成或出错。
 func (b *blobUpload) Wait(ctx context.Context, fn func(api.ProgressResponse)) error {
 	b.acquire()
 	defer b.release()
@@ -341,6 +349,7 @@ func (b *blobUpload) Wait(ctx context.Context, fn func(api.ProgressResponse)) er
 	}
 }
 
+// blobUploadPart 表示单个上传分片及其 MD5 累加器。
 type blobUploadPart struct {
 	// N is the part number
 	N      int
@@ -349,6 +358,7 @@ type blobUploadPart struct {
 	hash.Hash
 }
 
+// progressWriter 将 Write 字节数累加到 blobUpload.Completed。
 type progressWriter struct {
 	written int64
 	*blobUpload
@@ -366,6 +376,7 @@ func (p *progressWriter) Rollback() {
 	p.written = 0
 }
 
+// uploadBlob HEAD 已存在则跳过，否则 Prepare 并后台 Run 上传。
 func uploadBlob(ctx context.Context, n model.Name, layer manifest.Layer, opts *registryOptions, fn func(api.ProgressResponse)) error {
 	requestURL := n.BaseURL()
 	requestURL = requestURL.JoinPath("v2", n.DisplayNamespaceModel(), "blobs", layer.Digest)

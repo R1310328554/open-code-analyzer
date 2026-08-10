@@ -22,7 +22,9 @@ import (
 	"github.com/ollama/ollama/version"
 )
 
+// /api/show 进程内缓存：本地按 manifest digest、云端 SWR，System/Options 覆盖时 bypass。
 /*
+/api/show 缓存存储完整 api.ShowResponse，供 launch 与能力查询等路径复用。
 The /api/show cache stores full api.ShowResponse values because callers use
 more than capabilities: launch flows also need context length, embeddings
 metadata, quantization details, remote metadata, and model-specific fields.
@@ -59,10 +61,12 @@ const (
 
 var errModelShowNoCloud = errors.New("cloud disabled")
 
+// modelShowCache 持有本地/云端 show 缓存；handler 变异不会污染缓存条目。
 // modelShowCache owns process-local show response caches for local and cloud
 // models. All cached responses are cloned at read/write boundaries so
 // handler-specific mutations, such as user-agent compatibility tweaks, cannot
 // leak back into the cache.
+// modelShowCache 维护本地与云端 show 响应 map，读写边界深拷贝。
 type modelShowCache struct {
 	mu sync.RWMutex
 
@@ -85,11 +89,13 @@ type modelShowCache struct {
 // Deleted models are not eagerly pruned from this process-local cache. Manifest
 // resolution happens before local cache lookup, so stale delete entries are not
 // served and disappear on process restart.
+// modelShowLocalKey 以规范模型名与 verbose 标志索引本地槽位。
 type modelShowLocalKey struct {
 	Model   string
 	Verbose bool
 }
 
+// modelShowLocalEntry 绑定 manifest digest 与缓存响应。
 type modelShowLocalEntry struct {
 	Digest   string
 	Response *api.ShowResponse
@@ -97,11 +103,13 @@ type modelShowLocalEntry struct {
 
 // modelShowCloudKey intentionally excludes any local digest because cloud
 // models are refreshed through SWR and normalized by cloud base model name.
+// modelShowCloudKey 以规范化 cloud 基名与 verbose 索引云端槽位。
 type modelShowCloudKey struct {
 	Model   string
 	Verbose bool
 }
 
+// newModelShowCache 构造空 map 并将 getModelInfo 默认指向 GetModelInfo。
 func newModelShowCache() *modelShowCache {
 	return &modelShowCache{
 		local:                     make(map[modelShowLocalKey]modelShowLocalEntry),
@@ -116,6 +124,7 @@ func newModelShowCache() *modelShowCache {
 // modelShowCacheable returns whether a request can use the shared show cache.
 // System and Options overlays are request-specific response variants, so v1
 // bypasses caching for those rather than expanding the key space.
+// modelShowCacheable 判断请求是否可共享缓存（无 System/Options 覆盖）。
 func modelShowCacheable(req api.ShowRequest) bool {
 	return req.System == "" && len(req.Options) == 0
 }
@@ -123,6 +132,7 @@ func modelShowCacheable(req api.ShowRequest) bool {
 // Start kicks off non-blocking startup hydration for cloud entries. Local show
 // responses stay lazy because even non-verbose show must load GGUF metadata that
 // is expensive for large model stores.
+// Start 异步 hydrate 云端 show 条目，本地仍按需填充。
 func (c *modelShowCache) Start(ctx context.Context) {
 	c.once.Do(func() {
 		slog.Debug("starting model show cache")
@@ -147,6 +157,7 @@ func (c *modelShowCache) runStartup(ctx context.Context) {
 // GetLocal returns a cached local show response when the current manifest
 // digest matches. On a miss, it falls back to GetModelInfo, stores non-remote
 // local responses, and returns a clone to the caller.
+// GetLocal digest 命中则返回克隆，否则调用 GetModelInfo 并缓存非 remote 响应。
 func (c *modelShowCache) GetLocal(req api.ShowRequest) (*api.ShowResponse, error) {
 	key, digest, err := modelShowLocalKeyForRequest(req)
 	if err != nil {
@@ -173,6 +184,7 @@ func (c *modelShowCache) GetLocal(req api.ShowRequest) (*api.ShowResponse, error
 // GetCloudSWR returns a cached cloud show response and triggers a throttled
 // background refresh. The boolean is false on a cold miss so callers can
 // preserve existing synchronous proxy behavior.
+// GetCloudSWR 返回 warm 缓存并触发节流后台刷新；冷 miss 时 bool 为 false。
 func (c *modelShowCache) GetCloudSWR(ctx context.Context, req api.ShowRequest) (*api.ShowResponse, bool) {
 	key := modelShowCloudKeyForModel(req.Model, req.Verbose)
 	resp, ok := c.getCloud(key)
@@ -336,6 +348,7 @@ func (c *modelShowCache) hydrateLocal(ctx context.Context) error {
 // /api/show for each returned model with bounded concurrency. Per-model show
 // failures are logged and skipped so one bad cloud entry does not prevent the
 // rest of the cache from warming.
+// hydrateCloud 列举 cloud tags 并并发拉取各模型 /api/show。
 func (c *modelShowCache) hydrateCloud(ctx context.Context) error {
 	if disabled, _ := internalcloud.Status(); disabled {
 		return errModelShowNoCloud
@@ -441,6 +454,7 @@ func (c *modelShowCache) fetchCloudShow(ctx context.Context, modelName string, v
 // doCloudJSON is the cache's direct cloud client. It mirrors the cloud proxy's
 // signing and client-version behavior but uses an internal timeout because
 // hydration and refreshes must not hang indefinitely.
+// doCloudJSON 带签名与超时的内部 cloud HTTP 客户端。
 func (c *modelShowCache) doCloudJSON(ctx context.Context, method, path string, payload any, out any) error {
 	reqCtx, cancel := context.WithTimeout(ctx, modelShowCloudFetchTimeout)
 	defer cancel()
@@ -554,6 +568,7 @@ func modelShowCloudKeyForModel(modelName string, verbose bool) modelShowCloudKey
 
 // modelShowNormalizeCloudModel strips explicit cloud source syntax, including
 // legacy "-cloud" tags, so :cloud and -cloud forms share a cache entry.
+// modelShowNormalizeCloudModel 剥离 :cloud/-cloud 使多种写法共享缓存键。
 func modelShowNormalizeCloudModel(modelName string) string {
 	modelName = strings.TrimSpace(modelName)
 	if modelName == "" {
@@ -592,6 +607,7 @@ func modelShowManifestIsRemote(mf *manifest.Manifest) bool {
 // cloneShowResponse deep-copies mutable fields of api.ShowResponse before
 // storing or returning cached entries. The response contains maps and slices,
 // and some handlers mutate ModelInfo before writing JSON.
+// cloneShowResponse 深拷贝 map/slice 等可变字段后再返回或入库。
 func cloneShowResponse(in *api.ShowResponse) *api.ShowResponse {
 	if in == nil {
 		return nil

@@ -1,3 +1,4 @@
+// Gemma4 renderer 解析：按参数量或模型名选择 small/large 模板。
 package server
 
 import (
@@ -7,17 +8,19 @@ import (
 	"github.com/ollama/ollama/format"
 )
 
+// Gemma4 renderer 名称常量与 large 族参数量下限。
 const (
 	gemma4RendererLegacy = "gemma4"
 	gemma4RendererSmall  = "gemma4-small"
 	gemma4RendererLarge  = "gemma4-large"
 
-	// Gemma 4 small templates cover the e2b/e4b family, while 12b/26b/31b use
+	// e2b/e4b 用小模板，12b/26b/31b 用大模板；默认 small。
 	// the large template. Default to the small prompt unless the model is
 	// clearly in the large range.
 	gemma4LargeMinParameterCount = 12_000_000_000
 )
 
+// resolveRendererName 解析 Config.Renderer，legacy gemma4 走专用分支。
 func resolveRendererName(m *Model) string {
 	if m == nil || m.Config.Renderer == "" {
 		return ""
@@ -31,6 +34,7 @@ func resolveRendererName(m *Model) string {
 	}
 }
 
+// resolveGemma4Renderer 按 ShortName/Name/ModelType 选择 small 或 large renderer。
 func resolveGemma4Renderer(m *Model) string {
 	if m == nil || m.Config.Renderer != gemma4RendererLegacy {
 		if m == nil {
@@ -54,6 +58,7 @@ func resolveGemma4Renderer(m *Model) string {
 	return gemma4RendererSmall
 }
 
+// gemma4RendererForParameterCount 按参数量阈值返回 large 或 small。
 func gemma4RendererForParameterCount(parameterCount uint64) string {
 	if parameterCount >= gemma4LargeMinParameterCount {
 		return gemma4RendererLarge
@@ -62,6 +67,7 @@ func gemma4RendererForParameterCount(parameterCount uint64) string {
 	return gemma4RendererSmall
 }
 
+// gemma4RendererFromName 从模型名字符串启发式匹配 renderer。
 func gemma4RendererFromName(name string) (string, bool) {
 	lower := strings.ToLower(name)
 	switch {
@@ -74,6 +80,7 @@ func gemma4RendererFromName(name string) (string, bool) {
 	}
 }
 
+// parseHumanParameterCount 解析如 12B/7M 的人类可读参数量字符串。
 func parseHumanParameterCount(s string) (uint64, bool) {
 	if s == "" {
 		return 0, false
@@ -100,6 +107,7 @@ func parseHumanParameterCount(s string) (uint64, bool) {
 	return uint64(value * multiplier), true
 }
 
+// isGemma4Renderer 判断是否为 Gemma4 系列 renderer 名。
 func isGemma4Renderer(renderer string) bool {
 	switch renderer {
 	case gemma4RendererLegacy, gemma4RendererSmall, gemma4RendererLarge:

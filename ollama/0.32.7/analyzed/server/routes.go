@@ -1,3 +1,4 @@
+// HTTP 路由与 API handler：Gin 注册、推理/镜像/云端代理与 OpenAI 兼容层。
 package server
 
 import (
@@ -53,6 +54,7 @@ import (
 	xserver "github.com/ollama/ollama/x/server"
 )
 
+// signinURLStr 为 Ollama 账户连接页 URL 模板。
 const signinURLStr = "https://ollama.com/connect?name=%s&key=%s"
 
 const (
@@ -63,6 +65,7 @@ const (
 	copilotChatUserAgentPrefix            = "GitHubCopilotChat/"
 )
 
+// writeModelRefParseError 将模型引用解析错误映射为 HTTP JSON 响应。
 func writeModelRefParseError(c *gin.Context, err error, fallbackStatus int, fallbackMessage string) {
 	switch {
 	case errors.Is(err, errConflictingModelSource):
@@ -74,6 +77,7 @@ func writeModelRefParseError(c *gin.Context, err error, fallbackStatus int, fall
 	}
 }
 
+// shouldUseHarmony 启发式判断 gpt-oss 是否应走 Harmony 模板解析。
 func shouldUseHarmony(model *Model) bool {
 	if slices.Contains([]string{"gptoss", "gpt-oss"}, model.Config.ModelFamily) {
 		// heuristic to check whether the template expects to be parsed via harmony:
@@ -94,6 +98,7 @@ var useClient2 = experimentEnabled("client2")
 
 var mode string = gin.DebugMode
 
+// Server 聚合监听地址、调度器、默认上下文与模型缓存。
 type Server struct {
 	addr          net.Addr
 	sched         *Scheduler
@@ -122,6 +127,7 @@ var (
 	errBadTemplate = errors.New("template error")
 )
 
+// modelOptions 合并模型默认选项与请求覆盖并处理 embedding batch 默认值。
 func (s *Server) modelOptions(model *Model, requestOpts map[string]any) (api.Options, error) {
 	return s.modelOptionsWithEmbeddingBatchDefault(model, requestOpts, shouldApplyEmbeddingBatchDefault(model, requestOpts))
 }
@@ -197,6 +203,7 @@ func usesAutomaticNumBatch(model *Model, requestOpts map[string]any) bool {
 	return true
 }
 
+// scheduleRunner 校验能力与选项后向 Scheduler 申请 llama runner。
 // scheduleRunner schedules a runner after validating inputs such as capabilities and model options.
 // It returns the allocated runner, model instance, and consolidated options if successful and error otherwise.
 func (s *Server) scheduleRunner(ctx context.Context, name string, caps []model.Capability, requestOpts map[string]any, keepAlive *api.Duration, shift *bool) (llm.LlamaServer, *Model, *api.Options, error) {
@@ -247,6 +254,7 @@ func signinURL() (string, error) {
 	return fmt.Sprintf(signinURLStr, url.PathEscape(h), encKey), nil
 }
 
+// GenerateHandler 处理 POST /api/generate 与 OpenAI completions 兼容路径。
 func (s *Server) GenerateHandler(c *gin.Context) {
 	checkpointStart := time.Now()
 	var req api.GenerateRequest
@@ -786,6 +794,7 @@ func (s *Server) GenerateHandler(c *gin.Context) {
 	streamResponse(c, ch)
 }
 
+// EmbedHandler 处理 /api/embed 与 OpenAI embeddings 兼容请求。
 func (s *Server) EmbedHandler(c *gin.Context) {
 	checkpointStart := time.Now()
 	var req api.EmbedRequest
@@ -1081,6 +1090,7 @@ func (s *Server) EmbeddingsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+// PullHandler 从 registry 拉取模型 manifest 与 blob。
 func (s *Server) PullHandler(c *gin.Context) {
 	var req api.PullRequest
 	err := c.ShouldBindJSON(&req)
@@ -1142,6 +1152,7 @@ func (s *Server) PullHandler(c *gin.Context) {
 	streamResponse(c, ch)
 }
 
+// PushHandler 将本地模型推送到远程 registry。
 func (s *Server) PushHandler(c *gin.Context) {
 	var req api.PushRequest
 	err := c.ShouldBindJSON(&req)
@@ -1279,6 +1290,7 @@ func (s *Server) DeleteHandler(c *gin.Context) {
 	}
 }
 
+// ShowHandler 返回模型详情，本地/云端与 show cache 集成的入口。
 func (s *Server) ShowHandler(c *gin.Context) {
 	var req api.ShowRequest
 	err := c.ShouldBindJSON(&req)
@@ -1375,6 +1387,7 @@ func (s *Server) ShowHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+// GetModelInfo 加载 manifest/GGUF 并组装完整 api.ShowResponse（含 remote 代理）。
 func GetModelInfo(req api.ShowRequest) (*api.ShowResponse, error) {
 	name := model.ParseName(req.Model)
 	if !name.IsValid() {
@@ -1611,6 +1624,7 @@ func selectedModelTemplate(m *Model, kv ggml.KV) string {
 	return m.Template.String()
 }
 
+// ListHandler 返回 /api/tags 与 OpenAI /v1/models 列表。
 func (s *Server) ListHandler(c *gin.Context) {
 	if s.modelCaches == nil || s.modelCaches.modelList == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "model list cache unavailable"})
@@ -1782,6 +1796,7 @@ func allowedHost(host string) bool {
 	return false
 }
 
+// allowedHostsMiddleware 在非 loopback 监听时限制 Host 头为本地/内网 TLD。
 func allowedHostsMiddleware(addr net.Addr) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if addr == nil {
@@ -1820,6 +1835,7 @@ func allowedHostsMiddleware(addr net.Addr) gin.HandlerFunc {
 	}
 }
 
+// GenerateRoutes 注册全部 REST/OpenAI/Anthropic 路由与 CORS/主机限制中间件。
 func (s *Server) GenerateRoutes() (http.Handler, error) {
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowWildcard = true
@@ -1928,6 +1944,7 @@ func (s *Server) ModelRecommendationsExperimentalHandler(c *gin.Context) {
 	})
 }
 
+// Serve 启动 HTTP 服务：修复 blob、可选 prune、初始化调度器与模型缓存。
 func Serve(ln net.Listener) error {
 	slog.SetDefault(logutil.NewLogger(os.Stderr, envconfig.LogLevel()))
 	slog.Info("server config", "env", envconfig.Values())
@@ -2414,6 +2431,7 @@ func writeChatResponse(c *gin.Context, req api.ChatRequest, ch chan any) {
 	streamResponse(c, ch)
 }
 
+// ChatHandler 处理 /api/chat 及多种兼容中间件包装的聊天请求。
 func (s *Server) ChatHandler(c *gin.Context) {
 	checkpointStart := time.Now()
 

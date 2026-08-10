@@ -1,3 +1,4 @@
+// 聊天 Go template：内置模板索引、消息合并、工具 JSON 与 legacy 兼容执行。
 package template
 
 import (
@@ -20,6 +21,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// index.json 与 *.gotmpl/*.json 通过 embed 打包内置模板。
 //go:embed index.json
 var indexBytes []byte
 
@@ -55,6 +57,7 @@ var templatesOnce = sync.OnceValues(func() ([]*named, error) {
 	return templates, nil
 })
 
+// named 描述 index.json 中的一条内置模板及其参数。
 type named struct {
 	Name     string `json:"name"`
 	Template string `json:"template"`
@@ -69,6 +72,7 @@ func (t named) Reader() io.Reader {
 	return bytes.NewReader(t.Bytes)
 }
 
+// Named 用 Levenshtein 距离匹配最接近的内置模板名。
 func Named(s string) (*named, error) {
 	templates, err := templatesOnce()
 	if err != nil {
@@ -93,6 +97,7 @@ func Named(s string) (*named, error) {
 
 var DefaultTemplate, _ = Parse("{{ .Prompt }}")
 
+// Template 封装 text/template 与原始模板字符串。
 type Template struct {
 	*template.Template
 	raw string
@@ -142,6 +147,7 @@ var funcs = template.FuncMap{
 	},
 }
 
+// Parse 解析模板；缺少 messages/response 变量时自动追加 {{ .Response }}。
 func Parse(s string) (*Template, error) {
 	tmpl := template.New("").Option("missingkey=zero").Funcs(funcs)
 
@@ -192,6 +198,7 @@ func (t *Template) Contains(s string) bool {
 	return strings.Contains(t.raw, s)
 }
 
+// Values 为 Execute 传入的消息、工具、思考标志与 legacy prompt 字段。
 type Values struct {
 	Messages []api.Message
 	api.Tools
@@ -200,7 +207,7 @@ type Values struct {
 	Think  bool
 	// ThinkLevel contains the thinking level if Think is true and a string value was provided
 	ThinkLevel string
-	// whether or not the user explicitly set the thinking flag (vs. it being
+	// IsThinkSet 表示用户是否显式设置思考标志（区别于默认 false）。
 	// implicitly false). Templates can't see whether `Think` is nil
 	IsThinkSet bool
 
@@ -254,6 +261,7 @@ func (t *Template) Subtree(fn func(parse.Node) bool) *template.Template {
 	return nil
 }
 
+// Execute 按 messages 模式或 legacy system/prompt/response 模式渲染。
 func (t *Template) Execute(w io.Writer, v Values) error {
 	system, messages := collate(v.Messages)
 	vars, err := t.Vars()
@@ -349,6 +357,7 @@ func (t *Template) Execute(w io.Writer, v Values) error {
 	return err
 }
 
+// collate 合并同 role 连续消息并抽取 system 内容。
 // collate messages based on role. consecutive messages of the same role are merged
 // into a single message (except for tool messages which preserve individual metadata).
 // collate also collects and returns all system messages.
@@ -408,6 +417,7 @@ func (t templateTool) String() string {
 	return string(bts)
 }
 
+// templateTool 为模板 ranging 提供 map 化 Properties 的 api.Tool 视图。
 // templateTool is a template-compatible representation of api.Tool
 // with Properties as a regular map for template ranging.
 type templateTool struct {
@@ -456,6 +466,7 @@ type templateMessage struct {
 }
 
 // convertToolsForTemplate converts Tools to template-compatible format.
+// convertToolsForTemplate 将 api.Tools 转为模板友好结构。
 func convertToolsForTemplate(tools api.Tools) templateTools {
 	if tools == nil {
 		return nil
@@ -482,6 +493,7 @@ func convertToolsForTemplate(tools api.Tools) templateTools {
 }
 
 // convertMessagesForTemplate converts Messages to template-compatible format.
+// convertMessagesForTemplate 转换 ToolCalls 等为 templateMessage。
 func convertMessagesForTemplate(messages []*api.Message) []*templateMessage {
 	if messages == nil {
 		return nil
@@ -512,6 +524,7 @@ func convertMessagesForTemplate(messages []*api.Message) []*templateMessage {
 	return result
 }
 
+// Identifiers 遍历 AST 收集模板引用的字段名。
 // Identifiers walks the node tree returning any identifiers it finds along the way
 func Identifiers(n parse.Node) ([]string, error) {
 	switch n := n.(type) {
@@ -581,6 +594,7 @@ func Identifiers(n parse.Node) ([]string, error) {
 	return nil, nil
 }
 
+// deleteNode 按谓词删除 AST 节点（用于移除 {{ .Response }}）。
 // deleteNode walks the node list and deletes nodes that match the predicate
 // this is currently to remove the {{ .Response }} node from templates
 func deleteNode(n parse.Node, fn func(parse.Node) bool) parse.Node {

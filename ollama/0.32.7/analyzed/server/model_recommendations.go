@@ -1,3 +1,4 @@
+// 云端模型推荐缓存：默认列表、远程刷新、SWR 读触发与本地快照持久化。
 package server
 
 import (
@@ -20,6 +21,7 @@ import (
 	"github.com/ollama/ollama/format"
 )
 
+// modelRecommendationsURL 为 experimental 推荐 API 端点。
 const modelRecommendationsURL = "https://ollama.com/api/experimental/model-recommendations"
 
 var (
@@ -36,6 +38,7 @@ var (
 	errModelRecommendationsNoCloud = errors.New("cloud disabled")
 )
 
+// modelRecommendationsCache 线程安全持有推荐列表与刷新状态。
 type modelRecommendationsCache struct {
 	mu                   sync.RWMutex
 	recommendations      []api.ModelRecommendation
@@ -45,6 +48,7 @@ type modelRecommendationsCache struct {
 	client               *http.Client
 }
 
+// newModelRecommendationsCache 以内置默认推荐初始化 cache。
 func newModelRecommendationsCache() *modelRecommendationsCache {
 	return &modelRecommendationsCache{
 		recommendations: cloneModelRecommendations(defaultModelRecommendations),
@@ -52,6 +56,7 @@ func newModelRecommendationsCache() *modelRecommendationsCache {
 	}
 }
 
+// Start 启动后台定时刷新 goroutine（仅一次）。
 func (c *modelRecommendationsCache) Start(ctx context.Context) {
 	c.once.Do(func() {
 		slog.Debug("starting model recommendations cache",
@@ -63,12 +68,14 @@ func (c *modelRecommendationsCache) Start(ctx context.Context) {
 	})
 }
 
+// Get 返回当前推荐列表的副本。
 func (c *modelRecommendationsCache) Get() []api.ModelRecommendation {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return cloneModelRecommendations(c.recommendations)
 }
 
+// GetSWR 立即返回缓存并在读路径触发节流后台刷新。
 func (c *modelRecommendationsCache) GetSWR(ctx context.Context) []api.ModelRecommendation {
 	recs := c.Get()
 	c.triggerRefreshOnRead(ctx)
@@ -185,6 +192,7 @@ func (c *modelRecommendationsCache) run(ctx context.Context) {
 	}
 }
 
+// refresh 从远程拉取 JSON、校验并可选持久化快照。
 func (c *modelRecommendationsCache) refresh(ctx context.Context) error {
 	if envconfig.NoCloud() {
 		return errModelRecommendationsNoCloud
@@ -229,6 +237,7 @@ func (c *modelRecommendationsCache) refresh(ctx context.Context) error {
 	return nil
 }
 
+// loadSnapshot 启动时从 ~/.ollama/cache 读取上次成功快照。
 func (c *modelRecommendationsCache) loadSnapshot() {
 	path, err := modelRecommendationsSnapshotPath()
 	if err != nil {
@@ -262,6 +271,7 @@ func (c *modelRecommendationsCache) loadSnapshot() {
 	slog.Debug("loaded model recommendations snapshot", "path", path, "count", len(recs))
 }
 
+// persistSnapshot 原子写入推荐 JSON 快照。
 func (c *modelRecommendationsCache) persistSnapshot(recs []api.ModelRecommendation) error {
 	path, err := modelRecommendationsSnapshotPath()
 	if err != nil {
@@ -311,6 +321,7 @@ func modelRecommendationsSnapshotPath() (string, error) {
 	return filepath.Join(home, ".ollama", "cache", "model-recommendations.json"), nil
 }
 
+// validateModelRecommendations 去重、校验必填字段并过滤无效 cloud 项。
 func validateModelRecommendations(recs []api.ModelRecommendation) ([]api.ModelRecommendation, error) {
 	if len(recs) == 0 {
 		return nil, errors.New("empty recommendations")
@@ -345,10 +356,12 @@ func validateModelRecommendations(recs []api.ModelRecommendation) ([]api.ModelRe
 	return valid, nil
 }
 
+// isCloudRecommendation 判断模型名是否表示云端推荐。
 func isCloudRecommendation(modelName string) bool {
 	return strings.HasSuffix(modelName, ":cloud") || strings.HasSuffix(modelName, "-cloud")
 }
 
+// withJitter 在 [0.8x, 1.2x] 范围内随机化等待间隔。
 func withJitter(d time.Duration) time.Duration {
 	if d <= 0 {
 		return d

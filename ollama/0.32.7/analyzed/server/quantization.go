@@ -1,3 +1,4 @@
+// GGUF 量化：调用 llama-quantize、进度解析与兼容性 tensor 恢复。
 package server
 
 import (
@@ -18,11 +19,13 @@ import (
 	"github.com/ollama/ollama/manifest"
 )
 
+// findLlamaQuantize 定位与 llama-server 同目录的 llama-quantize 可执行文件。
 // findLlamaQuantize locates the llama-quantize binary (installed alongside llama-server).
 func findLlamaQuantize() (string, error) {
 	return llm.FindLlamaCppBinary("llama-quantize")
 }
 
+// progressRegex 匹配 llama-quantize 进度行如 "[ 42/ 200]"。
 // progressRegex matches llama-quantize output lines like "[ 42/ 200]"
 var progressRegex = regexp.MustCompile(`\[\s*(\d+)/\s*(\d+)\]`)
 
@@ -30,6 +33,7 @@ const llamaCppCompatEnv = "OLLAMA_LLAMA_CPP_COMPAT"
 
 var runLlamaQuantize = runLlamaQuantizeCommand
 
+// quantize 调用 llama-quantize 重量化 GGUF，并在完成后恢复嵌入式兼容 tensor。
 // quantize re-quantizes a GGUF model by shelling out to llama-quantize.
 // Embedded compatibility tensors are restored afterward because llama.cpp's
 // text model loader intentionally does not claim those tensors.
@@ -49,10 +53,12 @@ func quantize(in, out *os.File, orig *fsggml.GGML, newFileType fsggml.FileType, 
 	return nil
 }
 
+// copyGGUFWithLlamaQuantize 以 COPY 模式复制 GGUF 而不改变量化类型。
 func copyGGUFWithLlamaQuantize(in, out *os.File, orig *fsggml.GGML, progressFn func(n uint64)) error {
 	return runLlamaQuantize(in, out, orig, orig.KV().FileType(), "COPY", progressFn)
 }
 
+// needsDefaultLlavaProjectorType 判断 clip 层是否缺少 projector_type KV。
 func needsDefaultLlavaProjectorType(ggml *fsggml.GGML) bool {
 	kv := ggml.KV()
 	if kv.Architecture() != "clip" || !kv.Bool("has_vision_encoder") {
@@ -67,6 +73,7 @@ func needsDefaultLlavaProjectorType(ggml *fsggml.GGML) bool {
 	return true
 }
 
+// addDefaultLlavaProjectorType 写入 clip.projector_type=mlp 并重建 layer。
 func addDefaultLlavaProjectorType(layer *layerGGML) (*layerGGML, error) {
 	blob, err := manifest.BlobsPath(layer.Digest)
 	if err != nil {
@@ -115,6 +122,7 @@ func addDefaultLlavaProjectorType(layer *layerGGML) (*layerGGML, error) {
 	return &layerGGML{Layer: newLayer, GGML: f}, nil
 }
 
+// runLlamaQuantizeCommand 启动子进程、解析 stdout 进度并等待完成。
 func runLlamaQuantizeCommand(in, out *os.File, orig *fsggml.GGML, newFileType fsggml.FileType, typeName string, progressFn func(n uint64)) error {
 	quantizeExe, err := findLlamaQuantize()
 	if err != nil {
@@ -203,6 +211,7 @@ func (r tensorSection) WriteTo(w io.Writer) (int64, error) {
 	return io.Copy(w, r.SectionReader)
 }
 
+// restoreEmbeddedCompatibilityTensors 将 llama-quantize 丢弃的兼容 tensor 写回输出文件。
 func restoreEmbeddedCompatibilityTensors(in, out *os.File, orig *fsggml.GGML, newFileType fsggml.FileType) error {
 	if _, err := out.Seek(0, io.SeekStart); err != nil {
 		return err
@@ -279,6 +288,7 @@ func tensorFromFile(file *os.File, offset uint64, tensor *fsggml.Tensor) *fsggml
 	}
 }
 
+// llamaQuantizeArgs 按架构附加 --tensor-type 等 llama-quantize 参数。
 func llamaQuantizeArgs(arch string, newFileType fsggml.FileType, input, output, typeName string) []string {
 	args := []string{"--allow-requantize"}
 	if typeName == "COPY" {

@@ -1,3 +1,4 @@
+// 从 Go template AST 启发式推断思考块的开闭文本标签。
 package thinking
 
 import (
@@ -6,6 +7,7 @@ import (
 	"text/template/parse"
 )
 
+// templateVisit 深度优先遍历 template AST，支持 enter/exit 回调。
 func templateVisit(n parse.Node, enterFn func(parse.Node) bool, exitFn func(parse.Node)) {
 	if n == nil {
 		return
@@ -54,6 +56,7 @@ func templateVisit(n parse.Node, enterFn func(parse.Node) bool, exitFn func(pars
 	}
 }
 
+// InferTags 在 Messages range 内查找 {{.Thinking}}，取最近 ListNode 首尾 TextNode 为标签。
 // InferTags uses a heuristic to infer the tags that surround thinking traces:
 // We look for a range node that iterates over "Messages" and then look for a
 // reference to "Thinking" like `{{.Thinking}}`. We then go up to the nearest
@@ -117,6 +120,7 @@ func InferTags(t *template.Template) (string, string) {
 	return openingTag, closingTag
 }
 
+// rangeUsesField 检查 range 管道的 pipeline 是否引用指定字段名。
 // checks to see if the given field name is present in the pipeline of the given range node
 func rangeUsesField(rangeNode *parse.RangeNode, field string) bool {
 	found := false

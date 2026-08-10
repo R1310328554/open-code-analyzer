@@ -1,3 +1,4 @@
+// LLM 调度器：runner 加载/卸载、VRAM 放置、队列与 keep-alive 过期。
 package server
 
 import (
@@ -26,6 +27,7 @@ import (
 	"github.com/ollama/ollama/x/mlxrunner"
 )
 
+// LlmRequest 表示一次待调度或进行中的推理加载请求。
 type LlmRequest struct {
 	ctx             context.Context //nolint:containedctx
 	model           *Model
@@ -35,11 +37,11 @@ type LlmRequest struct {
 	errCh           chan error
 	schedAttempts   uint
 
-	// oomRetryAttempted is set after a llama-server load crash triggers an
+	// oomRetryAttempted 在 OOM 后 evict-all 重试过一次后为 true，防止无限循环。
 	// evict-all-and-retry. Prevents infinite retry on persistent load failures.
 	oomRetryAttempted bool
 
-	// numCtxAuto is true when NumCtx came from Ollama's automatic VRAM-tier
+	// numCtxAuto 表示 NumCtx 来自 Ollama 自动 VRAM 档位而非显式配置。
 	// default rather than explicit request, model, or environment config.
 	numCtxAuto bool
 
@@ -57,6 +59,7 @@ type LlmRequest struct {
 	shift        *bool
 }
 
+// Scheduler 管理 loaded runner map、pending 队列与 GPU 内存回收。
 type Scheduler struct {
 	pendingReqCh  chan *LlmRequest
 	finishedReqCh chan *LlmRequest
@@ -85,8 +88,10 @@ type Scheduler struct {
 // on a large GPU can cause stalling
 var defaultModelsPerGPU = 3
 
+// ErrMaxQueue 表示 pending 队列已满。
 var ErrMaxQueue = errors.New("server busy, please try again.  maximum pending requests exceeded")
 
+// InitScheduler 构造 Scheduler 并绑定默认 llama 加载/GPU 发现函数。
 func InitScheduler(ctx context.Context) *Scheduler {
 	maxQueue := envconfig.MaxQueue()
 	sched := &Scheduler{
@@ -104,6 +109,7 @@ func InitScheduler(ctx context.Context) *Scheduler {
 	return sched
 }
 
+// schedulerModelKey 返回调度 map 键：优先 ModelPath，否则 digest 或名称。
 // schedulerModelKey returns the scheduler map key for a model.
 // GGUF-backed models use ModelPath; safetensors/image models without a
 // ModelPath use manifest digest so distinct models don't collide.
@@ -126,6 +132,7 @@ func schedulerModelKey(m *Model) string {
 	return ""
 }
 
+// resolveContextShift 解析请求 shift 选项，deepseek2 等架构禁用 context shift。
 func resolveContextShift(shift *bool, m *Model) bool {
 	if shift != nil {
 		return *shift
@@ -146,6 +153,7 @@ func supportsContextShift(m *Model) bool {
 	return true
 }
 
+// effectiveModelContext 将 NumCtx 限制在模型训练上下文长度内。
 func effectiveModelContext(numCtx int, f *ggml.GGML) int {
 	return effectiveContext(numCtx, modelTrainContext(f))
 }
@@ -166,6 +174,7 @@ func effectiveContext(numCtx, trainCtx int) int {
 	return numCtx
 }
 
+// getRunner 复用已加载 runner 或入队 pending；返回 success/err channel。
 func (s *Scheduler) getRunner(c context.Context, m *Model, opts api.Options, sessionDuration *api.Duration, numCtxAuto bool, numBatchAuto bool, shift *bool) (chan *runnerRef, chan error) {
 	if opts.NumCtx < 4 {
 		opts.NumCtx = 4
@@ -210,6 +219,7 @@ func (s *Scheduler) getRunner(c context.Context, m *Model, opts api.Options, ses
 	return req.successCh, req.errCh
 }
 
+// Run 立即返回并启动 pending/completed 两个调度 goroutine。
 // Returns immediately, spawns go routines for the scheduler which will shutdown when ctx is done
 func (s *Scheduler) Run(ctx context.Context) {
 	slog.Debug("starting llm scheduler")
@@ -491,6 +501,7 @@ func (pending *LlmRequest) useLoadedRunner(runner *runnerRef, finished chan *Llm
 	}()
 }
 
+// load 创建并加载 llama-server；requireFull 时模型须完整上 GPU，否则可能需驱逐。
 // load creates a new model based on req and loads it. If requireFull is true then the model must be loaded fully onto GPUs
 // (if any). Returns whether the scheduler needs to evict a model to make this one fit.
 func (s *Scheduler) load(req *LlmRequest, systemInfo ml.SystemInfo, gpus []ml.DeviceInfo, requireFull bool) bool {
@@ -1554,6 +1565,7 @@ func (runner *runnerRef) HasExited() bool {
 	return true
 }
 
+// ByDurationAndName 按 session 剩余时间与名称排序 runner。
 type ByDurationAndName []*runnerRef
 
 func (a ByDurationAndName) Len() int      { return len(a) }
@@ -1587,6 +1599,7 @@ func (a ByDurationAndName) Less(i, j int) bool {
 // the one being loaded (matched by modelKey) and waits for all unload events
 // to drain. Returns false if the context was cancelled mid-wait so the caller
 // can exit the scheduling loop. Used by the OOM retry path in processPending.
+// evictAllAndWait OOM 恢复路径：卸载除 keepKey 外全部 runner 并等待 VRAM。
 func (s *Scheduler) evictAllAndWait(ctx context.Context, keepKey string) bool {
 	s.loadedMu.Lock()
 	runnersToExpire := make([]*runnerRef, 0, len(s.loaded))
@@ -1661,6 +1674,7 @@ func (s *Scheduler) expireRunnersForRuntimeOOM(model *Model, err error) {
 }
 
 // findRunnerToUnload finds a runner to unload to make room for a new model
+// findRunnerToUnload 按 LRU/keep-alive 策略挑选待卸载 runner。
 func (s *Scheduler) findRunnerToUnload() *runnerRef {
 	s.loadedMu.Lock()
 	runnerList := make([]*runnerRef, 0, len(s.loaded))

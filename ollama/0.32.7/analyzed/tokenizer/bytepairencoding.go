@@ -1,3 +1,4 @@
+// Byte Pair Encoding：GPT-2 字节级与 SentencePiece ▁ 两种 pretokenize/merge 路径。
 package tokenizer
 
 import (
@@ -14,17 +15,20 @@ import (
 	"github.com/ollama/ollama/logutil"
 )
 
+// BytePairEncoding 持有词表、pretokenizer 正则与 SPM 空格模式。
 type BytePairEncoding struct {
 	vocab         *Vocabulary
 	regexps       []*regexp2.Regexp
-	spaceToSpmSep bool // When true, normalize spaces to ▁ instead of GPT-2 byte-level encoding
+	spaceToSpmSep bool // 为 true 时空格规范为 ▁ 而非 GPT-2 字节映射
 }
 
 var _ Tokenizer = (*BytePairEncoding)(nil)
 
+// BPEOption 配置 BPE 行为（如 SentencePiece  normalizer）。
 // BPEOption configures BytePairEncoding behavior
 type BPEOption func(*BytePairEncoding)
 
+// WithSentencePieceNormalizer 启用 ▁ 空格规范化而非 GPT-2 字节级编码。
 // WithSentencePieceNormalizer enables ▁ space normalization instead of GPT-2 byte-level encoding.
 func WithSentencePieceNormalizer() BPEOption {
 	return func(bpe *BytePairEncoding) {
@@ -32,6 +36,7 @@ func WithSentencePieceNormalizer() BPEOption {
 	}
 }
 
+// NewBytePairEncoding 构造 BPE，无 pretokenizer 时使用默认 GPT-2 正则。
 func NewBytePairEncoding(vocab *Vocabulary, pretokenizer ...string) BytePairEncoding {
 	return newBytePairEncoding(vocab, pretokenizer)
 }
@@ -75,6 +80,7 @@ func (bpe BytePairEncoding) Is(id int32, special Special) bool {
 	return bpe.vocab.Is(id, special)
 }
 
+// split 按 pretokenizer 正则链式切分输入字符串。
 func (bpe *BytePairEncoding) split(s string) iter.Seq[string] {
 	parts := []string{s}
 	for _, re := range bpe.regexps {
@@ -108,6 +114,7 @@ func (bpe *BytePairEncoding) split(s string) iter.Seq[string] {
 	return slices.Values(parts)
 }
 
+// fragment 表示一段字符串及其已确定的 token ID（特殊 token 短路）。
 // fragment is a string fragment and their corresponding token IDs
 type fragment struct {
 	value string
@@ -126,6 +133,7 @@ type merge struct {
 	runes []rune
 }
 
+// Encode 先拆分特殊 token，再 BPE merge 各 fragment 为 ID 序列。
 func (bpe BytePairEncoding) Encode(s string, addSpecial bool) ([]int32, error) {
 	fragments := []fragment{{value: s}}
 	for _, special := range bpe.vocab.SpecialVocabulary() {
@@ -296,6 +304,7 @@ func (l lazyIdsString) LogValue() slog.Value {
 	return slog.AnyValue(fmt.Sprint(l.ids))
 }
 
+// Decode 按 spaceToSpmSep 选择 SPM 直写或 GPT-2 字节逆映射。
 func (bpe BytePairEncoding) Decode(ids []int32) (string, error) {
 	var sb strings.Builder
 
