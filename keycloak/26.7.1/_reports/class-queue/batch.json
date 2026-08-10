@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T06:50:53Z",
   "files": [
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/BaseGlobalOptionsCmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/CommandState.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/ExecutionExceptionHandler.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/Globals.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/ShortErrorMessageHandler.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/config/ConfigData.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/config/ConfigHandler.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/config/ConfigUpdateOperation.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/config/FileConfigHandler.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/config/InMemoryConfigHandler.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/config/RealmConfigData.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/AccessibleBufferOutputStream.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/AttributeException.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/AuthUtil.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/ClassLoaderUtil.java",
     "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/ConfigUtil.java",
     "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/FilterUtil.java",
     "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/Header.java",
@@ -33,5 +18,5 @@
     "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/util/ParseUtil.java"
   ],
   "remaining_pending": 5098,
-  "done": 870
+  "done": 885
 }
