@@ -1,5 +1,7 @@
 package bloomshipper
 
+// Fetcher 协调 Bloom 元数据与块的缓存命中、对象存储回源及下载队列，为查询路径提供 CloseableBlockQuerier。
+
 import (
 	"context"
 	"os"
@@ -73,9 +75,11 @@ type fetcher interface {
 	Close()
 }
 
+// 编译期断言 Fetcher 实现内部 fetcher 接口。
 // Compiler check to ensure Fetcher implements the fetcher interface
 var _ fetcher = &Fetcher{}
 
+// Fetcher 组合 Client、元数据/块缓存、下载队列与 Prometheus 指标。
 type Fetcher struct {
 	client Client
 
@@ -126,6 +130,7 @@ func (f *Fetcher) Close() {
 	f.q.close()
 }
 
+// FetchMetas 先查元数据缓存，miss 时批量从存储拉取并异步写回缓存。
 // FetchMetas implements fetcher
 func (f *Fetcher) FetchMetas(ctx context.Context, refs []MetaRef) ([]Meta, error) {
 	logger := spanlogger.FromContext(ctx, f.logger)
@@ -231,6 +236,7 @@ func (f *Fetcher) writeBackMetas(ctx context.Context, metas []Meta) error {
 	return f.metasCache.Store(ctx, keys, data)
 }
 
+// FetchBlocks 解析块缓存命中情况，未命中项入队下载并可选同步等待完成。
 // FetchBlocks implements fetcher
 func (f *Fetcher) FetchBlocks(ctx context.Context, refs []BlockRef, opts ...FetchOption) ([]*CloseableBlockQuerier, error) {
 	// apply fetch options
@@ -483,6 +489,7 @@ type downloadResponse[R any] struct {
 	idx  int
 }
 
+// downloadQueue 按 key 去重并串行化同键下载，避免重复拉取同一 Bloom 块。
 type downloadQueue[T any, R any] struct {
 	queue         chan *downloadRequest[T, R]
 	enqueued      *swiss.Map[string, struct{}]
@@ -574,3 +581,4 @@ func (q *downloadQueue[T, R]) close() {
 	close(q.done)
 	q.wg.Wait()
 }
+// 异步模式下 FetchBlocks 可立即返回已缓存块，其余块在后台下载队列中处理。

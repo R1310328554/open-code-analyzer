@@ -1,5 +1,7 @@
 package bloomshipper
 
+// bloomshipper Prometheus 指标：记录元数据/块拉取数量、体积、下载队列深度与缓存命中情况。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -18,6 +20,7 @@ func newStoreMetrics(_ prometheus.Registerer, _, _ string) *storeMetrics {
 	return &storeMetrics{}
 }
 
+// fetcherMetrics 持有 Fetcher 使用的 histogram 与 counter 指标句柄。
 type fetcherMetrics struct {
 	metasFetched      prometheus.Histogram
 	blocksFetched     prometheus.Histogram
@@ -30,6 +33,7 @@ type fetcherMetrics struct {
 	blocksMissing            prometheus.Counter
 }
 
+// newFetcherMetrics 注册 metas/blocks 拉取量、体积及下载队列相关 histogram。
 func newFetcherMetrics(registerer prometheus.Registerer, namespace, subsystem string) *fetcherMetrics {
 	r := promauto.With(registerer)
 	return &fetcherMetrics{
@@ -89,3 +93,4 @@ func newFetcherMetrics(registerer prometheus.Registerer, namespace, subsystem st
 		}),
 	}
 }
+// blocksFound/blocksMissing 计数器分别统计缓存命中与需回源下载的 Bloom 块。

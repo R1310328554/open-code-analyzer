@@ -1,5 +1,7 @@
 package compactor
 
+// 索引迭代与清理：按 series 遍历 chunk 索引条目，并删除 retention 指定的 series/chunk 键。
+
 import (
 	"bytes"
 	"context"
@@ -20,10 +22,12 @@ const (
 	separator     = "\000"
 )
 
+// 编译期断言 seriesCleaner 实现 retention.IndexCleaner 接口。
 var (
 	_ retention.IndexCleaner = &seriesCleaner{}
 )
 
+// ForEachSeries 扫描 bucket 中 chunk 键，按 series 聚合后调用 retention 回调。
 func ForEachSeries(ctx context.Context, bucket *bbolt.Bucket, config config.PeriodConfig, callback retention.SeriesCallback) error {
 	labelsMapper, err := newSeriesLabelsMapper(bucket, config)
 	if err != nil {
@@ -74,6 +78,7 @@ func ForEachSeries(ctx context.Context, bucket *bbolt.Bucket, config config.Peri
 	return ctx.Err()
 }
 
+// seriesCleaner 根据 schema 生成索引键并从 boltdb bucket 删除 series 或 chunk。
 type seriesCleaner struct {
 	tableInterval model.Interval
 	shards        map[uint32]string
@@ -206,3 +211,4 @@ func (s *seriesCleaner) ChunkExists(userID []byte, lbls labels.Labels, chunkRef 
 
 	return true, nil
 }
+// CleanupSeries 补全 __name__=logs 标签后删除该 series 的全部 label/chunk 写索引键。

@@ -1,5 +1,7 @@
 package bloomshipper
 
+// KeyResolver 将 MetaRef/BlockRef 映射到对象存储键与本地路径，支持前缀包装与按哈希分片的多工作目录布局。
+
 import (
 	"fmt"
 	"hash"
@@ -22,6 +24,7 @@ const (
 	blockExtension = v1.ExtTar
 )
 
+// KeyResolver 抽象 Bloom 元数据与块在对象存储及磁盘上的路径规则。
 // KeyResolver is an interface for resolving keys to locations.
 // This is used to determine where items are stored in object storage _and_ on disk.
 // Using an interface allows us to abstract away platform specifics
@@ -37,6 +40,7 @@ type KeyResolver interface {
 	TenantPrefix(loc Location) (string, error)
 }
 
+// defaultKeyResolver 使用 bloom/<table>/<tenant>/metas|blocks/ 层次结构编码键。
 type defaultKeyResolver struct{}
 
 func (defaultKeyResolver) Meta(ref MetaRef) Location {
@@ -167,6 +171,7 @@ func (defaultKeyResolver) TenantPrefix(loc Location) (string, error) {
 	return dirParts[2], nil
 }
 
+// PrefixedResolver 在基础解析器路径前追加固定前缀（如工作目录根）。
 type PrefixedResolver struct {
 	prefix string
 	KeyResolver
@@ -197,6 +202,7 @@ type hashable interface {
 	Hash(hash.Hash32) error
 }
 
+// ShardedPrefixedResolver 按 Ref 哈希将块分散到多个本地前缀目录。
 type ShardedPrefixedResolver struct {
 	prefixes []string
 	KeyResolver
@@ -237,6 +243,7 @@ func (r ShardedPrefixedResolver) Block(ref BlockRef) Location {
 	}
 }
 
+// Location 同时提供对象存储 Addr 与本地文件系统 LocalPath 表示。
 type Location interface {
 	Addr() string      // object storage location
 	LocalPath() string // local path version
@@ -292,3 +299,4 @@ func cacheKey(ref BlockRef) string {
 func localFilePathWithoutExtension(ref BlockRef, res KeyResolver) string {
 	return strings.TrimSuffix(res.Block(ref).LocalPath(), blockExtension+compression.ToFileExtension(ref.Codec))
 }
+// cacheKey 去掉压缩 tar 扩展名，使块缓存键与解压后目录路径一致。

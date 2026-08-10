@@ -1,5 +1,7 @@
 package bloomshipper
 
+// BloomStore 按 schema 周期管理多个 bloomStoreEntry：解析元数据、分区拉取块，并跨周期时间区间 fan-out 到对应存储后端。
+
 import (
 	"context"
 	"fmt"
@@ -30,6 +32,7 @@ var (
 	errNoStore = errors.New("no store found for time")
 )
 
+// StoreBase 定义元数据解析、块获取及按租户列举对象的核心能力。
 type StoreBase interface {
 	ResolveMetas(ctx context.Context, params MetaSearchParams) ([][]MetaRef, []*Fetcher, error)
 	FetchMetas(ctx context.Context, params MetaSearchParams) ([]Meta, error)
@@ -58,6 +61,7 @@ type bloomStoreConfig struct {
 // Compiler check to ensure bloomStoreEntry implements the Store interface
 var _ StoreBase = &bloomStoreEntry{}
 
+// bloomStoreEntry 绑定单个 PeriodConfig 的对象客户端、BloomClient 与 Fetcher。
 type bloomStoreEntry struct {
 	start              model.Time
 	cfg                config.PeriodConfig
@@ -67,6 +71,7 @@ type bloomStoreEntry struct {
 	defaultKeyResolver // TODO(owen-d): impl schema aware resolvers
 }
 
+// ResolveMetas 列举对象存储 metas 前缀并按 keyspace 过滤 MetaRef。
 // ResolveMetas implements store.
 func (b *bloomStoreEntry) ResolveMetas(ctx context.Context, params MetaSearchParams) ([][]MetaRef, []*Fetcher, error) {
 	var refs []MetaRef
@@ -116,6 +121,7 @@ func (b *bloomStoreEntry) ResolveMetas(ctx context.Context, params MetaSearchPar
 	return [][]MetaRef{refs}, []*Fetcher{b.fetcher}, nil
 }
 
+// FilterMetasOverlappingBounds 在已排序元数据中按指纹边界剪枝。
 // FilterMetasOverlappingBounds filters metas that are within the given bounds.
 // the input metas are expected to be sorted by fingerprint.
 func FilterMetasOverlappingBounds(metas []Meta, bounds v1.FingerprintBounds) []Meta {
@@ -277,6 +283,7 @@ func (b bloomStoreEntry) Stop() {
 // Compiler check to ensure BloomStore implements the Store interface
 var _ Store = &BloomStore{}
 
+// BloomStore 聚合各 schema 周期的 entry，对外实现 Store 与 KeyResolver。
 type BloomStore struct {
 	stores             []*bloomStoreEntry
 	storageConfig      storage.Config
@@ -497,6 +504,7 @@ func (b *BloomStore) FetchMetas(ctx context.Context, params MetaSearchParams) ([
 	return metas, nil
 }
 
+// partitionBlocksByFetcher 按块起始时间将请求路由到对应 schema 的 Fetcher。
 // partitionBlocksByFetcher returns a slice of BlockRefs for each fetcher
 func (b *BloomStore) partitionBlocksByFetcher(blocks []BlockRef) (refs [][]BlockRef, fetchers []*Fetcher) {
 	for i := len(b.stores) - 1; i >= 0; i-- {
@@ -648,3 +656,4 @@ func tablesForRange(periodConfig config.PeriodConfig, interval Interval) []strin
 	}
 	return tables
 }
+// forStores 将查询区间切分到各 schema 周期并在边界处调整起止时间。

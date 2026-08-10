@@ -1,5 +1,7 @@
 package compactor
 
+// indexCompactor 实现 compactor.IndexCompactor：创建 TableCompactor 并打开已压缩 boltdb 索引文件。
+
 import (
 	"context"
 
@@ -17,6 +19,7 @@ type indexEntry struct {
 	k, v []byte
 }
 
+// indexCompactor 为 boltdb-shipper 索引压缩的工厂与文件打开入口。
 type indexCompactor struct{}
 
 func NewIndexCompactor() compactor.IndexCompactor {
@@ -35,3 +38,4 @@ func (i indexCompactor) OpenCompactedIndexFile(_ context.Context, path, tableNam
 
 	return newCompactedIndex(boltdb, tableName, workingDir, periodConfig, logger), nil
 }
+// OpenCompactedIndexFile 以 NoSync 模式打开路径上的 boltdb 并包装为 CompactedIndex。

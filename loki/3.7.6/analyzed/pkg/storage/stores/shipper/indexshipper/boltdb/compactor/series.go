@@ -1,5 +1,7 @@
 package compactor
 
+// series 标签映射：扫描 label series range 键，为每个 user+series 构建 labels.Builder。
+
 import (
 	"github.com/prometheus/prometheus/model/labels"
 	"go.etcd.io/bbolt"
@@ -49,6 +51,7 @@ type seriesLabels struct {
 	builder *labels.Builder
 }
 
+// seriesLabelsMapper 预扫描 bucket 建立 seriesID+userID 到完整标签集的映射。
 type seriesLabelsMapper struct {
 	cursor *bbolt.Cursor
 	config config.PeriodConfig
@@ -108,3 +111,4 @@ Outer:
 	}
 	return nil
 }
+// Get 按 series 与 user 查找已构建标签；未命中时返回空 Labels。

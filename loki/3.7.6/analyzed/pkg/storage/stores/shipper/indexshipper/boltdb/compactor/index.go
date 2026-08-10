@@ -1,5 +1,7 @@
 package compactor
 
+// boltdb 索引键解析：从 hash/range 键解码 chunk 引用、series ID 与标签 series 范围键。
+
 import (
 	"bytes"
 	"errors"
@@ -17,6 +19,7 @@ const (
 
 var ErrInvalidIndexKey = errors.New("invalid index key")
 
+// InvalidIndexKeyError 携带无法解析的 hash/range 键片段。
 type InvalidIndexKeyError struct {
 	HashKey  string
 	RangeKey string
@@ -37,6 +40,7 @@ func (e InvalidIndexKeyError) Is(target error) bool {
 	return target == ErrInvalidIndexKey
 }
 
+// chunkRef 表示从索引键解析出的 chunk：用户、series、时间范围与 chunk ID。
 type chunkRef struct {
 	UserID   []byte
 	SeriesID []byte
@@ -163,6 +167,7 @@ func parseLabelIndexSeriesID(hashKey, rangeKey []byte) ([]byte, bool, error) {
 	return seriesID, true, nil
 }
 
+// LabelSeriesRangeKey 关联 series ID、用户 ID 与标签名。
 type LabelSeriesRangeKey struct {
 	SeriesID []byte
 	UserID   []byte
@@ -217,6 +222,7 @@ func seriesFromHash(h []byte) (seriesID []byte) {
 	return
 }
 
+// decodeKey 按 NUL 分隔符拆分 boltdb 键为 hashValue 与 rangeValue。
 // decodeKey decodes hash and range value from a boltdb key.
 func decodeKey(k []byte) (hashValue, rangeValue []byte) {
 	// hashValue + 0 + string(rangeValue)
@@ -260,3 +266,4 @@ func decodeRangeKey(value []byte, components [][]byte) [][]byte {
 	}
 	return components
 }
+// decodeRangeKey 以 NUL 分隔 range 键组件，供 chunk 与 label index 类型判断使用。

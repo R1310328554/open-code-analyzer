@@ -1,5 +1,7 @@
 package bloomshipper
 
+// bloomshipper 对象存储客户端：管理 Bloom 元数据与块的上传、下载与删除，并提供带 TTL 的 LIST 操作缓存以减轻对象存储压力。
+
 import (
 	"bytes"
 	"context"
@@ -35,6 +37,7 @@ const (
 	fileNamePartDelimiter = "-"
 )
 
+// Ref 标识 Bloom 元数据或块：租户、表名、指纹边界、时间范围与校验和。
 type Ref struct {
 	TenantID                     string
 	TableName                    string
@@ -43,6 +46,7 @@ type Ref struct {
 	Checksum                     uint32
 }
 
+// Hash 将表名、时间戳与校验和写入哈希器；租户 ID 不参与哈希以便跨租户迁移。
 // Hash hashes the ref
 // NB(owen-d): we don't include the tenant in the hash
 // as it's not included in the data and leaving it out gives
@@ -63,6 +67,7 @@ func (r Ref) Hash(h hash.Hash32) error {
 	return errors.Wrap(err, "writing BlockRef")
 }
 
+// Cmp 判断给定指纹相对 Ref 边界的 Before/After/Overlap 关系。
 // Cmp returns the fingerprint's position relative to the bounds
 func (r Ref) Cmp(fp uint64) v1.BoundsCheck {
 	return r.Bounds.Cmp(model.Fingerprint(fp))
@@ -98,6 +103,7 @@ func MetaRefFromKey(k string) (MetaRef, error) {
 }
 
 // todo rename it
+// Meta 描述 Bloom 块集合：来源 TSDB 文件列表及生成的 BlockRef 列表。
 type Meta struct {
 	MetaRef `json:"-"`
 
@@ -184,6 +190,7 @@ type MetaSearchParams struct {
 	Keyspace v1.FingerprintBounds
 }
 
+// MetaClient 定义 Bloom 元数据在对象存储上的 CRUD 接口。
 type MetaClient interface {
 	KeyResolver
 	GetMeta(ctx context.Context, ref MetaRef) (Meta, error)
@@ -248,6 +255,7 @@ func BlockFrom(enc compression.Codec, tenant, table string, blk *v1.Block) (Bloc
 	}, nil
 }
 
+// BlockClient 定义 Bloom 块下载、上传与删除接口。
 type BlockClient interface {
 	KeyResolver
 	GetBlock(ctx context.Context, ref BlockRef) (BlockDirectory, error)
@@ -267,6 +275,7 @@ type Client interface {
 // Compiler check to ensure BloomClient implements the Client interface
 var _ Client = &BloomClient{}
 
+// BloomClient 通过 ObjectClient 并发读写 Bloom 元数据与压缩 tar 块。
 type BloomClient struct {
 	KeyResolver
 	concurrency int
@@ -316,6 +325,7 @@ func (b *BloomClient) DeleteMetas(ctx context.Context, refs []MetaRef) error {
 	return err
 }
 
+// GetBlock 从对象存储拉取块、解压到本地工作目录并返回 BlockDirectory。
 // GetBlock downloads the blocks from objectStorage and returns the directory
 // in which the block data resides
 func (b *BloomClient) GetBlock(ctx context.Context, ref BlockRef) (BlockDirectory, error) {
@@ -420,6 +430,7 @@ func (b *BloomClient) GetMetas(ctx context.Context, refs []MetaRef) ([]Meta, err
 	return filtered, err
 }
 
+// GetMeta 按 MetaRef 读取 JSON 元数据；未找到或解码失败时返回空 Meta 与错误。
 // GetMeta fetches the meta file for given MetaRef from object storage and
 // decodes the JSON data into a Meta.
 // If the meta file is not found in storage or decoding fails, the empty Meta
@@ -458,6 +469,7 @@ type listOpResult struct {
 
 type listOpCache map[string]listOpResult
 
+// cachedListOpObjectClient 为 LIST 前缀查询提供带 TTL 的内存缓存。
 type cachedListOpObjectClient struct {
 	client.ObjectClient
 	cache         listOpCache
@@ -548,3 +560,4 @@ func (c *cachedListOpObjectClient) Stop() {
 	c.cache = nil
 	c.ObjectClient.Stop()
 }
+// LIST 缓存按前缀键存储对象列表，定期清理过期条目以降低重复列举开销。

@@ -1,5 +1,7 @@
 package bloomshipper
 
+// Shipper 对 Store 的薄封装：批量 FetchBlocks 并对每个 BlockQuerier 执行回调后自动 Close。
+
 import (
 	"context"
 	"fmt"
@@ -23,6 +25,7 @@ func NewShipper(client StoreBase) *Shipper {
 	return &Shipper{store: client}
 }
 
+// ForEach 同步拉取全部块，逐块调用 callback 并递减引用计数。
 // ForEach is a convenience function that wraps the store's FetchBlocks function
 // and automatically closes the block querier once the callback was run.
 func (s *Shipper) ForEach(ctx context.Context, refs []BlockRef, callback ForEachBlockCallback) error {
@@ -50,6 +53,7 @@ func (s *Shipper) Stop() {
 	s.store.Stop()
 }
 
+// BlocksForMetas 从元数据列表中筛选时间区间与指纹 keyspace 内的块并按边界排序。
 // BlocksForMetas returns all the blocks from all the metas listed that are within the requested bounds
 func BlocksForMetas(metas []Meta, interval Interval, keyspaces []v1.FingerprintBounds) (refs []BlockRef) {
 	for _, meta := range metas {
@@ -67,6 +71,7 @@ func BlocksForMetas(metas []Meta, interval Interval, keyspaces []v1.FingerprintB
 	return refs
 }
 
+// isOutsideRange 判断块是否在查询时间窗或任一指纹范围内。
 // isOutsideRange tests if a given BlockRef b is outside of search boundaries
 // defined by min/max timestamp and min/max fingerprint.
 // Fingerprint ranges must be sorted in ascending order.
@@ -85,3 +90,4 @@ func isOutsideRange(b BlockRef, interval Interval, bounds []v1.FingerprintBounds
 
 	return true
 }
+// Stop 转发至底层 Store，关闭 fetcher 与对象存储客户端。

@@ -1,5 +1,7 @@
 package compactor
 
+// tableCompactor 将 boltdb-shipper 索引从 FORMAT1/2 合并为 FORMAT1/3：并行下载源文件、按租户拆分并可选重建 compacted DB 以节省空间。
+
 import (
 	"context"
 	"fmt"
@@ -66,6 +68,7 @@ const (
 )
 
 // compactedIndexSet holds both the IndexSet and the CompactedIndex for ease.
+// compactedIndexSet 同时持有 IndexSet 接口与内存中的 CompactedIndex。
 type compactedIndexSet struct {
 	compactor.IndexSet
 	compactedIndex *CompactedIndex
@@ -96,6 +99,7 @@ func (d *downloadedDb) cleanup(logger log.Logger) {
 	}
 }
 
+// tableCompactor 协调公共索引与 per-user 索引集的压缩、重建与上传。
 type tableCompactor struct {
 	ctx                     context.Context
 	commonIndexSet          compactor.IndexSet
@@ -124,6 +128,7 @@ func newTableCompactor(
 	}
 }
 
+// CompactTable 驱动整表压缩：合并多文件、处理未更新租户索引并设置结果。
 func (t *tableCompactor) CompactTable() error {
 	commonIndexes := t.commonIndexSet.ListSourceFiles()
 
@@ -456,6 +461,7 @@ func compactedFileIdx(commonIndexes []storage.IndexFile) int {
 	return -1
 }
 
+// openBoltdbFileWithNoSync 打开 boltdb 并禁用 fsync，压缩产物随后上传即删。
 // openBoltdbFileWithNoSync opens a boltdb file and configures it to not sync the file to disk.
 // Compaction process is idempotent and we do not retain the files so there is no need to sync them to disk.
 func openBoltdbFileWithNoSync(path string) (*bbolt.DB, error) {
@@ -512,6 +518,7 @@ func readFile(_ log.Logger, db downloadedDb, writeBatch func(userID string, batc
 	})
 }
 
+// mustRecreateCompactedDB 在单文件、已压缩且超过 12 小时未重建时触发空间回收。
 // mustRecreateCompactedDB returns true if the compacted db should be recreated
 func mustRecreateCompactedDB(sourceFiles []storage.IndexFile) bool {
 	if len(sourceFiles) != 1 {
@@ -528,3 +535,4 @@ func mustRecreateCompactedDB(sourceFiles []storage.IndexFile) bool {
 	// recreate the compacted db only if we have not recreated it before
 	return !strings.Contains(sourceFiles[0].Name, recreatedCompactedDBSuffix)
 }
+// readFile 分批读取 bucket 键值并通过 writeBatch 写入目标 compacted boltdb。

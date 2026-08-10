@@ -1,6 +1,8 @@
 // package bloomshipperconfig resides in its own package to prevent circular imports with storage package
 package config
 
+// bloomshipper 独立配置包：工作目录、下载并发、块/元数据缓存与 Bloom 页内存分配策略，避免与 storage 包循环依赖。
+
 import (
 	"errors"
 	"flag"
@@ -16,6 +18,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/mempool"
 )
 
+// Config 聚合 Bloom Shipper 运行所需的目录、缓存与内存管理选项。
 type Config struct {
 	WorkingDirectory    flagext.StringSliceCSV    `yaml:"working_directory"`
 	MaxQueryPageSize    flagext.Bytes             `yaml:"max_query_page_size"`
@@ -55,13 +58,15 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// BlocksCacheConfig 配置进程内 Bloom 块嵌入缓存的软/硬上限与 TTL。
 // BlocksCacheConfig represents in-process embedded cache config.
 type BlocksCacheConfig struct {
 	SoftLimit flagext.Bytes `yaml:"soft_limit"`
 	HardLimit flagext.Bytes `yaml:"hard_limit"`
 	TTL       time.Duration `yaml:"ttl"`
 
-	// PurgeInterval tell how often should we remove keys that are expired.
+	// PurgeInterval 指定后台清理过期缓存键的间隔；零值时使用默认 purge 周期。
+// PurgeInterval tell how often should we remove keys that are expired.
 	// by default it takes `defaultPurgeInterval`
 	PurgeInterval time.Duration `yaml:"-"`
 }
@@ -107,6 +112,7 @@ var (
 	}
 )
 
+// MemoryManagementConfig 控制 Bloom 页缓冲区分配方式（simple/dynamic/fixed）。
 type MemoryManagementConfig struct {
 	BloomPageAllocationType string                          `yaml:"bloom_page_alloc_type"`
 	BloomPageMemPoolBuckets lokiflagext.CSV[mempool.Bucket] `yaml:"bloom_page_mem_pool_buckets"`
@@ -147,3 +153,4 @@ func (t supportedAllocationTypes) descriptions() []string {
 	}
 	return names
 }
+// RegisterFlagsWithPrefix 注册 shipper 相关 CLI/YAML 标志，含隐藏 cache-list-ops 开关。

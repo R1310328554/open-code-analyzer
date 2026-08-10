@@ -1,5 +1,7 @@
 package compactor
 
+// CompactedIndex 表示压缩过程中的 boltdb 索引文件：支持保留策略迭代、chunk 重索引及通过 bbolt.Compact 回收空闲页缩小文件。
+
 import (
 	"context"
 	"fmt"
@@ -23,6 +25,7 @@ import (
 	shipperutil "github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/util"
 )
 
+// CompactedIndex 持有工作区 boltdb、表名、period 配置及 retention 处理器。
 type CompactedIndex struct {
 	compactedFile          *bbolt.DB
 	compactedFileRecreated bool
@@ -55,6 +58,7 @@ func (c *CompactedIndex) isEmpty() (bool, error) {
 	return empty, nil
 }
 
+// recreateCompactedDB 用 bbolt.Compact 重建文件以释放删除留下的空闲页并提高页填充率。
 // recreateCompactedDB just copies the old db to the new one using bbolt.Compact for following reasons:
 //  1. When index entries are deleted, boltdb leaves free pages in the file. The only way to drop those free pages is to re-create the file.
 //     See https://github.com/boltdb/bolt/issues/308 for more details.
@@ -104,6 +108,7 @@ func (c *CompactedIndex) recreateCompactedDB() error {
 	return nil
 }
 
+// setupIndexProcessors 开启写事务并初始化 chunkIndexer 与 seriesCleaner。
 // setupIndexProcessors sets things for processing index for applying retention
 func (c *CompactedIndex) setupIndexProcessors() error {
 	// if boltdbTx is already set then we would have already setup all the required components
@@ -245,6 +250,7 @@ func newChunkIndexer(bucket *bbolt.Bucket, periodConfig config.PeriodConfig, tab
 	}, nil
 }
 
+// IndexChunk 仅写入属于当前表的 index entry，用于 compaction 期间增量索引。
 // IndexChunk indexes a chunk if it belongs to the same table by seeing if table name in built index entries match c.tableName.
 func (c *chunkIndexer) IndexChunk(chunkRef logproto.ChunkRef, lbls labels.Labels, _ uint32, _ uint32) (bool, error) {
 	entries, err := c.seriesStoreSchema.GetChunkWriteEntries(chunkRef.From, chunkRef.Through, chunkRef.UserID, "logs", lbls, c.scfg.ExternalKey(chunkRef))
@@ -285,3 +291,4 @@ func writeBatch(indexFile *bbolt.DB, batch []indexEntry) error {
 		return nil
 	})
 }
+// ToIndexFile 提交事务后将 boltdb 封装为 shipper Index 文件供上传对象存储。
