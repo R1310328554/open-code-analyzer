@@ -16,6 +16,8 @@
 
 package service
 
+// connector.go 管理外部数据源连接器及其 OAuth Web 授权流程。
+
 import (
 	"context"
 	"crypto/rand"
@@ -70,7 +72,7 @@ var (
 	connectorRedisGet = redis.Get
 )
 
-// Sentinel errors so handlers can map to the proper response codes,
+// 哨兵错误：供 handler 映射为与 Python connector_api 一致的响应码。
 // mirroring the Python connector_api responses.
 var (
 	// ErrConnectorNotFound mirrors Python's "Can't find this Connector!".
@@ -82,13 +84,13 @@ var (
 	ErrConnectorTestUnsupported = errors.New("test endpoint currently supports only REST API connectors")
 )
 
-// ConnectorService connector service
+// ConnectorService 连接器业务服务。
 type ConnectorService struct {
 	connectorDAO  *dao.ConnectorDAO
 	userTenantDAO *dao.UserTenantDAO
 }
 
-// NewConnectorService create connector service
+// NewConnectorService 构造 ConnectorService。
 func NewConnectorService() *ConnectorService {
 	return &ConnectorService{
 		connectorDAO:  dao.NewConnectorDAO(),
@@ -96,12 +98,12 @@ func NewConnectorService() *ConnectorService {
 	}
 }
 
-// ListConnectorsResponse list connectors response
+// ListConnectorsResponse 连接器列表响应。
 type ListConnectorsResponse struct {
 	Connectors []*dao.ConnectorListItem `json:"connectors"`
 }
 
-// CreateConnectorRequest creates a connector with Python-compatible defaults.
+// CreateConnectorRequest 创建连接器请求，refresh/prune/timeout 有 Python 默认值。
 type CreateConnectorRequest struct {
 	Name        string         `json:"name"`
 	Source      string         `json:"source"`
@@ -216,7 +218,7 @@ type boxOAuthTokenResponse struct {
 	ErrorDesc    string `json:"error_description,omitempty"`
 }
 
-// canAccessConnector Test Authentication
+// canAccessConnector 判断用户是否可访问连接器所属租户。
 func (s *ConnectorService) canAccessConnector(connector *entity.Connector, userID string) bool {
 	if connector.TenantID == userID {
 		return true
@@ -226,7 +228,7 @@ func (s *ConnectorService) canAccessConnector(connector *entity.Connector, userI
 	return err == nil
 }
 
-// cancelConnectorTasks Stop connector tasks
+// cancelConnectorTasks 取消运行中/已调度同步任务并将 status 置为 CANCEL。
 func (s *ConnectorService) cancelConnectorTasks(connectorID string) error {
 	if err := s.connectorDAO.CancelRunningOrScheduledLogs(connectorID); err != nil {
 		return err
@@ -234,7 +236,7 @@ func (s *ConnectorService) cancelConnectorTasks(connectorID string) error {
 	return s.connectorDAO.UpdateByID(connectorID, map[string]interface{}{"status": string(entity.TaskStatusCancel)})
 }
 
-// CreateConnector creates a connector owned by the current user.
+// CreateConnector 创建连接器，默认 input_type=poll、status=未启动。
 // Equivalent to Python's create_connector endpoint.
 func (s *ConnectorService) CreateConnector(userID string, req *CreateConnectorRequest) (*entity.Connector, error) {
 	refreshFreq := int64(defaultConnectorFreq)
@@ -272,7 +274,7 @@ func (s *ConnectorService) CreateConnector(userID string, req *CreateConnectorRe
 	return s.connectorDAO.GetByID(connector.ID)
 }
 
-// GetConnector returns one connector when the user can access its tenant.
+// GetConnector 获取单条连接器（租户成员或所有者）。
 func (s *ConnectorService) GetConnector(connectorID, userID string) (*entity.Connector, common.ErrorCode, error) {
 	if connectorID == "" {
 		return nil, common.CodeDataError, fmt.Errorf("connector_id is required")
@@ -303,7 +305,7 @@ func (s *ConnectorService) GetConnector(connectorID, userID string) (*entity.Con
 	return nil, common.CodeAuthenticationError, fmt.Errorf("No authorization.")
 }
 
-// ListConnectors list connectors for a user
+// ListConnectors 列出用户主租户下的全部连接器。
 // Equivalent to Python's ConnectorService.list(current_user.id)
 func (s *ConnectorService) ListConnectors(userID string) (*ListConnectorsResponse, error) {
 	// Get tenant IDs by user ID
@@ -332,7 +334,7 @@ func (s *ConnectorService) ListConnectors(userID string) (*ListConnectorsRespons
 	}, nil
 }
 
-// accessible reports whether the user can access the connector's tenant.
+// accessible 校验用户对 connector_id 的访问权限。
 // Mirrors Python's ConnectorService.accessible: owner access plus joined tenants.
 func (s *ConnectorService) accessible(connectorID, userID string) (bool, error) {
 	conn, err := s.connectorDAO.GetByID(connectorID)
@@ -356,7 +358,7 @@ func (s *ConnectorService) accessible(connectorID, userID string) (bool, error) 
 	return false, nil
 }
 
-// TestConnector validates a connector's stored configuration.
+// TestConnector 校验连接器配置；当前仅 fully 支持 rest_api 源。
 // Equivalent to Python's test_connector. Per-connector credential validation
 // lives in the Python common.data_source package and is not yet available in
 // Go; for now this verifies access, that the connector exists, that the source
@@ -395,6 +397,7 @@ func (s *ConnectorService) TestConnector(connectorID, userID string) error {
 	return nil
 }
 
+// StartGoogleWebOAuth 启动 Google Drive/Gmail PKCE Web OAuth，状态存 Redis。
 func (s *ConnectorService) StartGoogleWebOAuth(userID, source string, req *StartGoogleWebOAuthRequest) (*StartGoogleWebOAuthResponse, common.ErrorCode, error) {
 	source = strings.TrimSpace(source)
 	if source == "" {
@@ -473,6 +476,7 @@ func (s *ConnectorService) StartGoogleWebOAuth(userID, source string, req *Start
 	}, common.CodeSuccess, nil
 }
 
+// GoogleWebOAuthCallback OAuth 回调：换 token 写入 result 键并渲染 popup HTML。
 func (s *ConnectorService) GoogleWebOAuthCallback(source, stateID, oauthError, errorDescription, code string) string {
 	source = strings.TrimSpace(source)
 	if source != "google-drive" && source != "gmail" {
@@ -536,6 +540,7 @@ func (s *ConnectorService) GoogleWebOAuthCallback(source, stateID, oauthError, e
 	return renderWebOAuthPopup(stateID, true, "Authorization completed successfully.", source)
 }
 
+// PollGoogleWebOAuthResult 轮询 OAuth 结果 credentials JSON。
 func (s *ConnectorService) PollGoogleWebOAuthResult(userID, source string, req *PollGoogleWebOAuthResultRequest) (*PollGoogleWebOAuthResultResponse, common.ErrorCode, error) {
 	source = strings.TrimSpace(source)
 	if source != "google-drive" && source != "gmail" {
@@ -840,6 +845,7 @@ func webOAuthSourceDisplayName(source string) string {
 	return "OAuth"
 }
 
+// DeleteConnector 取消任务并删除连接器记录。
 func (s *ConnectorService) DeleteConnector(connectorID, userID string) (bool, common.ErrorCode, error) {
 	if connectorID == "" {
 		return false, common.CodeDataError, fmt.Errorf("connector_id is required")
@@ -876,6 +882,7 @@ type UpdateConnectorRequest struct {
 	Status      string         `json:"status,omitempty"`
 }
 
+// UpdateConnector 更新频率/配置，可选 reschedule 或按 status 取消/调度任务。
 func (s *ConnectorService) UpdateConnector(connectorID, userID string, req *UpdateConnectorRequest) (*entity.Connector, common.ErrorCode, error) {
 	if connectorID == "" {
 		return nil, common.CodeDataError, fmt.Errorf("connector_id is required")
@@ -955,7 +962,7 @@ func isConnectorScheduleStatus(status string) bool {
 	return status == string(entity.TaskStatusSchedule) || strings.EqualFold(status, "SCHEDULE")
 }
 
-// RebuildConnector schedules a rebuild for an accessible connector and knowledge base.
+// RebuildConnector 对指定 kb 重建连接器同步：删分块并重排任务。
 func (s *ConnectorService) RebuildConnector(connectorID, userID, kbID string) (bool, common.ErrorCode, error) {
 	if connectorID == "" {
 		return false, common.CodeDataError, fmt.Errorf("connector_id is required")
@@ -1002,6 +1009,7 @@ func (s *ConnectorService) deleteConnectorDocumentChunks(tenantID, kbID string, 
 	}
 }
 
+// ListLog 分页返回连接器同步日志。
 func (s *ConnectorService) ListLog(connectorID, userID string, page, pageSize int) ([]*entity.ConnectorSyncLog, int64, common.ErrorCode, error) {
 	if connectorID == "" {
 		return nil, 0, common.CodeDataError, fmt.Errorf("connector_id is required")
@@ -1037,6 +1045,7 @@ func (s *ConnectorService) ListLog(connectorID, userID string, page, pageSize in
 	return logs, total, common.CodeSuccess, nil
 }
 
+// StartBoxWebOAuth 启动 Box OAuth Web 流程。
 func (s *ConnectorService) StartBoxWebOAuth(userID string, req *StartBoxWebOAuthRequest) (*StartBoxWebOAuthResponse, common.ErrorCode, error) {
 	var clientID, clientSecret, redirectURI string
 	if req != nil {
@@ -1081,6 +1090,7 @@ func (s *ConnectorService) StartBoxWebOAuth(userID string, req *StartBoxWebOAuth
 	}, common.CodeSuccess, nil
 }
 
+// BoxWebOAuthCallback Box OAuth 回调页面与 token 交换。
 func (s *ConnectorService) BoxWebOAuthCallback(flowID string, oauthError string, errorDescription string, code string) string {
 	flowID = strings.TrimSpace(flowID)
 	if flowID == "" {
@@ -1137,6 +1147,7 @@ func (s *ConnectorService) BoxWebOAuthCallback(flowID string, oauthError string,
 	return renderWebOAuthPopup(flowID, true, "Authorization completed successfully.", "box")
 }
 
+// PollBoxWebOAuthResult 轮询 Box OAuth 凭证结果。
 func (s *ConnectorService) PollBoxWebOAuthResult(userID string, req *PollBoxWebOAuthResultRequest) (*PollBoxWebOAuthResultResponse, common.ErrorCode, error) {
 	if req == nil || strings.TrimSpace(req.FlowID) == "" {
 		return nil, common.CodeArgumentError, fmt.Errorf("required argument is missing: flow_id")
@@ -1232,3 +1243,4 @@ func exchangeBoxAuthorizationCode(clientID string, clientSecret string, redirect
 	}
 	return &token, nil
 }
+// connector.go — 外部数据源连接器 CRUD、OAuth 流程与同步日志。

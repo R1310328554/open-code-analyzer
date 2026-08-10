@@ -16,13 +16,15 @@
 
 package service
 
+// canvas_decode.go 将持久化 DSL 解码为可编译的 canvas.Canvas。
+
 import (
 	"fmt"
 
 	"ragflow/internal/agent/canvas"
 )
 
-// decodeCanvasFromDSL converts the DSL map (in either IMPORT shape
+// decodeCanvasFromDSL 将 DSL 映射（IMPORT 或 NormalizeForCanvas 形态）
 // or NormalizeForCanvas output shape) into a *canvas.Canvas that
 // canvas.Compile accepts.
 //
@@ -64,3 +66,4 @@ func decodeCanvasFromDSL(dsl map[string]any) (*canvas.Canvas, error) {
 	}
 	return c, nil
 }
+// canvas_decode.go — 将 DSL 映射解码为 canvas.Canvas，兼容 IMPORT 与归一化两种形态。

@@ -16,6 +16,8 @@
 
 package service
 
+// chat_pipeline.go 实现 OpenAI 与常规 chat 共用的 RAG 生成流水线。
+
 import (
 	"bytes"
 	"context"
@@ -38,7 +40,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// ChatPipelineService is the shared RAG chat pipeline engine used by both
+// ChatPipelineService 是 /openai/... 与 /chat/completions 共用的 RAG 引擎；
 // the OpenAI-compatible endpoint (/api/v1/openai/<chat_id>/chat/completions)
 // and the regular chat completion endpoint (/api/v1/chat/completions).
 //
@@ -51,7 +53,7 @@ type ChatPipelineService struct {
 	datasetService   *DatasetService
 }
 
-// NewChatPipelineService creates a new ChatPipelineService with all required dependencies.
+// NewChatPipelineService 构造流水线并注入模型、元数据与数据集服务。
 func NewChatPipelineService() *ChatPipelineService {
 	return &ChatPipelineService{
 		ModelProviderSvc: NewModelProviderService(),
@@ -66,7 +68,7 @@ func NewChatPipelineService() *ChatPipelineService {
 // builds a non-streaming OpenAICompletionResponse.
 // ---------------------------------------------------------------------------
 
-// AsyncChatResult is a single yield from the chat pipeline.
+// AsyncChatResult 流水线单次 yield：答案增量、引用、思考标记或终局。
 //
 // Reasoning carries chain-of-thought text routed by the driver to a
 // separate `reason` channel (e.g. OpenAI's `delta.reasoning_content`
@@ -91,7 +93,7 @@ type AsyncChatResult struct {
 	accumulatedAnswer string
 }
 
-// AsyncChat is the Go equivalent of Python's async_chat() in
+// AsyncChat 对应 Python dialog_service.async_chat：检索→提示→LLM→装饰。
 // api/db/services/dialog_service.py:541.
 //
 // Full pipeline:
@@ -160,7 +162,7 @@ func (s *ChatPipelineService) AsyncChat(
 
 	common.Info("AsyncChat started", zap.String("chat_id", chat.ID))
 
-	// === Phase 1: Entry Validation ===
+	// === 阶段 1：入口校验（messages 非空且末条为 user）===
 	// Guard: messages must be non-empty and the last role must be "user".
 	common.Info("phase 1: Entry Validation")
 	if len(messages) == 0 {
@@ -171,7 +173,7 @@ func (s *ChatPipelineService) AsyncChat(
 		return nil, fmt.Errorf("The last content of this conversation is not from user.")
 	}
 
-	// No KBs & no web search → fast-path to LLM-only chat.
+	// 无知识库且无联网搜索时走 AsyncChatSolo 纯 LLM 快路径。
 	hasKBs := false
 	for _, raw := range chat.KBIDs {
 		if id, ok := raw.(string); ok && id != "" {
@@ -192,7 +194,7 @@ func (s *ChatPipelineService) AsyncChat(
 		return s.AsyncChatSolo(ctx, userID, chat, messages, stream)
 	}
 
-	// Spawn goroutine for the async pipeline. All remaining phases run inside.
+	// 启动 goroutine 执行后续检索、提示组装与流式生成阶段。
 	out := make(chan AsyncChatResult, 16)
 
 	go func() {
@@ -1275,7 +1277,7 @@ func (s *ChatPipelineService) AsyncChat(
 	return out, nil
 }
 
-// AsyncChatSolo is the LLM-only chat path (no KBs, no web search).
+// AsyncChatSolo 无知识库/无联网的纯 LLM 对话路径。
 // Equivalent to Python's async_chat_solo() in dialog_service.py:289-337.
 func (s *ChatPipelineService) AsyncChatSolo(
 	ctx context.Context,
@@ -1581,7 +1583,7 @@ func (s *ChatPipelineService) AsyncChatSolo(
 	return out, nil
 }
 
-// extractImageFiles extracts data-URI image attachments from the files list.
+// extractImageFiles 从 files 列表提取 data-URI 图片附件。
 // Mirrors Python split_file_attachments raw mode.
 func (s *ChatPipelineService) extractImageFiles(userID string, files interface{}) []string {
 	// ── File-dict mode ──
@@ -1616,7 +1618,7 @@ func (s *ChatPipelineService) extractImageFiles(userID string, files interface{}
 	return images
 }
 
-// extractRawImageURLs extracts image references as raw URLs/data-URIs from
+// extractRawImageURLs 提取原始图片 URL/data-URI，供 image2text 多模态输入。
 // the string-mode files list, WITHOUT fetching blobs and WITHOUT filtering
 // to data: prefixes. Used for image2text models that expect URLs in the
 // multimodal content (matches Python's `image_files` from
@@ -1676,7 +1678,7 @@ func (s *ChatPipelineService) extractRawImageURLs(files interface{}) []string {
 var internetTruthyStrings = map[string]bool{"true": true, "1": true, "yes": true, "on": true}
 var internetFalsyStrings = map[string]bool{"false": true, "0": true, "no": true, "off": true, "": true}
 
-// normalizeInternetFlag is the Go port of Python's
+// normalizeInternetFlag 三态解析 internet 联网开关（true/false/nil）。
 // _normalize_internet_flag (dialog_service.py:108-119). Three-state
 // return matches Python: *true → explicit truthy, *false → explicit
 // falsy, nil → couldn't interpret (Python's `return None`). The caller
@@ -4287,3 +4289,4 @@ func getChunkValue(chunk map[string]interface{}, k1, k2 string) interface{} {
 	}
 	return chunk[k2]
 }
+// chat_pipeline.go — 共享 RAG 对话流水线：AsyncChat/AsyncChatSolo、检索、引用与流式生成。

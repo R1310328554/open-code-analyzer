@@ -16,6 +16,8 @@
 
 package service
 
+// chunk_types.go 定义分块服务 DTO 与检索结果归一化类型。
+
 import (
 	"context"
 	"encoding/json"
@@ -45,7 +47,7 @@ var (
 	SCHEDULE = "5"
 )
 
-// ChunkService chunk service
+// ChunkService 分块服务（类型定义层，与 chunk 子包实现互补）。
 type ChunkService struct {
 	docEngine      engine.DocEngine
 	engineType     server.EngineType
@@ -59,7 +61,7 @@ type ChunkService struct {
 	decrementChunkStatsFunc func(string, string, int64, int64, float64) error
 }
 
-// RetrievalTestRequest retrieval test request
+// RetrievalTestRequest 检索测试 API 请求体。
 type RetrievalTestRequest struct {
 	Datasets               common.StringSlice     `json:"dataset_ids" binding:"required"` // string or []string
 	Question               string                 `json:"question"`
@@ -78,7 +80,7 @@ type RetrievalTestRequest struct {
 	VectorSimilarityWeight *float64               `json:"vector_similarity_weight,omitempty"`
 }
 
-// RetrievalTestResponse retrieval test response
+// RetrievalTestResponse 检索测试响应：分块、doc_aggs、labels、total。
 type RetrievalTestResponse struct {
 	Chunks  []map[string]interface{} `json:"chunks"`
 	DocAggs []map[string]interface{} `json:"doc_aggs"`
@@ -86,7 +88,7 @@ type RetrievalTestResponse struct {
 	Total   int64                    `json:"total"`
 }
 
-// GetChunkRequest request for getting a chunk by ID
+// GetChunkRequest 按 ID 获取单条分块。
 type GetChunkRequest struct {
 	ChunkID string `json:"chunk_id"`
 }
@@ -96,12 +98,12 @@ type GetChunkResponse struct {
 	Chunk map[string]interface{} `json:"chunk"`
 }
 
-// ParseFileRequest is the request body for reparsing documents in a dataset.
+// ParseFileRequest 触发数据集内文档重新解析。
 type ParseFileRequest struct {
 	DocumentIDs []string `json:"document_ids"`
 }
 
-// AddChunkRequest request for adding a chunk
+// AddChunkRequest 手工添加分块请求。
 type AddChunkRequest struct {
 	DatasetID         string      `json:"dataset_id"`
 	DocumentID        string      `json:"document_id"`
@@ -118,13 +120,13 @@ type AddChunkResponse struct {
 	Chunk map[string]interface{} `json:"chunk"`
 }
 
-// ErrorCoder exposes an application error code alongside an error string.
+// ErrorCoder 带业务错误码的 error 接口。
 type ErrorCoder interface {
 	error
 	Code() common.ErrorCode
 }
 
-// Get retrieves a chunk by ID
+// Get 按 chunk_id 查询分块（service 包内实现）。
 func (s *ChunkService) Get(req *GetChunkRequest, userID string) (*GetChunkResponse, error) {
 	if s.docEngine == nil {
 		return nil, fmt.Errorf("doc engine not initialized")
@@ -233,6 +235,7 @@ func (s *ChunkService) cancelAllTasksOfDoc(docID string) error {
 	return nil
 }
 
+// CheckDuplicateIDs 去重 document/chunk ID 并收集重复提示。
 func CheckDuplicateIDs(docList []string, idType string) ([]string, []string) {
 	uniqueDocIDs := make([]string, 0)
 	duplicateMessages := make([]string, 0)
@@ -251,6 +254,7 @@ func CheckDuplicateIDs(docList []string, idType string) ([]string, []string) {
 	return uniqueDocIDs, duplicateMessages
 }
 
+// IndexName 构造租户文档索引名 ragflow_<tenant_id>。
 func IndexName(uid string) string {
 	return fmt.Sprintf("ragflow_%s", uid)
 }
@@ -832,7 +836,7 @@ func (s *ChunkService) decrementChunkStats(docID, kbID string, tokenNum, chunkNu
 	})
 }
 
-// SourcedChunk is a typed, normalized view over a retrieval result chunk.
+// SourcedChunk 检索分块的强类型视图，统一 ES/Infinity 字段别名。
 // It decouples the ask pipeline (KbPrompt, ChunksFormat) from the raw
 // map[string]interface{} that flows through the retrieval engine.
 type SourcedChunk struct {
@@ -851,7 +855,7 @@ type SourcedChunk struct {
 	DocumentMetadata map[string]interface{} // document_metadata
 }
 
-// NewSourcedChunks normalizes raw retrieval chunks into typed SourcedChunk values.
+// NewSourcedChunks 将 []map 检索结果转为 []SourcedChunk。
 // It handles the key aliases used by different engine backends (ES, Infinity).
 func NewSourcedChunks(raw []map[string]interface{}) []SourcedChunk {
 	out := make([]SourcedChunk, 0, len(raw))
@@ -929,7 +933,7 @@ func getMap(m map[string]interface{}, key string) map[string]interface{} {
 	return nil
 }
 
-// isInternalField reports whether k is an internal/technical field that
+// isInternalField 判断是否为 API 响应应剔除的内部技术字段。
 // should be excluded from API chunk responses.
 func isInternalField(k string) bool {
 	return strings.HasSuffix(k, "_vec") ||
@@ -938,7 +942,7 @@ func isInternalField(k string) bool {
 		strings.HasSuffix(k, "_ltks")
 }
 
-// applyCommonChunkMapping applies field mappings shared between GetChunk and
+// applyCommonChunkMapping Get/List 共用的 chunk 字段重命名逻辑。
 // ListChunks. Returns true if the field was handled.
 func applyCommonChunkMapping(result map[string]interface{}, k string, v interface{}) bool {
 	switch k {
@@ -964,7 +968,7 @@ func applyCommonChunkMapping(result map[string]interface{}, k string, v interfac
 	return true
 }
 
-// splitKwdHash splits a "###"-separated _kwd string into a slice.
+// splitKwdHash 将 ### 分隔的 _kwd 字符串拆为数组。
 // Non-string values or values without "###" are returned unchanged.
 func splitKwdHash(v interface{}) interface{} {
 	strVal, ok := v.(string)
@@ -980,3 +984,4 @@ func splitKwdHash(v interface{}) interface{} {
 	}
 	return filtered
 }
+// chunk_types.go — 分块 DTO、SourcedChunk 归一化与 API 字段映射辅助函数。

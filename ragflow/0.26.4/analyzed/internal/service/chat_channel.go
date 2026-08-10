@@ -14,6 +14,8 @@
 
 package service
 
+// chat_channel.go 管理第三方聊天渠道与助手的绑定关系。
+
 import (
 	"errors"
 	"fmt"
@@ -24,12 +26,14 @@ import (
 	"ragflow/internal/entity"
 )
 
+// ChatChannelService 聊天渠道服务，负责 CRUD 与租户/成员权限校验。
 type ChatChannelService struct {
 	chatChannelDAO *dao.ChatChannelDAO
 	chatDAO        *dao.ChatDAO
 	userTenantDAO  *dao.UserTenantDAO
 }
 
+// NewChatChannelService 构造 ChatChannelService。
 func NewChatChannelService() *ChatChannelService {
 	return &ChatChannelService{
 		chatChannelDAO: dao.NewChatChannel(),
@@ -38,6 +42,7 @@ func NewChatChannelService() *ChatChannelService {
 	}
 }
 
+// Insert 插入渠道行，自动补 UUID 与默认 status=1。
 func (s *ChatChannelService) Insert(channel *entity.ChatChannel) error {
 	if channel == nil {
 		return errors.New("channel is nil")
@@ -51,6 +56,7 @@ func (s *ChatChannelService) Insert(channel *entity.ChatChannel) error {
 	return s.chatChannelDAO.Create(channel)
 }
 
+// GetByID 按主键读取渠道（不做租户过滤）。
 func (s *ChatChannelService) GetByID(id string) (*entity.ChatChannel, error) {
 	if id == "" {
 		return nil, errors.New("id is empty")
@@ -58,10 +64,12 @@ func (s *ChatChannelService) GetByID(id string) (*entity.ChatChannel, error) {
 	return s.chatChannelDAO.GetByIDOnly(id)
 }
 
+// List 列出租户下全部聊天渠道。
 func (s *ChatChannelService) List(tenantID string) ([]*entity.ChatChannelListResponse, error) {
 	return s.chatChannelDAO.ListByTenantID(tenantID)
 }
 
+// CreateChatChannel 创建渠道；可选绑定 chat_id 并校验助手归属。
 func (s *ChatChannelService) CreateChatChannel(tenantID, name, channelType string, config entity.JSONMap, chatID *string) (*entity.ChatChannel, error) {
 	if chatID != nil && *chatID != "" {
 		dialog, err := s.chatDAO.GetByID(*chatID)
@@ -96,6 +104,7 @@ func (s *ChatChannelService) CreateChatChannel(tenantID, name, channelType strin
 	return created, nil
 }
 
+// accessible 判断用户是否为渠道租户所有者或关联租户成员。
 func (s *ChatChannelService) accessible(userID, channelID string) (*entity.ChatChannel, bool, error) {
 	channel, err := s.chatChannelDAO.GetByIDOnly(channelID)
 	if err != nil {
@@ -122,6 +131,7 @@ func (s *ChatChannelService) accessible(userID, channelID string) (*entity.ChatC
 	return channel, false, nil
 }
 
+// GetChatChannel 获取单条渠道详情（含鉴权）。
 func (s *ChatChannelService) GetChatChannel(userID, channelID string) (*entity.ChatChannel, common.ErrorCode, error) {
 	_, ok, err := s.accessible(userID, channelID)
 	if err != nil {
@@ -141,6 +151,7 @@ func (s *ChatChannelService) GetChatChannel(userID, channelID string) (*entity.C
 	return channel, common.CodeSuccess, nil
 }
 
+// UpdateChatChannel 更新 name/config/chat_id 等可写字段。
 func (s *ChatChannelService) UpdateChatChannel(userID, channelID string, req map[string]interface{}) (*entity.ChatChannel, common.ErrorCode, error) {
 	channel, ok, err := s.accessible(userID, channelID)
 	if err != nil {
@@ -215,6 +226,7 @@ func (s *ChatChannelService) UpdateChatChannel(userID, channelID string, req map
 	return updated, common.CodeSuccess, nil
 }
 
+// DeleteChatChannel 删除渠道（需 accessible）。
 func (s *ChatChannelService) DeleteChatChannel(userID, channelID string) (bool, common.ErrorCode, error) {
 	channel, ok, err := s.accessible(userID, channelID)
 	if err != nil {
@@ -232,3 +244,4 @@ func (s *ChatChannelService) DeleteChatChannel(userID, channelID string) (bool, 
 	}
 	return true, common.CodeSuccess, nil
 }
+// chat_channel.go — 聊天渠道 CRUD：绑定助手、租户权限与配置更新。

@@ -14,7 +14,7 @@
 //  limitations under the License.
 //
 
-// ComponentsService — Phase 4 of plan port-rag-flow-pipeline-to-go.md.
+// ComponentsService — Go 流水线 Phase 4：从 runtime 注册表投影组件目录。
 // Reads from runtime.DefaultRegistry (the single source of truth) and
 // projects each registered component into a JSON-friendly descriptor
 // for the GET /api/v1/components endpoint.
@@ -35,7 +35,7 @@ import (
 	"ragflow/internal/agent/runtime"
 )
 
-// ComponentDescriptor is the static catalog record served by
+// ComponentDescriptor GET /api/v1/components 返回的静态组件描述。
 // GET /api/v1/components. The shape is the union of registration
 // metadata; it does NOT depend on having a working factory — listing
 // must succeed even if every component's factory is broken.
@@ -46,18 +46,18 @@ type ComponentDescriptor struct {
 	Outputs  map[string]string `json:"outputs"`
 }
 
-// ComponentsService is a thin projection layer over runtime.DefaultRegistry.
+// ComponentsService 无状态投影层，数据源为 runtime.DefaultRegistry。
 // It holds no state; construction is a constant pointer to allow callers
 // (handler, tests) to swap the underlying registry in the future.
 type ComponentsService struct{}
 
-// NewComponentsService returns a ComponentsService backed by the
+// NewComponentsService 返回绑定进程级 DefaultRegistry 的服务实例。
 // process-wide runtime.DefaultRegistry.
 func NewComponentsService() *ComponentsService {
 	return &ComponentsService{}
 }
 
-// List returns the registered components, optionally filtered by one
+// List 列出已注册组件，可按 category 过滤；结果按 Name 排序。
 // or more runtime.Category values. An empty/nil categories slice means
 // "all categories"; this matches the plan §4 task 1 contract
 // (GET /api/v1/components with no filter returns every registered
@@ -99,7 +99,7 @@ func (s *ComponentsService) List(categories ...runtime.Category) ([]ComponentDes
 	return out, nil
 }
 
-// dedupeCategories returns a copy of `in` with duplicates removed,
+// dedupeCategories 对 category 切片去重并保持首次出现顺序。
 // preserving first-occurrence order. Returns nil if `in` is empty.
 func dedupeCategories(in []runtime.Category) []runtime.Category {
 	if len(in) == 0 {
@@ -117,7 +117,7 @@ func dedupeCategories(in []runtime.Category) []runtime.Category {
 	return out
 }
 
-// descriptor projects a registry (name, category, metadata) tuple into
+// descriptor 将注册元数据投影为 JSON 友好的 ComponentDescriptor。
 // the JSON-friendly ComponentDescriptor shape. nil maps become empty
 // maps so the JSON payload always carries a non-null `inputs` /
 // `outputs` field — easier for frontends than distinguishing nil from
@@ -138,3 +138,4 @@ func descriptor(name string, cat runtime.Category, meta runtime.Metadata) Compon
 		Outputs:  outputs,
 	}
 }
+// components_service.go — Agent 组件目录投影，供 GET /api/v1/components 使用。

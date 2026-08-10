@@ -16,28 +16,30 @@
 
 package service
 
+// citation.go 在 LLM 答案中按句插入 [ID:chunk_id] 引用标记。
+
 import (
 	"math"
 	"regexp"
 	"strings"
 )
 
-// sentenceSplitRE splits text on Chinese / English / Arabic sentence-ending
+// sentenceSplitRE 按中英阿标点分句，对齐 Python insert_citations。
 // punctuation.  Matches the Python regex in rag/nlp/search.py:insert_citations.
 var sentenceSplitRE = regexp.MustCompile(`([^\|][；。？!！,؛؟.\n]|[a-z؀-ۿ][.?;!،؛؟][ \n])`)
 
 const minSentenceLen = 5
 
-// Embedder abstracts embedding-model access so InsertCitations is testable.
+// Embedder 嵌入模型接口，便于单测 InsertCitations。
 type Embedder interface {
 	Encode(texts []string) ([][]float64, error)
 }
 
-// CitationMarkerPattern matches "[ID:N]" or bare "[N]" with Arabic digit support,
+// CitationMarkerPattern 匹配规范 [ID:N] 或裸 [N] 引用标记（含阿拉伯数字）。
 // allowing optional whitespace after "ID:" (e.g. "[ID: 12]").
 var CitationMarkerPattern = regexp.MustCompile(`\[(?:ID:\s*)?([0-9\x{0660}-\x{0669}\x{06F0}-\x{06F9}]+)\]`)
 
-// badCitationPatterns match malformed citation shapes that LLMs sometimes emit
+// badCitationPatterns 匹配 LLM 偶发的非规范引用格式以便修复。
 var badCitationPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`\(\s*ID\s*[:： ]*\s*([0-9\x{0660}-\x{0669}\x{06F0}-\x{06F9}]+)\s*\)`), // (ID: 12)
 	regexp.MustCompile(`\[\s*ID\s*[:： ]*\s*([0-9\x{0660}-\x{0669}\x{06F0}-\x{06F9}]+)\s*\]`), // [ID: 12]
@@ -45,7 +47,7 @@ var badCitationPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`(?i)\bref\s*([0-9\x{0660}-\x{0669}\x{06F0}-\x{06F9}]+)\b`),           // ref12
 }
 
-// InsertCitations decorates answer with [ID:n] citation markers.
+// InsertCitations 对答案分句嵌入相似度匹配，插入 [ID:n] 并返回被引用分块索引。
 //
 // Algorithm mirrors Python Dealer.insert_citations:
 //  1. Split into sentences, preserving ``` code blocks.
@@ -71,7 +73,7 @@ func InsertCitations(answer string, chunks []SourcedChunk, embedder Embedder, ch
 	return InsertCitationsWithVectors(answer, chunks, sentenceVecs, chunkVectors, sentences, sentenceIdx)
 }
 
-// InsertCitationsWithVectors is the pure core: pre-split sentences, pre-encoded
+// InsertCitationsWithVectors 纯计算核心：预分句与预编码向量，便于单测。
 // vectors.  Separated from the encoding step for testability.
 func InsertCitationsWithVectors(
 	answer string,
@@ -94,7 +96,7 @@ func InsertCitationsWithVectors(
 	return applyCitations(answer, sentences, sentenceIdx, cites, chunks)
 }
 
-// splitAnswer splits answer text into sentences, preserving ``` code blocks.
+// splitAnswer 分句并保留 ``` 代码块为整体（不参与引用）。
 func splitAnswer(answer string) ([]string, []int) {
 	blocks := strings.Split(answer, "```")
 	var rawPieces []string
@@ -144,7 +146,7 @@ func sentenceSplit(text string) []string {
 	return result
 }
 
-// applyCitations rebuilds the answer text with [ID:n] markers inserted after
+// applyCitations 在 cited 句末拼接 [ID:chunk_id] 标记并重建全文。
 // each cited sentence position.
 func applyCitations(answer string, sentences []string, sentenceIdx []int, cites map[int][]int, chunks []SourcedChunk) (string, []int) {
 	blocks := strings.Split(answer, "```")
@@ -294,7 +296,7 @@ func normalizeArabicDigits(s string) string {
 	return b.String()
 }
 
-// HasCitationMarkers reports whether answer already contains canonical citation markers.
+// HasCitationMarkers 检测答案是否已含规范引用标记。
 func HasCitationMarkers(answer string) bool {
 	if answer == "" {
 		return false
@@ -302,7 +304,7 @@ func HasCitationMarkers(answer string) bool {
 	return CitationMarkerPattern.MatchString(normalizeArabicDigits(answer))
 }
 
-// ExtractCitationMarkers returns chunk indices from citation markers within [0, maxIndex).
+// ExtractCitationMarkers 从答案解析引用分块下标（去重、保序）。
 // Preserves first-seen order, no duplicates.
 func ExtractCitationMarkers(answer string, maxIndex int) []int {
 	if answer == "" || maxIndex <= 0 {
@@ -334,7 +336,7 @@ func ExtractCitationMarkers(answer string, maxIndex int) []int {
 	return out
 }
 
-// RepairBadCitationFormats rewrites bad citation shapes into canonical "[ID:N]" form
+// RepairBadCitationFormats 将畸形引用格式改写为规范 [ID:N]。
 func RepairBadCitationFormats(answer string) string {
 	if answer == "" {
 		return answer
@@ -361,3 +363,4 @@ func RepairBadCitationFormats(answer string) string {
 	}
 	return working
 }
+// citation.go — 答案句级引用插入：分句、嵌入相似度与 [ID:n] 标记。

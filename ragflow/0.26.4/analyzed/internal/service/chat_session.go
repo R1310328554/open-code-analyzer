@@ -16,6 +16,8 @@
 
 package service
 
+// chat_session.go 管理对话会话、补全 API 与分块级用户反馈。
+
 import (
 	"context"
 	"encoding/json"
@@ -38,8 +40,9 @@ import (
 	"ragflow/internal/entity"
 )
 
-// Interfaces for testability — satisfied by the concrete DAO/pipeline types.
+// 以下接口便于单测注入 mock DAO 与流水线。
 
+// chatSessionStore 会话持久化抽象。
 type chatSessionStore interface {
 	GetByID(id string) (*entity.ChatSession, error)
 	GetBySessionIDAndChatID(sessionID, chatID string) (*entity.ChatSession, error)
@@ -51,15 +54,17 @@ type chatSessionStore interface {
 	CheckDialogExists(tenantID, chatID string) (bool, error)
 }
 
+// userTenantStore 用户-租户关系查询抽象。
 type userTenantStore interface {
 	GetTenantIDsByUserID(userID string) ([]string, error)
 }
 
+// chatPipelineRunner 委托 ChatPipelineService.AsyncChat。
 type chatPipelineRunner interface {
 	AsyncChat(ctx context.Context, userID string, chat *entity.Chat, messages []map[string]interface{}, stream bool, kwargs map[string]interface{}) (<-chan AsyncChatResult, error)
 }
 
-// chunkFeedbackApplier is the dispatch seam for chunk-level feedback
+// chunkFeedbackApplier 分块反馈写入 seam，对齐 Python ChunkFeedbackService。
 // persistence. Mirrors the Python ChunkFeedbackService.apply_feedback
 // (api/db/services/chunk_feedback_service.py) call site at
 // api/apps/restful_apis/chat_api.py — that handler records the thumb
@@ -75,7 +80,7 @@ type chunkPagerankAdjuster interface {
 	AdjustChunkPagerank(ctx context.Context, indexName, chunkID, kbID string, delta, minWeight, maxWeight float64) error
 }
 
-// ChatSessionService chat session (conversation) service.
+// ChatSessionService 对话会话服务，RAG 生成委托 ChatPipelineService。
 // The RAG pipeline is delegated to ChatPipelineService.
 type ChatSessionService struct {
 	chatSessionDAO       chatSessionStore
@@ -85,7 +90,7 @@ type ChatSessionService struct {
 	docEngine            engine.DocEngine
 }
 
-// NewChatSessionService create chat session service
+// NewChatSessionService 构造默认依赖的 ChatSessionService。
 func NewChatSessionService() *ChatSessionService {
 	return &ChatSessionService{
 		chatSessionDAO: dao.NewChatSessionDAO(),
@@ -108,7 +113,7 @@ type SetChatSessionResponse struct {
 	*entity.ChatSession
 }
 
-// SetChatSession creates or updates a chat session.
+// SetChatSession 创建或重命名会话（兼容旧 API）。
 // Kept as a compatibility entrypoint for older chat-session callers.
 func (s *ChatSessionService) SetChatSession(userID string, req *SetChatSessionRequest) (*SetChatSessionResponse, error) {
 	name := req.Name
@@ -168,7 +173,7 @@ func (s *ChatSessionService) SetChatSession(userID string, req *SetChatSessionRe
 	return &SetChatSessionResponse{ChatSession: session}, nil
 }
 
-// RemoveChatSessions removes chat sessions.
+// RemoveChatSessions 批量删除会话并校验 dialog 所有权。
 // Kept as a compatibility entrypoint for older chat-session callers.
 func (s *ChatSessionService) RemoveChatSessions(userID string, chatSessions []string) error {
 	tenantIDs, err := s.userTenantDAO.GetTenantIDsByUserID(userID)
@@ -235,7 +240,7 @@ type ChatSessionPayload struct {
 	UpdateTime *int64                   `json:"update_time,omitempty"`
 }
 
-// ListChatSessions lists chat sessions for a dialog
+// ListChatSessions 列出某 dialog 下全部会话。
 func (s *ChatSessionService) ListChatSessions(userID string, chatID string) (*ListChatSessionsResponse, error) {
 	// Get user's tenants
 	tenantIDs, err := s.userTenantDAO.GetTenantIDsByUserID(userID)
@@ -280,7 +285,7 @@ func (s *ChatSessionService) ListChatSessions(userID string, chatID string) (*Li
 	return &ListChatSessionsResponse{Sessions: sessions}, nil
 }
 
-// GetSession returns one chat session after ownership validation.
+// GetSession 获取单条会话 payload（含 reference chunks 格式化）。
 func (s *ChatSessionService) GetSession(userID, chatID, sessionID string) (*ChatSessionPayload, common.ErrorCode, error) {
 	ok, err := s.ensureOwnedChat(userID, chatID)
 	if err != nil {
@@ -309,7 +314,7 @@ func (s *ChatSessionService) GetSession(userID, chatID, sessionID string) (*Chat
 	return s.buildSessionPayload(session, dialog, true), common.CodeSuccess, nil
 }
 
-// CreateSession create a session in a dialog
+// CreateSession 在 dialog 下新建会话并写入 prologue 首条消息。
 func (s *ChatSessionService) CreateSession(userID, chatID string, req map[string]interface{}) (*ChatSessionPayload, common.ErrorCode, error) {
 	ok, err := s.ensureOwnedChat(userID, chatID)
 	if err != nil {
@@ -375,7 +380,7 @@ func (s *ChatSessionService) CreateSession(userID, chatID string, req map[string
 	return s.buildSessionPayload(session, nil, false), common.CodeSuccess, nil
 }
 
-// DeleteSessions delete a session in a dialog
+// DeleteSessions 批量/全量删除会话并清理上传文件 blob。
 func (s *ChatSessionService) DeleteSessions(userID, chatID string, req map[string]interface{}) (interface{}, string, common.ErrorCode, error) {
 	ok, err := s.ensureOwnedChat(userID, chatID)
 	if err != nil {
@@ -533,7 +538,7 @@ func checkDuplicateChatSessionIDs(ids []string) ([]string, []string) {
 	return uniqueIDs, duplicateMessages
 }
 
-// UpdateSession updates one chat session after Python-style field validation.
+// UpdateSession 更新会话可写字段；禁止直接改 message/reference。
 func (s *ChatSessionService) UpdateSession(userID, chatID, sessionID string, req map[string]interface{}) (*ChatSessionPayload, common.ErrorCode, error) {
 	ok, err := s.ensureOwnedChat(userID, chatID)
 	if err != nil {
@@ -818,7 +823,7 @@ type feedbackChunkRow struct {
 	chunk   map[string]interface{}
 }
 
-// applyChunkFeedback records a thumb vote against the chunks that produced a
+// applyChunkFeedback 对产生该回复的分块写入 thumbs 权重（Pagerank 调整）。
 // session message. It mirrors Python's ChunkFeedbackService.apply_feedback:
 // feature-flagged by CHUNK_FEEDBACK_ENABLED, split by relevance unless
 // CHUNK_FEEDBACK_WEIGHTING=uniform, and clamped through the document engine.
@@ -1164,7 +1169,7 @@ func (s *ChatSessionService) buildSessionPayload(session *entity.ChatSession, di
 	}
 }
 
-// parseMessages decodes a session.Message blob. Returns:
+// parseMessages 解码 session.Message；畸形 JSON 返回 nil 供上层拒绝。
 //   - nil                  — input was non-empty but malformed JSON;
 //     callers should reject with "Invalid session messages".
 //   - non-nil empty slice  — input was empty (no messages stored yet).
@@ -1219,7 +1224,7 @@ func parseMessages(raw json.RawMessage) []map[string]interface{} {
 	return messages
 }
 
-// parseReferenceList decodes a session.Reference blob. Same
+// parseReferenceList 解码 reference 列表，契约同 parseMessages。
 // nil-on-malformed contract as parseMessages — callers gate on
 // `if len(raw) > 0 && references == nil` to reject corruption.
 func parseReferenceList(raw json.RawMessage) []interface{} {
@@ -1257,7 +1262,7 @@ func isChatSessionNotFound(err error) bool {
 	return errors.Is(err, gorm.ErrRecordNotFound)
 }
 
-// Completion performs chat completion with full RAG support via ChatPipelineService.
+// Completion 非流式补全（兼容旧 conversation API）。
 // Kept as a compatibility entrypoint for callers that still use the pre-ChatCompletions API.
 func (s *ChatSessionService) Completion(userID string, conversationID string, messages []map[string]interface{}, llmID string, chatModelConfig map[string]interface{}, messageID string) (map[string]interface{}, error) {
 	if len(messages) == 0 {
@@ -1333,7 +1338,7 @@ func (s *ChatSessionService) Completion(userID string, conversationID string, me
 	return result, nil
 }
 
-// CompletionStream performs streaming chat completion with full RAG support via ChatPipelineService.
+// CompletionStream 流式补全并写入 SSE 帧。
 // Kept as a compatibility entrypoint for callers that still use the pre-ChatCompletions API.
 func (s *ChatSessionService) CompletionStream(ctx context.Context, userID string, conversationID string, messages []map[string]interface{}, llmID string, chatModelConfig map[string]interface{}, messageID string, streamChan chan<- string) error {
 	if ctx == nil {
@@ -1431,7 +1436,7 @@ func (s *ChatSessionService) CompletionStream(ctx context.Context, userID string
 	return nil
 }
 
-// ChatCompletions handles chat completion matching Python's session_completion.
+// ChatCompletions 对齐 Python session_completion，支持 stream/legacy 等模式。
 // When stream=true, returns nil result and streams SSE via streamChan.
 // When stream=false, returns the structured answer map.
 func (s *ChatSessionService) ChatCompletions(
@@ -1465,18 +1470,18 @@ func (s *ChatSessionService) ChatCompletions(
 
 	common.Info("ChatCompletions started")
 
-	// --- 1. Normalize messages ---
+	// --- 1. 归一化 messages/question/files ---
 	requestMessages, requestMsg, messageID, err := s.normalizeCompletionMessages(messages, question, files)
 	if err != nil {
 		return fail(err)
 	}
 
-	// --- 2. Validate ---
+	// --- 2. 校验 chat_id/session_id 组合 ---
 	if sessionID != "" && chatID == "" {
 		return fail(errors.New("`chat_id` is required when `session_id` is provided."))
 	}
 
-	// --- 3. Resolve dialog and session ---
+	// --- 3. 解析 dialog 与会话，必要时自动创建 ---
 	var dialog *entity.Chat
 	var session *entity.ChatSession
 	if chatID != "" {
@@ -1555,7 +1560,7 @@ func (s *ChatSessionService) ChatCompletions(
 		kwargs[k] = v
 	}
 
-	// --- 6. Run pipeline ---
+	// --- 6. 调用 ChatPipelineService.AsyncChat ---
 	resultChan, err := s.pipeline.AsyncChat(ctx, userID, dialog, requestMsg, stream, kwargs)
 	if err != nil {
 		return fail(err)
@@ -2233,3 +2238,4 @@ func (s *ChatSessionService) chunksFormat(reference map[string]interface{}) []ma
 	}
 	return out
 }
+// chat_session.go — 会话 CRUD、ChatCompletions、分块反馈与 SSE 结构化应答。

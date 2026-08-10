@@ -16,6 +16,8 @@
 
 package service
 
+// ask_service.go 实现基于知识库的流式问答服务。
+
 import (
 	"context"
 	"strings"
@@ -26,7 +28,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Defaults for the Ask pipeline — match Python bot_api.py.
+// Ask 流水线默认参数，与 Python bot_api.py 保持一致。
 const (
 	DefaultAskPage                   = 1
 	DefaultAskPageSize               = 12
@@ -37,24 +39,24 @@ const (
 	DefaultAskStreamMinTokens        = 16
 )
 
-// AskDeltaKind classifies a streaming event emitted by AskService.
+// AskDeltaKind 对流式事件进行分类（答案片段、思考标记、错误、终局）。
 type AskDeltaKind int
 
 const (
-	AskDeltaAnswer AskDeltaKind = iota // visible answer text delta
-	AskDeltaMarker                     // <think> or </think> boundary
-	AskDeltaError                      // non-fatal error message / early stop
-	AskDeltaFinal                      // final event with references
+	AskDeltaAnswer AskDeltaKind = iota // 可见答案文本增量
+	AskDeltaMarker                     // 思考区边界标记
+	AskDeltaError                      // 非致命错误或提前终止
+	AskDeltaFinal                      // 终局事件，携带引用块
 )
 
-// AskDelta is a single streaming event from AskService.Stream.
+// AskDelta 表示 AskService 流式输出中的单条事件。
 type AskDelta struct {
 	Kind  AskDeltaKind
 	Value string
 	Refs  interface{} // populated on AskDeltaFinal: {chunks, doc_aggs}
 }
 
-// AskStreamOptions carries optional retrieval settings supplied by saved
+// AskStreamOptions 允许 Saved Search 传入检索配置覆盖默认值。
 // search_config. Zero values keep the same defaults as Stream.
 type AskStreamOptions struct {
 	SearchID               string
@@ -70,17 +72,17 @@ type AskStreamOptions struct {
 	VectorSimilarityWeight *float64
 }
 
-// Retriever abstracts chunk retrieval for AskService.
+// Retriever 抽象分块检索，供 AskService 调用 RetrievalTest。
 type Retriever interface {
 	RetrievalTest(req *RetrievalTestRequest, userID string) (*RetrievalTestResponse, error)
 }
 
-// StreamingLLM abstracts streaming chat for AskService.
+// StreamingLLM 抽象流式聊天模型接口。
 type StreamingLLM interface {
 	ChatStream(ctx context.Context, messages []modelModule.Message, config *modelModule.ChatConfig) (<-chan string, error)
 }
 
-// AskService performs retrieval-augmented Q&A with streaming output.
+// AskService 执行检索增强问答；embedder 为 nil 时跳过引用插入。
 // Embedder may be nil; if nil, citation insertion is skipped.
 type AskService struct {
 	retriever       Retriever
@@ -89,7 +91,7 @@ type AskService struct {
 	minStreamTokens int
 }
 
-// NewAskService creates an AskService.
+// NewAskService 构造 AskService，tokenBudget/minStreamTokens 非正时使用默认值。
 func NewAskService(retriever Retriever, embedder Embedder, tokenBudget, minStreamTokens int) *AskService {
 	if tokenBudget <= 0 {
 		tokenBudget = DefaultAskTokenBudget
@@ -105,13 +107,13 @@ func NewAskService(retriever Retriever, embedder Embedder, tokenBudget, minStrea
 	}
 }
 
-// Stream runs the full ask pipeline.  llm must not be nil.  The returned
+// Stream 运行完整 Ask 流水线，llm 不可为 nil；返回 channel 在结束或 ctx 取消时关闭。
 // channel is closed when the pipeline completes or ctx is cancelled.
 func (s *AskService) Stream(ctx context.Context, llm StreamingLLM, userID, question string, kbIDs []string) <-chan AskDelta {
 	return s.StreamWithOptions(ctx, llm, userID, question, kbIDs, AskStreamOptions{})
 }
 
-// StreamWithOptions runs Stream while allowing callers such as saved Search
+// StreamWithOptions 在 Stream 基础上透传 search_config 检索选项。
 // apps to pass search_config retrieval options through to RetrievalTest.
 func (s *AskService) StreamWithOptions(ctx context.Context, llm StreamingLLM, userID, question string, kbIDs []string, opts AskStreamOptions) <-chan AskDelta {
 	out := make(chan AskDelta, 32)
@@ -123,7 +125,7 @@ func (s *AskService) StreamWithOptions(ctx context.Context, llm StreamingLLM, us
 }
 
 func (s *AskService) run(ctx context.Context, llm StreamingLLM, userID, question string, kbIDs []string, opts AskStreamOptions, out chan<- AskDelta) {
-	// Phase 1: Retrieval.
+	// 阶段一：检索相关分块。
 	topK := DefaultAskTopK
 	if opts.TopK != nil {
 		topK = *opts.TopK
@@ -172,7 +174,7 @@ func (s *AskService) run(ctx context.Context, llm StreamingLLM, userID, question
 
 	chunks := NewSourcedChunks(result.Chunks)
 
-	// Phase 2: Build system prompt.
+	// 阶段二：组装系统提示词（knowledge + ask_summary 模板）。
 	knowledge := KbPrompt(chunks, s.tokenBudget)
 	prompt, err := LoadPrompt("ask_summary")
 	if err != nil {
@@ -195,7 +197,7 @@ func (s *AskService) run(ctx context.Context, llm StreamingLLM, userID, question
 		return
 	}
 
-	// Phase 3: Stream LLM output with think-tag processing.
+	// 阶段三：流式 LLM 输出并处理思考标签。
 	var fullAnswer string
 	for delta := range StreamThinkTagDelta(ctx, ch, s.minStreamTokens) {
 		switch delta.Kind {
@@ -207,7 +209,7 @@ func (s *AskService) run(ctx context.Context, llm StreamingLLM, userID, question
 		}
 	}
 
-	// Phase 4: Finalize — citation insertion + reference formatting.
+	// 阶段四：终局化——引用插入与 reference 格式化。
 	visible := ExtractVisibleAnswer(fullAnswer)
 	if strings.TrimSpace(visible) == "" {
 		common.Warn("AskService LLM stream completed without visible answer")
@@ -238,7 +240,7 @@ func (s *AskService) sendOrCancel(out chan<- AskDelta, d AskDelta, ctx context.C
 	}
 }
 
-// ExtractChunkVectors extracts float64 vectors from retrieval result chunks.
+// ExtractChunkVectors 从检索结果中提取 float64 向量；空向量或全零返回 nil 槽位。
 // Returns nil for chunks that have no, empty, or all-zero vectors.
 func ExtractChunkVectors(chunks []map[string]interface{}) [][]float64 {
 	if len(chunks) == 0 {
@@ -279,3 +281,4 @@ func toFloat64Slice(v interface{}) []float64 {
 
 func ptrInt(v int) *int             { return &v }
 func ptrFloat64(v float64) *float64 { return &v }
+// ask_service.go — 检索增强问答流水线：检索 → 提示词 → 流式 LLM → 引用插入。

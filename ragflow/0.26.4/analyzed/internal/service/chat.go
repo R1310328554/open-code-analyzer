@@ -16,6 +16,8 @@
 
 package service
 
+// chat.go 管理对话助手实体：列表、创建、更新、删除与详情查询。
+
 import (
 	"encoding/json"
 	"errors"
@@ -29,11 +31,13 @@ import (
 	"ragflow/internal/dao"
 )
 
+// DefaultRerankModels 内置 rerank 模型白名单。
 var DefaultRerankModels = map[string]struct{}{
 	"BAAI/bge-reranker-v2-m3":           {},
 	"maidalun1020/bce-reranker-base_v1": {},
 }
 
+// ReadOnlyFields 创建/更新时不可由客户端写入的只读字段集合。
 var ReadOnlyFields = map[string]struct{}{
 	"id":          {},
 	"tenant_id":   {},
@@ -44,7 +48,7 @@ var ReadOnlyFields = map[string]struct{}{
 	"update_date": {},
 }
 
-// ChatService chat service
+// ChatService 对话助手业务服务。
 type ChatService struct {
 	chatDAO       *dao.ChatDAO
 	kbDAO         *dao.KnowledgebaseDAO
@@ -52,7 +56,7 @@ type ChatService struct {
 	tenantDAO     *dao.TenantDAO
 }
 
-// NewChatService create chat service
+// NewChatService 构造 ChatService 并注入 DAO。
 func NewChatService() *ChatService {
 	return &ChatService{
 		chatDAO:       dao.NewChatDAO(),
@@ -62,20 +66,20 @@ func NewChatService() *ChatService {
 	}
 }
 
-// ChatWithKBNames chat with knowledge base names
+// ChatWithKBNames 在 Chat 实体上附加知识库名称与 dataset_ids。
 type ChatWithKBNames struct {
 	*entity.Chat
 	KBNames    []string `json:"kb_names"`
 	DatasetIDs []string `json:"dataset_ids"`
 }
 
-// ListChatsResponse list chats response
+// ListChatsResponse 分页列表响应。
 type ListChatsResponse struct {
 	Total int64              `json:"total"`
 	Chats []*ChatWithKBNames `json:"chats"`
 }
 
-// ListChats list chats for a user
+// ListChats 按租户分页列出对话助手并 enrich kb_names。
 func (s *ChatService) ListChats(userID, status, keywords string, page, pageSize int, orderby string, desc bool) (*ListChatsResponse, error) {
 	chats, total, err := s.chatDAO.ListByTenantIDs(
 		nil,
@@ -124,6 +128,7 @@ type CreateChatRequest struct {
 	TenantID               *string `json:"tenant_id"`
 }
 
+// Create 创建对话助手：校验 dataset/llm/rerank/prompt 并写入默认值。
 func (s *ChatService) Create(userID string, req map[string]interface{}) (map[string]interface{}, common.ErrorCode, error) {
 	tenant, err := s.tenantDAO.GetByID(userID)
 	if err != nil {
@@ -609,7 +614,7 @@ func isTruthy(value interface{}) bool {
 	}
 }
 
-// getDatasetNamesAndIDs gets knowledge base names by IDs
+// getDatasetNamesAndIDs 将 kb_ids 解析为有效数据集名称与 ID 列表。
 func (s *ChatService) getDatasetNamesAndIDs(kbIDs entity.JSONSlice) ([]string, []string) {
 	var names = make([]string, 0, 0)
 	var ids = make([]string, 0, 0)
@@ -645,7 +650,7 @@ const (
 	pyDefaultEmptyResponse = "Sorry! No relevant content was found in the knowledge base!"
 )
 
-// splitModelNameAndFactory extracts the base model name (removes vendor suffix)
+// splitModelNameAndFactory 去掉 embedding 模型名中的 @vendor 后缀。
 func (s *ChatService) splitModelNameAndFactory(embdID string) string {
 	// Remove vendor suffix (e.g., "model@openai" -> "model")
 	if idx := strings.LastIndex(embdID, "@"); idx > 0 {
@@ -654,7 +659,7 @@ func (s *ChatService) splitModelNameAndFactory(embdID string) string {
 	return embdID
 }
 
-// getEmbdIDs extracts embedding IDs from knowledge bases
+// getEmbdIDs 收集知识库 embedding 模型 ID 列表。
 func getEmbdIDs(kbs []*entity.Knowledgebase) []string {
 	ids := make([]string, len(kbs))
 	for i, kb := range kbs {
@@ -711,12 +716,12 @@ var defaultRerankModels = map[string]struct{}{
 	"maidalun1020/bce-reranker-base_v1": {},
 }
 
-// UpdateChat mirrors PUT /api/v1/chats/<chat_id> in the Python REST API.
+// UpdateChat 对应 Python PUT /api/v1/chats/<chat_id> 全量更新。
 func (s *ChatService) UpdateChat(userID, chatID string, req map[string]interface{}) (map[string]interface{}, error) {
 	return s.updateChatREST(userID, chatID, req, false)
 }
 
-// PatchChat mirrors PATCH /api/v1/chats/<chat_id> in the Python REST API.
+// PatchChat 对应 Python PATCH 部分更新（prompt/llm_setting 可 merge）。
 func (s *ChatService) PatchChat(userID, chatID string, req map[string]interface{}) (map[string]interface{}, error) {
 	return s.updateChatREST(userID, chatID, req, true)
 }
@@ -1013,7 +1018,7 @@ func (s *ChatService) buildRESTChatResponse(chat *entity.Chat) map[string]interf
 	}
 }
 
-// DeleteChat soft deletes a single chat owned by the current user.
+// DeleteChat 软删除当前用户拥有的单个对话助手。
 func (s *ChatService) DeleteChat(userID, chatID string) error {
 	if _, err := s.getOwnedValidChat(userID, chatID); err != nil {
 		return err
@@ -1027,7 +1032,7 @@ func (s *ChatService) DeleteChat(userID, chatID string) error {
 	return nil
 }
 
-// BulkDeleteChatsRequest matches DELETE /api/v1/chats request semantics.
+// BulkDeleteChatsRequest 批量删除请求体，支持 ids 或 delete_all。
 type BulkDeleteChatsRequest struct {
 	IDs       []string `json:"ids,omitempty"`
 	DeleteAll bool     `json:"delete_all,omitempty"`
@@ -1058,7 +1063,7 @@ func checkDuplicateChatIDs(ids []string) ([]string, []string) {
 	return uniqueIDs, duplicateMessages
 }
 
-// BulkDeleteChats soft deletes chats owned by the current user with partial success semantics.
+// BulkDeleteChats 批量软删除，部分成功时返回 success_count 与 errors。
 func (s *ChatService) BulkDeleteChats(userID string, req *BulkDeleteChatsRequest) (map[string]interface{}, error) {
 	ids := req.IDs
 	if len(ids) == 0 && req.DeleteAll {
@@ -1120,7 +1125,7 @@ func (s *ChatService) countRunes(str string) int {
 	return utf8.RuneCountInString(str)
 }
 
-// GetChatResponse get chat response with kb_names
+// GetChatResponse 单条对话详情，含 dataset_ids 与 kb_names。
 // Reference: Python _build_chat_response
 type GetChatResponse struct {
 	*entity.Chat
@@ -1128,7 +1133,7 @@ type GetChatResponse struct {
 	KBNames    []string `json:"kb_names"`
 }
 
-// GetChat gets chat detail by ID with permission check
+// GetChat 按 ID 获取对话详情，校验用户租户可见性。
 func (s *ChatService) GetChat(userID string, chatID string) (*GetChatResponse, error) {
 	// Step 1: Get user tenants (same as Python UserTenantService.query(user_id=current_user.id))
 	tenants, err := s.userTenantDAO.GetByUserID(userID)
@@ -1170,3 +1175,4 @@ func (s *ChatService) GetChat(userID string, chatID string) (*GetChatResponse, e
 		KBNames:    kbNames,
 	}, nil
 }
+// chat.go — 对话助手（Dialog）CRUD、数据集校验与 REST/PATCH 更新，对齐 Python DialogService。

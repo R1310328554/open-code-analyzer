@@ -14,7 +14,7 @@
 //  limitations under the License.
 //
 
-// BotService is the shared service layer for the public
+// BotService 是公开 chatbot/agentbot 端点的共享服务层，
 // chatbot/agentbot endpoints (api/v1/chatbots/...,
 // api/v1/agentbots/...) plus the agent attachment download. It is
 // intentionally a thin aggregator — it sequences DAO lookups, the
@@ -35,7 +35,7 @@ import (
 	"ragflow/internal/entity"
 )
 
-// BotService coordinates chatbot + agentbot reads and the matching
+// BotService 协调 chatbot/agentbot 元数据读取与补全路径；
 // completion paths. Mirrors the Python
 // `api/db/services/conversation_service.py::async_iframe_completion`
 // + `api/db/services/canvas_service.py::completion` flow but stays
@@ -49,7 +49,7 @@ type BotService struct {
 	llmService          *LLMService
 }
 
-// NewBotService wires a fresh BotService. agentSvc is required for
+// NewBotService 装配 BotService；agentSvc/llmSvc 在单测中可为 nil。
 // AgentbotCompletion; llmSvc is required for ChatbotCompletion (in
 // step 6). Both are nullable in unit tests.
 func NewBotService(agentSvc *AgentService, llmSvc *LLMService) *BotService {
@@ -62,7 +62,7 @@ func NewBotService(agentSvc *AgentService, llmSvc *LLMService) *BotService {
 	}
 }
 
-// ChatbotInfo returns the public metadata of a chatbot dialog.
+// ChatbotInfo 返回 chatbot 公开元数据（标题、头像、开场白、LLM、Tavily 配置）。
 //
 // Mirrors the python `bot_api.py::chatbot_info` handler. The
 // authorisation check is: dialog must exist, the requester must own
@@ -93,7 +93,7 @@ func (s *BotService) ChatbotInfo(ctx context.Context, tenantID, dialogID string)
 		dialog.LLMID, strings.TrimSpace(tk) != "", common.CodeSuccess, nil
 }
 
-// AgentbotInputs returns the public metadata of an agentbot canvas.
+// AgentbotInputs 返回 agentbot 画布公开元数据及 begin 组件输入表单。
 //
 // Mirrors the python `bot_api.py::agentbot_inputs` handler. The
 // authorisation check is the same IDOR guard the production
@@ -126,7 +126,7 @@ func (s *BotService) AgentbotInputs(ctx context.Context, tenantID, agentID strin
 	return botDerefStr(cv.Title), botDerefStr(cv.Avatar), prologue, mode, inputs, common.CodeSuccess, nil
 }
 
-// AgentbotCompletion is a thin wrapper around AgentService.RunAgent
+// AgentbotCompletion 在 IDOR 校验后委托 AgentService.RunAgent 执行画布。
 // for the /api/v1/agentbots/<agent_id>/completions endpoint.
 //
 // Defence-in-depth (security H2): the IDOR guard runs BEFORE the
@@ -169,7 +169,7 @@ func (s *BotService) AgentbotCompletion(
 	return ch, common.CodeSuccess, nil
 }
 
-// AgentbotCompletionRequest is the request body for
+// AgentbotCompletionRequest agentbot 补全请求体，字段对齐 Python bot_api。
 // /api/v1/agentbots/<agent_id>/completions. We intentionally accept
 // the same fields the production /agents/chat/completions handler
 // accepts; the URL-bound agent_id is the authoritative canvas id
@@ -186,7 +186,7 @@ type AgentbotCompletionRequest struct {
 	Files     []string       `json:"files"`
 }
 
-// ChatbotCompletionRequest is the request body for
+// ChatbotCompletionRequest chatbot 补全请求体，对齐 async_iframe_completion。
 // /api/v1/chatbots/<dialog_id>/completions. Mirrors the python
 // `async_iframe_completion` body shape (session_id, question,
 // tts (unused) and a freeform dict).
@@ -197,7 +197,7 @@ type ChatbotCompletionRequest struct {
 	Inputs    map[string]any `json:"inputs"`
 }
 
-// loadCanvas is the IDOR guard for agentbot reads. It mirrors the
+// loadCanvas agentbot 读路径 IDOR 防护：校验用户可见租户下的画布。
 // private loadCanvasForUser helper on AgentService without taking a
 // dependency on the agentService pointer (so BotService can be unit-
 // tested with a nil agentService).
@@ -216,7 +216,7 @@ func (s *BotService) loadCanvas(ctx context.Context, tenantID, agentID string) (
 	return s.canvasDAO.GetByIDForUser(agentID, tenantID, tenants)
 }
 
-// canvasDSLMap projects a UserCanvas.DSL JSONMap into a
+// canvasDSLMap 将 UserCanvas.DSL 投影为 map[string]any 供 dsl 包使用。
 // map[string]any. Returns an empty map (not nil) on miss so
 // downstream dsl helpers can still scan it.
 func canvasDSLMap(cv *entity.UserCanvas) map[string]any {
@@ -229,7 +229,7 @@ func canvasDSLMap(cv *entity.UserCanvas) map[string]any {
 	return map[string]any(cv.DSL)
 }
 
-// botDerefStr returns *s or "" if nil. Used to read pointer-string
+// botDerefStr 安全解引用 *string，nil 时返回空串。
 // fields on entities (Name, Icon, Title, Avatar). Prefixed with bot
 // to avoid colliding with the test-only botDerefStr in
 // openai_chat_test.go.
@@ -240,7 +240,7 @@ func botDerefStr(s *string) string {
 	return *s
 }
 
-// stringFromMap returns m[key] as a string. Returns "" if the key is
+// stringFromMap 从 JSONMap 防御性读取字符串字段，避免类型断言 panic。
 // absent or the value is not a string. Used for defensive reads
 // over JSONMap-shaped fields (dialog.prompt_config) where a hard
 // type assertion would panic.
@@ -257,3 +257,4 @@ func stringFromMap(m entity.JSONMap, key string) string {
 	}
 	return ""
 }
+// bot.go — 公开 chatbot/agentbot 元数据与补全编排，含 IDOR 防护与画布 DSL 解析。

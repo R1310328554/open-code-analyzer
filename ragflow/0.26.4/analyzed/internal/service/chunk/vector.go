@@ -16,6 +16,8 @@
 
 package chunk
 
+// vector.go 提供分块向量按需拉取，供引用插入与检索结果回填。
+
 import (
 	"context"
 	"encoding/json"
@@ -29,13 +31,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// vectorFetcher is the consumer-side interface for chunk vector hydration.
+// vectorFetcher 分块向量拉取所需的 Search 能力子集。
 type vectorFetcher interface {
 	Search(ctx context.Context, req *types.SearchRequest) (*types.SearchResult, error)
 	GetType() string
 }
 
-// FetchChunkVectors fetches embedding vectors for a set of chunk IDs.
+// FetchChunkVectors 按 chunk ID 批量拉取 embedding；失败时降级为零向量。
 // This is used by citation insertion (insert_citations) to hydrate chunk
 // vectors on demand, since the main retrieval path skips vector transport.
 //
@@ -54,7 +56,7 @@ func FetchChunkVectors(ctx context.Context, engine vectorFetcher, chunkIDs, tena
 		return out
 	}
 
-	// Infinity already ships vectors with chunks; no need to fetch.
+	// Infinity/OceanBase 结果已带向量，跳过二次查询。
 	// TODO: OceanBase engine is not yet implemented — add "oceanbase" here when it lands.
 	if engine.GetType() == "infinity" || engine.GetType() == "oceanbase" {
 		for _, cid := range chunkIDs {
@@ -117,12 +119,12 @@ func FetchChunkVectors(ctx context.Context, engine vectorFetcher, chunkIDs, tena
 	return out
 }
 
-// zeroVector returns a freshly allocated zero vector of the given dimension.
+// zeroVector 分配指定维度的独立零向量副本。
 func zeroVector(dim int) []float64 {
 	return make([]float64, dim)
 }
 
-// parseVectorField extracts a vector from a chunk map. ES stores vectors
+// parseVectorField 从 chunk 映射解析向量（ES 制表符串或 []float64）。
 // as tab-separated strings; Infinity stores them as []float64 / []interface{}.
 // Returns nil when the vector cannot be extracted or has the wrong dimension.
 func parseVectorField(chunk map[string]interface{}, field string, dim int) []float64 {
@@ -170,7 +172,7 @@ func parseVectorField(chunk map[string]interface{}, field string, dim int) []flo
 	return nil
 }
 
-// parseVectorString parses a tab-separated vector string from ES.
+// parseVectorString 解析 ES 返回的制表符分隔向量字符串。
 // Returns nil when parsing fails or the dimension does not match.
 func parseVectorString(s string, dim int) []float64 {
 	parts := strings.Split(s, "\t")
@@ -187,3 +189,4 @@ func parseVectorString(s string, dim int) []float64 {
 	}
 	return vec
 }
+// chunk/vector.go — 按 chunk ID 批量拉取向量，供引用插入与 ES 零向量回填。

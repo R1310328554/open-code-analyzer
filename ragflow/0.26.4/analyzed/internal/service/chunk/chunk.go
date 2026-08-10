@@ -16,6 +16,8 @@
 
 package chunk
 
+// chunk.go 实现分块检索测试、文档解析任务与索引 CRUD。
+
 import (
 	"archive/zip"
 	"bytes"
@@ -88,7 +90,7 @@ func searchConfigMap(value interface{}) (map[string]interface{}, bool) {
 	}
 }
 
-// ChunkService chunk service
+// ChunkService 分块与检索测试核心服务。
 type ChunkService struct {
 	docEngine      engine.DocEngine
 	engineType     server.EngineType
@@ -115,7 +117,7 @@ type ChunkService struct {
 	numTokensFunc                 func(string) int
 }
 
-// NewChunkService creates chunk service
+// NewChunkService 构造 ChunkService 并绑定文档引擎与 DAO。
 func NewChunkService() *ChunkService {
 	cfg := server.GetConfig()
 	return &ChunkService{
@@ -130,7 +132,7 @@ func NewChunkService() *ChunkService {
 	}
 }
 
-// RetrievalTest performs retrieval test for a given question against specified knowledge bases.
+// RetrievalTest 对指定数据集执行检索测试：元数据过滤、跨语言、关键词与混合检索。
 //
 // Flow:
 //  1. Validate kbs permissions and embedding model
@@ -493,7 +495,7 @@ func knowledgebaseEmbeddingKey(kb *entity.Knowledgebase, tenantID string) string
 	return fmt.Sprintf("embd:%s", kb.EmbdID)
 }
 
-// hydrateChunkVectors replaces zero (placeholder) vectors in chunks with real
+// hydrateChunkVectors 将 ES 返回的零向量替换为引擎拉取的真实向量。
 // vectors fetched from the engine.  Infinity and OceanBase already ship real
 // vectors with chunks, so this is a no-op for those engines; for ES it queries
 // the engine by chunk ID list.  No if/else on engine type — just replaces
@@ -540,7 +542,7 @@ func hydrateChunkVectors(ctx context.Context, engine engine.DocEngine, chunks []
 	}
 }
 
-// Get retrieves a chunk by ID
+// Get 按 chunk_id 跨租户索引查找并格式化 API 字段。
 func (s *ChunkService) Get(req *service.GetChunkRequest, userID string) (*service.GetChunkResponse, error) {
 	if s.docEngine == nil {
 		return nil, fmt.Errorf("doc engine not initialized")
@@ -658,6 +660,7 @@ func (s *ChunkService) cancelAllTasksOfDoc(docID string) error {
 	return nil
 }
 
+// StopParsing 取消文档解析任务、重置 run 状态并删除已写入分块。
 func (s *ChunkService) StopParsing(userID, datasetID string, req service.StopParsingRequest) (*service.StopParsingResponse, common.ErrorCode, error) {
 	if !s.kbDAO.Accessible(datasetID, userID) {
 		return nil, common.CodeDataError, fmt.Errorf("You don't own the dataset %s", datasetID)
@@ -1230,6 +1233,7 @@ func docName(doc *entity.Document) string {
 	return *doc.Name
 }
 
+// Parse 重新排队解析文档：清分块、删旧任务、入 Redis 队列。
 func (s *ChunkService) Parse(userID, datasetID string, req *service.ParseFileRequest) (map[string]interface{}, common.ErrorCode, error) {
 	if !s.accessible(datasetID, userID) {
 		return nil, common.CodeOperatingError, fmt.Errorf("You don't own the dataset %s.", datasetID)
@@ -1315,7 +1319,7 @@ func (s *ChunkService) Parse(userID, datasetID string, req *service.ParseFileReq
 	return nil, common.CodeSuccess, nil
 }
 
-// List retrieves chunks for a document
+// List 分页列出文档下分块并附带 doc 元信息。
 func (s *ChunkService) List(req *service.ListChunksRequest, userID string) (*service.ListChunksResponse, error) {
 	if s.docEngine == nil {
 		return nil, fmt.Errorf("doc engine not initialized")
@@ -1499,6 +1503,7 @@ func (s *ChunkService) List(req *service.ListChunksRequest, userID string) (*ser
 	}, nil
 }
 
+// SwitchChunks 批量切换分块 available_int 启用/禁用状态。
 func (s *ChunkService) SwitchChunks(userID, datasetID, documentID string, availableInt int, chunkIDs []string) error {
 	if s.docEngine == nil {
 		return fmt.Errorf("doc engine not initialized")
@@ -1563,6 +1568,7 @@ func (s *ChunkService) SwitchChunks(userID, datasetID, documentID string, availa
 	return nil
 }
 
+// UpdateChunk 更新分块内容与分词字段并写回文档引擎。
 func (s *ChunkService) UpdateChunk(req *service.UpdateChunkRequest, userID string) error {
 	if s.docEngine == nil {
 		return fmt.Errorf("doc engine not initialized")
@@ -1780,6 +1786,7 @@ func (s *ChunkService) RemoveChunks(req *service.RemoveChunksRequest, userID str
 	return deletedCount, nil
 }
 
+// AddChunk 手工新增分块：分词、可选图片、embedding 合并后插入索引。
 func (s *ChunkService) AddChunk(req *service.AddChunkRequest, userID string) (*service.AddChunkResponse, error) {
 	if s.docEngine == nil {
 		return nil, addChunkError{code: common.CodeServerError, message: "doc engine not initialized"}
@@ -2221,3 +2228,4 @@ func releaseChunkImageMergeLock(key string) {
 		delete(chunkImageMergeLocks.locks, key)
 	}
 }
+// chunk/chunk.go — 分块服务：检索测试、解析队列、CRUD 与向量回填。

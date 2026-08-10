@@ -14,7 +14,7 @@
 //  limitations under the License.
 //
 
-// bot_completion.go is the SSE envelope writer + ChatbotCompletion
+// bot_completion.go 负责 chatbot SSE 帧格式与 ChatbotCompletion 实现；
 // service path for /api/v1/chatbots/<dialog_id>/completions. The wire
 // shape is dictated by the existing python
 // `api/db/services/conversation_service.py::async_iframe_completion`
@@ -50,7 +50,7 @@ import (
 	modelModule "ragflow/internal/entity/models"
 )
 
-// ChatbotSSEFrame is one envelope pushed to the SSE writer by the
+// ChatbotSSEFrame chatbot 补全路径输出的单帧 SSE 载荷。
 // chatbot completion path. Err takes precedence over Data and is
 // rendered as a python-style {code:500, message:str(e),
 // data:{answer:"**ERROR**..."}} frame.
@@ -70,7 +70,7 @@ type ChatbotSSEFrame struct {
 	Err       error          `json:"-"`
 }
 
-// WriteChatbotFrame emits one python-style SSE frame and flushes the
+// WriteChatbotFrame 写入一条 Python 兼容 SSE 帧并 flush；Err 优先渲染为 500 帧。
 // underlying http.ResponseWriter. The frame is `data: <json>\n\n`
 // and is byte-equivalent to the python side so the iframe SDK and
 // existing JS widgets keep working.
@@ -138,7 +138,7 @@ func WriteChatbotFrame(w http.ResponseWriter, f ChatbotSSEFrame) error {
 	return nil
 }
 
-// WriteDoneFrame emits the python completion marker
+// WriteDoneFrame 发送 Python 终局标记及 OpenAI 风格 [DONE] 行。
 // `data: {"code":0,"message":"","data":true}\n\n` followed by the
 // OpenAI-style `data: [DONE]\n\n` terminator. Used by both bot
 // completion paths.
@@ -155,7 +155,7 @@ func WriteDoneFrame(w http.ResponseWriter) error {
 	return nil
 }
 
-// WriteChatbotRunEvent translates one canvas.RunEvent into the flat
+// WriteChatbotRunEvent 将 canvas.RunEvent 转为 Agent 页期望的扁平 SSE 包。
 // Python agent-canvas SSE envelope:
 //
 //	data: {"event":"message","message_id":"...","task_id":"...",
@@ -247,19 +247,19 @@ func writeSSEJSON(w http.ResponseWriter, payload map[string]any) error {
 	return nil
 }
 
-// AgentbotSSEFrame mirrors ChatbotSSEFrame for the agentbot
+// AgentbotSSEFrame 与 ChatbotSSEFrame 同形，供 agentbot 补全复用。
 // completion path. The envelope shape is the same; the only
 // difference is that the LLM call goes through the canvas runner
 // (AgentService.RunAgent) instead of the legacy dialog async_chat.
 type AgentbotSSEFrame = ChatbotSSEFrame
 
-// WriteAgentbotFrame is an alias for WriteChatbotFrame — both bot
+// WriteAgentbotFrame WriteChatbotFrame 别名，两种 bot 共用线协议。
 // completion paths emit the same python wire shape.
 func WriteAgentbotFrame(w http.ResponseWriter, f ChatbotSSEFrame) error {
 	return WriteChatbotFrame(w, f)
 }
 
-// ChatbotCompletion streams an SSE response for
+// ChatbotCompletion 为 /api/v1/chatbots/<dialog_id>/completions 提供 SSE 流。
 // /api/v1/chatbots/<dialog_id>/completions.
 //
 // The full LLM session-lifecycle implementation is added below. It
@@ -272,7 +272,7 @@ func WriteAgentbotFrame(w http.ResponseWriter, f ChatbotSSEFrame) error {
 func (s *BotService) ChatbotCompletion(
 	ctx context.Context, tenantID, dialogID string, req ChatbotCompletionRequest,
 ) (<-chan ChatbotSSEFrame, common.ErrorCode, error) {
-	// 1. Load and authorise the dialog.
+	// 1. 加载并鉴权 dialog（租户 + StatusDialogValid）。
 	//
 	// ChatSessionDAO.GetDialogByID already filters by status = "1"
 	// so a returned row is valid; we still nil-check defensively
@@ -284,7 +284,7 @@ func (s *BotService) ChatbotCompletion(
 		return nil, common.CodeDataError, errors.New("no access to this chatbot")
 	}
 
-	// 2. Resolve or create the session row.
+	// 2. 解析或创建 api_4_conversation 会话行。
 	//
 	// API4ConversationDAO.GetBySessionID returns (nil, nil) on miss
 	// (not an error) — see internal/dao/api_token.go:146. We MUST
@@ -338,7 +338,7 @@ func (s *BotService) ChatbotCompletion(
 		}
 	}
 
-	// 3. Resolve the chat LLM via ModelProviderService. The python
+	// 3. 经 ModelProviderService 解析对话 LLM 配置。
 	// async_iframe_completion resolves the same way through
 	// LLMBundle(tenant_id, dialog.llm_id); the Go equivalent is
 	// GetChatModelConfig → NewChatModel → driver.ChatWithMessages.
@@ -360,7 +360,7 @@ func (s *BotService) ChatbotCompletion(
 	}
 	chatModel := modelModule.NewChatModel(driver, &modelName, apiConfig)
 
-	// 4. Build the prompt from prior conversation history plus the
+	// 4. 将会话历史与新用户轮次拼入 LLM messages。
 	// new user turn. Without this, a resumed session_id would
 	// authorise reuse but the LLM call would still be stateless
 	// turn-to-turn — a Python parity regression for any multi-turn
@@ -370,7 +370,7 @@ func (s *BotService) ChatbotCompletion(
 	messages := historyToMessages(session.Message)
 	messages = append(messages, modelModule.Message{Role: "user", Content: req.Question})
 
-	// 5. Yield frames on a channel.
+	// 5. 在 goroutine 中产出 SSE 帧 channel。
 	out := make(chan ChatbotSSEFrame, 4)
 	go func() {
 		defer close(out)
@@ -431,7 +431,7 @@ func (s *BotService) ChatbotCompletion(
 	return out, common.CodeSuccess, nil
 }
 
-// historyToMessages reads the session.Message JSON array of
+// historyToMessages 将会话 Message JSON 转为 modelModule.Message 切片。
 // {role, content, ...} dicts and projects it onto modelModule.Message
 // for the LLM driver. Tolerates an empty / malformed Message column
 // by returning an empty slice — the caller appends the new user turn
@@ -456,7 +456,7 @@ func historyToMessages(raw json.RawMessage) []modelModule.Message {
 	return out
 }
 
-// historyFromMessages is the inverse projection — used to write the
+// historyFromMessages 将会话 messages 写回 api_4_conversation.Message 列。
 // updated turn list back to the api_4_conversation.Message column.
 func historyFromMessages(msgs []modelModule.Message) []map[string]any {
 	out := make([]map[string]any, 0, len(msgs))
@@ -470,3 +470,4 @@ func historyFromMessages(msgs []modelModule.Message) []map[string]any {
 	}
 	return out
 }
+// bot_completion.go — chatbot SSE 帧写入与 ChatbotCompletion 会话生命周期。
