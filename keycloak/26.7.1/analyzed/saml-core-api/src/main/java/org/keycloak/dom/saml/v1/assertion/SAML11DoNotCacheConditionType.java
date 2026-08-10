@@ -17,6 +17,12 @@
 package org.keycloak.dom.saml.v1.assertion;
 
 /**
+ * SAML 1.1 禁止缓存条件（DoNotCacheCondition）：指示依赖方不得缓存该断言。
+ *
+ * @author Anil.Saldhana@redhat.com
+ * @since Jun 22, 2011
+ */
+/**
  * @author Anil.Saldhana@redhat.com
  * @since Jun 22, 2011
  */

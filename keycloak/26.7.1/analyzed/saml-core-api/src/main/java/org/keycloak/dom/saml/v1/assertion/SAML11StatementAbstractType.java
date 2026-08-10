@@ -19,6 +19,12 @@ package org.keycloak.dom.saml.v1.assertion;
 import java.io.Serializable;
 
 /**
+ * SAML 1.1 语句（Statement）抽象基类：断言内各类语句（认证、属性、授权决策等）的公共父类型。
+ *
+ * @author Anil.Saldhana@redhat.com
+ * @since Jun 22, 2011
+ */
+/**
  * @author Anil.Saldhana@redhat.com
  * @since Jun 22, 2011
  */

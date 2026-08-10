@@ -22,7 +22,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * <complexType name="AuthorizationDecisionStatementType"> <complexContent> <extension
+ * <complexType name="AuthorizationDecisionStatementType">
+ * SAML 1.1 授权决策语句 DOM 类型：对指定资源与动作给出 Permit/Deny/Indeterminate 决策，可附证据断言。
+ <complexContent> <extension
  * base="saml:SubjectStatementAbstractType">
  * <sequence> <element ref="saml:Action" maxOccurs="unbounded"/> <element ref="saml:Evidence" minOccurs="0"/>
  *
@@ -35,43 +37,55 @@ import java.util.List;
  */
 public class SAML11AuthorizationDecisionStatementType extends SAML11SubjectStatementType {
 
+    /** 待评估的动作列表。 */
     protected List<SAML11ActionType> actions = new ArrayList<>();
 
+    /** 支撑决策的可选证据。 */
     protected SAML11EvidenceType evidence;
 
+    /** 被授权评估的资源 URI。 */
     protected URI resource;
 
+    /** 对该资源与动作的授权决策。 */
     protected SAML11DecisionType decision;
 
+    /** 构造授权决策语句，指定资源与决策结果。 */
     public SAML11AuthorizationDecisionStatementType(URI resource, SAML11DecisionType decision) {
         this.resource = resource;
         this.decision = decision;
     }
 
+    /** 返回被评估资源 URI。 */
     public URI getResource() {
         return resource;
     }
 
+    /** 返回授权决策。 */
     public SAML11DecisionType getDecision() {
         return decision;
     }
 
+    /** 添加一条待评估动作。 */
     public void addAction(SAML11ActionType action) {
         this.actions.add(action);
     }
 
+    /** 移除指定动作。 */
     public boolean removeAction(SAML11ActionType action) {
         return this.actions.remove(action);
     }
 
+    /** 返回不可修改的动作列表。 */
     public List<SAML11ActionType> getActions() {
         return Collections.unmodifiableList(actions);
     }
 
+    /** 返回关联证据。 */
     public SAML11EvidenceType getEvidence() {
         return evidence;
     }
 
+    /** 设置支撑决策的证据。 */
     public void setEvidence(SAML11EvidenceType evidence) {
         this.evidence = evidence;
     }

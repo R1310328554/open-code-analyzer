@@ -23,7 +23,9 @@ import java.util.List;
 import org.keycloak.dom.saml.common.CommonConditionsType;
 
 /**
- * <complexType name="ConditionsType"> <choice minOccurs="0" maxOccurs="unbounded"> <element
+ * <complexType name="ConditionsType">
+ * SAML 1.1 条件集合（Conditions）DOM 类型：聚合受众限制、禁止缓存及自定义条件，并可指定 NotBefore/NotOnOrAfter。
+ <choice minOccurs="0" maxOccurs="unbounded"> <element
  * ref="saml:AudienceRestrictionCondition"/> <element ref="saml:DoNotCacheCondition"/> <element ref="saml:Condition"/>
  * </choice>
  * <attribute name="NotBefore" type="dateTime" use="optional"/> <attribute name="NotOnOrAfter" type="dateTime"
@@ -35,20 +37,25 @@ import org.keycloak.dom.saml.common.CommonConditionsType;
  */
 public class SAML11ConditionsType extends CommonConditionsType {
 
+    /** 附加条件列表（受众限制、DoNotCache 等）。 */
     public List<SAML11ConditionAbstractType> conditions = new ArrayList<>();
 
+    /** 添加一条条件。 */
     public void add(SAML11ConditionAbstractType condition) {
         this.conditions.add(condition);
     }
 
+    /** 批量添加条件。 */
     public void addAll(List<SAML11ConditionAbstractType> theConditions) {
         this.conditions.addAll(theConditions);
     }
 
+    /** 移除指定条件。 */
     public boolean remove(SAML11ConditionAbstractType condition) {
         return this.conditions.remove(condition);
     }
 
+    /** 返回不可修改的条件列表。 */
     public List<SAML11ConditionAbstractType> get() {
         return Collections.unmodifiableList(conditions);
     }

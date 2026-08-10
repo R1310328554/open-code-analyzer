@@ -17,7 +17,9 @@
 package org.keycloak.dom.saml.v1.assertion;
 
 /**
- * <complexType name="SubjectLocalityType"> <attribute name="IPAddress" type="string" use="optional"/> <attribute
+ * <complexType name="SubjectLocalityType">
+ * SAML 1.1 主体 locality DOM 类型：记录认证时主体的 IP 与 DNS 地址（可选）。
+ <attribute name="IPAddress" type="string" use="optional"/> <attribute
  * name="DNSAddress" type="string" use="optional"/> </complexType>
  *
  * @author Anil.Saldhana@redhat.com
@@ -25,22 +27,28 @@ package org.keycloak.dom.saml.v1.assertion;
  */
 public class SAML11SubjectLocalityType {
 
+    /** 主体 IP 地址。 */
     protected String ipAddress;
 
+    /** 主体 DNS 主机名。 */
     protected String dnsAddress;
 
+    /** 返回 IP 地址。 */
     public String getIpAddress() {
         return ipAddress;
     }
 
+    /** 设置 IP 地址。 */
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
     }
 
+    /** 返回 DNS 地址。 */
     public String getDnsAddress() {
         return dnsAddress;
     }
 
+    /** 设置 DNS 地址。 */
     public void setDnsAddress(String dnsAddress) {
         this.dnsAddress = dnsAddress;
     }

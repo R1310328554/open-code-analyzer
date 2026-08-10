@@ -17,7 +17,9 @@
 package org.keycloak.dom.saml.v1.assertion;
 
 /**
- * <simpleType name="DecisionType"> <restriction base="string">
+ * <simpleType name="DecisionType">
+ * SAML 1.1 授权决策枚举：Permit（允许）、Deny（拒绝）或 Indeterminate（无法判定）。
+ <restriction base="string">
  *
  * <enumeration value="Permit"/> <enumeration value="Deny"/> <enumeration value="Indeterminate"/> </restriction>
  * </simpleType>
@@ -26,5 +28,7 @@ package org.keycloak.dom.saml.v1.assertion;
  * @since Jun 22, 2011
  */
 public enum SAML11DecisionType {
-    Permit, Deny, Indeterminate;
+    /** 允许访问。 */ Permit,
+    /** 拒绝访问。 */ Deny,
+    /** 无法判定。 */ Indeterminate;
 }

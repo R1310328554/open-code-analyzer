@@ -17,6 +17,12 @@
 package org.keycloak.dom.saml.v1.assertion;
 
 /**
+ * SAML 1.1 通用语句（Statement）DOM 类型：扩展 {@link SAML11StatementAbstractType} 的占位实现。
+ *
+ * @author Anil.Saldhana@redhat.com
+ * @since Jun 22, 2011
+ */
+/**
  * @author Anil.Saldhana@redhat.com
  * @since Jun 22, 2011
  */

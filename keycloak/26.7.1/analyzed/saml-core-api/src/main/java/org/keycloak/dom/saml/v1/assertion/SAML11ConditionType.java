@@ -17,6 +17,12 @@
 package org.keycloak.dom.saml.v1.assertion;
 
 /**
+ * SAML 1.1 通用条件（Condition）DOM 类型：扩展 {@link SAML11ConditionAbstractType} 的占位实现，用于 schema 中未特化的条件元素。
+ *
+ * @author Anil.Saldhana@redhat.com
+ * @since Jun 22, 2011
+ */
+/**
  * @author Anil.Saldhana@redhat.com
  * @since Jun 22, 2011
  */

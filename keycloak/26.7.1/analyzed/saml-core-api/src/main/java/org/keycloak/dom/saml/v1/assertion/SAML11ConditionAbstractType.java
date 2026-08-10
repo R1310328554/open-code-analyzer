@@ -19,6 +19,12 @@ package org.keycloak.dom.saml.v1.assertion;
 import java.io.Serializable;
 
 /**
+ * SAML 1.1 条件（Condition）抽象基类：断言有效性约束的公共父类型，实现 {@link java.io.Serializable}。
+ *
+ * @author Anil.Saldhana@redhat.com
+ * @since Jun 22, 2011
+ */
+/**
  * @author Anil.Saldhana@redhat.com
  * @since Jun 22, 2011
  */

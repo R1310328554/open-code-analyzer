@@ -24,7 +24,9 @@ import java.util.List;
 import org.w3c.dom.Element;
 
 /**
- * <complexType name="SubjectConfirmationType"> <sequence> <element ref="saml:ConfirmationMethod"
+ * <complexType name="SubjectConfirmationType">
+ * SAML 1.1 主体确认（SubjectConfirmation）DOM 类型：描述如何确认断言主体身份（确认方法、数据与可选密钥信息）。
+ <sequence> <element ref="saml:ConfirmationMethod"
  * maxOccurs="unbounded"/>
  * <element ref="saml:SubjectConfirmationData" minOccurs="0"/>
  *
@@ -35,40 +37,51 @@ import org.w3c.dom.Element;
  */
 public class SAML11SubjectConfirmationType {
 
+    /** 主体确认方法 URI 列表。 */
     protected List<URI> confirmationMethod = new ArrayList<>();
 
+    /** 主体确认附加数据（类型由确认方法决定）。 */
     protected Object subjectConfirmationData;
 
+    /** 可选 XML 签名 KeyInfo 元素。 */
     protected Element keyInfo;
 
+    /** 添加一条确认方法 URI。 */
     public void addConfirmationMethod(URI confirmation) {
         this.confirmationMethod.add(confirmation);
     }
 
+    /** 批量添加确认方法 URI。 */
     public void addAllConfirmationMethod(List<URI> confirmation) {
         this.confirmationMethod.addAll(confirmation);
     }
 
+    /** 移除指定确认方法 URI。 */
     public boolean removeConfirmationMethod(URI confirmation) {
         return this.confirmationMethod.remove(confirmation);
     }
 
+    /** 返回不可修改的确认方法列表。 */
     public List<URI> getConfirmationMethod() {
         return Collections.unmodifiableList(confirmationMethod);
     }
 
+    /** 设置主体确认数据。 */
     public void setSubjectConfirmationData(Object subjectConfirmation) {
         this.subjectConfirmationData = subjectConfirmation;
     }
 
+    /** 返回 KeyInfo 元素。 */
     public Element getKeyInfo() {
         return keyInfo;
     }
 
+    /** 设置 KeyInfo 元素。 */
     public void setKeyInfo(Element keyInfo) {
         this.keyInfo = keyInfo;
     }
 
+    /** 返回主体确认数据。 */
     public Object getSubjectConfirmationData() {
         return subjectConfirmationData;
     }

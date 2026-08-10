@@ -19,6 +19,12 @@ package org.keycloak.dom.saml.v1.assertion;
 import java.io.Serializable;
 
 /**
+ * SAML 1.1 条件容器抽象基类：封装断言生效时间窗口与各类 {@link SAML11ConditionAbstractType} 约束。
+ *
+ * @author Anil.Saldhana@redhat.com
+ * @since Jun 22, 2011
+ */
+/**
  * @author Anil.Saldhana@redhat.com
  * @since Jun 22, 2011
  */
