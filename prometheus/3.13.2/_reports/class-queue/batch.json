@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T20:29:54Z",
-  "files": [
-    "notifier/alert.go",
-    "notifier/alertmanager.go",
-    "notifier/alertmanagerset.go",
-    "notifier/manager.go",
-    "notifier/metric.go",
-    "notifier/sendloop.go",
-    "notifier/util.go",
-    "plugins/minimum.go",
-    "plugins/plugin_aws.go",
-    "plugins/plugin_azure.go",
-    "plugins/plugin_consul.go",
-    "plugins/plugin_digitalocean.go",
-    "plugins/plugin_dns.go",
-    "plugins/plugin_eureka.go",
-    "plugins/plugin_gce.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 354,
-  "done": 165
+  "done": 180
 }
