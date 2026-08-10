@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:59:58Z",
-  "files": [
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SamlSecureClientUrisExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SamlSecureClientUrisExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SamlSignatureEnforcerExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SamlSignatureEnforcerExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureClientAuthenticationAssertionExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureClientAuthenticationAssertionExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureClientAuthenticatorExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureClientAuthenticatorExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureClientUrisExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureClientUrisExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureClientUrisPatternExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureClientUrisPatternExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureLogoutExecutor.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureLogoutExecutorFactory.java",
-    "services/src/main/java/org/keycloak/services/clientpolicy/executor/SecureParContentsExecutor.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1078,
-  "done": 4905
+  "done": 4920
 }
