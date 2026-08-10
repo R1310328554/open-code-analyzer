@@ -18,9 +18,20 @@
 package org.keycloak.adapters.spi;
 
 /**
+ * 适配器单次认证尝试的结果枚举。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public enum AuthOutcome {
-    NOT_ATTEMPTED, FAILED, AUTHENTICATED, NOT_AUTHENTICATED, LOGGED_OUT
+    /** 尚未尝试认证。 */
+    NOT_ATTEMPTED,
+    /** 认证失败（凭证无效或协议错误）。 */
+    FAILED,
+    /** 已成功认证并建立安全上下文。 */
+    AUTHENTICATED,
+    /** 已处理请求但用户未认证（如 Bearer-only 资源）。 */
+    NOT_AUTHENTICATED,
+    /** 用户已登出。 */
+    LOGGED_OUT
 }

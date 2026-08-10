@@ -25,7 +25,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jboss.logging.Logger;
 
 /**
- * Maps external principal and SSO id to internal local http session id
+ * 基于内存的 {@link SessionIdMapper} 实现。
+ *
+ * <p>维护 SSO 会话 ID、用户主体与本地 HTTP 会话 ID 之间的双向映射，
+ * 适用于单节点或非集群部署。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -34,9 +37,13 @@ public class InMemorySessionIdMapper implements SessionIdMapper {
 
     private static final Logger LOG = Logger.getLogger(InMemorySessionIdMapper.class.getName());
 
+    /** SSO 会话 ID → HTTP 会话 ID。 */
     ConcurrentHashMap<String, String> ssoToSession = new ConcurrentHashMap<>();
+    /** HTTP 会话 ID → SSO 会话 ID。 */
     ConcurrentHashMap<String, String> sessionToSso = new ConcurrentHashMap<>();
+    /** 用户主体 → 该用户全部 HTTP 会话 ID 集合。 */
     ConcurrentHashMap<String, Set<String>> principalToSession = new ConcurrentHashMap<>();
+    /** HTTP 会话 ID → 用户主体。 */
     ConcurrentHashMap<String, String> sessionToPrincipal = new ConcurrentHashMap<>();
 
     @Override

@@ -18,21 +18,26 @@
 package org.keycloak.adapters.spi;
 
 /**
+ * 适配器向未认证客户端发送认证质询（Challenge）的 SPI。
+ *
+ * <p>实现类负责构造重定向、401 响应或其他协议相关的质询行为。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface AuthChallenge {
     /**
+     * 向客户端发送认证质询。
      *
-     * @param exchange
-     * @return challenge sent
+     * @param exchange HTTP 请求/响应门面
+     * @return 若质询已成功发送则返回 {@code true}
      */
     boolean challenge(HttpFacade exchange);
 
     /**
-     * Some platforms need the error code that will be sent (i.e. Undertow)
+     * 部分平台（如 Undertow）需要预先获知将返回的 HTTP 状态码。
      *
-     * @return
+     * @return 质询响应的 HTTP 状态码
      */
     int getResponseCode();
 }

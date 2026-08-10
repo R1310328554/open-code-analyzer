@@ -20,7 +20,9 @@ import org.jboss.logging.Messages;
 import org.jboss.logging.annotations.MessageBundle;
 
 /**
- * This interface to be fleshed out later when error messages are fully externalized.
+ * Keycloak SAML WildFly 子系统的国际化消息束接口。
+ *
+ * <p>后续错误消息完全外部化时可继续扩展本接口。</p>
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2012 Red Hat Inc.
  */
@@ -28,7 +30,7 @@ import org.jboss.logging.annotations.MessageBundle;
 public interface KeycloakMessages {
 
     /**
-     * The messages
+     * 消息束单例，供子系统代码获取本地化字符串。
      */
     KeycloakMessages MESSAGES = Messages.getBundle(KeycloakMessages.class);
 }

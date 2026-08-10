@@ -20,47 +20,52 @@ package org.keycloak.adapters.spi;
 import java.util.Set;
 
 /**
+ * SSO 用户会话 ID、主体与本地 HTTP 会话 ID 之间的映射 SPI。
+ *
+ * <p>适配器通过本接口维护 IdP 侧 SSO 标识与容器 HTTP 会话的对应关系，
+ * 以支持单点登出与会话查找。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface SessionIdMapper {
     /**
-     * Returns {@code true} if the mapper contains mapping for the given HTTP session ID.
-     * @param id
-     * @return
+     * 若映射表中存在给定 HTTP 会话 ID 的条目则返回 {@code true}。
+     * @param id HTTP 会话 ID
+     * @return 是否存在映射
      */
     boolean hasSession(String id);
 
     /**
-     * Clears all mappings from this mapper.
+     * 清空本映射器中的全部条目。
      */
     void clear();
 
     /**
-     * Returns set of HTTP session IDs for the given principal.
-     * @param principal Principal
-     * @return
+     * 返回指定主体关联的全部 HTTP 会话 ID 集合。
+     * @param principal 用户主体
+     * @return HTTP 会话 ID 集合，若无则返回 {@code null}
      */
     Set<String> getUserSessions(String principal);
 
     /**
-     * Returns HTTP session ID from the given user session ID.
-     * @param sso User session ID
-     * @return
+     * 根据 SSO 用户会话 ID 查找对应的 HTTP 会话 ID。
+     * @param sso SSO 用户会话 ID
+     * @return 对应的 HTTP 会话 ID，若无则返回 {@code null}
      */
     String getSessionFromSSO(String sso);
 
     /**
-     * Establishes mapping between user session ID, principal and HTTP session ID.
-     * @param sso User session ID
-     * @param principal Principal
-     * @param session HTTP session ID
+     * 建立 SSO 会话 ID、主体与 HTTP 会话 ID 之间的映射。
+     * @param sso SSO 用户会话 ID
+     * @param principal 用户主体
+     * @param session HTTP 会话 ID
      */
     void map(String sso, String principal, String session);
 
     /**
-     * Removes mappings for the given HTTP session ID.
-     * @param session HTTP session ID.
+     * 移除给定 HTTP 会话 ID 相关的全部映射。
+     * @param session HTTP 会话 ID
      */
     void removeSession(String session);
 }

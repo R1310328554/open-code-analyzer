@@ -17,12 +17,16 @@
 package org.keycloak.adapters.spi;
 
 /**
- * Classes implementing this interface represent a mechanism for updating {@link SessionIdMapper} entries.
+ * 更新 {@link SessionIdMapper} 条目的策略 SPI。
+ *
+ * <p>集群或外部会话存储场景下，映射的写入方式可能与单机内存直接更新不同；
+ * 本接口抽象 {@link #DIRECT} 与 {@link #EXTERNAL} 等更新模式。</p>
+ *
  * @author hmlnarik
  */
 public interface SessionIdMapperUpdater {
     /**
-     * {@link SessionIdMapper} entries are updated directly.
+     * 直接更新 {@link SessionIdMapper} 条目（委托至 mapper 方法）。
      */
     public static final SessionIdMapperUpdater DIRECT = new SessionIdMapperUpdater() {
         @Override public void clear(SessionIdMapper idMapper) {
@@ -43,8 +47,8 @@ public interface SessionIdMapperUpdater {
     };
 
     /**
-     * Only HTTP session is manipulated with, {@link SessionIdMapper} entries are not updated by this updater and
-     * they have to be updated by some other means, e.g. by some listener of HTTP session changes.
+     * 仅操作 HTTP 会话，不直接更新 {@link SessionIdMapper}；
+     * 映射需由 HTTP 会话监听器等其他机制同步维护。
      */
     public static final SessionIdMapperUpdater EXTERNAL = new SessionIdMapperUpdater() {
         @Override public void clear(SessionIdMapper idMapper) { }
@@ -57,33 +61,31 @@ public interface SessionIdMapperUpdater {
     };
 
     /**
-     * Delegates to {@link SessionIdMapper#clear} method..
+     * 委托至 {@link SessionIdMapper#clear}。
      */
     void clear(SessionIdMapper idMapper);
 
     /**
-     * Delegates to {@link SessionIdMapper#map} method.
-     * @param idMapper Mapper
-     * @param sso User session ID
-     * @param principal Principal
-     * @param session HTTP session ID
+     * 委托至 {@link SessionIdMapper#map}。
+     * @param idMapper 会话 ID 映射器
+     * @param sso SSO 用户会话 ID
+     * @param principal 用户主体
+     * @param session HTTP 会话 ID
      */
     void map(SessionIdMapper idMapper, String sso, String principal, String session);
 
     /**
-     * Delegates to {@link SessionIdMapper#removeSession} method.
-     * @param idMapper Mapper
-     * @param session HTTP session ID.
+     * 委托至 {@link SessionIdMapper#removeSession}。
+     * @param idMapper 会话 ID 映射器
+     * @param session HTTP 会话 ID
      */
     void removeSession(SessionIdMapper idMapper, String session);
 
     /**
-     * Refreshes the mapping in the {@code idMapper} from the internal source of this mapped updater
-     * and maps it via {@link SessionIdMapper#map} method.
-     * @param idMapper Mapper
-     * @param session HTTP session ID.
-     * @return {@code true} if the mapping existed in the internal source of this mapped updater
-     * and has been refreshed, {@code false} otherwise
+     * 从本 updater 的内部数据源刷新映射，并通过 {@link SessionIdMapper#map} 写回。
+     * @param idMapper 会话 ID 映射器
+     * @param session HTTP 会话 ID
+     * @return 若内部源存在该会话且已成功刷新则返回 {@code true}，否则 {@code false}
      */
     boolean refreshMapping(SessionIdMapper idMapper, String httpSessionId);
 }

@@ -18,10 +18,17 @@
 package org.keycloak.adapters.spi;
 
 /**
+ * 适配器在认证重定向前保存/恢复原始 HTTP 请求的会话存储 SPI。
+ *
+ * <p>浏览器 SSO 流程会将用户重定向至 IdP，认证成功后需恢复被中断的请求；
+ * 各容器（Servlet、Undertow 等）通过实现本接口提供具体存储机制。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface AdapterSessionStore {
+    /** 将当前请求保存到会话，以便认证完成后恢复。 */
     void saveRequest();
+    /** 从会话恢复先前保存的请求；若存在则返回 {@code true}。 */
     boolean restoreRequest();
 }

@@ -21,11 +21,17 @@ import java.security.Principal;
 import java.util.Set;
 
 /**
+ * 已认证 Keycloak 用户的安全账户视图 SPI。
+ *
+ * <p>封装 {@link Principal} 与角色集合，供适配器向容器安全上下文注册用户身份。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface KeycloakAccount {
+    /** 返回已认证用户的主体。 */
     Principal getPrincipal();
 
+    /** 返回用户拥有的角色名称集合。 */
     Set<String> getRoles();
 }

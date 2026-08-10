@@ -25,7 +25,9 @@ import org.jboss.logging.annotations.MessageLogger;
 import static org.jboss.logging.Logger.Level.INFO;
 
 /**
- * This interface to be fleshed out later when error messages are fully externalized.
+ * Keycloak SAML WildFly 子系统的 JBoss Logging 消息日志接口。
+ *
+ * <p>后续错误消息完全外部化时可继续扩展本接口。</p>
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2013 Red Hat Inc.
  */
@@ -33,10 +35,15 @@ import static org.jboss.logging.Logger.Level.INFO;
 public interface KeycloakLogger extends BasicLogger {
 
     /**
-     * A logger with a category of the package name.
+     * 以包名作为日志分类的根日志记录器。
      */
     KeycloakLogger ROOT_LOGGER = Logger.getMessageLogger(KeycloakLogger.class, "org.jboss.keycloak");
 
+    /**
+     * 记录某部署已被 Keycloak 子系统配置覆盖保护。
+     *
+     * @param deployment 部署单元名称
+     */
     @LogMessage(level = INFO)
     @Message(value = "Keycloak subsystem override for deployment %s")
     void deploymentSecured(String deployment);

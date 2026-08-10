@@ -18,10 +18,11 @@
 package org.keycloak.adapters.spi;
 
 /**
- * Common marker interface used by keycloak client adapters when there is an error.  For servlets, you'll be able
- * to extract this error from the HttpServletRequest.getAttribute(AuthenticationError.class.getName()).  Each protocol
- * will have their own subclass of this interface.
+ * Keycloak 客户端适配器在认证出错时使用的通用标记接口。
  *
+ * <p>Servlet 环境中可通过
+ * {@code HttpServletRequest.getAttribute(AuthenticationError.class.getName())}
+ * 获取具体错误对象；各协议（OIDC、SAML 等）会定义本接口的子类型。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
