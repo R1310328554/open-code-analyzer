@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 非 builtinassets 构建下的 UI 静态资源 http.FileSystem：按工作目录选择 web/ui 路径并过滤部分 bootstrap/map 文件。
+
 //go:build !builtinassets
 
 package ui
@@ -26,6 +28,7 @@ import (
 	"github.com/shurcooL/httpfs/union"
 )
 
+// Assets 在 init 时根据 cwd 定位 static 目录并通过 union 挂载到 /static。
 // Assets contains the project's assets.
 var Assets = func() http.FileSystem {
 	wd, err := os.Getwd()
@@ -34,6 +37,7 @@ var Assets = func() http.FileSystem {
 	}
 	var assetsPrefix string
 	switch filepath.Base(wd) {
+// 从仓库根目录运行 prometheus 二进制时，静态资源前缀为 ./web/ui。
 	case "prometheus":
 		// When running Prometheus (without built-in assets) from the repo root.
 		assetsPrefix = "./web/ui"
@@ -45,6 +49,7 @@ var Assets = func() http.FileSystem {
 		assetsPrefix = "./"
 	}
 
+// filter.Keep 排除 source map 与 bootstrap 主题 CSS，减小开发态暴露面。
 	static := filter.Keep(
 		http.Dir(path.Join(assetsPrefix, "static")),
 		func(path string, fi os.FileInfo) bool {

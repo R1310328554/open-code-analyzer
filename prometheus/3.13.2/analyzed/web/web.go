@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Prometheus HTTP Web 层：注册 API v1、React SPA 路由、控制台模板、生命周期与健康检查，并暴露 metrics 与 debug pprof。
+
 package web
 
 import (
@@ -67,6 +69,7 @@ import (
 	"github.com/prometheus/prometheus/web/ui"
 )
 
+// 下列路径由 React Router 客户端接管，服务端统一回退 index.html。
 // Paths handled by the React router that should all serve the main React app's index.html,
 // no matter if agent mode is enabled or not.
 var oldUIReactRouterPaths = []string{
@@ -106,6 +109,7 @@ var newUIReactRouterServerPaths = []string{
 	"/tsdb-status",
 }
 
+// ReadyStatus 表示启动阶段：未就绪、就绪或正在停止，供 /-/ready 与 UI 占位符使用。
 type ReadyStatus uint32
 
 const (
@@ -119,6 +123,7 @@ var (
 	fgprofMu      sync.Mutex
 )
 
+// withStackTracer 在 handler panic 时记录堆栈并重新抛出，弥补 go-kit 日志对 panic 处理不足。
 // withStackTracer logs the stack trace in case the request panics. The function
 // will re-raise the error which will then be handled by the net/http package.
 // It is needed because the go-kit log package doesn't manage properly the
@@ -214,6 +219,7 @@ type LocalStorage interface {
 	api_v1.TSDBAdminStats
 }
 
+// Handler 聚合 scrape/rules/query 等子系统，对外提供 Web UI 与 REST API 入口。
 // Handler serves various HTTP endpoints of the Prometheus server.
 type Handler struct {
 	logger *slog.Logger
@@ -265,6 +271,7 @@ func (h *Handler) ApplyConfig(conf *config.Config) error {
 	return nil
 }
 
+// Options 配置监听地址、TSDB 路径、特性开关、CORS、Agent 模式与 UI 版本等运行时参数。
 // Options for the web Handler.
 type Options struct {
 	Context               context.Context
@@ -324,6 +331,7 @@ type Options struct {
 	Parser parser.Parser
 }
 
+// New 构造路由表：挂载 /api/v1、React 静态资源、consoles、/-/reload 与 debug 端点。
 // New initializes a new web Handler.
 func New(logger *slog.Logger, o *Options) *Handler {
 	if logger == nil {
@@ -507,6 +515,7 @@ func New(logger *slog.Logger, o *Options) *Handler {
 
 	router.Get("/consoles/*filepath", readyf(h.consoles))
 
+// serveReactApp 读取 index.html 并替换 CONSOLES/TITLE/AGENT/READY/LOOKBACKDELTA 占位符。
 	serveReactApp := func(w http.ResponseWriter, _ *http.Request) {
 		indexPath := reactAssetsRoot + "/index.html"
 		f, err := ui.Assets.Open(indexPath)
@@ -660,6 +669,7 @@ func serveDebug(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// SetReady 更新原子 ready 标志与 prometheus_ready 指标，启动完成后置为 Ready。
 // SetReady sets the ready status of our web Handler.
 func (h *Handler) SetReady(v ReadyStatus) {
 	if v == Ready {
@@ -740,6 +750,7 @@ func (h *Handler) Listener(address string, sem chan struct{}) (net.Listener, err
 	return listener, nil
 }
 
+// Run 创建 listener、注册 OpenTelemetry 中间件并通过 exporter-toolkit 提供 TLS/认证。
 // Run serves the HTTP endpoints.
 func (h *Handler) Run(ctx context.Context, listeners []net.Listener, webConfig string) error {
 	if len(listeners) == 0 {
@@ -791,6 +802,7 @@ func (h *Handler) Run(ctx context.Context, listeners []net.Listener, webConfig s
 	}
 }
 
+// consoles 渲染 Go template 控制台页面，注入 URL 参数与 external_labels。
 func (h *Handler) consoles(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	name := route.Param(ctx, "filepath")
@@ -959,6 +971,7 @@ func (h *Handler) quit(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
+// reload 通过 reloadCh 通知主进程热加载配置文件，失败时返回 500。
 func (h *Handler) reload(w http.ResponseWriter, _ *http.Request) {
 	rc := make(chan error)
 	h.reloadCh <- rc

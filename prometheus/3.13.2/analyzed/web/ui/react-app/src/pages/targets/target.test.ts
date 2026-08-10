@@ -1,3 +1,5 @@
+// target.ts 单元测试：验证 groupTargets 按 scrape job 分组与 getColor 健康状态配色映射。
+
 import { sampleApiResponse } from './__testdata__/testdata';
 import { groupTargets, Target, ScrapePools, getColor } from './target';
 
@@ -25,6 +27,7 @@ describe('groupTargets', () => {
   });
 });
 
+// getColor 表驱动测试 up/down/unknown 大小写不敏感时的 Bootstrap 语义色类名。
 describe('getColor', () => {
   const testCases: { color: string; status: string }[] = [
     { color: 'danger', status: 'down' },
@@ -40,3 +43,4 @@ describe('getColor', () => {
     });
   });
 });
+// Targets 工具函数测试覆盖聚合逻辑与 UI 状态颜色映射。

@@ -1,3 +1,5 @@
+// React UI 通用工具：HTML 转义、Prometheus 时长解析、Graph 面板 URL 编解码与查询参数读写。
+
 import moment from 'moment-timezone';
 
 import { GraphDisplayMode, PanelDefaultOptions, PanelOptions, PanelType } from '../pages/graph/Panel';
@@ -11,6 +13,7 @@ export const byEmptyString = (p: string): boolean => p.length > 0;
 
 export const isPresent = <T>(obj: T): obj is NonNullable<T> => obj !== null && obj !== undefined;
 
+// escapeHTML 将 &, <, > 等字符转为 HTML 实体，防止用户输入注入 DOM。
 export const escapeHTML = (str: string): string => {
   const entityMap: { [key: string]: string } = {
     '&': '&amp;',
@@ -26,6 +29,7 @@ export const escapeHTML = (str: string): string => {
   });
 };
 
+// metricToSeriesName 将 label 集格式化为 PromQL 风格 metric{label="value"} 字符串。
 export const metricToSeriesName = (labels: { [key: string]: string }): string => {
   if (labels === null) {
     return 'scalar';
@@ -41,6 +45,7 @@ export const metricToSeriesName = (labels: { [key: string]: string }): string =>
   return tsName;
 };
 
+// parseDuration 解析 Prometheus 风格时长（y/w/d/h/m/s/ms）为毫秒数，非法输入返回 null。
 export const parseDuration = (durationStr: string): number | null => {
   if (durationStr === '') {
     return null;
@@ -79,6 +84,7 @@ export const parseDuration = (durationStr: string): number | null => {
   return dur;
 };
 
+// formatDuration 将毫秒格式化为可读时长；年/周仅在无余数时输出以提升可读性。
 export const formatDuration = (d: number): string => {
   let ms = d;
   let r = '';
@@ -158,6 +164,7 @@ export const formatRelative = (startStr: string, end: number): string => {
 
 const paramFormat = /^g\d+\..+=.+$/;
 
+// decodePanelOptionsFromQueryString 从 g0.expr= 等 URL 参数还原 Graph 页多面板配置。
 export const decodePanelOptionsFromQueryString = (query: string): PanelMeta[] => {
   if (query === '') {
     return [];
@@ -243,6 +250,7 @@ export const toQueryString = ({ key, options }: PanelMeta): string => {
   return urlParams.filter(byEmptyString).join('&');
 };
 
+// encodePanelOptionsToQueryString 将面板列表序列化为可分享的 ?g0...&g1... 查询串。
 export const encodePanelOptionsToQueryString = (panels: PanelMeta[]): string => {
   return `?${panels.map(toQueryString).join('&')}`;
 };
@@ -298,6 +306,7 @@ export const parsePrometheusFloat = (value: string): string | number => {
   }
 };
 
+// debounce 对输入/resize 等高频回调做 trailing 防抖，减少 Graph 页重复请求。
 export function debounce<Params extends unknown[]>(
   func: (...args: Params) => unknown,
   timeout: number
@@ -310,3 +319,4 @@ export function debounce<Params extends unknown[]>(
     }, timeout);
   };
 }
+// utils 模块对齐 Prometheus Go 端 duration 语义并服务 graph 深链接。

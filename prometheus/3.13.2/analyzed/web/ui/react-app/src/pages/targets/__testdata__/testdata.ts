@@ -1,3 +1,5 @@
+// Targets 页单元测试夹具：模拟 scrape pool 分组、/api/v1/targets 与按 pool 查询的 API 响应。
+
 import { ScrapePools, Target } from '../target';
 
 export const targetGroups: ScrapePools = Object.freeze({
@@ -126,6 +128,7 @@ export const targetGroups: ScrapePools = Object.freeze({
   },
 });
 
+// sampleApiResponse 模拟 activeTargets 列表，供 groupTargets 测试使用。
 export const sampleApiResponse = Object.freeze({
   status: 'success',
   data: {
@@ -242,6 +245,7 @@ export const sampleApiResponse = Object.freeze({
   },
 });
 
+// scrapePoolTargetsSampleAPI 模拟 GET /api/v1/targets?scrapePool= 的单 pool 响应。
 export const scrapePoolTargetsSampleAPI = Object.freeze({
   status: 'success',
   data: {
@@ -316,9 +320,11 @@ export const scrapePoolTargetsSampleAPI = Object.freeze({
   },
 });
 
+// scrapePoolsSampleAPI 模拟 scrape pool 名称列表接口返回值。
 export const scrapePoolsSampleAPI = Object.freeze({
   status: 'success',
   data: {
     scrapePools: ['blackbox'],
   },
 });
+// 测试数据与 Prometheus targets API 字段结构对齐，便于快照与分组断言。

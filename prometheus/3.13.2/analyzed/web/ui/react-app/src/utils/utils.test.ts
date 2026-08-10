@@ -1,3 +1,5 @@
+// utils 单元测试：覆盖 HTML 转义、序列名格式化、时长/时间互转、URL 面板参数与 PromQL 链接。
+
 import moment from 'moment';
 
 import {
@@ -19,6 +21,7 @@ import {
 } from '.';
 import { GraphDisplayMode, PanelType } from '../pages/graph/Panel';
 
+// Utils 测试套件分组验证 escapeHTML、metricToSeriesName 与 Time format 等子模块。
 describe('Utils', () => {
   describe('escapeHTML', (): void => {
     it('escapes html sequences', () => {
@@ -28,6 +31,7 @@ describe('Utils', () => {
     });
   });
 
+// metricToSeriesName 测试空标签、仅 __name__ 与多标签组合的 PromQL 字面量输出。
   describe('metricToSeriesName', () => {
     it('returns "{}" if labels is empty', () => {
       const labels = {};
@@ -68,6 +72,7 @@ describe('Utils', () => {
       });
     });
 
+// parseDuration/formatDuration 表驱动断言与 Go model.Duration 兼容的往返格式化。
     describe('parseDuration and formatDuration', () => {
       describe('should parse and format durations correctly', () => {
         const tests: { input: string; output: number; expectedString?: string }[] = [
@@ -202,6 +207,7 @@ describe('Utils', () => {
     });
   });
 
+// URL Params 测试 gN 前缀面板编解码、parseOption 分支与 createExpressionLink 编码。
   describe('URL Params', () => {
     const panels: any = [
       {
@@ -347,3 +353,4 @@ describe('Utils', () => {
     });
   });
 });
+// utils 测试确保 Graph 页 URL 状态与 Prometheus 时长解析一致。
